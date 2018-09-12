@@ -301,79 +301,78 @@ SFORMAT SF_MOVIE[]={
 	{ 0 }
 };
 
-// TODO: integrate the new wifi state variables once everything is settled
 SFORMAT SF_WIFI[]={
-	{ "W000", 4, 1, &wifiMac.powerOn},
-	{ "W010", 4, 1, &wifiMac.powerOnPending},
+	{ "W000", 4, 1, &legacyWifiSF.powerOn},
+	{ "W010", 4, 1, &legacyWifiSF.powerOnPending},
 
-	{ "W020", 2, 1, &wifiMac.rfStatus},
-	{ "W030", 2, 1, &wifiMac.rfPins},
+	{ "W020", 2, 1, &legacyWifiSF.rfStatus},
+	{ "W030", 2, 1, &legacyWifiSF.rfPins},
 
-	{ "W040", 2, 1, &wifiMac.IE},
-	{ "W050", 2, 1, &wifiMac.IF},
+	{ "W040", 2, 1, &legacyWifiSF.IE},
+	{ "W050", 2, 1, &legacyWifiSF.IF},
 
-	{ "W060", 2, 1, &wifiMac.macMode},
-	{ "W070", 2, 1, &wifiMac.wepMode},
-	{ "W080", 4, 1, &wifiMac.WEP_enable},
+	{ "W060", 2, 1, &legacyWifiSF.macMode},
+	{ "W070", 2, 1, &legacyWifiSF.wepMode},
+	{ "W080", 4, 1, &legacyWifiSF.WEP_enable},
 
-	{ "W100", 2, 1, &wifiMac.TXCnt},
-	{ "W120", 2, 1, &wifiMac.TXStat},
+	{ "W100", 2, 1, &legacyWifiSF.TXCnt},
+	{ "W120", 2, 1, &legacyWifiSF.TXStat},
 
-	{ "W200", 2, 1, &wifiMac.RXCnt},
-	{ "W210", 2, 1, &wifiMac.RXCheckCounter},
+	{ "W200", 2, 1, &legacyWifiSF.RXCnt},
+	{ "W210", 2, 1, &legacyWifiSF.RXCheckCounter},
 
-	{ "W220", 1, 6, &wifiMac.mac.bytes},
-	{ "W230", 1, 6, &wifiMac.bss.bytes},
+	{ "W220", 1, 6, &legacyWifiSF.macAddr[0]},
+	{ "W230", 1, 6, &legacyWifiSF.bssid[0]},
 
-	{ "W240", 2, 1, &wifiMac.aid},
-	{ "W250", 2, 1, &wifiMac.pid},
-	{ "W260", 2, 1, &wifiMac.retryLimit},
+	{ "W240", 2, 1, &legacyWifiSF.aid},
+	{ "W250", 2, 1, &legacyWifiSF.pid},
+	{ "W260", 2, 1, &legacyWifiSF.retryLimit},
 
-	{ "W270", 4, 1, &wifiMac.crystalEnabled},
-	{ "W280", 8, 1, &wifiMac.usec},
-	{ "W290", 4, 1, &wifiMac.usecEnable},
-	{ "W300", 8, 1, &wifiMac.ucmp},
-	{ "W310", 4, 1, &wifiMac.ucmpEnable},
-	{ "W320", 2, 1, &wifiMac.eCount},
-	{ "W330", 4, 1, &wifiMac.eCountEnable},
+	{ "W270", 4, 1, &legacyWifiSF.crystalEnabled},
+	{ "W280", 8, 1, &legacyWifiSF.usec},
+	{ "W290", 4, 1, &legacyWifiSF.usecEnable},
+	{ "W300", 8, 1, &legacyWifiSF.ucmp},
+	{ "W310", 4, 1, &legacyWifiSF.ucmpEnable},
+	{ "W320", 2, 1, &legacyWifiSF.eCount},
+	{ "W330", 4, 1, &legacyWifiSF.eCountEnable},
 
-	{ "WR00", 4, 1, &wifiMac.RF.CFG1.val},
-	{ "WR01", 4, 1, &wifiMac.RF.IFPLL1.val},
-	{ "WR02", 4, 1, &wifiMac.RF.IFPLL2.val},
-	{ "WR03", 4, 1, &wifiMac.RF.IFPLL3.val},
-	{ "WR04", 4, 1, &wifiMac.RF.RFPLL1.val},
-	{ "WR05", 4, 1, &wifiMac.RF.RFPLL2.val},
-	{ "WR06", 4, 1, &wifiMac.RF.RFPLL3.val},
-	{ "WR07", 4, 1, &wifiMac.RF.RFPLL4.val},
-	{ "WR08", 4, 1, &wifiMac.RF.CAL1.val},
-	{ "WR09", 4, 1, &wifiMac.RF.TXRX1.val},
-	{ "WR10", 4, 1, &wifiMac.RF.PCNT1.val},
-	{ "WR11", 4, 1, &wifiMac.RF.PCNT2.val},
-	{ "WR12", 4, 1, &wifiMac.RF.VCOT1.val},
+	{ "WR00", 4, 1, &legacyWifiSF.rf_cfg1},
+	{ "WR01", 4, 1, &legacyWifiSF.rf_ifpll1},
+	{ "WR02", 4, 1, &legacyWifiSF.rf_ifpll2},
+	{ "WR03", 4, 1, &legacyWifiSF.rf_ifpll3},
+	{ "WR04", 4, 1, &legacyWifiSF.rf_rfpll1},
+	{ "WR05", 4, 1, &legacyWifiSF.rf_rfpll2},
+	{ "WR06", 4, 1, &legacyWifiSF.rf_rfpll3},
+	{ "WR07", 4, 1, &legacyWifiSF.rf_rfpll4},
+	{ "WR08", 4, 1, &legacyWifiSF.rf_cal1},
+	{ "WR09", 4, 1, &legacyWifiSF.rf_txrx1},
+	{ "WR10", 4, 1, &legacyWifiSF.rf_pcnt1},
+	{ "WR11", 4, 1, &legacyWifiSF.rf_pcnt2},
+	{ "WR12", 4, 1, &legacyWifiSF.rf_vcot1},
 
-	{ "W340", 1, 105, &wifiMac.BB.data[0]},
+	{ "W340", 1, 105, &legacyWifiSF.bb_data[0]},
 
-	{ "W350", 2, 1, &wifiMac.rfIOCnt.val},
-	{ "W360", 2, 1, &wifiMac.rfIOStatus.val},
-	{ "W370", 4, 1, &wifiMac.rfIOData.val},
-	{ "W380", 2, 1, &wifiMac.bbIOCnt.val},
+	{ "W350", 2, 1, &legacyWifiSF.rfIOCnt},
+	{ "W360", 2, 1, &legacyWifiSF.rfIOStatus},
+	{ "W370", 4, 1, &legacyWifiSF.rfIOData},
+	{ "W380", 2, 1, &legacyWifiSF.bbIOCnt},
 
-	{ "W400", 2, 0x1000, &wifiMac.RAM[0]},
-	{ "W410", 2, 1, &wifiMac.RXRangeBegin},
-	{ "W420", 2, 1, &wifiMac.RXRangeEnd},
-	{ "W430", 2, 1, &wifiMac.RXWriteCursor},
-	{ "W460", 2, 1, &wifiMac.RXReadCursor},
-	{ "W470", 2, 1, &wifiMac.RXUnits},
-	{ "W480", 2, 1, &wifiMac.RXBufCount},
-	{ "W490", 2, 1, &wifiMac.CircBufReadAddress},
-	{ "W500", 2, 1, &wifiMac.CircBufWriteAddress},
-	{ "W510", 2, 1, &wifiMac.CircBufRdEnd},
-	{ "W520", 2, 1, &wifiMac.CircBufRdSkip},
-	{ "W530", 2, 1, &wifiMac.CircBufWrEnd},
-	{ "W540", 2, 1, &wifiMac.CircBufWrSkip},
+	{ "W400", 2, 0x1000, &legacyWifiSF.wifiRAM[0]},
+	{ "W410", 2, 1, &legacyWifiSF.rxRangeBegin},
+	{ "W420", 2, 1, &legacyWifiSF.rxRangeEnd},
+	{ "W430", 2, 1, &legacyWifiSF.rxWriteCursor},
+	{ "W460", 2, 1, &legacyWifiSF.rxReadCursor},
+	{ "W470", 2, 1, &legacyWifiSF.rxUnits},
+	{ "W480", 2, 1, &legacyWifiSF.rxBufCount},
+	{ "W490", 2, 1, &legacyWifiSF.circBufReadAddress},
+	{ "W500", 2, 1, &legacyWifiSF.circBufWriteAddress},
+	{ "W510", 2, 1, &legacyWifiSF.circBufReadEnd},
+	{ "W520", 2, 1, &legacyWifiSF.circBufReadSkip},
+	{ "W530", 2, 1, &legacyWifiSF.circBufWriteEnd},
+	{ "W540", 2, 1, &legacyWifiSF.circBufWriteSkip},
 
-	{ "W580", 2, 0x800, &wifiMac.IOPorts[0]},
-	{ "W590", 2, 1, &wifiMac.randomSeed},
+	{ "W580", 2, 0x800, &legacyWifiSF.wifiIOPorts[0]},
+	{ "W590", 2, 1, &legacyWifiSF.randomSeed},
 
 	{ 0 }
 };
@@ -1065,6 +1064,8 @@ static void writechunks(EMUFILE &os)
 	svn_rev = 0;
 
 	save_time = tm.get_Ticks();
+	
+	wifiHandler->PrepareSaveStateWrite();
 
 	savestate_WriteChunk(os,1,SF_ARM9);
 	savestate_WriteChunk(os,2,SF_ARM7);
@@ -1143,7 +1144,20 @@ static bool ReadStateChunks(EMUFILE &is, s32 totalsize)
 			case 91: if(!gfx3d_loadstate(is,size)) ret=false; break;
 			case 100: if(!ReadStateChunk(is,SF_MOVIE, size)) ret=false; break;
 			case 101: if(!mov_loadstate(is, size)) ret=false; break;
-			case 110: if(!ReadStateChunk(is,SF_WIFI,size)) ret=false; break;
+				
+			case 110:
+			{
+				if (ReadStateChunk(is,SF_WIFI,size))
+				{
+					wifiHandler->ParseSaveStateRead();
+				}
+				else
+				{
+					ret = false;
+				}
+				break;
+			}
+				
 			case 120: if(!ReadStateChunk(is,SF_RTC,size)) ret=false; break;
 			case 130: if(!ReadStateChunk(is,SF_INFO,size)) ret=false; else haveInfo=true; break;
 			case 140: if(!s_slot1_loadstate(is, size)) ret=false; break;

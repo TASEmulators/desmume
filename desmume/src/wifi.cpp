@@ -77,7 +77,7 @@ typedef struct pcap pcap_t;
 	#define PCAP_ERRBUF_SIZE 256
 #endif
 
-wifimac_t wifiMac;
+LegacyWifiSFormat legacyWifiSF;
 
 /*******************************************************************************
 
@@ -353,174 +353,79 @@ static void WIFI_initCRC32Table()
 
  *******************************************************************************/
 
-static void WIFI_resetRF(rffilter_t *rf) 
+static void WIFI_resetRF(RF2958_IOREG_MAP &rf)
 {
 	/* reinitialize RF chip with the default values refer RF2958 docs */
 	/* CFG1 */
-	rf->CFG1.bits.IF_VGA_REG_EN = 1;
-	rf->CFG1.bits.IF_VCO_REG_EN = 1;
-	rf->CFG1.bits.RF_VCO_REG_EN = 1;
-	rf->CFG1.bits.HYBERNATE = 0;
-	rf->CFG1.bits.REF_SEL = 0;
+	rf.CFG1.IF_VGA_REG_EN = 1;
+	rf.CFG1.IF_VCO_REG_EN = 1;
+	rf.CFG1.RF_VCO_REG_EN = 1;
+	rf.CFG1.HYBERNATE = 0;
+	rf.CFG1.REF_SEL = 0;
 	/* IFPLL1 */
-	rf->IFPLL1.bits.DAC = 3;
-	rf->IFPLL1.bits.P1 = 0;
-	rf->IFPLL1.bits.LD_EN1 = 0;
-	rf->IFPLL1.bits.AUTOCAL_EN1 = 0;
-	rf->IFPLL1.bits.PDP1 = 1;
-	rf->IFPLL1.bits.CPL1 = 0;
-	rf->IFPLL1.bits.LPF1 = 0;
-	rf->IFPLL1.bits.VTC_EN1 = 1;
-	rf->IFPLL1.bits.KV_EN1 = 0;
-	rf->IFPLL1.bits.PLL_EN1 = 0;
+	rf.IFPLL1.DAC = 3;
+	rf.IFPLL1.P1 = 0;
+	rf.IFPLL1.LD_EN1 = 0;
+	rf.IFPLL1.AUTOCAL_EN1 = 0;
+	rf.IFPLL1.PDP1 = 1;
+	rf.IFPLL1.CPL1 = 0;
+	rf.IFPLL1.LPF1 = 0;
+	rf.IFPLL1.VTC_EN1 = 1;
+	rf.IFPLL1.KV_EN1 = 0;
+	rf.IFPLL1.PLL_EN1 = 0;
 	/* IFPLL2 */
-	rf->IFPLL2.bits.IF_N = 0x22;
+	rf.IFPLL2.IF_N = 0x22;
 	/* IFPLL3 */
-	rf->IFPLL3.bits.KV_DEF1 = 8;
-	rf->IFPLL3.bits.CT_DEF1 = 7;
-	rf->IFPLL3.bits.DN1 = 0x1FF;
+	rf.IFPLL3.KV_DEF1 = 8;
+	rf.IFPLL3.CT_DEF1 = 7;
+	rf.IFPLL3.DN1 = 0x1FF;
 	/* RFPLL1 */
-	rf->RFPLL1.bits.DAC = 3;
-	rf->RFPLL1.bits.P = 0;
-	rf->RFPLL1.bits.LD_EN = 0;
-	rf->RFPLL1.bits.AUTOCAL_EN = 0;
-	rf->RFPLL1.bits.PDP = 1;
-	rf->RFPLL1.bits.CPL = 0;
-	rf->RFPLL1.bits.LPF = 0;
-	rf->RFPLL1.bits.VTC_EN = 0;
-	rf->RFPLL1.bits.KV_EN = 0;
-	rf->RFPLL1.bits.PLL_EN = 0;
+	rf.RFPLL1.DAC = 3;
+	rf.RFPLL1.P = 0;
+	rf.RFPLL1.LD_EN = 0;
+	rf.RFPLL1.AUTOCAL_EN = 0;
+	rf.RFPLL1.PDP = 1;
+	rf.RFPLL1.CPL = 0;
+	rf.RFPLL1.LPF = 0;
+	rf.RFPLL1.VTC_EN = 1;
+	rf.RFPLL1.KV_EN = 0;
+	rf.RFPLL1.PLL_EN = 0;
 	/* RFPLL2 */
-	rf->RFPLL2.bits.NUM2 = 0;
-	rf->RFPLL2.bits.N2 = 0x5E;
+	rf.RFPLL2.NUM2 = 0;
+	rf.RFPLL2.N2 = 0x5E;
 	/* RFPLL3 */
-	rf->RFPLL3.bits.NUM2 = 0;
+	rf.RFPLL3.NUM2 = 0;
 	/* RFPLL4 */
-	rf->RFPLL4.bits.KV_DEF = 8;
-	rf->RFPLL4.bits.CT_DEF = 7;
-	rf->RFPLL4.bits.DN = 0x145;
+	rf.RFPLL4.KV_DEF = 8;
+	rf.RFPLL4.CT_DEF = 7;
+	rf.RFPLL4.DN = 0x145;
 	/* CAL1 */
-	rf->CAL1.bits.LD_WINDOW = 2;
-	rf->CAL1.bits.M_CT_VALUE = 8;
-	rf->CAL1.bits.TLOCK = 7;
-	rf->CAL1.bits.TVCO = 0x0F;
+	rf.CAL1.LD_WINDOW = 2;
+	rf.CAL1.M_CT_VALUE = 8;
+	rf.CAL1.TLOCK = 7;
+	rf.CAL1.TVCO = 0x0F;
 	/* TXRX1 */
-	rf->TXRX1.bits.TXBYPASS = 0;
-	rf->TXRX1.bits.INTBIASEN = 0;
-	rf->TXRX1.bits.TXENMODE = 0;
-	rf->TXRX1.bits.TXDIFFMODE = 0;
-	rf->TXRX1.bits.TXLPFBW = 2;
-	rf->TXRX1.bits.RXLPFBW = 2;
-	rf->TXRX1.bits.TXVGC = 0;
-	rf->TXRX1.bits.PCONTROL = 0;
-	rf->TXRX1.bits.RXDCFBBYPS = 0;
+	rf.TXRX1.TXBYPASS = 0;
+	rf.TXRX1.INTBIASEN = 0;
+	rf.TXRX1.TXENMODE = 0;
+	rf.TXRX1.TXDIFFMODE = 0;
+	rf.TXRX1.TXLPFBW = 2;
+	rf.TXRX1.RXLPFBW = 2;
+	rf.TXRX1.TXVGC = 0;
+	rf.TXRX1.PCONTROL = 0;
+	rf.TXRX1.RXDCFBBYPS = 0;
 	/* PCNT1 */
-	rf->PCNT1.bits.TX_DELAY = 0;
-	rf->PCNT1.bits.PC_OFFSET = 0;
-	rf->PCNT1.bits.P_DESIRED = 0;
-	rf->PCNT1.bits.MID_BIAS = 0;
+	rf.PCNT1.TX_DELAY = 0;
+	rf.PCNT1.PC_OFFSET = 0;
+	rf.PCNT1.P_DESIRED = 0;
+	rf.PCNT1.MID_BIAS = 0;
 	/* PCNT2 */
-	rf->PCNT2.bits.MIN_POWER = 0;
-	rf->PCNT2.bits.MID_POWER = 0;
-	rf->PCNT2.bits.MAX_POWER = 0;
+	rf.PCNT2.MIN_POWER = 0;
+	rf.PCNT2.MID_POWER = 0;
+	rf.PCNT2.MAX_POWER = 0;
 	/* VCOT1 */
-	rf->VCOT1.bits.AUX1 = 0;
-	rf->VCOT1.bits.AUX = 0;
-}
-
-
-void WIFI_setRF_CNT(u16 val)
-{
-	if (!wifiMac.rfIOStatus.bits.busy)
-		wifiMac.rfIOCnt.val = val;
-}
-
-void WIFI_setRF_DATA(u16 val, u8 part)
-{
-	if (!wifiMac.rfIOStatus.bits.busy)
-	{
-        rfIOData_t *rfreg = (rfIOData_t *)&wifiMac.RF;
-		switch (wifiMac.rfIOCnt.bits.readOperation)
-		{
-			case 1: /* read from RF chip */
-				/* low part of data is ignored on reads */
-				/* on high part, the address is read, and the data at this is written back */
-				if (part==1)
-				{
-					wifiMac.rfIOData.array16[part] = val;
-					if (wifiMac.rfIOData.bits.address > (sizeof(wifiMac.RF) / 4)) return; /* out of bound */
-					/* get content of the addressed register */
-					wifiMac.rfIOData.bits.content = rfreg[wifiMac.rfIOData.bits.address].bits.content;
-				}
-				break;
-			case 0: /* write to RF chip */
-				wifiMac.rfIOData.array16[part] = val;
-				if (wifiMac.rfIOData.bits.address > (sizeof(wifiMac.RF) / 4)) return; /* out of bound */
-				/* the actual transfer is done on high part write */
-				if (part==1)
-				{
-					switch (wifiMac.rfIOData.bits.address)
-					{
-						case 5:		/* write to upper part of the frequency filter */
-						case 6:		/* write to lower part of the frequency filter */
-							{
-								u32 channelFreqN;
-								rfreg[wifiMac.rfIOData.bits.address].bits.content = wifiMac.rfIOData.bits.content;
-								/* get the complete rfpll.n */
-								channelFreqN = (u32)wifiMac.RF.RFPLL3.bits.NUM2 + ((u32)wifiMac.RF.RFPLL2.bits.NUM2 << 18) + ((u32)wifiMac.RF.RFPLL2.bits.N2 << 24);
-								/* frequency setting is out of range */
-								if (channelFreqN<0x00A2E8BA) return;
-								/* substract base frequency (channel 1) */
-								channelFreqN -= 0x00A2E8BA;
-							}
-							return;
-						case 13:
-							/* special purpose register: TEST1, on write, the RF chip resets */
-							WIFI_resetRF(&wifiMac.RF);
-							return;
-					}
-					/* set content of the addressed register */
-					rfreg[wifiMac.rfIOData.bits.address].bits.content = wifiMac.rfIOData.bits.content;
-				}
-				break;
-		}
-	}
-}
-
-u16 WIFI_getRF_DATA(u8 part)
-{
-	if (!wifiMac.rfIOStatus.bits.busy)
-		return wifiMac.rfIOData.array16[part];
-	else
-		/* data is not (yet) available */
-		return 0;
- }
-
-u16 WIFI_getRF_STATUS()
-{
-	return wifiMac.rfIOStatus.val;
-}
-
-/*******************************************************************************
-
-	BB-Chip
-
- *******************************************************************************/
-
-void WIFI_setBB_CNT(u16 val)
-{
-	wifiMac.bbIOCnt.val = val;
-
-	if(wifiMac.bbIOCnt.bits.mode == 1)
-		wifiMac.BB.data[wifiMac.bbIOCnt.bits.address] = WIFI_IOREG(REG_WIFI_BBWRITE);
-}
-
-u8 WIFI_getBB_DATA()
-{
-	if((!wifiMac.bbIOCnt.bits.enable) || (wifiMac.bbIOCnt.bits.mode != 2))
-		return 0;
-
-	return wifiMac.BB.data[wifiMac.bbIOCnt.bits.address];
+	rf.VCOT1.AUX1 = 0;
+	rf.VCOT1.AUX = 0;
 }
 
 /*******************************************************************************
@@ -533,60 +438,98 @@ u8 WIFI_getBB_DATA()
 
  *******************************************************************************/
 
-static void WIFI_BeaconTXStart();
+static void WIFI_TXStart(const WifiTXLocIndex txSlotIndex, IOREG_W_TXBUF_LOCATION &txLocation);
 
 static void WIFI_triggerIRQMask(u16 mask)
 {
-	u16 oResult,nResult;
-	oResult = wifiMac.IE & wifiMac.IF;
-	wifiMac.IF = wifiMac.IF | (mask & ~0x0400);
-	nResult = wifiMac.IE & wifiMac.IF;
-
-	if (!oResult && nResult)
+	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
+	
+	u16 oldFlags = io.IF.value & io.IE.value;
+	
+	io.IF.value |= (mask & 0xFBFF);
+	u16 newFlags = io.IF.value & io.IE.value;
+	
+	if (!oldFlags && newFlags)
 	{
-		NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_ARM7_WIFI);   /* cascade it via arm7 wifi irq */
+		NDS_makeIrq(ARMCPU_ARM7, IRQ_BIT_ARM7_WIFI); // cascade it via arm7 wifi irq
 	}
 }
 
 static void WIFI_triggerIRQ(u8 irq)
 {
+	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
+	
 	switch (irq)
 	{
-	case WIFI_IRQ_TXSTART:
-		wifiMac.TXSeqNo++;
-		break;
-	case WIFI_IRQ_TIMEPREBEACON:
-		if (wifiMac.TXPower & 0x0001)
+		case WIFI_IRQ_TXSTART: // IRQ 7
+			io.TX_SEQNO.Number++;
+			break;
+			
+		case WIFI_IRQ_TIMEPREBEACON: // IRQ 15
 		{
-			wifiMac.rfStatus = 1;
-			wifiMac.rfPins = 0x0084;
+			if (io.POWER_TX.AutoWakeup != 0)
+			{
+				io.RF_STATUS.Status = 0x1;
+				io.RF_PINS.CarrierSense = 0;
+				io.RF_PINS.TXMain = 0;
+				io.RF_PINS.UNKNOWN1 = 1;
+				io.RF_PINS.TX_On = 0;
+				io.RF_PINS.RX_On = 1;
+			}
+			break;
 		}
-		break;
-	case WIFI_IRQ_TIMEBEACON:
-		wifiMac.BeaconCount1 = wifiMac.BeaconInterval;
-
-		if (wifiMac.ucmpEnable)
+			
+		case WIFI_IRQ_TIMEBEACON: // IRQ 14
 		{
-			wifiMac.BeaconCount2 = 0xFFFF;
-			wifiMac.TXCnt &= 0xFFF2;
-
-			WIFI_BeaconTXStart();
-
-			if (wifiMac.ListenCount == 0) wifiMac.ListenCount = wifiMac.ListenInterval;
-			wifiMac.ListenCount--;
+			io.BEACONCOUNT1 = io.BEACONINT.Interval;
+			
+			if (io.US_COMPARECNT.EnableCompare != 0)
+			{
+				io.BEACONCOUNT2 = 0xFFFF;
+				io.TXREQ_READ.Loc1 = 0;
+				io.TXREQ_READ.Loc2 = 0;
+				io.TXREQ_READ.Loc3 = 0;
+				
+				WIFI_TXStart(WifiTXLocIndex_BEACON, io.TXBUF_BEACON);
+				
+				if (io.TXBUF_BEACON.TransferRequest != 0)
+				{
+					io.TXBUSY.Beacon = 1;
+				}
+				
+				if (io.LISTENCOUNT.Count == 0)
+				{
+					io.LISTENCOUNT.Count = io.LISTENINT.Interval;
+				}
+				
+				io.LISTENCOUNT.Count--;
+			}
+			break;
 		}
-		break;
-	case WIFI_IRQ_TIMEPOSTBEACON:
-		if (wifiMac.TXPower & 0x0002)
+			
+		case WIFI_IRQ_TIMEPOSTBEACON: // IRQ 13
 		{
-			wifiMac.rfStatus = 9;
-			wifiMac.rfPins = 0x0004;
+			if (io.POWER_TX.AutoSleep != 0)
+			{
+				io.RF_STATUS.Status = 0x9;
+				io.RF_PINS.CarrierSense = 0;
+				io.RF_PINS.TXMain = 1;
+				io.RF_PINS.UNKNOWN1 = 1;
+				io.RF_PINS.TX_On = 1;
+				io.RF_PINS.RX_On = 0;
+				
+				io.INTERNAL_034 = 0x0002;
+				io.TXREQ_READ.value &= 0x0010;
+				io.POWERSTATE.WillPowerOn = 0;
+				io.POWERSTATE.IsPowerOff = 1;
+			}
+			break;
 		}
-		break;
-	case WIFI_IRQ_UNK:
-		WIFI_LOG(2, "IRQ 12 triggered.\n");
-		wifiMac.TXSeqNo++;
-		break;
+			
+		case WIFI_IRQ_UNK: // IRQ 12
+			WIFI_LOG(2, "IRQ 12 triggered.\n");
+			io.TX_SEQNO.Number++;
+			break;
 	}
 
 	WIFI_triggerIRQMask(1<<irq);
@@ -594,6 +537,7 @@ static void WIFI_triggerIRQ(u8 irq)
 
 INLINE u16 WIFI_GetRXFlags(u8* packet)
 {
+	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
 	u16 ret = 0x0010;
 	u16 frameCtl = *(u16*)&packet[0];
 
@@ -619,7 +563,7 @@ INLINE u16 WIFI_GetRXFlags(u8* packet)
 	if (frameCtl & 0x0400)
 		ret |= 0x0100;
 
-	if (!memcmp(&packet[10], &wifiMac.bss.bytes[0], 6))
+	if (!memcmp(&packet[10], io.BSSID, 6))
 		ret |= 0x8000;
 
 	//printf("----- Computing RX flags for received frame: FrameCtl = %04X, Flags = %04X -----\n", frameCtl, ret);
@@ -649,8 +593,11 @@ INLINE void WIFI_MakeRXHeader(u8* buf, u16 flags, u16 xferRate, u16 len, u8 maxR
 
 static void WIFI_RXPutWord(u16 val)
 {
+	WifiData &wifi = wifiHandler->GetWifiData();
+	WIFI_IOREG_MAP &io = wifi.io;
+	
 	/* abort when RX data queuing is not enabled */
-	if (!(wifiMac.RXCnt & 0x8000)) return;
+	if (io.RXCNT.EnableRXFIFOQueuing == 0) return;
 	/* abort when ringbuffer is full */
 	//if (wifiMac.RXReadCursor == wifiMac.RXWriteCursor) return;
 	/*if(wifiMac.RXWriteCursor >= wifiMac.RXReadCursor) 
@@ -660,34 +607,37 @@ static void WIFI_RXPutWord(u16 val)
 		return;
 	}*/
 	/* write the data to cursor position */
-	wifiMac.RAM[wifiMac.RXWriteCursor & 0xFFF] = val;
+	wifi.RAM[io.RXBUF_WRCSR.HalfwordAddress] = val;
 //	printf("wifi: written word %04X to circbuf addr %04X\n", val, (wifiMac.RXWriteCursor << 1));
 	/* move cursor by one */
 	//printf("written one word to %04X (start %04X, end %04X), ", wifiMac.RXWriteCursor, wifiMac.RXRangeBegin, wifiMac.RXRangeEnd);
-	wifiMac.RXWriteCursor++;
+	io.RXBUF_WRCSR.HalfwordAddress++;
 	/* wrap around */
 //	wifiMac.RXWriteCursor %= (wifiMac.RXRangeEnd - wifiMac.RXRangeBegin) >> 1;
 //	printf("new addr=%04X\n", wifiMac.RXWriteCursor);
-	if (wifiMac.RXWriteCursor >= ((wifiMac.RXRangeEnd & 0x1FFE) >> 1))
-		wifiMac.RXWriteCursor = ((wifiMac.RXRangeBegin & 0x1FFE) >> 1);
+	if (io.RXBUF_WRCSR.HalfwordAddress >= ((io.RXBUF_END & 0x1FFE) >> 1))
+		io.RXBUF_WRCSR.HalfwordAddress = ((io.RXBUF_BEGIN & 0x1FFE) >> 1);
 }
 
-static void WIFI_TXStart(u8 slot)
+static void WIFI_TXStart(const WifiTXLocIndex txSlotIndex, IOREG_W_TXBUF_LOCATION &txLocation)
 {
+	WifiData &wifi = wifiHandler->GetWifiData();
+	WIFI_IOREG_MAP &io = wifi.io;
+	
 	WIFI_LOG(3, "TX slot %i trying to send a packet: TXCnt = %04X, TXBufLoc = %04X\n", 
-		slot, wifiMac.TXCnt, wifiMac.TXSlot[slot]);
+		(int)txSlotIndex, io.TXREQ_READ.value, txLocation.value);
 
-	if (BIT15(wifiMac.TXSlot[slot]))	/* is slot enabled? */
+	if (txLocation.TransferRequest != 0)	/* is slot enabled? */
 	{
 		//printf("send packet at %08X, lr=%08X\n", NDS_ARM7.instruct_adr, NDS_ARM7.R[14]);
 		u16 txLen;
-		// the address has to be somewhere in the circular buffer, so drop the other bits
-		u16 address = (wifiMac.TXSlot[slot] & 0x0FFF);
+		u16 address = txLocation.HalfwordAddress;
+		
 		// is there even enough space for the header (6 hwords) in the tx buffer?
 		if (address > 0x1000-6)
 		{
 			WIFI_LOG(1, "TX slot %i trying to send a packet overflowing from the TX buffer (address %04X). Attempt ignored.\n", 
-				slot, (address << 1));
+				(int)txSlotIndex, (address << 1));
 			return;
 		}
 
@@ -695,12 +645,12 @@ static void WIFI_TXStart(u8 slot)
 		//	slot, wifiMac.RAM[address+6]);
 
 		// 12 byte header TX Header: http://www.akkit.org/info/dswifi.htm#FmtTx
-		txLen = wifiMac.RAM[address+5];
+		txLen = wifi.RAM[address+5];
 		// zero length
 		if (txLen == 0)
 		{
 			WIFI_LOG(1, "TX slot %i trying to send a packet with length field set to zero. Attempt ignored.\n", 
-				slot);
+				(int)txSlotIndex);
 			return;
 		}
 
@@ -708,181 +658,112 @@ static void WIFI_TXStart(u8 slot)
 		txLen = WIFI_alignedLen(txLen);
 
 		// unsupported txRate
-		switch (wifiMac.RAM[address+4] & 0xFF)
+		switch (wifi.RAM[address+4] & 0xFF)
 		{
 			case 10: // 1 mbit
 			case 20: // 2 mbit
 				break;
 			default: // other rates
 				WIFI_LOG(1, "TX slot %i trying to send a packet with transfer rate field set to an invalid value of %i. Attempt ignored.\n", 
-					slot, wifiMac.RAM[address+4] & 0xFF);
+					(int)txSlotIndex, wifi.RAM[address+4] & 0xFF);
 				return;
 		}
 
 		// Set sequence number if required
-		if (!BIT13(wifiMac.TXSlot[slot]))
+		if ( (txSlotIndex == WifiTXLocIndex_BEACON) || (txLocation.IEEESeqCtrl == 0) )
 		{
 		//	u16 seqctl = wifiMac.RAM[address + 6 + 22];
 		//	wifiMac.RAM[address + 6 + 11] = (seqctl & 0x000F) | (wifiMac.TXSeqNo << 4);
-			wifiMac.RAM[address + 6 + 11] = wifiMac.TXSeqNo << 4;
+			wifi.RAM[address + 6 + 11] = io.TX_SEQNO.Number << 4;
 		}
 
 		// Calculate and set FCS
-		u32 crc32 = WIFI_calcCRC32((u8*)&wifiMac.RAM[address + 6], txLen - 4);
-		*(u32*)&wifiMac.RAM[address + 6 + ((txLen-4) >> 1)] = crc32;
+		u32 crc32 = WIFI_calcCRC32((u8*)&wifi.RAM[address + 6], txLen - 4);
+		*(u32*)&wifi.RAM[address + 6 + ((txLen-4) >> 1)] = crc32;
 
 		WIFI_triggerIRQ(WIFI_IRQ_TXSTART);
-
-		if(slot > wifiMac.txCurSlot)
-			wifiMac.txCurSlot = slot;
-
-		wifiMac.txSlotBusy[slot] = 1;
-		wifiMac.txSlotAddr[slot] = address;
-		wifiMac.txSlotLen[slot] = txLen;
-		wifiMac.txSlotRemainingBytes[slot] = (txLen + 12);
-
-		wifiMac.RXTXAddr = address;
-
-		wifiMac.rfStatus = 0x0003;
-		wifiMac.rfPins = 0x0046;
-
-#if 0
-		WIFI_SoftAP_RecvPacketFromDS((u8*)&wifiMac.RAM[address+6], txLen);
-		WIFI_triggerIRQ(WIFI_IRQ_TXEND);
-
-		wifiMac.RAM[address] = 0x0001;
-		wifiMac.RAM[address+4] &= 0x00FF;
-#endif
-	}
-}
-
-static void WIFI_ExtraTXStart()
-{
-	if (BIT15(wifiMac.TXSlotExtra))
-	{
-		u16 txLen;
-		u16 address = wifiMac.TXSlotExtra & 0x0FFF;
-		// is there even enough space for the header (6 hwords) in the tx buffer?
-		if (address > 0x1000-6)
-		{
-			return;
-		}
-
-		//printf("---------- SENDING A PACKET ON EXTRA SLOT, FrameCtl = %04X ----------\n",
-		//	wifiMac.RAM[address+6]);
-
-		// 12 byte header TX Header: http://www.akkit.org/info/dswifi.htm#FmtTx
-		txLen = wifiMac.RAM[address+5];
-		// zero length 
-		if (txLen == 0)
-		{
-			return;
-		}
-
-		// Align packet length
-		txLen = WIFI_alignedLen(txLen);
-
-		// unsupported txRate
-		switch (wifiMac.RAM[address+4] & 0xFF)
-		{
-			case 10: // 1 mbit
-			case 20: // 2 mbit
-				break;
-			default: // other rates
-				return;
-		}
-
-		// Set sequence number if required
-		if (!BIT13(wifiMac.TXSlotExtra))
-		{
-			//u16 seqctl = wifiMac.RAM[address + 6 + 22];
-			//wifiMac.RAM[address + 6 + 11] = (seqctl & 0x000F) | (wifiMac.TXSeqNo << 4);
-			wifiMac.RAM[address + 6 + 11] = wifiMac.TXSeqNo << 4;
-		}
-
-		// Calculate and set FCS
-		u32 crc32 = WIFI_calcCRC32((u8*)&wifiMac.RAM[address + 6], txLen - 4);
-		*(u32*)&wifiMac.RAM[address + 6 + ((txLen-4) >> 1)] = crc32;
-
-		// Note: Extra transfers trigger two TX start interrupts according to GBATek
-		WIFI_triggerIRQ(WIFI_IRQ_TXSTART);
-		wifiHandler->CommSendPacket((u8 *)&wifiMac.RAM[address+6], txLen);
-		WIFI_triggerIRQ(WIFI_IRQ_UNK);
-
-		if (BIT13(wifiMac.TXStatCnt))
-		{
-			WIFI_triggerIRQ(WIFI_IRQ_TXEND);
-			wifiMac.TXStat = 0x0B01;
-		}
-		else if (BIT14(wifiMac.TXStatCnt))
-		{
-			WIFI_triggerIRQ(WIFI_IRQ_TXEND);
-			wifiMac.TXStat = 0x0801;
-		}
-
-		wifiMac.TXSlotExtra &= 0x7FFF;
-
-		wifiMac.RAM[address] = 0x0001;
-		wifiMac.RAM[address+4] &= 0x00FF;
-	}
-}
-
-static void WIFI_BeaconTXStart()
-{
-	if (wifiMac.BeaconEnable)
-	{
-		u16 txLen;
-		u16 address = wifiMac.BeaconAddr;
-		// is there even enough space for the header (6 hwords) in the tx buffer?
-		if (address > 0x1000-6)
-		{
-			return;
-		}
-
-		// 12 byte header TX Header: http://www.akkit.org/info/dswifi.htm#FmtTx
-		txLen = wifiMac.RAM[address+5];
-		// zero length 
-		if (txLen == 0)
-		{
-			return;
-		}
-
-		// Align packet length
-		txLen = WIFI_alignedLen(txLen);
-
-		// unsupported txRate
-		switch (wifiMac.RAM[address+4] & 0xFF)
-		{
-			case 10: // 1 mbit
-			case 20: // 2 mbit
-				break;
-			default: // other rates
-				return;
-		}
-
-		// Set sequence number
-		//u16 seqctl = wifiMac.RAM[address + 6 + 22];
-		//wifiMac.RAM[address + 6 + 11] = (seqctl & 0x000F) | (wifiMac.TXSeqNo << 4);
-		wifiMac.RAM[address + 6 + 11] = wifiMac.TXSeqNo << 4;
-
-		// Set timestamp
-		*(u64*)&wifiMac.RAM[address + 6 + 12] = wifiMac.usec;
-
-		// Calculate and set FCS
-		u32 crc32 = WIFI_calcCRC32((u8*)&wifiMac.RAM[address + 6], txLen - 4);
-		*(u32*)&wifiMac.RAM[address + 6 + ((txLen-4) >> 1)] = crc32;
-
-		WIFI_triggerIRQ(WIFI_IRQ_TXSTART);
-		wifiHandler->CommSendPacket((u8 *)&wifiMac.RAM[address+6], txLen);
 		
-		if (BIT15(wifiMac.TXStatCnt))
+		if ( (txSlotIndex == WifiTXLocIndex_LOC1) || (txSlotIndex == WifiTXLocIndex_LOC2) || (txSlotIndex == WifiTXLocIndex_LOC3) )
 		{
+			TXPacketInfo &txPacketInfo = wifiHandler->GetPacketInfoAtSlot(txSlotIndex);
+			txPacketInfo.bodyLen = txLen;
+			txPacketInfo.remainingBytes = txPacketInfo.bodyLen + 12;
+			
+			switch (txSlotIndex)
+			{
+				case WifiTXLocIndex_LOC1: io.TXBUSY.Loc1 = 1; break;
+				//case WifiTXLocIndex_CMD: io.TXBUSY.Cmd = 1; break;
+				case WifiTXLocIndex_LOC2: io.TXBUSY.Loc2 = 1; break;
+				case WifiTXLocIndex_LOC3: io.TXBUSY.Loc3 = 1; break;
+				//case WifiTXLocIndex_BEACON: io.TXBUSY.Beacon = 1; break;
+					
+				default:
+					break;
+			}
+			
+			if (txSlotIndex == WifiTXLocIndex_LOC3)
+			{
+				wifi.txCurrentSlot = WifiTXLocIndex_LOC3;
+			}
+			else if ( (txSlotIndex == WifiTXLocIndex_LOC2) && (wifi.txCurrentSlot == WifiTXLocIndex_LOC1) )
+			{
+				wifi.txCurrentSlot = WifiTXLocIndex_LOC2;
+			}
+			
+			io.RXTX_ADDR.HalfwordAddress = address;
+			
+			io.RF_STATUS.Status = 0x03;
+			io.RF_PINS.CarrierSense = 0;
+			io.RF_PINS.TXMain = 1;
+			io.RF_PINS.UNKNOWN1 = 1;
+			io.RF_PINS.TX_On = 1;
+			io.RF_PINS.RX_On = 0;
+#if 0
+			WIFI_SoftAP_RecvPacketFromDS((u8*)&wifi.RAM[address+6], txLen);
 			WIFI_triggerIRQ(WIFI_IRQ_TXEND);
-			wifiMac.TXStat = 0x0301;
+			
+			wifi.RAM[address] = 0x0001;
+			wifi.RAM[address+4] &= 0x00FF;
+#endif
 		}
-
-		wifiMac.RAM[address] = 0x0001;
-		wifiMac.RAM[address+4] &= 0x00FF;
+		else if (txSlotIndex == WifiTXLocIndex_CMD)
+		{
+			wifiHandler->CommSendPacket((u8 *)&wifi.RAM[address+6], txLen);
+			WIFI_triggerIRQ(WIFI_IRQ_UNK);
+			
+			// If bit 13 is set, then it has priority over bit 14
+			if (io.TXSTATCNT.UpdateTXStat_0B01 != 0)
+			{
+				WIFI_triggerIRQ(WIFI_IRQ_TXEND);
+				io.TXSTAT.value = 0x0B01;
+			}
+			else if (io.TXSTATCNT.UpdateTXStat_0800 != 0)
+			{
+				WIFI_triggerIRQ(WIFI_IRQ_TXEND);
+				io.TXSTAT.value = 0x0800;
+			}
+			
+			txLocation.TransferRequest = 0;
+			
+			wifi.RAM[address] = 0x0001;
+			wifi.RAM[address+4] &= 0x00FF;
+		}
+		else if (txSlotIndex == WifiTXLocIndex_BEACON)
+		{
+			// Set timestamp
+			*(u64*)&wifi.RAM[address + 6 + 12] = io.US_COUNT;
+			
+			wifiHandler->CommSendPacket((u8 *)&wifi.RAM[address+6], txLen);
+			
+			if (io.TXSTATCNT.UpdateTXStatBeacon != 0)
+			{
+				WIFI_triggerIRQ(WIFI_IRQ_TXEND);
+				io.TXSTAT.value = 0x0301;
+			}
+			
+			wifi.RAM[address] = 0x0001;
+			wifi.RAM[address+4] &= 0x00FF;
+		}
 	}
 }
 
@@ -890,6 +771,9 @@ void WIFI_write16(u32 address, u16 val)
 {
 	bool action = false;
 	if (!nds.power2.wifi) return;
+	
+	WifiData &wifi = wifiHandler->GetWifiData();
+	WIFI_IOREG_MAP &io = wifi.io;
 
 	u32 page = address & 0x7000;
 
@@ -905,7 +789,7 @@ void WIFI_write16(u32 address, u16 val)
 	{
 		/* access to the circular buffer */
 		address &= 0x1FFF;
-        wifiMac.RAM[address >> 1] = val;
+        wifi.RAM[address >> 1] = val;
 		return;
 	}
 
@@ -916,329 +800,1351 @@ void WIFI_write16(u32 address, u16 val)
 	address &= 0x0FFF;
 	switch (address)
 	{
-		case REG_WIFI_ID:
-			break;
-		case REG_WIFI_MODE:
+		case REG_WIFI_MODE: // 0x004
+		{
+			IOREG_W_MODE_RST MODE_RST;
+			MODE_RST.value = val;
+			
+			io.MODE_RST.UNKNOWN1 = MODE_RST.UNKNOWN1;
+			io.MODE_RST.UNKNOWN2 = MODE_RST.UNKNOWN2;
+			io.MODE_RST.UNKNOWN3 = MODE_RST.UNKNOWN3;
+			
+			if ( (io.MODE_RST.TXMasterEnable == 0) && (MODE_RST.TXMasterEnable != 0) )
 			{
-				u16 oldval = wifiMac.macMode;
-
-				if (!BIT0(oldval) && BIT0(val))
-				{
-					WIFI_IOREG(0x034)					= 0x0002;
-					wifiMac.rfPins 						= 0x0046;
-					wifiMac.rfStatus 					= 0x0009;
-					WIFI_IOREG(0x27C)					= 0x0005;
-				}
-
-				if (BIT0(oldval) && !BIT0(val))
-				{
-					WIFI_IOREG(0x27C)		 			= 0x000A;
-				}
-
-				if (BIT13(val))
-				{
-					WIFI_IOREG(REG_WIFI_WRITECSRLATCH) 	= 0x0000;
-					WIFI_IOREG(0x0C0)		 			= 0x0000;
-					WIFI_IOREG(0x0C4)		 			= 0x0000;
-					WIFI_IOREG(REG_WIFI_MAYBE_RATE)		= 0x0000;
-					WIFI_IOREG(0x278)		 			= 0x000F;
-				}
-
-				if (BIT14(val))
-				{
-					wifiMac.wepMode 					= 0x0000;
-					wifiMac.TXStatCnt					= 0x0000;
-					WIFI_IOREG(REG_WIFI_0A)				= 0x0000;
-					wifiMac.mac.words[0]				= 0x0000;
-					wifiMac.mac.words[1]				= 0x0000;
-					wifiMac.mac.words[2]				= 0x0000;
-					wifiMac.bss.words[0]				= 0x0000;
-					wifiMac.bss.words[1]				= 0x0000;
-					wifiMac.bss.words[2]				= 0x0000;
-					wifiMac.pid							= 0x0000;
-					wifiMac.aid 						= 0x0000;
-					WIFI_IOREG(REG_WIFI_RETRYLIMIT)		= 0x0707;
-					WIFI_IOREG(0x02E)		 			= 0x0000;
-					wifiMac.RXRangeBegin				= 0x4000;
-					wifiMac.RXRangeEnd					= 0x4800;
-					WIFI_IOREG(0x084)					= 0x0000;
-					WIFI_IOREG(REG_WIFI_PREAMBLE) 		= 0x0001;
-					WIFI_IOREG(REG_WIFI_RXFILTER) 		= 0x0401;
-					WIFI_IOREG(0x0D4)					= 0x0001;
-					WIFI_IOREG(REG_WIFI_RXFILTER2)		= 0x0008;
-					WIFI_IOREG(0x0EC)		 			= 0x3F03;
-					WIFI_IOREG(0x194)		 			= 0x0000;
-					WIFI_IOREG(0x198) 					= 0x0000;
-					WIFI_IOREG(0x1A2)		 			= 0x0001;
-					WIFI_IOREG(0x224)		 			= 0x0003;
-					WIFI_IOREG(0x230)		 			= 0x0047;
-				}
-
-				wifiMac.macMode = val & 0xAFFF;
+				io.INTERNAL_034						= 0x0002;
+				io.RF_STATUS.value					= 0x0009;
+				io.RF_PINS.value					= 0x0046;
+				io.INTERNAL_27C						= 0x0005;
+				
+				// According to GBATEK, the following registers might be reset to some unknown values.
+				// io.INTERNAL_2A2					= ???;
+			}
+			
+			if ( (io.MODE_RST.TXMasterEnable != 0) && (MODE_RST.TXMasterEnable == 0) )
+			{
+				io.INTERNAL_27C			 			= 0x000A;
+			}
+			
+			io.MODE_RST.TXMasterEnable = MODE_RST.TXMasterEnable;
+			
+			if (MODE_RST.ResetPortSet1 != 0)
+			{
+				io.RXBUF_WR_ADDR.value				= 0x0000;
+				io.CMD_TOTALTIME		 			= 0x0000;
+				io.CMD_REPLYTIME		 			= 0x0000;
+				io.X_1A4							= 0x0000;
+				io.INTERNAL_278			 			= 0x000F;
+				
+				// According to GBATEK, the following registers might be reset to some unknown values.
+				//io.TXREQ_SET.value				= ???;
+				//io.INTERNAL_0BA					= ???;
+				//io.INTERNAL_204					= ???;
+				//io.INTERNAL_25C					= ???;
+				//io.RXTX_ADDR.value				= ???;
+				//io.INTERNAL_274					= ???;
+			}
+			
+			if (MODE_RST.ResetPortSet2 != 0)
+			{
+				io.MODE_WEP.value 					= 0x0000;
+				io.TXSTATCNT.value					= 0x0000;
+				io.X_00A							= 0x0000;
+				io.MACADDR[0]						= 0x00;
+				io.MACADDR[1]						= 0x00;
+				io.MACADDR[2]						= 0x00;
+				io.MACADDR[3]						= 0x00;
+				io.MACADDR[4]						= 0x00;
+				io.MACADDR[5]						= 0x00;
+				io.BSSID[0]							= 0x00;
+				io.BSSID[1]							= 0x00;
+				io.BSSID[2]							= 0x00;
+				io.BSSID[3]							= 0x00;
+				io.BSSID[4]							= 0x00;
+				io.BSSID[5]							= 0x00;
+				io.AID_LOW.value					= 0x0000;
+				io.AID_FULL.value					= 0x0000;
+				io.TX_RETRYLIMIT.value				= 0x0707;
+				io.INTERNAL_02E			 			= 0x0000;
+				io.RXBUF_BEGIN						= 0x4000;
+				io.RXBUF_END						= 0x4800;
+				io.TXBUF_TIM.value					= 0x0000;
+				io.PREAMBLE.value 					= 0x0001;
+				io.RXFILTER.value			 		= 0x0401;
+				io.CONFIG_0D4						= 0x0001;
+				io.RXFILTER2.value					= 0x0008;
+				io.CONFIG_0EC			 			= 0x3F03;
+				io.TX_HDR_CNT.value		 			= 0x0000;
+				io.INTERNAL_198 					= 0x0000;
+				io.X_1A2.value			 			= 0x0001;
+				io.INTERNAL_224			 			= 0x0003;
+				io.INTERNAL_230			 			= 0x0047;
 			}
 			break;
-		case REG_WIFI_WEP:
-			wifiMac.wepMode = val;
+		}
+			
+		case REG_WIFI_WEP: // 0x006
+			io.MODE_WEP.value = val;
 			break;
-		case REG_WIFI_TXSTATCNT:
-			wifiMac.TXStatCnt = val;
-			//printf("txstatcnt=%04X\n", val);
+			
+		case REG_WIFI_TXSTATCNT: // 0x008
+			io.TXSTATCNT.value = val;
 			break;
-		case REG_WIFI_IE:
-			wifiMac.IE = val;
-			//printf("wifi ie write %04X\n", val);
+			
+		case REG_WIFI_X_00A: // 0x00A
+			io.X_00A = val;
 			break;
-		case REG_WIFI_IF:
-			wifiMac.IF &= ~val;		/* clear flagging bits */
+			
+		case REG_WIFI_IF: // 0x010
+			io.IF.value &= ~val;
 			break;
-		case REG_WIFI_MAC0:
-		case REG_WIFI_MAC1:
-		case REG_WIFI_MAC2:
-			wifiMac.mac.words[(address - REG_WIFI_MAC0) >> 1] = val;
+			
+		case REG_WIFI_IE: // 0x012
+			io.IE.value = val;
 			break;
-		case REG_WIFI_BSS0:
-		case REG_WIFI_BSS1:
-		case REG_WIFI_BSS2:
-			wifiMac.bss.words[(address - REG_WIFI_BSS0) >> 1] = val;
+			
+		case REG_WIFI_MAC0: // 0x018
+			io.MACADDR0.value = val;
 			break;
-		case REG_WIFI_RETRYLIMIT:
-			wifiMac.retryLimit = val;
+			
+		case REG_WIFI_MAC1: // 0x01A
+			io.MACADDR1.value = val;
 			break;
-		case REG_WIFI_WEPCNT:
-			wifiMac.WEP_enable = (val & 0x8000) != 0;
+			
+		case REG_WIFI_MAC2: // 0x01C
+			io.MACADDR2.value = val;
 			break;
-		case REG_WIFI_POWERSTATE:
-			wifiMac.powerOn = ((val & 0x0002) ? true : false);
-			if (wifiMac.powerOn) WIFI_triggerIRQ(WIFI_IRQ_RFWAKEUP);
+			
+		case REG_WIFI_BSS0: // 0x020
+			io.BSSID0.value = val;
 			break;
-		case REG_WIFI_POWERFORCE:
-			if ((val & 0x8000) && (!wifiMac.powerOnPending))
+			
+		case REG_WIFI_BSS1: // 0x022
+			io.BSSID1.value = val;
+			break;
+			
+		case REG_WIFI_BSS2: // 0x024
+			io.BSSID2.value = val;
+			break;
+			
+		case REG_WIFI_AID_LOW: // 0x028
+			io.AID_LOW.value = val & 0x000F;
+			break;
+			
+		case REG_WIFI_AID_HIGH: // 0x02A
+			io.AID_FULL.value = val & 0x07FF;
+			break;
+			
+		case REG_WIFI_RETRYLIMIT: // 0x02C
+			io.TX_RETRYLIMIT.value = val;
+			break;
+			
+		case 0x02E: // 0x02E
+			io.INTERNAL_02E = val;
+			break;
+			
+		case REG_WIFI_RXCNT: // 0x030
+		{
+			IOREG_W_RXCNT RXCNT;
+			RXCNT.value = val & 0xFF8F;
+			
+			io.RXCNT.EnableRXFIFOQueuing = RXCNT.EnableRXFIFOQueuing;
+			
+			if (io.RXCNT.UNKNOWN1 != RXCNT.UNKNOWN1)
 			{
-			/*	bool newPower = ((val & 0x0001) ? false : true);
-				if (newPower != wifiMac.powerOn)
+				io.RXCNT.UNKNOWN1 = RXCNT.UNKNOWN1;
+				WIFI_LOG(2, "Writing value of %04Xh to RXCNT.UNKNOWN1\n", (int)io.RXCNT.UNKNOWN1);
+			}
+			
+			if (io.RXCNT.UNKNOWN2 != RXCNT.UNKNOWN2)
+			{
+				io.RXCNT.UNKNOWN2 = RXCNT.UNKNOWN2;
+				WIFI_LOG(2, "Writing value of %04Xh to RXCNT.UNKNOWN2\n", (int)io.RXCNT.UNKNOWN2);
+			}
+			
+			if (RXCNT.CopyAddrToWRCSR != 0)
+			{
+				io.RXBUF_WRCSR.HalfwordAddress = io.RXBUF_WR_ADDR.HalfwordAddress;
+			}
+			
+			if (RXCNT.CopyTXBufReply1To2 != 0)
+			{
+				io.TXBUF_REPLY2.HalfwordAddress = io.TXBUF_REPLY1.HalfwordAddress;
+				io.TXBUF_REPLY1.value = 0x0000;
+			}
+			break;
+		}
+			
+		case REG_WIFI_WEPCNT: // 0x032
+			io.WEP_CNT.value = val & 0x8000;
+			break;
+			
+		case 0x034: // 0x034
+			io.INTERNAL_034 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_034\n", (int)io.INTERNAL_034);
+			break;
+			
+		case REG_WIFI_POWER_US: // 0x036
+		{
+			IOREG_W_POWER_US POWER_US;
+			POWER_US.value = val & 0x0003;
+			
+			io.POWER_US.Disable = POWER_US.Disable;
+			
+			if (io.POWER_US.UNKNOWN1 != POWER_US.UNKNOWN1)
+			{
+				io.POWER_US.UNKNOWN1 = POWER_US.UNKNOWN1;
+				WIFI_LOG(2, "Writing value of %d to POWER_US.UNKNOWN1\n", (int)POWER_US.UNKNOWN1);
+			}
+			break;
+		}
+			
+		case REG_WIFI_POWER_TX: // 0x038
+		{
+			IOREG_W_POWER_TX POWER_TX;
+			POWER_TX.value = val & 0x000F;
+			
+			io.POWER_TX.AutoWakeup = POWER_TX.AutoWakeup;
+			io.POWER_TX.AutoSleep = POWER_TX.AutoSleep;
+			
+			if (io.POWER_TX.UNKNOWN1 != POWER_TX.UNKNOWN1)
+			{
+				io.POWER_TX.UNKNOWN1 = POWER_TX.UNKNOWN1;
+				WIFI_LOG(2, "Writing value of %d to POWER_TX.UNKNOWN1\n", (int)POWER_TX.UNKNOWN1);
+			}
+			
+			if (POWER_TX.UNKNOWN2 != 0)
+			{
+				WIFI_LOG(2, "Performing unknown action of POWER_TX.UNKNOWN2\n");
+			}
+			break;
+		}
+			
+		case REG_WIFI_POWERSTATE: // 0x03C
+		{
+			IOREG_W_POWERSTATE newPowerState;
+			newPowerState.value = val;
+			
+			io.POWERSTATE.UNKNOWN1 = newPowerState.UNKNOWN1;
+			io.POWERSTATE.RequestPowerOn = newPowerState.RequestPowerOn;
+			
+			if (io.POWERSTATE.RequestPowerOn != 0)
+			{
+				WIFI_triggerIRQ(WIFI_IRQ_RFWAKEUP);
+				
+				// This is supposedly the TX beacon transfer flag.
+				// Since reading TXREQ_READ bit 4 should always return a 1 (unless
+				// POWERFORCE clears it), we'll simply set this bit to 1 on power up
+				// so that bit 4 gets its default value.
+				io.TXREQ_READ.UNKNOWN1 = 1;
+				
+				// Most likely, there should be some delay between firing the IRQ and
+				// setting the register bits. But we're not going to emulate the delay
+				// right now, so we simply change all of the bits immediately.
+				io.POWERSTATE.RequestPowerOn = 0;
+				io.POWERSTATE.WillPowerOn = 0;
+				io.POWERSTATE.IsPowerOff = 0;
+			}
+			break;
+		}
+			
+		case REG_WIFI_POWERFORCE: // 0x040
+		{
+			
+			io.POWERFORCE.value = val & 0x8001;
+			
+			if (io.POWERFORCE.ApplyNewPowerOffState != 0)
+			{
+				if ( (io.POWERFORCE.NewPowerOffState != 0) && (io.POWERSTATE.IsPowerOff == 0) )
 				{
-					if (!newPower)
-						wifiMac.powerOn = false;
-					else
-						wifiMac.powerOnPending = true;
-				}*/
-				wifiMac.powerOn = ((val & 0x0001) ? false : true);
+					// Immediate action
+					io.INTERNAL_034				= 0x0002;
+					io.TXREQ_READ.value			= 0x0000; // Note that even bit 4 gets cleared here
+					io.RF_STATUS.value			= 0x0009;
+					io.RF_PINS.value			= 0x0046;
+					
+					io.POWERSTATE.WillPowerOn	= 0;
+					io.POWERSTATE.IsPowerOff	= 1;
+				}
+				else if ( (io.POWERFORCE.NewPowerOffState == 0) && (io.POWERSTATE.IsPowerOff != 0) )
+				{
+					// Delayed action
+					io.POWERSTATE.WillPowerOn	= 1;
+				}
+				
+				// This probably shouldn't happen right here, but we need to write to
+				// POWERSTATE.IsPowerOff because we need to keep the power on in order
+				// to force certain in-game errors to occur. Otherwise, the user might
+				// get caught up in an infinite loop.
+				if (io.POWERSTATE.WillPowerOn != 0)
+				{
+					io.POWERSTATE.IsPowerOff	= io.POWERFORCE.NewPowerOffState;
+				}
 			}
 			break;
-		case REG_WIFI_POWERACK:
-			if ((val == 0x0000) && wifiMac.powerOnPending)
+		}
+			
+		case REG_WIFI_POWER_UNK: // 0x048
+			io.POWER_UNKNOWN.value = val;
+			break;
+			
+		case REG_WIFI_RXRANGEBEGIN: // 0x050
+		{
+			io.RXBUF_BEGIN = val;
+			if (io.RXBUF_WRCSR.HalfwordAddress < ((io.RXBUF_BEGIN & 0x1FFE) >> 1))
 			{
-				wifiMac.powerOn = true;
-				wifiMac.powerOnPending = false;
+				io.RXBUF_WRCSR.HalfwordAddress = ((io.RXBUF_BEGIN & 0x1FFE) >> 1);
 			}
 			break;
-		case REG_WIFI_POWER_TX:
-			wifiMac.TXPower = val & 0x0007;
-			break;
-		case REG_WIFI_RXCNT:
-			wifiMac.RXCnt = val & 0xFF0E;
-			if (BIT0(val))
+		}
+			
+		case REG_WIFI_RXRANGEEND: // 0x052
+		{
+			io.RXBUF_END = val;
+			if (io.RXBUF_WRCSR.HalfwordAddress >= ((io.RXBUF_END & 0x1FFE) >> 1))
 			{
-				wifiMac.RXWriteCursor = WIFI_IOREG(REG_WIFI_WRITECSRLATCH);
-				WIFI_IOREG(REG_WIFI_RXHWWRITECSR) = wifiMac.RXWriteCursor;
+				io.RXBUF_WRCSR.HalfwordAddress = ((io.RXBUF_BEGIN & 0x1FFE) >> 1);
 			}
 			break;
-		case REG_WIFI_RXRANGEBEGIN:
-			wifiMac.RXRangeBegin = val;
-			if (wifiMac.RXWriteCursor < ((val & 0x1FFE) >> 1))
-				wifiMac.RXWriteCursor = ((val & 0x1FFE) >> 1);
+		}
+			
+		case REG_WIFI_WRITECSRLATCH: // 0x056
+			io.RXBUF_WR_ADDR.value = val & 0x0FFF;
 			break;
-		case REG_WIFI_RXRANGEEND:
-			wifiMac.RXRangeEnd = val;
-			if (wifiMac.RXWriteCursor >= ((val & 0x1FFE) >> 1))
-				wifiMac.RXWriteCursor = ((wifiMac.RXRangeBegin & 0x1FFE) >> 1);
+			
+		case REG_WIFI_CIRCBUFRADR: // 0x058
+			io.RXBUF_RD_ADDR.value = val & 0x1FFE;
 			break;
-
-		case REG_WIFI_CIRCBUFRADR:
-			wifiMac.CircBufReadAddress = (val & 0x1FFE);
+			
+		case REG_WIFI_RXREADCSR: // 0x05A
+			io.RXBUF_READCSR.value = val & 0x0FFF;
 			break;
-		case REG_WIFI_RXREADCSR:
-			wifiMac.RXReadCursor = val;
+			
+		case REG_WIFI_RXBUF_COUNT: // 0x05C
+			io.RXBUF_COUNT.value = val & 0x0FFF;
 			break;
-		case REG_WIFI_CIRCBUFWADR:
-			wifiMac.CircBufWriteAddress = val;
+			
+		case REG_WIFI_CIRCBUFRD_END: // 0x062
+			io.RXBUF_GAP.value = val & 0x1FFE;
 			break;
-		case REG_WIFI_CIRCBUFWRITE:
+			
+		case REG_WIFI_CIRCBUFRD_SKIP: // 0x064
+			io.RXBUF_GAPDISP.value = val & 0x0FFF;
+			break;
+			
+		case REG_WIFI_CIRCBUFWADR: // 0x068
+			io.TXBUF_WR_ADDR.value = val & 0x1FFE;
+			break;
+			
+		case REG_WIFI_TXBUFCOUNT: // 0x06C
+			io.TXBUF_COUNT.value = val & 0x0FFF;
+			break;
+			
+		case REG_WIFI_CIRCBUFWRITE: // 0x070
+		{
 			/* set value into the circ buffer, and move cursor to the next hword on action */
 			//printf("wifi: circbuf fifo write at %04X, %04X (action=%i)\n", (wifiMac.CircBufWriteAddress & 0x1FFF), val, action);
-			wifiMac.RAM[(wifiMac.CircBufWriteAddress >> 1) & 0xFFF] = val;
+			wifi.RAM[io.TXBUF_WR_ADDR.HalfwordAddress] = val;
 			if (action)
 			{
 				/* move to next hword */
-                wifiMac.CircBufWriteAddress+=2;
-				if (wifiMac.CircBufWriteAddress == wifiMac.CircBufWrEnd)
+                io.TXBUF_WR_ADDR.HalfwordAddress++;
+				if (io.TXBUF_WR_ADDR.HalfwordAddress == io.TXBUF_GAP.HalfwordAddress)
 				{
 					/* on end of buffer, add skip hwords to it */
-					wifiMac.CircBufWrEnd += wifiMac.CircBufWrSkip * 2;
+					io.TXBUF_GAP.HalfwordAddress += io.TXBUF_GAPDISP.HalfwordOffset;
 				}
 			}
 			break;
-		case REG_WIFI_CIRCBUFWR_SKIP:
-			wifiMac.CircBufWrSkip = val;
+		}
+			
+		case REG_WIFI_CIRCBUFWR_END: // 0x074
+			io.TXBUF_GAP.value = val & 0x1FFF;
 			break;
-		case REG_WIFI_TXLOCBEACON:
-			wifiMac.BeaconAddr = val & 0x0FFF;
-			wifiMac.BeaconEnable = BIT15(val);
-			if (wifiMac.BeaconEnable) 
+			
+		case REG_WIFI_CIRCBUFWR_SKIP: // 0x076
+			io.TXBUF_GAPDISP.value = val & 0x0FFF;
+			break;
+			
+		case 0x078: // 0x078
+			io.INTERNAL_078 = val;
+			break;
+			
+		case REG_WIFI_TXLOCBEACON: // 0x080
+		{
+			IOREG_W_TXBUF_LOCATION TXBUF_BEACON;
+			TXBUF_BEACON.value = val;
+			
+			io.TXBUF_BEACON.HalfwordAddress = TXBUF_BEACON.HalfwordAddress;
+			io.TXBUF_BEACON.Bit12 = TXBUF_BEACON.Bit12;
+			io.TXBUF_BEACON.IEEESeqCtrl = TXBUF_BEACON.IEEESeqCtrl;
+			io.TXBUF_BEACON.TransferRequest = TXBUF_BEACON.TransferRequest;
+			
+			if (io.TXBUF_BEACON.UNKNOWN1 != TXBUF_BEACON.UNKNOWN1)
+			{
+				io.TXBUF_BEACON.UNKNOWN1 = TXBUF_BEACON.UNKNOWN1;
+				WIFI_LOG(2, "Writing value of %d to TXBUF_BEACON.UNKNOWN1\n", (int)TXBUF_BEACON.UNKNOWN1);
+			}
+			
+			if (io.TXBUF_BEACON.TransferRequest != 0)
+			{
 				WIFI_LOG(3, "Beacon transmission enabled to send the packet at %08X every %i milliseconds.\n",
-					0x04804000 + (wifiMac.BeaconAddr << 1), wifiMac.BeaconInterval);
+						 0x04804000 + (io.TXBUF_BEACON.HalfwordAddress << 1), io.BEACONINT.Interval);
+			}
 			break;
-		case REG_WIFI_TXLOCEXTRA:
-			wifiMac.TXSlotExtra = val;
-			WIFI_LOG(2, "Write to port %03X: %04X\n", address, val);
+		}
+			
+		case REG_WIFI_TXBUF_TIM: // 0x084
+			io.TXBUF_TIM.value = val & 0x00FF;
 			break;
-		case 0x094:
-		//	printf("write to 094 port\n");
+			
+		case REG_WIFI_LISTENCOUNT: // 0x088
+			io.LISTENCOUNT.value = val & 0x00FF;
 			break;
-		case 0x098:
-		case 0x0C0:
-		case 0x0C4:
-		case 0x0C8:
-		case 0x244:
-		case 0x228:
-		case 0x290:
-		case 0x1A0:
-		case 0x1A2:
-		case 0x1A4:
-		case 0x194:
-			WIFI_LOG(2, "Write to port %03X: %04X\n", address, val);
+			
+		case REG_WIFI_BEACONPERIOD: // 0x08C
+			io.BEACONINT.value = val & 0x03FF;
 			break;
-		case REG_WIFI_TXLOC1:
-		case REG_WIFI_TXLOC2:
-		case REG_WIFI_TXLOC3:
-			wifiMac.TXSlot[(address - REG_WIFI_TXLOC1) >> 2] = val;
-			WIFI_LOG(2, "Write to port %03X: %04X\n", address, val);
+			
+		case REG_WIFI_LISTENINT: // 0x08E
+			io.LISTENINT.value = val & 0x00FF;
 			break;
-		case REG_WIFI_TXRESET:
-			WIFI_LOG(3, "Write to TXRESET: %04X\n", val);
-			//if (val & 0x0001) wifiMac.TXSlot[0] &= 0x7FFF;
-			//if (val & 0x0004) wifiMac.TXSlot[1] &= 0x7FFF;
-			//if (val & 0x0008) wifiMac.TXSlot[2] &= 0x7FFF;
+			
+		case REG_WIFI_TXLOCEXTRA: // 0x090
+		{
+			IOREG_W_TXBUF_LOCATION TXBUF_CMD;
+			TXBUF_CMD.value = val;
+			
+			io.TXBUF_CMD.HalfwordAddress = TXBUF_CMD.HalfwordAddress;
+			io.TXBUF_CMD.Bit12 = TXBUF_CMD.Bit12;
+			io.TXBUF_CMD.IEEESeqCtrl = TXBUF_CMD.IEEESeqCtrl;
+			
+			if (wifi.cmdCount_u32 != 0)
+			{
+				io.TXBUF_CMD.TransferRequest = TXBUF_CMD.TransferRequest;
+			}
+			
+			if (io.TXBUF_CMD.UNKNOWN1 != TXBUF_CMD.UNKNOWN1)
+			{
+				io.TXBUF_CMD.UNKNOWN1 = TXBUF_CMD.UNKNOWN1;
+				WIFI_LOG(2, "Writing value of %d to TXBUF_CMD.UNKNOWN1\n", (int)TXBUF_CMD.UNKNOWN1);
+			}
 			break;
-		case REG_WIFI_TXREQ_RESET:
-			wifiMac.TXCnt &= ~val;
+		}
+			
+		case REG_WIFI_TXBUF_REPLY1: // 0x094
+			io.TXBUF_REPLY1.value = val;
 			break;
-		case REG_WIFI_TXREQ_SET:
-			wifiMac.TXCnt |= val;
-			if (BIT0(val)) WIFI_TXStart(0);
-			if (BIT1(val)) WIFI_ExtraTXStart();
-			if (BIT2(val)) WIFI_TXStart(1);
-			if (BIT3(val)) WIFI_TXStart(2);
-			//if (val) printf("TXReq: %04X\n", val);
+			
+		case 0x09C: // 0x09C
+			io.INTERNAL_09C = val;
 			break;
-		case REG_WIFI_RFCNT:
-			WIFI_setRF_CNT(val);
+			
+		case REG_WIFI_TXLOC1: // 0x0A0
+		{
+			IOREG_W_TXBUF_LOCATION TXBUF_LOCn;
+			TXBUF_LOCn.value = val;
+			
+			io.TXBUF_LOC1.HalfwordAddress = TXBUF_LOCn.HalfwordAddress;
+			io.TXBUF_LOC1.Bit12 = TXBUF_LOCn.Bit12;
+			io.TXBUF_LOC1.IEEESeqCtrl = TXBUF_LOCn.IEEESeqCtrl;
+			io.TXBUF_LOC1.TransferRequest = TXBUF_LOCn.TransferRequest;
+			
+			if (io.TXBUF_LOC1.UNKNOWN1 != TXBUF_LOCn.UNKNOWN1)
+			{
+				io.TXBUF_LOC1.UNKNOWN1 = TXBUF_LOCn.UNKNOWN1;
+				WIFI_LOG(2, "Writing value of %d to TXBUF_LOC1.UNKNOWN1\n", (int)TXBUF_LOCn.UNKNOWN1);
+			}
 			break;
-		case REG_WIFI_RFBUSY:
-			/* CHECKME: read only? */
+		}
+			
+		case REG_WIFI_TXLOC2: // 0x0A4
+		{
+			IOREG_W_TXBUF_LOCATION TXBUF_LOCn;
+			TXBUF_LOCn.value = val;
+			
+			io.TXBUF_LOC2.HalfwordAddress = TXBUF_LOCn.HalfwordAddress;
+			io.TXBUF_LOC2.Bit12 = TXBUF_LOCn.Bit12;
+			io.TXBUF_LOC2.IEEESeqCtrl = TXBUF_LOCn.IEEESeqCtrl;
+			io.TXBUF_LOC2.TransferRequest = TXBUF_LOCn.TransferRequest;
+			
+			if (io.TXBUF_LOC2.UNKNOWN1 != TXBUF_LOCn.UNKNOWN1)
+			{
+				io.TXBUF_LOC2.UNKNOWN1 = TXBUF_LOCn.UNKNOWN1;
+				WIFI_LOG(2, "Writing value of %d to TXBUF_LOC2.UNKNOWN1\n", (int)TXBUF_LOCn.UNKNOWN1);
+			}
 			break;
-		case REG_WIFI_RFDATA1:
-			WIFI_setRF_DATA(val,0);
+		}
+			
+		case REG_WIFI_TXLOC3: // 0x0A8
+		{
+			IOREG_W_TXBUF_LOCATION TXBUF_LOCn;
+			TXBUF_LOCn.value = val;
+			
+			io.TXBUF_LOC3.HalfwordAddress = TXBUF_LOCn.HalfwordAddress;
+			io.TXBUF_LOC3.Bit12 = TXBUF_LOCn.Bit12;
+			io.TXBUF_LOC3.IEEESeqCtrl = TXBUF_LOCn.IEEESeqCtrl;
+			io.TXBUF_LOC3.TransferRequest = TXBUF_LOCn.TransferRequest;
+			
+			if (io.TXBUF_LOC3.UNKNOWN1 != TXBUF_LOCn.UNKNOWN1)
+			{
+				io.TXBUF_LOC3.UNKNOWN1 = TXBUF_LOCn.UNKNOWN1;
+				WIFI_LOG(2, "Writing value of %d to TXBUF_LOC3.UNKNOWN1\n", (int)TXBUF_LOCn.UNKNOWN1);
+			}
 			break;
-		case REG_WIFI_RFDATA2:
-			WIFI_setRF_DATA(val,1);
+		}
+			
+		case REG_WIFI_TXREQ_RESET: // 0x0AC
+		{
+			IOREG_W_TXREQ_RESET TXREQ_RESET;
+			TXREQ_RESET.value = val;
+			
+			if (TXREQ_RESET.Loc1 != 0)
+			{
+				io.TXREQ_READ.Loc1 = 0;
+			}
+			
+			if (TXREQ_RESET.Cmd != 0)
+			{
+				io.TXREQ_READ.Cmd = 0;
+			}
+			
+			if (TXREQ_RESET.Loc2 != 0)
+			{
+				io.TXREQ_READ.Loc2 = 0;
+			}
+			
+			if (TXREQ_RESET.Loc3 != 0)
+			{
+				io.TXREQ_READ.Loc3 = 0;
+			}
+			
+			if (TXREQ_RESET.UNKNOWN1 != 0)
+			{
+				WIFI_LOG(2, "Prevented clearing of TXREQ_READ.UNKNOWN1, for beacon?\n");
+			}
 			break;
-		case REG_WIFI_USCOUNTERCNT:
-			wifiMac.usecEnable = BIT0(val);
+		}
+			
+		case REG_WIFI_TXREQ_SET: // 0x0AE
+		{
+			IOREG_W_TXREQ_SET TXREQ_SET;
+			TXREQ_SET.value = val;
+			
+			if (TXREQ_SET.Loc1 != 0)
+			{
+				io.TXREQ_READ.Loc1 = 1;
+				WIFI_TXStart(WifiTXLocIndex_LOC1, io.TXBUF_LOC1);
+			}
+			
+			if (TXREQ_SET.Cmd != 0)
+			{
+				io.TXREQ_READ.Cmd = 1;
+				WIFI_TXStart(WifiTXLocIndex_CMD, io.TXBUF_CMD);
+			}
+			
+			if (TXREQ_SET.Loc2 != 0)
+			{
+				io.TXREQ_READ.Loc2 = 1;
+				WIFI_TXStart(WifiTXLocIndex_LOC2, io.TXBUF_LOC2);
+			}
+			
+			if (TXREQ_SET.Loc3 != 0)
+			{
+				io.TXREQ_READ.Loc3 = 1;
+				WIFI_TXStart(WifiTXLocIndex_LOC3, io.TXBUF_LOC3);
+			}
+			
+			if (TXREQ_SET.UNKNOWN1 != 0)
+			{
+				io.TXREQ_READ.UNKNOWN1 = 1;
+				WIFI_LOG(2, "Setting of TXREQ_SET.UNKNOWN1, for beacon?\n");
+			}
 			break;
-		case REG_WIFI_USCOMPARECNT:
-			wifiMac.ucmpEnable = BIT0(val);
+		}
+			
+		case REG_WIFI_TXRESET: // 0x0B4
+		{
+			IOREG_W_TXBUF_RESET TXBUF_RESET;
+			TXBUF_RESET.value = val;
+			
+			if (TXBUF_RESET.Loc1 != 0)
+			{
+				io.TXBUF_LOC1.TransferRequest = 0;
+			}
+			
+			if (TXBUF_RESET.Cmd != 0)
+			{
+				io.TXBUF_CMD.TransferRequest = 0;
+			}
+			
+			if (TXBUF_RESET.Loc2 != 0)
+			{
+				io.TXBUF_LOC2.TransferRequest = 0;
+			}
+			
+			if (TXBUF_RESET.Loc3 != 0)
+			{
+				io.TXBUF_LOC3.TransferRequest = 0;
+			}
+			
+			if (TXBUF_RESET.Reply2 != 0)
+			{
+				io.TXBUF_REPLY2.Enable = 0;
+			}
+			
+			if (TXBUF_RESET.Reply1 != 0)
+			{
+				io.TXBUF_REPLY1.Enable = 0;
+			}
+			
+			const bool reportUnknownWrite = (val != 0xFFFF);
+			
+			if (io.TXBUF_RESET.UNKNOWN1 != TXBUF_RESET.UNKNOWN1)
+			{
+				io.TXBUF_RESET.UNKNOWN1 = TXBUF_RESET.UNKNOWN1;
+				
+				if (reportUnknownWrite)
+				{
+					WIFI_LOG(2, "Writing value of %04Xh to TXBUF_RESET.UNKNOWN1\n", (int)io.TXBUF_RESET.UNKNOWN1);
+				}
+			}
+			
+			if (io.TXBUF_RESET.UNKNOWN2 != TXBUF_RESET.UNKNOWN2)
+			{
+				io.TXBUF_RESET.UNKNOWN2 = TXBUF_RESET.UNKNOWN2;
+				
+				if (reportUnknownWrite)
+				{
+					WIFI_LOG(2, "Writing value of %04Xh to TXBUF_RESET.UNKNOWN2\n", (int)io.TXBUF_RESET.UNKNOWN2);
+				}
+			}
 			break;
-		case REG_WIFI_USCOUNTER0:
-			wifiMac.usec = (wifiMac.usec & 0xFFFFFFFFFFFF0000ULL) | (u64)val;
+		}
+			
+		case 0x0BA: // 0x0BA
+			io.INTERNAL_0BA = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_0BA\n", (int)io.INTERNAL_0BA);
 			break;
-		case REG_WIFI_USCOUNTER1:
-			wifiMac.usec = (wifiMac.usec & 0xFFFFFFFF0000FFFFULL) | (u64)val << 16;
+			
+		case REG_WIFI_PREAMBLE: // 0x0BC
+			io.PREAMBLE.value = val;
 			break;
-		case REG_WIFI_USCOUNTER2:
-			wifiMac.usec = (wifiMac.usec & 0xFFFF0000FFFFFFFFULL) | (u64)val << 32;
+			
+		case REG_WIFI_CMD_TOTALTIME: // 0x0C0
+			io.CMD_TOTALTIME = val;
 			break;
-		case REG_WIFI_USCOUNTER3:
-			wifiMac.usec = (wifiMac.usec & 0x0000FFFFFFFFFFFFULL) | (u64)val << 48;
+			
+		case REG_WIFI_CMD_REPLYTIME: // 0x0C4
+			io.CMD_REPLYTIME = val;
 			break;
-		case REG_WIFI_USCOMPARE0:
-			wifiMac.ucmp = (wifiMac.ucmp & 0xFFFFFFFFFFFF0000ULL) | (u64)(val & 0xFFFE);
-			//if (BIT0(val))
-		//		WIFI_triggerIRQ(14);
-			//	wifiMac.usec = wifiMac.ucmp;
+			
+		case 0x0C8: // 0x0C8
+			io.INTERNAL_0C8 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_0C8\n", (int)io.INTERNAL_0C8);
 			break;
-		case REG_WIFI_USCOMPARE1:
-			wifiMac.ucmp = (wifiMac.ucmp & 0xFFFFFFFF0000FFFFULL) | (u64)val << 16;
+			
+		case REG_WIFI_RXFILTER: // 0x0D0
+			io.RXFILTER.value = val;
 			break;
-		case REG_WIFI_USCOMPARE2:
-			wifiMac.ucmp = (wifiMac.ucmp & 0xFFFF0000FFFFFFFFULL) | (u64)val << 32;
+			
+		case REG_WIFI_CONFIG_0D4: // 0x0D4
+			io.CONFIG_0D4 = val;
 			break;
-		case REG_WIFI_USCOMPARE3:
-			wifiMac.ucmp = (wifiMac.ucmp & 0x0000FFFFFFFFFFFFULL) | (u64)val << 48;
+			
+		case REG_WIFI_CONFIG_0D8: // 0x0D8
+			io.CONFIG_0D8 = val;
 			break;
-		case REG_WIFI_BEACONPERIOD:
-			wifiMac.BeaconInterval = val & 0x03FF;
+			
+		case REG_WIFI_RX_LEN_CROP: // 0x0DA
+			io.RX_LEN_CROP.value = val;
 			break;
-		case REG_WIFI_BEACONCOUNT1:
-			wifiMac.BeaconCount1 = val;
+			
+		case REG_WIFI_RXFILTER2: // 0x0E0
+			io.RXFILTER2.value = val;
 			break;
-		case REG_WIFI_BEACONCOUNT2:
-			wifiMac.BeaconCount2 = val;
+			
+		case REG_WIFI_USCOUNTERCNT: // 0x0E8
+			io.US_COUNTCNT.value = val & 0x0001;
 			break;
-		case REG_WIFI_BBCNT:
-            WIFI_setBB_CNT(val);
+			
+		case REG_WIFI_USCOMPARECNT: // 0x0EA
+		{
+			IOREG_W_US_COMPARECNT US_COMPARECNT;
+			US_COMPARECNT.value = val & 0x0003;
+			
+			io.US_COMPARECNT.EnableCompare = US_COMPARECNT.EnableCompare;
+			
+			if (US_COMPARECNT.ForceIRQ14 != 0)
+			{
+				WIFI_triggerIRQ(WIFI_IRQ_TIMEBEACON);
+			}
 			break;
-		case REG_WIFI_RXBUF_COUNT:
-			wifiMac.RXBufCount = val & 0x0FFF;
+		}
+			
+		case REG_WIFI_CONFIG_0EC: // 0x0EC
+			io.CONFIG_0EC = val;
 			break;
-		case REG_WIFI_EXTRACOUNTCNT:
-			wifiMac.eCountEnable = BIT0(val);
+			
+		case REG_WIFI_EXTRACOUNTCNT: // 0x0EE
+			io.CMD_COUNTCNT.value = val & 0x0001;
 			break;
-		case REG_WIFI_EXTRACOUNT:
-			wifiMac.eCount = (u32)val * 10;
+			
+		case REG_WIFI_USCOMPARE0: // 0x0F0
+			io.US_COMPARE0 = val;
 			break;
-		case REG_WIFI_LISTENINT:
-			wifiMac.ListenInterval = val & 0x00FF;
+			
+		case REG_WIFI_USCOMPARE1: // 0x0F2
+			io.US_COMPARE1 = val;
 			break;
-		case REG_WIFI_LISTENCOUNT:
-			wifiMac.ListenCount = val & 0x00FF;
+			
+		case REG_WIFI_USCOMPARE2: // 0x0F4
+			io.US_COMPARE2 = val;
 			break;
-		case REG_WIFI_POWER_US:
-			wifiMac.crystalEnabled = !BIT0(val);
+			
+		case REG_WIFI_USCOMPARE3: // 0x0F6
+			io.US_COMPARE3 = val;
 			break;
-		case REG_WIFI_IF_SET:
+			
+		case REG_WIFI_USCOUNTER0: // 0x0F8
+			io.US_COUNT0 = val;
+			break;
+			
+		case REG_WIFI_USCOUNTER1: // 0x0FA
+			io.US_COUNT1 = val;
+			break;
+			
+		case REG_WIFI_USCOUNTER2: // 0x0FC
+			io.US_COUNT2 = val;
+			break;
+			
+		case REG_WIFI_USCOUNTER3: // 0x0FE
+			io.US_COUNT3 = val;
+			break;
+			
+		case 0x100: // 0x100
+			io.INTERNAL_100 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_100\n", (int)io.INTERNAL_100);
+			break;
+			
+		case 0x102: // 0x102
+			io.INTERNAL_102 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_102\n", (int)io.INTERNAL_102);
+			break;
+			
+		case 0x104: // 0x104
+			io.INTERNAL_104 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_104\n", (int)io.INTERNAL_104);
+			break;
+			
+		case 0x106: // 0x106
+			io.INTERNAL_106 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_106\n", (int)io.INTERNAL_106);
+			break;
+			
+		case REG_WIFI_CONTENTFREE: // 0x10C
+			io.CONTENTFREE = val;
+			break;
+			
+		case REG_WIFI_PREBEACONCOUNT: // 0x110
+			io.PRE_BEACON = val;
+			break;
+			
+		case REG_WIFI_EXTRACOUNT: // 0x118
+			io.CMD_COUNT = val;
+			wifi.cmdCount_u32 = (u32)val * 10;
+			break;
+			
+		case REG_WIFI_BEACONCOUNT1: // 0x11C
+			io.BEACONCOUNT1 = val;
+			break;
+			
+		case REG_WIFI_CONFIG_120: // 0x120
+			io.CONFIG_120 = val;
+			break;
+			
+		case REG_WIFI_CONFIG_122: // 0x122
+			io.CONFIG_122 = val;
+			break;
+			
+		case REG_WIFI_CONFIG_124: // 0x124
+			io.CONFIG_124 = val;
+			break;
+			
+		case 0x126: // 0x126
+			io.INTERNAL_126 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_126\n", (int)io.INTERNAL_126);
+			break;
+			
+		case REG_WIFI_CONFIG_128: // 0x128
+			io.CONFIG_128 = val;
+			break;
+			
+		case 0x12A: // 0x12A
+			io.INTERNAL_12A = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_12A\n", (int)io.INTERNAL_12A);
+			break;
+			
+		case REG_WIFI_CONFIG_130: // 0x130
+			io.CONFIG_130 = val;
+			break;
+			
+		case REG_WIFI_CONFIG_132: // 0x132
+			io.CONFIG_132 = val;
+			break;
+			
+		case REG_WIFI_BEACONCOUNT2: // 0x134
+			io.BEACONCOUNT2 = val;
+			break;
+			
+		case REG_WIFI_CONFIG_140: // 0x140
+			io.CONFIG_140 = val;
+			break;
+			
+		case REG_WIFI_CONFIG_142: // 0x142
+			io.CONFIG_142 = val;
+			break;
+			
+		case REG_WIFI_CONFIG_144: // 0x144
+			io.CONFIG_144 = val;
+			break;
+			
+		case REG_WIFI_CONFIG_146: // 0x146
+			io.CONFIG_146 = val;
+			break;
+			
+		case REG_WIFI_CONFIG_148: // 0x148
+			io.CONFIG_148 = val;
+			break;
+			
+		case REG_WIFI_CONFIG_14A: // 0x14A
+			io.CONFIG_14A = val;
+			break;
+			
+		case REG_WIFI_CONFIG_14C: // 0x14C
+			io.CONFIG_14C = val;
+			break;
+			
+		case REG_WIFI_CONFIG_150: // 0x150
+			io.CONFIG_150 = val;
+			break;
+			
+		case REG_WIFI_CONFIG_154: // 0x154
+			io.CONFIG_154 = val;
+			break;
+			
+		case REG_WIFI_BBCNT: // 0x158
+		{
+			bb_t &bb = wifiHandler->GetWifiData().bb;
+			
+			io.BB_CNT.value = val & 0xF0FF;
+			
+			if (io.BB_CNT.Index > 0x68)
+			{
+				WIFI_LOG(2, "Writing value of %02Xh to BB_CNT.Index, should be 00h-68h\n", (int)io.BB_CNT.Index);
+			}
+			else
+			{
+				io.BB_BUSY.Busy = 1;
+				
+				if (io.BB_CNT.Direction == 5)  // Perform a write
+				{
+					bb.data[io.BB_CNT.Index] = io.BB_WRITE.Data;
+				}
+				else if (io.BB_CNT.Direction == 6) // Perform a read
+				{
+					io.BB_READ.Data = bb.data[io.BB_CNT.Index];
+				}
+				
+				// Normally, there should be some sort of transfer delay, but we're
+				// not going to emulate the delay right now. Therefore, assume for
+				// now that the transfer occurs instantaneously and clear the busy
+				// flag accordingly.
+				io.BB_BUSY.Busy = 0;
+			}
+			break;
+		}
+			
+		case REG_WIFI_BBWRITE: // 0x15A
+			io.BB_WRITE.value = val & 0x00FF;
+			break;
+			
+		case REG_WIFI_BBMODE: // 0x160
+			io.BB_MODE.value = val & 0x0041;
+			break;
+			
+		case REG_WIFI_BBPOWER: // 0x168
+			io.BB_POWER.value = val & 0x800F;
+			break;
+			
+		case 0x16A: // 0x16A
+			io.INTERNAL_16A = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_16A\n", (int)io.INTERNAL_16A);
+			break;
+			
+		case 0x170: // 0x170
+			io.INTERNAL_170 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_170\n", (int)io.INTERNAL_170);
+			break;
+			
+		case 0x172: // 0x172
+			io.INTERNAL_172 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_172\n", (int)io.INTERNAL_172);
+			break;
+			
+		case 0x174: // 0x174
+			io.INTERNAL_174 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_174\n", (int)io.INTERNAL_174);
+			break;
+			
+		case 0x176: // 0x176
+			io.INTERNAL_176 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_176\n", (int)io.INTERNAL_176);
+			break;
+			
+		case 0x178: // 0x178
+			io.INTERNAL_178 = val;
+			break;
+			
+		case REG_WIFI_RFDATA2: // 0x17C
+		{
+			RF2958_IOREG_MAP &rf = wifiHandler->GetWifiData().rf;
+			
+			io.RF_DATA2.value = val & 0x00FF;
+			io.RF_BUSY.Busy = 1;
+			
+			const RegAddrRF2958 index = (RegAddrRF2958)io.RF_DATA2.Type2.Index;
+			
+			if (io.RF_DATA2.Type2.ReadCommand == 0) // Perform a write
+			{
+				switch (index)
+				{
+					case REG_RF2958_CFG1:
+					case REG_RF2958_IPLL1:
+					case REG_RF2958_IPLL2:
+					case REG_RF2958_IPLL3:
+					case REG_RF2958_RFPLL1:
+					case REG_RF2958_RFPLL4:
+					case REG_RF2958_CAL1:
+					case REG_RF2958_TXRX1:
+					case REG_RF2958_PCNT1:
+					case REG_RF2958_PCNT2:
+					case REG_RF2958_VCOT1:
+						rf.reg[index].DataLSB = io.RF_DATA1.Type2.DataLSB;
+						rf.reg[index].DataMSB = io.RF_DATA2.Type2.DataMSB;
+						break;
+						
+					case REG_RF2958_RFPLL2:
+					case REG_RF2958_RFPLL3:
+					{
+						u32 channelFreqN;
+						
+						rf.reg[index].DataLSB = io.RF_DATA1.Type2.DataLSB;
+						rf.reg[index].DataMSB = io.RF_DATA2.Type2.DataMSB;
+						
+						// get the complete rfpll.n
+						channelFreqN = (u32)rf.RFPLL3.NUM2 | ((u32)rf.RFPLL2.NUM2 << 18) | ((u32)rf.RFPLL2.N2 << 24);
+						
+						// frequency setting is out of range
+						if (channelFreqN < 0x00A2E8BA)
+						{
+							break;
+						}
+						
+						// substract base frequency (channel 1)
+						channelFreqN -= 0x00A2E8BA;
+						break;
+					}
+						
+					case REG_RF2958_TEST:
+						WIFI_LOG(2, "Writing value of %04Xh to RF test register\n", (int)rf.reg[index].Data);
+						break;
+						
+					case REG_RF2958_RESET:
+						WIFI_resetRF(rf);
+						break;
+						
+					// Any unlisted register is assumed to be unused padding,
+					// so just do nothing in this case.
+					default:
+						break;
+				}
+			}
+			else // Perform a read
+			{
+				io.RF_DATA1.Type2.DataLSB = rf.reg[index].DataLSB;
+				io.RF_DATA2.Type2.DataMSB = rf.reg[index].DataMSB;
+			}
+			
+			// Normally, there should be some sort of transfer delay, but we're
+			// not going to emulate the delay right now. Therefore, assume for
+			// now that the transfer occurs instantaneously and clear the busy
+			// flag accordingly.
+			io.RF_BUSY.Busy = 0;
+			break;
+		}
+			
+		case REG_WIFI_RFDATA1: // 0x17E
+			io.RF_DATA1.value = val;
+			break;
+			
+		case REG_WIFI_RFCNT: // 0x184
+		{
+			if (io.RF_BUSY.Busy == 0)
+			{
+				IOREG_W_RF_CNT RF_CNT;
+				RF_CNT.value = val;
+				
+				io.RF_CNT.TransferLen = RF_CNT.TransferLen;
+				
+				if (io.RF_CNT.UNKNOWN1 != RF_CNT.UNKNOWN1)
+				{
+					io.RF_CNT.UNKNOWN1 = RF_CNT.UNKNOWN1;
+					WIFI_LOG(2, "Writing value of %d to RF_CNT.UNKNOWN1\n", (int)RF_CNT.UNKNOWN1);
+				}
+				
+				if (io.RF_CNT.UNKNOWN2 != RF_CNT.UNKNOWN2)
+				{
+					io.RF_CNT.UNKNOWN2 = RF_CNT.UNKNOWN2;
+					WIFI_LOG(2, "Writing value of %d to RF_CNT.UNKNOWN2\n", (int)RF_CNT.UNKNOWN2);
+				}
+			}
+			break;
+		}
+			
+		case 0x190: // 0x190
+			io.INTERNAL_190 = val;
+			break;
+			
+		case REG_WIFI_TX_HDR_CNT: // 0x194
+			io.TX_HDR_CNT.value = val;
+			break;
+			
+		case REG_WIFI_X_1A0: // 0x1A0
+			io.X_1A0.value = val;
+			WIFI_LOG(2, "Writing value of %04Xh to X_1A0\n", (int)io.X_1A0.value);
+			break;
+			
+		case REG_WIFI_X_1A2: // 0x1A2
+			io.X_1A2.value = val;
+			WIFI_LOG(2, "Writing value of %04Xh to X_1A2\n", (int)io.X_1A2.value);
+			break;
+			
+		case REG_WIFI_X_1A4: // 0x1A4
+			io.X_1A4 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to X_1A4\n", (int)io.X_1A4);
+			break;
+			
+		case REG_WIFI_RXSTAT_INC_IE: // 0x1AA
+			io.RXSTAT_INC_IE.value = val;
+			break;
+			
+		case REG_WIFI_RXSTAT_OVF_IE: // 0x1AE
+			io.RXSTAT_OVF_IE.value = val;
+			break;
+			
+		case REG_WIFI_RXSTAT0: // 0x1B0
+			io.RXSTAT_COUNT.RXSTAT_1B0 = val;
+			break;
+			
+		case REG_WIFI_RXSTAT1: // 0x1B2
+			io.RXSTAT_COUNT.RXSTAT_1B2 = val;
+			break;
+			
+		case REG_WIFI_RXSTAT2: // 0x1B4
+			io.RXSTAT_COUNT.RXSTAT_1B4 = val;
+			break;
+			
+		case REG_WIFI_RXSTAT3: // 0x1B6
+			io.RXSTAT_COUNT.RXSTAT_1B6 = val;
+			break;
+			
+		case REG_WIFI_RXSTAT4: // 0x1B8
+			io.RXSTAT_COUNT.RXSTAT_1B8 = val;
+			break;
+			
+		case REG_WIFI_RXSTAT5: // 0x1BA
+			io.RXSTAT_COUNT.RXSTAT_1BA = val;
+			break;
+			
+		case REG_WIFI_RXSTAT6: // 0x1BC
+			io.RXSTAT_COUNT.RXSTAT_1BC = val;
+			break;
+			
+		case REG_WIFI_RXSTAT7: // 0x1BE
+			io.RXSTAT_COUNT.RXSTAT_1BE = val;
+			break;
+			
+		case REG_WIFI_TXERR_COUNT: // 0x1C0
+			io.TX_ERR_COUNT.Count++;
+			break;
+			
+		case REG_WIFI_CMD_STAT0: // 0x1D0
+			io.CMD_STAT_COUNT.CMD_STAT_1D0 = val;
+			break;
+			
+		case REG_WIFI_CMD_STAT1: // 0x1D2
+			io.CMD_STAT_COUNT.CMD_STAT_1D2 = val;
+			break;
+			
+		case REG_WIFI_CMD_STAT2: // 0x1D4
+			io.CMD_STAT_COUNT.CMD_STAT_1D4 = val;
+			break;
+			
+		case REG_WIFI_CMD_STAT3: // 0x1D6
+			io.CMD_STAT_COUNT.CMD_STAT_1D6 = val;
+			break;
+			
+		case REG_WIFI_CMD_STAT4: // 0x1D8
+			io.CMD_STAT_COUNT.CMD_STAT_1D8 = val;
+			break;
+			
+		case REG_WIFI_CMD_STAT5: // 0x1DA
+			io.CMD_STAT_COUNT.CMD_STAT_1DA = val;
+			break;
+			
+		case REG_WIFI_CMD_STAT6: // 0x1DC
+			io.CMD_STAT_COUNT.CMD_STAT_1DC = val;
+			break;
+			
+		case REG_WIFI_CMD_STAT7: // 0x1DE
+			io.CMD_STAT_COUNT.CMD_STAT_1DE = val;
+			break;
+			
+		case 0x1F0: // 0x1F0
+			io.INTERNAL_1F0 = val;
+			break;
+			
+		case 0x204: // 0x204
+			io.INTERNAL_204 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_204\n", (int)io.INTERNAL_204);
+			break;
+			
+		case 0x208: // 0x208
+			io.INTERNAL_208 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_208\n", (int)io.INTERNAL_208);
+			break;
+			
+		case 0x20C: // 0x20C
+			io.INTERNAL_20C = val;
+			break;
+			
+		case REG_WIFI_IF_SET: // 0x21C
 			WIFI_triggerIRQMask(val);
 			break;
-		case REG_WIFI_CIRCBUFRD_END:
-			wifiMac.CircBufRdEnd = (val & 0x1FFE);
+			
+		case 0x220: // 0x220
+			io.INTERNAL_220 = val;
 			break;
-		case REG_WIFI_CIRCBUFRD_SKIP:
-			wifiMac.CircBufRdSkip = val & 0xFFF;
+			
+		case 0x224: // 0x224
+			io.INTERNAL_224 = val;
 			break;
-		case REG_WIFI_AID_LOW:
-			wifiMac.pid = val & 0x0F;
+			
+		case REG_WIFI_X_228: // 0x228
+			io.X_228 = val;
 			break;
-		case REG_WIFI_AID_HIGH:
-			wifiMac.aid = val & 0x07FF;
+			
+		case 0x230: // 0x230
+			io.INTERNAL_230 = val;
 			break;
-		case 0xD0:
-		//	printf("wifi: rxfilter=%04X\n", val);
+			
+		case 0x234: // 0x234
+			io.INTERNAL_234 = val;
 			break;
-		case 0x0E0:
-		//	printf("wifi: rxfilter2=%04X\n", val);
+			
+		case 0x238: // 0x238
+			io.INTERNAL_238 = val;
 			break;
-
+			
+		case 0x23C: // 0x23C
+			io.INTERNAL_23C = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_23C\n", (int)io.INTERNAL_23C);
+			break;
+			
+		case REG_WIFI_X_244: // 0x244
+			io.X_244 = val;
+			break;
+			
+		case 0x248: // 0x248
+			io.INTERNAL_248 = val;
+			break;
+			
+		case REG_WIFI_CONFIG_254: // 0x254
+			io.CONFIG_254 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only CONFIG_254\n", (int)io.CONFIG_254);
+			break;
+			
+		case 0x258: // 0x258
+			io.INTERNAL_258 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_258\n", (int)io.INTERNAL_258);
+			break;
+			
+		case 0x25C: // 0x25C
+			io.INTERNAL_25C = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_25C\n", (int)io.INTERNAL_25C);
+			break;
+			
+		case 0x260: // 0x260
+			io.INTERNAL_260 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_260\n", (int)io.INTERNAL_260);
+			break;
+			
+		case 0x274: // 0x274
+			io.INTERNAL_274 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_274\n", (int)io.INTERNAL_274);
+			break;
+			
+		case 0x278: // 0x278
+			io.INTERNAL_278 = val;
+			break;
+			
+		case 0x27C: // 0x27C
+			io.INTERNAL_27C = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_27C\n", (int)io.INTERNAL_27C);
+			break;
+			
+		case REG_WIFI_X_290: // 0x290
+			io.X_290.value = val;
+			break;
+			
+		case 0x298: // 0x298
+			io.INTERNAL_298 = val;
+			break;
+			
+		case 0x2A0: // 0x2A0
+			io.INTERNAL_2A0 = val;
+			break;
+			
+		case 0x2A8: // 0x2A8
+			io.INTERNAL_2A8 = val;
+			break;
+			
+		case 0x2AC: // 0x2AC
+			io.INTERNAL_2AC = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_2AC\n", (int)io.INTERNAL_2AC);
+			break;
+			
+		case 0x2B0: // 0x2B0
+			io.INTERNAL_2B0 = val;
+			break;
+			
+		case 0x2B4: // 0x2B4
+			io.INTERNAL_2B4 = val;
+			break;
+			
+		case 0x2B8: // 0x2B8
+			io.INTERNAL_2B8 = val;
+			WIFI_LOG(2, "Writing value of %04Xh to possible read-only INTERNAL_2B8\n", (int)io.INTERNAL_2B8);
+			break;
+			
+		case 0x2C0: // 0x2C0
+			io.INTERNAL_2C0 = val;
+			break;
+			
+		case REG_WIFI_POWERACK: // 0x2D0
+		{
+			if (io.POWERSTATE.WillPowerOn != 0)
+			{
+				io.POWERACK = val;
+				
+				if (io.POWERACK == 0x0000)
+				{
+					io.POWERSTATE.WillPowerOn = 0;
+					io.POWERSTATE.IsPowerOff = io.POWERFORCE.NewPowerOffState;
+					
+					if (io.POWERSTATE.IsPowerOff == 0)
+					{
+						io.POWERSTATE.RequestPowerOn = 0;
+						WIFI_triggerIRQ(WIFI_IRQ_RFWAKEUP);
+						
+						// This is supposedly the TX beacon transfer flag.
+						// Since reading TXREQ_READ bit 4 should always return a 1 (unless
+						// POWERFORCE clears it), we'll simply set this bit to 1 on power up
+						// so that bit 4 gets its default value.
+						io.TXREQ_READ.UNKNOWN1 = 1;
+					}
+					else
+					{
+						io.RF_STATUS.Status = 0x9;
+						io.RF_PINS.CarrierSense = 0;
+						io.RF_PINS.TXMain = 1;
+						io.RF_PINS.UNKNOWN1 = 1;
+						io.RF_PINS.TX_On = 1;
+						io.RF_PINS.RX_On = 0;
+						
+						io.INTERNAL_034 = 0x0002;
+						io.TXREQ_READ.value &= 0x0010;
+						io.POWERSTATE.WillPowerOn = 0;
+						io.POWERSTATE.IsPowerOff = 1;
+					}
+				}
+			}
+			break;
+		}
+			
+		case 0x2F0: // 0x2F0
+			io.INTERNAL_2F0 = val;
+			break;
+			
+		case 0x2F2: // 0x2F2
+			io.INTERNAL_2F2 = val;
+			break;
+			
+		case 0x2F4: // 0x2F4
+			io.INTERNAL_2F4 = val;
+			break;
+			
+		case 0x2F6: // 0x2F6
+			io.INTERNAL_2F6 = val;
+			break;
+			
+		// Report any writes to read-only registers because this shouldn't happen.
+		case REG_WIFI_ID:						// 0x000
+		case REG_WIFI_RANDOM:					// 0x044
+		case REG_WIFI_RXHWWRITECSR:				// 0x054
+		case REG_WIFI_CIRCBUFREAD:				// 0x060
+		case REG_WIFI_TXBUF_REPLY2:				// 0x098
+		case REG_WIFI_TXREQ_READ:				// 0x0B0
+		case REG_WIFI_TXBUSY:					// 0x0B6
+		case REG_WIFI_TXSTAT:					// 0x0B8
+		case REG_WIFI_BBREAD:					// 0x15C
+		case REG_WIFI_BBBUSY:					// 0x15E
+		case REG_WIFI_RFBUSY:					// 0x180
+		case REG_WIFI_RFPINS:					// 0x19C
+		case REG_WIFI_RXSTAT_INC_IF:			// 0x1A8
+		case REG_WIFI_RXSTAT_OVF_IF:			// 0x1AC
+		case REG_WIFI_RX_COUNT:					// 0x1C4
+		case REG_WIFI_TXSEQNO:					// 0x210
+		case REG_WIFI_RFSTATUS:					// 0x214
+		case 0x24C:								// 0x24C
+		case 0x24E:								// 0x24E
+		case 0x250:								// 0x250
+		case 0x264:								// 0x264
+		case REG_WIFI_RXTX_ADDR:				// 0x268
+		case 0x270:								// 0x270
+		case 0x2A2:								// 0x2A2
+		case 0x2A4:								// 0x2A4
+		case 0x2C4:								// 0x2C4
+		case 0x2C8:								// 0x2C8
+		case 0x2CC:								// 0x2CC
+			WIFI_LOG(2, "Preventing writing value of %04Xh to read-only port 0x%03X\n", val, address);
+			break;
+			
+		// Assume that any unlisted register is just padding. It's meaningless to
+		// write to padding, so report that here.
 		default:
+			WIFI_LOG(2, "Preventing writing value of %04Xh to padding address 0x%03X\n", val, address);
 			break;
 	}
-
-	WIFI_IOREG(address) = val;
 }
 
 u16 WIFI_read16(u32 address)
 {
 	bool action = false;
 	if (!nds.power2.wifi) return 0;
+	
+	WifiData &wifi = wifiHandler->GetWifiData();
+	WIFI_IOREG_MAP &io = wifi.io;
 
 	u32 page = address & 0x7000;
 
@@ -1251,254 +2157,861 @@ u16 WIFI_read16(u32 address)
 	// 0x4000 - 0x5FFF: wifi RAM
 	if ((page >= 0x4000) && (page < 0x6000))
 	{
-        return wifiMac.RAM[(address & 0x1FFF) >> 1];
+        return wifi.RAM[(address & 0x1FFF) >> 1];
 	}
 
 	// anything else: I/O ports
 	// only the first mirror causes a special action
 	if (page == 0x0000) action = true;
-
+	
 	address &= 0x0FFF;
 	switch (address)
 	{
-		case REG_WIFI_ID:
+		case REG_WIFI_ID: // 0x000
 			return WIFI_CHIPID;
-		case REG_WIFI_MODE:
-			return wifiMac.macMode;
-		case REG_WIFI_WEP:
-			return wifiMac.wepMode;
-		case REG_WIFI_IE:
-			return wifiMac.IE;
-		case REG_WIFI_IF:
-			return wifiMac.IF;
-		case REG_WIFI_POWERSTATE:
-			return ((wifiMac.powerOn ? 0x0000 : 0x0200) | (wifiMac.powerOnPending ? 0x0102 : 0x0000));
-		case REG_WIFI_RFDATA1:
-			return WIFI_getRF_DATA(0);
-		case REG_WIFI_RFDATA2:
-			return WIFI_getRF_DATA(1);
-		case REG_WIFI_RFBUSY:
-		case REG_WIFI_BBBUSY:
-			return 0;	/* we are never busy :p */
-		case REG_WIFI_BBREAD:
-			return WIFI_getBB_DATA();
-		case REG_WIFI_RANDOM:
-			// probably not right, but it's better than using the unsaved and shared rand().
-			// at the very least, rand() shouldn't be used when movieMode is active.
+			
+		case REG_WIFI_MODE: // 0x004
+			return io.MODE_RST.value;
+			
+		case REG_WIFI_WEP: // 0x006
+			return io.MODE_WEP.value;
+			
+		case REG_WIFI_TXSTATCNT: // 0x008
+			return io.TXSTATCNT.value;
+			
+		case REG_WIFI_X_00A: // 0x00A
+			return io.X_00A;
+			
+		case REG_WIFI_IF: // 0x010
+			return io.IF.value;
+			
+		case REG_WIFI_IE: // 0x012
+			return io.IE.value;
+			
+		case REG_WIFI_MAC0: // 0x018
+			return io.MACADDR0.value;
+			
+		case REG_WIFI_MAC1: // 0x01A
+			return io.MACADDR1.value;
+			
+		case REG_WIFI_MAC2: // 0x01C
+			return io.MACADDR2.value;
+			
+		case REG_WIFI_BSS0: // 0x020
+			return io.BSSID0.value;
+			
+		case REG_WIFI_BSS1: // 0x022
+			return io.BSSID1.value;
+			
+		case REG_WIFI_BSS2: // 0x024
+			return io.BSSID2.value;
+			
+		case REG_WIFI_AID_LOW: // 0x028
+			return io.AID_LOW.value;
+			
+		case REG_WIFI_AID_HIGH: // 0x02A
+			return io.AID_FULL.value;
+			
+		case REG_WIFI_RETRYLIMIT: // 0x02C
+			return io.TX_RETRYLIMIT.value;
+			
+		case 0x2E: // 0x02E
+			return io.INTERNAL_02E;
+			
+		case REG_WIFI_RXCNT: // 0x030
+			return io.RXCNT.value;
+			
+		case REG_WIFI_WEPCNT: // 0x032
+			return io.WEP_CNT.value;
+			
+		case 0x034: // 0x034
+			return io.INTERNAL_034;
+			
+		case REG_WIFI_POWER_US: // 0x036
+			return io.POWER_US.value;
+			
+		case REG_WIFI_POWER_TX: // 0x038
+			return io.POWER_TX.value;
+			
+		case REG_WIFI_POWERSTATE: // 0x03C
+			return io.POWERSTATE.value;
+			
+		case REG_WIFI_POWERFORCE: // 0x040
+			return io.POWERFORCE.value;
+			
+		case REG_WIFI_RANDOM: // 0x044
+		{
+			u16 returnValue = io.RANDOM.Random;
+			io.RANDOM.Random = (io.RANDOM.Random & 1) ^ (((io.RANDOM.Random << 1) & 0x7FE) | ((io.RANDOM.Random >> 10) & 0x1));
+			return returnValue;
+		}
+			
+		case REG_WIFI_POWER_UNK: // 0x048
+			return io.POWER_UNKNOWN.value;
+			
+		case REG_WIFI_RXRANGEBEGIN: // 0x050
+			return io.RXBUF_BEGIN;
+			
+		case REG_WIFI_RXRANGEEND: // 0x052
+			return io.RXBUF_END;
+			
+		case REG_WIFI_RXHWWRITECSR: // 0x054
+			return io.RXBUF_WRCSR.value;
+			
+		case REG_WIFI_WRITECSRLATCH: // 0x056
+			return io.RXBUF_WR_ADDR.value;
+			
+		case REG_WIFI_CIRCBUFRADR: // 0x058
+			return io.RXBUF_RD_ADDR.value;
+			
+		case REG_WIFI_RXREADCSR: // 0x05A
+			return io.RXBUF_READCSR.value;
+			
+		case REG_WIFI_RXBUF_COUNT: // 0x05C
+			return io.RXBUF_COUNT.value;
+			
+		case REG_WIFI_CIRCBUFREAD: // 0x060
+		case REG_WIFI_CIRCBUFWRITE: // 0x070 - mirrored read of 0x060
+		{
+			u16 val = wifi.RAM[io.RXBUF_RD_ADDR.HalfwordAddress];
+			
+			if (action)
 			{
-				u16 returnValue = wifiMac.randomSeed;
-				wifiMac.randomSeed = (wifiMac.randomSeed & 1) ^ (((wifiMac.randomSeed << 1) & 0x7FE) | ((wifiMac.randomSeed >> 10) & 0x1));
-				return returnValue;
-			}
-
-			return 0;
-		case REG_WIFI_MAC0:
-		case REG_WIFI_MAC1:
-		case REG_WIFI_MAC2:
-			//printf("read mac addr: word %i = %02X\n", (address - REG_WIFI_MAC0) >> 1, wifiMac.mac.words[(address - REG_WIFI_MAC0) >> 1]);
-			return wifiMac.mac.words[(address - REG_WIFI_MAC0) >> 1];
-		case REG_WIFI_BSS0:
-		case REG_WIFI_BSS1:
-		case REG_WIFI_BSS2:
-			//printf("read bssid addr: word %i = %02X\n", (address - REG_WIFI_BSS0) >> 1, wifiMac.bss.words[(address - REG_WIFI_BSS0) >> 1]);
-			return wifiMac.bss.words[(address - REG_WIFI_BSS0) >> 1];
-		case REG_WIFI_RXCNT:
-			return wifiMac.RXCnt;
-		case REG_WIFI_RXRANGEBEGIN:
-			return wifiMac.RXRangeBegin;
-		case REG_WIFI_CIRCBUFREAD:
-			{
-				u16 val = wifiMac.RAM[wifiMac.CircBufReadAddress >> 1];
-				if (action)
+				io.RXBUF_RD_ADDR.HalfwordAddress++;
+				
+				if (io.RXBUF_RD_ADDR.ByteAddress >= io.RXBUF_END)
 				{
-					wifiMac.CircBufReadAddress += 2;
-
-					if (wifiMac.CircBufReadAddress >= wifiMac.RXRangeEnd) 
-					{ 
-						wifiMac.CircBufReadAddress = wifiMac.RXRangeBegin;
-					} 
-					else
-					{
-						/* skip does not fire after a reset */
-						if (wifiMac.CircBufReadAddress == wifiMac.CircBufRdEnd)
-						{
-							wifiMac.CircBufReadAddress += wifiMac.CircBufRdSkip * 2;
-							wifiMac.CircBufReadAddress &= 0x1FFE;
-							if (wifiMac.CircBufReadAddress + wifiMac.RXRangeBegin == wifiMac.RXRangeEnd) wifiMac.CircBufReadAddress = 0;
-						}
-					}
-
-					if (wifiMac.RXBufCount > 0)
-					{
-						if (wifiMac.RXBufCount == 1)
-						{
-							WIFI_triggerIRQ(WIFI_IRQ_RXCOUNTEXP);
-						}
-						wifiMac.RXBufCount--;
-					}				
+					io.RXBUF_RD_ADDR.ByteAddress = io.RXBUF_BEGIN;
 				}
-				return val;
+				else
+				{
+					/* skip does not fire after a reset */
+					if (io.RXBUF_RD_ADDR.HalfwordAddress == io.RXBUF_GAP.HalfwordAddress)
+					{
+						io.RXBUF_RD_ADDR.HalfwordAddress += io.RXBUF_GAPDISP.HalfwordOffset;
+						if (io.RXBUF_RD_ADDR.ByteAddress + io.RXBUF_BEGIN == io.RXBUF_END) io.RXBUF_RD_ADDR.ByteAddress = 0;
+					}
+				}
+				
+				if (io.RXBUF_COUNT.Count > 0)
+				{
+					if (io.RXBUF_COUNT.Count == 1)
+					{
+						WIFI_triggerIRQ(WIFI_IRQ_RXCOUNTEXP);
+					}
+					
+					io.RXBUF_COUNT.Count--;
+				}
 			}
-		case REG_WIFI_CIRCBUFRADR:
-			return wifiMac.CircBufReadAddress;
-		case REG_WIFI_RXBUF_COUNT:
-			return wifiMac.RXBufCount;
-		case REG_WIFI_TXREQ_READ:
-			//printf("read TX reg %04X\n", address);
-			return wifiMac.TXCnt | 0x10;
-		case REG_WIFI_TXBUSY:
-			//printf("read TX reg %04X\n", address);
-			return ((wifiMac.txSlotBusy[0] ? 0x01 : 0x00) | (wifiMac.txSlotBusy[1] ? 0x04 : 0x00) | (wifiMac.txSlotBusy[2] ? 0x08 : 0x00));
-		case REG_WIFI_TXSTAT:
-			//printf("read TX reg %04X\n", address);
-			return wifiMac.TXStat;
-		case REG_WIFI_TXLOCEXTRA:
-			//printf("read TX reg %04X\n", address);
-			return wifiMac.TXSlotExtra;
-		case REG_WIFI_TXLOC1:
-		case REG_WIFI_TXLOC2:
-		case REG_WIFI_TXLOC3:
-			//printf("read TX reg %04X\n", address);
-			return wifiMac.TXSlot[(address - REG_WIFI_TXLOC1) >> 2];
-		case REG_WIFI_TXLOCBEACON:
-			//printf("read TX reg %04X\n", address);
-			break;
-		case REG_WIFI_EXTRACOUNTCNT:
-			return wifiMac.eCountEnable?1:0;
-		case REG_WIFI_EXTRACOUNT:
-			return (u16)((wifiMac.eCount + 9) / 10);
-		case REG_WIFI_USCOUNTER0:
-			return (u16)wifiMac.usec;
-		case REG_WIFI_USCOUNTER1:
-			return (u16)(wifiMac.usec >> 16);
-		case REG_WIFI_USCOUNTER2:
-			return (u16)(wifiMac.usec >> 32);
-		case REG_WIFI_USCOUNTER3:
-			return (u16)(wifiMac.usec >> 48);
-		case REG_WIFI_USCOMPARE0:
-			return (u16)wifiMac.ucmp;
-		case REG_WIFI_USCOMPARE1:
-			return (u16)(wifiMac.ucmp >> 16);
-		case REG_WIFI_USCOMPARE2:
-			return (u16)(wifiMac.ucmp >> 32);
-		case REG_WIFI_USCOMPARE3:
-			return (u16)(wifiMac.ucmp >> 48);
-		case REG_WIFI_BEACONCOUNT1:
-			return wifiMac.BeaconCount1;
-		case REG_WIFI_BEACONCOUNT2:
-			return wifiMac.BeaconCount2;
-		case REG_WIFI_LISTENCOUNT:
-			return wifiMac.ListenCount;
-		case REG_WIFI_POWER_US:
-			return wifiMac.crystalEnabled?0:1;
-		case REG_WIFI_CIRCBUFRD_END:
-			return wifiMac.CircBufRdEnd;
-		case REG_WIFI_CIRCBUFRD_SKIP:
-			return wifiMac.CircBufRdSkip;
-		case REG_WIFI_AID_LOW:
-			return wifiMac.pid;
-		case REG_WIFI_AID_HIGH:
-			return wifiMac.aid;
-
-			// RFSTATUS, RFPINS
-			// TODO: figure out how to emulate those correctly
-			// without breaking Nintendo's games
-		case REG_WIFI_RFSTATUS:
+			return val;
+		}
+			
+		case REG_WIFI_CIRCBUFRD_END: // 0x062
+			return io.RXBUF_GAP.value;
+			
+		case REG_WIFI_CIRCBUFRD_SKIP: // 0x064
+			return io.RXBUF_GAPDISP.value;
+			
+		case REG_WIFI_CIRCBUFWADR: // 0x068
+			return io.TXBUF_WR_ADDR.value;
+			
+		case REG_WIFI_TXBUFCOUNT: // 0x06C
+			return io.TXBUF_COUNT.value;
+			
+		case REG_WIFI_CIRCBUFWR_END: // 0x074
+			return io.TXBUF_GAP.value;
+			
+		case REG_WIFI_CIRCBUFWR_SKIP: // 0x076
+			return io.TXBUF_GAPDISP.value;
+			
+		case 0x078: // 0x078 - mirrored read of 0x068
+			return io.TXBUF_WR_ADDR.value;
+			
+		case REG_WIFI_TXLOCBEACON: // 0x080
+			return io.TXBUF_BEACON.value;
+			
+		case REG_WIFI_TXBUF_TIM: // 0x084
+			return io.TXBUF_TIM.value;
+			
+		case REG_WIFI_LISTENCOUNT: // 0x088
+			return io.LISTENCOUNT.value;
+			
+		case REG_WIFI_BEACONPERIOD: // 0x08C
+			return io.BEACONINT.value;
+			
+		case REG_WIFI_LISTENINT: // 0x08E
+			return io.LISTENINT.value;
+			
+		case REG_WIFI_TXLOCEXTRA: // 0x090
+			return io.TXBUF_CMD.value;
+			
+		case REG_WIFI_TXBUF_REPLY1: // 0x094
+			return io.TXBUF_REPLY1.value;
+			
+		case REG_WIFI_TXBUF_REPLY2: // 0x098
+			return io.TXBUF_REPLY2.value;
+			
+		case 0x09C: // 0x09C
+			return io.INTERNAL_09C;
+			
+		case REG_WIFI_TXLOC1: // 0x0A0
+			return io.TXBUF_LOC1.value;
+			
+		case REG_WIFI_TXLOC2: // 0x0A4
+			return io.TXBUF_LOC2.value;
+			
+		case REG_WIFI_TXLOC3: // 0x0A8
+			return io.TXBUF_LOC3.value;
+			
+		case REG_WIFI_TXREQ_RESET: // 0x0AC - mirrored read of 0x09C
+		case REG_WIFI_TXREQ_SET: // 0x0AE - mirrored read of 0x09C
+			return io.INTERNAL_09C;
+			
+		case REG_WIFI_TXREQ_READ: // 0x0B0
+			return io.TXREQ_READ.value;
+			
+		case REG_WIFI_TXRESET: // 0x0B4 - mirrored read of 0x0B6
+		case REG_WIFI_TXBUSY: // 0x0B6
+			return io.TXBUSY.value;
+			
+		case REG_WIFI_TXSTAT: // 0x0B8
+			return io.TXSTAT.value;
+			
+		case 0x0BA: // 0x0BA
+			return io.INTERNAL_0BA;
+			
+		case REG_WIFI_PREAMBLE: // 0x0BC
+			return io.PREAMBLE.value;
+			
+		case REG_WIFI_CMD_TOTALTIME: // 0x0C0
+			return io.CMD_TOTALTIME;
+			
+		case REG_WIFI_CMD_REPLYTIME: // 0x0C4
+			return io.CMD_REPLYTIME;
+			
+		case 0x0C8: // 0x0C8
+			return io.INTERNAL_0C8;
+			
+		case REG_WIFI_RXFILTER: // 0x0D0
+			return io.RXFILTER.value;
+			
+		case REG_WIFI_CONFIG_0D4: // 0x0D4
+			return io.CONFIG_0D4;
+			
+		case REG_WIFI_CONFIG_0D8: // 0x0D8
+			return io.CONFIG_0D8;
+			
+		case REG_WIFI_RX_LEN_CROP: // 0x0DA
+			return io.RX_LEN_CROP.value;
+			
+		case REG_WIFI_RXFILTER2: // 0x0E0
+			return io.RXFILTER2.value;
+			
+		case REG_WIFI_USCOUNTERCNT: // 0x0E8
+			return io.US_COUNTCNT.value;
+			
+		case REG_WIFI_USCOMPARECNT: // 0x0EA
+			return io.US_COMPARECNT.value;
+			
+		case REG_WIFI_CONFIG_0EC: // 0x0EC
+			return io.CONFIG_0EC;
+			
+		case REG_WIFI_EXTRACOUNTCNT: // 0x0EE
+			return io.CMD_COUNTCNT.value;
+			
+		case REG_WIFI_USCOMPARE0: // 0x0F0
+			return io.US_COMPARE0;
+			
+		case REG_WIFI_USCOMPARE1: // 0x0F2
+			return io.US_COMPARE1;
+			
+		case REG_WIFI_USCOMPARE2: // 0x0F4
+			return io.US_COMPARE2;
+			
+		case REG_WIFI_USCOMPARE3: // 0x0F6
+			return io.US_COMPARE3;
+			
+		case REG_WIFI_USCOUNTER0: // 0x0F8
+			return io.US_COUNT0;
+			
+		case REG_WIFI_USCOUNTER1: // 0x0FA
+			return io.US_COUNT1;
+			
+		case REG_WIFI_USCOUNTER2: // 0x0FC
+			return io.US_COUNT2;
+			
+		case REG_WIFI_USCOUNTER3: // 0x0FE
+			return io.US_COUNT3;
+			
+		case 0x100: // 0x100
+			return io.INTERNAL_100;
+			
+		case 0x102: // 0x102
+			return io.INTERNAL_102;
+			
+		case 0x104: // 0x104
+			return io.INTERNAL_104;
+			
+		case 0x106: // 0x106
+			return io.INTERNAL_106;
+			
+		case REG_WIFI_CONTENTFREE: // 0x10C
+			return io.CONTENTFREE;
+			
+		case REG_WIFI_PREBEACONCOUNT: // 0x110
+			return io.PRE_BEACON;
+			
+		case REG_WIFI_EXTRACOUNT: // 0x118
+			return (u16)((wifi.cmdCount_u32 + 9) / 10);
+			
+		case REG_WIFI_BEACONCOUNT1: // 0x11C
+			return io.BEACONCOUNT1;
+			
+		case REG_WIFI_CONFIG_120: // 0x120
+			return io.CONFIG_120;
+			
+		case REG_WIFI_CONFIG_122: // 0x122
+			return io.CONFIG_122;
+			
+		case REG_WIFI_CONFIG_124: // 0x124
+			return io.CONFIG_124;
+			
+		case 0x126: // 0x126
+			return io.INTERNAL_126;
+			
+		case REG_WIFI_CONFIG_128: // 0x128
+			return io.CONFIG_128;
+			
+		case 0x12A: // 0x12A
+			return io.INTERNAL_12A;
+			
+		case REG_WIFI_CONFIG_130: // 0x130
+			return io.CONFIG_130;
+			
+		case REG_WIFI_CONFIG_132: // 0x132
+			return io.CONFIG_132;
+			
+		case REG_WIFI_BEACONCOUNT2: // 0x134
+			return io.BEACONCOUNT2;
+			
+		case REG_WIFI_CONFIG_140: // 0x140
+			return io.CONFIG_140;
+			
+		case REG_WIFI_CONFIG_142: // 0x142
+			return io.CONFIG_142;
+			
+		case REG_WIFI_CONFIG_144: // 0x144
+			return io.CONFIG_144;
+			
+		case REG_WIFI_CONFIG_146: // 0x146
+			return io.CONFIG_146;
+			
+		case REG_WIFI_CONFIG_148: // 0x148
+			return io.CONFIG_148;
+			
+		case REG_WIFI_CONFIG_14A: // 0x14A
+			return io.CONFIG_14A;
+			
+		case REG_WIFI_CONFIG_14C: // 0x14C
+			return io.CONFIG_14C;
+			
+		case REG_WIFI_CONFIG_150: // 0x150
+			return io.CONFIG_150;
+			
+		case REG_WIFI_CONFIG_154: // 0x154
+			return io.CONFIG_154;
+			
+		case REG_WIFI_BBCNT: // 0x158 - mirrored read of 0x15C
+			return io.BB_READ.value;
+			
+		case REG_WIFI_BBWRITE: // 0x15A
+			return 0;
+			
+		case REG_WIFI_BBREAD: // 0x15C
+			return io.BB_READ.value;
+			
+		case REG_WIFI_BBBUSY: // 0x15E
+			return io.BB_BUSY.value;
+			
+		case REG_WIFI_BBMODE: // 0x160
+			return io.BB_MODE.value;
+			
+		case REG_WIFI_BBPOWER: // 0x168
+			return io.BB_POWER.value;
+			
+		case 0x16A: // 0x16A
+			return io.INTERNAL_16A;
+			
+		case 0x170: // 0x170
+			return io.INTERNAL_170;
+			
+		case 0x172: // 0x172
+			return io.INTERNAL_172;
+			
+		case 0x174: // 0x174
+			return io.INTERNAL_174;
+			
+		case 0x176: // 0x176
+			return io.INTERNAL_176;
+			
+		case 0x178: // 0x178 - mirrored read of 0x17C
+		case REG_WIFI_RFDATA2: // 0017C
+		{
+			if (io.RF_BUSY.Busy == 0)
+			{
+				return io.RF_DATA2.value;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+			
+		case REG_WIFI_RFDATA1: // 0x17E
+		{
+			if (io.RF_BUSY.Busy == 0)
+			{
+				return io.RF_DATA1.value;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+			
+		case REG_WIFI_RFBUSY: // 0x180
+			return io.RF_BUSY.value;
+			
+		case REG_WIFI_RFCNT: // 0x184
+			return io.RF_CNT.value;
+			
+		case 0x190: // 0x190
+			return io.INTERNAL_190;
+			
+		case REG_WIFI_TX_HDR_CNT: // 0x194
+			return io.TX_HDR_CNT.value;
+			
+		case 0x198: // 0x198
+			return io.INTERNAL_198;
+			
+		case REG_WIFI_X_1A0: // 0x1A0
+			return io.X_1A0.value;
+			
+		case REG_WIFI_X_1A2: // 0x1A2
+			return io.X_1A2.value;
+			
+		case REG_WIFI_X_1A4: // 0x1A4
+			return io.X_1A4;
+			
+		case REG_WIFI_RXSTAT_INC_IF: // 0x1A8
+			return io.RXSTAT_INC_IF.value;
+			
+		case REG_WIFI_RXSTAT_INC_IE: // 0x1AA
+			return io.RXSTAT_INC_IE.value;
+			
+		case REG_WIFI_RXSTAT_OVF_IF: // 0x1AC
+			return io.RXSTAT_OVF_IF.value;
+			
+		case REG_WIFI_RXSTAT_OVF_IE: // 0x1AE
+			return io.RXSTAT_OVF_IE.value;
+			
+		case REG_WIFI_RXSTAT0: // 0x1B0
+			return io.RXSTAT_COUNT.RXSTAT_1B0;
+			
+		case REG_WIFI_RXSTAT1: // 0x1B2
+			return io.RXSTAT_COUNT.RXSTAT_1B2;
+			
+		case REG_WIFI_RXSTAT2: // 0x1B4
+			return io.RXSTAT_COUNT.RXSTAT_1B4;
+			
+		case REG_WIFI_RXSTAT3: // 0x1B6
+			return io.RXSTAT_COUNT.RXSTAT_1B6;
+			
+		case REG_WIFI_RXSTAT4: // 0x1B8
+			return io.RXSTAT_COUNT.RXSTAT_1B8;
+			
+		case REG_WIFI_RXSTAT5: // 0x1BA
+			return io.RXSTAT_COUNT.RXSTAT_1BA;
+			
+		case REG_WIFI_RXSTAT6: // 0x1BC
+			return io.RXSTAT_COUNT.RXSTAT_1BC;
+			
+		case REG_WIFI_RXSTAT7: // 0x1BE
+			return io.RXSTAT_COUNT.RXSTAT_1BE;
+			
+		case REG_WIFI_TXERR_COUNT: // 0x1C0
+			return io.TX_ERR_COUNT.value;
+			
+		case REG_WIFI_RX_COUNT: // 0x1C4
+			return io.RX_COUNT.value;
+			
+		case REG_WIFI_CMD_STAT0: // 0x1D0
+			return io.CMD_STAT_COUNT.CMD_STAT_1D0;
+			
+		case REG_WIFI_CMD_STAT1: // 0x1D2
+			return io.CMD_STAT_COUNT.CMD_STAT_1D2;
+			
+		case REG_WIFI_CMD_STAT2: // 0x1D4
+			return io.CMD_STAT_COUNT.CMD_STAT_1D4;
+			
+		case REG_WIFI_CMD_STAT3: // 0x1D6
+			return io.CMD_STAT_COUNT.CMD_STAT_1D6;
+			
+		case REG_WIFI_CMD_STAT4: // 0x1D8
+			return io.CMD_STAT_COUNT.CMD_STAT_1D8;
+			
+		case REG_WIFI_CMD_STAT5: // 0x1DA
+			return io.CMD_STAT_COUNT.CMD_STAT_1DA;
+			
+		case REG_WIFI_CMD_STAT6: // 0x1DC
+			return io.CMD_STAT_COUNT.CMD_STAT_1DC;
+			
+		case REG_WIFI_CMD_STAT7: // 0x1DE
+			return io.CMD_STAT_COUNT.CMD_STAT_1DE;
+			
+		case 0x1F0: // 0x1F0
+			return io.INTERNAL_1F0;
+			
+		case 0x204: // 0x204
+			return io.INTERNAL_204;
+			
+		case 0x208: // 0x208
+			return io.INTERNAL_208;
+			
+		case 0x20C: // 0x20C - mirrored read of 0x09C
+			return io.INTERNAL_09C;
+			
+		case REG_WIFI_TXSEQNO: // 0x210
+			return io.TX_SEQNO.value;
+			
+		case REG_WIFI_IF_SET: // 0x21C - mirrored read of 0x010
+			return io.IF.value;
+			
+		case 0x220: // 0x220
+			return io.INTERNAL_220;
+			
+		case 0x224: // 0x224
+			return io.INTERNAL_224;
+			
+		case REG_WIFI_X_228: // 0x228
+			return 0;
+			
+		case 0x230: // 0x230
+			return io.INTERNAL_230;
+			
+		case 0x234: // 0x234
+			return io.INTERNAL_234;
+			
+		case 0x238: // 0x238
+			return io.INTERNAL_238;
+			
+		case 0x23C: // 0x23C
+			return io.INTERNAL_23C;
+			
+		case REG_WIFI_X_244: // 0x244
+			return io.X_244;
+			
+		case 0x248: // 0x248
+			return io.INTERNAL_248;
+			
+		case 0x24C: // 0x24C
+			return io.INTERNAL_24C;
+			
+		case 0x24E: // 0x24E
+			return io.INTERNAL_24E;
+			
+		case 0x250: // 0x250
+			return io.INTERNAL_250;
+			
+		case REG_WIFI_CONFIG_254: // 0x254
+			return io.CONFIG_254;
+			
+		case 0x258: // 0x258
+			return io.INTERNAL_258;
+			
+		case 0x25C: // 0x25C
+			return io.INTERNAL_25C;
+			
+		case 0x260: // 0x260
+			return io.INTERNAL_260;
+			
+		case 0x264: // 0x264
+			return io.INTERNAL_264;
+			
+		case REG_WIFI_RXTX_ADDR: // 0x268
+			return io.RXTX_ADDR.value;
+			
+		case 0x270: // 0x270
+			return io.INTERNAL_270;
+			
+		case 0x274: // 0x274
+			return io.INTERNAL_274;
+			
+		case 0x278: // 0x278
+			return io.INTERNAL_278;
+			
+		case 0x27C: // 0x27C
+			return io.INTERNAL_27C;
+			
+		case REG_WIFI_X_290: // 0x290
+			return io.X_290.value;
+			
+		case 0x298: // 0x298 - mirrored read of 0x084
+			return io.TXBUF_TIM.value;
+			
+		case 0x2A0: // 0x2A0
+			return io.INTERNAL_2A0;
+			
+		case 0x2A2: // 0x2A2
+			return io.INTERNAL_2A2;
+			
+		case 0x2A4: // 0x2A4
+			return io.INTERNAL_2A4;
+			
+		case 0x2A8: // 0x2A8 - mirrored read of 0x238
+			return io.INTERNAL_238;
+			
+		case 0x2AC: // 0x2AC
+			return io.INTERNAL_2AC;
+			
+		case 0x2B0: // 0x2B0 - mirrored read of 0x084
+			return io.TXBUF_TIM.value;
+			
+		case 0x2B4: // 0x2B4
+			return io.INTERNAL_2B4;
+			
+		case 0x2B8: // 0x2B8
+			return io.INTERNAL_2B8;
+			
+		case 0x2C0: // 0x2C0
+			return io.INTERNAL_2C0;
+			
+		case 0x2C4: // 0x2C4
+			return io.INTERNAL_2C4;
+			
+		case 0x2C8: // 0x2C8
+			return io.INTERNAL_2C8;
+			
+		case 0x2CC: // 0x2CC
+			return io.INTERNAL_2CC;
+			
+		case REG_WIFI_POWERACK: // 0x2D0
+		{
+			if (io.POWERSTATE.WillPowerOn != 0)
+			{
+				return io.POWERACK;
+			}
+			else
+			{
+				break;
+			}
+		}
+			
+		case 0x2F0: // 0x2F0
+			return io.INTERNAL_2F0;
+			
+		case 0x2F2: // 0x2F2
+			return io.INTERNAL_2F2;
+			
+		case 0x2F4: // 0x2F4
+			return io.INTERNAL_2F4;
+			
+		case 0x2F6: // 0x2F6
+			return io.INTERNAL_2F6;
+			
+		// RFSTATUS, RFPINS
+		// TODO: figure out how to emulate those correctly
+		// without breaking Nintendo's games
+		case REG_WIFI_RFSTATUS: // 0x214
 			return 0x0009;
-		case REG_WIFI_RFPINS:
+		case REG_WIFI_RFPINS: // 0x19C
 			return 0x00C6;
-
-		case 0x268:
-			return wifiMac.RXTXAddr;
 
 		default:
 		//	printf("wifi: read unhandled reg %03X\n", address);
 			break;
 	}
-
-	return WIFI_IOREG(address);
+	
+	// TODO: We return the default value for the original NDS. However, the default value is different for NDS Lite.
+	WIFI_LOG(2, "Reading value of %04Xh from unlabeled register 0x%03X\n", 0xFFFF, address);
+	return 0xFFFF;
 }
 
 
 void WIFI_usTrigger()
 {
-	if (wifiMac.crystalEnabled)
+	WifiData &wifi = wifiHandler->GetWifiData();
+	WIFI_IOREG_MAP &io = wifi.io;
+	
+	if (io.POWER_US.Disable == 0)
 	{
 		/* a usec has passed */
-		if (wifiMac.usecEnable)
-			wifiMac.usec++;
-
+		if (io.US_COUNTCNT.EnableCounter != 0)
+		{
+			io.US_COUNT++;
+		}
+		
 		// Note: the extra counter is decremented every 10 microseconds.
 		// To avoid a modulo every microsecond, we multiply the counter
 		// value by 10 and decrement it every microsecond :)
-		if (wifiMac.eCountEnable)
+		if (io.CMD_COUNTCNT.EnableCounter != 0)
 		{
-			if (wifiMac.eCount > 0)
+			if (wifi.cmdCount_u32 > 0)
 			{
-				wifiMac.eCount--;
-				if (wifiMac.eCount == 0)
-					WIFI_ExtraTXStart();
+				wifi.cmdCount_u32--;
+				
+				if (wifi.cmdCount_u32 == 0)
+				{
+					WIFI_TXStart(WifiTXLocIndex_CMD, io.TXBUF_CMD);
+				}
 			}
 		}
 
 		// The beacon counters are in milliseconds
 		// GBATek says they're decremented every 1024 usecs
-		if (!(wifiMac.usec & 1023))
+		if ( !(io.US_COUNT & 1023) )
 		{
-			wifiMac.BeaconCount1--;
+			io.BEACONCOUNT1--;
 
-			if (wifiMac.BeaconCount1 == (WIFI_IOREG(REG_WIFI_PREBEACONCOUNT) >> 10))
-				WIFI_triggerIRQ(WIFI_IRQ_TIMEPREBEACON);
-			else if (wifiMac.BeaconCount1 == 0)
-				WIFI_triggerIRQ(WIFI_IRQ_TIMEBEACON);
-
-			if (wifiMac.BeaconCount2 > 0)
+			if ( io.BEACONCOUNT1 == (io.PRE_BEACON >> 10) )
 			{
-				wifiMac.BeaconCount2--;
-				if (wifiMac.BeaconCount2 == 0)
+				WIFI_triggerIRQ(WIFI_IRQ_TIMEPREBEACON);
+			}
+			else if (io.BEACONCOUNT1 == 0)
+			{
+				WIFI_triggerIRQ(WIFI_IRQ_TIMEBEACON);
+			}
+
+			if (io.BEACONCOUNT2 > 0)
+			{
+				io.BEACONCOUNT2--;
+				
+				if (io.BEACONCOUNT2 == 0)
+				{
 					WIFI_triggerIRQ(WIFI_IRQ_TIMEPOSTBEACON);
+				}
 			}
 		}
 	}
 
-	if ((wifiMac.ucmpEnable) && (wifiMac.ucmp == wifiMac.usec))
+	if ( (io.US_COMPARECNT.EnableCompare != 0) && (io.US_COMPARE == io.US_COUNT) )
 	{
 		//printf("ucmp irq14\n");
 		WIFI_triggerIRQ(WIFI_IRQ_TIMEBEACON);
 	}
 
-	if ((wifiMac.usec & 3) == 0)
+	if ((io.US_COUNT & 3) == 0)
 	{
-		int slot = wifiMac.txCurSlot;
-
-		if (wifiMac.txSlotBusy[slot])
+		const WifiTXLocIndex txSlotIndex = wifi.txCurrentSlot;
+		bool isTXSlotBusy = false;
+		
+		switch (txSlotIndex)
 		{
-			wifiMac.txSlotRemainingBytes[slot]--;
-			wifiMac.RXTXAddr++;
-			if (wifiMac.txSlotRemainingBytes[slot] == 0)
-			{
-				wifiMac.txSlotBusy[slot] = 0;
-				wifiMac.TXSlot[slot] &= 0x7FFF;
+			case WifiTXLocIndex_LOC1: isTXSlotBusy = (io.TXBUSY.Loc1 != 0); break;
+			//case WifiTXLocIndex_CMD: isTXSlotBusy = (io.TXBUSY.Cmd != 0); break;
+			case WifiTXLocIndex_LOC2: isTXSlotBusy = (io.TXBUSY.Loc2 != 0); break;
+			case WifiTXLocIndex_LOC3: isTXSlotBusy = (io.TXBUSY.Loc3 != 0); break;
+			//case WifiTXLocIndex_BEACON: isTXSlotBusy = (io.TXBUSY.Beacon != 0); break;
 				
-				wifiHandler->CommSendPacket((u8 *)&wifiMac.RAM[wifiMac.txSlotAddr[slot]+6], wifiMac.txSlotLen[slot]);
+			default:
+				break;
+		}
 
-				while ((wifiMac.txSlotBusy[wifiMac.txCurSlot] == 0) && (wifiMac.txCurSlot > 0))
-					wifiMac.txCurSlot--;
-
-				wifiMac.RAM[wifiMac.txSlotAddr[slot]] = 0x0001;
-				wifiMac.RAM[wifiMac.txSlotAddr[slot]+4] &= 0x00FF;
-
-				wifiMac.TXStat = (0x0001 | (slot << 12));
-
+		if (isTXSlotBusy)
+		{
+			IOREG_W_TXBUF_LOCATION *txBufLocation = NULL;
+			TXPacketInfo &txPacketInfo = wifiHandler->GetPacketInfoAtSlot(txSlotIndex);
+			
+			switch (txSlotIndex)
+			{
+				case WifiTXLocIndex_LOC1: txBufLocation = &io.TXBUF_LOC1; break;
+				//case WifiTXLocIndex_CMD: txBufLocation = &io.TXBUF_CMD; break;
+				case WifiTXLocIndex_LOC2: txBufLocation = &io.TXBUF_LOC2; break;
+				case WifiTXLocIndex_LOC3: txBufLocation = &io.TXBUF_LOC3; break;
+				//case WifiTXLocIndex_BEACON: txBufLocation = &io.TXBUF_BEACON; break;
+					
+				default:
+					break;
+			}
+			
+			txPacketInfo.remainingBytes--;
+			io.RXTX_ADDR.HalfwordAddress++;
+			
+			if (txPacketInfo.remainingBytes == 0)
+			{
+				isTXSlotBusy = false;
+				
+				switch (txSlotIndex)
+				{
+					case WifiTXLocIndex_LOC1: io.TXBUSY.Loc1 = 0; break;
+					//case WifiTXLocIndex_CMD: io.TXBUSY.Cmd = 0; break;
+					case WifiTXLocIndex_LOC2: io.TXBUSY.Loc2 = 0; break;
+					case WifiTXLocIndex_LOC3: io.TXBUSY.Loc3 = 0; break;
+					//case WifiTXLocIndex_BEACON: io.TXBUSY.Beacon = 0; break;
+						
+					default:
+						break;
+				}
+				
+				txBufLocation->TransferRequest = 0;
+				wifiHandler->CommSendPacket((u8 *)&wifi.RAM[txBufLocation->HalfwordAddress+6], txPacketInfo.bodyLen);
+				
+				wifi.RAM[txBufLocation->HalfwordAddress] = 0x0001;
+				wifi.RAM[txBufLocation->HalfwordAddress+4] &= 0x00FF;
+				
+				switch (txSlotIndex)
+				{
+					//case WifiTXLocIndex_CMD:
+					//case WifiTXLocIndex_BEACON:
+					case WifiTXLocIndex_LOC1: io.TXSTAT.PacketUpdate = 0; break;
+					case WifiTXLocIndex_LOC2: io.TXSTAT.PacketUpdate = 1; break;
+					case WifiTXLocIndex_LOC3: io.TXSTAT.PacketUpdate = 2; break;
+						
+					default:
+						break;
+				}
+				
+				io.TXSTAT.PacketCompleted = 1;
+				
 				WIFI_triggerIRQ(WIFI_IRQ_TXEND);
 				
-				//wifiMac.rfStatus = 0x0001;
-				//wifiMac.rfPins = 0x0084;
-				wifiMac.rfStatus = 0x0009;
-				wifiMac.rfPins = 0x0004;
+				//io.RF_STATUS.Status = 0x01;
+				//io.RF_PINS.RX_On = 1;
+				
+				io.RF_STATUS.Status = 0x09;
+				io.RF_PINS.CarrierSense = 0;
+				io.RF_PINS.TXMain = 0;
+				io.RF_PINS.UNKNOWN1 = 1;
+				io.RF_PINS.TX_On = 0;
+				io.RF_PINS.RX_On = 0;
+				
+				// Switch to the next TX slot.
+				while (!isTXSlotBusy && (wifi.txCurrentSlot != WifiTXLocIndex_LOC1))
+				{
+					/*if (wifi.txCurrentSlot == WifiTXLocIndex_BEACON)
+					 {
+					 wifi.txCurrentSlot = WifiTXLocIndex_CMD;
+					 isTXSlotBusy = (io.TXBUSY.Cmd != 0);
+					 }
+					 else if (wifi.txCurrentSlot == WifiTXLocIndex_CMD)
+					 {
+					 wifi.txCurrentSlot = WifiTXLocIndex_LOC3;
+					 isTXSlotBusy = (io.TXBUSY.Loc3 != 0);
+					 }
+					 else */if (wifi.txCurrentSlot == WifiTXLocIndex_LOC3)
+					 {
+						 wifi.txCurrentSlot = WifiTXLocIndex_LOC2;
+						 isTXSlotBusy = (io.TXBUSY.Loc2 != 0);
+					 }
+					 else if (wifi.txCurrentSlot == WifiTXLocIndex_LOC2)
+					 {
+						 wifi.txCurrentSlot = WifiTXLocIndex_LOC1;
+						 isTXSlotBusy = (io.TXBUSY.Loc1 != 0);
+					 }
+				}
 
 				WIFI_LOG(3, "TX slot %i finished sending its packet. Next is slot %i. TXStat = %04X\n", 
-					slot, wifiMac.txCurSlot, wifiMac.TXStat);
+					(int)txSlotIndex, (int)wifi.txCurrentSlot, io.TXSTAT.value);
 			}
 		}
 	}
@@ -1880,6 +3393,7 @@ void AdhocCommInterface::SendPacket(void *data, size_t len)
 
 void AdhocCommInterface::Trigger()
 {
+	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
 	socket_t &thisSocket = *((socket_t *)this->_wifiSocket);
 
 	this->_usecCounter++;
@@ -1929,11 +3443,11 @@ void AdhocCommInterface::Trigger()
 			ptr += sizeof(Adhoc_FrameHeader);
 
 			// If the packet is for us, send it to the wifi core
-			if (!WIFI_compareMAC(&ptr[10], &wifiMac.mac.bytes[0]))
+			if (!WIFI_compareMAC(&ptr[10], io.MACADDR))
 			{
 				if (WIFI_isBroadcastMAC(&ptr[16]) ||
-					WIFI_compareMAC(&ptr[16], &wifiMac.bss.bytes[0]) ||
-					WIFI_isBroadcastMAC(&wifiMac.bss.bytes[0]))
+					WIFI_compareMAC(&ptr[16], io.BSSID) ||
+					WIFI_isBroadcastMAC(io.BSSID))
 				{
 				/*	printf("packet was for us: mac=%02X:%02X.%02X.%02X.%02X.%02X, bssid=%02X:%02X.%02X.%02X.%02X.%02X\n",
 						wifiMac.mac.bytes[0], wifiMac.mac.bytes[1], wifiMac.mac.bytes[2], wifiMac.mac.bytes[3], wifiMac.mac.bytes[4], wifiMac.mac.bytes[5],
@@ -1969,10 +3483,12 @@ void AdhocCommInterface::Trigger()
 						WIFI_RXPutWord(word);
 					}
 
-					wifiMac.RXWriteCursor = ((wifiMac.RXWriteCursor + 1) & (~1));
-					WIFI_IOREG(REG_WIFI_RXHWWRITECSR) = wifiMac.RXWriteCursor;
-					wifiMac.RXNum++;
+					io.RXBUF_WRCSR.HalfwordAddress = ((io.RXBUF_WRCSR.HalfwordAddress + 1) & (~1));
+					
+					//wifiMac.RXNum++;
 					WIFI_triggerIRQ(WIFI_IRQ_RXEND);
+					
+					delete [] packet;
 				}
 			}
 		}
@@ -2080,6 +3596,7 @@ bool SoftAPCommInterface::_IsDNSRequestToWFC(u16 ethertype, u8 *body)
 
 void SoftAPCommInterface::_Deauthenticate()
 {
+	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
 	u32 packetLen = sizeof(SoftAP_DeauthFrame);
 	
 	memcpy(&this->_curPacket[12], SoftAP_DeauthFrame, packetLen);
@@ -2090,7 +3607,7 @@ void SoftAPCommInterface::_Deauthenticate()
 	this->_seqNum++;
 	
 	u16 rxflags = 0x0010;
-	if (WIFI_compareMAC(wifiMac.bss.bytes, &this->_curPacket[12 + 16]))
+	if (WIFI_compareMAC(io.BSSID, &this->_curPacket[12 + 16]))
 	{
 		rxflags |= 0x8000;
 	}
@@ -2107,6 +3624,7 @@ void SoftAPCommInterface::_Deauthenticate()
 
 void SoftAPCommInterface::_SendBeacon()
 {
+	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
 	u32 packetLen = sizeof(SoftAP_Beacon);
 	
 	memcpy(&this->_curPacket[12], SoftAP_Beacon, packetLen);	// Copy the beacon template
@@ -2118,7 +3636,7 @@ void SoftAPCommInterface::_SendBeacon()
 	*(u64 *)&this->_curPacket[12 + 24] = timestamp;				// Timestamp
 	
 	u16 rxflags = 0x0011;
-	if (WIFI_compareMAC(wifiMac.bss.bytes, &this->_curPacket[12 + 16]))
+	if (WIFI_compareMAC(io.BSSID, &this->_curPacket[12 + 16]))
 		rxflags |= 0x8000;
 	
 	WIFI_MakeRXHeader(this->_curPacket, rxflags, 20, packetLen, 0, 0);
@@ -2131,6 +3649,8 @@ void SoftAPCommInterface::_SendBeacon()
 
 void SoftAPCommInterface::PacketRX(const void *pktHeader, const u8 *pktData)
 {
+	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
+	
 	// safety checks
 	if ( (pktData == NULL) || (pktHeader == NULL) )
 	{
@@ -2138,13 +3658,13 @@ void SoftAPCommInterface::PacketRX(const void *pktHeader, const u8 *pktData)
 	}
 	
 	// reject the packet if it wasn't for us
-	if (!(WIFI_isBroadcastMAC(&pktData[0]) || WIFI_compareMAC(&pktData[0], wifiMac.mac.bytes)))
+	if (!(WIFI_isBroadcastMAC(&pktData[0]) || WIFI_compareMAC(&pktData[0], io.MACADDR)))
 	{
 		return;
 	}
 	
 	// reject the packet if we just sent it
-	if (WIFI_compareMAC(&pktData[6], wifiMac.mac.bytes))
+	if (WIFI_compareMAC(&pktData[6], io.MACADDR))
 	{
 		return;
 	}
@@ -2154,7 +3674,7 @@ void SoftAPCommInterface::PacketRX(const void *pktHeader, const u8 *pktData)
 	
 	if (this->_curPacketSending)
 	{
-		printf("crap we're gonna nuke a packet at %i/%i (%04X) (%04X)\n", this->_curPacketPos, this->_curPacketSize, *(u16 *)&this->_curPacket[12], wifiMac.RXWriteCursor<<1);
+		printf("crap we're gonna nuke a packet at %i/%i (%04X) (%04X)\n", this->_curPacketPos, this->_curPacketSize, *(u16 *)&this->_curPacket[12], io.RXBUF_WRCSR.HalfwordAddress<<1);
 	}
 	
 	// The packet was for us. Let's process it then.
@@ -2177,7 +3697,7 @@ void SoftAPCommInterface::PacketRX(const void *pktHeader, const u8 *pktData)
 	//	data[0], data[1], data[2], data[3], data[4], data[5], *(u16*)&data[12]);
 	
 	u16 rxflags = 0x0018;
-	if (WIFI_compareMAC(wifiMac.bss.bytes, (u8 *)SoftAP_MACAddr))
+	if (WIFI_compareMAC(io.BSSID, (u8 *)SoftAP_MACAddr))
 	{
 		rxflags |= 0x8000;
 	}
@@ -2206,8 +3726,7 @@ void SoftAPCommInterface::PacketRX(const void *pktHeader, const u8 *pktData)
 	}
 	
 	// Done!
-	wifiMac.RXWriteCursor = ((wifiMac.RXWriteCursor + 1) & (~1));
-	WIFI_IOREG(REG_WIFI_RXHWWRITECSR) = wifiMac.RXWriteCursor;
+	io.RXBUF_WRCSR.HalfwordAddress = ((io.RXBUF_WRCSR.HalfwordAddress + 1) & (~1));
 	
 	WIFI_triggerIRQ(WIFI_IRQ_RXEND);
 }
@@ -2383,11 +3902,13 @@ void SoftAPCommInterface::Stop()
 	if (this->_bridgeDevice != NULL)
 	{
 		this->_pcap->close(this->_bridgeDevice);
+		this->_bridgeDevice = NULL;
 	}
 }
 
 void SoftAPCommInterface::SendPacket(void *data, size_t len)
 {
+	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
 	u8 *packet = (u8 *)data;
 	u16 frameCtl = *(u16 *)&packet[0];
 
@@ -2473,7 +3994,7 @@ void SoftAPCommInterface::SendPacket(void *data, size_t len)
 			this->_seqNum++;
 
 			u16 rxflags = 0x0010;
-			if (WIFI_compareMAC(wifiMac.bss.bytes, &this->_curPacket[12 + 16]))
+			if (WIFI_compareMAC(io.BSSID, &this->_curPacket[12 + 16]))
 			{
 				rxflags |= 0x8000;
 			}
@@ -2534,6 +4055,8 @@ void SoftAPCommInterface::SendPacket(void *data, size_t len)
 
 void SoftAPCommInterface::Trigger()
 {
+	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
+	
 	this->_usecCounter++;
 
 	// other packets will have priority over beacons
@@ -2572,9 +4095,8 @@ void SoftAPCommInterface::Trigger()
 			this->_curPacketPos = 0;
 			this->_curPacketSending = false;
 
-			wifiMac.RXWriteCursor = ((wifiMac.RXWriteCursor + 1) & (~1));
-			WIFI_IOREG(REG_WIFI_RXHWWRITECSR) = wifiMac.RXWriteCursor;
-
+			io.RXBUF_WRCSR.HalfwordAddress = ((io.RXBUF_WRCSR.HalfwordAddress + 1) & (~1));
+			
 			WIFI_triggerIRQ(WIFI_IRQ_RXEND);
 		}
 	}
@@ -2629,16 +4151,33 @@ WifiHandler::~WifiHandler()
 
 void WifiHandler::Reset()
 {
-	memset(&wifiMac, 0, sizeof(wifimac_t));
+	memset(&legacyWifiSF, 0, sizeof(LegacyWifiSFormat));
+	memset(&_wifi, 0, sizeof(WifiData));
+	WIFI_resetRF(this->_wifi.rf);
 	
-	WIFI_resetRF(&wifiMac.RF);
-	
-	wifiMac.powerOn = false;
-	wifiMac.powerOnPending = false;
-	wifiMac.rfStatus = 0x0000;
-	wifiMac.rfPins = 0x0004;
+	_wifi.io.POWER_US.Disable = 1;
+	_wifi.io.POWERSTATE.IsPowerOff = 1;
+	_wifi.io.TXREQ_READ.UNKNOWN1 = 1;
+	_wifi.io.BB_POWER.Disable = 0x0D;
+	_wifi.io.BB_POWER.DisableAllPorts = 1;
+	_wifi.io.RF_PINS.UNKNOWN1 = 1;
 	
 	this->_didWarnWFCUser = false;
+}
+
+WifiData& WifiHandler::GetWifiData()
+{
+	return this->_wifi;
+}
+
+TXPacketInfo& WifiHandler::GetPacketInfoAtSlot(size_t txSlot)
+{
+	if (txSlot > 4)
+	{
+		return this->_wifi.txPacketInfo[0];
+	}
+	
+	return this->_wifi.txPacketInfo[txSlot];
 }
 
 WifiEmulationLevel WifiHandler::GetSelectedEmulationLevel()
@@ -2986,4 +4525,114 @@ void WifiHandler::CopyMACFromUserValues(u8 outMAC[6])
 	outMAC[3] = this->_userMAC[0];
 	outMAC[4] = this->_userMAC[1];
 	outMAC[5] = this->_userMAC[2];
+}
+
+void WifiHandler::PrepareSaveStateWrite()
+{
+	WIFI_IOREG_MAP &io = this->_wifi.io;
+	RF2958_IOREG_MAP &rf = this->_wifi.rf;
+	
+	legacyWifiSF.powerOn				= (u32)(io.POWERSTATE.IsPowerOff == 0);
+	legacyWifiSF.powerOnPending			= (u32)(io.POWERSTATE.WillPowerOn != 0);
+	
+	legacyWifiSF.rfStatus				= io.RF_STATUS.value;
+	legacyWifiSF.rfPins					= io.RF_PINS.value;
+	
+	legacyWifiSF.IE						= io.IE.value;
+	legacyWifiSF.IF						= io.IF.value;
+	
+	legacyWifiSF.macMode				= io.MODE_RST.value;
+	legacyWifiSF.wepMode				= io.MODE_WEP.value;
+	legacyWifiSF.WEP_enable				= io.WEP_CNT.Enable;
+	
+	legacyWifiSF.TXCnt					= io.TXREQ_READ.value;
+	legacyWifiSF.TXStat					= io.TXSTAT.value;
+	
+	legacyWifiSF.RXCnt					= io.RXCNT.value;
+	legacyWifiSF.RXCheckCounter			= 0;
+	
+	legacyWifiSF.macAddr[0]				= io.MACADDR[0];
+	legacyWifiSF.macAddr[1]				= io.MACADDR[1];
+	legacyWifiSF.macAddr[2]				= io.MACADDR[2];
+	legacyWifiSF.macAddr[3]				= io.MACADDR[3];
+	legacyWifiSF.macAddr[4]				= io.MACADDR[4];
+	legacyWifiSF.macAddr[5]				= io.MACADDR[5];
+	legacyWifiSF.bssid[0]				= io.BSSID[0];
+	legacyWifiSF.bssid[1]				= io.BSSID[1];
+	legacyWifiSF.bssid[2]				= io.BSSID[2];
+	legacyWifiSF.bssid[3]				= io.BSSID[3];
+	legacyWifiSF.bssid[4]				= io.BSSID[4];
+	legacyWifiSF.bssid[5]				= io.BSSID[5];
+	
+	legacyWifiSF.aid					= io.AID_FULL.AssociationID;
+	legacyWifiSF.pid					= io.AID_LOW.PlayerID;
+	legacyWifiSF.retryLimit				= io.TX_RETRYLIMIT.value;
+	
+	legacyWifiSF.crystalEnabled			= (u32)(io.POWER_US.Disable == 0);
+	legacyWifiSF.usec					= io.US_COUNT;
+	legacyWifiSF.usecEnable				= io.US_COUNTCNT.EnableCounter;
+	legacyWifiSF.ucmp					= io.US_COMPARE;
+	legacyWifiSF.ucmpEnable				= io.US_COMPARECNT.EnableCompare;
+	legacyWifiSF.eCount					= this->_wifi.cmdCount_u32;
+	legacyWifiSF.eCountEnable			= io.CMD_COUNTCNT.EnableCounter;
+	
+	legacyWifiSF.rf_cfg1				= rf.CFG1.value;
+	legacyWifiSF.rf_ifpll1				= rf.IFPLL1.value;
+	legacyWifiSF.rf_ifpll2				= rf.IFPLL2.value;
+	legacyWifiSF.rf_ifpll3				= rf.IFPLL3.value;
+	legacyWifiSF.rf_rfpll1				= rf.RFPLL1.value;
+	legacyWifiSF.rf_rfpll2				= rf.RFPLL2.value;
+	legacyWifiSF.rf_rfpll3				= rf.RFPLL3.value;
+	legacyWifiSF.rf_rfpll4				= rf.RFPLL4.value;
+	legacyWifiSF.rf_cal1				= rf.CAL1.value;
+	legacyWifiSF.rf_txrx1				= rf.TXRX1.value;
+	legacyWifiSF.rf_pcnt1				= rf.PCNT1.value;
+	legacyWifiSF.rf_pcnt2				= rf.PCNT2.value;
+	legacyWifiSF.rf_vcot1				= rf.VCOT1.value;
+	
+	legacyWifiSF.rfIOCnt				= io.RF_CNT.value;
+	legacyWifiSF.rfIOStatus				= io.RF_BUSY.Busy;
+	legacyWifiSF.rfIOData				= (io.RF_DATA2.value << 16) | io.RF_DATA1.value;
+	legacyWifiSF.bbIOCnt				= io.BB_CNT.value;
+	
+	legacyWifiSF.rxRangeBegin			= io.RXBUF_BEGIN;
+	legacyWifiSF.rxRangeEnd				= io.RXBUF_END;
+	legacyWifiSF.rxWriteCursor			= io.RXBUF_WRCSR.HalfwordAddress;
+	legacyWifiSF.rxReadCursor			= io.RXBUF_READCSR.HalfwordAddress;
+	legacyWifiSF.rxUnits				= 0;
+	legacyWifiSF.rxBufCount				= io.RXBUF_COUNT.Count;
+	legacyWifiSF.circBufReadAddress		= io.RXBUF_RD_ADDR.ByteAddress;
+	legacyWifiSF.circBufWriteAddress	= io.TXBUF_WR_ADDR.ByteAddress;
+	legacyWifiSF.circBufReadEnd			= io.RXBUF_GAP.ByteAddress;
+	legacyWifiSF.circBufReadSkip		= io.RXBUF_GAPDISP.HalfwordOffset;
+	legacyWifiSF.circBufWriteEnd		= io.TXBUF_GAP.ByteAddress;
+	legacyWifiSF.circBufWriteSkip		= io.TXBUF_GAPDISP.HalfwordOffset;
+	
+	legacyWifiSF.randomSeed				= io.RANDOM.Random;
+	
+	memcpy(legacyWifiSF.wifiIOPorts, &this->_wifi.io, sizeof(WIFI_IOREG_MAP));
+	memcpy(legacyWifiSF.bb_data, this->_wifi.bb.data, sizeof(this->_wifi.bb.data));
+	memcpy(legacyWifiSF.wifiRAM, this->_wifi.RAM, sizeof(this->_wifi.RAM));
+}
+
+void WifiHandler::ParseSaveStateRead()
+{
+	RF2958_IOREG_MAP &rf = this->_wifi.rf;
+	rf.CFG1.value		= legacyWifiSF.rf_cfg1;
+	rf.IFPLL1.value		= legacyWifiSF.rf_ifpll1;
+	rf.IFPLL2.value		= legacyWifiSF.rf_ifpll2;
+	rf.IFPLL3.value		= legacyWifiSF.rf_ifpll3;
+	rf.RFPLL1.value		= legacyWifiSF.rf_rfpll1;
+	rf.RFPLL2.value		= legacyWifiSF.rf_rfpll2;
+	rf.RFPLL3.value		= legacyWifiSF.rf_rfpll3;
+	rf.RFPLL4.value		= legacyWifiSF.rf_rfpll4;
+	rf.CAL1.value		= legacyWifiSF.rf_cal1;
+	rf.TXRX1.value		= legacyWifiSF.rf_txrx1;
+	rf.PCNT1.value		= legacyWifiSF.rf_pcnt1;
+	rf.PCNT2.value		= legacyWifiSF.rf_pcnt2;
+	rf.VCOT1.value		= legacyWifiSF.rf_vcot1;
+	
+	memcpy(&this->_wifi.io, legacyWifiSF.wifiIOPorts, sizeof(WIFI_IOREG_MAP));
+	memcpy(this->_wifi.bb.data, legacyWifiSF.bb_data, sizeof(this->_wifi.bb.data));
+	memcpy(this->_wifi.RAM, legacyWifiSF.wifiRAM, sizeof(this->_wifi.RAM));
 }
