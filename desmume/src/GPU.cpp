@@ -8423,9 +8423,7 @@ void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
 
 void GPUSubsystem::savestate(EMUFILE &f)
 {
-	f.write_32LE(1); // version
-	f.write_floatLE(_displayInfo.backlightIntensity[0]);
-	f.write_floatLE(_displayInfo.backlightIntensity[1]);
+	f.write_32LE(2); // version
 	f.write_floatLE(_backlightIntensityTotal[0]);
 	f.write_floatLE(_backlightIntensityTotal[1]);
 }
@@ -8439,8 +8437,14 @@ bool GPUSubsystem::loadstate(EMUFILE &f)
 	{
 		f.read_floatLE(_displayInfo.backlightIntensity[0]);
 		f.read_floatLE(_displayInfo.backlightIntensity[1]);
-		f.read_floatLE(_backlightIntensityTotal[0]);
-		f.read_floatLE(_backlightIntensityTotal[1]);
+	}
+
+	f.read_floatLE(_backlightIntensityTotal[0]);
+	f.read_floatLE(_backlightIntensityTotal[1]);
+	if (version == 2)
+	{
+		_displayInfo.backlightIntensity[0] = _backlightIntensityTotal[0] / 71;
+		_displayInfo.backlightIntensity[1] = _backlightIntensityTotal[1] / 71;
 	}
 }
 void GPUSubsystem::loadstateDefault()
