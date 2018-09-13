@@ -4817,6 +4817,11 @@ DOKEYDOWN:
 			RunConfig(CONFIGSCREEN_HOTKEY);
 			return 0;
 		case IDM_FIRMSETTINGS:
+			if (AreMovieEmulationSettingsActive())
+			{
+				MessageBox(hwnd, "The current settings have been set by a movie. Reset or unload the current game if you want to restore your saved settings.\n\n"
+					"If you make changes here, the new settings will overwrite your currently saved settings.", "Movie Settings Active", MB_OK);
+			}
 			RunConfig(CONFIGSCREEN_FIRMWARE);
 			return 0;
 		case IDM_SOUNDSETTINGS:
@@ -4826,6 +4831,11 @@ DOKEYDOWN:
 			RunConfig(CONFIGSCREEN_WIFI);
 			return 0;
 		case IDM_EMULATIONSETTINGS:
+			if (AreMovieEmulationSettingsActive())
+			{
+				MessageBox(hwnd, "The current settings have been set by a movie. Reset or unload the current game if you want to restore your saved settings.\n\n"
+					"If you make changes here (whether you reset now or not), the new settings will overwrite your currently saved settings.", "Movie Settings Active", MB_OK);
+			}
 			RunConfig(CONFIGSCREEN_EMULATION);
 			return 0;
 		case IDM_MICROPHONESETTINGS:
@@ -5874,7 +5884,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					if(romloaded)
 						val = MessageBox(hDlg, "The current ROM needs to be reset to apply changes.\nReset now ?", "DeSmuME", (MB_YESNO | MB_ICONQUESTION));
 
-					
+					UnloadMovieEmulationSettings();
 
 					CommonSettings.UseExtBIOS = IsDlgCheckboxChecked(hDlg, IDC_USEEXTBIOS);
 					cur = GetDlgItem(hDlg, IDC_ARM9BIOS);

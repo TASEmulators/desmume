@@ -559,7 +559,7 @@ void CommandLine::process_movieCommands()
 	}
 	else if(record_movie_file != "")
 	{
-		FCEUI_SaveMovie(record_movie_file.c_str(), L"", 0, NULL, FCEUI_MovieGetRTCDefault());
+		FCEUI_SaveMovie(record_movie_file.c_str(), L"", START_BLANK, NULL, FCEUI_MovieGetRTCDefault());
 	}
 }
 

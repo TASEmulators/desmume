@@ -18,6 +18,8 @@
 #ifndef _WIN_REPLAY_H_
 #define _WIN_REPLAY_H_
 
+enum START_FROM { START_BLANK, START_SRAM, START_SAVESTATE };
+
 void Replay_LoadMovie();
 void MovieRecordTo();
 

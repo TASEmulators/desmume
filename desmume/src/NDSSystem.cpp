@@ -781,6 +781,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 		cheats->init(buf);
 	}
 
+	//UnloadMovieEmulationSettings(); called in NDS_Reset()
 	NDS_Reset();
 
 	return ret;
@@ -790,6 +791,7 @@ void NDS_FreeROM(void)
 {
 	FCEUI_StopMovie();
 	gameInfo.closeROM();
+	UnloadMovieEmulationSettings();
 }
 
 void NDS_Sleep() { nds.sleeping = TRUE; }
@@ -2567,6 +2569,8 @@ bool NDS_FakeBoot()
 bool _HACK_DONT_STOPMOVIE = false;
 void NDS_Reset()
 {
+	UnloadMovieEmulationSettings();
+
 	//reload last paths if needed
 	if(!gameInfo.reader)
 	{

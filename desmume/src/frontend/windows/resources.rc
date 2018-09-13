@@ -963,27 +963,28 @@ BEGIN
     PUSHBUTTON      "Separator",IDC_C_WATCH_SEPARATE,225,136,36,14
 END
 
-IDD_RECORDMOVIE DIALOGEX 0, 0, 301, 124
+IDD_RECORDMOVIE DIALOGEX 0, 0, 301, 118
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Record movie"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,177,106,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,231,106,50,14
-    GROUPBOX        "",65501,11,9,269,64
-    LTEXT           "File:",IDC_STATIC,31,22,14,8
-    EDITTEXT        IDC_EDIT_FILENAME,49,20,189,12,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BUTTON_BROWSEFILE,249,20,18,14
-    LTEXT           "Author:",IDC_STATIC,21,38,25,8
-    EDITTEXT        IDC_EDIT_AUTHOR,49,36,189,14,ES_AUTOHSCROLL
-    LTEXT           "Date:",IDC_STATIC,28,56,18,8
-    CONTROL         "",IDC_DTP_DATE,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_LONGDATEFORMAT | WS_TABSTOP,49,54,123,12
-    CONTROL         "",IDC_DTP_TIME,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_UPDOWN | WS_TABSTOP | 0x8,176,54,62,12
-    GROUPBOX        "",IDC_STATIC,11,73,269,29
-    LTEXT           "SRAM:",IDC_STATIC,19,85,25,8
-    EDITTEXT        IDC_EDIT_SRAMFILENAME,48,83,189,12,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BUTTON_BROWSESRAM,248,83,18,14
-    CONTROL         "Start from SRAM",IDC_START_FROM_SRAM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,108,93,10
+    DEFPUSHBUTTON   "OK",IDOK,177,99,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,231,99,50,14
+    GROUPBOX        "",65501,11,2,269,64
+    LTEXT           "File:",IDC_STATIC,31,15,14,8
+    EDITTEXT        IDC_EDIT_FILENAME,49,13,189,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BUTTON_BROWSEFILE,249,13,18,14
+    LTEXT           "Author:",IDC_STATIC,21,31,25,8
+    EDITTEXT        IDC_EDIT_AUTHOR,49,29,189,14,ES_AUTOHSCROLL
+    LTEXT           "Date:",IDC_STATIC,28,49,18,8
+    CONTROL         "",IDC_DTP_DATE,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_LONGDATEFORMAT | WS_TABSTOP,49,47,123,12
+    CONTROL         "",IDC_DTP_TIME,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_UPDOWN | WS_TABSTOP | 0x8,176,47,62,12
+    GROUPBOX        "",IDC_STATIC,11,66,269,29
+    LTEXT           "SRAM:",IDC_STATIC,19,78,25,8
+    EDITTEXT        IDC_EDIT_SRAMFILENAME,48,76,189,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BUTTON_BROWSESRAM,248,76,18,14
+    CONTROL         "Start from SRAM",IDC_START_FROM_SRAM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,101,73,10
+    CONTROL         "Start from power on",IDC_START_FROM_POWER_ON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,85,101,81,10
 END
 
 IDD_REPLAY_METADATA DIALOGEX 0, 0, 325, 250
@@ -1904,7 +1905,7 @@ BEGIN
 
     IDD_RECORDMOVIE, DIALOG
     BEGIN
-        BOTTOMMARGIN, 113
+        BOTTOMMARGIN, 107
     END
 
     IDD_SOUNDSETTINGS, DIALOG
@@ -2120,6 +2121,10 @@ BEGIN
     IDM_FILE_STOPAVI        "Stop AVI"
     IDM_FILE_STOPWAV        "Stop WAV"
     IDM_FILE_RECORDAVI      "Record AVI"
+END
+
+STRINGTABLE
+BEGIN
     IDM_FILE_RECORDWAV      "Record WAV"
 END
 
@@ -2133,23 +2138,58 @@ BEGIN
     ID_LABEL_HK1            "Open ROM"
     ID_LABEL_HK2            "Reset"
     ID_LABEL_HK3            "Pause"
-    ID_LABEL_HK3b           "CPU mode"
-    ID_LABEL_HK3c           "Increase JIT block size"
-    ID_LABEL_HK3d           "Decrease JIT block size"
     ID_LABEL_HK4            "Frame Advance"
     ID_LABEL_HK5            "Fast Forward"
     ID_LABEL_HK6            "Fast Forward Toggle"
     ID_LABEL_HK7            "Increase Speed"
     ID_LABEL_HK8            "Decrease Speed"
-    ID_LABEL_HK8b           "Limit Framerate Toggle"
     ID_LABEL_HK9            "Microphone"
     ID_LABEL_HK10           "Auto-Hold"
     ID_LABEL_HK11           "Auto-Hold Clear"
     ID_LABEL_HK12           "Toggle Rasterizer"
     ID_LABEL_HK13           "Save Screenshot as"
-    ID_LABEL_HK13b          "Quick Screenshot"
     ID_LABEL_HK14           "Record WAV"
     ID_LABEL_HK15           "Record AVI"
+END
+
+STRINGTABLE
+BEGIN
+    ID_LABEL_HK3b           "CPU mode"
+    ID_LABEL_HK3c           "Increase JIT block size"
+END
+
+STRINGTABLE
+BEGIN
+    ID_LABEL_HK3d           "Decrease JIT block size"
+END
+
+STRINGTABLE
+BEGIN
+    ID_LABEL_HK8b           "Limit Framerate Toggle"
+END
+
+STRINGTABLE
+BEGIN
+    ID_LABEL_HK48           "Turbo A"
+    ID_LABEL_HK49           "Turbo Y"
+    ID_LABEL_HK50           "Turbo X"
+    ID_LABEL_HK51           "Turbo R"
+    ID_LABEL_HK52           "Turbo L"
+    ID_LABEL_HK53           "Reload ROM"
+    ID_LABEL_HK13b          "Quick Screenshot"
+    ID_LABEL_HK54           "Search Cheats"
+    ID_LABEL_HK55           "Increase Pressure"
+    ID_LABEL_HK56           "Decrease Pressure"
+    ID_LABEL_HK57           "Rotation 0"
+    ID_LABEL_HK58           "Rotation 90"
+    ID_LABEL_HK59           "Rotation 180"
+    ID_LABEL_HK60           "Rotation 270"
+    ID_LABEL_HK61           "Toggle Stylus Jitter"
+    ID_LABEL_HK62           "Toggle Cursor"
+END
+
+STRINGTABLE
+BEGIN
     ID_LABEL_HK16           "Toggle Frame Display"
     ID_LABEL_HK17           "Toggle FPS Display"
     ID_LABEL_HK18           "Toggle Input Display"
@@ -2166,6 +2206,10 @@ BEGIN
     ID_LABEL_HK29           "Stylus Auto-Hold"
     ID_LABEL_HK30           "LCDs layout mode"
     ID_LABEL_HK31           "LCDs swap"
+END
+
+STRINGTABLE
+BEGIN
     ID_LABEL_HK32           "Increase Volume"
     ID_LABEL_HK33           "Decrease Volume"
     ID_LABEL_HK34           "Save to Slot "
@@ -2182,21 +2226,10 @@ BEGIN
     ID_LABEL_HK45           "Turbo Select"
     ID_LABEL_HK46           "Turbo Start"
     ID_LABEL_HK47           "Turbo B"
-    ID_LABEL_HK48           "Turbo A"
-    ID_LABEL_HK49           "Turbo Y"
-    ID_LABEL_HK50           "Turbo X"
-    ID_LABEL_HK51           "Turbo R"
-    ID_LABEL_HK52           "Turbo L"
-    ID_LABEL_HK53           "Reload ROM"
-    ID_LABEL_HK54           "Search Cheats"
-    ID_LABEL_HK55           "Increase Pressure"
-    ID_LABEL_HK56           "Decrease Pressure"
-    ID_LABEL_HK57           "Rotation 0"
-    ID_LABEL_HK58           "Rotation 90"
-    ID_LABEL_HK59           "Rotation 180"
-    ID_LABEL_HK60           "Rotation 270"
-    ID_LABEL_HK61           "Toggle Stylus Jitter"
-    ID_LABEL_HK62           "Toggle Cursor"
+END
+
+STRINGTABLE
+BEGIN
     ID_LABEL_HK63           "List Cheats"
     ID_LABEL_HK64           "Toggle Cheats"
     ID_LABEL_HK65           "Toggle Main GPU"

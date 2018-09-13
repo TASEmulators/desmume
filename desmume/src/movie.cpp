@@ -39,6 +39,8 @@
 #include "version.h"
 #include "path.h"
 #include "emufile.h"
+#include "replay.h"
+#include "saves.h"
 
 using namespace std;
 bool freshMovie = false;	  //True when a movie loads, false when movie is altered.  Used to determine if a movie has been altered since opening
@@ -66,6 +68,10 @@ bool movie_readonly = true;
 
 char curMovieFilename[512] = {0};
 MovieData currMovieData;
+MovieData* oldSettings = NULL;
+// Loading a movie calls NDS_Reset, which calls UnloadMovieEmulationSettings. Don't unload settings on that call.
+bool firstReset = false;
+
 int currRerecordCount;
 bool movie_reset_command = false;
 //--------------
@@ -195,7 +201,7 @@ DateTime FCEUI_MovieGetRTCDefault()
 	return DateTime(2009,1,1,0,0,0);
 }
 
-MovieData::MovieData()
+MovieData::MovieData(bool fromCurrentSettings)
 	: version(MOVIE_VERSION)
 	, emuVersion(EMU_DESMUME_VERSION_NUMERIC())
 	, romChecksum(0)
@@ -203,6 +209,31 @@ MovieData::MovieData()
 	, binaryFlag(false)
 	, rtcStart(FCEUI_MovieGetRTCDefault())
 {
+	if (fromCurrentSettings)
+	{
+		useExtBios = CommonSettings.UseExtBIOS;
+		if (useExtBios)
+			swiFromBios = CommonSettings.SWIFromBIOS;
+		useExtFirmware = CommonSettings.UseExtFirmware;
+		if (useExtFirmware)
+			bootFromFirmware = CommonSettings.BootFromFirmware;
+		if (!CommonSettings.UseExtFirmware)
+		{
+			firmNickname.resize(CommonSettings.fw_config.nickname_len);
+			for (int i = 0; i < CommonSettings.fw_config.nickname_len; i++)
+				firmNickname[i] = CommonSettings.fw_config.nickname[i];
+			firmMessage.resize(CommonSettings.fw_config.message_len);
+			for (int i = 0; i < CommonSettings.fw_config.message_len; i++)
+				firmMessage[i] = CommonSettings.fw_config.message[i];
+
+			firmFavColour = CommonSettings.fw_config.fav_colour;
+			firmBirthMonth = CommonSettings.fw_config.birth_month;
+			firmBirthDay = CommonSettings.fw_config.birth_day;
+			firmLanguage = CommonSettings.fw_config.language;
+		}
+		advancedTiming = CommonSettings.advanced_timing;
+		jitBlockSize = CommonSettings.use_jit ? CommonSettings.jit_max_block_size : 0;
+	}
 }
 
 void MovieData::truncateAt(int frame)
@@ -211,68 +242,48 @@ void MovieData::truncateAt(int frame)
 		records.resize(frame);
 }
 
+void MovieData::installRomChecksum(std::string& val)
+{
+	// TODO: The current implementation of reading the checksum doesn't work correctly, and can
+	// cause crashes when the MovieData object is deallocated. (This is caused by StringToBytes()
+	// overrunning romChecksum into romSerial, making romSerial undefined.) Set romChecksum to
+	// some dummy value for now to prevent crashing. This is okay, since romChecksum isn't actually
+	// used in practice at this time. - rogerman, 2012/08/24
+	//StringToBytes(val,&romChecksum,MD5DATA::size);
+
+	romChecksum = 0;
+}
+void MovieData::installRtcStart(std::string& val)
+{
+	// sloppy format check and parse
+	const char *validFormatStr = "####-##-##T##:##:##Z";
+	bool validFormat = true;
+	for (int i = 0; validFormatStr[i] != '\0'; i++) {
+		if (validFormatStr[i] != val[i] &&
+			!(validFormatStr[i] == '#' && isdigit(val[i]))) {
+			validFormat = false;
+			break;
+		}
+	}
+	if (validFormat) {
+		const char *s = val.data();
+		int year = atoi(&s[0]);
+		int mon = atoi(&s[5]);
+		int day = atoi(&s[8]);
+		int hour = atoi(&s[11]);
+		int min = atoi(&s[14]);
+		int sec = atoi(&s[17]);
+		rtcStart = DateTime(year, mon, day, hour, min, sec);
+	}
+}
+void MovieData::installComment(std::string& val) { comments.push_back(mbstowcs(val)); }
+void MovieData::installSram(std::string& val) { BinaryDataFromString(val, &this->sram); }
+
 void MovieData::installValue(std::string& key, std::string& val)
 {
-	//todo - use another config system, or drive this from a little data structure. because this is gross
-	if(key == "version")
-		installInt(val,version);
-	else if(key == "emuVersion")
-		installInt(val,emuVersion);
-	else if(key == "rerecordCount")
-		installInt(val,rerecordCount);
-	else if(key == "romFilename")
-		romFilename = val;
-	else if(key == "romChecksum") {
-		// TODO: The current implementation of reading the checksum doesn't work correctly, and can
-		// cause crashes when the MovieData object is deallocated. (This is caused by StringToBytes()
-		// overrunning romChecksum into romSerial, making romSerial undefined.) Set romChecksum to
-		// some dummy value for now to prevent crashing. This is okay, since romChecksum isn't actually
-		// used in practice at this time. - rogerman, 2012/08/24
-		//StringToBytes(val,&romChecksum,MD5DATA::size);
-		
-		romChecksum = 0;
-	}
-	else if(key == "romSerial")
-		romSerial = val;
-	else if(key == "guid")
-		guid = Desmume_Guid::fromString(val);
-	else if(key == "rtcStart") {
-		// sloppy format check and parse
-		const char *validFormatStr = "####-##-##T##:##:##Z";
-		bool validFormat = true;
-		for (int i = 0; validFormatStr[i] != '\0'; i++) {
-			if (validFormatStr[i] != val[i] && 
-					!(validFormatStr[i] == '#' && isdigit(val[i]))) {
-				validFormat = false;
-				break;
-			}
-		}
-		if (validFormat) {
-			const char *s = val.data();
-			int year = atoi(&s[0]);
-			int mon = atoi(&s[5]);
-			int day = atoi(&s[8]);
-			int hour = atoi(&s[11]);
-			int min = atoi(&s[14]);
-			int sec = atoi(&s[17]);
-			rtcStart = DateTime(year,mon,day,hour,min,sec);
-		}
-	}
-	else if(key == "rtcStartNew") {
-		DateTime::TryParse(val.c_str(),rtcStart);
-	}
-	else if(key == "comment")
-		comments.push_back(mbstowcs(val));
-	else if(key == "binary")
-		installBool(val,binaryFlag);
-	else if(key == "savestate")
-	{
-		BinaryDataFromString(val, &this->savestate);
-	}
-	else if(key == "sram")
-	{
-		BinaryDataFromString(val, &this->sram);
-	}
+	ivm method = installValueMap[key];
+	if (method != NULL)
+		(this->*method)(val);
 }
 
 
@@ -287,13 +298,12 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	fp.fprintf("romChecksum %s\n", u32ToHexString(gameInfo.crc).c_str());
 	fp.fprintf("romSerial %s\n", romSerial.c_str());
 	fp.fprintf("guid %s\n", guid.toString().c_str());
-	fp.fprintf("useExtBios %d\n", CommonSettings.UseExtBIOS?1:0);
-	fp.fprintf("advancedTiming %d\n", CommonSettings.advanced_timing?1:0);
+	fp.fprintf("useExtBios %d\n", CommonSettings.UseExtBIOS?1:0); // TODO: include bios file data, not just a flag saying something was used
 
 	if (CommonSettings.UseExtBIOS)
 		fp.fprintf("swiFromBios %d\n", CommonSettings.SWIFromBIOS?1:0);
 
-	fp.fprintf("useExtFirmware %d\n", CommonSettings.UseExtFirmware?1:0);
+	fp.fprintf("useExtFirmware %d\n", CommonSettings.UseExtFirmware?1:0); // TODO: include firmware file data, not just a flag saying something was used
 
 	if (CommonSettings.UseExtFirmware)
 	{
@@ -315,6 +325,9 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 		fp.fprintf("firmLanguage %d\n", CommonSettings.fw_config.language);
 	}
 
+	fp.fprintf("advancedTiming %d\n", CommonSettings.advanced_timing?1:0);
+	fp.fprintf("jitBlockSize %d\n", CommonSettings.use_jit ? CommonSettings.jit_max_block_size : 0);
+
 	fp.fprintf("rtcStartNew %s\n", rtcStart.ToString().c_str());
 
 	for (u32 i = 0; i < comments.size(); i++)
@@ -323,8 +336,7 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	if (binary)
 		fp.fprintf("binary 1\n");
 
-	if (savestate.size() != 0)
-		fp.fprintf("savestate %s\n", BytesToString(&savestate[0],savestate.size()).c_str());
+	fp.fprintf("savestate %d\n", savestate?1:0);
 	if (sram.size() != 0)
 		fp.fprintf("sram %s\n", BytesToString(&sram[0],sram.size()).c_str());
 
@@ -343,103 +355,115 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	return end-start;
 }
 
+std::string readUntilWhitespace(EMUFILE &fp)
+{
+	std::string ret = "";
+	while (true)
+	{
+		int c = fp.fgetc();
+		switch (c)
+		{
+		case -1:
+		case ' ':
+		case '\t':
+		case '\r':
+		case '\n':
+			return ret;
+		default:
+			ret += c;
+			break;
+		}
+	}
+}
+std::string readUntilNewline(EMUFILE &fp)
+{
+	std::string ret = "";
+	while (true)
+	{
+		int c = fp.fgetc();
+		switch (c)
+		{
+		case -1:
+		case '\r':
+		case '\n':
+			return ret;
+		default:
+			ret += c;
+			break;
+		}
+	}
+}
+void readUntilNotWhitespace(EMUFILE &fp)
+{
+	while (true)
+	{
+		int c = fp.fgetc();
+		switch (c)
+		{
+		case -1:
+			return;
+		case ' ':
+		case '\t':
+		case '\r':
+		case '\n':
+			break;
+		default:
+			fp.unget();
+			return;
+		}
+	}
+}
 //yuck... another custom text parser.
 bool LoadFM2(MovieData &movieData, EMUFILE &fp, int size, bool stopAfterHeader)
 {
-	//TODO - start with something different. like 'desmume movie version 1"
-	int curr = fp.ftell();
+	int endOfMovie;
+	if (size == INT_MAX)
+		endOfMovie = fp.size();
+	else
+		endOfMovie = fp.ftell() + size;
 
 	//movie must start with "version 1"
+	//TODO - start with something different. like 'desmume movie version 1"
 	char buf[9];
-	curr = fp.ftell();
-	fp.fread(buf,9);
-	fp.fseek(curr, SEEK_SET);
+	fp.fread(buf, 9);
+	fp.fseek(-9, SEEK_CUR);
 //	if(fp->fail()) return false;
-	if (memcmp(buf,"version 1",9))
+	if (memcmp(buf, "version 1", 9))
 		return false;
 
-	std::string key,value;
-	enum {
-		NEWLINE, KEY, SEPARATOR, VALUE, RECORD, COMMENT
-	} state = NEWLINE;
-	bool bail = false;
-	for(;;)
+	while (fp.ftell() < endOfMovie)
 	{
-		bool iswhitespace, isrecchar, isnewline;
-		int c;
-		if(size--<=0) goto bail;
-		c = fp.fgetc();
-		if(c == -1)
-			goto bail;
-		iswhitespace = (c==' '||c=='\t');
-		isrecchar = (c=='|');
-		isnewline = (c==10||c==13);
-		if(isrecchar && movieData.binaryFlag && !stopAfterHeader)
+		readUntilNotWhitespace(fp);
+		int c = fp.fgetc();
+		// This will be the case if there is a newline at the end of the file.
+		if (c == -1) break;
+		else if (c == '|')
 		{
-			LoadFM2_binarychunk(movieData, fp, size);
-			return true;
-		}
-		switch(state)
-		{
-		case NEWLINE:
-			if(isnewline) goto done;
-			if(iswhitespace) goto done;
-			if(isrecchar) 
-				goto dorecord;
-			//must be a key
-			key = "";
-			value = "";
-			goto dokey;
-			break;
-		case RECORD:
+			if (stopAfterHeader) break;
+			else if (movieData.binaryFlag)
 			{
-				dorecord:
-				if (stopAfterHeader) return true;
-				int currcount = movieData.records.size();
-				movieData.records.resize(currcount+1);
-				int preparse = fp.ftell();
-				movieData.records[currcount].parse(fp);
-				int postparse = fp.ftell();
-				size -= (postparse-preparse);
-				state = NEWLINE;
+				LoadFM2_binarychunk(movieData, fp, endOfMovie - fp.ftell());
 				break;
 			}
-
-		case KEY:
-			dokey: //dookie
-			state = KEY;
-			if(iswhitespace) goto doseparator;
-			if(isnewline) goto commit;
-			key += c;
-			break;
-		case SEPARATOR:
-			doseparator:
-			state = SEPARATOR;
-			if(isnewline) goto commit;
-			if(!iswhitespace) goto dovalue;
-			break;
-		case VALUE:
-			dovalue:
-			state = VALUE;
-			if(isnewline) goto commit;
-			value += c;
-			break;
-		case COMMENT:
-		default:
-			break;
+			else
+			{
+				int currcount = movieData.records.size();
+				movieData.records.resize(currcount + 1);
+				movieData.records[currcount].parse(fp);
+			}
 		}
-		goto done;
-
-		bail:
-		bail = true;
-		if(state == VALUE) goto commit;
-		goto done;
-		commit:
-		movieData.installValue(key,value);
-		state = NEWLINE;
-		done: ;
-		if(bail) break;
+		else // key value
+		{
+			fp.unget();
+			std::string key = readUntilWhitespace(fp);
+			readUntilNotWhitespace(fp);
+			std::string value = readUntilNewline(fp);
+			movieData.installValue(key, value);
+		}
 	}
+
+	// just in case readUntilNotWhitespace read past the limit set by size parameter
+	fp.fseek(endOfMovie, SEEK_SET);
 
 	return true;
 }
@@ -454,14 +478,14 @@ static void closeRecordingMovie()
 	}
 }
 
-/// Stop movie playback.
+// Stop movie playback.
 static void StopPlayback()
 {
 	driver->USR_InfoMessage("Movie playback stopped.");
 	movieMode = MOVIEMODE_INACTIVE;
 }
 
-/// Stop movie playback without closing the movie.
+// Stop movie playback without closing the movie.
 static void FinishPlayback()
 {
 	driver->USR_InfoMessage("Movie finished playing.");
@@ -469,7 +493,7 @@ static void FinishPlayback()
 }
 
 
-/// Stop movie recording
+// Stop movie recording
 static void StopRecording()
 {
 	driver->USR_InfoMessage("Movie recording stopped.");
@@ -491,7 +515,66 @@ void FCEUI_StopMovie()
 	freshMovie = false;
 }
 
+static void LoadSettingsFromMovie(MovieData movieData)
+{
+	if (movieData.useExtBios != -1)
+		CommonSettings.UseExtBIOS = movieData.useExtBios;
+	if (movieData.swiFromBios != -1)
+		CommonSettings.SWIFromBIOS = movieData.swiFromBios;
+	if (movieData.useExtFirmware != -1)
+		CommonSettings.UseExtFirmware = movieData.useExtFirmware;
+	if (movieData.bootFromFirmware != -1)
+		CommonSettings.BootFromFirmware = movieData.bootFromFirmware;
+	if (!CommonSettings.UseExtFirmware)
+	{
+		if (movieData.firmNickname != "")
+		{
+			CommonSettings.fw_config.nickname_len = movieData.firmNickname.length() > MAX_FW_NICKNAME_LENGTH ? MAX_FW_NICKNAME_LENGTH : movieData.firmNickname.length();
+			for (int i = 0; i < CommonSettings.fw_config.nickname_len; i++)
+				CommonSettings.fw_config.nickname[i] = movieData.firmNickname[i];
+		}
+		if (movieData.firmMessage != "")
+		{
+			CommonSettings.fw_config.message_len = movieData.firmMessage.length() > MAX_FW_MESSAGE_LENGTH ? MAX_FW_MESSAGE_LENGTH : movieData.firmMessage.length();
+			for (int i = 0; i < CommonSettings.fw_config.message_len; i++)
+				CommonSettings.fw_config.message[i] = movieData.firmMessage[i];
+		}
 
+		if (movieData.firmFavColour != -1)
+			CommonSettings.fw_config.fav_colour = movieData.firmFavColour;
+		if (movieData.firmBirthMonth != -1)
+			CommonSettings.fw_config.birth_month = movieData.firmBirthMonth;
+		if (movieData.firmBirthDay != -1)
+			CommonSettings.fw_config.birth_day = movieData.firmBirthDay;
+		if (movieData.firmLanguage != -1)
+			CommonSettings.fw_config.language = movieData.firmLanguage;
+
+		// reset firmware (some games can write to it)
+		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
+	}
+	if (movieData.advancedTiming != -1)
+		CommonSettings.advanced_timing = movieData.advancedTiming;
+	if (movieData.jitBlockSize > 0 && movieData.jitBlockSize <= 100)
+	{
+		CommonSettings.use_jit = true;
+		CommonSettings.jit_max_block_size = movieData.jitBlockSize;
+	}
+	else
+		CommonSettings.use_jit = false;
+}
+void UnloadMovieEmulationSettings()
+{
+	if (oldSettings && !firstReset)
+	{
+		LoadSettingsFromMovie(*oldSettings);
+		delete oldSettings;
+		oldSettings = NULL;
+	}
+}
+bool AreMovieEmulationSettingsActive()
+{
+	return (bool)oldSettings;
+}
 //begin playing an existing movie
 const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe)
 {
@@ -514,36 +597,11 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	currMovieData = MovieData();
 	
 	strcpy(curMovieFilename, fname);
-	//FCEUFILE *fp = FCEU_fopen(fname,0,"rb",0);
-	//if (!fp) return;
-	//if(fp->isArchive() && !_read_only) {
-	//	FCEU_PrintError("Cannot open a movie in read+write from an archive.");
-	//	return;
-	//}
-
-	//LoadFM2(currMovieData, fp->stream, INT_MAX, false);
-	
 	
 	bool loadedfm2 = false;
-	bool opened = false;
-//	{
-		EMUFILE *fp = new EMUFILE_FILE(fname, "rb");
-//		if(fs.is_open())
-//		{
-			loadedfm2 = LoadFM2(currMovieData, *fp, INT_MAX, false);
-			opened = true;
-//		}
-//		fs.close();
-		delete fp;
-//	}
-	if(!opened)
-	{
-		// for some reason fs.open doesn't work, it has to be a whole new fstream object
-//		fstream fs (fname, std::ios_base::in);
-		loadedfm2 = LoadFM2(currMovieData, *fp, INT_MAX, false);
-//		fs.close();
-		delete fp;
-	}
+	EMUFILE *fp = new EMUFILE_FILE(fname, "rb");
+	loadedfm2 = LoadFM2(currMovieData, *fp, INT_MAX, false);
+	delete fp;
 
 	if(!loadedfm2)
 		return "failed to load movie";
@@ -552,20 +610,26 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	//fully reload the game to reinitialize everything before playing any movie
 	//poweron(true);
 
-	// reset firmware (some games can write to it)
-	if (!CommonSettings.UseExtFirmware)
+	// set emulation/firmware settings
+	oldSettings = new MovieData(true);
+	LoadSettingsFromMovie(currMovieData);
+
+	if (currMovieData.savestate)
 	{
-		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
+		// SS file name should be the same as the movie file name, except for extension
+		std::string ssName = fname;
+		ssName.erase(ssName.length() - 3, 3);
+		ssName.append("dst");
+		if (!savestate_load(ssName.c_str()))
+			return "Could not load movie's savestate. There should be a .dst file with the same name as the movie, in the same folder.";
+	}
+	else
+	{
+		firstReset = true;
+		NDS_Reset();
+		firstReset = false;
 	}
 
-	NDS_Reset();
-
-	////WE NEED TO LOAD A SAVESTATE
-	//if(currMovieData.savestate.size() != 0)
-	//{
-	//	bool success = MovieData::loadSavestateFrom(&currMovieData.savestate);
-	//	if(!success) return;
-	//}
 	lagframecounter=0;
 	LagFrameFlag=0;
 	lastLag=0;
@@ -646,7 +710,7 @@ bool MovieData::loadSramFrom(std::vector<u8>* buf)
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
-void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname, const DateTime &rtcstart)
+void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFrom, std::string sramfname, const DateTime &rtcstart)
 {
 	//if(!FCEU_IsValidUI(FCEUI_RECORDMOVIE))
 	//	return;
@@ -675,15 +739,26 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
 		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
 	}
 
-	NDS_Reset();
 
-	//todo ?
-	//poweron(true);
-	//else
-	//	MovieData::dumpSavestateTo(&currMovieData.savestate,Z_BEST_COMPRESSION);
+	if (startFrom == START_SAVESTATE)
+	{
+		// SS file name should be the same as the movie file name, except for extension
+		std::string ssName = fname;
+		ssName.erase(ssName.length() - 3, 3);
+		ssName.append("dst");
+		savestate_save(ssName.c_str());
+		currMovieData.savestate = true;
+	}
+	else
+	{
+		NDS_Reset();
 
-	if(flag == 1)
-		EMUFILE::readAllBytes(&currMovieData.sram, sramfname);
+		//todo ?
+		//poweron(true);
+
+		if (startFrom == START_SRAM)
+			EMUFILE::readAllBytes(&currMovieData.sram, sramfname);
+	}
 
 	//we are going to go ahead and dump the header. from now on we will only be appending frames
 	currMovieData.dump(*osRecordingMovie, false);
