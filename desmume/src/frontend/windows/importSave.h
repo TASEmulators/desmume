@@ -22,5 +22,6 @@
 #include <windows.h>
 
 extern bool importSave(HWND hwnd, HINSTANCE hAppInst);
+extern bool exportSave(HWND hwnd, HINSTANCE hAppInst);
 
 #endif

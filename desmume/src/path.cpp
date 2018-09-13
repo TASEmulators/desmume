@@ -39,23 +39,17 @@ static const char InvalidPathChars[] = {
 
 //but it is sort of windows-specific. Does it work in linux? Maybe we'll have to make it smarter
 static const char VolumeSeparatorChar = ':';
-static const char AltDirectorySeparatorChar = '/';
 static bool dirEqualsVolume = (DIRECTORY_DELIMITER_CHAR == VolumeSeparatorChar);
-
-
-bool Path::IsPathRooted (const std::string &path)
+bool Path::IsPathRooted(const std::string &path)
 {
-	if (path.empty()) {
+	if (path.empty())
 		return false;
-	}
 	
-	if (path.find_first_of(InvalidPathChars) != std::string::npos) {
+	if (path.find_first_of(InvalidPathChars) != std::string::npos)
 		return false;
-	}
 	
-	char c = path[0];
-	return (c == DIRECTORY_DELIMITER_CHAR 	||
-			c == AltDirectorySeparatorChar 	||
+	std::string delimiters = ALL_DIRECTORY_DELIMITER_STRING;
+	return (delimiters.find(path[0]) != std::string::npos ||
 			(!dirEqualsVolume && path.size() > 1 && path[1] == VolumeSeparatorChar));
 }
 
@@ -199,6 +193,211 @@ void PathInfo::init(const char *filename)
 		
 }
 
+void PathInfo::LoadModulePath()
+{
+#if defined(HOST_WINDOWS)
+
+	char *p;
+	ZeroMemory(pathToModule, sizeof(pathToModule));
+
+	GetModuleFileName(NULL, pathToModule, sizeof(pathToModule));
+	p = pathToModule + lstrlen(pathToModule);
+	while (p >= pathToModule && *p != DIRECTORY_DELIMITER_CHAR) p--;
+	if (++p >= pathToModule) *p = 0;
+
+	extern char* _hack_alternateModulePath;
+	if (_hack_alternateModulePath)
+	{
+		strcpy(pathToModule, _hack_alternateModulePath);
+	}
+#elif defined(DESMUME_COCOA)
+	std::string pathStr = Path::GetFileDirectoryPath(path);
+
+	strncpy(pathToModule, pathStr.c_str(), MAX_PATH);
+#else
+	char *cwd = g_build_filename(g_get_user_config_dir(), "desmume", NULL);
+	g_mkdir_with_parents(cwd, 0755);
+	strncpy(pathToModule, cwd, MAX_PATH);
+	g_free(cwd);
+#endif
+}
+
+void PathInfo::GetDefaultPath(char *pathToDefault, const char *key, int maxCount)
+{
+#ifdef HOST_WINDOWS
+	std::string temp = (std::string)"." + DIRECTORY_DELIMITER_CHAR + pathToDefault;
+	strncpy(pathToDefault, temp.c_str(), maxCount);
+#else
+	strncpy(pathToDefault, pathToModule, maxCount);
+#endif
+}
+
+void PathInfo::ReadKey(char *pathToRead, const char *key)
+{
+#ifdef HOST_WINDOWS
+	GetPrivateProfileString(SECTION, key, key, pathToRead, MAX_PATH, IniName);
+	if (strcmp(pathToRead, key) == 0) {
+		//since the variables are all intialized in this file they all use MAX_PATH
+		GetDefaultPath(pathToRead, key, MAX_PATH);
+	}
+#else
+	//since the variables are all intialized in this file they all use MAX_PATH
+	GetDefaultPath(pathToRead, key, MAX_PATH);
+#endif
+}
+
+void PathInfo::ReadPathSettings()
+{
+	if ((strcmp(pathToModule, "") == 0) || !pathToModule)
+		LoadModulePath();
+
+	ReadKey(pathToRoms, ROMKEY);
+	ReadKey(pathToBattery, BATTERYKEY);
+	ReadKey(pathToStates, STATEKEY);
+	ReadKey(pathToStateSlots, STATESLOTKEY);
+	ReadKey(pathToScreenshots, SCREENSHOTKEY);
+	ReadKey(pathToAviFiles, AVIKEY);
+	ReadKey(pathToCheats, CHEATKEY);
+	ReadKey(pathToSounds, SOUNDKEY);
+	ReadKey(pathToFirmware, FIRMWAREKEY);
+	ReadKey(pathToLua, LUAKEY);
+	ReadKey(pathToSlot1D, SLOT1DKEY);
+#ifdef HOST_WINDOWS
+	GetPrivateProfileString(SECTION, FORMATKEY, "%f_%s_%r", screenshotFormat, MAX_FORMAT, IniName);
+	savelastromvisit = GetPrivateProfileBool(SECTION, LASTVISITKEY, true, IniName);
+	currentimageformat = (ImageFormat)GetPrivateProfileInt(SECTION, DEFAULTFORMATKEY, PNG, IniName);
+	r4Format = (R4Format)GetPrivateProfileInt(SECTION, R4FORMATKEY, R4_CHEAT_DAT, IniName);
+	if ((r4Format != R4_CHEAT_DAT) && (r4Format != R4_USRCHEAT_DAT))
+	{
+		r4Format = R4_USRCHEAT_DAT;
+		WritePrivateProfileInt(SECTION, R4FORMATKEY, r4Format, IniName);
+	}
+#endif
+	/*
+	needsSaving		= GetPrivateProfileInt(SECTION, NEEDSSAVINGKEY, TRUE, IniName);
+	if(needsSaving)
+	{
+	needsSaving = FALSE;
+	WritePathSettings();
+	}*/
+}
+
+void PathInfo::SwitchPath(Action action, KnownPath path, char *buffer)
+{
+	char *pathToCopy = 0;
+	switch (path)
+	{
+	case ROMS:
+		pathToCopy = pathToRoms;
+		break;
+	case BATTERY:
+		pathToCopy = pathToBattery;
+		break;
+	case STATES:
+		pathToCopy = pathToStates;
+		break;
+	case STATE_SLOTS:
+		pathToCopy = pathToStateSlots;
+		break;
+	case SCREENSHOTS:
+		pathToCopy = pathToScreenshots;
+		break;
+	case AVI_FILES:
+		pathToCopy = pathToAviFiles;
+		break;
+	case CHEATS:
+		pathToCopy = pathToCheats;
+		break;
+	case SOUNDS:
+		pathToCopy = pathToSounds;
+		break;
+	case FIRMWARE:
+		pathToCopy = pathToFirmware;
+		break;
+	case MODULE:
+		pathToCopy = pathToModule;
+		break;
+	case SLOT1D:
+		pathToCopy = pathToSlot1D;
+		break;
+	}
+
+	if (action == GET)
+	{
+		std::string thePath = pathToCopy;
+		std::string relativePath = (std::string)"." + DIRECTORY_DELIMITER_CHAR;
+
+		int len = (int)thePath.size() - 1;
+
+		if (len == -1)
+			thePath = relativePath;
+		else
+			if (thePath[len] != DIRECTORY_DELIMITER_CHAR)
+				thePath += DIRECTORY_DELIMITER_CHAR;
+
+		if (!Path::IsPathRooted(thePath))
+		{
+			thePath = (std::string)pathToModule + thePath;
+		}
+
+		strncpy(buffer, thePath.c_str(), MAX_PATH);
+#ifdef HOST_WINDOWS
+		FCEUD_MakePathDirs(buffer);
+#endif
+	}
+	else if (action == SET)
+	{
+		int len = strlen(buffer) - 1;
+		if (std::string(ALL_DIRECTORY_DELIMITER_STRING).find(buffer[len]) != std::string::npos)
+			buffer[len] = '\0';
+
+		strncpy(pathToCopy, buffer, MAX_PATH);
+	}
+}
+
+std::string PathInfo::getpath(KnownPath path)
+{
+	char temp[MAX_PATH];
+	SwitchPath(GET, path, temp);
+	return temp;
+}
+void PathInfo::getpath(KnownPath path, char *buffer)
+{
+	SwitchPath(GET, path, buffer);
+}
+
+void PathInfo::setpath(KnownPath path, std::string value)
+{
+	SwitchPath(SET, path, (char*)value.c_str());
+}
+void PathInfo::setpath(KnownPath path, char *buffer)
+{
+	SwitchPath(SET, path, buffer);
+}
+
+void PathInfo::getfilename(char *buffer, int maxCount)
+{
+	strcpy(buffer, noextension().c_str());
+}
+
+void PathInfo::getpathnoext(KnownPath path, char *buffer)
+{
+	getpath(path, buffer);
+	strcat(buffer, GetRomNameWithoutExtension().c_str());
+}
+
+std::string PathInfo::extension()
+{
+	return Path::GetFileExt(path);
+}
+
+std::string PathInfo::noextension()
+{
+	std::string romNameWithPath = Path::GetFileDirectoryPath(path) + DIRECTORY_DELIMITER_CHAR + Path::GetFileNameWithoutExt(RomName);
+
+	return romNameWithPath;
+}
+
 void PathInfo::formatname(char *output)
 {
 	// Except 't' for tick and 'r' for random.
@@ -211,10 +410,10 @@ void PathInfo::formatname(char *output)
 	srand((unsigned)now);
 
 	for (char*  p = screenshotFormat,
-			*end = p + sizeof(screenshotFormat); p < end; p++)
-		{
+		*end = p + sizeof(screenshotFormat); p < end; p++)
+	{
 		if (*p != '%')
-			{
+		{
 			file.append(1, *p);
 		}
 		else
@@ -228,18 +427,18 @@ void PathInfo::formatname(char *output)
 			else if (*p == 'r')
 			{
 				file.append(stditoa(rand()));
-		}
+			}
 			else if (*p == 't')
-		{
+			{
 				file.append(stditoa(clock() >> 5));
-		}
+			}
 			else if (strchr(strftimeArgs, *p))
 			{
 				char tmp[MAX_PATH];
 				char format[] = { '%', *p, '\0' };
 				strftime(tmp, MAX_PATH, format, time_struct);
 				file.append(tmp);
-	}
+			}
 		}
 	}
 
@@ -256,4 +455,44 @@ void PathInfo::formatname(char *output)
 #endif
 
 	strncpy(output, file.c_str(), MAX_PATH);
+}
+
+PathInfo::ImageFormat PathInfo::imageformat() {
+	return currentimageformat;
+}
+
+void PathInfo::SetRomName(const char *filename)
+{
+	std::string romPath = filename;
+
+	RomName = Path::GetFileNameFromPath(romPath);
+	RomName = Path::ScrubInvalid(RomName);
+	RomDirectory = Path::GetFileDirectoryPath(romPath);
+}
+
+const char *PathInfo::GetRomName()
+{
+	return RomName.c_str();
+}
+
+std::string PathInfo::GetRomNameWithoutExtension()
+{
+	if (RomName.c_str() == NULL)
+		return "";
+	return Path::GetFileNameWithoutExt(RomName);
+}
+
+bool PathInfo::isdsgba(std::string fileName)
+{
+	size_t i = fileName.find_last_of(FILE_EXT_DELIMITER_CHAR);
+
+	if (i != std::string::npos) {
+		fileName = fileName.substr(i - 2);
+	}
+
+	if (fileName == "ds.gba") {
+		return true;
+	}
+
+	return false;
 }

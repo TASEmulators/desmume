@@ -2854,6 +2854,7 @@ void AviRecordTo()
 	//}
 
 	// avi record file browser
+	char outFilename[MAX_PATH] = "";
 	memset(&ofn, 0, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = MainWindow->getHWnd();
@@ -2861,22 +2862,15 @@ void AviRecordTo()
 	ofn.lpstrDefExt = "avi";
 	ofn.lpstrTitle = "Save AVI as";
 
-	char folder[MAX_PATH];
-	ZeroMemory(folder, sizeof(folder));
-	path.getpath(path.AVI_FILES, folder);
+	std::string dir = path.getpath(path.AVI_FILES);
+	ofn.lpstrInitialDir = dir.c_str();
+	path.formatname(outFilename);
+	ofn.lpstrFile = outFilename;
 
-	char file[MAX_PATH];
-	ZeroMemory(file, sizeof(file));
-	path.formatname(file);
-
-	strcat(folder, file);
-	int len = strlen(folder);
-	if(len > MAX_PATH - 4)
-		folder[MAX_PATH - 4] = '\0';
-	
-	strcat(folder, ".avi");
-	ofn.lpstrFile = folder;
-
+	int len = strlen(outFilename);
+	if(len + dir.length() > MAX_PATH - 4)
+		outFilename[MAX_PATH - dir.length() - 4] = '\0';
+	strcat(outFilename, ".avi");
 
 	ofn.nMaxFile = MAX_PATH;
 	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
@@ -2890,12 +2884,16 @@ void AviRecordTo()
 			driver->AddLine("AVI recording ended.");
 		}
 
-		bool result = DRV_AviBegin(folder);
+		bool result = DRV_AviBegin(outFilename);
 		if (result)
 		{
 			LOG("AVI recording started.");
 			driver->AddLine("AVI recording started.");
 		}
+
+		dir = Path::GetFileDirectoryPath(outFilename);
+		path.setpath(path.AVI_FILES, dir);
+		WritePrivateProfileString(SECTION, AVIKEY, dir.c_str(), IniName);
 	}
 
 	NDS_UnPause();
@@ -2923,7 +2921,6 @@ void WavRecordTo(int wavmode)
 	NDS_Pause();
 
 	OPENFILENAME ofn;
-	char szChoice[MAX_PATH] = {0};
 
 	////if we are playing a movie, construct the filename from the current movie.
 	////else construct it from the filename.
@@ -2947,20 +2944,34 @@ void WavRecordTo(int wavmode)
 	//}
 
 	// wav record file browser
+	char outFilename[MAX_PATH] = "";
 	memset(&ofn, 0, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = MainWindow->getHWnd();
 	ofn.lpstrFilter = "WAV Files (*.wav)\0*.wav\0\0";
-	ofn.lpstrFile = szChoice;
 	ofn.lpstrDefExt = "wav";
 	ofn.lpstrTitle = "Save WAV as";
+
+	std::string dir = path.getpath(path.AVI_FILES);
+	ofn.lpstrInitialDir = dir.c_str();
+	path.formatname(outFilename);
+	ofn.lpstrFile = outFilename;
+
+	int len = strlen(outFilename);
+	if (len + dir.length() > MAX_PATH - 4)
+		outFilename[MAX_PATH - dir.length() - 4] = '\0';
+	strcat(outFilename, ".wav");
 
 	ofn.nMaxFile = MAX_PATH;
 	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
 	if(GetSaveFileName(&ofn))
 	{
-		WAV_Begin(szChoice, (WAVMode)wavmode);
+		WAV_Begin(outFilename, (WAVMode)wavmode);
+
+		dir = Path::GetFileDirectoryPath(outFilename);
+		path.setpath(path.AVI_FILES, dir);
+		WritePrivateProfileString(SECTION, AVIKEY, dir.c_str(), IniName);
 	}
 
 	NDS_UnPause();
@@ -3070,11 +3081,8 @@ LRESULT OpenFile()
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrDefExt = "nds";
 	ofn.Flags = OFN_NOCHANGEDIR | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-
-	char buffer[MAX_PATH];
-	ZeroMemory(buffer, sizeof(buffer));
-	path.getpath(path.ROMS, buffer);
-	ofn.lpstrInitialDir = buffer;
+	std::string dir = path.getpath(path.ROMS);
+	ofn.lpstrInitialDir = dir.c_str();
 
 	if (GetOpenFileName(&ofn) == NULL)
 	{
@@ -3085,14 +3093,9 @@ LRESULT OpenFile()
 	{
 		if(path.savelastromvisit)
 		{
-			char *lchr, buffer[MAX_PATH];
-			ZeroMemory(buffer, sizeof(buffer));
-
-			lchr = strrchr(filename, '\\');
-			strncpy(buffer, filename, strlen(filename) - strlen(lchr));
-			
-			path.setpath(path.ROMS, buffer);
-			WritePathSettings();
+			std::string dir = Path::GetFileDirectoryPath(filename);
+			path.setpath(path.ROMS, dir);
+			WritePrivateProfileString(SECTION, ROMKEY, dir.c_str(), IniName);
 		}
 	}
 
@@ -4660,17 +4663,18 @@ DOKEYDOWN:
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "dst";
 				ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-
-				char buffer[MAX_PATH];
-				ZeroMemory(buffer, sizeof(buffer));
-				path.getpath(path.STATES, buffer);
-				ofn.lpstrInitialDir = buffer;
+				std::string dir = path.getpath(path.STATES);
+				ofn.lpstrInitialDir = dir.c_str();
 
 				if(!GetOpenFileName(&ofn))
 				{
 					NDS_UnPause();
 					return 0;
 				}
+
+				dir = Path::GetFileDirectoryPath(SavName);
+				path.setpath(path.STATES, dir);
+				WritePrivateProfileString(SECTION, STATEKEY, dir.c_str(), IniName);
 
 				savestate_load(SavName);
 				UpdateToolWindows();
@@ -4690,17 +4694,19 @@ DOKEYDOWN:
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "dst";
 				ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
-
-				char buffer[MAX_PATH];
-				ZeroMemory(buffer, sizeof(buffer));
-				path.getpath(path.STATES, buffer);
-				ofn.lpstrInitialDir = buffer;
+				std::string dir = path.getpath(path.STATES);
+				ofn.lpstrInitialDir = dir.c_str();
 
 				if(GetSaveFileName(&ofn))
 				{
 					savestate_save(SavName);
 					LoadSaveStateInfo();
 				}
+
+				dir = Path::GetFileDirectoryPath(SavName);
+				path.setpath(path.STATES, dir);
+				WritePrivateProfileString(SECTION, STATEKEY, dir.c_str(), IniName);
+
 				if(unpause) NDS_UnPause();
 				return 0;
 			}
@@ -4741,27 +4747,8 @@ DOKEYDOWN:
 			}
 		case IDM_EXPORTBACKUPMEMORY:
 			{
-				OPENFILENAME ofn;
 				NDS_Pause();
-				ZeroMemory(&ofn, sizeof(ofn));
-				ofn.lStructSize = sizeof(ofn);
-				ofn.hwndOwner = hwnd;
-				ofn.lpstrFilter = "Raw Save format (*.sav)\0*.sav\0No$GBA Save format (*.sav)\0*.sav\0\0";
-				ofn.nFilterIndex = 0;
-				ofn.lpstrFile =  ImportSavName;
-				ofn.nMaxFile = MAX_PATH;
-				ofn.lpstrDefExt = "sav";
-				ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
-
-				if(!GetSaveFileName(&ofn))
-				{
-					NDS_UnPause();
-					return 0;
-				}
-
-				if (ofn.nFilterIndex == 2) strcat(ImportSavName, "*");
-
-				if (!MMU_new.backupDevice.exportData(ImportSavName))
+				if (!exportSave(hwnd, hAppInst))
 					MessageBox(hwnd,"Save was not successfully exported","Error",MB_OK);
 				NDS_UnPause();
 				return 0;
@@ -5996,14 +5983,15 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					ofn.nMaxFile = 256;
 					ofn.lpstrDefExt = "bin";
 					ofn.Flags = OFN_NOCHANGEDIR | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-
-					char buffer[MAX_PATH];
-					ZeroMemory(buffer, sizeof(buffer));
-					path.getpath(path.FIRMWARE, buffer);
-					ofn.lpstrInitialDir = buffer;
+					std::string dir = path.getpath(path.FIRMWARE);
+					ofn.lpstrInitialDir = dir.c_str();
 
 					if(GetOpenFileName(&ofn))
 					{
+						std::string dir = Path::GetFileDirectoryPath(fileName);
+						path.setpath(path.FIRMWARE, dir);
+						WritePrivateProfileString(SECTION, FIRMWAREKEY, dir.c_str(), IniName);
+
 						HWND cur;
 
 						switch(LOWORD(wParam))
@@ -6115,14 +6103,15 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 					ofn.nMaxFile = 256;
 					ofn.lpstrDefExt = "wav";
 					ofn.Flags = OFN_NOCHANGEDIR | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-
-					char buffer[MAX_PATH];
-					ZeroMemory(buffer, sizeof(buffer));
-					path.getpath(path.SOUNDS, buffer);
-					ofn.lpstrInitialDir = buffer;
+					std::string dir = path.getpath(path.SOUNDS);
+					ofn.lpstrInitialDir = dir.c_str();
 
 					if(GetOpenFileName(&ofn))
 					{
+						std::string dir = Path::GetFileDirectoryPath(fileName);
+						path.setpath(path.SOUNDS, dir);
+						WritePrivateProfileString(SECTION, SOUNDKEY, dir.c_str(), IniName);
+
 						HWND cur;
 
 						switch(LOWORD(wParam))

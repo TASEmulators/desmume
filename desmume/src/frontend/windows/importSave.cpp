@@ -26,7 +26,7 @@
 
 #include "resource.h"
 
-char ImportSavFName[MAX_PATH] = {0};
+char SavFName[MAX_PATH] = {0};
 u32 fileSaveSize = 0;
 u32 fileSaveType = 0xFF;
 
@@ -79,7 +79,7 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 			}
 			SendDlgItemMessage(hDlg, IDC_IMP_MANUAL_SIZE, CB_SETCURSEL, fileInfo.type, 0);
 
-			fileSaveSize = MMU_new.backupDevice.importDataSize(ImportSavFName);
+			fileSaveSize = MMU_new.backupDevice.importDataSize(SavFName);
 
 			if (fileSaveSize > 0)
 			{
@@ -174,15 +174,13 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 	ofn.hwndOwner = hwnd;
 	ofn.lpstrFilter = "All supported types\0*.sav;*.duc;*.dss\0Raw/No$GBA Save format (*.sav)\0*.sav\0Action Replay DS Save (*.duc,*.dss)\0*.duc;*.dss\0\0";
 	ofn.nFilterIndex = 1;
-	ofn.lpstrFile =  ImportSavFName;
+	ofn.lpstrFile = SavFName;
+	SavFName[0] = 0; // lpstrFile overrides lpstsrInitialDir if lpstrFile contains a path
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrDefExt = "sav";
 	ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-
-	char buffer[MAX_PATH] = {0};
-	ZeroMemory(buffer, sizeof(buffer));
-	path.getpath(path.BATTERY, buffer);
-	ofn.lpstrInitialDir = buffer;
+	std::string dir = path.getpath(path.BATTERY);
+	ofn.lpstrInitialDir = dir.c_str();
 
 	if(!GetOpenFileName(&ofn))
 		return true;
@@ -190,7 +188,11 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 	u32 res = DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_IMPORT_SAVE_SIZE), hwnd, (DLGPROC)ImportSizeSelect_Proc);
 	if (res < MAX_SAVE_TYPES)
 	{
-		res = MMU_new.backupDevice.importData(ImportSavFName, save_types[res+1].size);
+		std::string dir = Path::GetFileDirectoryPath(SavFName);
+		path.setpath(path.BATTERY, dir);
+		WritePrivateProfileString(SECTION, BATTERYKEY, dir.c_str(), IniName);
+		
+		res = MMU_new.backupDevice.importData(SavFName, save_types[res+1].size);
 		if (res)
 		{
 			printf("Save was successfully imported\n");
@@ -200,6 +202,34 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 			printf("Save was not successfully imported");
 		return res;
 	}
+	else // user canceled
+		return (res == (MAX_SAVE_TYPES + 1));
+}
 
-	return (res == (MAX_SAVE_TYPES + 1));
+bool exportSave(HWND hwnd, HINSTANCE hAppInst)
+{
+	OPENFILENAME ofn;
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = hwnd;
+	ofn.lpstrFilter = "Raw Save format (*.sav)\0*.sav\0No$GBA Save format (*.sav)\0*.sav\0\0";
+	ofn.nFilterIndex = 0;
+	ofn.lpstrFile = SavFName;
+	SavFName[0] = 0; // lpstrFile overrides lpstsrInitialDir if lpstrFile contains a path
+	ofn.nMaxFile = MAX_PATH;
+	ofn.lpstrDefExt = "sav";
+	ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
+	std::string dir = path.getpath(path.BATTERY);
+	ofn.lpstrInitialDir = dir.c_str();
+
+	if (!GetSaveFileName(&ofn))
+		return true;
+
+	dir = Path::GetFileDirectoryPath(SavFName);
+	path.setpath(path.BATTERY, dir);
+	WritePrivateProfileString(SECTION, BATTERYKEY, dir.c_str(), IniName);
+
+	if (ofn.nFilterIndex == 2) strcat(SavFName, "*");
+
+	return !MMU_new.backupDevice.exportData(SavFName);
 }

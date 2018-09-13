@@ -108,6 +108,7 @@ void WritePathSettings()
 	WritePrivateProfileString(SECTION, ROMKEY, path.pathToRoms, IniName);
 	WritePrivateProfileString(SECTION, BATTERYKEY, path.pathToBattery, IniName);
 	WritePrivateProfileString(SECTION, STATEKEY, path.pathToStates, IniName);
+	WritePrivateProfileString(SECTION, STATESLOTKEY, path.pathToStateSlots, IniName);
 	WritePrivateProfileString(SECTION, SCREENSHOTKEY, path.pathToScreenshots, IniName);
 	WritePrivateProfileString(SECTION, AVIKEY, path.pathToAviFiles, IniName);
 	WritePrivateProfileString(SECTION, CHEATKEY, path.pathToCheats, IniName);
