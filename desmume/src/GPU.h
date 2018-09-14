@@ -71,9 +71,6 @@ struct Render3DInterface;
 
 #define MAX_FRAMEBUFFER_PAGES			8
 
-void gpu_savestate(EMUFILE &os);
-bool gpu_loadstate(EMUFILE &is, int size);
-
 typedef void (*PixelLookupFunc)(const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *__restrict pal, u8 &outIndex, u16 &outColor);
 
 enum PaletteMode
@@ -1863,8 +1860,7 @@ public:
 	void ClearWithColor(const u16 colorBGRA5551);
 
 	void savestate(EMUFILE &f);
-	bool loadstate(EMUFILE &f);
-	void loadstateDefault();
+	bool loadstate(EMUFILE &f, int size);
 };
 
 class GPUClientFetchObject

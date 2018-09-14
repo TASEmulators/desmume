@@ -641,7 +641,10 @@ static bool cp15_loadstate(EMUFILE &is, int size)
 	return true;
 }
 
-
+static void gpu_savestate(EMUFILE &os)
+{
+	GPU->savestate(os);
+}
 
 /* Format time and convert to string */
 static char * format_time(time_t cal_time)
@@ -1137,7 +1140,7 @@ static bool ReadStateChunks(EMUFILE &is, s32 totalsize)
 			case 51: if(!nds_loadstate(is,size)) ret=false; break;
 			case 60: if(!ReadStateChunk(is,SF_MMU,size)) ret=false; break;
 			case 61: if(!mmu_loadstate(is,size)) ret=false; break;
-			case 7: if(!gpu_loadstate(is,size)) ret=false; break;
+			case 7: if(!GPU->loadstate(is,size)) ret=false; break;
 			case 8: if(!spu_loadstate(is,size)) ret=false; break;
 			case 81: if(!mic_loadstate(is,size)) ret=false; break;
 			case 90: if(!ReadStateChunk(is,SF_GFX3D,size)) ret=false; break;
