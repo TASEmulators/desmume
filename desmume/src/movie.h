@@ -28,7 +28,6 @@
 #include "utils/guid.h"
 #include "utils/md5.h"
 
-enum START_FROM { START_BLANK, START_SRAM, START_SAVESTATE };
 
 struct UserInput;
 class EMUFILE;
@@ -46,6 +45,13 @@ typedef struct
 	std::vector<std::wstring> comments;
 	std::vector<std::string> subtitles;
 } MOVIE_INFO;
+
+enum START_FROM
+{
+	START_BLANK = 0,
+	START_SRAM,
+	START_SAVESTATE
+};
 
 enum EMOVIEMODE
 {
@@ -239,33 +245,7 @@ private:
 	void installSram(std::string& val);
 
 	typedef void(MovieData::* ivm)(std::string&);
-	std::map<std::string, ivm> installValueMap = {
-		{"version", &MovieData::installVersion},
-		{"emuVersion", &MovieData::installEmuVersion},
-		{"rerecordCount", &MovieData::installRerecordCount},
-		{"romFilename", &MovieData::installRomFilename},
-		{"romChecksum", &MovieData::installRomChecksum},
-		{"romSerial", &MovieData::installRomSerial},
-		{"guid", &MovieData::installGuid},
-		{"rtcStart", &MovieData::installRtcStart},
-		{"rtcStartNew", &MovieData::installRtcStartNew},
-		{"comment", &MovieData::installComment},
-		{"binary", &MovieData::installBinary},
-		{"useExtBios", &MovieData::installUseExtBios},
-		{"swiFromBios", &MovieData::installSwiFromBios},
-		{"useExtFirmware", &MovieData::installUseExtFirmware},
-		{"bootFromFirmware", &MovieData::installBootFromFirmware},
-		{"firmNickname", &MovieData::installFirmNickname},
-		{"firmMessage", &MovieData::installFirmMessage},
-		{"firmFavColour", &MovieData::installFirmFavColour},
-		{"firmBirthMonth", &MovieData::installFirmBirthMonth},
-		{"firmBirthDay", &MovieData::installFirmBirthDay},
-		{"firmLanguage", &MovieData::installFirmLanguage},
-		{"advancedTiming", &MovieData::installAdvancedTiming},
-		{"jitBlockSize", &MovieData::installJitBlockSize},
-		{"savestate", &MovieData::installSavestate},
-		{"sram", &MovieData::installSram}
-	};
+	std::map<std::string, ivm> installValueMap;
 };
 
 extern int currFrameCounter;

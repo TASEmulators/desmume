@@ -929,7 +929,7 @@ volatile bool execute = true;
 								dateSecond,
 								dateMillisecond);
 	
-	FCEUI_SaveMovie(fileName, L"Test Author", 0, sramPath, rtcDate);
+	FCEUI_SaveMovie(fileName, L"Test Author", START_BLANK, sramPath, rtcDate);
 	
 	return YES;
 }

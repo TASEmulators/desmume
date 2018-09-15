@@ -469,7 +469,7 @@ static void WIFI_triggerIRQ(u8 irq)
 		{
 			if (io.POWER_TX.AutoWakeup != 0)
 			{
-				io.RF_STATUS.Status = 0x1;
+				io.RF_STATUS.RFStatus = 0x1;
 				io.RF_PINS.CarrierSense = 0;
 				io.RF_PINS.TXMain = 0;
 				io.RF_PINS.UNKNOWN1 = 1;
@@ -511,7 +511,7 @@ static void WIFI_triggerIRQ(u8 irq)
 		{
 			if (io.POWER_TX.AutoSleep != 0)
 			{
-				io.RF_STATUS.Status = 0x9;
+				io.RF_STATUS.RFStatus = 0x9;
 				io.RF_PINS.CarrierSense = 0;
 				io.RF_PINS.TXMain = 1;
 				io.RF_PINS.UNKNOWN1 = 1;
@@ -712,7 +712,7 @@ static void WIFI_TXStart(const WifiTXLocIndex txSlotIndex, IOREG_W_TXBUF_LOCATIO
 			
 			io.RXTX_ADDR.HalfwordAddress = address;
 			
-			io.RF_STATUS.Status = 0x03;
+			io.RF_STATUS.RFStatus = 0x03;
 			io.RF_PINS.CarrierSense = 0;
 			io.RF_PINS.TXMain = 1;
 			io.RF_PINS.UNKNOWN1 = 1;
@@ -2065,7 +2065,7 @@ void WIFI_write16(u32 address, u16 val)
 					}
 					else
 					{
-						io.RF_STATUS.Status = 0x9;
+						io.RF_STATUS.RFStatus = 0x9;
 						io.RF_PINS.CarrierSense = 0;
 						io.RF_PINS.TXMain = 1;
 						io.RF_PINS.UNKNOWN1 = 1;
@@ -2975,10 +2975,10 @@ void WIFI_usTrigger()
 				
 				WIFI_triggerIRQ(WIFI_IRQ_TXEND);
 				
-				//io.RF_STATUS.Status = 0x01;
+				//io.RF_STATUS.RFStatus = 0x01;
 				//io.RF_PINS.RX_On = 1;
 				
-				io.RF_STATUS.Status = 0x09;
+				io.RF_STATUS.RFStatus = 0x09;
 				io.RF_PINS.CarrierSense = 0;
 				io.RF_PINS.TXMain = 0;
 				io.RF_PINS.UNKNOWN1 = 1;

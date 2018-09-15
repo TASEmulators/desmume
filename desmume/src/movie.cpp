@@ -208,6 +208,35 @@ MovieData::MovieData(bool fromCurrentSettings)
 	, binaryFlag(false)
 	, rtcStart(FCEUI_MovieGetRTCDefault())
 {
+	installValueMap["version"] = &MovieData::installVersion;
+	installValueMap["emuVersion"] = &MovieData::installEmuVersion;
+	installValueMap["rerecordCount"] = &MovieData::installRerecordCount;
+	installValueMap["romFilename"] = &MovieData::installRomFilename;
+	installValueMap["romChecksum"] = &MovieData::installRomChecksum;
+	installValueMap["romSerial"] = &MovieData::installRomSerial;
+	installValueMap["guid"] = &MovieData::installGuid;
+	installValueMap["rtcStart"] = &MovieData::installRtcStart;
+	installValueMap["rtcStartNew"] = &MovieData::installRtcStartNew;
+	
+	installValueMap["comment"] = &MovieData::installComment;
+	installValueMap["binary"] = &MovieData::installBinary;
+	installValueMap["useExtBios"] = &MovieData::installUseExtBios;
+	installValueMap["swiFromBios"] = &MovieData::installSwiFromBios;
+	installValueMap["useExtFirmware"] = &MovieData::installUseExtFirmware;
+	installValueMap["bootFromFirmware"] = &MovieData::installBootFromFirmware;
+	
+	installValueMap["firmNickname"] = &MovieData::installFirmNickname;
+	installValueMap["firmMessage"] = &MovieData::installFirmMessage;
+	installValueMap["firmFavColour"] = &MovieData::installFirmFavColour;
+	installValueMap["firmBirthMonth"] = &MovieData::installFirmBirthMonth;
+	installValueMap["firmBirthDay"] = &MovieData::installFirmBirthDay;
+	installValueMap["firmLanguage"] = &MovieData::installFirmLanguage;
+	
+	installValueMap["advancedTiming"] = &MovieData::installAdvancedTiming;
+	installValueMap["jitBlockSize"] = &MovieData::installJitBlockSize;
+	installValueMap["savestate"] = &MovieData::installSavestate;
+	installValueMap["sram"] = &MovieData::installSram;
+	
 	if (fromCurrentSettings)
 	{
 		useExtBios = CommonSettings.UseExtBIOS;

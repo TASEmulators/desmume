@@ -1,6 +1,6 @@
  /*
 	Copyright (C) 2007 Pascal Giard (evilynux)
-	Copyright (C) 2006-2017 DeSmuME team
+	Copyright (C) 2006-2018 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1064,7 +1064,7 @@ static void RecordMovieDialog()
     switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
     case GTK_RESPONSE_OK:
         sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
-        FCEUI_SaveMovie(sPath,L"",0,"", FCEUI_MovieGetRTCDefault());
+        FCEUI_SaveMovie(sPath,L"",START_BLANK,"", FCEUI_MovieGetRTCDefault());
         g_free(sPath);
         break;
     default:
