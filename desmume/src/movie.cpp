@@ -39,7 +39,6 @@
 #include "version.h"
 #include "path.h"
 #include "emufile.h"
-#include "replay.h"
 #include "saves.h"
 
 using namespace std;
