@@ -2266,13 +2266,13 @@ typedef union
 	{
 #ifndef MSB_FIRST
 		u16 Status:4;
-		u16 :4;
+		u16 empty:4;
 		
-		u16 :8;
+		u16 empty2:8;
 #else
-		u16 :8;
+		u16 empty2:8;
 		
-		u16 :4;
+		u16 empty:4;
 		u16 Status:4;
 #endif
 	};
