@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
 
 #ifndef _WIN_REPLAY_H_
 #define _WIN_REPLAY_H_
-
-enum START_FROM { START_BLANK, START_SRAM, START_SAVESTATE };
 
 void Replay_LoadMovie();
 void MovieRecordTo();
