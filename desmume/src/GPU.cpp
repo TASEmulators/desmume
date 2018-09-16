@@ -8329,6 +8329,82 @@ void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
 	}
 }
 
+template <bool main>
+static void ScaleDownBuffer16(u16* __restrict src, u16* __restrict dst, int scaleFactor)
+{
+	// special case, no scaling is actually required
+	if (scaleFactor == 1)
+	{
+		memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * (main ? 4:2));
+		return;
+	}
+
+	for (int y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT * (main ? 2:1); y++)
+	{
+		for (int x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+		{
+			*dst = *src;
+			src += scaleFactor;
+			dst++;
+		}
+		src += (scaleFactor-1) * GPU_FRAMEBUFFER_NATIVE_WIDTH*scaleFactor;
+	}
+}
+template <bool main>
+static void ScaleDownBuffer32(FragmentColor* __restrict src, u16* __restrict dst, int scaleFactor)
+{
+	for (int y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT * (main ? 2:1); y++)
+	{
+		for (int x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+		{
+			*dst = ColorspaceConvert8888To5551<false>(*src);
+			src += scaleFactor;
+			dst++;
+		}
+		src += (scaleFactor-1) * GPU_FRAMEBUFFER_NATIVE_WIDTH*scaleFactor;
+	}
+}
+template <bool main>
+static void ScaleUpBuffer16(u16* __restrict src, u16* __restrict dst, int scaleFactor)
+{
+	// special case, no scaling is actually required
+	if (scaleFactor == 1)
+	{
+		memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * (main ? 4:2));
+		return;
+	}
+
+	int dstScanLength = GPU_FRAMEBUFFER_NATIVE_WIDTH * scaleFactor;
+	for (int y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT * (main ? 2:1); y++)
+	{
+		for (int x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+		{
+			for (int i = 0; i < scaleFactor; i++)
+				std::fill(dst + i*dstScanLength, dst + i*dstScanLength + scaleFactor, *src);
+			dst += scaleFactor;
+			src++;
+		}
+		dst += (scaleFactor-1) * dstScanLength;
+	}
+}
+template <bool main, bool to6665>
+static void ScaleUpBuffer32(u16* __restrict src, u32* __restrict dst, int scaleFactor)
+{
+	int dstScanLength = GPU_FRAMEBUFFER_NATIVE_WIDTH * scaleFactor;
+	for (int y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT * (main ? 2:1); y++)
+	{
+		for (int x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+		{
+			u32 v = to6665 ? ColorspaceConvert555To6665Opaque<false>(*src) : ColorspaceConvert555To8888Opaque<false>(*src);
+			for (int i = 0; i < scaleFactor; i++)
+				std::fill(dst + i*dstScanLength, dst + i*dstScanLength + scaleFactor, v);
+			dst += scaleFactor;
+			src++;
+		}
+		dst += (scaleFactor-1) * dstScanLength;
+	}
+}
+
 void GPUSubsystem::savestate(EMUFILE &os)
 {
 	const NDSDisplayInfo &dispInfo = GetDisplayInfo();
@@ -8338,9 +8414,16 @@ void GPUSubsystem::savestate(EMUFILE &os)
 	//version
 	os.write_32LE(2);
 
-	int bufferSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
-	os.write_32LE(bufferSize);
-	os.fwrite((u8 *)dispInfo.masterCustomBuffer, bufferSize);
+	// display framebuffer
+	u16 tempBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2];
+	if (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+		ScaleDownBuffer16<true>((u16*)dispInfo.masterCustomBuffer, tempBuffer, dispInfo.customWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	else
+		ScaleDownBuffer32<true>((FragmentColor*)dispInfo.masterCustomBuffer, tempBuffer, dispInfo.customWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	os.fwrite(tempBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
+	// 3D framebuffer
+	ScaleDownBuffer16<false>(mainEngine->Get3DFramebuffer16(), tempBuffer, dispInfo.customWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	os.fwrite(tempBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
 
 	os.write_32LE(mainEngine->savedBG2X.value);
 	os.write_32LE(mainEngine->savedBG2Y.value);
@@ -8381,20 +8464,22 @@ bool GPUSubsystem::loadstate(EMUFILE &is, int size)
 
 	if (version > 2) return false;
 
-	int currentBufferSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
-	int streamBufferSize;
+	// display framebuffer
+	u16 tempBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2];
+	is.fread(tempBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
+	if (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+		ScaleUpBuffer16<true>(tempBuffer, (u16*)dispInfo.masterCustomBuffer, dispInfo.customWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	else
+		ScaleUpBuffer32<true, false>(tempBuffer, (u32*)dispInfo.masterCustomBuffer, dispInfo.customWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	// 3D framebuffer
 	if (version >= 2)
-		is.read_32LE(streamBufferSize);
-	else
-		streamBufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2;
-
-	if (currentBufferSize < streamBufferSize)
 	{
-		is.fread((u8 *)dispInfo.masterCustomBuffer, currentBufferSize);
-		is.fseek(streamBufferSize - currentBufferSize, SEEK_CUR);
+		is.fread(tempBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+		if (dispInfo.colorFormat == NDSColorFormat_BGR888_Rev)
+			ScaleUpBuffer32<false, false>(tempBuffer, (u32*)CurrentRenderer->GetFramebuffer(), dispInfo.customWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH);
+		else
+			ScaleUpBuffer32<false, true>(tempBuffer, (u32*)CurrentRenderer->GetFramebuffer(), dispInfo.customWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	}
-	else
-		is.fread((u8 *)dispInfo.masterCustomBuffer, streamBufferSize);
 
 	if (version >= 1)
 	{
