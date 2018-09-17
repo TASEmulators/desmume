@@ -282,10 +282,6 @@ static float normalTable[1024];
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
-// Color buffer that is filled by the 3D renderer and is read by the GPU engine.
-static FragmentColor *_gfx3d_colorMain = NULL;
-static u16 *_gfx3d_color16 = NULL;
-
 // Matrix stack handling
 //TODO: decouple stack pointers from matrix stack type
 CACHE_ALIGN MatrixStack<MATRIXMODE_PROJECTION> mtxStackProjection;
@@ -2678,15 +2674,8 @@ SFORMAT SF_GFX3D[]={
 	{ "GTVC", 4, 1, &tempVertInfo.count},
 	{ "GTVM", 4, 4, tempVertInfo.map},
 	{ "GTVF", 4, 1, &tempVertInfo.first},
-	{ "G3CX", 1, 4*GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT, _gfx3d_colorMain},
 	{ 0 }
 };
-
-void gfx3d_Update3DFramebuffers(FragmentColor *framebufferMain, u16 *framebuffer16)
-{
-	_gfx3d_colorMain = framebufferMain;
-	_gfx3d_color16 = framebuffer16;
-}
 
 //-------------savestate
 void gfx3d_savestate(EMUFILE &os)

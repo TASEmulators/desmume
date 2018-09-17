@@ -5603,7 +5603,6 @@ GPUEngineA::GPUEngineA()
 	_captureWorkingB16 = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
 	_captureWorkingA32 = (FragmentColor *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(FragmentColor));
 	_captureWorkingB32 = (FragmentColor *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(FragmentColor));
-	gfx3d_Update3DFramebuffers(_3DFramebufferMain, _3DFramebuffer16);
 }
 
 GPUEngineA::~GPUEngineA()
@@ -5614,7 +5613,6 @@ GPUEngineA::~GPUEngineA()
 	free_aligned(this->_captureWorkingB16);
 	free_aligned(this->_captureWorkingA32);
 	free_aligned(this->_captureWorkingB32);
-	gfx3d_Update3DFramebuffers(NULL, NULL);
 }
 
 GPUEngineA* GPUEngineA::Allocate()
@@ -5762,7 +5760,6 @@ void GPUEngineA::SetCustomFramebufferSize(size_t w, size_t h)
 	this->_captureWorkingB16 = newCaptureWorkingB16;
 	this->_captureWorkingA32 = newCaptureWorkingA32;
 	this->_captureWorkingB32 = newCaptureWorkingB32;
-	gfx3d_Update3DFramebuffers(this->_3DFramebufferMain, this->_3DFramebuffer16);
 	
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	
