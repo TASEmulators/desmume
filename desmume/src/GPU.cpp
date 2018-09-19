@@ -105,8 +105,20 @@ const CACHE_ALIGN BGLayerSize GPUEngineBase::_BGLayerSizeLUT[8][4] = {
 	{{128,128}, {256,256}, {512,256}, {512,512}}, //affine ext direct
 };
 
-template <s32 INTEGERSCALEHINT, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
-static FORCEINLINE void CopyLineExpand_C(void *__restrict dst, const void *__restrict src, size_t dstLength)
+template <size_t ELEMENTSIZE>
+static FORCEINLINE void CopyLinesForVerticalCount(void *__restrict dstLineHead, size_t lineWidth, size_t lineCount)
+{
+	u8 *__restrict dst = (u8 *)dstLineHead + (lineWidth * ELEMENTSIZE);
+	
+	for (size_t line = 1; line < lineCount; line++)
+	{
+		memcpy(dst, dstLineHead, lineWidth * ELEMENTSIZE);
+		dst += (lineWidth * ELEMENTSIZE);
+	}
+}
+
+template <s32 INTEGERSCALEHINT, bool SCALEVERTICAL, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
+static FORCEINLINE void CopyLineExpand_C(void *__restrict dst, const void *__restrict src, size_t dstLength, size_t dstLineCount)
 {
 	if (INTEGERSCALEHINT == 0)
 	{
@@ -154,6 +166,56 @@ static FORCEINLINE void CopyLineExpand_C(void *__restrict dst, const void *__res
 			memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * ELEMENTSIZE);
 		}
 	}
+	else if ( (INTEGERSCALEHINT >= 2) && (INTEGERSCALEHINT <= 16) )
+	{
+		const size_t S = INTEGERSCALEHINT;
+		
+		if (SCALEVERTICAL)
+		{
+			for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+			{
+				for (size_t q = 0; q < S; q++)
+				{
+					for (size_t p = 0; p < S; p++)
+					{
+						if (ELEMENTSIZE == 1)
+						{
+							( (u8 *)dst)[(q * (GPU_FRAMEBUFFER_NATIVE_WIDTH * S)) + ((x * S) + p)] = ( (u8 *)src)[x];
+						}
+						else if (ELEMENTSIZE == 2)
+						{
+							((u16 *)dst)[(q * (GPU_FRAMEBUFFER_NATIVE_WIDTH * S)) + ((x * S) + p)] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16( ((u16 *)src)[x] ) : ((u16 *)src)[x];
+						}
+						else if (ELEMENTSIZE == 4)
+						{
+							((u32 *)dst)[(q * (GPU_FRAMEBUFFER_NATIVE_WIDTH * S)) + ((x * S) + p)] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[x] ) : ((u32 *)src)[x];
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+			{
+				for (size_t p = 0; p < S; p++)
+				{
+					if (ELEMENTSIZE == 1)
+					{
+						( (u8 *)dst)[(x * S) + p] = ( (u8 *)src)[x];
+					}
+					else if (ELEMENTSIZE == 2)
+					{
+						((u16 *)dst)[(x * S) + p] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16( ((u16 *)src)[x] ) : ((u16 *)src)[x];
+					}
+					else if (ELEMENTSIZE == 4)
+					{
+						((u32 *)dst)[(x * S) + p] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[x] ) : ((u32 *)src)[x];
+					}
+				}
+			}
+		}
+	}
 	else
 	{
 		for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
@@ -174,12 +236,17 @@ static FORCEINLINE void CopyLineExpand_C(void *__restrict dst, const void *__res
 				}
 			}
 		}
+		
+		if (SCALEVERTICAL)
+		{
+			CopyLinesForVerticalCount<ELEMENTSIZE>(dst, dstLength, dstLineCount);
+		}
 	}
 }
 
 #ifdef ENABLE_SSE2
-template <s32 INTEGERSCALEHINT, size_t ELEMENTSIZE>
-static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__restrict src, size_t dstLength)
+template <s32 INTEGERSCALEHINT, bool SCALEVERTICAL, size_t ELEMENTSIZE>
+static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__restrict src, size_t dstLength, size_t dstLineCount)
 {
 	if (INTEGERSCALEHINT == 0)
 	{
@@ -191,57 +258,185 @@ static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__
 	}
 	else if (INTEGERSCALEHINT == 2)
 	{
+		__m128i srcPix;
+		__m128i srcPixOut[2];
+		
+		switch (ELEMENTSIZE)
+		{
+			case 1:
+			{
+				if (SCALEVERTICAL)
+				{
+					MACRODO_N( GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE), \
+							  srcPix = _mm_load_si128((__m128i *)((__m128i *)src + (X))); \
+							  srcPixOut[0] = _mm_unpacklo_epi8(srcPix, srcPix); \
+							  srcPixOut[1] = _mm_unpackhi_epi8(srcPix, srcPix); \
+							  _mm_store_si128((__m128i *)dst + ((X) * 2) + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 / (sizeof(__m128i) / ELEMENTSIZE)) * 0) + 0, srcPixOut[0]); \
+							  _mm_store_si128((__m128i *)dst + ((X) * 2) + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 / (sizeof(__m128i) / ELEMENTSIZE)) * 0) + 1, srcPixOut[1]); \
+							  _mm_store_si128((__m128i *)dst + ((X) * 2) + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 / (sizeof(__m128i) / ELEMENTSIZE)) * 1) + 0, srcPixOut[0]); \
+							  _mm_store_si128((__m128i *)dst + ((X) * 2) + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 / (sizeof(__m128i) / ELEMENTSIZE)) * 1) + 1, srcPixOut[1]); \
+							  );
+				}
+				else
+				{
+					MACRODO_N( GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE), \
+							  srcPix = _mm_load_si128((__m128i *)((__m128i *)src + (X))); \
+							  srcPixOut[0] = _mm_unpacklo_epi8(srcPix, srcPix); \
+							  srcPixOut[1] = _mm_unpackhi_epi8(srcPix, srcPix); \
+							  _mm_store_si128((__m128i *)dst + ((X) * 2) + 0, srcPixOut[0]); \
+							  _mm_store_si128((__m128i *)dst + ((X) * 2) + 1, srcPixOut[1]); \
+							  );
+				}
+				break;
+			}
+				
+			case 2:
+			{
+				if (SCALEVERTICAL)
+				{
+					MACRODO_N( GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE), \
+							  srcPix = _mm_load_si128((__m128i *)((__m128i *)src + (X))); \
+							  srcPixOut[0] = _mm_unpacklo_epi16(srcPix, srcPix); \
+							  srcPixOut[1] = _mm_unpackhi_epi16(srcPix, srcPix); \
+							  _mm_store_si128((__m128i *)dst + ((X) * 2) + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 / (sizeof(__m128i) / ELEMENTSIZE)) * 0) + 0, srcPixOut[0]); \
+							  _mm_store_si128((__m128i *)dst + ((X) * 2) + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 / (sizeof(__m128i) / ELEMENTSIZE)) * 0) + 1, srcPixOut[1]); \
+							  _mm_store_si128((__m128i *)dst + ((X) * 2) + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 / (sizeof(__m128i) / ELEMENTSIZE)) * 1) + 0, srcPixOut[0]); \
+							  _mm_store_si128((__m128i *)dst + ((X) * 2) + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 / (sizeof(__m128i) / ELEMENTSIZE)) * 1) + 1, srcPixOut[1]); \
+							  );
+				}
+				else
+				{
+					MACRODO_N( GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE), \
+							  srcPix = _mm_load_si128((__m128i *)((__m128i *)src + (X))); \
+							  srcPixOut[0] = _mm_unpacklo_epi16(srcPix, srcPix); \
+							  srcPixOut[1] = _mm_unpackhi_epi16(srcPix, srcPix); \
+							  _mm_store_si128((__m128i *)dst + ((X) * 2) + 0, srcPixOut[0]); \
+							  _mm_store_si128((__m128i *)dst + ((X) * 2) + 1, srcPixOut[1]); \
+							  );
+				}
+				break;
+			}
+				
+			case 4:
+			{
+				// If we're also doing vertical expansion, then the total number of instructions for a fully
+				// unrolled loop is 448 instructions. Therefore, let's not unroll the loop in this case in
+				// order to avoid overusing the CPU's instruction cache.
+				for (size_t i = 0; i < (GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE)); i++)
+				{
+					srcPix = _mm_load_si128((__m128i *)((__m128i *)src + i));
+					srcPixOut[0] = _mm_unpacklo_epi32(srcPix, srcPix);
+					srcPixOut[1] = _mm_unpackhi_epi32(srcPix, srcPix);
+					
+					_mm_store_si128((__m128i *)dst + (i * 2) + 0, srcPixOut[0]);
+					_mm_store_si128((__m128i *)dst + (i * 2) + 1, srcPixOut[1]);
+					
+					if (SCALEVERTICAL)
+					{
+						_mm_store_si128((__m128i *)dst + (i * 2) + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 / (sizeof(__m128i) / ELEMENTSIZE)) * 1) + 0, srcPixOut[0]);
+						_mm_store_si128((__m128i *)dst + (i * 2) + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 / (sizeof(__m128i) / ELEMENTSIZE)) * 1) + 1, srcPixOut[1]);
+					}
+				}
+				break;
+			}
+		}
+	}
+	else if (INTEGERSCALEHINT == 3)
+	{
+		__m128i srcPixOut[3];
+		
 		for (size_t srcX = 0, dstX = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH; )
 		{
 			if (ELEMENTSIZE == 1)
 			{
-				const __m128i src8  = _mm_load_si128((__m128i *)( (u8 *)src + srcX));
-				const __m128i src8out[2]  = { _mm_unpacklo_epi8(src8, src8), _mm_unpackhi_epi8(src8, src8) };
+				const __m128i src8 = _mm_load_si128((__m128i *)((u8 *)src + srcX));
 				
-				_mm_store_si128((__m128i *)( (u8 *)dst + dstX +  0), src8out[0]);
-				_mm_store_si128((__m128i *)( (u8 *)dst + dstX + 16), src8out[1]);
+#ifdef ENABLE_SSSE3
+				srcPixOut[0] = _mm_shuffle_epi8(src8, _mm_set_epi8( 5,  4,  4,  4,  3,  3,  3,  2,  2,  2,  1,  1,  1,  0,  0,  0));
+				srcPixOut[1] = _mm_shuffle_epi8(src8, _mm_set_epi8(10, 10,  9,  9,  9,  8,  8,  8,  7,  7,  7,  6,  6,  6,  5,  5));
+				srcPixOut[2] = _mm_shuffle_epi8(src8, _mm_set_epi8(15, 15, 15, 14, 14, 14, 13, 13, 13, 12, 12, 12, 11, 11, 11, 10));
+#else
+				__m128i src8As32[4];
+				src8As32[0] = _mm_unpacklo_epi8(src8, src8);
+				src8As32[1] = _mm_unpackhi_epi8(src8, src8);
+				src8As32[2] = _mm_unpacklo_epi8(src8As32[1], src8As32[1]);
+				src8As32[3] = _mm_unpackhi_epi8(src8As32[1], src8As32[1]);
+				src8As32[1] = _mm_unpackhi_epi8(src8As32[0], src8As32[0]);
+				src8As32[0] = _mm_unpacklo_epi8(src8As32[0], src8As32[0]);
+				
+				src8As32[0] = _mm_and_si128(src8As32[0], _mm_set_epi32(0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF));
+				src8As32[1] = _mm_and_si128(src8As32[1], _mm_set_epi32(0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF));
+				src8As32[2] = _mm_and_si128(src8As32[2], _mm_set_epi32(0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF));
+				src8As32[3] = _mm_and_si128(src8As32[3], _mm_set_epi32(0x000000FF, 0x000000FF, 0x000000FF, 0x000000FF));
+				
+				__m128i srcWorking[4];
+				
+				srcWorking[0] = _mm_shuffle_epi32(src8As32[0], 0x40);
+				srcWorking[1] = _mm_shuffle_epi32(src8As32[0], 0xA5);
+				srcWorking[2] = _mm_shuffle_epi32(src8As32[0], 0xFE);
+				srcWorking[3] = _mm_shuffle_epi32(src8As32[1], 0x40);
+				srcPixOut[0] = _mm_packus_epi16( _mm_packus_epi16(srcWorking[0], srcWorking[1]), _mm_packus_epi16(srcWorking[2], srcWorking[3]) );
+				
+				srcWorking[0] = _mm_shuffle_epi32(src8As32[1], 0xA5);
+				srcWorking[1] = _mm_shuffle_epi32(src8As32[1], 0xFE);
+				srcWorking[2] = _mm_shuffle_epi32(src8As32[2], 0x40);
+				srcWorking[3] = _mm_shuffle_epi32(src8As32[2], 0xA5);
+				srcPixOut[1] = _mm_packus_epi16( _mm_packus_epi16(srcWorking[0], srcWorking[1]), _mm_packus_epi16(srcWorking[2], srcWorking[3]) );
+				
+				srcWorking[0] = _mm_shuffle_epi32(src8As32[2], 0xFE);
+				srcWorking[1] = _mm_shuffle_epi32(src8As32[3], 0x40);
+				srcWorking[2] = _mm_shuffle_epi32(src8As32[3], 0xA5);
+				srcWorking[3] = _mm_shuffle_epi32(src8As32[3], 0xFE);
+				srcPixOut[2] = _mm_packus_epi16( _mm_packus_epi16(srcWorking[0], srcWorking[1]), _mm_packus_epi16(srcWorking[2], srcWorking[3]) );
+#endif
+				_mm_store_si128((__m128i *)((u8 *)dst + dstX +  0), srcPixOut[0]);
+				_mm_store_si128((__m128i *)((u8 *)dst + dstX + 16), srcPixOut[1]);
+				_mm_store_si128((__m128i *)((u8 *)dst + dstX + 32), srcPixOut[2]);
+				
+				if (SCALEVERTICAL)
+				{
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 1) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 1) + 16), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 1) + 32), srcPixOut[2]);
+					
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 2) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 2) + 16), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 2) + 32), srcPixOut[2]);
+				}
 				
 				srcX += 16;
-				dstX += 32;
+				dstX += 48;
 			}
 			else if (ELEMENTSIZE == 2)
 			{
 				const __m128i src16 = _mm_load_si128((__m128i *)((u16 *)src + srcX));
-				const __m128i src16out[2] = { _mm_unpacklo_epi16(src16, src16), _mm_unpackhi_epi16(src16, src16) };
 				
-				_mm_store_si128((__m128i *)((u16 *)dst + dstX +  0), src16out[0]);
-				_mm_store_si128((__m128i *)((u16 *)dst + dstX +  8), src16out[1]);
-				
-				srcX += 8;
-				dstX += 16;
-			}
-			else if (ELEMENTSIZE == 4)
-			{
-				const __m128i src32 = _mm_load_si128((__m128i *)((u32 *)src + srcX));
-				const __m128i src32out[2] = { _mm_unpacklo_epi32(src32, src32), _mm_unpackhi_epi32(src32, src32) };
-				
-				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  0), src32out[0]);
-				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  4), src32out[1]);
-				
-				srcX += 4;
-				dstX += 8;
-			}
-		}
-	}
-	else if ((INTEGERSCALEHINT == 3) && (ELEMENTSIZE != 1))
-	{
-		for (size_t srcX = 0, dstX = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH; )
-		{
-			if (ELEMENTSIZE == 2)
-			{
-				const __m128i src16 = _mm_load_si128((__m128i *)((u16 *)src + srcX));
+#ifdef ENABLE_SSSE3
+				srcPixOut[0] = _mm_shuffle_epi8(src16, _mm_set_epi8( 5,  4,  5,  4,  3,  2,  3,  2,  3,  2,  1,  0,  1,  0,  1,  0));
+				srcPixOut[1] = _mm_shuffle_epi8(src16, _mm_set_epi8(11, 10,  9,  8,  9,  8,  9,  8,  7,  6,  7,  6,  7,  6,  5,  4));
+				srcPixOut[2] = _mm_shuffle_epi8(src16, _mm_set_epi8(15, 14, 15, 14, 15, 14, 13, 12, 13, 12, 13, 12, 11, 10, 11, 10));
+#else
 				const __m128i src16lo = _mm_shuffle_epi32(src16, 0x44);
 				const __m128i src16hi = _mm_shuffle_epi32(src16, 0xEE);
-				const __m128i src16out[3] = { _mm_shufflehi_epi16(_mm_shufflelo_epi16(src16lo, 0x40), 0xA5), _mm_shufflehi_epi16(_mm_shufflelo_epi16(src16, 0xFE), 0x40), _mm_shufflehi_epi16(_mm_shufflelo_epi16(src16hi, 0xA5), 0xFE) };
 				
-				_mm_store_si128((__m128i *)((u16 *)dst + dstX +  0), src16out[0]);
-				_mm_store_si128((__m128i *)((u16 *)dst + dstX +  8), src16out[1]);
-				_mm_store_si128((__m128i *)((u16 *)dst + dstX + 16), src16out[2]);
+				srcPixOut[0] = _mm_shufflehi_epi16(_mm_shufflelo_epi16(src16lo, 0x40), 0xA5);
+				srcPixOut[1] = _mm_shufflehi_epi16(_mm_shufflelo_epi16(src16,   0xFE), 0x40);
+				srcPixOut[2] = _mm_shufflehi_epi16(_mm_shufflelo_epi16(src16hi, 0xA5), 0xFE);
+#endif
+				_mm_store_si128((__m128i *)((u16 *)dst + dstX +  0), srcPixOut[0]);
+				_mm_store_si128((__m128i *)((u16 *)dst + dstX +  8), srcPixOut[1]);
+				_mm_store_si128((__m128i *)((u16 *)dst + dstX + 16), srcPixOut[2]);
+				
+				if (SCALEVERTICAL)
+				{
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 1) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 1) +  8), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 1) + 16), srcPixOut[2]);
+					
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 2) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 2) +  8), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 2) + 16), srcPixOut[2]);
+				}
 				
 				srcX += 8;
 				dstX += 24;
@@ -249,11 +444,25 @@ static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__
 			else if (ELEMENTSIZE == 4)
 			{
 				const __m128i src32 = _mm_load_si128((__m128i *)((u32 *)src + srcX));
-				const __m128i src32out[3] = { _mm_shuffle_epi32(src32, 0x40), _mm_shuffle_epi32(src32, 0xA5), _mm_shuffle_epi32(src32, 0xFE) };
 				
-				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  0), src32out[0]);
-				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  4), src32out[1]);
-				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  8), src32out[2]);
+				srcPixOut[0] = _mm_shuffle_epi32(src32, 0x40);
+				srcPixOut[1] = _mm_shuffle_epi32(src32, 0xA5);
+				srcPixOut[2] = _mm_shuffle_epi32(src32, 0xFE);
+				
+				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  0), srcPixOut[0]);
+				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  4), srcPixOut[1]);
+				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  8), srcPixOut[2]);
+				
+				if (SCALEVERTICAL)
+				{
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 1) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 1) +  4), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 1) +  8), srcPixOut[2]);
+					
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 2) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 2) +  4), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 3) * 2) +  8), srcPixOut[2]);
+				}
 				
 				srcX += 4;
 				dstX += 12;
@@ -262,19 +471,50 @@ static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__
 	}
 	else if (INTEGERSCALEHINT == 4)
 	{
-		for (size_t srcX = 0, dstX = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH;)
+		__m128i srcPixOut[4];
+		
+		for (size_t srcX = 0, dstX = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH; )
 		{
 			if (ELEMENTSIZE == 1)
 			{
 				const __m128i src8  = _mm_load_si128((__m128i *)( (u8 *)src + srcX));
+				
+#ifdef ENABLE_SSSE3
+				srcPixOut[0] = _mm_shuffle_epi8(src8, _mm_set_epi8( 3,  3,  3,  3,  2,  2,  2,  2,  1,  1,  1,  1,  0,  0,  0,  0));
+				srcPixOut[1] = _mm_shuffle_epi8(src8, _mm_set_epi8( 7,  7,  7,  7,  6,  6,  6,  6,  5,  5,  5,  5,  4,  4,  4,  4));
+				srcPixOut[2] = _mm_shuffle_epi8(src8, _mm_set_epi8(11, 11, 11, 11, 10, 10, 10, 10,  9,  9,  9,  9,  8,  8,  8,  8));
+				srcPixOut[3] = _mm_shuffle_epi8(src8, _mm_set_epi8(15, 15, 15, 15, 14, 14, 14, 14, 13, 13, 13, 13, 12, 12, 12, 12));
+#else
 				const __m128i src8_lo  = _mm_unpacklo_epi8(src8, src8);
 				const __m128i src8_hi  = _mm_unpackhi_epi8(src8, src8);
-				const __m128i src8out[4] = { _mm_unpacklo_epi8(src8_lo, src8_lo), _mm_unpackhi_epi8(src8_lo, src8_lo), _mm_unpacklo_epi8(src8_hi, src8_hi), _mm_unpackhi_epi8(src8_hi, src8_hi) };
 				
-				_mm_store_si128((__m128i *)( (u8 *)dst + dstX +  0), src8out[0]);
-				_mm_store_si128((__m128i *)( (u8 *)dst + dstX + 16), src8out[1]);
-				_mm_store_si128((__m128i *)( (u8 *)dst + dstX + 32), src8out[2]);
-				_mm_store_si128((__m128i *)( (u8 *)dst + dstX + 48), src8out[3]);
+				srcPixOut[0] = _mm_unpacklo_epi8(src8_lo, src8_lo);
+				srcPixOut[1] = _mm_unpackhi_epi8(src8_lo, src8_lo);
+				srcPixOut[2] = _mm_unpacklo_epi8(src8_hi, src8_hi);
+				srcPixOut[3] = _mm_unpackhi_epi8(src8_hi, src8_hi);
+#endif
+				_mm_store_si128((__m128i *)( (u8 *)dst + dstX +  0), srcPixOut[0]);
+				_mm_store_si128((__m128i *)( (u8 *)dst + dstX + 16), srcPixOut[1]);
+				_mm_store_si128((__m128i *)( (u8 *)dst + dstX + 32), srcPixOut[2]);
+				_mm_store_si128((__m128i *)( (u8 *)dst + dstX + 48), srcPixOut[3]);
+				
+				if (SCALEVERTICAL)
+				{
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 1) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 1) + 16), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 1) + 32), srcPixOut[2]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 1) + 48), srcPixOut[3]);
+					
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 2) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 2) + 16), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 2) + 32), srcPixOut[2]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 2) + 48), srcPixOut[3]);
+					
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 3) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 3) + 16), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 3) + 32), srcPixOut[2]);
+					_mm_store_si128((__m128i *)( (u8 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 3) + 48), srcPixOut[3]);
+				}
 				
 				srcX += 16;
 				dstX += 64;
@@ -282,14 +522,43 @@ static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__
 			else if (ELEMENTSIZE == 2)
 			{
 				const __m128i src16 = _mm_load_si128((__m128i *)((u16 *)src + srcX));
+				
+#ifdef ENABLE_SSSE3
+				srcPixOut[0] = _mm_shuffle_epi8(src16, _mm_set_epi8( 3,  2,  3,  2,  3,  2,  3,  2,  1,  0,  1,  0,  1,  0,  1,  0));
+				srcPixOut[1] = _mm_shuffle_epi8(src16, _mm_set_epi8( 7,  6,  7,  6,  7,  6,  7,  6,  5,  4,  5,  4,  5,  4,  5,  4));
+				srcPixOut[2] = _mm_shuffle_epi8(src16, _mm_set_epi8(11, 10, 11, 10, 11, 10, 11, 10,  9,  8,  9,  8,  9,  8,  9,  8));
+				srcPixOut[3] = _mm_shuffle_epi8(src16, _mm_set_epi8(15, 14, 15, 14, 15, 14, 15, 14, 13, 12, 13, 12, 13, 12, 13, 12));
+#else
 				const __m128i src16_lo = _mm_unpacklo_epi16(src16, src16);
 				const __m128i src16_hi = _mm_unpackhi_epi16(src16, src16);
-				const __m128i src16out[4] = { _mm_unpacklo_epi16(src16_lo, src16_lo), _mm_unpackhi_epi16(src16_lo, src16_lo), _mm_unpacklo_epi16(src16_hi, src16_hi), _mm_unpackhi_epi16(src16_hi, src16_hi) };
 				
-				_mm_store_si128((__m128i *)((u16 *)dst + dstX +  0), src16out[0]);
-				_mm_store_si128((__m128i *)((u16 *)dst + dstX +  8), src16out[1]);
-				_mm_store_si128((__m128i *)((u16 *)dst + dstX + 16), src16out[2]);
-				_mm_store_si128((__m128i *)((u16 *)dst + dstX + 24), src16out[3]);
+				srcPixOut[0] = _mm_unpacklo_epi16(src16_lo, src16_lo);
+				srcPixOut[1] = _mm_unpackhi_epi16(src16_lo, src16_lo);
+				srcPixOut[2] = _mm_unpacklo_epi16(src16_hi, src16_hi);
+				srcPixOut[3] = _mm_unpackhi_epi16(src16_hi, src16_hi);
+#endif
+				_mm_store_si128((__m128i *)((u16 *)dst + dstX +  0), srcPixOut[0]);
+				_mm_store_si128((__m128i *)((u16 *)dst + dstX +  8), srcPixOut[1]);
+				_mm_store_si128((__m128i *)((u16 *)dst + dstX + 16), srcPixOut[2]);
+				_mm_store_si128((__m128i *)((u16 *)dst + dstX + 24), srcPixOut[3]);
+				
+				if (SCALEVERTICAL)
+				{
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 1) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 1) +  8), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 1) + 16), srcPixOut[2]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 1) + 24), srcPixOut[3]);
+					
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 2) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 2) +  8), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 2) + 16), srcPixOut[2]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 2) + 24), srcPixOut[3]);
+					
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 3) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 3) +  8), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 3) + 16), srcPixOut[2]);
+					_mm_store_si128((__m128i *)( (u16 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 3) + 24), srcPixOut[3]);
+				}
 				
 				srcX += 8;
 				dstX += 32;
@@ -297,14 +566,43 @@ static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__
 			else if (ELEMENTSIZE == 4)
 			{
 				const __m128i src32 = _mm_load_si128((__m128i *)((u32 *)src + srcX));
+				
+#ifdef ENABLE_SSSE3
+				srcPixOut[0] = _mm_shuffle_epi8(src32, _mm_set_epi8( 3,  2,  1,  0,  3,  2,  1,  0,  3,  2,  1,  0,  3,  2,  1,  0));
+				srcPixOut[1] = _mm_shuffle_epi8(src32, _mm_set_epi8( 7,  6,  5,  4,  7,  6,  5,  4,  7,  6,  5,  4,  7,  6,  5,  4));
+				srcPixOut[2] = _mm_shuffle_epi8(src32, _mm_set_epi8(11, 10,  9,  8, 11, 10,  9,  8, 11, 10,  9,  8, 11, 10,  9,  8));
+				srcPixOut[3] = _mm_shuffle_epi8(src32, _mm_set_epi8(15, 14, 13, 12, 15, 14, 13, 12, 15, 14, 13, 12, 15, 14, 13, 12));
+#else
 				const __m128i src32_lo = _mm_unpacklo_epi32(src32, src32);
 				const __m128i src32_hi = _mm_unpackhi_epi32(src32, src32);
-				const __m128i src32out[4] = { _mm_unpacklo_epi32(src32_lo, src32_lo), _mm_unpackhi_epi32(src32_lo, src32_lo), _mm_unpacklo_epi32(src32_hi, src32_hi), _mm_unpackhi_epi32(src32_hi, src32_hi) };
 				
-				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  0), src32out[0]);
-				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  4), src32out[1]);
-				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  8), src32out[2]);
-				_mm_store_si128((__m128i *)((u32 *)dst + dstX + 12), src32out[3]);
+				srcPixOut[0] = _mm_unpacklo_epi32(src32_lo, src32_lo);
+				srcPixOut[1] = _mm_unpackhi_epi32(src32_lo, src32_lo);
+				srcPixOut[2] = _mm_unpacklo_epi32(src32_hi, src32_hi);
+				srcPixOut[3] = _mm_unpackhi_epi32(src32_hi, src32_hi);
+#endif
+				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  0), srcPixOut[0]);
+				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  4), srcPixOut[1]);
+				_mm_store_si128((__m128i *)((u32 *)dst + dstX +  8), srcPixOut[2]);
+				_mm_store_si128((__m128i *)((u32 *)dst + dstX + 12), srcPixOut[3]);
+				
+				if (SCALEVERTICAL)
+				{
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 1) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 1) +  4), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 1) +  8), srcPixOut[2]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 1) + 12), srcPixOut[3]);
+					
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 2) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 2) +  4), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 2) +  8), srcPixOut[2]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 2) + 12), srcPixOut[3]);
+					
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 3) +  0), srcPixOut[0]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 3) +  4), srcPixOut[1]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 3) +  8), srcPixOut[2]);
+					_mm_store_si128((__m128i *)( (u32 *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) * 3) + 12), srcPixOut[3]);
+				}
 				
 				srcX += 4;
 				dstX += 16;
@@ -358,6 +656,11 @@ static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__
 				dstX += (4 * scale);
 			}
 		}
+		
+		if (SCALEVERTICAL)
+		{
+			CopyLinesForVerticalCount<ELEMENTSIZE>(dst, dstLength, dstLineCount);
+		}
 	}
 #endif
 	else
@@ -380,12 +683,17 @@ static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__
 				}
 			}
 		}
+		
+		if (SCALEVERTICAL)
+		{
+			CopyLinesForVerticalCount<ELEMENTSIZE>(dst, dstLength, dstLineCount);
+		}
 	}
 }
 #endif
 
-template <s32 INTEGERSCALEHINT, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
-static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restrict src, size_t dstLength)
+template <s32 INTEGERSCALEHINT, bool SCALEVERTICAL, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
+static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restrict src, size_t dstLength, size_t dstLineCount)
 {
 	// Use INTEGERSCALEHINT to provide a hint to CopyLineExpand() for the fastest execution path.
 	// INTEGERSCALEHINT represents the scaling value of the framebuffer width, and is always
@@ -403,30 +711,403 @@ static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restr
 	//   using the integer scaling value.
 	
 #ifdef ENABLE_SSE2
-	CopyLineExpand_SSE2<INTEGERSCALEHINT, ELEMENTSIZE>(dst, src, dstLength);
+	CopyLineExpand_SSE2<INTEGERSCALEHINT, SCALEVERTICAL, ELEMENTSIZE>(dst, src, dstLength, dstLineCount);
 #else
-	CopyLineExpand_C<INTEGERSCALEHINT, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, dstLength);
+	CopyLineExpand_C<INTEGERSCALEHINT, SCALEVERTICAL, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, dstLength, dstLineCount);
 #endif
 }
 
-template <bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
-static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restrict src)
+template <s32 INTEGERSCALEHINT, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
+static FORCEINLINE void CopyLineReduce_C(void *__restrict dst, const void *__restrict src, size_t srcLength)
 {
-	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+	if (INTEGERSCALEHINT == 0)
 	{
-		if (ELEMENTSIZE == 1)
+#if defined(MSB_FIRST)
+		if (NEEDENDIANSWAP && (ELEMENTSIZE != 1))
 		{
-			( (u8 *)dst)[i] = ((u8 *)src)[_gpuDstPitchIndex[i]];
+			for (size_t i = 0; i < srcLength; i++)
+			{
+				if (ELEMENTSIZE == 2)
+				{
+					((u16 *)dst)[i] = LE_TO_LOCAL_16( ((u16 *)src)[i] );
+				}
+				else if (ELEMENTSIZE == 4)
+				{
+					((u32 *)dst)[i] = LE_TO_LOCAL_32( ((u32 *)src)[i] );
+				}
+			}
 		}
-		else if (ELEMENTSIZE == 2)
+		else
+#endif
 		{
-			((u16 *)dst)[i] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16( ((u16 *)src)[_gpuDstPitchIndex[i]] ) : ((u16 *)src)[_gpuDstPitchIndex[i]];
-		}
-		else if (ELEMENTSIZE == 4)
-		{
-			((u32 *)dst)[i] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[_gpuDstPitchIndex[i]] ) : ((u32 *)src)[_gpuDstPitchIndex[i]];
+			memcpy(dst, src, srcLength * ELEMENTSIZE);
 		}
 	}
+	else if (INTEGERSCALEHINT == 1)
+	{
+#if defined(MSB_FIRST)
+		if (NEEDENDIANSWAP && (ELEMENTSIZE != 1))
+		{
+			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+			{
+				if (ELEMENTSIZE == 2)
+				{
+					((u16 *)dst)[i] = LE_TO_LOCAL_16( ((u16 *)src)[i] );
+				}
+				else if (ELEMENTSIZE == 4)
+				{
+					((u32 *)dst)[i] = LE_TO_LOCAL_32( ((u32 *)src)[i] );
+				}
+			}
+		}
+		else
+#endif
+		{
+			memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * ELEMENTSIZE);
+		}
+	}
+	else if ( (INTEGERSCALEHINT >= 2) && (INTEGERSCALEHINT <= 16) )
+	{
+		const size_t S = INTEGERSCALEHINT;
+		
+		for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+		{
+			if (ELEMENTSIZE == 1)
+			{
+				((u8 *)dst)[x] = ((u8 *)src)[x * S];
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				((u16 *)dst)[x] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16( ((u16 *)src)[x * S] ) : ((u16 *)src)[x * S];
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				((u32 *)dst)[x] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[x * S] ) : ((u32 *)src)[x * S];
+			}
+		}
+	}
+	else
+	{
+		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+		{
+			if (ELEMENTSIZE == 1)
+			{
+				( (u8 *)dst)[i] = ((u8 *)src)[_gpuDstPitchIndex[i]];
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				((u16 *)dst)[i] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16( ((u16 *)src)[_gpuDstPitchIndex[i]] ) : ((u16 *)src)[_gpuDstPitchIndex[i]];
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				((u32 *)dst)[i] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[_gpuDstPitchIndex[i]] ) : ((u32 *)src)[_gpuDstPitchIndex[i]];
+			}
+		}
+	}
+}
+
+template <s32 INTEGERSCALEHINT, bool SCALEVERTICAL, size_t ELEMENTSIZE>
+static FORCEINLINE void CopyLineReduce_SSE2(void *__restrict dst, const void *__restrict src, size_t srcLength, size_t srcLineCount)
+{
+	if (INTEGERSCALEHINT == 0)
+	{
+		memcpy(dst, src, srcLength * ELEMENTSIZE);
+	}
+	else if (INTEGERSCALEHINT == 1)
+	{
+		MACRODO_N( GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE), _mm_store_si128((__m128i *)dst + (X), _mm_load_si128((__m128i *)src + (X))) );
+	}
+	else if (INTEGERSCALEHINT == 2)
+	{
+		__m128i srcPix[2];
+		
+		for (size_t dstX = 0; dstX < (GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE)); dstX++)
+		{
+			srcPix[0] = _mm_load_si128((__m128i *)src + (dstX * 2) + 0);
+			srcPix[1] = _mm_load_si128((__m128i *)src + (dstX * 2) + 1);
+			
+			if (ELEMENTSIZE == 1)
+			{
+				srcPix[0] = _mm_and_si128(srcPix[0], _mm_set1_epi32(0x00FF00FF));
+				srcPix[1] = _mm_and_si128(srcPix[1], _mm_set1_epi32(0x00FF00FF));
+				
+				_mm_store_si128((__m128i *)dst + dstX, _mm_packus_epi16(srcPix[0], srcPix[1]));
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				srcPix[0] = _mm_and_si128(srcPix[0], _mm_set1_epi32(0x0000FFFF));
+				srcPix[1] = _mm_and_si128(srcPix[1], _mm_set1_epi32(0x0000FFFF));
+				
+#if defined(ENABLE_SSE4_1)
+				_mm_store_si128((__m128i *)dst + dstX, _mm_packus_epi32(srcPix[0], srcPix[1]));
+#elif defined(ENABLE_SSSE3)
+				srcPix[0] = _mm_shuffle_epi8(srcPix[0], _mm_set_epi8(15, 14, 11, 10,  7,  6,  3,  2, 13, 12,  9,  8,  5,  4,  1,  0));
+				srcPix[1] = _mm_shuffle_epi8(srcPix[1], _mm_set_epi8(13, 12,  9,  8,  5,  4,  1,  0, 15, 14, 11, 10,  7,  6,  3,  2));
+				
+				_mm_store_si128((__m128i *)dst + dstX, _mm_or_si128(srcPix[0], srcPix[1]));
+#else
+				srcPix[0] = _mm_shufflelo_epi16(srcPix[0], 0xD8);
+				srcPix[0] = _mm_shufflehi_epi16(srcPix[0], 0xD8);
+				srcPix[0] = _mm_shuffle_epi32(srcPix[0], 0xD8);
+				
+				srcPix[1] = _mm_shufflelo_epi16(srcPix[1], 0xD8);
+				srcPix[1] = _mm_shufflehi_epi16(srcPix[1], 0xD8);
+				srcPix[1] = _mm_shuffle_epi32(srcPix[1], 0x8D);
+				
+				_mm_store_si128((__m128i *)dst + dstX, _mm_or_si128(srcPix[0], srcPix[1]));
+#endif
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				srcPix[0] = _mm_and_si128(srcPix[0], _mm_set_epi32(0, 0xFFFFFFFF, 0, 0xFFFFFFFF));
+				srcPix[1] = _mm_and_si128(srcPix[1], _mm_set_epi32(0, 0xFFFFFFFF, 0, 0xFFFFFFFF));
+				
+				srcPix[0] = _mm_shuffle_epi32(srcPix[0], 0xD8);
+				srcPix[1] = _mm_shuffle_epi32(srcPix[1], 0x8D);
+				
+				_mm_store_si128((__m128i *)dst + dstX, _mm_or_si128(srcPix[0], srcPix[1]));
+			}
+		}
+	}
+	else if (INTEGERSCALEHINT == 3)
+	{
+		__m128i srcPix[3];
+		
+		for (size_t dstX = 0; dstX < (GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE)); dstX++)
+		{
+			srcPix[0] = _mm_load_si128((__m128i *)src + (dstX * 3) + 0);
+			srcPix[1] = _mm_load_si128((__m128i *)src + (dstX * 3) + 1);
+			srcPix[2] = _mm_load_si128((__m128i *)src + (dstX * 3) + 2);
+			
+			if (ELEMENTSIZE == 1)
+			{
+				srcPix[0] = _mm_and_si128(srcPix[0], _mm_set_epi32(0xFF0000FF, 0x0000FF00, 0x00FF0000, 0xFF0000FF));
+				srcPix[1] = _mm_and_si128(srcPix[1], _mm_set_epi32(0x00FF0000, 0xFF0000FF, 0x0000FF00, 0x00FF0000));
+				srcPix[2] = _mm_and_si128(srcPix[2], _mm_set_epi32(0x0000FF00, 0x00FF0000, 0xFF0000FF, 0x0000FF00));
+				
+#ifdef ENABLE_SSSE3
+				srcPix[0] = _mm_shuffle_epi8(srcPix[0], _mm_set_epi8(14, 13, 11, 10,  8,  7,  5,  4,  2,  1, 15, 12,  9,  6,  3,  0));
+				srcPix[1] = _mm_shuffle_epi8(srcPix[1], _mm_set_epi8(15, 13, 12, 10,  9, 14, 11,  8,  5,  2,  7,  6,  4,  3,  1,  0));
+				srcPix[2] = _mm_shuffle_epi8(srcPix[2], _mm_set_epi8(13, 10,  7,  4,  1, 15, 14, 12, 11,  9,  8,  6,  5,  3,  2,  0));
+				
+				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[1]);
+				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[2]);
+#else
+				__m128i srcWorking[3];
+				
+				srcWorking[0] = _mm_unpacklo_epi8(srcPix[0], _mm_setzero_si128());
+				srcWorking[1] = _mm_unpackhi_epi8(srcPix[0], _mm_setzero_si128());
+				srcWorking[2] = _mm_unpacklo_epi8(srcPix[1], _mm_setzero_si128());
+				srcPix[0] = _mm_or_si128(srcWorking[0], srcWorking[1]);
+				srcPix[0] = _mm_or_si128(srcPix[0], srcWorking[2]);
+				
+				srcWorking[0] = _mm_unpackhi_epi8(srcPix[1], _mm_setzero_si128());
+				srcWorking[1] = _mm_unpacklo_epi8(srcPix[2], _mm_setzero_si128());
+				srcWorking[2] = _mm_unpackhi_epi8(srcPix[2], _mm_setzero_si128());
+				srcPix[1] = _mm_or_si128(srcWorking[0], srcWorking[1]);
+				srcPix[1] = _mm_or_si128(srcPix[1], srcWorking[2]);
+				
+				srcPix[0] = _mm_shufflelo_epi16(srcPix[0], 0x6C);
+				srcPix[0] = _mm_shufflehi_epi16(srcPix[0], 0x6C);
+				srcPix[1] = _mm_shufflelo_epi16(srcPix[1], 0x6C);
+				srcPix[1] = _mm_shufflehi_epi16(srcPix[1], 0x6C);
+				
+				srcPix[0] = _mm_packus_epi16(srcPix[0], srcPix[1]);
+				srcPix[1] = _mm_shuffle_epi32(srcPix[0], 0xB1);
+				
+				srcPix[0] = _mm_and_si128(srcPix[0], _mm_set_epi32(0xFF00FFFF, 0xFF00FFFF, 0xFF00FFFF, 0xFF00FFFF));
+				srcPix[1] = _mm_and_si128(srcPix[1], _mm_set_epi32(0x00FF0000, 0x00FF0000, 0x00FF0000, 0x00FF0000));
+				
+				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[1]);
+#endif
+				_mm_store_si128((__m128i *)dst + dstX, srcPix[0]);
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				srcPix[0] = _mm_and_si128(srcPix[0], _mm_set_epi32(0x0000FFFF, 0x00000000, 0xFFFF0000, 0x0000FFFF));
+				srcPix[1] = _mm_and_si128(srcPix[1], _mm_set_epi32(0xFFFF0000, 0x0000FFFF, 0x00000000, 0xFFFF0000));
+				srcPix[2] = _mm_and_si128(srcPix[2], _mm_set_epi32(0x00000000, 0xFFFF0000, 0x0000FFFF, 0x00000000));
+				
+#ifdef ENABLE_SSSE3
+				srcPix[0] = _mm_shuffle_epi8(srcPix[0], _mm_set_epi8(15, 14, 11, 10,  9,  8,  5,  4,  3,  2, 13, 12,  7,  6,  1,  0));
+				srcPix[1] = _mm_shuffle_epi8(srcPix[1], _mm_set_epi8(13, 12, 11, 10, 15, 14,  9,  8,  3,  2,  7,  6,  5,  4,  1,  0));
+				srcPix[2] = _mm_shuffle_epi8(srcPix[2], _mm_set_epi8(11, 10,  5,  4, 15, 14, 13, 12,  9,  8,  7,  6,  3,  2,  1,  0));
+#else
+				srcPix[0] = _mm_shufflelo_epi16(srcPix[0], 0x9C);
+				srcPix[1] = _mm_shufflehi_epi16(srcPix[1], 0x9C);
+				srcPix[2] = _mm_shuffle_epi32(srcPix[2], 0x9C);
+				
+				srcPix[0] = _mm_shuffle_epi32(srcPix[0], 0x9C);
+				srcPix[1] = _mm_shuffle_epi32(srcPix[1], 0xE1);
+				srcPix[2] = _mm_shufflehi_epi16(srcPix[2], 0xC9);
+#endif
+				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[1]);
+				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[2]);
+				
+				_mm_store_si128((__m128i *)dst + dstX, srcPix[0]);
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				srcPix[0] = _mm_and_si128(srcPix[0], _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0xFFFFFFFF));
+				srcPix[1] = _mm_and_si128(srcPix[1], _mm_set_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000));
+				srcPix[2] = _mm_and_si128(srcPix[2], _mm_set_epi32(0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000));
+				
+				srcPix[0] = _mm_shuffle_epi32(srcPix[0], 0x9C);
+				srcPix[2] = _mm_shuffle_epi32(srcPix[2], 0x78);
+				
+				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[1]);
+				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[2]);
+				
+				_mm_store_si128((__m128i *)dst + dstX, srcPix[0]);
+			}
+		}
+	}
+	else if (INTEGERSCALEHINT == 4)
+	{
+		__m128i srcPix[4];
+		
+		for (size_t dstX = 0; dstX < (GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE)); dstX++)
+		{
+			srcPix[0] = _mm_load_si128((__m128i *)src + (dstX * 4) + 0);
+			srcPix[1] = _mm_load_si128((__m128i *)src + (dstX * 4) + 1);
+			srcPix[2] = _mm_load_si128((__m128i *)src + (dstX * 4) + 2);
+			srcPix[3] = _mm_load_si128((__m128i *)src + (dstX * 4) + 3);
+			
+			if (ELEMENTSIZE == 1)
+			{
+				srcPix[0] = _mm_and_si128(srcPix[0], _mm_set1_epi32(0x000000FF));
+				srcPix[1] = _mm_and_si128(srcPix[1], _mm_set1_epi32(0x000000FF));
+				srcPix[2] = _mm_and_si128(srcPix[2], _mm_set1_epi32(0x000000FF));
+				srcPix[3] = _mm_and_si128(srcPix[3], _mm_set1_epi32(0x000000FF));
+				
+				srcPix[0] = _mm_packus_epi16(srcPix[0], srcPix[1]);
+				srcPix[1] = _mm_packus_epi16(srcPix[2], srcPix[3]);
+				
+				_mm_store_si128((__m128i *)dst + dstX, _mm_packus_epi16(srcPix[0], srcPix[1]));
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				srcPix[0] = _mm_and_si128(srcPix[0], _mm_set_epi32(0x00000000, 0x0000FFFF, 0x00000000, 0x0000FFFF));
+				srcPix[1] = _mm_and_si128(srcPix[1], _mm_set_epi32(0x00000000, 0x0000FFFF, 0x00000000, 0x0000FFFF));
+				srcPix[2] = _mm_and_si128(srcPix[2], _mm_set_epi32(0x00000000, 0x0000FFFF, 0x00000000, 0x0000FFFF));
+				srcPix[3] = _mm_and_si128(srcPix[3], _mm_set_epi32(0x00000000, 0x0000FFFF, 0x00000000, 0x0000FFFF));
+				
+#if defined(ENABLE_SSE4_1)
+				srcPix[0] = _mm_packus_epi32(srcPix[0], srcPix[1]);
+				srcPix[1] = _mm_packus_epi32(srcPix[2], srcPix[3]);
+				
+				_mm_store_si128((__m128i *)dst + dstX, _mm_packus_epi32(srcPix[0], srcPix[1]));
+#elif defined(ENABLE_SSSE3)
+				srcPix[0] = _mm_shuffle_epi8(srcPix[0], _mm_set_epi8(15, 14, 13, 12, 11, 10,  7,  6,  5,  4,  3,  2,  9,  8,  1,  0));
+				srcPix[1] = _mm_shuffle_epi8(srcPix[1], _mm_set_epi8(13, 12, 13, 12, 11, 10,  7,  6,  9,  8,  1,  0,  5,  4,  3,  2));
+				srcPix[2] = _mm_shuffle_epi8(srcPix[2], _mm_set_epi8(13, 12, 13, 12,  9,  8,  1,  0, 11, 10,  7,  6,  5,  4,  3,  2));
+				srcPix[3] = _mm_shuffle_epi8(srcPix[3], _mm_set_epi8( 9,  8,  1,  0, 15, 14, 13, 12, 11, 10,  7,  6,  5,  4,  3,  2));
+				
+				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[1]);
+				srcPix[1] = _mm_or_si128(srcPix[2], srcPix[3]);
+				
+				_mm_store_si128((__m128i *)dst + dstX, _mm_or_si128(srcPix[0], srcPix[1]));
+#else
+				srcPix[0] = _mm_shuffle_epi32(srcPix[0], 0xD8);
+				srcPix[1] = _mm_shuffle_epi32(srcPix[1], 0xD8);
+				srcPix[2] = _mm_shuffle_epi32(srcPix[2], 0xD8);
+				srcPix[3] = _mm_shuffle_epi32(srcPix[3], 0xD8);
+				
+				srcPix[0] = _mm_unpacklo_epi32(srcPix[0], srcPix[1]);
+				srcPix[1] = _mm_unpacklo_epi32(srcPix[2], srcPix[3]);
+				
+				srcPix[0] = _mm_shuffle_epi32(srcPix[0], 0xD8);
+				srcPix[1] = _mm_shuffle_epi32(srcPix[1], 0x8D);
+				
+				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[1]);
+				srcPix[0] = _mm_shufflelo_epi16(srcPix[0], 0xD8);
+				srcPix[0] = _mm_shufflehi_epi16(srcPix[0], 0xD8);
+				
+				_mm_store_si128((__m128i *)dst + dstX, srcPix[0]);
+#endif
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				srcPix[0] = _mm_and_si128(srcPix[0], _mm_set_epi32(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF));
+				srcPix[1] = _mm_and_si128(srcPix[1], _mm_set_epi32(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF));
+				srcPix[2] = _mm_and_si128(srcPix[2], _mm_set_epi32(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF));
+				srcPix[3] = _mm_and_si128(srcPix[3], _mm_set_epi32(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF));
+				
+				srcPix[0] = _mm_unpacklo_epi32(srcPix[0], srcPix[1]);
+				srcPix[1] = _mm_unpacklo_epi32(srcPix[2], srcPix[3]);
+#ifdef HOST_64
+				srcPix[0] = _mm_unpacklo_epi64(srcPix[0], srcPix[1]);
+#else
+				srcPix[1] = _mm_shuffle_epi32(srcPix[1], 0x4E);
+				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[1]);
+#endif
+				_mm_store_si128((__m128i *)dst + dstX, srcPix[0]);
+			}
+		}
+	}
+	else if ( (INTEGERSCALEHINT >= 5) && (INTEGERSCALEHINT <= 16) )
+	{
+		const size_t S = INTEGERSCALEHINT;
+		
+		for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+		{
+			if (ELEMENTSIZE == 1)
+			{
+				((u8 *)dst)[x] = ((u8 *)src)[x * S];
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				((u16 *)dst)[x] = ((u16 *)src)[x * S];
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				((u32 *)dst)[x] = ((u32 *)src)[x * S];
+			}
+		}
+	}
+	else
+	{
+		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+		{
+			if (ELEMENTSIZE == 1)
+			{
+				( (u8 *)dst)[i] = ((u8 *)src)[_gpuDstPitchIndex[i]];
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				((u16 *)dst)[i] = ((u16 *)src)[_gpuDstPitchIndex[i]];
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				((u32 *)dst)[i] = ((u32 *)src)[_gpuDstPitchIndex[i]];
+			}
+		}
+	}
+}
+
+template <s32 INTEGERSCALEHINT, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
+static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restrict src, size_t srcLength)
+{
+	// Use INTEGERSCALEHINT to provide a hint to CopyLineReduce() for the fastest execution path.
+	// INTEGERSCALEHINT represents the scaling value of the source framebuffer width, and is always
+	// assumed to be a positive integer.
+	//
+	// Use cases:
+	// - Passing a value of 0 causes CopyLineReduce() to perform a simple copy, using srcLength
+	//   to copy srcLength elements.
+	// - Passing a value of 1 causes CopyLineReduce() to perform a simple copy, ignoring srcLength
+	//   and always copying GPU_FRAMEBUFFER_NATIVE_WIDTH elements.
+	// - Passing any negative value causes CopyLineReduce() to assume that the framebuffer width
+	//   is NOT scaled by an integer value, and will therefore take the safest (but slowest)
+	//   execution path.
+	// - Passing any positive value greater than 1 causes CopyLineReduce() to expand the line
+	//   using the integer scaling value.
+	
+#ifdef ENABLE_SSE2
+	CopyLineReduce_SSE2<INTEGERSCALEHINT, ELEMENTSIZE>(dst, src, srcLength);
+#else
+	CopyLineReduce_C<INTEGERSCALEHINT, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, srcLength);
+#endif
 }
 
 /*****************************************************************************/
@@ -1782,7 +2463,7 @@ void GPUEngineBase::_LineCopy(void *__restrict dstBuffer, const void *__restrict
 			const void *__restrict src = (USELINEINDEX) ? (u8 *)srcBuffer + (lineIndex * lineWidth * ELEMENTSIZE) : (u8 *)srcBuffer;
 			void *__restrict dst = (USELINEINDEX) ? (u8 *)dstBuffer + (lineIndex * lineWidth * ELEMENTSIZE) : (u8 *)dstBuffer;
 			
-			CopyLineExpand<INTEGERSCALEHINT, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, lineWidth * lineCount);
+			CopyLineExpand<INTEGERSCALEHINT, true, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, lineWidth * lineCount, 1);
 			break;
 		}
 			
@@ -1791,7 +2472,7 @@ void GPUEngineBase::_LineCopy(void *__restrict dstBuffer, const void *__restrict
 			const void *__restrict src = (USELINEINDEX) ? (u8 *)srcBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * ELEMENTSIZE) : (u8 *)srcBuffer;
 			void *__restrict dst = (USELINEINDEX) ? (u8 *)dstBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * ELEMENTSIZE) : (u8 *)dstBuffer;
 			
-			CopyLineExpand<INTEGERSCALEHINT, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+			CopyLineExpand<INTEGERSCALEHINT, true, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH, 1);
 			break;
 		}
 			
@@ -1809,35 +2490,33 @@ void GPUEngineBase::_LineCopy(void *__restrict dstBuffer, const void *__restrict
 			// The implementation below is a stopgap measure for getting the faster code paths to run.
 			// However, this setup is not ideal, since the code size will greatly increase in order to
 			// include all possible code paths, possibly causing cache misses on lesser CPUs.
-			if (lineWidth == (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2))
+			switch (lineWidth)
 			{
-				CopyLineExpand<2, NEEDENDIANSWAP, ELEMENTSIZE>(dstLineHead, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 2);
+				case (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2):
+					CopyLineExpand<2, true, NEEDENDIANSWAP, ELEMENTSIZE>(dstLineHead, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 2, 2);
+					break;
+					
+				case (GPU_FRAMEBUFFER_NATIVE_WIDTH * 3):
+					CopyLineExpand<3, true, NEEDENDIANSWAP, ELEMENTSIZE>(dstLineHead, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 3, 3);
+					break;
+					
+				case (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4):
+					CopyLineExpand<4, true, NEEDENDIANSWAP, ELEMENTSIZE>(dstLineHead, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 4, 4);
+					break;
+					
+				default:
+				{
+					if ((lineWidth % GPU_FRAMEBUFFER_NATIVE_WIDTH) == 0)
+					{
+						CopyLineExpand<0xFFFF, true, NEEDENDIANSWAP, ELEMENTSIZE>(dstLineHead, src, lineWidth, lineCount);
+					}
+					else
+					{
+						CopyLineExpand<-1, true, NEEDENDIANSWAP, ELEMENTSIZE>(dstLineHead, src, lineWidth, lineCount);
+					}
+					break;
+				}
 			}
-			else if (lineWidth == (GPU_FRAMEBUFFER_NATIVE_WIDTH * 3))
-			{
-				CopyLineExpand<3, NEEDENDIANSWAP, ELEMENTSIZE>(dstLineHead, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 3);
-			}
-			else if (lineWidth == (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4))
-			{
-				CopyLineExpand<4, NEEDENDIANSWAP, ELEMENTSIZE>(dstLineHead, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 4);
-			}
-			else if ((lineWidth % GPU_FRAMEBUFFER_NATIVE_WIDTH) == 0)
-			{
-				CopyLineExpand<0xFFFF, NEEDENDIANSWAP, ELEMENTSIZE>(dstLineHead, src, lineWidth);
-			}
-			else
-			{
-				CopyLineExpand<-1, NEEDENDIANSWAP, ELEMENTSIZE>(dstLineHead, src, lineWidth);
-			}
-			
-			u8 *__restrict dst = (u8 *)dstLineHead + (lineWidth * ELEMENTSIZE);
-			
-			for (size_t line = 1; line < lineCount; line++)
-			{
-				memcpy(dst, dstLineHead, lineWidth * ELEMENTSIZE);
-				dst += (lineWidth * ELEMENTSIZE);
-			}
-			
 			break;
 		}
 	}
@@ -3197,8 +3876,8 @@ void GPUEngineBase::_CompositeLineDeferred(GPUEngineCompositorInfo &compInfo)
 #endif
 	}
 	
-	CopyLineExpand<0xFFFF, false, 2>(this->_deferredColorCustom, this->_deferredColorNative, compInfo.line.widthCustom);
-	CopyLineExpand<0xFFFF, false, 1>(this->_deferredIndexCustom, this->_deferredIndexNative, compInfo.line.widthCustom);
+	CopyLineExpand<0xFFFF, false, false, 2>(this->_deferredColorCustom, this->_deferredColorNative, compInfo.line.widthCustom, 1);
+	CopyLineExpand<0xFFFF, false, false, 1>(this->_deferredIndexCustom, this->_deferredIndexNative, compInfo.line.widthCustom, 1);
 	
 	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHead;
 	compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHead;
@@ -5029,33 +5708,33 @@ void GPUEngineBase::_PerformWindowTesting(GPUEngineCompositorInfo &compInfo)
 #endif
 		if (compInfo.line.widthCustom == (GPU_FRAMEBUFFER_NATIVE_WIDTH * 1))
 		{
-			CopyLineExpand<1, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH);
-			CopyLineExpand<1, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH);
+			CopyLineExpand<1, false, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 1, 1);
+			CopyLineExpand<1, false, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 1, 1);
 		}
 		else if (compInfo.line.widthCustom == (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2))
 		{
-			CopyLineExpand<2, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 2);
-			CopyLineExpand<2, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 2);
+			CopyLineExpand<2, false, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 2, 1);
+			CopyLineExpand<2, false, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 2, 1);
 		}
 		else if (compInfo.line.widthCustom == (GPU_FRAMEBUFFER_NATIVE_WIDTH * 3))
 		{
-			CopyLineExpand<3, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 3);
-			CopyLineExpand<3, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 3);
+			CopyLineExpand<3, false, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 3, 1);
+			CopyLineExpand<3, false, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 3, 1);
 		}
 		else if (compInfo.line.widthCustom == (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4))
 		{
-			CopyLineExpand<4, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 4);
-			CopyLineExpand<4, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 4);
+			CopyLineExpand<4, false, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 4, 1);
+			CopyLineExpand<4, false, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], GPU_FRAMEBUFFER_NATIVE_WIDTH * 4, 1);
 		}
 		else if ((compInfo.line.widthCustom % GPU_FRAMEBUFFER_NATIVE_WIDTH) == 0)
 		{
-			CopyLineExpand<0xFFFF, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], compInfo.line.widthCustom);
-			CopyLineExpand<0xFFFF, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], compInfo.line.widthCustom);
+			CopyLineExpand<0xFFFF, false, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], compInfo.line.widthCustom, 1);
+			CopyLineExpand<0xFFFF, false, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], compInfo.line.widthCustom, 1);
 		}
 		else
 		{
-			CopyLineExpand<-1, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], compInfo.line.widthCustom);
-			CopyLineExpand<-1, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], compInfo.line.widthCustom);
+			CopyLineExpand<-1, false, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], compInfo.line.widthCustom, 1);
+			CopyLineExpand<-1, false, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], compInfo.line.widthCustom, 1);
 		}
 	}
 }
@@ -5419,11 +6098,11 @@ void GPUEngineBase::SetCustomFramebufferSize(size_t w, size_t h)
 	u16 *oldDeferredColorCustom = this->_deferredColorCustom;
 	u8 *oldDidPassWindowTestCustomMasterPtr = this->_didPassWindowTestCustomMasterPtr;
 	
-	void *newWorkingLineColor = malloc_alignedCacheLine(w * _gpuLargestDstLineCount * GPU->GetDisplayInfo().pixelBytes);
-	u8 *newWorkingLineLayerID = (u8 *)malloc_alignedCacheLine(w * _gpuLargestDstLineCount * 4 * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
-	u8 *newDeferredIndexCustom = (u8 *)malloc_alignedCacheLine(w * sizeof(u8));
-	u16 *newDeferredColorCustom = (u16 *)malloc_alignedCacheLine(w * sizeof(u16));
-	u8 *newDidPassWindowTestCustomMasterPtr = (u8 *)malloc_alignedCacheLine(w * 10 * sizeof(u8));
+	void *newWorkingLineColor = malloc_alignedPage(w * _gpuLargestDstLineCount * GPU->GetDisplayInfo().pixelBytes);
+	u8 *newWorkingLineLayerID = (u8 *)malloc_alignedPage(w * _gpuLargestDstLineCount * 4 * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
+	u8 *newDeferredIndexCustom = (u8 *)malloc_alignedPage(w * sizeof(u8));
+	u16 *newDeferredColorCustom = (u16 *)malloc_alignedPage(w * sizeof(u16));
+	u8 *newDidPassWindowTestCustomMasterPtr = (u8 *)malloc_alignedPage(w * 10 * sizeof(u8));
 	
 	this->_internalRenderLineTargetCustom = newWorkingLineColor;
 	this->_renderLineLayerIDCustom = newWorkingLineLayerID;
@@ -5667,12 +6346,12 @@ GPUEngineA::GPUEngineA()
 		isLineCaptureNative[3][l] = true;
 	}
 	
-	_3DFramebufferMain = (FragmentColor *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(FragmentColor));
-	_3DFramebuffer16 = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
-	_captureWorkingA16 = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
-	_captureWorkingB16 = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
-	_captureWorkingA32 = (FragmentColor *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(FragmentColor));
-	_captureWorkingB32 = (FragmentColor *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(FragmentColor));
+	_3DFramebufferMain = (FragmentColor *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(FragmentColor));
+	_3DFramebuffer16 = (u16 *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+	_captureWorkingA16 = (u16 *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+	_captureWorkingB16 = (u16 *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+	_captureWorkingA32 = (FragmentColor *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(FragmentColor));
+	_captureWorkingB32 = (FragmentColor *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(FragmentColor));
 	gfx3d_Update3DFramebuffers(_3DFramebufferMain, _3DFramebuffer16);
 }
 
@@ -5819,12 +6498,12 @@ void GPUEngineA::SetCustomFramebufferSize(size_t w, size_t h)
 	FragmentColor *oldCaptureWorkingA32 = this->_captureWorkingA32;
 	FragmentColor *oldCaptureWorkingB32 = this->_captureWorkingB32;
 	
-	FragmentColor *new3DFramebufferMain = (FragmentColor *)malloc_alignedCacheLine(w * h * sizeof(FragmentColor));
-	u16 *new3DFramebuffer16 = (u16 *)malloc_alignedCacheLine(w * h * sizeof(u16));
-	u16 *newCaptureWorkingA16 = (u16 *)malloc_alignedCacheLine(w * _gpuLargestDstLineCount * sizeof(u16));
-	u16 *newCaptureWorkingB16 = (u16 *)malloc_alignedCacheLine(w * _gpuLargestDstLineCount * sizeof(u16));
-	FragmentColor *newCaptureWorkingA32 = (FragmentColor *)malloc_alignedCacheLine(w * _gpuLargestDstLineCount * sizeof(FragmentColor));
-	FragmentColor *newCaptureWorkingB32 = (FragmentColor *)malloc_alignedCacheLine(w * _gpuLargestDstLineCount * sizeof(FragmentColor));
+	FragmentColor *new3DFramebufferMain = (FragmentColor *)malloc_alignedPage(w * h * sizeof(FragmentColor));
+	u16 *new3DFramebuffer16 = (u16 *)malloc_alignedPage(w * h * sizeof(u16));
+	u16 *newCaptureWorkingA16 = (u16 *)malloc_alignedPage(w * _gpuLargestDstLineCount * sizeof(u16));
+	u16 *newCaptureWorkingB16 = (u16 *)malloc_alignedPage(w * _gpuLargestDstLineCount * sizeof(u16));
+	FragmentColor *newCaptureWorkingA32 = (FragmentColor *)malloc_alignedPage(w * _gpuLargestDstLineCount * sizeof(FragmentColor));
+	FragmentColor *newCaptureWorkingB32 = (FragmentColor *)malloc_alignedPage(w * _gpuLargestDstLineCount * sizeof(FragmentColor));
 	
 	this->_3DFramebufferMain = new3DFramebufferMain;
 	this->_3DFramebuffer16 = new3DFramebuffer16;
@@ -7974,7 +8653,7 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 	switch (outputFormat)
 	{
 		case NDSColorFormat_BGR555_Rev:
-			newCustomVRAM = (void *)malloc_alignedCacheLine(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
+			newCustomVRAM = (void *)malloc_alignedPage(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
 			memset(newCustomVRAM, 0, ((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
 			memset_u16(this->_masterFramebuffer, 0x8000, (this->_displayInfo.framebufferPageSize * this->_displayInfo.framebufferPageCount) / sizeof(u16));
 			this->_customVRAM = newCustomVRAM;
@@ -7982,7 +8661,7 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 			break;
 			
 		case NDSColorFormat_BGR666_Rev:
-			newCustomVRAM = (void *)malloc_alignedCacheLine(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
+			newCustomVRAM = (void *)malloc_alignedPage(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
 			memset(newCustomVRAM, 0, ((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
 			memset_u32(this->_masterFramebuffer, 0x1F000000, (this->_displayInfo.framebufferPageSize * this->_displayInfo.framebufferPageCount) / sizeof(FragmentColor));
 			this->_customVRAM = newCustomVRAM;
@@ -7990,7 +8669,7 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 			break;
 			
 		case NDSColorFormat_BGR888_Rev:
-			newCustomVRAM = (void *)malloc_alignedCacheLine(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(FragmentColor));
+			newCustomVRAM = (void *)malloc_alignedPage(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(FragmentColor));
 			memset(newCustomVRAM, 0, ((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(FragmentColor));
 			memset_u32(this->_masterFramebuffer, 0xFF000000, (this->_displayInfo.framebufferPageSize * this->_displayInfo.framebufferPageCount) / sizeof(FragmentColor));
 			this->_customVRAM = newCustomVRAM;
