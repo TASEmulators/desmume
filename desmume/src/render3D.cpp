@@ -488,6 +488,75 @@ Render3DError Render3D::UpdateToonTable(const u16 *toonTableBuffer)
 	return RENDER3DERROR_NOERR;
 }
 
+template <bool ISCOLORBLANK, bool ISDEPTHBLANK>
+void Render3D::_ClearImageScrolledLoop(const u8 xScroll, const u8 yScroll, const u16 *__restrict inColor16, const u16 *__restrict inDepth16, const u8 inPolyID,
+									   u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog, u8 *__restrict outPolyID)
+{
+	if (ISCOLORBLANK && ISDEPTHBLANK)
+	{
+		memset(outColor16, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+		memset(outDepth24, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u32));
+		memset(outFog, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u8));
+		memset(outPolyID, inPolyID, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u8));
+	}
+	else
+	{
+		if (ISCOLORBLANK)
+		{
+			// Hint to when the clear color image pointer is pointing to blank memory.
+			// In this case, just do a simple zero fill for speed.
+			//
+			// Test cases:
+			// - Sonic Chronicles: The Dark Brotherhood
+			// - The Chronicles of Narnia: The Lion, the Witch and the Wardrobe
+			memset(outColor16, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+		}
+		
+		if (ISDEPTHBLANK)
+		{
+			memset(outDepth24, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u32));
+			memset(outFog, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u8));
+		}
+		
+		for (size_t dstIndex = 0, iy = 0; iy < GPU_FRAMEBUFFER_NATIVE_HEIGHT; iy++)
+		{
+			const size_t y = ((iy + yScroll) & 0xFF) << 8;
+			
+			for (size_t ix = 0; ix < GPU_FRAMEBUFFER_NATIVE_WIDTH; dstIndex++, ix++)
+			{
+				const size_t x = (ix + xScroll) & 0xFF;
+				const size_t srcIndex = y | x;
+				
+				// Clear image color buffer in RGBA5551 format.
+				//
+				// Test cases:
+				// - Harry Potter and the Order of Phoenix
+				// - Blazer Drive
+				if (!ISCOLORBLANK)
+				{
+					outColor16[dstIndex] = inColor16[srcIndex];
+				}
+				
+				// Clear image depth buffer, where the first 15 bits are converted to
+				// 24-bit depth, and the remaining MSB is the fog flag.
+				//
+				// Test cases:
+				// - Harry Potter and the Order of Phoenix
+				// - Blazer Drive
+				// - Sonic Chronicles: The Dark Brotherhood
+				// - The Chronicles of Narnia: The Lion, the Witch and the Wardrobe
+				if (!ISDEPTHBLANK)
+				{
+					outDepth24[dstIndex] = DS_DEPTH15TO24(inDepth16[srcIndex]);
+					outFog[dstIndex] = BIT15(inDepth16[srcIndex]);
+				}
+				
+				outPolyID[dstIndex] = inPolyID;
+			}
+		}
+	}
+}
+
 Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
@@ -530,27 +599,28 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 		}
 		else
 		{
-			for (size_t dstIndex = 0, iy = 0; iy < GPU_FRAMEBUFFER_NATIVE_HEIGHT; iy++)
+			const bool isClearColorBlank = (clearColorBuffer >= (u16 *)MMU.blank_memory);
+			const bool isClearDepthBlank = (clearDepthBuffer >= (u16 *)MMU.blank_memory);
+			
+			if (!isClearColorBlank && !isClearDepthBlank)
 			{
-				const size_t y = ((iy + yScroll) & 0xFF) << 8;
-				
-				for (size_t ix = 0; ix < GPU_FRAMEBUFFER_NATIVE_WIDTH; dstIndex++, ix++)
-				{
-					const size_t x = (ix + xScroll) & 0xFF;
-					const size_t srcIndex = y | x;
-					
-					//this is tested by harry potter and the order of the phoenix.
-					//TODO (optimization) dont do this if we are mapped to blank memory (such as in sonic chronicles)
-					//(or use a special zero fill in the bulk clearing above)
-					this->clearImageColor16Buffer[dstIndex] = clearColorBuffer[srcIndex];
-					
-					//this is tested quite well in the sonic chronicles main map mode
-					//where depth values are used for trees etc you can walk behind
-					this->clearImageDepthBuffer[dstIndex] = DS_DEPTH15TO24(clearDepthBuffer[srcIndex]);
-					
-					this->clearImageFogBuffer[dstIndex] = BIT15(clearDepthBuffer[srcIndex]);
-					this->clearImagePolyIDBuffer[dstIndex] = clearFragment.opaquePolyID;
-				}
+				this->_ClearImageScrolledLoop<false, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+			}
+			else if (isClearColorBlank)
+			{
+				this->_ClearImageScrolledLoop< true, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+			}
+			else if (isClearDepthBlank)
+			{
+				this->_ClearImageScrolledLoop<false,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+			}
+			else
+			{
+				this->_ClearImageScrolledLoop< true,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 			}
 		}
 		
@@ -758,6 +828,11 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 		}
 		else
 		{
+			// FIXME: Fix SSE2 support for scrolled clear images.
+			// The depth-related code below doesn't actually work, and I don't know why
+			// this is, so just use the scalar version for now.
+			// - rogerman, 2018/09/19
+			/*
 			const size_t shiftCount = xScroll & 0x07;
 			
 			for (size_t dstIndex = 0, iy = 0; iy < GPU_FRAMEBUFFER_NATIVE_HEIGHT; iy++)
@@ -849,6 +924,30 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 					_mm_storel_epi64((__m128i *)(this->clearImageFogBuffer + dstIndex), _mm_packs_epi16(clearFog, _mm_setzero_si128()));
 					_mm_storel_epi64((__m128i *)(this->clearImagePolyIDBuffer + dstIndex), opaquePolyID_vec128);
 				}
+			}
+			*/
+			const bool isClearColorBlank = (clearColorBuffer >= (u16 *)MMU.blank_memory);
+			const bool isClearDepthBlank = (clearDepthBuffer >= (u16 *)MMU.blank_memory);
+			
+			if (!isClearColorBlank && !isClearDepthBlank)
+			{
+				this->_ClearImageScrolledLoop<false, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+			}
+			else if (isClearColorBlank)
+			{
+				this->_ClearImageScrolledLoop< true, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+			}
+			else if (isClearDepthBlank)
+			{
+				this->_ClearImageScrolledLoop<false,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+			}
+			else
+			{
+				this->_ClearImageScrolledLoop< true,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 			}
 		}
 		
