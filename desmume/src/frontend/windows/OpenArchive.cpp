@@ -32,6 +32,7 @@
 #include "resource.h"
 #include "main.h"
 #include "utils/decrypt/header.h"
+#include "utils/xstring.h"
 
 static char Str_Tmp[1024];
 
@@ -418,7 +419,7 @@ bool ObtainFile(const char* Name, char *const & LogicalName, char *const & Physi
 	{
 		//before sending to FEX, see if we're known to be an NDS file
 		//(this will stop games beginning with the name ZOO from being mis-recognized as a zoo file)
-		FILE* inf = fopen(PhysicalName,"rb");
+		FILE* inf = _wfopen(mbstowcs((std::string)PhysicalName).c_str(),L"rb");
 		if(!inf) return false;
 		u8 bytes512[512];
 		bool got512 = fread(bytes512,1,512,inf)==512;

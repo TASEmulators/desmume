@@ -3055,9 +3055,9 @@ LRESULT OpenFile()
 	HWND hwnd = MainWindow->getHWnd();
 
 	int filterSize = 0, i = 0;
-	OPENFILENAME ofn;
-	char filename[MAX_PATH] = "",
-		fileFilter[512]="";
+	OPENFILENAMEW ofn;
+	wchar_t filename[MAX_PATH] = L"",
+		fileFilter[512]=L"";
 	NDS_Pause(); //Stop emulation while opening new rom
 
 	ZeroMemory(&ofn, sizeof(ofn));
@@ -3065,7 +3065,7 @@ LRESULT OpenFile()
 	ofn.hwndOwner = hwnd;
 
 	ofn.lpstrFilter = 
-		"All Usable Files (*.nds, *.ds.gba, *.srl, *.zip, *.7z, *.rar, *.gz)\0*.nds;*.ds.gba;*.srl;*.zip;*.7z;*.rar;*.gz\0"
+		L"All Usable Files (*.nds, *.ds.gba, *.srl, *.zip, *.7z, *.rar, *.gz)\0*.nds;*.ds.gba;*.srl;*.zip;*.7z;*.rar;*.gz\0"
 		"NDS ROM file (*.nds,*.srl)\0*.nds;*.srl\0"
 		"NDS/GBA ROM File (*.ds.gba)\0*.ds.gba\0"
 		"Zipped NDS ROM file (*.zip)\0*.zip\0"
@@ -3079,12 +3079,12 @@ LRESULT OpenFile()
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFile =  filename;
 	ofn.nMaxFile = MAX_PATH;
-	ofn.lpstrDefExt = "nds";
+	ofn.lpstrDefExt = L"nds";
 	ofn.Flags = OFN_NOCHANGEDIR | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-	std::string dir = path.getpath(path.ROMS);
+	std::wstring dir = mbstowcs(path.getpath(path.ROMS));
 	ofn.lpstrInitialDir = dir.c_str();
 
-	if (GetOpenFileName(&ofn) == NULL)
+	if (GetOpenFileNameW(&ofn) == NULL)
 	{
 		NDS_UnPause();
 		return 0;
@@ -3093,13 +3093,13 @@ LRESULT OpenFile()
 	{
 		if(path.savelastromvisit)
 		{
-			std::string dir = Path::GetFileDirectoryPath(filename);
+			std::string dir = Path::GetFileDirectoryPath(wcstombs(filename));
 			path.setpath(path.ROMS, dir);
 			WritePrivateProfileString(SECTION, ROMKEY, dir.c_str(), IniName);
 		}
 	}
 
-	if(!OpenCore(filename))
+	if(!OpenCore(wcstombs((std::wstring)filename).c_str()))
 		return 0;
 
 //	if(!GetOpenFileName(&ofn))

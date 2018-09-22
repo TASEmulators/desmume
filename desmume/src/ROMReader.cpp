@@ -25,6 +25,8 @@
 #include <zzip/zzip.h>
 #endif
 
+#include "utils/xstring.h"
+
 #ifdef WIN32
 #define stat(...) _stat(__VA_ARGS__)
 #define S_IFMT _S_IFMT
@@ -86,7 +88,7 @@ void* STDROMReaderInit(const char* filename)
 		return 0;
 #endif
 
-	FILE* inf = fopen(filename, "rb");
+	FILE* inf = _wfopen(mbstowcs((std::string)filename).c_str(),L"rb");
 	if(!inf) return NULL;
 
 	STDROMReaderData* ret = new STDROMReaderData();
