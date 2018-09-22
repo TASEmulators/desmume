@@ -290,7 +290,7 @@ std::wstring mbstowcs(std::string str)
 	size_t len = utf8len(str.c_str());
 	u32* tmp32 = new u32[len+1];
 	wchar_t* tmp16 = new wchar_t[len+1];
-	utf8_conv_utf32(tmp32,len+1,str.c_str(),len+1);
+	utf8_conv_utf32(tmp32,len+1,str.c_str(),str.size()+1);
 
 	//truncate the utf32 output to utf16.
 	//I know that's amazingly sloppy, but it should work for us, probably (libretro-common's facilities are underpowered at the present)
@@ -307,8 +307,8 @@ std::wstring mbstowcs(std::string str)
 std::string wcstombs(std::wstring str)
 {
 	size_t len = str.length();
-	char *tmp8 = new char[len+1];
-	utf16_to_char_string((u16*)str.c_str(),tmp8,len+1);
+	char *tmp8 = new char[len*4+1]; //allow space for string to inflate
+	utf16_to_char_string((u16*)str.c_str(),tmp8,len*4+1);
 	std::string ret = tmp8;
 	delete[] tmp8;
 	return ret;
