@@ -87,8 +87,13 @@ void* STDROMReaderInit(const char* filename)
  	if ((sb.st_mode & S_IFMT) != S_IFREG)
 		return 0;
 #endif
-
+	
+#ifdef WIN32
 	FILE* inf = _wfopen(mbstowcs((std::string)filename).c_str(),L"rb");
+#else
+	FILE* inf = fopen(filename, "rb");
+#endif
+	
 	if(!inf) return NULL;
 
 	STDROMReaderData* ret = new STDROMReaderData();
