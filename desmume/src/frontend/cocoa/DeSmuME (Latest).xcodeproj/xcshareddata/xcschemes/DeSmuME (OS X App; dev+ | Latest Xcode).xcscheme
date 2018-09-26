@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0440"
+   LastUpgradeVersion = "0510"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "AB796CA415CDCBA200C59155"
-               BuildableName = "DeSmuME.app"
-               BlueprintName = "DeSmuME (OS X App)"
+               BlueprintIdentifier = "AB8F3C171A53AC2600A80BF6"
+               BuildableName = "DeSmuME (dev+).app"
+               BlueprintName = "DeSmuME (OS X App; dev+ | Latest Xcode)"
                ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -32,9 +32,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "AB796CA415CDCBA200C59155"
-            BuildableName = "DeSmuME.app"
-            BlueprintName = "DeSmuME (OS X App)"
+            BlueprintIdentifier = "AB8F3C171A53AC2600A80BF6"
+            BuildableName = "DeSmuME (dev+).app"
+            BlueprintName = "DeSmuME (OS X App; dev+ | Latest Xcode)"
             ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -50,16 +50,14 @@
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
-      enableGPUFrameCaptureMode = "3"
-      enableGPUValidationMode = "1"
       allowLocationSimulation = "YES">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "AB796CA415CDCBA200C59155"
-            BuildableName = "DeSmuME.app"
-            BlueprintName = "DeSmuME (OS X App)"
+            BlueprintIdentifier = "AB8F3C171A53AC2600A80BF6"
+            BuildableName = "DeSmuME (dev+).app"
+            BlueprintName = "DeSmuME (OS X App; dev+ | Latest Xcode)"
             ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -76,9 +74,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "AB796CA415CDCBA200C59155"
-            BuildableName = "DeSmuME.app"
-            BlueprintName = "DeSmuME (OS X App)"
+            BlueprintIdentifier = "AB8F3C171A53AC2600A80BF6"
+            BuildableName = "DeSmuME (dev+).app"
+            BlueprintName = "DeSmuME (OS X App; dev+ | Latest Xcode)"
             ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

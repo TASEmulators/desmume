@@ -15,6 +15,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+
 #include "macOS_driver.h"
 #include "ClientAVCaptureObject.h"
 #include "ClientExecutionControl.h"
