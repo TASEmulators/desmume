@@ -2835,7 +2835,7 @@
 		ABDDF7C41898F024007583C1 /* Icon_DisplayToggle_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DisplayToggle_420x420.png; path = images/Icon_DisplayToggle_420x420.png; sourceTree = "<group>"; };
 		ABDDF7C71898F032007583C1 /* Icon_FrameAdvance_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameAdvance_420x420.png; path = images/Icon_FrameAdvance_420x420.png; sourceTree = "<group>"; };
 		ABDDF7C81898F032007583C1 /* Icon_FrameJump_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameJump_420x420.png; path = images/Icon_FrameJump_420x420.png; sourceTree = "<group>"; };
-		ABE145B91FBBA71A0097A4A8 /* DeSmuME (Xcode 6).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Xcode 6).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABE145B91FBBA71A0097A4A8 /* DeSmuME (extract NIB).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (extract NIB).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_videofilter.h; sourceTree = "<group>"; };
 		ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_videofilter.mm; sourceTree = "<group>"; };
 		ABE670251415DE6C00E8E4C9 /* tinystr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinystr.cpp; sourceTree = "<group>"; };
@@ -3234,7 +3234,7 @@
 				ABB3C6471501BC6D00E0C22E /* DeSmuME.oecoreplugin */,
 				AB796D7015CDCBA200C59155 /* DeSmuME (Debug).app */,
 				AB8F3D2E1A53AC2600A80BF6 /* DeSmuME (Debug, dev+).app */,
-				ABE145B91FBBA71A0097A4A8 /* DeSmuME (Xcode 6).app */,
+				ABE145B91FBBA71A0097A4A8 /* DeSmuME (extract NIB).app */,
 				AB79013D215B84E50082AE82 /* DeSmuME (Debug).app */,
 				AB79029A215B84F20082AE82 /* DeSmuME (Debug, dev+).app */,
 			);
@@ -4383,9 +4383,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		8D1107260486CEB800E47090 /* DeSmuME (OS X App; v10.5 Leopard Release Build | Xcode 9) */ = {
+		8D1107260486CEB800E47090 /* DeSmuME (OS X App; v10.5 Leopard Release Build -- Xcode 9) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; v10.5 Leopard Release Build | Xcode 9)" */;
+			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; v10.5 Leopard Release Build -- Xcode 9)" */;
 			buildPhases = (
 				8D1107290486CEB800E47090 /* Resources */,
 				8D11072C0486CEB800E47090 /* Sources */,
@@ -4396,15 +4396,15 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App; v10.5 Leopard Release Build | Xcode 9)";
+			name = "DeSmuME (OS X App; v10.5 Leopard Release Build -- Xcode 9)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = 8D1107320486CEB800E47090 /* DeSmuME.app */;
 			productType = "com.apple.product-type.application";
 		};
-		AB79013F215B84F20082AE82 /* DeSmuME (OS X App with 32-bit; dev+ | Xcode 9) */ = {
+		AB79013F215B84F20082AE82 /* DeSmuME (OS X App with 32-bit; dev+ -- Xcode 9) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB790297215B84F20082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App with 32-bit; dev+ | Xcode 9)" */;
+			buildConfigurationList = AB790297215B84F20082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App with 32-bit; dev+ -- Xcode 9)" */;
 			buildPhases = (
 				AB790140215B84F20082AE82 /* ShellScript */,
 				AB790141215B84F20082AE82 /* Resources */,
@@ -4416,15 +4416,15 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App with 32-bit; dev+ | Xcode 9)";
+			name = "DeSmuME (OS X App with 32-bit; dev+ -- Xcode 9)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = AB79029A215B84F20082AE82 /* DeSmuME (Debug, dev+).app */;
 			productType = "com.apple.product-type.application";
 		};
-		AB796CA415CDCBA200C59155 /* DeSmuME (OS X App | Latest Xcode) */ = {
+		AB796CA415CDCBA200C59155 /* DeSmuME (OS X App -- Latest Xcode) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB796D6D15CDCBA200C59155 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App | Latest Xcode)" */;
+			buildConfigurationList = AB796D6D15CDCBA200C59155 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App -- Latest Xcode)" */;
 			buildPhases = (
 				AB796CA515CDCBA200C59155 /* ShellScript */,
 				AB796CA615CDCBA200C59155 /* Resources */,
@@ -4437,15 +4437,15 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App | Latest Xcode)";
+			name = "DeSmuME (OS X App -- Latest Xcode)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = AB796D7015CDCBA200C59155 /* DeSmuME (Debug).app */;
 			productType = "com.apple.product-type.application";
 		};
-		AB79FFE2215B84E50082AE82 /* DeSmuME (OS X App with 32-bit | Xcode 9) */ = {
+		AB79FFE2215B84E50082AE82 /* DeSmuME (OS X App with 32-bit -- Xcode 9) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB79013A215B84E50082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App with 32-bit | Xcode 9)" */;
+			buildConfigurationList = AB79013A215B84E50082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App with 32-bit -- Xcode 9)" */;
 			buildPhases = (
 				AB79FFE3215B84E50082AE82 /* ShellScript */,
 				AB79FFE4215B84E50082AE82 /* Resources */,
@@ -4458,15 +4458,15 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App with 32-bit | Xcode 9)";
+			name = "DeSmuME (OS X App with 32-bit -- Xcode 9)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = AB79013D215B84E50082AE82 /* DeSmuME (Debug).app */;
 			productType = "com.apple.product-type.application";
 		};
-		AB8F3C171A53AC2600A80BF6 /* DeSmuME (OS X App; dev+ | Latest Xcode) */ = {
+		AB8F3C171A53AC2600A80BF6 /* DeSmuME (OS X App; dev+ -- Latest Xcode) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB8F3D2B1A53AC2600A80BF6 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; dev+ | Latest Xcode)" */;
+			buildConfigurationList = AB8F3D2B1A53AC2600A80BF6 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; dev+ -- Latest Xcode)" */;
 			buildPhases = (
 				AB8F3C181A53AC2600A80BF6 /* ShellScript */,
 				AB8F3C191A53AC2600A80BF6 /* Resources */,
@@ -4478,15 +4478,15 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App; dev+ | Latest Xcode)";
+			name = "DeSmuME (OS X App; dev+ -- Latest Xcode)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = AB8F3D2E1A53AC2600A80BF6 /* DeSmuME (Debug, dev+).app */;
 			productType = "com.apple.product-type.application";
 		};
-		ABB3C6461501BC6D00E0C22E /* DeSmuME (OpenEmu Plug-in | Latest Xcode) */ = {
+		ABB3C6461501BC6D00E0C22E /* DeSmuME (OpenEmu Plug-in -- Latest Xcode) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = ABB3C6571501BC6D00E0C22E /* Build configuration list for PBXNativeTarget "DeSmuME (OpenEmu Plug-in | Latest Xcode)" */;
+			buildConfigurationList = ABB3C6571501BC6D00E0C22E /* Build configuration list for PBXNativeTarget "DeSmuME (OpenEmu Plug-in -- Latest Xcode)" */;
 			buildPhases = (
 				ABB3C6611501BF3700E0C22E /* Resources */,
 				AB2DF23515E0839D00B4D0BC /* ShellScript */,
@@ -4497,14 +4497,14 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OpenEmu Plug-in | Latest Xcode)";
+			name = "DeSmuME (OpenEmu Plug-in -- Latest Xcode)";
 			productName = DeSmuME;
 			productReference = ABB3C6471501BC6D00E0C22E /* DeSmuME.oecoreplugin */;
 			productType = "com.apple.product-type.bundle";
 		};
-		ABE144581FBBA71A0097A4A8 /* DeSmuME (OS X App; .NIB for v10.5 Leopard Release Build | Xcode 6) */ = {
+		ABE144581FBBA71A0097A4A8 /* DeSmuME (OS X App; .NIB for v10.5 Leopard Release Build -- Xcode 6) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = ABE145B61FBBA71A0097A4A8 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; .NIB for v10.5 Leopard Release Build | Xcode 6)" */;
+			buildConfigurationList = ABE145B61FBBA71A0097A4A8 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; .NIB for v10.5 Leopard Release Build -- Xcode 6)" */;
 			buildPhases = (
 				ABE1445A1FBBA71A0097A4A8 /* Resources */,
 				ABE144CD1FBBA71A0097A4A8 /* Sources */,
@@ -4514,10 +4514,10 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App; .NIB for v10.5 Leopard Release Build | Xcode 6)";
+			name = "DeSmuME (OS X App; .NIB for v10.5 Leopard Release Build -- Xcode 6)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
-			productReference = ABE145B91FBBA71A0097A4A8 /* DeSmuME (Xcode 6).app */;
+			productReference = ABE145B91FBBA71A0097A4A8 /* DeSmuME (extract NIB).app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -4548,13 +4548,13 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AB796CA415CDCBA200C59155 /* DeSmuME (OS X App | Latest Xcode) */,
-				AB8F3C171A53AC2600A80BF6 /* DeSmuME (OS X App; dev+ | Latest Xcode) */,
-				AB79FFE2215B84E50082AE82 /* DeSmuME (OS X App with 32-bit | Xcode 9) */,
-				AB79013F215B84F20082AE82 /* DeSmuME (OS X App with 32-bit; dev+ | Xcode 9) */,
-				ABE144581FBBA71A0097A4A8 /* DeSmuME (OS X App; .NIB for v10.5 Leopard Release Build | Xcode 6) */,
-				8D1107260486CEB800E47090 /* DeSmuME (OS X App; v10.5 Leopard Release Build | Xcode 9) */,
-				ABB3C6461501BC6D00E0C22E /* DeSmuME (OpenEmu Plug-in | Latest Xcode) */,
+				AB796CA415CDCBA200C59155 /* DeSmuME (OS X App -- Latest Xcode) */,
+				AB8F3C171A53AC2600A80BF6 /* DeSmuME (OS X App; dev+ -- Latest Xcode) */,
+				AB79FFE2215B84E50082AE82 /* DeSmuME (OS X App with 32-bit -- Xcode 9) */,
+				AB79013F215B84F20082AE82 /* DeSmuME (OS X App with 32-bit; dev+ -- Xcode 9) */,
+				ABE144581FBBA71A0097A4A8 /* DeSmuME (OS X App; .NIB for v10.5 Leopard Release Build -- Xcode 6) */,
+				8D1107260486CEB800E47090 /* DeSmuME (OS X App; v10.5 Leopard Release Build -- Xcode 9) */,
+				ABB3C6461501BC6D00E0C22E /* DeSmuME (OpenEmu Plug-in -- Latest Xcode) */,
 			);
 		};
 /* End PBXProject section */
@@ -7290,7 +7290,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AB79013A215B84E50082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App with 32-bit | Xcode 9)" */ = {
+		AB79013A215B84E50082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App with 32-bit -- Xcode 9)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB79013B215B84E50082AE82 /* Debug */,
@@ -7299,7 +7299,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB790297215B84F20082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App with 32-bit; dev+ | Xcode 9)" */ = {
+		AB790297215B84F20082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App with 32-bit; dev+ -- Xcode 9)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB790298215B84F20082AE82 /* Debug */,
@@ -7308,7 +7308,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB796D6D15CDCBA200C59155 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App | Latest Xcode)" */ = {
+		AB796D6D15CDCBA200C59155 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App -- Latest Xcode)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB796D6E15CDCBA200C59155 /* Debug */,
@@ -7317,7 +7317,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB8F3D2B1A53AC2600A80BF6 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; dev+ | Latest Xcode)" */ = {
+		AB8F3D2B1A53AC2600A80BF6 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; dev+ -- Latest Xcode)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB8F3D2C1A53AC2600A80BF6 /* Debug */,
@@ -7326,7 +7326,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		ABB3C6571501BC6D00E0C22E /* Build configuration list for PBXNativeTarget "DeSmuME (OpenEmu Plug-in | Latest Xcode)" */ = {
+		ABB3C6571501BC6D00E0C22E /* Build configuration list for PBXNativeTarget "DeSmuME (OpenEmu Plug-in -- Latest Xcode)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				ABB3C6581501BC6D00E0C22E /* Debug */,
@@ -7335,7 +7335,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		ABE145B61FBBA71A0097A4A8 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; .NIB for v10.5 Leopard Release Build | Xcode 6)" */ = {
+		ABE145B61FBBA71A0097A4A8 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; .NIB for v10.5 Leopard Release Build -- Xcode 6)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				ABE145B71FBBA71A0097A4A8 /* Debug */,
@@ -7344,7 +7344,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; v10.5 Leopard Release Build | Xcode 9)" */ = {
+		C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; v10.5 Leopard Release Build -- Xcode 9)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C01FCF4B08A954540054247B /* Debug */,
