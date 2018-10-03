@@ -1800,6 +1800,8 @@ class WinDriver : public BaseDriver
 
 		CheckMessages();
 
+		if(finished) ExitProcess(0); //I guess.... fixes hangs when exiting while a lua script is running
+
 		if(!romloaded)
 			return ESTEP_DONE;
 
