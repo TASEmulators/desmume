@@ -928,11 +928,13 @@ static void SetVertex()
 
 static void UpdateProjection()
 {
+#ifdef HAVE_LUA
 	if(freelookMode == 0) return;
 	float floatproj[16];
 	for(int i=0;i<16;i++)
 		floatproj[i] = mtxCurrent[MATRIXMODE_PROJECTION][i]/((float)(1<<12));
 	CallRegistered3dEvent(0,floatproj);
+#endif
 }
 
 static void gfx3d_glPolygonAttrib_cache()
