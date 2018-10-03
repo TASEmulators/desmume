@@ -41,7 +41,7 @@ function GetGitExe()
 
 	WScript.Echo("Cannot find git or git.cmd, check your PATH:\n" +
 		wshShell.ExpandEnvironmentStrings("%PATH%"));
-	WScript.Quit(1);
+	return "";
 }
 
 function GetFirstStdOutLine(cmd)
@@ -72,11 +72,20 @@ function GetFileContents(f)
 }
 
 // get info from git
+var revision = "SCM_REV_STR";
+var describe = "SCM_DESC_STR";
+var branch = "SCM_BRANCH_STR"
+var isStable = "0"
+
 var gitexe = GetGitExe();
-var revision	= GetFirstStdOutLine(gitexe + cmd_revision);
-var describe	= GetFirstStdOutLine(gitexe + cmd_describe);
-var branch		= GetFirstStdOutLine(gitexe + cmd_branch);
-var isStable	= +("master" == branch || "stable" == branch);
+
+if(gitexe != "")
+{	
+	revision	= GetFirstStdOutLine(gitexe + cmd_revision);
+	describe	= GetFirstStdOutLine(gitexe + cmd_describe);
+	branch		= GetFirstStdOutLine(gitexe + cmd_branch);
+	isStable	= +("master" == branch || "stable" == branch);
+}
 
 // remove hash (and trailing "-0" if needed) from description
 describe = describe.replace(/(-0)?-[^-]+(-dirty)?$/, '$2');
