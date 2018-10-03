@@ -3830,6 +3830,38 @@ DEFINE_LUA_FUNCTION(emu_registermenustart, "func")
 	return 1;
 }
 
+DEFINE_LUA_FUNCTION(emu_set3dtransform, "mode, matrix")
+{
+	extern int freelookMode;
+	extern s32 freelookMatrix[16];
+
+	int mode = luaL_checkinteger(L,1);
+	freelookMode = mode;
+	if(mode == 2 || mode == 3)
+	{
+		for(int i=0;i<16;i++)
+		{
+			lua_rawgeti(L, 2, i+1);
+			freelookMatrix[i] = (s32)(lua_tonumber(L,-1)*(1<<12));
+			lua_pop(L,1);
+		}
+	}
+
+	return 0;
+}
+
+DEFINE_LUA_FUNCTION(emu_register3devent, "func")
+{
+	if (!lua_isnil(L,1))
+		luaL_checktype(L, 1, LUA_TFUNCTION);
+	lua_settop(L,1);
+	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_REGISTER3DEVENT]);
+	lua_insert(L,1);
+	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_REGISTER3DEVENT]);
+	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	return 1;
+}
+
 // TODO
 /*
 DEFINE_LUA_FUNCTION(emu_loadrom, "filename")
@@ -4674,6 +4706,8 @@ static const struct luaL_reg emulib [] =
 	{"addmenu", emu_addmenu},
 	{"setmenuiteminfo", emu_setmenuiteminfo},
 	{"registermenustart", emu_registermenustart},
+	{"register3devent", emu_register3devent},
+	{"set3dtransform", emu_set3dtransform},
 	// alternative names
 //	{"openrom", emu_loadrom},
 	{NULL, NULL}
@@ -5683,7 +5717,7 @@ bool AnyLuaActive()
 	return false;
 }
 
-void CallRegisteredLuaFunctions(LuaCallID calltype)
+void _CallRegisteredLuaFunctions(LuaCallID calltype, int (*beforeCallback)(lua_State*, void*), void* beforeCallbackArg)
 {
 	assert((unsigned int)calltype < (unsigned int)LUACALL_COUNT);
 	const char* idstring = luaCallIDStrings[calltype];
@@ -5720,7 +5754,9 @@ void CallRegisteredLuaFunctions(LuaCallID calltype)
 				bool wasRunning = info.running;
 				info.running = true;
 				RefreshScriptSpeedStatus();
-				int errorcode = lua_pcall(L, 0, 0, 0);
+				int nargs = 0;
+				if(beforeCallback) nargs = beforeCallback(L,beforeCallbackArg);
+				int errorcode = lua_pcall(L, nargs, 0, 0);
 				info.running = wasRunning;
 				RefreshScriptSpeedStatus();
 				if (errorcode)
@@ -5742,6 +5778,45 @@ void CallRegisteredLuaFunctions(LuaCallID calltype)
 
 		++iter;
 	}
+}
+
+void CallRegisteredLuaFunctions(LuaCallID calltype)
+{
+	_CallRegisteredLuaFunctions(calltype, NULL, NULL);
+}
+
+static struct {
+	int which;
+	void* arg;
+} todo3devent;
+
+int CallRegistered3dEvent_callback(lua_State* L, void* userarg)
+{
+	if(todo3devent.which == 0)
+	{
+		float* mat = (float*)todo3devent.arg;
+		lua_newtable(L);
+		for(int i=0;i<16;i++)
+		{
+			lua_pushnumber(L,mat[i]);
+			lua_rawseti(L,-2,i+1);
+		}
+		lua_setfield(L,LUA_GLOBALSINDEX,"registered3devent_arg");
+
+		lua_pushnumber(L,todo3devent.which);
+		lua_setfield(L,LUA_GLOBALSINDEX,"registered3devent_which");
+
+		return 0;
+	}
+
+	return 0;
+}
+
+void CallRegistered3dEvent(int which, void* arg)
+{
+	todo3devent.which = which;
+	todo3devent.arg = arg;
+	_CallRegisteredLuaFunctions(LUACALL_REGISTER3DEVENT, &CallRegistered3dEvent_callback, NULL);
 }
 
 void CallRegisteredLuaSaveFunctions(int savestateNumber, LuaSaveData& saveData)

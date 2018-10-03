@@ -37,6 +37,7 @@ enum LuaCallID
 	LUACALL_AFTERLOAD,
 	LUACALL_ONSTART,
 	LUACALL_ONINITMENU,
+	LUACALL_REGISTER3DEVENT,
 
 	LUACALL_SCRIPT_HOTKEY_1,
 	LUACALL_SCRIPT_HOTKEY_2,
@@ -58,6 +59,7 @@ enum LuaCallID
 	LUACALL_COUNT
 };
 void CallRegisteredLuaFunctions(LuaCallID calltype);
+void CallRegistered3dEvent(int which, void* arg);
 
 enum LuaMemHookType
 {

@@ -348,6 +348,9 @@ static u16 dsDiffuse, dsAmbient, dsSpecular, dsEmission;
 //used for indexing the shininess table during parameters to shininess command
 static u8 shininessInd = 0;
 
+// "Freelook" related things
+int freelookMode = 0;
+s32 freelookMatrix[16];
 
 //-----------cached things:
 //these dont need to go into the savestate. they can be regenerated from HW registers
@@ -743,8 +746,27 @@ static void SetVertex()
 	if(polylist->count >= POLYLIST_SIZE) 
 			return;
 
-	GEM_TransformVertex(mtxCurrent[MATRIXMODE_POSITION], coordTransformed); //modelview
-	GEM_TransformVertex(mtxCurrent[MATRIXMODE_PROJECTION], coordTransformed); //projection
+	if(freelookMode == 2)
+	{
+		//adjust projection
+		s32 tmp[16];
+		MatrixCopy(tmp,mtxCurrent[MATRIXMODE_PROJECTION]);
+		MatrixMultiply(tmp, freelookMatrix);
+		GEM_TransformVertex(mtxCurrent[MATRIXMODE_POSITION], coordTransformed); //modelview
+		GEM_TransformVertex(tmp, coordTransformed); //projection
+	}
+	else if(freelookMode == 3)
+	{
+		//use provided projection
+		GEM_TransformVertex(mtxCurrent[MATRIXMODE_POSITION], coordTransformed); //modelview
+		GEM_TransformVertex(freelookMatrix, coordTransformed); //projection
+	}
+	else
+	{
+		//no freelook
+		GEM_TransformVertex(mtxCurrent[MATRIXMODE_POSITION], coordTransformed); //modelview
+		GEM_TransformVertex(mtxCurrent[MATRIXMODE_PROJECTION], coordTransformed); //projection
+	}
 
 	//TODO - culling should be done here.
 	//TODO - viewport transform?
@@ -904,6 +926,15 @@ static void SetVertex()
 	}
 }
 
+static void UpdateProjection()
+{
+	if(freelookMode == 0) return;
+	float floatproj[16];
+	for(int i=0;i<16;i++)
+		floatproj[i] = mtxCurrent[MATRIXMODE_PROJECTION][i]/((float)(1<<12));
+	CallRegistered3dEvent(0,floatproj);
+}
+
 static void gfx3d_glPolygonAttrib_cache()
 {
 	// Light enable/disable
@@ -984,6 +1015,8 @@ static void gfx3d_glPushMatrix()
 			if (index == 1) MMU_new.gxstat.se = 1;
 			index += 1;
 			index &= 1;
+
+			UpdateProjection();
 		}
 		else
 		{
@@ -1031,6 +1064,8 @@ static void gfx3d_glPopMatrix(u32 v)
 			index ^= 1;
 			if (index == 1) MMU_new.gxstat.se = 1;
 			MatrixCopy(mtxCurrent[mode], mtxStackProjection.matrix[0]);
+
+			UpdateProjection();
 		}
 		else
 		{
@@ -1070,6 +1105,7 @@ static void gfx3d_glStoreMatrix(u32 v)
 		if (mode == MATRIXMODE_PROJECTION)
 		{
 			MatrixCopy(mtxStackProjection.matrix[0], mtxCurrent[MATRIXMODE_PROJECTION]);
+			UpdateProjection();
 		}
 		else
 		{
@@ -1102,6 +1138,7 @@ static void gfx3d_glRestoreMatrix(u32 v)
 		if (mode == MATRIXMODE_PROJECTION)
 		{
 			MatrixCopy(mtxCurrent[MATRIXMODE_PROJECTION], mtxStackProjection.matrix[0]);
+			UpdateProjection();
 		}
 		else
 		{
