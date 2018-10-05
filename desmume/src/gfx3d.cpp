@@ -1946,7 +1946,7 @@ void gfx3d_glAlphaFunc(u32 v)
 
 u32 gfx3d_glGetPosRes(const size_t index)
 {
-	return (u32)(PTcoords[index] * 4096.0f);
+	return (u32)(s32)(PTcoords[index] * 4096.0f);
 }
 
 //#define _3D_LOG_EXEC
