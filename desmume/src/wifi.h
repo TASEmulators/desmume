@@ -200,6 +200,8 @@
 /* WIFI misc constants */
 #define		WIFI_CHIPID					0x1440		/* emulates "old" wifi chip, new is 0xC340 */
 
+#define		WIFI_WORKING_PACKET_BUFFER_SIZE (16 * 1024 * sizeof(u8)) // 16 KB size
+
 // RF2958 Register Addresses
 enum RegAddrRF2958
 {
@@ -744,21 +746,39 @@ typedef struct
 	u8    data[105];
 } bb_t;
 
-#define WIFI_IRQ_RXEND					0
-#define WIFI_IRQ_TXEND					1
-#define WIFI_IRQ_RXINC					2
-#define WIFI_IRQ_TXERROR	            3
-#define WIFI_IRQ_RXOVF					4
-#define WIFI_IRQ_TXERROVF				5
-#define WIFI_IRQ_RXSTART				6
-#define WIFI_IRQ_TXSTART				7
-#define WIFI_IRQ_TXCOUNTEXP				8
-#define WIFI_IRQ_RXCOUNTEXP				9
-#define WIFI_IRQ_RFWAKEUP               11
-#define WIFI_IRQ_UNK					12
-#define WIFI_IRQ_TIMEPOSTBEACON			13
-#define WIFI_IRQ_TIMEBEACON             14
-#define WIFI_IRQ_TIMEPREBEACON          15
+enum WifiRFStatus
+{
+	WifiRFStatus0_Initial			= 0,
+	WifiRFStatus1_TXComplete		= 1,
+	WifiRFStatus2_TransitionRXTX	= 2,
+	WifiRFStatus3_TXEnabled			= 3,
+	WifiRFStatus4_TransitionTXRX	= 4,
+	WifiRFStatus5_MPHostReplyWait	= 5,
+	WifiRFStatus6_RXEnabled			= 6,
+	WifiRFStatus7_UNKNOWN7			= 7,
+	WifiRFStatus8_MPHostAcknowledge	= 8,
+	WifiRFStatus9_Idle				= 9
+};
+
+enum WifiIRQ
+{
+	WifiIRQ00_RXComplete			= 0,
+	WifiIRQ01_TXComplete			= 1,
+	WifiIRQ02_RXEventIncrement		= 2,
+	WifiIRQ03_TXErrorIncrement		= 3,
+	WifiIRQ04_RXEventOverflow		= 4,
+	WifiIRQ05_TXErrorOverflow		= 5,
+	WifiIRQ06_RXStart				= 6,
+	WifiIRQ07_TXStart				= 7,
+	WifiIRQ08_TXCountExpired		= 8,
+	WifiIRQ09_RXCountExpired		= 9,
+	WifiIRQ10_UNUSED				= 10,
+	WifiIRQ11_RFWakeup				= 11,
+	WifiIRQ12_UNKNOWN				= 12,
+	WifiIRQ13_TimeslotPostBeacon	= 13,
+	WifiIRQ14_TimeslotBeacon		= 14,
+	WifiIRQ15_TimeslotPreBeacon		= 15
+};
 
 enum EAPStatus
 {
@@ -773,14 +793,24 @@ enum WifiTXLocIndex
 	WifiTXLocIndex_CMD		= 1,
 	WifiTXLocIndex_LOC2		= 2,
 	WifiTXLocIndex_LOC3		= 3,
-	WifiTXLocIndex_BEACON	= 4
+	WifiTXLocIndex_BEACON	= 4,
+	WifiTXLocIndex_CMDREPLY	= 5
+};
+
+enum WifiStageID
+{
+	WifiStageID_PreambleDone			= 0,
+	WifiStageID_TransmitDone			= 1,
+	WifiStageID_CmdHostTransferDone		= 2,
+	WifiStageID_CmdHostAck				= 3,
+	WifiStageID_CmdReplyTransferDone	= 4
 };
 
 enum WifiEmulationLevel
 {
 	WifiEmulationLevel_Off = 0,
 	WifiEmulationLevel_Normal = 10000,
-	WifiEmulationLevel_Compatibility = 65535,
+	WifiEmulationLevel_Compatibility = 65535
 };
 
 enum WifiCommInterfaceID
@@ -939,7 +969,8 @@ typedef union
 #ifndef MSB_FIRST
 		u16 UNKNOWN1:8;
 		
-		u16 UNKNOWN2:5;
+		u16 UNKNOWN2:4;
+		u16 UpdateTXStat_0401:1;
 		u16 UpdateTXStat_0B01:1;
 		u16 UpdateTXStat_0800:1;
 		u16 UpdateTXStatBeacon:1;
@@ -1403,7 +1434,7 @@ typedef union
 		u16 UNKNOWN1:1;
 		u16 TransferRequest:1;
 	};
-} IOREG_W_TXBUF_LOCATION;							// 0x4808080, 0x4808090, 0x48080A0, 0x48080A4, 0x48080A8
+} IOREG_W_TXBUF_LOCATION;							// 0x4808080, 0x4808090, 0x4808094, 0x4808098, 0x48080A0, 0x48080A4, 0x48080A8
 
 typedef union
 {
@@ -1448,18 +1479,6 @@ typedef union
 		u16 :8;
 	};
 } IOREG_W_LISTENINT;								// 0x480808E
-
-typedef union
-{
-	u16 value;
-	
-	struct
-	{
-		u16 HalfwordAddress:12;
-		u16 UNKNOWN1:3;
-		u16 Enable:1;
-	};
-} IOREG_W_TXBUF_REPLY;								// 0x4808094, 0x4808098
 
 typedef union
 {
@@ -1561,11 +1580,13 @@ typedef union
 		u16 Loc2:1;
 		u16 Loc3:1;
 		u16 Beacon:1;
-		u16 UNKNOWN1:3;
+		u16 UNKNOWN1:2;
+		u16 CmdReply:1;
 		
 		u16 UNKNOWN2:8;
 #else
-		u16 UNKNOWN1:3;
+		u16 CmdReply:1;
+		u16 UNKNOWN1:2;
 		u16 Beacon:1;
 		u16 Loc3:1;
 		u16 Loc2:1;
@@ -2418,9 +2439,9 @@ typedef struct
 	IOREG_W_LISTENINT			LISTENINT;			// 0x480808E
 	IOREG_W_TXBUF_LOCATION		TXBUF_CMD;			// 0x4808090
 	IOREG_W_PADDING				pad_092;			// 0x4808092
-	IOREG_W_TXBUF_REPLY			TXBUF_REPLY1;		// 0x4808094
+	IOREG_W_TXBUF_LOCATION		TXBUF_REPLY1;		// 0x4808094
 	IOREG_W_PADDING				pad_096;			// 0x4808096
-	IOREG_W_TXBUF_REPLY			TXBUF_REPLY2;		// 0x4808098
+	IOREG_W_TXBUF_LOCATION		TXBUF_REPLY2;		// 0x4808098
 	IOREG_W_PADDING				pad_09A;			// 0x480809A
 	IOREG_W_INTERNAL_09C		INTERNAL_09C;		// 0x480809C
 	IOREG_W_PADDING				pad_09E;			// 0x480809E
@@ -2752,7 +2773,8 @@ typedef struct
 
 typedef struct
 {
-	size_t bodyLen;
+	IOREG_W_TXBUF_LOCATION *txLocation;
+	size_t emuPacketLength;
 	size_t remainingBytes;
 } TXPacketInfo;
 
@@ -2764,9 +2786,299 @@ typedef struct
 	u16 RAM[0x1000];
 	
 	WifiTXLocIndex txCurrentSlot;
-	TXPacketInfo txPacketInfo[5];
+	TXPacketInfo txPacketInfo[6];
 	u32 cmdCount_u32;
 } WifiData;
+
+// Emulator frame headers
+#define DESMUME_EMULATOR_FRAME_ID "DESMUME\0"
+#define DESMUME_EMULATOR_FRAME_CURRENT_VERSION 0x10
+
+typedef union
+{
+	u8 value;
+	
+	struct
+	{
+		u8 :7;
+		u8 IsTXRate20:1;
+	};
+} DesmumeFrameHeaderAttributes;
+
+typedef struct
+{
+	char frameID[8];				// "DESMUME\0" (null terminated string)
+	u8 version;						// Ad-hoc protocol version (for example 0x52 = v5.2)
+	DesmumeFrameHeaderAttributes packetAttributes; // Attribute bits for describing the packet
+	
+	u16 timeStamp;					// Timestamp for when the packet was sent.
+	u16 emuPacketSize;				// Size of the entire emulated packet in bytes.
+	
+	u16 reserved;					// Padding to make the header exactly 16 bytes.
+	
+} DesmumeFrameHeader;				// Should total 16 bytes
+
+// IEEE 802.11 Frame Information
+enum WifiFrameType
+{
+	WifiFrameType_Management = 0,
+	WifiFrameType_Control = 1,
+	WifiFrameType_Data = 2
+};
+
+enum WifiFrameManagementSubtype
+{
+	WifiFrameManagementSubtype_AssociationRequest		= 0x00,
+	WifiFrameManagementSubtype_AssociationResponse		= 0x01,
+	WifiFrameManagementSubtype_ReassociationRequest		= 0x02,
+	WifiFrameManagementSubtype_RessociationResponse		= 0x03,
+	WifiFrameManagementSubtype_ProbeRequest				= 0x04,
+	WifiFrameManagementSubtype_ProbeResponse			= 0x05,
+	WifiFrameManagementSubtype_RESERVED06				= 0x06,
+	WifiFrameManagementSubtype_RESERVED07				= 0x07,
+	WifiFrameManagementSubtype_Beacon					= 0x08,
+	WifiFrameManagementSubtype_ATIM						= 0x09,
+	WifiFrameManagementSubtype_Disassociation			= 0x0A,
+	WifiFrameManagementSubtype_Authentication			= 0x0B,
+	WifiFrameManagementSubtype_Deauthentication			= 0x0C,
+	WifiFrameManagementSubtype_RESERVED0D				= 0x0D,
+	WifiFrameManagementSubtype_RESERVED0E				= 0x0E,
+	WifiFrameManagementSubtype_RESERVED0F				= 0x0F
+};
+
+enum WifiFrameControlSubtype
+{
+	WifiFrameControlSubtype_RESERVED00		= 0x00,
+	WifiFrameControlSubtype_RESERVED01		= 0x01,
+	WifiFrameControlSubtype_RESERVED02		= 0x02,
+	WifiFrameControlSubtype_RESERVED03		= 0x03,
+	WifiFrameControlSubtype_RESERVED04		= 0x04,
+	WifiFrameControlSubtype_RESERVED05		= 0x05,
+	WifiFrameControlSubtype_RESERVED06		= 0x06,
+	WifiFrameControlSubtype_RESERVED07		= 0x07,
+	WifiFrameControlSubtype_RESERVED08		= 0x08,
+	WifiFrameControlSubtype_RESERVED09		= 0x09,
+	WifiFrameControlSubtype_PSPoll			= 0x0A,
+	WifiFrameControlSubtype_RTS				= 0x0B,
+	WifiFrameControlSubtype_CTS				= 0x0C,
+	WifiFrameControlSubtype_ACK				= 0x0D,
+	WifiFrameControlSubtype_End				= 0x0E,
+	WifiFrameControlSubtype_EndAck			= 0x0F
+};
+
+enum WifiFrameDataSubtype
+{
+	WifiFrameDataSubtype_Data			= 0x00,
+	WifiFrameDataSubtype_DataAck		= 0x01,
+	WifiFrameDataSubtype_DataPoll		= 0x02,
+	WifiFrameDataSubtype_DataAckPoll	= 0x03,
+	WifiFrameDataSubtype_Null			= 0x04,
+	WifiFrameDataSubtype_Ack			= 0x05,
+	WifiFrameDataSubtype_Poll			= 0x06,
+	WifiFrameDataSubtype_AckPoll		= 0x07,
+	WifiFrameDataSubtype_RESERVED08		= 0x08,
+	WifiFrameDataSubtype_RESERVED09		= 0x09,
+	WifiFrameDataSubtype_RESERVED0A		= 0x0A,
+	WifiFrameDataSubtype_RESERVED0B		= 0x0B,
+	WifiFrameDataSubtype_RESERVED0C		= 0x0C,
+	WifiFrameDataSubtype_RESERVED0D		= 0x0D,
+	WifiFrameDataSubtype_RESERVED0E		= 0x0E,
+	WifiFrameDataSubtype_RESERVED0F		= 0x0F
+};
+
+enum WifiFCFromToState
+{
+	WifiFCFromToState_STA2STA			= 0x0,
+	WifiFCFromToState_STA2DS			= 0x1,
+	WifiFCFromToState_DS2STA			= 0x2,
+	WifiFCFromToState_DS2DS				= 0x3
+};
+
+typedef union
+{
+	u16 value;
+	
+	struct
+	{
+		u16 Version:2;
+		u16 Type:2;
+		u16 Subtype:4;
+		
+		u16 ToDS:1;
+		u16 FromDS:1;
+		u16 MoreFragments:1;
+		u16 Retry:1;
+		u16 PowerManagement:1;
+		u16 MoreData:1;
+		u16 WEPEncryption:1;
+		u16 Order:1;
+	};
+	
+	struct
+	{
+		u16 :8;
+		
+		u16 FromToState:2;
+		u16 :6;
+	};
+} WifiFrameControl;
+
+typedef union
+{
+	u16 value;
+	
+	struct
+	{
+		u16 FragmentNumber:4;
+		u16 SequenceNumber:12;
+	};
+} WifiSequenceControl;
+
+typedef struct
+{
+	WifiFrameControl fc;
+	u16 duration;
+	u8 destMAC[6];
+	u8 sendMAC[6];
+	u8 BSSID[6];
+	WifiSequenceControl seqCtl;
+} WifiMgmtFrameHeader;
+
+typedef struct
+{
+	WifiFrameControl fc;
+	u16 aid;
+	u8 BSSID[6];
+	u8 txMAC[6];
+} WifiCtlFrameHeaderPSPoll;
+
+typedef struct
+{
+	WifiFrameControl fc;
+	u16 duration;
+	u8 rxMAC[6];
+	u8 txMAC[6];
+} WifiCtlFrameHeaderRTS;
+
+typedef struct
+{
+	WifiFrameControl fc;
+	u16 duration;
+	u8 rxMAC[6];
+} WifiCtlFrameHeaderCTS;
+
+typedef struct
+{
+	WifiFrameControl fc;
+	u16 duration;
+	u8 rxMAC[6];
+} WifiCtlFrameHeaderACK;
+
+typedef struct
+{
+	WifiFrameControl fc;
+	u16 duration;
+	u8 rxMAC[6];
+	u8 BSSID[6];
+} WifiCtlFrameHeaderEnd;
+
+typedef struct
+{
+	WifiFrameControl fc;
+	u16 duration;
+	u8 rxMAC[6];
+	u8 BSSID[6];
+} WifiCtlFrameHeaderEndAck;
+
+typedef struct
+{
+	WifiFrameControl fc;
+	u16 duration;
+	u8 destMAC[6];
+	u8 sendMAC[6];
+	u8 BSSID[6];
+	WifiSequenceControl seqCtl;
+} WifiDataFrameHeaderSTA2STA;
+
+typedef struct
+{
+	WifiFrameControl fc;
+	u16 duration;
+	u8 BSSID[6];
+	u8 sendMAC[6];
+	u8 destMAC[6];
+	WifiSequenceControl seqCtl;
+} WifiDataFrameHeaderSTA2DS;
+
+typedef struct
+{
+	WifiFrameControl fc;
+	u16 duration;
+	u8 destMAC[6];
+	u8 BSSID[6];
+	u8 sendMAC[6];
+	WifiSequenceControl seqCtl;
+} WifiDataFrameHeaderDS2STA;
+
+typedef struct
+{
+	WifiFrameControl fc;
+	u16 duration;
+	u8 rxMAC[6];
+	u8 txMAC[6];
+	u8 destMAC[6];
+	WifiSequenceControl seqCtl;
+	u8 sendMAC[6];
+} WifiDataFrameHeaderDS2DS;
+
+// IEEE 802.11 Frame Header Information
+typedef struct
+{
+	u8 destMAC[6];
+	u8 sendMAC[6];
+	u16 length;
+} WifiEthernetFrameHeader;
+
+// NDS Frame Header Information
+typedef struct
+{
+	u16 txStatus;
+	u16 mpSlaves;
+	u8 seqNumberControl;
+	u8 UNKNOWN1;
+	u16 UNKNOWN2;
+	u8 txRate;
+	u8 UNKNOWN3;
+	u16 length; // Total length of header+body+checksum, in bytes.
+} TXPacketHeader;
+
+typedef union
+{
+	u16 value;
+	
+	struct
+	{
+		u16 FrameType:4;
+		u16 UNKNOWN1:1;
+		u16 UNKNOWN2:3;
+		
+		u16 MoreFragments:1;
+		u16 UNKNOWN3:1;
+		u16 :5;
+		u16 MatchingBSSID:1;
+	};
+} RXPacketHeaderFlags;
+
+typedef struct
+{
+	RXPacketHeaderFlags rxFlags;
+	u16 UNKNOWN1;
+	u16 timeStamp;
+	u16 txRate;
+	u16 length; // Total length of header+body, in bytes (excluding the FCS checksum).
+	u8 rssiMax;
+	u8 rssiMin;
+} RXPacketHeader;
 
 extern LegacyWifiSFormat legacyWifiSF;
 
@@ -2855,13 +3167,25 @@ protected:
 	WifiEmulationLevel _emulationLevel;
 	u64 _usecCounter;
 	
+	u8 *_workingTXBuffer;
+	u8 *_workingRXBuffer;
+	
+	FILE *_packetCaptureFile; // PCAP file to store the Ethernet packets.
 public:
 	WifiCommInterface();
 	virtual ~WifiCommInterface();
 	
+	void PacketCaptureFileOpen();
+	void PacketCaptureFileClose();
+	void PacketCaptureFileWrite(const u8 *packet, u32 len, bool isReceived);
+	
+	const u8* RXPacketFilter(const u8 *rxBuffer, const size_t rxBytes, RXPacketHeader &outRXHeader);
+	void RXPacketCopy(const RXPacketHeader &rxHeader, const u8 *rxBuffer);
+	
 	virtual bool Start(WifiEmulationLevel emulationLevel) = 0;
 	virtual void Stop() = 0;
-	virtual void SendPacket(void *data, size_t len) = 0;
+	virtual void SendPacket(const TXPacketHeader &txHeader, const u8 *packetData) = 0;
+	virtual size_t RXPacketGet(u8 *rxTargetBuffer) = 0;
 	virtual void Trigger() = 0;
 };
 
@@ -2870,7 +3194,6 @@ class AdhocCommInterface : public WifiCommInterface
 protected:
 	void *_wifiSocket;
 	void *_sendAddr;
-	u8 *_packetBuffer;
 	
 public:
 	AdhocCommInterface();
@@ -2878,7 +3201,8 @@ public:
 	
 	virtual bool Start(WifiEmulationLevel emulationLevel);
 	virtual void Stop();
-	virtual void SendPacket(void *data, size_t len);
+	virtual void SendPacket(const TXPacketHeader &txHeader, const u8 *packetData);
+	virtual size_t RXPacketGet(u8 *rxTargetBuffer);
 	virtual void Trigger();
 };
 
@@ -2888,7 +3212,6 @@ protected:
 	ClientPCapInterface *_pcap;
 	int _bridgeDeviceIndex;
 	void *_bridgeDevice;
-	FILE *_packetCaptureFile; // PCAP file to store the Ethernet packets.
 	
 	u8 _curPacket[4096];
 	s32 _curPacketSize;
@@ -2899,7 +3222,7 @@ protected:
 	u16 _seqNum;
 	
 	void* _GetBridgeDeviceAtIndex(int deviceIndex, char *outErrorBuf);
-	bool _IsDNSRequestToWFC(u16 ethertype, u8 *body);
+	bool _IsDNSRequestToWFC(u16 ethertype, const u8 *body);
 	void _Deauthenticate();
 	void _SendBeacon();
 	
@@ -2913,15 +3236,10 @@ public:
 	int GetBridgeDeviceIndex();
 	void SetBridgeDeviceIndex(int deviceIndex);
 	
-	void PacketRX(const void *pktHeader, const u8 *pktData);
-	
-	void PacketCaptureFileOpen();
-	void PacketCaptureFileClose();
-	void PacketCaptureFileWrite(const u8 *packet, u32 len, bool isReceived);
-	
 	virtual bool Start(WifiEmulationLevel emulationLevel);
 	virtual void Stop();
-	virtual void SendPacket(void *data, size_t len);
+	virtual void SendPacket(const TXPacketHeader &txHeader, const u8 *packetData);
+	virtual size_t RXPacketGet(u8 *rxTargetBuffer);
 	virtual void Trigger();
 };
 
@@ -2978,7 +3296,7 @@ public:
 	
 	bool CommStart();
 	void CommStop();
-	void CommSendPacket(void *data, size_t len);
+	void CommSendPacket(const TXPacketHeader &txHeader, const u8 *packetData);
 	void CommTrigger();
 	
 	bool IsSocketsSupported();
