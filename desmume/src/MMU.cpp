@@ -5321,8 +5321,11 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		case REG_DISPA_VCOUNT:
 			if (nds.VCount >= 202 && nds.VCount <= 212)
 			{
-				printf("VCOUNT set to %i (previous value %i)\n", val, nds.VCount);
-				nds.VCount = val;
+				if (val != nds.VCount)
+				{
+					printf("VCOUNT set to %i (previous value %i)\n", val, nds.VCount);
+					nds.VCount = val;
+				}
 			}
 			else
 				printf("Attempt to set VCOUNT while not within 202-212 (%i), ignored\n", nds.VCount);
