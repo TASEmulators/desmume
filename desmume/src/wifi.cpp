@@ -468,7 +468,7 @@ static void WIFI_SetIRQ(const WifiIRQ irq)
 	
 	u16 oldFlags = io.IF.value & io.IE.value;
 	
-	io.IF.value |= (1 << irq);
+	io.IF.value |= ((1 << irq) & 0xFBFF);
 	u16 newFlags = io.IF.value & io.IE.value;
 	
 	if ( (oldFlags == 0) && (newFlags != 0) )
@@ -599,7 +599,6 @@ RXPacketHeader WIFI_GenerateRXHeader(const u8 *packetIEEE80211HeaderPtr, const u
 {
 	const WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
 	
-	size_t frameHeaderSize = 0;
 	RXPacketHeader rxHeader;
 	rxHeader.rxFlags.value = 0;
 	
@@ -620,8 +619,6 @@ RXPacketHeader WIFI_GenerateRXHeader(const u8 *packetIEEE80211HeaderPtr, const u
 			{
 				rxHeader.rxFlags.FrameType = 0x0;
 			}
-			
-			frameHeaderSize = sizeof(WifiMgmtFrameHeader);
 			break;
 		}
 			
@@ -635,36 +632,19 @@ RXPacketHeader WIFI_GenerateRXHeader(const u8 *packetIEEE80211HeaderPtr, const u
 				{
 					const WifiCtlFrameHeaderPSPoll &IEEE80211Header = (WifiCtlFrameHeaderPSPoll &)packetIEEE80211HeaderPtr[0];
 					rxHeader.rxFlags.MatchingBSSID = (WIFI_compareMAC(IEEE80211Header.BSSID, io.BSSID)) ? 1 : 0;
-					frameHeaderSize = sizeof(WifiCtlFrameHeaderPSPoll);
 					break;
 				}
 					
 				case WifiFrameControlSubtype_RTS:
-				{
-					rxHeader.rxFlags.MatchingBSSID = 0;
-					frameHeaderSize = sizeof(WifiCtlFrameHeaderRTS);
-					break;
-				}
-					
 				case WifiFrameControlSubtype_CTS:
-				{
-					rxHeader.rxFlags.MatchingBSSID = 0;
-					frameHeaderSize = sizeof(WifiCtlFrameHeaderCTS);
-					break;
-				}
-					
 				case WifiFrameControlSubtype_ACK:
-				{
 					rxHeader.rxFlags.MatchingBSSID = 0;
-					frameHeaderSize = sizeof(WifiCtlFrameHeaderACK);
 					break;
-				}
 					
 				case WifiFrameControlSubtype_End:
 				{
 					const WifiCtlFrameHeaderEnd &IEEE80211Header = (WifiCtlFrameHeaderEnd &)packetIEEE80211HeaderPtr[0];
 					rxHeader.rxFlags.MatchingBSSID = (WIFI_compareMAC(IEEE80211Header.BSSID, io.BSSID)) ? 1 : 0;
-					frameHeaderSize = sizeof(WifiCtlFrameHeaderEnd);
 					break;
 				}
 					
@@ -672,7 +652,6 @@ RXPacketHeader WIFI_GenerateRXHeader(const u8 *packetIEEE80211HeaderPtr, const u
 				{
 					const WifiCtlFrameHeaderEndAck &IEEE80211Header = (WifiCtlFrameHeaderEndAck &)packetIEEE80211HeaderPtr[0];
 					rxHeader.rxFlags.MatchingBSSID = (WIFI_compareMAC(IEEE80211Header.BSSID, io.BSSID)) ? 1 : 0;
-					frameHeaderSize = sizeof(WifiCtlFrameHeaderEndAck);
 					break;
 				}
 					
@@ -694,7 +673,6 @@ RXPacketHeader WIFI_GenerateRXHeader(const u8 *packetIEEE80211HeaderPtr, const u
 				{
 					const WifiDataFrameHeaderSTA2STA &IEEE80211Header = (WifiDataFrameHeaderSTA2STA &)packetIEEE80211HeaderPtr[0];
 					rxHeader.rxFlags.MatchingBSSID = (WIFI_compareMAC(IEEE80211Header.BSSID, io.BSSID)) ? 1 : 0;
-					frameHeaderSize = sizeof(WifiDataFrameHeaderSTA2STA);
 					break;
 				}
 					
@@ -711,8 +689,6 @@ RXPacketHeader WIFI_GenerateRXHeader(const u8 *packetIEEE80211HeaderPtr, const u
 					{
 						rxHeader.rxFlags.FrameType = 0xF;
 					}
-					
-					frameHeaderSize = sizeof(WifiDataFrameHeaderSTA2DS);
 					break;
 				}
 					
@@ -729,8 +705,6 @@ RXPacketHeader WIFI_GenerateRXHeader(const u8 *packetIEEE80211HeaderPtr, const u
 					{
 						rxHeader.rxFlags.FrameType = 0xD;
 					}
-					
-					frameHeaderSize = sizeof(WifiDataFrameHeaderDS2STA);
 					break;
 				}
 					
@@ -739,7 +713,6 @@ RXPacketHeader WIFI_GenerateRXHeader(const u8 *packetIEEE80211HeaderPtr, const u
 					// We shouldn't be receiving any DS-to-DS packets, but include this case anyways
 					// to account for all possible code paths.
 					rxHeader.rxFlags.MatchingBSSID = 0;
-					frameHeaderSize = sizeof(WifiDataFrameHeaderDS2DS);
 					break;
 				}
 			}
@@ -761,26 +734,6 @@ RXPacketHeader WIFI_GenerateRXHeader(const u8 *packetIEEE80211HeaderPtr, const u
 	rxHeader.rssiMin = 240;
 	
 	return rxHeader;
-}
-
-INLINE void WIFI_MakeRXHeader(u8* buf, u16 flags, u16 xferRate, u16 emuPacketSize, u8 maxRSSI, u8 minRSSI)
-{
-	*(u16*)&buf[0] = flags;
-
-	// Unknown (usually 0x0040)
-	buf[2] = 0x40;
-	buf[3] = 0x00;
-
-	// Time since last packet??? Random??? Left unchanged???
-	buf[4] = 0x01;
-	buf[5] = 0x00;
-
-	*(u16*)&buf[6] = xferRate;
-
-	*(u16*)&buf[8] = emuPacketSize;
-
-	buf[10] = 253;//maxRSSI;
-	buf[11] = 255;//minRSSI;
 }
 
 static void WIFI_RXPutWord(u16 val)
@@ -3798,7 +3751,7 @@ const u8* WifiCommInterface::RXPacketFilter(const u8 *rxBuffer, const size_t rxB
 #endif
 	
 	// Generate the RX header and return the IEEE 802.11 header.
-	outRXHeader = WIFI_GenerateRXHeader(packetIEEE80211HeaderPtr, 0, isTXRate20, rxPacketSize);
+	outRXHeader = WIFI_GenerateRXHeader(packetIEEE80211HeaderPtr, 1, isTXRate20, rxPacketSize);
 	return packetIEEE80211HeaderPtr;
 }
 
@@ -4112,10 +4065,13 @@ void* SoftAPCommInterface::_GetBridgeDeviceAtIndex(int deviceIndex, char *outErr
 
 bool SoftAPCommInterface::_IsDNSRequestToWFC(u16 ethertype, const u8 *body)
 {
+	const IPv4Header &ipv4Header = (IPv4Header &)body[0];
+	
 	// Check the various headers...
 	if (ntohs(ethertype) != 0x0800) return false;		// EtherType: IP
-	if (body[0] != 0x45) return false;					// Version: 4, header len: 5
-	if (body[9] != 0x11) return false;					// Protocol: UDP
+	if (ipv4Header.version != 4) return false;			// Version: 4
+	if (ipv4Header.headerLen != 5) return false;		// Header Length: 5
+	if (ipv4Header.protocol != 0x11) return false;		// Protocol: UDP
 	if (ntohs(*(u16*)&body[22]) != 53) return false;	// Dest. port: 53 (DNS)
 	if (htons(ntohs(*(u16*)&body[28+2])) & 0x8000) return false;	// must be a query
 	
@@ -4156,26 +4112,26 @@ bool SoftAPCommInterface::_IsDNSRequestToWFC(u16 ethertype, const u8 *body)
 
 void SoftAPCommInterface::_Deauthenticate()
 {
-	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
-	u32 packetLen = sizeof(SoftAP_DeauthFrame);
+	u8 *IEEE80211HeaderPtr = this->_curPacket + sizeof(RXPacketHeader);
+	WifiMgmtFrameHeader &IEEE80211Header = (WifiMgmtFrameHeader &)IEEE80211HeaderPtr[0];
 	
-	memcpy(&this->_curPacket[12], SoftAP_DeauthFrame, packetLen);
+	memcpy(IEEE80211HeaderPtr, SoftAP_DeauthFrame, sizeof(SoftAP_DeauthFrame));
 	
-	memcpy(&this->_curPacket[12 + 4], FW_Mac, 6); // Receiver MAC
+	IEEE80211Header.destMAC[0] = FW_Mac[0];
+	IEEE80211Header.destMAC[1] = FW_Mac[1];
+	IEEE80211Header.destMAC[2] = FW_Mac[2];
+	IEEE80211Header.destMAC[3] = FW_Mac[3];
+	IEEE80211Header.destMAC[4] = FW_Mac[4];
+	IEEE80211Header.destMAC[5] = FW_Mac[5];
 	
-	*(u16 *)&this->_curPacket[12 + 22] = this->_seqNum << 4;		// Sequence number
+	IEEE80211Header.seqCtl.SequenceNumber = this->_seqNum;
 	this->_seqNum++;
 	
-	u16 rxflags = 0x0010;
-	if (WIFI_compareMAC(io.BSSID, &this->_curPacket[12 + 16]))
-	{
-		rxflags |= 0x8000;
-	}
-	
-	WIFI_MakeRXHeader(this->_curPacket, rxflags, 20, packetLen, 0, 0);
+	RXPacketHeader &rxHeader = (RXPacketHeader &)this->_curPacket[0];
+	rxHeader = WIFI_GenerateRXHeader(IEEE80211HeaderPtr, 1, true, sizeof(SoftAP_DeauthFrame));
 	
 	// Let's prepare to send
-	this->_curPacketSize = packetLen + 12;
+	this->_curPacketSize = sizeof(RXPacketHeader) + sizeof(SoftAP_DeauthFrame);
 	this->_curPacketPos = 0;
 	this->_curPacketSending = true;
 	
@@ -4184,25 +4140,22 @@ void SoftAPCommInterface::_Deauthenticate()
 
 void SoftAPCommInterface::_SendBeacon()
 {
-	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
-	u32 packetLen = sizeof(SoftAP_Beacon);
+	u8 *IEEE80211HeaderPtr = this->_curPacket + sizeof(RXPacketHeader);
+	u8 *mgmtFrameBody = IEEE80211HeaderPtr + sizeof(WifiMgmtFrameHeader);
+	WifiMgmtFrameHeader &IEEE80211Header = (WifiMgmtFrameHeader &)IEEE80211HeaderPtr[0];
 	
-	memcpy(&this->_curPacket[12], SoftAP_Beacon, packetLen);	// Copy the beacon template
+	memcpy(IEEE80211HeaderPtr, SoftAP_Beacon, sizeof(SoftAP_Beacon));
 	
-	*(u16 *)&this->_curPacket[12 + 22] = this->_seqNum << 4;	// Sequence number
+	IEEE80211Header.seqCtl.SequenceNumber = this->_seqNum;
 	this->_seqNum++;
 	
-	u64 timestamp = this->_usecCounter;
-	*(u64 *)&this->_curPacket[12 + 24] = timestamp;				// Timestamp
+	*(u64 *)mgmtFrameBody = this->_usecCounter; // Timestamp
 	
-	u16 rxflags = 0x0011;
-	if (WIFI_compareMAC(io.BSSID, &this->_curPacket[12 + 16]))
-		rxflags |= 0x8000;
-	
-	WIFI_MakeRXHeader(this->_curPacket, rxflags, 20, packetLen, 0, 0);
+	RXPacketHeader &rxHeader = (RXPacketHeader &)this->_curPacket[0];
+	rxHeader = WIFI_GenerateRXHeader(IEEE80211HeaderPtr, 1, true, sizeof(SoftAP_Beacon));
 	
 	// Let's prepare to send
-	this->_curPacketSize = packetLen + 12;
+	this->_curPacketSize = sizeof(RXPacketHeader) + sizeof(SoftAP_Beacon);
 	this->_curPacketPos = 0;
 	this->_curPacketSending = true;
 }
@@ -4308,7 +4261,6 @@ void SoftAPCommInterface::Stop()
 
 void SoftAPCommInterface::SendPacket(const TXPacketHeader &txHeader, const u8 *packetData)
 {
-	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
 	const WifiFrameControl &fc = (WifiFrameControl &)packetData[0];
 
 	WIFI_LOG(3, "SoftAP: Received a packet of length %i bytes. Frame control = %04X\n",
@@ -4327,18 +4279,18 @@ void SoftAPCommInterface::SendPacket(const TXPacketHeader &txHeader, const u8 *p
 	{
 		case WifiFrameType_Management:
 		{
-			u32 packetLen;
-			u8 *IEEE80211FrameHeader = this->_curPacket + sizeof(RXPacketHeader);
-			u8 *mgmtFrameBody = IEEE80211FrameHeader + sizeof(WifiMgmtFrameHeader);
+			size_t packetLen = 0;
+			u8 *IEEE80211FrameHeaderPtr = this->_curPacket + sizeof(RXPacketHeader);
+			u8 *mgmtFrameBody = IEEE80211FrameHeaderPtr + sizeof(WifiMgmtFrameHeader);
 			
-			WifiMgmtFrameHeader &mgmtFrameHeader = (WifiMgmtFrameHeader &)IEEE80211FrameHeader[0];
+			WifiMgmtFrameHeader &mgmtFrameHeader = (WifiMgmtFrameHeader &)IEEE80211FrameHeaderPtr[0];
 
 			switch ((WifiFrameControlSubtype)fc.Subtype)
 			{
 				case WifiFrameManagementSubtype_ProbeRequest: // Probe request (WFC)
 				{
 					packetLen = sizeof(SoftAP_ProbeResponse);
-					memcpy(IEEE80211FrameHeader, SoftAP_ProbeResponse, packetLen);
+					memcpy(IEEE80211FrameHeaderPtr, SoftAP_ProbeResponse, packetLen);
 
 					// Add the timestamp
 					u64 timestamp = this->_usecCounter;
@@ -4350,7 +4302,7 @@ void SoftAPCommInterface::SendPacket(const TXPacketHeader &txHeader, const u8 *p
 				case WifiFrameManagementSubtype_Authentication:
 				{
 					packetLen = sizeof(SoftAP_AuthFrame);
-					memcpy(IEEE80211FrameHeader, SoftAP_AuthFrame, packetLen);
+					memcpy(IEEE80211FrameHeaderPtr, SoftAP_AuthFrame, packetLen);
 					this->_status = APStatus_Authenticated;
 					
 					break;
@@ -4364,7 +4316,7 @@ void SoftAPCommInterface::SendPacket(const TXPacketHeader &txHeader, const u8 *p
 					}
 					
 					packetLen = sizeof(SoftAP_AssocResponse);
-					memcpy(IEEE80211FrameHeader, SoftAP_AssocResponse, packetLen);
+					memcpy(IEEE80211FrameHeaderPtr, SoftAP_AssocResponse, packetLen);
 
 					this->_status = APStatus_Associated;
 					WIFI_LOG(1, "SoftAP connected!\n");
@@ -4410,17 +4362,12 @@ void SoftAPCommInterface::SendPacket(const TXPacketHeader &txHeader, const u8 *p
 			
 			mgmtFrameHeader.seqCtl.SequenceNumber = this->_seqNum;
 			this->_seqNum++;
-
-			u16 rxflags = 0x0010;
-			if (WIFI_compareMAC(io.BSSID, mgmtFrameHeader.BSSID))
-			{
-				rxflags |= 0x8000;
-			}
 			
-			WIFI_MakeRXHeader(this->_curPacket, rxflags, 20, packetLen, 0, 0); // make the RX header
+			RXPacketHeader &rxHeader = (RXPacketHeader &)this->_curPacket[0];
+			rxHeader = WIFI_GenerateRXHeader(this->_curPacket + sizeof(RXPacketHeader), 1, true, packetLen);
 
 			// Let's prepare to send
-			this->_curPacketSize = packetLen + sizeof(RXPacketHeader);
+			this->_curPacketSize = sizeof(RXPacketHeader) + packetLen;
 			this->_curPacketPos = 0;
 			this->_curPacketSending = true;
 			

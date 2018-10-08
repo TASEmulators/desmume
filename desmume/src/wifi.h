@@ -3053,6 +3053,51 @@ typedef struct
 	u16 ethertype;
 } WifiLLCSNAPHeader;
 
+typedef struct
+{
+	union
+	{
+		u8 :8;
+		
+		struct
+		{
+			u8 headerLen:4;
+			u8 version:4;
+		};
+	};
+	
+	u8 typeOfService;
+	u16 packetLen;
+	u16 fragmentID;
+	
+	union
+	{
+		u16 :16;
+		
+		struct
+		{
+			u16 fragmentOffset:13;
+			u16 flags:3;
+		};
+	};
+	
+	u8 timeToLive;
+	u8 protocol;
+	u16 checksum;
+	
+	union
+	{
+		u32 ipSrcValue;
+		u8 ipSrc[4];
+	};
+	
+	union
+	{
+		u32 ipDstValue;
+		u8 ipDst[4];
+	};
+} IPv4Header;
+
 // NDS Frame Header Information
 typedef struct
 {
