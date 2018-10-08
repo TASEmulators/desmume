@@ -98,6 +98,7 @@ static const bool BBIsDataWritable[105] = {
 };
 
 static const u16 RFPinsLUT[10] = {0x04, 0x84, 0, 0x46, 0, 0x84, 0x87, 0, 0x46, 0x04};
+static const WifiLLCSNAPHeader DefaultSNAPHeader = { 0xAA, 0xAA, 0x03, {0x00, 0x00, 0x00}, 0x0800 };
 LegacyWifiSFormat legacyWifiSF;
 
 DummyPCapInterface dummyPCapInterface;
@@ -312,6 +313,11 @@ INLINE bool WIFI_compareMAC(const u8 *a, const u8 *b)
 INLINE bool WIFI_isBroadcastMAC(const u8 *a)
 {
 	return ((*(u32*)&a[0]) == 0xFFFFFFFF) && ((*(u16*)&a[4]) == 0xFFFF);
+}
+
+INLINE bool WIFI_IsLLCSNAPHeader(const u8 *snapHeader)
+{
+	return ( (*(u16 *)&snapHeader[0] == *(u16 *)&DefaultSNAPHeader.dsap) && (*(u32 *)&snapHeader[2] == *(u32 *)&DefaultSNAPHeader.control) );
 }
 
 /*******************************************************************************
@@ -572,6 +578,21 @@ static void WIFI_triggerIRQ(const WifiIRQ irq)
 			break;
 		}
 	}
+}
+
+TXPacketHeader WIFI_GenerateTXHeader(bool isTXRate20, size_t txLength)
+{
+	TXPacketHeader txHeader;
+	txHeader.txStatus			= 1;
+	txHeader.mpSlaves			= 0;
+	txHeader.seqNumberControl	= 0;
+	txHeader.UNKNOWN1			= 0;
+	txHeader.UNKNOWN2			= 0;
+	txHeader.txRate				= (isTXRate20) ? 20 : 10;
+	txHeader.UNKNOWN3			= 0;
+	txHeader.length				= txLength;
+	
+	return txHeader;
 }
 
 RXPacketHeader WIFI_GenerateRXHeader(const u8 *packetIEEE80211HeaderPtr, const u16 timeStamp, const bool isTXRate20, const u16 emuPacketSize)
@@ -3339,16 +3360,16 @@ static void SoftAP_RXPacketGet_Callback(u_char *userData, const pcap_pkthdr *pkt
 	}
 	
 	// This is the smallest possible frame size there can be. As of this time:
-	// 14 bytes - The IEEE 802.3 frame header size (WifiEthernetFrameHeader)
+	// 14 bytes - The IEEE 802.3 frame header size (EthernetFrameHeader)
 	// 4 bytes - Size of the FCS at the end of every IEEE 802.3 frame. (not included because libpcap is not guaranteed to include this)
-	if (pktHeader->len <= sizeof(WifiEthernetFrameHeader))
+	if (pktHeader->len <= sizeof(EthernetFrameHeader))
 	{
 		return; // The packet is too small to be of any use.
 	}
 	
 	// Check the 802.3 header and do a precheck on the relevant MAC addresses to see
 	// if we can reject the packet early.
-	const WifiEthernetFrameHeader &IEEE8023Header = (WifiEthernetFrameHeader &)pktData[0];
+	const EthernetFrameHeader &IEEE8023Header = (EthernetFrameHeader &)pktData[0];
 	if ( !(WIFI_compareMAC(io.MACADDR, IEEE8023Header.destMAC) || (WIFI_isBroadcastMAC(IEEE8023Header.destMAC) && WIFI_compareMAC(io.BSSID, SoftAP_MACAddr))) )
 	{
 		// Don't process packets that aren't for us.
@@ -3361,7 +3382,7 @@ static void SoftAP_RXPacketGet_Callback(u_char *userData, const pcap_pkthdr *pkt
 	}
 	
 	// Determine the NDS-compatible RX packet size and store in the emulator header.
-	const u32 rxPacketGetSize = pktHeader->len - sizeof(WifiEthernetFrameHeader);
+	const u32 rxPacketGetSize = pktHeader->len - sizeof(EthernetFrameHeader);
 	emulatorHeader.emuPacketSize = ((sizeof(WifiDataFrameHeaderDS2STA) + 8 + rxPacketGetSize) + 3) & 0xFFFC;
 	
 	// Convert the libpcap 802.3 header into an NDS-compatible 802.11 header.
@@ -3393,21 +3414,14 @@ static void SoftAP_RXPacketGet_Callback(u_char *userData, const pcap_pkthdr *pkt
 	IEEE80211Header.sendMAC[5]		= IEEE8023Header.sendMAC[5];
 	IEEE80211Header.seqCtl.value	= 0; // This is 0 for now, but will need to be set later.
 	
+	// 802.3 to 802.11 LLC/SNAP header
+	WifiLLCSNAPHeader &snapHeader = (WifiLLCSNAPHeader &)rxTargetBuffer[sizeof(DesmumeFrameHeader) + sizeof(WifiDataFrameHeaderDS2STA)];
+	snapHeader = DefaultSNAPHeader;
+	snapHeader.ethertype = IEEE8023Header.ethertype;
+	
 	// Packet body
-	u8 *packetBody = rxTargetBuffer + sizeof(DesmumeFrameHeader) + sizeof(WifiDataFrameHeaderDS2STA);
-	
-	packetBody[0] = 0xAA;
-	packetBody[1] = 0xAA;
-	packetBody[2] = 0x03;
-	packetBody[3] = 0x00;
-	packetBody[4] = 0x00;
-	packetBody[5] = 0x00;
-	packetBody[6] = (IEEE8023Header.length & 0x00FF);
-	packetBody[7] = (IEEE8023Header.length & 0xFF00) >> 8;
-	packetBody += 8;
-	
-	// Copy the packet body.
-	memcpy(packetBody, (u8 *)pktData + sizeof(WifiEthernetFrameHeader), rxPacketGetSize);
+	u8 *packetBody = rxTargetBuffer + sizeof(DesmumeFrameHeader) + sizeof(WifiDataFrameHeaderDS2STA) + sizeof(WifiLLCSNAPHeader);
+	memcpy(packetBody, (u8 *)pktData + sizeof(EthernetFrameHeader), rxPacketGetSize);
 }
 
 void DummyPCapInterface::__CopyErrorString(char *errbuf)
@@ -3959,7 +3973,7 @@ void AdhocCommInterface::SendPacket(const TXPacketHeader &txHeader, const u8 *pa
 	const size_t emulatorHeaderSize = sizeof(DesmumeFrameHeader);
 	const size_t emulatorPacketSize = emulatorHeaderSize + txHeader.length;
 	
-	DesmumeFrameHeader emulatorHeader;
+	DesmumeFrameHeader &emulatorHeader = (DesmumeFrameHeader &)this->_workingTXBuffer[0];
 	strncpy(emulatorHeader.frameID, DESMUME_EMULATOR_FRAME_ID, 8);
 	emulatorHeader.version = DESMUME_EMULATOR_FRAME_CURRENT_VERSION;
 	emulatorHeader.timeStamp = 0;
@@ -3968,12 +3982,11 @@ void AdhocCommInterface::SendPacket(const TXPacketHeader &txHeader, const u8 *pa
 	emulatorHeader.packetAttributes.value = 0;
 	emulatorHeader.packetAttributes.IsTXRate20 = (txHeader.txRate == 20) ? 1 : 0;
 	
-	memcpy(this->_workingTXBuffer, &emulatorHeader, sizeof(DesmumeFrameHeader));
 	memcpy(this->_workingTXBuffer + emulatorHeaderSize, packetData, txHeader.length);
 	
 	size_t nbytes = sendto(thisSocket, (const char *)this->_workingTXBuffer, emulatorPacketSize, 0, &thisSendAddr, sizeof(sockaddr_t));
 	
-	WIFI_LOG(4, "Ad-hoc: sent %i/%i bytes of packet, frame control: %04X\n", (int)nbytes, (int)emulatorPacketSize, *(u16 *)(packetData + sizeof(DesmumeFrameHeader)));
+	WIFI_LOG(4, "Ad-hoc: sent %i/%i bytes of packet, frame control: %04X\n", (int)nbytes, (int)emulatorPacketSize, *(u16 *)packetData);
 }
 
 size_t AdhocCommInterface::RXPacketGet(u8 *rxTargetBuffer)
@@ -4009,7 +4022,7 @@ size_t AdhocCommInterface::RXPacketGet(u8 *rxTargetBuffer)
 		// 16 bytes - The smallest emulator frame header size (DesmumeFrameHeader)
 		// 10 bytes - The smallest possible IEEE 802.11 frame header size (WifiCtlFrameHeaderCTS/WifiCtlFrameHeaderACK)
 		// 4 bytes - Size of the FCS at the end of every IEEE 802.11 frame
-		if (rxPacketSizeInt <= (8 + 10 + 4))
+		if (rxPacketSizeInt <= (16 + 10 + 4))
 		{
 			return rxPacketSize; // The packet is too small to be of any use.
 		}
@@ -4296,7 +4309,7 @@ void SoftAPCommInterface::Stop()
 void SoftAPCommInterface::SendPacket(const TXPacketHeader &txHeader, const u8 *packetData)
 {
 	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
-	WifiFrameControl &fc = (WifiFrameControl &)packetData[0];
+	const WifiFrameControl &fc = (WifiFrameControl &)packetData[0];
 
 	WIFI_LOG(3, "SoftAP: Received a packet of length %i bytes. Frame control = %04X\n",
 		(int)txHeader.length, fc.value);
@@ -4362,13 +4375,23 @@ void SoftAPCommInterface::SendPacket(const TXPacketHeader &txHeader, const u8 *p
 				}
 
 				case WifiFrameManagementSubtype_Disassociation:
+				{
 					this->_status = APStatus_Authenticated;
+					
+					const u16 reasonCode = *(u16 *)mgmtFrameBody;
+					if (reasonCode != 0)
+					{
+						WIFI_LOG(1, "SoftAP disassocation error. ReasonCode=%d\n", (int)reasonCode);
+					}
 					return;
-
+				}
+					
 				case WifiFrameManagementSubtype_Deauthentication:
 				{
+					const u16 reasonCode = *(u16 *)mgmtFrameBody;
+					
 					this->_status = APStatus_Disconnected;
-					WIFI_LOG(1, "SoftAP disconnected.\n");
+					WIFI_LOG(1, "SoftAP disconnected. ReasonCode=%d\n", (int)reasonCode);
 					this->PacketCaptureFileClose();
 					return;
 				}
@@ -4409,38 +4432,56 @@ void SoftAPCommInterface::SendPacket(const TXPacketHeader &txHeader, const u8 *p
 
 		case WifiFrameType_Data:
 		{
-			// If it has a LLC/SLIP header, send it over the Ethernet
-			if ((*(u16 *)&packetData[24] == 0xAAAA) && (*(u16 *)&packetData[26] == 0x0003) && (*(u16 *)&packetData[28] == 0x0000))
+			const WifiDataFrameHeaderSTA2DS &IEEE80211FrameHeader = (WifiDataFrameHeaderSTA2DS &)packetData[0];
+			
+			// If it has an LLC/SNAP header, send it over the Ethernet.
+			if ( WIFI_IsLLCSNAPHeader(packetData + sizeof(WifiDataFrameHeaderSTA2DS)) )
 			{
+				const WifiLLCSNAPHeader &snapHeader = (WifiLLCSNAPHeader &)packetData[sizeof(WifiDataFrameHeaderSTA2DS)];
+				const u8 *inFrameBody = packetData + sizeof(WifiDataFrameHeaderSTA2DS) + sizeof(WifiLLCSNAPHeader);
+				
 				if (this->_status != APStatus_Associated)
+				{
 					return;
-
-				if (this->_IsDNSRequestToWFC(*(u16 *)&packetData[30], &packetData[32]))
+				}
+				
+				if (this->_IsDNSRequestToWFC(snapHeader.ethertype, inFrameBody))
 				{
 					// Removed to allow WFC communication.
 					//SoftAP_Deauthenticate();
 					//return;
 				}
-
-				u32 epacketLen = ((txHeader.length - 30 - 4) + 14);
-				u8 epacket[2048];
-
-				//printf("----- SENDING ETHERNET PACKET: len=%i, ethertype=%04X -----\n",
-				//	len, *(u16*)&packet[30]);
-
-				memcpy(&epacket[0], &packetData[16], 6);
-				memcpy(&epacket[6], &packetData[10], 6);
-				*(u16 *)&epacket[12] = *(u16 *)&packetData[30];
-				memcpy(&epacket[14], &packetData[32], epacketLen - 14);
-
+				
+				EthernetFrameHeader &IEEE8023FrameHeader = (EthernetFrameHeader &)this->_workingTXBuffer[0];
+				u8 *sendFrameBody = this->_workingTXBuffer + sizeof(EthernetFrameHeader);
+				
+				IEEE8023FrameHeader.destMAC[0] = IEEE80211FrameHeader.destMAC[0];
+				IEEE8023FrameHeader.destMAC[1] = IEEE80211FrameHeader.destMAC[1];
+				IEEE8023FrameHeader.destMAC[2] = IEEE80211FrameHeader.destMAC[2];
+				IEEE8023FrameHeader.destMAC[3] = IEEE80211FrameHeader.destMAC[3];
+				IEEE8023FrameHeader.destMAC[4] = IEEE80211FrameHeader.destMAC[4];
+				IEEE8023FrameHeader.destMAC[5] = IEEE80211FrameHeader.destMAC[5];
+				
+				IEEE8023FrameHeader.sendMAC[0] = IEEE80211FrameHeader.sendMAC[0];
+				IEEE8023FrameHeader.sendMAC[1] = IEEE80211FrameHeader.sendMAC[1];
+				IEEE8023FrameHeader.sendMAC[2] = IEEE80211FrameHeader.sendMAC[2];
+				IEEE8023FrameHeader.sendMAC[3] = IEEE80211FrameHeader.sendMAC[3];
+				IEEE8023FrameHeader.sendMAC[4] = IEEE80211FrameHeader.sendMAC[4];
+				IEEE8023FrameHeader.sendMAC[5] = IEEE80211FrameHeader.sendMAC[5];
+				
+				IEEE8023FrameHeader.ethertype = snapHeader.ethertype;
+				
+				const size_t sendPacketSize = txHeader.length - sizeof(WifiDataFrameHeaderSTA2DS) - sizeof(WifiLLCSNAPHeader) - sizeof(u32) + sizeof(EthernetFrameHeader);
+				memcpy(sendFrameBody, inFrameBody, sendPacketSize - sizeof(EthernetFrameHeader));
+				
 				if (this->_bridgeDevice != NULL)
 				{
 #if WIFI_SAVE_PCAP_TO_FILE
 					// Store the packet in the PCAP file.
-					this->PacketCaptureFileWrite(epacket, epacketLen, false);
+					this->PacketCaptureFileWrite(this->_workingTXBuffer, sendPacketSize, false);
 #endif
 					// Send it
-					this->_pcap->sendpacket(this->_bridgeDevice, epacket, epacketLen);
+					this->_pcap->sendpacket(this->_bridgeDevice, this->_workingTXBuffer, sendPacketSize);
 				}
 			}
 			else

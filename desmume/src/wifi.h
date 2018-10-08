@@ -3036,8 +3036,22 @@ typedef struct
 {
 	u8 destMAC[6];
 	u8 sendMAC[6];
-	u16 length;
-} WifiEthernetFrameHeader;
+	
+	union
+	{
+		u16 length;
+		u16 ethertype;
+	};
+} EthernetFrameHeader;
+
+typedef struct
+{
+	u8 dsap;
+	u8 ssap;
+	u8 control;
+	u8 encapsulation[3];
+	u16 ethertype;
+} WifiLLCSNAPHeader;
 
 // NDS Frame Header Information
 typedef struct
@@ -3171,6 +3185,7 @@ protected:
 	u8 *_workingRXBuffer;
 	
 	FILE *_packetCaptureFile; // PCAP file to store the Ethernet packets.
+	
 public:
 	WifiCommInterface();
 	virtual ~WifiCommInterface();
