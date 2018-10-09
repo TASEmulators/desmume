@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include "types.h"
 
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -3139,6 +3140,24 @@ typedef struct
 	u8 rssiMin;
 } RXPacketHeader;
 
+// The maximum possible size of any 802.11 frame is 2346 bytes:
+// - Max MTU is 2304 bytes
+// - Max 802.11 header size is 30 bytes
+// - WEP Encryption Header size is 8 bytes
+// - FCS size is 4 bytes
+#define MAX_PACKET_SIZE_80211 2346
+
+typedef union
+{
+	u8 rawFrameData[sizeof(RXPacketHeader) + MAX_PACKET_SIZE_80211];
+	
+	struct
+	{
+		RXPacketHeader rxHeader;
+		u8 rxData[MAX_PACKET_SIZE_80211];
+	};
+} RXQueuedPacket;
+
 extern LegacyWifiSFormat legacyWifiSF;
 
 /* wifimac io */
@@ -3229,7 +3248,16 @@ protected:
 	u8 *_workingTXBuffer;
 	u8 *_workingRXBuffer;
 	
+	std::deque<RXQueuedPacket> _rxPacketQueue;
+	size_t _rxCurrentQueuedPacketPosition;
+	
+	EAPStatus _softAPStatus;
+	u16 _softAPSequenceNumber;
+	
 	FILE *_packetCaptureFile; // PCAP file to store the Ethernet packets.
+	
+	RXQueuedPacket _GenerateSoftAPDeauthenticationFrame();
+	RXQueuedPacket _GenerateSoftAPBeaconFrame();
 	
 public:
 	WifiCommInterface();
@@ -3240,13 +3268,15 @@ public:
 	void PacketCaptureFileWrite(const u8 *packet, u32 len, bool isReceived);
 	
 	const u8* RXPacketFilter(const u8 *rxBuffer, const size_t rxBytes, RXPacketHeader &outRXHeader);
-	void RXPacketCopy(const RXPacketHeader &rxHeader, const u8 *rxBuffer);
+	void RXWriteOneHalfword(u16 val);
+	
+	void EmptyRXQueue();
 	
 	virtual bool Start(WifiEmulationLevel emulationLevel) = 0;
 	virtual void Stop() = 0;
 	virtual void SendPacket(const TXPacketHeader &txHeader, const u8 *packetData) = 0;
 	virtual size_t RXPacketGet(u8 *rxTargetBuffer) = 0;
-	virtual void Trigger() = 0;
+	void Trigger();
 };
 
 class AdhocCommInterface : public WifiCommInterface
@@ -3263,7 +3293,6 @@ public:
 	virtual void Stop();
 	virtual void SendPacket(const TXPacketHeader &txHeader, const u8 *packetData);
 	virtual size_t RXPacketGet(u8 *rxTargetBuffer);
-	virtual void Trigger();
 };
 
 class SoftAPCommInterface : public WifiCommInterface
@@ -3273,18 +3302,8 @@ protected:
 	int _bridgeDeviceIndex;
 	void *_bridgeDevice;
 	
-	u8 _curPacket[4096];
-	s32 _curPacketSize;
-	s32 _curPacketPos;
-	bool _curPacketSending;
-	
-	EAPStatus _status;
-	u16 _seqNum;
-	
 	void* _GetBridgeDeviceAtIndex(int deviceIndex, char *outErrorBuf);
 	bool _IsDNSRequestToWFC(u16 ethertype, const u8 *body);
-	void _Deauthenticate();
-	void _SendBeacon();
 	
 public:
 	SoftAPCommInterface();
@@ -3300,7 +3319,6 @@ public:
 	virtual void Stop();
 	virtual void SendPacket(const TXPacketHeader &txHeader, const u8 *packetData);
 	virtual size_t RXPacketGet(u8 *rxTargetBuffer);
-	virtual void Trigger();
 };
 
 class WifiHandler
@@ -3358,6 +3376,7 @@ public:
 	void CommStop();
 	void CommSendPacket(const TXPacketHeader &txHeader, const u8 *packetData);
 	void CommTrigger();
+	void CommEmptyRXQueue();
 	
 	bool IsSocketsSupported();
 	void SetSocketsSupported(bool isSupported);
