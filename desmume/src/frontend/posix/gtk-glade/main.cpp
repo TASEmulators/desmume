@@ -539,8 +539,9 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "Warning: X11 not thread-safe\n");
     }
 
-  if (!g_thread_supported())
-    g_thread_init( NULL);
+#if !g_thread_supported()
+  g_thread_init( NULL);
+#endif
 
   gtk_init(&argc, &argv);
 
