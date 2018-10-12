@@ -4733,6 +4733,40 @@ DEFINE_LUA_FUNCTION(controller_get, "[joystickID = 0 [,returnDiagonals = false]]
 		pow *= 2;
 	}
 
+	// add all available joystick axes to the table; axes will be scaled from -1 to 1
+	double scaledpos;
+	#define SCALEAXIS(pos, srcmin, srcmax, dstmin, dstmax) ((pos - srcmin) * (dstmax - dstmin) / (srcmax - srcmin) + dstmin)
+	if (joycaps.wNumAxes > 0) {
+		scaledpos = SCALEAXIS(joyinfoex.dwXpos, joycaps.wXmin, joycaps.wXmax, -1.0, 1.0);
+		lua_pushnumber(L, scaledpos);
+		lua_setfield(L, -2, "x");
+	}
+	if (joycaps.wNumAxes > 1) {
+		scaledpos = SCALEAXIS(joyinfoex.dwYpos, joycaps.wYmin, joycaps.wYmax, -1.0, 1.0);
+		lua_pushnumber(L, scaledpos);
+		lua_setfield(L, -2, "y");
+	}
+	if (joycaps.wCaps & JOYCAPS_HASZ) {
+		scaledpos = SCALEAXIS(joyinfoex.dwZpos, joycaps.wZmin, joycaps.wZmax, -1.0, 1.0);
+		lua_pushnumber(L, scaledpos);
+		lua_setfield(L, -2, "z");
+	}
+	if (joycaps.wCaps & JOYCAPS_HASR) {
+		scaledpos = SCALEAXIS(joyinfoex.dwRpos, joycaps.wRmin, joycaps.wRmax, -1.0, 1.0);
+		lua_pushnumber(L, scaledpos);
+		lua_setfield(L, -2, "r");
+	}
+	if (joycaps.wCaps & JOYCAPS_HASU) {
+		scaledpos = SCALEAXIS(joyinfoex.dwUpos, joycaps.wUmin, joycaps.wUmax, -1.0, 1.0);
+		lua_pushnumber(L, scaledpos);
+		lua_setfield(L, -2, "u");
+	}
+	if (joycaps.wCaps & JOYCAPS_HASV) {
+		scaledpos = SCALEAXIS(joyinfoex.dwVpos, joycaps.wVmin, joycaps.wVmax, -1.0, 1.0);
+		lua_pushnumber(L, scaledpos);
+		lua_setfield(L, -2, "v");
+	}
+
 	return 1; // return the table
 }
 static const struct luaL_reg controllerlib [] = {
