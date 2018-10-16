@@ -287,7 +287,7 @@ enum OGLMaxMultisamples
 	OGLMaxMultisamples_Tier1			= 32,
 	OGLMaxMultisamples_Tier2			= 16,
 	OGLMaxMultisamples_Tier3			= 8,
-	OGLMaxMultisamples_Tier4			= 4,
+	OGLMaxMultisamples_Tier4			= 4
 };
 
 enum OGLMaxMultisamplesScaleLimit
