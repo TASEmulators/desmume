@@ -5813,8 +5813,10 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			case IDC_MSAA_LIMIT:
 				{
 					HWND cur;
-					BOOL enable = IsDlgButtonChecked(hw, IDC_MSAA_LIMIT);
-
+					CommonSettings.GFX3D_Renderer_AntiAliasingLimit = IsDlgButtonChecked(hw, IDC_MSAA_LIMIT);
+					BOOL enable = CommonSettings.GFX3D_Renderer_AntiAliasingLimit;
+					
+					WritePrivateProfileBool("3D", "AntiAliasingLimit", enable, IniName);
 					cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_8);
 					EnableWindow(cur, enable);
 					cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_4);
