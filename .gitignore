@@ -5,6 +5,8 @@
 /desmume/src/frontend/windows/__bins
 /desmume/src/frontend/windows/*.tlog
 /desmume/src/frontend/windows/*.aps
+/desmume/src/frontend/windows/.vs/desmume/v15/
+.vs/
 *.user
 *.suo
 *.VC.db

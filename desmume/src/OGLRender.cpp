@@ -1481,17 +1481,21 @@ GLsizei OpenGLRenderer::GetLimitedMultisampleSize() const
 	GLsizei maxMultisamples = OGLMaxMultisamples_Tier1;
 	
 	if ( (this->_framebufferWidth  <= GPU_FRAMEBUFFER_NATIVE_WIDTH  * OGLMaxMultisamplesScaleLimit_Tier1) &&
-		 (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * OGLMaxMultisamplesScaleLimit_Tier1) )
+		 (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * OGLMaxMultisamplesScaleLimit_Tier1) && CommonSettings.GFX3D_Renderer_AntiAliasingForce == false )
 	{
 		maxMultisamples = OGLMaxMultisamples_Tier1;
 	}
 	else if ( (this->_framebufferWidth  <= GPU_FRAMEBUFFER_NATIVE_WIDTH  * OGLMaxMultisamplesScaleLimit_Tier2) &&
-			  (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * OGLMaxMultisamplesScaleLimit_Tier2) )
+			  (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * OGLMaxMultisamplesScaleLimit_Tier2) &&
+			  ((CommonSettings.GFX3D_Renderer_AntiAliasingForce && CommonSettings.GFX3D_Renderer_AntiAliasingSamples == 16) ||
+			  CommonSettings.GFX3D_Renderer_AntiAliasingForce == false) )
 	{
 		maxMultisamples = OGLMaxMultisamples_Tier2;
 	}
 	else if ( (this->_framebufferWidth  <= GPU_FRAMEBUFFER_NATIVE_WIDTH  * OGLMaxMultisamplesScaleLimit_Tier3) &&
-			  (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * OGLMaxMultisamplesScaleLimit_Tier3) )
+			  (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * OGLMaxMultisamplesScaleLimit_Tier3) &&
+			  ((CommonSettings.GFX3D_Renderer_AntiAliasingForce && CommonSettings.GFX3D_Renderer_AntiAliasingSamples == 8) ||
+			  CommonSettings.GFX3D_Renderer_AntiAliasingForce == false) )
 	{
 		maxMultisamples = OGLMaxMultisamples_Tier3;
 	}

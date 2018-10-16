@@ -533,6 +533,8 @@ extern struct TCommonSettings
 		, GFX3D_LineHack(true)
 		, GFX3D_Renderer_Multisample(false)
 		, GFX3D_Renderer_TextureScalingFactor(1) // Possible values: 1, 2, 4
+		, GFX3D_Renderer_AntiAliasingSamples(16) // Possible values: 4, 8, 16
+		, GFX3D_Renderer_AntiAliasingForce(false)
 		, GFX3D_Renderer_TextureDeposterize(false)
 		, GFX3D_Renderer_TextureSmoothing(false)
 		, GFX3D_TXTHack(false)
@@ -592,6 +594,8 @@ extern struct TCommonSettings
 	bool GFX3D_LineHack;
 	bool GFX3D_Renderer_Multisample;
 	int GFX3D_Renderer_TextureScalingFactor; //must be one of {1,2,4}
+	int GFX3D_Renderer_AntiAliasingSamples; //must be one of {4,8,16}
+	bool GFX3D_Renderer_AntiAliasingForce;
 	bool GFX3D_Renderer_TextureDeposterize;
 	bool GFX3D_Renderer_TextureSmoothing;
 	bool GFX3D_TXTHack;

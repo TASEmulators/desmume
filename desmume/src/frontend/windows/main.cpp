@@ -2374,6 +2374,8 @@ int _main()
 	CommonSettings.GFX3D_Texture = GetPrivateProfileBool("3D", "EnableTexture", 1, IniName);
 	CommonSettings.GFX3D_LineHack = GetPrivateProfileBool("3D", "EnableLineHack", 1, IniName);
 	CommonSettings.GFX3D_Renderer_Multisample = GetPrivateProfileBool("3D", "EnableAntiAliasing", 0, IniName);
+	CommonSettings.GFX3D_Renderer_AntiAliasingForce = GetPrivateProfileBool("3D", "AntiAliasingForce", 0, IniName);
+	CommonSettings.GFX3D_Renderer_AntiAliasingSamples = GetPrivateProfileInt("3D", "AntiAliasingSamples", 16, IniName);
 	CommonSettings.GFX3D_TXTHack = GetPrivateProfileBool("3D", "EnableTXTHack", 0, IniName); //default is off.
 	Change3DCoreWithFallbackAndSave(cur3DCore);
 
@@ -5659,6 +5661,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 	case WM_INITDIALOG:
 		{
 			int i;
+			HWND cur;
 
 			CheckDlgButton(hw,IDC_INTERPOLATECOLOR,CommonSettings.GFX3D_HighResolutionInterpolateColor);
 			CheckDlgButton(hw,IDC_3DSETTINGS_EDGEMARK,CommonSettings.GFX3D_EdgeMark);
@@ -5666,6 +5669,10 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw,IDC_3DSETTINGS_TEXTURE,CommonSettings.GFX3D_Texture);
 			CheckDlgButton(hw,IDC_3DSETTINGS_LINEHACK, CommonSettings.GFX3D_LineHack);
 			CheckDlgButton(hw,IDC_3DSETTINGS_ANTIALIASING, CommonSettings.GFX3D_Renderer_Multisample);
+			CheckDlgButton(hw,IDC_MSAA_FORCE, CommonSettings.GFX3D_Renderer_AntiAliasingForce);
+			CheckDlgButton(hw,IDC_MSAA_SAMPLES_4, CommonSettings.GFX3D_Renderer_AntiAliasingSamples == 4);
+			CheckDlgButton(hw,IDC_MSAA_SAMPLES_8, CommonSettings.GFX3D_Renderer_AntiAliasingSamples == 8);
+			CheckDlgButton(hw,IDC_MSAA_SAMPLES_16, CommonSettings.GFX3D_Renderer_AntiAliasingSamples == 16);
 			CheckDlgButton(hw,IDC_TXTHACK, CommonSettings.GFX3D_TXTHack);
 
 			CheckDlgButton(hw,IDC_TEXSCALE_1, CommonSettings.GFX3D_Renderer_TextureScalingFactor == 1);
@@ -5678,6 +5685,27 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 
 			CheckDlgButton(hw,IDC_TEX_DEPOSTERIZE, CommonSettings.GFX3D_Renderer_TextureDeposterize);
 			CheckDlgButton(hw,IDC_TEX_SMOOTH, CommonSettings.GFX3D_Renderer_TextureSmoothing);
+
+			if(CommonSettings.GFX3D_Renderer_Multisample == false)
+			{
+				cur = GetDlgItem(hw, IDC_MSAA_FORCE);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_4);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_8);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_16);
+				EnableWindow(cur, FALSE);
+			}
+			else if(CommonSettings.GFX3D_Renderer_Multisample && CommonSettings.GFX3D_Renderer_AntiAliasingForce == false)
+			{
+				cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_4);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_8);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_16);
+				EnableWindow(cur, FALSE);
+			}
 
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, video.prescaleHD);
@@ -5702,6 +5730,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					CommonSettings.GFX3D_Texture = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_TEXTURE);
 					CommonSettings.GFX3D_LineHack = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_LINEHACK);
 					CommonSettings.GFX3D_Renderer_Multisample = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_ANTIALIASING);
+					CommonSettings.GFX3D_Renderer_AntiAliasingForce = IsDlgCheckboxChecked(hw,IDC_MSAA_FORCE);
 					CommonSettings.GFX3D_TXTHack = IsDlgCheckboxChecked(hw,IDC_TXTHACK);
 
 					int newPrescaleHD = video.prescaleHD;
@@ -5710,6 +5739,10 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					{
 						newPrescaleHD = LOWORD(scaleResult);
 					}
+
+					if(IsDlgCheckboxChecked(hw,IDC_MSAA_SAMPLES_4)) CommonSettings.GFX3D_Renderer_AntiAliasingSamples = 4;
+					else if(IsDlgCheckboxChecked(hw,IDC_MSAA_SAMPLES_8)) CommonSettings.GFX3D_Renderer_AntiAliasingSamples = 8;
+					else if(IsDlgCheckboxChecked(hw,IDC_MSAA_SAMPLES_16)) CommonSettings.GFX3D_Renderer_AntiAliasingSamples = 16;
 
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_1)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 1;
 					else if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_2)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 2;
@@ -5745,6 +5778,8 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					WritePrivateProfileBool("3D", "EnableTexture", CommonSettings.GFX3D_Texture, IniName);
 					WritePrivateProfileInt ("3D", "EnableLineHack", CommonSettings.GFX3D_LineHack, IniName);
 					WritePrivateProfileInt ("3D", "EnableAntiAliasing", CommonSettings.GFX3D_Renderer_Multisample, IniName);
+					WritePrivateProfileInt ("3D", "AntiAliasingSamples", CommonSettings.GFX3D_Renderer_AntiAliasingSamples, IniName);
+					WritePrivateProfileBool("3D", "AntiAliasingForce", CommonSettings.GFX3D_Renderer_AntiAliasingForce, IniName);
 					WritePrivateProfileInt ("3D", "EnableTXTHack", CommonSettings.GFX3D_TXTHack, IniName);
 					WritePrivateProfileInt ("3D", "PrescaleHD", video.prescaleHD, IniName);
 					WritePrivateProfileInt ("3D", "TextureScalingFactor", CommonSettings.GFX3D_Renderer_TextureScalingFactor, IniName);
@@ -5757,7 +5792,37 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					EndDialog(hw, TRUE);
 				}
 				return TRUE;
+			case IDC_3DSETTINGS_ANTIALIASING:
+				{
+					HWND cur;
+					BOOL enable = IsDlgButtonChecked(hw, IDC_3DSETTINGS_ANTIALIASING);
 
+					cur = GetDlgItem(hw, IDC_MSAA_FORCE);
+					EnableWindow(cur, enable);
+					if (CommonSettings.GFX3D_Renderer_AntiAliasingForce)
+					{
+						cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_4);
+						EnableWindow(cur, enable);
+						cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_8);
+						EnableWindow(cur, enable);
+						cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_16);
+						EnableWindow(cur, enable);
+					}
+				}
+				return TRUE;
+			case IDC_MSAA_FORCE:
+				{
+					HWND cur;
+					BOOL enable = IsDlgButtonChecked(hw, IDC_MSAA_FORCE);
+
+					cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_4);
+					EnableWindow(cur, enable);
+					cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_8);
+					EnableWindow(cur, enable);
+					cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_16);
+					EnableWindow(cur, enable);
+				}
+				return TRUE;
 			case IDC_DEFAULT:
 				{
 					Change3DCoreWithFallbackAndSave(GPU3D_DEFAULT);
