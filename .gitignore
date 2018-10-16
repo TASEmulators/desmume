@@ -6,7 +6,8 @@
 /desmume/src/frontend/windows/*.tlog
 /desmume/src/frontend/windows/*.aps
 /desmume/src/frontend/windows/.vs/desmume/v15/
-.vs/
+.vs/VSWorkspaceState.json
+.vs/slnx.sqlite
 *.user
 *.suo
 *.VC.db
@@ -56,6 +57,7 @@ DerivedData/
 *.perspectivev3
 !default.perspectivev3
 xcuserdata/
+.vs/ProjectSettings.json
 
 ## Other
 *.moved-aside
