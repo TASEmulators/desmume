@@ -110,7 +110,7 @@ BEGIN
     PUSHBUTTON      "&Cancel",IDCANCEL,127,94,50,16
 END
 
-IDD_3DSETTINGS DIALOGEX 0, 0, 313, 218
+IDD_3DSETTINGS DIALOGEX 0, 0, 310, 218
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "3D settings"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
@@ -129,9 +129,9 @@ BEGIN
     CONTROL         "2x Samples",IDC_MSAA_SAMPLES_2,"Button",BS_AUTORADIOBUTTON,13,190,74,10
     EDITTEXT        IDC_TEXT_PRESCALEHD,267,16,20,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_NUD_PRESCALEHD,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS,286,16,11,14
-    PUSHBUTTON      "Default",IDC_DEFAULT,196,195,50,14,BS_VCENTER
-    DEFPUSHBUTTON   "OK",IDOK,196,167,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,251,167,50,14
+    PUSHBUTTON      "Default",IDC_DEFAULT,194,165,50,14
+    DEFPUSHBUTTON   "OK",IDOK,194,194,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,253,194,50,14
     GROUPBOX        "Renderer:",IDC_STATIC,7,7,180,39
     GROUPBOX        "SoftRasterizer Options",IDC_STATIC,7,50,180,82
     LTEXT           "Fixes some graphical bugs involving lines, but causes some other bugs. Not many games use lines.",ID_LABEL_ZELDA_SHADOW_DEPTH_HACK2,14,112,170,18
@@ -139,7 +139,7 @@ BEGIN
     LTEXT           "Fixes text bugs in some games.(e.g. Etrian Odyssey)",ID_LABEL_TXTHACK1,14,83,167,11
     CONTROL         "Enable TXT Hack",IDC_TXTHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,73,73,10
     GROUPBOX        "OpenGL Renderer Options",IDC_STATIC,7,137,180,77
-    GROUPBOX        "General Options",IDC_STATIC,194,6,109,150
+    GROUPBOX        "General Options",IDC_STATIC,194,6,109,148
     LTEXT           "GPU Scaling Factor",IDC_STATIC,200,19,64,8
     CONTROL         "Texture Scaling 1x",IDC_TEXSCALE_1,"Button",BS_AUTORADIOBUTTON,200,81,77,10
     CONTROL         "Texture Scaling 2x",IDC_TEXSCALE_2,"Button",BS_AUTORADIOBUTTON,200,91,79,10
