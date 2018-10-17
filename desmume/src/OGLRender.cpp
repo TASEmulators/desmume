@@ -1496,7 +1496,7 @@ GLsizei OpenGLRenderer::GetLimitedMultisampleSize() const
 	{
 		maxMultisamples = OGLMaxMultisamples_Tier3;
 	}
-	else if (CommonSettings.GFX3D_Renderer_AntiAliasingSamples == 2)
+	else if (CommonSettings.GFX3D_Renderer_AntiAliasingLimit && CommonSettings.GFX3D_Renderer_AntiAliasingSamples == 2)
 	{
 		maxMultisamples = 2; // Only used when manually limiting.
 	}

@@ -2373,10 +2373,12 @@ int _main()
 	CommonSettings.GFX3D_Fog = GetPrivateProfileBool("3D", "EnableFog", 1, IniName);
 	CommonSettings.GFX3D_Texture = GetPrivateProfileBool("3D", "EnableTexture", 1, IniName);
 	CommonSettings.GFX3D_LineHack = GetPrivateProfileBool("3D", "EnableLineHack", 1, IniName);
+	CommonSettings.GFX3D_TXTHack = GetPrivateProfileBool("3D", "EnableTXTHack", 0, IniName); //default is off.
 	CommonSettings.GFX3D_Renderer_Multisample = GetPrivateProfileBool("3D", "EnableAntiAliasing", 0, IniName);
 	CommonSettings.GFX3D_Renderer_AntiAliasingLimit = GetPrivateProfileBool("3D", "AntiAliasingLimit", 0, IniName);
-	CommonSettings.GFX3D_Renderer_AntiAliasingSamples = GetPrivateProfileInt("3D", "AntiAliasingSamples", 8, IniName);
-	CommonSettings.GFX3D_TXTHack = GetPrivateProfileBool("3D", "EnableTXTHack", 0, IniName); //default is off.
+	int tempAA = GetPrivateProfileInt("3D", "AntiAliasingSamples", 8, IniName); //only place this user variable gets read
+	if(tempAA != 2 || tempAA != 4 || tempAA != 8) tempAA = 8; //so just default to 8 here if invalid is entered.
+	CommonSettings.GFX3D_Renderer_AntiAliasingSamples = tempAA;
 	Change3DCoreWithFallbackAndSave(cur3DCore);
 
 
