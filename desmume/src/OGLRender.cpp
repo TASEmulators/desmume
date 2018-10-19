@@ -4895,8 +4895,15 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	
 	glActiveTextureARB(GL_TEXTURE0_ARB);
 	
+	this->_framebufferWidth = w;
+	this->_framebufferHeight = h;
+	this->_framebufferPixCount = w * h;
+	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
+	
 	if (this->isMultisampledFBOSupported)
 	{
+		// Call GetLimitedMultisampleSize() after _framebufferWidth and _framebufferHeight are set
+		// since this method depends on them.
 		GLsizei sampleSize = this->GetLimitedMultisampleSize();
 		
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);
@@ -4910,11 +4917,6 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilAlphaID);
 		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, sampleSize, GL_DEPTH24_STENCIL8_EXT, w, h);
 	}
-	
-	this->_framebufferWidth = w;
-	this->_framebufferHeight = h;
-	this->_framebufferPixCount = w * h;
-	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
 	
 	if (this->isPBOSupported)
 	{

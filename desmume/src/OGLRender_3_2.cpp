@@ -2035,8 +2035,16 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	
 	glActiveTexture(GL_TEXTURE0);
 	
+	this->_framebufferWidth = w;
+	this->_framebufferHeight = h;
+	this->_framebufferPixCount = w * h;
+	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
+	this->_framebufferColor = NULL; // Don't need to make a client-side buffer since we will be reading directly from the PBO.
+	
 	if (this->isMultisampledFBOSupported)
 	{
+		// Call GetLimitedMultisampleSize() after _framebufferWidth and _framebufferHeight are set
+		// since this method depends on them.
 		GLsizei sampleSize = this->GetLimitedMultisampleSize();
 		
 		if (this->willUsePerSampleZeroDstPass)
@@ -2062,12 +2070,6 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthStencilAlphaID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, w, h, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
-	
-	this->_framebufferWidth = w;
-	this->_framebufferHeight = h;
-	this->_framebufferPixCount = w * h;
-	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
-	this->_framebufferColor = NULL; // Don't need to make a client-side buffer since we will be reading directly from the PBO.
 	
 	if (oglrender_framebufferDidResizeCallback != NULL)
 	{
