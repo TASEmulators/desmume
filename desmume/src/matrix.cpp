@@ -694,7 +694,7 @@ FORCEINLINE void _Vec3_MultiplyByMatrix(__m128i &outVec,
 	outVecLo = _mm_srli_epi64(outVecLo, 12);
 	outVecLo = _mm_shuffle_epi32(outVecLo, 0xD8);
 	
-	__m128i outVecHi = _mm_add_epi64( _mm_mul_epi32(rowHi0, c0), _mm_add_epi64(_mm_mul_epi32(rowLo1, c1), _mm_mul_epi32(rowHi2, c2)) );
+	__m128i outVecHi = _mm_add_epi64( _mm_mul_epi32(rowHi0, c0), _mm_add_epi64(_mm_mul_epi32(rowHi1, c1), _mm_mul_epi32(rowHi2, c2)) );
 	outVecHi = _mm_srli_epi64(outVecHi, 12);
 	outVecHi = _mm_shuffle_epi32(outVecHi, 0x8D);
 	
