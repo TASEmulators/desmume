@@ -95,7 +95,7 @@ struct ClientExecutionControlSettings
 	bool enableDebugConsole;
 	bool enableEnsataEmulation;
 	
-	int wifiMode;
+	int wifiEmulationMode;
 	int wifiBridgeDeviceIndex;
 	uint32_t wifiIP4Address;
 	
@@ -305,8 +305,8 @@ public:
 	bool GetEnableEnsataEmulation();
 	void SetEnableEnsataEmulation(bool enable);
 	
-	int GetWifiMode();
-	void SetWifiMode(int wifiMode);
+	int GetWifiEmulationMode();
+	void SetWifiEmulationMode(int wifiEmulationMode);
 	
 	int GetWifiBridgeDeviceIndex();
 	void SetWifiBridgeDeviceIndex(int wifiBridgeDeviceIndex);

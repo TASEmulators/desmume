@@ -89,7 +89,7 @@ ClientExecutionControl::ClientExecutionControl()
 	_settingsPending.enableFirmwareBoot					= false;
 	_settingsPending.enableDebugConsole					= false;
 	_settingsPending.enableEnsataEmulation				= false;
-	_settingsPending.wifiMode							= WifiCommInterfaceID_AdHoc;
+	_settingsPending.wifiEmulationMode					= WifiEmulationLevel_Off;
 	_settingsPending.wifiBridgeDeviceIndex				= 0;
 	
 	_settingsPending.enableExecutionSpeedLimiter		= true;
@@ -565,19 +565,19 @@ void ClientExecutionControl::SetEnableEnsataEmulation(bool enable)
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
-int ClientExecutionControl::GetWifiMode()
+int ClientExecutionControl::GetWifiEmulationMode()
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
-	const int wifiMode = this->_settingsPending.wifiMode;
+	const int wifiEmulationMode = this->_settingsPending.wifiEmulationMode;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 	
-	return wifiMode;
+	return wifiEmulationMode;
 }
 
-void ClientExecutionControl::SetWifiMode(int wifiMode)
+void ClientExecutionControl::SetWifiEmulationMode(int wifiEmulationMode)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
-	this->_settingsPending.wifiMode = wifiMode;
+	this->_settingsPending.wifiEmulationMode = wifiEmulationMode;
 	
 	this->_newSettingsPendingOnReset = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
@@ -972,7 +972,7 @@ void ClientExecutionControl::ApplySettingsOnReset()
 		this->_settingsApplied.enableExternalFirmware		= this->_settingsPending.enableExternalFirmware;
 		this->_settingsApplied.enableFirmwareBoot			= this->_settingsPending.enableFirmwareBoot;
 		
-		this->_settingsApplied.wifiMode						= this->_settingsPending.wifiMode;
+		this->_settingsApplied.wifiEmulationMode			= this->_settingsPending.wifiEmulationMode;
 		this->_settingsApplied.wifiBridgeDeviceIndex		= this->_settingsPending.wifiBridgeDeviceIndex;
 		this->_settingsApplied.wifiIP4Address				= this->_settingsPending.wifiIP4Address;
 		
@@ -997,11 +997,9 @@ void ClientExecutionControl::ApplySettingsOnReset()
 		//CommonSettings.UseExtFirmwareSettings	= this->_settingsApplied.enableExternalFirmware;
 		CommonSettings.UseExtFirmwareSettings = false;
 		CommonSettings.BootFromFirmware			= this->_settingsApplied.enableFirmwareBoot;
-		CommonSettings.wifi.mode				= (WifiCommInterfaceID)this->_settingsApplied.wifiMode;
 		CommonSettings.wifi.infraBridgeAdapter	= this->_settingsApplied.wifiBridgeDeviceIndex;
 		
-		wifiHandler->SetIP4Address(this->_settingsApplied.wifiIP4Address);
-		wifiHandler->SetCommInterfaceID((WifiCommInterfaceID)this->_settingsApplied.wifiMode);
+		wifiHandler->SetEmulationLevel((WifiEmulationLevel)this->_settingsApplied.wifiEmulationMode);
 		wifiHandler->SetBridgeDeviceIndex(this->_settingsApplied.wifiBridgeDeviceIndex);
 		
 		if (this->_settingsApplied.filePathARM9BIOS.length() == 0)
