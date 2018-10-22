@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -281,21 +281,6 @@ EXTERNOGLEXT(PFNGLTEXBUFFERPROC, glTexBuffer) // Core in v3.1
 #define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION		0
 
 #define OGLRENDER_VERT_INDEX_BUFFER_COUNT	(POLYLIST_SIZE * 6)
-
-enum OGLMaxMultisamples
-{
-	OGLMaxMultisamples_Tier1			= 32,
-	OGLMaxMultisamples_Tier2			= 16,
-	OGLMaxMultisamples_Tier3			= 8,
-	OGLMaxMultisamples_Tier4			= 4
-};
-
-enum OGLMaxMultisamplesScaleLimit
-{
-	OGLMaxMultisamplesScaleLimit_Tier1	= 1,
-	OGLMaxMultisamplesScaleLimit_Tier2	= 4,
-	OGLMaxMultisamplesScaleLimit_Tier3	= 8
-};
 
 enum OGLVertexAttributeID
 {
@@ -663,6 +648,7 @@ protected:
 	OGLTextureUnitID _lastTextureDrawTarget;
 	
 	bool _enableMultisampledRendering;
+	int _selectedMultisampleSize;
 	size_t _clearImageIndex;
 	
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
@@ -680,6 +666,7 @@ protected:
 	virtual void DestroyFBOs() = 0;
 	virtual Render3DError CreateMultisampledFBO(GLsizei numSamples) = 0;
 	virtual void DestroyMultisampledFBO() = 0;
+	virtual void ResizeMultisampledFBOs(GLsizei numSamples) = 0;
 	virtual Render3DError InitGeometryProgram(const char *geometryVtxShaderCString, const char *geometryFragShaderCString,
 											  const char *geometryAlphaVtxShaderCString, const char *geometryAlphaFragShaderCString,
 											  const char *geometryMSAlphaVtxShaderCString, const char *geometryMSAlphaFragShaderCString) = 0;
@@ -751,6 +738,7 @@ protected:
 	virtual void DestroyFBOs();
 	virtual Render3DError CreateMultisampledFBO(GLsizei numSamples);
 	virtual void DestroyMultisampledFBO();
+	virtual void ResizeMultisampledFBOs(GLsizei numSamples);
 	virtual Render3DError CreateVAOs();
 	virtual void DestroyVAOs();
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
