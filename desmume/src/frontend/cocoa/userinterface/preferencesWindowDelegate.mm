@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2017 DeSmuME Team
+	Copyright (C) 2012-2018 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #import "EmuControllerDelegate.h"
 
 #import "cocoa_core.h"
+#import "cocoa_GPU.h"
 #import "cocoa_cheat.h"
 #import "cocoa_globals.h"
 #import "cocoa_input.h"
@@ -302,6 +303,8 @@
 @synthesize displayRotationMenuCustomItem;
 @synthesize displayRotationField;
 @synthesize spuSyncMethodMenu;
+
+@synthesize openglMSAAPopUpButton;
 
 @synthesize previewView;
 
@@ -898,6 +901,34 @@
 	[window setContentView:theView];
 	
 	[tempView release];
+}
+
+- (void) markUnsupportedOpenGLMSAAMenuItems
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	NSUInteger maxSamples = [[cdsCore cdsGPU] openglDeviceMaxMultisamples];
+	size_t itemCount = [openglMSAAPopUpButton numberOfItems];
+	BOOL needAddUnsupportedSeparator = YES;
+	
+	for (size_t i = 0; i < itemCount; i++)
+	{
+		NSMenuItem *menuItem = [openglMSAAPopUpButton itemAtIndex:i];
+		if ([menuItem tag] > maxSamples)
+		{
+			if (needAddUnsupportedSeparator)
+			{
+				NSMenuItem *newSeparatorItem = [NSMenuItem separatorItem];
+				[newSeparatorItem setTag:-1];
+				[[openglMSAAPopUpButton menu] insertItem:newSeparatorItem atIndex:i];
+				
+				needAddUnsupportedSeparator = NO;
+				itemCount++;
+				continue;
+			}
+			
+			[menuItem setTitle:[NSString stringWithFormat:@"%@ (unsupported on this GPU)", [menuItem title]]];
+		}
+	}
 }
 
 - (void) setupUserDefaults

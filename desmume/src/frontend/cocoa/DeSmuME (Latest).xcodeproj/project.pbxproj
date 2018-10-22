@@ -165,6 +165,12 @@
 		AB3BF43E1E26289E003E2B24 /* MacMetalDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF43B1E26289E003E2B24 /* MacMetalDisplayView.mm */; };
 		AB3BF4421E262959003E2B24 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4401E262943003E2B24 /* Metal.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		AB3E34C9134AF4500056477A /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
+		AB3FBD802176DE95005722D0 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
+		AB3FBD812176DE95005722D0 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
+		AB3FBD822176DE95005722D0 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
+		AB3FBD832176DE95005722D0 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
+		AB3FBD842176DE95005722D0 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
+		AB3FBD852176DE95005722D0 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
 		AB40562A169F5DBB0016AC3E /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
 		AB40562B169F5DBB0016AC3E /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
 		AB40562C169F5DBB0016AC3E /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
@@ -2391,6 +2397,8 @@
 		AB3BF4401E262943003E2B24 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		AB3E34C7134AF4500056477A /* cocoa_output.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_output.h; sourceTree = "<group>"; };
 		AB3E34C8134AF4500056477A /* cocoa_output.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_output.mm; sourceTree = "<group>"; };
+		AB3FBD7E2176DE95005722D0 /* WifiSettingsPanel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WifiSettingsPanel.h; sourceTree = "<group>"; };
+		AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = WifiSettingsPanel.mm; sourceTree = "<group>"; };
 		AB4055ED169F59380016AC3E /* AsmJit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AsmJit.h; sourceTree = "<group>"; };
 		AB4055EE169F59380016AC3E /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Config.h; sourceTree = "<group>"; };
 		AB4055EF169F59380016AC3E /* core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = core.h; sourceTree = "<group>"; };
@@ -3582,6 +3590,7 @@
 				ABAF0A3F1A96E67200B95B75 /* RomInfoPanel.h */,
 				AB564902186E6EBC002740F4 /* Slot2WindowDelegate.h */,
 				ABF2B9F81690412A000FF7C0 /* troubleshootingWindowDelegate.h */,
+				AB3FBD7E2176DE95005722D0 /* WifiSettingsPanel.h */,
 				AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
@@ -3601,6 +3610,7 @@
 				ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */,
 				AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */,
 				ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */,
+				AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */,
 			);
 			path = userinterface;
 			sourceTree = "<group>";
@@ -5512,6 +5522,7 @@
 				ABE6702D1415DE6C00E8E4C9 /* tinyxmlerror.cpp in Sources */,
 				ABA7316C1BB51FDC00B26147 /* psaux.c in Sources */,
 				ABE6702E1415DE6C00E8E4C9 /* tinyxmlparser.cpp in Sources */,
+				AB3FBD852176DE95005722D0 /* WifiSettingsPanel.mm in Sources */,
 				ABA7315B1BB51A8D00B26147 /* psnames.c in Sources */,
 				ABFEA8411BB4EC1100B08C25 /* ftpatent.c in Sources */,
 				ABD1FEFD1345AC8400AF11D1 /* version.cpp in Sources */,
@@ -5738,6 +5749,7 @@
 				AB7900B8215B84E50082AE82 /* SPU.cpp in Sources */,
 				AB7900B9215B84E50082AE82 /* sse_optimized.cpp in Sources */,
 				AB7900BA215B84E50082AE82 /* task.cpp in Sources */,
+				AB3FBD822176DE95005722D0 /* WifiSettingsPanel.mm in Sources */,
 				AB7900BB215B84E50082AE82 /* TDStretch.cpp in Sources */,
 				AB7900BC215B84E50082AE82 /* texcache.cpp in Sources */,
 				AB7900BD215B84E50082AE82 /* async_job.c in Sources */,
@@ -5930,6 +5942,7 @@
 				AB7901F3215B84F20082AE82 /* matrix.cpp in Sources */,
 				AB7901F4215B84F20082AE82 /* mc.cpp in Sources */,
 				AB7901F5215B84F20082AE82 /* metaspu.cpp in Sources */,
+				AB3FBD832176DE95005722D0 /* WifiSettingsPanel.mm in Sources */,
 				AB7901F6215B84F20082AE82 /* MMU.cpp in Sources */,
 				AB7901F7215B84F20082AE82 /* mmx_optimized.cpp in Sources */,
 				AB7901F8215B84F20082AE82 /* movie.cpp in Sources */,
@@ -6191,6 +6204,7 @@
 				AB796D3815CDCBA200C59155 /* SPU.cpp in Sources */,
 				AB796D3915CDCBA200C59155 /* sse_optimized.cpp in Sources */,
 				AB796D3A15CDCBA200C59155 /* task.cpp in Sources */,
+				AB3FBD802176DE95005722D0 /* WifiSettingsPanel.mm in Sources */,
 				AB796D3B15CDCBA200C59155 /* TDStretch.cpp in Sources */,
 				AB796D3C15CDCBA200C59155 /* texcache.cpp in Sources */,
 				AB2ABA3B1C9F9CFA00173B15 /* async_job.c in Sources */,
@@ -6383,6 +6397,7 @@
 				AB8F3C9C1A53AC2600A80BF6 /* matrix.cpp in Sources */,
 				AB8F3C9D1A53AC2600A80BF6 /* mc.cpp in Sources */,
 				AB8F3C9F1A53AC2600A80BF6 /* metaspu.cpp in Sources */,
+				AB3FBD812176DE95005722D0 /* WifiSettingsPanel.mm in Sources */,
 				AB8F3CA01A53AC2600A80BF6 /* MMU.cpp in Sources */,
 				AB8F3CA11A53AC2600A80BF6 /* mmx_optimized.cpp in Sources */,
 				AB8F3CA21A53AC2600A80BF6 /* movie.cpp in Sources */,
@@ -6885,6 +6900,7 @@
 				ABE1457F1FBBA71A0097A4A8 /* operand.cpp in Sources */,
 				ABE145801FBBA71A0097A4A8 /* stringbuilder.cpp in Sources */,
 				ABE145811FBBA71A0097A4A8 /* ftgxval.c in Sources */,
+				AB3FBD842176DE95005722D0 /* WifiSettingsPanel.mm in Sources */,
 				ABE145821FBBA71A0097A4A8 /* stringutil.cpp in Sources */,
 				ABE145831FBBA71A0097A4A8 /* virtualmemory.cpp in Sources */,
 				ABE145841FBBA71A0097A4A8 /* zonememory.cpp in Sources */,

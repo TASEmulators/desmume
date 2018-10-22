@@ -93,6 +93,8 @@ public:
 @dynamic gpuScale;
 @dynamic gpuColorFormat;
 
+@synthesize openglDeviceMaxMultisamples;
+
 @dynamic layerMainGPU;
 @dynamic layerMainBG0;
 @dynamic layerMainBG1;
@@ -114,6 +116,8 @@ public:
 @dynamic render3DThreads;
 @dynamic render3DLineHack;
 @dynamic render3DMultisample;
+@dynamic render3DMultisampleSize;
+@synthesize render3DMultisampleSizeString;
 @dynamic render3DTextureDeposterize;
 @dynamic render3DTextureSmoothing;
 @dynamic render3DTextureScalingFactor;
@@ -192,6 +196,27 @@ public:
 	GPU->SetWillAutoResolveToCustomBuffer(false);
 #endif
 	
+	openglDeviceMaxMultisamples = 0;
+	render3DMultisampleSizeString = @"Off";
+	
+	bool isTempContextCreated = OSXOpenGLRendererInit();
+	if (isTempContextCreated)
+	{
+		OSXOpenGLRendererBegin();
+		GLint maxSamplesOGL = 0;
+		
+#if defined(GL_MAX_SAMPLES)
+		glGetIntegerv(GL_MAX_SAMPLES, &maxSamplesOGL);
+#elif defined(GL_MAX_SAMPLES_EXT)
+		glGetIntegerv(GL_MAX_SAMPLES_EXT, &maxSamplesOGL);
+#endif
+		
+		openglDeviceMaxMultisamples = maxSamplesOGL;
+		
+		OSXOpenGLRendererEnd();
+		DestroyOpenGLRenderer();
+	}
+	
 	return self;
 }
 
@@ -201,6 +226,8 @@ public:
 	
 	delete fetchObject;
 	delete gpuEvent;
+	
+	[self setRender3DMultisampleSizeString:nil];
 	
 	[super dealloc];
 }
@@ -470,7 +497,7 @@ public:
 	
 	CommonSettings.num_cores = numberCores;
 	
-	if (renderingEngineID == RENDERID_SOFTRASTERIZER)
+	if (renderingEngineID == CORE3DLIST_SWRASTERIZE)
 	{
 		GPU->Set3DRendererByID(renderingEngineID);
 	}
@@ -517,6 +544,115 @@ public:
 	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;
+}
+
+- (void) setRender3DMultisampleSize:(NSUInteger)msaaSize
+{
+	gpuEvent->ApplyRender3DSettingsLock();
+	
+	const int currentMSAASize = CommonSettings.GFX3D_Renderer_MultisampleSize;
+	
+	if (currentMSAASize != msaaSize)
+	{
+		switch (currentMSAASize)
+		{
+			case 0:
+			{
+				if (msaaSize == (currentMSAASize+1))
+				{
+					msaaSize = 2;
+				}
+				break;
+			}
+				
+			case 2:
+			{
+				if (msaaSize == (currentMSAASize-1))
+				{
+					msaaSize = 0;
+				}
+				else if (msaaSize == (currentMSAASize+1))
+				{
+					msaaSize = 4;
+				}
+				break;
+			}
+				
+			case 4:
+			{
+				if (msaaSize == (currentMSAASize-1))
+				{
+					msaaSize = 2;
+				}
+				else if (msaaSize == (currentMSAASize+1))
+				{
+					msaaSize = 8;
+				}
+				break;
+			}
+				
+			case 8:
+			{
+				if (msaaSize == (currentMSAASize-1))
+				{
+					msaaSize = 4;
+				}
+				else if (msaaSize == (currentMSAASize+1))
+				{
+					msaaSize = 16;
+				}
+				break;
+			}
+				
+			case 16:
+			{
+				if (msaaSize == (currentMSAASize-1))
+				{
+					msaaSize = 8;
+				}
+				else if (msaaSize == (currentMSAASize+1))
+				{
+					msaaSize = 32;
+				}
+				break;
+			}
+				
+			case 32:
+			{
+				if (msaaSize == (currentMSAASize-1))
+				{
+					msaaSize = 16;
+				}
+				else if (msaaSize == (currentMSAASize+1))
+				{
+					msaaSize = 32;
+				}
+				break;
+			}
+		}
+		
+		if (msaaSize > openglDeviceMaxMultisamples)
+		{
+			msaaSize = openglDeviceMaxMultisamples;
+		}
+		
+		msaaSize = GetNearestPositivePOT(msaaSize);
+		CommonSettings.GFX3D_Renderer_MultisampleSize = msaaSize;
+	}
+	
+	gpuEvent->ApplyRender3DSettingsUnlock();
+	
+	NSString *newMsaaSizeString = (msaaSize == 0) ? @"Off" : [NSString stringWithFormat:@"%d", (int)msaaSize];
+	[self setRender3DMultisampleSizeString:newMsaaSizeString];
+}
+
+- (NSUInteger) render3DMultisampleSize
+{
+	gpuEvent->ApplyRender3DSettingsLock();
+	const NSInteger msaaSize = (NSUInteger)CommonSettings.GFX3D_Renderer_MultisampleSize;
+	gpuEvent->ApplyRender3DSettingsUnlock();
+	
+	return msaaSize;
 }
 
 - (void) setRender3DTextureDeposterize:(BOOL)state
@@ -1608,14 +1744,13 @@ CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
 
 bool OSXOpenGLRendererInit()
 {
-	static bool isContextAlreadyCreated = false;
-	
-	if (!isContextAlreadyCreated)
+	bool isContextCreated = (OSXOpenGLRendererContext != NULL);
+	if (!isContextCreated)
 	{
-		isContextAlreadyCreated = CreateOpenGLRenderer();
+		isContextCreated = CreateOpenGLRenderer();
 	}
 	
-	return true;
+	return isContextCreated;
 }
 
 bool OSXOpenGLRendererBegin()

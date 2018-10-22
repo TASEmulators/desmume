@@ -115,7 +115,11 @@ typedef struct
 @property (copy) NSURL *firmwareImageURL;
 @property (copy) NSURL *slot1R4URL;
 
+@property (assign) NSString *firmwareMACAddressSelectionString;
+
 @property (readonly) pthread_rwlock_t *rwlockCoreExecute;
+
+- (void) generateFirmwareMACAddress;
 
 - (BOOL) isSlot1Ejected;
 - (void) slot1Eject;

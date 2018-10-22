@@ -71,6 +71,8 @@
 @synthesize ndsErrorStatusTextField;
 @synthesize exportRomSavePanelAccessoryView;
 
+@synthesize openglMSAAPopUpButton;
+
 @synthesize iconExecute;
 @synthesize iconPause;
 @synthesize iconSpeedNormal;
@@ -235,6 +237,7 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore setCdsFirmware:theFirmware];
+	[cdsCore setFirmwareMACAddressSelectionString:NULL];
 	[firmwarePanelController setContent:theFirmware];
 	
 	[cdsFirmware release];
@@ -927,6 +930,12 @@
 	[cdsCore setMasterExecute:NO];
 }
 
+- (IBAction) generateFirmwareMACAddress:(id)sender
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore generateFirmwareMACAddress];
+}
+
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
@@ -941,7 +950,7 @@
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DTextures] forKey:@"Render3D_Textures"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DThreads] forKey:@"Render3D_Threads"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DLineHack] forKey:@"Render3D_LineHack"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DMultisample] forKey:@"Render3D_Multisample"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DMultisampleSize] forKey:@"Render3D_MultisampleSize"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DTextureScalingFactor] forKey:@"Render3D_TextureScalingFactor"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DTextureDeposterize] forKey:@"Render3D_TextureDeposterize"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DTextureSmoothing] forKey:@"Render3D_TextureSmoothing"];
@@ -955,7 +964,7 @@
 - (IBAction) writeDefaultsEmulationSettings:(id)sender
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	NSDictionary *firmwareDict = [(CocoaDSFirmware *)[firmwarePanelController content] dataDictionary];
+	CocoaDSFirmware *writeFirmware = (CocoaDSFirmware *)[firmwarePanelController content];
 	
 	// Force end of editing of any text fields.
 	[[(NSControl *)sender window] makeFirstResponder:nil];
@@ -973,11 +982,11 @@
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagEmulateEnsata] forKey:@"Emulation_EmulateEnsata"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagDebugConsole] forKey:@"Emulation_UseDebugConsole"];
 	
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Nickname"] forKey:@"FirmwareConfig_Nickname"];
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Message"] forKey:@"FirmwareConfig_Message"];
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"FavoriteColor"] forKey:@"FirmwareConfig_FavoriteColor"];
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Birthday"] forKey:@"FirmwareConfig_Birthday"];
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Language"] forKey:@"FirmwareConfig_Language"];
+	[[NSUserDefaults standardUserDefaults] setObject:[writeFirmware nickname] forKey:@"FirmwareConfig_Nickname"];
+	[[NSUserDefaults standardUserDefaults] setObject:[writeFirmware message] forKey:@"FirmwareConfig_Message"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware favoriteColor] forKey:@"FirmwareConfig_FavoriteColor"];
+	[[NSUserDefaults standardUserDefaults] setObject:[writeFirmware birthday] forKey:@"FirmwareConfig_Birthday"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware language] forKey:@"FirmwareConfig_Language"];
 	
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
@@ -2220,6 +2229,38 @@
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[screenshotCaptureToolDelegate setSharedData:[[cdsCore cdsGPU] sharedData]];
 	[avCaptureToolDelegate setSharedData:[[cdsCore cdsGPU] sharedData]];
+	[self fillOpenGLMSAAMenu];
+}
+
+- (void) fillOpenGLMSAAMenu
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	NSUInteger maxSamples = [[cdsCore cdsGPU] openglDeviceMaxMultisamples];
+	size_t itemCount = 0;
+	
+	while (maxSamples > 1)
+	{
+		itemCount++;
+		maxSamples >>= 1;
+	}
+	
+	if (itemCount <= 0)
+	{
+		return;
+	}
+	
+	int itemValue = 2;
+	
+	for (size_t i = 0; i < itemCount; i++, itemValue<<=1)
+	{
+		NSString *itemTitle = [NSString stringWithFormat:@"%d", itemValue];
+		[openglMSAAPopUpButton addItemWithTitle:itemTitle];
+		
+		NSMenuItem *menuItem = [openglMSAAPopUpButton itemAtIndex:i+1];
+		[menuItem setTag:itemValue];
+	}
+	
+	[openglMSAAPopUpButton selectItemAtIndex:0];
 }
 
 - (void) readUserDefaults
@@ -2260,7 +2301,7 @@
 	[[cdsCore cdsGPU] setRender3DFog:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Fog"]];
 	[[cdsCore cdsGPU] setRender3DTextures:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Textures"]];
 	[[cdsCore cdsGPU] setRender3DLineHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_LineHack"]];
-	[[cdsCore cdsGPU] setRender3DMultisample:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Multisample"]];
+	[[cdsCore cdsGPU] setRender3DMultisampleSize:[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_MultisampleSize"]];
 	[[cdsCore cdsGPU] setRender3DTextureScalingFactor:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_TextureScalingFactor"]];
 	[[cdsCore cdsGPU] setRender3DTextureDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_TextureDeposterize"]];
 	[[cdsCore cdsGPU] setRender3DTextureSmoothing:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_TextureSmoothing"]];

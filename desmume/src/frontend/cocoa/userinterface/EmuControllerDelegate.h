@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2017 DeSmuME Team
+	Copyright (C) 2013-2018 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -76,6 +76,8 @@ class AudioSampleBlockGenerator;
 	NSWindow *ndsErrorSheet;
 	NSTextField *ndsErrorStatusTextField;
 	NSView *exportRomSavePanelAccessoryView;
+	
+	NSPopUpButton *openglMSAAPopUpButton;
 	
 	BOOL isSaveStateEdited;
 	
@@ -154,6 +156,8 @@ class AudioSampleBlockGenerator;
 @property (readonly) IBOutlet NSWindow *ndsErrorSheet;
 @property (readonly) IBOutlet NSTextField *ndsErrorStatusTextField;
 @property (readonly) IBOutlet NSView *exportRomSavePanelAccessoryView;
+
+@property (readonly) IBOutlet NSPopUpButton *openglMSAAPopUpButton;
 
 @property (readonly) NSImage *iconExecute;
 @property (readonly) NSImage *iconPause;
@@ -237,6 +241,7 @@ class AudioSampleBlockGenerator;
 - (IBAction) chooseSlot1R4Directory:(id)sender;
 - (IBAction) slot1Eject:(id)sender;
 - (IBAction) simulateEmulationCrash:(id)sender;
+- (IBAction) generateFirmwareMACAddress:(id)sender;
 
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender;
 - (IBAction) writeDefaultsEmulationSettings:(id)sender;
@@ -301,6 +306,7 @@ class AudioSampleBlockGenerator;
 - (void) updateAllWindowTitles;
 - (void) updateDisplayPanelTitles;
 - (void) appInit;
+- (void) fillOpenGLMSAAMenu;
 - (void) readUserDefaults;
 - (void) writeUserDefaults;
 - (void) restoreDisplayWindowStates;

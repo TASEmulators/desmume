@@ -737,6 +737,11 @@
 		AB446DB41F69DB68002F32B6 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB446DA01F69DB56002F32B6 /* CoreVideo.framework */; };
 		AB446DB51F69DB69002F32B6 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB446DA01F69DB56002F32B6 /* CoreVideo.framework */; };
 		AB446DB61F69DB69002F32B6 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB446DA01F69DB56002F32B6 /* CoreVideo.framework */; };
+		AB4B5A21217E47E400381363 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB4B5A20217E47E400381363 /* WifiSettingsPanel.mm */; };
+		AB4B5A22217E47E400381363 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB4B5A20217E47E400381363 /* WifiSettingsPanel.mm */; };
+		AB4B5A23217E47E400381363 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB4B5A20217E47E400381363 /* WifiSettingsPanel.mm */; };
+		AB4B5A24217E47E400381363 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB4B5A20217E47E400381363 /* WifiSettingsPanel.mm */; };
+		AB4B5A25217E47E400381363 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB4B5A20217E47E400381363 /* WifiSettingsPanel.mm */; };
 		AB4C4C3F16F55C64002E07CD /* AAFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2A16F55C64002E07CD /* AAFilter.cpp */; };
 		AB4C4C4016F55C64002E07CD /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2B16F55C64002E07CD /* cpu_detect_x86_gcc.cpp */; };
 		AB4C4C4116F55C64002E07CD /* FIFOSampleBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2C16F55C64002E07CD /* FIFOSampleBuffer.cpp */; };
@@ -1951,6 +1956,8 @@
 		AB43528517D5BA95007417C8 /* fsnitro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fsnitro.h; sourceTree = "<group>"; };
 		AB43528617D5BA95007417C8 /* fsnitro.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fsnitro.cpp; sourceTree = "<group>"; };
 		AB446DA01F69DB56002F32B6 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		AB4B5A1F217E47E400381363 /* WifiSettingsPanel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WifiSettingsPanel.h; sourceTree = "<group>"; };
+		AB4B5A20217E47E400381363 /* WifiSettingsPanel.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = WifiSettingsPanel.mm; sourceTree = "<group>"; };
 		AB4C4C2A16F55C64002E07CD /* AAFilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AAFilter.cpp; sourceTree = "<group>"; };
 		AB4C4C2B16F55C64002E07CD /* cpu_detect_x86_gcc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cpu_detect_x86_gcc.cpp; sourceTree = "<group>"; };
 		AB4C4C2C16F55C64002E07CD /* FIFOSampleBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FIFOSampleBuffer.cpp; sourceTree = "<group>"; };
@@ -3132,6 +3139,7 @@
 				ABC3DEBB1A96EA96009EC345 /* RomInfoPanel.h */,
 				ABAE2F7918682B6C00C92F4F /* Slot2WindowDelegate.h */,
 				ABA0356E169127BB00817C69 /* troubleshootingWindowDelegate.h */,
+				AB4B5A1F217E47E400381363 /* WifiSettingsPanel.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
 				AB3E69821E25FBBF00D4CC75 /* DisplayViewCALayer.mm */,
@@ -3149,6 +3157,7 @@
 				ABC3DEBC1A96EA96009EC345 /* RomInfoPanel.mm */,
 				ABAE2F7A18682B6C00C92F4F /* Slot2WindowDelegate.mm */,
 				ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */,
+				AB4B5A20217E47E400381363 /* WifiSettingsPanel.mm */,
 			);
 			path = userinterface;
 			sourceTree = "<group>";
@@ -4681,6 +4690,7 @@
 				ABD1266A20AE80DF00EFE1B2 /* MacBaseCaptureTool.mm in Sources */,
 				ABD1267720AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267820AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
+				AB4B5A22217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4874,6 +4884,7 @@
 				ABD1266C20AE80DF00EFE1B2 /* MacBaseCaptureTool.mm in Sources */,
 				ABD1267920AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267A20AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
+				AB4B5A23217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5097,6 +5108,7 @@
 				ABD1266820AE80DF00EFE1B2 /* MacBaseCaptureTool.mm in Sources */,
 				ABD1267520AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267620AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
+				AB4B5A21217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5320,6 +5332,7 @@
 				ABD1267020AE80DF00EFE1B2 /* MacBaseCaptureTool.mm in Sources */,
 				ABD1267D20AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267E20AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
+				AB4B5A25217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5513,6 +5526,7 @@
 				ABD1266E20AE80DF00EFE1B2 /* MacBaseCaptureTool.mm in Sources */,
 				ABD1267B20AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267C20AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
+				AB4B5A24217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

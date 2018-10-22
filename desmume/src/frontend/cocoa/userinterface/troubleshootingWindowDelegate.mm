@@ -133,7 +133,7 @@
 		case CORE3DLIST_OPENGL:
 			render3DEngineDetails = [NSString stringWithFormat:@"%@ (MSAA=%@, SmoothTextures=%@)",
 									 [[cdsCore cdsGPU] render3DRenderingEngineString],
-									 [[cdsCore cdsGPU] render3DMultisample] ? @"YES" : @"NO",
+									 ([[cdsCore cdsGPU] render3DMultisampleSize] == 0) ? @"Off" : [NSString stringWithFormat:@"%ld", (unsigned long)[[cdsCore cdsGPU] render3DMultisampleSize]],
 									 [[cdsCore cdsGPU] render3DTextureSmoothing] ? @"YES" : @"NO"];
 			break;
 			

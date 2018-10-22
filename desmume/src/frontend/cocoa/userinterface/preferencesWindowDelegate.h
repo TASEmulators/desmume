@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2014 DeSmuME Team
+	Copyright (C) 2012-2018 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -74,6 +74,8 @@ class OGLImage;
 	NSMenuItem *displayRotationMenuCustomItem;
 	NSTextField *displayRotationField;
 	
+	NSPopUpButton *openglMSAAPopUpButton;
+	
 	NSImage *iconVolumeFull;
 	NSImage *iconVolumeTwoThird;
 	NSImage *iconVolumeOneThird;
@@ -109,6 +111,8 @@ class OGLImage;
 @property (readonly) IBOutlet NSMenuItem *displayRotationMenuCustomItem;
 @property (readonly) IBOutlet NSTextField *displayRotationField;
 @property (readonly) IBOutlet NSPopUpButton *spuSyncMethodMenu;
+
+@property (readonly) IBOutlet NSPopUpButton *openglMSAAPopUpButton;
 
 @property (readonly) IBOutlet DisplayPreviewView *previewView;
 
@@ -146,6 +150,7 @@ class OGLImage;
 - (void) didEndFirmwareConfigSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 
 - (void) switchContentView:(NSView *)theView;
+- (void) markUnsupportedOpenGLMSAAMenuItems;
 - (void) setupUserDefaults;
 
 @end

@@ -742,6 +742,8 @@
 	<true/>
 	<key>Render3D_Multisample</key>
 	<false/>
+	<key>Render3D_MultisampleSize</key>
+	<integer>0</integer>
 	<key>Render3D_RenderingEngine</key>
 	<integer>1</integer>
 	<key>Render3D_Textures</key>
@@ -828,5 +830,15 @@
 	<integer>0</integer>
 	<key>SPU_SyncMode</key>
 	<integer>1</integer>
+	<key>Wifi_EmulationMode</key>
+	<integer>0</integer>
+	<key>Wifi_AddressSelection</key>
+	<integer>0</integer>
+	<key>Wifi_BridgeDeviceSelectionIndex</key>
+	<integer>0</integer>
+	<key>Wifi_BridgeDeviceSelectionName</key>
+	<string></string>
+	<key>Wifi_MyMACAddress</key>
+	<integer>0</integer>
 </dict>
 </plist>

@@ -88,6 +88,7 @@ volatile bool execute = true;
 @dynamic arm9ImageURL;
 @dynamic arm7ImageURL;
 @dynamic firmwareImageURL;
+@dynamic firmwareMACAddressSelectionString;
 @dynamic slot1R4URL;
 
 @dynamic rwlockCoreExecute;
@@ -129,7 +130,6 @@ volatile bool execute = true;
 	
 	threadParam.cdsCore = self;
 	
-	wifiHandler->SetUniqueMACValue((uint32_t)[[NSProcessInfo processInfo] processIdentifier]);
 	wifiHandler->SetEmulationLevel(WifiEmulationLevel_Off);
 	
 	pthread_rwlock_init(&threadParam.rwlockOutputList, NULL);
@@ -716,9 +716,38 @@ volatile bool execute = true;
 	return [NSURL fileURLWithPath:[NSString stringWithCString:filePath encoding:NSUTF8StringEncoding]];
 }
 
+- (void) setFirmwareMACAddressSelectionString:(NSString *)theString
+{
+	// Do nothing. This is here for KVO-compliance only.
+}
+
+- (NSString *) firmwareMACAddressSelectionString
+{
+	// TODO: Also handle the case of returning the correct MAC address of external firmware.
+	//return [NSString stringWithFormat:@"Firmware  %@", [[self cdsFirmware] MACAddressString]];
+	return @"Firmware  00:09:BF:FF:FF:FF";
+}
+
 - (pthread_rwlock_t *) rwlockCoreExecute
 {
 	return &threadParam.rwlockCoreExecute;
+}
+
+- (void) generateFirmwareMACAddress
+{
+	const uint32_t macValue = (uint32_t)random() & 0x00FFFFFF;
+	
+	uint8_t newMACAddress[6];
+	newMACAddress[0] = 0x00;
+	newMACAddress[1] = 0x09;
+	newMACAddress[2] = 0xBF;
+	newMACAddress[3] = (macValue >>  0) & 0x000000FF;
+	newMACAddress[4] = (macValue >>  8) & 0x000000FF;
+	newMACAddress[5] = (macValue >> 16) & 0x000000FF;
+	
+	//[[self cdsFirmware] setMACAddress:newMACAddress];
+	
+	[self setFirmwareMACAddressSelectionString:NULL];
 }
 
 - (BOOL) isSlot1Ejected
