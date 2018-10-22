@@ -149,7 +149,7 @@ public:
 	u32 romChecksum;
 	std::string romSerial;
 	std::string romFilename;
-	bool savestate = false;
+	bool savestate;
 	std::vector<u8> sram;
 	std::vector<MovieRecord> records;
 	std::vector<std::wstring> comments;
@@ -162,20 +162,20 @@ public:
 	//was the frame data stored in binary?
 	bool binaryFlag;
 
-	int useExtBios = -1;
-	int swiFromBios = -1;
-	int useExtFirmware = -1;
-	int bootFromFirmware = -1;
+	int useExtBios;
+	int swiFromBios;
+	int useExtFirmware;
+	int bootFromFirmware;
 
-	std::string firmNickname = "";
-	std::string firmMessage = "";
-	int firmFavColour = -1;
-	int firmBirthMonth = -1;
-	int firmBirthDay = -1;
-	int firmLanguage = -1;
+	std::string firmNickname;
+	std::string firmMessage;
+	int firmFavColour;
+	int firmBirthMonth;
+	int firmBirthDay;
+	int firmLanguage;
 
-	int advancedTiming = -1;
-	int jitBlockSize = -1;
+	int advancedTiming;
+	int jitBlockSize;
 
 	int getNumRecords() { return records.size(); }
 

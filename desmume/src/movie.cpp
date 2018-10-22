@@ -208,6 +208,23 @@ MovieData::MovieData(bool fromCurrentSettings)
 	, binaryFlag(false)
 	, rtcStart(FCEUI_MovieGetRTCDefault())
 {
+	savestate = false;
+	
+	useExtBios = -1;
+	swiFromBios = -1;
+	useExtFirmware = -1;
+	bootFromFirmware = -1;
+	
+	firmNickname = "";
+	firmMessage = "";
+	firmFavColour = -1;
+	firmBirthMonth = -1;
+	firmBirthDay = -1;
+	firmLanguage = -1;
+	
+	advancedTiming = -1;
+	jitBlockSize = -1;
+	
 	installValueMap["version"] = &MovieData::installVersion;
 	installValueMap["emuVersion"] = &MovieData::installEmuVersion;
 	installValueMap["rerecordCount"] = &MovieData::installRerecordCount;
@@ -904,8 +921,8 @@ static void FCEUMOV_AddCommand(int cmd)
 }
 
 //little endian 4-byte cookies
-static const int kMOVI = 0x49564F4D;
-static const int kNOMO = 0x4F4D4F4E;
+static const u32 kMOVI = 0x49564F4D;
+static const u32 kNOMO = 0x4F4D4F4E;
 
 void mov_savestate(EMUFILE &fp)
 {
