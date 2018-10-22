@@ -73,6 +73,7 @@ protected:
 	virtual void DestroyFBOs();
 	virtual Render3DError CreateMultisampledFBO(GLsizei numSamples);
 	virtual void DestroyMultisampledFBO();
+	virtual void ResizeMultisampledFBOs(GLsizei numSamples);
 	virtual Render3DError CreateVAOs();
 	virtual void DestroyVAOs();
 	

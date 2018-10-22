@@ -532,6 +532,7 @@ extern struct TCommonSettings
 		, GFX3D_Texture(true)
 		, GFX3D_LineHack(true)
 		, GFX3D_Renderer_Multisample(false)
+		, GFX3D_Renderer_MultisampleSize(0)
 		, GFX3D_Renderer_TextureScalingFactor(1) // Possible values: 1, 2, 4
 		, GFX3D_Renderer_TextureDeposterize(false)
 		, GFX3D_Renderer_TextureSmoothing(false)
@@ -591,6 +592,7 @@ extern struct TCommonSettings
 	bool GFX3D_Texture;
 	bool GFX3D_LineHack;
 	bool GFX3D_Renderer_Multisample;
+	int GFX3D_Renderer_MultisampleSize;
 	int GFX3D_Renderer_TextureScalingFactor; //must be one of {1,2,4}
 	bool GFX3D_Renderer_TextureDeposterize;
 	bool GFX3D_Renderer_TextureSmoothing;

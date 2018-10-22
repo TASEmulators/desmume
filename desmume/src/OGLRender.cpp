@@ -1474,35 +1474,39 @@ FragmentColor* OpenGLRenderer::GetFramebuffer()
 	return (this->willFlipAndConvertFramebufferOnGPU && this->isPBOSupported) ? this->_mappedFramebuffer : GPU->GetEngineMain()->Get3DFramebufferMain();
 }
 
-
 GLsizei OpenGLRenderer::GetLimitedMultisampleSize() const
 {
 	GLsizei deviceMultisamples = this->_deviceInfo.maxSamples;
-	GLsizei maxMultisamples = OGLMaxMultisamples_Tier1;
+	u32 workingMultisamples = (u32)this->_selectedMultisampleSize;
 	
-	if ( (this->_framebufferWidth  <= GPU_FRAMEBUFFER_NATIVE_WIDTH  * OGLMaxMultisamplesScaleLimit_Tier1) &&
-		 (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * OGLMaxMultisamplesScaleLimit_Tier1) )
+	if (workingMultisamples == 1)
 	{
-		maxMultisamples = OGLMaxMultisamples_Tier1;
-	}
-	else if ( (this->_framebufferWidth  <= GPU_FRAMEBUFFER_NATIVE_WIDTH  * OGLMaxMultisamplesScaleLimit_Tier2) &&
-			  (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * OGLMaxMultisamplesScaleLimit_Tier2) )
-	{
-		maxMultisamples = OGLMaxMultisamples_Tier2;
-	}
-	else if ( (this->_framebufferWidth  <= GPU_FRAMEBUFFER_NATIVE_WIDTH  * OGLMaxMultisamplesScaleLimit_Tier3) &&
-			  (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * OGLMaxMultisamplesScaleLimit_Tier3) )
-	{
-		maxMultisamples = OGLMaxMultisamples_Tier3;
+		// If this->_selectedMultisampleSize is 1, then just set workingMultisamples to 2
+		// by default. This is done to prevent the multisampled FBOs from being resized to
+		// a meaningless sample size of 1.
+		//
+		// As an side, if someone wants to bring back automatic MSAA sample size selection
+		// in the future, then this would be the place to reimplement it.
+		workingMultisamples = 2;
 	}
 	else
 	{
-		maxMultisamples = OGLMaxMultisamples_Tier4;
+		// Ensure that workingMultisamples is a power-of-two, which is what OpenGL likes.
+		//
+		// If workingMultisamples is not a power-of-two, then workingMultisamples is
+		// increased to the next largest power-of-two.
+		workingMultisamples--;
+		workingMultisamples |= workingMultisamples >> 1;
+		workingMultisamples |= workingMultisamples >> 2;
+		workingMultisamples |= workingMultisamples >> 4;
+		workingMultisamples |= workingMultisamples >> 8;
+		workingMultisamples |= workingMultisamples >> 16;
+		workingMultisamples++;
 	}
 	
-	if (deviceMultisamples > maxMultisamples)
+	if (deviceMultisamples > workingMultisamples)
 	{
-		deviceMultisamples = maxMultisamples;
+		deviceMultisamples = workingMultisamples;
 	}
 	
 	return deviceMultisamples;
@@ -1945,7 +1949,16 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive, const
 
 Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderState)
 {
-	this->_enableMultisampledRendering = (CommonSettings.GFX3D_Renderer_Multisample && this->isMultisampledFBOSupported);
+	int oldSelectedMultisampleSize = this->_selectedMultisampleSize;
+	
+	this->_selectedMultisampleSize = CommonSettings.GFX3D_Renderer_MultisampleSize;
+	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->isMultisampledFBOSupported);
+	
+	if (this->_selectedMultisampleSize != oldSelectedMultisampleSize)
+	{
+		GLsizei sampleSize = this->GetLimitedMultisampleSize();
+		this->ResizeMultisampledFBOs(sampleSize);
+	}
 	
 	return Render3D::ApplyRenderingSettings(renderState);
 }
@@ -2169,6 +2182,8 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		INFO("OpenGL: FBOs are unsupported. Some emulation features will be disabled.\n");
 	}
 	
+	this->_selectedMultisampleSize = CommonSettings.GFX3D_Renderer_MultisampleSize;
+	
 	// Don't use ARB versions since we're using the EXT versions for backwards compatibility.
 	this->isMultisampledFBOSupported	= this->isFBOSupported &&
 										  this->IsExtensionPresent(&oglExtensionSet, "GL_EXT_framebuffer_multisample");
@@ -2178,14 +2193,30 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		glGetIntegerv(GL_MAX_SAMPLES_EXT, &maxSamplesOGL);
 		this->_deviceInfo.maxSamples = (u8)maxSamplesOGL;
 		
-		if (maxSamplesOGL >= 2)
+		if (this->_deviceInfo.maxSamples >= 2)
 		{
+			// Try and initialize the multisampled FBOs with the GFX3D_Renderer_MultisampleSize.
+			// However, if the client has this set to 0, then set sampleSize to 2 in order to
+			// force the generation and the attachments of the buffers at a meaningful sample
+			// size. If GFX3D_Renderer_MultisampleSize is 0, then we can deallocate the buffer
+			// memory afterwards.
 			GLsizei sampleSize = this->GetLimitedMultisampleSize();
+			if (sampleSize == 0)
+			{
+				sampleSize = 2;
+			}
 			
 			error = this->CreateMultisampledFBO(sampleSize);
 			if (error != OGLERROR_NOERR)
 			{
 				this->isMultisampledFBOSupported = false;
+			}
+			
+			// If GFX3D_Renderer_MultisampleSize is 0, then we can deallocate the buffers now
+			// in order to save some memory.
+			if (this->_selectedMultisampleSize == 0)
+			{
+				this->ResizeMultisampledFBOs(0);
 			}
 		}
 		else
@@ -2207,7 +2238,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	this->_deviceInfo.isFogSupported = (this->isShaderSupported && this->isVBOSupported && this->isFBOSupported);
 	this->_deviceInfo.isTextureSmoothingSupported = this->isShaderSupported;
 	
-	this->_enableMultisampledRendering = (CommonSettings.GFX3D_Renderer_Multisample && this->isMultisampledFBOSupported);
+	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->isMultisampledFBOSupported);
 	
 	this->InitFinalRenderStates(&oglExtensionSet); // This must be done last
 	
@@ -2954,6 +2985,38 @@ void OpenGLRenderer_1_2::DestroyMultisampledFBO()
 	OGLRef.fboMSIntermediateRenderAlphaID = 0;
 	
 	this->isMultisampledFBOSupported = false;
+}
+
+void OpenGLRenderer_1_2::ResizeMultisampledFBOs(GLsizei numSamples)
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	GLsizei w = this->_framebufferWidth;
+	GLsizei h = this->_framebufferHeight;
+	
+	if ( !this->isMultisampledFBOSupported ||
+		 (numSamples == 1) ||
+		 (w < GPU_FRAMEBUFFER_NATIVE_WIDTH) || (h < GPU_FRAMEBUFFER_NATIVE_HEIGHT) )
+	{
+		return;
+	}
+	
+	if (numSamples == 0)
+	{
+		w = 0;
+		h = 0;
+		numSamples = 2;
+	}
+	
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);
+	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, numSamples, GL_RGBA, w, h);
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGPolyID);
+	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, numSamples, GL_RGBA, w, h);
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGFogAttrID);
+	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, numSamples, GL_RGBA, w, h);
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilID);
+	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, numSamples, GL_DEPTH24_STENCIL8_EXT, w, h);
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilAlphaID);
+	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, numSamples, GL_DEPTH24_STENCIL8_EXT, w, h);
 }
 
 Render3DError OpenGLRenderer_1_2::InitFinalRenderStates(const std::set<std::string> *oglExtensionSet)
@@ -4900,23 +4963,10 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferPixCount = w * h;
 	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
 	
-	if (this->isMultisampledFBOSupported)
-	{
-		// Call GetLimitedMultisampleSize() after _framebufferWidth and _framebufferHeight are set
-		// since this method depends on them.
-		GLsizei sampleSize = this->GetLimitedMultisampleSize();
-		
-		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);
-		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, sampleSize, GL_RGBA, w, h);
-		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGPolyID);
-		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, sampleSize, GL_RGBA, w, h);
-		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGFogAttrID);
-		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, sampleSize, GL_RGBA, w, h);
-		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilID);
-		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, sampleSize, GL_DEPTH24_STENCIL8_EXT, w, h);
-		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilAlphaID);
-		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, sampleSize, GL_DEPTH24_STENCIL8_EXT, w, h);
-	}
+	// Call ResizeMultisampledFBOs() after _framebufferWidth and _framebufferHeight are set
+	// since this method depends on them.
+	GLsizei sampleSize = this->GetLimitedMultisampleSize();
+	this->ResizeMultisampledFBOs(sampleSize);
 	
 	if (this->isPBOSupported)
 	{
