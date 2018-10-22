@@ -21,6 +21,7 @@
 #import "EmuControllerDelegate.h"
 #import "FileMigrationDelegate.h"
 #import "MacAVCaptureTool.h"
+#import "WifiSettingsPanel.h"
 #import "preferencesWindowDelegate.h"
 #import "troubleshootingWindowDelegate.h"
 #import "cheatWindowDelegate.h"
@@ -50,6 +51,7 @@
 @synthesize prefWindowController;
 @synthesize cdsCoreController;
 @synthesize avCaptureToolDelegate;
+@synthesize wifiSettingsPanelDelegate;
 @synthesize migrationDelegate;
 
 @synthesize isAppRunningOnIntel;
@@ -136,6 +138,8 @@
 		return;
 	}
 	
+	srandom(time(NULL));
+	
 	[CocoaDSFile setupAllFilePaths];
 	
 	// On macOS v10.13 and later, some unwanted menu items will show up in the View menu.
@@ -188,6 +192,9 @@
 	[avCaptureToolDelegate setCdsCore:newCore];
 	[avCaptureToolDelegate setExecControl:[newCore execControl]];
 	
+	[wifiSettingsPanelDelegate setExecControl:[newCore execControl]];
+	[wifiSettingsPanelDelegate fillLibpcapDeviceMenu];
+	
 	// Init the DS speakers.
 	CocoaDSSpeaker *newSpeaker = [[[CocoaDSSpeaker alloc] init] autorelease];
 	[newCore addOutput:newSpeaker];
@@ -198,6 +205,7 @@
 	[prefWindowController setContent:[prefWindowDelegate bindings]];
 	
 	[emuControl appInit];
+	[prefWindowDelegate markUnsupportedOpenGLMSAAMenuItems];
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
@@ -459,15 +467,13 @@
 	[cdsCore setIsCheatingEnabled:[[NSUserDefaults standardUserDefaults] boolForKey:@"CoreControl_EnableCheats"]];
 	
 	// Set up the firmware per user preferences.
-	NSMutableDictionary *newFWDict = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-									  [[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_Nickname"], @"Nickname",
-									  [[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_Message"], @"Message",
-									  [[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_FavoriteColor"], @"FavoriteColor",
-									  [[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_Birthday"], @"Birthday",
-									  [[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_Language"], @"Language",
-									  nil];
+	CocoaDSFirmware *newFirmware = [[[CocoaDSFirmware alloc] init] autorelease];
+	[newFirmware setNickname:[[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_Nickname"]];
+	[newFirmware setMessage:[[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_Message"]];
+	[newFirmware setFavoriteColor:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_FavoriteColor"]];
+	[newFirmware setBirthday:[[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_Birthday"]];
+	[newFirmware setLanguage:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_Language"]];
 	
-	CocoaDSFirmware *newFirmware = [[[CocoaDSFirmware alloc] initWithDictionary:newFWDict] autorelease];
 	[newFirmware update];
 	[emuControl setCdsFirmware:newFirmware];
 	
@@ -517,6 +523,7 @@
 	
 	// Set up the rest of the emulation-related user defaults.
 	[emuControl readUserDefaults];
+	[wifiSettingsPanelDelegate readUserDefaults];
 	
 	// Set up the preferences window.
 	[prefWindowDelegate setupUserDefaults];

@@ -724,8 +724,7 @@ volatile bool execute = true;
 - (NSString *) firmwareMACAddressSelectionString
 {
 	// TODO: Also handle the case of returning the correct MAC address of external firmware.
-	//return [NSString stringWithFormat:@"Firmware  %@", [[self cdsFirmware] MACAddressString]];
-	return @"Firmware  00:09:BF:FF:FF:FF";
+	return [NSString stringWithFormat:@"Firmware  %@", [[self cdsFirmware] MACAddressString]];
 }
 
 - (pthread_rwlock_t *) rwlockCoreExecute
@@ -745,8 +744,7 @@ volatile bool execute = true;
 	newMACAddress[4] = (macValue >>  8) & 0x000000FF;
 	newMACAddress[5] = (macValue >> 16) & 0x000000FF;
 	
-	//[[self cdsFirmware] setMACAddress:newMACAddress];
-	
+	[[self cdsFirmware] setMACAddress:newMACAddress];
 	[self setFirmwareMACAddressSelectionString:NULL];
 }
 

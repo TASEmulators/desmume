@@ -21,6 +21,7 @@
 @class InputPrefsView;
 @class FileMigrationDelegate;
 @class MacAVCaptureToolDelegate;
+@class WifiSettingsPanelDelegate;
 
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
@@ -37,6 +38,7 @@
 	NSObjectController *cdsCoreController;
 	FileMigrationDelegate *migrationDelegate;
 	MacAVCaptureToolDelegate *avCaptureToolDelegate;
+	WifiSettingsPanelDelegate *wifiSettingsPanelDelegate;
 	
 	NSWindow *prefWindow;
 	NSWindow *troubleshootingWindow;
@@ -57,6 +59,7 @@
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
 @property (readonly) IBOutlet FileMigrationDelegate *migrationDelegate;
 @property (readonly) IBOutlet MacAVCaptureToolDelegate *avCaptureToolDelegate;
+@property (readonly) IBOutlet WifiSettingsPanelDelegate *wifiSettingsPanelDelegate;
 @property (readonly) IBOutlet NSWindow *prefWindow;
 @property (readonly) IBOutlet NSWindow *troubleshootingWindow;
 @property (readonly) IBOutlet NSMenu *mLoadStateSlot;
