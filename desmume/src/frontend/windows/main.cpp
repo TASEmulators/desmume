@@ -424,6 +424,9 @@ static int sndcoretype=SNDCORE_DIRECTX;
 static int sndbuffersize=DESMUME_SAMPLE_RATE*8/60;
 int sndvolume=100;
 
+const int possibleMSAA[] = {0, 2, 4, 8, 16, 32};
+int maxSamples=32;
+
 SoundInterface_struct *SNDCoreList[] = {
 	&SNDDummy,
 	&SNDDIRECTX,
@@ -2375,14 +2378,8 @@ int _main()
 	CommonSettings.GFX3D_LineHack = GetPrivateProfileBool("3D", "EnableLineHack", 1, IniName);
 	CommonSettings.GFX3D_TXTHack = GetPrivateProfileBool("3D", "EnableTXTHack", 0, IniName); //default is off.
 	CommonSettings.GFX3D_Renderer_Multisample = GetPrivateProfileBool("3D", "EnableAntiAliasing", 0, IniName);
-	CommonSettings.GFX3D_Renderer_AntiAliasingLimit = GetPrivateProfileBool("3D", "AntiAliasingLimit", 0, IniName);
-	CommonSettings.GFX3D_Renderer_AntiAliasingSamples = GetPrivateProfileInt("3D", "AntiAliasingSamples", 8, IniName); //only place this user variable gets read
-	if (CommonSettings.GFX3D_Renderer_AntiAliasingSamples != 2 && CommonSettings.GFX3D_Renderer_AntiAliasingSamples != 4 && 
-		CommonSettings.GFX3D_Renderer_AntiAliasingSamples != 8) //so just check for invalid values here
-	{
-		CommonSettings.GFX3D_Renderer_AntiAliasingSamples = 8;
-		WritePrivateProfileInt("3D", "AntiAliasingSamples", CommonSettings.GFX3D_Renderer_AntiAliasingSamples, IniName);
-	}
+	CommonSettings.GFX3D_Renderer_MultisampleSize = GetPrivateProfileInt("3D", "MultisampleSize", 0, IniName);
+	CheckValidMSAA(CommonSettings.GFX3D_Renderer_MultisampleSize);
 	Change3DCoreWithFallbackAndSave(cur3DCore);
 
 
@@ -2619,6 +2616,23 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	CloseConsole();
 
 	return ret;
+}
+
+void CheckValidMSAA(int userVal)
+{
+	bool validMSAA = false;
+
+	for(int i=0; i < 6; i++)
+	{
+		if(CommonSettings.GFX3D_Renderer_MultisampleSize == possibleMSAA[i]) 
+			validMSAA = true;
+	}
+
+	if(!validMSAA)
+	{
+		CommonSettings.GFX3D_Renderer_MultisampleSize=0; //Just disable for now until I find a better solution
+		WritePrivateProfileInt("3D","MultisampleSize",0,IniName);
+	}
 }
 
 
@@ -5666,7 +5680,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 	{
 	case WM_INITDIALOG:
 		{
-			int i;
+			int i = 0, z = 0;
 			HWND cur;
 
 			CheckDlgButton(hw,IDC_INTERPOLATECOLOR,CommonSettings.GFX3D_HighResolutionInterpolateColor);
@@ -5674,11 +5688,6 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw,IDC_3DSETTINGS_FOG,CommonSettings.GFX3D_Fog);
 			CheckDlgButton(hw,IDC_3DSETTINGS_TEXTURE,CommonSettings.GFX3D_Texture);
 			CheckDlgButton(hw,IDC_3DSETTINGS_LINEHACK, CommonSettings.GFX3D_LineHack);
-			CheckDlgButton(hw,IDC_3DSETTINGS_ANTIALIASING, CommonSettings.GFX3D_Renderer_Multisample);
-			CheckDlgButton(hw,IDC_MSAA_LIMIT, CommonSettings.GFX3D_Renderer_AntiAliasingLimit);
-			CheckDlgButton(hw,IDC_MSAA_SAMPLES_8, CommonSettings.GFX3D_Renderer_AntiAliasingSamples == 8);
-			CheckDlgButton(hw,IDC_MSAA_SAMPLES_4, CommonSettings.GFX3D_Renderer_AntiAliasingSamples == 4);
-			CheckDlgButton(hw,IDC_MSAA_SAMPLES_2, CommonSettings.GFX3D_Renderer_AntiAliasingSamples == 2);
 			CheckDlgButton(hw,IDC_TXTHACK, CommonSettings.GFX3D_TXTHack);
 
 			CheckDlgButton(hw,IDC_TEXSCALE_1, CommonSettings.GFX3D_Renderer_TextureScalingFactor == 1);
@@ -5692,29 +5701,29 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw,IDC_TEX_DEPOSTERIZE, CommonSettings.GFX3D_Renderer_TextureDeposterize);
 			CheckDlgButton(hw,IDC_TEX_SMOOTH, CommonSettings.GFX3D_Renderer_TextureSmoothing);
 
-			if(CommonSettings.GFX3D_Renderer_Multisample == false)
-			{
-				cur = GetDlgItem(hw, IDC_MSAA_LIMIT);
-				EnableWindow(cur, FALSE);
-				cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_8);
-				EnableWindow(cur, FALSE);
-				cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_4);
-				EnableWindow(cur, FALSE);
-				cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_2);
-				EnableWindow(cur, FALSE);
-			}
-			else if(CommonSettings.GFX3D_Renderer_Multisample && CommonSettings.GFX3D_Renderer_AntiAliasingLimit == false)
-			{
-				cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_8);
-				EnableWindow(cur, FALSE);
-				cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_4);
-				EnableWindow(cur, FALSE);
-				cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_2);
-				EnableWindow(cur, FALSE);
-			}
-
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, video.prescaleHD);
+
+			const char MSAADescriptions[6][9] = {"Disabled", "2x", "4x", "8x", "16x", "32x"};
+
+			CheckValidMSAA(CommonSettings.GFX3D_Renderer_MultisampleSize);
+			if(cur3DCore != 0 && cur3DCore != 2) //Not sure how to get maxSamples when renderer is null or softrast
+			{
+				maxSamples = CurrentRenderer->GetDeviceInfo().maxSamples;
+				if (CommonSettings.GFX3D_Renderer_MultisampleSize > maxSamples) 
+				{
+					CommonSettings.GFX3D_Renderer_MultisampleSize = maxSamples;
+					WritePrivateProfileInt("3D", "MultisampleSize", maxSamples, IniName);
+				}	
+			}
+			while (z <= maxSamples && i < 6) //There's a better way of handling this, I just can't think of it atm.
+			{
+				ComboBox_AddString(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE),MSAADescriptions[i]);
+				if (z == CommonSettings.GFX3D_Renderer_MultisampleSize)
+					ComboBox_SetCurSel(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE),i);
+				i++;
+				if(z >= 2) z *= 2; else z=2; //Double the samplesize if 2 or more;
+			}
 
 			for(i = 0; core3DList[i] != NULL; i++)
 			{
@@ -5735,8 +5744,6 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					CommonSettings.GFX3D_Fog = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_FOG);
 					CommonSettings.GFX3D_Texture = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_TEXTURE);
 					CommonSettings.GFX3D_LineHack = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_LINEHACK);
-					CommonSettings.GFX3D_Renderer_Multisample = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_ANTIALIASING);
-					CommonSettings.GFX3D_Renderer_AntiAliasingLimit = IsDlgCheckboxChecked(hw,IDC_MSAA_LIMIT);
 					CommonSettings.GFX3D_TXTHack = IsDlgCheckboxChecked(hw,IDC_TXTHACK);
 
 					int newPrescaleHD = video.prescaleHD;
@@ -5745,10 +5752,6 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					{
 						newPrescaleHD = LOWORD(scaleResult);
 					}
-
-					if(IsDlgCheckboxChecked(hw,IDC_MSAA_SAMPLES_8)) CommonSettings.GFX3D_Renderer_AntiAliasingSamples = 8;
-					else if(IsDlgCheckboxChecked(hw,IDC_MSAA_SAMPLES_4)) CommonSettings.GFX3D_Renderer_AntiAliasingSamples = 4;
-					else if(IsDlgCheckboxChecked(hw,IDC_MSAA_SAMPLES_2)) CommonSettings.GFX3D_Renderer_AntiAliasingSamples = 2;
 
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_1)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 1;
 					else if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_2)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 2;
@@ -5759,6 +5762,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 
 					CommonSettings.GFX3D_Renderer_TextureDeposterize = IsDlgCheckboxChecked(hw,IDC_TEX_DEPOSTERIZE);
 					CommonSettings.GFX3D_Renderer_TextureSmoothing = IsDlgCheckboxChecked(hw,IDC_TEX_SMOOTH);
+					CommonSettings.GFX3D_Renderer_MultisampleSize = possibleMSAA[SendDlgItemMessage(hw,IDC_MULTISAMPLE_SIZE,CB_GETCURSEL,0,0)];
 
 					{
 						Lock lock(win_backbuffer_sync);
@@ -5784,8 +5788,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					WritePrivateProfileBool("3D", "EnableTexture", CommonSettings.GFX3D_Texture, IniName);
 					WritePrivateProfileInt ("3D", "EnableLineHack", CommonSettings.GFX3D_LineHack, IniName);
 					WritePrivateProfileInt ("3D", "EnableAntiAliasing", CommonSettings.GFX3D_Renderer_Multisample, IniName);
-					WritePrivateProfileInt ("3D", "AntiAliasingSamples", CommonSettings.GFX3D_Renderer_AntiAliasingSamples, IniName);
-					WritePrivateProfileBool("3D", "AntiAliasingLimit", CommonSettings.GFX3D_Renderer_AntiAliasingLimit, IniName);
+					WritePrivateProfileInt ("3D", "MultisampleSize", CommonSettings.GFX3D_Renderer_MultisampleSize, IniName);
 					WritePrivateProfileInt ("3D", "EnableTXTHack", CommonSettings.GFX3D_TXTHack, IniName);
 					WritePrivateProfileInt ("3D", "PrescaleHD", video.prescaleHD, IniName);
 					WritePrivateProfileInt ("3D", "TextureScalingFactor", CommonSettings.GFX3D_Renderer_TextureScalingFactor, IniName);
@@ -5796,39 +5799,6 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			case IDCANCEL:
 				{
 					EndDialog(hw, TRUE);
-				}
-				return TRUE;
-			case IDC_3DSETTINGS_ANTIALIASING:
-				{
-					HWND cur;
-					BOOL enable = IsDlgButtonChecked(hw, IDC_3DSETTINGS_ANTIALIASING);
-
-					cur = GetDlgItem(hw, IDC_MSAA_LIMIT);
-					EnableWindow(cur, enable);
-					if (CommonSettings.GFX3D_Renderer_AntiAliasingLimit)
-					{
-						cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_8);
-						EnableWindow(cur, enable);
-						cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_4);
-						EnableWindow(cur, enable);
-						cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_2);
-						EnableWindow(cur, enable);
-					}
-				}
-				return TRUE;
-			case IDC_MSAA_LIMIT:
-				{
-					HWND cur;
-					CommonSettings.GFX3D_Renderer_AntiAliasingLimit = IsDlgButtonChecked(hw, IDC_MSAA_LIMIT);
-					BOOL enable = CommonSettings.GFX3D_Renderer_AntiAliasingLimit;
-					
-					WritePrivateProfileBool("3D", "AntiAliasingLimit", enable, IniName);
-					cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_8);
-					EnableWindow(cur, enable);
-					cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_4);
-					EnableWindow(cur, enable);
-					cur = GetDlgItem(hw, IDC_MSAA_SAMPLES_2);
-					EnableWindow(cur, enable);
 				}
 				return TRUE;
 			case IDC_DEFAULT:

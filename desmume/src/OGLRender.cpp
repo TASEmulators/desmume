@@ -1489,10 +1489,6 @@ GLsizei OpenGLRenderer::GetLimitedMultisampleSize() const
 		// in the future, then this would be the place to reimplement it.
 		workingMultisamples = 2;
 	}
-	else if (CommonSettings.GFX3D_Renderer_AntiAliasingLimit && CommonSettings.GFX3D_Renderer_AntiAliasingSamples == 2)
-	{
-		maxMultisamples = 2; // Only used when manually limiting.
-	}
 	else
 	{
 		// Ensure that workingMultisamples is a power-of-two, which is what OpenGL likes.

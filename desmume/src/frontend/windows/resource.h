@@ -504,10 +504,7 @@
 #define IDC_S4X                         1091
 #define IDC_S8X                         1092
 #define IDC_S16X                        1093
-#define IDC_MSAA_SAMPLES_2              1094
-#define IDC_MSAA_SAMPLES_4              1095
-#define IDC_MSAA_SAMPLES_8              1096
-#define IDC_MSAA_LIMIT                  1097
+#define IDC_MULTISAMPLE_SIZE            1094
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
 #define IDC_EDIT1                       1102
@@ -1092,8 +1089,8 @@
 #define IDC_AUTOLOADLUA                 64001
 #define IDC_TXTHACK                     64002
 #define ID_LABEL_TXTHACK1               64003
-#define IDC_3DSETTINGS_ANTIALIASING     64004
-#define ID_LABEL_TXTHACK2               64005
+#define ID_LABEL_TXTHACK2               64004
+#define ID_LABEL_MSAA_SAMPLES           64005
 
 // Next default values for new objects
 // 

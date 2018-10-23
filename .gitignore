@@ -5,7 +5,6 @@
 /desmume/src/frontend/windows/__bins
 /desmume/src/frontend/windows/*.tlog
 /desmume/src/frontend/windows/*.aps
-/desmume/src/frontend/windows/.vs/desmume/v15/
 .vs/VSWorkspaceState.json
 .vs/slnx.sqlite
 *.user
@@ -13,6 +12,7 @@
 *.VC.db
 *.VC.opendb
 *.o
+*.ipch
 .deps
 *.dirstamp
 Makefile.in

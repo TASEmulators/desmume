@@ -53,6 +53,7 @@ void SaveWindowSize(HWND hwnd);
 void SaveWindowSizePos(HWND hwnd);
 void RestoreWindow(HWND hwnd);
 void ShowFullScreen(HWND hwnd);
+void CheckValidMSAA(int userVal);
 
 extern bool frameCounterDisplay;
 extern bool FpsDisplay;
