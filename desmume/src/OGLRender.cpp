@@ -1956,8 +1956,15 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 	
 	if (this->_selectedMultisampleSize != oldSelectedMultisampleSize)
 	{
+		if (!BEGINGL())
+		{
+			return OGLERROR_BEGINGL_FAILED;
+		}
+		
 		GLsizei sampleSize = this->GetLimitedMultisampleSize();
 		this->ResizeMultisampledFBOs(sampleSize);
+		
+		ENDGL();
 	}
 	
 	return Render3D::ApplyRenderingSettings(renderState);
