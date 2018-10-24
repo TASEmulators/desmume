@@ -426,7 +426,7 @@ int sndvolume=100;
 
 const int possibleMSAA[] = {0, 2, 4, 8, 16, 32};
 int maxSamples = 0;
-bool tempContextAttempted = false;
+bool didGetMaxSamples = false;
 
 SoundInterface_struct *SNDCoreList[] = {
 	&SNDDummy,
@@ -5681,24 +5681,29 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 	{
 	case WM_INITDIALOG:
 		{
-			int i, z = 0;
 			const char MSAADescriptions[6][9] = {"Disabled", "2x", "4x", "8x", "16x", "32x"};
 
-			if(cur3DCore != 0 && cur3DCore != 2) //Get max device samples from the current renderer only if it's OpenGL.
-				maxSamples = CurrentRenderer->GetDeviceInfo().maxSamples;
-			if (maxSamples == 0 && tempContextAttempted == false) 
-			{ //If it already has a value it's likely correct so don't create again.
-				tempContextAttempted = true;
-				bool isTempContextCreated = windows_opengl_init(); //Create a context just to get max device samples.
-				if(isTempContextCreated) //Creating it here because it's only needed in this window.
+			if (!didGetMaxSamples)
+			{
+				if (cur3DCore != 0 && cur3DCore != 2) //Get max device samples from the current renderer only if it's OpenGL.
 				{
-					GLint maxSamplesOGL = 0;
+					maxSamples = CurrentRenderer->GetDeviceInfo().maxSamples;
+					didGetMaxSamples = true;
+				}
+				else
+				{
+					bool isTempContextCreated = windows_opengl_init(); //Create a context just to get max device samples.
+					if (isTempContextCreated) //Creating it here because it's only needed in this window.
+					{
+						GLint maxSamplesOGL = 0;
 #if defined(GL_MAX_SAMPLES)
-					glGetIntegerv(GL_MAX_SAMPLES,&maxSamplesOGL);
+						glGetIntegerv(GL_MAX_SAMPLES, &maxSamplesOGL);
 #elif defined(GL_MAX_SAMPLES_EXT)
-					glGetIntegerv(GL_MAX_SAMPLES_EXT,&maxSamplesOGL);
+						glGetIntegerv(GL_MAX_SAMPLES_EXT, &maxSamplesOGL);
 #endif
-					maxSamples = maxSamplesOGL;
+						maxSamples = maxSamplesOGL;
+						didGetMaxSamples = true;
+					}
 				}
 			}
 
@@ -5720,8 +5725,8 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw,IDC_TEX_DEPOSTERIZE, CommonSettings.GFX3D_Renderer_TextureDeposterize);
 			CheckDlgButton(hw,IDC_TEX_SMOOTH, CommonSettings.GFX3D_Renderer_TextureSmoothing);
 
-			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
-			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, video.prescaleHD);
+			SendDlgItemMessage(hw,IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
+			SendDlgItemMessage(hw,IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, video.prescaleHD);
 
 			CheckValidMSAA(CommonSettings.GFX3D_Renderer_MultisampleSize);
 			if (CommonSettings.GFX3D_Renderer_MultisampleSize > maxSamples) 
@@ -5730,15 +5735,18 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 				WritePrivateProfileInt("3D", "MultisampleSize", maxSamples, IniName);
 			}
 
-			for (i = 0; z <= maxSamples; i++)
+			// Generate the MSAA pop-up menu
+			ComboBox_AddString(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE), MSAADescriptions[0]);
+			ComboBox_SetCurSel(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE), 0);
+			for (int i = 1, z = 2; z <= maxSamples; i++, z*=2)
 			{
 				ComboBox_AddString(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE),MSAADescriptions[i]);
 				if (z == CommonSettings.GFX3D_Renderer_MultisampleSize)
-					ComboBox_SetCurSel(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE),i);
-				if(z >= 2) z *= 2; else z=2; //Double the samplesize if 2 or more;
+					ComboBox_SetCurSel(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE), i);
 			}
-
-			for(i = 0; core3DList[i] != NULL; i++)
+			
+			// Generate the 3D Rendering Engine pop-up menu
+			for (int i = 0; core3DList[i] != NULL; i++)
 			{
 				ComboBox_AddString(GetDlgItem(hw, IDC_3DCORE), core3DList[i]->name);
 			}
