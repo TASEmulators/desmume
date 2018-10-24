@@ -425,7 +425,7 @@ static int sndbuffersize=DESMUME_SAMPLE_RATE*8/60;
 int sndvolume=100;
 
 const int possibleMSAA[] = {0, 2, 4, 8, 16, 32};
-int maxSamples=32;
+int maxSamples=0;
 
 SoundInterface_struct *SNDCoreList[] = {
 	&SNDDummy,
@@ -2630,7 +2630,7 @@ void CheckValidMSAA(int userVal)
 
 	if(!validMSAA)
 	{
-		CommonSettings.GFX3D_Renderer_MultisampleSize=0; //Just disable for now until I find a better solution
+		CommonSettings.GFX3D_Renderer_MultisampleSize=0; //Disable if user entered invalid value
 		WritePrivateProfileInt("3D","MultisampleSize",0,IniName);
 	}
 }
@@ -5682,6 +5682,23 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 		{
 			int i = 0, z = 0;
 			HWND cur;
+			const char MSAADescriptions[6][9] = {"Disabled", "2x", "4x", "8x", "16x", "32x"};
+
+			if(cur3DCore != 0 && cur3DCore != 2) //Get max device samples from the current renderer only if it's OpenGL.
+				maxSamples=CurrentRenderer->GetDeviceInfo().maxSamples;
+			if (maxSamples == 0) { //If it already has a value it's likely correct so don't create again.
+				bool isTempContextCreated = windows_opengl_init(); //Create a context just to get max device samples.
+				if(isTempContextCreated) //Creating it here because it's only needed in this window.
+				{
+					GLint maxSamplesOGL=0;
+#if defined(GL_MAX_SAMPLES)
+					glGetIntegerv(GL_MAX_SAMPLES,&maxSamplesOGL);
+#elif defined(GL_MAX_SAMPLES_EXT)
+					glGetIntegerv(GL_MAX_SAMPLES_EXT,&maxSamplesOGL);
+#endif
+					maxSamples=maxSamplesOGL;
+				}
+			}
 
 			CheckDlgButton(hw,IDC_INTERPOLATECOLOR,CommonSettings.GFX3D_HighResolutionInterpolateColor);
 			CheckDlgButton(hw,IDC_3DSETTINGS_EDGEMARK,CommonSettings.GFX3D_EdgeMark);
@@ -5704,19 +5721,14 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, video.prescaleHD);
 
-			const char MSAADescriptions[6][9] = {"Disabled", "2x", "4x", "8x", "16x", "32x"};
-
 			CheckValidMSAA(CommonSettings.GFX3D_Renderer_MultisampleSize);
-			if(cur3DCore != 0 && cur3DCore != 2) //Not sure how to get maxSamples when renderer is null or softrast
+			if (CommonSettings.GFX3D_Renderer_MultisampleSize > maxSamples) 
 			{
-				maxSamples = CurrentRenderer->GetDeviceInfo().maxSamples;
-				if (CommonSettings.GFX3D_Renderer_MultisampleSize > maxSamples) 
-				{
-					CommonSettings.GFX3D_Renderer_MultisampleSize = maxSamples;
-					WritePrivateProfileInt("3D", "MultisampleSize", maxSamples, IniName);
-				}	
+				CommonSettings.GFX3D_Renderer_MultisampleSize = maxSamples;
+				WritePrivateProfileInt("3D", "MultisampleSize", maxSamples, IniName);
 			}
-			while (z <= maxSamples && i < 6) //There's a better way of handling this, I just can't think of it atm.
+
+			while (z <= maxSamples && i < 6)
 			{
 				ComboBox_AddString(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE),MSAADescriptions[i]);
 				if (z == CommonSettings.GFX3D_Renderer_MultisampleSize)
