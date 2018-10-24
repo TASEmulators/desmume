@@ -425,7 +425,8 @@ static int sndbuffersize=DESMUME_SAMPLE_RATE*8/60;
 int sndvolume=100;
 
 const int possibleMSAA[] = {0, 2, 4, 8, 16, 32};
-int maxSamples=0;
+int maxSamples = 0;
+bool tempContextAttempted = false;
 
 SoundInterface_struct *SNDCoreList[] = {
 	&SNDDummy,
@@ -5680,30 +5681,31 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 	{
 	case WM_INITDIALOG:
 		{
-			int i = 0, z = 0;
-			HWND cur;
+			int i, z = 0;
 			const char MSAADescriptions[6][9] = {"Disabled", "2x", "4x", "8x", "16x", "32x"};
 
 			if(cur3DCore != 0 && cur3DCore != 2) //Get max device samples from the current renderer only if it's OpenGL.
-				maxSamples=CurrentRenderer->GetDeviceInfo().maxSamples;
-			if (maxSamples == 0) { //If it already has a value it's likely correct so don't create again.
+				maxSamples = CurrentRenderer->GetDeviceInfo().maxSamples;
+			if (maxSamples == 0 && tempContextAttempted == false) 
+			{ //If it already has a value it's likely correct so don't create again.
+				tempContextAttempted = true;
 				bool isTempContextCreated = windows_opengl_init(); //Create a context just to get max device samples.
 				if(isTempContextCreated) //Creating it here because it's only needed in this window.
 				{
-					GLint maxSamplesOGL=0;
+					GLint maxSamplesOGL = 0;
 #if defined(GL_MAX_SAMPLES)
 					glGetIntegerv(GL_MAX_SAMPLES,&maxSamplesOGL);
 #elif defined(GL_MAX_SAMPLES_EXT)
 					glGetIntegerv(GL_MAX_SAMPLES_EXT,&maxSamplesOGL);
 #endif
-					maxSamples=maxSamplesOGL;
+					maxSamples = maxSamplesOGL;
 				}
 			}
 
-			CheckDlgButton(hw,IDC_INTERPOLATECOLOR,CommonSettings.GFX3D_HighResolutionInterpolateColor);
-			CheckDlgButton(hw,IDC_3DSETTINGS_EDGEMARK,CommonSettings.GFX3D_EdgeMark);
-			CheckDlgButton(hw,IDC_3DSETTINGS_FOG,CommonSettings.GFX3D_Fog);
-			CheckDlgButton(hw,IDC_3DSETTINGS_TEXTURE,CommonSettings.GFX3D_Texture);
+			CheckDlgButton(hw,IDC_INTERPOLATECOLOR, CommonSettings.GFX3D_HighResolutionInterpolateColor);
+			CheckDlgButton(hw,IDC_3DSETTINGS_EDGEMARK, CommonSettings.GFX3D_EdgeMark);
+			CheckDlgButton(hw,IDC_3DSETTINGS_FOG, CommonSettings.GFX3D_Fog);
+			CheckDlgButton(hw,IDC_3DSETTINGS_TEXTURE, CommonSettings.GFX3D_Texture);
 			CheckDlgButton(hw,IDC_3DSETTINGS_LINEHACK, CommonSettings.GFX3D_LineHack);
 			CheckDlgButton(hw,IDC_TXTHACK, CommonSettings.GFX3D_TXTHack);
 
@@ -5711,9 +5713,9 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw,IDC_TEXSCALE_2, CommonSettings.GFX3D_Renderer_TextureScalingFactor == 2);
 			CheckDlgButton(hw,IDC_TEXSCALE_4, CommonSettings.GFX3D_Renderer_TextureScalingFactor == 4);
 
-			CheckDlgButton(hw, IDC_GPU_24BPP, gpu_bpp == 24);
-			CheckDlgButton(hw, IDC_GPU_18BPP, gpu_bpp == 18);
-			CheckDlgButton(hw, IDC_GPU_15BPP, gpu_bpp == 15);
+			CheckDlgButton(hw,IDC_GPU_24BPP, gpu_bpp == 24);
+			CheckDlgButton(hw,IDC_GPU_18BPP, gpu_bpp == 18);
+			CheckDlgButton(hw,IDC_GPU_15BPP, gpu_bpp == 15);
 
 			CheckDlgButton(hw,IDC_TEX_DEPOSTERIZE, CommonSettings.GFX3D_Renderer_TextureDeposterize);
 			CheckDlgButton(hw,IDC_TEX_SMOOTH, CommonSettings.GFX3D_Renderer_TextureSmoothing);
@@ -5728,12 +5730,11 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 				WritePrivateProfileInt("3D", "MultisampleSize", maxSamples, IniName);
 			}
 
-			while (z <= maxSamples && i < 6)
+			for (i = 0; z <= maxSamples; i++)
 			{
 				ComboBox_AddString(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE),MSAADescriptions[i]);
 				if (z == CommonSettings.GFX3D_Renderer_MultisampleSize)
 					ComboBox_SetCurSel(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE),i);
-				i++;
 				if(z >= 2) z *= 2; else z=2; //Double the samplesize if 2 or more;
 			}
 
@@ -5744,7 +5745,6 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), cur3DCore);
 		}
 		return TRUE;
-
 	case WM_COMMAND:
 		{
 			switch(LOWORD(wp))
@@ -5768,9 +5768,9 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_1)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 1;
 					else if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_2)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 2;
 					else if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_4)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 4;
-					if(IsDlgCheckboxChecked(hw, IDC_GPU_15BPP)) gpu_bpp = 15;
-					else if(IsDlgCheckboxChecked(hw, IDC_GPU_18BPP)) gpu_bpp = 18;
-					else if(IsDlgCheckboxChecked(hw, IDC_GPU_24BPP)) gpu_bpp = 24;
+					if(IsDlgCheckboxChecked(hw,IDC_GPU_15BPP)) gpu_bpp = 15;
+					else if(IsDlgCheckboxChecked(hw,IDC_GPU_18BPP)) gpu_bpp = 18;
+					else if(IsDlgCheckboxChecked(hw,IDC_GPU_24BPP)) gpu_bpp = 24;
 
 					CommonSettings.GFX3D_Renderer_TextureDeposterize = IsDlgCheckboxChecked(hw,IDC_TEX_DEPOSTERIZE);
 					CommonSettings.GFX3D_Renderer_TextureSmoothing = IsDlgCheckboxChecked(hw,IDC_TEX_SMOOTH);
