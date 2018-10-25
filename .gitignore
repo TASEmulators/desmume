@@ -5,11 +5,14 @@
 /desmume/src/frontend/windows/__bins
 /desmume/src/frontend/windows/*.tlog
 /desmume/src/frontend/windows/*.aps
+.vs/VSWorkspaceState.json
+.vs/slnx.sqlite
 *.user
 *.suo
 *.VC.db
 *.VC.opendb
 *.o
+*.ipch
 .deps
 *.dirstamp
 Makefile.in
@@ -54,6 +57,7 @@ DerivedData/
 *.perspectivev3
 !default.perspectivev3
 xcuserdata/
+.vs/ProjectSettings.json
 
 ## Other
 *.moved-aside
