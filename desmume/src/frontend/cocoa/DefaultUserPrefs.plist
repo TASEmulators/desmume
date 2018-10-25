@@ -740,8 +740,6 @@
 	<true/>
 	<key>Render3D_LineHack</key>
 	<true/>
-	<key>Render3D_Multisample</key>
-	<false/>
 	<key>Render3D_MultisampleSize</key>
 	<integer>0</integer>
 	<key>Render3D_RenderingEngine</key>

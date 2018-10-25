@@ -115,7 +115,6 @@ public:
 @dynamic render3DTextures;
 @dynamic render3DThreads;
 @dynamic render3DLineHack;
-@dynamic render3DMultisample;
 @dynamic render3DMultisampleSize;
 @synthesize render3DMultisampleSizeString;
 @dynamic render3DTextureDeposterize;
@@ -525,22 +524,6 @@ public:
 {
 	gpuEvent->ApplyRender3DSettingsLock();
 	const BOOL state = CommonSettings.GFX3D_LineHack ? YES : NO;
-	gpuEvent->ApplyRender3DSettingsUnlock();
-	
-	return state;
-}
-
-- (void) setRender3DMultisample:(BOOL)state
-{
-	gpuEvent->ApplyRender3DSettingsLock();
-	CommonSettings.GFX3D_Renderer_Multisample = state ? true : false;
-	gpuEvent->ApplyRender3DSettingsUnlock();
-}
-
-- (BOOL) render3DMultisample
-{
-	gpuEvent->ApplyRender3DSettingsLock();
-	const BOOL state = CommonSettings.GFX3D_Renderer_Multisample ? YES : NO;
 	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;

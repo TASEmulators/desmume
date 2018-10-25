@@ -162,7 +162,6 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @property (assign) BOOL render3DTextures;
 @property (assign) NSUInteger render3DThreads;
 @property (assign) BOOL render3DLineHack;
-@property (assign) BOOL render3DMultisample;
 @property (assign) NSUInteger render3DMultisampleSize;
 @property (retain) NSString *render3DMultisampleSizeString;
 @property (assign) BOOL render3DTextureDeposterize;
