@@ -79,7 +79,7 @@ u8 memRead8 (MemRegionType regionType, HWAddressType address)
 		MMU_DumpMemBlock(ARMCPU_ARM7, address, 1, &value);
 		return value;
 	case MEMVIEW_FIRMWARE:
-		value = MMU.fw.data[address];
+		value = MMU.fw.data._raw[address];
 		return value;
 	case MEMVIEW_FULL:
 		MMU_DumpMemBlock(0, address, 1, &value);
@@ -133,7 +133,7 @@ void memWrite8(MemRegionType regionType, HWAddressType address, u8 value)
 		MMU_write8(ARMCPU_ARM7, address, value);
 		break;
 	case MEMVIEW_FIRMWARE:
-		MMU.fw.data[address] = value;
+		MMU.fw.data._raw[address] = value;
 		break;
 	case MEMVIEW_ROM:
 		gameInfo.reader->Seek(gameInfo.fROM, address, SEEK_SET);
@@ -157,7 +157,7 @@ void memWrite16(MemRegionType regionType, HWAddressType address, u16 value)
 		MMU_write16(ARMCPU_ARM7, address, value);
 		break;
 	case MEMVIEW_FIRMWARE:
-		*((u16*)&MMU.fw.data[address]) = value;
+		*((u16*)&MMU.fw.data._raw[address]) = value;
 		break;
 	case MEMVIEW_ROM:
 		gameInfo.reader->Seek(gameInfo.fROM, address, SEEK_SET);
@@ -181,7 +181,7 @@ void memWrite32(MemRegionType regionType, HWAddressType address, u32 value)
 		MMU_write32(ARMCPU_ARM7, address, value);
 		break;
 	case MEMVIEW_FIRMWARE:
-		*((u32*)&MMU.fw.data[address]) = value;
+		*((u32*)&MMU.fw.data._raw[address]) = value;
 		break;
 	case MEMVIEW_ROM:
 		gameInfo.reader->Seek(gameInfo.fROM, address, SEEK_SET);

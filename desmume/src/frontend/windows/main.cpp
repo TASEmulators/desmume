@@ -2269,7 +2269,7 @@ int _main()
 		}
 		
 		hash >>= 1;
-		hash += ipAddr >> 8;
+		hash += ipaddr >> 8;
 		hash &= 0x00FFFFFF;
 		
 		wifiHandler->SetUserMACValues(hash >> 16, (hash >> 8) & 0xFF, hash & 0xFF);
