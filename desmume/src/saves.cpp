@@ -504,7 +504,7 @@ static void mmu_savestate(EMUFILE &os)
 
 	//version 8:
 	os.write_32LE(MMU.fw.size);
-	os.fwrite(MMU.fw.data,MMU.fw.size);
+	os.fwrite(MMU.fw.data._raw, MMU.fw.size);
 }
 
 static bool mmu_loadstate(EMUFILE &is, int size)
@@ -594,11 +594,10 @@ static bool mmu_loadstate(EMUFILE &is, int size)
 	if (version < 8) return ok;
 
 	//version 8:
-	delete[] MMU.fw.data;
+	memset(MMU.fw.data._raw, 0, sizeof(NDSFirmwareData));
 	MMU.fw.size = is.read_u32LE();
-	MMU.fw.data = new u8[size];
-	is.fread(MMU.fw.data,MMU.fw.size);
-
+	is.fread(MMU.fw.data._raw, MMU.fw.size);
+	
 	return ok;
 }
 

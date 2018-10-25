@@ -127,7 +127,7 @@ int NDS_GetCPUCoreCount()
 
 void NDS_SetupDefaultFirmware()
 {
-	NDS_FillDefaultFirmwareConfigData(&CommonSettings.fw_config);
+	NDS_GetDefaultFirmwareConfig(CommonSettings.fwConfig);
 }
 
 void NDS_RunAdvansceneAutoImport()
@@ -2161,7 +2161,7 @@ static void PrepareBiosARM7()
 	NDS_ARM7.BIOS_loaded = false;
 	memset(MMU.ARM7_BIOS, 0, sizeof(MMU.ARM7_BIOS));
 
-	if(CommonSettings.UseExtBIOS == true)
+	if(CommonSettings.UseExtBIOS)
 	{
 		//read arm7 bios from inputfile and flag it if it succeeds
 		FILE *arm7inf = fopen(CommonSettings.ARM7BIOS,"rb");
@@ -2219,7 +2219,7 @@ static void PrepareBiosARM9()
 	memset(MMU.ARM9_BIOS, 0, sizeof(MMU.ARM9_BIOS));
 	NDS_ARM9.BIOS_loaded = false;
 
-	if(CommonSettings.UseExtBIOS == true)
+	if(CommonSettings.UseExtBIOS)
 	{
 		//read arm9 bios from inputfile and flag it if it succeeds
 		FILE* arm9inf = fopen(CommonSettings.ARM9BIOS,"rb");
@@ -2434,7 +2434,7 @@ bool NDS_FakeBoot()
 	// Create the dummy firmware
 	//EDIT - whats dummy firmware and how is relating to the above?
 	//it seems to be emplacing basic firmware data into MMU.fw.data
-	NDS_CreateDummyFirmware(&CommonSettings.fw_config);
+	NDS_InitFirmwareWithConfig(CommonSettings.fwConfig);
 	
 	//firmware loads the game card arm9 and arm7 programs as specified in rom header
 	{
@@ -2473,7 +2473,7 @@ bool NDS_FakeBoot()
 	//TBD - this code is really clunky
 	//it seems to be copying the MMU.fw.data data into RAM in the user memory stash locations
 	u8 temp_buffer[NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT];
-	if ( copy_firmware_user_data( temp_buffer, MMU.fw.data)) {
+	if ( copy_firmware_user_data( temp_buffer, MMU.fw.data._raw)) {
 		for ( int fw_index = 0; fw_index < NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT; fw_index++)
 			_MMU_write08<ARMCPU_ARM9>(0x027FFC80 + fw_index, temp_buffer[fw_index]);
 	}

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME Team
+	Copyright (C) 2009-2018 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,24 +30,387 @@
 //extension of the firmware user settings file
 #define FW_CONFIG_FILE_EXT "dfc"
 
-struct NDS_fw_config_data;
+#define MAX_FW_NICKNAME_LENGTH 10
+#define MAX_FW_MESSAGE_LENGTH 26
+
+struct FirmwareConfig
+{
+	u8 consoleType;
+	
+	u8 favoriteColor;
+	u8 birthdayMonth;
+	u8 birthdayDay;
+	
+	// Add one character to these string buffers just in case clients
+	// try to terminate a max length string with a null character.
+	u16 nickname[MAX_FW_NICKNAME_LENGTH+1];
+	u8 nicknameLength;
+	u16 message[MAX_FW_MESSAGE_LENGTH+1];
+	u8 messageLength;
+	
+	u8 language;
+	u8 backlightLevel;
+	
+	u16 tscADC_x1;
+	u16 tscADC_y1;
+	u8 tscPixel_x1;
+	u8 tscPixel_y1;
+	u16 tscADC_x2;
+	u16 tscADC_y2;
+	u8 tscPixel_x2;
+	u8 tscPixel_y2;
+	
+	u8 MACAddress[6];
+	
+	u8 ipv4Address_AP1[4];
+	u8 ipv4Gateway_AP1[4];
+	u8 ipv4PrimaryDNS_AP1[4];
+	u8 ipv4SecondaryDNS_AP1[4];
+	u8 subnetMask_AP1;
+	
+	u8 ipv4Address_AP2[4];
+	u8 ipv4Gateway_AP2[4];
+	u8 ipv4PrimaryDNS_AP2[4];
+	u8 ipv4SecondaryDNS_AP2[4];
+	u8 subnetMask_AP2;
+	
+	u8 ipv4Address_AP3[4];
+	u8 ipv4Gateway_AP3[4];
+	u8 ipv4PrimaryDNS_AP3[4];
+	u8 ipv4SecondaryDNS_AP3[4];
+	u8 subnetMask_AP3;
+};
+typedef FirmwareConfig FirmwareConfig;
+
+#include "PACKED.h"
+typedef union __PACKED
+{
+	u64 encryption;
+	
+	struct
+	{
+		u64 timestamp:40;
+		u64 consoleType:8;
+		u64 unused:16;
+	};
+} FW_HEADER_KEY;
+
+typedef union __PACKED
+{
+	u16 value;
+	
+	struct
+	{
+		u16 language:3;
+		u16 gbaModeScreenSelection:1;
+		u16 backlightLevel:2;
+		u16 bootmenuDisable:1;
+		u16 :1;
+		
+		u16 :1;
+		u16 settingsLost:1;
+		u16 settingsOkay1:1;
+		u16 :1;
+		u16 settingsOkay2:1;
+		u16 settingsOkay3:1;
+		u16 settingsOkay4:1;
+		u16 settingsOkay5:1;
+	};
+} FW_USERSETTINGS_LANGUAGE_FLAGS;
+
+typedef struct __PACKED
+{
+	u16 part3_rom_gui9_addr;			// 0x0000
+	u16 part4_rom_wifi7_addr;			// 0x0002
+	u16 part34_gui_wifi_crc16;			// 0x0004
+	u16 part12_boot_crc16;				// 0x0006
+	
+	union
+	{
+		u32 identifierValue;			// 0x0008
+		u8 identifier[4];				// 0x0008
+	};
+	
+	u16 part1_rom_boot9_addr;			// 0x000C
+	u16 part1_ram_boot9_addr;			// 0x000E
+	u16 part2_rom_boot7_addr;			// 0x0010
+	u16 part2_ram_boot7_addr;			// 0x0012
+	u16 shift;							// 0x0014
+	u16 part5_data_gfx_addr;			// 0x0016
+	
+	FW_HEADER_KEY key;					// 0x0018
+	
+	u16 userSettingsOffset;				// 0x0020
+	u16 UNKNOWN1;						// 0x0022
+	u16 UNKNOWN2;						// 0x0024
+	u16 part5_crc16;					// 0x0026
+	u16 unused2;						// 0x0028
+} FWHeader;
+
+typedef struct __PACKED
+{
+	u16 crc16;							// 0x002A
+	u16 length;							// 0x002C
+	u8 unused1;							// 0x002E
+	u8 version;							// 0x002F
+	u8 unused2[6];						// 0x0030
+	u8 MACAddr[6];						// 0x0036
+	u16 channels;						// 0x003C
+	u16 flags;							// 0x003E
+	u8 rfType;							// 0x0040
+	u8 rfBits;							// 0x0041
+	u8 rfEntries;						// 0x0042
+	u8 UNKNOWN1;						// 0x0043
+	
+	u16 wifiConfig146;					// 0x0044
+	u16 wifiConfig148;					// 0x0046
+	u16 wifiConfig14A;					// 0x0048
+	u16 wifiConfig14C;					// 0x004A
+	u16 wifiConfig120;					// 0x004C
+	u16 wifiConfig122;					// 0x004E
+	u16 wifiConfig154;					// 0x0050
+	u16 wifiConfig144;					// 0x0052
+	u16 wifiConfig130;					// 0x0054
+	u16 wifiConfig132;					// 0x0056
+	u16 wifiConfig140;					// 0x0058
+	u16 wifiConfig142;					// 0x005A
+	u16 wifiConfigPowerTX;				// 0x005C
+	u16 wifiConfig124;					// 0x005E
+	u16 wifiConfig128;					// 0x0060
+	u16 wifiConfig150;					// 0x0062
+	
+	u8 bbData[105];						// 0x0064
+	u8 unused3;							// 0x00CD
+	
+	union
+	{
+		struct
+		{
+			u8 rfValue[36];				// 0x00CE
+			u8 rfChannelValue24[84];	// 0x00F2
+			u8 bbChannelValue8[14];		// 0x0146
+			u8 rfChannelValue8[14];		// 0x0154
+		} Type2;
+		
+		struct
+		{
+			u8 type3Data[148];			// 0x00CE
+		} Type3;
+	};
+	
+	u8 UNKNOWN2;						// 0x0162
+	u8 unused4;							// 0x0163
+	u8 unused5[156];					// 0x0164
+} FWWifiInfo;
+
+typedef struct
+{
+	u8 UNKNOWN1[64];
+	u8 SSID[32];
+	u8 SSID_WEP[32];
+	u8 wepKey1[16];
+	u8 wepKey2[16];
+	u8 wepKey3[16];
+	u8 wepKey4[16];
+	u8 ipv4Address[4];
+	u8 ipv4Gateway[4];
+	u8 ipv4PrimaryDNS[4];
+	u8 ipv4SecondaryDNS[4];
+	u8 subnetMask;
+	u8 wepKeyAOSS[20];
+	u8 UNKNOWN2;
+	u8 wepMode;
+	u8 configureMode;
+	u8 zero;
+	u8 UNKNOWN3;
+	u16 mtuSize;
+	u8 UNKNOWN4[3];
+	u8 connectStatus;
+	u8 wfcUserID[6];
+	u8 UNKNOWN5[8];
+	u16 crc16;
+} FWAccessPointSettings;
+
+typedef struct
+{
+	u8 proxyAuthenticationUsername[32];
+	u8 proxyAuthenticationPassword[32];
+	u8 SSID[32];
+	u8 SSID_WEP[32];
+	u8 wepKey1[16];
+	u8 wepKey2[16];
+	u8 wepKey3[16];
+	u8 wepKey4[16];
+	u8 ipv4Address[4];
+	u8 ipv4Gateway[4];
+	u8 ipv4PrimaryDNS[4];
+	u8 ipv4SecondaryDNS[4];
+	u8 subnetMask;
+	u8 wepKeyAOSS[20];
+	u8 UNKNOWN2;
+	u8 wepMode;
+	u8 configureMode;
+	u8 ssidLength;
+	u8 UNKNOWN3;
+	u16 mtuSize;
+	u8 UNKNOWN4[3];
+	u8 connectStatus;
+	u8 unused1[14];
+	u16 crc16_1;
+	u8 UNKNOWN5[32];
+	u8 wpaKey[16];
+	u8 unused2[82];
+	u8 securityMode;
+	u8 proxyEnable;
+	u8 proxyAuthentication;
+	u8 proxyName[32];
+	u8 unused3[65];
+	u16 proxyPort;
+	u8 unused4[21];
+	u16 crc16_2;
+} FWExtAccessPointSettings;
+
+typedef struct
+{
+	u16 version;
+	u8 favoriteColor;
+	u8 birthdayMonth;
+	u8 birthdayDay;
+	u8 unused1;
+	u16 nickname[10];
+	u16 nicknameLength;
+	u16 message[26];
+	u16 messageLength;
+	u8 alarmHour;
+	u8 alarmMinute;
+	u16 unused2;
+	u8 alarmEnable;
+	u8 unused3;
+	u16 tscADC_x1;
+	u16 tscADC_y1;
+	u8 tscPixel_x1;
+	u8 tscPixel_y1;
+	u16 tscADC_x2;
+	u16 tscADC_y2;
+	u8 tscPixel_x2;
+	u8 tscPixel_y2;
+	FW_USERSETTINGS_LANGUAGE_FLAGS languageFlags;
+	u8 year;
+	u8 UNKNOWN1;
+	u32 rtcOffset;
+	u32 unused4;
+	
+	u16 updateCounter;
+	u16 crc16;
+	
+	union
+	{
+		struct
+		{
+			u8 unused5[140];
+		} nds;
+		
+		struct
+		{
+			u8 UNKNOWN2;
+			u8 extendedLanguage;
+			u16 supportedLanguage;
+			u8 unused6[134];
+			u16 crc16Extended;
+		} dsi;
+	};
+	
+} FWUserSettings;
+
+typedef struct
+{
+	union
+	{
+		u64 identifierValue;
+		u8 identifier[8];
+	};
+	
+	u16 crc16Value;
+	u16 crc16Length;
+	u8 version;
+	u8 updateCount;
+	u8 bootMenuFlags;
+	u8 gbaBorder;
+	u16 tempCalibrationTP0;
+	u16 tempCalibrationTP1;
+	u16 tempCalibrationDegrees;
+	u8 tempFlags;
+	u8 backlightIntensity;
+	u32 dateCenturyOffset;
+	u8 dateMonthRecoveryValue;
+	u8 dateDayRecoveryValue;
+	u8 dateYearRecoveryValue;
+	u8 dateTimeFlags;
+	u8 dateSeparator;
+	u8 timeSeparator;
+	u8 decimalSeparator;
+	u8 thousandsSeparator;
+	u8 daylightSavingsTimeNth;
+	u8 daylightSavingsTimeDay;
+	u8 daylightSavingsTimeMonth;
+	u8 daylightSavingsTimeFlags;
+} FWExtUserSettings;
+
+typedef union
+{
+	u8 _raw[262144];
+	
+	struct
+	{
+		FWHeader header;
+		FWWifiInfo wifiInfo;
+		
+		union
+		{
+			struct
+			{
+				u8 codeAndData[260096];
+			} nds;
+			
+			struct
+			{
+				u8 zeroBuffer[255];
+				u8 value0x80;
+				u8 ffBuffer[127231];
+				u8 bootFlags;
+				FWExtAccessPointSettings wifiAP4;
+				FWExtAccessPointSettings wifiAP5;
+				FWExtAccessPointSettings wifiAP6;
+				u8 UNKNOWN1[131072];
+			} dsi;
+		};
+		
+		FWAccessPointSettings wifiAP1;
+		FWAccessPointSettings wifiAP2;
+		FWAccessPointSettings wifiAP3;
+		
+		u8 unused[256];
+		
+		FWUserSettings userSettings0;
+		FWUserSettings userSettings1;
+	};
+	
+} NDSFirmwareData;
+#include "PACKED_END.h"
 
 class CFIRMWARE
 {
 private:
-	u8		*tmp_data9;
-	u8		*tmp_data7;
-	u32		size9, size7;
-	u32		userDataAddr;
-
-	u16		getBootCodeCRC16();
-	u32		decrypt(const u8 *in, u8* &out);
-	u32		decompress(const u8 *in, u8* &out);
-
-	bool	successLoad;
+	FWHeader _header;
+	bool	_isLoaded;
+	u32		_userDataAddr;
+	
+	u16		_getBootCodeCRC16(const u8 *arm9Data, const u32 arm9Size, const u8 *arm7Data, const u32 arm7Size);
+	u32		_decrypt(const u8 *in, u8* &out);
+	u32		_decompress(const u8 *in, u8* &out);
 
 public:
-	CFIRMWARE(): size9(0), size7(0), ARM9bootAddr(0), ARM7bootAddr(0), patched(0), userDataAddr(0x3FE00), successLoad(false) {};
+	CFIRMWARE(): _userDataAddr(0x3FE00), _isLoaded(false) {};
 	
 	bool load();
 	bool unpack();
@@ -56,43 +419,15 @@ public:
 
 	static std::string GetExternalFilePath();
 
-	u32 getID() { return header.fw_identifier; }
-	bool loaded() { return successLoad; }
-	void *getTouchCalibrate();
-
-	struct HEADER
-	{
-		u16	part3_rom_gui9_addr;		// 000h
-		u16	part4_rom_wifi7_addr;		// 002h
-		u16	part34_gui_wifi_crc16;		// 004h
-		u16	part12_boot_crc16;			// 006h
-		u32	fw_identifier;				// 008h
-		u16	part1_rom_boot9_addr;		// 00Ch
-		u16	part1_ram_boot9_addr;		// 00Eh
-		u16	part2_rom_boot7_addr;		// 010h
-		u16	part2_ram_boot7_addr;		// 012h
-		u16	shift_amounts;				// 014h
-		u16	part5_data_gfx_addr;		// 016h
-
-		u8	fw_timestamp[5];			// 018h
-		u8	console_type;				// 01Dh
-		u16	unused1;					// 01Eh
-		u16	user_settings_offset;		// 020h
-		u16	unknown1;					// 022h
-		u16	unknown2;					// 024h
-		u16	part5_crc16;				// 026h
-		u16	unused2;					// 028h	- FFh filled 
-	} header;
-
-	u32		ARM9bootAddr;
-	u32		ARM7bootAddr;
-	bool	patched;
+	bool loaded();
+	void* getTouchCalibrate();
 };
 
 int copy_firmware_user_data( u8 *dest_buffer, const u8 *fw_data);
-int NDS_CreateDummyFirmware(NDS_fw_config_data *user_settings);
-void NDS_FillDefaultFirmwareConfigData(NDS_fw_config_data *fw_config);
-void NDS_PatchFirmwareMAC();
+
+void NDS_GetDefaultFirmwareConfig(FirmwareConfig &outConfig);
+void NDS_InitFirmwareWithConfig(const FirmwareConfig &inConfig);
+void NDS_OverrideFirmwareMAC(const u8 inMAC[6]);
 
 struct fw_memory_chip
 {
@@ -102,8 +437,9 @@ struct fw_memory_chip
 	u8 addr_size;    //size of addr when writing/reading
 
 	BOOL write_enable;	//is write enabled ?
-
-	u8 *data;       //memory data
+	
+	NDSFirmwareData data;
+	
 	u32 size;       //memory size
 	BOOL writeable_buffer;	//is "data" writeable ?
 	int type; //type of Memory
@@ -125,4 +461,3 @@ void mc_load_file(fw_memory_chip *mc, const char* filename); /* load save file a
 void mc_free(fw_memory_chip *mc);    /* delete mc memory */
 
 #endif
-

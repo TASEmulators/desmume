@@ -24,6 +24,7 @@
 
 #include "types.h"
 #include "ROMReader.h"
+#include "firmware.h"
 #include "wifi.h"
 
 class CFIRMWARE;
@@ -213,7 +214,7 @@ enum NDS_CONSOLE_TYPE
 	NDS_CONSOLE_TYPE_FAT = 0xFF,
 	NDS_CONSOLE_TYPE_LITE = 0x20,
 	NDS_CONSOLE_TYPE_IQUE = 0x43,
-	NDS_CONSOLE_TYPE_IQUE_LIE = 0x63,
+	NDS_CONSOLE_TYPE_IQUE_LITE = 0x63,
 	NDS_CONSOLE_TYPE_DSI = 0xFE
 };
 
@@ -289,39 +290,6 @@ struct NDSSystem
 
 	bool isInVblank() const { return VCount >= 192; } 
 	bool isIn3dVblank() const { return VCount >= 192 && VCount<215; } 
-};
-
-/** /brief A touchscreen calibration point.
- */
-struct NDS_fw_touchscreen_cal {
-  u16 adc_x;
-  u16 adc_y;
-
-  u8 screen_x;
-  u8 screen_y;
-};
-
-#define MAX_FW_NICKNAME_LENGTH 10
-#define MAX_FW_MESSAGE_LENGTH 26
-
-struct NDS_fw_config_data
-{
-  NDS_CONSOLE_TYPE ds_type;
-
-  u8 fav_colour;
-  u8 birth_month;
-  u8 birth_day;
-
-  u16 nickname[MAX_FW_NICKNAME_LENGTH];
-  u8 nickname_len;
-
-  u16 message[MAX_FW_MESSAGE_LENGTH];
-  u8 message_len;
-
-  u8 language;
-
-  //touchscreen calibration
-  NDS_fw_touchscreen_cal touch_cal[2];
 };
 
 extern NDSSystem nds;
@@ -608,7 +576,7 @@ extern struct TCommonSettings
 	bool UseExtFirmwareSettings;
 	char Firmware[256];
 	bool BootFromFirmware;
-	NDS_fw_config_data fw_config;
+	FirmwareConfig fwConfig;
 
 	NDS_CONSOLE_TYPE ConsoleType;
 	bool DebugConsole;

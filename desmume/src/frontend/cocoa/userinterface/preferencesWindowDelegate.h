@@ -84,6 +84,11 @@ class OGLImage;
 	
 	DisplayPreviewView *previewView;
 	
+	NSString *firmwareMACAddressString;
+	NSString *subnetMaskString_AP1;
+	NSString *subnetMaskString_AP2;
+	NSString *subnetMaskString_AP3;
+	
 	NSMutableDictionary *bindings;
 }
 
@@ -115,6 +120,11 @@ class OGLImage;
 @property (readonly) IBOutlet NSPopUpButton *openglMSAAPopUpButton;
 
 @property (readonly) IBOutlet DisplayPreviewView *previewView;
+
+@property (retain) NSString *firmwareMACAddressString;
+@property (retain) NSString *subnetMaskString_AP1;
+@property (retain) NSString *subnetMaskString_AP2;
+@property (retain) NSString *subnetMaskString_AP3;
 
 @property (readonly) NSMutableDictionary *bindings;
 
@@ -148,6 +158,12 @@ class OGLImage;
 - (IBAction) configureInternalFirmware:(id)sender;
 - (IBAction) closeFirmwareConfigSheet:(id)sender;
 - (void) didEndFirmwareConfigSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
+
+- (IBAction) generateFirmwareMACAddress:(id)sender;
+- (IBAction) updateFirmwareMACAddressString:(id)sender;
+- (IBAction) updateSubnetMaskString_AP1:(id)sender;
+- (IBAction) updateSubnetMaskString_AP2:(id)sender;
+- (IBAction) updateSubnetMaskString_AP3:(id)sender;
 
 - (void) switchContentView:(NSView *)theView;
 - (void) markUnsupportedOpenGLMSAAMenuItems;

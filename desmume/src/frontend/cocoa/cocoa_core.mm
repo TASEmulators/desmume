@@ -734,17 +734,7 @@ volatile bool execute = true;
 
 - (void) generateFirmwareMACAddress
 {
-	const uint32_t macValue = (uint32_t)random() & 0x00FFFFFF;
-	
-	uint8_t newMACAddress[6];
-	newMACAddress[0] = 0x00;
-	newMACAddress[1] = 0x09;
-	newMACAddress[2] = 0xBF;
-	newMACAddress[3] = (macValue >>  0) & 0x000000FF;
-	newMACAddress[4] = (macValue >>  8) & 0x000000FF;
-	newMACAddress[5] = (macValue >> 16) & 0x000000FF;
-	
-	[[self cdsFirmware] setMACAddress:newMACAddress];
+	[[self cdsFirmware] generateRandomMACAddress];
 	[self setFirmwareMACAddressSelectionString:NULL];
 }
 

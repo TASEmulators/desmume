@@ -51,10 +51,10 @@
 	
 	execControl = NULL;
 	
-	_myMACAddressValue = 0x00503412;
-	const uint8_t myMAC4 = (_myMACAddressValue >>  0) & 0x000000FF;
-	const uint8_t myMAC5 = (_myMACAddressValue >>  8) & 0x000000FF;
-	const uint8_t myMAC6 = (_myMACAddressValue >> 16) & 0x000000F0;
+	_myMACAddressValue = 0x503412BF;
+	const uint8_t myMAC4 = (_myMACAddressValue >>  8) & 0x000000FF;
+	const uint8_t myMAC5 = (_myMACAddressValue >> 16) & 0x000000FF;
+	const uint8_t myMAC6 = (_myMACAddressValue >> 24) & 0x000000F0;
 	
 	firmwareMACAddressString = @"Firmware  00:09:BF:FF:FF:FF";
 	currentSessionMACAddressString = @"00:09:BF:FF:FF:FF";
@@ -99,9 +99,9 @@
 	}
 	else if ( (theSelection >= 1) && (theSelection <= 4) )
 	{
-		const uint8_t myMAC4 = (_myMACAddressValue >>  0) & 0x000000FF;
-		const uint8_t myMAC5 = (_myMACAddressValue >>  8) & 0x000000FF;
-		const uint8_t myMAC6 = (_myMACAddressValue >> 16) & 0x000000F0;
+		const uint8_t myMAC4 = (_myMACAddressValue >>  8) & 0x000000FF;
+		const uint8_t myMAC5 = (_myMACAddressValue >> 16) & 0x000000FF;
+		const uint8_t myMAC6 = (_myMACAddressValue >> 24) & 0x000000F0;
 		
 		wifiHandler->SetUserMACValues(myMAC4, myMAC5, myMAC6 + theSelection);
 		//wifiHandler->SetFirmwareMACMode(FirmwareMACMode_Manual);
@@ -135,23 +135,14 @@
 
 - (void) updateMyMACAddressStringsWithValue:(uint32_t)value
 {
-	const uint8_t myMAC4 = (value >>  0) & 0x000000FF;
-	const uint8_t myMAC5 = (value >>  8) & 0x000000FF;
-	const uint8_t myMAC6 = (value >> 16) & 0x000000F0;
+	const uint8_t myMAC4 = (value >>  8) & 0x000000FF;
+	const uint8_t myMAC5 = (value >> 16) & 0x000000FF;
+	const uint8_t myMAC6 = (value >> 24) & 0x000000F0;
 	
 	[self setMyMACAddress1String:[NSString stringWithFormat:@"My Address #1  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 1]];
 	[self setMyMACAddress2String:[NSString stringWithFormat:@"My Address #2  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 2]];
 	[self setMyMACAddress3String:[NSString stringWithFormat:@"My Address #3  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 3]];
 	[self setMyMACAddress4String:[NSString stringWithFormat:@"My Address #4  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 4]];
-}
-
-- (void) updateFirmwareMACAddressStringWithValue:(uint32_t)value
-{
-	const uint8_t fwMAC4 = (value >>  0) & 0x000000FF;
-	const uint8_t fwMAC5 = (value >>  8) & 0x000000FF;
-	const uint8_t fwMAC6 = (value >> 16) & 0x000000FF;
-	
-	[self setFirmwareMACAddressString:[NSString stringWithFormat:@"Firmware  00:09:BF:%02X:%02X:%02X", fwMAC4, fwMAC5, fwMAC6]];
 }
 
 - (void) fillLibpcapDeviceMenu
@@ -183,7 +174,14 @@
 
 - (void) generateRandomMyMACAddressSet
 {
-	_myMACAddressValue = (uint32_t)random() & 0x00FFFFFF;
+	uint32_t randomMACAddressValue = 0;
+	
+	do
+	{
+		randomMACAddressValue = (uint32_t)random() & 0x00FFFFFF;
+	} while (randomMACAddressValue == 0);
+	
+	_myMACAddressValue = (randomMACAddressValue << 8) | 0xBF;
 	[self updateMyMACAddressStringsWithValue:_myMACAddressValue];
 	
 	const NSInteger currentAddressSelection = [self addressSelection];
@@ -220,7 +218,6 @@
 	if ([[NSUserDefaults standardUserDefaults] objectForKey:@"Wifi_MyMACAddress"] != nil)
 	{
 		userDefaultMACAddressValue = (uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"Wifi_MyMACAddress"];
-		userDefaultMACAddressValue &= 0x00FFFFFF;
 	}
 	
 	if (userDefaultMACAddressValue == 0)
@@ -230,6 +227,8 @@
 		{
 			userDefaultMACAddressValue = (uint32_t)random() & 0x00FFFFFF;
 		} while (userDefaultMACAddressValue == 0);
+		
+		userDefaultMACAddressValue = ((userDefaultMACAddressValue << 8) | 0xBF);
 		
 		[[NSUserDefaults standardUserDefaults] setInteger:userDefaultMACAddressValue forKey:@"Wifi_MyMACAddress"];
 		needUserDefaultSynchronize = YES;

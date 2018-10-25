@@ -264,17 +264,17 @@ MovieData::MovieData(bool fromCurrentSettings)
 			bootFromFirmware = CommonSettings.BootFromFirmware;
 		if (!CommonSettings.UseExtFirmware)
 		{
-			firmNickname.resize(CommonSettings.fw_config.nickname_len);
-			for (int i = 0; i < CommonSettings.fw_config.nickname_len; i++)
-				firmNickname[i] = CommonSettings.fw_config.nickname[i];
-			firmMessage.resize(CommonSettings.fw_config.message_len);
-			for (int i = 0; i < CommonSettings.fw_config.message_len; i++)
-				firmMessage[i] = CommonSettings.fw_config.message[i];
+			firmNickname.resize(CommonSettings.fwConfig.nicknameLength);
+			for (int i = 0; i < CommonSettings.fwConfig.nicknameLength; i++)
+				firmNickname[i] = CommonSettings.fwConfig.nickname[i];
+			firmMessage.resize(CommonSettings.fwConfig.messageLength);
+			for (int i = 0; i < CommonSettings.fwConfig.messageLength; i++)
+				firmMessage[i] = CommonSettings.fwConfig.message[i];
 
-			firmFavColour = CommonSettings.fw_config.fav_colour;
-			firmBirthMonth = CommonSettings.fw_config.birth_month;
-			firmBirthDay = CommonSettings.fw_config.birth_day;
-			firmLanguage = CommonSettings.fw_config.language;
+			firmFavColour = CommonSettings.fwConfig.favoriteColor;
+			firmBirthMonth = CommonSettings.fwConfig.birthdayMonth;
+			firmBirthDay = CommonSettings.fwConfig.birthdayDay;
+			firmLanguage = CommonSettings.fwConfig.language;
 		}
 		advancedTiming = CommonSettings.advanced_timing;
 		jitBlockSize = CommonSettings.use_jit ? CommonSettings.jit_max_block_size : 0;
@@ -356,18 +356,18 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	}
 	else
 	{
-		std::wstring wnick((wchar_t*)CommonSettings.fw_config.nickname,CommonSettings.fw_config.nickname_len);
+		std::wstring wnick((wchar_t*)CommonSettings.fwConfig.nickname, CommonSettings.fwConfig.nicknameLength);
 		std::string nick = wcstombs(wnick);
 		
-		std::wstring wmessage((wchar_t*)CommonSettings.fw_config.message,CommonSettings.fw_config.message_len);
+		std::wstring wmessage((wchar_t*)CommonSettings.fwConfig.message, CommonSettings.fwConfig.messageLength);
 		std::string message = wcstombs(wmessage);
 		
 		fp.fprintf("firmNickname %s\n", nick.c_str());
 		fp.fprintf("firmMessage %s\n", message.c_str());
-		fp.fprintf("firmFavColour %d\n", CommonSettings.fw_config.fav_colour);
-		fp.fprintf("firmBirthMonth %d\n", CommonSettings.fw_config.birth_month);
-		fp.fprintf("firmBirthDay %d\n", CommonSettings.fw_config.birth_day);
-		fp.fprintf("firmLanguage %d\n", CommonSettings.fw_config.language);
+		fp.fprintf("firmFavColour %d\n", CommonSettings.fwConfig.favoriteColor);
+		fp.fprintf("firmBirthMonth %d\n", CommonSettings.fwConfig.birthdayMonth);
+		fp.fprintf("firmBirthDay %d\n", CommonSettings.fwConfig.birthdayDay);
+		fp.fprintf("firmLanguage %d\n", CommonSettings.fwConfig.language);
 	}
 
 	fp.fprintf("advancedTiming %d\n", CommonSettings.advanced_timing?1:0);
@@ -574,28 +574,28 @@ static void LoadSettingsFromMovie(MovieData movieData)
 	{
 		if (movieData.firmNickname != "")
 		{
-			CommonSettings.fw_config.nickname_len = movieData.firmNickname.length() > MAX_FW_NICKNAME_LENGTH ? MAX_FW_NICKNAME_LENGTH : movieData.firmNickname.length();
-			for (int i = 0; i < CommonSettings.fw_config.nickname_len; i++)
-				CommonSettings.fw_config.nickname[i] = movieData.firmNickname[i];
+			CommonSettings.fwConfig.nicknameLength = movieData.firmNickname.length() > MAX_FW_NICKNAME_LENGTH ? MAX_FW_NICKNAME_LENGTH : movieData.firmNickname.length();
+			for (int i = 0; i < CommonSettings.fwConfig.nicknameLength; i++)
+				CommonSettings.fwConfig.nickname[i] = movieData.firmNickname[i];
 		}
 		if (movieData.firmMessage != "")
 		{
-			CommonSettings.fw_config.message_len = movieData.firmMessage.length() > MAX_FW_MESSAGE_LENGTH ? MAX_FW_MESSAGE_LENGTH : movieData.firmMessage.length();
-			for (int i = 0; i < CommonSettings.fw_config.message_len; i++)
-				CommonSettings.fw_config.message[i] = movieData.firmMessage[i];
+			CommonSettings.fwConfig.messageLength = movieData.firmMessage.length() > MAX_FW_MESSAGE_LENGTH ? MAX_FW_MESSAGE_LENGTH : movieData.firmMessage.length();
+			for (int i = 0; i < CommonSettings.fwConfig.messageLength; i++)
+				CommonSettings.fwConfig.message[i] = movieData.firmMessage[i];
 		}
 
 		if (movieData.firmFavColour != -1)
-			CommonSettings.fw_config.fav_colour = movieData.firmFavColour;
+			CommonSettings.fwConfig.favoriteColor = movieData.firmFavColour;
 		if (movieData.firmBirthMonth != -1)
-			CommonSettings.fw_config.birth_month = movieData.firmBirthMonth;
+			CommonSettings.fwConfig.birthdayMonth = movieData.firmBirthMonth;
 		if (movieData.firmBirthDay != -1)
-			CommonSettings.fw_config.birth_day = movieData.firmBirthDay;
+			CommonSettings.fwConfig.birthdayDay = movieData.firmBirthDay;
 		if (movieData.firmLanguage != -1)
-			CommonSettings.fw_config.language = movieData.firmLanguage;
+			CommonSettings.fwConfig.language = movieData.firmLanguage;
 
 		// reset firmware (some games can write to it)
-		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
+		NDS_InitFirmwareWithConfig(CommonSettings.fwConfig);
 	}
 	if (movieData.advancedTiming != -1)
 		CommonSettings.advanced_timing = movieData.advancedTiming;
@@ -781,7 +781,7 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 	// reset firmware (some games can write to it)
 	if (!CommonSettings.UseExtFirmware)
 	{
-		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
+		NDS_InitFirmwareWithConfig(CommonSettings.fwConfig);
 	}
 
 

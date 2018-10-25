@@ -354,12 +354,12 @@ joinThread_gdb( void *thread_handle) {
 static int
 common_gtk_glade_main( struct configured_features *my_config) {
         /* the firmware settings */
-        struct NDS_fw_config_data fw_config;
+        FirmwareConfig fw_config;
 	gchar *uifile;
 	GKeyFile *keyfile;
 
         /* default the firmware settings, they may get changed later */
-        NDS_FillDefaultFirmwareConfigData( &fw_config);
+        NDS_GetDefaultFirmwareConfig(fw_config);
 
         /* use any language set on the command line */
         if ( my_config->firmware_language != -1) {
@@ -384,7 +384,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
 	desmume_init();
 
         /* Create the dummy firmware */
-        NDS_CreateDummyFirmware( &fw_config);
+        NDS_InitFirmwareWithConfig(fw_config);
 
         /*
          * Activate the GDB stubs

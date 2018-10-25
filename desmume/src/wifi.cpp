@@ -4748,16 +4748,21 @@ bool WifiHandler::CommStart()
 			{
 				case WifiMACMode_Automatic:
 					this->GenerateMACFromValues(FW_Mac);
-					NDS_PatchFirmwareMAC();
+					NDS_OverrideFirmwareMAC(FW_Mac);
 					break;
 					
 				case WifiMACMode_Manual:
 					this->CopyMACFromUserValues(FW_Mac);
-					NDS_PatchFirmwareMAC();
+					NDS_OverrideFirmwareMAC(FW_Mac);
 					break;
 					
 				case WifiMACMode_ReadFromFirmware:
-					memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);
+					FW_Mac[0] = MMU.fw.data.wifiInfo.MACAddr[0];
+					FW_Mac[1] = MMU.fw.data.wifiInfo.MACAddr[1];
+					FW_Mac[2] = MMU.fw.data.wifiInfo.MACAddr[2];
+					FW_Mac[3] = MMU.fw.data.wifiInfo.MACAddr[3];
+					FW_Mac[4] = MMU.fw.data.wifiInfo.MACAddr[4];
+					FW_Mac[5] = MMU.fw.data.wifiInfo.MACAddr[5];
 					break;
 			}
 			

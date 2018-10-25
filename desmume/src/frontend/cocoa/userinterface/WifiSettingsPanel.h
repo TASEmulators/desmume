@@ -58,7 +58,6 @@ class ClientExecutionControl;
 @property (readonly) IBOutlet NSPopUpButton *bridgeDevicePopUpButton;
 
 - (void) updateMyMACAddressStringsWithValue:(uint32_t)value;
-- (void) updateFirmwareMACAddressStringWithValue:(uint32_t)value;
 - (void) fillLibpcapDeviceMenu;
 - (void) generateRandomMyMACAddressSet;
 - (IBAction) generateNewAddresses:(id)sender;

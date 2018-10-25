@@ -19,6 +19,7 @@
 #import <Cocoa/Cocoa.h>
 #include <pthread.h>
 
+struct FirmwareConfig;
 
 /********************************************************************************************
 	CocoaDSFirmware - OBJECTIVE-C CLASS
@@ -30,76 +31,20 @@
  ********************************************************************************************/
 @interface CocoaDSFirmware : NSObject
 {
-	struct NDS_fw_config_data *internalData;
+	FirmwareConfig *_internalData;
 	NSUInteger _birth_year;
-	uint8_t _MACAddress[6];
 	
-	NSInteger ipv4Address_AP1_1;
-	NSInteger ipv4Address_AP1_2;
-	NSInteger ipv4Address_AP1_3;
-	NSInteger ipv4Address_AP1_4;
-	NSInteger ipv4Gateway_AP1_1;
-	NSInteger ipv4Gateway_AP1_2;
-	NSInteger ipv4Gateway_AP1_3;
-	NSInteger ipv4Gateway_AP1_4;
-	NSInteger ipv4PrimaryDNS_AP1_1;
-	NSInteger ipv4PrimaryDNS_AP1_2;
-	NSInteger ipv4PrimaryDNS_AP1_3;
-	NSInteger ipv4PrimaryDNS_AP1_4;
-	NSInteger ipv4SecondaryDNS_AP1_1;
-	NSInteger ipv4SecondaryDNS_AP1_2;
-	NSInteger ipv4SecondaryDNS_AP1_3;
-	NSInteger ipv4SecondaryDNS_AP1_4;
-	NSInteger subnetMask_AP1;
+	NSString *MACAddressString;
 	NSString *subnetMaskString_AP1;
-	
-	NSInteger ipv4Address_AP2_1;
-	NSInteger ipv4Address_AP2_2;
-	NSInteger ipv4Address_AP2_3;
-	NSInteger ipv4Address_AP2_4;
-	NSInteger ipv4Gateway_AP2_1;
-	NSInteger ipv4Gateway_AP2_2;
-	NSInteger ipv4Gateway_AP2_3;
-	NSInteger ipv4Gateway_AP2_4;
-	NSInteger ipv4PrimaryDNS_AP2_1;
-	NSInteger ipv4PrimaryDNS_AP2_2;
-	NSInteger ipv4PrimaryDNS_AP2_3;
-	NSInteger ipv4PrimaryDNS_AP2_4;
-	NSInteger ipv4SecondaryDNS_AP2_1;
-	NSInteger ipv4SecondaryDNS_AP2_2;
-	NSInteger ipv4SecondaryDNS_AP2_3;
-	NSInteger ipv4SecondaryDNS_AP2_4;
-	NSInteger subnetMask_AP2;
 	NSString *subnetMaskString_AP2;
-	
-	NSInteger ipv4Address_AP3_1;
-	NSInteger ipv4Address_AP3_2;
-	NSInteger ipv4Address_AP3_3;
-	NSInteger ipv4Address_AP3_4;
-	NSInteger ipv4Gateway_AP3_1;
-	NSInteger ipv4Gateway_AP3_2;
-	NSInteger ipv4Gateway_AP3_3;
-	NSInteger ipv4Gateway_AP3_4;
-	NSInteger ipv4PrimaryDNS_AP3_1;
-	NSInteger ipv4PrimaryDNS_AP3_2;
-	NSInteger ipv4PrimaryDNS_AP3_3;
-	NSInteger ipv4PrimaryDNS_AP3_4;
-	NSInteger ipv4SecondaryDNS_AP3_1;
-	NSInteger ipv4SecondaryDNS_AP3_2;
-	NSInteger ipv4SecondaryDNS_AP3_3;
-	NSInteger ipv4SecondaryDNS_AP3_4;
-	NSInteger subnetMask_AP3;
 	NSString *subnetMaskString_AP3;
-	
-	NSInteger backlightLevel;
 	
 	pthread_mutex_t mutex;
 }
 
-@property (readonly) struct NDS_fw_config_data *internalData;
-
 // WiFi Info
-@property (assign) NSString *MACAddressString;
+@property (assign) uint32_t MACAddressValue;
+@property (retain) NSString *MACAddressString;
 
 // Access Point Settings
 @property (assign) NSInteger ipv4Address_AP1_1;
@@ -168,9 +113,7 @@
 @property (assign) NSInteger language;
 @property (assign) NSInteger backlightLevel;
 
-- (void) setMACAddress:(const uint8_t *)inMACAddress;
-- (uint8_t *) MACAddress;
-
 - (void) update;
+- (uint32_t) generateRandomMACAddress;
 
 @end

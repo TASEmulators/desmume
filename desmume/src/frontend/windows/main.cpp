@@ -2247,20 +2247,36 @@ int _main()
 	wifiHandler->SetPCapInterface(winpcapInterface);
 	wifiHandler->SetSocketsSupported(isSocketsSupported);
 
-	// Get the host's IP4 address.
-	char hostname[256];
-	if (gethostname(hostname, 256) != 0)
-		strncpy(hostname, "127.0.0.1", 256);
-
-	hostent *he = gethostbyname(hostname);
-	unsigned long ipaddr;
-	if (he == NULL || he->h_addr_list[0] == NULL)
-		ipaddr = 0x0100007F; // 127.0.0.1
-	else
-		ipaddr = *(unsigned long*)he->h_addr_list[0];
-
-	wifiHandler->SetIP4Address(ipaddr);
-	wifiHandler->SetUniqueMACValue((u32)GetCurrentProcessId());
+	// Generate the unique MAC address for Ad-hoc mode.
+	{
+		// Get the host's IP4 address.
+		char hostname[256];
+		if (gethostname(hostname, 256) != 0)
+			strncpy(hostname, "127.0.0.1", 256);
+		
+		hostent *he = gethostbyname(hostname);
+		u32 ipaddr;
+		if (he == NULL || he->h_addr_list[0] == NULL)
+			ipaddr = 0x0100007F; // 127.0.0.1
+		else
+			ipaddr = *(u32 *)he->h_addr_list[0];
+		
+		u32 hash = (u32)GetCurrentProcessId();
+		
+		while ((hash & 0xFF000000) == 0)
+		{
+			hash <<= 1;
+		}
+		
+		hash >>= 1;
+		hash += ipAddr >> 8;
+		hash &= 0x00FFFFFF;
+		
+		wifiHandler->SetUserMACValues(hash >> 16, (hash >> 8) & 0xFF, hash & 0xFF);
+		wifiHandler->SetMACModeForComm(WifiCommInterfaceID_AdHoc, WifiMACMode_Manual);
+		//wifiHandler->SetFirmwareMACMode(FirmwareMACMode_Manual);
+	}
+	
 	wifiHandler->SetCommInterfaceID(CommonSettings.wifi.mode);
 	wifiHandler->SetBridgeDeviceIndex(CommonSettings.wifi.infraBridgeAdapter);
 
@@ -2425,12 +2441,12 @@ int _main()
 	FilterUpdate(MainWindow->getHWnd(),false);
 
 	//default the firmware settings, they may get changed later
-	NDS_FillDefaultFirmwareConfigData(&CommonSettings.fw_config);
+	NDS_GetDefaultFirmwareConfig(CommonSettings.fwConfig);
 	// Read the firmware settings from the init file
-	CommonSettings.fw_config.fav_colour = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
-	CommonSettings.fw_config.birth_month = GetPrivateProfileInt("Firmware","bMonth", 7, IniName);
-	CommonSettings.fw_config.birth_day = GetPrivateProfileInt("Firmware","bDay", 15, IniName);
-	CommonSettings.fw_config.language = GetPrivateProfileInt("Firmware","Language", 1, IniName);
+	CommonSettings.fwConfig.favoriteColor = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
+	CommonSettings.fwConfig.birthdayMonth = GetPrivateProfileInt("Firmware","bMonth", 7, IniName);
+	CommonSettings.fwConfig.birthdayDay = GetPrivateProfileInt("Firmware","bDay", 15, IniName);
+	CommonSettings.fwConfig.language = GetPrivateProfileInt("Firmware","Language", 1, IniName);
 
 	{
 		/*
@@ -2440,21 +2456,21 @@ int _main()
 		char temp_str[27];
 		int char_index;
 		GetPrivateProfileString("Firmware","nickName", "yopyop", temp_str, 11, IniName);
-		CommonSettings.fw_config.nickname_len = strlen( temp_str);
+		CommonSettings.fwConfig.nicknameLength = strlen( temp_str);
 
-		if (CommonSettings.fw_config.nickname_len == 0) {
+		if (CommonSettings.fwConfig.nicknameLength == 0) {
 			strcpy( temp_str, "yopyop");
-			CommonSettings.fw_config.nickname_len = strlen( temp_str);
+			CommonSettings.fwConfig.nicknameLength = strlen( temp_str);
 		}
 
-		for ( char_index = 0; char_index < CommonSettings.fw_config.nickname_len; char_index++) {
-			CommonSettings.fw_config.nickname[char_index] = temp_str[char_index];
+		for ( char_index = 0; char_index < CommonSettings.fwConfig.nicknameLength; char_index++) {
+			CommonSettings.fwConfig.nickname[char_index] = temp_str[char_index];
 		}
 
 		GetPrivateProfileString("Firmware","Message", "DeSmuME makes you happy!", temp_str, 27, IniName);
-		CommonSettings.fw_config.message_len = strlen( temp_str);
-		for ( char_index = 0; char_index < CommonSettings.fw_config.message_len; char_index++) {
-			CommonSettings.fw_config.message[char_index] = temp_str[char_index];
+		CommonSettings.fwConfig.messageLength = strlen( temp_str);
+		for ( char_index = 0; char_index < CommonSettings.fwConfig.messageLength; char_index++) {
+			CommonSettings.fwConfig.message[char_index] = temp_str[char_index];
 		}
 	}
 
@@ -2467,7 +2483,7 @@ int _main()
 	}
 
 	//not supported; use the GUI
-	//if(cmdline.language != -1) CommonSettings.fw_config.language = cmdline.language;
+	//if(cmdline.language != -1) CommonSettings.fwConfig.language = cmdline.language;
 
 	cmdline.process_movieCommands();
 	

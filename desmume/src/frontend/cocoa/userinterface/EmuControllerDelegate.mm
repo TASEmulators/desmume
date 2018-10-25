@@ -22,6 +22,7 @@
 #import "Slot2WindowDelegate.h"
 #import "MacAVCaptureTool.h"
 #import "MacScreenshotCaptureTool.h"
+#import "preferencesWindowDelegate.h"
 
 #import "cocoa_globals.h"
 #import "cocoa_cheat.h"
@@ -46,6 +47,7 @@
 @synthesize cheatWindowDelegate;
 @synthesize screenshotCaptureToolDelegate;
 @synthesize avCaptureToolDelegate;
+@synthesize prefWindowDelegate;
 @synthesize firmwarePanelController;
 @synthesize romInfoPanelController;
 @synthesize cdsCoreController;
@@ -982,11 +984,74 @@
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagEmulateEnsata] forKey:@"Emulation_EmulateEnsata"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagDebugConsole] forKey:@"Emulation_UseDebugConsole"];
 	
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware MACAddressValue] forKey:@"FirmwareConfig_MACAddress"];
+	
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP1_1] forKey:@"FirmwareConfig_IPv4Address_AP1_1"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP1_2] forKey:@"FirmwareConfig_IPv4Address_AP1_2"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP1_3] forKey:@"FirmwareConfig_IPv4Address_AP1_3"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP1_4] forKey:@"FirmwareConfig_IPv4Address_AP1_4"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Gateway_AP1_1] forKey:@"FirmwareConfig_IPv4Gateway_AP1_1"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Gateway_AP1_2] forKey:@"FirmwareConfig_IPv4Gateway_AP1_2"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Gateway_AP1_3] forKey:@"FirmwareConfig_IPv4Gateway_AP1_3"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Gateway_AP1_4] forKey:@"FirmwareConfig_IPv4Gateway_AP1_4"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4PrimaryDNS_AP1_1] forKey:@"FirmwareConfig_IPv4PrimaryDNS_AP1_1"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4PrimaryDNS_AP1_2] forKey:@"FirmwareConfig_IPv4PrimaryDNS_AP1_2"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4PrimaryDNS_AP1_3] forKey:@"FirmwareConfig_IPv4PrimaryDNS_AP1_3"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4PrimaryDNS_AP1_4] forKey:@"FirmwareConfig_IPv4PrimaryDNS_AP1_4"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP1_1] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP1_1"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP1_2] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP1_2"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP1_3] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP1_3"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP1_4] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP1_4"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware subnetMask_AP1] forKey:@"FirmwareConfig_SubnetMask_AP1"];
+	
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP2_1] forKey:@"FirmwareConfig_IPv4Address_AP2_1"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP2_2] forKey:@"FirmwareConfig_IPv4Address_AP2_2"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP2_3] forKey:@"FirmwareConfig_IPv4Address_AP2_3"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP2_4] forKey:@"FirmwareConfig_IPv4Address_AP2_4"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Gateway_AP2_1] forKey:@"FirmwareConfig_IPv4Gateway_AP2_1"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Gateway_AP2_2] forKey:@"FirmwareConfig_IPv4Gateway_AP2_2"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Gateway_AP2_3] forKey:@"FirmwareConfig_IPv4Gateway_AP2_3"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Gateway_AP2_4] forKey:@"FirmwareConfig_IPv4Gateway_AP2_4"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4PrimaryDNS_AP2_1] forKey:@"FirmwareConfig_IPv4PrimaryDNS_AP2_1"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4PrimaryDNS_AP2_2] forKey:@"FirmwareConfig_IPv4PrimaryDNS_AP2_2"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4PrimaryDNS_AP2_3] forKey:@"FirmwareConfig_IPv4PrimaryDNS_AP2_3"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4PrimaryDNS_AP2_4] forKey:@"FirmwareConfig_IPv4PrimaryDNS_AP2_4"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP2_1] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP2_1"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP2_2] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP2_2"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP2_3] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP2_3"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP2_4] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP2_4"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware subnetMask_AP2] forKey:@"FirmwareConfig_SubnetMask_AP2"];
+	
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP3_1] forKey:@"FirmwareConfig_IPv4Address_AP3_1"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP3_2] forKey:@"FirmwareConfig_IPv4Address_AP3_2"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP3_3] forKey:@"FirmwareConfig_IPv4Address_AP3_3"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP3_4] forKey:@"FirmwareConfig_IPv4Address_AP3_4"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Gateway_AP3_1] forKey:@"FirmwareConfig_IPv4Gateway_AP3_1"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Gateway_AP3_2] forKey:@"FirmwareConfig_IPv4Gateway_AP3_2"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Gateway_AP3_3] forKey:@"FirmwareConfig_IPv4Gateway_AP3_3"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Gateway_AP3_4] forKey:@"FirmwareConfig_IPv4Gateway_AP3_4"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4PrimaryDNS_AP3_1] forKey:@"FirmwareConfig_IPv4PrimaryDNS_AP3_1"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4PrimaryDNS_AP3_2] forKey:@"FirmwareConfig_IPv4PrimaryDNS_AP3_2"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4PrimaryDNS_AP3_3] forKey:@"FirmwareConfig_IPv4PrimaryDNS_AP3_3"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4PrimaryDNS_AP3_4] forKey:@"FirmwareConfig_IPv4PrimaryDNS_AP3_4"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP3_1] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP3_1"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP3_2] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP3_2"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP3_3] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP3_3"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP3_4] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP3_4"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware subnetMask_AP3] forKey:@"FirmwareConfig_SubnetMask_AP3"];
+	
+	//[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware consoleType] forKey:@"FirmwareConfig_ConsoleType"];
 	[[NSUserDefaults standardUserDefaults] setObject:[writeFirmware nickname] forKey:@"FirmwareConfig_Nickname"];
 	[[NSUserDefaults standardUserDefaults] setObject:[writeFirmware message] forKey:@"FirmwareConfig_Message"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware favoriteColor] forKey:@"FirmwareConfig_FavoriteColor"];
 	[[NSUserDefaults standardUserDefaults] setObject:[writeFirmware birthday] forKey:@"FirmwareConfig_Birthday"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware language] forKey:@"FirmwareConfig_Language"];
+	//[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware backlightLevel] forKey:@"FirmwareConfig_BacklightLevel"];
+	
+	[prefWindowDelegate updateFirmwareMACAddressString:nil];
+	[prefWindowDelegate updateSubnetMaskString_AP1:nil];
+	[prefWindowDelegate updateSubnetMaskString_AP2:nil];
+	[prefWindowDelegate updateSubnetMaskString_AP3:nil];
 	
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }

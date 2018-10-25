@@ -501,12 +501,12 @@ int main(int argc, char ** argv) {
   const SDL_VideoInfo *videoInfo;
 
   /* the firmware settings */
-  struct NDS_fw_config_data fw_config;
+  FirmwareConfig fw_config;
 
   NDS_Init();
 
   /* default the firmware settings, they may get changed later */
-  NDS_FillDefaultFirmwareConfigData( &fw_config);
+  NDS_GetDefaultFirmwareConfig(fw_config);
 
   init_config( &my_config);
 
@@ -621,7 +621,7 @@ int main(int argc, char ** argv) {
 #endif
 
   /* Create the dummy firmware */
-  NDS_CreateDummyFirmware( &fw_config);
+  NDS_InitFirmwareWithConfig(fw_config);
 
   if ( !my_config.disable_sound) {
     SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);

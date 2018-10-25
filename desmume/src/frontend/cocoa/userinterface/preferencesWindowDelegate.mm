@@ -308,6 +308,11 @@
 
 @synthesize previewView;
 
+@synthesize firmwareMACAddressString;
+@synthesize subnetMaskString_AP1;
+@synthesize subnetMaskString_AP2;
+@synthesize subnetMaskString_AP3;
+
 @synthesize bindings;
 
 - (id)init
@@ -325,6 +330,11 @@
 		self = nil;
 		return self;
 	}
+	
+	firmwareMACAddressString = @"00:09:BF:FF:FF:FF";
+	subnetMaskString_AP1 = @"0.0.0.0";
+	subnetMaskString_AP2 = @"0.0.0.0";
+	subnetMaskString_AP3 = @"0.0.0.0";
 	
 	// Load the volume icons.
 	iconVolumeFull		= [[NSImage imageNamed:@"Icon_VolumeFull_16x16"] retain];
@@ -346,6 +356,11 @@
 	[iconVolumeMute release];
 	[bindings release];
 	[prefViewDict release];
+	
+	[self setFirmwareMACAddressString:nil];
+	[self setSubnetMaskString_AP1:nil];
+	[self setSubnetMaskString_AP2:nil];
+	[self setSubnetMaskString_AP3:nil];
 	
 	[super dealloc];
 }
@@ -876,6 +891,76 @@
 - (void) didEndFirmwareConfigSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
 {
     [sheet orderOut:self];
+}
+
+- (IBAction) generateFirmwareMACAddress:(id)sender
+{
+	uint32_t randomMACAddressValue = 0;
+	
+	do
+	{
+		randomMACAddressValue = (uint32_t)random() & 0x00FFFFFF;
+	} while (randomMACAddressValue == 0);
+	
+	randomMACAddressValue = (randomMACAddressValue << 8) | 0xBF;
+	
+	[[NSUserDefaults standardUserDefaults] setInteger:randomMACAddressValue forKey:@"FirmwareConfig_MACAddress"];
+	[[NSUserDefaults standardUserDefaults] synchronize];
+	
+	[self updateFirmwareMACAddressString:nil];
+}
+
+- (IBAction) updateFirmwareMACAddressString:(id)sender
+{
+	const uint32_t defaultMACAddressValue = (uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_MACAddress"];
+	const uint8_t mac4 = (defaultMACAddressValue >>  8) & 0x000000FF;
+	const uint8_t mac5 = (defaultMACAddressValue >> 16) & 0x000000FF;
+	const uint8_t mac6 = (defaultMACAddressValue >> 24) & 0x000000FF;
+	
+	NSString *theMACAddressString = [NSString stringWithFormat:@"00:09:BF:%02X:%02X:%02X", mac4, mac5, mac6];
+	[self setFirmwareMACAddressString:theMACAddressString];
+}
+
+- (IBAction) updateSubnetMaskString_AP1:(id)sender
+{
+	const uint32_t defaultSubnetMask = (uint8_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_SubnetMask_AP1"];
+	const uint32_t subnetMaskValue = (defaultSubnetMask == 0) ? 0 : (0xFFFFFFFF << (32 - defaultSubnetMask));
+	
+	NSString *subnetMaskString = [NSString stringWithFormat:@"%d.%d.%d.%d",
+								  (subnetMaskValue >> 24) & 0x000000FF,
+								  (subnetMaskValue >> 16) & 0x000000FF,
+								  (subnetMaskValue >>  8) & 0x000000FF,
+								  (subnetMaskValue >>  0) & 0x000000FF];
+	
+	[self setSubnetMaskString_AP1:subnetMaskString];
+}
+
+- (IBAction) updateSubnetMaskString_AP2:(id)sender
+{
+	const uint32_t defaultSubnetMask = (uint8_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_SubnetMask_AP2"];
+	const uint32_t subnetMaskValue = (defaultSubnetMask == 0) ? 0 : (0xFFFFFFFF << (32 - defaultSubnetMask));
+	
+	NSString *subnetMaskString = [NSString stringWithFormat:@"%d.%d.%d.%d",
+								  (subnetMaskValue >> 24) & 0x000000FF,
+								  (subnetMaskValue >> 16) & 0x000000FF,
+								  (subnetMaskValue >>  8) & 0x000000FF,
+								  (subnetMaskValue >>  0) & 0x000000FF];
+	
+	[self setSubnetMaskString_AP2:subnetMaskString];
+}
+
+- (IBAction) updateSubnetMaskString_AP3:(id)sender
+{
+	const uint32_t defaultSubnetMask = (uint8_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_SubnetMask_AP3"];
+	const uint32_t subnetMaskValue = (defaultSubnetMask == 0) ? 0 : (0xFFFFFFFF << (32 - defaultSubnetMask));
+	
+	NSString *subnetMaskString = [NSString stringWithFormat:@"%d.%d.%d.%d",
+								  (subnetMaskValue >> 24) & 0x000000FF,
+								  (subnetMaskValue >> 16) & 0x000000FF,
+								  (subnetMaskValue >>  8) & 0x000000FF,
+								  (subnetMaskValue >>  0) & 0x000000FF];
+	
+	[self setSubnetMaskString_AP3:subnetMaskString];
 }
 
 - (void)controlTextDidEndEditing:(NSNotification *)aNotification

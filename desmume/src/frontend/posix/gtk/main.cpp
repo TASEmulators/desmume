@@ -3005,10 +3005,10 @@ common_gtk_main( class configured_features *my_config)
     GtkWidget *pToolBar;
 
     /* the firmware settings */
-    struct NDS_fw_config_data fw_config;
+    FirmwareConfig fw_config;
 
     /* default the firmware settings, they may get changed later */
-    NDS_FillDefaultFirmwareConfigData( &fw_config);
+    NDS_GetDefaultFirmwareConfig(fw_config);
 
     /* use any language set on the command line */
     if ( my_config->firmware_language != -1) {
@@ -3130,7 +3130,7 @@ common_gtk_main( class configured_features *my_config)
 #endif
 
     /* Create the dummy firmware */
-    NDS_CreateDummyFirmware( &fw_config);
+    NDS_InitFirmwareWithConfig(fw_config);
 
     /* Initialize joysticks */
     if(!init_joy()) return 1;

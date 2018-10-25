@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2017 DeSmuME Team
+	Copyright (C) 2011-2018 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -468,11 +468,95 @@
 	
 	// Set up the firmware per user preferences.
 	CocoaDSFirmware *newFirmware = [[[CocoaDSFirmware alloc] init] autorelease];
+	uint32_t defaultMACAddress_u32 = 0;
+	
+	if ([[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_MACAddress"] != nil)
+	{
+		defaultMACAddress_u32 = (uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_MACAddress"];
+	}
+	
+	if (defaultMACAddress_u32 == 0)
+	{
+		// Generate a new random MAC address set if one does not exist.
+		do
+		{
+			defaultMACAddress_u32 = (uint32_t)random() & 0x00FFFFFF;
+		} while (defaultMACAddress_u32 == 0);
+		
+		defaultMACAddress_u32 = ((defaultMACAddress_u32 << 8) | 0xBF);
+		
+		[[NSUserDefaults standardUserDefaults] setInteger:defaultMACAddress_u32 forKey:@"FirmwareConfig_MACAddress"];
+		[[NSUserDefaults standardUserDefaults] synchronize];
+	}
+	
+	[newFirmware setMACAddressValue:defaultMACAddress_u32];
+	
+	[newFirmware setIpv4Address_AP1_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP1_1"]];
+	[newFirmware setIpv4Address_AP1_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP1_2"]];
+	[newFirmware setIpv4Address_AP1_3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP1_3"]];
+	[newFirmware setIpv4Address_AP1_4:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP1_4"]];
+	[newFirmware setIpv4Gateway_AP1_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Gateway_AP1_1"]];
+	[newFirmware setIpv4Gateway_AP1_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Gateway_AP1_2"]];
+	[newFirmware setIpv4Gateway_AP1_3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Gateway_AP1_3"]];
+	[newFirmware setIpv4Gateway_AP1_4:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Gateway_AP1_4"]];
+	[newFirmware setIpv4PrimaryDNS_AP1_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4PrimaryDNS_AP1_1"]];
+	[newFirmware setIpv4PrimaryDNS_AP1_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4PrimaryDNS_AP1_2"]];
+	[newFirmware setIpv4PrimaryDNS_AP1_3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4PrimaryDNS_AP1_3"]];
+	[newFirmware setIpv4PrimaryDNS_AP1_4:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4PrimaryDNS_AP1_4"]];
+	[newFirmware setIpv4SecondaryDNS_AP1_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4SecondaryDNS_AP1_1"]];
+	[newFirmware setIpv4SecondaryDNS_AP1_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4SecondaryDNS_AP1_2"]];
+	[newFirmware setIpv4SecondaryDNS_AP1_3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4SecondaryDNS_AP1_3"]];
+	[newFirmware setIpv4SecondaryDNS_AP1_4:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4SecondaryDNS_AP1_4"]];
+	[newFirmware setSubnetMask_AP1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_SubnetMask_AP1"]];
+	
+	[newFirmware setIpv4Address_AP2_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP2_1"]];
+	[newFirmware setIpv4Address_AP2_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP2_2"]];
+	[newFirmware setIpv4Address_AP2_3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP2_3"]];
+	[newFirmware setIpv4Address_AP2_4:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP2_4"]];
+	[newFirmware setIpv4Gateway_AP2_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Gateway_AP2_1"]];
+	[newFirmware setIpv4Gateway_AP2_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Gateway_AP2_2"]];
+	[newFirmware setIpv4Gateway_AP2_3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Gateway_AP2_3"]];
+	[newFirmware setIpv4Gateway_AP2_4:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Gateway_AP2_4"]];
+	[newFirmware setIpv4PrimaryDNS_AP2_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4PrimaryDNS_AP2_1"]];
+	[newFirmware setIpv4PrimaryDNS_AP2_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4PrimaryDNS_AP2_2"]];
+	[newFirmware setIpv4PrimaryDNS_AP2_3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4PrimaryDNS_AP2_3"]];
+	[newFirmware setIpv4PrimaryDNS_AP2_4:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4PrimaryDNS_AP2_4"]];
+	[newFirmware setIpv4SecondaryDNS_AP2_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4SecondaryDNS_AP2_1"]];
+	[newFirmware setIpv4SecondaryDNS_AP2_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4SecondaryDNS_AP2_2"]];
+	[newFirmware setIpv4SecondaryDNS_AP2_3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4SecondaryDNS_AP2_3"]];
+	[newFirmware setIpv4SecondaryDNS_AP2_4:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4SecondaryDNS_AP2_4"]];
+	[newFirmware setSubnetMask_AP2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_SubnetMask_AP2"]];
+	
+	[newFirmware setIpv4Address_AP3_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP3_1"]];
+	[newFirmware setIpv4Address_AP3_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP3_2"]];
+	[newFirmware setIpv4Address_AP3_3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP3_3"]];
+	[newFirmware setIpv4Address_AP3_4:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP3_4"]];
+	[newFirmware setIpv4Gateway_AP3_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Gateway_AP3_1"]];
+	[newFirmware setIpv4Gateway_AP3_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Gateway_AP3_2"]];
+	[newFirmware setIpv4Gateway_AP3_3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Gateway_AP3_3"]];
+	[newFirmware setIpv4Gateway_AP3_4:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Gateway_AP3_4"]];
+	[newFirmware setIpv4PrimaryDNS_AP3_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4PrimaryDNS_AP3_1"]];
+	[newFirmware setIpv4PrimaryDNS_AP3_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4PrimaryDNS_AP3_2"]];
+	[newFirmware setIpv4PrimaryDNS_AP3_3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4PrimaryDNS_AP3_3"]];
+	[newFirmware setIpv4PrimaryDNS_AP3_4:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4PrimaryDNS_AP3_4"]];
+	[newFirmware setIpv4SecondaryDNS_AP3_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4SecondaryDNS_AP3_1"]];
+	[newFirmware setIpv4SecondaryDNS_AP3_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4SecondaryDNS_AP3_2"]];
+	[newFirmware setIpv4SecondaryDNS_AP3_3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4SecondaryDNS_AP3_3"]];
+	[newFirmware setIpv4SecondaryDNS_AP3_4:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4SecondaryDNS_AP3_4"]];
+	[newFirmware setSubnetMask_AP3:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_SubnetMask_AP3"]];
+	
+	//[newFirmware setConsoleType:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_ConsoleType"]];
 	[newFirmware setNickname:[[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_Nickname"]];
 	[newFirmware setMessage:[[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_Message"]];
 	[newFirmware setFavoriteColor:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_FavoriteColor"]];
 	[newFirmware setBirthday:[[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_Birthday"]];
 	[newFirmware setLanguage:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_Language"]];
+	//[newFirmware setBacklightLevel:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_BacklightLevel"]];
+	
+	[prefWindowDelegate updateFirmwareMACAddressString:nil];
+	[prefWindowDelegate updateSubnetMaskString_AP1:nil];
+	[prefWindowDelegate updateSubnetMaskString_AP2:nil];
+	[prefWindowDelegate updateSubnetMaskString_AP3:nil];
 	
 	[newFirmware update];
 	[emuControl setCdsFirmware:newFirmware];
