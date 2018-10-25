@@ -2238,7 +2238,7 @@ static void GraphicsSettingsDialog() {
 #ifdef HAVE_OPENGL
 	// OpenGL Multisample
 	wMultisample = gtk_check_button_new_with_label("Multisample Antialiasing (OpenGL)");
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wMultisample), CommonSettings.GFX3D_Renderer_Multisample);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wMultisample), (CommonSettings.GFX3D_Renderer_MultisampleSize > 0) ? TRUE : FALSE);
 	gtk_table_attach(GTK_TABLE(wTable), wMultisample, 1, 2, 2, 3,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 10, 0);
@@ -2309,7 +2309,8 @@ static void GraphicsSettingsDialog() {
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
 		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wHCInterpolate));
 #ifdef HAVE_OPENGL
-		CommonSettings.GFX3D_Renderer_Multisample = config.multisampling = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wMultisample));
+		config.multisampling = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wMultisample));
+		CommonSettings.GFX3D_Renderer_MultisampleSize = (config.multisampling) ? 4 : 0;
 #endif
     }
     // End: OK Response Block
@@ -3411,7 +3412,7 @@ common_gtk_main( class configured_features *my_config)
 	}
 
     CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation;
-    CommonSettings.GFX3D_Renderer_Multisample = config.multisampling;
+	CommonSettings.GFX3D_Renderer_MultisampleSize = (config.multisampling) ? 4 : 0;
     CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize;
     CommonSettings.GFX3D_Renderer_TextureScalingFactor = (config.textureUpscale == 1 ||
     														config.textureUpscale == 2 ||
