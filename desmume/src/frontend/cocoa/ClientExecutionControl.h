@@ -97,7 +97,6 @@ struct ClientExecutionControlSettings
 	
 	int wifiEmulationMode;
 	int wifiBridgeDeviceIndex;
-	uint32_t wifiIP4Address;
 	
 	bool enableCheats;
 	
@@ -311,8 +310,7 @@ public:
 	int GetWifiBridgeDeviceIndex();
 	void SetWifiBridgeDeviceIndex(int wifiBridgeDeviceIndex);
 	
-	uint32_t GetWifiIP4Address();
-	void SetWifiIP4Address(uint32_t ip4Address);
+	uint8_t* GetCurrentSessionMACAddress();
 	
 	bool GetEnableCheats();
 	void SetEnableCheats(bool enable);

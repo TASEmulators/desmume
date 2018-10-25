@@ -601,22 +601,9 @@ void ClientExecutionControl::SetWifiBridgeDeviceIndex(int wifiBridgeDeviceIndex)
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 }
 
-uint32_t ClientExecutionControl::GetWifiIP4Address()
+uint8_t* ClientExecutionControl::GetCurrentSessionMACAddress()
 {
-	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
-	const uint32_t ip4Address = this->_settingsPending.wifiIP4Address;
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
-	
-	return ip4Address;
-}
-
-void ClientExecutionControl::SetWifiIP4Address(uint32_t ip4Address)
-{
-	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
-	this->_settingsPending.wifiIP4Address = ip4Address;
-	
-	this->_newSettingsPendingOnReset = true;
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	return (uint8_t *)FW_Mac;
 }
 
 bool ClientExecutionControl::GetEnableCheats()
@@ -974,7 +961,6 @@ void ClientExecutionControl::ApplySettingsOnReset()
 		
 		this->_settingsApplied.wifiEmulationMode			= this->_settingsPending.wifiEmulationMode;
 		this->_settingsApplied.wifiBridgeDeviceIndex		= this->_settingsPending.wifiBridgeDeviceIndex;
-		this->_settingsApplied.wifiIP4Address				= this->_settingsPending.wifiIP4Address;
 		
 		this->_settingsApplied.cpuEmulationEngineName		= this->_settingsPending.cpuEmulationEngineName;
 		this->_settingsApplied.slot1DeviceName				= this->_settingsPending.slot1DeviceName;

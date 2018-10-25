@@ -239,7 +239,7 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore setCdsFirmware:theFirmware];
-	[cdsCore setFirmwareMACAddressSelectionString:NULL];
+	[cdsCore updateFirmwareMACAddressString];
 	[firmwarePanelController setContent:theFirmware];
 	
 	[cdsFirmware release];
@@ -1704,7 +1704,6 @@
 	[self pauseCore];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore execControl]->SetWifiIP4Address([CocoaDSUtil hostIP4AddressAsUInt32]);
 	[cdsCore execControl]->ApplySettingsOnReset();
 	[cdsCore updateSlot1DeviceStatus];
 	[self writeDefaultsSlot1Settings:nil];
@@ -1856,8 +1855,8 @@
 		[[windowController window] displayIfNeeded];
 	}
 	
-	[cdsCore execControl]->SetWifiIP4Address([CocoaDSUtil hostIP4AddressAsUInt32]);
 	[cdsCore execControl]->ApplySettingsOnReset();
+	[cdsCore updateCurrentSessionMACAddressString:YES];
 	[cdsCore setMasterExecute:YES];
 	
 	// After the ROM loading is complete, send an execute message to the Cocoa DS per
@@ -1941,6 +1940,7 @@
 	}
 	
 	[cdsCore setSlot1StatusText:NSSTRING_STATUS_EMULATION_NOT_RUNNING];
+	[cdsCore updateCurrentSessionMACAddressString:NO];
 	[[cdsCore cdsController] reset];
 	
 	result = YES;
@@ -2292,6 +2292,7 @@
 	[slot2WindowDelegate setAutoSelectedDeviceText:[[slot2WindowDelegate deviceManager] autoSelectedDeviceName]];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore updateCurrentSessionMACAddressString:NO];
 	[screenshotCaptureToolDelegate setSharedData:[[cdsCore cdsGPU] sharedData]];
 	[avCaptureToolDelegate setSharedData:[[cdsCore cdsGPU] sharedData]];
 	[self fillOpenGLMSAAMenu];

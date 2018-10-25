@@ -34,12 +34,10 @@
 
 @synthesize bridgeDevicePopUpButton;
 
-@synthesize firmwareMACAddressString;
 @synthesize myMACAddress1String;
 @synthesize myMACAddress2String;
 @synthesize myMACAddress3String;
 @synthesize myMACAddress4String;
-@synthesize currentSessionMACAddressString;
 
 - (id)init
 {
@@ -56,8 +54,6 @@
 	const uint8_t myMAC5 = (_myMACAddressValue >> 16) & 0x000000FF;
 	const uint8_t myMAC6 = (_myMACAddressValue >> 24) & 0x000000F0;
 	
-	firmwareMACAddressString = @"Firmware  00:09:BF:FF:FF:FF";
-	currentSessionMACAddressString = @"00:09:BF:FF:FF:FF";
 	myMACAddress1String = [NSString stringWithFormat:@"My Address #1  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 1];
 	myMACAddress2String = [NSString stringWithFormat:@"My Address #2  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 2];
 	myMACAddress3String = [NSString stringWithFormat:@"My Address #3  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 3];

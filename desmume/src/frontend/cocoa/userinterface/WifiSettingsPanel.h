@@ -34,12 +34,10 @@ class ClientExecutionControl;
 	
 	NSPopUpButton *bridgeDevicePopUpButton;
 	
-	NSString *firmwareMACAddressString;
 	NSString *myMACAddress1String;
 	NSString *myMACAddress2String;
 	NSString *myMACAddress3String;
 	NSString *myMACAddress4String;
-	NSString *currentSessionMACAddressString;
 }
 
 @property (assign) ClientExecutionControl *execControl;
@@ -48,12 +46,10 @@ class ClientExecutionControl;
 @property (assign) NSInteger addressSelection;
 @property (assign) NSInteger bridgeDeviceSelection;
 
-@property (assign) NSString *firmwareMACAddressString;
 @property (assign) NSString *myMACAddress1String;
 @property (assign) NSString *myMACAddress2String;
 @property (assign) NSString *myMACAddress3String;
 @property (assign) NSString *myMACAddress4String;
-@property (assign) NSString *currentSessionMACAddressString;
 
 @property (readonly) IBOutlet NSPopUpButton *bridgeDevicePopUpButton;
 
