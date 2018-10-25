@@ -8104,7 +8104,7 @@ GPUSubsystem::GPUSubsystem()
 	_pending3DRendererID = RENDERID_NULL;
 	_needChange3DRenderer = false;
 	
-	_videoFrameCount = 0;
+	_videoFrameIndex = 0;
 	_render3DFrameCount = 0;
 	_frameNeedsFinish = false;
 	_willFrameSkip = false;
@@ -8134,6 +8134,7 @@ GPUSubsystem::GPUSubsystem()
 	_displayInfo.isDisplayEnabled[NDSDisplayID_Touch] = true;
 	
 	_displayInfo.bufferIndex = 0;
+	_displayInfo.sequenceNumber = 0;
 	_displayInfo.masterNativeBuffer = _masterFramebuffer;
 	_displayInfo.masterCustomBuffer = (u8 *)_masterFramebuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * _displayInfo.pixelBytes);
 	
@@ -8205,12 +8206,12 @@ GPUSubsystem::~GPUSubsystem()
 
 void GPUSubsystem::_UpdateFPSRender3D()
 {
-	this->_videoFrameCount++;
-	if (this->_videoFrameCount == 60)
+	this->_videoFrameIndex++;
+	if (this->_videoFrameIndex == 60)
 	{
 		this->_render3DFrameCount = gfx3d.render3DFrameCount;
 		gfx3d.render3DFrameCount = 0;
-		this->_videoFrameCount = 0;
+		this->_videoFrameIndex = 0;
 	}
 }
 
@@ -8232,7 +8233,7 @@ void GPUSubsystem::Reset()
 	}
 	
 	this->_willFrameSkip = false;
-	this->_videoFrameCount = 0;
+	this->_videoFrameIndex = 0;
 	this->_render3DFrameCount = 0;
 	this->_backlightIntensityTotal[NDSDisplayID_Main]  = 0.0f;
 	this->_backlightIntensityTotal[NDSDisplayID_Touch] = 0.0f;
@@ -8290,6 +8291,7 @@ void GPUSubsystem::ForceFrameStop()
 	if (this->_frameNeedsFinish)
 	{
 		this->_frameNeedsFinish = false;
+		this->_displayInfo.sequenceNumber++;
 		this->_event->DidFrameEnd(this->_willFrameSkip, this->_displayInfo);
 	}
 }
@@ -9009,6 +9011,7 @@ void GPUSubsystem::RenderLine(const size_t l)
 		if (this->_frameNeedsFinish)
 		{
 			this->_frameNeedsFinish = false;
+			this->_displayInfo.sequenceNumber++;
 			this->_event->DidFrameEnd(this->_willFrameSkip, this->_displayInfo);
 		}
 	}

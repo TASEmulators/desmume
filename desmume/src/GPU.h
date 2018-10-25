@@ -1156,7 +1156,10 @@ typedef struct
 	
 	
 	// Frame render state information. These fields will change per frame, depending on how each display was rendered.
-	u8 bufferIndex;								// Index of this frame's buffer set.
+	u8 bufferIndex;								// Index of a specific framebuffer page for the GPU emulation to write data into.
+												// Indexing starts at 0, and must be less than framebufferPageCount.
+												// A specific index can be chosen at the DidFrameBegin event.
+	size_t sequenceNumber;						// A unique number assigned to each frame that increments for each DidFrameEnd event. Never resets.
 	
 	void *masterNativeBuffer;					// Pointer to the head of the master native buffer.
 	void *masterCustomBuffer;					// Pointer to the head of the master custom buffer.
@@ -1765,7 +1768,7 @@ private:
 	int _pending3DRendererID;
 	bool _needChange3DRenderer;
 	
-	u32 _videoFrameCount;			// Internal variable that increments when a video frame is completed. Resets every 60 video frames.
+	u32 _videoFrameIndex;			// Increments whenever a video frame is completed. Resets every 60 video frames.
 	u32 _render3DFrameCount;		// The current 3D rendering frame count, saved to this variable once every 60 video frames.
 	bool _frameNeedsFinish;
 	bool _willFrameSkip;

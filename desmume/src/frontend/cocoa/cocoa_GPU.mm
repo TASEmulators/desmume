@@ -1235,24 +1235,6 @@ public:
 		}
 	}
 	
-	// As a last resort, search for any buffer that is not currently writing, and then force wait
-	// on its corresponding semaphore.
-	if (stillSearching)
-	{
-		selectedIndex = (selectedIndex + 1) % pageCount;
-		for (; selectedIndex != currentIndex; selectedIndex = (selectedIndex + 1) % pageCount)
-		{
-			if ( ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Idle) ||
-				 ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Ready) ||
-				 ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Reading) ||
-				 ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_PendingRead) )
-			{
-				stillSearching = false;
-				break;
-			}
-		}
-	}
-	
 	return selectedIndex;
 }
 

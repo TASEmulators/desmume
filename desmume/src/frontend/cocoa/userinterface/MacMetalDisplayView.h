@@ -42,17 +42,23 @@ class MacMetalFetchObject;
 class MacMetalDisplayPresenter;
 class MacMetalDisplayView;
 
-union MetalTexturePair
+struct MetalTexturePair
 {
-	id<MTLTexture> tex[2];
+	uint8_t bufferIndex;
+	size_t fetchSequenceNumber;
 	
-	struct
+	union
 	{
-		id<MTLTexture> main;
-		id<MTLTexture> touch;
+		id<MTLTexture> tex[2];
+		
+		struct
+		{
+			id<MTLTexture> main;
+			id<MTLTexture> touch;
+		};
 	};
 };
-typedef union MetalTexturePair MetalTexturePair;
+typedef struct MetalTexturePair MetalTexturePair;
 
 struct MetalRenderFrameInfo
 {
@@ -116,7 +122,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	
 	MetalTexturePair texPairFetch;
 	id<MTLBlitCommandEncoder> bceFetch;
-	BOOL willFetchImmediate;
 	
 	id<MTLTexture> texLQ2xLUT;
 	id<MTLTexture> texHQ2xLUT;
@@ -124,15 +129,11 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLTexture> texHQ4xLUT;
 	id<MTLTexture> texCurrentHQnxLUT;
 	
-	MTLResourceOptions preferredResourceStorageMode;
-	
 	MTLSize _fetchThreadsPerGroup;
 	MTLSize _fetchThreadGroupsPerGridNative;
 	MTLSize _fetchThreadGroupsPerGridCustom;
 	MTLSize deposterizeThreadsPerGroup;
 	MTLSize deposterizeThreadGroupsPerGrid;
-	
-	BOOL _isSharedBufferTextureSupported;
 }
 
 @property (readonly, nonatomic) id<MTLDevice> device;
@@ -149,7 +150,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 
 @property (assign) MetalTexturePair texPairFetch;
 @property (assign) id<MTLBlitCommandEncoder> bceFetch;
-@property (assign) BOOL willFetchImmediate;
 
 @property (readonly, nonatomic) id<MTLTexture> texLQ2xLUT;
 @property (readonly, nonatomic) id<MTLTexture> texHQ2xLUT;
@@ -163,7 +163,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) MTLSize deposterizeThreadGroupsPerGrid;
 
 - (void) setFetchBuffersWithDisplayInfo:(const NDSDisplayInfo &)dispInfo;
-- (MetalTexturePair) setFetchTextureBindingsAtIndex:(const u8)index commandBuffer:(id<MTLCommandBuffer>)cb;
+- (MetalTexturePair) setFetchTextureBindingsAtIndex:(const uint8_t)index commandBuffer:(id<MTLCommandBuffer>)cb;
 - (void) fetchFromBufferIndex:(const u8)index;
 - (void) fetchNativeDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex blitCommandEncoder:(id<MTLBlitCommandEncoder>)bce;
 - (void) fetchCustomDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex blitCommandEncoder:(id<MTLBlitCommandEncoder>)bce;
@@ -265,6 +265,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MacMetalDisplayPresenterObject *presenterObject;
 	dispatch_semaphore_t _semDrawable;
 	id<CAMetalDrawable> layerDrawable;
+	MetalTexturePair _displayTexturePair;
+	size_t _displaySequenceNumber;
 }
 
 @property (readonly, nonatomic) MacMetalDisplayPresenterObject *presenterObject;
