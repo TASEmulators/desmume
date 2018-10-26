@@ -1864,6 +1864,9 @@ public:
 	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
 	void UpdateAverageBacklightIntensityTotal();
 	void ClearWithColor(const u16 colorBGRA5551);
+	
+	void SaveState(EMUFILE &os);
+	bool LoadState(EMUFILE &is, int size);
 };
 
 class GPUClientFetchObject

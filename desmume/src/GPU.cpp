@@ -1151,72 +1151,12 @@ FORCEINLINE void rot_BMP_map(const s32 auxX, const s32 auxY, const int lg, const
 
 void gpu_savestate(EMUFILE &os)
 {
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	const GPUEngineA *mainEngine = GPU->GetEngineMain();
-	const GPUEngineB *subEngine = GPU->GetEngineSub();
-	
-	//version
-	os.write_32LE(1);
-	
-	os.fwrite((u8 *)dispInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
-	
-	os.write_32LE(mainEngine->savedBG2X.value);
-	os.write_32LE(mainEngine->savedBG2Y.value);
-	os.write_32LE(mainEngine->savedBG3X.value);
-	os.write_32LE(mainEngine->savedBG3Y.value);
-	os.write_32LE(subEngine->savedBG2X.value);
-	os.write_32LE(subEngine->savedBG2Y.value);
-	os.write_32LE(subEngine->savedBG3X.value);
-	os.write_32LE(subEngine->savedBG3Y.value);
+	GPU->SaveState(os);
 }
 
 bool gpu_loadstate(EMUFILE &is, int size)
 {
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	GPUEngineA *mainEngine = GPU->GetEngineMain();
-	GPUEngineB *subEngine = GPU->GetEngineSub();
-	
-	//read version
-	u32 version;
-	
-	//sigh.. shouldve used a new version number
-	if (size == GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2)
-	{
-		version = 0;
-	}
-	else if (size == 0x30024)
-	{
-		is.read_32LE(version);
-		version = 1;
-	}
-	else
-	{
-		if (is.read_32LE(version) != 1) return false;
-	}
-	
-	if (version > 1) return false;
-	
-	is.fread((u8 *)dispInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
-	
-	if (version == 1)
-	{
-		is.read_32LE(mainEngine->savedBG2X.value);
-		is.read_32LE(mainEngine->savedBG2Y.value);
-		is.read_32LE(mainEngine->savedBG3X.value);
-		is.read_32LE(mainEngine->savedBG3Y.value);
-		is.read_32LE(subEngine->savedBG2X.value);
-		is.read_32LE(subEngine->savedBG2Y.value);
-		is.read_32LE(subEngine->savedBG3X.value);
-		is.read_32LE(subEngine->savedBG3Y.value);
-		//removed per nitsuja feedback. anyway, this same thing will happen almost immediately in gpu line=0
-		//mainEngine->refreshAffineStartRegs(-1,-1);
-		//subEngine->refreshAffineStartRegs(-1,-1);
-	}
-	
-	mainEngine->ParseAllRegisters();
-	subEngine->ParseAllRegisters();
-	
-	return !is.fail();
+	return GPU->LoadState(is, size);
 }
 
 /*****************************************************************************/
@@ -9079,6 +9019,96 @@ void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
 		default:
 			break;
 	}
+}
+
+void GPUSubsystem::SaveState(EMUFILE &os)
+{
+	// Savestate chunk version
+	os.write_32LE(2);
+	
+	// Version 0
+	os.fwrite((u8 *)this->_displayInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
+	
+	// Version 1
+	os.write_32LE(this->_engineMain->savedBG2X.value);
+	os.write_32LE(this->_engineMain->savedBG2Y.value);
+	os.write_32LE(this->_engineMain->savedBG3X.value);
+	os.write_32LE(this->_engineMain->savedBG3Y.value);
+	os.write_32LE(this->_engineSub->savedBG2X.value);
+	os.write_32LE(this->_engineSub->savedBG2Y.value);
+	os.write_32LE(this->_engineSub->savedBG3X.value);
+	os.write_32LE(this->_engineSub->savedBG3Y.value);
+	
+	// Version 2
+	os.write_floatLE(_backlightIntensityTotal[0]);
+	os.write_floatLE(_backlightIntensityTotal[1]);
+}
+
+bool GPUSubsystem::LoadState(EMUFILE &is, int size)
+{
+	u32 version;
+	
+	//sigh.. shouldve used a new version number
+	if (size == GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2)
+	{
+		version = 0;
+	}
+	else if (size == 0x30024)
+	{
+		is.read_32LE(version);
+		version = 1;
+	}
+	else
+	{
+		if (is.read_32LE(version) < 1) return false;
+	}
+	
+	if (version > 2) return false;
+	
+	// Version 0
+	is.fread((u8 *)this->_displayInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
+	
+	// Version 1
+	if (version >= 1)
+	{
+		is.read_32LE(this->_engineMain->savedBG2X.value);
+		is.read_32LE(this->_engineMain->savedBG2Y.value);
+		is.read_32LE(this->_engineMain->savedBG3X.value);
+		is.read_32LE(this->_engineMain->savedBG3Y.value);
+		is.read_32LE(this->_engineSub->savedBG2X.value);
+		is.read_32LE(this->_engineSub->savedBG2Y.value);
+		is.read_32LE(this->_engineSub->savedBG3X.value);
+		is.read_32LE(this->_engineSub->savedBG3Y.value);
+		//removed per nitsuja feedback. anyway, this same thing will happen almost immediately in gpu line=0
+		//this->_engineMain->refreshAffineStartRegs(-1,-1);
+		//this->_engineSub->refreshAffineStartRegs(-1,-1);
+	}
+	
+	// Version 2
+	if (version >= 2)
+	{
+		is.read_floatLE(_backlightIntensityTotal[0]);
+		is.read_floatLE(_backlightIntensityTotal[1]);
+	}
+	else
+	{
+		// UpdateAverageBacklightIntensityTotal() adds to _backlightIntensityTotal, and is called 263 times per frame.
+		// Of these, 71 calls are after _displayInfo.backlightIntensity is set.
+		// This emulates those calls as a way of guessing what the backlight values were in a savestate which doesn't contain that information.
+		this->_backlightIntensityTotal[0] = 0.0f;
+		this->_backlightIntensityTotal[1] = 0.0f;
+		this->UpdateAverageBacklightIntensityTotal();
+		this->_displayInfo.backlightIntensity[0] = this->_backlightIntensityTotal[0];
+		this->_displayInfo.backlightIntensity[1] = this->_backlightIntensityTotal[1];
+		this->_backlightIntensityTotal[0] *= 71;
+		this->_backlightIntensityTotal[1] *= 71;
+	}
+	
+	// Parse all GPU engine related registers based on a previously read MMU savestate chunk.
+	this->_engineMain->ParseAllRegisters();
+	this->_engineSub->ParseAllRegisters();
+	
+	return !is.fail();
 }
 
 void GPUEventHandlerDefault::DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut)

@@ -1231,7 +1231,7 @@ struct Sequencer
 		if (!divider.load(is)) return false;
 		if (!sqrtunit.load(is)) return false;
 		if (!gxfifo.load(is)) return false;
-		if (!readslot1.load(is)) return false;
+		if (version >= 4) if (!readslot1.load(is)) return false;
 		if (version >= 1) if(!wifi.load(is)) return false;
 #define LOAD(I,X,Y) if(!I##_##X##_##Y .load(is)) return false;
 		LOAD(timer,0,0); LOAD(timer,0,1); LOAD(timer,0,2); LOAD(timer,0,3); 
@@ -1762,7 +1762,7 @@ static bool loadUserInput(EMUFILE &is, int version);
 void nds_savestate(EMUFILE &os)
 {
 	//version
-	os.write_32LE(3);
+	os.write_32LE(4);
 
 	sequencer.save(os);
 
@@ -1782,7 +1782,13 @@ bool nds_loadstate(EMUFILE &is, int size)
 	u32 version;
 	if (is.read_32LE(version) != 1) return false;
 
-	if (version > 3) return false;
+	if (version > 4) return false;
+	// hacky fix; commit 281268e added to the saved info but didn't update version
+	if (version == 3)
+	{
+		if (size == 497)
+			version = 4;
+	}
 
 	bool temp = true;
 	temp &= sequencer.load(is, version);

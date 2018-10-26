@@ -1095,6 +1095,7 @@ static bool ReadStateChunks(EMUFILE &is, s32 totalsize)
 {
 	bool ret = true;
 	bool haveInfo = false;
+	bool chunkError = false;
 	
 	s64 save_time = 0;
 	u32 romsize = 0;
@@ -1122,6 +1123,7 @@ static bool ReadStateChunks(EMUFILE &is, s32 totalsize)
 		if (!is.read_32LE(t))  { ret=false; break; }
 		if (t == 0xFFFFFFFF) break;
 		if (!is.read_32LE(size))  { ret=false; break; }
+		u32 endPos = is.ftell() + size;
 		
 		switch(t)
 		{
@@ -1169,9 +1171,20 @@ static bool ReadStateChunks(EMUFILE &is, s32 totalsize)
 			default:
 				return false;
 		}
+		
+		if (is.ftell() != endPos)
+		{
+			// Should we just go ahead and return false?
+			chunkError = true;
+			is.fseek(endPos, SEEK_SET);
+		}
+		
 		if(!ret)
 			return false;
 	}
+	
+	if (chunkError)
+		msgbox->warn("There was an error loading the savestate. Your game session is probably corrupt now.");
 
 	if (haveInfo)
 	{
