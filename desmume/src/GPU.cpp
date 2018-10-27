@@ -118,14 +118,14 @@ static FORCEINLINE void CopyLinesForVerticalCount(void *__restrict dstLineHead, 
 }
 
 template <s32 INTEGERSCALEHINT, bool SCALEVERTICAL, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
-static FORCEINLINE void CopyLineExpand_C(void *__restrict dst, const void *__restrict src, size_t dstLength, size_t dstLineCount)
+static FORCEINLINE void CopyLineExpand_C(void *__restrict dst, const void *__restrict src, size_t dstWidth, size_t dstLineCount)
 {
 	if (INTEGERSCALEHINT == 0)
 	{
 #if defined(MSB_FIRST)
 		if (NEEDENDIANSWAP && (ELEMENTSIZE != 1))
 		{
-			for (size_t i = 0; i < dstLength; i++)
+			for (size_t i = 0; i < dstWidth; i++)
 			{
 				if (ELEMENTSIZE == 2)
 				{
@@ -140,7 +140,7 @@ static FORCEINLINE void CopyLineExpand_C(void *__restrict dst, const void *__res
 		else
 #endif
 		{
-			memcpy(dst, src, dstLength * ELEMENTSIZE);
+			memcpy(dst, src, dstWidth * ELEMENTSIZE);
 		}
 	}
 	else if (INTEGERSCALEHINT == 1)
@@ -239,18 +239,18 @@ static FORCEINLINE void CopyLineExpand_C(void *__restrict dst, const void *__res
 		
 		if (SCALEVERTICAL)
 		{
-			CopyLinesForVerticalCount<ELEMENTSIZE>(dst, dstLength, dstLineCount);
+			CopyLinesForVerticalCount<ELEMENTSIZE>(dst, dstWidth, dstLineCount);
 		}
 	}
 }
 
 #ifdef ENABLE_SSE2
 template <s32 INTEGERSCALEHINT, bool SCALEVERTICAL, size_t ELEMENTSIZE>
-static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__restrict src, size_t dstLength, size_t dstLineCount)
+static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__restrict src, size_t dstWidth, size_t dstLineCount)
 {
 	if (INTEGERSCALEHINT == 0)
 	{
-		memcpy(dst, src, dstLength * ELEMENTSIZE);
+		memcpy(dst, src, dstWidth * ELEMENTSIZE);
 	}
 	else if (INTEGERSCALEHINT == 1)
 	{
@@ -612,7 +612,7 @@ static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__
 #ifdef ENABLE_SSSE3
 	else if (INTEGERSCALEHINT >= 0)
 	{
-		const size_t scale = dstLength / GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		const size_t scale = dstWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH;
 		
 		for (size_t srcX = 0, dstX = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH; )
 		{
@@ -659,7 +659,7 @@ static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__
 		
 		if (SCALEVERTICAL)
 		{
-			CopyLinesForVerticalCount<ELEMENTSIZE>(dst, dstLength, dstLineCount);
+			CopyLinesForVerticalCount<ELEMENTSIZE>(dst, dstWidth, dstLineCount);
 		}
 	}
 #endif
@@ -686,23 +686,23 @@ static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__
 		
 		if (SCALEVERTICAL)
 		{
-			CopyLinesForVerticalCount<ELEMENTSIZE>(dst, dstLength, dstLineCount);
+			CopyLinesForVerticalCount<ELEMENTSIZE>(dst, dstWidth, dstLineCount);
 		}
 	}
 }
 #endif
 
 template <s32 INTEGERSCALEHINT, bool SCALEVERTICAL, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
-static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restrict src, size_t dstLength, size_t dstLineCount)
+static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restrict src, size_t dstWidth, size_t dstLineCount)
 {
 	// Use INTEGERSCALEHINT to provide a hint to CopyLineExpand() for the fastest execution path.
 	// INTEGERSCALEHINT represents the scaling value of the framebuffer width, and is always
 	// assumed to be a positive integer.
 	//
 	// Use cases:
-	// - Passing a value of 0 causes CopyLineExpand() to perform a simple copy, using dstLength
-	//   to copy dstLength elements.
-	// - Passing a value of 1 causes CopyLineExpand() to perform a simple copy, ignoring dstLength
+	// - Passing a value of 0 causes CopyLineExpand() to perform a simple copy, using dstWidth
+	//   to copy dstWidth elements.
+	// - Passing a value of 1 causes CopyLineExpand() to perform a simple copy, ignoring dstWidth
 	//   and always copying GPU_FRAMEBUFFER_NATIVE_WIDTH elements.
 	// - Passing any negative value causes CopyLineExpand() to assume that the framebuffer width
 	//   is NOT scaled by an integer value, and will therefore take the safest (but slowest)
@@ -711,21 +711,21 @@ static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restr
 	//   using the integer scaling value.
 	
 #ifdef ENABLE_SSE2
-	CopyLineExpand_SSE2<INTEGERSCALEHINT, SCALEVERTICAL, ELEMENTSIZE>(dst, src, dstLength, dstLineCount);
+	CopyLineExpand_SSE2<INTEGERSCALEHINT, SCALEVERTICAL, ELEMENTSIZE>(dst, src, dstWidth, dstLineCount);
 #else
-	CopyLineExpand_C<INTEGERSCALEHINT, SCALEVERTICAL, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, dstLength, dstLineCount);
+	CopyLineExpand_C<INTEGERSCALEHINT, SCALEVERTICAL, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, dstWidth, dstLineCount);
 #endif
 }
 
 template <s32 INTEGERSCALEHINT, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
-static FORCEINLINE void CopyLineReduce_C(void *__restrict dst, const void *__restrict src, size_t srcLength)
+static FORCEINLINE void CopyLineReduce_C(void *__restrict dst, const void *__restrict src, size_t srcWidth)
 {
 	if (INTEGERSCALEHINT == 0)
 	{
 #if defined(MSB_FIRST)
 		if (NEEDENDIANSWAP && (ELEMENTSIZE != 1))
 		{
-			for (size_t i = 0; i < srcLength; i++)
+			for (size_t i = 0; i < srcWidth; i++)
 			{
 				if (ELEMENTSIZE == 2)
 				{
@@ -740,7 +740,7 @@ static FORCEINLINE void CopyLineReduce_C(void *__restrict dst, const void *__res
 		else
 #endif
 		{
-			memcpy(dst, src, srcLength * ELEMENTSIZE);
+			memcpy(dst, src, srcWidth * ELEMENTSIZE);
 		}
 	}
 	else if (INTEGERSCALEHINT == 1)
@@ -806,12 +806,12 @@ static FORCEINLINE void CopyLineReduce_C(void *__restrict dst, const void *__res
 	}
 }
 
-template <s32 INTEGERSCALEHINT, bool SCALEVERTICAL, size_t ELEMENTSIZE>
-static FORCEINLINE void CopyLineReduce_SSE2(void *__restrict dst, const void *__restrict src, size_t srcLength, size_t srcLineCount)
+template <s32 INTEGERSCALEHINT, size_t ELEMENTSIZE>
+static FORCEINLINE void CopyLineReduce_SSE2(void *__restrict dst, const void *__restrict src, size_t srcWidth)
 {
 	if (INTEGERSCALEHINT == 0)
 	{
-		memcpy(dst, src, srcLength * ELEMENTSIZE);
+		memcpy(dst, src, srcWidth * ELEMENTSIZE);
 	}
 	else if (INTEGERSCALEHINT == 1)
 	{
@@ -1071,7 +1071,7 @@ static FORCEINLINE void CopyLineReduce_SSE2(void *__restrict dst, const void *__
 		{
 			if (ELEMENTSIZE == 1)
 			{
-				( (u8 *)dst)[i] = ((u8 *)src)[_gpuDstPitchIndex[i]];
+				( (u8 *)dst)[i] = ( (u8 *)src)[_gpuDstPitchIndex[i]];
 			}
 			else if (ELEMENTSIZE == 2)
 			{
@@ -1086,16 +1086,16 @@ static FORCEINLINE void CopyLineReduce_SSE2(void *__restrict dst, const void *__
 }
 
 template <s32 INTEGERSCALEHINT, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
-static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restrict src, size_t srcLength)
+static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restrict src, size_t srcWidth)
 {
 	// Use INTEGERSCALEHINT to provide a hint to CopyLineReduce() for the fastest execution path.
 	// INTEGERSCALEHINT represents the scaling value of the source framebuffer width, and is always
 	// assumed to be a positive integer.
 	//
 	// Use cases:
-	// - Passing a value of 0 causes CopyLineReduce() to perform a simple copy, using srcLength
-	//   to copy srcLength elements.
-	// - Passing a value of 1 causes CopyLineReduce() to perform a simple copy, ignoring srcLength
+	// - Passing a value of 0 causes CopyLineReduce() to perform a simple copy, using srcWidth
+	//   to copy srcWidth elements.
+	// - Passing a value of 1 causes CopyLineReduce() to perform a simple copy, ignoring srcWidth
 	//   and always copying GPU_FRAMEBUFFER_NATIVE_WIDTH elements.
 	// - Passing any negative value causes CopyLineReduce() to assume that the framebuffer width
 	//   is NOT scaled by an integer value, and will therefore take the safest (but slowest)
@@ -1104,9 +1104,9 @@ static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restr
 	//   using the integer scaling value.
 	
 #ifdef ENABLE_SSE2
-	CopyLineReduce_SSE2<INTEGERSCALEHINT, ELEMENTSIZE>(dst, src, srcLength);
+	CopyLineReduce_SSE2<INTEGERSCALEHINT, ELEMENTSIZE>(dst, src, srcWidth);
 #else
-	CopyLineReduce_C<INTEGERSCALEHINT, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, srcLength);
+	CopyLineReduce_C<INTEGERSCALEHINT, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, srcWidth);
 #endif
 }
 
@@ -9021,13 +9021,128 @@ void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
 	}
 }
 
+u8* GPUSubsystem::_DownscaleAndConvertForSavestate(const NDSDisplayID displayID, void *__restrict intermediateBuffer)
+{
+	u8 *dstBuffer = NULL;
+	bool isIntermediateBufferMissing = false; // Flag to check if intermediateBuffer is NULL, but only if it's actually needed.
+	
+	if ( (this->_displayInfo.colorFormat == NDSColorFormat_BGR555_Rev) && !this->_displayInfo.didPerformCustomRender[displayID] )
+	{
+		dstBuffer = (u8 *)this->_displayInfo.nativeBuffer[displayID];
+	}
+	else
+	{
+		if (this->_displayInfo.isDisplayEnabled[displayID])
+		{
+			if (this->_displayInfo.didPerformCustomRender[displayID])
+			{
+				if (this->_displayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+				{
+					const u16 *__restrict src = (u16 *__restrict)this->_displayInfo.customBuffer[displayID];
+					u16 *__restrict dst = (u16 *__restrict)this->_displayInfo.nativeBuffer[displayID];
+					
+					for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
+					{
+						CopyLineReduce<-1, false, 2>(dst, src, this->_displayInfo.customWidth);
+						src += _gpuDstLineCount[l] * this->_displayInfo.customWidth;
+						dst += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+					}
+				}
+				else
+				{
+					isIntermediateBufferMissing = (intermediateBuffer == NULL);
+					if (!isIntermediateBufferMissing)
+					{
+						const u32 *src = (u32 *)this->_displayInfo.customBuffer[displayID];
+						u32 *dst = (u32 *)intermediateBuffer;
+						
+						for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
+						{
+							CopyLineReduce<-1, false, 4>(dst, src, this->_displayInfo.customWidth);
+							src += _gpuDstLineCount[l] * this->_displayInfo.customWidth;
+							dst += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+						}
+						
+						switch (this->_displayInfo.colorFormat)
+						{
+							case NDSColorFormat_BGR666_Rev:
+								ColorspaceConvertBuffer6665To5551<false, false>((const u32 *__restrict)intermediateBuffer, (u16 *__restrict)this->_displayInfo.nativeBuffer[displayID], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+								break;
+								
+							case NDSColorFormat_BGR888_Rev:
+								ColorspaceConvertBuffer8888To5551<false, false>((const u32 *__restrict)intermediateBuffer, (u16 *__restrict)this->_displayInfo.nativeBuffer[displayID], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+								break;
+								
+							default:
+								break;
+						}
+					}
+				}
+				
+				dstBuffer = (u8 *)this->_displayInfo.nativeBuffer[displayID];
+			}
+			else
+			{
+				isIntermediateBufferMissing = (intermediateBuffer == NULL);
+				if (!isIntermediateBufferMissing)
+				{
+					switch (this->_displayInfo.colorFormat)
+					{
+						case NDSColorFormat_BGR666_Rev:
+							ColorspaceConvertBuffer6665To5551<false, false>((const u32 *__restrict)this->_displayInfo.nativeBuffer[displayID], (u16 *__restrict)intermediateBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+							break;
+							
+						case NDSColorFormat_BGR888_Rev:
+							ColorspaceConvertBuffer8888To5551<false, false>((const u32 *__restrict)this->_displayInfo.nativeBuffer[displayID], (u16 *__restrict)intermediateBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+							break;
+							
+						default:
+							break;
+					}
+					
+					dstBuffer = (u8 *)intermediateBuffer;
+				}
+				else
+				{
+					dstBuffer = (u8 *)this->_displayInfo.nativeBuffer[displayID];
+				}
+			}
+		}
+		
+		if (!this->_displayInfo.isDisplayEnabled[displayID] || isIntermediateBufferMissing)
+		{
+			memset(this->_displayInfo.nativeBuffer[displayID], 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+			dstBuffer = (u8 *)this->_displayInfo.nativeBuffer[displayID];
+		}
+	}
+	
+	return dstBuffer;
+}
+
 void GPUSubsystem::SaveState(EMUFILE &os)
 {
 	// Savestate chunk version
 	os.write_32LE(2);
 	
 	// Version 0
-	os.fwrite((u8 *)this->_displayInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
+	u8 *__restrict intermediateBuffer = NULL;
+	u8 *savestateColorBuffer = NULL;
+	
+	if ( (this->_displayInfo.colorFormat != NDSColorFormat_BGR555_Rev) &&
+		 (this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main] || this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch]) )
+	{
+		intermediateBuffer = (u8 *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u32));
+	}
+	
+	// Downscale and color convert the display framebuffers.
+	savestateColorBuffer = this->_DownscaleAndConvertForSavestate(NDSDisplayID_Main, intermediateBuffer);
+	os.fwrite(savestateColorBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+	
+	savestateColorBuffer = this->_DownscaleAndConvertForSavestate(NDSDisplayID_Touch, intermediateBuffer);
+	os.fwrite(savestateColorBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+	
+	free_aligned(intermediateBuffer);
+	intermediateBuffer = NULL;
 	
 	// Version 1
 	os.write_32LE(this->_engineMain->savedBG2X.value);
@@ -9040,8 +9155,8 @@ void GPUSubsystem::SaveState(EMUFILE &os)
 	os.write_32LE(this->_engineSub->savedBG3Y.value);
 	
 	// Version 2
-	os.write_floatLE(_backlightIntensityTotal[0]);
-	os.write_floatLE(_backlightIntensityTotal[1]);
+	os.write_floatLE(_backlightIntensityTotal[NDSDisplayID_Main]);
+	os.write_floatLE(_backlightIntensityTotal[NDSDisplayID_Touch]);
 }
 
 bool GPUSubsystem::LoadState(EMUFILE &is, int size)
@@ -9066,7 +9181,150 @@ bool GPUSubsystem::LoadState(EMUFILE &is, int size)
 	if (version > 2) return false;
 	
 	// Version 0
-	is.fread((u8 *)this->_displayInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
+	if (this->_displayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+	{
+		is.fread((u8 *)this->_displayInfo.nativeBuffer[NDSDisplayID_Main],  GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+		is.fread((u8 *)this->_displayInfo.nativeBuffer[NDSDisplayID_Touch], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+	}
+	else
+	{
+		is.fread((u8 *)this->_displayInfo.customBuffer[NDSDisplayID_Main],  GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+		is.fread((u8 *)this->_displayInfo.customBuffer[NDSDisplayID_Touch], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+		
+		switch (this->_displayInfo.colorFormat)
+		{
+			case NDSColorFormat_BGR666_Rev:
+			{
+				if (this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main])
+				{
+					ColorspaceConvertBuffer555To6665Opaque<false, false>((u16 *)this->_displayInfo.customBuffer[NDSDisplayID_Main], (u32 *)this->_displayInfo.nativeBuffer[NDSDisplayID_Main], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				}
+				else
+				{
+					memset(this->_displayInfo.nativeBuffer[NDSDisplayID_Main], 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * this->_displayInfo.pixelBytes);
+				}
+				
+				if (this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+				{
+					ColorspaceConvertBuffer555To6665Opaque<false, false>((u16 *)this->_displayInfo.customBuffer[NDSDisplayID_Touch], (u32 *)this->_displayInfo.nativeBuffer[NDSDisplayID_Touch], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				}
+				else
+				{
+					memset(this->_displayInfo.nativeBuffer[NDSDisplayID_Touch], 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * this->_displayInfo.pixelBytes);
+				}
+				break;
+			}
+				
+			case NDSColorFormat_BGR888_Rev:
+			{
+				if (this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main])
+				{
+					ColorspaceConvertBuffer555To8888Opaque<false, false>((u16 *)this->_displayInfo.customBuffer[NDSDisplayID_Main], (u32 *)this->_displayInfo.nativeBuffer[NDSDisplayID_Main], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				}
+				else
+				{
+					memset(this->_displayInfo.nativeBuffer[NDSDisplayID_Main], 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * this->_displayInfo.pixelBytes);
+				}
+				
+				if (this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+				{
+					ColorspaceConvertBuffer555To8888Opaque<false, false>((u16 *)this->_displayInfo.customBuffer[NDSDisplayID_Touch], (u32 *)this->_displayInfo.nativeBuffer[NDSDisplayID_Touch], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				}
+				else
+				{
+					memset(this->_displayInfo.nativeBuffer[NDSDisplayID_Touch], 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * this->_displayInfo.pixelBytes);
+				}
+				break;
+			}
+				
+			default:
+				break;
+		}
+	}
+	
+	if (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main])
+	{
+		if (this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main])
+		{
+			switch (this->_displayInfo.colorFormat)
+			{
+				case NDSColorFormat_BGR555_Rev:
+				{
+					const u16 *__restrict src = (u16 *__restrict)this->_displayInfo.nativeBuffer[NDSDisplayID_Main];
+					u16 *__restrict dst = (u16 *__restrict)this->_displayInfo.customBuffer[NDSDisplayID_Main];
+					
+					for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
+					{
+						CopyLineExpand<-1, true, false, 2>(dst, src, this->_displayInfo.customWidth, _gpuDstLineCount[l]);
+						src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+						dst += _gpuDstLineCount[l] * this->_displayInfo.customWidth;
+					}
+					break;
+				}
+					
+				case NDSColorFormat_BGR666_Rev:
+				case NDSColorFormat_BGR888_Rev:
+				{
+					const u32 *__restrict src = (u32 *__restrict)this->_displayInfo.nativeBuffer[NDSDisplayID_Main];
+					u32 *__restrict dst = (u32 *__restrict)this->_displayInfo.customBuffer[NDSDisplayID_Main];
+					
+					for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
+					{
+						CopyLineExpand<-1, true, false, 4>(dst, src, this->_displayInfo.customWidth, _gpuDstLineCount[l]);
+						src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+						dst += _gpuDstLineCount[l] * this->_displayInfo.customWidth;
+					}
+					break;
+				}
+			}
+		}
+		else
+		{
+			memset(this->_displayInfo.customBuffer[NDSDisplayID_Main], 0, this->_displayInfo.customWidth * this->_displayInfo.customHeight * this->_displayInfo.pixelBytes);
+		}
+	}
+	
+	if (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch])
+	{
+		if (this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+		{
+			switch (this->_displayInfo.colorFormat)
+			{
+				case NDSColorFormat_BGR555_Rev:
+				{
+					const u16 *__restrict src = (u16 *__restrict)this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
+					u16 *__restrict dst = (u16 *__restrict)this->_displayInfo.customBuffer[NDSDisplayID_Touch];
+					
+					for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
+					{
+						CopyLineExpand<-1, true, false, 2>(dst, src, this->_displayInfo.customWidth, _gpuDstLineCount[l]);
+						src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+						dst += _gpuDstLineCount[l] * this->_displayInfo.customWidth;
+					}
+					break;
+				}
+					
+				case NDSColorFormat_BGR666_Rev:
+				case NDSColorFormat_BGR888_Rev:
+				{
+					const u32 *__restrict src = (u32 *__restrict)this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
+					u32 *__restrict dst = (u32 *__restrict)this->_displayInfo.customBuffer[NDSDisplayID_Touch];
+					
+					for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
+					{
+						CopyLineExpand<-1, true, false, 4>(dst, src, this->_displayInfo.customWidth, _gpuDstLineCount[l]);
+						src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+						dst += _gpuDstLineCount[l] * this->_displayInfo.customWidth;
+					}
+					break;
+				}
+			}
+		}
+		else
+		{
+			memset(this->_displayInfo.customBuffer[NDSDisplayID_Touch], 0, this->_displayInfo.customWidth * this->_displayInfo.customHeight * this->_displayInfo.pixelBytes);
+		}
+	}
 	
 	// Version 1
 	if (version >= 1)
@@ -9087,8 +9345,10 @@ bool GPUSubsystem::LoadState(EMUFILE &is, int size)
 	// Version 2
 	if (version >= 2)
 	{
-		is.read_floatLE(_backlightIntensityTotal[0]);
-		is.read_floatLE(_backlightIntensityTotal[1]);
+		is.read_floatLE(this->_backlightIntensityTotal[NDSDisplayID_Main]);
+		is.read_floatLE(this->_backlightIntensityTotal[NDSDisplayID_Touch]);
+		this->_displayInfo.backlightIntensity[NDSDisplayID_Main]  = this->_backlightIntensityTotal[NDSDisplayID_Main]  / 71.0f;
+		this->_displayInfo.backlightIntensity[NDSDisplayID_Touch] = this->_backlightIntensityTotal[NDSDisplayID_Touch] / 71.0f;
 	}
 	else
 	{

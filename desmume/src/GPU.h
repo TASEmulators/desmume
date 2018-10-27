@@ -1784,6 +1784,8 @@ private:
 	void _UpdateFPSRender3D();
 	void _AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, size_t h, size_t pageCount);
 	
+	u8* _DownscaleAndConvertForSavestate(const NDSDisplayID displayID, void *__restrict intermediateBuffer);
+	
 public:
 	GPUSubsystem();
 	~GPUSubsystem();
