@@ -1183,6 +1183,79 @@ static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restr
 #endif
 }
 
+template <s32 INTEGERSCALEHINT, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
+static void CopyLineReduceHinted(const void *__restrict srcBuffer, const size_t srcLineIndex, const size_t srcLineWidth,
+								 void *__restrict dstBuffer, const size_t dstLineIndex)
+{
+	switch (INTEGERSCALEHINT)
+	{
+		case 0:
+		{
+			const u8 *__restrict src = (USELINEINDEX) ? (u8 *)srcBuffer + (srcLineIndex * srcLineWidth * ELEMENTSIZE) : (u8 *)srcBuffer;
+			u8 *__restrict dst = (USELINEINDEX) ? (u8 *)dstBuffer + (srcLineIndex * srcLineWidth * ELEMENTSIZE) : (u8 *)dstBuffer;
+			
+			CopyLineReduce<INTEGERSCALEHINT, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, srcLineWidth);
+			break;
+		}
+			
+		case 1:
+		{
+			const u8 *__restrict src = (USELINEINDEX) ? (u8 *)srcBuffer + (dstLineIndex * GPU_FRAMEBUFFER_NATIVE_WIDTH * ELEMENTSIZE) : (u8 *)srcBuffer;
+			u8 *__restrict dst = (USELINEINDEX) ? (u8 *)dstBuffer + (dstLineIndex * GPU_FRAMEBUFFER_NATIVE_WIDTH * ELEMENTSIZE) : (u8 *)dstBuffer;
+			
+			CopyLineReduce<INTEGERSCALEHINT, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+			break;
+		}
+			
+		default:
+		{
+			const u8 *__restrict src = (USELINEINDEX) ? (u8 *)srcBuffer + (srcLineIndex * srcLineWidth * ELEMENTSIZE) : (u8 *)srcBuffer;
+			u8 *__restrict dst = (USELINEINDEX) ? (u8 *)dstBuffer + (dstLineIndex * GPU_FRAMEBUFFER_NATIVE_WIDTH * ELEMENTSIZE) : (u8 *)dstBuffer;
+			
+			// TODO: Determine INTEGERSCALEHINT earlier in the pipeline, preferably when the framebuffer is first initialized.
+			//
+			// The implementation below is a stopgap measure for getting the faster code paths to run.
+			// However, this setup is not ideal, since the code size will greatly increase in order to
+			// include all possible code paths, possibly causing cache misses on lesser CPUs.
+			switch (srcLineWidth)
+			{
+				case (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2):
+					CopyLineReduce<2, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 2);
+					break;
+					
+				case (GPU_FRAMEBUFFER_NATIVE_WIDTH * 3):
+					CopyLineReduce<3, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 3);
+					break;
+					
+				case (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4):
+					CopyLineReduce<4, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 4);
+					break;
+					
+				default:
+				{
+					if ((srcLineWidth % GPU_FRAMEBUFFER_NATIVE_WIDTH) == 0)
+					{
+						CopyLineReduce<0xFFFF, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, srcLineWidth);
+					}
+					else
+					{
+						CopyLineReduce<-1, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, srcLineWidth);
+					}
+					break;
+				}
+			}
+			break;
+		}
+	}
+}
+
+template <s32 INTEGERSCALEHINT, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
+static void CopyLineReduceHinted(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer)
+{
+	CopyLineReduceHinted<INTEGERSCALEHINT, USELINEINDEX, NEEDENDIANSWAP, ELEMENTSIZE>(srcBuffer, lineInfo.indexCustom, lineInfo.widthCustom,
+																					  dstBuffer, lineInfo.indexNative);
+}
+
 /*****************************************************************************/
 //			BACKGROUND RENDERING -ROTOSCALE-
 /*****************************************************************************/
@@ -9071,7 +9144,7 @@ u8* GPUSubsystem::_DownscaleAndConvertForSavestate(const NDSDisplayID displayID,
 					
 					for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 					{
-						CopyLineReduce<-1, true, 2>(dst, src, this->_displayInfo.customWidth);
+						CopyLineReduceHinted<0xFFFF, false, true, 2>(src, _gpuDstLineIndex[l], this->_displayInfo.customWidth, dst, l);
 						src += _gpuDstLineCount[l] * this->_displayInfo.customWidth;
 						dst += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 					}
@@ -9086,7 +9159,7 @@ u8* GPUSubsystem::_DownscaleAndConvertForSavestate(const NDSDisplayID displayID,
 						
 						for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 						{
-							CopyLineReduce<-1, true, 4>(dst, src, this->_displayInfo.customWidth);
+							CopyLineReduceHinted<0xFFFF, false, true, 4>(src, _gpuDstLineIndex[l], this->_displayInfo.customWidth, dst, l);
 							src += _gpuDstLineCount[l] * this->_displayInfo.customWidth;
 							dst += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 						}
