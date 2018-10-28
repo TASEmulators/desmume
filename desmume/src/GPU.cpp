@@ -718,8 +718,8 @@ static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restr
 }
 
 template <s32 INTEGERSCALEHINT, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
-static void CopyLineExpandHinted(const void *__restrict srcBuffer, const size_t srcLineIndex,
-								 void *__restrict dstBuffer, const size_t dstLineIndex, const size_t dstLineWidth, const size_t dstLineCount)
+void CopyLineExpandHinted(const void *__restrict srcBuffer, const size_t srcLineIndex,
+						  void *__restrict dstBuffer, const size_t dstLineIndex, const size_t dstLineWidth, const size_t dstLineCount)
 {
 	switch (INTEGERSCALEHINT)
 	{
@@ -784,7 +784,7 @@ static void CopyLineExpandHinted(const void *__restrict srcBuffer, const size_t 
 }
 
 template <s32 INTEGERSCALEHINT, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
-static void CopyLineExpandHinted(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer)
+void CopyLineExpandHinted(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer)
 {
 	CopyLineExpandHinted<INTEGERSCALEHINT, USELINEINDEX, NEEDENDIANSWAP, ELEMENTSIZE>(srcBuffer, lineInfo.indexNative,
 																					  dstBuffer, lineInfo.indexCustom, lineInfo.widthCustom, lineInfo.renderCount);
@@ -1184,8 +1184,8 @@ static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restr
 }
 
 template <s32 INTEGERSCALEHINT, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
-static void CopyLineReduceHinted(const void *__restrict srcBuffer, const size_t srcLineIndex, const size_t srcLineWidth,
-								 void *__restrict dstBuffer, const size_t dstLineIndex)
+void CopyLineReduceHinted(const void *__restrict srcBuffer, const size_t srcLineIndex, const size_t srcLineWidth,
+						  void *__restrict dstBuffer, const size_t dstLineIndex)
 {
 	switch (INTEGERSCALEHINT)
 	{
@@ -1250,7 +1250,7 @@ static void CopyLineReduceHinted(const void *__restrict srcBuffer, const size_t 
 }
 
 template <s32 INTEGERSCALEHINT, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
-static void CopyLineReduceHinted(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer)
+void CopyLineReduceHinted(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer)
 {
 	CopyLineReduceHinted<INTEGERSCALEHINT, USELINEINDEX, NEEDENDIANSWAP, ELEMENTSIZE>(srcBuffer, lineInfo.indexCustom, lineInfo.widthCustom,
 																					  dstBuffer, lineInfo.indexNative);
@@ -6393,7 +6393,6 @@ GPUEngineA::GPUEngineA()
 	_captureWorkingB16 = (u16 *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
 	_captureWorkingA32 = (FragmentColor *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(FragmentColor));
 	_captureWorkingB32 = (FragmentColor *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(FragmentColor));
-	gfx3d_Update3DFramebuffers(_3DFramebufferMain, _3DFramebuffer16);
 }
 
 GPUEngineA::~GPUEngineA()
@@ -6404,7 +6403,6 @@ GPUEngineA::~GPUEngineA()
 	free_aligned(this->_captureWorkingB16);
 	free_aligned(this->_captureWorkingA32);
 	free_aligned(this->_captureWorkingB32);
-	gfx3d_Update3DFramebuffers(NULL, NULL);
 }
 
 GPUEngineA* GPUEngineA::Allocate()
@@ -6552,7 +6550,6 @@ void GPUEngineA::SetCustomFramebufferSize(size_t w, size_t h)
 	this->_captureWorkingB16 = newCaptureWorkingB16;
 	this->_captureWorkingA32 = newCaptureWorkingA32;
 	this->_captureWorkingB32 = newCaptureWorkingB32;
-	gfx3d_Update3DFramebuffers(this->_3DFramebufferMain, this->_3DFramebuffer16);
 	
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	
@@ -8133,6 +8130,19 @@ GPUSubsystem::GPUSubsystem()
 	
 	gfx3d_init();
 	
+	for (size_t line = 0; line < GPU_VRAM_BLOCK_LINES + 1; line++)
+	{
+		GPUEngineLineInfo &lineInfo = this->_lineInfo[line];
+		
+		lineInfo.indexNative = line;
+		lineInfo.indexCustom = lineInfo.indexNative;
+		lineInfo.widthCustom = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		lineInfo.renderCount = 1;
+		lineInfo.pixelCount = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		lineInfo.blockOffsetNative = lineInfo.indexNative * GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		lineInfo.blockOffsetCustom = lineInfo.indexCustom * GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	}
+	
 	_engineMain = GPUEngineA::Allocate();
 	_engineSub = GPUEngineB::Allocate();
 	
@@ -8443,6 +8453,11 @@ const NDSDisplayInfo& GPUSubsystem::GetDisplayInfo()
 	return this->_displayInfo;
 }
 
+const GPUEngineLineInfo& GPUSubsystem::GetLineInfoAtIndex(size_t l)
+{
+	return this->_lineInfo[l];
+}
+
 u32 GPUSubsystem::GetFPSRender3D() const
 {
 	return this->_render3DFrameCount;
@@ -8592,6 +8607,19 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
 	_gpuDstToSrcSSSE3_u8_16e = newGpuDstToSrcSSSE3_u8_16e;
 	_gpuDstToSrcSSSE3_u16_8e = newGpuDstToSrcSSSE3_u16_8e;
 	_gpuDstToSrcSSSE3_u32_4e = newGpuDstToSrcSSSE3_u32_4e;
+	
+	for (size_t line = 0; line < GPU_VRAM_BLOCK_LINES + 1; line++)
+	{
+		GPUEngineLineInfo &lineInfo = this->_lineInfo[line];
+		
+		lineInfo.indexNative = line;
+		lineInfo.indexCustom = _gpuCaptureLineIndex[lineInfo.indexNative];
+		lineInfo.widthCustom = w;
+		lineInfo.renderCount = _gpuCaptureLineCount[lineInfo.indexNative];
+		lineInfo.pixelCount = lineInfo.widthCustom * lineInfo.renderCount;
+		lineInfo.blockOffsetNative = lineInfo.indexNative * GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		lineInfo.blockOffsetCustom = lineInfo.indexCustom * lineInfo.widthCustom;
+	}
 	
 	CurrentRenderer->RenderFinish();
 	CurrentRenderer->SetRenderNeedsFinish(false);
@@ -9153,8 +9181,8 @@ u8* GPUSubsystem::_DownscaleAndConvertForSavestate(const NDSDisplayID displayID,
 					isIntermediateBufferMissing = (intermediateBuffer == NULL);
 					if (!isIntermediateBufferMissing)
 					{
-						const u32 *src = (u32 *)this->_displayInfo.customBuffer[displayID];
-						u32 *dst = (u32 *)intermediateBuffer;
+						const u32 *__restrict src = (u32 *__restrict)this->_displayInfo.customBuffer[displayID];
+						u32 *__restrict dst = (u32 *__restrict)intermediateBuffer;
 						
 						for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 						{
@@ -9650,3 +9678,7 @@ template void GPUEngineBase::ParseReg_BGnY<GPULayerID_BG3>();
 template void GPUSubsystem::RenderLine<NDSColorFormat_BGR555_Rev>(const size_t l);
 template void GPUSubsystem::RenderLine<NDSColorFormat_BGR666_Rev>(const size_t l);
 template void GPUSubsystem::RenderLine<NDSColorFormat_BGR888_Rev>(const size_t l);
+
+// These functions are used in gfx3d.cpp
+template void CopyLineExpandHinted<0xFFFF, false, true, 4>(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer);
+template void CopyLineReduceHinted<0xFFFF, false, true, 4>(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer);

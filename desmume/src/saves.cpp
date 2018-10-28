@@ -1061,6 +1061,7 @@ static void writechunks(EMUFILE &os)
 
 	save_time = tm.get_Ticks();
 	
+	gfx3d_PrepareSaveStateBufferWrite();
 	wifiHandler->PrepareSaveStateWrite();
 
 	savestate_WriteChunk(os,1,SF_ARM9);
@@ -1184,8 +1185,14 @@ static bool ReadStateChunks(EMUFILE &is, s32 totalsize)
 	}
 	
 	if (chunkError)
+	{
 		msgbox->warn("There was an error loading the savestate. Your game session is probably corrupt now.");
-
+	}
+	else
+	{
+		gfx3d_FinishLoadStateBufferRead();
+	}
+	
 	if (haveInfo)
 	{
 

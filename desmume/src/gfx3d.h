@@ -636,9 +636,10 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst);
 
 struct SFORMAT;
 extern SFORMAT SF_GFX3D[];
-void gfx3d_Update3DFramebuffers(FragmentColor *framebufferMain, u16 *framebuffer16);
+void gfx3d_PrepareSaveStateBufferWrite();
 void gfx3d_savestate(EMUFILE &os);
 bool gfx3d_loadstate(EMUFILE &is, int size);
+void gfx3d_FinishLoadStateBufferRead();
 
 void gfx3d_ClearStack();
 

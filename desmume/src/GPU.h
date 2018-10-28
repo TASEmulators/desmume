@@ -1763,6 +1763,7 @@ private:
 	GPUEngineB *_engineSub;
 	NDSDisplay *_display[2];
 	float _backlightIntensityTotal[2];
+	GPUEngineLineInfo _lineInfo[GPU_VRAM_BLOCK_LINES + 1];
 	
 	int _pending3DRendererID;
 	bool _needChange3DRenderer;
@@ -1797,6 +1798,7 @@ public:
 	void ForceFrameStop();
 	
 	const NDSDisplayInfo& GetDisplayInfo(); // Frontends need to call this whenever they need to read the video buffers from the emulator core
+	const GPUEngineLineInfo& GetLineInfoAtIndex(size_t l);
 	u32 GetFPSRender3D() const;
 	
 	GPUEngineA* GetEngineMain();
@@ -1897,6 +1899,20 @@ public:
 	void* GetClientData() const;
 	void SetClientData(void *clientData);
 };
+
+template <s32 INTEGERSCALEHINT, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
+void CopyLineExpandHinted(const void *__restrict srcBuffer, const size_t srcLineIndex,
+						  void *__restrict dstBuffer, const size_t dstLineIndex, const size_t dstLineWidth, const size_t dstLineCount);
+
+template <s32 INTEGERSCALEHINT, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
+void CopyLineExpandHinted(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer);
+
+template <s32 INTEGERSCALEHINT, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
+void CopyLineReduceHinted(const void *__restrict srcBuffer, const size_t srcLineIndex, const size_t srcLineWidth,
+						  void *__restrict dstBuffer, const size_t dstLineIndex);
+
+template <s32 INTEGERSCALEHINT, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
+void CopyLineReduceHinted(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer);
 
 extern GPUSubsystem *GPU;
 extern MMU_struct MMU;
