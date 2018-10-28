@@ -7944,18 +7944,13 @@ void GPUEngineA::_HandleDisplayModeVRAM(const size_t l)
 template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 {
-	// Native rendering only.
-	//
-	//this has not been tested since the dma timing for dispfifo was changed around the time of
-	//newemuloop. it may not work.
-	
-	u32 *dstColorLine = (u32 *)((u16 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
-	
+	// Displays video using color data directly read from main memory.
+	// Doing this should always result in an output line that is at the native size (192px x 1px).
 	switch (OUTPUTFORMAT)
 	{
 		case NDSColorFormat_BGR555_Rev:
 		{
-			u32 *dst = dstColorLine;
+			u32 *dst = (u32 *)((u16 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
 			
 #ifdef ENABLE_SSE2
 			const __m128i alphaBit = _mm_set1_epi16(0x8000);
@@ -7975,7 +7970,7 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 			
 		case NDSColorFormat_BGR666_Rev:
 		{
-			FragmentColor *dst = (FragmentColor *)dstColorLine;
+			FragmentColor *dst = (FragmentColor *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 			
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i+=2)
 			{
@@ -7988,7 +7983,7 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 			
 		case NDSColorFormat_BGR888_Rev:
 		{
-			FragmentColor *dst = (FragmentColor *)dstColorLine;
+			FragmentColor *dst = (FragmentColor *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 			
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i+=2)
 			{
