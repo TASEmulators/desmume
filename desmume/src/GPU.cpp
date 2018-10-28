@@ -7956,7 +7956,11 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 			const __m128i alphaBit = _mm_set1_epi16(0x8000);
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(__m128i); i++)
 			{
-				const __m128i fifoColor = _mm_setr_epi32(DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv());
+				const u32 srcA = DISP_FIFOrecv();
+				const u32 srcB = DISP_FIFOrecv();
+				const u32 srcC = DISP_FIFOrecv();
+				const u32 srcD = DISP_FIFOrecv();
+				const __m128i fifoColor = _mm_setr_epi32(srcA, srcB, srcC, srcD);
 				_mm_store_si128((__m128i *)dst + i, _mm_or_si128(fifoColor, alphaBit));
 			}
 #else
