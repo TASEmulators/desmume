@@ -43,7 +43,8 @@ public:
 		//check game ID in core emulator and select right implementation
 		//gamehack: definitely not a game hack, just a lazy way of selecting the right equipment for the game
 		if(gameInfo.IsCode("UOR") || // WarioWare - D.I.Y. (U)(E)(EUR) / Made in Ore (J)
-			gameInfo.IsCode("UXBP") // Jam with the Band (EUR)
+			gameInfo.IsCode("UXBP") || // Jam with the Band (EUR)
+			gameInfo.IsCode("AXBJ") // Daigassou! Band-Brothers DX (J)
 			)
 			selection = NDS_SLOT1_RETAIL_NAND;
 
