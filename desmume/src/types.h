@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2005 Guillaume Duhamel
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -111,7 +111,7 @@
 //------------alignment macros-------------
 //dont apply these to types without further testing. it only works portably here on declarations of variables
 //cant we find a pattern other people use more successfully?
-#if _MSC_VER >= 1900
+#if _MSC_VER >= 9999 // Was 1900. The way we use DS_ALIGN doesn't jive with how alignas() wants itself to be used, so just use __declspec(align(X)) for now to avoid problems.
 	#define DS_ALIGN(X) alignas(X)
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
 	#define DS_ALIGN(X) __declspec(align(X))
