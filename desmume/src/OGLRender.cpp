@@ -1636,7 +1636,8 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 				polyPrimitive != GL_LINE_LOOP &&
 				polyPrimitive != GL_LINE_STRIP &&
 				oglPrimitiveType[nextPoly.vtxFormat] != GL_LINE_LOOP &&
-				oglPrimitiveType[nextPoly.vtxFormat] != GL_LINE_STRIP)
+				oglPrimitiveType[nextPoly.vtxFormat] != GL_LINE_STRIP &&
+				this->_isPolyFrontFacing[i] != this->_isPolyFrontFacing[i+1])
 			{
 				continue;
 			}
