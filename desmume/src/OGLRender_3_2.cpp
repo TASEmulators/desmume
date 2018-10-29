@@ -1679,6 +1679,12 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	{
 		const POLY &thePoly = engine.polylist->list[engine.indexlist.list[i]];
 		const size_t polyType = thePoly.type;
+		const VERT vert[4] = {
+			engine.vertList[thePoly.vertIndexes[0]],
+			engine.vertList[thePoly.vertIndexes[1]],
+			engine.vertList[thePoly.vertIndexes[2]],
+			engine.vertList[thePoly.vertIndexes[3]]
+		};
 		
 		for (size_t j = 0; j < polyType; j++)
 		{
@@ -1702,10 +1708,24 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 			}
 		}
 		
+		// Get the polygon's facing.
+		const size_t n = polyType - 1;
+		float facing = (vert[0].y + vert[n].y) * (vert[0].x - vert[n].x)
+		             + (vert[1].y + vert[0].y) * (vert[1].x - vert[0].x)
+		             + (vert[2].y + vert[1].y) * (vert[2].x - vert[1].x);
+		
+		for (size_t j = 2; j < n; j++)
+		{
+			facing += (vert[j+1].y + vert[j].y) * (vert[j+1].x - vert[j].x);
+		}
+		
+		this->_isPolyFrontFacing[i] = (facing < 0);
+		
+		// Get the texture that is to be attached to this polygon.
 		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, this->_enableTextureSampling);
 		
+		// Get all of the polygon states that can be handled within the shader.
 		const NDSTextureFormat packFormat = this->_textureList[i]->GetPackFormat();
-		
 		polyStates[i].enableTexture = (this->_textureList[i]->IsSamplingEnabled()) ? GL_TRUE : GL_FALSE;
 		polyStates[i].enableFog = (thePoly.attribute.Fog_Enable) ? GL_TRUE : GL_FALSE;
 		polyStates[i].isWireframe = (thePoly.isWireframe()) ? GL_TRUE : GL_FALSE;

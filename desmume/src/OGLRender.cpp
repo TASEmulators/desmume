@@ -1654,11 +1654,24 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 		}
 		else if ( (thePoly.texParam.PackedFormat == TEXMODE_A3I5) || (thePoly.texParam.PackedFormat == TEXMODE_A5I3) )
 		{
-			this->DrawAlphaTexturePolygon<DRAWMODE>(polyPrimitive, vertIndexCount, indexBufferPtr, thePoly.attribute.DepthEqualTest_Enable, thePoly.attribute.TranslucentDepthWrite_Enable, thePoly.isWireframe() || thePoly.isOpaque(), thePoly.attribute.PolygonID);
+			this->DrawAlphaTexturePolygon<DRAWMODE>(polyPrimitive,
+													vertIndexCount,
+													indexBufferPtr,
+													thePoly.attribute.DepthEqualTest_Enable,
+													thePoly.attribute.TranslucentDepthWrite_Enable,
+													thePoly.isWireframe() || thePoly.isOpaque(),
+													thePoly.attribute.PolygonID,
+													this->_isPolyFrontFacing[i]);
 		}
 		else
 		{
-			this->DrawOtherPolygon<DRAWMODE>(polyPrimitive, vertIndexCount, indexBufferPtr, thePoly.attribute.DepthEqualTest_Enable, thePoly.attribute.TranslucentDepthWrite_Enable, thePoly.attribute.PolygonID);
+			this->DrawOtherPolygon<DRAWMODE>(polyPrimitive,
+											 vertIndexCount,
+											 indexBufferPtr,
+											 thePoly.attribute.DepthEqualTest_Enable,
+											 thePoly.attribute.TranslucentDepthWrite_Enable,
+											 thePoly.attribute.PolygonID,
+											 this->_isPolyFrontFacing[i]);
 		}
 		
 		indexBufferPtr += vertIndexCount;
@@ -1670,7 +1683,14 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 }
 
 template <OGLPolyDrawMode DRAWMODE>
-Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const bool canHaveOpaqueFragments, const u8 opaquePolyID)
+Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive,
+													  const GLsizei vertIndexCount,
+													  const GLushort *indexBufferPtr,
+													  const bool performDepthEqualTest,
+													  const bool enableAlphaDepthWrite,
+													  const bool canHaveOpaqueFragments,
+													  const u8 opaquePolyID,
+													  const bool isPolyFrontFacing)
 {
 	const OGLRenderRef &OGLRef = *this->ref;
 	
@@ -1850,9 +1870,8 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 					}
 				}
 			}
-			else
+			else // Draw the polygon as completely opaque.
 			{
-				// Draw the polygon as completely opaque.
 				glUniform1i(OGLRef.uniformTexDrawOpaque, GL_TRUE);
 				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 				glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
@@ -1868,7 +1887,13 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 }
 
 template <OGLPolyDrawMode DRAWMODE>
-Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const u8 opaquePolyID)
+Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive,
+											   const GLsizei vertIndexCount,
+											   const GLushort *indexBufferPtr,
+											   const bool performDepthEqualTest,
+											   const bool enableAlphaDepthWrite,
+											   const u8 opaquePolyID,
+											   const bool isPolyFrontFacing)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -3955,21 +3980,27 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	
 	for (size_t i = 0; i < engine.polylist->count; i++)
 	{
-		const POLY *thePoly = &engine.polylist->list[engine.indexlist.list[i]];
-		const size_t polyType = thePoly->type;
+		const POLY &thePoly = engine.polylist->list[engine.indexlist.list[i]];
+		const size_t polyType = thePoly.type;
+		const VERT vert[4] = {
+			engine.vertList[thePoly.vertIndexes[0]],
+			engine.vertList[thePoly.vertIndexes[1]],
+			engine.vertList[thePoly.vertIndexes[2]],
+			engine.vertList[thePoly.vertIndexes[3]]
+		};
 		
 		if (this->isShaderSupported)
 		{
 			for (size_t j = 0; j < polyType; j++)
 			{
-				const GLushort vertIndex = thePoly->vertIndexes[j];
+				const GLushort vertIndex = thePoly.vertIndexes[j];
 				
 				// While we're looping through our vertices, add each vertex index to
 				// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 				// vertices here to convert them to GL_TRIANGLES, which are much easier
 				// to work with and won't be deprecated in future OpenGL versions.
 				indexPtr[vertIndexCount++] = vertIndex;
-				if (thePoly->vtxFormat == GFX3D_QUADS || thePoly->vtxFormat == GFX3D_QUAD_STRIP)
+				if (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP)
 				{
 					if (j == 2)
 					{
@@ -3977,26 +4008,26 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 					}
 					else if (j == 3)
 					{
-						indexPtr[vertIndexCount++] = thePoly->vertIndexes[0];
+						indexPtr[vertIndexCount++] = thePoly.vertIndexes[0];
 					}
 				}
 			}
 		}
 		else
 		{
-			const GLfloat thePolyAlpha = (thePoly->isWireframe()) ? 1.0f : divide5bitBy31_LUT[thePoly->attribute.Alpha];
+			const GLfloat thePolyAlpha = (thePoly.isWireframe()) ? 1.0f : divide5bitBy31_LUT[thePoly.attribute.Alpha];
 			
 			for (size_t j = 0; j < polyType; j++)
 			{
-				const GLushort vertIndex = thePoly->vertIndexes[j];
+				const GLushort vertIndex = thePoly.vertIndexes[j];
 				const size_t colorIndex = vertIndex * 4;
 				
 				// Consolidate the vertex color and the poly alpha to our internal color buffer
 				// so that OpenGL can use it.
-				const VERT *vert = &engine.vertList[vertIndex];
-				OGLRef.color4fBuffer[colorIndex+0] = material_8bit_to_float[vert->color[0]];
-				OGLRef.color4fBuffer[colorIndex+1] = material_8bit_to_float[vert->color[1]];
-				OGLRef.color4fBuffer[colorIndex+2] = material_8bit_to_float[vert->color[2]];
+				const VERT *vertForAlpha = &engine.vertList[vertIndex];
+				OGLRef.color4fBuffer[colorIndex+0] = material_8bit_to_float[vertForAlpha->color[0]];
+				OGLRef.color4fBuffer[colorIndex+1] = material_8bit_to_float[vertForAlpha->color[1]];
+				OGLRef.color4fBuffer[colorIndex+2] = material_8bit_to_float[vertForAlpha->color[2]];
 				OGLRef.color4fBuffer[colorIndex+3] = thePolyAlpha;
 				
 				// While we're looping through our vertices, add each vertex index to a
@@ -4004,7 +4035,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 				// vertices here to convert them to GL_TRIANGLES, which are much easier
 				// to work with and won't be deprecated in future OpenGL versions.
 				indexPtr[vertIndexCount++] = vertIndex;
-				if (thePoly->vtxFormat == GFX3D_QUADS || thePoly->vtxFormat == GFX3D_QUAD_STRIP)
+				if (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP)
 				{
 					if (j == 2)
 					{
@@ -4012,13 +4043,27 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 					}
 					else if (j == 3)
 					{
-						indexPtr[vertIndexCount++] = thePoly->vertIndexes[0];
+						indexPtr[vertIndexCount++] = thePoly.vertIndexes[0];
 					}
 				}
 			}
 		}
 		
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(*thePoly, this->_enableTextureSampling);
+		// Get this polygon's facing.
+		const size_t n = polyType - 1;
+		float facing = (vert[0].y + vert[n].y) * (vert[0].x - vert[n].x)
+		+ (vert[1].y + vert[0].y) * (vert[1].x - vert[0].x)
+		+ (vert[2].y + vert[1].y) * (vert[2].x - vert[1].x);
+		
+		for (size_t j = 2; j < n; j++)
+		{
+			facing += (vert[j+1].y + vert[j].y) * (vert[j+1].x - vert[j].x);
+		}
+		
+		this->_isPolyFrontFacing[i] = (facing < 0);
+		
+		// Get the texture that is to be attached to this polygon.
+		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, this->_enableTextureSampling);
 	}
 	
 	if (this->isVBOSupported)
@@ -4834,11 +4879,11 @@ Render3DError OpenGLRenderer_1_2::Reset()
 	OGLRef.vtxPtrTexCoord = (GLvoid *)offsetof(VERT, texcoord);
 	OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)offsetof(VERT, color) : OGLRef.color4fBuffer;
 	
-	memset(OGLRef.workingCIColorBuffer, 0, sizeof(OGLRef.workingCIColorBuffer));
 	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));
 	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
 	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
 	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
+	memset(this->_isPolyFrontFacing, 0, sizeof(this->_isPolyFrontFacing));
 	
 	texCache.Reset();
 	
