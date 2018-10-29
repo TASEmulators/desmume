@@ -1387,7 +1387,7 @@ protected:
 	u8 *_didPassWindowTestCustom[5];
 	u8 *_enableColorEffectCustom[5];
 	
-	GPUEngineCompositorInfo _currentCompositorInfo[GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	GPUEngineCompositorInfo _currentCompositorInfo[GPU_VRAM_BLOCK_LINES + 1];
 	GPUEngineRenderState _currentRenderState;
 	
 	u8 *_deferredIndexCustom;
