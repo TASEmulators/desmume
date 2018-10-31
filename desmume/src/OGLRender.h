@@ -434,7 +434,6 @@ struct OGLRenderRef
 	GLuint texGPolyID;
 	GLuint texZeroAlphaPixelMaskID;
 	GLuint texGDepthStencilID;
-	GLuint texGDepthStencilAlphaID;
 	GLuint texFinalColorID;
 	GLuint texMSGColorID;
 	
@@ -442,14 +441,11 @@ struct OGLRenderRef
 	GLuint rboMSGPolyID;
 	GLuint rboMSGFogAttrID;
 	GLuint rboMSGDepthStencilID;
-	GLuint rboMSGDepthStencilAlphaID;
 	
 	GLuint fboClearImageID;
 	GLuint fboRenderID;
-	GLuint fboRenderAlphaID;
 	GLuint fboPostprocessID;
 	GLuint fboMSIntermediateRenderID;
-	GLuint fboMSIntermediateRenderAlphaID;
 	GLuint selectedRenderingFBO;
 	
 	// Shader states
