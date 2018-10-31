@@ -1874,7 +1874,35 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 			else // Draw the polygon as completely opaque.
 			{
 				glUniform1i(OGLRef.uniformTexDrawOpaque, GL_TRUE);
-				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+				
+				if (isPolyFrontFacing)
+				{
+					glDepthFunc(GL_EQUAL);
+					glStencilFunc(GL_EQUAL, 0x40 | opaquePolyID, 0x40);
+					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+					
+					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					glDepthMask(GL_FALSE);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
+					glStencilMask(0x40);
+					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+					
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+					glDepthMask(GL_TRUE);
+					glDepthFunc(GL_LESS);
+					glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+					glStencilMask(0xFF);
+					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+				}
+				else
+				{
+					glStencilFunc(GL_ALWAYS, 0x40 | opaquePolyID, 0x40);
+					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+					
+					glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
+				}
+				
 				glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
 			}
 		}
@@ -1964,6 +1992,36 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive,
 		glStencilMask(0xFF);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glDepthMask(((DRAWMODE == OGLPolyDrawMode_DrawOpaquePolys) || enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
+	}
+	else if (DRAWMODE == OGLPolyDrawMode_DrawOpaquePolys)
+	{
+		if (isPolyFrontFacing)
+		{
+			glDepthFunc(GL_EQUAL);
+			glStencilFunc(GL_EQUAL, 0x40 | opaquePolyID, 0x40);
+			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+			
+			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+			glDepthMask(GL_FALSE);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
+			glStencilMask(0x40);
+			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+			
+			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+			glDepthMask(GL_TRUE);
+			glDepthFunc(GL_LESS);
+			glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			glStencilMask(0xFF);
+			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+		}
+		else
+		{
+			glStencilFunc(GL_ALWAYS, 0x40 | opaquePolyID, 0x40);
+			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+			
+			glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
+		}
 	}
 	else
 	{
