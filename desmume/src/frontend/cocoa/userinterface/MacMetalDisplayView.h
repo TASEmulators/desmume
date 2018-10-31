@@ -157,8 +157,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) id<MTLTexture> texHQ4xLUT;
 @property (retain) id<MTLTexture> texCurrentHQnxLUT;
 
-@property (readonly, nonatomic) MTLResourceOptions preferredResourceStorageMode;
-
 @property (readonly, nonatomic) MTLSize deposterizeThreadsPerGroup;
 @property (readonly, nonatomic) MTLSize deposterizeThreadGroupsPerGrid;
 

@@ -23,7 +23,6 @@
 @implementation MetalDisplayViewSharedData
 
 @synthesize device;
-@synthesize preferredResourceStorageMode;
 @synthesize commandQueue;
 @synthesize defaultLibrary;
 
