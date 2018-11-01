@@ -74,52 +74,50 @@ void MatrixSet(float (&mtx)[16], const size_t x, const size_t y, const s32 value
 	mtx[x+(y<<2)] = (float)value / 4096.0f;
 }
 
-void MatrixCopy(s32 (&mtxDst)[16], const s32 (&mtxSrc)[16])
+void MatrixCopy(s32 (&__restrict mtxDst)[16], const s32 (&__restrict mtxSrc)[16])
 {
-	// We're going to assume that the two buffers are not the same.
 	memcpy(mtxDst, mtxSrc, sizeof(s32)*16);
 }
 
-void MatrixCopy(float (&mtxDst)[16], const float (&mtxSrc)[16])
+void MatrixCopy(float (&__restrict mtxDst)[16], const float (&__restrict mtxSrc)[16])
 {
-	// We're going to assume that the two buffers are not the same.
 	memcpy(mtxDst, mtxSrc, sizeof(float)*16);
 }
 
 void MatrixCopy(float (&__restrict mtxDst)[16], const s32 (&__restrict mtxSrc)[16])
 {
-	mtxDst[ 0] = mtxSrc[ 0] / 4096.0f;
-	mtxDst[ 1] = mtxSrc[ 1] / 4096.0f;
-	mtxDst[ 2] = mtxSrc[ 2] / 4096.0f;
-	mtxDst[ 3] = mtxSrc[ 3] / 4096.0f;
+	mtxDst[ 0] = (float)mtxSrc[ 0] / 4096.0f;
+	mtxDst[ 1] = (float)mtxSrc[ 1] / 4096.0f;
+	mtxDst[ 2] = (float)mtxSrc[ 2] / 4096.0f;
+	mtxDst[ 3] = (float)mtxSrc[ 3] / 4096.0f;
 	
-	mtxDst[ 4] = mtxSrc[ 4] / 4096.0f;
-	mtxDst[ 5] = mtxSrc[ 5] / 4096.0f;
-	mtxDst[ 6] = mtxSrc[ 6] / 4096.0f;
-	mtxDst[ 7] = mtxSrc[ 7] / 4096.0f;
+	mtxDst[ 4] = (float)mtxSrc[ 4] / 4096.0f;
+	mtxDst[ 5] = (float)mtxSrc[ 5] / 4096.0f;
+	mtxDst[ 6] = (float)mtxSrc[ 6] / 4096.0f;
+	mtxDst[ 7] = (float)mtxSrc[ 7] / 4096.0f;
 	
-	mtxDst[ 8] = mtxSrc[ 8] / 4096.0f;
-	mtxDst[ 9] = mtxSrc[ 9] / 4096.0f;
-	mtxDst[10] = mtxSrc[10] / 4096.0f;
-	mtxDst[11] = mtxSrc[11] / 4096.0f;
+	mtxDst[ 8] = (float)mtxSrc[ 8] / 4096.0f;
+	mtxDst[ 9] = (float)mtxSrc[ 9] / 4096.0f;
+	mtxDst[10] = (float)mtxSrc[10] / 4096.0f;
+	mtxDst[11] = (float)mtxSrc[11] / 4096.0f;
 	
-	mtxDst[12] = mtxSrc[12] / 4096.0f;
-	mtxDst[13] = mtxSrc[13] / 4096.0f;
-	mtxDst[14] = mtxSrc[14] / 4096.0f;
-	mtxDst[15] = mtxSrc[15] / 4096.0f;
+	mtxDst[12] = (float)mtxSrc[12] / 4096.0f;
+	mtxDst[13] = (float)mtxSrc[13] / 4096.0f;
+	mtxDst[14] = (float)mtxSrc[14] / 4096.0f;
+	mtxDst[15] = (float)mtxSrc[15] / 4096.0f;
 }
 
-int MatrixCompare(const s32 (&mtxDst)[16], const s32 (&mtxSrc)[16])
+int MatrixCompare(const s32 (&__restrict mtxDst)[16], const s32 (&__restrict mtxSrc)[16])
 {
 	return memcmp(mtxDst, mtxSrc, sizeof(s32)*16);
 }
 
-int MatrixCompare(const float (&mtxDst)[16], const float (&mtxSrc)[16])
+int MatrixCompare(const float (&__restrict mtxDst)[16], const float (&__restrict mtxSrc)[16])
 {
 	return memcmp(mtxDst, mtxSrc, sizeof(float)*16);
 }
 
-s32 MatrixGetMultipliedIndex(const u32 index, const s32 (&mtxA)[16], const s32 (&mtxB)[16])
+s32 MatrixGetMultipliedIndex(const u32 index, const s32 (&__restrict mtxA)[16], const s32 (&__restrict mtxB)[16])
 {
 	assert(index < 16);
 	
@@ -130,7 +128,7 @@ s32 MatrixGetMultipliedIndex(const u32 index, const s32 (&mtxA)[16], const s32 (
 	return temp;
 }
 
-float MatrixGetMultipliedIndex(const u32 index, const float (&mtxA)[16], const float (&mtxB)[16])
+float MatrixGetMultipliedIndex(const u32 index, const float (&__restrict mtxA)[16], const float (&__restrict mtxB)[16])
 {
 	assert(index < 16);
 	
