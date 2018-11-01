@@ -1234,6 +1234,11 @@ static BOOL gfx3d_glMultMatrix4x4(s32 v)
 		GFX_DELAY_M2(30);
 	}
 
+	if(mode == MATRIXMODE_PROJECTION)
+	{
+		UpdateProjection();
+	}
+
 	//printf("mult4x4: matrix %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
 
 	MatrixIdentity(mtxTemporal);
@@ -1263,6 +1268,11 @@ static BOOL gfx3d_glMultMatrix4x3(s32 v)
 	{
 		MatrixMultiply (mtxCurrent[MATRIXMODE_POSITION], mtxTemporal);
 		GFX_DELAY_M2(30);
+	}
+
+	if(mode == MATRIXMODE_PROJECTION)
+	{
+		UpdateProjection();
 	}
 
 	//printf("mult4x3: matrix %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
@@ -1296,6 +1306,11 @@ static BOOL gfx3d_glMultMatrix3x3(s32 v)
 	{
 		MatrixMultiply(mtxCurrent[MATRIXMODE_POSITION], mtxTemporal);
 		GFX_DELAY_M2(30);
+	}
+
+	if(mode == MATRIXMODE_PROJECTION)
+	{
+		UpdateProjection();
 	}
 
 	//printf("mult3x3: matrix %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
@@ -2421,6 +2436,10 @@ void gfx3d_VBlankSignal()
 		gfx3d_doFlush();
 		GFX_DELAY(392);
 		isSwapBuffers = FALSE;
+		
+		//let's consider this the beginning of the next 3d frame.
+		//in case the game isn't constantly restoring the projection matrix, we want to ping lua
+		UpdateProjection();
 	}
 }
 
