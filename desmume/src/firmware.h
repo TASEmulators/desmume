@@ -428,6 +428,7 @@ int copy_firmware_user_data( u8 *dest_buffer, const u8 *fw_data);
 void NDS_GetDefaultFirmwareConfig(FirmwareConfig &outConfig);
 void NDS_InitFirmwareWithConfig(const FirmwareConfig &inConfig);
 void NDS_OverrideFirmwareMAC(const u8 inMAC[6]);
+bool NDS_ReadFirmwareDataFromFile(const char *fileName, NDSFirmwareData *outFirmwareData, size_t *outFileSize, int *outConsoleType, u8 *outMACAddr);
 
 struct fw_memory_chip
 {

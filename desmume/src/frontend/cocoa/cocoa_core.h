@@ -61,6 +61,7 @@ typedef struct
 	NSString *frameStatus;
 	NSString *executionSpeedStatus;
 	NSString *errorStatus;
+	NSString *extFirmwareMACAddressString;
 	NSString *firmwareMACAddressSelectionString;
 	NSString *currentSessionMACAddressString;
 	
@@ -117,6 +118,7 @@ typedef struct
 @property (copy) NSURL *firmwareImageURL;
 @property (copy) NSURL *slot1R4URL;
 
+@property (retain) NSString *extFirmwareMACAddressString;
 @property (retain) NSString *firmwareMACAddressSelectionString;
 @property (retain) NSString *currentSessionMACAddressString;
 

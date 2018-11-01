@@ -84,6 +84,7 @@ volatile bool execute = true;
 @synthesize frameStatus;
 @synthesize executionSpeedStatus;
 @synthesize errorStatus;
+@synthesize extFirmwareMACAddressString;
 @synthesize firmwareMACAddressSelectionString;
 @synthesize currentSessionMACAddressString;
 
@@ -172,6 +173,7 @@ volatile bool execute = true;
 	executionSpeedStatus = @"1.00x";
 	errorStatus = @"";
 	slot1StatusText = NSSTRING_STATUS_EMULATION_NOT_RUNNING;
+	extFirmwareMACAddressString = @"Invalid MAC!";
 	firmwareMACAddressSelectionString = @"Firmware  00:09:BF:FF:FF:FF";
 	currentSessionMACAddressString = NSSTRING_STATUS_NO_ROM_LOADED;
 	
@@ -191,6 +193,7 @@ volatile bool execute = true;
 	[self setCdsGPU:nil];
 	[self setCdsOutputList:nil];
 	[self setErrorStatus:nil];
+	[self setExtFirmwareMACAddressString:nil];
 	[self setFirmwareMACAddressSelectionString:nil];
 	[self setCurrentSessionMACAddressString:nil];
 	
@@ -478,6 +481,25 @@ volatile bool execute = true;
 - (void) setEmuFlagUseExternalFirmware:(BOOL)enable
 {
 	execControl->SetEnableExternalFirmware((enable) ? true : false);
+	
+	if (enable)
+	{
+		uint8_t MACAddr[6] = {0x00, 0x09, 0xBF, 0xFF, 0xFF, 0xFF};
+		const char *extFirmwareFileName = execControl->GetFirmwareImagePath();
+		bool isFirmwareFileRead = NDS_ReadFirmwareDataFromFile(extFirmwareFileName, NULL, NULL, NULL, MACAddr);
+		
+		if (isFirmwareFileRead)
+		{
+			NSString *macAddressString = [NSString stringWithFormat:@"%02X:%02X:%02X:%02X:%02X:%02X", MACAddr[0], MACAddr[1], MACAddr[2], MACAddr[3], MACAddr[4], MACAddr[5]];
+			[self setExtFirmwareMACAddressString:macAddressString];
+		}
+		else
+		{
+			[self setExtFirmwareMACAddressString:@"Invalid MAC!"];
+		}
+	}
+	
+	[self updateFirmwareMACAddressString];
 }
 
 - (BOOL) emuFlagUseExternalFirmware
@@ -721,7 +743,14 @@ volatile bool execute = true;
 
 - (void) updateFirmwareMACAddressString
 {
-	[self setFirmwareMACAddressSelectionString:[NSString stringWithFormat:@"Firmware  %@", [[self cdsFirmware] MACAddressString]]];
+	if ([self emuFlagUseExternalFirmware])
+	{
+		[self setFirmwareMACAddressSelectionString:[NSString stringWithFormat:@"Ext. Firmware  %@", [self extFirmwareMACAddressString]]];
+	}
+	else
+	{
+		[self setFirmwareMACAddressSelectionString:[NSString stringWithFormat:@"Firmware  %@", [[self cdsFirmware] MACAddressString]]];
+	}
 }
 
 - (void) updateCurrentSessionMACAddressString:(BOOL)isRomLoaded

@@ -246,53 +246,24 @@ u32 CFIRMWARE::_decompress(const u8 *in, u8* &out)
 //================================================================================
 bool CFIRMWARE::load()
 {
-	u32 size = 0;
-	
 	if (!CommonSettings.UseExtFirmware)
 		return false;
 	if (strlen(CommonSettings.Firmware) == 0)
 		return false;
 	
-	FILE	*fp = fopen(CommonSettings.Firmware, "rb");
-	if (!fp)
-		return false;
-	fseek(fp, 0, SEEK_END);
-	size = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-	if( (size != NDS_FW_SIZE_V1) && (size != NDS_FW_SIZE_V2) )
-	{
-		fclose(fp);
-		return false;
-	}
-	
+	size_t fileSize = 0;
 	NDSFirmwareData newFirmwareData;
 	
-	if (fread(&newFirmwareData._raw[0], 1, 12, fp) == 12)
+	bool isFirmwareFileRead = NDS_ReadFirmwareDataFromFile(CommonSettings.Firmware, &newFirmwareData, &fileSize, NULL, NULL);
+	if (!isFirmwareFileRead)
 	{
-		if ((newFirmwareData.header.identifierValue & 0x00FFFFFF) != 0x0043414D)
-		{
-			fclose(fp);
-			return false;
-		}
-	}
-	else
-	{
-		fclose(fp);
 		return false;
 	}
-	
-	if (fread(&newFirmwareData._raw[12], 1, size - 12, fp) != (size - 12))
-	{
-		fclose(fp);
-		return false; 
-	}
-	
-	fclose(fp);
 	
 	this->_header = newFirmwareData.header;
 
-	if (MMU.fw.size != size)	// reallocate
-		mc_alloc(&MMU.fw, size);
+	if (MMU.fw.size != fileSize)	// reallocate
+		mc_alloc(&MMU.fw, fileSize);
 	
 	this->_userDataAddr = LE_TO_LOCAL_16(newFirmwareData.header.userSettingsOffset) * 8;
 	
@@ -304,7 +275,7 @@ bool CFIRMWARE::load()
 		newFirmwareData.header.key.unused = 0xFFFF;
 	}
 	
-	memcpy(&MMU.fw.data, &newFirmwareData, size);
+	memcpy(&MMU.fw.data, &newFirmwareData, fileSize);
 	
 	// Generate the path for the external firmware config file.
 	std::string extFilePath = CFIRMWARE::GetExternalFilePath();
@@ -367,13 +338,13 @@ bool CFIRMWARE::unpack()
 	u32 arm7Size = 0;
 	
 	arm9Size = this->_decrypt((u8 *)&workingFirmwareData + part1addr, tmp_data9);
-	if (!tmp_data9)
+	if (tmp_data9 == NULL)
 	{
 		return false;
 	}
 
 	arm7Size = this->_decrypt((u8 *)&workingFirmwareData + part2addr, tmp_data7);
-	if (!tmp_data7)
+	if (tmp_data7 == NULL)
 	{
 		delete [] tmp_data9;
 		return false;
@@ -403,10 +374,14 @@ bool CFIRMWARE::unpack()
 		_MMU_write32<ARMCPU_ARM7>(part2ram, T1ReadLong(tmp_data7, src));
 		src += 4; part2ram += 4;
 	}
+	
 	delete [] tmp_data7;
+	tmp_data7 = NULL;
+	
 	delete [] tmp_data9;
-
-	bool isPatched = (workingFirmwareData._raw[0x17C] != 0xFF);
+	tmp_data9 = NULL;
+	
+	const bool isPatched = (workingFirmwareData._raw[0x17C] != 0xFF);
 	
 	INFO("Firmware:\n");
 	INFO("- path: %s\n", CommonSettings.Firmware);
@@ -449,13 +424,13 @@ bool CFIRMWARE::unpack()
 		ARM7bootAddr = part2ram;
 
 		arm9Size = this->_decompress(&workingFirmwareData._raw[part1addr], tmp_data9);
-		if (!tmp_data9) 
+		if (tmp_data9 == NULL)
 		{
 			return false;
 		}
 
 		arm7Size = this->_decompress(&workingFirmwareData._raw[part2addr], tmp_data7);
-		if (!tmp_data7)
+		if (tmp_data7 == NULL)
 		{
 			delete [] tmp_data9;
 			return false;
@@ -1048,6 +1023,120 @@ void NDS_OverrideFirmwareMAC(const u8 inMAC[6])
 	fw.wifiInfo.MACAddr[5] = inMAC[5];
 	
 	fw.wifiInfo.crc16 = calc_CRC16(0, &fw.wifiInfo.length, fw.wifiInfo.length);
+}
+
+bool NDS_ReadFirmwareDataFromFile(const char *fileName, NDSFirmwareData *outFirmwareData, size_t *outFileSize, int *outConsoleType, u8 *outMACAddr)
+{
+	bool result = false;
+	
+	if (fileName == NULL)
+	{
+		return result;
+	}
+	
+	// Open the file.
+	FILE *fp = fopen(fileName, "rb");
+	if (fp == NULL)
+	{
+		return result;
+	}
+	
+	// Do some basic validation of the firmware file.
+	fseek(fp, 0, SEEK_END);
+	const size_t fileSize = ftell(fp);
+	if (outFileSize != NULL)
+	{
+		*outFileSize = fileSize;
+	}
+	
+	if ( (fileSize != NDS_FW_SIZE_V1) && (fileSize != NDS_FW_SIZE_V2) )
+	{
+		fclose(fp);
+		return result;
+	}
+	
+	size_t readBytes = 0;
+	u32 identifierValue = 0;
+	
+	fseek(fp, offsetof(FWHeader, identifierValue), SEEK_SET);
+	readBytes = fread(&identifierValue, 1, sizeof(u32), fp);
+	
+	if ( (readBytes != sizeof(u32)) || ((identifierValue & 0x00FFFFFF) != 0x0043414D) )
+	{
+		fclose(fp);
+		return result;
+	}
+	
+	// Now that the firmware file has been validated, let's start reading the individual
+	// pieces of data that the caller has requested.
+	result = true;
+	
+	if (outFirmwareData != NULL)
+	{
+		fseek(fp, 0, SEEK_SET);
+		readBytes = fread(outFirmwareData, 1, sizeof(NDSFirmwareData), fp);
+		
+		if ( readBytes == sizeof(NDSFirmwareData) )
+		{
+			if (outConsoleType != NULL)
+			{
+				*outConsoleType = (int)outFirmwareData->header.key.consoleType;
+			}
+			
+			if (outMACAddr != NULL)
+			{
+				outMACAddr[0] = outFirmwareData->wifiInfo.MACAddr[0];
+				outMACAddr[1] = outFirmwareData->wifiInfo.MACAddr[1];
+				outMACAddr[2] = outFirmwareData->wifiInfo.MACAddr[2];
+				outMACAddr[3] = outFirmwareData->wifiInfo.MACAddr[3];
+				outMACAddr[4] = outFirmwareData->wifiInfo.MACAddr[4];
+				outMACAddr[5] = outFirmwareData->wifiInfo.MACAddr[5];
+			}
+		}
+		else
+		{
+			printf("Ext. Firmware: Failed to read the firmware data. (%lu out of %lu bytes read.)\n", (unsigned long)readBytes, sizeof(NDSFirmwareData));
+			result = false;
+		}
+	}
+	else
+	{
+		if (outConsoleType != NULL)
+		{
+			FW_HEADER_KEY fpKey;
+			fpKey.consoleType = NDS_CONSOLE_TYPE_FAT;
+			
+			fseek(fp, offsetof(FWHeader, key), SEEK_SET);
+			readBytes = fread(&fpKey, 1, sizeof(FW_HEADER_KEY), fp);
+			
+			if (readBytes == sizeof(FW_HEADER_KEY))
+			{
+				*outConsoleType = (int)fpKey.consoleType;
+			}
+			else
+			{
+				printf("Ext. Firmware: Failed to read the console type. (%lu out of %lu bytes read.)\n", (unsigned long)readBytes, sizeof(FW_HEADER_KEY));
+				result = false;
+			}
+		}
+		
+		if (outMACAddr != NULL)
+		{
+			fseek(fp, sizeof(FWHeader) + offsetof(FWWifiInfo, MACAddr), SEEK_SET);
+			readBytes = fread(outMACAddr, 1, 6, fp);
+			
+			if (readBytes != 6)
+			{
+				printf("Ext. Firmware: Failed to read the MAC address. (%lu out of %lu bytes read.)\n", (unsigned long)readBytes, sizeof(u8) * 6);
+				result = false;
+			}
+		}
+	}
+	
+	// Close the file.
+	fclose(fp);
+	
+	return result;
 }
 
 //=========================
