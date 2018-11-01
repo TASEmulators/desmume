@@ -6209,6 +6209,7 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 
 LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	const bool isPCapSupported = wifiHandler->IsPCapSupported();
 	const WifiEmulationLevel emulationLevel = wifiHandler->GetSelectedEmulationLevel();
 
 	switch(uMsg)
@@ -6242,7 +6243,12 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			{
 				ComboBox_DeleteString(deviceMenu, 0);
 			}
-			
+
+			if (isPCapSupported)
+			{
+				deviceCount = wifiHandler->GetBridgeDeviceList(&deviceStringList);
+			}
+
 			if (deviceCount < 0)
 			{
 				ComboBox_AddString(deviceMenu, "Error: Cannot find any devices.");
