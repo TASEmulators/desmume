@@ -2273,11 +2273,9 @@ int _main()
 		hash &= 0x00FFFFFF;
 		
 		wifiHandler->SetUserMACValues(hash >> 16, (hash >> 8) & 0xFF, hash & 0xFF);
-		wifiHandler->SetMACModeForComm(WifiCommInterfaceID_AdHoc, WifiMACMode_Manual);
-		//wifiHandler->SetFirmwareMACMode(FirmwareMACMode_Manual);
+		wifiHandler->SetFirmwareMACMode(FirmwareMACMode_Manual);
 	}
 	
-	wifiHandler->SetCommInterfaceID(CommonSettings.wifi.mode);
 	wifiHandler->SetBridgeDeviceIndex(CommonSettings.wifi.infraBridgeAdapter);
 
 	if (GetPrivateProfileBool("Wifi", "Enabled", false, IniName))
@@ -6325,7 +6323,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 					else
 						CommonSettings.wifi.mode = WifiCommInterfaceID_Infrastructure;
 					WritePrivateProfileInt("Wifi", "Mode", CommonSettings.wifi.mode, IniName);
-					wifiHandler->SetCommInterfaceID(CommonSettings.wifi.mode);
 
 					cur = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
 					CommonSettings.wifi.infraBridgeAdapter = ComboBox_GetCurSel(cur);

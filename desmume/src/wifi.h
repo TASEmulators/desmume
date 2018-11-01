@@ -820,11 +820,11 @@ enum WifiCommInterfaceID
 	WifiCommInterfaceID_Infrastructure = 1
 };
 
-enum WifiMACMode
+enum FirmwareMACMode
 {
-	WifiMACMode_Automatic = 0,
-	WifiMACMode_Manual = 1,
-	WifiMACMode_ReadFromFirmware = 2
+	FirmwareMACMode_Automatic = 0,
+	FirmwareMACMode_Manual = 1,
+	FirmwareMACMode_ReadFromFirmware = 2
 };
 
 typedef u16 IOREG_W_PADDING;
@@ -3242,41 +3242,14 @@ class WifiCommInterface
 {
 protected:
 	WifiCommInterfaceID _commInterfaceID;
-	WifiEmulationLevel _emulationLevel;
-	u64 _usecCounter;
-	
-	u8 *_workingTXBuffer;
-	u8 *_workingRXBuffer;
-	
-	std::deque<RXQueuedPacket> _rxPacketQueue;
-	size_t _rxCurrentQueuedPacketPosition;
-	
-	EAPStatus _softAPStatus;
-	u16 _softAPSequenceNumber;
-	
-	FILE *_packetCaptureFile; // PCAP file to store the Ethernet packets.
-	
-	RXQueuedPacket _GenerateSoftAPDeauthenticationFrame();
-	RXQueuedPacket _GenerateSoftAPBeaconFrame();
 	
 public:
-	WifiCommInterface();
-	virtual ~WifiCommInterface();
-	
-	void PacketCaptureFileOpen();
-	void PacketCaptureFileClose();
-	void PacketCaptureFileWrite(const u8 *packet, u32 len, bool isReceived);
-	
-	const u8* RXPacketFilter(const u8 *rxBuffer, const size_t rxBytes, RXPacketHeader &outRXHeader);
-	void RXWriteOneHalfword(u16 val);
-	
-	void EmptyRXQueue();
+	~WifiCommInterface();
 	
 	virtual bool Start(WifiEmulationLevel emulationLevel) = 0;
 	virtual void Stop() = 0;
-	virtual void SendPacket(const TXPacketHeader &txHeader, const u8 *packetData) = 0;
-	virtual size_t RXPacketGet(u8 *rxTargetBuffer) = 0;
-	void Trigger();
+	virtual size_t TXPacketSend(u8 *txTargetBuffer, size_t txLength) = 0;
+	virtual size_t RXPacketGet(u8 *rxTargetBuffer, u16 sequenceNumber) = 0;
 };
 
 class AdhocCommInterface : public WifiCommInterface
@@ -3291,8 +3264,8 @@ public:
 	
 	virtual bool Start(WifiEmulationLevel emulationLevel);
 	virtual void Stop();
-	virtual void SendPacket(const TXPacketHeader &txHeader, const u8 *packetData);
-	virtual size_t RXPacketGet(u8 *rxTargetBuffer);
+	virtual size_t TXPacketSend(u8 *txTargetBuffer, size_t txLength);
+	virtual size_t RXPacketGet(u8 *rxTargetBuffer, u16 sequenceNumber);
 };
 
 class SoftAPCommInterface : public WifiCommInterface
@@ -3317,8 +3290,8 @@ public:
 	
 	virtual bool Start(WifiEmulationLevel emulationLevel);
 	virtual void Stop();
-	virtual void SendPacket(const TXPacketHeader &txHeader, const u8 *packetData);
-	virtual size_t RXPacketGet(u8 *rxTargetBuffer);
+	virtual size_t TXPacketSend(u8 *txTargetBuffer, size_t txLength);
+	virtual size_t RXPacketGet(u8 *rxTargetBuffer, u16 sequenceNumber);
 };
 
 class WifiHandler
@@ -3332,21 +3305,43 @@ protected:
 	WifiEmulationLevel _selectedEmulationLevel;
 	WifiEmulationLevel _currentEmulationLevel;
 	
-	WifiCommInterfaceID _selectedCommID;
-	WifiCommInterfaceID _currentCommID;
-	WifiCommInterface *_currentCommInterface;
-	
 	int _selectedBridgeDeviceIndex;
 	
 	ClientPCapInterface *_pcap;
 	bool _isSocketsSupported;
 	bool _didWarnWFCUser;
 	
-	WifiMACMode _adhocMACMode;
-	WifiMACMode _infrastructureMACMode;
-	u32 _ip4Address;
-	u32 _uniqueMACValue;
+	FirmwareMACMode _firmwareMACMode;
 	u8 _userMAC[3];
+	
+	u64 _usecCounter;
+	
+	u8 *_workingTXBuffer;
+	u8 *_workingRXBuffer;
+	
+	std::deque<RXQueuedPacket> _rxPacketQueue;
+	size_t _rxCurrentQueuedPacketPosition;
+	
+	EAPStatus _softAPStatus;
+	u16 _softAPSequenceNumber;
+	
+	FILE *_packetCaptureFile; // PCAP file to store the Ethernet packets.
+	
+	void _RXEmptyQueue();
+	void _RXWriteOneHalfword(u16 val);
+	const u8* _RXPacketFilter(const u8 *rxBuffer, const size_t rxBytes, RXPacketHeader &outRXHeader);
+	
+	void _PacketCaptureFileOpen();
+	void _PacketCaptureFileClose();
+	void _PacketCaptureFileWrite(const u8 *packet, u32 len, bool isReceived);
+	
+	RXQueuedPacket _GenerateSoftAPDeauthenticationFrame();
+	RXQueuedPacket _GenerateSoftAPBeaconFrame();
+	RXQueuedPacket _GenerateSoftAPMgmtResponseFrame(WifiFrameManagementSubtype mgmtFrameSubtype);
+	RXQueuedPacket _GenerateSoftAPCtlACKFrame(const WifiDataFrameHeaderSTA2DS &inIEEE80211FrameHeader, const size_t sendPacketLength);
+	
+	bool _SoftAPTrySendPacket(const TXPacketHeader &txHeader, const u8 *IEEE80211PacketData);
+	bool _AdhocTrySendPacket(const TXPacketHeader &txHeader, const u8 *IEEE80211PacketData);
 	
 public:
 	WifiHandler();
@@ -3361,10 +3356,6 @@ public:
 	WifiEmulationLevel GetSelectedEmulationLevel();
 	WifiEmulationLevel GetCurrentEmulationLevel();
 	void SetEmulationLevel(WifiEmulationLevel emulationLevel);
-	
-	WifiCommInterfaceID GetSelectedCommInterfaceID();
-	WifiCommInterfaceID GetCurrentCommInterfaceID();
-	void SetCommInterfaceID(WifiCommInterfaceID commID);
 	
 	int GetBridgeDeviceList(std::vector<std::string> *deviceStringList);
 
@@ -3385,23 +3376,20 @@ public:
 	ClientPCapInterface* GetPCapInterface();
 	void SetPCapInterface(ClientPCapInterface *pcapInterface);
 	
-	WifiMACMode GetMACModeForComm(WifiCommInterfaceID commID);
-	void SetMACModeForComm(WifiCommInterfaceID commID, WifiMACMode macMode);
-	
-	uint32_t GetIP4Address();
-	void SetIP4Address(u32 ip4Address);
-	
-	uint32_t GetUniqueMACValue();
-	void SetUniqueMACValue(u32 uniqueValue);
+	FirmwareMACMode GetFirmwareMACMode();
+	void SetFirmwareMACMode(FirmwareMACMode macMode);
 	
 	void GetUserMACValues(u8 *outValue3, u8 *outValue4, u8 *outValue5);
 	void SetUserMACValues(u8 inValue3, u8 inValue4, u8 inValue5);
 	
-	void GenerateMACFromValues(u8 outMAC[6]);
+	void GenerateRandomMAC(u8 outMAC[6]);
 	void CopyMACFromUserValues(u8 outMAC[6]);
 	
 	void PrepareSaveStateWrite();
 	void ParseSaveStateRead();
+	
+	static size_t ConvertDataFrame80211To8023(const u8 *inIEEE80211Frame, const size_t txLength, u8 *outIEEE8023Frame);
+	static size_t ConvertDataFrame8023To80211(const u8 *inIEEE8023Frame, const size_t txLength, u8 *outIEEE80211Frame);
 };
 
 /* wifi data to be stored in firmware, when no firmware image was loaded */

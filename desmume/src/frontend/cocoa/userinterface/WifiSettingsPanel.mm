@@ -89,9 +89,7 @@
 {
 	if (theSelection == 0)
 	{
-		//wifiHandler->SetFirmwareMACMode(FirmwareMACMode_ReadFromFirmware);
-		wifiHandler->SetMACModeForComm(WifiCommInterfaceID_AdHoc, WifiMACMode_ReadFromFirmware);
-		wifiHandler->SetMACModeForComm(WifiCommInterfaceID_Infrastructure, WifiMACMode_ReadFromFirmware);
+		wifiHandler->SetFirmwareMACMode(FirmwareMACMode_ReadFromFirmware);
 	}
 	else if ( (theSelection >= 1) && (theSelection <= 4) )
 	{
@@ -100,9 +98,7 @@
 		const uint8_t myMAC6 = (_myMACAddressValue >> 24) & 0x000000F0;
 		
 		wifiHandler->SetUserMACValues(myMAC4, myMAC5, myMAC6 + theSelection);
-		//wifiHandler->SetFirmwareMACMode(FirmwareMACMode_Manual);
-		wifiHandler->SetMACModeForComm(WifiCommInterfaceID_AdHoc, WifiMACMode_Manual);
-		wifiHandler->SetMACModeForComm(WifiCommInterfaceID_Infrastructure, WifiMACMode_Manual);
+		wifiHandler->SetFirmwareMACMode(FirmwareMACMode_Manual);
 	}
 	
 	addressSelection = theSelection;
