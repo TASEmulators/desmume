@@ -1759,7 +1759,18 @@ DEFINE_LUA_FUNCTION(emu_frameadvance, "")
 
 	return StepEmulationAtSpeed(L, info.speedMode, true);
 }
-
+DEFINE_LUA_FUNCTION(emu_gamecode, "")
+{
+	char tmp[5] = {gameInfo.header.gameCode[0],gameInfo.header.gameCode[1],gameInfo.header.gameCode[2],gameInfo.header.gameCode[3],0};
+	lua_pushstring(L,tmp);
+	return 1;
+}
+DEFINE_LUA_FUNCTION(emu_smallgamecode, "")
+{
+	char tmp[4] = {gameInfo.header.gameCode[0],gameInfo.header.gameCode[1],gameInfo.header.gameCode[2],0};
+	lua_pushstring(L,tmp);
+	return 1;
+}
 DEFINE_LUA_FUNCTION(emu_pause, "")
 {
 	driver->EMU_PauseEmulation(true);
@@ -4798,6 +4809,8 @@ static const struct luaL_reg styluslib [] =
 static const struct luaL_reg emulib [] =
 {
 	{"frameadvance", emu_frameadvance},
+	{"gamecode", emu_gamecode},
+	{"smallgamecode", emu_smallgamecode},
 	{"speedmode", emu_speedmode},
 	{"wait", emu_wait},
 	{"pause", emu_pause},
