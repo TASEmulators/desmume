@@ -2234,7 +2234,6 @@ int _main()
 	Piano.Enabled	= (slot2_device_type == NDS_SLOT2_EASYPIANO)?true:false;
 	Paddle.Enabled	= (slot2_device_type == NDS_SLOT2_PADDLE)?true:false;
 
-	CommonSettings.wifi.mode = (WifiCommInterfaceID)GetPrivateProfileInt("Wifi", "Mode", WifiCommInterfaceID_AdHoc, IniName);
 	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 
 	osd = new OSDCLASS(-1);
@@ -6210,8 +6209,6 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 
 LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	const bool isSocketsSupported = wifiHandler->IsSocketsSupported();
-	const bool isPCapSupported = wifiHandler->IsPCapSupported();
 	const WifiEmulationLevel emulationLevel = wifiHandler->GetSelectedEmulationLevel();
 
 	switch(uMsg)
@@ -6235,12 +6232,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			EnableWindow(GetDlgItem(hDlg, IDC_WIFI_ENABLED), FALSE);
 			EnableWindow(GetDlgItem(hDlg, IDC_WIFI_COMPAT), FALSE);
 #endif
-			if (isSocketsSupported && isPCapSupported)
-				CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE0 + CommonSettings.wifi.mode);
-			else if(isSocketsSupported)
-				CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE0);
-			else
-				CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE1);
 
 			HWND deviceMenu = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
 			int menuItemCount = ComboBox_GetCount(deviceMenu);
@@ -6250,15 +6241,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			for (int i = 0; i < menuItemCount; i++)
 			{
 				ComboBox_DeleteString(deviceMenu, 0);
-			}
-
-			if (isPCapSupported)
-			{
-				deviceCount = wifiHandler->GetBridgeDeviceList(&deviceStringList);
-			}
-			else
-			{
-				SetDlgItemText(hDlg, IDC_WIFIMODE1, "Infrastructure (winpcap not loaded)");
 			}
 			
 			if (deviceCount < 0)
@@ -6283,9 +6265,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 				ComboBox_SetCurSel(deviceMenu, CommonSettings.wifi.infraBridgeAdapter);
 				EnableWindow(deviceMenu, TRUE);
 			}
-
-			if (!isSocketsSupported)
-				EnableWindow(GetDlgItem(hDlg, IDC_WIFIMODE0), FALSE);
 		}
 		return TRUE;
 
@@ -6317,12 +6296,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 #else
 					wifiHandler->SetEmulationLevel(WifiEmulationLevel_Off);
 #endif
-
-					if (IsDlgButtonChecked(hDlg, IDC_WIFIMODE0))
-						CommonSettings.wifi.mode = WifiCommInterfaceID_AdHoc;
-					else
-						CommonSettings.wifi.mode = WifiCommInterfaceID_Infrastructure;
-					WritePrivateProfileInt("Wifi", "Mode", CommonSettings.wifi.mode, IniName);
 
 					cur = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
 					CommonSettings.wifi.infraBridgeAdapter = ComboBox_GetCurSel(cur);

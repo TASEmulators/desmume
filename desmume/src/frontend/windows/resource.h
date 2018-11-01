@@ -320,10 +320,8 @@
 #define IDC_GGREEN                      1005
 #define IDC_ROTATE270                   1006
 #define IDC_GRED                        1006
-#define IDC_WIFIMODE0                   1006
 #define IDC_ARM7BIOSBROWSE              1007
 #define IDC_GYELLOW                     1007
-#define IDC_WIFIMODE1                   1007
 #define IDC_MEMVIEWBOX                  1008
 #define IDC_GBLUE                       1008
 #define IDC_ADHOC_SERVER                1008
