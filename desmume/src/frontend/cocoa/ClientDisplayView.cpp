@@ -784,7 +784,7 @@ void ClientDisplayPresenter::SetHUDColorInputPendingOnly(uint32_t color32)
 
 uint32_t ClientDisplayPresenter::GetInputColorUsingStates(bool pendingState, bool appliedState)
 {
-	uint32_t color = this->_hudColorInputAppliedAndPending;
+	uint32_t color = LE_TO_LOCAL_32(0x80808080);
 	
 	if (pendingState && appliedState)
 	{
@@ -797,10 +797,6 @@ uint32_t ClientDisplayPresenter::GetInputColorUsingStates(bool pendingState, boo
 	else if (pendingState)
 	{
 		color = this->_hudColorInputPendingOnly;
-	}
-	else
-	{
-		color = LE_TO_LOCAL_32(0x80808080);
 	}
 	
 	return color;

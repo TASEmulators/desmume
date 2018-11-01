@@ -214,6 +214,7 @@
 		}
 	}
 	
+	[numberFormatter release];
 	return ip4Address_u32;
 }
 
