@@ -6238,7 +6238,9 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			int menuItemCount = ComboBox_GetCount(deviceMenu);
 			int deviceCount = -1;
 			std::vector<std::string> deviceStringList;
-
+			int curSel = 0;
+			bool enableWin = false;
+			
 			for (int i = 0; i < menuItemCount; i++)
 			{
 				ComboBox_DeleteString(deviceMenu, 0);
@@ -6247,30 +6249,28 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			if (isPCapSupported)
 			{
 				deviceCount = wifiHandler->GetBridgeDeviceList(&deviceStringList);
-			}
 
-			if (deviceCount < 0)
-			{
-				ComboBox_AddString(deviceMenu, "Error: Cannot find any devices.");
-				ComboBox_SetCurSel(deviceMenu, 0);
-				EnableWindow(deviceMenu, FALSE);
-			}
-			else if (deviceCount == 0)
-			{
-				ComboBox_AddString(deviceMenu, "No devices found.");
-				ComboBox_SetCurSel(deviceMenu, 0);
-				EnableWindow(deviceMenu, FALSE);
+				if (deviceCount <= 0)
+				{
+					ComboBox_AddString(deviceMenu, "Error: No devices found.");
+				}
+				else
+				{
+					for (size_t i = 0; i < deviceCount; i++)
+					{
+						ComboBox_AddString(deviceMenu, deviceStringList[i].c_str());
+					}
+					curSel = CommonSettings.wifi.infraBridgeAdapter;
+					enableWin = true;
+				}
 			}
 			else
 			{
-				for (size_t i = 0; i < deviceCount; i++)
-				{
-					ComboBox_AddString(deviceMenu, deviceStringList[i].c_str());
-				}
-
-				ComboBox_SetCurSel(deviceMenu, CommonSettings.wifi.infraBridgeAdapter);
-				EnableWindow(deviceMenu, TRUE);
+				ComboBox_AddString(deviceMenu, "Error: Could not load WinPcap.");
 			}
+			ComboBox_SetCurSel(deviceMenu, curSel);
+			EnableWindow(deviceMenu, enableWin);
+			
 		}
 		return TRUE;
 
