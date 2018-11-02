@@ -6236,7 +6236,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 
 			HWND deviceMenu = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
 			int menuItemCount = ComboBox_GetCount(deviceMenu);
-			int deviceCount = -1;
 			std::vector<std::string> deviceStringList;
 			int curSel = 0;
 			bool enableWin = false;
@@ -6248,7 +6247,7 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 
 			if (isPCapSupported)
 			{
-				deviceCount = wifiHandler->GetBridgeDeviceList(&deviceStringList);
+				int deviceCount = wifiHandler->GetBridgeDeviceList(&deviceStringList);
 
 				if (deviceCount <= 0)
 				{
