@@ -6238,7 +6238,7 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			int menuItemCount = ComboBox_GetCount(deviceMenu);
 			std::vector<std::string> deviceStringList;
 			int curSel = 0;
-			bool enableWin = false;
+			BOOL enableWin = FALSE;
 			
 			for (int i = 0; i < menuItemCount; i++)
 			{
@@ -6251,11 +6251,11 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 
 				if (deviceCount < 0)
 				{
-					ComboBox_AddString(deviceMenu, "Error: Cannot find any devices.");
+					ComboBox_AddString(deviceMenu, "Error: Searching for a device failed.");
 				}
 				else if (deviceCount == 0)
 				{
-					ComboBox_AddString(deviceMenu, "No devices found.");
+					ComboBox_AddString(deviceMenu, "No devices were found.");
 				}
 				else
 				{
@@ -6264,7 +6264,7 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 						ComboBox_AddString(deviceMenu, deviceStringList[i].c_str());
 					}
 					curSel = CommonSettings.wifi.infraBridgeAdapter;
-					enableWin = true;
+					enableWin = TRUE;
 				}
 			}
 			else
