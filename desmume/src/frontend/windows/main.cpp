@@ -6249,9 +6249,13 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			{
 				int deviceCount = wifiHandler->GetBridgeDeviceList(&deviceStringList);
 
-				if (deviceCount <= 0)
+				if (deviceCount < 0)
 				{
-					ComboBox_AddString(deviceMenu, "Error: No devices found.");
+					ComboBox_AddString(deviceMenu, "Error: Cannot find any devices.");
+				}
+				else if (deviceCount == 0)
+				{
+					ComboBox_AddString(deviceMenu, "No devices found.");
 				}
 				else
 				{
