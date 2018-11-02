@@ -1911,15 +1911,29 @@ template<int PROCNUM, u8 Rnum>
 static u32 FASTCALL OP_LDRD_REG(u32 adr)
 {
 	cpu->R[Rnum] = READ32(cpu->mem_if->data, adr);
-	cpu->R[Rnum+1] = READ32(cpu->mem_if->data, adr+4);
-	return (MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(adr) + MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(adr+4));
+	
+	// For even-numbered registers, we'll do a double-word load. Otherwise, we'll just do a single-word load.
+	if ((Rnum & 0x01) == 0)
+	{
+		cpu->R[Rnum+1] = READ32(cpu->mem_if->data, adr+4);
+		return (MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(adr) + MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(adr+4));
+	}
+	
+	return MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(adr);
 }
 template<int PROCNUM, u8 Rnum>
 static u32 FASTCALL OP_STRD_REG(u32 adr)
 {
 	WRITE32(cpu->mem_if->data, adr, cpu->R[Rnum]);
-	WRITE32(cpu->mem_if->data, adr + 4, cpu->R[Rnum + 1]);
-	return (MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(adr) + MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(adr+4));
+	
+	// For even-numbered registers, we'll do a double-word store. Otherwise, we'll just do a single-word store.
+	if ((Rnum & 0x01) == 0)
+	{
+		WRITE32(cpu->mem_if->data, adr+4, cpu->R[Rnum + 1]);
+		return (MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(adr) + MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(adr+4));
+	}
+	
+	return MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(adr);
 }
 #define T(op, proc) op<proc,0>, op<proc,1>, op<proc,2>, op<proc,3>, op<proc,4>, op<proc,5>, op<proc,6>, op<proc,7>, op<proc,8>, op<proc,9>, op<proc,10>, op<proc,11>, op<proc,12>, op<proc,13>, op<proc,14>, op<proc,15>
 static const LDRD_STRD_REG op_ldrd_tab[2][16] = { {T(OP_LDRD_REG, 0)}, {T(OP_LDRD_REG, 1)} };
