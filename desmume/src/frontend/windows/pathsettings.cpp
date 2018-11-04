@@ -173,7 +173,9 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 
 	SetDlgItemText(hDlg, IDC_ROMPATHEDIT, path.pathToRoms);
 	SetDlgItemText(hDlg, IDC_SAVERAMPATHEDIT, path.pathToBattery);
+	SetDlgItemText(hDlg, IDC_SRAMIMPORTPATHEDIT, path.pathToSramImportExport);
 	SetDlgItemText(hDlg, IDC_STATEPATHEDIT, path.pathToStates);
+	SetDlgItemText(hDlg, IDC_STATESLOTPATHEDIT, path.pathToStateSlots);
 	SetDlgItemText(hDlg, IDC_SCREENSHOTPATHEDIT, path.pathToScreenshots);
 	SetDlgItemText(hDlg, IDC_AVIPATHEDIT, path.pathToAviFiles);
 	SetDlgItemText(hDlg, IDC_CHEATPATHEDIT, path.pathToCheats);
@@ -259,10 +261,22 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 					SetDlgItemText(hDlg, IDC_SAVERAMPATHEDIT, path.pathToBattery);
 			}
 			break;
+		case IDC_BROWSESRAMIMPORT:
+			{
+				if(BrowseForPath(path.pathToSramImportExport))
+					SetDlgItemText(hDlg, IDC_SRAMIMPORTPATHEDIT, path.pathToSramImportExport);
+			}
+			break;
 		case IDC_BROWSESTATES:
 			{
 				if(BrowseForPath(path.pathToStates))
 					SetDlgItemText(hDlg, IDC_STATEPATHEDIT, path.pathToStates);
+			}
+			break;
+		case IDC_BROWSESTATESLOTS:
+			{
+				if(BrowseForPath(path.pathToStateSlots))
+					SetDlgItemText(hDlg, IDC_STATESLOTPATHEDIT, path.pathToStateSlots);
 			}
 			break;
 		case IDC_BROWSESCREENSHOTS:
@@ -344,7 +358,9 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 
 			GetDlgItemText(hDlg, IDC_ROMPATHEDIT, path.pathToRoms, MAX_PATH);
 			GetDlgItemText(hDlg, IDC_SAVERAMPATHEDIT, path.pathToBattery, MAX_PATH);
+			GetDlgItemText(hDlg, IDC_SRAMIMPORTPATHEDIT, path.pathToSramImportExport, MAX_PATH);
 			GetDlgItemText(hDlg, IDC_STATEPATHEDIT, path.pathToStates, MAX_PATH);
+			GetDlgItemText(hDlg, IDC_STATESLOTPATHEDIT, path.pathToStateSlots, MAX_PATH);
 			GetDlgItemText(hDlg, IDC_SCREENSHOTPATHEDIT, path.pathToScreenshots, MAX_PATH);
 			GetDlgItemText(hDlg, IDC_AVIPATHEDIT, path.pathToAviFiles, MAX_PATH);
 			GetDlgItemText(hDlg, IDC_CHEATPATHEDIT, path.pathToCheats, MAX_PATH);
