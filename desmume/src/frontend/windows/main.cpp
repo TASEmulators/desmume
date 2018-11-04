@@ -2234,7 +2234,6 @@ int _main()
 	Piano.Enabled	= (slot2_device_type == NDS_SLOT2_EASYPIANO)?true:false;
 	Paddle.Enabled	= (slot2_device_type == NDS_SLOT2_PADDLE)?true:false;
 
-	CommonSettings.wifi.mode = (WifiCommInterfaceID)GetPrivateProfileInt("Wifi", "Mode", WifiCommInterfaceID_AdHoc, IniName);
 	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 
 	osd = new OSDCLASS(-1);
@@ -6210,7 +6209,6 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 
 LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	const bool isSocketsSupported = wifiHandler->IsSocketsSupported();
 	const bool isPCapSupported = wifiHandler->IsPCapSupported();
 	const WifiEmulationLevel emulationLevel = wifiHandler->GetSelectedEmulationLevel();
 
@@ -6235,18 +6233,13 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			EnableWindow(GetDlgItem(hDlg, IDC_WIFI_ENABLED), FALSE);
 			EnableWindow(GetDlgItem(hDlg, IDC_WIFI_COMPAT), FALSE);
 #endif
-			if (isSocketsSupported && isPCapSupported)
-				CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE0 + CommonSettings.wifi.mode);
-			else if(isSocketsSupported)
-				CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE0);
-			else
-				CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE1);
 
 			HWND deviceMenu = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
 			int menuItemCount = ComboBox_GetCount(deviceMenu);
-			int deviceCount = -1;
 			std::vector<std::string> deviceStringList;
-
+			int curSel = 0;
+			BOOL enableWin = FALSE;
+			
 			for (int i = 0; i < menuItemCount; i++)
 			{
 				ComboBox_DeleteString(deviceMenu, 0);
@@ -6254,38 +6247,33 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 
 			if (isPCapSupported)
 			{
-				deviceCount = wifiHandler->GetBridgeDeviceList(&deviceStringList);
-			}
-			else
-			{
-				SetDlgItemText(hDlg, IDC_WIFIMODE1, "Infrastructure (winpcap not loaded)");
-			}
-			
-			if (deviceCount < 0)
-			{
-				ComboBox_AddString(deviceMenu, "Error: Cannot find any devices.");
-				ComboBox_SetCurSel(deviceMenu, 0);
-				EnableWindow(deviceMenu, FALSE);
-			}
-			else if (deviceCount == 0)
-			{
-				ComboBox_AddString(deviceMenu, "No devices found.");
-				ComboBox_SetCurSel(deviceMenu, 0);
-				EnableWindow(deviceMenu, FALSE);
-			}
-			else
-			{
-				for (size_t i = 0; i < deviceCount; i++)
+				int deviceCount = wifiHandler->GetBridgeDeviceList(&deviceStringList);
+
+				if (deviceCount < 0)
 				{
-					ComboBox_AddString(deviceMenu, deviceStringList[i].c_str());
+					ComboBox_AddString(deviceMenu, "Error: Searching for a device failed.");
 				}
-
-				ComboBox_SetCurSel(deviceMenu, CommonSettings.wifi.infraBridgeAdapter);
-				EnableWindow(deviceMenu, TRUE);
+				else if (deviceCount == 0)
+				{
+					ComboBox_AddString(deviceMenu, "No devices were found.");
+				}
+				else
+				{
+					for (size_t i = 0; i < deviceCount; i++)
+					{
+						ComboBox_AddString(deviceMenu, deviceStringList[i].c_str());
+					}
+					curSel = CommonSettings.wifi.infraBridgeAdapter;
+					enableWin = TRUE;
+				}
 			}
-
-			if (!isSocketsSupported)
-				EnableWindow(GetDlgItem(hDlg, IDC_WIFIMODE0), FALSE);
+			else
+			{
+				ComboBox_AddString(deviceMenu, "Error: Could not load WinPcap.");
+			}
+			ComboBox_SetCurSel(deviceMenu, curSel);
+			EnableWindow(deviceMenu, enableWin);
+			
 		}
 		return TRUE;
 
@@ -6317,12 +6305,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 #else
 					wifiHandler->SetEmulationLevel(WifiEmulationLevel_Off);
 #endif
-
-					if (IsDlgButtonChecked(hDlg, IDC_WIFIMODE0))
-						CommonSettings.wifi.mode = WifiCommInterfaceID_AdHoc;
-					else
-						CommonSettings.wifi.mode = WifiCommInterfaceID_Infrastructure;
-					WritePrivateProfileInt("Wifi", "Mode", CommonSettings.wifi.mode, IniName);
 
 					cur = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
 					CommonSettings.wifi.infraBridgeAdapter = ComboBox_GetCurSel(cur);
