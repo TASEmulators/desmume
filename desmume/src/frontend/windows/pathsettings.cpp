@@ -107,6 +107,7 @@ void WritePathSettings()
 {
 	WritePrivateProfileString(SECTION, ROMKEY, path.pathToRoms, IniName);
 	WritePrivateProfileString(SECTION, BATTERYKEY, path.pathToBattery, IniName);
+	WritePrivateProfileString(SECTION, SRAMIMPORTKEY, path.pathToSramImportExport, IniName);
 	WritePrivateProfileString(SECTION, STATEKEY, path.pathToStates, IniName);
 	WritePrivateProfileString(SECTION, STATESLOTKEY, path.pathToStateSlots, IniName);
 	WritePrivateProfileString(SECTION, SCREENSHOTKEY, path.pathToScreenshots, IniName);
