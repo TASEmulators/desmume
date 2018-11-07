@@ -203,6 +203,10 @@
 
 #define		WIFI_WORKING_PACKET_BUFFER_SIZE (16 * 1024 * sizeof(u8)) // 16 KB size
 
+class Task;
+struct slock;
+typedef slock slock_t;
+
 // RF2958 Register Addresses
 enum RegAddrRF2958
 {
@@ -3147,14 +3151,19 @@ typedef struct
 // - FCS size is 4 bytes
 #define MAX_PACKET_SIZE_80211 2346
 
+// Given a connection of 2 megabits per second, we take ~4 microseconds to transfer a byte.
+// This works out to needing ~8 microseconds to transfer a halfword.
+#define RX_LATENCY_LIMIT 8
+
 typedef union
 {
-	u8 rawFrameData[sizeof(RXPacketHeader) + MAX_PACKET_SIZE_80211];
+	u8 rawFrameData[sizeof(RXPacketHeader) + MAX_PACKET_SIZE_80211 + sizeof(u16)];
 	
 	struct
 	{
 		RXPacketHeader rxHeader;
 		u8 rxData[MAX_PACKET_SIZE_80211];
+		u16 latencyCount;
 	};
 } RXQueuedPacket;
 
@@ -3317,8 +3326,14 @@ protected:
 	u64 _usecCounter;
 	
 	u8 *_workingTXBuffer;
-	u8 *_workingRXBuffer;
+	u8 *_workingRXAdhocBuffer;
+	u8 *_workingRXSoftAPBuffer;
 	
+	Task *_rxTaskAdhoc;
+	slock_t *_mutexRXThreadAdhocRunningFlag;
+	volatile bool _isRXThreadAdhocRunning;
+	
+	slock_t *_mutexRXPacketQueue;
 	std::deque<RXQueuedPacket> _rxPacketQueue;
 	size_t _rxCurrentQueuedPacketPosition;
 	
@@ -3335,9 +3350,9 @@ protected:
 	void _PacketCaptureFileClose();
 	void _PacketCaptureFileWrite(const u8 *packet, u32 len, bool isReceived);
 	
-	RXQueuedPacket _GenerateSoftAPDeauthenticationFrame();
-	RXQueuedPacket _GenerateSoftAPBeaconFrame();
-	RXQueuedPacket _GenerateSoftAPMgmtResponseFrame(WifiFrameManagementSubtype mgmtFrameSubtype);
+	RXQueuedPacket _GenerateSoftAPDeauthenticationFrame(u16 sequenceNumber);
+	RXQueuedPacket _GenerateSoftAPBeaconFrame(u16 sequenceNumber);
+	RXQueuedPacket _GenerateSoftAPMgmtResponseFrame(WifiFrameManagementSubtype mgmtFrameSubtype, u16 sequenceNumber);
 	RXQueuedPacket _GenerateSoftAPCtlACKFrame(const WifiDataFrameHeaderSTA2DS &inIEEE80211FrameHeader, const size_t sendPacketLength);
 	
 	bool _SoftAPTrySendPacket(const TXPacketHeader &txHeader, const u8 *IEEE80211PacketData);
@@ -3368,6 +3383,8 @@ public:
 	void CommSendPacket(const TXPacketHeader &txHeader, const u8 *packetData);
 	void CommTrigger();
 	void CommEmptyRXQueue();
+	
+	void RXPacketGetAdhoc();
 	
 	bool IsSocketsSupported();
 	void SetSocketsSupported(bool isSupported);
