@@ -2788,11 +2788,12 @@ typedef struct
 	WIFI_IOREG_MAP io;
 	RF2958_IOREG_MAP rf;
 	bb_t bb;
-	u16 RAM[0x1000];
+	u8 RAM[0x2000];
 	
 	WifiTXLocIndex txCurrentSlot;
 	TXPacketInfo txPacketInfo[6];
 	u32 cmdCount_u32;
+	u64 usecCounter;
 } WifiData;
 
 // Emulator frame headers
@@ -3173,10 +3174,6 @@ extern LegacyWifiSFormat legacyWifiSF;
 void WIFI_write16(u32 address, u16 val);
 u16  WIFI_read16(u32 address);
 
-/* wifimac timing */
-void WIFI_usTrigger();
-
-
 /* DS WFC profile data documented here : */
 /* http://dsdev.bigredpimp.com/2006/07/31/aoss-wfc-profile-data/ */
 /* Note : we use bytes to avoid endianness issues */
@@ -3323,8 +3320,6 @@ protected:
 	FirmwareMACMode _firmwareMACMode;
 	u8 _userMAC[3];
 	
-	u64 _usecCounter;
-	
 	u8 *_workingTXBuffer;
 	u8 *_workingRXAdhocBuffer;
 	u8 *_workingRXSoftAPBuffer;
@@ -3342,17 +3337,20 @@ protected:
 	
 	FILE *_packetCaptureFile; // PCAP file to store the Ethernet packets.
 	
+	void _AddPeriodicPacketsToRXQueue(const u64 usecCounter);
+	void _CopyFromRXQueue();
+	
 	void _RXEmptyQueue();
 	void _RXWriteOneHalfword(u16 val);
 	const u8* _RXPacketFilter(const u8 *rxBuffer, const size_t rxBytes, RXPacketHeader &outRXHeader);
 	
 	void _PacketCaptureFileOpen();
 	void _PacketCaptureFileClose();
-	void _PacketCaptureFileWrite(const u8 *packet, u32 len, bool isReceived);
+	void _PacketCaptureFileWrite(const u8 *packet, u32 len, bool isReceived, u64 timeStamp);
 	
 	RXQueuedPacket _GenerateSoftAPDeauthenticationFrame(u16 sequenceNumber);
-	RXQueuedPacket _GenerateSoftAPBeaconFrame(u16 sequenceNumber);
-	RXQueuedPacket _GenerateSoftAPMgmtResponseFrame(WifiFrameManagementSubtype mgmtFrameSubtype, u16 sequenceNumber);
+	RXQueuedPacket _GenerateSoftAPBeaconFrame(u16 sequenceNumber, u64 timeStamp);
+	RXQueuedPacket _GenerateSoftAPMgmtResponseFrame(WifiFrameManagementSubtype mgmtFrameSubtype, u16 sequenceNumber, u64 timeStamp);
 	RXQueuedPacket _GenerateSoftAPCtlACKFrame(const WifiDataFrameHeaderSTA2DS &inIEEE80211FrameHeader, const size_t sendPacketLength);
 	
 	bool _SoftAPTrySendPacket(const TXPacketHeader &txHeader, const u8 *IEEE80211PacketData);

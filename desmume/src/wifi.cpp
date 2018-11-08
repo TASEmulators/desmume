@@ -754,19 +754,21 @@ static void WIFI_TXStart(const WifiTXLocIndex txSlotIndex, IOREG_W_TXBUF_LOCATIO
 	if (txLocation.TransferRequest != 0)	/* is slot enabled? */
 	{
 		//printf("send packet at %08X, lr=%08X\n", NDS_ARM7.instruct_adr, NDS_ARM7.R[14]);
-		u16 address = txLocation.HalfwordAddress;
-		TXPacketHeader &txHeader = (TXPacketHeader &)wifi.RAM[address];
+		u32 byteAddress = txLocation.HalfwordAddress << 1;
 		
 		// is there even enough space for the header (6 hwords) in the tx buffer?
-		if (address > 0x1000-6)
+		if (byteAddress > (0x2000 - sizeof(TXPacketHeader) - sizeof(WifiFrameControl)))
 		{
 			WIFI_LOG(1, "TX slot %i trying to send a packet overflowing from the TX buffer (address %04X). Attempt ignored.\n", 
-				(int)txSlotIndex, (address << 1));
+				(int)txSlotIndex, (int)byteAddress);
 			return;
 		}
+		
+		TXPacketHeader &txHeader = (TXPacketHeader &)wifi.RAM[byteAddress];
+		const WifiFrameControl &fc = (WifiFrameControl &)wifi.RAM[byteAddress + sizeof(TXPacketHeader)];
 
 		//printf("---------- SENDING A PACKET ON SLOT %i, FrameCtl = %04X ----------\n",
-		//	slot, wifiMac.RAM[address+6]);
+		//	slot, wifi.RAM[byteAddress + sizeof(TXPacketHeader)]);
 
 		// 12 byte header TX Header: http://www.akkit.org/info/dswifi.htm#FmtTx
 		
@@ -788,14 +790,26 @@ static void WIFI_TXStart(const WifiTXLocIndex txSlotIndex, IOREG_W_TXBUF_LOCATIO
 		// Set sequence number if required
 		if ( (txSlotIndex == WifiTXLocIndex_BEACON) || (txLocation.IEEESeqCtrl == 0) )
 		{
-		//	u16 seqctl = wifiMac.RAM[address + 6 + 22];
-		//	wifiMac.RAM[address + 6 + 11] = (seqctl & 0x000F) | (wifiMac.TXSeqNo << 4);
-			wifi.RAM[address + 6 + 11] = io.TX_SEQNO.Number << 4;
+			if (fc.Type == WifiFrameType_Management)
+			{
+				WifiMgmtFrameHeader &mgmtHeader = (WifiMgmtFrameHeader &)wifi.RAM[byteAddress + sizeof(TXPacketHeader)];
+				mgmtHeader.seqCtl.SequenceNumber = io.TX_SEQNO.Number;
+				mgmtHeader.seqCtl.FragmentNumber = 0;
+			}
+			else if (fc.Type == WifiFrameType_Data)
+			{
+				// The frame header may not necessarily be a STA-to-STA header, but all of the data frame headers
+				// place the sequence number value at the same location in memory, so we can just use the
+				// STA-to-STA header to represent all of the data frame headers.
+				WifiDataFrameHeaderSTA2STA &dataHeader = (WifiDataFrameHeaderSTA2STA &)wifi.RAM[byteAddress + sizeof(TXPacketHeader)];
+				dataHeader.seqCtl.SequenceNumber = io.TX_SEQNO.Number;
+				dataHeader.seqCtl.FragmentNumber = 0;
+			}
 		}
-
+		
 		// Calculate and set FCS
-		u32 crc32 = WIFI_calcCRC32((u8 *)&wifi.RAM[address + 6], txHeader.length - 4);
-		*(u32*)&wifi.RAM[address + 6 + ((txHeader.length - 4) >> 1)] = crc32;
+		u32 crc32 = WIFI_calcCRC32(&wifi.RAM[byteAddress + sizeof(TXPacketHeader)], txHeader.length - 4);
+		*(u32 *)&wifi.RAM[byteAddress + sizeof(TXPacketHeader) + txHeader.length - 4] = crc32;
 
 		WIFI_triggerIRQ(WifiIRQ07_TXStart);
 		
@@ -826,7 +840,7 @@ static void WIFI_TXStart(const WifiTXLocIndex txSlotIndex, IOREG_W_TXBUF_LOCATIO
 				wifi.txCurrentSlot = WifiTXLocIndex_LOC2;
 			}
 			
-			io.RXTX_ADDR.HalfwordAddress = address;
+			io.RXTX_ADDR.HalfwordAddress = byteAddress >> 1;
 			
 			io.RF_STATUS.RFStatus = 0x03;
 			io.RF_PINS.CarrierSense = 0;
@@ -835,16 +849,16 @@ static void WIFI_TXStart(const WifiTXLocIndex txSlotIndex, IOREG_W_TXBUF_LOCATIO
 			io.RF_PINS.TX_On = 1;
 			io.RF_PINS.RX_On = 0;
 #if 0
-			WIFI_SoftAP_RecvPacketFromDS((u8 *)&wifi.RAM[address + 6], txHeader.length);
+			WIFI_SoftAP_RecvPacketFromDS(&wifi.RAM[address + sizeof(TXPacketHeader)], txHeader.length);
 			WIFI_triggerIRQ(WifiIRQ01_TXComplete);
 			
-			wifi.RAM[address] = 0x0001;
-			wifi.RAM[address+4] &= 0x00FF;
+			txHeader.txStatus = 0x0001;
+			txHeader.UNKNOWN3 = 0;
 #endif
 		}
 		else if (txSlotIndex == WifiTXLocIndex_CMD)
 		{
-			wifiHandler->CommSendPacket(txHeader, (u8 *)&wifi.RAM[address + 6]);
+			wifiHandler->CommSendPacket(txHeader, &wifi.RAM[byteAddress + sizeof(TXPacketHeader)]);
 			WIFI_triggerIRQ(WifiIRQ12_UNKNOWN);
 			
 			// If bit 13 is set, then it has priority over bit 14
@@ -861,15 +875,15 @@ static void WIFI_TXStart(const WifiTXLocIndex txSlotIndex, IOREG_W_TXBUF_LOCATIO
 			
 			txLocation.TransferRequest = 0;
 			
-			wifi.RAM[address] = 0x0001;
-			wifi.RAM[address+4] &= 0x00FF;
+			txHeader.txStatus = 0x0001;
+			txHeader.UNKNOWN3 = 0;
 		}
 		else if (txSlotIndex == WifiTXLocIndex_BEACON)
 		{
 			// Set timestamp
-			*(u64*)&wifi.RAM[address + 6 + 12] = io.US_COUNT;
+			*(u64 *)&wifi.RAM[byteAddress + sizeof(TXPacketHeader) + sizeof(WifiMgmtFrameHeader)] = io.US_COUNT;
 			
-			wifiHandler->CommSendPacket(txHeader, (u8 *)&wifi.RAM[address + 6]);
+			wifiHandler->CommSendPacket(txHeader, &wifi.RAM[byteAddress + sizeof(TXPacketHeader)]);
 			
 			if (io.TXSTATCNT.UpdateTXStatBeacon != 0)
 			{
@@ -877,8 +891,8 @@ static void WIFI_TXStart(const WifiTXLocIndex txSlotIndex, IOREG_W_TXBUF_LOCATIO
 				io.TXSTAT.value = 0x0301;
 			}
 			
-			wifi.RAM[address] = 0x0001;
-			wifi.RAM[address+4] &= 0x00FF;
+			txHeader.txStatus = 0x0001;
+			txHeader.UNKNOWN3 = 0;
 		}
 	}
 }
@@ -904,8 +918,7 @@ void WIFI_write16(u32 address, u16 val)
 	if ((page >= 0x4000) && (page < 0x6000))
 	{
 		/* access to the circular buffer */
-		address &= 0x1FFF;
-        wifi.RAM[address >> 1] = val;
+		*(u16 *)&wifi.RAM[address & 0x1FFE] = val;
 		return;
 	}
 
@@ -1263,7 +1276,7 @@ void WIFI_write16(u32 address, u16 val)
 		{
 			/* set value into the circ buffer, and move cursor to the next hword on action */
 			//printf("wifi: circbuf fifo write at %04X, %04X (action=%i)\n", (wifiMac.CircBufWriteAddress & 0x1FFF), val, action);
-			wifi.RAM[io.TXBUF_WR_ADDR.HalfwordAddress] = val;
+			*(u16 *)&wifi.RAM[io.TXBUF_WR_ADDR.HalfwordAddress << 1] = val;
 			if (action)
 			{
 				/* move to next hword */
@@ -2296,7 +2309,7 @@ u16 WIFI_read16(u32 address)
 	// 0x4000 - 0x5FFF: wifi RAM
 	if ((page >= 0x4000) && (page < 0x6000))
 	{
-        return wifi.RAM[(address & 0x1FFF) >> 1];
+        return *(u16 *)&wifi.RAM[address & 0x1FFE];
 	}
 
 	// anything else: I/O ports
@@ -2430,7 +2443,7 @@ u16 WIFI_read16(u32 address)
 					}
 				}
 				
-				io.RXBUF_RD_DATA = wifi.RAM[io.RXBUF_RD_ADDR.HalfwordAddress];
+				io.RXBUF_RD_DATA = *(u16 *)&wifi.RAM[io.RXBUF_RD_ADDR.HalfwordAddress << 1];
 				
 				if (io.RXBUF_COUNT.Count > 0)
 				{
@@ -2974,195 +2987,6 @@ u16 WIFI_read16(u32 address)
 	// TODO: We return the default value for the original NDS. However, the default value is different for NDS Lite.
 	WIFI_LOG(2, "Reading value of %04Xh from unlabeled register 0x%03X\n", 0xFFFF, address);
 	return 0xFFFF;
-}
-
-void WIFI_usTrigger()
-{
-	WifiData &wifi = wifiHandler->GetWifiData();
-	WIFI_IOREG_MAP &io = wifi.io;
-	
-	if (io.POWER_US.Disable != 0)
-	{
-		// Don't do anything if WiFi isn't powered up.
-		return;
-	}
-	
-	// a usec has passed
-	if (io.US_COUNTCNT.EnableCounter != 0)
-	{
-		io.US_COUNT++;
-	}
-	
-	// Note: the extra counter is decremented every 10 microseconds.
-	// To avoid a modulo every microsecond, we multiply the counter
-	// value by 10 and decrement it every microsecond :)
-	if (io.CMD_COUNTCNT.EnableCounter != 0)
-	{
-		if (wifi.cmdCount_u32 > 0)
-		{
-			wifi.cmdCount_u32--;
-			
-			if (wifi.cmdCount_u32 == 0)
-			{
-				WIFI_TXStart(WifiTXLocIndex_CMD, io.TXBUF_CMD);
-			}
-		}
-	}
-	
-	// The beacon counters are in milliseconds
-	// GBATek says they're decremented every 1024 usecs
-	if ( !(io.US_COUNT & 1023) )
-	{
-		io.BEACONCOUNT1--;
-		if ( io.BEACONCOUNT1 == (io.PRE_BEACON >> 10) )
-		{
-			WIFI_triggerIRQ(WifiIRQ15_TimeslotPreBeacon);
-		}
-		else if (io.BEACONCOUNT1 == 0)
-		{
-			WIFI_triggerIRQ(WifiIRQ14_TimeslotBeacon);
-		}
-		
-		if (io.BEACONCOUNT2 > 0)
-		{
-			io.BEACONCOUNT2--;
-			if (io.BEACONCOUNT2 == 0)
-			{
-				WIFI_triggerIRQ(WifiIRQ13_TimeslotPostBeacon);
-			}
-		}
-	}
-	
-	if ( (io.US_COMPARECNT.EnableCompare != 0) && (io.US_COMPARE == io.US_COUNT) )
-	{
-		//printf("ucmp irq14\n");
-		WIFI_triggerIRQ(WifiIRQ14_TimeslotBeacon);
-	}
-	
-	if (io.CONTENTFREE > 0)
-	{
-		io.CONTENTFREE--;
-	}
-	
-	if ((io.US_COUNT & 3) == 0)
-	{
-		const WifiTXLocIndex txSlotIndex = wifi.txCurrentSlot;
-		bool isTXSlotBusy = false;
-		
-		switch (txSlotIndex)
-		{
-			case WifiTXLocIndex_LOC1: isTXSlotBusy = (io.TXBUSY.Loc1 != 0); break;
-			//case WifiTXLocIndex_CMD: isTXSlotBusy = (io.TXBUSY.Cmd != 0); break;
-			case WifiTXLocIndex_LOC2: isTXSlotBusy = (io.TXBUSY.Loc2 != 0); break;
-			case WifiTXLocIndex_LOC3: isTXSlotBusy = (io.TXBUSY.Loc3 != 0); break;
-			//case WifiTXLocIndex_BEACON: isTXSlotBusy = (io.TXBUSY.Beacon != 0); break;
-				
-			default:
-				break;
-		}
-
-		if (isTXSlotBusy)
-		{
-			IOREG_W_TXBUF_LOCATION *txBufLocation = NULL;
-			TXPacketInfo &txPacketInfo = wifiHandler->GetPacketInfoAtSlot(txSlotIndex);
-			
-			switch (txSlotIndex)
-			{
-				case WifiTXLocIndex_LOC1: txBufLocation = &io.TXBUF_LOC1; break;
-				//case WifiTXLocIndex_CMD: txBufLocation = &io.TXBUF_CMD; break;
-				case WifiTXLocIndex_LOC2: txBufLocation = &io.TXBUF_LOC2; break;
-				case WifiTXLocIndex_LOC3: txBufLocation = &io.TXBUF_LOC3; break;
-				//case WifiTXLocIndex_BEACON: txBufLocation = &io.TXBUF_BEACON; break;
-					
-				default:
-					break;
-			}
-			
-			txPacketInfo.remainingBytes--;
-			io.RXTX_ADDR.HalfwordAddress++;
-			
-			if (txPacketInfo.remainingBytes == 0)
-			{
-				isTXSlotBusy = false;
-				
-				switch (txSlotIndex)
-				{
-					case WifiTXLocIndex_LOC1: io.TXBUSY.Loc1 = 0; break;
-					//case WifiTXLocIndex_CMD: io.TXBUSY.Cmd = 0; break;
-					case WifiTXLocIndex_LOC2: io.TXBUSY.Loc2 = 0; break;
-					case WifiTXLocIndex_LOC3: io.TXBUSY.Loc3 = 0; break;
-					//case WifiTXLocIndex_BEACON: io.TXBUSY.Beacon = 0; break;
-						
-					default:
-						break;
-				}
-				
-				txBufLocation->TransferRequest = 0;
-				
-				const TXPacketHeader &txHeader = (TXPacketHeader &)wifi.RAM[txBufLocation->HalfwordAddress];
-				wifiHandler->CommSendPacket(txHeader, (u8 *)&wifi.RAM[txBufLocation->HalfwordAddress+6]);
-				
-				wifi.RAM[txBufLocation->HalfwordAddress] = 0x0001;
-				wifi.RAM[txBufLocation->HalfwordAddress+4] &= 0x00FF;
-				
-				switch (txSlotIndex)
-				{
-					//case WifiTXLocIndex_CMD:
-					//case WifiTXLocIndex_BEACON:
-					case WifiTXLocIndex_LOC1: io.TXSTAT.PacketUpdate = 0; break;
-					case WifiTXLocIndex_LOC2: io.TXSTAT.PacketUpdate = 1; break;
-					case WifiTXLocIndex_LOC3: io.TXSTAT.PacketUpdate = 2; break;
-						
-					default:
-						break;
-				}
-				
-				io.TXSTAT.PacketCompleted = 1;
-				
-				WIFI_triggerIRQ(WifiIRQ01_TXComplete);
-				
-				//io.RF_STATUS.RFStatus = 0x01;
-				//io.RF_PINS.RX_On = 1;
-				
-				io.RF_STATUS.RFStatus = 0x09;
-				io.RF_PINS.CarrierSense = 0;
-				io.RF_PINS.TXMain = 0;
-				io.RF_PINS.UNKNOWN1 = 1;
-				io.RF_PINS.TX_On = 0;
-				io.RF_PINS.RX_On = 0;
-				
-				// Switch to the next TX slot.
-				while (!isTXSlotBusy && (wifi.txCurrentSlot != WifiTXLocIndex_LOC1))
-				{
-					/*if (wifi.txCurrentSlot == WifiTXLocIndex_BEACON)
-					 {
-					 wifi.txCurrentSlot = WifiTXLocIndex_CMD;
-					 isTXSlotBusy = (io.TXBUSY.Cmd != 0);
-					 }
-					 else if (wifi.txCurrentSlot == WifiTXLocIndex_CMD)
-					 {
-					 wifi.txCurrentSlot = WifiTXLocIndex_LOC3;
-					 isTXSlotBusy = (io.TXBUSY.Loc3 != 0);
-					 }
-					 else */if (wifi.txCurrentSlot == WifiTXLocIndex_LOC3)
-					 {
-						 wifi.txCurrentSlot = WifiTXLocIndex_LOC2;
-						 isTXSlotBusy = (io.TXBUSY.Loc2 != 0);
-					 }
-					 else if (wifi.txCurrentSlot == WifiTXLocIndex_LOC2)
-					 {
-						 wifi.txCurrentSlot = WifiTXLocIndex_LOC1;
-						 isTXSlotBusy = (io.TXBUSY.Loc1 != 0);
-					 }
-				}
-
-				WIFI_LOG(3, "TX slot %i finished sending its packet. Next is slot %i. TXStat = %04X\n", 
-					(int)txSlotIndex, (int)wifi.txCurrentSlot, io.TXSTAT.value);
-			}
-		}
-	}
-
-	wifiHandler->CommTrigger();
 }
 
 /*******************************************************************************
@@ -3775,11 +3599,6 @@ size_t SoftAPCommInterface::TXPacketSend(u8 *txTargetBuffer, size_t txLength)
 		return txPacketSize;
 	}
 	
-#if WIFI_SAVE_PCAP_TO_FILE
-	// Store the packet in the PCAP file.
-	this->_PacketCaptureFileWrite(txTargetBuffer, txLength, false);
-#endif
-	
 	int result = this->_pcap->sendpacket(this->_bridgeDevice, txTargetBuffer, txLength);
 	if (result == 0)
 	{
@@ -3798,7 +3617,7 @@ size_t SoftAPCommInterface::RXPacketGet(u8 *rxTargetBuffer, u16 sequenceNumber)
 		return rxPacketSize;
 	}
 	
-	int result = this->_pcap->dispatch(this->_bridgeDevice, 16, (void *)&SoftAP_RXPacketGet_Callback, rxTargetBuffer);
+	int result = this->_pcap->dispatch(this->_bridgeDevice, 1, (void *)&SoftAP_RXPacketGet_Callback, rxTargetBuffer);
 	if (result <= 0)
 	{
 		return rxPacketSize;
@@ -3833,8 +3652,6 @@ WifiHandler::WifiHandler()
 	
 	_selectedBridgeDeviceIndex = 0;
 	_firmwareMACMode = FirmwareMACMode_Automatic;
-	
-	_usecCounter = 0;
 	
 	_workingTXBuffer = NULL;
 	_workingRXAdhocBuffer = NULL;
@@ -3902,7 +3719,7 @@ void WifiHandler::_RXWriteOneHalfword(u16 val)
 	WifiData &wifi = this->_wifi;
 	WIFI_IOREG_MAP &io = wifi.io;
 	
-	wifi.RAM[io.RXBUF_WRCSR.HalfwordAddress] = val;
+	*(u16 *)&wifi.RAM[io.RXBUF_WRCSR.HalfwordAddress << 1] = val;
 	io.RXBUF_WRCSR.HalfwordAddress++;
 	
 	// wrap around
@@ -4088,7 +3905,7 @@ const u8* WifiHandler::_RXPacketFilter(const u8 *rxBuffer, const size_t rxBytes,
 #if WIFI_SAVE_PCAP_TO_FILE
 	if ( !WIFI_isBroadcastMAC(&packetIEEE80211HeaderPtr[destMACOffset]) )
 	{
-		this->_PacketCaptureFileWrite(packetIEEE80211HeaderPtr, rxPacketSize, true);
+		this->_PacketCaptureFileWrite(packetIEEE80211HeaderPtr, rxPacketSize, true, wifi.usecCounter);
 	}
 #endif
 	
@@ -4155,7 +3972,7 @@ void WifiHandler::_PacketCaptureFileClose()
 }
 
 // Save an Ethernet packet into the PCAP file of the current connection.
-void WifiHandler::_PacketCaptureFileWrite(const u8 *packet, u32 len, bool isReceived)
+void WifiHandler::_PacketCaptureFileWrite(const u8 *packet, u32 len, bool isReceived, u64 timeStamp)
 {
 	if (this->_packetCaptureFile == NULL)
 	{
@@ -4163,8 +3980,8 @@ void WifiHandler::_PacketCaptureFileWrite(const u8 *packet, u32 len, bool isRece
 		return;
 	}
 	
-	const u32 seconds = this->_usecCounter / 1000000;
-	const u32 millis = this->_usecCounter % 1000000;
+	const u32 seconds = timeStamp / 1000000;
+	const u32 millis = timeStamp % 1000000;
 	
 	// Add the packet
 	// more info: http://www.kroosec.com/2012/10/a-look-at-pcap-file-format.html
@@ -4206,7 +4023,7 @@ RXQueuedPacket WifiHandler::_GenerateSoftAPDeauthenticationFrame(u16 sequenceNum
 	return newRXPacket;
 }
 
-RXQueuedPacket WifiHandler::_GenerateSoftAPBeaconFrame(u16 sequenceNumber)
+RXQueuedPacket WifiHandler::_GenerateSoftAPBeaconFrame(u16 sequenceNumber, u64 timeStamp)
 {
 	RXQueuedPacket newRXPacket;
 	
@@ -4217,14 +4034,14 @@ RXQueuedPacket WifiHandler::_GenerateSoftAPBeaconFrame(u16 sequenceNumber)
 	memcpy(IEEE80211FrameHeaderPtr, SoftAP_Beacon, sizeof(SoftAP_Beacon));
 	mgmtFrameHeader.seqCtl.SequenceNumber = sequenceNumber;
 	
-	*(u64 *)mgmtFrameBody = this->_usecCounter; // Timestamp
+	*(u64 *)mgmtFrameBody = timeStamp;
 	
 	newRXPacket.rxHeader = WIFI_GenerateRXHeader(IEEE80211FrameHeaderPtr, 1, true, sizeof(SoftAP_Beacon));
 	
 	return newRXPacket;
 }
 
-RXQueuedPacket WifiHandler::_GenerateSoftAPMgmtResponseFrame(WifiFrameManagementSubtype mgmtFrameSubtype, u16 sequenceNumber)
+RXQueuedPacket WifiHandler::_GenerateSoftAPMgmtResponseFrame(WifiFrameManagementSubtype mgmtFrameSubtype, u16 sequenceNumber, u64 timeStamp)
 {
 	RXQueuedPacket newRXPacket;
 	
@@ -4240,9 +4057,7 @@ RXQueuedPacket WifiHandler::_GenerateSoftAPMgmtResponseFrame(WifiFrameManagement
 			packetLen = sizeof(SoftAP_ProbeResponse);
 			memcpy(IEEE80211FrameHeaderPtr, SoftAP_ProbeResponse, packetLen);
 			
-			// Add the timestamp
-			u64 timestamp = this->_usecCounter;
-			*(u64 *)mgmtFrameBody = timestamp;
+			*(u64 *)mgmtFrameBody = timeStamp;
 			break;
 		}
 			
@@ -4349,7 +4164,7 @@ bool WifiHandler::_SoftAPTrySendPacket(const TXPacketHeader &txHeader, const u8 
 	bool isPacketHandled = false;
 	const WifiFrameControl &fc = (WifiFrameControl &)IEEE80211PacketData[0];
 	
-	switch((WifiFrameType)fc.Type)
+	switch ((WifiFrameType)fc.Type)
 	{
 		case WifiFrameType_Management:
 		{
@@ -4358,7 +4173,7 @@ bool WifiHandler::_SoftAPTrySendPacket(const TXPacketHeader &txHeader, const u8 
 			if ( WIFI_compareMAC(mgmtFrameHeader.BSSID, SoftAP_MACAddr) ||
 				(WIFI_isBroadcastMAC(mgmtFrameHeader.BSSID) && (fc.Subtype == WifiFrameManagementSubtype_ProbeRequest)) )
 			{
-				RXQueuedPacket newRXPacket = this->_GenerateSoftAPMgmtResponseFrame((WifiFrameManagementSubtype)fc.Subtype, this->_softAPSequenceNumber);
+				RXQueuedPacket newRXPacket = this->_GenerateSoftAPMgmtResponseFrame((WifiFrameManagementSubtype)fc.Subtype, this->_softAPSequenceNumber, this->_wifi.usecCounter);
 				if (newRXPacket.rxHeader.length > 0)
 				{
 					newRXPacket.latencyCount = 0;
@@ -4449,6 +4264,11 @@ bool WifiHandler::_SoftAPTrySendPacket(const TXPacketHeader &txHeader, const u8 
 							this->_rxPacketQueue.push_back(newRXPacket);
 							slock_unlock(this->_mutexRXPacketQueue);
 							this->_softAPSequenceNumber++;
+							
+#if WIFI_SAVE_PCAP_TO_FILE
+							// Store the packet in the PCAP file.
+							this->_PacketCaptureFileWrite(this->_workingTXBuffer, sendPacketSize, false, this->_wifi.usecCounter);
+#endif
 						}
 					}
 					
@@ -4622,7 +4442,7 @@ bool WifiHandler::CommStart()
 	this->_softAPCommInterface->Stop();
 	
 	// Reset internal values.
-	this->_usecCounter = 0;
+	this->_wifi.usecCounter = 0;
 	this->_RXEmptyQueue();
 	
 	// Allocate 16KB worth of memory per buffer for sending packets. Hopefully, this should be plenty.
@@ -4750,15 +4570,204 @@ void WifiHandler::CommSendPacket(const TXPacketHeader &txHeader, const u8 *IEEE8
 
 void WifiHandler::CommTrigger()
 {
-	WIFI_IOREG_MAP &io = this->_wifi.io;
+	WifiData &wifi = this->_wifi;
+	WIFI_IOREG_MAP &io = wifi.io;
 	
-	this->_usecCounter++;
+	if (io.POWER_US.Disable != 0)
+	{
+		return; // Don't do anything if WiFi isn't powered up.
+	}
 	
-	if ( ((this->_usecCounter & 131071) == 0) && (io.RXCNT.EnableRXFIFOQueuing != 0) )
+	wifi.usecCounter++;
+	
+	// a usec has passed
+	if (io.US_COUNTCNT.EnableCounter != 0)
+	{
+		io.US_COUNT++;
+	}
+	
+	// Note: the extra counter is decremented every 10 microseconds.
+	// To avoid a modulo every microsecond, we multiply the counter
+	// value by 10 and decrement it every microsecond :)
+	if (io.CMD_COUNTCNT.EnableCounter != 0)
+	{
+		if (wifi.cmdCount_u32 > 0)
+		{
+			wifi.cmdCount_u32--;
+			
+			if (wifi.cmdCount_u32 == 0)
+			{
+				WIFI_TXStart(WifiTXLocIndex_CMD, io.TXBUF_CMD);
+			}
+		}
+	}
+	
+	// The beacon counters are in milliseconds
+	// GBATek says they're decremented every 1024 usecs
+	if ((io.US_COUNT & 1023) == 0)
+	{
+		io.BEACONCOUNT1--;
+		if (io.BEACONCOUNT1 == (io.PRE_BEACON >> 10))
+		{
+			WIFI_triggerIRQ(WifiIRQ15_TimeslotPreBeacon);
+		}
+		else if (io.BEACONCOUNT1 == 0)
+		{
+			WIFI_triggerIRQ(WifiIRQ14_TimeslotBeacon);
+		}
+		
+		if (io.BEACONCOUNT2 > 0)
+		{
+			io.BEACONCOUNT2--;
+			if (io.BEACONCOUNT2 == 0)
+			{
+				WIFI_triggerIRQ(WifiIRQ13_TimeslotPostBeacon);
+			}
+		}
+	}
+	
+	if ( (io.US_COMPARECNT.EnableCompare != 0) && (io.US_COMPARE == io.US_COUNT) )
+	{
+		//printf("ucmp irq14\n");
+		WIFI_triggerIRQ(WifiIRQ14_TimeslotBeacon);
+	}
+	
+	if (io.CONTENTFREE > 0)
+	{
+		io.CONTENTFREE--;
+	}
+	
+	if ((io.US_COUNT & 3) == 0)
+	{
+		const WifiTXLocIndex txSlotIndex = wifi.txCurrentSlot;
+		bool isTXSlotBusy = false;
+		
+		switch (txSlotIndex)
+		{
+			case WifiTXLocIndex_LOC1: isTXSlotBusy = (io.TXBUSY.Loc1 != 0); break;
+			//case WifiTXLocIndex_CMD: isTXSlotBusy = (io.TXBUSY.Cmd != 0); break;
+			case WifiTXLocIndex_LOC2: isTXSlotBusy = (io.TXBUSY.Loc2 != 0); break;
+			case WifiTXLocIndex_LOC3: isTXSlotBusy = (io.TXBUSY.Loc3 != 0); break;
+			//case WifiTXLocIndex_BEACON: isTXSlotBusy = (io.TXBUSY.Beacon != 0); break;
+				
+			default:
+				break;
+		}
+		
+		if (isTXSlotBusy)
+		{
+			IOREG_W_TXBUF_LOCATION *txBufLocation = NULL;
+			TXPacketInfo &txPacketInfo = wifiHandler->GetPacketInfoAtSlot(txSlotIndex);
+			
+			switch (txSlotIndex)
+			{
+				case WifiTXLocIndex_LOC1: txBufLocation = &io.TXBUF_LOC1; break;
+				//case WifiTXLocIndex_CMD: txBufLocation = &io.TXBUF_CMD; break;
+				case WifiTXLocIndex_LOC2: txBufLocation = &io.TXBUF_LOC2; break;
+				case WifiTXLocIndex_LOC3: txBufLocation = &io.TXBUF_LOC3; break;
+				//case WifiTXLocIndex_BEACON: txBufLocation = &io.TXBUF_BEACON; break;
+					
+				default:
+					break;
+			}
+			
+			txPacketInfo.remainingBytes--;
+			io.RXTX_ADDR.HalfwordAddress++;
+			
+			if (txPacketInfo.remainingBytes == 0)
+			{
+				isTXSlotBusy = false;
+				
+				switch (txSlotIndex)
+				{
+					case WifiTXLocIndex_LOC1: io.TXBUSY.Loc1 = 0; break;
+					//case WifiTXLocIndex_CMD: io.TXBUSY.Cmd = 0; break;
+					case WifiTXLocIndex_LOC2: io.TXBUSY.Loc2 = 0; break;
+					case WifiTXLocIndex_LOC3: io.TXBUSY.Loc3 = 0; break;
+					//case WifiTXLocIndex_BEACON: io.TXBUSY.Beacon = 0; break;
+						
+					default:
+						break;
+				}
+				
+				txBufLocation->TransferRequest = 0;
+				
+				TXPacketHeader &txHeader = (TXPacketHeader &)wifi.RAM[txBufLocation->HalfwordAddress << 1];
+				wifiHandler->CommSendPacket(txHeader, &wifi.RAM[(txBufLocation->HalfwordAddress << 1) + sizeof(TXPacketHeader)]);
+				txHeader.txStatus = 0x0001;
+				txHeader.UNKNOWN3 = 0;
+				
+				switch (txSlotIndex)
+				{
+					//case WifiTXLocIndex_CMD:
+					//case WifiTXLocIndex_BEACON:
+					case WifiTXLocIndex_LOC1: io.TXSTAT.PacketUpdate = 0; break;
+					case WifiTXLocIndex_LOC2: io.TXSTAT.PacketUpdate = 1; break;
+					case WifiTXLocIndex_LOC3: io.TXSTAT.PacketUpdate = 2; break;
+						
+					default:
+						break;
+				}
+				
+				io.TXSTAT.PacketCompleted = 1;
+				
+				WIFI_triggerIRQ(WifiIRQ01_TXComplete);
+				
+				//io.RF_STATUS.RFStatus = 0x01;
+				//io.RF_PINS.RX_On = 1;
+				
+				io.RF_STATUS.RFStatus = 0x09;
+				io.RF_PINS.CarrierSense = 0;
+				io.RF_PINS.TXMain = 0;
+				io.RF_PINS.UNKNOWN1 = 1;
+				io.RF_PINS.TX_On = 0;
+				io.RF_PINS.RX_On = 0;
+				
+				// Switch to the next TX slot.
+				while (!isTXSlotBusy && (wifi.txCurrentSlot != WifiTXLocIndex_LOC1))
+				{
+					/*if (wifi.txCurrentSlot == WifiTXLocIndex_BEACON)
+					 {
+					 wifi.txCurrentSlot = WifiTXLocIndex_CMD;
+					 isTXSlotBusy = (io.TXBUSY.Cmd != 0);
+					 }
+					 else if (wifi.txCurrentSlot == WifiTXLocIndex_CMD)
+					 {
+					 wifi.txCurrentSlot = WifiTXLocIndex_LOC3;
+					 isTXSlotBusy = (io.TXBUSY.Loc3 != 0);
+					 }
+					 else */if (wifi.txCurrentSlot == WifiTXLocIndex_LOC3)
+					 {
+						 wifi.txCurrentSlot = WifiTXLocIndex_LOC2;
+						 isTXSlotBusy = (io.TXBUSY.Loc2 != 0);
+					 }
+					 else if (wifi.txCurrentSlot == WifiTXLocIndex_LOC2)
+					 {
+						 wifi.txCurrentSlot = WifiTXLocIndex_LOC1;
+						 isTXSlotBusy = (io.TXBUSY.Loc1 != 0);
+					 }
+				}
+				
+				WIFI_LOG(3, "TX slot %i finished sending its packet. Next is slot %i. TXStat = %04X\n",
+						 (int)txSlotIndex, (int)wifi.txCurrentSlot, io.TXSTAT.value);
+			}
+		}
+	}
+	
+	if (io.RXCNT.EnableRXFIFOQueuing != 0)
+	{
+		this->_AddPeriodicPacketsToRXQueue(wifi.usecCounter);
+		this->_CopyFromRXQueue();
+	}
+}
+
+void WifiHandler::_AddPeriodicPacketsToRXQueue(const u64 usecCounter)
+{
+	if ((usecCounter & 131071) == 0)
 	{
 		//zero sez: every 1/10 second? does it have to be precise? this is so costly..
 		// Okay for 128 ms then
-		RXQueuedPacket newRXPacket = this->_GenerateSoftAPBeaconFrame(this->_softAPSequenceNumber);
+		RXQueuedPacket newRXPacket = this->_GenerateSoftAPBeaconFrame(this->_softAPSequenceNumber, this->_wifi.usecCounter);
 		
 		newRXPacket.latencyCount = 0;
 		slock_lock(this->_mutexRXPacketQueue);
@@ -4767,75 +4776,10 @@ void WifiHandler::CommTrigger()
 		this->_softAPSequenceNumber++;
 	}
 	
-	slock_lock(this->_mutexRXPacketQueue);
-	
-	if (!this->_rxPacketQueue.empty() && (io.RXCNT.EnableRXFIFOQueuing != 0))
-	{
-		RXQueuedPacket &currentRXPacket = this->_rxPacketQueue.front();
-		currentRXPacket.latencyCount++;
-		
-		const RXQueuedPacket newRXPacket = currentRXPacket;
-		slock_unlock(this->_mutexRXPacketQueue);
-		
-		const size_t totalPacketLength = (sizeof(RXPacketHeader) + newRXPacket.rxHeader.length > sizeof(RXQueuedPacket)) ? sizeof(RXQueuedPacket) : sizeof(RXPacketHeader) + newRXPacket.rxHeader.length;
-		
-		if (this->_rxCurrentQueuedPacketPosition == 0)
-		{
-			WIFI_triggerIRQ(WifiIRQ06_RXStart);
-		}
-		
-		// If the user selects compatibility mode, then we will emulate the transfer delays
-		// involved with copying RX packet data into WiFi RAM. Otherwise, just copy all of
-		// the RX packet data into WiFi RAM immediately.
-		if (this->_currentEmulationLevel == WifiEmulationLevel_Compatibility)
-		{
-			// Copy the RX packet data into WiFi RAM over time.
-			if ( (this->_rxCurrentQueuedPacketPosition == 0) || (newRXPacket.latencyCount >= RX_LATENCY_LIMIT) )
-			{
-				this->_RXWriteOneHalfword(*(u16 *)&newRXPacket.rawFrameData[this->_rxCurrentQueuedPacketPosition]);
-				this->_rxCurrentQueuedPacketPosition += 2;
-			}
-		}
-		else
-		{
-			// Copy the entire RX packet data into WiFi RAM immediately.
-			while (this->_rxCurrentQueuedPacketPosition < totalPacketLength)
-			{
-				this->_RXWriteOneHalfword(*(u16 *)&newRXPacket.rawFrameData[this->_rxCurrentQueuedPacketPosition]);
-				this->_rxCurrentQueuedPacketPosition += 2;
-			}
-		}
-		
-		if (this->_rxCurrentQueuedPacketPosition >= totalPacketLength)
-		{
-			slock_lock(this->_mutexRXPacketQueue);
-			this->_rxPacketQueue.pop_front();
-			slock_unlock(this->_mutexRXPacketQueue);
-			
-			this->_rxCurrentQueuedPacketPosition = 0;
-			
-			// Adjust the RX cursor address so that it is 4-byte aligned.
-			io.RXBUF_WRCSR.HalfwordAddress = ((io.RXBUF_WRCSR.HalfwordAddress + 1) & 0x0FFE);
-			if (io.RXBUF_WRCSR.HalfwordAddress >= ((io.RXBUF_END & 0x1FFE) >> 1))
-			{
-				io.RXBUF_WRCSR.HalfwordAddress = ((io.RXBUF_BEGIN & 0x1FFE) >> 1);
-			}
-			
-			io.RX_COUNT.OkayCount++;
-			WIFI_triggerIRQ(WifiIRQ00_RXComplete);
-			io.RF_STATUS.RFStatus = WifiRFStatus1_TXComplete;
-			io.RF_PINS.value = RFPinsLUT[WifiRFStatus1_TXComplete];
-		}
-	}
-	else
-	{
-		slock_unlock(this->_mutexRXPacketQueue);
-	}
-	
 	// EXTREMELY EXPERIMENTAL packet receiving code
 	// Can now receive 64 packets per millisecond. Completely arbitrary limit. Todo: tweak if needed.
 	// But due to using non-blocking mode, this shouldn't be as slow as it used to be.
-	if ((this->_usecCounter & 255) == 0)
+	if ((usecCounter & 15) == 0)
 	{
 		size_t rxBytes = this->_softAPCommInterface->RXPacketGet(this->_workingRXSoftAPBuffer, this->_softAPSequenceNumber);
 		if (rxBytes > 0)
@@ -4854,6 +4798,75 @@ void WifiHandler::CommTrigger()
 				this->_softAPSequenceNumber++;
 			}
 		}
+	}
+}
+
+void WifiHandler::_CopyFromRXQueue()
+{
+	WIFI_IOREG_MAP &io = this->_wifi.io;
+	
+	slock_lock(this->_mutexRXPacketQueue);
+	
+	if (this->_rxPacketQueue.empty())
+	{
+		slock_unlock(this->_mutexRXPacketQueue);
+		return;
+	}
+	
+	RXQueuedPacket &currentRXPacket = this->_rxPacketQueue.front();
+	currentRXPacket.latencyCount++;
+	
+	const RXQueuedPacket newRXPacket = currentRXPacket;
+	slock_unlock(this->_mutexRXPacketQueue);
+	
+	const size_t totalPacketLength = (sizeof(RXPacketHeader) + newRXPacket.rxHeader.length > sizeof(RXQueuedPacket)) ? sizeof(RXQueuedPacket) : sizeof(RXPacketHeader) + newRXPacket.rxHeader.length;
+	
+	if (this->_rxCurrentQueuedPacketPosition == 0)
+	{
+		WIFI_triggerIRQ(WifiIRQ06_RXStart);
+	}
+	
+	// If the user selects compatibility mode, then we will emulate the transfer delays
+	// involved with copying RX packet data into WiFi RAM. Otherwise, just copy all of
+	// the RX packet data into WiFi RAM immediately.
+	if (this->_currentEmulationLevel == WifiEmulationLevel_Compatibility)
+	{
+		// Copy the RX packet data into WiFi RAM over time.
+		if ( (this->_rxCurrentQueuedPacketPosition == 0) || (newRXPacket.latencyCount >= RX_LATENCY_LIMIT) )
+		{
+			this->_RXWriteOneHalfword(*(u16 *)&newRXPacket.rawFrameData[this->_rxCurrentQueuedPacketPosition]);
+			this->_rxCurrentQueuedPacketPosition += 2;
+		}
+	}
+	else
+	{
+		// Copy the entire RX packet data into WiFi RAM immediately.
+		while (this->_rxCurrentQueuedPacketPosition < totalPacketLength)
+		{
+			this->_RXWriteOneHalfword(*(u16 *)&newRXPacket.rawFrameData[this->_rxCurrentQueuedPacketPosition]);
+			this->_rxCurrentQueuedPacketPosition += 2;
+		}
+	}
+	
+	if (this->_rxCurrentQueuedPacketPosition >= totalPacketLength)
+	{
+		slock_lock(this->_mutexRXPacketQueue);
+		this->_rxPacketQueue.pop_front();
+		slock_unlock(this->_mutexRXPacketQueue);
+		
+		this->_rxCurrentQueuedPacketPosition = 0;
+		
+		// Adjust the RX cursor address so that it is 4-byte aligned.
+		io.RXBUF_WRCSR.HalfwordAddress = ((io.RXBUF_WRCSR.HalfwordAddress + 1) & 0x0FFE);
+		if (io.RXBUF_WRCSR.HalfwordAddress >= ((io.RXBUF_END & 0x1FFE) >> 1))
+		{
+			io.RXBUF_WRCSR.HalfwordAddress = ((io.RXBUF_BEGIN & 0x1FFE) >> 1);
+		}
+		
+		io.RX_COUNT.OkayCount++;
+		WIFI_triggerIRQ(WifiIRQ00_RXComplete);
+		io.RF_STATUS.RFStatus = WifiRFStatus1_TXComplete;
+		io.RF_PINS.value = RFPinsLUT[WifiRFStatus1_TXComplete];
 	}
 }
 

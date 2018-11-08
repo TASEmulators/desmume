@@ -1733,7 +1733,7 @@ void Sequencer::execHardware()
 	{
 		if (wifi.isTriggered())
 		{
-			WIFI_usTrigger();
+			wifiHandler->CommTrigger();
 			wifi.timestamp += kWifiCycles;
 		}
 	}
