@@ -25,14 +25,11 @@ class ClientExecutionControl;
 @interface WifiSettingsPanelDelegate : NSObject
 #endif
 {
-	ClientExecutionControl *execControl;
-	
-	uint32_t _myMACAddressValue;
-	NSString *_libpcapDeviceSelectionName;
-	
-	NSInteger addressSelection;
-	
+	NSObjectController *firmwarePanelController;
 	NSPopUpButton *bridgeDevicePopUpButton;
+	
+	ClientExecutionControl *execControl;
+	NSString *_libpcapDeviceSelectionName;
 	
 	NSString *myMACAddress1String;
 	NSString *myMACAddress2String;
@@ -42,8 +39,10 @@ class ClientExecutionControl;
 
 @property (assign) ClientExecutionControl *execControl;
 
+@property (assign) IBOutlet NSObjectController *firmwarePanelController;
+@property (assign) IBOutlet NSPopUpButton *bridgeDevicePopUpButton;
+
 @property (assign) NSInteger wifiEmulationMode;
-@property (assign) NSInteger addressSelection;
 @property (assign) NSInteger bridgeDeviceSelection;
 
 @property (assign) NSString *myMACAddress1String;
@@ -51,11 +50,8 @@ class ClientExecutionControl;
 @property (assign) NSString *myMACAddress3String;
 @property (assign) NSString *myMACAddress4String;
 
-@property (readonly) IBOutlet NSPopUpButton *bridgeDevicePopUpButton;
-
-- (void) updateMyMACAddressStringsWithValue:(uint32_t)value;
+- (void) updateCustomMACAddressStrings;
 - (void) fillLibpcapDeviceMenu;
-- (void) generateRandomMyMACAddressSet;
 - (IBAction) generateNewAddresses:(id)sender;
 - (IBAction) writeDefaultsWifiSettings:(id)sender;
 - (void) readUserDefaults;

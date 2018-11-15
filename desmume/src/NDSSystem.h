@@ -73,7 +73,7 @@ extern BOOL click;
 #define NDS_FW_LANG_CHI 6
 #define NDS_FW_LANG_RES 7
 
-extern CFIRMWARE *firmware;
+extern CFIRMWARE *extFirmwareObj;
 
 #define DSGBA_LOADER_SIZE 512
 enum
@@ -528,13 +528,11 @@ extern struct TCommonSettings
 		, backupSave(false)
 		, SPU_sync_mode(1)
 		, SPU_sync_method(0)
+		, WifiBridgeDeviceID(0)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
-		strcpy(Firmware, "firmware.bin");
-
-		wifi.mode = WifiCommInterfaceID_Infrastructure;
-		wifi.infraBridgeAdapter = 0;
+		strcpy(ExtFirmwarePath, "firmware.bin");
 
 		for(int i=0;i<16;i++)
 			spu_muteChannels[i] = false;
@@ -567,14 +565,15 @@ extern struct TCommonSettings
 	bool loadToMemory;
 
 	bool UseExtBIOS;
-	char ARM9BIOS[256];
-	char ARM7BIOS[256];
+	char ARM9BIOS[MAX_PATH];
+	char ARM7BIOS[MAX_PATH];
 	bool SWIFromBIOS;
 	bool PatchSWI3;
 
 	bool UseExtFirmware;
 	bool UseExtFirmwareSettings;
-	char Firmware[256];
+	char ExtFirmwarePath[MAX_PATH];
+	char ExtFirmwareUserSettingsPath[MAX_PATH];
 	bool BootFromFirmware;
 	FirmwareConfig fwConfig;
 
@@ -614,10 +613,7 @@ extern struct TCommonSettings
 	bool use_jit;
 	u32	jit_max_block_size;
 	
-	struct _Wifi {
-		WifiCommInterfaceID mode;
-		int infraBridgeAdapter;
-	} wifi;
+	int WifiBridgeDeviceID;
 
 	enum MicMode
 	{

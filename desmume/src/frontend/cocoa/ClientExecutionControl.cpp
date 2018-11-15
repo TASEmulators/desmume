@@ -72,6 +72,9 @@ ClientExecutionControl::ClientExecutionControl()
 	_settingsPending.cpuEngineID						= CPUEmulationEngineID_Interpreter;
 	_settingsPending.JITMaxBlockSize					= 12;
 	_settingsPending.slot1DeviceType					= NDS_SLOT1_RETAIL_AUTO;
+	
+	memset(&_settingsPending.fwConfig, 0, sizeof(FirmwareConfig));
+	
 	_settingsPending.filePathARM9BIOS					= std::string();
 	_settingsPending.filePathARM7BIOS					= std::string();
 	_settingsPending.filePathFirmware					= std::string();
@@ -352,7 +355,7 @@ void ClientExecutionControl::SetFirmwareImagePath(const char *filePath)
 	}
 	else
 	{
-		this->_settingsPending.filePathFirmware = std::string(filePath, sizeof(CommonSettings.Firmware));
+		this->_settingsPending.filePathFirmware = std::string(filePath, sizeof(CommonSettings.ExtFirmwarePath));
 	}
 	
 	this->_newSettingsPendingOnReset = true;
@@ -491,6 +494,29 @@ void ClientExecutionControl::SetEnableBIOSPatchDelayLoop(bool enable)
 	
 	this->_newSettingsPendingOnNDSExec = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+}
+
+FirmwareConfig ClientExecutionControl::GetFirmwareConfig()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	const FirmwareConfig outConfig = this->_settingsPending.fwConfig;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return outConfig;
+}
+
+FirmwareConfig ClientExecutionControl::GetFirmwareConfigApplied()
+{
+	return this->_settingsApplied.fwConfig;
+}
+
+void ClientExecutionControl::SetFirmwareConfig(const FirmwareConfig &inConfig)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	this->_settingsPending.fwConfig = inConfig;
+	
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 }
 
 bool ClientExecutionControl::GetEnableExternalFirmware()
@@ -959,6 +985,8 @@ void ClientExecutionControl::ApplySettingsOnReset()
 		this->_settingsApplied.enableExternalFirmware		= this->_settingsPending.enableExternalFirmware;
 		this->_settingsApplied.enableFirmwareBoot			= this->_settingsPending.enableFirmwareBoot;
 		
+		this->_settingsApplied.fwConfig						= this->_settingsPending.fwConfig;
+		
 		this->_settingsApplied.wifiEmulationMode			= this->_settingsPending.wifiEmulationMode;
 		this->_settingsApplied.wifiBridgeDeviceIndex		= this->_settingsPending.wifiBridgeDeviceIndex;
 		
@@ -980,10 +1008,10 @@ void ClientExecutionControl::ApplySettingsOnReset()
 		CommonSettings.jit_max_block_size		= this->_settingsApplied.JITMaxBlockSize;
 		CommonSettings.UseExtBIOS				= this->_settingsApplied.enableExternalBIOS;
 		CommonSettings.UseExtFirmware			= this->_settingsApplied.enableExternalFirmware;
-		//CommonSettings.UseExtFirmwareSettings	= this->_settingsApplied.enableExternalFirmware;
-		CommonSettings.UseExtFirmwareSettings = false;
+		CommonSettings.UseExtFirmwareSettings	= this->_settingsApplied.enableExternalFirmware;
 		CommonSettings.BootFromFirmware			= this->_settingsApplied.enableFirmwareBoot;
-		CommonSettings.wifi.infraBridgeAdapter	= this->_settingsApplied.wifiBridgeDeviceIndex;
+		CommonSettings.WifiBridgeDeviceID		= this->_settingsApplied.wifiBridgeDeviceIndex;
+		CommonSettings.fwConfig					= this->_settingsApplied.fwConfig;
 		
 		wifiHandler->SetEmulationLevel((WifiEmulationLevel)this->_settingsApplied.wifiEmulationMode);
 		wifiHandler->SetBridgeDeviceIndex(this->_settingsApplied.wifiBridgeDeviceIndex);
@@ -1008,11 +1036,11 @@ void ClientExecutionControl::ApplySettingsOnReset()
 		
 		if (this->_settingsApplied.filePathFirmware.length() == 0)
 		{
-			memset(CommonSettings.Firmware, 0, sizeof(CommonSettings.Firmware));
+			memset(CommonSettings.ExtFirmwarePath, 0, sizeof(CommonSettings.ExtFirmwarePath));
 		}
 		else
 		{
-			strlcpy(CommonSettings.Firmware, this->_settingsApplied.filePathFirmware.c_str(), sizeof(CommonSettings.Firmware));
+			strlcpy(CommonSettings.ExtFirmwarePath, this->_settingsApplied.filePathFirmware.c_str(), sizeof(CommonSettings.ExtFirmwarePath));
 		}
 		
 		if (this->_settingsApplied.filePathSlot1R4.length() > 0)

@@ -3651,7 +3651,6 @@ WifiHandler::WifiHandler()
 	_softAPCommInterface = new SoftAPCommInterface;
 	
 	_selectedBridgeDeviceIndex = 0;
-	_firmwareMACMode = FirmwareMACMode_Automatic;
 	
 	_workingTXBuffer = NULL;
 	_workingRXAdhocBuffer = NULL;
@@ -4485,34 +4484,17 @@ bool WifiHandler::CommStart()
 	
 	if (isAdhocCommStarted || isInfrastructureCommStarted)
 	{
-		switch (this->_firmwareMACMode)
-		{
-			case FirmwareMACMode_Automatic:
-				this->GenerateRandomMAC(FW_Mac);
-				NDS_OverrideFirmwareMAC(FW_Mac);
-				break;
-				
-			case FirmwareMACMode_Manual:
-				this->CopyMACFromUserValues(FW_Mac);
-				NDS_OverrideFirmwareMAC(FW_Mac);
-				break;
-				
-			case FirmwareMACMode_ReadFromFirmware:
-				FW_Mac[0] = MMU.fw.data.wifiInfo.MACAddr[0];
-				FW_Mac[1] = MMU.fw.data.wifiInfo.MACAddr[1];
-				FW_Mac[2] = MMU.fw.data.wifiInfo.MACAddr[2];
-				FW_Mac[3] = MMU.fw.data.wifiInfo.MACAddr[3];
-				FW_Mac[4] = MMU.fw.data.wifiInfo.MACAddr[4];
-				FW_Mac[5] = MMU.fw.data.wifiInfo.MACAddr[5];
-				break;
-		}
+		FW_Mac[0] = MMU.fw.data.wifiInfo.MACAddr[0];
+		FW_Mac[1] = MMU.fw.data.wifiInfo.MACAddr[1];
+		FW_Mac[2] = MMU.fw.data.wifiInfo.MACAddr[2];
+		FW_Mac[3] = MMU.fw.data.wifiInfo.MACAddr[3];
+		FW_Mac[4] = MMU.fw.data.wifiInfo.MACAddr[4];
+		FW_Mac[5] = MMU.fw.data.wifiInfo.MACAddr[5];
 		
 		// Starting the comm interface was successful.
 		// Report the MAC address to the user as confirmation.
 		WIFI_LOG(1, "MAC Address = %02X:%02X:%02X:%02X:%02X:%02X\n",
 				 FW_Mac[0], FW_Mac[1], FW_Mac[2], FW_Mac[3], FW_Mac[4], FW_Mac[5]);
-		
-		NDS_OverrideFirmwareMAC(FW_Mac);
 		
 #ifdef DESMUME_COCOA
 		this->_rxTaskAdhoc->start(false, 43);
@@ -4927,68 +4909,6 @@ ClientPCapInterface* WifiHandler::GetPCapInterface()
 void WifiHandler::SetPCapInterface(ClientPCapInterface *pcapInterface)
 {
 	this->_pcap = (pcapInterface == NULL) ? &dummyPCapInterface : pcapInterface;
-}
-
-FirmwareMACMode WifiHandler::GetFirmwareMACMode()
-{
-	return this->_firmwareMACMode;
-}
-
-void WifiHandler::SetFirmwareMACMode(FirmwareMACMode macMode)
-{
-	this->_firmwareMACMode = macMode;
-}
-
-void WifiHandler::GetUserMACValues(u8 *outValue3, u8 *outValue4, u8 *outValue5)
-{
-	*outValue3 = this->_userMAC[0];
-	*outValue4 = this->_userMAC[1];
-	*outValue5 = this->_userMAC[2];
-}
-
-void WifiHandler::SetUserMACValues(u8 inValue3, u8 inValue4, u8 inValue5)
-{
-	this->_userMAC[0] = inValue3;
-	this->_userMAC[1] = inValue4;
-	this->_userMAC[2] = inValue5;
-}
-
-void WifiHandler::GenerateRandomMAC(u8 outMAC[6])
-{
-	if (outMAC == NULL)
-	{
-		return;
-	}
-	
-	static bool needSetRandomSeed = true;
-	if (needSetRandomSeed)
-	{
-		srand(time(NULL));
-		needSetRandomSeed = false;
-	}
-	
-	const u32 randomValue = (u32)rand();
-	
-	outMAC[3] = (randomValue >>  0) & 0xFF;
-	outMAC[4] = (randomValue >>  8) & 0xFF;
-	outMAC[5] = (randomValue >> 16) & 0xFF;
-}
-
-void WifiHandler::CopyMACFromUserValues(u8 outMAC[6])
-{
-	if (outMAC == NULL)
-	{
-		return;
-	}
-	
-	// The first three MAC values are Nintendo's signature MAC values.
-	// The last three MAC values are user-defined.
-	outMAC[0] = 0x00;
-	outMAC[1] = 0x09;
-	outMAC[2] = 0xBF;
-	outMAC[3] = this->_userMAC[0];
-	outMAC[4] = this->_userMAC[1];
-	outMAC[5] = this->_userMAC[2];
 }
 
 void WifiHandler::PrepareSaveStateWrite()

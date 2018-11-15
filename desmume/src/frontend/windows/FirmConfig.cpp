@@ -144,8 +144,6 @@ BOOL CALLBACK FirmConfig_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lp
 
 				WriteFirmConfig(fwConfig);
 				EndDialog(dialog,0);
-				if (CommonSettings.UseExtFirmware == 0)
-					NDS_InitFirmwareWithConfig(fwConfig);
 				return 1;
 				}
 				else

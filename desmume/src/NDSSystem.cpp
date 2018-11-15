@@ -88,7 +88,7 @@ static NDSError _lastNDSError;
 
 GameInfo gameInfo;
 NDSSystem nds;
-CFIRMWARE *firmware = NULL;
+CFIRMWARE *extFirmwareObj = NULL;
 
 using std::min;
 using std::max;
@@ -2387,10 +2387,7 @@ bool NDS_LegitBoot()
 		//CRAZYMAX: is it safe to accept anything smaller than 12?
 		CommonSettings.jit_max_block_size = std::min(CommonSettings.jit_max_block_size,12U);
 	#endif
-
-	//partially clobber the loaded firmware with the user settings from DFC
-	firmware->loadSettings();
-
+	
 	//since firmware only boots encrypted roms, we have to make sure it's encrypted first
 	//this has not been validated on big endian systems. it almost positively doesn't work.
 	if (gameInfo.header.CRC16 != 0)
@@ -2428,19 +2425,6 @@ bool NDS_FakeBoot()
 
 	//bios (or firmware) sets this default, which is generally not important for retail games but some homebrews are depending on
 	_MMU_write08<ARMCPU_ARM9>(REG_WRAMCNT,3);
-
-	//EDIT - whats this firmware and how is it relating to the dummy firmware below
-	//how do these even get used? what is the purpose of unpack and why is it not used by the firmware boot process?
-	if (CommonSettings.UseExtFirmware && firmware->loaded())
-	{
-		firmware->unpack();
-		firmware->loadSettings();
-	}
-
-	// Create the dummy firmware
-	//EDIT - whats dummy firmware and how is relating to the above?
-	//it seems to be emplacing basic firmware data into MMU.fw.data
-	NDS_InitFirmwareWithConfig(CommonSettings.fwConfig);
 	
 	//firmware loads the game card arm9 and arm7 programs as specified in rom header
 	{
@@ -2652,28 +2636,57 @@ void NDS_Reset()
 	PrepareBiosARM7();
 	PrepareBiosARM9();
 
-	if (firmware)
+	if (extFirmwareObj)
 	{
-		delete firmware;
-		firmware = NULL;
+		delete extFirmwareObj;
+		extFirmwareObj = NULL;
 	}
-
-	firmware = new CFIRMWARE();
-	firmware->load();
-
+	
+	bool didLoadExtFirmware = false;
+	extFirmwareObj = new CFIRMWARE();
+	
+	if (CommonSettings.UseExtFirmware)
+	{
+		didLoadExtFirmware = extFirmwareObj->load(CommonSettings.ExtFirmwarePath);
+	}
+	
+	if (didLoadExtFirmware)
+	{
+		// what is the purpose of unpack?
+		extFirmwareObj->unpack();
+		
+		std::string extFWUserSettingsString = CFIRMWARE::GetUserSettingsFilePath(CommonSettings.ExtFirmwarePath);
+		strncpy(CommonSettings.ExtFirmwareUserSettingsPath, extFWUserSettingsString.c_str(), MAX_PATH);
+		
+		//partially clobber the loaded firmware with the user settings from DFC
+		if (CommonSettings.UseExtFirmwareSettings)
+		{
+			extFirmwareObj->loadSettings(CommonSettings.ExtFirmwareUserSettingsPath);
+		}
+	}
+	else
+	{
+		NDS_InitFirmwareWithConfig(CommonSettings.fwConfig);
+	}
+	
 	//we will allow a proper firmware boot, if:
 	//1. we have the ARM7 and ARM9 bioses (its doubtful that our HLE bios implement the necessary functions)
 	//2. firmware is available
 	//3. user has requested booting from firmware
-	bool canBootFromFirmware = (NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded && CommonSettings.BootFromFirmware && firmware->loaded());
+	bool canBootFromFirmware = (NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded && CommonSettings.BootFromFirmware && didLoadExtFirmware);
 	bool bootResult = false;
-	if(canBootFromFirmware)
+	
+	if (canBootFromFirmware)
+	{
 		bootResult = NDS_LegitBoot();
+	}
 	else
+	{
 		bootResult = NDS_FakeBoot();
-
+	}
+	
 	// Init calibration info
-	memcpy(&TSCal, firmware->getTouchCalibrate(), sizeof(TSCalInfo));
+	memcpy(&TSCal, extFirmwareObj->getTouchCalibrate(), sizeof(TSCalInfo));
 
 	GPU->Reset();
 

@@ -749,7 +749,7 @@ volatile bool execute = true;
 	}
 	else
 	{
-		[self setFirmwareMACAddressSelectionString:[NSString stringWithFormat:@"Firmware  %@", [[self cdsFirmware] MACAddressString]]];
+		[self setFirmwareMACAddressSelectionString:[NSString stringWithFormat:@"Firmware  %@", [[self cdsFirmware] firmwareMACAddressString]]];
 	}
 }
 
@@ -775,7 +775,7 @@ volatile bool execute = true;
 
 - (void) generateFirmwareMACAddress
 {
-	[[self cdsFirmware] generateRandomMACAddress];
+	[[self cdsFirmware] generateRandomFirmwareMACAddress];
 	[self updateFirmwareMACAddressString];
 }
 
@@ -853,6 +853,12 @@ volatile bool execute = true;
 - (void) reset
 {
 	[self setCoreState:ExecutionBehavior_Pause];
+	
+	if (![self emuFlagUseExternalFirmware])
+	{
+		[[self cdsFirmware] writeUserDefaultWFCUserID];
+		[[self cdsFirmware] updateFirmwareConfigSessionValues];
+	}
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	execControl->ApplySettingsOnReset();

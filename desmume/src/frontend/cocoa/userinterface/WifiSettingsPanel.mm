@@ -19,6 +19,7 @@
 #include <vector>
 
 #import "WifiSettingsPanel.h"
+#import "../cocoa_firmware.h"
 #include "../ClientExecutionControl.h"
 #include "../../../wifi.h"
 #undef BOOL
@@ -26,13 +27,13 @@
 
 @implementation WifiSettingsPanelDelegate
 
+@synthesize firmwarePanelController;
+@synthesize bridgeDevicePopUpButton;
+
 @synthesize execControl;
 
 @dynamic wifiEmulationMode;
-@dynamic addressSelection;
 @dynamic bridgeDeviceSelection;
-
-@synthesize bridgeDevicePopUpButton;
 
 @synthesize myMACAddress1String;
 @synthesize myMACAddress2String;
@@ -49,17 +50,15 @@
 	
 	execControl = NULL;
 	
-	_myMACAddressValue = 0x503412BF;
-	const uint8_t myMAC4 = (_myMACAddressValue >>  8) & 0x000000FF;
-	const uint8_t myMAC5 = (_myMACAddressValue >> 16) & 0x000000FF;
-	const uint8_t myMAC6 = (_myMACAddressValue >> 24) & 0x000000F0;
+	const uint8_t myMAC4 = 0x12;
+	const uint8_t myMAC5 = 0x34;
+	const uint8_t myMAC6 = 0x50;
 	
 	myMACAddress1String = [NSString stringWithFormat:@"My Address #1  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 1];
 	myMACAddress2String = [NSString stringWithFormat:@"My Address #2  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 2];
 	myMACAddress3String = [NSString stringWithFormat:@"My Address #3  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 3];
 	myMACAddress4String = [NSString stringWithFormat:@"My Address #4  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 4];
 	
-	addressSelection = 0;
 	_libpcapDeviceSelectionName = @"";
 	
 	return self;
@@ -85,30 +84,6 @@
 	return (NSInteger)execControl->GetWifiEmulationMode();
 }
 
-- (void) setAddressSelection:(NSInteger)theSelection
-{
-	if (theSelection == 0)
-	{
-		wifiHandler->SetFirmwareMACMode(FirmwareMACMode_ReadFromFirmware);
-	}
-	else if ( (theSelection >= 1) && (theSelection <= 4) )
-	{
-		const uint8_t myMAC4 = (_myMACAddressValue >>  8) & 0x000000FF;
-		const uint8_t myMAC5 = (_myMACAddressValue >> 16) & 0x000000FF;
-		const uint8_t myMAC6 = (_myMACAddressValue >> 24) & 0x000000F0;
-		
-		wifiHandler->SetUserMACValues(myMAC4, myMAC5, myMAC6 + theSelection);
-		wifiHandler->SetFirmwareMACMode(FirmwareMACMode_Manual);
-	}
-	
-	addressSelection = theSelection;
-}
-
-- (NSInteger) addressSelection
-{
-	return addressSelection;
-}
-
 - (void) setBridgeDeviceSelection:(NSInteger)theSelection
 {
 	_libpcapDeviceSelectionName = [bridgeDevicePopUpButton itemTitleAtIndex:theSelection];
@@ -125,16 +100,14 @@
 	return execControl->GetWifiBridgeDeviceIndex();
 }
 
-- (void) updateMyMACAddressStringsWithValue:(uint32_t)value
+- (void) updateCustomMACAddressStrings
 {
-	const uint8_t myMAC4 = (value >>  8) & 0x000000FF;
-	const uint8_t myMAC5 = (value >> 16) & 0x000000FF;
-	const uint8_t myMAC6 = (value >> 24) & 0x000000F0;
+	CocoaDSFirmware *cdsFirmware = (CocoaDSFirmware *)[firmwarePanelController content];
 	
-	[self setMyMACAddress1String:[NSString stringWithFormat:@"My Address #1  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 1]];
-	[self setMyMACAddress2String:[NSString stringWithFormat:@"My Address #2  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 2]];
-	[self setMyMACAddress3String:[NSString stringWithFormat:@"My Address #3  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 3]];
-	[self setMyMACAddress4String:[NSString stringWithFormat:@"My Address #4  00:09:BF:%02X:%02X:%02X", myMAC4, myMAC5, myMAC6 + 4]];
+	[self setMyMACAddress1String:[NSString stringWithFormat:@"My Address #1  %@", [cdsFirmware customMACAddress1String]]];
+	[self setMyMACAddress2String:[NSString stringWithFormat:@"My Address #2  %@", [cdsFirmware customMACAddress2String]]];
+	[self setMyMACAddress3String:[NSString stringWithFormat:@"My Address #3  %@", [cdsFirmware customMACAddress3String]]];
+	[self setMyMACAddress4String:[NSString stringWithFormat:@"My Address #4  %@", [cdsFirmware customMACAddress4String]]];
 }
 
 - (void) fillLibpcapDeviceMenu
@@ -157,77 +130,31 @@
 		NSMenuItem *menuItem = [bridgeDevicePopUpButton itemAtIndex:i];
 		[menuItem setTag:i];
 	}
-	
-	if (deviceCount > 0)
-	{
-		[self setAddressSelection:0];
-	}
-}
-
-- (void) generateRandomMyMACAddressSet
-{
-	uint32_t randomMACAddressValue = 0;
-	
-	do
-	{
-		randomMACAddressValue = (uint32_t)random() & 0x00FFFFFF;
-	} while (randomMACAddressValue == 0);
-	
-	_myMACAddressValue = (randomMACAddressValue << 8) | 0xBF;
-	[self updateMyMACAddressStringsWithValue:_myMACAddressValue];
-	
-	const NSInteger currentAddressSelection = [self addressSelection];
-	if (currentAddressSelection != 0)
-	{
-		[self setAddressSelection:currentAddressSelection];
-	}
 }
 
 - (IBAction) generateNewAddresses:(id)sender
 {
-	[self generateRandomMyMACAddressSet];
+	CocoaDSFirmware *cdsFirmware = (CocoaDSFirmware *)[firmwarePanelController content];
+	[cdsFirmware generateRandomCustomMACAddress];
+	[self updateCustomMACAddressStrings];
 }
 
 - (IBAction) writeDefaultsWifiSettings:(id)sender
 {
+	CocoaDSFirmware *cdsFirmware = (CocoaDSFirmware *)[firmwarePanelController content];
+	
 	[[NSUserDefaults standardUserDefaults] setInteger:[self wifiEmulationMode] forKey:@"Wifi_EmulationMode"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[self addressSelection] forKey:@"Wifi_AddressSelection"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[cdsFirmware addressSelection] forKey:@"FirmwareConfig_AddressSelection"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self bridgeDeviceSelection] forKey:@"Wifi_BridgeDeviceSelectionIndex"];
 	[[NSUserDefaults standardUserDefaults] setObject:_libpcapDeviceSelectionName forKey:@"Wifi_BridgeDeviceSelectionName"];
-	[[NSUserDefaults standardUserDefaults] setInteger:_myMACAddressValue forKey:@"Wifi_MyMACAddress"];
 	
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (void) readUserDefaults
 {
-	BOOL needUserDefaultSynchronize = NO;
-	
-	// Set the user's MAC address set.
-	// This needs to happen first since the other properties will have a dependency on this.
-	uint32_t userDefaultMACAddressValue = 0;
-	
-	if ([[NSUserDefaults standardUserDefaults] objectForKey:@"Wifi_MyMACAddress"] != nil)
-	{
-		userDefaultMACAddressValue = (uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"Wifi_MyMACAddress"];
-	}
-	
-	if (userDefaultMACAddressValue == 0)
-	{
-		// Generate a new random MAC address set if one does not exist.
-		do
-		{
-			userDefaultMACAddressValue = (uint32_t)random() & 0x00FFFFFF;
-		} while (userDefaultMACAddressValue == 0);
-		
-		userDefaultMACAddressValue = ((userDefaultMACAddressValue << 8) | 0xBF);
-		
-		[[NSUserDefaults standardUserDefaults] setInteger:userDefaultMACAddressValue forKey:@"Wifi_MyMACAddress"];
-		needUserDefaultSynchronize = YES;
-	}
-	
-	_myMACAddressValue = userDefaultMACAddressValue;
-	[self updateMyMACAddressStringsWithValue:_myMACAddressValue];
+	CocoaDSFirmware *cdsFirmware = (CocoaDSFirmware *)[firmwarePanelController content];
+	[self updateCustomMACAddressStrings];
 	
 	// Set the bridge device selection.
 	NSInteger userDefaultDeviceIndex = [[NSUserDefaults standardUserDefaults] integerForKey:@"Wifi_BridgeDeviceSelectionIndex"];
@@ -255,20 +182,14 @@
 		
 		[[NSUserDefaults standardUserDefaults] setInteger:userDefaultDeviceIndex forKey:@"Wifi_BridgeDeviceSelectionIndex"];
 		[[NSUserDefaults standardUserDefaults] setObject:userDefaultDeviceName forKey:@"Wifi_BridgeDeviceSelectionName"];
-		needUserDefaultSynchronize = YES;
+		[[NSUserDefaults standardUserDefaults] synchronize];
 	}
 	
 	[self setBridgeDeviceSelection:userDefaultDeviceIndex];
 	
 	// Set the remaining user defaults.
 	[self setWifiEmulationMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"Wifi_EmulationMode"]];
-	[self setAddressSelection:[[NSUserDefaults standardUserDefaults] integerForKey:@"Wifi_AddressSelection"]];
-	
-	// If we wrote to user defaults beforehand, then synchronize the write as the final operation here.
-	if (needUserDefaultSynchronize)
-	{
-		[[NSUserDefaults standardUserDefaults] synchronize];
-	}
+	[cdsFirmware setAddressSelection:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_AddressSelection"]];
 }
 
 @end

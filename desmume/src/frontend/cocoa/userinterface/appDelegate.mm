@@ -138,8 +138,6 @@
 		return;
 	}
 	
-	srandom(time(NULL));
-	
 	[CocoaDSFile setupAllFilePaths];
 	
 	// On macOS v10.13 and later, some unwanted menu items will show up in the View menu.
@@ -434,6 +432,37 @@
 	PreferencesWindowDelegate *prefWindowDelegate = [prefWindow delegate];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
+	// Setup the ARM7 BIOS, ARM9 BIOS, and firmware image paths per user preferences.
+	NSString *arm7BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM7ImagePath"];
+	if (arm7BiosImagePath != nil)
+	{
+		[cdsCore setArm7ImageURL:[NSURL fileURLWithPath:arm7BiosImagePath]];
+	}
+	else
+	{
+		[cdsCore setArm7ImageURL:nil];
+	}
+	
+	NSString *arm9BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM9ImagePath"];
+	if (arm9BiosImagePath != nil)
+	{
+		[cdsCore setArm9ImageURL:[NSURL fileURLWithPath:arm9BiosImagePath]];
+	}
+	else
+	{
+		[cdsCore setArm9ImageURL:nil];
+	}
+	
+	NSString *firmwareImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Emulation_FirmwareImagePath"];
+	if (firmwareImagePath != nil)
+	{
+		[cdsCore setFirmwareImageURL:[NSURL fileURLWithPath:firmwareImagePath]];
+	}
+	else
+	{
+		[cdsCore setFirmwareImageURL:nil];
+	}
+	
 	// Set the emulation flags.
 	[cdsCore setEmuFlagAdvancedBusLevelTiming:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_AdvancedBusLevelTiming"]];
 	[cdsCore setEmuFlagRigorousTiming:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_RigorousTiming"]];
@@ -468,28 +497,50 @@
 	
 	// Set up the firmware per user preferences.
 	CocoaDSFirmware *newFirmware = [[[CocoaDSFirmware alloc] init] autorelease];
+	BOOL needUserDefaultSynchronize = NO;
 	uint32_t defaultMACAddress_u32 = 0;
 	
-	if ([[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_MACAddress"] != nil)
+	[newFirmware setExecControl:[cdsCore execControl]];
+	
+	if ([[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_FirmwareMACAddress"] != nil)
 	{
-		defaultMACAddress_u32 = (uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_MACAddress"];
+		defaultMACAddress_u32 = (uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_FirmwareMACAddress"];
 	}
 	
 	if (defaultMACAddress_u32 == 0)
 	{
-		// Generate a new random MAC address set if one does not exist.
-		do
-		{
-			defaultMACAddress_u32 = (uint32_t)random() & 0x00FFFFFF;
-		} while (defaultMACAddress_u32 == 0);
-		
-		defaultMACAddress_u32 = ((defaultMACAddress_u32 << 8) | 0xBF);
-		
-		[[NSUserDefaults standardUserDefaults] setInteger:defaultMACAddress_u32 forKey:@"FirmwareConfig_MACAddress"];
+		defaultMACAddress_u32 = [newFirmware firmwareMACAddressPendingValue];
+		[[NSUserDefaults standardUserDefaults] setInteger:defaultMACAddress_u32 forKey:@"FirmwareConfig_FirmwareMACAddress"];
+		needUserDefaultSynchronize = YES;
+	}
+	else
+	{
+		[newFirmware setFirmwareMACAddressPendingValue:defaultMACAddress_u32];
+	}
+	
+	defaultMACAddress_u32 = 0;
+	if ([[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_CustomMACAddress"] != nil)
+	{
+		defaultMACAddress_u32 = (uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_CustomMACAddress"];
+	}
+	
+	if (defaultMACAddress_u32 == 0)
+	{
+		defaultMACAddress_u32 = [newFirmware customMACAddressValue];
+		[[NSUserDefaults standardUserDefaults] setInteger:defaultMACAddress_u32 forKey:@"FirmwareConfig_CustomMACAddress"];
+		needUserDefaultSynchronize = YES;
+	}
+	else
+	{
+		[newFirmware setCustomMACAddressValue:defaultMACAddress_u32];
+	}
+	
+	if (needUserDefaultSynchronize)
+	{
 		[[NSUserDefaults standardUserDefaults] synchronize];
 	}
 	
-	[newFirmware setMACAddressValue:defaultMACAddress_u32];
+	[wifiSettingsPanelDelegate updateCustomMACAddressStrings];
 	
 	[newFirmware setIpv4Address_AP1_1:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP1_1"]];
 	[newFirmware setIpv4Address_AP1_2:[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_IPv4Address_AP1_2"]];
@@ -558,39 +609,9 @@
 	[prefWindowDelegate updateSubnetMaskString_AP2:nil];
 	[prefWindowDelegate updateSubnetMaskString_AP3:nil];
 	
-	[newFirmware update];
+	[newFirmware applySettings];
+	[cdsCore updateFirmwareMACAddressString];
 	[emuControl setCdsFirmware:newFirmware];
-	
-	// Setup the ARM7 BIOS, ARM9 BIOS, and firmware image paths per user preferences.
-	NSString *arm7BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM7ImagePath"];
-	if (arm7BiosImagePath != nil)
-	{
-		[cdsCore setArm7ImageURL:[NSURL fileURLWithPath:arm7BiosImagePath]];
-	}
-	else
-	{
-		[cdsCore setArm7ImageURL:nil];
-	}
-	
-	NSString *arm9BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM9ImagePath"];
-	if (arm9BiosImagePath != nil)
-	{
-		[cdsCore setArm9ImageURL:[NSURL fileURLWithPath:arm9BiosImagePath]];
-	}
-	else
-	{
-		[cdsCore setArm9ImageURL:nil];
-	}
-	
-	NSString *firmwareImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Emulation_FirmwareImagePath"];
-	if (firmwareImagePath != nil)
-	{
-		[cdsCore setFirmwareImageURL:[NSURL fileURLWithPath:firmwareImagePath]];
-	}
-	else
-	{
-		[cdsCore setFirmwareImageURL:nil];
-	}
 	
 	// Set up GDB stub settings per user preferences.
 #ifdef GDB_STUB

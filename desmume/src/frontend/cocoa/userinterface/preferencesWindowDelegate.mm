@@ -904,7 +904,7 @@
 	
 	randomMACAddressValue = (randomMACAddressValue << 8) | 0xBF;
 	
-	[[NSUserDefaults standardUserDefaults] setInteger:randomMACAddressValue forKey:@"FirmwareConfig_MACAddress"];
+	[[NSUserDefaults standardUserDefaults] setInteger:randomMACAddressValue forKey:@"FirmwareConfig_FirmwareMACAddress"];
 	[[NSUserDefaults standardUserDefaults] synchronize];
 	
 	[self updateFirmwareMACAddressString:nil];
@@ -912,7 +912,7 @@
 
 - (IBAction) updateFirmwareMACAddressString:(id)sender
 {
-	const uint32_t defaultMACAddressValue = (uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_MACAddress"];
+	const uint32_t defaultMACAddressValue = (uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"FirmwareConfig_FirmwareMACAddress"];
 	const uint8_t mac4 = (defaultMACAddressValue >>  8) & 0x000000FF;
 	const uint8_t mac5 = (defaultMACAddressValue >> 16) & 0x000000FF;
 	const uint8_t mac6 = (defaultMACAddressValue >> 24) & 0x000000FF;

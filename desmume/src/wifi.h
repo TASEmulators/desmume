@@ -824,13 +824,6 @@ enum WifiCommInterfaceID
 	WifiCommInterfaceID_Infrastructure = 1
 };
 
-enum FirmwareMACMode
-{
-	FirmwareMACMode_Automatic = 0,
-	FirmwareMACMode_Manual = 1,
-	FirmwareMACMode_ReadFromFirmware = 2
-};
-
 typedef u16 IOREG_W_PADDING;
 
 typedef u16 IOREG_W_INTERNAL;
@@ -3317,9 +3310,6 @@ protected:
 	bool _isSocketsSupported;
 	bool _didWarnWFCUser;
 	
-	FirmwareMACMode _firmwareMACMode;
-	u8 _userMAC[3];
-	
 	u8 *_workingTXBuffer;
 	u8 *_workingRXAdhocBuffer;
 	u8 *_workingRXSoftAPBuffer;
@@ -3390,15 +3380,6 @@ public:
 	bool IsPCapSupported();
 	ClientPCapInterface* GetPCapInterface();
 	void SetPCapInterface(ClientPCapInterface *pcapInterface);
-	
-	FirmwareMACMode GetFirmwareMACMode();
-	void SetFirmwareMACMode(FirmwareMACMode macMode);
-	
-	void GetUserMACValues(u8 *outValue3, u8 *outValue4, u8 *outValue5);
-	void SetUserMACValues(u8 inValue3, u8 inValue4, u8 inValue5);
-	
-	void GenerateRandomMAC(u8 outMAC[6]);
-	void CopyMACFromUserValues(u8 outMAC[6]);
 	
 	void PrepareSaveStateWrite();
 	void ParseSaveStateRead();

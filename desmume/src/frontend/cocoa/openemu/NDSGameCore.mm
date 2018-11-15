@@ -98,7 +98,7 @@ volatile bool execute = true;
 	
 	// Set up the DS firmware using the internal firmware
 	cdsFirmware = [[[[CocoaDSFirmware alloc] init] retain] autorelease];
-	[cdsFirmware update];
+	[cdsFirmware applySettings];
 	
 	// Set up the sound core
 	CommonSettings.spu_advanced = true;

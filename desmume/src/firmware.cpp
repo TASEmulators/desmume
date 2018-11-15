@@ -244,45 +244,38 @@ u32 CFIRMWARE::_decompress(const u8 *in, u8* &out)
 	return (blockSize);
 }
 //================================================================================
-bool CFIRMWARE::load()
+bool CFIRMWARE::load(const char *firmwareFilePath)
 {
-	if (!CommonSettings.UseExtFirmware)
-		return false;
-	if (strlen(CommonSettings.Firmware) == 0)
-		return false;
-	
 	size_t fileSize = 0;
-	NDSFirmwareData newFirmwareData;
+	NDSFirmwareData *newFirmwareData = new NDSFirmwareData;
 	
-	bool isFirmwareFileRead = NDS_ReadFirmwareDataFromFile(CommonSettings.Firmware, &newFirmwareData, &fileSize, NULL, NULL);
-	if (!isFirmwareFileRead)
+	this->_isLoaded = NDS_ReadFirmwareDataFromFile(firmwareFilePath, newFirmwareData, &fileSize, NULL, NULL);
+	if (!this->_isLoaded)
 	{
-		return false;
+		return this->_isLoaded;
 	}
 	
-	this->_header = newFirmwareData.header;
+	this->_fwFilePath = firmwareFilePath;
+	this->_header = newFirmwareData->header;
 
 	if (MMU.fw.size != fileSize)	// reallocate
 		mc_alloc(&MMU.fw, fileSize);
 	
-	this->_userDataAddr = LE_TO_LOCAL_16(newFirmwareData.header.userSettingsOffset) * 8;
+	this->_userDataAddr = LE_TO_LOCAL_16(newFirmwareData->header.userSettingsOffset) * 8;
 	
 	// fix bad dump of firmware? (wrong DS type)
 	// fix mario kart touch screen calibration
-	if ( (newFirmwareData.header.key.unused != 0xFFFF) && (newFirmwareData.header.key.consoleType == NDS_CONSOLE_TYPE_IQUE_LITE) )
+	if ( (newFirmwareData->header.key.unused != 0xFFFF) && (newFirmwareData->header.key.consoleType == NDS_CONSOLE_TYPE_IQUE_LITE) )
 	{
-		newFirmwareData.header.key.consoleType = NDS_CONSOLE_TYPE_FAT;
-		newFirmwareData.header.key.unused = 0xFFFF;
+		newFirmwareData->header.key.consoleType = NDS_CONSOLE_TYPE_FAT;
+		newFirmwareData->header.key.unused = 0xFFFF;
 	}
 	
-	memcpy(&MMU.fw.data, &newFirmwareData, fileSize);
+	memcpy(&MMU.fw.data, newFirmwareData, fileSize);
+	delete newFirmwareData;
 	
-	// Generate the path for the external firmware config file.
-	std::string extFilePath = CFIRMWARE::GetExternalFilePath();
-	strncpy(MMU.fw.userfile, extFilePath.c_str(), MAX_PATH);
-
 	this->_isLoaded = true;
-	return true;
+	return this->_isLoaded;
 }
 
 bool CFIRMWARE::unpack()
@@ -299,8 +292,8 @@ bool CFIRMWARE::unpack()
 		return false;
 	}
 	
-	NDSFirmwareData workingFirmwareData;
-	memcpy(&workingFirmwareData, &MMU.fw.data, size);
+	NDSFirmwareData *workingFirmwareData = new NDSFirmwareData;
+	memcpy(workingFirmwareData, &MMU.fw.data, sizeof(NDSFirmwareData));
 	
 	shift1 = ((this->_header.shift >> 0) & 0x07);
 	shift2 = ((this->_header.shift >> 3) & 0x07);
@@ -325,9 +318,9 @@ bool CFIRMWARE::unpack()
 	enc.applyKeycode((u32*)&data[0x18]);
 #else
 	// fix touch coords
-	workingFirmwareData.header.key.timestamp = 0;
-	workingFirmwareData.header.key.consoleType = NDS_CONSOLE_TYPE_FAT;
-	workingFirmwareData.header.key.unused = 0xFFFF;
+	workingFirmwareData->header.key.timestamp = 0;
+	workingFirmwareData->header.key.consoleType = NDS_CONSOLE_TYPE_FAT;
+	workingFirmwareData->header.key.unused = 0xFFFF;
 #endif
 
 	enc.init(this->_header.identifierValue, 2, 0xC);
@@ -337,13 +330,13 @@ bool CFIRMWARE::unpack()
 	u32 arm9Size = 0;
 	u32 arm7Size = 0;
 	
-	arm9Size = this->_decrypt((u8 *)&workingFirmwareData + part1addr, tmp_data9);
+	arm9Size = this->_decrypt(&workingFirmwareData->_raw[part1addr], tmp_data9);
 	if (tmp_data9 == NULL)
 	{
 		return false;
 	}
 
-	arm7Size = this->_decrypt((u8 *)&workingFirmwareData + part2addr, tmp_data7);
+	arm7Size = this->_decrypt(&workingFirmwareData->_raw[part2addr], tmp_data7);
 	if (tmp_data7 == NULL)
 	{
 		delete [] tmp_data9;
@@ -381,10 +374,10 @@ bool CFIRMWARE::unpack()
 	delete [] tmp_data9;
 	tmp_data9 = NULL;
 	
-	const bool isPatched = (workingFirmwareData._raw[0x17C] != 0xFF);
+	const bool isPatched = (workingFirmwareData->_raw[0x17C] != 0xFF);
 	
 	INFO("Firmware:\n");
-	INFO("- path: %s\n", CommonSettings.Firmware);
+	INFO("- path: %s\n", this->_fwFilePath.c_str());
 	INFO("- size: %i bytes (%i Mbit)\n", size, size/1024/8);
 	INFO("- CRC : 0x%04X\n", this->_header.part12_boot_crc16);
 	INFO("- header: \n");
@@ -404,10 +397,10 @@ bool CFIRMWARE::unpack()
 	if (isPatched)
 	{
 		u32 patch_offset = 0x3FC80;
-		if (workingFirmwareData._raw[0x17C] > 1)
+		if (workingFirmwareData->_raw[0x17C] > 1)
 			patch_offset = 0x3F680;
 
-		memcpy(&this->_header, &workingFirmwareData._raw[patch_offset], sizeof(this->_header));
+		memcpy(&this->_header, &workingFirmwareData->_raw[patch_offset], sizeof(this->_header));
 
 		shift1 = ((this->_header.shift >> 0) & 0x07);
 		shift2 = ((this->_header.shift >> 3) & 0x07);
@@ -423,13 +416,13 @@ bool CFIRMWARE::unpack()
 		ARM9bootAddr = part1ram;
 		ARM7bootAddr = part2ram;
 
-		arm9Size = this->_decompress(&workingFirmwareData._raw[part1addr], tmp_data9);
+		arm9Size = this->_decompress(&workingFirmwareData->_raw[part1addr], tmp_data9);
 		if (tmp_data9 == NULL)
 		{
 			return false;
 		}
 
-		arm7Size = this->_decompress(&workingFirmwareData._raw[part2addr], tmp_data7);
+		arm7Size = this->_decompress(&workingFirmwareData->_raw[part2addr], tmp_data7);
 		if (tmp_data7 == NULL)
 		{
 			delete [] tmp_data9;
@@ -463,18 +456,20 @@ bool CFIRMWARE::unpack()
 		INFO("   * ARM7 unpacked size:         0x%08X (%i) bytes\n", arm7Size, arm7Size);
 	}
 
-	memcpy(&MMU.fw.data, &workingFirmwareData, size);
-	MMU.fw.fp = NULL;
-
+	memcpy(&MMU.fw.data, workingFirmwareData, size);
+	delete workingFirmwareData;
+	
 	return true;
 }
 
-bool CFIRMWARE::loadSettings()
+bool CFIRMWARE::loadSettings(const char *firmwareUserSettingsFilePath)
 {
-	if (!CommonSettings.UseExtFirmware) return false;
-	if (!CommonSettings.UseExtFirmwareSettings) return false;
-
-	FILE *fp = fopen(MMU.fw.userfile, "rb");
+	if ( (firmwareUserSettingsFilePath == NULL) || (strlen(firmwareUserSettingsFilePath) == 0) )
+	{
+		return false;
+	}
+	
+	FILE *fp = fopen(firmwareUserSettingsFilePath, "rb");
 	if (fp)
 	{
 		fseek(fp, 0, SEEK_END);
@@ -494,7 +489,7 @@ bool CFIRMWARE::loadSettings()
 							memcpy(&MMU.fw.data.userSettings1, usr, sizeof(FWUserSettings));
 							memcpy(&MMU.fw.data.wifiInfo, usr + sizeof(FWUserSettings), WIFI_SETTINGS_SIZE);
 							memcpy(&MMU.fw.data.wifiAP1, usr + sizeof(FWUserSettings) + WIFI_SETTINGS_SIZE, sizeof(FWAccessPointSettings));
-							printf("Loaded user settings from %s\n", MMU.fw.userfile);
+							printf("Loaded user settings from %s\n", firmwareUserSettingsFilePath);
 						}
 					}
 				}
@@ -503,7 +498,7 @@ bool CFIRMWARE::loadSettings()
 			}
 		}
 		else
-			printf("Failed loading firmware config from %s (wrong file size)\n", MMU.fw.userfile);
+			printf("Failed loading firmware config from %s (wrong file size)\n", firmwareUserSettingsFilePath);
 
 		fclose(fp);
 	}
@@ -511,10 +506,12 @@ bool CFIRMWARE::loadSettings()
 	return false;
 }
 
-bool CFIRMWARE::saveSettings()
+bool CFIRMWARE::saveSettings(const char *firmwareUserSettingsFilePath)
 {
-	if (!CommonSettings.UseExtFirmware) return false;
-	if (!CommonSettings.UseExtFirmwareSettings) return false;
+	if ( (firmwareUserSettingsFilePath == NULL) || (strlen(firmwareUserSettingsFilePath) == 0) )
+	{
+		return false;
+	}
 	
 	FWUserSettings &userSettings0 = MMU.fw.data.userSettings0;
 	FWUserSettings &userSettings1 = MMU.fw.data.userSettings1;
@@ -529,7 +526,7 @@ bool CFIRMWARE::saveSettings()
 	}
 	
 	printf("Firmware: saving config");
-	FILE *fp = fopen(MMU.fw.userfile, "wb");
+	FILE *fp = fopen(firmwareUserSettingsFilePath, "wb");
 	if (fp)
 	{
 		u8 *usr = new u8[DFC_FILE_SIZE];
@@ -555,9 +552,9 @@ bool CFIRMWARE::saveSettings()
 	return true;
 }
 
-std::string CFIRMWARE::GetExternalFilePath()
+std::string CFIRMWARE::GetUserSettingsFilePath(const char *firmwareFilePath)
 {
-	std::string fwPath = CommonSettings.Firmware;
+	std::string fwPath = firmwareFilePath;
 	std::string fwFileName = Path::GetFileNameFromPathWithoutExt(fwPath);
 
 	std::string configPath = path.getpath(path.BATTERY);
@@ -743,6 +740,13 @@ void NDS_GetDefaultFirmwareConfig(FirmwareConfig &outConfig)
 	outConfig.MACAddress[4] = 0x34;
 	outConfig.MACAddress[5] = 0x56;
 	
+	outConfig.WFCUserID[0] = 0x00;
+	outConfig.WFCUserID[1] = 0x00;
+	outConfig.WFCUserID[2] = 0x00;
+	outConfig.WFCUserID[3] = 0x00;
+	outConfig.WFCUserID[4] = 0x00;
+	outConfig.WFCUserID[5] = 0x00;
+	
 	// default touchscreen calibration
 	
 	//ANCIENT DESMUME VALUES
@@ -770,6 +774,31 @@ void NDS_GetDefaultFirmwareConfig(FirmwareConfig &outConfig)
 	outConfig.subnetMask_AP1 = 24;
 	outConfig.subnetMask_AP2 = 24;
 	outConfig.subnetMask_AP3 = 24;
+}
+
+void NDS_GetCurrentWFCUserID(u8 *outMAC, u8 *outUserID)
+{
+	const NDSFirmwareData &fw = MMU.fw.data;
+	
+	if (outMAC != NULL)
+	{
+		outMAC[0] = fw.wifiInfo.MACAddr[0];
+		outMAC[1] = fw.wifiInfo.MACAddr[1];
+		outMAC[2] = fw.wifiInfo.MACAddr[2];
+		outMAC[3] = fw.wifiInfo.MACAddr[3];
+		outMAC[4] = fw.wifiInfo.MACAddr[4];
+		outMAC[5] = fw.wifiInfo.MACAddr[5];
+	}
+	
+	if (outUserID != NULL)
+	{
+		outUserID[0] = fw.wifiAP1.wfcUserID[0];
+		outUserID[1] = fw.wifiAP1.wfcUserID[1];
+		outUserID[2] = fw.wifiAP1.wfcUserID[2];
+		outUserID[3] = fw.wifiAP1.wfcUserID[3];
+		outUserID[4] = fw.wifiAP1.wfcUserID[4];
+		outUserID[5] = fw.wifiAP1.wfcUserID[5];
+	}
 }
 
 void NDS_InitFirmwareWithConfig(const FirmwareConfig &inConfig)
@@ -902,6 +931,14 @@ void NDS_InitFirmwareWithConfig(const FirmwareConfig &inConfig)
 	// Wifi settings CRC16
 	fw.wifiInfo.crc16 = calc_CRC16(0, &fw.wifiInfo.length, fw.wifiInfo.length);
 	
+	// WFC User ID, uniquely located on the first WiFi profile and no other
+	fw.wifiAP1.wfcUserID[0] = inConfig.WFCUserID[0];
+	fw.wifiAP1.wfcUserID[1] = inConfig.WFCUserID[1];
+	fw.wifiAP1.wfcUserID[2] = inConfig.WFCUserID[2];
+	fw.wifiAP1.wfcUserID[3] = inConfig.WFCUserID[3];
+	fw.wifiAP1.wfcUserID[4] = inConfig.WFCUserID[4];
+	fw.wifiAP1.wfcUserID[5] = inConfig.WFCUserID[5];
+	
 	// WiFi profiles
 	if ( ((*(u32 *)inConfig.ipv4Address_AP1 != 0) && (*(u32 *)inConfig.ipv4Gateway_AP1 != 0) && (inConfig.subnetMask_AP1 != 0)) ||
 		 (*(u32 *)inConfig.ipv4PrimaryDNS_AP1 != 0) ||
@@ -1009,27 +1046,17 @@ void NDS_InitFirmwareWithConfig(const FirmwareConfig &inConfig)
 	fw.wifiAP2.crc16 = (u16)calc_CRC16(0, &fw.wifiAP2, 254);
 	fw.wifiAP3.crc16 = (u16)calc_CRC16(0, &fw.wifiAP3, 254);
 	
-	memcpy(&CommonSettings.fwConfig, &inConfig, sizeof(FirmwareConfig));
-}
-
-void NDS_OverrideFirmwareMAC(const u8 inMAC[6])
-{
-	NDSFirmwareData &fw = MMU.fw.data;
-	fw.wifiInfo.MACAddr[0] = inMAC[0];
-	fw.wifiInfo.MACAddr[1] = inMAC[1];
-	fw.wifiInfo.MACAddr[2] = inMAC[2];
-	fw.wifiInfo.MACAddr[3] = inMAC[3];
-	fw.wifiInfo.MACAddr[4] = inMAC[4];
-	fw.wifiInfo.MACAddr[5] = inMAC[5];
-	
-	fw.wifiInfo.crc16 = calc_CRC16(0, &fw.wifiInfo.length, fw.wifiInfo.length);
+	if (&inConfig != &CommonSettings.fwConfig)
+	{
+		memcpy(&CommonSettings.fwConfig, &inConfig, sizeof(FirmwareConfig));
+	}
 }
 
 bool NDS_ReadFirmwareDataFromFile(const char *fileName, NDSFirmwareData *outFirmwareData, size_t *outFileSize, int *outConsoleType, u8 *outMACAddr)
 {
 	bool result = false;
 	
-	if (fileName == NULL)
+	if ( (fileName == NULL) || (strlen(fileName) == 0) )
 	{
 		return result;
 	}
@@ -1156,15 +1183,9 @@ void fw_reset_com(fw_memory_chip *mc)
 {
 	if(mc->com == FW_CMD_PAGEWRITE)
 	{
-		if (mc->fp)
+		if (mc->isFirmware && CommonSettings.UseExtFirmware && CommonSettings.UseExtFirmwareSettings && (extFirmwareObj != NULL))
 		{
-			fseek(mc->fp, 0, SEEK_SET);
-			fwrite(mc->data._raw, mc->size, 1, mc->fp);
-		}
-
-		if (mc->isFirmware && CommonSettings.UseExtFirmware && CommonSettings.UseExtFirmwareSettings && firmware)
-		{
-			firmware->saveSettings();
+			extFirmwareObj->saveSettings(CommonSettings.ExtFirmwareUserSettingsPath);
 		}
 		mc->write_enable = FALSE;
 	}
@@ -1196,6 +1217,11 @@ u8 fw_transfer(fw_memory_chip *mc, u8 data)
 				case FW_CMD_PAGEWRITE:
 					if(mc->addr < mc->size)
 					{
+						if ( (mc->addr >= offsetof(NDSFirmwareData, wifiAP1.wfcUserID[0])) && (mc->addr <= offsetof(NDSFirmwareData, wifiAP1.wfcUserID[5])) )
+						{
+							CommonSettings.fwConfig.WFCUserID[mc->addr - offsetof(NDSFirmwareData, wifiAP1.wfcUserID[0])] = data;
+						}
+						
 						mc->data._raw[mc->addr] = data;       /* write byte */
 						mc->addr++;
 					}

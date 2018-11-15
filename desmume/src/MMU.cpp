@@ -923,7 +923,6 @@ void MMU_Init(void)
 
 	mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
 	mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
-	MMU.fw.fp = NULL;
 	MMU.fw.isFirmware = true;
 
 	rtcInit();
@@ -939,9 +938,7 @@ void MMU_Init(void)
 
 void MMU_DeInit(void) {
 	LOG("MMU deinit\n");
-	if (MMU.fw.fp)
-		fclose(MMU.fw.fp);
-	mc_free(&MMU.fw);      
+	mc_free(&MMU.fw);
 
 	slot1_Shutdown();
 	slot2_Shutdown();
@@ -5216,7 +5213,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 				if (NDS_ARM7.instruct_adr > 0x3FFF) return;
 #ifdef HAVE_JIT
 				// hack for firmware boot in JIT mode
-				if (CommonSettings.UseExtFirmware && CommonSettings.BootFromFirmware && firmware->loaded() && val == 1)
+				if (CommonSettings.UseExtFirmware && CommonSettings.BootFromFirmware && extFirmwareObj->loaded() && val == 1)
 					CommonSettings.jit_max_block_size = saveBlockSizeJIT;
 #endif
 				break;
@@ -5324,8 +5321,9 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				if (val != nds.VCount)
 				{
 					printf("VCOUNT set to %i (previous value %i)\n", val, nds.VCount);
-					nds.VCount = val;
 				}
+				
+				nds.VCount = val;
 			}
 			else
 				printf("Attempt to set VCOUNT while not within 202-212 (%i), ignored\n", nds.VCount);

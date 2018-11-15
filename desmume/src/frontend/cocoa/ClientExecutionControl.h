@@ -81,6 +81,8 @@ struct ClientExecutionControlSettings
 	std::string filePathFirmware;
 	std::string filePathSlot1R4;
 	
+	FirmwareConfig fwConfig;
+	
 	std::string cpuEmulationEngineName;
 	std::string slot1DeviceName;
 	
@@ -291,6 +293,10 @@ public:
 	
 	bool GetEnableBIOSPatchDelayLoop();
 	void SetEnableBIOSPatchDelayLoop(bool enable);
+	
+	FirmwareConfig GetFirmwareConfig();
+	FirmwareConfig GetFirmwareConfigApplied();
+	void SetFirmwareConfig(const FirmwareConfig &inConfig);
 	
 	bool GetEnableExternalFirmware();
 	void SetEnableExternalFirmware(bool enable);

@@ -80,8 +80,14 @@
 	<true/>
 	<key>EmulationSlot1_DeviceType</key>
 	<integer>1</integer>
-	<key>FirmwareConfig_MACAddress</key>
+	<key>FirmwareConfig_AddressSelection</key>
 	<integer>0</integer>
+	<key>FirmwareConfig_FirmwareMACAddress</key>
+	<integer>0</integer>
+	<key>FirmwareConfig_CustomMACAddress</key>
+	<integer>0</integer>
+	<key>FirmwareConfig_WFCUserID</key>
+	<dict/>
 	<key>FirmwareConfig_IPv4Address_AP1_1</key>
 	<integer>0</integer>
 	<key>FirmwareConfig_IPv4Address_AP1_2</key>
@@ -934,13 +940,9 @@
 	<integer>1</integer>
 	<key>Wifi_EmulationMode</key>
 	<integer>0</integer>
-	<key>Wifi_AddressSelection</key>
-	<integer>0</integer>
 	<key>Wifi_BridgeDeviceSelectionIndex</key>
 	<integer>0</integer>
 	<key>Wifi_BridgeDeviceSelectionName</key>
 	<string></string>
-	<key>Wifi_MyMACAddress</key>
-	<integer>0</integer>
 </dict>
 </plist>

@@ -2234,7 +2234,7 @@ int _main()
 	Piano.Enabled	= (slot2_device_type == NDS_SLOT2_EASYPIANO)?true:false;
 	Paddle.Enabled	= (slot2_device_type == NDS_SLOT2_PADDLE)?true:false;
 
-	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
+	CommonSettings.WifiBridgeDeviceID = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 
 	osd = new OSDCLASS(-1);
 
@@ -2245,37 +2245,7 @@ int _main()
 	WinPCapInterface *winpcapInterface = (isPCapSupported) ? new WinPCapInterface : NULL;
 	wifiHandler->SetPCapInterface(winpcapInterface);
 	wifiHandler->SetSocketsSupported(isSocketsSupported);
-
-	// Generate the unique MAC address for Ad-hoc mode.
-	{
-		// Get the host's IP4 address.
-		char hostname[256];
-		if (gethostname(hostname, 256) != 0)
-			strncpy(hostname, "127.0.0.1", 256);
-		
-		hostent *he = gethostbyname(hostname);
-		u32 ipaddr;
-		if (he == NULL || he->h_addr_list[0] == NULL)
-			ipaddr = 0x0100007F; // 127.0.0.1
-		else
-			ipaddr = *(u32 *)he->h_addr_list[0];
-		
-		u32 hash = (u32)GetCurrentProcessId();
-		
-		while ((hash & 0xFF000000) == 0)
-		{
-			hash <<= 1;
-		}
-		
-		hash >>= 1;
-		hash += ipaddr >> 8;
-		hash &= 0x00FFFFFF;
-		
-		wifiHandler->SetUserMACValues(hash >> 16, (hash >> 8) & 0xFF, hash & 0xFF);
-		wifiHandler->SetFirmwareMACMode(FirmwareMACMode_Manual);
-	}
-	
-	wifiHandler->SetBridgeDeviceIndex(CommonSettings.wifi.infraBridgeAdapter);
+	wifiHandler->SetBridgeDeviceIndex(CommonSettings.WifiBridgeDeviceID);
 
 	if (GetPrivateProfileBool("Wifi", "Enabled", false, IniName))
 	{
@@ -2431,7 +2401,7 @@ int _main()
 
 	CommonSettings.UseExtFirmware = GetPrivateProfileBool("Firmware", "UseExtFirmware", false, IniName);
 	CommonSettings.UseExtFirmwareSettings = GetPrivateProfileBool("Firmware", "UseExtFirmwareSettings", false, IniName);
-	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
+	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.ExtFirmwarePath, 256, IniName);
 	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", false, IniName);
 
 	video.setfilter(GetPrivateProfileInt("Video", "Filter", video.NONE, IniName));
@@ -2439,6 +2409,40 @@ int _main()
 
 	//default the firmware settings, they may get changed later
 	NDS_GetDefaultFirmwareConfig(CommonSettings.fwConfig);
+	
+	// Generate the unique MAC address.
+	{
+		// Get the host's IP4 address.
+		char hostname[256];
+		if (gethostname(hostname, 256) != 0)
+			strncpy(hostname, "127.0.0.1", 256);
+		
+		hostent *he = gethostbyname(hostname);
+		u32 ipaddr;
+		if (he == NULL || he->h_addr_list[0] == NULL)
+			ipaddr = 0x0100007F; // 127.0.0.1
+		else
+			ipaddr = *(u32 *)he->h_addr_list[0];
+		
+		u32 hash = (u32)GetCurrentProcessId();
+		
+		while ((hash & 0xFF000000) == 0)
+		{
+			hash <<= 1;
+		}
+		
+		hash >>= 1;
+		hash += ipaddr >> 8;
+		hash &= 0x00FFFFFF;
+		
+		CommonSettings.fwConfig.MACAddress[0] = 0x00;
+		CommonSettings.fwConfig.MACAddress[1] = 0x09;
+		CommonSettings.fwConfig.MACAddress[2] = 0xBF;
+		CommonSettings.fwConfig.MACAddress[3] = hash >> 16;
+		CommonSettings.fwConfig.MACAddress[4] = (hash >> 8) & 0xFF;
+		CommonSettings.fwConfig.MACAddress[5] = hash & 0xFF;
+	}
+	
 	// Read the firmware settings from the init file
 	CommonSettings.fwConfig.favoriteColor = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
 	CommonSettings.fwConfig.birthdayMonth = GetPrivateProfileInt("Firmware","bMonth", 7, IniName);
@@ -5893,7 +5897,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 			}
 
 			CheckDlgButton(hDlg, IDC_USEEXTFIRMWARE, ((CommonSettings.UseExtFirmware == true) ? BST_CHECKED : BST_UNCHECKED));
-			SetDlgItemText(hDlg, IDC_FIRMWARE, CommonSettings.Firmware);
+			SetDlgItemText(hDlg, IDC_FIRMWARE, CommonSettings.ExtFirmwarePath);
 			CheckDlgButton(hDlg, IDC_FIRMWAREBOOT, ((CommonSettings.BootFromFirmware == true) ? BST_CHECKED : BST_UNCHECKED));
 			CheckDlgButton(hDlg, IDC_FIRMWAREEXTUSER, ((CommonSettings.UseExtFirmwareSettings == true) ? BST_CHECKED : BST_UNCHECKED));
 
@@ -5959,7 +5963,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 
 					CommonSettings.UseExtFirmware = IsDlgCheckboxChecked(hDlg, IDC_USEEXTFIRMWARE);
 					cur = GetDlgItem(hDlg, IDC_FIRMWARE);
-					GetWindowText(cur, CommonSettings.Firmware, 256);
+					GetWindowText(cur, CommonSettings.ExtFirmwarePath, 256);
 					CommonSettings.BootFromFirmware = IsDlgCheckboxChecked(hDlg, IDC_FIRMWAREBOOT);
 					CommonSettings.UseExtFirmwareSettings = IsDlgCheckboxChecked(hDlg, IDC_FIRMWAREEXTUSER);
 
@@ -5987,7 +5991,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					WritePrivateProfileInt("BIOS", "PatchSWI3", ((CommonSettings.PatchSWI3 == true) ? 1 : 0), IniName);
 
 					WritePrivateProfileInt("Firmware", "UseExtFirmware", ((CommonSettings.UseExtFirmware == true) ? 1 : 0), IniName);
-					WritePrivateProfileString("Firmware", "FirmwareFile", CommonSettings.Firmware, IniName);
+					WritePrivateProfileString("Firmware", "FirmwareFile", CommonSettings.ExtFirmwarePath, IniName);
 					WritePrivateProfileInt("Firmware", "BootFromFirmware", ((CommonSettings.BootFromFirmware == true) ? 1 : 0), IniName);
 					WritePrivateProfileInt("Firmware", "UseExtFirmwareSettings", ((CommonSettings.UseExtFirmwareSettings == true) ? 1 : 0), IniName);
 #ifdef HAVE_JIT
@@ -6263,7 +6267,7 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 					{
 						ComboBox_AddString(deviceMenu, deviceStringList[i].c_str());
 					}
-					curSel = CommonSettings.wifi.infraBridgeAdapter;
+					curSel = CommonSettings.WifiBridgeDeviceID;
 					enableWin = TRUE;
 				}
 			}
@@ -6307,9 +6311,9 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 #endif
 
 					cur = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
-					CommonSettings.wifi.infraBridgeAdapter = ComboBox_GetCurSel(cur);
-					wifiHandler->SetBridgeDeviceIndex(CommonSettings.wifi.infraBridgeAdapter);
-					WritePrivateProfileInt("Wifi", "BridgeAdapter", CommonSettings.wifi.infraBridgeAdapter, IniName);
+					CommonSettings.WifiBridgeDeviceID = ComboBox_GetCurSel(cur);
+					wifiHandler->SetBridgeDeviceIndex(CommonSettings.WifiBridgeDeviceID);
+					WritePrivateProfileInt("Wifi", "BridgeAdapter", CommonSettings.WifiBridgeDeviceID, IniName);
 
 					if(val == IDYES)
 					{

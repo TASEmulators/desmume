@@ -815,7 +815,8 @@
 	[[(NSControl *)sender window] makeFirstResponder:nil];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[[cdsCore cdsFirmware] update];
+	[[cdsCore cdsFirmware] applySettings];
+	[cdsCore updateFirmwareMACAddressString];
 }
 
 - (IBAction) changeHardwareMicGain:(id)sender
@@ -971,6 +972,9 @@
 	// Force end of editing of any text fields.
 	[[(NSControl *)sender window] makeFirstResponder:nil];
 	
+	// Saving the user defaults also applies the current firmware settings.
+	[writeFirmware applySettings];
+	
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagAdvancedBusLevelTiming] forKey:@"Emulation_AdvancedBusLevelTiming"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagRigorousTiming] forKey:@"Emulation_RigorousTiming"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagUseGameSpecificHacks] forKey:@"Emulation_UseGameSpecificHacks"];
@@ -984,7 +988,8 @@
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagEmulateEnsata] forKey:@"Emulation_EmulateEnsata"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagDebugConsole] forKey:@"Emulation_UseDebugConsole"];
 	
-	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware MACAddressValue] forKey:@"FirmwareConfig_MACAddress"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware firmwareMACAddressValue] forKey:@"FirmwareConfig_FirmwareMACAddress"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware customMACAddressValue] forKey:@"FirmwareConfig_CustomMACAddress"];
 	
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP1_1] forKey:@"FirmwareConfig_IPv4Address_AP1_1"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP1_2] forKey:@"FirmwareConfig_IPv4Address_AP1_2"];
@@ -1704,6 +1709,11 @@
 	[self pauseCore];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	if (![cdsCore emuFlagUseExternalFirmware])
+	{
+		[[cdsCore cdsFirmware] updateFirmwareConfigSessionValues];
+	}
+	
 	[cdsCore execControl]->ApplySettingsOnReset();
 	[cdsCore updateSlot1DeviceStatus];
 	[self writeDefaultsSlot1Settings:nil];
@@ -1855,7 +1865,6 @@
 		[[windowController window] displayIfNeeded];
 	}
 	
-	[cdsCore execControl]->ApplySettingsOnReset();
 	[cdsCore updateCurrentSessionMACAddressString:YES];
 	[cdsCore setMasterExecute:YES];
 	
@@ -1905,6 +1914,11 @@
 	}
 	
 	// Unload the ROM.
+	if (![cdsCore emuFlagUseExternalFirmware])
+	{
+		[[cdsCore cdsFirmware] writeUserDefaultWFCUserID];
+	}
+	
 	[[self currentRom] release];
 	[self setCurrentRom:nil];
 	

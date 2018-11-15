@@ -2445,7 +2445,7 @@ static void SelectFirmwareFile()
     case GTK_RESPONSE_OK:
         sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
         CommonSettings.UseExtFirmware = true;
-        strncpy(CommonSettings.Firmware, (const char*)sPath, g_utf8_strlen(sPath, -1));
+        strncpy(CommonSettings.ExtFirmwarePath, (const char*)sPath, g_utf8_strlen(sPath, -1));
         g_free(sPath);
         break;
     default:

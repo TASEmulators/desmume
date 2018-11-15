@@ -61,6 +61,7 @@ struct FirmwareConfig
 	u8 tscPixel_y2;
 	
 	u8 MACAddress[6];
+	u8 WFCUserID[6];
 	
 	u8 ipv4Address_AP1[4];
 	u8 ipv4Gateway_AP1[4];
@@ -402,8 +403,9 @@ class CFIRMWARE
 {
 private:
 	FWHeader _header;
-	bool	_isLoaded;
-	u32		_userDataAddr;
+	std::string _fwFilePath;
+	bool _isLoaded;
+	u32 _userDataAddr;
 	
 	u16		_getBootCodeCRC16(const u8 *arm9Data, const u32 arm9Size, const u8 *arm7Data, const u32 arm7Size);
 	u32		_decrypt(const u8 *in, u8* &out);
@@ -412,22 +414,22 @@ private:
 public:
 	CFIRMWARE(): _userDataAddr(0x3FE00), _isLoaded(false) {};
 	
-	bool load();
+	bool load(const char *firmwareFilePath);
 	bool unpack();
-	bool loadSettings();
-	bool saveSettings();
-
-	static std::string GetExternalFilePath();
+	bool loadSettings(const char *firmwareUserSettingsFilePath);
+	bool saveSettings(const char *firmwareUserSettingsFilePath);
 
 	bool loaded();
 	void* getTouchCalibrate();
+	
+	static std::string GetUserSettingsFilePath(const char *firmwareFilePath);
 };
 
 int copy_firmware_user_data( u8 *dest_buffer, const u8 *fw_data);
 
 void NDS_GetDefaultFirmwareConfig(FirmwareConfig &outConfig);
+void NDS_GetCurrentWFCUserID(u8 *outMAC, u8 *outUserID);
 void NDS_InitFirmwareWithConfig(const FirmwareConfig &inConfig);
-void NDS_OverrideFirmwareMAC(const u8 inMAC[6]);
 bool NDS_ReadFirmwareDataFromFile(const char *fileName, NDSFirmwareData *outFirmwareData, size_t *outFileSize, int *outConsoleType, u8 *outMACAddr);
 
 struct fw_memory_chip
@@ -444,12 +446,9 @@ struct fw_memory_chip
 	u32 size;       //memory size
 	BOOL writeable_buffer;	//is "data" writeable ?
 	int type; //type of Memory
-	char *filename;
-	FILE *fp;
 	
 	// needs only for firmware
 	bool isFirmware;
-	char userfile[MAX_PATH];
 };
 
 
