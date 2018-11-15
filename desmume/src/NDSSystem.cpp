@@ -2645,7 +2645,7 @@ void NDS_Reset()
 	bool didLoadExtFirmware = false;
 	extFirmwareObj = new CFIRMWARE();
 	
-	if (CommonSettings.UseExtFirmware)
+	if (CommonSettings.UseExtFirmware && NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded)
 	{
 		didLoadExtFirmware = extFirmwareObj->load(CommonSettings.ExtFirmwarePath);
 	}
@@ -2673,7 +2673,7 @@ void NDS_Reset()
 	//1. we have the ARM7 and ARM9 bioses (its doubtful that our HLE bios implement the necessary functions)
 	//2. firmware is available
 	//3. user has requested booting from firmware
-	bool canBootFromFirmware = (NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded && CommonSettings.BootFromFirmware && didLoadExtFirmware);
+	bool canBootFromFirmware = (CommonSettings.BootFromFirmware && didLoadExtFirmware);
 	bool bootResult = false;
 	
 	if (canBootFromFirmware)

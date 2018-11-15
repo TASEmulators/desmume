@@ -1709,7 +1709,7 @@
 	[self pauseCore];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	if (![cdsCore emuFlagUseExternalFirmware])
+	if (![cdsCore emuFlagUseExternalBios] || ![cdsCore emuFlagUseExternalFirmware])
 	{
 		[[cdsCore cdsFirmware] updateFirmwareConfigSessionValues];
 	}
@@ -1914,7 +1914,7 @@
 	}
 	
 	// Unload the ROM.
-	if (![cdsCore emuFlagUseExternalFirmware])
+	if (![cdsCore emuFlagUseExternalBios] || ![cdsCore emuFlagUseExternalFirmware])
 	{
 		[[cdsCore cdsFirmware] writeUserDefaultWFCUserID];
 	}

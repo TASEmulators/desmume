@@ -448,6 +448,7 @@ volatile bool execute = true;
 - (void) setEmuFlagUseExternalBios:(BOOL)enable
 {
 	execControl->SetEnableExternalBIOS((enable) ? true : false);
+	[self updateFirmwareMACAddressString];
 }
 
 - (BOOL) emuFlagUseExternalBios
@@ -743,7 +744,7 @@ volatile bool execute = true;
 
 - (void) updateFirmwareMACAddressString
 {
-	if ([self emuFlagUseExternalFirmware])
+	if ([self emuFlagUseExternalBios] && [self emuFlagUseExternalFirmware])
 	{
 		[self setFirmwareMACAddressSelectionString:[NSString stringWithFormat:@"Ext. Firmware  %@", [self extFirmwareMACAddressString]]];
 	}
@@ -854,7 +855,7 @@ volatile bool execute = true;
 {
 	[self setCoreState:ExecutionBehavior_Pause];
 	
-	if (![self emuFlagUseExternalFirmware])
+	if (![self emuFlagUseExternalBios] || ![self emuFlagUseExternalFirmware])
 	{
 		[[self cdsFirmware] writeUserDefaultWFCUserID];
 		[[self cdsFirmware] updateFirmwareConfigSessionValues];
