@@ -203,6 +203,7 @@
 
 #define		WIFI_WORKING_PACKET_BUFFER_SIZE (16 * 1024 * sizeof(u8)) // 16 KB size
 
+class WifiHandler;
 class Task;
 struct slock;
 typedef slock slock_t;
@@ -3161,6 +3162,13 @@ typedef union
 	};
 } RXQueuedPacket;
 
+typedef struct
+{
+	u8 buffer[(sizeof(DesmumeFrameHeader) + MAX_PACKET_SIZE_80211) * 16];
+	size_t writeLocation;
+	size_t count;
+} RXRawPacketData;
+
 extern LegacyWifiSFormat legacyWifiSF;
 
 /* wifimac io */
@@ -3204,6 +3212,7 @@ public:
 	virtual int setnonblock(void *dev, int nonblock, char *errbuf) = 0;
 	virtual int sendpacket(void *dev, const void *data, int len) = 0;
 	virtual int dispatch(void *dev, int num, void *callback, void *userdata) = 0;
+	virtual void breakloop(void *dev) = 0;
 };
 
 class DummyPCapInterface : public ClientPCapInterface
@@ -3219,6 +3228,7 @@ public:
 	virtual int setnonblock(void *dev, int nonblock, char *errbuf);
 	virtual int sendpacket(void *dev, const void *data, int len);
 	virtual int dispatch(void *dev, int num, void *callback, void *userdata);
+	virtual void breakloop(void *dev);
 };
 
 #ifndef HOST_WINDOWS
@@ -3233,6 +3243,7 @@ public:
 	virtual int setnonblock(void *dev, int nonblock, char *errbuf);
 	virtual int sendpacket(void *dev, const void *data, int len);
 	virtual int dispatch(void *dev, int num, void *callback, void *userdata);
+	virtual void breakloop(void *dev);
 };
 
 #endif
@@ -3241,14 +3252,21 @@ class WifiCommInterface
 {
 protected:
 	WifiCommInterfaceID _commInterfaceID;
+	WifiHandler *_wifiHandler;
+	
+	Task *_rxTask;
+	slock_t *_mutexRXThreadRunningFlag;
+	volatile bool _isRXThreadRunning;
+	RXRawPacketData *_rawPacket;
 	
 public:
+	WifiCommInterface();
 	~WifiCommInterface();
 	
-	virtual bool Start(WifiEmulationLevel emulationLevel) = 0;
+	virtual bool Start(WifiHandler *currentWifiHandler) = 0;
 	virtual void Stop() = 0;
 	virtual size_t TXPacketSend(u8 *txTargetBuffer, size_t txLength) = 0;
-	virtual size_t RXPacketGet(u8 *rxTargetBuffer, u16 sequenceNumber) = 0;
+	virtual void RXPacketGet() = 0;
 };
 
 class AdhocCommInterface : public WifiCommInterface
@@ -3261,10 +3279,12 @@ public:
 	AdhocCommInterface();
 	~AdhocCommInterface();
 	
-	virtual bool Start(WifiEmulationLevel emulationLevel);
+	int _RXPacketGetFromSocket(RXRawPacketData &rawPacket);
+	
+	virtual bool Start(WifiHandler *currentWifiHandler);
 	virtual void Stop();
 	virtual size_t TXPacketSend(u8 *txTargetBuffer, size_t txLength);
-	virtual size_t RXPacketGet(u8 *rxTargetBuffer, u16 sequenceNumber);
+	virtual void RXPacketGet();
 };
 
 class SoftAPCommInterface : public WifiCommInterface
@@ -3287,10 +3307,10 @@ public:
 	int GetBridgeDeviceIndex();
 	void SetBridgeDeviceIndex(int deviceIndex);
 	
-	virtual bool Start(WifiEmulationLevel emulationLevel);
+	virtual bool Start(WifiHandler *currentWifiHandler);
 	virtual void Stop();
 	virtual size_t TXPacketSend(u8 *txTargetBuffer, size_t txLength);
-	virtual size_t RXPacketGet(u8 *rxTargetBuffer, u16 sequenceNumber);
+	virtual void RXPacketGet();
 };
 
 class WifiHandler
@@ -3311,12 +3331,6 @@ protected:
 	bool _didWarnWFCUser;
 	
 	u8 *_workingTXBuffer;
-	u8 *_workingRXAdhocBuffer;
-	u8 *_workingRXSoftAPBuffer;
-	
-	Task *_rxTaskAdhoc;
-	slock_t *_mutexRXThreadAdhocRunningFlag;
-	volatile bool _isRXThreadAdhocRunning;
 	
 	slock_t *_mutexRXPacketQueue;
 	std::deque<RXQueuedPacket> _rxPacketQueue;
@@ -3372,7 +3386,7 @@ public:
 	void CommTrigger();
 	void CommEmptyRXQueue();
 	
-	void RXPacketGetAdhoc();
+	template<bool WILLADVANCESEQNO> void RXPacketRawToQueue(const RXRawPacketData &rawPacket);
 	
 	bool IsSocketsSupported();
 	void SetSocketsSupported(bool isSupported);

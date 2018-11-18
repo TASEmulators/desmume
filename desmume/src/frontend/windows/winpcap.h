@@ -38,6 +38,7 @@ typedef void (__cdecl *T_pcap_close)(pcap_t* dev);
 typedef int (__cdecl *T_pcap_setnonblock)(pcap_t* dev, int nonblock, char* errbuf);
 typedef int (__cdecl *T_pcap_sendpacket)(pcap_t* dev, const u_char* data, int len);
 typedef int (__cdecl *T_pcap_dispatch)(pcap_t* dev, int num, pcap_handler callback, u_char* userdata);
+typedef int (__cdecl *T_pcap_breakloop)(pcap_t* dev);
 
 T_pcap_findalldevs _pcap_findalldevs = NULL;
 T_pcap_freealldevs _pcap_freealldevs = NULL;
@@ -46,6 +47,7 @@ T_pcap_close _pcap_close = NULL;
 T_pcap_setnonblock _pcap_setnonblock = NULL;
 T_pcap_sendpacket _pcap_sendpacket = NULL;
 T_pcap_dispatch _pcap_dispatch = NULL;
+T_pcap_breakloop _pcap_breakloop = NULL;
 
 
 #define LOADSYMBOL(name) \
@@ -71,6 +73,7 @@ static void LoadWinPCap(bool &outResult)
 	LOADSYMBOL(pcap_setnonblock);
 	LOADSYMBOL(pcap_sendpacket);
 	LOADSYMBOL(pcap_dispatch);
+	LOADSYMBOL(pcap_breakloop);
 
 	result = true;
 	outResult = result;

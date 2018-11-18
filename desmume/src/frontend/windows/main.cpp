@@ -506,6 +506,11 @@ public:
 
 		return _pcap_dispatch((pcap_t *)dev, num, (pcap_handler)callback, (u_char *)userdata);
 	}
+	
+	virtual void breakloop(void *dev)
+	{
+		_pcap_breakloop((pcap_t *)dev);
+	}
 };
 
 GPUEventHandlerWindows *WinGPUEvent = NULL;

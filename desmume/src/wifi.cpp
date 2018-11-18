@@ -3090,24 +3090,9 @@ static const u8 SoftAP_DeauthFrame[] = {
 
 static void SoftAP_RXPacketGet_Callback(u_char *userData, const pcap_pkthdr *pktHeader, const u_char *pktData)
 {
-	WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
+	const WIFI_IOREG_MAP &io = wifiHandler->GetWifiData().io;
 	
-	if (userData == NULL)
-	{
-		return;
-	}
-	
-	// Generate the emulator header.
-	DesmumeFrameHeader &emulatorHeader = (DesmumeFrameHeader &)userData[0];
-	strncpy(emulatorHeader.frameID, DESMUME_EMULATOR_FRAME_ID, 8);
-	emulatorHeader.version = DESMUME_EMULATOR_FRAME_CURRENT_VERSION;
-	emulatorHeader.timeStamp = 0;
-	emulatorHeader.emuPacketSize = 0;
-	
-	emulatorHeader.packetAttributes.value = 0;
-	emulatorHeader.packetAttributes.IsTXRate20 = 1;
-	
-	if ( (pktData == NULL) || (pktHeader == NULL) )
+	if ( (userData == NULL) || (pktData == NULL) || (pktHeader == NULL) )
 	{
 		return;
 	}
@@ -3139,16 +3124,37 @@ static void SoftAP_RXPacketGet_Callback(u_char *userData, const pcap_pkthdr *pkt
 		return;
 	}
 	
-	// Determine the NDS-compatible RX packet size and store in the emulator header.
+	RXRawPacketData *rawPacket = (RXRawPacketData *)userData;
+	u8 *targetPacket = &rawPacket->buffer[rawPacket->writeLocation];
+	
+	// Generate the emulator header.
+	DesmumeFrameHeader &emulatorHeader = (DesmumeFrameHeader &)targetPacket[0];
+	strncpy(emulatorHeader.frameID, DESMUME_EMULATOR_FRAME_ID, 8);
+	emulatorHeader.version = DESMUME_EMULATOR_FRAME_CURRENT_VERSION;
+	emulatorHeader.timeStamp = 0;
 	emulatorHeader.emuPacketSize = (pktHeader->len + (sizeof(WifiDataFrameHeaderDS2STA) + sizeof(WifiLLCSNAPHeader) - sizeof(EthernetFrameHeader)) + 3) & 0xFFFC;
 	
+	emulatorHeader.packetAttributes.value = 0;
+	emulatorHeader.packetAttributes.IsTXRate20 = 1;
+	
 	WifiHandler::ConvertDataFrame8023To80211((u8 *)pktData, pktHeader->len, (u8 *)userData + sizeof(DesmumeFrameHeader));
+	
+	rawPacket->writeLocation += emulatorHeader.emuPacketSize;
+	rawPacket->count++;
 }
 
-static void* WifiHandler_RXPacketGetAdhoc(void *arg)
+static void* Adhoc_RXPacketGetOnThread(void *arg)
 {
-	WifiHandler *handler = (WifiHandler *)arg;
-	handler->RXPacketGetAdhoc();
+	AdhocCommInterface *commInterface = (AdhocCommInterface *)arg;
+	commInterface->RXPacketGet();
+	
+	return NULL;
+}
+
+static void* Infrastructure_RXPacketGetOnThread(void *arg)
+{
+	SoftAPCommInterface *commInterface = (SoftAPCommInterface *)arg;
+	commInterface->RXPacketGet();
 	
 	return NULL;
 }
@@ -3197,6 +3203,11 @@ int DummyPCapInterface::dispatch(void *dev, int num, void *callback, void *userd
 	return -1;
 }
 
+void DummyPCapInterface::breakloop(void *dev)
+{
+	// Do nothing.
+}
+
 #ifndef HOST_WINDOWS
 
 int POSIXPCapInterface::findalldevs(void **alldevs, char *errbuf)
@@ -3239,11 +3250,44 @@ int POSIXPCapInterface::dispatch(void *dev, int num, void *callback, void *userd
 	return pcap_dispatch((pcap_t *)dev, num, (pcap_handler)callback, (u_char *)userdata);
 }
 
+void POSIXPCapInterface::breakloop(void *dev)
+{
+	pcap_breakloop((pcap_t *)dev);
+}
+
 #endif
+
+WifiCommInterface::WifiCommInterface()
+{
+	_rxTask = new Task();
+	_mutexRXThreadRunningFlag = slock_new();
+	_isRXThreadRunning = false;
+	_rawPacket = NULL;
+	_wifiHandler = NULL;
+}
 
 WifiCommInterface::~WifiCommInterface()
 {
-	// Do nothing.
+	slock_lock(this->_mutexRXThreadRunningFlag);
+	
+	if (this->_isRXThreadRunning)
+	{
+		this->_isRXThreadRunning = false;
+		slock_unlock(this->_mutexRXThreadRunningFlag);
+		
+		this->_rxTask->finish();
+		delete this->_rxTask;
+	}
+	else
+	{
+		slock_unlock(this->_mutexRXThreadRunningFlag);
+	}
+	
+	free(this->_rawPacket);
+	this->_rawPacket = NULL;
+	this->_wifiHandler = NULL;
+	
+	slock_free(this->_mutexRXThreadRunningFlag);
 }
 
 AdhocCommInterface::AdhocCommInterface()
@@ -3264,19 +3308,11 @@ AdhocCommInterface::~AdhocCommInterface()
 	free(this->_sendAddr);
 }
 
-bool AdhocCommInterface::Start(WifiEmulationLevel emulationLevel)
+bool AdhocCommInterface::Start(WifiHandler *currentWifiHandler)
 {
 	socket_t &thisSocket = *((socket_t *)this->_wifiSocket);
 	int socketOptValueTrue = 1;
 	int result = -1;
-	
-	// Ad-hoc mode won't have a partial-functioning variant, and so just return
-	// if the WiFi emulation level is Off.
-	if (emulationLevel == WifiEmulationLevel_Off)
-	{
-		thisSocket = INVALID_SOCKET;
-		return false;
-	}
 	
 	// Create an UDP socket.
 	thisSocket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -3350,6 +3386,18 @@ bool AdhocCommInterface::Start(WifiEmulationLevel emulationLevel)
 	*(u32 *)&thisSendAddr.sa_data[2] = htonl(INADDR_BROADCAST);
 	*(u16 *)&thisSendAddr.sa_data[0] = htons(BASEPORT);
 	
+	// Start the RX packet thread.
+	this->_wifiHandler = currentWifiHandler;
+	this->_rawPacket = (RXRawPacketData *)calloc(1, sizeof(RXRawPacketData));
+	
+#ifdef DESMUME_COCOA
+	this->_rxTask->start(false, 43);
+#else
+	this->_rxTask->start(false);
+#endif
+	this->_isRXThreadRunning = true;
+	this->_rxTask->execute(&Adhoc_RXPacketGetOnThread, this);
+	
 	WIFI_LOG(1, "Ad-hoc: Initialization successful.\n");
 	return true;
 }
@@ -3360,9 +3408,28 @@ void AdhocCommInterface::Stop()
 
 	if (thisSocket >= 0)
 	{
+		slock_lock(this->_mutexRXThreadRunningFlag);
+		
+		if (this->_isRXThreadRunning)
+		{
+			this->_isRXThreadRunning = false;
+			slock_unlock(this->_mutexRXThreadRunningFlag);
+			
+			this->_rxTask->finish();
+			this->_rxTask->shutdown();
+		}
+		else
+		{
+			slock_unlock(this->_mutexRXThreadRunningFlag);
+		}
+		
 		closesocket(thisSocket);
 		thisSocket = INVALID_SOCKET;
 	}
+	
+	free(this->_rawPacket);
+	this->_rawPacket = NULL;
+	this->_wifiHandler = NULL;
 }
 
 size_t AdhocCommInterface::TXPacketSend(u8 *txTargetBuffer, size_t txLength)
@@ -3382,15 +3449,10 @@ size_t AdhocCommInterface::TXPacketSend(u8 *txTargetBuffer, size_t txLength)
 	return txPacketSize;
 }
 
-size_t AdhocCommInterface::RXPacketGet(u8 *rxTargetBuffer, u16 sequenceNumber)
+int AdhocCommInterface::_RXPacketGetFromSocket(RXRawPacketData &rawPacket)
 {
-	size_t rxPacketSize = 0;
 	socket_t &thisSocket = *((socket_t *)this->_wifiSocket);
-	
-	if ( (thisSocket < 0) || (rxTargetBuffer == NULL) )
-	{
-		return rxPacketSize;
-	}
+	int rxPacketSizeInt = 0;
 	
 	fd_set fd;
 	struct timeval tv;
@@ -3405,10 +3467,12 @@ size_t AdhocCommInterface::RXPacketGet(u8 *rxTargetBuffer, u16 sequenceNumber)
 		sockaddr_t fromAddr;
 		socklen_t fromLen = sizeof(sockaddr_t);
 		
-		int rxPacketSizeInt = recvfrom(thisSocket, (char *)rxTargetBuffer, WIFI_WORKING_PACKET_BUFFER_SIZE, 0, &fromAddr, &fromLen);
+		u8 *targetPacket = &rawPacket.buffer[rawPacket.writeLocation];
+		
+		rxPacketSizeInt = recvfrom(thisSocket, (char *)targetPacket, WIFI_WORKING_PACKET_BUFFER_SIZE, 0, &fromAddr, &fromLen);
 		if (rxPacketSizeInt <= 0)
 		{
-			return rxPacketSize; // No packet data was received.
+			return rxPacketSizeInt; // No packet data was received.
 		}
 		
 		// This is the smallest possible frame size there can be. As of this time:
@@ -3417,14 +3481,51 @@ size_t AdhocCommInterface::RXPacketGet(u8 *rxTargetBuffer, u16 sequenceNumber)
 		// 4 bytes - Size of the FCS at the end of every IEEE 802.11 frame
 		if (rxPacketSizeInt <= (16 + 10 + 4))
 		{
-			return rxPacketSize; // The packet is too small to be of any use.
+			rxPacketSizeInt = 0;
+			return rxPacketSizeInt; // The packet is too small to be of any use.
 		}
 		
 		// Set the packet size to a non-zero value.
-		rxPacketSize = (size_t)rxPacketSizeInt;
+		DesmumeFrameHeader &emulatorHeader = (DesmumeFrameHeader &)targetPacket[0];
+		rawPacket.writeLocation += emulatorHeader.emuPacketSize;
+		rawPacket.count++;
 	}
 	
-	return rxPacketSize;
+	return rxPacketSizeInt;
+}
+
+void AdhocCommInterface::RXPacketGet()
+{
+	socket_t &thisSocket = *((socket_t *)this->_wifiSocket);
+	
+	if ( (thisSocket < 0) || (this->_rawPacket == NULL) || (this->_wifiHandler == NULL) )
+	{
+		return;
+	}
+	
+	slock_lock(this->_mutexRXThreadRunningFlag);
+	
+	while (this->_isRXThreadRunning)
+	{
+		slock_unlock(this->_mutexRXThreadRunningFlag);
+		
+		this->_rawPacket->writeLocation = 0;
+		this->_rawPacket->count = 0;
+		
+		int result = this->_RXPacketGetFromSocket(*this->_rawPacket);
+		if (result <= 0)
+		{
+			this->_rawPacket->count = 0;
+		}
+		else
+		{
+			this->_wifiHandler->RXPacketRawToQueue<false>(*this->_rawPacket);
+		}
+		
+		slock_lock(this->_mutexRXThreadRunningFlag);
+	}
+	
+	slock_unlock(this->_mutexRXThreadRunningFlag);
 }
 
 SoftAPCommInterface::SoftAPCommInterface()
@@ -3541,53 +3642,67 @@ void SoftAPCommInterface::SetBridgeDeviceIndex(int deviceIndex)
 	this->_bridgeDeviceIndex = deviceIndex;
 }
 
-bool SoftAPCommInterface::Start(WifiEmulationLevel emulationLevel)
+bool SoftAPCommInterface::Start(WifiHandler *currentWifiHandler)
 {
 	const bool isPCapSupported = (this->_pcap != &dummyPCapInterface);
 	char errbuf[PCAP_ERRBUF_SIZE];
 	
-	if (isPCapSupported && (emulationLevel != WifiEmulationLevel_Off))
+	if (isPCapSupported)
 	{
 		this->_bridgeDevice = this->_GetBridgeDeviceAtIndex(this->_bridgeDeviceIndex, errbuf);
 	}
 	else
 	{
 		this->_bridgeDevice = NULL;
-		
-		if (!isPCapSupported)
-		{
-			WIFI_LOG(1, "SoftAP: No libpcap interface has been set.\n");
-		}
-		
-		if (emulationLevel == WifiEmulationLevel_Off)
-		{
-			WIFI_LOG(1, "SoftAP: Emulation level is OFF.\n");
-		}
+		WIFI_LOG(1, "SoftAP: No libpcap interface has been set.\n");
 	}
 	
-	// Set non-blocking mode
-	if (this->_bridgeDevice != NULL)
+	const bool hasBridgeDevice = (this->_bridgeDevice != NULL);
+	if (hasBridgeDevice)
 	{
-		int result = this->_pcap->setnonblock(this->_bridgeDevice, 1, errbuf);
-		if (result == -1)
-		{
-			this->_pcap->close(this->_bridgeDevice);
-			this->_bridgeDevice = NULL;
-			
-			WIFI_LOG(1, "SoftAP: libpcap failed to set non-blocking mode: %s\n", errbuf);
-		}
+		// Start the RX packet thread.
+		this->_wifiHandler = currentWifiHandler;
+		this->_rawPacket = (RXRawPacketData *)calloc(1, sizeof(RXRawPacketData));
+		
+#ifdef DESMUME_COCOA
+		this->_rxTask->start(false, 43);
+#else
+		this->_rxTask->start(false);
+#endif
+		this->_isRXThreadRunning = true;
+		this->_rxTask->execute(&Infrastructure_RXPacketGetOnThread, this);
 	}
 	
-	return true;
+	return hasBridgeDevice;
 }
 
 void SoftAPCommInterface::Stop()
 {
 	if (this->_bridgeDevice != NULL)
 	{
+		slock_lock(this->_mutexRXThreadRunningFlag);
+		
+		if (this->_isRXThreadRunning)
+		{
+			this->_isRXThreadRunning = false;
+			slock_unlock(this->_mutexRXThreadRunningFlag);
+			
+			this->_pcap->breakloop(this->_bridgeDevice);
+			this->_rxTask->finish();
+			this->_rxTask->shutdown();
+		}
+		else
+		{
+			slock_unlock(this->_mutexRXThreadRunningFlag);
+		}
+		
 		this->_pcap->close(this->_bridgeDevice);
 		this->_bridgeDevice = NULL;
 	}
+	
+	free(this->_rawPacket);
+	this->_rawPacket = NULL;
+	this->_wifiHandler = NULL;
 }
 
 size_t SoftAPCommInterface::TXPacketSend(u8 *txTargetBuffer, size_t txLength)
@@ -3608,38 +3723,36 @@ size_t SoftAPCommInterface::TXPacketSend(u8 *txTargetBuffer, size_t txLength)
 	return txPacketSize;
 }
 
-size_t SoftAPCommInterface::RXPacketGet(u8 *rxTargetBuffer, u16 sequenceNumber)
+void SoftAPCommInterface::RXPacketGet()
 {
-	size_t rxPacketSize = 0;
-	
-	if ( (this->_bridgeDevice == NULL) || (rxTargetBuffer == NULL) )
+	if ( (this->_bridgeDevice == NULL) || (this->_rawPacket == NULL) || (this->_wifiHandler == NULL) )
 	{
-		return rxPacketSize;
+		return;
 	}
 	
-	int result = this->_pcap->dispatch(this->_bridgeDevice, 1, (void *)&SoftAP_RXPacketGet_Callback, rxTargetBuffer);
-	if (result <= 0)
+	slock_lock(this->_mutexRXThreadRunningFlag);
+	
+	while (this->_isRXThreadRunning)
 	{
-		return rxPacketSize;
+		slock_unlock(this->_mutexRXThreadRunningFlag);
+		
+		this->_rawPacket->writeLocation = 0;
+		this->_rawPacket->count = 0;
+		
+		int result = this->_pcap->dispatch(this->_bridgeDevice, 8, (void *)&SoftAP_RXPacketGet_Callback, (u_char *)this->_rawPacket);
+		if (result <= 0)
+		{
+			this->_rawPacket->count = 0;
+		}
+		else
+		{
+			this->_wifiHandler->RXPacketRawToQueue<true>(*this->_rawPacket);
+		}
+		
+		slock_lock(this->_mutexRXThreadRunningFlag);
 	}
 	
-	DesmumeFrameHeader &emulatorHeader = (DesmumeFrameHeader &)rxTargetBuffer[0];
-	rxPacketSize = emulatorHeader.emuPacketSize;
-	if (rxPacketSize == 0)
-	{
-		return rxPacketSize;
-	}
-	
-	// Update the sequence number.
-	WifiDataFrameHeaderDS2STA &IEEE80211Header = (WifiDataFrameHeaderDS2STA &)rxTargetBuffer[sizeof(DesmumeFrameHeader)];
-	IEEE80211Header.seqCtl.SequenceNumber = sequenceNumber;
-	
-	// Write the FCS at the end of the frame.
-	u32 &fcs = (u32 &)rxTargetBuffer[sizeof(DesmumeFrameHeader) + emulatorHeader.emuPacketSize];
-	fcs = WIFI_calcCRC32(rxTargetBuffer + sizeof(DesmumeFrameHeader), emulatorHeader.emuPacketSize);
-	emulatorHeader.emuPacketSize += sizeof(u32);
-	
-	return rxPacketSize + sizeof(DesmumeFrameHeader);
+	slock_unlock(this->_mutexRXThreadRunningFlag);
 }
 
 WifiHandler::WifiHandler()
@@ -3653,15 +3766,10 @@ WifiHandler::WifiHandler()
 	_selectedBridgeDeviceIndex = 0;
 	
 	_workingTXBuffer = NULL;
-	_workingRXAdhocBuffer = NULL;
-	_workingRXSoftAPBuffer = NULL;
 	
-	_rxTaskAdhoc = new Task();
 	_mutexRXPacketQueue = slock_new();
-	_mutexRXThreadAdhocRunningFlag = slock_new();
 	_rxPacketQueue.clear();
 	_rxCurrentQueuedPacketPosition = 0;
-	_isRXThreadAdhocRunning = false;
 	
 	_softAPStatus = APStatus_Disconnected;
 	_softAPSequenceNumber = 0;
@@ -3682,23 +3790,10 @@ WifiHandler::WifiHandler()
 
 WifiHandler::~WifiHandler()
 {
-	slock_lock(this->_mutexRXThreadAdhocRunningFlag);
-	this->_isRXThreadAdhocRunning = false;
-	slock_unlock(this->_mutexRXThreadAdhocRunningFlag);
-	this->_rxTaskAdhoc->finish();
-	delete this->_rxTaskAdhoc;
-	slock_free(this->_mutexRXThreadAdhocRunningFlag);
-	
 	slock_free(this->_mutexRXPacketQueue);
 	
 	free(this->_workingTXBuffer);
 	this->_workingTXBuffer = NULL;
-	
-	free(this->_workingRXAdhocBuffer);
-	this->_workingRXAdhocBuffer = NULL;
-	
-	free(this->_workingRXSoftAPBuffer);
-	this->_workingRXSoftAPBuffer = NULL;
 	
 	delete this->_adhocCommInterface;
 	delete this->_softAPCommInterface;
@@ -4172,16 +4267,17 @@ bool WifiHandler::_SoftAPTrySendPacket(const TXPacketHeader &txHeader, const u8 
 			if ( WIFI_compareMAC(mgmtFrameHeader.BSSID, SoftAP_MACAddr) ||
 				(WIFI_isBroadcastMAC(mgmtFrameHeader.BSSID) && (fc.Subtype == WifiFrameManagementSubtype_ProbeRequest)) )
 			{
+				slock_lock(this->_mutexRXPacketQueue);
+				
 				RXQueuedPacket newRXPacket = this->_GenerateSoftAPMgmtResponseFrame((WifiFrameManagementSubtype)fc.Subtype, this->_softAPSequenceNumber, this->_wifi.usecCounter);
 				if (newRXPacket.rxHeader.length > 0)
 				{
 					newRXPacket.latencyCount = 0;
-					slock_lock(this->_mutexRXPacketQueue);
 					this->_rxPacketQueue.push_back(newRXPacket);
-					slock_unlock(this->_mutexRXPacketQueue);
 					this->_softAPSequenceNumber++;
 				}
 				
+				slock_unlock(this->_mutexRXPacketQueue);
 				isPacketHandled = true;
 			}
 			break;
@@ -4257,12 +4353,12 @@ bool WifiHandler::_SoftAPTrySendPacket(const TXPacketHeader &txHeader, const u8 
 						if (sendPacketSize > 0)
 						{
 							RXQueuedPacket newRXPacket = this->_GenerateSoftAPCtlACKFrame(IEEE80211FrameHeader, sendPacketSize);
-							
 							newRXPacket.latencyCount = 0;
+							
 							slock_lock(this->_mutexRXPacketQueue);
 							this->_rxPacketQueue.push_back(newRXPacket);
-							slock_unlock(this->_mutexRXPacketQueue);
 							this->_softAPSequenceNumber++;
+							slock_unlock(this->_mutexRXPacketQueue);
 							
 #if WIFI_SAVE_PCAP_TO_FILE
 							// Store the packet in the PCAP file.
@@ -4427,16 +4523,7 @@ void WifiHandler::SetBridgeDeviceIndex(int deviceIndex)
 
 bool WifiHandler::CommStart()
 {
-	bool isAdhocCommStarted = false;
-	bool isInfrastructureCommStarted = false;
-	WifiEmulationLevel pendingEmulationLevel = this->_selectedEmulationLevel;
-	
-	// Stop the current comm interface.
-	slock_lock(this->_mutexRXThreadAdhocRunningFlag);
-	this->_isRXThreadAdhocRunning = false;
-	slock_unlock(this->_mutexRXThreadAdhocRunningFlag);
-	this->_rxTaskAdhoc->finish();
-	
+	// Stop the current comm interfaces.
 	this->_adhocCommInterface->Stop();
 	this->_softAPCommInterface->Stop();
 	
@@ -4444,10 +4531,18 @@ bool WifiHandler::CommStart()
 	this->_wifi.usecCounter = 0;
 	this->_RXEmptyQueue();
 	
+	FW_Mac[0] = MMU.fw.data.wifiInfo.MACAddr[0];
+	FW_Mac[1] = MMU.fw.data.wifiInfo.MACAddr[1];
+	FW_Mac[2] = MMU.fw.data.wifiInfo.MACAddr[2];
+	FW_Mac[3] = MMU.fw.data.wifiInfo.MACAddr[3];
+	FW_Mac[4] = MMU.fw.data.wifiInfo.MACAddr[4];
+	FW_Mac[5] = MMU.fw.data.wifiInfo.MACAddr[5];
+	
+	WIFI_LOG(1, "MAC Address = %02X:%02X:%02X:%02X:%02X:%02X\n",
+			 FW_Mac[0], FW_Mac[1], FW_Mac[2], FW_Mac[3], FW_Mac[4], FW_Mac[5]);
+	
 	// Allocate 16KB worth of memory per buffer for sending packets. Hopefully, this should be plenty.
 	this->_workingTXBuffer = (u8 *)malloc(WIFI_WORKING_PACKET_BUFFER_SIZE);
-	this->_workingRXAdhocBuffer = (u8 *)malloc(WIFI_WORKING_PACKET_BUFFER_SIZE);
-	this->_workingRXSoftAPBuffer = (u8 *)malloc(WIFI_WORKING_PACKET_BUFFER_SIZE);
 	this->_softAPStatus = APStatus_Disconnected;
 	this->_softAPSequenceNumber = 0;
 	
@@ -4455,58 +4550,33 @@ bool WifiHandler::CommStart()
 	this->_softAPCommInterface->SetPCapInterface(this->_pcap);
 	this->_softAPCommInterface->SetBridgeDeviceIndex(this->_selectedBridgeDeviceIndex);
 	
-	// Start the new comm interface.
-	if (this->_isSocketsSupported)
+	if (this->_selectedEmulationLevel == WifiEmulationLevel_Off)
 	{
-		isAdhocCommStarted = this->_adhocCommInterface->Start(pendingEmulationLevel);
-		if (!isAdhocCommStarted)
-		{
-			this->_adhocCommInterface->Stop();
-		}
+		WIFI_LOG(1, "Emulation level is OFF.\n");
 	}
 	else
 	{
-		WIFI_LOG(1, "Ad-hoc mode requires sockets, but sockets are not supported on this system.\n");
-	}
-	
-	if (this->IsPCapSupported())
-	{
-		isInfrastructureCommStarted = this->_softAPCommInterface->Start(pendingEmulationLevel);
-		if (!isInfrastructureCommStarted)
+		// Start the new comm interfaces.
+		if (this->_isSocketsSupported)
 		{
-			this->_softAPCommInterface->Stop();
+			this->_adhocCommInterface->Start(this);
+		}
+		else
+		{
+			WIFI_LOG(1, "Ad-hoc mode requires sockets, but sockets are not supported on this system.\n");
+		}
+		
+		if (this->IsPCapSupported())
+		{
+			this->_softAPCommInterface->Start(this);
+		}
+		else
+		{
+			WIFI_LOG(1, "Infrastructure mode requires libpcap for full functionality,\n      but libpcap is not available on this system. Network functions\n      will be disabled for this session.\n");
 		}
 	}
-	else
-	{
-		WIFI_LOG(1, "Infrastructure mode requires libpcap for full functionality,\n      but libpcap is not available on this system. Network functions\n      will be disabled for this session.\n");
-	}
 	
-	if (isAdhocCommStarted || isInfrastructureCommStarted)
-	{
-		FW_Mac[0] = MMU.fw.data.wifiInfo.MACAddr[0];
-		FW_Mac[1] = MMU.fw.data.wifiInfo.MACAddr[1];
-		FW_Mac[2] = MMU.fw.data.wifiInfo.MACAddr[2];
-		FW_Mac[3] = MMU.fw.data.wifiInfo.MACAddr[3];
-		FW_Mac[4] = MMU.fw.data.wifiInfo.MACAddr[4];
-		FW_Mac[5] = MMU.fw.data.wifiInfo.MACAddr[5];
-		
-		// Starting the comm interface was successful.
-		// Report the MAC address to the user as confirmation.
-		WIFI_LOG(1, "MAC Address = %02X:%02X:%02X:%02X:%02X:%02X\n",
-				 FW_Mac[0], FW_Mac[1], FW_Mac[2], FW_Mac[3], FW_Mac[4], FW_Mac[5]);
-		
-#ifdef DESMUME_COCOA
-		this->_rxTaskAdhoc->start(false, 43);
-#else
-		this->_rxTaskAdhoc->start(false);
-#endif
-		
-		this->_isRXThreadAdhocRunning = true;
-		this->_rxTaskAdhoc->execute(&WifiHandler_RXPacketGetAdhoc, this);
-	}
-	
-	this->_currentEmulationLevel = pendingEmulationLevel;
+	this->_currentEmulationLevel = this->_selectedEmulationLevel;
 	
 	return true;
 }
@@ -4515,12 +4585,6 @@ void WifiHandler::CommStop()
 {
 	this->_PacketCaptureFileClose();
 	
-	slock_lock(this->_mutexRXThreadAdhocRunningFlag);
-	this->_isRXThreadAdhocRunning = false;
-	slock_unlock(this->_mutexRXThreadAdhocRunningFlag);
-	this->_rxTaskAdhoc->finish();
-	this->_rxTaskAdhoc->shutdown();
-	
 	this->_adhocCommInterface->Stop();
 	this->_softAPCommInterface->Stop();
 	
@@ -4528,12 +4592,6 @@ void WifiHandler::CommStop()
 	
 	free(this->_workingTXBuffer);
 	this->_workingTXBuffer = NULL;
-	
-	free(this->_workingRXAdhocBuffer);
-	this->_workingRXAdhocBuffer = NULL;
-	
-	free(this->_workingRXSoftAPBuffer);
-	this->_workingRXSoftAPBuffer = NULL;
 }
 
 void WifiHandler::CommSendPacket(const TXPacketHeader &txHeader, const u8 *IEEE80211PacketData)
@@ -4639,7 +4697,7 @@ void WifiHandler::CommTrigger()
 		if (isTXSlotBusy)
 		{
 			IOREG_W_TXBUF_LOCATION *txBufLocation = NULL;
-			TXPacketInfo &txPacketInfo = wifiHandler->GetPacketInfoAtSlot(txSlotIndex);
+			TXPacketInfo &txPacketInfo = this->GetPacketInfoAtSlot(txSlotIndex);
 			
 			switch (txSlotIndex)
 			{
@@ -4675,7 +4733,7 @@ void WifiHandler::CommTrigger()
 				txBufLocation->TransferRequest = 0;
 				
 				TXPacketHeader &txHeader = (TXPacketHeader &)wifi.RAM[txBufLocation->HalfwordAddress << 1];
-				wifiHandler->CommSendPacket(txHeader, &wifi.RAM[(txBufLocation->HalfwordAddress << 1) + sizeof(TXPacketHeader)]);
+				this->CommSendPacket(txHeader, &wifi.RAM[(txBufLocation->HalfwordAddress << 1) + sizeof(TXPacketHeader)]);
 				txHeader.txStatus = 0x0001;
 				txHeader.UNKNOWN3 = 0;
 				
@@ -4747,39 +4805,17 @@ void WifiHandler::_AddPeriodicPacketsToRXQueue(const u64 usecCounter)
 {
 	if ((usecCounter & 131071) == 0)
 	{
+		slock_lock(this->_mutexRXPacketQueue);
+		
 		//zero sez: every 1/10 second? does it have to be precise? this is so costly..
 		// Okay for 128 ms then
 		RXQueuedPacket newRXPacket = this->_GenerateSoftAPBeaconFrame(this->_softAPSequenceNumber, this->_wifi.usecCounter);
-		
 		newRXPacket.latencyCount = 0;
-		slock_lock(this->_mutexRXPacketQueue);
+		
 		this->_rxPacketQueue.push_back(newRXPacket);
-		slock_unlock(this->_mutexRXPacketQueue);
 		this->_softAPSequenceNumber++;
-	}
-	
-	// EXTREMELY EXPERIMENTAL packet receiving code
-	// Can now receive 64 packets per millisecond. Completely arbitrary limit. Todo: tweak if needed.
-	// But due to using non-blocking mode, this shouldn't be as slow as it used to be.
-	if ((usecCounter & 15) == 0)
-	{
-		size_t rxBytes = this->_softAPCommInterface->RXPacketGet(this->_workingRXSoftAPBuffer, this->_softAPSequenceNumber);
-		if (rxBytes > 0)
-		{
-			RXQueuedPacket newRXPacket;
-			
-			const u8 *packetIEEE80211HeaderPtr = this->_RXPacketFilter(this->_workingRXSoftAPBuffer, rxBytes, newRXPacket.rxHeader);
-			if (packetIEEE80211HeaderPtr != NULL)
-			{
-				memcpy(newRXPacket.rxData, packetIEEE80211HeaderPtr, newRXPacket.rxHeader.length);
-				
-				newRXPacket.latencyCount = 0;
-				slock_lock(this->_mutexRXPacketQueue);
-				this->_rxPacketQueue.push_back(newRXPacket);
-				slock_unlock(this->_mutexRXPacketQueue);
-				this->_softAPSequenceNumber++;
-			}
-		}
+		
+		slock_unlock(this->_mutexRXPacketQueue);
 	}
 }
 
@@ -4857,33 +4893,45 @@ void WifiHandler::CommEmptyRXQueue()
 	this->_RXEmptyQueue();
 }
 
-void WifiHandler::RXPacketGetAdhoc()
+template <bool WILLADVANCESEQNO>
+void WifiHandler::RXPacketRawToQueue(const RXRawPacketData &rawPacket)
 {
 	RXQueuedPacket newRXPacket;
 	
-	slock_lock(this->_mutexRXThreadAdhocRunningFlag);
+	slock_lock(this->_mutexRXPacketQueue);
 	
-	while (this->_isRXThreadAdhocRunning)
+	for (size_t i = 0, readLocation = 0; i < rawPacket.count; i++)
 	{
-		slock_unlock(this->_mutexRXThreadAdhocRunningFlag);
+		const u8 *currentPacket = &rawPacket.buffer[readLocation];
+		const DesmumeFrameHeader &emulatorHeader = (DesmumeFrameHeader &)*currentPacket;
+		readLocation += sizeof(DesmumeFrameHeader) + emulatorHeader.emuPacketSize;
 		
-		size_t rxBytes = this->_adhocCommInterface->RXPacketGet(this->_workingRXAdhocBuffer, 0);
-		if (rxBytes > 0)
+		const u8 *packetIEEE80211HeaderPtr = this->_RXPacketFilter(currentPacket, sizeof(DesmumeFrameHeader) + emulatorHeader.emuPacketSize, newRXPacket.rxHeader);
+		if (packetIEEE80211HeaderPtr != NULL)
 		{
-			const u8 *packetIEEE80211HeaderPtr = this->_RXPacketFilter(this->_workingRXAdhocBuffer, rxBytes, newRXPacket.rxHeader);
-			if (packetIEEE80211HeaderPtr != NULL)
+			memset(newRXPacket.rxData, 0, sizeof(newRXPacket.rxData));
+			memcpy(newRXPacket.rxData, packetIEEE80211HeaderPtr, newRXPacket.rxHeader.length);
+			newRXPacket.latencyCount = 0;
+			
+			if (WILLADVANCESEQNO)
 			{
-				memcpy(newRXPacket.rxData, packetIEEE80211HeaderPtr, newRXPacket.rxHeader.length);
+				// Update the sequence number.
+				WifiDataFrameHeaderDS2STA &IEEE80211Header = (WifiDataFrameHeaderDS2STA &)newRXPacket.rxData[0];
+				IEEE80211Header.seqCtl.SequenceNumber = this->_softAPSequenceNumber;
+				this->_softAPSequenceNumber++;
 				
-				newRXPacket.latencyCount = 0;
-				slock_lock(this->_mutexRXPacketQueue);
-				this->_rxPacketQueue.push_back(newRXPacket);
-				slock_unlock(this->_mutexRXPacketQueue);
+				// Write the FCS at the end of the frame.
+				u32 &fcs = (u32 &)newRXPacket.rxData[newRXPacket.rxHeader.length];
+				fcs = WIFI_calcCRC32(newRXPacket.rxData, newRXPacket.rxHeader.length);
+				newRXPacket.rxHeader.length += sizeof(u32);
 			}
+			
+			// Add the packet to the RX queue.
+			this->_rxPacketQueue.push_back(newRXPacket);
 		}
 	}
 	
-	slock_unlock(this->_mutexRXThreadAdhocRunningFlag);
+	slock_unlock(this->_mutexRXPacketQueue);
 }
 
 bool WifiHandler::IsPCapSupported()
