@@ -3770,6 +3770,7 @@ WifiHandler::WifiHandler()
 	_mutexRXPacketQueue = slock_new();
 	_rxPacketQueue.clear();
 	_rxCurrentQueuedPacketPosition = 0;
+	memset(&_rxCurrentPacket, 0, sizeof(RXQueuedPacket));
 	
 	_softAPStatus = APStatus_Disconnected;
 	_softAPSequenceNumber = 0;
@@ -3790,13 +3791,13 @@ WifiHandler::WifiHandler()
 
 WifiHandler::~WifiHandler()
 {
-	slock_free(this->_mutexRXPacketQueue);
-	
 	free(this->_workingTXBuffer);
 	this->_workingTXBuffer = NULL;
 	
 	delete this->_adhocCommInterface;
 	delete this->_softAPCommInterface;
+	
+	slock_free(this->_mutexRXPacketQueue);
 }
 
 void WifiHandler::_RXEmptyQueue()
@@ -4823,26 +4824,28 @@ void WifiHandler::_CopyFromRXQueue()
 {
 	WIFI_IOREG_MAP &io = this->_wifi.io;
 	
-	slock_lock(this->_mutexRXPacketQueue);
-	
-	if (this->_rxPacketQueue.empty())
-	{
-		slock_unlock(this->_mutexRXPacketQueue);
-		return;
-	}
-	
-	RXQueuedPacket &currentRXPacket = this->_rxPacketQueue.front();
-	currentRXPacket.latencyCount++;
-	
-	const RXQueuedPacket newRXPacket = currentRXPacket;
-	slock_unlock(this->_mutexRXPacketQueue);
-	
-	const size_t totalPacketLength = (sizeof(RXPacketHeader) + newRXPacket.rxHeader.length > sizeof(RXQueuedPacket)) ? sizeof(RXQueuedPacket) : sizeof(RXPacketHeader) + newRXPacket.rxHeader.length;
-	
+	// Retrieve a packet from the RX packet queue if we're not already working on one.
 	if (this->_rxCurrentQueuedPacketPosition == 0)
 	{
+		slock_lock(this->_mutexRXPacketQueue);
+		
+		if (this->_rxPacketQueue.empty())
+		{
+			// However, if the queue is empty, then there is no packet to retrieve.
+			slock_unlock(this->_mutexRXPacketQueue);
+			return;
+		}
+		
+		this->_rxCurrentPacket = this->_rxPacketQueue.front();
+		this->_rxPacketQueue.pop_front();
+		
+		slock_unlock(this->_mutexRXPacketQueue);
+		
 		WIFI_triggerIRQ(WifiIRQ06_RXStart);
 	}
+	
+	const size_t totalPacketLength = (this->_rxCurrentPacket.rxHeader.length > MAX_PACKET_SIZE_80211) ? sizeof(RXPacketHeader) + MAX_PACKET_SIZE_80211 : sizeof(RXPacketHeader) + this->_rxCurrentPacket.rxHeader.length;
+	this->_rxCurrentPacket.latencyCount++;
 	
 	// If the user selects compatibility mode, then we will emulate the transfer delays
 	// involved with copying RX packet data into WiFi RAM. Otherwise, just copy all of
@@ -4850,9 +4853,9 @@ void WifiHandler::_CopyFromRXQueue()
 	if (this->_currentEmulationLevel == WifiEmulationLevel_Compatibility)
 	{
 		// Copy the RX packet data into WiFi RAM over time.
-		if ( (this->_rxCurrentQueuedPacketPosition == 0) || (newRXPacket.latencyCount >= RX_LATENCY_LIMIT) )
+		if ( (this->_rxCurrentQueuedPacketPosition == 0) || (this->_rxCurrentPacket.latencyCount >= RX_LATENCY_LIMIT) )
 		{
-			this->_RXWriteOneHalfword(*(u16 *)&newRXPacket.rawFrameData[this->_rxCurrentQueuedPacketPosition]);
+			this->_RXWriteOneHalfword(*(u16 *)&this->_rxCurrentPacket.rawFrameData[this->_rxCurrentQueuedPacketPosition]);
 			this->_rxCurrentQueuedPacketPosition += 2;
 		}
 	}
@@ -4861,17 +4864,13 @@ void WifiHandler::_CopyFromRXQueue()
 		// Copy the entire RX packet data into WiFi RAM immediately.
 		while (this->_rxCurrentQueuedPacketPosition < totalPacketLength)
 		{
-			this->_RXWriteOneHalfword(*(u16 *)&newRXPacket.rawFrameData[this->_rxCurrentQueuedPacketPosition]);
+			this->_RXWriteOneHalfword(*(u16 *)&this->_rxCurrentPacket.rawFrameData[this->_rxCurrentQueuedPacketPosition]);
 			this->_rxCurrentQueuedPacketPosition += 2;
 		}
 	}
 	
 	if (this->_rxCurrentQueuedPacketPosition >= totalPacketLength)
 	{
-		slock_lock(this->_mutexRXPacketQueue);
-		this->_rxPacketQueue.pop_front();
-		slock_unlock(this->_mutexRXPacketQueue);
-		
 		this->_rxCurrentQueuedPacketPosition = 0;
 		
 		// Adjust the RX cursor address so that it is 4-byte aligned.

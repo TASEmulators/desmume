@@ -3334,6 +3334,7 @@ protected:
 	
 	slock_t *_mutexRXPacketQueue;
 	std::deque<RXQueuedPacket> _rxPacketQueue;
+	RXQueuedPacket _rxCurrentPacket;
 	size_t _rxCurrentQueuedPacketPosition;
 	
 	EAPStatus _softAPStatus;
