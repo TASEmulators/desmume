@@ -517,7 +517,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 	// When using z-depth, be sure to test against the following test cases:
 	// - The drawing of the overworld map in Dragon Quest IV
 	// - The drawing of all units on the map in Advance Wars: Days of Ruin
-	const u32 newDepth = (gfx3d.renderState.wbuffer) ? u32floor(4096*w) : (u32floor(z*0x7FFF) << 9);
+	const u32 newDepth = (gfx3d.renderState.wbuffer) ? u32floor(w * 4096.0f) : u32floor(z * 16777215.0f);
 	
 	// run the depth test
 	bool depthFail = false;
