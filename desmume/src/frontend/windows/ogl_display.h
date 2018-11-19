@@ -34,7 +34,7 @@ private:
 	HWND hwnd;
 	bool initialize(HWND hwnd);
 	bool WGLExtensionSupported(const char *extension_name);
-	void _setvsync();
+	void _setvsync(bool isVsyncEnabled);
 
 public:
 	bool active;

@@ -26,6 +26,17 @@ bool GLDISPLAY::initialize(HWND hwnd)
 	if (initContext(hwnd, &privateContext))
 	{
 		this->hwnd = hwnd;
+		privateDC = GetDC(hwnd);
+		wglMakeCurrent(privateDC, privateContext);
+		
+		// Certain video drivers may try to set the V-sync setting to whatever they want on
+		// initialization, and so we can't assume that wantVsync will match whatever the video
+		// driver is doing.
+		//
+		// And so we need to force the V-sync to be whatever default value wantVsync is in
+		// order to ensure that the actual V-sync setting in OpenGL matches wantVsync.
+		this->_setvsync(wantVsync);
+
 		return true;
 	}
 	else
@@ -49,11 +60,8 @@ bool GLDISPLAY::WGLExtensionSupported(const char *extension_name)
 	// extension is supported
 	return true;
 }
-void GLDISPLAY::_setvsync()
+void GLDISPLAY::_setvsync(bool isVsyncEnabled)
 {
-	//even if it doesn't work, we'll track it
-	haveVsync = wantVsync;
-
 	if (!WGLExtensionSupported("WGL_EXT_swap_control")) return;
 
 	//http://stackoverflow.com/questions/589064/how-to-enable-vertical-sync-in-opengl
@@ -67,7 +75,7 @@ void GLDISPLAY::_setvsync()
 		wglGetSwapIntervalEXT = (PFNWGLGETSWAPINTERVALEXTPROC)wglGetProcAddress("wglGetSwapIntervalEXT");
 	}
 
-	wglSwapIntervalEXT(wantVsync ? 1 : 0);
+	wglSwapIntervalEXT(isVsyncEnabled ? 1 : 0);
 }
 
 
@@ -105,7 +113,10 @@ bool GLDISPLAY::begin(HWND hwnd)
 
 	//go ahead and sync the vsync setting while we have the context
 	if (wantVsync != haveVsync)
-		_setvsync();
+	{
+		_setvsync(wantVsync);
+		haveVsync = wantVsync;
+	}
 
 	if (filter)
 	{
