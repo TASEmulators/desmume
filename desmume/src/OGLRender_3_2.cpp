@@ -1385,8 +1385,7 @@ Render3DError OpenGLRenderer_3_2::ZeroDstAlphaPass(const POLYLIST *polyList, con
 	glDisable(GL_BLEND);
 	glEnable(GL_STENCIL_TEST);
 	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+	glDisable(GL_CULL_FACE);
 	
 	glStencilFunc(GL_ALWAYS, 0x40, 0x40);
 	glDrawBuffer(GL_NONE);
@@ -1503,8 +1502,7 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_STENCIL_TEST);
 		glDisable(GL_BLEND);
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
+		glDisable(GL_CULL_FACE);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboPostprocessIndexID);
@@ -1701,39 +1699,48 @@ Render3DError OpenGLRenderer_3_2::RenderEdgeMarking(const u16 *colorTable, const
 	
 	// Set up the postprocessing states
 	glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
-	glDisable(GL_BLEND);
 	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_STENCIL_TEST);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+	glDisable(GL_CULL_FACE);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboPostprocessIndexID);
 	glBindVertexArray(OGLRef.vaoPostprocessStatesID);
 	
-	// Pass 1: Determine the pixels with zero alpha
-	glDrawBuffer(GL_NONE);
-	glStencilFunc(GL_ALWAYS, 0x40, 0x40);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glStencilMask(0x40);
-	glDepthMask(GL_FALSE);
-	glClearBufferfi(GL_DEPTH_STENCIL, 0, 0.0f, 0);
-	
-	glUseProgram(OGLRef.programGeometryZeroDstAlphaID);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
-	
-	// Pass 2: Unblended edge mark colors to zero-alpha pixels
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	glUseProgram(OGLRef.programEdgeMarkID);
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
-	glStencilFunc(GL_NOTEQUAL, 0x40, 0x40);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
-	
-	// Pass 3: Blended edge mark
-	glEnable(GL_BLEND);
-	glDisable(GL_STENCIL_TEST);
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+	if (this->_emulateSpecialZeroAlphaBlending)
+	{
+		// Pass 1: Determine the pixels with zero alpha
+		glDrawBuffer(GL_NONE);
+		glDisable(GL_BLEND);
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS, 0x40, 0x40);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glStencilMask(0x40);
+		glDepthMask(GL_FALSE);
+		glClearBufferfi(GL_DEPTH_STENCIL, 0, 0.0f, 0);
+		
+		glUseProgram(OGLRef.programGeometryZeroDstAlphaID);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+		
+		// Pass 2: Unblended edge mark colors to zero-alpha pixels
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		glUseProgram(OGLRef.programEdgeMarkID);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+		glStencilFunc(GL_NOTEQUAL, 0x40, 0x40);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+		
+		// Pass 3: Blended edge mark
+		glEnable(GL_BLEND);
+		glDisable(GL_STENCIL_TEST);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+	}
+	else
+	{
+		glUseProgram(OGLRef.programEdgeMarkID);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		glDisable(GL_STENCIL_TEST);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+	}
 	
 	glBindVertexArray(0);
 	
@@ -1755,8 +1762,7 @@ Render3DError OpenGLRenderer_3_2::RenderFog(const u8 *densityTable, const u32 co
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_STENCIL_TEST);
 	glDisable(GL_BLEND);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+	glDisable(GL_CULL_FACE);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboPostprocessIndexID);
@@ -1900,29 +1906,32 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAs
 		// Handle drawing states for the polygon
 		if (thePoly.attribute.Mode == POLYGON_MODE_SHADOW)
 		{
-			// Set up shadow polygon states.
-			//
-			// See comments in DrawShadowPolygon() for more information about
-			// how this 5-pass process works in OpenGL.
-			if (thePoly.attribute.PolygonID == 0)
+			if (this->_emulateShadowPolygon)
 			{
-				// 1st pass: Use stencil buffer bit 7 (0x80) for the shadow volume mask.
-				// Write only on depth-fail.
-				glStencilFunc(GL_ALWAYS, 0x80, 0x80);
-				glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
-				glStencilMask(0x80);
+				// Set up shadow polygon states.
+				//
+				// See comments in DrawShadowPolygon() for more information about
+				// how this 5-pass process works in OpenGL.
+				if (thePoly.attribute.PolygonID == 0)
+				{
+					// 1st pass: Use stencil buffer bit 7 (0x80) for the shadow volume mask.
+					// Write only on depth-fail.
+					glStencilFunc(GL_ALWAYS, 0x80, 0x80);
+					glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
+					glStencilMask(0x80);
+				}
+				else
+				{
+					// 2nd pass: Compare stencil buffer bits 0-5 (0x3F) with this polygon's ID. If this stencil
+					// test fails, remove the fragment from the shadow volume mask by clearing bit 7.
+					glStencilFunc(GL_NOTEQUAL, thePoly.attribute.PolygonID, 0x3F);
+					glStencilOp(GL_ZERO, GL_KEEP, GL_KEEP);
+					glStencilMask(0x80);
+				}
+				
+				glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+				glDepthMask(GL_FALSE);
 			}
-			else
-			{
-				// 2nd pass: Compare stencil buffer bits 0-5 (0x3F) with this polygon's ID. If this stencil
-				// test fails, remove the fragment from the shadow volume mask by clearing bit 7.
-				glStencilFunc(GL_NOTEQUAL, thePoly.attribute.PolygonID, 0x3F);
-				glStencilOp(GL_ZERO, GL_KEEP, GL_KEEP);
-				glStencilMask(0x80);
-			}
-			
-			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-			glDepthMask(GL_FALSE);
 		}
 		else
 		{

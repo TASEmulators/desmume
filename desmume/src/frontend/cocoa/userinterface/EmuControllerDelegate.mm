@@ -961,6 +961,11 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] gpuScale] forKey:@"Render3D_ScalingFactor"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] gpuColorFormat] forKey:@"Render3D_ColorFormat"];
 	
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateShadowPolygon] forKey:@"Render3D_OpenGL_EmulateShadowPolygon"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateSpecialZeroAlphaBlending] forKey:@"Render3D_OpenGL_EmulateSpecialZeroAlphaBlending"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateDepthEqualsTestTolerance] forKey:@"Render3D_OpenGL_EmulateDepthEqualTestTolerance"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateDepthLEqualPolygonFacing] forKey:@"Render3D_OpenGL_EmulateDepthLEqualPolygonFacing"];
+	
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -2388,6 +2393,12 @@
 	[[cdsCore cdsGPU] setRender3DFragmentSamplingHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_FragmentSamplingHack"]];
 	[[cdsCore cdsGPU] setGpuScale:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ScalingFactor"]];
 	[[cdsCore cdsGPU] setGpuColorFormat:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ColorFormat"]];
+	
+	[[cdsCore cdsGPU] setOpenGLEmulateShadowPolygon:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateShadowPolygon"]];
+	[[cdsCore cdsGPU] setOpenGLEmulateSpecialZeroAlphaBlending:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateSpecialZeroAlphaBlending"]];
+	[[cdsCore cdsGPU] setOpenGLEmulateDepthEqualsTestTolerance:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateDepthEqualTestTolerance"]];
+	[[cdsCore cdsGPU] setOpenGLEmulateDepthLEqualPolygonFacing:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateDepthLEqualPolygonFacing"]];
+	
 	[[[cdsCore cdsGPU] sharedData] fetchSynchronousAtIndex:0];
 	
 	// Set the stylus options per user preferences.

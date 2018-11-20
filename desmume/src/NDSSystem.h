@@ -25,6 +25,7 @@
 #include "types.h"
 #include "ROMReader.h"
 #include "firmware.h"
+#include "render3D.h"
 #include "wifi.h"
 
 class CFIRMWARE;
@@ -504,6 +505,10 @@ extern struct TCommonSettings
 		, GFX3D_Renderer_TextureDeposterize(false)
 		, GFX3D_Renderer_TextureSmoothing(false)
 		, GFX3D_TXTHack(false)
+		, OpenGL_Emulation_ShadowPolygon(true)
+		, OpenGL_Emulation_SpecialZeroAlphaBlending(true)
+		, OpenGL_Emulation_DepthEqualsTestTolerance(true)
+		, OpenGL_Emulation_DepthLEqualPolygonFacing(false)
 		, jit_max_block_size(12)
 		, loadToMemory(false)
 		, UseExtBIOS(false)
@@ -561,6 +566,11 @@ extern struct TCommonSettings
 	bool GFX3D_Renderer_TextureDeposterize;
 	bool GFX3D_Renderer_TextureSmoothing;
 	bool GFX3D_TXTHack;
+	
+	bool OpenGL_Emulation_ShadowPolygon;
+	bool OpenGL_Emulation_SpecialZeroAlphaBlending;
+	bool OpenGL_Emulation_DepthEqualsTestTolerance;
+	bool OpenGL_Emulation_DepthLEqualPolygonFacing;
 
 	bool loadToMemory;
 

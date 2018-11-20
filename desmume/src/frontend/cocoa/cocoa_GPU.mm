@@ -121,6 +121,10 @@ public:
 @dynamic render3DTextureSmoothing;
 @dynamic render3DTextureScalingFactor;
 @dynamic render3DFragmentSamplingHack;
+@dynamic openGLEmulateShadowPolygon;
+@dynamic openGLEmulateSpecialZeroAlphaBlending;
+@dynamic openGLEmulateDepthEqualsTestTolerance;
+@dynamic openGLEmulateDepthLEqualPolygonFacing;
 
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 @synthesize fetchObject;
@@ -714,6 +718,70 @@ public:
 {
 	gpuEvent->ApplyRender3DSettingsLock();
 	const BOOL state = CommonSettings.GFX3D_TXTHack ? YES : NO;
+	gpuEvent->ApplyRender3DSettingsUnlock();
+	
+	return state;
+}
+
+- (void) setOpenGLEmulateShadowPolygon:(BOOL)state
+{
+	gpuEvent->ApplyRender3DSettingsLock();
+	CommonSettings.OpenGL_Emulation_ShadowPolygon = (state) ? true : false;
+	gpuEvent->ApplyRender3DSettingsUnlock();
+}
+
+- (BOOL) openGLEmulateShadowPolygon
+{
+	gpuEvent->ApplyRender3DSettingsLock();
+	const BOOL state = (CommonSettings.OpenGL_Emulation_ShadowPolygon) ? YES : NO;
+	gpuEvent->ApplyRender3DSettingsUnlock();
+	
+	return state;
+}
+
+- (void) setOpenGLEmulateSpecialZeroAlphaBlending:(BOOL)state
+{
+	gpuEvent->ApplyRender3DSettingsLock();
+	CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending = (state) ? true : false;
+	gpuEvent->ApplyRender3DSettingsUnlock();
+}
+
+- (BOOL) openGLEmulateSpecialZeroAlphaBlending
+{
+	gpuEvent->ApplyRender3DSettingsLock();
+	const BOOL state = (CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending) ? YES : NO;
+	gpuEvent->ApplyRender3DSettingsUnlock();
+	
+	return state;
+}
+
+- (void) setOpenGLEmulateDepthEqualsTestTolerance:(BOOL)state
+{
+	gpuEvent->ApplyRender3DSettingsLock();
+	CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance = (state) ? true : false;
+	gpuEvent->ApplyRender3DSettingsUnlock();
+}
+
+- (BOOL) openGLEmulateDepthEqualsTestTolerance
+{
+	gpuEvent->ApplyRender3DSettingsLock();
+	const BOOL state = (CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance) ? YES : NO;
+	gpuEvent->ApplyRender3DSettingsUnlock();
+	
+	return state;
+}
+
+- (void) setOpenGLEmulateDepthLEqualPolygonFacing:(BOOL)state
+{
+	gpuEvent->ApplyRender3DSettingsLock();
+	CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing = (state) ? true : false;
+	gpuEvent->ApplyRender3DSettingsUnlock();
+}
+
+- (BOOL) openGLEmulateDepthLEqualPolygonFacing
+{
+	gpuEvent->ApplyRender3DSettingsLock();
+	const BOOL state = (CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing) ? YES : NO;
 	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;

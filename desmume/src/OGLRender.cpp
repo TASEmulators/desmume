@@ -1056,6 +1056,11 @@ OpenGLRenderer::OpenGLRenderer()
 	willFlipAndConvertFramebufferOnGPU = false;
 	willUsePerSampleZeroDstPass = false;
 	
+	_emulateShadowPolygon = true;
+	_emulateSpecialZeroAlphaBlending = true;
+	_emulateDepthEqualsTestTolerance = true;
+	_emulateDepthLEqualPolygonFacing = false;
+	
 	// Init OpenGL rendering states
 	ref = new OGLRenderRef;
 	memset(ref, 0, sizeof(OGLRenderRef));
@@ -1648,7 +1653,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 		
 		if (thePoly.attribute.Mode == POLYGON_MODE_SHADOW)
 		{
-			if (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass)
+			if ((DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass) && this->_emulateShadowPolygon)
 			{
 				this->DrawShadowPolygon(polyPrimitive, vertIndexCount, indexBufferPtr, thePoly.attribute.DepthEqualTest_Enable, thePoly.attribute.TranslucentDepthWrite_Enable, (DRAWMODE == OGLPolyDrawMode_DrawTranslucentPolys), thePoly.attribute.PolygonID);
 			}
@@ -1697,7 +1702,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 	
 	if (this->isShaderSupported)
 	{
-		if ((DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass) && performDepthEqualTest)
+		if ((DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass) && performDepthEqualTest && this->_emulateDepthEqualsTestTolerance)
 		{
 			if (DRAWMODE == OGLPolyDrawMode_DrawTranslucentPolys)
 			{
@@ -1875,32 +1880,39 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 			{
 				glUniform1i(OGLRef.uniformTexDrawOpaque, GL_TRUE);
 				
-				if (isPolyFrontFacing)
+				if (this->_emulateDepthLEqualPolygonFacing)
 				{
-					glDepthFunc(GL_EQUAL);
-					glStencilFunc(GL_EQUAL, 0x40 | opaquePolyID, 0x40);
-					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-					
-					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-					glDepthMask(GL_FALSE);
-					glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
-					glStencilMask(0x40);
-					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-					
-					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-					glDepthMask(GL_TRUE);
-					glDepthFunc(GL_LESS);
-					glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
-					glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-					glStencilMask(0xFF);
-					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+					if (isPolyFrontFacing)
+					{
+						glDepthFunc(GL_EQUAL);
+						glStencilFunc(GL_EQUAL, 0x40 | opaquePolyID, 0x40);
+						glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+						
+						glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+						glDepthMask(GL_FALSE);
+						glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
+						glStencilMask(0x40);
+						glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+						
+						glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+						glDepthMask(GL_TRUE);
+						glDepthFunc(GL_LESS);
+						glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
+						glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+						glStencilMask(0xFF);
+						glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+					}
+					else
+					{
+						glStencilFunc(GL_ALWAYS, 0x40 | opaquePolyID, 0x40);
+						glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+						
+						glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
+					}
 				}
 				else
 				{
-					glStencilFunc(GL_ALWAYS, 0x40 | opaquePolyID, 0x40);
 					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-					
-					glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
 				}
 				
 				glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
@@ -1926,7 +1938,7 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive,
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if ((DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass) && performDepthEqualTest && this->isShaderSupported)
+	if ((DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass) && performDepthEqualTest && this->_emulateDepthEqualsTestTolerance && this->isShaderSupported)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthMask(GL_FALSE);
@@ -1993,7 +2005,7 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive,
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glDepthMask(((DRAWMODE == OGLPolyDrawMode_DrawOpaquePolys) || enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	}
-	else if (DRAWMODE == OGLPolyDrawMode_DrawOpaquePolys)
+	else if ((DRAWMODE == OGLPolyDrawMode_DrawOpaquePolys) && this->_emulateDepthLEqualPolygonFacing)
 	{
 		if (isPolyFrontFacing)
 		{
@@ -2033,8 +2045,12 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive,
 
 Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderState)
 {
-	int oldSelectedMultisampleSize = this->_selectedMultisampleSize;
+	this->_emulateShadowPolygon = CommonSettings.OpenGL_Emulation_ShadowPolygon;
+	this->_emulateSpecialZeroAlphaBlending = CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending;
+	this->_emulateDepthEqualsTestTolerance = CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance;
+	this->_emulateDepthLEqualPolygonFacing = CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing;
 	
+	int oldSelectedMultisampleSize = this->_selectedMultisampleSize;
 	this->_selectedMultisampleSize = CommonSettings.GFX3D_Renderer_MultisampleSize;
 	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->isMultisampledFBOSupported);
 	
@@ -3690,8 +3706,7 @@ Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLYLIST *polyList, con
 	glDisable(GL_BLEND);
 	glEnable(GL_STENCIL_TEST);
 	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+	glDisable(GL_CULL_FACE);
 	
 	glStencilFunc(GL_ALWAYS, 0x40, 0x40);
 	glDrawBuffer(GL_NONE);
@@ -3856,8 +3871,7 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_STENCIL_TEST);
 		glDisable(GL_BLEND);
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
+		glDisable(GL_CULL_FACE);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboPostprocessIndexID);
@@ -4115,7 +4129,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 			glClear(GL_STENCIL_BUFFER_BIT);
 			glStencilMask(0xFF);
 			
-			if (this->_needsZeroDstAlphaPass)
+			if (this->_needsZeroDstAlphaPass && this->_emulateSpecialZeroAlphaBlending)
 			{
 				if (polyList->opaqueCount == 0)
 				{
@@ -4197,11 +4211,8 @@ Render3DError OpenGLRenderer_1_2::RenderEdgeMarking(const u16 *colorTable, const
 	
 	// Set up the postprocessing states
 	glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
-	glDisable(GL_BLEND);
 	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_STENCIL_TEST);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+	glDisable(GL_CULL_FACE);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboPostprocessIndexID);
@@ -4218,31 +4229,45 @@ Render3DError OpenGLRenderer_1_2::RenderEdgeMarking(const u16 *colorTable, const
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
 	}
 	
-	// Pass 1: Determine the pixels with zero alpha
-	glDrawBuffer(GL_NONE);
-	glStencilFunc(GL_ALWAYS, 0x40, 0x40);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glStencilMask(0x40);
-	glClearStencil(0);
-	glClear(GL_STENCIL_BUFFER_BIT);
-	
-	glUseProgram(OGLRef.programGeometryZeroDstAlphaID);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
-	
-	// Pass 2: Unblended edge mark colors to zero-alpha pixels
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glUseProgram(OGLRef.programEdgeMarkID);
-	glUniform2f(OGLRef.uniformFramebufferSize, this->_framebufferWidth, this->_framebufferHeight);
-	glUniform4fv(OGLRef.uniformStateEdgeColor, 8, oglColor);
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
-	glStencilFunc(GL_NOTEQUAL, 0x40, 0x40);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
-	
-	// Pass 3: Blended edge mark
-	glEnable(GL_BLEND);
-	glDisable(GL_STENCIL_TEST);
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+	if (this->_emulateSpecialZeroAlphaBlending)
+	{
+		// Pass 1: Determine the pixels with zero alpha
+		glDrawBuffer(GL_NONE);
+		glDisable(GL_BLEND);
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS, 0x40, 0x40);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glStencilMask(0x40);
+		glClearStencil(0);
+		glClear(GL_STENCIL_BUFFER_BIT);
+		
+		glUseProgram(OGLRef.programGeometryZeroDstAlphaID);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+		
+		// Pass 2: Unblended edge mark colors to zero-alpha pixels
+		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		glUseProgram(OGLRef.programEdgeMarkID);
+		glUniform2f(OGLRef.uniformFramebufferSize, this->_framebufferWidth, this->_framebufferHeight);
+		glUniform4fv(OGLRef.uniformStateEdgeColor, 8, oglColor);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+		glStencilFunc(GL_NOTEQUAL, 0x40, 0x40);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+		
+		// Pass 3: Blended edge mark
+		glEnable(GL_BLEND);
+		glDisable(GL_STENCIL_TEST);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+	}
+	else
+	{
+		glUseProgram(OGLRef.programEdgeMarkID);
+		glUniform2f(OGLRef.uniformFramebufferSize, this->_framebufferWidth, this->_framebufferHeight);
+		glUniform4fv(OGLRef.uniformStateEdgeColor, 8, oglColor);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		glDisable(GL_STENCIL_TEST);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+	}
 	
 	if (this->isVAOSupported)
 	{
@@ -4296,8 +4321,7 @@ Render3DError OpenGLRenderer_1_2::RenderFog(const u8 *densityTable, const u32 co
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_STENCIL_TEST);
 	glDisable(GL_BLEND);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+	glDisable(GL_CULL_FACE);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboPostprocessIndexID);
@@ -4527,29 +4551,32 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool treatAs
 		// Handle drawing states for the polygon
 		if (thePoly.attribute.Mode == POLYGON_MODE_SHADOW)
 		{
-			// Set up shadow polygon states.
-			//
-			// See comments in DrawShadowPolygon() for more information about
-			// how this 5-pass process works in OpenGL.
-			if (thePoly.attribute.PolygonID == 0)
+			if (this->_emulateShadowPolygon)
 			{
-				// 1st pass: Use stencil buffer bit 7 (0x80) for the shadow volume mask.
-				// Write only on depth-fail.
-				glStencilFunc(GL_ALWAYS, 0x80, 0x80);
-				glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
-				glStencilMask(0x80);
+				// Set up shadow polygon states.
+				//
+				// See comments in DrawShadowPolygon() for more information about
+				// how this 5-pass process works in OpenGL.
+				if (thePoly.attribute.PolygonID == 0)
+				{
+					// 1st pass: Use stencil buffer bit 7 (0x80) for the shadow volume mask.
+					// Write only on depth-fail.
+					glStencilFunc(GL_ALWAYS, 0x80, 0x80);
+					glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
+					glStencilMask(0x80);
+				}
+				else
+				{
+					// 2nd pass: Compare stencil buffer bits 0-5 (0x3F) with this polygon's ID. If this stencil
+					// test fails, remove the fragment from the shadow volume mask by clearing bit 7.
+					glStencilFunc(GL_NOTEQUAL, thePoly.attribute.PolygonID, 0x3F);
+					glStencilOp(GL_ZERO, GL_KEEP, GL_KEEP);
+					glStencilMask(0x80);
+				}
+				
+				glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+				glDepthMask(GL_FALSE);
 			}
-			else
-			{
-				// 2nd pass: Compare stencil buffer bits 0-5 (0x3F) with this polygon's ID. If this stencil
-				// test fails, remove the fragment from the shadow volume mask by clearing bit 7.
-				glStencilFunc(GL_NOTEQUAL, thePoly.attribute.PolygonID, 0x3F);
-				glStencilOp(GL_ZERO, GL_KEEP, GL_KEEP);
-				glStencilMask(0x80);
-			}
-			
-			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-			glDepthMask(GL_FALSE);
 		}
 		else
 		{

@@ -636,6 +636,11 @@ protected:
 	bool willFlipAndConvertFramebufferOnGPU;
 	bool willUsePerSampleZeroDstPass;
 	
+	bool _emulateShadowPolygon;
+	bool _emulateSpecialZeroAlphaBlending;
+	bool _emulateDepthEqualsTestTolerance;
+	bool _emulateDepthLEqualPolygonFacing;
+	
 	FragmentColor *_mappedFramebuffer;
 	FragmentColor *_workingTextureUnpackBuffer;
 	bool _pixelReadNeedsFinish;

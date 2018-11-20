@@ -864,6 +864,14 @@
 	<false/>
 	<key>Render3D_Threads</key>
 	<integer>0</integer>
+	<key>Render3D_OpenGL_EmulateShadowPolygon</key>
+	<true/>
+	<key>Render3D_OpenGL_EmulateSpecialZeroAlphaBlending</key>
+	<true/>
+	<key>Render3D_OpenGL_EmulateDepthEqualTestTolerance</key>
+	<true/>
+	<key>Render3D_OpenGL_EmulateDepthLEqualPolygonFacing</key>
+	<false/>
 	<key>RomInfoPanel_SectionViewState</key>
 	<dict/>
 	<key>AVCaptureTool_DirectoryPath</key>
