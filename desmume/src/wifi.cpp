@@ -4857,6 +4857,7 @@ void WifiHandler::_CopyFromRXQueue()
 		{
 			this->_RXWriteOneHalfword(*(u16 *)&this->_rxCurrentPacket.rawFrameData[this->_rxCurrentQueuedPacketPosition]);
 			this->_rxCurrentQueuedPacketPosition += 2;
+			this->_rxCurrentPacket.latencyCount = 0;
 		}
 	}
 	else
