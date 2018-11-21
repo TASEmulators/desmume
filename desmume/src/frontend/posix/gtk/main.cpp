@@ -2358,6 +2358,7 @@ static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data)
 static void Printscreen()
 {
     GdkPixbuf *screenshot;
+    const gchar *dir;
     gchar *filename, *filen;
     GError *error = NULL;
     u8 rgb[256 * 384 * 4];
@@ -2387,8 +2388,16 @@ static void Printscreen()
                           NULL,
                           NULL);
 
+    dir = g_get_user_special_dir(G_USER_DIRECTORY_PICTURES);
+    if (dir == NULL) {
+        dir = g_get_user_special_dir(G_USER_DIRECTORY_DESKTOP);
+    }
+    if (dir == NULL) {
+        dir = g_get_home_dir();
+    }
+
     filen = g_strdup_printf("desmume-screenshot-%d.png", seq);
-    filename = g_build_filename(g_get_user_special_dir(G_USER_DIRECTORY_PICTURES), filen, NULL);
+    filename = g_build_filename(dir, filen, NULL);
 
     gdk_pixbuf_save(screenshot, filename, "png", &error, NULL);
     if (error) {
