@@ -2020,7 +2020,7 @@ int _main()
 	CommonSettings.GFX3D_Renderer_TextureDeposterize =  GetPrivateProfileBool("3D", "TextureDeposterize", 0, IniName);
 	CommonSettings.GFX3D_Renderer_TextureSmoothing =  GetPrivateProfileBool("3D", "TextureSmooth", 0, IniName);
 	gpu_bpp = GetPrivateProfileInt("3D", "GpuBpp", 18, IniName);
-		
+	CheckValid3DIntSetting("GpuBpp", 3);
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
 
 	//Get Ram-Watch values
@@ -2265,6 +2265,7 @@ int _main()
 		wifiHandler->SetEmulationLevel(WifiEmulationLevel_Off);
 
 	CommonSettings.GFX3D_Renderer_TextureScalingFactor = (cmdline.texture_upscale != -1) ? cmdline.texture_upscale : GetPrivateProfileInt("3D", "TextureScalingFactor ", 1, IniName);
+	CheckValid3DIntSetting("TextureScalingFactor", 3);
 	int newPrescaleHD = (cmdline.gpu_resolution_multiplier != -1) ? cmdline.gpu_resolution_multiplier : GetPrivateProfileInt("3D", "PrescaleHD", 1, IniName);
 	video.SetPrescale(newPrescaleHD, 1);
 	GPU->SetCustomFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH*video.prescaleHD, GPU_FRAMEBUFFER_NATIVE_HEIGHT*video.prescaleHD);
@@ -2372,6 +2373,7 @@ int _main()
 	CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance = GetPrivateProfileBool("3D", "EnableDepthEqualsTestTolerance", 1, IniName);
 	CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing = GetPrivateProfileBool("3D", "EnableDepthLEqualPolygonFacing", 0, IniName); // Default is off.
 	CommonSettings.GFX3D_Renderer_MultisampleSize = GetPrivateProfileInt("3D", "MultisampleSize", 0, IniName);
+	CheckValid3DIntSetting("MultisampleSize", 6);
 	Change3DCoreWithFallbackAndSave(cur3DCore);
 
 
@@ -2642,6 +2644,47 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	CloseConsole();
 
 	return ret;
+}
+
+//Checks for incorrect values and updates ini. Only supports MultisampleSize, TextureScalingFactor and GpuBpp right now.
+void CheckValid3DIntSetting(const char *settingName, const int arrSize)
+{
+	bool valid = false;
+
+	for (int i = 0; i <= arrSize; i++)
+	{
+		if (settingName == "MultisampleSize" && CommonSettings.GFX3D_Renderer_MultisampleSize == possibleMSAA[i])
+		{
+			valid = true;
+		}
+		else if (settingName == "GpuBpp" && gpu_bpp == possibleBPP[i])
+		{
+			valid = true;
+		}
+		else if (settingName == "TextureScalingFactor" && CommonSettings.GFX3D_Renderer_TextureScalingFactor == possibleTexScale[i])
+		{
+			valid = true;
+		}
+	}
+
+	if (!valid) 
+	{ // Sets to defaults if ini value is incorrect.
+		if (settingName == "MultisampleSize")
+		{
+			CommonSettings.GFX3D_Renderer_MultisampleSize = 0;
+			WritePrivateProfileInt("3D", "MultisampleSize", 0, IniName);
+		}
+		else if (settingName == "GpuBpp")
+		{
+			gpu_bpp = 18;
+			WritePrivateProfileInt("3D", "GpuBpp", 18, IniName);
+		}
+		else if (settingName == "TextureScalingFactor")
+		{
+			CommonSettings.GFX3D_Renderer_TextureScalingFactor = 1;
+			WritePrivateProfileInt("3D", "TextureScalingFactor", 1, IniName);
+		}
+	}
 }
 
 void UpdateScreenRects()
@@ -5737,7 +5780,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), "2x");
 			ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), "4x");
 			ComboBox_SetCurSel(GetDlgItem(hw, IDC_TEXSCALE), 0);
-			// If user input is valid, set the correct selection.
+
 			for (int i = 0; i < 3; i++)
 			{
 				if (gpu_bpp == possibleBPP[i])
@@ -5770,7 +5813,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					ComboBox_SetCurSel(GetDlgItem(hw, IDC_MULTISAMPLE_SIZE), i);
 				}
 			}
-			
+
 			// Generate the 3D Rendering Engine pop-up menu
 			for (int i = 0; core3DList[i] != NULL; i++)
 			{
