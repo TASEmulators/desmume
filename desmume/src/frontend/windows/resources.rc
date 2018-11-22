@@ -110,52 +110,52 @@ BEGIN
     PUSHBUTTON      "&Cancel",IDCANCEL,127,94,50,16
 END
 
-IDD_3DSETTINGS DIALOGEX 0, 0, 327, 279
+IDD_3DSETTINGS DIALOGEX 0, 0, 329, 274
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "3D Settings"
-FONT 8, "MS Sans Serif", 0, 0, 0x0
+FONT 8, "MS Sans Serif", 400, 0, 0x0
 BEGIN
-    COMBOBOX        IDC_3DCORE,15,20,108,138,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Unrealistically High-Precision Color Interpolation",IDC_INTERPOLATECOLOR,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,56,165,10
-    CONTROL         "Enable Edge Marking",IDC_3DSETTINGS_EDGEMARK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,199,86,84,10
-    CONTROL         "Enable Fog",IDC_3DSETTINGS_FOG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,200,98,52,10
-    CONTROL         "Enable Textures",IDC_3DSETTINGS_TEXTURE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,200,110,67,10
-    LTEXT           "Multisample Antialiasing",ID_LABEL_MSAA_SAMPLES,13,145,78,8
-    EDITTEXT        IDC_TEXT_PRESCALEHD,272,17,27,14,ES_AUTOHSCROLL
-    CONTROL         "",IDC_NUD_PRESCALEHD,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS,297,17,12,14
-    PUSHBUTTON      "Default",IDC_DEFAULT,130,19,50,15
-    DEFPUSHBUTTON   "OK",IDOK,207,258,50,15
-    PUSHBUTTON      "Cancel",IDCANCEL,269,258,50,15
-    GROUPBOX        "3D Rendering Engine",IDC_STATIC,7,7,180,34
-    GROUPBOX        "SoftRasterizer Options",IDC_STATIC,7,44,180,83
-    LTEXT           "Fixes some graphical bugs involving lines, but causes some other bugs. Not many games use lines.",ID_LABEL_ZELDA_SHADOW_DEPTH_HACK2,13,106,170,18
-    CONTROL         "Enable Line Hack",IDC_3DSETTINGS_LINEHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,96,73,10
-    LTEXT           "Fixes text bugs in some games.(e.g. Etrian Odyssey)",ID_LABEL_TXTHACK1,13,77,167,11
-    LTEXT           "May need to be toggled on/off per scene.",ID_LABEL_TXTHACK2,13,86,167,8
-    CONTROL         "Enable TXT Hack",IDC_TXTHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,67,73,10
-    GROUPBOX        "OpenGL Options",IDC_STATIC,7,131,312,121
-    GROUPBOX        "General Options",IDC_STATIC,196,7,123,120
-    LTEXT           "GPU Scaling Factor",IDC_STATIC,200,20,64,8
-    CONTROL         "Deposterize Textures",IDC_TEX_DEPOSTERIZE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,200,74,79,10
-    CONTROL         "Smooth Textures",IDC_TEX_SMOOTH,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,171,146,75,10
-    COMBOBOX        IDC_MULTISAMPLE_SIZE,93,144,71,138,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_GPU_COLOR_DEPTH,263,39,47,138,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "GPU Color Depth",ID_LABEL_GPU_COLOR_DEPTH,201,41,62,8
-    LTEXT           "Texture Scaling",ID_LABEL_TEXTURE_SCALING,201,60,54,8
-    COMBOBOX        IDC_TEXSCALE,263,58,47,138,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CTEXT           "Trade Accuracy For Performance",ID_LABEL_ACCURACY_TRADE,16,161,294,11,WS_BORDER
-    CONTROL         "Enable Shadow Polygons",IDC_SHADOW_POLYGONS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,176,98,10
+    COMBOBOX        IDC_3DCORE,14,20,115,138,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "High-Precision Color Interpolation",IDC_INTERPOLATECOLOR,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,56,124,10
+    CONTROL         "Enable Edge Marking",IDC_3DSETTINGS_EDGEMARK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,203,90,84,10
+    CONTROL         "Enable Fog",IDC_3DSETTINGS_FOG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,203,101,52,10
+    CONTROL         "Enable Textures",IDC_3DSETTINGS_TEXTURE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,203,112,67,10
+    LTEXT           "Multisample Antialiasing",ID_LABEL_MSAA_SAMPLES,12,145,78,8
+    EDITTEXT        IDC_TEXT_PRESCALEHD,273,17,31,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_NUD_PRESCALEHD,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS,303,17,12,14
+    PUSHBUTTON      "Default",IDC_DEFAULT,135,19,50,15
+    DEFPUSHBUTTON   "OK",IDOK,211,253,50,15
+    PUSHBUTTON      "Cancel",IDCANCEL,273,253,50,15
+    GROUPBOX        "3D Rendering Engine",IDC_STATIC,7,7,184,34
+    GROUPBOX        "SoftRasterizer Options",IDC_STATIC,7,44,184,83
+    LTEXT           "Fixes some graphical bugs involving lines, but causes some other bugs. Not many games use lines.",ID_LABEL_ZELDA_SHADOW_DEPTH_HACK2,12,106,170,18
+    CONTROL         "Enable Line Hack",IDC_3DSETTINGS_LINEHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,96,73,10
+    LTEXT           "Fixes text bugs in some games.(e.g. Etrian Odyssey)",ID_LABEL_TXTHACK1,12,77,171,8
+    LTEXT           "May need to be toggled on/off per scene.",ID_LABEL_TXTHACK2,12,86,167,8
+    CONTROL         "Enable TXT Hack",IDC_TXTHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,67,73,10
+    GROUPBOX        "OpenGL Options",IDC_STATIC,7,131,315,117
+    GROUPBOX        "General Options",IDC_STATIC,198,7,124,120
+    LTEXT           "GPU Scaling Factor",IDC_STATIC,203,20,64,8
+    CONTROL         "Deposterize Textures",IDC_TEX_DEPOSTERIZE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,203,79,79,10
+    CONTROL         "Smooth Textures",IDC_TEX_SMOOTH,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,172,145,75,10
+    COMBOBOX        IDC_MULTISAMPLE_SIZE,92,143,62,138,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_GPU_COLOR_DEPTH,273,39,42,138,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "GPU Color Depth",ID_LABEL_GPU_COLOR_DEPTH,203,41,60,8
+    LTEXT           "Texture Scaling",ID_LABEL_TEXTURE_SCALING,203,61,54,8
+    COMBOBOX        IDC_TEXSCALE,273,59,42,138,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Enable Shadow Polygons",IDC_SHADOW_POLYGONS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,173,137,10
     CONTROL         "Enable Special Zero Alpha Blending",IDC_S_0_ALPHA_BLEND,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,171,177,126,10
-    CONTROL         "Enable Depth-Equals Test Tolerance",IDC_DEPTH_EQUALS_TT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,209,133,10
-    CONTROL         "Enable Depth-LEqual Polygon Facing",IDC_DEPTH_LESS_EQUALS_TT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,171,208,133,10
-    LTEXT           "Disabling this option may cause some shadows to disappear.",ID_LABEL_SHADOW_POLYGONS,11,189,152,17
-    LTEXT           "Disabling this option may cause certain polygons to get caught up in Z-fighting or disappear completely.",ID_LABEL_S_0_ALPHA_BLEND,11,222,154,26
-    LTEXT           "Disabling this option may cause some colors to look darker than they normally should.",ID_LABEL_DEPTH_EQUALS_TT,172,188,143,17
-    LTEXT           "Disabling this option may cause some fragments to disappear. Default by default due to performance impact.",ID_LABEL_DEPTH_LEQUALS_TT,173,220,142,27
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,172,173,137,10
+    CONTROL         "Enable Depth Equals Test Tolerance",IDC_DEPTH_EQUALS_TT,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,202,137,10
+    CONTROL         "Enable Depth L-Equal Polygon Facing",IDC_DEPTH_LESS_EQUALS_TT,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,172,202,137,10
+    LTEXT           "Disabling this option may cause some shadows to disappear.",ID_LABEL_SHADOW_POLYGONS,17,184,137,16
+    LTEXT           "Disabling this option may cause certain polygons to get caught up in Z-fighting or disappear completely.",ID_LABEL_S_0_ALPHA_BLEND,17,213,137,24
+    LTEXT           "Disabling this option may cause some colors to look darker than normal.",ID_LABEL_DEPTH_EQUALS_TT,172,184,137,16
+    LTEXT           "Disabling this option may cause some fragments to disappear. Disabled by default due to performance impact.",ID_LABEL_DEPTH_LEQUALS_TT,172,213,137,24
+    GROUPBOX        "Rendering Accuracy Options",IDC_STATIC,12,161,305,82,BS_CENTER
 END
 
 IDD_ABOUT_BOX DIALOGEX 0, 0, 268, 198
@@ -1872,7 +1872,7 @@ BEGIN
 
     IDD_3DSETTINGS, DIALOG
     BEGIN
-        BOTTOMMARGIN, 266
+        RIGHTMARGIN, 328
     END
 
     IDD_CHEAT_ADD, DIALOG
