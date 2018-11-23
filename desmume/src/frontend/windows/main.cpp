@@ -2262,7 +2262,7 @@ int _main()
 	}
 	else
 		wifiHandler->SetEmulationLevel(WifiEmulationLevel_Off);
-
+	
 	CommonSettings.GFX3D_Renderer_TextureScalingFactor = (cmdline.texture_upscale != -1) ? cmdline.texture_upscale : GetValid3DIntSetting("TextureScalingFactor", 1, possibleTexScale, 3);
 	int newPrescaleHD = (cmdline.gpu_resolution_multiplier != -1) ? cmdline.gpu_resolution_multiplier : GetPrivateProfileInt("3D", "PrescaleHD", 1, IniName);
 	video.SetPrescale(newPrescaleHD, 1);
@@ -2646,7 +2646,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 // Checks for incorrect values, updates ini and returns a valid value. Requires an array to check.
 int GetValid3DIntSetting(char *settingName, const int defVal, const int arrName[], const int arrSize)
 {
-	bool valid = false;
 	const int curVal = GetPrivateProfileInt("3D", settingName, defVal, IniName);
 
 	for (int i = 0; i <= arrSize; i++)
@@ -5706,6 +5705,8 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 	case WM_INITDIALOG:
 		{
 			const char MSAADescriptions[6][9] = {"Disabled", "2x", "4x", "8x", "16x", "32x"};
+			const char gpuBPPDescriptions[3][7] = {"15 bit", "18 bit", "24 bit"};
+			const char texScaleDescriptions[3][4] = {"1x", "2x", "4x"};
 
 			if (!didGetMaxSamples)
 			{
@@ -5744,19 +5745,14 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw, IDC_DEPTH_EQUALS_TT, CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance);
 			CheckDlgButton(hw, IDC_DEPTH_L_EQUAL_PF, CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing);
 
-			// Generate the Color Depth pop-up menu
-			ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), "15 bit");
-			ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), "18 bit");
-			ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), "24 bit");
-			ComboBox_SetCurSel(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), 1);
-			// Generate the Texture Scaling pop-up menu
-			ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), "1x");
-			ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), "2x");
-			ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), "4x");
-			ComboBox_SetCurSel(GetDlgItem(hw, IDC_TEXSCALE), 0);
+			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
+			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, video.prescaleHD);
 
+			// Generate the Color Depth pop-up menu and Texture Scaling pop-up menu
 			for (int i = 0; i < 3; i++)
 			{
+				ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), gpuBPPDescriptions[i]);
+				ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), texScaleDescriptions[i]);
 				if (gpu_bpp == possibleBPP[i])
 				{
 					ComboBox_SetCurSel(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), i);
@@ -5766,9 +5762,6 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					ComboBox_SetCurSel(GetDlgItem(hw, IDC_TEXSCALE), i);
 				}
 			}
-
-			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
-			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, video.prescaleHD);
 
 			if (CommonSettings.GFX3D_Renderer_MultisampleSize > maxSamples) 
 			{
