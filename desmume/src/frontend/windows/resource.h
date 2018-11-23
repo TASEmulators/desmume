@@ -500,7 +500,7 @@
 #define IDC_SHADOW_POLYGONS             1096
 #define IDC_S_0_ALPHA_BLEND             1097
 #define IDC_DEPTH_EQUALS_TT             1098
-#define IDC_DEPTH_LESS_EQUALS_TT        1099
+#define IDC_DEPTH_L_EQUAL_PF            1099
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
 #define IDC_EDIT1                       1102
@@ -1092,7 +1092,7 @@
 #define ID_LABEL_SHADOW_POLYGONS        64009
 #define ID_LABEL_S_0_ALPHA_BLEND        640010
 #define ID_LABEL_DEPTH_EQUALS_TT        640011
-#define ID_LABEL_DEPTH_LEQUALS_TT       640012
+#define ID_LABEL_DEPTH_L_EQUAL_PF       640012
 
 
 // Next default values for new objects

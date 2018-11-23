@@ -110,7 +110,7 @@ BEGIN
     PUSHBUTTON      "&Cancel",IDCANCEL,127,94,50,16
 END
 
-IDD_3DSETTINGS DIALOGEX 0, 0, 329, 274
+IDD_3DSETTINGS DIALOGEX 0, 0, 329, 273
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "3D Settings"
 FONT 8, "MS Sans Serif", 400, 0, 0x0
@@ -125,8 +125,8 @@ BEGIN
     EDITTEXT        IDC_TEXT_PRESCALEHD,273,17,31,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_NUD_PRESCALEHD,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS,303,17,12,14
     PUSHBUTTON      "Default",IDC_DEFAULT,135,19,50,15
-    DEFPUSHBUTTON   "OK",IDOK,211,253,50,15
-    PUSHBUTTON      "Cancel",IDCANCEL,273,253,50,15
+    DEFPUSHBUTTON   "OK",IDOK,211,252,50,15
+    PUSHBUTTON      "Cancel",IDCANCEL,273,252,50,15
     GROUPBOX        "3D Rendering Engine",IDC_STATIC,7,7,184,34
     GROUPBOX        "SoftRasterizer Options",IDC_STATIC,7,44,184,83
     LTEXT           "Fixes some graphical bugs involving lines, but causes some other bugs. Not many games use lines.",ID_LABEL_ZELDA_SHADOW_DEPTH_HACK2,12,106,170,18
@@ -134,7 +134,7 @@ BEGIN
     LTEXT           "Fixes text bugs in some games.(e.g. Etrian Odyssey)",ID_LABEL_TXTHACK1,12,77,171,8
     LTEXT           "May need to be toggled on/off per scene.",ID_LABEL_TXTHACK2,12,86,167,8
     CONTROL         "Enable TXT Hack",IDC_TXTHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,67,73,10
-    GROUPBOX        "OpenGL Options",IDC_STATIC,7,131,315,117
+    GROUPBOX        "OpenGL Options",IDC_STATIC,7,131,315,116
     GROUPBOX        "General Options",IDC_STATIC,198,7,124,120
     LTEXT           "GPU Scaling Factor",IDC_STATIC,203,20,64,8
     CONTROL         "Deposterize Textures",IDC_TEX_DEPOSTERIZE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,203,79,79,10
@@ -148,14 +148,14 @@ BEGIN
     CONTROL         "Enable Special Zero Alpha Blending",IDC_S_0_ALPHA_BLEND,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,172,173,137,10
     CONTROL         "Enable Depth Equals Test Tolerance",IDC_DEPTH_EQUALS_TT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,202,137,10
-    CONTROL         "Enable Depth L-Equal Polygon Facing",IDC_DEPTH_LESS_EQUALS_TT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,172,202,137,10
-    LTEXT           "Disabling this option may cause some shadows to disappear.",ID_LABEL_SHADOW_POLYGONS,17,184,137,16
-    LTEXT           "Disabling this option may cause certain polygons to get caught up in Z-fighting or disappear completely.",ID_LABEL_S_0_ALPHA_BLEND,17,213,137,24
-    LTEXT           "Disabling this option may cause some colors to look darker than normal.",ID_LABEL_DEPTH_EQUALS_TT,172,184,137,16
-    LTEXT           "Disabling this option may cause some fragments to disappear. Disabled by default due to performance impact.",ID_LABEL_DEPTH_LEQUALS_TT,172,213,137,24
-    GROUPBOX        "Rendering Accuracy Options",IDC_STATIC,12,161,305,82,BS_CENTER
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,203,137,10
+    CONTROL         "Enable Depth L-Equal Polygon Facing",IDC_DEPTH_L_EQUAL_PF,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,172,203,137,10
+    LTEXT           "Disabling this option may cause some shadows to disappear.",ID_LABEL_SHADOW_POLYGONS,17,183,137,16
+    LTEXT           "Disabling this option may cause certain polygons to get caught up in Z-fighting or disappear completely.",ID_LABEL_DEPTH_EQUALS_TT,17,213,137,24
+    LTEXT           "Disabling this option may cause some colors to look darker than normal.",ID_LABEL_S_0_ALPHA_BLEND,172,183,137,16
+    LTEXT           "Disabling this option may cause some fragments to disappear. Disabled by default due to performance impact.",ID_LABEL_DEPTH_L_EQUAL_PF,172,213,137,24
+    GROUPBOX        "Rendering Accuracy Options",IDC_STATIC,12,161,305,81,BS_CENTER
 END
 
 IDD_ABOUT_BOX DIALOGEX 0, 0, 268, 198
