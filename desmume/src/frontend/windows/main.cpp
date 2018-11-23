@@ -5705,8 +5705,6 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 	case WM_INITDIALOG:
 		{
 			const char MSAADescriptions[6][9] = {"Disabled", "2x", "4x", "8x", "16x", "32x"};
-			const char gpuBPPDescriptions[3][7] = {"15 bit", "18 bit", "24 bit"};
-			const char texScaleDescriptions[3][4] = {"1x", "2x", "4x"};
 
 			if (!didGetMaxSamples)
 			{
@@ -5748,11 +5746,19 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, video.prescaleHD);
 
-			// Generate the Color Depth pop-up menu and Texture Scaling pop-up menu
+			// Generate the Color Depth pop-up menu
+			ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), "15 bit");
+			ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), "18 bit");
+			ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), "24 bit");
+			ComboBox_SetCurSel(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), 1);
+			// Generate the Texture Scaling pop-up menu
+			ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), "1x");
+			ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), "2x");
+			ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), "4x");
+			ComboBox_SetCurSel(GetDlgItem(hw, IDC_TEXSCALE), 0);
+
 			for (int i = 0; i < 3; i++)
 			{
-				ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), gpuBPPDescriptions[i]);
-				ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), texScaleDescriptions[i]);
 				if (gpu_bpp == possibleBPP[i])
 				{
 					ComboBox_SetCurSel(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), i);
