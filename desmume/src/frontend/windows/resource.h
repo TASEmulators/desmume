@@ -461,22 +461,16 @@
 #define IDC_TEXT_PRESCALEHD             1062
 #define IDC_STATIC_S3                   1063
 #define IDC_STATIC_S4                   1064
-#define IDC_TEX_DEPOSTERIZE             1064
 #define IDC_EVALUE                      1065
-#define IDC_TEX_DEPOSTERIZE2            1065
-#define IDC_TEX_SMOOTH                  1065
 #define IDC_WIFI_ENABLED                1065
 #define IDC_STATIC_RANGE                1066
-#define IDC_TEXSCALE_1                  1066
 #define IDC_WIFI_COMPAT                 1066
-#define IDC_TEXSCALE_2                  1067
+#define IDC_TEXSCALE                    1067
 #define IDC_BADD                        1068
 #define IDC_LIST                        1069
-#define IDC_TEXSCALE_4                  1070
+#define IDC_TEX_DEPOSTERIZE             1070
 #define IDC_SNUMBER                     1071
-#define IDC_GPU_24BPP                   1071
-#define IDC_GPU_18BPP                   1072
-#define IDC_GPU_15BPP                   1073
+#define IDC_TEX_SMOOTH                  1072
 #define IDC_CHECK1                      1074
 #define IDC_CHECK2                      1075
 #define IDC_CAP0_SRC                    1075
@@ -502,6 +496,11 @@
 #define IDC_S8X                         1092
 #define IDC_S16X                        1093
 #define IDC_MULTISAMPLE_SIZE            1094
+#define IDC_GPU_COLOR_DEPTH             1095
+#define IDC_SHADOW_POLYGONS             1096
+#define IDC_S_0_ALPHA_BLEND             1097
+#define IDC_DEPTH_EQUALS_TT             1098
+#define IDC_DEPTH_L_EQUAL_PF            1099
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
 #define IDC_EDIT1                       1102
@@ -1088,6 +1087,13 @@
 #define ID_LABEL_TXTHACK1               64003
 #define ID_LABEL_TXTHACK2               64004
 #define ID_LABEL_MSAA_SAMPLES           64005
+#define ID_LABEL_GPU_COLOR_DEPTH        64006
+#define ID_LABEL_TEXTURE_SCALING        64007
+#define ID_LABEL_SHADOW_POLYGONS        64009
+#define ID_LABEL_S_0_ALPHA_BLEND        640010
+#define ID_LABEL_DEPTH_EQUALS_TT        640011
+#define ID_LABEL_DEPTH_L_EQUAL_PF       640012
+
 
 // Next default values for new objects
 // 

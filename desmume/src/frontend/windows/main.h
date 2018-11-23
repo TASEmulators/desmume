@@ -53,7 +53,7 @@ void SaveWindowSize(HWND hwnd);
 void SaveWindowSizePos(HWND hwnd);
 void RestoreWindow(HWND hwnd);
 void ShowFullScreen(HWND hwnd);
-void CheckValidMSAA(int userVal);
+int GetValid3DIntSetting(char *settingName, const int defVal, const int arrName[], const int arrSize);
 
 extern bool frameCounterDisplay;
 extern bool FpsDisplay;

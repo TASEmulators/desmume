@@ -425,6 +425,9 @@ static int sndbuffersize=DESMUME_SAMPLE_RATE*8/60;
 int sndvolume=100;
 
 const int possibleMSAA[] = {0, 2, 4, 8, 16, 32};
+const int possibleBPP[] = {15, 18, 24};
+const int possibleTexScale[] = {1, 2, 4};
+
 int maxSamples = 0;
 bool didGetMaxSamples = false;
 
@@ -2014,11 +2017,9 @@ int _main()
 	CommonSettings.spu_advanced = GetPrivateProfileBool("Sound", "SpuAdvanced", true, IniName);
 	CommonSettings.advanced_timing = GetPrivateProfileBool("Emulation", "AdvancedTiming", true, IniName);
 	CommonSettings.gamehacks.en = GetPrivateProfileBool("Emulation", "GameHacks", true, IniName);
-
-	CommonSettings.GFX3D_Renderer_TextureDeposterize =  GetPrivateProfileBool("3D", "TextureDeposterize ", 0, IniName);
-	CommonSettings.GFX3D_Renderer_TextureSmoothing =  GetPrivateProfileBool("3D", "TextureSmooth ", 0, IniName);
-	gpu_bpp = GetPrivateProfileInt("3D", "GpuBpp ", 18, IniName);
-		
+	CommonSettings.GFX3D_Renderer_TextureDeposterize =  GetPrivateProfileBool("3D", "TextureDeposterize", 0, IniName);
+	CommonSettings.GFX3D_Renderer_TextureSmoothing =  GetPrivateProfileBool("3D", "TextureSmooth", 0, IniName);
+	gpu_bpp = GetValid3DIntSetting("GpuBpp", 18, possibleBPP, 3);
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
 
 	//Get Ram-Watch values
@@ -2261,10 +2262,9 @@ int _main()
 	}
 	else
 		wifiHandler->SetEmulationLevel(WifiEmulationLevel_Off);
-
-	CommonSettings.GFX3D_Renderer_TextureScalingFactor = (cmdline.texture_upscale != -1) ? cmdline.texture_upscale : GetPrivateProfileInt("3D", "TextureScalingFactor ", 1, IniName);
+	
+	CommonSettings.GFX3D_Renderer_TextureScalingFactor = (cmdline.texture_upscale != -1) ? cmdline.texture_upscale : GetValid3DIntSetting("TextureScalingFactor", 1, possibleTexScale, 3);
 	int newPrescaleHD = (cmdline.gpu_resolution_multiplier != -1) ? cmdline.gpu_resolution_multiplier : GetPrivateProfileInt("3D", "PrescaleHD", 1, IniName);
-
 	video.SetPrescale(newPrescaleHD, 1);
 	GPU->SetCustomFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH*video.prescaleHD, GPU_FRAMEBUFFER_NATIVE_HEIGHT*video.prescaleHD);
 	SyncGpuBpp();
@@ -2365,9 +2365,12 @@ int _main()
 	CommonSettings.GFX3D_Fog = GetPrivateProfileBool("3D", "EnableFog", 1, IniName);
 	CommonSettings.GFX3D_Texture = GetPrivateProfileBool("3D", "EnableTexture", 1, IniName);
 	CommonSettings.GFX3D_LineHack = GetPrivateProfileBool("3D", "EnableLineHack", 1, IniName);
-	CommonSettings.GFX3D_TXTHack = GetPrivateProfileBool("3D", "EnableTXTHack", 0, IniName); //default is off.
-	CommonSettings.GFX3D_Renderer_MultisampleSize = GetPrivateProfileInt("3D", "MultisampleSize", 0, IniName);
-	CheckValidMSAA(CommonSettings.GFX3D_Renderer_MultisampleSize);
+	CommonSettings.GFX3D_TXTHack = GetPrivateProfileBool("3D", "EnableTXTHack", 0, IniName); // Default is off.
+	CommonSettings.OpenGL_Emulation_ShadowPolygon = GetPrivateProfileBool("3D", "EnableShadowPolygon", 1, IniName);
+	CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending = GetPrivateProfileBool("3D", "EnableSpecialZeroAlphaBlending", 1, IniName);
+	CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance = GetPrivateProfileBool("3D", "EnableDepthEqualsTestTolerance", 1, IniName);
+	CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing = GetPrivateProfileBool("3D", "EnableDepthLEqualPolygonFacing", 0, IniName); // Default is off.
+	CommonSettings.GFX3D_Renderer_MultisampleSize = GetValid3DIntSetting("MultisampleSize", 0, possibleMSAA, 6);
 	Change3DCoreWithFallbackAndSave(cur3DCore);
 
 
@@ -2640,23 +2643,22 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	return ret;
 }
 
-void CheckValidMSAA(int userVal)
+// Checks for incorrect values, updates ini and returns a valid value. Requires an array to check.
+int GetValid3DIntSetting(char *settingName, const int defVal, const int arrName[], const int arrSize)
 {
-	bool validMSAA = false;
+	const int curVal = GetPrivateProfileInt("3D", settingName, defVal, IniName);
 
-	for(int i=0; i < 6; i++)
+	for (int i = 0; i <= arrSize; i++)
 	{
-		if(CommonSettings.GFX3D_Renderer_MultisampleSize == possibleMSAA[i]) 
-			validMSAA = true;
+		if (curVal == arrName[i])
+		{
+			return curVal;
+		}
 	}
-
-	if(!validMSAA)
-	{
-		CommonSettings.GFX3D_Renderer_MultisampleSize=0; //Disable if user entered invalid value
-		WritePrivateProfileInt("3D","MultisampleSize",0,IniName);
-	}
+	// Sets to defaults if ini value is incorrect.
+	WritePrivateProfileInt("3D", settingName, defVal, IniName);
+	return defVal;
 }
-
 
 void UpdateScreenRects()
 {
@@ -5728,28 +5730,45 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 				}
 			}
 
-			CheckDlgButton(hw,IDC_INTERPOLATECOLOR, CommonSettings.GFX3D_HighResolutionInterpolateColor);
-			CheckDlgButton(hw,IDC_3DSETTINGS_EDGEMARK, CommonSettings.GFX3D_EdgeMark);
-			CheckDlgButton(hw,IDC_3DSETTINGS_FOG, CommonSettings.GFX3D_Fog);
-			CheckDlgButton(hw,IDC_3DSETTINGS_TEXTURE, CommonSettings.GFX3D_Texture);
-			CheckDlgButton(hw,IDC_3DSETTINGS_LINEHACK, CommonSettings.GFX3D_LineHack);
-			CheckDlgButton(hw,IDC_TXTHACK, CommonSettings.GFX3D_TXTHack);
+			CheckDlgButton(hw, IDC_INTERPOLATECOLOR, CommonSettings.GFX3D_HighResolutionInterpolateColor);
+			CheckDlgButton(hw, IDC_3DSETTINGS_LINEHACK, CommonSettings.GFX3D_LineHack);
+			CheckDlgButton(hw, IDC_TXTHACK, CommonSettings.GFX3D_TXTHack);
+			CheckDlgButton(hw, IDC_TEX_DEPOSTERIZE, CommonSettings.GFX3D_Renderer_TextureDeposterize);
+			CheckDlgButton(hw, IDC_3DSETTINGS_EDGEMARK, CommonSettings.GFX3D_EdgeMark);
+			CheckDlgButton(hw, IDC_3DSETTINGS_FOG, CommonSettings.GFX3D_Fog);
+			CheckDlgButton(hw, IDC_3DSETTINGS_TEXTURE, CommonSettings.GFX3D_Texture);
+			CheckDlgButton(hw, IDC_TEX_SMOOTH, CommonSettings.GFX3D_Renderer_TextureSmoothing);
+			CheckDlgButton(hw, IDC_SHADOW_POLYGONS, CommonSettings.OpenGL_Emulation_ShadowPolygon);
+			CheckDlgButton(hw, IDC_S_0_ALPHA_BLEND, CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending);
+			CheckDlgButton(hw, IDC_DEPTH_EQUALS_TT, CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance);
+			CheckDlgButton(hw, IDC_DEPTH_L_EQUAL_PF, CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing);
 
-			CheckDlgButton(hw,IDC_TEXSCALE_1, CommonSettings.GFX3D_Renderer_TextureScalingFactor == 1);
-			CheckDlgButton(hw,IDC_TEXSCALE_2, CommonSettings.GFX3D_Renderer_TextureScalingFactor == 2);
-			CheckDlgButton(hw,IDC_TEXSCALE_4, CommonSettings.GFX3D_Renderer_TextureScalingFactor == 4);
+			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
+			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, video.prescaleHD);
 
-			CheckDlgButton(hw,IDC_GPU_24BPP, gpu_bpp == 24);
-			CheckDlgButton(hw,IDC_GPU_18BPP, gpu_bpp == 18);
-			CheckDlgButton(hw,IDC_GPU_15BPP, gpu_bpp == 15);
+			// Generate the Color Depth pop-up menu
+			ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), "15 bit");
+			ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), "18 bit");
+			ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), "24 bit");
+			ComboBox_SetCurSel(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), 1);
+			// Generate the Texture Scaling pop-up menu
+			ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), "1x");
+			ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), "2x");
+			ComboBox_AddString(GetDlgItem(hw, IDC_TEXSCALE), "4x");
+			ComboBox_SetCurSel(GetDlgItem(hw, IDC_TEXSCALE), 0);
 
-			CheckDlgButton(hw,IDC_TEX_DEPOSTERIZE, CommonSettings.GFX3D_Renderer_TextureDeposterize);
-			CheckDlgButton(hw,IDC_TEX_SMOOTH, CommonSettings.GFX3D_Renderer_TextureSmoothing);
+			for (int i = 0; i < 3; i++)
+			{
+				if (gpu_bpp == possibleBPP[i])
+				{
+					ComboBox_SetCurSel(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), i);
+				}
+				if (CommonSettings.GFX3D_Renderer_TextureScalingFactor == possibleTexScale[i])
+				{
+					ComboBox_SetCurSel(GetDlgItem(hw, IDC_TEXSCALE), i);
+				}
+			}
 
-			SendDlgItemMessage(hw,IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
-			SendDlgItemMessage(hw,IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, video.prescaleHD);
-
-			CheckValidMSAA(CommonSettings.GFX3D_Renderer_MultisampleSize);
 			if (CommonSettings.GFX3D_Renderer_MultisampleSize > maxSamples) 
 			{
 				CommonSettings.GFX3D_Renderer_MultisampleSize = maxSamples;
@@ -5757,15 +5776,17 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			}
 
 			// Generate the MSAA pop-up menu
-			ComboBox_AddString(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE), MSAADescriptions[0]);
-			ComboBox_SetCurSel(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE), 0);
+			ComboBox_AddString(GetDlgItem(hw, IDC_MULTISAMPLE_SIZE), MSAADescriptions[0]);
+			ComboBox_SetCurSel(GetDlgItem(hw, IDC_MULTISAMPLE_SIZE), 0);
 			for (int i = 1, z = 2; z <= maxSamples; i++, z*=2)
 			{
-				ComboBox_AddString(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE),MSAADescriptions[i]);
-				if (z == CommonSettings.GFX3D_Renderer_MultisampleSize)
-					ComboBox_SetCurSel(GetDlgItem(hw,IDC_MULTISAMPLE_SIZE), i);
+				ComboBox_AddString(GetDlgItem(hw, IDC_MULTISAMPLE_SIZE), MSAADescriptions[i]);
+				if (z == CommonSettings.GFX3D_Renderer_MultisampleSize) 
+				{
+					ComboBox_SetCurSel(GetDlgItem(hw, IDC_MULTISAMPLE_SIZE), i);
+				}
 			}
-			
+
 			// Generate the 3D Rendering Engine pop-up menu
 			for (int i = 0; core3DList[i] != NULL; i++)
 			{
@@ -5780,30 +5801,28 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			{
 			case IDOK:
 				{
-					CommonSettings.GFX3D_HighResolutionInterpolateColor = IsDlgCheckboxChecked(hw,IDC_INTERPOLATECOLOR);
-					CommonSettings.GFX3D_EdgeMark = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_EDGEMARK);
-					CommonSettings.GFX3D_Fog = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_FOG);
-					CommonSettings.GFX3D_Texture = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_TEXTURE);
-					CommonSettings.GFX3D_LineHack = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_LINEHACK);
-					CommonSettings.GFX3D_TXTHack = IsDlgCheckboxChecked(hw,IDC_TXTHACK);
-
+					CommonSettings.GFX3D_HighResolutionInterpolateColor = IsDlgCheckboxChecked(hw, IDC_INTERPOLATECOLOR);
+					CommonSettings.GFX3D_LineHack = IsDlgCheckboxChecked(hw, IDC_3DSETTINGS_LINEHACK);
+					CommonSettings.GFX3D_TXTHack = IsDlgCheckboxChecked(hw, IDC_TXTHACK);
+					gpu_bpp = possibleBPP[SendDlgItemMessage(hw, IDC_GPU_COLOR_DEPTH, CB_GETCURSEL, 0, 0)];
+					CommonSettings.GFX3D_Renderer_TextureScalingFactor = possibleTexScale[SendDlgItemMessage(hw, IDC_TEXSCALE, CB_GETCURSEL, 0, 0)];
+					CommonSettings.GFX3D_Renderer_TextureDeposterize = IsDlgCheckboxChecked(hw, IDC_TEX_DEPOSTERIZE);
+					CommonSettings.GFX3D_EdgeMark = IsDlgCheckboxChecked(hw, IDC_3DSETTINGS_EDGEMARK);
+					CommonSettings.GFX3D_Fog = IsDlgCheckboxChecked(hw, IDC_3DSETTINGS_FOG);
+					CommonSettings.GFX3D_Texture = IsDlgCheckboxChecked(hw, IDC_3DSETTINGS_TEXTURE);
+					CommonSettings.GFX3D_Renderer_MultisampleSize = possibleMSAA[SendDlgItemMessage(hw, IDC_MULTISAMPLE_SIZE, CB_GETCURSEL, 0, 0)];
+					CommonSettings.GFX3D_Renderer_TextureSmoothing = IsDlgCheckboxChecked(hw, IDC_TEX_SMOOTH);
+					CommonSettings.OpenGL_Emulation_ShadowPolygon = IsDlgCheckboxChecked(hw, IDC_SHADOW_POLYGONS);
+					CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending = IsDlgCheckboxChecked(hw, IDC_S_0_ALPHA_BLEND);
+					CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance = IsDlgCheckboxChecked(hw, IDC_DEPTH_EQUALS_TT);
+					CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing = IsDlgCheckboxChecked(hw, IDC_DEPTH_L_EQUAL_PF);
+					
 					int newPrescaleHD = video.prescaleHD;
 					LRESULT scaleResult = SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_GETPOS, 0, 0);
 					if (HIWORD(scaleResult) == 0)
 					{
 						newPrescaleHD = LOWORD(scaleResult);
 					}
-
-					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_1)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 1;
-					else if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_2)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 2;
-					else if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_4)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 4;
-					if(IsDlgCheckboxChecked(hw,IDC_GPU_15BPP)) gpu_bpp = 15;
-					else if(IsDlgCheckboxChecked(hw,IDC_GPU_18BPP)) gpu_bpp = 18;
-					else if(IsDlgCheckboxChecked(hw,IDC_GPU_24BPP)) gpu_bpp = 24;
-
-					CommonSettings.GFX3D_Renderer_TextureDeposterize = IsDlgCheckboxChecked(hw,IDC_TEX_DEPOSTERIZE);
-					CommonSettings.GFX3D_Renderer_TextureSmoothing = IsDlgCheckboxChecked(hw,IDC_TEX_SMOOTH);
-					CommonSettings.GFX3D_Renderer_MultisampleSize = possibleMSAA[SendDlgItemMessage(hw,IDC_MULTISAMPLE_SIZE,CB_GETCURSEL,0,0)];
 
 					{
 						Lock lock(win_backbuffer_sync);
@@ -5824,17 +5843,21 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					}
 
 					WritePrivateProfileBool("3D", "HighResolutionInterpolateColor", CommonSettings.GFX3D_HighResolutionInterpolateColor, IniName);
+					WritePrivateProfileBool("3D", "EnableTXTHack", CommonSettings.GFX3D_TXTHack, IniName);
+					WritePrivateProfileBool("3D", "EnableLineHack", CommonSettings.GFX3D_LineHack, IniName);
+					WritePrivateProfileInt ("3D", "PrescaleHD", video.prescaleHD, IniName);
+					WritePrivateProfileInt ("3D", "GpuBpp", gpu_bpp, IniName);
+					WritePrivateProfileInt ("3D", "TextureScalingFactor", CommonSettings.GFX3D_Renderer_TextureScalingFactor, IniName);
+					WritePrivateProfileBool("3D", "TextureDeposterize", CommonSettings.GFX3D_Renderer_TextureDeposterize, IniName);
 					WritePrivateProfileBool("3D", "EnableEdgeMark", CommonSettings.GFX3D_EdgeMark, IniName);
 					WritePrivateProfileBool("3D", "EnableFog", CommonSettings.GFX3D_Fog, IniName);
 					WritePrivateProfileBool("3D", "EnableTexture", CommonSettings.GFX3D_Texture, IniName);
-					WritePrivateProfileInt ("3D", "EnableLineHack", CommonSettings.GFX3D_LineHack, IniName);
 					WritePrivateProfileInt ("3D", "MultisampleSize", CommonSettings.GFX3D_Renderer_MultisampleSize, IniName);
-					WritePrivateProfileInt ("3D", "EnableTXTHack", CommonSettings.GFX3D_TXTHack, IniName);
-					WritePrivateProfileInt ("3D", "PrescaleHD", video.prescaleHD, IniName);
-					WritePrivateProfileInt ("3D", "TextureScalingFactor", CommonSettings.GFX3D_Renderer_TextureScalingFactor, IniName);
-					WritePrivateProfileBool("3D", "TextureDeposterize", CommonSettings.GFX3D_Renderer_TextureDeposterize, IniName);
 					WritePrivateProfileBool("3D", "TextureSmooth", CommonSettings.GFX3D_Renderer_TextureSmoothing, IniName);
-					WritePrivateProfileInt ("3D", "GpuBpp", gpu_bpp, IniName);
+					WritePrivateProfileBool("3D", "EnableShadowPolygon", CommonSettings.OpenGL_Emulation_ShadowPolygon, IniName);
+					WritePrivateProfileBool("3D", "EnableSpecialZeroAlphaBlending", CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending, IniName);
+					WritePrivateProfileBool("3D", "EnableDepthEqualsTestTolerance", CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance, IniName);
+					WritePrivateProfileBool("3D", "EnableDepthLEqualPolygonFacing", CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing, IniName);
 				}
 			case IDCANCEL:
 				{
