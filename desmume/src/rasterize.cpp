@@ -959,8 +959,8 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline_SSE2(const POLYGON_ATTR
 	
 	//our dx values are taken from the steps up until the right edge
 	const __m128 invWidth = _mm_set1_ps(1.0f / (float)width);
-	const __m128 coord_dx = _mm_mul_ps(_mm_setr_ps(pRight->u.curr - coord[0], pRight->v.curr - coord[1], pRight->z.curr - coord[2], pRight->invw.curr - coord[3]), invWidth);
-	const __m128 color_dx = _mm_mul_ps(_mm_setr_ps(pRight->color[0].curr - color[0], pRight->color[1].curr - color[1], pRight->color[2].curr - color[2], 0.0f), invWidth);
+	const __m128 coord_dx = _mm_mul_ps(_mm_setr_ps(pRight->u.curr - pLeft->u.curr, pRight->v.curr - pLeft->v.curr, pRight->z.curr - pLeft->z.curr, pRight->invw.curr - pLeft->invw.curr), invWidth);
+	const __m128 color_dx = _mm_mul_ps(_mm_setr_ps(pRight->color[0].curr - pLeft->color[0].curr, pRight->color[1].curr - pLeft->color[1].curr, pRight->color[2].curr - pLeft->color[2].curr, 0.0f), invWidth);
 	
 	size_t adr = (pLeft->Y*framebufferWidth)+XStart;
 	
