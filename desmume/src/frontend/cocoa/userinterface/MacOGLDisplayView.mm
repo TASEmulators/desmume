@@ -552,7 +552,7 @@ void MacOGLDisplayView::FlushView(void *userData)
 	CGLUnlockContext(context);
 }
 
-void MacOGLDisplayView::FinalizeFlush(void *userData)
+void MacOGLDisplayView::FinalizeFlush(void *userData, uint64_t outputTime)
 {
 	CGLContextObj context = ((MacOGLDisplayPresenter *)this->_presenter)->GetContext();
 	

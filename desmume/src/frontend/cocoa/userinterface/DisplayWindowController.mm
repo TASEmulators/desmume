@@ -2142,13 +2142,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[self setLayer:localLayer];
 	[self setWantsLayer:YES];
 	
-	if (isMetalLayer)
+	if (cdv->GetRenderToCALayer())
 	{
-		cdv->FlushAndFinalizeImmediate();
+		[localLayer setNeedsDisplay];
 	}
 	else
 	{
-		[localLayer setNeedsDisplay];
+		cdv->FlushAndFinalizeImmediate();
 	}
 }
 

@@ -134,7 +134,7 @@ public:
 	
 	// Client view interface
 	virtual void FlushView(void *userData);
-	virtual void FinalizeFlush(void *userData);
+	virtual void FinalizeFlush(void *userData, uint64_t outputTime);
 };
 
 #endif // _MAC_OGLDISPLAYOUTPUT_H_

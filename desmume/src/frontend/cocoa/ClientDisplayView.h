@@ -356,7 +356,7 @@ public:
 	virtual void SetAllowViewFlushes(bool allowFlushes);
 	
 	virtual void FlushView(void *userData);
-	virtual void FinalizeFlush(void *userData);
+	virtual void FinalizeFlush(void *userData, uint64_t outputTime);
 	virtual void FlushAndFinalizeImmediate();
 	
 	// Touch screen input handling

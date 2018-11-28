@@ -36,7 +36,7 @@
 #endif
 
 #define METAL_FETCH_BUFFER_COUNT	3
-#define RENDER_BUFFER_COUNT			6
+#define RENDER_BUFFER_COUNT			12
 
 class MacMetalFetchObject;
 class MacMetalDisplayPresenter;
@@ -166,8 +166,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 - (void) fetchNativeDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex blitCommandEncoder:(id<MTLBlitCommandEncoder>)bce;
 - (void) fetchCustomDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex blitCommandEncoder:(id<MTLBlitCommandEncoder>)bce;
 
-- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList;;
-- (void) finalizeFlushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList;
+- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList timeStampNow:(const CVTimeStamp *)timeStampNow timeStampOutput:(const CVTimeStamp *)timeStampOutput;
 
 @end
 
@@ -262,18 +261,23 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MacDisplayLayeredView *_cdv;
 	MacMetalDisplayPresenterObject *presenterObject;
 	dispatch_semaphore_t _semDrawable;
-	id<CAMetalDrawable> layerDrawable;
+	id<CAMetalDrawable> _currentDrawable;
+	id<CAMetalDrawable> layerDrawable0;
+	id<CAMetalDrawable> layerDrawable1;
+	id<CAMetalDrawable> layerDrawable2;
+	
 	MetalTexturePair _displayTexturePair;
-	size_t _displaySequenceNumber;
 }
 
 @property (readonly, nonatomic) MacMetalDisplayPresenterObject *presenterObject;
-@property (retain) id<CAMetalDrawable> layerDrawable;
+@property (retain) id<CAMetalDrawable> layerDrawable0;
+@property (retain) id<CAMetalDrawable> layerDrawable1;
+@property (retain) id<CAMetalDrawable> layerDrawable2;
 
 - (id) initWithDisplayPresenterObject:(MacMetalDisplayPresenterObject *)thePresenterObject;
 - (void) setupLayer;
 - (void) renderToDrawableUsingCommandBuffer:(id<MTLCommandBuffer>)cb;
-- (void) presentDrawableWithCommandBuffer:(id<MTLCommandBuffer>)cb;
+- (void) presentDrawableWithCommandBuffer:(id<MTLCommandBuffer>)cb outputTime:(uint64_t)outputTime;
 - (void) renderAndPresentDrawableImmediate;
 
 @end
@@ -368,7 +372,7 @@ public:
 	
 	// Client view interface
 	virtual void FlushView(void *userData);
-	virtual void FinalizeFlush(void *userData);
+	virtual void FinalizeFlush(void *userData, uint64_t outputTime);
 	virtual void FlushAndFinalizeImmediate();
 };
 

@@ -428,10 +428,10 @@
 			}
 		}
 		
-		id<MTLComputeCommandEncoder> cce = [cb computeCommandEncoder];
-		
 		if (currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Main] || currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Touch])
 		{
+			id<MTLComputeCommandEncoder> cce = [cb computeCommandEncoder];
+			
 			if (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
 			{
 				[cce setComputePipelineState:_fetch555Pipeline];
@@ -505,9 +505,12 @@
 					targetTexPair.touch = _texDisplayPostprocessCustom[NDSDisplayID_Touch][index];
 				}
 			}
+			
+			[cce endEncoding];
 		}
 		else if (currentDisplayInfo.colorFormat != NDSColorFormat_BGR888_Rev)
 		{
+			id<MTLComputeCommandEncoder> cce = [cb computeCommandEncoder];
 			bool isPipelineStateSet = false;
 			
 			if (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
@@ -569,9 +572,9 @@
 					}
 				}
 			}
+			
+			[cce endEncoding];
 		}
-		
-		[cce endEncoding];
 	}
 	
 	return targetTexPair;
@@ -580,7 +583,6 @@
 - (void) fetchFromBufferIndex:(const u8)index
 {
 	id<MTLCommandBuffer> cb = [_fetchCommandQueue commandBufferWithUnretainedReferences];
-	[cb enqueue];
 	
 	semaphore_wait([self semaphoreFramebufferPageAtIndex:index]);
 	[self setFramebufferState:ClientDisplayBufferState_Reading index:index];
@@ -591,16 +593,6 @@
 	[self setBceFetch:nil];
 	[bce endEncoding];
 	
-	[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-		[self setFramebufferState:ClientDisplayBufferState_Idle index:index];
-		semaphore_signal([self semaphoreFramebufferPageAtIndex:index]);
-	}];
-	
-	[cb commit];
-	
-	cb = [_fetchCommandQueue commandBufferWithUnretainedReferences];
-	[cb enqueue];
-	
 	const MetalTexturePair newTexPair = [self setFetchTextureBindingsAtIndex:index commandBuffer:cb];
 	[newTexPair.main  retain];
 	[newTexPair.touch retain];
@@ -610,6 +602,9 @@
 		[self setTexPairFetch:newTexPair];
 		[oldTexPair.main  release];
 		[oldTexPair.touch release];
+		
+		[self setFramebufferState:ClientDisplayBufferState_Idle index:index];
+		semaphore_signal([self semaphoreFramebufferPageAtIndex:index]);
 	}];
 	
 	[cb commit];
@@ -656,32 +651,37 @@
 	  destinationOrigin:MTLOriginMake(0, 0, 0)];
 }
 
-- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList
+- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList timeStampNow:(const CVTimeStamp *)timeStampNow timeStampOutput:(const CVTimeStamp *)timeStampOutput
 {
 	const size_t listSize = cdvFlushList.size();
-	id<MTLCommandBuffer> cb = [commandQueue commandBufferWithUnretainedReferences];
 	
-	for (size_t i = 0; i < listSize; i++)
+	@autoreleasepool
 	{
-		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
-		cdv->FlushView(cb);
+		id<MTLCommandBuffer> cbFlush = [commandQueue commandBufferWithUnretainedReferences];
+		id<MTLCommandBuffer> cbFinalize = [commandQueue commandBufferWithUnretainedReferences];
+		
+		for (size_t i = 0; i < listSize; i++)
+		{
+			ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
+			cdv->FlushView(cbFlush);
+		}
+		
+		for (size_t i = 0; i < listSize; i++)
+		{
+			ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
+			cdv->FinalizeFlush(cbFinalize, timeStampOutput->hostTime);
+		}
+		
+		[cbFlush enqueue];
+		[cbFinalize enqueue];
+		
+		[cbFlush commit];
+		[cbFinalize commit];
+		
+#ifdef DEBUG
+		[commandQueue insertDebugCaptureBoundary];
+#endif
 	}
-	
-	[cb commit];
-}
-
-- (void) finalizeFlushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList
-{
-	const size_t listSize = cdvFlushList.size();
-	id<MTLCommandBuffer> cb = [commandQueue commandBufferWithUnretainedReferences];
-	
-	for (size_t i = 0; i < listSize; i++)
-	{
-		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
-		cdv->FinalizeFlush(cb);
-	}
-	
-	[cb commit];
 }
 
 @end
@@ -2082,7 +2082,9 @@
 
 @synthesize _cdv;
 @synthesize presenterObject;
-@synthesize layerDrawable;
+@synthesize layerDrawable0;
+@synthesize layerDrawable1;
+@synthesize layerDrawable2;
 
 - (id) initWithDisplayPresenterObject:(MacMetalDisplayPresenterObject *)thePresenterObject
 {
@@ -2094,8 +2096,10 @@
 	
 	_cdv = NULL;
 	_semDrawable = dispatch_semaphore_create(3);
-	layerDrawable = nil;
-	_displaySequenceNumber = 0;
+	_currentDrawable = nil;
+	layerDrawable0 = nil;
+	layerDrawable1 = nil;
+	layerDrawable2 = nil;
 	
 	_displayTexturePair.bufferIndex = 0;
 	_displayTexturePair.fetchSequenceNumber = 0;
@@ -2116,7 +2120,9 @@
 
 - (void)dealloc
 {
-	[self setLayerDrawable:nil];
+	[self setLayerDrawable0:nil];
+	[self setLayerDrawable1:nil];
+	[self setLayerDrawable2:nil];
 	dispatch_release(_semDrawable);
 	
 	[_displayTexturePair.main  release];
@@ -2136,82 +2142,133 @@
 
 - (void) renderToDrawableUsingCommandBuffer:(id<MTLCommandBuffer>)cb
 {
-	@autoreleasepool
-	{
-		const MetalTexturePair texProcess = [presenterObject texPairProcess];
-		
-		if (texProcess.fetchSequenceNumber >= _displayTexturePair.fetchSequenceNumber)
-		{
-			id<MTLTexture> oldTexMain  = _displayTexturePair.main;
-			id<MTLTexture> oldTexTouch = _displayTexturePair.touch;
-			
-			_displayTexturePair.bufferIndex = texProcess.bufferIndex;
-			_displayTexturePair.fetchSequenceNumber = texProcess.fetchSequenceNumber;
-			_displayTexturePair.main  = [texProcess.main  retain];
-			_displayTexturePair.touch = [texProcess.touch retain];
-			
-			[oldTexMain  release];
-			[oldTexTouch release];
-		}
-		
-		// Now that everything is set up, go ahead and draw everything.
-		dispatch_semaphore_wait(_semDrawable, DISPATCH_TIME_FOREVER);
-		id<CAMetalDrawable> drawable = [self nextDrawable];
-		
-		if (drawable != nil)
-		{
-			[[presenterObject colorAttachment0Desc] setTexture:[drawable texture]];
-			
-			const MetalRenderFrameInfo mrfi = [presenterObject renderFrameInfo];
-			
-			[presenterObject renderForCommandBuffer:cb
-								outputPipelineState:[presenterObject outputDrawablePipeline]
-								   hudPipelineState:[[presenterObject sharedData] hudPipeline]
-										texDisplays:_displayTexturePair
-											   mrfi:mrfi
-											doYFlip:NO];
-			
-			[cb addScheduledHandler:^(id<MTLCommandBuffer> block) {
-				[presenterObject setRenderBufferState:ClientDisplayBufferState_Reading index:mrfi.renderIndex];
-			}];
-			
-			[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-				[presenterObject renderFinishAtIndex:mrfi.renderIndex];
-			}];
-			
-			[self setLayerDrawable:drawable];
-		}
-		else
-		{
-			dispatch_semaphore_signal(_semDrawable);
-		}
-	}
-}
-
-- (void) presentDrawableWithCommandBuffer:(id<MTLCommandBuffer>)cb
-{
-	id<CAMetalDrawable> drawable = [self layerDrawable];
+	dispatch_semaphore_wait(_semDrawable, DISPATCH_TIME_FOREVER);
+	
+	id<CAMetalDrawable> drawable = [self nextDrawable];
 	if (drawable == nil)
 	{
+		_currentDrawable = nil;
+		dispatch_semaphore_signal(_semDrawable);
+		return;
+	}
+	else
+	{
+		if ([self layerDrawable0] == nil)
+		{
+			[self setLayerDrawable0:drawable];
+		}
+		else if ([self layerDrawable1] == nil)
+		{
+			[self setLayerDrawable1:drawable];
+		}
+		else if ([self layerDrawable2] == nil)
+		{
+			[self setLayerDrawable2:drawable];
+		}
+	}
+	
+	id<MTLTexture> texDrawable = [drawable texture];
+	[[presenterObject colorAttachment0Desc] setTexture:texDrawable];
+	
+	const MetalTexturePair texProcess = [presenterObject texPairProcess];
+	id<MTLTexture> oldTexMain  = _displayTexturePair.main;
+	id<MTLTexture> oldTexTouch = _displayTexturePair.touch;
+	
+	_displayTexturePair.bufferIndex = texProcess.bufferIndex;
+	_displayTexturePair.fetchSequenceNumber = texProcess.fetchSequenceNumber;
+	_displayTexturePair.main  = [texProcess.main  retain];
+	_displayTexturePair.touch = [texProcess.touch retain];
+	
+	[oldTexMain  release];
+	[oldTexTouch release];
+	
+	const MetalRenderFrameInfo mrfi = [presenterObject renderFrameInfo];
+	
+	[presenterObject renderForCommandBuffer:cb
+						outputPipelineState:[presenterObject outputDrawablePipeline]
+						   hudPipelineState:[[presenterObject sharedData] hudPipeline]
+								texDisplays:_displayTexturePair
+									   mrfi:mrfi
+									doYFlip:NO];
+	
+	[cb addScheduledHandler:^(id<MTLCommandBuffer> block) {
+		[presenterObject setRenderBufferState:ClientDisplayBufferState_Reading index:mrfi.renderIndex];
+	}];
+	
+	[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+		[presenterObject renderFinishAtIndex:mrfi.renderIndex];
+	}];
+	
+	_currentDrawable = drawable;
+}
+
+- (void) presentDrawableWithCommandBuffer:(id<MTLCommandBuffer>)cb outputTime:(uint64_t)outputTime
+{
+	id<CAMetalDrawable> drawable = _currentDrawable;
+	if (drawable == nil)
+	{
+		printf("Metal: No drawable was assigned!\n");
 		return;
 	}
 	
-	[cb presentDrawable:drawable];
-	[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-		[self setLayerDrawable:nil];
+	// Apple's documentation might seem to suggest that [MTLCommandBuffer presentDrawable:atTime:]
+	// and [MTLDrawable presentAtTime:] inside of a [MTLCommandBuffer addScheduledHandler:] block
+	// are equivalent. However, much testing has shown that this is NOT the case.
+	//
+	// So rather than using [MTLCommandBuffer presentDrawable:atTime:], which causes Metal to
+	// present the drawable whenever it pleases, we manually call [MTLDrawable presentAtTime] so
+	// that we can synchronously force the presentation order of the drawables. If we don't do
+	// this, then Metal may start presenting the drawables in some random order, causing some
+	// really nasty microstuttering.
+	
+	[cb addScheduledHandler:^(id<MTLCommandBuffer> block) {
+		@autoreleasepool
+		{
+			[drawable presentAtTime:(CFTimeInterval)outputTime / 1000000000.0];
+			
+			if (drawable == [self layerDrawable0])
+			{
+				[self setLayerDrawable0:nil];
+			}
+			else if (drawable == [self layerDrawable1])
+			{
+				[self setLayerDrawable1:nil];
+			}
+			else if (drawable == [self layerDrawable2])
+			{
+				[self setLayerDrawable2:nil];
+			}
+		}
+		
 		dispatch_semaphore_signal(_semDrawable);
 	}];
 }
 
 - (void) renderAndPresentDrawableImmediate
 {
-	id<MTLCommandBuffer> cb = [presenterObject newCommandBuffer];
-	_cdv->FlushView(cb);
-	[cb commit];
-	
-	cb = [presenterObject newCommandBuffer];
-	_cdv->FinalizeFlush(cb);
-	[cb commit];
+	@autoreleasepool
+	{
+		id<MTLCommandBuffer> cbFlush = [presenterObject newCommandBuffer];
+		id<MTLCommandBuffer> cbFinalize = [presenterObject newCommandBuffer];
+		
+		_cdv->FlushView(cbFlush);
+		_cdv->FinalizeFlush(cbFinalize, 0);
+		
+		[cbFlush enqueue];
+		[cbFinalize enqueue];
+		
+		[cbFlush commit];
+		[cbFinalize commit];
+		
+#ifdef DEBUG
+		[[[presenterObject sharedData] commandQueue] insertDebugCaptureBoundary];
+#endif
+	}
+}
+
+- (void) display
+{
+	[self renderAndPresentDrawableImmediate];
 }
 
 @end
@@ -2541,15 +2598,23 @@ void MacMetalDisplayView::SetViewNeedsFlush()
 		return;
 	}
 	
-	// For every update, ensure that the CVDisplayLink is started so that the update
-	// will eventually get flushed.
-	this->SetAllowViewFlushes(true);
-	
-	this->_presenter->UpdateLayout();
-	
-	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
-	this->_viewNeedsFlush = true;
-	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+	if (this->GetRenderToCALayer())
+	{
+		this->_presenter->UpdateLayout();
+		[this->_caLayer setNeedsDisplay];
+		[CATransaction flush];
+	}
+	else
+	{
+		// For every update, ensure that the CVDisplayLink is started so that the update
+		// will eventually get flushed.
+		this->SetAllowViewFlushes(true);
+		this->_presenter->UpdateLayout();
+		
+		OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+		this->_viewNeedsFlush = true;
+		OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+	}
 }
 
 void MacMetalDisplayView::SetAllowViewFlushes(bool allowFlushes)
@@ -2568,9 +2633,9 @@ void MacMetalDisplayView::FlushView(void *userData)
 	[(DisplayViewMetalLayer *)this->_caLayer renderToDrawableUsingCommandBuffer:(id<MTLCommandBuffer>)userData];
 }
 
-void MacMetalDisplayView::FinalizeFlush(void *userData)
+void MacMetalDisplayView::FinalizeFlush(void *userData, uint64_t outputTime)
 {
-	[(DisplayViewMetalLayer *)this->_caLayer presentDrawableWithCommandBuffer:(id<MTLCommandBuffer>)userData];
+	[(DisplayViewMetalLayer *)this->_caLayer presentDrawableWithCommandBuffer:(id<MTLCommandBuffer>)userData outputTime:outputTime];
 }
 
 void MacMetalDisplayView::FlushAndFinalizeImmediate()

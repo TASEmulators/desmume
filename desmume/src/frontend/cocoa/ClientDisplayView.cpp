@@ -1292,7 +1292,7 @@ void ClientDisplayViewInterface::FlushView(void *userData)
 	this->_viewNeedsFlush = false;
 }
 
-void ClientDisplayViewInterface::FinalizeFlush(void *userData)
+void ClientDisplayViewInterface::FinalizeFlush(void *userData, uint64_t outputTime)
 {
 	// Do nothing. This is implementation dependent.
 }
@@ -1300,7 +1300,7 @@ void ClientDisplayViewInterface::FinalizeFlush(void *userData)
 void ClientDisplayViewInterface::FlushAndFinalizeImmediate()
 {
 	this->FlushView(NULL);
-	this->FinalizeFlush(NULL);
+	this->FinalizeFlush(NULL, 0);
 }
 
 // Touch screen input handling

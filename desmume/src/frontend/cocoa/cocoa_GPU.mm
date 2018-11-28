@@ -1382,7 +1382,7 @@ public:
 	}
 }
 
-- (void) flushAllDisplaysOnDisplayLink:(CVDisplayLinkRef)displayLink timeStamp:(const CVTimeStamp *)timeStamp
+- (void) flushAllDisplaysOnDisplayLink:(CVDisplayLinkRef)displayLink timeStampNow:(const CVTimeStamp *)timeStampNow timeStampOutput:(const CVTimeStamp *)timeStampOutput
 {
 	pthread_rwlock_t *currentRWLock = _rwlockOutputList;
 	CGDirectDisplayID displayID = CVDisplayLinkGetCurrentCGDisplay(displayLink);
@@ -1415,8 +1415,7 @@ public:
 	
 	if (listSize > 0)
 	{
-		[self flushMultipleViews:cdvFlushList];
-		[self finalizeFlushMultipleViews:cdvFlushList];
+		[self flushMultipleViews:cdvFlushList timeStampNow:timeStampNow timeStampOutput:timeStampOutput];
 		didFlushOccur = true;
 	}
 	
@@ -1428,15 +1427,15 @@ public:
 	if (didFlushOccur)
 	{
 		// Set the new time limit to 8 seconds after the current time.
-		_displayLinkFlushTimeList[displayID] = timeStamp->videoTime + (timeStamp->videoTimeScale * VIDEO_FLUSH_TIME_LIMIT_OFFSET);
+		_displayLinkFlushTimeList[displayID] = timeStampNow->videoTime + (timeStampNow->videoTimeScale * VIDEO_FLUSH_TIME_LIMIT_OFFSET);
 	}
-	else if (timeStamp->videoTime > _displayLinkFlushTimeList[displayID])
+	else if (timeStampNow->videoTime > _displayLinkFlushTimeList[displayID])
 	{
 		CVDisplayLinkStop(displayLink);
 	}
 }
 
-- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList
+- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList timeStampNow:(const CVTimeStamp *)timeStampNow timeStampOutput:(const CVTimeStamp *)timeStampOutput
 {
 	const size_t listSize = cdvFlushList.size();
 	
@@ -1445,16 +1444,11 @@ public:
 		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
 		cdv->FlushView(NULL);
 	}
-}
-
-- (void) finalizeFlushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList
-{
-	const size_t listSize = cdvFlushList.size();
 	
 	for (size_t i = 0; i < listSize; i++)
 	{
 		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
-		cdv->FinalizeFlush(NULL);
+		cdv->FinalizeFlush(NULL, timeStampOutput->hostTime);
 	}
 }
 
@@ -1768,7 +1762,7 @@ CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
 								void *displayLinkContext)
 {
 	MacClientSharedObject *sharedData = (MacClientSharedObject *)displayLinkContext;
-	[sharedData flushAllDisplaysOnDisplayLink:displayLink timeStamp:inNow];
+	[sharedData flushAllDisplaysOnDisplayLink:displayLink timeStampNow:inNow timeStampOutput:inOutputTime];
 	
 	return kCVReturnSuccess;
 }
