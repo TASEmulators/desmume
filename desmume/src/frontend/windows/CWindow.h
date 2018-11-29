@@ -241,6 +241,7 @@ public:
 	bool setMenu(HMENU menu);
 	bool addMenuItem(u32 item, bool byPos, LPCMENUITEMINFO info);
 	DWORD checkMenu(UINT idd, bool check);
+	void enableMenu(UINT idd, bool enable);
 
 	void Show(int mode);
 	void Hide();

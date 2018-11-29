@@ -1690,9 +1690,6 @@ int MenuInit()
 //	DeleteMenu(configMenu,GetSubMenuIndexByHMENU(configMenu,advancedMenu),MF_BYPOSITION);
 //#endif
 
-	if (!gShowConsole)
-		DeleteMenu(toolsMenu, IDM_CONSOLE_ALWAYS_ON_TOP, MF_BYCOMMAND);
-
 	return 1;
 }
 
@@ -3804,6 +3801,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			// Tools
 			MainWindow->checkMenu(IDM_CONSOLE_ALWAYS_ON_TOP, gConsoleTopmost);
+			MainWindow->checkMenu(IDM_CONSOLE_SHOWHIDE, gShowConsole);
+			MainWindow->enableMenu(IDM_CONSOLE_ALWAYS_ON_TOP, gShowConsole);
 
 			UpdateHotkeyAssignments();	//Add current hotkey mappings to menu item names
 
@@ -5476,6 +5475,22 @@ DOKEYDOWN:
 				WritePrivateProfileBool("Console", "Always On Top", gConsoleTopmost, IniName);
 			}
 			return 0;
+
+		case IDM_CONSOLE_SHOWHIDE:
+		{
+			gShowConsole = !gShowConsole;
+			WritePrivateProfileBool("Console", "Show", gShowConsole, IniName);
+			if(gShowConsole) 
+			{
+				OpenConsole();			// Init debug console
+				ConsoleAlwaysTop(gConsoleTopmost);
+			}
+			else
+			{
+				CloseConsole();
+			}
+			return 0;
+		}
 
 		case IDM_SHOWTOOLBAR:
 			{

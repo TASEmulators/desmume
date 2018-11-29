@@ -985,6 +985,12 @@
 #define IDM_FS_MENU                     40150
 #define IDM_FS_WINDOW                   40151
 #define IDM_FS_HIDE_CURSOR              40152
+#define ID_TOOLS_SHOWCONSOLE            40153
+#define ID_TOOLS_CONSOLE                40154
+#define ID_CONSOLE_ALWAYSONTOP          40155
+#define ID_CONSOLE_SHOWCONSOLE          40156
+#define IDM_CONSOLE_SHOW                40157
+#define IDM_CONSOLE_SHOWHIDE            40158
 #define ID_LABEL_HK3b                   44670
 #define ID_LABEL_HK3c                   44671
 #define ID_LABEL_HK3d                   44672
@@ -1032,6 +1038,9 @@
 #define IDC_KILLSTYLUS                  50039
 #define IDC_KILLSTYLUSTOP               50039
 #define IDC_KILLSTYLUSOFF               50040
+#define ID_LABEL_S_0_ALPHA_BLEND        50186
+#define ID_LABEL_DEPTH_EQUALS_TT        50187
+#define ID_LABEL_DEPTH_L_EQUAL_PF       50188
 #define IDC_LUASCRIPT_RESERVE_START     58000
 #define IDC_LUASCRIPT_RESERVE_END       58099
 #define IDD_LUARECENT_RESERVE_START     58100
@@ -1094,10 +1103,6 @@
 #define ID_LABEL_GPU_COLOR_DEPTH        64006
 #define ID_LABEL_TEXTURE_SCALING        64007
 #define ID_LABEL_SHADOW_POLYGONS        64009
-#define ID_LABEL_S_0_ALPHA_BLEND        640010
-#define ID_LABEL_DEPTH_EQUALS_TT        640011
-#define ID_LABEL_DEPTH_L_EQUAL_PF       640012
-
 
 // Next default values for new objects
 // 
@@ -1105,7 +1110,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
-#define _APS_NEXT_COMMAND_VALUE         40153
+#define _APS_NEXT_COMMAND_VALUE         40159
 #define _APS_NEXT_CONTROL_VALUE         1066
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

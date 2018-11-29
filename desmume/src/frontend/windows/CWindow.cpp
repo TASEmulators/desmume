@@ -590,6 +590,11 @@ DWORD WINCLASS::checkMenu(UINT idd, bool check)
 	return CheckMenuItem(hmenu, idd, MF_BYCOMMAND | (check?MF_CHECKED:MF_UNCHECKED));
 }
 
+void WINCLASS::enableMenu(UINT idd, bool enable)
+{
+	EnableMenuItem(hmenu, idd, MF_BYCOMMAND | (enable ? (MF_ENABLED) : MF_GRAYED));
+}
+
 HWND WINCLASS::getHWnd()
 {
 	return hwnd;
