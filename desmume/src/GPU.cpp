@@ -4011,6 +4011,11 @@ void GPUEngineBase::_CompositeVRAMLineDeferred(GPUEngineCompositorInfo &compInfo
 	const size_t ssePixCount = (compInfo.line.pixelCount - (compInfo.line.pixelCount % 16));
 	for (; i < ssePixCount; i+=16, compInfo.target.xCustom+=16, compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom], compInfo.target.lineColor16+=16, compInfo.target.lineColor32+=16, compInfo.target.lineLayerID+=16)
 	{
+		if (compInfo.target.xCustom >= compInfo.line.widthCustom)
+		{
+			compInfo.target.xCustom -= compInfo.line.widthCustom;
+		}
+		
 		__m128i src[4];
 		__m128i passMask8;
 		
@@ -4076,6 +4081,11 @@ void GPUEngineBase::_CompositeVRAMLineDeferred(GPUEngineCompositorInfo &compInfo
 #endif
 	for (; i < compInfo.line.pixelCount; i++, compInfo.target.xCustom++, compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom], compInfo.target.lineColor16++, compInfo.target.lineColor32++, compInfo.target.lineLayerID++)
 	{
+		if (compInfo.target.xCustom >= compInfo.line.widthCustom)
+		{
+			compInfo.target.xCustom -= compInfo.line.widthCustom;
+		}
+		
 		if ( WILLPERFORMWINDOWTEST && (this->_didPassWindowTestNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] == 0) )
 		{
 			continue;
