@@ -72,6 +72,7 @@ public:
 
 	#define ROMKEY			"Roms"
 	#define BATTERYKEY		"Battery"
+	#define SRAMIMPORTKEY	"SramImportExport"
 	#define STATEKEY		"States"
 	#define STATESLOTKEY	"StateSlots"
 	#define SCREENSHOTKEY	"Screenshots"
@@ -94,6 +95,7 @@ public:
 		FIRSTKNOWNPATH = 0,
 		ROMS = 0,
 		BATTERY,
+		SRAM_IMPORT_EXPORT,
 		STATES,
 		STATE_SLOTS,
 		SCREENSHOTS,
@@ -108,6 +110,7 @@ public:
 
 	char pathToRoms[MAX_PATH];
 	char pathToBattery[MAX_PATH];
+	char pathToSramImportExport[MAX_PATH];
 	char pathToStates[MAX_PATH];
 	char pathToStateSlots[MAX_PATH];
 	char pathToScreenshots[MAX_PATH];

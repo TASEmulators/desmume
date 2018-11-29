@@ -153,6 +153,10 @@
 #define IDD_PATHSETTINGS                366
 #define IDC_ASSOCIATE                   367
 #define IDC_CLOSE_LUA_SCRIPTS           368
+#define IDC_SRAMIMPORTPATHEDIT          369
+#define IDC_BROWSESRAMIMPORT            370
+#define IDC_STATESLOTPATHEDIT           371
+#define IDC_BROWSESTATESLOTS            372
 #define IDC_DES_BOX                     402
 #define IDC_R0                          403
 #define IDC_R1                          404

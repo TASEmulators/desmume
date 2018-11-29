@@ -253,6 +253,7 @@ void PathInfo::ReadPathSettings()
 
 	ReadKey(pathToRoms, ROMKEY);
 	ReadKey(pathToBattery, BATTERYKEY);
+	ReadKey(pathToSramImportExport, SRAMIMPORTKEY);
 	ReadKey(pathToStates, STATEKEY);
 	ReadKey(pathToStateSlots, STATESLOTKEY);
 	ReadKey(pathToScreenshots, SCREENSHOTKEY);
@@ -292,6 +293,9 @@ void PathInfo::SwitchPath(Action action, KnownPath path, char *buffer)
 		break;
 	case BATTERY:
 		pathToCopy = pathToBattery;
+		break;
+	case SRAM_IMPORT_EXPORT:
+		pathToCopy = pathToSramImportExport;
 		break;
 	case STATES:
 		pathToCopy = pathToStates;

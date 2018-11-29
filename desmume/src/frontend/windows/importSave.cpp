@@ -179,7 +179,7 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrDefExt = "sav";
 	ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-	std::string dir = path.getpath(path.BATTERY);
+	std::string dir = path.getpath(path.SRAM_IMPORT_EXPORT);
 	ofn.lpstrInitialDir = dir.c_str();
 
 	if(!GetOpenFileName(&ofn))
@@ -189,8 +189,8 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 	if (res < MAX_SAVE_TYPES)
 	{
 		std::string dir = Path::GetFileDirectoryPath(SavFName);
-		path.setpath(path.BATTERY, dir);
-		WritePrivateProfileString(SECTION, BATTERYKEY, dir.c_str(), IniName);
+		path.setpath(path.SRAM_IMPORT_EXPORT, dir);
+		WritePrivateProfileString(SECTION, SRAMIMPORTKEY, dir.c_str(), IniName);
 		
 		res = MMU_new.backupDevice.importData(SavFName, save_types[res+1].size);
 		if (res)
@@ -219,15 +219,15 @@ bool exportSave(HWND hwnd, HINSTANCE hAppInst)
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrDefExt = "sav";
 	ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
-	std::string dir = path.getpath(path.BATTERY);
+	std::string dir = path.getpath(path.SRAM_IMPORT_EXPORT);
 	ofn.lpstrInitialDir = dir.c_str();
 
 	if (!GetSaveFileName(&ofn))
 		return true;
 
 	dir = Path::GetFileDirectoryPath(SavFName);
-	path.setpath(path.BATTERY, dir);
-	WritePrivateProfileString(SECTION, BATTERYKEY, dir.c_str(), IniName);
+	path.setpath(path.SRAM_IMPORT_EXPORT, dir);
+	WritePrivateProfileString(SECTION, SRAMIMPORTKEY, dir.c_str(), IniName);
 
 	if (ofn.nFilterIndex == 2) strcat(SavFName, "*");
 
