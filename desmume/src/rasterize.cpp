@@ -878,7 +878,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAt
 	__m128 newColorf = _mm_add_ps( _mm_mul_ps(srcColorf, perspective), _mm_set1_ps(0.5f) );
 	newColorf = _mm_max_ps(newColorf, _mm_setzero_ps());
 	
-	__m128i cvtColor32 = _mm_cvtps_epi32(newColorf);
+	__m128i cvtColor32 = _mm_cvttps_epi32(newColorf);
 	cvtColor32 = _mm_min_epu8(cvtColor32, _mm_set_epi32(0x1F, 0x3F, 0x3F, 0x3F));
 	cvtColor32 = _mm_packus_epi16(cvtColor32, _mm_setzero_si128());
 	cvtColor32 = _mm_packus_epi16(cvtColor32, _mm_setzero_si128());
