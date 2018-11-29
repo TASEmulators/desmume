@@ -2993,7 +2993,7 @@ void gfx3d_FinishLoadStateBufferRead()
 				for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 				{
 					const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(l);
-					CopyLineExpandHinted<0xFFFF, false, true, 4>(lineInfo, src, dst);
+					CopyLineExpandHinted<0xFFFF, true, false, true, 4>(lineInfo, src, dst);
 					src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 					dst += lineInfo.pixelCount;
 				}
