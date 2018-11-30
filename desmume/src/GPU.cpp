@@ -3899,98 +3899,106 @@ void GPUEngineBase::_CompositeLineDeferred(GPUEngineCompositorInfo &compInfo)
 	CopyLineExpand<0xFFFF, false, false, 2>(this->_deferredColorCustom, this->_deferredColorNative, compInfo.line.widthCustom, 1);
 	CopyLineExpand<0xFFFF, false, false, 1>(this->_deferredIndexCustom, this->_deferredIndexNative, compInfo.line.widthCustom, 1);
 	
+	compInfo.target.xNative = 0;
+	compInfo.target.xCustom = 0;
 	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHead;
 	compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHead;
 	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead;
 	
+	size_t i = 0;
+	
 #ifdef ENABLE_SSE2
-	const size_t ssePixCount = (compInfo.line.widthCustom - (compInfo.line.widthCustom % 16));
+	const size_t ssePixCount = (compInfo.line.pixelCount - (compInfo.line.pixelCount % 16));
 	const __m128i srcEffectEnableMask = compInfo.renderState.srcEffectEnable_SSE2[compInfo.renderState.selectedLayerID];
+	
+	for (; i < ssePixCount; i+=16, compInfo.target.xCustom+=16, compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom], compInfo.target.lineColor16+=16, compInfo.target.lineColor32+=16, compInfo.target.lineLayerID+=16)
+	{
+		if (compInfo.target.xCustom >= compInfo.line.widthCustom)
+		{
+			compInfo.target.xCustom -= compInfo.line.widthCustom;
+			compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom];
+		}
+		
+		__m128i passMask8;
+		
+		if (WILLPERFORMWINDOWTEST)
+		{
+			// Do the window test.
+			passMask8 = _mm_cmpeq_epi8( _mm_load_si128((__m128i *)(this->_didPassWindowTestCustom[compInfo.renderState.selectedLayerID] + compInfo.target.xCustom)), _mm_set1_epi8(1) );
+		}
+		else
+		{
+			passMask8 = _mm_set1_epi8(0xFF);
+		}
+		
+		// Do the index test. Pixels with an index value of 0 are rejected.
+		passMask8 = _mm_andnot_si128(_mm_cmpeq_epi8(_mm_load_si128((__m128i *)(this->_deferredIndexCustom + compInfo.target.xCustom)), _mm_setzero_si128()), passMask8);
+		
+		const int passMaskValue = _mm_movemask_epi8(passMask8);
+		
+		// If none of the pixels within the vector pass, then reject them all at once.
+		if (passMaskValue == 0)
+		{
+			continue;
+		}
+		
+		__m128i src[4];
+		
+		if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+		{
+			src[0] = _mm_load_si128((__m128i *)(this->_deferredColorCustom + compInfo.target.xCustom + 0));
+			src[1] = _mm_load_si128((__m128i *)(this->_deferredColorCustom + compInfo.target.xCustom + 8));
+		}
+		else
+		{
+			const __m128i src16[2] = { _mm_load_si128((__m128i *)(this->_deferredColorCustom + compInfo.target.xCustom + 0)),
+				_mm_load_si128((__m128i *)(this->_deferredColorCustom + compInfo.target.xCustom + 8)) };
+			
+			if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
+			{
+				ColorspaceConvert555To6665Opaque_SSE2<false>(src16[0], src[0], src[1]);
+				ColorspaceConvert555To6665Opaque_SSE2<false>(src16[1], src[2], src[3]);
+			}
+			else
+			{
+				ColorspaceConvert555To8888Opaque_SSE2<false>(src16[0], src[0], src[1]);
+				ColorspaceConvert555To8888Opaque_SSE2<false>(src16[1], src[2], src[3]);
+			}
+		}
+		
+		// Write out the pixels.
+		const bool didAllPixelsPass = (passMaskValue == 0xFFFF);
+		this->_PixelComposite16_SSE2<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_BG, WILLPERFORMWINDOWTEST>(compInfo,
+																										   didAllPixelsPass,
+																										   passMask8,
+																										   src[3], src[2], src[1], src[0],
+																										   srcEffectEnableMask);
+	}
 #endif
 	
-	for (size_t l = 0; l < compInfo.line.renderCount; l++)
-	{
-		compInfo.target.xNative = 0;
-		compInfo.target.xCustom = 0;
-		
-#ifdef ENABLE_SSE2
-		for (; compInfo.target.xCustom < ssePixCount; compInfo.target.xCustom+=16, compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom], compInfo.target.lineColor16+=16, compInfo.target.lineColor32+=16, compInfo.target.lineLayerID+=16)
-		{
-			__m128i passMask8;
-			
-			if (WILLPERFORMWINDOWTEST)
-			{
-				// Do the window test.
-				passMask8 = _mm_cmpeq_epi8( _mm_load_si128((__m128i *)(this->_didPassWindowTestCustom[compInfo.renderState.selectedLayerID] + compInfo.target.xCustom)), _mm_set1_epi8(1) );
-			}
-			else
-			{
-				passMask8 = _mm_set1_epi8(0xFF);
-			}
-			
-			// Do the index test. Pixels with an index value of 0 are rejected.
-			passMask8 = _mm_andnot_si128(_mm_cmpeq_epi8(_mm_load_si128((__m128i *)(this->_deferredIndexCustom + compInfo.target.xCustom)), _mm_setzero_si128()), passMask8);
-			
-			const int passMaskValue = _mm_movemask_epi8(passMask8);
-			
-			// If none of the pixels within the vector pass, then reject them all at once.
-			if (passMaskValue == 0)
-			{
-				continue;
-			}
-			
-			__m128i src[4];
-			
-			if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-			{
-				src[0] = _mm_load_si128((__m128i *)(this->_deferredColorCustom + compInfo.target.xCustom + 0));
-				src[1] = _mm_load_si128((__m128i *)(this->_deferredColorCustom + compInfo.target.xCustom + 8));
-			}
-			else
-			{
-				const __m128i src16[2] = { _mm_load_si128((__m128i *)(this->_deferredColorCustom + compInfo.target.xCustom + 0)),
-										   _mm_load_si128((__m128i *)(this->_deferredColorCustom + compInfo.target.xCustom + 8)) };
-				
-				if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
-				{
-					ColorspaceConvert555To6665Opaque_SSE2<false>(src16[0], src[0], src[1]);
-					ColorspaceConvert555To6665Opaque_SSE2<false>(src16[1], src[2], src[3]);
-				}
-				else
-				{
-					ColorspaceConvert555To8888Opaque_SSE2<false>(src16[0], src[0], src[1]);
-					ColorspaceConvert555To8888Opaque_SSE2<false>(src16[1], src[2], src[3]);
-				}
-			}
-			
-			// Write out the pixels.
-			const bool didAllPixelsPass = (passMaskValue == 0xFFFF);
-			this->_PixelComposite16_SSE2<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_BG, WILLPERFORMWINDOWTEST>(compInfo,
-																											   didAllPixelsPass,
-																											   passMask8,
-																											   src[3], src[2], src[1], src[0],
-																											   srcEffectEnableMask);
-		}
-#endif
-		
 #ifdef ENABLE_SSE2
 #pragma LOOPVECTORIZE_DISABLE
 #endif
-		for (; compInfo.target.xCustom < compInfo.line.widthCustom; compInfo.target.xCustom++, compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom], compInfo.target.lineColor16++, compInfo.target.lineColor32++, compInfo.target.lineLayerID++)
+	for (; i < compInfo.line.pixelCount; i++, compInfo.target.xCustom++, compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom], compInfo.target.lineColor16++, compInfo.target.lineColor32++, compInfo.target.lineLayerID++)
+	{
+		if (compInfo.target.xCustom >= compInfo.line.widthCustom)
 		{
-			if ( WILLPERFORMWINDOWTEST && (this->_didPassWindowTestNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] == 0) )
-			{
-				continue;
-			}
-			
-			if (this->_deferredIndexCustom[compInfo.target.xCustom] == 0)
-			{
-				continue;
-			}
-			
-			const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
-			this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_BG>(compInfo, this->_deferredColorCustom[compInfo.target.xCustom], 0, enableColorEffect);
+			compInfo.target.xCustom -= compInfo.line.widthCustom;
+			compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom];
 		}
+		
+		if ( WILLPERFORMWINDOWTEST && (this->_didPassWindowTestNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] == 0) )
+		{
+			continue;
+		}
+		
+		if (this->_deferredIndexCustom[compInfo.target.xCustom] == 0)
+		{
+			continue;
+		}
+		
+		const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+		this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_BG>(compInfo, this->_deferredColorCustom[compInfo.target.xCustom], 0, enableColorEffect);
 	}
 }
 
@@ -4006,14 +4014,15 @@ void GPUEngineBase::_CompositeVRAMLineDeferred(GPUEngineCompositorInfo &compInfo
 	size_t i = 0;
 	
 #ifdef ENABLE_SSE2
+	const size_t ssePixCount = (compInfo.line.pixelCount - (compInfo.line.pixelCount % 16));
 	const __m128i srcEffectEnableMask = compInfo.renderState.srcEffectEnable_SSE2[compInfo.renderState.selectedLayerID];
 	
-	const size_t ssePixCount = (compInfo.line.pixelCount - (compInfo.line.pixelCount % 16));
 	for (; i < ssePixCount; i+=16, compInfo.target.xCustom+=16, compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom], compInfo.target.lineColor16+=16, compInfo.target.lineColor32+=16, compInfo.target.lineLayerID+=16)
 	{
 		if (compInfo.target.xCustom >= compInfo.line.widthCustom)
 		{
 			compInfo.target.xCustom -= compInfo.line.widthCustom;
+			compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom];
 		}
 		
 		__m128i src[4];
@@ -4084,6 +4093,7 @@ void GPUEngineBase::_CompositeVRAMLineDeferred(GPUEngineCompositorInfo &compInfo
 		if (compInfo.target.xCustom >= compInfo.line.widthCustom)
 		{
 			compInfo.target.xCustom -= compInfo.line.widthCustom;
+			compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom];
 		}
 		
 		if ( WILLPERFORMWINDOWTEST && (this->_didPassWindowTestNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] == 0) )
