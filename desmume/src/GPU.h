@@ -1382,6 +1382,7 @@ protected:
 	CACHE_ALIGN u8 _deferredIndexNative[GPU_FRAMEBUFFER_NATIVE_WIDTH * 4];
 	CACHE_ALIGN u16 _deferredColorNative[GPU_FRAMEBUFFER_NATIVE_WIDTH * 4];
 	
+	bool _needExpandSprColorCustom;
 	u16 *_sprColorCustom;
 	u8 *_sprAlphaCustom;
 	u8 *_sprTypeCustom;
@@ -1449,7 +1450,7 @@ protected:
 	
 	TILEENTRY _GetTileEntry(const u32 tileMapAddress, const u16 xOffset, const u16 layerWidthMask);
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST> FORCEINLINE void _CompositePixelImmediate(GPUEngineCompositorInfo &compInfo, const size_t srcX, u16 srcColor16, bool opaque);
-	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST> void _CompositeLineDeferred(GPUEngineCompositorInfo &compInfo);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool MOSAIC, bool WILLPERFORMWINDOWTEST> void _CompositeLineDeferred(GPUEngineCompositorInfo &compInfo, u16 *__restrict srcColorCustom, u8 *__restrict srcIndexCustom);
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool MOSAIC, bool WILLPERFORMWINDOWTEST> void _CompositeVRAMLineDeferred(GPUEngineCompositorInfo &compInfo, const void *__restrict vramColorPtr);
 	
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING> void _RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const u16 XBG, const u16 YBG);
