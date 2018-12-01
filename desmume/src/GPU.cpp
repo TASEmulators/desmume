@@ -1979,13 +1979,12 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectDecreaseBrightness(const __m128i 
 	}
 }
 
-template <NDSColorFormat COLORFORMAT>
+// Note that if USECONSTANTBLENDVALUESHINT is true, then this method will assume that blendEVA contains identical values
+// for each 16-bit vector element, and also that blendEVB contains identical values for each 16-bit vector element. If
+// this assumption is broken, then the resulting color will be undefined.
+template <NDSColorFormat COLORFORMAT, bool USECONSTANTBLENDVALUESHINT>
 FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend(const __m128i &colA, const __m128i &colB, const __m128i &blendEVA, const __m128i &blendEVB)
 {
-#ifdef ENABLE_SSSE3
-	__m128i blendAB = _mm_or_si128(blendEVA, _mm_slli_epi16(blendEVB, 8));
-#endif
-	
 	if (COLORFORMAT == NDSColorFormat_BGR555_Rev)
 	{
 		__m128i ra;
@@ -1998,6 +1997,7 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend(const __m128i &colA, const 
 		ga = _mm_or_si128( _mm_and_si128(_mm_srli_epi16(colA,  5), colorBitMask), _mm_and_si128(_mm_slli_epi16(colB, 3), _mm_set1_epi16(0x1F00)) );
 		ba = _mm_or_si128( _mm_and_si128(_mm_srli_epi16(colA, 10), colorBitMask), _mm_and_si128(_mm_srli_epi16(colB, 2), _mm_set1_epi16(0x1F00)) );
 		
+		const __m128i blendAB = _mm_or_si128(blendEVA, _mm_slli_epi16(blendEVB, 8));
 		ra = _mm_maddubs_epi16(ra, blendAB);
 		ga = _mm_maddubs_epi16(ga, blendAB);
 		ba = _mm_maddubs_epi16(ba, blendAB);
@@ -2032,19 +2032,44 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend(const __m128i &colA, const 
 		__m128i outColor;
 		
 #ifdef ENABLE_SSSE3
+		const __m128i blendAB = _mm_or_si128(blendEVA, _mm_slli_epi16(blendEVB, 8));
+		
 		outColorLo = _mm_unpacklo_epi8(colA, colB);
 		outColorHi = _mm_unpackhi_epi8(colA, colB);
 		
-		outColorLo = _mm_maddubs_epi16(outColorLo, blendAB);
-		outColorHi = _mm_maddubs_epi16(outColorHi, blendAB);
+		if (USECONSTANTBLENDVALUESHINT)
+		{
+			outColorLo = _mm_maddubs_epi16(outColorLo, blendAB);
+			outColorHi = _mm_maddubs_epi16(outColorHi, blendAB);
+		}
+		else
+		{
+			const __m128i blendABLo = _mm_unpacklo_epi16(blendAB, blendAB);
+			const __m128i blendABHi = _mm_unpackhi_epi16(blendAB, blendAB);
+			outColorLo = _mm_maddubs_epi16(outColorLo, blendABLo);
+			outColorHi = _mm_maddubs_epi16(outColorHi, blendABHi);
+		}
 #else
-		__m128i colALo = _mm_unpacklo_epi8(colA, _mm_setzero_si128());
-		__m128i colAHi = _mm_unpackhi_epi8(colA, _mm_setzero_si128());
-		__m128i colBLo = _mm_unpacklo_epi8(colB, _mm_setzero_si128());
-		__m128i colBHi = _mm_unpackhi_epi8(colB, _mm_setzero_si128());
+		const __m128i colALo = _mm_unpacklo_epi8(colA, _mm_setzero_si128());
+		const __m128i colAHi = _mm_unpackhi_epi8(colA, _mm_setzero_si128());
+		const __m128i colBLo = _mm_unpacklo_epi8(colB, _mm_setzero_si128());
+		const __m128i colBHi = _mm_unpackhi_epi8(colB, _mm_setzero_si128());
 		
-		outColorLo = _mm_add_epi16( _mm_mullo_epi16(colALo, blendEVA), _mm_mullo_epi16(colBLo, blendEVB) );
-		outColorHi = _mm_add_epi16( _mm_mullo_epi16(colAHi, blendEVA), _mm_mullo_epi16(colBHi, blendEVB) );
+		if (USECONSTANTBLENDVALUESHINT)
+		{
+			outColorLo = _mm_add_epi16( _mm_mullo_epi16(colALo, blendEVA), _mm_mullo_epi16(colBLo, blendEVB) );
+			outColorHi = _mm_add_epi16( _mm_mullo_epi16(colAHi, blendEVA), _mm_mullo_epi16(colBHi, blendEVB) );
+		}
+		else
+		{
+			const __m128i blendALo = _mm_unpacklo_epi16(blendEVA, blendEVA);
+			const __m128i blendAHi = _mm_unpackhi_epi16(blendEVA, blendEVA);
+			const __m128i blendBLo = _mm_unpacklo_epi16(blendEVB, blendEVB);
+			const __m128i blendBHi = _mm_unpackhi_epi16(blendEVB, blendEVB);
+			
+			outColorLo = _mm_add_epi16( _mm_mullo_epi16(colALo, blendALo), _mm_mullo_epi16(colBLo, blendBLo) );
+			outColorHi = _mm_add_epi16( _mm_mullo_epi16(colAHi, blendAHi), _mm_mullo_epi16(colBHi, blendBHi) );
+		}
 #endif
 		
 		outColorLo = _mm_srli_epi16(outColorLo, 4);
@@ -3329,9 +3354,13 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffectWithMask16_SSE2(GPUEngineComp
 	// Select the color effect based on the BLDCNT target flags.
 	const __m128i colorEffect_vec128 = _mm_blendv_epi8(_mm_set1_epi8(ColorEffect_Disable), _mm_set1_epi8(compInfo.renderState.colorEffect), enableColorEffectMask);
 	const __m128i evy_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVY);
-	__m128i eva_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVA);
-	__m128i evb_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVB);
 	__m128i forceDstTargetBlendMask = (LAYERTYPE == GPULayerType_3D) ? dstTargetBlendEnableMask : _mm_setzero_si128();
+	
+	// Do note that OBJ layers can modify EVA or EVB, meaning that these blend values may not be constant for OBJ layers.
+	// Therefore, we're going to treat EVA and EVB as vectors of uint8 so that the OBJ layer can modify them, and then
+	// convert EVA to EVB into vectors of uint16 right before we use them.
+	__m128i eva_vec128 = (LAYERTYPE == GPULayerType_OBJ) ? _mm_set1_epi8(compInfo.renderState.blendEVA) : _mm_set1_epi16(compInfo.renderState.blendEVA);
+	__m128i evb_vec128 = (LAYERTYPE == GPULayerType_OBJ) ? _mm_set1_epi8(compInfo.renderState.blendEVB) : _mm_set1_epi16(compInfo.renderState.blendEVB);
 	
 	if (LAYERTYPE == GPULayerType_OBJ)
 	{
@@ -3426,15 +3455,34 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffectWithMask16_SSE2(GPUEngineComp
 	{
 		__m128i blendSrc16[2];
 		
-		if (LAYERTYPE == GPULayerType_3D)
+		switch (LAYERTYPE)
 		{
-			blendSrc16[0] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src0, src1, dst0);
-			blendSrc16[1] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src2, src3, dst1);
-		}
-		else
-		{
-			blendSrc16[0] = this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[0], dst0, eva_vec128, evb_vec128);
-			blendSrc16[1] = this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[1], dst1, eva_vec128, evb_vec128);
+			case GPULayerType_3D:
+				blendSrc16[0] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src0, src1, dst0);
+				blendSrc16[1] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src2, src3, dst1);
+				break;
+				
+			case GPULayerType_BG:
+				blendSrc16[0] = this->_ColorEffectBlend<OUTPUTFORMAT, true>(tmpSrc[0], dst0, eva_vec128, evb_vec128);
+				blendSrc16[1] = this->_ColorEffectBlend<OUTPUTFORMAT, true>(tmpSrc[1], dst1, eva_vec128, evb_vec128);
+				break;
+				
+			case GPULayerType_OBJ:
+			{
+				// For OBJ layers, we need to convert EVA and EVB from vectors of uint8 into vectors of uint16.
+				const __m128i tempEVA[2] = {
+					_mm_unpacklo_epi8(eva_vec128, _mm_setzero_si128()),
+					_mm_unpackhi_epi8(eva_vec128, _mm_setzero_si128())
+				};
+				const __m128i tempEVB[2] = {
+					_mm_unpacklo_epi8(evb_vec128, _mm_setzero_si128()),
+					_mm_unpackhi_epi8(evb_vec128, _mm_setzero_si128())
+				};
+				
+				blendSrc16[0] = this->_ColorEffectBlend<OUTPUTFORMAT, false>(tmpSrc[0], dst0, tempEVA[0], tempEVB[0]);
+				blendSrc16[1] = this->_ColorEffectBlend<OUTPUTFORMAT, false>(tmpSrc[1], dst1, tempEVA[1], tempEVB[1]);
+				break;
+			}
 		}
 		
 		tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc16[0], blendMask16[0]);
@@ -3451,19 +3499,55 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffectWithMask16_SSE2(GPUEngineComp
 	{
 		__m128i blendSrc32[4];
 		
-		if (LAYERTYPE == GPULayerType_3D)
+		switch (LAYERTYPE)
 		{
-			blendSrc32[0] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src0, src0, dst0);
-			blendSrc32[1] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src1, src1, dst1);
-			blendSrc32[2] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src2, src2, dst2);
-			blendSrc32[3] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src3, src3, dst3);
-		}
-		else
-		{
-			blendSrc32[0] = this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[0], dst0, eva_vec128, evb_vec128);
-			blendSrc32[1] = this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[1], dst1, eva_vec128, evb_vec128);
-			blendSrc32[2] = this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[2], dst2, eva_vec128, evb_vec128);
-			blendSrc32[3] = this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[3], dst3, eva_vec128, evb_vec128);
+			case GPULayerType_3D:
+				blendSrc32[0] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src0, src0, dst0);
+				blendSrc32[1] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src1, src1, dst1);
+				blendSrc32[2] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src2, src2, dst2);
+				blendSrc32[3] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src3, src3, dst3);
+				break;
+				
+			case GPULayerType_BG:
+				blendSrc32[0] = this->_ColorEffectBlend<OUTPUTFORMAT, true>(tmpSrc[0], dst0, eva_vec128, evb_vec128);
+				blendSrc32[1] = this->_ColorEffectBlend<OUTPUTFORMAT, true>(tmpSrc[1], dst1, eva_vec128, evb_vec128);
+				blendSrc32[2] = this->_ColorEffectBlend<OUTPUTFORMAT, true>(tmpSrc[2], dst2, eva_vec128, evb_vec128);
+				blendSrc32[3] = this->_ColorEffectBlend<OUTPUTFORMAT, true>(tmpSrc[3], dst3, eva_vec128, evb_vec128);
+				break;
+				
+			case GPULayerType_OBJ:
+			{
+				// For OBJ layers, we need to convert EVA and EVB from vectors of uint8 into vectors of uint16.
+				//
+				// Note that we are sending only 4 colors for each _ColorEffectBlend() call, and so we are only
+				// going to send the 4 correspending EVA/EVB vectors as well. In this case, each individual
+				// EVA/EVB value is mirrored for each adjacent 16-bit boundary.
+				__m128i tempBlendLo = _mm_unpacklo_epi8(eva_vec128, eva_vec128);
+				__m128i tempBlendHi = _mm_unpackhi_epi8(eva_vec128, eva_vec128);
+				
+				const __m128i tempEVA[4] = {
+					_mm_unpacklo_epi8(tempBlendLo, _mm_setzero_si128()),
+					_mm_unpackhi_epi8(tempBlendLo, _mm_setzero_si128()),
+					_mm_unpacklo_epi8(tempBlendHi, _mm_setzero_si128()),
+					_mm_unpackhi_epi8(tempBlendHi, _mm_setzero_si128())
+				};
+				
+				tempBlendLo = _mm_unpacklo_epi8(evb_vec128, evb_vec128);
+				tempBlendHi = _mm_unpackhi_epi8(evb_vec128, evb_vec128);
+				
+				const __m128i tempEVB[4] = {
+					_mm_unpacklo_epi8(tempBlendLo, _mm_setzero_si128()),
+					_mm_unpackhi_epi8(tempBlendLo, _mm_setzero_si128()),
+					_mm_unpacklo_epi8(tempBlendHi, _mm_setzero_si128()),
+					_mm_unpackhi_epi8(tempBlendHi, _mm_setzero_si128())
+				};
+				
+				blendSrc32[0] = this->_ColorEffectBlend<OUTPUTFORMAT, false>(tmpSrc[0], dst0, tempEVA[0], tempEVB[0]);
+				blendSrc32[1] = this->_ColorEffectBlend<OUTPUTFORMAT, false>(tmpSrc[1], dst1, tempEVA[1], tempEVB[1]);
+				blendSrc32[2] = this->_ColorEffectBlend<OUTPUTFORMAT, false>(tmpSrc[2], dst2, tempEVA[2], tempEVB[2]);
+				blendSrc32[3] = this->_ColorEffectBlend<OUTPUTFORMAT, false>(tmpSrc[3], dst3, tempEVA[3], tempEVB[3]);
+				break;
+			}
 		}
 		
 		const __m128i blendMask32[4] = { _mm_unpacklo_epi16(blendMask16[0], blendMask16[0]),
