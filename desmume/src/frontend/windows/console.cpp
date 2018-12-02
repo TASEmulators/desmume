@@ -208,6 +208,7 @@ void CloseConsole()
 		WritePrivateProfileInt("Console", "PosY",	pos.top, IniName);
 		WritePrivateProfileInt("Console", "Width",	width, IniName);
 		WritePrivateProfileInt("Console", "Height",	height, IniName);
+		ShowWindow(gConsoleWnd, SW_HIDE); // FreeConsole isn't killing the console process in Windows 10 so just hide the window for now.
 	}
 
 	FreeConsole();
