@@ -7075,6 +7075,8 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 	const float customWidthScale = (float)compInfo.line.widthCustom / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	const FragmentColor *__restrict srcLinePtr = framebuffer3D + compInfo.line.blockOffsetCustom;
 	
+	compInfo.target.xNative = 0;
+	compInfo.target.xCustom = 0;
 	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHead;
 	compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHead;
 	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead;
