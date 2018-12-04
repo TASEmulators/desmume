@@ -49,6 +49,8 @@
 	
 	BOOL isAppRunningOnIntel;
     BOOL isDeveloperPlusBuild;
+	BOOL didApplicationFinishLaunching;
+	NSString *delayedROMFileName;
 }
 
 @property (readonly) IBOutlet NSObject *dummyObject;
@@ -68,6 +70,8 @@
 
 @property (assign) BOOL isAppRunningOnIntel;
 @property (assign) BOOL isDeveloperPlusBuild;
+@property (assign) BOOL didApplicationFinishLaunching;
+@property (copy) NSString *delayedROMFileName;
 
 - (IBAction) launchWebsite:(id)sender;
 - (IBAction) launchForums:(id)sender;

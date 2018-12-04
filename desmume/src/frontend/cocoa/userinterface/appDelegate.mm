@@ -56,7 +56,8 @@
 
 @synthesize isAppRunningOnIntel;
 @synthesize isDeveloperPlusBuild;
-
+@synthesize didApplicationFinishLaunching;
+@synthesize delayedROMFileName;
 
 - (id)init
 {
@@ -79,6 +80,9 @@
     isDeveloperPlusBuild = NO;
 #endif
 	
+	didApplicationFinishLaunching = NO;
+	delayedROMFileName = nil;
+	
 	RGBA8888ToNSColorValueTransformer *nsColorTransformer = [[[RGBA8888ToNSColorValueTransformer alloc] init] autorelease];
 	[NSValueTransformer setValueTransformer:nsColorTransformer forName:@"RGBA8888ToNSColorValueTransformer"];
 	
@@ -89,6 +93,30 @@
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {
 	BOOL result = NO;
+	
+	// Apparently, we can't be too sure when macOS will try to call this method if the user tries to
+	// open a ROM file while launching the app (i.e. the user double-clicks a ROM file from the Finder).
+	// Will this method be called before or after [NSApplicationDelgate applicationDidFinishLaunching:]
+	// is finished? Who knows? And so since we really don't know when this method will be called, we will
+	// keep a flag for ourselves that is set whenever [NSApplicationDelgate applicationDidFinishLaunching:]
+	// actually finishes. This way, we can prevent any race conditions that may occur by ensuring that the
+	// app finishes launching BEFORE trying to load a ROM file.
+	//
+	// If this method is called AFTER [NSApplicationDelgate applicationDidFinishLaunching:] finishes, then
+	// nothing special happens and everything works as it normally does.
+	//
+	// If this method is called BEFORE [NSApplicationDelgate applicationDidFinishLaunching:] finishes, then
+	// simply save the passed in file name, and then automatically call this method again with our
+	// previously saved file name the moment before [NSApplicationDelgate applicationDidFinishLaunching:]
+	// finishes.
+	
+	if (![self didApplicationFinishLaunching])
+	{
+		[self setDelayedROMFileName:filename];
+		result = YES;
+		return result;
+	}
+	
 	NSURL *fileURL = [NSURL fileURLWithPath:filename];
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
@@ -310,6 +338,15 @@
 	[appFirstTimeRunDict setValue:[NSNumber numberWithBool:isFirstTimeRun] forKey:bundleVersionString];
 	[[NSUserDefaults standardUserDefaults] setObject:appFirstTimeRunDict forKey:@"General_AppFirstTimeRun"];
 	[appFirstTimeRunDict release];
+	
+	// If the user is trying to load a ROM file while launching the app, then ensure that the
+	// ROM file is loaded at the end of this method and never any time before that.
+	[self setDidApplicationFinishLaunching:YES];
+	if ([self delayedROMFileName] != nil)
+	{
+		[self application:NSApp openFile:[self delayedROMFileName]];
+		[self setDelayedROMFileName:nil];
+	}
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
@@ -356,6 +393,7 @@
 #endif
 	
 	[cdsCoreController setContent:nil];
+	[self setDelayedROMFileName:nil];
 }
 
 #pragma mark IBActions
