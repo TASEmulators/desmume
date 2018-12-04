@@ -1646,6 +1646,9 @@ private:
 	~GPUEngineA();
 	
 protected:
+	CACHE_ALIGN u16 _fifoLine16[GPU_FRAMEBUFFER_NATIVE_WIDTH];
+	CACHE_ALIGN FragmentColor _fifoLine32[GPU_FRAMEBUFFER_NATIVE_WIDTH];
+	
 	CACHE_ALIGN u16 _VRAMNativeBlockCaptureCopy[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4];
 	u16 *_VRAMNativeBlockCaptureCopyPtr[4];
 	
@@ -1654,6 +1657,9 @@ protected:
 	
 	u16 *_VRAMNativeBlockPtr[4];
 	void *_VRAMCustomBlockPtr[4];
+	
+	size_t _nativeLineCaptureCount[4];
+	bool _isLineCaptureNative[4][GPU_VRAM_BLOCK_LINES];
 	
 	u16 *_captureWorkingA16;
 	u16 *_captureWorkingB16;
@@ -1665,11 +1671,20 @@ protected:
 	
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING> void _LineLarge8bpp(GPUEngineCompositorInfo &compInfo);
 	
+	template<NDSColorFormat OUTPUTFORMAT, size_t CAPTURELENGTH>
+	void _RenderLine_DisplayCaptureCustom(const GPUEngineLineInfo &lineInfo,
+										  const IOREG_DISPCNT &DISPCNT,
+										  const IOREG_DISPCAPCNT &DISPCAPCNT,
+										  const bool isLineCaptureNative,
+										  const void *srcAPtr,
+										  const void *srcBPtr,
+										  void *dstCustomPtr);  // Do not use restrict pointers, since srcB and dst can be the same
+	
 	template<NDSColorFormat OUTPUTFORMAT, size_t CAPTURELENGTH> void _RenderLine_DisplayCapture(const u16 l);
 	void _RenderLine_DispCapture_FIFOToBuffer(u16 *fifoLineBuffer);
 	
 	template<NDSColorFormat COLORFORMAT, int SOURCESWITCH, size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRC, bool CAPTURETONATIVEDST>
-	void _RenderLine_DispCapture_Copy(const void *src, void *dst, const size_t captureLengthExt, const size_t captureLineCount); // Do not use restrict pointers, since src and dst can be the same
+	void _RenderLine_DispCapture_Copy(const GPUEngineLineInfo &lineInfo, const void *src, void *dst, const size_t captureLengthExt); // Do not use restrict pointers, since src and dst can be the same
 	
 	u16 _RenderLine_DispCapture_BlendFunc(const u16 srcA, const u16 srcB, const u8 blendEVA, const u8 blendEVB);
 	template<NDSColorFormat COLORFORMAT> FragmentColor _RenderLine_DispCapture_BlendFunc(const FragmentColor srcA, const FragmentColor srcB, const u8 blendEVA, const u8 blendEVB);
@@ -1679,10 +1694,10 @@ protected:
 #endif
 	
 	template<NDSColorFormat OUTPUTFORMAT>
-	void _RenderLine_DispCapture_BlendToCustomDstBuffer(const void *srcA, const void *srcB, void *dst, const u8 blendEVA, const u8 blendEVB, const size_t length, size_t l); // Do not use restrict pointers, since srcB and dst can be the same
+	void _RenderLine_DispCapture_BlendToCustomDstBuffer(const void *srcA, const void *srcB, void *dst, const u8 blendEVA, const u8 blendEVB, const size_t length); // Do not use restrict pointers, since srcB and dst can be the same
 	
 	template<NDSColorFormat OUTPUTFORMAT, size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB, bool CAPTURETONATIVEDST>
-	void _RenderLine_DispCapture_Blend(const void *srcA, const void *srcB, void *dst, const size_t captureLengthExt, const size_t l); // Do not use restrict pointers, since srcB and dst can be the same
+	void _RenderLine_DispCapture_Blend(const GPUEngineLineInfo &lineInfo, const void *srcA, const void *srcB, void *dst, const size_t captureLengthExt); // Do not use restrict pointers, since srcB and dst can be the same
 	
 	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeVRAM(const size_t l);
 	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeMainMemory(const size_t l);
@@ -1691,10 +1706,8 @@ public:
 	static GPUEngineA* Allocate();
 	void FinalizeAndDeallocate();
 	
-	size_t nativeLineCaptureCount[4];
-	bool isLineCaptureNative[4][GPU_VRAM_BLOCK_LINES];
-	
 	void ParseReg_DISPCAPCNT();
+	bool IsLineCaptureNative(const size_t blockID, const size_t blockLine);
 	void* GetCustomVRAMBlockPtr(const size_t blockID);
 	FragmentColor* Get3DFramebufferMain() const;
 	u16* Get3DFramebuffer16() const;
@@ -1710,7 +1723,7 @@ public:
 	void LastLineProcess();
 	
 	virtual void Reset();
-	void ResetCaptureLineStates();
+	void ResetCaptureLineStates(const size_t blockID);
 	
 	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo);
