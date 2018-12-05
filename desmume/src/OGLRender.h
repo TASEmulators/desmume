@@ -297,7 +297,6 @@ enum OGLTextureUnitID
 	OGLTextureUnitID_GColor,
 	OGLTextureUnitID_DepthStencil,
 	OGLTextureUnitID_GPolyID,
-	OGLTextureUnitID_ZeroAlphaPixelMask,
 	OGLTextureUnitID_FogAttr,
 	OGLTextureUnitID_PolyStates
 };
@@ -432,7 +431,6 @@ struct OGLRenderRef
 	GLuint texGColorID;
 	GLuint texGFogAttrID;
 	GLuint texGPolyID;
-	GLuint texZeroAlphaPixelMaskID;
 	GLuint texGDepthStencilID;
 	GLuint texFinalColorID;
 	GLuint texMSGColorID;
