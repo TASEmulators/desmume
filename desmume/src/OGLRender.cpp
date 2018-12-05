@@ -3823,12 +3823,6 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if (this->_mappedFramebuffer != NULL)
-	{
-		glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
-		this->_mappedFramebuffer = NULL;
-	}
-	
 	if (this->willFlipAndConvertFramebufferOnGPU)
 	{
 		// Both flips and converts the framebuffer on the GPU. No additional postprocessing
@@ -3926,6 +3920,12 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 	{
 		// Read back the pixels in BGRA format, since legacy OpenGL devices may experience a performance
 		// penalty if the readback is in any other format.
+		if (this->_mappedFramebuffer != NULL)
+		{
+			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
+			this->_mappedFramebuffer = NULL;
+		}
+		
 		glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 	}
 	
@@ -4913,6 +4913,51 @@ Render3DError OpenGLRenderer_1_2::Reset()
 	return OGLERROR_NOERR;
 }
 
+Render3DError OpenGLRenderer_1_2::RenderPowerOff()
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	
+	if (!this->_isPoweredOn)
+	{
+		return OGLERROR_NOERR;
+	}
+	
+	this->_isPoweredOn = false;
+	memset(GPU->GetEngineMain()->Get3DFramebufferMain(), 0, this->_framebufferColorSizeBytes);
+	memset(GPU->GetEngineMain()->Get3DFramebuffer16(), 0, this->_framebufferPixCount * sizeof(u16));
+	
+	if(!BEGINGL())
+	{
+		return OGLERROR_BEGINGL_FAILED;
+	}
+	
+	if (this->isFBOSupported)
+	{
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
+		glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	}
+	
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	
+	if (this->isPBOSupported)
+	{
+		if (this->_mappedFramebuffer != NULL)
+		{
+			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
+			this->_mappedFramebuffer = NULL;
+		}
+		
+		glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	}
+	
+	ENDGL();
+	
+	this->_pixelReadNeedsFinish = true;
+	return OGLERROR_NOERR;
+}
+
 Render3DError OpenGLRenderer_1_2::RenderFinish()
 {
 	if (!this->_renderNeedsFinish)
@@ -4949,6 +4994,11 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 
 Render3DError OpenGLRenderer_1_2::RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16)
 {
+	if (!this->_isPoweredOn)
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
 	FragmentColor *framebufferMain = (willFlushBuffer32) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
 	u16 *framebuffer16 = (willFlushBuffer16) ? GPU->GetEngineMain()->Get3DFramebuffer16() : NULL;
 	
@@ -5257,6 +5307,11 @@ Render3DError OpenGLRenderer_2_1::RenderFinish()
 
 Render3DError OpenGLRenderer_2_1::RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16)
 {
+	if (!this->_isPoweredOn)
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
 	FragmentColor *framebufferMain = (willFlushBuffer32) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
 	u16 *framebuffer16 = (willFlushBuffer16) ? GPU->GetEngineMain()->Get3DFramebuffer16() : NULL;
 	

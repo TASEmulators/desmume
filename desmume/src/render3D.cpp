@@ -220,6 +220,7 @@ Render3D::Render3D()
 	_renderNeedsFinish = false;
 	_renderNeedsFlushMain = false;
 	_renderNeedsFlush16 = false;
+	_isPoweredOn = false;
 	
 	_textureUpscaleBuffer = NULL;
 	
@@ -673,8 +674,23 @@ Render3DError Render3D::Reset()
 	this->_renderNeedsFinish = false;
 	this->_renderNeedsFlushMain = false;
 	this->_renderNeedsFlush16 = false;
+	this->_isPoweredOn = false;
 	
 	texCache.Reset();
+	
+	return RENDER3DERROR_NOERR;
+}
+
+Render3DError Render3D::RenderPowerOff()
+{
+	if (!this->_isPoweredOn)
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
+	this->_isPoweredOn = false;
+	memset(GPU->GetEngineMain()->Get3DFramebufferMain(), 0, this->_framebufferColorSizeBytes);
+	memset(GPU->GetEngineMain()->Get3DFramebuffer16(), 0, this->_framebufferPixCount * sizeof(u16));
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -682,6 +698,7 @@ Render3DError Render3D::Reset()
 Render3DError Render3D::Render(const GFX3D &engine)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
+	this->_isPoweredOn = true;
 	
 	error = this->BeginRender(engine);
 	if (error != RENDER3DERROR_NOERR)

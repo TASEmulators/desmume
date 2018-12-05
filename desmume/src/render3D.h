@@ -162,6 +162,7 @@ protected:
 	bool _renderNeedsFinish;
 	bool _renderNeedsFlushMain;
 	bool _renderNeedsFlush16;
+	bool _isPoweredOn;
 	
 	bool _enableEdgeMark;
 	bool _enableFog;
@@ -222,6 +223,8 @@ public:
 	virtual Render3DError ApplyRenderingSettings(const GFX3D_State &renderState);
 	
 	virtual Render3DError Reset();						// Called when the emulator resets.
+	
+	virtual Render3DError RenderPowerOff();				// Called when the renderer needs to handle a power-off condition by clearing its framebuffers.
 	
 	virtual Render3DError Render(const GFX3D &engine);	// Called when the renderer should do its job and render the current display lists.
 	

@@ -1470,12 +1470,6 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if (this->_mappedFramebuffer != NULL)
-	{
-		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-		this->_mappedFramebuffer = NULL;
-	}
-	
 	if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
 	{
 		// Both flips and converts the framebuffer on the GPU. No additional postprocessing
@@ -1510,6 +1504,12 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 		glBindVertexArray(0);
 		
+		if (this->_mappedFramebuffer != NULL)
+		{
+			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+			this->_mappedFramebuffer = NULL;
+		}
+		
 		glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 	}
 	else
@@ -1534,6 +1534,12 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 		
 		// Read back the pixels in RGBA format, since an OpenGL 3.2 device should be able to read back this
 		// format without a performance penalty.
+		if (this->_mappedFramebuffer != NULL)
+		{
+			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+			this->_mappedFramebuffer = NULL;
+		}
+		
 		glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	}
 	
@@ -2073,5 +2079,43 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	glFinish();
 	ENDGL();
 	
+	return OGLERROR_NOERR;
+}
+
+Render3DError OpenGLRenderer_3_2::RenderPowerOff()
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	static const GLfloat oglColor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+	
+	if (!this->_isPoweredOn)
+	{
+		return OGLERROR_NOERR;
+	}
+	
+	this->_isPoweredOn = false;
+	memset(GPU->GetEngineMain()->Get3DFramebufferMain(), 0, this->_framebufferColorSizeBytes);
+	memset(GPU->GetEngineMain()->Get3DFramebuffer16(), 0, this->_framebufferPixCount * sizeof(u16));
+	
+	if(!BEGINGL())
+	{
+		return OGLERROR_BEGINGL_FAILED;
+	}
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glClearBufferfv(GL_COLOR, 0, oglColor);
+	
+	if (this->_mappedFramebuffer != NULL)
+	{
+		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+		this->_mappedFramebuffer = NULL;
+	}
+	
+	glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	
+	ENDGL();
+	
+	this->_pixelReadNeedsFinish = true;
 	return OGLERROR_NOERR;
 }

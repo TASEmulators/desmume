@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -106,6 +106,8 @@ protected:
 	
 public:
 	~OpenGLRenderer_3_2();
+	
+	virtual Render3DError RenderPowerOff();
 };
 
 #endif

@@ -2529,6 +2529,7 @@ Render3DError SoftRasterizerRenderer::Reset()
 Render3DError SoftRasterizerRenderer::Render(const GFX3D &engine)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
+	this->_isPoweredOn = true;
 	
 	error = this->BeginRender(engine);
 	if (error != RENDER3DERROR_NOERR)
@@ -2609,6 +2610,11 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 
 Render3DError SoftRasterizerRenderer::RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16)
 {
+	if (!this->_isPoweredOn)
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
 	FragmentColor *framebufferMain = (willFlushBuffer32 && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
 	u16 *framebuffer16 = (willFlushBuffer16) ? GPU->GetEngineMain()->Get3DFramebuffer16() : NULL;
 	this->FlushFramebuffer(this->_framebufferColor, framebufferMain, framebuffer16);

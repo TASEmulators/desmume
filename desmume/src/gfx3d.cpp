@@ -2506,10 +2506,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	}
 	else
 	{
-		memset(GPU->GetEngineMain()->Get3DFramebufferMain(), 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(FragmentColor));
-		memset(GPU->GetEngineMain()->Get3DFramebuffer16(), 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(u16));
-		CurrentRenderer->SetRenderNeedsFinish(false);
-		GPU->GetEventHandler()->DidRender3DEnd();
+		CurrentRenderer->RenderPowerOff();
 	}
 }
 
