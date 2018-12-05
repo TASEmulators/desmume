@@ -25,6 +25,7 @@
 #endif
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <boolean.h>
 #include <rthreads/rthreads.h>

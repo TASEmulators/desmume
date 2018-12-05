@@ -574,9 +574,9 @@ int main(int argc, char ** argv) {
     slot2_Init();
     slot2_Change((NDS_SLOT2_TYPE)slot2_device_type);
 
-  if ( !g_thread_supported()) {
+#if !g_thread_supported()
     g_thread_init( NULL);
-  }
+#endif
 
   driver = new BaseDriver();
   

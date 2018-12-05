@@ -238,12 +238,13 @@ void * ZIPROMReaderInit(const char * filename)
 	ZZIP_DIRENT * dirent = zzip_readdir(dir);
 	if (dir != NULL)
 	{
-		char tmp1[1024];
+		char *tmp1;
 		char tmp2[1024];
-		memset(tmp1,0,sizeof(tmp1));
+
 		memset(tmp2,0,sizeof(tmp2));
-		strncpy(tmp1, filename, strlen(filename) - 4);
+		tmp1 = strndup(filename, strlen(filename) - 4);
 		sprintf(tmp2, "%s/%s", tmp1, dirent->d_name);
+		free(tmp1);
 		return zzip_fopen(tmp2, "rb");
 	}
 	return NULL;
