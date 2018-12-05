@@ -2274,47 +2274,27 @@ void gfx3d_glFlush(u32 v)
 	GFX_DELAY(1);
 }
 
-static inline bool gfx3d_ysort_compare_orig(int num1, int num2)
+static bool gfx3d_ysort_compare(int num1, int num2)
 {
 	const POLY &poly1 = polylist->list[num1];
 	const POLY &poly2 = polylist->list[num2];
-
-	if (poly1.maxy != poly2.maxy)
-		return poly1.maxy < poly2.maxy; 
-	if (poly1.miny != poly2.miny)
-		return poly1.miny < poly2.miny; 
-
-	return num1 < num2;
-}
-
-static inline bool gfx3d_ysort_compare_kalven(int num1, int num2)
-{
-	const POLY &poly1 = polylist->list[num1];
-	const POLY &poly2 = polylist->list[num2];
-
+	
 	//this may be verified by checking the game create menus in harvest moon island of happiness
 	//also the buttons in the knights in the nightmare frontend depend on this and the perspective division
-	if (poly1.maxy < poly2.maxy) return true;
-	if (poly1.maxy > poly2.maxy) return false;
-	if (poly1.miny < poly2.miny) return true;
-	if (poly1.miny > poly2.miny) return false;
+	if (poly1.maxy != poly2.maxy)
+		return (poly1.maxy < poly2.maxy);
+	if (poly1.miny != poly2.miny)
+		return (poly1.miny < poly2.miny);
+	
 	//notably, the main shop interface in harvest moon will not have a correct RTN button
 	//i think this is due to a math error rounding its position to one pixel too high and it popping behind
 	//the bar that it sits on.
 	//everything else in all the other menus that I could find looks right..
-
+	
 	//make sure we respect the game's ordering in cases of complete ties
 	//this makes it a stable sort.
 	//this must be a stable sort or else advance wars DOR will flicker in the main map mode
 	return (num1 < num2);
-}
-
-static bool gfx3d_ysort_compare(int num1, int num2)
-{
-	bool original = gfx3d_ysort_compare_orig(num1,num2);
-	bool kalven = gfx3d_ysort_compare_kalven(num1,num2);
-	assert(original == kalven);
-	return original;
 }
 
 static void gfx3d_doFlush()
@@ -2392,22 +2372,17 @@ static void gfx3d_doFlush()
 		if (poly.isTranslucent())
 			gfx3d.indexlist.list[ctr++] = i;
 	}
-	
-	//NOTE: the use of the stable_sort below must be here as a workaround for some compilers on osx and linux.
-	//we're hazy on the exact behaviour of the resulting bug, all thats known is the list gets mangled somehow.
-	//it should not in principle be relevant since the predicate results in no ties.
-	//perhaps the compiler is buggy. perhaps the predicate is wrong.
 
 	//now we have to sort the opaque polys by y-value.
-	//(test case: harvest moon island of happiness character cretor UI)
+	//(test case: harvest moon island of happiness character creator UI)
 	//should this be done after clipping??
-	std::stable_sort(gfx3d.indexlist.list, gfx3d.indexlist.list + polylist->opaqueCount, gfx3d_ysort_compare);
+	std::sort(gfx3d.indexlist.list, gfx3d.indexlist.list + polylist->opaqueCount, gfx3d_ysort_compare);
 	
 	if (!gfx3d.state.sortmode)
 	{
 		//if we are autosorting translucent polys, we need to do this also
 		//TODO - this is unverified behavior. need a test case
-		std::stable_sort(gfx3d.indexlist.list + polylist->opaqueCount, gfx3d.indexlist.list + polycount, gfx3d_ysort_compare);
+		std::sort(gfx3d.indexlist.list + polylist->opaqueCount, gfx3d.indexlist.list + polycount, gfx3d_ysort_compare);
 	}
 
 	//switch to the new lists
