@@ -2359,7 +2359,7 @@ static void Printscreen()
 {
     GdkPixbuf *screenshot;
     const gchar *dir;
-    gchar *filename, *filen;
+    gchar *filename = NULL, *filen = NULL;
     GError *error = NULL;
     u8 rgb[256 * 384 * 4];
     static int seq = 0;
@@ -2396,15 +2396,19 @@ static void Printscreen()
         dir = g_get_home_dir();
     }
 
-    filen = g_strdup_printf("desmume-screenshot-%d.png", seq);
-    filename = g_build_filename(dir, filen, NULL);
+    do {
+        g_free(filen);
+        g_free(filename);
+        filen = g_strdup_printf("desmume-screenshot-%d.png", seq++);
+        filename = g_build_filename(dir, filen, NULL);
+    }
+    while (g_file_test(filename, G_FILE_TEST_EXISTS));
 
     gdk_pixbuf_save(screenshot, filename, "png", &error, NULL);
     if (error) {
         g_error_free (error);
         g_printerr("Failed to save %s", filename);
-    } else {
-        seq++;
+        seq--;
     }
 
     //free(rgb);

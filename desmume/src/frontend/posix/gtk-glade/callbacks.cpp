@@ -218,7 +218,7 @@ void  on_menu_quit_activate    (GtkMenuItem *menuitem, gpointer user_data) { gtk
 static void Printscreen()
 {
         GdkPixbuf *screenshot;
-        gchar *filename;
+        gchar *filename = NULL;
         GError *error = NULL;
         u8 *rgb;
         u16 *gpuFramebuffer = (u16 *)GPU->GetDisplayInfo().masterNativeBuffer;
@@ -243,13 +243,17 @@ static void Printscreen()
                                               NULL,
                                               NULL);
 
-        filename = g_strdup_printf("./desmume-screenshot-%d.png", seq);
-        gdk_pixbuf_save(screenshot, filename, "png", &error, NULL);
+        do {
+		g_free(filename);
+		filename = g_strdup_printf("./desmume-screenshot-%d.png", seq++);
+        }
+	while (g_file_test(filename, G_FILE_TEST_EXISTS));
+
+	gdk_pixbuf_save(screenshot, filename, "png", &error, NULL);
         if (error) {
                 g_error_free (error);
                 g_printerr("Failed to save %s", filename);
-        } else {
-                seq++;
+		seq--;
         }
 
         free(rgb);
