@@ -3548,6 +3548,15 @@ void SaveWindowPos(HWND hwnd)
 	WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
 }
 
+static BOOL OpenCoreSystemCP(const char* filename_syscp)
+{
+	wchar_t wgarbage[1024];
+	char garbage[1024];
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, filename_syscp, -1, wgarbage, 1024);
+	int q = WideCharToMultiByte(CP_UTF8, 0, wgarbage, -1, garbage, 1024, NULL, NULL);
+	return OpenCore(garbage);
+}
+
 //========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
@@ -4307,7 +4316,7 @@ DOKEYDOWN:
 			//Else load it as a ROM
 			//-------------------------------------------------------
 
-			else if(OpenCore(filename))
+			else if(OpenCoreSystemCP(filename))
 			{
 				romloaded = TRUE;
 			}

@@ -18,6 +18,8 @@
 #ifndef _FEX_DEC_HEADER
 #define _FEX_DEC_HEADER
 
+#include <string>
+
 #include "types.h"
 
 // File_Extractor interface
@@ -53,13 +55,13 @@ protected:
 	{
 		int size;
 		char* name;
-		wchar_t* wname;
+		std::wstring wname;
 		s64 offset;
 	};
 	ArchiveItem* m_items;
 	int m_numItems;
 	fex_type_t archiveType;
-	char* m_filename;
+	std::string m_filenameUtf8;
 };
 
 #endif

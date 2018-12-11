@@ -20,6 +20,8 @@
 #include "FEX_Interface.h"
 #include "File_Extractor/fex/fex.h"
 
+#include "utils/xstring.h"
+
 #include <windows.h>
 #include <string>
 #include <vector>
@@ -117,24 +119,16 @@ ArchiveFile::ArchiveFile(const char* filename)
 	archiveType = NULL;
 	m_numItems = 0;
 	m_items = NULL;
-	m_filename = NULL;
 
-	FILE* file = fopen(filename, "rb");
+	//assuming filename is utf-8 because what the fuck else can we assume about it? geeze
+	auto fn = mbstowcs((std::string)filename);
+	FILE* file = _wfopen(fn.c_str(), L"rb");
 	if(!file)
 		return;
 
 	//TODO - maybe windows only check here if we ever drop fex into portable code. unfortunately this is probably too unwieldy to ever happen
 
-	//convert the filename to unicode
-	wchar_t temp_wchar[MAX_PATH*2];
-	char filename_utf8[MAX_PATH*4];
-	MultiByteToWideChar(CP_THREAD_ACP,0,filename,-1,temp_wchar,ARRAY_SIZE(temp_wchar));
-	//now convert it back to utf-8. is there a way to do this in one step?
-	WideCharToMultiByte(CP_UTF8,0,temp_wchar,-1,filename_utf8,ARRAY_SIZE(filename_utf8), NULL, NULL);
-
-
-	m_filename = new char[strlen(filename_utf8)+1];
-	strcpy(m_filename, filename_utf8);
+	m_filenameUtf8 = filename;
 
 	fex_err_t err = fex_identify_file(&archiveType, filename);
 
@@ -158,12 +152,12 @@ ArchiveFile::ArchiveFile(const char* filename)
 		m_items[0].name = new char[strlen(filename)+1];
 		strcpy(m_items[0].name, filename);
 
-		m_items[0].wname = _wcsdup(temp_wchar);
+		m_items[0].wname = fn;
 	}
 	else
 	{
 		fex_t * object;
-		fex_err_t err = fex_open_type( &object, m_filename, archiveType );
+		fex_err_t err = fex_open_type( &object, m_filenameUtf8.c_str(), archiveType );
 		if ( !err )
 		{
 			int numItems = 0;
@@ -227,10 +221,8 @@ ArchiveFile::~ArchiveFile()
 	for(int i = 0; i < m_numItems; i++)
 	{
 		delete[] m_items[i].name;
-		free(m_items[i].wname);
 	}
 	delete[] m_items;
-	delete[] m_filename;
 }
 
 const char* ArchiveFile::GetArchiveTypeName()
@@ -266,7 +258,7 @@ const wchar_t* ArchiveFile::GetItemNameW(int item)
 {
 	//assert(item >= 0 && item < m_numItems);
 	if(!(item >= 0 && item < m_numItems)) return L"";
-	return m_items[item].wname;
+	return m_items[item].wname.c_str();
 }
 
 
@@ -289,14 +281,15 @@ int ArchiveFile::ExtractItem(int index, unsigned char* outBuffer, int bufSize) c
 	if(archiveType == NULL)
 	{
 		// uncompressed
-		FILE* file = fopen(m_filename, "rb");
+		auto fn = mbstowcs(m_filenameUtf8);
+		FILE* file = _wfopen(fn.c_str(), L"rb");
 		fread(outBuffer, 1, item.size, file);
 		fclose(file);
 	}
 	else
 	{
 		fex_t * object;
-		fex_err_t err = fex_open_type( &object, m_filename, archiveType );
+		fex_err_t err = fex_open_type( &object, m_filenameUtf8.c_str(), archiveType );
 		if ( !err )
 		{
 			if ( index != 0 ) err = fex_seek_arc( object, item.offset );
@@ -336,13 +329,13 @@ int ArchiveFile::ExtractItem(int index, const char* outFilename) const
 	if(archiveType == NULL)
 	{
 		// uncompressed
-		if(!CopyFile(m_filename, outFilename, false))
+		if(!CopyFile(m_filenameUtf8.c_str(), outFilename, false))
 			rv = 0;
 	}
 	else
 	{
 		fex_t * object;
-		fex_err_t err = fex_open_type( &object, m_filename, archiveType );
+		fex_err_t err = fex_open_type( &object, m_filenameUtf8.c_str(), archiveType );
 		if ( !err )
 		{
 			if ( index != 0 ) err = fex_seek_arc( object, item.offset );
