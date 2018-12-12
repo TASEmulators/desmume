@@ -24,7 +24,7 @@
 
 #include "resource.h"
 #include "winutil.h"
-
+#include "utils/xstring.h"
 
 std::vector<std::string> RecentRoms;					//The list of recent ROM filenames
 HMENU recentromsmenu;				//Handle to the recent ROMs submenu
@@ -88,9 +88,13 @@ void PopulateRecentRomsMenu()
 	for(int x = RecentRoms.size()-1; x >= 0; x--)	//Must loop in reverse order since InsertMenuItem will insert as the first on the list
 	{
 		string tmp = RecentRoms[x];
-		LPSTR tmp2 = (LPSTR)tmp.c_str();
 
-		PathCompactPath(dc, tmp2, 500);
+		//the recent roms are UTF-8, so convert to windows stupid codepage
+		auto wtmp = mbstowcs(tmp);
+		char garbage[1024];
+		WideCharToMultiByte(CP_ACP,0,wtmp.c_str(),-1,garbage,1024,NULL,NULL);
+
+		PathCompactPath(dc, garbage, 500);
 
 		moo.cbSize = sizeof(moo);
 		moo.fMask = MIIM_DATA | MIIM_ID | MIIM_TYPE;
@@ -98,7 +102,7 @@ void PopulateRecentRomsMenu()
 		moo.cch = tmp.size();
 		moo.fType = 0;
 		moo.wID = recentRoms_baseid + x;
-		moo.dwTypeData = tmp2;
+		moo.dwTypeData = garbage;
 		//LOG("Inserting: %s\n",tmp.c_str());  //Debug
 		InsertMenuItem(GetSubMenu(recentromsmenu, 0), 0, 1, &moo);
 	}
