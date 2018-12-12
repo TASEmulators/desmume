@@ -102,6 +102,7 @@ typedef union __PACKED
 	
 	struct
 	{
+#ifndef MSB_FIRST
 		u16 language:3;
 		u16 gbaModeScreenSelection:1;
 		u16 backlightLevel:2;
@@ -116,6 +117,22 @@ typedef union __PACKED
 		u16 settingsOkay3:1;
 		u16 settingsOkay4:1;
 		u16 settingsOkay5:1;
+#else
+		u16 :1;
+		u16 bootmenuDisable:1;
+		u16 backlightLevel:2;
+		u16 gbaModeScreenSelection:1;
+		u16 language:3;
+		
+		u16 settingsOkay5:1;
+		u16 settingsOkay4:1;
+		u16 settingsOkay3:1;
+		u16 settingsOkay2:1;
+		u16 :1;
+		u16 settingsOkay1:1;
+		u16 settingsLost:1;
+		u16 :1;
+#endif
 	};
 } FW_USERSETTINGS_LANGUAGE_FLAGS;
 

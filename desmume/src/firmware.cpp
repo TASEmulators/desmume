@@ -516,7 +516,7 @@ bool CFIRMWARE::saveSettings(const char *firmwareUserSettingsFilePath)
 	FWUserSettings &userSettings0 = MMU.fw.data.userSettings0;
 	FWUserSettings &userSettings1 = MMU.fw.data.userSettings1;
 	
-	if (userSettings1.updateCounter == ((userSettings0.updateCounter + 1) & 0x7F))
+	if (userSettings1.updateCounter == ((LE_TO_LOCAL_16(userSettings0.updateCounter) + 1) & 0x7F))
 	{
 		userSettings0 = userSettings1;
 	}
@@ -814,7 +814,7 @@ void NDS_InitFirmwareWithConfig(const FirmwareConfig &inConfig)
 	fw.header.identifier[3] = 'P';
 	
 	// User Settings offset 0x3fe00 / 8
-	fw.header.userSettingsOffset = offsetof(NDSFirmwareData, userSettings0) / 8;
+	fw.header.userSettingsOffset = LOCAL_TO_LE_16( (u16)(offsetof(NDSFirmwareData, userSettings0) / 8) );
 	
 	// NDS type
 	if (inConfig.consoleType == NDS_CONSOLE_TYPE_DSI)
@@ -833,26 +833,26 @@ void NDS_InitFirmwareWithConfig(const FirmwareConfig &inConfig)
 	fw.userSettings0.birthdayDay = inConfig.birthdayDay;
 	
 	// Copy the default char buffers into the UTF-16 string buffers.
-	fw.userSettings0.nicknameLength = inConfig.nicknameLength;
-	fw.userSettings0.messageLength = inConfig.nicknameLength;
+	fw.userSettings0.nicknameLength = LOCAL_TO_LE_16((u16)inConfig.nicknameLength);
+	fw.userSettings0.messageLength = LOCAL_TO_LE_16((u16)inConfig.messageLength);
 	
-	for (size_t i = 0; i < fw.userSettings0.nicknameLength; i++)
+	for (size_t i = 0; i < inConfig.nicknameLength; i++)
 	{
-		fw.userSettings0.nickname[i] = inConfig.nickname[i];
+		fw.userSettings0.nickname[i] = LOCAL_TO_LE_16(inConfig.nickname[i]);
 	}
 	
-	for (size_t i = 0; i < fw.userSettings0.messageLength; i++)
+	for (size_t i = 0; i < inConfig.messageLength; i++)
 	{
-		fw.userSettings0.message[i] = inConfig.message[i];
+		fw.userSettings0.message[i] = LOCAL_TO_LE_16(inConfig.message[i]);
 	}
 	
 	// Default touch-screen calibration settings.
-	fw.userSettings0.tscADC_x1 = inConfig.tscADC_x1;
-	fw.userSettings0.tscADC_y1 = inConfig.tscADC_y1;
+	fw.userSettings0.tscADC_x1 = LOCAL_TO_LE_16(inConfig.tscADC_x1);
+	fw.userSettings0.tscADC_y1 = LOCAL_TO_LE_16(inConfig.tscADC_y1);
 	fw.userSettings0.tscPixel_x1 = inConfig.tscPixel_x1;
 	fw.userSettings0.tscPixel_y1 = inConfig.tscPixel_y1;
-	fw.userSettings0.tscADC_x2 = inConfig.tscADC_x2;
-	fw.userSettings0.tscADC_y2 = inConfig.tscADC_y2;
+	fw.userSettings0.tscADC_x2 = LOCAL_TO_LE_16(inConfig.tscADC_x2);
+	fw.userSettings0.tscADC_y2 = LOCAL_TO_LE_16(inConfig.tscADC_y2);
 	fw.userSettings0.tscPixel_x2 = inConfig.tscPixel_x2;
 	fw.userSettings0.tscPixel_y2 = inConfig.tscPixel_y2;
 	
@@ -870,10 +870,10 @@ void NDS_InitFirmwareWithConfig(const FirmwareConfig &inConfig)
 	// Copy the default config for userSettings0 into userSettings1.
 	fw.userSettings1 = fw.userSettings0;
 	
-	fw.userSettings0.updateCounter = 0;
-	fw.userSettings1.updateCounter = 1;
-	fw.userSettings0.crc16 = (u16)calc_CRC16(0xFFFF, &fw.userSettings0, 0x70);
-	fw.userSettings1.crc16 = (u16)calc_CRC16(0xFFFF, &fw.userSettings1, 0x70);
+	fw.userSettings0.updateCounter = 0x0000;
+	fw.userSettings1.updateCounter = 0x0001;
+	fw.userSettings0.crc16 = LOCAL_TO_LE_16( (u16)calc_CRC16(0xFFFF, &fw.userSettings0, 0x70) );
+	fw.userSettings1.crc16 = LOCAL_TO_LE_16( (u16)calc_CRC16(0xFFFF, &fw.userSettings1, 0x70) );
 	
 	// Begin setting up the WiFi info.
 	fw.wifiInfo.length = 0x0138;
@@ -929,7 +929,7 @@ void NDS_InitFirmwareWithConfig(const FirmwareConfig &inConfig)
 	fw.wifiInfo.MACAddr[5] = inConfig.MACAddress[5];
 	
 	// Wifi settings CRC16
-	fw.wifiInfo.crc16 = calc_CRC16(0, &fw.wifiInfo.length, fw.wifiInfo.length);
+	fw.wifiInfo.crc16 = LOCAL_TO_LE_16( (u16)calc_CRC16(0, &fw.wifiInfo.length, fw.wifiInfo.length) );
 	
 	// WFC User ID, uniquely located on the first WiFi profile and no other
 	fw.wifiAP1.wfcUserID[0] = inConfig.WFCUserID[0];
@@ -1042,9 +1042,9 @@ void NDS_InitFirmwareWithConfig(const FirmwareConfig &inConfig)
 		fw.wifiAP3.configureMode = 0xFF;
 	}
 	
-	fw.wifiAP1.crc16 = (u16)calc_CRC16(0, &fw.wifiAP1, 254);
-	fw.wifiAP2.crc16 = (u16)calc_CRC16(0, &fw.wifiAP2, 254);
-	fw.wifiAP3.crc16 = (u16)calc_CRC16(0, &fw.wifiAP3, 254);
+	fw.wifiAP1.crc16 = LOCAL_TO_LE_16( (u16)calc_CRC16(0, &fw.wifiAP1, 254) );
+	fw.wifiAP2.crc16 = LOCAL_TO_LE_16( (u16)calc_CRC16(0, &fw.wifiAP2, 254) );
+	fw.wifiAP3.crc16 = LOCAL_TO_LE_16( (u16)calc_CRC16(0, &fw.wifiAP3, 254) );
 	
 	if (&inConfig != &CommonSettings.fwConfig)
 	{
