@@ -109,8 +109,11 @@
 	// simply save the passed in file name, and then automatically call this method again with our
 	// previously saved file name the moment before [NSApplicationDelgate applicationDidFinishLaunching:]
 	// finishes.
+	//
+	// We'll do the delayed ROM loading only for Mavericks and later, since this delayed loading code
+	// doesn't seem to work on older macOS versions.
 	
-	if (![self didApplicationFinishLaunching])
+	if (IsOSXVersionSupported(10, 9, 0) && ![self didApplicationFinishLaunching])
 	{
 		[self setDelayedROMFileName:filename];
 		result = YES;
@@ -171,10 +174,12 @@
 	// On macOS v10.13 and later, some unwanted menu items will show up in the View menu.
 	// Disable automatic window tabbing for all NSWindows in order to rid ourselves of
 	// these unwanted menu items.
+#if defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
 	if ([[NSWindow class] respondsToSelector:@selector(setAllowsAutomaticWindowTabbing:)])
 	{
 		[NSWindow setAllowsAutomaticWindowTabbing:NO];
 	}
+#endif
 	
 	// Setup the About window.
 	NSString *descriptionStr = [[[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"] stringByAppendingString:@" "] stringByAppendingString:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]];
@@ -342,7 +347,7 @@
 	// If the user is trying to load a ROM file while launching the app, then ensure that the
 	// ROM file is loaded at the end of this method and never any time before that.
 	[self setDidApplicationFinishLaunching:YES];
-	if ([self delayedROMFileName] != nil)
+	if (IsOSXVersionSupported(10, 9, 0) && [self delayedROMFileName] != nil)
 	{
 		[self application:NSApp openFile:[self delayedROMFileName]];
 		[self setDelayedROMFileName:nil];

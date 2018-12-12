@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2017 DeSmuME Team
+	Copyright (C) 2012-2018 DeSmuME Team
 	
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -116,7 +116,7 @@ static NSDictionary *hidUsageTable = nil;
     CFRelease(elementArray);
 	
 	// Set up force feedback.
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	if (IsOSXVersionSupported(10, 6, 0))
 	{
 		ioService = IOHIDDeviceGetService(hidDeviceRef);

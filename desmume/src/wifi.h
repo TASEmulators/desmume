@@ -497,18 +497,18 @@ typedef union
 		u8 reserved1:4;
 		u8 DAC:4;
 		
-		u8 VTC_EN1:1;
-		u8 LPF1:1;
-		u8 CPL1:1;
-		u8 PDP1:1;
-		u8 AUTOCAL_EN1:1;
-		u8 LD_EN1:1;
-		u8 P1:1;
+		u8 VTC_EN:1;
+		u8 LPF:1;
+		u8 CPL:1;
+		u8 PDP:1;
+		u8 AUTOCAL_EN:1;
+		u8 LD_EN:1;
+		u8 P:1;
 		u8 reserved2:1;
 		
 		u8 :6;
-		u8 PLL_EN1:1;
-		u8 KV_EN1:1;
+		u8 PLL_EN:1;
+		u8 KV_EN:1;
 		
 		u8 :8;
 #endif

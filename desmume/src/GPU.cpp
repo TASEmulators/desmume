@@ -875,6 +875,7 @@ static FORCEINLINE void CopyLineReduce_C(void *__restrict dst, const void *__res
 	}
 }
 
+#ifdef ENABLE_SSE2
 template <s32 INTEGERSCALEHINT, size_t ELEMENTSIZE>
 static FORCEINLINE void CopyLineReduce_SSE2(void *__restrict dst, const void *__restrict src, size_t srcWidth)
 {
@@ -1153,6 +1154,7 @@ static FORCEINLINE void CopyLineReduce_SSE2(void *__restrict dst, const void *__
 		}
 	}
 }
+#endif
 
 template <s32 INTEGERSCALEHINT, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
 static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restrict src, size_t srcWidth)
@@ -8269,14 +8271,15 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 {
 	// Displays video using color data directly read from main memory.
 	// Doing this should always result in an output line that is at the native size (192px x 1px).
+	
+#ifdef ENABLE_SSE2
 	switch (OUTPUTFORMAT)
 	{
 		case NDSColorFormat_BGR555_Rev:
 		{
-			u32 *dst = (u32 *)((u16 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
-			
-#ifdef ENABLE_SSE2
+			u32 *__restrict dst = (u32 *__restrict)((u16 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
 			const __m128i alphaBit = _mm_set1_epi16(0x8000);
+			
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(__m128i); i++)
 			{
 				const u32 srcA = DISP_FIFOrecv();
@@ -8286,22 +8289,63 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 				const __m128i fifoColor = _mm_setr_epi32(srcA, srcB, srcC, srcD);
 				_mm_store_si128((__m128i *)dst + i, _mm_or_si128(fifoColor, alphaBit));
 			}
+			break;
+		}
+			
+		case NDSColorFormat_BGR666_Rev:
+		case NDSColorFormat_BGR888_Rev:
+		{
+			FragmentColor *__restrict dst = (FragmentColor *__restrict)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+			__m128i dstLo;
+			__m128i dstHi;
+			
+			for (size_t i = 0, d = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(__m128i); i++, d+=2)
+			{
+				const u32 srcA = DISP_FIFOrecv();
+				const u32 srcB = DISP_FIFOrecv();
+				const u32 srcC = DISP_FIFOrecv();
+				const u32 srcD = DISP_FIFOrecv();
+				const __m128i fifoColor = _mm_setr_epi32(srcA, srcB, srcC, srcD);
+				
+				if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
+				{
+					ColorspaceConvert555To6665Opaque_SSE2<false>(fifoColor, dstLo, dstHi);
+				}
+				else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
+				{
+					ColorspaceConvert555To8888Opaque_SSE2<false>(fifoColor, dstLo, dstHi);
+				}
+				
+				_mm_store_si128((__m128i *)dst + d + 0, dstLo);
+				_mm_store_si128((__m128i *)dst + d + 1, dstHi);
+			}
+			break;
+		}
+	}
 #else
+	switch (OUTPUTFORMAT)
+	{
+		case NDSColorFormat_BGR555_Rev:
+		{
+			u32 *__restrict dst = (u32 *__restrict)((u16 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
 			{
-				dst[i] = DISP_FIFOrecv() | 0x80008000;
-			}
+				const u32 src = DISP_FIFOrecv();
+#ifdef MSB_FIRST
+				dst[i] = (src >> 16) | (src << 16) | 0x80008000;
+#else
+				dst[i] = src | 0x80008000;
 #endif
+			}
 			break;
 		}
 			
 		case NDSColorFormat_BGR666_Rev:
 		{
-			FragmentColor *dst = (FragmentColor *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
-			
+			FragmentColor *__restrict dst = (FragmentColor *__restrict)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i+=2)
 			{
-				u32 src = DISP_FIFOrecv();
+				const u32 src = DISP_FIFOrecv();
 				dst[i+0].color = COLOR555TO6665_OPAQUE((src >>  0) & 0x7FFF);
 				dst[i+1].color = COLOR555TO6665_OPAQUE((src >> 16) & 0x7FFF);
 			}
@@ -8310,17 +8354,17 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 			
 		case NDSColorFormat_BGR888_Rev:
 		{
-			FragmentColor *dst = (FragmentColor *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
-			
+			FragmentColor *__restrict dst = (FragmentColor *__restrict)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i+=2)
 			{
-				u32 src = DISP_FIFOrecv();
+				const u32 src = DISP_FIFOrecv();
 				dst[i+0].color = COLOR555TO8888_OPAQUE((src >>  0) & 0x7FFF);
 				dst[i+1].color = COLOR555TO8888_OPAQUE((src >> 16) & 0x7FFF);
 			}
 			break;
 		}
 	}
+#endif
 }
 
 template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING>
