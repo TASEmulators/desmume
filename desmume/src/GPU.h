@@ -595,45 +595,45 @@ typedef union
 	struct
 	{
 #ifndef MSB_FIRST
-		unsigned EVA:5;						//  0- 4: Blending coefficient for SrcA; 0...31 (clamped to 16)
-		unsigned :3;						//  5- 7: Unused bits
+		u32 EVA:5;							//  0- 4: Blending coefficient for SrcA; 0...31 (clamped to 16)
+		u32 :3;								//  5- 7: Unused bits
 		
-		unsigned EVB:5;						//  8-12: Blending coefficient for SrcB; 0...31 (clamped to 16)
-		unsigned :3;						// 13-15: Unused bits
+		u32 EVB:5;							//  8-12: Blending coefficient for SrcB; 0...31 (clamped to 16)
+		u32 :3;								// 13-15: Unused bits
 		
-		unsigned VRAMWriteBlock:2;			// 16-17: VRAM write target block; 0=Block A, 1=Block B, 2=Block C, 3=Block D
-		unsigned VRAMWriteOffset:2;			// 18-19: VRAM write target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
-		unsigned CaptureSize:2;				// 20-21: Display capture dimensions; 0=128x128, 1=256x64, 2=256x128, 3=256x192
-		unsigned :2;						// 22-23: Unused bits
+		u32 VRAMWriteBlock:2;				// 16-17: VRAM write target block; 0=Block A, 1=Block B, 2=Block C, 3=Block D
+		u32 VRAMWriteOffset:2;				// 18-19: VRAM write target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
+		u32 CaptureSize:2;					// 20-21: Display capture dimensions; 0=128x128, 1=256x64, 2=256x128, 3=256x192
+		u32 :2;								// 22-23: Unused bits
 		
-		unsigned SrcA:1;					//    24: SrcA target; 0=Current framebuffer, 1=3D render buffer
-		unsigned SrcB:1;					//    25: SrcB target;
+		u32 SrcA:1;							//    24: SrcA target; 0=Current framebuffer, 1=3D render buffer
+		u32 SrcB:1;							//    25: SrcB target;
 											//        0=VRAM block, interacts with DISPCNT (0x4000000)
 											//        1=Main memory FIFO, interacts with DISP_MMEM_FIFO (0x4000068)
-		unsigned VRAMReadOffset:2;			// 26-27: VRAM read target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
-		unsigned :1;						//    28: Unused bit
-		unsigned CaptureSrc:2;				// 29-30: Select capture target; 0=SrcA, 1=SrcB, 2=SrcA+SrcB blend, 3=SrcA+SrcB blend
-		unsigned CaptureEnable:1;			//    31: Display capture status; 0=Disable/Ready 1=Enable/Busy
+		u32 VRAMReadOffset:2;				// 26-27: VRAM read target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
+		u32 :1;								//    28: Unused bit
+		u32 CaptureSrc:2;					// 29-30: Select capture target; 0=SrcA, 1=SrcB, 2=SrcA+SrcB blend, 3=SrcA+SrcB blend
+		u32 CaptureEnable:1;				//    31: Display capture status; 0=Disable/Ready 1=Enable/Busy
 #else
-		unsigned :3;						//  5- 7: Unused bits
-		unsigned EVA:5;						//  0- 4: Blending coefficient for SrcA; 0...31 (clamped to 16)
+		u32 :3;								//  5- 7: Unused bits
+		u32 EVA:5;							//  0- 4: Blending coefficient for SrcA; 0...31 (clamped to 16)
 		
-		unsigned :3;						// 13-15: Unused bits
-		unsigned EVB:5;						//  8-12: Blending coefficient for SrcB; 0...31 (clamped to 16)
+		u32 :3;								// 13-15: Unused bits
+		u32 EVB:5;							//  8-12: Blending coefficient for SrcB; 0...31 (clamped to 16)
 		
-		unsigned :2;						// 22-23: Unused bits
-		unsigned CaptureSize:2;				// 20-21: Display capture dimensions; 0=128x128, 1=256x64, 2=256x128, 3=256x192
-		unsigned VRAMWriteOffset:2;			// 18-19: VRAM write target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
-		unsigned VRAMWriteBlock:2;			// 16-17: VRAM write target block; 0=Block A, 1=Block B, 2=Block C, 3=Block D
+		u32 :2;								// 22-23: Unused bits
+		u32 CaptureSize:2;					// 20-21: Display capture dimensions; 0=128x128, 1=256x64, 2=256x128, 3=256x192
+		u32 VRAMWriteOffset:2;				// 18-19: VRAM write target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
+		u32 VRAMWriteBlock:2;				// 16-17: VRAM write target block; 0=Block A, 1=Block B, 2=Block C, 3=Block D
 		
-		unsigned CaptureEnable:1;			//    31: Display capture status; 0=Disable/Ready 1=Enable/Busy
-		unsigned CaptureSrc:2;				// 29-30: Select capture target; 0=SrcA, 1=SrcB, 2=SrcA+SrcB blend, 3=SrcA+SrcB blend
-		unsigned :1;						//    28: Unused bit
-		unsigned VRAMReadOffset:2;			// 26-27: VRAM read target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
-		unsigned SrcB:1;					//    25: SrcB target;
+		u32 CaptureEnable:1;				//    31: Display capture status; 0=Disable/Ready 1=Enable/Busy
+		u32 CaptureSrc:2;					// 29-30: Select capture target; 0=SrcA, 1=SrcB, 2=SrcA+SrcB blend, 3=SrcA+SrcB blend
+		u32 :1;								//    28: Unused bit
+		u32 VRAMReadOffset:2;				// 26-27: VRAM read target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
+		u32 SrcB:1;							//    25: SrcB target;
 											//        0=VRAM block, interacts with DISPCNT (0x4000000)
 											//        1=Main memory FIFO, interacts with DISP_MMEM_FIFO (0x4000068)
-		unsigned SrcA:1;					//    24: SrcA target; 0=Current framebuffer, 1=3D render buffer
+		u32 SrcA:1;							//    24: SrcA target; 0=Current framebuffer, 1=3D render buffer
 #endif
 	};
 	
@@ -1465,7 +1465,7 @@ protected:
 		
 	template<NDSColorFormat OUTPUTFORMAT> void _RenderLine_Clear(GPUEngineCompositorInfo &compInfo);
 	void _RenderLine_SetupSprites(GPUEngineCompositorInfo &compInfo);
-	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _RenderLine_Layers(const size_t l);
+	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _RenderLine_Layers(GPUEngineCompositorInfo &compInfo);
 	
 	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeOff(const size_t l);
 	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeNormal(const size_t l);
@@ -1661,6 +1661,7 @@ protected:
 	size_t _nativeLineCaptureCount[4];
 	bool _isLineCaptureNative[4][GPU_VRAM_BLOCK_LINES];
 	
+	u16 *_captureWorkingDisplay16;
 	u16 *_captureWorkingA16;
 	u16 *_captureWorkingB16;
 	FragmentColor *_captureWorkingA32;
@@ -1672,15 +1673,15 @@ protected:
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING> void _LineLarge8bpp(GPUEngineCompositorInfo &compInfo);
 	
 	template<NDSColorFormat OUTPUTFORMAT, size_t CAPTURELENGTH>
-	void _RenderLine_DisplayCaptureCustom(const GPUEngineLineInfo &lineInfo,
-										  const IOREG_DISPCNT &DISPCNT,
-										  const IOREG_DISPCAPCNT &DISPCAPCNT,
-										  const bool isLineCaptureNative,
+	void _RenderLine_DisplayCaptureCustom(const IOREG_DISPCAPCNT &DISPCAPCNT,
+										  const GPUEngineLineInfo &lineInfo,
+										  const bool isReadDisplayLineNative,
+										  const bool isReadVRAMLineNative,
 										  const void *srcAPtr,
 										  const void *srcBPtr,
 										  void *dstCustomPtr);  // Do not use restrict pointers, since srcB and dst can be the same
 	
-	template<NDSColorFormat OUTPUTFORMAT, size_t CAPTURELENGTH> void _RenderLine_DisplayCapture(const u16 l);
+	template<NDSColorFormat OUTPUTFORMAT, size_t CAPTURELENGTH> void _RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compInfo);
 	void _RenderLine_DispCapture_FIFOToBuffer(u16 *fifoLineBuffer);
 	
 	template<NDSColorFormat COLORFORMAT, int SOURCESWITCH, size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRC, bool CAPTURETONATIVEDST>
@@ -1699,8 +1700,8 @@ protected:
 	template<NDSColorFormat OUTPUTFORMAT, size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB, bool CAPTURETONATIVEDST>
 	void _RenderLine_DispCapture_Blend(const GPUEngineLineInfo &lineInfo, const void *srcA, const void *srcB, void *dst, const size_t captureLengthExt); // Do not use restrict pointers, since srcB and dst can be the same
 	
-	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeVRAM(const size_t l);
-	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeMainMemory(const size_t l);
+	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeVRAM(const GPUEngineLineInfo &lineInfo);
+	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeMainMemory(const GPUEngineLineInfo &lineInfo);
 	
 public:
 	static GPUEngineA* Allocate();
