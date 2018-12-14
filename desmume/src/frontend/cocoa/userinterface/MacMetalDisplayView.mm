@@ -2037,7 +2037,7 @@
 					hudPipelineState:[sharedData hudRGBAPipeline]
 						 texDisplays:texProcess
 								mrfi:mrfi
-							 doYFlip:YES];
+							 doYFlip:NO];
 		
 		id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
 		
