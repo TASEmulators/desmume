@@ -1880,6 +1880,15 @@ static void SyncGpuBpp()
 		GPU->SetColorFormat(NDSColorFormat_BGR888_Rev);
 }
 
+static BOOL OpenCoreSystemCP(const char* filename_syscp)
+{
+	wchar_t wgarbage[1024];
+	char garbage[1024];
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, filename_syscp, -1, wgarbage, 1024);
+	int q = WideCharToMultiByte(CP_UTF8, 0, wgarbage, -1, garbage, 1024, NULL, NULL);
+	return OpenCore(garbage);
+}
+
 #define RENDERID_NULL_SAVED -1
 #define GPU3D_DEFAULT  GPU3D_SWRAST
 
@@ -2482,7 +2491,7 @@ int _main()
 
 	if (cmdline.nds_file != "")
 	{
-		if(OpenCore(cmdline.nds_file.c_str()))
+		if(OpenCoreSystemCP(cmdline.nds_file.c_str()))
 		{
 			romloaded = TRUE;
 		}
@@ -3546,15 +3555,6 @@ void SaveWindowPos(HWND hwnd)
 	if(IsZoomed(hwnd) || fsWindow) return;
 	WritePrivateProfileInt("Video", "WindowPosX", WndX/*MainWindowRect.left*/, IniName);
 	WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
-}
-
-static BOOL OpenCoreSystemCP(const char* filename_syscp)
-{
-	wchar_t wgarbage[1024];
-	char garbage[1024];
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, filename_syscp, -1, wgarbage, 1024);
-	int q = WideCharToMultiByte(CP_UTF8, 0, wgarbage, -1, garbage, 1024, NULL, NULL);
-	return OpenCore(garbage);
 }
 
 //========================================================================================
