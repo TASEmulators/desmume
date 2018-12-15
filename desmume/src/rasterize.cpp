@@ -62,6 +62,7 @@
 #include "render3D.h"
 #include "MMU.h"
 #include "NDSSystem.h"
+#include "utils/bits.h"
 #include "utils/task.h"
 #include "filter/filter.h"
 #include "filter/xbrz.h"
@@ -2131,77 +2132,6 @@ Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State &renderSt
 	return RENDER3DERROR_NOERR;
 }
 
-// This method is currently unused right now, in favor of the new multithreaded
-// SoftRasterizerRenderer::RenderEdgeMarkingAndFog() method. But let's keep this
-// one around for reference just in case something goes horribly wrong with the
-// new multithreaded method.
-Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, const bool useAntialias)
-{
-	// TODO: Old edge marking algorithm which tests only polyID, but checks the 8 surrounding pixels. Can this be removed?
-	
-	// this looks ok although it's still pretty much a hack,
-	// it needs to be redone with low-level accuracy at some point,
-	// but that should probably wait until the shape renderer is more accurate.
-	// a good test case for edge marking is Sonic Rush:
-	// - the edges are completely sharp/opaque on the very brief title screen intro,
-	// - the level-start intro gets a pseudo-antialiasing effect around the silhouette,
-	// - the character edges in-level are clearly transparent, and also show well through shield powerups.
-	
-	for (size_t i = 0, y = 0; y < this->_framebufferHeight; y++)
-	{
-		for (size_t x = 0; x < this->_framebufferWidth; x++, i++)
-		{
-			const u8 polyID = this->_framebufferAttributes->opaquePolyID[i];
-			
-			if (this->edgeMarkDisabled[polyID>>3]) continue;
-			if (this->_framebufferAttributes->isTranslucentPoly[i] != 0) continue;
-			
-			// > is used instead of != to prevent double edges
-			// between overlapping polys of different IDs.
-			// also note that the edge generally goes on the outside, not the inside, (maybe needs to change later)
-			// and that polys with the same edge color can make edges against each other.
-			
-			const FragmentColor edgeColor = this->edgeMarkTable[polyID>>3];
-			
-#define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
-#define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID > this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET(dx,dy)])
-#define DRAWEDGE(dx,dy) EdgeBlend(this->_framebufferColor[i+PIXOFFSET(dx,dy)], edgeColor)
-			
-			bool upleft    = ISEDGE(-1,-1);
-			bool up        = ISEDGE( 0,-1);
-			bool upright   = ISEDGE( 1,-1);
-			bool left      = ISEDGE(-1, 0);
-			bool right     = ISEDGE( 1, 0);
-			bool downleft  = ISEDGE(-1, 1);
-			bool down      = ISEDGE( 0, 1);
-			bool downright = ISEDGE( 1, 1);
-			
-			if(upleft && upright && downleft && !downright)
-				DRAWEDGE(-1,-1);
-			if(up && !down)
-				DRAWEDGE(0,-1);
-			if(upleft && upright && !downleft && downright)
-				DRAWEDGE(1,-1);
-			if(left && !right)
-				DRAWEDGE(-1,0);
-			if(right && !left)
-				DRAWEDGE(1,0);
-			if(upleft && !upright && downleft && downright)
-				DRAWEDGE(-1,1);
-			if(down && !up)
-				DRAWEDGE(0,1);
-			if(!upleft && upright && downleft && downright)
-				DRAWEDGE(1,1);
-			
-#undef PIXOFFSET
-#undef ISEDGE
-#undef DRAWEDGE
-		}
-	}
-	
-	return RENDER3DERROR_NOERR;
-}
-
 Render3DError SoftRasterizerRenderer::UpdateEdgeMarkColorTable(const u16 *edgeMarkColorTable)
 {
 	//TODO: need to test and find out whether these get grabbed at flush time, or at render time
@@ -2286,48 +2216,6 @@ Render3DError SoftRasterizerRenderer::UpdateFogTable(const u8 *fogDensityTable)
 	return RENDER3DERROR_NOERR;
 }
 
-// This method is currently unused right now, in favor of the new multithreaded
-// SoftRasterizerRenderer::RenderEdgeMarkingAndFog() method. But let's keep this
-// one around for reference just in case something goes horribly wrong with the
-// new multithreaded method.
-Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly)
-{
-	FragmentColor fogColor;
-	fogColor.color = COLOR555TO6665( color & 0x7FFF, (color>>16) & 0x1F );
-	
-	const size_t framebufferFragmentCount = this->_framebufferWidth * this->_framebufferHeight;
-	
-	if (!alphaOnly)
-	{
-		for (size_t i = 0; i < framebufferFragmentCount; i++)
-		{
-			const size_t fogIndex = this->_framebufferAttributes->depth[i] >> 9;
-			assert(fogIndex < 32768);
-			const u8 fog = (this->_framebufferAttributes->isFogged[i] != 0) ? this->fogTable[fogIndex] : 0;
-			
-			FragmentColor &destFragmentColor = this->_framebufferColor[i];
-			destFragmentColor.r = ((128-fog)*destFragmentColor.r + fogColor.r*fog)>>7;
-			destFragmentColor.g = ((128-fog)*destFragmentColor.g + fogColor.g*fog)>>7;
-			destFragmentColor.b = ((128-fog)*destFragmentColor.b + fogColor.b*fog)>>7;
-			destFragmentColor.a = ((128-fog)*destFragmentColor.a + fogColor.a*fog)>>7;
-		}
-	}
-	else
-	{
-		for (size_t i = 0; i < framebufferFragmentCount; i++)
-		{
-			const size_t fogIndex = this->_framebufferAttributes->depth[i] >> 9;
-			assert(fogIndex < 32768);
-			const u8 fog = (this->_framebufferAttributes->isFogged[i] != 0) ? this->fogTable[fogIndex] : 0;
-			
-			FragmentColor &destFragmentColor = this->_framebufferColor[i];
-			destFragmentColor.a = ((128-fog)*destFragmentColor.a + fogColor.a*fog)>>7;
-		}
-	}
-	
-	return RENDER3DERROR_NOERR;
-}
-
 Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasterizerPostProcessParams &param)
 {
 	for (size_t i = param.startLine * this->_framebufferWidth, y = param.startLine; y < param.endLine; y++)
@@ -2338,45 +2226,75 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 			const u32 depth = this->_framebufferAttributes->depth[i];
 			const u8 polyID = this->_framebufferAttributes->opaquePolyID[i];
 			
-			// TODO: New edge marking algorithm which tests both polyID and depth, but only checks 4 surrounding pixels. Can we keep this one?
 			if (param.enableEdgeMarking)
 			{
-				// this looks ok although it's still pretty much a hack,
-				// it needs to be redone with low-level accuracy at some point,
-				// but that should probably wait until the shape renderer is more accurate.
+				FragmentColor edgeMarkColor;
+				edgeMarkColor.color = 0;
+				
 				// a good test case for edge marking is Sonic Rush:
 				// - the edges are completely sharp/opaque on the very brief title screen intro,
 				// - the level-start intro gets a pseudo-antialiasing effect around the silhouette,
 				// - the character edges in-level are clearly transparent, and also show well through shield powerups.
 				
-				bool up = false;
-				bool left = false;
-				bool right = false;
-				bool down = false;
-				
-#define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
-#define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID != this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET(dx,dy)] && depth >= this->_framebufferAttributes->depth[i+PIXOFFSET(dx,dy)])
-#define DRAWEDGE(dx,dy) EdgeBlend(dstColor, this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET(dx,dy)] >> 3])
-				
-				if (this->edgeMarkDisabled[polyID>>3] || this->_framebufferAttributes->isTranslucentPoly[i] != 0)
-					goto END_EDGE_MARK;
-				
-				up		= ISEDGE( 0,-1);
-				left	= ISEDGE(-1, 0);
-				right	= ISEDGE( 1, 0);
-				down	= ISEDGE( 0, 1);
-				
-				if (right)			DRAWEDGE( 1, 0);
-				else if (down)		DRAWEDGE( 0, 1);
-				else if (left)		DRAWEDGE(-1, 0);
-				else if (up)		DRAWEDGE( 0,-1);
-				
-				
-#undef PIXOFFSET
-#undef ISEDGE
-#undef DRAWEDGE
-				
-END_EDGE_MARK: ;
+				if (!this->edgeMarkDisabled[polyID>>3] && this->_framebufferAttributes->isTranslucentPoly[i] == 0)
+				{
+					const bool isEdgeMarkingClearValues = ((polyID != this->_clearAttributes.opaquePolyID) && (depth < this->_clearAttributes.depth));
+					
+					const bool right = (x >= this->_framebufferWidth-1)  ? isEdgeMarkingClearValues : ((polyID != this->_framebufferAttributes->opaquePolyID[i+1])                       && (depth >= this->_framebufferAttributes->depth[i+1]));
+					const bool down  = (y >= this->_framebufferHeight-1) ? isEdgeMarkingClearValues : ((polyID != this->_framebufferAttributes->opaquePolyID[i+this->_framebufferWidth]) && (depth >= this->_framebufferAttributes->depth[i+this->_framebufferWidth]));
+					const bool left  = (x < 1)                           ? isEdgeMarkingClearValues : ((polyID != this->_framebufferAttributes->opaquePolyID[i-1])                       && (depth >= this->_framebufferAttributes->depth[i-1]));
+					const bool up    = (y < 1)                           ? isEdgeMarkingClearValues : ((polyID != this->_framebufferAttributes->opaquePolyID[i-this->_framebufferWidth]) && (depth >= this->_framebufferAttributes->depth[i-this->_framebufferWidth]));
+					
+					if (right)
+					{
+						if (x >= this->_framebufferWidth - 1)
+						{
+							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
+						}
+						else
+						{
+							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+1] >> 3];
+						}
+					}
+					else if (down)
+					{
+						if (y >= this->_framebufferHeight - 1)
+						{
+							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
+						}
+						else
+						{
+							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+this->_framebufferWidth] >> 3];
+						}
+					}
+					else if (left)
+					{
+						if (x < 1)
+						{
+							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
+						}
+						else
+						{
+							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i-1] >> 3];
+						}
+					}
+					else if (up)
+					{
+						if (y < 1)
+						{
+							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
+						}
+						else
+						{
+							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i-this->_framebufferWidth] >> 3];
+						}
+					}
+					
+					if (right || down || left || up)
+					{
+						EdgeBlend(dstColor, edgeMarkColor);
+					}
+				}
 			}
 			
 			if (param.enableFog)
@@ -2476,9 +2394,6 @@ void SoftRasterizerRenderer::ClearUsingValues_Execute(const size_t startPixel, c
 
 Render3DError SoftRasterizerRenderer::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
 {
-	this->_clearColor6665 = clearColor6665;
-	this->_clearAttributes = clearAttributes;
-	
 	const bool doMultithreadedClear = (this->_threadCount > 0);
 	
 	if (doMultithreadedClear)
@@ -2530,6 +2445,20 @@ Render3DError SoftRasterizerRenderer::Render(const GFX3D &engine)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	this->_isPoweredOn = true;
+	
+	const u32 clearColorSwapped = LE_TO_LOCAL_32(engine.renderState.clearColor);
+	this->_clearColor6665.color = COLOR555TO6665(clearColorSwapped & 0x7FFF, (clearColorSwapped >> 16) & 0x1F);
+	
+	this->_clearAttributes.opaquePolyID = (clearColorSwapped >> 24) & 0x3F;
+	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
+	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
+	//but in spiderman2 some fires with polyid 0 try to render on top of the background
+	this->_clearAttributes.translucentPolyID = kUnsetTranslucentPolyID;
+	this->_clearAttributes.depth = engine.renderState.clearDepth;
+	this->_clearAttributes.stencil = 0;
+	this->_clearAttributes.isTranslucentPoly = 0;
+	this->_clearAttributes.polyFacing = PolyFacing_Unwritten;
+	this->_clearAttributes.isFogged = BIT15(clearColorSwapped);
 	
 	error = this->BeginRender(engine);
 	if (error != RENDER3DERROR_NOERR)

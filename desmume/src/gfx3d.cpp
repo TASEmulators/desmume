@@ -408,7 +408,11 @@ static void makeTables()
 	for (size_t i = 0; i < 32768; i++)
 	{
 		// 15-bit to 24-bit depth formula from http://problemkaputt.de/gbatek.htm#ds3drearplane
-		dsDepthExtend_15bit_to_24bit[i] = LE_TO_LOCAL_32( (i*0x200)+((i+1)>>15)*0x01FF );
+		//dsDepthExtend_15bit_to_24bit[i] = LE_TO_LOCAL_32( (i*0x0200) + ((i+1)>>15)*0x01FF );
+		
+		// Is GBATEK actually correct here? Let's try using a simplified formula and see if it's
+		// more accurate.
+		dsDepthExtend_15bit_to_24bit[i] = LE_TO_LOCAL_32( (i*0x0200) + 0x01FF );
 	}
 
 	for (size_t i = 0; i < 65536; i++)

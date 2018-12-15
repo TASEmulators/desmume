@@ -454,7 +454,11 @@ static const char *EdgeMarkFragShader_100 = {"\
 	\n\
 	uniform sampler2D texInFragDepth;\n\
 	uniform sampler2D texInPolyID;\n\
+	\n\
+	uniform vec2 framebufferSize;\n\
 	uniform vec4 stateEdgeColor[8];\n\
+	uniform int clearPolyID;\n\
+	uniform float clearDepth;\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -491,12 +495,51 @@ static const char *EdgeMarkFragShader_100 = {"\
 			isWireframe[3] = bool(polyIDInfo[3].g);\n\
 			isWireframe[4] = bool(polyIDInfo[4].g);\n\
 			\n\
-			for (int i = 1; i < 5; i++)\n\
+			bool isEdgeMarkingClearValues = ((polyID[0] != clearPolyID) && (depth[0] < clearDepth) && !isWireframe[0]);\n\
+			vec2 pixelCoord = texCoord[0] * framebufferSize;\n\
+			\n\
+			if ( ((pixelCoord.x >= framebufferSize.x-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[1]) && (depth[0] >= depth[1]) && !isWireframe[1])) )\n\
 			{\n\
-				if ( (polyID[0] != polyID[i]) && (depth[0] >= depth[i]) && !isWireframe[i] )\n\
+				if (pixelCoord.x >= framebufferSize.x-1.0)\n\
 				{\n\
-					newEdgeColor = stateEdgeColor[polyID[i]/8];\n\
-					break;\n\
+					newEdgeColor = stateEdgeColor[polyID[0]/8];\n\
+				}\n\
+				else\n\
+				{\n\
+					newEdgeColor = stateEdgeColor[polyID[1]/8];\n\
+				}\n\
+			}\n\
+			else if ( ((pixelCoord.y >= framebufferSize.y-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[2]) && (depth[0] >= depth[2]) && !isWireframe[2])) )\n\
+			{\n\
+				if (pixelCoord.y >= framebufferSize.y-1.0)\n\
+				{\n\
+					newEdgeColor = stateEdgeColor[polyID[0]/8];\n\
+				}\n\
+				else\n\
+				{\n\
+					newEdgeColor = stateEdgeColor[polyID[2]/8];\n\
+				}\n\
+			}\n\
+			else if ( ((pixelCoord.x < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[3]) && (depth[0] >= depth[3]) && !isWireframe[3])) )\n\
+			{\n\
+				if (pixelCoord.x < 1.0)\n\
+				{\n\
+					newEdgeColor = stateEdgeColor[polyID[0]/8];\n\
+				}\n\
+				else\n\
+				{\n\
+					newEdgeColor = stateEdgeColor[polyID[3]/8];\n\
+				}\n\
+			}\n\
+			else if ( ((pixelCoord.y < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[4]) && (depth[0] >= depth[4]) && !isWireframe[4])) )\n\
+			{\n\
+				if (pixelCoord.y < 1.0)\n\
+				{\n\
+					newEdgeColor = stateEdgeColor[polyID[0]/8];\n\
+				}\n\
+				else\n\
+				{\n\
+					newEdgeColor = stateEdgeColor[polyID[4]/8];\n\
 				}\n\
 			}\n\
 		}\n\
@@ -3406,13 +3449,15 @@ Render3DError OpenGLRenderer_1_2::InitEdgeMarkProgramShaderLocations()
 	
 	glUseProgram(OGLRef.programEdgeMarkID);
 	
-	const GLint uniformTexGDepth				= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInFragDepth");
-	const GLint uniformTexGPolyID				= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInPolyID");
+	const GLint uniformTexGDepth			= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInFragDepth");
+	const GLint uniformTexGPolyID			= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInPolyID");
 	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGPolyID, OGLTextureUnitID_GPolyID);
 	
-	OGLRef.uniformFramebufferSize	= glGetUniformLocation(OGLRef.programEdgeMarkID, "framebufferSize");
-	OGLRef.uniformStateEdgeColor	= glGetUniformLocation(OGLRef.programEdgeMarkID, "stateEdgeColor");
+	OGLRef.uniformFramebufferSize_EdgeMark	= glGetUniformLocation(OGLRef.programEdgeMarkID, "framebufferSize");
+	OGLRef.uniformStateClearPolyID			= glGetUniformLocation(OGLRef.programEdgeMarkID, "clearPolyID");
+	OGLRef.uniformStateClearDepth			= glGetUniformLocation(OGLRef.programEdgeMarkID, "clearDepth");
+	OGLRef.uniformStateEdgeColor			= glGetUniformLocation(OGLRef.programEdgeMarkID, "stateEdgeColor");
 	
 	return OGLERROR_NOERR;
 }
@@ -3939,6 +3984,8 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		glUniform1i(OGLRef.uniformStateEnableAntialiasing, (engine.renderState.enableAntialiasing) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (this->_enableEdgeMark) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformStateUseWDepth, (engine.renderState.wbuffer) ? GL_TRUE : GL_FALSE);
+		glUniform1i(OGLRef.uniformStateClearPolyID, this->_clearAttributes.opaquePolyID);
+		glUniform1f(OGLRef.uniformStateClearDepth, (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF);
 		glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
 		glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
 		glUniform1i(OGLRef.uniformPolyDrawShadow, GL_FALSE);
@@ -4236,7 +4283,9 @@ Render3DError OpenGLRenderer_1_2::RenderEdgeMarking(const u16 *colorTable, const
 		// Pass 2: Unblended edge mark colors to zero-alpha pixels
 		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 		glUseProgram(OGLRef.programEdgeMarkID);
-		glUniform2f(OGLRef.uniformFramebufferSize, this->_framebufferWidth, this->_framebufferHeight);
+		glUniform2f(OGLRef.uniformFramebufferSize_EdgeMark, this->_framebufferWidth, this->_framebufferHeight);
+		glUniform1i(OGLRef.uniformStateClearPolyID, this->_clearAttributes.opaquePolyID);
+		glUniform1f(OGLRef.uniformStateClearDepth, (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF);
 		glUniform4fv(OGLRef.uniformStateEdgeColor, 8, oglColor);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
 		glStencilFunc(GL_NOTEQUAL, 0x40, 0x40);
@@ -4251,7 +4300,9 @@ Render3DError OpenGLRenderer_1_2::RenderEdgeMarking(const u16 *colorTable, const
 	else
 	{
 		glUseProgram(OGLRef.programEdgeMarkID);
-		glUniform2f(OGLRef.uniformFramebufferSize, this->_framebufferWidth, this->_framebufferHeight);
+		glUniform2f(OGLRef.uniformFramebufferSize_EdgeMark, this->_framebufferWidth, this->_framebufferHeight);
+		glUniform1i(OGLRef.uniformStateClearPolyID, this->_clearAttributes.opaquePolyID);
+		glUniform1f(OGLRef.uniformStateClearDepth, (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF);
 		glUniform4fv(OGLRef.uniformStateEdgeColor, 8, oglColor);
 		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 		glDisable(GL_STENCIL_TEST);

@@ -157,6 +157,9 @@ protected:
 	size_t _framebufferColorSizeBytes;
 	FragmentColor *_framebufferColor;
 	
+	FragmentColor _clearColor6665;
+	FragmentAttributes _clearAttributes;
+	
 	NDSColorFormat _internalRenderingFormat;
 	NDSColorFormat _outputFormat;
 	bool _renderNeedsFinish;

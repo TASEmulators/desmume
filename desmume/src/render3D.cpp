@@ -562,22 +562,6 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
-	const u32 clearColorSwapped = LE_TO_LOCAL_32(renderState.clearColor);
-	FragmentColor clearColor6665;
-	clearColor6665.color = COLOR555TO6665(clearColorSwapped & 0x7FFF, (clearColorSwapped >> 16) & 0x1F);
-	
-	FragmentAttributes clearFragment;
-	clearFragment.opaquePolyID = (clearColorSwapped >> 24) & 0x3F;
-	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
-	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
-	//but in spiderman2 some fires with polyid 0 try to render on top of the background
-	clearFragment.translucentPolyID = kUnsetTranslucentPolyID;
-	clearFragment.depth = renderState.clearDepth;
-	clearFragment.stencil = 0;
-	clearFragment.isTranslucentPoly = 0;
-	clearFragment.polyFacing = PolyFacing_Unwritten;
-	clearFragment.isFogged = BIT15(clearColorSwapped);
-	
 	if (renderState.enableClearImage)
 	{
 		//the lion, the witch, and the wardrobe (thats book 1, suck it you new-school numberers)
@@ -595,7 +579,7 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 				this->clearImageColor16Buffer[i] = clearColorBuffer[i];
 				this->clearImageDepthBuffer[i] = DS_DEPTH15TO24(clearDepthBuffer[i]);
 				this->clearImageFogBuffer[i] = BIT15(clearDepthBuffer[i]);
-				this->clearImagePolyIDBuffer[i] = clearFragment.opaquePolyID;
+				this->clearImagePolyIDBuffer[i] = this->_clearAttributes.opaquePolyID;
 			}
 		}
 		else
@@ -605,22 +589,22 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 			
 			if (!isClearColorBlank && !isClearDepthBlank)
 			{
-				this->_ClearImageScrolledLoop<false, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+				this->_ClearImageScrolledLoop<false, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
 															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 			}
 			else if (isClearColorBlank)
 			{
-				this->_ClearImageScrolledLoop< true, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+				this->_ClearImageScrolledLoop< true, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
 															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 			}
 			else if (isClearDepthBlank)
 			{
-				this->_ClearImageScrolledLoop<false,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+				this->_ClearImageScrolledLoop<false,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
 															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 			}
 			else
 			{
-				this->_ClearImageScrolledLoop< true,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+				this->_ClearImageScrolledLoop< true,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
 															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 			}
 		}
@@ -628,12 +612,12 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 		error = this->ClearUsingImage(this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 		if (error != RENDER3DERROR_NOERR)
 		{
-			error = this->ClearUsingValues(clearColor6665, clearFragment);
+			error = this->ClearUsingValues(this->_clearColor6665, this->_clearAttributes);
 		}
 	}
 	else
 	{
-		error = this->ClearUsingValues(clearColor6665, clearFragment);
+		error = this->ClearUsingValues(this->_clearColor6665, this->_clearAttributes);
 	}
 	
 	return error;
@@ -671,6 +655,9 @@ Render3DError Render3D::Reset()
 	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
 	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
 	
+	this->_clearColor6665.color = 0;
+	memset(&this->_clearAttributes, 0, sizeof(FragmentAttributes));
+	
 	this->_renderNeedsFinish = false;
 	this->_renderNeedsFlushMain = false;
 	this->_renderNeedsFlush16 = false;
@@ -699,6 +686,20 @@ Render3DError Render3D::Render(const GFX3D &engine)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	this->_isPoweredOn = true;
+	
+	const u32 clearColorSwapped = LE_TO_LOCAL_32(engine.renderState.clearColor);
+	this->_clearColor6665.color = COLOR555TO6665(clearColorSwapped & 0x7FFF, (clearColorSwapped >> 16) & 0x1F);
+	
+	this->_clearAttributes.opaquePolyID = (clearColorSwapped >> 24) & 0x3F;
+	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
+	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
+	//but in spiderman2 some fires with polyid 0 try to render on top of the background
+	this->_clearAttributes.translucentPolyID = kUnsetTranslucentPolyID;
+	this->_clearAttributes.depth = engine.renderState.clearDepth;
+	this->_clearAttributes.stencil = 0;
+	this->_clearAttributes.isTranslucentPoly = 0;
+	this->_clearAttributes.polyFacing = PolyFacing_Unwritten;
+	this->_clearAttributes.isFogged = BIT15(clearColorSwapped);
 	
 	error = this->BeginRender(engine);
 	if (error != RENDER3DERROR_NOERR)
@@ -772,21 +773,6 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
-	FragmentColor clearColor6665;
-	clearColor6665.color = COLOR555TO6665(renderState.clearColor & 0x7FFF, (renderState.clearColor >> 16) & 0x1F);
-	
-	FragmentAttributes clearFragment;
-	clearFragment.opaquePolyID = (renderState.clearColor >> 24) & 0x3F;
-	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
-	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
-	//but in spiderman2 some fires with polyid 0 try to render on top of the background
-	clearFragment.translucentPolyID = kUnsetTranslucentPolyID;
-	clearFragment.depth = renderState.clearDepth;
-	clearFragment.stencil = 0;
-	clearFragment.isTranslucentPoly = 0;
-	clearFragment.polyFacing = PolyFacing_Unwritten;
-	clearFragment.isFogged = BIT15(renderState.clearColor);
-	
 	if (renderState.enableClearImage)
 	{
 		//the lion, the witch, and the wardrobe (thats book 1, suck it you new-school numberers)
@@ -797,7 +783,7 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 		const u8 xScroll = scrollBits & 0xFF;
 		const u8 yScroll = (scrollBits >> 8) & 0xFF;
 		
-		const __m128i opaquePolyID_vec128 = _mm_set1_epi8(clearFragment.opaquePolyID);
+		const __m128i opaquePolyID_vec128 = _mm_set1_epi8(this->_clearAttributes.opaquePolyID);
 		const __m128i calcDepthConstants = _mm_set1_epi32(0x01FF0200);
 		
 		if (xScroll == 0 && yScroll == 0)
@@ -811,18 +797,19 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 				// Write the depth values to the depth buffer using the following formula from GBATEK.
 				// 15-bit to 24-bit depth formula from http://problemkaputt.de/gbatek.htm#ds3drearplane
 				//    D24 = (D15 * 0x0200) + (((D15 + 1) >> 15) * 0x01FF);
+				//
+				// For now, let's forget GBATEK (which could be wrong) and try using a simpified formula:
+				//    D24 = (D15 * 0x0200) + 0x01FF;
 				const __m128i clearDepthLo = _mm_load_si128((__m128i *)(clearDepthBuffer + i + 0));
 				const __m128i clearDepthHi = _mm_load_si128((__m128i *)(clearDepthBuffer + i + 8));
 				
 				const __m128i clearDepthValueLo = _mm_and_si128(clearDepthLo, _mm_set1_epi16(0x7FFF));
 				const __m128i clearDepthValueHi = _mm_and_si128(clearDepthHi, _mm_set1_epi16(0x7FFF));
-				const __m128i highestDepthBitLo = _mm_srli_epi16( _mm_adds_epu16(clearDepthValueLo, _mm_set1_epi16(1)), 15);
-				const __m128i highestDepthBitHi = _mm_srli_epi16( _mm_adds_epu16(clearDepthValueHi, _mm_set1_epi16(1)), 15);
 				
-				__m128i calcDepth0 = _mm_unpacklo_epi16(clearDepthValueLo, highestDepthBitLo);
-				__m128i calcDepth1 = _mm_unpackhi_epi16(clearDepthValueLo, highestDepthBitLo);
-				__m128i calcDepth2 = _mm_unpacklo_epi16(clearDepthValueHi, highestDepthBitHi);
-				__m128i calcDepth3 = _mm_unpackhi_epi16(clearDepthValueHi, highestDepthBitHi);
+				__m128i calcDepth0 = _mm_unpacklo_epi16(clearDepthValueLo, _mm_set1_epi16(1));
+				__m128i calcDepth1 = _mm_unpackhi_epi16(clearDepthValueLo, _mm_set1_epi16(1));
+				__m128i calcDepth2 = _mm_unpacklo_epi16(clearDepthValueHi, _mm_set1_epi16(1));
+				__m128i calcDepth3 = _mm_unpackhi_epi16(clearDepthValueHi, _mm_set1_epi16(1));
 				
 				calcDepth0 = _mm_madd_epi16(calcDepth0, calcDepthConstants);
 				calcDepth1 = _mm_madd_epi16(calcDepth1, calcDepthConstants);
@@ -948,22 +935,22 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 			
 			if (!isClearColorBlank && !isClearDepthBlank)
 			{
-				this->_ClearImageScrolledLoop<false, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+				this->_ClearImageScrolledLoop<false, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
 															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 			}
 			else if (isClearColorBlank)
 			{
-				this->_ClearImageScrolledLoop< true, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+				this->_ClearImageScrolledLoop< true, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
 															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 			}
 			else if (isClearDepthBlank)
 			{
-				this->_ClearImageScrolledLoop<false,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+				this->_ClearImageScrolledLoop<false,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
 															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 			}
 			else
 			{
-				this->_ClearImageScrolledLoop< true,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, clearFragment.opaquePolyID,
+				this->_ClearImageScrolledLoop< true,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
 															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 			}
 		}
@@ -971,12 +958,12 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 		error = this->ClearUsingImage(this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 		if (error != RENDER3DERROR_NOERR)
 		{
-			error = this->ClearUsingValues(clearColor6665, clearFragment);
+			error = this->ClearUsingValues(this->_clearColor6665, this->_clearAttributes);
 		}
 	}
 	else
 	{
-		error = this->ClearUsingValues(clearColor6665, clearFragment);
+		error = this->ClearUsingValues(this->_clearColor6665, this->_clearAttributes);
 	}
 	
 	return error;

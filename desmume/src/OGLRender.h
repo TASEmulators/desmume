@@ -372,10 +372,12 @@ struct OGLRenderStates
 	GLuint enableEdgeMarking;
 	GLuint enableFogAlphaOnly;
 	GLuint useWDepth;
+	GLuint clearPolyID;
+	GLfloat clearDepth;
 	GLfloat alphaTestRef;
 	GLfloat fogOffset;
 	GLfloat fogStep;
-	GLfloat pad_0; // This needs to be here to preserve alignment
+	GLfloat pad[3]; // This needs to be here to preserve alignment
 	GLvec4 fogColor;
 	GLvec4 fogDensity[32]; // Array of floats need to be padded as vec4
 	GLvec4 edgeColor[8];
@@ -471,7 +473,6 @@ struct OGLRenderRef
 	GLuint programFramebufferRGBA6665OutputID;
 	GLuint programFramebufferRGBA8888OutputID;
 	
-	GLint uniformFramebufferSize;
 	GLint uniformFramebufferSize_ConvertRGBA6665;
 	GLint uniformFramebufferSize_ConvertRGBA8888;
 	GLint uniformTexInFragColor_ConvertRGBA6665;
@@ -483,6 +484,9 @@ struct OGLRenderRef
 	GLint uniformStateEnableFogAlphaOnly;
 	GLint uniformStateUseWDepth;
 	GLint uniformStateAlphaTestRef;
+	GLint uniformFramebufferSize_EdgeMark;
+	GLint uniformStateClearPolyID;
+	GLint uniformStateClearDepth;
 	GLint uniformStateEdgeColor;
 	GLint uniformStateFogColor;
 	GLint uniformStateFogDensity;
@@ -638,6 +642,9 @@ protected:
 	bool _emulateSpecialZeroAlphaBlending;
 	bool _emulateDepthEqualsTestTolerance;
 	bool _emulateDepthLEqualPolygonFacing;
+	
+	float _clearDepth;
+	
 	
 	FragmentColor *_mappedFramebuffer;
 	FragmentColor *_workingTextureUnpackBuffer;

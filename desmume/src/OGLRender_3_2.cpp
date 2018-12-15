@@ -23,6 +23,7 @@
 #include <string.h>
 #include <algorithm>
 
+#include "utils/bits.h"
 #include "common.h"
 #include "debug.h"
 #include "NDSSystem.h"
@@ -177,6 +178,8 @@ static const char *GeometryFragShader_150 = {"\
 		bool enableEdgeMarking;\n\
 		bool enableFogAlphaOnly;\n\
 		bool useWDepth;\n\
+		int clearPolyID;\n\
+		float clearDepth;\n\
 		float alphaTestRef;\n\
 		float fogOffset;\n\
 		float fogStep;\n\
@@ -351,6 +354,7 @@ static const char *EdgeMarkVtxShader_150 = {"\
 	\n\
 	in vec2 inPosition;\n\
 	in vec2 inTexCoord0;\n\
+	\n\
 	layout (std140) uniform RenderStates\n\
 	{\n\
 		vec2 framebufferSize;\n\
@@ -360,6 +364,8 @@ static const char *EdgeMarkVtxShader_150 = {"\
 		bool enableEdgeMarking;\n\
 		bool enableFogAlphaOnly;\n\
 		bool useWDepth;\n\
+		int clearPolyID;\n\
+		float clearDepth;\n\
 		float alphaTestRef;\n\
 		float fogOffset;\n\
 		float fogStep;\n\
@@ -401,6 +407,8 @@ static const char *EdgeMarkFragShader_150 = {"\
 		bool enableEdgeMarking;\n\
 		bool enableFogAlphaOnly;\n\
 		bool useWDepth;\n\
+		int clearPolyID;\n\
+		float clearDepth;\n\
 		float alphaTestRef;\n\
 		float fogOffset;\n\
 		float fogStep;\n\
@@ -451,12 +459,51 @@ static const char *EdgeMarkFragShader_150 = {"\
 			isWireframe[3] = bool(polyIDInfo[3].g);\n\
 			isWireframe[4] = bool(polyIDInfo[4].g);\n\
 			\n\
-			for (int i = 1; i < 5; i++)\n\
+			bool isEdgeMarkingClearValues = ((polyID[0] != state.clearPolyID) && (depth[0] < state.clearDepth) && !isWireframe[0]);\n\
+			vec2 pixelCoord = texCoord[0] * state.framebufferSize;\n\
+			\n\
+			if ( ((pixelCoord.x >= state.framebufferSize.x-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[1]) && (depth[0] >= depth[1]) && !isWireframe[1])) )\n\
 			{\n\
-				if ( (polyID[0] != polyID[i]) && (depth[0] >= depth[i]) && !isWireframe[i] )\n\
+				if (pixelCoord.x >= state.framebufferSize.x-1.0)\n\
 				{\n\
-					newEdgeColor = state.edgeColor[polyID[i]/8];\n\
-					break;\n\
+					newEdgeColor = state.edgeColor[polyID[0]/8];\n\
+				}\n\
+				else\n\
+				{\n\
+					newEdgeColor = state.edgeColor[polyID[1]/8];\n\
+				}\n\
+			}\n\
+			else if ( ((pixelCoord.y >= state.framebufferSize.y-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[2]) && (depth[0] >= depth[2]) && !isWireframe[2])) )\n\
+			{\n\
+				if (pixelCoord.y >= state.framebufferSize.y-1.0)\n\
+				{\n\
+					newEdgeColor = state.edgeColor[polyID[0]/8];\n\
+				}\n\
+				else\n\
+				{\n\
+					newEdgeColor = state.edgeColor[polyID[2]/8];\n\
+				}\n\
+			}\n\
+			else if ( ((pixelCoord.x < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[3]) && (depth[0] >= depth[3]) && !isWireframe[3])) )\n\
+			{\n\
+				if (pixelCoord.x < 1.0)\n\
+				{\n\
+					newEdgeColor = state.edgeColor[polyID[0]/8];\n\
+				}\n\
+				else\n\
+				{\n\
+					newEdgeColor = state.edgeColor[polyID[3]/8];\n\
+				}\n\
+			}\n\
+			else if ( ((pixelCoord.y < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[4]) && (depth[0] >= depth[4]) && !isWireframe[4])) )\n\
+			{\n\
+				if (pixelCoord.y < 1.0)\n\
+				{\n\
+					newEdgeColor = state.edgeColor[polyID[0]/8];\n\
+				}\n\
+				else\n\
+				{\n\
+					newEdgeColor = state.edgeColor[polyID[4]/8];\n\
 				}\n\
 			}\n\
 		}\n\
@@ -495,6 +542,8 @@ static const char *FogFragShader_150 = {"\
 		bool enableEdgeMarking;\n\
 		bool enableFogAlphaOnly;\n\
 		bool useWDepth;\n\
+		int clearPolyID;\n\
+		float clearDepth;\n\
 		float alphaTestRef;\n\
 		float fogOffset;\n\
 		float fogStep;\n\
@@ -1560,6 +1609,8 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	state->enableEdgeMarking = (this->_enableEdgeMark) ? GL_TRUE : GL_FALSE;
 	state->enableFogAlphaOnly = (engine.renderState.enableFogAlphaOnly) ? GL_TRUE : GL_FALSE;
 	state->useWDepth = (engine.renderState.wbuffer) ? GL_TRUE : GL_FALSE;
+	state->clearPolyID = this->_clearAttributes.opaquePolyID;
+	state->clearDepth = (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF;
 	state->alphaTestRef = divide5bitBy31_LUT[engine.renderState.alphaTestRef];
 	state->fogColor.r = divide5bitBy31_LUT[(engine.renderState.fogColor      ) & 0x0000001F];
 	state->fogColor.g = divide5bitBy31_LUT[(engine.renderState.fogColor >>  5) & 0x0000001F];
