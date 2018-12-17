@@ -7328,6 +7328,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 	const bool isRead3DLineNative = CurrentRenderer->IsFramebufferNativeSize();
 	const bool isReadVRAMLineNative = this->_isLineCaptureNative[DISPCNT.VRAM_Block][readLineIndexWithOffset];
 	
+	bool willReadNativeVRAM = isReadVRAMLineNative;
 	bool willWriteVRAMLineNative = true;
 	bool needCaptureNative = true;
 	bool needConvertDisplayLine23 = false;
@@ -7343,7 +7344,6 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 	
 	// Convert VRAM for native VRAM capture.
 	const u16 *vramNative16 = (u16 *)MMU.blank_memory;
-	bool willReadNativeVRAM = true;
 	
 	if ( (DISPCAPCNT.SrcB == 0) && (DISPCAPCNT.CaptureSrc != 0) && (vramConfiguration.banks[DISPCNT.VRAM_Block].purpose == VramConfiguration::LCDC) )
 	{
@@ -7353,7 +7353,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 		
 		this->VerifyVRAMLineDidChange(DISPCNT.VRAM_Block, readLineIndexWithOffset);
 		
-		willReadNativeVRAM = isReadVRAMLineNative;
+		willReadNativeVRAM = this->_isLineCaptureNative[DISPCNT.VRAM_Block][readLineIndexWithOffset];
 	}
 	
 	switch (DISPCAPCNT.value & 0x63000000)
@@ -7372,7 +7372,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 			
 		case 0x20000000: // VRAM only - ((DISPCAPCNT.CaptureSrc == 1) && (DISPCAPCNT.SrcA == 0) && (DISPCAPCNT.SrcB == 0))
 		case 0x21000000: // VRAM only - ((DISPCAPCNT.CaptureSrc == 1) && (DISPCAPCNT.SrcA == 1) && (DISPCAPCNT.SrcB == 0))
-			willWriteVRAMLineNative = isReadVRAMLineNative;
+			willWriteVRAMLineNative = willReadNativeVRAM;
 			break;
 			
 		case 0x22000000: // FIFO only - ((DISPCAPCNT.CaptureSrc == 1) && (DISPCAPCNT.SrcA == 0) && (DISPCAPCNT.SrcB == 1))
@@ -7383,7 +7383,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 			
 		case 0x40000000: // Display + VRAM - ((DISPCAPCNT.CaptureSrc == 2) && (DISPCAPCNT.SrcA == 0) && (DISPCAPCNT.SrcB == 0))
 		case 0x60000000: // Display + VRAM - ((DISPCAPCNT.CaptureSrc == 3) && (DISPCAPCNT.SrcA == 0) && (DISPCAPCNT.SrcB == 0))
-			willWriteVRAMLineNative = (isReadDisplayLineNative && isReadVRAMLineNative);
+			willWriteVRAMLineNative = (isReadDisplayLineNative && willReadNativeVRAM);
 			needConvertDisplayLine23 = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
 			needConvertDisplayLine32 = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev);
 			break;
@@ -7398,7 +7398,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 			
 		case 0x41000000: //      3D + VRAM - ((DISPCAPCNT.CaptureSrc == 2) && (DISPCAPCNT.SrcA == 1) && (DISPCAPCNT.SrcB == 0))
 		case 0x61000000: //      3D + VRAM - ((DISPCAPCNT.CaptureSrc == 3) && (DISPCAPCNT.SrcA == 1) && (DISPCAPCNT.SrcB == 0))
-			willWriteVRAMLineNative = (isRead3DLineNative && isReadVRAMLineNative);
+			willWriteVRAMLineNative = (isRead3DLineNative && willReadNativeVRAM);
 			break;
 			
 		case 0x43000000: //      3D + FIFO - ((DISPCAPCNT.CaptureSrc == 2) && (DISPCAPCNT.SrcA == 1) && (DISPCAPCNT.SrcB == 1))
@@ -7458,7 +7458,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 		}
 		else
 		{
-			const u16 *vramPtr16 = (isReadVRAMLineNative) ? vramNative16 : vramCustom16;
+			const u16 *vramPtr16 = (willReadNativeVRAM) ? vramNative16 : vramCustom16;
 			
 			srcAPtr = (DISPCAPCNT.SrcA == 0) ? (u16 *)compInfo.target.lineColorHead : this->_3DFramebuffer16 + compInfo.line.blockOffsetCustom;
 			srcBPtr = (DISPCAPCNT.SrcB == 0) ? vramPtr16 : this->_fifoLine16;
@@ -7478,7 +7478,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 			this->_RenderLine_DisplayCaptureCustom<NDSColorFormat_BGR555_Rev, CAPTURELENGTH>(DISPCAPCNT,
 																							 compInfo.line,
 																							 isReadDisplayLineNative,
-																							 ((srcBPtr == vramCustom16) || (srcBPtr == vramCustom32)),
+																							 (srcBPtr == vramNative16),
 																							 srcAPtr,
 																							 srcBPtr,
 																							 dstCustomPtr);
@@ -7494,7 +7494,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 			this->_RenderLine_DisplayCaptureCustom<OUTPUTFORMAT, CAPTURELENGTH>(DISPCAPCNT,
 																				compInfo.line,
 																				isReadDisplayLineNative,
-																				((srcBPtr == vramCustom16) || (srcBPtr == vramCustom32)),
+																				(srcBPtr == vramNative16),
 																				srcAPtr,
 																				srcBPtr,
 																				dstCustomPtr);
