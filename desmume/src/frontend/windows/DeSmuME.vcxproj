@@ -58,6 +58,10 @@
     <Import Project="desmume.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ExecutablePath>$(VC_ExecutablePath_x64);$(VC_ExecutablePath_x64_x64);$(VC_ExecutablePath_x64_x86);$(WindowsSdk_71A_ExecutablePath);$(WindowsSDK_ExecutablePath);$(MSBuild_ExecutablePath);$(FxCopDir);$(PATH)</ExecutablePath>
+    <ExcludePath>$(VC_ExecutablePath_x64_x64);$(VC_ExecutablePath_x64_x86);$(ExcludePath)</ExcludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Link>
       <LargeAddressAware>true</LargeAddressAware>
