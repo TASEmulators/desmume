@@ -63,12 +63,7 @@ class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 {
 protected:
 	virtual Render3DError InitExtensions();
-	virtual Render3DError InitEdgeMarkProgramBindings();
-	virtual Render3DError InitEdgeMarkProgramShaderLocations();
-	virtual Render3DError InitFogProgramBindings();
-	virtual Render3DError InitFogProgramShaderLocations();
-	virtual Render3DError InitFramebufferOutputProgramBindings();
-	virtual Render3DError InitFramebufferOutputShaderLocations();
+	
 	virtual Render3DError CreateFBOs();
 	virtual void DestroyFBOs();
 	virtual Render3DError CreateMultisampledFBO(GLsizei numSamples);
@@ -77,11 +72,15 @@ protected:
 	virtual Render3DError CreateVAOs();
 	virtual void DestroyVAOs();
 	
-	virtual Render3DError InitGeometryProgramBindings();
-	virtual Render3DError InitGeometryProgramShaderLocations();
-	virtual Render3DError InitGeometryZeroDstAlphaProgramBindings();
-	virtual Render3DError InitGeometryZeroDstAlphaProgramShaderLocations();
-	virtual void DestroyGeometryProgram();
+	virtual Render3DError CreateGeometryPrograms();
+	virtual void DestroyGeometryPrograms();
+	virtual Render3DError CreateGeometryZeroDstAlphaProgram(const char *vtxShaderCString, const char *fragShaderCString);
+	virtual Render3DError CreateMSGeometryZeroDstAlphaProgram(const char *vtxShaderCString, const char *fragShaderCString);
+	virtual void DestroyMSGeometryZeroDstAlphaProgram();
+	virtual Render3DError CreateEdgeMarkProgram(const char *vtxShaderCString, const char *fragShaderCString);
+	virtual Render3DError CreateFogProgram(const char *vtxShaderCString, const char *fragShaderCString);
+	virtual Render3DError CreateFramebufferOutput6665Program(const char *vtxShaderCString, const char *fragShaderCString);
+	virtual Render3DError CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString);
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual Render3DError EnableVertexAttributes();
