@@ -868,7 +868,7 @@
 	<true/>
 	<key>Render3D_OpenGL_EmulateSpecialZeroAlphaBlending</key>
 	<true/>
-	<key>Render3D_OpenGL_EmulateDepthEqualTestTolerance</key>
+	<key>Render3D_OpenGL_EmulateNDSDepthCalculation</key>
 	<true/>
 	<key>Render3D_OpenGL_EmulateDepthLEqualPolygonFacing</key>
 	<false/>

@@ -507,7 +507,7 @@ extern struct TCommonSettings
 		, GFX3D_TXTHack(false)
 		, OpenGL_Emulation_ShadowPolygon(true)
 		, OpenGL_Emulation_SpecialZeroAlphaBlending(true)
-		, OpenGL_Emulation_DepthEqualsTestTolerance(true)
+		, OpenGL_Emulation_NDSDepthCalculation(true)
 		, OpenGL_Emulation_DepthLEqualPolygonFacing(false)
 		, jit_max_block_size(12)
 		, loadToMemory(false)
@@ -569,7 +569,7 @@ extern struct TCommonSettings
 	
 	bool OpenGL_Emulation_ShadowPolygon;
 	bool OpenGL_Emulation_SpecialZeroAlphaBlending;
-	bool OpenGL_Emulation_DepthEqualsTestTolerance;
+	bool OpenGL_Emulation_NDSDepthCalculation;
 	bool OpenGL_Emulation_DepthLEqualPolygonFacing;
 
 	bool loadToMemory;

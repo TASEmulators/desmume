@@ -646,7 +646,6 @@ protected:
 	bool _emulateShadowPolygon;
 	bool _emulateSpecialZeroAlphaBlending;
 	bool _emulateNDSDepthCalculation;
-	bool _emulateDepthEqualsTestTolerance;
 	bool _emulateDepthLEqualPolygonFacing;
 	
 	FragmentColor *_mappedFramebuffer;

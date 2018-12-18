@@ -328,25 +328,15 @@ void main()\n\
 	vec4 newPolyID = vec4(0.0, 0.0, 0.0, 0.0);\n\
 	vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
 	\n\
-#if USE_NDS_DEPTH_CALCULATION || USE_DEPTH_EQUALS_TOLERANCE || ENABLE_FOG\n\
-	#if ENABLE_W_DEPTH\n\
-		#if USE_DEPTH_EQUALS_TOLERANCE\n\
+#if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
 	float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
+	\n\
+	#if ENABLE_W_DEPTH\n\
 	float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
-		#else\n\
-	float newFragDepthValue = clamp( (vtxPosition.w * 4096.0) / 16777215.0, 0.0, 1.0 );\n\
-		#endif\n\
 	#else\n\
 	float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w;\n\
-	\n\
-		#if USE_DEPTH_EQUALS_TOLERANCE\n\
-		float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
-		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-		float newFragDepthValue = clamp( ( (floor(((vtxPosition.z/vertW) * 0.5 + 0.5) * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
-		#else\n\
-		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-		float newFragDepthValue = clamp( (floor(((vtxPosition.z/vertW) * 0.5 + 0.5) * 4194303.0) * 4.0) / 16777215.0, 0.0, 1.0 );\n\
-		#endif\n\
+	// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
+	float newFragDepthValue = clamp( ( (floor(((vtxPosition.z/vertW) * 0.5 + 0.5) * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
 	#endif\n\
 #endif\n\
 	\n\
@@ -413,7 +403,7 @@ void main()\n\
 	gl_FragData[1] = newPolyID;\n\
 	gl_FragData[2] = newFogAttributes;\n\
 	\n\
-#if USE_NDS_DEPTH_CALCULATION || USE_DEPTH_EQUALS_TOLERANCE || ENABLE_FOG\n\
+#if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
 	gl_FragDepth = newFragDepthValue;\n\
 #endif\n\
 }\n\
@@ -1307,7 +1297,6 @@ OpenGLRenderer::OpenGLRenderer()
 	_emulateShadowPolygon = true;
 	_emulateSpecialZeroAlphaBlending = true;
 	_emulateNDSDepthCalculation = true;
-	_emulateDepthEqualsTestTolerance = true;
 	_emulateDepthLEqualPolygonFacing = false;
 	
 	// Init OpenGL rendering states
@@ -2027,7 +2016,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 	
 	if (this->isShaderSupported)
 	{
-		if ((DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass) && performDepthEqualTest && this->_emulateDepthEqualsTestTolerance)
+		if ((DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass) && performDepthEqualTest && this->_emulateNDSDepthCalculation)
 		{
 			if (DRAWMODE == OGLPolyDrawMode_DrawTranslucentPolys)
 			{
@@ -2263,7 +2252,7 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive,
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if ((DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass) && performDepthEqualTest && this->_emulateDepthEqualsTestTolerance && this->isShaderSupported)
+	if ((DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass) && performDepthEqualTest && this->_emulateNDSDepthCalculation && this->isShaderSupported)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthMask(GL_FALSE);
@@ -2373,14 +2362,12 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 	Render3DError error = RENDER3DERROR_NOERR;
 	
 	const bool didSelectedMultisampleSizeChange = (this->_selectedMultisampleSize != CommonSettings.GFX3D_Renderer_MultisampleSize);
-	//const bool didEmulateNDSDepthCalculationChange = (this->_emulateNDSDepthCalculation != CommonSettings.OpenGL_Emulation_NDSDepthCalculation);
-	const bool didEmulateDepthEqualsToleranceChange = (this->_emulateDepthEqualsTestTolerance != CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance);
+	const bool didEmulateNDSDepthCalculationChange = (this->_emulateNDSDepthCalculation != CommonSettings.OpenGL_Emulation_NDSDepthCalculation);
 	const bool didEnableTextureSmoothingChange = (this->_enableTextureSmoothing != CommonSettings.GFX3D_Renderer_TextureSmoothing);
 	
 	this->_emulateShadowPolygon = CommonSettings.OpenGL_Emulation_ShadowPolygon;
 	this->_emulateSpecialZeroAlphaBlending = CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending;
-	//this->_emulateNDSDepthCalculation = CommonSettings.OpenGL_Emulation_NDSDepthCalculation;
-	this->_emulateDepthEqualsTestTolerance = CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance;
+	this->_emulateNDSDepthCalculation = CommonSettings.OpenGL_Emulation_NDSDepthCalculation;
 	this->_emulateDepthLEqualPolygonFacing = CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing;
 	
 	this->_selectedMultisampleSize = CommonSettings.GFX3D_Renderer_MultisampleSize;
@@ -2393,8 +2380,7 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 	}
 	
 	if (didSelectedMultisampleSizeChange ||
-		//didEmulateNDSDepthCalculationChange ||
-		didEmulateDepthEqualsToleranceChange ||
+		didEmulateNDSDepthCalculationChange ||
 		didEnableTextureSmoothingChange )
 	{
 		if (!BEGINGL())
@@ -2409,8 +2395,7 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 		}
 		
 		if ( this->isShaderSupported &&
-			(//didEmulateNDSDepthCalculationChange ||
-			 didEmulateDepthEqualsToleranceChange ||
+			(didEmulateNDSDepthCalculationChange ||
 			 didEnableTextureSmoothingChange) )
 		{
 			glUseProgram(0);
@@ -2521,6 +2506,12 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		
 		if ( (maxDrawBuffersOGL >= 4) && (maxShaderTexUnitsOGL >= 8) )
 		{
+			this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
+			this->_emulateShadowPolygon = CommonSettings.OpenGL_Emulation_ShadowPolygon;
+			this->_emulateSpecialZeroAlphaBlending = CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending;
+			this->_emulateNDSDepthCalculation = CommonSettings.OpenGL_Emulation_NDSDepthCalculation;
+			this->_emulateDepthLEqualPolygonFacing = CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing;
+			
 			error = this->CreateGeometryPrograms();
 			if (error == OGLERROR_NOERR)
 			{
@@ -3158,7 +3149,6 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 	{
 		std::stringstream shaderFlags;
 		shaderFlags << "#define USE_TEXTURE_SMOOTHING " << ((this->_enableTextureSmoothing) ? 1 : 0) << "\n";
-		shaderFlags << "#define USE_DEPTH_EQUALS_TOLERANCE " << ((this->_emulateDepthEqualsTestTolerance) ? 1 : 0) << "\n";
 		shaderFlags << "#define USE_NDS_DEPTH_CALCULATION " << ((this->_emulateNDSDepthCalculation) ? 1 : 0) << "\n";
 		shaderFlags << "\n";
 		shaderFlags << "#define ENABLE_W_DEPTH " << ((programFlags.EnableWDepth) ? 1 : 0) << "\n";

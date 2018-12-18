@@ -208,25 +208,15 @@ void main()\n\
 	vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
 #endif\n\
 	\n\
-#if USE_NDS_DEPTH_CALCULATION || USE_DEPTH_EQUALS_TOLERANCE || ENABLE_FOG\n\
-	#if ENABLE_W_DEPTH\n\
-		#if USE_DEPTH_EQUALS_TOLERANCE\n\
+#if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
 	float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
+	\n\
+	#if ENABLE_W_DEPTH\n\
 	float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
-		#else\n\
-	float newFragDepthValue = clamp( (vtxPosition.w * 4096.0) / 16777215.0, 0.0, 1.0 );\n\
-		#endif\n\
 	#else\n\
 	float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w;\n\
-	\n\
-		#if USE_DEPTH_EQUALS_TOLERANCE\n\
-		float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
-		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-		float newFragDepthValue = clamp( ( (floor(((vtxPosition.z/vertW) * 0.5 + 0.5) * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
-		#else\n\
-		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-		float newFragDepthValue = clamp( (floor(((vtxPosition.z/vertW) * 0.5 + 0.5) * 4194303.0) * 4.0) / 16777215.0, 0.0, 1.0 );\n\
-		#endif\n\
+	// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
+	float newFragDepthValue = clamp( ( (floor(((vtxPosition.z/vertW) * 0.5 + 0.5) * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
 	#endif\n\
 #endif\n\
 	\n\
@@ -308,7 +298,7 @@ void main()\n\
 #if ENABLE_FOG\n\
 	outFogAttributes = newFogAttributes;\n\
 #endif\n\
-#if USE_NDS_DEPTH_CALCULATION || USE_DEPTH_EQUALS_TOLERANCE || ENABLE_FOG\n\
+#if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
 	gl_FragDepth = newFragDepthValue;\n\
 #endif\n\
 }\n\
@@ -900,6 +890,12 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	
 	this->isSampleShadingSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_sample_shading");
 	
+	this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
+	this->_emulateShadowPolygon = CommonSettings.OpenGL_Emulation_ShadowPolygon;
+	this->_emulateSpecialZeroAlphaBlending = CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending;
+	this->_emulateNDSDepthCalculation = CommonSettings.OpenGL_Emulation_NDSDepthCalculation;
+	this->_emulateDepthLEqualPolygonFacing = CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing;
+	
 	error = this->CreateGeometryPrograms();
 	if (error != OGLERROR_NOERR)
 	{
@@ -1389,7 +1385,6 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	{
 		std::stringstream shaderFlags;
 		shaderFlags << "#define USE_TEXTURE_SMOOTHING " << ((this->_enableTextureSmoothing) ? 1 : 0) << "\n";
-		shaderFlags << "#define USE_DEPTH_EQUALS_TOLERANCE " << ((this->_emulateDepthEqualsTestTolerance) ? 1 : 0) << "\n";
 		shaderFlags << "#define USE_NDS_DEPTH_CALCULATION " << ((this->_emulateNDSDepthCalculation) ? 1 : 0) << "\n";
 		shaderFlags << "\n";
 		shaderFlags << "#define ENABLE_W_DEPTH " << ((programFlags.EnableWDepth) ? 1 : 0) << "\n";

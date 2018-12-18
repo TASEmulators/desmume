@@ -123,7 +123,7 @@ public:
 @dynamic render3DFragmentSamplingHack;
 @dynamic openGLEmulateShadowPolygon;
 @dynamic openGLEmulateSpecialZeroAlphaBlending;
-@dynamic openGLEmulateDepthEqualsTestTolerance;
+@dynamic openGLEmulateNDSDepthCalculation;
 @dynamic openGLEmulateDepthLEqualPolygonFacing;
 
 #ifdef ENABLE_SHARED_FETCH_OBJECT
@@ -755,17 +755,17 @@ public:
 	return state;
 }
 
-- (void) setOpenGLEmulateDepthEqualsTestTolerance:(BOOL)state
+- (void) setOpenGLEmulateNDSDepthCalculation:(BOOL)state
 {
 	gpuEvent->ApplyRender3DSettingsLock();
-	CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance = (state) ? true : false;
+	CommonSettings.OpenGL_Emulation_NDSDepthCalculation = (state) ? true : false;
 	gpuEvent->ApplyRender3DSettingsUnlock();
 }
 
-- (BOOL) openGLEmulateDepthEqualsTestTolerance
+- (BOOL) openGLEmulateNDSDepthCalculation
 {
 	gpuEvent->ApplyRender3DSettingsLock();
-	const BOOL state = (CommonSettings.OpenGL_Emulation_DepthEqualsTestTolerance) ? YES : NO;
+	const BOOL state = (CommonSettings.OpenGL_Emulation_NDSDepthCalculation) ? YES : NO;
 	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;

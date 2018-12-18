@@ -169,7 +169,7 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @property (assign) BOOL render3DFragmentSamplingHack;
 @property (assign) BOOL openGLEmulateShadowPolygon;
 @property (assign) BOOL openGLEmulateSpecialZeroAlphaBlending;
-@property (assign) BOOL openGLEmulateDepthEqualsTestTolerance;
+@property (assign) BOOL openGLEmulateNDSDepthCalculation;
 @property (assign) BOOL openGLEmulateDepthLEqualPolygonFacing;
 
 #ifdef ENABLE_SHARED_FETCH_OBJECT

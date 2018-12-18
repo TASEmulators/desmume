@@ -503,7 +503,7 @@
 #define IDC_GPU_COLOR_DEPTH             1095
 #define IDC_SHADOW_POLYGONS             1096
 #define IDC_S_0_ALPHA_BLEND             1097
-#define IDC_DEPTH_EQUALS_TT             1098
+#define IDC_NDS_DEPTH_CALC              1098
 #define IDC_DEPTH_L_EQUAL_PF            1099
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
@@ -1039,7 +1039,7 @@
 #define IDC_KILLSTYLUSTOP               50039
 #define IDC_KILLSTYLUSOFF               50040
 #define ID_LABEL_S_0_ALPHA_BLEND        50186
-#define ID_LABEL_DEPTH_EQUALS_TT        50187
+#define ID_LABEL_NDS_DEPTH_CALC         50187
 #define ID_LABEL_DEPTH_L_EQUAL_PF       50188
 #define IDC_LUASCRIPT_RESERVE_START     58000
 #define IDC_LUASCRIPT_RESERVE_END       58099

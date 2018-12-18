@@ -963,7 +963,7 @@
 	
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateShadowPolygon] forKey:@"Render3D_OpenGL_EmulateShadowPolygon"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateSpecialZeroAlphaBlending] forKey:@"Render3D_OpenGL_EmulateSpecialZeroAlphaBlending"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateDepthEqualsTestTolerance] forKey:@"Render3D_OpenGL_EmulateDepthEqualTestTolerance"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateNDSDepthCalculation] forKey:@"Render3D_OpenGL_EmulateNDSDepthCalculation"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateDepthLEqualPolygonFacing] forKey:@"Render3D_OpenGL_EmulateDepthLEqualPolygonFacing"];
 	
 	[[NSUserDefaults standardUserDefaults] synchronize];
@@ -2396,7 +2396,7 @@
 	
 	[[cdsCore cdsGPU] setOpenGLEmulateShadowPolygon:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateShadowPolygon"]];
 	[[cdsCore cdsGPU] setOpenGLEmulateSpecialZeroAlphaBlending:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateSpecialZeroAlphaBlending"]];
-	[[cdsCore cdsGPU] setOpenGLEmulateDepthEqualsTestTolerance:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateDepthEqualTestTolerance"]];
+	[[cdsCore cdsGPU] setOpenGLEmulateNDSDepthCalculation:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateNDSDepthCalculation"]];
 	[[cdsCore cdsGPU] setOpenGLEmulateDepthLEqualPolygonFacing:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateDepthLEqualPolygonFacing"]];
 	
 	[[[cdsCore cdsGPU] sharedData] fetchSynchronousAtIndex:0];

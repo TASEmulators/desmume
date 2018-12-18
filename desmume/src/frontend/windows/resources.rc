@@ -154,12 +154,12 @@ BEGIN
     CONTROL         "Enable Shadow Polygons",IDC_SHADOW_POLYGONS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,173,137,10
     CONTROL         "Enable Special Zero Alpha Blending",IDC_S_0_ALPHA_BLEND,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,172,173,137,10
-    CONTROL         "Enable Depth Equals Test Tolerance",IDC_DEPTH_EQUALS_TT,
+    CONTROL         "Enable NDS-Style Depth Calculation",IDC_NDS_DEPTH_CALC,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,203,137,10
     CONTROL         "Enable Depth L-Equal Polygon Facing",IDC_DEPTH_L_EQUAL_PF,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,172,203,137,10
     LTEXT           "Disabling this option may cause some shadows to disappear.",ID_LABEL_SHADOW_POLYGONS,17,183,137,16
-    LTEXT           "Disabling this option may cause certain polygons to get caught up in Z-fighting or disappear completely.",ID_LABEL_DEPTH_EQUALS_TT,17,213,137,24
+    LTEXT           "Disabling this option may cause certain polygons to render incorrectly or disappear completely.",ID_LABEL_NDS_DEPTH_CALC,17,213,137,24
     LTEXT           "Disabling this option may cause some colors to look darker than normal.",ID_LABEL_S_0_ALPHA_BLEND,172,183,137,16
     LTEXT           "Disabling this option may cause some fragments to disappear. Disabled by default due to performance impact.",ID_LABEL_DEPTH_L_EQUAL_PF,172,213,137,24
     GROUPBOX        "Rendering Accuracy Options",IDC_STATIC,12,161,305,81,BS_CENTER
