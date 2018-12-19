@@ -208,9 +208,9 @@ void main()\n\
 	vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
 #endif\n\
 	\n\
-#if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
 	float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
 	\n\
+#if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
 	#if ENABLE_W_DEPTH\n\
 	float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
 	#else\n\
@@ -538,79 +538,10 @@ layout (std140) uniform RenderStates\n\
 } state;\n\
 \n\
 out vec2 texCoord;\n\
-out float fogDepthCompare[32];\n\
-out float fogDepthInvDiff[32];\n\
 \n\
 void main()\n\
 {\n\
 	texCoord = inTexCoord0;\n\
-	\n\
-	fogDepthCompare[ 0] = min(state.fogOffset + (state.fogStep* 1.0), 1.0);\n\
-	fogDepthCompare[ 1] = min(state.fogOffset + (state.fogStep* 2.0), 1.0);\n\
-	fogDepthCompare[ 2] = min(state.fogOffset + (state.fogStep* 3.0), 1.0);\n\
-	fogDepthCompare[ 3] = min(state.fogOffset + (state.fogStep* 4.0), 1.0);\n\
-	fogDepthCompare[ 4] = min(state.fogOffset + (state.fogStep* 5.0), 1.0);\n\
-	fogDepthCompare[ 5] = min(state.fogOffset + (state.fogStep* 6.0), 1.0);\n\
-	fogDepthCompare[ 6] = min(state.fogOffset + (state.fogStep* 7.0), 1.0);\n\
-	fogDepthCompare[ 7] = min(state.fogOffset + (state.fogStep* 8.0), 1.0);\n\
-	fogDepthCompare[ 8] = min(state.fogOffset + (state.fogStep* 9.0), 1.0);\n\
-	fogDepthCompare[ 9] = min(state.fogOffset + (state.fogStep*10.0), 1.0);\n\
-	fogDepthCompare[10] = min(state.fogOffset + (state.fogStep*11.0), 1.0);\n\
-	fogDepthCompare[11] = min(state.fogOffset + (state.fogStep*12.0), 1.0);\n\
-	fogDepthCompare[12] = min(state.fogOffset + (state.fogStep*13.0), 1.0);\n\
-	fogDepthCompare[13] = min(state.fogOffset + (state.fogStep*14.0), 1.0);\n\
-	fogDepthCompare[14] = min(state.fogOffset + (state.fogStep*15.0), 1.0);\n\
-	fogDepthCompare[15] = min(state.fogOffset + (state.fogStep*16.0), 1.0);\n\
-	fogDepthCompare[16] = min(state.fogOffset + (state.fogStep*17.0), 1.0);\n\
-	fogDepthCompare[17] = min(state.fogOffset + (state.fogStep*18.0), 1.0);\n\
-	fogDepthCompare[18] = min(state.fogOffset + (state.fogStep*19.0), 1.0);\n\
-	fogDepthCompare[19] = min(state.fogOffset + (state.fogStep*20.0), 1.0);\n\
-	fogDepthCompare[20] = min(state.fogOffset + (state.fogStep*21.0), 1.0);\n\
-	fogDepthCompare[21] = min(state.fogOffset + (state.fogStep*22.0), 1.0);\n\
-	fogDepthCompare[22] = min(state.fogOffset + (state.fogStep*23.0), 1.0);\n\
-	fogDepthCompare[23] = min(state.fogOffset + (state.fogStep*24.0), 1.0);\n\
-	fogDepthCompare[24] = min(state.fogOffset + (state.fogStep*25.0), 1.0);\n\
-	fogDepthCompare[25] = min(state.fogOffset + (state.fogStep*26.0), 1.0);\n\
-	fogDepthCompare[26] = min(state.fogOffset + (state.fogStep*27.0), 1.0);\n\
-	fogDepthCompare[27] = min(state.fogOffset + (state.fogStep*28.0), 1.0);\n\
-	fogDepthCompare[28] = min(state.fogOffset + (state.fogStep*29.0), 1.0);\n\
-	fogDepthCompare[29] = min(state.fogOffset + (state.fogStep*30.0), 1.0);\n\
-	fogDepthCompare[30] = min(state.fogOffset + (state.fogStep*31.0), 1.0);\n\
-	fogDepthCompare[31] = min(state.fogOffset + (state.fogStep*32.0), 1.0);\n\
-	\n\
-	fogDepthInvDiff[ 0] = 0.0;\n\
-	fogDepthInvDiff[ 1] = 1.0 / (fogDepthCompare[ 1] - fogDepthCompare[ 0]);\n\
-	fogDepthInvDiff[ 2] = 1.0 / (fogDepthCompare[ 2] - fogDepthCompare[ 1]);\n\
-	fogDepthInvDiff[ 3] = 1.0 / (fogDepthCompare[ 3] - fogDepthCompare[ 2]);\n\
-	fogDepthInvDiff[ 4] = 1.0 / (fogDepthCompare[ 4] - fogDepthCompare[ 3]);\n\
-	fogDepthInvDiff[ 5] = 1.0 / (fogDepthCompare[ 5] - fogDepthCompare[ 4]);\n\
-	fogDepthInvDiff[ 6] = 1.0 / (fogDepthCompare[ 6] - fogDepthCompare[ 5]);\n\
-	fogDepthInvDiff[ 7] = 1.0 / (fogDepthCompare[ 7] - fogDepthCompare[ 6]);\n\
-	fogDepthInvDiff[ 8] = 1.0 / (fogDepthCompare[ 8] - fogDepthCompare[ 7]);\n\
-	fogDepthInvDiff[ 9] = 1.0 / (fogDepthCompare[ 9] - fogDepthCompare[ 8]);\n\
-	fogDepthInvDiff[10] = 1.0 / (fogDepthCompare[10] - fogDepthCompare[ 9]);\n\
-	fogDepthInvDiff[11] = 1.0 / (fogDepthCompare[11] - fogDepthCompare[10]);\n\
-	fogDepthInvDiff[12] = 1.0 / (fogDepthCompare[12] - fogDepthCompare[11]);\n\
-	fogDepthInvDiff[13] = 1.0 / (fogDepthCompare[13] - fogDepthCompare[12]);\n\
-	fogDepthInvDiff[14] = 1.0 / (fogDepthCompare[14] - fogDepthCompare[13]);\n\
-	fogDepthInvDiff[15] = 1.0 / (fogDepthCompare[15] - fogDepthCompare[14]);\n\
-	fogDepthInvDiff[16] = 1.0 / (fogDepthCompare[16] - fogDepthCompare[15]);\n\
-	fogDepthInvDiff[17] = 1.0 / (fogDepthCompare[17] - fogDepthCompare[16]);\n\
-	fogDepthInvDiff[18] = 1.0 / (fogDepthCompare[18] - fogDepthCompare[17]);\n\
-	fogDepthInvDiff[19] = 1.0 / (fogDepthCompare[19] - fogDepthCompare[18]);\n\
-	fogDepthInvDiff[20] = 1.0 / (fogDepthCompare[20] - fogDepthCompare[19]);\n\
-	fogDepthInvDiff[21] = 1.0 / (fogDepthCompare[21] - fogDepthCompare[20]);\n\
-	fogDepthInvDiff[22] = 1.0 / (fogDepthCompare[22] - fogDepthCompare[21]);\n\
-	fogDepthInvDiff[23] = 1.0 / (fogDepthCompare[23] - fogDepthCompare[22]);\n\
-	fogDepthInvDiff[24] = 1.0 / (fogDepthCompare[24] - fogDepthCompare[23]);\n\
-	fogDepthInvDiff[25] = 1.0 / (fogDepthCompare[25] - fogDepthCompare[24]);\n\
-	fogDepthInvDiff[26] = 1.0 / (fogDepthCompare[26] - fogDepthCompare[25]);\n\
-	fogDepthInvDiff[27] = 1.0 / (fogDepthCompare[27] - fogDepthCompare[26]);\n\
-	fogDepthInvDiff[28] = 1.0 / (fogDepthCompare[28] - fogDepthCompare[27]);\n\
-	fogDepthInvDiff[29] = 1.0 / (fogDepthCompare[29] - fogDepthCompare[28]);\n\
-	fogDepthInvDiff[30] = 1.0 / (fogDepthCompare[30] - fogDepthCompare[29]);\n\
-	fogDepthInvDiff[31] = 1.0 / (fogDepthCompare[31] - fogDepthCompare[30]);\n\
-	\n\
 	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 }\n\
 "};
@@ -618,8 +549,6 @@ void main()\n\
 // Fragment shader for applying fog, GLSL 1.50
 static const char *FogFragShader_150 = {"\
 in vec2 texCoord;\n\
-in float fogDepthCompare[32];\n\
-in float fogDepthInvDiff[32];\n\
 \n\
 layout (std140) uniform RenderStates\n\
 {\n\
@@ -655,137 +584,137 @@ void main()\n\
 		float inFragDepth = texture(texInFragDepth, texCoord).r;\n\
 		float fogMixWeight = 0.0;\n\
 		\n\
-		if (inFragDepth <= fogDepthCompare[0])\n\
+		if (inFragDepth <= FOG_DEPTH_COMPARE_0)\n\
 		{\n\
 			fogMixWeight = state.fogDensity[0];\n\
 		}\n\
-		else if (inFragDepth >= fogDepthCompare[31])\n\
+		else if (inFragDepth >= FOG_DEPTH_COMPARE_31)\n\
 		{\n\
 			fogMixWeight = state.fogDensity[31];\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[ 1])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_1)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[ 0], state.fogDensity[ 1], (inFragDepth - fogDepthCompare[ 0]) * fogDepthInvDiff[ 1]);\n\
+			fogMixWeight = mix(state.fogDensity[ 0], state.fogDensity[ 1], (inFragDepth - FOG_DEPTH_COMPARE_0)  * FOG_DEPTH_INVDIFF_1);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[ 2])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_2)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[ 1], state.fogDensity[ 2], (inFragDepth - fogDepthCompare[ 1]) * fogDepthInvDiff[ 2]);\n\
+			fogMixWeight = mix(state.fogDensity[ 1], state.fogDensity[ 2], (inFragDepth - FOG_DEPTH_COMPARE_1)  * FOG_DEPTH_INVDIFF_2);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[ 3])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_3)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[ 2], state.fogDensity[ 3], (inFragDepth - fogDepthCompare[ 2]) * fogDepthInvDiff[ 3]);\n\
+			fogMixWeight = mix(state.fogDensity[ 2], state.fogDensity[ 3], (inFragDepth - FOG_DEPTH_COMPARE_2)  * FOG_DEPTH_INVDIFF_3);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[ 4])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_4)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[ 3], state.fogDensity[ 4], (inFragDepth - fogDepthCompare[ 3]) * fogDepthInvDiff[ 4]);\n\
+			fogMixWeight = mix(state.fogDensity[ 3], state.fogDensity[ 4], (inFragDepth - FOG_DEPTH_COMPARE_3)  * FOG_DEPTH_INVDIFF_4);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[ 5])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_5)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[ 4], state.fogDensity[ 5], (inFragDepth - fogDepthCompare[ 4]) * fogDepthInvDiff[ 5]);\n\
+			fogMixWeight = mix(state.fogDensity[ 4], state.fogDensity[ 5], (inFragDepth - FOG_DEPTH_COMPARE_4)  * FOG_DEPTH_INVDIFF_5);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[ 6])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_6)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[ 5], state.fogDensity[ 6], (inFragDepth - fogDepthCompare[ 5]) * fogDepthInvDiff[ 6]);\n\
+			fogMixWeight = mix(state.fogDensity[ 5], state.fogDensity[ 6], (inFragDepth - FOG_DEPTH_COMPARE_5)  * FOG_DEPTH_INVDIFF_6);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[ 7])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_7)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[ 6], state.fogDensity[ 7], (inFragDepth - fogDepthCompare[ 6]) * fogDepthInvDiff[ 7]);\n\
+			fogMixWeight = mix(state.fogDensity[ 6], state.fogDensity[ 7], (inFragDepth - FOG_DEPTH_COMPARE_6)  * FOG_DEPTH_INVDIFF_7);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[ 8])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_8)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[ 7], state.fogDensity[ 8], (inFragDepth - fogDepthCompare[ 7]) * fogDepthInvDiff[ 8]);\n\
+			fogMixWeight = mix(state.fogDensity[ 7], state.fogDensity[ 8], (inFragDepth - FOG_DEPTH_COMPARE_7)  * FOG_DEPTH_INVDIFF_8);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[ 9])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_9)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[ 8], state.fogDensity[ 9], (inFragDepth - fogDepthCompare[ 8]) * fogDepthInvDiff[ 9]);\n\
+			fogMixWeight = mix(state.fogDensity[ 8], state.fogDensity[ 9], (inFragDepth - FOG_DEPTH_COMPARE_8)  * FOG_DEPTH_INVDIFF_9);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[10])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_10)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[ 9], state.fogDensity[10], (inFragDepth - fogDepthCompare[ 9]) * fogDepthInvDiff[10]);\n\
+			fogMixWeight = mix(state.fogDensity[ 9], state.fogDensity[10], (inFragDepth - FOG_DEPTH_COMPARE_9)  * FOG_DEPTH_INVDIFF_10);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[11])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_11)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[10], state.fogDensity[11], (inFragDepth - fogDepthCompare[10]) * fogDepthInvDiff[11]);\n\
+			fogMixWeight = mix(state.fogDensity[10], state.fogDensity[11], (inFragDepth - FOG_DEPTH_COMPARE_10) * FOG_DEPTH_INVDIFF_11);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[12])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_12)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[11], state.fogDensity[12], (inFragDepth - fogDepthCompare[11]) * fogDepthInvDiff[12]);\n\
+			fogMixWeight = mix(state.fogDensity[11], state.fogDensity[12], (inFragDepth - FOG_DEPTH_COMPARE_11) * FOG_DEPTH_INVDIFF_12);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[13])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_13)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[12], state.fogDensity[13], (inFragDepth - fogDepthCompare[12]) * fogDepthInvDiff[13]);\n\
+			fogMixWeight = mix(state.fogDensity[12], state.fogDensity[13], (inFragDepth - FOG_DEPTH_COMPARE_12) * FOG_DEPTH_INVDIFF_13);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[14])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_14)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[13], state.fogDensity[14], (inFragDepth - fogDepthCompare[13]) * fogDepthInvDiff[14]);\n\
+			fogMixWeight = mix(state.fogDensity[13], state.fogDensity[14], (inFragDepth - FOG_DEPTH_COMPARE_13) * FOG_DEPTH_INVDIFF_14);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[15])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_15)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[14], state.fogDensity[15], (inFragDepth - fogDepthCompare[14]) * fogDepthInvDiff[15]);\n\
+			fogMixWeight = mix(state.fogDensity[14], state.fogDensity[15], (inFragDepth - FOG_DEPTH_COMPARE_14) * FOG_DEPTH_INVDIFF_15);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[16])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_16)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[15], state.fogDensity[16], (inFragDepth - fogDepthCompare[15]) * fogDepthInvDiff[16]);\n\
+			fogMixWeight = mix(state.fogDensity[15], state.fogDensity[16], (inFragDepth - FOG_DEPTH_COMPARE_15) * FOG_DEPTH_INVDIFF_16);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[17])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_17)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[16], state.fogDensity[17], (inFragDepth - fogDepthCompare[16]) * fogDepthInvDiff[17]);\n\
+			fogMixWeight = mix(state.fogDensity[16], state.fogDensity[17], (inFragDepth - FOG_DEPTH_COMPARE_16) * FOG_DEPTH_INVDIFF_17);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[18])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_18)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[17], state.fogDensity[18], (inFragDepth - fogDepthCompare[17]) * fogDepthInvDiff[18]);\n\
+			fogMixWeight = mix(state.fogDensity[17], state.fogDensity[18], (inFragDepth - FOG_DEPTH_COMPARE_17) * FOG_DEPTH_INVDIFF_18);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[19])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_19)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[18], state.fogDensity[19], (inFragDepth - fogDepthCompare[18]) * fogDepthInvDiff[19]);\n\
+			fogMixWeight = mix(state.fogDensity[18], state.fogDensity[19], (inFragDepth - FOG_DEPTH_COMPARE_18) * FOG_DEPTH_INVDIFF_19);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[20])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_20)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[19], state.fogDensity[20], (inFragDepth - fogDepthCompare[19]) * fogDepthInvDiff[20]);\n\
+			fogMixWeight = mix(state.fogDensity[19], state.fogDensity[20], (inFragDepth - FOG_DEPTH_COMPARE_19) * FOG_DEPTH_INVDIFF_20);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[21])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_21)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[20], state.fogDensity[21], (inFragDepth - fogDepthCompare[20]) * fogDepthInvDiff[21]);\n\
+			fogMixWeight = mix(state.fogDensity[20], state.fogDensity[21], (inFragDepth - FOG_DEPTH_COMPARE_20) * FOG_DEPTH_INVDIFF_21);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[22])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_22)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[21], state.fogDensity[22], (inFragDepth - fogDepthCompare[21]) * fogDepthInvDiff[22]);\n\
+			fogMixWeight = mix(state.fogDensity[21], state.fogDensity[22], (inFragDepth - FOG_DEPTH_COMPARE_21) * FOG_DEPTH_INVDIFF_22);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[23])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_23)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[22], state.fogDensity[23], (inFragDepth - fogDepthCompare[22]) * fogDepthInvDiff[23]);\n\
+			fogMixWeight = mix(state.fogDensity[22], state.fogDensity[23], (inFragDepth - FOG_DEPTH_COMPARE_22) * FOG_DEPTH_INVDIFF_23);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[24])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_24)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[23], state.fogDensity[24], (inFragDepth - fogDepthCompare[23]) * fogDepthInvDiff[24]);\n\
+			fogMixWeight = mix(state.fogDensity[23], state.fogDensity[24], (inFragDepth - FOG_DEPTH_COMPARE_23) * FOG_DEPTH_INVDIFF_24);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[25])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_25)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[24], state.fogDensity[25], (inFragDepth - fogDepthCompare[24]) * fogDepthInvDiff[25]);\n\
+			fogMixWeight = mix(state.fogDensity[24], state.fogDensity[25], (inFragDepth - FOG_DEPTH_COMPARE_24) * FOG_DEPTH_INVDIFF_25);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[26])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_26)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[25], state.fogDensity[26], (inFragDepth - fogDepthCompare[25]) * fogDepthInvDiff[26]);\n\
+			fogMixWeight = mix(state.fogDensity[25], state.fogDensity[26], (inFragDepth - FOG_DEPTH_COMPARE_25) * FOG_DEPTH_INVDIFF_26);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[27])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_27)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[26], state.fogDensity[27], (inFragDepth - fogDepthCompare[26]) * fogDepthInvDiff[27]);\n\
+			fogMixWeight = mix(state.fogDensity[26], state.fogDensity[27], (inFragDepth - FOG_DEPTH_COMPARE_26) * FOG_DEPTH_INVDIFF_27);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[28])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_28)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[27], state.fogDensity[28], (inFragDepth - fogDepthCompare[27]) * fogDepthInvDiff[28]);\n\
+			fogMixWeight = mix(state.fogDensity[27], state.fogDensity[28], (inFragDepth - FOG_DEPTH_COMPARE_27) * FOG_DEPTH_INVDIFF_28);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[29])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_29)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[28], state.fogDensity[29], (inFragDepth - fogDepthCompare[28]) * fogDepthInvDiff[29]);\n\
+			fogMixWeight = mix(state.fogDensity[28], state.fogDensity[29], (inFragDepth - FOG_DEPTH_COMPARE_28) * FOG_DEPTH_INVDIFF_29);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[30])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_30)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[29], state.fogDensity[30], (inFragDepth - fogDepthCompare[29]) * fogDepthInvDiff[30]);\n\
+			fogMixWeight = mix(state.fogDensity[29], state.fogDensity[30], (inFragDepth - FOG_DEPTH_COMPARE_29) * FOG_DEPTH_INVDIFF_30);\n\
 		}\n\
-		else if (inFragDepth <= fogDepthCompare[31])\n\
+		else if (inFragDepth <= FOG_DEPTH_COMPARE_31)\n\
 		{\n\
-			fogMixWeight = mix(state.fogDensity[30], state.fogDensity[31], (inFragDepth - fogDepthCompare[30]) * fogDepthInvDiff[31]);\n\
+			fogMixWeight = mix(state.fogDensity[30], state.fogDensity[31], (inFragDepth - FOG_DEPTH_COMPARE_30) * FOG_DEPTH_INVDIFF_31);\n\
 		}\n\
 		\n\
 		newFoggedColor = mix(inFragColor, (state.enableFogAlphaOnly) ? vec4(inFragColor.rgb, state.fogColor.a) : state.fogColor, fogMixWeight);\n\
@@ -939,8 +868,6 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	INFO("OpenGL: Successfully created geometry shaders.\n");
 	error = this->InitPostprocessingPrograms(EdgeMarkVtxShader_150,
 											 EdgeMarkFragShader_150,
-											 FogVtxShader_150,
-											 FogFragShader_150,
 											 FramebufferOutputVtxShader_150,
 											 FramebufferOutput6665FragShader_150,
 											 NULL);
@@ -1703,7 +1630,7 @@ Render3DError OpenGLRenderer_3_2::CreateEdgeMarkProgram(const char *vtxShaderCSt
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_3_2::CreateFogProgram(const char *vtxShaderCString, const char *fragShaderCString)
+Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogProgramKey, const char *vtxShaderCString, const char *fragShaderCString)
 {
 	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
@@ -1713,48 +1640,161 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const char *vtxShaderCString,
 		return error;
 	}
 	
+	const u16 fogOffset = fogProgramKey.offset;
+	const u16 fogShift = (0x0400 >> fogProgramKey.shift);
+	
+	const GLfloat fogDepthCompare[32] = {
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  1)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  2)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  3)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  4)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  5)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  6)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  7)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  8)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  9)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 10)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 11)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 12)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 13)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 14)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 15)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 16)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 17)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 18)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 19)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 20)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 21)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 22)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 23)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 24)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 25)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 26)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 27)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 28)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 29)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 30)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 31)) / 32767.0f, 1.0f),
+		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 32)) / 32767.0f, 1.0f)
+	};
+	
 	std::stringstream shaderHeader;
 	shaderHeader << "#version 150\n";
 	shaderHeader << "\n";
 	
+	std::stringstream fragDepthConstants;
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_0  " << fogDepthCompare[ 0] << (((fogDepthCompare[ 0] == 0.0f) || (fogDepthCompare[ 0] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_1  " << fogDepthCompare[ 1] << (((fogDepthCompare[ 1] == 0.0f) || (fogDepthCompare[ 1] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_2  " << fogDepthCompare[ 2] << (((fogDepthCompare[ 2] == 0.0f) || (fogDepthCompare[ 2] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_3  " << fogDepthCompare[ 3] << (((fogDepthCompare[ 3] == 0.0f) || (fogDepthCompare[ 3] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_4  " << fogDepthCompare[ 4] << (((fogDepthCompare[ 4] == 0.0f) || (fogDepthCompare[ 4] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_5  " << fogDepthCompare[ 5] << (((fogDepthCompare[ 5] == 0.0f) || (fogDepthCompare[ 5] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_6  " << fogDepthCompare[ 6] << (((fogDepthCompare[ 6] == 0.0f) || (fogDepthCompare[ 6] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_7  " << fogDepthCompare[ 7] << (((fogDepthCompare[ 7] == 0.0f) || (fogDepthCompare[ 7] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_8  " << fogDepthCompare[ 8] << (((fogDepthCompare[ 8] == 0.0f) || (fogDepthCompare[ 8] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_9  " << fogDepthCompare[ 9] << (((fogDepthCompare[ 9] == 0.0f) || (fogDepthCompare[ 9] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_10 " << fogDepthCompare[10] << (((fogDepthCompare[10] == 0.0f) || (fogDepthCompare[10] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_11 " << fogDepthCompare[11] << (((fogDepthCompare[11] == 0.0f) || (fogDepthCompare[11] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_12 " << fogDepthCompare[12] << (((fogDepthCompare[12] == 0.0f) || (fogDepthCompare[12] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_13 " << fogDepthCompare[13] << (((fogDepthCompare[13] == 0.0f) || (fogDepthCompare[13] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_14 " << fogDepthCompare[14] << (((fogDepthCompare[14] == 0.0f) || (fogDepthCompare[14] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_15 " << fogDepthCompare[15] << (((fogDepthCompare[15] == 0.0f) || (fogDepthCompare[15] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_16 " << fogDepthCompare[16] << (((fogDepthCompare[16] == 0.0f) || (fogDepthCompare[16] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_17 " << fogDepthCompare[17] << (((fogDepthCompare[17] == 0.0f) || (fogDepthCompare[17] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_18 " << fogDepthCompare[18] << (((fogDepthCompare[18] == 0.0f) || (fogDepthCompare[18] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_19 " << fogDepthCompare[19] << (((fogDepthCompare[19] == 0.0f) || (fogDepthCompare[19] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_20 " << fogDepthCompare[20] << (((fogDepthCompare[20] == 0.0f) || (fogDepthCompare[20] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_21 " << fogDepthCompare[21] << (((fogDepthCompare[21] == 0.0f) || (fogDepthCompare[21] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_22 " << fogDepthCompare[22] << (((fogDepthCompare[22] == 0.0f) || (fogDepthCompare[22] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_23 " << fogDepthCompare[23] << (((fogDepthCompare[23] == 0.0f) || (fogDepthCompare[23] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_24 " << fogDepthCompare[24] << (((fogDepthCompare[24] == 0.0f) || (fogDepthCompare[24] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_25 " << fogDepthCompare[25] << (((fogDepthCompare[25] == 0.0f) || (fogDepthCompare[25] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_26 " << fogDepthCompare[26] << (((fogDepthCompare[26] == 0.0f) || (fogDepthCompare[26] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_27 " << fogDepthCompare[27] << (((fogDepthCompare[27] == 0.0f) || (fogDepthCompare[27] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_28 " << fogDepthCompare[28] << (((fogDepthCompare[28] == 0.0f) || (fogDepthCompare[28] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_29 " << fogDepthCompare[29] << (((fogDepthCompare[29] == 0.0f) || (fogDepthCompare[29] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_30 " << fogDepthCompare[30] << (((fogDepthCompare[30] == 0.0f) || (fogDepthCompare[30] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_COMPARE_31 " << fogDepthCompare[31] << (((fogDepthCompare[31] == 0.0f) || (fogDepthCompare[31] == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_0   0.0\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_1  (1.0 / (FOG_DEPTH_COMPARE_1  - FOG_DEPTH_COMPARE_0))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_2  (1.0 / (FOG_DEPTH_COMPARE_2  - FOG_DEPTH_COMPARE_1))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_3  (1.0 / (FOG_DEPTH_COMPARE_3  - FOG_DEPTH_COMPARE_2))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_4  (1.0 / (FOG_DEPTH_COMPARE_4  - FOG_DEPTH_COMPARE_3))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_5  (1.0 / (FOG_DEPTH_COMPARE_5  - FOG_DEPTH_COMPARE_4))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_6  (1.0 / (FOG_DEPTH_COMPARE_6  - FOG_DEPTH_COMPARE_5))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_7  (1.0 / (FOG_DEPTH_COMPARE_7  - FOG_DEPTH_COMPARE_6))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_8  (1.0 / (FOG_DEPTH_COMPARE_8  - FOG_DEPTH_COMPARE_7))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_9  (1.0 / (FOG_DEPTH_COMPARE_9  - FOG_DEPTH_COMPARE_8))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_10 (1.0 / (FOG_DEPTH_COMPARE_10 - FOG_DEPTH_COMPARE_9))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_11 (1.0 / (FOG_DEPTH_COMPARE_11 - FOG_DEPTH_COMPARE_10))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_12 (1.0 / (FOG_DEPTH_COMPARE_12 - FOG_DEPTH_COMPARE_11))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_13 (1.0 / (FOG_DEPTH_COMPARE_13 - FOG_DEPTH_COMPARE_12))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_14 (1.0 / (FOG_DEPTH_COMPARE_14 - FOG_DEPTH_COMPARE_13))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_15 (1.0 / (FOG_DEPTH_COMPARE_15 - FOG_DEPTH_COMPARE_14))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_16 (1.0 / (FOG_DEPTH_COMPARE_16 - FOG_DEPTH_COMPARE_15))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_17 (1.0 / (FOG_DEPTH_COMPARE_17 - FOG_DEPTH_COMPARE_16))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_18 (1.0 / (FOG_DEPTH_COMPARE_18 - FOG_DEPTH_COMPARE_17))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_19 (1.0 / (FOG_DEPTH_COMPARE_19 - FOG_DEPTH_COMPARE_18))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_20 (1.0 / (FOG_DEPTH_COMPARE_20 - FOG_DEPTH_COMPARE_19))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_21 (1.0 / (FOG_DEPTH_COMPARE_21 - FOG_DEPTH_COMPARE_20))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_22 (1.0 / (FOG_DEPTH_COMPARE_22 - FOG_DEPTH_COMPARE_21))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_23 (1.0 / (FOG_DEPTH_COMPARE_23 - FOG_DEPTH_COMPARE_22))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_24 (1.0 / (FOG_DEPTH_COMPARE_24 - FOG_DEPTH_COMPARE_23))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_25 (1.0 / (FOG_DEPTH_COMPARE_25 - FOG_DEPTH_COMPARE_24))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_26 (1.0 / (FOG_DEPTH_COMPARE_26 - FOG_DEPTH_COMPARE_25))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_27 (1.0 / (FOG_DEPTH_COMPARE_27 - FOG_DEPTH_COMPARE_26))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_28 (1.0 / (FOG_DEPTH_COMPARE_28 - FOG_DEPTH_COMPARE_27))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_29 (1.0 / (FOG_DEPTH_COMPARE_29 - FOG_DEPTH_COMPARE_28))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_30 (1.0 / (FOG_DEPTH_COMPARE_30 - FOG_DEPTH_COMPARE_29))\n";
+	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_31 (1.0 / (FOG_DEPTH_COMPARE_31 - FOG_DEPTH_COMPARE_30))\n";
+	fragDepthConstants << "\n";
+	
 	std::string vtxShaderCode  = shaderHeader.str() + std::string(vtxShaderCString);
-	std::string fragShaderCode = shaderHeader.str() + std::string(fragShaderCString);
+	std::string fragShaderCode = shaderHeader.str() + fragDepthConstants.str() + std::string(fragShaderCString);
+	
+	OGLFogShaderID shaderID;
+	shaderID.program = 0;
+	shaderID.fragShader = 0;
 	
 	error = this->ShaderProgramCreate(OGLRef.vertexFogShaderID,
-									  OGLRef.fragmentFogShaderID,
-									  OGLRef.programFogID,
+									  shaderID.fragShader,
+									  shaderID.program,
 									  vtxShaderCode.c_str(),
 									  fragShaderCode.c_str());
+	
+	this->_fogProgramMap[fogProgramKey.key] = shaderID;
+	
 	if (error != OGLERROR_NOERR)
 	{
 		INFO("OpenGL: Failed to create the FOG shader program.\n");
 		glUseProgram(0);
-		this->DestroyFogProgram();
+		this->DestroyFogProgram(fogProgramKey);
 		return error;
 	}
 	
-	glBindAttribLocation(OGLRef.programFogID, OGLVertexAttributeID_Position, "inPosition");
-	glBindAttribLocation(OGLRef.programFogID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
-	glBindFragDataLocation(OGLRef.programFogID, 0, "outFragColor");
+	glBindAttribLocation(shaderID.program, OGLVertexAttributeID_Position, "inPosition");
+	glBindAttribLocation(shaderID.program, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
+	glBindFragDataLocation(shaderID.program, 0, "outFragColor");
 	
-	glLinkProgram(OGLRef.programFogID);
-	if (!this->ValidateShaderProgramLink(OGLRef.programFogID))
+	glLinkProgram(shaderID.program);
+	if (!this->ValidateShaderProgramLink(shaderID.program))
 	{
 		INFO("OpenGL: Failed to link the FOG shader program.\n");
 		glUseProgram(0);
-		this->DestroyFogProgram();
+		this->DestroyFogProgram(fogProgramKey);
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	glValidateProgram(OGLRef.programFogID);
-	glUseProgram(OGLRef.programFogID);
+	glValidateProgram(shaderID.program);
+	glUseProgram(shaderID.program);
 	
-	const GLuint uniformBlockRenderStates = glGetUniformBlockIndex(OGLRef.programFogID, "RenderStates");
-	glUniformBlockBinding(OGLRef.programFogID, uniformBlockRenderStates, OGLBindingPointID_RenderStates);
+	const GLuint uniformBlockRenderStates = glGetUniformBlockIndex(shaderID.program, "RenderStates");
+	glUniformBlockBinding(shaderID.program, uniformBlockRenderStates, OGLBindingPointID_RenderStates);
 	
-	const GLint uniformTexGColor	= glGetUniformLocation(OGLRef.programFogID, "texInFragColor");
-	const GLint uniformTexGDepth	= glGetUniformLocation(OGLRef.programFogID, "texInFragDepth");
-	const GLint uniformTexGFog		= glGetUniformLocation(OGLRef.programFogID, "texInFogAttributes");
+	const GLint uniformTexGColor	= glGetUniformLocation(shaderID.program, "texInFragColor");
+	const GLint uniformTexGDepth	= glGetUniformLocation(shaderID.program, "texInFragDepth");
+	const GLint uniformTexGFog		= glGetUniformLocation(shaderID.program, "texInFogAttributes");
 	glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
 	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGFog, OGLTextureUnitID_FogAttr);
@@ -2262,13 +2302,30 @@ Render3DError OpenGLRenderer_3_2::RenderEdgeMarking(const u16 *colorTable, const
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_3_2::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly)
+Render3DError OpenGLRenderer_3_2::RenderFog(const u8 *densityTable, const u32 color, const u16 offset, const u8 shift, const bool alphaOnly)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
+	OGLFogProgramKey fogProgramKey;
+	fogProgramKey.key = 0;
+	fogProgramKey.offset = offset;
+	fogProgramKey.shift = shift;
+	
+	std::map<u32, OGLFogShaderID>::iterator it = this->_fogProgramMap.find(fogProgramKey.key);
+	if (it == this->_fogProgramMap.end())
+	{
+		Render3DError error = this->CreateFogProgram(fogProgramKey, FogVtxShader_150, FogFragShader_150);
+		if (error != OGLERROR_NOERR)
+		{
+			return error;
+		}
+	}
+	
+	OGLFogShaderID shaderID = this->_fogProgramMap[fogProgramKey.key];
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboPostprocessID);
 	glDrawBuffer(GL_COLOR_ATTACHMENT1);
-	glUseProgram(OGLRef.programFogID);
+	glUseProgram(shaderID.program);
 	
 	glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
 	glDisable(GL_DEPTH_TEST);

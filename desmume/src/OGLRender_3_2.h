@@ -78,7 +78,7 @@ protected:
 	virtual Render3DError CreateMSGeometryZeroDstAlphaProgram(const char *vtxShaderCString, const char *fragShaderCString);
 	virtual void DestroyMSGeometryZeroDstAlphaProgram();
 	virtual Render3DError CreateEdgeMarkProgram(const char *vtxShaderCString, const char *fragShaderCString);
-	virtual Render3DError CreateFogProgram(const char *vtxShaderCString, const char *fragShaderCString);
+	virtual Render3DError CreateFogProgram(const OGLFogProgramKey fogProgramKey, const char *vtxShaderCString, const char *fragShaderCString);
 	virtual Render3DError CreateFramebufferOutput6665Program(const char *vtxShaderCString, const char *fragShaderCString);
 	virtual Render3DError CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString);
 	
@@ -90,7 +90,7 @@ protected:
 	virtual Render3DError ReadBackPixels();
 	virtual Render3DError BeginRender(const GFX3D &engine);
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
-	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
+	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u16 offset, const u8 shift, const bool alphaOnly);
 	
 	virtual Render3DError CreateToonTable();
 	virtual Render3DError DestroyToonTable();

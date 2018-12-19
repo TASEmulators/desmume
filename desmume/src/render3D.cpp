@@ -431,7 +431,7 @@ Render3DError Render3D::RenderEdgeMarking(const u16 *colorTable, const bool useA
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly)
+Render3DError Render3D::RenderFog(const u8 *densityTable, const u32 color, const u16 offset, const u8 shift, const bool alphaOnly)
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -719,7 +719,7 @@ Render3DError Render3D::Render(const GFX3D &engine)
 	
 	if (this->_enableFog)
 	{
-		this->RenderFog(engine.renderState.fogDensityTable, engine.renderState.fogColor, engine.renderState.fogOffset, engine.renderState.fogShift, engine.renderState.enableFogAlphaOnly);
+		this->RenderFog(engine.renderState.fogDensityTable, engine.renderState.fogColor, (engine.renderState.fogOffset & 0x7FFF), engine.renderState.fogShift, engine.renderState.enableFogAlphaOnly);
 	}
 
 	this->EndRender(engine.render3DFrameCount);
