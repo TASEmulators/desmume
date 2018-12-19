@@ -325,12 +325,16 @@ uniform int polyDepthOffsetMode;\n\
 void main()\n\
 {\n\
 	vec4 newFragColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
+#if ENABLE_EDGE_MARK\n\
 	vec4 newPolyID = vec4(0.0, 0.0, 0.0, 0.0);\n\
+#endif\n\
+#if ENABLE_FOG\n\
 	vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
-	\n\
-	float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
+#endif\n\
 	\n\
 #if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
+	float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
+	\n\
 	#if ENABLE_W_DEPTH\n\
 	float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
 	#else\n\
@@ -395,14 +399,22 @@ void main()\n\
 			discard;\n\
 		}\n\
 		\n\
+#if ENABLE_EDGE_MARK\n\
 		newPolyID = vec4( float(polyID)/63.0, float(polyIsWireframe), 0.0, float(newFragColor.a > 0.999) );\n\
+#endif\n\
+#if ENABLE_FOG\n\
 		newFogAttributes = vec4( float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5) );\n\
+#endif\n\
 	}\n\
 	\n\
 	gl_FragData[0] = newFragColor;\n\
-	gl_FragData[1] = newPolyID;\n\
-	gl_FragData[2] = newFogAttributes;\n\
 	\n\
+#if ENABLE_EDGE_MARK\n\
+	gl_FragData[1] = newPolyID;\n\
+#endif\n\
+#if ENABLE_FOG\n\
+	gl_FragData[2] = newFogAttributes;\n\
+#endif\n\
 #if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
 	gl_FragDepth = newFragDepthValue;\n\
 #endif\n\
@@ -3066,8 +3078,7 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 	
 	std::stringstream shaderHeader;
 	shaderHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0 \n";
-	
-	std::string vtxShaderCode  = shaderHeader.str() + std::string(GeometryVtxShader_100);
+	shaderHeader << "\n";
 	
 	for (size_t flagsValue = 0; flagsValue < 64; flagsValue++, programFlags.value++)
 	{
@@ -3088,7 +3099,7 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		error = this->ShaderProgramCreate(OGLRef.vertexGeometryShaderID,
 										  OGLRef.fragmentGeometryShaderID[flagsValue],
 										  OGLRef.programGeometryID[flagsValue],
-										  vtxShaderCode.c_str(),
+										  GeometryVtxShader_100,
 										  fragShaderCode.c_str());
 		if (error != OGLERROR_NOERR)
 		{
@@ -3114,27 +3125,27 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		glValidateProgram(OGLRef.programGeometryID[flagsValue]);
 		glUseProgram(OGLRef.programGeometryID[flagsValue]);
 		
-		const GLint uniformTexRenderObject				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texRenderObject");
-		const GLint uniformTexToonTable					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texToonTable");
+		const GLint uniformTexRenderObject						= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texRenderObject");
+		const GLint uniformTexToonTable							= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texToonTable");
 		glUniform1i(uniformTexRenderObject, 0);
 		glUniform1i(uniformTexToonTable, OGLTextureUnitID_ToonTable);
 		
-		OGLRef.uniformStateAlphaTestRef					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "stateAlphaTestRef");
+		OGLRef.uniformStateAlphaTestRef[flagsValue]				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "stateAlphaTestRef");
 		
-		OGLRef.uniformPolyTexScale						= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyTexScale");
-		OGLRef.uniformPolyMode							= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyMode");
-		OGLRef.uniformPolyIsWireframe					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyIsWireframe");
-		OGLRef.uniformPolySetNewDepthForTranslucent		= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polySetNewDepthForTranslucent");
-		OGLRef.uniformPolyAlpha							= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyAlpha");
-		OGLRef.uniformPolyID							= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyID");
+		OGLRef.uniformPolyTexScale[flagsValue]					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyTexScale");
+		OGLRef.uniformPolyMode[flagsValue]						= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyMode");
+		OGLRef.uniformPolyIsWireframe[flagsValue]				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyIsWireframe");
+		OGLRef.uniformPolySetNewDepthForTranslucent[flagsValue]	= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polySetNewDepthForTranslucent");
+		OGLRef.uniformPolyAlpha[flagsValue]						= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyAlpha");
+		OGLRef.uniformPolyID[flagsValue]						= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyID");
 		
-		OGLRef.uniformPolyEnableTexture					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyEnableTexture");
-		OGLRef.uniformPolyEnableFog						= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyEnableFog");
-		OGLRef.uniformTexSingleBitAlpha					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texSingleBitAlpha");
+		OGLRef.uniformPolyEnableTexture[flagsValue]				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyEnableTexture");
+		OGLRef.uniformPolyEnableFog[flagsValue]					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyEnableFog");
+		OGLRef.uniformTexSingleBitAlpha[flagsValue]				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texSingleBitAlpha");
 		
-		OGLRef.uniformTexDrawOpaque[flagsValue]			= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texDrawOpaque");
-		OGLRef.uniformPolyDrawShadow[flagsValue]		= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDrawShadow");
-		OGLRef.uniformPolyDepthOffsetMode[flagsValue]	= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDepthOffsetMode");
+		OGLRef.uniformTexDrawOpaque[flagsValue]					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texDrawOpaque");
+		OGLRef.uniformPolyDrawShadow[flagsValue]				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDrawShadow");
+		OGLRef.uniformPolyDepthOffsetMode[flagsValue]			= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDepthOffsetMode");
 	}
 	
 	this->CreateToonTable();
@@ -4246,7 +4257,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		glUseProgram(OGLRef.programGeometryID[this->_geometryProgramFlags.value]);
 		glUniform1i(OGLRef.uniformStateClearPolyID, this->_clearAttributes.opaquePolyID);
 		glUniform1f(OGLRef.uniformStateClearDepth, (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF);
-		glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
+		glUniform1f(OGLRef.uniformStateAlphaTestRef[this->_geometryProgramFlags.value], divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
 		glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_FALSE);
 		glUniform1i(OGLRef.uniformPolyDrawShadow[this->_geometryProgramFlags.value], GL_FALSE);
 	}
@@ -4940,12 +4951,12 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool treatAs
 	if (this->isShaderSupported)
 	{
 		OGLRenderRef &OGLRef = *this->ref;
-		glUniform1i(OGLRef.uniformPolyMode, thePoly.attribute.Mode);
-		glUniform1i(OGLRef.uniformPolyEnableFog, (thePoly.attribute.Fog_Enable) ? GL_TRUE : GL_FALSE);
-		glUniform1f(OGLRef.uniformPolyAlpha, (thePoly.isWireframe()) ? 1.0f : divide5bitBy31_LUT[thePoly.attribute.Alpha]);
-		glUniform1i(OGLRef.uniformPolyID, thePoly.attribute.PolygonID);
-		glUniform1i(OGLRef.uniformPolyIsWireframe, (thePoly.isWireframe()) ? GL_TRUE : GL_FALSE);
-		glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent, (thePoly.attribute.TranslucentDepthWrite_Enable) ? GL_TRUE : GL_FALSE);
+		glUniform1i(OGLRef.uniformPolyMode[this->_geometryProgramFlags.value], thePoly.attribute.Mode);
+		glUniform1i(OGLRef.uniformPolyEnableFog[this->_geometryProgramFlags.value], (thePoly.attribute.Fog_Enable) ? GL_TRUE : GL_FALSE);
+		glUniform1f(OGLRef.uniformPolyAlpha[this->_geometryProgramFlags.value], (thePoly.isWireframe()) ? 1.0f : divide5bitBy31_LUT[thePoly.attribute.Alpha]);
+		glUniform1i(OGLRef.uniformPolyID[this->_geometryProgramFlags.value], thePoly.attribute.PolygonID);
+		glUniform1i(OGLRef.uniformPolyIsWireframe[this->_geometryProgramFlags.value], (thePoly.isWireframe()) ? GL_TRUE : GL_FALSE);
+		glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent[this->_geometryProgramFlags.value], (thePoly.attribute.TranslucentDepthWrite_Enable) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
 	}
 	else
@@ -4969,9 +4980,9 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, size_t polyR
 	{
 		if (this->isShaderSupported)
 		{
-			glUniform1i(OGLRef.uniformPolyEnableTexture, GL_FALSE);
-			glUniform1i(OGLRef.uniformTexSingleBitAlpha, GL_FALSE);
-			glUniform2f(OGLRef.uniformPolyTexScale, theTexture->GetInvWidth(), theTexture->GetInvHeight());
+			glUniform1i(OGLRef.uniformPolyEnableTexture[this->_geometryProgramFlags.value], GL_FALSE);
+			glUniform1i(OGLRef.uniformTexSingleBitAlpha[this->_geometryProgramFlags.value], GL_FALSE);
+			glUniform2f(OGLRef.uniformPolyTexScale[this->_geometryProgramFlags.value], theTexture->GetInvWidth(), theTexture->GetInvHeight());
 		}
 		else
 		{
@@ -4984,9 +4995,9 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, size_t polyR
 	// Enable textures if they weren't already enabled
 	if (this->isShaderSupported)
 	{
-		glUniform1i(OGLRef.uniformPolyEnableTexture, GL_TRUE);
-		glUniform1i(OGLRef.uniformTexSingleBitAlpha, (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
-		glUniform2f(OGLRef.uniformPolyTexScale, theTexture->GetInvWidth(), theTexture->GetInvHeight());
+		glUniform1i(OGLRef.uniformPolyEnableTexture[this->_geometryProgramFlags.value], GL_TRUE);
+		glUniform1i(OGLRef.uniformTexSingleBitAlpha[this->_geometryProgramFlags.value], (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
+		glUniform2f(OGLRef.uniformPolyTexScale[this->_geometryProgramFlags.value], theTexture->GetInvWidth(), theTexture->GetInvHeight());
 	}
 	else
 	{
@@ -5521,7 +5532,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	this->_geometryProgramFlags.ToonShadingMode = (engine.renderState.shading) ? 1 : 0;
 	
 	glUseProgram(OGLRef.programGeometryID[this->_geometryProgramFlags.value]);
-	glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
+	glUniform1f(OGLRef.uniformStateAlphaTestRef[this->_geometryProgramFlags.value], divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
 	glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_FALSE);
 	glUniform1i(OGLRef.uniformPolyDrawShadow[this->_geometryProgramFlags.value], GL_FALSE);
 	
@@ -5578,18 +5589,18 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, size_t polyR
 	const NDSTextureFormat packFormat = theTexture->GetPackFormat();
 	const OGLRenderRef &OGLRef = *this->ref;
 	
-	glUniform2f(OGLRef.uniformPolyTexScale, theTexture->GetInvWidth(), theTexture->GetInvHeight());
+	glUniform2f(OGLRef.uniformPolyTexScale[this->_geometryProgramFlags.value], theTexture->GetInvWidth(), theTexture->GetInvHeight());
 	
 	// Check if we need to use textures
 	if (!theTexture->IsSamplingEnabled())
 	{
-		glUniform1i(OGLRef.uniformPolyEnableTexture, GL_FALSE);
-		glUniform1i(OGLRef.uniformTexSingleBitAlpha, GL_FALSE);
+		glUniform1i(OGLRef.uniformPolyEnableTexture[this->_geometryProgramFlags.value], GL_FALSE);
+		glUniform1i(OGLRef.uniformTexSingleBitAlpha[this->_geometryProgramFlags.value], GL_FALSE);
 		return OGLERROR_NOERR;
 	}
 	
-	glUniform1i(OGLRef.uniformPolyEnableTexture, GL_TRUE);
-	glUniform1i(OGLRef.uniformTexSingleBitAlpha, (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
+	glUniform1i(OGLRef.uniformPolyEnableTexture[this->_geometryProgramFlags.value], GL_TRUE);
+	glUniform1i(OGLRef.uniformTexSingleBitAlpha[this->_geometryProgramFlags.value], (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
 	
 	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ((thePoly.texParam.RepeatS_Enable) ? ((thePoly.texParam.MirroredRepeatS_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));

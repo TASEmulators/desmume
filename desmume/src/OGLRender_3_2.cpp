@@ -208,9 +208,9 @@ void main()\n\
 	vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
 #endif\n\
 	\n\
+#if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
 	float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
 	\n\
-#if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
 	#if ENABLE_W_DEPTH\n\
 	float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
 	#else\n\

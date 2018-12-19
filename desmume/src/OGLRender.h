@@ -508,23 +508,23 @@ struct OGLRenderRef
 	GLint uniformTexInFragColor_ConvertRGBA6665;
 	GLint uniformTexInFragColor_ConvertRGBA8888;
 	GLint uniformStateEnableFogAlphaOnly;
-	GLint uniformStateAlphaTestRef;
 	GLint uniformStateClearPolyID;
 	GLint uniformStateClearDepth;
 	GLint uniformStateEdgeColor;
 	GLint uniformStateFogColor;
 	GLint uniformStateFogDensity;
 	
-	GLint uniformPolyTexScale;
-	GLint uniformPolyMode;
-	GLint uniformPolyIsWireframe;
-	GLint uniformPolySetNewDepthForTranslucent;
-	GLint uniformPolyAlpha;
-	GLint uniformPolyID;
+	GLint uniformStateAlphaTestRef[256];
+	GLint uniformPolyTexScale[256];
+	GLint uniformPolyMode[256];
+	GLint uniformPolyIsWireframe[256];
+	GLint uniformPolySetNewDepthForTranslucent[256];
+	GLint uniformPolyAlpha[256];
+	GLint uniformPolyID[256];
 	
-	GLint uniformPolyEnableTexture;
-	GLint uniformPolyEnableFog;
-	GLint uniformTexSingleBitAlpha;
+	GLint uniformPolyEnableTexture[256];
+	GLint uniformPolyEnableFog[256];
+	GLint uniformTexSingleBitAlpha[256];
 	GLint uniformTexDrawOpaque[256];
 	
 	GLint uniformPolyStateIndex[256];
