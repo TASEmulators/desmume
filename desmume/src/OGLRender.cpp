@@ -794,7 +794,7 @@ void main()\n\
 }\n\
 "};
 
-bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision)
+bool IsOpenGLDriverVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision)
 {
 	bool result = false;
 	
@@ -1027,7 +1027,7 @@ static Render3D* OpenGLRendererCreate()
 	
 	if (!BEGINGL())
 	{
-		INFO("OpenGL<%s,%s>: Could not initialize -- BEGINGL() failed.\n",require_profile?"force":"auto",enable_3_2?"3_2":"old");
+		INFO("OpenGL<%s,%s>: Could not initialize -- BEGINGL() failed.\n", require_profile?"force":"auto", enable_3_2?"3_2":"old");
 		return NULL;
 	}
 	
@@ -1050,7 +1050,7 @@ static Render3D* OpenGLRendererCreate()
 	// Check the driver's OpenGL version
 	OGLGetDriverVersion(oglVersionString, &_OGLDriverVersion.major, &_OGLDriverVersion.minor, &_OGLDriverVersion.revision);
 	
-	if (!IsVersionSupported(OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION))
+	if (!IsOpenGLDriverVersionSupported(OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION))
 	{
 		INFO("OpenGL: Driver does not support OpenGL v%u.%u.%u or later. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
 			 OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION,
@@ -1085,17 +1085,17 @@ static Render3D* OpenGLRendererCreate()
 	{
 		OGLLoadEntryPoints_Legacy();
 		
-		if (IsVersionSupported(2, 1, 0))
+		if (IsOpenGLDriverVersionSupported(2, 1, 0))
 		{
 			newRenderer = new OpenGLRenderer_2_1;
 			newRenderer->SetVersion(2, 1, 0);
 		}
-		else if (IsVersionSupported(2, 0, 0))
+		else if (IsOpenGLDriverVersionSupported(2, 0, 0))
 		{
 			newRenderer = new OpenGLRenderer_2_0;
 			newRenderer->SetVersion(2, 0, 0);
 		}
-		else if (IsVersionSupported(1, 2, 0))
+		else if (IsOpenGLDriverVersionSupported(1, 2, 0))
 		{
 			newRenderer = new OpenGLRenderer_1_2;
 			newRenderer->SetVersion(1, 2, 0);
@@ -1120,12 +1120,12 @@ static Render3D* OpenGLRendererCreate()
 			INFO("OpenGL: This driver does not support the minimum feature set required to run this renderer. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
 				 oglVersionString, oglVendorString, oglRendererString);
 		}
-		else if (IsVersionSupported(1, 5, 0) && (error == OGLERROR_VBO_UNSUPPORTED))
+		else if (newRenderer->IsVersionSupported(1, 5, 0) && (error == OGLERROR_VBO_UNSUPPORTED))
 		{
 			INFO("OpenGL: VBOs are not available, even though this version of OpenGL requires them. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
 				 oglVersionString, oglVendorString, oglRendererString);
 		}
-		else if ( IsVersionSupported(2, 0, 0) &&
+		else if ( newRenderer->IsVersionSupported(2, 0, 0) &&
 			(error == OGLERROR_SHADER_CREATE_ERROR ||
 			 error == OGLERROR_VERTEX_SHADER_PROGRAM_LOAD_ERROR ||
 			 error == OGLERROR_FRAGMENT_SHADER_PROGRAM_LOAD_ERROR) )
@@ -1133,12 +1133,12 @@ static Render3D* OpenGLRendererCreate()
 			INFO("OpenGL: Shaders are not working, even though they should be on this version of OpenGL. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
 				 oglVersionString, oglVendorString, oglRendererString);
 		}
-		else if (IsVersionSupported(2, 1, 0) && (error == OGLERROR_PBO_UNSUPPORTED))
+		else if (newRenderer->IsVersionSupported(2, 1, 0) && (error == OGLERROR_PBO_UNSUPPORTED))
 		{
 			INFO("OpenGL: PBOs are not available, even though this version of OpenGL requires them. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
 				 oglVersionString, oglVendorString, oglRendererString);
 		}
-		else if (IsVersionSupported(3, 0, 0) && (error == OGLERROR_FBO_CREATE_ERROR) && (OGLLoadEntryPoints_3_2_Func != NULL))
+		else if (newRenderer->IsVersionSupported(3, 0, 0) && (error == OGLERROR_FBO_CREATE_ERROR) && (OGLLoadEntryPoints_3_2_Func != NULL))
 		{
 			INFO("OpenGL: FBOs are not available, even though this version of OpenGL requires them. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
 				 oglVersionString, oglVendorString, oglRendererString);
@@ -1410,6 +1410,20 @@ void OpenGLRenderer::SetVersion(unsigned int major, unsigned int minor, unsigned
 	this->versionMajor = major;
 	this->versionMinor = minor;
 	this->versionRevision = revision;
+}
+
+bool OpenGLRenderer::IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision) const
+{
+	bool result = false;
+	
+	if ( (this->versionMajor > checkVersionMajor) ||
+		 (this->versionMajor >= checkVersionMajor && this->versionMinor > checkVersionMinor) ||
+		 (this->versionMajor >= checkVersionMajor && this->versionMinor >= checkVersionMinor && this->versionRevision >= checkVersionRevision) )
+	{
+		result = true;
+	}
+	
+	return result;
 }
 
 Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const FragmentColor *__restrict srcFramebuffer,
@@ -2497,7 +2511,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	{
 		INFO("OpenGL: Shaders are unsupported. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
 		
-		if (IsVersionSupported(2, 0, 0))
+		if (this->IsVersionSupported(2, 0, 0))
 		{
 			return error;
 		}
@@ -2511,7 +2525,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	else
 	{
 		error = OGLERROR_VBO_UNSUPPORTED;
-		if (IsVersionSupported(1, 5, 0))
+		if (this->IsVersionSupported(1, 5, 0))
 		{
 			return error;
 		}
@@ -2527,7 +2541,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	else
 	{
 		error = OGLERROR_PBO_UNSUPPORTED;
-		if (IsVersionSupported(2, 1, 0))
+		if (this->IsVersionSupported(2, 1, 0))
 		{
 			return error;
 		}
@@ -5433,15 +5447,18 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		free_aligned(oldFramebufferColor);
 	}
 	
-	// Recreate shaders that use the framebuffer size.
-	glUseProgram(0);
-	this->DestroyEdgeMarkProgram();
-	this->DestroyFramebufferOutput6665Program();
-	this->DestroyFramebufferOutput8888Program();
-	
-	this->CreateEdgeMarkProgram(EdgeMarkVtxShader_100, EdgeMarkFragShader_100);
-	this->CreateFramebufferOutput6665Program(FramebufferOutputVtxShader_100, FramebufferOutputRGBA6665FragShader_100);
-	this->CreateFramebufferOutput8888Program(FramebufferOutputVtxShader_100, FramebufferOutputRGBA8888FragShader_100);
+	if (this->isShaderSupported)
+	{
+		// Recreate shaders that use the framebuffer size.
+		glUseProgram(0);
+		this->DestroyEdgeMarkProgram();
+		this->DestroyFramebufferOutput6665Program();
+		this->DestroyFramebufferOutput8888Program();
+		
+		this->CreateEdgeMarkProgram(EdgeMarkVtxShader_100, EdgeMarkFragShader_100);
+		this->CreateFramebufferOutput6665Program(FramebufferOutputVtxShader_100, FramebufferOutputRGBA6665FragShader_100);
+		this->CreateFramebufferOutput8888Program(FramebufferOutputVtxShader_100, FramebufferOutputRGBA8888FragShader_100);
+	}
 	
 	if (oglrender_framebufferDidResizeCallback != NULL)
 	{

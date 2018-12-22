@@ -596,7 +596,7 @@ void ENDGL();
 extern void (*OGLLoadEntryPoints_3_2_Func)();
 extern void (*OGLCreateRenderer_3_2_Func)(OpenGLRenderer **rendererPtr);
 
-bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision);
+bool IsOpenGLDriverVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision);
 
 class OpenGLTexture : public Render3DTexture
 {
@@ -763,6 +763,7 @@ public:
 	bool ValidateShaderProgramLink(GLuint theProgram) const;
 	void GetVersion(unsigned int *major, unsigned int *minor, unsigned int *revision) const;
 	void SetVersion(unsigned int major, unsigned int minor, unsigned int revision);
+	bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision) const;
 	
 	virtual FragmentColor* GetFramebuffer();
 	virtual GLsizei GetLimitedMultisampleSize() const;

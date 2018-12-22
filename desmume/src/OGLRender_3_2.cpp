@@ -761,7 +761,7 @@ void main()\n\
 
 void OGLCreateRenderer_3_2(OpenGLRenderer **rendererPtr)
 {
-	if (IsVersionSupported(3, 2, 0))
+	if (IsOpenGLDriverVersionSupported(3, 2, 0))
 	{
 		*rendererPtr = new OpenGLRenderer_3_2;
 		(*rendererPtr)->SetVersion(3, 2, 0);
