@@ -9180,6 +9180,8 @@ bool GPUSubsystem::Change3DRendererByID(int rendererID)
 	Render3DError error = newRenderer->SetFramebufferSize(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight());
 	if (error != RENDER3DERROR_NOERR)
 	{
+		newRenderInterface->NDS_3D_Close();
+		printf("GPU: 3D framebuffer resize error. 3D rendering will be disabled for this renderer. (Error code = %d)\n", (int)error);
 		return result;
 	}
 	

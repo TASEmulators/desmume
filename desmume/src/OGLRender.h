@@ -314,6 +314,7 @@ enum OGLErrorCode
 	OGLERROR_DRIVER_VERSION_TOO_OLD,
 	
 	OGLERROR_BEGINGL_FAILED,
+	OGLERROR_CLIENT_RESIZE_ERROR,
 	
 	OGLERROR_FEATURE_UNSUPPORTED,
 	OGLERROR_VBO_UNSUPPORTED,
@@ -580,7 +581,7 @@ extern bool (*oglrender_beginOpenGL)();
 extern void (*oglrender_endOpenGL)();
 
 //This is called by OGLRender whenever the framebuffer is resized.
-extern bool (*oglrender_framebufferDidResizeCallback)(size_t w, size_t h);
+extern bool (*oglrender_framebufferDidResizeCallback)(const bool isFBOSupported, size_t w, size_t h);
 
 // Helper functions for calling the above function pointers at the
 // beginning and ending of OpenGL commands.

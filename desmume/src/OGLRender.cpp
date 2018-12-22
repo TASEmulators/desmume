@@ -105,7 +105,7 @@ void ENDGL()
 bool (*oglrender_init)() = NULL;
 bool (*oglrender_beginOpenGL)() = NULL;
 void (*oglrender_endOpenGL)() = NULL;
-bool (*oglrender_framebufferDidResizeCallback)(size_t w, size_t h) = NULL;
+bool (*oglrender_framebufferDidResizeCallback)(const bool isFBOSupported, size_t w, size_t h) = NULL;
 void (*OGLLoadEntryPoints_3_2_Func)() = NULL;
 void (*OGLCreateRenderer_3_2_Func)(OpenGLRenderer **rendererPtr) = NULL;
 
@@ -5368,16 +5368,18 @@ Render3DError OpenGLRenderer_1_2::RenderFlush(bool willFlushBuffer32, bool willF
 
 Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 {
+	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	if (w < GPU_FRAMEBUFFER_NATIVE_WIDTH || h < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
 	{
-		return OGLERROR_NOERR;
+		return error;
 	}
 	
 	if (!BEGINGL())
 	{
-		return OGLERROR_BEGINGL_FAILED;
+		error = OGLERROR_BEGINGL_FAILED;
+		return error;
 	}
 	
 	glFinish();
@@ -5462,13 +5464,17 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	
 	if (oglrender_framebufferDidResizeCallback != NULL)
 	{
-		oglrender_framebufferDidResizeCallback(w, h);
+		bool clientResizeSuccess = oglrender_framebufferDidResizeCallback(this->isFBOSupported, w, h);
+		if (!clientResizeSuccess)
+		{
+			error = OGLERROR_CLIENT_RESIZE_ERROR;
+		}
 	}
 	
 	glFinish();
 	ENDGL();
 	
-	return OGLERROR_NOERR;
+	return error;
 }
 
 Render3DError OpenGLRenderer_2_0::InitFinalRenderStates(const std::set<std::string> *oglExtensionSet)

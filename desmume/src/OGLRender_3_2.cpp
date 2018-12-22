@@ -2590,16 +2590,18 @@ Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, size_t polyR
 
 Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 {
+	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	if (w < GPU_FRAMEBUFFER_NATIVE_WIDTH || h < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
 	{
-		return OGLERROR_NOERR;
+		return error;
 	}
 	
 	if (!BEGINGL())
 	{
-		return OGLERROR_BEGINGL_FAILED;
+		error = OGLERROR_BEGINGL_FAILED;
+		return error;
 	}
 	
 	glFinish();
@@ -2656,8 +2658,8 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	
 	if (this->isSampleShadingSupported)
 	{
-		Render3DError error = this->CreateMSGeometryZeroDstAlphaProgram(MSGeometryZeroDstAlphaPixelMaskVtxShader_150, MSGeometryZeroDstAlphaPixelMaskFragShader_150);
-		this->willUsePerSampleZeroDstPass = (error == OGLERROR_NOERR);
+		Render3DError shaderError = this->CreateMSGeometryZeroDstAlphaProgram(MSGeometryZeroDstAlphaPixelMaskVtxShader_150, MSGeometryZeroDstAlphaPixelMaskFragShader_150);
+		this->willUsePerSampleZeroDstPass = (shaderError == OGLERROR_NOERR);
 	}
 	
 	// Call ResizeMultisampledFBOs() after _framebufferWidth and _framebufferHeight are set
@@ -2667,13 +2669,17 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	
 	if (oglrender_framebufferDidResizeCallback != NULL)
 	{
-		oglrender_framebufferDidResizeCallback(w, h);
+		bool clientResizeSuccess = oglrender_framebufferDidResizeCallback(this->isFBOSupported, w, h);
+		if (!clientResizeSuccess)
+		{
+			error = OGLERROR_CLIENT_RESIZE_ERROR;
+		}
 	}
 	
 	glFinish();
 	ENDGL();
 	
-	return OGLERROR_NOERR;
+	return error;
 }
 
 Render3DError OpenGLRenderer_3_2::RenderPowerOff()

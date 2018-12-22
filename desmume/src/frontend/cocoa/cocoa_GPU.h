@@ -206,7 +206,7 @@ CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
 bool OSXOpenGLRendererInit();
 bool OSXOpenGLRendererBegin();
 void OSXOpenGLRendererEnd();
-bool OSXOpenGLRendererFramebufferDidResize(size_t w, size_t h);
+bool OSXOpenGLRendererFramebufferDidResize(const bool isFBOSupported, size_t w, size_t h);
 
 bool CreateOpenGLRenderer();
 void DestroyOpenGLRenderer();
@@ -214,7 +214,7 @@ void RequestOpenGLRenderer_3_2(bool request_3_2);
 void SetOpenGLRendererFunctions(bool (*initFunction)(),
 								bool (*beginOGLFunction)(),
 								void (*endOGLFunction)(),
-								bool (*resizeOGLFunction)(size_t w, size_t h));
+								bool (*resizeOGLFunction)(const bool isFBOSupported, size_t w, size_t h));
 
 #ifdef __cplusplus
 }

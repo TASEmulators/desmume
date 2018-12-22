@@ -1795,36 +1795,43 @@ void OSXOpenGLRendererEnd()
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-bool OSXOpenGLRendererFramebufferDidResize(size_t w, size_t h)
+bool OSXOpenGLRendererFramebufferDidResize(const bool isFBOSupported, size_t w, size_t h)
 {
 	bool result = false;
 	
-	// Create a PBuffer for legacy contexts since the availability of FBOs
-	// is not guaranteed.
-	if (OGLCreateRenderer_3_2_Func == NULL)
+	if (isFBOSupported)
 	{
-		CGLPBufferObj newPBuffer = NULL;
-		
-		CGLCreatePBuffer(w, h, GL_TEXTURE_2D, GL_RGBA, 0, &newPBuffer);
-		
-		if (newPBuffer == NULL)
-		{
-			return result;
-		}
-		else
-		{
-			GLint virtualScreenID = 0;
-			CGLGetVirtualScreen(OSXOpenGLRendererContext, &virtualScreenID);
-			CGLSetPBuffer(OSXOpenGLRendererContext, newPBuffer, 0, 0, virtualScreenID);
-		}
-		
-		CGLPBufferObj oldPBuffer = OSXOpenGLRendererPBuffer;
-		OSXOpenGLRendererPBuffer = newPBuffer;
-		CGLReleasePBuffer(oldPBuffer);
-		
 		result = true;
+		return result;
 	}
 	
+	if (IsOSXVersionSupported(10, 13, 0))
+	{
+		printf("Mac OpenGL: P-Buffers cannot be created on macOS v10.13 High Sierra and later.\n");
+		return result;
+	}
+	
+	// Create a PBuffer if FBOs are not supported.
+	CGLPBufferObj newPBuffer = NULL;
+	CGLError error = CGLCreatePBuffer(w, h, GL_TEXTURE_2D, GL_RGBA, 0, &newPBuffer);
+	
+	if ( (newPBuffer == NULL) || (error != kCGLNoError) )
+	{
+		printf("Mac OpenGL: ERROR - Could not create the P-Buffer: %s\n", CGLErrorString(error));
+		return result;
+	}
+	else
+	{
+		GLint virtualScreenID = 0;
+		CGLGetVirtualScreen(OSXOpenGLRendererContext, &virtualScreenID);
+		CGLSetPBuffer(OSXOpenGLRendererContext, newPBuffer, 0, 0, virtualScreenID);
+	}
+	
+	CGLPBufferObj oldPBuffer = OSXOpenGLRendererPBuffer;
+	OSXOpenGLRendererPBuffer = newPBuffer;
+	CGLReleasePBuffer(oldPBuffer);
+	
+	result = true;
 	return result;
 }
 
@@ -1892,11 +1899,8 @@ void DestroyOpenGLRenderer()
 		return;
 	}
 	
-	if (OGLCreateRenderer_3_2_Func == NULL)
-	{
-		CGLReleasePBuffer(OSXOpenGLRendererPBuffer);
-		OSXOpenGLRendererPBuffer = NULL;
-	}
+	CGLReleasePBuffer(OSXOpenGLRendererPBuffer);
+	OSXOpenGLRendererPBuffer = NULL;
 	
 	CGLReleaseContext(OSXOpenGLRendererContext);
 	OSXOpenGLRendererContext = NULL;
@@ -1921,7 +1925,7 @@ void RequestOpenGLRenderer_3_2(bool request_3_2)
 void SetOpenGLRendererFunctions(bool (*initFunction)(),
 								bool (*beginOGLFunction)(),
 								void (*endOGLFunction)(),
-								bool (*resizeOGLFunction)(size_t w, size_t h))
+								bool (*resizeOGLFunction)(const bool isFBOSupported, size_t w, size_t h))
 {
 	oglrender_init = initFunction;
 	oglrender_beginOpenGL = beginOGLFunction;
