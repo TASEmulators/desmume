@@ -18,7 +18,10 @@
 #include <metal_stdlib>
 using namespace metal;
 
+#include "../MetalRendererCommonShaders.h"
+
 #define LANCZOS_FIX(c) max(abs(c), 1e-5)
+
 
 struct HUDVtx
 {
@@ -44,7 +47,6 @@ struct DisplayViewShaderProperties
 };
 
 float reduce(const float3 color);
-float4 unpack_unorm1555_to_unorm8888(const ushort color16);
 float3 color_interpolate_LTE(const float3 pixA, const float3 pixB, const float3 threshold);
 float4 bicubic_weight_bspline(const float x);
 float4 bicubic_weight_mitchell_netravali(const float x);
@@ -87,14 +89,6 @@ bool InterpDiff(const float3 p1, const float3 p2)
 	yuv = abs(yuv);
 	
 	return any( yuv > float3(192.0f/255.0f, 28.0f/255.0f, 48.0f/255.0f) );
-}
-
-float4 unpack_unorm1555_to_unorm8888(const ushort color16)
-{
-	return float4((float)((color16 >>  0) & 0x1F) / 31.0f,
-				  (float)((color16 >>  5) & 0x1F) / 31.0f,
-				  (float)((color16 >> 10) & 0x1F) / 31.0f,
-				  (float)(color16 >> 16));
 }
 
 float3 color_interpolate_LTE(const float3 pixA, const float3 pixB, const float3 threshold)

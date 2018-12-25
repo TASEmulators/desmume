@@ -67,12 +67,37 @@
 	commandQueue = [device newCommandQueue];
 	_fetchCommandQueue = [device newCommandQueue];
 	defaultLibrary = [device newDefaultLibrary];
-	_fetch555Pipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch555"] error:nil] retain];
-	_fetch666Pipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch666"] error:nil] retain];
-	_fetch888Pipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch888"] error:nil] retain];
-	_fetch555ConvertOnlyPipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch555ConvertOnly"] error:nil] retain];
-	_fetch666ConvertOnlyPipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch666ConvertOnly"] error:nil] retain];
-	deposterizePipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"src_filter_deposterize"] error:nil] retain];
+	
+	MTLComputePipelineDescriptor *computePipelineDesc = [[MTLComputePipelineDescriptor alloc] init];
+	[computePipelineDesc setThreadGroupSizeIsMultipleOfThreadExecutionWidth:YES];
+	
+	[computePipelineDesc setComputeFunction:[defaultLibrary newFunctionWithName:@"nds_fetch555ConvertOnly"]];
+	_fetch555ConvertOnlyPipeline = [[device newComputePipelineStateWithDescriptor:computePipelineDesc options:MTLPipelineOptionNone reflection:nil error:nil] retain];
+	
+	[computePipelineDesc setComputeFunction:[defaultLibrary newFunctionWithName:@"nds_fetch666ConvertOnly"]];
+	_fetch666ConvertOnlyPipeline = [[device newComputePipelineStateWithDescriptor:computePipelineDesc options:MTLPipelineOptionNone reflection:nil error:nil] retain];
+	
+	[computePipelineDesc setComputeFunction:[defaultLibrary newFunctionWithName:@"src_filter_deposterize"]];
+	deposterizePipeline = [[device newComputePipelineStateWithDescriptor:computePipelineDesc options:MTLPipelineOptionNone reflection:nil error:nil] retain];
+	
+#if defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+	if (@available(macOS 10.13, *))
+	{
+		[[[computePipelineDesc buffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
+		[[[computePipelineDesc buffers] objectAtIndexedSubscript:1] setMutability:MTLMutabilityImmutable];
+	}
+#endif
+	
+	[computePipelineDesc setComputeFunction:[defaultLibrary newFunctionWithName:@"nds_fetch555"]];
+	_fetch555Pipeline = [[device newComputePipelineStateWithDescriptor:computePipelineDesc options:MTLPipelineOptionNone reflection:nil error:nil] retain];
+	
+	[computePipelineDesc setComputeFunction:[defaultLibrary newFunctionWithName:@"nds_fetch666"]];
+	_fetch666Pipeline = [[device newComputePipelineStateWithDescriptor:computePipelineDesc options:MTLPipelineOptionNone reflection:nil error:nil] retain];
+	
+	[computePipelineDesc setComputeFunction:[defaultLibrary newFunctionWithName:@"nds_fetch888"]];
+	_fetch888Pipeline = [[device newComputePipelineStateWithDescriptor:computePipelineDesc options:MTLPipelineOptionNone reflection:nil error:nil] retain];
+	
+	[computePipelineDesc release];
 	
 	size_t tw = GetNearestPositivePOT((uint32_t)[_fetch555Pipeline threadExecutionWidth]);
 	while ( (tw > [_fetch555Pipeline threadExecutionWidth]) || (tw > GPU_FRAMEBUFFER_NATIVE_WIDTH) )
@@ -104,6 +129,18 @@
 	id<MTLFunction> hudFragmentFunction = [defaultLibrary newFunctionWithName:@"hud_fragment"];
 	[hudPipelineDesc setVertexFunction:[defaultLibrary newFunctionWithName:@"hud_vertex"]];
 	[hudPipelineDesc setFragmentFunction:hudFragmentFunction];
+	
+#if defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+	if (@available(macOS 10.13, *))
+	{
+		[[[hudPipelineDesc vertexBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
+		[[[hudPipelineDesc vertexBuffers] objectAtIndexedSubscript:1] setMutability:MTLMutabilityImmutable];
+		[[[hudPipelineDesc vertexBuffers] objectAtIndexedSubscript:2] setMutability:MTLMutabilityImmutable];
+		[[[hudPipelineDesc vertexBuffers] objectAtIndexedSubscript:3] setMutability:MTLMutabilityImmutable];
+		[[[hudPipelineDesc vertexBuffers] objectAtIndexedSubscript:4] setMutability:MTLMutabilityImmutable];
+		[[[hudPipelineDesc vertexBuffers] objectAtIndexedSubscript:5] setMutability:MTLMutabilityImmutable];
+	}
+#endif
 	
 	[[[hudPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:MTLPixelFormatBGRA8Unorm];
 	hudPipeline = [[device newRenderPipelineStateWithDescriptor:hudPipelineDesc error:nil] retain];
@@ -854,103 +891,118 @@
 {
 	id<MTLTexture> currentHQnxLUT = nil;
 	
+	MTLComputePipelineDescriptor *computePipelineDesc = [[MTLComputePipelineDescriptor alloc] init];
+	[computePipelineDesc setThreadGroupSizeIsMultipleOfThreadExecutionWidth:YES];
+	
 	switch (filterID)
 	{
 		case VideoFilterTypeID_Nearest2X:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_nearest2x"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_nearest2x"]];
 			break;
 			
 		case VideoFilterTypeID_Scanline:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_scanline"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_scanline"]];
 			break;
 			
 		case VideoFilterTypeID_EPX:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xEPX"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xEPX"]];
 			break;
 			
 		case VideoFilterTypeID_EPXPlus:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xEPXPlus"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xEPXPlus"]];
 			break;
 			
 		case VideoFilterTypeID_2xSaI:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xSaI"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xSaI"]];
 			break;
 			
 		case VideoFilterTypeID_Super2xSaI:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_Super2xSaI"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_Super2xSaI"]];
 			break;
 			
 		case VideoFilterTypeID_SuperEagle:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xSuperEagle"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xSuperEagle"]];
 			break;
 			
 		case VideoFilterTypeID_LQ2X:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_LQ2x"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_LQ2x"]];
 			currentHQnxLUT = [sharedData texLQ2xLUT];
 			break;
 			
 		case VideoFilterTypeID_LQ2XS:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_LQ2xS"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_LQ2xS"]];
 			currentHQnxLUT = [sharedData texLQ2xLUT];
 			break;
 			
 		case VideoFilterTypeID_HQ2X:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ2x"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ2x"]];
 			currentHQnxLUT = [sharedData texHQ2xLUT];
 			break;
 			
 		case VideoFilterTypeID_HQ2XS:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ2xS"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ2xS"]];
 			currentHQnxLUT = [sharedData texHQ2xLUT];
 			break;
 			
 		case VideoFilterTypeID_HQ3X:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ3x"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ3x"]];
 			currentHQnxLUT = [sharedData texHQ3xLUT];
 			break;
 			
 		case VideoFilterTypeID_HQ3XS:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ3xS"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ3xS"]];
 			currentHQnxLUT = [sharedData texHQ3xLUT];
 			break;
 			
 		case VideoFilterTypeID_HQ4X:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ4x"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ4x"]];
 			currentHQnxLUT = [sharedData texHQ4xLUT];
 			break;
 			
 		case VideoFilterTypeID_HQ4XS:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ4xS"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ4xS"]];
 			currentHQnxLUT = [sharedData texHQ4xLUT];
 			break;
 			
 		case VideoFilterTypeID_2xBRZ:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xBRZ"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xBRZ"]];
 			break;
 			
 		case VideoFilterTypeID_3xBRZ:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_3xBRZ"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_3xBRZ"]];
 			break;
 			
 		case VideoFilterTypeID_4xBRZ:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_4xBRZ"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_4xBRZ"]];
 			break;
 			
 		case VideoFilterTypeID_5xBRZ:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_5xBRZ"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_5xBRZ"]];
 			break;
 			
 		case VideoFilterTypeID_6xBRZ:
-			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_6xBRZ"] error:nil]];
+			[computePipelineDesc setComputeFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_6xBRZ"]];
 			break;
 			
 		case VideoFilterTypeID_None:
 		default:
-			[self setPixelScalePipeline:nil];
+			[computePipelineDesc release];
+			computePipelineDesc = nil;
 			break;
 	}
 	
 	[sharedData setTexCurrentHQnxLUT:currentHQnxLUT];
+	
+	if (computePipelineDesc != nil)
+	{
+		[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithDescriptor:computePipelineDesc options:MTLPipelineOptionNone reflection:nil error:nil]];
+		[computePipelineDesc release];
+		computePipelineDesc = nil;
+	}
+	else
+	{
+		[self setPixelScalePipeline:nil];
+	}
 	
 	if ([self pixelScalePipeline] != nil)
 	{
@@ -1049,6 +1101,17 @@
 		[self setOutputDrawablePipeline:[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil]];
 	}
 	
+#if defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+	if (@available(macOS 10.13, *))
+	{
+		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
+		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:1] setMutability:MTLMutabilityImmutable];
+		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:2] setMutability:MTLMutabilityImmutable];
+		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:3] setMutability:MTLMutabilityImmutable];
+		[[[outputPipelineDesc fragmentBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
+	}
+#endif
+	
 	[outputPipelineDesc release];
 }
 
@@ -1063,6 +1126,17 @@
 	[outputPipelineDesc setAlphaToOneEnabled:YES];
 	[outputPipelineDesc setVertexFunction:[[sharedData defaultLibrary] newFunctionWithName:@"display_output_vertex"]];
 	[outputPipelineDesc setFragmentFunction:[[sharedData defaultLibrary] newFunctionWithName:@"output_filter_bilinear"]];
+	
+#if defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+	if (@available(macOS 10.13, *))
+	{
+		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
+		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:1] setMutability:MTLMutabilityImmutable];
+		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:2] setMutability:MTLMutabilityImmutable];
+		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:3] setMutability:MTLMutabilityImmutable];
+		[[[outputPipelineDesc fragmentBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
+	}
+#endif
 	
 	[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:MTLPixelFormatRGBA8Unorm];
 	outputRGBAPipeline = [[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil] retain];

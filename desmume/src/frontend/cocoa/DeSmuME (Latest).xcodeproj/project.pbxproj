@@ -296,6 +296,11 @@
 		AB564915186E6F67002740F4 /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = AB56490B186E6F67002740F4 /* Image_Piano.png */; };
 		AB5785FD17176AFC002C5FC7 /* OpenEmuBase.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB5785FC17176AFC002C5FC7 /* OpenEmuBase.framework */; };
 		AB58F32D1364F44B0074C376 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
+		AB5B1D4A21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */; };
+		AB5B1D4B21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */; };
+		AB5B1D4C21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */; };
+		AB5B1D4D21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */; };
+		AB5B1D4E21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */; };
 		AB5FDDAC1D62C89E0094617C /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */; };
 		AB64987C13ECC73800EE7DD2 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB64987B13ECC73800EE7DD2 /* FileTypeInfo.plist */; };
 		AB68101B187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681013187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png */; };
@@ -2486,6 +2491,8 @@
 		AB5785FC17176AFC002C5FC7 /* OpenEmuBase.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenEmuBase.framework; path = openemu/OpenEmuBase.framework; sourceTree = "<group>"; };
 		AB58F32B1364F44B0074C376 /* cocoa_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_file.h; sourceTree = "<group>"; };
 		AB58F32C1364F44B0074C376 /* cocoa_file.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_file.mm; sourceTree = "<group>"; };
+		AB5B1D4821D1F31D00BF0E0F /* MetalRendererCommonShaders.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MetalRendererCommonShaders.h; sourceTree = "<group>"; };
+		AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = MetalRendererCommonShaders.metal; sourceTree = "<group>"; };
 		AB64987B13ECC73800EE7DD2 /* FileTypeInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = FileTypeInfo.plist; sourceTree = "<group>"; };
 		AB681013187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Blue_512x512.png; path = images/Icon_GuitarGrip_Button_Blue_512x512.png; sourceTree = "<group>"; };
 		AB681014187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Green_512x512.png; path = images/Icon_GuitarGrip_Button_Green_512x512.png; sourceTree = "<group>"; };
@@ -3183,12 +3190,14 @@
 				ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */,
 				AB1B9E611501A78000464647 /* coreaudiosound.h */,
 				AB28625520AE3E9E00EAED43 /* macOS_driver.h */,
+				AB5B1D4821D1F31D00BF0E0F /* MetalRendererCommonShaders.h */,
 				ABD10AE41715FCDD00B5729D /* mic_ext.h */,
 				ABB24F6C1A81EE92006C1108 /* OGLDisplayOutput_3_2.h */,
 				ABE6840E189E33D5007FD69C /* OGLDisplayOutput.h */,
 				AB1B9E621501A78000464647 /* ringbuffer.h */,
 				ABD104011346652500AF11D1 /* sndOSX.h */,
 				AB82445E1704AEC400B8EE20 /* utilities.h */,
+				AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */,
 				ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */,
 				ABD104121346652500AF11D1 /* cocoa_core.mm */,
 				AB58F32C1364F44B0074C376 /* cocoa_file.mm */,
@@ -5539,6 +5548,7 @@
 				ABD104281346653B00AF11D1 /* main.m in Sources */,
 				AB2ABA411C9F9CFA00173B15 /* rsemaphore.c in Sources */,
 				ABA6574B14511EC90077E5E9 /* cocoa_cheat.mm in Sources */,
+				AB5B1D4E21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */,
 				ABD1041D1346652500AF11D1 /* cocoa_core.mm in Sources */,
 				AB58F32D1364F44B0074C376 /* cocoa_file.mm in Sources */,
 				AB3BF43E1E26289E003E2B24 /* MacMetalDisplayView.mm in Sources */,
@@ -5766,6 +5776,7 @@
 				AB7900C8215B84E50082AE82 /* ftinit.c in Sources */,
 				AB7900C9215B84E50082AE82 /* vfat.cpp in Sources */,
 				AB7900CA215B84E50082AE82 /* colorspacehandler.cpp in Sources */,
+				AB5B1D4C21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */,
 				AB7900CB215B84E50082AE82 /* videofilter.cpp in Sources */,
 				AB7900CC215B84E50082AE82 /* WavFile.cpp in Sources */,
 				AB7900CD215B84E50082AE82 /* wifi.cpp in Sources */,
@@ -5878,6 +5889,7 @@
 				AB7901B3215B84F20082AE82 /* ClientExecutionControl.cpp in Sources */,
 				AB7901B4215B84F20082AE82 /* deposterize.cpp in Sources */,
 				AB7901B5215B84F20082AE82 /* ftgasp.c in Sources */,
+				AB5B1D4D21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */,
 				AB7901B6215B84F20082AE82 /* ftotval.c in Sources */,
 				AB7901B7215B84F20082AE82 /* ftdebug.c in Sources */,
 				AB7901B8215B84F20082AE82 /* ftstroke.c in Sources */,
@@ -6221,6 +6233,7 @@
 				ABFEA82B1BB4EC1100B08C25 /* ftinit.c in Sources */,
 				AB796D4415CDCBA200C59155 /* vfat.cpp in Sources */,
 				AB5FDDAC1D62C89E0094617C /* colorspacehandler.cpp in Sources */,
+				AB5B1D4A21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */,
 				AB796D4515CDCBA200C59155 /* videofilter.cpp in Sources */,
 				AB796D4615CDCBA200C59155 /* WavFile.cpp in Sources */,
 				AB796D4715CDCBA200C59155 /* wifi.cpp in Sources */,
@@ -6333,6 +6346,7 @@
 				ABB1C9491F5281AE0004844F /* ClientExecutionControl.cpp in Sources */,
 				AB301BE01D9C8BCD00246A93 /* deposterize.cpp in Sources */,
 				ABFEA8211BB4EC1000B08C25 /* ftgasp.c in Sources */,
+				AB5B1D4B21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */,
 				ABFEA83C1BB4EC1100B08C25 /* ftotval.c in Sources */,
 				ABFEA8181BB4EC1000B08C25 /* ftdebug.c in Sources */,
 				ABFEA8541BB4EC1100B08C25 /* ftstroke.c in Sources */,
