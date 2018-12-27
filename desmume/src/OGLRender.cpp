@@ -54,7 +54,7 @@ typedef struct
 static OGLVersion _OGLDriverVersion = {0, 0, 0};
 
 // Lookup Tables
-static CACHE_ALIGN GLfloat material_8bit_to_float[256] = {0};
+static CACHE_ALIGN GLfloat material_6bit_to_float[64] = {0};
 CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32]	= {0.0,             0.0322580645161, 0.0645161290323, 0.0967741935484,
 													   0.1290322580645, 0.1612903225806, 0.1935483870968, 0.2258064516129,
 													   0.2580645161290, 0.2903225806452, 0.3225806451613, 0.3548387096774,
@@ -292,7 +292,7 @@ void main() \n\
 	\n\
 	vtxPosition = inPosition; \n\
 	vtxTexCoord = texScaleMtx * inTexCoord0; \n\
-	vtxColor = vec4(inColor * 4.0, polyAlpha); \n\
+	vtxColor = vec4(inColor / 63.0, polyAlpha); \n\
 	\n\
 	gl_Position = vtxPosition; \n\
 } \n\
@@ -330,18 +330,6 @@ void main()\n\
 #endif\n\
 #if ENABLE_FOG\n\
 	vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
-#endif\n\
-	\n\
-#if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
-	float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
-	\n\
-	#if ENABLE_W_DEPTH\n\
-	float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
-	#else\n\
-	float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w;\n\
-	// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-	float newFragDepthValue = clamp( ( (floor(((vtxPosition.z/vertW) * 0.5 + 0.5) * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
-	#endif\n\
 #endif\n\
 	\n\
 	if ((polyMode != 3) || polyDrawShadow)\n\
@@ -416,6 +404,16 @@ void main()\n\
 	gl_FragData[2] = newFogAttributes;\n\
 #endif\n\
 #if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
+	float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
+	\n\
+	#if ENABLE_W_DEPTH\n\
+	float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
+	#else\n\
+	float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w;\n\
+	// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
+	float newFragDepthValue = clamp( ( (floor(((vtxPosition.z/vertW) * 0.5 + 0.5) * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
+	#endif\n\
+	\n\
 	gl_FragDepth = newFragDepthValue;\n\
 #endif\n\
 }\n\
@@ -1908,7 +1906,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 				polyPrimitive != GL_LINE_STRIP &&
 				oglPrimitiveType[nextPoly.vtxFormat] != GL_LINE_LOOP &&
 				oglPrimitiveType[nextPoly.vtxFormat] != GL_LINE_STRIP &&
-				this->_isPolyFrontFacing[i] != this->_isPolyFrontFacing[i+1])
+				this->_isPolyFrontFacing[i] == this->_isPolyFrontFacing[i+1])
 			{
 				continue;
 			}
@@ -2765,7 +2763,7 @@ Render3DError OpenGLRenderer_1_2::CreateVAOs()
 	glEnableVertexAttribArray(OGLVertexAttributeID_Color);
 	glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
 	glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
-	glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
+	glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
 	
 	glBindVertexArray(0);
 	
@@ -3758,8 +3756,8 @@ Render3DError OpenGLRenderer_1_2::InitTables()
 	
 	if (needTableInit)
 	{
-		for (size_t i = 0; i < 256; i++)
-			material_8bit_to_float[i] = (GLfloat)(i * 4) / 255.0f;
+		for (size_t i = 0; i < 63; i++)
+			material_6bit_to_float[i] = ((GLfloat)i * (255.0f/63.0f)) / 255.0f;
 		
 		needTableInit = false;
 	}
@@ -3931,7 +3929,7 @@ Render3DError OpenGLRenderer_1_2::EnableVertexAttributes()
 			glEnableVertexAttribArray(OGLVertexAttributeID_Color);
 			glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), OGLRef.vtxPtrPosition);
 			glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), OGLRef.vtxPtrTexCoord);
-			glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), OGLRef.vtxPtrColor);
+			glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(VERT), OGLRef.vtxPtrColor);
 		}
 		else
 		{
@@ -4356,9 +4354,9 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 				// Consolidate the vertex color and the poly alpha to our internal color buffer
 				// so that OpenGL can use it.
 				const VERT *vertForAlpha = &engine.vertList[vertIndex];
-				OGLRef.color4fBuffer[colorIndex+0] = material_8bit_to_float[vertForAlpha->color[0]];
-				OGLRef.color4fBuffer[colorIndex+1] = material_8bit_to_float[vertForAlpha->color[1]];
-				OGLRef.color4fBuffer[colorIndex+2] = material_8bit_to_float[vertForAlpha->color[2]];
+				OGLRef.color4fBuffer[colorIndex+0] = material_6bit_to_float[vertForAlpha->color[0]];
+				OGLRef.color4fBuffer[colorIndex+1] = material_6bit_to_float[vertForAlpha->color[1]];
+				OGLRef.color4fBuffer[colorIndex+2] = material_6bit_to_float[vertForAlpha->color[2]];
 				OGLRef.color4fBuffer[colorIndex+3] = thePolyAlpha;
 				
 				// While we're looping through our vertices, add each vertex index to a
@@ -5515,7 +5513,7 @@ Render3DError OpenGLRenderer_2_0::EnableVertexAttributes()
 		glEnableVertexAttribArray(OGLVertexAttributeID_Color);
 		glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), OGLRef.vtxPtrPosition);
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), OGLRef.vtxPtrTexCoord);
-		glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), OGLRef.vtxPtrColor);
+		glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(VERT), OGLRef.vtxPtrColor);
 	}
 	
 	return OGLERROR_NOERR;

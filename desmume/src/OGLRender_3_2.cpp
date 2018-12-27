@@ -147,7 +147,7 @@ void main() \n\
 	\n\
 	vtxPosition = inPosition; \n\
 	vtxTexCoord = texScaleMtx * inTexCoord0; \n\
-	vtxColor = vec4(inColor * 4.0, polyAlpha); \n\
+	vtxColor = vec4(inColor / 63.0, polyAlpha); \n\
 	\n\
 	gl_Position = vtxPosition; \n\
 } \n\
@@ -206,18 +206,6 @@ void main()\n\
 #endif\n\
 #if ENABLE_FOG\n\
 	vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
-#endif\n\
-	\n\
-#if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
-	float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
-	\n\
-	#if ENABLE_W_DEPTH\n\
-	float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
-	#else\n\
-	float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w;\n\
-	// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-	float newFragDepthValue = clamp( ( (floor(((vtxPosition.z/vertW) * 0.5 + 0.5) * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
-	#endif\n\
 #endif\n\
 	\n\
 	if ((polyMode != 3u) || polyDrawShadow)\n\
@@ -299,6 +287,16 @@ void main()\n\
 	outFogAttributes = newFogAttributes;\n\
 #endif\n\
 #if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
+	float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
+	\n\
+	#if ENABLE_W_DEPTH\n\
+	float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
+	#else\n\
+	float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w;\n\
+	// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
+	float newFragDepthValue = clamp( ( (floor(((vtxPosition.z/vertW) * 0.5 + 0.5) * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
+	#endif\n\
+	\n\
 	gl_FragDepth = newFragDepthValue;\n\
 #endif\n\
 }\n\
@@ -1259,7 +1257,7 @@ Render3DError OpenGLRenderer_3_2::CreateVAOs()
 	glEnableVertexAttribArray(OGLVertexAttributeID_Color);
 	glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
 	glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
-	glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
+	glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
 	
 	glBindVertexArray(0);
 	
