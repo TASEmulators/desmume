@@ -54,7 +54,6 @@ typedef struct
 static OGLVersion _OGLDriverVersion = {0, 0, 0};
 
 // Lookup Tables
-static CACHE_ALIGN GLfloat material_6bit_to_float[64] = {0};
 CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32]	= {0.0,             0.0322580645161, 0.0645161290323, 0.0967741935484,
 													   0.1290322580645, 0.1612903225806, 0.1935483870968, 0.2258064516129,
 													   0.2580645161290, 0.2903225806452, 0.3225806451613, 0.3548387096774,
@@ -2440,9 +2439,6 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropyOGL);
 	this->_deviceInfo.maxAnisotropy = maxAnisotropyOGL;
 	
-	// Initialize OpenGL
-	this->InitTables();
-	
 	this->isShaderSupported	= this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_shader_objects") &&
 							  this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_vertex_shader") &&
 							  this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_fragment_shader") &&
@@ -3750,21 +3746,6 @@ Render3DError OpenGLRenderer_1_2::InitFinalRenderStates(const std::set<std::stri
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::InitTables()
-{
-	static bool needTableInit = true;
-	
-	if (needTableInit)
-	{
-		for (size_t i = 0; i < 63; i++)
-			material_6bit_to_float[i] = ((GLfloat)i * (255.0f/63.0f)) / 255.0f;
-		
-		needTableInit = false;
-	}
-	
-	return OGLERROR_NOERR;
-}
-
 Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *edgeMarkVtxShaderCString,
 															 const char *edgeMarkFragShaderCString,
 															 const char *framebufferOutputVtxShaderCString,
@@ -4354,9 +4335,9 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 				// Consolidate the vertex color and the poly alpha to our internal color buffer
 				// so that OpenGL can use it.
 				const VERT *vertForAlpha = &engine.vertList[vertIndex];
-				OGLRef.color4fBuffer[colorIndex+0] = material_6bit_to_float[vertForAlpha->color[0]];
-				OGLRef.color4fBuffer[colorIndex+1] = material_6bit_to_float[vertForAlpha->color[1]];
-				OGLRef.color4fBuffer[colorIndex+2] = material_6bit_to_float[vertForAlpha->color[2]];
+				OGLRef.color4fBuffer[colorIndex+0] = divide6bitBy63_LUT[vertForAlpha->color[0]];
+				OGLRef.color4fBuffer[colorIndex+1] = divide6bitBy63_LUT[vertForAlpha->color[1]];
+				OGLRef.color4fBuffer[colorIndex+2] = divide6bitBy63_LUT[vertForAlpha->color[2]];
 				OGLRef.color4fBuffer[colorIndex+3] = thePolyAlpha;
 				
 				// While we're looping through our vertices, add each vertex index to a

@@ -795,9 +795,6 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	this->_deviceInfo.isEdgeMarkSupported = true;
 	this->_deviceInfo.isFogSupported = true;
 	
-	// Initialize OpenGL
-	this->InitTables();
-	
 	glGenTextures(1, &OGLRef.texFinalColorID);
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texFinalColorID);

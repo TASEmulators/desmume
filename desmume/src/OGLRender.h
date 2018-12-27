@@ -727,7 +727,6 @@ protected:
 	virtual void DestroyFramebufferOutput8888Program() = 0;
 	
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet) = 0;
-	virtual Render3DError InitTables() = 0;
 	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader,
 													 const char *edgeMarkFragShader,
 													 const char *framebufferOutputVtxShader,
@@ -803,7 +802,6 @@ protected:
 	virtual void DestroyFramebufferOutput8888Program();
 	
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
-	virtual Render3DError InitTables();
 	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader,
 													 const char *edgeMarkFragShader,
 													 const char *framebufferOutputVtxShader,
