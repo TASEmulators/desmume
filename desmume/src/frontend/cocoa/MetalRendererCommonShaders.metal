@@ -21,7 +21,7 @@ using namespace metal;
 #include "MetalRendererCommonShaders.h"
 
 
-float4 unpack_unorm1555_to_unorm8888(const ushort color16)
+float4 unpack_rgba5551_to_unorm8888(const ushort color16)
 {
 	return float4((float)((color16 >>  0) & 0x1F) / 31.0f,
 				  (float)((color16 >>  5) & 0x1F) / 31.0f,
@@ -29,9 +29,9 @@ float4 unpack_unorm1555_to_unorm8888(const ushort color16)
 				  (float)(color16 >> 15));
 }
 
-ushort pack_color_to_unorm5551(const float4 inColor)
+ushort pack_unorm8888_to_rgba5551(const float4 inColor)
 {
-	ushort4 color16 = (ushort4)((inColor * 31.0f) + 0.35f);
+	ushort4 color16 = ushort4( (inColor * 31.0f) + 0.1f );
 	
 	color16.g <<= 5;
 	color16.b <<= 10;
@@ -40,7 +40,17 @@ ushort pack_color_to_unorm5551(const float4 inColor)
 	return (color16.r | color16.g | color16.b | color16.a);
 }
 
-float4 pack_color_to_unorm6665(const float4 inColor)
+uchar4 pack_unorm8888_to_rgba6665(const float4 inColor)
 {
-	return inColor * float4(63.0f/255.0f, 63.0f/255.0f, 63.0f/255.0f, 31.0f/255.0f);
+	return uchar4( (inColor * float4(63.0f, 63.0f, 63.0f, 31.0f)) + 0.1f );
+}
+
+uchar4 pack_unorm8888_to_rgba8888(const float4 inColor)
+{
+	return uchar4( (inColor * 255.0f) + 0.1f );
+}
+
+float4 convert_unorm666X_to_unorm8888(const float4 inColor)
+{
+	return float4( inColor.rgb * (255.0f/63.0f), 1.0f );
 }

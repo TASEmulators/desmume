@@ -129,8 +129,9 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLTexture> texHQ4xLUT;
 	id<MTLTexture> texCurrentHQnxLUT;
 	
-	MTLSize _fetchThreadsPerGroup;
+	MTLSize _fetchThreadsPerGroupNative;
 	MTLSize _fetchThreadGroupsPerGridNative;
+	MTLSize _fetchThreadsPerGroupCustom;
 	MTLSize _fetchThreadGroupsPerGridCustom;
 	MTLSize deposterizeThreadsPerGroup;
 	MTLSize deposterizeThreadGroupsPerGrid;

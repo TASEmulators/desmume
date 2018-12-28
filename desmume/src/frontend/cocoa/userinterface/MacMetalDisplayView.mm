@@ -71,10 +71,10 @@
 	MTLComputePipelineDescriptor *computePipelineDesc = [[MTLComputePipelineDescriptor alloc] init];
 	[computePipelineDesc setThreadGroupSizeIsMultipleOfThreadExecutionWidth:YES];
 	
-	[computePipelineDesc setComputeFunction:[defaultLibrary newFunctionWithName:@"nds_fetch555ConvertOnly"]];
+	[computePipelineDesc setComputeFunction:[defaultLibrary newFunctionWithName:@"convert_texture_rgb555_to_unorm8888"]];
 	_fetch555ConvertOnlyPipeline = [[device newComputePipelineStateWithDescriptor:computePipelineDesc options:MTLPipelineOptionNone reflection:nil error:nil] retain];
 	
-	[computePipelineDesc setComputeFunction:[defaultLibrary newFunctionWithName:@"nds_fetch666ConvertOnly"]];
+	[computePipelineDesc setComputeFunction:[defaultLibrary newFunctionWithName:@"convert_texture_unorm666X_to_unorm8888"]];
 	_fetch666ConvertOnlyPipeline = [[device newComputePipelineStateWithDescriptor:computePipelineDesc options:MTLPipelineOptionNone reflection:nil error:nil] retain];
 	
 	[computePipelineDesc setComputeFunction:[defaultLibrary newFunctionWithName:@"src_filter_deposterize"]];
@@ -99,22 +99,27 @@
 	
 	[computePipelineDesc release];
 	
-	size_t tw = GetNearestPositivePOT((uint32_t)[_fetch555Pipeline threadExecutionWidth]);
-	while ( (tw > [_fetch555Pipeline threadExecutionWidth]) || (tw > GPU_FRAMEBUFFER_NATIVE_WIDTH) )
+	NSUInteger tw = [_fetch555Pipeline threadExecutionWidth];
+	while ( ((GPU_FRAMEBUFFER_NATIVE_WIDTH  % tw) != 0) || (tw > GPU_FRAMEBUFFER_NATIVE_WIDTH) )
 	{
 		tw >>= 1;
 	}
 	
-	size_t th = [_fetch555Pipeline maxTotalThreadsPerThreadgroup] / tw;
+	NSUInteger th = [_fetch555Pipeline maxTotalThreadsPerThreadgroup] / tw;
+	while ( ((GPU_FRAMEBUFFER_NATIVE_HEIGHT % th) != 0) || (th > GPU_FRAMEBUFFER_NATIVE_HEIGHT) )
+	{
+		th >>= 1;
+	}
 	
-	_fetchThreadsPerGroup = MTLSizeMake(tw, th, 1);
+	_fetchThreadsPerGroupNative = MTLSizeMake(tw, th, 1);
 	_fetchThreadGroupsPerGridNative = MTLSizeMake(GPU_FRAMEBUFFER_NATIVE_WIDTH  / tw,
 												  GPU_FRAMEBUFFER_NATIVE_HEIGHT / th,
 												  1);
 	
+	_fetchThreadsPerGroupCustom = _fetchThreadsPerGroupNative;
 	_fetchThreadGroupsPerGridCustom = _fetchThreadGroupsPerGridNative;
 	
-	deposterizeThreadsPerGroup = _fetchThreadsPerGroup;
+	deposterizeThreadsPerGroup = _fetchThreadsPerGroupNative;
 	deposterizeThreadGroupsPerGrid = _fetchThreadGroupsPerGridNative;
 		
 	MTLRenderPipelineDescriptor *hudPipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
@@ -413,9 +418,22 @@
 	
 	_fetchPixelBytes = dispInfo.pixelBytes;
 	
-	const size_t tw = _fetchThreadsPerGroup.width;
-	const size_t th = _fetchThreadsPerGroup.height;
-	_fetchThreadGroupsPerGridCustom = MTLSizeMake((w + tw - 1) / tw, (h + th - 1) / th, 1);
+	NSUInteger tw = [_fetch555Pipeline threadExecutionWidth];
+	while ( ((w % tw) != 0) || (tw > w) )
+	{
+		tw >>= 1;
+	}
+	
+	NSUInteger th = [_fetch555Pipeline maxTotalThreadsPerThreadgroup] / tw;
+	while ( ((h % th) != 0) || (th > h) )
+	{
+		th >>= 1;
+	}
+	
+	_fetchThreadsPerGroupCustom = MTLSizeMake(tw, th, 1);
+	_fetchThreadGroupsPerGridCustom = MTLSizeMake(w / tw,
+												  h / th,
+												  1);
 	
 	id<MTLCommandBuffer> cb = [_fetchCommandQueue commandBufferWithUnretainedReferences];
 	MetalTexturePair newTexPair = [self setFetchTextureBindingsAtIndex:dispInfo.bufferIndex commandBuffer:cb];
@@ -498,7 +516,7 @@
 					[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Main][index] atIndex:0];
 					[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Main][index] atIndex:1];
 					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-						threadsPerThreadgroup:_fetchThreadsPerGroup];
+						threadsPerThreadgroup:_fetchThreadsPerGroupNative];
 					
 					targetTexPair.main  = _texDisplayPostprocessNative[NDSDisplayID_Main][index];
 				}
@@ -507,7 +525,7 @@
 					[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Main][index] atIndex:0];
 					[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Main][index] atIndex:1];
 					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-						threadsPerThreadgroup:_fetchThreadsPerGroup];
+						threadsPerThreadgroup:_fetchThreadsPerGroupCustom];
 					
 					targetTexPair.main  = _texDisplayPostprocessCustom[NDSDisplayID_Main][index];
 				}
@@ -528,7 +546,7 @@
 					[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Touch][index] atIndex:0];
 					[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Touch][index] atIndex:1];
 					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-						threadsPerThreadgroup:_fetchThreadsPerGroup];
+						threadsPerThreadgroup:_fetchThreadsPerGroupNative];
 					
 					targetTexPair.touch = _texDisplayPostprocessNative[NDSDisplayID_Touch][index];
 				}
@@ -537,7 +555,7 @@
 					[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Touch][index] atIndex:0];
 					[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Touch][index] atIndex:1];
 					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-						threadsPerThreadgroup:_fetchThreadsPerGroup];
+						threadsPerThreadgroup:_fetchThreadsPerGroupCustom];
 					
 					targetTexPair.touch = _texDisplayPostprocessCustom[NDSDisplayID_Touch][index];
 				}
@@ -572,7 +590,7 @@
 						[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Main][index] atIndex:0];
 						[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Main][index] atIndex:1];
 						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-							threadsPerThreadgroup:_fetchThreadsPerGroup];
+							threadsPerThreadgroup:_fetchThreadsPerGroupNative];
 						
 						targetTexPair.main  = _texDisplayPostprocessNative[NDSDisplayID_Main][index];
 					}
@@ -581,7 +599,7 @@
 						[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Main][index] atIndex:0];
 						[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Main][index] atIndex:1];
 						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-							threadsPerThreadgroup:_fetchThreadsPerGroup];
+							threadsPerThreadgroup:_fetchThreadsPerGroupCustom];
 						
 						targetTexPair.main  = _texDisplayPostprocessCustom[NDSDisplayID_Main][index];
 					}
@@ -594,7 +612,7 @@
 						[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Touch][index] atIndex:0];
 						[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Touch][index] atIndex:1];
 						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-							threadsPerThreadgroup:_fetchThreadsPerGroup];
+							threadsPerThreadgroup:_fetchThreadsPerGroupNative];
 						
 						targetTexPair.touch = _texDisplayPostprocessNative[NDSDisplayID_Touch][index];
 					}
@@ -603,7 +621,7 @@
 						[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Touch][index] atIndex:0];
 						[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Touch][index] atIndex:1];
 						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-							threadsPerThreadgroup:_fetchThreadsPerGroup];
+							threadsPerThreadgroup:_fetchThreadsPerGroupCustom];
 						
 						targetTexPair.touch = _texDisplayPostprocessCustom[NDSDisplayID_Touch][index];
 					}
@@ -1023,17 +1041,21 @@
 		_texDisplayPixelScaler[NDSDisplayID_Main]  = [[sharedData device] newTextureWithDescriptor:texDisplayPixelScaleDesc];
 		_texDisplayPixelScaler[NDSDisplayID_Touch] = [[sharedData device] newTextureWithDescriptor:texDisplayPixelScaleDesc];
 		
-		size_t tw = GetNearestPositivePOT((uint32_t)[[self pixelScalePipeline] threadExecutionWidth]);
-		while ( (tw > [[self pixelScalePipeline] threadExecutionWidth]) || (tw > GPU_FRAMEBUFFER_NATIVE_WIDTH) )
+		NSUInteger tw = [[self pixelScalePipeline] threadExecutionWidth];
+		while ( ((newScalerWidth  % tw) != 0) || (tw > newScalerWidth) )
 		{
 			tw >>= 1;
 		}
 		
-		const size_t th = [[self pixelScalePipeline] maxTotalThreadsPerThreadgroup] / tw;
+		NSUInteger th = [[self pixelScalePipeline] maxTotalThreadsPerThreadgroup] / tw;
+		while ( ((newScalerHeight % th) != 0) || (th > newScalerHeight) )
+		{
+			th >>= 1;
+		}
 		
 		_pixelScalerThreadsPerGroup = MTLSizeMake(tw, th, 1);
-		_pixelScalerThreadGroupsPerGrid = MTLSizeMake(GPU_FRAMEBUFFER_NATIVE_WIDTH  / tw,
-													  GPU_FRAMEBUFFER_NATIVE_HEIGHT / th,
+		_pixelScalerThreadGroupsPerGrid = MTLSizeMake(newScalerWidth  / tw,
+													  newScalerHeight / th,
 													  1);
 	}
 	else

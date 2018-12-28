@@ -432,12 +432,7 @@ kernel void nds_fetch555(const uint2 position [[thread_position_in_grid]],
 {
 	const uint h = inTexture.get_height();
 	
-	if ( (position.x > inTexture.get_width() - 1) || (position.y > h - 1) )
-	{
-		return;
-	}
-	
-	const float4 inColor = unpack_unorm1555_to_unorm8888( (ushort)inTexture.read(position).r );
+	const float4 inColor = unpack_rgba5551_to_unorm8888( (ushort)inTexture.read(position).r );
 	float3 outColor = inColor.rgb;
 	
 	const uint line = uint( (float)position.y / ((float)h / 192.0f) );
@@ -453,11 +448,6 @@ kernel void nds_fetch666(const uint2 position [[thread_position_in_grid]],
 						 texture2d<float, access::write> outTexture [[texture(1)]])
 {
 	const uint h = inTexture.get_height();
-	
-	if ( (position.x > inTexture.get_width() - 1) || (position.y > h - 1) )
-	{
-		return;
-	}
 	
 	const float4 inColor = inTexture.read(position);
 	float3 outColor = inColor.rgb * float3(255.0f/63.0f);
@@ -476,11 +466,6 @@ kernel void nds_fetch888(const uint2 position [[thread_position_in_grid]],
 {
 	const uint h = inTexture.get_height();
 	
-	if ( (position.x > inTexture.get_width() - 1) || (position.y > h - 1) )
-	{
-		return;
-	}
-	
 	const float4 inColor = inTexture.read(position);
 	float3 outColor = inColor.rgb;
 	
@@ -490,30 +475,20 @@ kernel void nds_fetch888(const uint2 position [[thread_position_in_grid]],
 	outTexture.write(float4(outColor, 1.0f), position);
 }
 
-kernel void nds_fetch555ConvertOnly(const uint2 position [[thread_position_in_grid]],
-									const texture2d<ushort, access::read> inTexture [[texture(0)]],
-									texture2d<float, access::write> outTexture [[texture(1)]])
+kernel void convert_texture_rgb555_to_unorm8888(const uint2 position [[thread_position_in_grid]],
+												const texture2d<ushort, access::read> inTexture [[texture(0)]],
+												texture2d<float, access::write> outTexture [[texture(1)]])
 {
-	if ( (position.x > inTexture.get_width() - 1) || (position.y > inTexture.get_height() - 1) )
-	{
-		return;
-	}
-	
-	const float4 outColor = unpack_unorm1555_to_unorm8888( (ushort)inTexture.read(position).r );
+	const float4 outColor = unpack_rgba5551_to_unorm8888( (ushort)inTexture.read(position).r );
 	outTexture.write(float4(outColor.rgb, 1.0f), position);
 }
 
-kernel void nds_fetch666ConvertOnly(const uint2 position [[thread_position_in_grid]],
-									const texture2d<float, access::read> inTexture [[texture(0)]],
-									texture2d<float, access::write> outTexture [[texture(1)]])
+kernel void convert_texture_unorm666X_to_unorm8888(const uint2 position [[thread_position_in_grid]],
+												   const texture2d<float, access::read> inTexture [[texture(0)]],
+												   texture2d<float, access::write> outTexture [[texture(1)]])
 {
-	if ( (position.x > inTexture.get_width() - 1) || (position.y > inTexture.get_height() - 1) )
-	{
-		return;
-	}
-	
-	const float3 outColor = inTexture.read(position).rgb * float3(255.0f/63.0f);
-	outTexture.write(float4(outColor, 1.0f), position);
+	const float4 outColor = convert_unorm666X_to_unorm8888( inTexture.read(position) );
+	outTexture.write(outColor, position);
 }
 
 float3 nds_apply_master_brightness(const float3 inColor, const uchar mode, const float intensity)
