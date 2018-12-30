@@ -827,7 +827,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	this->willFlipAndConvertFramebufferOnGPU = true;
 	
 	this->isSampleShadingSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_sample_shading");
-	this->isConservativeDepthSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_conservative_depth");
+	this->isConservativeDepthSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0);
 	
 	this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
 	this->_emulateShadowPolygon = CommonSettings.OpenGL_Emulation_ShadowPolygon;
@@ -1312,14 +1312,28 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	programFlags.value = 0;
 	
 	std::stringstream vtxShaderHeader;
-	vtxShaderHeader << "#version 150\n";
+	if (this->isConservativeDepthSupported)
+	{
+		vtxShaderHeader << "#version 400\n";
+	}
+	else
+	{
+		vtxShaderHeader << "#version 150\n";
+	}
 	vtxShaderHeader << "\n";
 	
 	std::string vtxShaderCode  = vtxShaderHeader.str() + std::string(GeometryVtxShader_150);
 	
 	std::stringstream fragShaderHeader;
-	fragShaderHeader << "#version 150\n";
-	if (this->isConservativeDepthSupported) fragShaderHeader << "#extension GL_ARB_conservative_depth : require\n";
+	if (this->isConservativeDepthSupported)
+	{
+		fragShaderHeader << "#version 400\n";
+		fragShaderHeader << "#extension GL_ARB_conservative_depth : require\n";
+	}
+	else
+	{
+		fragShaderHeader << "#version 150\n";
+	}
 	fragShaderHeader << "\n";
 	fragShaderHeader << "#define IS_CONSERVATIVE_DEPTH_SUPPORTED " << ((this->isConservativeDepthSupported) ? 1 : 0) << "\n";
 	fragShaderHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0\n";
