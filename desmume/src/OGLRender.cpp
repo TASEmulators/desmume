@@ -403,14 +403,25 @@ void main()\n\
 	gl_FragData[2] = newFogAttributes;\n\
 #endif\n\
 #if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
-	float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
+	// It is tempting to perform the NDS depth calculation in the vertex shader rather than in the fragment shader.\n\
+	// Resist this temptation! It is much more reliable to do the depth calculation in the fragment shader due to\n\
+	// subtle interpolation differences between various GPUs and/or drivers. If the depth calculation is not done\n\
+	// here, then it is very possible for the user to experience Z-fighting in certain rendering situations.\n\
 	\n\
-	#if ENABLE_W_DEPTH\n\
-	float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
+	#if NEEDS_DEPTH_EQUALS_TEST\n\
+		float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
+		#if ENABLE_W_DEPTH\n\
+		float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
+		#else\n\
+		float newFragDepthValue = clamp( ( (floor(gl_FragCoord.z * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
+		#endif\n\
 	#else\n\
-	float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w;\n\
-	// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-	float newFragDepthValue = clamp( ( (floor(((vtxPosition.z/vertW) * 0.5 + 0.5) * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
+		#if ENABLE_W_DEPTH\n\
+		float newFragDepthValue = clamp( (vtxPosition.w * 4096.0) / 16777215.0, 0.0, 1.0 );\n\
+		#else\n\
+		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
+		float newFragDepthValue = clamp( (floor(gl_FragCoord.z * 4194303.0) * 4.0) / 16777215.0, 0.0, 1.0 );\n\
+		#endif\n\
 	#endif\n\
 	\n\
 	gl_FragDepth = newFragDepthValue;\n\
@@ -1223,6 +1234,7 @@ OpenGLRenderer::OpenGLRenderer()
 	isMultisampledFBOSupported = false;
 	isShaderSupported = false;
 	isSampleShadingSupported = false;
+	isConservativeDepthSupported = false;
 	isVAOSupported = false;
 	willFlipOnlyFramebufferOnGPU = false;
 	willFlipAndConvertFramebufferOnGPU = false;
@@ -1241,6 +1253,7 @@ OpenGLRenderer::OpenGLRenderer()
 	_workingTextureUnpackBuffer = (FragmentColor *)malloc_alignedCacheLine(1024 * 1024 * sizeof(FragmentColor));
 	_pixelReadNeedsFinish = false;
 	_needsZeroDstAlphaPass = true;
+	_renderNeedsDepthEqualsTest = false;
 	_currentPolyIndex = 0;
 	_lastTextureDrawTarget = OGLTextureUnitID_GColor;
 	_geometryProgramFlags.value = 0;
@@ -2110,76 +2123,73 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_FALSE);
 			}
 		}
-		else
+		else if (DRAWMODE != OGLPolyDrawMode_DrawOpaquePolys)
 		{
-			if (DRAWMODE != OGLPolyDrawMode_DrawOpaquePolys)
+			// Draw the translucent fragments.
+			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+			
+			// Draw the opaque fragments if they might exist.
+			if (canHaveOpaqueFragments)
 			{
-				// Draw the translucent fragments.
-				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-				
-				// Draw the opaque fragments if they might exist.
-				if (canHaveOpaqueFragments)
+				if (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass)
 				{
-					if (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass)
-					{
-						glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
-						glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-						glDepthMask(GL_TRUE);
-					}
-					
-					glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_TRUE);
-					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-					glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_FALSE);
-					
-					if (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass)
-					{
-						glStencilFunc(GL_NOTEQUAL, 0x40 | opaquePolyID, 0x7F);
-						glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-						glDepthMask((enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
-					}
+					glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+					glDepthMask(GL_TRUE);
+				}
+				
+				glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_TRUE);
+				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+				glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_FALSE);
+				
+				if (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass)
+				{
+					glStencilFunc(GL_NOTEQUAL, 0x40 | opaquePolyID, 0x7F);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+					glDepthMask((enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 				}
 			}
-			else // Draw the polygon as completely opaque.
+		}
+		else // Draw the polygon as completely opaque.
+		{
+			glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_TRUE);
+			
+			if (this->_emulateDepthLEqualPolygonFacing)
 			{
-				glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_TRUE);
-				
-				if (this->_emulateDepthLEqualPolygonFacing)
+				if (isPolyFrontFacing)
 				{
-					if (isPolyFrontFacing)
-					{
-						glDepthFunc(GL_EQUAL);
-						glStencilFunc(GL_EQUAL, 0x40 | opaquePolyID, 0x40);
-						glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-						
-						glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-						glDepthMask(GL_FALSE);
-						glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
-						glStencilMask(0x40);
-						glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-						
-						glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-						glDepthMask(GL_TRUE);
-						glDepthFunc(GL_LESS);
-						glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
-						glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-						glStencilMask(0xFF);
-						glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-					}
-					else
-					{
-						glStencilFunc(GL_ALWAYS, 0x40 | opaquePolyID, 0x40);
-						glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-						
-						glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
-					}
+					glDepthFunc(GL_EQUAL);
+					glStencilFunc(GL_EQUAL, 0x40 | opaquePolyID, 0x40);
+					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+					
+					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					glDepthMask(GL_FALSE);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
+					glStencilMask(0x40);
+					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+					
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+					glDepthMask(GL_TRUE);
+					glDepthFunc(GL_LESS);
+					glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
+					glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+					glStencilMask(0xFF);
+					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 				}
 				else
 				{
+					glStencilFunc(GL_ALWAYS, 0x40 | opaquePolyID, 0x40);
 					glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+					
+					glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
 				}
-				
-				glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_FALSE);
 			}
+			else
+			{
+				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+			}
+			
+			glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_FALSE);
 		}
 	}
 	else
@@ -3084,11 +3094,11 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 	OGLGeometryFlags programFlags;
 	programFlags.value = 0;
 	
-	std::stringstream shaderHeader;
-	shaderHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0 \n";
-	shaderHeader << "\n";
+	std::stringstream fragShaderHeader;
+	fragShaderHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0 \n";
+	fragShaderHeader << "\n";
 	
-	for (size_t flagsValue = 0; flagsValue < 64; flagsValue++, programFlags.value++)
+	for (size_t flagsValue = 0; flagsValue < 128; flagsValue++, programFlags.value++)
 	{
 		std::stringstream shaderFlags;
 		shaderFlags << "#define USE_TEXTURE_SMOOTHING " << ((this->_enableTextureSmoothing) ? 1 : 0) << "\n";
@@ -3100,9 +3110,10 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		shaderFlags << "#define ENABLE_FOG " << ((programFlags.EnableFog) ? 1 : 0) << "\n";
 		shaderFlags << "#define ENABLE_EDGE_MARK " << ((programFlags.EnableEdgeMark) ? 1 : 0) << "\n";
 		shaderFlags << "#define TOON_SHADING_MODE " << ((programFlags.ToonShadingMode) ? 1 : 0) << "\n";
+		shaderFlags << "#define NEEDS_DEPTH_EQUALS_TEST " << ((programFlags.NeedsDepthEqualsTest) ? 1 : 0) << "\n";
 		shaderFlags << "\n";
 		
-		std::string fragShaderCode = shaderHeader.str() + shaderFlags.str() + std::string(GeometryFragShader_100);
+		std::string fragShaderCode = fragShaderHeader.str() + shaderFlags.str() + std::string(GeometryFragShader_100);
 		
 		error = this->ShaderProgramCreate(OGLRef.vertexGeometryShaderID,
 										  OGLRef.fragmentGeometryShaderID[flagsValue],
@@ -3170,7 +3181,7 @@ void OpenGLRenderer_1_2::DestroyGeometryPrograms()
 	
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	for (size_t flagsValue = 0; flagsValue < 64; flagsValue++)
+	for (size_t flagsValue = 0; flagsValue < 128; flagsValue++)
 	{
 		if (OGLRef.programGeometryID[flagsValue] == 0)
 		{
@@ -4238,37 +4249,6 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
-	if (this->isShaderSupported)
-	{
-		this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;
-		this->_geometryProgramFlags.EnableAlphaTest = (engine.renderState.enableAlphaTest) ? 1 : 0;
-		this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
-		this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
-		this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
-		this->_geometryProgramFlags.ToonShadingMode = (engine.renderState.shading) ? 1 : 0;
-		
-		glUseProgram(OGLRef.programGeometryID[this->_geometryProgramFlags.value]);
-		glUniform1i(OGLRef.uniformStateClearPolyID, this->_clearAttributes.opaquePolyID);
-		glUniform1f(OGLRef.uniformStateClearDepth, (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF);
-		glUniform1f(OGLRef.uniformStateAlphaTestRef[this->_geometryProgramFlags.value], divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
-		glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_FALSE);
-		glUniform1i(OGLRef.uniformPolyDrawShadow[this->_geometryProgramFlags.value], GL_FALSE);
-	}
-	else
-	{
-		if(engine.renderState.enableAlphaTest && (engine.renderState.alphaTestRef > 0))
-		{
-			glAlphaFunc(GL_GEQUAL, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
-		}
-		else
-		{
-			glAlphaFunc(GL_GREATER, 0);
-		}
-		
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-	}
-	
 	GLushort *indexPtr = NULL;
 	
 	if (this->isVBOSupported)
@@ -4286,6 +4266,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		indexPtr = OGLRef.vertIndexBuffer;
 	}
 	
+	this->_renderNeedsDepthEqualsTest = false;
 	size_t vertIndexCount = 0;
 	
 	for (size_t i = 0; i < engine.polylist->count; i++)
@@ -4361,15 +4342,16 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		
 		// Get this polygon's facing.
 		const size_t n = polyType - 1;
-		float facing = (vert[0].y + vert[n].y) * (vert[0].x - vert[n].x)
-		+ (vert[1].y + vert[0].y) * (vert[1].x - vert[0].x)
-		+ (vert[2].y + vert[1].y) * (vert[2].x - vert[1].x);
+		float facing = (vert[0].y + vert[n].y) * (vert[0].x - vert[n].x) +
+		               (vert[1].y + vert[0].y) * (vert[1].x - vert[0].x) +
+		               (vert[2].y + vert[1].y) * (vert[2].x - vert[1].x);
 		
 		for (size_t j = 2; j < n; j++)
 		{
 			facing += (vert[j+1].y + vert[j].y) * (vert[j+1].x - vert[j].x);
 		}
 		
+		this->_renderNeedsDepthEqualsTest = this->_renderNeedsDepthEqualsTest || (thePoly.attribute.DepthEqualTest_Enable != 0);
 		this->_isPolyFrontFacing[i] = (facing < 0);
 		
 		// Get the texture that is to be attached to this polygon.
@@ -4380,6 +4362,38 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	{
 		glUnmapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB);
 		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * engine.vertListCount, engine.vertList);
+	}
+	
+	if (this->isShaderSupported)
+	{
+		this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;
+		this->_geometryProgramFlags.EnableAlphaTest = (engine.renderState.enableAlphaTest) ? 1 : 0;
+		this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
+		this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
+		this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
+		this->_geometryProgramFlags.ToonShadingMode = (engine.renderState.shading) ? 1 : 0;
+		this->_geometryProgramFlags.NeedsDepthEqualsTest = (this->_renderNeedsDepthEqualsTest) ? 1 : 0;
+		
+		glUseProgram(OGLRef.programGeometryID[this->_geometryProgramFlags.value]);
+		glUniform1i(OGLRef.uniformStateClearPolyID, this->_clearAttributes.opaquePolyID);
+		glUniform1f(OGLRef.uniformStateClearDepth, (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF);
+		glUniform1f(OGLRef.uniformStateAlphaTestRef[this->_geometryProgramFlags.value], divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
+		glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_FALSE);
+		glUniform1i(OGLRef.uniformPolyDrawShadow[this->_geometryProgramFlags.value], GL_FALSE);
+	}
+	else
+	{
+		if(engine.renderState.enableAlphaTest && (engine.renderState.alphaTestRef > 0))
+		{
+			glAlphaFunc(GL_GEQUAL, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
+		}
+		else
+		{
+			glAlphaFunc(GL_GREATER, 0);
+		}
+		
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
 	}
 	
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -5086,7 +5100,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 	// 1st pass: Create the shadow volume.
 	if (opaquePolyID == 0)
 	{
-		if (performDepthEqualTest && this->isShaderSupported)
+		if (performDepthEqualTest && this->_emulateNDSDepthCalculation && this->isShaderSupported)
 		{
 			// Use the stencil buffer to determine which fragments fail the depth test using the lower-side tolerance.
 			glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 1);
@@ -5103,6 +5117,8 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 			glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
 			glStencilMask(0x80);
 			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+			
+			glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
 		}
 		else
 		{
@@ -5113,7 +5129,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 	}
 	
 	// 2nd pass: Do the polygon ID check.
-	if (performDepthEqualTest && this->isShaderSupported)
+	if (performDepthEqualTest && this->_emulateNDSDepthCalculation && this->isShaderSupported)
 	{
 		// Use the stencil buffer to determine which fragments pass the lower-side tolerance.
 		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 1);
@@ -5227,6 +5243,7 @@ Render3DError OpenGLRenderer_1_2::Reset()
 		memset(OGLRef.vertIndexBuffer, 0, OGLRENDER_VERT_INDEX_BUFFER_COUNT * sizeof(GLushort));
 	}
 	
+	this->_renderNeedsDepthEqualsTest = false;
 	this->_currentPolyIndex = 0;
 	
 	OGLRef.vtxPtrPosition = (GLvoid *)offsetof(VERT, coord);
@@ -5525,40 +5542,35 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
-	// Setup render states
-	this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;
-	this->_geometryProgramFlags.EnableAlphaTest = (engine.renderState.enableAlphaTest) ? 1 : 0;
-	this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
-	this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
-	this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
-	this->_geometryProgramFlags.ToonShadingMode = (engine.renderState.shading) ? 1 : 0;
-	
-	glUseProgram(OGLRef.programGeometryID[this->_geometryProgramFlags.value]);
-	glUniform1f(OGLRef.uniformStateAlphaTestRef[this->_geometryProgramFlags.value], divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
-	glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_FALSE);
-	glUniform1i(OGLRef.uniformPolyDrawShadow[this->_geometryProgramFlags.value], GL_FALSE);
-	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
+	
+	this->_renderNeedsDepthEqualsTest = false;
 	
 	size_t vertIndexCount = 0;
 	GLushort *indexPtr = (GLushort *)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
 	
 	for (size_t i = 0; i < engine.polylist->count; i++)
 	{
-		const POLY *thePoly = &engine.polylist->list[engine.indexlist.list[i]];
-		const size_t polyType = thePoly->type;
+		const POLY &thePoly = engine.polylist->list[engine.indexlist.list[i]];
+		const size_t polyType = thePoly.type;
+		const VERT vert[4] = {
+			engine.vertList[thePoly.vertIndexes[0]],
+			engine.vertList[thePoly.vertIndexes[1]],
+			engine.vertList[thePoly.vertIndexes[2]],
+			engine.vertList[thePoly.vertIndexes[3]]
+		};
 		
 		for (size_t j = 0; j < polyType; j++)
 		{
-			const GLushort vertIndex = thePoly->vertIndexes[j];
+			const GLushort vertIndex = thePoly.vertIndexes[j];
 			
 			// While we're looping through our vertices, add each vertex index to
 			// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 			// vertices here to convert them to GL_TRIANGLES, which are much easier
 			// to work with and won't be deprecated in future OpenGL versions.
 			indexPtr[vertIndexCount++] = vertIndex;
-			if (thePoly->vtxFormat == GFX3D_QUADS || thePoly->vtxFormat == GFX3D_QUAD_STRIP)
+			if (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP)
 			{
 				if (j == 2)
 				{
@@ -5566,16 +5578,45 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 				}
 				else if (j == 3)
 				{
-					indexPtr[vertIndexCount++] = thePoly->vertIndexes[0];
+					indexPtr[vertIndexCount++] = thePoly.vertIndexes[0];
 				}
 			}
 		}
 		
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(*thePoly, this->_enableTextureSampling);
+		// Get this polygon's facing.
+		const size_t n = polyType - 1;
+		float facing = (vert[0].y + vert[n].y) * (vert[0].x - vert[n].x) +
+		               (vert[1].y + vert[0].y) * (vert[1].x - vert[0].x) +
+		               (vert[2].y + vert[1].y) * (vert[2].x - vert[1].x);
+		
+		for (size_t j = 2; j < n; j++)
+		{
+			facing += (vert[j+1].y + vert[j].y) * (vert[j+1].x - vert[j].x);
+		}
+		
+		this->_renderNeedsDepthEqualsTest = this->_renderNeedsDepthEqualsTest || (thePoly.attribute.DepthEqualTest_Enable != 0);
+		this->_isPolyFrontFacing[i] = (facing < 0);
+		
+		// Get the texture that is to be attached to this polygon.
+		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, this->_enableTextureSampling);
 	}
 	
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * engine.vertListCount, engine.vertList);
+	
+	// Setup render states
+	this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;
+	this->_geometryProgramFlags.EnableAlphaTest = (engine.renderState.enableAlphaTest) ? 1 : 0;
+	this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
+	this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
+	this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
+	this->_geometryProgramFlags.ToonShadingMode = (engine.renderState.shading) ? 1 : 0;
+	this->_geometryProgramFlags.NeedsDepthEqualsTest = (this->_renderNeedsDepthEqualsTest) ? 1 : 0;
+	
+	glUseProgram(OGLRef.programGeometryID[this->_geometryProgramFlags.value]);
+	glUniform1f(OGLRef.uniformStateAlphaTestRef[this->_geometryProgramFlags.value], divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
+	glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_FALSE);
+	glUniform1i(OGLRef.uniformPolyDrawShadow[this->_geometryProgramFlags.value], GL_FALSE);
 	
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);

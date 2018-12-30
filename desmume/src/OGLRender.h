@@ -414,7 +414,8 @@ union OGLGeometryFlags
 		u8 EnableFog:1;
 		u8 EnableEdgeMark:1;
 		u8 ToonShadingMode:1;
-		u8 :3;
+		u8 NeedsDepthEqualsTest:1;
+		u8 :1;
 	};
 };
 typedef OGLGeometryFlags OGLGeometryFlags;
@@ -657,6 +658,7 @@ protected:
 	bool isShaderSupported;
 	bool isVAOSupported;
 	bool isSampleShadingSupported;
+	bool isConservativeDepthSupported;
 	bool willFlipOnlyFramebufferOnGPU;
 	bool willFlipAndConvertFramebufferOnGPU;
 	bool willUsePerSampleZeroDstPass;
@@ -670,6 +672,7 @@ protected:
 	FragmentColor *_workingTextureUnpackBuffer;
 	bool _pixelReadNeedsFinish;
 	bool _needsZeroDstAlphaPass;
+	bool _renderNeedsDepthEqualsTest;
 	size_t _currentPolyIndex;
 	OGLTextureUnitID _lastTextureDrawTarget;
 	OGLGeometryFlags _geometryProgramFlags;
