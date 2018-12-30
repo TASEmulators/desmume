@@ -1235,6 +1235,7 @@ OpenGLRenderer::OpenGLRenderer()
 	isShaderSupported = false;
 	isSampleShadingSupported = false;
 	isConservativeDepthSupported = false;
+	isConservativeDepthAMDSupported = false;
 	isVAOSupported = false;
 	willFlipOnlyFramebufferOnGPU = false;
 	willFlipAndConvertFramebufferOnGPU = false;

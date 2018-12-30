@@ -828,6 +828,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	
 	this->isSampleShadingSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_sample_shading");
 	this->isConservativeDepthSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0);
+	this->isConservativeDepthAMDSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_AMD_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0);
 	
 	this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
 	this->_emulateShadowPolygon = CommonSettings.OpenGL_Emulation_ShadowPolygon;
@@ -1312,7 +1313,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	programFlags.value = 0;
 	
 	std::stringstream vtxShaderHeader;
-	if (this->isConservativeDepthSupported)
+	if (this->isConservativeDepthSupported || this->isConservativeDepthAMDSupported)
 	{
 		vtxShaderHeader << "#version 400\n";
 	}
@@ -1325,17 +1326,20 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	std::string vtxShaderCode  = vtxShaderHeader.str() + std::string(GeometryVtxShader_150);
 	
 	std::stringstream fragShaderHeader;
-	if (this->isConservativeDepthSupported)
+	if (this->isConservativeDepthSupported || this->isConservativeDepthAMDSupported)
 	{
 		fragShaderHeader << "#version 400\n";
-		fragShaderHeader << "#extension GL_ARB_conservative_depth : require\n";
+		
+		// Prioritize using GL_AMD_conservative_depth over GL_ARB_conservative_depth, since AMD drivers
+		// seem to have problems with GL_ARB_conservative_depth.
+		fragShaderHeader << ((this->isConservativeDepthAMDSupported) ? "#extension GL_AMD_conservative_depth : require\n" : "#extension GL_ARB_conservative_depth : require\n");
 	}
 	else
 	{
 		fragShaderHeader << "#version 150\n";
 	}
 	fragShaderHeader << "\n";
-	fragShaderHeader << "#define IS_CONSERVATIVE_DEPTH_SUPPORTED " << ((this->isConservativeDepthSupported) ? 1 : 0) << "\n";
+	fragShaderHeader << "#define IS_CONSERVATIVE_DEPTH_SUPPORTED " << ((this->isConservativeDepthSupported || this->isConservativeDepthAMDSupported) ? 1 : 0) << "\n";
 	fragShaderHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0\n";
 	fragShaderHeader << "\n";
 	

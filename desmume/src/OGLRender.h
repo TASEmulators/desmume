@@ -659,6 +659,7 @@ protected:
 	bool isVAOSupported;
 	bool isSampleShadingSupported;
 	bool isConservativeDepthSupported;
+	bool isConservativeDepthAMDSupported;
 	bool willFlipOnlyFramebufferOnGPU;
 	bool willFlipAndConvertFramebufferOnGPU;
 	bool willUsePerSampleZeroDstPass;
