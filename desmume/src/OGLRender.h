@@ -408,6 +408,7 @@ union OGLGeometryFlags
 	
 	struct
 	{
+#ifndef MSB_FIRST
 		u8 EnableWDepth:1;
 		u8 EnableAlphaTest:1;
 		u8 EnableTextureSampling:1;
@@ -416,9 +417,34 @@ union OGLGeometryFlags
 		u8 ToonShadingMode:1;
 		u8 NeedsDepthEqualsTest:1;
 		u8 :1;
+#else
+		u8 :1;
+		u8 NeedsDepthEqualsTest:1;
+		u8 ToonShadingMode:1;
+		u8 EnableEdgeMark:1;
+		u8 EnableFog:1;
+		u8 EnableTextureSampling:1;
+		u8 EnableAlphaTest:1;
+		u8 EnableWDepth:1;
+#endif
+	};
+	
+	struct
+	{
+		u8 :3;
+		u8 DrawBuffersMode:2;
+		u8 :3;
 	};
 };
 typedef OGLGeometryFlags OGLGeometryFlags;
+
+enum OGLGeometryDrawBuffersMode
+{
+	OGLGeometryDrawBuffersMode_ColorOnly = 0,
+	OGLGeometryDrawBuffersMode_Color_Fog = 1,
+	OGLGeometryDrawBuffersMode_Color_EdgeMark = 2,
+	OGLGeometryDrawBuffersMode_Color_Fog_EdgeMark = 3
+};
 
 union OGLFogProgramKey
 {
@@ -449,7 +475,6 @@ struct OGLRenderRef
 	GLuint vboGeometryVtxID;
 	GLuint iboGeometryIndexID;
 	GLuint vboPostprocessVtxID;
-	GLuint iboPostprocessIndexID;
 	
 	// PBO
 	GLuint pboRenderDataID;
@@ -479,7 +504,6 @@ struct OGLRenderRef
 	
 	GLuint fboClearImageID;
 	GLuint fboRenderID;
-	GLuint fboPostprocessID;
 	GLuint fboMSIntermediateRenderID;
 	GLuint selectedRenderingFBO;
 	
@@ -504,11 +528,9 @@ struct OGLRenderRef
 	GLuint fragmentFramebufferRGBA6665OutputShaderID;
 	GLuint fragmentFramebufferRGBA8888OutputShaderID;
 	GLuint programEdgeMarkID;
-	GLuint programFramebufferRGBA6665OutputID;
-	GLuint programFramebufferRGBA8888OutputID;
+	GLuint programFramebufferRGBA6665OutputID[2];
+	GLuint programFramebufferRGBA8888OutputID[2];
 	
-	GLint uniformTexInFragColor_ConvertRGBA6665;
-	GLint uniformTexInFragColor_ConvertRGBA8888;
 	GLint uniformStateEnableFogAlphaOnly;
 	GLint uniformStateClearPolyID;
 	GLint uniformStateClearDepth;
@@ -563,7 +585,7 @@ extern GPU3DInterface gpu3Dgl;
 extern GPU3DInterface gpu3DglOld;
 extern GPU3DInterface gpu3Dgl_3_2;
 
-extern const GLenum RenderDrawList[3];
+extern const GLenum GeometryDrawBuffersList[4][3];
 extern CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32];
 extern CACHE_ALIGN const GLfloat divide6bitBy63_LUT[64];
 extern const GLfloat PostprocessVtxBuffer[16];
@@ -725,10 +747,10 @@ protected:
 	virtual Render3DError CreateFogProgram(const OGLFogProgramKey fogProgramKey, const char *vtxShaderCString, const char *fragShaderCString) = 0;
 	virtual void DestroyFogProgram(const OGLFogProgramKey fogProgramKey) = 0;
 	virtual void DestroyFogPrograms() = 0;
-	virtual Render3DError CreateFramebufferOutput6665Program(const char *vtxShaderCString, const char *fragShaderCString) = 0;
-	virtual void DestroyFramebufferOutput6665Program() = 0;
-	virtual Render3DError CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString) = 0;
-	virtual void DestroyFramebufferOutput8888Program() = 0;
+	virtual Render3DError CreateFramebufferOutput6665Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString) = 0;
+	virtual void DestroyFramebufferOutput6665Programs() = 0;
+	virtual Render3DError CreateFramebufferOutput8888Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString) = 0;
+	virtual void DestroyFramebufferOutput8888Programs() = 0;
 	
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader,
@@ -800,10 +822,10 @@ protected:
 	virtual Render3DError CreateFogProgram(const OGLFogProgramKey fogProgramKey, const char *vtxShaderCString, const char *fragShaderCString);
 	virtual void DestroyFogProgram(const OGLFogProgramKey fogProgramKey);
 	virtual void DestroyFogPrograms();
-	virtual Render3DError CreateFramebufferOutput6665Program(const char *vtxShaderCString, const char *fragShaderCString);
-	virtual void DestroyFramebufferOutput6665Program();
-	virtual Render3DError CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString);
-	virtual void DestroyFramebufferOutput8888Program();
+	virtual Render3DError CreateFramebufferOutput6665Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString);
+	virtual void DestroyFramebufferOutput6665Programs();
+	virtual Render3DError CreateFramebufferOutput8888Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString);
+	virtual void DestroyFramebufferOutput8888Programs();
 	
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
 	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader,

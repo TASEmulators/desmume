@@ -79,8 +79,8 @@ protected:
 	virtual void DestroyMSGeometryZeroDstAlphaProgram();
 	virtual Render3DError CreateEdgeMarkProgram(const char *vtxShaderCString, const char *fragShaderCString);
 	virtual Render3DError CreateFogProgram(const OGLFogProgramKey fogProgramKey, const char *vtxShaderCString, const char *fragShaderCString);
-	virtual Render3DError CreateFramebufferOutput6665Program(const char *vtxShaderCString, const char *fragShaderCString);
-	virtual Render3DError CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString);
+	virtual Render3DError CreateFramebufferOutput6665Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString);
+	virtual Render3DError CreateFramebufferOutput8888Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString);
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual Render3DError EnableVertexAttributes();
