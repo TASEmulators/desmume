@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2018 DeSmuME team
+	Copyright (C) 2008-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -381,24 +381,26 @@ struct OGLRenderStates
 	GLvec4 toonColor[32];
 };
 
-struct OGLPolyStates
+union OGLPolyStates
 {
-	union
-	{
-		struct { GLubyte enableTexture, enableFog, isWireframe, setNewDepthForTranslucent; };
-		GLubyte flags[4];
-	};
+	u32 packedState;
 	
-	union
+	struct
 	{
-		struct { GLubyte polyAlpha, polyMode, polyID, valuesPad[1]; };
-		GLubyte values[4];
-	};
-	
-	union
-	{
-		struct { GLubyte texSizeS, texSizeT, texSingleBitAlpha, texParamPad[1]; };
-		GLubyte texParam[4];
+		u8 PolygonID:6;
+		u8 PolygonMode:2;
+		
+		u8 PolygonAlpha:5;
+		u8 IsWireframe:1;
+		u8 EnableFog:1;
+		u8 SetNewDepthForTranslucent:1;
+		
+		u8 EnableTexture:1;
+		u8 TexSingleBitAlpha:1;
+		u8 TexSizeShiftS:3;
+		u8 TexSizeShiftT:3;
+		
+		u8 :8;
 	};
 };
 

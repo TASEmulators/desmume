@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2018 DeSmuME team
+	Copyright (C) 2008-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -111,36 +111,36 @@ in vec4 inPosition; \n\
 in vec2 inTexCoord0; \n\
 in vec3 inColor; \n\
 \n\
-uniform usamplerBuffer PolyStates;\n\
+uniform isamplerBuffer PolyStates;\n\
 uniform int polyIndex;\n\
 \n\
 out vec4 vtxPosition; \n\
 out vec2 vtxTexCoord; \n\
 out vec4 vtxColor; \n\
-flat out uint polyEnableTexture;\n\
-flat out uint polyEnableFog;\n\
-flat out uint polyIsWireframe;\n\
-flat out uint polySetNewDepthForTranslucent;\n\
-flat out uint polyMode;\n\
-flat out uint polyID;\n\
-flat out uint texSingleBitAlpha;\n\
+flat out int polyEnableTexture;\n\
+flat out int polyEnableFog;\n\
+flat out int polyIsWireframe;\n\
+flat out int polySetNewDepthForTranslucent;\n\
+flat out int polyMode;\n\
+flat out int polyID;\n\
+flat out int texSingleBitAlpha;\n\
 \n\
 void main() \n\
 { \n\
-	uvec4 polyStateFlags = texelFetch(PolyStates, (polyIndex*3)+0);\n\
-	uvec4 polyStateValues = texelFetch(PolyStates, (polyIndex*3)+1);\n\
-	uvec4 polyStateTexParams = texelFetch(PolyStates, (polyIndex*3)+2);\n\
+	int polyStateBits = texelFetch(PolyStates, polyIndex).r;\n\
+	int texSizeShiftS = (polyStateBits >> 18) & 0x07;\n\
+	int texSizeShiftT = (polyStateBits >> 21) & 0x07;\n\
 	\n\
-	float polyAlpha = float(polyStateValues[0]) / 31.0;\n\
-	vec2 polyTexScale = vec2(1.0 / float(8 << polyStateTexParams[0]), 1.0 / float(8 << polyStateTexParams[1]));\n\
+	float polyAlpha = float((polyStateBits >>  8) & 0x1F) / 31.0;\n\
+	vec2 polyTexScale = vec2(1.0 / float(8 << texSizeShiftS), 1.0 / float(8 << texSizeShiftT));\n\
 	\n\
-	polyEnableTexture = polyStateFlags[0];\n\
-	polyEnableFog = polyStateFlags[1];\n\
-	polyIsWireframe = polyStateFlags[2];\n\
-	polySetNewDepthForTranslucent = polyStateFlags[3];\n\
-	polyMode = polyStateValues[1];\n\
-	polyID = polyStateValues[2];\n\
-	texSingleBitAlpha = polyStateTexParams[2];\n\
+	polyID                        = (polyStateBits >>  0) & 0x3F;\n\
+	polyMode                      = (polyStateBits >>  6) & 0x03;\n\
+	polyIsWireframe               = (polyStateBits >> 13) & 0x01;\n\
+	polyEnableFog                 = (polyStateBits >> 14) & 0x01;\n\
+	polySetNewDepthForTranslucent = (polyStateBits >> 15) & 0x01;\n\
+	polyEnableTexture             = (polyStateBits >> 16) & 0x01;\n\
+	texSingleBitAlpha             = (polyStateBits >> 17) & 0x01;\n\
 	\n\
 	mat2 texScaleMtx	= mat2(	vec2(polyTexScale.x,            0.0), \n\
 								vec2(           0.0, polyTexScale.y)); \n\
@@ -158,13 +158,13 @@ static const char *GeometryFragShader_150 = {"\
 in vec4 vtxPosition;\n\
 in vec2 vtxTexCoord;\n\
 in vec4 vtxColor;\n\
-flat in uint polyEnableTexture;\n\
-flat in uint polyEnableFog;\n\
-flat in uint polyIsWireframe;\n\
-flat in uint polySetNewDepthForTranslucent;\n\
-flat in uint polyMode;\n\
-flat in uint polyID;\n\
-flat in uint texSingleBitAlpha;\n\
+flat in int polyEnableTexture;\n\
+flat in int polyEnableFog;\n\
+flat in int polyIsWireframe;\n\
+flat in int polySetNewDepthForTranslucent;\n\
+flat in int polyMode;\n\
+flat in int polyID;\n\
+flat in int texSingleBitAlpha;\n\
 \n\
 layout (std140) uniform RenderStates\n\
 {\n\
@@ -183,10 +183,8 @@ layout (std140) uniform RenderStates\n\
 } state;\n\
 \n\
 uniform sampler2D texRenderObject;\n\
-uniform usamplerBuffer PolyStates;\n\
 uniform bool texDrawOpaque;\n\
 uniform bool polyDrawShadow;\n\
-uniform int polyIndex;\n\
 uniform int polyDepthOffsetMode;\n\
 \n\
 out vec4 outFragColor;\n\
@@ -203,15 +201,15 @@ layout (depth_less) out float gl_FragDepth;\n\
 \n\
 void main()\n\
 {\n\
-	vec4 newFragColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
+	outFragColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
 #if ENABLE_EDGE_MARK\n\
-	vec4 newPolyID = vec4(0.0, 0.0, 0.0, 0.0);\n\
+	outPolyID = vec4(0.0, 0.0, 0.0, 0.0);\n\
 #endif\n\
 #if ENABLE_FOG\n\
-	vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
+	outFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
 #endif\n\
 	\n\
-	if ((polyMode != 3u) || polyDrawShadow)\n\
+	if ((polyMode != 3) || polyDrawShadow)\n\
 	{\n\
 		vec4 mainTexColor = (ENABLE_TEXTURE_SAMPLING && bool(polyEnableTexture)) ? texture(texRenderObject, vtxTexCoord) : vec4(1.0, 1.0, 1.0, 1.0);\n\
 		\n\
@@ -233,62 +231,54 @@ void main()\n\
 		{\n\
 			if (texDrawOpaque)\n\
 			{\n\
-				if ( (polyMode != 1u) && (mainTexColor.a <= 0.999) )\n\
+				if ( (polyMode != 1) && (mainTexColor.a <= 0.999) )\n\
 				{\n\
 					discard;\n\
 				}\n\
 			}\n\
 			else\n\
 			{\n\
-				if ( ((polyMode != 1u) && (mainTexColor.a * vtxColor.a > 0.999)) || ((polyMode == 1u) && (vtxColor.a > 0.999)) )\n\
+				if ( ((polyMode != 1) && (mainTexColor.a * vtxColor.a > 0.999)) || ((polyMode == 1) && (vtxColor.a > 0.999)) )\n\
 				{\n\
 					discard;\n\
 				}\n\
 			}\n\
 		}\n\
 		\n\
-		newFragColor = mainTexColor * vtxColor;\n\
+		outFragColor = mainTexColor * vtxColor;\n\
 		\n\
-		if (polyMode == 1u)\n\
+		if (polyMode == 1)\n\
 		{\n\
-			newFragColor.rgb = (ENABLE_TEXTURE_SAMPLING && bool(polyEnableTexture)) ? mix(vtxColor.rgb, mainTexColor.rgb, mainTexColor.a) : vtxColor.rgb;\n\
-			newFragColor.a = vtxColor.a;\n\
+			outFragColor.rgb = (ENABLE_TEXTURE_SAMPLING && bool(polyEnableTexture)) ? mix(vtxColor.rgb, mainTexColor.rgb, mainTexColor.a) : vtxColor.rgb;\n\
+			outFragColor.a = vtxColor.a;\n\
 		}\n\
-		else if (polyMode == 2u)\n\
+		else if (polyMode == 2)\n\
 		{\n\
 			vec3 newToonColor = state.toonColor[int((vtxColor.r * 31.0) + 0.5)].rgb;\n\
 #if TOON_SHADING_MODE\n\
-			newFragColor.rgb = min((mainTexColor.rgb * vtxColor.r) + newToonColor.rgb, 1.0);\n\
+			outFragColor.rgb = min((mainTexColor.rgb * vtxColor.r) + newToonColor.rgb, 1.0);\n\
 #else\n\
-			newFragColor.rgb = mainTexColor.rgb * newToonColor.rgb;\n\
+			outFragColor.rgb = mainTexColor.rgb * newToonColor.rgb;\n\
 #endif\n\
 		}\n\
-		else if (polyMode == 3u)\n\
+		else if (polyMode == 3)\n\
 		{\n\
-			newFragColor = vtxColor;\n\
+			outFragColor = vtxColor;\n\
 		}\n\
 		\n\
-		if (newFragColor.a < 0.001 || (ENABLE_ALPHA_TEST && newFragColor.a < state.alphaTestRef))\n\
+		if (outFragColor.a < 0.001 || (ENABLE_ALPHA_TEST && outFragColor.a < state.alphaTestRef))\n\
 		{\n\
 			discard;\n\
 		}\n\
 		\n\
 #if ENABLE_EDGE_MARK\n\
-		newPolyID = vec4( float(polyID)/63.0, float(polyIsWireframe == 1u), 0.0, float(newFragColor.a > 0.999) );\n\
+		outPolyID = vec4( float(polyID)/63.0, float(polyIsWireframe == 1), 0.0, float(outFragColor.a > 0.999) );\n\
 #endif\n\
 #if ENABLE_FOG\n\
-		newFogAttributes = vec4( float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5) );\n\
+		outFogAttributes = vec4( float(polyEnableFog), 0.0, 0.0, float((outFragColor.a > 0.999) ? 1.0 : 0.5) );\n\
 #endif\n\
 	}\n\
 	\n\
-	outFragColor = newFragColor;\n\
-	\n\
-#if ENABLE_EDGE_MARK\n\
-	outPolyID = newPolyID;\n\
-#endif\n\
-#if ENABLE_FOG\n\
-	outFogAttributes = newFogAttributes;\n\
-#endif\n\
 #if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
 	// It is tempting to perform the NDS depth calculation in the vertex shader rather than in the fragment shader.\n\
 	// Resist this temptation! It is much more reliable to do the depth calculation in the fragment shader due to\n\
@@ -439,7 +429,7 @@ layout (std140) uniform RenderStates\n\
 uniform sampler2D texInFragDepth;\n\
 uniform sampler2D texInPolyID;\n\
 \n\
-out vec4 outFragColor;\n\
+out vec4 outEdgeColor;\n\
 \n\
 void main()\n\
 {\n\
@@ -460,7 +450,7 @@ void main()\n\
 	depth[3] = texture(texInFragDepth, texCoord[3]).r;\n\
 	depth[4] = texture(texInFragDepth, texCoord[4]).r;\n\
 	\n\
-	vec4 newEdgeColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
+	outEdgeColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
 	\n\
 	if (!isWireframe[0])\n\
 	{\n\
@@ -482,49 +472,47 @@ void main()\n\
 		{\n\
 			if (pixelCoord.x >= FRAMEBUFFER_SIZE_X-1.0)\n\
 			{\n\
-				newEdgeColor = state.edgeColor[polyID[0]/8];\n\
+				outEdgeColor = state.edgeColor[polyID[0]/8];\n\
 			}\n\
 			else\n\
 			{\n\
-				newEdgeColor = state.edgeColor[polyID[1]/8];\n\
+				outEdgeColor = state.edgeColor[polyID[1]/8];\n\
 			}\n\
 		}\n\
 		else if ( ((pixelCoord.y >= FRAMEBUFFER_SIZE_Y-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[2]) && (depth[0] >= depth[2]) && !isWireframe[2])) )\n\
 		{\n\
 			if (pixelCoord.y >= FRAMEBUFFER_SIZE_Y-1.0)\n\
 			{\n\
-				newEdgeColor = state.edgeColor[polyID[0]/8];\n\
+				outEdgeColor = state.edgeColor[polyID[0]/8];\n\
 			}\n\
 			else\n\
 			{\n\
-				newEdgeColor = state.edgeColor[polyID[2]/8];\n\
+				outEdgeColor = state.edgeColor[polyID[2]/8];\n\
 			}\n\
 		}\n\
 		else if ( ((pixelCoord.x < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[3]) && (depth[0] >= depth[3]) && !isWireframe[3])) )\n\
 		{\n\
 			if (pixelCoord.x < 1.0)\n\
 			{\n\
-				newEdgeColor = state.edgeColor[polyID[0]/8];\n\
+				outEdgeColor = state.edgeColor[polyID[0]/8];\n\
 			}\n\
 			else\n\
 			{\n\
-				newEdgeColor = state.edgeColor[polyID[3]/8];\n\
+				outEdgeColor = state.edgeColor[polyID[3]/8];\n\
 			}\n\
 		}\n\
 		else if ( ((pixelCoord.y < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[4]) && (depth[0] >= depth[4]) && !isWireframe[4])) )\n\
 		{\n\
 			if (pixelCoord.y < 1.0)\n\
 			{\n\
-				newEdgeColor = state.edgeColor[polyID[0]/8];\n\
+				outEdgeColor = state.edgeColor[polyID[0]/8];\n\
 			}\n\
 			else\n\
 			{\n\
-				newEdgeColor = state.edgeColor[polyID[4]/8];\n\
+				outEdgeColor = state.edgeColor[polyID[4]/8];\n\
 			}\n\
 		}\n\
 	}\n\
-	\n\
-	outFragColor = newEdgeColor;\n\
 }\n\
 "};
 
@@ -586,10 +574,10 @@ out vec4 outFragColor;\n\
 \n\
 void main()\n\
 {\n\
-	vec4 inFragColor = texture(texInFragColor, texCoord);\n\
+	outFragColor = texture(texInFragColor, texCoord);\n\
+	\n\
 	vec4 inFogAttributes = texture(texInFogAttributes, texCoord);\n\
 	bool polyEnableFog = (inFogAttributes.r > 0.999);\n\
-	vec4 newFoggedColor = inFragColor;\n\
 	\n\
 	if (polyEnableFog)\n\
 	{\n\
@@ -729,10 +717,8 @@ void main()\n\
 			fogMixWeight = mix(state.fogDensity[30], state.fogDensity[31], (inFragDepth - FOG_DEPTH_COMPARE_30) * FOG_DEPTH_INVDIFF_31);\n\
 		}\n\
 		\n\
-		newFoggedColor = mix(inFragColor, (state.enableFogAlphaOnly) ? vec4(inFragColor.rgb, state.fogColor.a) : state.fogColor, fogMixWeight);\n\
+		outFragColor = mix(outFragColor, (state.enableFogAlphaOnly) ? vec4(outFragColor.rgb, state.fogColor.a) : state.fogColor, fogMixWeight);\n\
 	}\n\
-	\n\
-	outFragColor = newFoggedColor;\n\
 }\n\
 "};
 
@@ -756,18 +742,18 @@ in vec2 texCoord;\n\
 \n\
 uniform sampler2D texInFragColor;\n\
 \n\
-out vec4 outFragColor;\n\
+out vec4 outFragColor6665;\n\
 \n\
 void main()\n\
 {\n\
 	// Note that we swap B and R since pixel readbacks are done in BGRA format for fastest\n\
 	// performance. The final color is still in RGBA format.\n\
-	vec4 colorRGBA6665 = texture(texInFragColor, texCoord).bgra;\n\
-	colorRGBA6665     = floor((colorRGBA6665 * 255.0) + 0.5);\n\
-	colorRGBA6665.rgb = floor(colorRGBA6665.rgb / 4.0);\n\
-	colorRGBA6665.a   = floor(colorRGBA6665.a   / 8.0);\n\
+	outFragColor6665     = texture(texInFragColor, texCoord).bgra;\n\
+	outFragColor6665     = floor((outFragColor6665 * 255.0) + 0.5);\n\
+	outFragColor6665.rgb = floor(outFragColor6665.rgb / 4.0);\n\
+	outFragColor6665.a   = floor(outFragColor6665.a   / 8.0);\n\
 	\n\
-	outFragColor = (colorRGBA6665 / 255.0);\n\
+	outFragColor6665 /= 255.0;\n\
 }\n\
 "};
 
@@ -1422,7 +1408,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 		glGenTextures(1, &OGLRef.texPolyStatesID);
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
 		glBindTexture(GL_TEXTURE_BUFFER, OGLRef.texPolyStatesID);
-		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA8UI, OGLRef.tboPolyStatesID);
+		glTexBuffer(GL_TEXTURE_BUFFER, GL_R32I, OGLRef.tboPolyStatesID);
 		glActiveTexture(GL_TEXTURE0);
 	}
 	
@@ -1625,7 +1611,7 @@ Render3DError OpenGLRenderer_3_2::CreateEdgeMarkProgram(const char *vtxShaderCSt
 	
 	glBindAttribLocation(OGLRef.programEdgeMarkID, OGLVertexAttributeID_Position, "inPosition");
 	glBindAttribLocation(OGLRef.programEdgeMarkID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
-	glBindFragDataLocation(OGLRef.programEdgeMarkID, 0, "outFragColor");
+	glBindFragDataLocation(OGLRef.programEdgeMarkID, 0, "outEdgeColor");
 	
 	glLinkProgram(OGLRef.programEdgeMarkID);
 	if (!this->ValidateShaderProgramLink(OGLRef.programEdgeMarkID))
@@ -1856,7 +1842,7 @@ Render3DError OpenGLRenderer_3_2::CreateFramebufferOutput6665Program(const size_
 	
 	glBindAttribLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], OGLVertexAttributeID_Position, "inPosition");
 	glBindAttribLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], OGLVertexAttributeID_TexCoord0, "inTexCoord0");
-	glBindFragDataLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], 0, "outFragColor");
+	glBindFragDataLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], 0, "outFragColor6665");
 	
 	glLinkProgram(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex]);
 	if (!this->ValidateShaderProgramLink(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex]))
@@ -2234,16 +2220,20 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		
 		// Get all of the polygon states that can be handled within the shader.
 		const NDSTextureFormat packFormat = this->_textureList[i]->GetPackFormat();
-		polyStates[i].enableTexture = (this->_textureList[i]->IsSamplingEnabled()) ? GL_TRUE : GL_FALSE;
-		polyStates[i].enableFog = (thePoly.attribute.Fog_Enable) ? GL_TRUE : GL_FALSE;
-		polyStates[i].isWireframe = (thePoly.isWireframe()) ? GL_TRUE : GL_FALSE;
-		polyStates[i].setNewDepthForTranslucent = (thePoly.attribute.TranslucentDepthWrite_Enable) ? GL_TRUE : GL_FALSE;
-		polyStates[i].polyAlpha = (thePoly.isWireframe()) ? 0x1F : thePoly.attribute.Alpha;
-		polyStates[i].polyMode = thePoly.attribute.Mode;
-		polyStates[i].polyID = thePoly.attribute.PolygonID;
-		polyStates[i].texSizeS = thePoly.texParam.SizeShiftS; // Note that we are using the preshifted size of S
-		polyStates[i].texSizeT = thePoly.texParam.SizeShiftT; // Note that we are using the preshifted size of T
-		polyStates[i].texSingleBitAlpha = (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE;
+		
+		polyStates[i].packedState = 0;
+		polyStates[i].PolygonID = thePoly.attribute.PolygonID;
+		polyStates[i].PolygonMode = thePoly.attribute.Mode;
+		
+		polyStates[i].PolygonAlpha = (thePoly.isWireframe()) ? 0x1F : thePoly.attribute.Alpha;
+		polyStates[i].IsWireframe = (thePoly.isWireframe()) ? 1 : 0;
+		polyStates[i].EnableFog = (thePoly.attribute.Fog_Enable) ? 1 : 0;
+		polyStates[i].SetNewDepthForTranslucent = (thePoly.attribute.TranslucentDepthWrite_Enable) ? 1 : 0;
+		
+		polyStates[i].EnableTexture = (this->_textureList[i]->IsSamplingEnabled()) ? 1 : 0;
+		polyStates[i].TexSingleBitAlpha = (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? 1 : 0;
+		polyStates[i].TexSizeShiftS = thePoly.texParam.SizeShiftS; // Note that we are using the preshifted size of S
+		polyStates[i].TexSizeShiftT = thePoly.texParam.SizeShiftT; // Note that we are using the preshifted size of T
 	}
 	
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
