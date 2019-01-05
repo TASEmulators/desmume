@@ -4012,10 +4012,6 @@ Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLYLIST *polyList, con
 	
 	this->DisableVertexAttributes();
 	
-	glDepthMask(GL_FALSE);
-	glStencilMask(0x40);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	
 	const bool isRunningMSAA = this->isMultisampledFBOSupported && (OGLRef.selectedRenderingFBO == OGLRef.fboMSIntermediateRenderID);
 	
 	if (isRunningMSAA)
@@ -4037,6 +4033,9 @@ Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLYLIST *polyList, con
 	glDisable(GL_CULL_FACE);
 	
 	glStencilFunc(GL_ALWAYS, 0x40, 0x40);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilMask(0x40);
+	glDepthMask(GL_FALSE);
 	glDrawBuffer(GL_NONE);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
@@ -4471,12 +4470,6 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		
 		if (polyList->opaqueCount < polyList->count)
 		{
-			// Clear the stencil bit that we will use to mark transparent fragments.
-			glStencilMask(0x40);
-			glClearStencil(0);
-			glClear(GL_STENCIL_BUFFER_BIT);
-			glStencilMask(0xFF);
-			
 			if (this->_needsZeroDstAlphaPass && this->_emulateSpecialZeroAlphaBlending)
 			{
 				if (polyList->opaqueCount == 0)
@@ -4492,6 +4485,15 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 					lastPolyAttr = lastOpaquePoly.attribute;
 					this->SetupPolygon(lastOpaquePoly, false, true);
 				}
+			}
+			else
+			{
+				// If we're not doing the zero-dst-alpha pass, then we need to make sure to
+				// clear the stencil bit that we will use to mark transparent fragments.
+				glStencilMask(0x40);
+				glClearStencil(0);
+				glClear(GL_STENCIL_BUFFER_BIT);
+				glStencilMask(0xFF);
 			}
 			
 			if (polyList->opaqueCount == 0)
@@ -4576,7 +4578,7 @@ Render3DError OpenGLRenderer_1_2::RenderEdgeMarking(const u16 *colorTable, const
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
 	}
 	
-	if (this->_emulateSpecialZeroAlphaBlending)
+	if (this->_needsZeroDstAlphaPass && this->_emulateSpecialZeroAlphaBlending)
 	{
 		// Pass 1: Determine the pixels with zero alpha
 		glDrawBuffer(GL_NONE);
@@ -4585,8 +4587,6 @@ Render3DError OpenGLRenderer_1_2::RenderEdgeMarking(const u16 *colorTable, const
 		glStencilFunc(GL_ALWAYS, 0x40, 0x40);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		glStencilMask(0x40);
-		glClearStencil(0);
-		glClear(GL_STENCIL_BUFFER_BIT);
 		
 		glUseProgram(OGLRef.programGeometryZeroDstAlphaID);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -4614,7 +4614,9 @@ Render3DError OpenGLRenderer_1_2::RenderEdgeMarking(const u16 *colorTable, const
 		glUniform1f(OGLRef.uniformStateClearDepth, (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF);
 		glUniform4fv(OGLRef.uniformStateEdgeColor, 8, oglColor);
 		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		glEnable(GL_BLEND);
 		glDisable(GL_STENCIL_TEST);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}
 	
