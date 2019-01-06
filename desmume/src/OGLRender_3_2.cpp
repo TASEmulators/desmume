@@ -107,16 +107,15 @@ void OGLLoadEntryPoints_3_2()
 
 // Vertex shader for geometry, GLSL 1.50
 static const char *GeometryVtxShader_150 = {"\
-in vec4 inPosition; \n\
-in vec2 inTexCoord0; \n\
+in vec4 inPosition;\n\
+in vec2 inTexCoord0;\n\
 in vec3 inColor; \n\
 \n\
 uniform isamplerBuffer PolyStates;\n\
 uniform int polyIndex;\n\
 \n\
-out vec4 vtxPosition; \n\
-out vec2 vtxTexCoord; \n\
-out vec4 vtxColor; \n\
+out vec2 vtxTexCoord;\n\
+out vec4 vtxColor;\n\
 flat out int polyEnableTexture;\n\
 flat out int polyEnableFog;\n\
 flat out int polyIsWireframe;\n\
@@ -125,8 +124,8 @@ flat out int polyMode;\n\
 flat out int polyID;\n\
 flat out int texSingleBitAlpha;\n\
 \n\
-void main() \n\
-{ \n\
+void main()\n\
+{\n\
 	int polyStateBits = texelFetch(PolyStates, polyIndex).r;\n\
 	int texSizeShiftS = (polyStateBits >> 18) & 0x07;\n\
 	int texSizeShiftT = (polyStateBits >> 21) & 0x07;\n\
@@ -145,17 +144,14 @@ void main() \n\
 	mat2 texScaleMtx	= mat2(	vec2(polyTexScale.x,            0.0), \n\
 								vec2(           0.0, polyTexScale.y)); \n\
 	\n\
-	vtxPosition = inPosition; \n\
-	vtxTexCoord = texScaleMtx * inTexCoord0; \n\
-	vtxColor = vec4(inColor / 63.0, polyAlpha); \n\
-	\n\
-	gl_Position = vtxPosition; \n\
-} \n\
+	vtxTexCoord = texScaleMtx * inTexCoord0;\n\
+	vtxColor = vec4(inColor / 63.0, polyAlpha);\n\
+	gl_Position = inPosition;\n\
+}\n\
 "};
 
 // Fragment shader for geometry, GLSL 1.50
 static const char *GeometryFragShader_150 = {"\
-in vec4 vtxPosition;\n\
 in vec2 vtxTexCoord;\n\
 in vec4 vtxColor;\n\
 flat in int polyEnableTexture;\n\
@@ -288,20 +284,18 @@ void main()\n\
 	#if NEEDS_DEPTH_EQUALS_TEST\n\
 		float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
 		#if ENABLE_W_DEPTH\n\
-		float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
+		gl_FragDepth = clamp( ( (4096.0/gl_FragCoord.w) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
 		#else\n\
-		float newFragDepthValue = clamp( ( (floor(gl_FragCoord.z * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
+		gl_FragDepth = clamp( ( (floor(gl_FragCoord.z * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
 		#endif\n\
 	#else\n\
 		#if ENABLE_W_DEPTH\n\
-		float newFragDepthValue = clamp( (vtxPosition.w * 4096.0) / 16777215.0, 0.0, 1.0 );\n\
+		gl_FragDepth = clamp( (4096.0/gl_FragCoord.w) / 16777215.0, 0.0, 1.0 );\n\
 		#else\n\
 		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-		float newFragDepthValue = clamp( (floor(gl_FragCoord.z * 4194303.0) * 4.0) / 16777215.0, 0.0, 1.0 );\n\
+		gl_FragDepth = clamp( (floor(gl_FragCoord.z * 4194303.0) * 4.0) / 16777215.0, 0.0, 1.0 );\n\
 		#endif\n\
 	#endif\n\
-	\n\
-	gl_FragDepth = newFragDepthValue;\n\
 #endif\n\
 }\n\
 "};

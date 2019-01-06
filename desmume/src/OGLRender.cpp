@@ -284,7 +284,6 @@ attribute vec3 inColor; \n\
 uniform float polyAlpha; \n\
 uniform vec2 polyTexScale; \n\
 \n\
-varying vec4 vtxPosition; \n\
 varying vec2 vtxTexCoord; \n\
 varying vec4 vtxColor; \n\
 \n\
@@ -293,17 +292,14 @@ void main() \n\
 	mat2 texScaleMtx	= mat2(	vec2(polyTexScale.x,            0.0), \n\
 								vec2(           0.0, polyTexScale.y)); \n\
 	\n\
-	vtxPosition = inPosition; \n\
 	vtxTexCoord = texScaleMtx * inTexCoord0; \n\
 	vtxColor = vec4(inColor / 63.0, polyAlpha); \n\
-	\n\
-	gl_Position = vtxPosition; \n\
+	gl_Position = inPosition; \n\
 } \n\
 "};
 
 // Fragment Shader GLSL 1.00
 static const char *GeometryFragShader_100 = {"\
-varying vec4 vtxPosition;\n\
 varying vec2 vtxTexCoord;\n\
 varying vec4 vtxColor;\n\
 \n\
@@ -417,20 +413,18 @@ void main()\n\
 	#if NEEDS_DEPTH_EQUALS_TEST\n\
 		float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
 		#if ENABLE_W_DEPTH\n\
-		float newFragDepthValue = clamp( ( (vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
+		gl_FragDepth = clamp( ( (4096.0/gl_FragCoord.w) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
 		#else\n\
-		float newFragDepthValue = clamp( ( (floor(gl_FragCoord.z * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
+		gl_FragDepth = clamp( ( (floor(gl_FragCoord.z * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
 		#endif\n\
 	#else\n\
 		#if ENABLE_W_DEPTH\n\
-		float newFragDepthValue = clamp( (vtxPosition.w * 4096.0) / 16777215.0, 0.0, 1.0 );\n\
+		gl_FragDepth = clamp( (4096.0/gl_FragCoord.w) / 16777215.0, 0.0, 1.0 );\n\
 		#else\n\
 		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-		float newFragDepthValue = clamp( (floor(gl_FragCoord.z * 4194303.0) * 4.0) / 16777215.0, 0.0, 1.0 );\n\
+		gl_FragDepth = clamp( (floor(gl_FragCoord.z * 4194303.0) * 4.0) / 16777215.0, 0.0, 1.0 );\n\
 		#endif\n\
 	#endif\n\
-	\n\
-	gl_FragDepth = newFragDepthValue;\n\
 #endif\n\
 }\n\
 "};
