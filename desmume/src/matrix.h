@@ -1,6 +1,6 @@
 /*  
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2018 DeSmuME team
+	Copyright (C) 2007-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -145,6 +145,12 @@ FORCEINLINE s32 s32floor(float f)
 FORCEINLINE s32 s32floor(double d)
 {
 	return s32floor((float)d);
+}
+
+FORCEINLINE s32 sfx32_shiftdown(const s64 a)
+{
+	//TODO: replace me with direct calls to sfx32_shiftdown
+	return fx32_shiftdown(a);
 }
 
 // SIMD Functions

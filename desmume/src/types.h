@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2005 Guillaume Duhamel
-	Copyright (C) 2008-2018 DeSmuME team
+	Copyright (C) 2008-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -302,6 +302,84 @@ typedef int desmume_BOOL;
 #define FALSE 0
 #endif
 
+// Atomic functions
+#if defined(HOST_WINDOWS)
+#include <winnt.h>
+
+//#define atomic_add_32(V,M)					InterlockedAddNoFence((volatile LONG *)(V),(LONG)(M))			// Requires Windows 8
+#define atomic_add_32(V,M)						_InterlockedAdd((volatile LONG *)(V),(LONG)(M))
+#define atomic_add_barrier32(V,M)				_InterlockedAdd((volatile LONG *)(V),(LONG)(M))
+
+//#define atomic_inc_32(V)						InterlockedIncrementNoFence((volatile LONG *)(V))				// Requires Windows 8
+#define atomic_inc_32(V)						_InterlockedIncrement((volatile LONG *)(V))
+#define atomic_inc_barrier32(V)					_InterlockedIncrement((volatile LONG *)(V))
+//#define atomic_dec_32(V)						InterlockedDecrementNoFence((volatile LONG *)(V))				// Requires Windows 8
+#define atomic_dec_32(V)						_InterlockedDecrement((volatile LONG *)(V))
+#define atomic_dec_barrier32(V)					_InterlockedDecrement((volatile LONG *)(V))
+
+//#define atomic_or_32(V,M)						InterlockedOrNoFence((volatile LONG *)(V),(LONG)(M))			// Requires Windows 8
+#define atomic_or_32(V,M)						_InterlockedOr((volatile LONG *)(V),(LONG)(M))
+#define atomic_or_barrier32(V,M)				_InterlockedOr((volatile LONG *)(V),(LONG)(M))
+//#define atomic_and_32(V,M)					InterlockedAndNoFence((volatile LONG *)(V),(LONG)(M))			// Requires Windows 8
+#define atomic_and_32(V,M)						_InterlockedAnd((volatile LONG *)(V),(LONG)(M))
+#define atomic_and_barrier32(V,M)				_InterlockedAnd((volatile LONG *)(V),(LONG)(M))
+//#define atomic_xor_32(V,M)					InterlockedXorNoFence((volatile LONG *)(V),(LONG)(M))			// Requires Windows 8
+#define atomic_xor_32(V,M)						_InterlockedXor((volatile LONG *)(V),(LONG)(M))
+#define atomic_xor_barrier32(V,M)				_InterlockedXor((volatile LONG *)(V),(LONG)(M))
+
+inline bool atomic_test_and_set_32(volatile s32 *V, s32 M)				{ return (_interlockedbittestandset((volatile LONG *)V, (LONG)M)) ? true : false; }
+inline bool atomic_test_and_set_barrier32(volatile s32 *V, s32 M)		{ return (_interlockedbittestandset((volatile LONG *)V, (LONG)M)) ? true : false; }
+inline bool atomic_test_and_clear_32(volatile s32 *V, s32 M)			{ return (_interlockedbittestandreset((volatile LONG *)V, (LONG)M)) ? true : false; }
+inline bool atomic_test_and_clear_barrier32(volatile s32 *V, s32 M)		{ return (_interlockedbittestandreset((volatile LONG *)V, (LONG)M)) ? true : false; }
+
+#elif defined(DESMUME_COCOA)
+#include <libkern/OSAtomic.h>
+
+#define atomic_add_32(V,M)						OSAtomicAdd32((M),(V))
+#define atomic_add_barrier32(V,M)				OSAtomicAdd32Barrier((M),(V))
+
+#define atomic_inc_32(V)						OSAtomicIncrement32((V))
+#define atomic_inc_barrier32(V)					OSAtomicIncrement32Barrier((V))
+#define atomic_dec_32(V)						OSAtomicDecrement32((V))
+#define atomic_dec_barrier32(V)					OSAtomicDecrement32Barrier((V))
+
+#define atomic_or_32(V,M)						OSAtomicOr32((M),(volatile uint32_t *)(V))
+#define atomic_or_barrier32(V,M)				OSAtomicOr32Barrier((M),(volatile uint32_t *)(V))
+#define atomic_and_32(V,M)						OSAtomicAnd32((M),(volatile uint32_t *)(V))
+#define atomic_and_barrier32(V,M)				OSAtomicAnd32Barrier((M),(volatile uint32_t *)(V))
+#define atomic_xor_32(V,M)						OSAtomicXor32((M),(volatile uint32_t *)(V))
+#define atomic_xor_barrier32(V,M)				OSAtomicXor32Barrier((M),(volatile uint32_t *)(V))
+
+#define atomic_test_and_set_32(V,M)				OSAtomicTestAndSet((M),(V))
+#define atomic_test_and_set_barrier32(V,M)		OSAtomicTestAndSetBarrier((M),(V))
+#define atomic_test_and_clear_32(V,M)			OSAtomicTestAndClear((M),(V))
+#define atomic_test_and_clear_barrier32(V,M)	OSAtomicTestAndClearBarrier((M),(V))
+
+#else // Just use C++11 std::atomic
+#include <atomic>
+
+inline s32 atomic_add_32(volatile s32 *V, s32 M)			{ return std::atomic_fetch_add_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_relaxed) + M; }
+inline s32 atomic_add_barrier32(volatile s32 *V, s32 M)		{ return std::atomic_fetch_add_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_seq_cst) + M; }
+
+inline s32 atomic_inc_32(volatile s32 *V)					{ return atomic_add_32(V, 1); }
+inline s32 atomic_inc_barrier32(volatile s32 *V)			{ return atomic_add_barrier32(V, 1); }
+inline s32 atomic_dec_32(volatile s32 *V)					{ return atomic_add_32(V, -1); }
+inline s32 atomic_dec_barrier32(volatile s32 *V)			{ return atomic_add_barrier32(V, -1); }
+
+inline s32 atomic_or_32(volatile s32 *V, s32 M)				{ return std::atomic_fetch_or_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_relaxed) | M; }
+inline s32 atomic_or_barrier32(volatile s32 *V, s32 M)		{ return std::atomic_fetch_or_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_seq_cst) | M; }
+inline s32 atomic_and_32(volatile s32 *V, s32 M)			{ return std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_relaxed) & M; }
+inline s32 atomic_and_barrier32(volatile s32 *V, s32 M)		{ return std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_seq_cst) & M; }
+inline s32 atomic_xor_32(volatile s32 *V, s32 M)			{ return std::atomic_fetch_xor_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_relaxed) ^ M; }
+inline s32 atomic_xor_barrier32(volatile s32 *V, s32 M)		{ return std::atomic_fetch_xor_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_seq_cst) ^ M; }
+
+inline bool atomic_test_and_set_32(volatile s32 *V, s32 M)				{ return (std::atomic_fetch_or_explicit<s32>((volatile std::atomic<s32> *)V,(0x80>>((M)&0x07)), std::memory_order::memory_order_relaxed) & (0x80>>((M)&0x07))) ? true : false; }
+inline bool atomic_test_and_set_barrier32(volatile s32 *V, s32 M)		{ return (std::atomic_fetch_or_explicit<s32>((volatile std::atomic<s32> *)V,(0x80>>((M)&0x07)), std::memory_order::memory_order_seq_cst) & (0x80>>((M)&0x07))) ? true : false; }
+inline bool atomic_test_and_clear_32(volatile s32 *V, s32 M)			{ return (std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V,~(s32)(0x80>>((M)&0x07)), std::memory_order::memory_order_relaxed) & (0x80>>((M)&0x07))) ? true : false; }
+inline bool atomic_test_and_clear_barrier32(volatile s32 *V, s32 M)		{ return (std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V,~(s32)(0x80>>((M)&0x07)), std::memory_order::memory_order_seq_cst) & (0x80>>((M)&0x07))) ? true : false; }
+
+#endif
+
 /* little endian (ds' endianess) to local endianess convert macros */
 #ifdef MSB_FIRST	/* local arch is big endian */
 # define LE_TO_LOCAL_16(x) ((((x)&0xff)<<8)|(((x)>>8)&0xff))
@@ -322,61 +400,6 @@ typedef int desmume_BOOL;
 // kilobytes and megabytes macro
 #define MB(x) ((x)*1024*1024)
 #define KB(x) ((x)*1024)
-
-#define CPU_STR(c) ((c==ARM9)?"ARM9":"ARM7")
-typedef enum
-{
-	ARM9 = 0,
-	ARM7 = 1
-} cpu_id_t;
-
-inline u64 double_to_u64(double d)
-{
-	union
-	{
-		u64 a;
-		double b;
-	} fuxor;
-	
-	fuxor.b = d;
-	return fuxor.a;
-}
-
-inline double u64_to_double(u64 u)
-{
-	union
-	{
-		u64 a;
-		double b;
-	} fuxor;
-	
-	fuxor.a = u;
-	return fuxor.b;
-}
-
-inline u32 float_to_u32(float f)
-{
-	union
-	{
-		u32 a;
-		float b;
-	} fuxor;
-	
-	fuxor.b = f;
-	return fuxor.a;
-}
-
-inline float u32_to_float(u32 u)
-{
-	union
-	{
-		u32 a;
-		float b;
-	} fuxor;
-	
-	fuxor.a = u;
-	return fuxor.b;
-}
 
 //fairly standard for loop macros
 #define MACRODO1(TRICK,TODO) { const size_t X = TRICK; TODO; }
@@ -443,21 +466,9 @@ inline float u32_to_float(u32 u)
 #define	CTASSERT(x)		typedef char __assert ## y[(x) ? 1 : -1]
 #endif
 
-static const char hexValid[23] = {"0123456789ABCDEFabcdef"};
-
-
 template<typename T> inline void reconstruct(T* t) { 
 	t->~T();
 	new(t) T();
-}
-
-/* fixed point speedup macros */
-
-
-FORCEINLINE s32 sfx32_shiftdown(const s64 a)
-{
-	//TODO: replace me with direct calls to sfx32_shiftdown
-	return fx32_shiftdown(a);
 }
 
 #endif

@@ -1,7 +1,7 @@
 /*
 The MIT License
 
-Copyright (C) 2009-2017 DeSmuME team
+Copyright (C) 2009-2019 DeSmuME team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,54 @@ THE SOFTWARE.
 #include "emufile.h"
 
 #include <vector>
+
+inline u64 double_to_u64(double d)
+{
+	union
+	{
+		u64 a;
+		double b;
+	} fuxor;
+	
+	fuxor.b = d;
+	return fuxor.a;
+}
+
+inline double u64_to_double(u64 u)
+{
+	union
+	{
+		u64 a;
+		double b;
+	} fuxor;
+	
+	fuxor.a = u;
+	return fuxor.b;
+}
+
+inline u32 float_to_u32(float f)
+{
+	union
+	{
+		u32 a;
+		float b;
+	} fuxor;
+	
+	fuxor.b = f;
+	return fuxor.a;
+}
+
+inline float u32_to_float(u32 u)
+{
+	union
+	{
+		u32 a;
+		float b;
+	} fuxor;
+	
+	fuxor.a = u;
+	return fuxor.b;
+}
 
 bool EMUFILE::readAllBytes(std::vector<u8>* dstbuf, const std::string& fname)
 {
