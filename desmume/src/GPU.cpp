@@ -1411,6 +1411,24 @@ GPUEngineBase::GPUEngineBase()
 	_sprAlphaCustom = NULL;
 	_sprTypeCustom = NULL;
 	
+	if (CommonSettings.num_cores > 1)
+	{
+		_asyncClearTask = new Task;
+		_asyncClearTask->start(false);
+	}
+	else
+	{
+		_asyncClearTask = NULL;
+	}
+	
+	_asyncClearTransitionedLineFromBackdropCount = 0;
+	_asyncClearLineCustom = 0;
+	_asyncClearInterrupt = 0;
+	_asyncClearBackdropColor16 = 0;
+	_asyncClearBackdropColor32.color = 0;
+	_asyncClearIsRunning = false;
+	_asyncClearUseInternalCustomBuffer = false;
+	
 	_didPassWindowTestCustomMasterPtr = NULL;
 	_didPassWindowTestCustom[GPULayerID_BG0] = NULL;
 	_didPassWindowTestCustom[GPULayerID_BG1] = NULL;
@@ -1428,6 +1446,13 @@ GPUEngineBase::GPUEngineBase()
 
 GPUEngineBase::~GPUEngineBase()
 {
+	if (this->_asyncClearTask != NULL)
+	{
+		this->RenderLineClearAsyncFinish();
+		delete this->_asyncClearTask;
+		this->_asyncClearTask = NULL;
+	}
+	
 	free_aligned(this->_internalRenderLineTargetCustom);
 	this->_internalRenderLineTargetCustom = NULL;
 	free_aligned(this->_renderLineLayerIDCustom);
@@ -1484,7 +1509,7 @@ void GPUEngineBase::_Reset_Base()
 	
 	if (this->_internalRenderLineTargetCustom != NULL)
 	{
-		memset(this->_internalRenderLineTargetCustom, 0, dispInfo.customWidth * _gpuLargestDstLineCount * dispInfo.pixelBytes);
+		memset(this->_internalRenderLineTargetCustom, 0, dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes);
 	}
 	
 	this->_isBGLayerShown[GPULayerID_BG0] = false;
@@ -1692,6 +1717,12 @@ void GPUEngineBase::_Reset_Base()
 	this->savedBG2Y.value = 0;
 	this->savedBG3X.value = 0;
 	this->savedBG3Y.value = 0;
+	
+	this->_asyncClearTransitionedLineFromBackdropCount = 0;
+	this->_asyncClearLineCustom = 0;
+	this->_asyncClearInterrupt = 0;
+	this->_asyncClearIsRunning = false;
+	this->_asyncClearUseInternalCustomBuffer = false;
 	
 	this->_renderedWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	this->_renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -2404,21 +2435,115 @@ void GPUEngineBase::ParseReg_BGnY()
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
-void GPUEngineBase::_RenderLine_Clear(GPUEngineCompositorInfo &compInfo)
+void* GPUEngine_RunClearAsynchronous(void *arg)
 {
-	// Clear the current line with the clear color
-	if (compInfo.renderState.srcEffectEnable[GPULayerID_Backdrop])
+	GPUEngineBase *gpuEngine = (GPUEngineBase *)arg;
+	gpuEngine->RenderLineClearAsync<OUTPUTFORMAT>();
+	
+	return NULL;
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+void GPUEngineBase::RenderLineClearAsync()
+{
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	const bool isCustomClearNeeded = dispInfo.isCustomSizeRequested;
+	
+	s32 asyncClearLineCustom = atomic_and_barrier32(&this->_asyncClearLineCustom, 0x000000FF);
+	
+	if (isCustomClearNeeded)
 	{
-		if (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness)
+		// Note that the following variables are not explicitly synchronized, and therefore are expected
+		// to remain constant while this thread is running:
+		//    _asyncClearUseInternalCustomBuffer
+		//    _asyncClearBackdropColor16
+		//    _asyncClearBackdropColor32
+		//
+		// These variables are automatically handled when calling RenderLineClearAsyncStart(),
+		// and so there should be no need to modify these variables directly.
+		u8 *targetBufferHead = (this->_asyncClearUseInternalCustomBuffer) ? (u8 *)this->_internalRenderLineTargetCustom : (u8 *)this->_customBuffer;
+		
+		while (asyncClearLineCustom < 192)
 		{
-			compInfo.renderState.workingBackdropColor16 = compInfo.renderState.brightnessUpTable555[compInfo.renderState.backdropColor16];
-		}
-		else if (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness)
-		{
-			compInfo.renderState.workingBackdropColor16 = compInfo.renderState.brightnessDownTable555[compInfo.renderState.backdropColor16];
+			const GPUEngineLineInfo &lineInfo = this->_currentCompositorInfo[asyncClearLineCustom].line;
+			
+			switch (OUTPUTFORMAT)
+			{
+				case NDSColorFormat_BGR555_Rev:
+					memset_u16(targetBufferHead + (lineInfo.blockOffsetCustom * sizeof(u16)), this->_asyncClearBackdropColor16, lineInfo.pixelCount);
+					break;
+					
+				case NDSColorFormat_BGR666_Rev:
+				case NDSColorFormat_BGR888_Rev:
+					memset_u32(targetBufferHead + (lineInfo.blockOffsetCustom * sizeof(FragmentColor)), this->_asyncClearBackdropColor32.color, lineInfo.pixelCount);
+					break;
+			}
+			
+			asyncClearLineCustom++;
+			atomic_inc_barrier32(&this->_asyncClearLineCustom);
+			
+			if ( atomic_test_and_clear_barrier32(&this->_asyncClearInterrupt, 0x07) )
+			{
+				return;
+			}
 		}
 	}
+	else
+	{
+		atomic_add_32(&this->_asyncClearLineCustom, 192 - asyncClearLineCustom);
+		asyncClearLineCustom = 192;
+	}
 	
+	atomic_test_and_clear_barrier32(&this->_asyncClearInterrupt, 0x07);
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+void GPUEngineBase::RenderLineClearAsyncStart(bool willClearInternalCustomBuffer,
+											  s32 startLineIndex,
+											  u16 clearColor16,
+											  FragmentColor clearColor32)
+{
+	if (this->_asyncClearTask == NULL)
+	{
+		return;
+	}
+	
+	this->RenderLineClearAsyncFinish();
+	
+	this->_asyncClearLineCustom = startLineIndex;
+	this->_asyncClearBackdropColor16 = clearColor16;
+	this->_asyncClearBackdropColor32 = clearColor32;
+	this->_asyncClearUseInternalCustomBuffer = willClearInternalCustomBuffer;
+	
+	this->_asyncClearTask->execute(&GPUEngine_RunClearAsynchronous<OUTPUTFORMAT>, this);
+	this->_asyncClearIsRunning = true;
+}
+
+void GPUEngineBase::RenderLineClearAsyncFinish()
+{
+	if (!this->_asyncClearIsRunning)
+	{
+		return;
+	}
+	
+	atomic_test_and_set_barrier32(&this->_asyncClearInterrupt, 0x07);
+	
+	this->_asyncClearTask->finish();
+	this->_asyncClearIsRunning = false;
+	this->_asyncClearInterrupt = 0;
+}
+
+void GPUEngineBase::RenderLineClearAsyncWaitForCustomLine(const s32 l)
+{
+	while (l >= atomic_and_barrier32(&this->_asyncClearLineCustom, 0x000000FF))
+	{
+		// Do nothing -- just spin.
+	}
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+void GPUEngineBase::_RenderLine_Clear(GPUEngineCompositorInfo &compInfo)
+{
 	switch (OUTPUTFORMAT)
 	{
 		case NDSColorFormat_BGR555_Rev:
@@ -2426,12 +2551,7 @@ void GPUEngineBase::_RenderLine_Clear(GPUEngineCompositorInfo &compInfo)
 			break;
 			
 		case NDSColorFormat_BGR666_Rev:
-			compInfo.renderState.workingBackdropColor32.color = COLOR555TO666(LOCAL_TO_LE_16(compInfo.renderState.workingBackdropColor16));
-			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(*compInfo.target.lineColor, compInfo.renderState.workingBackdropColor32.color);
-			break;
-			
 		case NDSColorFormat_BGR888_Rev:
-			compInfo.renderState.workingBackdropColor32.color = COLOR555TO888(LOCAL_TO_LE_16(compInfo.renderState.workingBackdropColor16));
 			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(*compInfo.target.lineColor, compInfo.renderState.workingBackdropColor32.color);
 			break;
 	}
@@ -2486,11 +2606,66 @@ template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineBase::UpdateRenderStates(const size_t l)
 {
 	GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[l];
+	GPUEngineRenderState &currRenderState = this->_currentRenderState;
 	
-	this->_currentRenderState.backdropColor16 = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
-	this->_currentRenderState.workingBackdropColor16 = this->_currentRenderState.backdropColor16;
-	this->_currentRenderState.workingBackdropColor32.color = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? COLOR555TO666(LOCAL_TO_LE_16(this->_currentRenderState.workingBackdropColor16)) : COLOR555TO888(LOCAL_TO_LE_16(this->_currentRenderState.workingBackdropColor16));
-	compInfo.renderState = this->_currentRenderState;
+	// Get the current backdrop color.
+	currRenderState.backdropColor16 = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
+	if (currRenderState.srcEffectEnable[GPULayerID_Backdrop])
+	{
+		if (currRenderState.colorEffect == ColorEffect_IncreaseBrightness)
+		{
+			currRenderState.workingBackdropColor16 = currRenderState.brightnessUpTable555[currRenderState.backdropColor16];
+		}
+		else if (currRenderState.colorEffect == ColorEffect_DecreaseBrightness)
+		{
+			currRenderState.workingBackdropColor16 = currRenderState.brightnessDownTable555[currRenderState.backdropColor16];
+		}
+		else
+		{
+			currRenderState.workingBackdropColor16 = currRenderState.backdropColor16;
+		}
+	}
+	else
+	{
+		currRenderState.workingBackdropColor16 = currRenderState.backdropColor16;
+	}
+	currRenderState.workingBackdropColor32.color = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? COLOR555TO666(LOCAL_TO_LE_16(currRenderState.workingBackdropColor16)) : COLOR555TO888(LOCAL_TO_LE_16(currRenderState.workingBackdropColor16));
+	
+	// Save the current render states to this line's compositor info.
+	compInfo.renderState = currRenderState;
+	
+	// Handle the asynchronous custom line clearing thread.
+	if (compInfo.line.indexNative == 0)
+	{
+		const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+		
+		// If, in the last frame, we transitioned all 192 lines directly from the backdrop layer,
+		// then we'll assume that this current frame will also do the same. Therefore, we will
+		// attempt to asynchronously clear all of the custom lines with the backdrop color as an
+		// optimization.
+		const bool wasPreviousHDFrameFullyTransitionedFromBackdrop = (this->_asyncClearTransitionedLineFromBackdropCount >= 192);
+		this->_asyncClearTransitionedLineFromBackdropCount = 0;
+		
+		if (dispInfo.isCustomSizeRequested && wasPreviousHDFrameFullyTransitionedFromBackdrop)
+		{
+			this->RenderLineClearAsyncStart<OUTPUTFORMAT>((compInfo.renderState.displayOutputMode != GPUDisplayMode_Normal),
+														  compInfo.line.indexNative,
+														  compInfo.renderState.workingBackdropColor16,
+														  compInfo.renderState.workingBackdropColor32);
+		}
+	}
+	else if (this->_asyncClearIsRunning)
+	{
+		// If the backdrop color or the display output mode changes mid-frame, then we need to cancel
+		// the asynchronous clear and then clear this and any other remaining lines synchronously.
+		const bool isUsingInternalCustomBuffer = (compInfo.renderState.displayOutputMode != GPUDisplayMode_Normal);
+		
+		if ( (compInfo.renderState.workingBackdropColor16 != this->_asyncClearBackdropColor16) ||
+			 (isUsingInternalCustomBuffer != this->_asyncClearUseInternalCustomBuffer) )
+		{
+			this->RenderLineClearAsyncFinish();
+		}
+	}
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
@@ -2611,20 +2786,31 @@ void GPUEngineBase::_TransitionLineNativeToCustom(GPUEngineCompositorInfo &compI
 	{
 		if (compInfo.renderState.previouslyRenderedLayerID == GPULayerID_Backdrop)
 		{
-			switch (OUTPUTFORMAT)
+			if (this->_asyncClearIsRunning)
 			{
-				case NDSColorFormat_BGR555_Rev:
-					memset_u16(compInfo.target.lineColorHeadCustom, compInfo.renderState.workingBackdropColor16, compInfo.line.pixelCount);
-					break;
-					
-				case NDSColorFormat_BGR666_Rev:
-				case NDSColorFormat_BGR888_Rev:
-					memset_u32(compInfo.target.lineColorHeadCustom, compInfo.renderState.workingBackdropColor32.color, compInfo.line.pixelCount);
-					break;
+				this->RenderLineClearAsyncWaitForCustomLine(compInfo.line.indexNative);
 			}
+			else
+			{
+				switch (OUTPUTFORMAT)
+				{
+					case NDSColorFormat_BGR555_Rev:
+						memset_u16(compInfo.target.lineColorHeadCustom, compInfo.renderState.workingBackdropColor16, compInfo.line.pixelCount);
+						break;
+						
+					case NDSColorFormat_BGR666_Rev:
+					case NDSColorFormat_BGR888_Rev:
+						memset_u32(compInfo.target.lineColorHeadCustom, compInfo.renderState.workingBackdropColor32.color, compInfo.line.pixelCount);
+						break;
+				}
+			}
+			
+			this->_asyncClearTransitionedLineFromBackdropCount++;
 		}
 		else
 		{
+			this->RenderLineClearAsyncFinish();
+			
 			switch (OUTPUTFORMAT)
 			{
 				case NDSColorFormat_BGR555_Rev:
@@ -5300,7 +5486,7 @@ void GPUEngineBase::_RenderLine_Layers(GPUEngineCompositorInfo &compInfo)
 	// Optimization: For normal display mode, render straight to the output buffer when that is what we are going to end
 	// up displaying anyway. Otherwise, we need to use the working buffer.
 	compInfo.target.lineColorHeadNative = (compInfo.renderState.displayOutputMode == GPUDisplayMode_Normal) ? (u8 *)this->_nativeBuffer + (compInfo.line.blockOffsetNative * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetNative;
-	compInfo.target.lineColorHeadCustom = (compInfo.renderState.displayOutputMode == GPUDisplayMode_Normal) ? (u8 *)this->_customBuffer + (compInfo.line.blockOffsetCustom * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetCustom;
+	compInfo.target.lineColorHeadCustom = (compInfo.renderState.displayOutputMode == GPUDisplayMode_Normal) ? (u8 *)this->_customBuffer + (compInfo.line.blockOffsetCustom * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetCustom + (compInfo.line.blockOffsetCustom * dispInfo.pixelBytes);
 	compInfo.target.lineColorHead = compInfo.target.lineColorHeadNative;
 	
 	compInfo.target.lineLayerIDHeadNative = this->_renderLineLayerIDNative[compInfo.line.indexNative];
@@ -6486,8 +6672,20 @@ NDSDisplayID GPUEngineBase::GetTargetDisplayByID() const
 void GPUEngineBase::SetTargetDisplayByID(const NDSDisplayID theDisplayID)
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	void *newCustomBufferPtr = (theDisplayID == NDSDisplayID_Main) ? dispInfo.customBuffer[NDSDisplayID_Main] : dispInfo.customBuffer[NDSDisplayID_Touch];
+	
+	if (!this->_asyncClearUseInternalCustomBuffer && (newCustomBufferPtr != this->_customBuffer))
+	{
+		// Games SHOULD only be changing the engine/display association outside the V-blank.
+		// However, if there is a situation where a game changes this association mid-frame,
+		// then we need to force any asynchronous clearing to finish so that we can return
+		// control of _customBuffer to this thread.
+		this->RenderLineClearAsyncFinish();
+		this->_asyncClearTransitionedLineFromBackdropCount = 0;
+	}
+	
 	this->_nativeBuffer = (theDisplayID == NDSDisplayID_Main) ? dispInfo.nativeBuffer[NDSDisplayID_Main] : dispInfo.nativeBuffer[NDSDisplayID_Touch];
-	this->_customBuffer = (theDisplayID == NDSDisplayID_Main) ? dispInfo.customBuffer[NDSDisplayID_Main] : dispInfo.customBuffer[NDSDisplayID_Touch];
+	this->_customBuffer = newCustomBufferPtr;
 	
 	this->_targetDisplayID = theDisplayID;
 }
@@ -6523,7 +6721,7 @@ void GPUEngineBase::SetCustomFramebufferSize(size_t w, size_t h)
 	u8 *oldSprTypeCustom = this->_sprTypeCustom;
 	u8 *oldDidPassWindowTestCustomMasterPtr = this->_didPassWindowTestCustomMasterPtr;
 	
-	this->_internalRenderLineTargetCustom = malloc_alignedPage(w * _gpuLargestDstLineCount * GPU->GetDisplayInfo().pixelBytes);
+	this->_internalRenderLineTargetCustom = malloc_alignedPage(w * h * GPU->GetDisplayInfo().pixelBytes);
 	this->_renderLineLayerIDCustom = (u8 *)malloc_alignedPage(w * (h + (_gpuLargestDstLineCount * 4)) * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
 	this->_deferredIndexCustom = (u8 *)malloc_alignedPage(w * sizeof(u8));
 	this->_deferredColorCustom = (u16 *)malloc_alignedPage(w * sizeof(u16));
@@ -7068,6 +7266,11 @@ void GPUEngineA::RenderLine(const size_t l)
 		{
 			this->_RenderLine_Layers<OUTPUTFORMAT, false>(compInfo);
 		}
+	}
+	
+	if (compInfo.line.indexNative >= 191)
+	{
+		this->RenderLineClearAsyncFinish();
 	}
 	
 	// Fill the display output
@@ -8386,7 +8589,7 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const GPUEngineLineInfo &lineInfo)
 	{
 		case NDSColorFormat_BGR555_Rev:
 		{
-			u32 *__restrict dst = (u32 *__restrict)((u16 *)this->nativeBuffer + (lineInfo.indexNative * GPU_FRAMEBUFFER_NATIVE_WIDTH));
+			u32 *__restrict dst = (u32 *__restrict)((u16 *)this->_nativeBuffer + (lineInfo.indexNative * GPU_FRAMEBUFFER_NATIVE_WIDTH));
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
 			{
 				const u32 src = DISP_FIFOrecv();
@@ -8401,7 +8604,7 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const GPUEngineLineInfo &lineInfo)
 			
 		case NDSColorFormat_BGR666_Rev:
 		{
-			FragmentColor *__restrict dst = (FragmentColor *__restrict)this->nativeBuffer + (lineInfo.indexNative * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+			FragmentColor *__restrict dst = (FragmentColor *__restrict)this->_nativeBuffer + (lineInfo.indexNative * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i+=2)
 			{
 				const u32 src = DISP_FIFOrecv();
@@ -8413,7 +8616,7 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const GPUEngineLineInfo &lineInfo)
 			
 		case NDSColorFormat_BGR888_Rev:
 		{
-			FragmentColor *__restrict dst = (FragmentColor *__restrict)this->nativeBuffer + (lineInfo.indexNative * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+			FragmentColor *__restrict dst = (FragmentColor *__restrict)this->_nativeBuffer + (lineInfo.indexNative * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i+=2)
 			{
 				const u32 src = DISP_FIFOrecv();
@@ -8547,6 +8750,11 @@ void GPUEngineB::RenderLine(const size_t l)
 			
 		default:
 			break;
+	}
+	
+	if (compInfo.line.indexNative >= 191)
+	{
+		this->RenderLineClearAsyncFinish();
 	}
 }
 
@@ -8725,6 +8933,8 @@ GPUEventHandler* GPUSubsystem::GetEventHandler()
 
 void GPUSubsystem::Reset()
 {
+	this->_engineMain->RenderLineClearAsyncFinish();
+	this->_engineSub->RenderLineClearAsyncFinish();
 	this->AsyncSetupEngineBuffersFinish();
 	
 	if (this->_customVRAM == NULL)
@@ -8938,6 +9148,8 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
 		return;
 	}
 	
+	this->_engineMain->RenderLineClearAsyncFinish();
+	this->_engineSub->RenderLineClearAsyncFinish();
 	this->AsyncSetupEngineBuffersFinish();
 	
 	const float customWidthScale = (float)w / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
@@ -9068,6 +9280,10 @@ void GPUSubsystem::SetColorFormat(const NDSColorFormat outputFormat)
 	{
 		return;
 	}
+	
+	this->_engineMain->RenderLineClearAsyncFinish();
+	this->_engineSub->RenderLineClearAsyncFinish();
+	this->AsyncSetupEngineBuffersFinish();
 	
 	CurrentRenderer->RenderFinish();
 	CurrentRenderer->SetRenderNeedsFinish(false);
@@ -9387,19 +9603,20 @@ void GPUSubsystem::AsyncSetupEngineBuffersStart()
 		return;
 	}
 	
+	this->AsyncSetupEngineBuffersFinish();
 	this->_asyncEngineBufferSetupTask->execute(&GPUSubsystem_AsyncSetupEngineBuffers, this);
-	_asyncEngineBufferSetupIsRunning = true;
+	this->_asyncEngineBufferSetupIsRunning = true;
 }
 
 void GPUSubsystem::AsyncSetupEngineBuffersFinish()
 {
-	if (this->_asyncEngineBufferSetupTask == NULL)
+	if (!this->_asyncEngineBufferSetupIsRunning)
 	{
 		return;
 	}
 	
 	this->_asyncEngineBufferSetupTask->finish();
-	_asyncEngineBufferSetupIsRunning = false;
+	this->_asyncEngineBufferSetupIsRunning = false;
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
@@ -9415,9 +9632,6 @@ void GPUSubsystem::RenderLine(const size_t l)
 		this->_event->DidFrameBegin(l, this->_willFrameSkip, this->_displayInfo.framebufferPageCount, this->_displayInfo.bufferIndex);
 		this->_frameNeedsFinish = true;
 	}
-	
-	this->_engineMain->UpdateRenderStates<OUTPUTFORMAT>(l);
-	this->_engineSub->UpdateRenderStates<OUTPUTFORMAT>(l);
 	
 	const bool isDisplayCaptureNeeded = this->_engineMain->WillDisplayCapture(l);
 	const bool isFramebufferRenderNeeded[2]	= { this->_engineMain->GetEnableStateApplied(), this->_engineSub->GetEnableStateApplied() };
@@ -9438,6 +9652,9 @@ void GPUSubsystem::RenderLine(const size_t l)
 			this->UpdateRenderProperties();
 		}
 	}
+	
+	this->_engineMain->UpdateRenderStates<OUTPUTFORMAT>(l);
+	this->_engineSub->UpdateRenderStates<OUTPUTFORMAT>(l);
 	
 	if ( (isFramebufferRenderNeeded[GPUEngineID_Main] || isDisplayCaptureNeeded) && !this->_willFrameSkip )
 	{

@@ -1442,6 +1442,15 @@ protected:
 	u8 *_renderLineLayerIDCustom;
 	bool _needUpdateWINH[2];
 	
+	Task *_asyncClearTask;
+	bool _asyncClearIsRunning;
+	u8 _asyncClearTransitionedLineFromBackdropCount;
+	volatile s32 _asyncClearLineCustom;
+	volatile s32 _asyncClearInterrupt;
+	u16 _asyncClearBackdropColor16; // Do not modify this variable directly.
+	FragmentColor _asyncClearBackdropColor32; // Do not modify this variable directly.
+	bool _asyncClearUseInternalCustomBuffer; // Do not modify this variable directly.
+	
 	void _InitLUTs();
 	void _Reset_Base();
 	void _ResortBGLayers();
@@ -1619,6 +1628,14 @@ public:
 	void SetLayerEnableState(const size_t layerIndex, bool theState);
 	
 	void ApplySettings();
+	
+	template<NDSColorFormat OUTPUTFORMAT> void RenderLineClearAsync();
+	template<NDSColorFormat OUTPUTFORMAT> void RenderLineClearAsyncStart(bool willClearInternalCustomBuffer,
+																		 s32 startLineIndex,
+																		 u16 clearColor16,
+																		 FragmentColor clearColor32);
+	void RenderLineClearAsyncFinish();
+	void RenderLineClearAsyncWaitForCustomLine(const s32 l);
 	
 	void UpdateMasterBrightnessDisplayInfo(NDSDisplayInfo &mutableInfo);
 	template<NDSColorFormat OUTPUTFORMAT> void ApplyMasterBrightness(const NDSDisplayInfo &displayInfo);
