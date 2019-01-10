@@ -307,8 +307,8 @@ typedef int desmume_BOOL;
 #include <winnt.h>
 
 //#define atomic_add_32(V,M)					InterlockedAddNoFence((volatile LONG *)(V),(LONG)(M))			// Requires Windows 8
-#define atomic_add_32(V,M)						_InterlockedAdd((volatile LONG *)(V),(LONG)(M))
-#define atomic_add_barrier32(V,M)				_InterlockedAdd((volatile LONG *)(V),(LONG)(M))
+inline s32 atomic_add_32(volatile s32 *V, s32 M)						{ return (s32)(InterlockedExchangeAdd((volatile LONG *)V, (LONG)M) + M); }
+inline s32 atomic_add_barrier32(volatile s32 *V, s32 M)					{ return (s32)(InterlockedExchangeAdd((volatile LONG *)V, (LONG)M) + M); }
 
 //#define atomic_inc_32(V)						InterlockedIncrementNoFence((volatile LONG *)(V))				// Requires Windows 8
 #define atomic_inc_32(V)						_InterlockedIncrement((volatile LONG *)(V))
