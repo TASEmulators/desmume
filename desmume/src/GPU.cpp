@@ -9653,8 +9653,11 @@ void GPUSubsystem::RenderLine(const size_t l)
 		}
 	}
 	
-	this->_engineMain->UpdateRenderStates<OUTPUTFORMAT>(l);
-	this->_engineSub->UpdateRenderStates<OUTPUTFORMAT>(l);
+	if (!this->_willFrameSkip)
+	{
+		this->_engineMain->UpdateRenderStates<OUTPUTFORMAT>(l);
+		this->_engineSub->UpdateRenderStates<OUTPUTFORMAT>(l);
+	}
 	
 	if ( (isFramebufferRenderNeeded[GPUEngineID_Main] || isDisplayCaptureNeeded) && !this->_willFrameSkip )
 	{
