@@ -3557,6 +3557,12 @@ void SaveWindowPos(HWND hwnd)
 	WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
 }
 
+static void ShowToolWindow(HWND hwnd)
+{
+	ShowWindow(hwnd,SW_NORMAL);
+	SetForegroundWindow(hwnd);
+}
+
 //========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
@@ -4308,7 +4314,7 @@ DOKEYDOWN:
 					//				DialogsOpen++;
 				}
 				else
-					SetForegroundWindow(RamWatchHWnd);
+					ShowToolWindow(RamWatchHWnd);
 				Load_Watches(true, fileDropped.c_str());
 			}
 			
@@ -4501,7 +4507,7 @@ DOKEYDOWN:
 			{
 				unsigned int index = wParam - IDC_LUASCRIPT_RESERVE_START;
 				if(LuaScriptHWnds.size() > index)
-					SetForegroundWindow(LuaScriptHWnds[index]);
+					ShowToolWindow(LuaScriptHWnds[index]);
 
 				return 0;
 			}
@@ -5104,7 +5110,7 @@ DOKEYDOWN:
 				RamSearchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMSEARCH), hwnd, (DLGPROC) RamSearchProc);
 			}
 			else
-				SetForegroundWindow(RamSearchHWnd);
+				ShowToolWindow(RamSearchHWnd);
 			break;
 
 		case ID_RAM_WATCH:
@@ -5114,7 +5120,7 @@ DOKEYDOWN:
 				//				DialogsOpen++;
 			}
 			else
-				SetForegroundWindow(RamWatchHWnd);
+				ShowToolWindow(RamWatchHWnd);
 			return 0;
 
 		case IDC_BACKGROUNDPAUSE:
