@@ -5470,7 +5470,7 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	
 	_vf = new VideoFilter(_normalWidth, _normalHeight, VideoFilterTypeID_None, 0);
 	
-	_vfMasterDstBuffer = (uint32_t *)calloc(_vf->GetDstWidth() * _vf->GetDstHeight(), sizeof(uint32_t));
+	_vfMasterDstBuffer = (uint32_t *)malloc_alignedPage(_vf->GetDstWidth() * _vf->GetDstHeight() * sizeof(uint32_t));
 	_vf->SetDstBufferPtr(_vfMasterDstBuffer);
 	
 	_displayTexFilter = GL_NEAREST;
@@ -6082,7 +6082,7 @@ void OGLImage::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 	if (needResizeTexture)
 	{
 		uint32_t *oldMasterBuffer = _vfMasterDstBuffer;
-		uint32_t *newMasterBuffer = (uint32_t *)calloc(newDstBufferWidth * newDstBufferHeight, sizeof(uint32_t));
+		uint32_t *newMasterBuffer = (uint32_t *)malloc_alignedPage(newDstBufferWidth * newDstBufferHeight * sizeof(uint32_t));
 		this->_vf->SetDstBufferPtr(newMasterBuffer);
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID);

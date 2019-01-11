@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011-2012 Roger Manuel
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -191,7 +191,7 @@ public:
 	const char* GetTypeString();
 	uint32_t* GetSrcBufferPtr();
 	uint32_t* GetDstBufferPtr();
-	void SetDstBufferPtr(uint32_t *theBuffer);
+	void SetDstBufferPtr(uint32_t *pageAlignedBuffer);
 	size_t GetSrcWidth();
 	size_t GetSrcHeight();
 	size_t GetDstWidth();

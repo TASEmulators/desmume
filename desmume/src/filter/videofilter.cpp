@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011-2012 Roger Manuel
-	Copyright (C) 2013-2017 DeSmuME team
+	Copyright (C) 2013-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 #include "videofilter.h"
 #include <string.h>
+#include "../common.h"
 
 
 // This function is called when running a filter in multithreaded mode.
@@ -116,19 +117,19 @@ VideoFilter::~VideoFilter()
 	
 	if (_useInternalDstBuffer)
 	{
-		free(__vfDstSurface.Surface);
+		free_aligned(__vfDstSurface.Surface);
 		__vfDstSurface.Surface = NULL;
 	}
 	
 	for (size_t i = 0; i < _vfAttributes.workingSurfaceCount; i++)
 	{
-		free(__vfDstSurface.workingSurface[i]);
+		free_aligned(__vfDstSurface.workingSurface[i]);
 		__vfDstSurface.workingSurface[i] = NULL;
 	}
 	
 	ThreadLockUnlock(&_lockDst);
 	
-	free(__vfSrcSurfacePixBuffer);
+	free_aligned(__vfSrcSurfacePixBuffer);
 	__vfSrcSurfacePixBuffer = NULL;
 	__vfSrcSurface.Surface = NULL;
 	
@@ -202,11 +203,12 @@ bool VideoFilter::__AllocateDstBuffer(const size_t dstWidth, const size_t dstHei
 	// Allocate the destination buffer if necessary.
 	if (_useInternalDstBuffer)
 	{
-		newSurfaceBuffer = (unsigned char *)calloc(dstWidth * dstHeight, sizeof(uint32_t));
+		newSurfaceBuffer = (unsigned char *)malloc_alignedPage(dstWidth * dstHeight * sizeof(uint32_t));
 		if (newSurfaceBuffer == NULL)
 		{
 			return result;
 		}
+		memset(newSurfaceBuffer, 0, dstWidth * dstHeight * sizeof(uint32_t));
 	}
 	
 	ThreadLockLock(&this->_lockDst);
@@ -214,8 +216,13 @@ bool VideoFilter::__AllocateDstBuffer(const size_t dstWidth, const size_t dstHei
 	for (size_t i = 0; i < FILTER_MAX_WORKING_SURFACE_COUNT; i++)
 	{
 		unsigned char *oldWorkingSurface = this->__vfDstSurface.workingSurface[i];
-		this->__vfDstSurface.workingSurface[i] = (i < workingSurfaceCount) ? (unsigned char *)calloc(dstWidth * dstHeight, sizeof(uint32_t)) : NULL;
-		free(oldWorkingSurface);
+		this->__vfDstSurface.workingSurface[i] = (i < workingSurfaceCount) ? (unsigned char *)malloc_alignedPage(dstWidth * dstHeight * sizeof(uint32_t)) : NULL;
+		free_aligned(oldWorkingSurface);
+		
+		if (this->__vfDstSurface.workingSurface[i] != NULL)
+		{
+			memset(this->__vfDstSurface.workingSurface[i], 0, dstWidth * dstHeight * sizeof(uint32_t));
+		}
 	}
 	
 	// Set up SSurface structure.
@@ -227,7 +234,7 @@ bool VideoFilter::__AllocateDstBuffer(const size_t dstWidth, const size_t dstHei
 	{
 		unsigned char *oldBuffer = this->__vfDstSurface.Surface;
 		this->__vfDstSurface.Surface = newSurfaceBuffer;
-		free(oldBuffer);
+		free_aligned(oldBuffer);
 	}
 	
 	// Update the surfaces on threads.
@@ -290,11 +297,12 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 	
 	// Overallocate the source buffer by 8 rows of pixels to account for out-of-bounds
 	// memory reads done by some filters.
-	uint32_t *newPixBuffer = (uint32_t *)calloc(width * (height + 8), sizeof(uint32_t));
+	uint32_t *newPixBuffer = (uint32_t *)malloc_alignedPage(width * (height + 8) * sizeof(uint32_t));
 	if (newPixBuffer == NULL)
 	{
 		return result;
 	}
+	memset(newPixBuffer, 0, width * (height + 8) * sizeof(uint32_t));
 	
 	if (this->__vfSrcSurface.Surface == NULL || this->__vfSrcSurface.Width != width || this->__vfSrcSurface.Height != height)
 	{
@@ -308,7 +316,7 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 	// with 4 pixel rows worth of memory on both sides.
 	this->__vfSrcSurface.Surface = (unsigned char *)(newPixBuffer + (width * 4));
 	
-	free(this->__vfSrcSurfacePixBuffer);
+	free_aligned(this->__vfSrcSurfacePixBuffer);
 	this->__vfSrcSurfacePixBuffer = newPixBuffer;
 	
 	// Update the surfaces on threads.
@@ -632,17 +640,7 @@ void VideoFilter::RunFilterCustomByAttributes(const uint32_t *__restrict srcBuff
 	}
 	else
 	{
-		for (size_t i = 0; i < vfAttr.workingSurfaceCount; i++)
-		{
-			dstSurface.workingSurface[i] = (unsigned char *)calloc(dstWidth * dstHeight, sizeof(uint32_t));
-		}
-		
 		filterFunction(srcSurface, dstSurface);
-		
-		for (size_t i = 0; i < vfAttr.workingSurfaceCount; i++)
-		{
-			free(dstSurface.workingSurface[i]);
-		}
 	}
 }
 
@@ -743,10 +741,12 @@ uint32_t* VideoFilter::GetDstBufferPtr()
 /********************************************************************************************
 	SetDstBufferPtr()
 
-	Returns a C-string representation of the passed in video filter type.
+	Sets a user-defined buffer for the video filter's target destination pixel
+ 	buffer.
 
 	Takes:
-		theBuffer - A pointer to the destination pixel buffer. If a value of NULL is
+		pageAlignedBuffer - A page-aligned pointer to a user-defined pixel buffer,
+ 			usually allocated by using malloc_alignedPage(). If a value of NULL is
 			passed in, then VideoFilter will use its own internal buffer (this is the
 			default behavior). Otherwise, VideoFilter will use the passed in pointer
 			for the destination buffer. The caller is responsible for ensuring that
@@ -760,22 +760,22 @@ uint32_t* VideoFilter::GetDstBufferPtr()
 	Returns:
 		Nothing.
  ********************************************************************************************/
-void VideoFilter::SetDstBufferPtr(uint32_t *theBuffer)
+void VideoFilter::SetDstBufferPtr(uint32_t *pageAlignedBuffer)
 {
 	ThreadLockLock(&this->_lockDst);
 	
-	if (theBuffer == NULL)
+	if (pageAlignedBuffer == NULL)
 	{
 		this->_useInternalDstBuffer = true;
 	}
 	else
 	{
 		unsigned char *oldDstBuffer = this->__vfDstSurface.Surface;
-		this->__vfDstSurface.Surface = (unsigned char *)theBuffer;
+		this->__vfDstSurface.Surface = (unsigned char *)pageAlignedBuffer;
 		
 		if (this->_useInternalDstBuffer)
 		{
-			free(oldDstBuffer);
+			free_aligned(oldDstBuffer);
 		}
 		
 		this->_useInternalDstBuffer = false;
