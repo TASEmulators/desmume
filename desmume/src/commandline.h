@@ -61,6 +61,7 @@ public:
 	std::string console_type;
 	std::string slot1_fat_dir;
 	bool _slot1_fat_dir_type;
+	int _slot1_no8000prot;
 	int disable_sound;
 	int disable_limiter;
 	int windowed_fullscreen;

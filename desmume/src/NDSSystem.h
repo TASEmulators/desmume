@@ -516,6 +516,7 @@ extern struct TCommonSettings
 		, PatchSWI3(false)
 		, UseExtFirmware(false)
 		, UseExtFirmwareSettings(false)
+		, RetailCardProtection8000(true)
 		, BootFromFirmware(false)
 		, DebugConsole(false)
 		, EnsataEmulation(false)
@@ -580,6 +581,7 @@ extern struct TCommonSettings
 	bool SWIFromBIOS;
 	bool PatchSWI3;
 
+	bool RetailCardProtection8000;
 	bool UseExtFirmware;
 	bool UseExtFirmwareSettings;
 	char ExtFirmwarePath[MAX_PATH];

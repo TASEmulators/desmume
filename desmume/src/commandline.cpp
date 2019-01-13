@@ -61,6 +61,7 @@ CommandLine::CommandLine()
 , _slot1(NULL)
 , _slot1_fat_dir(NULL)
 , _slot1_fat_dir_type(false)
+, _slot1_no8000prot(0)
 #ifdef HAVE_JIT
 , _cpu_mode(-1)
 , _jit_size(-1)
@@ -144,8 +145,8 @@ ENDL
 "                            Select basic console type; default FAT" ENDL
 " --bios-arm9 BIN_FILE       Uses the ARM9 BIOS provided at the specified path" ENDL
 " --bios-arm7 BIN_FILE       Uses the ARM7 BIOS provided at the specified path" ENDL
-" --firmware-path BIN_FILE       Uses the firmware provided at the specified path" ENDL
-" --firmware-boot 0|1       Boot from firmware" ENDL
+" --firmware-path BIN_FILE   Uses the firmware provided at the specified path" ENDL
+" --firmware-boot 0|1        Boot from firmware" ENDL
 " --bios-swi                 Uses SWI from the provided bios files (else HLE)" ENDL
 " --lang N                   Firmware language (can affect game translations)" ENDL
 "                            0 = Japanese, 1 = English (default), 2 = French" ENDL
@@ -156,6 +157,7 @@ ENDL
 "                            Device type to be used SLOT-1; default RETAILAUTO" ENDL
 " --preload-rom              precache ROM to RAM instead of streaming from disk" ENDL
 " --slot1-fat-dir DIR        Directory to mount for SLOT-1 flash cards" ENDL
+" --slot1_no8000prot         Disables retail card copy protection <8000 feature" ENDL
 ENDL
 "Arguments affecting contents of SLOT-2:" ENDL
 " --cflash-image IMG_FILE    Mounts cflash in SLOT-2 with specified image file" ENDL
@@ -283,6 +285,8 @@ bool CommandLine::parse(int argc,char **argv)
 			{ "slot1", required_argument, NULL, OPT_SLOT1},
 			{ "preload-rom", no_argument, &_load_to_memory, 1},
 			{ "slot1-fat-dir", required_argument, NULL, OPT_SLOT1_FAT_DIR},
+			//and other slot-1 option
+			{ "slot1-no8000prot", no_argument, &_slot1_no8000prot, 1},
 
 			//slot-2 contents
 			{ "cflash-image", required_argument, NULL, OPT_SLOT2_CFLASH_IMAGE},
@@ -433,6 +437,7 @@ bool CommandLine::parse(int argc,char **argv)
 	#endif
 	if(_fw_boot) CommonSettings.BootFromFirmware = true;
 	if(_bios_swi) CommonSettings.SWIFromBIOS = true;
+	if(_slot1_no8000prot) CommonSettings.RetailCardProtection8000 = false;
 	if(_spu_sync_mode != -1) CommonSettings.SPU_sync_mode = _spu_sync_mode;
 	if(_spu_sync_method != -1) CommonSettings.SPU_sync_method = _spu_sync_method;
 	if(_spu_advanced) CommonSettings.spu_advanced = true;

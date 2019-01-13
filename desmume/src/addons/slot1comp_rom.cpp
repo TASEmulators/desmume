@@ -63,8 +63,9 @@ u32 Slot1Comp_Rom::read()
 
 			//feature of retail carts: 
 			//B7 "Can be used only for addresses 8000h and up, smaller addresses will be silently redirected to address `8000h+(addr AND 1FFh)`"
-			if(address < 0x8000)
-				address = (0x8000 + (address & 0x1FF));
+			if(CommonSettings.RetailCardProtection8000)
+				if(address < 0x8000)
+					address = (0x8000 + (address & 0x1FF));
 
 			//1. as a sanity measure for funny-sized roms (homebrew and perhaps truncated retail roms) we need to protect ourselves by returning 0xFF for things still out of range.
 			//2. this isnt right, unless someone documents otherwise:
