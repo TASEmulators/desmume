@@ -146,7 +146,8 @@ void main()\n\
 	\n\
 	vtxTexCoord = texScaleMtx * inTexCoord0;\n\
 	vtxColor = vec4(inColor / 63.0, polyAlpha);\n\
-	gl_Position = inPosition;\n\
+	gl_Position.xyw = inPosition.xyw;\n\
+	gl_Position.z = (inPosition.z + inPosition.w) / 2.0;\n\
 }\n\
 "};
 
@@ -290,10 +291,10 @@ void main()\n\
 		#endif\n\
 	#else\n\
 		#if ENABLE_W_DEPTH\n\
-		gl_FragDepth = clamp( (4096.0/gl_FragCoord.w) / 16777215.0, 0.0, 1.0 );\n\
+		gl_FragDepth = (4096.0/gl_FragCoord.w) / 16777215.0;\n\
 		#else\n\
 		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-		gl_FragDepth = clamp( (floor(gl_FragCoord.z * 4194303.0) * 4.0) / 16777215.0, 0.0, 1.0 );\n\
+		gl_FragDepth = (floor(gl_FragCoord.z * 4194303.0) * 4.0) / 16777215.0;\n\
 		#endif\n\
 	#endif\n\
 #endif\n\
