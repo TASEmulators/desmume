@@ -146,8 +146,7 @@ void main()\n\
 	\n\
 	vtxTexCoord = texScaleMtx * inTexCoord0;\n\
 	vtxColor = vec4(inColor / 63.0, polyAlpha);\n\
-	gl_Position.xyw = inPosition.xyw;\n\
-	gl_Position.z = (inPosition.z + inPosition.w) / 2.0;\n\
+	gl_Position = inPosition;\n\
 }\n\
 "};
 
