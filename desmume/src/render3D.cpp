@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2018 DeSmuME team
+	Copyright (C) 2008-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -249,6 +249,10 @@ Render3D::Render3D()
 		_textureList[i] = NULL;
 	}
 	
+	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));
+	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
+	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
+	
 	Reset();
 }
 
@@ -495,15 +499,14 @@ Render3DError Render3D::UpdateToonTable(const u16 *toonTableBuffer)
 }
 
 template <bool ISCOLORBLANK, bool ISDEPTHBLANK>
-void Render3D::_ClearImageScrolledLoop(const u8 xScroll, const u8 yScroll, const u16 *__restrict inColor16, const u16 *__restrict inDepth16, const u8 inPolyID,
-									   u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog, u8 *__restrict outPolyID)
+void Render3D::_ClearImageScrolledLoop(const u8 xScroll, const u8 yScroll, const u16 *__restrict inColor16, const u16 *__restrict inDepth16,
+									   u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog)
 {
 	if (ISCOLORBLANK && ISDEPTHBLANK)
 	{
 		memset(outColor16, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
 		memset(outDepth24, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u32));
 		memset(outFog, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u8));
-		memset(outPolyID, inPolyID, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u8));
 	}
 	else
 	{
@@ -556,8 +559,6 @@ void Render3D::_ClearImageScrolledLoop(const u8 xScroll, const u8 yScroll, const
 					outDepth24[dstIndex] = DS_DEPTH15TO24(inDepth16[srcIndex]);
 					outFog[dstIndex] = BIT15(inDepth16[srcIndex]);
 				}
-				
-				outPolyID[dstIndex] = inPolyID;
 			}
 		}
 	}
@@ -584,7 +585,6 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 				this->clearImageColor16Buffer[i] = clearColorBuffer[i];
 				this->clearImageDepthBuffer[i] = DS_DEPTH15TO24(clearDepthBuffer[i]);
 				this->clearImageFogBuffer[i] = BIT15(clearDepthBuffer[i]);
-				this->clearImagePolyIDBuffer[i] = this->_clearAttributes.opaquePolyID;
 			}
 		}
 		else
@@ -594,27 +594,27 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 			
 			if (!isClearColorBlank && !isClearDepthBlank)
 			{
-				this->_ClearImageScrolledLoop<false, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
-															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+				this->_ClearImageScrolledLoop<false, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer);
 			}
 			else if (isClearColorBlank)
 			{
-				this->_ClearImageScrolledLoop< true, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
-															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+				this->_ClearImageScrolledLoop< true, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer);
 			}
 			else if (isClearDepthBlank)
 			{
-				this->_ClearImageScrolledLoop<false,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
-															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+				this->_ClearImageScrolledLoop<false,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer);
 			}
 			else
 			{
-				this->_ClearImageScrolledLoop< true,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
-															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+				this->_ClearImageScrolledLoop< true,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer);
 			}
 		}
 		
-		error = this->ClearUsingImage(this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+		error = this->ClearUsingImage(this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->_clearAttributes.opaquePolyID);
 		if (error != RENDER3DERROR_NOERR)
 		{
 			error = this->ClearUsingValues(this->_clearColor6665, this->_clearAttributes);
@@ -628,7 +628,7 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 	return error;
 }
 
-Render3DError Render3D::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
+Render3DError Render3D::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID)
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -654,11 +654,6 @@ Render3DError Render3D::Reset()
 	{
 		memset(this->_framebufferColor, 0, this->_framebufferColorSizeBytes);
 	}
-	
-	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));
-	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
-	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
-	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
 	
 	this->_clearColor6665.color = 0;
 	memset(&this->_clearAttributes, 0, sizeof(FragmentAttributes));
@@ -788,7 +783,6 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 		const u8 xScroll = scrollBits & 0xFF;
 		const u8 yScroll = (scrollBits >> 8) & 0xFF;
 		
-		const __m128i opaquePolyID_vec128 = _mm_set1_epi8(this->_clearAttributes.opaquePolyID);
 		const __m128i calcDepthConstants = _mm_set1_epi32(0x01FF0200);
 		
 		if (xScroll == 0 && yScroll == 0)
@@ -830,9 +824,6 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 				const __m128i clearFogLo = _mm_srli_epi16(clearDepthLo, 15);
 				const __m128i clearFogHi = _mm_srli_epi16(clearDepthHi, 15);
 				_mm_store_si128((__m128i *)(this->clearImageFogBuffer + i), _mm_packs_epi16(clearFogLo, clearFogHi));
-				
-				// The one is easy. Just set the values in the polygon ID buffer.
-				_mm_store_si128((__m128i *)(this->clearImagePolyIDBuffer + i), opaquePolyID_vec128);
 			}
 		}
 		else
@@ -931,7 +922,6 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 					_mm_store_si128((__m128i *)(this->clearImageDepthBuffer + dstIndex + 0), calcDepth0);
 					_mm_store_si128((__m128i *)(this->clearImageDepthBuffer + dstIndex + 4), calcDepth1);
 					_mm_storel_epi64((__m128i *)(this->clearImageFogBuffer + dstIndex), _mm_packs_epi16(clearFog, _mm_setzero_si128()));
-					_mm_storel_epi64((__m128i *)(this->clearImagePolyIDBuffer + dstIndex), opaquePolyID_vec128);
 				}
 			}
 			*/
@@ -940,27 +930,27 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 			
 			if (!isClearColorBlank && !isClearDepthBlank)
 			{
-				this->_ClearImageScrolledLoop<false, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
-															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+				this->_ClearImageScrolledLoop<false, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer);
 			}
 			else if (isClearColorBlank)
 			{
-				this->_ClearImageScrolledLoop< true, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
-															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+				this->_ClearImageScrolledLoop< true, false>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer);
 			}
 			else if (isClearDepthBlank)
 			{
-				this->_ClearImageScrolledLoop<false,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
-															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+				this->_ClearImageScrolledLoop<false,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer);
 			}
 			else
 			{
-				this->_ClearImageScrolledLoop< true,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer, this->_clearAttributes.opaquePolyID,
-															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+				this->_ClearImageScrolledLoop< true,  true>(xScroll, yScroll, clearColorBuffer, clearDepthBuffer,
+															this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer);
 			}
 		}
 		
-		error = this->ClearUsingImage(this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
+		error = this->ClearUsingImage(this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->_clearAttributes.opaquePolyID);
 		if (error != RENDER3DERROR_NOERR)
 		{
 			error = this->ClearUsingValues(this->_clearColor6665, this->_clearAttributes);
@@ -976,6 +966,5 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 
 #endif // defined(ENABLE_AVX2) || defined(ENABLE_SSE2)
 
-template Render3D_SIMD<0>::Render3D_SIMD();
 template Render3D_SIMD<16>::Render3D_SIMD();
 template Render3D_SIMD<32>::Render3D_SIMD();
