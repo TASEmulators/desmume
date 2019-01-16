@@ -760,6 +760,11 @@ void OGLCreateRenderer_3_2(OpenGLRenderer **rendererPtr)
 	}
 }
 
+OpenGLRenderer_3_2::OpenGLRenderer_3_2()
+{
+	_syncBufferSetup = NULL;
+}
+
 OpenGLRenderer_3_2::~OpenGLRenderer_3_2()
 {
 	glFinish();
@@ -2092,11 +2097,19 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
-	// Since glReadPixels() is called at the end of every render, we know that rendering
-	// must be synchronized at that time. Therefore, GL_MAP_UNSYNCHRONIZED_BIT should be
-	// safe to use.
-	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
+	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
+	glBindBuffer(GL_TEXTURE_BUFFER, OGLRef.tboPolyStatesID);
 	glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboRenderStatesID);
+	
+	// Copy the vertex data.
+	const size_t vtxBufferSize = sizeof(VERT) * engine.vertListCount;
+	VERT *vtxPtr = (VERT *)glMapBufferRange(GL_ARRAY_BUFFER, 0, vtxBufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+	memcpy(vtxPtr, engine.vertList, vtxBufferSize);
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+	
+	// Set up rendering states that will remain constant for the entire frame.
 	OGLRenderStates *state = (OGLRenderStates *)glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(OGLRenderStates), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 	
 	state->enableAntialiasing = (engine.renderState.enableAntialiasing) ? GL_TRUE : GL_FALSE;
@@ -2138,19 +2151,11 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	
 	glUnmapBuffer(GL_UNIFORM_BUFFER);
 	
-	// Do per-poly setup
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
-	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
-	glBindBuffer(GL_TEXTURE_BUFFER, OGLRef.tboPolyStatesID);
+	// Set up the polygon states.
+	GLushort *indexPtr = (GLushort *)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, engine.polylist->count * 6 * sizeof(GLushort), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 	
 	this->_renderNeedsDepthEqualsTest = false;
-	
-	size_t vertIndexCount = 0;
-	GLushort *indexPtr = (GLushort *)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, engine.polylist->count * 6 * sizeof(GLushort), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-	OGLPolyStates *polyStates = (OGLPolyStates *)glMapBufferRange(GL_TEXTURE_BUFFER, 0, engine.polylist->count * sizeof(OGLPolyStates), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-	
-	for (size_t i = 0; i < engine.polylist->count; i++)
+	for (size_t i = 0, vertIndexCount = 0; i < engine.polylist->count; i++)
 	{
 		const POLY &thePoly = engine.polylist->list[engine.indexlist.list[i]];
 		const size_t polyType = thePoly.type;
@@ -2199,6 +2204,25 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		
 		// Get the texture that is to be attached to this polygon.
 		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, this->_enableTextureSampling);
+	}
+	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	
+	// Since we used GL_MAP_UNSYNCHRONIZED_BIT with the previous buffers,
+	// we will need to synchronize the buffer writes before we start drawing.
+	if (this->_syncBufferSetup != NULL)
+	{
+		glWaitSync(this->_syncBufferSetup, 0, GL_TIMEOUT_IGNORED);
+		glDeleteSync(this->_syncBufferSetup);
+	}
+	this->_syncBufferSetup = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+	
+	// Some drivers seem to have problems with glMapBufferRange() and GL_TEXTURE_BUFFER, causing
+	// certain polygons to intermittently flicker in certain games. Therefore, we'll use glMapBuffer()
+	// in this case in order to prevent these glitches from happening.
+	OGLPolyStates *polyStates = (OGLPolyStates *)glMapBuffer(GL_TEXTURE_BUFFER, GL_WRITE_ONLY);
+	for (size_t i = 0; i < engine.polylist->count; i++)
+	{
+		const POLY &thePoly = engine.polylist->list[engine.indexlist.list[i]];
 		
 		// Get all of the polygon states that can be handled within the shader.
 		const NDSTextureFormat packFormat = this->_textureList[i]->GetPackFormat();
@@ -2217,15 +2241,9 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		polyStates[i].TexSizeShiftS = thePoly.texParam.SizeShiftS; // Note that we are using the preshifted size of S
 		polyStates[i].TexSizeShiftT = thePoly.texParam.SizeShiftT; // Note that we are using the preshifted size of T
 	}
-	
-	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 	glUnmapBuffer(GL_TEXTURE_BUFFER);
 	
-	const size_t vtxBufferSize = sizeof(VERT) * engine.vertListCount;
-	VERT *vtxPtr = (VERT *)glMapBufferRange(GL_ARRAY_BUFFER, 0, vtxBufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-	memcpy(vtxPtr, engine.vertList, vtxBufferSize);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	
+	// Set up the default draw call states.
 	this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;
 	this->_geometryProgramFlags.EnableAlphaTest = (engine.renderState.enableAlphaTest) ? 1 : 0;
 	this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
@@ -2456,6 +2474,13 @@ void OpenGLRenderer_3_2::SetPolygonIndex(const size_t index)
 {
 	this->_currentPolyIndex = index;
 	glUniform1i(this->ref->uniformPolyStateIndex[this->_geometryProgramFlags.value], index);
+	
+	if (this->_syncBufferSetup != NULL)
+	{
+		glWaitSync(this->_syncBufferSetup, 0, GL_TIMEOUT_IGNORED);
+		glDeleteSync(this->_syncBufferSetup);
+		this->_syncBufferSetup = NULL;
+	}
 }
 
 Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer)

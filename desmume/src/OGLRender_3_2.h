@@ -62,6 +62,8 @@ void OGLCreateRenderer_3_2(OpenGLRenderer **rendererPtr);
 class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 {
 protected:
+	GLsync _syncBufferSetup;
+	
 	virtual Render3DError InitExtensions();
 	
 	virtual Render3DError CreateFBOs();
@@ -104,6 +106,7 @@ protected:
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 	
 public:
+	OpenGLRenderer_3_2();
 	~OpenGLRenderer_3_2();
 	
 	virtual Render3DError RenderPowerOff();
