@@ -29,6 +29,9 @@
 #include "IORegView.h"
 #include "windriver.h"
 
+
+extern bool fsWindow;
+
 //-----------------------------------------------------------------------------
 //   The Toolkit - Helpers
 //-----------------------------------------------------------------------------
@@ -660,7 +663,8 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 	int frameHeight = frameInfo.bottom-frameInfo.top + tbheight;
 
 	if((keepRatio & FULLSCREEN))
-		frameWidth = frameHeight = 0;
+		if(fsWindow)
+			frameWidth = frameHeight = 0;
 
 	// Calculate the minimum size in pixels
 	_minWidth = adjr.right-adjr.left;
