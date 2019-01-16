@@ -274,6 +274,11 @@ EXTERNOGLEXT(PFNGLGETACTIVEUNIFORMBLOCKIVPROC, glGetActiveUniformBlockiv) // Cor
 // TBO
 EXTERNOGLEXT(PFNGLTEXBUFFERPROC, glTexBuffer) // Core in v3.1
 
+// Sync Objects
+EXTERNOGLEXT(PFNGLFENCESYNCPROC, glFenceSync) // Core in v3.2
+EXTERNOGLEXT(PFNGLWAITSYNCPROC, glWaitSync) // Core in v3.2
+EXTERNOGLEXT(PFNGLDELETESYNCPROC, glDeleteSync) // Core in v3.2
+
 #endif // OGLRENDER_3_2_H
 
 // Define the minimum required OpenGL version for the driver to support

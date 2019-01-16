@@ -67,6 +67,11 @@ OGLEXT(PFNGLGETACTIVEUNIFORMBLOCKIVPROC, glGetActiveUniformBlockiv) // Core in v
 // TBO
 OGLEXT(PFNGLTEXBUFFERPROC, glTexBuffer) // Core in v3.1
 
+// Sync Objects
+OGLEXT(PFNGLFENCESYNCPROC, glFenceSync) // Core in v3.2
+OGLEXT(PFNGLWAITSYNCPROC, glWaitSync) // Core in v3.2
+OGLEXT(PFNGLDELETESYNCPROC, glDeleteSync) // Core in v3.2
+
 void OGLLoadEntryPoints_3_2()
 {
 	// Basic Functions
@@ -103,6 +108,11 @@ void OGLLoadEntryPoints_3_2()
 	
 	// TBO
 	INITOGLEXT(PFNGLTEXBUFFERPROC, glTexBuffer)
+
+	// Sync Objects
+	INITOGLEXT(PFNGLFENCESYNCPROC, glFenceSync) // Core in v3.2
+	INITOGLEXT(PFNGLWAITSYNCPROC, glWaitSync) // Core in v3.2
+	INITOGLEXT(PFNGLDELETESYNCPROC, glDeleteSync) // Core in v3.2
 }
 
 // Vertex shader for geometry, GLSL 1.50
