@@ -63,6 +63,7 @@ class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 {
 protected:
 	GLsync _syncBufferSetup;
+	CACHE_ALIGN OGLRenderStates _pendingRenderStates;
 	
 	virtual Render3DError InitExtensions();
 	

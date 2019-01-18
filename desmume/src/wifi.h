@@ -3098,6 +3098,20 @@ typedef struct
 	};
 } IPv4Header;
 
+
+
+// The maximum possible size of any 802.11 frame is 2346 bytes:
+// - Max MTU is 2304 bytes
+// - Max 802.11 header size is 30 bytes
+// - WEP Encryption Header size is 8 bytes
+// - FCS size is 4 bytes
+#define MAX_PACKET_SIZE_80211 2346
+
+// Given a connection of 2 megabits per second, we take ~4 microseconds to transfer a byte.
+// This works out to needing ~8 microseconds to transfer a halfword.
+#define TX_LATENCY_LIMIT 8
+#define RX_LATENCY_LIMIT 8
+
 // NDS Frame Header Information
 typedef struct
 {
@@ -3110,6 +3124,19 @@ typedef struct
 	u8 UNKNOWN3;
 	u16 length; // Total length of header+body+checksum, in bytes.
 } TXPacketHeader;
+
+typedef union
+{
+	u8 rawFrameData[sizeof(TXPacketHeader) + MAX_PACKET_SIZE_80211 + sizeof(u16) + sizeof(u16)];
+	
+	struct
+	{
+		TXPacketHeader txHeader;
+		u8 txData[MAX_PACKET_SIZE_80211];
+		u16 remainingBytes;
+		u16 latencyCount;
+	};
+} TXBufferedPacket;
 
 typedef union
 {
@@ -3138,17 +3165,6 @@ typedef struct
 	u8 rssiMax;
 	u8 rssiMin;
 } RXPacketHeader;
-
-// The maximum possible size of any 802.11 frame is 2346 bytes:
-// - Max MTU is 2304 bytes
-// - Max 802.11 header size is 30 bytes
-// - WEP Encryption Header size is 8 bytes
-// - FCS size is 4 bytes
-#define MAX_PACKET_SIZE_80211 2346
-
-// Given a connection of 2 megabits per second, we take ~4 microseconds to transfer a byte.
-// This works out to needing ~8 microseconds to transfer a halfword.
-#define RX_LATENCY_LIMIT 8
 
 typedef union
 {

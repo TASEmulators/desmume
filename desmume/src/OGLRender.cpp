@@ -2394,9 +2394,6 @@ OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 	delete[] ref->color4fBuffer;
 	ref->color4fBuffer = NULL;
 	
-	delete[] ref->vertIndexBuffer;
-	ref->vertIndexBuffer = NULL;
-	
 	if (this->isShaderSupported)
 	{
 		glUseProgram(0);
@@ -2697,7 +2694,7 @@ Render3DError OpenGLRenderer_1_2::CreateVBOs()
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboGeometryVtxID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, VERTLIST_SIZE * sizeof(VERT), NULL, GL_STREAM_DRAW_ARB);
 	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, OGLRef.iboGeometryIndexID);
-	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, OGLRENDER_VERT_INDEX_BUFFER_COUNT * sizeof(GLushort), NULL, GL_STREAM_DRAW_ARB);
+	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(OGLRef.vertIndexBuffer), NULL, GL_STREAM_DRAW_ARB);
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboPostprocessVtxID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(PostprocessVtxBuffer), PostprocessVtxBuffer, GL_STATIC_DRAW_ARB);
@@ -3745,10 +3742,6 @@ Render3DError OpenGLRenderer_1_2::InitFinalRenderStates(const std::set<std::stri
 	// simply reference the colors+alpha from just the vertices by themselves.)
 	OGLRef.color4fBuffer = (this->isShaderSupported) ? NULL : new GLfloat[VERTLIST_SIZE * 4];
 	
-	// If VBOs aren't supported, then we need to create the index buffer on the
-	// client side so that we have a buffer to update.
-	OGLRef.vertIndexBuffer = (this->isVBOSupported) ? NULL : new GLushort[OGLRENDER_VERT_INDEX_BUFFER_COUNT];
-	
 	return OGLERROR_NOERR;
 }
 
@@ -4243,13 +4236,13 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
-	GLushort *indexPtr = NULL;
-	
 	if (this->isVBOSupported)
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboGeometryVtxID);
 		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, OGLRef.iboGeometryIndexID);
-		indexPtr = (GLushort *)glMapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+		
+		// Only copy as much vertex data as we need to, since this can be a potentially large upload size.
+		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * engine.vertListCount, engine.vertList);
 	}
 	else
 	{
@@ -4257,13 +4250,10 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		OGLRef.vtxPtrPosition = &engine.vertList[0].coord;
 		OGLRef.vtxPtrTexCoord = &engine.vertList[0].texcoord;
 		OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)&engine.vertList[0].color : OGLRef.color4fBuffer;
-		indexPtr = OGLRef.vertIndexBuffer;
 	}
 	
 	this->_renderNeedsDepthEqualsTest = false;
-	size_t vertIndexCount = 0;
-	
-	for (size_t i = 0; i < engine.polylist->count; i++)
+	for (size_t i = 0, vertIndexCount = 0; i < engine.polylist->count; i++)
 	{
 		const POLY &thePoly = engine.polylist->list[engine.indexlist.list[i]];
 		const size_t polyType = thePoly.type;
@@ -4284,16 +4274,16 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 				// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 				// vertices here to convert them to GL_TRIANGLES, which are much easier
 				// to work with and won't be deprecated in future OpenGL versions.
-				indexPtr[vertIndexCount++] = vertIndex;
+				OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
 				if (!thePoly.isWireframe() && (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP))
 				{
 					if (j == 2)
 					{
-						indexPtr[vertIndexCount++] = vertIndex;
+						OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
 					}
 					else if (j == 3)
 					{
-						indexPtr[vertIndexCount++] = thePoly.vertIndexes[0];
+						OGLRef.vertIndexBuffer[vertIndexCount++] = thePoly.vertIndexes[0];
 					}
 				}
 			}
@@ -4319,16 +4309,16 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 				// buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 				// vertices here to convert them to GL_TRIANGLES, which are much easier
 				// to work with and won't be deprecated in future OpenGL versions.
-				indexPtr[vertIndexCount++] = vertIndex;
+				OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
 				if (!thePoly.isWireframe() && (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP))
 				{
 					if (j == 2)
 					{
-						indexPtr[vertIndexCount++] = vertIndex;
+						OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
 					}
 					else if (j == 3)
 					{
-						indexPtr[vertIndexCount++] = thePoly.vertIndexes[0];
+						OGLRef.vertIndexBuffer[vertIndexCount++] = thePoly.vertIndexes[0];
 					}
 				}
 			}
@@ -4377,8 +4367,9 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	
 	if (this->isVBOSupported)
 	{
-		glUnmapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB);
-		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * engine.vertListCount, engine.vertList);
+		// Replace the entire index buffer as a hint to the driver that we can orphan the index buffer and
+		// avoid a synchronization cost.
+		glBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
 	}
 	
 	if (this->isShaderSupported)
@@ -5262,11 +5253,6 @@ Render3DError OpenGLRenderer_1_2::Reset()
 		memset(OGLRef.color4fBuffer, 0, VERTLIST_SIZE * 4 * sizeof(GLfloat));
 	}
 	
-	if (OGLRef.vertIndexBuffer != NULL)
-	{
-		memset(OGLRef.vertIndexBuffer, 0, OGLRENDER_VERT_INDEX_BUFFER_COUNT * sizeof(GLushort));
-	}
-	
 	this->_renderNeedsDepthEqualsTest = false;
 	this->_currentPolyIndex = 0;
 	
@@ -5514,9 +5500,6 @@ Render3DError OpenGLRenderer_2_0::InitFinalRenderStates(const std::set<std::stri
 	// Ignore our color buffer since we'll transfer the polygon alpha through a uniform.
 	OGLRef.color4fBuffer = NULL;
 	
-	// VBOs are supported here, so just use the index buffer on the GPU.
-	OGLRef.vertIndexBuffer = NULL;
-	
 	return OGLERROR_NOERR;
 }
 
@@ -5569,12 +5552,11 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 	
+	// Only copy as much vertex data as we need to, since this can be a potentially large upload size.
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * engine.vertListCount, engine.vertList);
+	
 	this->_renderNeedsDepthEqualsTest = false;
-	
-	size_t vertIndexCount = 0;
-	GLushort *indexPtr = (GLushort *)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
-	
-	for (size_t i = 0; i < engine.polylist->count; i++)
+	for (size_t i = 0, vertIndexCount = 0; i < engine.polylist->count; i++)
 	{
 		const POLY &thePoly = engine.polylist->list[engine.indexlist.list[i]];
 		const size_t polyType = thePoly.type;
@@ -5593,16 +5575,16 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 			// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 			// vertices here to convert them to GL_TRIANGLES, which are much easier
 			// to work with and won't be deprecated in future OpenGL versions.
-			indexPtr[vertIndexCount++] = vertIndex;
+			OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
 			if (!thePoly.isWireframe() && (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP))
 			{
 				if (j == 2)
 				{
-					indexPtr[vertIndexCount++] = vertIndex;
+					OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
 				}
 				else if (j == 3)
 				{
-					indexPtr[vertIndexCount++] = thePoly.vertIndexes[0];
+					OGLRef.vertIndexBuffer[vertIndexCount++] = thePoly.vertIndexes[0];
 				}
 			}
 		}
@@ -5648,8 +5630,9 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 		}
 	}
 	
-	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * engine.vertListCount, engine.vertList);
+	// Replace the entire index buffer as a hint to the driver that we can orphan the index buffer and
+	// avoid a synchronization cost.
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
 	
 	// Setup render states
 	this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;

@@ -1401,7 +1401,6 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 		glGenBuffers(1, &OGLRef.tboPolyStatesID);
 		glBindBuffer(GL_TEXTURE_BUFFER, OGLRef.tboPolyStatesID);
 		glBufferData(GL_TEXTURE_BUFFER, POLYLIST_SIZE * sizeof(OGLPolyStates), NULL, GL_DYNAMIC_DRAW);
-		glBindBuffer(GL_TEXTURE_BUFFER, 0);
 		
 		glGenTextures(1, &OGLRef.texPolyStatesID);
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
@@ -2107,63 +2106,65 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
-	glBindBuffer(GL_TEXTURE_BUFFER, OGLRef.tboPolyStatesID);
-	glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboRenderStatesID);
 	
-	// Copy the vertex data.
+	// Copy the vertex data to the GPU asynchronously due to the potentially large upload size.
+	// This buffer write will need to be synchronized before we start drawing.
+	if (this->_syncBufferSetup != NULL)
+	{
+		glWaitSync(this->_syncBufferSetup, 0, GL_TIMEOUT_IGNORED);
+		glDeleteSync(this->_syncBufferSetup);
+	}
+	
 	const size_t vtxBufferSize = sizeof(VERT) * engine.vertListCount;
 	VERT *vtxPtr = (VERT *)glMapBufferRange(GL_ARRAY_BUFFER, 0, vtxBufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 	memcpy(vtxPtr, engine.vertList, vtxBufferSize);
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
-	// Set up rendering states that will remain constant for the entire frame.
-	OGLRenderStates *state = (OGLRenderStates *)glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(OGLRenderStates), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+	this->_syncBufferSetup = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	
-	state->enableAntialiasing = (engine.renderState.enableAntialiasing) ? GL_TRUE : GL_FALSE;
-	state->enableFogAlphaOnly = (engine.renderState.enableFogAlphaOnly) ? GL_TRUE : GL_FALSE;
-	state->clearPolyID = this->_clearAttributes.opaquePolyID;
-	state->clearDepth = (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF;
-	state->alphaTestRef = divide5bitBy31_LUT[engine.renderState.alphaTestRef];
-	state->fogColor.r = divide5bitBy31_LUT[(engine.renderState.fogColor      ) & 0x0000001F];
-	state->fogColor.g = divide5bitBy31_LUT[(engine.renderState.fogColor >>  5) & 0x0000001F];
-	state->fogColor.b = divide5bitBy31_LUT[(engine.renderState.fogColor >> 10) & 0x0000001F];
-	state->fogColor.a = divide5bitBy31_LUT[(engine.renderState.fogColor >> 16) & 0x0000001F];
-	state->fogOffset = (GLfloat)(engine.renderState.fogOffset & 0x7FFF) / 32767.0f;
-	state->fogStep = (GLfloat)(0x0400 >> engine.renderState.fogShift) / 32767.0f;
+	// Set up rendering states that will remain constant for the entire frame.
+	this->_pendingRenderStates.enableAntialiasing = (engine.renderState.enableAntialiasing) ? GL_TRUE : GL_FALSE;
+	this->_pendingRenderStates.enableFogAlphaOnly = (engine.renderState.enableFogAlphaOnly) ? GL_TRUE : GL_FALSE;
+	this->_pendingRenderStates.clearPolyID = this->_clearAttributes.opaquePolyID;
+	this->_pendingRenderStates.clearDepth = (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF;
+	this->_pendingRenderStates.alphaTestRef = divide5bitBy31_LUT[engine.renderState.alphaTestRef];
+	this->_pendingRenderStates.fogColor.r = divide5bitBy31_LUT[(engine.renderState.fogColor      ) & 0x0000001F];
+	this->_pendingRenderStates.fogColor.g = divide5bitBy31_LUT[(engine.renderState.fogColor >>  5) & 0x0000001F];
+	this->_pendingRenderStates.fogColor.b = divide5bitBy31_LUT[(engine.renderState.fogColor >> 10) & 0x0000001F];
+	this->_pendingRenderStates.fogColor.a = divide5bitBy31_LUT[(engine.renderState.fogColor >> 16) & 0x0000001F];
+	this->_pendingRenderStates.fogOffset = (GLfloat)(engine.renderState.fogOffset & 0x7FFF) / 32767.0f;
+	this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> engine.renderState.fogShift) / 32767.0f;
 	
 	for (size_t i = 0; i < 32; i++)
 	{
-		state->fogDensity[i].r = (engine.renderState.fogDensityTable[i] == 127) ? 1.0f : (GLfloat)engine.renderState.fogDensityTable[i] / 128.0f;
-		state->fogDensity[i].g = 0.0f;
-		state->fogDensity[i].b = 0.0f;
-		state->fogDensity[i].a = 0.0f;
+		this->_pendingRenderStates.fogDensity[i].r = (engine.renderState.fogDensityTable[i] == 127) ? 1.0f : (GLfloat)engine.renderState.fogDensityTable[i] / 128.0f;
+		this->_pendingRenderStates.fogDensity[i].g = 0.0f;
+		this->_pendingRenderStates.fogDensity[i].b = 0.0f;
+		this->_pendingRenderStates.fogDensity[i].a = 0.0f;
 	}
 	
 	const GLfloat edgeColorAlpha = (engine.renderState.enableAntialiasing) ? (16.0f/31.0f) : 1.0f;
 	for (size_t i = 0; i < 8; i++)
 	{
-		state->edgeColor[i].r = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[i]      ) & 0x001F];
-		state->edgeColor[i].g = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[i] >>  5) & 0x001F];
-		state->edgeColor[i].b = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[i] >> 10) & 0x001F];
-		state->edgeColor[i].a = edgeColorAlpha;
+		this->_pendingRenderStates.edgeColor[i].r = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[i]      ) & 0x001F];
+		this->_pendingRenderStates.edgeColor[i].g = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[i] >>  5) & 0x001F];
+		this->_pendingRenderStates.edgeColor[i].b = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[i] >> 10) & 0x001F];
+		this->_pendingRenderStates.edgeColor[i].a = edgeColorAlpha;
 	}
 	
 	for (size_t i = 0; i < 32; i++)
 	{
-		state->toonColor[i].r = divide5bitBy31_LUT[(engine.renderState.u16ToonTable[i]      ) & 0x001F];
-		state->toonColor[i].g = divide5bitBy31_LUT[(engine.renderState.u16ToonTable[i] >>  5) & 0x001F];
-		state->toonColor[i].b = divide5bitBy31_LUT[(engine.renderState.u16ToonTable[i] >> 10) & 0x001F];
-		state->toonColor[i].a = 1.0f;
+		this->_pendingRenderStates.toonColor[i].r = divide5bitBy31_LUT[(engine.renderState.u16ToonTable[i]      ) & 0x001F];
+		this->_pendingRenderStates.toonColor[i].g = divide5bitBy31_LUT[(engine.renderState.u16ToonTable[i] >>  5) & 0x001F];
+		this->_pendingRenderStates.toonColor[i].b = divide5bitBy31_LUT[(engine.renderState.u16ToonTable[i] >> 10) & 0x001F];
+		this->_pendingRenderStates.toonColor[i].a = 1.0f;
 	}
 	
-	glUnmapBuffer(GL_UNIFORM_BUFFER);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(this->_pendingRenderStates), &this->_pendingRenderStates);
 	
 	// Set up the polygon states.
-	GLushort *indexPtr = (GLushort *)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, engine.polylist->count * 6 * sizeof(GLushort), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-	
 	this->_renderNeedsDepthEqualsTest = false;
 	for (size_t i = 0, vertIndexCount = 0; i < engine.polylist->count; i++)
 	{
@@ -2184,16 +2185,16 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 			// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 			// vertices here to convert them to GL_TRIANGLES, which are much easier
 			// to work with and won't be deprecated in future OpenGL versions.
-			indexPtr[vertIndexCount++] = vertIndex;
+			OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
 			if (!thePoly.isWireframe() && (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP))
 			{
 				if (j == 2)
 				{
-					indexPtr[vertIndexCount++] = vertIndex;
+					OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
 				}
 				else if (j == 3)
 				{
-					indexPtr[vertIndexCount++] = thePoly.vertIndexes[0];
+					OGLRef.vertIndexBuffer[vertIndexCount++] = thePoly.vertIndexes[0];
 				}
 			}
 		}
@@ -2238,16 +2239,10 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 			this->_willForceTextureSampleClampT[i] = this->_willForceTextureSampleClampT[i] && ( ((tc[3].y > -0.0001f) && (tc[3].y < 0.0001f)) || ((tc[3].y > 0.9999f) && (tc[3].y < 1.0001f)) );
 		}
 	}
-	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 	
-	// Since we used GL_MAP_UNSYNCHRONIZED_BIT with the previous buffers,
-	// we will need to synchronize the buffer writes before we start drawing.
-	if (this->_syncBufferSetup != NULL)
-	{
-		glWaitSync(this->_syncBufferSetup, 0, GL_TIMEOUT_IGNORED);
-		glDeleteSync(this->_syncBufferSetup);
-	}
-	this->_syncBufferSetup = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+	// Replace the entire index buffer as a hint to the driver that we can orphan the index buffer and
+	// avoid a synchronization cost.
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
 	
 	// Some drivers seem to have problems with glMapBufferRange() and GL_TEXTURE_BUFFER, causing
 	// certain polygons to intermittently flicker in certain games. Therefore, we'll use glMapBuffer()
