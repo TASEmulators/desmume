@@ -1870,7 +1870,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 	
 	// Enumerate through all polygons and render
 	GLsizei vertIndexCount = 0;
-	GLushort *indexBufferPtr = OGLRef.vertIndexBuffer + indexOffset;
+	GLushort *indexBufferPtr = (this->isVBOSupported) ? (GLushort *)NULL + indexOffset : OGLRef.vertIndexBuffer + indexOffset;
 	
 	for (size_t i = firstIndex; i <= lastIndex; i++)
 	{
