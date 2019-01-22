@@ -1260,7 +1260,7 @@ void RasterizerUnit<RENDERER>::SetRenderer(SoftRasterizerRenderer *theRenderer)
 template<bool RENDERER> template <bool SLI, bool USELINEHACK>
 FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 {
-	const size_t polyCount = this->_softRender->_clippedPolyCount;
+	const size_t polyCount = this->_softRender->GetClippedPolyCount();
 	if (polyCount == 0)
 	{
 		return;
@@ -1270,7 +1270,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 	const size_t dstWidth = this->_softRender->GetFramebufferWidth();
 	const size_t dstHeight = this->_softRender->GetFramebufferHeight();
 	
-	const GFX3D_Clipper::TClippedPoly &firstClippedPoly = this->_softRender->clippedPolys[0];
+	const CPoly &firstClippedPoly = this->_softRender->GetClippedPolyByIndex(0);
 	const POLY &firstPoly = *firstClippedPoly.poly;
 	POLYGON_ATTR polyAttr = firstPoly.attribute;
 	TEXIMAGE_PARAM lastTexParams = firstPoly.texParam;
@@ -1285,7 +1285,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 		if (!this->_softRender->polyVisible[i]) continue;
 		this->_polynum = i;
 
-		GFX3D_Clipper::TClippedPoly &clippedPoly = this->_softRender->clippedPolys[i];
+		const CPoly &clippedPoly = this->_softRender->GetClippedPolyByIndex(i);
 		const POLY &thePoly = *clippedPoly.poly;
 		const int vertCount = clippedPoly.type;
 		const bool useLineHack = USELINEHACK && (thePoly.vtxFormat & 4);
@@ -1738,7 +1738,6 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	_task = NULL;
 	
 	_debug_drawClippedUserPoly = -1;
-	clippedPolys = clipper.clippedPolys = new GFX3D_Clipper::TClippedPoly[POLYLIST_SIZE*2];
 	
 	_renderGeometryNeedsFinish = false;
 	_framebufferAttributes = NULL;
@@ -1868,27 +1867,6 @@ Render3DError SoftRasterizerRenderer::InitTables()
 	return RENDER3DERROR_NOERR;
 }
 
-template<bool USEHIRESINTERPOLATE>
-size_t SoftRasterizerRenderer::performClipping(const VERT *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
-{
-	//submit all polys to clipper
-	clipper.reset();
-	for (size_t i = 0; i < polyList->count; i++)
-	{
-		const POLY &poly = polyList->list[indexList->list[i]];
-		const VERT *clipVerts[4] = {
-			&vertList[poly.vertIndexes[0]],
-			&vertList[poly.vertIndexes[1]],
-			&vertList[poly.vertIndexes[2]],
-			(poly.type == POLYGON_TYPE_QUAD) ? &vertList[poly.vertIndexes[3]] : NULL
-		};
-		
-		clipper.clipPoly<USEHIRESINTERPOLATE>(poly, clipVerts);
-	}
-	
-	return clipper.clippedPolyCounter;
-}
-
 void SoftRasterizerRenderer::performViewportTransforms()
 {
 	const float wScalar = (float)this->_framebufferWidth  / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
@@ -1897,7 +1875,7 @@ void SoftRasterizerRenderer::performViewportTransforms()
 	//viewport transforms
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
-		GFX3D_Clipper::TClippedPoly &poly = this->clippedPolys[i];
+		CPoly &poly = this->_clippedPolyList[i];
 		for (size_t j = 0; j < poly.type; j++)
 		{
 			VERT &vert = poly.clipVerts[j];
@@ -1953,7 +1931,7 @@ void SoftRasterizerRenderer::performCoordAdjustment()
 {
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
-		GFX3D_Clipper::TClippedPoly &clippedPoly = this->clippedPolys[i];
+		CPoly &clippedPoly = this->_clippedPolyList[i];
 		const PolygonType type = clippedPoly.type;
 		VERT *verts = &clippedPoly.clipVerts[0];
 		
@@ -1970,7 +1948,7 @@ void SoftRasterizerRenderer::GetAndLoadAllTextures()
 {
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
-		const GFX3D_Clipper::TClippedPoly &clippedPoly = this->clippedPolys[i];
+		const CPoly &clippedPoly = this->_clippedPolyList[i];
 		const POLY &thePoly = *clippedPoly.poly;
 		
 		//make sure all the textures we'll need are cached
@@ -1985,7 +1963,7 @@ void SoftRasterizerRenderer::performBackfaceTests()
 {
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
-		const GFX3D_Clipper::TClippedPoly &clippedPoly = this->clippedPolys[i];
+		const CPoly &clippedPoly = this->_clippedPolyList[i];
 		const POLY &thePoly = *clippedPoly.poly;
 		const PolygonType type = clippedPoly.type;
 		const VERT *verts = &clippedPoly.clipVerts[0];
@@ -2045,11 +2023,11 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 	
 	if (this->_enableHighPrecisionColorInterpolation)
 	{
-		this->_clippedPolyCount = this->performClipping<true>(engine.vertList, engine.polylist, &engine.indexlist);
+		this->_PerformClipping<ClipperMode_InterpolateFull>(engine.vertList, engine.polylist, &engine.indexlist);
 	}
 	else
 	{
-		this->_clippedPolyCount = this->performClipping<false>(engine.vertList, engine.polylist, &engine.indexlist);
+		this->_PerformClipping<ClipperMode_Full>(engine.vertList, engine.polylist, &engine.indexlist);
 	}
 	
 	const bool doMultithreadedStateSetup = (this->_threadCount >= 2);
@@ -2228,9 +2206,6 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 			
 			if (param.enableEdgeMarking)
 			{
-				FragmentColor edgeMarkColor;
-				edgeMarkColor.color = 0;
-				
 				// a good test case for edge marking is Sonic Rush:
 				// - the edges are completely sharp/opaque on the very brief title screen intro,
 				// - the level-start intro gets a pseudo-antialiasing effect around the silhouette,
@@ -2245,46 +2220,32 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 					const bool left  = (x < 1)                           ? isEdgeMarkingClearValues : ((polyID != this->_framebufferAttributes->opaquePolyID[i-1])                       && (depth >= this->_framebufferAttributes->depth[i-1]));
 					const bool up    = (y < 1)                           ? isEdgeMarkingClearValues : ((polyID != this->_framebufferAttributes->opaquePolyID[i-this->_framebufferWidth]) && (depth >= this->_framebufferAttributes->depth[i-this->_framebufferWidth]));
 					
+					FragmentColor edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
+					
 					if (right)
 					{
-						if (x >= this->_framebufferWidth - 1)
-						{
-							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
-						}
-						else
+						if (x < this->_framebufferWidth - 1)
 						{
 							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+1] >> 3];
 						}
 					}
 					else if (down)
 					{
-						if (y >= this->_framebufferHeight - 1)
-						{
-							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
-						}
-						else
+						if (y < this->_framebufferHeight - 1)
 						{
 							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+this->_framebufferWidth] >> 3];
 						}
 					}
 					else if (left)
 					{
-						if (x < 1)
-						{
-							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
-						}
-						else
+						if (x > 0)
 						{
 							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i-1] >> 3];
 						}
 					}
 					else if (up)
 					{
-						if (y < 1)
-						{
-							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
-						}
-						else
+						if (y > 0)
 						{
 							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i-this->_framebufferWidth] >> 3];
 						}

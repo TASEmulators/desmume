@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2018 DeSmuME team
+	Copyright (C) 2008-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -477,31 +477,37 @@ struct VIEWPORT {
 //four corners of the hexagon, and you will observe a decagon
 #define MAX_CLIPPED_VERTS 10
 
+enum ClipperMode
+{
+	ClipperMode_Full = 0,
+	ClipperMode_InterpolateFull = 1,
+	ClipperMode_DetermineClipOnly = 2
+};
+
+struct CPoly
+{
+	PolygonType type; //otherwise known as "count" of verts
+	POLY *poly;
+	VERT clipVerts[MAX_CLIPPED_VERTS];
+};
+
 class GFX3D_Clipper
 {
-public:
+protected:
+	size_t _clippedPolyCounter;
+	CPoly *_clippedPolyList; // The output of clipping operations goes into here. Be sure you init it before clipping!
 	
-	struct TClippedPoly
-	{
-		PolygonType type; //otherwise known as "count" of verts
-		POLY *poly;
-		VERT clipVerts[MAX_CLIPPED_VERTS];
-	};
-
-	//the entry point for poly clipping
-	template<bool hirez> void clipPoly(const POLY &poly, const VERT **verts);
-
-	//the output of clipping operations goes into here.
-	//be sure you init it before clipping!
-	TClippedPoly *clippedPolys;
-	size_t clippedPolyCounter;
-	void reset() { clippedPolyCounter=0; }
-
-private:
-	TClippedPoly tempClippedPoly;
-	TClippedPoly outClippedPoly;
-	FORCEINLINE void clipSegmentVsPlane(VERT** verts, const int coord, int which);
-	FORCEINLINE void clipPolyVsPlane(const int coord, int which);
+public:
+	GFX3D_Clipper();
+	
+	const CPoly* GetClippedPolyBufferPtr();
+	void SetClippedPolyBufferPtr(CPoly *bufferPtr);
+	
+	const CPoly& GetClippedPolyByIndex(size_t index) const;
+	size_t GetPolyCount() const;
+	
+	void Reset();
+	template<ClipperMode CLIPPERMODE> void ClipPoly(const POLY &poly, const VERT **verts); // the entry point for poly clipping
 };
 
 //used to communicate state to the renderer

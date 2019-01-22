@@ -121,7 +121,14 @@ in vec4 inPosition;\n\
 in vec2 inTexCoord0;\n\
 in vec3 inColor; \n\
 \n\
+#if IS_USING_UBO_POLY_STATES\n\
+layout (std140) uniform PolyStates\n\
+{\n\
+	ivec4 value[4096];\n\
+} polyState;\n\
+#else\n\
 uniform isamplerBuffer PolyStates;\n\
+#endif\n\
 uniform int polyIndex;\n\
 \n\
 out vec2 vtxTexCoord;\n\
@@ -136,7 +143,12 @@ flat out int texSingleBitAlpha;\n\
 \n\
 void main()\n\
 {\n\
+#if IS_USING_UBO_POLY_STATES\n\
+	ivec4 polyStateVec = polyState.value[polyIndex >> 2];\n\
+	int polyStateBits = polyStateVec[polyIndex & 0x03];\n\
+#else\n\
 	int polyStateBits = texelFetch(PolyStates, polyIndex).r;\n\
+#endif\n\
 	int texSizeShiftS = (polyStateBits >> 18) & 0x07;\n\
 	int texSizeShiftT = (polyStateBits >> 21) & 0x07;\n\
 	\n\
@@ -772,6 +784,7 @@ void OGLCreateRenderer_3_2(OpenGLRenderer **rendererPtr)
 
 OpenGLRenderer_3_2::OpenGLRenderer_3_2()
 {
+	_is64kUBOSupported = false;
 	_syncBufferSetup = NULL;
 }
 
@@ -797,6 +810,10 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	this->GetExtensionSet(&oglExtensionSet);
 	
 	// Get host GPU device properties
+	GLint maxUBOSize = 0;
+	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUBOSize);
+	this->_is64kUBOSupported = (maxUBOSize >= 65536);
+	
 	GLfloat maxAnisotropyOGL = 1.0f;
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropyOGL);
 	this->_deviceInfo.maxAnisotropy = (float)maxAnisotropyOGL;
@@ -1271,6 +1288,42 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
 	
+	// Create shader resources.
+	if (OGLRef.uboRenderStatesID == 0)
+	{
+		glGenBuffers(1, &OGLRef.uboRenderStatesID);
+		glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboRenderStatesID);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(OGLRenderStates), NULL, GL_DYNAMIC_DRAW);
+		glBindBufferBase(GL_UNIFORM_BUFFER, OGLBindingPointID_RenderStates, OGLRef.uboRenderStatesID);
+	}
+	
+	if (this->_is64kUBOSupported)
+	{
+		if (OGLRef.uboPolyStatesID == 0)
+		{
+			glGenBuffers(1, &OGLRef.uboPolyStatesID);
+			glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboPolyStatesID);
+			glBufferData(GL_UNIFORM_BUFFER, MAX_CLIPPED_POLY_COUNT_FOR_UBO * sizeof(OGLPolyStates), NULL, GL_DYNAMIC_DRAW);
+			glBindBufferBase(GL_UNIFORM_BUFFER, OGLBindingPointID_PolyStates, OGLRef.uboPolyStatesID);
+		}
+	}
+	else
+	{
+		if (OGLRef.tboPolyStatesID == 0)
+		{
+			// Set up poly states TBO
+			glGenBuffers(1, &OGLRef.tboPolyStatesID);
+			glBindBuffer(GL_TEXTURE_BUFFER, OGLRef.tboPolyStatesID);
+			glBufferData(GL_TEXTURE_BUFFER, POLYLIST_SIZE * sizeof(OGLPolyStates), NULL, GL_DYNAMIC_DRAW);
+			
+			glGenTextures(1, &OGLRef.texPolyStatesID);
+			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
+			glBindTexture(GL_TEXTURE_BUFFER, OGLRef.texPolyStatesID);
+			glTexBuffer(GL_TEXTURE_BUFFER, GL_R32I, OGLRef.tboPolyStatesID);
+			glActiveTexture(GL_TEXTURE0);
+		}
+	}
+	
 	OGLGeometryFlags programFlags;
 	programFlags.value = 0;
 	
@@ -1283,6 +1336,8 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	{
 		vtxShaderHeader << "#version 150\n";
 	}
+	vtxShaderHeader << "\n";
+	vtxShaderHeader << "#define IS_USING_UBO_POLY_STATES " << ((OGLRef.uboPolyStatesID != 0) ? 1 : 0) << "\n";
 	vtxShaderHeader << "\n";
 	
 	std::string vtxShaderCode  = vtxShaderHeader.str() + std::string(GeometryVtxShader_150);
@@ -1380,36 +1435,23 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 		assert(uboSize == sizeof(OGLRenderStates));
 		
 		const GLint uniformTexRenderObject				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texRenderObject");
-		const GLint uniformTexBufferPolyStates			= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "PolyStates");
 		glUniform1i(uniformTexRenderObject, 0);
-		glUniform1i(uniformTexBufferPolyStates, OGLTextureUnitID_PolyStates);
+		
+		if (OGLRef.uboPolyStatesID != 0)
+		{
+			const GLuint uniformBlockPolyStates = glGetUniformBlockIndex(OGLRef.programGeometryID[flagsValue], "PolyStates");
+			glUniformBlockBinding(OGLRef.programGeometryID[flagsValue], uniformBlockPolyStates, OGLBindingPointID_PolyStates);
+		}
+		else
+		{
+			const GLint uniformTexBufferPolyStates = glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "PolyStates");
+			glUniform1i(uniformTexBufferPolyStates, OGLTextureUnitID_PolyStates);
+		}
 		
 		OGLRef.uniformTexDrawOpaque[flagsValue]			= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texDrawOpaque");
 		OGLRef.uniformPolyDrawShadow[flagsValue]		= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDrawShadow");
 		OGLRef.uniformPolyStateIndex[flagsValue]		= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyIndex");
 		OGLRef.uniformPolyDepthOffsetMode[flagsValue]	= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDepthOffsetMode");
-	}
-	
-	if (OGLRef.uboRenderStatesID == 0)
-	{
-		glGenBuffers(1, &OGLRef.uboRenderStatesID);
-		glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboRenderStatesID);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(OGLRenderStates), NULL, GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_UNIFORM_BUFFER, OGLBindingPointID_RenderStates, OGLRef.uboRenderStatesID);
-	}
-	
-	if (OGLRef.tboPolyStatesID == 0)
-	{
-		// Set up poly states TBO
-		glGenBuffers(1, &OGLRef.tboPolyStatesID);
-		glBindBuffer(GL_TEXTURE_BUFFER, OGLRef.tboPolyStatesID);
-		glBufferData(GL_TEXTURE_BUFFER, POLYLIST_SIZE * sizeof(OGLPolyStates), NULL, GL_DYNAMIC_DRAW);
-		
-		glGenTextures(1, &OGLRef.texPolyStatesID);
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
-		glBindTexture(GL_TEXTURE_BUFFER, OGLRef.texPolyStatesID);
-		glTexBuffer(GL_TEXTURE_BUFFER, GL_R32I, OGLRef.tboPolyStatesID);
-		glActiveTexture(GL_TEXTURE0);
 	}
 	
 	return error;
@@ -1427,9 +1469,11 @@ void OpenGLRenderer_3_2::DestroyGeometryPrograms()
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	glBindBuffer(GL_TEXTURE_BUFFER, 0);
 	glDeleteBuffers(1, &OGLRef.uboRenderStatesID);
+	glDeleteBuffers(1, &OGLRef.uboPolyStatesID);
 	glDeleteBuffers(1, &OGLRef.tboPolyStatesID);
 	
 	OGLRef.uboRenderStatesID = 0;
+	OGLRef.uboPolyStatesID = 0;
 	OGLRef.tboPolyStatesID = 0;
 	
 	for (size_t flagsValue = 0; flagsValue < 128; flagsValue++)
@@ -1964,7 +2008,7 @@ Render3DError OpenGLRenderer_3_2::ZeroDstAlphaPass(const POLYLIST *polyList, con
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
 	glStencilFunc(GL_NOTEQUAL, 0x40, 0x40);
 	
-	this->DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(polyList, indexList, polyList->opaqueCount, polyList->count - 1, indexOffset, lastPolyAttr);
+	this->DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(polyList, indexList, this->_clippedPolyOpaqueCount, this->_clippedPolyCount - 1, indexOffset, lastPolyAttr);
 	
 	// Restore OpenGL states back to normal.
 	this->_geometryProgramFlags = oldGProgramFlags;
@@ -2165,13 +2209,27 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		this->_pendingRenderStates.toonColor[i].a = 1.0f;
 	}
 	
+	glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboRenderStatesID);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(this->_pendingRenderStates), &this->_pendingRenderStates);
+	
+	// Generate the clipped polygon list.
+	this->_PerformClipping<ClipperMode_DetermineClipOnly>(engine.vertList, engine.polylist, &engine.indexlist);
+	
+	if ( (OGLRef.uboPolyStatesID != 0) && (this->_clippedPolyCount > MAX_CLIPPED_POLY_COUNT_FOR_UBO) )
+	{
+		// In practice, there shouldn't be any game scene with a clipped polygon count that
+		// would exceed POLYLIST_SIZE. But if for some reason there is, then we need to limit
+		// the polygon count here. Please report if this happens!
+		printf("OpenGL: Clipped poly count of %d exceeds %d. Please report!!!\n", (int)this->_clippedPolyCount, MAX_CLIPPED_POLY_COUNT_FOR_UBO);
+		this->_clippedPolyCount = MAX_CLIPPED_POLY_COUNT_FOR_UBO;
+	}
 	
 	// Set up the polygon states.
 	this->_renderNeedsDepthEqualsTest = false;
-	for (size_t i = 0, vertIndexCount = 0; i < engine.polylist->count; i++)
+	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{
-		const POLY &thePoly = engine.polylist->list[engine.indexlist.list[i]];
+		const POLY &thePoly = *this->_clipper.GetClippedPolyByIndex(i).poly;
+		
 		const size_t polyType = thePoly.type;
 		const VERT vert[4] = {
 			engine.vertList[thePoly.vertIndexes[0]],
@@ -2243,17 +2301,23 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		}
 	}
 	
-	// Replace the entire index buffer as a hint to the driver that we can orphan the index buffer and
-	// avoid a synchronization cost.
+	// Replace the entire buffer as a hint to the driver to orphan the buffer and avoid a synchronization cost.
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
 	
-	// Some drivers seem to have problems with glMapBufferRange() and GL_TEXTURE_BUFFER, causing
-	// certain polygons to intermittently flicker in certain games. Therefore, we'll use glMapBuffer()
-	// in this case in order to prevent these glitches from happening.
-	OGLPolyStates *polyStates = (OGLPolyStates *)glMapBuffer(GL_TEXTURE_BUFFER, GL_WRITE_ONLY);
-	for (size_t i = 0; i < engine.polylist->count; i++)
+	OGLPolyStates *polyStates = this->_pendingPolyStates;
+	
+	if (OGLRef.uboPolyStatesID == 0)
 	{
-		const POLY &thePoly = engine.polylist->list[engine.indexlist.list[i]];
+		// Some drivers seem to have problems with GL_TEXTURE_BUFFER used as the target for
+		// glMapBufferRange() or glBufferSubData(), causing certain polygons to intermittently
+		// flicker in certain games. Therefore, we'll use glMapBuffer() in this case in order
+		// to prevent these glitches from happening.
+		polyStates = (OGLPolyStates *)glMapBuffer(GL_TEXTURE_BUFFER, GL_WRITE_ONLY);
+	}
+	
+	for (size_t i = 0; i < this->_clippedPolyCount; i++)
+	{
+		const POLY &thePoly = *this->_clipper.GetClippedPolyByIndex(i).poly;
 		
 		// Get all of the polygon states that can be handled within the shader.
 		const NDSTextureFormat packFormat = this->_textureList[i]->GetPackFormat();
@@ -2272,7 +2336,17 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		polyStates[i].TexSizeShiftS = thePoly.texParam.SizeShiftS; // Note that we are using the preshifted size of S
 		polyStates[i].TexSizeShiftT = thePoly.texParam.SizeShiftT; // Note that we are using the preshifted size of T
 	}
-	glUnmapBuffer(GL_TEXTURE_BUFFER);
+	
+	if (OGLRef.uboPolyStatesID != 0)
+	{
+		// Replace the entire buffer as a hint to the driver to orphan the buffer and avoid a synchronization cost.
+		glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboPolyStatesID);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, MAX_CLIPPED_POLY_COUNT_FOR_UBO * sizeof(OGLPolyStates), this->_pendingPolyStates);
+	}
+	else
+	{
+		glUnmapBuffer(GL_TEXTURE_BUFFER);
+	}
 	
 	// Set up the default draw call states.
 	this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;

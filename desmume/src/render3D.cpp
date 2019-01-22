@@ -249,6 +249,9 @@ Render3D::Render3D()
 		_textureList[i] = NULL;
 	}
 	
+	_clippedPolyList = (CPoly *)malloc_alignedCacheLine(POLYLIST_SIZE * 2 * sizeof(CPoly));
+	_clipper.SetClippedPolyBufferPtr(_clippedPolyList);
+	
 	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));
 	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
 	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
@@ -264,6 +267,8 @@ Render3D::~Render3D()
 		this->_textureDeposterizeDstSurface.Surface = NULL;
 		this->_textureDeposterizeDstSurface.workingSurface[0] = NULL;
 	}
+	
+	free_aligned(this->_clippedPolyList);
 }
 
 const Render3DDeviceInfo& Render3D::GetDeviceInfo()
@@ -397,6 +402,54 @@ void Render3D::SetTextureProcessingProperties()
 Render3DTexture* Render3D::GetTextureByPolygonRenderIndex(size_t polyRenderIndex) const
 {
 	return this->_textureList[polyRenderIndex];
+}
+
+const CPoly& Render3D::GetClippedPolyByIndex(size_t index) const
+{
+	return this->_clippedPolyList[index];
+}
+
+size_t Render3D::GetClippedPolyCount() const
+{
+	return this->_clippedPolyCount;
+}
+
+template <ClipperMode CLIPPERMODE>
+void Render3D::_PerformClipping(const VERT *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
+{
+	//submit all polys to clipper
+	this->_clipper.Reset();
+	
+	size_t i = 0;
+	for (; i < polyList->opaqueCount; i++)
+	{
+		const POLY &poly = polyList->list[indexList->list[i]];
+		const VERT *clipVerts[4] = {
+			&vertList[poly.vertIndexes[0]],
+			&vertList[poly.vertIndexes[1]],
+			&vertList[poly.vertIndexes[2]],
+			(poly.type == POLYGON_TYPE_QUAD) ? &vertList[poly.vertIndexes[3]] : NULL
+		};
+		
+		this->_clipper.ClipPoly<CLIPPERMODE>(poly, clipVerts);
+	}
+	
+	this->_clippedPolyOpaqueCount = this->_clipper.GetPolyCount();
+	
+	for (; i < polyList->count; i++)
+	{
+		const POLY &poly = polyList->list[indexList->list[i]];
+		const VERT *clipVerts[4] = {
+			&vertList[poly.vertIndexes[0]],
+			&vertList[poly.vertIndexes[1]],
+			&vertList[poly.vertIndexes[2]],
+			(poly.type == POLYGON_TYPE_QUAD) ? &vertList[poly.vertIndexes[3]] : NULL
+		};
+		
+		this->_clipper.ClipPoly<CLIPPERMODE>(poly, clipVerts);
+	}
+	
+	this->_clippedPolyCount = this->_clipper.GetPolyCount();
 }
 
 Render3DError Render3D::ApplyRenderingSettings(const GFX3D_State &renderState)
@@ -965,6 +1018,10 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 }
 
 #endif // defined(ENABLE_AVX2) || defined(ENABLE_SSE2)
+
+template void Render3D::_PerformClipping<ClipperMode_Full>(const VERT *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
+template void Render3D::_PerformClipping<ClipperMode_InterpolateFull>(const VERT *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
+template void Render3D::_PerformClipping<ClipperMode_DetermineClipOnly>(const VERT *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
 
 template Render3D_SIMD<16>::Render3D_SIMD();
 template Render3D_SIMD<32>::Render3D_SIMD();

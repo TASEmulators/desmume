@@ -309,7 +309,8 @@ enum OGLTextureUnitID
 
 enum OGLBindingPointID
 {
-	OGLBindingPointID_RenderStates = 0
+	OGLBindingPointID_RenderStates = 0,
+	OGLBindingPointID_PolyStates = 1
 };
 
 enum OGLErrorCode
@@ -488,6 +489,7 @@ struct OGLRenderRef
 	
 	// UBO / TBO
 	GLuint uboRenderStatesID;
+	GLuint uboPolyStatesID;
 	GLuint tboPolyStatesID;
 	GLuint texPolyStatesID;
 	
@@ -715,6 +717,7 @@ protected:
 	
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
+	
 	template<OGLPolyDrawMode DRAWMODE> size_t DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
 	template<OGLPolyDrawMode DRAWMODE> Render3DError DrawAlphaTexturePolygon(const GLenum polyPrimitive,
 																			 const GLsizei vertIndexCount,

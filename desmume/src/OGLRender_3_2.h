@@ -56,14 +56,18 @@
 
 #include "OGLRender.h"
 
+#define MAX_CLIPPED_POLY_COUNT_FOR_UBO 16384
+
 void OGLLoadEntryPoints_3_2();
 void OGLCreateRenderer_3_2(OpenGLRenderer **rendererPtr);
 
 class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 {
 protected:
+	bool _is64kUBOSupported;
 	GLsync _syncBufferSetup;
 	CACHE_ALIGN OGLRenderStates _pendingRenderStates;
+	CACHE_ALIGN OGLPolyStates _pendingPolyStates[POLYLIST_SIZE];
 	
 	virtual Render3DError InitExtensions();
 	

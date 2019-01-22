@@ -106,7 +106,7 @@ protected:
 	
 	SoftRasterizerRenderer *_softRender;
 	SoftRasterizerTexture *_currentTexture;
-	VERT *_verts[MAX_CLIPPED_VERTS];
+	const VERT *_verts[MAX_CLIPPED_VERTS];
 	size_t _polynum;
 	u8 _textureWrapMode;
 	
@@ -158,7 +158,6 @@ protected:
 	size_t _customLinesPerThread;
 	size_t _customPixelsPerThread;
 	
-	GFX3D_Clipper clipper;
 	u8 fogTable[32768];
 	FragmentColor edgeMarkTable[8];
 	bool edgeMarkDisabled[8];
@@ -171,8 +170,6 @@ protected:
 	// SoftRasterizer-specific methods
 	virtual Render3DError InitTables();
 	
-	template<bool USEHIRESINTERPOLATE> size_t performClipping(const VERT *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
-	
 	// Base rendering methods
 	virtual Render3DError BeginRender(const GFX3D &engine);
 	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList);
@@ -183,9 +180,7 @@ protected:
 	
 public:
 	int _debug_drawClippedUserPoly;
-	size_t _clippedPolyCount;
 	FragmentColor toonColor32LUT[32];
-	GFX3D_Clipper::TClippedPoly *clippedPolys;
 	FragmentAttributesBuffer *_framebufferAttributes;
 	bool polyVisible[POLYLIST_SIZE];
 	bool polyBackfacing[POLYLIST_SIZE];
