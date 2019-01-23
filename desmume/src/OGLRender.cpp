@@ -1860,7 +1860,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 	};
 	
 	// Set up the initial polygon
-	const POLY &initialPoly = *this->_clipper.GetClippedPolyByIndex(firstIndex).poly;
+	const POLY &initialPoly = *this->_clippedPolyList[firstIndex].poly;
 	TEXIMAGE_PARAM lastTexParams = initialPoly.texParam;
 	u32 lastTexPalette = initialPoly.texPalette;
 	u32 lastViewport = initialPoly.viewport;
@@ -1874,7 +1874,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 	
 	for (size_t i = firstIndex; i <= lastIndex; i++)
 	{
-		const POLY &thePoly = *this->_clipper.GetClippedPolyByIndex(i).poly;
+		const POLY &thePoly = *this->_clippedPolyList[i].poly;
 		
 		// Set up the polygon if it changed
 		if (lastPolyAttr.value != thePoly.attribute.value)
@@ -1914,7 +1914,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 		// the same and we're not drawing a line loop or line strip.
 		if (i+1 <= lastIndex)
 		{
-			const POLY &nextPoly = *this->_clipper.GetClippedPolyByIndex(i+1).poly;
+			const POLY &nextPoly = *this->_clippedPolyList[i+1].poly;
 			
 			if (lastPolyAttr.value == nextPoly.attribute.value &&
 				lastTexParams.value == nextPoly.texParam.value &&
@@ -4261,7 +4261,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	this->_renderNeedsDepthEqualsTest = false;
 	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{
-		const POLY &thePoly = *this->_clipper.GetClippedPolyByIndex(i).poly;
+		const POLY &thePoly = *this->_clippedPolyList[i].poly;
 		
 		const size_t polyType = thePoly.type;
 		const VERT vert[4] = {
@@ -4347,29 +4347,6 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		
 		// Get the texture that is to be attached to this polygon.
 		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, this->_enableTextureSampling);
-		
-		// Force the texture sampling method to clamp if we know that all of the texture coordinates
-		// of all of this polygon's vertices are either 0.0 or 1.0.
-		const GLvec2 tc[4] = {
-			{ vert[0].u / vert[0].w, vert[0].v / vert[0].w },
-			{ vert[1].u / vert[1].w, vert[1].v / vert[1].w },
-			{ vert[2].u / vert[2].w, vert[2].v / vert[2].w },
-			{ vert[3].u / vert[3].w, vert[3].v / vert[3].w }
-		};
-		
-		this->_willForceTextureSampleClampS[i] = ( ((tc[0].x > -0.0001f) && (tc[0].x < 0.0001f)) || ((tc[0].x > 0.9999f) && (tc[0].x < 1.0001f)) ) &&
-		                                         ( ((tc[1].x > -0.0001f) && (tc[1].x < 0.0001f)) || ((tc[1].x > 0.9999f) && (tc[1].x < 1.0001f)) ) &&
-		                                         ( ((tc[2].x > -0.0001f) && (tc[2].x < 0.0001f)) || ((tc[2].x > 0.9999f) && (tc[2].x < 1.0001f)) );
-		
-		this->_willForceTextureSampleClampT[i] = ( ((tc[0].y > -0.0001f) && (tc[0].y < 0.0001f)) || ((tc[0].y > 0.9999f) && (tc[0].y < 1.0001f)) ) &&
-		                                         ( ((tc[1].y > -0.0001f) && (tc[1].y < 0.0001f)) || ((tc[1].y > 0.9999f) && (tc[1].y < 1.0001f)) ) &&
-		                                         ( ((tc[2].y > -0.0001f) && (tc[2].y < 0.0001f)) || ((tc[2].y > 0.9999f) && (tc[2].y < 1.0001f)) );
-		
-		if (polyType == 4)
-		{
-			this->_willForceTextureSampleClampS[i] = this->_willForceTextureSampleClampS[i] && ( ((tc[3].x > -0.0001f) && (tc[3].x < 0.0001f)) || ((tc[3].x > 0.9999f) && (tc[3].x < 1.0001f)) );
-			this->_willForceTextureSampleClampT[i] = this->_willForceTextureSampleClampT[i] && ( ((tc[3].y > -0.0001f) && (tc[3].y < 0.0001f)) || ((tc[3].y > 0.9999f) && (tc[3].y < 1.0001f)) );
-		}
 	}
 	
 	if (this->isVBOSupported)
@@ -4452,7 +4429,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		
 		size_t indexOffset = 0;
 		
-		const POLY &firstPoly = *this->_clipper.GetClippedPolyByIndex(0).poly;
+		const POLY &firstPoly = *this->_clippedPolyList[0].poly;
 		POLYGON_ATTR lastPolyAttr = firstPoly.attribute;
 		
 		if (this->_clippedPolyOpaqueCount > 0)
@@ -4474,7 +4451,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 				
 				if (this->_clippedPolyOpaqueCount > 0)
 				{
-					const POLY &lastOpaquePoly = *this->_clipper.GetClippedPolyByIndex(this->_clippedPolyOpaqueCount - 1).poly;
+					const POLY &lastOpaquePoly = *this->_clippedPolyList[this->_clippedPolyOpaqueCount - 1].poly;
 					lastPolyAttr = lastOpaquePoly.attribute;
 					this->SetupPolygon(lastOpaquePoly, false, true);
 				}
@@ -5038,8 +5015,8 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, size_t polyR
 	}
 	
 	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ((!this->_willForceTextureSampleClampS[polyRenderIndex] && thePoly.texParam.RepeatS_Enable) ? ((thePoly.texParam.MirroredRepeatS_Enable) ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ((!this->_willForceTextureSampleClampT[polyRenderIndex] && thePoly.texParam.RepeatT_Enable) ? ((thePoly.texParam.MirroredRepeatT_Enable) ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ((thePoly.texParam.RepeatS_Enable) ? ((thePoly.texParam.MirroredRepeatS_Enable) ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ((thePoly.texParam.RepeatT_Enable) ? ((thePoly.texParam.MirroredRepeatT_Enable) ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	
 	if (this->_enableTextureSmoothing)
 	{
@@ -5267,8 +5244,6 @@ Render3DError OpenGLRenderer_1_2::Reset()
 	OGLRef.vtxPtrTexCoord = (GLvoid *)offsetof(VERT, texcoord);
 	OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)offsetof(VERT, color) : OGLRef.color4fBuffer;
 	
-	memset(this->_willForceTextureSampleClampS, 0, sizeof(this->_willForceTextureSampleClampS));
-	memset(this->_willForceTextureSampleClampT, 0, sizeof(this->_willForceTextureSampleClampT));
 	memset(this->_isPolyFrontFacing, 0, sizeof(this->_isPolyFrontFacing));
 	
 	texCache.Reset();
@@ -5568,7 +5543,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	this->_renderNeedsDepthEqualsTest = false;
 	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{
-		const POLY &thePoly = *this->_clipper.GetClippedPolyByIndex(i).poly;
+		const POLY &thePoly = *this->_clippedPolyList[i].poly;
 		
 		const size_t polyType = thePoly.type;
 		const VERT vert[4] = {
@@ -5616,29 +5591,6 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 		
 		// Get the texture that is to be attached to this polygon.
 		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, this->_enableTextureSampling);
-		
-		// Force the texture sampling method to clamp if we know that all of the texture coordinates
-		// of all of this polygon's vertices are either 0.0 or 1.0.
-		const GLvec2 tc[4] = {
-			{ vert[0].u / vert[0].w, vert[0].v / vert[0].w },
-			{ vert[1].u / vert[1].w, vert[1].v / vert[1].w },
-			{ vert[2].u / vert[2].w, vert[2].v / vert[2].w },
-			{ vert[3].u / vert[3].w, vert[3].v / vert[3].w }
-		};
-		
-		this->_willForceTextureSampleClampS[i] = ( ((tc[0].x > -0.0001f) && (tc[0].x < 0.0001f)) || ((tc[0].x > 0.9999f) && (tc[0].x < 1.0001f)) ) &&
-		                                         ( ((tc[1].x > -0.0001f) && (tc[1].x < 0.0001f)) || ((tc[1].x > 0.9999f) && (tc[1].x < 1.0001f)) ) &&
-		                                         ( ((tc[2].x > -0.0001f) && (tc[2].x < 0.0001f)) || ((tc[2].x > 0.9999f) && (tc[2].x < 1.0001f)) );
-		
-		this->_willForceTextureSampleClampT[i] = ( ((tc[0].y > -0.0001f) && (tc[0].y < 0.0001f)) || ((tc[0].y > 0.9999f) && (tc[0].y < 1.0001f)) ) &&
-		                                         ( ((tc[1].y > -0.0001f) && (tc[1].y < 0.0001f)) || ((tc[1].y > 0.9999f) && (tc[1].y < 1.0001f)) ) &&
-		                                         ( ((tc[2].y > -0.0001f) && (tc[2].y < 0.0001f)) || ((tc[2].y > 0.9999f) && (tc[2].y < 1.0001f)) );
-		
-		if (polyType == 4)
-		{
-			this->_willForceTextureSampleClampS[i] = this->_willForceTextureSampleClampS[i] && ( ((tc[3].x > -0.0001f) && (tc[3].x < 0.0001f)) || ((tc[3].x > 0.9999f) && (tc[3].x < 1.0001f)) );
-			this->_willForceTextureSampleClampT[i] = this->_willForceTextureSampleClampT[i] && ( ((tc[3].y > -0.0001f) && (tc[3].y < 0.0001f)) || ((tc[3].y > 0.9999f) && (tc[3].y < 1.0001f)) );
-		}
 	}
 	
 	// Replace the entire index buffer as a hint to the driver that we can orphan the index buffer and
@@ -5698,8 +5650,8 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, size_t polyR
 	glUniform1i(OGLRef.uniformTexSingleBitAlpha[this->_geometryProgramFlags.value], (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
 	
 	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ((!this->_willForceTextureSampleClampS[polyRenderIndex] && thePoly.texParam.RepeatS_Enable) ? ((thePoly.texParam.MirroredRepeatS_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ((!this->_willForceTextureSampleClampT[polyRenderIndex] && thePoly.texParam.RepeatT_Enable) ? ((thePoly.texParam.MirroredRepeatT_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ((thePoly.texParam.RepeatS_Enable) ? ((thePoly.texParam.MirroredRepeatS_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ((thePoly.texParam.RepeatT_Enable) ? ((thePoly.texParam.MirroredRepeatT_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	
 	if (this->_enableTextureSmoothing)
 	{
