@@ -187,14 +187,11 @@ protected:
 	
 	size_t _clippedPolyCount;
 	size_t _clippedPolyOpaqueCount;
-	GFX3D_Clipper _clipper;
 	CPoly *_clippedPolyList;
 	
 	CACHE_ALIGN u16 clearImageColor16Buffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN u32 clearImageDepthBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN u8 clearImageFogBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
-	
-	template<ClipperMode CLIPPERMODE> void _PerformClipping(const VERT *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
 	
 	template<bool ISCOLORBLANK, bool ISDEPTHBLANK> void _ClearImageScrolledLoop(const u8 xScroll, const u8 yScroll, const u16 *__restrict inColor16, const u16 *__restrict inDepth16,
 																				u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
@@ -272,6 +269,7 @@ public:
 	void SetTextureProcessingProperties();
 	Render3DTexture* GetTextureByPolygonRenderIndex(size_t polyRenderIndex) const;
 	
+	virtual ClipperMode GetPreferredPolygonClippingMode() const;
 	const CPoly& GetClippedPolyByIndex(size_t index) const;
 	size_t GetClippedPolyCount() const;
 };

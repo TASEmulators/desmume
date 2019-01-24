@@ -4239,6 +4239,10 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
+	this->_clippedPolyCount = engine.clippedPolyCount;
+	this->_clippedPolyOpaqueCount = engine.clippedPolyOpaqueCount;
+	this->_clippedPolyList = engine.clippedPolyList;
+	
 	if (this->isVBOSupported)
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboGeometryVtxID);
@@ -4256,8 +4260,6 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	}
 	
 	// Generate the clipped polygon list.
-	this->_PerformClipping<ClipperMode_DetermineClipOnly>(engine.vertList, engine.polylist, &engine.indexlist);
-	
 	this->_renderNeedsDepthEqualsTest = false;
 	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{
@@ -5531,6 +5533,10 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
+	this->_clippedPolyCount = engine.clippedPolyCount;
+	this->_clippedPolyOpaqueCount = engine.clippedPolyOpaqueCount;
+	this->_clippedPolyList = engine.clippedPolyList;
+	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 	
@@ -5538,8 +5544,6 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * engine.vertListCount, engine.vertList);
 	
 	// Generate the clipped polygon list.
-	this->_PerformClipping<ClipperMode_DetermineClipOnly>(engine.vertList, engine.polylist, &engine.indexlist);
-	
 	this->_renderNeedsDepthEqualsTest = false;
 	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{

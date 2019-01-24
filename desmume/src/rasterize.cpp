@@ -1867,6 +1867,11 @@ Render3DError SoftRasterizerRenderer::InitTables()
 	return RENDER3DERROR_NOERR;
 }
 
+ClipperMode SoftRasterizerRenderer::GetPreferredPolygonClippingMode() const
+{
+	return (this->_enableHighPrecisionColorInterpolation) ? ClipperMode_FullColorInterpolate : ClipperMode_Full;
+}
+
 void SoftRasterizerRenderer::performViewportTransforms()
 {
 	const float wScalar = (float)this->_framebufferWidth  / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
@@ -2020,15 +2025,9 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 	
 	// Keep the current render states for later use
 	this->currentRenderState = (GFX3D_State *)&engine.renderState;
-	
-	if (this->_enableHighPrecisionColorInterpolation)
-	{
-		this->_PerformClipping<ClipperMode_InterpolateFull>(engine.vertList, engine.polylist, &engine.indexlist);
-	}
-	else
-	{
-		this->_PerformClipping<ClipperMode_Full>(engine.vertList, engine.polylist, &engine.indexlist);
-	}
+	this->_clippedPolyCount = engine.clippedPolyCount;
+	this->_clippedPolyOpaqueCount = engine.clippedPolyOpaqueCount;
+	this->_clippedPolyList = engine.clippedPolyList;
 	
 	const bool doMultithreadedStateSetup = (this->_threadCount >= 2);
 	

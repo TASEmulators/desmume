@@ -2153,6 +2153,10 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
+	this->_clippedPolyCount = engine.clippedPolyCount;
+	this->_clippedPolyOpaqueCount = engine.clippedPolyOpaqueCount;
+	this->_clippedPolyList = engine.clippedPolyList;
+	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 	
@@ -2213,8 +2217,6 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(this->_pendingRenderStates), &this->_pendingRenderStates);
 	
 	// Generate the clipped polygon list.
-	this->_PerformClipping<ClipperMode_DetermineClipOnly>(engine.vertList, engine.polylist, &engine.indexlist);
-	
 	if ( (OGLRef.uboPolyStatesID != 0) && (this->_clippedPolyCount > MAX_CLIPPED_POLY_COUNT_FOR_UBO) )
 	{
 		// In practice, there shouldn't be any game scene with a clipped polygon count that

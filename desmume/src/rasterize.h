@@ -191,6 +191,8 @@ public:
 	SoftRasterizerRenderer();
 	virtual ~SoftRasterizerRenderer();
 	
+	virtual ClipperMode GetPreferredPolygonClippingMode() const;
+	
 	void performViewportTransforms();
 	void performBackfaceTests();
 	void performCoordAdjustment();

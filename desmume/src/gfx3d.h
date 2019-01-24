@@ -479,13 +479,14 @@ struct VIEWPORT {
 
 enum ClipperMode
 {
-	ClipperMode_Full = 0,
-	ClipperMode_InterpolateFull = 1,
-	ClipperMode_DetermineClipOnly = 2
+	ClipperMode_DetermineClipOnly = 0,		// Retains only the pointer to the original polygon info. All other information in CPoly is considered undefined.
+	ClipperMode_Full = 1,					// Retains all of the modified polygon's info in CPoly, including the clipped vertex info.
+	ClipperMode_FullColorInterpolate = 2	// Same as ClipperMode_Full, but the vertex color attribute is better interpolated.
 };
 
 struct CPoly
 {
+	u16 index; // The index number of this polygon in the full polygon list.
 	PolygonType type; //otherwise known as "count" of verts
 	POLY *poly;
 	VERT clipVerts[MAX_CLIPPED_VERTS];
@@ -507,7 +508,7 @@ public:
 	size_t GetPolyCount() const;
 	
 	void Reset();
-	template<ClipperMode CLIPPERMODE> void ClipPoly(const POLY &poly, const VERT **verts); // the entry point for poly clipping
+	template<ClipperMode CLIPPERMODE> bool ClipPoly(const u16 polyIndex, const POLY &poly, const VERT **verts); // the entry point for poly clipping
 };
 
 //used to communicate state to the renderer
@@ -600,6 +601,10 @@ struct GFX3D
 	POLYLIST *polylist;
 	VERT *vertList;
 	INDEXLIST indexlist;
+	
+	size_t clippedPolyCount;
+	size_t clippedPolyOpaqueCount;
+	CPoly *clippedPolyList;
 	
 	size_t vertListCount;
 	u32 render3DFrameCount;			// Increments when gfx3d_doFlush() is called. Resets every 60 video frames.
