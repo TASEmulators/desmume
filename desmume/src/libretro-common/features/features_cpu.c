@@ -315,12 +315,12 @@ static unsigned char check_arm_cpu_feature(const char* feature)
 {
    char line[1024];
    unsigned char status = 0;
-   RFILE *fp = filestream_open("/proc/cpuinfo", RFILE_MODE_READ_TEXT, -1);
+   FILE *fp = fopen("/proc/cpuinfo", "r");
 
    if (!fp)
       return 0;
 
-   while (filestream_gets(fp, line, sizeof(line)) != NULL)
+   while (fscanf(fp, "%s", line) != NULL)
    {
       if (strncmp(line, "Features\t: ", 11))
          continue;
@@ -331,7 +331,7 @@ static unsigned char check_arm_cpu_feature(const char* feature)
       break;
    }
 
-   filestream_close(fp);
+   fclose(fp);
 
    return status;
 }
