@@ -420,17 +420,17 @@ union OGLGeometryFlags
 		u8 EnableWDepth:1;
 		u8 EnableAlphaTest:1;
 		u8 EnableTextureSampling:1;
-		u8 EnableFog:1;
-		u8 EnableEdgeMark:1;
 		u8 ToonShadingMode:1;
 		u8 NeedsDepthEqualsTest:1;
-		u8 :1;
+		u8 EnableFog:1;
+		u8 EnableEdgeMark:1;
+		u8 OpaqueDrawMode:1;
 #else
-		u8 :1;
-		u8 NeedsDepthEqualsTest:1;
-		u8 ToonShadingMode:1;
+		u8 OpaqueDrawMode:1;
 		u8 EnableEdgeMark:1;
 		u8 EnableFog:1;
+		u8 NeedsDepthEqualsTest:1;
+		u8 ToonShadingMode:1;
 		u8 EnableTextureSampling:1;
 		u8 EnableAlphaTest:1;
 		u8 EnableWDepth:1;
@@ -439,20 +439,11 @@ union OGLGeometryFlags
 	
 	struct
 	{
-		u8 :3;
-		u8 DrawBuffersMode:2;
-		u8 :3;
+		u8 :5;
+		u8 DrawBuffersMode:3;
 	};
 };
 typedef OGLGeometryFlags OGLGeometryFlags;
-
-enum OGLGeometryDrawBuffersMode
-{
-	OGLGeometryDrawBuffersMode_ColorOnly = 0,
-	OGLGeometryDrawBuffersMode_Color_Fog = 1,
-	OGLGeometryDrawBuffersMode_Color_EdgeMark = 2,
-	OGLGeometryDrawBuffersMode_Color_Fog_EdgeMark = 3
-};
 
 union OGLFogProgramKey
 {
@@ -504,8 +495,10 @@ struct OGLRenderRef
 	GLuint texGDepthStencilID;
 	GLuint texFinalColorID;
 	GLuint texMSGColorID;
+	GLuint texMSGWorkingID;
 	
 	GLuint rboMSGColorID;
+	GLuint rboMSGWorkingID;
 	GLuint rboMSGPolyID;
 	GLuint rboMSGFogAttrID;
 	GLuint rboMSGDepthStencilID;
@@ -558,6 +551,7 @@ struct OGLRenderRef
 	GLint uniformPolyEnableFog[256];
 	GLint uniformTexSingleBitAlpha[256];
 	GLint uniformTexDrawOpaque[256];
+	GLint uniformDrawModeDepthEqualsTest[256];
 	
 	GLint uniformPolyStateIndex[256];
 	GLint uniformPolyDepthOffsetMode[256];
@@ -592,7 +586,7 @@ extern GPU3DInterface gpu3Dgl;
 extern GPU3DInterface gpu3DglOld;
 extern GPU3DInterface gpu3Dgl_3_2;
 
-extern const GLenum GeometryDrawBuffersList[4][3];
+extern const GLenum GeometryDrawBuffersList[8][4];
 extern CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32];
 extern CACHE_ALIGN const GLfloat divide6bitBy63_LUT[64];
 extern const GLfloat PostprocessVtxBuffer[16];
@@ -704,6 +698,7 @@ protected:
 	bool _needsZeroDstAlphaPass;
 	bool _renderNeedsDepthEqualsTest;
 	size_t _currentPolyIndex;
+	u8 _currentAlphaTestRef;
 	OGLTextureUnitID _lastTextureDrawTarget;
 	OGLGeometryFlags _geometryProgramFlags;
 	std::map<u32, OGLFogShaderID> _fogProgramMap;
@@ -772,9 +767,11 @@ protected:
 	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID) = 0;
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet) = 0;
+	virtual void _SetupGeometryShaders(const OGLGeometryFlags flags) = 0;
 	virtual Render3DError EnableVertexAttributes() = 0;
 	virtual Render3DError DisableVertexAttributes() = 0;
-	virtual Render3DError DownsampleFBO() = 0;
+	virtual void _ResolveWorkingBackFacing() = 0;
+	virtual void _ResolveGeometry() = 0;
 	virtual Render3DError ReadBackPixels() = 0;
 	
 	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID) = 0;
@@ -847,10 +844,12 @@ protected:
 	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID);
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
+	virtual void _SetupGeometryShaders(const OGLGeometryFlags flags);
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
 	virtual Render3DError ZeroDstAlphaPass(const POLYLIST *polyList, const INDEXLIST *indexList, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr);
-	virtual Render3DError DownsampleFBO();
+	virtual void _ResolveWorkingBackFacing();
+	virtual void _ResolveGeometry();
 	virtual Render3DError ReadBackPixels();
 	
 	// Base rendering methods

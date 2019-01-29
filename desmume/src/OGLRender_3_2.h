@@ -90,10 +90,12 @@ protected:
 	virtual Render3DError CreateFramebufferOutput8888Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString);
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
+	virtual void _SetupGeometryShaders(const OGLGeometryFlags flags);
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
 	virtual Render3DError ZeroDstAlphaPass(const POLYLIST *polyList, const INDEXLIST *indexList, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr);
-	virtual Render3DError DownsampleFBO();
+	virtual void _ResolveWorkingBackFacing();
+	virtual void _ResolveGeometry();
 	virtual Render3DError ReadBackPixels();
 	virtual Render3DError BeginRender(const GFX3D &engine);
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
