@@ -288,6 +288,19 @@ EXTERNOGLEXT(PFNGLDELETESYNCPROC, glDeleteSync) // Core in v3.2
 
 #define OGLRENDER_VERT_INDEX_BUFFER_COUNT	(POLYLIST_SIZE * 6)
 
+// Assign the FBO attachments for the main geometry render
+#ifdef OGLRENDER_3_2_H
+	#define GL_COLOROUT_ATTACHMENT_ID			GL_COLOR_ATTACHMENT0
+	#define GL_WORKING_ATTACHMENT_ID			GL_COLOR_ATTACHMENT3
+	#define GL_POLYID_ATTACHMENT_ID				GL_COLOR_ATTACHMENT1
+	#define GL_FOGATTRIBUTES_ATTACHMENT_ID		GL_COLOR_ATTACHMENT2
+#else
+	#define GL_COLOROUT_ATTACHMENT_ID			GL_COLOR_ATTACHMENT0_EXT
+	#define GL_WORKING_ATTACHMENT_ID			GL_COLOR_ATTACHMENT3_EXT
+	#define GL_POLYID_ATTACHMENT_ID				GL_COLOR_ATTACHMENT1_EXT
+	#define GL_FOGATTRIBUTES_ATTACHMENT_ID		GL_COLOR_ATTACHMENT2_EXT
+#endif
+
 enum OGLVertexAttributeID
 {
 	OGLVertexAttributeID_Position	= 0,
@@ -586,7 +599,11 @@ extern GPU3DInterface gpu3Dgl;
 extern GPU3DInterface gpu3DglOld;
 extern GPU3DInterface gpu3Dgl_3_2;
 
-extern const GLenum GeometryDrawBuffersList[8][4];
+extern const GLenum GeometryDrawBuffersEnum[8][4];
+extern const GLint GeometryAttachmentWorkingBuffer[8];
+extern const GLint GeometryAttachmentPolyID[8];
+extern const GLint GeometryAttachmentFogAttributes[8];
+
 extern CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32];
 extern CACHE_ALIGN const GLfloat divide6bitBy63_LUT[64];
 extern const GLfloat PostprocessVtxBuffer[16];

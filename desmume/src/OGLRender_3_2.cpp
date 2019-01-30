@@ -206,12 +206,10 @@ uniform bool drawModeDepthEqualsTest;\n\
 uniform bool polyDrawShadow;\n\
 uniform int polyDepthOffsetMode;\n\
 \n\
-#if USE_DEPTH_LEQUAL_POLYGON_FACING\n\
 #if DRAW_MODE_OPAQUE\n\
 out vec4 outBackFacing;\n\
-#else\n\
+#elif USE_DEPTH_LEQUAL_POLYGON_FACING\n\
 uniform sampler2D inBackFacing;\n\
-#endif\n\
 #endif\n\
 \n\
 out vec4 outFragColor;\n\
@@ -229,7 +227,7 @@ layout (depth_less) out float gl_FragDepth;\n\
 void main()\n\
 {\n\
 	outFragColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
-#if USE_DEPTH_LEQUAL_POLYGON_FACING && DRAW_MODE_OPAQUE\n\
+#if DRAW_MODE_OPAQUE\n\
 	outBackFacing = vec4(float(!gl_FrontFacing), 0.0, 0.0, 1.0);\n\
 #endif\n\
 #if ENABLE_EDGE_MARK\n\
@@ -1086,10 +1084,10 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	}
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, OGLRef.texGColorID, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, OGLRef.texGPolyID, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, OGLRef.texGFogAttrID, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, OGLRef.texFinalColorID, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOROUT_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texGColorID, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_POLYID_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texGPolyID, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_FOGATTRIBUTES_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texGFogAttrID, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_WORKING_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texFinalColorID, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, OGLRef.texGDepthStencilID, 0);
 	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1184,17 +1182,17 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 	
 	if (this->willUsePerSampleZeroDstPass)
 	{
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGColorID, 0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGWorkingID, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOROUT_ATTACHMENT_ID, GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGColorID, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_WORKING_ATTACHMENT_ID, GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGWorkingID, 0);
 	}
 	else
 	{
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, OGLRef.rboMSGColorID);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_RENDERBUFFER, OGLRef.rboMSGWorkingID);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOROUT_ATTACHMENT_ID, GL_RENDERBUFFER, OGLRef.rboMSGColorID);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_WORKING_ATTACHMENT_ID, GL_RENDERBUFFER, OGLRef.rboMSGWorkingID);
 	}
 	
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_RENDERBUFFER, OGLRef.rboMSGPolyID);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_RENDERBUFFER, OGLRef.rboMSGFogAttrID);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_POLYID_ATTACHMENT_ID, GL_RENDERBUFFER, OGLRef.rboMSGPolyID);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_FOGATTRIBUTES_ATTACHMENT_ID, GL_RENDERBUFFER, OGLRef.rboMSGFogAttrID);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, OGLRef.rboMSGDepthStencilID);
 	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1450,14 +1448,19 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 		glBindAttribLocation(OGLRef.programGeometryID[flagsValue], OGLVertexAttributeID_Color, "inColor");
 		glBindFragDataLocation(OGLRef.programGeometryID[flagsValue], 0, "outFragColor");
 		
-		if (programFlags.EnableEdgeMark)
-		{
-			glBindFragDataLocation(OGLRef.programGeometryID[flagsValue], 2, "outPolyID");
-		}
-		
 		if (programFlags.EnableFog)
 		{
-			glBindFragDataLocation(OGLRef.programGeometryID[flagsValue], 3, "outFogAttributes");
+			glBindFragDataLocation(OGLRef.programGeometryID[flagsValue], GeometryAttachmentFogAttributes[programFlags.DrawBuffersMode], "outFogAttributes");
+		}
+		
+		if (programFlags.EnableEdgeMark)
+		{
+			glBindFragDataLocation(OGLRef.programGeometryID[flagsValue], GeometryAttachmentPolyID[programFlags.DrawBuffersMode], "outPolyID");
+		}
+		
+		if (programFlags.OpaqueDrawMode)
+		{
+			glBindFragDataLocation(OGLRef.programGeometryID[flagsValue], GeometryAttachmentWorkingBuffer[programFlags.DrawBuffersMode], "outBackFacing");
 		}
 		
 		glLinkProgram(OGLRef.programGeometryID[flagsValue]);
@@ -1494,17 +1497,10 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 			glUniform1i(uniformTexBufferPolyStates, OGLTextureUnitID_PolyStates);
 		}
 		
-		if (this->_emulateDepthLEqualPolygonFacing)
+		if (this->_emulateDepthLEqualPolygonFacing && !programFlags.OpaqueDrawMode)
 		{
-			if (programFlags.OpaqueDrawMode)
-			{
-				glBindFragDataLocation(OGLRef.programGeometryID[flagsValue], 1, "outBackFacing");
-			}
-			else
-			{
-				const GLint uniformTexBackfacing		= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "inBackFacing");
-				glUniform1i(uniformTexBackfacing, OGLTextureUnitID_FinalColor);
-			}
+			const GLint uniformTexBackfacing			= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "inBackFacing");
+			glUniform1i(uniformTexBackfacing, OGLTextureUnitID_FinalColor);
 		}
 		
 		OGLRef.uniformTexDrawOpaque[flagsValue]           = glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texDrawOpaque");
@@ -1987,7 +1983,7 @@ void OpenGLRenderer_3_2::_SetupGeometryShaders(const OGLGeometryFlags flags)
 	glUniform1i(OGLRef.uniformDrawModeDepthEqualsTest[flags.value], GL_FALSE);
 	glUniform1i(OGLRef.uniformPolyDrawShadow[flags.value], GL_FALSE);
 	
-	glDrawBuffers(4, GeometryDrawBuffersList[flags.DrawBuffersMode]);
+	glDrawBuffers(4, GeometryDrawBuffersEnum[flags.DrawBuffersMode]);
 }
 
 Render3DError OpenGLRenderer_3_2::EnableVertexAttributes()
@@ -2020,9 +2016,9 @@ Render3DError OpenGLRenderer_3_2::ZeroDstAlphaPass(const POLYLIST *polyList, con
 		// Just downsample the color buffer now so that we have some texture data to sample from in the non-multisample shader.
 		// This is not perfectly pixel accurate, but it's better than nothing.
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboRenderID);
-		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
 		glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-		glDrawBuffers(4, GeometryDrawBuffersList[this->_geometryProgramFlags.DrawBuffersMode]);
+		glDrawBuffers(4, GeometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
 		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
 	}
 	
@@ -2049,7 +2045,7 @@ Render3DError OpenGLRenderer_3_2::ZeroDstAlphaPass(const POLYLIST *polyList, con
 	this->_geometryProgramFlags.EnableEdgeMark = 0;
 	this->_geometryProgramFlags.EnableFog = 0;
 	this->_SetupGeometryShaders(this->_geometryProgramFlags);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
@@ -2094,13 +2090,13 @@ void OpenGLRenderer_3_2::_ResolveWorkingBackFacing()
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.fboMSIntermediateRenderID);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboRenderID);
 	
-	glReadBuffer(GL_COLOR_ATTACHMENT3);
-	glDrawBuffer(GL_COLOR_ATTACHMENT3);
+	glReadBuffer(GL_WORKING_ATTACHMENT_ID);
+	glDrawBuffer(GL_WORKING_ATTACHMENT_ID);
 	glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	
 	// Reset framebuffer targets
-	glReadBuffer(GL_COLOR_ATTACHMENT0);
-	glDrawBuffers(4, GeometryDrawBuffersList[this->_geometryProgramFlags.DrawBuffersMode]);
+	glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
+	glDrawBuffers(4, GeometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboMSIntermediateRenderID);
 }
 
@@ -2118,28 +2114,26 @@ void OpenGLRenderer_3_2::_ResolveGeometry()
 	
 	if (this->_enableEdgeMark)
 	{
-		// Blit the polygon ID buffer
-		glReadBuffer(GL_COLOR_ATTACHMENT1);
-		glDrawBuffer(GL_COLOR_ATTACHMENT1);
+		glReadBuffer(GL_POLYID_ATTACHMENT_ID);
+		glDrawBuffer(GL_POLYID_ATTACHMENT_ID);
 		glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
 	
 	if (this->_enableFog)
 	{
-		// Blit the fog buffer
-		glReadBuffer(GL_COLOR_ATTACHMENT2);
-		glDrawBuffer(GL_COLOR_ATTACHMENT2);
+		glReadBuffer(GL_FOGATTRIBUTES_ATTACHMENT_ID);
+		glDrawBuffer(GL_FOGATTRIBUTES_ATTACHMENT_ID);
 		glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
 	
 	// Blit the color and depth buffers
-	glReadBuffer(GL_COLOR_ATTACHMENT0);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
+	glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
 	glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 	
 	// Reset framebuffer targets
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
-	glDrawBuffers(4, GeometryDrawBuffersList[this->_geometryProgramFlags.DrawBuffersMode]);
+	glDrawBuffers(4, GeometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
 }
 
 Render3DError OpenGLRenderer_3_2::ReadBackPixels()
@@ -2154,15 +2148,15 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 		{
 			// Use the alternate program where the output color is not at index 0.
 			glUseProgram(OGLRef.programFramebufferRGBA6665OutputID[1]);
-			glDrawBuffer(GL_COLOR_ATTACHMENT3);
-			glReadBuffer(GL_COLOR_ATTACHMENT3);
+			glDrawBuffer(GL_WORKING_ATTACHMENT_ID);
+			glReadBuffer(GL_WORKING_ATTACHMENT_ID);
 		}
 		else
 		{
 			// Use the program where the output color is from index 0.
 			glUseProgram(OGLRef.programFramebufferRGBA6665OutputID[0]);
-			glDrawBuffer(GL_COLOR_ATTACHMENT0);
-			glReadBuffer(GL_COLOR_ATTACHMENT0);
+			glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
+			glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
 		}
 		
 		glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
@@ -2189,17 +2183,17 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 		// Just flips the framebuffer in Y to match the coordinates of OpenGL and the NDS hardware.
 		if (this->_lastTextureDrawTarget == OGLTextureUnitID_GColor)
 		{
-			glDrawBuffer(GL_COLOR_ATTACHMENT3);
-			glReadBuffer(GL_COLOR_ATTACHMENT0);
+			glDrawBuffer(GL_WORKING_ATTACHMENT_ID);
+			glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
 			glBlitFramebuffer(0, this->_framebufferHeight, this->_framebufferWidth, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			glReadBuffer(GL_COLOR_ATTACHMENT3);
+			glReadBuffer(GL_WORKING_ATTACHMENT_ID);
 		}
 		else
 		{
-			glDrawBuffer(GL_COLOR_ATTACHMENT0);
-			glReadBuffer(GL_COLOR_ATTACHMENT3);
+			glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
+			glReadBuffer(GL_WORKING_ATTACHMENT_ID);
 			glBlitFramebuffer(0, this->_framebufferHeight, this->_framebufferWidth, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			glReadBuffer(GL_COLOR_ATTACHMENT0);
+			glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
 		}
 		
 		// Read back the pixels in RGBA format, since an OpenGL 3.2 device should be able to read back this
@@ -2412,7 +2406,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	
 	this->_currentAlphaTestRef = engine.renderState.alphaTestRef;
 	this->_SetupGeometryShaders(this->_geometryProgramFlags);
-	glReadBuffer(GL_COLOR_ATTACHMENT0);
+	glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
 	
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);
@@ -2448,7 +2442,7 @@ Render3DError OpenGLRenderer_3_2::RenderEdgeMarking(const u16 *colorTable, const
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		
 		// Pass 2: Unblended edge mark colors to zero-alpha pixels
-		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
 		glUseProgram(OGLRef.programEdgeMarkID);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
 		glStencilFunc(GL_NOTEQUAL, 0x40, 0x40);
@@ -2463,7 +2457,7 @@ Render3DError OpenGLRenderer_3_2::RenderEdgeMarking(const u16 *colorTable, const
 	else
 	{
 		glUseProgram(OGLRef.programEdgeMarkID);
-		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
 		glEnable(GL_BLEND);
 		glDisable(GL_STENCIL_TEST);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -2496,7 +2490,7 @@ Render3DError OpenGLRenderer_3_2::RenderFog(const u8 *densityTable, const u32 co
 	
 	OGLFogShaderID shaderID = this->_fogProgramMap[fogProgramKey.key];
 	
-	glDrawBuffer(GL_COLOR_ATTACHMENT3);
+	glDrawBuffer(GL_WORKING_ATTACHMENT_ID);
 	glUseProgram(shaderID.program);
 	glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
 	glDisable(GL_DEPTH_TEST);
@@ -2540,32 +2534,32 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 	
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.fboClearImageID);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboRenderID);
-	glDrawBuffers(4, GeometryDrawBuffersList[this->_geometryProgramFlags.DrawBuffersMode]);
+	glDrawBuffers(4, GeometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
 	
 	if (this->_emulateDepthLEqualPolygonFacing)
 	{
 		const GLfloat oglBackfacing[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-		glClearBufferfv(GL_COLOR, 1, oglBackfacing);
+		glClearBufferfv(GL_COLOR, GeometryAttachmentWorkingBuffer[this->_geometryProgramFlags.DrawBuffersMode], oglBackfacing);
 	}
 	
 	if (this->_enableEdgeMark)
 	{
 		// Clear the polygon ID buffer
 		const GLfloat oglPolyID[4] = {(GLfloat)opaquePolyID/63.0f, 0.0f, 0.0f, 1.0f};
-		glClearBufferfv(GL_COLOR, 2, oglPolyID);
+		glClearBufferfv(GL_COLOR, GeometryAttachmentPolyID[this->_geometryProgramFlags.DrawBuffersMode], oglPolyID);
 	}
 	
 	if (this->_enableFog)
 	{
 		// Blit the fog buffer
-		glReadBuffer(GL_COLOR_ATTACHMENT2);
-		glDrawBuffer(GL_COLOR_ATTACHMENT2);
+		glReadBuffer(GL_FOGATTRIBUTES_ATTACHMENT_ID);
+		glDrawBuffer(GL_FOGATTRIBUTES_ATTACHMENT_ID);
 		glBlitFramebuffer(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
 	
 	// Blit the color and depth/stencil buffers. Do this last so that color attachment 0 is set to the read FBO.
-	glReadBuffer(GL_COLOR_ATTACHMENT0);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
+	glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
 	glBlitFramebuffer(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
@@ -2575,32 +2569,30 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 	{
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.fboRenderID);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
-		glDrawBuffers(4, GeometryDrawBuffersList[this->_geometryProgramFlags.DrawBuffersMode]);
+		glDrawBuffers(4, GeometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
 		
 		if (this->_emulateDepthLEqualPolygonFacing)
 		{
 			const GLfloat oglBackfacing[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-			glClearBufferfv(GL_COLOR, 1, oglBackfacing);
+			glClearBufferfv(GL_COLOR, GeometryAttachmentWorkingBuffer[this->_geometryProgramFlags.DrawBuffersMode], oglBackfacing);
 		}
 		
 		if (this->_enableEdgeMark)
 		{
-			// Clear the polygon ID buffer
 			const GLfloat oglPolyID[4] = {(GLfloat)opaquePolyID/63.0f, 0.0f, 0.0f, 1.0f};
-			glClearBufferfv(GL_COLOR, 2, oglPolyID);
+			glClearBufferfv(GL_COLOR, GeometryAttachmentPolyID[this->_geometryProgramFlags.DrawBuffersMode], oglPolyID);
 		}
 		
 		if (this->_enableFog)
 		{
-			// Blit the fog buffer
-			glReadBuffer(GL_COLOR_ATTACHMENT2);
-			glDrawBuffer(GL_COLOR_ATTACHMENT2);
+			glReadBuffer(GL_FOGATTRIBUTES_ATTACHMENT_ID);
+			glDrawBuffer(GL_FOGATTRIBUTES_ATTACHMENT_ID);
 			glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		}
 		
 		// Blit the color and depth/stencil buffers. Do this last so that color attachment 0 is set to the read FBO.
-		glReadBuffer(GL_COLOR_ATTACHMENT0);
-		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
+		glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
 		glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 		
 		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
@@ -2614,28 +2606,28 @@ Render3DError OpenGLRenderer_3_2::ClearUsingValues(const FragmentColor &clearCol
 	OGLRenderRef &OGLRef = *this->ref;
 	OGLRef.selectedRenderingFBO = (this->_enableMultisampledRendering) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
-	glDrawBuffers(4, GeometryDrawBuffersList[this->_geometryProgramFlags.DrawBuffersMode]);
+	glDrawBuffers(4, GeometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
 	
 	const GLfloat oglColor[4] = {divide6bitBy63_LUT[clearColor6665.r], divide6bitBy63_LUT[clearColor6665.g], divide6bitBy63_LUT[clearColor6665.b], divide5bitBy31_LUT[clearColor6665.a]};
-	glClearBufferfv(GL_COLOR, 0, oglColor); // texGColorID
+	glClearBufferfv(GL_COLOR, 0, oglColor);
 	glClearBufferfi(GL_DEPTH_STENCIL, 0, (GLfloat)clearAttributes.depth / (GLfloat)0x00FFFFFF, clearAttributes.opaquePolyID);
 	
 	if (this->_emulateDepthLEqualPolygonFacing)
 	{
 		const GLfloat oglBackfacing[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-		glClearBufferfv(GL_COLOR, 1, oglBackfacing);
+		glClearBufferfv(GL_COLOR, GeometryAttachmentWorkingBuffer[this->_geometryProgramFlags.DrawBuffersMode], oglBackfacing);
 	}
 	
 	if (this->_enableEdgeMark)
 	{
 		const GLfloat oglPolyID[4] = {(GLfloat)clearAttributes.opaquePolyID/63.0f, 0.0f, 0.0f, 1.0f};
-		glClearBufferfv(GL_COLOR, 2, oglPolyID); // texGPolyID
+		glClearBufferfv(GL_COLOR, GeometryAttachmentPolyID[this->_geometryProgramFlags.DrawBuffersMode], oglPolyID);
 	}
 	
 	if (this->_enableFog)
 	{
 		const GLfloat oglFogAttr[4] = {(GLfloat)clearAttributes.isFogged, 0.0f, 0.0f, 1.0f};
-		glClearBufferfv(GL_COLOR, 3, oglFogAttr);
+		glClearBufferfv(GL_COLOR, GeometryAttachmentFogAttributes[this->_geometryProgramFlags.DrawBuffersMode], oglFogAttr);
 	}
 	
 	this->_needsZeroDstAlphaPass = (clearColor6665.a == 0);
@@ -2894,8 +2886,8 @@ Render3DError OpenGLRenderer_3_2::RenderPowerOff()
 	}
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
-	glReadBuffer(GL_COLOR_ATTACHMENT0);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
+	glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
 	glClearBufferfv(GL_COLOR, 0, oglColor);
 	
 	if (this->_mappedFramebuffer != NULL)
