@@ -445,22 +445,17 @@ Render3DError Render3D::BeginRender(const GFX3D &engine)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList)
+Render3DError Render3D::RenderGeometry()
 {
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::RenderEdgeMarking(const u16 *colorTable, const bool useAntialias)
+Render3DError Render3D::PostprocessFramebuffer()
 {
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::RenderFog(const u8 *densityTable, const u32 color, const u16 offset, const u8 shift, const bool alphaOnly)
-{
-	return RENDER3DERROR_NOERR;
-}
-
-Render3DError Render3D::EndRender(const u64 frameCount)
+Render3DError Render3D::EndRender()
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -505,11 +500,6 @@ Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFram
 		this->_renderNeedsFlush16 = false;
 	}
 	
-	return RENDER3DERROR_NOERR;
-}
-
-Render3DError Render3D::UpdateToonTable(const u16 *toonTableBuffer)
-{
 	return RENDER3DERROR_NOERR;
 }
 
@@ -719,27 +709,32 @@ Render3DError Render3D::Render(const GFX3D &engine)
 	error = this->BeginRender(engine);
 	if (error != RENDER3DERROR_NOERR)
 	{
+		this->EndRender();
 		return error;
 	}
 	
-	this->UpdateToonTable(engine.renderState.u16ToonTable);
-	this->ClearFramebuffer(engine.renderState);
-	
-	this->RenderGeometry(engine.renderState, engine.polylist, &engine.indexlist);
-	
-	if (this->_enableEdgeMark)
+	error = this->ClearFramebuffer(engine.renderState);
+	if (error != RENDER3DERROR_NOERR)
 	{
-		this->RenderEdgeMarking(engine.renderState.edgeMarkColorTable, engine.renderState.enableAntialiasing);
+		this->EndRender();
+		return error;
 	}
 	
-	if (this->_enableFog)
+	error = this->RenderGeometry();
+	if (error != RENDER3DERROR_NOERR)
 	{
-		this->RenderFog(engine.renderState.fogDensityTable, engine.renderState.fogColor, (engine.renderState.fogOffset & 0x7FFF), engine.renderState.fogShift, engine.renderState.enableFogAlphaOnly);
+		this->EndRender();
+		return error;
 	}
-
-	this->EndRender(engine.render3DFrameCount);
 	
-	return error;
+	error = this->PostprocessFramebuffer();
+	if (error != RENDER3DERROR_NOERR)
+	{
+		this->EndRender();
+		return error;
+	}
+	
+	return this->EndRender();
 }
 
 Render3DError Render3D::RenderFinish()

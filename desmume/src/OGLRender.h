@@ -312,7 +312,6 @@ enum OGLTextureUnitID
 {
 	// Main textures will always be on texture unit 0.
 	OGLTextureUnitID_FinalColor = 1,
-	OGLTextureUnitID_ToonTable,
 	OGLTextureUnitID_GColor,
 	OGLTextureUnitID_DepthStencil,
 	OGLTextureUnitID_GPolyID,
@@ -394,8 +393,8 @@ struct OGLRenderStates
 	GLfloat fogOffset;
 	GLfloat fogStep;
 	GLfloat pad_0; // This needs to be here to preserve alignment
+	GLfloat fogDensity[32];
 	GLvec4 fogColor;
-	GLvec4 fogDensity[32]; // Array of floats need to be padded as vec4
 	GLvec4 edgeColor[8];
 	GLvec4 toonColor[32];
 };
@@ -553,6 +552,7 @@ struct OGLRenderRef
 	GLint uniformStateFogDensity;
 	
 	GLint uniformStateAlphaTestRef[256];
+	GLint uniformStateToonColor[256];
 	GLint uniformPolyTexScale[256];
 	GLint uniformPolyMode[256];
 	GLint uniformPolyIsWireframe[256];
@@ -569,8 +569,6 @@ struct OGLRenderRef
 	GLint uniformPolyStateIndex[256];
 	GLint uniformPolyDepthOffsetMode[256];
 	GLint uniformPolyDrawShadow[256];
-	
-	GLuint texToonTableID;
 	
 	// VAO
 	GLuint vaoGeometryStatesID;
@@ -713,12 +711,14 @@ protected:
 	FragmentColor *_workingTextureUnpackBuffer;
 	bool _pixelReadNeedsFinish;
 	bool _needsZeroDstAlphaPass;
-	bool _renderNeedsDepthEqualsTest;
 	size_t _currentPolyIndex;
-	u8 _currentAlphaTestRef;
+	bool _enableAlphaBlending;
 	OGLTextureUnitID _lastTextureDrawTarget;
 	OGLGeometryFlags _geometryProgramFlags;
+	OGLFogProgramKey _fogProgramKey;
 	std::map<u32, OGLFogShaderID> _fogProgramMap;
+	
+	CACHE_ALIGN OGLRenderStates _pendingRenderStates;
 	
 	bool _enableMultisampledRendering;
 	int _selectedMultisampleSize;
@@ -728,7 +728,7 @@ protected:
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
 	
-	template<OGLPolyDrawMode DRAWMODE> size_t DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
+	template<OGLPolyDrawMode DRAWMODE> size_t DrawPolygonsForIndexRange(const CPoly *clippedPolyList, const size_t clippedPolyCount, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
 	template<OGLPolyDrawMode DRAWMODE> Render3DError DrawAlphaTexturePolygon(const GLenum polyPrimitive,
 																			 const GLsizei vertIndexCount,
 																			 const GLushort *indexBufferPtr,
@@ -779,8 +779,6 @@ protected:
 													 const char *framebufferOutputRGBA6665FragShader,
 													 const char *framebufferOutputRGBA8888FragShader) = 0;
 	
-	virtual Render3DError CreateToonTable() = 0;
-	virtual Render3DError DestroyToonTable() = 0;
 	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID) = 0;
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet) = 0;
@@ -856,25 +854,22 @@ protected:
 													 const char *framebufferOutputRGBA6665FragShader,
 													 const char *framebufferOutputRGBA8888FragShader);
 	
-	virtual Render3DError CreateToonTable();
-	virtual Render3DError DestroyToonTable();
 	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID);
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual void _SetupGeometryShaders(const OGLGeometryFlags flags);
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
-	virtual Render3DError ZeroDstAlphaPass(const POLYLIST *polyList, const INDEXLIST *indexList, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr);
+	virtual Render3DError ZeroDstAlphaPass(const CPoly *clippedPolyList, const size_t clippedPolyCount, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr);
 	virtual void _ResolveWorkingBackFacing();
 	virtual void _ResolveGeometry();
 	virtual Render3DError ReadBackPixels();
 	
 	// Base rendering methods
 	virtual Render3DError BeginRender(const GFX3D &engine);
-	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList);
-	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
-	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u16 offset, const u8 shift, const bool alphaOnly);
-	virtual Render3DError EndRender(const u64 frameCount);
+	virtual Render3DError RenderGeometry();
+	virtual Render3DError PostprocessFramebuffer();
+	virtual Render3DError EndRender();
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID);
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
@@ -890,7 +885,6 @@ public:
 	~OpenGLRenderer_1_2();
 	
 	virtual Render3DError InitExtensions();
-	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError Reset();
 	virtual Render3DError RenderPowerOff();
 	virtual Render3DError RenderFinish();

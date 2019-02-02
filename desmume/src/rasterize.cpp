@@ -64,6 +64,7 @@
 #include "NDSSystem.h"
 #include "utils/bits.h"
 #include "utils/task.h"
+#include "./utils/colorspacehandler/colorspacehandler.h"
 #include "filter/filter.h"
 #include "filter/xbrz.h"
 
@@ -1282,7 +1283,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 	for (size_t i = 0; i < polyCount; i++)
 	{
 		if (!RENDERER) _debug_thisPoly = (i == this->_softRender->_debug_drawClippedUserPoly);
-		if (!this->_softRender->polyVisible[i]) continue;
+		if (!this->_softRender->isPolyVisible[i]) continue;
 		this->_polynum = i;
 
 		const CPoly &clippedPoly = this->_softRender->GetClippedPolyByIndex(i);
@@ -1305,7 +1306,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 		for (size_t j = vertCount; j < MAX_CLIPPED_VERTS; j++)
 			this->_verts[j] = NULL;
 		
-		if (!this->_softRender->polyBackfacing[i])
+		if (!this->_softRender->isPolyBackFacing[i])
 		{
 			if (polyAttr.Mode == POLYGON_MODE_SHADOW)
 			{
@@ -1376,12 +1377,10 @@ void* SoftRasterizer_RunRasterizerUnit(void *arg)
 	return 0;
 }
 
-static void* SoftRasterizer_RunCalculateVertices(void *arg)
+static void* SoftRasterizer_RunProcessAllVertices(void *arg)
 {
 	SoftRasterizerRenderer *softRender = (SoftRasterizerRenderer *)arg;
-	softRender->performViewportTransforms();
-	softRender->performBackfaceTests();
-	softRender->performCoordAdjustment();
+	softRender->ProcessAllVertices();
 	
 	return NULL;
 }
@@ -1390,16 +1389,6 @@ static void* SoftRasterizer_RunGetAndLoadAllTextures(void *arg)
 {
 	SoftRasterizerRenderer *softRender = (SoftRasterizerRenderer *)arg;
 	softRender->GetAndLoadAllTextures();
-	
-	return NULL;
-}
-
-static void* SoftRasterizer_RunUpdateTables(void *arg)
-{
-	SoftRasterizerRenderer *softRender = (SoftRasterizerRenderer *)arg;
-	softRender->UpdateToonTable(softRender->currentRenderState->u16ToonTable);
-	softRender->UpdateFogTable(softRender->currentRenderState->fogDensityTable);
-	softRender->UpdateEdgeMarkColorTable(softRender->currentRenderState->edgeMarkColorTable);
 	
 	return NULL;
 }
@@ -1816,7 +1805,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 		}
 	}
 	
-	InitTables();
+	__InitTables();
 	Reset();
 	
 	if (_threadCount == 0)
@@ -1845,7 +1834,7 @@ SoftRasterizerRenderer::~SoftRasterizerRenderer()
 	this->_framebufferAttributes = NULL;
 }
 
-Render3DError SoftRasterizerRenderer::InitTables()
+void SoftRasterizerRenderer::__InitTables()
 {
 	static bool needTableInit = true;
 	
@@ -1863,8 +1852,6 @@ Render3DError SoftRasterizerRenderer::InitTables()
 		
 		needTableInit = false;
 	}
-	
-	return RENDER3DERROR_NOERR;
 }
 
 ClipperMode SoftRasterizerRenderer::GetPreferredPolygonClippingMode() const
@@ -1872,7 +1859,7 @@ ClipperMode SoftRasterizerRenderer::GetPreferredPolygonClippingMode() const
 	return (this->_enableHighPrecisionColorInterpolation) ? ClipperMode_FullColorInterpolate : ClipperMode_Full;
 }
 
-void SoftRasterizerRenderer::performViewportTransforms()
+void SoftRasterizerRenderer::_TransformVertices()
 {
 	const float wScalar = (float)this->_framebufferWidth  / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	const float hScalar = (float)this->_framebufferHeight / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -1928,24 +1915,57 @@ void SoftRasterizerRenderer::performViewportTransforms()
 
 			vert.coord[0] *= wScalar;
 			vert.coord[1] *= hScalar;
+			
+			//here is a hack which needs to be removed.
+			//at some point our shape engine needs these to be converted to "fixed point"
+			//which is currently just a float
+			vert.coord[0] = (float)iround(16.0f * vert.coord[0]);
+			vert.coord[1] = (float)iround(16.0f * vert.coord[1]);
 		}
 	}
 }
 
-void SoftRasterizerRenderer::performCoordAdjustment()
+void SoftRasterizerRenderer::_GetPolygonStates()
 {
+	static const bool visibleFunction[2][4] = {
+		//always false, backfacing, !backfacing, always true
+		{ false, false, true, true },
+		{ false, true, false, true }
+	};
+	
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
-		CPoly &clippedPoly = this->_clippedPolyList[i];
-		const PolygonType type = clippedPoly.type;
-		VERT *verts = &clippedPoly.clipVerts[0];
+		const CPoly &clippedPoly = this->_clippedPolyList[i];
+		const POLY &thePoly = *clippedPoly.poly;
+		const PolygonType polyType = clippedPoly.type;
+		const VERT *vert = &clippedPoly.clipVerts[0];
+		const u8 cullingMode = thePoly.attribute.SurfaceCullingMode;
 		
-		//here is a hack which needs to be removed.
-		//at some point our shape engine needs these to be converted to "fixed point"
-		//which is currently just a float
-		for (size_t j = 0; j < type; j++)
-			for (size_t k = 0; k < 2; k++)
-				verts[j].coord[k] = (float)iround(16.0f * verts[j].coord[k]);
+		//HACK: backface culling
+		//this should be moved to gfx3d, but first we need to redo the way the lists are built
+		//because it is too convoluted right now.
+		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
+		
+		//an older approach
+		//(not good enough for quads and other shapes)
+		//float ab[2], ac[2]; Vector2Copy(ab, verts[1].coord); Vector2Copy(ac, verts[2].coord); Vector2Subtract(ab, verts[0].coord);
+		//Vector2Subtract(ac, verts[0].coord); float cross = Vector2Cross(ab, ac); polyAttr.backfacing = (cross>0);
+		
+		//a better approach
+		// we have to support somewhat non-convex polygons (see NSMB world map 1st screen).
+		// this version should handle those cases better.
+		const size_t n = polyType - 1;
+		float facing = (vert[0].y + vert[n].y) * (vert[0].x - vert[n].x) +
+		               (vert[1].y + vert[0].y) * (vert[1].x - vert[0].x) +
+		               (vert[2].y + vert[1].y) * (vert[2].x - vert[1].x);
+		
+		for (size_t j = 2; j < n; j++)
+		{
+			facing += (vert[j+1].y + vert[j].y) * (vert[j+1].x - vert[j].x);
+		}
+		
+		this->isPolyBackFacing[i] = (facing < 0);
+		this->isPolyVisible[i] = visibleFunction[this->isPolyBackFacing[i]][cullingMode];
 	}
 }
 
@@ -1964,46 +1984,10 @@ void SoftRasterizerRenderer::GetAndLoadAllTextures()
 	}
 }
 
-void SoftRasterizerRenderer::performBackfaceTests()
+void SoftRasterizerRenderer::ProcessAllVertices()
 {
-	for (size_t i = 0; i < this->_clippedPolyCount; i++)
-	{
-		const CPoly &clippedPoly = this->_clippedPolyList[i];
-		const POLY &thePoly = *clippedPoly.poly;
-		const PolygonType type = clippedPoly.type;
-		const VERT *verts = &clippedPoly.clipVerts[0];
-		const u8 cullingMode = thePoly.attribute.SurfaceCullingMode;
-		
-		//HACK: backface culling
-		//this should be moved to gfx3d, but first we need to redo the way the lists are built
-		//because it is too convoluted right now.
-		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
-		
-		//an older approach
-		//(not good enough for quads and other shapes)
-		//float ab[2], ac[2]; Vector2Copy(ab, verts[1].coord); Vector2Copy(ac, verts[2].coord); Vector2Subtract(ab, verts[0].coord);
-		//Vector2Subtract(ac, verts[0].coord); float cross = Vector2Cross(ab, ac); polyAttr.backfacing = (cross>0);
-		
-		//a better approach
-		// we have to support somewhat non-convex polygons (see NSMB world map 1st screen).
-		// this version should handle those cases better.
-		const size_t n = type - 1;
-		float facing = (verts[0].y + verts[n].y) * (verts[0].x - verts[n].x)
-		+ (verts[1].y + verts[0].y) * (verts[1].x - verts[0].x)
-		+ (verts[2].y + verts[1].y) * (verts[2].x - verts[1].x);
-		for (size_t j = 2; j < n; j++)
-			facing += (verts[j+1].y + verts[j].y) * (verts[j+1].x - verts[j].x);
-		
-		polyBackfacing[i] = (facing < 0);
-		
-		static const bool visibleFunction[2][4] = {
-			//always false, backfacing, !backfacing, always true
-			{ false, false, true, true },
-			{ false, true, false, true }
-		};
-		
-		polyVisible[i] = visibleFunction[polyBackfacing[i]][cullingMode];
-	}
+	this->_TransformVertices();
+	this->_GetPolygonStates();
 }
 
 Render3DError SoftRasterizerRenderer::ApplyRenderingSettings(const GFX3D_State &renderState)
@@ -2034,26 +2018,25 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 	if (doMultithreadedStateSetup)
 	{
 		this->_task[0].execute(&SoftRasterizer_RunGetAndLoadAllTextures, this);
-		this->_task[1].execute(&SoftRasterizer_RunCalculateVertices, this);
+		this->_task[1].execute(&SoftRasterizer_RunProcessAllVertices, this);
 	}
 	else
 	{
 		this->GetAndLoadAllTextures();
-		this->performViewportTransforms();
-		this->performBackfaceTests();
-		this->performCoordAdjustment();
+		this->ProcessAllVertices();
 	}
 	
-	this->UpdateToonTable(engine.renderState.u16ToonTable);
+	// Convert the toon table colors
+	ColorspaceConvertBuffer555To6665Opaque<false, false>(engine.renderState.u16ToonTable, (u32 *)this->toonColor32LUT, 32);
 	
 	if (this->_enableEdgeMark)
 	{
-		this->UpdateEdgeMarkColorTable(this->currentRenderState->edgeMarkColorTable);
+		this->_UpdateEdgeMarkColorTable(this->currentRenderState->edgeMarkColorTable);
 	}
 	
 	if (this->_enableFog)
 	{
-		this->UpdateFogTable(this->currentRenderState->fogDensityTable);
+		this->_UpdateFogTable(this->currentRenderState->fogDensityTable);
 	}
 	
 	if (doMultithreadedStateSetup)
@@ -2062,12 +2045,10 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 		this->_task[0].finish();
 	}
 	
-	this->ClearFramebuffer(engine.renderState);
-	
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList)
+Render3DError SoftRasterizerRenderer::RenderGeometry()
 {
 	// Render the geometry
 	if (this->_threadCount > 0)
@@ -2109,24 +2090,22 @@ Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State &renderSt
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::UpdateEdgeMarkColorTable(const u16 *edgeMarkColorTable)
+void SoftRasterizerRenderer::_UpdateEdgeMarkColorTable(const u16 *edgeMarkColorTable)
 {
 	//TODO: need to test and find out whether these get grabbed at flush time, or at render time
 	//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
 	for (size_t i = 0; i < 8; i++)
 	{
-		this->edgeMarkTable[i].color = COLOR555TO6665(edgeMarkColorTable[i] & 0x7FFF, (this->currentRenderState->enableAntialiasing) ? 0x10 : 0x1F);
+		this->_edgeMarkTable[i].color = COLOR555TO6665(edgeMarkColorTable[i] & 0x7FFF, (this->currentRenderState->enableAntialiasing) ? 0x10 : 0x1F);
 		
 		//zero 20-jun-2013 - this doesnt make any sense. at least, it should be related to the 0x8000 bit. if this is undocumented behaviour, lets write about which scenario proves it here, or which scenario is requiring this code.
 		//// this seems to be the only thing that selectively disables edge marking
-		//edgeMarkDisabled[i] = (col == 0x7FFF);
-		this->edgeMarkDisabled[i] = false;
+		//_edgeMarkDisabled[i] = (col == 0x7FFF);
+		this->_edgeMarkDisabled[i] = false;
 	}
-	
-	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::UpdateFogTable(const u8 *fogDensityTable)
+void SoftRasterizerRenderer::_UpdateFogTable(const u8 *fogDensityTable)
 {
 #if 0
 	//TODO - this might be a little slow;
@@ -2136,7 +2115,7 @@ Render3DError SoftRasterizerRenderer::UpdateFogTable(const u8 *fogDensityTable)
 	{
 		if (i < offset)
 		{
-			fogTable[i] = densityTable[0];
+			this->_fogTable[i] = densityTable[0];
 			continue;
 		}
 		
@@ -2147,17 +2126,17 @@ Render3DError SoftRasterizerRenderer::UpdateFogTable(const u8 *fogDensityTable)
 			{
 				if (j == 0)
 				{
-					fogTable[i] = densityTable[0];
+					this->_fogTable[i] = densityTable[0];
 					goto done;
 				}
 				else
 				{
-					fogTable[i] = ((value-i)*(densityTable[j-1]) + (increment-(value-i))*(densityTable[j]))/increment;
+					this->_fogTable[i] = ((value-i)*(densityTable[j-1]) + (increment-(value-i))*(densityTable[j]))/increment;
 					goto done;
 				}
 			}
 		}
-		fogTable[i] = (densityTable[31]);
+		this->_fogTable[i] = (densityTable[31]);
 	done: ;
 	}
 #else
@@ -2173,7 +2152,7 @@ Render3DError SoftRasterizerRenderer::UpdateFogTable(const u8 *fogDensityTable)
 	
 	// If the fog factor is 127, then treat it as 128.
 	u8 fogFactor = (fogDensityTable[0] == 127) ? 128 : fogDensityTable[0];
-	memset(this->fogTable, fogFactor, iMin);
+	memset(this->_fogTable, fogFactor, iMin);
 	
 	for(u32 i = iMin; i < iMax; i++)
 	{
@@ -2183,14 +2162,12 @@ Render3DError SoftRasterizerRenderer::UpdateFogTable(const u8 *fogDensityTable)
 		u32 diff = value - i;
 		assert(j >= 1 && j < 32);
 		fogFactor = ((diff*(fogDensityTable[j-1]) + (increment-diff)*(fogDensityTable[j])) >> incrementDivShift);
-		this->fogTable[i] = (fogFactor == 127) ? 128 : fogFactor;
+		this->_fogTable[i] = (fogFactor == 127) ? 128 : fogFactor;
 	}
 	
 	fogFactor = (fogDensityTable[31] == 127) ? 128 : fogDensityTable[31];
-	memset(this->fogTable+iMax, fogFactor, 32768-iMax);
+	memset(this->_fogTable+iMax, fogFactor, 32768-iMax);
 #endif
-	
-	return RENDER3DERROR_NOERR;
 }
 
 Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasterizerPostProcessParams &param)
@@ -2210,7 +2187,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 				// - the level-start intro gets a pseudo-antialiasing effect around the silhouette,
 				// - the character edges in-level are clearly transparent, and also show well through shield powerups.
 				
-				if (!this->edgeMarkDisabled[polyID>>3] && this->_framebufferAttributes->isTranslucentPoly[i] == 0)
+				if (!this->_edgeMarkDisabled[polyID>>3] && this->_framebufferAttributes->isTranslucentPoly[i] == 0)
 				{
 					const bool isEdgeMarkingClearValues = ((polyID != this->_clearAttributes.opaquePolyID) && (depth < this->_clearAttributes.depth));
 					
@@ -2219,34 +2196,34 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 					const bool left  = (x < 1)                           ? isEdgeMarkingClearValues : ((polyID != this->_framebufferAttributes->opaquePolyID[i-1])                       && (depth >= this->_framebufferAttributes->depth[i-1]));
 					const bool up    = (y < 1)                           ? isEdgeMarkingClearValues : ((polyID != this->_framebufferAttributes->opaquePolyID[i-this->_framebufferWidth]) && (depth >= this->_framebufferAttributes->depth[i-this->_framebufferWidth]));
 					
-					FragmentColor edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
+					FragmentColor edgeMarkColor = this->_edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
 					
 					if (right)
 					{
 						if (x < this->_framebufferWidth - 1)
 						{
-							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+1] >> 3];
+							edgeMarkColor = this->_edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+1] >> 3];
 						}
 					}
 					else if (down)
 					{
 						if (y < this->_framebufferHeight - 1)
 						{
-							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+this->_framebufferWidth] >> 3];
+							edgeMarkColor = this->_edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+this->_framebufferWidth] >> 3];
 						}
 					}
 					else if (left)
 					{
 						if (x > 0)
 						{
-							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i-1] >> 3];
+							edgeMarkColor = this->_edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i-1] >> 3];
 						}
 					}
 					else if (up)
 					{
 						if (y > 0)
 						{
-							edgeMarkColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i-this->_framebufferWidth] >> 3];
+							edgeMarkColor = this->_edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i-this->_framebufferWidth] >> 3];
 						}
 					}
 					
@@ -2264,7 +2241,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 				
 				const size_t fogIndex = depth >> 9;
 				assert(fogIndex < 32768);
-				const u8 fog = (this->_framebufferAttributes->isFogged[i] != 0) ? this->fogTable[fogIndex] : 0;
+				const u8 fog = (this->_framebufferAttributes->isFogged[i] != 0) ? this->_fogTable[fogIndex] : 0;
 				
 				if (!param.fogAlphaOnly)
 				{
@@ -2303,17 +2280,6 @@ SoftRasterizerTexture* SoftRasterizerRenderer::GetLoadedTextureFromPolygon(const
 	}
 	
 	return theTexture;
-}
-
-Render3DError SoftRasterizerRenderer::UpdateToonTable(const u16 *toonTableBuffer)
-{
-	//convert the toon colors
-	for (size_t i = 0; i < 32; i++)
-	{
-		this->toonColor32LUT[i].color = COLOR555TO666(toonTableBuffer[i] & 0x7FFF);
-	}
-	
-	return RENDER3DERROR_NOERR;
 }
 
 Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID)
@@ -2396,38 +2362,7 @@ Render3DError SoftRasterizerRenderer::Reset()
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::Render(const GFX3D &engine)
-{
-	Render3DError error = RENDER3DERROR_NOERR;
-	this->_isPoweredOn = true;
-	
-	const u32 clearColorSwapped = LE_TO_LOCAL_32(engine.renderState.clearColor);
-	this->_clearColor6665.color = COLOR555TO6665(clearColorSwapped & 0x7FFF, (clearColorSwapped >> 16) & 0x1F);
-	
-	this->_clearAttributes.opaquePolyID = (clearColorSwapped >> 24) & 0x3F;
-	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
-	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
-	//but in spiderman2 some fires with polyid 0 try to render on top of the background
-	this->_clearAttributes.translucentPolyID = kUnsetTranslucentPolyID;
-	this->_clearAttributes.depth = engine.renderState.clearDepth;
-	this->_clearAttributes.stencil = 0;
-	this->_clearAttributes.isTranslucentPoly = 0;
-	this->_clearAttributes.polyFacing = PolyFacing_Unwritten;
-	this->_clearAttributes.isFogged = BIT15(clearColorSwapped);
-	
-	error = this->BeginRender(engine);
-	if (error != RENDER3DERROR_NOERR)
-	{
-		return error;
-	}
-	
-	this->RenderGeometry(engine.renderState, engine.polylist, &engine.indexlist);
-	this->EndRender(engine.render3DFrameCount);
-	
-	return error;
-}
-
-Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
+Render3DError SoftRasterizerRenderer::EndRender()
 {
 	// If we're not multithreaded, then just do the post-processing steps now.
 	if (!this->_renderGeometryNeedsFinish)

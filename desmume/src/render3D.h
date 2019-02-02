@@ -198,10 +198,9 @@ protected:
 	
 	
 	virtual Render3DError BeginRender(const GFX3D &engine);
-	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList);
-	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
-	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u16 offset, const u8 shift, const bool alphaOnly);
-	virtual Render3DError EndRender(const u64 frameCount);
+	virtual Render3DError RenderGeometry();
+	virtual Render3DError PostprocessFramebuffer();
+	virtual Render3DError EndRender();
 	virtual Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID);
@@ -224,7 +223,6 @@ public:
 	size_t GetFramebufferHeight();
 	bool IsFramebufferNativeSize();
 	
-	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
 	
 	virtual Render3DError ApplyRenderingSettings(const GFX3D_State &renderState);

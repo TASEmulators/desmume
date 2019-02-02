@@ -565,7 +565,7 @@ struct GFX3D_State
 	u32 fogShift;
 
 	bool invalidateToon;
-	u16 u16ToonTable[32];
+	CACHE_ALIGN u16 u16ToonTable[32];
 	u8 shininessTable[128];
 	u8 *fogDensityTable;		// Alias to MMU.ARM9_REG+0x0360
 	u16 *edgeMarkColorTable;	// Alias to MMU.ARM9_REG+0x0330

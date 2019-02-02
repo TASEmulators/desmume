@@ -66,7 +66,6 @@ class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 protected:
 	bool _is64kUBOSupported;
 	GLsync _syncBufferSetup;
-	CACHE_ALIGN OGLRenderStates _pendingRenderStates;
 	CACHE_ALIGN OGLPolyStates _pendingPolyStates[POLYLIST_SIZE];
 	
 	virtual Render3DError InitExtensions();
@@ -93,17 +92,13 @@ protected:
 	virtual void _SetupGeometryShaders(const OGLGeometryFlags flags);
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
-	virtual Render3DError ZeroDstAlphaPass(const POLYLIST *polyList, const INDEXLIST *indexList, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr);
+	virtual Render3DError ZeroDstAlphaPass(const CPoly *clippedPolyList, const size_t clippedPolyCount, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr);
 	virtual void _ResolveWorkingBackFacing();
 	virtual void _ResolveGeometry();
 	virtual Render3DError ReadBackPixels();
 	virtual Render3DError BeginRender(const GFX3D &engine);
-	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
-	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u16 offset, const u8 shift, const bool alphaOnly);
+	virtual Render3DError PostprocessFramebuffer();
 	
-	virtual Render3DError CreateToonTable();
-	virtual Render3DError DestroyToonTable();
-	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID);
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
 	

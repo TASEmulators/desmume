@@ -144,6 +144,9 @@ class SoftRasterizerRenderer : public Render3D_Altivec
 class SoftRasterizerRenderer : public Render3D
 #endif
 {
+private:
+	void __InitTables();
+	
 protected:
 	Task *_task;
 	SoftRasterizerClearParam _threadClearParam[SOFTRASTERIZER_MAX_THREADS];
@@ -158,9 +161,9 @@ protected:
 	size_t _customLinesPerThread;
 	size_t _customPixelsPerThread;
 	
-	u8 fogTable[32768];
-	FragmentColor edgeMarkTable[8];
-	bool edgeMarkDisabled[8];
+	u8 _fogTable[32768];
+	FragmentColor _edgeMarkTable[8];
+	bool _edgeMarkDisabled[8];
 	
 	bool _renderGeometryNeedsFinish;
 	
@@ -168,22 +171,25 @@ protected:
 	bool _enableLineHack;
 	
 	// SoftRasterizer-specific methods
-	virtual Render3DError InitTables();
+	void _UpdateEdgeMarkColorTable(const u16 *edgeMarkColorTable);
+	void _UpdateFogTable(const u8 *fogDensityTable);
+	void _TransformVertices();
+	void _GetPolygonStates();
 	
 	// Base rendering methods
 	virtual Render3DError BeginRender(const GFX3D &engine);
-	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList);
-	virtual Render3DError EndRender(const u64 frameCount);
+	virtual Render3DError RenderGeometry();
+	virtual Render3DError EndRender();
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID);
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 public:
 	int _debug_drawClippedUserPoly;
-	FragmentColor toonColor32LUT[32];
+	CACHE_ALIGN FragmentColor toonColor32LUT[32];
 	FragmentAttributesBuffer *_framebufferAttributes;
-	bool polyVisible[POLYLIST_SIZE];
-	bool polyBackfacing[POLYLIST_SIZE];
+	bool isPolyVisible[POLYLIST_SIZE];
+	bool isPolyBackFacing[POLYLIST_SIZE];
 	GFX3D_State *currentRenderState;
 	
 	bool _enableFragmentSamplingHack;
@@ -193,21 +199,15 @@ public:
 	
 	virtual ClipperMode GetPreferredPolygonClippingMode() const;
 	
-	void performViewportTransforms();
-	void performBackfaceTests();
-	void performCoordAdjustment();
 	void GetAndLoadAllTextures();
-	Render3DError UpdateEdgeMarkColorTable(const u16 *edgeMarkColorTable);
-	Render3DError UpdateFogTable(const u8 *fogDensityTable);
+	void ProcessAllVertices();
 	Render3DError RenderEdgeMarkingAndFog(const SoftRasterizerPostProcessParams &param);
 	
 	SoftRasterizerTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
 	
 	// Base rendering methods
-	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError Reset();
 	virtual Render3DError ApplyRenderingSettings(const GFX3D_State &renderState);
-	virtual Render3DError Render(const GFX3D &engine);
 	virtual Render3DError RenderFinish();
 	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);
 	virtual void ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel);
