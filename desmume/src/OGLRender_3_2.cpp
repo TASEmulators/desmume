@@ -39,6 +39,7 @@ OGLEXT(PFNGLCLEARBUFFERFIPROC, glClearBufferfi) // Core in v3.0
 
 // Shaders
 OGLEXT(PFNGLBINDFRAGDATALOCATIONPROC, glBindFragDataLocation) // Core in v3.0
+OGLEXT(PFNGLBINDFRAGDATALOCATIONINDEXEDPROC, glBindFragDataLocationIndexed) // Core in v3.0
 
 // Buffer Objects
 OGLEXT(PFNGLMAPBUFFERRANGEPROC, glMapBufferRange) // Core in v3.0
