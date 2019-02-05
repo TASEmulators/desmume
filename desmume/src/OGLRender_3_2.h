@@ -65,6 +65,7 @@ class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 {
 protected:
 	bool _is64kUBOSupported;
+	bool _isDualSourceBlendingSupported;
 	bool _isSampleShadingSupported;
 	bool _isConservativeDepthSupported;
 	bool _isConservativeDepthAMDSupported;
