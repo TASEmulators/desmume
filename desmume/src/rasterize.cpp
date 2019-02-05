@@ -1724,6 +1724,8 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	_deviceInfo.maxAnisotropy = 1.0f;
 	_deviceInfo.maxSamples = 0;
 	
+	_clippedPolyList = (CPoly *)malloc_alignedCacheLine(POLYLIST_SIZE * 2 * sizeof(CPoly));
+	
 	_task = NULL;
 	
 	_debug_drawClippedUserPoly = -1;
@@ -1832,6 +1834,9 @@ SoftRasterizerRenderer::~SoftRasterizerRenderer()
 	
 	delete this->_framebufferAttributes;
 	this->_framebufferAttributes = NULL;
+	
+	free_aligned(this->_clippedPolyList);
+	this->_clippedPolyList = NULL;
 }
 
 void SoftRasterizerRenderer::__InitTables()
@@ -2011,7 +2016,7 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 	this->currentRenderState = (GFX3D_State *)&engine.renderState;
 	this->_clippedPolyCount = engine.clippedPolyCount;
 	this->_clippedPolyOpaqueCount = engine.clippedPolyOpaqueCount;
-	this->_clippedPolyList = engine.clippedPolyList;
+	memcpy(this->_clippedPolyList, engine.clippedPolyList, this->_clippedPolyCount * sizeof(CPoly));
 	
 	const bool doMultithreadedStateSetup = (this->_threadCount >= 2);
 	
