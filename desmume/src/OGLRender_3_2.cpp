@@ -333,7 +333,7 @@ void main()\n\
 #if USE_DEPTH_LEQUAL_POLYGON_FACING && !DRAW_MODE_OPAQUE\n\
 		if (drawModeDepthEqualsTest)\n\
 		{\n\
-			bool isOpaqueDstBackFacing = bool( texture(inBackFacing, vec2(gl_FragCoord.x/FRAMEBUFFER_SIZE_X, gl_FragCoord.y/FRAMEBUFFER_SIZE_Y)).r );\n\
+			bool isOpaqueDstBackFacing = bool( texelFetch(inBackFacing, ivec2(gl_FragCoord.xy), 0).r );\n\
 			if ( !gl_FrontFacing || !isOpaqueDstBackFacing )\n\
 			{\n\
 				discard;\n\
@@ -377,24 +377,20 @@ void main()\n\
 // Vertex shader for determining which pixels have a zero alpha, GLSL 1.50
 static const char *GeometryZeroDstAlphaPixelMaskVtxShader_150 = {"\
 in vec2 inPosition;\n\
-in vec2 inTexCoord0;\n\
-out vec2 texCoord;\n\
 \n\
 void main()\n\
 {\n\
-	texCoord = inTexCoord0;\n\
 	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 }\n\
 "};
 
 // Fragment shader for determining which pixels have a zero alpha, GLSL 1.50
 static const char *GeometryZeroDstAlphaPixelMaskFragShader_150 = {"\
-in vec2 texCoord;\n\
 uniform sampler2D texInFragColor;\n\
 \n\
 void main()\n\
 {\n\
-	vec4 inFragColor = texture(texInFragColor, texCoord);\n\
+	vec4 inFragColor = texelFetch(texInFragColor, ivec2(gl_FragCoord.xy), 0);\n\
 	\n\
 	if (inFragColor.a <= 0.001)\n\
 	{\n\
@@ -403,28 +399,13 @@ void main()\n\
 }\n\
 "};
 
-// Vertex shader for determining which pixels have a zero alpha, GLSL 1.50
-static const char *MSGeometryZeroDstAlphaPixelMaskVtxShader_150 = {"\
-in vec2 inPosition;\n\
-in vec2 inTexCoord0;\n\
-uniform sampler2DMS texInFragColor;\n\
-out vec2 pixelCoord;\n\
-\n\
-void main()\n\
-{\n\
-	pixelCoord = inTexCoord0 * vec2(FRAMEBUFFER_SIZE_X, FRAMEBUFFER_SIZE_Y);\n\
-	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
-}\n\
-"};
-
 // Fragment shader for determining which pixels have a zero alpha, GLSL 1.50
 static const char *MSGeometryZeroDstAlphaPixelMaskFragShader_150 = {"\
-in vec2 pixelCoord;\n\
 uniform sampler2DMS texInFragColor;\n\
 \n\
 void main()\n\
 {\n\
-	vec4 inFragColor = texelFetch(texInFragColor, ivec2(pixelCoord), gl_SampleID);\n\
+	vec4 inFragColor = texelFetch(texInFragColor, ivec2(gl_FragCoord.xy), gl_SampleID);\n\
 	\n\
 	if (inFragColor.a <= 0.001)\n\
 	{\n\
@@ -438,55 +419,7 @@ static const char *EdgeMarkVtxShader_150 = {"\
 in vec2 inPosition;\n\
 in vec2 inTexCoord0;\n\
 \n\
-layout (std140) uniform RenderStates\n\
-{\n\
-	bool enableAntialiasing;\n\
-	bool enableFogAlphaOnly;\n\
-	int clearPolyID;\n\
-	float clearDepth;\n\
-	float alphaTestRef;\n\
-	float fogOffset;\n\
-	float fogStep;\n\
-	float pad_0;\n\
-	float fogDensity_00;\n\
-	float fogDensity_01;\n\
-	float fogDensity_02;\n\
-	float fogDensity_03;\n\
-	float fogDensity_04;\n\
-	float fogDensity_05;\n\
-	float fogDensity_06;\n\
-	float fogDensity_07;\n\
-	float fogDensity_08;\n\
-	float fogDensity_09;\n\
-	float fogDensity_10;\n\
-	float fogDensity_11;\n\
-	float fogDensity_12;\n\
-	float fogDensity_13;\n\
-	float fogDensity_14;\n\
-	float fogDensity_15;\n\
-	float fogDensity_16;\n\
-	float fogDensity_17;\n\
-	float fogDensity_18;\n\
-	float fogDensity_19;\n\
-	float fogDensity_20;\n\
-	float fogDensity_21;\n\
-	float fogDensity_22;\n\
-	float fogDensity_23;\n\
-	float fogDensity_24;\n\
-	float fogDensity_25;\n\
-	float fogDensity_26;\n\
-	float fogDensity_27;\n\
-	float fogDensity_28;\n\
-	float fogDensity_29;\n\
-	float fogDensity_30;\n\
-	float fogDensity_31;\n\
-	vec4 fogColor;\n\
-	vec4 edgeColor[8];\n\
-	vec4 toonColor[32];\n\
-} state;\n\
-\n\
 out vec2 texCoord[5];\n\
-out vec2 pixelCoord;\n\
 \n\
 void main()\n\
 {\n\
@@ -498,8 +431,6 @@ void main()\n\
 	texCoord[3] = inTexCoord0 + (vec2(-1.0, 0.0) * texInvScale); // Left\n\
 	texCoord[4] = inTexCoord0 + (vec2( 0.0,-1.0) * texInvScale); // Up\n\
 	\n\
-	pixelCoord = inTexCoord0 * vec2(FRAMEBUFFER_SIZE_X, FRAMEBUFFER_SIZE_Y);\n\
-	\n\
 	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 }\n\
 "};
@@ -507,7 +438,6 @@ void main()\n\
 // Fragment shader for applying edge marking, GLSL 1.50
 static const char *EdgeMarkFragShader_150 = {"\
 in vec2 texCoord[5];\n\
-in vec2 pixelCoord;\n\
 \n\
 layout (std140) uniform RenderStates\n\
 {\n\
@@ -598,9 +528,9 @@ void main()\n\
 		\n\
 		bool isEdgeMarkingClearValues = ((polyID[0] != state.clearPolyID) && (depth[0] < state.clearDepth) && !isWireframe[0]);\n\
 		\n\
-		if ( ((pixelCoord.x >= FRAMEBUFFER_SIZE_X-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[1]) && (depth[0] >= depth[1]) && !isWireframe[1])) )\n\
+		if ( ((gl_FragCoord.x >= FRAMEBUFFER_SIZE_X-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[1]) && (depth[0] >= depth[1]) && !isWireframe[1])) )\n\
 		{\n\
-			if (pixelCoord.x >= FRAMEBUFFER_SIZE_X-1.0)\n\
+			if (gl_FragCoord.x >= FRAMEBUFFER_SIZE_X-1.0)\n\
 			{\n\
 				outEdgeColor = state.edgeColor[polyID[0]/8];\n\
 			}\n\
@@ -609,9 +539,9 @@ void main()\n\
 				outEdgeColor = state.edgeColor[polyID[1]/8];\n\
 			}\n\
 		}\n\
-		else if ( ((pixelCoord.y >= FRAMEBUFFER_SIZE_Y-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[2]) && (depth[0] >= depth[2]) && !isWireframe[2])) )\n\
+		else if ( ((gl_FragCoord.y >= FRAMEBUFFER_SIZE_Y-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[2]) && (depth[0] >= depth[2]) && !isWireframe[2])) )\n\
 		{\n\
-			if (pixelCoord.y >= FRAMEBUFFER_SIZE_Y-1.0)\n\
+			if (gl_FragCoord.y >= FRAMEBUFFER_SIZE_Y-1.0)\n\
 			{\n\
 				outEdgeColor = state.edgeColor[polyID[0]/8];\n\
 			}\n\
@@ -620,9 +550,9 @@ void main()\n\
 				outEdgeColor = state.edgeColor[polyID[2]/8];\n\
 			}\n\
 		}\n\
-		else if ( ((pixelCoord.x < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[3]) && (depth[0] >= depth[3]) && !isWireframe[3])) )\n\
+		else if ( ((gl_FragCoord.x < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[3]) && (depth[0] >= depth[3]) && !isWireframe[3])) )\n\
 		{\n\
-			if (pixelCoord.x < 1.0)\n\
+			if (gl_FragCoord.x < 1.0)\n\
 			{\n\
 				outEdgeColor = state.edgeColor[polyID[0]/8];\n\
 			}\n\
@@ -631,9 +561,9 @@ void main()\n\
 				outEdgeColor = state.edgeColor[polyID[3]/8];\n\
 			}\n\
 		}\n\
-		else if ( ((pixelCoord.y < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[4]) && (depth[0] >= depth[4]) && !isWireframe[4])) )\n\
+		else if ( ((gl_FragCoord.y < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[4]) && (depth[0] >= depth[4]) && !isWireframe[4])) )\n\
 		{\n\
-			if (pixelCoord.y < 1.0)\n\
+			if (gl_FragCoord.y < 1.0)\n\
 			{\n\
 				outEdgeColor = state.edgeColor[polyID[0]/8];\n\
 			}\n\
@@ -649,68 +579,15 @@ void main()\n\
 // Vertex shader for applying fog, GLSL 1.50
 static const char *FogVtxShader_150 = {"\
 in vec2 inPosition;\n\
-in vec2 inTexCoord0;\n\
-\n\
-layout (std140) uniform RenderStates\n\
-{\n\
-	bool enableAntialiasing;\n\
-	bool enableFogAlphaOnly;\n\
-	int clearPolyID;\n\
-	float clearDepth;\n\
-	float alphaTestRef;\n\
-	float fogOffset;\n\
-	float fogStep;\n\
-	float pad_0;\n\
-	float fogDensity_00;\n\
-	float fogDensity_01;\n\
-	float fogDensity_02;\n\
-	float fogDensity_03;\n\
-	float fogDensity_04;\n\
-	float fogDensity_05;\n\
-	float fogDensity_06;\n\
-	float fogDensity_07;\n\
-	float fogDensity_08;\n\
-	float fogDensity_09;\n\
-	float fogDensity_10;\n\
-	float fogDensity_11;\n\
-	float fogDensity_12;\n\
-	float fogDensity_13;\n\
-	float fogDensity_14;\n\
-	float fogDensity_15;\n\
-	float fogDensity_16;\n\
-	float fogDensity_17;\n\
-	float fogDensity_18;\n\
-	float fogDensity_19;\n\
-	float fogDensity_20;\n\
-	float fogDensity_21;\n\
-	float fogDensity_22;\n\
-	float fogDensity_23;\n\
-	float fogDensity_24;\n\
-	float fogDensity_25;\n\
-	float fogDensity_26;\n\
-	float fogDensity_27;\n\
-	float fogDensity_28;\n\
-	float fogDensity_29;\n\
-	float fogDensity_30;\n\
-	float fogDensity_31;\n\
-	vec4 fogColor;\n\
-	vec4 edgeColor[8];\n\
-	vec4 toonColor[32];\n\
-} state;\n\
-\n\
-out vec2 texCoord;\n\
 \n\
 void main()\n\
 {\n\
-	texCoord = inTexCoord0;\n\
 	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 }\n\
 "};
 
 // Fragment shader for applying fog, GLSL 1.50
 static const char *FogFragShader_150 = {"\
-in vec2 texCoord;\n\
-\n\
 layout (std140) uniform RenderStates\n\
 {\n\
 	bool enableAntialiasing;\n\
@@ -766,14 +643,14 @@ out vec4 outFragColor;\n\
 \n\
 void main()\n\
 {\n\
-	outFragColor = texture(texInFragColor, texCoord);\n\
+	outFragColor = texelFetch(texInFragColor, ivec2(gl_FragCoord.xy), 0);\n\
 	\n\
-	vec4 inFogAttributes = texture(texInFogAttributes, texCoord);\n\
+	vec4 inFogAttributes = texelFetch(texInFogAttributes, ivec2(gl_FragCoord.xy), 0);\n\
 	bool polyEnableFog = (inFogAttributes.r > 0.999);\n\
 	\n\
 	if (polyEnableFog)\n\
 	{\n\
-		float inFragDepth = texture(texInFragDepth, texCoord).r;\n\
+		float inFragDepth = texelFetch(texInFragDepth, ivec2(gl_FragCoord.xy), 0).r;\n\
 		float fogMixWeight = 0.0;\n\
 		\n\
 		if (inFragDepth <= FOG_DEPTH_COMPARE_0)\n\
@@ -917,21 +794,15 @@ void main()\n\
 // Vertex shader for the final framebuffer, GLSL 1.50
 static const char *FramebufferOutputVtxShader_150 = {"\
 in vec2 inPosition;\n\
-in vec2 inTexCoord0;\n\
-\n\
-out vec2 texCoord;\n\
 \n\
 void main()\n\
 {\n\
-	texCoord = vec2(inTexCoord0.x, (FRAMEBUFFER_SIZE_Y - (FRAMEBUFFER_SIZE_Y * inTexCoord0.y)) / FRAMEBUFFER_SIZE_Y);\n\
 	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 }\n\
 "};
 
 // Fragment shader for the final framebuffer, GLSL 1.50
 static const char *FramebufferOutput6665FragShader_150 = {"\
-in vec2 texCoord;\n\
-\n\
 uniform sampler2D texInFragColor;\n\
 \n\
 out vec4 outFragColor6665;\n\
@@ -940,7 +811,7 @@ void main()\n\
 {\n\
 	// Note that we swap B and R since pixel readbacks are done in BGRA format for fastest\n\
 	// performance. The final color is still in RGBA format.\n\
-	outFragColor6665     = texture(texInFragColor, texCoord).bgra;\n\
+	outFragColor6665     = texelFetch(texInFragColor, ivec2(gl_FragCoord.x, FRAMEBUFFER_SIZE_Y - gl_FragCoord.y), 0).bgra;\n\
 	outFragColor6665     = floor((outFragColor6665 * 255.0) + 0.5);\n\
 	outFragColor6665.rgb = floor(outFragColor6665.rgb / 4.0);\n\
 	outFragColor6665.a   = floor(outFragColor6665.a   / 8.0);\n\
@@ -961,6 +832,9 @@ void OGLCreateRenderer_3_2(OpenGLRenderer **rendererPtr)
 OpenGLRenderer_3_2::OpenGLRenderer_3_2()
 {
 	_is64kUBOSupported = false;
+	_isSampleShadingSupported = false;
+	_isConservativeDepthSupported = false;
+	_isConservativeDepthAMDSupported = false;
 	_syncBufferSetup = NULL;
 }
 
@@ -1014,9 +888,9 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	this->willFlipOnlyFramebufferOnGPU = true;
 	this->willFlipAndConvertFramebufferOnGPU = true;
 	
-	this->isSampleShadingSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_sample_shading");
-	this->isConservativeDepthSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0);
-	this->isConservativeDepthAMDSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_AMD_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0);
+	this->_isSampleShadingSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_sample_shading");
+	this->_isConservativeDepthSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0);
+	this->_isConservativeDepthAMDSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_AMD_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0);
 	
 	this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
 	this->_emulateShadowPolygon = CommonSettings.OpenGL_Emulation_ShadowPolygon;
@@ -1044,9 +918,9 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 		return error;
 	}
 	
-	if (this->isSampleShadingSupported)
+	if (this->_isSampleShadingSupported)
 	{
-		error = this->CreateMSGeometryZeroDstAlphaProgram(MSGeometryZeroDstAlphaPixelMaskVtxShader_150, MSGeometryZeroDstAlphaPixelMaskFragShader_150);
+		error = this->CreateMSGeometryZeroDstAlphaProgram(GeometryZeroDstAlphaPixelMaskVtxShader_150, MSGeometryZeroDstAlphaPixelMaskFragShader_150);
 		if (error == OGLERROR_NOERR)
 		{
 			this->willUsePerSampleZeroDstPass = true;
@@ -1057,7 +931,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 			this->DestroyGeometryPrograms();
 			this->DestroyGeometryZeroDstAlphaProgram();
 			this->isShaderSupported = false;
-			this->isSampleShadingSupported = false;
+			this->_isSampleShadingSupported = false;
 			this->willUsePerSampleZeroDstPass = false;
 			
 			return error;
@@ -1532,7 +1406,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	programFlags.value = 0;
 	
 	std::stringstream vtxShaderHeader;
-	if (this->isConservativeDepthSupported || this->isConservativeDepthAMDSupported)
+	if (this->_isConservativeDepthSupported || this->_isConservativeDepthAMDSupported)
 	{
 		vtxShaderHeader << "#version 400\n";
 	}
@@ -1547,22 +1421,19 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	std::string vtxShaderCode  = vtxShaderHeader.str() + std::string(GeometryVtxShader_150);
 	
 	std::stringstream fragShaderHeader;
-	if (this->isConservativeDepthSupported || this->isConservativeDepthAMDSupported)
+	if (this->_isConservativeDepthSupported || this->_isConservativeDepthAMDSupported)
 	{
 		fragShaderHeader << "#version 400\n";
 		
 		// Prioritize using GL_AMD_conservative_depth over GL_ARB_conservative_depth, since AMD drivers
 		// seem to have problems with GL_ARB_conservative_depth.
-		fragShaderHeader << ((this->isConservativeDepthAMDSupported) ? "#extension GL_AMD_conservative_depth : require\n" : "#extension GL_ARB_conservative_depth : require\n");
+		fragShaderHeader << ((this->_isConservativeDepthAMDSupported) ? "#extension GL_AMD_conservative_depth : require\n" : "#extension GL_ARB_conservative_depth : require\n");
 	}
 	else
 	{
 		fragShaderHeader << "#version 150\n";
 	}
-	fragShaderHeader << "#define FRAMEBUFFER_SIZE_X " << this->_framebufferWidth  << ".0 \n";
-	fragShaderHeader << "#define FRAMEBUFFER_SIZE_Y " << this->_framebufferHeight << ".0 \n";
-	fragShaderHeader << "\n";
-	fragShaderHeader << "#define IS_CONSERVATIVE_DEPTH_SUPPORTED " << ((this->isConservativeDepthSupported || this->isConservativeDepthAMDSupported) ? 1 : 0) << "\n";
+	fragShaderHeader << "#define IS_CONSERVATIVE_DEPTH_SUPPORTED " << ((this->_isConservativeDepthSupported || this->_isConservativeDepthAMDSupported) ? 1 : 0) << "\n";
 	fragShaderHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0\n";
 	fragShaderHeader << "\n";
 	
@@ -1721,7 +1592,6 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryZeroDstAlphaProgram(const char *
 	}
 	
 	glBindAttribLocation(OGLRef.programGeometryZeroDstAlphaID, OGLVertexAttributeID_Position, "inPosition");
-	glBindAttribLocation(OGLRef.programGeometryZeroDstAlphaID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
 	
 	glLinkProgram(OGLRef.programGeometryZeroDstAlphaID);
 	if (!this->ValidateShaderProgramLink(OGLRef.programGeometryZeroDstAlphaID))
@@ -1754,8 +1624,6 @@ Render3DError OpenGLRenderer_3_2::CreateMSGeometryZeroDstAlphaProgram(const char
 	std::stringstream shaderHeader;
 	shaderHeader << "#version 150\n";
 	shaderHeader << "#extension GL_ARB_sample_shading : require\n";
-	shaderHeader << "#define FRAMEBUFFER_SIZE_X " << this->_framebufferWidth  << ".0 \n";
-	shaderHeader << "#define FRAMEBUFFER_SIZE_Y " << this->_framebufferHeight << ".0 \n";
 	shaderHeader << "\n";
 	
 	std::string vtxShaderCode  = shaderHeader.str() + std::string(vtxShaderCString);
@@ -1775,7 +1643,6 @@ Render3DError OpenGLRenderer_3_2::CreateMSGeometryZeroDstAlphaProgram(const char
 	}
 	
 	glBindAttribLocation(OGLRef.programMSGeometryZeroDstAlphaID, OGLVertexAttributeID_Position, "inPosition");
-	glBindAttribLocation(OGLRef.programMSGeometryZeroDstAlphaID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
 	
 	glLinkProgram(OGLRef.programMSGeometryZeroDstAlphaID);
 	if (!this->ValidateShaderProgramLink(OGLRef.programMSGeometryZeroDstAlphaID))
@@ -2026,7 +1893,6 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	}
 	
 	glBindAttribLocation(shaderID.program, OGLVertexAttributeID_Position, "inPosition");
-	glBindAttribLocation(shaderID.program, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
 	glBindFragDataLocation(shaderID.program, 0, "outFragColor");
 	
 	glLinkProgram(shaderID.program);
@@ -2087,7 +1953,6 @@ Render3DError OpenGLRenderer_3_2::CreateFramebufferOutput6665Program(const size_
 	}
 	
 	glBindAttribLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], OGLVertexAttributeID_Position, "inPosition");
-	glBindAttribLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], OGLVertexAttributeID_TexCoord0, "inTexCoord0");
 	glBindFragDataLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], 0, "outFragColor6665");
 	
 	glLinkProgram(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex]);
@@ -2987,16 +2852,14 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	this->DestroyEdgeMarkProgram();
 	this->DestroyFramebufferOutput6665Programs();
 	this->DestroyMSGeometryZeroDstAlphaProgram();
-	this->DestroyGeometryPrograms();
 	
-	this->CreateGeometryPrograms();
 	this->CreateEdgeMarkProgram(EdgeMarkVtxShader_150, EdgeMarkFragShader_150);
 	this->CreateFramebufferOutput6665Program(0, FramebufferOutputVtxShader_150, FramebufferOutput6665FragShader_150);
 	this->CreateFramebufferOutput6665Program(1, FramebufferOutputVtxShader_150, FramebufferOutput6665FragShader_150);
 	
-	if (this->isSampleShadingSupported)
+	if (this->_isSampleShadingSupported)
 	{
-		Render3DError shaderError = this->CreateMSGeometryZeroDstAlphaProgram(MSGeometryZeroDstAlphaPixelMaskVtxShader_150, MSGeometryZeroDstAlphaPixelMaskFragShader_150);
+		Render3DError shaderError = this->CreateMSGeometryZeroDstAlphaProgram(GeometryZeroDstAlphaPixelMaskVtxShader_150, MSGeometryZeroDstAlphaPixelMaskFragShader_150);
 		this->willUsePerSampleZeroDstPass = (shaderError == OGLERROR_NOERR);
 	}
 	

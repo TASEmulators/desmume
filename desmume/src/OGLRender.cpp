@@ -517,7 +517,6 @@ static const char *EdgeMarkVtxShader_100 = {"\
 attribute vec2 inPosition;\n\
 attribute vec2 inTexCoord0;\n\
 varying vec2 texCoord[5];\n\
-varying vec2 pixelCoord;\n\
 \n\
 void main()\n\
 {\n\
@@ -529,8 +528,6 @@ void main()\n\
 	texCoord[3] = inTexCoord0 + (vec2(-1.0, 0.0) * texInvScale); // Left\n\
 	texCoord[4] = inTexCoord0 + (vec2( 0.0,-1.0) * texInvScale); // Up\n\
 	\n\
-	pixelCoord = inTexCoord0 * vec2(FRAMEBUFFER_SIZE_X, FRAMEBUFFER_SIZE_Y);\n\
-	\n\
 	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 }\n\
 "};
@@ -538,7 +535,6 @@ void main()\n\
 // Fragment shader for applying edge marking, GLSL 1.00
 static const char *EdgeMarkFragShader_100 = {"\
 varying vec2 texCoord[5];\n\
-varying vec2 pixelCoord;\n\
 \n\
 uniform sampler2D texInFragDepth;\n\
 uniform sampler2D texInPolyID;\n\
@@ -584,9 +580,9 @@ void main()\n\
 		\n\
 		bool isEdgeMarkingClearValues = ((polyID[0] != clearPolyID) && (depth[0] < clearDepth) && !isWireframe[0]);\n\
 		\n\
-		if ( ((pixelCoord.x >= FRAMEBUFFER_SIZE_X-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[1]) && (depth[0] >= depth[1]) && !isWireframe[1])) )\n\
+		if ( ((gl_FragCoord.x >= FRAMEBUFFER_SIZE_X-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[1]) && (depth[0] >= depth[1]) && !isWireframe[1])) )\n\
 		{\n\
-			if (pixelCoord.x >= FRAMEBUFFER_SIZE_X-1.0)\n\
+			if (gl_FragCoord.x >= FRAMEBUFFER_SIZE_X-1.0)\n\
 			{\n\
 				newEdgeColor = stateEdgeColor[polyID[0]/8];\n\
 			}\n\
@@ -595,9 +591,9 @@ void main()\n\
 				newEdgeColor = stateEdgeColor[polyID[1]/8];\n\
 			}\n\
 		}\n\
-		else if ( ((pixelCoord.y >= FRAMEBUFFER_SIZE_Y-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[2]) && (depth[0] >= depth[2]) && !isWireframe[2])) )\n\
+		else if ( ((gl_FragCoord.y >= FRAMEBUFFER_SIZE_Y-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[2]) && (depth[0] >= depth[2]) && !isWireframe[2])) )\n\
 		{\n\
-			if (pixelCoord.y >= FRAMEBUFFER_SIZE_Y-1.0)\n\
+			if (gl_FragCoord.y >= FRAMEBUFFER_SIZE_Y-1.0)\n\
 			{\n\
 				newEdgeColor = stateEdgeColor[polyID[0]/8];\n\
 			}\n\
@@ -606,9 +602,9 @@ void main()\n\
 				newEdgeColor = stateEdgeColor[polyID[2]/8];\n\
 			}\n\
 		}\n\
-		else if ( ((pixelCoord.x < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[3]) && (depth[0] >= depth[3]) && !isWireframe[3])) )\n\
+		else if ( ((gl_FragCoord.x < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[3]) && (depth[0] >= depth[3]) && !isWireframe[3])) )\n\
 		{\n\
-			if (pixelCoord.x < 1.0)\n\
+			if (gl_FragCoord.x < 1.0)\n\
 			{\n\
 				newEdgeColor = stateEdgeColor[polyID[0]/8];\n\
 			}\n\
@@ -617,9 +613,9 @@ void main()\n\
 				newEdgeColor = stateEdgeColor[polyID[3]/8];\n\
 			}\n\
 		}\n\
-		else if ( ((pixelCoord.y < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[4]) && (depth[0] >= depth[4]) && !isWireframe[4])) )\n\
+		else if ( ((gl_FragCoord.y < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[4]) && (depth[0] >= depth[4]) && !isWireframe[4])) )\n\
 		{\n\
-			if (pixelCoord.y < 1.0)\n\
+			if (gl_FragCoord.y < 1.0)\n\
 			{\n\
 				newEdgeColor = stateEdgeColor[polyID[0]/8];\n\
 			}\n\
@@ -1287,9 +1283,6 @@ OpenGLRenderer::OpenGLRenderer()
 	isFBOSupported = false;
 	isMultisampledFBOSupported = false;
 	isShaderSupported = false;
-	isSampleShadingSupported = false;
-	isConservativeDepthSupported = false;
-	isConservativeDepthAMDSupported = false;
 	isVAOSupported = false;
 	willFlipOnlyFramebufferOnGPU = false;
 	willFlipAndConvertFramebufferOnGPU = false;

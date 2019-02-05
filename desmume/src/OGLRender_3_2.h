@@ -65,6 +65,10 @@ class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 {
 protected:
 	bool _is64kUBOSupported;
+	bool _isSampleShadingSupported;
+	bool _isConservativeDepthSupported;
+	bool _isConservativeDepthAMDSupported;
+	
 	GLsync _syncBufferSetup;
 	CACHE_ALIGN OGLPolyStates _pendingPolyStates[POLYLIST_SIZE];
 	
