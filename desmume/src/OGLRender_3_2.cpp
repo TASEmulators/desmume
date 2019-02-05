@@ -39,6 +39,7 @@ OGLEXT(PFNGLCLEARBUFFERFIPROC, glClearBufferfi) // Core in v3.0
 
 // Shaders
 OGLEXT(PFNGLBINDFRAGDATALOCATIONPROC, glBindFragDataLocation) // Core in v3.0
+OGLEXT(PFNGLBINDFRAGDATALOCATIONINDEXEDPROC, glBindFragDataLocationIndexed) // Core in v3.3
 
 // Buffer Objects
 OGLEXT(PFNGLMAPBUFFERRANGEPROC, glMapBufferRange) // Core in v3.0
@@ -2030,6 +2031,22 @@ void OpenGLRenderer_3_2::GetExtensionSet(std::set<std::string> *oglExtensionSet)
 		std::string extensionName = std::string((const char *)glGetStringi(GL_EXTENSIONS, i));
 		oglExtensionSet->insert(extensionName);
 	}
+}
+
+Render3DError OpenGLRenderer_3_2::InitFinalRenderStates(const std::set<std::string> *oglExtensionSet)
+{
+	Render3DError error = OpenGLRenderer_2_1::InitFinalRenderStates(oglExtensionSet);
+	if (error != OGLERROR_NOERR)
+	{
+		return error;
+	}
+	
+	if (this->_isDualSourceBlendingSupported)
+	{
+		INITOGLEXT(PFNGLBINDFRAGDATALOCATIONINDEXEDPROC, glBindFragDataLocationIndexed)
+	}
+	
+	return error;
 }
 
 void OpenGLRenderer_3_2::_SetupGeometryShaders(const OGLGeometryFlags flags)

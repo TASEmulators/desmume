@@ -94,6 +94,7 @@ protected:
 	virtual Render3DError CreateFramebufferOutput8888Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString);
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
+	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
 	virtual void _SetupGeometryShaders(const OGLGeometryFlags flags);
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
