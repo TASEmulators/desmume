@@ -158,7 +158,9 @@ OGLEXT(PFNGLACTIVETEXTUREARBPROC, glActiveTextureARB)
 #endif
 
 // Blending
+#if !defined(GLX_H)
 OGLEXT(PFNGLBLENDEQUATIONPROC, glBlendEquation) // Core in v1.2
+#endif
 OGLEXT(PFNGLBLENDFUNCSEPARATEPROC, glBlendFuncSeparate) // Core in v1.4
 OGLEXT(PFNGLBLENDEQUATIONSEPARATEPROC, glBlendEquationSeparate) // Core in v2.0
 
@@ -234,13 +236,15 @@ OGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 static void OGLLoadEntryPoints_Legacy()
 {
 	// Textures
-	#if !defined(GLX_H)
+#if !defined(GLX_H)
 	INITOGLEXT(PFNGLACTIVETEXTUREPROC, glActiveTexture) // Core in v1.3
 	INITOGLEXT(PFNGLACTIVETEXTUREARBPROC, glActiveTextureARB)
-	#endif
+#endif
 
 	// Blending
+#if !defined(GLX_H)
 	INITOGLEXT(PFNGLBLENDEQUATIONPROC, glBlendEquation) // Core in v1.2
+#endif
 	INITOGLEXT(PFNGLBLENDFUNCSEPARATEPROC, glBlendFuncSeparate) // Core in v1.4
 	INITOGLEXT(PFNGLBLENDEQUATIONSEPARATEPROC, glBlendEquationSeparate) // Core in v2.0
 
