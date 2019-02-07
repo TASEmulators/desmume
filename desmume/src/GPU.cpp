@@ -8287,6 +8287,8 @@ __m128i GPUEngineA::_RenderLine_DispCapture_BlendFunc_SSE2(const __m128i &srcA, 
 			return outColor;
 		}
 	}
+	
+	return srcA;
 }
 #endif
 
@@ -8558,8 +8560,6 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const GPUEngineLineInfo &lineInfo)
 		case NDSColorFormat_BGR888_Rev:
 		{
 			FragmentColor *__restrict dst = (FragmentColor *__restrict)this->_nativeBuffer + (lineInfo.indexNative * GPU_FRAMEBUFFER_NATIVE_WIDTH);
-			__m128i dstLo;
-			__m128i dstHi;
 			
 			for (size_t i = 0, d = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(__m128i); i++, d+=2)
 			{
@@ -8568,6 +8568,9 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const GPUEngineLineInfo &lineInfo)
 				const u32 srcC = DISP_FIFOrecv();
 				const u32 srcD = DISP_FIFOrecv();
 				const __m128i fifoColor = _mm_setr_epi32(srcA, srcB, srcC, srcD);
+				
+				__m128i dstLo = _mm_setzero_si128();
+				__m128i dstHi = _mm_setzero_si128();
 				
 				if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 				{
