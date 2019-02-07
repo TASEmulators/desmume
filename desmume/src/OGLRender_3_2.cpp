@@ -1190,6 +1190,7 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 		glGenTextures(1, &OGLRef.texMSGColorID);
 		glGenTextures(1, &OGLRef.texMSGWorkingID);
 		
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGColorID);
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1197,12 +1198,15 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight, GL_TRUE);
 		
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGWorkingID);
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight, GL_TRUE);
+		
+		glActiveTexture(GL_TEXTURE0);
 	}
 	else
 	{
@@ -1308,9 +1312,9 @@ void OpenGLRenderer_3_2::ResizeMultisampledFBOs(GLsizei numSamples)
 	
 	if (this->willUsePerSampleZeroDstPass)
 	{
-		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGColorID);
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA, w, h, GL_TRUE);
-		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGWorkingID);
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA, w, h, GL_TRUE);
 	}
 	else
@@ -1674,7 +1678,7 @@ Render3DError OpenGLRenderer_3_2::CreateMSGeometryZeroDstAlphaProgram(const char
 	glUseProgram(OGLRef.programMSGeometryZeroDstAlphaID);
 	
 	const GLint uniformTexGColor = glGetUniformLocation(OGLRef.programMSGeometryZeroDstAlphaID, "texInFragColor");
-	glUniform1i(uniformTexGColor, 0);
+	glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
 	
 	return OGLERROR_NOERR;
 }
@@ -2853,7 +2857,6 @@ Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, size_t polyR
 Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 {
 	Render3DError error = OGLERROR_NOERR;
-	OGLRenderRef &OGLRef = *this->ref;
 	
 	if (w < GPU_FRAMEBUFFER_NATIVE_WIDTH || h < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
 	{
@@ -2884,15 +2887,12 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	}
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texFinalColorID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_DepthStencil);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthStencilID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, w, h, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
