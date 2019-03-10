@@ -252,6 +252,7 @@ bool CFIRMWARE::load(const char *firmwareFilePath)
 	this->_isLoaded = NDS_ReadFirmwareDataFromFile(firmwareFilePath, newFirmwareData, &fileSize, NULL, NULL);
 	if (!this->_isLoaded)
 	{
+		delete newFirmwareData;
 		return this->_isLoaded;
 	}
 	
@@ -333,6 +334,7 @@ bool CFIRMWARE::unpack()
 	arm9Size = this->_decrypt(&workingFirmwareData->_raw[part1addr], tmp_data9);
 	if (tmp_data9 == NULL)
 	{
+		delete workingFirmwareData;
 		return false;
 	}
 
@@ -340,6 +342,7 @@ bool CFIRMWARE::unpack()
 	if (tmp_data7 == NULL)
 	{
 		delete [] tmp_data9;
+		delete workingFirmwareData;
 		return false;
 	}
 
@@ -350,6 +353,7 @@ bool CFIRMWARE::unpack()
 		INFO("Firmware: ERROR: the boot code CRC16 (0x%04X) doesn't match the value in the firmware header (0x%04X)", crc16_mine, this->_header.part12_boot_crc16);
 		delete [] tmp_data9;
 		delete [] tmp_data7;
+		delete workingFirmwareData;
 		return false;
 	}
 
@@ -419,6 +423,7 @@ bool CFIRMWARE::unpack()
 		arm9Size = this->_decompress(&workingFirmwareData->_raw[part1addr], tmp_data9);
 		if (tmp_data9 == NULL)
 		{
+			delete workingFirmwareData;
 			return false;
 		}
 
@@ -426,6 +431,7 @@ bool CFIRMWARE::unpack()
 		if (tmp_data7 == NULL)
 		{
 			delete [] tmp_data9;
+			delete workingFirmwareData;
 			return false;
 		};
 		// Copy firmware boot codes to their respective locations
