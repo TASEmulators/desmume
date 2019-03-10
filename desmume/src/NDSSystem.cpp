@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2018 DeSmuME team
+	Copyright (C) 2008-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2422,9 +2422,6 @@ bool NDS_FakeBoot()
 			return false;
 		}
 	}
-
-	//bios (or firmware) sets this default, which is generally not important for retail games but some homebrews are depending on
-	_MMU_write08<ARMCPU_ARM9>(REG_WRAMCNT,3);
 	
 	//firmware loads the game card arm9 and arm7 programs as specified in rom header
 	{
@@ -2643,39 +2640,52 @@ void NDS_Reset()
 	}
 	
 	bool didLoadExtFirmware = false;
+	bool canBootFromFirmware = false;
+	bool bootResult = false;
+	
 	extFirmwareObj = new CFIRMWARE();
 	
+	// First, load the firmware from an external file if requested.
 	if (CommonSettings.UseExtFirmware && NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded)
 	{
 		didLoadExtFirmware = extFirmwareObj->load(CommonSettings.ExtFirmwarePath);
+		
+		//we will allow a proper firmware boot, if:
+		//1. we have the ARM7 and ARM9 bioses (its doubtful that our HLE bios implement the necessary functions)
+		//2. firmware is available
+		//3. user has requested booting from firmware
+		canBootFromFirmware = (CommonSettings.BootFromFirmware && didLoadExtFirmware);
+	}
+	
+	// If we're doing a fake boot, then we must ensure that this value gets set before any firmware settings are changed.
+	if (!canBootFromFirmware)
+	{
+		//bios (or firmware) sets this default, which is generally not important for retail games but some homebrews are depending on
+		_MMU_write08<ARMCPU_ARM9>(REG_WRAMCNT,3);
 	}
 	
 	if (didLoadExtFirmware)
 	{
 		// what is the purpose of unpack?
 		extFirmwareObj->unpack();
-		
+	}
+	
+	// Load the firmware settings.
+	if (CommonSettings.UseExtFirmwareSettings && didLoadExtFirmware)
+	{
+		// Partially clobber the loaded firmware with user settings from the .dfc file.
 		std::string extFWUserSettingsString = CFIRMWARE::GetUserSettingsFilePath(CommonSettings.ExtFirmwarePath);
 		strncpy(CommonSettings.ExtFirmwareUserSettingsPath, extFWUserSettingsString.c_str(), MAX_PATH);
 		
-		//partially clobber the loaded firmware with the user settings from DFC
-		if (CommonSettings.UseExtFirmwareSettings)
-		{
-			extFirmwareObj->loadSettings(CommonSettings.ExtFirmwareUserSettingsPath);
-		}
+		extFirmwareObj->loadSettings(CommonSettings.ExtFirmwareUserSettingsPath);
 	}
 	else
 	{
+		// Otherwise, just use our version of the firmware config.
 		NDS_InitFirmwareWithConfig(CommonSettings.fwConfig);
 	}
 	
-	//we will allow a proper firmware boot, if:
-	//1. we have the ARM7 and ARM9 bioses (its doubtful that our HLE bios implement the necessary functions)
-	//2. firmware is available
-	//3. user has requested booting from firmware
-	bool canBootFromFirmware = (CommonSettings.BootFromFirmware && didLoadExtFirmware);
-	bool bootResult = false;
-	
+	// Finally, boot the firmware.
 	if (canBootFromFirmware)
 	{
 		bootResult = NDS_LegitBoot();
