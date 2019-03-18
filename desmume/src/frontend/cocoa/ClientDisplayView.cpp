@@ -270,13 +270,17 @@ void ClientDisplayPresenter::_UpdateViewScale()
 	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, this->_renderProperty.rotation, checkWidth, checkHeight);
 	this->_renderProperty.viewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(checkWidth, checkHeight, this->_renderProperty.clientWidth, this->_renderProperty.clientHeight);
 	
-	this->_hudObjectScale = this->_renderProperty.clientWidth / this->_renderProperty.normalWidth;
-	if (this->_hudObjectScale > 2.0)
+	const double logicalClientWidth = this->_renderProperty.clientWidth / this->_scaleFactor;
+	
+	this->_hudObjectScale = logicalClientWidth / this->_renderProperty.normalWidth;
+	if (this->_hudObjectScale > 1.74939175)
 	{
-		// If the view scale is <= 2.0, we scale the HUD objects linearly. Otherwise, we scale
+		// If the view scale is <= 1.74939175, we scale the HUD objects linearly. Otherwise, we scale
 		// the HUD objects logarithmically, up to a maximum scale of 3.0.
-		this->_hudObjectScale = ( -1.0/((1.0/12000.0)*pow(this->_hudObjectScale+4.5438939, 5.0)) ) + 3.0;
+		this->_hudObjectScale = (-12000.0 * pow(this->_hudObjectScale+4.5075, -5.0)) + 3.0;
 	}
+	
+	this->_hudObjectScale *= this->_scaleFactor;
 }
 
 // NDS screen layout
