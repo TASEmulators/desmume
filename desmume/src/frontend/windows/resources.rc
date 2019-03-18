@@ -844,7 +844,7 @@ BEGIN
     LTEXT           "Sample:",IDC_STATIC,15,83,110,8
     EDITTEXT        IDC_MICSAMPLE,15,93,190,14,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_MICSAMPLEBROWSE,210,94,20,14
-    CONTROL         "Use Microphone Sample",IDC_USEMICSAMPLE,"Button",BS_AUTORADIOBUTTON,18,70,93,10
+    CONTROL         "Use Microphone Samples",IDC_USEMICSAMPLE,"Button",BS_AUTORADIOBUTTON,18,70,93,10
     CONTROL         "Use rand() whitenoise (NOT suitable for TAS)",IDC_USEMICRAND,
                     "Button",BS_AUTORADIOBUTTON,18,56,157,10
     CONTROL         "Use internal noise sample",IDC_USENOISE,"Button",BS_AUTORADIOBUTTON,18,43,96,10

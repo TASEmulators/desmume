@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2006-2018 DeSmuME team
+	Copyright (C) 2006-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1854,14 +1854,18 @@ static void RefreshMicSettings()
 	Mic_DeInit_Physical();
 	if(CommonSettings.micMode == TCommonSettings::Sample)
 	{
-		if(!LoadSample(MicSampleName))
+		if(!LoadSamples(MicSampleName))
 		{
 			MessageBox(NULL, "Unable to read the mic sample", "DeSmuME", (MB_OK | MB_ICONEXCLAMATION));
+		}
+		else
+		{
+			driver->AddLine("Mic sample %d selected", MicSampleSelection);
 		}
 	}
 	else
 	{
-		LoadSample(NULL);
+		LoadSamples(nullptr);
 		if(CommonSettings.micMode == TCommonSettings::Physical)
 		{
 			Mic_Init_Physical();

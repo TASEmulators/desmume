@@ -3,7 +3,7 @@
 	licensed under the terms supplied at the end of this file (for the terms are very long!)
 	Differences from that baseline version are:
 
-	Copyright (C) 2009-2017 DeSmuME team
+	Copyright (C) 2009-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -338,6 +338,21 @@ void HK_StateQuickLoadSlot(int, bool justPressed)
 
 void HK_MicrophoneKeyDown(int, bool justPressed) { NDS_setMic(1); }
 void HK_MicrophoneKeyUp(int) { NDS_setMic(0); }
+
+void Mic_NextSample();
+void Mic_PrevSample();
+
+void HK_NextSampleKeyDown(int, bool justPressed)
+{
+	Mic_NextSample();
+	driver->AddLine("Mic sample %d selected", MicSampleSelection);
+}
+
+void HK_PrevSampleKeyDown(int, bool justPressed)
+{
+	Mic_PrevSample();
+	driver->AddLine("Mic sample %d selected", MicSampleSelection);
+}
 
 void HK_AutoHoldKeyDown(int, bool justPressed) {AutoHoldPressed = true;}
 void HK_AutoHoldKeyUp(int) {AutoHoldPressed = false;}
@@ -702,6 +717,18 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->Microphone.page = HOTKEY_PAGE_MAIN;
 	keys->Microphone.key = NULL;
 
+	keys->PrevSample.handleKeyDown = HK_PrevSampleKeyDown;
+	keys->PrevSample.code = "Mic Prev Sample";
+	keys->PrevSample.name = L"Mic Prev Sample";
+	keys->PrevSample.page = HOTKEY_PAGE_MAIN;
+	keys->PrevSample.key = NULL;
+
+	keys->NextSample.handleKeyDown = HK_NextSampleKeyDown;
+	keys->NextSample.code = "Mic Next Sample";
+	keys->NextSample.name = L"Mic Next Sample";
+	keys->NextSample.page = HOTKEY_PAGE_MAIN;
+	keys->NextSample.key = NULL;
+
 	keys->AutoHold.handleKeyDown = HK_AutoHoldKeyDown;
 	keys->AutoHold.handleKeyUp = HK_AutoHoldKeyUp;
 	keys->AutoHold.code = "AutoHold";
@@ -715,11 +742,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->AutoHoldClear.page = HOTKEY_PAGE_MAIN;
 	keys->AutoHoldClear.key = NULL;
 
-	keys->ToggleRasterizer.handleKeyDown = HK_ToggleRasterizer;
-	keys->ToggleRasterizer.code = "ToggleRasterizer";
-	keys->ToggleRasterizer.name = STRW(ID_LABEL_HK12);
-	keys->ToggleRasterizer.page = HOTKEY_PAGE_MAIN;
-	keys->ToggleRasterizer.key = VK_SUBTRACT;
+
 
 	//Tools Page ----------------------------------------------------------
 	keys->PrintScreen.handleKeyDown = HK_PrintScreen;
@@ -1058,6 +1081,12 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->ToggleSubOBJLayer.name = STRW(ID_LABEL_HK76);
 	keys->ToggleSubOBJLayer.page = HOTKEY_PAGE_OTHER;
 	keys->ToggleSubOBJLayer.key = NULL;
+
+	keys->ToggleRasterizer.handleKeyDown = HK_ToggleRasterizer;
+	keys->ToggleRasterizer.code = "ToggleRasterizer";
+	keys->ToggleRasterizer.name = STRW(ID_LABEL_HK12);
+	keys->ToggleRasterizer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleRasterizer.key = VK_SUBTRACT;
 
 	//State/Slots Pages ------------------------------------------------
 	keys->NextSaveSlot.handleKeyDown = HK_NextSaveSlot;

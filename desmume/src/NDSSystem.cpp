@@ -99,6 +99,8 @@ int lagframecounter;
 int LagFrameFlag;
 int lastLag;
 int TotalLagFrames;
+u8 MicSampleSelection = 0;
+
 
 TSCalInfo TSCal;
 

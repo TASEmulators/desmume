@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -416,6 +416,7 @@ struct UserTouch
 struct UserMicrophone
 {
 	u32 micButtonPressed;
+	u8 micSample;
 };
 struct UserInput
 {
@@ -683,6 +684,7 @@ void NDS_RunAdvansceneAutoImport();
 extern std::string InputDisplayString;
 extern int LagFrameFlag;
 extern int lastLag, TotalLagFrames;
+extern u8 MicSampleSelection;
 
 void MovieSRAM();
 

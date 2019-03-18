@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2017 DeSmuME Team
+	Copyright (C) 2009-2019 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ class EMUFILE;
 
 #ifdef WIN32
 static char MicSampleName[256];
-bool LoadSample(const char *name);
+bool LoadSamples(const char *name);
 #endif
 
 extern int MicDisplay;
