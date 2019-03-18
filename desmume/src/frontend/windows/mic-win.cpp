@@ -261,7 +261,9 @@ bool LoadSamples(const char *name)
 	prefix.resize(maybe0-name);
 	
 	//if found, it's a wildcard. load all those samples
-	for(int i=0;;i++)
+	//this is limited to 254 entries in order to prevent some surprises, because I was stupid and used a byte for the MicSampleSelection.
+	//I should probably change that. But it has to be limited somehow...
+	for(int i=0;i<255;i++)
 	{
 		char tmp[32];
 		sprintf(tmp,"%d",i);
