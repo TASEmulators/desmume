@@ -3,7 +3,7 @@
 	licensed under the terms supplied at the end of this file (for the terms are very long!)
 	Differences from that baseline version are:
 
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1301,12 +1301,12 @@ static void InitCustomControls()
 
 InputCust * GetInputCustom(HWND hwnd)
 {
-	return (InputCust *)GetWindowLong(hwnd, 0);
+	return (InputCust *)GetWindowLongPtr(hwnd, 0);
 }
 
 void SetInputCustom(HWND hwnd, InputCust *icp)
 {
-    SetWindowLong(hwnd, 0, (LONG)icp);
+    SetWindowLongPtr(hwnd, 0, (LONG_PTR)icp);
 }
 
 LRESULT InputCustom_OnPaint(InputCust *ccp, WPARAM wParam, LPARAM lParam)
