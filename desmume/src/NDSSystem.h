@@ -686,7 +686,7 @@ extern std::string InputDisplayString;
 extern int LagFrameFlag;
 extern int lastLag, TotalLagFrames;
 extern u8 MicSampleSelection;
-extern std::vector<std::vector<u8>> micSamples;
+extern std::vector< std::vector<u8> > micSamples;
 
 void MovieSRAM();
 

@@ -1,6 +1,6 @@
 /* main.c - this file is part of DeSmuME
  *
- * Copyright (C) 2007-2015 DeSmuME Team
+ * Copyright (C) 2007-2019 DeSmuME Team
  * Copyright (C) 2007 Damien Nozay (damdoum)
  * Copyright (C) 2007 Pascal Giard (evilynux)
  * Author: damdoum at users.sourceforge.net
@@ -353,17 +353,12 @@ joinThread_gdb( void *thread_handle) {
 
 static int
 common_gtk_glade_main( struct configured_features *my_config) {
-        /* the firmware settings */
-        FirmwareConfig fw_config;
 	gchar *uifile;
 	GKeyFile *keyfile;
 
-        /* default the firmware settings, they may get changed later */
-        NDS_GetDefaultFirmwareConfig(fw_config);
-
         /* use any language set on the command line */
         if ( my_config->firmware_language != -1) {
-          fw_config.language = my_config->firmware_language;
+          CommonSettings.fwConfig.language = my_config->firmware_language;
         }
         desmume_savetype(my_config->savetype);
 
@@ -382,9 +377,6 @@ common_gtk_glade_main( struct configured_features *my_config) {
           }
 
 	desmume_init();
-
-        /* Create the dummy firmware */
-        NDS_InitFirmwareWithConfig(fw_config);
 
         /*
          * Activate the GDB stubs

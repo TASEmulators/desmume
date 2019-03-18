@@ -2424,9 +2424,6 @@ int _main()
 
 	video.setfilter(GetPrivateProfileInt("Video", "Filter", video.NONE, IniName));
 	FilterUpdate(MainWindow->getHWnd(),false);
-
-	//default the firmware settings, they may get changed later
-	NDS_GetDefaultFirmwareConfig(CommonSettings.fwConfig);
 	
 	// Generate the unique MAC address.
 	{

@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2018 DeSmuME team
+	Copyright 2008-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -630,7 +630,8 @@ static void LoadSettingsFromMovie(MovieData movieData)
 			CommonSettings.fwConfig.language = movieData.firmLanguage;
 
 		// reset firmware (some games can write to it)
-		NDS_InitFirmwareWithConfig(CommonSettings.fwConfig);
+		NDS_InitDefaultFirmware(&MMU.fw.data);
+		NDS_ApplyFirmwareSettingsWithConfig(&MMU.fw.data, CommonSettings.fwConfig);
 	}
 	if (movieData.advancedTiming != -1)
 		CommonSettings.advanced_timing = movieData.advancedTiming;
@@ -822,9 +823,9 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 	// reset firmware (some games can write to it)
 	if (!CommonSettings.UseExtFirmware)
 	{
-		NDS_InitFirmwareWithConfig(CommonSettings.fwConfig);
+		NDS_InitDefaultFirmware(&MMU.fw.data);
+		NDS_ApplyFirmwareSettingsWithConfig(&MMU.fw.data, CommonSettings.fwConfig);
 	}
-
 
 	if (startFrom == START_SAVESTATE)
 	{

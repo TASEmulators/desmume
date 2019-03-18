@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2018 DeSmuME Team
+	Copyright (C) 2009-2019 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -446,8 +446,18 @@ int copy_firmware_user_data( u8 *dest_buffer, const u8 *fw_data);
 
 void NDS_GetDefaultFirmwareConfig(FirmwareConfig &outConfig);
 void NDS_GetCurrentWFCUserID(u8 *outMAC, u8 *outUserID);
-void NDS_InitFirmwareWithConfig(const FirmwareConfig &inConfig);
-bool NDS_ReadFirmwareDataFromFile(const char *fileName, NDSFirmwareData *outFirmwareData, size_t *outFileSize, int *outConsoleType, u8 *outMACAddr);
+void NDS_ApplyFirmwareSettings(NDSFirmwareData *outFirmware,
+							   const FW_HEADER_KEY *headerKey,
+							   const FWUserSettings *userSettings0,
+							   const FWUserSettings *userSettings1,
+							   const FWWifiInfo *wifiInfo,
+							   const FWAccessPointSettings *wifiAP1,
+							   const FWAccessPointSettings *wifiAP2,
+							   const FWAccessPointSettings *wifiAP3);
+bool NDS_ApplyFirmwareSettingsWithFile(NDSFirmwareData *outFirmware, const char *inFileName);
+void NDS_ApplyFirmwareSettingsWithConfig(NDSFirmwareData *outFirmware, const FirmwareConfig &inConfig);
+void NDS_InitDefaultFirmware(NDSFirmwareData *outFirmware);
+bool NDS_ReadFirmwareDataFromFile(const char *fileName, NDSFirmwareData *outFirmware, size_t *outFileSize, int *outConsoleType, u8 *outMACAddr);
 
 struct fw_memory_chip
 {

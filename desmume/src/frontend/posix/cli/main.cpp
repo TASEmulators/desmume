@@ -1,6 +1,6 @@
 /* main.c - this file is part of DeSmuME
  *
- * Copyright (C) 2006-2017 DeSmuME Team
+ * Copyright (C) 2006-2019 DeSmuME Team
  * Copyright (C) 2007 Pascal Giard (evilynux)
  *
  * This file is free software; you can redistribute it and/or modify
@@ -500,13 +500,7 @@ int main(int argc, char ** argv) {
   /* this holds some info about our display */
   const SDL_VideoInfo *videoInfo;
 
-  /* the firmware settings */
-  FirmwareConfig fw_config;
-
   NDS_Init();
-
-  /* default the firmware settings, they may get changed later */
-  NDS_GetDefaultFirmwareConfig(fw_config);
 
   init_config( &my_config);
 
@@ -516,7 +510,7 @@ int main(int argc, char ** argv) {
 
   /* use any language set on the command line */
   if ( my_config.firmware_language != -1) {
-    fw_config.language = my_config.firmware_language;
+    CommonSettings.fwConfig.language = my_config.firmware_language;
   }
 
     my_config.process_addonCommands();
@@ -619,9 +613,6 @@ int main(int argc, char ** argv) {
     }
   }
 #endif
-
-  /* Create the dummy firmware */
-  NDS_InitFirmwareWithConfig(fw_config);
 
   if ( !my_config.disable_sound) {
     SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);

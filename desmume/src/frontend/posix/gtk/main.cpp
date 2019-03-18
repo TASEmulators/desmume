@@ -1,6 +1,6 @@
  /*
 	Copyright (C) 2007 Pascal Giard (evilynux)
-	Copyright (C) 2006-2018 DeSmuME team
+	Copyright (C) 2006-2019 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -3018,17 +3018,10 @@ common_gtk_main( class configured_features *my_config)
     GtkWidget *pMenuBar;
     GtkWidget *pToolBar;
 
-    /* the firmware settings */
-    FirmwareConfig fw_config;
-
-    /* default the firmware settings, they may get changed later */
-    NDS_GetDefaultFirmwareConfig(fw_config);
-
     /* use any language set on the command line */
     if ( my_config->firmware_language != -1) {
-        fw_config.language = my_config->firmware_language;
+		CommonSettings.fwConfig.language = my_config->firmware_language;
     }
-
 
     //------------------addons----------
     my_config->process_addonCommands();
@@ -3142,9 +3135,6 @@ common_gtk_main( class configured_features *my_config)
         }
     }
 #endif
-
-    /* Create the dummy firmware */
-    NDS_InitFirmwareWithConfig(fw_config);
 
     /* Initialize joysticks */
     if(!init_joy()) return 1;
