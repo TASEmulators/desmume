@@ -6914,7 +6914,7 @@ void GPUEngineBase::REG_DISPx_pack_test()
 {
 	const GPU_IOREG *r = this->_IORegisterMap;
 	
-	printf("%08lx %02x\n", (uintptr_t)r, (u32)((uintptr_t)(&r->DISPCNT) - (uintptr_t)r) );
+	printf("%p %02x\n", r, (u32)((uintptr_t)(&r->DISPCNT) - (uintptr_t)r) );
 	printf("\t%02x\n", (u32)((uintptr_t)(&r->DISPSTAT) - (uintptr_t)r) );
 	printf("\t%02x\n", (u32)((uintptr_t)(&r->VCOUNT) - (uintptr_t)r) );
 	printf("\t%02x\n", (u32)((uintptr_t)(&r->BGnCNT[GPULayerID_BG0]) - (uintptr_t)r) );

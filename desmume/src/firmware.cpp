@@ -1128,7 +1128,7 @@ bool NDS_ReadFirmwareDataFromFile(const char *fileName, NDSFirmwareData *outFirm
 		}
 		else
 		{
-			printf("Ext. Firmware: Failed to read the firmware data. (%lu out of %lu bytes read.)\n", (unsigned long)readBytes, sizeof(NDSFirmwareData));
+			printf("Ext. Firmware: Failed to read the firmware data. (%zu out of %zu bytes read.)\n", readBytes, sizeof(NDSFirmwareData));
 			result = false;
 		}
 	}
@@ -1148,7 +1148,7 @@ bool NDS_ReadFirmwareDataFromFile(const char *fileName, NDSFirmwareData *outFirm
 			}
 			else
 			{
-				printf("Ext. Firmware: Failed to read the console type. (%lu out of %lu bytes read.)\n", (unsigned long)readBytes, sizeof(FW_HEADER_KEY));
+				printf("Ext. Firmware: Failed to read the console type. (%zu out of %zu bytes read.)\n", readBytes, sizeof(FW_HEADER_KEY));
 				result = false;
 			}
 		}
@@ -1160,7 +1160,7 @@ bool NDS_ReadFirmwareDataFromFile(const char *fileName, NDSFirmwareData *outFirm
 			
 			if (readBytes != 6)
 			{
-				printf("Ext. Firmware: Failed to read the MAC address. (%lu out of %lu bytes read.)\n", (unsigned long)readBytes, sizeof(u8) * 6);
+				printf("Ext. Firmware: Failed to read the MAC address. (%zu out of %zu bytes read.)\n", readBytes, sizeof(u8) * 6);
 				result = false;
 			}
 		}
