@@ -275,7 +275,7 @@ void DEBUG_reset()
 
 	DEBUG_Notify = DebugNotify();
 	DEBUG_statistics = DebugStatistics();
-	printf("DEBUG_reset: %08X\n",&DebugStatistics::print); //force a reference to this function
+	printf("DEBUG_reset: %p\n",&DebugStatistics::print); //force a reference to this function
 }
 
 static void DEBUG_dumpMemory_fill(EMUFILE &fp, u32 size)
