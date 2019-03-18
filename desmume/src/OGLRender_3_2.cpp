@@ -1316,6 +1316,7 @@ void OpenGLRenderer_3_2::ResizeMultisampledFBOs(GLsizei numSamples)
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA, w, h, GL_TRUE);
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA, w, h, GL_TRUE);
+		glActiveTexture(GL_TEXTURE0);
 	}
 	else
 	{
