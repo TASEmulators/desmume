@@ -81,6 +81,7 @@ public:
 		struct {
 			u8 x, y;
 			u8 touch;
+			u8 micsample;
 		};
 
 		u32 padding;
@@ -153,6 +154,7 @@ public:
 	std::vector<u8> sram;
 	std::vector<MovieRecord> records;
 	std::vector<std::wstring> comments;
+	std::vector<std::vector<u8> > micSamples;
 	
 	int rerecordCount;
 	Desmume_Guid guid;
@@ -217,34 +219,35 @@ public:
 	//void TryDumpIncremental();
 
 private:
-	void installVersion(std::string& val) { version = atoi(val.c_str()); }
-	void installEmuVersion(std::string& val) { emuVersion = atoi(val.c_str()); }
-	void installRerecordCount(std::string& val) { rerecordCount = atoi(val.c_str()); }
-	void installRomFilename(std::string& val) { romFilename = val; }
-	void installRomSerial(std::string& val) { romSerial = val; }
-	void installGuid(std::string& val) { guid = Desmume_Guid::fromString(val); }
-	void installRtcStartNew(std::string& val) { DateTime::TryParse(val.c_str(), rtcStart); }
-	void installBinary(std::string& val) { binaryFlag = atoi(val.c_str()) != 0; }
-	void installUseExtBios(std::string& val) { useExtBios = atoi(val.c_str()) != 0; }
-	void installSwiFromBios(std::string& val) { swiFromBios = atoi(val.c_str()) != 0; }
-	void installUseExtFirmware(std::string& val) { useExtFirmware = atoi(val.c_str()) != 0; }
-	void installBootFromFirmware(std::string& val) { bootFromFirmware = atoi(val.c_str()) != 0; }
-	void installFirmNickname(std::string& val) { firmNickname = val; }
-	void installFirmMessage(std::string& val) { firmMessage = val; }
-	void installFirmFavColour(std::string& val) { firmFavColour = atoi(val.c_str()); }
-	void installFirmBirthMonth(std::string& val) { firmBirthMonth = atoi(val.c_str()); }
-	void installFirmBirthDay(std::string& val) { firmBirthDay = atoi(val.c_str()); }
-	void installFirmLanguage(std::string& val) { firmLanguage = atoi(val.c_str()); }
-	void installAdvancedTiming(std::string& val) { advancedTiming = atoi(val.c_str()) != 0; }
-	void installJitBlockSize(std::string& val) { jitBlockSize = atoi(val.c_str()); }
-	void installSavestate(std::string& val) { savestate = atoi(val.c_str()) != 0; }
+	void installVersion(std::string& key, std::string& val) { version = atoi(val.c_str()); }
+	void installEmuVersion(std::string& key, std::string& val) { emuVersion = atoi(val.c_str()); }
+	void installRerecordCount(std::string& key, std::string& val) { rerecordCount = atoi(val.c_str()); }
+	void installRomFilename(std::string& key, std::string& val) { romFilename = val; }
+	void installRomSerial(std::string& key, std::string& val) { romSerial = val; }
+	void installGuid(std::string& key, std::string& val) { guid = Desmume_Guid::fromString(val); }
+	void installRtcStartNew(std::string& key, std::string& val) { DateTime::TryParse(val.c_str(), rtcStart); }
+	void installBinary(std::string& key, std::string& val) { binaryFlag = atoi(val.c_str()) != 0; }
+	void installUseExtBios(std::string& key, std::string& val) { useExtBios = atoi(val.c_str()) != 0; }
+	void installSwiFromBios(std::string& key, std::string& val) { swiFromBios = atoi(val.c_str()) != 0; }
+	void installUseExtFirmware(std::string& key, std::string& val) { useExtFirmware = atoi(val.c_str()) != 0; }
+	void installBootFromFirmware(std::string& key, std::string& val) { bootFromFirmware = atoi(val.c_str()) != 0; }
+	void installFirmNickname(std::string& key, std::string& val) { firmNickname = val; }
+	void installFirmMessage(std::string& key, std::string& val) { firmMessage = val; }
+	void installFirmFavColour(std::string& key, std::string& val) { firmFavColour = atoi(val.c_str()); }
+	void installFirmBirthMonth(std::string& key, std::string& val) { firmBirthMonth = atoi(val.c_str()); }
+	void installFirmBirthDay(std::string& key, std::string& val) { firmBirthDay = atoi(val.c_str()); }
+	void installFirmLanguage(std::string& key, std::string& val) { firmLanguage = atoi(val.c_str()); }
+	void installAdvancedTiming(std::string& key, std::string& val) { advancedTiming = atoi(val.c_str()) != 0; }
+	void installJitBlockSize(std::string& key, std::string& val) { jitBlockSize = atoi(val.c_str()); }
+	void installSavestate(std::string& key, std::string& val) { savestate = atoi(val.c_str()) != 0; }
 
-	void installRomChecksum(std::string& val);
-	void installRtcStart(std::string& val);
-	void installComment(std::string& val);
-	void installSram(std::string& val);
+	void installRomChecksum(std::string& key, std::string& val);
+	void installRtcStart(std::string& key, std::string& val);
+	void installComment(std::string& key, std::string& val);
+	void installSram(std::string& key, std::string& val);
+	void installMicSample(std::string& key, std::string& val);
 
-	typedef void(MovieData::* ivm)(std::string&);
+	typedef void(MovieData::* ivm)(std::string&,std::string&);
 	std::map<std::string, ivm> installValueMap;
 };
 

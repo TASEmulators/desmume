@@ -47,7 +47,9 @@ bool autoMovieBackup = true;
 
 #define FCEU_PrintError LOG
 
-#define MOVIE_VERSION 1
+//version 1 - was the main version for a long time, most of 201x
+//version 2 - march 2019, added mic sample
+#define MOVIE_VERSION 2
 
 #ifdef WIN32
 #include "frontend/windows/main.h"
@@ -112,9 +114,6 @@ bool MovieRecord::Compare(MovieRecord& compareRec)
 
 	//Check Stylus
 	if (this->touch.padding != compareRec.touch.padding) return false;
-	if (this->touch.touch != compareRec.touch.touch) return false;
-	if (this->touch.x != compareRec.touch.x) return false;
-	if (this->touch.y != compareRec.touch.y) return false;
 
 	//Check comamnds
 	//if new commands are ever recordable, they need to be added here if we go with this method
@@ -170,6 +169,7 @@ void MovieRecord::parse(EMUFILE &fp)
 	touch.x = u32DecFromIstream(fp);
 	touch.y = u32DecFromIstream(fp);
 	touch.touch = u32DecFromIstream(fp);
+	touch.micsample = u32DecFromIstream(fp);
 		
 	fp.fgetc(); //eat the pipe
 
@@ -187,7 +187,8 @@ void MovieRecord::dump(EMUFILE &fp)
 	dumpPad(fp, pad);
 	putdec<u8,3,true>(fp,touch.x); fp.fputc(' ');
 	putdec<u8,3,true>(fp,touch.y); fp.fputc(' ');
-	putdec<u8,1,true>(fp,touch.touch);
+	putdec<u8,1,true>(fp,touch.touch); fp.fputc(' ');
+	putdec<u8,3,true>(fp,touch.micsample);
 	fp.fputc('|');
 	
 	//each frame is on a new line
@@ -253,7 +254,14 @@ MovieData::MovieData(bool fromCurrentSettings)
 	installValueMap["jitBlockSize"] = &MovieData::installJitBlockSize;
 	installValueMap["savestate"] = &MovieData::installSavestate;
 	installValueMap["sram"] = &MovieData::installSram;
-	
+
+	for(int i=0;i<256;i++)
+	{
+		char tmp[256];
+		sprintf(tmp,"micsample%d",i);
+		installValueMap[tmp] = &MovieData::installMicSample;
+	}
+
 	if (fromCurrentSettings)
 	{
 		useExtBios = CommonSettings.UseExtBIOS;
@@ -287,7 +295,7 @@ void MovieData::truncateAt(int frame)
 		records.resize(frame);
 }
 
-void MovieData::installRomChecksum(std::string& val)
+void MovieData::installRomChecksum(std::string& key, std::string& val)
 {
 	// TODO: The current implementation of reading the checksum doesn't work correctly, and can
 	// cause crashes when the MovieData object is deallocated. (This is caused by StringToBytes()
@@ -298,7 +306,7 @@ void MovieData::installRomChecksum(std::string& val)
 
 	romChecksum = 0;
 }
-void MovieData::installRtcStart(std::string& val)
+void MovieData::installRtcStart(std::string& key, std::string& val)
 {
 	// sloppy format check and parse
 	const char *validFormatStr = "####-##-##T##:##:##Z";
@@ -321,14 +329,26 @@ void MovieData::installRtcStart(std::string& val)
 		rtcStart = DateTime(year, mon, day, hour, min, sec);
 	}
 }
-void MovieData::installComment(std::string& val) { comments.push_back(mbstowcs(val)); }
-void MovieData::installSram(std::string& val) { BinaryDataFromString(val, &this->sram); }
+void MovieData::installComment(std::string& key, std::string& val) { comments.push_back(mbstowcs(val)); }
+void MovieData::installSram(std::string& key, std::string& val) { BinaryDataFromString(val, &this->sram); }
+
+void MovieData::installMicSample(std::string& key, std::string& val)
+{
+	//which sample?
+	int which = atoi(key.c_str()+strlen("micsample"));
+
+	//make sure we have this many
+	if(micSamples.size()<which+1)
+		micSamples.resize(which+1);
+
+	BinaryDataFromString(val, &micSamples[which]);
+}
 
 void MovieData::installValue(std::string& key, std::string& val)
 {
 	ivm method = installValueMap[key];
 	if (method != NULL)
-		(this->*method)(val);
+		(this->*method)(key,val);
 }
 
 
@@ -384,6 +404,17 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	fp.fprintf("savestate %d\n", savestate?1:0);
 	if (sram.size() != 0)
 		fp.fprintf("sram %s\n", BytesToString(&sram[0],sram.size()).c_str());
+
+	for(int i=0;i<256;i++)
+	{
+		//TODO - how do these get put in here
+		if(micSamples.size() > i)
+		{
+			char tmp[32];
+			sprintf(tmp,"micsample%d",i);
+			fp.fprintf("%s %s\n",tmp, BytesToString(&micSamples[i][0],micSamples[i].size()).c_str());
+		}
+	}
 
 	if (binary)
 	{
@@ -473,8 +504,12 @@ bool LoadFM2(MovieData &movieData, EMUFILE &fp, int size, bool stopAfterHeader)
 	fp.fread(buf, 9);
 	fp.fseek(-9, SEEK_CUR);
 //	if(fp->fail()) return false;
-	if (memcmp(buf, "version 1", 9))
-		return false;
+	bool version1 = memcmp(buf, "version 1", 9)==0;
+	bool version2 = memcmp(buf, "version 2", 9)==0;
+
+	if(version1) {}
+	else if(version2) {}
+	else return false;
 
 	while (fp.ftell() < endOfMovie)
 	{
@@ -693,6 +728,11 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	}
 	else
 		MMU_new.backupDevice.load_movie_blank();
+
+	#ifdef _WIN32
+	::micSamples = currMovieData.micSamples;
+	#endif
+
 	freshMovie = true;
 	ClearAutoHold();
 
@@ -777,6 +817,7 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 	currMovieData.romSerial = gameInfo.ROMserial;
 	currMovieData.romFilename = path.GetRomName();
 	currMovieData.rtcStart = rtcstart;
+	currMovieData.micSamples = ::micSamples;
 
 	// reset firmware (some games can write to it)
 	if (!CommonSettings.UseExtFirmware)
@@ -1364,6 +1405,7 @@ void ReplayRecToDesmumeInput(const MovieRecord &inRecord, UserInput &outInput)
 	outInput.touch.touchY = inRecord.touch.y << 4;
 	
 	outInput.mic.micButtonPressed = (inRecord.command_microphone()) ? 1 : 0;
+	outInput.mic.micSample = MicSampleSelection;
 }
 
 void DesmumeInputToReplayRec(const UserInput &inInput, MovieRecord &outRecord)
@@ -1397,6 +1439,7 @@ void DesmumeInputToReplayRec(const UserInput &inInput, MovieRecord &outRecord)
 	outRecord.touch.touch = (inInput.touch.isTouch) ? 1 : 0;
 	outRecord.touch.x = (inInput.touch.isTouch) ? inInput.touch.touchX >> 4 : 0;
 	outRecord.touch.y = (inInput.touch.isTouch) ? inInput.touch.touchY >> 4 : 0;
+	outRecord.touch.micsample = MicSampleSelection;
 	
 	if (inInput.mic.micButtonPressed != 0)
 		outRecord.commands = MOVIECMD_MIC;

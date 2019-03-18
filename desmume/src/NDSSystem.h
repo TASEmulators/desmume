@@ -21,6 +21,7 @@
 
 #include <string.h>
 #include <string>
+#include <vector>
 
 #include "types.h"
 #include "ROMReader.h"
@@ -685,6 +686,7 @@ extern std::string InputDisplayString;
 extern int LagFrameFlag;
 extern int lastLag, TotalLagFrames;
 extern u8 MicSampleSelection;
+extern std::vector<std::vector<u8>> micSamples;
 
 void MovieSRAM();
 

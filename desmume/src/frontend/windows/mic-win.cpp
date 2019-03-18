@@ -83,8 +83,6 @@ static int CALLBACK waveInProc(HWAVEIN wavein, UINT msg, DWORD instance, DWORD_P
 
 static FILE* fp = NULL;
 
-std::vector<std::vector<char>> micSamples;
-
 static bool dataChunk(EMUFILE &inf)
 {
 	bool found = false;
@@ -113,7 +111,7 @@ static bool dataChunk(EMUFILE &inf)
 			  return false;
 		  }
 			micSamples.resize(micSamples.size()+1);
-			std::vector<char>& thisSample = micSamples[micSamples.size()-1];
+			std::vector<u8>& thisSample = micSamples[micSamples.size()-1];
 			thisSample.resize(chunk_length);
 			memcpy(&thisSample[0], temp, chunk_length);
 		  delete[] temp;

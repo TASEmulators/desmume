@@ -100,7 +100,7 @@ int LagFrameFlag;
 int lastLag;
 int TotalLagFrames;
 u8 MicSampleSelection = 0;
-
+std::vector<std::vector<u8>> micSamples;
 
 TSCalInfo TSCal;
 
@@ -2614,6 +2614,7 @@ void NDS_Reset()
 	nds_arm7_timer = 0;
 	LidClosed = FALSE;
 	countLid = 0;
+	MicSampleSelection = 0;
 
 	MMU_Reset();
 	SetupMMU(nds.Is_DebugConsole(),nds.Is_DSI());
