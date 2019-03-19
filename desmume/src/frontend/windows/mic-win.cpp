@@ -243,22 +243,26 @@ bool LoadSamples(const char *name)
 	//if we're disabling the mic samples system, just bail now
 	if (!name || !*name) return true;
 
-	//analyze the filename for 0 at the end. anything with 0 at the end is assumed to be the beginning of a series of files
+	//analyze the filename for _0 at the end. anything with _0 at the end is assumed to be the beginning of a series of files
 	//(and if not, it can still be loaded just fine)
-	const char* ext = strchr(name,'.');
+	const char* ext = strrchr(name,'.');
 	
 	//in case the filename had no extension... it's an error.
 	if(!ext) return false;
 
-	const char* maybe0 = ext-1;
+	const char* maybe_0 = ext-2;
+	
+	//in case this was an absurdly short filename
+	if(ext<name)
+		return LoadSample(name);
 
-	//if it was not a 0, just load it
-	if(*maybe0 != '0')
+	//if it was not a _0, just load it
+	if(strncmp(maybe_0,"_0",2))
 		return LoadSample(name);
 	
 	//otherwise replace it with increasing numbers and load all those
 	std::string prefix = name;
-	prefix.resize(maybe0-name);
+	prefix.resize(maybe_0-name+1); //take care to keep the _
 	
 	//if found, it's a wildcard. load all those samples
 	//this is limited to 254 entries in order to prevent some surprises, because I was stupid and used a byte for the MicSampleSelection.
