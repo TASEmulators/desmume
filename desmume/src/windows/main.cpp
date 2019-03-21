@@ -2772,14 +2772,18 @@ static void RefreshMicSettings()
 	Mic_DeInit_Physical();
 	if(CommonSettings.micMode == TCommonSettings::Sample)
 	{
-		if(!LoadSample(MicSampleName))
+		if(!LoadSamples(MicSampleName))
 		{
 			MessageBox(NULL, "Unable to read the mic sample", "DeSmuME", (MB_OK | MB_ICONEXCLAMATION));
+		}
+		else
+		{
+			osd->addLine("Mic sample %d selected", MicSampleSelection);
 		}
 	}
 	else
 	{
-		LoadSample(NULL);
+		LoadSamples(NULL);
 		if(CommonSettings.micMode == TCommonSettings::Physical)
 		{
 			Mic_Init_Physical();

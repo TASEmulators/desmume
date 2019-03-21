@@ -71,6 +71,7 @@ public:
 		struct {
 			u8 x, y;
 			u8 touch;
+			u8 micsample;
 		};
 
 		u32 padding;
@@ -144,6 +145,7 @@ public:
 	std::vector<u8> sram;
 	std::vector<MovieRecord> records;
 	std::vector<std::wstring> comments;
+	std::vector<std::vector<u8> > micSamples;
 	
 	int rerecordCount;
 	Desmume_Guid guid;
@@ -185,6 +187,7 @@ public:
 
 	void truncateAt(int frame);
 	void installValue(std::string& key, std::string& val);
+	void installMicSample(std::string& key, std::string& val);
 	int dump(EMUFILE* fp, bool binary);
 	void clearRecordRange(int start, int len);
 	void insertEmpty(int at, int frames);
@@ -228,4 +231,5 @@ extern bool movie_readonly;
 extern bool ShowInputDisplay;
 void FCEUI_MakeBackupMovie(bool dispMessage);
 DateTime FCEUI_MovieGetRTCDefault();
+void BinaryDataFromString(std::string &inStringData, std::vector<u8> *outBinaryData);
 #endif

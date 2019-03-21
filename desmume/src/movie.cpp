@@ -41,7 +41,9 @@ bool autoMovieBackup = true;
 
 #define FCEU_PrintError LOG
 
-#define MOVIE_VERSION 1
+//version 1 - was the main version for a long time, most of 201x
+//version 2 - march 2019, added mic sample
+#define MOVIE_VERSION 2
 
 #ifdef WIN32
 #include ".\windows\main.h"
@@ -105,9 +107,6 @@ bool MovieRecord::Compare(MovieRecord& compareRec)
 
 	//Check Stylus
 	if (this->touch.padding != compareRec.touch.padding) return false;
-	if (this->touch.touch != compareRec.touch.touch) return false;
-	if (this->touch.x != compareRec.touch.x) return false;
-	if (this->touch.y != compareRec.touch.y) return false;
 
 	//Check comamnds
 	//if new commands are ever recordable, they need to be added here if we go with this method
@@ -165,6 +164,7 @@ void MovieRecord::parse(MovieData* md, EMUFILE* fp)
 	touch.x = u32DecFromIstream(fp);
 	touch.y = u32DecFromIstream(fp);
 	touch.touch = u32DecFromIstream(fp);
+	touch.micsample = u32DecFromIstream(fp);
 		
 	fp->fgetc(); //eat the pipe
 
@@ -183,7 +183,8 @@ void MovieRecord::dump(MovieData* md, EMUFILE* fp, int index)
 	dumpPad(fp, pad);
 	putdec<u8,3,true>(fp,touch.x); fp->fputc(' ');
 	putdec<u8,3,true>(fp,touch.y); fp->fputc(' ');
-	putdec<u8,1,true>(fp,touch.touch);
+	putdec<u8,1,true>(fp,touch.touch); fp->fputc(' ');
+	putdec<u8,3,true>(fp,touch.micsample);
 	fp->fputc('|');
 	
 	//each frame is on a new line
@@ -212,6 +213,18 @@ void MovieData::truncateAt(int frame)
 		records.resize(frame);
 }
 
+
+void MovieData::installMicSample(std::string& key, std::string& val)
+{
+	//which sample?
+	int which = atoi(key.c_str()+strlen("micsample"));
+
+	//make sure we have this many
+	if(micSamples.size()<which+1)
+		micSamples.resize(which+1);
+
+	BinaryDataFromString(val, &micSamples[which]);
+}
 
 void MovieData::installValue(std::string& key, std::string& val)
 {
@@ -288,6 +301,19 @@ void MovieData::installValue(std::string& key, std::string& val)
 			StringToBytes(val,&sram[0],len); // decodes either base64 or hex
 		}
 	}
+
+	for(int i=0;i<256;i++)
+	{
+		char tmp[256];
+		sprintf(tmp,"micsample%d",i);
+		if(key == tmp)
+		{
+			if(micSamples.size()<i+1)
+				micSamples.resize(i+1);
+			BinaryDataFromString(val, &micSamples[i]);
+		}
+	}
+
 }
 
 
@@ -350,6 +376,17 @@ int MovieData::dump(EMUFILE* fp, bool binary)
 	if(sram.size() != 0)
 		fp->fprintf("sram %s\n", BytesToString(&sram[0],sram.size()).c_str());
 
+	for(int i=0;i<256;i++)
+	{
+		//TODO - how do these get put in here
+		if(micSamples.size() > i)
+		{
+			char tmp[32];
+			sprintf(tmp,"micsample%d",i);
+			fp->fprintf("%s %s\n",tmp, BytesToString(&micSamples[i][0],micSamples[i].size()).c_str());
+		}
+	}
+
 	if(binary)
 	{
 		//put one | to start the binary dump
@@ -377,8 +414,12 @@ bool LoadFM2(MovieData& movieData, EMUFILE* fp, int size, bool stopAfterHeader)
 	fp->fread(buf,9);
 	fp->fseek(curr, SEEK_SET);
 //	if(fp->fail()) return false;
-	if(memcmp(buf,"version 1",9)) 
-		return false;
+	bool version1 = memcmp(buf, "version 1", 9)==0;
+	bool version2 = memcmp(buf, "version 2", 9)==0;
+
+	if(version1) {}
+	else if(version2) {}
+	else return false;
 
 	std::string key,value;
 	enum {
@@ -604,6 +645,11 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 		bool success = MovieData::loadSramFrom(&currMovieData.sram);
 		if(!success) return "failed to load sram";
 	}
+
+	#ifdef _WIN32
+	::micSamples = currMovieData.micSamples;
+	#endif
+
 	freshMovie = true;
 	ClearAutoHold();
 
@@ -688,6 +734,7 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
 	currMovieData.romSerial = gameInfo.ROMserial;
 	currMovieData.romFilename = path.GetRomName();
 	currMovieData.rtcStart = rtcstart;
+	currMovieData.micSamples = ::micSamples;
 
 	// reset firmware (some games can write to it)
 	if (CommonSettings.UseExtFirmware == false)
@@ -755,6 +802,7 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
 
 			 if(mr->command_microphone()) input.mic.micButtonPressed = 1;
 			 else input.mic.micButtonPressed = 0;
+			 input.mic.micSample = MicSampleSelection;
 
 			 if(mr->command_reset()) NDS_Reset();
 
@@ -833,6 +881,7 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
 		 mr.touch.touch = input.touch.isTouch ? 1 : 0;
 		 mr.touch.x = input.touch.isTouch ? input.touch.touchX >> 4 : 0;
 		 mr.touch.y = input.touch.isTouch ? input.touch.touchY >> 4 : 0;
+		 mr.touch.micsample = MicSampleSelection;
 
 		 assert(mr.touch.touch || (!mr.touch.x && !mr.touch.y));
 		 //assert(nds.touchX == input.touch.touchX && nds.touchY == input.touch.touchY);
@@ -1268,3 +1317,13 @@ void FCEUI_MakeBackupMovie(bool dispMessage)
 	}
 }
 
+void BinaryDataFromString(std::string &inStringData, std::vector<u8> *outBinaryData)
+{
+	int len = Base64StringToBytesLength(inStringData);
+	if(len == -1) len = HexStringToBytesLength(inStringData); // wasn't base64, try hex
+	if(len >= 1)
+	{
+		outBinaryData->resize(len);
+		StringToBytes(inStringData, &outBinaryData->front(), len); // decodes either base64 or hex
+	}
+}

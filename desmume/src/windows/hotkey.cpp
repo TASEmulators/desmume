@@ -289,6 +289,21 @@ void HK_StateQuickLoadSlot(int, bool justPressed)
 void HK_MicrophoneKeyDown(int, bool justPressed) { NDS_setMic(1); }
 void HK_MicrophoneKeyUp(int) { NDS_setMic(0); }
 
+void Mic_NextSample();
+void Mic_PrevSample();
+
+void HK_NextSampleKeyDown(int, bool justPressed)
+{
+	Mic_NextSample();
+	osd->addLine("Mic sample %d selected", MicSampleSelection);
+}
+
+void HK_PrevSampleKeyDown(int, bool justPressed)
+{
+	Mic_PrevSample();
+	osd->addLine("Mic sample %d selected", MicSampleSelection);
+}
+
 void HK_AutoHoldKeyDown(int, bool justPressed) {AutoHoldPressed = true;}
 void HK_AutoHoldKeyUp(int) {AutoHoldPressed = false;}
 
@@ -651,6 +666,18 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->Microphone.name = STRW(ID_LABEL_HK9);
 	keys->Microphone.page = HOTKEY_PAGE_MAIN;
 	keys->Microphone.key = NULL;
+
+	keys->PrevSample.handleKeyDown = HK_PrevSampleKeyDown;
+	keys->PrevSample.code = "Mic Prev Sample";
+	keys->PrevSample.name = L"Mic Prev Sample";
+	keys->PrevSample.page = HOTKEY_PAGE_MAIN;
+	keys->PrevSample.key = NULL;
+
+	keys->NextSample.handleKeyDown = HK_NextSampleKeyDown;
+	keys->NextSample.code = "Mic Next Sample";
+	keys->NextSample.name = L"Mic Next Sample";
+	keys->NextSample.page = HOTKEY_PAGE_MAIN;
+	keys->NextSample.key = NULL;
 
 	keys->AutoHold.handleKeyDown = HK_AutoHoldKeyDown;
 	keys->AutoHold.handleKeyUp = HK_AutoHoldKeyUp;

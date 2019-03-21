@@ -80,6 +80,8 @@ int lagframecounter;
 int LagFrameFlag;
 int lastLag;
 int TotalLagFrames;
+u8 MicSampleSelection = 0;
+std::vector<std::vector<u8>> micSamples;
 
 TSCalInfo TSCal;
 
@@ -2593,6 +2595,7 @@ void NDS_Reset()
 
 	LidClosed = FALSE;
 	countLid = 0;
+	MicSampleSelection = 0;
 
 	resetUserInput();
 

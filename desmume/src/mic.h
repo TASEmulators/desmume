@@ -24,7 +24,7 @@
 
 #ifdef WIN32
 static char MicSampleName[256];
-bool LoadSample(const char *name);
+bool LoadSamples(const char *name);
 #endif
 
 extern int MicDisplay;

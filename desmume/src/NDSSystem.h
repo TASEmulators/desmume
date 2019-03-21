@@ -32,6 +32,7 @@
 #include "types.h"
 
 #include <string>
+#include <vector>
 
 #if defined(_WINDOWS) && !defined(WXPORT)
 #include "pathsettings.h"
@@ -398,6 +399,7 @@ struct UserTouch
 struct UserMicrophone
 {
 	u32 micButtonPressed;
+	u8 micSample;
 };
 struct UserInput
 {
@@ -628,6 +630,8 @@ extern struct TCommonSettings {
 extern std::string InputDisplayString;
 extern int LagFrameFlag;
 extern int lastLag, TotalLagFrames;
+extern u8 MicSampleSelection;
+extern std::vector<std::vector<u8>> micSamples;
 
 void MovieSRAM();
 

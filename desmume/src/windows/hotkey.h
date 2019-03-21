@@ -79,7 +79,7 @@ struct SCustomKeys
 #ifdef HAVE_JIT
 	SCustomKey CpuMode, JitBlockSizeDec, JitBlockSizeInc;
 #endif
-	SCustomKey FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, FrameLimitToggle, Microphone, IncreasePressure, DecreasePressure, ToggleStylusJitter;
+	SCustomKey FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, FrameLimitToggle, Microphone, PrevSample, NextSample, IncreasePressure, DecreasePressure, ToggleStylusJitter;
 
 	SCustomKey PlayMovie, RecordMovie, StopMovie, ToggleReadOnly;
 	

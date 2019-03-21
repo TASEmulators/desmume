@@ -34,7 +34,6 @@
 #include <fstream>
 
 int MicDisplay;
-int SampleLoaded=0;
 
 #define MIC_CHECKERR(hr) if(hr != MMSYSERR_NOERROR) return FALSE;
 
@@ -76,11 +75,7 @@ static int CALLBACK waveInProc(HWAVEIN wavein, UINT msg, DWORD instance, DWORD_P
 	return 0;
 }
 
-static char* samplebuffer = NULL;
-static int samplebuffersize = 0;
 static FILE* fp = NULL;
-
-EMUFILE_MEMORY newWavData;
 
 static bool dataChunk(EMUFILE* inf)
 {
@@ -102,11 +97,14 @@ static bool dataChunk(EMUFILE* inf)
       if (memcmp(chunk_id, "data", 4) == 0) {
 		  found = true;
 		  u8* temp = new u8[chunk_length];
-		  if(inf->fread(temp,chunk_length) != chunk_length) {
+		  if(inf->fread(temp,chunk_length) != chunk_length || chunk_length == 0) {
 			  delete[] temp;
 			  return false;
 		  }
-		  newWavData.fwrite(temp,chunk_length);
+		  micSamples.resize(micSamples.size()+1);
+		  std::vector<u8>& thisSample = micSamples[micSamples.size()-1];
+		  thisSample.resize(chunk_length);
+		  memcpy(&thisSample[0], temp, chunk_length);
 		  delete[] temp;
 		  chunk_length = 0;
 	  }
@@ -166,11 +164,27 @@ static bool formatChunk(EMUFILE* inf)
 	return false;
 }
 
+void Mic_PrevSample()
+{
+	if(MicSampleSelection==0) return;
+	MicSampleSelection--;
+}
+
+void Mic_NextSample()
+{
+	if(MicSampleSelection==255) return;
+	MicSampleSelection++;
+	if(MicSampleSelection >= micSamples.size())
+	{
+		if(micSamples.size()==0)
+			MicSampleSelection = 0;
+		else 
+			MicSampleSelection = micSamples.size()-1;
+	}
+}
+
 bool LoadSample(const char *name)
 {
-	SampleLoaded = 0;
-	if(!name) return true;
-	 
 	EMUFILE_FILE inf(name,"rb");
 	if(inf.fail()) return false;
 
@@ -201,16 +215,61 @@ bool LoadSample(const char *name)
 		 return false;
 	 }
 
-	 delete[] samplebuffer;
-	 samplebuffersize = (int)newWavData.size();
-	 samplebuffer = new char[samplebuffersize];
-	 memcpy(samplebuffer,newWavData.buf(),samplebuffersize);
- 	new(&newWavData) EMUFILE_MEMORY();
-
-	SampleLoaded=1;
-
 	return true;
 }
+
+bool LoadSamples(const char *name)
+{
+	//unload any existing mic samples
+	micSamples.resize(0);
+
+	//select NO mic sample
+	micReadSamplePos = 0;
+	MicSampleSelection = 0;
+
+	//if we're disabling the mic samples system, just bail now
+	if (!name || !*name) return true;
+
+	//analyze the filename for _0 at the end. anything with _0 at the end is assumed to be the beginning of a series of files
+	//(and if not, it can still be loaded just fine)
+	const char* ext = strrchr(name,'.');
+	
+	//in case the filename had no extension... it's an error.
+	if(!ext) return false;
+
+	const char* maybe_0 = ext-2;
+	
+	//in case this was an absurdly short filename
+	if(ext<name)
+		return LoadSample(name);
+
+	//if it was not a _0, just load it
+	if(strncmp(maybe_0,"_0",2))
+		return LoadSample(name);
+	
+	//otherwise replace it with increasing numbers and load all those
+	std::string prefix = name;
+	prefix.resize(maybe_0-name+1); //take care to keep the _
+	
+	//if found, it's a wildcard. load all those samples
+	//this is limited to 254 entries in order to prevent some surprises, because I was stupid and used a byte for the MicSampleSelection.
+	//I should probably change that. But it has to be limited somehow...
+	for(int i=0;i<255;i++)
+	{
+		char tmp[32];
+		sprintf(tmp,"%d",i);
+		std::string trial = prefix + tmp + ".wav";
+		printf("Trying sample %s\n",trial.c_str());
+		bool ok = LoadSample(trial.c_str());
+		if(!ok)
+		{
+			if(i==0) return false;
+			break;
+		}
+ 	}
+	//OK, we loaded some samples. that's all we have to do
+ 	return true;
+ }
 
 BOOL Mic_DeInit_Physical()
 {
@@ -333,17 +392,30 @@ u8 Mic_ReadSample()
 	{
 		if(NDS_getFinalUserInput().mic.micButtonPressed)
 		{
-			if(SampleLoaded)
+			if(micSamples.size() > 0)
 			{
-				//use a sample
-				//TODO: what if a movie is active?
-				// for now I'm going to hope that if anybody records a movie with a sample loaded,
-				// either they know what they're doing and plan to distribute the sample,
-				// or they're playing a game where it doesn't even matter or they never press the mic button.
-				tmp = samplebuffer[micReadSamplePos >> 1];
-				micReadSamplePos++;
-				if(micReadSamplePos == samplebuffersize*2)
-					micReadSamplePos=0;
+				//why is this reading every sample twice? I did this for some reason in 57dbe9128d0f8cbb4bd79154fb9cda3ab6fab386
+				//maybe the game reads two samples in succession to check them or something. stuff definitely works better with the two-in-a-row
+				if (micReadSamplePos == micSamples[MicSampleSelection].size()*2)
+				{
+					tmp = 0x80; //silence, with 8 bit signed values
+				}
+				else
+				{
+					tmp = micSamples[MicSampleSelection][micReadSamplePos >> 1];
+					
+					//nintendogs seems sensitive to clipped samples, at least.
+					//by clamping these, we get better sounds on playback
+					//I don't know how important it is, but I like nintendogs to sound good at least..
+					if(tmp == 0) tmp = 1;
+					if(tmp == 255) tmp = 254;
+
+					micReadSamplePos++;
+					if(micReadSamplePos == micSamples[MicSampleSelection].size()*2)
+					{
+						printf("Ended mic sample MicSampleSelection\n");
+					}
+				}
 			}
 			else
 			{
