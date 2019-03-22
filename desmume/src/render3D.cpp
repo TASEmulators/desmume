@@ -793,10 +793,53 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 		const u8 xScroll = scrollBits & 0xFF;
 		const u8 yScroll = (scrollBits >> 8) & 0xFF;
 		
+#ifdef ENABLE_AVX2
+		const __m256i calcDepthConstants = _mm256_set1_epi32(0x01FF0200);
+#else
 		const __m128i calcDepthConstants = _mm_set1_epi32(0x01FF0200);
-		
+#endif
 		if (xScroll == 0 && yScroll == 0)
 		{
+#ifdef ENABLE_AVX2
+			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT; i += 32)
+			{
+				// Copy the colors to the color buffer.
+				_mm256_store_si256( (__m256i *)(this->clearImageColor16Buffer + i +  0), _mm256_load_si256((__m256i *)(clearColorBuffer + i +  0)) );
+				_mm256_store_si256( (__m256i *)(this->clearImageColor16Buffer + i + 16), _mm256_load_si256((__m256i *)(clearColorBuffer + i + 16)) );
+				
+				// Write the depth values to the depth buffer using the following formula from GBATEK.
+				// 15-bit to 24-bit depth formula from http://problemkaputt.de/gbatek.htm#ds3drearplane
+				//    D24 = (D15 * 0x0200) + (((D15 + 1) >> 15) * 0x01FF);
+				//
+				// For now, let's forget GBATEK (which could be wrong) and try using a simpified formula:
+				//    D24 = (D15 * 0x0200) + 0x01FF;
+				const __m256i clearDepthLo = _mm256_load_si256((__m256i *)(clearDepthBuffer + i +  0));
+				const __m256i clearDepthHi = _mm256_load_si256((__m256i *)(clearDepthBuffer + i + 16));
+				
+				const __m256i clearDepthValueLo = _mm256_permute4x64_epi64( _mm256_and_si256(clearDepthLo, _mm256_set1_epi16(0x7FFF)), 0xD8 );
+				const __m256i clearDepthValueHi = _mm256_permute4x64_epi64( _mm256_and_si256(clearDepthHi, _mm256_set1_epi16(0x7FFF)), 0xD8 );
+				
+				__m256i calcDepth0 = _mm256_unpacklo_epi16(clearDepthValueLo, _mm256_set1_epi16(1));
+				__m256i calcDepth1 = _mm256_unpackhi_epi16(clearDepthValueLo, _mm256_set1_epi16(1));
+				__m256i calcDepth2 = _mm256_unpacklo_epi16(clearDepthValueHi, _mm256_set1_epi16(1));
+				__m256i calcDepth3 = _mm256_unpackhi_epi16(clearDepthValueHi, _mm256_set1_epi16(1));
+				
+				calcDepth0 = _mm256_madd_epi16(calcDepth0, calcDepthConstants);
+				calcDepth1 = _mm256_madd_epi16(calcDepth1, calcDepthConstants);
+				calcDepth2 = _mm256_madd_epi16(calcDepth2, calcDepthConstants);
+				calcDepth3 = _mm256_madd_epi16(calcDepth3, calcDepthConstants);
+				
+				_mm256_store_si256((__m256i *)(this->clearImageDepthBuffer + i +  0), calcDepth0);
+				_mm256_store_si256((__m256i *)(this->clearImageDepthBuffer + i +  8), calcDepth1);
+				_mm256_store_si256((__m256i *)(this->clearImageDepthBuffer + i + 16), calcDepth2);
+				_mm256_store_si256((__m256i *)(this->clearImageDepthBuffer + i + 24), calcDepth3);
+				
+				// Write the fog flags to the fog flag buffer.
+				const __m256i clearFogLo = _mm256_srli_epi16(clearDepthLo, 15);
+				const __m256i clearFogHi = _mm256_srli_epi16(clearDepthHi, 15);
+				_mm256_store_si256( (__m256i *)(this->clearImageFogBuffer + i), _mm256_permute4x64_epi64(_mm256_packus_epi16(clearFogLo, clearFogHi), 0xD8) );
+			}
+#else
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT; i += 16)
 			{
 				// Copy the colors to the color buffer.
@@ -835,6 +878,7 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 				const __m128i clearFogHi = _mm_srli_epi16(clearDepthHi, 15);
 				_mm_store_si128((__m128i *)(this->clearImageFogBuffer + i), _mm_packs_epi16(clearFogLo, clearFogHi));
 			}
+#endif
 		}
 		else
 		{
@@ -843,7 +887,7 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 			// this is, so just use the scalar version for now.
 			// - rogerman, 2018/09/19
 			/*
-			const size_t shiftCount = xScroll & 0x07;
+			 const size_t shiftCount = xScroll & 0x07;
 			
 			for (size_t dstIndex = 0, iy = 0; iy < GPU_FRAMEBUFFER_NATIVE_HEIGHT; iy++)
 			{
