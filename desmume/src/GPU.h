@@ -1401,9 +1401,9 @@ protected:
 	
 	void *_customBuffer;
 	void *_nativeBuffer;
-	size_t _renderedWidth;
-	size_t _renderedHeight;
-	void *_renderedBuffer;
+	
+	size_t _nativeLineRenderCount;
+	bool _isLineRenderNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	
 	bool _enableEngine;
 	bool _enableBGLayer[5];
@@ -1427,6 +1427,7 @@ protected:
 	u16 *_paletteOBJ;
 	OAMAttributes *_oamList;
 	u32 _sprMem;
+	u32 _vramBlockOBJAddress;
 	
 	BGLayerInfo _BGLayer[4];
 	
@@ -1576,7 +1577,7 @@ public:
 	virtual void Reset();
 	
 	void SetupBuffers();
-	void SetupRenderStates(void *nativeBuffer, void *customBuffer);
+	void SetupRenderStates();
 	template<NDSColorFormat OUTPUTFORMAT> void UpdateRenderStates(const size_t l);
 	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
 	
@@ -1601,13 +1602,6 @@ public:
 	
 	void UpdatePropertiesWithoutRender(const u16 l);
 	void LastLineProcess();
-	
-	u32 vramBlockOBJAddress;
-	
-	size_t nativeLineRenderCount;
-	size_t nativeLineOutputCount;
-	bool isLineRenderNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT];
-	bool isLineOutputNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	
 	IOREG_BG2X savedBG2X;
 	IOREG_BG2Y savedBG2Y;
@@ -1651,12 +1645,7 @@ public:
 	
 	GPUEngineID GetEngineID() const;
 	
-	void* GetRenderedBuffer() const;
-	size_t GetRenderedWidth() const;
-	size_t GetRenderedHeight() const;
-	
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
-	template<NDSColorFormat OUTPUTFORMAT> void ResolveCustomRendering();
 	void ResolveToCustomFramebuffer(NDSDisplayInfo &mutableInfo);
 	
 	void REG_DISPx_pack_test();
@@ -1774,6 +1763,18 @@ private:
 	NDSDisplayID _ID;
 	GPUEngineBase *_gpu;
 	
+	size_t _nativeLineCount;
+	bool _isLineNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	
+	void *_nativeBuffer;
+	void *_customBuffer;
+	
+	void *_renderedBuffer;
+	size_t _renderedWidth;
+	size_t _renderedHeight;
+	
+	void __constructor(const NDSDisplayID displayID, GPUEngineBase *theEngine);
+	
 public:
 	NDSDisplay();
 	NDSDisplay(const NDSDisplayID displayID);
@@ -1784,6 +1785,21 @@ public:
 	
 	GPUEngineID GetEngineID();
 	void SetEngineByID(const GPUEngineID theID);
+	
+	size_t GetNativeLineCount();
+	bool GetIsLineNative(const size_t l);
+	void SetIsLineNative(const size_t l, const bool isNative);
+	void ClearAllLinesToNative();
+	
+	template<NDSColorFormat OUTPUTFORMAT> void ResolveCustomRendering();
+	
+	void* GetNativeBuffer() const;
+	void* GetCustomBuffer() const;
+	void SetDrawBuffers(void *nativeBuffer, void *customBuffer);
+	
+	void* GetRenderedBuffer() const;
+	size_t GetRenderedWidth() const;
+	size_t GetRenderedHeight() const;
 };
 
 class GPUEventHandler

@@ -1569,16 +1569,13 @@ void GPUEngineBase::_Reset_Base()
 	this->_needUpdateWINH[0] = true;
 	this->_needUpdateWINH[1] = true;
 	
-	this->vramBlockOBJAddress = 0;
-	
-	this->nativeLineRenderCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	this->nativeLineOutputCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	this->_vramBlockOBJAddress = 0;
 	
 	for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 	{
-		this->isLineRenderNative[l] = true;
-		this->isLineOutputNative[l] = true;
+		this->_isLineRenderNative[l] = true;
 	}
+	this->_nativeLineRenderCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
 	GPUEngineRenderState &renderState = this->_currentRenderState;
 	
@@ -1723,10 +1720,6 @@ void GPUEngineBase::_Reset_Base()
 	this->_asyncClearInterrupt = 0;
 	this->_asyncClearIsRunning = false;
 	this->_asyncClearUseInternalCustomBuffer = false;
-	
-	this->_renderedWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	this->_renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	this->_renderedBuffer = this->_nativeBuffer;
 	
 	for (size_t line = 0; line < GPU_VRAM_BLOCK_LINES + 1; line++)
 	{
@@ -2584,22 +2577,24 @@ void GPUEngineBase::SetupBuffers()
 	}
 }
 
-void GPUEngineBase::SetupRenderStates(void *nativeBuffer, void *customBuffer)
+void GPUEngineBase::SetupRenderStates()
 {
-	this->nativeLineRenderCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	this->nativeLineOutputCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	
 	for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 	{
-		this->isLineRenderNative[l] = true;
-		this->isLineOutputNative[l] = true;
+		this->_isLineRenderNative[l] = true;
 	}
+	this->_nativeLineRenderCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
-	this->_nativeBuffer = nativeBuffer;
-	this->_customBuffer = customBuffer;
-	this->_renderedBuffer = this->_nativeBuffer;
-	this->_renderedWidth  = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	this->_renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	if (this->_targetDisplayID == NDSDisplayID_Main)
+	{
+		this->_nativeBuffer = GPU->GetDisplayMain()->GetNativeBuffer();
+		this->_customBuffer = GPU->GetDisplayMain()->GetCustomBuffer();
+	}
+	else
+	{
+		this->_nativeBuffer = GPU->GetDisplayTouch()->GetNativeBuffer();
+		this->_customBuffer = GPU->GetDisplayTouch()->GetCustomBuffer();
+	}
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
@@ -2782,55 +2777,57 @@ void GPUEngineBase::ApplySettings()
 template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineBase::_TransitionLineNativeToCustom(GPUEngineCompositorInfo &compInfo)
 {
-	if (this->isLineRenderNative[compInfo.line.indexNative])
+	if (!this->_isLineRenderNative[compInfo.line.indexNative])
 	{
-		if (compInfo.renderState.previouslyRenderedLayerID == GPULayerID_Backdrop)
+		return;
+	}
+	
+	if (compInfo.renderState.previouslyRenderedLayerID == GPULayerID_Backdrop)
+	{
+		if (this->_asyncClearIsRunning)
 		{
-			if (this->_asyncClearIsRunning)
-			{
-				this->RenderLineClearAsyncWaitForCustomLine(compInfo.line.indexNative);
-			}
-			else
-			{
-				switch (OUTPUTFORMAT)
-				{
-					case NDSColorFormat_BGR555_Rev:
-						memset_u16(compInfo.target.lineColorHeadCustom, compInfo.renderState.workingBackdropColor16, compInfo.line.pixelCount);
-						break;
-						
-					case NDSColorFormat_BGR666_Rev:
-					case NDSColorFormat_BGR888_Rev:
-						memset_u32(compInfo.target.lineColorHeadCustom, compInfo.renderState.workingBackdropColor32.color, compInfo.line.pixelCount);
-						break;
-				}
-			}
-			
-			this->_asyncClearTransitionedLineFromBackdropCount++;
+			this->RenderLineClearAsyncWaitForCustomLine(compInfo.line.indexNative);
 		}
 		else
 		{
-			this->RenderLineClearAsyncFinish();
-			
 			switch (OUTPUTFORMAT)
 			{
 				case NDSColorFormat_BGR555_Rev:
-					CopyLineExpandHinted<0xFFFF, true, false, false, 2>(compInfo.line, compInfo.target.lineColorHeadNative, compInfo.target.lineColorHeadCustom);
+					memset_u16(compInfo.target.lineColorHeadCustom, compInfo.renderState.workingBackdropColor16, compInfo.line.pixelCount);
 					break;
 					
 				case NDSColorFormat_BGR666_Rev:
 				case NDSColorFormat_BGR888_Rev:
-					CopyLineExpandHinted<0xFFFF, true, false, false, 4>(compInfo.line, compInfo.target.lineColorHeadNative, compInfo.target.lineColorHeadCustom);
+					memset_u32(compInfo.target.lineColorHeadCustom, compInfo.renderState.workingBackdropColor32.color, compInfo.line.pixelCount);
 					break;
 			}
-			
-			CopyLineExpandHinted<0xFFFF, true, false, false, 1>(compInfo.line, compInfo.target.lineLayerIDHeadNative, compInfo.target.lineLayerIDHeadCustom);
 		}
 		
-		compInfo.target.lineColorHead = compInfo.target.lineColorHeadCustom;
-		compInfo.target.lineLayerIDHead = compInfo.target.lineLayerIDHeadCustom;
-		this->isLineRenderNative[compInfo.line.indexNative] = false;
-		this->nativeLineRenderCount--;
+		this->_asyncClearTransitionedLineFromBackdropCount++;
 	}
+	else
+	{
+		this->RenderLineClearAsyncFinish();
+		
+		switch (OUTPUTFORMAT)
+		{
+			case NDSColorFormat_BGR555_Rev:
+				CopyLineExpandHinted<0xFFFF, true, false, false, 2>(compInfo.line, compInfo.target.lineColorHeadNative, compInfo.target.lineColorHeadCustom);
+				break;
+				
+			case NDSColorFormat_BGR666_Rev:
+			case NDSColorFormat_BGR888_Rev:
+				CopyLineExpandHinted<0xFFFF, true, false, false, 4>(compInfo.line, compInfo.target.lineColorHeadNative, compInfo.target.lineColorHeadCustom);
+				break;
+		}
+		
+		CopyLineExpandHinted<0xFFFF, true, false, false, 1>(compInfo.line, compInfo.target.lineLayerIDHeadNative, compInfo.target.lineLayerIDHeadCustom);
+	}
+	
+	compInfo.target.lineColorHead = compInfo.target.lineColorHeadCustom;
+	compInfo.target.lineLayerIDHead = compInfo.target.lineLayerIDHeadCustom;
+	this->_isLineRenderNative[compInfo.line.indexNative] = false;
+	this->_nativeLineRenderCount--;
 }
 
 /*****************************************************************************/
@@ -5445,7 +5442,7 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 					
 					if (!GPU->GetEngineMain()->IsLineCaptureNative(blockID, blockLine) && (linePixel == 0))
 					{
-						this->vramBlockOBJAddress = objAddress;
+						this->_vramBlockOBJAddress = objAddress;
 					}
 				}
 			}
@@ -5506,7 +5503,7 @@ void GPUEngineBase::_RenderLine_Layers(GPUEngineCompositorInfo &compInfo)
 	// for all the pixels in the line
 	if (this->_isBGLayerShown[GPULayerID_OBJ])
 	{
-		this->vramBlockOBJAddress = 0;
+		this->_vramBlockOBJAddress = 0;
 		this->_RenderLine_SetupSprites(compInfo);
 	}
 	
@@ -5528,7 +5525,7 @@ void GPUEngineBase::_RenderLine_Layers(GPUEngineCompositorInfo &compInfo)
 			{
 				const GPULayerID layerID = (GPULayerID)item->BGs[i];
 				
-				if (this->_isBGLayerShown[layerID])
+				if (this->_isBGLayerShown[layerID] && this->_BGLayer[layerID].isVisible)
 				{
 					compInfo.renderState.selectedLayerID = layerID;
 					compInfo.renderState.selectedBGLayer = &this->_BGLayer[layerID];
@@ -5675,9 +5672,9 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 {
 	bool useCustomVRAM = false;
 	
-	if (this->vramBlockOBJAddress != 0)
+	if (this->_vramBlockOBJAddress != 0)
 	{
-		const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(this->vramBlockOBJAddress) - MMU.ARM9_LCD) / sizeof(u16);
+		const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(this->_vramBlockOBJAddress) - MMU.ARM9_LCD) / sizeof(u16);
 		
 		if (vramPixel < (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4))
 		{
@@ -5696,11 +5693,11 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 	
 	if (item->nbPixelsX == GPU_FRAMEBUFFER_NATIVE_WIDTH)
 	{
-		if (this->isLineRenderNative[compInfo.line.indexNative])
+		if (this->_isLineRenderNative[compInfo.line.indexNative])
 		{
 			if ((OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) && useCustomVRAM)
 			{
-				const FragmentColor *__restrict vramColorPtr = (FragmentColor *)GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(this->vramBlockOBJAddress, 0);
+				const FragmentColor *__restrict vramColorPtr = (FragmentColor *)GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(this->_vramBlockOBJAddress, 0);
 				this->_CompositeNativeLineOBJ<COMPOSITORMODE, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo, NULL, vramColorPtr);
 			}
 			else
@@ -5712,7 +5709,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 		{
 			if (useCustomVRAM)
 			{
-				const void *__restrict vramColorPtr = GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(this->vramBlockOBJAddress, 0);
+				const void *__restrict vramColorPtr = GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(this->_vramBlockOBJAddress, 0);
 				this->_CompositeVRAMLineDeferred<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_OBJ, WILLPERFORMWINDOWTEST>(compInfo, vramColorPtr);
 			}
 			else
@@ -5731,11 +5728,11 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 	}
 	else
 	{
-		if (this->isLineRenderNative[compInfo.line.indexNative])
+		if (this->_isLineRenderNative[compInfo.line.indexNative])
 		{
 			if (useCustomVRAM && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev))
 			{
-				const FragmentColor *__restrict vramColorPtr = (FragmentColor *)GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(this->vramBlockOBJAddress, 0);
+				const FragmentColor *__restrict vramColorPtr = (FragmentColor *)GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(this->_vramBlockOBJAddress, 0);
 				
 				for (size_t i = 0; i < item->nbPixelsX; i++)
 				{
@@ -5785,7 +5782,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 			
 			if (useCustomVRAM)
 			{
-				const void *__restrict vramColorPtr = GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(this->vramBlockOBJAddress, 0);
+				const void *__restrict vramColorPtr = GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(this->_vramBlockOBJAddress, 0);
 				
 				for (size_t line = 0; line < compInfo.line.renderCount; line++)
 				{
@@ -5921,9 +5918,9 @@ void GPUEngineBase::ApplyMasterBrightness(const NDSDisplayInfo &displayInfo)
 	{
 		for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
 		{
-			const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[line];
-			void *dstColorLine = (!displayInfo.didPerformCustomRender[this->_targetDisplayID]) ? ((u8 *)displayInfo.nativeBuffer[this->_targetDisplayID] + (compInfo.line.blockOffsetNative * displayInfo.pixelBytes)) : ((u8 *)displayInfo.customBuffer[this->_targetDisplayID] + (compInfo.line.blockOffsetCustom * displayInfo.pixelBytes));
-			const size_t pixCount = (!displayInfo.didPerformCustomRender[this->_targetDisplayID]) ? GPU_FRAMEBUFFER_NATIVE_WIDTH : compInfo.line.pixelCount;
+			const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(line);
+			void *dstColorLine = (!displayInfo.didPerformCustomRender[this->_targetDisplayID]) ? ((u8 *)displayInfo.nativeBuffer[this->_targetDisplayID] + (lineInfo.blockOffsetNative * displayInfo.pixelBytes)) : ((u8 *)displayInfo.customBuffer[this->_targetDisplayID] + (lineInfo.blockOffsetCustom * displayInfo.pixelBytes));
+			const size_t pixCount = (!displayInfo.didPerformCustomRender[this->_targetDisplayID]) ? GPU_FRAMEBUFFER_NATIVE_WIDTH : lineInfo.pixelCount;
 			
 			this->ApplyMasterBrightness<OUTPUTFORMAT, false>(dstColorLine,
 															 pixCount,
@@ -6364,7 +6361,7 @@ FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_Final(GPUEngineCompositorInf
 	// If compositing at the native size, each pixel is composited immediately. However, if
 	// compositing at a custom size, pixel gathering and pixel compositing are split up into
 	// separate steps. If compositing at a custom size, composite the entire line now.
-	if ( (COMPOSITORMODE != GPUCompositorMode_Debug) && (WILLDEFERCOMPOSITING || !this->isLineRenderNative[compInfo.line.indexNative] || (useCustomVRAM && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) && !GPU->GetDisplayInfo().isCustomSizeRequested)) )
+	if ( (COMPOSITORMODE != GPUCompositorMode_Debug) && (WILLDEFERCOMPOSITING || !this->_isLineRenderNative[compInfo.line.indexNative] || (useCustomVRAM && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) && !GPU->GetDisplayInfo().isCustomSizeRequested)) )
 	{
 		if (useCustomVRAM)
 		{
@@ -6382,7 +6379,7 @@ FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_Final(GPUEngineCompositorInf
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST>
 FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_ApplyMosaic(GPUEngineCompositorInfo &compInfo)
 {
-	if (this->isLineRenderNative[compInfo.line.indexNative])
+	if (this->_isLineRenderNative[compInfo.line.indexNative])
 	{
 		this->_RenderLine_LayerBG_Final<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, false>(compInfo);
 	}
@@ -6481,10 +6478,16 @@ void GPUEngineBase::_HandleDisplayModeOff(const size_t l)
 template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineBase::_HandleDisplayModeNormal(const size_t l)
 {
-	if (!this->isLineRenderNative[l])
+	if (!this->_isLineRenderNative[l])
 	{
-		this->isLineOutputNative[l] = false;
-		this->nativeLineOutputCount--;
+		if (this->_targetDisplayID == NDSDisplayID_Main)
+		{
+			GPU->GetDisplayMain()->SetIsLineNative(l, false);
+		}
+		else
+		{
+			GPU->GetDisplayTouch()->SetIsLineNative(l, false);
+		}
 	}
 }
 
@@ -6672,20 +6675,22 @@ NDSDisplayID GPUEngineBase::GetTargetDisplayByID() const
 void GPUEngineBase::SetTargetDisplayByID(const NDSDisplayID theDisplayID)
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	void *newCustomBufferPtr = (theDisplayID == NDSDisplayID_Main) ? dispInfo.customBuffer[NDSDisplayID_Main] : dispInfo.customBuffer[NDSDisplayID_Touch];
 	
-	if (!this->_asyncClearUseInternalCustomBuffer && (newCustomBufferPtr != this->_customBuffer))
+	if ( (this->_targetDisplayID != theDisplayID) && dispInfo.didPerformCustomRender[this->_targetDisplayID] && !this->_asyncClearUseInternalCustomBuffer && (this->_customBuffer != NULL) )
 	{
-		// Games SHOULD only be changing the engine/display association outside the V-blank.
-		// However, if there is a situation where a game changes this association mid-frame,
-		// then we need to force any asynchronous clearing to finish so that we can return
-		// control of _customBuffer to this thread.
+		// So apparently, it is possible for some games to change the engine/display association
+		// mid-frame. For example, "The Legend of Zelda: Phantom Hourglass" will do exactly this
+		// whenever the player moves the map to or from the touch screen.
+		//
+		// Therefore, whenever a game changes this association mid-frame, we need to force any
+		// asynchronous clearing to finish so that we can return control of _customBuffer to
+		// this thread.
 		this->RenderLineClearAsyncFinish();
 		this->_asyncClearTransitionedLineFromBackdropCount = 0;
 	}
 	
 	this->_nativeBuffer = (theDisplayID == NDSDisplayID_Main) ? dispInfo.nativeBuffer[NDSDisplayID_Main] : dispInfo.nativeBuffer[NDSDisplayID_Touch];
-	this->_customBuffer = newCustomBufferPtr;
+	this->_customBuffer = (theDisplayID == NDSDisplayID_Main) ? dispInfo.customBuffer[NDSDisplayID_Main] : dispInfo.customBuffer[NDSDisplayID_Touch];
 	
 	this->_targetDisplayID = theDisplayID;
 }
@@ -6693,21 +6698,6 @@ void GPUEngineBase::SetTargetDisplayByID(const NDSDisplayID theDisplayID)
 GPUEngineID GPUEngineBase::GetEngineID() const
 {
 	return this->_engineID;
-}
-
-void* GPUEngineBase::GetRenderedBuffer() const
-{
-	return this->_renderedBuffer;
-}
-
-size_t GPUEngineBase::GetRenderedWidth() const
-{
-	return this->_renderedWidth;
-}
-
-size_t GPUEngineBase::GetRenderedHeight() const
-{
-	return this->_renderedHeight;
 }
 
 void GPUEngineBase::SetCustomFramebufferSize(size_t w, size_t h)
@@ -6729,23 +6719,6 @@ void GPUEngineBase::SetCustomFramebufferSize(size_t w, size_t h)
 	this->_sprColorCustom = (u16 *)malloc_alignedPage(w * sizeof(u16));
 	this->_sprAlphaCustom = (u8 *)malloc_alignedPage(w * sizeof(u8));
 	this->_sprTypeCustom = (u8 *)malloc_alignedPage(w * sizeof(u8));
-	
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	this->_nativeBuffer = (this->_targetDisplayID == NDSDisplayID_Main) ? dispInfo.nativeBuffer[NDSDisplayID_Main] : dispInfo.nativeBuffer[NDSDisplayID_Touch];
-	this->_customBuffer = (this->_targetDisplayID == NDSDisplayID_Main) ? dispInfo.customBuffer[NDSDisplayID_Main] : dispInfo.customBuffer[NDSDisplayID_Touch];
-	
-	if (this->nativeLineOutputCount == GPU_FRAMEBUFFER_NATIVE_HEIGHT)
-	{
-		this->_renderedBuffer = this->_nativeBuffer;
-		this->_renderedWidth  = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-		this->_renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	}
-	else
-	{
-		this->_renderedBuffer = this->_customBuffer;
-		this->_renderedWidth  = dispInfo.customWidth;
-		this->_renderedHeight = dispInfo.customHeight;
-	}
 	
 	u8 *newDidPassWindowTestCustomMasterPtr = (u8 *)malloc_alignedPage(w * 10 * sizeof(u8));
 	
@@ -6780,69 +6753,6 @@ void GPUEngineBase::SetCustomFramebufferSize(size_t w, size_t h)
 	free_aligned(oldSprAlphaCustom);
 	free_aligned(oldSprTypeCustom);
 	free_aligned(oldDidPassWindowTestCustomMasterPtr);
-}
-
-template <NDSColorFormat OUTPUTFORMAT>
-void GPUEngineBase::ResolveCustomRendering()
-{
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	
-	if (this->nativeLineOutputCount == GPU_FRAMEBUFFER_NATIVE_HEIGHT)
-	{
-		return;
-	}
-	else if (this->nativeLineOutputCount == 0)
-	{
-		this->_renderedWidth = dispInfo.customWidth;
-		this->_renderedHeight = dispInfo.customHeight;
-		this->_renderedBuffer = this->_customBuffer;
-		return;
-	}
-	
-	// Resolve any remaining native lines to the custom buffer
-	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-	{
-		const u16 *__restrict src = (u16 *__restrict)this->_nativeBuffer;
-		u16 *__restrict dst = (u16 *__restrict)this->_customBuffer;
-		
-		for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
-		{
-			const GPUEngineLineInfo &lineInfo = this->_currentCompositorInfo[y].line;
-			
-			if (this->isLineOutputNative[y])
-			{
-				CopyLineExpandHinted<0xFFFF, true, false, false, 2>(lineInfo, src, dst);
-				this->isLineOutputNative[y] = false;
-			}
-			
-			src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
-			dst += lineInfo.pixelCount;
-		}
-	}
-	else
-	{
-		const u32 *__restrict src = (u32 *__restrict)this->_nativeBuffer;
-		u32 *__restrict dst = (u32 *__restrict)this->_customBuffer;
-		
-		for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
-		{
-			const GPUEngineLineInfo &lineInfo = this->_currentCompositorInfo[y].line;
-			
-			if (this->isLineOutputNative[y])
-			{
-				CopyLineExpandHinted<0xFFFF, true, false, false, 4>(lineInfo, src, dst);
-				this->isLineOutputNative[y] = false;
-			}
-			
-			src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
-			dst += lineInfo.pixelCount;
-		}
-	}
-	
-	this->nativeLineOutputCount = 0;
-	this->_renderedWidth = dispInfo.customWidth;
-	this->_renderedHeight = dispInfo.customHeight;
-	this->_renderedBuffer = this->_customBuffer;
 }
 
 void GPUEngineBase::ResolveToCustomFramebuffer(NDSDisplayInfo &mutableInfo)
@@ -7575,7 +7485,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 	const size_t writeLineIndexWithOffset = (DISPCAPCNT.VRAMWriteOffset * 64) + compInfo.line.indexNative;
 	const size_t readLineIndexWithOffset = (this->_dispCapCnt.readOffset * 64) + compInfo.line.indexNative;
 	
-	const bool isReadDisplayLineNative = this->isLineRenderNative[compInfo.line.indexNative];
+	const bool isReadDisplayLineNative = this->_isLineRenderNative[compInfo.line.indexNative];
 	const bool isRead3DLineNative = CurrentRenderer->IsFramebufferNativeSize();
 	const bool isReadVRAMLineNative = this->_isLineCaptureNative[DISPCNT.VRAM_Block][readLineIndexWithOffset];
 	
@@ -8524,8 +8434,14 @@ void GPUEngineA::_HandleDisplayModeVRAM(const GPUEngineLineInfo &lineInfo)
 		
 		if ((OUTPUTFORMAT != NDSColorFormat_BGR888_Rev) || GPU->GetDisplayInfo().isCustomSizeRequested)
 		{
-			this->isLineOutputNative[lineInfo.indexNative] = false;
-			this->nativeLineOutputCount--;
+			if (this->_targetDisplayID == NDSDisplayID_Main)
+			{
+				GPU->GetDisplayMain()->SetIsLineNative(lineInfo.indexNative, false);
+			}
+			else
+			{
+				GPU->GetDisplayTouch()->SetIsLineNative(lineInfo.indexNative, false);
+			}
 		}
 	}
 }
@@ -8786,10 +8702,8 @@ GPUSubsystem::GPUSubsystem()
 	_engineMain = GPUEngineA::Allocate();
 	_engineSub = GPUEngineB::Allocate();
 	
-	_display[NDSDisplayID_Main] = new NDSDisplay(NDSDisplayID_Main);
-	_display[NDSDisplayID_Main]->SetEngine(_engineMain);
-	_display[NDSDisplayID_Touch] = new NDSDisplay(NDSDisplayID_Touch);
-	_display[NDSDisplayID_Touch]->SetEngine(_engineSub);
+	_display[NDSDisplayID_Main] = new NDSDisplay(NDSDisplayID_Main, _engineMain);
+	_display[NDSDisplayID_Touch] = new NDSDisplay(NDSDisplayID_Touch, _engineSub);
 	
 	if (CommonSettings.num_cores > 1)
 	{
@@ -8977,6 +8891,10 @@ void GPUSubsystem::Reset()
 	this->_display[NDSDisplayID_Touch]->SetEngineByID(GPUEngineID_Sub);
 	
 	gfx3d_reset();
+	
+	this->_display[NDSDisplayID_Main]->ClearAllLinesToNative();
+	this->_display[NDSDisplayID_Touch]->ClearAllLinesToNative();
+	
 	this->_engineMain->Reset();
 	this->_engineSub->Reset();
 	
@@ -9052,13 +8970,10 @@ void GPUSubsystem::UpdateRenderProperties()
 	this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = false;
 	this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = false;
 	
-	void *nativeBufferA  = (this->_engineMain->GetTargetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.nativeBuffer[NDSDisplayID_Main] : this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
-	void *customBufferA  = (this->_engineMain->GetTargetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.customBuffer[NDSDisplayID_Main] : this->_displayInfo.customBuffer[NDSDisplayID_Touch];
-	void *nativeBufferB = (this->_engineSub->GetTargetDisplayByID()  == NDSDisplayID_Main) ? this->_displayInfo.nativeBuffer[NDSDisplayID_Main] : this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
-	void *customBufferB = (this->_engineSub->GetTargetDisplayByID()  == NDSDisplayID_Main) ? this->_displayInfo.customBuffer[NDSDisplayID_Main] : this->_displayInfo.customBuffer[NDSDisplayID_Touch];
-	
-	this->_engineMain->SetupRenderStates(nativeBufferA, customBufferA);
-	this->_engineSub->SetupRenderStates(nativeBufferB, customBufferB);
+	this->_display[NDSDisplayID_Main]->SetDrawBuffers(this->_displayInfo.nativeBuffer[NDSDisplayID_Main], this->_displayInfo.customBuffer[NDSDisplayID_Main]);
+	this->_display[NDSDisplayID_Touch]->SetDrawBuffers(this->_displayInfo.nativeBuffer[NDSDisplayID_Touch], this->_displayInfo.customBuffer[NDSDisplayID_Touch]);
+	this->_engineMain->SetupRenderStates();
+	this->_engineSub->SetupRenderStates();
 	
 	if (!this->_displayInfo.isCustomSizeRequested && (this->_displayInfo.colorFormat != NDSColorFormat_BGR888_Rev))
 	{
@@ -9387,6 +9302,9 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 			break;
 	}
 	
+	this->_display[NDSDisplayID_Main]->SetDrawBuffers(this->_displayInfo.nativeBuffer[NDSDisplayID_Main], this->_displayInfo.customBuffer[NDSDisplayID_Main]);
+	this->_display[NDSDisplayID_Touch]->SetDrawBuffers(this->_displayInfo.nativeBuffer[NDSDisplayID_Touch], this->_displayInfo.customBuffer[NDSDisplayID_Touch]);
+	
 	this->_engineMain->SetCustomFramebufferSize(w, h);
 	this->_engineSub->SetCustomFramebufferSize(w, h);
 	
@@ -9652,6 +9570,8 @@ void GPUSubsystem::RenderLine(const size_t l)
 				this->SetupEngineBuffers();
 			}
 			
+			this->_display[NDSDisplayID_Main]->ClearAllLinesToNative();
+			this->_display[NDSDisplayID_Touch]->ClearAllLinesToNative();
 			this->UpdateRenderProperties();
 		}
 	}
@@ -9717,19 +9637,19 @@ void GPUSubsystem::RenderLine(const size_t l)
 		{
 			if (this->_displayInfo.isCustomSizeRequested)
 			{
-				this->_engineMain->ResolveCustomRendering<OUTPUTFORMAT>();
-				this->_engineSub->ResolveCustomRendering<OUTPUTFORMAT>();
+				this->_display[NDSDisplayID_Main]->ResolveCustomRendering<OUTPUTFORMAT>();
+				this->_display[NDSDisplayID_Touch]->ResolveCustomRendering<OUTPUTFORMAT>();
 			}
 			
-			this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = (this->_display[NDSDisplayID_Main]->GetEngine()->nativeLineOutputCount < GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-			this->_displayInfo.renderedBuffer[NDSDisplayID_Main] = this->_display[NDSDisplayID_Main]->GetEngine()->GetRenderedBuffer();
-			this->_displayInfo.renderedWidth[NDSDisplayID_Main] = this->_display[NDSDisplayID_Main]->GetEngine()->GetRenderedWidth();
-			this->_displayInfo.renderedHeight[NDSDisplayID_Main] = this->_display[NDSDisplayID_Main]->GetEngine()->GetRenderedHeight();
+			this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = (this->_display[NDSDisplayID_Main]->GetNativeLineCount() < GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			this->_displayInfo.renderedBuffer[NDSDisplayID_Main] = this->_display[NDSDisplayID_Main]->GetRenderedBuffer();
+			this->_displayInfo.renderedWidth[NDSDisplayID_Main] = this->_display[NDSDisplayID_Main]->GetRenderedWidth();
+			this->_displayInfo.renderedHeight[NDSDisplayID_Main] = this->_display[NDSDisplayID_Main]->GetRenderedHeight();
 			
-			this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = (this->_display[NDSDisplayID_Touch]->GetEngine()->nativeLineOutputCount < GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-			this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngine()->GetRenderedBuffer();
-			this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngine()->GetRenderedWidth();
-			this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngine()->GetRenderedHeight();
+			this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = (this->_display[NDSDisplayID_Touch]->GetNativeLineCount() < GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetRenderedBuffer();
+			this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetRenderedWidth();
+			this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetRenderedHeight();
 			
 			this->_displayInfo.engineID[NDSDisplayID_Main]  = this->_display[NDSDisplayID_Main]->GetEngineID();
 			this->_displayInfo.engineID[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngineID();
@@ -10310,20 +10230,36 @@ void GPUClientFetchObject::SetClientData(void *clientData)
 
 NDSDisplay::NDSDisplay()
 {
-	_ID = NDSDisplayID_Main;
-	_gpu = NULL;
+	__constructor(NDSDisplayID_Main, NULL);
 }
 
 NDSDisplay::NDSDisplay(const NDSDisplayID displayID)
 {
-	_ID = displayID;
-	_gpu = NULL;
+	__constructor(displayID, NULL);
 }
 
 NDSDisplay::NDSDisplay(const NDSDisplayID displayID, GPUEngineBase *theEngine)
 {
-	_ID = displayID;
-	_gpu = theEngine;
+	__constructor(displayID, theEngine);
+}
+
+void NDSDisplay::__constructor(const NDSDisplayID displayID, GPUEngineBase *theEngine)
+{
+	this->_ID = displayID;
+	this->_gpu = theEngine;
+	
+	for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
+	{
+		this->_isLineNative[l] = true;
+	}
+	
+	this->_nativeLineCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	
+	this->_nativeBuffer = NULL;
+	this->_customBuffer = NULL;
+	this->_renderedBuffer = this->_nativeBuffer;
+	this->_renderedWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	this->_renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 }
 
 GPUEngineBase* NDSDisplay::GetEngine()
@@ -10345,6 +10281,142 @@ void NDSDisplay::SetEngineByID(const GPUEngineID theID)
 {
 	this->_gpu = (theID == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain() : (GPUEngineBase *)GPU->GetEngineSub();
 	this->_gpu->SetTargetDisplayByID(this->_ID);
+}
+
+size_t NDSDisplay::GetNativeLineCount()
+{
+	return this->_nativeLineCount;
+}
+
+bool NDSDisplay::GetIsLineNative(const size_t l)
+{
+	return this->_isLineNative[l];
+}
+
+void NDSDisplay::SetIsLineNative(const size_t l, const bool isNative)
+{
+	if (this->_isLineNative[l] != isNative)
+	{
+		if (isNative)
+		{
+			this->_isLineNative[l] = isNative;
+			this->_nativeLineCount++;
+		}
+		else
+		{
+			this->_isLineNative[l] = isNative;
+			this->_nativeLineCount--;
+		}
+	}
+}
+
+void NDSDisplay::ClearAllLinesToNative()
+{
+	for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
+	{
+		this->_isLineNative[l] = true;
+	}
+	
+	this->_nativeLineCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	
+	this->_renderedBuffer = this->_nativeBuffer;
+	this->_renderedWidth  = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	this->_renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+void NDSDisplay::ResolveCustomRendering()
+{
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	
+	if (this->_nativeLineCount == GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+	{
+		return;
+	}
+	else if (this->_nativeLineCount == 0)
+	{
+		this->_renderedWidth = dispInfo.customWidth;
+		this->_renderedHeight = dispInfo.customHeight;
+		this->_renderedBuffer = this->_customBuffer;
+		return;
+	}
+	
+	// Resolve any remaining native lines to the custom buffer
+	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+	{
+		const u16 *__restrict src = (u16 *__restrict)this->_nativeBuffer;
+		u16 *__restrict dst = (u16 *__restrict)this->_customBuffer;
+		
+		for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
+		{
+			const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(y);
+			
+			if (this->_isLineNative[y])
+			{
+				CopyLineExpandHinted<0xFFFF, true, false, false, 2>(lineInfo, src, dst);
+				this->_isLineNative[y] = false;
+			}
+			
+			src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+			dst += lineInfo.pixelCount;
+		}
+	}
+	else
+	{
+		const u32 *__restrict src = (u32 *__restrict)this->_nativeBuffer;
+		u32 *__restrict dst = (u32 *__restrict)this->_customBuffer;
+		
+		for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
+		{
+			const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(y);
+			
+			if (this->_isLineNative[y])
+			{
+				CopyLineExpandHinted<0xFFFF, true, false, false, 4>(lineInfo, src, dst);
+				this->_isLineNative[y] = false;
+			}
+			
+			src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+			dst += lineInfo.pixelCount;
+		}
+	}
+	
+	this->_nativeLineCount = 0;
+	this->_renderedWidth = dispInfo.customWidth;
+	this->_renderedHeight = dispInfo.customHeight;
+	this->_renderedBuffer = this->_customBuffer;
+}
+
+void* NDSDisplay::GetNativeBuffer() const
+{
+	return this->_nativeBuffer;
+}
+
+void* NDSDisplay::GetCustomBuffer() const
+{
+	return this->_customBuffer;
+}
+
+void NDSDisplay::SetDrawBuffers(void *nativeBuffer, void *customBuffer)
+{
+	this->_nativeBuffer = nativeBuffer;
+	this->_customBuffer = customBuffer;
+	this->_renderedBuffer = (this->_nativeLineCount == GPU_FRAMEBUFFER_NATIVE_HEIGHT) ? nativeBuffer : customBuffer;
+}
+
+void* NDSDisplay::GetRenderedBuffer() const
+{
+	return this->_renderedBuffer;
+}
+
+size_t NDSDisplay::GetRenderedWidth() const
+{
+	return this->_renderedWidth;
+}
+
+size_t NDSDisplay::GetRenderedHeight() const
+{
+	return this->_renderedHeight;
 }
 
 template void GPUEngineBase::ParseReg_BGnHOFS<GPULayerID_BG0>();
