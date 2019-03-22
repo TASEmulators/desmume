@@ -34,7 +34,11 @@
 #endif
 
 #ifdef ENABLE_SSE4_1
-#include "smmintrin.h"
+#include <smmintrin.h>
+#endif
+
+#ifdef ENABLE_AVX
+#include <immintrin.h>
 #endif
 
 enum MatrixMode
@@ -155,7 +159,7 @@ FORCEINLINE s32 sfx32_shiftdown(const s64 a)
 
 // SIMD Functions
 //-------------
-#if defined(ENABLE_AVX2)
+#if defined(ENABLE_AVX)
 
 static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 {

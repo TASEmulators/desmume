@@ -1419,8 +1419,8 @@ static void* SoftRasterizer_RunClearUsingValues(void *arg)
 
 static Render3D* SoftRasterizerRendererCreate()
 {
-#if defined(ENABLE_AVX2)
-	return new SoftRasterizerRenderer_AVX2;
+#if defined(ENABLE_AVX)
+	return new SoftRasterizerRenderer_AVX;
 #elif defined(ENABLE_SSE2)
 	return new SoftRasterizerRenderer_SSE2;
 #elif defined(ENABLE_ALTIVEC)
@@ -1434,8 +1434,8 @@ static void SoftRasterizerRendererDestroy()
 {
 	if (CurrentRenderer != BaseRenderer)
 	{
-#if defined(ENABLE_AVX2)
-		SoftRasterizerRenderer_AVX2 *oldRenderer = (SoftRasterizerRenderer_AVX2 *)CurrentRenderer;
+#if defined(ENABLE_AVX)
+		SoftRasterizerRenderer_AVX *oldRenderer = (SoftRasterizerRenderer_AVX *)CurrentRenderer;
 #elif defined(ENABLE_SSE2)
 		SoftRasterizerRenderer_SSE2 *oldRenderer = (SoftRasterizerRenderer_SSE2 *)CurrentRenderer;
 #elif defined(ENABLE_ALTIVEC)
@@ -2492,7 +2492,7 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 	return RENDER3DERROR_NOERR;
 }
 
-#if defined(ENABLE_AVX2) || defined(ENABLE_SSE2) || defined(ENABLE_ALTIVEC)
+#if defined(ENABLE_AVX) || defined(ENABLE_SSE2) || defined(ENABLE_ALTIVEC)
 
 template <size_t SIMDBYTES>
 SoftRasterizer_SIMD<SIMDBYTES>::SoftRasterizer_SIMD()
@@ -2604,9 +2604,9 @@ Render3DError SoftRasterizer_SIMD<SIMDBYTES>::SetFramebufferSize(size_t w, size_
 
 #endif
 
-#if defined(ENABLE_AVX2)
+#if defined(ENABLE_AVX)
 
-void SoftRasterizerRenderer_AVX2::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+void SoftRasterizerRenderer_AVX::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
 {
 	this->_clearColor_v256u32					= _mm256_set1_epi32(clearColor6665.color);
 	this->_clearDepth_v256u32					= _mm256_set1_epi32(clearAttributes.depth);
@@ -2618,7 +2618,7 @@ void SoftRasterizerRenderer_AVX2::LoadClearValues(const FragmentColor &clearColo
 	this->_clearAttrPolyFacing_v256u8			= _mm256_set1_epi8(clearAttributes.polyFacing);
 }
 
-void SoftRasterizerRenderer_AVX2::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
+void SoftRasterizerRenderer_AVX::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
 	for (size_t i = startPixel; i < endPixel; i+=32)
 	{

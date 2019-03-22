@@ -134,8 +134,8 @@ public:
 	template<bool SLI, bool USELINEHACK> FORCEINLINE void Render();
 };
 
-#if defined(ENABLE_AVX2)
-class SoftRasterizerRenderer : public Render3D_AVX2
+#if defined(ENABLE_AVX)
+class SoftRasterizerRenderer : public Render3D_AVX
 #elif defined(ENABLE_SSE2)
 class SoftRasterizerRenderer : public Render3D_SSE2
 #elif defined(ENABLE_ALTIVEC)
@@ -218,7 +218,7 @@ template <size_t SIMDBYTES>
 class SoftRasterizer_SIMD : public SoftRasterizerRenderer
 {
 protected:
-#if defined(ENABLE_AVX2)
+#if defined(ENABLE_AVX)
 	v256u32 _clearColor_v256u32;
 	v256u32 _clearDepth_v256u32;
 	v256u8 _clearAttrOpaquePolyID_v256u8;
@@ -247,8 +247,8 @@ public:
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
-#if defined(ENABLE_AVX2)
-class SoftRasterizerRenderer_AVX2 : public SoftRasterizer_SIMD<32>
+#if defined(ENABLE_AVX)
+class SoftRasterizerRenderer_AVX : public SoftRasterizer_SIMD<32>
 {
 protected:
 	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);

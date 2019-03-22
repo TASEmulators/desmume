@@ -773,10 +773,10 @@ Render3DError Render3D_SIMD<SIMDBYTES>::SetFramebufferSize(size_t w, size_t h)
 	return error;
 }
 
-#if defined(ENABLE_AVX2) || defined(ENABLE_SSE2)
+#if defined(ENABLE_AVX) || defined(ENABLE_SSE2)
 
-#if defined(ENABLE_AVX2)
-Render3DError Render3D_AVX2::ClearFramebuffer(const GFX3D_State &renderState)
+#if defined(ENABLE_AVX)
+Render3DError Render3D_AVX::ClearFramebuffer(const GFX3D_State &renderState)
 #elif defined(ENABLE_SSE2)
 Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 #endif
@@ -974,7 +974,7 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 	return error;
 }
 
-#endif // defined(ENABLE_AVX2) || defined(ENABLE_SSE2)
+#endif // defined(ENABLE_AVX) || defined(ENABLE_SSE2)
 
 template Render3D_SIMD<16>::Render3D_SIMD();
 template Render3D_SIMD<32>::Render3D_SIMD();

@@ -281,9 +281,9 @@ public:
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
-#if defined(ENABLE_AVX2)
+#if defined(ENABLE_AVX)
 
-class Render3D_AVX2 : public Render3D_SIMD<32>
+class Render3D_AVX : public Render3D_SIMD<32>
 {
 public:
 	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);

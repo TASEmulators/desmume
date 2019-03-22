@@ -245,7 +245,7 @@ typedef __m128i v128u32;
 typedef __m128i v128s32;
 #endif
 
-#ifdef ENABLE_AVX2
+#ifdef ENABLE_AVX
 #include <immintrin.h>
 typedef __m256i v256u8;
 typedef __m256i v256s8;
