@@ -394,27 +394,12 @@ u8 Mic_ReadSample()
 		{
 			if(micSamples.size() > 0)
 			{
-				//why is this reading every sample twice? I did this for some reason in 57dbe9128d0f8cbb4bd79154fb9cda3ab6fab386
-				//maybe the game reads two samples in succession to check them or something. stuff definitely works better with the two-in-a-row
-				if (micReadSamplePos == micSamples[MicSampleSelection].size()*2)
+				tmp = micSamples[MicSampleSelection][micReadSamplePos >> 1];
+				micReadSamplePos++;
+				if(micReadSamplePos == micSamples[MicSampleSelection].size()*2)
 				{
-					tmp = 0x80; //silence, with 8 bit signed values
-				}
-				else
-				{
-					tmp = micSamples[MicSampleSelection][micReadSamplePos >> 1];
-					
-					//nintendogs seems sensitive to clipped samples, at least.
-					//by clamping these, we get better sounds on playback
-					//I don't know how important it is, but I like nintendogs to sound good at least..
-					if(tmp == 0) tmp = 1;
-					if(tmp == 255) tmp = 254;
-
-					micReadSamplePos++;
-					if(micReadSamplePos == micSamples[MicSampleSelection].size()*2)
-					{
-						printf("Ended mic sample MicSampleSelection\n");
-					}
+					micReadSamplePos=0;
+					printf("Ended mic sample MicSampleSelection\n");
 				}
 			}
 			else
