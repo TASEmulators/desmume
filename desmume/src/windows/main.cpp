@@ -2776,7 +2776,7 @@ static void RefreshMicSettings()
 		{
 			MessageBox(NULL, "Unable to read the mic sample", "DeSmuME", (MB_OK | MB_ICONEXCLAMATION));
 		}
-		else
+		else if (osd)
 		{
 			osd->addLine("Mic sample %d selected", MicSampleSelection);
 		}
