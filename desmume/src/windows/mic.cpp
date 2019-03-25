@@ -231,7 +231,8 @@ bool LoadSamples(const char *name)
 	if (!name || !*name) return true;
 
 	//analyze the filename for _0 at the end. anything with _0 at the end is assumed to be the beginning of a series of files
-	//(and if not, it can still be loaded just fine)
+	//series with just digits in filenames also work: "0.wav". in those \ would be a remainder from the path
+	//(and if neither, it can still be loaded just fine)
 	const char* ext = strrchr(name,'.');
 	
 	//in case the filename had no extension... it's an error.
@@ -243,13 +244,13 @@ bool LoadSamples(const char *name)
 	if(ext<name)
 		return LoadSample(name);
 
-	//if it was not a _0, just load it
-	if(strncmp(maybe_0,"_0",2))
+	//if it was not a _0 or a \0, just load it
+	if(strncmp(maybe_0,"_0",2) && strncmp(maybe_0,"\\0",2))
 		return LoadSample(name);
 	
 	//otherwise replace it with increasing numbers and load all those
 	std::string prefix = name;
-	prefix.resize(maybe_0-name+1); //take care to keep the _
+	prefix.resize(maybe_0-name+1); //take care to keep the _ or \
 	
 	//if found, it's a wildcard. load all those samples
 	//this is limited to 254 entries in order to prevent some surprises, because I was stupid and used a byte for the MicSampleSelection.
