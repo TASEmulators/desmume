@@ -231,7 +231,8 @@ bool LoadSamples(const char *name)
 	if (!name || !*name) return true;
 
 	//analyze the filename for _0 at the end. anything with _0 at the end is assumed to be the beginning of a series of files
-	//(and if not, it can still be loaded just fine)
+	//series with just digits in filenames also work: "0.wav". in those \ would be a remainder from the path
+	//(and if neither, it can still be loaded just fine)
 	const char* ext = strrchr(name,'.');
 	
 	//in case the filename had no extension... it's an error.
@@ -243,13 +244,13 @@ bool LoadSamples(const char *name)
 	if(ext<name)
 		return LoadSample(name);
 
-	//if it was not a _0, just load it
-	if(strncmp(maybe_0,"_0",2))
+	//if it was not a _0 or a \0, just load it
+	if(strncmp(maybe_0,"_0",2) && strncmp(maybe_0,"\\0",2))
 		return LoadSample(name);
 	
 	//otherwise replace it with increasing numbers and load all those
 	std::string prefix = name;
-	prefix.resize(maybe_0-name+1); //take care to keep the _
+	prefix.resize(maybe_0-name+1); //take care to keep the _ or \
 	
 	//if found, it's a wildcard. load all those samples
 	//this is limited to 254 entries in order to prevent some surprises, because I was stupid and used a byte for the MicSampleSelection.
@@ -394,27 +395,12 @@ u8 Mic_ReadSample()
 		{
 			if(micSamples.size() > 0)
 			{
-				//why is this reading every sample twice? I did this for some reason in 57dbe9128d0f8cbb4bd79154fb9cda3ab6fab386
-				//maybe the game reads two samples in succession to check them or something. stuff definitely works better with the two-in-a-row
-				if (micReadSamplePos == micSamples[MicSampleSelection].size()*2)
+				tmp = micSamples[MicSampleSelection][micReadSamplePos >> 1];
+				micReadSamplePos++;
+				if(micReadSamplePos == micSamples[MicSampleSelection].size()*2)
 				{
-					tmp = 0x80; //silence, with 8 bit signed values
-				}
-				else
-				{
-					tmp = micSamples[MicSampleSelection][micReadSamplePos >> 1];
-					
-					//nintendogs seems sensitive to clipped samples, at least.
-					//by clamping these, we get better sounds on playback
-					//I don't know how important it is, but I like nintendogs to sound good at least..
-					if(tmp == 0) tmp = 1;
-					if(tmp == 255) tmp = 254;
-
-					micReadSamplePos++;
-					if(micReadSamplePos == micSamples[MicSampleSelection].size()*2)
-					{
-						printf("Ended mic sample MicSampleSelection\n");
-					}
+					micReadSamplePos=0;
+					printf("Ended mic sample MicSampleSelection\n");
 				}
 			}
 			else
