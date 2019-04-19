@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2017 DeSmuME team
+	Copyright (C) 2009-2019 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -203,6 +203,7 @@ static const char* luaCallIDStrings [] =
 	"CALL_AFTERLOAD",
 	"CALL_ONSTART",
 	"CALL_ONINITMENU",
+	"CALL_REGISTER3DEVENT",
 
 	"CALL_HOTKEY_1",
 	"CALL_HOTKEY_2",
@@ -221,7 +222,9 @@ static const char* luaCallIDStrings [] =
 	"CALL_HOTKEY_15",
 	"CALL_HOTKEY_16",
 };
-static const int _makeSureWeHaveTheRightNumberOfStrings = (sizeof(luaCallIDStrings)/sizeof(*luaCallIDStrings) == LUACALL_COUNT) ? 1 : 0;
+
+//make Sure We Have The Right Number Of Strings
+CTASSERT(ARRAY_SIZE(luaCallIDStrings) == LUACALL_COUNT);
 
 static const char* luaMemHookTypeStrings [] =
 {
@@ -233,7 +236,9 @@ static const char* luaMemHookTypeStrings [] =
 	"MEMHOOK_READ_SUB",
 	"MEMHOOK_EXEC_SUB",
 };
-static const int _makeSureWeHaveTheRightNumberOfStrings2 = (sizeof(luaMemHookTypeStrings)/sizeof(*luaMemHookTypeStrings) == LUAMEMHOOK_COUNT) ? 1 : 0;
+
+//make Sure We Have The Right Number Of Strings 2
+CTASSERT(ARRAY_SIZE(luaMemHookTypeStrings) == LUAMEMHOOK_COUNT);
 
 void StopScriptIfFinished(int uid, bool justReturned = false);
 void SetSaveKey(LuaContextInfo& info, const char* key);
