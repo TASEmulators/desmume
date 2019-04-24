@@ -38,12 +38,20 @@
     <ProjectName>DeSmuME</ProjectName>
     <ProjectGuid>{9F5F72A1-D3A5-4918-B460-E076B16D10A9}</ProjectGuid>
     <RootNamespace>DeSmuME</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
     <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '16.0'" Label="TargetPlatform">
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VisualStudioVersion)' != '16.0'" Label="TargetPlatform">
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <!-- desmume customization: set PlatformToolset to an uptodate choice for vs2015 and leave it to the default vs2010 toolset for vs2010 -->
   <!-- NOTE: the location of this hack is important or else we break resource editing, intellisense, and ctrl+f7 in vs2010 either; or it doesnt work for vs2015. weird. -->
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '16.0'" Label="Configuration">
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(VisualStudioVersion)' == '15.0'" Label="Configuration">
     <PlatformToolset>v141_xp</PlatformToolset>
   </PropertyGroup>
