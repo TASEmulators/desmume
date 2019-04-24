@@ -193,6 +193,14 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 		}
 		if(type == 0xD0 || type == 0xD1 || type == 0xD2) {}
 		else if(type == 0xC5) {}
+		else if(type == 0x0E)
+		{
+			if (statusSkip) {
+				CHEATLOG(" (skip multiple lines!)\n");
+				i += (lo + 7) / 8;
+				continue;
+			}
+		}
 		else
 		{
 			if(statusSkip) {
