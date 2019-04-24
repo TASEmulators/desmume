@@ -21,10 +21,12 @@
 		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '12.0'">12</NDS_VSVER>
 		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '14.0'">14</NDS_VSVER>
 		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '15.0'">15</NDS_VSVER>
+		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '16.0'">16</NDS_VSVER>
 		<!-- others may not be supported, so lets not list them here -->
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '10'">VS2010</NDS_VisualStudioName>
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '14'">VS2015</NDS_VisualStudioName>
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '15'">VS2017</NDS_VisualStudioName>
+		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '16'">VS2019</NDS_VisualStudioName>
 	</PropertyGroup>
 
 	<!-- Generate optimization level property from configuration name -->
@@ -210,13 +212,14 @@
 	<!-- other maybe related info -->
 	<!-- http://stackoverflow.com/questions/841913/modify-msbuild-itemgroup-metadata -->
 	<UsingTask TaskName="UNDUPOBJ_TASK" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
-	  <ParameterGroup>
-	    <OutputDir ParameterType="System.String" Required="true" />
-	    <ItemList ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
-	    <OutputItemList ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
-	  </ParameterGroup>
-	  <Task>
-	    <Code><![CDATA[
+		<ParameterGroup>
+			<OutputDir ParameterType="System.String" Required="true" />
+			<ItemList ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+			<OutputItemList ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+		</ParameterGroup>
+		<Task>
+			<Code>
+				<![CDATA[
 	            //general outline: for each item (in ClCompile) assign it to a subdirectory of $(IntDir) by allocating subdirectories 0,1,2, etc., as needed to prevent duplicate filenames from clobbering each other
 	            //this minimizes the number of batches that need to be run, since each subdirectory will necessarily be in a distinct batch due to /Fo specifying that output subdirectory
 
@@ -241,19 +244,20 @@
 	            OutputItemList = ItemList;
 	            ItemList = new Microsoft.Build.Framework.ITaskItem[0];
 
-	        ]]></Code>
-	  </Task>
+	        ]]>
+			</Code>
+		</Task>
 	</UsingTask>
 
 	<Target Name="UNDUPOBJ">
-	  <!-- see stackoverflow topics for discussion on why we need to do some loopy copying stuff here -->
-	  <ItemGroup>
-	    <ClCompileCopy Include="@(ClCompile)"/>
-	    <ClCompile Remove="@(ClCompile)"/>
-	  </ItemGroup>
-	  <UNDUPOBJ_TASK OutputDir="$(IntDir)" ItemList="@(ClCompileCopy)" OutputItemList="@(ClCompile)">
-	    <Output ItemName="ClCompile" TaskParameter="OutputItemList"/>
-	  </UNDUPOBJ_TASK>
+		<!-- see stackoverflow topics for discussion on why we need to do some loopy copying stuff here -->
+		<ItemGroup>
+			<ClCompileCopy Include="@(ClCompile)"/>
+			<ClCompile Remove="@(ClCompile)"/>
+		</ItemGroup>
+		<UNDUPOBJ_TASK OutputDir="$(IntDir)" ItemList="@(ClCompileCopy)" OutputItemList="@(ClCompile)">
+			<Output ItemName="ClCompile" TaskParameter="OutputItemList"/>
+		</UNDUPOBJ_TASK>
 	</Target>
 	<!-- ================ UNDUPOBJ ================ -->
 
