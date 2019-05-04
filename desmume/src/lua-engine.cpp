@@ -28,6 +28,7 @@
 	#include "frontend/windows/main.h"
 	#include "frontend/windows/video.h"
 	#include "frontend/windows/resource.h"
+	#include "frontend/windows/display.h"
 #else
 	// TODO: define appropriate types for menu
 	typedef void* PlatformMenu;
@@ -3278,6 +3279,20 @@ DEFINE_LUA_FUNCTION(gui_settransparency, "transparency_4_to_0")
 	return 0;
 }
 
+// gui.setlayermask(int top, int bottom)
+// enables or disables display layers for each screen according to the bitfields provided
+// e.g. 31 (11111) shows all layers; 0 (00000) hides all layers; 16 (10000) shows only the object layer (layer 4)
+// this function is only supported by the windows frontend.
+DEFINE_LUA_FUNCTION(gui_setlayermask, "top,bottom")
+{
+#if defined(WIN32)
+	lua_Integer top = luaL_checkint(L, 1);
+	lua_Integer bottom = luaL_checkint(L, 2);
+	SetLayerMasks(top, bottom);
+#endif
+	return 0;
+}
+
 // takes a screenshot and returns it in gdstr format
 // example: gd.createFromGdStr(gui.gdscreenshot()):png("outputimage.png")
 DEFINE_LUA_FUNCTION(gui_gdscreenshot, "[whichScreen='both']")
@@ -4861,6 +4876,7 @@ static const struct luaL_reg guilib [] =
 	{"transparency", gui_settransparency},
 	{"popup", gui_popup},
 	{"parsecolor", gui_parsecolor},
+	{"setlayermask", gui_setlayermask},
 	{"gdscreenshot", gui_gdscreenshot},
 	{"gdoverlay", gui_gdoverlay},
 	{"redraw", emu_redraw}, // some people might think of this as more of a GUI function

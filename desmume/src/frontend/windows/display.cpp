@@ -968,3 +968,28 @@ void TwiddleLayer(UINT ctlid, int core, int layer)
 	gpu->SetLayerEnableState(layer, newLayerState);
 	MainWindow->checkMenu(ctlid, newLayerState);
 }
+
+void SetLayerMasks(int mainEngineMask, int subEngineMask)
+{
+	static const size_t numCores = sizeof(CommonSettings.dispLayers) / sizeof(CommonSettings.dispLayers[0]);
+	static const size_t numLayers = sizeof(CommonSettings.dispLayers[0]) / sizeof(CommonSettings.dispLayers[0][0]);
+	static const UINT ctlids[numCores][numLayers] = {
+		{IDM_MBG0, IDM_MBG1, IDM_MBG2, IDM_MBG3, IDM_MOBJ},
+		{IDM_SBG0, IDM_SBG1, IDM_SBG2, IDM_SBG3, IDM_SOBJ},
+	};
+
+	for (int core = 0; core < 2; core++)
+	{
+		GPUEngineBase *gpu = (GPUEngineID)core == GPUEngineID_Main ? (GPUEngineBase *)GPU->GetEngineMain() : (GPUEngineBase *)GPU->GetEngineSub();
+		const int mask = core == 0 ? mainEngineMask : subEngineMask;
+		for (size_t layer = 0; layer < numLayers; layer++)
+		{
+			const bool newLayerState = (mask >> layer) & 0x01 != 0;
+			if (newLayerState != CommonSettings.dispLayers[core][layer])
+			{
+				gpu->SetLayerEnableState(layer, newLayerState);
+				MainWindow->checkMenu(ctlids[core][layer], newLayerState);
+			}
+		}
+	}
+}
