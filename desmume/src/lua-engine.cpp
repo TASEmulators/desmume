@@ -3279,16 +3279,16 @@ DEFINE_LUA_FUNCTION(gui_settransparency, "transparency_4_to_0")
 	return 0;
 }
 
-// gui.setlayermask(int top, int bottom)
-// enables or disables display layers for each screen according to the bitfields provided
+// gui.setlayermask(int main, int sub)
+// enables or disables display layers for each GPU according to the bitfields provided
 // e.g. 31 (11111) shows all layers; 0 (00000) hides all layers; 16 (10000) shows only the object layer (layer 4)
 // this function is only supported by the windows frontend.
-DEFINE_LUA_FUNCTION(gui_setlayermask, "top,bottom")
+DEFINE_LUA_FUNCTION(gui_setlayermask, "main,sub")
 {
 #if defined(WIN32)
-	lua_Integer top = luaL_checkint(L, 1);
-	lua_Integer bottom = luaL_checkint(L, 2);
-	SetLayerMasks(top, bottom);
+	lua_Integer main = luaL_checkint(L, 1);
+	lua_Integer sub = luaL_checkint(L, 2);
+	SetLayerMasks(main, sub);
 #endif
 	return 0;
 }
