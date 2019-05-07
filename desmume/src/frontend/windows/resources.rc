@@ -1020,7 +1020,7 @@ CAPTION "Sound Settings"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     GROUPBOX        "Synchronization Mode",IDC_STATIC,13,8,173,80
-    CONTROL         "Dual SPU Synch/Asynch (traditional)",IDC_SYNCHMODE_DUAL,
+    CONTROL         "Dual SPU Synch/Async (traditional)",IDC_SYNCHMODE_DUAL,
                     "Button",BS_AUTORADIOBUTTON | WS_GROUP,22,18,132,10
     CONTROL         "Synchronous (sometimes needed for streams)",IDC_SYNCHMODE_SYNCH,
                     "Button",BS_AUTORADIOBUTTON,21,28,158,10
@@ -1265,7 +1265,7 @@ BEGIN
     GROUPBOX        "Infrastructure settings",IDC_STATIC,6,33,319,55
     LTEXT           "Bridge network adapter:",IDC_STATIC,12,52,306,8
     COMBOBOX        IDC_BRIDGEADAPTER,12,68,306,45,CBS_DROPDOWNLIST | CBS_HASSTRINGS
-    CONTROL         "Enable WiFi Emulation",IDC_WIFI_ENABLED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,13,84,10
+    CONTROL         "Enable Wifi Emulation",IDC_WIFI_ENABLED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,13,84,10
     CONTROL         "Compatibility Mode",IDC_WIFI_COMPAT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,127,13,84,10
 END
 
@@ -1430,7 +1430,7 @@ IDD_SLOT1_R4 DIALOGEX 7, 64, 302, 89
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_VISIBLE | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "Directory to scan:",IDC_R4_FOLDER,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,9,22,35,10
+    CONTROL         "Directory to scan:",IDC_R4_FOLDER,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,9,22,71,10
     CONTROL         "use path of the loaded ROM (not the same as ""ROM path"" in path configuration)",IDC_R4_ROM,
                     "Button",BS_AUTORADIOBUTTON,9,53,272,10
     PUSHBUTTON      "Browse...",IDC_BROWSE,245,33,50,14
