@@ -1020,7 +1020,7 @@ CAPTION "Sound Settings"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     GROUPBOX        "Synchronization Mode",IDC_STATIC,13,8,173,80
-    CONTROL         "Dual SPU Synch/Asynch (traditional)",IDC_SYNCHMODE_DUAL,
+    CONTROL         "Dual SPU Synch/Async (traditional)",IDC_SYNCHMODE_DUAL,
                     "Button",BS_AUTORADIOBUTTON | WS_GROUP,22,18,132,10
     CONTROL         "Synchronous (sometimes needed for streams)",IDC_SYNCHMODE_SYNCH,
                     "Button",BS_AUTORADIOBUTTON,21,28,158,10
@@ -1046,7 +1046,7 @@ BEGIN
     CONTROL         "Advanced SPU Logic (reboot game after changing)",IDC_SPU_ADVANCED,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,197,74,177,10
     LTEXT           "This will be necessary to emulate sound capture (reverb and music visualization). This is costly, few games use it, and the effect is unnecessary.  Enable it if your system has power to spare; check the Sound Viewer to see if the game is using capture.",IDC_STATIC,196,86,177,41
-    LTEXT           "Can cause deterministically visible changes to emulation in principle!!!",IDC_STATIC,196,127,177,17
+    LTEXT           "Can cause deterministically visible changes to emulation in principle!!!",IDC_STATIC,196,127,177,17WS_BORDER
 END
 
 IDD_SOUND_VIEW DIALOGEX 0, 0, 568, 269
@@ -1257,7 +1257,7 @@ END
 
 IDD_WIFISETTINGS DIALOGEX 0, 0, 331, 114
 STYLE DS_SETFONT | DS_CENTER | WS_CAPTION | WS_SYSMENU
-CAPTION "Wifi settings"
+CAPTION "Wi-fi settings"
 FONT 8, "Ms Shell Dlg", 0, 0, 0x0
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,220,93,50,14
@@ -1265,7 +1265,7 @@ BEGIN
     GROUPBOX        "Infrastructure settings",IDC_STATIC,6,33,319,55
     LTEXT           "Bridge network adapter:",IDC_STATIC,12,52,306,8
     COMBOBOX        IDC_BRIDGEADAPTER,12,68,306,45,CBS_DROPDOWNLIST | CBS_HASSTRINGS
-    CONTROL         "Enable WiFi Emulation",IDC_WIFI_ENABLED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,13,84,10
+    CONTROL         "Enable Wi-fi Emulation",IDC_WIFI_ENABLED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,13,84,10
     CONTROL         "Compatibility Mode",IDC_WIFI_COMPAT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,127,13,84,10
 END
 
@@ -1430,7 +1430,7 @@ IDD_SLOT1_R4 DIALOGEX 7, 64, 302, 89
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_VISIBLE | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "Directory to scan:",IDC_R4_FOLDER,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,9,22,35,10
+    CONTROL         "Directory to scan:",IDC_R4_FOLDER,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,9,22,71,10
     CONTROL         "use path of the loaded ROM (not the same as ""ROM path"" in path configuration)",IDC_R4_ROM,
                     "Button",BS_AUTORADIOBUTTON,9,53,272,10
     PUSHBUTTON      "Browse...",IDC_BROWSE,245,33,50,14
@@ -1738,7 +1738,7 @@ BEGIN
         END
         MENUITEM "&Control Config",             IDM_CONFIG
         MENUITEM "&Hotkey Config",              IDM_HOTKEY_CONFIG
-        MENUITEM "&Wifi Settings",              IDM_WIFISETTINGS
+        MENUITEM "&Wi-fi Settings",              IDM_WIFISETTINGS
         MENUITEM "&Path Settings",              IDM_PATHSETTINGS
         MENUITEM "Background Pause",            IDC_BACKGROUNDPAUSE
         MENUITEM "Background Input",            IDC_BACKGROUNDINPUT
