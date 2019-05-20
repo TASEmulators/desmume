@@ -37,10 +37,6 @@
 #include <smmintrin.h>
 #endif
 
-#ifdef ENABLE_AVX
-#include <immintrin.h>
-#endif
-
 enum MatrixMode
 {
 	MATRIXMODE_PROJECTION		= 0,
@@ -159,7 +155,47 @@ FORCEINLINE s32 sfx32_shiftdown(const s64 a)
 
 // SIMD Functions
 //-------------
-#if defined(ENABLE_AVX)
+#if defined(ENABLE_AVX512_0)
+
+static void memset_u16(void *dst, const u16 val, const size_t elementCount)
+{
+	v512u16 *dst_vec512 = (v512u16 *)dst;
+	const size_t length_vec512 = elementCount / (sizeof(v512u16) / sizeof(u16));
+	
+	const v512u16 val_vec512 = _mm512_set1_epi16(val);
+	for (size_t i = 0; i < length_vec512; i++)
+		_mm512_stream_si512(dst_vec512 + i, val_vec512);
+}
+
+template <size_t ELEMENTCOUNT>
+static void memset_u16_fast(void *dst, const u16 val)
+{
+	v512u16 *dst_vec512 = (v512u16 *)dst;
+	
+	const v512u16 val_vec512 = _mm512_set1_epi16(val);
+	MACRODO_N(ELEMENTCOUNT / (sizeof(v512u16) / sizeof(u16)), _mm512_store_si512(dst_vec512 + (X), val_vec512));
+}
+
+static void memset_u32(void *dst, const u32 val, const size_t elementCount)
+{
+	v512u32 *dst_vec512 = (v512u32 *)dst;
+	const size_t length_vec512 = elementCount / (sizeof(v512u32) / sizeof(u32));
+	
+	const v512u32 val_vec512 = _mm512_set1_epi32(val);
+	for (size_t i = 0; i < length_vec512; i++)
+		_mm512_stream_si512(dst_vec512 + i, val_vec512);
+}
+
+template <size_t ELEMENTCOUNT>
+static void memset_u32_fast(void *dst, const u32 val)
+{
+	v512u32 *dst_vec512 = (v512u32 *)dst;
+	
+	const v512u32 val_vec512 = _mm512_set1_epi32(val);
+	MACRODO_N(ELEMENTCOUNT / (sizeof(v512u32) / sizeof(u32)), _mm512_store_si512(dst_vec512 + (X), val_vec512));
+}
+
+#elif defined(ENABLE_AVX)
 
 static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 {

@@ -2685,6 +2685,8 @@
 		ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = System/Library/Frameworks/AudioUnit.framework; sourceTree = SDKROOT; };
 		ABC570D4134431DA00E7B0B1 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = DefaultKeyMappings.plist; sourceTree = "<group>"; };
+		ABCC19332287879000DFA471 /* colorspacehandler_AVX512.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_AVX512.cpp; sourceTree = "<group>"; };
+		ABCC19342287879000DFA471 /* colorspacehandler_AVX512.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_AVX512.h; sourceTree = "<group>"; };
 		ABCFA9F2178BDE920030C8BA /* encrypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = encrypt.h; sourceTree = "<group>"; };
 		ABCFA9F3178BDE920030C8BA /* encrypt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = encrypt.cpp; sourceTree = "<group>"; };
 		ABD103FE1346652500AF11D1 /* cocoa_core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_core.h; sourceTree = "<group>"; };
@@ -3842,10 +3844,12 @@
 			children = (
 				ABBFFF811D611A36003CD598 /* colorspacehandler_AltiVec.cpp */,
 				ABBFFF7B1D610457003CD598 /* colorspacehandler_AVX2.cpp */,
+				ABCC19332287879000DFA471 /* colorspacehandler_AVX512.cpp */,
 				ABBFFF751D5FD2ED003CD598 /* colorspacehandler_SSE2.cpp */,
 				ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */,
 				ABBFFF821D611A36003CD598 /* colorspacehandler_AltiVec.h */,
 				ABBFFF7C1D610457003CD598 /* colorspacehandler_AVX2.h */,
+				ABCC19342287879000DFA471 /* colorspacehandler_AVX512.h */,
 				ABBFFF761D5FD2ED003CD598 /* colorspacehandler_SSE2.h */,
 				ABBFFF701D5F9C52003CD598 /* colorspacehandler.h */,
 			);
@@ -7073,6 +7077,7 @@
 					GDB_STUB,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				PRODUCT_NAME = "DeSmuME (Debug, dev+)";
 			};
 			name = Debug;
@@ -7087,6 +7092,7 @@
 					GDB_STUB,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				PRODUCT_NAME = "DeSmuME (dev+)";
 			};
 			name = Release;
@@ -7257,6 +7263,9 @@
 				INFOPLIST_FILE = "Info (Debug).plist";
 				LD_NO_PIE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MTL_FAST_MATH = YES;
+				MTL_LANGUAGE_REVISION = Metal11;
+				MTL_OPTIMIZATION_LEVEL = 3;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-I./../../";
 				PRODUCT_NAME = "DeSmuME (Debug)";
@@ -7309,6 +7318,9 @@
 				INFOPLIST_FILE = Info.plist;
 				LD_NO_PIE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MTL_FAST_MATH = YES;
+				MTL_LANGUAGE_REVISION = Metal11;
+				MTL_OPTIMIZATION_LEVEL = 3;
 				OTHER_CFLAGS = "-I./../../";
 				PRODUCT_NAME = DeSmuME;
 				SDKROOT = macosx;

@@ -49,6 +49,10 @@
 #endif
 
 #ifdef __GNUC__
+	#ifdef __ALTIVEC__
+		#define ENABLE_ALTIVEC
+	#endif
+
 	#ifdef __SSE__
 		#define ENABLE_SSE
 	#endif
@@ -81,8 +85,27 @@
 		#define ENABLE_AVX2
 	#endif
 
-	#ifdef __ALTIVEC__
-		#define ENABLE_ALTIVEC
+	// AVX-512 is special because it has multiple tiers of support.
+	//
+	// For our case, Tier-0 will be the baseline AVX-512 tier that includes the basic Foundation and
+	// Conflict Detection extensions, which should be supported on all AVX-512 CPUs. Higher tiers
+	// include more extensions, where each higher tier also assumes support for all lower tiers.
+	//
+	// For typical use cases in DeSmuME, the most practical AVX-512 tier will be Tier-1.
+	#if defined(__AVX512F__) && defined(__AVX512CD__)
+		#define ENABLE_AVX512_0
+	#endif
+
+	#if defined(ENABLE_AVX512_0) && defined(__AVX512BW__) && defined(__AVX512DQ__)
+		#define ENABLE_AVX512_1
+	#endif
+
+	#if defined(ENABLE_AVX512_1) && defined(__AVX512IFMA__) && defined(__AVX512VBMI__)
+		#define ENABLE_AVX512_2
+	#endif
+
+	#if defined(ENABLE_AVX512_2) && defined(__AVX512VNNI__) && defined(__AVX512VBMI2__) && defined(__AVX512BITALG__)
+		#define ENABLE_AVX512_3
 	#endif
 #endif
 
@@ -245,7 +268,8 @@ typedef __m128i v128u32;
 typedef __m128i v128s32;
 #endif
 
-#ifdef ENABLE_AVX
+#if defined(ENABLE_AVX) || defined(ENABLE_AVX512_0)
+
 #include <immintrin.h>
 typedef __m256i v256u8;
 typedef __m256i v256s8;
@@ -253,7 +277,17 @@ typedef __m256i v256u16;
 typedef __m256i v256s16;
 typedef __m256i v256u32;
 typedef __m256i v256s32;
+
+#if defined(ENABLE_AVX512_0)
+typedef __m512i v512u8;
+typedef __m512i v512s8;
+typedef __m512i v512u16;
+typedef __m512i v512s16;
+typedef __m512i v512u32;
+typedef __m512i v512s32;
 #endif
+
+#endif // defined(ENABLE_AVX) || defined(ENABLE_AVX512_0)
 
 /*---------- GPU3D fixed-points types -----------*/
 

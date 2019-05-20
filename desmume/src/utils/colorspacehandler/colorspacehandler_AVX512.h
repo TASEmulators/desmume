@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2017 DeSmuME team
+	Copyright (C) 2016-2019 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,37 +15,37 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef COLORSPACEHANDLER_SSE2_H
-#define COLORSPACEHANDLER_SSE2_H
+#ifndef COLORSPACEHANDLER_AVX512_H
+#define COLORSPACEHANDLER_AVX512_H
 
 #include "colorspacehandler.h"
 
-#ifndef ENABLE_SSE2
-	#warning This header requires SSE2 support.
+#ifndef ENABLE_AVX512_1
+	#warning This header requires AVX-512 Tier-1 support.
 #else
 
-template<bool SWAP_RB> void ColorspaceConvert555To8888_SSE2(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi);
-template<bool SWAP_RB> void ColorspaceConvert555XTo888X_SSE2(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
-template<bool SWAP_RB> void ColorspaceConvert555To6665_SSE2(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi);
-template<bool SWAP_RB> void ColorspaceConvert555XTo666X_SSE2(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
-template<bool SWAP_RB> void ColorspaceConvert555To8888Opaque_SSE2(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
-template<bool SWAP_RB> void ColorspaceConvert555To6665Opaque_SSE2(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
-template<bool SWAP_RB> v128u32 ColorspaceConvert8888To6665_SSE2(const v128u32 &src);
-template<bool SWAP_RB> v128u32 ColorspaceConvert6665To8888_SSE2(const v128u32 &src);
-template<bool SWAP_RB> v128u16 ColorspaceConvert8888To5551_SSE2(const v128u32 &srcLo, const v128u32 &srcHi);
-template<bool SWAP_RB> v128u16 ColorspaceConvert6665To5551_SSE2(const v128u32 &srcLo, const v128u32 &srcHi);
-template<bool SWAP_RB> v128u32 ColorspaceConvert888XTo8888Opaque_SSE2(const v128u32 &src);
+template<bool SWAP_RB> void ColorspaceConvert555To8888_AVX512(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi);
+template<bool SWAP_RB> void ColorspaceConvert555XTo888X_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template<bool SWAP_RB> void ColorspaceConvert555To6665_AVX512(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi);
+template<bool SWAP_RB> void ColorspaceConvert555XTo666X_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template<bool SWAP_RB> void ColorspaceConvert555To8888Opaque_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template<bool SWAP_RB> void ColorspaceConvert555To6665Opaque_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template<bool SWAP_RB> v512u32 ColorspaceConvert8888To6665_AVX512(const v512u32 &src);
+template<bool SWAP_RB> v512u32 ColorspaceConvert6665To8888_AVX512(const v512u32 &src);
+template<bool SWAP_RB> v512u16 ColorspaceConvert8888To5551_AVX512(const v512u32 &srcLo, const v512u32 &srcHi);
+template<bool SWAP_RB> v512u16 ColorspaceConvert6665To5551_AVX512(const v512u32 &srcLo, const v512u32 &srcHi);
+template<bool SWAP_RB> v512u32 ColorspaceConvert888XTo8888Opaque_AVX512(const v512u32 &src);
 
-template<bool SWAP_RB> v128u16 ColorspaceCopy16_SSE2(const v128u16 &src);
-template<bool SWAP_RB> v128u32 ColorspaceCopy32_SSE2(const v128u32 &src);
+template<bool SWAP_RB> v512u16 ColorspaceCopy16_AVX512(const v512u16 &src);
+template<bool SWAP_RB> v512u32 ColorspaceCopy32_AVX512(const v512u32 &src);
 
-template<bool SWAP_RB> v128u16 ColorspaceApplyIntensity16_SSE2(const v128u16 &src, float intensity);
-template<bool SWAP_RB> v128u32 ColorspaceApplyIntensity32_SSE2(const v128u32 &src, float intensity);
+template<bool SWAP_RB> v512u16 ColorspaceApplyIntensity16_AVX512(const v512u16 &src, float intensity);
+template<bool SWAP_RB> v512u32 ColorspaceApplyIntensity32_AVX512(const v512u32 &src, float intensity);
 
-class ColorspaceHandler_SSE2 : public ColorspaceHandler
+class ColorspaceHandler_AVX512 : public ColorspaceHandler
 {
 public:
-	ColorspaceHandler_SSE2() {};
+	ColorspaceHandler_AVX512() {};
 	
 	size_t ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
 	size_t ConvertBuffer555To8888Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
@@ -82,7 +82,6 @@ public:
 	size_t ConvertBuffer888XTo8888Opaque_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const;
 	size_t ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const;
 	
-#ifdef ENABLE_SSSE3
 	size_t ConvertBuffer555XTo888(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
 	size_t ConvertBuffer555XTo888_SwapRB(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
 	size_t ConvertBuffer555XTo888_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
@@ -92,7 +91,6 @@ public:
 	size_t ConvertBuffer888XTo888_SwapRB(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
 	size_t ConvertBuffer888XTo888_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
 	size_t ConvertBuffer888XTo888_SwapRB_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
-#endif
 	
 	size_t CopyBuffer16_SwapRB(const u16 *src, u16 *dst, size_t pixCount) const;
 	size_t CopyBuffer16_SwapRB_IsUnaligned(const u16 *src, u16 *dst, size_t pixCount) const;
@@ -111,6 +109,6 @@ public:
 	size_t ApplyIntensityToBuffer32_SwapRB_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const;
 };
 
-#endif // ENABLE_SSE2
+#endif // ENABLE_AVX512_1
 
-#endif /* COLORSPACEHANDLER_SSE2_H */
+#endif // COLORSPACEHANDLER_AVX512_H
