@@ -58,6 +58,7 @@
 #include "SPU.h"
 #include "saves.h"
 #include "emufile.h"
+#include "hotkey.h"
 
 using namespace std;
 
@@ -3291,6 +3292,25 @@ DEFINE_LUA_FUNCTION(gui_setlayermask, "main,sub")
 	SetLayerMasks(main, sub);
 #endif
 	return 0;
+}
+
+// gui.savescreenshotas()
+//
+// Causes Desmume to write a screenshot to a file based on a received filename, caution: will overwrite existing screenshot files
+//
+// Unconditionally returns 1
+// Ported from FCEUX
+DEFINE_LUA_FUNCTION(gui_savescreenshotas, "filename")
+{
+	const char* name = NULL;
+	size_t l;
+	name = luaL_checklstring(L, 1, &l);
+	lua_pushstring(L, name);
+	if (name)
+		DoScreenshot(name);
+	else
+		luaL_error(L,"gui.savescreenshotas must have a string parameter");
+	return 1;
 }
 
 // takes a screenshot and returns it in gdstr format
