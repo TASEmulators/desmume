@@ -67,4 +67,5 @@ OPT(multisampling, bool, false, Config, OpenGLMultisampling)
 OPT(audio_enabled, bool, true, Audio, Enabled)
 OPT(audio_sync, int, 0, Audio, Synchronization)
 OPT(audio_interpolation, int, 1, Audio, Interpolation)
+OPT(audio_volume, int, 128, Audio, Volume)
 

@@ -23,4 +23,7 @@
 #define SNDCORE_SDL 2
 
 extern SoundInterface_struct SNDSDL;
+extern int audio_volume;
+int SNDSDLGetAudioVolume();
+void SNDSDLSetAudioVolume(int value);
 #endif

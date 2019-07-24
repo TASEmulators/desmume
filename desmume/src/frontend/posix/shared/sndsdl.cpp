@@ -57,6 +57,7 @@ static volatile u32 soundpos;
 static u32 soundlen;
 static u32 soundbufsize;
 static SDL_AudioSpec audiofmt;
+int audio_volume;
 
 //////////////////////////////////////////////////////////////////////////////
 #ifdef _XBOX
@@ -82,14 +83,17 @@ static void MixAudio(void *userdata, Uint8 *stream, int len) {
    int i;
    Uint8 *soundbuf=(Uint8 *)stereodata16;
 
+   Uint8 *stream_tmp=(Uint8 *)malloc(len);
    for (i = 0; i < len; i++)
    {
       if (soundpos >= soundbufsize)
          soundpos = 0;
 
-      stream[i] = soundbuf[soundpos];
+      stream_tmp[i] = soundbuf[soundpos];
       soundpos++;
    }
+   SDL_MixAudio(stream, stream_tmp, len, audio_volume);
+   free(stream_tmp);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -222,3 +226,11 @@ void SNDSDLSetVolume(int volume)
 }
 
 //////////////////////////////////////////////////////////////////////////////
+int SNDSDLGetAudioVolume()
+{
+   return audio_volume;
+}
+void SNDSDLSetAudioVolume(int value)
+{
+   audio_volume = value;
+}

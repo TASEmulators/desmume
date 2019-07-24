@@ -138,6 +138,7 @@ static void ResetSaveStateTimes();
 static void LoadSaveStateInfo();
 static void Printscreen();
 static void Reset();
+static void SetAudioVolume();
 static void Edit_Controls();
 static void Edit_Joystick_Controls();
 static void MenuSave(GtkMenuItem *item, gpointer slot);
@@ -358,6 +359,7 @@ static const char *ui_description =
 "        <menuitem action='save_t5'/>"
 "        <menuitem action='save_t6'/>"
 "      </menu>"
+"      <menuitem action='setaudiovolume'/>"
 "      <menuitem action='editctrls'/>"
 "      <menuitem action='editjoyctrls'/>"
 "    </menu>"
@@ -436,6 +438,7 @@ static const GtkActionEntry action_entries[] = {
         { "cheatsearch",     NULL,      "_Search",        NULL,       NULL,   CheatSearch },
         { "cheatlist",       NULL,      "_List",        NULL,       NULL,   CheatList },
       { "ConfigSaveMenu", NULL, "_Saves" },
+      { "setaudiovolume", NULL, "Set audio _volume", NULL, NULL, SetAudioVolume },
       { "editctrls",  NULL,        "_Edit controls",NULL,    NULL,   Edit_Controls },
       { "editjoyctrls",  NULL,     "Edit _Joystick controls",NULL,       NULL,   Edit_Joystick_Controls },
 
@@ -1902,6 +1905,38 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
   RM_KEY( keys_latch, Key );
   return 1;
 
+}
+
+/////////////////////////////// SET AUDIO VOLUME //////////////////////////////////////
+
+static void CallbackSetAudioVolume(GtkWidget* hscale, gpointer data)
+{
+	SNDSDLSetAudioVolume(gtk_range_get_value(GTK_RANGE(hscale)));
+	config.audio_volume = SNDSDLGetAudioVolume();
+}
+
+static void SetAudioVolume()
+{
+	GtkWidget *dialog = NULL;
+	GtkWidget *hscale = NULL;
+	int audio_volume = SNDSDLGetAudioVolume();
+	dialog = gtk_dialog_new_with_buttons("Set audio volume", GTK_WINDOW(pWindow), GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+	hscale = gtk_hscale_new_with_range(0, SDL_MIX_MAXVOLUME, 1);
+	gtk_range_set_value(GTK_RANGE(hscale), SNDSDLGetAudioVolume());
+        g_signal_connect(G_OBJECT(hscale), "value-changed", G_CALLBACK(CallbackSetAudioVolume), NULL);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), hscale, TRUE, FALSE, 0);
+	gtk_widget_show_all(GTK_DIALOG(dialog)->vbox);
+	switch(gtk_dialog_run(GTK_DIALOG(dialog)))
+	{
+		case GTK_RESPONSE_OK:
+			break;
+		case GTK_RESPONSE_CANCEL:
+		case GTK_RESPONSE_NONE:
+			SNDSDLSetAudioVolume(audio_volume);
+			config.audio_volume = SNDSDLGetAudioVolume();
+			break;
+	}
+	gtk_widget_destroy(dialog);
 }
 
 /////////////////////////////// CONTROLS EDIT //////////////////////////////////////
@@ -3452,6 +3487,8 @@ common_gtk_main( class configured_features *my_config)
     if (my_config->timeout > 0) {
         g_timeout_add_seconds(my_config->timeout, timeout_exit_cb, GINT_TO_POINTER(my_config->timeout));
     }
+
+    SNDSDLSetAudioVolume(config.audio_volume);
 
     /* Video filter parameters */
     video->SetFilterParameteri(VF_PARAM_SCANLINE_A, _scanline_filter_a);
