@@ -3106,8 +3106,7 @@ common_gtk_main( class configured_features *my_config)
 		CommonSettings.fwConfig.language = my_config->firmware_language;
     }
 
-    /* if the command line overriding is enabled
-       then use the language set on the GUI */
+    /* if the command line overriding is enabled then use the language set on the GUI */
     if(config.command_line_overriding_firmware_language)
 		CommonSettings.fwConfig.language = config.firmware_language;
 
@@ -3367,7 +3366,6 @@ common_gtk_main( class configured_features *my_config)
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatsearch"), FALSE);
 
     nds_screen.gap_size = config.view_gap ? GAP_SIZE : 0;
-    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "gap"), config.view_gap);
 
     nds_screen.swap = config.view_swap;
     gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "orient_swapscreens"), config.view_swap);
@@ -3396,6 +3394,10 @@ common_gtk_main( class configured_features *my_config)
 
     /* Creating the place for showing DS screens */
     pDrawingArea = gtk_drawing_area_new();
+
+    /* This toggle action must not be set active before the pDrawingArea initialization to avoid a GTK warning */
+    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "gap"), config.view_gap);
+
     gtk_container_add (GTK_CONTAINER (pVBox), pDrawingArea);
 
     gtk_widget_set_events(pDrawingArea,
