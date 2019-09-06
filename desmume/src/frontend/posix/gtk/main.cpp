@@ -150,6 +150,7 @@ static void ToggleStatusbarVisible(GtkToggleAction *action);
 static void ToggleToolbarVisible(GtkToggleAction *action);
 static void ToggleFullscreen (GtkToggleAction *action);
 static void ToggleAudio (GtkToggleAction *action);
+static void ToggleAutoPause (GtkToggleAction *action);
 #ifdef FAKE_MIC
 static void ToggleMicNoise (GtkToggleAction *action);
 #endif
@@ -331,6 +332,7 @@ static const char *ui_description =
 #endif
 "      <menuitem action='graphicssettings'/>"
 "      <menuitem action='enableaudio'/>"
+"      <menuitem action='autopause'/>"
 #ifdef FAKE_MIC
 "      <menuitem action='micnoise'/>"
 #endif
@@ -454,6 +456,7 @@ static const GtkActionEntry action_entries[] = {
 
 static const GtkToggleActionEntry toggle_entries[] = {
     { "enableaudio", NULL, "_Enable audio", NULL, NULL, G_CALLBACK(ToggleAudio), TRUE},
+    { "autopause", NULL, "Auto pause in background", NULL, NULL, G_CALLBACK(ToggleAutoPause), TRUE},
 #ifdef FAKE_MIC
     { "micnoise", NULL, "Fake mic _noise", NULL, NULL, G_CALLBACK(ToggleMicNoise), FALSE},
 #endif
@@ -809,6 +812,7 @@ uint SPUMode = SPUMODE_DUALASYNC;
 uint Frameskip = 0;
 uint autoFrameskipMax = 0;
 bool autoframeskip = true;
+static bool autoPauseActivated = false;
 cairo_filter_t Interpolation = CAIRO_FILTER_NEAREST;
 
 static GtkWidget *pWindow;
@@ -1908,6 +1912,26 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
   RM_KEY( keys_latch, Key );
   return 1;
 
+}
+
+static gboolean Focus_In(GtkWidget *w, GdkEvent *e, gpointer data)
+{
+    if(config.window_autoPause && autoPauseActivated && !desmume_running()){
+        Launch();
+    }
+    autoPauseActivated = false;
+    return FALSE;
+}
+
+static gboolean Focus_Out(GtkWidget *w, GdkEvent *e, gpointer data)
+{
+    if(config.window_autoPause && desmume_running()){
+        autoPauseActivated = true;
+        Pause();
+    }else{
+        autoPauseActivated = false;
+    }
+    return FALSE;
 }
 
 /////////////////////////////// SET AUDIO VOLUME //////////////////////////////////////
@@ -3027,6 +3051,16 @@ static void ToggleAudio (GtkToggleAction *action)
     RedrawScreen();
 }
 
+static void ToggleAutoPause (GtkToggleAction *action)
+{
+    config.window_autoPause = gtk_toggle_action_get_active(action);
+    if (config.window_autoPause)
+        driver->AddLine("Auto pause enabled");
+    else
+        driver->AddLine("Auto pause disabled");
+    RedrawScreen();
+}
+
 #ifdef FAKE_MIC
 static void ToggleMicNoise (GtkToggleAction *action)
 {
@@ -3247,6 +3281,8 @@ common_gtk_main( class configured_features *my_config)
     g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(DoQuit), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
+    g_signal_connect(G_OBJECT(pWindow), "focus_in_event", G_CALLBACK(Focus_In), NULL);
+    g_signal_connect(G_OBJECT(pWindow), "focus_out_event", G_CALLBACK(Focus_Out), NULL);
 
     /* Create the GtkVBox */
     pVBox = gtk_vbox_new(FALSE, 0);
@@ -3261,6 +3297,12 @@ common_gtk_main( class configured_features *my_config)
     /* Update audio toggle status */
     if (my_config->disable_sound || !config.audio_enabled) {
         GtkAction *action = gtk_action_group_get_action(action_group, "enableaudio");
+        if (action)
+            gtk_toggle_action_set_active((GtkToggleAction *)action, FALSE);
+    }
+    /* Update autoPause toggle status */
+    if (!config.window_autoPause) {
+        GtkAction *action = gtk_action_group_get_action(action_group, "autopause");
         if (action)
             gtk_toggle_action_set_active((GtkToggleAction *)action, FALSE);
     }

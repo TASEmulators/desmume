@@ -40,6 +40,7 @@ OPT(window_scale, int, 0, Window, Scale2x)
 /*OPT(window_h, int, 0, Window, Height)*/
 /*OPT(window_maximized, bool, false, Window, Maximized)*/
 OPT(window_fullscreen, bool, false, Window, Fullscreen)
+OPT(window_autoPause, bool, false, Window, AutoPause)
 
 /* HUD display */
 OPT(hud_fps, bool, false, HudDisplay, Fps)
