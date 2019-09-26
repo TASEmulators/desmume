@@ -698,10 +698,14 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	//run crc over the whole buffer (chunk at a time, to avoid coding a streaming crc
 	gameInfo.reader->Seek(gameInfo.fROM, 0, SEEK_SET);
 	gameInfo.crc = 0;
+	bool first = true;
 	for(;;) {
 		u8 buf[4096];
 		int read = gameInfo.reader->Read(gameInfo.fROM,buf,4096);
 		if(read == 0) break;
+		if(first && read >= 512)
+			gameInfo.crcForCheatsDb = ~crc32(0, buf, 512);
+		first = false;
 		gameInfo.crc = crc32(gameInfo.crc, buf, read);
 	}
 

@@ -339,6 +339,7 @@ struct GameInfo
 	u32 cardSize;
 	u32 mask;
 	u32 crc;
+	u32 crcForCheatsDb;
 	u32 chipID;
 	u32	romType;
 	u32 headerOffset;

@@ -1564,7 +1564,7 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 				lvi.pszText= tmp[i].description;
 				SendMessage(exportListView, LVM_INSERTITEM, 0, (LPARAM)&lvi);
 			}
-			if (gameInfo.crc && (gameInfo.crc != cheatsExport->CRC))
+			if (gameInfo.crc && (gameInfo.crcForCheatsDb != cheatsExport->CRC))
 				msgbox->warn("Checksums not matching");
 
 			SendMessage(exportListView, WM_SETREDRAW, (WPARAM)TRUE,0);
