@@ -94,3 +94,13 @@ DLL void FrameAdvance()
 	NDS_exec<false>();
 	SPU_Emulate_user();
 }
+
+u16* VideoBuffer16bit()
+{
+	return (u16*)GPU->GetDisplayInfo().masterNativeBuffer;
+}
+DLL void VideoBuffer32bit(s32* dst)
+{
+	u16* v = VideoBuffer16bit();
+	ColorspaceConvertBuffer555To8888Opaque<true, false>(v, (u32*)dst, 256 * 192 * 2);
+}
