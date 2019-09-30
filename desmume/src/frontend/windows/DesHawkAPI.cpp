@@ -70,3 +70,23 @@ DLL bool LoadROM(u8* file, int fileSize)
 {
 	return (NDS_LoadROM(file, fileSize) > 0);
 }
+
+DLL void SetInput(u16 buttons, u8 touchX, u8 touchY)
+{
+	NDS_setPad(buttons & 0x0002, buttons & 0x0001, buttons & 0x0008, buttons & 0x0004,
+		buttons & 0x0800, buttons & 0x0400, buttons & 0x0020, buttons & 0x0010,
+		buttons & 0x0080, buttons & 0x0040, buttons & 0x0100, buttons & 0x0200,
+		buttons & 0x1000, buttons & 0x2000);
+	if (buttons & 0x4000)
+		NDS_setTouchPos(touchX, touchY);
+	else
+		NDS_releaseTouch();
+}
+DLL void FrameAdvance()
+{
+	NDS_beginProcessingInput();
+	NDS_endProcessingInput();
+
+	NDS_exec<false>();
+	SPU_Emulate_user();
+}
