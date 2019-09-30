@@ -373,6 +373,8 @@ struct GameInfo
 	bool IsCode(const char* code) const;
 
 	bool loadROM(std::string fname, u32 type = ROM_NDS);
+	bool loadROM(u8* file, s32 fileSize);
+	bool loadROM(u32 type);
 	void closeROM();
 	u32 readROM(u32 pos);
 	bool ValidateHeader();
@@ -465,6 +467,7 @@ void NDS_suspendProcessingInput(bool suspend);
 
 
 int NDS_LoadROM(const char *filename, const char* physicalFilename=0, const char* logicalFilename=0);
+int NDS_LoadROM(u8* file, int fileSize);
 void NDS_FreeROM(void);
 void NDS_Reset();
 

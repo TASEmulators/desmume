@@ -65,3 +65,8 @@ DLL int GetFrameCount()
 {
 	return currFrameCounter;
 }
+
+DLL bool LoadROM(u8* file, int fileSize)
+{
+	return (NDS_LoadROM(file, fileSize) > 0);
+}

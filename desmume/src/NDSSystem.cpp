@@ -401,21 +401,8 @@ void GameInfo::populate()
 		}*/
 }
 
-bool GameInfo::loadROM(std::string fname, u32 type)
+bool GameInfo::loadROM(u32 type)
 {
-	//printf("ROM %s\n", CommonSettings.loadToMemory?"loaded to RAM":"stream from disk");
-
-	closeROM();
-
-	char *noext = strdup(fname.c_str());
-	reader = ROMReaderInit(&noext); free(noext);
-	fROM = reader->Init(fname.c_str());
-	if (!fROM) return false;
-
-	headerOffset = (type == ROM_DSGBA)?DSGBA_LOADER_SIZE:0;
-	romsize = reader->Size(fROM) - headerOffset;
-	reader->Seek(fROM, headerOffset, SEEK_SET);
-
 	bool res = (reader->Read(fROM, &header, sizeof(header)) == sizeof(header));
 
 	if (res)
@@ -426,10 +413,10 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 			const size_t offset;
 			const size_t bytes;
 		};
-		
+
 		static const FieldSwap fieldSwaps[] = {
 			{ offsetof(NDS_header,makerCode), 2},
-			
+
 			{ offsetof(NDS_header,ARM9src), 4},
 			{ offsetof(NDS_header,ARM9exe), 4},
 			{ offsetof(NDS_header,ARM9cpy), 4},
@@ -449,35 +436,35 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 			{ offsetof(NDS_header,normalCmd), 4},
 			{ offsetof(NDS_header,Key1Cmd), 4},
 			{ offsetof(NDS_header,IconOff), 4},
-			
+
 			{ offsetof(NDS_header,CRC16), 2},
 			{ offsetof(NDS_header,ROMtimeout), 2},
-			
+
 			{ offsetof(NDS_header,ARM9autoload), 4},
 			{ offsetof(NDS_header,ARM7autoload), 4},
 			{ offsetof(NDS_header,endROMoffset), 4},
 			{ offsetof(NDS_header,HeaderSize), 4},
-			
+
 			{ offsetof(NDS_header, ARM9module), 4},
 			{ offsetof(NDS_header, ARM7module), 4},
-			
+
 			{ offsetof(NDS_header,logoCRC16), 2},
 			{ offsetof(NDS_header,headerCRC16), 2},
 		};
-		
-		for(size_t i = 0; i < ARRAY_SIZE(fieldSwaps); i++)
+
+		for (size_t i = 0; i < ARRAY_SIZE(fieldSwaps); i++)
 		{
 			const u8 *fieldAddr = (u8 *)&header + fieldSwaps[i].offset;
-			
-			switch(fieldSwaps[i].bytes)
+
+			switch (fieldSwaps[i].bytes)
 			{
-				case 2:
-					*(u16 *)fieldAddr = LE_TO_LOCAL_16(*(u16 *)fieldAddr);
-					break;
-					
-				case 4:
-					*(u32 *)fieldAddr = LE_TO_LOCAL_32(*(u32 *)fieldAddr);
-					break;
+			case 2:
+				*(u16 *)fieldAddr = LE_TO_LOCAL_16(*(u16 *)fieldAddr);
+				break;
+
+			case 4:
+				*(u32 *)fieldAddr = LE_TO_LOCAL_32(*(u32 *)fieldAddr);
+				break;
 			}
 		}
 #endif
@@ -486,10 +473,10 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 		if (cardSize < romsize)
 		{
 			msgbox->warn("The ROM header is invalid.\nThe device size has been increased to allow for the provided file size.\n");
-			
+
 			for (u32 i = header.cardSize; i < 0xF; i++)
 			{
-				if (((128 * 1024) << i) >= romsize) 
+				if (((128 * 1024) << i) >= romsize)
 				{
 					header.cardSize = i;
 					cardSize = (128 * 1024) << i;
@@ -497,13 +484,13 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 				}
 			}
 		}
-		
+
 		mask = (cardSize - 1);
-		mask |= (mask >>1);
-		mask |= (mask >>2);
-		mask |= (mask >>4);
-		mask |= (mask >>8);
-		mask |= (mask >>16);
+		mask |= (mask >> 1);
+		mask |= (mask >> 2);
+		mask |= (mask >> 4);
+		mask |= (mask >> 8);
+		mask |= (mask >> 16);
 
 		if (type == ROM_NDS)
 		{
@@ -511,40 +498,15 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 			reader->Read(fROM, &secureArea[0], 0x4000);
 		}
 
-		//for now, we have to do this, because the DLDI patching requires it
-		bool loadToMemory = CommonSettings.loadToMemory;
-		if(isHomebrew())
-			loadToMemory = true;
-
-		//convert to an in-memory reader around a pre-read buffer if that's what's requested
-		if (loadToMemory)
-		{
-			reader->Seek(fROM, headerOffset, SEEK_SET);
-			
-			romdataForReader = new u8[romsize];
-			if (reader->Read(fROM, romdataForReader, romsize) != romsize)
-			{
-				delete [] romdataForReader; romdataForReader = NULL;
-				romsize = 0;
-
-				return false;
-			}
-
-			reader->DeInit(fROM); 
-			fROM = NULL;
-			reader = MemROMReaderRead_TrueInit(romdataForReader, romsize);
-			fROM = reader->Init(NULL);
-		}
-
-		if(hasRomBanner())
+		if (hasRomBanner())
 		{
 			reader->Seek(fROM, header.IconOff, SEEK_SET);
 			reader->Read(fROM, &banner, sizeof(RomBanner));
-				
+
 			banner.version = LE_TO_LOCAL_16(banner.version);
 			banner.crc16 = LE_TO_LOCAL_16(banner.crc16);
-				
-			for(size_t i = 0; i < ARRAY_SIZE(banner.palette); i++)
+
+			for (size_t i = 0; i < ARRAY_SIZE(banner.palette); i++)
 			{
 				banner.palette[i] = LE_TO_LOCAL_16(banner.palette[i]);
 			}
@@ -555,11 +517,11 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 		{
 			reader->Seek(fROM, header.IconOff + headerOffset, SEEK_SET);
 			reader->Read(fROM, &banner, sizeof(RomBanner));
-			
+
 			banner.version = LE_TO_LOCAL_16(banner.version);
 			banner.crc16 = LE_TO_LOCAL_16(banner.crc16);
-			
-			for(size_t i = 0; i < ARRAY_SIZE(banner.palette); i++)
+
+			for (size_t i = 0; i < ARRAY_SIZE(banner.palette); i++)
 			{
 				banner.palette[i] = LE_TO_LOCAL_16(banner.palette[i]);
 			}
@@ -571,6 +533,63 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 	romsize = 0;
 	reader->DeInit(fROM); fROM = NULL;
 	return false;
+
+}
+bool GameInfo::loadROM(std::string fname, u32 type)
+{
+	//printf("ROM %s\n", CommonSettings.loadToMemory?"loaded to RAM":"stream from disk");
+
+	closeROM();
+
+	char *noext = strdup(fname.c_str());
+	reader = ROMReaderInit(&noext); free(noext);
+	fROM = reader->Init(fname.c_str());
+	if (!fROM) return false;
+
+	headerOffset = (type == ROM_DSGBA) ? DSGBA_LOADER_SIZE : 0;
+	romsize = reader->Size(fROM) - headerOffset;
+	reader->Seek(fROM, headerOffset, SEEK_SET);
+
+	//for now, we have to do this, because the DLDI patching requires it
+	bool loadToMemory = CommonSettings.loadToMemory;
+	if (isHomebrew())
+		loadToMemory = true;
+
+	//convert to an in-memory reader around a pre-read buffer if that's what's requested
+	if (loadToMemory)
+	{
+		reader->Seek(fROM, headerOffset, SEEK_SET);
+
+		romdataForReader = new u8[romsize];
+		if (reader->Read(fROM, romdataForReader, romsize) != romsize)
+		{
+			delete[] romdataForReader; romdataForReader = NULL;
+			romsize = 0;
+
+			return false;
+		}
+
+		reader->DeInit(fROM);
+		fROM = NULL;
+		reader = MemROMReaderRead_TrueInit(romdataForReader, romsize);
+		fROM = reader->Init(NULL);
+	}
+
+	return loadROM(type);
+}
+bool GameInfo::loadROM(u8* file, s32 fileSize)
+{
+	closeROM();
+
+	// create memory stream
+	reader = MemROMReaderRead_TrueInit(file, fileSize);
+	fROM = reader->Init(NULL);
+
+	headerOffset = 0;
+	romsize = reader->Size(fROM) - headerOffset;
+	reader->Seek(fROM, headerOffset, SEEK_SET);
+
+	return loadROM(ROM_NDS);
 }
 
 void GameInfo::closeROM()
@@ -667,49 +686,21 @@ struct LastRom {
 	std::string filename, physicalName, logicalFilename;
 } lastRom;
 
-int NDS_LoadROM(const char *filename, const char *physicalName, const char *logicalFilename)
+void LoadGameInfo()
 {
-	lastRom.filename = filename;
-	lastRom.physicalName = physicalName ? physicalName : "";
-	lastRom.logicalFilename = logicalFilename ? logicalFilename : "";
-
-	int	ret;
-	char	buf[MAX_PATH];
-
-	if (filename == NULL)
-		return -1;
-
-	ret = rom_init_path(filename, physicalName, logicalFilename);
-	if (ret < 1)
-		return ret;
-
-	if (cheatSearch)
-		cheatSearch->close();
-	FCEUI_StopMovie();
-	
-	if (!gameInfo.ValidateHeader())
-	{
-		ret = -1;
-		return ret;
-	}
-	
 	gameInfo.populate();
-	
+
 	//run crc over the whole buffer (chunk at a time, to avoid coding a streaming crc
 	gameInfo.reader->Seek(gameInfo.fROM, 0, SEEK_SET);
 	gameInfo.crc = 0;
-	bool first = true;
-	for(;;) {
+	for (;;) {
 		u8 buf[4096];
-		int read = gameInfo.reader->Read(gameInfo.fROM,buf,4096);
-		if(read == 0) break;
-		if(first && read >= 512)
-			gameInfo.crcForCheatsDb = ~crc32(0, buf, 512);
-		first = false;
+		int read = gameInfo.reader->Read(gameInfo.fROM, buf, 4096);
+		if (read == 0) break;
 		gameInfo.crc = crc32(gameInfo.crc, buf, read);
 	}
 
-	gameInfo.chipID  = 0xC2;														// The Manufacturer ID is defined by JEDEC (C2h = Macronix)
+	gameInfo.chipID = 0xC2;														// The Manufacturer ID is defined by JEDEC (C2h = Macronix)
 	if (!gameInfo.isHomebrew())
 	{
 		gameInfo.chipID |= ((((128 << gameInfo.header.cardSize) / 1024) - 1) << 8);		// Chip size in megabytes minus 1
@@ -740,8 +731,45 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 		if (gameInfo.isDSiEnhanced()) INFO("ROM DSi Enhanced\n");
 	}
 
-	const char *makerName = Database::MakerNameForMakerCode(gameInfo.header.makerCode,true);
-	INFO("ROM developer: %s\n", ((gameInfo.header.makerCode == 0) && gameInfo.isHomebrew())?"Homebrew":makerName);
+	const char *makerName = Database::MakerNameForMakerCode(gameInfo.header.makerCode, true);
+	INFO("ROM developer: %s\n", ((gameInfo.header.makerCode == 0) && gameInfo.isHomebrew()) ? "Homebrew" : makerName);
+
+	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
+	if (gameInfo.isHomebrew())
+	{
+		//note: gameInfo.romdataForReader is safe here because we made sure to load the rom into memory for isHomebrew
+		if (slot1_GetCurrentType() == NDS_SLOT1_R4)
+			DLDI::tryPatch((void*)gameInfo.romdataForReader, gameInfo.romsize, 1);
+		else if (slot2_GetCurrentType() == NDS_SLOT2_CFLASH)
+			DLDI::tryPatch((void*)gameInfo.romdataForReader, gameInfo.romsize, 0);
+	}
+}
+int NDS_LoadROM(const char *filename, const char *physicalName, const char *logicalFilename)
+{
+	lastRom.filename = filename;
+	lastRom.physicalName = physicalName ? physicalName : "";
+	lastRom.logicalFilename = logicalFilename ? logicalFilename : "";
+
+	int	ret;
+	char	buf[MAX_PATH];
+
+	if (filename == NULL)
+		return -1;
+
+	ret = rom_init_path(filename, physicalName, logicalFilename);
+	if (ret < 1)
+		return ret;
+
+	if (cheatSearch)
+		cheatSearch->close();
+	FCEUI_StopMovie();
+	
+	if (!gameInfo.ValidateHeader())
+	{
+		ret = -1;
+		return ret;
+	}
+	LoadGameInfo();
 
 	buf[0] = gameInfo.header.gameCode[0];
 	buf[1] = gameInfo.header.gameCode[1];
@@ -769,16 +797,6 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	}
 	printf("\n");
 
-	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
-	if(gameInfo.isHomebrew())
-	{
-		//note: gameInfo.romdataForReader is safe here because we made sure to load the rom into memory for isHomebrew
-		if (slot1_GetCurrentType() == NDS_SLOT1_R4)
-			DLDI::tryPatch((void*)gameInfo.romdataForReader, gameInfo.romsize, 1);
-		else if (slot2_GetCurrentType() == NDS_SLOT2_CFLASH)
-			DLDI::tryPatch((void*)gameInfo.romdataForReader, gameInfo.romsize, 0);
-	}
-
 	if (cheats != NULL)
 	{
 		memset(buf, 0, MAX_PATH);
@@ -791,6 +809,20 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	NDS_Reset();
 
 	return ret;
+}
+int NDS_LoadROM(u8* file, int fileSize)
+{
+	gameInfo.loadROM(file, fileSize);
+	gameInfo.romType = ROM_NDS;
+
+	if (!gameInfo.ValidateHeader())
+		return -1;
+	// I'm not sure all this is necessary/wanted here.
+	LoadGameInfo();
+	
+	NDS_Reset();
+
+	return 1;
 }
 
 void NDS_FreeROM(void)
