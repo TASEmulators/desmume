@@ -65,6 +65,10 @@ DLL int GetFrameCount()
 {
 	return currFrameCounter;
 }
+DLL void ResetFrameCounters()
+{
+	currFrameCounter = 0;
+}
 
 DLL bool LoadROM(u8* file, int fileSize)
 {
