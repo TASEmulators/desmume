@@ -306,6 +306,7 @@
     <ClCompile Include="console.cpp" />
     <ClCompile Include="CWindow.cpp" />
     <ClCompile Include="ddraw.cpp" />
+    <ClCompile Include="DesHawkAPI.cpp" />
     <ClCompile Include="display.cpp" />
     <ClCompile Include="FEX_Interface.cpp" />
     <ClCompile Include="File_Extractor\7z_C\7zAlloc.c" />

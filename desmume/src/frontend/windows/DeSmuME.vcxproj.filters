@@ -930,6 +930,7 @@
     <ClCompile Include="display.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="DesHawkAPI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\utils\guid.h">
