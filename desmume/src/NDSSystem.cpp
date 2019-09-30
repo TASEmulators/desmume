@@ -582,7 +582,9 @@ bool GameInfo::loadROM(u8* file, s32 fileSize)
 	closeROM();
 
 	// create memory stream
-	reader = MemROMReaderRead_TrueInit(file, fileSize);
+	romdataForReader = new u8[fileSize];
+	memcpy(romdataForReader, file, fileSize);
+	reader = MemROMReaderRead_TrueInit(romdataForReader, fileSize);
 	fROM = reader->Init(NULL);
 
 	headerOffset = 0;
