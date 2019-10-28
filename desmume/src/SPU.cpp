@@ -1058,12 +1058,12 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch8Bi
 	u32 loc = sputrunc(chan->sampcnt);
 	if(INTERPOLATE_MODE != SPUInterpolation_None)
 	{
-		s32 a = (s32)(read_s8(chan->addr + loc) << 8);
-		if(loc < (chan->totlength << 2) - 1) {
-			s32 b = (s32)(read_s8(chan->addr + loc + 1) << 8);
-			a = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
-		}
-		*data = a;
+		s32 a = (s32)(read_s8(chan->addr + loc) << 8), b = a;
+		if(loc < (chan->totlength << 2) - 1)
+			b = (s32)(read_s8(chan->addr + loc + 1) << 8);
+		else if(chan->repeat == 1)
+			b = (s32)(read_s8(chan->addr + chan->loopstart*4) << 8);
+		*data = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
 	}
 	else
 		*data = (s32)read_s8(chan->addr + loc)<< 8;
@@ -1077,20 +1077,18 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch16B
 		return;
 	}
 
+	u32 loc = sputrunc(chan->sampcnt);
 	if(INTERPOLATE_MODE != SPUInterpolation_None)
 	{
-		u32 loc = sputrunc(chan->sampcnt);
-		
-		s32 a = (s32)read16(loc*2 + chan->addr), b;
+		s32 a = (s32)read16(loc*2 + chan->addr), b = a;
 		if(loc < (chan->totlength << 1) - 1)
-		{
-			b = (s32)read16(loc*2 + chan->addr + 2);
-			a = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
-		}
-		*data = a;
+			b = (s32)read16(chan->addr + loc*2 + 2);
+		else if(chan->repeat == 1)
+			b = (s32)read16(chan->addr + chan->loopstart*2);
+		*data = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
 	}
 	else
-		*data = read16(chan->addr + sputrunc(chan->sampcnt)*2);
+		*data = read16(chan->addr + loc*2);
 }
 
 template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void FetchADPCMData(channel_struct * const chan, s32 * const data)
