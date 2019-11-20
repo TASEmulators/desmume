@@ -37,6 +37,7 @@
 	#endif
 	#define PCAP_DEVICE_NAME description
 #else
+	#include <stddef.h>
 	#include <unistd.h>
 	#include <stdlib.h>
 	#include <string.h>
