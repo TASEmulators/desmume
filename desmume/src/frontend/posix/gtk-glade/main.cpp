@@ -334,10 +334,8 @@ gchar * get_ui_file (const char *filename)
 void *
 createThread_gdb( void (*thread_function)( void *data),
                   void *thread_data) {
-  GThread *new_thread = g_thread_create( (GThreadFunc)thread_function,
-                                         thread_data,
-                                         TRUE,
-                                         NULL);
+  GThread *new_thread = g_thread_new(NULL, (GThreadFunc)thread_function,
+                                     thread_data);
 
   return new_thread;
 }
@@ -530,10 +528,6 @@ int main(int argc, char *argv[]) {
     {
       fprintf(stderr, "Warning: X11 not thread-safe\n");
     }
-
-#if !g_thread_supported()
-  g_thread_init( NULL);
-#endif
 
   gtk_init(&argc, &argv);
 
