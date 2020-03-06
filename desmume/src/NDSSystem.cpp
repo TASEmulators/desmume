@@ -2562,6 +2562,10 @@ bool NDS_FakeBoot()
 bool _HACK_DONT_STOPMOVIE = false;
 void NDS_Reset()
 {
+	//do nothing if nothing is loaded
+	if(lastRom.filename.size()==0)
+		return;
+
 	UnloadMovieEmulationSettings();
 
 	//reload last paths if needed
