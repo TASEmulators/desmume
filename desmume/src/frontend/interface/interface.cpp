@@ -27,10 +27,14 @@
 #include "../../SPU.h"
 #include "../../rasterize.h"
 #include "../../saves.h"
+#include "../../movie.h"
 #include "../../mc.h"
 #include "../../firmware.h"
 #include "../posix/shared/sndsdl.h"
 #include "../posix/shared/ctrlssdl.h"
+#include <locale>
+#include <codecvt>
+#include <string>
 
 #define SCREENS_PIXEL_SIZE 98304
 volatile bool execute = false;
@@ -48,6 +52,12 @@ GPU3DInterface *core3DList[] = {
         &gpu3DRasterize,
         NULL
 };
+
+std::wstring s2ws(const std::string& str)
+{
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    return converter.from_bytes(str);
+}
 
 EXPORTED int desmume_init()
 {
@@ -133,6 +143,12 @@ EXPORTED void desmume_cycle()
     /* Update keypad value */
     update_keypad(keypad);
 
+    NDS_beginProcessingInput();
+    {
+        FCEUMOV_AddInputState();
+    }
+    NDS_endProcessingInput();
+
     NDS_exec<false>();
     SPU_Emulate_user();
 }
@@ -215,7 +231,8 @@ EXPORTED u16 *desmume_draw_raw()
     return (u16*) displayInfo.masterNativeBuffer;
 }
 
-EXPORTED void desmume_draw_raw_as_rgbx(u8 *buffer) {
+EXPORTED void desmume_draw_raw_as_rgbx(u8 *buffer)
+{
     u16 *gpuFramebuffer = desmume_draw_raw();
 
     for (int i = 0; i < SCREENS_PIXEL_SIZE; i++) {
@@ -233,8 +250,15 @@ EXPORTED void desmume_savestate_clear()
     clear_savestates();
 }
 
-//EXPORTED BOOL desmume_savestate_load(const char *file_name);
-//EXPORTED BOOL desmume_savestate_save(const char *file_name);
+EXPORTED BOOL desmume_savestate_load(const char *file_name)
+{
+    return savestate_load(file_name);
+}
+
+EXPORTED BOOL desmume_savestate_save(const char *file_name)
+{
+    return savestate_save(file_name);
+}
 
 EXPORTED void desmume_savestate_scan()
 {
@@ -377,21 +401,94 @@ EXPORTED void desmume_input_release_touch()
     NDS_releaseTouch();
 }
 
-//EXPORTED BOOL desmume_movie_is_active();
-//EXPORTED BOOL desmume_movie_is_recording();
-//EXPORTED BOOL desmume_movie_is_playing();
-//EXPORTED char *desmume_movie_get_mode();
-//EXPORTED int desmume_movie_get_length();
-//EXPORTED char *desmume_movie_get_name();
-//EXPORTED int desmume_movie_get_rerecord_count();
-//EXPORTED void desmume_movie_set_rerecord_count(int count);
-//EXPORTED BOOL desmume_movie_get_rerecord_counting();
-//EXPORTED void desmume_movie_set_rerecord_counting(BOOL state);
-//EXPORTED BOOL desmume_movie_get_readonly();
-//EXPORTED void desmume_movie_set_readonly(BOOL state);
-//EXPORTED void desmume_movie_play(/* ??? */);
-//EXPORTED void desmume_movie_replay();
-//EXPORTED void desmume_movie_stop();
+EXPORTED BOOL desmume_movie_is_active()
+{
+    return movieMode != MOVIEMODE_INACTIVE;
+}
+
+EXPORTED BOOL desmume_movie_is_recording()
+{
+    return movieMode == MOVIEMODE_RECORD;
+}
+
+EXPORTED BOOL desmume_movie_is_playing()
+{
+    return movieMode == MOVIEMODE_PLAY;
+}
+
+EXPORTED BOOL desmume_movie_is_finished()
+{
+    return movieMode == MOVIEMODE_FINISHED;
+}
+
+EXPORTED int desmume_movie_get_length()
+{
+    return currMovieData.records.size();
+}
+
+EXPORTED char *desmume_movie_get_name()
+{
+    extern char curMovieFilename[512];
+    return curMovieFilename;
+}
+
+EXPORTED int desmume_movie_get_rerecord_count()
+{
+    return currMovieData.rerecordCount;
+}
+
+EXPORTED void desmume_movie_set_rerecord_count(int count)
+{
+    currMovieData.rerecordCount = count;
+}
+
+EXPORTED BOOL desmume_movie_get_readonly()
+{
+    return movie_readonly;
+}
+
+EXPORTED void desmume_movie_set_readonly(BOOL state)
+{
+    movie_readonly = state;
+}
+
+EXPORTED const char* desmume_movie_play(const char *file_name)
+{
+    return FCEUI_LoadMovie(file_name, true, false, 0);
+}
+
+EXPORTED void desmume_movie_record_simple(const char *save_file_name, const char *author_name)
+{
+    std::string s_author_name = author_name;
+    FCEUI_SaveMovie(save_file_name, s2ws(s_author_name), START_BLANK, "", DateTime::get_Now());
+}
+
+EXPORTED void desmume_movie_record(const char *save_file_name, const char *author_name, START_FROM start_from, const char* sram_file_name)
+{
+    std::string s_author_name = author_name;
+    std::string s_sram_file_name = sram_file_name;
+    FCEUI_SaveMovie(save_file_name, s2ws(s_author_name), start_from, s_sram_file_name, DateTime::get_Now());
+}
+
+EXPORTED void desmume_movie_record_from_date(const char *save_file_name, const char *author_name, START_FROM start_from, const char* sram_file_name, SimpleDate date)
+{
+    std::string s_author_name = author_name;
+    std::string s_sram_file_name = sram_file_name;
+    FCEUI_SaveMovie(save_file_name, s2ws(s_author_name), start_from, s_sram_file_name,
+            DateTime(date.year, date.month, date.day, date.hour, date.minute, date.second, date.millisecond));
+}
+
+EXPORTED void desmume_movie_replay()
+{
+    if (movieMode != MOVIEMODE_INACTIVE) {
+        extern char curMovieFilename[512];
+        desmume_movie_play(curMovieFilename);
+    }
+}
+EXPORTED void desmume_movie_stop()
+{
+    FCEUI_StopMovie();
+}
 //
 //EXPORTED void desmume_gui_pixel(int x, int y, int color);
 //EXPORTED void desmume_gui_line(int x1, int y1, int x2, int y2, int color);

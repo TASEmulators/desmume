@@ -22,6 +22,7 @@
 
 #include <SDL.h>
 #include <../../types.h>
+#include "../../movie.h"
 
 #ifdef HAVE_GL_GL_H
 #define INCLUDE_OPENGL_2D
@@ -46,6 +47,16 @@
 extern "C" {
 // callback for memory hooks: if it returns false, remove it.
 typedef BOOL (*memory_cb_fnc)(void);
+
+struct SimpleDate {
+    int year;
+    int month;
+    int day;
+    int hour;
+    int minute;
+    int second;
+    int millisecond;
+};
 
 EXPORTED int desmume_init(void);
 EXPORTED void desmume_free(void);
@@ -144,16 +155,18 @@ EXPORTED void desmume_input_release_touch();
 EXPORTED BOOL desmume_movie_is_active();
 EXPORTED BOOL desmume_movie_is_recording();
 EXPORTED BOOL desmume_movie_is_playing();
-EXPORTED char *desmume_movie_get_mode();
+EXPORTED BOOL desmume_movie_is_finished();
 EXPORTED int desmume_movie_get_length();
 EXPORTED char *desmume_movie_get_name();
 EXPORTED int desmume_movie_get_rerecord_count();
 EXPORTED void desmume_movie_set_rerecord_count(int count);
-EXPORTED BOOL desmume_movie_get_rerecord_counting();
-EXPORTED void desmume_movie_set_rerecord_counting(BOOL state);
 EXPORTED BOOL desmume_movie_get_readonly();
 EXPORTED void desmume_movie_set_readonly(BOOL state);
-EXPORTED void desmume_movie_play(/* ??? */);
+// Returns NULL on success, error message otherwise.
+EXPORTED const char *desmume_movie_play(const char *file_name);
+EXPORTED void desmume_movie_record_simple(const char *save_file_name, const char *author_name);
+EXPORTED void desmume_movie_record(const char *save_file_name, const char *author_name, START_FROM start_from, const char* sram_file_name);
+EXPORTED void desmume_movie_record_from_date(const char *save_file_name, const char *author_name, START_FROM start_from, const char* sram_file_name, SimpleDate date);
 EXPORTED void desmume_movie_replay();
 EXPORTED void desmume_movie_stop();
 
