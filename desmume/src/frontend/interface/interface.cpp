@@ -242,9 +242,6 @@ EXPORTED void desmume_draw_raw_as_rgbx(u8 *buffer)
     }
 }
 
-//EXPORTED int desmume_sram_load(const char *file_name);
-//EXPORTED int desmume_sram_save(const char *file_name);
-//
 EXPORTED void desmume_savestate_clear()
 {
     clear_savestates();
@@ -489,11 +486,3 @@ EXPORTED void desmume_movie_stop()
 {
     FCEUI_StopMovie();
 }
-//
-//EXPORTED void desmume_gui_pixel(int x, int y, int color);
-//EXPORTED void desmume_gui_line(int x1, int y1, int x2, int y2, int color);
-//EXPORTED void desmume_gui_box(int x1, int y1, int x2, int y2, int fillcolor, int outlinecolor);
-//EXPORTED void desmume_gui_box(int x1, int y1, int x2, int y2, int fillcolor, int outlinecolor);
-//EXPORTED void desmume_gui_text(int x, int y, char *str, int textcolor, BOOL has_backcolor, int backcolor);
-//EXPORTED void desmume_gui_gdoverlay(int dx, int dy, char* str, int alphamul);
-//EXPORTED void desmume_gui_opacity(int alpha);
