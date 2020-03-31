@@ -29,6 +29,7 @@
 #include <deque>
 #include <string>
 #include <vector>
+#include "emufile.h"
 
 #define		REG_WIFI_ID					0x000
 #define     REG_WIFI_MODE       		0x004
@@ -3414,6 +3415,8 @@ public:
 	
 	void PrepareSaveStateWrite();
 	void ParseSaveStateRead();
+	bool LoadState(EMUFILE &is, int size);
+	void SaveState(EMUFILE &f);
 	
 	static size_t ConvertDataFrame80211To8023(const u8 *inIEEE80211Frame, const size_t txLength, u8 *outIEEE8023Frame);
 	static size_t ConvertDataFrame8023To80211(const u8 *inIEEE8023Frame, const size_t txLength, u8 *outIEEE80211Frame);
