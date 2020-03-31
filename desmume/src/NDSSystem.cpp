@@ -58,6 +58,7 @@
 #include "SPU.h"
 #include "wifi.h"
 #include "Database.h"
+#include "frontend/modules/Disassembler.h"
 
 #ifdef GDB_STUB
 #include "gdbstub.h"
