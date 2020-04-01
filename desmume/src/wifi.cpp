@@ -1203,7 +1203,6 @@ void WIFI_write16(u32 address, u16 val)
 					{
 						// Delayed action
 						io.POWERSTATE.WillPowerOn = 1;
-						DebugBreak();
 					}
 
 					// This probably shouldn't happen right here, but we need to write to
