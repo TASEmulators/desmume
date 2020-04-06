@@ -25,11 +25,13 @@
 // TODO: OSD Support isn't really done yet! Test!
 #include "../modules/osd/agg/agg_osd.h"
 #include "../../SPU.h"
+#include "../../MMU.h"
 #include "../../rasterize.h"
 #include "../../saves.h"
 #include "../../movie.h"
 #include "../../mc.h"
 #include "../../firmware.h"
+#include "../../armcpu.h"
 #include "../posix/shared/sndsdl.h"
 #include "../posix/shared/ctrlssdl.h"
 #include <locale>
@@ -38,6 +40,8 @@
 
 #define SCREENS_PIXEL_SIZE 98304
 volatile bool execute = false;
+TieredRegion hooked_regions [HOOK_COUNT];
+std::map<unsigned int, memory_cb_fnc> hooks[HOOK_COUNT];
 
 
 SoundInterface_struct *SNDCoreList[] = {
@@ -311,29 +315,198 @@ EXPORTED void desmume_volume_set(int volume)
     SNDSDLSetAudioVolume(volume);
 }
 
-//
-//EXPORTED unsigned char desmume_memory_read_byte(int address);
-//EXPORTED signed char desmume_memory_read_byte_signed(int address);
-//EXPORTED unsigned short desmume_memory_read_short(int address);
-//EXPORTED signed short desmume_memory_read_short_signed(int address);
-//EXPORTED unsigned long desmume_memory_read_long(int address);
-//EXPORTED signed long desmume_memory_read_long_signed(int address);
-//EXPORTED unsigned char *desmume_memory_read_byterange(int address, int length);
-//
-//EXPORTED void desmume_memory_write_byte(int address, unsigned char value);
-//EXPORTED void desmume_memory_write_byte_signed(int address, signed char value);
-//EXPORTED void desmume_memory_write_short(int address, unsigned short value);
-//EXPORTED void desmume_memory_write_short_signed(int address, signed short value);
-//EXPORTED void desmume_memory_write_long(int address, unsigned long value);
-//EXPORTED void desmume_memory_write_long_signed(int address, signed long value);
-//EXPORTED void desmume_memory_write_byterange(int address, const unsigned char *bytes);
-//
-//EXPORTED long desmume_memory_read_register(char* register_name);
-//EXPORTED void desmume_memory_write_register(char* register_name, long value);
-//
-//EXPORTED void desmume_memory_register_write(int address, int size, memory_cb_fnc cb);
-//EXPORTED void desmume_memory_register_read(int address, int size, memory_cb_fnc cb);
-//EXPORTED void desmume_memory_register_exec(int address, int size, memory_cb_fnc cb);
+EXPORTED unsigned char desmume_memory_read_byte(int address)
+{
+    return (unsigned char)(_MMU_read08<ARMCPU_ARM9>(address) & 0xFF);
+}
+
+EXPORTED signed char desmume_memory_read_byte_signed(int address)
+{
+    return (signed char)(_MMU_read08<ARMCPU_ARM9>(address) & 0xFF);
+}
+
+EXPORTED unsigned short desmume_memory_read_short(int address)
+{
+    return (unsigned short)(_MMU_read16<ARMCPU_ARM9>(address) & 0xFFFF);
+}
+
+EXPORTED signed short desmume_memory_read_short_signed(int address)
+{
+    return (signed short)(_MMU_read16<ARMCPU_ARM9>(address) & 0xFFFF);
+}
+
+EXPORTED unsigned long desmume_memory_read_long(int address)
+{
+    return (unsigned long)(_MMU_read32<ARMCPU_ARM9>(address));
+}
+
+EXPORTED signed long desmume_memory_read_long_signed(int address)
+{
+    return (signed long)(_MMU_read32<ARMCPU_ARM9>(address));
+}
+
+EXPORTED void desmume_memory_write_byte(int address, unsigned char value)
+{
+    _MMU_write08<ARMCPU_ARM9>(address, value);
+}
+
+EXPORTED void desmume_memory_write_short(int address, unsigned short value)
+{
+    _MMU_write16<ARMCPU_ARM9>(address, value);
+}
+
+EXPORTED void desmume_memory_write_long(int address, unsigned long value)
+{
+    _MMU_write32<ARMCPU_ARM9>(address, value);
+}
+
+struct registerPointerMap
+{
+    const char* registerName;
+    unsigned int* pointer;
+    int dataSize;
+};
+
+#define RPM_ENTRY(name,var) {name, (unsigned int*)&var, sizeof(var)},
+
+registerPointerMap arm9PointerMap [] = {
+	RPM_ENTRY("r0", NDS_ARM9.R[0])
+	RPM_ENTRY("r1", NDS_ARM9.R[1])
+	RPM_ENTRY("r2", NDS_ARM9.R[2])
+	RPM_ENTRY("r3", NDS_ARM9.R[3])
+	RPM_ENTRY("r4", NDS_ARM9.R[4])
+	RPM_ENTRY("r5", NDS_ARM9.R[5])
+	RPM_ENTRY("r6", NDS_ARM9.R[6])
+	RPM_ENTRY("r7", NDS_ARM9.R[7])
+	RPM_ENTRY("r8", NDS_ARM9.R[8])
+	RPM_ENTRY("r9", NDS_ARM9.R[9])
+	RPM_ENTRY("r10", NDS_ARM9.R[10])
+	RPM_ENTRY("r11", NDS_ARM9.R[11])
+	RPM_ENTRY("r12", NDS_ARM9.R[12])
+	RPM_ENTRY("r13", NDS_ARM9.R[13])
+	RPM_ENTRY("r14", NDS_ARM9.R[14])
+	RPM_ENTRY("r15", NDS_ARM9.R[15])
+	RPM_ENTRY("cpsr", NDS_ARM9.CPSR.val)
+	RPM_ENTRY("spsr", NDS_ARM9.SPSR.val)
+	{}
+};
+registerPointerMap arm7PointerMap [] = {
+	RPM_ENTRY("r0", NDS_ARM7.R[0])
+	RPM_ENTRY("r1", NDS_ARM7.R[1])
+	RPM_ENTRY("r2", NDS_ARM7.R[2])
+	RPM_ENTRY("r3", NDS_ARM7.R[3])
+	RPM_ENTRY("r4", NDS_ARM7.R[4])
+	RPM_ENTRY("r5", NDS_ARM7.R[5])
+	RPM_ENTRY("r6", NDS_ARM7.R[6])
+	RPM_ENTRY("r7", NDS_ARM7.R[7])
+	RPM_ENTRY("r8", NDS_ARM7.R[8])
+	RPM_ENTRY("r9", NDS_ARM7.R[9])
+	RPM_ENTRY("r10", NDS_ARM7.R[10])
+	RPM_ENTRY("r11", NDS_ARM7.R[11])
+	RPM_ENTRY("r12", NDS_ARM7.R[12])
+	RPM_ENTRY("r13", NDS_ARM7.R[13])
+	RPM_ENTRY("r14", NDS_ARM7.R[14])
+	RPM_ENTRY("r15", NDS_ARM7.R[15])
+	RPM_ENTRY("cpsr", NDS_ARM7.CPSR.val)
+	RPM_ENTRY("spsr", NDS_ARM7.SPSR.val)
+	{}
+};
+
+struct cpuToRegisterMap
+{
+	const char* cpuName;
+	registerPointerMap* rpmap;
+}
+cpuToRegisterMaps [] =
+{
+	{"arm9.", arm9PointerMap},
+	{"main.", arm9PointerMap},
+	{"arm7.", arm7PointerMap},
+	{"sub.",  arm7PointerMap},
+	{"", arm9PointerMap},
+};
+
+EXPORTED int desmume_memory_read_register(char* register_name)
+{
+	for(int cpu = 0; cpu < sizeof(cpuToRegisterMaps)/sizeof(*cpuToRegisterMaps); cpu++)
+	{
+		cpuToRegisterMap ctrm = cpuToRegisterMaps[cpu];
+		int cpuNameLen = strlen(ctrm.cpuName);
+		if(!strncasecmp(register_name, ctrm.cpuName, cpuNameLen))
+		{
+            register_name += cpuNameLen;
+			for(int reg = 0; ctrm.rpmap[reg].dataSize; reg++)
+			{
+				registerPointerMap rpm = ctrm.rpmap[reg];
+				if(!strcasecmp(register_name, rpm.registerName))
+				{
+					switch(rpm.dataSize)
+					{ default:
+					case 1: return *(unsigned char*)rpm.pointer;
+					case 2: return *(unsigned short*)rpm.pointer;
+					case 4: return *(unsigned long*)rpm.pointer;
+					}
+				}
+			}
+			return 0;
+		}
+	}
+	return 0;
+}
+
+EXPORTED void desmume_memory_write_register(char* register_name, long value)
+{
+	for(int cpu = 0; cpu < sizeof(cpuToRegisterMaps)/sizeof(*cpuToRegisterMaps); cpu++)
+	{
+		cpuToRegisterMap ctrm = cpuToRegisterMaps[cpu];
+		int cpuNameLen = strlen(ctrm.cpuName);
+		if(!strncasecmp(register_name, ctrm.cpuName, cpuNameLen))
+		{
+			register_name += cpuNameLen;
+			for(int reg = 0; ctrm.rpmap[reg].dataSize; reg++)
+			{
+				registerPointerMap rpm = ctrm.rpmap[reg];
+				if(!strcasecmp(register_name, rpm.registerName))
+				{
+					switch(rpm.dataSize)
+					{ default:
+					case 1: *(unsigned char*)rpm.pointer = (unsigned char)(value & 0xFF); break;
+					case 2: *(unsigned short*)rpm.pointer = (unsigned short)(value & 0xFFFF); break;
+					case 4: *(unsigned long*)rpm.pointer = value; break;
+					}
+				}
+			}
+		}
+	}
+}
+
+INLINE void memory_register_hook(int addr, MemHookType hook_type, int size, memory_cb_fnc cb)
+{
+	for(unsigned int i = addr; i != addr+size; i++)
+	{
+		hooks[hook_type][i] = cb;
+	}
+    std::vector<unsigned int> hooked_bytes;
+    for(std::map<unsigned int, memory_cb_fnc>::iterator it = hooks[hook_type].begin(); it != hooks[hook_type].end(); ++it) {
+        hooked_bytes.push_back(it->first);
+    }
+    hooked_regions[hook_type].Calculate(hooked_bytes);
+}
+
+EXPORTED void desmume_memory_register_write(int address, int size, memory_cb_fnc cb)
+{
+	memory_register_hook(address, HOOK_WRITE, size, cb);
+}
+
+EXPORTED void desmume_memory_register_read(int address, int size, memory_cb_fnc cb)
+{
+	memory_register_hook(address, HOOK_READ, size, cb);
+}
+
+EXPORTED void desmume_memory_register_exec(int address, int size, memory_cb_fnc cb)
+{
+	memory_register_hook(address, HOOK_EXEC, size, cb);
+}
 
 EXPORTED void desmume_screenshot(char *screenshot_buffer)
 {

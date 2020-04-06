@@ -32,6 +32,8 @@ if ( test -d ../../../../.git; ) && test "x${GIT}" != "x" -a -x "${GIT}" ; then
 fi
 AC_DEFINE_UNQUOTED([GIT_COMMIT], ["$COMMIT"], [git commit hash])
 
+AC_DEFINE([TARGET_INTERFACE])
+
 dnl - Check for zlib
 AC_CHECK_LIB(z, gzopen, [], [AC_MSG_ERROR([zlib was not found, we can't go further. Please install it or specify the location where it's installed.])])
 

@@ -30,6 +30,10 @@
 #include "lua-engine.h"
 #endif
 
+#ifdef TARGET_INTERFACE
+#include "frontend/interface/interface.h"
+#endif
+
 #ifdef HAVE_JIT
 #include "arm_jit.h"
 #endif
@@ -699,6 +703,9 @@ FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u3
 #ifdef HAVE_LUA
 	CallRegisteredLuaMemHook(addr, 1, /*FIXME*/ 0, LUAMEMHOOK_READ);
 #endif
+#ifdef TARGET_INTERFACE
+    call_registered_interface_mem_hook(addr, 1, HOOK_READ);
+#endif
 
 	// break points, wheee
 	for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
@@ -743,6 +750,9 @@ FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 
 #ifdef HAVE_LUA
 	CallRegisteredLuaMemHook(addr, 2, /*FIXME*/ 0, LUAMEMHOOK_READ);
+#endif
+#ifdef TARGET_INTERFACE
+    call_registered_interface_mem_hook(addr, 2, HOOK_READ);
 #endif
 
 	// break points, wheee
@@ -801,6 +811,9 @@ FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 
 #ifdef HAVE_LUA
 	CallRegisteredLuaMemHook(addr, 4, /*FIXME*/ 0, LUAMEMHOOK_READ);
+#endif
+#ifdef TARGET_INTERFACE
+    call_registered_interface_mem_hook(addr, 4, HOOK_READ);
 #endif
 	// break points, wheee
 	for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
@@ -884,6 +897,9 @@ FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 #ifdef HAVE_LUA
 			CallRegisteredLuaMemHook(addr, 1, val, LUAMEMHOOK_WRITE);
 #endif
+#ifdef TARGET_INTERFACE
+    call_registered_interface_mem_hook(addr, 1, HOOK_READ);
+#endif
 			return;
 		}
 
@@ -895,6 +911,9 @@ FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 #ifdef HAVE_LUA
 		CallRegisteredLuaMemHook(addr, 1, val, LUAMEMHOOK_WRITE);
 #endif
+#ifdef TARGET_INTERFACE
+    call_registered_interface_mem_hook(addr, 1, HOOK_WRITE);
+#endif
 		return;
 	}
 
@@ -902,6 +921,9 @@ FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	else _MMU_ARM7_write08(addr,val);
 #ifdef HAVE_LUA
 	CallRegisteredLuaMemHook(addr, 1, val, LUAMEMHOOK_WRITE);
+#endif
+#ifdef TARGET_INTERFACE
+    call_registered_interface_mem_hook(addr, 1, HOOK_WRITE);
 #endif
 }
 
@@ -933,6 +955,9 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 #ifdef HAVE_LUA
 			CallRegisteredLuaMemHook(addr, 2, val, LUAMEMHOOK_WRITE);
 #endif
+#ifdef TARGET_INTERFACE
+    call_registered_interface_mem_hook(addr, 2, HOOK_WRITE);
+#endif
 			return;
 		}
 
@@ -951,6 +976,9 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	else _MMU_ARM7_write16(addr,val);
 #ifdef HAVE_LUA
 	CallRegisteredLuaMemHook(addr, 2, val, LUAMEMHOOK_WRITE);
+#endif
+#ifdef TARGET_INTERFACE
+    call_registered_interface_mem_hook(addr, 2, HOOK_WRITE);
 #endif
 }
 
@@ -982,6 +1010,9 @@ FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 #ifdef HAVE_LUA
 			CallRegisteredLuaMemHook(addr, 4, val, LUAMEMHOOK_WRITE);
 #endif
+#ifdef TARGET_INTERFACE
+    call_registered_interface_mem_hook(addr, 4, HOOK_WRITE);
+#endif
 			return;
 		}
 
@@ -994,6 +1025,9 @@ FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 #ifdef HAVE_LUA
 		CallRegisteredLuaMemHook(addr, 4, val, LUAMEMHOOK_WRITE);
 #endif
+#ifdef TARGET_INTERFACE
+    call_registered_interface_mem_hook(addr, 4, HOOK_WRITE);
+#endif
 		return;
 	}
 
@@ -1001,6 +1035,9 @@ FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	else _MMU_ARM7_write32(addr,val);
 #ifdef HAVE_LUA
 	CallRegisteredLuaMemHook(addr, 4, val, LUAMEMHOOK_WRITE);
+#endif
+#ifdef TARGET_INTERFACE
+    call_registered_interface_mem_hook(addr, 4, HOOK_WRITE);
 #endif
 }
 

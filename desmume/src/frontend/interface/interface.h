@@ -44,9 +44,18 @@
 # define EXPORTED
 #endif
 
+enum MemHookType
+{
+    HOOK_WRITE,
+    HOOK_READ,
+    HOOK_EXEC,
+
+    HOOK_COUNT
+};
+
 extern "C" {
-// callback for memory hooks: if it returns false, remove it.
-typedef BOOL (*memory_cb_fnc)(void);
+// callback for memory hooks (get's two values: address and size of operation that triggered the hook)
+typedef BOOL (*memory_cb_fnc)(unsigned int, int);
 
 struct SimpleDate {
     int year;
@@ -68,6 +77,7 @@ EXPORTED void desmume_set_savetype(int type);
 EXPORTED void desmume_pause(void);
 EXPORTED void desmume_resume(void);
 EXPORTED void desmume_reset(void);
+EXPORTED void desmume_stop(void);
 EXPORTED BOOL desmume_running(void);
 EXPORTED void desmume_skip_next_frame(void);
 EXPORTED void desmume_cycle(void);
@@ -115,17 +125,14 @@ EXPORTED unsigned short desmume_memory_read_short(int address);
 EXPORTED signed short desmume_memory_read_short_signed(int address);
 EXPORTED unsigned long desmume_memory_read_long(int address);
 EXPORTED signed long desmume_memory_read_long_signed(int address);
-EXPORTED unsigned char *desmume_memory_read_byterange(int address, int length);
+//EXPORTED unsigned char *desmume_memory_read_byterange(int address, int length);
 
 EXPORTED void desmume_memory_write_byte(int address, unsigned char value);
-EXPORTED void desmume_memory_write_byte_signed(int address, signed char value);
 EXPORTED void desmume_memory_write_short(int address, unsigned short value);
-EXPORTED void desmume_memory_write_short_signed(int address, signed short value);
 EXPORTED void desmume_memory_write_long(int address, unsigned long value);
-EXPORTED void desmume_memory_write_long_signed(int address, signed long value);
-EXPORTED void desmume_memory_write_byterange(int address, const unsigned char *bytes);
+//EXPORTED void desmume_memory_write_byterange(int address, int length, const unsigned char *bytes);
 
-EXPORTED long desmume_memory_read_register(char* register_name);
+EXPORTED int desmume_memory_read_register(char* register_name);
 EXPORTED void desmume_memory_write_register(char* register_name, long value);
 
 EXPORTED void desmume_memory_register_write(int address, int size, memory_cb_fnc cb);
@@ -168,4 +175,118 @@ EXPORTED void desmume_movie_replay();
 EXPORTED void desmume_movie_stop();
 
 };
+
+// TODO: Below is mostly just from lua-engine.h, might think about how to get rid of the code duplication.
+
+#include <vector>
+#include <algorithm>
+
+// the purpose of this structure is to provide a way of
+// QUICKLY determining whether a memory address range has a hook associated with it,
+// with a bias toward fast rejection because the majority of addresses will not be hooked.
+// (it must not use any part of Lua or perform any per-script operations,
+//  otherwise it would definitely be too slow.)
+// calculating the regions when a hook is added/removed may be slow,
+// but this is an intentional tradeoff to obtain a high speed of checking during later execution
+struct TieredRegion
+{
+    template<unsigned int maxGap>
+    struct Region
+    {
+        struct Island
+        {
+            unsigned int start;
+            unsigned int end;
+            FORCEINLINE bool Contains(unsigned int address, int size) const { return address < end && address+size > start; }
+        };
+        std::vector<Island> islands;
+
+        void Calculate(const std::vector<unsigned int>& bytes)
+        {
+            islands.clear();
+
+            unsigned int lastEnd = ~0;
+
+            std::vector<unsigned int>::const_iterator iter = bytes.begin();
+            std::vector<unsigned int>::const_iterator end = bytes.end();
+            for(; iter != end; ++iter)
+            {
+                unsigned int addr = *iter;
+                if(addr < lastEnd || addr > lastEnd + (long long)maxGap)
+                {
+                    islands.push_back(Island());
+                    islands.back().start = addr;
+                }
+                islands.back().end = addr+1;
+                lastEnd = addr+1;
+            }
+        }
+
+        bool Contains(unsigned int address, int size) const
+        {
+            typename std::vector<Island>::const_iterator iter = islands.begin();
+            typename std::vector<Island>::const_iterator end = islands.end();
+            for(; iter != end; ++iter)
+                if(iter->Contains(address, size))
+                    return true;
+            return false;
+        }
+    };
+
+    Region<0xFFFFFFFF> broad;
+    Region<0x1000> mid;
+    Region<0> narrow;
+
+    void Calculate(std::vector<unsigned int>& bytes)
+    {
+        std::sort(bytes.begin(), bytes.end());
+
+        broad.Calculate(bytes);
+        mid.Calculate(bytes);
+        narrow.Calculate(bytes);
+    }
+
+    TieredRegion()
+    {
+        std::vector<unsigned int> somevector;
+        Calculate(somevector);
+    }
+
+    FORCEINLINE int NotEmpty()
+    {
+        return broad.islands.size();
+    }
+
+    // note: it is illegal to call this if NotEmpty() returns 0
+    FORCEINLINE bool Contains(unsigned int address, int size)
+    {
+        return broad.islands[0].Contains(address,size) &&
+               mid.Contains(address,size) &&
+               narrow.Contains(address,size);
+    }
+};
+extern TieredRegion hooked_regions [HOOK_COUNT];
+
+extern std::map<unsigned int, memory_cb_fnc> hooks[HOOK_COUNT];
+
+FORCEINLINE void call_registered_interface_mem_hook(unsigned int address, int size, MemHookType hook_type)
+{
+    // See notes for CallRegisteredLuaMemHook!
+    if(hooked_regions[hook_type].NotEmpty())
+    {
+        if(hooked_regions[hook_type].Contains(address, size))
+        {
+            for(int i = address; i != address+size; i++)
+            {
+                memory_cb_fnc hook = hooks[hook_type][i];
+                if(hook != 0)
+                {
+                    (*hook)(address, size);
+                    break;
+                }
+            }
+        }
+    }
+}
+
 #endif //DESMUME_INTERFACE_H
