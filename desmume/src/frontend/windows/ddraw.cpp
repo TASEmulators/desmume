@@ -117,7 +117,10 @@ bool DDRAW::createSurfaces(HWND hwnd)
 bool DDRAW::lock()
 {
 	if (!handle) return true;
-	if (!surface.back) return false;
+	if (!surface.back) {
+		surfDescBack.dwWidth = 0; //signal to another file to try recreating
+		return false;
+	}
 	memset(&surfDescBack, 0, sizeof(surfDescBack));
 	surfDescBack.dwSize = sizeof(surfDescBack);
 	surfDescBack.dwFlags = DDSD_ALL;
