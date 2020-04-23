@@ -322,6 +322,8 @@ gchar * get_ui_file (const char *filename)
 	if (g_file_test (path, G_FILE_TEST_IS_REGULAR)) return path;
 	g_free (path);
 	
+	printf ("Failed to find ui file, \"%s\", in %s or %s\n",
+		filename ? filename : "", GLADEUI_UNINSTALLED_DIR, DATADIR);
 	/* not found */
 	return NULL;
 }
