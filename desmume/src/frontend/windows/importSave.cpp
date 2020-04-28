@@ -231,5 +231,5 @@ bool exportSave(HWND hwnd, HINSTANCE hAppInst)
 
 	if (ofn.nFilterIndex == 2) strcat(SavFName, "*");
 
-	return !MMU_new.backupDevice.exportData(SavFName);
+	return MMU_new.backupDevice.exportData(SavFName);
 }
