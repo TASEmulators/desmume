@@ -2033,8 +2033,11 @@ void OpenGLRenderer_3_2::GetExtensionSet(std::set<std::string> *oglExtensionSet)
 	glGetIntegerv(GL_NUM_EXTENSIONS, &extensionCount);
 	for (size_t i = 0; i < extensionCount; i++)
 	{
-		std::string extensionName = std::string((const char *)glGetStringi(GL_EXTENSIONS, i));
-		oglExtensionSet->insert(extensionName);
+		const char * extensionName = (const char *)glGetStringi(GL_EXTENSIONS, i);
+		if (extensionName == NULL) {
+			continue;
+		}
+		oglExtensionSet->insert(std::string(extensionName));
 	}
 }
 
