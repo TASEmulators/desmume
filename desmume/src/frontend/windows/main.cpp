@@ -4253,12 +4253,13 @@ DOKEYDOWN:
 
 	case WM_DROPFILES:
 		{
-			char filename[MAX_PATH] = "";
-			DragQueryFile((HDROP)wParam,0,filename,MAX_PATH);
+			wchar_t wfilename[MAX_PATH] = L"";
+			DragQueryFileW((HDROP)wParam,0,wfilename,MAX_PATH);
 			DragFinish((HDROP)wParam);
+			std::string fileDropped = wcstombs((std::wstring)wfilename);
+			const char* filename = fileDropped.c_str();
 			
 			//adelikat: dropping these in from FCEUX, I hope this is the best place for that
-			std::string fileDropped = filename;
 			//-------------------------------------------------------
 			//Check if Movie file
 			//-------------------------------------------------------
@@ -4326,7 +4327,7 @@ DOKEYDOWN:
 			//Else load it as a ROM
 			//-------------------------------------------------------
 
-			else if(OpenCoreSystemCP(filename))
+			else if(OpenCore(filename))
 			{
 				romloaded = TRUE;
 			}

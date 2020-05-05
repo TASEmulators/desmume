@@ -41,6 +41,7 @@ void PopulateRecentRomsMenu()
 	//----------------------------------------------------------------------
 	//Get Menu item info
 
+	MENUITEMINFOW moow;
 	MENUITEMINFO moo;
 	moo.cbSize = sizeof(moo);
 	moo.fMask = MIIM_SUBMENU | MIIM_STATE;
@@ -91,20 +92,21 @@ void PopulateRecentRomsMenu()
 
 		//the recent roms are UTF-8, so convert to windows stupid codepage
 		auto wtmp = mbstowcs(tmp);
-		char garbage[1024];
-		WideCharToMultiByte(CP_ACP,0,wtmp.c_str(),-1,garbage,1024,NULL,NULL);
+		wchar_t garbage[1024];
+		wcscpy(garbage,wtmp.c_str());
 
-		PathCompactPath(dc, garbage, 500);
+		PathCompactPathW(dc, garbage, 500);
 
-		moo.cbSize = sizeof(moo);
-		moo.fMask = MIIM_DATA | MIIM_ID | MIIM_TYPE;
+		memset(&moow, 0, sizeof(moow));
+		moow.cbSize = sizeof(moo);
+		moow.fMask = MIIM_DATA | MIIM_ID | MIIM_TYPE;
 
-		moo.cch = tmp.size();
-		moo.fType = 0;
-		moo.wID = recentRoms_baseid + x;
-		moo.dwTypeData = garbage;
+		moow.cch = wtmp.size();
+		moow.fType = 0;
+		moow.wID = recentRoms_baseid + x;
+		moow.dwTypeData = garbage;
 		//LOG("Inserting: %s\n",tmp.c_str());  //Debug
-		InsertMenuItem(GetSubMenu(recentromsmenu, 0), 0, 1, &moo);
+		InsertMenuItemW(GetSubMenu(recentromsmenu, 0), 0, 1, &moow);
 	}
 
 	ReleaseDC(MainWindow->getHWnd(), dc);
@@ -141,7 +143,7 @@ void LoadRecentRoms()
 	//This function retrieves the recent ROMs stored in the .ini file
 	//Then is populates the RecentRomsMenu array
 
-	char tempstr[256];
+	char tempstr[1024];
 
 	// Avoids duplicating when changing the language.
 	RecentRoms.clear();
@@ -152,7 +154,7 @@ void LoadRecentRoms()
 		char keyName[100];
 		sprintf(keyName,"Recent Rom %d",x);
 
-		GetPrivateProfileString("General",keyName,"", tempstr, 256, IniName);
+		GetPrivateProfileString("General",keyName,"", tempstr, 1024, IniName);
 		if (tempstr[0])
 			RecentRoms.push_back(tempstr);
 	}
