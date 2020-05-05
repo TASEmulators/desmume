@@ -23,6 +23,7 @@ THE SOFTWARE.
 */
 
 #include "emufile.h"
+#include "utils/xstring.h"
 
 #include <vector>
 
@@ -508,4 +509,20 @@ size_t EMUFILE::read_MemoryStream(EMUFILE_MEMORY &ms)
 	}
 	
 	return 1;
+}
+
+void EMUFILE_FILE::open(const char* fname, const char* mode)
+{
+	mPositionCacheEnabled = false;
+	mCondition = eCondition_Clean;
+	mFilePosition = 0;
+	#ifdef HOST_WINDOWS
+	fp = _wfopen(mbstowcs((std::string)fname).c_str(),mbstowcs(mode).c_str());
+	#else
+	fp = fopen(fname,mode);
+	#endif
+	if(!fp)
+		failbit = true;
+	this->fname = fname;
+	strcpy(this->mode,mode);
 }

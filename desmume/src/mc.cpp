@@ -234,7 +234,11 @@ BackupDevice::BackupDevice()
 
 	MCLOG("MC: %s\n", _fileName.c_str());
 
-	bool fexists = (access(_fileName.c_str(), 0) == 0)?true:false;
+	bool fexists = false;
+	{
+		EMUFILE_FILE testfile(_fileName, "rb");
+		fexists = testfile.is_open();
+	}
 
 	if (fexists && CommonSettings.backupSave)
 	{

@@ -3088,7 +3088,10 @@ static BOOL OpenCore(const char* filename)
 		memset(batteryPath, 0, MAX_PATH);
 		path.getpathnoext(path.BATTERY, batteryPath);
 		std::string batteryPathString = std::string(batteryPath) + ".dsv";
-		FILE *testFs = fopen(batteryPathString.c_str(), "rb+");
+		std::wstring batteryPathStringW = mbstowcs(batteryPathString);
+		FILE *testFs = _wfopen(batteryPathStringW.c_str(), L"rb");
+		if (testFs == NULL)
+			testFs = _wfopen(batteryPathStringW.c_str(), L"wb");
 		if (testFs == NULL)
 		{
 			msgbox->warn("\

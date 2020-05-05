@@ -294,17 +294,7 @@ protected:
 	} mCondition;
 
 private:
-	void open(const char* fname, const char* mode)
-	{
-		mPositionCacheEnabled = false;
-		mCondition = eCondition_Clean;
-		mFilePosition = 0;
-		fp = fopen(fname,mode);
-		if(!fp)
-			failbit = true;
-		this->fname = fname;
-		strcpy(this->mode,mode);
-	}
+	void open(const char* fname, const char* mode);
 
 public:
 
