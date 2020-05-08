@@ -2416,6 +2416,8 @@ static void GraphicsSettingsDialog() {
 		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wHCInterpolate));
 #ifdef HAVE_OPENGL
 		int selectedMultisample = gtk_combo_box_get_active(GTK_COMBO_BOX(wMultisample));
+		config.multisamplingSize = multisampleSizes[selectedMultisample];
+		config.multisampling = selectedMultisample != 0;
 		CommonSettings.GFX3D_Renderer_MultisampleSize = multisampleSizes[selectedMultisample];
 #endif
     }
@@ -3528,7 +3530,9 @@ common_gtk_main( class configured_features *my_config)
 	}
 
     CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation;
-	CommonSettings.GFX3D_Renderer_MultisampleSize = (config.multisampling) ? 4 : 0;
+	CommonSettings.GFX3D_Renderer_MultisampleSize = (config.multisamplingSize > 0)
+														? config.multisamplingSize
+														: config.multisampling ? 4 : 0;
     CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize;
     CommonSettings.GFX3D_Renderer_TextureScalingFactor = (config.textureUpscale == 1 ||
     														config.textureUpscale == 2 ||
