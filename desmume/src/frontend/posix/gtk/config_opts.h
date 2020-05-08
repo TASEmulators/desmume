@@ -62,6 +62,7 @@ OPT(textureSmoothing, bool, false, Config, 3DTextureSmoothing)
 OPT(textureUpscale, int, 1, Config, 3DTextureUpscaling)
 OPT(highColorInterpolation, bool, true, Config, HighResolutionColorInterpolation)
 OPT(multisampling, bool, false, Config, OpenGLMultisampling)
+OPT(multisamplingSize, int, 0, Config, OpenGLMultisamplingSize)
 OPT(command_line_overriding_firmware_language, bool, false, Config, CommandLineOverridingFirmwareLanguage)
 OPT(firmware_language, int, 1, Config, FirmwareLanguage)
 
