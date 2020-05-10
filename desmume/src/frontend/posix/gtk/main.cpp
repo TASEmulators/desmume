@@ -2619,6 +2619,7 @@ static void Modify_SPUMode(GtkAction *action, GtkRadioAction *current)
 static void Modify_SPUInterpolation(GtkAction *action, GtkRadioAction *current)
 {
     CommonSettings.spuInterpolationMode = (SPUInterpolationMode)gtk_radio_action_get_current_value(current);
+    config.audio_interpolation = CommonSettings.spuInterpolationMode;
 }
 
 static void Modify_Frameskip(GtkAction *action, GtkRadioAction *current)
@@ -3334,6 +3335,7 @@ common_gtk_main( class configured_features *my_config)
     gtk_action_group_add_radio_actions(action_group, spumode_entries, G_N_ELEMENTS(spumode_entries),
             config.audio_sync, G_CALLBACK(Modify_SPUMode), NULL);
 
+    CommonSettings.spuInterpolationMode = (SPUInterpolationMode)(config.audio_interpolation.get());
     gtk_action_group_add_radio_actions(action_group, spuinterpolation_entries, G_N_ELEMENTS(spuinterpolation_entries),
             CommonSettings.spuInterpolationMode, G_CALLBACK(Modify_SPUInterpolation), NULL);
 
