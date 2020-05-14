@@ -521,7 +521,6 @@
     <ClCompile Include="..\..\..\firmware.cpp" />
     <ClCompile Include="..\..\..\gfx3d.cpp" />
     <ClCompile Include="..\..\..\GPU.cpp" />
-    <ClCompile Include="..\..\..\lua-engine.cpp" />
     <ClCompile Include="..\..\..\matrix.cpp" />
     <ClCompile Include="..\..\..\mc.cpp" />
     <ClCompile Include="..\..\..\MMU.cpp" />
@@ -558,9 +557,6 @@
     <ClCompile Include="..\..\..\utils\colorspacehandler\colorspacehandler_AltiVec.cpp">
       <Filter>utils\colorspacehandler</Filter>
     </ClCompile>
-    <ClCompile Include="..\draw_sdl.cpp">
-      <Filter>frontend\interface</Filter>
-    </ClCompile>
     <ClCompile Include="..\interface.cpp">
       <Filter>frontend\interface</Filter>
     </ClCompile>
@@ -581,6 +577,9 @@
     </ClCompile>
     <ClCompile Include="..\..\posix\shared\sndsdl.cpp">
       <Filter>frontend\posix\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw_sdl_window.cpp">
+      <Filter>frontend\interface</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -850,7 +849,6 @@
     <ClInclude Include="..\..\..\GPU.h" />
     <ClInclude Include="..\..\..\instruction_attributes.h" />
     <ClInclude Include="..\..\..\instructions.h" />
-    <ClInclude Include="..\..\..\lua-engine.h" />
     <ClInclude Include="..\..\..\matrix.h" />
     <ClInclude Include="..\..\..\mc.h" />
     <ClInclude Include="..\..\..\mem.h" />
@@ -989,8 +987,5 @@
     </None>
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\thumb_tabdef.inc" />
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="..\..\windows\lua\lua.7z" />
   </ItemGroup>
 </Project>

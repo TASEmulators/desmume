@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="IntegrityChecks" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
 	<!-- Debug: typical build with max debugging -->
@@ -88,7 +88,7 @@
 
 		<ClCompile>
 
-			<AdditionalIncludeDirectories>.;..\..;..\..\..;..\..\windows;..\..\windows\lua\include;.\SDL\include;glib-2.20.1\build;..\..\windows\zlib128;..\..\windows\zziplib;..\..\windows\winpcap;userconfig;..\..\windows\agg\include;..\..\windows\agg\examples;..\..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\..;..\..\..;..\..\windows;.\SDL\include;glib-2.20.1\build;..\..\windows\zlib128;..\..\windows\zziplib;..\..\windows\winpcap;userconfig;..\..\windows\agg\include;..\..\windows\agg\examples;..\..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 			
 			<!-- We are building the interface -->
 			<PreprocessorDefinitions>TARGET_INTERFACE;WIN_EXPORT</PreprocessorDefinitions>
@@ -154,7 +154,7 @@
 			<PreprocessorDefinitions>EXPERIMENTAL_WIFI_COMM=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 			<!-- desmume configuration: features we always have in windows -->
-			<PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;HAVE_LUA=1;HAVE_GL_GL_H=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 		</ClCompile>
 
@@ -174,11 +174,9 @@
 			<AdditionalDependencies Label="Configuration" Condition="'$(NDS_VSVER)' &gt;= '14'">legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- general deps config -->
-			<AdditionalDependencies>SDLmain.lib;SDL.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalDependencies>SDLmain.lib;SDL.lib;%(AdditionalDependencies)</AdditionalDependencies>
 			<!-- (and windows libs) -->
 			<AdditionalDependencies>vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-
-			<DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
 
 			<!-- debugging options -->
 			<GenerateDebugInformation>true</GenerateDebugInformation>

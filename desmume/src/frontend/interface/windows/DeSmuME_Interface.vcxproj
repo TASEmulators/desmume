@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" InitialTargets="UNDUPOBJ" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -157,7 +157,6 @@
     <ClCompile Include="..\..\..\libretro-common\rthreads\rthreads.c" />
     <ClCompile Include="..\..\..\libretro-common\streams\file_stream.c" />
     <ClCompile Include="..\..\..\libretro-common\streams\memory_stream.c" />
-    <ClCompile Include="..\..\..\lua-engine.cpp" />
     <ClCompile Include="..\..\..\matrix.cpp" />
     <ClCompile Include="..\..\..\mc.cpp" />
     <ClCompile Include="..\..\..\MMU.cpp" />
@@ -293,7 +292,7 @@
     <ClCompile Include="..\..\posix\shared\sndsdl.cpp" />
     <ClCompile Include="..\..\windows\mic-win.cpp" />
     <ClCompile Include="..\..\windows\winutil.cpp" />
-    <ClCompile Include="..\draw_sdl.cpp" />
+    <ClCompile Include="..\draw_sdl_window.cpp" />
     <ClCompile Include="..\interface.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -371,7 +370,6 @@
     <ClInclude Include="..\..\..\libretro-common\include\boolean.h" />
     <ClInclude Include="..\..\..\libretro-common\include\retro_inline.h" />
     <ClInclude Include="..\..\..\libretro-common\include\retro_miscellaneous.h" />
-    <ClInclude Include="..\..\..\lua-engine.h" />
     <ClInclude Include="..\..\..\matrix.h" />
     <ClInclude Include="..\..\..\mc.h" />
     <ClInclude Include="..\..\..\mem.h" />
@@ -491,32 +489,6 @@
     <None Include="..\..\modules\osd\agg\agg2d.inl" />
     <None Include="..\thumb_tabdef.inc" />
     <None Include="..\..\..\utils\AsmJit\COPYING.txt" />
-    <CustomBuild Include="..\..\windows\lua\lua.7z">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">call ..\..\windows\un7z_and_touch.bat ..\..\windows\lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">7z.exe;..\..\windows\un7z_and_touch.bat</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.libs\lua.tag;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">call ..\..\windows\un7z_and_touch.bat ..\..\windows\lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">7z.exe;..\..\windows\un7z_and_touch.bat</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.libs\lua.tag;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">call ..\..\windows\un7z_and_touch.bat ..\..\windows\lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">7z.exe;..\..\windows\un7z_and_touch.bat</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">.libs\lua.tag;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">call ..\..\windows\un7z_and_touch.bat ..\..\windows\lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|Win32'">call ..\..\windows\un7z_and_touch.bat ..\..\windows\lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">7z.exe;..\..\windows\un7z_and_touch.bat</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|Win32'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.libs\lua.tag;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|Win32'">.libs\lua.tag;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">call ..\..\windows\un7z_and_touch.bat ..\..\windows\lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">call ..\..\windows\un7z_and_touch.bat ..\..\windows\lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;..\..\windows\un7z_and_touch.bat</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\lua.tag;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">.libs\lua.tag;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">call ..\..\windows\un7z_and_touch.bat ..\..\windows\lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">.libs\lua.tag;</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">7z.exe;..\..\windows\un7z_and_touch.bat</AdditionalInputs>
-    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
