@@ -593,7 +593,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 						{
 							if (!cheats->add_AR(buf, tempCheat.description, tempCheat.enabled))
 							{
-								MessageBox(dialog, "Syntax error in Action Replay code.\nTry again", "DeSmuME",
+								MessageBox(dialog, "Syntax error in Action Replay code.\nTry again", DESMUME_NAME,
 											MB_OK | MB_ICONERROR);
 								return FALSE;
 							}
@@ -602,7 +602,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 						{
 							if (!cheats->update_AR(buf, tempCheat.description, tempCheat.enabled, cheatEditPos))
 							{
-								MessageBox(dialog, "Syntax error in Action Replay code.\nTry again", "DeSmuME",
+								MessageBox(dialog, "Syntax error in Action Replay code.\nTry again", DESMUME_NAME,
 											MB_OK | MB_ICONERROR);
 								return FALSE;
 							}
@@ -614,7 +614,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 						{
 							if (!cheats->add_CB(buf, tempCheat.description, tempCheat.enabled))
 							{
-								MessageBox(dialog, "Syntax error in Codebreaker code.\nTry again", "DeSmuME",
+								MessageBox(dialog, "Syntax error in Codebreaker code.\nTry again", DESMUME_NAME,
 											MB_OK | MB_ICONERROR);
 								return FALSE;
 							}
@@ -623,7 +623,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 						{
 							if (!cheats->update_CB(buf, tempCheat.description, tempCheat.enabled, cheatEditPos))
 							{
-								MessageBox(dialog, "Syntax error in Codebreaker code.\nTry again", "DeSmuME",
+								MessageBox(dialog, "Syntax error in Codebreaker code.\nTry again", DESMUME_NAME,
 											MB_OK | MB_ICONERROR);
 								return FALSE;
 							}
@@ -1634,7 +1634,7 @@ bool CheatsExportDialog(HWND hwnd)
 		if (cheatsExport->getCheatsNum() > 0)
 			res = DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_EXPORT), hwnd, (DLGPROC) CheatsExportProc);
 		else
-			MessageBox(hwnd, "Cheats for this game in database not founded.", "DeSmuME", MB_OK | MB_ICONERROR);
+			MessageBox(hwnd, "Cheats for this game in database not founded.", DESMUME_NAME, MB_OK | MB_ICONERROR);
 	}
 	else
 	{

@@ -131,7 +131,7 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 		{
 			char buf[256] = {0};
 			memset(&buf[0], 0, sizeof(buf));
-			sprintf(buf, "DeSmuME%s", EMU_DESMUME_VERSION_STRING());
+			sprintf(buf, DESMUME_NAME "%s", EMU_DESMUME_VERSION_STRING());
 			SetDlgItemText(dialog, IDC_TXT_VERSION, buf);
 			sprintf(buf, "compiled %s - %s %s", __DATE__, __TIME__, EMU_DESMUME_COMPILER_DETAIL());
 			SetDlgItemText(dialog, IDC_TXT_COMPILED, buf);
