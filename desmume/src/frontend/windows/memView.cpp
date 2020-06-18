@@ -29,6 +29,7 @@
 
 #include "resource.h"
 #include "winutil.h"
+#include "version.h"
 
 using namespace std;
 
