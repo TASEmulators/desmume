@@ -2961,39 +2961,43 @@ void WavEnd()
 	NDS_UnPause();
 }
 
-void UpdateTitle(const char* curr_title)
+void UpdateTitle(const char* currTitle)
 {
 	if (gameInfo.hasRomBanner())
 	{
-		if (curr_title == nullptr) {
-			curr_title = EMU_DESMUME_NAME_AND_VERSION();
+		if (currTitle == nullptr) {
+			currTitle = EMU_DESMUME_NAME_AND_VERSION();
 		}
 
-		char new_title[512];
-		char game_title[128];
+		char newTitle[512];
+		char gameTitle[128];
 
-		strcpy(new_title, curr_title);
+		strcpy(newTitle, currTitle);
+
+		int newLength = strlen(newTitle);
 
 		const RomBanner& banner = gameInfo.getRomBanner();
-		sprintf(game_title, " | %ws", banner.titles[CommonSettings.fwConfig.language]);
+		sprintf(gameTitle, " | %ws", banner.titles[CommonSettings.fwConfig.language]);
 
-		int index = 0, lenght = strlen(game_title);
-		for (int i = 0; i < lenght; i++)
+		int index = 0, gameLength = strlen(gameTitle);
+		for (int i = 0; i < gameLength; i++)
 		{
-			if (game_title[i] == '\n')
+			if (gameTitle[i] == '\n')
 			{
-				game_title[i] = ' ';
+				gameTitle[i] = ' ';
 				index = i;
 			}
 		}
 
 		if (index != 0)
 		{
-			game_title[index] = '\0';
-			strcat(new_title + strlen(new_title), game_title);
+			gameTitle[index] = '\0';
+			if (newLength + gameLength < 512) strcat(newTitle + newLength, gameTitle); 
 		}
 
-		SetWindowText(MainWindow->getHWnd(), new_title);
+		newTitle[511] = '\0'; // Stay safe
+
+		SetWindowText(MainWindow->getHWnd(), newTitle);
 	}
 }
 
