@@ -1493,7 +1493,7 @@ void NDS_UnPause(bool showMsg)
 		SPU_Pause(0);
 		if (showMsg) INFO("Emulation unpaused\n");
 
-		SetWindowText(MainWindow->getHWnd(), (char*)EMU_DESMUME_NAME_AND_VERSION());
+		UpdateTitle();
 		MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PAUSE);
 	}
 }
@@ -2961,6 +2961,42 @@ void WavEnd()
 	NDS_UnPause();
 }
 
+void UpdateTitle(const char* curr_title)
+{
+	if (gameInfo.hasRomBanner())
+	{
+		if (curr_title == nullptr) {
+			curr_title = EMU_DESMUME_NAME_AND_VERSION();
+		}
+
+		char new_title[512];
+		char game_title[128];
+
+		strcpy(new_title, curr_title);
+
+		const RomBanner& banner = gameInfo.getRomBanner();
+		sprintf(game_title, " | %ws", banner.titles[CommonSettings.fwConfig.language]);
+
+		int index = 0, lenght = strlen(game_title);
+		for (int i = 0; i < lenght; i++)
+		{
+			if (game_title[i] == '\n')
+			{
+				game_title[i] = ' ';
+				index = i;
+			}
+		}
+
+		if (index != 0)
+		{
+			game_title[index] = '\0';
+			strcat(new_title + strlen(new_title), game_title);
+		}
+
+		SetWindowText(MainWindow->getHWnd(), new_title);
+	}
+}
+
 void UpdateToolWindows()
 {
 	Update_RAM_Search();	//Update_RAM_Watch() is also called; hotkey.cpp - HK_StateLoadSlot & State_Load also call these functions
@@ -3102,6 +3138,8 @@ Choose Config > Path Settings and ensure that the SaveRam directory exists and i
 		{
 			fclose(testFs);
 		}
+
+		UpdateTitle();		
 		
 		return TRUE;
 	}
@@ -3169,8 +3207,6 @@ LRESULT OpenFile()
 //		}
 //		return 0;
 //	}
-
-
 
 	return 0;
 }
