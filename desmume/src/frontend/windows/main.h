@@ -45,6 +45,7 @@ void AviRecordTo();
 void AviEnd();
 void WavRecordTo(int wavmode);
 void WavEnd();
+void UpdateTitle(HWND hwnd);
 void UpdateToolWindows();
 bool DemandLua();
 void SetRotate(HWND hwnd, int rot, bool user = true);

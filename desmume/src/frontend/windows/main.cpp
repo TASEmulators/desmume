@@ -1493,7 +1493,7 @@ void NDS_UnPause(bool showMsg)
 		SPU_Pause(0);
 		if (showMsg) INFO("Emulation unpaused\n");
 
-		SetWindowText(MainWindow->getHWnd(), (char*)EMU_DESMUME_NAME_AND_VERSION());
+		UpdateTitle(MainWindow->getHWnd());
 		MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PAUSE);
 	}
 }
@@ -2961,6 +2961,40 @@ void WavEnd()
 	NDS_UnPause();
 }
 
+void UpdateTitle(HWND hwnd)
+{
+	if (gameInfo.hasRomBanner())
+	{
+		char curr_title[512];
+		char new_title[512];
+		char game_title[128];
+
+		GetWindowText(hwnd, curr_title, 512);
+		strcpy(new_title, curr_title);
+
+		const RomBanner& banner = gameInfo.getRomBanner();
+		sprintf(game_title, " | %ws", banner.titles[CommonSettings.fwConfig.language]);
+
+		int index = 0, lenght = strlen(game_title);
+		for (int i = 0; i < lenght; i++)
+		{
+			if (game_title[i] == '\n')
+			{
+				game_title[i] = ' ';
+				index = i;
+			}
+		}
+
+		if (index != 0)
+		{
+			game_title[index] = '\0';
+			strcat(new_title + strlen(new_title), game_title);
+		}
+
+		SetWindowText(hwnd, new_title);
+	}
+}
+
 void UpdateToolWindows()
 {
 	Update_RAM_Search();	//Update_RAM_Watch() is also called; hotkey.cpp - HK_StateLoadSlot & State_Load also call these functions
@@ -3170,7 +3204,7 @@ LRESULT OpenFile()
 //		return 0;
 //	}
 
-
+	UpdateTitle(hwnd);
 
 	return 0;
 }
