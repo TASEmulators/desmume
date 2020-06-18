@@ -20,6 +20,7 @@
 
 #include <string>
 #include "types.h"
+#include "version.h"
 
 #define NDS_FW_SIZE_V1 (256 * 1024)		/* size of fw memory on nds v1 */
 #define NDS_FW_SIZE_V2 (512 * 1024)		/* size of fw memory on nds v2 */
@@ -32,6 +33,9 @@
 
 #define MAX_FW_NICKNAME_LENGTH 10
 #define MAX_FW_MESSAGE_LENGTH 26
+
+extern const char* defaultNickname;
+extern const char* defaultMessage;
 
 struct FirmwareConfig
 {

@@ -18,6 +18,10 @@
 #include <string>
 #include "types.h"
 
+#ifndef DESMUME_NAME
+#define DESMUME_NAME "DeSmuME"
+#endif // !DESMUME_NAME
+
 extern const u8 DESMUME_VERSION_MAJOR;
 extern const u8 DESMUME_VERSION_MINOR;
 extern const u8 DESMUME_VERSION_BUILD;

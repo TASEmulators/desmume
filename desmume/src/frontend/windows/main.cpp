@@ -1638,7 +1638,7 @@ bool DemandLua()
 	HMODULE mod = LoadLibrary("lua51.dll");
 	if(!mod)
 	{
-		MessageBox(NULL, "lua51.dll was not found. Please get it into your PATH or in the same directory as desmume.exe", "DeSmuME", MB_OK | MB_ICONERROR);
+		MessageBox(NULL, "lua51.dll was not found. Please get it into your PATH or in the same directory as desmume.exe", DESMUME_NAME, MB_OK | MB_ICONERROR);
 		return false;
 	}
 	FreeLibrary(mod);
@@ -1856,7 +1856,7 @@ static void RefreshMicSettings()
 	{
 		if(!LoadSamples(MicSampleName))
 		{
-			MessageBox(NULL, "Unable to read the mic sample", "DeSmuME", (MB_OK | MB_ICONEXCLAMATION));
+			MessageBox(NULL, "Unable to read the mic sample", DESMUME_NAME, (MB_OK | MB_ICONEXCLAMATION));
 		}
 		else
 		{
@@ -1968,7 +1968,7 @@ int _main()
 	ColorCtrl_Register();
 	if (!RegWndClass("DeSmuME", WindowProcedure, CS_DBLCLKS, LoadIcon(hAppInst, MAKEINTRESOURCE(ICONDESMUME))))
 	{
-		MessageBox(NULL, "Error registering windows class", "DeSmuME", MB_OK);
+		MessageBox(NULL, "Error registering windows class", DESMUME_NAME, MB_OK);
 		exit(-1);
 	}
 
@@ -2107,7 +2107,7 @@ int _main()
 		WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 		NULL))
 	{
-		MessageBox(NULL, "Error creating main window", "DeSmuME", MB_OK);
+		MessageBox(NULL, "Error creating main window", DESMUME_NAME, MB_OK);
 		delete MainWindow;
 		exit(-1);
 	}
@@ -2129,7 +2129,7 @@ int _main()
 
 	if(MenuInit() == 0)
 	{
-		MessageBox(NULL, "Error creating main menu", "DeSmuME", MB_OK);
+		MessageBox(NULL, "Error creating main menu", DESMUME_NAME, MB_OK);
 		delete MainWindow;
 		exit(-1);
 	}
@@ -2483,7 +2483,7 @@ int _main()
 			CommonSettings.fwConfig.nickname[char_index] = temp_str[char_index];
 		}
 
-		GetPrivateProfileString("Firmware","Message", "DeSmuME makes you happy!", temp_str, 27, IniName);
+		GetPrivateProfileString("Firmware","Message", defaultMessage, temp_str, 27, IniName);
 		CommonSettings.fwConfig.messageLength = strlen( temp_str);
 		for ( char_index = 0; char_index < CommonSettings.fwConfig.messageLength; char_index++) {
 			CommonSettings.fwConfig.message[char_index] = temp_str[char_index];
