@@ -80,7 +80,7 @@ EXPORTED void desmume_reset(void);
 EXPORTED void desmume_stop(void);
 EXPORTED BOOL desmume_running(void);
 EXPORTED void desmume_skip_next_frame(void);
-EXPORTED void desmume_cycle(void);
+EXPORTED void desmume_cycle(BOOL with_joystick);
 
 EXPORTED int desmume_sdl_get_ticks();
 

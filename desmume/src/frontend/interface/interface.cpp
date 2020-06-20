@@ -136,16 +136,18 @@ EXPORTED void desmume_skip_next_frame()
     NDS_SkipNextFrame();
 }
 
-EXPORTED void desmume_cycle()
+EXPORTED void desmume_cycle(BOOL with_joystick)
 {
     u16 keypad;
     /* Joystick events */
-    /* Retrieve old value: can use joysticks w/ another device (from our side) */
-    keypad = get_keypad();
-    /* Process joystick events if any */
-    process_joystick_events(&keypad);
-    /* Update keypad value */
-    update_keypad(keypad);
+    if (with_joystick) {
+        /* Retrieve old value: can use joysticks w/ another device (from our side) */
+        keypad = get_keypad();
+        /* Process joystick events if any */
+        process_joystick_events(&keypad);
+        /* Update keypad value */
+        update_keypad(keypad);
+    }
 
     NDS_beginProcessingInput();
     {
