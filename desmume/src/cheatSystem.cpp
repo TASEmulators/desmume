@@ -804,52 +804,49 @@ BOOL CHEATS::save()
 {
 	const char	*types[] = {"DS", "AR", "CB"};
 	std::string	cheatLineStr = "";
-	FILE		*flist = fopen((char *)filename, "w");
 
-	if (flist)
+	EMUFILE_FILE flist((char *)filename, "w");
+	if(flist.fail())
+		return FALSE;
+
+	flist.fprintf("; DeSmuME cheats file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
+	flist.fprintf("Name=%s\n", gameInfo.ROMname);
+	flist.fprintf("Serial=%s\n", gameInfo.ROMserial);
+	flist.fprintf("\n; cheats list\n");
+	for (size_t i = 0;  i < list.size(); i++)
 	{
-		fprintf(flist, "; DeSmuME cheats file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
-		fprintf(flist, "Name=%s\n", gameInfo.ROMname);
-		fprintf(flist, "Serial=%s\n", gameInfo.ROMserial);
-		fputs("\n; cheats list\n", flist);
-		for (size_t i = 0;  i < list.size(); i++)
+		if (list[i].num == 0) continue;
+			
+		char buf1[8] = {0};
+		sprintf(buf1, "%s %c ", types[list[i].type], list[i].enabled?'1':'0');
+		cheatLineStr = buf1;
+			
+		for (int t = 0; t < list[i].num; t++)
 		{
-			if (list[i].num == 0) continue;
-			
-			char buf1[8] = {0};
-			sprintf(buf1, "%s %c ", types[list[i].type], list[i].enabled?'1':'0');
-			cheatLineStr = buf1;
-			
-			for (int t = 0; t < list[i].num; t++)
+			char buf2[10] = { 0 };
+
+			u32 adr = list[i].code[t][0];
+			if (list[i].type == 0)
 			{
-				char buf2[10] = { 0 };
-
-				u32 adr = list[i].code[t][0];
-				if (list[i].type == 0)
-				{
-					//size of the cheat is written out as adr highest nybble
-					adr &= 0x0FFFFFFF;
-					adr |= (list[i].size << 28);
-				}
-				sprintf(buf2, "%08X", adr);
-				cheatLineStr += buf2;
-				
-				sprintf(buf2, "%08X", list[i].code[t][1]);
-				cheatLineStr += buf2;
-				if (t < (list[i].num - 1))
-					cheatLineStr += ",";
+				//size of the cheat is written out as adr highest nybble
+				adr &= 0x0FFFFFFF;
+				adr |= (list[i].size << 28);
 			}
-			
-			cheatLineStr += " ;";
-			cheatLineStr += trim(list[i].description);
-			fprintf(flist, "%s\n", cheatLineStr.c_str());
+			sprintf(buf2, "%08X", adr);
+			cheatLineStr += buf2;
+				
+			sprintf(buf2, "%08X", list[i].code[t][1]);
+			cheatLineStr += buf2;
+			if (t < (list[i].num - 1))
+				cheatLineStr += ",";
 		}
-		fputs("\n", flist);
-		fclose(flist);
-		return TRUE;
+			
+		cheatLineStr += " ;";
+		cheatLineStr += trim(list[i].description);
+		flist.fprintf("%s\n", cheatLineStr.c_str());
 	}
-
-	return FALSE;
+	flist.fprintf("\n");
+	return TRUE;
 }
 
 char *CHEATS::clearCode(char *s)
@@ -873,11 +870,9 @@ char *CHEATS::clearCode(char *s)
 
 BOOL CHEATS::load()
 {
-	FILE *flist = fopen((char *)filename, "r");
-	if (flist == NULL)
-	{
+	EMUFILE_FILE flist((char *)filename, "r");
+	if(flist.fail())
 		return FALSE;
-	}
 	
 	size_t readSize = (MAX_XX_CODE * 17) + sizeof(list[0].description) + 7;
 	if (readSize < CHEAT_FILE_MIN_FGETS_BUFFER)
@@ -886,11 +881,6 @@ BOOL CHEATS::load()
 	}
 	
 	char *buf = (char *)malloc(readSize);
-	if (buf == NULL)
-	{
-		fclose(flist);
-		return FALSE;
-	}
 	
 	readSize *= sizeof(*buf);
 	
@@ -901,12 +891,12 @@ BOOL CHEATS::load()
 	INFO("Load cheats: %s\n", filename);
 	clear();
 	last = 0; line = 0;
-	while (!feof(flist))
+	while (!flist.eof())
 	{
 		CHEATS_LIST		tmp_cht;
 		line++;				// only for debug
 		memset(buf, 0, readSize);
-		if (fgets(buf, readSize, flist) == NULL) {
+		if (flist.fgets(buf, readSize) == NULL) {
 			//INFO("Cheats: Failed to read from flist at line %i\n", line);
 			continue;
 		}
@@ -980,7 +970,6 @@ BOOL CHEATS::load()
 	free(buf);
 	buf = NULL;
 
-	fclose(flist);
 	INFO("Added %i cheat codes\n", list.size());
 	
 	return TRUE;
