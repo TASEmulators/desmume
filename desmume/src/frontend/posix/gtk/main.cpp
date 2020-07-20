@@ -132,6 +132,8 @@ static void StopMovie();
 static void OpenNdsDialog();
 static void SaveStateDialog();
 static void LoadStateDialog();
+static void ExportBackupMemoryDialog();
+static void ImportBackupMemoryDialog();
 void Launch();
 void Pause();
 static void ResetSaveStateTimes();
@@ -213,6 +215,9 @@ static const char *ui_description =
 #ifdef GTK_DESMUME_FIRMWARE_BROKEN
 "      <menuitem action='loadfirmware'/>"
 #endif
+"      <separator/>"
+"      <menuitem action='importbackupmemory'/>"
+"      <menuitem action='exportbackupmemory'/>"
 "      <separator/>"
 "      <menuitem action='recordmovie'/>"
 "      <menuitem action='playmovie'/>"
@@ -402,6 +407,8 @@ static const GtkActionEntry action_entries[] = {
       { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
       { "savestateto",    NULL,         "Save state _to ...",         NULL,  NULL,   SaveStateDialog },
       { "loadstatefrom",  NULL,         "Load state _from ...",         NULL,  NULL,   LoadStateDialog },
+      { "importbackupmemory",    NULL,  "Import Backup Memory...",      NULL,  NULL,   ImportBackupMemoryDialog },
+      { "exportbackupmemory",  NULL,    "Export Backup Memory...",      NULL,  NULL,   ExportBackupMemoryDialog },
       { "recordmovie",  NULL,         "Record movie _to ...",         NULL,  NULL,   RecordMovieDialog },
       { "playmovie",  NULL,         "Play movie _from ...",         NULL,  NULL,   PlayMovieDialog },
       { "stopmovie",  NULL,         "Stop movie", NULL,  NULL,   StopMovie },
@@ -960,6 +967,8 @@ void Launch()
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), TRUE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), TRUE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "exportbackupmemory"), TRUE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "importbackupmemory"), TRUE);
 
     pause = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/pause")));
     gtk_widget_grab_focus(pause);
@@ -1138,6 +1147,135 @@ static void PlayMovieDialog()
         break;
     }
     gtk_widget_destroy(pFileSelection);
+}
+
+static void ImportBackupMemoryDialog()
+{
+    GtkFileFilter *pFilter_raw, *pFilter_ar, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
+
+    if (desmume_running())
+        Pause();
+
+    pParent = GTK_WIDGET(pWindow);
+
+    pFilter_raw = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_raw, "*.sav");
+    gtk_file_filter_set_name(pFilter_raw, "Raw/No$GBA Save format (*.sav)");
+
+    pFilter_ar = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_ar, "*.duc");
+    gtk_file_filter_add_pattern(pFilter_ar, "*.dss");
+    gtk_file_filter_set_name(pFilter_ar, "Action Replay DS Save (*.duc,*.dss)");
+
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*.sav");
+    gtk_file_filter_add_pattern(pFilter_any, "*.duc");
+    gtk_file_filter_add_pattern(pFilter_any, "*.dss");
+    gtk_file_filter_set_name(pFilter_any, "All supported types");
+
+    /* Creating the selection window */
+    pFileSelection = gtk_file_chooser_dialog_new("Import Backup Memory From ...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_OPEN,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_OPEN, GTK_RESPONSE_OK,
+            NULL);
+
+    /* Only the dialog window is accepting events: */
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_raw);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_ar);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+
+    /* Showing the window */
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+
+        if(MMU_new.backupDevice.importData(sPath) == false ) {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+                    GTK_DIALOG_MODAL,
+                    GTK_MESSAGE_ERROR,
+                    GTK_BUTTONS_OK,
+                    "Unable to import :\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        } else {
+            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+        }
+
+        g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
+    Launch();
+}
+
+static void ExportBackupMemoryDialog()
+{
+    GtkFileFilter *pFilter_raw, *pFilter_ar, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
+
+    if (desmume_running())
+        Pause();
+
+    pParent = GTK_WIDGET(pWindow);
+
+    pFilter_raw = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_raw, "*.sav");
+    gtk_file_filter_set_name(pFilter_raw, "Raw/No$GBA Save format (*.sav)");
+
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*.sav");
+    gtk_file_filter_set_name(pFilter_any, "All supported types");
+
+    /* Creating the selection window */
+    pFileSelection = gtk_file_chooser_dialog_new("Export Backup Memory To ...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_SAVE,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
+            NULL);
+    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
+
+    /* Only the dialog window is accepting events: */
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_raw);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+
+    /* Showing the window */
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+
+        if(MMU_new.backupDevice.exportData(sPath) == false ) {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+                    GTK_DIALOG_MODAL,
+                    GTK_MESSAGE_ERROR,
+                    GTK_BUTTONS_OK,
+                    "Unable to export :\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        } else {
+            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+        }
+
+        g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
+    Launch();
 }
 
 static void SaveStateDialog()
@@ -3389,6 +3527,8 @@ common_gtk_main( class configured_features *my_config)
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "exportbackupmemory"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "importbackupmemory"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatsearch"), FALSE);
 
