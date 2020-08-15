@@ -327,6 +327,13 @@ struct armcpu_t
 	
 	/** the ctrl interface */
 	armcpu_ctrl_iface ctrl_iface;
+
+	// debugging stuff
+	int runToRetTmp;
+	bool runToRet;
+	int stepOverBreak;
+	std::vector<int> breakPoints;
+	bool debugStep;
 };
 
 int armcpu_new( armcpu_t *armcpu, u32 id);

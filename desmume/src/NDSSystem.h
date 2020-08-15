@@ -405,6 +405,9 @@ typedef struct TSCalInfo
 
 extern GameInfo gameInfo;
 
+extern std::vector<int> memReadBreakPoints;
+extern std::vector<int> memWriteBreakPoints;
+
 
 struct UserButtons : buttonstruct<bool>
 {

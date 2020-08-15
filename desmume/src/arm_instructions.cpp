@@ -3104,6 +3104,10 @@ TEMPLATE static u32 FASTCALL  OP_BLX_REG(const u32 i)
 	cpu->CPSR.bits.T = BIT0(tmp);
 	cpu->R[15] = tmp & (0xFFFFFFFC|(cpu->CPSR.bits.T<<1));
 	cpu->next_instruction = cpu->R[15];
+	if (cpu->runToRet) {
+		cpu->runToRet = false;
+		cpu->runToRetTmp = cpu->next_instruction + 4;
+	}
 	return 3;
 }
 
@@ -3145,6 +3149,10 @@ TEMPLATE static u32 FASTCALL  OP_BL(const u32 i)
 	cpu->R[15] += (off<<2);
 	cpu->R[15] &= (0xFFFFFFFC|(cpu->CPSR.bits.T<<1));
 	cpu->next_instruction = cpu->R[15];
+	if (cpu->runToRet) {
+		cpu->runToRet = false;
+		cpu->runToRetTmp = cpu->next_instruction + 4;
+	}
 
 	return 3;
 }
@@ -4750,6 +4758,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA(const u32 i)
 		//start += 4;
 		cpu->next_instruction = registres[15];
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
+
+		// debugging
+		if (cpu->runToRet) {
+			execute = false;
+			cpu->runToRet = false;
+		}
 	}
 	
 	return MMU_aluMemCycles<PROCNUM>(2, c);
@@ -4791,6 +4805,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB(const u32 i)
 		else
 			registres[15] = tmp & 0xFFFFFFFC;
 		cpu->next_instruction = registres[15];
+
+		// debugging
+		if (cpu->runToRet) {
+			execute = false;
+			cpu->runToRet = false;
+		}
 		return MMU_aluMemCycles<PROCNUM>(4, c);
 	}
 	
@@ -4817,6 +4837,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA(const u32 i)
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
 		start -= 4;
 		cpu->next_instruction = registres[15];
+
+		// debugging
+		if (cpu->runToRet) {
+			execute = false;
+			cpu->runToRet = false;
+		}
 	}
 
 	OP_L_DA(14, start);
@@ -4858,6 +4884,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB(const u32 i)
 			registres[15] = tmp & 0xFFFFFFFC;
 		cpu->next_instruction = registres[15];
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
+
+		// debugging
+		if (cpu->runToRet) {
+			execute = false;
+			cpu->runToRet = false;
+		}
 	}
 
 	OP_L_DB(14, start);
@@ -4915,6 +4947,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA_W(const u32 i)
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
 		start += 4;
 		cpu->next_instruction = registres[15];
+
+		// debugging
+		if (cpu->runToRet) {
+			execute = false;
+			cpu->runToRet = false;
+		}
 	}
 
 	if(i & (1 << REG_POS(i,16))) {
@@ -4965,6 +5003,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB_W(const u32 i)
 		else
 			registres[15] = tmp & 0xFFFFFFFC;
 		cpu->next_instruction = registres[15];
+
+		// debugging
+		if (cpu->runToRet) {
+			execute = false;
+			cpu->runToRet = false;
+		}
 	}
 
 	if(i & (1 << REG_POS(i,16))) {
@@ -4998,6 +5042,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA_W(const u32 i)
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
 		start -= 4;
 		cpu->next_instruction = registres[15];
+
+		// debugging
+		if (cpu->runToRet) {
+			execute = false;
+			cpu->runToRet = false;
+		}
 	}
 
 	OP_L_DA(14, start);
@@ -5047,6 +5097,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB_W(const u32 i)
 			registres[15] = tmp & 0xFFFFFFFC;
 		cpu->next_instruction = registres[15];
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
+
+		// debugging
+		if (cpu->runToRet) {
+			execute = false;
+			cpu->runToRet = false;
+		}
 	}
 
 	OP_L_DB(14, start);
@@ -5125,6 +5181,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2(const u32 i)
 		//start += 4;
 		cpu->next_instruction = cpu->R[15];
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
+
+		// debugging
+		if (cpu->runToRet) {
+			execute = false;
+			cpu->runToRet = false;
+		}
 	}
 	return MMU_aluMemCycles<PROCNUM>(2, c);
 }
@@ -5180,6 +5242,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2(const u32 i)
 		cpu->changeCPSR();
 		cpu->next_instruction = registres[15];
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
+
+		// debugging
+		if (cpu->runToRet) {
+			execute = false;
+			cpu->runToRet = false;
+		}
 	}
 	return MMU_aluMemCycles<PROCNUM>(2, c);
 }
@@ -5212,6 +5280,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA2(const u32 i)
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
 		start -= 4;
 		cpu->next_instruction = registres[15];
+
+		// debugging
+		if (cpu->runToRet) {
+			execute = false;
+			cpu->runToRet = false;
+		}
 	}
  
 	OP_L_DA(14, start);
@@ -5270,6 +5344,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB2(const u32 i)
 		cpu->changeCPSR();
 		cpu->next_instruction = registres[15];
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
+
+		// debugging
+		if (cpu->runToRet) {
+			execute = false;
+			cpu->runToRet = false;
+		}
 	}
 
 	OP_L_DB(14, start);

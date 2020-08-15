@@ -37,8 +37,9 @@ typedef struct
 	BOOL autoup;
 	u32	autoup_secs;
 	u32 curr_ligne;
-	armcpu_t *cpu;
+	armcpu_t* cpu;
 	u16 mode;
+	s32 break_pos;
 } disview_struct;
 
 disview_struct		*DisView7 = NULL;
@@ -47,7 +48,7 @@ disview_struct		*DisView9 = NULL;
 extern TOOLSCLASS	*ViewDisasm_ARM7;
 extern TOOLSCLASS	*ViewDisasm_ARM9;
 
-static	HWND DisViewWnd[2] = {NULL, NULL};
+	HWND DisViewWnd[2] = {NULL, NULL};
 
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
@@ -90,12 +91,23 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
              u32 i;
              u32 adr;
 
-             if (win->autoup||win->autogo)
-				 win->curr_ligne = (win->cpu->instruct_adr >> 2);
+             //if (win->autoup||win->autogo)
+			//	 win->curr_ligne = (win->cpu->instruct_adr >> 2);
              adr = win->curr_ligne*4;
+
+			 SetTextColor(mem_dc, RGB(0, 0, 0));
 
              for(i = 0; i < nbligne; ++i)
              {
+				 SetBkColor(mem_dc, RGB(255, 255, 255));
+				 for (int j = 0; j < win->cpu->breakPoints.size(); ++j) {
+					 if (adr == win->cpu->breakPoints[j]) {
+						 SetBkColor(mem_dc, RGB(255, 0, 0));
+					 }
+				 }
+				 if (adr == win->cpu->instruct_adr) {
+					 SetBkColor(mem_dc, RGB(0, 255, 0));
+				 }
                   u32 ins = _MMU_read32(win->cpu->proc_ID, MMU_AT_DEBUG, adr);
                   des_arm_instructions_set[INDEX(ins)](adr, ins, txt);
                   sprintf(text, "%04X:%04X  %08X  %s", (int)(adr>>16), (int)(adr&0xFFFF), (int)ins, txt);
@@ -130,6 +142,15 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
         
              for(i = 0; i < nbligne; ++i)
              {
+				 SetBkColor(mem_dc, RGB(255, 255, 255));
+				 for (int j = 0; j < win->cpu->breakPoints.size(); ++j) {
+					 if (adr == win->cpu->breakPoints[j]) {
+						 SetBkColor(mem_dc, RGB(255, 0, 0));
+					 }
+				 }
+				 if (adr == win->cpu->instruct_adr) {
+					 SetBkColor(mem_dc, RGB(0, 255, 0));
+				 }
                   u32 ins = _MMU_read16(win->cpu->proc_ID, MMU_AT_DEBUG, adr);
                   des_thumb_instructions_set[ins>>6](adr, ins, txt);
                   sprintf(text, "%04X:%04X  %04X  %s", (int)(adr>>16), (int)(adr&0xFFFF), (int)ins, txt);
@@ -174,53 +195,71 @@ LRESULT DisViewDialog_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPA
         for(i = 0; i < 16; ++i)
         {
              sprintf(text, "%08X", (int)win->cpu->R[i]);
-             SetWindowText(GetDlgItem(hwnd, IDC_R0+i), text);
+             //SetWindowText(GetDlgItem(hwnd, IDC_R0+i), text);
+			 SetDlgItemText(hwnd, IDC_R0 + i, text);
         }
         
         #define OFF 16
+
+		#define CPSROFF 288
         
         SetBkMode(hdc, TRANSPARENT);
         if(win->cpu->CPSR.bits.N)
              SetTextColor(hdc, RGB(255,0,0));
         else
              SetTextColor(hdc, RGB(70, 70, 70));
-        TextOut(hdc, 452+OFF, 238, "N", 1);
+        TextOut(hdc, 452+OFF, CPSROFF, "N", 1);
         
         if(win->cpu->CPSR.bits.Z)
              SetTextColor(hdc, RGB(255,0,0));
         else
              SetTextColor(hdc, RGB(70, 70, 70));
-        TextOut(hdc, 464+OFF, 238, "Z", 1);
+        TextOut(hdc, 464+OFF, CPSROFF, "Z", 1);
         
         if(win->cpu->CPSR.bits.C)
              SetTextColor(hdc, RGB(255,0,0));
         else
              SetTextColor(hdc, RGB(70, 70, 70));
-        TextOut(hdc, 475+OFF, 238, "C", 1);
+        TextOut(hdc, 475+OFF, CPSROFF, "C", 1);
         
         if(win->cpu->CPSR.bits.V)
              SetTextColor(hdc, RGB(255,0,0));
         else
              SetTextColor(hdc, RGB(70, 70, 70));
-        TextOut(hdc, 486+OFF, 238, "V", 1);
+        TextOut(hdc, 486+OFF, CPSROFF, "V", 1);
         
         if(win->cpu->CPSR.bits.Q)
              SetTextColor(hdc, RGB(255,0,0));
         else
              SetTextColor(hdc, RGB(70, 70, 70));
-        TextOut(hdc, 497+OFF, 238, "Q", 1);
+        TextOut(hdc, 497+OFF, CPSROFF, "Q", 1);
         
         if(!win->cpu->CPSR.bits.I)
              SetTextColor(hdc, RGB(255,0,0));
         else
              SetTextColor(hdc, RGB(70, 70, 70));
-        TextOut(hdc, 508+OFF, 238, "I", 1);
+        TextOut(hdc, 508+OFF, CPSROFF, "I", 1);
         
         sprintf(text, "%02X", (int)win->cpu->CPSR.bits.mode);
         SetWindowText(GetDlgItem(hwnd, IDC_MODE), text);
 
         sprintf(text, "%08X", MMU.timer[0][0]);//win->cpu->SPSR);
         SetWindowText(GetDlgItem(hwnd, IDC_TMP), text);
+
+		// weehee break points drawing
+		for (int i = 0; i < 8; ++i) {
+			int j = i + win->break_pos;
+			if (j < win->cpu->breakPoints.size()) {
+				sprintf(text, "%08X", win->cpu->breakPoints[j]);
+			}
+			else {
+				sprintf(text, "%08X", 0);
+			}
+			SetWindowText(GetDlgItem(hwnd, IDC_BP0 + i), text);
+		}
+
+		sprintf(text, "%02i", win->break_pos);
+		SetWindowText(GetDlgItem(hwnd, IDC_BPCOUNT), text);
         
         EndPaint(hwnd, &ps);
         return 1;
@@ -308,7 +347,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETPOS32, 0, DisView7->autoup_secs);
-					DisViewWnd[1] = NULL;
+					DisViewWnd[1] = hwnd;
 					return 1;
 				}
 			case WM_CLOSE :
@@ -332,6 +371,13 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 			case WM_TIMER:
 				SendMessage(hwnd, WM_COMMAND, IDC_REFRESH, 0);
 				return 1;
+			case WM_MOUSEWHEEL: {
+				int tmp = (*((int*)&wParam));
+				short tmp2 = (*(((short*)&tmp) + 1));
+				DisView7->curr_ligne += -tmp2 / WHEEL_DELTA;
+				InvalidateRect(hwnd, NULL, FALSE);
+				return 1;
+			}
             case WM_COMMAND :
                  switch (LOWORD (wParam))
                  {
@@ -385,6 +431,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 						case IDC_STEP:
                              {
 								NDS_debug_step();
+								NDS_ARM7.debugStep = true;
                              }
                              return 1;
 
@@ -464,6 +511,85 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 								EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE), TRUE);
 							}
 							return 1;
+						case IDC_DISASMSEEK:
+						{
+							DisView7->curr_ligne = lParam / 4;
+							return 1;
+						}
+						case IDC_BPUP:
+						{
+							DisView7->break_pos = max<s32>(0, DisView7->break_pos - 1);
+							InvalidateRect(hwnd, NULL, FALSE);
+							return 1;
+						}
+						case IDC_BPDOWN:
+						{
+							DisView7->break_pos += 1;
+							InvalidateRect(hwnd, NULL, FALSE);
+							return 1;
+						}
+						case IDC_BREAKPOINT: {
+							char tmp[16];
+							int lg = GetDlgItemText(hwnd, IDC_BPDEST, tmp, 16);
+							u32 adr = 0;
+							for (int i = 0; i < lg; ++i)
+							{
+								if ((tmp[i] >= 'A') && (tmp[i] <= 'F'))
+								{
+									adr = adr * 16 + (tmp[i] - 'A' + 10);
+									continue;
+								}
+								if ((tmp[i] >= '0') && (tmp[i] <= '9'))
+								{
+									adr = adr * 16 + (tmp[i] - '0');
+									continue;
+								}
+							}
+							NDS_ARM7.breakPoints.push_back(adr);
+							InvalidateRect(hwnd, NULL, FALSE);
+							return 1;
+						}
+						case IDC_DELBP: {
+							if (DisView7->break_pos < NDS_ARM7.breakPoints.size()) {
+								NDS_ARM7.breakPoints.erase(NDS_ARM7.breakPoints.begin() + DisView7->break_pos);
+							}
+							InvalidateRect(hwnd, NULL, FALSE);
+							return 1;
+						}
+						case IDC_REGUPDATE: {
+							for (int i = 0; i < 15; ++i) {
+								char tmp[16];
+								int lg = GetDlgItemText(hwnd, IDC_R0 + i, tmp, 16);
+								u32 adr = 0;
+								for (int i = 0; i < lg; ++i)
+								{
+									if ((tmp[i] >= 'A') && (tmp[i] <= 'F'))
+									{
+										adr = adr * 16 + (tmp[i] - 'A' + 10);
+										continue;
+									}
+									if ((tmp[i] >= '0') && (tmp[i] <= '9'))
+									{
+										adr = adr * 16 + (tmp[i] - '0');
+										continue;
+									}
+								}
+
+								NDS_ARM7.R[i] = adr;
+							}
+							return 1;
+						}
+						case IDC_RUNRET: {
+							NDS_ARM7.runToRet = true;
+							execute = true;
+							return 1;
+						}
+						case IDC_STEPOVER: {
+							NDS_ARM7.stepOverBreak = NDS_ARM7.instruct_adr + 4;
+							execute = true;
+							paused = false;
+						}
+										 return 1;
                         return 1;
                  }
                  return 0;
@@ -554,7 +680,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETPOS32, 0, DisView9->autoup_secs);
-					DisViewWnd[0] = NULL;
+					DisViewWnd[0] = hwnd;
 					return 1;
 				}
 						case WM_CLOSE :
@@ -578,6 +704,13 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 			case WM_TIMER:
 				SendMessage(hwnd, WM_COMMAND, IDC_REFRESH, 0);
 				return 1;
+			case WM_MOUSEWHEEL: {
+				int tmp = (*((int*)&wParam));
+				short tmp2 = (*(((short*)&tmp) + 1));
+				DisView9->curr_ligne += -tmp2 / WHEEL_DELTA;
+				InvalidateRect(hwnd, NULL, FALSE);
+				return 1;
+				}
             case WM_COMMAND :
                  switch (LOWORD (wParam))
                  {
@@ -631,6 +764,8 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 						case IDC_STEP:
                              {
 								NDS_debug_step();
+								DisView9->curr_ligne += 1;
+								NDS_ARM9.debugStep = true;
                              }
                              return 1;
 						case IDC_CONTINUE:
@@ -709,6 +844,84 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 								EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE), TRUE);
 							}
 							return 1;
+						case IDC_DISASMSEEK:
+							{
+								DisView9->curr_ligne = lParam / 4;
+								return 1;
+							}
+						case IDC_BPUP:
+						{
+							DisView9->break_pos = max<s32>(0, DisView9->break_pos - 1);
+							InvalidateRect(hwnd, NULL, FALSE);
+							return 1;
+						}
+						case IDC_BPDOWN:
+						{
+							DisView9->break_pos += 1;
+							InvalidateRect(hwnd, NULL, FALSE);
+							return 1;
+						}
+						case IDC_BREAKPOINT: {
+							char tmp[16];
+							int lg = GetDlgItemText(hwnd, IDC_BPDEST, tmp, 16);
+							u32 adr = 0;
+							for (int i = 0; i < lg; ++i)
+							{
+								if ((tmp[i] >= 'A') && (tmp[i] <= 'F'))
+								{
+									adr = adr * 16 + (tmp[i] - 'A' + 10);
+									continue;
+								}
+								if ((tmp[i] >= '0') && (tmp[i] <= '9'))
+								{
+									adr = adr * 16 + (tmp[i] - '0');
+									continue;
+								}
+							}
+							NDS_ARM9.breakPoints.push_back(adr);
+							InvalidateRect(hwnd, NULL, FALSE);
+							return 1;
+						}
+						case IDC_DELBP: {
+							if (DisView9->break_pos < NDS_ARM9.breakPoints.size()) {
+								NDS_ARM9.breakPoints.erase(NDS_ARM9.breakPoints.begin() + DisView9->break_pos);
+							}
+							InvalidateRect(hwnd, NULL, FALSE);
+							return 1;
+						}
+						case IDC_REGUPDATE: {
+							for (int i = 0; i < 15; ++i) {
+								char tmp[16];
+								int lg = GetDlgItemText(hwnd, IDC_R0 + i, tmp, 16);
+								u32 adr = 0;
+								for (int i = 0; i < lg; ++i)
+								{
+									if ((tmp[i] >= 'A') && (tmp[i] <= 'F'))
+									{
+										adr = adr * 16 + (tmp[i] - 'A' + 10);
+										continue;
+									}
+									if ((tmp[i] >= '0') && (tmp[i] <= '9'))
+									{
+										adr = adr * 16 + (tmp[i] - '0');
+										continue;
+									}
+								}
+
+								NDS_ARM9.R[i] = adr;
+							}
+							return 1;
+						}
+						case IDC_RUNRET: {
+							NDS_ARM9.runToRet = true;
+							execute = true;
+							return 1;
+						}
+						case IDC_STEPOVER: {
+							NDS_ARM9.stepOverBreak = NDS_ARM9.instruct_adr + 4;
+							execute = true;
+							paused = false;
+						}
 						return 1;
                  }
                  return 0;
