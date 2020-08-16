@@ -59,7 +59,6 @@
 #include "wifi.h"
 #include "Database.h"
 #include "frontend/modules/Disassembler.h"
-#include "frontend/windows/disView.h"
 #include "display.h"
 
 #ifdef GDB_STUB
@@ -1923,8 +1922,8 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 				paused = true;
 				execute = false;
 				// update debug display
-				PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
-				InvalidateRect(DisViewWnd[0], NULL, FALSE);
+				//PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
+				//InvalidateRect(DisViewWnd[0], NULL, FALSE);
 				return std::make_pair(arm9, arm7);
 			}
 		}
@@ -1934,8 +1933,8 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 				paused = true;
 				execute = false;
 				// update debug display
-				PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
-				InvalidateRect(DisViewWnd[1], NULL, FALSE);
+				//PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
+				//InvalidateRect(DisViewWnd[1], NULL, FALSE);
 				return std::make_pair(arm9, arm7);
 			}
 		}
@@ -1965,14 +1964,14 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			if (NDS_ARM9.debugStep) {
 				NDS_ARM9.debugStep = false;
 				execute = false;
-				PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
-				InvalidateRect(DisViewWnd[0], NULL, FALSE);
+				//PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
+				//InvalidateRect(DisViewWnd[0], NULL, FALSE);
 			}
 			if (NDS_ARM9.stepOverBreak == NDS_ARM9.instruct_adr && NDS_ARM9.stepOverBreak != 0) {
 				NDS_ARM9.stepOverBreak = 0;
 				execute = false;
-				PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
-				InvalidateRect(DisViewWnd[0], NULL, FALSE);
+				//PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
+				//InvalidateRect(DisViewWnd[0], NULL, FALSE);
 			}
 			// aaand handle step to return
 			if (NDS_ARM9.runToRetTmp != 0 && NDS_ARM9.runToRetTmp == NDS_ARM9.instruct_adr) {
@@ -2013,14 +2012,14 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			if (NDS_ARM7.debugStep) {
 				NDS_ARM7.debugStep = false;
 				execute = false;
-				PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
-				InvalidateRect(DisViewWnd[1], NULL, FALSE);
+				//PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
+				//InvalidateRect(DisViewWnd[1], NULL, FALSE);
 			}
 			if (NDS_ARM7.stepOverBreak == NDS_ARM7.instruct_adr && NDS_ARM7.stepOverBreak != 0) {
 				NDS_ARM7.stepOverBreak = 0;
 				execute = false;
-				PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
-				InvalidateRect(DisViewWnd[1], NULL, FALSE);
+				//PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
+				//InvalidateRect(DisViewWnd[1], NULL, FALSE);
 			}
 			// aaand handle step to return
 			if (NDS_ARM7.runToRetTmp != 0 && NDS_ARM7.runToRetTmp == NDS_ARM7.instruct_adr) {
