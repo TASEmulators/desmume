@@ -1637,6 +1637,7 @@ public:
 	
 	const BGLayerInfo& GetBGLayerInfoByID(const GPULayerID layerID);
 	
+	void SpritePrepareRenderDebug(u16 *dst);
 	void SpriteRenderDebug(const u16 lineIndex, u16 *dst);
 	void RenderLayerBG(const GPULayerID layerID, u16 *dstLineColor);
 

@@ -4956,7 +4956,11 @@ FORCEINLINE void GPUEngineBase::_RenderSpriteUpdatePixel(GPUEngineCompositorInfo
 	
 	if (ISDEBUGRENDER)
 	{
+		//sprites draw in order, so EQUAL priority also trumps later sprites
+		if(prioTab[frameX] <= prio)
+			return;
 		dst[frameX] = (ISOBJMODEBITMAP) ? *srcPalette : LE_TO_LOCAL_16(srcPalette[palIndex]);
+		prioTab[frameX] = prio;
 		return;
 	}
 	
@@ -5164,6 +5168,11 @@ void GPUEngineBase::_SpriteRender(GPUEngineCompositorInfo &compInfo, u16 *__rest
 		this->_SpriteRenderPerform<SpriteRenderMode_Sprite2D, ISDEBUGRENDER>(compInfo, dst, dst_alpha, typeTab, prioTab);
 }
 
+void GPUEngineBase::SpritePrepareRenderDebug(u16 *dst)
+{
+	memset(this->_sprPrio, 0x7F, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+}
+
 void GPUEngineBase::SpriteRenderDebug(const u16 lineIndex, u16 *dst)
 {
 	GPUEngineCompositorInfo compInfo;
@@ -5202,7 +5211,7 @@ void GPUEngineBase::SpriteRenderDebug(const u16 lineIndex, u16 *dst)
 	compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHeadNative;
 	compInfo.target.lineLayerID = NULL;
 	
-	this->_SpriteRender<true>(compInfo, dst, NULL, NULL, NULL);
+	this->_SpriteRender<true>(compInfo, dst, NULL, NULL, &this->_sprPrio[lineIndex][0]);
 }
 
 template <SpriteRenderMode MODE, bool ISDEBUGRENDER>

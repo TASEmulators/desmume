@@ -211,10 +211,11 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
              SetWindowText(GetDlgItem(hwnd, IDC_PROP1), "");
         }
         
-        for(i = 0; i < 192; ++i)
-        {
-             win->gpu->SpriteRenderDebug(i, (u16*)(bitmap + i*256));
-        }
+				win->gpu->SpritePrepareRenderDebug(bitmap);
+				for(i = 0; i < 192; ++i)
+				{
+					win->gpu->SpriteRenderDebug(i, (u16*)(bitmap + i * 256));
+				}
 
 		u32 width = dimm_int[(oam->attr1>>14)][(oam->attr0>>14)][0];
 		u32 height = dimm_int[(oam->attr1>>14)][(oam->attr0>>14)][1];
