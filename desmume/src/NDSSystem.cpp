@@ -59,7 +59,11 @@
 #include "wifi.h"
 #include "Database.h"
 #include "frontend/modules/Disassembler.h"
+
+#ifdef HOST_WINDOWS
 #include "display.h"
+extern HWND DisViewWnd[2];
+#endif
 
 #ifdef GDB_STUB
 #include "gdbstub.h"
@@ -1916,14 +1920,15 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 	while(timer < s32next && !sequencer.reschedule && execute)
 	{
 		// breakpoint handling
+		#ifdef HOST_WINDOWS
 		for (int i = 0; i < NDS_ARM9.breakPoints.size(); ++i) {
 			if (NDS_ARM9.instruct_adr == NDS_ARM9.breakPoints[i] && !NDS_ARM9.debugStep) {
 				emu_paused = true;
 				paused = true;
 				execute = false;
 				// update debug display
-				//PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
-				//InvalidateRect(DisViewWnd[0], NULL, FALSE);
+				PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
+				InvalidateRect(DisViewWnd[0], NULL, FALSE);
 				return std::make_pair(arm9, arm7);
 			}
 		}
@@ -1933,11 +1938,13 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 				paused = true;
 				execute = false;
 				// update debug display
-				//PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
-				//InvalidateRect(DisViewWnd[1], NULL, FALSE);
+				PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
+				InvalidateRect(DisViewWnd[1], NULL, FALSE);
 				return std::make_pair(arm9, arm7);
 			}
 		}
+		#endif //HOST_WINDOWS
+
 		if(doarm9 && (!doarm7 || arm9 <= timer))
 		{
 			if(!(NDS_ARM9.freeze & CPU_FREEZE_WAIT_IRQ) && !nds.freezeBus)
