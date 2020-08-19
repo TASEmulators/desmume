@@ -1214,16 +1214,26 @@ void CheckMessages()
 
 	while( PeekMessage( &msg, 0, 0, 0, PM_NOREMOVE ) )
 	{
-		if( GetMessage( &msg, 0,  0, 0)>0 )
+		if (GetMessage(&msg, 0, 0, 0) > 0)
 		{
 			if (RamWatchHWnd && IsDialogMessage(RamWatchHWnd, &msg))
 			{
-				if(msg.message == WM_KEYDOWN) // send keydown messages to the dialog (for accelerators, and also needed for the Alt key to work)
+				if (msg.message == WM_KEYDOWN) // send keydown messages to the dialog (for accelerators, and also needed for the Alt key to work)
 					SendMessage(RamWatchHWnd, msg.message, msg.wParam, msg.lParam);
 				continue;
 			}
 			if (SoundView_GetHWnd() && IsDialogMessage(SoundView_GetHWnd(), &msg))
 				continue;
+
+			if (DisViewWnd[0] && msg.message == WM_MOUSEWHEEL && IsDialogMessage(DisViewWnd[0], &msg))
+			{
+				SendMessage(DisViewWnd[0], msg.message, msg.wParam, msg.lParam);
+			}
+
+			if (DisViewWnd[1] && msg.message == WM_MOUSEWHEEL && IsDialogMessage(DisViewWnd[1], &msg))
+			{
+				SendMessage(DisViewWnd[1], msg.message, msg.wParam, msg.lParam);
+			}
 
 			if(!TranslateAccelerator(hwnd,hAccel,&msg))
 			{

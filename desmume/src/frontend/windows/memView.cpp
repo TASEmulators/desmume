@@ -37,6 +37,9 @@ using namespace std;
 
 typedef u32 HWAddressType;
 
+int RBPOffs;
+int WBPOffs;
+
 struct MemViewRegion
 {
 	char name[16];     // name of this region (ex. ARM9, region dropdown)
@@ -249,6 +252,44 @@ INT_PTR CALLBACK EditAddrProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return CallWindowProc((WNDPROC)oldEditAddrProc, hWnd, msg, wParam, lParam);
 }
 
+void MemView_Paint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lParam) {
+
+	PAINTSTRUCT ps;
+
+	BeginPaint(hCtl, &ps);
+	// update text...
+	char str[16];
+	for (int i = 0; i < 8; ++i) {
+		int j = i + RBPOffs;
+		if (j < memReadBreakPoints.size()) {
+			sprintf(str, "%08X", memReadBreakPoints[j]);
+		}
+		else {
+			sprintf(str, "%08X", 0);
+		}
+		SetWindowText(GetDlgItem(hCtl, IDC_MRBP0 + i), str);
+	}
+
+	for (int i = 0; i < 8; ++i) {
+		int j = i + WBPOffs;
+		if (j < memWriteBreakPoints.size()) {
+			sprintf(str, "%08X", memWriteBreakPoints[j]);
+		}
+		else {
+			sprintf(str, "%08X", 0);
+		}
+		SetWindowText(GetDlgItem(hCtl, IDC_MWBP0 + i), str);
+	}
+
+	sprintf(str, "%02i", RBPOffs);
+	SetWindowText(GetDlgItem(hCtl, IDC_MEMRBPOFFS), str);
+
+	sprintf(str, "%02i", WBPOffs);
+	SetWindowText(GetDlgItem(hCtl, IDC_MEMWBPOFFS), str);
+
+	EndPaint(hCtl, &ps);
+}
+
 INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	CMemView* wnd = (CMemView*)GetWindowLongPtr(hDlg, DWLP_USER);
@@ -323,6 +364,10 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			wnd->Refresh();
 			wnd->SetFocus();
 		}
+		return 1;
+
+	case WM_PAINT:
+		MemView_Paint(wnd, hDlg, wParam, lParam);
 		return 1;
 
 	case WM_DESTROY:
@@ -630,6 +675,73 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			wnd->Refresh();
 			wnd->SetFocus();
 			return 1;
+
+		case IDC_READBP:
+		{
+			char str[16];
+			GetDlgItemText(hDlg, IDC_MEMBPTARG, str, 16);
+			memReadBreakPoints.push_back(strtol(str, NULL, 16));
+			wnd->Refresh();
+			wnd->SetFocus();
+			InvalidateRect(hDlg, NULL, FALSE);
+			return 1;
+		}
+		case IDC_WRITEBP:
+		{
+			char str[16];
+			GetDlgItemText(hDlg, IDC_MEMBPTARG, str, 16);
+			memWriteBreakPoints.push_back(strtol(str, NULL, 16));
+			wnd->Refresh();
+			wnd->SetFocus();
+			InvalidateRect(hDlg, NULL, FALSE);
+			return 1;
+		}
+		case IDC_DELREADBP: {
+			if (RBPOffs < memReadBreakPoints.size()) {
+				memReadBreakPoints.erase(memReadBreakPoints.begin() + RBPOffs);
+			}
+			wnd->Refresh();
+			wnd->SetFocus();
+			InvalidateRect(hDlg, NULL, FALSE);
+			return 1;
+		}
+		case IDC_DELWRITEBP: {
+			if (WBPOffs < memWriteBreakPoints.size()) {
+				memWriteBreakPoints.erase(memWriteBreakPoints.begin() + WBPOffs);
+			}
+			wnd->Refresh();
+			wnd->SetFocus();
+			InvalidateRect(hDlg, NULL, FALSE);
+			return 1;
+		}
+		case IDC_MEMRBPUP: {
+			RBPOffs = max(0, RBPOffs - 1);
+			wnd->Refresh();
+			wnd->SetFocus();
+			InvalidateRect(hDlg, NULL, FALSE);
+			return 1;
+		}
+		case IDC_MEMRBPDOWN: {
+			RBPOffs += 1;
+			wnd->Refresh();
+			wnd->SetFocus();
+			InvalidateRect(hDlg, NULL, FALSE);
+			return 1;
+		}
+		case IDC_MEMWBPUP: {
+			WBPOffs = max(0, WBPOffs - 1);
+			wnd->Refresh();
+			wnd->SetFocus();
+			InvalidateRect(hDlg, NULL, FALSE);
+			return 1;
+		}
+		case IDC_MEMWBPDOWN: {
+			WBPOffs += 1;
+			wnd->Refresh();
+			wnd->SetFocus();
+			InvalidateRect(hDlg, NULL, FALSE);
+			return 1;
+		}
 		}
 		return 0;
 	}
@@ -727,6 +839,16 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 					else
 					{
 						SetBkColor(mem_hdc, RGB(255, 255, 255));
+						for (int j = 0; j < memReadBreakPoints.size(); ++j) {
+							if ((line << 4) + i + wnd->address == memReadBreakPoints[j]) {
+								SetBkColor(mem_hdc, RGB(255, 0, 0));
+							}
+						}
+						for (int j = 0; j < memWriteBreakPoints.size(); ++j) {
+							if ((line << 4) + i + wnd->address == memWriteBreakPoints[j]) {
+								SetBkColor(mem_hdc, RGB(255, 0, 0));
+							}
+						}
 						SetTextColor(mem_hdc, RGB(0, 0, 0));
 						
 						sprintf(text, "%02X", val);
@@ -770,6 +892,16 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 					else
 					{
 						SetBkColor(mem_hdc, RGB(255, 255, 255));
+						for (int j = 0; j < memReadBreakPoints.size(); ++j) {
+							if ((line << 4) + i + wnd->address == memReadBreakPoints[j]) {
+								SetBkColor(mem_hdc, RGB(255, 0, 0));
+							}
+						}
+						for (int j = 0; j < memWriteBreakPoints.size(); ++j) {
+							if ((line << 4) + i + wnd->address == memWriteBreakPoints[j]) {
+								SetBkColor(mem_hdc, RGB(255, 0, 0));
+							}
+						}
 						SetTextColor(mem_hdc, RGB(0, 0, 0));
 						
 						sprintf(text, "%04X", val);
@@ -823,6 +955,16 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 					else
 					{
 						SetBkColor(mem_hdc, RGB(255, 255, 255));
+						for (int j = 0; j < memReadBreakPoints.size(); ++j) {
+							if ((line << 4) + i + wnd->address == memReadBreakPoints[j]) {
+								SetBkColor(mem_hdc, RGB(255, 0, 0));
+							}
+						}
+						for (int j = 0; j < memWriteBreakPoints.size(); ++j) {
+							if ((line << 4) + i + wnd->address == memWriteBreakPoints[j]) {
+								SetBkColor(mem_hdc, RGB(255, 0, 0));
+							}
+						}
 						SetTextColor(mem_hdc, RGB(0, 0, 0));
 						
 						sprintf(text, "%08X", val);

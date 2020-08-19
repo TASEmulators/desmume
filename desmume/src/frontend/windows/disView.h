@@ -21,12 +21,16 @@
 #define DISVIEW_H
 
 #include <windows.h>
+#include <stdio.h>
+#include <types.h>
 
 extern BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 extern LRESULT CALLBACK ViewDisasm_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 extern BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 extern LRESULT CALLBACK ViewDisasm_ARM9BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+extern HWND DisViewWnd[2];
 
 template<int proc> void FORCEINLINE DisassemblerTools_Refresh();
 

@@ -59,6 +59,7 @@
 #include "wifi.h"
 #include "Database.h"
 #include "frontend/modules/Disassembler.h"
+#include "display.h"
 
 #ifdef GDB_STUB
 #include "gdbstub.h"
@@ -90,6 +91,9 @@ static NDSError _lastNDSError;
 GameInfo gameInfo;
 NDSSystem nds;
 CFIRMWARE *extFirmwareObj = NULL;
+
+std::vector<int> memReadBreakPoints;
+std::vector<int> memWriteBreakPoints;
 
 using std::min;
 using std::max;
@@ -1911,6 +1915,29 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 	s32 timer = minarmtime<doarm9,doarm7>(arm9,arm7);
 	while(timer < s32next && !sequencer.reschedule && execute)
 	{
+		// breakpoint handling
+		for (int i = 0; i < NDS_ARM9.breakPoints.size(); ++i) {
+			if (NDS_ARM9.instruct_adr == NDS_ARM9.breakPoints[i] && !NDS_ARM9.debugStep) {
+				emu_paused = true;
+				paused = true;
+				execute = false;
+				// update debug display
+				//PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
+				//InvalidateRect(DisViewWnd[0], NULL, FALSE);
+				return std::make_pair(arm9, arm7);
+			}
+		}
+		for (int i = 0; i < NDS_ARM7.breakPoints.size(); ++i) {
+			if (NDS_ARM7.instruct_adr == NDS_ARM7.breakPoints[i] && !NDS_ARM7.debugStep) {
+				emu_paused = true;
+				paused = true;
+				execute = false;
+				// update debug display
+				//PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
+				//InvalidateRect(DisViewWnd[1], NULL, FALSE);
+				return std::make_pair(arm9, arm7);
+			}
+		}
 		if(doarm9 && (!doarm7 || arm9 <= timer))
 		{
 			if(!(NDS_ARM9.freeze & CPU_FREEZE_WAIT_IRQ) && !nds.freezeBus)
@@ -1932,6 +1959,24 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 				arm9 = min(s32next, arm9 + kIrqWait);
 				nds.idleCycles[0] += arm9-temp;
 				if (gxFIFO.size < 255) nds.freezeBus &= ~1;
+			}
+			// for proper stepping...
+			if (NDS_ARM9.debugStep) {
+				NDS_ARM9.debugStep = false;
+				execute = false;
+				//PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
+				//InvalidateRect(DisViewWnd[0], NULL, FALSE);
+			}
+			if (NDS_ARM9.stepOverBreak == NDS_ARM9.instruct_adr && NDS_ARM9.stepOverBreak != 0) {
+				NDS_ARM9.stepOverBreak = 0;
+				execute = false;
+				//PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
+				//InvalidateRect(DisViewWnd[0], NULL, FALSE);
+			}
+			// aaand handle step to return
+			if (NDS_ARM9.runToRetTmp != 0 && NDS_ARM9.runToRetTmp == NDS_ARM9.instruct_adr) {
+				NDS_ARM9.runToRetTmp = 0;
+				NDS_ARM9.runToRet = true;
 			}
 		}
 		if(doarm7 && (!doarm9 || arm7 <= timer))
@@ -1964,6 +2009,23 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 #endif
 				}
 			}
+			if (NDS_ARM7.debugStep) {
+				NDS_ARM7.debugStep = false;
+				execute = false;
+				//PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
+				//InvalidateRect(DisViewWnd[1], NULL, FALSE);
+			}
+			if (NDS_ARM7.stepOverBreak == NDS_ARM7.instruct_adr && NDS_ARM7.stepOverBreak != 0) {
+				NDS_ARM7.stepOverBreak = 0;
+				execute = false;
+				//PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
+				//InvalidateRect(DisViewWnd[1], NULL, FALSE);
+			}
+			// aaand handle step to return
+			if (NDS_ARM7.runToRetTmp != 0 && NDS_ARM7.runToRetTmp == NDS_ARM7.instruct_adr) {
+				NDS_ARM7.runToRetTmp = 0;
+				NDS_ARM7.runToRet = true;
+			}
 		}
 
 		timer = minarmtime<doarm9,doarm7>(arm9,arm7);
@@ -1984,6 +2046,7 @@ void NDS_debug_break()
 void NDS_debug_continue()
 {
 	NDS_ARM9.stalled = NDS_ARM7.stalled = 0;
+	execute = true;
 }
 
 void NDS_debug_step()
