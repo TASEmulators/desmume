@@ -1797,7 +1797,7 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
 
     if(click) {
         if(e->is_hint)
-            gdk_window_get_pointer(gtk_widget_get_window(w), &x, &y, &state);
+            gdk_window_get_device_position(gtk_widget_get_window(w), e->device, &x, &y, &state);
         else {
             x= (gint)e->x;
             y= (gint)e->y;
@@ -1833,7 +1833,7 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
     }
 
     if (e->button == 1) {
-        gdk_window_get_pointer(gtk_widget_get_window(w), &x, &y, &state);
+        gdk_window_get_device_position(gtk_widget_get_window(w), e->device, &x, &y, &state);
 
         if(state & GDK_BUTTON1_MASK) {
 #ifdef HAVE_LIBAGG
