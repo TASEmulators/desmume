@@ -22,8 +22,8 @@
 #ifndef __CHEATS_H__
 #define __CHEATS_H__
 
-void CheatSearch ();
-void CheatList ();
+void CheatSearch(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+void CheatList(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 
 #endif /*__CHEATS_H__*/
 

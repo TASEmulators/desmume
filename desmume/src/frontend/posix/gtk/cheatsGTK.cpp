@@ -276,7 +276,7 @@ static void cheatListEnd()
 {
     cheats->save();
     if(shouldBeRunning)
-        Launch();
+        Launch(NULL, NULL, NULL);
 }
 
 static GtkListStore *cheat_list_populate()
@@ -331,10 +331,10 @@ static GtkWidget *cheat_list_create_ui()
     return tree;
 }
 
-void CheatList ()
+void CheatList(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     shouldBeRunning = desmume_running();
-    Pause();
+    Pause(NULL, NULL, NULL);
     win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win),"Cheat List");
     gtk_window_set_modal(GTK_WINDOW(win), TRUE);
@@ -425,10 +425,10 @@ static void cheatSearchEnd()
 {
 }
 
-void CheatSearch ()
+void CheatSearch(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     shouldBeRunning = desmume_running();
-    Pause();
+    Pause(NULL, NULL, NULL);
     win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win),"Cheat Search");
     gtk_window_set_modal(GTK_WINDOW(win), TRUE);

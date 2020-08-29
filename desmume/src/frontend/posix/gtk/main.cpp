@@ -30,6 +30,7 @@
 #include <gdk/gdkkeysyms.h>
 #include <SDL.h>
 #include <X11/Xlib.h>
+#include <vector>
 
 #include "types.h"
 #include "firmware.h"
@@ -122,394 +123,844 @@ gboolean EmuLoop(gpointer data);
 
 static AVOutX264 avout_x264;
 static AVOutFlac avout_flac;
-static void RecordAV_x264();
-static void RecordAV_flac();
-static void RecordAV_stop();
+static void RecordAV_x264(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void RecordAV_flac(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void RecordAV_stop(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void RedrawScreen();
 
-static void DoQuit();
-static void RecordMovieDialog();
-static void PlayMovieDialog();
-static void StopMovie();
-static void OpenNdsDialog();
-static void SaveStateDialog();
-static void LoadStateDialog();
-void Launch();
-void Pause();
+static void DoQuit(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void RecordMovieDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void PlayMovieDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void StopMovie(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void OpenNdsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void SaveStateDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void LoadStateDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+void Launch(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+void Pause(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void ResetSaveStateTimes();
 static void LoadSaveStateInfo();
-static void Printscreen();
-static void Reset();
-static void SetAudioVolume();
-static void SetFirmwareLanguage();
-static void Edit_Controls();
-static void Edit_Joystick_Controls();
-static void MenuSave(GtkMenuItem *item, gpointer slot);
-static void MenuLoad(GtkMenuItem *item, gpointer slot);
-static void About();
-static void ToggleMenuVisible(GtkToggleAction *action);
-static void ToggleStatusbarVisible(GtkToggleAction *action);
-static void ToggleToolbarVisible(GtkToggleAction *action);
-static void ToggleFullscreen (GtkToggleAction *action);
-static void ToggleAudio (GtkToggleAction *action);
+static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void Reset(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void SetAudioVolume(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void SetFirmwareLanguage(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void MenuSave(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void changesavetype(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void MenuLoad(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void About(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ToggleMenuVisible(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ToggleStatusbarVisible(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ToggleToolbarVisible(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ToggleFullscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ToggleAudio(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void Modify_SPUMode(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void Modify_SPUInterpolation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 #ifdef FAKE_MIC
-static void ToggleMicNoise (GtkToggleAction *action);
+static void ToggleMicNoise(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 #endif
-static void ToggleFpsLimiter (GtkToggleAction *action);
-static void ToggleAutoFrameskip (GtkToggleAction *action);
-static void ToggleSwapScreens(GtkToggleAction *action);
-static void ToggleGap (GtkToggleAction *action);
-static void SetRotation(GtkAction *action, GtkRadioAction *current);
-static void SetWinSize(GtkAction *action, GtkRadioAction *current);
-static void SetOrientation(GtkAction *action, GtkRadioAction *current);
-static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data);
+static void ToggleFpsLimiter(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ToggleAutoFrameskip(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void Modify_Frameskip(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ToggleSwapScreens(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ToggleGap(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void SetRotation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void SetWinsize(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void Modify_PriInterpolation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void Modify_Interpolation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void SetOrientation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ToggleLayerVisibility(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void ToggleHudDisplay(GtkToggleAction* action, gpointer data);
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
-static void SelectFirmwareFile();
+static void SelectFirmwareFile(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 #endif
 #ifdef HAVE_JIT
-static void EmulationSettingsDialog();
+static void EmulationSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void ToggleJIT();
 static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void *);
 #endif
-static void GraphicsSettingsDialog();
+static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 
-
-static const char *ui_description =
-"<ui>"
-"  <menubar name='MainMenu'>"
-"    <menu action='FileMenu'>"
-"      <menuitem action='open'/>"
-"      <menu action='RecentMenu'/>"
-"      <separator/>"
-"      <menuitem action='run'/>"
-"      <menuitem action='pause'/>"
-"      <menuitem action='reset'/>"
-"      <separator/>"
-"      <menuitem action='savestateto'/>"
-"      <menuitem action='loadstatefrom'/>"
-"      <menu action='SavestateMenu'>"
-"        <menuitem action='savestate1'/>"
-"        <menuitem action='savestate2'/>"
-"        <menuitem action='savestate3'/>"
-"        <menuitem action='savestate4'/>"
-"        <menuitem action='savestate5'/>"
-"        <menuitem action='savestate6'/>"
-"        <menuitem action='savestate7'/>"
-"        <menuitem action='savestate8'/>"
-"        <menuitem action='savestate9'/>"
-"        <menuitem action='savestate10'/>"
-"      </menu>"
-"      <menu action='LoadstateMenu'>"
-"        <menuitem action='loadstate1'/>"
-"        <menuitem action='loadstate2'/>"
-"        <menuitem action='loadstate3'/>"
-"        <menuitem action='loadstate4'/>"
-"        <menuitem action='loadstate5'/>"
-"        <menuitem action='loadstate6'/>"
-"        <menuitem action='loadstate7'/>"
-"        <menuitem action='loadstate8'/>"
-"        <menuitem action='loadstate9'/>"
-"        <menuitem action='loadstate10'/>"
-"      </menu>"
-#ifdef GTK_DESMUME_FIRMWARE_BROKEN
-"      <menuitem action='loadfirmware'/>"
-#endif
-"      <separator/>"
-"      <menuitem action='recordmovie'/>"
-"      <menuitem action='playmovie'/>"
-"      <menuitem action='stopmovie'/>"
-"      <separator/>"
-"      <menu action='RecordAVMenu'>"
-"        <menuitem action='record_x264'/>"
-"        <menuitem action='record_flac'/>"
-"        <menuitem action='record_stop'/>"
-"      </menu>"
-"      <menuitem action='printscreen'/>"
-"      <separator/>"
-"      <menuitem action='quit'/>"
-"    </menu>"
-"    <menu action='ViewMenu'>"
-"      <menu action='OrientationMenu'>"
-"        <menuitem action='orient_vertical'/>"
-"        <menuitem action='orient_horizontal'/>"
-"        <menuitem action='orient_single'/>"
-"        <separator/>"
-"        <menuitem action='orient_swapscreens'/>"
-"      </menu>"
-"      <menu action='RotationMenu'>"
-"        <menuitem action='rotate_0'/>"
-"        <menuitem action='rotate_90'/>"
-"        <menuitem action='rotate_180'/>"
-"        <menuitem action='rotate_270'/>"
-"      </menu>"
-"      <menu action='WinsizeMenu'>"
-"        <menuitem action='winsize_half'/>"
-"        <menuitem action='winsize_1'/>"
-"        <menuitem action='winsize_1half'/>"
-"        <menuitem action='winsize_2'/>"
-"        <menuitem action='winsize_2half'/>"
-"        <menuitem action='winsize_3'/>"
-"        <menuitem action='winsize_4'/>"
-"        <menuitem action='winsize_5'/>"
-"        <menuitem action='winsize_scale'/>"
-"        <separator/>"
-"        <menuitem action='fullscreen'/>"
-"      </menu>"
-"      <menuitem action='gap'/>"
-"      <menu action='PriInterpolationMenu'>"
-"        <menuitem action='pri_interp_none'/>"
-"        <menuitem action='pri_interp_lq2x'/>"
-"        <menuitem action='pri_interp_lq2xs'/>"
-"        <menuitem action='pri_interp_hq2x'/>"
-"        <menuitem action='pri_interp_hq2xs'/>"
-"        <menuitem action='pri_interp_hq3x'/>"
-"        <menuitem action='pri_interp_hq3xs'/>"
-"        <menuitem action='pri_interp_hq4x'/>"
-"        <menuitem action='pri_interp_hq4xs'/>"
-"        <menuitem action='pri_interp_2xsai'/>"
-"        <menuitem action='pri_interp_super2xsai'/>"
-"        <menuitem action='pri_interp_supereagle'/>"
-"        <menuitem action='pri_interp_scanline'/>"
-"        <menuitem action='pri_interp_bilinear'/>"
-"        <menuitem action='pri_interp_nearest2x'/>"
-"        <menuitem action='pri_interp_nearest_1point5x'/>"
-"        <menuitem action='pri_interp_nearestplus_1point5x'/>"
-"        <menuitem action='pri_interp_epx'/>"
-"        <menuitem action='pri_interp_epxplus'/>"
-"        <menuitem action='pri_interp_epx_1point5x'/>"
-"        <menuitem action='pri_interp_epxplus_1point5x'/>"
-"        <menuitem action='pri_interp_2xbrz'/>"
-"        <menuitem action='pri_interp_3xbrz'/>"
-"        <menuitem action='pri_interp_4xbrz'/>"
-"        <menuitem action='pri_interp_5xbrz'/>"
-"      </menu>"
-"      <menu action='InterpolationMenu'>"
-"        <menuitem action='interp_fast'/>"
-"        <menuitem action='interp_nearest'/>"
-"        <menuitem action='interp_good'/>"
-"        <menuitem action='interp_bilinear'/>"
-"        <menuitem action='interp_best'/>"
-"      </menu>"
-"      <menu action='HudMenu'>"
-#ifdef HAVE_LIBAGG
-"        <menuitem action='hud_fps'/>"
-"        <menuitem action='hud_input'/>"
-"        <menuitem action='hud_graphicalinput'/>"
-"        <menuitem action='hud_framecounter'/>"
-"        <menuitem action='hud_lagcounter'/>"
-"        <menuitem action='hud_rtc'/>"
-"        <menuitem action='hud_mic'/>"
-"        <separator/>"
-"        <menuitem action='hud_editor'/>"
-#else
-"        <menuitem action='hud_notsupported'/>"
-#endif
-"      </menu>"
-"      <separator/>"
-"      <menuitem action='view_menu'/>"
-"      <menuitem action='view_toolbar'/>"
-"      <menuitem action='view_statusbar'/>"
-"    </menu>"
-"    <menu action='ConfigMenu'>"
-"      <menu action='FrameskipMenu'>"
-"        <menuitem action='enablefpslimiter'/>"
-"        <separator/>"
-"        <menuitem action='frameskipA'/>"
-"        <separator/>"
-"        <menuitem action='frameskip0'/>"
-"        <menuitem action='frameskip1'/>"
-"        <menuitem action='frameskip2'/>"
-"        <menuitem action='frameskip3'/>"
-"        <menuitem action='frameskip4'/>"
-"        <menuitem action='frameskip5'/>"
-"        <menuitem action='frameskip6'/>"
-"        <menuitem action='frameskip7'/>"
-"        <menuitem action='frameskip8'/>"
-"        <menuitem action='frameskip9'/>"
-"      </menu>"
-#ifdef HAVE_JIT
-"      <menuitem action='emulationsettings'/>"
-#endif
-"      <menuitem action='graphicssettings'/>"
-"      <menuitem action='enableaudio'/>"
-#ifdef FAKE_MIC
-"      <menuitem action='micnoise'/>"
-#endif
-"      <menu action='SPUModeMenu'>"
-"        <menuitem action='SPUModeDualASync'/>"
-"        <menuitem action='SPUModeSyncN'/>"
-"        <menuitem action='SPUModeSyncZ'/>"
-#ifdef HAVE_LIBSOUNDTOUCH
-"        <menuitem action='SPUModeSyncP'/>"
-#endif
-"      </menu>"
-"      <menu action='SPUInterpolationMenu'>"
-"        <menuitem action='SPUInterpolationNone'/>"
-"        <menuitem action='SPUInterpolationLinear'/>"
-"        <menuitem action='SPUInterpolationCosine'/>"
-"      </menu>"
-"      <menu action='CheatMenu'>"
-"        <menuitem action='cheatsearch'/>"
-"        <menuitem action='cheatlist'/>"
-"      </menu>"
-"      <menu action='ConfigSaveMenu'>"
-"        <menuitem action='save_t0'/>"
-"        <menuitem action='save_t1'/>"
-"        <menuitem action='save_t2'/>"
-"        <menuitem action='save_t3'/>"
-"        <menuitem action='save_t4'/>"
-"        <menuitem action='save_t5'/>"
-"        <menuitem action='save_t6'/>"
-"      </menu>"
-"      <menuitem action='setaudiovolume'/>"
-"      <menuitem action='setfirmwarelanguage'/>"
-"      <menuitem action='editctrls'/>"
-"      <menuitem action='editjoyctrls'/>"
-"    </menu>"
-"    <menu action='ToolsMenu'>"
-"      <menuitem action='ioregs'/>"
-"      <separator/>"
-"      <menu action='LayersMenu'>"
-"        <menuitem action='layermainbg0'/>"
-"        <menuitem action='layermainbg1'/>"
-"        <menuitem action='layermainbg2'/>"
-"        <menuitem action='layermainbg3'/>"
-"        <menuitem action='layermainobj'/>"
-"        <menuitem action='layersubbg0'/>"
-"        <menuitem action='layersubbg1'/>"
-"        <menuitem action='layersubbg2'/>"
-"        <menuitem action='layersubbg3'/>"
-"        <menuitem action='layersubobj'/>"
-"      </menu>"
-"    </menu>"
-"    <menu action='HelpMenu'>"
-"      <menuitem action='about'/>"
-"    </menu>"
-"  </menubar>"
-"  <toolbar name='ToolBar'>"
-"    <toolitem action='open'/>"
-"    <toolitem action='run'/>"
-"    <toolitem action='pause'/>"
-"    <toolitem action='quit'/>"
-"  </toolbar>"
-"</ui>";
-  
-static const GtkActionEntry action_entries[] = {
-    { "FileMenu", NULL, "_File" },
-      { "open",          "gtk-open",    "_Open",         "<Ctrl>o",  NULL,   OpenNdsDialog },
-      { "RecentMenu", NULL, "Open _recent" },
-      { "run",        "gtk-media-play",   "_Run",          "Pause",  NULL,   Launch },
-      { "pause",      "gtk-media-pause",  "_Pause",        "Pause",  NULL,   Pause },
-      { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
-      { "savestateto",    NULL,         "Save state _to ...",         NULL,  NULL,   SaveStateDialog },
-      { "loadstatefrom",  NULL,         "Load state _from ...",         NULL,  NULL,   LoadStateDialog },
-      { "recordmovie",  NULL,         "Record movie _to ...",         NULL,  NULL,   RecordMovieDialog },
-      { "playmovie",  NULL,         "Play movie _from ...",         NULL,  NULL,   PlayMovieDialog },
-      { "stopmovie",  NULL,         "Stop movie", NULL,  NULL,   StopMovie },
-      { "RecordAVMenu", NULL, "Record _video/audio" },
-        { "record_x264", "gtk-media-record", "Record lossless H._264 (video only)...", NULL, NULL, RecordAV_x264 },
-        { "record_flac", "gtk-media-record", "Record _flac (audio only)...", NULL, NULL, RecordAV_flac },
-        { "record_stop", "gtk-media-stop", "_Stop recording", NULL, NULL, RecordAV_stop },
-      { "SavestateMenu", NULL, "_Save state" },
-      { "LoadstateMenu", NULL, "_Load state" },
+static const char *menu_builder =
+"<?xml version='1.0' encoding='UTF-8'?>"
+"<interface>"
+"  <menu id='menubar'>"
+"    <submenu>"
+"      <attribute name='label' translatable='yes'>_File</attribute>"
+"      <section>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>_Open</attribute>"
+"          <attribute name='action'>app.open</attribute>"
+"          <attribute name='accel'>&lt;Control&gt;o</attribute>"
+"        </item>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>Open _recent</attribute>"
+"        </submenu>"
+"      </section>"
+"      <section>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>_Run</attribute>"
+"          <attribute name='action'>app.run</attribute>"
+"          <attribute name='accel'>Pause</attribute>"
+"        </item>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>_Pause</attribute>"
+"          <attribute name='action'>app.pause</attribute>"
+"          <attribute name='accel'>Pause</attribute>"
+"        </item>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Re_set</attribute>"
+"          <attribute name='action'>app.reset</attribute>"
+"        </item>"
+"      </section>"
+"      <section>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Save state _to…</attribute>"
+"          <attribute name='action'>app.save_state_to</attribute>"
+"        </item>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Load state _from…</attribute>"
+"          <attribute name='action'>app.load_state_from</attribute>"
+"        </item>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>_Save state</attribute>"
+"        </submenu>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>_Load state</attribute>"
+"        </submenu>"
+"      </section>"
+"      <section>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Record movie _to…</attribute>"
+"          <attribute name='action'>app.record_movie_to</attribute>"
+"        </item>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Play movie _from…</attribute>"
+"          <attribute name='action'>app.play_movie_from</attribute>"
+"        </item>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Stop movie</attribute>"
+"          <attribute name='action'>app.stop_movie</attribute>"
+"        </item>"
+"      </section>"
+"      <section>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>Record _video/audio</attribute>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>Record lossless H._264 (video only)…</attribute>"
+"              <attribute name='action'>app.record_x264</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>Record _FLAC (audio only)…</attribute>"
+"              <attribute name='action'>app.record_flac</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Stop recording</attribute>"
+"              <attribute name='action'>app.stop_recording</attribute>"
+"            </item>"
+"          </section>"
+"        </submenu>"
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
-      { "loadfirmware","gtk-open",        "Load Firm_ware file", "<Ctrl>l",  NULL, SelectFirmwareFile },
+"        <item>"
+"          <attribute name='label' translatable='yes'>Load Firm_ware file</attribute>"
+"          <attribute name='action'>app.loadfirmware</attribute>"
+"        </item>"
 #endif
-      { "printscreen","gtk-media-record", "Take a _screenshot",    "<Ctrl>s",  NULL,   Printscreen },
-      { "quit",       "gtk-quit",         "_Quit",         "<Ctrl>q",  NULL,   DoQuit },
-
-    { "ViewMenu", NULL, "_View" },
-      { "RotationMenu", NULL, "_Rotation" },
-      { "OrientationMenu", NULL, "LCDs _Layout" },
-      { "WinsizeMenu", NULL, "_Window Size" },
-      { "PriInterpolationMenu", NULL, "Video _Filter" },
-      { "InterpolationMenu", NULL, "S_econdary Video Filter" },
-      { "HudMenu", NULL, "_HUD" },
-#ifndef HAVE_LIBAGG
-      { "hud_notsupported", NULL, "HUD support not compiled" },
+"        <item>"
+"          <attribute name='label' translatable='yes'>Take a screenshot</attribute>"
+"          <attribute name='action'>app.printscreen</attribute>"
+"          <attribute name='accel'>&lt;Control&gt;s</attribute>"
+"        </item>"
+"      </section>"
+"      <section>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>_Quit</attribute>"
+"          <attribute name='action'>app.quit</attribute>"
+"          <attribute name='accel'>&lt;Control&gt;q</attribute>"
+"        </item>"
+"      </section>"
+"    </submenu>"
+"    <submenu>"
+"      <attribute name='label' translatable='yes'>_View</attribute>"
+"      <section>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>LCDs _Layout</attribute>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Vertical</attribute>"
+"              <attribute name='action'>app.orient</attribute>"
+"              <attribute name='target'>vertical</attribute>"
+"              <attribute name='accel'>&lt;Control&gt;1</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Horizontal</attribute>"
+"              <attribute name='action'>app.orient</attribute>"
+"              <attribute name='target'>horizontal</attribute>"
+"              <attribute name='accel'>&lt;Control&gt;2</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Single screen</attribute>"
+"              <attribute name='action'>app.orient</attribute>"
+"              <attribute name='target'>single</attribute>"
+"              <attribute name='accel'>&lt;Control&gt;0</attribute>"
+"            </item>"
+"          </section>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>S_wap screens</attribute>"
+"              <attribute name='action'>app.swapscreens</attribute>"
+"              <attribute name='accel'>space</attribute>"
+"            </item>"
+"          </section>"
+"        </submenu>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>_Rotation</attribute>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_0°</attribute>"
+"              <attribute name='action'>app.rotate</attribute>"
+"              <attribute name='target'>0</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_90°</attribute>"
+"              <attribute name='action'>app.rotate</attribute>"
+"              <attribute name='target'>90</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_180°</attribute>"
+"              <attribute name='action'>app.rotate</attribute>"
+"              <attribute name='target'>180</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_270°</attribute>"
+"              <attribute name='action'>app.rotate</attribute>"
+"              <attribute name='target'>270</attribute>"
+"            </item>"
+"          </section>"
+"        </submenu>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>_Window Size</attribute>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>0_.5×</attribute>"
+"              <attribute name='action'>app.winsize</attribute>"
+"              <attribute name='target'>0.5</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_1×</attribute>"
+"              <attribute name='action'>app.winsize</attribute>"
+"              <attribute name='target'>1</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>1.5×</attribute>"
+"              <attribute name='action'>app.winsize</attribute>"
+"              <attribute name='target'>1.5</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_2×</attribute>"
+"              <attribute name='action'>app.winsize</attribute>"
+"              <attribute name='target'>2</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>2.5×</attribute>"
+"              <attribute name='action'>app.winsize</attribute>"
+"              <attribute name='target'>2.5</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_3×</attribute>"
+"              <attribute name='action'>app.winsize</attribute>"
+"              <attribute name='target'>3</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_4×</attribute>"
+"              <attribute name='action'>app.winsize</attribute>"
+"              <attribute name='target'>4</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_5×</attribute>"
+"              <attribute name='action'>app.winsize</attribute>"
+"              <attribute name='target'>5</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Scale to window</attribute>"
+"              <attribute name='action'>app.winsize</attribute>"
+"              <attribute name='target'>scale</attribute>"
+"            </item>"
+"          </section>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Fullscreen</attribute>"
+"              <attribute name='action'>app.fullscreen</attribute>"
+"              <attribute name='accel'>F11</attribute>"
+"            </item>"
+"          </section>"
+"        </submenu>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Screen _Gap</attribute>"
+"          <attribute name='action'>app.gap</attribute>"
+"        </item>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>Video _Filter</attribute>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_None</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>none</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_LQ2X</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>lq2x</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_LQ2XS</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>lq2xs</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_HQ2X</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>hq2x</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_HQ2XS</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>hq2xs</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_HQ3X</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>hq3x</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_HQ3XS</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>hq3xs</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_HQ4X</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>hq4x</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_HQ4XS</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>hq4xs</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_2xSaI</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>2xsai</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Super2xSaI</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>super2xsai</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_SuperEagle</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>supereagle</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Scanline</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>scanline</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Bilinear</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>bilinear</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Nearest2X</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>nearest2x</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Nearest1_5X</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>nearest_1point5x</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_NearestPlus1_5X</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>nearestplus_1point5x</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_EPX</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>epx</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_EPXPlus</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>epxplus</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_EPX1_5X</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>epx_1point5x</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_EPXPlus1_5X</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>epxplus_1point5x</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_2xBRZ</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>2xbrz</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_3xBRZ</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>3xbrz</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_4xBRZ</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>4xbrz</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_5xBRZ</attribute>"
+"              <attribute name='action'>app.pri_interpolation</attribute>"
+"              <attribute name='target'>5xbrz</attribute>"
+"            </item>"
+"          </section>"
+"        </submenu>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>S_econdary Video Filter</attribute>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Fast</attribute>"
+"              <attribute name='action'>app.interpolation</attribute>"
+"              <attribute name='target'>fast</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Nearest-neighbor</attribute>"
+"              <attribute name='action'>app.interpolation</attribute>"
+"              <attribute name='target'>nearest</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Good</attribute>"
+"              <attribute name='action'>app.interpolation</attribute>"
+"              <attribute name='target'>good</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>B_ilinear</attribute>"
+"              <attribute name='action'>app.interpolation</attribute>"
+"              <attribute name='target'>bilinear</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>B_est</attribute>"
+"              <attribute name='action'>app.interpolation</attribute>"
+"              <attribute name='target'>best</attribute>"
+"            </item>"
+//"            <item>"
+//"              <attribute name='label' translatable='yes'>G_aussian</attribute>"
+//"              <attribute name='action'>app.interpolation</attribute>"
+//"              <attribute name='target'>gaussian</attribute>"
+//"            </item>"
+"          </section>"
+"        </submenu>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>_HUD</attribute>"
+#ifdef HAVE_LIBAGG
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>Display _fps</attribute>"
+"              <attribute name='action'>app.hud_fps</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>Display _Input</attribute>"
+"              <attribute name='action'>app.hud_input</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>Display _Graphical Input</attribute>"
+"              <attribute name='action'>app.hud_graphicalinput</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>Display Frame _Counter</attribute>"
+"              <attribute name='action'>app.hud_framecounter</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>Display _Lag Counter</attribute>"
+"              <attribute name='action'>app.hud_lagcounter</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>Display _RTC</attribute>"
+"              <attribute name='action'>app.hud_rtc</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>Display _Mic</attribute>"
+"              <attribute name='action'>app.hud_mic</attribute>"
+"            </item>"
+"          </section>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Editor mode</attribute>"
+"              <attribute name='action'>app.hud_editor</attribute>"
+"            </item>"
+"          </section>"
+#else
+"          <item>"
+"            <attribute name='label' translatable='yes'>HUD support not compiled</attribute>"
+"            <attribute name='action'>app.hud_notsupported</attribute>"
+"          </item>"
 #endif
-
-    { "ConfigMenu", NULL, "_Config" },
-      { "FrameskipMenu", NULL, "_Frameskip" },
+"        </submenu>"
+"      </section>"
+"      <section>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Show _menu</attribute>"
+"          <attribute name='action'>app.view_menu</attribute>"
+"        </item>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Show _toolbar</attribute>"
+"          <attribute name='action'>app.view_toolbar</attribute>"
+"        </item>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Show _statusbar</attribute>"
+"          <attribute name='action'>app.view_statusbar</attribute>"
+"        </item>"
+"      </section>"
+"    </submenu>"
+"    <submenu>"
+"      <attribute name='label' translatable='yes'>_Config</attribute>"
+"      <section>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>_Frameskip</attribute>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Limit framerate</attribute>"
+"              <attribute name='action'>app.enablefpslimiter</attribute>"
+"            </item>"
+"          </section>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Auto-minimize skipping</attribute>"
+"              <attribute name='action'>app.frameskipA</attribute>"
+"            </item>"
+"          </section>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_0 (never skip)</attribute>"
+"              <attribute name='action'>app.frameskip</attribute>"
+"              <attribute name='target'>0</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_1</attribute>"
+"              <attribute name='action'>app.frameskip</attribute>"
+"              <attribute name='target'>1</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_2</attribute>"
+"              <attribute name='action'>app.frameskip</attribute>"
+"              <attribute name='target'>2</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_3</attribute>"
+"              <attribute name='action'>app.frameskip</attribute>"
+"              <attribute name='target'>3</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_4</attribute>"
+"              <attribute name='action'>app.frameskip</attribute>"
+"              <attribute name='target'>4</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_5</attribute>"
+"              <attribute name='action'>app.frameskip</attribute>"
+"              <attribute name='target'>5</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_6</attribute>"
+"              <attribute name='action'>app.frameskip</attribute>"
+"              <attribute name='target'>6</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_7</attribute>"
+"              <attribute name='action'>app.frameskip</attribute>"
+"              <attribute name='target'>7</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_8</attribute>"
+"              <attribute name='action'>app.frameskip</attribute>"
+"              <attribute name='target'>8</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_9</attribute>"
+"              <attribute name='action'>app.frameskip</attribute>"
+"              <attribute name='target'>9</attribute>"
+"            </item>"
+"          </section>"
+"        </submenu>"
 #ifdef HAVE_JIT
-	  { "emulationsettings",NULL,"Em_ulation Settings",NULL,NULL,EmulationSettingsDialog},
+"        <item>"
+"          <attribute name='label' translatable='yes'>Em_ulation Settings</attribute>"
+"          <attribute name='action'>app.emulationsettings</attribute>"
+"        </item>"
 #endif
-	  { "graphicssettings",NULL,"_Graphics Settings",NULL,NULL, GraphicsSettingsDialog},
-	  { "SPUModeMenu", NULL, "Audio _Synchronization" },
-      { "SPUInterpolationMenu", NULL, "Audio _Interpolation" },
-      { "CheatMenu", NULL, "_Cheat" },
-        { "cheatsearch",     NULL,      "_Search",        NULL,       NULL,   CheatSearch },
-        { "cheatlist",       NULL,      "_List",        NULL,       NULL,   CheatList },
-      { "ConfigSaveMenu", NULL, "_Saves" },
-      { "setaudiovolume", NULL, "Set audio _volume", NULL, NULL, SetAudioVolume },
-      { "setfirmwarelanguage", NULL, "Set firmware _language", NULL, NULL, SetFirmwareLanguage },
-      { "editctrls",  NULL,        "_Edit controls",NULL,    NULL,   Edit_Controls },
-      { "editjoyctrls",  NULL,     "Edit _Joystick controls",NULL,       NULL,   Edit_Joystick_Controls },
-
-    { "ToolsMenu", NULL, "_Tools" },
-      { "LayersMenu", NULL, "View _Layers" },
-
-    { "HelpMenu", NULL, "_Help" },
-      { "about",      "gtk-about",        "_About",        NULL,       NULL,   About }
-};
-
-static const GtkToggleActionEntry toggle_entries[] = {
-    { "enableaudio", NULL, "_Enable audio", NULL, NULL, G_CALLBACK(ToggleAudio), TRUE},
+"        <item>"
+"          <attribute name='label' translatable='yes'>_Graphics settings</attribute>"
+"          <attribute name='action'>app.graphics_settings</attribute>"
+"        </item>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>_Enable audio</attribute>"
+"          <attribute name='action'>app.enableaudio</attribute>"
+"        </item>"
 #ifdef FAKE_MIC
-    { "micnoise", NULL, "Fake mic _noise", NULL, NULL, G_CALLBACK(ToggleMicNoise), FALSE},
+"        <item>"
+"          <attribute name='label' translatable='yes'>Fake mic _noise</attribute>"
+"          <attribute name='action'>app.micnoise</attribute>"
+"        </item>"
 #endif
-    { "enablefpslimiter", NULL, "_Limit framerate", NULL, NULL, G_CALLBACK(ToggleFpsLimiter), TRUE},
-    { "frameskipA", NULL, "_Auto-minimize skipping", NULL, NULL, G_CALLBACK(ToggleAutoFrameskip), TRUE},
-    { "gap", NULL, "Screen _Gap", NULL, NULL, G_CALLBACK(ToggleGap), FALSE},
-    { "view_menu", NULL, "Show _menu", NULL, NULL, G_CALLBACK(ToggleMenuVisible), TRUE},
-    { "view_toolbar", NULL, "Show _toolbar", NULL, NULL, G_CALLBACK(ToggleToolbarVisible), TRUE},
-    { "view_statusbar", NULL, "Show _statusbar", NULL, NULL, G_CALLBACK(ToggleStatusbarVisible), TRUE},
-    { "orient_swapscreens", NULL, "S_wap screens", "space", NULL, G_CALLBACK(ToggleSwapScreens), FALSE},
-    { "fullscreen", NULL, "_Fullscreen", "F11", NULL, G_CALLBACK(ToggleFullscreen), FALSE},
-};
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>Audio _Synchronization</attribute>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Dual Asynchronous</attribute>"
+"              <attribute name='action'>app.spu_mode</attribute>"
+"              <attribute name='target'>dual-async</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>Synchronous (_N)</attribute>"
+"              <attribute name='action'>app.spu_mode</attribute>"
+"              <attribute name='target'>sync-n</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>Synchronous (_Z)</attribute>"
+"              <attribute name='action'>app.spu_mode</attribute>"
+"              <attribute name='target'>sync-z</attribute>"
+"            </item>"
+#ifdef HAVE_LIBSOUNDTOUCH
+"            <item>"
+"              <attribute name='label' translatable='yes'>Synchronous (_P)</attribute>"
+"              <attribute name='action'>app.spu_mode</attribute>"
+"              <attribute name='target'>sync-p</attribute>"
+"            </item>"
+#endif
+"          </section>"
+"        </submenu>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>Audio _Interpolation</attribute>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_None</attribute>"
+"              <attribute name='action'>app.spu_interpolation</attribute>"
+"              <attribute name='target'>none</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Linear</attribute>"
+"              <attribute name='action'>app.spu_interpolation</attribute>"
+"              <attribute name='target'>linear</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Cosine</attribute>"
+"              <attribute name='action'>app.spu_interpolation</attribute>"
+"              <attribute name='target'>cosine</attribute>"
+"            </item>"
+"          </section>"
+"        </submenu>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>_Cheat</attribute>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_Search</attribute>"
+"              <attribute name='action'>app.cheatsearch</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_List</attribute>"
+"              <attribute name='action'>app.cheatlist</attribute>"
+"            </item>"
+"          </section>"
+"        </submenu>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>_Saves</attribute>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_0 Autodetect</attribute>"
+"              <attribute name='action'>app.savetype</attribute>"
+"              <attribute name='target'>autodetect</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_1 EEPROM 4kbit</attribute>"
+"              <attribute name='action'>app.savetype</attribute>"
+"              <attribute name='target'>eeprom-4k</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_2 EEPROM 64kbit</attribute>"
+"              <attribute name='action'>app.savetype</attribute>"
+"              <attribute name='target'>eeprom-64k</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_3 EEPROM 512kbit</attribute>"
+"              <attribute name='action'>app.savetype</attribute>"
+"              <attribute name='target'>eeprom-512k</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_4 FRAM 256kbit</attribute>"
+"              <attribute name='action'>app.savetype</attribute>"
+"              <attribute name='target'>fram-256k</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_5 FLASH 2mbit</attribute>"
+"              <attribute name='action'>app.savetype</attribute>"
+"              <attribute name='target'>flash-2m</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_6 FLASH 4mbit</attribute>"
+"              <attribute name='action'>app.savetype</attribute>"
+"              <attribute name='target'>flash-4m</attribute>"
+"            </item>"
+"          </section>"
+"        </submenu>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Set audio _volume</attribute>"
+"          <attribute name='action'>app.setaudiovolume</attribute>"
+"        </item>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Set firmware _language</attribute>"
+"          <attribute name='action'>app.setfirmwarelanguage</attribute>"
+"        </item>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>_Edit controls</attribute>"
+"          <attribute name='action'>app.editctrls</attribute>"
+"        </item>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>Edit _Joystick controls</attribute>"
+"          <attribute name='action'>app.editjoyctrls</attribute>"
+"        </item>"
+"      </section>"
+"    </submenu>"
+"    <submenu>"
+"      <attribute name='label' translatable='yes'>_Tools</attribute>"
+"      <section>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>_IO regs view</attribute>"
+"          <attribute name='action'>app.ioregs</attribute>"
+"        </item>"
+"        <submenu>"
+"          <attribute name='label' translatable='yes'>View _Layers</attribute>"
+"          <section>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_0 Main BG 0</attribute>"
+"              <attribute name='action'>app.layermainbg0</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_1 Main BG 1</attribute>"
+"              <attribute name='action'>app.layermainbg1</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_2 Main BG 2</attribute>"
+"              <attribute name='action'>app.layermainbg2</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_3 Main BG 3</attribute>"
+"              <attribute name='action'>app.layermainbg3</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_4 Main OBJ</attribute>"
+"              <attribute name='action'>app.layermainobj</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_5 SUB BG 0</attribute>"
+"              <attribute name='action'>app.layersubbg0</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_6 SUB BG 1</attribute>"
+"              <attribute name='action'>app.layersubbg1</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_7 SUB BG 2</attribute>"
+"              <attribute name='action'>app.layersubbg2</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_8 SUB BG 3</attribute>"
+"              <attribute name='action'>app.layersubbg3</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_9 SUB OBJ</attribute>"
+"              <attribute name='action'>app.layersubobj</attribute>"
+"            </item>"
+"          </section>"
+"        </submenu>"
+"      </section>"
+"    </submenu>"
+"    <submenu>"
+"      <attribute name='label' translatable='yes'>_Help</attribute>"
+"      <section>"
+"        <item>"
+"          <attribute name='label' translatable='yes'>_About</attribute>"
+"          <attribute name='action'>app.about</attribute>"
+"        </item>"
+"      </section>"
+"    </submenu>"
+"  </menu>"
+"</interface>";
 
-static const GtkRadioActionEntry pri_interpolation_entries[] = {
-    { "pri_interp_none", NULL, VideoFilterAttributesList[VideoFilterTypeID_None].typeString, NULL, NULL, VideoFilterTypeID_None},
-    { "pri_interp_lq2x", NULL, VideoFilterAttributesList[VideoFilterTypeID_LQ2X].typeString, NULL, NULL, VideoFilterTypeID_LQ2X},
-    { "pri_interp_lq2xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_LQ2XS].typeString, NULL, NULL, VideoFilterTypeID_LQ2XS},
-    { "pri_interp_hq2x", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ2X].typeString, NULL, NULL, VideoFilterTypeID_HQ2X},
-    { "pri_interp_hq2xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ2XS].typeString, NULL, NULL, VideoFilterTypeID_HQ2XS},
-    { "pri_interp_hq3x", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ3X].typeString, NULL, NULL, VideoFilterTypeID_HQ3X},
-    { "pri_interp_hq3xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ3XS].typeString, NULL, NULL, VideoFilterTypeID_HQ3XS},
-    { "pri_interp_hq4x", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ4X].typeString, NULL, NULL, VideoFilterTypeID_HQ4X},
-    { "pri_interp_hq4xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ4XS].typeString, NULL, NULL, VideoFilterTypeID_HQ4XS},
-    { "pri_interp_2xsai", NULL, VideoFilterAttributesList[VideoFilterTypeID_2xSaI].typeString, NULL, NULL, VideoFilterTypeID_2xSaI},
-    { "pri_interp_super2xsai", NULL, VideoFilterAttributesList[VideoFilterTypeID_Super2xSaI].typeString, NULL, NULL, VideoFilterTypeID_Super2xSaI},
-    { "pri_interp_supereagle", NULL, VideoFilterAttributesList[VideoFilterTypeID_SuperEagle].typeString, NULL, NULL, VideoFilterTypeID_SuperEagle},
-    { "pri_interp_scanline", NULL, VideoFilterAttributesList[VideoFilterTypeID_Scanline].typeString, NULL, NULL, VideoFilterTypeID_Scanline},
-    { "pri_interp_bilinear", NULL, VideoFilterAttributesList[VideoFilterTypeID_Bilinear].typeString, NULL, NULL, VideoFilterTypeID_Bilinear},
-    { "pri_interp_nearest2x", NULL, VideoFilterAttributesList[VideoFilterTypeID_Nearest2X].typeString, NULL, NULL, VideoFilterTypeID_Nearest2X},
-    { "pri_interp_nearest_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_Nearest1_5X].typeString, NULL, NULL, VideoFilterTypeID_Nearest1_5X},
-    { "pri_interp_nearestplus_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_NearestPlus1_5X].typeString, NULL, NULL, VideoFilterTypeID_NearestPlus1_5X},
-    { "pri_interp_epx", NULL, VideoFilterAttributesList[VideoFilterTypeID_EPX].typeString, NULL, NULL, VideoFilterTypeID_EPX},
-    { "pri_interp_epxplus", NULL, VideoFilterAttributesList[VideoFilterTypeID_EPXPlus].typeString, NULL, NULL, VideoFilterTypeID_EPXPlus},
-    { "pri_interp_epx_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_EPX1_5X].typeString, NULL, NULL, VideoFilterTypeID_EPX1_5X},
-    { "pri_interp_epxplus_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_EPXPlus1_5X].typeString, NULL, NULL, VideoFilterTypeID_EPXPlus1_5X},
-    { "pri_interp_2xbrz", NULL, VideoFilterAttributesList[VideoFilterTypeID_2xBRZ].typeString, NULL, NULL, VideoFilterTypeID_2xBRZ},
-    { "pri_interp_3xbrz", NULL, VideoFilterAttributesList[VideoFilterTypeID_3xBRZ].typeString, NULL, NULL, VideoFilterTypeID_3xBRZ},
-    { "pri_interp_4xbrz", NULL, VideoFilterAttributesList[VideoFilterTypeID_4xBRZ].typeString, NULL, NULL, VideoFilterTypeID_4xBRZ},
-    { "pri_interp_5xbrz", NULL, VideoFilterAttributesList[VideoFilterTypeID_5xBRZ].typeString, NULL, NULL, VideoFilterTypeID_5xBRZ},
-};
+static const GActionEntry app_entries[] = {
+    // File
+    { "open",          OpenNdsDialog },
+    { "run",           Launch },
+    { "pause",         Pause },
+    { "reset",         Reset },
+    { "savestateto",   SaveStateDialog },
+    { "loadstatefrom", LoadStateDialog },
+    { "recordmovie",   RecordMovieDialog },
+    { "playmovie",     PlayMovieDialog },
+    { "stopmovie",     StopMovie },
+    { "record_x264",   RecordAV_x264 },
+    { "record_flac",   RecordAV_flac },
+    { "record_stop",   RecordAV_stop },
+#ifdef DESMUME_GTK_FIRMWARE_BROKEN
+    { "loadfirmware",  SelectFirmwareFile },
+#endif
+    { "printscreen",   Printscreen },
+    { "quit",          DoQuit },
 
-static const GtkRadioActionEntry interpolation_entries[] = {
-    { "interp_fast", NULL, "_Fast", NULL, NULL, CAIRO_FILTER_FAST },
-    { "interp_nearest", NULL, "_Nearest-neighbor", NULL, NULL, CAIRO_FILTER_NEAREST },
-    { "interp_good", NULL, "_Good", NULL, NULL, CAIRO_FILTER_GOOD },
-    { "interp_bilinear", NULL, "_Bilinear", NULL, NULL, CAIRO_FILTER_BILINEAR },
-    { "interp_best", NULL, "B_est", NULL, NULL, CAIRO_FILTER_BEST },
-};
+    // View
+    { "orient",         SetOrientation,         "s",  "\"vertical\"" },
+    { "swapscreens",    ToggleSwapScreens,      NULL, "true" },
+    { "rotate",         SetRotation,            "s",  "\"0\"" },
+    { "winsize",        SetWinsize,             "s",  "\"scale\"" },
+    { "fullscreen",     ToggleFullscreen,       NULL, "false" },
+    { "gap",            ToggleGap,              NULL, "false" },
+    { "pri_interpolation", Modify_PriInterpolation, "s", "\"none\"" },
+    { "interpolation",  Modify_Interpolation,   "s",  "\"nearest\"" },
+    { "view_menu",      ToggleMenuVisible,      NULL, "true" },
+    { "view_toolbar",   ToggleToolbarVisible,   NULL, "true" },
+    { "view_statusbar", ToggleStatusbarVisible, NULL, "true" },
 
-static const GtkRadioActionEntry rotation_entries[] = {
-    { "rotate_0",   "gtk-orientation-portrait",          "_0",  NULL, NULL, 0 },
-    { "rotate_90",  "gtk-orientation-landscape",         "_90", NULL, NULL, 90 },
-    { "rotate_180", "gtk-orientation-reverse-portrait",  "_180",NULL, NULL, 180 },
-    { "rotate_270", "gtk-orientation-reverse-landscape", "_270",NULL, NULL, 270 },
+    // Config
+    { "enablefpslimiter",  ToggleFpsLimiter,    NULL, "true" },
+    { "frameskipA",        ToggleAutoFrameskip, NULL, "true" },
+    { "frameskip",         Modify_Frameskip,    "s",  "\"0\"" },
+    { "enableaudio",       ToggleAudio,         NULL, "true" },
+#ifdef FAKE_MIC
+    { "micnoise",          ToggleMicNoise,      NULL, "false" },
+#endif
+#ifdef HAVE_JIT
+    { "emulationsettings",   EmulationSettingsDialog },
+#endif
+    { "graphics_settings",   GraphicsSettingsDialog },
+    { "spu_mode",            Modify_SPUMode,          "s", "\"dual-async\"" },
+    { "spu_interpolation",   Modify_SPUInterpolation, "s", "\"linear\"" },
+    { "cheatsearch",         CheatSearch },
+    { "cheatlist",           CheatList },
+    { "savetype",            changesavetype,          "s", "\"autodetect\"" },
+    { "setaudiovolume",      SetAudioVolume },
+    { "setfirmwarelanguage", SetFirmwareLanguage },
+    { "editctrls",           Edit_Controls },
+    { "editjoyctrls",        Edit_Joystick_Controls },
+
+    // Tools
+    // Populated in desmume_gtk_menu_tools().
+
+    // Help
+    { "about",         About },
 };
 
 static const char *graphics_settings =
@@ -633,30 +1084,12 @@ enum winsize_enum {
 
 static winsize_enum winsize_current;
 
-static const GtkRadioActionEntry winsize_entries[] = {
-	{ "winsize_half", NULL, "0_.5x", NULL, NULL, WINSIZE_HALF },
-	{ "winsize_1", NULL, "_1x", NULL, NULL, WINSIZE_1 },
-	{ "winsize_1half", NULL, "1.5x", NULL, NULL, WINSIZE_1HALF },
-	{ "winsize_2", NULL, "_2x", NULL, NULL, WINSIZE_2 },
-	{ "winsize_2half", NULL, "2.5x", NULL, NULL, WINSIZE_2HALF },
-	{ "winsize_3", NULL, "_3x", NULL, NULL, WINSIZE_3 },
-	{ "winsize_4", NULL, "_4x", NULL, NULL, WINSIZE_4 },
-	{ "winsize_5", NULL, "_5x", NULL, NULL, WINSIZE_5 },
-	{ "winsize_scale", NULL, "_Scale to window", NULL, NULL, WINSIZE_SCALE },
-};
-
 /* When adding modes here remember to add the relevent entry to screen_size */
 enum orientation_enum {
     ORIENT_VERTICAL = 0,
     ORIENT_HORIZONTAL = 1,
     ORIENT_SINGLE = 2,
     ORIENT_N
-};
-
-static const GtkRadioActionEntry orientation_entries[] = {
-    { "orient_vertical",   NULL, "_Vertical",   "<Ctrl>1", NULL, ORIENT_VERTICAL },
-    { "orient_horizontal", NULL, "_Horizontal", "<Ctrl>2", NULL, ORIENT_HORIZONTAL },
-    { "orient_single",     NULL, "_Single screen", "<Ctrl>0", NULL, ORIENT_SINGLE },
 };
 
 struct screen_size_t {
@@ -675,57 +1108,6 @@ enum spumode_enum {
     SPUMODE_SYNCN = 1,
     SPUMODE_SYNCZ = 2,
     SPUMODE_SYNCP = 3
-};
-
-static const GtkRadioActionEntry spumode_entries[] = {
-    { "SPUModeSyncN", NULL, "Synchronous (N)", NULL, NULL, SPUMODE_SYNCN},
-    { "SPUModeSyncZ", NULL, "Synchronous (Z)", NULL, NULL, SPUMODE_SYNCZ},
-#ifdef HAVE_LIBSOUNDTOUCH
-    { "SPUModeSyncP", NULL, "Synchronous (P)", NULL, NULL, SPUMODE_SYNCP},
-#endif
-    { "SPUModeDualASync", NULL, "Dual Asynchronous", NULL, NULL, SPUMODE_DUALASYNC}
-};
-
-static const GtkRadioActionEntry spuinterpolation_entries[] = {
-    { "SPUInterpolationNone", NULL, "_None", NULL, NULL, SPUInterpolation_None },
-    { "SPUInterpolationLinear", NULL, "_Linear", NULL, NULL, SPUInterpolation_Linear },
-    { "SPUInterpolationCosine", NULL, "_Cosine", NULL, NULL, SPUInterpolation_Cosine }
-};
-
-enum frameskip_enum {
-    FRAMESKIP_0 = 0,
-    FRAMESKIP_1 = 1,
-    FRAMESKIP_2 = 2,
-    FRAMESKIP_3 = 3,
-    FRAMESKIP_4 = 4,
-    FRAMESKIP_5 = 5,
-    FRAMESKIP_6 = 6,
-    FRAMESKIP_7 = 7,
-    FRAMESKIP_8 = 8,
-    FRAMESKIP_9 = 9,
-};
-
-static const GtkRadioActionEntry frameskip_entries[] = {
-    { "frameskip0", NULL, "_0 (never skip)", NULL, NULL, FRAMESKIP_0},
-    { "frameskip1", NULL, "_1", NULL, NULL, FRAMESKIP_1},
-    { "frameskip2", NULL, "_2", NULL, NULL, FRAMESKIP_2},
-    { "frameskip3", NULL, "_3", NULL, NULL, FRAMESKIP_3},
-    { "frameskip4", NULL, "_4", NULL, NULL, FRAMESKIP_4},
-    { "frameskip5", NULL, "_5", NULL, NULL, FRAMESKIP_5},
-    { "frameskip6", NULL, "_6", NULL, NULL, FRAMESKIP_6},
-    { "frameskip7", NULL, "_7", NULL, NULL, FRAMESKIP_7},
-    { "frameskip8", NULL, "_8", NULL, NULL, FRAMESKIP_8},
-    { "frameskip9", NULL, "_9", NULL, NULL, FRAMESKIP_9},
-};
-
-static const GtkRadioActionEntry savet_entries[] = {
-    { "save_t0", NULL, "_0 Autodetect",     NULL, NULL, 0},
-    { "save_t1", NULL, "_1 EEPROM 4kbit",   NULL, NULL, 1},
-    { "save_t2", NULL, "_2 EEPROM 64kbit",  NULL, NULL, 2},
-    { "save_t3", NULL, "_3 EEPROM 512kbit", NULL, NULL, 3},
-    { "save_t4", NULL, "_4 FRAM 256kbit",   NULL, NULL, 4},
-    { "save_t5", NULL, "_5 FLASH 2mbit",    NULL, NULL, 5},
-    { "save_t6", NULL, "_6 FLASH 4mbit",    NULL, NULL, 6}
 };
 
 SoundInterface_struct *SNDCoreList[] = {
@@ -921,11 +1303,10 @@ uint autoFrameskipMax = 0;
 bool autoframeskip = true;
 cairo_filter_t Interpolation = CAIRO_FILTER_NEAREST;
 
+static GtkApplication *pApp;
 static GtkWidget *pWindow;
 static GtkWidget *pStatusBar;
 static GtkWidget *pDrawingArea;
-static GtkActionGroup * action_group;
-static GtkUIManager *ui_manager;
 
 struct nds_screen_t {
     guint gap_size;
@@ -949,7 +1330,7 @@ static inline void UpdateStatusBar (const char *message)
     gtk_statusbar_push(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx, message);
 }
 
-static void About()
+static void About(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GdkPixbuf * pixbuf = gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm);
 
@@ -971,56 +1352,65 @@ static void About()
     g_object_unref(pixbuf);
 }
 
-static void ToggleMenuVisible(GtkToggleAction *action)
+static void ToggleMenuVisible(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    GtkWidget *pMenuBar = gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
-
-    config.view_menu = gtk_toggle_action_get_active(action);
-    if (config.view_menu)
-      gtk_widget_show(pMenuBar);
-    else
-      gtk_widget_hide(pMenuBar);
+    GVariant *variant = g_action_get_state(G_ACTION(action));
+    gboolean value = !g_variant_get_boolean(variant);
+    config.view_menu = value;
+    gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(pWindow), config.view_menu);
+    g_simple_action_set_state(action, g_variant_new_boolean(value));
 }
 
-static void ToggleToolbarVisible(GtkToggleAction *action)
+static void ToggleToolbarVisible(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
+#if 0
     GtkWidget *pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
 
-    config.view_toolbar = gtk_toggle_action_get_active(action);
+    GVariant *variant = g_action_get_state(G_ACTION(action));
+    gboolean value = !g_variant_get_boolean(variant);
+    config.view_toolbar = value;
     if (config.view_toolbar)
       gtk_widget_show(pToolBar);
     else
       gtk_widget_hide(pToolBar);
+    g_simple_action_set_state(action, g_variant_new_boolean(value));
+#endif
 }
 
-static void ToggleStatusbarVisible(GtkToggleAction *action)
+static void ToggleStatusbarVisible(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    config.view_statusbar = gtk_toggle_action_get_active(action);
+    GVariant *variant = g_action_get_state(G_ACTION(action));
+    gboolean value = !g_variant_get_boolean(variant);
+    config.view_statusbar = value;
     if (config.view_statusbar)
       gtk_widget_show(pStatusBar);
     else
       gtk_widget_hide(pStatusBar);
+    g_simple_action_set_state(action, g_variant_new_boolean(value));
 }
 
-static void ToggleFullscreen(GtkToggleAction *action)
+static void ToggleFullscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-  GtkWidget *pMenuBar = gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
-  GtkWidget *pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
-  config.window_fullscreen = gtk_toggle_action_get_active(action);
+  GtkWidget *pToolBar = NULL; //gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
+  GVariant *variant = g_action_get_state(G_ACTION(action));
+  gboolean fullscreen = !g_variant_get_boolean(variant);
+  config.window_fullscreen = fullscreen;
+  printf("ToggleFullscreen -> %d\n", fullscreen);
+  g_simple_action_set_state(action, g_variant_new_boolean(fullscreen));
   if (config.window_fullscreen)
   {
-    gtk_widget_hide(pMenuBar);
+    gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(pWindow), FALSE);
     gtk_widget_hide(pToolBar);
     gtk_widget_hide(pStatusBar);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_menu"), FALSE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_toolbar"), FALSE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_statusbar"), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view_menu")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view_toolbar")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view_statusbar")), FALSE);
     gtk_window_fullscreen(GTK_WINDOW(pWindow));
   }
   else
   {
     if (config.view_menu) {
-      gtk_widget_show(pMenuBar);
+      gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(pWindow), TRUE);
     }
     if (config.view_toolbar) {
       gtk_widget_show(pToolBar);
@@ -1028,9 +1418,9 @@ static void ToggleFullscreen(GtkToggleAction *action)
     if (config.view_statusbar) {
       gtk_widget_show(pStatusBar);
     }
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_menu"), TRUE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_toolbar"), TRUE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_statusbar"), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view_menu")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view_toolbar")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view_statusbar")), TRUE);
     gtk_window_unfullscreen(GTK_WINDOW(pWindow));
   }
 }
@@ -1043,12 +1433,12 @@ static int Open(const char *filename)
     res = NDS_LoadROM( filename );
     if(res > 0) {
         LoadSaveStateInfo();
-        gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), TRUE);
+        g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "cheatlist")), TRUE);
     }
     return res;
 }
 
-void Launch()
+void Launch(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkWidget *pause;
     desmume_resume();
@@ -1059,35 +1449,36 @@ void Launch()
 
     UpdateStatusBar("Running ...");
 
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), TRUE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), TRUE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "pause")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "run")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "reset")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "printscreen")), TRUE);
 
-    pause = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/pause")));
-    gtk_widget_grab_focus(pause);
+    //pause = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/pause")));
+    //gtk_widget_grab_focus(pause);
 }
 
-void Pause()
+
+void Pause(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkWidget *run;
     desmume_pause();
     UpdateStatusBar("Paused");
 
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), FALSE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "pause")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "run")), TRUE);
 
-    run = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/run")));
-    gtk_widget_grab_focus(run);
+    //run = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/run")));
+    //gtk_widget_grab_focus(run);
 }
 
-static void LoadStateDialog()
+static void LoadStateDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkFileFilter *pFilter_ds, *pFilter_any;
     GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
-        Pause();
+        Pause(NULL, NULL, NULL);
 
     pFilter_ds = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_ds, "*.ds*");
@@ -1121,7 +1512,7 @@ static void LoadStateDialog()
             gtk_dialog_run(GTK_DIALOG(pDialog));
             gtk_widget_destroy(pDialog);
         } else {
-            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "run")), TRUE);
         }
 
         g_free(sPath);
@@ -1129,13 +1520,13 @@ static void LoadStateDialog()
     g_object_unref(pFileSelection);
 }
 
-static void RecordMovieDialog()
+static void RecordMovieDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
  GtkFileFilter *pFilter_dsm, *pFilter_any;
     GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
-        Pause();
+        Pause(NULL, NULL, NULL);
 
     pFilter_dsm = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_dsm, "*.dsm*");
@@ -1167,18 +1558,18 @@ static void RecordMovieDialog()
     g_object_unref(pFileSelection);
 }
 
-static void StopMovie()
+static void StopMovie(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
 	FCEUI_StopMovie();
 }
 
-static void PlayMovieDialog()
+static void PlayMovieDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
    GtkFileFilter *pFilter_dsm, *pFilter_any;
     GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
-        Pause();
+        Pause(NULL, NULL, NULL);
 
     pFilter_dsm = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_dsm, "*.dsm*");
@@ -1211,13 +1602,13 @@ static void PlayMovieDialog()
     g_object_unref(pFileSelection);
 }
 
-static void SaveStateDialog()
+static void SaveStateDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkFileFilter *pFilter_ds, *pFilter_any;
     GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
-        Pause();
+        Pause(NULL, NULL, NULL);
 
     pFilter_ds = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_ds, "*.ds*");
@@ -1252,7 +1643,7 @@ static void SaveStateDialog()
             gtk_dialog_run(GTK_DIALOG(pDialog));
             gtk_widget_destroy(pDialog);
         } else {
-            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "run")), TRUE);
         }
 
         g_free(sPath);
@@ -1260,13 +1651,13 @@ static void SaveStateDialog()
     g_object_unref(pFileSelection);
 }
 
-static void RecordAV_x264()
+static void RecordAV_x264(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkFileFilter *pFilter_mkv, *pFilter_mp4, *pFilter_any;
     GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
-        Pause();
+        Pause(NULL, NULL, NULL);
 
     pFilter_mkv = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_mkv, "*.mkv");
@@ -1298,7 +1689,7 @@ static void RecordAV_x264()
         gchar *sPath = g_file_get_path(file);
 
         if(avout_x264.begin(sPath)) {
-            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "record_x264"), FALSE);
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "record_x264")), FALSE);
         } else {
             GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
@@ -1314,13 +1705,13 @@ static void RecordAV_x264()
     g_object_unref(pFileSelection);
 }
 
-static void RecordAV_flac()
+static void RecordAV_flac(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkFileFilter *pFilter_flac, *pFilter_any;
     GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
-        Pause();
+        Pause(NULL, NULL, NULL);
 
     pFilter_flac = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_flac, "*.flac");
@@ -1347,7 +1738,7 @@ static void RecordAV_flac()
         gchar *sPath = g_file_get_path(file);
 
         if(avout_flac.begin(sPath)) {
-            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "record_flac"), FALSE);
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "record_flac")), FALSE);
         } else {
             GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
@@ -1363,20 +1754,20 @@ static void RecordAV_flac()
     g_object_unref(pFileSelection);
 }
 
-static void RecordAV_stop() {
+static void RecordAV_stop(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
 	avout_x264.end();
 	avout_flac.end();
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "record_x264"), TRUE);
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "record_flac"), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "record_x264")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "record_flac")), TRUE);
 }
 
-static void OpenNdsDialog()
+static void OpenNdsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkFileFilter *pFilter_nds, *pFilter_dsgba, *pFilter_any;
     GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
-        Pause();
+        Pause(NULL, NULL, NULL);
 
     pFilter_nds = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_nds, "*.[nN][dD][sS]");
@@ -1437,8 +1828,8 @@ static void OpenNdsDialog()
 
             g_free(uri);
             g_free(recentData.app_exec);
-            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
-            Launch();
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "run")), TRUE);
+            Launch(NULL, NULL, NULL);
         }
 
         g_free(sPath);
@@ -1453,14 +1844,14 @@ static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
     int ret;
 
     if (desmume_running())
-        Pause();
+        Pause(NULL, NULL, NULL);
 
     uri = gtk_recent_chooser_get_current_uri(chooser);
     romname = g_filename_from_uri(uri, NULL, NULL);
     ret = Open(romname);
     if (ret > 0) {
-        gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
-        Launch();
+        g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "run")), TRUE);
+        Launch(NULL, NULL, NULL);
     } else {
         gtk_recent_manager_remove_item(recent_manager, uri, NULL);
         GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
@@ -1476,14 +1867,14 @@ static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
     g_free(romname);
 }
 
-static void Reset()
+static void Reset(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     bool shouldBeRunning = desmume_running();
-    Pause();
+    Pause(NULL, NULL, NULL);
     NDS_Reset();
     RedrawScreen();
     if (shouldBeRunning) {
-        Launch();
+        Launch(NULL, NULL, NULL);
     }
 }
 
@@ -1521,48 +1912,79 @@ static void UpdateDrawingAreaAspect()
 	}
 }
 
-static void ToggleGap(GtkToggleAction* action)
+static void ToggleGap(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    config.view_gap = gtk_toggle_action_get_active(action);
+    GVariant *variant = g_action_get_state(G_ACTION(action));
+    gboolean value = !g_variant_get_boolean(variant);
+    config.view_gap = value;
     nds_screen.gap_size = config.view_gap ? GAP_SIZE : 0;
     UpdateDrawingAreaAspect();
+    g_simple_action_set_state(action, g_variant_new_boolean(value));
 }
 
-static void SetRotation(GtkAction *action, GtkRadioAction *current)
+static void SetRotation(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    nds_screen.rotation_angle = gtk_radio_action_get_current_value(current);
+    const char *string = g_variant_get_string(parameter, NULL);
+    nds_screen.rotation_angle = g_ascii_strtoll(string, NULL, 10);
     config.view_rot = nds_screen.rotation_angle;
     UpdateDrawingAreaAspect();
+    g_simple_action_set_state(action, parameter);
 }
 
-static void SetWinsize(GtkAction *action, GtkRadioAction *current)
+static void SetWinsize(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-	winsize_current = (winsize_enum) gtk_radio_action_get_current_value(current);
-	config.window_scale = winsize_current;
-	if (config.window_fullscreen) {
-		gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "fullscreen"), FALSE);
-	}
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "fullscreen"), winsize_current == WINSIZE_SCALE);
-	UpdateDrawingAreaAspect();
+    const char *string = g_variant_get_string(parameter, NULL);
+    winsize_enum winsize;
+    if (strcmp(string, "scale") == 0)
+        winsize = WINSIZE_SCALE;
+    else if (strcmp(string, "0.5") == 0)
+        winsize = WINSIZE_HALF;
+    else if (strcmp(string, "1") == 0)
+        winsize = WINSIZE_1;
+    else if (strcmp(string, "1.5") == 0)
+        winsize = WINSIZE_1HALF;
+    else if (strcmp(string, "2") == 0)
+        winsize = WINSIZE_2;
+    else if (strcmp(string, "2.5") == 0)
+        winsize = WINSIZE_2HALF;
+    else if (strcmp(string, "3") == 0)
+        winsize = WINSIZE_3;
+    else if (strcmp(string, "4") == 0)
+        winsize = WINSIZE_4;
+    else if (strcmp(string, "5") == 0)
+        winsize = WINSIZE_5;
+    winsize_current = winsize;
+    config.window_scale = winsize_current;
+    if (config.window_fullscreen) {
+        g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "fullscreen")), FALSE);
+    }
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "fullscreen")), winsize_current == WINSIZE_SCALE);
+    UpdateDrawingAreaAspect();
+    g_simple_action_set_state(action, parameter);
 }
 
-static void SetOrientation(GtkAction *action, GtkRadioAction *current)
+static void SetOrientation(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    nds_screen.orientation = (orientation_enum)gtk_radio_action_get_current_value(current);
+    const char *string = g_variant_get_string(parameter, NULL);
+    nds_screen.orientation = (orientation_enum)g_ascii_strtoll(string, NULL, 10);
 #ifdef HAVE_LIBAGG
     osd->singleScreen = nds_screen.orientation == ORIENT_SINGLE;
 #endif
     config.view_orient = nds_screen.orientation;
     UpdateDrawingAreaAspect();
+    g_simple_action_set_state(action, parameter);
 }
 
-static void ToggleSwapScreens(GtkToggleAction *action) {
-    nds_screen.swap = gtk_toggle_action_get_active(action);
+static void ToggleSwapScreens(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
+    GVariant *variant = g_action_get_state(G_ACTION(action));
+    gboolean value = !g_variant_get_boolean(variant);
+    nds_screen.swap = value;
 #ifdef HAVE_LIBAGG
     osd->swapScreens = nds_screen.swap;
 #endif
     config.view_swap = nds_screen.swap;
     RedrawScreen();
+    g_simple_action_set_state(action, g_variant_new_boolean(value));
 }
 
 static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpointer data)
@@ -1826,11 +2248,13 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
     GdkModifierType state;
     gint x, y;
 
+#if 0
     if (e->button == 3) {
         GtkWidget * pMenu = gtk_menu_item_get_submenu ( GTK_MENU_ITEM(
                     gtk_ui_manager_get_widget (ui_manager, "/MainMenu/ViewMenu")));
         gtk_menu_popup(GTK_MENU(pMenu), NULL, NULL, NULL, NULL, 3, e->time);
     }
+#endif
 
     if (e->button == 1) {
         gdk_window_get_device_position(gtk_widget_get_window(w), e->device, &x, &y, &state);
@@ -1862,9 +2286,9 @@ static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 static void loadgame(int num){
    if (desmume_running())
    {   
-       Pause();
+       Pause(NULL, NULL, NULL);
        loadstate_slot(num);
-       Launch();
+       Launch(NULL, NULL, NULL);
    }
    else
        loadstate_slot(num);
@@ -1874,9 +2298,9 @@ static void loadgame(int num){
 static void savegame(int num){
    if (desmume_running())
    {   
-       Pause();
+       Pause(NULL, NULL, NULL);
        savestate_slot(num);
-       Launch();
+       Launch(NULL, NULL, NULL);
    }
    else
        savestate_slot(num);
@@ -1884,14 +2308,14 @@ static void savegame(int num){
    RedrawScreen();
 }
 
-static void MenuLoad(GtkMenuItem *item, gpointer slot)
+static void MenuLoad(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    loadgame(GPOINTER_TO_INT(slot));
+    loadgame(g_variant_get_uint32(parameter));
 }
 
-static void MenuSave(GtkMenuItem *item, gpointer slot)
+static void MenuSave(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    savegame(GPOINTER_TO_INT(slot));
+    savegame(g_variant_get_uint32(parameter));
 }
 
 static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
@@ -1954,7 +2378,7 @@ static void CallbackSetAudioVolume(GtkWidget *scale, gpointer data)
 	config.audio_volume = SNDSDLGetAudioVolume();
 }
 
-static void SetAudioVolume()
+static void SetAudioVolume(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
 	GtkWidget *dialog = NULL;
 	GtkWidget *scale = NULL;
@@ -1985,7 +2409,7 @@ static void CallbackSetFirmwareLanguage(GtkWidget *check_button, gpointer data)
 	gtk_widget_set_sensitive(GTK_WIDGET(data), gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_button)));
 }
 
-static void SetFirmwareLanguage()
+static void SetFirmwareLanguage(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
 	GtkWidget *dialog = NULL;
 	GtkWidget *combo_box_text = NULL;
@@ -2078,7 +2502,7 @@ static void Modify_Key(GtkWidget* widget, gpointer data)
 
 }
 
-static void Edit_Controls()
+static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkWidget *ecDialog;
     GtkWidget *ecKey;
@@ -2174,7 +2598,7 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
 
 #ifdef HAVE_JIT
 
-static void EmulationSettingsDialog(){
+static void EmulationSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data){
 	GtkWidget *esDialog;
 	GtkWidget *esKey;
 
@@ -2243,7 +2667,7 @@ static void ToggleJIT(){
 
 #endif
 
-static void Edit_Joystick_Controls()
+static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkWidget *ecDialog;
     GtkWidget *ecKey;
@@ -2283,7 +2707,7 @@ static void Edit_Joystick_Controls()
 }
 
 
-static void GraphicsSettingsDialog() {
+static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
 	GtkWidget *gsDialog;
 	GtkBox *wBox;
 	GtkGrid *wGrid;
@@ -2412,16 +2836,17 @@ static void GraphicsSettingsDialog() {
 
 }
 
-static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data)
+static void ToggleLayerVisibility(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    guint Layer = GPOINTER_TO_UINT(data);
-    gboolean active;
+    guint Layer = GPOINTER_TO_UINT(user_data);
 
     // FIXME: make it work after resume
     if (!desmume_running())
         return;
 
-    active = gtk_toggle_action_get_active(action);
+    GVariant *variant = g_action_get_state(G_ACTION(action));
+    gboolean active = !g_variant_get_boolean(variant);
+    g_simple_action_set_state(action, g_variant_new_boolean(active));
 
     switch (Layer) {
     case MAIN_BG_0:
@@ -2443,7 +2868,7 @@ static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data)
     }
 }
 
-static void Printscreen()
+static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GdkPixbuf *screenshot;
     const gchar *dir;
@@ -2506,13 +2931,13 @@ static void Printscreen()
 }
 
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
-static void SelectFirmwareFile()
+static void SelectFirmwareFile(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkFileFilter *pFilter_nds, *pFilter_bin, *pFilter_any;
     GtkFileChooserNative *pFileSelection;
 
     BOOL oldState = desmume_running();
-    Pause();
+    Pause(NULL, NULL, NULL);
 
     pFilter_nds = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
@@ -2546,28 +2971,106 @@ static void SelectFirmwareFile()
     }
     g_object_unref(pFileSelection);
 
-    if(oldState) Launch();
+    if(oldState) Launch(NULL, NULL, NULL);
 }
 #endif
 
-static void Modify_PriInterpolation(GtkAction *action, GtkRadioAction *current)
+static void Modify_PriInterpolation(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    uint filter = gtk_radio_action_get_current_value(current) ;
-    video->ChangeFilterByID((VideoFilterTypeID)filter);
+    std::string string = g_variant_get_string(parameter, NULL);
+    VideoFilterTypeID filter;
+    if (string == "none")
+        filter = VideoFilterTypeID_None;
+    else if (string == "lq2x")
+        filter = VideoFilterTypeID_LQ2X;
+    else if (string == "lq2xs")
+        filter = VideoFilterTypeID_LQ2XS;
+    else if (string == "hq2x")
+        filter = VideoFilterTypeID_HQ2X;
+    else if (string == "hq2xs")
+        filter = VideoFilterTypeID_HQ2XS;
+    else if (string == "hq3x")
+        filter = VideoFilterTypeID_HQ3X;
+    else if (string == "hq3xs")
+        filter = VideoFilterTypeID_HQ3XS;
+    else if (string == "hq4x")
+        filter = VideoFilterTypeID_HQ4X;
+    else if (string == "hq4xs")
+        filter = VideoFilterTypeID_HQ4XS;
+    else if (string == "2xsai")
+        filter = VideoFilterTypeID_2xSaI;
+    else if (string == "super2xsai")
+        filter = VideoFilterTypeID_Super2xSaI;
+    else if (string == "supereagle")
+        filter = VideoFilterTypeID_SuperEagle;
+    else if (string == "scanline")
+        filter = VideoFilterTypeID_Scanline;
+    else if (string == "bilinear")
+        filter = VideoFilterTypeID_Bilinear;
+    else if (string == "nearest2x")
+        filter = VideoFilterTypeID_Nearest2X;
+    else if (string == "nearest_1point5x")
+        filter = VideoFilterTypeID_Nearest1_5X;
+    else if (string == "nearestplus_1point5x")
+        filter = VideoFilterTypeID_NearestPlus1_5X;
+    else if (string == "epx")
+        filter = VideoFilterTypeID_EPX;
+    else if (string == "epxplus")
+        filter = VideoFilterTypeID_EPXPlus;
+    else if (string == "epx_1point5x")
+        filter = VideoFilterTypeID_EPX1_5X;
+    else if (string == "epxplus_1point5x")
+        filter = VideoFilterTypeID_EPXPlus1_5X;
+    else if (string == "2xbrz")
+        filter = VideoFilterTypeID_2xBRZ;
+    else if (string == "3xbrz")
+        filter = VideoFilterTypeID_3xBRZ;
+    else if (string == "4xbrz")
+        filter = VideoFilterTypeID_4xBRZ;
+    else if (string == "5xbrz")
+        filter = VideoFilterTypeID_5xBRZ;
+    video->ChangeFilterByID(filter);
     config.view_filter = filter;
     RedrawScreen();
+    g_simple_action_set_state(action, parameter);
 }
 
-static void Modify_Interpolation(GtkAction *action, GtkRadioAction *current)
+static void Modify_Interpolation(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    Interpolation = (cairo_filter_t)gtk_radio_action_get_current_value(current);
+    std::string string = g_variant_get_string(parameter, NULL);
+    cairo_filter_t filter;
+    if (string == "fast")
+        filter = CAIRO_FILTER_FAST;
+    else if (string == "good")
+        filter = CAIRO_FILTER_GOOD;
+    else if (string == "best")
+        filter = CAIRO_FILTER_BEST;
+    else if (string == "nearest")
+        filter = CAIRO_FILTER_NEAREST;
+    else if (string == "bilinear")
+        filter = CAIRO_FILTER_BILINEAR;
+    else if (string == "gaussian")
+        filter = CAIRO_FILTER_GAUSSIAN;
+    Interpolation = filter;
     config.view_cairoFilter = Interpolation;
     RedrawScreen();
+    g_simple_action_set_state(action, parameter);
 }
 
-static void Modify_SPUMode(GtkAction *action, GtkRadioAction *current)
+static void Modify_SPUMode(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    const uint mode = gtk_radio_action_get_current_value(current);
+    const char *string = g_variant_get_string(parameter, NULL);
+    spumode_enum mode;
+    if (strcmp(string, "dual-async") == 0)
+        mode = SPUMODE_DUALASYNC;
+    else if (strcmp(string, "sync-n") == 0)
+        mode = SPUMODE_SYNCN;
+    else if (strcmp(string, "sync-z") == 0)
+        mode = SPUMODE_SYNCZ;
+#ifdef HAVE_LIBSOUNDTOUCH
+    else if (strcmp(string, "sync-p") == 0)
+        mode = SPUMODE_SYNCP;
+#endif
 
     switch (mode) {
     case SPUMODE_SYNCN:
@@ -2586,17 +3089,28 @@ static void Modify_SPUMode(GtkAction *action, GtkRadioAction *current)
         break;
     }
     config.audio_sync = SPUMode;
+    g_simple_action_set_state(action, parameter);
 }
 
-static void Modify_SPUInterpolation(GtkAction *action, GtkRadioAction *current)
+static void Modify_SPUInterpolation(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    CommonSettings.spuInterpolationMode = (SPUInterpolationMode)gtk_radio_action_get_current_value(current);
+    const char *string = g_variant_get_string(parameter, NULL);
+    SPUInterpolationMode mode;
+    if (strcmp(string, "none") == 0)
+        mode = SPUInterpolation_None;
+    else if (strcmp(string, "linear") == 0)
+        mode = SPUInterpolation_Linear;
+    else if (strcmp(string, "cosine") == 0)
+        mode = SPUInterpolation_Cosine;
+    CommonSettings.spuInterpolationMode = mode;
     config.audio_interpolation = CommonSettings.spuInterpolationMode;
+    g_simple_action_set_state(action, parameter);
 }
 
-static void Modify_Frameskip(GtkAction *action, GtkRadioAction *current)
+static void Modify_Frameskip(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    autoFrameskipMax = gtk_radio_action_get_current_value(current) ;
+    const char *string = g_variant_get_string(parameter, NULL);
+    autoFrameskipMax = g_ascii_strtoll(string, NULL, 10);
     config.frameskip = autoFrameskipMax;
     if (!autoframeskip) {
         Frameskip = autoFrameskipMax;
@@ -2610,9 +3124,9 @@ extern const int dTools_list_size;
 
 BOOL *dTools_running;
 
-static void Start_dTool(GtkWidget *widget, gpointer data)
+static void Start_dTool(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    int tool = GPOINTER_TO_INT(data);
+    int tool = g_variant_get_uint32(parameter);
 
     if(dTools_running == NULL || dTools_running[tool])
         return;
@@ -2666,7 +3180,7 @@ public:
 	}
 };
 
-static void DoQuit()
+static void DoQuit(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     emu_halt(EMUHALT_REASON_USER_REQUESTED_HALT, NDSErrorTag_None);
     if (regMainLoop) {
@@ -2825,30 +3339,17 @@ gboolean EmuLoop(gpointer data)
     return TRUE;
 }
 
-static void desmume_try_adding_ui(GtkUIManager *self, const char *ui_descr){
-    GError *error;
-    error = NULL;
-    if (!gtk_ui_manager_add_ui_from_string (self, ui_descr, -1, &error))
-      {
-        g_message ("building menus failed: %s", error->message);
-        g_error_free (error);
-        exit (EXIT_FAILURE);
-      }
-}
-
-static void dui_set_accel_group(gpointer action, gpointer group) {
-        gtk_action_set_accel_group((GtkAction *)action, (GtkAccelGroup *)group);
-}
-
 // The following functions are adapted from the Windows port:
 //     UpdateSaveStateMenu, ResetSaveStateTimes, LoadSaveStateInfo
 static void UpdateSaveStateMenu(int pos, char* txt)
 {
-	char name[64];
-        snprintf(name, sizeof(name), "savestate%d", (pos == 0) ? 10 : pos);
-	gtk_action_set_label(gtk_action_group_get_action(action_group, name), txt);
-        snprintf(name, sizeof(name), "loadstate%d", (pos == 0) ? 10 : pos);
-	gtk_action_set_label(gtk_action_group_get_action(action_group, name), txt);
+#if 0
+    char name[64];
+    snprintf(name, sizeof(name), "savestate%d", (pos == 0) ? 10 : pos);
+    gtk_action_set_label(gtk_action_group_get_action(action_group, name), txt);
+    snprintf(name, sizeof(name), "loadstate%d", (pos == 0) ? 10 : pos);
+    gtk_action_set_label(gtk_action_group_get_action(action_group, name), txt);
+#endif
 }
 
 static void ResetSaveStateTimes()
@@ -2875,59 +3376,72 @@ static void LoadSaveStateInfo()
 	}
 }
 
-static void desmume_gtk_menu_file_saveload_slot (GtkActionGroup *ag)
+static void desmume_gtk_menu_file_saveload_slot(GtkApplication *app)
 {
+    std::vector<GActionEntry> entries;
     for(guint i = 1; i <= 10; i++){
-        GtkAction *act;
         char label[64], name[64], accel[64];
 
-        snprintf(label, sizeof(label), "_%d", i % 10);
+        snprintf(label, sizeof(label), "%d", i % 10);
 
         // Note: GTK+ doesn't handle Shift correctly, so the actual action is
         // done in Key_Press. The accelerators here are simply visual cues.
 
         snprintf(name, sizeof(name), "savestate%d", i);
         snprintf(accel, sizeof(accel), "<Shift>F%d", i);
-        act = gtk_action_new(name, label, NULL, NULL);
-        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(MenuSave), GUINT_TO_POINTER(i % 10));
-        gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), accel);
+        GActionEntry entry = {name, MenuSave, "u", label, NULL};
+        entries.push_back(entry);
 
         snprintf(name, sizeof(name), "loadstate%d", i);
         snprintf(accel, sizeof(accel), "F%d", i);
-        act = gtk_action_new(name, label, NULL, NULL);
-        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(MenuLoad), GUINT_TO_POINTER(i % 10));
-        gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), accel);
+        entry = {name, MenuLoad, "u", label, NULL};
+        entries.push_back(entry);
     }
+    g_action_map_add_action_entries(G_ACTION_MAP(app), entries.data(), entries.size(), NULL);
 }
 
-static void changesavetype(GtkAction *action, GtkRadioAction *current)
+static void changesavetype(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    backup_setManualBackupType( gtk_radio_action_get_current_value(current));
+    const char *string = g_variant_get_string(parameter, NULL);
+    int savetype;
+    if (strcmp(string, "autodetect") == 0)
+        savetype = 0;
+    else if (strcmp(string, "eeprom-4k") == 0)
+        savetype = 1;
+    else if (strcmp(string, "eeprom-64k") == 0)
+        savetype = 2;
+    else if (strcmp(string, "eeprom-512k") == 0)
+        savetype = 3;
+    else if (strcmp(string, "fram-256k") == 0)
+        savetype = 4;
+    else if (strcmp(string, "flash-2m") == 0)
+        savetype = 5;
+    else if (strcmp(string, "flash-4m") == 0)
+        savetype = 6;
+    backup_setManualBackupType(savetype);
 }
 
-static void desmume_gtk_menu_tool_layers (GtkActionGroup *ag)
+static void desmume_gtk_menu_tool_layers(GtkApplication *app)
 {
-    const char *Layers_Menu[10][2] = {
-        {"layermainbg0","_0 Main BG 0"},
-        {"layermainbg1","_1 Main BG 1"},
-        {"layermainbg2","_2 Main BG 2"},
-        {"layermainbg3","_3 Main BG 3"},
-        {"layermainobj","_4 Main OBJ"},
-        {"layersubbg0", "_5 SUB BG 0"},
-        {"layersubbg1", "_6 SUB BG 1"},
-        {"layersubbg2", "_7 SUB BG 2"},
-        {"layersubbg3", "_8 SUB BG 3"},
-        {"layersubobj", "_9 SUB OBJ"}
+    const char *Layers_Menu[10][3] = {
+        {"0", "layermainbg0","_0 Main BG 0"},
+        {"1", "layermainbg1","_1 Main BG 1"},
+        {"2", "layermainbg2","_2 Main BG 2"},
+        {"3", "layermainbg3","_3 Main BG 3"},
+        {"4", "layermainobj","_4 Main OBJ"},
+        {"5", "layersubbg0", "_5 SUB BG 0"},
+        {"6", "layersubbg1", "_6 SUB BG 1"},
+        {"7", "layersubbg2", "_7 SUB BG 2"},
+        {"8", "layersubbg3", "_8 SUB BG 3"},
+        {"9", "layersubobj", "_9 SUB OBJ"}
     };
-    guint i;
 
-    GtkToggleAction *act;
-    for(i = 0; i< 10; i++){
-        act = gtk_toggle_action_new(Layers_Menu[i][0],Layers_Menu[i][1],NULL,NULL);
-        gtk_toggle_action_set_active(act, TRUE);
-        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(ToggleLayerVisibility), GUINT_TO_POINTER(i));
-        gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), NULL);
+    std::vector<GActionEntry> entries;
+    for (int i = 0; i < 10; i++) {
+        GActionEntry entry = {Layers_Menu[i][1], ToggleLayerVisibility, NULL, "true", NULL};
+        entries.push_back(entry);
     }
+    g_action_map_add_action_entries(G_ACTION_MAP(app), entries.data(), entries.size(), NULL);
 }
 
 #ifdef HAVE_LIBAGG
@@ -2988,7 +3502,7 @@ static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
     RedrawScreen();
 }
 
-static void desmume_gtk_menu_view_hud (GtkActionGroup *ag)
+static void desmume_gtk_menu_view_hud(GtkApplication *app)
 {
     const struct {
         const gchar* name;
@@ -3019,9 +3533,11 @@ static void desmume_gtk_menu_view_hud (GtkActionGroup *ag)
 }
 #endif
 
-static void ToggleAudio (GtkToggleAction *action)
+static void ToggleAudio(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    config.audio_enabled = gtk_toggle_action_get_active(action);
+    GVariant *variant = g_action_get_state(G_ACTION(action));
+    gboolean value = !g_variant_get_boolean(variant);
+    config.audio_enabled = value;
     if (config.audio_enabled) {
         SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
         driver->AddLine("Audio enabled");
@@ -3030,12 +3546,14 @@ static void ToggleAudio (GtkToggleAction *action)
         driver->AddLine("Audio disabled");
     }
     RedrawScreen();
+    g_simple_action_set_state(action, g_variant_new_boolean(value));
 }
 
 #ifdef FAKE_MIC
-static void ToggleMicNoise (GtkToggleAction *action)
+static void ToggleMicNoise(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    BOOL doNoise = (BOOL)gtk_toggle_action_get_active(action);
+    GVariant *variant = g_action_get_state(G_ACTION(action));
+    gboolean doNoise = !g_variant_get_boolean(variant);
 
     Mic_DoNoise(doNoise);
     if (doNoise)
@@ -3043,23 +3561,29 @@ static void ToggleMicNoise (GtkToggleAction *action)
     else
        driver->AddLine("Fake mic disabled");
     RedrawScreen();
+    g_simple_action_set_state(action, g_variant_new_boolean(doNoise));
 }
 #endif
 
-static void ToggleFpsLimiter (GtkToggleAction *action)
+static void ToggleFpsLimiter(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    config.fpslimiter = (BOOL)gtk_toggle_action_get_active(action);
+    GVariant *variant = g_action_get_state(G_ACTION(action));
+    gboolean value = !g_variant_get_boolean(variant);
+    config.fpslimiter = value;
 
     if (config.fpslimiter)
        driver->AddLine("Fps limiter enabled");
     else
        driver->AddLine("Fps limiter disabled");
     RedrawScreen();
+    g_simple_action_set_state(action, g_variant_new_boolean(value));
 }
 
-static void ToggleAutoFrameskip (GtkToggleAction *action)
+static void ToggleAutoFrameskip(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    config.autoframeskip = (BOOL)gtk_toggle_action_get_active(action);
+    GVariant *variant = g_action_get_state(G_ACTION(action));
+    gboolean value = !g_variant_get_boolean(variant);
+    config.autoframeskip = value;
 
     if (config.autoframeskip) {
         autoframeskip = true;
@@ -3071,22 +3595,22 @@ static void ToggleAutoFrameskip (GtkToggleAction *action)
         driver->AddLine("Auto frameskip disabled");
     }
     RedrawScreen();
+    g_simple_action_set_state(action, g_variant_new_boolean(value));
 }
 
-static void desmume_gtk_menu_tools (GtkActionGroup *ag)
+static void desmume_gtk_menu_tools(GtkApplication *app)
 {
-    gint i;
-    for(i = 0; i < dTools_list_size; i++) {
-        GtkAction *act;
-        act = gtk_action_new(dTools_list[i]->shortname, dTools_list[i]->name, NULL, NULL);
-        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(Start_dTool), GINT_TO_POINTER(i));
-        gtk_action_group_add_action(ag, GTK_ACTION(act));
+    std::vector<GActionEntry> entries;
+    for (int i = 0; i < dTools_list_size; i++) {
+        GActionEntry entry = {dTools_list[i]->shortname, Start_dTool, "u", std::to_string(i).c_str(), NULL};
+        entries.push_back(entry);
     }
+    g_action_map_add_action_entries(G_ACTION_MAP(app), entries.data(), entries.size(), NULL);
 }
 
 static gboolean timeout_exit_cb(gpointer data)
 {
-    DoQuit();
+    DoQuit(NULL, NULL, NULL);
     INFO("Quit after %d seconds timeout\n", GPOINTER_TO_INT(data));
 
     return FALSE;
@@ -3105,7 +3629,6 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     GtkAccelGroup * accel_group;
     GtkWidget *pBox;
-    GtkWidget *pMenuBar;
     GtkWidget *pToolBar;
 
     /* use any language set on the command line */
@@ -3249,11 +3772,10 @@ common_gtk_main(GApplication *app, gpointer user_data)
     video = new VideoFilter(256, 384, VideoFilterTypeID_None, CommonSettings.num_cores);
 
     /* Create the window */
-    pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    pWindow = gtk_application_window_new(GTK_APPLICATION(app));
     gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME");
     gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
     gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
-    gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(pWindow));
 
     g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(DoQuit), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
@@ -3263,71 +3785,204 @@ common_gtk_main(GApplication *app, gpointer user_data)
     pBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(pWindow), pBox);
 
-    ui_manager = gtk_ui_manager_new ();
     accel_group = gtk_accel_group_new();
-    action_group = gtk_action_group_new("dui");
 
-    gtk_action_group_add_actions(action_group, action_entries, G_N_ELEMENTS(action_entries), NULL);
-    gtk_action_group_add_toggle_actions(action_group, toggle_entries, G_N_ELEMENTS(toggle_entries), NULL);
     /* Update audio toggle status */
     if (my_config->disable_sound || !config.audio_enabled) {
-        GtkAction *action = gtk_action_group_get_action(action_group, "enableaudio");
-        if (action)
-            gtk_toggle_action_set_active((GtkToggleAction *)action, FALSE);
+        g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "enableaudio")), g_variant_new_boolean(FALSE));
     }
-    desmume_gtk_menu_tool_layers(action_group);
+    desmume_gtk_menu_tool_layers(GTK_APPLICATION(app));
 #ifdef HAVE_LIBAGG
-    desmume_gtk_menu_view_hud(action_group);
-#else
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "hud_notsupported"), FALSE);
+    desmume_gtk_menu_view_hud(GTK_APPLICATION(app));
 #endif
-    desmume_gtk_menu_file_saveload_slot(action_group);
-    desmume_gtk_menu_tools(action_group);
-    gtk_action_group_add_radio_actions(action_group, savet_entries, G_N_ELEMENTS(savet_entries), 
-            my_config->savetype, G_CALLBACK(changesavetype), NULL);
+    desmume_gtk_menu_file_saveload_slot(GTK_APPLICATION(app));
+    desmume_gtk_menu_tools(GTK_APPLICATION(app));
+    std::string string;
+    switch (my_config->savetype) {
+        case 0:
+            string = "autodetect";
+            break;
+        case 1:
+            string = "eeprom-4k";
+            break;
+        case 2:
+            string = "eeprom-64k";
+            break;
+        case 3:
+            string = "eeprom-512k";
+            break;
+        case 4:
+            string = "fram-256k";
+            break;
+        case 5:
+            string = "flash-2m";
+            break;
+        case 6:
+            string = "flash-4m";
+            break;
+    }
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "savetype")), g_variant_new_string(string.c_str()));
 
     if (config.view_cairoFilter < CAIRO_FILTER_FAST || config.view_cairoFilter > CAIRO_FILTER_BILINEAR) {
     	config.view_cairoFilter = CAIRO_FILTER_NEAREST;
     }
     Interpolation = (cairo_filter_t)config.view_cairoFilter.get();
-    gtk_action_group_add_radio_actions(action_group, interpolation_entries, G_N_ELEMENTS(interpolation_entries), 
-            Interpolation, G_CALLBACK(Modify_Interpolation), NULL);
+    switch (Interpolation) {
+        case CAIRO_FILTER_FAST:
+            string = "fast";
+            break;
+        case CAIRO_FILTER_NEAREST:
+            string = "nearest";
+            break;
+        case CAIRO_FILTER_GOOD:
+            string = "good";
+            break;
+        case CAIRO_FILTER_BILINEAR:
+            string = "bilinear";
+            break;
+        case CAIRO_FILTER_BEST:
+            string = "best";
+            break;
+    }
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "interpolation")), g_variant_new_string(string.c_str()));
 
     if (config.view_filter < VideoFilterTypeID_None || config.view_filter >= VideoFilterTypeIDCount) {
         config.view_filter = VideoFilterTypeID_None;
     }
     video->ChangeFilterByID((VideoFilterTypeID)config.view_filter.get());
-    gtk_action_group_add_radio_actions(action_group, pri_interpolation_entries, G_N_ELEMENTS(pri_interpolation_entries), 
-            config.view_filter, G_CALLBACK(Modify_PriInterpolation), NULL);
+    switch (config.view_filter) {
+		case VideoFilterTypeID_None:
+			string = "none";
+			break;
+		case VideoFilterTypeID_LQ2X:
+			string = "lq2x";
+			break;
+		case VideoFilterTypeID_LQ2XS:
+			string = "lq2xs";
+			break;
+		case VideoFilterTypeID_HQ2X:
+			string = "hq2x";
+			break;
+		case VideoFilterTypeID_HQ2XS:
+			string = "hq2xs";
+			break;
+		case VideoFilterTypeID_HQ3X:
+			string = "hq3x";
+			break;
+		case VideoFilterTypeID_HQ3XS:
+			string = "hq3xs";
+			break;
+		case VideoFilterTypeID_HQ4X:
+			string = "hq4x";
+			break;
+		case VideoFilterTypeID_HQ4XS:
+			string = "hq4xs";
+			break;
+		case VideoFilterTypeID_2xSaI:
+			string = "2xsai";
+			break;
+		case VideoFilterTypeID_Super2xSaI:
+			string = "super2xsai";
+			break;
+		case VideoFilterTypeID_SuperEagle:
+			string = "supereagle";
+			break;
+		case VideoFilterTypeID_Scanline:
+			string = "scanline";
+			break;
+		case VideoFilterTypeID_Bilinear:
+			string = "bilinear";
+			break;
+		case VideoFilterTypeID_Nearest2X:
+			string = "nearest2x";
+			break;
+		case VideoFilterTypeID_Nearest1_5X:
+			string = "nearest_1point5x";
+			break;
+		case VideoFilterTypeID_NearestPlus1_5X:
+			string = "nearestplus_1point5x";
+			break;
+		case VideoFilterTypeID_EPX:
+			string = "epx";
+			break;
+		case VideoFilterTypeID_EPXPlus:
+			string = "epxplus";
+			break;
+		case VideoFilterTypeID_EPX1_5X:
+			string = "epx_1point5x";
+			break;
+		case VideoFilterTypeID_EPXPlus1_5X:
+			string = "epxplus_1point5x";
+			break;
+		case VideoFilterTypeID_2xBRZ:
+			string = "2xbrz";
+			break;
+		case VideoFilterTypeID_3xBRZ:
+			string = "3xbrz";
+			break;
+		case VideoFilterTypeID_4xBRZ:
+			string = "4xbrz";
+			break;
+		case VideoFilterTypeID_5xBRZ:
+			string = "5xbrz";
+			break;
+    }
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "pri_interpolation")), g_variant_new_string(string.c_str()));
 
     switch (config.audio_sync) {
+        case SPUMODE_SYNCN:
+        case SPUMODE_SYNCZ:
+#ifdef HAVE_LIBSOUNDTOUCH
+        case SPUMODE_SYNCP:
+#endif
+            SPUMode = config.audio_sync;
+            SPU_SetSynchMode(1, config.audio_sync-1);
+            break;
+
+        case SPUMODE_DUALASYNC:
+        default:
+            config.audio_sync = SPUMODE_DUALASYNC;
+            SPUMode = SPUMODE_DUALASYNC;
+            SPU_SetSynchMode(0, 0);
+            break;
+    }
+    switch (config.audio_sync) {
     case SPUMODE_SYNCN:
+        string = "sync-n";
+        break;
     case SPUMODE_SYNCZ:
+        string = "sync-z";
+        break;
 #ifdef HAVE_LIBSOUNDTOUCH
     case SPUMODE_SYNCP:
-#endif
-        SPUMode = config.audio_sync;
-        SPU_SetSynchMode(1, config.audio_sync-1);
+        string = "sync-p";
         break;
-
+#endif
     case SPUMODE_DUALASYNC:
     default:
-        config.audio_sync = SPUMODE_DUALASYNC;
-        SPUMode = SPUMODE_DUALASYNC;
-        SPU_SetSynchMode(0, 0);
+        string = "dual-async";
         break;
     }
-    gtk_action_group_add_radio_actions(action_group, spumode_entries, G_N_ELEMENTS(spumode_entries),
-            config.audio_sync, G_CALLBACK(Modify_SPUMode), NULL);
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "spu_mode")), g_variant_new_string(string.c_str()));
 
     CommonSettings.spuInterpolationMode = (SPUInterpolationMode)(config.audio_interpolation.get());
-    gtk_action_group_add_radio_actions(action_group, spuinterpolation_entries, G_N_ELEMENTS(spuinterpolation_entries),
-            CommonSettings.spuInterpolationMode, G_CALLBACK(Modify_SPUInterpolation), NULL);
+    switch (CommonSettings.spuInterpolationMode) {
+        case SPUInterpolation_None:
+            string = "none";
+            break;
+        case SPUInterpolation_Linear:
+            string = "linear";
+            break;
+        case SPUInterpolation_Cosine:
+            string = "cosine";
+            break;
+    }
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "spu_interpolation")), g_variant_new_string(string.c_str()));
 
-    gtk_action_group_add_radio_actions(action_group, frameskip_entries, G_N_ELEMENTS(frameskip_entries), 
-            config.frameskip, G_CALLBACK(Modify_Frameskip), NULL);
+    string = std::to_string(config.frameskip);
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "frameskip")), g_variant_new_string(string.c_str()));
     autoFrameskipMax = config.frameskip;
-    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "frameskipA"), config.autoframeskip);
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "frameskipA")), g_variant_new_boolean(config.autoframeskip));
     if (config.autoframeskip) {
         autoframeskip = true;
         Frameskip = 0;
@@ -3347,53 +4002,81 @@ common_gtk_main(GApplication *app, gpointer user_data)
             break;
     }
     nds_screen.rotation_angle = config.view_rot;
-    gtk_action_group_add_radio_actions(action_group, rotation_entries, G_N_ELEMENTS(rotation_entries), 
-            nds_screen.rotation_angle, G_CALLBACK(SetRotation), NULL);
+    string = std::to_string(nds_screen.rotation_angle);
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "rotate")), g_variant_new_string(string.c_str()));
 
 
     if (config.window_scale < WINSIZE_SCALE || config.window_scale > WINSIZE_5) {
     	config.window_scale = WINSIZE_SCALE;
     }
     winsize_current = (winsize_enum)config.window_scale.get();
-    gtk_action_group_add_radio_actions(action_group, winsize_entries, G_N_ELEMENTS(winsize_entries), 
-            winsize_current, G_CALLBACK(SetWinsize), NULL);
+    switch (winsize_current) {
+        case WINSIZE_SCALE:
+            string = "scale";
+            break;
+        case WINSIZE_HALF:
+            string = "0.5";
+            break;
+        case WINSIZE_1:
+            string = "1";
+            break;
+        case WINSIZE_1HALF:
+            string = "1.5";
+            break;
+        case WINSIZE_2:
+            string = "2";
+            break;
+        case WINSIZE_2HALF:
+            string = "2.5";
+            break;
+        case WINSIZE_3:
+            string = "3";
+            break;
+        case WINSIZE_4:
+            string = "4";
+            break;
+        case WINSIZE_5:
+            string = "5";
+            break;
+    }
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "winsize")), g_variant_new_string(string.c_str()));
 
     if (config.view_orient < ORIENT_VERTICAL || config.view_orient > ORIENT_SINGLE) {
         config.view_orient = ORIENT_VERTICAL;
     }
     nds_screen.orientation = (orientation_enum)config.view_orient.get();
-    gtk_action_group_add_radio_actions(action_group, orientation_entries, G_N_ELEMENTS(orientation_entries), 
-            nds_screen.orientation, G_CALLBACK(SetOrientation), NULL);
-
-    {
-        GList * list = gtk_action_group_list_actions(action_group);
-        g_list_foreach(list, dui_set_accel_group, accel_group);
+    switch (nds_screen.orientation) {
+        case ORIENT_VERTICAL:
+            string = "vertical";
+            break;
+        case ORIENT_HORIZONTAL:
+            string = "horizontal";
+            break;
+        case ORIENT_SINGLE:
+            string = "single";
+            break;
     }
-    gtk_window_add_accel_group(GTK_WINDOW(pWindow), accel_group);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), FALSE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), FALSE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), FALSE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), FALSE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatsearch"), FALSE);
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "orient")), g_variant_new_string(string.c_str()));
+
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "pause")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "run")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "reset")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "printscreen")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "cheatlist")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "cheatsearch")), FALSE);
 
     nds_screen.gap_size = config.view_gap ? GAP_SIZE : 0;
 
     nds_screen.swap = config.view_swap;
-    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "orient_swapscreens"), config.view_swap);
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "swapscreens")), g_variant_new_boolean(config.view_swap));
 
-    gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
-    
-    accel_group = gtk_ui_manager_get_accel_group (ui_manager);
-    gtk_window_add_accel_group (GTK_WINDOW (pWindow), accel_group);
+    GtkBuilder *builder = gtk_builder_new_from_string(menu_builder, -1);
+    GMenuModel *menubar = G_MENU_MODEL(gtk_builder_get_object(builder, "menubar"));
+    gtk_application_set_menubar(GTK_APPLICATION(app), menubar);
+    g_object_unref(builder);
+	pApp = GTK_APPLICATION(app);
 
-    desmume_try_adding_ui(ui_manager, ui_description);
-
-    pMenuBar = gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
-    gtk_box_pack_start (GTK_BOX(pBox), pMenuBar, FALSE, FALSE, 0);
-    pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
-    gtk_box_pack_start (GTK_BOX(pBox), pToolBar, FALSE, FALSE, 0);
-
+#if 0
     {
         GtkWidget * recentMenu = gtk_ui_manager_get_widget (ui_manager, "/MainMenu/FileMenu/RecentMenu");
         GtkWidget * recentFiles = gtk_recent_chooser_menu_new();
@@ -3403,12 +4086,13 @@ common_gtk_main(GApplication *app, gpointer user_data)
         gtk_menu_item_set_submenu(GTK_MENU_ITEM(recentMenu), recentFiles);
         g_signal_connect(G_OBJECT(recentFiles), "item-activated", G_CALLBACK(OpenRecent), NULL);
     }
+#endif
 
     /* Creating the place for showing DS screens */
     pDrawingArea = gtk_drawing_area_new();
 
     /* This toggle action must not be set active before the pDrawingArea initialization to avoid a GTK warning */
-    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "gap"), config.view_gap);
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "gap")), g_variant_new_boolean(config.view_gap));
 
     gtk_container_add (GTK_CONTAINER(pBox), pDrawingArea);
 
@@ -3437,37 +4121,35 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 	if (winsize_current == WINSIZE_SCALE) {
 		if (config.window_fullscreen) {
-			gtk_widget_hide(pMenuBar);
+            gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(pWindow), FALSE);
 			gtk_widget_hide(pToolBar);
 			gtk_widget_hide(pStatusBar);
-			gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_menu"), FALSE);
-			gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_toolbar"), FALSE);
-			gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_statusbar"), FALSE);
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_menu")), FALSE);
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_toolbar")), FALSE);
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_statusbar")), FALSE);
 			gtk_window_fullscreen(GTK_WINDOW(pWindow));
 		}
 	} else {
 		config.window_fullscreen = false;
-		gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "fullscreen"), FALSE);
+        g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "fullscreen")), FALSE);
 	}
 	if (!config.view_menu) {
-		gtk_widget_hide(pMenuBar);
-		gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_menu"), FALSE);
+        gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(pWindow), FALSE);
+        g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_menu")), g_variant_new_boolean(FALSE));
 	}
 	if (!config.view_toolbar) {
 		gtk_widget_hide(pToolBar);
-		gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_toolbar"), FALSE);
+        g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_toolbar")), g_variant_new_boolean(FALSE));
 	}
 	if (!config.view_statusbar) {
 		gtk_widget_hide(pStatusBar);
-		gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_statusbar"), FALSE);
+        g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_statusbar")), g_variant_new_boolean(FALSE));
 	}
     UpdateDrawingAreaAspect();
 
     if (my_config->disable_limiter || !config.fpslimiter) {
         config.fpslimiter = false;
-        GtkAction *action = gtk_action_group_get_action(action_group, "enablefpslimiter");
-        if (action)
-            gtk_toggle_action_set_active((GtkToggleAction *)action, FALSE);
+        g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "enablefpslimiter")), g_variant_new_boolean(FALSE));
     }
 
 #if defined(HAVE_OPENGL) && defined(OGLRENDER_3_2_H)
@@ -3541,7 +4223,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
               loadstate_slot(my_config->load_slot);
             }
 
-            Launch();
+            Launch(NULL, NULL, NULL);
         } else {
             GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
@@ -3621,6 +4303,9 @@ int main (int argc, char *argv[])
   // TODO: pass G_APPLICATION_HANDLES_COMMAND_LINE instead.
   GtkApplication *app = gtk_application_new("org.desmume.DeSmuME", G_APPLICATION_FLAGS_NONE);
   g_signal_connect (app, "activate", G_CALLBACK(common_gtk_main), &my_config);
+  g_action_map_add_action_entries(G_ACTION_MAP(app),
+                                  app_entries, G_N_ELEMENTS(app_entries),
+                                  app);
 
   if ( !fill_configured_features( &my_config, argv)) {
     exit(0);
