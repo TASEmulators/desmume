@@ -28,7 +28,6 @@ includes = [
 
 executable('desmume',
   desmume_src,
-  cpp_args: ['-DGDK_DISABLE_DEPRECATION_WARNINGS'],
   dependencies: gtk_dependencies,
   include_directories: includes,
   link_with: libdesmume,
