@@ -28,6 +28,7 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <SDL.h>
+#include <X11/Xlib.h>
 
 #include "types.h"
 #include "firmware.h"
