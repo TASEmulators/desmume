@@ -2205,7 +2205,7 @@ static void EmulationSettingsDialog(){
 }
 
 static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void * nullPtr){
-	config.jit_max_block_size=(int)adj->value;
+	config.jit_max_block_size=(int)gtk_adjustment_get_value(adj);
 }
 
 static void ToggleJIT(){
