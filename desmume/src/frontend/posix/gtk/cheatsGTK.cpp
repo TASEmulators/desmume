@@ -306,7 +306,7 @@ static GtkWidget *cheat_list_create_ui()
     GtkListStore *store = cheat_list_populate();
     GtkWidget *tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (store));
     GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
-    GtkWidget *hbbox = gtk_hbutton_box_new();
+    GtkWidget *hbbox = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
     GtkWidget *button;
   
     gtk_container_add(GTK_CONTAINER(box), GTK_WIDGET(tree));
@@ -353,7 +353,7 @@ static void cheat_search_create_ui()
 {
     GtkWidget *button;
     GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
-    GtkWidget *hbbox = gtk_hbutton_box_new();
+    GtkWidget *hbbox = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
     GtkWidget *b;
     
     gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(box));
