@@ -1959,7 +1959,7 @@ static void SetAudioVolume()
 	GtkWidget *dialog = NULL;
 	GtkWidget *hscale = NULL;
 	int audio_volume = SNDSDLGetAudioVolume();
-	dialog = gtk_dialog_new_with_buttons("Set audio volume", GTK_WINDOW(pWindow), GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+	dialog = gtk_dialog_new_with_buttons("Set audio volume", GTK_WINDOW(pWindow), GTK_DIALOG_MODAL, "_OK", GTK_RESPONSE_OK, "_Cancel", GTK_RESPONSE_CANCEL, NULL);
 	hscale = gtk_hscale_new_with_range(0, SDL_MIX_MAXVOLUME, 1);
 	gtk_range_set_value(GTK_RANGE(hscale), SNDSDLGetAudioVolume());
 	g_signal_connect(G_OBJECT(hscale), "value-changed", G_CALLBACK(CallbackSetAudioVolume), NULL);
@@ -1992,7 +1992,7 @@ static void SetFirmwareLanguage()
 	GtkWidget *check_button = NULL;
 	const char *languages[6] = {"Japanese", "English", "French", "German", "Italian", "Spanish"};
 	gchar *text = NULL;
-	dialog = gtk_dialog_new_with_buttons("Set firmware language", GTK_WINDOW(pWindow), GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+	dialog = gtk_dialog_new_with_buttons("Set firmware language", GTK_WINDOW(pWindow), GTK_DIALOG_MODAL, "_OK", GTK_RESPONSE_OK, "_Cancel", GTK_RESPONSE_CANCEL, NULL);
 	combo_box_text = gtk_combo_box_text_new();
 	for(int index = 0; index < 6; index++)
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_box_text), languages[index]);
@@ -2049,8 +2049,8 @@ static void Modify_Key(GtkWidget* widget, gpointer data)
     mkDialog = gtk_dialog_new_with_buttons(Title,
         GTK_WINDOW(pWindow),
         GTK_DIALOG_MODAL,
-        GTK_STOCK_OK,GTK_RESPONSE_OK,
-        GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
+        "_OK",GTK_RESPONSE_OK,
+        "_Cancel",GTK_RESPONSE_CANCEL,
         NULL);
 
     ctx.label = gtk_label_new(Title);
@@ -2090,8 +2090,8 @@ static void Edit_Controls()
     ecDialog = gtk_dialog_new_with_buttons("Edit controls",
                         GTK_WINDOW(pWindow),
                         GTK_DIALOG_MODAL,
-                        GTK_STOCK_OK,GTK_RESPONSE_OK,
-                        GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
+                        "_OK",GTK_RESPONSE_OK,
+                        "_Cancel",GTK_RESPONSE_CANCEL,
                         NULL);
 
     for(i = 0; i < NB_KEYS; i++) {
@@ -2144,8 +2144,8 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
     mkDialog = gtk_dialog_new_with_buttons(Title,
         GTK_WINDOW(pWindow),
         GTK_DIALOG_MODAL,
-        GTK_STOCK_OK,GTK_RESPONSE_OK,
-        GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
+        "_OK",GTK_RESPONSE_OK,
+        "_Cancel",GTK_RESPONSE_CANCEL,
         NULL);
 
     ctx.label = gtk_label_new(Title);
@@ -2181,8 +2181,8 @@ static void EmulationSettingsDialog(){
 	esDialog=gtk_dialog_new_with_buttons("Emulation Settings",
 			GTK_WINDOW(pWindow),
 			GTK_DIALOG_MODAL,
-			GTK_STOCK_OK,GTK_RESPONSE_OK,
-			GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
+			"_OK",GTK_RESPONSE_OK,
+			"_Cancel",GTK_RESPONSE_CANCEL,
 			NULL);
 
     esKey=gtk_label_new("CPU Mode:\n");
@@ -2255,8 +2255,8 @@ static void Edit_Joystick_Controls()
     ecDialog = gtk_dialog_new_with_buttons("Edit controls",
                         GTK_WINDOW(pWindow),
                         GTK_DIALOG_MODAL,
-                        GTK_STOCK_OK,GTK_RESPONSE_OK,
-                        GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
+                        "_OK",GTK_RESPONSE_OK,
+                        "_Cancel",GTK_RESPONSE_CANCEL,
                         NULL);
 
     for(i = 0; i < NB_KEYS; i++) {
@@ -2293,9 +2293,9 @@ static void GraphicsSettingsDialog() {
 	gsDialog = gtk_dialog_new_with_buttons("Graphics Settings",
 			GTK_WINDOW(pWindow),
 			GTK_DIALOG_MODAL,
-			GTK_STOCK_OK,
+			"_OK",
 			GTK_RESPONSE_OK,
-			GTK_STOCK_CANCEL,
+			"_Cancel",
 			GTK_RESPONSE_CANCEL,
 			NULL);
 
