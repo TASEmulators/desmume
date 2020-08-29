@@ -3439,7 +3439,7 @@ common_gtk_main( class configured_features *my_config)
                      G_CALLBACK(Stylus_Release), NULL);
     g_signal_connect(G_OBJECT(pDrawingArea), "motion_notify_event",
                      G_CALLBACK(Stylus_Move), NULL);
-    g_signal_connect(G_OBJECT(pDrawingArea), "expose_event",
+    g_signal_connect(G_OBJECT(pDrawingArea), "draw",
                      G_CALLBACK(ExposeDrawingArea), NULL ) ;
     g_signal_connect(G_OBJECT(pDrawingArea), "configure_event",
                      G_CALLBACK(ConfigureDrawingArea), NULL ) ;
