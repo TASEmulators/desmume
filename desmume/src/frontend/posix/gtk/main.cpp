@@ -1557,7 +1557,8 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	hratio = MIN(hratio, vratio);
 	vratio = hratio;
 
-	cairo_t* cr = gdk_cairo_create(window);
+	GdkDrawingContext *context = gdk_window_begin_draw_frame(window, gdk_window_get_clip_region(window));
+	cairo_t* cr = gdk_drawing_context_get_cairo_context(context);
 
 	// Scale to window size at center of area
 	cairo_translate(cr, daW / 2, daH / 2);
@@ -1583,7 +1584,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	cairo_matrix_scale(&nds_screen.touch_matrix, (double)dstScale / 2, (double)dstScale / 2);
 	cairo_matrix_invert(&nds_screen.touch_matrix);
 
-	cairo_destroy(cr);
+	gdk_window_end_draw_frame(window, context);
 	draw_count++;
 
 	return TRUE;
