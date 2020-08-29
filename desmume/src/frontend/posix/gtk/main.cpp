@@ -901,9 +901,6 @@ static void ToggleFullscreen(GtkToggleAction *action)
   config.window_fullscreen = gtk_toggle_action_get_active(action);
   if (config.window_fullscreen)
   {
-    GdkColor black = {0, 0, 0, 0};
-    gtk_widget_modify_bg(pDrawingArea, GTK_STATE_NORMAL, &black);
-
     gtk_widget_hide(pMenuBar);
     gtk_widget_hide(pToolBar);
     gtk_widget_hide(pStatusBar);
@@ -914,8 +911,6 @@ static void ToggleFullscreen(GtkToggleAction *action)
   }
   else
   {
-    gtk_widget_modify_bg(pDrawingArea, GTK_STATE_NORMAL, NULL);
-
     if (config.view_menu) {
       gtk_widget_show(pMenuBar);
     }
