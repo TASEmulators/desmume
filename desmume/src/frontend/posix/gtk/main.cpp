@@ -3119,7 +3119,7 @@ common_gtk_main( class configured_features *my_config)
     SDL_TimerID limiter_timer = NULL;
 
     GtkAccelGroup * accel_group;
-    GtkWidget *pVBox;
+    GtkWidget *pBox;
     GtkWidget *pMenuBar;
     GtkWidget *pToolBar;
 
@@ -3270,9 +3270,9 @@ common_gtk_main( class configured_features *my_config)
     g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
 
-    /* Create the GtkVBox */
-    pVBox = gtk_vbox_new(FALSE, 0);
-    gtk_container_add(GTK_CONTAINER(pWindow), pVBox);
+    /* Create the GtkBox */
+    pBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_container_add(GTK_CONTAINER(pWindow), pBox);
 
     ui_manager = gtk_ui_manager_new ();
     accel_group = gtk_accel_group_new();
@@ -3401,9 +3401,9 @@ common_gtk_main( class configured_features *my_config)
     desmume_try_adding_ui(ui_manager, ui_description);
 
     pMenuBar = gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
-    gtk_box_pack_start (GTK_BOX (pVBox), pMenuBar, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX(pBox), pMenuBar, FALSE, FALSE, 0);
     pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
-    gtk_box_pack_start (GTK_BOX(pVBox), pToolBar, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX(pBox), pToolBar, FALSE, FALSE, 0);
 
     {
         GtkWidget * recentMenu = gtk_ui_manager_get_widget (ui_manager, "/MainMenu/FileMenu/RecentMenu");
@@ -3421,7 +3421,7 @@ common_gtk_main( class configured_features *my_config)
     /* This toggle action must not be set active before the pDrawingArea initialization to avoid a GTK warning */
     gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "gap"), config.view_gap);
 
-    gtk_container_add (GTK_CONTAINER (pVBox), pDrawingArea);
+    gtk_container_add (GTK_CONTAINER(pBox), pDrawingArea);
 
     gtk_widget_set_events(pDrawingArea,
                           GDK_EXPOSURE_MASK | GDK_LEAVE_NOTIFY_MASK |
@@ -3442,7 +3442,7 @@ common_gtk_main( class configured_features *my_config)
     /* Status bar */
     pStatusBar = gtk_statusbar_new();
     UpdateStatusBar(EMU_DESMUME_NAME_AND_VERSION());
-    gtk_box_pack_end(GTK_BOX(pVBox), pStatusBar, FALSE, FALSE, 0);
+    gtk_box_pack_end(GTK_BOX(pBox), pStatusBar, FALSE, FALSE, 0);
 
     gtk_widget_show_all(pWindow);
 
