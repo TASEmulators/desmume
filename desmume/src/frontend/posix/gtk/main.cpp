@@ -2268,7 +2268,7 @@ static void GraphicsSettingsDialog() {
 
 	// 3D Core
 	gsKey = gtk_label_new("3D Core:");
-	gtk_misc_set_alignment(GTK_MISC(gsKey), 0.0, 0.5);
+	gtk_label_set_yalign(GTK_LABEL(gsKey), 0.5);
 	gtk_table_attach(GTK_TABLE(wTable), gsKey, 0, 1, 0, 1,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
@@ -2287,7 +2287,7 @@ static void GraphicsSettingsDialog() {
 
 	// 3D Texture Upscaling
 	gsKey = gtk_label_new("3D Texture Upscaling:");
-	gtk_misc_set_alignment(GTK_MISC(gsKey), 0.0, 0.5);
+	gtk_label_set_yalign(GTK_LABEL(gsKey), 0.5);
 	gtk_table_attach(GTK_TABLE(wTable), gsKey, 0, 1, 1, 2,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
@@ -2323,7 +2323,7 @@ static void GraphicsSettingsDialog() {
 #ifdef HAVE_OPENGL
 	// OpenGL Multisample
 	gsKey = gtk_label_new("Multisample Antialiasing (OpenGL):");
-	gtk_misc_set_alignment(GTK_MISC(gsKey), 0.0, 0.5);
+	gtk_label_set_yalign(GTK_LABEL(gsKey), 0.5);
 	gtk_table_attach(GTK_TABLE(wTable), gsKey, 0, 1, 4, 5,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
