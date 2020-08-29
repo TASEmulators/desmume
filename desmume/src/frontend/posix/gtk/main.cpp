@@ -963,6 +963,42 @@ static const GActionEntry app_entries[] = {
     { "about",         About },
 };
 
+static const char *toolbar =
+"<?xml version='1.0' encoding='UTF-8'?>"
+"<interface>"
+"  <requires lib='gtk+' version='3.24'/>"
+"  <object class='GtkBox' id='toolbar'>"
+"    <child>"
+"      <object class='GtkToolButton'>"
+"        <property name='label' translatable='yes'>_Open</property>"
+"        <property name='icon-name'>document-open</property>"
+"        <property name='action-name'>app.open</property>"
+"      </object>"
+"    </child>"
+"    <child>"
+"      <object class='GtkToolButton'>"
+"        <property name='label' translatable='yes'>_Run</property>"
+"        <property name='icon-name'>media-playback-start</property>"
+"        <property name='action-name'>app.run</property>"
+"      </object>"
+"    </child>"
+"    <child>"
+"      <object class='GtkToolButton'>"
+"        <property name='label' translatable='yes'>_Pause</property>"
+"        <property name='icon-name'>media-playback-pause</property>"
+"        <property name='action-name'>app.pause</property>"
+"      </object>"
+"    </child>"
+"    <child>"
+"      <object class='GtkToolButton'>"
+"        <property name='label' translatable='yes'>_Quit</property>"
+"        <property name='icon-name'>application-exit</property>"
+"        <property name='action-name'>app.quit</property>"
+"      </object>"
+"    </child>"
+"  </object>"
+"</interface>";
+
 static const char *graphics_settings =
 "<?xml version='1.0' encoding='UTF-8'?>"
 "<interface>"
@@ -1305,6 +1341,7 @@ cairo_filter_t Interpolation = CAIRO_FILTER_NEAREST;
 
 static GtkApplication *pApp;
 static GtkWidget *pWindow;
+static GtkWidget *pToolBar;
 static GtkWidget *pStatusBar;
 static GtkWidget *pDrawingArea;
 
@@ -1363,9 +1400,6 @@ static void ToggleMenuVisible(GSimpleAction *action, GVariant *parameter, gpoint
 
 static void ToggleToolbarVisible(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-#if 0
-    GtkWidget *pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
-
     GVariant *variant = g_action_get_state(G_ACTION(action));
     gboolean value = !g_variant_get_boolean(variant);
     config.view_toolbar = value;
@@ -1374,7 +1408,6 @@ static void ToggleToolbarVisible(GSimpleAction *action, GVariant *parameter, gpo
     else
       gtk_widget_hide(pToolBar);
     g_simple_action_set_state(action, g_variant_new_boolean(value));
-#endif
 }
 
 static void ToggleStatusbarVisible(GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -1391,7 +1424,6 @@ static void ToggleStatusbarVisible(GSimpleAction *action, GVariant *parameter, g
 
 static void ToggleFullscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-  GtkWidget *pToolBar = NULL; //gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
   GVariant *variant = g_action_get_state(G_ACTION(action));
   gboolean fullscreen = !g_variant_get_boolean(variant);
   config.window_fullscreen = fullscreen;
@@ -3627,9 +3659,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     SDL_TimerID limiter_timer = NULL;
 
-    GtkAccelGroup * accel_group;
     GtkWidget *pBox;
-    GtkWidget *pToolBar;
 
     /* use any language set on the command line */
     if ( my_config->firmware_language != -1) {
@@ -3785,7 +3815,11 @@ common_gtk_main(GApplication *app, gpointer user_data)
     pBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(pWindow), pBox);
 
-    accel_group = gtk_accel_group_new();
+    /* Create the toolbar */
+    GtkBuilder *builder = gtk_builder_new_from_string(toolbar, -1);
+    pToolBar = GTK_WIDGET(gtk_builder_get_object(builder, "toolbar"));
+    gtk_container_add(GTK_CONTAINER(pBox), pToolBar);
+    g_object_unref(builder);
 
     /* Update audio toggle status */
     if (my_config->disable_sound || !config.audio_enabled) {
@@ -4070,7 +4104,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
     nds_screen.swap = config.view_swap;
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "swapscreens")), g_variant_new_boolean(config.view_swap));
 
-    GtkBuilder *builder = gtk_builder_new_from_string(menu_builder, -1);
+    builder = gtk_builder_new_from_string(menu_builder, -1);
     GMenuModel *menubar = G_MENU_MODEL(gtk_builder_get_object(builder, "menubar"));
     gtk_application_set_menubar(GTK_APPLICATION(app), menubar);
     g_object_unref(builder);
