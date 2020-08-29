@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <gtk/gtk.h>
+#include <gio/gapplication.h>
 #include <gdk/gdkkeysyms.h>
 #include <SDL.h>
 #include <X11/Xlib.h>
@@ -830,7 +831,7 @@ struct nds_screen_t {
 
 struct nds_screen_t nds_screen;
 
-static BOOL regMainLoop = FALSE;
+static guint regMainLoop = 0;
 
 static inline void UpdateStatusBar (const char *message)
 {
@@ -946,8 +947,7 @@ void Launch()
     desmume_resume();
 
     if(!regMainLoop) {
-        g_idle_add_full(EMULOOP_PRIO, &EmuLoop, pWindow, NULL);
-        regMainLoop = TRUE;
+        regMainLoop = g_idle_add_full(EMULOOP_PRIO, &EmuLoop, pWindow, NULL);
     }
 
     UpdateStatusBar("Running ...");
@@ -2611,7 +2611,11 @@ public:
 static void DoQuit()
 {
     emu_halt(EMUHALT_REASON_USER_REQUESTED_HALT, NDSErrorTag_None);
-    gtk_main_quit();
+    if (regMainLoop) {
+        g_source_remove(regMainLoop);
+        regMainLoop = 0;
+    }
+    gtk_window_close(GTK_WINDOW(pWindow));
 }
 
 
@@ -2630,7 +2634,10 @@ gboolean EmuLoop(gpointer data)
       frame_mod3 = 0;
       gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME - Paused");
       fps_SecStart = 0;
-      regMainLoop = FALSE;
+      if (regMainLoop) {
+          g_source_remove(regMainLoop);
+          regMainLoop = 0;
+      }
       RedrawScreen();
       return FALSE;
     }
@@ -3027,9 +3034,11 @@ static gboolean timeout_exit_cb(gpointer data)
     return FALSE;
 }
 
-static int
-common_gtk_main( class configured_features *my_config)
+static void
+common_gtk_main(GApplication *app, gpointer user_data)
 {
+    configured_features *my_config = static_cast<configured_features*>(user_data);
+
 	config.load();
 
     driver = new GtkDriver();
@@ -3111,7 +3120,8 @@ common_gtk_main( class configured_features *my_config)
     if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO) == -1) {
         g_printerr("Error trying to initialize SDL: %s\n",
                     SDL_GetError());
-        return 1;
+        // TODO: return a non-zero exit status.
+        g_application_quit(app);
     }
     desmume_init( my_config->disable_sound || !config.audio_enabled);
 
@@ -3164,7 +3174,9 @@ common_gtk_main( class configured_features *my_config)
 #endif
 
     /* Initialize joysticks */
-    if(!init_joy()) return 1;
+    if(!init_joy())
+        // TODO: return a non-zero exit status.
+        g_application_quit(app);
 
     dTools_running = (BOOL*)malloc(sizeof(BOOL) * dTools_list_size);
     if (dTools_running != NULL) 
@@ -3183,6 +3195,7 @@ common_gtk_main( class configured_features *my_config)
     gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME");
     gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
     gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
+    gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(pWindow));
 
     g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(DoQuit), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
@@ -3495,9 +3508,9 @@ common_gtk_main( class configured_features *my_config)
     video->SetFilterParameteri(VF_PARAM_SCANLINE_D, _scanline_filter_d);
 
 	RedrawScreen();
-    /* Main loop */
-    gtk_main();
+}
 
+static void Teardown() {
     delete video;
 
 	config.save();
@@ -3528,10 +3541,7 @@ common_gtk_main( class configured_features *my_config)
 
     gdbstub_mutex_destroy();
 #endif
-
-    return EXIT_SUCCESS;
 }
-
 
 int main (int argc, char *argv[])
 {
@@ -3550,7 +3560,9 @@ int main (int argc, char *argv[])
       fprintf(stderr, "Warning: X11 not thread-safe\n");
     }
 
-  gtk_init(&argc, &argv);
+  // TODO: pass G_APPLICATION_HANDLES_COMMAND_LINE instead.
+  GtkApplication *app = gtk_application_new("org.desmume.DeSmuME", G_APPLICATION_FLAGS_NONE);
+  g_signal_connect (app, "activate", G_CALLBACK(common_gtk_main), &my_config);
 
   if ( !fill_configured_features( &my_config, argv)) {
     exit(0);
@@ -3562,23 +3574,7 @@ int main (int argc, char *argv[])
   arm_jit_sync();
   arm_jit_reset(CommonSettings.use_jit);
 #endif
-  return common_gtk_main( &my_config);
+  int ret = g_application_run(G_APPLICATION(app), argc, argv);
+  Teardown();
+  return ret;
 }
-
-#ifdef WIN32
-int WinMain (HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lpszArgument, int nFunsterStil)
-{
-  int argc = 0;
-  char *argv[] = NULL;
-
-  /*
-   * FIXME:
-   * Emulate the argc and argv main parameters. Could do this using
-   * CommandLineToArgvW and then convert the wide chars to thin chars.
-   * Or parse the wide chars directly and call common_gtk_main with a
-   * filled configuration structure.
-   */
-  main( argc, argv);
-}
-#endif
-
