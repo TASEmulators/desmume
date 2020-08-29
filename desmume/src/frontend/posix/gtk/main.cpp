@@ -637,21 +637,21 @@ GPU3DInterface *core3DList[] = {
 int multisampleSizes[] = {0, 2, 4, 8, 16, 32};
 
 static const u16 gtk_kb_cfg[NB_KEYS] = {
-    GDK_x,         // A
-    GDK_z,         // B
-    GDK_Shift_R,   // select
-    GDK_Return,    // start
-    GDK_Right,     // Right
-    GDK_Left,      // Left
-    GDK_Up,        // Up
-    GDK_Down,      // Down       
-    GDK_w,         // R
-    GDK_q,         // L
-    GDK_s,         // X
-    GDK_a,         // Y
-    GDK_p,         // DEBUG
-    GDK_o,         // BOOST
-    GDK_BackSpace, // Lid
+    GDK_KEY_x,         // A
+    GDK_KEY_z,         // B
+    GDK_KEY_Shift_R,   // select
+    GDK_KEY_Return,    // start
+    GDK_KEY_Right,     // Right
+    GDK_KEY_Left,      // Left
+    GDK_KEY_Up,        // Up
+    GDK_KEY_Down,      // Down
+    GDK_KEY_w,         // R
+    GDK_KEY_q,         // L
+    GDK_KEY_s,         // X
+    GDK_KEY_a,         // Y
+    GDK_KEY_p,         // DEBUG
+    GDK_KEY_o,         // BOOST
+    GDK_KEY_BackSpace, // Lid
 };
 
 GKeyFile *keyfile;
@@ -1867,19 +1867,19 @@ static void MenuSave(GtkMenuItem *item, gpointer slot)
 
 static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
-  if (e->keyval == GDK_Shift_L){
+  if (e->keyval == GDK_KEY_Shift_L){
       gdk_shift_pressed |= 1;
       return 1;
   }
-  if (e->keyval == GDK_Shift_R){
+  if (e->keyval == GDK_KEY_Shift_R){
       gdk_shift_pressed |= 2;
       return 1;
   }
-  if( e->keyval >= GDK_F1 && e->keyval <= GDK_F10 ){
+  if( e->keyval >= GDK_KEY_F1 && e->keyval <= GDK_KEY_F10 ){
       if(!gdk_shift_pressed)
-          loadgame((e->keyval - GDK_F1 + 1) % 10);
+          loadgame((e->keyval - GDK_KEY_F1 + 1) % 10);
       else
-          savegame((e->keyval - GDK_F1 + 1) % 10);
+          savegame((e->keyval - GDK_KEY_F1 + 1) % 10);
       return 1;
   }
   guint mask;
@@ -1903,11 +1903,11 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 
 static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
-  if (e->keyval == GDK_Shift_L){
+  if (e->keyval == GDK_KEY_Shift_L){
       gdk_shift_pressed &= ~1;
       return 1;
   }
-  if (e->keyval == GDK_Shift_R){
+  if (e->keyval == GDK_KEY_Shift_R){
       gdk_shift_pressed &= ~2;
       return 1;
   }
