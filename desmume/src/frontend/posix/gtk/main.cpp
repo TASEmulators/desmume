@@ -512,6 +512,113 @@ static const GtkRadioActionEntry rotation_entries[] = {
     { "rotate_270", "gtk-orientation-reverse-landscape", "_270",NULL, NULL, 270 },
 };
 
+static const char *graphics_settings =
+"<?xml version='1.0' encoding='UTF-8'?>"
+"<interface>"
+"  <requires lib='gtk+' version='3.24'/>"
+"  <object class='GtkGrid' id='graphics_grid'>"
+"    <child>"
+"      <object class='GtkLabel'>"
+"        <property name='label' translatable='yes'>3D Core:</property>"
+"      </object>"
+"      <packing>"
+"        <property name='left_attach'>0</property>"
+"        <property name='top_attach'>0</property>"
+"      </packing>"
+"    </child>"
+"    <child>"
+"      <object class='GtkComboBoxText' id='core_combo'>"
+"        <items>"
+"          <item translatable='yes'>Null</item>"
+"          <item translatable='yes'>SoftRasterizer</item>"
+"          <item translatable='yes'>OpenGL</item>"
+"        </items>"
+"      </object>"
+"      <packing>"
+"        <property name='left_attach'>1</property>"
+"        <property name='top_attach'>0</property>"
+"      </packing>"
+"    </child>"
+"    <child>"
+"      <object class='GtkLabel'>"
+"        <property name='label' translatable='yes'>3D Texture Upscaling:</property>"
+"      </object>"
+"      <packing>"
+"        <property name='left_attach'>0</property>"
+"        <property name='top_attach'>1</property>"
+"      </packing>"
+"    </child>"
+"    <child>"
+"      <object class='GtkComboBoxText' id='scale'>"
+"        <items>"
+"          <item translatable='yes'>×1</item>"
+"          <item translatable='yes'>×2</item>"
+"          <item translatable='yes'>×4</item>"
+"        </items>"
+"      </object>"
+"      <packing>"
+"        <property name='left_attach'>1</property>"
+"        <property name='top_attach'>1</property>"
+"      </packing>"
+"    </child>"
+"    <child>"
+"      <object class='GtkCheckButton' id='posterize'>"
+"        <property name='label' translatable='yes'>3D Texture Deposterization</property>"
+"        <property name='draw_indicator'>True</property>"
+"      </object>"
+"      <packing>"
+"        <property name='left_attach'>0</property>"
+"        <property name='top_attach'>2</property>"
+"      </packing>"
+"    </child>"
+"    <child>"
+"      <object class='GtkCheckButton' id='smoothing'>"
+"        <property name='label' translatable='yes'>3D Texture Smoothing</property>"
+"        <property name='draw_indicator'>True</property>"
+"      </object>"
+"      <packing>"
+"        <property name='left_attach'>0</property>"
+"        <property name='top_attach'>3</property>"
+"      </packing>"
+"    </child>"
+"    <child>"
+"      <object class='GtkCheckButton' id='hc_interpolate'>"
+"        <property name='label' translatable='yes'>High Resolution Color Interpolation (SoftRasterizer)</property>"
+"        <property name='draw_indicator'>True</property>"
+"      </object>"
+"      <packing>"
+"        <property name='left_attach'>1</property>"
+"        <property name='top_attach'>3</property>"
+"      </packing>"
+"    </child>"
+"    <child>"
+"      <object class='GtkLabel'>"
+"        <property name='label' translatable='yes'>Multisample Antialiasing (OpenGL):</property>"
+"      </object>"
+"      <packing>"
+"        <property name='left_attach'>0</property>"
+"        <property name='top_attach'>4</property>"
+"      </packing>"
+"    </child>"
+"    <child>"
+"      <object class='GtkComboBoxText' id='multisample'>"
+"        <items>"
+"          <item translatable='yes'>None</item>"
+"          <item translatable='yes'>2</item>"
+"          <item translatable='yes'>4</item>"
+"          <item translatable='yes'>8</item>"
+"          <item translatable='yes'>16</item>"
+"          <item translatable='yes'>32</item>"
+"        </items>"
+"      </object>"
+"      <packing>"
+"        <property name='left_attach'>1</property>"
+"        <property name='top_attach'>4</property>"
+"      </packing>"
+"    </child>"
+"  </object>"
+"</interface>";
+
 enum winsize_enum {
 	WINSIZE_SCALE = 0,
 	WINSIZE_HALF = 1,
@@ -2178,7 +2285,10 @@ static void Edit_Joystick_Controls()
 
 static void GraphicsSettingsDialog() {
 	GtkWidget *gsDialog;
-	GtkWidget *gsKey, *coreCombo, *wTable, *wPosterize, *wScale, *wSmoothing, *wMultisample, *wHCInterpolate;
+	GtkBox *wBox;
+	GtkGrid *wGrid;
+	GtkComboBox *coreCombo, *wScale, *wMultisample;
+	GtkToggleButton *wPosterize, *wSmoothing, *wHCInterpolate;
 
 	gsDialog = gtk_dialog_new_with_buttons("Graphics Settings",
 			GTK_WINDOW(pWindow),
@@ -2189,97 +2299,44 @@ static void GraphicsSettingsDialog() {
 			GTK_RESPONSE_CANCEL,
 			NULL);
 
+	GtkBuilder *builder = gtk_builder_new_from_string(graphics_settings, -1);
+	wBox = GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(gsDialog)));
+	wGrid = GTK_GRID(gtk_builder_get_object(builder, "graphics_grid"));
+	gtk_box_pack_start(wBox, GTK_WIDGET(wGrid), TRUE, FALSE, 0);
+	coreCombo = GTK_COMBO_BOX(gtk_builder_get_object(builder, "core_combo"));
+	wScale = GTK_COMBO_BOX(gtk_builder_get_object(builder, "scale"));
+	wMultisample = GTK_COMBO_BOX(gtk_builder_get_object(builder, "multisample"));
+	wPosterize = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "posterize"));
+	wSmoothing = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "smoothing"));
+	wHCInterpolate = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "hc_interpolate"));
+	g_object_unref(builder);
 
-	wTable = gtk_table_new(2 ,2, TRUE);
-	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(gsDialog))), wTable, TRUE, FALSE, 0);
-
-	// 3D Core
-	gsKey = gtk_label_new("3D Core:");
-	gtk_label_set_yalign(GTK_LABEL(gsKey), 0.5);
-	gtk_table_attach(GTK_TABLE(wTable), gsKey, 0, 1, 0, 1,
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
-
-	coreCombo = gtk_combo_box_text_new();
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 0, "Null");
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 1, "SoftRasterizer");
-#ifdef HAVE_OPENGL
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 2, "OpenGL");
+#ifndef HAVE_OPENGL
+	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 2);
+	gtk_grid_remove_row(wGrid, 4);
 #endif
-	gtk_combo_box_set_active(GTK_COMBO_BOX(coreCombo), cur3DCore);
-	gtk_table_attach(GTK_TABLE(wTable), coreCombo, 1, 2, 0, 1,
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
-
-
-	// 3D Texture Upscaling
-	gsKey = gtk_label_new("3D Texture Upscaling:");
-	gtk_label_set_yalign(GTK_LABEL(gsKey), 0.5);
-	gtk_table_attach(GTK_TABLE(wTable), gsKey, 0, 1, 1, 2,
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
-
-	wScale = gtk_combo_box_text_new();
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wScale), 0, "x1");
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wScale), 1, "x2");
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wScale), 2, "x4");
+	gtk_combo_box_set_active(coreCombo, cur3DCore);
 
 	// The shift it work for scale up to 4. For scaling more than 4, a mapping function is required
-	gtk_combo_box_set_active(GTK_COMBO_BOX(wScale), CommonSettings.GFX3D_Renderer_TextureScalingFactor >> 1);
-	gtk_table_attach(GTK_TABLE(wTable), wScale, 1, 2, 1, 2,
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
-
+	gtk_combo_box_set_active(wScale, CommonSettings.GFX3D_Renderer_TextureScalingFactor >> 1);
 
 	// 3D Texture Deposterization
-	wPosterize = gtk_check_button_new_with_label("3D Texture Deposterization");
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wPosterize), CommonSettings.GFX3D_Renderer_TextureDeposterize);
-	gtk_table_attach(GTK_TABLE(wTable), wPosterize, 0, 1, 2, 3,
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 0, 0);
-
+	gtk_toggle_button_set_active(wPosterize, CommonSettings.GFX3D_Renderer_TextureDeposterize);
 
 	// 3D Texture Smoothing
-	wSmoothing = gtk_check_button_new_with_label("3D Texture Smoothing");
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wSmoothing), CommonSettings.GFX3D_Renderer_TextureSmoothing);
-	gtk_table_attach(GTK_TABLE(wTable), wSmoothing, 0, 1, 3, 4,
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 0, 0);
-
+	gtk_toggle_button_set_active(wSmoothing, CommonSettings.GFX3D_Renderer_TextureSmoothing);
 
 #ifdef HAVE_OPENGL
 	// OpenGL Multisample
-	gsKey = gtk_label_new("Multisample Antialiasing (OpenGL):");
-	gtk_label_set_yalign(GTK_LABEL(gsKey), 0.5);
-	gtk_table_attach(GTK_TABLE(wTable), gsKey, 0, 1, 4, 5,
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
-
-	wMultisample = gtk_combo_box_text_new();
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wMultisample), 0, "None");
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wMultisample), 1, "2");
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wMultisample), 2, "4");
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wMultisample), 3, "8");
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wMultisample), 4, "16");
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wMultisample), 5, "32");
-
 	int currentMultisample = CommonSettings.GFX3D_Renderer_MultisampleSize;
 	int currentActive = 0;
 	// find smallest option that is larger than current value, i.e. round up to power of 2
 	while (multisampleSizes[currentActive] < currentMultisample && currentActive < 5) { currentActive++; }
-	gtk_combo_box_set_active(GTK_COMBO_BOX(wMultisample), currentActive);
-	gtk_table_attach(GTK_TABLE(wTable), wMultisample, 1, 2, 4, 5,
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
+	gtk_combo_box_set_active(wMultisample, currentActive);
 #endif
 
 	// SoftRasterizer High Color Interpolation
-	wHCInterpolate = gtk_check_button_new_with_label("High Resolution Color Interpolation (SoftRasterizer)");
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wHCInterpolate), CommonSettings.GFX3D_HighResolutionInterpolateColor);
-	gtk_table_attach(GTK_TABLE(wTable), wHCInterpolate, 1, 2, 3, 4,
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
-			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 10, 0);
-
+	gtk_toggle_button_set_active(wHCInterpolate, CommonSettings.GFX3D_HighResolutionInterpolateColor);
 
 	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(gsDialog)));
 
@@ -2287,7 +2344,7 @@ static void GraphicsSettingsDialog() {
     case GTK_RESPONSE_OK:
     // Start: OK Response block
     {
-    	int sel3DCore = gtk_combo_box_get_active(GTK_COMBO_BOX(coreCombo));
+    	int sel3DCore = gtk_combo_box_get_active(coreCombo);
 
     	// Change only if needed
 		if (sel3DCore != cur3DCore)
@@ -2323,7 +2380,7 @@ static void GraphicsSettingsDialog() {
 
 		size_t scale = 1;
 
-		switch (gtk_combo_box_get_active(GTK_COMBO_BOX(wScale))){
+		switch (gtk_combo_box_get_active(wScale)){
 		case 1:
 			scale = 2;
 			break;
@@ -2333,12 +2390,12 @@ static void GraphicsSettingsDialog() {
 		default:
 			break;
 		}
-		CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wPosterize));
-		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wSmoothing));
+		CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize = gtk_toggle_button_get_active(wPosterize);
+		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(wSmoothing);
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
-		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wHCInterpolate));
+		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(wHCInterpolate);
 #ifdef HAVE_OPENGL
-		int selectedMultisample = gtk_combo_box_get_active(GTK_COMBO_BOX(wMultisample));
+		int selectedMultisample = gtk_combo_box_get_active(wMultisample);
 		config.multisamplingSize = multisampleSizes[selectedMultisample];
 		config.multisampling = selectedMultisample != 0;
 		CommonSettings.GFX3D_Renderer_MultisampleSize = multisampleSizes[selectedMultisample];
