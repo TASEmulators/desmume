@@ -1948,22 +1948,22 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 
 /////////////////////////////// SET AUDIO VOLUME //////////////////////////////////////
 
-static void CallbackSetAudioVolume(GtkWidget *hscale, gpointer data)
+static void CallbackSetAudioVolume(GtkWidget *scale, gpointer data)
 {
-	SNDSDLSetAudioVolume(gtk_range_get_value(GTK_RANGE(hscale)));
+	SNDSDLSetAudioVolume(gtk_range_get_value(GTK_RANGE(scale)));
 	config.audio_volume = SNDSDLGetAudioVolume();
 }
 
 static void SetAudioVolume()
 {
 	GtkWidget *dialog = NULL;
-	GtkWidget *hscale = NULL;
+	GtkWidget *scale = NULL;
 	int audio_volume = SNDSDLGetAudioVolume();
 	dialog = gtk_dialog_new_with_buttons("Set audio volume", GTK_WINDOW(pWindow), GTK_DIALOG_MODAL, "_OK", GTK_RESPONSE_OK, "_Cancel", GTK_RESPONSE_CANCEL, NULL);
-	hscale = gtk_hscale_new_with_range(0, SDL_MIX_MAXVOLUME, 1);
-	gtk_range_set_value(GTK_RANGE(hscale), SNDSDLGetAudioVolume());
-	g_signal_connect(G_OBJECT(hscale), "value-changed", G_CALLBACK(CallbackSetAudioVolume), NULL);
-	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), hscale, TRUE, FALSE, 0);
+	scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, SDL_MIX_MAXVOLUME, 1);
+	gtk_range_set_value(GTK_RANGE(scale), SNDSDLGetAudioVolume());
+	g_signal_connect(G_OBJECT(scale), "value-changed", G_CALLBACK(CallbackSetAudioVolume), NULL);
+	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), scale, TRUE, FALSE, 0);
 	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(dialog)));
 	switch(gtk_dialog_run(GTK_DIALOG(dialog)))
 	{
@@ -2197,7 +2197,7 @@ static void EmulationSettingsDialog(){
     gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(esDialog))), esKey,TRUE, FALSE, 0);
 
     GtkAdjustment* JITBlockSizeAdjustment=(GtkAdjustment*)gtk_adjustment_new(config.jit_max_block_size,1,100,1,5,0);
-    esKey=gtk_hscale_new(JITBlockSizeAdjustment);
+    esKey=gtk_scale_new(GTK_ORIENTATION_HORIZONTAL, JITBlockSizeAdjustment);
     gtk_scale_set_digits((GtkScale*)esKey,0);
     g_signal_connect(G_OBJECT(JITBlockSizeAdjustment),"value_changed",G_CALLBACK(JITMaxBlockSizeChanged),NULL);
     gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(esDialog))), esKey,TRUE, FALSE, 0);
