@@ -977,14 +977,10 @@ void Pause()
 static void LoadStateDialog()
 {
     GtkFileFilter *pFilter_ds, *pFilter_any;
-    GtkWidget *pFileSelection;
-    GtkWidget *pParent;
-    gchar *sPath;
+    GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
         Pause();
-
-    pParent = GTK_WIDGET(pWindow);
 
     pFilter_ds = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_ds, "*.ds*");
@@ -995,26 +991,22 @@ static void LoadStateDialog()
     gtk_file_filter_set_name(pFilter_any, "All files");
 
     /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_dialog_new("Load State From ...",
-            GTK_WINDOW(pParent),
+    pFileSelection = gtk_file_chooser_native_new("Load State From ...",
+            GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_OPEN,
-            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-            GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-            NULL);
-
-    /* Only the dialog window is accepting events: */
-    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+            "_Open", "_Cancel");
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_ds);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
     /* Showing the window */
-    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-    case GTK_RESPONSE_OK:
-        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+    int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
+    if (response == GTK_RESPONSE_ACCEPT) {
+        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
+        gchar *sPath = g_file_get_path(file);
 
         if(savestate_load(sPath) == false ) {
-            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,
                     GTK_BUTTONS_OK,
@@ -1026,24 +1018,17 @@ static void LoadStateDialog()
         }
 
         g_free(sPath);
-        break;
-    default:
-        break;
     }
-    gtk_widget_destroy(pFileSelection);
+    g_object_unref(pFileSelection);
 }
 
 static void RecordMovieDialog()
 {
  GtkFileFilter *pFilter_dsm, *pFilter_any;
-    GtkWidget *pFileSelection;
-    GtkWidget *pParent;
-    gchar *sPath;
+    GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
         Pause();
-
-    pParent = GTK_WIDGET(pWindow);
 
     pFilter_dsm = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_dsm, "*.dsm*");
@@ -1054,31 +1039,25 @@ static void RecordMovieDialog()
     gtk_file_filter_set_name(pFilter_any, "All files");
 
     /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_dialog_new("Save Movie To ...",
-            GTK_WINDOW(pParent),
+    pFileSelection = gtk_file_chooser_native_new("Save Movie To ...",
+            GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_SAVE,
-            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
-            NULL);
+            "_Save", "_Cancel");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
-
-    /* Only the dialog window is accepting events: */
-    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_dsm);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
     /* Showing the window */
-    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-    case GTK_RESPONSE_OK:
-        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+    int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
+    if (response == GTK_RESPONSE_ACCEPT) {
+        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
+        gchar *sPath = g_file_get_path(file);
+
         FCEUI_SaveMovie(sPath,L"",START_BLANK,"", FCEUI_MovieGetRTCDefault());
         g_free(sPath);
-        break;
-    default:
-        break;
     }
-    gtk_widget_destroy(pFileSelection);
+    g_object_unref(pFileSelection);
 }
 
 static void StopMovie()
@@ -1089,14 +1068,10 @@ static void StopMovie()
 static void PlayMovieDialog()
 {
    GtkFileFilter *pFilter_dsm, *pFilter_any;
-    GtkWidget *pFileSelection;
-    GtkWidget *pParent;
-    gchar *sPath;
+    GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
         Pause();
-
-    pParent = GTK_WIDGET(pWindow);
 
     pFilter_dsm = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_dsm, "*.dsm*");
@@ -1107,46 +1082,35 @@ static void PlayMovieDialog()
     gtk_file_filter_set_name(pFilter_any, "All files");
 
     /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_dialog_new("Play movie from...",
-            GTK_WINDOW(pParent),
+    pFileSelection = gtk_file_chooser_native_new("Play movie from...",
+            GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_OPEN,
-            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-            GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-            NULL);
+            "_Open", "_Cancel");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
-
-    /* Only the dialog window is accepting events: */
-    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_dsm);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
     /* Showing the window */
-    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-    case GTK_RESPONSE_OK:
-        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+    int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
+    if (response == GTK_RESPONSE_ACCEPT) {
+        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
+        gchar *sPath = g_file_get_path(file);
 
 		FCEUI_LoadMovie(sPath,true,false,-1);
 
         g_free(sPath);
-        break;
-    default:
-        break;
     }
-    gtk_widget_destroy(pFileSelection);
+    g_object_unref(pFileSelection);
 }
 
 static void SaveStateDialog()
 {
     GtkFileFilter *pFilter_ds, *pFilter_any;
-    GtkWidget *pFileSelection;
-    GtkWidget *pParent;
-    gchar *sPath;
+    GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
         Pause();
-
-    pParent = GTK_WIDGET(pWindow);
 
     pFilter_ds = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_ds, "*.ds*");
@@ -1157,27 +1121,23 @@ static void SaveStateDialog()
     gtk_file_filter_set_name(pFilter_any, "All files");
 
     /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_dialog_new("Save State To ...",
-            GTK_WINDOW(pParent),
+    pFileSelection = gtk_file_chooser_native_new("Save State To ...",
+            GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_SAVE,
-            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
-            NULL);
+            "_Save", "_Cancel");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
-
-    /* Only the dialog window is accepting events: */
-    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_ds);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
     /* Showing the window */
-    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-    case GTK_RESPONSE_OK:
-        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+    int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
+    if (response == GTK_RESPONSE_ACCEPT) {
+        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
+        gchar *sPath = g_file_get_path(file);
 
         if(savestate_save(sPath) == false ) {
-            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,
                     GTK_BUTTONS_OK,
@@ -1189,24 +1149,17 @@ static void SaveStateDialog()
         }
 
         g_free(sPath);
-        break;
-    default:
-        break;
     }
-    gtk_widget_destroy(pFileSelection);
+    g_object_unref(pFileSelection);
 }
 
 static void RecordAV_x264()
 {
     GtkFileFilter *pFilter_mkv, *pFilter_mp4, *pFilter_any;
-    GtkWidget *pFileSelection;
-    GtkWidget *pParent;
-    gchar *sPath;
+    GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
         Pause();
-
-    pParent = GTK_WIDGET(pWindow);
 
     pFilter_mkv = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_mkv, "*.mkv");
@@ -1221,30 +1174,26 @@ static void RecordAV_x264()
     gtk_file_filter_set_name(pFilter_any, "All files");
 
     /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_dialog_new("Save video...",
-            GTK_WINDOW(pParent),
+    pFileSelection = gtk_file_chooser_native_new("Save video...",
+            GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_SAVE,
-            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
-            NULL);
+            "_Save", "_Cancel");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
-
-    /* Only the dialog window is accepting events: */
-    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_mkv);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_mp4);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
     /* Showing the window */
-    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-    case GTK_RESPONSE_OK:
-        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+    int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
+    if (response == GTK_RESPONSE_ACCEPT) {
+        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
+        gchar *sPath = g_file_get_path(file);
 
         if(avout_x264.begin(sPath)) {
             gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "record_x264"), FALSE);
         } else {
-            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,
                     GTK_BUTTONS_OK,
@@ -1254,24 +1203,17 @@ static void RecordAV_x264()
         }
 
         g_free(sPath);
-        break;
-    default:
-        break;
     }
-    gtk_widget_destroy(pFileSelection);
+    g_object_unref(pFileSelection);
 }
 
 static void RecordAV_flac()
 {
     GtkFileFilter *pFilter_flac, *pFilter_any;
-    GtkWidget *pFileSelection;
-    GtkWidget *pParent;
-    gchar *sPath;
+    GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
         Pause();
-
-    pParent = GTK_WIDGET(pWindow);
 
     pFilter_flac = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_flac, "*.flac");
@@ -1282,29 +1224,25 @@ static void RecordAV_flac()
     gtk_file_filter_set_name(pFilter_any, "All files");
 
     /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_dialog_new("Save audio...",
-            GTK_WINDOW(pParent),
+    pFileSelection = gtk_file_chooser_native_new("Save audio...",
+            GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_SAVE,
-            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
-            NULL);
+            "_Save", "_Cancel");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
-
-    /* Only the dialog window is accepting events: */
-    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_flac);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
     /* Showing the window */
-    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-    case GTK_RESPONSE_OK:
-        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+    int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
+    if (response == GTK_RESPONSE_ACCEPT) {
+        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
+        gchar *sPath = g_file_get_path(file);
 
         if(avout_flac.begin(sPath)) {
             gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "record_flac"), FALSE);
         } else {
-            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,
                     GTK_BUTTONS_OK,
@@ -1314,11 +1252,8 @@ static void RecordAV_flac()
         }
 
         g_free(sPath);
-        break;
-    default:
-        break;
     }
-    gtk_widget_destroy(pFileSelection);
+    g_object_unref(pFileSelection);
 }
 
 static void RecordAV_stop() {
@@ -1331,14 +1266,10 @@ static void RecordAV_stop() {
 static void OpenNdsDialog()
 {
     GtkFileFilter *pFilter_nds, *pFilter_dsgba, *pFilter_any;
-    GtkWidget *pFileSelection;
-    GtkWidget *pParent;
-    gchar *sPath;
+    GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
         Pause();
-
-    pParent = GTK_WIDGET(pWindow);
 
     pFilter_nds = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_nds, "*.[nN][dD][sS]");
@@ -1359,14 +1290,10 @@ static void OpenNdsDialog()
     gtk_file_filter_set_name(pFilter_any, "All files");
 
     /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_dialog_new("Open...",
-            GTK_WINDOW(pParent),
+    pFileSelection = gtk_file_chooser_native_new("Open...",
+            GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_OPEN,
-            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-            GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-            NULL);
-    /* Only the dialog window is accepting events: */
-    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+            "_Open", "_Cancel");
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_nds);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_dsgba);
@@ -1375,11 +1302,13 @@ static void OpenNdsDialog()
     gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(pFileSelection), g_get_home_dir());
 
     /* Showing the window */
-    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-    case GTK_RESPONSE_OK:
-        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+    int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
+    if (response == GTK_RESPONSE_ACCEPT) {
+        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
+        gchar *sPath = g_file_get_path(file);
+
         if(Open((const char*)sPath) < 0) {
-            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,
                     GTK_BUTTONS_OK,
@@ -1406,11 +1335,8 @@ static void OpenNdsDialog()
         }
 
         g_free(sPath);
-        break;
-    default:
-        break;
     }
-    gtk_widget_destroy(pFileSelection);
+    g_object_unref(pFileSelection);
 }
 
 static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
@@ -2525,14 +2451,10 @@ static void Printscreen()
 static void SelectFirmwareFile()
 {
     GtkFileFilter *pFilter_nds, *pFilter_bin, *pFilter_any;
-    GtkWidget *pFileSelection;
-    GtkWidget *pParent;
-    gchar *sPath;
+    GtkFileChooserNative *pFileSelection;
 
     BOOL oldState = desmume_running();
     Pause();
-
-    pParent = GTK_WIDGET(pWindow);
 
     pFilter_nds = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
@@ -2546,29 +2468,25 @@ static void SelectFirmwareFile()
     gtk_file_filter_add_pattern(pFilter_any, "*");
     gtk_file_filter_set_name(pFilter_any, "All files");
 
-    pFileSelection = gtk_file_chooser_dialog_new("Load firmware...",
-            GTK_WINDOW(pParent),
+    pFileSelection = gtk_file_chooser_native_new("Load firmware...",
+            GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_OPEN,
-            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-            GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-            NULL);
-    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+            "_Open", "_Cancel");
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_nds);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_bin);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
-    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-    case GTK_RESPONSE_OK:
-        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+    int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
+    if (response == GTK_RESPONSE_ACCEPT) {
+        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
+        gchar *sPath = g_file_get_path(file);
+
         CommonSettings.UseExtFirmware = true;
         strncpy(CommonSettings.ExtFirmwarePath, (const char*)sPath, g_utf8_strlen(sPath, -1));
         g_free(sPath);
-        break;
-    default:
-        break;
     }
-    gtk_widget_destroy(pFileSelection);
+    g_object_unref(pFileSelection);
 
     if(oldState) Launch();
 }
