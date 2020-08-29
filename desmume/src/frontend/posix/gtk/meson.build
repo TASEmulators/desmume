@@ -1,7 +1,7 @@
-dep_gtk2 = dependency('gtk+-2.0')
+dep_gtk3 = dependency('gtk+-3.0')
 dep_x11 = dependency('x11')
 
-gtk_dependencies = dependencies + [dep_gtk2, dep_x11]
+gtk_dependencies = dependencies + [dep_gtk3, dep_x11]
 
 desmume_src = [
   'avout_pipe_base.cpp',
@@ -28,6 +28,7 @@ includes = [
 
 executable('desmume',
   desmume_src,
+  cpp_args: ['-DGDK_DISABLE_DEPRECATION_WARNINGS'],
   dependencies: gtk_dependencies,
   include_directories: includes,
   link_with: libdesmume,
