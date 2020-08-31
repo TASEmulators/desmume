@@ -1414,7 +1414,7 @@ GPUEngineBase::GPUEngineBase()
 	if (CommonSettings.num_cores > 1)
 	{
 		_asyncClearTask = new Task;
-		_asyncClearTask->start(false);
+		_asyncClearTask->start(false, 0, "async clear");
 	}
 	else
 	{
@@ -8717,7 +8717,7 @@ GPUSubsystem::GPUSubsystem()
 	if (CommonSettings.num_cores > 1)
 	{
 		_asyncEngineBufferSetupTask = new Task;
-		_asyncEngineBufferSetupTask->start(false);
+		_asyncEngineBufferSetupTask->start(false, 0, "setup gpu bufs");
 	}
 	else
 	{

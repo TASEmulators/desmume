@@ -188,7 +188,9 @@ void VideoFilter::__InstanceInit(size_t srcWidth, size_t srcHeight, VideoFilterT
 		__vfThread[i].param.filterFunction = NULL;
 		
 		__vfThread[i].task = new Task;
-		__vfThread[i].task->start(false);
+		char name[16];
+		snprintf(name, 16, "video filter %d", i);
+		__vfThread[i].task->start(false, 0, name);
 	}
 	
 	__vfFunc = _vfAttributes.filterFunction;
