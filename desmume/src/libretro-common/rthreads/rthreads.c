@@ -270,8 +270,6 @@ int sthread_detach(sthread_t *thread)
  * @thread to terminate. If that thread has already terminated, then
  * it will return immediately. The thread specified by @thread must
  * be joinable.
- *
- * Returns: 0 on success, otherwise it returns a non-zero error number.
  */
 void sthread_join(sthread_t *thread)
 {
