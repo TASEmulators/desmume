@@ -30,7 +30,7 @@ public:
 
 	// initialize task runner
 	void start(bool spinlock);
-	void start(bool spinlock, int threadPriority);
+	void start(bool spinlock, int threadPriority, const char *name = nullptr);
 
 	//execute some work
 	void execute(const TWork &work, void* param);
