@@ -303,6 +303,24 @@ bool sthread_isself(sthread_t *thread)
 }
 
 /**
+ * sthread_set_name:
+ * @thread                  : pointer to thread object
+ * @name                    : name to define for the thread (at most
+ *                            15 bytes)
+ *
+ * Set the thread name, useful for debugging.
+ */
+void sthread_setname(sthread_t *thread, const char *name)
+{
+   if (!thread)
+      return;
+   // TODO: implement that for Windows too.
+#ifndef USE_WIN32_THREADS
+   pthread_setname_np(thread->id, name);
+#endif
+}
+
+/**
  * slock_new:
  *
  * Create and initialize a new mutex. Must be manually
