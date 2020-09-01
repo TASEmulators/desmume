@@ -170,7 +170,9 @@ static void Modify_PriInterpolation(GSimpleAction *action, GVariant *parameter, 
 static void Modify_Interpolation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void SetOrientation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void ToggleLayerVisibility(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+#ifdef HAVE_LIBAGG
 static void ToggleHudDisplay(GtkToggleAction* action, gpointer data);
+#endif
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 #endif
