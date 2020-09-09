@@ -4217,14 +4217,15 @@ common_gtk_main(GApplication *app, gpointer user_data)
         // TODO: Is that enough?  Maybe allocate instead?
         char action[1024];
         sprintf(action, "app.recent('%s')", uri);
-        g_menu_append(G_MENU(open_recent_menu), name, action);
+        g_menu_append(G_MENU(user_data), name, action);
 
         gtk_recent_info_unref(info);
-    }, NULL);
+    }, open_recent_menu);
     g_list_free(items);
 
     /* Creating the place for showing DS screens */
     pDrawingArea = gtk_drawing_area_new();
+    gtk_widget_set_vexpand(pDrawingArea, TRUE);
 
     /* This toggle action must not be set active before the pDrawingArea initialization to avoid a GTK warning */
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "gap")), g_variant_new_boolean(config.view_gap));
