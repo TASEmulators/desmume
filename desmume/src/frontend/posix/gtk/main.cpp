@@ -4225,6 +4225,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     /* Creating the place for showing DS screens */
     pDrawingArea = gtk_drawing_area_new();
+    gtk_widget_set_vexpand(pDrawingArea, TRUE);
 
     /* This toggle action must not be set active before the pDrawingArea initialization to avoid a GTK warning */
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "gap")), g_variant_new_boolean(config.view_gap));
