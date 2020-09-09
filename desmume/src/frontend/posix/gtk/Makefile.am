@@ -6,8 +6,8 @@ AM_CPPFLAGS += $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS) $(ALSA_CFLAGS) $(LI
 Applicationsdir = $(datadir)/applications
 Applications_DATA = desmume.desktop
 pixmapdir = $(datadir)/pixmaps
-pixmap_DATA = DeSmuME.xpm
-EXTRA_DIST = DeSmuME.xpm desmume.desktop
+pixmap_DATA = DeSmuME.svg
+EXTRA_DIST = DeSmuME.svg desmume.desktop
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
 	avout.h \

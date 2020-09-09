@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 32 32">
+ <linearGradient id="a" x1="0" x2="0" y1="2" y2="30" gradientUnits="userSpaceOnUse">
+  <stop offset="0" stop-color="#f6f6fb"/>
+  <stop offset="1" stop-color="#8080c0"/>
+ </linearGradient>
+ <path fill="#000" d="M3 0 H 23 V 20 H 26 V 32 H 8 V 22 H 5 V 15 H 0 V 2 H 3 Z"/>
+ <path fill="url(#a)" d="M5 2 V 4 H 2 V 13 H 7 V 2 H 5 Z M4 5 H 5 V 12 H 4 V 5 Z"/>
+ <path fill="url(#a)" d="M9 2 H 14 v 1 h -3 v 1 h 3 V 5 h -3 v 7 h 1 V 6 h 2 V 13 H 9 Z"/>
+ <path fill="url(#a)" d="M16 2 h 5 v 1 h -3 v 1 h 3 v 9 H 16 V 6 h 2 v 6 h 1 V 5 h -3 Z"/>
+ <path fill="url(#a)" d="M7 14 h 8 v 6 h -2 v -5 h -1 v 5 H 10 V 15 H 9 v 5 H 7 Z"/>
+ <path fill="url(#a)" d="M16 14 h 2 v 5 h 1 v -5 h 2 v 6 h -5 Z"/>
+ <path fill="url(#a)" d="M19 22 h 5 v 1 h -3 v 1 h 3 v 1 h -3 v 4 h 1 v -3 h 2 v 4 h -5 Z"/>
+ <path fill="url(#a)" d="M10 22 h 8 v 8 h -2 v -7 h -1 v 7 h -2 v -7 h -1 v 7 H 10 Z"/>
+</svg>

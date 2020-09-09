@@ -88,8 +88,6 @@
 
 #include "config.h"
 
-#include "DeSmuME.xpm"
-
 #undef GPOINTER_TO_INT
 #define GPOINTER_TO_INT(p) ((gint)  (glong) (p))
 
@@ -1515,8 +1513,6 @@ static inline void UpdateStatusBar (const char *message)
 
 static void About(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    GdkPixbuf * pixbuf = gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm);
-
     static const gchar *authors[] = {
     	"yopyop (original author)",
     	"DeSmuME team",
@@ -1527,12 +1523,10 @@ static void About(GSimpleAction *action, GVariant *parameter, gpointer user_data
             "program-name", "DeSmuME",
             "version", EMU_DESMUME_VERSION_STRING() + 1, // skip space
             "website", "http://desmume.org",
-            "logo", pixbuf,
+            "logo-icon-name", "DeSmuME",
             "comments", "Nintendo DS emulator based on work by Yopyop",
             "authors", authors,
             NULL);
-
-    g_object_unref(pixbuf);
 }
 
 static void ToggleMenuVisible(GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -3918,7 +3912,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
     pWindow = gtk_application_window_new(GTK_APPLICATION(app));
     gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME");
     gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
-    gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
+    gtk_window_set_icon_name(GTK_WINDOW (pWindow), "DeSmuME");
 
     g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(DoQuit), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
