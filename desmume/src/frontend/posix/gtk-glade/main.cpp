@@ -21,6 +21,8 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include <X11/Xlib.h>
+
 #include "callbacks.h"
 #include "callbacks_IO.h"
 #include "dTools/callbacks_dtools.h"

@@ -276,7 +276,7 @@ static void cheatListEnd()
 {
     cheats->save();
     if(shouldBeRunning)
-        Launch();
+        Launch(NULL, NULL, NULL);
 }
 
 static GtkListStore *cheat_list_populate()
@@ -305,13 +305,13 @@ static GtkWidget *cheat_list_create_ui()
 {
     GtkListStore *store = cheat_list_populate();
     GtkWidget *tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (store));
-    GtkWidget *vbox = gtk_vbox_new(FALSE, 1);
-    GtkWidget *hbbox = gtk_hbutton_box_new();
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+    GtkWidget *hbbox = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
     GtkWidget *button;
   
-    gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(tree));
-    gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(hbbox));
-    gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(vbox));
+    gtk_container_add(GTK_CONTAINER(box), GTK_WIDGET(tree));
+    gtk_container_add(GTK_CONTAINER(box), GTK_WIDGET(hbbox));
+    gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(box));
 
     button = gtk_button_new_with_label("add cheat");
     g_signal_connect (button, "clicked", G_CALLBACK (cheat_list_add_cheat), store);
@@ -331,10 +331,10 @@ static GtkWidget *cheat_list_create_ui()
     return tree;
 }
 
-void CheatList ()
+void CheatList(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     shouldBeRunning = desmume_running();
-    Pause();
+    Pause(NULL, NULL, NULL);
     win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win),"Cheat List");
     gtk_window_set_modal(GTK_WINDOW(win), TRUE);
@@ -352,15 +352,15 @@ void CheatList ()
 static void cheat_search_create_ui()
 {
     GtkWidget *button;
-    GtkWidget *vbox = gtk_vbox_new(FALSE, 1);
-    GtkWidget *hbbox = gtk_hbutton_box_new();
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+    GtkWidget *hbbox = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
     GtkWidget *b;
     
-    gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(vbox));
+    gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(box));
 
     {
-        b = gtk_hbox_new(FALSE, 1);
-        gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(b));
+        b = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+        gtk_container_add(GTK_CONTAINER(box), GTK_WIDGET(b));
 
         {
             GtkTreeModel * size_model;
@@ -381,8 +381,8 @@ static void cheat_search_create_ui()
             gtk_container_add(GTK_CONTAINER(b), w);
         }
 
-        b = gtk_hbox_new(FALSE, 1);
-        gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(b));
+        b = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+        gtk_container_add(GTK_CONTAINER(box), GTK_WIDGET(b));
 
         {
             GtkWidget *w;
@@ -407,7 +407,7 @@ static void cheat_search_create_ui()
 
     // BUTTONS:
 
-    gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(hbbox));
+    gtk_container_add(GTK_CONTAINER(box), GTK_WIDGET(hbbox));
 
     button = gtk_button_new_with_label("add cheats");
 //    g_signal_connect (button, "clicked", g_callback (cheat_list_add_cheat), store);
@@ -417,18 +417,18 @@ static void cheat_search_create_ui()
 //    g_signal_connect (button, "clicked", g_callback (cheat_list_add_cheat), store);
     gtk_container_add(GTK_CONTAINER(hbbox),button);
 
-//    GtkWidget *vbox = gtk_vbox_new(FALSE, 1);
-//    gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(vbox));
+//    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+//    gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(box));
 }
 
 static void cheatSearchEnd()
 {
 }
 
-void CheatSearch ()
+void CheatSearch(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     shouldBeRunning = desmume_running();
-    Pause();
+    Pause(NULL, NULL, NULL);
     win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win),"Cheat Search");
     gtk_window_set_modal(GTK_WINDOW(win), TRUE);
