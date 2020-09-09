@@ -133,6 +133,7 @@ static void RecordMovieDialog(GSimpleAction *action, GVariant *parameter, gpoint
 static void PlayMovieDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void StopMovie(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void OpenNdsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void OpenRecent(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void SaveStateDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void LoadStateDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 void Launch(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -195,7 +196,7 @@ static const char *menu_builder =
 "          <attribute name='action'>app.open</attribute>"
 "          <attribute name='accel'>&lt;Control&gt;o</attribute>"
 "        </item>"
-"        <submenu>"
+"        <submenu id='open_recent'>"
 "          <attribute name='label' translatable='yes'>Open _recent</attribute>"
 "        </submenu>"
 "      </section>"
@@ -1030,6 +1031,7 @@ static const char *menu_builder =
 static const GActionEntry app_entries[] = {
     // File
     { "open",          OpenNdsDialog },
+    { "recent",        OpenRecent, "s" },
     { "run",           Launch },
     { "pause",         Pause },
     { "reset",         Reset },
@@ -1996,16 +1998,16 @@ static void OpenNdsDialog(GSimpleAction *action, GVariant *parameter, gpointer u
     g_object_unref(pFileSelection);
 }
 
-static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
+static void OpenRecent(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkRecentManager *recent_manager = gtk_recent_manager_get_default();
-    gchar *uri, *romname;
+    gchar *romname;
     int ret;
 
     if (desmume_running())
         Pause(NULL, NULL, NULL);
 
-    uri = gtk_recent_chooser_get_current_uri(chooser);
+    const char *uri = g_variant_get_string(parameter, NULL);
     romname = g_filename_from_uri(uri, NULL, NULL);
     ret = Open(romname);
     if (ret > 0) {
@@ -2022,7 +2024,6 @@ static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
         gtk_widget_destroy(pDialog);
     }
 
-    g_free(uri);
     g_free(romname);
 }
 
@@ -4193,23 +4194,34 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     builder = gtk_builder_new_from_string(menu_builder, -1);
     GMenuModel *menubar = G_MENU_MODEL(gtk_builder_get_object(builder, "menubar"));
+    GMenuModel *open_recent_menu = G_MENU_MODEL(gtk_builder_get_object(builder, "open_recent"));
     savestates_menu = G_MENU_MODEL(gtk_builder_get_object(builder, "savestates"));
     loadstates_menu = G_MENU_MODEL(gtk_builder_get_object(builder, "loadstates"));
     gtk_application_set_menubar(GTK_APPLICATION(app), menubar);
     g_object_unref(builder);
 	pApp = GTK_APPLICATION(app);
 
-#if 0
-    {
-        GtkWidget * recentMenu = gtk_ui_manager_get_widget (ui_manager, "/MainMenu/FileMenu/RecentMenu");
-        GtkWidget * recentFiles = gtk_recent_chooser_menu_new();
-        GtkRecentFilter * recentFilter = gtk_recent_filter_new();
-        gtk_recent_filter_add_mime_type(recentFilter, "application/x-nintendo-ds-rom");
-        gtk_recent_chooser_set_filter(GTK_RECENT_CHOOSER(recentFiles), recentFilter);
-        gtk_menu_item_set_submenu(GTK_MENU_ITEM(recentMenu), recentFiles);
-        g_signal_connect(G_OBJECT(recentFiles), "item-activated", G_CALLBACK(OpenRecent), NULL);
-    }
-#endif
+    GtkRecentManager *manager = gtk_recent_manager_get_default();
+    GList *items = gtk_recent_manager_get_items(manager);
+    g_list_foreach(items, [](gpointer data, gpointer user_data) {
+        // TODO: Why is there no GTK_RECENT_INFO()?!
+        GtkRecentInfo *info = static_cast<GtkRecentInfo*>(data);
+        const char *mime = gtk_recent_info_get_mime_type(info);
+        if (strcmp(mime, "application/x-nintendo-ds-rom") != 0) {
+            gtk_recent_info_unref(info);
+            return;
+        }
+
+        const char *uri = gtk_recent_info_get_uri(info);
+        const char *name = gtk_recent_info_get_display_name(info);
+        // TODO: Is that enough?  Maybe allocate instead?
+        char action[1024];
+        sprintf(action, "app.recent('%s')", uri);
+        g_menu_append(G_MENU(open_recent_menu), name, action);
+
+        gtk_recent_info_unref(info);
+    }, NULL);
+    g_list_free(items);
 
     /* Creating the place for showing DS screens */
     pDrawingArea = gtk_drawing_area_new();
