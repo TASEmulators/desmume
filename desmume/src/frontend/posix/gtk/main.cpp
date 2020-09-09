@@ -226,9 +226,133 @@ static const char *menu_builder =
 "        </item>"
 "        <submenu>"
 "          <attribute name='label' translatable='yes'>_Save state</attribute>"
+"          <section id='savestates'>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_1</attribute>"
+"              <attribute name='action'>app.savestate</attribute>"
+"              <attribute name='target' type='u'>1</attribute>"
+"              <attribute name='accel'>&lt;Shift&gt;F1</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_2</attribute>"
+"              <attribute name='action'>app.savestate</attribute>"
+"              <attribute name='target' type='u'>2</attribute>"
+"              <attribute name='accel'>&lt;Shift&gt;F2</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_3</attribute>"
+"              <attribute name='action'>app.savestate</attribute>"
+"              <attribute name='target' type='u'>3</attribute>"
+"              <attribute name='accel'>&lt;Shift&gt;F3</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_4</attribute>"
+"              <attribute name='action'>app.savestate</attribute>"
+"              <attribute name='target' type='u'>4</attribute>"
+"              <attribute name='accel'>&lt;Shift&gt;F4</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_5</attribute>"
+"              <attribute name='action'>app.savestate</attribute>"
+"              <attribute name='target' type='u'>5</attribute>"
+"              <attribute name='accel'>&lt;Shift&gt;F5</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_6</attribute>"
+"              <attribute name='action'>app.savestate</attribute>"
+"              <attribute name='target' type='u'>6</attribute>"
+"              <attribute name='accel'>&lt;Shift&gt;F6</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_7</attribute>"
+"              <attribute name='action'>app.savestate</attribute>"
+"              <attribute name='target' type='u'>7</attribute>"
+"              <attribute name='accel'>&lt;Shift&gt;F7</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_8</attribute>"
+"              <attribute name='action'>app.savestate</attribute>"
+"              <attribute name='target' type='u'>8</attribute>"
+"              <attribute name='accel'>&lt;Shift&gt;F8</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_9</attribute>"
+"              <attribute name='action'>app.savestate</attribute>"
+"              <attribute name='target' type='u'>9</attribute>"
+"              <attribute name='accel'>&lt;Shift&gt;F9</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>1_0</attribute>"
+"              <attribute name='action'>app.savestate</attribute>"
+"              <attribute name='target' type='u'>0</attribute>"
+"              <attribute name='accel'>&lt;Shift&gt;F10</attribute>"
+"            </item>"
+"          </section>"
 "        </submenu>"
 "        <submenu>"
 "          <attribute name='label' translatable='yes'>_Load state</attribute>"
+"          <section id='loadstates'>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_1</attribute>"
+"              <attribute name='action'>app.loadstate</attribute>"
+"              <attribute name='target' type='u'>1</attribute>"
+"              <attribute name='accel'>F1</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_2</attribute>"
+"              <attribute name='action'>app.loadstate</attribute>"
+"              <attribute name='target' type='u'>2</attribute>"
+"              <attribute name='accel'>F2</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_3</attribute>"
+"              <attribute name='action'>app.loadstate</attribute>"
+"              <attribute name='target' type='u'>3</attribute>"
+"              <attribute name='accel'>F3</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_4</attribute>"
+"              <attribute name='action'>app.loadstate</attribute>"
+"              <attribute name='target' type='u'>4</attribute>"
+"              <attribute name='accel'>F4</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_5</attribute>"
+"              <attribute name='action'>app.loadstate</attribute>"
+"              <attribute name='target' type='u'>5</attribute>"
+"              <attribute name='accel'>F5</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_6</attribute>"
+"              <attribute name='action'>app.loadstate</attribute>"
+"              <attribute name='target' type='u'>6</attribute>"
+"              <attribute name='accel'>F6</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_7</attribute>"
+"              <attribute name='action'>app.loadstate</attribute>"
+"              <attribute name='target' type='u'>7</attribute>"
+"              <attribute name='accel'>F7</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_8</attribute>"
+"              <attribute name='action'>app.loadstate</attribute>"
+"              <attribute name='target' type='u'>8</attribute>"
+"              <attribute name='accel'>F8</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>_9</attribute>"
+"              <attribute name='action'>app.loadstate</attribute>"
+"              <attribute name='target' type='u'>9</attribute>"
+"              <attribute name='accel'>F9</attribute>"
+"            </item>"
+"            <item>"
+"              <attribute name='label' translatable='yes'>1_0</attribute>"
+"              <attribute name='action'>app.loadstate</attribute>"
+"              <attribute name='target' type='u'>0</attribute>"
+"              <attribute name='accel'>F10</attribute>"
+"            </item>"
+"          </section>"
 "        </submenu>"
 "      </section>"
 "      <section>"
@@ -911,6 +1035,8 @@ static const GActionEntry app_entries[] = {
     { "reset",         Reset },
     { "savestateto",   SaveStateDialog },
     { "loadstatefrom", LoadStateDialog },
+    { "savestate",     MenuSave, "u" },
+    { "loadstate",     MenuLoad, "u" },
     { "recordmovie",   RecordMovieDialog },
     { "playmovie",     PlayMovieDialog },
     { "stopmovie",     StopMovie },
@@ -1191,7 +1317,6 @@ struct modify_key_ctx {
 };
 
 static u16 keys_latch = 0;
-static u16 gdk_shift_pressed = 0;
 u16 Keypad_Temp[NB_KEYS];
 
 class configured_features : public CommandLine
@@ -2354,21 +2479,6 @@ static void MenuSave(GSimpleAction *action, GVariant *parameter, gpointer user_d
 
 static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
-  if (e->keyval == GDK_KEY_Shift_L){
-      gdk_shift_pressed |= 1;
-      return 1;
-  }
-  if (e->keyval == GDK_KEY_Shift_R){
-      gdk_shift_pressed |= 2;
-      return 1;
-  }
-  if( e->keyval >= GDK_KEY_F1 && e->keyval <= GDK_KEY_F10 ){
-      if(!gdk_shift_pressed)
-          loadgame((e->keyval - GDK_KEY_F1 + 1) % 10);
-      else
-          savegame((e->keyval - GDK_KEY_F1 + 1) % 10);
-      return 1;
-  }
   guint mask;
   mask = gtk_accelerator_get_default_mod_mask ();
   if( (e->state & mask) == 0){
@@ -2390,14 +2500,6 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 
 static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
-  if (e->keyval == GDK_KEY_Shift_L){
-      gdk_shift_pressed &= ~1;
-      return 1;
-  }
-  if (e->keyval == GDK_KEY_Shift_R){
-      gdk_shift_pressed &= ~2;
-      return 1;
-  }
   u16 Key = lookup_key(e->keyval);
   RM_KEY( keys_latch, Key );
   return 1;
@@ -3373,17 +3475,25 @@ gboolean EmuLoop(gpointer data)
     return TRUE;
 }
 
+GMenuModel *savestates_menu;
+GMenuModel *loadstates_menu;
+
 // The following functions are adapted from the Windows port:
 //     UpdateSaveStateMenu, ResetSaveStateTimes, LoadSaveStateInfo
 static void UpdateSaveStateMenu(int pos, char* txt)
 {
-#if 0
-    char name[64];
-    snprintf(name, sizeof(name), "savestate%d", (pos == 0) ? 10 : pos);
-    gtk_action_set_label(gtk_action_group_get_action(action_group, name), txt);
-    snprintf(name, sizeof(name), "loadstate%d", (pos == 0) ? 10 : pos);
-    gtk_action_set_label(gtk_action_group_get_action(action_group, name), txt);
-#endif
+    GMenuItem *item;
+    gint position = ((pos == 0) ? 10 : pos) - 1;
+
+    item = g_menu_item_new_from_model(savestates_menu, position);
+    g_menu_item_set_label(item, txt);
+    g_menu_remove(G_MENU(savestates_menu), position);
+    g_menu_insert_item(G_MENU(savestates_menu), position, item);
+
+    item = g_menu_item_new_from_model(loadstates_menu, position);
+    g_menu_item_set_label(item, txt);
+    g_menu_remove(G_MENU(loadstates_menu), position);
+    g_menu_insert_item(G_MENU(loadstates_menu), position, item);
 }
 
 static void ResetSaveStateTimes()
@@ -3408,30 +3518,6 @@ static void LoadSaveStateInfo()
 			UpdateSaveStateMenu(i, ntxt);
 		}
 	}
-}
-
-static void desmume_gtk_menu_file_saveload_slot(GtkApplication *app)
-{
-    std::vector<GActionEntry> entries;
-    for(guint i = 1; i <= 10; i++){
-        char label[64], name[64], accel[64];
-
-        snprintf(label, sizeof(label), "%d", i % 10);
-
-        // Note: GTK+ doesn't handle Shift correctly, so the actual action is
-        // done in Key_Press. The accelerators here are simply visual cues.
-
-        snprintf(name, sizeof(name), "savestate%d", i);
-        snprintf(accel, sizeof(accel), "<Shift>F%d", i);
-        GActionEntry entry = {name, MenuSave, "u", label, NULL};
-        entries.push_back(entry);
-
-        snprintf(name, sizeof(name), "loadstate%d", i);
-        snprintf(accel, sizeof(accel), "F%d", i);
-        entry = {name, MenuLoad, "u", label, NULL};
-        entries.push_back(entry);
-    }
-    g_action_map_add_action_entries(G_ACTION_MAP(app), entries.data(), entries.size(), NULL);
 }
 
 static void changesavetype(GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -3831,7 +3917,6 @@ common_gtk_main(GApplication *app, gpointer user_data)
 #ifdef HAVE_LIBAGG
     desmume_gtk_menu_view_hud(GTK_APPLICATION(app));
 #endif
-    desmume_gtk_menu_file_saveload_slot(GTK_APPLICATION(app));
     desmume_gtk_menu_tools(GTK_APPLICATION(app));
     std::string string;
     switch (my_config->savetype) {
@@ -4108,6 +4193,8 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     builder = gtk_builder_new_from_string(menu_builder, -1);
     GMenuModel *menubar = G_MENU_MODEL(gtk_builder_get_object(builder, "menubar"));
+    savestates_menu = G_MENU_MODEL(gtk_builder_get_object(builder, "savestates"));
+    loadstates_menu = G_MENU_MODEL(gtk_builder_get_object(builder, "loadstates"));
     gtk_application_set_menubar(GTK_APPLICATION(app), menubar);
     g_object_unref(builder);
 	pApp = GTK_APPLICATION(app);
