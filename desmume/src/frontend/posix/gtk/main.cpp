@@ -4217,10 +4217,10 @@ common_gtk_main(GApplication *app, gpointer user_data)
         // TODO: Is that enough?  Maybe allocate instead?
         char action[1024];
         sprintf(action, "app.recent('%s')", uri);
-        g_menu_append(G_MENU(open_recent_menu), name, action);
+        g_menu_append(G_MENU(user_data), name, action);
 
         gtk_recent_info_unref(info);
-    }, NULL);
+    }, open_recent_menu);
     g_list_free(items);
 
     /* Creating the place for showing DS screens */
