@@ -11,7 +11,7 @@ project('desmume',
 )
 
 dep_glib2 = dependency('glib-2.0')
-dep_sdl = dependency('sdl')
+dep_sdl = dependency('sdl2')
 dep_pcap = dependency('pcap')
 dep_zlib = dependency('zlib')
 dep_threads = dependency('threads')

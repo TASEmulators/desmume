@@ -1325,7 +1325,7 @@ GPU3DInterface *core3DList[] = {
 
 int multisampleSizes[] = {0, 2, 4, 8, 16, 32};
 
-static const u16 gtk_kb_cfg[NB_KEYS] = {
+static const u32 gtk_kb_cfg[NB_KEYS] = {
     GDK_KEY_x,         // A
     GDK_KEY_z,         // B
     GDK_KEY_Shift_R,   // select
@@ -3898,7 +3898,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     driver = new GtkDriver();
 
-    SDL_TimerID limiter_timer = NULL;
+    SDL_TimerID limiter_timer = 0;
 
     GtkWidget *pBox;
 

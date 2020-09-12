@@ -80,7 +80,7 @@ const u16 default_joypad_cfg[NB_KEYS] =
   };
 
 /* Load default joystick and keyboard configurations */
-void load_default_config(const u16 kbCfg[])
+void load_default_config(const u32 kbCfg[])
 {
   memcpy(keyboard_cfg, kbCfg, sizeof(keyboard_cfg));
   memcpy(joypad_cfg, default_joypad_cfg, sizeof(joypad_cfg));
@@ -123,7 +123,7 @@ BOOL init_joy( void) {
       for (i = 0; i < nbr_joy; i++)
         {
           SDL_Joystick * joy = SDL_JoystickOpen(i);
-          printf("Joystick %d %s\n", i, SDL_JoystickName(i));
+          printf("Joystick %d %s\n", i, SDL_JoystickNameForIndex(i));
           printf("Axes: %d\n", SDL_JoystickNumAxes(joy));
           printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
           printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
@@ -476,20 +476,24 @@ process_ctrls_event( SDL_Event& event,
   if ( !do_process_joystick_events( &cfg->keypad, &event)) {
     switch (event.type)
     {
-      case SDL_VIDEORESIZE:
-        cfg->resize_cb( event.resize.w, event.resize.h, cfg->screen_texture);
-        break;
-
-      case SDL_ACTIVEEVENT:
-        if (cfg->auto_pause && (event.active.state & SDL_APPINPUTFOCUS )) {
-          if (event.active.gain) {
-            cfg->focused = 1;
-            SPU_Pause(0);
-            driver->AddLine("Auto pause disabled");
-          } else {
-            cfg->focused = 0;
-            SPU_Pause(1);
-          }
+      case SDL_WINDOWEVENT:
+        switch (event.window.event) {
+          case SDL_WINDOWEVENT_RESIZED:
+            cfg->resize_cb(event.window.data1, event.window.data2, cfg->screen_texture);
+            break;
+          case SDL_WINDOWEVENT_FOCUS_GAINED:
+            if (cfg->auto_pause) {
+              cfg->focused = 1;
+              SPU_Pause(0);
+              driver->AddLine("Auto pause disabled");
+            }
+            break;
+          case SDL_WINDOWEVENT_FOCUS_LOST:
+            if (cfg->auto_pause) {
+              cfg->focused = 0;
+              SPU_Pause(1);
+            }
+            break;
         }
         break;
 

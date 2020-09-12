@@ -92,6 +92,7 @@ static void MixAudio(void *userdata, Uint8 *stream, int len) {
       stream_tmp[i] = soundbuf[soundpos];
       soundpos++;
    }
+   memset(stream, 0, len);
    SDL_MixAudio(stream, stream_tmp, len, audio_volume);
    free(stream_tmp);
 }

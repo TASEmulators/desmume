@@ -25,7 +25,7 @@ static const gchar *desmume_old_config_file = ".desmume.ini";
 static const gchar *desmume_config_dir = "desmume";
 static const gchar *desmume_config_file = "config";
 
-GKeyFile *desmume_config_read_file(const u16 *kb_cfg)
+GKeyFile *desmume_config_read_file(const u32 *kb_cfg)
 {
     gchar *config_file, *config_dir, *old_config_file;
     GKeyFile *keyfile;

@@ -100,7 +100,7 @@ struct ctrls_event_config {
 #endif
 };
 
-void load_default_config(const u16 kbCfg[]);
+void load_default_config(const u32 kbCfg[]);
 BOOL init_joy( void);
 void uninit_joy( void);
 u16 get_joy_key(int index);

@@ -77,7 +77,8 @@ static float nds_screen_size_ratio = 1.0f;
 
 #define FPS_LIMITER_FPS 60
 
-static SDL_Surface * surface;
+static SDL_Window * window;
+static SDL_Renderer * renderer;
 
 /* Flags to pass to SDL_SetVideoMode */
 static int sdl_videoFlags;
@@ -109,7 +110,7 @@ const char * save_type_names[] = {
 
 /* Our keyboard config is different because of the directional keys */
 /* Please note that m is used for fake microphone */
-const u16 cli_kb_cfg[NB_KEYS] =
+const u32 cli_kb_cfg[NB_KEYS] =
   { 
     SDLK_x,         // A
     SDLK_z,         // B
@@ -330,7 +331,6 @@ resizeWindow( u16 width, u16 height, GLuint *screen_texture) {
   int comp_height = 2 * height;
   GLenum errCode;
 
-  surface = SDL_SetVideoMode(width, height, 32, sdl_videoFlags);
   initGL(screen_texture);
 
 #ifdef HAVE_LIBAGG
@@ -438,9 +438,10 @@ Draw( void) {
   SDL_Surface *rawImage = SDL_CreateRGBSurfaceFrom(displayInfo.masterNativeBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, 16, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16), 0x001F, 0x03E0, 0x7C00, 0);
   if(rawImage == NULL) return;
 
-  SDL_BlitSurface(rawImage, 0, surface, 0);
-  SDL_UpdateRect(surface, 0, 0, 0, 0);
+  SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, rawImage);
   SDL_FreeSurface(rawImage);
+  SDL_RenderCopy(renderer, texture, NULL, NULL);
+  SDL_RenderPresent(renderer);
 
   return;
 }
@@ -497,8 +498,6 @@ int main(int argc, char ** argv) {
 #ifdef INCLUDE_OPENGL_2D
   GLuint screen_texture[2];
 #endif
-  /* this holds some info about our display */
-  const SDL_VideoInfo *videoInfo;
 
   NDS_Init();
 
@@ -641,43 +640,23 @@ int main(int argc, char ** argv) {
               SDL_GetError());
       return 1;
     }
-  SDL_WM_SetCaption("Desmume SDL", NULL);
-
-  /* Fetch the video info */
-  videoInfo = SDL_GetVideoInfo( );
-  if ( !videoInfo ) {
-    fprintf( stderr, "Video query failed: %s\n", SDL_GetError( ) );
-    exit( -1);
-  }
-
-  /* This checks if hardware blits can be done */
-  if ( videoInfo->blit_hw )
-    sdl_videoFlags |= SDL_HWACCEL;
 
 #ifdef INCLUDE_OPENGL_2D
   if ( my_config.opengl_2d) {
     /* the flags to pass to SDL_SetVideoMode */
     sdl_videoFlags  = SDL_OPENGL;          /* Enable OpenGL in SDL */
-    sdl_videoFlags |= SDL_HWPALETTE;       /* Store the palette in hardware */
     sdl_videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
-
-
-    /* This checks to see if surfaces can be stored in memory */
-    if ( videoInfo->hw_available )
-      sdl_videoFlags |= SDL_HWSURFACE;
-    else
-      sdl_videoFlags |= SDL_SWSURFACE;
 
 
     /* Sets up OpenGL double buffering */
     SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
-    surface = SDL_SetVideoMode( 256, 192 * 2, 32,
-                                sdl_videoFlags );
+    window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 192 * 2,
+                               sdl_videoFlags );
 
-    /* Verify there is a surface */
-    if ( !surface ) {
-      fprintf( stderr, "Video mode set failed: %s\n", SDL_GetError( ) );
+    /* Verify there is a window */
+    if ( !window ) {
+      fprintf( stderr, "Window creation failed: %s\n", SDL_GetError( ) );
       exit( -1);
     }
 
@@ -693,12 +672,14 @@ int main(int argc, char ** argv) {
   if ( !my_config.opengl_2d) {
 #endif
     sdl_videoFlags |= SDL_SWSURFACE;
-    surface = SDL_SetVideoMode(256, 384, 32, sdl_videoFlags);
+    window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 384, sdl_videoFlags );
 
-    if ( !surface ) {
-      fprintf( stderr, "Video mode set failed: %s\n", SDL_GetError( ) );
+    if ( !window ) {
+      fprintf( stderr, "Window creation failed: %s\n", SDL_GetError( ) );
       exit( -1);
     }
+
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 #ifdef INCLUDE_OPENGL_2D
   }
 
@@ -804,7 +785,7 @@ int main(int argc, char ** argv) {
 
       snprintf( win_title, sizeof(win_title), "Desmume %f", fps);
 
-      SDL_WM_SetCaption( win_title, NULL);
+      SDL_SetWindowTitle( window, win_title );
     }
 #endif
   }
