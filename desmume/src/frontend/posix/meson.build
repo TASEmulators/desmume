@@ -1,7 +1,7 @@
 project('desmume',
   ['c', 'cpp'],
   version: '2.7.10',
-  meson_version: '>=0.54',
+  meson_version: '>=0.53',
   default_options: [
     'warning_level=0',
     'c_std=c11',
