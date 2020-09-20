@@ -172,7 +172,14 @@ static void Modify_Interpolation(GSimpleAction *action, GVariant *parameter, gpo
 static void SetOrientation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void ToggleLayerVisibility(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 #ifdef HAVE_LIBAGG
-static void ToggleHudDisplay(GtkToggleAction* action, gpointer data);
+static void HudFps(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HudInput(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HudGraphicalInput(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HudFrameCounter(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HudLagCounter(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HudRtc(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HudMic(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HudEditor(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 #endif
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -1063,6 +1070,14 @@ static const GActionEntry app_entries[] = {
     { "view_menu",      ToggleMenuVisible,      NULL, "true" },
     { "view_toolbar",   ToggleToolbarVisible,   NULL, "true" },
     { "view_statusbar", ToggleStatusbarVisible, NULL, "true" },
+    { "hud_fps",        HudFps,                 NULL, "false" },
+    { "hud_input",      HudInput,               NULL, "false" },
+    { "hud_graphicalinput", HudGraphicalInput,  NULL, "false" },
+    { "hud_framecounter", HudFrameCounter,      NULL, "false" },
+    { "hud_lagcounter", HudLagCounter,          NULL, "false" },
+    { "hud_rtc",        HudRtc,                 NULL, "false" },
+    { "hud_mic",        HudMic,                 NULL, "false" },
+    { "hud_editor",     HudEditor,              NULL, "false" },
 
     // Config
     { "enablefpslimiter",  ToggleFpsLimiter,    NULL, "true" },
@@ -3577,13 +3592,8 @@ enum hud_display_enum {
     HUD_DISPLAY_EDITOR,
 };
 
-static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
+static void ToggleHudDisplay(hud_display_enum hudId, gboolean active)
 {
-    guint hudId = GPOINTER_TO_UINT(data);
-    gboolean active;
-
-    active = gtk_toggle_action_get_active(action);
-
     switch (hudId) {
     case HUD_DISPLAY_FPS:
         CommonSettings.hud.FpsDisplay = active;
@@ -3623,33 +3633,45 @@ static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
     RedrawScreen();
 }
 
+#define HudMacro(func_name, enum_value) \
+static void func_name(GSimpleAction *action, GVariant *parameter, gpointer user_data) \
+{ \
+    GVariant *variant = g_action_get_state(G_ACTION(action)); \
+    gboolean value = !g_variant_get_boolean(variant); \
+    g_simple_action_set_state(action, g_variant_new_boolean(value)); \
+    ToggleHudDisplay(enum_value, value); \
+}
+
+HudMacro(HudFps, HUD_DISPLAY_FPS)
+HudMacro(HudInput, HUD_DISPLAY_INPUT)
+HudMacro(HudGraphicalInput, HUD_DISPLAY_GINPUT)
+HudMacro(HudFrameCounter, HUD_DISPLAY_FCOUNTER)
+HudMacro(HudLagCounter, HUD_DISPLAY_LCOUNTER)
+HudMacro(HudRtc, HUD_DISPLAY_RTC)
+HudMacro(HudMic, HUD_DISPLAY_MIC)
+HudMacro(HudEditor, HUD_DISPLAY_EDITOR)
+
 static void desmume_gtk_menu_view_hud(GtkApplication *app)
 {
     const struct {
         const gchar* name;
-        const gchar* label;
-        guint id;
         bool active;
         bool& setting;
     } hud_menu[] = {
-        { "hud_fps","Display _fps", HUD_DISPLAY_FPS, config.hud_fps, CommonSettings.hud.FpsDisplay },
-        { "hud_input","Display _Input", HUD_DISPLAY_INPUT, config.hud_input, CommonSettings.hud.ShowInputDisplay },
-        { "hud_graphicalinput","Display _Graphical Input", HUD_DISPLAY_GINPUT, config.hud_graphicalInput, CommonSettings.hud.ShowGraphicalInputDisplay },
-        { "hud_framecounter","Display Frame _Counter", HUD_DISPLAY_FCOUNTER, config.hud_frameCounter, CommonSettings.hud.FrameCounterDisplay },
-        { "hud_lagcounter","Display _Lag Counter", HUD_DISPLAY_LCOUNTER, config.hud_lagCounter, CommonSettings.hud.ShowLagFrameCounter },
-        { "hud_rtc","Display _RTC", HUD_DISPLAY_RTC, config.hud_rtc, CommonSettings.hud.ShowRTC },
-        { "hud_mic","Display _Mic", HUD_DISPLAY_MIC, config.hud_mic, CommonSettings.hud.ShowMicrophone },
-        { "hud_editor","_Editor Mode", HUD_DISPLAY_EDITOR, false, HudEditorMode },
+        { "hud_fps", config.hud_fps, CommonSettings.hud.FpsDisplay },
+        { "hud_input", config.hud_input, CommonSettings.hud.ShowInputDisplay },
+        { "hud_graphicalinput", config.hud_graphicalInput, CommonSettings.hud.ShowGraphicalInputDisplay },
+        { "hud_framecounter", config.hud_frameCounter, CommonSettings.hud.FrameCounterDisplay },
+        { "hud_lagcounter", config.hud_lagCounter, CommonSettings.hud.ShowLagFrameCounter },
+        { "hud_rtc", config.hud_rtc, CommonSettings.hud.ShowRTC },
+        { "hud_mic", config.hud_mic, CommonSettings.hud.ShowMicrophone },
     };
     guint i;
 
-    GtkToggleAction *act;
     for(i = 0; i < sizeof(hud_menu) / sizeof(hud_menu[0]); i++){
-        act = gtk_toggle_action_new(hud_menu[i].name, hud_menu[i].label, NULL, NULL);
-        gtk_toggle_action_set_active(act, hud_menu[i].active ? TRUE : FALSE);
+        GSimpleAction *action = G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), hud_menu[i].name));
+        g_simple_action_set_state(action, g_variant_new_boolean(hud_menu[i].active ? TRUE : FALSE));
         hud_menu[i].setting = hud_menu[i].active;
-        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(ToggleHudDisplay), GUINT_TO_POINTER(hud_menu[i].id));
-        gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), NULL);
     }
 }
 #endif
