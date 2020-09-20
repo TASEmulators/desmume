@@ -14,6 +14,7 @@ dep_glib2 = dependency('glib-2.0')
 dep_sdl = dependency('sdl')
 dep_pcap = dependency('pcap')
 dep_zlib = dependency('zlib')
+dep_threads = dependency('threads')
 dep_gl = dependency('gl', required: false)
 dep_openal = dependency('openal', required: get_option('openal'))
 dep_alsa = dependency('alsa', required: false)
@@ -27,7 +28,7 @@ if get_option('wifi')
   add_global_arguments('-DEXPERIMENTAL_WIFI_COMM')
 endif
 
-dependencies = [dep_glib2, dep_sdl, dep_pcap, dep_zlib]
+dependencies = [dep_glib2, dep_sdl, dep_pcap, dep_zlib, dep_threads]
 
 if target_machine.cpu() == 'x86_64'
   add_global_arguments('-DHAVE_JIT', language: ['c', 'cpp'])
