@@ -2,39 +2,36 @@
 
 DeSmuME is written in C++ using the GTK+ and SDL libraries.
 
-* http://www.gtk.org
-* http://www.libsdl.org/
+* https://gtk.org/
+* https://libsdl.org/
+
+It uses the Meson build system.
+
+* https://mesonbuild.com/
 
 DeSmuME provides another interface based on libglade, to use
 , you'll need glade:
 
 * http://glade.gnome.org/
 
-To build, first cd to src/frontend/posix and then run `./autogen.sh`
+To build, first cd to src/frontend/posix and run `meson build`
 
-This will create the file `configure`. 
-It does this using the packages `autoconf` and `automake`.
-It also requires `libglib2.0-dev` to generate correctly. 
-(`glib` from the AUR if building on Arch)
-
-Run this using `./configure`
-
-Then build the program by running `make`
+Then build the program by running `ninja -C build`
 
 It will generate three programs:
-1) "desmume" in the "gtk" directory;
-2) "desmume-cli" in the "cli" directory.
+1) "desmume" in the "build/gtk" directory;
+2) "desmume-cli" in the "build/cli" directory.
 
 If glade is installed on your system, you'll get a third
 binary:
 
-3) "desmume-glade" in the "gtk-glade" directory.
+3) "desmume-glade" in the "build/gtk-glade" directory.
 
-You can even type "make install" to install those programs on
+You can even type "ninja -C build install" to install those programs on
 your system (in /usr/local/ by default); then uninstalling is
-done by typing "make uninstall".
+done by typing "ninja -C build uninstall".
 
-For more information on the available commandline options, 
+For more information on the available commandline options,
 check the other README files which will be more up to date.
 
 The following options specially are available on these posix ports:
