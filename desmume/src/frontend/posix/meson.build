@@ -194,6 +194,7 @@ endif
 
 if dep_soundtouch.found()
   dependencies += dep_soundtouch
+  add_global_arguments('-DHAVE_LIBSOUNDTOUCH', language: ['c', 'cpp'])
   libdesmume_src += [
     '../../metaspu/SndOut.cpp',
     '../../metaspu/Timestretcher.cpp',
