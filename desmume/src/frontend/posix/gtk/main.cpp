@@ -1070,6 +1070,7 @@ static const GActionEntry app_entries[] = {
     { "view_menu",      ToggleMenuVisible,      NULL, "true" },
     { "view_toolbar",   ToggleToolbarVisible,   NULL, "true" },
     { "view_statusbar", ToggleStatusbarVisible, NULL, "true" },
+#ifdef HAVE_LIBAGG
     { "hud_fps",        HudFps,                 NULL, "false" },
     { "hud_input",      HudInput,               NULL, "false" },
     { "hud_graphicalinput", HudGraphicalInput,  NULL, "false" },
@@ -1078,6 +1079,7 @@ static const GActionEntry app_entries[] = {
     { "hud_rtc",        HudRtc,                 NULL, "false" },
     { "hud_mic",        HudMic,                 NULL, "false" },
     { "hud_editor",     HudEditor,              NULL, "false" },
+#endif
 
     // Config
     { "enablefpslimiter",  ToggleFpsLimiter,    NULL, "true" },
