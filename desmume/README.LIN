@@ -14,7 +14,8 @@ DeSmuME provides another interface based on libglade, to use
 
 * http://glade.gnome.org/
 
-To build, first cd to src/frontend/posix and run `meson build`
+To build, first cd to src/frontend/posix and run
+`meson build --buildtype=release`
 
 Then build the program by running `ninja -C build`
 
