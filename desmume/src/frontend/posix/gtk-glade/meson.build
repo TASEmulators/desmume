@@ -42,4 +42,5 @@ executable('desmume-glade',
 
 install_data('desmume-glade.desktop', install_dir: get_option('datadir') / 'applications')
 install_data('glade/DeSmuME.xpm', install_dir: get_option('datadir') / 'pixmaps')
+install_data('doc/desmume-glade.1', install_dir: get_option('datadir') / 'man' / 'man1')
 install_data(['glade/DeSmuMe_Dtools.glade', 'glade/DeSmuMe.glade', 'glade/DeSmuME.xpm'], install_dir: get_option('datadir') / 'glade')

@@ -22,3 +22,5 @@ executable('desmume-cli',
   link_with: libdesmume,
   install: true,
 )
+
+install_data('doc/desmume-cli.1', install_dir: get_option('datadir') / 'man' / 'man1')
