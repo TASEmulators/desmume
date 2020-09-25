@@ -25,7 +25,7 @@ dep_agg = dependency('libagg', required: false)
 #dep_lua = dependency('lua-5.1', required: false)
 
 if get_option('wifi')
-  add_global_arguments('-DEXPERIMENTAL_WIFI_COMM')
+  add_global_arguments('-DEXPERIMENTAL_WIFI_COMM', language: ['c', 'cpp'])
 endif
 
 dependencies = [dep_glib2, dep_sdl, dep_pcap, dep_zlib, dep_threads]
