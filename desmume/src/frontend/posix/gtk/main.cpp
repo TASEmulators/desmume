@@ -2137,7 +2137,14 @@ static void SetWinsize(GSimpleAction *action, GVariant *parameter, gpointer user
 static void SetOrientation(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     const char *string = g_variant_get_string(parameter, NULL);
-    nds_screen.orientation = (orientation_enum)g_ascii_strtoll(string, NULL, 10);
+	orientation_enum orient=ORIENT_VERTICAL;
+	if(strcmp(string, "vertical") == 0)
+		orient = ORIENT_VERTICAL;
+	else if(strcmp(string, "horizontal") == 0)
+		orient = ORIENT_HORIZONTAL;
+	else if(strcmp(string, "single") == 0)
+		orient = ORIENT_SINGLE;
+    nds_screen.orientation = orient;
 #ifdef HAVE_LIBAGG
     osd->singleScreen = nds_screen.orientation == ORIENT_SINGLE;
 #endif
