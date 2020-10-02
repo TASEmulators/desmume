@@ -219,6 +219,7 @@ endif
 #endif
 
 if get_option('gdb-stub')
+  add_global_arguments('-DGDB_STUB', language: ['c', 'cpp'])
   libdesmume_src += [
     '../../gdbstub/gdbstub.cpp',
   ]
