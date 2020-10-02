@@ -104,6 +104,11 @@ VideoFilter* video;
 
 desmume::config::Config config;
 
+#ifdef GDB_STUB
+gdbstub_handle_t arm9_gdb_stub = NULL;
+gdbstub_handle_t arm7_gdb_stub = NULL;
+#endif
+
 enum {
     MAIN_BG_0 = 0,
     MAIN_BG_1,
@@ -3864,10 +3869,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
      */
 #ifdef GDB_STUB
     gdbstub_mutex_init();
-    
-    gdbstub_handle_t arm9_gdb_stub = NULL;
-    gdbstub_handle_t arm7_gdb_stub = NULL;
-    
+
     if ( my_config->arm9_gdb_port > 0) {
         arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
                                          &NDS_ARM9,
