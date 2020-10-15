@@ -230,6 +230,9 @@ ENDL
 
 bool CommandLine::parse(int argc,char **argv)
 {
+	//closest thing to a portable main() we have, I guess.
+	srand((unsigned)time(nullptr));
+
 	std::string _render3d;
 
 	int opt_help = 0;

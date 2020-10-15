@@ -411,8 +411,6 @@ void PathInfo::formatname(char *output)
 	time_t now = time(NULL);
 	tm *time_struct = localtime(&now);
 
-	srand((unsigned)now);
-
 	for (char*  p = screenshotFormat,
 		*end = p + sizeof(screenshotFormat); p < end; p++)
 	{

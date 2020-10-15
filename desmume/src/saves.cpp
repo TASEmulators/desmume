@@ -57,6 +57,7 @@
 
 #ifdef HOST_WINDOWS
 #include "frontend/windows/main.h"
+extern char IniName[MAX_PATH];
 #endif
 
 int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load functions
@@ -726,8 +727,44 @@ void loadstate_slot(int num)
 
 	path.getpathnoext(path.STATE_SLOTS, filename);
 
+	//save the state before we load the state, to give people a path for recovery in case they hit the wrong key
+	#ifdef HOST_WINDOWS
+	if(!GetPrivateProfileInt("General", "BackupSavestateSuppress", 0, IniName))
+	#endif
+	{
+		if(movieMode == MOVIEMODE_INACTIVE)
+		{
+			std::string dirname = (std::string)filename + " (backups)";
+			#ifdef HOST_WINDOWS
+			static const char PSS = '\\';
+			#else
+			static const char PSS = '/';
+			#endif
+			mkdir(dirname.c_str(),0777);
+			static unsigned seed;
+			for(;;)
+			{
+				std::string fname = dirname + PSS;
+				char mini[100];
+				sprintf(mini,"%u",seed);
+				fname += mini + (std::string)".dst";
+				FILE* f = fopen(fname.c_str(),"rb");
+				if(f)
+				{
+					seed = rand()*16000+rand();
+					fclose(f);
+					continue;
+				}
+				seed++;
+				savestate_save(fname.c_str());
+				break;
+			}
+		}
+	}
+
 	if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ > MAX_PATH) return;
 	sprintf(filename + strlen(filename), ".ds%d", num);
+
 	if (savestate_load(filename))
 	{
 		driver->SetLineColor(255, 255, 255);

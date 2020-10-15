@@ -44,14 +44,6 @@ public:
 		static Slot1InfoSimple info("R4", "Slot1 R4 emulation", 0x03);
 		return &info;
 	}
-
-	//called once when the emulator starts up, or when the device springs into existence
-	virtual bool init()
-	{
-		//strange to do this here but we need to make sure its done at some point
-		srand(time(NULL));
-		return true;
-	}
 	
 	virtual void connect()
 	{
