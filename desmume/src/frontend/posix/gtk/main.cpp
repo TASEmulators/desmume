@@ -1882,6 +1882,11 @@ static void ExportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
         GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
         gchar *sPath = g_file_get_path(file);
 
+        if(! g_str_has_suffix(sPath, ".sav"))
+        {
+            sPath = g_strjoin(NULL, sPath, ".sav", NULL);
+        }
+
         if(MMU_new.backupDevice.exportData(sPath) == false ) {
             GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
