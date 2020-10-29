@@ -370,11 +370,11 @@ static const char *menu_builder =
 "      </section>"
 "      <section>"
 "        <item>"
-"          <attribute name='label' translatable='yes'>Import Backup Memory…</attribute>"
+"          <attribute name='label' translatable='yes'>_Import backup memory…</attribute>"
 "          <attribute name='action'>app.importbackup</attribute>"
 "        </item>"
 "        <item>"
-"          <attribute name='label' translatable='yes'>Export Backup Memory…</attribute>"
+"          <attribute name='label' translatable='yes'>_Export backup memory…</attribute>"
 "          <attribute name='action'>app.exportbackup</attribute>"
 "        </item>"
 "      </section>"
@@ -1798,14 +1798,10 @@ static void PlayMovieDialog(GSimpleAction *action, GVariant *parameter, gpointer
 static void ImportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkFileFilter *pFilter_raw, *pFilter_ar, *pFilter_any;
-    GtkWidget *pFileSelection;
-    GtkWidget *pParent;
-    gchar *sPath;
+    GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
         Pause(NULL, NULL, NULL);
-
-    pParent = GTK_WIDGET(pWindow);
 
     pFilter_raw = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_raw, "*.sav");
@@ -1823,12 +1819,10 @@ static void ImportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
     gtk_file_filter_set_name(pFilter_any, "All supported types");
 
     /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_dialog_new("Import Backup Memory From ...",
-            GTK_WINDOW(pParent),
+    pFileSelection = gtk_file_chooser_native_new("Import Backup Memory From ...",
+            GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_OPEN,
-            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-            GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-            NULL);
+	    "_Open", "_Cancel");
 
     /* Only the dialog window is accepting events: */
     gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
@@ -1838,9 +1832,10 @@ static void ImportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
     /* Showing the window */
-    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-    case GTK_RESPONSE_OK:
-        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+    int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
+    if (response == GTK_RESPONSE_ACCEPT) {
+        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
+        gchar *sPath = g_file_get_path(file);
 
         if(MMU_new.backupDevice.importData(sPath) == false ) {
             GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
@@ -1853,25 +1848,18 @@ static void ImportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
         }
 
         g_free(sPath);
-        break;
-    default:
-        break;
     }
-    gtk_widget_destroy(pFileSelection);
+    g_object_unref(pFileSelection);
     Launch(NULL, NULL, NULL);
 }
 
 static void ExportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkFileFilter *pFilter_raw, *pFilter_ar, *pFilter_any;
-    GtkWidget *pFileSelection;
-    GtkWidget *pParent;
-    gchar *sPath;
+    GtkFileChooserNative *pFileSelection;
 
     if (desmume_running())
         Pause(NULL, NULL, NULL);
-
-    pParent = GTK_WIDGET(pWindow);
 
     pFilter_raw = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_raw, "*.sav");
@@ -1882,12 +1870,10 @@ static void ExportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
     gtk_file_filter_set_name(pFilter_any, "All supported types");
 
     /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_dialog_new("Export Backup Memory To ...",
-            GTK_WINDOW(pParent),
+    pFileSelection = gtk_file_chooser_native_new("Export Backup Memory To ...",
+            GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_SAVE,
-            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
-            NULL);
+	    "_Save", "_Cancel");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
 
     /* Only the dialog window is accepting events: */
@@ -1897,9 +1883,10 @@ static void ExportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
     /* Showing the window */
-    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-    case GTK_RESPONSE_OK:
-        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+    int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
+    if (response == GTK_RESPONSE_ACCEPT) {
+	GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
+        gchar *sPath = g_file_get_path(file);
 
         if(MMU_new.backupDevice.exportData(sPath) == false ) {
             GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
@@ -1912,11 +1899,8 @@ static void ExportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
         }
 
         g_free(sPath);
-        break;
-    default:
-        break;
     }
-    gtk_widget_destroy(pFileSelection);
+    g_object_unref(pFileSelection);
     Launch(NULL, NULL, NULL);
 }
 
@@ -4354,6 +4338,8 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "printscreen")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "cheatlist")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "cheatsearch")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "importbackup")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "exportbackup")), FALSE);
 
     nds_screen.gap_size = config.view_gap ? GAP_SIZE : 0;
 
