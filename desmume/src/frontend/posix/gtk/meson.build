@@ -31,6 +31,7 @@ executable('desmume',
   dependencies: gtk_dependencies,
   include_directories: includes,
   link_with: libdesmume,
+  cpp_args: ['-DGTK_DISABLE_DEPRECATED'],
   install: true,
 )
 
