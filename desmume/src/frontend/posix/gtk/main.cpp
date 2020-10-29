@@ -1839,7 +1839,7 @@ static void ImportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
                     GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,
                     GTK_BUTTONS_OK,
-                    "Unable to import :\n%s", sPath);
+                    "Unable to import:\n%s", sPath);
             gtk_dialog_run(GTK_DIALOG(pDialog));
             gtk_widget_destroy(pDialog);
         }
@@ -1887,7 +1887,7 @@ static void ExportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
                     GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,
                     GTK_BUTTONS_OK,
-                    "Unable to export :\n%s", sPath);
+                    "Unable to export:\n%s", sPath);
             gtk_dialog_run(GTK_DIALOG(pDialog));
             gtk_widget_destroy(pDialog);
         }
