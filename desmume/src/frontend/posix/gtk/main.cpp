@@ -1835,7 +1835,7 @@ static void ImportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
         gchar *sPath = g_file_get_path(file);
 
         if(MMU_new.backupDevice.importData(sPath) == false ) {
-            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,
                     GTK_BUTTONS_OK,
@@ -1883,7 +1883,7 @@ static void ExportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
         gchar *sPath = g_file_get_path(file);
 
         if(MMU_new.backupDevice.exportData(sPath) == false ) {
-            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,
                     GTK_BUTTONS_OK,
