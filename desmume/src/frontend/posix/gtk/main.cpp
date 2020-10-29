@@ -1822,7 +1822,7 @@ static void ImportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
     pFileSelection = gtk_file_chooser_native_new("Import Backup Memory From ...",
             GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_OPEN,
-	    "_Open", "_Cancel");
+            "_Open", "_Cancel");
 
     /* Only the dialog window is accepting events: */
     gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
@@ -1873,7 +1873,7 @@ static void ExportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
     pFileSelection = gtk_file_chooser_native_new("Export Backup Memory To ...",
             GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_SAVE,
-	    "_Save", "_Cancel");
+            "_Save", "_Cancel");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
 
     /* Only the dialog window is accepting events: */
@@ -1885,7 +1885,7 @@ static void ExportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
     /* Showing the window */
     int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
     if (response == GTK_RESPONSE_ACCEPT) {
-	GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
+        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
         gchar *sPath = g_file_get_path(file);
 
         if(MMU_new.backupDevice.exportData(sPath) == false ) {
