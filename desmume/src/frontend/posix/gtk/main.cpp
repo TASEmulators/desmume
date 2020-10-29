@@ -1824,9 +1824,6 @@ static void ImportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
             GTK_FILE_CHOOSER_ACTION_OPEN,
             "_Open", "_Cancel");
 
-    /* Only the dialog window is accepting events: */
-    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
-
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_raw);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_ar);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
@@ -1875,9 +1872,6 @@ static void ExportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
             GTK_FILE_CHOOSER_ACTION_SAVE,
             "_Save", "_Cancel");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
-
-    /* Only the dialog window is accepting events: */
-    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_raw);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
