@@ -9,11 +9,11 @@ cli_src = [
 ]
 
 # TODO: why do we have to redeclare it here with one more fs level?
-includes = [
+includes = include_directories(
   '../../../../src',
   '../../../../src/libretro-common/include',
   '../../../../src/frontend',
-]
+)
 
 executable('desmume-cli',
   cli_src,
@@ -23,4 +23,4 @@ executable('desmume-cli',
   install: true,
 )
 
-install_data('doc/desmume-cli.1', install_dir: get_option('datadir') / 'man' / 'man1')
+install_data('doc/desmume-cli.1', install_dir: join_paths(get_option('datadir'), 'man', 'man1'))

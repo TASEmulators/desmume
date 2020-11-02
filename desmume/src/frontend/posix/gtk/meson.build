@@ -20,11 +20,11 @@ desmume_src = [
 ]
 
 # TODO: why do we have to redeclare it here with one more fs level?
-includes = [
+includes = include_directories(
   '../../../../src',
   '../../../../src/libretro-common/include',
   '../../../../src/frontend',
-]
+)
 
 executable('desmume',
   desmume_src,
@@ -35,6 +35,6 @@ executable('desmume',
   install: true,
 )
 
-install_data('desmume.desktop', install_dir: get_option('datadir') / 'applications')
-install_data('DeSmuME.svg', install_dir: get_option('datadir') / 'pixmaps')
-install_data('doc/desmume.1', install_dir: get_option('datadir') / 'man' / 'man1')
+install_data('desmume.desktop', install_dir: join_paths(get_option('datadir'), 'applications'))
+install_data('DeSmuME.svg', install_dir: join_paths(get_option('datadir'), 'pixmaps'))
+install_data('doc/desmume.1', install_dir: join_paths(get_option('datadir'), 'man', 'man1'))

@@ -25,11 +25,11 @@ desmume_src = [
 ]
 
 # TODO: why do we have to redeclare it here with one more fs level?
-includes = [
+includes = include_directories(
   '../../../../src',
   '../../../../src/libretro-common/include',
   '../../../../src/frontend',
-]
+)
 
 executable('desmume-glade',
   desmume_src,
@@ -40,7 +40,7 @@ executable('desmume-glade',
   install: true,
 )
 
-install_data('desmume-glade.desktop', install_dir: get_option('datadir') / 'applications')
-install_data('glade/DeSmuME.xpm', install_dir: get_option('datadir') / 'pixmaps')
-install_data('doc/desmume-glade.1', install_dir: get_option('datadir') / 'man' / 'man1')
-install_data(['glade/DeSmuMe_Dtools.glade', 'glade/DeSmuMe.glade', 'glade/DeSmuME.xpm'], install_dir: get_option('datadir') / 'glade')
+install_data('desmume-glade.desktop', install_dir: join_paths(get_option('datadir'), 'applications'))
+install_data('glade/DeSmuME.xpm', install_dir: join_paths(get_option('datadir'), 'pixmaps'))
+install_data('doc/desmume-glade.1', install_dir: join_paths(get_option('datadir'), 'man', 'man1'))
+install_data(['glade/DeSmuMe_Dtools.glade', 'glade/DeSmuMe.glade', 'glade/DeSmuME.xpm'], install_dir: join_paths(get_option('datadir'), 'glade'))

@@ -1,9 +1,9 @@
 project('desmume',
   ['c', 'cpp'],
   version: '2.7.10',
-  meson_version: '>=0.53',
+  meson_version: '>=0.45',
   default_options: [
-    'warning_level=0',
+    'warning_level=1',
     'c_std=c11',
     'cpp_std=c++14',
   ],
@@ -42,11 +42,11 @@ else
   have_jit = false
 endif
 
-includes = [
+includes = include_directories(
   '../../../src',
   '../../../src/libretro-common/include',
   '../../../src/frontend',
-]
+)
 
 libdesmume_src = [
   '../../armcpu.cpp',
