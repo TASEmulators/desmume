@@ -3,7 +3,17 @@ option('openal',
   value: false,
   description: 'Enable experimental OpenAL microphone input',
 )
-option('glade',
+option('frontend-gtk',
+  type: 'boolean',
+  value: true,
+  description: 'Enable GTK frontend',
+)
+option('frontend-cli',
+  type: 'boolean',
+  value: true,
+  description: 'Enable CLI frontend',
+)
+option('frontend-glade',
   type: 'boolean',
   value: false,
   description: 'Enable glade frontend',

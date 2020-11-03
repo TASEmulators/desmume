@@ -246,8 +246,12 @@ libdesmume = static_library('desmume',
   link_with: colorspacehandler_simd,
 )
 
-subdir('cli')
-subdir('gtk')
-if get_option('glade')
+if get_option('frontend-cli')
+  subdir('cli')
+endif
+if get_option('frontend-gtk')
+  subdir('gtk')
+endif
+if get_option('frontend-glade')
   subdir('gtk-glade')
 endif
