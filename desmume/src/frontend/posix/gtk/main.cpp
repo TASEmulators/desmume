@@ -75,7 +75,6 @@
 
 #ifdef HAVE_OPENGL
 	#include <GL/gl.h>
-	#include <GL/glu.h>
 	#include "OGLRender.h"
 	#include "OGLRender_3_2.h"
 #endif
