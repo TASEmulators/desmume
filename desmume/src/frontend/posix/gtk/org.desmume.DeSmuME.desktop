@@ -5,6 +5,6 @@ Name=DeSmuME (Gtk)
 Comment=Nintento DS emulator
 TryExec=desmume
 Exec=desmume
-Icon=DeSmuME
+Icon=org.desmume.DeSmuME
 Categories=GNOME;GTK;Game;Emulator;
 MimeType=application/x-nintendo-ds-rom;
