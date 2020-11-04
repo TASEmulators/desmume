@@ -311,8 +311,27 @@ static void arm_enable_runfast_mode(void)
 #endif
 
 #if defined(__linux__) && !defined(CPU_X86)
+#if __ARM_ARCH
+#include <sys/auxv.h>
+#endif
+
 static unsigned char check_arm_cpu_feature(const char* feature)
 {
+#if __ARM_ARCH < 8
+   uint64_t hwcap = getauxval(AT_HWCAP);
+   if (!strcmp(feature, "neon"))
+      return (hwcap & HWCAP_ARM_NEON) != 0;
+   if (!strcmp(feature, "vfpv3"))
+      return (hwcap & HWCAP_ARM_VFPv3) != 0;
+   if (!strcmp(feature, "vfpv4"))
+      return (hwcap & HWCAP_ARM_VFPv4) != 0;
+   return 0;
+#elif __ARM_ARCH == 8
+   uint64_t hwcap = getauxval(AT_HWCAP);
+   if (!strcmp(feature, "asimd"))
+      return (hwcap & HWCAP_ASIMD) != 0;
+   return 0;
+#else
    char line[1024];
    unsigned char status = 0;
    RFILE *fp = filestream_open("/proc/cpuinfo", RFILE_MODE_READ_TEXT, -1);
@@ -334,6 +353,7 @@ static unsigned char check_arm_cpu_feature(const char* feature)
    filestream_close(fp);
 
    return status;
+#endif
 }
 
 #if !defined(_SC_NPROCESSORS_ONLN)
