@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.desmume.DeSmuME</id>
+  <name>DeSmuME</name>
+  <summary>Nintendo DS emulator</summary>
+  <project_license>GPL-2.0-or-later</project_license>
+  <metadata_license>CC0-1.0</metadata_license>
+  <developer_name>DeSmuME Team</developer_name>
+  <update_contact>linkmauve_AT_linkmauve.fr</update_contact>
+  <launchable type="desktop-id">org.desmume.DeSmuME.desktop</launchable>
+
+  <url type="homepage">http://desmume.org</url>
+  <url type="bugtracker">https://github.com/TASVideos/desmume/issues</url>
+
+  <description>
+    <p>
+      DeSmuME is a Nintendo DS emulator.
+    </p>
+  </description>
+
+  <provides>
+    <binary>desmume</binary>
+  </provides>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://linkmauve.fr/files/desmume-pokémon.png</image>
+      <caption>DeSmuME running Pokémon Heart Gold</caption>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="0.9.11" date="2015-04-15"/>
+  </releases>
+
+  <content_rating type="oars-1.1"/>
+</component>
