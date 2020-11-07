@@ -4,10 +4,10 @@ include ../desmume.mk
 AM_CPPFLAGS += $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
 
 Applicationsdir = $(datadir)/applications
-Applications_DATA = desmume.desktop
+Applications_DATA = org.desmume.DeSmuME.desktop
 pixmapdir = $(datadir)/pixmaps
-pixmap_DATA = DeSmuME.svg
-EXTRA_DIST = DeSmuME.svg desmume.desktop
+pixmap_DATA = org.desmume.DeSmuME.svg
+EXTRA_DIST = org.desmume.DeSmuME.svg org.desmume.DeSmuME.desktop
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
 	avout.h \
