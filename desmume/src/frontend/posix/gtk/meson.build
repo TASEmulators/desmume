@@ -38,4 +38,4 @@ executable('desmume',
 install_data('org.desmume.DeSmuME.desktop', install_dir: join_paths(get_option('datadir'), 'applications'))
 install_data('org.desmume.DeSmuME.metainfo.xml', install_dir: join_paths(get_option('datadir'), 'metainfo'))
 install_data('org.desmume.DeSmuME.svg', install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'apps'))
-install_data('doc/desmume.1', install_dir: join_paths(get_option('datadir'), 'man', 'man1'))
+install_man('doc/desmume.1')

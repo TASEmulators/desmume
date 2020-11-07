@@ -23,4 +23,4 @@ executable('desmume-cli',
   install: true,
 )
 
-install_data('doc/desmume-cli.1', install_dir: join_paths(get_option('datadir'), 'man', 'man1'))
+install_man('doc/desmume-cli.1')
