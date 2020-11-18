@@ -1068,7 +1068,6 @@ bool savestate_save(EMUFILE &outstream, int compressionLevel)
 bool savestate_save (const char *file_name)
 {
 	EMUFILE_MEMORY ms;
-	size_t elems_written;
 	if (!savestate_save(ms))
 		return false;
 
