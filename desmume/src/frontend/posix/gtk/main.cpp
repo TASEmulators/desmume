@@ -3477,7 +3477,6 @@ static void DoQuit(GSimpleAction *action, GVariant *parameter, gpointer user_dat
 gboolean EmuLoop(gpointer data)
 {
     static Uint32 fps_SecStart, next_fps_SecStart, fps_FrameCount, skipped_frames;
-    static int last_tick;
     static unsigned next_frame_time;
     static int frame_mod3;
     unsigned int i;
