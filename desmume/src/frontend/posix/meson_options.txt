@@ -13,11 +13,6 @@ option('frontend-cli',
   value: true,
   description: 'Enable CLI frontend',
 )
-option('frontend-glade',
-  type: 'boolean',
-  value: false,
-  description: 'Enable glade frontend',
-)
 option('wifi',
   type: 'boolean',
   value: false,

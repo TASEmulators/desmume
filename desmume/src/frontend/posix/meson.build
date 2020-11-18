@@ -252,6 +252,3 @@ endif
 if get_option('frontend-gtk')
   subdir('gtk')
 endif
-if get_option('frontend-glade')
-  subdir('gtk-glade')
-endif
