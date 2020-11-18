@@ -1541,7 +1541,7 @@ static void About(GSimpleAction *action, GVariant *parameter, gpointer user_data
             "program-name", "DeSmuME",
             "version", EMU_DESMUME_VERSION_STRING() + 1, // skip space
             "website", "http://desmume.org",
-            "logo-icon-name", "DeSmuME",
+            "logo-icon-name", "org.desmume.DeSmuME",
             "comments", "Nintendo DS emulator based on work by Yopyop",
             "authors", authors,
             NULL);
