@@ -55,7 +55,7 @@
 #endif
 
 //TODO - do we need these here?
-_KEY2 key2;
+static _KEY2 key2;
 
 //http://home.utah.edu/~nahaj/factoring/isqrt.c.html
 static u64 isqrt (u64 x) {

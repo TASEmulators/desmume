@@ -20,28 +20,12 @@
 #include "types.h"
 #include <string.h>
 
-struct _KEY1
+struct _KEY1 final
 {
-	_KEY1(const u8 *inKeyBufPtr)
-	{
-		if (keyBuf) delete[] keyBuf;
-		keyBuf = new u32 [0x412];
-		memset(keyBuf, 0x00, 0x412 * sizeof(u32));
-		memset(&keyCode[0], 0, sizeof(keyCode));
-		this->keyBufPtr = inKeyBufPtr;
-	}
+	_KEY1(const u8 *inKeyBufPtr) : keyBufPtr(inKeyBufPtr) {}
 
-	~_KEY1()
-	{
-		if (keyBuf) 
-		{
-			delete[] keyBuf;
-			keyBuf = NULL;
-		}
-	}
-
-	u32 *keyBuf;
-	u32 keyCode[3];
+	u32 keyBuf[0x412] = {};
+	u32 keyCode[3] = {};
 	const u8	*keyBufPtr;
 
 	void init(u32 idcode, u8 level, u8 modulo);
@@ -50,21 +34,17 @@ struct _KEY1
 	void encrypt(u32 *ptr);
 };
 
-struct _KEY2
+struct _KEY2 final
 {
 private:
-	u64 seed0;
-	u64 seed1;
+	u64 seed0 = 0x58C56DE0E8ULL;
+	u64 seed1 = 0x5C879B9B05ULL;
 	u64 x;
 	u64 y;
 
 	u64 bitsReverse39(u64 key);
 
 public:
-	_KEY2() :	seed0(0x58C56DE0E8ULL), 
-				seed1(0x5C879B9B05ULL)
-	{}
-	
 	void applySeed(u8 PROCNUM);
 	u8 apply(u8 data);
 };
