@@ -624,17 +624,8 @@ static bool cp15_loadstate(EMUFILE &is, int size)
 	if (version == 0)
 	{
 		//ARM7 not have coprocessor
-		
-		// TODO: What's going on here with tmp_buf?
-		u8 *tmp_buf = new u8 [sizeof(armcp15_t)];
-		if (!tmp_buf) return false;
-		
 		if (!cp15.loadone(is))
-		{
-			delete [] tmp_buf;
 			return false;
-		}
-		delete [] tmp_buf;
 	}
 
 	return true;
