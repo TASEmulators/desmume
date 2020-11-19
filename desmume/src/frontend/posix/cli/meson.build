@@ -1,7 +1,3 @@
-dep_x11 = dependency('x11')
-
-cli_dependencies = dependencies + [dep_x11]
-
 cli_src = [
   'main.cpp',
   '../shared/sndsdl.cpp',
@@ -17,7 +13,7 @@ includes = include_directories(
 
 executable('desmume-cli',
   cli_src,
-  dependencies: cli_dependencies,
+  dependencies: dependencies,
   include_directories: includes,
   link_with: libdesmume,
   install: true,
