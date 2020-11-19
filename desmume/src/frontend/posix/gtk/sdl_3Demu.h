@@ -1,6 +1,5 @@
 /*
-	Copyright (C) 2013 The Lemon Man
-	Copyright (C) 2013-2017 DeSmuME team
+	Copyright (C) 2020 Emmanuel Gil Peyrot
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,12 +15,12 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GLX_3DEMU_H
-#define GLX_3DEMU_H
+#ifndef SDL_3DEMU_H
+#define SDL_3DEMU_H
 
-bool init_glx_3Demu(void);
-bool deinit_glx_3Demu(void);
-bool is_glx_initialized(void);
+bool init_sdl_3Demu(void);
+bool deinit_sdl_3Demu(void);
+bool is_sdl_initialized(void);
 
-#endif // GLX_3DEMU_H
+#endif // SDL_3DEMU_H
 

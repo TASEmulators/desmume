@@ -169,7 +169,6 @@ libdesmume_src += [
 
 if dep_gl.found()
   dependencies += dep_gl
-  add_global_arguments('-DHAVE_GL_GLX', language: ['c', 'cpp'])
   libdesmume_src += [
     '../../OGLRender.cpp',
     '../../OGLRender_3_2.cpp',

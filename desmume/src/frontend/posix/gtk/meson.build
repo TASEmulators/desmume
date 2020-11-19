@@ -14,7 +14,7 @@ desmume_src = [
   '../shared/sndsdl.cpp',
   '../shared/ctrlssdl.cpp',
   'osmesa_3Demu.cpp',
-  'glx_3Demu.cpp',
+  'sdl_3Demu.cpp',
   'cheatsGTK.cpp',
   'main.cpp',
 ]
