@@ -29,6 +29,7 @@
 #include <gio/gapplication.h>
 #include <gdk/gdkkeysyms.h>
 #include <SDL.h>
+#include <X11/Xlib.h>
 #include <vector>
 
 #include "types.h"
@@ -4589,6 +4590,12 @@ int main (int argc, char *argv[])
 
   my_config.parse(argc, argv);
   init_configured_features( &my_config);
+
+  /* X11 multi-threading support */
+  if(!XInitThreads())
+    {
+      fprintf(stderr, "Warning: X11 not thread-safe\n");
+    }
 
   // TODO: pass G_APPLICATION_HANDLES_COMMAND_LINE instead.
   GtkApplication *app = gtk_application_new("org.desmume.DeSmuME", G_APPLICATION_HANDLES_OPEN);
