@@ -53,11 +53,6 @@ bool init_sdl_3Demu(void)
     if (!win)
         return false;
 
-    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -66,7 +61,18 @@ bool init_sdl_3Demu(void)
 
     ctx = SDL_GL_CreateContext(win);
     if (!ctx)
-        return false;
+	{
+        printf("Failed to create GL context: %s\n", SDL_GetError());
+		return false;
+	}
+	
+	int v[5];
+	SDL_GL_GetAttribute(SDL_GL_RED_SIZE, v);
+    SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, v+1);
+    SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, v+2);
+    SDL_GL_GetAttribute(SDL_GL_ALPHA_SIZE, v+3);
+    SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, v+4);
+	printf("GL buffer format: R=%d G=%d B=%d A=%d D=%d\n", v[0], v[1], v[2], v[3], v[4]);
 
     printf("OGL/SDL Renderer has finished the initialization.\n");
 
