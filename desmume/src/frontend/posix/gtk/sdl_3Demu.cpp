@@ -49,10 +49,6 @@ bool deinit_sdl_3Demu(void)
 
 bool init_sdl_3Demu(void) 
 {
-    win = SDL_CreateWindow(NULL, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 192, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
-    if (!win)
-        return false;
-
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
@@ -63,6 +59,10 @@ bool init_sdl_3Demu(void)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+
+    win = SDL_CreateWindow(NULL, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 192, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+    if (!win)
+        return false;
 
     ctx = SDL_GL_CreateContext(win);
     if (!ctx)
