@@ -4379,6 +4379,13 @@ common_gtk_main(GApplication *app, gpointer user_data)
     /* This toggle action must not be set active before the pDrawingArea initialization to avoid a GTK warning */
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "gap")), g_variant_new_boolean(config.view_gap));
 
+    GdkRGBA color_black;
+    color_black.red = 0.0;
+    color_black.green = 0.0;
+    color_black.blue = 0.0;
+    color_black.alpha = 1.0;
+    gtk_widget_override_background_color(pBox, GTK_STATE_FLAG_NORMAL, &color_black);
+
     gtk_container_add (GTK_CONTAINER(pBox), pDrawingArea);
 
     gtk_widget_set_events(pDrawingArea,
@@ -4399,6 +4406,14 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     /* Status bar */
     pStatusBar = gtk_statusbar_new();
+
+    GdkRGBA color_soft_gray;
+    color_soft_gray.red = 0.8;
+    color_soft_gray.green = 0.8;
+    color_soft_gray.blue = 0.8;
+    color_soft_gray.alpha = 1.0;
+    gtk_widget_override_color(pStatusBar, GTK_STATE_FLAG_NORMAL, &color_soft_gray);
+
     UpdateStatusBar(EMU_DESMUME_NAME_AND_VERSION());
     gtk_box_pack_end(GTK_BOX(pBox), pStatusBar, FALSE, FALSE, 0);
 
