@@ -61,12 +61,16 @@ bool init_sdl_3Demu(void)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
     win = SDL_CreateWindow(NULL, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 192, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
-    if (!win)
+    if (!win) {
+        fprintf(stderr, "SDL: Failed to create a window: %s\n", SDL_GetError());
         return false;
+    }
 
     ctx = SDL_GL_CreateContext(win);
-    if (!ctx)
+    if (!ctx) {
+        fprintf(stderr, "SDL: Failed to create an OpenGL context: %s\n", SDL_GetError());
         return false;
+    }
 
     printf("OGL/SDL Renderer has finished the initialization.\n");
 
