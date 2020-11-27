@@ -192,7 +192,6 @@ struct NDS_header
 
 extern void debug();
 NDSError NDS_GetLastError();
-static void NDS_CurrentCPUInfoToNDSError(NDSError &ndsError);
 void emu_halt(EmuHaltReasonCode reasonCode, NDSErrorTag errorTag);
 
 extern u64 nds_timer;

@@ -2630,6 +2630,16 @@ bool NDS_FakeBoot()
 	return true;
 }
 
+static void NDS_CurrentCPUInfoToNDSError(NDSError &ndsError)
+{
+	ndsError.programCounterARM9		= NDS_ARM9.R[15];
+	ndsError.instructionARM9		= NDS_ARM9.instruction;
+	ndsError.instructionAddrARM9	= NDS_ARM9.instruct_adr;
+	ndsError.programCounterARM7		= NDS_ARM7.R[15];
+	ndsError.instructionARM7		= NDS_ARM7.instruction;
+	ndsError.instructionAddrARM7	= NDS_ARM7.instruct_adr;
+}
+
 bool _HACK_DONT_STOPMOVIE = false;
 void NDS_Reset()
 {
@@ -3159,16 +3169,6 @@ void NDS_swapScreen()
 NDSError NDS_GetLastError()
 {
 	return _lastNDSError;
-}
-
-static void NDS_CurrentCPUInfoToNDSError(NDSError &ndsError)
-{
-	ndsError.programCounterARM9		= NDS_ARM9.R[15];
-	ndsError.instructionARM9		= NDS_ARM9.instruction;
-	ndsError.instructionAddrARM9	= NDS_ARM9.instruct_adr;
-	ndsError.programCounterARM7		= NDS_ARM7.R[15];
-	ndsError.instructionARM7		= NDS_ARM7.instruction;
-	ndsError.instructionAddrARM7	= NDS_ARM7.instruct_adr;
 }
 
 void emu_halt(EmuHaltReasonCode reasonCode, NDSErrorTag errorTag)
