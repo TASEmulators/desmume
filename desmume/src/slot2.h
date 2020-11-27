@@ -30,8 +30,8 @@ class Slot2Info
 {
 public:
 	virtual const char* name() const = 0;
-	virtual const char* descr() const  = 0;
-	virtual const u8 id() const  = 0;
+	virtual const char* descr() const = 0;
+	virtual u8 id() const = 0;
 };
 
 class Slot2InfoSimple : public Slot2Info
@@ -45,7 +45,7 @@ public:
 	}
 	virtual const char* name() const { return mName; }
 	virtual const char* descr() const { return mDescr; }
-	virtual const u8 id() const { return mID; }
+	virtual u8 id() const { return mID; }
 private:
 	const char* mName, *mDescr;
 	const u8 mID;
