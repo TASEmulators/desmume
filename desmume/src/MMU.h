@@ -701,7 +701,7 @@ FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u3
 #endif
 
 	// break points, wheee
-	for (int i = 0; i < memReadBreakPoints.size(); ++i)
+	for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
 	{
 		if (addr == memReadBreakPoints[i])
 		{
@@ -746,7 +746,7 @@ FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 #endif
 
 	// break points, wheee
-	for (int i = 0; i < memReadBreakPoints.size(); ++i)
+	for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
 	{
 		if (addr == memReadBreakPoints[i])
 		{
@@ -803,7 +803,7 @@ FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 	CallRegisteredLuaMemHook(addr, 4, /*FIXME*/ 0, LUAMEMHOOK_READ);
 #endif
 	// break points, wheee
-	for (int i = 0; i < memReadBreakPoints.size(); ++i)
+	for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
 	{
 		if (addr == memReadBreakPoints[i])
 		{
@@ -868,7 +868,7 @@ FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	}
 
 	// break points, wheee
-	for (int i = 0; i < memWriteBreakPoints.size(); ++i)
+	for (size_t i = 0; i < memWriteBreakPoints.size(); ++i)
 	{
 		if (addr == memWriteBreakPoints[i])
 		{
@@ -917,7 +917,7 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	}
 
 	// break points, wheee
-	for (int i = 0; i < memWriteBreakPoints.size(); ++i)
+	for (size_t i = 0; i < memWriteBreakPoints.size(); ++i)
 	{
 		if (addr == memWriteBreakPoints[i])
 		{
@@ -966,7 +966,7 @@ FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	}
 
 	// break points, wheee
-	for (int i = 0; i < memWriteBreakPoints.size(); ++i)
+	for (size_t i = 0; i < memWriteBreakPoints.size(); ++i)
 	{
 		if (addr == memWriteBreakPoints[i])
 		{
