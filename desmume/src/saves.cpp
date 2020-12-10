@@ -748,6 +748,7 @@ void loadstate_slot(int num)
 				}
 				seed++;
 				savestate_save(fname.c_str());
+				printf("Creating backup of current state prior to loadstate as path: %s\n",fname.c_str());
 				break;
 			}
 		}
