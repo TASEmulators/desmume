@@ -2293,8 +2293,8 @@ void gfx3d_glFlush(u32 v)
 
 static bool gfx3d_ysort_compare(int num1, int num2)
 {
-	const POLY &poly1 = gfx3d.polylist->list[num1];
-	const POLY &poly2 = gfx3d.polylist->list[num2];
+	const POLY &poly1 = *_clippedPolyUnsortedList[num1].poly;
+	const POLY &poly2 = *_clippedPolyUnsortedList[num2].poly;
 	
 	//this may be verified by checking the game create menus in harvest moon island of happiness
 	//also the buttons in the knights in the nightmare frontend depend on this and the perspective division
@@ -2401,8 +2401,10 @@ void gfx3d_GenerateRenderLists(const ClipperMode clippingMode)
 	//find the min and max y values for each poly.
 	//the w-division here is just an approximation to fix the shop in harvest moon island of happiness
 	//also the buttons in the knights in the nightmare frontend depend on this
-	size_t ysortCount = (gfx3d.state.sortmode) ? gfx3d.clippedPolyOpaqueCount : gfx3d.clippedPolyCount;
-	for (size_t i = 0; i < ysortCount; i++)
+	//we process all polys here instead of just the opaque ones (which have been sorted to the beginning of the index list earlier) because
+	//1. otherwise it is basically two passes through the list and will probably run slower than one pass through the list
+	//2. most geometry is opaque which is always sorted anyway
+	for (size_t i = 0; i < gfx3d.clippedPolyCount; i++)
 	{
 		// TODO: Possible divide by zero with the w-coordinate.
 		// Is the vertex being read correctly? Is 0 a valid value for w?
