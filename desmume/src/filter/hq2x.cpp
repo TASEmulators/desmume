@@ -151,7 +151,7 @@
 
 static void hq2x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, const u32 *src0, const u32 *src1, const u32 *src2, unsigned count)
 {
-	for (int i = 0; i < count; ++i)
+	for (unsigned i = 0; i < count; ++i)
 	{
 		u8 mask = 0;
 		u32 c[9];
@@ -409,7 +409,7 @@ static void hq2x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, const u32 *s
 
 static void hq2xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, const u32 *src0, const u32 *src1, const u32 *src2, unsigned count)
 {
-	for (int i = 0; i < count; ++i)
+	for (unsigned i = 0; i < count; ++i)
 	{
 		u8 mask = 0;
 		u32 c[9];

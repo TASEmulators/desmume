@@ -43,7 +43,7 @@ void hq4x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst
 				 const u32 *src0, const u32 *src1, const u32 *src2,
 				 unsigned count, unsigned flag)
 {
-	for (int i = 0; i < count; ++i)
+	for (unsigned i = 0; i < count; ++i)
 	{
 		u8 mask = 0;
 		u32 c[9];
@@ -132,7 +132,7 @@ void hq4xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict ds
 				  const u32 *src0, const u32 *src1, const u32 *src2,
 				  unsigned count, unsigned flag)
 {
-	for (int i = 0; i < count; ++i)
+	for (unsigned i = 0; i < count; ++i)
 	{
 		u8 mask = 0;
 		u32 c[9];

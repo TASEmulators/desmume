@@ -245,7 +245,7 @@ static inline u32 interp_32_97(u32 p1, u32 p2)
 //return 0;
 //}
 
-static int interp_32_diff(u32 p1, u32 p2)
+static inline int interp_32_diff(u32 p1, u32 p2)
 {
   int r, g, b;
   int y, u, v;
@@ -306,28 +306,6 @@ static FORCEINLINE u32 ABS(s32 x) { return (x+(x>>31))^(x>>31); } // faster
 //  return 0;
 //}
 
-static int interp_32_diff2(u32 p1, u32 p2)
-{
-  int r, g, b;
-  int y, u, v;
-
-  if ((p1 & 0xF0F0F0) == (p2 & 0xF0F0F0))
-    return 0;
-
-  b = (int)((p1 & 0xF8) - (p2 & 0xF8));
-  g = (int)((p1 & 0xF800) - (p2 & 0xF800)) >> 8;
-  r = (int)((p1 & 0xF80000) - (p2 & 0xF80000)) >> 16;
-
-//  y =  30*r + 58*g + 12*b;
-  y =  33*r + 36*g + 31*b;
-  u = -14*r - 29*g + 44*b;
-  v =  62*r - 51*g - 10*b;
-
-  if (11*ABS(y) + 8*ABS(u) + 6*ABS(v) > INTERP_LIMIT2)
-    return 1;
-
-  return 0;
-}
 //
 //static void interp_set(unsigned bits_per_pixel)
 //{
