@@ -252,10 +252,11 @@ error:
  */
 #ifdef GDB_STUB
 void *
-createThread_gdb( void (*thread_function)( void *data),
-                  void *thread_data) {
-  SDL_Thread *new_thread = SDL_CreateThread( (int (*)(void *data))thread_function,
-                                             thread_data);
+createThread_gdb(void (*thread_function)(void *data),
+                 void *thread_data) {
+  SDL_Thread *new_thread = SDL_CreateThread((int (*)(void *data))thread_function,
+                                            "gdb-stub",
+                                            thread_data);
 
   return new_thread;
 }
