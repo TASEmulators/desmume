@@ -1969,25 +1969,14 @@ static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, g
 
 
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
-	GtkWidget *gsDialog;
-	GtkBox *wBox;
+	GtkDialog *dialog;
 	GtkGrid *wGrid;
 	GtkComboBox *coreCombo, *wScale, *wMultisample;
 	GtkToggleButton *wPosterize, *wSmoothing, *wHCInterpolate;
 
-	gsDialog = gtk_dialog_new_with_buttons("Graphics Settings",
-			GTK_WINDOW(pWindow),
-			GTK_DIALOG_MODAL,
-			"_OK",
-			GTK_RESPONSE_OK,
-			"_Cancel",
-			GTK_RESPONSE_CANCEL,
-			NULL);
-
 	GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/graphics.ui");
-	wBox = GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(gsDialog)));
+	dialog = GTK_DIALOG(gtk_builder_get_object(builder, "dialog"));
 	wGrid = GTK_GRID(gtk_builder_get_object(builder, "graphics_grid"));
-	gtk_box_pack_start(wBox, GTK_WIDGET(wGrid), TRUE, FALSE, 0);
 	coreCombo = GTK_COMBO_BOX(gtk_builder_get_object(builder, "core_combo"));
 	wScale = GTK_COMBO_BOX(gtk_builder_get_object(builder, "scale"));
 	wMultisample = GTK_COMBO_BOX(gtk_builder_get_object(builder, "multisample"));
@@ -2023,9 +2012,9 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	// SoftRasterizer High Color Interpolation
 	gtk_toggle_button_set_active(wHCInterpolate, CommonSettings.GFX3D_HighResolutionInterpolateColor);
 
-	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(gsDialog)));
+	gtk_widget_show_all(gtk_dialog_get_content_area(dialog));
 
-    switch (gtk_dialog_run(GTK_DIALOG(gsDialog))) {
+    switch (gtk_dialog_run(dialog)) {
     case GTK_RESPONSE_OK:
     // Start: OK Response block
     {
@@ -2093,7 +2082,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
         break;
     }
 
-	gtk_widget_destroy(gsDialog);
+	gtk_widget_destroy(GTK_WIDGET(dialog));
 
 }
 
