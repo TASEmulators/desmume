@@ -3,6 +3,12 @@ dep_x11 = dependency('x11')
 
 gtk_dependencies = dependencies + [dep_gtk3, dep_x11]
 
+gnome = import('gnome')
+
+gresource = gnome.compile_resources(
+  'gresource', 'desmume.gresource.xml',
+)
+
 desmume_src = [
   'avout_pipe_base.cpp',
   'avout_x264.cpp',
@@ -17,6 +23,7 @@ desmume_src = [
   'sdl_3Demu.cpp',
   'cheatsGTK.cpp',
   'main.cpp',
+  gresource,
 ]
 
 # TODO: why do we have to redeclare it here with one more fs level?

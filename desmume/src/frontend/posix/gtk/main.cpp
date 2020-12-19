@@ -1124,42 +1124,6 @@ static const GActionEntry app_entries[] = {
     { "about",         About },
 };
 
-static const char *toolbar =
-"<?xml version='1.0' encoding='UTF-8'?>"
-"<interface>"
-"  <requires lib='gtk+' version='3.24'/>"
-"  <object class='GtkBox' id='toolbar'>"
-"    <child>"
-"      <object class='GtkToolButton'>"
-"        <property name='label' translatable='yes'>_Open</property>"
-"        <property name='icon-name'>document-open</property>"
-"        <property name='action-name'>app.open</property>"
-"      </object>"
-"    </child>"
-"    <child>"
-"      <object class='GtkToolButton'>"
-"        <property name='label' translatable='yes'>_Run</property>"
-"        <property name='icon-name'>media-playback-start</property>"
-"        <property name='action-name'>app.run</property>"
-"      </object>"
-"    </child>"
-"    <child>"
-"      <object class='GtkToolButton'>"
-"        <property name='label' translatable='yes'>_Pause</property>"
-"        <property name='icon-name'>media-playback-pause</property>"
-"        <property name='action-name'>app.pause</property>"
-"      </object>"
-"    </child>"
-"    <child>"
-"      <object class='GtkToolButton'>"
-"        <property name='label' translatable='yes'>_Quit</property>"
-"        <property name='icon-name'>application-exit</property>"
-"        <property name='action-name'>app.quit</property>"
-"      </object>"
-"    </child>"
-"  </object>"
-"</interface>";
-
 static const char *graphics_settings =
 "<?xml version='1.0' encoding='UTF-8'?>"
 "<interface>"
@@ -4052,7 +4016,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
     gtk_container_add(GTK_CONTAINER(pWindow), pBox);
 
     /* Create the toolbar */
-    GtkBuilder *builder = gtk_builder_new_from_string(toolbar, -1);
+    GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/toolbar.ui");
     pToolBar = GTK_WIDGET(gtk_builder_get_object(builder, "toolbar"));
     gtk_container_add(GTK_CONTAINER(pBox), pToolBar);
     g_object_unref(builder);

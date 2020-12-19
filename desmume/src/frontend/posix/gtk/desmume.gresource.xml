@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/desmume/DeSmuME">
+    <file preprocess="xml-stripblanks" compressed="true">org.desmume.DeSmuME.svg</file>
+    <file preprocess="xml-stripblanks" compressed="true">toolbar.ui</file>
+  </gresource>
+</gresources>
