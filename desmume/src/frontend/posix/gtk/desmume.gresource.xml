@@ -4,6 +4,7 @@
     <file preprocess="xml-stripblanks" compressed="true">org.desmume.DeSmuME.svg</file>
     <file preprocess="xml-stripblanks" compressed="true">main.ui</file>
     <file preprocess="xml-stripblanks" compressed="true">menu.ui</file>
+    <file preprocess="xml-stripblanks" compressed="true">emulation_settings.ui</file>
     <file preprocess="xml-stripblanks" compressed="true">graphics.ui</file>
   </gresource>
 </gresources>

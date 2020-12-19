@@ -1882,71 +1882,48 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
 
 #ifdef HAVE_JIT
 
-static void EmulationSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data){
-	GtkWidget *esDialog;
-	GtkWidget *esKey;
+static void EmulationSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
+    GtkDialog *dialog;
+    GtkCheckButton *use_dynarec;
+    GtkAdjustment *block_size;
 
-	esDialog=gtk_dialog_new_with_buttons("Emulation Settings",
-			GTK_WINDOW(pWindow),
-			GTK_DIALOG_MODAL,
-			"_OK",GTK_RESPONSE_OK,
-			"_Cancel",GTK_RESPONSE_CANCEL,
-			NULL);
+    GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/emulation_settings.ui");
+    dialog = GTK_DIALOG(gtk_builder_get_object(builder, "dialog"));
+    use_dynarec = GTK_CHECK_BUTTON(gtk_builder_get_object(builder, "use-dynarec"));
+    block_size = GTK_ADJUSTMENT(gtk_builder_get_object(builder, "block-size"));
+    g_object_unref(builder);
 
-    esKey=gtk_label_new("CPU Mode:\n");
-    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(esDialog))), esKey,TRUE, FALSE, 0);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(use_dynarec), config.use_jit);
+    g_signal_connect(G_OBJECT(use_dynarec), "clicked", G_CALLBACK(ToggleJIT), GINT_TO_POINTER(0));
 
-	esKey=gtk_check_button_new_with_label("Use dynamic recompiler");
-	gtk_toggle_button_set_active((GtkToggleButton*)esKey,config.use_jit);
-	g_signal_connect(G_OBJECT(esKey),"clicked",G_CALLBACK(ToggleJIT),GINT_TO_POINTER(0));
-    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(esDialog))), esKey,TRUE, FALSE, 0);
+    gtk_adjustment_set_value(block_size, config.jit_max_block_size);
+    g_signal_connect(G_OBJECT(block_size), "value_changed", G_CALLBACK(JITMaxBlockSizeChanged), NULL);
 
-    esKey=gtk_label_new("Block Size (1 - accuracy, 100 - fastest):");
-    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(esDialog))), esKey,TRUE, FALSE, 0);
+    bool prev_use_jit = config.use_jit;
+    int prev_jit_max_block_size = config.jit_max_block_size;
 
-    GtkAdjustment* JITBlockSizeAdjustment=(GtkAdjustment*)gtk_adjustment_new(config.jit_max_block_size,1,100,1,5,0);
-    esKey=gtk_scale_new(GTK_ORIENTATION_HORIZONTAL, JITBlockSizeAdjustment);
-    gtk_scale_set_digits((GtkScale*)esKey,0);
-    g_signal_connect(G_OBJECT(JITBlockSizeAdjustment),"value_changed",G_CALLBACK(JITMaxBlockSizeChanged),NULL);
-    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(esDialog))), esKey,TRUE, FALSE, 0);
-
-    esKey=gtk_label_new(
-    		"Enabling this will get you 0-50% speedups. It is optional because it\n"
-    		"may still contain small small bugs, due mostly merely to newness, \n"
-    		"which can safely be fixed in time. Furthermore, you may have to \n"
-    		"tune the block size to prevent some games from breaking.\n"
-    		"\n"
-    		"This should not be assumed to be deterministic."
-    		);
-    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(esDialog))), esKey,TRUE, FALSE, 0);
-
-	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(esDialog)));
-
-	bool prev_use_jit=config.use_jit;
-	int prev_jit_max_block_size=config.jit_max_block_size;
-
-	switch (gtk_dialog_run(GTK_DIALOG(esDialog))) {
-	case GTK_RESPONSE_OK:
-		CommonSettings.jit_max_block_size=config.jit_max_block_size;
-		arm_jit_sync();
-		arm_jit_reset(CommonSettings.use_jit=config.use_jit);
-		break;
-	case GTK_RESPONSE_CANCEL:
-	case GTK_RESPONSE_NONE:
-		config.use_jit=prev_use_jit;
-		config.jit_max_block_size=prev_jit_max_block_size;
-		break;
-	}
-	gtk_widget_destroy(esDialog);
+    switch (gtk_dialog_run(dialog)) {
+    case GTK_RESPONSE_OK:
+        CommonSettings.jit_max_block_size = config.jit_max_block_size;
+        arm_jit_sync();
+        arm_jit_reset(CommonSettings.use_jit = config.use_jit);
+        break;
+    case GTK_RESPONSE_CANCEL:
+    case GTK_RESPONSE_NONE:
+        config.use_jit = prev_use_jit;
+        config.jit_max_block_size = prev_jit_max_block_size;
+        break;
+    }
+    gtk_widget_destroy(GTK_WIDGET(dialog));
 
 }
 
-static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void * nullPtr){
-	config.jit_max_block_size=(int)gtk_adjustment_get_value(adj);
+static void JITMaxBlockSizeChanged(GtkAdjustment* adj, gpointer data) {
+    config.jit_max_block_size = (int)gtk_adjustment_get_value(adj);
 }
 
-static void ToggleJIT(){
-	config.use_jit=!config.use_jit;
+static void ToggleJIT() {
+    config.use_jit = !config.use_jit;
 }
 
 #endif
