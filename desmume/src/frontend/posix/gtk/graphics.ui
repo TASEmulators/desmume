@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <object class="GtkGrid" id="graphics_grid">
+    <child>
+      <object class="GtkLabel">
+        <property name="label" translatable="yes">3D Core:</property>
+      </object>
+      <packing>
+        <property name="left_attach">0</property>
+        <property name="top_attach">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkComboBoxText" id="core_combo">
+        <items>
+          <item translatable="yes">Null</item>
+          <item translatable="yes">SoftRasterizer</item>
+          <item translatable="yes">OpenGL</item>
+        </items>
+      </object>
+      <packing>
+        <property name="left_attach">1</property>
+        <property name="top_attach">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkLabel">
+        <property name="label" translatable="yes">3D Texture Upscaling:</property>
+      </object>
+      <packing>
+        <property name="left_attach">0</property>
+        <property name="top_attach">1</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkComboBoxText" id="scale">
+        <items>
+          <item translatable="yes">×1</item>
+          <item translatable="yes">×2</item>
+          <item translatable="yes">×4</item>
+        </items>
+      </object>
+      <packing>
+        <property name="left_attach">1</property>
+        <property name="top_attach">1</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="posterize">
+        <property name="label" translatable="yes">3D Texture Deposterization</property>
+        <property name="draw_indicator">True</property>
+      </object>
+      <packing>
+        <property name="left_attach">0</property>
+        <property name="top_attach">2</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="smoothing">
+        <property name="label" translatable="yes">3D Texture Smoothing</property>
+        <property name="draw_indicator">True</property>
+      </object>
+      <packing>
+        <property name="left_attach">0</property>
+        <property name="top_attach">3</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="hc_interpolate">
+        <property name="label" translatable="yes">High Resolution Color Interpolation (SoftRasterizer)</property>
+        <property name="draw_indicator">True</property>
+      </object>
+      <packing>
+        <property name="left_attach">1</property>
+        <property name="top_attach">3</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkLabel">
+        <property name="label" translatable="yes">Multisample Antialiasing (OpenGL):</property>
+      </object>
+      <packing>
+        <property name="left_attach">0</property>
+        <property name="top_attach">4</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkComboBoxText" id="multisample">
+        <items>
+          <item translatable="yes">None</item>
+          <item translatable="yes">2</item>
+          <item translatable="yes">4</item>
+          <item translatable="yes">8</item>
+          <item translatable="yes">16</item>
+          <item translatable="yes">32</item>
+        </items>
+      </object>
+      <packing>
+        <property name="left_attach">1</property>
+        <property name="top_attach">4</property>
+      </packing>
+    </child>
+  </object>
+</interface>
