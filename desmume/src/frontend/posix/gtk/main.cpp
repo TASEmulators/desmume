@@ -3862,8 +3862,6 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     SDL_TimerID limiter_timer = 0;
 
-    GtkWidget *pBox;
-
     /* use any language set on the command line */
     if ( my_config->firmware_language != -1) {
 		CommonSettings.fwConfig.language = my_config->firmware_language;
@@ -4001,25 +3999,19 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_printerr("Using %d threads for video filter.\n", CommonSettings.num_cores);
     video = new VideoFilter(256, 384, VideoFilterTypeID_None, CommonSettings.num_cores);
 
-    /* Create the window */
-    pWindow = gtk_application_window_new(GTK_APPLICATION(app));
-    gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME");
-    gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
-    gtk_window_set_icon_name(GTK_WINDOW (pWindow), "DeSmuME");
+    /* Fetch the main elements from the window */
+    GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/main.ui");
+    pWindow = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
+    pToolBar = GTK_WIDGET(gtk_builder_get_object(builder, "toolbar"));
+    pDrawingArea = GTK_WIDGET(gtk_builder_get_object(builder, "drawing-area"));
+    pStatusBar = GTK_WIDGET(gtk_builder_get_object(builder, "status-bar"));
+    g_object_unref(builder);
+
+    gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(pWindow));
 
     g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(DoQuit), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
-
-    /* Create the GtkBox */
-    pBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    gtk_container_add(GTK_CONTAINER(pWindow), pBox);
-
-    /* Create the toolbar */
-    GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/toolbar.ui");
-    pToolBar = GTK_WIDGET(gtk_builder_get_object(builder, "toolbar"));
-    gtk_container_add(GTK_CONTAINER(pBox), pToolBar);
-    g_object_unref(builder);
 
     /* Update audio toggle status */
     if (my_config->disable_sound || !config.audio_enabled) {
@@ -4336,14 +4328,8 @@ common_gtk_main(GApplication *app, gpointer user_data)
     }, open_recent_menu);
     g_list_free(items);
 
-    /* Creating the place for showing DS screens */
-    pDrawingArea = gtk_drawing_area_new();
-    gtk_widget_set_vexpand(pDrawingArea, TRUE);
-
     /* This toggle action must not be set active before the pDrawingArea initialization to avoid a GTK warning */
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "gap")), g_variant_new_boolean(config.view_gap));
-
-    gtk_container_add (GTK_CONTAINER(pBox), pDrawingArea);
 
     gtk_widget_set_events(pDrawingArea,
                           GDK_EXPOSURE_MASK | GDK_LEAVE_NOTIFY_MASK |
@@ -4362,9 +4348,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
                      G_CALLBACK(ConfigureDrawingArea), NULL ) ;
 
     /* Status bar */
-    pStatusBar = gtk_statusbar_new();
     UpdateStatusBar(EMU_DESMUME_NAME_AND_VERSION());
-    gtk_box_pack_end(GTK_BOX(pBox), pStatusBar, FALSE, FALSE, 0);
 
     gtk_widget_show_all(pWindow);
 

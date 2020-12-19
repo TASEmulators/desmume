@@ -2,6 +2,6 @@
 <gresources>
   <gresource prefix="/org/desmume/DeSmuME">
     <file preprocess="xml-stripblanks" compressed="true">org.desmume.DeSmuME.svg</file>
-    <file preprocess="xml-stripblanks" compressed="true">toolbar.ui</file>
+    <file preprocess="xml-stripblanks" compressed="true">main.ui</file>
   </gresource>
 </gresources>
