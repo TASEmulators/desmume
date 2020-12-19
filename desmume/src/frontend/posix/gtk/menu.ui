@@ -1,0 +1,845 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<interface>
+  <menu id='menubar'>
+    <submenu>
+      <attribute name='label' translatable='yes'>_File</attribute>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Open</attribute>
+          <attribute name='action'>app.open</attribute>
+          <attribute name='accel'>&lt;Control&gt;o</attribute>
+        </item>
+        <submenu id='open_recent'>
+          <attribute name='label' translatable='yes'>Open _recent</attribute>
+        </submenu>
+      </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Run</attribute>
+          <attribute name='action'>app.run</attribute>
+          <attribute name='accel'>Pause</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Pause</attribute>
+          <attribute name='action'>app.pause</attribute>
+          <attribute name='accel'>Pause</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Re_set</attribute>
+          <attribute name='action'>app.reset</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>Save state _to…</attribute>
+          <attribute name='action'>app.save_state_to</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Load state _from…</attribute>
+          <attribute name='action'>app.load_state_from</attribute>
+        </item>
+        <submenu>
+          <attribute name='label' translatable='yes'>_Save state</attribute>
+          <section id='savestates'>
+            <item>
+              <attribute name='label' translatable='yes'>_1</attribute>
+              <attribute name='action'>app.savestate</attribute>
+              <attribute name='target' type='u'>1</attribute>
+              <attribute name='accel'>&lt;Shift&gt;F1</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_2</attribute>
+              <attribute name='action'>app.savestate</attribute>
+              <attribute name='target' type='u'>2</attribute>
+              <attribute name='accel'>&lt;Shift&gt;F2</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_3</attribute>
+              <attribute name='action'>app.savestate</attribute>
+              <attribute name='target' type='u'>3</attribute>
+              <attribute name='accel'>&lt;Shift&gt;F3</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_4</attribute>
+              <attribute name='action'>app.savestate</attribute>
+              <attribute name='target' type='u'>4</attribute>
+              <attribute name='accel'>&lt;Shift&gt;F4</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_5</attribute>
+              <attribute name='action'>app.savestate</attribute>
+              <attribute name='target' type='u'>5</attribute>
+              <attribute name='accel'>&lt;Shift&gt;F5</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_6</attribute>
+              <attribute name='action'>app.savestate</attribute>
+              <attribute name='target' type='u'>6</attribute>
+              <attribute name='accel'>&lt;Shift&gt;F6</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_7</attribute>
+              <attribute name='action'>app.savestate</attribute>
+              <attribute name='target' type='u'>7</attribute>
+              <attribute name='accel'>&lt;Shift&gt;F7</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_8</attribute>
+              <attribute name='action'>app.savestate</attribute>
+              <attribute name='target' type='u'>8</attribute>
+              <attribute name='accel'>&lt;Shift&gt;F8</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_9</attribute>
+              <attribute name='action'>app.savestate</attribute>
+              <attribute name='target' type='u'>9</attribute>
+              <attribute name='accel'>&lt;Shift&gt;F9</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>1_0</attribute>
+              <attribute name='action'>app.savestate</attribute>
+              <attribute name='target' type='u'>0</attribute>
+              <attribute name='accel'>&lt;Shift&gt;F10</attribute>
+            </item>
+          </section>
+        </submenu>
+        <submenu>
+          <attribute name='label' translatable='yes'>_Load state</attribute>
+          <section id='loadstates'>
+            <item>
+              <attribute name='label' translatable='yes'>_1</attribute>
+              <attribute name='action'>app.loadstate</attribute>
+              <attribute name='target' type='u'>1</attribute>
+              <attribute name='accel'>F1</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_2</attribute>
+              <attribute name='action'>app.loadstate</attribute>
+              <attribute name='target' type='u'>2</attribute>
+              <attribute name='accel'>F2</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_3</attribute>
+              <attribute name='action'>app.loadstate</attribute>
+              <attribute name='target' type='u'>3</attribute>
+              <attribute name='accel'>F3</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_4</attribute>
+              <attribute name='action'>app.loadstate</attribute>
+              <attribute name='target' type='u'>4</attribute>
+              <attribute name='accel'>F4</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_5</attribute>
+              <attribute name='action'>app.loadstate</attribute>
+              <attribute name='target' type='u'>5</attribute>
+              <attribute name='accel'>F5</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_6</attribute>
+              <attribute name='action'>app.loadstate</attribute>
+              <attribute name='target' type='u'>6</attribute>
+              <attribute name='accel'>F6</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_7</attribute>
+              <attribute name='action'>app.loadstate</attribute>
+              <attribute name='target' type='u'>7</attribute>
+              <attribute name='accel'>F7</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_8</attribute>
+              <attribute name='action'>app.loadstate</attribute>
+              <attribute name='target' type='u'>8</attribute>
+              <attribute name='accel'>F8</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_9</attribute>
+              <attribute name='action'>app.loadstate</attribute>
+              <attribute name='target' type='u'>9</attribute>
+              <attribute name='accel'>F9</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>1_0</attribute>
+              <attribute name='action'>app.loadstate</attribute>
+              <attribute name='target' type='u'>0</attribute>
+              <attribute name='accel'>F10</attribute>
+            </item>
+          </section>
+        </submenu>
+      </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Import backup memory…</attribute>
+          <attribute name='action'>app.importbackup</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Export backup memory…</attribute>
+          <attribute name='action'>app.exportbackup</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>Record movie _to…</attribute>
+          <attribute name='action'>app.record_movie_to</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Play movie _from…</attribute>
+          <attribute name='action'>app.play_movie_from</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Stop movie</attribute>
+          <attribute name='action'>app.stop_movie</attribute>
+        </item>
+      </section>
+      <section>
+        <submenu>
+          <attribute name='label' translatable='yes'>Record _video/audio</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>Record lossless H._264 (video only)…</attribute>
+              <attribute name='action'>app.record_x264</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>Record _FLAC (audio only)…</attribute>
+              <attribute name='action'>app.record_flac</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Stop recording</attribute>
+              <attribute name='action'>app.stop_recording</attribute>
+            </item>
+          </section>
+        </submenu>
+<!--#ifdef DESMUME_GTK_FIRMWARE_BROKEN
+        <item>
+          <attribute name='label' translatable='yes'>Load Firm_ware file</attribute>
+          <attribute name='action'>app.loadfirmware</attribute>
+        </item>
+#endif -->
+        <item>
+          <attribute name='label' translatable='yes'>Take a screenshot</attribute>
+          <attribute name='action'>app.printscreen</attribute>
+          <attribute name='accel'>&lt;Control&gt;s</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Quit</attribute>
+          <attribute name='action'>app.quit</attribute>
+          <attribute name='accel'>&lt;Control&gt;q</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name='label' translatable='yes'>_View</attribute>
+      <section id='view'>
+        <submenu>
+          <attribute name='label' translatable='yes'>LCDs _Layout</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_Vertical</attribute>
+              <attribute name='action'>app.orient</attribute>
+              <attribute name='target'>vertical</attribute>
+              <attribute name='accel'>&lt;Control&gt;1</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Horizontal</attribute>
+              <attribute name='action'>app.orient</attribute>
+              <attribute name='target'>horizontal</attribute>
+              <attribute name='accel'>&lt;Control&gt;2</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Single screen</attribute>
+              <attribute name='action'>app.orient</attribute>
+              <attribute name='target'>single</attribute>
+              <attribute name='accel'>&lt;Control&gt;0</attribute>
+            </item>
+          </section>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>S_wap screens</attribute>
+              <attribute name='action'>app.swapscreens</attribute>
+              <attribute name='accel'>space</attribute>
+            </item>
+          </section>
+        </submenu>
+        <submenu>
+          <attribute name='label' translatable='yes'>_Rotation</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_0°</attribute>
+              <attribute name='action'>app.rotate</attribute>
+              <attribute name='target'>0</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_90°</attribute>
+              <attribute name='action'>app.rotate</attribute>
+              <attribute name='target'>90</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_180°</attribute>
+              <attribute name='action'>app.rotate</attribute>
+              <attribute name='target'>180</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_270°</attribute>
+              <attribute name='action'>app.rotate</attribute>
+              <attribute name='target'>270</attribute>
+            </item>
+          </section>
+        </submenu>
+        <submenu>
+          <attribute name='label' translatable='yes'>_Window Size</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>0_.5×</attribute>
+              <attribute name='action'>app.winsize</attribute>
+              <attribute name='target'>0.5</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_1×</attribute>
+              <attribute name='action'>app.winsize</attribute>
+              <attribute name='target'>1</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>1.5×</attribute>
+              <attribute name='action'>app.winsize</attribute>
+              <attribute name='target'>1.5</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_2×</attribute>
+              <attribute name='action'>app.winsize</attribute>
+              <attribute name='target'>2</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>2.5×</attribute>
+              <attribute name='action'>app.winsize</attribute>
+              <attribute name='target'>2.5</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_3×</attribute>
+              <attribute name='action'>app.winsize</attribute>
+              <attribute name='target'>3</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_4×</attribute>
+              <attribute name='action'>app.winsize</attribute>
+              <attribute name='target'>4</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_5×</attribute>
+              <attribute name='action'>app.winsize</attribute>
+              <attribute name='target'>5</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Scale to window</attribute>
+              <attribute name='action'>app.winsize</attribute>
+              <attribute name='target'>scale</attribute>
+            </item>
+          </section>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_Fullscreen</attribute>
+              <attribute name='action'>app.fullscreen</attribute>
+              <attribute name='accel'>F11</attribute>
+            </item>
+          </section>
+        </submenu>
+        <item>
+          <attribute name='label' translatable='yes'>Screen _Gap</attribute>
+          <attribute name='action'>app.gap</attribute>
+        </item>
+        <submenu>
+          <attribute name='label' translatable='yes'>Video _Filter</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_None</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>none</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_LQ2X</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>lq2x</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_LQ2XS</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>lq2xs</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_HQ2X</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>hq2x</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_HQ2XS</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>hq2xs</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_HQ3X</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>hq3x</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_HQ3XS</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>hq3xs</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_HQ4X</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>hq4x</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_HQ4XS</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>hq4xs</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_2xSaI</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>2xsai</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Super2xSaI</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>super2xsai</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_SuperEagle</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>supereagle</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Scanline</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>scanline</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Bilinear</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>bilinear</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Nearest2X</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>nearest2x</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Nearest1_5X</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>nearest_1point5x</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_NearestPlus1_5X</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>nearestplus_1point5x</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_EPX</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>epx</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_EPXPlus</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>epxplus</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_EPX1_5X</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>epx_1point5x</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_EPXPlus1_5X</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>epxplus_1point5x</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_2xBRZ</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>2xbrz</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_3xBRZ</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>3xbrz</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_4xBRZ</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>4xbrz</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_5xBRZ</attribute>
+              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='target'>5xbrz</attribute>
+            </item>
+          </section>
+        </submenu>
+        <submenu>
+          <attribute name='label' translatable='yes'>S_econdary Video Filter</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_Fast</attribute>
+              <attribute name='action'>app.interpolation</attribute>
+              <attribute name='target'>fast</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Nearest-neighbor</attribute>
+              <attribute name='action'>app.interpolation</attribute>
+              <attribute name='target'>nearest</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Good</attribute>
+              <attribute name='action'>app.interpolation</attribute>
+              <attribute name='target'>good</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>B_ilinear</attribute>
+              <attribute name='action'>app.interpolation</attribute>
+              <attribute name='target'>bilinear</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>B_est</attribute>
+              <attribute name='action'>app.interpolation</attribute>
+              <attribute name='target'>best</attribute>
+            </item>
+          </section>
+        </submenu>
+      </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>Show _menu</attribute>
+          <attribute name='action'>app.view_menu</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Show _toolbar</attribute>
+          <attribute name='action'>app.view_toolbar</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Show _statusbar</attribute>
+          <attribute name='action'>app.view_statusbar</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name='label' translatable='yes'>_Config</attribute>
+      <section id='config'>
+        <submenu>
+          <attribute name='label' translatable='yes'>_Frameskip</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_Limit framerate</attribute>
+              <attribute name='action'>app.enablefpslimiter</attribute>
+            </item>
+          </section>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_Auto-minimize skipping</attribute>
+              <attribute name='action'>app.frameskipA</attribute>
+            </item>
+          </section>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_0 (never skip)</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target'>0</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_1</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target'>1</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_2</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target'>2</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_3</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target'>3</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_4</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target'>4</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_5</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target'>5</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_6</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target'>6</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_7</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target'>7</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_8</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target'>8</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_9</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target'>9</attribute>
+            </item>
+          </section>
+        </submenu>
+<!-- #ifdef HAVE_JIT
+        <item>
+          <attribute name='label' translatable='yes'>Em_ulation Settings</attribute>
+          <attribute name='action'>app.emulationsettings</attribute>
+        </item>
+#endif -->
+        <item>
+          <attribute name='label' translatable='yes'>_Graphics settings</attribute>
+          <attribute name='action'>app.graphics_settings</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Enable audio</attribute>
+          <attribute name='action'>app.enableaudio</attribute>
+        </item>
+<!-- #ifdef FAKE_MIC
+        <item>
+          <attribute name='label' translatable='yes'>Fake mic _noise</attribute>
+          <attribute name='action'>app.micnoise</attribute>
+        </item>
+#endif -->
+        <submenu>
+          <attribute name='label' translatable='yes'>Audio _Synchronization</attribute>
+          <section id='audio-synchronisation'>
+            <item>
+              <attribute name='label' translatable='yes'>_Dual Asynchronous</attribute>
+              <attribute name='action'>app.spu_mode</attribute>
+              <attribute name='target'>dual-async</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>Synchronous (_N)</attribute>
+              <attribute name='action'>app.spu_mode</attribute>
+              <attribute name='target'>sync-n</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>Synchronous (_Z)</attribute>
+              <attribute name='action'>app.spu_mode</attribute>
+              <attribute name='target'>sync-z</attribute>
+            </item>
+<!-- #ifdef HAVE_LIBSOUNDTOUCH
+            <item>
+              <attribute name='label' translatable='yes'>Synchronous (_P)</attribute>
+              <attribute name='action'>app.spu_mode</attribute>
+              <attribute name='target'>sync-p</attribute>
+            </item>
+#endif -->
+          </section>
+        </submenu>
+        <submenu>
+          <attribute name='label' translatable='yes'>Audio _Interpolation</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_None</attribute>
+              <attribute name='action'>app.spu_interpolation</attribute>
+              <attribute name='target'>none</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Linear</attribute>
+              <attribute name='action'>app.spu_interpolation</attribute>
+              <attribute name='target'>linear</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Cosine</attribute>
+              <attribute name='action'>app.spu_interpolation</attribute>
+              <attribute name='target'>cosine</attribute>
+            </item>
+          </section>
+        </submenu>
+        <submenu>
+          <attribute name='label' translatable='yes'>_Cheat</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_Search</attribute>
+              <attribute name='action'>app.cheatsearch</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_List</attribute>
+              <attribute name='action'>app.cheatlist</attribute>
+            </item>
+          </section>
+        </submenu>
+        <submenu>
+          <attribute name='label' translatable='yes'>_Saves</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_0 Autodetect</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target'>autodetect</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_1 EEPROM 4kbit</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target'>eeprom-4k</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_2 EEPROM 64kbit</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target'>eeprom-64k</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_3 EEPROM 512kbit</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target'>eeprom-512k</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_4 FRAM 256kbit</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target'>fram-256k</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_5 FLASH 2mbit</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target'>flash-2m</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_6 FLASH 4mbit</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target'>flash-4m</attribute>
+            </item>
+          </section>
+        </submenu>
+        <item>
+          <attribute name='label' translatable='yes'>Set audio _volume</attribute>
+          <attribute name='action'>app.setaudiovolume</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Set firmware _language</attribute>
+          <attribute name='action'>app.setfirmwarelanguage</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Edit controls</attribute>
+          <attribute name='action'>app.editctrls</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Edit _Joystick controls</attribute>
+          <attribute name='action'>app.editjoyctrls</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name='label' translatable='yes'>_Tools</attribute>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_IO regs view</attribute>
+          <attribute name='action'>app.ioregs</attribute>
+        </item>
+        <submenu>
+          <attribute name='label' translatable='yes'>View _Layers</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_0 Main BG 0</attribute>
+              <attribute name='action'>app.layermainbg0</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_1 Main BG 1</attribute>
+              <attribute name='action'>app.layermainbg1</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_2 Main BG 2</attribute>
+              <attribute name='action'>app.layermainbg2</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_3 Main BG 3</attribute>
+              <attribute name='action'>app.layermainbg3</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_4 Main OBJ</attribute>
+              <attribute name='action'>app.layermainobj</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_5 SUB BG 0</attribute>
+              <attribute name='action'>app.layersubbg0</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_6 SUB BG 1</attribute>
+              <attribute name='action'>app.layersubbg1</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_7 SUB BG 2</attribute>
+              <attribute name='action'>app.layersubbg2</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_8 SUB BG 3</attribute>
+              <attribute name='action'>app.layersubbg3</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_9 SUB OBJ</attribute>
+              <attribute name='action'>app.layersubobj</attribute>
+            </item>
+          </section>
+        </submenu>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name='label' translatable='yes'>_Help</attribute>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_About</attribute>
+          <attribute name='action'>app.about</attribute>
+        </item>
+      </section>
+    </submenu>
+  </menu>
+  <menu id='hud_supported'>
+    <section>
+      <item>
+        <attribute name='label' translatable='yes'>Display _fps</attribute>
+        <attribute name='action'>app.hud_fps</attribute>
+      </item>
+      <item>
+        <attribute name='label' translatable='yes'>Display _Input</attribute>
+        <attribute name='action'>app.hud_input</attribute>
+      </item>
+      <item>
+        <attribute name='label' translatable='yes'>Display _Graphical Input</attribute>
+        <attribute name='action'>app.hud_graphicalinput</attribute>
+      </item>
+      <item>
+        <attribute name='label' translatable='yes'>Display Frame _Counter</attribute>
+        <attribute name='action'>app.hud_framecounter</attribute>
+      </item>
+      <item>
+        <attribute name='label' translatable='yes'>Display _Lag Counter</attribute>
+        <attribute name='action'>app.hud_lagcounter</attribute>
+      </item>
+      <item>
+        <attribute name='label' translatable='yes'>Display _RTC</attribute>
+        <attribute name='action'>app.hud_rtc</attribute>
+      </item>
+      <item>
+        <attribute name='label' translatable='yes'>Display _Mic</attribute>
+        <attribute name='action'>app.hud_mic</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name='label' translatable='yes'>_Editor mode</attribute>
+        <attribute name='action'>app.hud_editor</attribute>
+      </item>
+    </section>
+  </menu>
+  <menu id='hud_unsupported'>
+    <item>
+      <attribute name='label' translatable='yes'>HUD support not compiled</attribute>
+      <attribute name='action'>app.hud_unsupported</attribute>
+    </item>
+  </menu>
+</interface>
