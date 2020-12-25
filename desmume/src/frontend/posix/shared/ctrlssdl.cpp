@@ -272,12 +272,12 @@ static void set_mouse_coord(signed long x,signed long y)
 }
 
 // Adapted from Windows port
-bool allowUpAndDown = false;
-static buttonstruct<int> cardinalHeldTime = {0};
+static bool allowUpAndDown = false;
+static buttonstruct<int> cardinalHeldTime = {};
 
 static void RunAntipodalRestriction(const buttonstruct<bool>& pad)
 {
-	if(allowUpAndDown)
+	if (allowUpAndDown)
 		return;
 
 	pad.U ? (cardinalHeldTime.U++) : (cardinalHeldTime.U=0);
@@ -287,20 +287,22 @@ static void RunAntipodalRestriction(const buttonstruct<bool>& pad)
 }
 static void ApplyAntipodalRestriction(buttonstruct<bool>& pad)
 {
-	if(allowUpAndDown)
+	if (allowUpAndDown)
 		return;
 
 	// give preference to whichever direction was most recently pressed
-	if(pad.U && pad.D)
-		if(cardinalHeldTime.U < cardinalHeldTime.D)
+	if (pad.U && pad.D) {
+		if (cardinalHeldTime.U < cardinalHeldTime.D)
 			pad.D = false;
 		else
 			pad.U = false;
-	if(pad.L && pad.R)
-		if(cardinalHeldTime.L < cardinalHeldTime.R)
+	}
+	if (pad.L && pad.R) {
+		if (cardinalHeldTime.L < cardinalHeldTime.R)
 			pad.R = false;
 		else
 			pad.L = false;
+	}
 }
 
 /* Update NDS keypad */
@@ -466,7 +468,7 @@ process_joystick_events( u16 *keypad) {
     }
 }
 
-u16 shift_pressed;
+static u16 shift_pressed;
 
 void
 process_ctrls_event( SDL_Event& event,
@@ -576,6 +578,7 @@ process_ctrls_event( SDL_Event& event,
       case SDL_MOUSEBUTTONDOWN:
         if(event.button.button==1)
           mouse.down = TRUE;
+        break;
                                             
       case SDL_MOUSEMOTION:
         if(!mouse.down)
