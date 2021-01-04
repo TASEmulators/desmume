@@ -86,11 +86,6 @@ public:
 	int _spu_sync_mode;
 	int _spu_sync_method;
 private:
-	char* _play_movie_file;
-	char* _record_movie_file;
-	char* _cflash_image;
-	char* _cflash_path;
-	char* _gbaslot_rom;
 	char* _bios_arm9, *_bios_arm7;
 	char* _fw_path;
 	int _fw_boot;
@@ -107,9 +102,6 @@ private:
 	int _cpu_mode;
 	int _jit_size;
 #endif
-	char* _slot1;
-	char *_slot1_fat_dir;
-	char* _console_type;
 	char* _advanscene_import;
 	int _rtc_day;
 	int _rtc_hour;

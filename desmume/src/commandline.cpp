@@ -39,11 +39,12 @@ int _commandline_linux_nojoy = 0;
 CommandLine::CommandLine()
 : is_cflash_configured(false)
 , _load_to_memory(-1)
-, _play_movie_file(0)
-, _record_movie_file(0)
-, _cflash_image(0)
-, _cflash_path(0)
-, _gbaslot_rom(0)
+, nds_file("")
+, play_movie_file("")
+, record_movie_file("")
+, cflash_image("")
+, cflash_path("")
+, gbaslot_rom("")
 , _bios_arm9(NULL)
 , _bios_arm7(NULL)
 , _bios_swi(0)
@@ -58,15 +59,15 @@ CommandLine::CommandLine()
 , _gamehacks(-1)
 , _texture_deposterize(-1)
 , _texture_smooth(-1)
-, _slot1(NULL)
-, _slot1_fat_dir(NULL)
+, slot1("")
+, slot1_fat_dir("")
 , _slot1_fat_dir_type(false)
 , _slot1_no8000prot(0)
 #ifdef HAVE_JIT
 , _cpu_mode(-1)
 , _jit_size(-1)
 #endif
-, _console_type(NULL)
+, console_type("")
 , _advanscene_import(NULL)
 , load_slot(-1)
 , arm9_gdb_port(0)
@@ -358,8 +359,8 @@ bool CommandLine::parse(int argc,char **argv)
 
 		//slot-2 contents
 		case OPT_SLOT2_CFLASH_IMAGE: cflash_image = optarg; break;
-		case OPT_SLOT2_CFLASH_DIR: _cflash_path = optarg; break;
-		case OPT_SLOT2_GBAGAME: _gbaslot_rom = optarg; break;
+		case OPT_SLOT2_CFLASH_DIR: cflash_path = optarg; break;
+		case OPT_SLOT2_GBAGAME: gbaslot_rom = optarg; break;
 
 		//commands
 		case OPT_LOAD_SLOT: load_slot = atoi(optarg);  break;
@@ -518,8 +519,9 @@ bool CommandLine::validate()
 		printerror("If either firmware boot is used, firmware path must be specified.\n");
  	}
 
-	if((_cflash_image && _gbaslot_rom) || (_cflash_path && _gbaslot_rom)) {
+	if((cflash_image != "" && gbaslot_rom != "") || (cflash_path != "" && gbaslot_rom != "")) {
 		printerror("Cannot specify both cflash and gbaslot rom (both occupy SLOT-2)\n");
+		return false;
 	}
 
 	if (autodetect_method < -1 || autodetect_method > 1) {
