@@ -22,6 +22,10 @@ of hacky, but I'd rather not have to allocate memory for a copy of it. */
 
 #include "blargg_source.h"
 
+#ifdef _MSC_VER
+#include <Windows.h>
+#endif
+
 /* Reads this much from end of file when first opening. Only this much is
 searched for the end catalog entry. If whole catalog is within this data,
 nothing more needs to be read on open. */
@@ -120,6 +124,8 @@ Zip_Extractor::Zip_Extractor() :
 
 Zip_Extractor::~Zip_Extractor()
 {
+	for(auto tp : tmppaths)
+		free(tp);
 	close();
 }
 
@@ -251,7 +257,32 @@ blargg_err_t Zip_Extractor::update_info( bool advance_first )
 			
 			if ( is_normal_file( e, len ) )
 			{
-				set_name( e.filename );
+				if(e.flags[1] & 0x08)
+				{
+					//known to be UTF8
+					set_name( e.filename );
+				}
+				else
+				{
+					//known not to be UTF8.
+					//we COULD use CP_OEMCP and it would probably be a correct guess
+					//but using CP_UTF8 in windows will give us unknown characters for anything >= 0x80
+					//these results won't be ideal, but they will be less likely to be a malfunctioned mess.
+					//then again, CP_OEMCP will simply give us weird latin characters (or otherwise single, valid characters) for unknown stuff. 
+					//That's not so bad either
+					//If there's every any proof that invalid characters (for pathnames) are produced, then we will change it to CP_UTF8
+					#ifdef _MSC_VER
+					wchar_t *temp_wchar = (wchar_t*)malloc(sizeof(wchar_t)*MAX_PATH);
+					tmppaths.push_back(temp_wchar);
+					MultiByteToWideChar(CP_OEMCP,0,e.filename,-1,temp_wchar,MAX_PATH);
+					char *temp_char = (char*)malloc(MAX_PATH*4+4);
+					tmppaths.push_back(temp_char);
+					WideCharToMultiByte(CP_UTF8,0,temp_wchar,-1,temp_char,MAX_PATH*4,nullptr,nullptr);
+					set_name(temp_char);
+					#else
+					set_name( e.filename );
+					#endif
+				}
 				set_info( get_le32( e.size ), get_le32( e.date ), get_le32( e.crc ) );
 				break;
 			}

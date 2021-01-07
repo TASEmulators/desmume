@@ -7,6 +7,8 @@
 #include "File_Extractor.h"
 #include "Zlib_Inflater.h"
 
+#include <vector>
+
 class Zip_Extractor : public File_Extractor {
 public:
 	Zip_Extractor();
@@ -34,6 +36,7 @@ private:
 	unsigned long correct_crc;
 	bool file_deflated;
 	Zlib_Inflater buf;
+	std::vector<void*> tmppaths;
 
 	blargg_err_t fill_buf( long offset, long buf_size, long initial_read );
 	blargg_err_t update_info( bool advance_first );

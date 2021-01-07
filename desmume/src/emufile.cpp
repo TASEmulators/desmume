@@ -517,7 +517,8 @@ void EMUFILE_FILE::open(const char* fname, const char* mode)
 	mCondition = eCondition_Clean;
 	mFilePosition = 0;
 	#ifdef HOST_WINDOWS
-	fp = _wfopen(mbstowcs((std::string)fname).c_str(),mbstowcs(mode).c_str());
+	auto tmp = mbstowcs((std::string)fname);
+	fp = _wfopen(tmp.c_str(),mbstowcs(mode).c_str());
 	#else
 	fp = fopen(fname,mode);
 	#endif

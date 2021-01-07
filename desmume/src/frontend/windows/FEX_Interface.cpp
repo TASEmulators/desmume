@@ -193,10 +193,8 @@ ArchiveFile::ArchiveFile(const char* filename)
 				else
 				{
 					const char* name = fex_name(object);
-					wchar_t temp_wchar[MAX_PATH];
-					//what code page to use??? who knows. 
-					MultiByteToWideChar(CP_ACP,0,name,-1,temp_wchar,ARRAY_SIZE(temp_wchar));
-					item.wname = _wcsdup(temp_wchar);
+					item.wname = _wcsdup(mbstowcs(name).c_str());
+					item.name = strdup(item.name);
 				}
 
 

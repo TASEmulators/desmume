@@ -464,7 +464,8 @@ bool ObtainFile(const char* Name, char *const & LogicalName, char *const & Physi
 			if(item < 0)
 				item = ChooseItemFromArchive(archive, !forceManual, ignoreExtensions, numIgnoreExtensions);
 
-			const char* TempFileName = s_tempFiles.GetFile(category, strrchr(archive.GetItemName(item), '.'));
+			const char* itemName = archive.GetItemName(item);
+			const char* TempFileName = s_tempFiles.GetFile(category, strrchr(itemName, '.'));
 			if(!archive.ExtractItem(item, TempFileName))
 				s_tempFiles.ReleaseFile(TempFileName);
 			s_tempFiles.ReleaseFile(PhysicalName);
@@ -472,9 +473,9 @@ bool ObtainFile(const char* Name, char *const & LogicalName, char *const & Physi
 
 			const wchar_t* itemNameW = archive.GetItemNameW(item);
 
-			//convert the itemname to local encoding
+			//convert the itemname to utf8
 			char itemname_utf8[MAX_PATH*4];
-			WideCharToMultiByte(CP_THREAD_ACP,0,itemNameW,-1,itemname_utf8,ARRAY_SIZE(itemname_utf8),NULL,NULL);
+			WideCharToMultiByte(CP_UTF8,0,itemNameW,-1,itemname_utf8,ARRAY_SIZE(itemname_utf8),NULL,NULL);
 
 			//strcat(LogicalName,itemname_utf8);
 			_snprintf(LogicalName + strlen(LogicalName), 1024 - (strlen(LogicalName)+1), "|%s", itemname_utf8);
