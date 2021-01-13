@@ -3,4 +3,4 @@
 
 DeSmuME is a Nintendo DS emulator.
 
-http://desmume.org
+http://desmume.org/download
