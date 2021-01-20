@@ -1,1783 +1,324 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<archive type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="8.00">
-	<data>
-		<int key="IBDocument.SystemTarget">1060</int>
-		<string key="IBDocument.SystemVersion">17G3025</string>
-		<string key="IBDocument.InterfaceBuilderVersion">851</string>
-		<string key="IBDocument.AppKitVersion">1561.60.100</string>
-		<string key="IBDocument.HIToolboxVersion">911.10</string>
-		<object class="NSMutableDictionary" key="IBDocument.PluginVersions">
-			<string key="NS.key.0">com.apple.InterfaceBuilder.CocoaPlugin</string>
-			<string key="NS.object.0">851</string>
-		</object>
-		<array class="NSMutableArray" key="IBDocument.EditedObjectIDs"/>
-		<array key="IBDocument.PluginDependencies">
-			<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-		</array>
-		<object class="NSMutableDictionary" key="IBDocument.Metadata">
-			<string key="NS.key.0">PluginDependencyRecalculationVersion</string>
-			<integer value="1" key="NS.object.0"/>
-		</object>
-		<array class="NSMutableArray" key="IBDocument.RootObjects" id="1000">
-			<object class="NSCustomObject" id="1001">
-				<string key="NSClassName">DisplayWindowController</string>
-			</object>
-			<object class="NSCustomObject" id="1003">
-				<string key="NSClassName">FirstResponder</string>
-			</object>
-			<object class="NSCustomObject" id="1004">
-				<string key="NSClassName">NSApplication</string>
-			</object>
-			<object class="NSWindowTemplate" id="418996424">
-				<int key="NSWindowStyleMask">271</int>
-				<int key="NSWindowBacking">2</int>
-				<string key="NSWindowRect">{{830, 370}, {256, 408}}</string>
-				<int key="NSWTFlags">74973184</int>
-				<string key="NSWindowTitle">DeSmuME</string>
-				<string key="NSWindowClass">NSWindow</string>
-				<object class="NSToolbar" key="NSViewClass" id="321775728">
-					<object class="NSMutableString" key="NSToolbarIdentifier">
-						<characters key="NS.bytes">D5552DCE-722B-4ECB-8E0A-8B7CF76EAC70</characters>
-					</object>
-					<nil key="NSToolbarDelegate"/>
-					<bool key="NSToolbarPrefersToBeShown">YES</bool>
-					<bool key="NSToolbarShowsBaselineSeparator">YES</bool>
-					<bool key="NSToolbarAllowsUserCustomization">YES</bool>
-					<bool key="NSToolbarAutosavesConfiguration">YES</bool>
-					<int key="NSToolbarDisplayMode">1</int>
-					<int key="NSToolbarSizeMode">2</int>
-					<dictionary class="NSMutableDictionary" key="NSToolbarIBIdentifiedItems">
-						<object class="NSToolbarItem" key="0135754F-463F-4625-9D27-DEF701AEF50E" id="127287125">
-							<object class="NSMutableString" key="NSToolbarItemIdentifier">
-								<characters key="NS.bytes">0135754F-463F-4625-9D27-DEF701AEF50E</characters>
-							</object>
-							<string key="NSToolbarItemLabel">Open ROM</string>
-							<string key="NSToolbarItemPaletteLabel">Open ROM</string>
-							<string key="NSToolbarItemToolTip"/>
-							<nil key="NSToolbarItemView"/>
-							<object class="NSCustomResource" key="NSToolbarItemImage">
-								<string key="NSClassName">NSImage</string>
-								<string key="NSResourceName">Icon_OpenROM_420x420</string>
-							</object>
-							<nil key="NSToolbarItemTarget"/>
-							<nil key="NSToolbarItemAction"/>
-							<string key="NSToolbarItemMinSize">{0, 0}</string>
-							<string key="NSToolbarItemMaxSize">{0, 0}</string>
-							<bool key="NSToolbarItemEnabled">YES</bool>
-							<bool key="NSToolbarItemAutovalidates">YES</bool>
-							<int key="NSToolbarItemTag">-1</int>
-							<bool key="NSToolbarIsUserRemovable">YES</bool>
-							<int key="NSToolbarItemVisibilityPriority">0</int>
-						</object>
-						<object class="NSToolbarItem" key="039A3D54-15EA-4743-88B7-60517113C193" id="78663493">
-							<object class="NSMutableString" key="NSToolbarItemIdentifier">
-								<characters key="NS.bytes">039A3D54-15EA-4743-88B7-60517113C193</characters>
-							</object>
-							<string key="NSToolbarItemLabel">Toggle Displays</string>
-							<string key="NSToolbarItemPaletteLabel">Toggle Displays</string>
-							<string key="NSToolbarItemToolTip"/>
-							<nil key="NSToolbarItemView"/>
-							<object class="NSCustomResource" key="NSToolbarItemImage">
-								<string key="NSClassName">NSImage</string>
-								<string key="NSResourceName">Icon_DisplayToggle_420x420</string>
-							</object>
-							<nil key="NSToolbarItemTarget"/>
-							<nil key="NSToolbarItemAction"/>
-							<string key="NSToolbarItemMinSize">{0, 0}</string>
-							<string key="NSToolbarItemMaxSize">{0, 0}</string>
-							<bool key="NSToolbarItemEnabled">YES</bool>
-							<bool key="NSToolbarItemAutovalidates">YES</bool>
-							<int key="NSToolbarItemTag">-1</int>
-							<bool key="NSToolbarIsUserRemovable">YES</bool>
-							<int key="NSToolbarItemVisibilityPriority">0</int>
-						</object>
-						<object class="NSToolbarItem" key="2E728430-6055-404B-944F-25594ACBEC39" id="298859108">
-							<object class="NSMutableString" key="NSToolbarItemIdentifier">
-								<characters key="NS.bytes">2E728430-6055-404B-944F-25594ACBEC39</characters>
-							</object>
-							<string key="NSToolbarItemLabel">Execute</string>
-							<string key="NSToolbarItemPaletteLabel">Execute/Pause</string>
-							<string key="NSToolbarItemToolTip"/>
-							<nil key="NSToolbarItemView"/>
-							<object class="NSCustomResource" key="NSToolbarItemImage">
-								<string key="NSClassName">NSImage</string>
-								<string key="NSResourceName">Icon_Execute_420x420</string>
-							</object>
-							<nil key="NSToolbarItemTarget"/>
-							<nil key="NSToolbarItemAction"/>
-							<string key="NSToolbarItemMinSize">{0, 0}</string>
-							<string key="NSToolbarItemMaxSize">{0, 0}</string>
-							<bool key="NSToolbarItemEnabled">YES</bool>
-							<bool key="NSToolbarItemAutovalidates">YES</bool>
-							<int key="NSToolbarItemTag">-1</int>
-							<bool key="NSToolbarIsUserRemovable">YES</bool>
-							<int key="NSToolbarItemVisibilityPriority">0</int>
-						</object>
-						<object class="NSToolbarItem" key="321036F9-6034-47B1-9CC5-2461D98700F0" id="281439290">
-							<object class="NSMutableString" key="NSToolbarItemIdentifier">
-								<characters key="NS.bytes">321036F9-6034-47B1-9CC5-2461D98700F0</characters>
-							</object>
-							<string key="NSToolbarItemLabel">Reset</string>
-							<string key="NSToolbarItemPaletteLabel">Reset</string>
-							<string key="NSToolbarItemToolTip"/>
-							<nil key="NSToolbarItemView"/>
-							<object class="NSCustomResource" key="NSToolbarItemImage">
-								<string key="NSClassName">NSImage</string>
-								<string key="NSResourceName">Icon_Reset_420x420</string>
-							</object>
-							<nil key="NSToolbarItemTarget"/>
-							<nil key="NSToolbarItemAction"/>
-							<string key="NSToolbarItemMinSize">{0, 0}</string>
-							<string key="NSToolbarItemMaxSize">{0, 0}</string>
-							<bool key="NSToolbarItemEnabled">YES</bool>
-							<bool key="NSToolbarItemAutovalidates">YES</bool>
-							<int key="NSToolbarItemTag">-1</int>
-							<bool key="NSToolbarIsUserRemovable">YES</bool>
-							<int key="NSToolbarItemVisibilityPriority">0</int>
-						</object>
-						<object class="NSToolbarItem" key="41A299FB-4A95-4FA3-9982-8523FF04ACDE" id="668087633">
-							<object class="NSMutableString" key="NSToolbarItemIdentifier">
-								<characters key="NS.bytes">41A299FB-4A95-4FA3-9982-8523FF04ACDE</characters>
-							</object>
-							<string key="NSToolbarItemLabel">Rotate Right</string>
-							<string key="NSToolbarItemPaletteLabel">Rotate Right</string>
-							<string key="NSToolbarItemToolTip"/>
-							<nil key="NSToolbarItemView"/>
-							<object class="NSCustomResource" key="NSToolbarItemImage">
-								<string key="NSClassName">NSImage</string>
-								<string key="NSResourceName">Icon_RotateCW_420x420</string>
-							</object>
-							<nil key="NSToolbarItemTarget"/>
-							<nil key="NSToolbarItemAction"/>
-							<string key="NSToolbarItemMinSize">{0, 0}</string>
-							<string key="NSToolbarItemMaxSize">{0, 0}</string>
-							<bool key="NSToolbarItemEnabled">YES</bool>
-							<bool key="NSToolbarItemAutovalidates">YES</bool>
-							<int key="NSToolbarItemTag">90</int>
-							<bool key="NSToolbarIsUserRemovable">YES</bool>
-							<int key="NSToolbarItemVisibilityPriority">0</int>
-						</object>
-						<object class="NSToolbarItem" key="8A505B61-7B2E-49ED-B6A0-DBE0A72DB48D" id="838391207">
-							<object class="NSMutableString" key="NSToolbarItemIdentifier">
-								<characters key="NS.bytes">8A505B61-7B2E-49ED-B6A0-DBE0A72DB48D</characters>
-							</object>
-							<string key="NSToolbarItemLabel">Enable HUD</string>
-							<string key="NSToolbarItemPaletteLabel">Enable/Disable HUD</string>
-							<string key="NSToolbarItemToolTip"/>
-							<nil key="NSToolbarItemView"/>
-							<object class="NSCustomResource" key="NSToolbarItemImage">
-								<string key="NSClassName">NSImage</string>
-								<string key="NSResourceName">Icon_ShowHUD_420x420</string>
-							</object>
-							<nil key="NSToolbarItemTarget"/>
-							<nil key="NSToolbarItemAction"/>
-							<string key="NSToolbarItemMinSize">{0, 0}</string>
-							<string key="NSToolbarItemMaxSize">{0, 0}</string>
-							<bool key="NSToolbarItemEnabled">YES</bool>
-							<bool key="NSToolbarItemAutovalidates">YES</bool>
-							<int key="NSToolbarItemTag">-1</int>
-							<bool key="NSToolbarIsUserRemovable">YES</bool>
-							<int key="NSToolbarItemVisibilityPriority">0</int>
-						</object>
-						<object class="NSToolbarItem" key="C626F2C1-4353-4288-AD59-40FB7F4C1A58" id="843588223">
-							<object class="NSMutableString" key="NSToolbarItemIdentifier">
-								<characters key="NS.bytes">C626F2C1-4353-4288-AD59-40FB7F4C1A58</characters>
-							</object>
-							<string key="NSToolbarItemLabel">Rotate Left</string>
-							<string key="NSToolbarItemPaletteLabel">Rotate Left</string>
-							<string key="NSToolbarItemToolTip"/>
-							<nil key="NSToolbarItemView"/>
-							<object class="NSCustomResource" key="NSToolbarItemImage">
-								<string key="NSClassName">NSImage</string>
-								<string key="NSResourceName">Icon_RotateCCW_420x420</string>
-							</object>
-							<nil key="NSToolbarItemTarget"/>
-							<nil key="NSToolbarItemAction"/>
-							<string key="NSToolbarItemMinSize">{0, 0}</string>
-							<string key="NSToolbarItemMaxSize">{0, 0}</string>
-							<bool key="NSToolbarItemEnabled">YES</bool>
-							<bool key="NSToolbarItemAutovalidates">YES</bool>
-							<int key="NSToolbarItemTag">-90</int>
-							<bool key="NSToolbarIsUserRemovable">YES</bool>
-							<int key="NSToolbarItemVisibilityPriority">0</int>
-						</object>
-						<object class="NSToolbarItem" key="D3628D4D-C39F-4CC3-B82F-7CC0F699B953" id="535920858">
-							<object class="NSMutableString" key="NSToolbarItemIdentifier">
-								<characters key="NS.bytes">D3628D4D-C39F-4CC3-B82F-7CC0F699B953</characters>
-							</object>
-							<string key="NSToolbarItemLabel">Frame Advance</string>
-							<string key="NSToolbarItemPaletteLabel">Frame Advance</string>
-							<string key="NSToolbarItemToolTip"/>
-							<nil key="NSToolbarItemView"/>
-							<object class="NSCustomResource" key="NSToolbarItemImage">
-								<string key="NSClassName">NSImage</string>
-								<string key="NSResourceName">Icon_FrameAdvance_420x420</string>
-							</object>
-							<nil key="NSToolbarItemTarget"/>
-							<nil key="NSToolbarItemAction"/>
-							<string key="NSToolbarItemMinSize">{0, 0}</string>
-							<string key="NSToolbarItemMaxSize">{0, 0}</string>
-							<bool key="NSToolbarItemEnabled">YES</bool>
-							<bool key="NSToolbarItemAutovalidates">YES</bool>
-							<int key="NSToolbarItemTag">-1</int>
-							<bool key="NSToolbarIsUserRemovable">YES</bool>
-							<int key="NSToolbarItemVisibilityPriority">0</int>
-						</object>
-						<object class="NSToolbarItem" key="EDBFD998-E031-4AC5-A86A-7114D66FF847" id="137384193">
-							<object class="NSMutableString" key="NSToolbarItemIdentifier">
-								<characters key="NS.bytes">EDBFD998-E031-4AC5-A86A-7114D66FF847</characters>
-							</object>
-							<string key="NSToolbarItemLabel">Speed 2x</string>
-							<string key="NSToolbarItemPaletteLabel">Speed 1x/2x</string>
-							<string key="NSToolbarItemToolTip"/>
-							<nil key="NSToolbarItemView"/>
-							<object class="NSCustomResource" key="NSToolbarItemImage">
-								<string key="NSClassName">NSImage</string>
-								<string key="NSResourceName">Icon_Speed2x_420x420</string>
-							</object>
-							<nil key="NSToolbarItemTarget"/>
-							<nil key="NSToolbarItemAction"/>
-							<string key="NSToolbarItemMinSize">{0, 0}</string>
-							<string key="NSToolbarItemMaxSize">{0, 0}</string>
-							<bool key="NSToolbarItemEnabled">YES</bool>
-							<bool key="NSToolbarItemAutovalidates">YES</bool>
-							<int key="NSToolbarItemTag">200</int>
-							<bool key="NSToolbarIsUserRemovable">YES</bool>
-							<int key="NSToolbarItemVisibilityPriority">0</int>
-						</object>
-						<object class="NSToolbarFlexibleSpaceItem" key="NSToolbarFlexibleSpaceItem" id="69604475">
-							<string key="NSToolbarItemIdentifier">NSToolbarFlexibleSpaceItem</string>
-							<string key="NSToolbarItemLabel"/>
-							<string key="NSToolbarItemPaletteLabel">Flexible Space</string>
-							<nil key="NSToolbarItemToolTip"/>
-							<nil key="NSToolbarItemView"/>
-							<nil key="NSToolbarItemImage"/>
-							<nil key="NSToolbarItemTarget"/>
-							<nil key="NSToolbarItemAction"/>
-							<string key="NSToolbarItemMinSize">{1, 5}</string>
-							<string key="NSToolbarItemMaxSize">{20000, 32}</string>
-							<bool key="NSToolbarItemEnabled">YES</bool>
-							<bool key="NSToolbarItemAutovalidates">YES</bool>
-							<int key="NSToolbarItemTag">-1</int>
-							<bool key="NSToolbarIsUserRemovable">YES</bool>
-							<int key="NSToolbarItemVisibilityPriority">0</int>
-							<object class="NSMenuItem" key="NSToolbarItemMenuFormRepresentation">
-								<bool key="NSIsDisabled">YES</bool>
-								<bool key="NSIsSeparator">YES</bool>
-								<string key="NSTitle"/>
-								<string key="NSKeyEquiv"/>
-								<int key="NSKeyEquivModMask">1048576</int>
-								<int key="NSMnemonicLoc">2147483647</int>
-								<object class="NSCustomResource" key="NSOnImage" id="332695261">
-									<string key="NSClassName">NSImage</string>
-									<string key="NSResourceName">NSMenuCheckmark</string>
-								</object>
-								<object class="NSCustomResource" key="NSMixedImage" id="541356577">
-									<string key="NSClassName">NSImage</string>
-									<string key="NSResourceName">NSMenuMixedState</string>
-								</object>
-							</object>
-						</object>
-						<object class="NSToolbarSpaceItem" key="NSToolbarSpaceItem" id="522097277">
-							<string key="NSToolbarItemIdentifier">NSToolbarSpaceItem</string>
-							<string key="NSToolbarItemLabel"/>
-							<string key="NSToolbarItemPaletteLabel">Space</string>
-							<nil key="NSToolbarItemToolTip"/>
-							<nil key="NSToolbarItemView"/>
-							<nil key="NSToolbarItemImage"/>
-							<nil key="NSToolbarItemTarget"/>
-							<nil key="NSToolbarItemAction"/>
-							<string key="NSToolbarItemMinSize">{32, 5}</string>
-							<string key="NSToolbarItemMaxSize">{32, 10000}</string>
-							<bool key="NSToolbarItemEnabled">YES</bool>
-							<bool key="NSToolbarItemAutovalidates">YES</bool>
-							<int key="NSToolbarItemTag">-1</int>
-							<bool key="NSToolbarIsUserRemovable">YES</bool>
-							<int key="NSToolbarItemVisibilityPriority">0</int>
-							<object class="NSMenuItem" key="NSToolbarItemMenuFormRepresentation">
-								<bool key="NSIsDisabled">YES</bool>
-								<bool key="NSIsSeparator">YES</bool>
-								<string key="NSTitle"/>
-								<string key="NSKeyEquiv"/>
-								<int key="NSKeyEquivModMask">1048576</int>
-								<int key="NSMnemonicLoc">2147483647</int>
-								<reference key="NSOnImage" ref="332695261"/>
-								<reference key="NSMixedImage" ref="541356577"/>
-							</object>
-						</object>
-					</dictionary>
-					<array key="NSToolbarIBAllowedItems">
-						<reference ref="298859108"/>
-						<reference ref="535920858"/>
-						<reference ref="281439290"/>
-						<reference ref="137384193"/>
-						<reference ref="843588223"/>
-						<reference ref="668087633"/>
-						<reference ref="78663493"/>
-						<reference ref="838391207"/>
-						<reference ref="127287125"/>
-						<reference ref="522097277"/>
-						<reference ref="69604475"/>
-					</array>
-					<array key="NSToolbarIBDefaultItems">
-						<reference ref="298859108"/>
-						<reference ref="137384193"/>
-						<reference ref="281439290"/>
-						<reference ref="843588223"/>
-						<reference ref="668087633"/>
-						<reference ref="69604475"/>
-					</array>
-					<array key="NSToolbarIBSelectableItems" id="0"/>
-				</object>
-				<nil key="NSUserInterfaceItemIdentifier"/>
-				<string key="NSWindowContentMaxSize">{1.7976931348623157e+308, 1.7976931348623157e+308}</string>
-				<string key="NSWindowContentMinSize">{256, 408}</string>
-				<object class="NSView" key="NSWindowView" id="1027645320">
-					<nil key="NSNextResponder"/>
-					<nil key="NSNibTouchBar"/>
-					<int key="NSvFlags">256</int>
-					<array class="NSMutableArray" key="NSSubviews">
-						<object class="NSProgressIndicator" id="963885183">
-							<reference key="NSNextResponder" ref="1027645320"/>
-							<nil key="NSNibTouchBar"/>
-							<int key="NSvFlags">5156</int>
-							<string key="NSFrame">{{2, 3}, {16, 16}}</string>
-							<reference key="NSSuperview" ref="1027645320"/>
-							<int key="NSpiFlags">28938</int>
-							<double key="NSMaxValue">100</double>
-						</object>
-						<object class="NSTextField" id="731708450">
-							<reference key="NSNextResponder" ref="1027645320"/>
-							<nil key="NSNibTouchBar"/>
-							<int key="NSvFlags">294</int>
-							<string key="NSFrame">{{17, 5}, {137, 14}}</string>
-							<reference key="NSSuperview" ref="1027645320"/>
-							<bool key="NSEnabled">YES</bool>
-							<object class="NSTextFieldCell" key="NSCell" id="644649254">
-								<int key="NSCellFlags">68157504</int>
-								<int key="NSCellFlags2">272634880</int>
-								<string key="NSContents"/>
-								<object class="NSFont" key="NSSupport" id="26">
-									<string key="NSName">.SFNSText</string>
-									<double key="NSSize">11</double>
-									<int key="NSfFlags">3088</int>
-								</object>
-								<string key="NSPlaceholderString">Status Text</string>
-								<reference key="NSControlView" ref="731708450"/>
-								<object class="NSColor" key="NSBackgroundColor" id="949245653">
-									<int key="NSColorSpace">6</int>
-									<string key="NSCatalogName">System</string>
-									<string key="NSColorName">controlColor</string>
-									<object class="NSColor" key="NSColor">
-										<int key="NSColorSpace">3</int>
-										<bytes key="NSWhite">MC42NjY2NjY2NjY3AA</bytes>
-									</object>
-								</object>
-								<object class="NSColor" key="NSTextColor" id="434655141">
-									<int key="NSColorSpace">6</int>
-									<string key="NSCatalogName">System</string>
-									<string key="NSColorName">controlTextColor</string>
-									<object class="NSColor" key="NSColor">
-										<int key="NSColorSpace">3</int>
-										<bytes key="NSWhite">MAA</bytes>
-									</object>
-								</object>
-							</object>
-							<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
-							<int key="NSTextFieldAlignmentRectInsetsVersion">2</int>
-						</object>
-						<object class="NSPopUpButton" id="347607109">
-							<reference key="NSNextResponder" ref="1027645320"/>
-							<nil key="NSNibTouchBar"/>
-							<int key="NSvFlags">289</int>
-							<string key="NSFrame">{{192, -1}, {40, 26}}</string>
-							<reference key="NSSuperview" ref="1027645320"/>
-							<bool key="NSEnabled">YES</bool>
-							<object class="NSPopUpButtonCell" key="NSCell" id="1063916850">
-								<int key="NSCellFlags">-2076180416</int>
-								<int key="NSCellFlags2">134219776</int>
-								<object class="NSFont" key="NSSupport" id="844216569">
-									<string key="NSName">.SFNSText</string>
-									<double key="NSSize">13</double>
-									<int key="NSfFlags">1040</int>
-								</object>
-								<reference key="NSControlView" ref="347607109"/>
-								<int key="NSButtonFlags">-2043002880</int>
-								<int key="NSButtonFlags2">34</int>
-								<object class="NSFont" key="NSAlternateImage" id="598094278">
-									<string key="NSName">LucidaGrande</string>
-									<double key="NSSize">13</double>
-									<int key="NSfFlags">16</int>
-								</object>
-								<string key="NSAlternateContents"/>
-								<string key="NSKeyEquivalent"/>
-								<int key="NSPeriodicDelay">400</int>
-								<int key="NSPeriodicInterval">75</int>
-								<object class="NSMenuItem" key="NSMenuItem" id="993162570">
-									<reference key="NSMenu" ref="895362311"/>
-									<bool key="NSIsHidden">YES</bool>
-									<string key="NSTitle"/>
-									<string key="NSKeyEquiv"/>
-									<int key="NSMnemonicLoc">2147483647</int>
-									<int key="NSState">1</int>
-									<object class="NSCustomResource" key="NSImage">
-										<string key="NSClassName">NSImage</string>
-										<string key="NSResourceName">Icon_VolumeFull_16x16</string>
-									</object>
-									<reference key="NSOnImage" ref="332695261"/>
-									<reference key="NSMixedImage" ref="541356577"/>
-									<string key="NSAction">_popUpItemAction:</string>
-									<reference key="NSTarget" ref="1063916850"/>
-								</object>
-								<bool key="NSMenuItemRespectAlignment">YES</bool>
-								<object class="NSMenu" key="NSMenu" id="895362311">
-									<string key="NSTitle">OtherViews</string>
-									<array class="NSMutableArray" key="NSMenuItems">
-										<reference ref="993162570"/>
-										<object class="NSMenuItem" id="845020802">
-											<reference key="NSMenu" ref="895362311"/>
-											<string key="NSTitle">Volume</string>
-											<string key="NSKeyEquiv"/>
-											<int key="NSMnemonicLoc">2147483647</int>
-											<reference key="NSOnImage" ref="332695261"/>
-											<reference key="NSMixedImage" ref="541356577"/>
-											<string key="NSAction">_popUpItemAction:</string>
-											<reference key="NSTarget" ref="1063916850"/>
-										</object>
-									</array>
-									<reference key="NSMenuFont" ref="844216569"/>
-								</object>
-								<bool key="NSPullDown">YES</bool>
-								<int key="NSPreferredEdge">1</int>
-								<bool key="NSUsesItemFromMenu">YES</bool>
-								<bool key="NSAltersState">YES</bool>
-								<int key="NSArrowPosition">2</int>
-							</object>
-							<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
-						</object>
-						<object class="NSPopUpButton" id="154157914">
-							<reference key="NSNextResponder" ref="1027645320"/>
-							<nil key="NSNibTouchBar"/>
-							<int key="NSvFlags">289</int>
-							<string key="NSFrame">{{151, -1}, {42, 26}}</string>
-							<reference key="NSSuperview" ref="1027645320"/>
-							<bool key="NSEnabled">YES</bool>
-							<object class="NSPopUpButtonCell" key="NSCell" id="480563989">
-								<int key="NSCellFlags">-2076180416</int>
-								<int key="NSCellFlags2">134219776</int>
-								<reference key="NSSupport" ref="844216569"/>
-								<reference key="NSControlView" ref="154157914"/>
-								<int key="NSButtonFlags">-2043002880</int>
-								<int key="NSButtonFlags2">162</int>
-								<reference key="NSAlternateImage" ref="598094278"/>
-								<string key="NSAlternateContents"/>
-								<string key="NSKeyEquivalent"/>
-								<int key="NSPeriodicDelay">400</int>
-								<int key="NSPeriodicInterval">75</int>
-								<object class="NSMenuItem" key="NSMenuItem" id="596758847">
-									<reference key="NSMenu" ref="969190675"/>
-									<bool key="NSIsHidden">YES</bool>
-									<string key="NSTitle"/>
-									<string key="NSKeyEquiv"/>
-									<int key="NSMnemonicLoc">2147483647</int>
-									<int key="NSState">1</int>
-									<object class="NSCustomResource" key="NSImage">
-										<string key="NSClassName">NSImage</string>
-										<string key="NSResourceName">Icon_MicrophoneBlack_256x256</string>
-									</object>
-									<reference key="NSOnImage" ref="332695261"/>
-									<reference key="NSMixedImage" ref="541356577"/>
-									<string key="NSAction">_popUpItemAction:</string>
-									<reference key="NSTarget" ref="480563989"/>
-								</object>
-								<bool key="NSMenuItemRespectAlignment">YES</bool>
-								<object class="NSMenu" key="NSMenu" id="969190675">
-									<string key="NSTitle">OtherViews</string>
-									<array class="NSMutableArray" key="NSMenuItems">
-										<reference ref="596758847"/>
-										<object class="NSMenuItem" id="772257676">
-											<reference key="NSMenu" ref="969190675"/>
-											<string key="NSTitle">Gain</string>
-											<string key="NSKeyEquiv"/>
-											<int key="NSMnemonicLoc">2147483647</int>
-											<reference key="NSOnImage" ref="332695261"/>
-											<reference key="NSMixedImage" ref="541356577"/>
-											<string key="NSAction">_popUpItemAction:</string>
-											<reference key="NSTarget" ref="480563989"/>
-										</object>
-									</array>
-									<reference key="NSMenuFont" ref="844216569"/>
-								</object>
-								<bool key="NSPullDown">YES</bool>
-								<int key="NSPreferredEdge">1</int>
-								<bool key="NSUsesItemFromMenu">YES</bool>
-								<bool key="NSAltersState">YES</bool>
-								<int key="NSArrowPosition">2</int>
-							</object>
-							<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
-						</object>
-					</array>
-					<string key="NSFrameSize">{256, 408}</string>
-				</object>
-				<string key="NSScreenRect">{{0, 0}, {1920, 1177}}</string>
-				<string key="NSMinSize">{256, 477}</string>
-				<string key="NSMaxSize">{1.7976931348623157e+308, 1.7976931348623157e+308}</string>
-				<bool key="NSWindowIsRestorable">YES</bool>
-			</object>
-			<object class="NSCustomView" id="545736283">
-				<nil key="NSNextResponder"/>
-				<nil key="NSNibTouchBar"/>
-				<int key="NSvFlags">268</int>
-				<array class="NSMutableArray" key="NSSubviews">
-					<object class="NSButton" id="208921964">
-						<reference key="NSNextResponder" ref="545736283"/>
-						<nil key="NSNibTouchBar"/>
-						<int key="NSvFlags">268</int>
-						<string key="NSFrame">{{2, 0}, {49, 18}}</string>
-						<reference key="NSSuperview" ref="545736283"/>
-						<bool key="NSEnabled">YES</bool>
-						<object class="NSButtonCell" key="NSCell" id="169016076">
-							<int key="NSCellFlags">67108864</int>
-							<int key="NSCellFlags2">131072</int>
-							<string key="NSContents">Mute</string>
-							<reference key="NSSupport" ref="26"/>
-							<reference key="NSControlView" ref="208921964"/>
-							<int key="NSButtonFlags">1211912448</int>
-							<int key="NSButtonFlags2">2</int>
-							<object class="NSCustomResource" key="NSNormalImage">
-								<string key="NSClassName">NSImage</string>
-								<string key="NSResourceName">NSSwitch</string>
-							</object>
-							<object class="NSButtonImageSource" key="NSAlternateImage">
-								<string key="NSImageName">NSSwitch</string>
-							</object>
-							<string key="NSAlternateContents"/>
-							<string key="NSKeyEquivalent"/>
-							<int key="NSPeriodicDelay">200</int>
-							<int key="NSPeriodicInterval">25</int>
-						</object>
-						<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
-					</object>
-					<object class="NSTextField" id="261027162">
-						<reference key="NSNextResponder" ref="545736283"/>
-						<nil key="NSNibTouchBar"/>
-						<int key="NSvFlags">268</int>
-						<string key="NSFrame">{{-3, 20}, {66, 11}}</string>
-						<reference key="NSSuperview" ref="545736283"/>
-						<reference key="NSNextKeyView" ref="208921964"/>
-						<bool key="NSEnabled">YES</bool>
-						<object class="NSTextFieldCell" key="NSCell" id="30057499">
-							<int key="NSCellFlags">68157504</int>
-							<int key="NSCellFlags2">138679296</int>
-							<object class="NSFont" key="NSSupport" id="22">
-								<string key="NSName">.SFNSText</string>
-								<double key="NSSize">9</double>
-								<int key="NSfFlags">3600</int>
-							</object>
-							<object class="NSNumberFormatter" key="NSFormatter" id="405997883">
-								<dictionary class="NSMutableDictionary" key="NS.attributes">
-									<boolean value="YES" key="allowsFloats"/>
-									<boolean value="YES" key="alwaysShowsDecimalSeparator"/>
-									<integer value="1040" key="formatterBehavior"/>
-									<boolean value="NO" key="lenient"/>
-									<object class="NSLocale" key="locale" id="135116341">
-										<string key="NS.identifier"/>
-									</object>
-									<integer value="1" key="maximumFractionDigits"/>
-									<integer value="1" key="minimumFractionDigits"/>
-									<integer value="1" key="multiplier"/>
-									<string key="negativeInfinitySymbol">-∞</string>
-									<string key="nilSymbol"/>
-									<integer value="3" key="numberStyle"/>
-									<string key="positiveInfinitySymbol">+∞</string>
-									<boolean value="NO" key="usesGroupingSeparator"/>
-								</dictionary>
-								<string key="NS.positiveformat">#0.0%</string>
-								<string key="NS.negativeformat">#0.0%</string>
-								<nil key="NS.positiveattrs"/>
-								<nil key="NS.negativeattrs"/>
-								<nil key="NS.zero"/>
-								<object class="NSAttributedString" key="NS.nil">
-									<string key="NSString"/>
-								</object>
-								<object class="NSAttributedString" key="NS.nan">
-									<string key="NSString">NaN</string>
-									<dictionary key="NSAttributes" id="487334154"/>
-								</object>
-								<object class="NSDecimalNumberPlaceholder" key="NS.min" id="986569588">
-									<int key="NS.exponent">0</int>
-									<int key="NS.length">0</int>
-									<bool key="NS.negative">YES</bool>
-									<bool key="NS.compact">NO</bool>
-									<int key="NS.mantissa.bo">1</int>
-									<bytes key="NS.mantissa">AAAAAAAAAAAAAAAAAAAAAA</bytes>
-								</object>
-								<reference key="NS.max" ref="986569588"/>
-								<object class="NSDecimalNumberHandler" key="NS.rounding">
-									<int key="NS.roundingmode">3</int>
-									<bool key="NS.raise.overflow">YES</bool>
-									<bool key="NS.raise.underflow">YES</bool>
-									<bool key="NS.raise.dividebyzero">YES</bool>
-								</object>
-								<string key="NS.decimal">.</string>
-								<string key="NS.thousand">,</string>
-								<bool key="NS.hasthousands">NO</bool>
-								<bool key="NS.localized">NO</bool>
-								<bool key="NS.allowsfloats">YES</bool>
-							</object>
-							<string key="NSPlaceholderString">%1.1f%%</string>
-							<reference key="NSControlView" ref="261027162"/>
-							<reference key="NSBackgroundColor" ref="949245653"/>
-							<reference key="NSTextColor" ref="434655141"/>
-						</object>
-						<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
-						<int key="NSTextFieldAlignmentRectInsetsVersion">2</int>
-					</object>
-					<object class="NSSlider" id="738109744">
-						<reference key="NSNextResponder" ref="545736283"/>
-						<nil key="NSNibTouchBar"/>
-						<int key="NSvFlags">268</int>
-						<string key="NSFrame">{{17, 31}, {21, 105}}</string>
-						<reference key="NSSuperview" ref="545736283"/>
-						<reference key="NSNextKeyView" ref="261027162"/>
-						<bool key="NSEnabled">YES</bool>
-						<object class="NSSliderCell" key="NSCell" id="893365979">
-							<int key="NSCellFlags">604242176</int>
-							<int key="NSCellFlags2">0</int>
-							<string key="NSContents"/>
-							<reference key="NSControlView" ref="738109744"/>
-							<double key="NSMaxValue">100</double>
-							<double key="NSMinValue">0.0</double>
-							<double key="NSValue">0.0</double>
-							<double key="NSAltIncValue">0.0</double>
-							<int key="NSNumberOfTickMarks">0</int>
-							<int key="NSTickMarkPosition">0</int>
-							<bool key="NSAllowsTickMarkValuesOnly">NO</bool>
-							<bool key="NSVertical">YES</bool>
-						</object>
-						<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
-					</object>
-				</array>
-				<string key="NSFrameSize">{55, 139}</string>
-				<reference key="NSNextKeyView" ref="738109744"/>
-				<string key="NSClassName">NSView</string>
-			</object>
-			<object class="NSCustomView" id="552471306">
-				<nil key="NSNextResponder"/>
-				<nil key="NSNibTouchBar"/>
-				<int key="NSvFlags">268</int>
-				<array class="NSMutableArray" key="NSSubviews">
-					<object class="NSTextField" id="1023402314">
-						<reference key="NSNextResponder" ref="552471306"/>
-						<nil key="NSNibTouchBar"/>
-						<int key="NSvFlags">268</int>
-						<string key="NSFrame">{{-1, 6}, {51, 11}}</string>
-						<reference key="NSSuperview" ref="552471306"/>
-						<bool key="NSEnabled">YES</bool>
-						<object class="NSTextFieldCell" key="NSCell" id="999175719">
-							<int key="NSCellFlags">68157504</int>
-							<int key="NSCellFlags2">138679296</int>
-							<reference key="NSSupport" ref="22"/>
-							<object class="NSNumberFormatter" key="NSFormatter" id="296608132">
-								<dictionary class="NSMutableDictionary" key="NS.attributes">
-									<boolean value="YES" key="allowsFloats"/>
-									<boolean value="YES" key="alwaysShowsDecimalSeparator"/>
-									<integer value="1040" key="formatterBehavior"/>
-									<boolean value="NO" key="lenient"/>
-									<reference key="locale" ref="135116341"/>
-									<integer value="1" key="maximumFractionDigits"/>
-									<integer value="2000000000" key="maximumIntegerDigits"/>
-									<integer value="1" key="minimumFractionDigits"/>
-									<integer value="1" key="minimumIntegerDigits"/>
-									<real value="1" key="multiplier"/>
-									<string key="nilSymbol"/>
-									<integer value="3" key="numberStyle"/>
-									<boolean value="NO" key="usesGroupingSeparator"/>
-								</dictionary>
-								<string key="NS.positiveformat">#0.0%</string>
-								<string key="NS.negativeformat">#0.0%</string>
-								<nil key="NS.positiveattrs"/>
-								<nil key="NS.negativeattrs"/>
-								<nil key="NS.zero"/>
-								<object class="NSAttributedString" key="NS.nil">
-									<string key="NSString"/>
-								</object>
-								<object class="NSAttributedString" key="NS.nan">
-									<string key="NSString">NaN</string>
-									<reference key="NSAttributes" ref="487334154"/>
-								</object>
-								<reference key="NS.min" ref="986569588"/>
-								<reference key="NS.max" ref="986569588"/>
-								<object class="NSDecimalNumberHandler" key="NS.rounding">
-									<int key="NS.roundingmode">3</int>
-									<bool key="NS.raise.overflow">YES</bool>
-									<bool key="NS.raise.underflow">YES</bool>
-									<bool key="NS.raise.dividebyzero">YES</bool>
-								</object>
-								<string key="NS.decimal">.</string>
-								<string key="NS.thousand">,</string>
-								<bool key="NS.hasthousands">NO</bool>
-								<bool key="NS.localized">NO</bool>
-								<bool key="NS.allowsfloats">YES</bool>
-							</object>
-							<string key="NSPlaceholderString">%1.1f%%</string>
-							<reference key="NSControlView" ref="1023402314"/>
-							<reference key="NSBackgroundColor" ref="949245653"/>
-							<reference key="NSTextColor" ref="434655141"/>
-						</object>
-						<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
-						<int key="NSTextFieldAlignmentRectInsetsVersion">2</int>
-					</object>
-					<object class="NSSlider" id="782084649">
-						<reference key="NSNextResponder" ref="552471306"/>
-						<nil key="NSNibTouchBar"/>
-						<int key="NSvFlags">268</int>
-						<string key="NSFrame">{{12, 17}, {21, 105}}</string>
-						<reference key="NSSuperview" ref="552471306"/>
-						<reference key="NSNextKeyView" ref="1023402314"/>
-						<bool key="NSEnabled">YES</bool>
-						<object class="NSSliderCell" key="NSCell" id="134610646">
-							<int key="NSCellFlags">67371264</int>
-							<int key="NSCellFlags2">0</int>
-							<string key="NSContents"/>
-							<reference key="NSControlView" ref="782084649"/>
-							<double key="NSMaxValue">100</double>
-							<double key="NSMinValue">0.0</double>
-							<double key="NSValue">100</double>
-							<double key="NSAltIncValue">0.0</double>
-							<int key="NSNumberOfTickMarks">0</int>
-							<int key="NSTickMarkPosition">0</int>
-							<bool key="NSAllowsTickMarkValuesOnly">NO</bool>
-							<bool key="NSVertical">YES</bool>
-						</object>
-						<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
-					</object>
-				</array>
-				<string key="NSFrameSize">{45, 125}</string>
-				<reference key="NSNextKeyView" ref="782084649"/>
-				<string key="NSClassName">NSView</string>
-			</object>
-		</array>
-		<object class="IBObjectContainer" key="IBDocument.Objects">
-			<array class="NSMutableArray" key="connectionRecords">
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isShowingStatusBar</string>
-						<reference key="source" ref="963885183"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="963885183"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">hidden: isShowingStatusBar</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isShowingStatusBar</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">54</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeCoreSpeed:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="137384193"/>
-					</object>
-					<int key="connectionID">56</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeRotationRelative:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="843588223"/>
-					</object>
-					<int key="connectionID">57</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeRotationRelative:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="668087633"/>
-					</object>
-					<int key="connectionID">58</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">openRom:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="127287125"/>
-					</object>
-					<int key="connectionID">60</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">delegate</string>
-						<reference key="source" ref="418996424"/>
-						<reference key="destination" ref="1001"/>
-					</object>
-					<int key="connectionID">62</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">value: emuControl.statusText</string>
-						<reference key="source" ref="731708450"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="731708450"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">value: emuControl.statusText</string>
-							<string key="NSBinding">value</string>
-							<string key="NSKeyPath">emuControl.statusText</string>
-							<dictionary key="NSOptions">
-								<boolean value="NO" key="NSAllowsEditingMultipleValuesSelection"/>
-								<boolean value="NO" key="NSRaisesForNotApplicableKeys"/>
-								<boolean value="YES" key="NSValidatesImmediately"/>
-							</dictionary>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">67</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">animate: emuControl.isWorking</string>
-						<reference key="source" ref="963885183"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="963885183"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">animate: emuControl.isWorking</string>
-							<string key="NSBinding">animate</string>
-							<string key="NSKeyPath">emuControl.isWorking</string>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">68</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">reset:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="281439290"/>
-					</object>
-					<int key="connectionID">107</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">toggleExecutePause:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="298859108"/>
-					</object>
-					<int key="connectionID">108</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">window</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="418996424"/>
-					</object>
-					<int key="connectionID">109</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isShowingStatusBar</string>
-						<reference key="source" ref="347607109"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="347607109"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">hidden: isShowingStatusBar</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isShowingStatusBar</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">131</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isShowingStatusBar</string>
-						<reference key="source" ref="154157914"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="154157914"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">hidden: isShowingStatusBar</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isShowingStatusBar</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">133</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">image: emuControl.currentVolumeIcon</string>
-						<reference key="source" ref="993162570"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="993162570"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">image: emuControl.currentVolumeIcon</string>
-							<string key="NSBinding">image</string>
-							<string key="NSKeyPath">emuControl.currentVolumeIcon</string>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">135</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">value: emuControl.currentVolumeValue</string>
-						<reference key="source" ref="782084649"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="782084649"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">value: emuControl.currentVolumeValue</string>
-							<string key="NSBinding">value</string>
-							<string key="NSKeyPath">emuControl.currentVolumeValue</string>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">138</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeVolume:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="782084649"/>
-					</object>
-					<int key="connectionID">141</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">outputVolumeMenuItem</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="845020802"/>
-					</object>
-					<int key="connectionID">142</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">microphoneGainMenuItem</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="772257676"/>
-					</object>
-					<int key="connectionID">144</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">value: emuControl.currentVolumeValue</string>
-						<reference key="source" ref="1023402314"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="1023402314"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">value: emuControl.currentVolumeValue</string>
-							<string key="NSBinding">value</string>
-							<string key="NSKeyPath">emuControl.currentVolumeValue</string>
-							<dictionary key="NSOptions">
-								<boolean value="NO" key="NSRaisesForNotApplicableKeys"/>
-								<boolean value="YES" key="NSValidatesImmediately"/>
-							</dictionary>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">157</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isShowingStatusBar</string>
-						<reference key="source" ref="552471306"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="552471306"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">hidden: isShowingStatusBar</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isShowingStatusBar</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">159</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">outputVolumeControlView</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="552471306"/>
-					</object>
-					<int key="connectionID">160</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isShowingStatusBar</string>
-						<reference key="source" ref="545736283"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="545736283"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">hidden: isShowingStatusBar</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isShowingStatusBar</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">167</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">microphoneGainControlView</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="545736283"/>
-					</object>
-					<int key="connectionID">183</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">image: emuControl.currentMicStatusIcon</string>
-						<reference key="source" ref="596758847"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="596758847"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">image: emuControl.currentMicStatusIcon</string>
-							<string key="NSBinding">image</string>
-							<string key="NSKeyPath">emuControl.currentMicStatusIcon</string>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">184</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">microphoneGainSlider</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="738109744"/>
-					</object>
-					<int key="connectionID">203</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">microphoneMuteButton</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="208921964"/>
-					</object>
-					<int key="connectionID">204</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeHardwareMicGain:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="738109744"/>
-					</object>
-					<int key="connectionID">207</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">enabled: emuControl.isHardwareMicAvailable</string>
-						<reference key="source" ref="738109744"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="738109744"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">enabled: emuControl.isHardwareMicAvailable</string>
-							<string key="NSBinding">enabled</string>
-							<string key="NSKeyPath">emuControl.isHardwareMicAvailable</string>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">218</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">enabled: emuControl.isHardwareMicAvailable</string>
-						<reference key="source" ref="261027162"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="261027162"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">enabled: emuControl.isHardwareMicAvailable</string>
-							<string key="NSBinding">enabled</string>
-							<string key="NSKeyPath">emuControl.isHardwareMicAvailable</string>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">220</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">value: emuControl.cdsCoreController.content.cdsController.hardwareMicMute</string>
-						<reference key="source" ref="208921964"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="208921964"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">value: emuControl.cdsCoreController.content.cdsController.hardwareMicMute</string>
-							<string key="NSBinding">value</string>
-							<string key="NSKeyPath">emuControl.cdsCoreController.content.cdsController.hardwareMicMute</string>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">224</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">toolTip: emuControl.cdsCoreController.content.cdsController.hardwareMicInfoString</string>
-						<reference key="source" ref="154157914"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="154157914"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">toolTip: emuControl.cdsCoreController.content.cdsController.hardwareMicInfoString</string>
-							<string key="NSBinding">toolTip</string>
-							<string key="NSKeyPath">emuControl.cdsCoreController.content.cdsController.hardwareMicInfoString</string>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">226</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">value: emuControl.currentMicGainValue</string>
-						<reference key="source" ref="738109744"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="738109744"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">value: emuControl.currentMicGainValue</string>
-							<string key="NSBinding">value</string>
-							<string key="NSKeyPath">emuControl.currentMicGainValue</string>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">230</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">value: emuControl.currentMicGainValue</string>
-						<reference key="source" ref="261027162"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="261027162"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">value: emuControl.currentMicGainValue</string>
-							<string key="NSBinding">value</string>
-							<string key="NSKeyPath">emuControl.currentMicGainValue</string>
-							<dictionary key="NSOptions">
-								<boolean value="NO" key="NSRaisesForNotApplicableKeys"/>
-								<boolean value="YES" key="NSValidatesImmediately"/>
-							</dictionary>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">232</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeHardwareMicMute:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="208921964"/>
-					</object>
-					<int key="connectionID">233</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">frameAdvance:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="535920858"/>
-					</object>
-					<int key="connectionID">243</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">toggleNDSDisplays:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="78663493"/>
-					</object>
-					<int key="connectionID">244</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">toggleHUDVisibility:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="838391207"/>
-					</object>
-					<int key="connectionID">245</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isShowingStatusBar</string>
-						<reference key="source" ref="731708450"/>
-						<reference key="destination" ref="1001"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="731708450"/>
-							<reference key="NSDestination" ref="1001"/>
-							<string key="NSLabel">hidden: isShowingStatusBar</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isShowingStatusBar</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">248</int>
-				</object>
-			</array>
-			<object class="IBMutableOrderedSet" key="objectRecords">
-				<array key="orderedObjects">
-					<object class="IBObjectRecord">
-						<int key="objectID">0</int>
-						<reference key="object" ref="0"/>
-						<reference key="children" ref="1000"/>
-						<nil key="parent"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">-2</int>
-						<reference key="object" ref="1001"/>
-						<reference key="parent" ref="0"/>
-						<string key="objectName">File's Owner</string>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">-1</int>
-						<reference key="object" ref="1003"/>
-						<reference key="parent" ref="0"/>
-						<string key="objectName">First Responder</string>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">-3</int>
-						<reference key="object" ref="1004"/>
-						<reference key="parent" ref="0"/>
-						<string key="objectName">Application</string>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">3</int>
-						<reference key="object" ref="418996424"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="321775728"/>
-							<reference ref="1027645320"/>
-						</array>
-						<reference key="parent" ref="0"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">4</int>
-						<reference key="object" ref="321775728"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="843588223"/>
-							<reference ref="668087633"/>
-							<reference ref="522097277"/>
-							<reference ref="69604475"/>
-							<reference ref="127287125"/>
-							<reference ref="298859108"/>
-							<reference ref="137384193"/>
-							<reference ref="281439290"/>
-							<reference ref="535920858"/>
-							<reference ref="78663493"/>
-							<reference ref="838391207"/>
-						</array>
-						<reference key="parent" ref="418996424"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">5</int>
-						<reference key="object" ref="1027645320"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="731708450"/>
-							<reference ref="963885183"/>
-							<reference ref="154157914"/>
-							<reference ref="347607109"/>
-						</array>
-						<reference key="parent" ref="418996424"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">6</int>
-						<reference key="object" ref="731708450"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="644649254"/>
-						</array>
-						<reference key="parent" ref="1027645320"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">10</int>
-						<reference key="object" ref="963885183"/>
-						<reference key="parent" ref="1027645320"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">13</int>
-						<reference key="object" ref="644649254"/>
-						<reference key="parent" ref="731708450"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">14</int>
-						<reference key="object" ref="843588223"/>
-						<reference key="parent" ref="321775728"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">15</int>
-						<reference key="object" ref="668087633"/>
-						<reference key="parent" ref="321775728"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">16</int>
-						<reference key="object" ref="522097277"/>
-						<reference key="parent" ref="321775728"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">17</int>
-						<reference key="object" ref="69604475"/>
-						<reference key="parent" ref="321775728"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">18</int>
-						<reference key="object" ref="127287125"/>
-						<reference key="parent" ref="321775728"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">19</int>
-						<reference key="object" ref="298859108"/>
-						<reference key="parent" ref="321775728"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">20</int>
-						<reference key="object" ref="137384193"/>
-						<reference key="parent" ref="321775728"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">21</int>
-						<reference key="object" ref="281439290"/>
-						<reference key="parent" ref="321775728"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">116</int>
-						<reference key="object" ref="347607109"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="1063916850"/>
-						</array>
-						<reference key="parent" ref="1027645320"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">117</int>
-						<reference key="object" ref="1063916850"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="895362311"/>
-						</array>
-						<reference key="parent" ref="347607109"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">118</int>
-						<reference key="object" ref="895362311"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="845020802"/>
-							<reference ref="993162570"/>
-						</array>
-						<reference key="parent" ref="1063916850"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">120</int>
-						<reference key="object" ref="845020802"/>
-						<reference key="parent" ref="895362311"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">119</int>
-						<reference key="object" ref="993162570"/>
-						<reference key="parent" ref="895362311"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">122</int>
-						<reference key="object" ref="154157914"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="480563989"/>
-						</array>
-						<reference key="parent" ref="1027645320"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">123</int>
-						<reference key="object" ref="480563989"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="969190675"/>
-						</array>
-						<reference key="parent" ref="154157914"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">124</int>
-						<reference key="object" ref="969190675"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="596758847"/>
-							<reference ref="772257676"/>
-						</array>
-						<reference key="parent" ref="480563989"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">125</int>
-						<reference key="object" ref="596758847"/>
-						<reference key="parent" ref="969190675"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">126</int>
-						<reference key="object" ref="772257676"/>
-						<reference key="parent" ref="969190675"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">151</int>
-						<reference key="object" ref="552471306"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="782084649"/>
-							<reference ref="1023402314"/>
-						</array>
-						<reference key="parent" ref="0"/>
-						<string key="objectName">Sound Output Volume Menu Item</string>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">136</int>
-						<reference key="object" ref="782084649"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="134610646"/>
-						</array>
-						<reference key="parent" ref="552471306"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">137</int>
-						<reference key="object" ref="134610646"/>
-						<reference key="parent" ref="782084649"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">152</int>
-						<reference key="object" ref="1023402314"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="999175719"/>
-						</array>
-						<reference key="parent" ref="552471306"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">153</int>
-						<reference key="object" ref="999175719"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="296608132"/>
-						</array>
-						<reference key="parent" ref="1023402314"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">154</int>
-						<reference key="object" ref="296608132"/>
-						<reference key="parent" ref="999175719"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">161</int>
-						<reference key="object" ref="545736283"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="208921964"/>
-							<reference ref="738109744"/>
-							<reference ref="261027162"/>
-						</array>
-						<reference key="parent" ref="0"/>
-						<string key="objectName">Microphone Input Gain Menu Item</string>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">162</int>
-						<reference key="object" ref="261027162"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="30057499"/>
-						</array>
-						<reference key="parent" ref="545736283"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">165</int>
-						<reference key="object" ref="30057499"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="405997883"/>
-						</array>
-						<reference key="parent" ref="261027162"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">166</int>
-						<reference key="object" ref="405997883"/>
-						<reference key="parent" ref="30057499"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">145</int>
-						<reference key="object" ref="738109744"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="893365979"/>
-						</array>
-						<reference key="parent" ref="545736283"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">146</int>
-						<reference key="object" ref="893365979"/>
-						<reference key="parent" ref="738109744"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">185</int>
-						<reference key="object" ref="208921964"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="169016076"/>
-						</array>
-						<reference key="parent" ref="545736283"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">186</int>
-						<reference key="object" ref="169016076"/>
-						<reference key="parent" ref="208921964"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">234</int>
-						<reference key="object" ref="535920858"/>
-						<reference key="parent" ref="321775728"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">237</int>
-						<reference key="object" ref="78663493"/>
-						<reference key="parent" ref="321775728"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">238</int>
-						<reference key="object" ref="838391207"/>
-						<reference key="parent" ref="321775728"/>
-					</object>
-				</array>
-			</object>
-			<dictionary class="NSMutableDictionary" key="flattenedProperties">
-				<string key="-1.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="-2.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="-3.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="10.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="116.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="117.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="118.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="119.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="120.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="122.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="123.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="124.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="125.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="126.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="13.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="136.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="137.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="14.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="145.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="146.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="15.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="151.IBPersistedLastKnownCanvasPosition">{183.5, 317.5}</string>
-				<string key="151.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="152.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="153.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<integer value="1040" key="154.IBNumberFormatterBehaviorMetadataKey"/>
-				<boolean value="NO" key="154.IBNumberFormatterLocalizesFormatMetadataKey"/>
-				<real value="10" key="154.IBNumberFormatterSampleNumberKey"/>
-				<string key="154.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="16.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<reference key="161.IBNSViewMetadataGestureRecognizers" ref="0"/>
-				<string key="161.IBPersistedLastKnownCanvasPosition">{84.5, 324.5}</string>
-				<string key="161.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="162.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="165.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<integer value="1040" key="166.IBNumberFormatterBehaviorMetadataKey"/>
-				<boolean value="NO" key="166.IBNumberFormatterLocalizesFormatMetadataKey"/>
-				<string key="166.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="17.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="18.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="185.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="186.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="19.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="20.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="21.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="234.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="237.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="238.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="3.IBEditorWindowLastContentRect">{{666, 269}, {256, 408}}</string>
-				<string key="3.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="3.IBWindowTemplateEditedContentRect">{{666, 269}, {256, 408}}</string>
-				<boolean value="NO" key="3.NSWindowTemplate.visibleAtLaunch"/>
-				<boolean value="YES" key="3.windowTemplate.hasMinSize"/>
-				<string key="3.windowTemplate.minSize">{256, 408}</string>
-				<string key="4.IBEditorWindowLastContentRect">{{334, 998}, {616, 0}}</string>
-				<string key="4.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="5.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="6.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-			</dictionary>
-			<dictionary class="NSMutableDictionary" key="unlocalizedProperties"/>
-			<nil key="activeLocalization"/>
-			<dictionary class="NSMutableDictionary" key="localizations"/>
-			<nil key="sourceID"/>
-			<int key="maxID">248</int>
-		</object>
-		<object class="IBClassDescriber" key="IBDocument.Classes"/>
-		<int key="IBDocument.localizationMode">0</int>
-		<string key="IBDocument.TargetRuntimeIdentifier">IBCocoaFramework</string>
-		<object class="NSMutableDictionary" key="IBDocument.PluginDeclaredDependencies">
-			<string key="NS.key.0">com.apple.InterfaceBuilder.CocoaPlugin.macosx</string>
-			<integer value="1060" key="NS.object.0"/>
-		</object>
-		<object class="NSMutableDictionary" key="IBDocument.PluginDeclaredDependencyDefaults">
-			<string key="NS.key.0">com.apple.InterfaceBuilder.CocoaPlugin.macosx</string>
-			<integer value="1060" key="NS.object.0"/>
-		</object>
-		<object class="NSMutableDictionary" key="IBDocument.PluginDeclaredDevelopmentDependencies">
-			<string key="NS.key.0">com.apple.InterfaceBuilder.CocoaPlugin.InterfaceBuilder3</string>
-			<integer value="3200" key="NS.object.0"/>
-		</object>
-		<bool key="IBDocument.PluginDeclaredDependenciesTrackSystemTargetVersion">YES</bool>
-		<string key="IBDocument.LastKnownRelativeProjectPath">../../DeSmuME (XCode 3).xcodeproj</string>
-		<int key="IBDocument.defaultPropertyAccessControl">3</int>
-		<dictionary class="NSMutableDictionary" key="IBDocument.LastKnownImageSizes">
-			<string key="Icon_DisplayToggle_420x420">{420, 420}</string>
-			<string key="Icon_Execute_420x420">{420, 420}</string>
-			<string key="Icon_FrameAdvance_420x420">{420, 420}</string>
-			<string key="Icon_MicrophoneBlack_256x256">{256, 256}</string>
-			<string key="Icon_OpenROM_420x420">{420, 420}</string>
-			<string key="Icon_Reset_420x420">{420, 420}</string>
-			<string key="Icon_RotateCCW_420x420">{420, 420}</string>
-			<string key="Icon_RotateCW_420x420">{420, 420}</string>
-			<string key="Icon_ShowHUD_420x420">{420, 420}</string>
-			<string key="Icon_Speed2x_420x420">{420, 420}</string>
-			<string key="Icon_VolumeFull_16x16">{16, 16}</string>
-			<string key="NSMenuCheckmark">{12, 12}</string>
-			<string key="NSMenuMixedState">{10, 2}</string>
-			<string key="NSSwitch">{15, 15}</string>
-		</dictionary>
-	</data>
-	<classes>
-		<class name="IBActionConnection">
-			<fallbacks/>
-		</class>
-		<class name="IBBindingConnection">
-			<fallbacks/>
-		</class>
-		<class name="IBClassDescriber">
-			<fallbacks/>
-		</class>
-		<class name="IBConnectionRecord">
-			<fallbacks/>
-		</class>
-		<class name="IBMutableOrderedSet">
-			<fallbacks/>
-		</class>
-		<class name="IBObjectContainer">
-			<fallbacks/>
-		</class>
-		<class name="IBObjectRecord">
-			<fallbacks/>
-		</class>
-		<class name="IBOutletConnection">
-			<fallbacks/>
-		</class>
-		<class name="NSAttributedString">
-			<fallbacks/>
-		</class>
-		<class name="NSButton">
-			<fallbacks/>
-		</class>
-		<class name="NSButtonCell">
-			<fallbacks/>
-		</class>
-		<class name="NSButtonImageSource">
-			<fallbacks/>
-		</class>
-		<class name="NSColor">
-			<fallbacks/>
-		</class>
-		<class name="NSCustomObject">
-			<fallbacks/>
-		</class>
-		<class name="NSCustomResource">
-			<fallbacks/>
-		</class>
-		<class name="NSCustomView">
-			<fallbacks/>
-		</class>
-		<class name="NSDecimalNumberHandler">
-			<fallbacks/>
-		</class>
-		<class name="NSDecimalNumberPlaceholder">
-			<fallbacks/>
-		</class>
-		<class name="NSDictionary">
-			<fallbacks/>
-		</class>
-		<class name="NSFont">
-			<fallbacks/>
-		</class>
-		<class name="NSLocale">
-			<fallbacks/>
-		</class>
-		<class name="NSMenu">
-			<fallbacks/>
-		</class>
-		<class name="NSMenuItem">
-			<fallbacks/>
-		</class>
-		<class name="NSMutableDictionary">
-			<fallbacks/>
-		</class>
-		<class name="NSMutableString">
-			<fallbacks/>
-		</class>
-		<class name="NSNibBindingConnector">
-			<fallbacks/>
-		</class>
-		<class name="NSNumberFormatter">
-			<fallbacks/>
-		</class>
-		<class name="NSPopUpButton">
-			<fallbacks/>
-		</class>
-		<class name="NSPopUpButtonCell">
-			<fallbacks/>
-		</class>
-		<class name="NSProgressIndicator">
-			<fallbacks/>
-		</class>
-		<class name="NSSlider">
-			<fallbacks/>
-		</class>
-		<class name="NSSliderCell">
-			<fallbacks/>
-		</class>
-		<class name="NSTextField">
-			<fallbacks/>
-		</class>
-		<class name="NSTextFieldCell">
-			<fallbacks/>
-		</class>
-		<class name="NSToolbar">
-			<fallbacks/>
-		</class>
-		<class name="NSToolbarFlexibleSpaceItem">
-			<fallbacks/>
-		</class>
-		<class name="NSToolbarItem">
-			<fallbacks/>
-		</class>
-		<class name="NSToolbarSpaceItem">
-			<fallbacks/>
-		</class>
-		<class name="NSView">
-			<fallbacks/>
-		</class>
-		<class name="NSWindowTemplate">
-			<fallbacks/>
-		</class>
-	</classes>
-</archive>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="DisplayWindowController">
+            <connections>
+                <outlet property="microphoneGainControlView" destination="161" id="183"/>
+                <outlet property="microphoneGainMenuItem" destination="126" id="144"/>
+                <outlet property="microphoneGainSlider" destination="145" id="203"/>
+                <outlet property="microphoneMuteButton" destination="185" id="204"/>
+                <outlet property="outputVolumeControlView" destination="151" id="160"/>
+                <outlet property="outputVolumeMenuItem" destination="120" id="142"/>
+                <outlet property="window" destination="3" id="109"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application"/>
+        <window title="DeSmuME" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" deferred="NO" visibleAtLaunch="NO" animationBehavior="default" id="3">
+            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" texturedBackground="YES"/>
+            <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
+            <rect key="contentRect" x="830" y="370" width="256" height="408"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
+            <value key="minSize" type="size" width="256" height="408"/>
+            <view key="contentView" id="5">
+                <rect key="frame" x="0.0" y="0.0" width="256" height="408"/>
+                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                <subviews>
+                    <progressIndicator autoresizesSubviews="NO" focusRingType="none" horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" maxValue="100" displayedWhenStopped="NO" bezeled="NO" indeterminate="YES" controlSize="small" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="10">
+                        <rect key="frame" x="2" y="3" width="16" height="16"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                        <connections>
+                            <binding destination="-2" name="animate" keyPath="emuControl.isWorking" id="68"/>
+                            <binding destination="-2" name="hidden" keyPath="isShowingStatusBar" id="54">
+                                <dictionary key="options">
+                                    <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                </dictionary>
+                            </binding>
+                        </connections>
+                    </progressIndicator>
+                    <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6">
+                        <rect key="frame" x="17" y="5" width="137" height="14"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" allowsUndo="NO" sendsActionOnEndEditing="YES" placeholderString="Status Text" id="13">
+                            <font key="font" metaFont="smallSystem"/>
+                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                        <connections>
+                            <binding destination="-2" name="hidden" keyPath="isShowingStatusBar" id="248">
+                                <dictionary key="options">
+                                    <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                </dictionary>
+                            </binding>
+                            <binding destination="-2" name="value" keyPath="emuControl.statusText" id="67">
+                                <dictionary key="options">
+                                    <integer key="NSAllowsEditingMultipleValuesSelection" value="0"/>
+                                    <integer key="NSRaisesForNotApplicableKeys" value="0"/>
+                                    <integer key="NSValidatesImmediately" value="1"/>
+                                </dictionary>
+                            </binding>
+                        </connections>
+                    </textField>
+                    <popUpButton fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="116">
+                        <rect key="frame" x="192" y="-1" width="40" height="26"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxY="YES"/>
+                        <popUpButtonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="left" alignment="center" lineBreakMode="truncatingTail" state="on" borderStyle="bezel" inset="2" pullsDown="YES" selectedItem="119" id="117">
+                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                            <menu key="menu" title="OtherViews" id="118">
+                                <items>
+                                    <menuItem state="on" image="Icon_VolumeFull_16x16" hidden="YES" id="119">
+                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                        <connections>
+                                            <binding destination="-2" name="image" keyPath="emuControl.currentVolumeIcon" id="135"/>
+                                        </connections>
+                                    </menuItem>
+                                    <menuItem title="Volume" id="120">
+                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                    </menuItem>
+                                </items>
+                            </menu>
+                        </popUpButtonCell>
+                        <connections>
+                            <binding destination="-2" name="hidden" keyPath="isShowingStatusBar" id="131">
+                                <dictionary key="options">
+                                    <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                </dictionary>
+                            </binding>
+                        </connections>
+                    </popUpButton>
+                    <popUpButton fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="122">
+                        <rect key="frame" x="151" y="-1" width="42" height="26"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxY="YES"/>
+                        <popUpButtonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="left" alignment="center" lineBreakMode="truncatingTail" state="on" borderStyle="bezel" imageScaling="proportionallyDown" inset="2" pullsDown="YES" selectedItem="125" id="123">
+                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                            <menu key="menu" title="OtherViews" id="124">
+                                <items>
+                                    <menuItem state="on" image="Icon_MicrophoneBlack_256x256" hidden="YES" id="125">
+                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                        <connections>
+                                            <binding destination="-2" name="image" keyPath="emuControl.currentMicStatusIcon" id="184"/>
+                                        </connections>
+                                    </menuItem>
+                                    <menuItem title="Gain" id="126">
+                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                    </menuItem>
+                                </items>
+                            </menu>
+                        </popUpButtonCell>
+                        <connections>
+                            <binding destination="-2" name="hidden" keyPath="isShowingStatusBar" id="133">
+                                <dictionary key="options">
+                                    <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                </dictionary>
+                            </binding>
+                            <binding destination="-2" name="toolTip" keyPath="emuControl.cdsCoreController.content.cdsController.hardwareMicInfoString" id="226"/>
+                        </connections>
+                    </popUpButton>
+                </subviews>
+            </view>
+            <toolbar key="toolbar" implicitIdentifier="D5552DCE-722B-4ECB-8E0A-8B7CF76EAC70" displayMode="iconAndLabel" sizeMode="small" id="4">
+                <allowedToolbarItems>
+                    <toolbarItem implicitItemIdentifier="2E728430-6055-404B-944F-25594ACBEC39" label="Execute" paletteLabel="Execute/Pause" tag="-1" image="Icon_Execute_420x420" id="19">
+                        <size key="minSize" width="22" height="22"/>
+                        <size key="maxSize" width="22" height="22"/>
+                        <connections>
+                            <action selector="toggleExecutePause:" target="-2" id="108"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="D3628D4D-C39F-4CC3-B82F-7CC0F699B953" label="Frame Advance" paletteLabel="Frame Advance" tag="-1" image="Icon_FrameAdvance_420x420" id="234">
+                        <size key="minSize" width="22" height="22"/>
+                        <size key="maxSize" width="22" height="22"/>
+                        <connections>
+                            <action selector="frameAdvance:" target="-2" id="243"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="321036F9-6034-47B1-9CC5-2461D98700F0" label="Reset" paletteLabel="Reset" tag="-1" image="Icon_Reset_420x420" id="21">
+                        <size key="minSize" width="22" height="22"/>
+                        <size key="maxSize" width="22" height="22"/>
+                        <connections>
+                            <action selector="reset:" target="-2" id="107"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="EDBFD998-E031-4AC5-A86A-7114D66FF847" label="Speed 2x" paletteLabel="Speed 1x/2x" tag="200" image="Icon_Speed2x_420x420" id="20">
+                        <size key="minSize" width="22" height="22"/>
+                        <size key="maxSize" width="22" height="22"/>
+                        <connections>
+                            <action selector="changeCoreSpeed:" target="-2" id="56"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="C626F2C1-4353-4288-AD59-40FB7F4C1A58" label="Rotate Left" paletteLabel="Rotate Left" tag="-90" image="Icon_RotateCCW_420x420" id="14">
+                        <size key="minSize" width="22" height="22"/>
+                        <size key="maxSize" width="22" height="22"/>
+                        <connections>
+                            <action selector="changeRotationRelative:" target="-2" id="57"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="41A299FB-4A95-4FA3-9982-8523FF04ACDE" label="Rotate Right" paletteLabel="Rotate Right" tag="90" image="Icon_RotateCW_420x420" id="15">
+                        <size key="minSize" width="22" height="22"/>
+                        <size key="maxSize" width="22" height="22"/>
+                        <connections>
+                            <action selector="changeRotationRelative:" target="-2" id="58"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="039A3D54-15EA-4743-88B7-60517113C193" label="Toggle Displays" paletteLabel="Toggle Displays" tag="-1" image="Icon_DisplayToggle_420x420" id="237">
+                        <size key="minSize" width="22" height="22"/>
+                        <size key="maxSize" width="22" height="22"/>
+                        <connections>
+                            <action selector="toggleNDSDisplays:" target="-2" id="244"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="8A505B61-7B2E-49ED-B6A0-DBE0A72DB48D" label="Enable HUD" paletteLabel="Enable/Disable HUD" tag="-1" image="Icon_ShowHUD_420x420" id="238">
+                        <size key="minSize" width="22" height="22"/>
+                        <size key="maxSize" width="22" height="22"/>
+                        <connections>
+                            <action selector="toggleHUDVisibility:" target="-2" id="245"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="0135754F-463F-4625-9D27-DEF701AEF50E" label="Open ROM" paletteLabel="Open ROM" tag="-1" image="Icon_OpenROM_420x420" id="18">
+                        <size key="minSize" width="22" height="22"/>
+                        <size key="maxSize" width="22" height="22"/>
+                        <connections>
+                            <action selector="openRom:" target="-2" id="60"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="NSToolbarSpaceItem" id="16"/>
+                    <toolbarItem implicitItemIdentifier="NSToolbarFlexibleSpaceItem" id="17"/>
+                </allowedToolbarItems>
+                <defaultToolbarItems>
+                    <toolbarItem reference="19"/>
+                    <toolbarItem reference="20"/>
+                    <toolbarItem reference="21"/>
+                    <toolbarItem reference="14"/>
+                    <toolbarItem reference="15"/>
+                    <toolbarItem reference="17"/>
+                </defaultToolbarItems>
+            </toolbar>
+            <connections>
+                <outlet property="delegate" destination="-2" id="62"/>
+            </connections>
+            <point key="canvasLocation" x="14" y="99"/>
+        </window>
+        <customView id="161" userLabel="Microphone Input Gain Menu Item">
+            <rect key="frame" x="0.0" y="0.0" width="55" height="139"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <subviews>
+                <slider horizontalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="145">
+                    <rect key="frame" x="17" y="31" width="21" height="105"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <sliderCell key="cell" continuous="YES" enabled="NO" alignment="left" maxValue="100" tickMarkPosition="right" sliderType="linear" id="146"/>
+                    <connections>
+                        <action selector="changeHardwareMicGain:" target="-2" id="207"/>
+                        <binding destination="-2" name="enabled" keyPath="emuControl.isHardwareMicAvailable" id="218"/>
+                        <binding destination="-2" name="value" keyPath="emuControl.currentMicGainValue" id="230"/>
+                    </connections>
+                </slider>
+                <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="162">
+                    <rect key="frame" x="-3" y="20" width="66" height="11"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" controlSize="mini" scrollable="YES" lineBreakMode="clipping" allowsUndo="NO" sendsActionOnEndEditing="YES" alignment="center" placeholderString="%1.1f%%" id="165">
+                        <numberFormatter key="formatter" formatterBehavior="custom10_4" localizesFormat="NO" numberStyle="percent" alwaysShowsDecimalSeparator="YES" usesGroupingSeparator="NO" formatWidth="-1" minimumIntegerDigits="1" maximumIntegerDigits="2000000000" minimumFractionDigits="1" maximumFractionDigits="1" id="166">
+                            <integer key="multiplier" value="1"/>
+                        </numberFormatter>
+                        <font key="font" metaFont="miniSystem"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                    <connections>
+                        <binding destination="-2" name="enabled" keyPath="emuControl.isHardwareMicAvailable" id="220"/>
+                        <binding destination="-2" name="value" keyPath="emuControl.currentMicGainValue" id="232">
+                            <dictionary key="options">
+                                <integer key="NSRaisesForNotApplicableKeys" value="0"/>
+                                <integer key="NSValidatesImmediately" value="1"/>
+                            </dictionary>
+                        </binding>
+                    </connections>
+                </textField>
+                <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="185">
+                    <rect key="frame" x="2" y="0.0" width="49" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="check" title="Mute" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="186">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="changeHardwareMicMute:" target="-2" id="233"/>
+                        <binding destination="-2" name="value" keyPath="emuControl.cdsCoreController.content.cdsController.hardwareMicMute" id="224"/>
+                    </connections>
+                </button>
+            </subviews>
+            <connections>
+                <binding destination="-2" name="hidden" keyPath="isShowingStatusBar" id="167">
+                    <dictionary key="options">
+                        <string key="NSValueTransformerName">NSNegateBoolean</string>
+                    </dictionary>
+                </binding>
+            </connections>
+            <point key="canvasLocation" x="84.5" y="324.5"/>
+        </customView>
+        <customView id="151" userLabel="Sound Output Volume Menu Item">
+            <rect key="frame" x="0.0" y="0.0" width="45" height="125"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <subviews>
+                <slider horizontalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="136">
+                    <rect key="frame" x="12" y="17" width="21" height="105"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <sliderCell key="cell" continuous="YES" alignment="left" maxValue="100" doubleValue="100" tickMarkPosition="right" sliderType="linear" id="137"/>
+                    <connections>
+                        <action selector="changeVolume:" target="-2" id="141"/>
+                        <binding destination="-2" name="value" keyPath="emuControl.currentVolumeValue" id="138"/>
+                    </connections>
+                </slider>
+                <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="152">
+                    <rect key="frame" x="-1" y="6" width="51" height="11"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" controlSize="mini" scrollable="YES" lineBreakMode="clipping" allowsUndo="NO" sendsActionOnEndEditing="YES" alignment="center" placeholderString="%1.1f%%" id="153">
+                        <numberFormatter key="formatter" formatterBehavior="custom10_4" localizesFormat="NO" numberStyle="percent" alwaysShowsDecimalSeparator="YES" usesGroupingSeparator="NO" formatWidth="-1" minimumIntegerDigits="1" maximumIntegerDigits="2000000000" minimumFractionDigits="1" maximumFractionDigits="1" id="154">
+                            <real key="multiplier" value="1"/>
+                            <nil key="negativeInfinitySymbol"/>
+                            <nil key="positiveInfinitySymbol"/>
+                        </numberFormatter>
+                        <font key="font" metaFont="miniSystem"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                    <connections>
+                        <binding destination="-2" name="value" keyPath="emuControl.currentVolumeValue" id="157">
+                            <dictionary key="options">
+                                <integer key="NSRaisesForNotApplicableKeys" value="0"/>
+                                <integer key="NSValidatesImmediately" value="1"/>
+                            </dictionary>
+                        </binding>
+                    </connections>
+                </textField>
+            </subviews>
+            <connections>
+                <binding destination="-2" name="hidden" keyPath="isShowingStatusBar" id="159">
+                    <dictionary key="options">
+                        <string key="NSValueTransformerName">NSNegateBoolean</string>
+                    </dictionary>
+                </binding>
+            </connections>
+            <point key="canvasLocation" x="183.5" y="317.5"/>
+        </customView>
+    </objects>
+    <resources>
+        <image name="Icon_DisplayToggle_420x420" width="420" height="420"/>
+        <image name="Icon_Execute_420x420" width="420" height="420"/>
+        <image name="Icon_FrameAdvance_420x420" width="420" height="420"/>
+        <image name="Icon_MicrophoneBlack_256x256" width="256" height="256"/>
+        <image name="Icon_OpenROM_420x420" width="420" height="420"/>
+        <image name="Icon_Reset_420x420" width="420" height="420"/>
+        <image name="Icon_RotateCCW_420x420" width="420" height="420"/>
+        <image name="Icon_RotateCW_420x420" width="420" height="420"/>
+        <image name="Icon_ShowHUD_420x420" width="420" height="420"/>
+        <image name="Icon_Speed2x_420x420" width="420" height="420"/>
+        <image name="Icon_VolumeFull_16x16" width="16" height="16"/>
+    </resources>
+</document>
