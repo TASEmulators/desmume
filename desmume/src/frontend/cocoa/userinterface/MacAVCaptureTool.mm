@@ -1348,7 +1348,7 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	param.refObject					= newCaptureObject;
 	param.sharedData				= [self sharedData];
 	param.formatID					= [self formatID];
-	param.savePath					= std::string([savePath cStringUsingEncoding:NSUTF8StringEncoding]);
+	param.savePath					= std::string([savePath fileSystemRepresentation]);
 	param.romName					= std::string([romName cStringUsingEncoding:NSUTF8StringEncoding]);
 	param.useDeposterize			= [self useDeposterize] ? true : false;
 	param.outputFilterID			= (OutputFilterTypeID)[self outputFilterID];

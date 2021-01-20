@@ -1295,7 +1295,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[newDisplayOutput setClientDisplay3DView:cdv];
 	
 	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
-	cdv->Get3DPresenter()->SetHUDFontPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
+	cdv->Get3DPresenter()->SetHUDFontPath([fontPath fileSystemRepresentation]);
 	
 	if (scaleFactor != 1.0f)
 	{

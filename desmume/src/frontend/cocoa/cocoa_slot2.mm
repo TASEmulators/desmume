@@ -146,7 +146,7 @@
 		[fileManager fileExistsAtPath:thePath isDirectory:&isDirectory];
 		
 		CFlash_Mode = (isDirectory) ? ADDON_CFLASH_MODE_Path : ADDON_CFLASH_MODE_File;
-		CFlash_Path = [thePath cStringUsingEncoding:NSUTF8StringEncoding];
+		CFlash_Path = [thePath fileSystemRepresentation];
 		
 		[fileManager release];
 	}
@@ -166,7 +166,7 @@
 {
 	if (fileURL != nil)
 	{
-		GBACartridge_RomPath = [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+		GBACartridge_RomPath = [fileURL fileSystemRepresentation];
 	}
 	else
 	{
@@ -183,7 +183,7 @@
 {
 	if (fileURL != nil)
 	{
-		GBACartridge_SRAMPath = [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+		GBACartridge_SRAMPath = [fileURL fileSystemRepresentation];
 	}
 	else
 	{

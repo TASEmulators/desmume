@@ -696,7 +696,7 @@ volatile bool execute = true;
 
 - (void) setArm9ImageURL:(NSURL *)fileURL
 {
-	const char *filePath = (fileURL != NULL) ? [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding] : NULL;
+	const char *filePath = (fileURL != NULL) ? [fileURL fileSystemRepresentation] : NULL;
 	execControl->SetARM9ImagePath(filePath);
 }
 
@@ -708,7 +708,7 @@ volatile bool execute = true;
 
 - (void) setArm7ImageURL:(NSURL *)fileURL
 {
-	const char *filePath = (fileURL != NULL) ? [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding] : NULL;
+	const char *filePath = (fileURL != NULL) ? [fileURL fileSystemRepresentation] : NULL;
 	execControl->SetARM7ImagePath(filePath);
 }
 
@@ -720,7 +720,7 @@ volatile bool execute = true;
 
 - (void) setFirmwareImageURL:(NSURL *)fileURL
 {
-	const char *filePath = (fileURL != NULL) ? [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding] : NULL;
+	const char *filePath = (fileURL != NULL) ? [fileURL fileSystemRepresentation] : NULL;
 	execControl->SetFirmwareImagePath(filePath);
 }
 
@@ -732,7 +732,7 @@ volatile bool execute = true;
 
 - (void) setSlot1R4URL:(NSURL *)fileURL
 {
-	const char *filePath = (fileURL != NULL) ? [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding] : NULL;
+	const char *filePath = (fileURL != NULL) ? [fileURL fileSystemRepresentation] : NULL;
 	execControl->SetSlot1R4Path(filePath);
 }
 
@@ -968,8 +968,8 @@ volatile bool execute = true;
 		return NO;
 	}
 	
-	std::string sramPath = (sramURL != nil) ? [[sramURL path] cStringUsingEncoding:NSUTF8StringEncoding] : "";
-	const char *fileName = [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+	std::string sramPath = (sramURL != nil) ? [sramURL fileSystemRepresentation] : "";
+	const char *fileName = [fileURL fileSystemRepresentation];
 	
 	NSDate *currentDate = [NSDate date];
 	NSString *currentDateStr = [currentDate descriptionWithCalendarFormat:@"%Y %m %d %H %M %S %F"

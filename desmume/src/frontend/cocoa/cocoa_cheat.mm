@@ -708,7 +708,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	if (fileURL != nil)
 	{
-		listData->init((char *)[[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding]);
+		listData->init((char *)[fileURL fileSystemRepresentation]);
 		list = [[CocoaDSCheatManager cheatListWithListObject:listData] retain];
 	}
 	else
@@ -965,7 +965,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	CHEATSEXPORT *exporter = new CHEATSEXPORT();
 	
-	BOOL result = exporter->load((char *)[[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding]);
+	BOOL result = exporter->load((char *)[fileURL fileSystemRepresentation]);
 	if (!result)
 	{
 		if (error != nil)
