@@ -1814,11 +1814,11 @@
 				080E96DDFE201D6D7F000001 /* Cocoa Port */,
 				AB35BD8C1DEBF1BD00844310 /* Modules */,
 				ABC572B7134592D900E7B0B1 /* Core */,
-				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
-				19C28FACFE9D520D11CA2CBB /* Products */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				AB407F381A620D6E00313213 /* OptimizationProfiles */,
+				29B97323FDCFA39411CA2CEA /* Frameworks */,
+				19C28FACFE9D520D11CA2CBB /* Products */,
 			);
 			name = DeSmuME;
 			sourceTree = "<group>";
