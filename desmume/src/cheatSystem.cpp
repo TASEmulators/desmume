@@ -1553,7 +1553,8 @@ bool CHEATSEXPORT::search()
 			
 		}
 		//printf("serial: %s, offset %08X\n", fat.serial, fat.addr);
-		if (memcmp(gameInfo.header.gameCode, &fat.serial[0], 4) == 0)
+		if (gameInfo.crcForCheatsDb == fat.CRC
+			&& !memcmp(gameInfo.header.gameCode, &fat.serial[0], 4))
 		{
 			dataSize = fat_tmp.addr?(fat_tmp.addr - fat.addr):0;
 			if (encrypted)

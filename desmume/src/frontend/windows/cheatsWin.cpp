@@ -1564,8 +1564,6 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 				lvi.pszText= tmp[i].description;
 				SendMessage(exportListView, LVM_INSERTITEM, 0, (LPARAM)&lvi);
 			}
-			if (gameInfo.crc && (gameInfo.crcForCheatsDb != cheatsExport->CRC))
-				msgbox->warn("Checksums not matching");
 
 			SendMessage(exportListView, WM_SETREDRAW, (WPARAM)TRUE,0);
 			ListView_SetItemState(exportListView,0, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
@@ -1646,7 +1644,7 @@ bool CheatsExportDialog(HWND hwnd)
 				sprintf(buf2, "File \"%s\" is not R4 cheats database.\nWrong file format!", buf);
 			else
 				if (cheatsExport->getErrorCode() == 3)
-					sprintf(buf2, "Serial \"%s\" not found in database.", gameInfo.ROMserial);
+					sprintf(buf2, "CRC %8X not found in database.", gameInfo.crcForCheatsDb);
 				else
 					if (cheatsExport->getErrorCode() == 4)
 						sprintf(buf2, "Error export from database");
