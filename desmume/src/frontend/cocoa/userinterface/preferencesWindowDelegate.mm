@@ -28,11 +28,7 @@
 #import "cocoa_videofilter.h"
 #import "cocoa_util.h"
 
-#ifdef MAC_OS_X_VERSION_10_7
 #include "../OGLDisplayOutput_3_2.h"
-#else
-#include "../OGLDisplayOutput.h"
-#endif
 
 
 #pragma mark -
@@ -51,12 +47,7 @@
 		return self;
 	}
 	
-#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	if ([self respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
-	{
-		[self setWantsBestResolutionOpenGLSurface:YES];
-	}
-#endif
+	[self setWantsBestResolutionOpenGLSurface:YES];
 	
 	isPreviewImageLoaded = false;
 		
@@ -70,16 +61,10 @@
 		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
 		(NSOpenGLPixelFormatAttribute)0 };
 	
-#ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	// If we can support a 3.2 Core Profile context, then request that in our
 	// pixel format attributes.
-	useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
-	if (useContext_3_2)
-	{
-		attributes[8] = NSOpenGLPFAOpenGLProfile;
-		attributes[9] = NSOpenGLProfileVersion3_2Core;
-	}
-#endif
+	attributes[8] = NSOpenGLPFAOpenGLProfile;
+	attributes[9] = NSOpenGLProfileVersion3_2Core;
 	
 	NSOpenGLPixelFormat *format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	if (format == nil)
@@ -100,22 +85,15 @@
 	CGLSetCurrentContext(cglDisplayContext);
 	
 	NSRect newViewportRect = frameRect;
-#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	if ([self respondsToSelector:@selector(convertRectToBacking:)])
-	{
-		newViewportRect = [self convertRectToBacking:frameRect];
-	}
-#endif
+	newViewportRect = [self convertRectToBacking:frameRect];
 	
 	OGLContextInfo *contextInfo = NULL;
 	
-#ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	if (useContext_3_2)
 	{
 		contextInfo = new OGLContextInfo_3_2;
 	}
 	else
-#endif
 	{
 		contextInfo = new OGLContextInfo_Legacy;
 	}
@@ -402,26 +380,14 @@
 	[panel setTitle:NSSTRING_TITLE_SELECT_ROM_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_DS, @FILE_EXT_ROM_GBA, nil];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
-				  completionHandler:^(NSInteger result) {
+				  completionHandler:^(NSModalResponse result) {
 					  [self chooseRomForAutoloadDidEnd:panel returnCode:result contextInfo:nil];
 				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseRomForAutoloadDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
-#endif
 }
 
-- (void) chooseRomForAutoloadDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
+- (void) chooseRomForAutoloadDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	
@@ -460,26 +426,14 @@
 	[panel setTitle:NSSTRING_TITLE_SELECT_ADVANSCENE_DB_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ADVANSCENE_DB, nil];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
 					  [self chooseAdvansceneDatabaseDidEnd:panel returnCode:result contextInfo:nil];
 				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseAdvansceneDatabaseDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
-#endif
 }
 
-- (void) chooseAdvansceneDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
+- (void) chooseAdvansceneDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	
@@ -512,24 +466,14 @@
 	
 	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
 					  [self chooseCheatDatabaseDidEnd:panel returnCode:result contextInfo:nil];
 				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseCheatDatabaseDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
-#endif
 }
 
-- (void) chooseCheatDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
+- (void) chooseCheatDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	
@@ -721,21 +665,11 @@
 	
 	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
 					  [self chooseArm9BiosImageDidEnd:panel returnCode:result contextInfo:nil];
 				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseArm9BiosImageDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
-#endif
 }
 
 - (IBAction) chooseARM7BiosImage:(id)sender
@@ -748,23 +682,11 @@
 	[panel setTitle:NSSTRING_TITLE_SELECT_ARM7_IMAGE_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_HW_IMAGE_FILE, nil];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
 					  [self chooseArm7BiosImageDidEnd:panel returnCode:result contextInfo:nil];
 				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseArm7BiosImageDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
-#endif
 }
 
 - (IBAction) chooseFirmwareImage:(id)sender
@@ -777,26 +699,14 @@
 	[panel setTitle:NSSTRING_TITLE_SELECT_FIRMWARE_IMAGE_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_HW_IMAGE_FILE, nil];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
 					  [self chooseFirmwareImageDidEnd:panel returnCode:result contextInfo:nil];
 				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseFirmwareImageDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
-#endif
 }
 
-- (void) chooseArm9BiosImageDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
+- (void) chooseArm9BiosImageDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	
@@ -820,7 +730,7 @@
 	[cdsCore setArm9ImageURL:selectedFileURL];
 }
 
-- (void) chooseArm7BiosImageDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
+- (void) chooseArm7BiosImageDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	

@@ -20,13 +20,7 @@
 #include <IOKit/hid/IOHIDManager.h>
 #include <ForceFeedback/ForceFeedback.h>
 
-#if defined(__ppc__) || defined(__ppc64__)
-#include <map>
-#elif !defined(MAC_OS_X_VERSION_10_7) || (MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_6)
-#include <tr1/unordered_map>
-#else
 #include <unordered_map>
-#endif
 #include <string>
 #include <vector>
 
@@ -49,22 +43,10 @@ class MacInputDevicePropertiesEncoder;
 
 typedef std::vector<ClientCommandAttributes> CommandAttributesList;
 
-#if defined(__ppc__) || defined(__ppc64__)
-typedef std::map<std::string, ClientCommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = ClientCommandAttributes
-typedef std::map<std::string, ClientCommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = ClientCommandAttributes
-typedef std::map<std::string, AudioSampleBlockGenerator> AudioFileSampleGeneratorMap; // Key = File path to audio file, Value = AudioSampleBlockGenerator
-typedef std::map<int32_t, std::string> KeyboardKeyNameMap; // Key = Key code, Value = Key name
-#elif !defined(MAC_OS_X_VERSION_10_7) || (MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_6)
-typedef std::tr1::unordered_map<std::string, ClientCommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = ClientCommandAttributes
-typedef std::tr1::unordered_map<std::string, ClientCommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = ClientCommandAttributes
-typedef std::tr1::unordered_map<std::string, AudioSampleBlockGenerator> AudioFileSampleGeneratorMap; // Key = File path to audio file, Value = AudioSampleBlockGenerator
-typedef std::tr1::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Key code, Value = Key name
-#else
 typedef std::unordered_map<std::string, ClientCommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = ClientCommandAttributes
 typedef std::unordered_map<std::string, ClientCommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = ClientCommandAttributes
 typedef std::unordered_map<std::string, AudioSampleBlockGenerator> AudioFileSampleGeneratorMap; // Key = File path to audio file, Value = AudioSampleBlockGenerator
 typedef std::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Key code, Value = Key name
-#endif
 
 #pragma mark -
 @interface InputHIDDevice : NSObject

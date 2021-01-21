@@ -138,15 +138,7 @@ InternalNoiseGenerator::InternalNoiseGenerator()
 uint8_t WhiteNoiseGenerator::generateSample()
 {
 #ifdef __APPLE__
-	#ifdef MAC_OS_X_VERSION_10_7
-	if (IsOSXVersionSupported(10, 7, 0))
-	{
-		return (uint8_t)(arc4random_uniform(0x00000080) & 0x7F);
-	}
-	return (uint8_t)((arc4random() % 0x00000080) & 0x7F);
-	#else
-	return (uint8_t)((arc4random() % 0x00000080) & 0x7F);
-	#endif
+	return (uint8_t)(arc4random_uniform(0x00000080) & 0x7F);
 #else
 	return (uint8_t)(rand() & 0x7F);
 #endif

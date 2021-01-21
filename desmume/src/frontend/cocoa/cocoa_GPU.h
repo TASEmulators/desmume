@@ -48,13 +48,12 @@
 
 #define VIDEO_FLUSH_TIME_LIMIT_OFFSET	8	// The amount of time, in seconds, to wait for a flush to occur on a given CVDisplayLink before stopping it.
 
-enum ClientDisplayBufferState
-{
-	ClientDisplayBufferState_Idle			= 0,	// The buffer has already been read and is currently idle. It is a candidate for a read or write operation.
-	ClientDisplayBufferState_Writing		= 1,	// The buffer is currently being written. It cannot be accessed.
-	ClientDisplayBufferState_Ready			= 2,	// The buffer was just written to, but has not been read yet. It is a candidate for a read or write operation.
-	ClientDisplayBufferState_PendingRead	= 3,	// The buffer has been marked that it will be read. It must not be accessed.
-	ClientDisplayBufferState_Reading		= 4		// The buffer is currently being read. It cannot be accessed.
+typedef NS_ENUM(NSInteger, ClientDisplayBufferState) {
+	ClientDisplayBufferState_Idle			= 0,	//!< The buffer has already been read and is currently idle. It is a candidate for a read or write operation.
+	ClientDisplayBufferState_Writing		= 1,	//!< The buffer is currently being written. It cannot be accessed.
+	ClientDisplayBufferState_Ready			= 2,	//!< The buffer was just written to, but has not been read yet. It is a candidate for a read or write operation.
+	ClientDisplayBufferState_PendingRead	= 3,	//!< The buffer has been marked that it will be read. It must not be accessed.
+	ClientDisplayBufferState_Reading		= 4		//!< The buffer is currently being read. It cannot be accessed.
 };
 
 class GPUEventHandlerOSX;

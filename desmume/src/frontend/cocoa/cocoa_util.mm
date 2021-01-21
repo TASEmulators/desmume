@@ -53,7 +53,7 @@
 + (BOOL) getIBActionSenderButtonStateBool:(id)sender
 {
 	BOOL theState = NO;
-	NSInteger buttonState = NSOffState;
+	NSControlStateValue buttonState = NSOffState;
 	
 	if ([sender respondsToSelector:@selector(state)])
 	{

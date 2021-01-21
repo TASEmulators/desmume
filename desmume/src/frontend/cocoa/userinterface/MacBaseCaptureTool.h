@@ -30,11 +30,7 @@
 
 @class MacClientSharedObject;
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface MacBaseCaptureToolDelegate : NSObject <NSWindowDelegate, DirectoryURLDragDestTextFieldProtocol>
-#else
-@interface MacBaseCaptureToolDelegate : NSObject <DirectoryURLDragDestTextFieldProtocol>
-#endif
 {
 	NSObject *dummyObject;
 	NSWindow *window;
@@ -76,7 +72,7 @@
 @property (assign) NSInteger pixelScalerID;
 
 - (IBAction) chooseDirectoryPath:(id)sender;
-- (void) chooseDirectoryPathDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
+- (void) chooseDirectoryPathDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 
 @end
 

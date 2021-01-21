@@ -179,10 +179,7 @@ void CoreAudioInputDefaultHardwareStateChangedCallback(CoreAudioInputDeviceInfo 
 
 void CoreAudioInputDefaultHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2);
 
-bool CreateAudioUnitInstance(AudioUnit *au, ComponentDescription *auDescription);
-#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
 bool CreateAudioUnitInstance(AudioUnit *au, AudioComponentDescription *auDescription);
-#endif
 void DestroyAudioUnitInstance(AudioUnit *au);
 
 #endif

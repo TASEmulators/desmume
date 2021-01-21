@@ -1155,14 +1155,8 @@
 						  @"wav",
 						  nil];
 	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	const NSInteger buttonClicked = [panel runModal];
-#else
-	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
-#endif
 	
 	if (buttonClicked == NSFileHandlingPanelOKButton)
 	{

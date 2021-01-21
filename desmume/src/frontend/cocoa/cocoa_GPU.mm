@@ -23,11 +23,7 @@
 #include "../../NDSSystem.h"
 #include "../../rasterize.h"
 
-#ifdef MAC_OS_X_VERSION_10_7
-	#include "../../OGLRender_3_2.h"
-#else
-	#include "../../OGLRender.h"
-#endif
+#include "../../OGLRender_3_2.h"
 
 #include <OpenGL/OpenGL.h>
 #import "userinterface/MacOGLDisplayView.h"
@@ -1855,16 +1851,8 @@ bool CreateOpenGLRenderer()
 		(CGLPixelFormatAttribute)0
 	};
 	
-#ifdef MAC_OS_X_VERSION_10_7
-	// If we can support a 3.2 Core Profile context, then request that in our
-	// pixel format attributes.
-	useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
-	if (useContext_3_2)
-	{
-		attrs[9] = kCGLPFAOpenGLProfile;
-		attrs[10] = (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core;
-	}
-#endif
+	attrs[9] = kCGLPFAOpenGLProfile;
+	attrs[10] = (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core;
 	
 	CGLChoosePixelFormat(attrs, &cglPixFormat, &virtualScreenCount);
 	if (cglPixFormat == NULL)

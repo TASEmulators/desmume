@@ -19,11 +19,7 @@
 
 class ClientExecutionControl;
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface WifiSettingsPanelDelegate : NSObject <NSWindowDelegate>
-#else
-@interface WifiSettingsPanelDelegate : NSObject
-#endif
 {
 	NSObjectController *firmwarePanelController;
 	NSPopUpButton *bridgeDevicePopUpButton;

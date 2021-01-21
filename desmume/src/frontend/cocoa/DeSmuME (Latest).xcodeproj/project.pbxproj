@@ -196,7 +196,6 @@
 		55D205FC25B986690057EF7A /* macOS_driver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB28625320AE3E9E00EAED43 /* macOS_driver.cpp */; };
 		55D2060525B986690057EF7A /* type1cid.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731651BB51FDC00B26147 /* type1cid.c */; };
 		55D2060B25B986690057EF7A /* ftfstype.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA77F1BB4EC1000B08C25 /* ftfstype.c */; };
-		55D2061025B986690057EF7A /* macosx_10_5_compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */; };
 		55D2061125B986690057EF7A /* retro_dirent.c in Sources */ = {isa = PBXBuildFile; fileRef = AB000DC61CCC6B0700413F02 /* retro_dirent.c */; };
 		55D2061925B986690057EF7A /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
 		55D2061C25B986690057EF7A /* psnames.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731591BB51A8D00B26147 /* psnames.c */; };
@@ -687,7 +686,6 @@
 		AB8F3D0F1A53AC2600A80BF6 /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405674169F5DCC0016AC3E /* x86operand.cpp */; };
 		AB8F3D101A53AC2600A80BF6 /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405676169F5DCC0016AC3E /* x86util.cpp */; };
 		AB8F3D111A53AC2600A80BF6 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB2EE13017D57F5000F68622 /* fsnitro.cpp */; };
-		AB8F3D121A53AC2600A80BF6 /* macosx_10_5_compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */; };
 		AB8F3D131A53AC2600A80BF6 /* OGLRender_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB68A0DA16B139BC00DE0546 /* OGLRender_3_2.cpp */; };
 		AB8F3D141A53AC2600A80BF6 /* EmuControllerDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3A655D16CC5421001F5D4A /* EmuControllerDelegate.mm */; };
 		AB8F3D151A53AC2600A80BF6 /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3A656016CC5438001F5D4A /* cocoa_GPU.mm */; };
@@ -751,7 +749,6 @@
 		ABAF0A431A96E67200B95B75 /* RomInfoPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */; };
 		ABB0FBC51A9E5CEA0060C55A /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB0FBC41A9E5CEA0060C55A /* CoreAudio.framework */; };
 		ABB0FBC71A9E5D080060C55A /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB0FBC41A9E5CEA0060C55A /* CoreAudio.framework */; };
-		ABB1C9451F4D6B340004844F /* macosx_10_5_compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */; };
 		ABB1C9481F5281AE0004844F /* ClientExecutionControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB1C9461F5281AE0004844F /* ClientExecutionControl.cpp */; };
 		ABB1C9491F5281AE0004844F /* ClientExecutionControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB1C9461F5281AE0004844F /* ClientExecutionControl.cpp */; };
 		ABB1C94B1F5281AE0004844F /* ClientExecutionControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB1C9461F5281AE0004844F /* ClientExecutionControl.cpp */; };
@@ -1096,7 +1093,6 @@
 		AB1B9E601501A78000464647 /* ringbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ringbuffer.cpp; sourceTree = "<group>"; };
 		AB1B9E611501A78000464647 /* coreaudiosound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreaudiosound.h; sourceTree = "<group>"; };
 		AB1B9E621501A78000464647 /* ringbuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ringbuffer.h; sourceTree = "<group>"; };
-		AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = macosx_10_5_compat.cpp; sourceTree = "<group>"; };
 		AB28624720AE3E7A00EAED43 /* MacAVCaptureTool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MacAVCaptureTool.mm; sourceTree = "<group>"; };
 		AB28624820AE3E7A00EAED43 /* MacBaseCaptureTool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MacBaseCaptureTool.mm; sourceTree = "<group>"; };
 		AB28624920AE3E7B00EAED43 /* MacAVCaptureTool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacAVCaptureTool.h; sourceTree = "<group>"; };
@@ -1894,7 +1890,6 @@
 				AB1B9E611501A78000464647 /* coreaudiosound.h */,
 				AB28625320AE3E9E00EAED43 /* macOS_driver.cpp */,
 				AB28625520AE3E9E00EAED43 /* macOS_driver.h */,
-				AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */,
 				AB5B1D4821D1F31D00BF0E0F /* MetalRendererCommonShaders.h */,
 				AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */,
 				ABD10AE61715FCDD00B5729D /* mic_ext.cpp */,
@@ -3754,7 +3749,6 @@
 				55D205FC25B986690057EF7A /* macOS_driver.cpp in Sources */,
 				55D2060525B986690057EF7A /* type1cid.c in Sources */,
 				55D2060B25B986690057EF7A /* ftfstype.c in Sources */,
-				55D2061025B986690057EF7A /* macosx_10_5_compat.cpp in Sources */,
 				55D2061125B986690057EF7A /* retro_dirent.c in Sources */,
 				55D2061925B986690057EF7A /* slot2_passme.cpp in Sources */,
 				55D2061C25B986690057EF7A /* psnames.c in Sources */,
@@ -3970,7 +3964,6 @@
 				AB405654169F5DBB0016AC3E /* operand.cpp in Sources */,
 				AB405657169F5DBB0016AC3E /* stringbuilder.cpp in Sources */,
 				AB40565A169F5DBB0016AC3E /* stringutil.cpp in Sources */,
-				ABB1C9451F4D6B340004844F /* macosx_10_5_compat.cpp in Sources */,
 				AB000DCF1CCC6B0700413F02 /* retro_dirent.c in Sources */,
 				AB40565D169F5DBB0016AC3E /* virtualmemory.cpp in Sources */,
 				AB405660169F5DBB0016AC3E /* zonememory.cpp in Sources */,
@@ -4219,7 +4212,6 @@
 				AB8F3D0F1A53AC2600A80BF6 /* x86operand.cpp in Sources */,
 				AB8F3D101A53AC2600A80BF6 /* x86util.cpp in Sources */,
 				AB8F3D111A53AC2600A80BF6 /* fsnitro.cpp in Sources */,
-				AB8F3D121A53AC2600A80BF6 /* macosx_10_5_compat.cpp in Sources */,
 				AB8F3D131A53AC2600A80BF6 /* OGLRender_3_2.cpp in Sources */,
 				AB8F3D141A53AC2600A80BF6 /* EmuControllerDelegate.mm in Sources */,
 				AB8F3D151A53AC2600A80BF6 /* cocoa_GPU.mm in Sources */,

@@ -365,14 +365,8 @@
 	[panel setTitle:NSSTRING_TITLE_OPEN_ROM_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_DS, @FILE_EXT_ROM_GBA, nil]; 
 	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	const NSInteger buttonClicked = [panel runModal];
-#else
-	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
-#endif
 	
 	if (buttonClicked == NSFileHandlingPanelOKButton)
 	{
@@ -426,12 +420,8 @@
 	
 	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	const NSInteger buttonClicked = [panel runModal];
-#else
-	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
-#endif
 	
 	if (buttonClicked == NSFileHandlingPanelOKButton)
 	{
@@ -504,12 +494,8 @@
 	
 	// The NSSavePanel method -(void)setRequiredFileType:
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_SAVE_STATE, nil];
 	[panel setAllowedFileTypes:fileTypes];
-#else
-	[panel setRequiredFileType:@FILE_EXT_SAVE_STATE];
-#endif
 	
 	const NSInteger buttonClicked = [panel runModal];
 	if(buttonClicked == NSOKButton)
@@ -588,12 +574,8 @@
 	
 	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	const NSInteger buttonClicked = [panel runModal];
-#else
-	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
-#endif
 	
 	if (buttonClicked == NSFileHandlingPanelOKButton)
 	{
@@ -618,12 +600,8 @@
 	
 	// The NSSavePanel method -(void)setRequiredFileType:
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	NSArray *fileTypes = [NSArray arrayWithObjects:@"dsm", nil];
 	[panel setAllowedFileTypes:fileTypes];
-#else
-	[panel setRequiredFileType:@"dsm"];
-#endif
 	
 	const NSInteger buttonClicked = [panel runModal];
 	if (buttonClicked == NSFileHandlingPanelOKButton)
@@ -679,12 +657,8 @@
 	
 	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	const NSInteger buttonClicked = [panel runModal];
-#else
-	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
-#endif
 	
 	if (buttonClicked == NSFileHandlingPanelOKButton)
 	{
@@ -905,20 +879,10 @@
 	
 	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
 	[panel beginSheetModalForWindow:slot1ManagerWindow
-				  completionHandler:^(NSInteger result) {
+				  completionHandler:^(NSModalResponse result) {
 					  [self didEndChooseSlot1R4Directory:panel returnCode:result contextInfo:nil];
 				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:nil
-				   modalForWindow:slot1ManagerWindow
-					modalDelegate:self
-				   didEndSelector:@selector(didEndChooseSlot1R4Directory:returnCode:contextInfo:)
-					  contextInfo:nil];
-#endif
 }
 
 - (IBAction) slot1Eject:(id)sender
@@ -2190,7 +2154,7 @@
 	}
 }
 
-- (void) didEndChooseSlot1R4Directory:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
+- (void) didEndChooseSlot1R4Directory:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	

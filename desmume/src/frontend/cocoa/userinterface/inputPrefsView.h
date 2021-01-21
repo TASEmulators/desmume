@@ -22,11 +22,7 @@
 @class InputProfileController;
 
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface InputPrefsView : NSView <InputHIDManagerTarget, NSOutlineViewDelegate, NSOutlineViewDataSource>
-#else
-@interface InputPrefsView : NSView <InputHIDManagerTarget>
-#endif
 {
 	NSObject *dummyObject;
 	NSWindow *prefWindow;

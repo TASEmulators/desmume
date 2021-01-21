@@ -51,11 +51,7 @@ class OGLVideoOutput;
 
 @end
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface DisplayWindowController : NSWindowController <NSWindowDelegate>
-#else
-@interface DisplayWindowController : NSWindowController
-#endif
 {
 	NSObject *dummyObject;
 	

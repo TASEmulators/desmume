@@ -41,11 +41,7 @@ class OGLImage;
 
 #pragma mark -
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface PreferencesWindowDelegate : NSObject <NSWindowDelegate>
-#else
-@interface PreferencesWindowDelegate : NSObject
-#endif
 {
 	NSObject *dummyObject;
 	NSWindow *window;
@@ -131,11 +127,11 @@ class OGLImage;
 - (IBAction) changePrefView:(id)sender;
 
 - (IBAction) chooseAdvansceneDatabase:(id)sender;
-- (void) chooseAdvansceneDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
+- (void) chooseAdvansceneDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 - (IBAction) chooseRomForAutoload:(id)sender;
-- (void) chooseRomForAutoloadDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
+- (void) chooseRomForAutoloadDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 - (IBAction) chooseCheatDatabase:(id)sender;
-- (void) chooseCheatDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
+- (void) chooseCheatDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 
 - (IBAction) selectDisplayRotation:(id)sender;
 - (void) updateDisplayRotationMenu:(double)displayRotation;
@@ -152,9 +148,9 @@ class OGLImage;
 - (IBAction) chooseARM9BiosImage:(id)sender;
 - (IBAction) chooseARM7BiosImage:(id)sender;
 - (IBAction) chooseFirmwareImage:(id)sender;
-- (void) chooseArm9BiosImageDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
-- (void) chooseArm7BiosImageDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
-- (void) chooseFirmwareImageDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
+- (void) chooseArm9BiosImageDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
+- (void) chooseArm7BiosImageDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
+- (void) chooseFirmwareImageDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 - (IBAction) configureInternalFirmware:(id)sender;
 - (IBAction) closeFirmwareConfigSheet:(id)sender;
 - (void) didEndFirmwareConfigSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;

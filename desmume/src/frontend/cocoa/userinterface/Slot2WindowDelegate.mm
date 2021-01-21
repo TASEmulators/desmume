@@ -367,24 +367,14 @@
 	
 	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
 					  [self chooseMPCFPathDidEnd:panel returnCode:result contextInfo:mpcfOptionNumber];
 				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseMPCFPathDidEnd:returnCode:contextInfo:)
-					  contextInfo:mpcfOptionNumber];
-#endif
 }
 
-- (void) chooseMPCFPathDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
+- (void) chooseMPCFPathDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
 {
 	const NSInteger prevMpcfOption = [[NSUserDefaults standardUserDefaults] integerForKey:@"Slot2_MPCF_PathOption"];
 	const NSInteger mpcfOptionTag = [(NSNumber *)contextInfo integerValue];
@@ -509,26 +499,14 @@
 	[panel setCanChooseFiles:YES];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_GBA_ROM, nil];
 		
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
 					  [self chooseGbaCartridgePathDidEnd:panel returnCode:result contextInfo:nil];
 				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseGbaCartridgePathDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
-#endif
 }
 
-- (void) chooseGbaCartridgePathDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
+- (void) chooseGbaCartridgePathDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	
@@ -570,24 +548,14 @@
 	
 	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
-				  completionHandler:^(NSInteger result) {
+				  completionHandler:^(NSModalResponse result) {
 					  [self chooseGbaSRamPathDidEnd:panel returnCode:result contextInfo:nil];
 				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseGbaSRamPathDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
-#endif
 }
 
-- (void) chooseGbaSRamPathDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
+- (void) chooseGbaSRamPathDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	

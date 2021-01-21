@@ -25,11 +25,7 @@
 #import "DisplayViewCALayer.h"
 #import "../cocoa_GPU.h"
 
-#ifdef MAC_OS_X_VERSION_10_7
-	#include "../OGLDisplayOutput_3_2.h"
-#else
-	#include "../OGLDisplayOutput.h"
-#endif
+#include "../OGLDisplayOutput_3_2.h"
 
 #ifdef BOOL
 #undef BOOL

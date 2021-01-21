@@ -24,11 +24,7 @@
 @class CocoaDSCheatSearchParams;
 
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface CheatWindowDelegate : NSObject <NSWindowDelegate, NSTableViewDelegate>
-#else
-@interface CheatWindowDelegate : NSObject
-#endif
 {
 	NSObject *dummyObject;
 	NSWindow *window;

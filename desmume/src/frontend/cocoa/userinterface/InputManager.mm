@@ -25,47 +25,8 @@
 #import "cocoa_util.h"
 
 #include <AudioToolbox/AudioToolbox.h>
-
-/*
- Get the symbols for UpdateSystemActivity().
- 
- For some reason, in Mac OS v10.5 and earlier, UpdateSystemActivity() is not
- defined for 64-bit, even though it does work on 64-bit systems. So we're going
- to copy the symbols from OSServices/Power.h so that we can use them. This
- solution is better than making an absolute path to the Power.h file, since
- we can't assume that the header file will always be in the same location.
- 
- Note that this isn't a problem on 32-bit, or if the target SDK is Mac OS v10.6
- or later.
- */
-
-#if !__LP64__ || MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-
 #include <CoreServices/CoreServices.h>
 
-#else
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-	
-	extern OSErr UpdateSystemActivity(UInt8 activity);
-	
-	enum
-	{
-		OverallAct		= 0,
-		UsrActivity		= 1,
-		NetActivity		= 2,
-		HDActivity		= 3,
-		IdleActivity	= 4
-	};
-	
-#ifdef __cplusplus
-}
-#endif
-
-#endif // !__LP64__ || MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 
 #pragma mark -
 @implementation InputHIDDevice
@@ -117,7 +78,6 @@ static NSDictionary *hidUsageTable = nil;
     CFRelease(elementArray);
 	
 	// Set up force feedback.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	if (IsOSXVersionSupported(10, 6, 0))
 	{
 		ioService = IOHIDDeviceGetService(hidDeviceRef);
@@ -126,31 +86,6 @@ static NSDictionary *hidUsageTable = nil;
 			IOObjectRetain(ioService);
 		}
 	}
-	else
-#else
-	{
-		ioService = MACH_PORT_NULL;
-		
-		CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOHIDDeviceKey);
-		if (matchingDict)
-		{
-			CFStringRef locationKey = CFSTR(kIOHIDLocationIDKey);
-			CFTypeRef deviceLocation = IOHIDDeviceGetProperty(hidDeviceRef, locationKey);
-			if (deviceLocation != NULL)
-			{
-				CFDictionaryAddValue(matchingDict, locationKey, deviceLocation);
-				
-				//This eats a reference to matchingDict, so we don't need a separate release.
-				//The result, meanwhile, has a reference count of 1 and must be released by the caller.
-				ioService = IOServiceGetMatchingService(kIOMasterPortDefault, matchingDict);
-			}
-			else
-			{
-				CFRelease(matchingDict);
-			}
-		}
-	}
-#endif
 	
 	ffDevice = NULL;
 	ffEffect = NULL;

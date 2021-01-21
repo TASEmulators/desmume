@@ -24,11 +24,7 @@ enum TroubleshootingViewID
 	TROUBLESHOOTING_BUG_REPORT_VIEW_ID
 };
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface TroubleshootingWindowDelegate : NSObject <NSWindowDelegate>
-#else
-@interface TroubleshootingWindowDelegate : NSObject
-#endif
 {
 	NSObject *dummyObject;
 	NSWindow *window;

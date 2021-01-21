@@ -21,11 +21,7 @@
 
 @class InputHIDManager;
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface Slot2WindowDelegate : NSObject <NSWindowDelegate, NSTableViewDelegate>
-#else
-@interface Slot2WindowDelegate : NSObject
-#endif
 {
 	NSObject *dummyObject;
 	NSWindow *window;
@@ -113,14 +109,14 @@
 #pragma mark -
 #pragma mark Compact Flash
 - (IBAction) chooseMPCFPath:(id)sender;
-- (void) chooseMPCFPathDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
+- (void) chooseMPCFPathDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 
 #pragma mark -
 #pragma mark GBA Cartridge
 - (IBAction) chooseGbaCartridgePath:(id)sender;
-- (void) chooseGbaCartridgePathDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
+- (void) chooseGbaCartridgePathDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 - (IBAction) chooseGbaSRamPath:(id)sender;
-- (void) chooseGbaSRamPathDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
+- (void) chooseGbaSRamPathDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 - (IBAction) clearSRamPath:(id)sender;
 - (BOOL) isGbaSRamWithCartridge;
 
