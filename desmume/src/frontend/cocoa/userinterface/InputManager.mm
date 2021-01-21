@@ -18,6 +18,7 @@
 
 #import "InputManager.h"
 #import "EmuControllerDelegate.h"
+#import "DisplayWindowController.h"
 
 #import "cocoa_globals.h"
 #import "cocoa_input.h"

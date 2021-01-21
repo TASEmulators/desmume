@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
-        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -18,8 +17,8 @@
             </connections>
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
-        <customObject id="-3" userLabel="Application"/>
-        <window title="DeSmuME" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" deferred="NO" visibleAtLaunch="NO" animationBehavior="default" id="3">
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <window title="DeSmuME" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" deferred="NO" visibleAtLaunch="NO" animationBehavior="default" toolbarStyle="expanded" id="3">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" texturedBackground="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="830" y="370" width="256" height="408"/>
@@ -44,22 +43,22 @@
                     <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6">
                         <rect key="frame" x="17" y="5" width="137" height="14"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" allowsUndo="NO" sendsActionOnEndEditing="YES" placeholderString="Status Text" id="13">
+                        <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" allowsUndo="NO" sendsActionOnEndEditing="YES" placeholderString="Status Text" id="13">
                             <font key="font" metaFont="smallSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                         <connections>
-                            <binding destination="-2" name="hidden" keyPath="isShowingStatusBar" id="248">
-                                <dictionary key="options">
-                                    <string key="NSValueTransformerName">NSNegateBoolean</string>
-                                </dictionary>
-                            </binding>
                             <binding destination="-2" name="value" keyPath="emuControl.statusText" id="67">
                                 <dictionary key="options">
                                     <integer key="NSAllowsEditingMultipleValuesSelection" value="0"/>
                                     <integer key="NSRaisesForNotApplicableKeys" value="0"/>
                                     <integer key="NSValidatesImmediately" value="1"/>
+                                </dictionary>
+                            </binding>
+                            <binding destination="-2" name="hidden" keyPath="isShowingStatusBar" id="248">
+                                <dictionary key="options">
+                                    <string key="NSValueTransformerName">NSNegateBoolean</string>
                                 </dictionary>
                             </binding>
                         </connections>
@@ -69,7 +68,7 @@
                         <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxY="YES"/>
                         <popUpButtonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="left" alignment="center" lineBreakMode="truncatingTail" state="on" borderStyle="bezel" inset="2" pullsDown="YES" selectedItem="119" id="117">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                            <font key="font" metaFont="system"/>
+                            <font key="font" metaFont="menu"/>
                             <menu key="menu" title="OtherViews" id="118">
                                 <items>
                                     <menuItem state="on" image="Icon_VolumeFull_16x16" hidden="YES" id="119">
@@ -97,7 +96,7 @@
                         <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxY="YES"/>
                         <popUpButtonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="left" alignment="center" lineBreakMode="truncatingTail" state="on" borderStyle="bezel" imageScaling="proportionallyDown" inset="2" pullsDown="YES" selectedItem="125" id="123">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                            <font key="font" metaFont="system"/>
+                            <font key="font" metaFont="menu"/>
                             <menu key="menu" title="OtherViews" id="124">
                                 <items>
                                     <menuItem state="on" image="Icon_MicrophoneBlack_256x256" hidden="YES" id="125">
@@ -113,77 +112,59 @@
                             </menu>
                         </popUpButtonCell>
                         <connections>
+                            <binding destination="-2" name="toolTip" keyPath="emuControl.cdsCoreController.content.cdsController.hardwareMicInfoString" id="226"/>
                             <binding destination="-2" name="hidden" keyPath="isShowingStatusBar" id="133">
                                 <dictionary key="options">
                                     <string key="NSValueTransformerName">NSNegateBoolean</string>
                                 </dictionary>
                             </binding>
-                            <binding destination="-2" name="toolTip" keyPath="emuControl.cdsCoreController.content.cdsController.hardwareMicInfoString" id="226"/>
                         </connections>
                     </popUpButton>
                 </subviews>
             </view>
             <toolbar key="toolbar" implicitIdentifier="D5552DCE-722B-4ECB-8E0A-8B7CF76EAC70" displayMode="iconAndLabel" sizeMode="small" id="4">
                 <allowedToolbarItems>
-                    <toolbarItem implicitItemIdentifier="2E728430-6055-404B-944F-25594ACBEC39" label="Execute" paletteLabel="Execute/Pause" tag="-1" image="Icon_Execute_420x420" id="19">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="2E728430-6055-404B-944F-25594ACBEC39" label="Execute" paletteLabel="Execute/Pause" tag="-1" image="Icon_Execute_420x420" sizingBehavior="auto" id="19">
                         <connections>
                             <action selector="toggleExecutePause:" target="-2" id="108"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="D3628D4D-C39F-4CC3-B82F-7CC0F699B953" label="Frame Advance" paletteLabel="Frame Advance" tag="-1" image="Icon_FrameAdvance_420x420" id="234">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="D3628D4D-C39F-4CC3-B82F-7CC0F699B953" label="Frame Advance" paletteLabel="Frame Advance" tag="-1" image="Icon_FrameAdvance_420x420" sizingBehavior="auto" id="234">
                         <connections>
                             <action selector="frameAdvance:" target="-2" id="243"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="321036F9-6034-47B1-9CC5-2461D98700F0" label="Reset" paletteLabel="Reset" tag="-1" image="Icon_Reset_420x420" id="21">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="321036F9-6034-47B1-9CC5-2461D98700F0" label="Reset" paletteLabel="Reset" tag="-1" image="Icon_Reset_420x420" sizingBehavior="auto" id="21">
                         <connections>
                             <action selector="reset:" target="-2" id="107"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="EDBFD998-E031-4AC5-A86A-7114D66FF847" label="Speed 2x" paletteLabel="Speed 1x/2x" tag="200" image="Icon_Speed2x_420x420" id="20">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="EDBFD998-E031-4AC5-A86A-7114D66FF847" label="Speed 2x" paletteLabel="Speed 1x/2x" tag="200" image="Icon_Speed2x_420x420" sizingBehavior="auto" id="20">
                         <connections>
                             <action selector="changeCoreSpeed:" target="-2" id="56"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="C626F2C1-4353-4288-AD59-40FB7F4C1A58" label="Rotate Left" paletteLabel="Rotate Left" tag="-90" image="Icon_RotateCCW_420x420" id="14">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="C626F2C1-4353-4288-AD59-40FB7F4C1A58" label="Rotate Left" paletteLabel="Rotate Left" tag="-90" image="Icon_RotateCCW_420x420" sizingBehavior="auto" id="14">
                         <connections>
                             <action selector="changeRotationRelative:" target="-2" id="57"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="41A299FB-4A95-4FA3-9982-8523FF04ACDE" label="Rotate Right" paletteLabel="Rotate Right" tag="90" image="Icon_RotateCW_420x420" id="15">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="41A299FB-4A95-4FA3-9982-8523FF04ACDE" label="Rotate Right" paletteLabel="Rotate Right" tag="90" image="Icon_RotateCW_420x420" sizingBehavior="auto" id="15">
                         <connections>
                             <action selector="changeRotationRelative:" target="-2" id="58"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="039A3D54-15EA-4743-88B7-60517113C193" label="Toggle Displays" paletteLabel="Toggle Displays" tag="-1" image="Icon_DisplayToggle_420x420" id="237">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="039A3D54-15EA-4743-88B7-60517113C193" label="Toggle Displays" paletteLabel="Toggle Displays" tag="-1" image="Icon_DisplayToggle_420x420" sizingBehavior="auto" id="237">
                         <connections>
                             <action selector="toggleNDSDisplays:" target="-2" id="244"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="8A505B61-7B2E-49ED-B6A0-DBE0A72DB48D" label="Enable HUD" paletteLabel="Enable/Disable HUD" tag="-1" image="Icon_ShowHUD_420x420" id="238">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="8A505B61-7B2E-49ED-B6A0-DBE0A72DB48D" label="Enable HUD" paletteLabel="Enable/Disable HUD" tag="-1" image="Icon_ShowHUD_420x420" sizingBehavior="auto" id="238">
                         <connections>
                             <action selector="toggleHUDVisibility:" target="-2" id="245"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="0135754F-463F-4625-9D27-DEF701AEF50E" label="Open ROM" paletteLabel="Open ROM" tag="-1" image="Icon_OpenROM_420x420" id="18">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="0135754F-463F-4625-9D27-DEF701AEF50E" label="Open ROM" paletteLabel="Open ROM" tag="-1" image="Icon_OpenROM_420x420" sizingBehavior="auto" id="18">
                         <connections>
                             <action selector="openRom:" target="-2" id="60"/>
                         </connections>
@@ -215,8 +196,8 @@
                     <sliderCell key="cell" continuous="YES" enabled="NO" alignment="left" maxValue="100" tickMarkPosition="right" sliderType="linear" id="146"/>
                     <connections>
                         <action selector="changeHardwareMicGain:" target="-2" id="207"/>
-                        <binding destination="-2" name="enabled" keyPath="emuControl.isHardwareMicAvailable" id="218"/>
                         <binding destination="-2" name="value" keyPath="emuControl.currentMicGainValue" id="230"/>
+                        <binding destination="-2" name="enabled" keyPath="emuControl.isHardwareMicAvailable" id="218"/>
                     </connections>
                 </slider>
                 <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="162">
@@ -231,13 +212,13 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                     <connections>
-                        <binding destination="-2" name="enabled" keyPath="emuControl.isHardwareMicAvailable" id="220"/>
                         <binding destination="-2" name="value" keyPath="emuControl.currentMicGainValue" id="232">
                             <dictionary key="options">
                                 <integer key="NSRaisesForNotApplicableKeys" value="0"/>
                                 <integer key="NSValidatesImmediately" value="1"/>
                             </dictionary>
                         </binding>
+                        <binding destination="-2" name="enabled" keyPath="emuControl.isHardwareMicAvailable" id="220"/>
                     </connections>
                 </textField>
                 <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="185">
