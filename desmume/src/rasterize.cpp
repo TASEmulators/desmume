@@ -1802,7 +1802,9 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 			// to help stabilize performance when running SoftRasterizer.
 			_task[i].start(false, 43);
 #else
-			_task[i].start(false);
+			char name[16];
+			snprintf(name, 16, "rasterizer %d", i);
+			_task[i].start(false, 0, name);
 #endif
 		}
 	}

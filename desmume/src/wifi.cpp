@@ -3398,7 +3398,7 @@ bool AdhocCommInterface::Start(WifiHandler* currentWifiHandler)
 	#ifdef DESMUME_COCOA
 	this->_rxTask->start(false, 43);
 	#else
-	this->_rxTask->start(false);
+	this->_rxTask->start(false, 0, "wifi ad-hoc");
 	#endif
 	this->_isRXThreadRunning = true;
 	this->_rxTask->execute(&Adhoc_RXPacketGetOnThread, this);
@@ -3672,7 +3672,7 @@ bool SoftAPCommInterface::Start(WifiHandler* currentWifiHandler)
 		#ifdef DESMUME_COCOA
 		this->_rxTask->start(false, 43);
 		#else
-		this->_rxTask->start(false);
+		this->_rxTask->start(false, 0, "wifi ap");
 		#endif
 		this->_isRXThreadRunning = true;
 		this->_rxTask->execute(&Infrastructure_RXPacketGetOnThread, this);
