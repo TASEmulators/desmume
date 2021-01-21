@@ -3,7 +3,9 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef __MACH__
 #include <malloc.h>
+#endif
 #include "arm_gen.h"
 
 #ifdef _3DS

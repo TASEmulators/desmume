@@ -215,7 +215,7 @@
 	{
 		const uint32_t color = bitmapData[i];
 		
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__aarch64__)
 		bitmapData[i]	=           0xFF000000         | // lA
 						  ((color & 0x00FF0000) >> 16) | // lB -> lR
 						   (color & 0x0000FF00)        | // lG

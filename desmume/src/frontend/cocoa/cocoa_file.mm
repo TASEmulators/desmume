@@ -213,7 +213,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 + (BOOL) importRomSave:(NSURL *)romSaveURL
 {
 	BOOL result = NO;
-	const char *romSavePath = [[romSaveURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+	const char *romSavePath = [romSaveURL fileSystemRepresentation];
 	
 	NSInteger resultCode = MMU_new.backupDevice.importData(romSavePath, 0);
 	if (resultCode == 0)
@@ -561,27 +561,27 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	NSString *fileExt = nil;
 	switch (fileType)
 	{
-		case NSTIFFFileType:
+		case NSBitmapImageFileTypeTIFF:
 			fileExt = @"tiff";
 			break;
 			
-		case NSBMPFileType:
+		case NSBitmapImageFileTypeBMP:
 			fileExt = @"bmp";
 			break;
 			
-		case NSGIFFileType:
+		case NSBitmapImageFileTypeGIF:
 			fileExt = @"gif";
 			break;
 			
-		case NSJPEGFileType:
+		case NSBitmapImageFileTypeJPEG:
 			fileExt = @"jpg";
 			break;
 			
-		case NSPNGFileType:
+		case NSBitmapImageFileTypePNG:
 			fileExt = @"png";
 			break;
 			
-		case NSJPEG2000FileType:
+		case NSBitmapImageFileTypeJPEG2000:
 			fileExt = @"jp2";
 			break;
 			

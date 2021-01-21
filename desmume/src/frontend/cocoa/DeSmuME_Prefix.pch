@@ -41,5 +41,9 @@
 	#define MSB_FIRST 1
 #endif
 
+#ifdef __aarch64__
+#define USE_POSIX_MEMALIGN 1
+#endif
+
 #define PORT_VERSION	"Cocoa"
 #define PORT_VERSION_OS_X_APP
