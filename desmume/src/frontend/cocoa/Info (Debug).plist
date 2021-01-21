@@ -12,11 +12,13 @@
 				<string>nds</string>
 			</array>
 			<key>CFBundleTypeIconFile</key>
-			<string>AppIcon_NintendoDS_ROM.icns</string>
+			<string>AppIcon_NintendoDS_ROM</string>
 			<key>CFBundleTypeName</key>
 			<string>Nintendo DS ROM</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.nintendo.rom.ds</string>
@@ -52,11 +54,13 @@
 				<string>dst</string>
 			</array>
 			<key>CFBundleTypeIconFile</key>
-			<string>AppIcon_SaveState.icns</string>
+			<string>AppIcon_SaveState</string>
 			<key>CFBundleTypeName</key>
 			<string>DeSmuME Save State</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.desmume.savestate</string>
@@ -72,11 +76,13 @@
 				<string>dsv</string>
 			</array>
 			<key>CFBundleTypeIconFile</key>
-			<string>AppIcon_ROMSave.icns</string>
+			<string>AppIcon_ROMSave</string>
 			<key>CFBundleTypeName</key>
 			<string>DeSmuME ROM Save</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.desmume.romsave</string>
@@ -92,11 +98,13 @@
 				<string>dfc</string>
 			</array>
 			<key>CFBundleTypeIconFile</key>
-			<string>AppIcon_FirmwareConfig.icns</string>
+			<string>AppIcon_FirmwareConfig</string>
 			<key>CFBundleTypeName</key>
 			<string>DeSmuME Firmware Configuration</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.desmume.firmwareconfig</string>
@@ -112,11 +120,13 @@
 				<string>dct</string>
 			</array>
 			<key>CFBundleTypeIconFile</key>
-			<string>AppIcon_ROMCheats.icns</string>
+			<string>AppIcon_ROMCheats</string>
 			<key>CFBundleTypeName</key>
 			<string>DeSmuME ROM Cheats</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.desmume.romcheats</string>
@@ -265,7 +275,9 @@
 			<key>UTTypeDescription</key>
 			<string>DeSmuME Save State</string>
 			<key>UTTypeIconFile</key>
-			<string>AppIcon_SaveState.icns</string>
+			<string>AppIcon_SaveState</string>
+			<key>UTTypeIcons</key>
+			<dict/>
 			<key>UTTypeIdentifier</key>
 			<string>com.desmume.savestate</string>
 			<key>UTTypeTagSpecification</key>
@@ -284,7 +296,9 @@
 			<key>UTTypeDescription</key>
 			<string>DeSmuME ROM Save</string>
 			<key>UTTypeIconFile</key>
-			<string>AppIcon_ROMSave.icns</string>
+			<string>AppIcon_ROMSave</string>
+			<key>UTTypeIcons</key>
+			<dict/>
 			<key>UTTypeIdentifier</key>
 			<string>com.desmume.romsave</string>
 			<key>UTTypeTagSpecification</key>
@@ -303,7 +317,9 @@
 			<key>UTTypeDescription</key>
 			<string>DeSmuME Firmware Configuration</string>
 			<key>UTTypeIconFile</key>
-			<string>AppIcon_FirmwareConfig.icns</string>
+			<string>AppIcon_FirmwareConfig</string>
+			<key>UTTypeIcons</key>
+			<dict/>
 			<key>UTTypeIdentifier</key>
 			<string>com.desmume.firmwareconfig</string>
 			<key>UTTypeTagSpecification</key>
@@ -322,7 +338,9 @@
 			<key>UTTypeDescription</key>
 			<string>DeSmuME ROM Cheats</string>
 			<key>UTTypeIconFile</key>
-			<string>AppIcon_ROMCheats.icns</string>
+			<string>AppIcon_ROMCheats</string>
+			<key>UTTypeIcons</key>
+			<dict/>
 			<key>UTTypeIdentifier</key>
 			<string>com.desmume.romcheats</string>
 			<key>UTTypeTagSpecification</key>
@@ -344,7 +362,9 @@
 			<key>UTTypeDescription</key>
 			<string>Nintendo DS ROM</string>
 			<key>UTTypeIconFile</key>
-			<string>AppIcon_NintendoDS_ROM.icns</string>
+			<string>AppIcon_NintendoDS_ROM</string>
+			<key>UTTypeIcons</key>
+			<dict/>
 			<key>UTTypeIdentifier</key>
 			<string>com.nintendo.rom.ds</string>
 			<key>UTTypeTagSpecification</key>
