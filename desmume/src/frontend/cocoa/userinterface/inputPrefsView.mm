@@ -119,13 +119,8 @@
 - (void) setConfigInputTargetID:(NSString *)targetID
 {
 	
-	configInputTargetID = targetID;
+	configInputTargetID = [targetID copy];
 	[[self inputManager] setHidInputTarget:(targetID == nil) ? nil : self];
-}
-
-- (NSString *) configInputTargetID
-{
-	return configInputTargetID;
 }
 
 #pragma mark Class Methods
@@ -157,7 +152,7 @@
 
 - (void) loadSavedProfilesList
 {
-	NSArray *userDefaultsSavedProfilesList = (NSArray *)[[NSUserDefaults standardUserDefaults] arrayForKey:@"Input_SavedProfiles"];
+	NSArray *userDefaultsSavedProfilesList = [[NSUserDefaults standardUserDefaults] arrayForKey:@"Input_SavedProfiles"];
 	[savedProfilesList removeAllObjects];
 	
 	for (NSDictionary *theProfile in userDefaultsSavedProfilesList)
@@ -402,10 +397,10 @@
 	
 	switch (returnCode)
 	{
-		case NSCancelButton:
+		case NSModalResponseCancel:
 			break;
 			
-		case NSOKButton:
+		case NSModalResponseOK:
 			[deviceInfoInEdit setDictionary:editedDeviceInfo];
 			[self setMappingUsingDeviceInfoDictionary:deviceInfoInEdit];
 			[outlineView reloadItem:deviceInfoInEdit reloadChildren:NO];

@@ -81,7 +81,7 @@
 @property (weak, readonly) IBOutlet NSSegmentedControl *turboPatternControl;
 
 @property (weak, readonly) IBOutlet InputManager *inputManager;
-@property (strong) NSString *configInputTargetID;
+@property (nonatomic, copy) NSString *configInputTargetID;
 @property (strong) NSMutableDictionary *inputSettingsInEdit;
 
 - (void) initSettingsSheets;
