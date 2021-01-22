@@ -1251,7 +1251,7 @@
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="nai-0h-Zna">
                                                 <rect key="frame" x="0.0" y="0.0" width="505" height="244"/>
-                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
                                                     <textView editable="NO" drawsBackground="NO" importsGraphics="NO" verticallyResizable="YES" findStyle="panel" spellingCorrection="YES" id="5673">
                                                         <rect key="frame" x="0.0" y="0.0" width="505" height="244"/>
@@ -1462,37 +1462,27 @@
             </view>
             <toolbar key="toolbar" implicitIdentifier="7F8262D5-9D3C-423C-B7C5-79385DDE5A70" autosavesConfiguration="NO" allowsUserCustomization="NO" displayMode="iconAndLabel" sizeMode="regular" id="629">
                 <allowedToolbarItems>
-                    <toolbarItem implicitItemIdentifier="A9C4AA28-77F8-4AD3-96D8-A67306997B4C" label="General" paletteLabel="General" tag="-1" image="NSPreferencesGeneral" selectable="YES" id="1680">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="A9C4AA28-77F8-4AD3-96D8-A67306997B4C" label="General" paletteLabel="General" tag="-1" image="NSPreferencesGeneral" sizingBehavior="auto" selectable="YES" id="1680">
                         <connections>
                             <action selector="changePrefView:" target="1682" id="8671"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="8DD2F943-8717-4EC3-A3C5-30068405F029" label="Input" paletteLabel="Input" tag="-1" image="Icon_Input_420x420" selectable="YES" id="1679">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="8DD2F943-8717-4EC3-A3C5-30068405F029" label="Input" paletteLabel="Input" tag="-1" image="Icon_Input_420x420" sizingBehavior="auto" selectable="YES" id="1679">
                         <connections>
                             <action selector="changePrefView:" target="1682" id="8672"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="E30B98EC-D044-488C-A4E0-5BCE53366462" label="Display" paletteLabel="Display" tag="-1" image="Icon_ShowHUD_420x420" selectable="YES" id="1681">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="E30B98EC-D044-488C-A4E0-5BCE53366462" label="Display" paletteLabel="Display" tag="-1" image="Icon_ShowHUD_420x420" sizingBehavior="auto" selectable="YES" id="1681">
                         <connections>
                             <action selector="changePrefView:" target="1682" id="8673"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="C9B4F2D8-9F6E-4ED5-84C7-E13EB3484A3A" label="Sound" paletteLabel="Sound" tag="-1" image="Icon_Speaker_420x420" selectable="YES" id="2246">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="C9B4F2D8-9F6E-4ED5-84C7-E13EB3484A3A" label="Sound" paletteLabel="Sound" tag="-1" image="Icon_Speaker_420x420" sizingBehavior="auto" selectable="YES" id="2246">
                         <connections>
                             <action selector="changePrefView:" target="1682" id="8674"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="AC584A31-E187-4BC3-9981-D18A2C8553F7" label="Emulation" paletteLabel="Emulation" tag="-1" image="Icon_Emulation_420x420" selectable="YES" id="2340">
-                        <size key="minSize" width="22" height="22"/>
-                        <size key="maxSize" width="22" height="22"/>
+                    <toolbarItem implicitItemIdentifier="AC584A31-E187-4BC3-9981-D18A2C8553F7" label="Emulation" paletteLabel="Emulation" tag="-1" image="Icon_Emulation_420x420" sizingBehavior="auto" selectable="YES" id="2340">
                         <connections>
                             <action selector="changePrefView:" target="1682" id="8675"/>
                         </connections>
@@ -4196,7 +4186,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <clipView key="contentView" id="TE4-ST-yVf">
                             <rect key="frame" x="1" y="1" width="620" height="320"/>
-                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                            <autoresizingMask key="autoresizingMask"/>
                             <subviews>
                                 <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="none" alternatingRowBackgroundColors="YES" columnReordering="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" headerView="7518" indentationPerLevel="13" indentationMarkerFollowsCell="NO" autoresizesOutlineColumn="YES" outlineTableColumn="7537" id="7519">
                                     <rect key="frame" x="0.0" y="0.0" width="620" height="292"/>
@@ -4377,8 +4367,8 @@ DQ
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="235" y="444" width="452" height="115"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" id="7708">
-                <rect key="frame" x="0.0" y="0.0" width="452" height="113"/>
+            <view key="contentView" misplaced="YES" id="7708">
+                <rect key="frame" x="0.0" y="0.0" width="452" height="115"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7715">
@@ -5012,8 +5002,8 @@ Gw
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="235" y="434" width="350" height="125"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" id="7174">
-                <rect key="frame" x="0.0" y="0.0" width="350" height="112"/>
+            <view key="contentView" misplaced="YES" id="7174">
+                <rect key="frame" x="0.0" y="0.0" width="350" height="125"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <popUpButton horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7210">
@@ -5134,8 +5124,8 @@ Gw
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="235" y="459" width="350" height="125"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" id="7226">
-                <rect key="frame" x="0.0" y="0.0" width="350" height="112"/>
+            <view key="contentView" misplaced="YES" id="7226">
+                <rect key="frame" x="0.0" y="0.0" width="350" height="125"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <popUpButton horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7228">
@@ -7540,8 +7530,8 @@ DQ
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="157" y="261" width="380" height="200"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" id="2848">
-                <rect key="frame" x="0.0" y="0.0" width="380" height="197"/>
+            <view key="contentView" misplaced="YES" id="2848">
+                <rect key="frame" x="0.0" y="0.0" width="380" height="200"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="342" translatesAutoresizingMaskIntoConstraints="NO" id="2894">
@@ -7704,12 +7694,12 @@ Gw
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="157" y="347" width="400" height="114"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" id="10523">
-                <rect key="frame" x="0.0" y="0.0" width="400" height="117"/>
+            <view key="contentView" misplaced="YES" id="10523">
+                <rect key="frame" x="0.0" y="0.0" width="400" height="114"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="362" translatesAutoresizingMaskIntoConstraints="NO" id="10524">
-                        <rect key="frame" x="18" y="81" width="324" height="16"/>
+                        <rect key="frame" x="18" y="84" width="324" height="16"/>
                         <textFieldCell key="cell" controlSize="mini" sendsActionOnEndEditing="YES" title="The emulation has halted due to an internal issue." id="10525">
                             <font key="font" metaFont="systemBold"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -7743,7 +7733,7 @@ DQ
                         </connections>
                     </button>
                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="362" translatesAutoresizingMaskIntoConstraints="NO" id="10530">
-                        <rect key="frame" x="18" y="60" width="84" height="13"/>
+                        <rect key="frame" x="18" y="60" width="72" height="16"/>
                         <constraints>
                             <constraint firstAttribute="width" relation="lessThanOrEqual" constant="360" id="z0J-Th-gjV"/>
                         </constraints>
@@ -7789,7 +7779,7 @@ DQ
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <clipView key="contentView" id="Hg7-6Z-dmQ">
                             <rect key="frame" x="1" y="1" width="270" height="351"/>
-                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                            <autoresizingMask key="autoresizingMask"/>
                             <subviews>
                                 <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" rowHeight="42" headerView="4715" id="3499">
                                     <rect key="frame" x="0.0" y="0.0" width="270" height="323"/>
@@ -8152,7 +8142,7 @@ Serial:</string>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES" heightSizable="YES"/>
                     <clipView key="contentView" id="FeN-zN-DI3">
                         <rect key="frame" x="1" y="1" width="286" height="192"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" columnReordering="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" rowHeight="14" headerView="4798" id="4797">
                                 <rect key="frame" x="0.0" y="0.0" width="286" height="164"/>
@@ -8384,7 +8374,7 @@ Serial:</string>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <clipView key="contentView" id="IHV-dZ-yLF">
                             <rect key="frame" x="1" y="1" width="500" height="303"/>
-                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                            <autoresizingMask key="autoresizingMask"/>
                             <subviews>
                                 <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" rowHeight="39" headerView="5086" id="5085">
                                     <rect key="frame" x="0.0" y="0.0" width="500" height="275"/>
@@ -9010,7 +9000,7 @@ Gw
                     <autoresizingMask key="autoresizingMask"/>
                     <clipView key="contentView" id="Nw2-In-y1f">
                         <rect key="frame" x="1" y="1" width="278" height="223"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" baseWritingDirection="leftToRight" findStyle="panel" allowsUndo="YES" allowsNonContiguousLayout="YES" spellingCorrection="YES" id="4634">
                                 <rect key="frame" x="0.0" y="0.0" width="278" height="223"/>
@@ -9824,7 +9814,7 @@ Serial:</string>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <clipView key="contentView" id="ede-My-FIf">
                         <rect key="frame" x="1" y="1" width="358" height="172"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="none" alternatingRowBackgroundColors="YES" columnReordering="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" headerView="8524" id="8515">
                                 <rect key="frame" x="0.0" y="0.0" width="358" height="144"/>
@@ -14151,7 +14141,7 @@ Serial:</string>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <clipView key="contentView" id="zpE-Cv-ss8">
                             <rect key="frame" x="1" y="1" width="330" height="811"/>
-                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                            <autoresizingMask key="autoresizingMask"/>
                             <subviews>
                                 <customView id="9827" customClass="RomInfoContentView">
                                     <rect key="frame" x="0.0" y="0.0" width="319" height="810"/>
@@ -16956,7 +16946,7 @@ Serial:</string>
             <rect key="contentRect" x="162" y="360" width="290" height="119"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
             <view key="contentView" misplaced="YES" id="9390">
-                <rect key="frame" x="0.0" y="0.0" width="290" height="122"/>
+                <rect key="frame" x="0.0" y="0.0" width="290" height="119"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="9393">
@@ -17336,7 +17326,7 @@ Serial:</string>
                     <autoresizingMask key="autoresizingMask"/>
                     <clipView key="contentView" id="hfD-1L-KYl">
                         <rect key="frame" x="1" y="1" width="538" height="202"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" spellingCorrection="YES" smartInsertDelete="YES" id="6499">
                                 <rect key="frame" x="0.0" y="0.0" width="538" height="202"/>
@@ -17554,7 +17544,7 @@ Serial:</string>
                     <rect key="frame" x="20" y="167" width="540" height="84"/>
                     <clipView key="contentView" id="FRq-Q5-CCu">
                         <rect key="frame" x="1" y="1" width="538" height="82"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" spellingCorrection="YES" smartInsertDelete="YES" id="6489">
                                 <rect key="frame" x="0.0" y="0.0" width="538" height="82"/>
@@ -17584,7 +17574,7 @@ Serial:</string>
                     <rect key="frame" x="20" y="61" width="540" height="82"/>
                     <clipView key="contentView" id="kDg-Su-UXe">
                         <rect key="frame" x="1" y="1" width="538" height="80"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" spellingCorrection="YES" smartInsertDelete="YES" id="6494">
                                 <rect key="frame" x="0.0" y="0.0" width="538" height="80"/>
@@ -17733,7 +17723,7 @@ Serial:</string>
                     <rect key="frame" x="20" y="102" width="540" height="445"/>
                     <clipView key="contentView" id="wxr-Yo-zgs">
                         <rect key="frame" x="1" y="1" width="538" height="443"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <textView editable="NO" importsGraphics="NO" richText="NO" verticallyResizable="YES" spellingCorrection="YES" id="6436">
                                 <rect key="frame" x="0.0" y="0.0" width="538" height="443"/>

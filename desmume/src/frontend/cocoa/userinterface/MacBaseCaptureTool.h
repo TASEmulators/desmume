@@ -72,7 +72,6 @@
 @property (assign) NSInteger pixelScalerID;
 
 - (IBAction) chooseDirectoryPath:(id)sender;
-- (void) chooseDirectoryPathDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 
 @end
 

@@ -1262,7 +1262,7 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 
 - (void) readUserDefaults
 {
-	[self setSaveDirectoryPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"AVCaptureTool_DirectoryPath"]];
+	[self setSaveDirectoryPath:[[[NSUserDefaults standardUserDefaults] URLForKey:@"AVCaptureTool_DirectoryPath"] path]];
 	[self setFormatID:[[NSUserDefaults standardUserDefaults] integerForKey:@"AVCaptureTool_FileFormat"]];
 	[self setUseDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"AVCaptureTool_Deposterize"]];
 	[self setOutputFilterID:[[NSUserDefaults standardUserDefaults] integerForKey:@"AVCaptureTool_OutputFilter"]];
@@ -1280,7 +1280,7 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 
 - (void) writeUserDefaults
 {
-	[[NSUserDefaults standardUserDefaults] setObject:[self saveDirectoryPath] forKey:@"AVCaptureTool_DirectoryPath"];
+	[[NSUserDefaults standardUserDefaults] setURL:[NSURL fileURLWithPath:[self saveDirectoryPath]] forKey:@"AVCaptureTool_DirectoryPath"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self formatID] forKey:@"AVCaptureTool_FileFormat"];
 	[[NSUserDefaults standardUserDefaults] setBool:[self useDeposterize] forKey:@"AVCaptureTool_Deposterize"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self outputFilterID] forKey:@"AVCaptureTool_OutputFilter"];
