@@ -814,18 +814,36 @@
 		[self updateCustomTurboPatternControls:turboPatternControl];
 	}
 	
-	[NSApp beginSheet:theSheet
-	   modalForWindow:prefWindow
-		modalDelegate:self
-	   didEndSelector:@selector(didEndSettingsSheet:returnCode:contextInfo:)
-		  contextInfo:(__bridge void*)outlineView];
+	[prefWindow beginSheet:theSheet
+		 completionHandler:^(NSModalResponse returnCode) {
+		NSMutableDictionary *editedDeviceInfo = (NSMutableDictionary *)[self->inputSettingsController content];
+		NSMutableDictionary *deviceInfoInEdit = [self inputSettingsInEdit];
+		
+		switch (returnCode)
+		{
+			case NSModalResponseCancel:
+				break;
+				
+			case NSModalResponseOK:
+				[deviceInfoInEdit setDictionary:editedDeviceInfo];
+				[self setMappingUsingDeviceInfoDictionary:deviceInfoInEdit];
+				[outlineView reloadItem:deviceInfoInEdit reloadChildren:NO];
+				break;
+				
+			default:
+				break;
+		}
+		
+		[self->inputSettingsController setContent:nil];
+		[self setInputSettingsInEdit:nil];
+	}];
 }
 
 - (IBAction) closeSettingsSheet:(id)sender
 {
 	NSWindow *sheet = [(NSControl *)sender window];
 	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
-    [NSApp endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
+    [prefWindow endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) updateCustomTurboPatternControls:(id)sender
@@ -850,7 +868,7 @@
 		[turboPatternControl setSelected:isPressedBit forSegment:i];
 	}
 	
-	float controlWidth = (turboPatternLength * (24.0f + 1.5f));
+	CGFloat controlWidth = (turboPatternLength * (24.0f + 1.5f));
 	NSRect oldSheetFrame = [theSheet frame];
 	NSRect newSheetFrame = oldSheetFrame;
 	
@@ -986,11 +1004,10 @@
 
 - (IBAction) profileView:(id)sender
 {
-	[NSApp beginSheet:inputProfileSheet
-	   modalForWindow:prefWindow
-		modalDelegate:self
-	   didEndSelector:@selector(didEndProfileSheet:returnCode:contextInfo:)
-		  contextInfo:nil];
+	[prefWindow beginSheet:inputProfileSheet
+		 completionHandler:^(NSModalResponse returnCode) {
+		
+	}];
 }
 
 - (IBAction) profileApply:(id)sender
@@ -1012,11 +1029,10 @@
 
 - (IBAction) profileRename:(id)sender
 {
-	[NSApp beginSheet:inputProfileRenameSheet
-	   modalForWindow:prefWindow
-		modalDelegate:self
-	   didEndSelector:@selector(didEndProfileRenameSheet:returnCode:contextInfo:)
-		  contextInfo:nil];
+	[prefWindow beginSheet:inputProfileRenameSheet
+		 completionHandler:^(NSModalResponse returnCode) {
+		
+	}];
 }
 
 - (IBAction) profileSave:(id)sender
@@ -1097,14 +1113,14 @@
 {
 	NSWindow *sheet = [(NSControl *)sender window];
 	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
-	[NSApp endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[prefWindow endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) closeProfileRenameSheet:(id)sender
 {
 	NSWindow *sheet = [(NSControl *)sender window];
 	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
-	[NSApp endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[prefWindow endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) audioFileChoose:(id)sender

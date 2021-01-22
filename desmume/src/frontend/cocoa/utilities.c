@@ -40,7 +40,7 @@ static void ReadSystemVersionPListFile()
 		return;
 	}
 	
-	CFDictionaryRef systemDict = (CFDictionaryRef)CFPropertyListCreateFromXMLData(kCFAllocatorDefault, resourceData, kCFPropertyListImmutable, NULL);
+	CFDictionaryRef systemDict = (CFDictionaryRef)CFPropertyListCreateWithData(kCFAllocatorDefault, resourceData, kCFPropertyListImmutable, NULL, NULL);
 	if (systemDict == NULL)
 	{
 		CFRelease(resourceData);

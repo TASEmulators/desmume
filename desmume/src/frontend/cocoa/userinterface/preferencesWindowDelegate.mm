@@ -387,7 +387,7 @@
 		
 		[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_SELECTED forKey:@"General_AutoloadROMOption"];
 		[[NSUserDefaults standardUserDefaults] setURL:selectedFileURL forKey:@"General_AutoloadROMSelectedPath"];
-		[bindings setValue:[selectedFileURL lastPathComponent] forKey:@"AutoloadRomName"];
+		[self->bindings setValue:[selectedFileURL lastPathComponent] forKey:@"AutoloadRomName"];
 	} ];
 }
 
@@ -416,7 +416,7 @@
 		}
 		
 		[[NSUserDefaults standardUserDefaults] setURL:selectedFileURL forKey:@"Advanscene_DatabasePath"];
-		[bindings setValue:[selectedFileURL lastPathComponent] forKey:@"AdvansceneDatabaseName"];
+		[self->bindings setValue:[selectedFileURL lastPathComponent] forKey:@"AdvansceneDatabaseName"];
 	} ];
 }
 
@@ -633,9 +633,9 @@
 		}
 		
 		[[NSUserDefaults standardUserDefaults] setURL:selectedFileURL forKey:@"BIOS_ARM9ImagePath"];
-		[bindings setValue:[selectedFileURL lastPathComponent] forKey:@"Arm9BiosImageName"];
+		[self->bindings setValue:[selectedFileURL lastPathComponent] forKey:@"Arm9BiosImageName"];
 		
-		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[self->cdsCoreController content];
 		[cdsCore setArm9ImageURL:selectedFileURL];
 	} ];
 }
@@ -697,20 +697,19 @@
 		}
 		
 		[[NSUserDefaults standardUserDefaults] setURL:selectedFileURL forKey:@"Emulation_FirmwareImagePath"];
-		[bindings setValue:[selectedFileURL lastPathComponent] forKey:@"FirmwareImageName"];
+		[self->bindings setValue:[selectedFileURL lastPathComponent] forKey:@"FirmwareImageName"];
 		
-		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[self->cdsCoreController content];
 		[cdsCore setFirmwareImageURL:selectedFileURL];
 	} ];
 }
 
 - (IBAction) configureInternalFirmware:(id)sender
 {
-	[NSApp beginSheet:firmwareConfigSheet
-	   modalForWindow:window
-		modalDelegate:self
-	   didEndSelector:@selector(didEndFirmwareConfigSheet:returnCode:contextInfo:)
-		  contextInfo:nil];
+	[window beginSheet:firmwareConfigSheet
+	 completionHandler:^(NSModalResponse returnCode) {
+		
+	}];
 }
 
 - (IBAction) closeFirmwareConfigSheet:(id)sender
@@ -721,12 +720,7 @@
 	// Force end of editing of any text fields.
 	[sheet makeFirstResponder:nil];
 	
-    [NSApp endSheet:sheet returnCode:code];
-}
-
-- (void) didEndFirmwareConfigSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
-{
-    [sheet orderOut:self];
+    [window endSheet:sheet returnCode:code];
 }
 
 - (IBAction) generateFirmwareMACAddress:(id)sender

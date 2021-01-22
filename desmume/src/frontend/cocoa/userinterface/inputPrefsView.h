@@ -94,9 +94,6 @@
 - (void) setMappingUsingDeviceInfoDictionary:(NSMutableDictionary *)deviceInfo;
 - (BOOL) doesProfileNameExist:(NSString *)profileName;
 - (void) updateSelectedProfileName;
-- (void) didEndSettingsSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
-- (void) didEndProfileSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
-- (void) didEndProfileRenameSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 
 - (IBAction) setInputAdd:(id)sender;
 - (IBAction) removeInput:(id)sender;

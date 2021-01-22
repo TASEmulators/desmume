@@ -41,7 +41,7 @@ class OGLImage;
 
 #pragma mark -
 
-@interface PreferencesWindowDelegate : NSObject <NSWindowDelegate>
+@interface PreferencesWindowDelegate : NSObject <NSWindowDelegate, NSControlTextEditingDelegate>
 {
 	NSObject *dummyObject;
 	NSWindow *window;
@@ -147,7 +147,6 @@ class OGLImage;
 - (IBAction) chooseFirmwareImage:(id)sender;
 - (IBAction) configureInternalFirmware:(id)sender;
 - (IBAction) closeFirmwareConfigSheet:(id)sender;
-- (void) didEndFirmwareConfigSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 
 - (IBAction) generateFirmwareMACAddress:(id)sender;
 - (IBAction) updateFirmwareMACAddressString:(id)sender;

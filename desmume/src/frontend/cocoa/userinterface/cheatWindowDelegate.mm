@@ -178,11 +178,22 @@
 
 - (IBAction) viewDatabase:(id)sender
 {
-	[NSApp beginSheet:cheatDatabaseSheet
-	   modalForWindow:window
-		modalDelegate:self
-	   didEndSelector:@selector(didEndCheatDatabaseSheet:returnCode:contextInfo:)
-		  contextInfo:nil];
+	[window beginSheet:cheatDatabaseSheet
+	 completionHandler:^(NSModalResponse returnCode) {
+		switch (returnCode)
+		{
+			case NSModalResponseCancel:
+				return;
+				break;
+				
+			case NSModalResponseOK:
+				[self addSelectedFromCheatDatabase];
+				break;
+				
+			default:
+				break;
+		}
+	}];
 }
 
 - (IBAction) setInternalCheatValue:(id)sender
@@ -454,7 +465,7 @@
 	NSWindow *sheet = [(NSControl *)sender window];
 	NSInteger code = [(NSControl *)sender tag];
 	
-    [NSApp endSheet:sheet returnCode:code];
+    [window endSheet:sheet returnCode:code];
 }
 
 - (void) didEndCheatDatabaseSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
