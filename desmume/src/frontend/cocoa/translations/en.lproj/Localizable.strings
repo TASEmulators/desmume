@@ -34,7 +34,7 @@
 
 /* Alert Text */
 "A critical file is missing. DeSmuME will now quit." = "A critical file is missing. DeSmuME will now quit.";
-"The file \"DefaultUserPrefs.plist\" is missing. Please reinstall DeSmuME." = "The file \"DefaultUserPrefs.plist\" is missing. Please reinstall DeSmuME.";
+"The file \"DefaultUserPrefs.plist\" is missing. Please reinstall DeSmuME." = "The file “DefaultUserPrefs.plist” is missing. Please reinstall DeSmuME.";
 
 /* Status Text */
 "Ready." = "Ready.";
@@ -51,13 +51,13 @@
 "ROM save file export failed!" = "ROM save file export failed!";
 "ROM save file exported." = "ROM save file exported.";
 
-"Loading ROM..." = "Loading ROM...";
+"Loading ROM..." = "Loading ROM…";
 "ROM loaded." = "ROM loaded.";
 "ROM loading failed!" = "ROM loading failed!";
-"Unloading ROM..." = "Unloading ROM...";
+"Unloading ROM..." = "Unloading ROM…";
 "ROM unloaded." = "ROM unloaded.";
 
-"Emulator resetting..." = "Emulator resetting...";
+"Emulator resetting..." = "Emulator resetting…";
 "Emulator reset." = "Emulator reset.";
 
 "Cannot generate the save file path!" = "Cannot generate the save file path!";
