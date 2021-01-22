@@ -134,7 +134,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	id<InputHIDManagerTarget> hidInputTarget;
 	InputHIDManager *hidManager;
 	NSMutableDictionary *inputMappings;
-	NSArray *__weak commandTagList;
+	NSArray *commandTagList;
 	NSDictionary *commandIcon;
 	
 	InputCommandMap commandMap;
@@ -145,10 +145,10 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 @property (weak, readonly) IBOutlet EmuControllerDelegate *emuControl;
 @property (readonly) MacInputDevicePropertiesEncoder *inputEncoder;
 @property (strong) id<InputHIDManagerTarget> hidInputTarget;
-@property (readonly) InputHIDManager *hidManager;
-@property (readonly) NSMutableDictionary *inputMappings;
-@property (weak, readonly) NSArray *commandTagList;
-@property (readonly) NSDictionary *commandIcon;
+@property (readonly, strong) InputHIDManager *hidManager;
+@property (readonly, strong) NSMutableDictionary *inputMappings;
+@property (readonly, copy) NSArray *commandTagList;
+@property (readonly, copy) NSDictionary *commandIcon;
 
 - (void) setMappingsWithMappings:(NSDictionary *)mappings;
 - (void) addMappingUsingDeviceInfoDictionary:(NSDictionary *)deviceDict commandAttributes:(const ClientCommandAttributes *)cmdAttr;
