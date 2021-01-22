@@ -18,10 +18,6 @@
 
 #import <Cocoa/Cocoa.h>
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
-	#include "macosx_10_4_compat.h"
-#endif
-
 
 @interface CocoaDSFile : NSDocument
 {
@@ -67,11 +63,9 @@
 + (BOOL) createUserAppSupportDirectory:(NSString *)directoryName;
 + (NSURL *) lastLoadedRomURL;
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_4
 + (BOOL) moveFileToCurrentDirectory:(NSURL *)fileURL;
 + (BOOL) copyFileToCurrentDirectory:(NSURL *)fileURL;
 + (NSMutableArray *) appFileList:(NSURL *)directoryURL;
 + (NSMutableArray *) appFileList:(NSURL *)directoryURL fileKind:(NSString *)theFileKind;
-#endif
 
 @end

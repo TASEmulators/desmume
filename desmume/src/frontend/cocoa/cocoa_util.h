@@ -21,10 +21,6 @@
 #include <libkern/OSAtomic.h>
 #include "utilities.h"
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
-	#include "macosx_10_4_compat.h"
-#endif
-
 
 @interface CocoaDSUtil : NSObject
 {

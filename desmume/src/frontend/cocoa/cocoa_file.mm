@@ -232,19 +232,18 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	
 	switch (fileTypeID)
 	{
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_4
 		case ROMSAVEFORMAT_DESMUME:
 		{
-			NSString *destinationPath = [[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE];
+			NSURL *destinationPath = [destinationURL URLByAppendingPathExtension:@FILE_EXT_ROM_SAVE];
 			NSFileManager *fileManager = [[NSFileManager alloc] init];
-			result = [fileManager copyItemAtPath:[romSaveURL path] toPath:destinationPath error:nil];
+			result = [fileManager copyItemAtURL:romSaveURL toURL:destinationPath error:nil];
 			[fileManager release];
 			break;
 		}
-#endif
+			
 		case ROMSAVEFORMAT_NOGBA:
 		{
-			const char *destinationPath = [[[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE_NOGBA] fileSystemRepresentation];
+			const char *destinationPath = [[destinationURL URLByAppendingPathExtension:@FILE_EXT_ROM_SAVE_NOGBA] fileSystemRepresentation];
 			bool resultCode = MMU_new.backupDevice.exportData(destinationPath);
 			if (resultCode)
 			{
@@ -255,7 +254,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 			
 		case ROMSAVEFORMAT_RAW:
 		{
-			const char *destinationPath = [[[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE_RAW] fileSystemRepresentation];
+			const char *destinationPath = [[destinationURL URLByAppendingPathExtension:@FILE_EXT_ROM_SAVE_RAW] fileSystemRepresentation];
 			bool resultCode = MMU_new.backupDevice.exportData(destinationPath);
 			if (resultCode)
 			{
@@ -507,14 +506,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	
 	NSArray *fileKindList = [pathPortDict allKeys];
 	
-#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_4 // Mac OS X v10.4 and earlier.
-	NSEnumerator *enumerator = [fileKindList objectEnumerator];
-	NSString *fileKind;
-	
-	while ((fileKind = (NSString *)[enumerator nextObject]) != nil)
-#else // Mac OS X v10.5 and later.
 	for (NSString *fileKind in fileKindList)
-#endif
 	{
 		NSString *dirPath = (NSString *)[pathPortDict valueForKey:fileKind];
 		NSString *dirName = (NSString *)[dirNamePortDict valueForKey:fileKind];
@@ -1088,55 +1080,10 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
 	
-#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_4 // Mac OS X v10.4 and earlier.
-	BOOL isDir = YES;
-	
-	tempPath = [tempPath stringByAppendingPathComponent:appName];
-	result = [fileManager createDirectoryAtPath:tempPath attributes:nil];
-	if (!result)
-	{
-		if(![fileManager fileExistsAtPath:tempPath isDirectory:&isDir])
-		{
-			[fileManager release];
-			return result;
-		}
-	}
-	
-	tempPath = [tempPath stringByAppendingPathComponent:appVersion];
-	result = [fileManager createDirectoryAtPath:tempPath attributes:nil];
-	if (!result)
-	{
-		if(![fileManager fileExistsAtPath:tempPath isDirectory:&isDir])
-		{
-			[fileManager release];
-			return result;
-		}
-	}
-	
-	tempPath = [tempPath stringByAppendingPathComponent:directoryName];
-	result = [fileManager createDirectoryAtPath:tempPath attributes:nil];
-	if (!result)
-	{
-		if(![fileManager fileExistsAtPath:tempPath isDirectory:&isDir])
-		{
-			[fileManager release];
-			return result;
-		}
-	}
-	
-	/*
-	 In Mac OS X v10.4 and earlier, having the File Manager create new directories where they already
-	 exist returns NO. Note that this behavior is not per Apple's own documentation. Therefore, we
-	 manually set result=YES at the end to make sure the function returns the right result.
-	 */
-	result = YES;
-	
-#else // Mac OS X v10.5 and later. Yes, the code is this simple...
 	tempPath = [tempPath stringByAppendingPathComponent:appName];
 	tempPath = [tempPath stringByAppendingPathComponent:appVersion];
 	tempPath = [tempPath stringByAppendingPathComponent:directoryName];
 	result = [fileManager createDirectoryAtPath:tempPath withIntermediateDirectories:YES attributes:nil error:NULL];
-#endif
 	
 	[fileManager release];
 	return result;
@@ -1146,8 +1093,6 @@ static NSMutableDictionary *_gURLDictionary = nil;
 {
 	return [[[NSDocumentController sharedDocumentController] recentDocumentURLs] objectAtIndex:0];
 }
-
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_4
 
 + (BOOL) moveFileToCurrentDirectory:(NSURL *)fileURL
 {
@@ -1263,7 +1208,5 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	
 	return outArray;
 }
-
-#endif
 
 @end
