@@ -113,13 +113,8 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 		(NSOpenGLPixelFormatAttribute)0
 	};
 	
-	// If we can support a 3.2 Core Profile context, then request that in our
-	// pixel format attributes.
-	if (useContext_3_2)
-	{
-		attributes[8] = NSOpenGLPFAOpenGLProfile;
-		attributes[9] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core;
-	}
+	attributes[8] = NSOpenGLPFAOpenGLProfile;
+	attributes[9] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core;
 	
 	NSOpenGLPixelFormat *nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	if (nsPixelFormat == nil)
