@@ -78,13 +78,10 @@ static NSDictionary *hidUsageTable = nil;
     CFRelease(elementArray);
 	
 	// Set up force feedback.
-	if (IsOSXVersionSupported(10, 6, 0))
+	ioService = IOHIDDeviceGetService(hidDeviceRef);
+	if (ioService != MACH_PORT_NULL)
 	{
-		ioService = IOHIDDeviceGetService(hidDeviceRef);
-		if (ioService != MACH_PORT_NULL)
-		{
-			IOObjectRetain(ioService);
-		}
+		IOObjectRetain(ioService);
 	}
 	
 	ffDevice = NULL;
