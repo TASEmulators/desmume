@@ -271,10 +271,10 @@ static NSMutableDictionary *saveTypeValues = nil;
 	
 	fileURL = [theURL copy];
 	
-	NSString *advscDBPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Advanscene_DatabasePath"];
+	NSURL *advscDBPath = [[NSUserDefaults standardUserDefaults] URLForKey:@"Advanscene_DatabasePath"];
 	if (advscDBPath != nil)
 	{
-		NSXMLParser *advscDB = [[NSXMLParser alloc] initWithContentsOfURL:[NSURL fileURLWithPath:advscDBPath]];
+		NSXMLParser *advscDB = [[NSXMLParser alloc] initWithContentsOfURL:advscDBPath];
 		[advscDB setDelegate:self];
 		[advscDB parse];
 		[advscDB release];

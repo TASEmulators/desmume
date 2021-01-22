@@ -383,37 +383,28 @@
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSModalResponse result) {
-					  [self chooseRomForAutoloadDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-}
-
-- (void) chooseRomForAutoloadDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
-{
-	[sheet orderOut:self];
-	
-	// Temporarily set the autoload ROM option in user defaults to some neutral value first and synchronize.
-	// When the user defaults are actually set later, this will force the proper state transitions to occur.
-	[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_CHOOSE_ROM forKey:@"General_AutoloadROMOption"];
-	[[NSUserDefaults standardUserDefaults] synchronize];
-	
-	if (returnCode == NSCancelButton)
-	{
-		[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_NONE forKey:@"General_AutoloadROMOption"];
-		return;
-	}
-	
-	NSURL *selectedFileURL = [[sheet URLs] lastObject]; //hopefully also the first object
-	if(selectedFileURL == nil)
-	{
-		[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_NONE forKey:@"General_AutoloadROMOption"];
-		return;
-	}
-	
-	NSString *selectedFile = [selectedFileURL path];
-	
-	[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_SELECTED forKey:@"General_AutoloadROMOption"];
-	[[NSUserDefaults standardUserDefaults] setObject:selectedFile forKey:@"General_AutoloadROMSelectedPath"];
-	[bindings setValue:[selectedFile lastPathComponent] forKey:@"AutoloadRomName"];
+		// Temporarily set the autoload ROM option in user defaults to some neutral value first and synchronize.
+		// When the user defaults are actually set later, this will force the proper state transitions to occur.
+		[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_CHOOSE_ROM forKey:@"General_AutoloadROMOption"];
+		[[NSUserDefaults standardUserDefaults] synchronize];
+		
+		if (result == NSCancelButton)
+		{
+			[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_NONE forKey:@"General_AutoloadROMOption"];
+			return;
+		}
+		
+		NSURL *selectedFileURL = [[panel URLs] firstObject];
+		if(selectedFileURL == nil)
+		{
+			[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_NONE forKey:@"General_AutoloadROMOption"];
+			return;
+		}
+		
+		[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_SELECTED forKey:@"General_AutoloadROMOption"];
+		[[NSUserDefaults standardUserDefaults] setURL:selectedFileURL forKey:@"General_AutoloadROMSelectedPath"];
+		[bindings setValue:[selectedFileURL lastPathComponent] forKey:@"AutoloadRomName"];
+	} ];
 }
 
 - (IBAction) chooseAdvansceneDatabase:(id)sender
@@ -429,29 +420,20 @@
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
-					  [self chooseAdvansceneDatabaseDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-}
-
-- (void) chooseAdvansceneDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
-{
-	[sheet orderOut:self];
-	
-	if (returnCode == NSCancelButton)
-	{
-		return;
-	}
-	
-	NSURL *selectedFileURL = [[sheet URLs] lastObject]; //hopefully also the first object
-	if(selectedFileURL == nil)
-	{
-		return;
-	}
-	
-	NSString *selectedFile = [selectedFileURL path];
-	
-	[[NSUserDefaults standardUserDefaults] setObject:selectedFile forKey:@"Advanscene_DatabasePath"];
-	[bindings setValue:[selectedFile lastPathComponent] forKey:@"AdvansceneDatabaseName"];
+		if (result == NSCancelButton)
+		{
+			return;
+		}
+		
+		NSURL *selectedFileURL = [[panel URLs] firstObject];
+		if(selectedFileURL == nil)
+		{
+			return;
+		}
+		
+		[[NSUserDefaults standardUserDefaults] setURL:selectedFileURL forKey:@"Advanscene_DatabasePath"];
+		[bindings setValue:[selectedFileURL lastPathComponent] forKey:@"AdvansceneDatabaseName"];
+	} ];
 }
 
 - (IBAction) chooseCheatDatabase:(id)sender
@@ -464,90 +446,79 @@
 	[panel setTitle:NSSTRING_TITLE_SELECT_R4_CHEAT_DB_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_R4_CHEAT_DB, nil];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
-					  [self chooseCheatDatabaseDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-}
-
-- (void) chooseCheatDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
-{
-	[sheet orderOut:self];
-	
-	if (returnCode == NSCancelButton)
-	{
-		return;
-	}
-	
-	NSURL *selectedFileURL = [[sheet URLs] lastObject]; //hopefully also the first object
-	if(selectedFileURL == nil)
-	{
-		return;
-	}
-	
-	NSString *selectedFile = [selectedFileURL path];
-	
-	[[NSUserDefaults standardUserDefaults] setObject:selectedFile forKey:@"R4Cheat_DatabasePath"];
-	[bindings setValue:[selectedFile lastPathComponent] forKey:@"R4CheatDatabaseName"];
-	
-	const BOOL isRomLoaded = [(EmuControllerDelegate *)[emuController content] currentRom] != nil;
-	NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
-	CocoaDSCheatManager *cdsCheats = (CocoaDSCheatManager *)[cheatWindowBindings valueForKey:@"cheatList"];
-	
-	if (isRomLoaded == YES && cdsCheats != nil)
-	{
-		NSInteger error = 0;
-		NSMutableArray *dbList = [cdsCheats cheatListFromDatabase:selectedFileURL errorCode:&error];
-		if (dbList != nil)
+		if (result == NSCancelButton)
 		{
-			[cheatDatabaseController setContent:dbList];
-			
-			NSString *titleString = cdsCheats.dbTitle;
-			NSString *dateString = cdsCheats.dbDate;
-			
-			[cheatWindowBindings setValue:titleString forKey:@"cheatDBTitle"];
-			[cheatWindowBindings setValue:dateString forKey:@"cheatDBDate"];
-			[cheatWindowBindings setValue:[NSString stringWithFormat:@"%ld", (unsigned long)[dbList count]] forKey:@"cheatDBItemCount"];
+			return;
 		}
-		else
+		
+		NSURL *selectedFileURL = [[panel URLs] firstObject];
+		if(selectedFileURL == nil)
 		{
-			// TODO: Display an error message here.
-			[cheatWindowBindings setValue:@"---" forKey:@"cheatDBItemCount"];
-			
-			switch (error)
+			return;
+		}
+		
+		[[NSUserDefaults standardUserDefaults] setURL:selectedFileURL forKey:@"R4Cheat_DatabasePath"];
+		[bindings setValue:[selectedFileURL lastPathComponent] forKey:@"R4CheatDatabaseName"];
+		
+		const BOOL isRomLoaded = [(EmuControllerDelegate *)[emuController content] currentRom] != nil;
+		NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
+		CocoaDSCheatManager *cdsCheats = (CocoaDSCheatManager *)[cheatWindowBindings valueForKey:@"cheatList"];
+		
+		if (isRomLoaded == YES && cdsCheats != nil)
+		{
+			NSInteger error = 0;
+			NSMutableArray *dbList = [cdsCheats cheatListFromDatabase:selectedFileURL errorCode:&error];
+			if (dbList != nil)
 			{
-				case CHEATEXPORT_ERROR_FILE_NOT_FOUND:
-					NSLog(@"R4 Cheat Database read failed! Could not load the database file!");
-					[cheatWindowBindings setValue:@"Database not loaded." forKey:@"cheatDBTitle"];
-					[cheatWindowBindings setValue:@"CANNOT LOAD FILE" forKey:@"cheatDBDate"];
-					break;
-					
-				case CHEATEXPORT_ERROR_WRONG_FILE_FORMAT:
-					NSLog(@"R4 Cheat Database read failed! Wrong file format!");
-					[cheatWindowBindings setValue:@"Database load error." forKey:@"cheatDBTitle"];
-					[cheatWindowBindings setValue:@"FAILED TO LOAD FILE" forKey:@"cheatDBDate"];
-					break;
-					
-				case CHEATEXPORT_ERROR_SERIAL_NOT_FOUND:
-					NSLog(@"R4 Cheat Database read failed! Could not find the serial number for this game in the database!");
-					[cheatWindowBindings setValue:@"ROM not found in database." forKey:@"cheatDBTitle"];
-					[cheatWindowBindings setValue:@"ROM not found." forKey:@"cheatDBDate"];
-					break;
-					
-				case CHEATEXPORT_ERROR_EXPORT_FAILED:
-					NSLog(@"R4 Cheat Database read failed! Could not read the database file!");
-					[cheatWindowBindings setValue:@"Database read error." forKey:@"cheatDBTitle"];
-					[cheatWindowBindings setValue:@"CANNOT READ FILE" forKey:@"cheatDBDate"];
-					break;
-					
-				default:
-					break;
+				[cheatDatabaseController setContent:dbList];
+				
+				NSString *titleString = cdsCheats.dbTitle;
+				NSString *dateString = cdsCheats.dbDate;
+				
+				[cheatWindowBindings setValue:titleString forKey:@"cheatDBTitle"];
+				[cheatWindowBindings setValue:dateString forKey:@"cheatDBDate"];
+				[cheatWindowBindings setValue:[NSString stringWithFormat:@"%ld", (unsigned long)[dbList count]] forKey:@"cheatDBItemCount"];
+			}
+			else
+			{
+				// TODO: Display an error message here.
+				[cheatWindowBindings setValue:@"---" forKey:@"cheatDBItemCount"];
+				
+				switch (error)
+				{
+					case CHEATEXPORT_ERROR_FILE_NOT_FOUND:
+						NSLog(@"R4 Cheat Database read failed! Could not load the database file!");
+						[cheatWindowBindings setValue:@"Database not loaded." forKey:@"cheatDBTitle"];
+						[cheatWindowBindings setValue:@"CANNOT LOAD FILE" forKey:@"cheatDBDate"];
+						break;
+						
+					case CHEATEXPORT_ERROR_WRONG_FILE_FORMAT:
+						NSLog(@"R4 Cheat Database read failed! Wrong file format!");
+						[cheatWindowBindings setValue:@"Database load error." forKey:@"cheatDBTitle"];
+						[cheatWindowBindings setValue:@"FAILED TO LOAD FILE" forKey:@"cheatDBDate"];
+						break;
+						
+					case CHEATEXPORT_ERROR_SERIAL_NOT_FOUND:
+						NSLog(@"R4 Cheat Database read failed! Could not find the serial number for this game in the database!");
+						[cheatWindowBindings setValue:@"ROM not found in database." forKey:@"cheatDBTitle"];
+						[cheatWindowBindings setValue:@"ROM not found." forKey:@"cheatDBDate"];
+						break;
+						
+					case CHEATEXPORT_ERROR_EXPORT_FAILED:
+						NSLog(@"R4 Cheat Database read failed! Could not read the database file!");
+						[cheatWindowBindings setValue:@"Database read error." forKey:@"cheatDBTitle"];
+						[cheatWindowBindings setValue:@"CANNOT READ FILE" forKey:@"cheatDBDate"];
+						break;
+						
+					default:
+						break;
+				}
 			}
 		}
-	}
+	} ];
 }
 
 - (IBAction) selectDisplayRotation:(id)sender
@@ -663,13 +634,26 @@
 	[panel setTitle:NSSTRING_TITLE_SELECT_ARM9_IMAGE_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_HW_IMAGE_FILE, nil];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
-					  [self chooseArm9BiosImageDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
+		if (result == NSCancelButton)
+		{
+			return;
+		}
+		
+		NSURL *selectedFileURL = [[panel URLs] firstObject];
+		if(selectedFileURL == nil)
+		{
+			return;
+		}
+		
+		[[NSUserDefaults standardUserDefaults] setURL:selectedFileURL forKey:@"BIOS_ARM9ImagePath"];
+		[bindings setValue:[selectedFileURL lastPathComponent] forKey:@"Arm9BiosImageName"];
+		
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+		[cdsCore setArm9ImageURL:selectedFileURL];
+	} ];
 }
 
 - (IBAction) chooseARM7BiosImage:(id)sender
@@ -685,8 +669,23 @@
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
-					  [self chooseArm7BiosImageDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
+		if (result == NSCancelButton)
+		{
+			return;
+		}
+		
+		NSURL *selectedFileURL = [[panel URLs] firstObject];
+		if(selectedFileURL == nil)
+		{
+			return;
+		}
+		
+		[[NSUserDefaults standardUserDefaults] setURL:selectedFileURL forKey:@"BIOS_ARM7ImagePath"];
+		[bindings setValue:[selectedFileURL lastPathComponent] forKey:@"Arm7BiosImageName"];
+		
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+		[cdsCore setArm7ImageURL:selectedFileURL];
+	} ];
 }
 
 - (IBAction) chooseFirmwareImage:(id)sender
@@ -702,80 +701,23 @@
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
-					  [self chooseFirmwareImageDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-}
-
-- (void) chooseArm9BiosImageDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
-{
-	[sheet orderOut:self];
-	
-	if (returnCode == NSCancelButton)
-	{
-		return;
-	}
-	
-	NSURL *selectedFileURL = [[sheet URLs] lastObject]; //hopefully also the first object
-	if(selectedFileURL == nil)
-	{
-		return;
-	}
-	
-	NSString *selectedFile = [selectedFileURL path];
-	
-	[[NSUserDefaults standardUserDefaults] setObject:selectedFile forKey:@"BIOS_ARM9ImagePath"];
-	[bindings setValue:[selectedFile lastPathComponent] forKey:@"Arm9BiosImageName"];
-	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setArm9ImageURL:selectedFileURL];
-}
-
-- (void) chooseArm7BiosImageDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
-{
-	[sheet orderOut:self];
-	
-	if (returnCode == NSCancelButton)
-	{
-		return;
-	}
-	
-	NSURL *selectedFileURL = [[sheet URLs] lastObject]; //hopefully also the first object
-	if(selectedFileURL == nil)
-	{
-		return;
-	}
-	
-	NSString *selectedFile = [selectedFileURL path];
-	
-	[[NSUserDefaults standardUserDefaults] setObject:selectedFile forKey:@"BIOS_ARM7ImagePath"];
-	[bindings setValue:[selectedFile lastPathComponent] forKey:@"Arm7BiosImageName"];
-	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setArm7ImageURL:selectedFileURL];
-}
-
-- (void) chooseFirmwareImageDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
-{
-	[sheet orderOut:self];
-	
-	if (returnCode == NSCancelButton)
-	{
-		return;
-	}
-	
-	NSURL *selectedFileURL = [[sheet URLs] lastObject]; //hopefully also the first object
-	if(selectedFileURL == nil)
-	{
-		return;
-	}
-	
-	NSString *selectedFile = [selectedFileURL path];
-	
-	[[NSUserDefaults standardUserDefaults] setObject:selectedFile forKey:@"Emulation_FirmwareImagePath"];
-	[bindings setValue:[selectedFile lastPathComponent] forKey:@"FirmwareImageName"];
-	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setFirmwareImageURL:selectedFileURL];
+		if (result == NSCancelButton)
+		{
+			return;
+		}
+		
+		NSURL *selectedFileURL = [[panel URLs] firstObject];
+		if(selectedFileURL == nil)
+		{
+			return;
+		}
+		
+		[[NSUserDefaults standardUserDefaults] setURL:selectedFileURL forKey:@"Emulation_FirmwareImagePath"];
+		[bindings setValue:[selectedFileURL lastPathComponent] forKey:@"FirmwareImageName"];
+		
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+		[cdsCore setFirmwareImageURL:selectedFileURL];
+	} ];
 }
 
 - (IBAction) configureInternalFirmware:(id)sender
@@ -962,37 +904,37 @@
 	[[self previewView] setOutputFilter:outputFilterID];
 	
 	// Set up file paths.
-	NSString *arm7BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM7ImagePath"];
+	NSURL *arm7BiosImagePath = [[NSUserDefaults standardUserDefaults] URLForKey:@"BIOS_ARM7ImagePath"];
 	if (arm7BiosImagePath != nil)
 	{
 		[bindings setValue:[arm7BiosImagePath lastPathComponent] forKey:@"Arm7BiosImageName"];
 	}
 	
-	NSString *arm9BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM9ImagePath"];
+	NSURL *arm9BiosImagePath = [[NSUserDefaults standardUserDefaults] URLForKey:@"BIOS_ARM9ImagePath"];
 	if (arm9BiosImagePath != nil)
 	{
 		[bindings setValue:[arm9BiosImagePath lastPathComponent] forKey:@"Arm9BiosImageName"];
 	}
 	
-	NSString *firmwareImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Emulation_FirmwareImagePath"];
+	NSURL *firmwareImagePath = [[NSUserDefaults standardUserDefaults] URLForKey:@"Emulation_FirmwareImagePath"];
 	if (firmwareImagePath != nil)
 	{
 		[bindings setValue:[firmwareImagePath lastPathComponent] forKey:@"FirmwareImageName"];
 	}
 	
-	NSString *advansceneDatabasePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Advanscene_DatabasePath"];
+	NSURL *advansceneDatabasePath = [[NSUserDefaults standardUserDefaults] URLForKey:@"Advanscene_DatabasePath"];
 	if (advansceneDatabasePath != nil)
 	{
 		[bindings setValue:[advansceneDatabasePath lastPathComponent] forKey:@"AdvansceneDatabaseName"];
 	}
 	
-	NSString *cheatDatabasePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"R4Cheat_DatabasePath"];
+	NSURL *cheatDatabasePath = [[NSUserDefaults standardUserDefaults] URLForKey:@"R4Cheat_DatabasePath"];
 	if (cheatDatabasePath != nil)
 	{
 		[bindings setValue:[cheatDatabasePath lastPathComponent] forKey:@"R4CheatDatabaseName"];
 	}
 	
-	NSString *autoloadRomPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"General_AutoloadROMSelectedPath"];
+	NSURL *autoloadRomPath = [[NSUserDefaults standardUserDefaults] URLForKey:@"General_AutoloadROMSelectedPath"];
 	if (autoloadRomPath != nil)
 	{
 		[bindings setValue:[autoloadRomPath lastPathComponent] forKey:@"AutoloadRomName"];

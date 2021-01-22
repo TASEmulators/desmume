@@ -109,14 +109,11 @@
 #pragma mark -
 #pragma mark Compact Flash
 - (IBAction) chooseMPCFPath:(id)sender;
-- (void) chooseMPCFPathDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 
 #pragma mark -
 #pragma mark GBA Cartridge
 - (IBAction) chooseGbaCartridgePath:(id)sender;
-- (void) chooseGbaCartridgePathDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 - (IBAction) chooseGbaSRamPath:(id)sender;
-- (void) chooseGbaSRamPathDidEnd:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 - (IBAction) clearSRamPath:(id)sender;
 - (BOOL) isGbaSRamWithCartridge;
 

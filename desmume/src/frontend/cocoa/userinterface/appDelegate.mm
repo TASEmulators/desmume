@@ -311,11 +311,7 @@
 				
 			case ROMAUTOLOADOPTION_LOAD_SELECTED:
 			{
-				NSString *autoloadRomPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"General_AutoloadROMSelectedPath"];
-				if (autoloadRomPath != nil && [autoloadRomPath length] > 0)
-				{
-					autoloadRomURL = [NSURL fileURLWithPath:autoloadRomPath];
-				}
+				autoloadRomURL = [[NSUserDefaults standardUserDefaults] URLForKey:@"General_AutoloadROMSelectedPath"];
 				
 				break;
 			}
@@ -476,35 +472,14 @@
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	// Setup the ARM7 BIOS, ARM9 BIOS, and firmware image paths per user preferences.
-	NSString *arm7BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM7ImagePath"];
-	if (arm7BiosImagePath != nil)
-	{
-		[cdsCore setArm7ImageURL:[NSURL fileURLWithPath:arm7BiosImagePath]];
-	}
-	else
-	{
-		[cdsCore setArm7ImageURL:nil];
-	}
+	NSURL *arm7BiosImagePath = [[NSUserDefaults standardUserDefaults] URLForKey:@"BIOS_ARM7ImagePath"];
+	[cdsCore setArm7ImageURL:arm7BiosImagePath];
 	
-	NSString *arm9BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM9ImagePath"];
-	if (arm9BiosImagePath != nil)
-	{
-		[cdsCore setArm9ImageURL:[NSURL fileURLWithPath:arm9BiosImagePath]];
-	}
-	else
-	{
-		[cdsCore setArm9ImageURL:nil];
-	}
+	NSURL *arm9BiosImagePath = [[NSUserDefaults standardUserDefaults] URLForKey:@"BIOS_ARM9ImagePath"];
+	[cdsCore setArm9ImageURL:arm9BiosImagePath];
 	
-	NSString *firmwareImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Emulation_FirmwareImagePath"];
-	if (firmwareImagePath != nil)
-	{
-		[cdsCore setFirmwareImageURL:[NSURL fileURLWithPath:firmwareImagePath]];
-	}
-	else
-	{
-		[cdsCore setFirmwareImageURL:nil];
-	}
+	NSURL *firmwareImagePath = [[NSUserDefaults standardUserDefaults] URLForKey:@"Emulation_FirmwareImagePath"];
+	[cdsCore setFirmwareImageURL:firmwareImagePath];
 	
 	// Set the emulation flags.
 	[cdsCore setEmuFlagAdvancedBusLevelTiming:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_AdvancedBusLevelTiming"]];

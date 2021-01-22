@@ -418,8 +418,6 @@
 	[panel setTitle:NSSTRING_TITLE_OPEN_STATE_FILE_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_SAVE_STATE, nil];
 	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
 	[panel setAllowedFileTypes:fileTypes];
 	const NSInteger buttonClicked = [panel runModal];
 	
@@ -492,8 +490,6 @@
 	[panel setCanCreateDirectories:YES];
 	[panel setTitle:NSSTRING_TITLE_SAVE_STATE_FILE_PANEL];
 	
-	// The NSSavePanel method -(void)setRequiredFileType:
-	// is deprecated in Mac OS X v10.6.
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_SAVE_STATE, nil];
 	[panel setAllowedFileTypes:fileTypes];
 	
@@ -572,8 +568,6 @@
 	[panel setTitle:@"Load Replay"];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@"dsm", nil];
 	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
 	[panel setAllowedFileTypes:fileTypes];
 	const NSInteger buttonClicked = [panel runModal];
 	
@@ -598,8 +592,6 @@
 	[panel setCanCreateDirectories:YES];
 	[panel setTitle:@"Record Replay"];
 	
-	// The NSSavePanel method -(void)setRequiredFileType:
-	// is deprecated in Mac OS X v10.6.
 	NSArray *fileTypes = [NSArray arrayWithObjects:@"dsm", nil];
 	[panel setAllowedFileTypes:fileTypes];
 	
@@ -655,8 +647,6 @@
 	
 	[self pauseCore];
 	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
 	[panel setAllowedFileTypes:fileTypes];
 	const NSInteger buttonClicked = [panel runModal];
 	
@@ -1750,10 +1740,9 @@
 		[self setCdsCheats:newCheatList];
 		[cheatWindowBindings setValue:newCheatList forKey:@"cheatList"];
 		
-		NSString *filePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"R4Cheat_DatabasePath"];
-		if (filePath != nil)
+		NSURL *fileURL = [[NSUserDefaults standardUserDefaults] URLForKey:@"R4Cheat_DatabasePath"];
+		if (fileURL != nil)
 		{
-			NSURL *fileURL = [NSURL fileURLWithPath:filePath];
 			NSInteger error = 0;
 			NSMutableArray *dbList = [[self cdsCheats] cheatListFromDatabase:fileURL errorCode:&error];
 			if (dbList != nil)
