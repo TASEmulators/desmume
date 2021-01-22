@@ -372,7 +372,7 @@
 		[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_CHOOSE_ROM forKey:@"General_AutoloadROMOption"];
 		[[NSUserDefaults standardUserDefaults] synchronize];
 		
-		if (result == NSCancelButton)
+		if (result == NSModalResponseCancel)
 		{
 			[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_NONE forKey:@"General_AutoloadROMOption"];
 			return;
@@ -404,7 +404,7 @@
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
-		if (result == NSCancelButton)
+		if (result == NSModalResponseCancel)
 		{
 			return;
 		}
@@ -433,7 +433,7 @@
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
-		if (result == NSCancelButton)
+		if (result == NSModalResponseCancel)
 		{
 			return;
 		}
@@ -621,7 +621,7 @@
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
-		if (result == NSCancelButton)
+		if (result == NSModalResponseCancel)
 		{
 			return;
 		}
@@ -653,7 +653,7 @@
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
-		if (result == NSCancelButton)
+		if (result == NSModalResponseCancel)
 		{
 			return;
 		}
@@ -685,7 +685,7 @@
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
-		if (result == NSCancelButton)
+		if (result == NSModalResponseCancel)
 		{
 			return;
 		}

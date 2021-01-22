@@ -1086,10 +1086,10 @@
 		55D204A425B834600057EF7A /* en */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = en; path = translations/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		55D204A525B834600057EF7A /* en */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = en; path = translations/en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		55D204A625B834610057EF7A /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = translations/en.lproj/MainMenu.xib; sourceTree = "<group>"; };
-		55D204E425B986530057EF7A /* arm_jit.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = arm_jit.cpp; sourceTree = "<group>"; };
-		55D204E525B986530057EF7A /* arm_gen.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = arm_gen.h; sourceTree = "<group>"; };
-		55D204E625B986530057EF7A /* arm_gen.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = arm_gen.cpp; sourceTree = "<group>"; };
-		55D204E725B986530057EF7A /* reg_manager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = reg_manager.h; sourceTree = "<group>"; };
+		55D204E425B986530057EF7A /* arm_jit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = arm_jit.cpp; sourceTree = "<group>"; };
+		55D204E525B986530057EF7A /* arm_gen.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = arm_gen.h; sourceTree = "<group>"; };
+		55D204E625B986530057EF7A /* arm_gen.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = arm_gen.cpp; sourceTree = "<group>"; };
+		55D204E725B986530057EF7A /* reg_manager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = reg_manager.h; sourceTree = "<group>"; };
 		55D2064525B986690057EF7A /* DeSmuME (Debug, ARM64).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug, ARM64).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		55D2068D25B98A1E0057EF7A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -2285,9 +2285,9 @@
 		55D204E325B986530057EF7A /* arm_arm */ = {
 			isa = PBXGroup;
 			children = (
-				55D204E425B986530057EF7A /* arm_jit.cpp */,
-				55D204E525B986530057EF7A /* arm_gen.h */,
 				55D204E625B986530057EF7A /* arm_gen.cpp */,
+				55D204E525B986530057EF7A /* arm_gen.h */,
+				55D204E425B986530057EF7A /* arm_jit.cpp */,
 				55D204E725B986530057EF7A /* reg_manager.h */,
 			);
 			path = arm_arm;

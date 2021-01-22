@@ -91,7 +91,7 @@
 	
 	if ([CocoaDSCheatItem iconInternalCheat] == nil || [CocoaDSCheatItem iconActionReplay] == nil || [CocoaDSCheatItem iconCodeBreaker] == nil)
 	{
-		[CocoaDSCheatItem setIconInternalCheat:[NSImage imageNamed:@"NSApplicationIcon"]];
+		[CocoaDSCheatItem setIconInternalCheat:[NSImage imageNamed:NSImageNameApplicationIcon]];
 		[CocoaDSCheatItem setIconActionReplay:[NSImage imageNamed:@"Icon_ActionReplay_128x128"]];
 		[CocoaDSCheatItem setIconCodeBreaker:[NSImage imageNamed:@"Icon_CodeBreaker_128x128"]];
 	}
@@ -463,11 +463,11 @@
 	
 	switch (returnCode)
 	{
-		case NSCancelButton:
+		case NSModalResponseCancel:
 			return;
 			break;
 			
-		case NSOKButton:
+		case NSModalResponseOK:
 			[self addSelectedFromCheatDatabase];
 			break;
 			

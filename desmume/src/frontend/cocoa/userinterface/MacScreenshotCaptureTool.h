@@ -31,6 +31,4 @@
 
 @end
 
-static void* RunFileWriteThread(void *arg);
-
 #endif // _MAC_SCREENSHOTCAPTURETOOL_H_

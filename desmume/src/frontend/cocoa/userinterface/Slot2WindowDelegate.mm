@@ -365,7 +365,7 @@
 		[[NSUserDefaults standardUserDefaults] setInteger:mpcfOptionTag forKey:@"Slot2_MPCF_PathOption"];
 		[[NSUserDefaults standardUserDefaults] synchronize];
 		
-		if (result == NSCancelButton)
+		if (result == NSModalResponseCancel)
 		{
 			[[NSUserDefaults standardUserDefaults] setInteger:prevMpcfOption forKey:@"Slot2_MPCF_PathOption"];
 			return;
@@ -479,7 +479,7 @@
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSInteger result) {
-		if (result == NSCancelButton)
+		if (result == NSModalResponseCancel)
 		{
 			return;
 		}
@@ -519,7 +519,7 @@
 	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:window
 				  completionHandler:^(NSModalResponse result) {
-		if (result == NSCancelButton)
+		if (result == NSModalResponseCancel)
 		{
 			return;
 		}

@@ -463,7 +463,7 @@
 	[panel setAllowedFileTypes:fileTypes];
 	
 	const NSInteger buttonClicked = [panel runModal];
-	if(buttonClicked == NSOKButton)
+	if(buttonClicked == NSModalResponseOK)
 	{
 		NSURL *saveFileURL = [panel URL];
 		
@@ -643,7 +643,7 @@
 	[self pauseCore];
 	
 	const NSInteger buttonClicked = [panel runModal];
-	if(buttonClicked == NSOKButton)
+	if(buttonClicked == NSModalResponseOK)
 	{
 		NSURL *romSaveURL = [CocoaDSFile fileURLFromRomURL:[[self currentRom] fileURL] toKind:@"ROM Save"];
 		if (romSaveURL != nil)
@@ -2027,7 +2027,7 @@
 	
 	switch (returnCode)
 	{
-		case NSOKButton:
+		case NSModalResponseOK:
 			[CocoaDSFile moveFileToCurrentDirectory:romSaveURL];
 			break;
 			
@@ -2046,7 +2046,7 @@
 	
 	switch (returnCode)
 	{
-		case NSCancelButton: // Cancel
+		case NSModalResponseCancel: // Cancel
 			[self restoreCoreState];
 			[self setIsUserInterfaceBlockingExecution:NO];
 			[self setIsShowingSaveStateDialog:NO];
@@ -2089,7 +2089,7 @@
 {
 	[self didEndSaveStateSheet:sheet returnCode:returnCode contextInfo:contextInfo];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == NSModalResponseCancel)
 	{
 		[NSApp replyToApplicationShouldTerminate:NO];
 	}
@@ -2106,7 +2106,7 @@
 {
 	[sheet orderOut:self];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == NSModalResponseCancel)
 	{
 		return;
 	}
@@ -2134,7 +2134,7 @@
 			[self reset:self];
 			break;
 			
-		case NSCancelButton: // Stop
+		case NSModalResponseCancel: // Stop
 		default:
 			break;
 	}

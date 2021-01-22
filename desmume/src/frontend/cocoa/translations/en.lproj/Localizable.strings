@@ -76,7 +76,7 @@
 
 /* ROM Info Panel */
 "No ROM loaded." = "No ROM loaded.";
-"%i bytes" = "%i bytes";
+"%li bytes" = "%li bytes";
 
 /* Display Mode Strings */
 "Main" = "Main";

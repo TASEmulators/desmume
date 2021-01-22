@@ -151,7 +151,11 @@
 	NSDictionary *prefsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultUserPrefs" ofType:@"plist"]];
 	if (prefsDict == nil)
 	{
-		[[NSAlert alertWithMessageText:NSSTRING_ALERT_CRITICAL_FILE_MISSING_PRI defaultButton:nil alternateButton:nil otherButton:nil informativeTextWithFormat:NSSTRING_ALERT_CRITICAL_FILE_MISSING_SEC] runModal];
+		NSAlert *alert = [[NSAlert alloc] init];
+		alert.messageText = NSSTRING_ALERT_CRITICAL_FILE_MISSING_PRI;
+		alert.informativeText = NSSTRING_ALERT_CRITICAL_FILE_MISSING_SEC;
+		[alert runModal];
+		[alert release];
 		[NSApp terminate:nil];
 		return;
 	}

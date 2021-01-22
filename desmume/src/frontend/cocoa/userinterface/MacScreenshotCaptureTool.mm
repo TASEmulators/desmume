@@ -27,6 +27,8 @@
 #include "MacMetalDisplayView.h"
 #endif
 
+static void* RunFileWriteThread(void *arg);
+
 @implementation MacScreenshotCaptureToolDelegate
 
 - (id)init

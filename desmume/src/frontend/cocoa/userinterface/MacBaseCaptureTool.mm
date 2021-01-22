@@ -83,7 +83,7 @@
 	
 	[panel beginSheetModalForWindow:[self window]
 				  completionHandler:^(NSInteger result) {
-		if (result == NSCancelButton)
+		if (result == NSModalResponseCancel)
 		{
 			return;
 		}
