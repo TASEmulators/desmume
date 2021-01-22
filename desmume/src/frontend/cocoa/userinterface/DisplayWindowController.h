@@ -51,7 +51,7 @@ class OGLVideoOutput;
 
 @end
 
-@interface DisplayWindowController : NSWindowController <NSWindowDelegate>
+@interface DisplayWindowController : NSWindowController <NSWindowDelegate, NSToolbarItemValidation>
 {
 	NSObject *dummyObject;
 	
