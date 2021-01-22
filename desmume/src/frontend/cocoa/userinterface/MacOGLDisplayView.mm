@@ -103,7 +103,7 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 	// [NSOpenGLContext CGLContextObj] is available on macOS 10.5 Leopard, but
 	// [NSOpenGLContext initWithCGLContextObj:] is only available on macOS 10.6
 	// Snow Leopard.
-	bool useContext_3_2 = false;
+	bool useContext_3_2 = true;
 	NSOpenGLPixelFormatAttribute attributes[] = {
 		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
 		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
@@ -113,16 +113,13 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 		(NSOpenGLPixelFormatAttribute)0
 	};
 	
-#ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	// If we can support a 3.2 Core Profile context, then request that in our
 	// pixel format attributes.
-	useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
 	if (useContext_3_2)
 	{
 		attributes[8] = NSOpenGLPFAOpenGLProfile;
 		attributes[9] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core;
 	}
-#endif
 	
 	NSOpenGLPixelFormat *nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	if (nsPixelFormat == nil)
@@ -141,13 +138,11 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(_context);
 	
-#ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	if (useContext_3_2)
 	{
 		_contextInfo = new OGLContextInfo_3_2;
 	}
 	else
-#endif
 	{
 		_contextInfo = new OGLContextInfo_Legacy;
 	}

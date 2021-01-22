@@ -52,7 +52,7 @@
 	isPreviewImageLoaded = false;
 		
 	// Initialize the OpenGL context
-	bool useContext_3_2 = false;
+	bool useContext_3_2 = true;
 	NSOpenGLPixelFormatAttribute attributes[] = {
 		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
 		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,

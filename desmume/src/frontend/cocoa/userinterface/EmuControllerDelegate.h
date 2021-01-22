@@ -39,7 +39,7 @@ class AudioSampleBlockGenerator;
 {
 	InputManager *inputManager;
 	
-	__unsafe_unretained CocoaDSRom *currentRom;
+	CocoaDSRom *currentRom;
 	CocoaDSFirmware *cdsFirmware;
 	CocoaDSSpeaker *cdsSpeaker;
 	CocoaDSCheatManager *cdsCheats;
@@ -126,7 +126,7 @@ class AudioSampleBlockGenerator;
 
 @property (readonly) IBOutlet InputManager *inputManager;
 
-@property (assign) CocoaDSRom *currentRom; // Don't rely on autorelease since the emulator doesn't support concurrent unloading
+@property (strong) CocoaDSRom *currentRom; // Don't rely on autorelease since the emulator doesn't support concurrent unloading
 @property (retain) CocoaDSFirmware *cdsFirmware;
 @property (retain) CocoaDSSpeaker *cdsSpeaker;
 @property (retain) CocoaDSCheatManager *cdsCheats;

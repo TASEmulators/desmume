@@ -225,8 +225,6 @@ public:
 	
 	delete fetchObject;
 	delete gpuEvent;
-	
-	
 }
 
 - (GPUClientFetchObject *) fetchObject
@@ -1197,12 +1195,12 @@ public:
 		pthread_rwlock_wrlock(currentRWLock);
 	}
 	
+	_cdsOutputList = nil;
 	
 	if (currentRWLock != NULL)
 	{
 		pthread_rwlock_unlock(currentRWLock);
 	}
-	
 }
 
 - (void) semaphoreFramebufferCreate
@@ -1830,7 +1828,7 @@ bool OSXOpenGLRendererFramebufferDidResize(const bool isFBOSupported, size_t w, 
 bool CreateOpenGLRenderer()
 {
 	bool result = false;
-	bool useContext_3_2 = false;
+	bool useContext_3_2 = true;
 	CGLPixelFormatObj cglPixFormat = NULL;
 	CGLContextObj newContext = NULL;
 	GLint virtualScreenCount = 0;
