@@ -106,9 +106,7 @@ volatile bool execute = true;
 	int initResult = NDS_Init();
 	if (initResult == -1)
 	{
-		[self release];
-		self = nil;
-		return self;
+		return nil;
 	}
 	
 	execControl = new ClientExecutionControl;
@@ -117,9 +115,9 @@ volatile bool execute = true;
 	_isTimerAtSecond = NO;
 	
 	cdsFirmware = nil;
-	cdsGPU = [[[[CocoaDSGPU alloc] init] autorelease] retain];
-	cdsController = [[[[CocoaDSController alloc] init] autorelease] retain];
-	cdsOutputList = [[[[NSMutableArray alloc] initWithCapacity:32] autorelease] retain];
+	cdsGPU = [[CocoaDSGPU alloc] init];
+	cdsController = [[CocoaDSController alloc] init];
+	cdsOutputList = [[NSMutableArray alloc] initWithCapacity:32];
 	
 	ClientInputHandler *inputHandler = [cdsController inputHandler];
 	inputHandler->SetClientExecutionController(execControl);
@@ -210,8 +208,6 @@ volatile bool execute = true;
 	
 	delete execControl;
 	NDS_DeInit();
-	
-	[super dealloc];
 }
 
 - (void) setMasterExecute:(BOOL)theState
@@ -249,13 +245,7 @@ volatile bool execute = true;
 		return;
 	}
 	
-	if (theController != nil)
-	{
-		[theController retain];
-	}
-	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	[cdsController release];
 	cdsController = theController;
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	

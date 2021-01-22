@@ -56,21 +56,20 @@ static NSDictionary *hidUsageTable = nil;
 		hidUsageTable = [[NSDictionary alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"HID_usage_strings" ofType:@"plist"]];
 	}
 	
-	hidManager = [theHIDManager retain];
+	hidManager = theHIDManager;
 	hidDeviceRef = theDevice;
 	
 	hidQueueRef = IOHIDQueueCreate(kCFAllocatorDefault, hidDeviceRef, 10, kIOHIDOptionsTypeNone);
 	if (hidQueueRef == NULL)
 	{
-		[self release];
 		return nil;
 	}
 	
 	CFArrayRef elementArray = IOHIDDeviceCopyMatchingElements(hidDeviceRef, NULL, kIOHIDOptionsTypeNone);
-	NSEnumerator *enumerator = [(NSArray *)elementArray objectEnumerator];
+	NSEnumerator *enumerator = [(__bridge NSArray *)elementArray objectEnumerator];
 	IOHIDElementRef hidElement = NULL;
 	
-	while ((hidElement = (IOHIDElementRef)[enumerator nextObject]))
+	while ((hidElement = (__bridge IOHIDElementRef)[enumerator nextObject]))
 	{
 		IOHIDQueueAddElement(hidQueueRef, hidElement);
 	}
@@ -142,15 +141,14 @@ static NSDictionary *hidUsageTable = nil;
 	
 	if (cfDeviceSerial != nil)
 	{
-		identifier = [NSString stringWithFormat:@"%d/%d/%@", [(NSNumber *)cfVendorIDNumber intValue], [(NSNumber *)cfProductIDNumber intValue], cfDeviceSerial];
+		identifier = [NSString stringWithFormat:@"%d/%d/%@", [(__bridge NSNumber *)cfVendorIDNumber intValue], [(__bridge NSNumber *)cfProductIDNumber intValue], cfDeviceSerial];
 	}
 	else
 	{
 		CFNumberRef cfLocationIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDLocationIDKey));
-		identifier = [NSString stringWithFormat:@"%d/%d/0x%08X", [(NSNumber *)cfVendorIDNumber intValue], [(NSNumber *)cfProductIDNumber intValue], [(NSNumber *)cfLocationIDNumber intValue]];
+		identifier = [NSString stringWithFormat:@"%d/%d/0x%08X", [(__bridge NSNumber *)cfVendorIDNumber intValue], [(__bridge NSNumber *)cfProductIDNumber intValue], [(__bridge NSNumber *)cfLocationIDNumber intValue]];
 	}
 	
-	[identifier retain];
 	
 	spinlockRunLoop = OS_SPINLOCK_INIT;
 	[self setRunLoop:[NSRunLoop currentRunLoop]];
@@ -163,7 +161,6 @@ static NSDictionary *hidUsageTable = nil;
 	[self stopForceFeedback];
 	[self stop];
 	[self setRunLoop:nil];
-	[self setHidManager:nil];
 	
 	if (hidQueueRef != NULL)
 	{
@@ -184,9 +181,7 @@ static NSDictionary *hidUsageTable = nil;
 		ioService = MACH_PORT_NULL;
 	}
 	
-	[identifier release];
 	
-	[super dealloc];
 }
 
 - (NSString *) manufacturerName
@@ -257,12 +252,10 @@ static NSDictionary *hidUsageTable = nil;
 	}
 	else
 	{
-		[theRunLoop retain];
-		IOHIDQueueRegisterValueAvailableCallback(hidQueueRef, HandleQueueValueAvailableCallback, self);
+		IOHIDQueueRegisterValueAvailableCallback(hidQueueRef, HandleQueueValueAvailableCallback, (__bridge void*)self);
 		IOHIDQueueScheduleWithRunLoop(hidQueueRef, [theRunLoop getCFRunLoop], kCFRunLoopDefaultMode);
 	}
 	
-	[runLoop release];
 	runLoop = theRunLoop;
 	
 	OSSpinLockUnlock(&spinlockRunLoop);
@@ -736,16 +729,16 @@ size_t ClearHIDQueue(const IOHIDQueueRef hidQueue)
 
 void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void *inSender)
 {
-	InputHIDDevice *hidDevice = (InputHIDDevice *)inContext;
+	InputHIDDevice *hidDevice = (__bridge InputHIDDevice *)inContext;
 	InputHIDManager *hidManager = [hidDevice hidManager];
 	IOHIDQueueRef hidQueue = (IOHIDQueueRef)inSender;
 	id<InputHIDManagerTarget> target = [hidManager target];
 	
 	if (target != nil)
 	{
-		NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
+		@autoreleasepool {
 		[[hidManager target] handleHIDQueue:hidQueue hidManager:hidManager];
-		[tempPool release];
+		}
 	}
 	else
 	{
@@ -773,12 +766,11 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	
 	target = nil;
 	deviceListController = nil;
-	inputManager = [theInputManager retain];
+	inputManager = theInputManager;
 	
 	hidManagerRef = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
 	if (hidManagerRef == NULL)
 	{
-		[self release];
 		return nil;
 	}
 		
@@ -794,21 +786,16 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	CFDictionarySetValue(cfGenericControllerMatcher, CFSTR(kIOHIDDeviceUsagePageKey), (CFNumberRef)[NSNumber numberWithInteger:kHIDPage_GenericDesktop]);
 	CFDictionarySetValue(cfGenericControllerMatcher, CFSTR(kIOHIDDeviceUsageKey), (CFNumberRef)[NSNumber numberWithInteger:kHIDUsage_GD_MultiAxisController]);
 	
-	NSArray *matcherArray = [[NSArray alloc] initWithObjects:(NSMutableDictionary *)cfJoystickMatcher, (NSMutableDictionary *)cfGamepadMatcher, (NSMutableDictionary *)cfGenericControllerMatcher, nil];
+	NSArray *matcherArray = [[NSArray alloc] initWithObjects:(NSMutableDictionary *)CFBridgingRelease(cfJoystickMatcher), (NSMutableDictionary *)CFBridgingRelease(cfGamepadMatcher), (NSMutableDictionary *)CFBridgingRelease(cfGenericControllerMatcher), nil];
 	
 	IOHIDManagerSetDeviceMatchingMultiple(hidManagerRef, (CFArrayRef)matcherArray);
 	
-	[matcherArray release];
-	CFRelease(cfJoystickMatcher);
-	CFRelease(cfGamepadMatcher);
-	CFRelease(cfGenericControllerMatcher);
 	
 	spinlockRunLoop = OS_SPINLOCK_INIT;
 	
 	IOReturn result = IOHIDManagerOpen(hidManagerRef, kIOHIDOptionsTypeNone);
 	if (result != kIOReturnSuccess)
 	{
-		[self release];
 		return nil;
 	}
 	
@@ -818,8 +805,6 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 - (void)dealloc
 {
 	[self setRunLoop:nil];
-	[self setDeviceListController:nil];
-	[self setInputManager:nil];
 	[self setTarget:nil];
 		
 	if (hidManagerRef != NULL)
@@ -829,7 +814,6 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 		hidManagerRef = NULL;
 	}
 	
-	[super dealloc];
 }
 
 - (void) setRunLoop:(NSRunLoop *)theRunLoop
@@ -850,13 +834,11 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	}
 	else
 	{
-		[theRunLoop retain];
 		IOHIDManagerScheduleWithRunLoop(hidManagerRef, [theRunLoop getCFRunLoop], kCFRunLoopDefaultMode);
-		IOHIDManagerRegisterDeviceMatchingCallback(hidManagerRef, HandleDeviceMatchingCallback, self);
-		IOHIDManagerRegisterDeviceRemovalCallback(hidManagerRef, HandleDeviceRemovalCallback, self);
+		IOHIDManagerRegisterDeviceMatchingCallback(hidManagerRef, HandleDeviceMatchingCallback, (__bridge void*)self);
+		IOHIDManagerRegisterDeviceRemovalCallback(hidManagerRef, HandleDeviceRemovalCallback, (__bridge void*)self);
 	}
 	
-	[runLoop release];
 	runLoop = theRunLoop;
 	
 	OSSpinLockUnlock(&spinlockRunLoop);
@@ -875,8 +857,8 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 
 void HandleDeviceMatchingCallback(void *inContext, IOReturn inResult, void *inSender, IOHIDDeviceRef inIOHIDDeviceRef)
 {
-	InputHIDManager *hidManager = (InputHIDManager *)inContext;
-	InputHIDDevice *newDevice = [[[InputHIDDevice alloc] initWithDevice:inIOHIDDeviceRef hidManager:hidManager] autorelease];
+	InputHIDManager *hidManager = (__bridge InputHIDManager *)inContext;
+	InputHIDDevice *newDevice = [[InputHIDDevice alloc] initWithDevice:inIOHIDDeviceRef hidManager:hidManager];
 	[[hidManager deviceListController] addObject:newDevice];
 	
 	NSDictionary *savedInputDeviceDict = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_SavedDeviceProperties"];
@@ -896,7 +878,7 @@ void HandleDeviceMatchingCallback(void *inContext, IOReturn inResult, void *inSe
 
 void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSender, IOHIDDeviceRef inIOHIDDeviceRef)
 {
-	InputHIDManager *hidManager = (InputHIDManager *)inContext;
+	InputHIDManager *hidManager = (__bridge InputHIDManager *)inContext;
 	NSArray *hidDeviceList = [[hidManager deviceListController] arrangedObjects];
 	
 	for (InputHIDDevice *hidDevice in hidDeviceList)
@@ -1143,14 +1125,9 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 
 - (void)dealloc
 {	
-	[hidManager release];
-	[inputMappings release];
-	[commandTagList release];
-	[commandIcon release];
 	
 	delete inputEncoder;
 	
-	[super dealloc];
 }
 
 #pragma mark Dynamic Properties
@@ -1417,7 +1394,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	for (size_t i = 0; i < cmdCount; i++)
 	{
 		const ClientCommandAttributes &cmdAttr = (*cmdList)[i];
-		cmdAttr.dispatchFunction(cmdAttr, emuControl);
+		cmdAttr.dispatchFunction(cmdAttr, (__bridge void*)emuControl);
 	}
 }
 
@@ -1444,7 +1421,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	cmdAttr.input = *inputProperty;
 	
 	// Call this command's dispatch function.
-	cmdAttr.dispatchFunction(cmdAttr, emuControl);
+	cmdAttr.dispatchFunction(cmdAttr, (__bridge void*)emuControl);
 	
 	didCommandDispatch = YES;
 	return didCommandDispatch;
@@ -1702,7 +1679,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	}
 	
 	ExtAudioFileRef audioFile;
-	error = ExtAudioFileOpenURL((CFURLRef)fileURL, &audioFile);
+	error = ExtAudioFileOpenURL((__bridge CFURLRef)fileURL, &audioFile);
 	if (error != noErr)
 	{
 		return error;
@@ -1962,10 +1939,10 @@ void UpdateCommandAttributesWithDeviceInfoDictionary(ClientCommandAttributes *cm
 	if (useInputForObject != nil)		cmdAttr->useInputForObject = [useInputForObject boolValue];
 	if (isInputAnalog != nil)			cmdAttr->allowAnalogInput = [isInputAnalog boolValue];
 	
-	cmdAttr->object[0] = object0;
-	cmdAttr->object[1] = object1;
-	cmdAttr->object[2] = object2;
-	cmdAttr->object[3] = object3;
+	cmdAttr->object[0] = (__bridge void*)object0;
+	cmdAttr->object[1] = (__bridge void*)object1;
+	cmdAttr->object[2] = (__bridge void*)object2;
+	cmdAttr->object[3] = (__bridge void*)object3;
 }
 
 NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const ClientCommandAttributes *cmdAttr,
@@ -2008,155 +1985,155 @@ NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const ClientComma
 										  nil];
 	
 	// Set the object references last since these could be nil.
-	[newDeviceInfo setValue:(id)cmdAttr->object[0] forKey:@"object0"];
-	[newDeviceInfo setValue:(id)cmdAttr->object[1] forKey:@"object1"];
-	[newDeviceInfo setValue:(id)cmdAttr->object[2] forKey:@"object2"];
-	[newDeviceInfo setValue:(id)cmdAttr->object[3] forKey:@"object3"];
+	[newDeviceInfo setValue:(__bridge id)cmdAttr->object[0] forKey:@"object0"];
+	[newDeviceInfo setValue:(__bridge id)cmdAttr->object[1] forKey:@"object1"];
+	[newDeviceInfo setValue:(__bridge id)cmdAttr->object[2] forKey:@"object2"];
+	[newDeviceInfo setValue:(__bridge id)cmdAttr->object[3] forKey:@"object3"];
 	
 	return newDeviceInfo;
 }
 
 void ClientCommandUpdateDSController(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdUpdateDSController:cmdAttr];
 }
 
 void ClientCommandUpdateDSControllerWithTurbo(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdUpdateDSControllerWithTurbo:cmdAttr];
 }
 
 void ClientCommandUpdateDSTouch(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdUpdateDSTouch:cmdAttr];
 }
 
 void ClientCommandUpdateDSMicrophone(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdUpdateDSMicrophone:cmdAttr];
 }
 
 void ClientCommandUpdateDSPaddle(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdUpdateDSPaddle:cmdAttr];
 }
 
 void ClientCommandAutoholdSet(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdAutoholdSet:cmdAttr];
 }
 
 void ClientCommandAutoholdClear(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdAutoholdClear:cmdAttr];
 }
 
 void ClientCommandLoadEmuSaveStateSlot(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdLoadEmuSaveStateSlot:cmdAttr];
 }
 
 void ClientCommandSaveEmuSaveStateSlot(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdSaveEmuSaveStateSlot:cmdAttr];
 }
 
 void ClientCommandCopyScreen(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdCopyScreen:cmdAttr];
 }
 
 void ClientCommandRotateDisplayRelative(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdRotateDisplayRelative:cmdAttr];
 }
 
 void ClientCommandToggleAllDisplays(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdToggleAllDisplays:cmdAttr];
 }
 
 void ClientCommandHoldToggleSpeedScalar(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdHoldToggleSpeedScalar:cmdAttr];
 }
 
 void ClientCommandToggleSpeedLimiter(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdToggleSpeedLimiter:cmdAttr];
 }
 
 void ClientCommandToggleAutoFrameSkip(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdToggleAutoFrameSkip:cmdAttr];
 }
 
 void ClientCommandToggleCheats(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdToggleCheats:cmdAttr];
 }
 
 void ClientCommandToggleExecutePause(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdToggleExecutePause:cmdAttr];
 }
 
 void ClientCommandCoreExecute(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdCoreExecute:cmdAttr];
 }
 
 void ClientCommandCorePause(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdCorePause:cmdAttr];
 }
 
 void ClientCommandFrameAdvance(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdFrameAdvance:cmdAttr];
 }
 
 void ClientCommandFrameJump(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdFrameJump:cmdAttr];
 }
 
 void ClientCommandReset(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdReset:cmdAttr];
 }
 
 void ClientCommandToggleMute(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdToggleMute:cmdAttr];
 }
 
 void ClientCommandToggleGPUState(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	EmuControllerDelegate *emuControl = (__bridge EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdToggleGPUState:cmdAttr];
 }
 
@@ -2247,7 +2224,7 @@ ClientInputDeviceProperties MacInputDevicePropertiesEncoder::EncodeIBAction(cons
 	inputProperty.floatCoordX	= 0.0f;
 	inputProperty.floatCoordY	= 0.0f;
 	inputProperty.scalar		= 1.0f;
-	inputProperty.object		= sender;
+	inputProperty.object		= (__bridge void*)sender;
 	
 	return inputProperty;
 }

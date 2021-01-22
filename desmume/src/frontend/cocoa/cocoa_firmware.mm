@@ -117,37 +117,27 @@
 	_appliedFWConfig = (FirmwareConfig *)malloc(sizeof(FirmwareConfig));
 	_birth_year = 1970;
 	
-	firmwareMACAddressString = [[NSString stringWithCString:_fwConfigInterface->GetMACAddressString(FirmwareCfgMACAddrSetID_Firmware) encoding:NSUTF8StringEncoding] retain];
-	firmwareMACAddressPendingString = [[firmwareMACAddressString copy] retain];
-	customMACAddress1String  = [[NSString stringWithCString:_fwConfigInterface->GetMACAddressString(FirmwareCfgMACAddrSetID_Custom1)  encoding:NSUTF8StringEncoding] retain];
-	customMACAddress2String  = [[NSString stringWithCString:_fwConfigInterface->GetMACAddressString(FirmwareCfgMACAddrSetID_Custom2)  encoding:NSUTF8StringEncoding] retain];
-	customMACAddress3String  = [[NSString stringWithCString:_fwConfigInterface->GetMACAddressString(FirmwareCfgMACAddrSetID_Custom3)  encoding:NSUTF8StringEncoding] retain];
-	customMACAddress4String  = [[NSString stringWithCString:_fwConfigInterface->GetMACAddressString(FirmwareCfgMACAddrSetID_Custom4)  encoding:NSUTF8StringEncoding] retain];
+	firmwareMACAddressString = [NSString stringWithCString:_fwConfigInterface->GetMACAddressString(FirmwareCfgMACAddrSetID_Firmware) encoding:NSUTF8StringEncoding];
+	firmwareMACAddressPendingString = [firmwareMACAddressString copy];
+	customMACAddress1String  = [NSString stringWithCString:_fwConfigInterface->GetMACAddressString(FirmwareCfgMACAddrSetID_Custom1)  encoding:NSUTF8StringEncoding];
+	customMACAddress2String  = [NSString stringWithCString:_fwConfigInterface->GetMACAddressString(FirmwareCfgMACAddrSetID_Custom2)  encoding:NSUTF8StringEncoding];
+	customMACAddress3String  = [NSString stringWithCString:_fwConfigInterface->GetMACAddressString(FirmwareCfgMACAddrSetID_Custom3)  encoding:NSUTF8StringEncoding];
+	customMACAddress4String  = [NSString stringWithCString:_fwConfigInterface->GetMACAddressString(FirmwareCfgMACAddrSetID_Custom4)  encoding:NSUTF8StringEncoding];
 	
-	subnetMaskString_AP1 = [[NSString stringWithCString:_fwConfigInterface->GetSubnetMaskString(FirmwareCfgAPID_AP1)  encoding:NSUTF8StringEncoding] retain];
-	subnetMaskString_AP2 = [[NSString stringWithCString:_fwConfigInterface->GetSubnetMaskString(FirmwareCfgAPID_AP2)  encoding:NSUTF8StringEncoding] retain];
-	subnetMaskString_AP3 = [[NSString stringWithCString:_fwConfigInterface->GetSubnetMaskString(FirmwareCfgAPID_AP3)  encoding:NSUTF8StringEncoding] retain];
+	subnetMaskString_AP1 = [NSString stringWithCString:_fwConfigInterface->GetSubnetMaskString(FirmwareCfgAPID_AP1)  encoding:NSUTF8StringEncoding];
+	subnetMaskString_AP2 = [NSString stringWithCString:_fwConfigInterface->GetSubnetMaskString(FirmwareCfgAPID_AP2)  encoding:NSUTF8StringEncoding];
+	subnetMaskString_AP3 = [NSString stringWithCString:_fwConfigInterface->GetSubnetMaskString(FirmwareCfgAPID_AP3)  encoding:NSUTF8StringEncoding];
 	
 	return self;
 }
 
 - (void)dealloc
 {
-	[self setFirmwareMACAddressString:nil];
-	[self setFirmwareMACAddressPendingString:nil];
-	[self setCustomMACAddress1String:nil];
-	[self setCustomMACAddress2String:nil];
-	[self setCustomMACAddress3String:nil];
-	[self setCustomMACAddress4String:nil];
 	
-	[self setSubnetMaskString_AP1:nil];
-	[self setSubnetMaskString_AP2:nil];
-	[self setSubnetMaskString_AP3:nil];
 	
 	delete _fwConfigInterface;
 	free(_appliedFWConfig);
 	
-	[super dealloc];
 }
 
 - (void) writeUserDefaultWFCUserID
@@ -794,7 +784,7 @@
 
 - (NSString *) nickname
 {
-	return [[[NSString alloc] initWithBytes:_fwConfigInterface->GetNicknameStringBuffer() length:(sizeof(uint16_t) * _fwConfigInterface->GetNicknameStringLength()) encoding:NSUTF16LittleEndianStringEncoding] autorelease];
+	return [[NSString alloc] initWithBytes:_fwConfigInterface->GetNicknameStringBuffer() length:(sizeof(uint16_t) * _fwConfigInterface->GetNicknameStringLength()) encoding:NSUTF16LittleEndianStringEncoding];
 }
 
 - (void) setMessage:(NSString *)theMessage
@@ -826,7 +816,7 @@
 
 - (NSString *) message
 {
-	return [[[NSString alloc] initWithBytes:_fwConfigInterface->GetMessageStringBuffer() length:(sizeof(uint16_t) * _fwConfigInterface->GetMessageStringLength()) encoding:NSUTF16LittleEndianStringEncoding] autorelease];
+	return [[NSString alloc] initWithBytes:_fwConfigInterface->GetMessageStringBuffer() length:(sizeof(uint16_t) * _fwConfigInterface->GetMessageStringLength()) encoding:NSUTF16LittleEndianStringEncoding];
 }
 
 - (void) setFavoriteColor:(NSInteger)colorID
@@ -854,7 +844,6 @@
 		[dateFormatter setDateFormat:@"Y"];
 		NSInteger theYear = [[dateFormatter stringFromDate:theDate] integerValue];
 		
-		[dateFormatter release];
 		
 		_fwConfigInterface->SetBirthdayMonth((uint8_t)theMonth);
 		_fwConfigInterface->SetBirthdayDay((uint8_t)theDay);

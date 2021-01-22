@@ -90,8 +90,8 @@ class OGLVideoOutput;
 @property (readonly) IBOutlet NSButton *microphoneMuteButton;
 
 @property (retain) NSView<CocoaDisplayViewProtocol> *view;
-@property (retain) EmuControllerDelegate *emuControl;
-@property (assign) NSScreen *assignedScreen;
+@property (strong) EmuControllerDelegate *emuControl;
+@property (strong) NSScreen *assignedScreen;
 @property (retain) NSWindow *masterWindow;
 
 @property (readonly, nonatomic) BOOL isFullScreen;

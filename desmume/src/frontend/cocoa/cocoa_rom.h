@@ -33,8 +33,8 @@
 }
 
 @property (readonly) NSMutableDictionary *header;
-@property (readonly) NSMutableDictionary *bindings;
-@property (readonly) NSURL *fileURL;
+@property (readonly, strong) NSMutableDictionary *bindings;
+@property (readonly, copy) NSURL *fileURL;
 @property (assign) BOOL willStreamLoadData;
 @property (readonly) BOOL isDataLoaded;
 @property (assign) NSInteger saveType;

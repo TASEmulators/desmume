@@ -71,10 +71,6 @@
 - (void)dealloc
 {
 	[self exitThread];
-	
-	[property release];
-	
-	[super dealloc];
 }
 
 - (void) setIdle:(BOOL)theState
@@ -107,7 +103,7 @@
 	sp.sched_priority = 45;
 	pthread_attr_setschedparam(&threadAttr, &sp);
 	
-	pthread_create(&_pthread, &threadAttr, &RunOutputThread, self);
+	pthread_create(&_pthread, &threadAttr, &RunOutputThread, (__bridge void*)self);
 	pthread_attr_destroy(&threadAttr);
 }
 
@@ -586,8 +582,6 @@
 	pthread_mutex_unlock(&_mutexCaptureBuffer);
 	
 	pthread_mutex_destroy(&_mutexCaptureBuffer);
-	
-	[super dealloc];
 }
 
 - (void) handleReceiveGPUFrame
@@ -1285,7 +1279,7 @@
 	}
 	
 	// Render the frame in an NSBitmapImageRep
-	NSBitmapImageRep *newImageRep = [[[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
+	NSBitmapImageRep *newImageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
 																			 pixelsWide:w
 																			 pixelsHigh:h
 																		  bitsPerSample:8
@@ -1294,10 +1288,9 @@
 																			   isPlanar:NO
 																		 colorSpaceName:NSCalibratedRGBColorSpace
 																			bytesPerRow:w * 4
-																		   bitsPerPixel:32] autorelease];
+																		   bitsPerPixel:32];
 	if (newImageRep == nil)
 	{
-		[newImage release];
 		newImage = nil;
 		return newImage;
 	}
@@ -1307,14 +1300,14 @@
 	// Attach the rendered frame to the NSImageRep
 	[newImage addRepresentation:newImageRep];
 	
-	return [newImage autorelease];
+	return newImage;
 }
 
 @end
 
 static void* RunOutputThread(void *arg)
 {
-	CocoaDSOutput *cdsDisplayOutput = (CocoaDSOutput *)arg;
+	CocoaDSOutput *cdsDisplayOutput = (__bridge CocoaDSOutput *)arg;
 	[cdsDisplayOutput runMessageLoop];
 	
 	return NULL;

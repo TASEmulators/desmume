@@ -77,7 +77,7 @@
 void MacOGLClientFetchObject::operator delete(void *ptr)
 {
 	MacOGLClientFetchObject *fetchObjectPtr = (MacOGLClientFetchObject *)ptr;
-	[(MacClientSharedObject *)(fetchObjectPtr->GetClientData()) release];
+	CFBridgingRelease(fetchObjectPtr->GetClientData());
 	
 	CGLContextObj context = fetchObjectPtr->GetContext();
 	
@@ -87,7 +87,7 @@ void MacOGLClientFetchObject::operator delete(void *ptr)
 		CGLContextObj prevContext = CGLGetCurrentContext();
 		CGLSetCurrentContext(context);
 		
-		[fetchObjectPtr->GetNSContext() release];
+//		[fetchObjectPtr->GetNSContext() release];
 		delete contextInfo;
 		::operator delete(ptr);
 		
@@ -138,8 +138,6 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 	_nsContext = [[NSOpenGLContext alloc] initWithFormat:nsPixelFormat shareContext:nil];
 	_context = (CGLContextObj)[_nsContext CGLContextObj];
 	
-	[nsPixelFormat release];
-	
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(_context);
 	
@@ -156,7 +154,7 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 	
 	CGLSetCurrentContext(prevContext);
 	
-	_clientData = [[MacClientSharedObject alloc] init];
+	_clientData = (void*)CFBridgingRetain([[MacClientSharedObject alloc] init]);
 	
 	_spinlockTexFetch[NDSDisplayID_Main]  = OS_SPINLOCK_INIT;
 	_spinlockTexFetch[NDSDisplayID_Touch] = OS_SPINLOCK_INIT;
@@ -174,7 +172,7 @@ CGLContextObj MacOGLClientFetchObject::GetContext() const
 
 void MacOGLClientFetchObject::Init()
 {
-	[(MacClientSharedObject *)this->_clientData setGPUFetchObject:this];
+	[(__bridge MacClientSharedObject *)this->_clientData setGPUFetchObject:this];
 	
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(_context);
@@ -192,7 +190,7 @@ void MacOGLClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDispl
 
 void MacOGLClientFetchObject::FetchFromBufferIndex(const u8 index)
 {
-	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_clientData;
+	MacClientSharedObject *sharedViewObject = (__bridge MacClientSharedObject *)this->_clientData;
 	this->_useDirectToCPUFilterPipeline = ([sharedViewObject numberViewsUsingDirectToCPUFiltering] > 0);
 	
 	semaphore_wait([sharedViewObject semaphoreFramebufferPageAtIndex:index]);
@@ -235,8 +233,8 @@ void MacOGLDisplayPresenter::operator delete(void *ptr)
 		CGLContextObj prevContext = CGLGetCurrentContext();
 		CGLSetCurrentContext(context);
 		
-		[((MacOGLDisplayPresenter *)ptr)->GetNSContext() release];
-		[((MacOGLDisplayPresenter *)ptr)->GetNSPixelFormat() release];
+//		[((MacOGLDisplayPresenter *)ptr)->GetNSContext() release];
+//		[((MacOGLDisplayPresenter *)ptr)->GetNSPixelFormat() release];
 		delete contextInfo;
 		::operator delete(ptr);
 		
@@ -436,7 +434,7 @@ void MacOGLDisplayPresenter::SetProcessedFrameInfo(const OGLProcessedFrameInfo &
 void MacOGLDisplayPresenter::WriteLockEmuFramebuffer(const uint8_t bufferIndex)
 {
 	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
-	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
+	MacClientSharedObject *sharedViewObject = (__bridge MacClientSharedObject *)fetchObj.GetClientData();
 	
 	semaphore_wait([sharedViewObject semaphoreFramebufferPageAtIndex:bufferIndex]);
 }
@@ -444,7 +442,7 @@ void MacOGLDisplayPresenter::WriteLockEmuFramebuffer(const uint8_t bufferIndex)
 void MacOGLDisplayPresenter::ReadLockEmuFramebuffer(const uint8_t bufferIndex)
 {
 	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
-	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
+	MacClientSharedObject *sharedViewObject = (__bridge MacClientSharedObject *)fetchObj.GetClientData();
 	
 	semaphore_wait([sharedViewObject semaphoreFramebufferPageAtIndex:bufferIndex]);
 }
@@ -452,7 +450,7 @@ void MacOGLDisplayPresenter::ReadLockEmuFramebuffer(const uint8_t bufferIndex)
 void MacOGLDisplayPresenter::UnlockEmuFramebuffer(const uint8_t bufferIndex)
 {
 	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
-	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
+	MacClientSharedObject *sharedViewObject = (__bridge MacClientSharedObject *)fetchObj.GetClientData();
 	
 	semaphore_signal([sharedViewObject semaphoreFramebufferPageAtIndex:bufferIndex]);
 }
@@ -471,7 +469,7 @@ MacOGLDisplayView::MacOGLDisplayView(MacClientSharedObject *sharedObject)
 
 MacOGLDisplayView::~MacOGLDisplayView()
 {
-	[this->_caLayer release];
+//	[this->_caLayer release];
 }
 
 void MacOGLDisplayView::__InstanceInit(MacClientSharedObject *sharedObject)

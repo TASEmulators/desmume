@@ -70,7 +70,7 @@
 	}
 	
 	selectedDevice = nil;
-	deviceManager = [[[[CocoaDSSlot2Manager alloc] init] retain] autorelease];
+	deviceManager = [[CocoaDSSlot2Manager alloc] init];
 	hidManager = nil;
 	currentDeviceView = viewNoSelection;
 	
@@ -91,16 +91,11 @@
 
 - (void)dealloc
 {
-	[self setSelectedDevice:nil];
-	[self setDeviceManager:nil];
-	[self setHidManager:nil];
-	[self setAutoSelectedDeviceText:nil];
 	[self setMpcfFolderURL:nil];
 	[self setMpcfDiskImageURL:nil];
 	[self setGbaCartridgeURL:nil];
 	[self setGbaSRamURL:nil];
 	
-	[super dealloc];
 }
 
 - (IBAction) applySettings:(id)sender
@@ -233,7 +228,6 @@
 	if (newView != nil)
 	{
 		NSRect frameRect = [currentDeviceView frame];
-		[currentDeviceView retain];
 		[deviceSettingsBox replaceSubview:currentDeviceView with:newView];
 		currentDeviceView = newView;
 		[currentDeviceView setFrame:frameRect];
@@ -260,8 +254,7 @@
 
 - (void) setMpcfFolderURL:(NSURL *)theURL
 {
-	[mpcfFolderURL release];
-	mpcfFolderURL = [theURL retain];
+	mpcfFolderURL = theURL;
 	
 	NSString *thePath = [mpcfFolderURL path];
 	[self setMpcfFolderPath:thePath];
@@ -296,8 +289,7 @@
 
 - (void) setMpcfDiskImageURL:(NSURL *)theURL
 {
-	[mpcfDiskImageURL release];
-	mpcfDiskImageURL = [theURL retain];
+	mpcfDiskImageURL = theURL;
 	
 	NSString *thePath = [mpcfDiskImageURL path];
 	[self setMpcfDiskImagePath:thePath];
@@ -406,8 +398,7 @@
 
 - (void) setGbaCartridgeURL:(NSURL *)theURL
 {
-	[gbaCartridgeURL release];
-	gbaCartridgeURL = [theURL retain];
+	gbaCartridgeURL = theURL;
 	
 	NSString *thePath = [gbaCartridgeURL path];
 	[self setGbaCartridgePath:thePath];
@@ -442,8 +433,7 @@
 
 - (void) setGbaSRamURL:(NSURL *)theURL
 {
-	[gbaSRamURL release];
-	gbaSRamURL = [theURL retain];
+	gbaSRamURL = theURL;
 	
 	NSString *thePath = [gbaSRamURL path];
 	[self setGbaSRamPath:thePath];
@@ -565,7 +555,6 @@
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
 	result = [fileManager isReadableFileAtPath:sramPath];
-	[fileManager release];
 	
 	return result;
 }
@@ -642,7 +631,6 @@
 	else
 	{
 		NSRect frameRect = [currentDeviceView frame];
-		[currentDeviceView retain];
 		[deviceSettingsBox replaceSubview:currentDeviceView with:viewNoSelection];
 		currentDeviceView = viewNoSelection;
 		[currentDeviceView setFrame:frameRect];

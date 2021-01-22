@@ -75,8 +75,6 @@
 	[self setHardwareMicNameString:nil];
 	[self setHardwareMicManufacturerString:nil];
 	[self setHardwareMicSampleRateString:nil];
-	
-	[super dealloc];
 }
 
 - (ClientInputHandler *) inputHandler
@@ -106,10 +104,8 @@
 	// KVO-compliant controls that are associated with this property.
 	
 	if ( (delegate != nil) && [delegate respondsToSelector:@selector(doMicLevelUpdateFromController:)] )
-	{
-		NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
+	@autoreleasepool {
 		[[self delegate] doMicLevelUpdateFromController:self];
-		[tempPool release];
 	}
 }
 
@@ -240,7 +236,7 @@
 							 isEnabled:(BOOL)isHardwareEnabled
 							  isLocked:(BOOL)isHardwareLocked
 {
-	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
+	@autoreleasepool {
 	
 	if (deviceInfo->objectID == kAudioObjectUnknown)
 	{
@@ -253,10 +249,10 @@
 	else
 	{
 		[self setHardwareMicInfoString:[NSString stringWithFormat:@"%@\nSample Rate: %1.1f Hz",
-										(NSString *)deviceInfo->name,
+										(__bridge NSString *)deviceInfo->name,
 										(double)deviceInfo->sampleRate]];
-		[self setHardwareMicNameString:(NSString *)deviceInfo->name];
-		[self setHardwareMicManufacturerString:(NSString *)deviceInfo->manufacturer];
+		[self setHardwareMicNameString:(__bridge NSString *)deviceInfo->name];
+		[self setHardwareMicManufacturerString:(__bridge NSString *)deviceInfo->manufacturer];
 		[self setHardwareMicSampleRateString:[NSString stringWithFormat:@"%1.1f Hz", (double)deviceInfo->sampleRate]];
 	}
 	
@@ -270,16 +266,14 @@
 														isLocked:isHardwareLocked];
 	}
 	
-	[tempPool release];
+	}
 }
 
 - (void) handleMicHardwareGainChanged:(float)gainValue
 {
 	if ( (delegate != nil) && [delegate respondsToSelector:@selector(doMicHardwareGainChangedFromController:gain:)] )
-	{
-		NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
+	@autoreleasepool {
 		[[self delegate] doMicHardwareGainChangedFromController:self gain:gainValue];
-		[tempPool release];
 	}
 }
 
@@ -292,8 +286,8 @@ MacInputHandler::MacInputHandler()
 	_hardwareMicSampleGenerator = _CAInputDevice;
 	_isHardwareMicMuted = false;
 	
-	_CAInputDevice->SetCallbackHardwareStateChanged(&CAHardwareStateChangedCallback, _cdsController, NULL);
-	_CAInputDevice->SetCallbackHardwareGainChanged(&CAHardwareGainChangedCallback, _cdsController, NULL);
+	_CAInputDevice->SetCallbackHardwareStateChanged(&CAHardwareStateChangedCallback, (__bridge void*)_cdsController, NULL);
+	_CAInputDevice->SetCallbackHardwareGainChanged(&CAHardwareGainChangedCallback, (__bridge void*)_cdsController, NULL);
 	
 	Mic_SetResetCallback(&CAResetCallback, _CAInputDevice, NULL);
 	Mic_SetSampleReadCallback(&CASampleReadCallback, this, NULL);
@@ -312,8 +306,8 @@ CocoaDSController* MacInputHandler::GetCocoaController()
 void MacInputHandler::SetCocoaController(CocoaDSController *theController)
 {
 	this->_cdsController = theController;
-	this->_CAInputDevice->SetCallbackHardwareStateChanged(&CAHardwareStateChangedCallback, theController, NULL);
-	this->_CAInputDevice->SetCallbackHardwareGainChanged(&CAHardwareGainChangedCallback, theController, NULL);
+	this->_CAInputDevice->SetCallbackHardwareStateChanged(&CAHardwareStateChangedCallback, (__bridge void*)theController, NULL);
+	this->_CAInputDevice->SetCallbackHardwareGainChanged(&CAHardwareGainChangedCallback, (__bridge void*)theController, NULL);
 }
 
 void MacInputHandler::StartHardwareMicDevice()
@@ -392,7 +386,7 @@ void CAHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
 									void *inParam1,
 									void *inParam2)
 {
-	CocoaDSController *cdsController = (CocoaDSController *)inParam1;
+	CocoaDSController *cdsController = (__bridge CocoaDSController *)inParam1;
 	[cdsController handleMicHardwareStateChanged:(CoreAudioInputDeviceInfo *)deviceInfo
 									   isEnabled:((isHardwareEnabled) ? YES : NO)
 										isLocked:((isHardwareLocked) ? YES : NO)];
@@ -400,6 +394,6 @@ void CAHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
 
 void CAHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2)
 {
-	CocoaDSController *cdsController = (CocoaDSController *)inParam1;
+	CocoaDSController *cdsController = (__bridge CocoaDSController *)inParam1;
 	[cdsController handleMicHardwareGainChanged:normalizedGain];
 }

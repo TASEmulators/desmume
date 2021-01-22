@@ -47,16 +47,23 @@ struct MetalTexturePair
 	uint8_t bufferIndex;
 	size_t fetchSequenceNumber;
 	
-	union
-	{
-		id<MTLTexture> tex[2];
-		
-		struct
-		{
-			id<MTLTexture> main;
-			id<MTLTexture> touch;
-		};
-	};
+	__strong id<MTLTexture> tex[2];
+
+	inline id<MTLTexture> getMain() const {
+		return tex[0];
+	}
+	
+	inline id<MTLTexture> getTouch() const {
+		return tex[1];
+	}
+
+	inline void setMain(id<MTLTexture> val) {
+		tex[0] = val;
+	}
+	
+	inline void setTouch(id<MTLTexture> val) {
+		tex[1] = val;
+	}
 };
 typedef struct MetalTexturePair MetalTexturePair;
 
@@ -150,7 +157,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) id<MTLBuffer> hudIndexBuffer;
 
 @property (assign) MetalTexturePair texPairFetch;
-@property (assign) id<MTLBlitCommandEncoder> bceFetch;
+@property (strong) id<MTLBlitCommandEncoder> bceFetch;
 
 @property (readonly, nonatomic) id<MTLTexture> texLQ2xLUT;
 @property (readonly, nonatomic) id<MTLTexture> texHQ2xLUT;
@@ -174,7 +181,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @interface MacMetalDisplayPresenterObject : NSObject
 {
 	ClientDisplay3DPresenter *cdp;
-	MetalDisplayViewSharedData *sharedData;
+	__unsafe_unretained MetalDisplayViewSharedData *sharedData;
 	
 	MTLRenderPassDescriptor *_outputRenderPassDesc;
 	MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
@@ -378,7 +385,7 @@ public:
 };
 
 #pragma mark -
-void SetupHQnxLUTs_Metal(id<MTLDevice> &device, id<MTLCommandQueue> &commandQueue, id<MTLTexture> &texLQ2xLUT, id<MTLTexture> &texHQ2xLUT, id<MTLTexture> &texHQ3xLUT, id<MTLTexture> &texHQ4xLUT);
-void DeleteHQnxLUTs_Metal(id<MTLTexture> &texLQ2xLUT, id<MTLTexture> &texHQ2xLUT, id<MTLTexture> &texHQ3xLUT, id<MTLTexture> &texHQ4xLUT);
+void SetupHQnxLUTs_Metal(__strong id<MTLDevice> *device, __strong id<MTLCommandQueue> *commandQueue, __strong id<MTLTexture> *texLQ2xLUT, __strong id<MTLTexture> *texHQ2xLUT, __strong id<MTLTexture> *texHQ3xLUT, __strong id<MTLTexture> *texHQ4xLUT);
+void DeleteHQnxLUTs_Metal(id<MTLTexture> texLQ2xLUT, id<MTLTexture> texHQ2xLUT, id<MTLTexture> texHQ3xLUT, id<MTLTexture> texHQ4xLUT);
 
 #endif // _MAC_METALDISPLAYVIEW_H

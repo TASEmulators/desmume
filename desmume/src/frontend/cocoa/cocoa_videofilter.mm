@@ -54,7 +54,6 @@
 - (void)dealloc
 {
 	delete vf;
-	[super dealloc];
 }
 
 - (BOOL) setSourceSize:(NSSize)theSize
@@ -107,14 +106,13 @@
 	NSBitmapImageRep *newImageRep = [self bitmapImageRep];
 	if (newImageRep == nil)
 	{
-		[newImage release];
 		newImage = nil;
 		return newImage;
 	}
 	
 	[newImage addRepresentation:newImageRep];
 	
-	return [newImage autorelease];
+	return newImage;
 }
 
 - (NSBitmapImageRep *) bitmapImageRep
@@ -148,7 +146,7 @@
 	}
 #endif
 	
-	return [imageRep autorelease];
+	return imageRep;
 }
 
 - (VideoFilterTypeID) typeID

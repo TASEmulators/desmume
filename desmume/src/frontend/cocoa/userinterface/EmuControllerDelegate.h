@@ -39,7 +39,7 @@ class AudioSampleBlockGenerator;
 {
 	InputManager *inputManager;
 	
-	CocoaDSRom *currentRom;
+	__unsafe_unretained CocoaDSRom *currentRom;
 	CocoaDSFirmware *cdsFirmware;
 	CocoaDSSpeaker *cdsSpeaker;
 	CocoaDSCheatManager *cdsCheats;
@@ -171,7 +171,7 @@ class AudioSampleBlockGenerator;
 
 @property (assign) BOOL isWorking;
 @property (assign) BOOL isRomLoading;
-@property (assign) NSString *statusText;
+@property (copy) NSString *statusText;
 @property (assign) BOOL isHardwareMicAvailable;
 @property (assign) float currentMicGainValue;
 @property (assign) float currentVolumeValue;

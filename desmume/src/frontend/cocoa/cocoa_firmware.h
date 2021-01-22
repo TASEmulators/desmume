@@ -76,13 +76,13 @@ enum FirmwareCfgMACAddrSetID
 @property (assign, nonatomic) NSInteger addressSelection;
 @property (assign, nonatomic) uint32_t firmwareMACAddressPendingValue;
 @property (readonly, nonatomic) uint32_t firmwareMACAddressValue;
-@property (retain) NSString *firmwareMACAddressPendingString;
-@property (retain) NSString *firmwareMACAddressString;
+@property (strong) NSString *firmwareMACAddressPendingString;
+@property (strong) NSString *firmwareMACAddressString;
 @property (assign, nonatomic) uint32_t customMACAddressValue;
-@property (retain) NSString *customMACAddress1String;
-@property (retain) NSString *customMACAddress2String;
-@property (retain) NSString *customMACAddress3String;
-@property (retain) NSString *customMACAddress4String;
+@property (strong) NSString *customMACAddress1String;
+@property (strong) NSString *customMACAddress2String;
+@property (strong) NSString *customMACAddress3String;
+@property (strong) NSString *customMACAddress4String;
 
 // Access Point Settings
 @property (assign, nonatomic) NSInteger ipv4Address_AP1_1;
@@ -102,7 +102,7 @@ enum FirmwareCfgMACAddrSetID
 @property (assign, nonatomic) NSInteger ipv4SecondaryDNS_AP1_3;
 @property (assign, nonatomic) NSInteger ipv4SecondaryDNS_AP1_4;
 @property (assign, nonatomic) NSInteger subnetMask_AP1;
-@property (retain) NSString *subnetMaskString_AP1;
+@property (strong) NSString *subnetMaskString_AP1;
 
 @property (assign, nonatomic) NSInteger ipv4Address_AP2_1;
 @property (assign, nonatomic) NSInteger ipv4Address_AP2_2;
@@ -121,7 +121,7 @@ enum FirmwareCfgMACAddrSetID
 @property (assign, nonatomic) NSInteger ipv4SecondaryDNS_AP2_3;
 @property (assign, nonatomic) NSInteger ipv4SecondaryDNS_AP2_4;
 @property (assign, nonatomic) NSInteger subnetMask_AP2;
-@property (retain) NSString *subnetMaskString_AP2;
+@property (strong) NSString *subnetMaskString_AP2;
 
 @property (assign, nonatomic) NSInteger ipv4Address_AP3_1;
 @property (assign, nonatomic) NSInteger ipv4Address_AP3_2;
@@ -140,14 +140,14 @@ enum FirmwareCfgMACAddrSetID
 @property (assign, nonatomic) NSInteger ipv4SecondaryDNS_AP3_3;
 @property (assign, nonatomic) NSInteger ipv4SecondaryDNS_AP3_4;
 @property (assign, nonatomic) NSInteger subnetMask_AP3;
-@property (retain) NSString *subnetMaskString_AP3;
+@property (strong) NSString *subnetMaskString_AP3;
 
 // User Settings
 @property (assign, nonatomic) NSInteger consoleType;
 @property (copy, nonatomic) NSString *nickname;
 @property (copy, nonatomic) NSString *message;
 @property (assign, nonatomic) NSInteger favoriteColor;
-@property (assign, nonatomic) NSDate *birthday;
+@property (weak, nonatomic) NSDate *birthday;
 @property (assign, nonatomic) NSInteger language;
 @property (assign, nonatomic) NSInteger backlightLevel;
 

@@ -62,17 +62,6 @@
 	return self;
 }
 
-- (void)dealloc
-{
-	[_versionList release];
-	[_portStringsDict release];
-	[_fileTree release];
-	[_fileTreeSelection release];
-	[_fileTreeVersionList release];
-	
-	[super dealloc];
-}
-
 - (void) updateFileList
 {
 	NSDictionary *fileTypeInfoRootDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FileTypeInfo" ofType:@"plist"]];
@@ -121,8 +110,6 @@
 			}
 		}
 	}
-	
-	[fileManager release];
 	
 	[self setFilesPresent:([_fileTree count] > 0)];
 	

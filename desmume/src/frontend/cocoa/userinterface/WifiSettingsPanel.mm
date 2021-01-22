@@ -64,11 +64,6 @@
 	return self;
 }
 
-- (void)dealloc
-{
-	[super dealloc];
-}
-
 - (void) setWifiEmulationMode:(NSInteger)theMode
 {
 	execControl->SetWifiEmulationMode((int)theMode);

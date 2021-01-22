@@ -1335,11 +1335,8 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	if (!isDirectoryFound)
 	{
 		[self chooseDirectoryPath:self];
-		[fileManager release];
 		return;
 	}
-	
-	[fileManager release];
 	
 	ClientAVCaptureObject *newCaptureObject = new ClientAVCaptureObject([self videoWidth], [self videoHeight]);
 	
@@ -1379,7 +1376,6 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
 	[dateFormatter setDateFormat:@"yyyyMMdd_HH-mm-ss.SSS "];
 	NSString *fileNameNSString = [[dateFormatter stringFromDate:[NSDate date]] stringByAppendingString:[NSString stringWithCString:param.romName.c_str() encoding:NSUTF8StringEncoding]];
-	[dateFormatter release];
 	
 	std::string fileName = param.savePath + "/" + std::string([fileNameNSString cStringUsingEncoding:NSUTF8StringEncoding]);
 	

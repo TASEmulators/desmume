@@ -67,7 +67,6 @@ static NSImage *iconCodeBreaker = nil;
 		internalData = (CHEATS_LIST *)malloc(sizeof(CHEATS_LIST));
 		if (internalData == NULL)
 		{
-			[self release];
 			return nil;
 		}
 		
@@ -105,8 +104,6 @@ static NSImage *iconCodeBreaker = nil;
 	internalData = NULL;
 	
 	pthread_mutex_destroy(&mutexData);
-	
-	[super dealloc];
 }
 
 - (CHEATS_LIST *) data
@@ -494,11 +491,6 @@ static NSImage *iconCodeBreaker = nil;
 {
 	CocoaDSCheatItem *newWorkingCopy = nil;
 	
-	if (workingCopy != nil)
-	{
-		[workingCopy release];
-	}
-	
 	newWorkingCopy = [[CocoaDSCheatItem alloc] initWithCheatData:self.data];
 	[newWorkingCopy retainData];
 	newWorkingCopy.parent = self;
@@ -509,7 +501,6 @@ static NSImage *iconCodeBreaker = nil;
 
 - (void) destroyWorkingCopy
 {
-	[workingCopy release];
 	workingCopy = nil;
 }
 
@@ -695,7 +686,6 @@ static NSImage *iconCodeBreaker = nil;
 		CHEATS *newListData = new CHEATS();
 		if (newListData == nil)
 		{
-			[self release];
 			return nil;
 		}
 		
@@ -709,7 +699,7 @@ static NSImage *iconCodeBreaker = nil;
 	if (fileURL != nil)
 	{
 		listData->init((char *)[fileURL fileSystemRepresentation]);
-		list = [[CocoaDSCheatManager cheatListWithListObject:listData] retain];
+		list = [CocoaDSCheatManager cheatListWithListObject:listData];
 	}
 	else
 	{
@@ -717,7 +707,6 @@ static NSImage *iconCodeBreaker = nil;
 		if (list == nil)
 		{
 			delete listData;
-			[self release];
 			return nil;
 		}
 	}
@@ -737,7 +726,6 @@ static NSImage *iconCodeBreaker = nil;
 {
 	self.dbTitle = nil;
 	self.dbDate = nil;
-	[list release];
 	delete (CHEATS *)self.listData;
 	
 	if (isUsingDummyRWlock)
@@ -746,8 +734,6 @@ static NSImage *iconCodeBreaker = nil;
 		free(rwlockCoreExecute);
 		rwlockCoreExecute = NULL;
 	}
-	
-	[super dealloc];
 }
 
 - (void) setRwlockCoreExecute:(pthread_rwlock_t *)theRwlock
@@ -1075,7 +1061,7 @@ static NSImage *iconCodeBreaker = nil;
 		
 		if (newItem != nil)
 		{
-			[newList addObject:[newItem autorelease]];
+			[newList addObject:newItem];
 		}
 	}
 	
@@ -1097,7 +1083,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	for (NSUInteger i = 0; i < itemCount; i++)
 	{
-		[newList addObject:[[[CocoaDSCheatItem alloc] initWithCheatData:cheatItemArray + i] autorelease]];
+		[newList addObject:[[CocoaDSCheatItem alloc] initWithCheatData:cheatItemArray + i]];
 	}
 	
 	return newList;
@@ -1147,7 +1133,6 @@ static NSImage *iconCodeBreaker = nil;
 	CHEATSEARCH *newListData = new CHEATSEARCH();
 	if (newListData == nil)
 	{
-		[self release];
 		return nil;
 	}
 	
@@ -1168,7 +1153,6 @@ static NSImage *iconCodeBreaker = nil;
 	self.listData->close();
 	pthread_rwlock_unlock(self.rwlockCoreExecute);
 	
-	[addressList release];
 	delete (CHEATSEARCH *)self.listData;
 	
 	if (isUsingDummyRWlock)
@@ -1177,8 +1161,6 @@ static NSImage *iconCodeBreaker = nil;
 		free(rwlockCoreExecute);
 		rwlockCoreExecute = NULL;
 	}
-	
-	[super dealloc];
 }
 
 - (void) setRwlockCoreExecute:(pthread_rwlock_t *)theRwlock
@@ -1230,10 +1212,9 @@ static NSImage *iconCodeBreaker = nil;
 	{
 		pthread_rwlock_rdlock(self.rwlockCoreExecute);
 		itemCount = (NSUInteger)self.listData->search((u32)value);
-		NSMutableArray *newAddressList = [[CocoaDSCheatSearch addressListWithListObject:self.listData maxItems:100] retain];
+		NSMutableArray *newAddressList = [CocoaDSCheatSearch addressListWithListObject:self.listData maxItems:100];
 		pthread_rwlock_unlock(self.rwlockCoreExecute);
 		
-		[addressList release];
 		addressList = newAddressList;
 		searchCount++;
 	}
@@ -1268,10 +1249,9 @@ static NSImage *iconCodeBreaker = nil;
 	{
 		pthread_rwlock_rdlock(self.rwlockCoreExecute);
 		itemCount = (NSUInteger)self.listData->search((u8)typeID);
-		NSMutableArray *newAddressList = [[CocoaDSCheatSearch addressListWithListObject:self.listData maxItems:100] retain];
+		NSMutableArray *newAddressList = [CocoaDSCheatSearch addressListWithListObject:self.listData maxItems:100];
 		pthread_rwlock_unlock(self.rwlockCoreExecute);
 		
-		[addressList release];
 		addressList = newAddressList;
 	}
 
@@ -1298,7 +1278,6 @@ static NSImage *iconCodeBreaker = nil;
 	pthread_rwlock_unlock(self.rwlockCoreExecute);
 	
 	searchCount = 0;
-	[addressList release];
 	addressList = nil;
 }
 

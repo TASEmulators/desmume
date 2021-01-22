@@ -80,18 +80,13 @@ static NSMutableDictionary *saveTypeValues = nil;
 	header = [[NSMutableDictionary alloc] initWithCapacity:32];
 	if (header == nil)
 	{
-		[self release];
-		self = nil;
-		return self;
+		return nil;
 	}
 	
-	bindings = [[CocoaDSRom romNotLoadedBindings] retain];
+	bindings = [CocoaDSRom romNotLoadedBindings];
 	if (bindings == nil)
 	{
-		[header release];
-		[self release];
-		self = nil;
-		return self;
+		return nil;
 	}
 	
 	fileURL = nil;
@@ -117,14 +112,6 @@ static NSMutableDictionary *saveTypeValues = nil;
 	{
 		NDS_FreeROM();
 	}
-	
-	[xmlElementStack release];
-	[xmlCharacterStack release];
-	[header release];
-	[bindings release];
-	[fileURL release];
-	
-	[super dealloc];
 }
 
 - (void) setWillStreamLoadData:(BOOL)theState
@@ -265,7 +252,6 @@ static NSMutableDictionary *saveTypeValues = nil;
 	{
 		NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithBool:NO], @"DidLoad", nil];
 		[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.loadRomDidFinish" object:self userInfo:userInfo];
-		[userInfo release];
 		return result;
 	}
 	
@@ -277,29 +263,22 @@ static NSMutableDictionary *saveTypeValues = nil;
 		NSXMLParser *advscDB = [[NSXMLParser alloc] initWithContentsOfURL:advscDBPath];
 		[advscDB setDelegate:self];
 		[advscDB parse];
-		[advscDB release];
 	}
 	
 	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithBool:YES], @"DidLoad", self.fileURL, @"URL", nil];
 	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.loadRomDidFinish" object:self userInfo:userInfo];
-	[userInfo release];
 	
 	return result;
 }
 
 - (void) loadDataOnThread:(id)object
 {
-	[self retain];
+	__strong CocoaDSRom *strongSelf = self;
 	
 	NSURL *theURL = [(NSURL *)object copy];
-	NSAutoreleasePool *threadPool = [[NSAutoreleasePool alloc] init];
-	
-	[self loadData:theURL];
-	
-	[threadPool release];
-	[theURL release];
-	
-	[self release];
+	@autoreleasepool {
+		[self loadData:theURL];
+	}
 }
 
 - (NSString *) title
@@ -310,7 +289,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 		return nil;
 	}
 	
-	return [[[NSString alloc] initWithBytes:ndsRomHeader->gameTile length:ROMINFO_GAME_TITLE_LENGTH encoding:NSUTF8StringEncoding] autorelease];
+	return [[NSString alloc] initWithBytes:ndsRomHeader->gameTile length:ROMINFO_GAME_TITLE_LENGTH encoding:NSUTF8StringEncoding];
 }
 
 - (NSString *) code
@@ -321,14 +300,14 @@ static NSMutableDictionary *saveTypeValues = nil;
 		return nil;
 	}
 	
-	return [[[NSString alloc] initWithBytes:ndsRomHeader->gameCode length:ROMINFO_GAME_CODE_LENGTH encoding:NSUTF8StringEncoding] autorelease];
+	return [[NSString alloc] initWithBytes:ndsRomHeader->gameCode length:ROMINFO_GAME_CODE_LENGTH encoding:NSUTF8StringEncoding];
 }
 
 - (NSString *) banner:(const UInt16 *)UTF16TextBuffer
 {
 	NSUInteger bannerLength = ROMINFO_GAME_BANNER_LENGTH * sizeof(*UTF16TextBuffer);
 	
-	return [[[NSString alloc] initWithBytes:UTF16TextBuffer length:bannerLength encoding:NSUTF16LittleEndianStringEncoding] autorelease];
+	return [[NSString alloc] initWithBytes:UTF16TextBuffer length:bannerLength encoding:NSUTF16LittleEndianStringEncoding];
 }
 
 - (NSString *) internalName
@@ -425,7 +404,6 @@ static NSMutableDictionary *saveTypeValues = nil;
 	
 	if(imageRep == nil)
 	{
-		[newImage release];
 		newImage = nil;
 		return newImage;
 	}
@@ -440,10 +418,9 @@ static NSMutableDictionary *saveTypeValues = nil;
 	}
 #endif
 	
-	[imageRep autorelease];
 	[newImage addRepresentation:imageRep];
 	
-	return [newImage autorelease];
+	return newImage;
 }
 
 - (void) handleAdvansceneDatabaseInfo
@@ -506,7 +483,6 @@ static NSMutableDictionary *saveTypeValues = nil;
 			[parser abortParsing];
 		}
 		
-		[xmlCurrentRom release];
 		xmlCurrentRom = nil;
 	}
 	else

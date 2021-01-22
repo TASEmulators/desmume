@@ -44,7 +44,7 @@
 
 @property (readonly) NSMutableArray *deviceList;
 @property (retain) CocoaDSSlot2Device *currentDevice;
-@property (assign) NSString *slot2StatusText;
+@property (copy) NSString *slot2StatusText;
 @property (retain) NSURL *mpcfFileSearchURL;
 @property (copy) NSURL *gbaCartridgeURL;
 @property (copy) NSURL *gbaSRamURL;

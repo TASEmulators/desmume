@@ -161,7 +161,7 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @property (assign) NSUInteger render3DThreads;
 @property (assign) BOOL render3DLineHack;
 @property (assign) NSUInteger render3DMultisampleSize;
-@property (retain) NSString *render3DMultisampleSizeString;
+@property (strong) NSString *render3DMultisampleSizeString;
 @property (assign) BOOL render3DTextureDeposterize;
 @property (assign) BOOL render3DTextureSmoothing;
 @property (assign) NSUInteger render3DTextureScalingFactor;
@@ -173,7 +173,7 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 @property (readonly, nonatomic) GPUClientFetchObject *fetchObject;
-@property (readonly, nonatomic) MacClientSharedObject *sharedData;
+@property (weak, readonly, nonatomic) MacClientSharedObject *sharedData;
 
 - (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock;
 #endif

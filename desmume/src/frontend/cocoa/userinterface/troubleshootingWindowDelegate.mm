@@ -49,7 +49,6 @@
 	bindings = [[NSMutableDictionary alloc] init];
 	if (bindings == nil)
 	{
-		[self release];
 		self = nil;
 		return self;
 	}
@@ -272,7 +271,6 @@
 	[window setFrame:newFrame display:YES animate:YES];
 	[window setContentView:theView];
 	
-	[tempView release];
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)notification

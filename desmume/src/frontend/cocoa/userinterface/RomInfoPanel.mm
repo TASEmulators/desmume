@@ -106,13 +106,6 @@
 	return self;
 }
 
-- (void)dealloc
-{
-	[_sectionViewList release];
-	
-	[super dealloc];
-}
-
 - (IBAction) toggleViewState:(id)sender
 {
 	NSButton *disclosureTriangle = (NSButton *)sender;

@@ -69,8 +69,6 @@
 	[self setSharedData:nil];
 	[self setSaveDirectoryPath:nil];
 	[self setRomName:nil];
-	
-	[super dealloc];
 }
 
 - (IBAction) chooseDirectoryPath:(id)sender

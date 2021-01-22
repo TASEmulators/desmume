@@ -55,7 +55,7 @@ typedef std::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Ke
 	IOHIDDeviceRef hidDeviceRef;
 	IOHIDQueueRef hidQueueRef;
 	
-	NSString *identifier;
+	NSString *__weak identifier;
 	
 	io_service_t ioService;
 	FFDeviceObjectReference ffDevice;
@@ -67,15 +67,15 @@ typedef std::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Ke
 	OSSpinLock spinlockRunLoop;
 }
 
-@property (retain) InputHIDManager *hidManager;
+@property (strong) InputHIDManager *hidManager;
 @property (readonly) IOHIDDeviceRef hidDeviceRef;
-@property (readonly) NSString *manufacturerName;
-@property (readonly) NSString *productName;
-@property (readonly) NSString *serialNumber;
-@property (readonly) NSString *identifier;
+@property (weak, readonly) NSString *manufacturerName;
+@property (weak, readonly) NSString *productName;
+@property (weak, readonly) NSString *serialNumber;
+@property (weak, readonly) NSString *identifier;
 @property (readonly) BOOL supportsForceFeedback;
 @property (assign) BOOL isForceFeedbackEnabled;
-@property (retain) NSRunLoop *runLoop;
+@property (strong) NSRunLoop *runLoop;
 
 - (id) initWithDevice:(IOHIDDeviceRef)theDevice hidManager:(InputHIDManager *)theHIDManager;
 
@@ -108,16 +108,16 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	IOHIDManagerRef hidManagerRef;
 	NSRunLoop *runLoop;
 	NSArrayController *deviceListController;
-	id<InputHIDManagerTarget> target;
+	id<InputHIDManagerTarget> __unsafe_unretained target;
 	
 	OSSpinLock spinlockRunLoop;
 }
 
-@property (retain) NSArrayController *deviceListController;
-@property (retain) InputManager *inputManager;
+@property (strong) NSArrayController *deviceListController;
+@property (strong) InputManager *inputManager;
 @property (readonly) IOHIDManagerRef hidManagerRef;
-@property (assign) id target;
-@property (retain) NSRunLoop *runLoop;
+@property (unsafe_unretained) id target;
+@property (strong) NSRunLoop *runLoop;
 
 - (id) initWithInputManager:(InputManager *)theInputManager;
 
@@ -129,12 +129,12 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 #pragma mark -
 @interface InputManager : NSObject
 {
-	EmuControllerDelegate *emuControl;
+	EmuControllerDelegate *__weak emuControl;
 	MacInputDevicePropertiesEncoder *inputEncoder;
 	id<InputHIDManagerTarget> hidInputTarget;
 	InputHIDManager *hidManager;
 	NSMutableDictionary *inputMappings;
-	NSArray *commandTagList;
+	NSArray *__weak commandTagList;
 	NSDictionary *commandIcon;
 	
 	InputCommandMap commandMap;
@@ -142,12 +142,12 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	AudioFileSampleGeneratorMap audioFileGenerators;
 }
 
-@property (readonly) IBOutlet EmuControllerDelegate *emuControl;
+@property (weak, readonly) IBOutlet EmuControllerDelegate *emuControl;
 @property (readonly) MacInputDevicePropertiesEncoder *inputEncoder;
-@property (retain) id<InputHIDManagerTarget> hidInputTarget;
+@property (strong) id<InputHIDManagerTarget> hidInputTarget;
 @property (readonly) InputHIDManager *hidManager;
 @property (readonly) NSMutableDictionary *inputMappings;
-@property (readonly) NSArray *commandTagList;
+@property (weak, readonly) NSArray *commandTagList;
 @property (readonly) NSDictionary *commandIcon;
 
 - (void) setMappingsWithMappings:(NSDictionary *)mappings;

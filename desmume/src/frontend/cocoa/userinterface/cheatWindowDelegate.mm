@@ -67,18 +67,13 @@
 	bindings = [[NSMutableDictionary alloc] init];
 	if (bindings == nil)
 	{
-		[self release];
-		self = nil;
-		return self;
+		return nil;
 	}
 	
 	cdsCheatSearch = [[CocoaDSCheatSearch alloc] init];
 	if (cdsCheatSearch == nil)
 	{
-		[bindings release];
-		[self release];
-		self = nil;
-		return self;
+		return nil;
 	}
 	
 	workingCheat = nil;
@@ -108,10 +103,6 @@
 {	
 	self.workingCheat = nil;
 	self.cdsCheats = nil;
-	[cdsCheatSearch release];
-	[bindings release];
-	
-	[super dealloc];
 }
 
 - (IBAction) addToList:(id)sender
@@ -133,7 +124,7 @@
 		untitledString = @"Untitled";
 	}
 	
-	CocoaDSCheatItem *newCheatItem = [[[CocoaDSCheatItem alloc] init] autorelease];
+	CocoaDSCheatItem *newCheatItem = [[CocoaDSCheatItem alloc] init];
 	newCheatItem.cheatType = CHEAT_TYPE_INTERNAL;
 	newCheatItem.description = untitledString;
 	
@@ -359,7 +350,6 @@
 	if (newView != nil)
 	{
 		NSRect frameRect = [currentView frame];
-		[currentView retain];
 		[cheatConfigBox replaceSubview:currentView with:newView];
 		currentView = newView;
 		[currentView setFrame:frameRect];
@@ -399,7 +389,6 @@
 	if (newView != nil)
 	{
 		NSRect frameRect = [currentSearchStyleView frame];
-		[currentSearchStyleView retain];
 		[cheatSearchView replaceSubview:currentSearchStyleView with:newView];
 		currentSearchStyleView = newView;
 		[currentSearchStyleView setFrame:frameRect];
@@ -446,7 +435,7 @@
 	{
 		if (cheatItem.willAdd)
 		{
-			CocoaDSCheatItem *newCheatItem = [[[CocoaDSCheatItem alloc] initWithCheatData:cheatItem.data] autorelease];
+			CocoaDSCheatItem *newCheatItem = [[CocoaDSCheatItem alloc] initWithCheatData:cheatItem.data];
 			[newCheatItem retainData];
 			[cheatListController addObject:newCheatItem];
 			[self.cdsCheats add:newCheatItem];
@@ -520,7 +509,6 @@
 			self.workingCheat = nil;
 			
 			NSRect frameRect = [currentView frame];
-			[currentView retain];
 			[cheatConfigBox replaceSubview:currentView with:viewConfigureNoSelection];
 			currentView = viewConfigureNoSelection;
 			[currentView setFrame:frameRect];

@@ -130,7 +130,7 @@ public:
 {
 	ClientAVCaptureObject *_captureObject;
 	ClientExecutionControl *execControl;
-	CocoaDSCore *cdsCore;
+	__unsafe_unretained CocoaDSCore *cdsCore;
 	CocoaDSVideoCapture *_videoCaptureOutput;
 	
 	NSButton *recordButton;

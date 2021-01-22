@@ -26,31 +26,31 @@ enum TroubleshootingViewID
 
 @interface TroubleshootingWindowDelegate : NSObject <NSWindowDelegate>
 {
-	NSObject *dummyObject;
-	NSWindow *window;
-	NSObjectController *troubleshootingWindowController;
-	NSObjectController *romInfoController;
-	NSObjectController *emuControlController;
-	NSObjectController *cdsCoreController;
+	NSObject *__unsafe_unretained dummyObject;
+	NSWindow *__weak window;
+	NSObjectController *__weak troubleshootingWindowController;
+	NSObjectController *__weak romInfoController;
+	NSObjectController *__weak emuControlController;
+	NSObjectController *__weak cdsCoreController;
 	
-	NSView *viewSupportRequest;
-	NSView *viewBugReport;
-	NSView *viewFinishedForm;
+	NSView *__weak viewSupportRequest;
+	NSView *__weak viewBugReport;
+	NSView *__weak viewFinishedForm;
 	
 	NSView *currentForm;
 	
 	NSMutableDictionary *bindings;
 }
 
-@property (readonly) IBOutlet NSObject *dummyObject;
-@property (readonly) IBOutlet NSWindow *window;
-@property (readonly) IBOutlet NSObjectController *troubleshootingWindowController;
-@property (readonly) IBOutlet NSObjectController *romInfoController;
-@property (readonly) IBOutlet NSObjectController *emuControlController;
-@property (readonly) IBOutlet NSObjectController *cdsCoreController;
-@property (readonly) IBOutlet NSView *viewSupportRequest;
-@property (readonly) IBOutlet NSView *viewBugReport;
-@property (readonly) IBOutlet NSView *viewFinishedForm;
+@property (unsafe_unretained, readonly) IBOutlet NSObject *dummyObject;
+@property (weak, readonly) IBOutlet NSWindow *window;
+@property (weak, readonly) IBOutlet NSObjectController *troubleshootingWindowController;
+@property (weak, readonly) IBOutlet NSObjectController *romInfoController;
+@property (weak, readonly) IBOutlet NSObjectController *emuControlController;
+@property (weak, readonly) IBOutlet NSObjectController *cdsCoreController;
+@property (weak, readonly) IBOutlet NSView *viewSupportRequest;
+@property (weak, readonly) IBOutlet NSView *viewBugReport;
+@property (weak, readonly) IBOutlet NSView *viewFinishedForm;
 @property (readonly) NSMutableDictionary *bindings;
 
 - (IBAction) copyRomInfoToTextFields:(id)sender;

@@ -108,19 +108,19 @@ typedef struct
 @property (assign) NSInteger cpuEmulationEngine;
 @property (assign) NSInteger maxJITBlockSize;
 @property (assign) NSInteger slot1DeviceType;
-@property (assign) NSString *slot1StatusText;
-@property (assign) NSString *frameStatus;
-@property (assign) NSString *executionSpeedStatus;
-@property (retain) NSString *errorStatus;
+@property (copy) NSString *slot1StatusText;
+@property (copy) NSString *frameStatus;
+@property (copy) NSString *executionSpeedStatus;
+@property (copy) NSString *errorStatus;
 
 @property (copy) NSURL *arm9ImageURL;
 @property (copy) NSURL *arm7ImageURL;
 @property (copy) NSURL *firmwareImageURL;
 @property (copy) NSURL *slot1R4URL;
 
-@property (retain) NSString *extFirmwareMACAddressString;
-@property (retain) NSString *firmwareMACAddressSelectionString;
-@property (retain) NSString *currentSessionMACAddressString;
+@property (copy) NSString *extFirmwareMACAddressString;
+@property (copy) NSString *firmwareMACAddressSelectionString;
+@property (copy) NSString *currentSessionMACAddressString;
 
 @property (readonly) pthread_rwlock_t *rwlockCoreExecute;
 

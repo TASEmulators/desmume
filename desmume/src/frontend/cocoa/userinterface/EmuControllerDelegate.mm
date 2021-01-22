@@ -23,6 +23,7 @@
 #import "MacAVCaptureTool.h"
 #import "MacScreenshotCaptureTool.h"
 #import "preferencesWindowDelegate.h"
+#import "RomInfoPanel.h"
 
 #import "cocoa_globals.h"
 #import "cocoa_cheat.h"
@@ -143,28 +144,28 @@
 	isSoundMuted = NO;
 	lastSetVolumeValue = MAX_VOLUME;
 	
-	iconExecute				= [[NSImage imageNamed:@"Icon_Execute_420x420"] retain];
-	iconPause				= [[NSImage imageNamed:@"Icon_Pause_420x420"] retain];
-	iconSpeedNormal			= [[NSImage imageNamed:@"Icon_Speed1x_420x420"] retain];
-	iconSpeedDouble			= [[NSImage imageNamed:@"Icon_Speed2x_420x420"] retain];
+	iconExecute				= [NSImage imageNamed:@"Icon_Execute_420x420"];
+	iconPause				= [NSImage imageNamed:@"Icon_Pause_420x420"];
+	iconSpeedNormal			= [NSImage imageNamed:@"Icon_Speed1x_420x420"];
+	iconSpeedDouble			= [NSImage imageNamed:@"Icon_Speed2x_420x420"];
 	
-	iconMicDisabled			= [[NSImage imageNamed:@"Icon_MicrophoneBlack_256x256"] retain];
-	iconMicIdle				= [[NSImage imageNamed:@"Icon_MicrophoneDarkGreen_256x256"] retain];
-	iconMicActive			= [[NSImage imageNamed:@"Icon_MicrophoneGreen_256x256"] retain];
-	iconMicInClip			= [[NSImage imageNamed:@"Icon_MicrophoneRed_256x256"] retain];
-	iconMicManualOverride	= [[NSImage imageNamed:@"Icon_MicrophoneGray_256x256"] retain];
+	iconMicDisabled			= [NSImage imageNamed:@"Icon_MicrophoneBlack_256x256"];
+	iconMicIdle				= [NSImage imageNamed:@"Icon_MicrophoneDarkGreen_256x256"];
+	iconMicActive			= [NSImage imageNamed:@"Icon_MicrophoneGreen_256x256"];
+	iconMicInClip			= [NSImage imageNamed:@"Icon_MicrophoneRed_256x256"];
+	iconMicManualOverride	= [NSImage imageNamed:@"Icon_MicrophoneGray_256x256"];
 	
-	iconVolumeFull			= [[NSImage imageNamed:@"Icon_VolumeFull_16x16"] retain];
-	iconVolumeTwoThird		= [[NSImage imageNamed:@"Icon_VolumeTwoThird_16x16"] retain];
-	iconVolumeOneThird		= [[NSImage imageNamed:@"Icon_VolumeOneThird_16x16"] retain];
-	iconVolumeMute			= [[NSImage imageNamed:@"Icon_VolumeMute_16x16"] retain];
+	iconVolumeFull			= [NSImage imageNamed:@"Icon_VolumeFull_16x16"];
+	iconVolumeTwoThird		= [NSImage imageNamed:@"Icon_VolumeTwoThird_16x16"];
+	iconVolumeOneThird		= [NSImage imageNamed:@"Icon_VolumeOneThird_16x16"];
+	iconVolumeMute			= [NSImage imageNamed:@"Icon_VolumeMute_16x16"];
 	
 	isWorking = NO;
 	isRomLoading = NO;
 	statusText = NSSTRING_STATUS_READY;
 	currentVolumeValue = MAX_VOLUME;
-	currentMicStatusIcon = [iconMicDisabled retain];
-	currentVolumeIcon = [iconVolumeFull retain];
+	currentMicStatusIcon = iconMicDisabled;
+	currentVolumeIcon = iconVolumeFull;
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(loadRomDidFinish:)
@@ -183,23 +184,6 @@
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
 	
-	[iconExecute release];
-	[iconPause release];
-	[iconSpeedNormal release];
-	[iconSpeedDouble release];
-	
-	[iconMicDisabled release];
-	[iconMicIdle release];
-	[iconMicActive release];
-	[iconMicInClip release];
-	[iconMicManualOverride release];
-	
-	[iconVolumeFull release];
-	[iconVolumeTwoThird release];
-	[iconVolumeOneThird release];
-	[iconVolumeMute release];
-	
-	[[self currentRom] release];
 	[self setCurrentRom:nil];
 	
 	[self setCdsCheats:nil];
@@ -215,9 +199,6 @@
 	[firmwarePanelController setContent:nil];
 	
 	[self setMainWindow:nil];
-	[windowList release];
-	
-	[super dealloc];
 }
 
 #pragma mark Dynamic Property Methods
@@ -232,17 +213,11 @@
 		return;
 	}
 	
-	if (theFirmware != nil)
-	{
-		[theFirmware retain];
-	}
-	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore setCdsFirmware:theFirmware];
 	[cdsCore updateFirmwareMACAddressString];
 	[firmwarePanelController setContent:theFirmware];
 	
-	[cdsFirmware release];
 	cdsFirmware = theFirmware;
 	
 	OSSpinLockUnlock(&spinlockFirmware);
@@ -267,14 +242,8 @@
 		return;
 	}
 	
-	if (theSpeaker != nil)
-	{
-		[theSpeaker retain];
-	}
-	
 	[cdsSoundController setContent:[theSpeaker property]];
 	
-	[cdsSpeaker release];
 	cdsSpeaker = theSpeaker;
 	
 	OSSpinLockUnlock(&spinlockSpeaker);
@@ -610,7 +579,6 @@
 		
 		NSFileManager *fileManager = [[NSFileManager alloc] init];
 		const BOOL exists = [fileManager isReadableFileAtPath:[sramURL path]];
-		[fileManager release];
 		
 		const BOOL isMovieStarted = [cdsCore startReplayRecording:fileURL sramURL:sramURL];
 		[self setStatusText:(isMovieStarted) ? @"Replay recording started." : @"Replay creation failed!"];
@@ -1143,7 +1111,7 @@
 	const float sineWaveFrequency = cmdAttr.floatValue[0];
 	[cdsController setSineWaveGeneratorFrequency:sineWaveFrequency];
 	
-	NSString *audioFilePath = (NSString *)cmdAttr.object[0];
+	NSString *audioFilePath = (__bridge NSString *)cmdAttr.object[0];
 	[cdsController setSelectedAudioFileGenerator:[inputManager audioFileGeneratorFromFilePath:audioFilePath]];
 }
 
@@ -1216,7 +1184,7 @@
 		return;
 	}
 	
-	const NSInteger slotNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
+	const NSInteger slotNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(__bridge id)cmdAttr.input.object] : cmdAttr.intValue[0];
 	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
 	{
 		return;
@@ -1258,7 +1226,7 @@
 		return;
 	}
 	
-	const NSInteger slotNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
+	const NSInteger slotNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(__bridge id)cmdAttr.input.object] : cmdAttr.intValue[0];
 	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
 	{
 		return;
@@ -1291,7 +1259,7 @@
 		return;
 	}
 	
-	const double relativeDegrees = (cmdAttr.useInputForObject) ? (double)[CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : (double)cmdAttr.intValue[0];
+	const double relativeDegrees = (cmdAttr.useInputForObject) ? (double)[CocoaDSUtil getIBActionSenderTag:(__bridge id)cmdAttr.input.object] : (double)cmdAttr.intValue[0];
 	const double angleDegrees = [mainWindow displayRotation] + relativeDegrees;
 	[mainWindow setDisplayRotation:angleDegrees];
 }
@@ -1550,7 +1518,7 @@
 	}
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	const NSInteger bitNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
+	const NSInteger bitNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(__bridge id)cmdAttr.input.object] : cmdAttr.intValue[0];
 	const UInt32 flagBit = [cdsCore.cdsGPU gpuStateFlags] ^ (1 << bitNumber);
 	
 	[cdsCore.cdsGPU setGpuStateFlags:flagBit];
@@ -1582,7 +1550,6 @@
 	// Check for the v0.9.7 ROM Save File
 	if ([CocoaDSFile romSaveExistsWithRom:fileURL] && ![CocoaDSFile romSaveExists:fileURL])
 	{
-		[fileURL retain];
 		[self setIsUserInterfaceBlockingExecution:YES];
 		[self setIsShowingFileMigrationDialog:YES];
 		
@@ -1590,7 +1557,7 @@
 		   modalForWindow:[[windowList objectAtIndex:0] window]
             modalDelegate:self
 		   didEndSelector:@selector(didEndFileMigrationSheet:returnCode:contextInfo:)
-			  contextInfo:fileURL];
+			  contextInfo:(void*)CFBridgingRetain(fileURL)];
 	}
 	else
 	{
@@ -1618,7 +1585,7 @@
 		switch (reasonID)
 		{
 			case REASONFORCLOSE_OPEN:
-				[romURL retain];
+				CFBridgingRetain(romURL);
 				endSheetSelector = @selector(didEndSaveStateSheetOpen:returnCode:contextInfo:);
 				break;	
 				
@@ -1637,7 +1604,7 @@
 		   modalForWindow:(NSWindow *)[[windowList objectAtIndex:0] window]
             modalDelegate:self
 		   didEndSelector:endSheetSelector
-			  contextInfo:romURL];
+			  contextInfo:(__bridge void*)(romURL)];
 	}
 	else
 	{
@@ -1681,7 +1648,6 @@
 	if (newRom != nil)
 	{
 		[self setIsRomLoading:YES];
-		[romURL retain];
 		[newRom setSaveType:selectedRomSaveTypeID];
 		[newRom setWillStreamLoadData:[[NSUserDefaults standardUserDefaults] boolForKey:@"General_StreamLoadRomData"]];
 		
@@ -1693,8 +1659,6 @@
 		{
 			[newRom loadData:romURL];
 		}
-		
-		[romURL release];
 	}
 	
 	result = YES;
@@ -1730,7 +1694,7 @@
 	// If the ROM has an associated cheat file, load it now.
 	NSString *cheatsPath = [[CocoaDSFile fileURLFromRomURL:[theRom fileURL] toKind:@"Cheat"] path];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	CocoaDSCheatManager *newCheatList = [[[CocoaDSCheatManager alloc] initWithFileURL:[NSURL fileURLWithPath:cheatsPath]] autorelease];
+	CocoaDSCheatManager *newCheatList = [[CocoaDSCheatManager alloc] initWithFileURL:[NSURL fileURLWithPath:cheatsPath]];
 	if (newCheatList != nil)
 	{
 		NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
@@ -1877,7 +1841,6 @@
 		[[cdsCore cdsFirmware] writeUserDefaultWFCUserID];
 	}
 	
-	[[self currentRom] release];
 	[self setCurrentRom:nil];
 	
 	// Release the current cheat list and assign the empty list.
@@ -2057,7 +2020,7 @@
 
 - (void) didEndFileMigrationSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
 {
-	NSURL *romURL = (NSURL *)contextInfo;
+	NSURL *romURL = (NSURL *)CFBridgingRelease(contextInfo);
 	NSURL *romSaveURL = [CocoaDSFile romSaveURLFromRomURL:romURL];
 	
     [sheet orderOut:self];	
@@ -2075,9 +2038,6 @@
 	[self setIsUserInterfaceBlockingExecution:NO];
 	[self setIsShowingFileMigrationDialog:NO];
 	[self loadRomByURL:romURL asynchronous:YES];
-	
-	// We retained this when we initially put up the sheet, so we need to release it now.
-	[romURL release];
 }
 
 - (void) didEndSaveStateSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
@@ -2121,9 +2081,8 @@
 {
 	[self didEndSaveStateSheet:sheet returnCode:returnCode contextInfo:contextInfo];
 	
-	NSURL *romURL = (NSURL *)contextInfo;
+	NSURL *romURL = (NSURL *)CFBridgingRelease(contextInfo);
 	[self handleLoadRomByURL:romURL];
-	[romURL release];
 }
 
 - (void) didEndSaveStateSheetTerminate:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
@@ -2612,8 +2571,6 @@
 		{
 			enable = NO;
 		}
-		
-		[fileManager release];
 	}
     else if (theAction == @selector(toggleExecutePause:))
     {

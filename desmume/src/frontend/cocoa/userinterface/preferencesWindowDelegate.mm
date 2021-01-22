@@ -78,7 +78,6 @@
 	}
 	
 	context = [[NSOpenGLContext alloc] initWithFormat:format shareContext:nil];
-	[format release];
 	cglDisplayContext = (CGLContextObj)[context CGLContextObj];
 	
 	CGLContextObj prevContext = CGLGetCurrentContext();
@@ -117,9 +116,6 @@
 	CGLSetCurrentContext(prevContext);
 	
 	[context clearDrawable];
-	[context release];
-	
-	[super dealloc];
 }
 
 - (void) setFiltersPreferGPU:(BOOL)theState
@@ -237,7 +233,6 @@
 		// Load the preview image.
 		NSImage *previewImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"VideoFilterPreview_64x64" ofType:@"png"]];
 		[self loadPreviewImage:previewImage];
-		[previewImage release];
 		
 		isPreviewImageLoaded = true;
 	}
@@ -304,9 +299,7 @@
 	bindings = [[NSMutableDictionary alloc] init];
 	if (bindings == nil)
 	{
-		[self release];
-		self = nil;
-		return self;
+		return nil;
 	}
 	
 	firmwareMACAddressString = @"00:09:BF:FF:FF:FF";
@@ -315,10 +308,10 @@
 	subnetMaskString_AP3 = @"0.0.0.0";
 	
 	// Load the volume icons.
-	iconVolumeFull		= [[NSImage imageNamed:@"Icon_VolumeFull_16x16"] retain];
-	iconVolumeTwoThird	= [[NSImage imageNamed:@"Icon_VolumeTwoThird_16x16"] retain];
-	iconVolumeOneThird	= [[NSImage imageNamed:@"Icon_VolumeOneThird_16x16"] retain];
-	iconVolumeMute		= [[NSImage imageNamed:@"Icon_VolumeMute_16x16"] retain];
+	iconVolumeFull		= [NSImage imageNamed:@"Icon_VolumeFull_16x16"];
+	iconVolumeTwoThird	= [NSImage imageNamed:@"Icon_VolumeTwoThird_16x16"];
+	iconVolumeOneThird	= [NSImage imageNamed:@"Icon_VolumeOneThird_16x16"];
+	iconVolumeMute		= [NSImage imageNamed:@"Icon_VolumeMute_16x16"];
 	[bindings setObject:iconVolumeFull forKey:@"volumeIconImage"];
 	
 	prefViewDict = nil;
@@ -328,19 +321,10 @@
 
 - (void)dealloc
 {
-	[iconVolumeFull release];
-	[iconVolumeTwoThird release];
-	[iconVolumeOneThird release];
-	[iconVolumeMute release];
-	[bindings release];
-	[prefViewDict release];
-	
 	[self setFirmwareMACAddressString:nil];
 	[self setSubnetMaskString_AP1:nil];
 	[self setSubnetMaskString_AP2:nil];
 	[self setSubnetMaskString_AP3:nil];
-	
-	[super dealloc];
 }
 
 - (IBAction) changePrefView:(id)sender
@@ -461,10 +445,10 @@
 		}
 		
 		[[NSUserDefaults standardUserDefaults] setURL:selectedFileURL forKey:@"R4Cheat_DatabasePath"];
-		[bindings setValue:[selectedFileURL lastPathComponent] forKey:@"R4CheatDatabaseName"];
+		[self->bindings setValue:[selectedFileURL lastPathComponent] forKey:@"R4CheatDatabaseName"];
 		
-		const BOOL isRomLoaded = [(EmuControllerDelegate *)[emuController content] currentRom] != nil;
-		NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
+		const BOOL isRomLoaded = [(EmuControllerDelegate *)[self->emuController content] currentRom] != nil;
+		NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[self->cheatWindowController content];
 		CocoaDSCheatManager *cdsCheats = (CocoaDSCheatManager *)[cheatWindowBindings valueForKey:@"cheatList"];
 		
 		if (isRomLoaded == YES && cdsCheats != nil)
@@ -473,7 +457,7 @@
 			NSMutableArray *dbList = [cdsCheats cheatListFromDatabase:selectedFileURL errorCode:&error];
 			if (dbList != nil)
 			{
-				[cheatDatabaseController setContent:dbList];
+				[self->cheatDatabaseController setContent:dbList];
 				
 				NSString *titleString = cdsCheats.dbTitle;
 				NSString *dateString = cdsCheats.dbDate;
@@ -681,9 +665,9 @@
 		}
 		
 		[[NSUserDefaults standardUserDefaults] setURL:selectedFileURL forKey:@"BIOS_ARM7ImagePath"];
-		[bindings setValue:[selectedFileURL lastPathComponent] forKey:@"Arm7BiosImageName"];
+		[self->bindings setValue:[selectedFileURL lastPathComponent] forKey:@"Arm7BiosImageName"];
 		
-		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[self->cdsCoreController content];
 		[cdsCore setArm7ImageURL:selectedFileURL];
 	} ];
 }
@@ -836,8 +820,6 @@
 	
 	[window setFrame:newFrame display:YES animate:YES];
 	[window setContentView:theView];
-	
-	[tempView release];
 }
 
 - (void) markUnsupportedOpenGLMSAAMenuItems

@@ -43,23 +43,23 @@ class CHEATSEARCH;
 	pthread_mutex_t mutexData;
 	
 	CocoaDSCheatItem *workingCopy;
-	CocoaDSCheatItem *parent;
+	__unsafe_unretained CocoaDSCheatItem *parent;
 }
 
 @property (assign) CHEATS_LIST *data;
 @property (assign) BOOL willAdd;
 @property (assign, nonatomic) BOOL enabled;
 @property (assign, nonatomic) NSInteger cheatType;
-@property (assign, nonatomic) NSImage *cheatTypeIcon;
+@property (strong, nonatomic) NSImage *cheatTypeIcon;
 @property (assign, nonatomic) BOOL isSupportedCheatType;
 @property (assign, nonatomic) NSInteger freezeType;
 @property (assign, nonatomic) NSString *description;
 @property (assign, nonatomic) NSUInteger codeCount;
-@property (assign, nonatomic) NSString *code;
+@property (copy, nonatomic) NSString *code;
 @property (assign, nonatomic) UInt8 bytes;
 @property (assign, nonatomic) UInt32 memAddress;
-@property (assign, nonatomic) NSString *memAddressString;
-@property (assign, nonatomic) NSString *memAddressSixDigitString;
+@property (copy, nonatomic) NSString *memAddressString;
+@property (copy, nonatomic) NSString *memAddressSixDigitString;
 @property (assign, nonatomic) SInt64 value;
 @property (readonly) CocoaDSCheatItem *workingCopy;
 @property (assign) CocoaDSCheatItem *parent;
@@ -106,7 +106,7 @@ class CHEATSEARCH;
 }
 
 @property (readonly) CHEATS *listData;
-@property (readonly) NSMutableArray *list;
+@property (readonly, strong) NSMutableArray *list;
 @property (assign) pthread_rwlock_t *rwlockCoreExecute;
 @property (assign) NSUInteger untitledCount;
 @property (copy) NSString *dbTitle;

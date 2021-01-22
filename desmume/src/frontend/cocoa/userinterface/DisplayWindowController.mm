@@ -74,7 +74,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	
 	view = nil;
-	emuControl = [theEmuController retain];
+	emuControl = theEmuController;
 	assignedScreen = nil;
 	masterWindow = nil;
 	
@@ -117,8 +117,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[self setAssignedScreen:nil];
 	[self setView:nil];
 	[self setMasterWindow:nil];
-	
-	[super dealloc];
 }
 
 #pragma mark Dynamic Property Methods
@@ -578,11 +576,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	screenRect.origin.x = 0.0;
 	screenRect.origin.y = 0.0;
 	
-	DisplayFullScreenWindow *newFullScreenWindow = [[[DisplayFullScreenWindow alloc] initWithContentRect:screenRect
+	DisplayFullScreenWindow *newFullScreenWindow = [[DisplayFullScreenWindow alloc] initWithContentRect:screenRect
 																							   styleMask:NSBorderlessWindowMask
 																								 backing:NSBackingStoreBuffered
 																								   defer:NO
-																								  screen:targetScreen] autorelease];
+																								  screen:targetScreen];
 	[newFullScreenWindow setHasShadow:NO];
 	[view setFrame:screenRect];
 	[[newFullScreenWindow contentView] addSubview:view];
@@ -1241,7 +1239,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void)windowDidLoad
 {
 	NSRect newViewFrameRect = NSMakeRect(0.0f, (CGFloat)_statusBarHeight, (CGFloat)_localViewProps.clientWidth, (CGFloat)_localViewProps.clientHeight);
-	NSView<CocoaDisplayViewProtocol> *newView = (NSView<CocoaDisplayViewProtocol> *)[[[DisplayView alloc] initWithFrame:newViewFrameRect] autorelease];
+	NSView<CocoaDisplayViewProtocol> *newView = (NSView<CocoaDisplayViewProtocol> *)[[DisplayView alloc] initWithFrame:newViewFrameRect];
 	[self setView:newView];
 	
 	// Set up the master window that is associated with this window controller.
@@ -1269,7 +1267,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[outputVolumeMenuItem setView:outputVolumeControlView];
 	
 	// Set up the video output thread.
-	CocoaDSDisplayVideo *newDisplayOutput = [[[CocoaDSDisplayVideo alloc] init] autorelease];
+	CocoaDSDisplayVideo *newDisplayOutput = [[CocoaDSDisplayVideo alloc] init];
 	ClientDisplay3DView *cdv = [newView clientDisplayView];
 	
 	[newDisplayOutput setClientDisplay3DView:cdv];
@@ -1631,12 +1629,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	if (localOGLContext != nil)
 	{
 		[localOGLContext clearDrawable];
-		[localOGLContext release];
 	}
-	
-	[localLayer release];
-	
-	[super dealloc];
 }
 
 #pragma mark Class Methods

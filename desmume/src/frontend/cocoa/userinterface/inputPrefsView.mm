@@ -86,10 +86,10 @@
 				{
 					NSArray *inputList = (NSArray *)[profileMappings objectForKey:mappingKey];
 					NSMutableArray *newInputList = [[NSMutableArray alloc] initWithArray:inputList copyItems:YES];
-					[reconstructedMappings setObject:[newInputList autorelease] forKey:mappingKey];
+					[reconstructedMappings setObject:newInputList forKey:mappingKey];
 				}
 				
-				[reconstructedProfile setObject:[reconstructedMappings autorelease] forKey:profileKey];
+				[reconstructedProfile setObject:reconstructedMappings forKey:profileKey];
 			}
 			else
 			{
@@ -97,7 +97,7 @@
 			}
 		}
 		
-		[defaultProfilesList addObject:[reconstructedProfile autorelease]];
+		[defaultProfilesList addObject:reconstructedProfile];
 	}
 	
 	savedProfilesList = [[NSMutableArray alloc] initWithCapacity:32];
@@ -110,25 +110,16 @@
 
 - (void)dealloc
 {
-	[configInputList release];
-	[inputSettingsMappings release];
-	[savedProfilesList release];
 	
 	[self setConfigInputTargetID:nil];
-	[self setInputSettingsInEdit:nil];
 	
-	[super dealloc];
 }
 
 #pragma mark Dynamic Properties
 - (void) setConfigInputTargetID:(NSString *)targetID
 {
-	if (targetID == nil)
-	{
-		[configInputTargetID release];
-	}
 	
-	configInputTargetID = [targetID retain];
+	configInputTargetID = targetID;
 	[[self inputManager] setHidInputTarget:(targetID == nil) ? nil : self];
 }
 
@@ -184,10 +175,10 @@
 				{
 					NSArray *inputList = (NSArray *)[profileMappings objectForKey:mappingKey];
 					NSMutableArray *newInputList = [[NSMutableArray alloc] initWithArray:inputList copyItems:YES];
-					[reconstructedMappings setObject:[newInputList autorelease] forKey:mappingKey];
+					[reconstructedMappings setObject:newInputList forKey:mappingKey];
 				}
 				
-				[reconstructedProfile setObject:[reconstructedMappings autorelease] forKey:profileKey];
+				[reconstructedProfile setObject:reconstructedMappings forKey:profileKey];
 			}
 			else
 			{
@@ -195,7 +186,7 @@
 			}
 		}
 		
-		[savedProfilesList addObject:[reconstructedProfile autorelease]];
+		[savedProfilesList addObject:reconstructedProfile];
 	}
 }
 
@@ -229,9 +220,9 @@
 			profileName = @"";
 		}
 		
-		NSMenuItem *newProfileMenuItem = [[[NSMenuItem alloc] initWithTitle:profileName
+		NSMenuItem *newProfileMenuItem = [[NSMenuItem alloc] initWithTitle:profileName
 																	 action:@selector(profileSelect:)
-															  keyEquivalent:@""] autorelease];
+															  keyEquivalent:@""];
 		[newProfileMenuItem setTag:profileIndex];
 		[newProfileMenuItem setTarget:self];
 		
@@ -260,9 +251,9 @@
 				profileName = @"";
 			}
 			
-			NSMenuItem *newProfileMenuItem = [[[NSMenuItem alloc] initWithTitle:profileName
+			NSMenuItem *newProfileMenuItem = [[NSMenuItem alloc] initWithTitle:profileName
 																		 action:@selector(profileSelect:)
-																  keyEquivalent:@""] autorelease];
+																  keyEquivalent:@""];
 			[newProfileMenuItem setTag:profileIndex];
 			[newProfileMenuItem setTarget:self];
 			
@@ -405,7 +396,7 @@
 {
     [sheet orderOut:self];
 	
-	NSOutlineView *outlineView = (NSOutlineView *)contextInfo;
+	NSOutlineView *outlineView = (__bridge NSOutlineView *)contextInfo;
 	NSMutableDictionary *editedDeviceInfo = (NSMutableDictionary *)[inputSettingsController content];
 	NSMutableDictionary *deviceInfoInEdit = [self inputSettingsInEdit];
 	
@@ -534,12 +525,12 @@
 			}
 			else
 			{
-				outCell = [[[NSCell alloc] init] autorelease];
+				outCell = [[NSCell alloc] init];
 			}
 		}
 		else
 		{
-			outCell = [[[NSCell alloc] init] autorelease];
+			outCell = [[NSCell alloc] init];
 		}
 	}
 	else if ([columnID isEqualToString:@"InputDeviceColumn"])
@@ -568,14 +559,14 @@
 		}
 		else
 		{
-			outCell = [[[NSCell alloc] init] autorelease];
+			outCell = [[NSCell alloc] init];
 		}
 	}
 	else if ([columnID isEqualToString:@"RemoveInputColumn"])
 	{
 		if (![item isKindOfClass:[NSDictionary class]])
 		{
-			outCell = [[[NSCell alloc] init] autorelease];
+			outCell = [[NSCell alloc] init];
 		}
 	}
 	
@@ -832,7 +823,7 @@
 	   modalForWindow:prefWindow
 		modalDelegate:self
 	   didEndSelector:@selector(didEndSettingsSheet:returnCode:contextInfo:)
-		  contextInfo:outlineView];
+		  contextInfo:(__bridge void*)outlineView];
 }
 
 - (IBAction) closeSettingsSheet:(id)sender
@@ -963,22 +954,22 @@
 	{
 		NSArray *inputList = (NSArray *)[profileMappings objectForKey:mappingKey];
 		NSMutableArray *newInputList = [[NSMutableArray alloc] initWithArray:inputList copyItems:YES];
-		[reconstructedMappings setObject:[newInputList autorelease] forKey:mappingKey];
+		[reconstructedMappings setObject:newInputList forKey:mappingKey];
 	}
 	
 	NSMutableDictionary *newProfile = [NSMutableDictionary dictionaryWithObjectsAndKeys:
 									   newProfileName, @"Name",
 									   [NSNumber numberWithBool:NO], @"IsDefaultType",
-									   [reconstructedMappings autorelease], @"Mappings",
+									   reconstructedMappings, @"Mappings",
 									   nil];
 	
 	[savedProfilesList addObject:newProfile];
 	
 	const NSInteger profileIndex = _defaultProfileListCount + [savedProfilesList count] - 1;
 	NSMenu *profileMenu = [inputProfileMenu menu];
-	NSMenuItem *newProfileMenuItem = [[[NSMenuItem alloc] initWithTitle:newProfileName
+	NSMenuItem *newProfileMenuItem = [[NSMenuItem alloc] initWithTitle:newProfileName
 																 action:@selector(profileSelect:)
-														  keyEquivalent:@""] autorelease];
+														  keyEquivalent:@""];
 	[newProfileMenuItem setTag:profileIndex];
 	[newProfileMenuItem setTarget:self];
 	
@@ -1041,7 +1032,7 @@
 		return;
 	}
 	
-	[selectedProfile setValue:[[[NSMutableDictionary alloc] initWithDictionary:[inputManager inputMappings] copyItems:YES] autorelease] forKey:@"Mappings"];
+	[selectedProfile setValue:[[NSMutableDictionary alloc] initWithDictionary:[inputManager inputMappings] copyItems:YES] forKey:@"Mappings"];
 	[[NSUserDefaults standardUserDefaults] setObject:savedProfilesList forKey:@"Input_SavedProfiles"];
 }
 
@@ -1063,9 +1054,9 @@
 	// Add the "no items" menu item if there are no profiles saved.
 	if ([savedProfilesList count] < 1)
 	{
-		NSMenuItem *noSavedConfigItem = [[[NSMenuItem alloc] initWithTitle:NSSTRING_INPUTPREF_NO_SAVED_PROFILES
+		NSMenuItem *noSavedConfigItem = [[NSMenuItem alloc] initWithTitle:NSSTRING_INPUTPREF_NO_SAVED_PROFILES
 																	 action:NULL
-															  keyEquivalent:@""] autorelease];
+															  keyEquivalent:@""];
 		[noSavedConfigItem setEnabled:NO];
 		[profileMenu insertItem:noSavedConfigItem atIndex:profileIndex+1];
 	}

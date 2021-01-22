@@ -83,7 +83,7 @@
 	didApplicationFinishLaunching = NO;
 	delayedROMFileName = nil;
 	
-	RGBA8888ToNSColorValueTransformer *nsColorTransformer = [[[RGBA8888ToNSColorValueTransformer alloc] init] autorelease];
+	RGBA8888ToNSColorValueTransformer *nsColorTransformer = [[RGBA8888ToNSColorValueTransformer alloc] init];
 	[NSValueTransformer setValueTransformer:nsColorTransformer forName:@"RGBA8888ToNSColorValueTransformer"];
 	
 	return self;
@@ -214,7 +214,7 @@
 	[self setupSlotMenuItems];
 	
 	// Init the DS emulation core.
-	CocoaDSCore *newCore = [[[CocoaDSCore alloc] init] autorelease];
+	CocoaDSCore *newCore = [[CocoaDSCore alloc] init];
 	
 	// Init the DS controller.
 	[[newCore cdsController] setDelegate:emuControl];
@@ -227,7 +227,7 @@
 	[wifiSettingsPanelDelegate fillLibpcapDeviceMenu];
 	
 	// Init the DS speakers.
-	CocoaDSSpeaker *newSpeaker = [[[CocoaDSSpeaker alloc] init] autorelease];
+	CocoaDSSpeaker *newSpeaker = [[CocoaDSSpeaker alloc] init];
 	[newCore addOutput:newSpeaker];
 	[emuControl setCdsSpeaker:newSpeaker];
 	
@@ -338,7 +338,6 @@
 	isFirstTimeRun = YES;
 	[appFirstTimeRunDict setValue:[NSNumber numberWithBool:isFirstTimeRun] forKey:bundleVersionString];
 	[[NSUserDefaults standardUserDefaults] setObject:appFirstTimeRunDict forKey:@"General_AppFirstTimeRun"];
-	[appFirstTimeRunDict release];
 	
 	// If the user is trying to load a ROM file while launching the app, then ensure that the
 	// ROM file is loaded at the end of this method and never any time before that.
@@ -514,7 +513,7 @@
 	[cdsCore setIsCheatingEnabled:[[NSUserDefaults standardUserDefaults] boolForKey:@"CoreControl_EnableCheats"]];
 	
 	// Set up the firmware per user preferences.
-	CocoaDSFirmware *newFirmware = [[[CocoaDSFirmware alloc] init] autorelease];
+	CocoaDSFirmware *newFirmware = [[CocoaDSFirmware alloc] init];
 	BOOL needUserDefaultSynchronize = NO;
 	uint32_t defaultMACAddress_u32 = 0;
 	

@@ -214,7 +214,6 @@
 		}
 	}
 	
-	[numberFormatter release];
 	return ip4Address_u32;
 }
 
@@ -259,8 +258,6 @@
 		{
 			dragOp = NSDragOperationLink;
 		}
-		
-		[fileManager release];
 	}
 	
 	return dragOp;
