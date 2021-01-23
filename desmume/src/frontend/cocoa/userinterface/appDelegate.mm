@@ -506,9 +506,9 @@
 	[cdsCore setMaxJITBlockSize:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_MaxJITBlockSize"]];
 	
 	// Set the SLOT-1 device settings per user preferences.
-	NSString *slot1R4Path = (NSString *)[[NSUserDefaults standardUserDefaults] objectForKey:@"EmulationSlot1_R4StoragePath"];
+	NSURL *slot1R4Path = [[NSUserDefaults standardUserDefaults] URLForKey:@"EmulationSlot1_R4StoragePath"];
 	[cdsCore setSlot1DeviceType:[[NSUserDefaults standardUserDefaults] integerForKey:@"EmulationSlot1_DeviceType"]];
-	[cdsCore setSlot1R4URL:(slot1R4Path != nil) ? [NSURL fileURLWithPath:slot1R4Path] : nil];
+	[cdsCore setSlot1R4URL:slot1R4Path];
 	
 	// Set the miscellaneous emulations settings per user preferences.
 	[emuControl changeCoreSpeedWithDouble:[[NSUserDefaults standardUserDefaults] doubleForKey:@"CoreControl_SpeedScalar"]];

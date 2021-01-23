@@ -26,43 +26,26 @@
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 {
-	NSObject *dummyObject;
-	
-	NSObjectController *aboutWindowController;
-	NSObjectController *emuControlController;
-	NSObjectController *prefWindowController;
-	NSObjectController *cdsCoreController;
-	FileMigrationDelegate *migrationDelegate;
-	MacAVCaptureToolDelegate *avCaptureToolDelegate;
-	WifiSettingsPanelDelegate *wifiSettingsPanelDelegate;
-	
-	NSWindow *prefWindow;
-	NSWindow *troubleshootingWindow;
-	InputPrefsView *inputPrefsView;
-	
-	NSMenu *mLoadStateSlot;
-	NSMenu *mSaveStateSlot;
-	
 	BOOL isAppRunningOnIntel;
     BOOL isDeveloperPlusBuild;
 	BOOL didApplicationFinishLaunching;
 	NSString *delayedROMFileName;
 }
 
-@property (readonly) IBOutlet NSObject *dummyObject;
+@property (weak) IBOutlet NSObject *dummyObject;
 
-@property (readonly) IBOutlet NSObjectController *aboutWindowController;
-@property (readonly) IBOutlet NSObjectController *emuControlController;
-@property (readonly) IBOutlet NSObjectController *prefWindowController;
-@property (readonly) IBOutlet NSObjectController *cdsCoreController;
-@property (readonly) IBOutlet FileMigrationDelegate *migrationDelegate;
-@property (readonly) IBOutlet MacAVCaptureToolDelegate *avCaptureToolDelegate;
-@property (readonly) IBOutlet WifiSettingsPanelDelegate *wifiSettingsPanelDelegate;
-@property (readonly) IBOutlet NSWindow *prefWindow;
-@property (readonly) IBOutlet NSWindow *troubleshootingWindow;
-@property (readonly) IBOutlet NSMenu *mLoadStateSlot;
-@property (readonly) IBOutlet NSMenu *mSaveStateSlot;
-@property (readonly) IBOutlet InputPrefsView *inputPrefsView;
+@property (weak) IBOutlet NSObjectController *aboutWindowController;
+@property (weak) IBOutlet NSObjectController *emuControlController;
+@property (weak) IBOutlet NSObjectController *prefWindowController;
+@property (weak) IBOutlet NSObjectController *cdsCoreController;
+@property (weak) IBOutlet FileMigrationDelegate *migrationDelegate;
+@property (weak) IBOutlet MacAVCaptureToolDelegate *avCaptureToolDelegate;
+@property (weak) IBOutlet WifiSettingsPanelDelegate *wifiSettingsPanelDelegate;
+@property (weak) IBOutlet NSWindow *prefWindow;
+@property (weak) IBOutlet NSWindow *troubleshootingWindow;
+@property (weak) IBOutlet NSMenu *mLoadStateSlot;
+@property (weak) IBOutlet NSMenu *mSaveStateSlot;
+@property (weak) IBOutlet InputPrefsView *inputPrefsView;
 
 @property (assign) BOOL isAppRunningOnIntel;
 @property (assign) BOOL isDeveloperPlusBuild;

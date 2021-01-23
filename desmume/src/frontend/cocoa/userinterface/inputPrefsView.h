@@ -24,29 +24,6 @@
 
 @interface InputPrefsView : NSView <InputHIDManagerTarget, NSOutlineViewDelegate, NSOutlineViewDataSource>
 {
-	NSObject *__unsafe_unretained dummyObject;
-	NSWindow *__weak prefWindow;
-	NSPopUpButton *__weak inputProfileMenu;
-	NSButton *__weak inputProfilePreviousButton;
-	NSButton *__weak inputProfileNextButton;
-	NSOutlineView *__weak inputPrefOutlineView;
-	NSObjectController *__weak inputSettingsController;
-	InputProfileController *__weak inputProfileController;
-	
-	NSWindow *__weak inputProfileSheet;
-	NSWindow *__weak inputProfileRenameSheet;
-	NSWindow *__weak inputSettingsNDSInput;
-	NSWindow *__weak inputSettingsMicrophone;
-	NSWindow *__weak inputSettingsTouch;
-	NSWindow *__weak inputSettingsLoadStateSlot;
-	NSWindow *__weak inputSettingsSaveStateSlot;
-	NSWindow *__weak inputSettingsSetSpeedLimit;
-	NSWindow *__weak inputSettingsGPUState;
-	NSWindow *__weak inputSettingsPaddleController;
-	
-	NSSegmentedControl *__weak turboPatternControl;
-	
-	InputManager *__weak inputManager;
 	NSString *configInputTargetID;
 	NSMutableDictionary *configInputList;
 	NSMutableDictionary *inputSettingsInEdit;
@@ -58,29 +35,29 @@
 	NSMutableArray *savedProfilesList;
 }
 
-@property (unsafe_unretained, readonly) IBOutlet NSObject *dummyObject;
-@property (weak, readonly) IBOutlet NSWindow *prefWindow;
-@property (weak, readonly) IBOutlet NSPopUpButton *inputProfileMenu;
-@property (weak, readonly) IBOutlet NSButton *inputProfilePreviousButton;
-@property (weak, readonly) IBOutlet NSButton *inputProfileNextButton;
-@property (weak, readonly) IBOutlet NSOutlineView *inputPrefOutlineView;
-@property (weak, readonly) IBOutlet NSObjectController *inputSettingsController;
-@property (weak, readonly) IBOutlet InputProfileController *inputProfileController;
+@property (weak) IBOutlet NSObject *dummyObject;
+@property (weak) IBOutlet NSWindow *prefWindow;
+@property (weak) IBOutlet NSPopUpButton *inputProfileMenu;
+@property (weak) IBOutlet NSButton *inputProfilePreviousButton;
+@property (weak) IBOutlet NSButton *inputProfileNextButton;
+@property (weak) IBOutlet NSOutlineView *inputPrefOutlineView;
+@property (weak) IBOutlet NSObjectController *inputSettingsController;
+@property (weak) IBOutlet InputProfileController *inputProfileController;
 
-@property (weak, readonly) IBOutlet NSWindow *inputProfileSheet;
-@property (weak, readonly) IBOutlet NSWindow *inputProfileRenameSheet;
-@property (weak, readonly) IBOutlet NSWindow *inputSettingsNDSInput;
-@property (weak, readonly) IBOutlet NSWindow *inputSettingsMicrophone;
-@property (weak, readonly) IBOutlet NSWindow *inputSettingsTouch;
-@property (weak, readonly) IBOutlet NSWindow *inputSettingsLoadStateSlot;
-@property (weak, readonly) IBOutlet NSWindow *inputSettingsSaveStateSlot;
-@property (weak, readonly) IBOutlet NSWindow *inputSettingsSetSpeedLimit;
-@property (weak, readonly) IBOutlet NSWindow *inputSettingsGPUState;
-@property (weak, readonly) IBOutlet NSWindow *inputSettingsPaddleController;
+@property (weak) IBOutlet NSWindow *inputProfileSheet;
+@property (weak) IBOutlet NSWindow *inputProfileRenameSheet;
+@property (weak) IBOutlet NSWindow *inputSettingsNDSInput;
+@property (weak) IBOutlet NSWindow *inputSettingsMicrophone;
+@property (weak) IBOutlet NSWindow *inputSettingsTouch;
+@property (weak) IBOutlet NSWindow *inputSettingsLoadStateSlot;
+@property (weak) IBOutlet NSWindow *inputSettingsSaveStateSlot;
+@property (weak) IBOutlet NSWindow *inputSettingsSetSpeedLimit;
+@property (weak) IBOutlet NSWindow *inputSettingsGPUState;
+@property (weak) IBOutlet NSWindow *inputSettingsPaddleController;
 
-@property (weak, readonly) IBOutlet NSSegmentedControl *turboPatternControl;
+@property (weak) IBOutlet NSSegmentedControl *turboPatternControl;
 
-@property (weak, readonly) IBOutlet InputManager *inputManager;
+@property (weak) IBOutlet InputManager *inputManager;
 @property (nonatomic, copy) NSString *configInputTargetID;
 @property (strong) NSMutableDictionary *inputSettingsInEdit;
 

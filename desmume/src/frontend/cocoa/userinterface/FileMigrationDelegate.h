@@ -19,9 +19,6 @@
 
 @interface FileMigrationDelegate : NSObject <NSWindowDelegate, NSOutlineViewDelegate, NSOutlineViewDataSource>
 {
-	NSObject *dummyObject;
-	NSWindow *window;
-	NSOutlineView *fileTreeOutlineView;
 	NSArray *_versionList;
 	NSMutableDictionary *_portStringsDict;
 	NSMutableDictionary *_fileTree;
@@ -31,9 +28,9 @@
 	BOOL filesPresent;
 }
 
-@property (readonly) IBOutlet NSObject *dummyObject;
-@property (readonly) IBOutlet NSWindow *window;
-@property (readonly) IBOutlet NSOutlineView *fileTreeOutlineView;
+@property (weak) IBOutlet NSObject *dummyObject;
+@property (weak) IBOutlet NSWindow *window;
+@property (weak) IBOutlet NSOutlineView *fileTreeOutlineView;
 
 @property (assign) BOOL filesPresent;
 

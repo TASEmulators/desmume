@@ -186,17 +186,17 @@ static NSDictionary *hidUsageTable = nil;
 
 - (NSString *) manufacturerName
 {
-	return (NSString *)IOHIDDeviceGetProperty([self hidDeviceRef], CFSTR(kIOHIDManufacturerKey));
+	return (__bridge NSString *)IOHIDDeviceGetProperty([self hidDeviceRef], CFSTR(kIOHIDManufacturerKey));
 }
 
 - (NSString *) productName
 {
-	return (NSString *)IOHIDDeviceGetProperty([self hidDeviceRef], CFSTR(kIOHIDProductKey));
+	return (__bridge NSString *)IOHIDDeviceGetProperty([self hidDeviceRef], CFSTR(kIOHIDProductKey));
 }
 
 - (NSString *) serialNumber
 {
-	return (NSString *)IOHIDDeviceGetProperty([self hidDeviceRef], CFSTR(kIOHIDSerialNumberKey));
+	return (__bridge NSString *)IOHIDDeviceGetProperty([self hidDeviceRef], CFSTR(kIOHIDSerialNumberKey));
 }
 
 - (BOOL) supportsForceFeedback

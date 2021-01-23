@@ -37,49 +37,16 @@ class AudioSampleBlockGenerator;
 
 @interface EmuControllerDelegate : NSObject <NSUserInterfaceValidations, CocoaDSControllerDelegate>
 {
-	InputManager *inputManager;
-	
 	CocoaDSRom *currentRom;
 	CocoaDSFirmware *cdsFirmware;
 	CocoaDSSpeaker *cdsSpeaker;
 	CocoaDSCheatManager *cdsCheats;
 	CocoaDSCheatManager *dummyCheatList;
 	
-	CheatWindowDelegate *cheatWindowDelegate;
-	MacScreenshotCaptureToolDelegate *screenshotCaptureToolDelegate;
-	MacAVCaptureToolDelegate *avCaptureToolDelegate;
-	PreferencesWindowDelegate *prefWindowDelegate;
-	NSObjectController *firmwarePanelController;
-	NSObjectController *romInfoPanelController;
-	NSObjectController *cdsCoreController;
-	NSObjectController *cdsSoundController;
-	NSObjectController *cheatWindowController;
-	NSObjectController *slot2WindowController;
-	NSArrayController *inputDeviceListController;
-	NSArrayController *cheatListController;
-	NSArrayController *cheatDatabaseController;
-	
-	RomInfoPanel *romInfoPanel;
-	
-	NSWindow *displayRotationPanel;
-	NSWindow *displaySeparationPanel;
-	NSWindow *displayVideoSettingsPanel;
-	NSWindow *displayHUDSettingsPanel;
-	
 	NSString *_displayRotationPanelTitle;
 	NSString *_displaySeparationPanelTitle;
 	NSString *_displayVideoSettingsPanelTitle;
 	NSString *_displayHUDSettingsPanelTitle;
-	
-	NSWindow *executionControlWindow;
-	NSWindow *slot1ManagerWindow;
-	NSWindow *saveFileMigrationSheet;
-	NSWindow *saveStatePrecloseSheet;
-	NSWindow *ndsErrorSheet;
-	NSTextField *ndsErrorStatusTextField;
-	NSView *exportRomSavePanelAccessoryView;
-	
-	NSPopUpButton *openglMSAAPopUpButton;
 	
 	BOOL isSaveStateEdited;
 	
@@ -118,54 +85,54 @@ class AudioSampleBlockGenerator;
 	NSImage *iconSpeedDouble;
 	
 	DisplayWindowController *mainWindow;
-	NSMutableArray *windowList;
+	NSMutableArray<DisplayWindowController*> *windowList;
 	
 	OSSpinLock spinlockFirmware;
 	OSSpinLock spinlockSpeaker;
 }
 
-@property (readonly) IBOutlet InputManager *inputManager;
+@property (weak) IBOutlet InputManager *inputManager;
 
 @property (strong) CocoaDSRom *currentRom; // Don't rely on autorelease since the emulator doesn't support concurrent unloading
-@property (retain) CocoaDSFirmware *cdsFirmware;
-@property (retain) CocoaDSSpeaker *cdsSpeaker;
-@property (retain) CocoaDSCheatManager *cdsCheats;
+@property (strong) CocoaDSFirmware *cdsFirmware;
+@property (strong) CocoaDSSpeaker *cdsSpeaker;
+@property (strong) CocoaDSCheatManager *cdsCheats;
 
-@property (readonly) IBOutlet CheatWindowDelegate *cheatWindowDelegate;
-@property (readonly) IBOutlet MacScreenshotCaptureToolDelegate *screenshotCaptureToolDelegate;
-@property (readonly) IBOutlet MacAVCaptureToolDelegate *avCaptureToolDelegate;
-@property (readonly) IBOutlet PreferencesWindowDelegate *prefWindowDelegate;
-@property (readonly) IBOutlet NSObjectController *firmwarePanelController;
-@property (readonly) IBOutlet NSObjectController *romInfoPanelController;
-@property (readonly) IBOutlet NSObjectController *cdsCoreController;
-@property (readonly) IBOutlet NSObjectController *cdsSoundController;
-@property (readonly) IBOutlet NSObjectController *cheatWindowController;
-@property (readonly) IBOutlet NSObjectController *slot2WindowController;
-@property (readonly) IBOutlet NSArrayController *inputDeviceListController;
-@property (readonly) IBOutlet NSArrayController *cheatListController;
-@property (readonly) IBOutlet NSArrayController *cheatDatabaseController;
+@property (weak) IBOutlet CheatWindowDelegate *cheatWindowDelegate;
+@property (weak) IBOutlet MacScreenshotCaptureToolDelegate *screenshotCaptureToolDelegate;
+@property (weak) IBOutlet MacAVCaptureToolDelegate *avCaptureToolDelegate;
+@property (weak) IBOutlet PreferencesWindowDelegate *prefWindowDelegate;
+@property (weak) IBOutlet NSObjectController *firmwarePanelController;
+@property (weak) IBOutlet NSObjectController *romInfoPanelController;
+@property (weak) IBOutlet NSObjectController *cdsCoreController;
+@property (weak) IBOutlet NSObjectController *cdsSoundController;
+@property (weak) IBOutlet NSObjectController *cheatWindowController;
+@property (weak) IBOutlet NSObjectController *slot2WindowController;
+@property (weak) IBOutlet NSArrayController *inputDeviceListController;
+@property (weak) IBOutlet NSArrayController *cheatListController;
+@property (weak) IBOutlet NSArrayController *cheatDatabaseController;
 
-@property (readonly) IBOutlet RomInfoPanel *romInfoPanel;
+@property (weak) IBOutlet RomInfoPanel *romInfoPanel;
 
-@property (readonly) IBOutlet NSWindow *displayRotationPanel;
-@property (readonly) IBOutlet NSWindow *displaySeparationPanel;
-@property (readonly) IBOutlet NSWindow *displayVideoSettingsPanel;
-@property (readonly) IBOutlet NSWindow *displayHUDSettingsPanel;
+@property (weak) IBOutlet NSWindow *displayRotationPanel;
+@property (weak) IBOutlet NSWindow *displaySeparationPanel;
+@property (weak) IBOutlet NSWindow *displayVideoSettingsPanel;
+@property (weak) IBOutlet NSWindow *displayHUDSettingsPanel;
 
-@property (readonly) IBOutlet NSWindow *executionControlWindow;
-@property (readonly) IBOutlet NSWindow *slot1ManagerWindow;
-@property (readonly) IBOutlet NSWindow *saveFileMigrationSheet;
-@property (readonly) IBOutlet NSWindow *saveStatePrecloseSheet;
-@property (readonly) IBOutlet NSWindow *ndsErrorSheet;
-@property (readonly) IBOutlet NSTextField *ndsErrorStatusTextField;
-@property (readonly) IBOutlet NSView *exportRomSavePanelAccessoryView;
+@property (weak) IBOutlet NSWindow *executionControlWindow;
+@property (weak) IBOutlet NSWindow *slot1ManagerWindow;
+@property (weak) IBOutlet NSWindow *saveFileMigrationSheet;
+@property (weak) IBOutlet NSWindow *saveStatePrecloseSheet;
+@property (weak) IBOutlet NSWindow *ndsErrorSheet;
+@property (weak) IBOutlet NSTextField *ndsErrorStatusTextField;
+@property (weak) IBOutlet NSView *exportRomSavePanelAccessoryView;
 
-@property (readonly) IBOutlet NSPopUpButton *openglMSAAPopUpButton;
+@property (weak) IBOutlet NSPopUpButton *openglMSAAPopUpButton;
 
-@property (readonly) NSImage *iconExecute;
-@property (readonly) NSImage *iconPause;
-@property (readonly) NSImage *iconSpeedNormal;
-@property (readonly) NSImage *iconSpeedDouble;
+@property (readonly, strong) NSImage *iconExecute;
+@property (readonly, strong) NSImage *iconPause;
+@property (readonly, strong) NSImage *iconSpeedNormal;
+@property (readonly, strong) NSImage *iconSpeedDouble;
 
 @property (readonly) CGFloat lastSetSpeedScalar;
 
@@ -174,18 +141,18 @@ class AudioSampleBlockGenerator;
 @property (copy) NSString *statusText;
 @property (assign) BOOL isHardwareMicAvailable;
 @property (assign) float currentMicGainValue;
-@property (assign) float currentVolumeValue;
-@property (retain) NSImage *currentMicStatusIcon;
-@property (retain) NSImage *currentVolumeIcon;
+@property (nonatomic, assign) float currentVolumeValue;
+@property (strong) NSImage *currentMicStatusIcon;
+@property (strong) NSImage *currentVolumeIcon;
 @property (assign) BOOL isShowingSaveStateDialog;
 @property (assign) BOOL isShowingFileMigrationDialog;
 @property (assign) BOOL isUserInterfaceBlockingExecution;
-@property (retain) NSURL *currentSaveStateURL;
+@property (copy) NSURL *currentSaveStateURL;
 @property (assign) NSInteger selectedExportRomSaveID;
 @property (assign) NSInteger selectedRomSaveTypeID;
 
-@property (retain) DisplayWindowController *mainWindow;
-@property (readonly) NSMutableArray *windowList;
+@property (strong) DisplayWindowController *mainWindow;
+@property (readonly, strong) NSMutableArray<DisplayWindowController*> *windowList;
 
 // File Menu
 - (IBAction) newDisplayWindow:(id)sender;

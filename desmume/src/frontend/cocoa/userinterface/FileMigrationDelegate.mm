@@ -66,7 +66,6 @@
 {
 	NSDictionary *fileTypeInfoRootDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FileTypeInfo" ofType:@"plist"]];
 	NSDictionary *defaultPaths = (NSDictionary *)[fileTypeInfoRootDict valueForKey:@"DefaultPaths"];
-	NSFileManager *fileManager = [[NSFileManager alloc] init];
 	
 	[_fileTree removeAllObjects];
 	[_fileTreeSelection removeAllObjects];

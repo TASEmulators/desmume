@@ -88,7 +88,7 @@
 @synthesize statusText;
 @synthesize isHardwareMicAvailable;
 @synthesize currentMicGainValue;
-@dynamic currentVolumeValue;
+@synthesize currentVolumeValue;
 @synthesize currentMicStatusIcon;
 @synthesize currentVolumeIcon;
 
@@ -292,11 +292,6 @@
 	{
 		[self setCurrentVolumeIcon:newImage];
 	}
-}
-
-- (float) currentVolumeValue
-{
-	return currentVolumeValue;
 }
 
 #pragma mark IBActions
@@ -814,7 +809,7 @@
 
 - (IBAction) setVerticalSyncForNonLayerBackedViews:(id)sender
 {
-	if ( ([[(DisplayWindowController *)[windowList objectAtIndex:0] view] layer] == nil) && ([windowList count] > 0) )
+	if ( ([[[windowList objectAtIndex:0] view] layer] == nil) && ([windowList count] > 0) )
 	{
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 		const BOOL useVerticalSync = [cdsCore isFrameSkipEnabled] || (([cdsCore speedScalar] < 1.03f) && [cdsCore isSpeedLimitEnabled]);
@@ -835,12 +830,24 @@
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTitle:@"Select R4 Directory"];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
 	[panel beginSheetModalForWindow:slot1ManagerWindow
 				  completionHandler:^(NSModalResponse result) {
-					  [self didEndChooseSlot1R4Directory:panel returnCode:result contextInfo:nil];
-				  } ];
+		if (result == NSModalResponseCancel)
+		{
+			return;
+		}
+		
+		NSURL *selectedDirURL = [[panel URLs] firstObject];
+		if(selectedDirURL == nil)
+		{
+			return;
+		}
+		
+		[[NSUserDefaults standardUserDefaults] setURL:selectedDirURL forKey:@"EmulationSlot1_R4StoragePath"];
+		
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+		[cdsCore setSlot1R4URL:selectedDirURL];
+	} ];
 }
 
 - (IBAction) slot1Eject:(id)sender
@@ -993,7 +1000,7 @@
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore slot1DeviceType] forKey:@"EmulationSlot1_DeviceType"];
-	[[NSUserDefaults standardUserDefaults] setObject:[[cdsCore slot1R4URL] path] forKey:@"EmulationSlot1_R4StoragePath"];
+	[[NSUserDefaults standardUserDefaults] setURL:[cdsCore slot1R4URL]  forKey:@"EmulationSlot1_R4StoragePath"];
 	
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
@@ -1601,7 +1608,7 @@
 		[self setIsShowingSaveStateDialog:YES];
 		
 		[NSApp beginSheet:saveStatePrecloseSheet
-		   modalForWindow:(NSWindow *)[[windowList objectAtIndex:0] window]
+		   modalForWindow:[[windowList objectAtIndex:0] window]
             modalDelegate:self
 		   didEndSelector:endSheetSelector
 			  contextInfo:(__bridge void*)(romURL)];
@@ -1921,7 +1928,7 @@
 	[ndsErrorStatusTextField setFrame:newTextFieldRect];
 	
 	[NSApp beginSheet:ndsErrorSheet
-	   modalForWindow:(NSWindow *)[[windowList objectAtIndex:0] window]
+	   modalForWindow:[[windowList objectAtIndex:0] window]
 		modalDelegate:self
 	   didEndSelector:@selector(didEndErrorSheet:returnCode:contextInfo:)
 		  contextInfo:nil];
@@ -2100,27 +2107,6 @@
 			[NSApp replyToApplicationShouldTerminate:YES];
 		}
 	}
-}
-
-- (void) didEndChooseSlot1R4Directory:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo
-{
-	[sheet orderOut:self];
-	
-	if (returnCode == NSModalResponseCancel)
-	{
-		return;
-	}
-	
-	NSURL *selectedDirURL = [[sheet URLs] lastObject]; //hopefully also the first object
-	if(selectedDirURL == nil)
-	{
-		return;
-	}
-	
-	[[NSUserDefaults standardUserDefaults] setObject:[selectedDirURL path] forKey:@"EmulationSlot1_R4StoragePath"];
-	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setSlot1R4URL:selectedDirURL];
 }
 
 - (void) didEndErrorSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo

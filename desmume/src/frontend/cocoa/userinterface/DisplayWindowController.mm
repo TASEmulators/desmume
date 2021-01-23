@@ -544,7 +544,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[masterWindow setFrame:newWindowFrame display:YES animate:NO];
 }
 
-- (double) maxViewScaleInHostScreen:(double)contentBoundsWidth height:(double)contentBoundsHeight
+- (CGFloat) maxViewScaleInHostScreen:(CGFloat)contentBoundsWidth height:(CGFloat)contentBoundsHeight
 {
 	// Determine the maximum scale based on the visible screen size (which
 	// doesn't include the menu bar or dock).

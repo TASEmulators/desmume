@@ -21,9 +21,6 @@ class ClientExecutionControl;
 
 @interface WifiSettingsPanelDelegate : NSObject <NSWindowDelegate>
 {
-	__unsafe_unretained NSObjectController *firmwarePanelController;
-	__unsafe_unretained NSPopUpButton *bridgeDevicePopUpButton;
-	
 	ClientExecutionControl *execControl;
 	NSString *_libpcapDeviceSelectionName;
 	
@@ -35,8 +32,8 @@ class ClientExecutionControl;
 
 @property (assign) ClientExecutionControl *execControl;
 
-@property (assign) IBOutlet NSObjectController *firmwarePanelController;
-@property (assign) IBOutlet NSPopUpButton *bridgeDevicePopUpButton;
+@property (weak) IBOutlet NSObjectController *firmwarePanelController;
+@property (weak) IBOutlet NSPopUpButton *bridgeDevicePopUpButton;
 
 @property (assign) NSInteger wifiEmulationMode;
 @property (assign) NSInteger bridgeDeviceSelection;

@@ -76,7 +76,7 @@
 @implementation CocoaDSSlot2Manager
 
 @synthesize deviceList;
-@dynamic currentDevice;
+@synthesize currentDevice;
 @synthesize slot2StatusText;
 @dynamic mpcfFileSearchURL;
 @dynamic gbaCartridgeURL;
@@ -119,11 +119,6 @@
 	}
 	
 	[self updateStatus];
-}
-
-- (CocoaDSSlot2Device *) currentDevice
-{
-	return currentDevice;
 }
 
 - (void) setMpcfFileSearchURL:(NSURL *)theURL

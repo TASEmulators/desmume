@@ -55,7 +55,7 @@ typedef std::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Ke
 	IOHIDDeviceRef hidDeviceRef;
 	IOHIDQueueRef hidQueueRef;
 	
-	NSString *__weak identifier;
+	NSString * identifier;
 	
 	io_service_t ioService;
 	FFDeviceObjectReference ffDevice;
@@ -69,10 +69,10 @@ typedef std::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Ke
 
 @property (strong) InputHIDManager *hidManager;
 @property (readonly) IOHIDDeviceRef hidDeviceRef;
-@property (weak, readonly) NSString *manufacturerName;
-@property (weak, readonly) NSString *productName;
-@property (weak, readonly) NSString *serialNumber;
-@property (weak, readonly) NSString *identifier;
+@property (copy, readonly) NSString *manufacturerName;
+@property (copy, readonly) NSString *productName;
+@property (copy, readonly) NSString *serialNumber;
+@property (copy, readonly) NSString *identifier;
 @property (readonly) BOOL supportsForceFeedback;
 @property (assign) BOOL isForceFeedbackEnabled;
 @property (strong) NSRunLoop *runLoop;

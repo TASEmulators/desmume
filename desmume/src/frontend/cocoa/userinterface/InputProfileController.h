@@ -20,15 +20,10 @@
 
 
 @interface InputProfileController : NSObjectController <NSOutlineViewDelegate, NSOutlineViewDataSource>
-{
-	NSObject *dummyObject;
-	InputManager *inputManager;
-	NSOutlineView *profileOutlineView;
-}
 
-@property (readonly) IBOutlet NSObject *dummyObject;
-@property (readonly) IBOutlet InputManager *inputManager;
-@property (readonly) IBOutlet NSOutlineView *profileOutlineView;
+@property (weak) IBOutlet NSObject *dummyObject;
+@property (weak) IBOutlet InputManager *inputManager;
+@property (weak) IBOutlet NSOutlineView *profileOutlineView;
 
 - (NSString *) commandTagFromInputList:(NSArray *)inputList;
 

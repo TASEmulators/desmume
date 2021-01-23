@@ -25,8 +25,8 @@
 	BOOL enabled;
 }
 
-@property (readonly) NSString *name;
-@property (readonly) NSString *description;
+@property (readonly, copy) NSString *name;
+@property (readonly, copy) NSString *description;
 @property (readonly) NSInteger deviceID;
 @property (readonly) NDS_SLOT2_TYPE type;
 @property (assign) BOOL enabled;
@@ -42,10 +42,10 @@
 	NSString *slot2StatusText;
 }
 
-@property (readonly) NSMutableArray *deviceList;
-@property (retain) CocoaDSSlot2Device *currentDevice;
+@property (readonly, strong) NSMutableArray *deviceList;
+@property (nonatomic, strong) CocoaDSSlot2Device *currentDevice;
 @property (copy) NSString *slot2StatusText;
-@property (retain) NSURL *mpcfFileSearchURL;
+@property (copy) NSURL *mpcfFileSearchURL;
 @property (copy) NSURL *gbaCartridgeURL;
 @property (copy) NSURL *gbaSRamURL;
 @property (readonly) BOOL doesGbaCartridgeSaveExist;

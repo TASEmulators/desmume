@@ -43,86 +43,51 @@ class OGLImage;
 
 @interface PreferencesWindowDelegate : NSObject <NSWindowDelegate, NSControlTextEditingDelegate>
 {
-	NSObject *dummyObject;
-	NSWindow *window;
-	NSToolbar *toolbar;
-	NSWindow *firmwareConfigSheet;
-	NSObjectController *cdsCoreController;
-	NSObjectController *emuController;
-	NSObjectController *prefWindowController;
-	NSObjectController *cheatWindowController;
-	NSArrayController *cheatDatabaseController;
-	
-	NSToolbarItem *toolbarItemGeneral;
-	NSToolbarItem *toolbarItemInput;
-	NSToolbarItem *toolbarItemDisplay;
-	NSToolbarItem *toolbarItemSound;
-	NSToolbarItem *toolbarItemEmulation;
-	
-	NSView *viewGeneral;
-	InputPrefsView *viewInput;
-	NSView *viewDisplay;
-	NSView *viewSound;
-	NSView *viewEmulation;
 	NSDictionary *prefViewDict;
-		
-	NSPopUpButton *displayRotationMenu;
-	NSMenuItem *displayRotationMenuCustomItem;
-	NSTextField *displayRotationField;
-	
-	NSPopUpButton *openglMSAAPopUpButton;
 	
 	NSImage *iconVolumeFull;
 	NSImage *iconVolumeTwoThird;
 	NSImage *iconVolumeOneThird;
 	NSImage *iconVolumeMute;
-	NSPopUpButton *spuSyncMethodMenu;
-	
-	DisplayPreviewView *previewView;
-	
-	NSString *firmwareMACAddressString;
-	NSString *subnetMaskString_AP1;
-	NSString *subnetMaskString_AP2;
-	NSString *subnetMaskString_AP3;
 	
 	NSMutableDictionary *bindings;
 }
 
-@property (readonly) IBOutlet NSObject *dummyObject;
-@property (readonly) IBOutlet NSWindow *window;
-@property (readonly) IBOutlet NSToolbar *toolbar;
-@property (readonly) IBOutlet NSWindow *firmwareConfigSheet;
-@property (readonly) IBOutlet NSObjectController *cdsCoreController;
-@property (readonly) IBOutlet NSObjectController *emuController;
-@property (readonly) IBOutlet NSObjectController *prefWindowController;
-@property (readonly) IBOutlet NSObjectController *cheatWindowController;
-@property (readonly) IBOutlet NSArrayController *cheatDatabaseController;
-@property (readonly) IBOutlet NSToolbarItem *toolbarItemGeneral;
-@property (readonly) IBOutlet NSToolbarItem *toolbarItemInput;
-@property (readonly) IBOutlet NSToolbarItem *toolbarItemDisplay;
-@property (readonly) IBOutlet NSToolbarItem *toolbarItemSound;
-@property (readonly) IBOutlet NSToolbarItem *toolbarItemEmulation;
-@property (readonly) IBOutlet NSView *viewGeneral;
-@property (readonly) IBOutlet InputPrefsView *viewInput;
-@property (readonly) IBOutlet NSView *viewDisplay;
-@property (readonly) IBOutlet NSView *viewSound;
-@property (readonly) IBOutlet NSView *viewEmulation;
+@property (weak) IBOutlet NSObject *dummyObject;
+@property (weak) IBOutlet NSWindow *window;
+@property (weak) IBOutlet NSToolbar *toolbar;
+@property (weak) IBOutlet NSWindow *firmwareConfigSheet;
+@property (weak) IBOutlet NSObjectController *cdsCoreController;
+@property (weak) IBOutlet NSObjectController *emuController;
+@property (weak) IBOutlet NSObjectController *prefWindowController;
+@property (weak) IBOutlet NSObjectController *cheatWindowController;
+@property (weak) IBOutlet NSArrayController *cheatDatabaseController;
+@property (weak) IBOutlet NSToolbarItem *toolbarItemGeneral;
+@property (weak) IBOutlet NSToolbarItem *toolbarItemInput;
+@property (weak) IBOutlet NSToolbarItem *toolbarItemDisplay;
+@property (weak) IBOutlet NSToolbarItem *toolbarItemSound;
+@property (weak) IBOutlet NSToolbarItem *toolbarItemEmulation;
+@property (weak) IBOutlet NSView *viewGeneral;
+@property (weak) IBOutlet InputPrefsView *viewInput;
+@property (weak) IBOutlet NSView *viewDisplay;
+@property (weak) IBOutlet NSView *viewSound;
+@property (weak) IBOutlet NSView *viewEmulation;
 
-@property (readonly) IBOutlet NSPopUpButton *displayRotationMenu;
-@property (readonly) IBOutlet NSMenuItem *displayRotationMenuCustomItem;
-@property (readonly) IBOutlet NSTextField *displayRotationField;
-@property (readonly) IBOutlet NSPopUpButton *spuSyncMethodMenu;
+@property (weak) IBOutlet NSPopUpButton *displayRotationMenu;
+@property (weak) IBOutlet NSMenuItem *displayRotationMenuCustomItem;
+@property (weak) IBOutlet NSTextField *displayRotationField;
+@property (weak) IBOutlet NSPopUpButton *spuSyncMethodMenu;
 
-@property (readonly) IBOutlet NSPopUpButton *openglMSAAPopUpButton;
+@property (weak) IBOutlet NSPopUpButton *openglMSAAPopUpButton;
 
-@property (readonly) IBOutlet DisplayPreviewView *previewView;
+@property (weak) IBOutlet DisplayPreviewView *previewView;
 
 @property (copy) NSString *firmwareMACAddressString;
 @property (copy) NSString *subnetMaskString_AP1;
 @property (copy) NSString *subnetMaskString_AP2;
 @property (copy) NSString *subnetMaskString_AP3;
 
-@property (readonly) NSMutableDictionary *bindings;
+@property (readonly, strong) NSMutableDictionary *bindings;
 
 - (IBAction) changePrefView:(id)sender;
 

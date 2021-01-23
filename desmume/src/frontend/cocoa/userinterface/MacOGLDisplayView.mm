@@ -459,7 +459,7 @@ MacOGLDisplayView::MacOGLDisplayView(MacClientSharedObject *sharedObject)
 
 MacOGLDisplayView::~MacOGLDisplayView()
 {
-//	[this->_caLayer release];
+	this->_caLayer = nil;
 }
 
 void MacOGLDisplayView::__InstanceInit(MacClientSharedObject *sharedObject)

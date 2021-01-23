@@ -50,13 +50,13 @@
 @synthesize hidManager;
 
 @synthesize autoSelectedDeviceText;
-@dynamic mpcfFolderURL;
-@dynamic mpcfDiskImageURL;
+@synthesize mpcfFolderURL;
+@synthesize mpcfDiskImageURL;
 @dynamic mpcfFolderName;
 @dynamic mpcfFolderPath;
 @dynamic mpcfDiskImageName;
 @dynamic mpcfDiskImagePath;
-@dynamic gbaCartridgeURL;
+@synthesize gbaCartridgeURL;
 @dynamic gbaCartridgeName;
 @dynamic gbaCartridgePath;
 @synthesize gbaSRamURL;
@@ -261,11 +261,6 @@
 	[self setMpcfFolderName:[thePath lastPathComponent]];
 }
 
-- (NSURL *) mpcfFolderURL
-{
-	return mpcfFolderURL;
-}
-
 - (void) setMpcfFolderName:(NSString *)theName
 {
 	// Do nothing. This is for KVO-compliance only.
@@ -294,11 +289,6 @@
 	NSString *thePath = [mpcfDiskImageURL path];
 	[self setMpcfDiskImagePath:thePath];
 	[self setMpcfDiskImageName:[thePath lastPathComponent]];
-}
-
-- (NSURL *) mpcfDiskImageURL
-{
-	return mpcfDiskImageURL;
 }
 
 - (void) setMpcfDiskImageName:(NSString *)theName
@@ -403,11 +393,6 @@
 	NSString *thePath = [gbaCartridgeURL path];
 	[self setGbaCartridgePath:thePath];
 	[self setGbaCartridgeName:[thePath lastPathComponent]];
-}
-
-- (NSURL *) gbaCartridgeURL
-{
-	return gbaCartridgeURL;
 }
 
 - (void) setGbaCartridgeName:(NSString *)theName

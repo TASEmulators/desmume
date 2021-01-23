@@ -26,32 +26,21 @@ enum TroubleshootingViewID
 
 @interface TroubleshootingWindowDelegate : NSObject <NSWindowDelegate>
 {
-	NSObject *__unsafe_unretained dummyObject;
-	NSWindow *__weak window;
-	NSObjectController *__weak troubleshootingWindowController;
-	NSObjectController *__weak romInfoController;
-	NSObjectController *__weak emuControlController;
-	NSObjectController *__weak cdsCoreController;
-	
-	NSView *__weak viewSupportRequest;
-	NSView *__weak viewBugReport;
-	NSView *__weak viewFinishedForm;
-	
-	NSView *currentForm;
+	NSView *__weak currentForm;
 	
 	NSMutableDictionary *bindings;
 }
 
-@property (unsafe_unretained, readonly) IBOutlet NSObject *dummyObject;
-@property (weak, readonly) IBOutlet NSWindow *window;
-@property (weak, readonly) IBOutlet NSObjectController *troubleshootingWindowController;
-@property (weak, readonly) IBOutlet NSObjectController *romInfoController;
-@property (weak, readonly) IBOutlet NSObjectController *emuControlController;
-@property (weak, readonly) IBOutlet NSObjectController *cdsCoreController;
-@property (weak, readonly) IBOutlet NSView *viewSupportRequest;
-@property (weak, readonly) IBOutlet NSView *viewBugReport;
-@property (weak, readonly) IBOutlet NSView *viewFinishedForm;
-@property (readonly) NSMutableDictionary *bindings;
+@property (weak) IBOutlet NSObject *dummyObject;
+@property (weak) IBOutlet NSWindow *window;
+@property (weak) IBOutlet NSObjectController *troubleshootingWindowController;
+@property (weak) IBOutlet NSObjectController *romInfoController;
+@property (weak) IBOutlet NSObjectController *emuControlController;
+@property (weak) IBOutlet NSObjectController *cdsCoreController;
+@property (weak) IBOutlet NSView *viewSupportRequest;
+@property (weak) IBOutlet NSView *viewBugReport;
+@property (weak) IBOutlet NSView *viewFinishedForm;
+@property (readonly, strong) NSMutableDictionary *bindings;
 
 - (IBAction) copyRomInfoToTextFields:(id)sender;
 - (IBAction) continueToFinalForm:(id)sender;

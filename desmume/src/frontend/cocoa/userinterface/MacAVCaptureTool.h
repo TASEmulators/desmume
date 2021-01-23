@@ -165,6 +165,4 @@ public:
 
 @end
 
-static void* RunAVCaptureCloseThread(void *arg);
-
 #endif // _MAC_AVCAPTURETOOL_H_

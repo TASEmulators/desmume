@@ -144,26 +144,26 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MTLSize deposterizeThreadGroupsPerGrid;
 }
 
-@property (readonly, nonatomic) id<MTLDevice> device;
-@property (readonly, nonatomic) id<MTLCommandQueue> commandQueue;
-@property (readonly, nonatomic) id<MTLLibrary> defaultLibrary;
+@property (readonly, strong, nonatomic) id<MTLDevice> device;
+@property (readonly, strong, nonatomic) id<MTLCommandQueue> commandQueue;
+@property (readonly, strong, nonatomic) id<MTLLibrary> defaultLibrary;
 
-@property (readonly, nonatomic) id<MTLComputePipelineState> deposterizePipeline;
-@property (readonly, nonatomic) id<MTLRenderPipelineState> hudPipeline;
-@property (readonly, nonatomic) id<MTLRenderPipelineState> hudRGBAPipeline;
-@property (readonly, nonatomic) id<MTLSamplerState> samplerHUDBox;
-@property (readonly, nonatomic) id<MTLSamplerState> samplerHUDText;
+@property (readonly, strong, nonatomic) id<MTLComputePipelineState> deposterizePipeline;
+@property (readonly, strong, nonatomic) id<MTLRenderPipelineState> hudPipeline;
+@property (readonly, strong, nonatomic) id<MTLRenderPipelineState> hudRGBAPipeline;
+@property (readonly, strong, nonatomic) id<MTLSamplerState> samplerHUDBox;
+@property (readonly, strong, nonatomic) id<MTLSamplerState> samplerHUDText;
 
 @property (readonly, nonatomic) id<MTLBuffer> hudIndexBuffer;
 
 @property (assign) MetalTexturePair texPairFetch;
 @property (strong) id<MTLBlitCommandEncoder> bceFetch;
 
-@property (readonly, nonatomic) id<MTLTexture> texLQ2xLUT;
-@property (readonly, nonatomic) id<MTLTexture> texHQ2xLUT;
-@property (readonly, nonatomic) id<MTLTexture> texHQ3xLUT;
-@property (readonly, nonatomic) id<MTLTexture> texHQ4xLUT;
-@property (retain) id<MTLTexture> texCurrentHQnxLUT;
+@property (readonly, strong, nonatomic) id<MTLTexture> texLQ2xLUT;
+@property (readonly, strong, nonatomic) id<MTLTexture> texHQ2xLUT;
+@property (readonly, strong, nonatomic) id<MTLTexture> texHQ3xLUT;
+@property (readonly, strong, nonatomic) id<MTLTexture> texHQ4xLUT;
+@property (strong) id<MTLTexture> texCurrentHQnxLUT;
 
 @property (readonly, nonatomic) MTLSize deposterizeThreadsPerGroup;
 @property (readonly, nonatomic) MTLSize deposterizeThreadGroupsPerGrid;
@@ -181,7 +181,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @interface MacMetalDisplayPresenterObject : NSObject
 {
 	ClientDisplay3DPresenter *cdp;
-	__unsafe_unretained MetalDisplayViewSharedData *sharedData;
 	
 	MTLRenderPassDescriptor *_outputRenderPassDesc;
 	MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
@@ -224,15 +223,15 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 }
 
 @property (readonly, nonatomic) ClientDisplay3DPresenter *cdp;
-@property (assign, nonatomic) MetalDisplayViewSharedData *sharedData;
-@property (readonly, nonatomic) MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
-@property (retain) id<MTLComputePipelineState> pixelScalePipeline;
-@property (retain) id<MTLRenderPipelineState> outputRGBAPipeline;
-@property (retain) id<MTLRenderPipelineState> outputDrawablePipeline;
+@property (weak, nonatomic) MetalDisplayViewSharedData *sharedData;
+@property (readonly, strong, nonatomic) MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
+@property (strong) id<MTLComputePipelineState> pixelScalePipeline;
+@property (strong) id<MTLRenderPipelineState> outputRGBAPipeline;
+@property (strong) id<MTLRenderPipelineState> outputDrawablePipeline;
 @property (assign) MTLPixelFormat drawableFormat;
-@property (retain) id<MTLBuffer> bufCPUFilterDstMain;
-@property (retain) id<MTLBuffer> bufCPUFilterDstTouch;
-@property (retain) id<MTLTexture> texHUDCharMap;
+@property (strong) id<MTLBuffer> bufCPUFilterDstMain;
+@property (strong) id<MTLBuffer> bufCPUFilterDstTouch;
+@property (strong) id<MTLTexture> texHUDCharMap;
 @property (assign) BOOL needsProcessFrameWait;
 @property (assign) BOOL needsViewportUpdate;
 @property (assign) BOOL needsRotationScaleUpdate;
@@ -244,7 +243,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (assign, nonatomic) OutputFilterTypeID outputFilter;
 
 - (id) initWithDisplayPresenter:(MacMetalDisplayPresenter *)thePresenter;
-- (id<MTLCommandBuffer>) newCommandBuffer;
+- (id<MTLCommandBuffer>) newCommandBuffer NS_RETURNS_NOT_RETAINED;
 - (void) setup;
 - (void) resizeCPUPixelScalerUsingFilterID:(const VideoFilterTypeID)filterID;
 - (void) copyHUDFontUsingFace:(const FT_Face &)fontFace size:(const size_t)glyphSize tileSize:(const size_t)glyphTileSize info:(GlyphInfo *)glyphInfo;
@@ -277,10 +276,10 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MetalTexturePair _displayTexturePair;
 }
 
-@property (readonly, nonatomic) MacMetalDisplayPresenterObject *presenterObject;
-@property (retain) id<CAMetalDrawable> layerDrawable0;
-@property (retain) id<CAMetalDrawable> layerDrawable1;
-@property (retain) id<CAMetalDrawable> layerDrawable2;
+@property (readonly, strong, nonatomic) MacMetalDisplayPresenterObject *presenterObject;
+@property (strong) id<CAMetalDrawable> layerDrawable0;
+@property (strong) id<CAMetalDrawable> layerDrawable1;
+@property (strong) id<CAMetalDrawable> layerDrawable2;
 
 - (id) initWithDisplayPresenterObject:(MacMetalDisplayPresenterObject *)thePresenterObject;
 - (void) setupLayer;
@@ -383,9 +382,5 @@ public:
 	virtual void FinalizeFlush(void *userData, uint64_t outputTime);
 	virtual void FlushAndFinalizeImmediate();
 };
-
-#pragma mark -
-void SetupHQnxLUTs_Metal(__strong id<MTLDevice> *device, __strong id<MTLCommandQueue> *commandQueue, __strong id<MTLTexture> *texLQ2xLUT, __strong id<MTLTexture> *texHQ2xLUT, __strong id<MTLTexture> *texHQ3xLUT, __strong id<MTLTexture> *texHQ4xLUT);
-void DeleteHQnxLUTs_Metal(id<MTLTexture> texLQ2xLUT, id<MTLTexture> texHQ2xLUT, id<MTLTexture> texHQ3xLUT, id<MTLTexture> texHQ4xLUT);
 
 #endif // _MAC_METALDISPLAYVIEW_H

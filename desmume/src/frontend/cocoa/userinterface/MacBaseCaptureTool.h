@@ -32,10 +32,6 @@
 
 @interface MacBaseCaptureToolDelegate : NSObject <NSWindowDelegate, DirectoryURLDragDestTextFieldProtocol>
 {
-	NSObject *dummyObject;
-	NSWindow *window;
-	DirectoryURLDragDestTextField *saveDirectoryPathTextField;
-	
 	MacClientSharedObject *sharedData;
 	
 	NSString *saveDirectoryPath;
@@ -52,9 +48,9 @@
 	NSInteger pixelScalerID;
 }
 
-@property (readonly) IBOutlet NSObject *dummyObject;
-@property (readonly) IBOutlet NSWindow *window;
-@property (readonly) IBOutlet DirectoryURLDragDestTextField *saveDirectoryPathTextField;
+@property (weak) IBOutlet NSObject *dummyObject;
+@property (weak) IBOutlet NSWindow *window;
+@property (weak) IBOutlet DirectoryURLDragDestTextField *saveDirectoryPathTextField;
 
 @property (retain) MacClientSharedObject *sharedData;
 

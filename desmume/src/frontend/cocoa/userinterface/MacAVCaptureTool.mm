@@ -30,6 +30,9 @@
 #ifdef ENABLE_APPLE_METAL
 #include "MacMetalDisplayView.h"
 #endif
+
+static void* RunAVCaptureCloseThread(void *arg);
+
 /*
 extern "C"
 {

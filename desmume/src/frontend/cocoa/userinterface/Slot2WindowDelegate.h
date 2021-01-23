@@ -23,27 +23,7 @@
 
 @interface Slot2WindowDelegate : NSObject <NSWindowDelegate, NSTableViewDelegate>
 {
-	NSObject *__unsafe_unretained dummyObject;
-	NSWindow *__weak window;
-	NSArrayController *__weak deviceListController;
-	NSTableView *__weak deviceListTable;
-	NSBox *__weak deviceSettingsBox;
-	NSPopUpButton *__weak mpcfFileSearchMenu;
-	PreferencesWindowDelegate *__weak prefWindowDelegate;
-	
-	NSView *currentDeviceView;
-	NSView *__weak viewUnsupported;
-	NSView *__weak viewNoSelection;
-	NSView *__weak viewNone;
-	NSView *__weak viewAuto;
-	NSView *__weak viewCompactFlash;
-	NSView *__weak viewRumblePak;
-	NSView *__weak viewGBACartridge;
-	NSView *__weak viewGuitarGrip;
-	NSView *__weak viewMemoryExpansionPack;
-	NSView *__weak viewPiano;
-	NSView *__weak viewPaddleController;
-	NSView *__weak viewPassME;
+	NSView *__weak currentDeviceView;
 	
 	CocoaDSSlot2Device *selectedDevice;
 	CocoaDSSlot2Manager *deviceManager;
@@ -56,44 +36,44 @@
 	NSURL *gbaSRamURL;
 }
 
-@property (unsafe_unretained, readonly) IBOutlet NSObject *dummyObject;
-@property (weak, readonly) IBOutlet NSWindow *window;
-@property (weak, readonly) IBOutlet NSArrayController *deviceListController;
-@property (weak, readonly) IBOutlet NSTableView *deviceListTable;
-@property (weak, readonly) IBOutlet NSBox *deviceSettingsBox;
-@property (weak, readonly) IBOutlet NSPopUpButton *mpcfFileSearchMenu;
-@property (weak, readonly) IBOutlet PreferencesWindowDelegate *prefWindowDelegate;
+@property (weak) IBOutlet NSObject *dummyObject;
+@property (weak) IBOutlet NSWindow *window;
+@property (weak) IBOutlet NSArrayController *deviceListController;
+@property (weak) IBOutlet NSTableView *deviceListTable;
+@property (weak) IBOutlet NSBox *deviceSettingsBox;
+@property (weak) IBOutlet NSPopUpButton *mpcfFileSearchMenu;
+@property (weak) IBOutlet PreferencesWindowDelegate *prefWindowDelegate;
 
-@property (weak, readonly) IBOutlet NSView *viewUnsupported;
-@property (weak, readonly) IBOutlet NSView *viewNoSelection;
-@property (weak, readonly) IBOutlet NSView *viewNone;
-@property (weak, readonly) IBOutlet NSView *viewAuto;
-@property (weak, readonly) IBOutlet NSView *viewCompactFlash;
-@property (weak, readonly) IBOutlet NSView *viewRumblePak;
-@property (weak, readonly) IBOutlet NSView *viewGBACartridge;
-@property (weak, readonly) IBOutlet NSView *viewGuitarGrip;
-@property (weak, readonly) IBOutlet NSView *viewMemoryExpansionPack;
-@property (weak, readonly) IBOutlet NSView *viewPiano;
-@property (weak, readonly) IBOutlet NSView *viewPaddleController;
-@property (weak, readonly) IBOutlet NSView *viewPassME;
+@property (weak) IBOutlet NSView *viewUnsupported;
+@property (weak) IBOutlet NSView *viewNoSelection;
+@property (weak) IBOutlet NSView *viewNone;
+@property (weak) IBOutlet NSView *viewAuto;
+@property (weak) IBOutlet NSView *viewCompactFlash;
+@property (weak) IBOutlet NSView *viewRumblePak;
+@property (weak) IBOutlet NSView *viewGBACartridge;
+@property (weak) IBOutlet NSView *viewGuitarGrip;
+@property (weak) IBOutlet NSView *viewMemoryExpansionPack;
+@property (weak) IBOutlet NSView *viewPiano;
+@property (weak) IBOutlet NSView *viewPaddleController;
+@property (weak) IBOutlet NSView *viewPassME;
 
 @property (strong) CocoaDSSlot2Device *selectedDevice;
 @property (strong) CocoaDSSlot2Manager *deviceManager;
 @property (strong) InputHIDManager *hidManager;
 
-@property (strong) NSString *autoSelectedDeviceText;
-@property (strong) NSURL *mpcfFolderURL;
-@property (strong) NSURL *mpcfDiskImageURL;
-@property (weak) NSString *mpcfFolderName;
-@property (weak) NSString *mpcfFolderPath;
-@property (weak) NSString *mpcfDiskImageName;
-@property (weak) NSString *mpcfDiskImagePath;
-@property (strong) NSURL *gbaCartridgeURL;
-@property (weak) NSString *gbaCartridgeName;
-@property (weak) NSString *gbaCartridgePath;
-@property (strong) NSURL *gbaSRamURL;
-@property (weak) NSString *gbaSRamName;
-@property (weak) NSString *gbaSRamPath;
+@property (copy) NSString *autoSelectedDeviceText;
+@property (nonatomic, strong) NSURL *mpcfFolderURL;
+@property (nonatomic, strong) NSURL *mpcfDiskImageURL;
+@property (readonly, copy) NSString *mpcfFolderName;
+@property (readonly, copy) NSString *mpcfFolderPath;
+@property (readonly, copy) NSString *mpcfDiskImageName;
+@property (readonly, copy) NSString *mpcfDiskImagePath;
+@property (nonatomic, strong) NSURL *gbaCartridgeURL;
+@property (readonly, copy) NSString *gbaCartridgeName;
+@property (readonly, copy) NSString *gbaCartridgePath;
+@property (nonatomic, strong) NSURL *gbaSRamURL;
+@property (readonly, copy) NSString *gbaSRamName;
+@property (readonly, copy) NSString *gbaSRamPath;
 
 - (IBAction) applySettings:(id)sender;
 - (IBAction) showInputPreferences:(id)sender;

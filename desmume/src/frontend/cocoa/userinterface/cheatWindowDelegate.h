@@ -26,32 +26,8 @@
 
 @interface CheatWindowDelegate : NSObject <NSWindowDelegate, NSTableViewDelegate>
 {
-	NSObject *dummyObject;
-	NSWindow *window;
-	NSBox *cheatConfigBox;
-	NSView *cheatSearchView;
-	NSTableView *cheatListTable;
-	NSTableView *cheatSearchListTable;
-	NSArrayController *cheatListController;
-	NSArrayController *cheatSearchListController;
-	NSArrayController *cheatDatabaseController;
-	NSObjectController *cheatWindowController;
-	NSObjectController *cheatSelectedItemController;
-	
-	NSView *currentView;
-	NSView *viewConfigureNoSelection;
-	NSView *viewConfigureInternalCheat;
-	NSView *viewConfigureActionReplayCheat;
-	NSView *viewConfigureCodeBreakerCheat;
-	NSView *currentSearchStyleView;
-	NSView *viewSearchNoSelection;
-	NSView *viewSearchExactValue;
-	NSView *viewSearchComparativeStart;
-	NSView *viewSearchComparativeContinue;
-	
-	NSSearchField *searchField;
-	
-	NSWindow *cheatDatabaseSheet;
+	NSView *__weak currentView;
+	NSView *__weak currentSearchStyleView;
 	
 	NSUInteger untitledCount;
 	
@@ -61,37 +37,37 @@
 	CocoaDSCheatSearch *cdsCheatSearch;
 }
 
-@property (assign) IBOutlet NSObject *dummyObject;
-@property (readonly) IBOutlet NSWindow *window;
-@property (readonly) IBOutlet NSBox *cheatConfigBox;
-@property (readonly) IBOutlet NSView *cheatSearchView;
-@property (readonly) IBOutlet NSTableView *cheatListTable;
-@property (readonly) IBOutlet NSTableView *cheatSearchListTable;
-@property (readonly) IBOutlet NSArrayController *cheatListController;
-@property (readonly) IBOutlet NSArrayController *cheatSearchListController;
-@property (readonly) IBOutlet NSArrayController *cheatDatabaseController;
-@property (readonly) IBOutlet NSObjectController *cheatWindowController;
-@property (readonly) IBOutlet NSObjectController *cheatSelectedItemController;
+@property (weak) IBOutlet NSObject *dummyObject;
+@property (weak) IBOutlet NSWindow *window;
+@property (weak) IBOutlet NSBox *cheatConfigBox;
+@property (weak) IBOutlet NSView *cheatSearchView;
+@property (weak) IBOutlet NSTableView *cheatListTable;
+@property (weak) IBOutlet NSTableView *cheatSearchListTable;
+@property (weak) IBOutlet NSArrayController *cheatListController;
+@property (weak) IBOutlet NSArrayController *cheatSearchListController;
+@property (weak) IBOutlet NSArrayController *cheatDatabaseController;
+@property (weak) IBOutlet NSObjectController *cheatWindowController;
+@property (weak) IBOutlet NSObjectController *cheatSelectedItemController;
 
-@property (readonly) IBOutlet NSView *viewConfigureNoSelection;
-@property (readonly) IBOutlet NSView *viewConfigureInternalCheat;
-@property (readonly) IBOutlet NSView *viewConfigureActionReplayCheat;
-@property (readonly) IBOutlet NSView *viewConfigureCodeBreakerCheat;
+@property (weak) IBOutlet NSView *viewConfigureNoSelection;
+@property (weak) IBOutlet NSView *viewConfigureInternalCheat;
+@property (weak) IBOutlet NSView *viewConfigureActionReplayCheat;
+@property (weak) IBOutlet NSView *viewConfigureCodeBreakerCheat;
 
-@property (readonly) IBOutlet NSView *viewSearchNoSelection;
-@property (readonly) IBOutlet NSView *viewSearchExactValue;
-@property (readonly) IBOutlet NSView *viewSearchComparativeStart;
-@property (readonly) IBOutlet NSView *viewSearchComparativeContinue;
+@property (weak) IBOutlet NSView *viewSearchNoSelection;
+@property (weak) IBOutlet NSView *viewSearchExactValue;
+@property (weak) IBOutlet NSView *viewSearchComparativeStart;
+@property (weak) IBOutlet NSView *viewSearchComparativeContinue;
 
-@property (readonly) IBOutlet NSSearchField *searchField;
+@property (weak) IBOutlet NSSearchField *searchField;
 
-@property (readonly) IBOutlet NSWindow *cheatDatabaseSheet;
+@property (weak) IBOutlet NSWindow *cheatDatabaseSheet;
 
 @property (assign) NSUInteger untitledCount;
-@property (readonly) NSMutableDictionary *bindings;
-@property (retain) CocoaDSCheatItem *workingCheat;
-@property (retain) CocoaDSCheatManager *cdsCheats;
-@property (readonly) CocoaDSCheatSearch *cdsCheatSearch;
+@property (readonly, strong) NSMutableDictionary *bindings;
+@property (strong) CocoaDSCheatItem *workingCheat;
+@property (strong) CocoaDSCheatManager *cdsCheats;
+@property (readonly, strong) CocoaDSCheatSearch *cdsCheatSearch;
 
 - (IBAction) addToList:(id)sender;
 - (IBAction) removeFromList:(id)sender;
@@ -113,6 +89,5 @@
 - (IBAction) selectNoneCheatsInDatabase:(id)sender;
 - (void) addSelectedFromCheatDatabase;
 - (IBAction) closeCheatDatabaseSheet:(id)sender;
-- (void) didEndCheatDatabaseSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 
 @end

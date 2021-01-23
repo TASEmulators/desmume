@@ -25,7 +25,7 @@
 
 @implementation CheatWindowDelegate
 
-@dynamic dummyObject;
+@synthesize dummyObject;
 @synthesize window;
 @synthesize cheatConfigBox;
 @synthesize cheatSearchView;
@@ -466,25 +466,6 @@
 	NSInteger code = [(NSControl *)sender tag];
 	
     [window endSheet:sheet returnCode:code];
-}
-
-- (void) didEndCheatDatabaseSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
-{
-	[sheet orderOut:self];
-	
-	switch (returnCode)
-	{
-		case NSModalResponseCancel:
-			return;
-			break;
-			
-		case NSModalResponseOK:
-			[self addSelectedFromCheatDatabase];
-			break;
-			
-		default:
-			break;
-	}
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)notification

@@ -34,9 +34,9 @@ static void ReadSystemVersionPListFile()
 	CFDataRef resourceData = NULL;
 	CFURLRef systemPListURL = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, CFSTR("/System/Library/CoreServices/SystemVersion.plist"), kCFURLPOSIXPathStyle, false);
 	Boolean status = CFURLCreateDataAndPropertiesFromResource(kCFAllocatorDefault, systemPListURL, &resourceData, NULL, NULL, NULL);
+	CFRelease(systemPListURL);
 	if (!status)
 	{
-		CFRelease(systemPListURL);
 		return;
 	}
 	
@@ -44,7 +44,6 @@ static void ReadSystemVersionPListFile()
 	if (systemDict == NULL)
 	{
 		CFRelease(resourceData);
-		CFRelease(systemPListURL);
 		return;
 	}
 	
@@ -91,7 +90,6 @@ static void ReadSystemVersionPListFile()
 	
 	// Release all resources now that the system version string has been copied.
 	CFRelease(resourceData);
-	CFRelease(systemPListURL);
 	CFRelease(systemDict);
 	
 	// Mark that we've already read the SystemVersion.plist file so that we don't

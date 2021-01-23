@@ -53,15 +53,7 @@ class OGLVideoOutput;
 
 @interface DisplayWindowController : NSWindowController <NSWindowDelegate, NSToolbarItemValidation>
 {
-	NSObject *dummyObject;
-	
 	ClientDisplayPresenterProperties _localViewProps;
-	NSView *outputVolumeControlView;
-	NSView *microphoneGainControlView;
-	NSMenuItem *outputVolumeMenuItem;
-	NSMenuItem *microphoneGainMenuItem;
-	NSSlider *microphoneGainSlider;
-	NSButton *microphoneMuteButton;
 	
 	NSView<CocoaDisplayViewProtocol> *view;
 	EmuControllerDelegate *emuControl;
@@ -80,14 +72,14 @@ class OGLVideoOutput;
 	double _localRotation;
 }
 
-@property (readonly) IBOutlet NSObject *dummyObject;
+@property (weak) IBOutlet NSObject *dummyObject;
 
-@property (readonly) IBOutlet NSView *outputVolumeControlView;
-@property (readonly) IBOutlet NSView *microphoneGainControlView;
-@property (readonly) IBOutlet NSMenuItem *outputVolumeMenuItem;
-@property (readonly) IBOutlet NSMenuItem *microphoneGainMenuItem;
-@property (readonly) IBOutlet NSSlider *microphoneGainSlider;
-@property (readonly) IBOutlet NSButton *microphoneMuteButton;
+@property (weak) IBOutlet NSView *outputVolumeControlView;
+@property (weak) IBOutlet NSView *microphoneGainControlView;
+@property (weak) IBOutlet NSMenuItem *outputVolumeMenuItem;
+@property (weak) IBOutlet NSMenuItem *microphoneGainMenuItem;
+@property (weak) IBOutlet NSSlider *microphoneGainSlider;
+@property (weak) IBOutlet NSButton *microphoneMuteButton;
 
 @property (retain) NSView<CocoaDisplayViewProtocol> *view;
 @property (strong) EmuControllerDelegate *emuControl;
@@ -121,12 +113,12 @@ class OGLVideoOutput;
 	 isShowingStatusBar:(BOOL)isShowingStatusBar;
 
 - (void) setupUserDefaults;
-- (BOOL) masterStatusBarState;
-- (NSRect) masterWindowFrame;
-- (double) masterWindowScale;
-- (NSRect) updateViewProperties;
+@property (readonly) BOOL masterStatusBarState;
+@property (readonly) NSRect masterWindowFrame;
+@property (readonly) CGFloat masterWindowScale;
+@property (readonly) NSRect updateViewProperties;
 - (void) resizeWithTransform;
-- (double) maxViewScaleInHostScreen:(double)contentBoundsWidth height:(double)contentBoundsHeight;
+- (CGFloat) maxViewScaleInHostScreen:(CGFloat)contentBoundsWidth height:(CGFloat)contentBoundsHeight;
 - (void) enterFullScreen;
 - (void) exitFullScreen;
 - (void) updateDisplayID;

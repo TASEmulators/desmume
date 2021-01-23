@@ -48,20 +48,14 @@
 	NSSize _panelMaxSize;
 	NSSize _mainViewMaxSize;
 	
-	RomInfoPanelSectionView *generalSectionView;
-	RomInfoPanelSectionView *titlesSectionView;
-	RomInfoPanelSectionView *armBinariesSectionView;
-	RomInfoPanelSectionView *fileSystemSectionView;
-	RomInfoPanelSectionView *miscSectionView;
-	
-	NSArray *_sectionViewList;
+	NSArray<RomInfoPanelSectionView*> *_sectionViewList;
 }
 
-@property (readonly) IBOutlet RomInfoPanelSectionView *generalSectionView;
-@property (readonly) IBOutlet RomInfoPanelSectionView *titlesSectionView;
-@property (readonly) IBOutlet RomInfoPanelSectionView *armBinariesSectionView;
-@property (readonly) IBOutlet RomInfoPanelSectionView *fileSystemSectionView;
-@property (readonly) IBOutlet RomInfoPanelSectionView *miscSectionView;
+@property (weak) IBOutlet RomInfoPanelSectionView *generalSectionView;
+@property (weak) IBOutlet RomInfoPanelSectionView *titlesSectionView;
+@property (weak) IBOutlet RomInfoPanelSectionView *armBinariesSectionView;
+@property (weak) IBOutlet RomInfoPanelSectionView *fileSystemSectionView;
+@property (weak) IBOutlet RomInfoPanelSectionView *miscSectionView;
 
 - (IBAction) toggleViewState:(id)sender;
 

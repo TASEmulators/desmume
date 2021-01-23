@@ -21,11 +21,9 @@
 #include <libkern/OSAtomic.h>
 #include "utilities.h"
 
+NS_ASSUME_NONNULL_BEGIN
 
 @interface CocoaDSUtil : NSObject
-{
-	
-}
 
 + (NSInteger) getIBActionSenderTag:(id)sender;
 + (BOOL) getIBActionSenderButtonStateBool:(id)sender;
@@ -33,14 +31,14 @@
 + (NSColor *) NSColorFromRGBA8888:(uint32_t)theColor;
 + (uint32_t) RGBA8888FromNSColor:(NSColor *)theColor;
 
-+ (NSInteger) appVersionNumeric;
-+ (NSString *) appInternalVersionString;
-+ (NSString *) appInternalNameAndVersionString;
-+ (NSString *) appCompilerDetailString;
+@property (class, readonly) NSInteger appVersionNumeric;
+@property (class, readonly, copy) NSString *appInternalVersionString;
+@property (class, readonly, copy) NSString *appInternalNameAndVersionString;
+@property (class, readonly, copy) NSString *appCompilerDetailString;
 
-+ (NSString *) operatingSystemString;
-+ (NSString *) modelIdentifierString;
-+ (uint32_t) hostIP4AddressAsUInt32;
+@property (class, readonly, copy) NSString *operatingSystemString;
+@property (class, readonly, copy) NSString *modelIdentifierString;
+@property (class, readonly) uint32_t hostIP4AddressAsUInt32;
 
 @end
 
@@ -51,20 +49,21 @@
 
 @end
 
-// Subclass NSTextField to override NSDraggingDestination methods for assigning directory paths using drag-and-drop
+/// Subclass NSTextField to override NSDraggingDestination methods for assigning directory paths using drag-and-drop
 @interface DirectoryURLDragDestTextField : NSTextField
-{ }
+
 @end
 
 @interface NSNotificationCenter (MainThread)
 
 - (void)postNotificationOnMainThread:(NSNotification *)notification;
-- (void)postNotificationOnMainThreadName:(NSString *)aName object:(id)anObject;
-- (void)postNotificationOnMainThreadName:(NSString *)aName object:(id)anObject userInfo:(NSDictionary *)aUserInfo;
+- (void)postNotificationOnMainThreadName:(NSNotificationName)aName object:(nullable id)anObject;
+- (void)postNotificationOnMainThreadName:(NSNotificationName)aName object:(nullable id)anObject userInfo:(nullable NSDictionary *)aUserInfo;
 
 @end
 
 @interface RGBA8888ToNSColorValueTransformer : NSValueTransformer
-{ }
+
 @end
 
+NS_ASSUME_NONNULL_END

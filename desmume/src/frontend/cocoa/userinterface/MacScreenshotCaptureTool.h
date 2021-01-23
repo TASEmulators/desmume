@@ -21,9 +21,6 @@
 #import "MacBaseCaptureTool.h"
 
 @interface MacScreenshotCaptureToolDelegate : MacBaseCaptureToolDelegate
-{
-	
-}
 
 - (IBAction) takeScreenshot:(id)sender;
 - (void) readUserDefaults;

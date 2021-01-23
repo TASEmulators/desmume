@@ -49,8 +49,7 @@
 	bindings = [[NSMutableDictionary alloc] init];
 	if (bindings == nil)
 	{
-		self = nil;
-		return self;
+		return nil;
 	}
 		
 	return self;
