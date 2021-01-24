@@ -20,7 +20,7 @@
 
 #include "../../../common.h"
 
-static void SetupHQnxLUTs_Metal(__strong id<MTLDevice> *device, __strong id<MTLCommandQueue> *commandQueue, __strong id<MTLTexture> *texLQ2xLUT, __strong id<MTLTexture> *texHQ2xLUT, __strong id<MTLTexture> *texHQ3xLUT, __strong id<MTLTexture> *texHQ4xLUT);
+static void SetupHQnxLUTs_Metal(id<MTLDevice> device, id<MTLCommandQueue> commandQueue, __strong id<MTLTexture> *texLQ2xLUT, __strong id<MTLTexture> *texHQ2xLUT, __strong id<MTLTexture> *texHQ3xLUT, __strong id<MTLTexture> *texHQ4xLUT);
 static void DeleteHQnxLUTs_Metal(__strong id<MTLTexture> *texLQ2xLUT, __strong id<MTLTexture> *texHQ2xLUT, __strong id<MTLTexture> *texHQ3xLUT, __strong id<MTLTexture> *texHQ4xLUT);
 
 @implementation MetalDisplayViewSharedData
@@ -251,7 +251,7 @@ static void DeleteHQnxLUTs_Metal(__strong id<MTLTexture> *texLQ2xLUT, __strong i
 	bceFetch = nil;
 	
 	// Set up the HQnx LUT textures.
-	SetupHQnxLUTs_Metal(&device, &_fetchCommandQueue, &texLQ2xLUT, &texHQ2xLUT, &texHQ3xLUT, &texHQ4xLUT);
+	SetupHQnxLUTs_Metal(device, _fetchCommandQueue, &texLQ2xLUT, &texHQ2xLUT, &texHQ3xLUT, &texHQ4xLUT);
 	texCurrentHQnxLUT = nil;
 	
 	return self;
@@ -2615,27 +2615,27 @@ void MacMetalDisplayView::FlushAndFinalizeImmediate()
 }
 
 #pragma mark -
-void SetupHQnxLUTs_Metal(__strong id<MTLDevice> *device, __strong id<MTLCommandQueue> *commandQueue, __strong id<MTLTexture> *texLQ2xLUT, __strong id<MTLTexture> *texHQ2xLUT, __strong id<MTLTexture> *texHQ3xLUT, __strong id<MTLTexture> *texHQ4xLUT)
+void SetupHQnxLUTs_Metal(id<MTLDevice> device, id<MTLCommandQueue> commandQueue, __strong id<MTLTexture> *texLQ2xLUT, __strong id<MTLTexture> *texHQ2xLUT, __strong id<MTLTexture> *texHQ3xLUT, __strong id<MTLTexture> *texHQ4xLUT)
 {
 	InitHQnxLUTs();
 	
 	// Create the MTLBuffer objects to wrap the the existing LUT buffers that are already in memory.
-	id<MTLBuffer> bufLQ2xLUT = [*device newBufferWithBytesNoCopy:_LQ2xLUT
+	id<MTLBuffer> bufLQ2xLUT = [device newBufferWithBytesNoCopy:_LQ2xLUT
 														 length:256 * 2 * 4  * 16 * sizeof(uint32_t)
 														options:MTLResourceStorageModeShared | MTLResourceCPUCacheModeWriteCombined
 													deallocator:nil];
 	
-	id<MTLBuffer> bufHQ2xLUT = [*device newBufferWithBytesNoCopy:_HQ2xLUT
+	id<MTLBuffer> bufHQ2xLUT = [device newBufferWithBytesNoCopy:_HQ2xLUT
 														 length:256 * 2 * 4  * 16 * sizeof(uint32_t)
 														options:MTLResourceStorageModeShared | MTLResourceCPUCacheModeWriteCombined
 													deallocator:nil];
 	
-	id<MTLBuffer> bufHQ3xLUT = [*device newBufferWithBytesNoCopy:_HQ3xLUT
+	id<MTLBuffer> bufHQ3xLUT = [device newBufferWithBytesNoCopy:_HQ3xLUT
 														 length:256 * 2 * 9  * 16 * sizeof(uint32_t)
 														options:MTLResourceStorageModeShared | MTLResourceCPUCacheModeWriteCombined
 													deallocator:nil];
 	
-	id<MTLBuffer> bufHQ4xLUT = [*device newBufferWithBytesNoCopy:_HQ4xLUT
+	id<MTLBuffer> bufHQ4xLUT = [device newBufferWithBytesNoCopy:_HQ4xLUT
 														 length:256 * 2 * 16 * 16 * sizeof(uint32_t)
 														options:MTLResourceStorageModeShared | MTLResourceCPUCacheModeWriteCombined
 													deallocator:nil];
@@ -2672,13 +2672,13 @@ void SetupHQnxLUTs_Metal(__strong id<MTLDevice> *device, __strong id<MTLCommandQ
 	[texHQ4xLUTDesc setStorageMode:MTLStorageModePrivate];
 	[texHQ4xLUTDesc setUsage:MTLTextureUsageShaderRead];
 	
-	*texLQ2xLUT = [*device newTextureWithDescriptor:texHQ2xLUTDesc];
-	*texHQ2xLUT = [*device newTextureWithDescriptor:texHQ2xLUTDesc];
-	*texHQ3xLUT = [*device newTextureWithDescriptor:texHQ3xLUTDesc];
-	*texHQ4xLUT = [*device newTextureWithDescriptor:texHQ4xLUTDesc];
+	*texLQ2xLUT = [device newTextureWithDescriptor:texHQ2xLUTDesc];
+	*texHQ2xLUT = [device newTextureWithDescriptor:texHQ2xLUTDesc];
+	*texHQ3xLUT = [device newTextureWithDescriptor:texHQ3xLUTDesc];
+	*texHQ4xLUT = [device newTextureWithDescriptor:texHQ4xLUTDesc];
 	
 	// Copy the LUT buffers from main memory to the GPU.
-	id<MTLCommandBuffer> cb = [*commandQueue commandBufferWithUnretainedReferences];;
+	id<MTLCommandBuffer> cb = [commandQueue commandBufferWithUnretainedReferences];
 	id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
 	
 	[bce copyFromBuffer:bufLQ2xLUT
