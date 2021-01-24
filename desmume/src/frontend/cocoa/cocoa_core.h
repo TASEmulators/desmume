@@ -71,7 +71,7 @@ typedef struct
 
 @property (readonly, nonatomic) ClientExecutionControl *execControl;
 
-@property (retain) CocoaDSController *cdsController;
+@property (nonatomic, retain) CocoaDSController *cdsController;
 @property (retain) CocoaDSFirmware *cdsFirmware;
 @property (retain) CocoaDSGPU *cdsGPU;
 @property (retain) NSMutableArray *cdsOutputList;
@@ -154,5 +154,3 @@ typedef struct
 - (void) postNDSError:(const NDSError &)ndsError;
 
 @end
-
-static void* RunCoreThread(void *arg);

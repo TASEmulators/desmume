@@ -200,14 +200,3 @@ class ClientAVCaptureObject;
 - (NSImage *) image;
 
 @end
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-static void* RunOutputThread(void *arg);
-
-#ifdef __cplusplus
-}
-#endif

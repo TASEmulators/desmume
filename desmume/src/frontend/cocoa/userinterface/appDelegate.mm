@@ -471,7 +471,7 @@
 - (void) setupUserDefaults
 {
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
-	PreferencesWindowDelegate *prefWindowDelegate = [prefWindow delegate];
+	PreferencesWindowDelegate *prefWindowDelegate = (PreferencesWindowDelegate*)[prefWindow delegate];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	// Setup the ARM7 BIOS, ARM9 BIOS, and firmware image paths per user preferences.

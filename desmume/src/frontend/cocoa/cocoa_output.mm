@@ -40,6 +40,7 @@
 #undef BOOL
 #endif
 
+static void* RunOutputThread(void *arg);
 
 @implementation CocoaDSOutput
 

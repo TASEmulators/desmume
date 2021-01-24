@@ -845,7 +845,7 @@
 		
 		[[NSUserDefaults standardUserDefaults] setURL:selectedDirURL forKey:@"EmulationSlot1_R4StoragePath"];
 		
-		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[self->cdsCoreController content];
 		[cdsCore setSlot1R4URL:selectedDirURL];
 	} ];
 }

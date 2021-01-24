@@ -192,8 +192,6 @@ extern "C"
 
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 
-static void* RunFetchThread(void *arg);
-
 CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
 								const CVTimeStamp *inNow,
 								const CVTimeStamp *inOutputTime,

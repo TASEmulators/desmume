@@ -38,7 +38,7 @@
 @dynamic serialNumber;
 @synthesize identifier;
 @dynamic supportsForceFeedback;
-@dynamic isForceFeedbackEnabled;
+@synthesize forceFeedbackEnabled=isForceFeedbackEnabled;
 @dynamic runLoop;
 
 static NSDictionary *hidUsageTable = nil;
@@ -204,7 +204,7 @@ static NSDictionary *hidUsageTable = nil;
 	return (ioService != MACH_PORT_NULL) ? (FFIsForceFeedback(ioService) == FF_OK) : NO;
 }
 
-- (void) setIsForceFeedbackEnabled:(BOOL)theState
+- (void) setForceFeedbackEnabled:(BOOL)theState
 {
 	if (ffDevice != NULL)
 	{
@@ -280,7 +280,7 @@ static NSDictionary *hidUsageTable = nil;
 	NSNumber *isFFEnabledNumber = (NSNumber *)[theProperties objectForKey:@"isForceFeedbackEnabled"];
 	if (isFFEnabledNumber != nil)
 	{
-		[self setIsForceFeedbackEnabled:[isFFEnabledNumber boolValue]];
+		[self setForceFeedbackEnabled:[isFFEnabledNumber boolValue]];
 	}
 }
 
@@ -754,7 +754,7 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 @synthesize hidManagerRef;
 @synthesize deviceListController;
 @synthesize target;
-@dynamic runLoop;
+@synthesize runLoop;
 
 - (id) initWithInputManager:(InputManager *)theInputManager
 {

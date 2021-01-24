@@ -1752,7 +1752,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                     <clipView key="contentView" id="enq-CQ-T6a">
                         <rect key="frame" x="1" y="1" width="640" height="410"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="none" alternatingRowBackgroundColors="YES" columnReordering="NO" multipleSelection="NO" typeSelect="NO" autosaveName="InputPreferences" headerView="7129" indentationPerLevel="13" autosaveExpandedItems="YES" indentationMarkerFollowsCell="NO" autoresizesOutlineColumn="YES" outlineTableColumn="7137" id="7130">
                                 <rect key="frame" x="0.0" y="0.0" width="640" height="382"/>
@@ -4367,8 +4367,8 @@ DQ
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="235" y="444" width="452" height="115"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" id="7708">
-                <rect key="frame" x="0.0" y="0.0" width="452" height="113"/>
+            <view key="contentView" misplaced="YES" id="7708">
+                <rect key="frame" x="0.0" y="0.0" width="452" height="115"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7715">
@@ -5002,8 +5002,8 @@ Gw
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="235" y="434" width="350" height="125"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" id="7174">
-                <rect key="frame" x="0.0" y="0.0" width="350" height="112"/>
+            <view key="contentView" misplaced="YES" id="7174">
+                <rect key="frame" x="0.0" y="0.0" width="350" height="125"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <popUpButton horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7210">
@@ -5124,8 +5124,8 @@ Gw
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="235" y="459" width="350" height="125"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" id="7226">
-                <rect key="frame" x="0.0" y="0.0" width="350" height="112"/>
+            <view key="contentView" misplaced="YES" id="7226">
+                <rect key="frame" x="0.0" y="0.0" width="350" height="125"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <popUpButton horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7228">
@@ -7530,8 +7530,8 @@ DQ
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="157" y="261" width="380" height="200"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" id="2848">
-                <rect key="frame" x="0.0" y="0.0" width="380" height="197"/>
+            <view key="contentView" misplaced="YES" id="2848">
+                <rect key="frame" x="0.0" y="0.0" width="380" height="200"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="342" translatesAutoresizingMaskIntoConstraints="NO" id="2894">
@@ -7694,8 +7694,8 @@ Gw
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="157" y="347" width="400" height="114"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" id="10523">
-                <rect key="frame" x="0.0" y="0.0" width="400" height="120"/>
+            <view key="contentView" misplaced="YES" id="10523">
+                <rect key="frame" x="0.0" y="0.0" width="400" height="114"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="362" translatesAutoresizingMaskIntoConstraints="NO" id="10524">
@@ -9000,7 +9000,7 @@ Gw
                     <autoresizingMask key="autoresizingMask"/>
                     <clipView key="contentView" id="Nw2-In-y1f">
                         <rect key="frame" x="1" y="1" width="278" height="223"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" baseWritingDirection="leftToRight" findStyle="panel" allowsUndo="YES" allowsNonContiguousLayout="YES" spellingCorrection="YES" id="4634">
                                 <rect key="frame" x="0.0" y="0.0" width="278" height="223"/>
@@ -9441,7 +9441,7 @@ Serial:</string>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <clipView key="contentView" id="LdN-xx-f7O">
                             <rect key="frame" x="1" y="1" width="188" height="320"/>
-                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                            <autoresizingMask key="autoresizingMask"/>
                             <subviews>
                                 <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" columnResizing="NO" multipleSelection="NO" emptySelection="NO" autosaveColumns="NO" headerView="8351" id="8336">
                                     <rect key="frame" x="0.0" y="0.0" width="188" height="292"/>
@@ -9816,7 +9816,7 @@ Serial:</string>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <clipView key="contentView" id="ede-My-FIf">
                         <rect key="frame" x="1" y="1" width="358" height="172"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="none" alternatingRowBackgroundColors="YES" columnReordering="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" headerView="8524" id="8515">
                                 <rect key="frame" x="0.0" y="0.0" width="358" height="144"/>
@@ -9835,7 +9835,7 @@ Serial:</string>
                                             <font key="font" metaFont="system"/>
                                         </buttonCell>
                                         <connections>
-                                            <binding destination="8527" name="value" keyPath="arrangedObjects.isForceFeedbackEnabled" id="8528"/>
+                                            <binding destination="8527" name="value" keyPath="arrangedObjects.forceFeedbackEnabled" id="8528"/>
                                             <binding destination="8527" name="enabled" keyPath="arrangedObjects.supportsForceFeedback" id="8530"/>
                                         </connections>
                                     </tableColumn>
@@ -12466,8 +12466,8 @@ Serial:</string>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="806" y="204" width="235" height="310"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" id="795">
-                <rect key="frame" x="0.0" y="0.0" width="235" height="318"/>
+            <view key="contentView" misplaced="YES" id="795">
+                <rect key="frame" x="0.0" y="0.0" width="235" height="310"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <button translatesAutoresizingMaskIntoConstraints="NO" id="823">
@@ -14256,7 +14256,7 @@ Serial:</string>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <clipView key="contentView" id="zpE-Cv-ss8">
                             <rect key="frame" x="1" y="1" width="330" height="811"/>
-                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                            <autoresizingMask key="autoresizingMask"/>
                             <subviews>
                                 <customView id="9827" customClass="RomInfoContentView">
                                     <rect key="frame" x="0.0" y="0.0" width="319" height="810"/>
@@ -17060,8 +17060,8 @@ Serial:</string>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="162" y="360" width="290" height="119"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" id="9390">
-                <rect key="frame" x="0.0" y="0.0" width="290" height="122"/>
+            <view key="contentView" misplaced="YES" id="9390">
+                <rect key="frame" x="0.0" y="0.0" width="290" height="119"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <textField verticalHuggingPriority="750" preferredMaxLayoutWidth="88" translatesAutoresizingMaskIntoConstraints="NO" id="9393">
@@ -17659,7 +17659,7 @@ Serial:</string>
                     <rect key="frame" x="20" y="167" width="540" height="85"/>
                     <clipView key="contentView" id="FRq-Q5-CCu">
                         <rect key="frame" x="1" y="1" width="538" height="83"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" spellingCorrection="YES" smartInsertDelete="YES" id="6489">
                                 <rect key="frame" x="0.0" y="0.0" width="538" height="83"/>
@@ -17689,7 +17689,7 @@ Serial:</string>
                     <rect key="frame" x="20" y="61" width="540" height="82"/>
                     <clipView key="contentView" id="kDg-Su-UXe">
                         <rect key="frame" x="1" y="1" width="538" height="80"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" spellingCorrection="YES" smartInsertDelete="YES" id="6494">
                                 <rect key="frame" x="0.0" y="0.0" width="538" height="80"/>
@@ -18362,7 +18362,7 @@ DQ
         <arrayController objectClassName="InputHIDDevice" preservesSelection="NO" selectsInsertedObjects="NO" id="8527" userLabel="Input Device List Array Controller">
             <declaredKeys>
                 <string>supportsForceFeedback</string>
-                <string>isForceFeedbackEnabled</string>
+                <string>forceFeedbackEnabled</string>
                 <string>manufacturerName</string>
                 <string>productName</string>
                 <string>serialNumber</string>

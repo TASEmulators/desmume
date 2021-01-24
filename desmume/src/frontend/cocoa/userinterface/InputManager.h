@@ -74,7 +74,7 @@ typedef std::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Ke
 @property (copy, readonly) NSString *serialNumber;
 @property (copy, readonly) NSString *identifier;
 @property (readonly) BOOL supportsForceFeedback;
-@property (assign) BOOL isForceFeedbackEnabled;
+@property (assign, getter=isForceFeedbackEnabled) BOOL forceFeedbackEnabled;
 @property (strong) NSRunLoop *runLoop;
 
 - (id) initWithDevice:(IOHIDDeviceRef)theDevice hidManager:(InputHIDManager *)theHIDManager;
@@ -108,7 +108,6 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	IOHIDManagerRef hidManagerRef;
 	NSRunLoop *runLoop;
 	NSArrayController *deviceListController;
-	id<InputHIDManagerTarget> __unsafe_unretained target;
 	
 	OSSpinLock spinlockRunLoop;
 }
@@ -116,8 +115,8 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 @property (strong) NSArrayController *deviceListController;
 @property (strong) InputManager *inputManager;
 @property (readonly) IOHIDManagerRef hidManagerRef;
-@property (unsafe_unretained) id target;
-@property (strong) NSRunLoop *runLoop;
+@property (strong) id<InputHIDManagerTarget> target;
+@property (nonatomic, strong) NSRunLoop *runLoop;
 
 - (id) initWithInputManager:(InputManager *)theInputManager;
 
@@ -142,7 +141,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	AudioFileSampleGeneratorMap audioFileGenerators;
 }
 
-@property (weak, readonly) IBOutlet EmuControllerDelegate *emuControl;
+@property (weak) IBOutlet EmuControllerDelegate *emuControl;
 @property (readonly) MacInputDevicePropertiesEncoder *inputEncoder;
 @property (strong) id<InputHIDManagerTarget> hidInputTarget;
 @property (readonly, strong) InputHIDManager *hidManager;

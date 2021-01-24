@@ -37,6 +37,8 @@
 #include "../../SPU.h"
 #undef BOOL
 
+static void* RunCoreThread(void *arg);
+
 //accessed from other files
 volatile bool execute = true;
 
@@ -44,7 +46,7 @@ volatile bool execute = true;
 
 @synthesize execControl;
 
-@dynamic cdsController;
+@synthesize cdsController;
 @synthesize cdsFirmware;
 @synthesize cdsGPU;
 @synthesize cdsOutputList;
@@ -962,27 +964,16 @@ volatile bool execute = true;
 	const char *fileName = [fileURL fileSystemRepresentation];
 	
 	NSDate *currentDate = [NSDate date];
-	NSString *currentDateStr = [currentDate descriptionWithCalendarFormat:@"%Y %m %d %H %M %S %F"
-																 timeZone:nil
-																   locale:[[NSUserDefaults standardUserDefaults] dictionaryRepresentation]];
+	NSCalendar *cal = [NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
+	NSDateComponents *comps = [cal components:(NSCalendarUnitNanosecond | NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay | NSCalendarUnitHour | NSCalendarUnitMinute | NSCalendarUnitSecond) fromDate:currentDate];
 	
-	int dateYear = 2009;
-	int dateMonth = 1;
-	int dateDay = 1;
-	int dateHour = 0;
-	int dateMinute = 0;
-	int dateSecond = 0;
-	int dateMillisecond = 0;
-	const char *dateCStr = [currentDateStr cStringUsingEncoding:NSUTF8StringEncoding];
-	sscanf(dateCStr, "%i %i %i %i %i %i %i", &dateYear, &dateMonth, &dateDay, &dateHour, &dateMinute, &dateSecond, &dateMillisecond);
-	
-	DateTime rtcDate = DateTime(dateYear,
-								dateMonth,
-								dateDay,
-								dateHour,
-								dateMinute,
-								dateSecond,
-								dateMillisecond);
+	DateTime rtcDate = DateTime((int)comps.year,
+								(int)comps.month,
+								(int)comps.day,
+								(int)comps.hour,
+								(int)comps.minute,
+								(int)comps.second,
+								(int)comps.nanosecond/1e+6);
 	
 	FCEUI_SaveMovie(fileName, L"Test Author", START_BLANK, sramPath, rtcDate);
 	

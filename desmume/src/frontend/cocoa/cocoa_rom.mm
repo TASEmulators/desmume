@@ -279,8 +279,9 @@ static NSMutableDictionary *saveTypeValues = nil;
 	
 	NSURL *theURL = [(NSURL *)object copy];
 	@autoreleasepool {
-		[self loadData:theURL];
+		[strongSelf loadData:theURL];
 	}
+	strongSelf = nil;
 }
 
 - (NSString *) title

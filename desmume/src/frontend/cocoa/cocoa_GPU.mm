@@ -36,6 +36,12 @@
 #undef BOOL
 #endif
 
+#ifdef ENABLE_SHARED_FETCH_OBJECT
+
+static void* RunFetchThread(void *arg);
+
+#endif
+
 GPU3DInterface *core3DList[] = {
 	&gpu3DNull,
 	&gpu3DRasterize,

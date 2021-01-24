@@ -859,7 +859,14 @@
 
 - (NSDate *) birthday
 {
-	return [NSDate dateWithString:[NSString stringWithFormat:@"%ld-%ld-%ld 12:00:00 +0000", (unsigned long)_birth_year, (unsigned long)_fwConfigInterface->GetBirthdayMonth(), (unsigned long)_fwConfigInterface->GetBirthdayDay()]];
+	NSDateComponents *components = [[NSDateComponents alloc] init];
+	components.year = _birth_year;
+	components.month = _fwConfigInterface->GetBirthdayMonth();
+	components.day = _fwConfigInterface->GetBirthdayDay();
+	components.timeZone = [NSTimeZone timeZoneForSecondsFromGMT:0];
+	components.hour = 12;
+	NSCalendar *cal = [NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
+	return [cal dateFromComponents:components];
 }
 
 - (void) setLanguage:(NSInteger)languageID

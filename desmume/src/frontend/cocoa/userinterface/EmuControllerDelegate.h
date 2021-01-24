@@ -271,7 +271,6 @@ class AudioSampleBlockGenerator;
 - (void) didEndSaveStateSheet:(NSWindow *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 - (void) didEndSaveStateSheetOpen:(NSWindow *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 - (void) didEndSaveStateSheetTerminate:(NSWindow *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
-- (void) didEndChooseSlot1R4Directory:(NSOpenPanel *)sheet returnCode:(NSModalResponse)returnCode contextInfo:(void *)contextInfo;
 
 - (void) updateAllWindowTitles;
 - (void) updateDisplayPanelTitles;
