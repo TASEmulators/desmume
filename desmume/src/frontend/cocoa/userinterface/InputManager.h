@@ -55,7 +55,7 @@ typedef std::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Ke
 	IOHIDDeviceRef hidDeviceRef;
 	IOHIDQueueRef hidQueueRef;
 	
-	NSString * identifier;
+	NSString *identifier;
 	
 	io_service_t ioService;
 	FFDeviceObjectReference ffDevice;

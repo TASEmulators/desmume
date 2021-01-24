@@ -128,7 +128,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLTexture> _texDisplayPostprocessCustom[2][METAL_FETCH_BUFFER_COUNT];
 	
 	MetalTexturePair texPairFetch;
-	id<MTLBlitCommandEncoder> bceFetch;
+	id<MTLBlitCommandEncoder> __weak bceFetch;
 	
 	id<MTLTexture> texLQ2xLUT;
 	id<MTLTexture> texHQ2xLUT;
@@ -157,7 +157,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) id<MTLBuffer> hudIndexBuffer;
 
 @property (assign) MetalTexturePair texPairFetch;
-@property (strong) id<MTLBlitCommandEncoder> bceFetch;
+@property (weak) id<MTLBlitCommandEncoder> bceFetch;
 
 @property (readonly, strong, nonatomic) id<MTLTexture> texLQ2xLUT;
 @property (readonly, strong, nonatomic) id<MTLTexture> texHQ2xLUT;
