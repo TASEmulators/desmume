@@ -130,21 +130,20 @@ bool IsOSXVersion(const unsigned int major, const unsigned int minor, const unsi
 	return result;
 }
 
-/********************************************************************************************
-	GetNearestPositivePOT()
+/**
+	@function GetNearestPositivePOT()
 
-	Returns the next highest power of two of a 32-bit integer value.
+	@brief Returns the next highest power of two of a 32-bit integer value.
 
-	Takes:
-		value - A 32-bit integer value.
+	@param value  A 32-bit integer value.
 
-	Returns:
+	@Returns
 		A 32-bit integer with the next highest power of two compared to the input value.
 
-	Details:
+	@discussion
 		If the input value is already a power of two, this function returns the same
 		value.
- ********************************************************************************************/
+ **/
 uint32_t GetNearestPositivePOT(uint32_t value)
 {
 	value--;

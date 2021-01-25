@@ -338,20 +338,17 @@ static NSDictionary *hidUsageTable = nil;
 
 @end
 
-/********************************************************************************************
-	InputAttributesOfHIDValue()
+/**
+	@method InputAttributesOfHIDValue()
 
-	Parses an IOHIDValueRef into an input attributes struct.
+	@brief Parses an \c IOHIDValueRef into an input attributes struct.
 
-	Takes:
-		hidValueRef - The IOHIDValueRef to parse.
+	@param hidValueRef The \c IOHIDValueRef to parse.
 
-	Returns:
-		A ClientInputDeviceProperties struct with the parsed input device's properties.
+	@Returns
+		A \c ClientInputDeviceProperties struct with the parsed input device's properties.
 
-	Details:
-		None.
- ********************************************************************************************/
+ **/
 ClientInputDeviceProperties InputAttributesOfHIDValue(IOHIDValueRef hidValueRef)
 {
 	ClientInputDeviceProperties inputProperty;

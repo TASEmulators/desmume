@@ -23,14 +23,14 @@
 @class NSImage;
 @class NSBitmapImageRep;
 
-/********************************************************************************************
-	CocoaVideoFilter - OBJECTIVE-C CLASS
+/**
+	@class CocoaVideoFilter - OBJECTIVE-C CLASS
 
-	This is an Objective-C wrapper class for the video filter C++ object.
+	@brief This is an Objective-C wrapper class for the video filter C++ object.
 	
 	Thread Safety:
 		All methods are thread-safe.
- ********************************************************************************************/
+ **/
 @interface CocoaVideoFilter : NSObject
 {
 	VideoFilter *vf;

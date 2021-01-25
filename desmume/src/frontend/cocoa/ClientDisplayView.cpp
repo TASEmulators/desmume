@@ -1015,25 +1015,24 @@ void ClientDisplayPresenter::SetEmuDisplayInfo(const NDSDisplayInfo &ndsDisplayI
 	this->_emuDisplayInfo = ndsDisplayInfo;
 }
 
-/********************************************************************************************
-	ConvertNormalToTransformedBounds()
+/**
+	@function ConvertNormalToTransformedBounds()
 
-	Returns the bounds of a normalized 2D surface using affine transformations.
+	@brief Returns the bounds of a normalized 2D surface using affine transformations.
 
-	Takes:
-		scalar - The scalar used to transform the 2D surface.
-		angleDegrees - The rotation angle, in degrees, to transform the 2D surface.
- 		inoutWidth - The width of the normal 2D surface.
- 		inoutHeight - The height of the normal 2D surface.
+	@param scalar  The scalar used to transform the 2D surface.
+	@param angleDegrees  The rotation angle, in degrees, to transform the 2D surface.
+	@param inoutWidth  The width of the normal 2D surface.
+	@param inoutHeight  The height of the normal 2D surface.
 
-	Returns:
+	@Returns
 		The bounds of a normalized 2D surface using affine transformations.
 
-	Details:
+	@Discussion
 		The returned bounds is always a normal rectangle. Ignoring the scaling, the
 		returned bounds will always be at its smallest when the angle is at 0, 90, 180,
 		or 270 degrees, and largest when the angle is at 45, 135, 225, or 315 degrees.
- ********************************************************************************************/
+ **/
 void ClientDisplayPresenter::ConvertNormalToTransformedBounds(const double scalar,
 															  const double angleDegrees,
 															  double &inoutWidth, double &inoutHeight)
@@ -1152,26 +1151,25 @@ void ClientDisplayPresenter::ConvertNormalToTransformedBounds(const double scala
 	}
 }
 
-/********************************************************************************************
-	GetMaxScalarWithinBounds()
+/**
+	@function GetMaxScalarWithinBounds()
 
-	Returns the maximum scalar that a rectangle can grow, while maintaining its aspect
+	@brief Returns the maximum scalar that a rectangle can grow, while maintaining its aspect
 	ratio, within a boundary.
 
-	Takes:
-		normalBoundsWidth - The width of the normal 2D surface.
-		normalBoundsHeight - The height of the normal 2D surface.
-		keepInBoundsWidth - The width of the keep-in 2D surface.
-		keepInBoundsHeight - The height of the keep-in 2D surface.
+	@param normalBoundsWidth The width of the normal 2D surface.
+	@param normalBoundsHeight The height of the normal 2D surface.
+	@param keepInBoundsWidth The width of the keep-in 2D surface.
+	@param keepInBoundsHeight The height of the keep-in 2D surface.
 
-	Returns:
+	@Returns
 		The maximum scalar that a rectangle can grow, while maintaining its aspect ratio,
 		within a boundary.
 
-	Details:
-		If keepInBoundsWidth or keepInBoundsHeight are less than or equal to zero, the
+	@discussion
+		If \c keepInBoundsWidth or \c keepInBoundsHeight are less than or equal to zero, the
 		returned scalar will be zero.
- ********************************************************************************************/
+ **/
 double ClientDisplayPresenter::GetMaxScalarWithinBounds(const double normalBoundsWidth, const double normalBoundsHeight,
 														const double keepInBoundsWidth, const double keepInBoundsHeight)
 {
@@ -1307,7 +1305,7 @@ void ClientDisplayViewInterface::FlushAndFinalizeImmediate()
 	this->FinalizeFlush(NULL, 0);
 }
 
-// Touch screen input handling
+//! Touch screen input handling
 void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterProperties &props,
 											 const double logicalClientWidth, const double logicalClientHeight,
 											 const int inputID, const bool isInitialTouchPress,
@@ -1398,27 +1396,26 @@ void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterPropert
 	outY = (u8)(y + 0.001);
 }
 
-/********************************************************************************************
-	ConvertClientToNormalPoint()
+/**
+	@function ConvertClientToNormalPoint()
 
-	Returns a normalized point from a point from a 2D transformed surface.
+	@brief Returns a normalized point from a point from a 2D transformed surface.
 
-	Takes:
-		normalWidth - The width of the normal 2D surface.
-		normalHeight - The height of the normal 2D surface.
-		clientWidth - The width of the client 2D surface.
-		clientHeight - The height of the client 2D surface.
-		scalar - The scalar used on the transformed 2D surface.
-		angleDegrees - The rotation angle, in degrees, of the transformed 2D surface.
- 		inoutX - The X coordinate of a 2D point as it exists on a 2D transformed surface.
- 		inoutY - The Y coordinate of a 2D point as it exists on a 2D transformed surface.
+	@param normalWidth The width of the normal 2D surface.
+	@param normalHeight The height of the normal 2D surface.
+	@param clientWidth The width of the client 2D surface.
+	@param clientHeight The height of the client 2D surface.
+	@param scalar The scalar used on the transformed 2D surface.
+	@param angleDegrees The rotation angle, in degrees, of the transformed 2D surface.
+	@param inoutX The X coordinate of a 2D point as it exists on a 2D transformed surface.
+	@param inoutY The Y coordinate of a 2D point as it exists on a 2D transformed surface.
 	
-	Returns:
+	@Returns
 		A normalized point from a point from a 2D transformed surface.
 
-	Details:
-		It may help to call GetMaxScalarWithinBounds() for the scalar parameter.
- ********************************************************************************************/
+	@discussion
+		It may help to call \c GetMaxScalarWithinBounds() for the scalar parameter.
+ **/
 void ClientDisplayViewInterface::ConvertClientToNormalPoint(const double normalWidth, const double normalHeight,
 															const double clientWidth, const double clientHeight,
 															const double scalar,

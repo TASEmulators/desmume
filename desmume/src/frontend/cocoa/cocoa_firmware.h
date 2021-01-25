@@ -43,14 +43,14 @@ enum FirmwareCfgMACAddrSetID
 	FirmwareCfgMACAddrSetID_Custom8 = 8
 };
 
-/********************************************************************************************
-	CocoaDSFirmware - OBJECTIVE-C CLASS
+/**
+	@class CocoaDSFirmware - OBJECTIVE-C CLASS
 
-	This is an Objective-C wrapper class for DeSmuME's firmware struct.
+	@brief This is an Objective-C wrapper class for DeSmuME's firmware struct.
  
 	Thread Safety:
 		All methods are thread-safe.
- ********************************************************************************************/
+ **/
 @interface CocoaDSFirmware : NSObject
 {
 	ClientExecutionControl *execControl;

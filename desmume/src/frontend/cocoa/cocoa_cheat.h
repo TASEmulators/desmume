@@ -24,17 +24,17 @@ class CHEATS_LIST;
 class CHEATSEARCH;
 
 
-/********************************************************************************************
-	CocoaDSCheatItem - OBJECTIVE-C CLASS
+/**
+	@class CocoaDSCheatItem - OBJECTIVE-C CLASS
 
-	This is an Objective-C wrapper class for DeSmuME's cheat item struct.
+	@brief This is an Objective-C wrapper class for DeSmuME's cheat item struct.
  
-	The cheat item data is not freed upon release of this object. This is by design.
+	@discussion The cheat item data is not freed upon release of this object. This is by design.
 
 	Thread Safety:
 		Assume that all methods are not thread-safe. This was done for performance
 		reasons. The caller of this class' methods is expected to handle thread safety.
- ********************************************************************************************/
+ **/
 @interface CocoaDSCheatItem : NSObject
 {
 	CHEATS_LIST *data;
@@ -81,14 +81,15 @@ class CHEATSEARCH;
 
 @end
 
-/********************************************************************************************
-	CocoaDSCheatManager - OBJECTIVE-C CLASS
+/**
+	@class CocoaDSCheatManager - OBJECTIVE-C CLASS
 
-	This is an Objective-C wrapper class for DeSmuME's cheat list class.
+	@brief This is an Objective-C wrapper class for DeSmuME's cheat list class.
 
+	@discussion
 	Thread Safety:
 		All methods are thread-safe.
- ********************************************************************************************/
+ **/
 @interface CocoaDSCheatManager : NSObject
 {
 	CHEATS *listData;

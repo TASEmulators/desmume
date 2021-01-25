@@ -39,23 +39,20 @@
 // URL dictionary so that we can manually set and get URLs at runtime.
 static NSMutableDictionary *_gURLDictionary = nil;
 
-/********************************************************************************************
-	URLDictionary
+/**
+	@property URLDictionary
 
-	Returns the global URL dictionary.
+	@brief Returns the global URL dictionary.
 
-	Takes:
-		Nothing.
-
-	Returns:
+	@Returns
 		A reference to the NSMutableDictionary URLDictionary.
 
-	Details:
+	@discussion
 		This should always be used for getting the global URL dictionary. Never try to
 		reference the global URL dictionary directly, since this may change between
 		versions. The first time this method is called, it will automatically allocate
 		the memory for the global URL dictionary.
- ********************************************************************************************/
+ **/
 + (NSMutableDictionary *) URLDictionary
 {
 	static dispatch_once_t onceToken;
@@ -66,23 +63,19 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	return _gURLDictionary;
 }
 
-/********************************************************************************************
-	addURLToURLDictionary:groupKey:fileKind:
+/**
+	@method addURLToURLDictionary:groupKey:fileKind:
 
-	Adds a URL to the global URL dictionary.
+	@brief Adds a URL to the global URL dictionary.
 
-	Takes:
-		theURL - An NSURL used to store a URL into the dictionary.
-		groupKey - An NSString that represents the key used to group a set URLs together.
-		fileKind - An NSString that represents the file type.
+	@param theURL An \c NSURL used to store a URL into the dictionary.
+	@param groupKey An \c NSString that represents the key used to group a set URLs together.
+	@param fileKind An \c NSString that represents the file type.
 
-	Returns:
-		Nothing.
-
-	Details:
+	@discussion
 		This should always be used for adding a URL to the global URL dictionary. Never
 		try to add a URL directly, since this may change between versions.
- ********************************************************************************************/
+ **/
 + (void) addURLToURLDictionary:(NSURL *)theURL groupKey:(NSString *)groupKey fileKind:(NSString *)fileKind
 {
 	if (theURL == nil || groupKey == nil || fileKind == nil)
@@ -102,22 +95,18 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	[groupDictionary setValue:theURL forKey:fileKind];
 }
 
-/********************************************************************************************
-	removeURLFromURLDictionaryByGroupKey:fileKind:
+/**
+	@method removeURLFromURLDictionaryByGroupKey:fileKind:
 
-	Removes a URL from the global URL dictionary.
+	@brief Removes a URL from the global URL dictionary.
 
-	Takes:
-		groupKey - An NSString that represents the key used to group a set URLs together.
-		fileKind - An NSString that represents the file type.
+	@param groupKey An \c NSString that represents the key used to group a set URLs together.
+	@param fileKind An \c NSString that represents the file type.
 
-	Returns:
-		Nothing.
-
-	Details:
+	@discussion
 		This should always be used for removing a URL from the global URL dictionary.
 		Never try to remove a URL directly, since this may change between versions.
- ********************************************************************************************/
+ **/
 + (void) removeURLFromURLDictionaryByGroupKey:(NSString *)groupKey fileKind:(NSString *)fileKind
 {
 	if (groupKey == nil || fileKind == nil)
@@ -313,43 +302,33 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	return exists;
 }
 
-/********************************************************************************************
-	setupAllFilePaths
+/**
+	@method setupAllFilePaths
 
-	Sets up all application file paths using the current version of the default port.
+	@brief Sets up all application file paths using the current version of the default port.
 
-	Takes:
-		Nothing.
-
-	Returns:
-		Nothing.
-
-	Details:
-		This method uses setupAllFilePathsForVersion:port: for its implementation.
- ********************************************************************************************/
+	@Discussion
+		This method uses \c setupAllFilePathsForVersion:port: for its implementation.
+ **/
 + (void) setupAllFilePaths
 {
 	[CocoaDSFile setupAllFilePathsForVersion:nil port:nil];
 }
 
-/********************************************************************************************
-	setupAllFilePathsForVersion:port:
+/**
+	@method setupAllFilePathsForVersion:port:
 
-	Sets up all application file paths, reading the paths from FileTypeInfo.plist.
+	@brief Sets up all application file paths, reading the paths from FileTypeInfo.plist.
 
-	Takes:
-		versionString - An NSString that represents the application version. If nil is
+	@param versionString An NSString that represents the application version. If \c nil is
 			used, this method assumes the current version.
-		portString - An NSString that represents the port version. If nil is used, this
+	@param portString An NSString that represents the port version. If \c nil is used, this
 			method assumes the default port version.
-
-	Returns:
-		Nothing.
-
-	Details:
+ 
+	@discussion
 		This is an Objective-C to C wrapper function for assigning file paths to the
 		emulation layer.
- ********************************************************************************************/
+ **/
 + (void) setupAllFilePathsForVersion:(NSString *)versionString port:(NSString *)portString
 {
 	NSURL *romURL = [CocoaDSFile directoryURLByKind:@"ROM" version:versionString port:portString];
@@ -407,22 +386,18 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	}
 }
 
-/********************************************************************************************
-	setupAllFilePathsWithURLDictionary:
+/**
+	@method setupAllFilePathsWithURLDictionary:
 
-	Sets up all application file paths using the global URLDictionary. This method exists
+	@brief Sets up all application file paths using the global URLDictionary. This method exists
 	in the case where reading the paths from FileTypeInfo.plist impossible or impractical.
 
-	Takes:
-		URLDictionaryKey - An NSString that is a group key to the URLDictionary.
+	@param URLDictionaryKey An \c NSString that is a group key to the URLDictionary.
 
-	Returns:
-		Nothing.
-
-	Details:
+	@discussion
 		This is an Objective-C to C wrapper function for assigning file paths to the
 		emulation layer.
- ********************************************************************************************/
+ **/
 + (void) setupAllFilePathsWithURLDictionary:(NSString *)URLDictionaryKey
 {
 	if (URLDictionaryKey == nil)
@@ -585,24 +560,23 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	return result;
 }
 
-/********************************************************************************************
-	fileKindByURL:
+/**
+	@method fileKindByURL:
 
-	Determines a DeSmuME file's type, and returns a description as a string.
+	@brief Determines a DeSmuME file's type, and returns a description as a string.
 
-	Takes:
-		fileURL - An NSURL that points to a file.
+	@param fileURL An \c NSURL that points to a file.
 
-	Returns:
-		An NSString representing the file type. The NSString will be nil if the file
+	@Returns
+		An \c NSString representing the file type. The \c NSString will be \c nil if the file
 		type is not recognized as a DeSmuME file.
 
-	Details:
+	@discussion
 		This is not the most reliable method for determining a file's type. The current
 		implementation simply checks the file extension to determine the file type.
 		Future implementations could be made more reliable by actually opening the file
 		and validating some header info. 
- ********************************************************************************************/
+ **/
 + (NSString *) fileKindByURL:(NSURL *)fileURL
 {
 	return [CocoaDSFile fileKindByURL:fileURL version:nil port:nil];
@@ -948,21 +922,20 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	return exists;
 }
 
-/********************************************************************************************
-	isSaveStateSlotExtension:
+/**
+	@method isSaveStateSlotExtension:
 
-	Determines if a given extension represents a save state file type.
+	@brief Determines if a given extension represents a save state file type.
 
-	Takes:
-		extension - An NSString representing the file extension.
+	@param extension An \c NSString representing the file extension.
 
-	Returns:
-		A BOOL indicating if extension represents a save state file type.
+	@Returns
+		A \c BOOL indicating if extension represents a save state file type.
 
-	Details:
+	@discussion
 		Save state file extensions are represented by .ds#, where # is an integer that
 		is greater than or equal to 0.
- ********************************************************************************************/
+ **/
 + (BOOL) isSaveStateSlotExtension:(NSString *)extension
 {
 	BOOL result = NO;

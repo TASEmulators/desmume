@@ -608,25 +608,23 @@ static NSMutableDictionary *saveTypeValues = nil;
 
 @end
 
-/********************************************************************************************
-	RomIconToRGBA8888()
+/**
+	@function RomIconToRGBA8888()
 
-	Reads the icon image data from a ROM and converts it to an RGBA8888 formatted bitmap.
+	@brief Reads the icon image data from a ROM and converts it to an RGBA8888 formatted bitmap.
 
-	Takes:
-		bitmapData - Write pointer for the icon's pixel data.
+	@param bitmapData Write pointer for the icon's pixel data.
 
-	Returns:
-		Nothing.
-
-	Details:
+	@Discussion
 		- If bitmapData is NULL, then this function immediately returns and does nothing.
+ 
 		- If no ROM is loaded, then bitmapData will have a black square icon.
+ 
 		- The caller is responsible for ensuring that bitmapData points to a valid
 		  memory location and that the memory block is large enough to hold the pixel
 		  data. The written data will be 32x32 pixels in 32-bit color. Therefore, a size
 		  of at least 4096 bytes must be allocated.
- ********************************************************************************************/
+ **/
 void RomIconToRGBA8888(uint32_t *bitmapData)
 {
 	const RomBanner &ndsRomBanner = gameInfo.getRomBanner(); // Contains the memory addresses we need to get our read pointer locations.
