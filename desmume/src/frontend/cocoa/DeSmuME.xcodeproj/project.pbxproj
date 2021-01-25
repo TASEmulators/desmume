@@ -4364,6 +4364,11 @@
 					"$(inherited)",
 					"GL_SILENCE_DEPRECATION=1",
 				);
+				"GCC_PREPROCESSOR_DEFINITIONS[arch=arm64]" = (
+					"$(inherited)",
+					"OSATOMIC_USE_INLINED=1",
+					"OSSPINLOCK_USE_INLINED=1",
+				);
 				GCC_UNROLL_LOOPS = YES;
 				LLVM_LTO = YES_THIN;
 				PRODUCT_BUNDLE_IDENTIFIER = org.desmume.DeSmuME;
@@ -4379,6 +4384,11 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"GL_SILENCE_DEPRECATION=1",
+				);
+				"GCC_PREPROCESSOR_DEFINITIONS[arch=arm64]" = (
+					"$(inherited)",
+					"OSATOMIC_USE_INLINED=1",
+					"OSSPINLOCK_USE_INLINED=1",
 				);
 				GCC_UNROLL_LOOPS = YES;
 				LLVM_LTO = YES;

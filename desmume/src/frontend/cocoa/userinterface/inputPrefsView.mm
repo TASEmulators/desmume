@@ -48,7 +48,7 @@
 @synthesize inputProfileSheet;
 @synthesize inputProfileRenameSheet;
 @synthesize inputManager;
-@dynamic configInputTargetID;
+@synthesize configInputTargetID;
 @synthesize inputSettingsInEdit;
 
 - (id)initWithFrame:(NSRect)frame
