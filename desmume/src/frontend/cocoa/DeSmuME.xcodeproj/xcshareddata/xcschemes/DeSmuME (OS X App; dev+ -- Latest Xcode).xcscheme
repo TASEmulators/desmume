@@ -17,7 +17,7 @@
                BlueprintIdentifier = "AB8F3C171A53AC2600A80BF6"
                BuildableName = "DeSmuME (dev+).app"
                BlueprintName = "DeSmuME (OS X App; dev+ -- Latest Xcode)"
-               ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
+               ReferencedContainer = "container:DeSmuME.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>

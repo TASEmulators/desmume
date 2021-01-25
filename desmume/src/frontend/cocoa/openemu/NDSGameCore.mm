@@ -82,22 +82,22 @@ volatile bool execute = true;
 	NDS_Init();
 	
 	// Set up the DS GPU
-	cdsGPU = [[[[CocoaDSGPU alloc] init] retain] autorelease];
+	cdsGPU = [[CocoaDSGPU alloc] init];
 	[cdsGPU setRender3DThreads:0]; // Pass 0 to automatically set the number of rendering threads
 	[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
 	[cdsGPU setGpuScale:1];
 	[cdsGPU setGpuColorFormat:NDSColorFormat_BGR666_Rev];
 	
 	// Set up the DS controller
-	cdsController = [[[[CocoaDSController alloc] init] retain] autorelease];
+	cdsController = [[CocoaDSController alloc] init];
 	
 	// Set up the cheat system
-	cdsCheats = [[[[CocoaDSCheatManager alloc] init] retain] autorelease];
+	cdsCheats = [[CocoaDSCheatManager alloc] init];
 	[cdsCheats setRwlockCoreExecute:&rwlockCoreExecute];
 	addedCheatsDict = [[NSMutableDictionary alloc] initWithCapacity:128];
 	
 	// Set up the DS firmware using the internal firmware
-	cdsFirmware = [[[[CocoaDSFirmware alloc] init] retain] autorelease];
+	cdsFirmware = [[CocoaDSFirmware alloc] init];
 	[cdsFirmware applySettings];
 	
 	// Set up the sound core
@@ -129,15 +129,12 @@ volatile bool execute = true;
 	SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
 	NDS_DeInit();
 	
-	[addedCheatsDict release];
 	[self setCdsCheats:nil];
 	[self setCdsController:nil];
 	[self setCdsGPU:nil];
 	[self setCdsFirmware:nil];
 	
 	pthread_rwlock_destroy(&rwlockCoreExecute);
-	
-	[super dealloc];
 }
 
 - (NSInteger) displayMode
@@ -213,7 +210,6 @@ volatile bool execute = true;
 	// Ensure that the OpenEmu data directory exists before loading the ROM.
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
 	[fileManager createDirectoryAtPath:openEmuDataPath withIntermediateDirectories:YES attributes:nil error:NULL];
-	[fileManager release];
 	
 	isRomLoaded = [CocoaDSFile loadRom:[NSURL fileURLWithPath:path]];
 	
@@ -399,7 +395,7 @@ volatile bool execute = true;
 	if (cheatItem == nil)
 	{
 		// If the cheat doesn't already exist, then create a new one and add it.
-		cheatItem = [[[CocoaDSCheatItem alloc] init] autorelease];
+		cheatItem = [[CocoaDSCheatItem alloc] init];
 		[cheatItem setCheatType:CHEAT_TYPE_ACTION_REPLAY]; // Default to Action Replay for now
 		[cheatItem setFreezeType:0];
 		[cheatItem setDescription:@""]; // OpenEmu takes care of this
