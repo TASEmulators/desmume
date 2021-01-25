@@ -4422,7 +4422,6 @@
 		ABB3C6581501BC6D00E0C22E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				EXCLUDED_ARCHS = "";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/openemu\"",
@@ -4442,7 +4441,6 @@
 		ABB3C6591501BC6D00E0C22E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				EXCLUDED_ARCHS = "";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/openemu\"",
