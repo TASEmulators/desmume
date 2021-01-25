@@ -58,10 +58,10 @@ static NSMutableDictionary *_gURLDictionary = nil;
  ********************************************************************************************/
 + (NSMutableDictionary *) URLDictionary
 {
-	if (_gURLDictionary == nil)
-	{
+	static dispatch_once_t onceToken;
+	dispatch_once(&onceToken, ^{
 		_gURLDictionary = [[NSMutableDictionary alloc] initWithCapacity:8];
-	}
+	});
 	
 	return _gURLDictionary;
 }

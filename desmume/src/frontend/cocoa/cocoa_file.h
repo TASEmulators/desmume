@@ -20,11 +20,8 @@
 
 
 @interface CocoaDSFile : NSDocument
-{
 
-}
-
-+ (NSMutableDictionary *) URLDictionary;
+@property (class, readonly, strong) NSMutableDictionary *URLDictionary;
 + (void) addURLToURLDictionary:(NSURL *)theURL groupKey:(NSString *)groupKey fileKind:(NSString *)fileKind;
 + (void) removeURLFromURLDictionaryByGroupKey:(NSString *)groupKey fileKind:(NSString *)fileKind;
 + (BOOL) loadState:(NSURL *)saveStateURL;
