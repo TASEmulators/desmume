@@ -550,8 +550,8 @@
 - (IBAction) testRumble:(id)sender
 {
 	NSDictionary *ffProperties = [NSDictionary dictionaryWithObjectsAndKeys:
-								  [NSNumber numberWithBool:YES], @"ffState",
-								  [NSNumber numberWithInteger:RUMBLE_ITERATIONS_TEST], @"iterations",
+								  @YES, @"ffState",
+								  @(RUMBLE_ITERATIONS_TEST), @"iterations",
 								  nil];
 	
 	[[NSNotificationCenter defaultCenter] postNotificationName:@"org.desmume.DeSmuME.sendForceFeedback"

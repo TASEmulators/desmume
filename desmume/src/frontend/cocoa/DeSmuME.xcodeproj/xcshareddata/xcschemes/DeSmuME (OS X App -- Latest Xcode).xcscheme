@@ -27,15 +27,6 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "AB796CA415CDCBA200C59155"
-            BuildableName = "DeSmuME.app"
-            BlueprintName = "DeSmuME (OS X App -- Latest Xcode)"
-            ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
       <Testables>
       </Testables>
    </TestAction>
@@ -51,6 +42,16 @@
       enableGPUFrameCaptureMode = "3"
       enableGPUValidationMode = "1"
       allowLocationSimulation = "YES">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "AB796CA415CDCBA200C59155"
+            BuildableName = "DeSmuME.app"
+            BlueprintName = "DeSmuME (OS X App -- Latest Xcode)"
+            ReferencedContainer = "container:DeSmuME.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

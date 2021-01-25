@@ -23,8 +23,6 @@
 
 #import "cocoa_globals.h"
 
-//#define FORCE_AUDIOCOMPONENT_10_5
-
 CoreAudioInput::CoreAudioInput()
 {
 	_spinlockAUHAL = (OSSpinLock *)malloc(sizeof(OSSpinLock));
@@ -1059,7 +1057,7 @@ OSStatus CoreAudioOutputRenderCallback(void *inRefCon,
 bool CreateAudioUnitInstance(AudioUnit *au, AudioComponentDescription *auDescription)
 {
 	bool result = false;
-	if (au == NULL || auDescription == NULL || !IsOSXVersionSupported(10, 6, 0))
+	if (au == NULL || auDescription == NULL)
 	{
 		return result;
 	}

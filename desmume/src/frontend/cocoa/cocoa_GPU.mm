@@ -40,7 +40,26 @@
 
 static void* RunFetchThread(void *arg);
 
+static CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
+									   const CVTimeStamp *inNow,
+									   const CVTimeStamp *inOutputTime,
+									   CVOptionFlags flagsIn,
+									   CVOptionFlags *flagsOut,
+									   void *displayLinkContext);
 #endif
+
+static bool OSXOpenGLRendererInit();
+static bool OSXOpenGLRendererBegin();
+static void OSXOpenGLRendererEnd();
+static bool OSXOpenGLRendererFramebufferDidResize(const bool isFBOSupported, size_t w, size_t h);
+
+static bool CreateOpenGLRenderer();
+static void DestroyOpenGLRenderer();
+static void RequestOpenGLRenderer_3_2(bool request_3_2);
+static void SetOpenGLRendererFunctions(bool (*initFunction)(),
+									   bool (*beginOGLFunction)(),
+									   void (*endOGLFunction)(),
+									   bool (*resizeOGLFunction)(const bool isFBOSupported, size_t w, size_t h));
 
 GPU3DInterface *core3DList[] = {
 	&gpu3DNull,

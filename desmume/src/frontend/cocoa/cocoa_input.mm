@@ -26,6 +26,14 @@
 #include "../../slot2.h"
 #undef BOOL
 
+static void CAResetCallback(void *inParam1, void *inParam2);
+static uint8_t CASampleReadCallback(void *inParam1, void *inParam2);
+static void CAHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
+										   const bool isHardwareEnabled,
+										   const bool isHardwareLocked,
+										   void *inParam1,
+										   void *inParam2);
+static void CAHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2);
 
 @implementation CocoaDSController
 

@@ -50,7 +50,7 @@ class ClientAVCaptureObject;
 
 @property (readonly) NSMutableDictionary *property;
 @property (assign) pthread_rwlock_t *rwlockProducer;
-@property (assign) BOOL idle;
+@property (nonatomic, assign) BOOL idle;
 
 - (void) createThread;
 - (void) exitThread;
@@ -77,28 +77,20 @@ class ClientAVCaptureObject;
 
 @property (assign) NSUInteger bufferSize;
 
-- (id) initWithVolume:(CGFloat)vol;
+- (instancetype) initWithVolume:(CGFloat)vol;
 
-- (void) setVolume:(float)vol;
-- (float) volume;
-- (void) setAudioOutputEngine:(NSInteger)methodID;
-- (NSInteger) audioOutputEngine;
-- (void) setSpuAdvancedLogic:(BOOL)state;
-- (BOOL) spuAdvancedLogic;
-- (void) setSpuInterpolationMode:(NSInteger)modeID;
-- (NSInteger) spuInterpolationMode;
-- (void) setSpuSyncMode:(NSInteger)modeID;
-- (NSInteger) spuSyncMode;
-- (void) setSpuSyncMethod:(NSInteger)methodID;
-- (NSInteger) spuSyncMethod;
+@property (nonatomic, assign) float volume;
+@property (nonatomic, assign) int audioOutputEngine;
+@property (nonatomic, assign) BOOL spuAdvancedLogic;
+@property (nonatomic, assign) NSInteger spuInterpolationMode;
+@property (nonatomic, assign) int spuSyncMode;
+@property (nonatomic, assign) int spuSyncMethod;
 
-- (BOOL) mute;
-- (void) setMute:(BOOL)mute;
-- (NSInteger) filter;
-- (void) setFilter:(NSInteger)filter;
-- (NSString *) audioOutputEngineString;
-- (NSString *) spuInterpolationModeString;
-- (NSString *) spuSyncMethodString;
+@property (nonatomic, assign) BOOL mute;
+@property (nonatomic, assign) NSInteger filter;
+@property (readonly, copy) NSString *audioOutputEngineString;
+@property (readonly, copy) NSString *spuInterpolationModeString;
+@property (readonly, copy) NSString *spuSyncMethodString;
 
 @end
 

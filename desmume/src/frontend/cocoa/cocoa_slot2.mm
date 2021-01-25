@@ -353,7 +353,7 @@ void OSXSendForceFeedbackState(bool enable)
 	@autoreleasepool {
 	NSDictionary *ffProperties = [NSDictionary dictionaryWithObjectsAndKeys:
 								  [NSNumber numberWithBool:enable], @"ffState",
-								  [NSNumber numberWithInteger:RUMBLE_ITERATIONS_RUMBLE_PAK], @"iterations",
+								  @(RUMBLE_ITERATIONS_RUMBLE_PAK), @"iterations",
 								  nil];
 	
 	[[NSNotificationCenter defaultCenter] postNotificationName:@"org.desmume.DeSmuME.sendForceFeedback"

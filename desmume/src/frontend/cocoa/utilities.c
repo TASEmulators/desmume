@@ -28,22 +28,47 @@ static unsigned int OSXVersionRevision = 0;
 
 static bool isSystemVersionAlreadyRead = false;
 
+static CFDataRef copyDataFromReadStream(CFReadStreamRef theRef)
+{
+	CFMutableDataRef toRet = CFDataCreateMutable(kCFAllocatorDefault, 0);
+	if (!CFReadStreamOpen(theRef)) {
+		CFRelease(toRet);
+		return nil;
+	}
+	while (CFReadStreamHasBytesAvailable(theRef))
+	{
+		UInt8 buffer[1024];
+		CFIndex readSize = CFReadStreamRead(theRef, buffer, sizeof(buffer));
+		CFDataAppendBytes(toRet, buffer, readSize);
+	}
+	CFReadStreamClose(theRef);
+	
+	return toRet;
+}
+
 static void ReadSystemVersionPListFile()
 {
 	// Read the SystemVersion.plist file.
 	CFDataRef resourceData = NULL;
 	CFURLRef systemPListURL = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, CFSTR("/System/Library/CoreServices/SystemVersion.plist"), kCFURLPOSIXPathStyle, false);
-	Boolean status = CFURLCreateDataAndPropertiesFromResource(kCFAllocatorDefault, systemPListURL, &resourceData, NULL, NULL, NULL);
+	CFReadStreamRef readRef = CFReadStreamCreateWithFile(kCFAllocatorDefault, systemPListURL);
 	CFRelease(systemPListURL);
-	if (!status)
+	if (!readRef)
+	{
+		return;
+	}
+	
+	resourceData = copyDataFromReadStream(readRef);
+	CFRelease(readRef);
+	if (!resourceData)
 	{
 		return;
 	}
 	
 	CFDictionaryRef systemDict = (CFDictionaryRef)CFPropertyListCreateWithData(kCFAllocatorDefault, resourceData, kCFPropertyListImmutable, NULL, NULL);
+	CFRelease(resourceData);
 	if (systemDict == NULL)
 	{
-		CFRelease(resourceData);
 		return;
 	}
 	
@@ -89,7 +114,6 @@ static void ReadSystemVersionPListFile()
 	}
 	
 	// Release all resources now that the system version string has been copied.
-	CFRelease(resourceData);
 	CFRelease(systemDict);
 	
 	// Mark that we've already read the SystemVersion.plist file so that we don't

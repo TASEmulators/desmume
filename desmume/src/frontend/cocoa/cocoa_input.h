@@ -115,21 +115,3 @@ public:
 	virtual float GetHardwareMicNormalizedGain();
 	virtual void SetHardwareMicGainAsNormalized(float normalizedGain);
 };
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-void CAResetCallback(void *inParam1, void *inParam2);
-uint8_t CASampleReadCallback(void *inParam1, void *inParam2);
-void CAHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
-									const bool isHardwareEnabled,
-									const bool isHardwareLocked,
-									void *inParam1,
-									void *inParam2);
-void CAHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2);
-
-#ifdef __cplusplus
-}
-#endif

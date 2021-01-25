@@ -211,13 +211,13 @@ static void* RunOutputThread(void *arg);
 	
 	// Set up properties.
 	[property setValue:[NSNumber numberWithFloat:(float)vol] forKey:@"volume"];
-	[property setValue:[NSNumber numberWithBool:NO] forKey:@"mute"];
-	[property setValue:[NSNumber numberWithInteger:0] forKey:@"filter"];
-	[property setValue:[NSNumber numberWithInteger:SNDCORE_DUMMY] forKey:@"audioOutputEngine"];
-	[property setValue:[NSNumber numberWithBool:NO] forKey:@"spuAdvancedLogic"];
-	[property setValue:[NSNumber numberWithInteger:SPUInterpolation_None] forKey:@"spuInterpolationMode"];
-	[property setValue:[NSNumber numberWithInteger:SPU_SYNC_MODE_DUAL_SYNC_ASYNC] forKey:@"spuSyncMode"];
-	[property setValue:[NSNumber numberWithInteger:SPU_SYNC_METHOD_N] forKey:@"spuSyncMethod"];
+	[property setValue:@NO forKey:@"mute"];
+	[property setValue:@0 forKey:@"filter"];
+	[property setValue:@(SNDCORE_DUMMY) forKey:@"audioOutputEngine"];
+	[property setValue:@NO forKey:@"spuAdvancedLogic"];
+	[property setValue:@(SPUInterpolation_None) forKey:@"spuInterpolationMode"];
+	[property setValue:@(SPU_SYNC_MODE_DUAL_SYNC_ASYNC) forKey:@"spuSyncMode"];
+	[property setValue:@(SPU_SYNC_METHOD_N) forKey:@"spuSyncMethod"];
 	
 	return self;
 }
@@ -263,10 +263,10 @@ static void* RunOutputThread(void *arg);
 	return vol;
 }
 
-- (void) setAudioOutputEngine:(NSInteger)methodID
+- (void) setAudioOutputEngine:(int)methodID
 {
 	OSSpinLockLock(&spinlockAudioOutputEngine);
-	[property setValue:[NSNumber numberWithInteger:methodID] forKey:@"audioOutputEngine"];
+	[property setValue:@(methodID) forKey:@"audioOutputEngine"];
 	OSSpinLockUnlock(&spinlockAudioOutputEngine);
 	
 	pthread_rwlock_wrlock(self.rwlockProducer);
@@ -289,10 +289,10 @@ static void* RunOutputThread(void *arg);
 	[self setVolume:[self volume]];
 }
 
-- (NSInteger) audioOutputEngine
+- (int) audioOutputEngine
 {
 	OSSpinLockLock(&spinlockAudioOutputEngine);
-	NSInteger methodID = [(NSNumber *)[property valueForKey:@"audioOutputEngine"] integerValue];
+	NSInteger methodID = [(NSNumber *)[property valueForKey:@"audioOutputEngine"] intValue];
 	OSSpinLockUnlock(&spinlockAudioOutputEngine);
 	
 	return methodID;
@@ -338,43 +338,43 @@ static void* RunOutputThread(void *arg);
 	return modeID;
 }
 
-- (void) setSpuSyncMode:(NSInteger)modeID
+- (void) setSpuSyncMode:(int)modeID
 {
 	OSSpinLockLock(&spinlockSpuSyncMode);
-	[property setValue:[NSNumber numberWithInteger:modeID] forKey:@"spuSyncMode"];
+	[property setValue:@(modeID) forKey:@"spuSyncMode"];
 	OSSpinLockUnlock(&spinlockSpuSyncMode);
 	
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	CommonSettings.SPU_sync_mode = (int)modeID;
+	CommonSettings.SPU_sync_mode = modeID;
 	SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
 	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
-- (NSInteger) spuSyncMode
+- (int) spuSyncMode
 {
 	OSSpinLockLock(&spinlockSpuSyncMode);
-	NSInteger modeID = [(NSNumber *)[property valueForKey:@"spuSyncMode"] integerValue];
+	int modeID = [(NSNumber *)[property valueForKey:@"spuSyncMode"] intValue];
 	OSSpinLockUnlock(&spinlockSpuSyncMode);
 	
 	return modeID;
 }
 
-- (void) setSpuSyncMethod:(NSInteger)methodID
+- (void) setSpuSyncMethod:(int)methodID
 {
 	OSSpinLockLock(&spinlockSpuSyncMethod);
-	[property setValue:[NSNumber numberWithInteger:methodID] forKey:@"spuSyncMethod"];
+	[property setValue:@(methodID) forKey:@"spuSyncMethod"];
 	OSSpinLockUnlock(&spinlockSpuSyncMethod);
 	
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	CommonSettings.SPU_sync_method = (int)methodID;
+	CommonSettings.SPU_sync_method = methodID;
 	SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
 	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
-- (NSInteger) spuSyncMethod
+- (int) spuSyncMethod
 {
 	OSSpinLockLock(&spinlockSpuSyncMethod);
-	NSInteger methodID = [(NSNumber *)[property valueForKey:@"spuSyncMethod"] integerValue];
+	int methodID = [(NSNumber *)[property valueForKey:@"spuSyncMethod"] intValue];
 	OSSpinLockUnlock(&spinlockSpuSyncMethod);
 	
 	return methodID;
@@ -1244,8 +1244,8 @@ static void* RunOutputThread(void *arg);
 	}
 	
 	NSPasteboard *pboard = [NSPasteboard generalPasteboard];
-	[pboard declareTypes:[NSArray arrayWithObjects:NSTIFFPboardType, nil] owner:self];
-	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSTIFFPboardType];
+	[pboard declareTypes:@[NSPasteboardTypeTIFF] owner:self];
+	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSPasteboardTypeTIFF];
 }
 
 - (void) setScaleFactor:(float)theScaleFactor
