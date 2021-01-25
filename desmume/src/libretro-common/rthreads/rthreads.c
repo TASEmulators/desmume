@@ -314,8 +314,8 @@ void sthread_setname(sthread_t *thread, const char *name)
 {
    if (!thread)
       return;
-   // TODO: implement that for Windows too.
-#ifndef USE_WIN32_THREADS
+   // TODO: implement that for Windows (and Mac?) too.
+#if !defined(USE_WIN32_THREADS) && !defined(__APPLE__)
    pthread_setname_np(thread->id, name);
 #endif
 }
