@@ -366,7 +366,7 @@ inline bool atomic_test_and_set_barrier32(volatile s32 *V, s32 M)		{ return (_in
 inline bool atomic_test_and_clear_32(volatile s32 *V, s32 M)			{ return (_interlockedbittestandreset((volatile LONG *)V, (LONG)M)) ? true : false; }
 inline bool atomic_test_and_clear_barrier32(volatile s32 *V, s32 M)		{ return (_interlockedbittestandreset((volatile LONG *)V, (LONG)M)) ? true : false; }
 
-#elif defined(DESMUME_COCOA)
+#elif defined(DESMUME_COCOA) && __cplusplus > 201103
 #include <libkern/OSAtomic.h>
 
 #define atomic_add_32(V,M)						OSAtomicAdd32((M),(V))

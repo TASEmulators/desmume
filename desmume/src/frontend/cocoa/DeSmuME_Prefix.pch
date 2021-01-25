@@ -18,6 +18,7 @@
 
 #ifdef __OBJC__
 	#define OBJ_C
+	#import <Cocoa/Cocoa.h>
 #endif
 
 #define HOST_DARWIN
