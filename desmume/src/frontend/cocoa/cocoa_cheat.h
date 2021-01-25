@@ -43,7 +43,7 @@ class CHEATSEARCH;
 	pthread_mutex_t mutexData;
 	
 	CocoaDSCheatItem *workingCopy;
-	__unsafe_unretained CocoaDSCheatItem *parent;
+	__weak CocoaDSCheatItem *parent;
 }
 
 @property (assign) CHEATS_LIST *data;
@@ -53,7 +53,7 @@ class CHEATSEARCH;
 @property (strong, nonatomic) NSImage *cheatTypeIcon;
 @property (assign, nonatomic) BOOL isSupportedCheatType;
 @property (assign, nonatomic) NSInteger freezeType;
-@property (assign, nonatomic) NSString *description;
+@property (copy, nonatomic) NSString *description;
 @property (assign, nonatomic) NSUInteger codeCount;
 @property (copy, nonatomic) NSString *code;
 @property (assign, nonatomic) UInt8 bytes;
@@ -62,11 +62,11 @@ class CHEATSEARCH;
 @property (copy, nonatomic) NSString *memAddressSixDigitString;
 @property (assign, nonatomic) SInt64 value;
 @property (readonly) CocoaDSCheatItem *workingCopy;
-@property (assign) CocoaDSCheatItem *parent;
+@property (weak) CocoaDSCheatItem *parent;
 
 - (id) initWithCheatData:(CHEATS_LIST *)cheatData;
 - (BOOL) retainData;
-- (char *) descriptionCString;
+@property (readonly) char *descriptionCString NS_RETURNS_INNER_POINTER;
 - (void) update;
 - (CocoaDSCheatItem *) createWorkingCopy;
 - (void) destroyWorkingCopy;
@@ -75,12 +75,9 @@ class CHEATSEARCH;
 - (void) setDataWithDictionary:(NSDictionary *)dataDict;
 - (NSDictionary *) dataDictionary;
 
-+ (void) setIconInternalCheat:(NSImage *)iconImage;
-+ (NSImage *) iconInternalCheat;
-+ (void) setIconActionReplay:(NSImage *)iconImage;
-+ (NSImage *) iconActionReplay;
-+ (void) setIconCodeBreaker:(NSImage *)iconImage;
-+ (NSImage *) iconCodeBreaker;
+@property (class, strong) NSImage *iconInternalCheat;
+@property (class, strong) NSImage *iconActionReplay;
+@property (class, strong) NSImage *iconCodeBreaker;
 
 @end
 
@@ -106,7 +103,7 @@ class CHEATSEARCH;
 }
 
 @property (readonly) CHEATS *listData;
-@property (readonly, strong) NSMutableArray *list;
+@property (readonly, strong) NSMutableArray<CocoaDSCheatItem*> *list;
 @property (assign) pthread_rwlock_t *rwlockCoreExecute;
 @property (assign) NSUInteger untitledCount;
 @property (copy) NSString *dbTitle;
@@ -120,7 +117,7 @@ class CHEATSEARCH;
 - (void) remove:(CocoaDSCheatItem *)cheatItem;
 - (BOOL) update:(CocoaDSCheatItem *)cheatItem;
 - (BOOL) save;
-- (NSUInteger) activeCount;
+@property (readonly) NSUInteger activeCount;
 - (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error;
 - (void) applyInternalCheat:(CocoaDSCheatItem *)cheatItem;
 
@@ -145,7 +142,7 @@ class CHEATSEARCH;
 }
 
 @property (readonly) CHEATSEARCH *listData;
-@property (readonly) NSMutableArray *addressList;
+@property (readonly, strong) NSMutableArray<NSDictionary<NSString*,id>*> *addressList;
 @property (assign) pthread_rwlock_t *rwlockCoreExecute;
 @property (readonly) NSUInteger searchCount;
 
@@ -155,7 +152,7 @@ class CHEATSEARCH;
 - (void) runComparativeSearchOnThread:(id)object;
 - (void) reset;
 
-+ (NSMutableArray *) addressListWithListObject:(CHEATSEARCH *)addressList maxItems:(NSUInteger)maxItemCount;
++ (NSMutableArray<NSDictionary<NSString*,id>*> *) addressListWithListObject:(CHEATSEARCH *)addressList maxItems:(NSUInteger)maxItemCount;
 
 @end
 

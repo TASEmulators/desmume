@@ -1309,7 +1309,7 @@ static NSImage *iconCodeBreaker = nil;
 	{
 		newItem = [NSMutableDictionary dictionaryWithObjectsAndKeys:
 				   [NSString stringWithFormat:@"0x02%06X", address], @"addressString",
-				   [NSNumber numberWithUnsignedInteger:value], @"value",
+				   @(value), @"value",
 				   nil];
 		
 		[newList addObject:newItem];
