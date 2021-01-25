@@ -109,12 +109,9 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
 		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)0,
 		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)0,
-		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
+		NSOpenGLPFAOpenGLProfile, (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core,
 		(NSOpenGLPixelFormatAttribute)0
 	};
-	
-	attributes[8] = NSOpenGLPFAOpenGLProfile;
-	attributes[9] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core;
 	
 	NSOpenGLPixelFormat *nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	if (nsPixelFormat == nil)
@@ -250,26 +247,17 @@ void MacOGLDisplayPresenter::__InstanceInit(MacClientSharedObject *sharedObject)
 	// [NSOpenGLContext CGLContextObj] is available on macOS 10.5 Leopard, but
 	// [NSOpenGLContext initWithCGLContextObj:] is only available on macOS 10.6
 	// Snow Leopard.
+	// If we can support a 3.2 Core Profile context, then request that in our
+	// pixel format attributes.
 	NSOpenGLPixelFormatAttribute attributes[] = {
 		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
 		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
 		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)0,
 		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)0,
 		NSOpenGLPFADoubleBuffer,
-		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
+		NSOpenGLPFAOpenGLProfile, (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core,
 		(NSOpenGLPixelFormatAttribute)0
 	};
-	
-#ifdef _OGLDISPLAYOUTPUT_3_2_H_
-	// If we can support a 3.2 Core Profile context, then request that in our
-	// pixel format attributes.
-	bool useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
-	if (useContext_3_2)
-	{
-		attributes[9] = NSOpenGLPFAOpenGLProfile;
-		attributes[10] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core;
-	}
-#endif
 	
 	_nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	if (_nsPixelFormat == nil)

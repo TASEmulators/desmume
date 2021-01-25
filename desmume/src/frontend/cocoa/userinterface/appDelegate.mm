@@ -155,7 +155,6 @@
 		alert.messageText = NSSTRING_ALERT_CRITICAL_FILE_MISSING_PRI;
 		alert.informativeText = NSSTRING_ALERT_CRITICAL_FILE_MISSING_SEC;
 		[alert runModal];
-		[alert release];
 		[NSApp terminate:nil];
 		return;
 	}
@@ -178,9 +177,8 @@
 	// On macOS v10.13 and later, some unwanted menu items will show up in the View menu.
 	// Disable automatic window tabbing for all NSWindows in order to rid ourselves of
 	// these unwanted menu items.
-#if defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
-	if ([[NSWindow class] respondsToSelector:@selector(setAllowsAutomaticWindowTabbing:)])
-	{
+#if defined(MAC_OS_X_VERSION_10_12) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_12)
+	if (@available(macOS 10.12, *)) {
 		[NSWindow setAllowsAutomaticWindowTabbing:NO];
 	}
 #endif

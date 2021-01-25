@@ -52,19 +52,16 @@
 	isPreviewImageLoaded = false;
 		
 	// Initialize the OpenGL context
+	// If we can support a 3.2 Core Profile context, then request that in our
+	// pixel format attributes.
 	bool useContext_3_2 = true;
 	NSOpenGLPixelFormatAttribute attributes[] = {
 		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
 		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
 		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)0,
 		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)0,
-		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
+		NSOpenGLPFAOpenGLProfile, (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core,
 		(NSOpenGLPixelFormatAttribute)0 };
-	
-	// If we can support a 3.2 Core Profile context, then request that in our
-	// pixel format attributes.
-	attributes[8] = NSOpenGLPFAOpenGLProfile;
-	attributes[9] = NSOpenGLProfileVersion3_2Core;
 	
 	NSOpenGLPixelFormat *format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	if (format == nil)

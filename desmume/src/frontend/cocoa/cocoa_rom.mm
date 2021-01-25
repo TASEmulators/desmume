@@ -422,7 +422,6 @@ static NSMutableDictionary *saveTypeValues = nil;
 #endif
 	
 	[newImage addRepresentation:imageRep];
-	[imageRep release];
 	
 	return newImage;
 }
@@ -561,7 +560,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 	return [NSMutableDictionary dictionaryWithObjectsAndKeys:
 			noRom, @"romInternalName",
 			noRom, @"romSerial",
-			[[romNameAndSerialInfoString copy] autorelease], @"romNameAndSerialInfo",
+			[romNameAndSerialInfoString copy], @"romNameAndSerialInfo",
 			noRom, @"bannerJapanese",
 			noRom, @"bannerEnglish",
 			noRom, @"bannerFrench",
