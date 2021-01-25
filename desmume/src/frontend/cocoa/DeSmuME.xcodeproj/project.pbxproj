@@ -4532,6 +4532,10 @@
 					"\"$(SRCROOT)/openemu\"",
 				);
 				GCC_PREFIX_HEADER = openemu/DeSmuME_Prefix_OpenEmu.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"GL_SILENCE_DEPRECATION=1",
+				);
 				INFOPLIST_FILE = "openemu/Info (OpenEmu Plug-in).plist";
 				PRODUCT_BUNDLE_IDENTIFIER = "org.desmume.DeSmuME-OpenEmu";
 				PRODUCT_NAME = DeSmuME;
@@ -4548,6 +4552,10 @@
 					"\"$(SRCROOT)/openemu\"",
 				);
 				GCC_PREFIX_HEADER = openemu/DeSmuME_Prefix_OpenEmu.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"GL_SILENCE_DEPRECATION=1",
+				);
 				INFOPLIST_FILE = "openemu/Info (OpenEmu Plug-in).plist";
 				LLVM_LTO = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "org.desmume.DeSmuME-OpenEmu";
@@ -4673,11 +4681,11 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 0.9.12;
 				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				EXCLUDED_ARCHS = arm64;
 				GCC_DYNAMIC_NO_PIC = YES;
 				GCC_FAST_MATH = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = fast;

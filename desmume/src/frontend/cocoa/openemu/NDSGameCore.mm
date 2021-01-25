@@ -189,7 +189,7 @@ volatile bool execute = true;
 
 #pragma mark - Starting
 
-- (BOOL)loadFileAtPath:(NSString*)path
+- (BOOL)loadFileAtPath:(NSString*)path error:(NSError *__autoreleasing *)error
 {
 	BOOL isRomLoaded = NO;
 	NSString *openEmuDataPath = [self batterySavesDirectoryPath];
