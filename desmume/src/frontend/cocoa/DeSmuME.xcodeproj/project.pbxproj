@@ -2726,14 +2726,14 @@
 			isa = PBXGroup;
 			children = (
 				ABBFFF811D611A36003CD598 /* colorspacehandler_AltiVec.cpp */,
-				ABBFFF7B1D610457003CD598 /* colorspacehandler_AVX2.cpp */,
-				ABCC19332287879000DFA471 /* colorspacehandler_AVX512.cpp */,
-				ABBFFF751D5FD2ED003CD598 /* colorspacehandler_SSE2.cpp */,
-				ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */,
 				ABBFFF821D611A36003CD598 /* colorspacehandler_AltiVec.h */,
+				ABBFFF7B1D610457003CD598 /* colorspacehandler_AVX2.cpp */,
 				ABBFFF7C1D610457003CD598 /* colorspacehandler_AVX2.h */,
+				ABCC19332287879000DFA471 /* colorspacehandler_AVX512.cpp */,
 				ABCC19342287879000DFA471 /* colorspacehandler_AVX512.h */,
+				ABBFFF751D5FD2ED003CD598 /* colorspacehandler_SSE2.cpp */,
 				ABBFFF761D5FD2ED003CD598 /* colorspacehandler_SSE2.h */,
+				ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */,
 				ABBFFF701D5F9C52003CD598 /* colorspacehandler.h */,
 			);
 			path = colorspacehandler;
@@ -2922,10 +2922,10 @@
 			isa = PBXGroup;
 			children = (
 				ABD1FF221345ACBF00AF11D1 /* crc.cpp */,
-				ABD1FF241345ACBF00AF11D1 /* decrypt.cpp */,
-				ABD1FF261345ACBF00AF11D1 /* header.cpp */,
 				ABD1FF231345ACBF00AF11D1 /* crc.h */,
+				ABD1FF241345ACBF00AF11D1 /* decrypt.cpp */,
 				ABD1FF251345ACBF00AF11D1 /* decrypt.h */,
+				ABD1FF261345ACBF00AF11D1 /* header.cpp */,
 				ABD1FF271345ACBF00AF11D1 /* header.h */,
 			);
 			path = decrypt;
