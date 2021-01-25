@@ -31,7 +31,11 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stddef.h>
+// Apple has become very strict about memory protection! 
+// The static code buffer won't work anymore!
+#ifndef __APPLE__
 #define HAVE_STATIC_CODE_BUFFER
+#endif
 #endif
 
 #include "utils/bits.h"
