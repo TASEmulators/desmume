@@ -50,6 +50,8 @@
 	#define DESMUME_PLATFORM_STRING " ARM"
 #elif defined(__thumb__)
 	#define DESMUME_PLATFORM_STRING " ARM-Thumb"
+#elif defined(__aarch64__)
+	#define DESMUME_PLATFORM_STRING " AArch64"
 #elif defined(__ppc64__)
 	#define DESMUME_PLATFORM_STRING " PPC64"
 #elif defined(__ppc__) || defined(_M_PPC)
