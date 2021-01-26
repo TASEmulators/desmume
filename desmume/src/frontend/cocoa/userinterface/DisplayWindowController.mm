@@ -1457,7 +1457,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 												NSApplicationPresentationAutoHideToolbar);
 	
 #if defined(MAC_OS_X_VERSION_10_11_2) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
-	options |= NSApplicationPresentationDisableCursorLocationAssistance;
+	if (@available(macOS 10.11.2, *)) {
+		options |= NSApplicationPresentationDisableCursorLocationAssistance;
+	}
 #endif
 	
 	return options;
