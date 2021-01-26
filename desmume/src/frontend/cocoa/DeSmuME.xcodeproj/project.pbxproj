@@ -3191,9 +3191,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		55D204E825B986690057EF7A /* DeSmuME (OS X App -- ARM64 -- Latest Xcode) */ = {
+		55D204E825B986690057EF7A /* DeSmuME (OS X App -- ARM64) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 55D2064225B986690057EF7A /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App -- ARM64 -- Latest Xcode)" */;
+			buildConfigurationList = 55D2064225B986690057EF7A /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App -- ARM64)" */;
 			buildPhases = (
 				55D204E925B986690057EF7A /* ShellScript */,
 				55D204EA25B986690057EF7A /* Resources */,
@@ -3206,15 +3206,15 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App -- ARM64 -- Latest Xcode)";
+			name = "DeSmuME (OS X App -- ARM64)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = 55D2064525B986690057EF7A /* DeSmuME (Debug, ARM64).app */;
 			productType = "com.apple.product-type.application";
 		};
-		AB796CA415CDCBA200C59155 /* DeSmuME (OS X App -- Latest Xcode) */ = {
+		AB796CA415CDCBA200C59155 /* DeSmuME (OS X App) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB796D6D15CDCBA200C59155 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App -- Latest Xcode)" */;
+			buildConfigurationList = AB796D6D15CDCBA200C59155 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App)" */;
 			buildPhases = (
 				AB796CA515CDCBA200C59155 /* ShellScript */,
 				AB796CA615CDCBA200C59155 /* Resources */,
@@ -3227,15 +3227,15 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App -- Latest Xcode)";
+			name = "DeSmuME (OS X App)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = AB796D7015CDCBA200C59155 /* DeSmuME (Debug).app */;
 			productType = "com.apple.product-type.application";
 		};
-		AB8F3C171A53AC2600A80BF6 /* DeSmuME (OS X App; dev+ -- Latest Xcode) */ = {
+		AB8F3C171A53AC2600A80BF6 /* DeSmuME (OS X App; dev+) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB8F3D2B1A53AC2600A80BF6 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; dev+ -- Latest Xcode)" */;
+			buildConfigurationList = AB8F3D2B1A53AC2600A80BF6 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; dev+)" */;
 			buildPhases = (
 				AB8F3C181A53AC2600A80BF6 /* ShellScript */,
 				AB8F3C191A53AC2600A80BF6 /* Resources */,
@@ -3247,7 +3247,7 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App; dev+ -- Latest Xcode)";
+			name = "DeSmuME (OS X App; dev+)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = AB8F3D2E1A53AC2600A80BF6 /* DeSmuME (Debug, dev+).app */;
@@ -3298,9 +3298,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AB796CA415CDCBA200C59155 /* DeSmuME (OS X App -- Latest Xcode) */,
-				AB8F3C171A53AC2600A80BF6 /* DeSmuME (OS X App; dev+ -- Latest Xcode) */,
-				55D204E825B986690057EF7A /* DeSmuME (OS X App -- ARM64 -- Latest Xcode) */,
+				AB796CA415CDCBA200C59155 /* DeSmuME (OS X App) */,
+				AB8F3C171A53AC2600A80BF6 /* DeSmuME (OS X App; dev+) */,
+				55D204E825B986690057EF7A /* DeSmuME (OS X App -- ARM64) */,
 				ABB3C6461501BC6D00E0C22E /* DeSmuME (OpenEmu Plug-in -- Latest Xcode) */,
 			);
 		};
@@ -4636,7 +4636,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		55D2064225B986690057EF7A /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App -- ARM64 -- Latest Xcode)" */ = {
+		55D2064225B986690057EF7A /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App -- ARM64)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				55D2064325B986690057EF7A /* Debug */,
@@ -4645,7 +4645,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB796D6D15CDCBA200C59155 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App -- Latest Xcode)" */ = {
+		AB796D6D15CDCBA200C59155 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB796D6E15CDCBA200C59155 /* Debug */,
@@ -4654,7 +4654,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB8F3D2B1A53AC2600A80BF6 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; dev+ -- Latest Xcode)" */ = {
+		AB8F3D2B1A53AC2600A80BF6 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; dev+)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB8F3D2C1A53AC2600A80BF6 /* Debug */,

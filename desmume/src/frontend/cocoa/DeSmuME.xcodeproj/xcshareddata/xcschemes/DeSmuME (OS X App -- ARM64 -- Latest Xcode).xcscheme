@@ -16,7 +16,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "55D204E825B986690057EF7A"
                BuildableName = "DeSmuME (ARM64).app"
-               BlueprintName = "DeSmuME (OS X App -- ARM64 -- Latest Xcode)"
+               BlueprintName = "DeSmuME (OS X App -- ARM64)"
                ReferencedContainer = "container:DeSmuME.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -46,7 +46,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "55D204E825B986690057EF7A"
             BuildableName = "DeSmuME (ARM64).app"
-            BlueprintName = "DeSmuME (OS X App -- ARM64 -- Latest Xcode)"
+            BlueprintName = "DeSmuME (OS X App -- ARM64)"
             ReferencedContainer = "container:DeSmuME.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -63,7 +63,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "55D204E825B986690057EF7A"
             BuildableName = "DeSmuME (ARM64).app"
-            BlueprintName = "DeSmuME (OS X App -- ARM64 -- Latest Xcode)"
+            BlueprintName = "DeSmuME (OS X App -- ARM64)"
             ReferencedContainer = "container:DeSmuME.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
