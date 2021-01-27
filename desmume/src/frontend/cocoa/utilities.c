@@ -33,7 +33,7 @@ static CFDataRef copyDataFromReadStream(CFReadStreamRef theRef)
 	CFMutableDataRef toRet = CFDataCreateMutable(kCFAllocatorDefault, 0);
 	if (!CFReadStreamOpen(theRef)) {
 		CFRelease(toRet);
-		return nil;
+		return NULL;
 	}
 	while (CFReadStreamHasBytesAvailable(theRef))
 	{
