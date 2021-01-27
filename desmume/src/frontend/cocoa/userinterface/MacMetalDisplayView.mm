@@ -21,7 +21,6 @@
 #include "../../../common.h"
 
 static void SetupHQnxLUTs_Metal(id<MTLDevice> device, id<MTLCommandQueue> commandQueue, __strong id<MTLTexture> *texLQ2xLUT, __strong id<MTLTexture> *texHQ2xLUT, __strong id<MTLTexture> *texHQ3xLUT, __strong id<MTLTexture> *texHQ4xLUT);
-static void DeleteHQnxLUTs_Metal(__strong id<MTLTexture> *texLQ2xLUT, __strong id<MTLTexture> *texHQ2xLUT, __strong id<MTLTexture> *texHQ3xLUT, __strong id<MTLTexture> *texHQ4xLUT);
 
 @implementation MetalDisplayViewSharedData
 
@@ -261,9 +260,6 @@ static void DeleteHQnxLUTs_Metal(__strong id<MTLTexture> *texLQ2xLUT, __strong i
 {
 	texPairFetch.setMain(nil);
 	texPairFetch.setTouch(nil);
-	
-	DeleteHQnxLUTs_Metal(&texLQ2xLUT, &texHQ2xLUT, &texHQ3xLUT, &texHQ4xLUT);
-	[self setTexCurrentHQnxLUT:nil];
 }
 
 - (void) setFetchBuffersWithDisplayInfo:(const NDSDisplayInfo &)dispInfo
@@ -2725,12 +2721,4 @@ void SetupHQnxLUTs_Metal(id<MTLDevice> device, id<MTLCommandQueue> commandQueue,
 	
 	[cb commit];
 	[cb waitUntilCompleted];
-}
-
-void DeleteHQnxLUTs_Metal(__strong id<MTLTexture> *texLQ2xLUT, __strong id<MTLTexture> *texHQ2xLUT, __strong id<MTLTexture> *texHQ3xLUT, __strong id<MTLTexture> *texHQ4xLUT)
-{
-	*texLQ2xLUT = nil;
-	*texHQ2xLUT = nil;
-	*texHQ3xLUT = nil;
-	*texHQ4xLUT = nil;
 }
