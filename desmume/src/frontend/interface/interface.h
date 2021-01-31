@@ -77,7 +77,6 @@ EXPORTED void desmume_set_savetype(int type);
 EXPORTED void desmume_pause(void);
 EXPORTED void desmume_resume(void);
 EXPORTED void desmume_reset(void);
-EXPORTED void desmume_stop(void);
 EXPORTED BOOL desmume_running(void);
 EXPORTED void desmume_skip_next_frame(void);
 EXPORTED void desmume_cycle(BOOL with_joystick);
@@ -107,9 +106,6 @@ EXPORTED void desmume_savestate_slot_load(int index);
 EXPORTED void desmume_savestate_slot_save(int index);
 EXPORTED BOOL desmume_savestate_slot_exists(int index);
 EXPORTED char* desmume_savestate_slot_date(int index);
-
-EXPORTED void desmume_savestate_load_slot(int num);
-EXPORTED void desmume_savestate_save_slot(int num);
 
 EXPORTED BOOL desmume_gpu_get_layer_main_enable_state(int layer_index);
 EXPORTED BOOL desmume_gpu_get_layer_sub_enable_state(int layer_index);
