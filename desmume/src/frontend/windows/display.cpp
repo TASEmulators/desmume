@@ -24,6 +24,8 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "windriver.h"
 #include "winutil.h"
 
+#include <cmath>
+
 DDRAW ddraw;
 GLDISPLAY gldisplay;
 u32 displayMethod;
@@ -773,8 +775,8 @@ void UpdateWndRects(HWND hwnd, RECT* newClientRect)
 		wndHeight = (rc.right - rc.left);
 
 		ratio = ((float)wndHeight / (float)512);
-		oneScreenHeight = (int)((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * ratio);
-		int oneScreenWidth = (int)((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * ratio);
+		oneScreenHeight = (int)std::round(((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * ratio));
+		int oneScreenWidth = (int)std::round(((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * ratio));
 		int vResizedScrOffset = 0;
 
 		// Main screen
@@ -783,7 +785,7 @@ void UpdateWndRects(HWND hwnd, RECT* newClientRect)
 		ClientToScreen(hwnd, &ptClient);
 		MainScreenRect.left = ptClient.x;
 		MainScreenRect.top = ptClient.y;
-		ptClient.x = (rc.left + oneScreenHeight * screenSizeRatio);
+		ptClient.x = (rc.left + std::floor(oneScreenHeight * screenSizeRatio));
 		ptClient.y = (rc.top + wndWidth);
 		ClientToScreen(hwnd, &ptClient);
 		MainScreenRect.right = ptClient.x;
