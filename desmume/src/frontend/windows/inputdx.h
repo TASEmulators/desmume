@@ -119,6 +119,13 @@ struct SJoyState{
     bool Button[128];
 	bool FeedBack;
 	LPDIRECTINPUTEFFECT     pEffect;
+
+	LONG lX;
+	LONG lY;
+	LONG lZ;
+	LONG lRx;
+	LONG lRy;
+	LONG lRz;
 };
 
 extern SJoypad Joypad[16];
@@ -153,9 +160,20 @@ struct SPaddle {
     WORD INC;
 };
 
+struct SAnalog {
+	BOOL Enabled;
+	WORD X;
+	WORD Y;
+
+	WORD Deadzone;
+	BOOL Joined;
+	BOOL Circle;
+};
+
 extern SGuitar Guitar;
 extern SPiano Piano;
 extern SPaddle Paddle;
+extern SAnalog Analog;
 
 #endif
 

@@ -514,15 +514,20 @@
 #define IDC_WIFI_ENABLED                1065
 #define IDC_STATIC_RANGE                1066
 #define IDC_WIFI_COMPAT                 1066
+#define IDC_ANALOG_X                    1066
 #define IDC_TEXSCALE                    1067
+#define IDC_ANALOG_Y                    1067
 #define IDC_BADD                        1068
 #define IDC_LIST                        1069
+#define IDC_ANALOG_DEADZONE_SLIDER      1069
 #define IDC_TEX_DEPOSTERIZE             1070
+#define IDC_ANALOG_DEADZONE             1070
 #define IDC_SNUMBER                     1071
 #define IDC_TEX_SMOOTH                  1072
 #define IDC_CHECK1                      1074
 #define IDC_CHECK2                      1075
 #define IDC_CAP0_SRC                    1075
+#define IDC_ANALOG_CIRCLE               1075
 #define IDC_CHECK3                      1076
 #define IDC_CAP0_ONESHOT                1076
 #define IDC_CHECK4                      1077
@@ -531,6 +536,7 @@
 #define IDC_CHECK10                     1079
 #define IDC_CAP0_RUNNING                1079
 #define IDC_BIG_ENDIAN                  1079
+#define IDC_ANALOG_JOINED               1079
 #define IDC_CHECK6                      1080
 #define IDC_CAP1_SRC                    1080
 #define IDC_CAP1_ONESHOT                1081
@@ -923,6 +929,7 @@
 #define IDD_SLOT1_R4                    10012
 #define IDD_SLOT1_DEBUG                 10013
 #define IDD_GBASLOT_PADDLE              10014
+#define IDD_GBASLOT_ANALOG              10015
 #define IDM_FILE_STOPAVI                40000
 #define IDM_SCREENSEP_NONE              40000
 #define IDM_FILE_STOPWAV                40001
@@ -1154,9 +1161,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        128
+#define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         40159
-#define _APS_NEXT_CONTROL_VALUE         1066
+#define _APS_NEXT_CONTROL_VALUE         1071
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
