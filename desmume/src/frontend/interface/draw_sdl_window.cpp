@@ -40,7 +40,7 @@ bool opengl_2d = true;
 GLuint sdl_ogl_screen_texture[2];
 #endif
 // TODO: Make configurable instead.
-const u16 cli_kb_cfg[NB_KEYS] =
+const u32 cli_kb_cfg[NB_KEYS] =
         {
                 SDLK_x,         // A
                 SDLK_z,         // B
