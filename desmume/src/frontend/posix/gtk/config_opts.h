@@ -65,6 +65,7 @@ OPT(multisampling, bool, false, Config, OpenGLMultisampling)
 OPT(multisamplingSize, int, 0, Config, OpenGLMultisamplingSize)
 OPT(command_line_overriding_firmware_language, bool, false, Config, CommandLineOverridingFirmwareLanguage)
 OPT(firmware_language, int, 1, Config, FirmwareLanguage)
+OPT(savetype, int, 0, Config, SaveType)
 
 /* Audio */
 OPT(audio_enabled, bool, true, Audio, Enabled)
