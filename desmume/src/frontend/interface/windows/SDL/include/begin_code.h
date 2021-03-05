@@ -1,133 +1,108 @@
 /*
-    SDL - Simple DirectMedia Layer
-    Copyright (C) 1997-2012 Sam Lantinga
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2020 Sam Lantinga <slouken@libsdl.org>
 
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
 
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
 
-    You should have received a copy of the GNU Library General Public
-    License along with this library; if not, write to the Free
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-    Sam Lantinga
-    slouken@libsdl.org
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
 */
 
-/** 
- *  @file begin_code.h
+/**
+ *  \file begin_code.h
+ *
  *  This file sets things up for C dynamic library function definitions,
  *  static inlined functions, and structures aligned at 4-byte alignment.
  *  If you don't like ugly C preprocessor code, don't look at this file. :)
  */
 
-/** 
- *  @file begin_code.h
- *  This shouldn't be nested -- included it around code only.
- */
+/* This shouldn't be nested -- included it around code only. */
 #ifdef _begin_code_h
 #error Nested inclusion of begin_code.h
 #endif
 #define _begin_code_h
 
-/** 
- *  @def DECLSPEC
- *  Some compilers use a special export keyword
- */
-#ifndef DECLSPEC
-# if defined(__BEOS__) || defined(__HAIKU__)
-#  if defined(__GNUC__)
-#   define DECLSPEC
+#ifndef SDL_DEPRECATED
+#  if (__GNUC__ >= 4)  /* technically, this arrived in gcc 3.1, but oh well. */
+#    define SDL_DEPRECATED __attribute__((deprecated))
 #  else
-#   define DECLSPEC	__declspec(export)
+#    define SDL_DEPRECATED
 #  endif
-# elif defined(__WIN32__)
-#  ifdef __BORLANDC__
-#   ifdef BUILD_SDL
-#    define DECLSPEC 
-#   else
-#    define DECLSPEC	__declspec(dllimport)
-#   endif
+#endif
+
+#ifndef SDL_UNUSED
+#  ifdef __GNUC__
+#    define SDL_UNUSED __attribute__((unused))
 #  else
-#   define DECLSPEC	__declspec(dllexport)
+#    define SDL_UNUSED
+#  endif
+#endif
+
+/* Some compilers use a special export keyword */
+#ifndef DECLSPEC
+# if defined(__WIN32__) || defined(__WINRT__) || defined(__CYGWIN__)
+#  ifdef DLL_EXPORT
+#   define DECLSPEC __declspec(dllexport)
+#  else
+#   define DECLSPEC
 #  endif
 # elif defined(__OS2__)
-#  ifdef __WATCOMC__
-#   ifdef BUILD_SDL
-#    define DECLSPEC	__declspec(dllexport)
-#   else
-#    define DECLSPEC
-#   endif
-#  elif defined (__GNUC__) && __GNUC__ < 4
-#   /* Added support for GCC-EMX <v4.x */
-#   /* this is needed for XFree86/OS2 developement */
-#   /* F. Ambacher(anakor@snafu.de) 05.2008 */
 #   ifdef BUILD_SDL
 #    define DECLSPEC    __declspec(dllexport)
 #   else
 #    define DECLSPEC
 #   endif
-#  else
-#   define DECLSPEC
-#  endif
 # else
 #  if defined(__GNUC__) && __GNUC__ >= 4
-#   define DECLSPEC	__attribute__ ((visibility("default")))
+#   define DECLSPEC __attribute__ ((visibility("default")))
 #  else
 #   define DECLSPEC
 #  endif
 # endif
 #endif
 
-/** 
- *  @def SDLCALL
- *  By default SDL uses the C calling convention
- */
+/* By default SDL uses the C calling convention */
 #ifndef SDLCALL
-# if defined(__WIN32__) && !defined(__GNUC__)
-#  define SDLCALL __cdecl
-# elif defined(__OS2__)
-#  if defined (__GNUC__) && __GNUC__ < 4
-#   /* Added support for GCC-EMX <v4.x */
-#   /* this is needed for XFree86/OS2 developement */
-#   /* F. Ambacher(anakor@snafu.de) 05.2008 */
-#   define SDLCALL _cdecl
-#  else
-#   /* On other compilers on OS/2, we use the _System calling convention */
-#   /* to be compatible with every compiler */
-#   define SDLCALL _System
-#  endif
-# else
-#  define SDLCALL
+#if (defined(__WIN32__) || defined(__WINRT__)) && !defined(__GNUC__)
+#define SDLCALL __cdecl
+#elif defined(__OS2__) || defined(__EMX__)
+#define SDLCALL _System
+# if defined (__GNUC__) && !defined(_System)
+#  define _System /* for old EMX/GCC compat.  */
 # endif
+#else
+#define SDLCALL
+#endif
 #endif /* SDLCALL */
 
-#ifdef __SYMBIAN32__ 
-#ifndef EKA2 
+/* Removed DECLSPEC on Symbian OS because SDL cannot be a DLL in EPOC */
+#ifdef __SYMBIAN32__
 #undef DECLSPEC
 #define DECLSPEC
-#elif !defined(__WINS__)
-#undef DECLSPEC
-#define DECLSPEC __declspec(dllexport)
-#endif /* !EKA2 */
 #endif /* __SYMBIAN32__ */
 
-/**
- *  @file begin_code.h
- *  Force structure packing at 4 byte alignment.
- *  This is necessary if the header is included in code which has structure
- *  packing set to an alternate value, say for loading structures from disk.
- *  The packing is reset to the previous value in close_code.h 
+/* Force structure packing at 4 byte alignment.
+   This is necessary if the header is included in code which has structure
+   packing set to an alternate value, say for loading structures from disk.
+   The packing is reset to the previous value in close_code.h
  */
 #if defined(_MSC_VER) || defined(__MWERKS__) || defined(__BORLANDC__)
 #ifdef _MSC_VER
 #pragma warning(disable: 4103)
+#endif
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wpragma-pack"
 #endif
 #ifdef __BORLANDC__
 #pragma nopackwarning
@@ -138,53 +113,48 @@
 #else
 #pragma pack(push,4)
 #endif
-#elif (defined(__MWERKS__) && defined(__MACOS__))
-#pragma options align=mac68k4byte
-#pragma enumsalwaysint on
 #endif /* Compiler needs structure packing set */
 
-/**
- *  @def SDL_INLINE_OKAY
- *  Set up compiler-specific options for inlining functions
- */
-#ifndef SDL_INLINE_OKAY
-#ifdef __GNUC__
-#define SDL_INLINE_OKAY
-#else
-/* Add any special compiler-specific cases here */
-#if defined(_MSC_VER) || defined(__BORLANDC__) || \
-    defined(__DMC__) || defined(__SC__) || \
-    defined(__WATCOMC__) || defined(__LCC__) || \
-    defined(__DECC) || defined(__EABI__)
+#ifndef SDL_INLINE
+#if defined(__GNUC__)
+#define SDL_INLINE __inline__
+#elif defined(_MSC_VER) || defined(__BORLANDC__) || \
+      defined(__DMC__) || defined(__SC__) || \
+      defined(__WATCOMC__) || defined(__LCC__) || \
+      defined(__DECC) || defined(__CC_ARM)
+#define SDL_INLINE __inline
 #ifndef __inline__
-#define __inline__	__inline
+#define __inline__ __inline
 #endif
-#define SDL_INLINE_OKAY
 #else
-#if !defined(__MRC__) && !defined(_SGI_SOURCE)
+#define SDL_INLINE inline
 #ifndef __inline__
 #define __inline__ inline
 #endif
-#define SDL_INLINE_OKAY
-#endif /* Not a funky compiler */
-#endif /* Visual C++ */
-#endif /* GNU C */
-#endif /* SDL_INLINE_OKAY */
-
-/**
- *  @def __inline__
- *  If inlining isn't supported, remove "__inline__", turning static
- *  inlined functions into static functions (resulting in code bloat
- *  in all files which include the offending header files)
- */
-#ifndef SDL_INLINE_OKAY
-#define __inline__
 #endif
+#endif /* SDL_INLINE not defined */
 
-/**
- *  @def NULL
- *  Apparently this is needed by several Windows compilers
- */
+#ifndef SDL_FORCE_INLINE
+#if defined(_MSC_VER)
+#define SDL_FORCE_INLINE __forceinline
+#elif ( (defined(__GNUC__) && (__GNUC__ >= 4)) || defined(__clang__) )
+#define SDL_FORCE_INLINE __attribute__((always_inline)) static __inline__
+#else
+#define SDL_FORCE_INLINE static SDL_INLINE
+#endif
+#endif /* SDL_FORCE_INLINE not defined */
+
+#ifndef SDL_NORETURN
+#if defined(__GNUC__)
+#define SDL_NORETURN __attribute__((noreturn))
+#elif defined(_MSC_VER)
+#define SDL_NORETURN __declspec(noreturn)
+#else
+#define SDL_NORETURN
+#endif
+#endif /* SDL_NORETURN not defined */
+
+/* Apparently this is needed by several Windows compilers */
 #if !defined(__MACH__)
 #ifndef NULL
 #ifdef __cplusplus
