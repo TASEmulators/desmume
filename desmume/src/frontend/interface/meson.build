@@ -1,4 +1,4 @@
-project('libdesmume',
+project('desmume',
   ['c', 'cpp'],
   version: '2.7.10',
   meson_version: '>=0.45',
@@ -222,7 +222,7 @@ rval = simd.check('colorspacehandler',
 )
 colorspacehandler_simd = rval[0]
 
-library('libdesmume',
+library('desmume',
   libdesmume_src,
   dependencies: dependencies,
   include_directories: includes,
