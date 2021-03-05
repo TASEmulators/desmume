@@ -20,8 +20,7 @@
 #ifndef DESMUME_INTERFACE_H
 #define DESMUME_INTERFACE_H
 
-#include <SDL.h>
-#include <../../types.h>
+#include "../../types.h"
 #include "../../movie.h"
 
 #ifdef HAVE_GL_GL_H

@@ -19,6 +19,7 @@
 
 // This entire file is basically a copy of the Posix CLI rendering / input processing.
 
+#include <SDL.h>
 #include "interface.h"
 #include "../../NDSSystem.h"
 #include "../../GPU.h"
@@ -31,7 +32,8 @@
 #endif
 
 // SDL drawing & input processing
-static SDL_Surface *surface;
+static SDL_Window *window;
+static SDL_Renderer *renderer;
 static int sdl_videoFlags;
 struct ctrls_event_config ctrls_cfg;
 static float nds_screen_size_ratio = 1.0f;
@@ -67,10 +69,6 @@ static void resizeWindow_stub(u16 width, u16 height, void *sdl_ogl_screen_textur
 
 static void sdl_draw_no_opengl()
 {
-#ifdef HAVE_LIBAGG
-    //TODO : osd->update();
-    //TODO : DrawHUD();
-#endif
     const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
     const size_t pixCount = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT;
     ColorspaceApplyIntensityToBuffer16<false, false>((u16 *)displayInfo.masterNativeBuffer, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
@@ -79,12 +77,10 @@ static void sdl_draw_no_opengl()
     SDL_Surface *rawImage = SDL_CreateRGBSurfaceFrom(displayInfo.masterNativeBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, 16, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16), 0x001F, 0x03E0, 0x7C00, 0);
     if(rawImage == NULL) return;
 
-    SDL_BlitSurface(rawImage, 0, surface, 0);
-    SDL_UpdateRect(surface, 0, 0, 0, 0);
-    SDL_FreeSurface(rawImage);
-#ifdef HAVE_LIBAGG
-    //TODO : osd->clear();
-#endif
+	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, rawImage);
+	SDL_FreeSurface(rawImage);
+	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderPresent(renderer);
 }
 
 #ifdef INCLUDE_OPENGL_2D
@@ -155,7 +151,6 @@ static void resizeWindow(u16 width, u16 height, GLuint *screen_texture) {
     int comp_height = 2 * height;
     GLenum errCode;
 
-    surface = SDL_SetVideoMode(width, height, 32, sdl_videoFlags);
     initGL(screen_texture);
 
 #ifdef HAVE_LIBAGG
@@ -206,45 +201,24 @@ EXPORTED int desmume_draw_window_init(BOOL auto_pause, BOOL use_opengl_if_possib
 
     // SDL_Init is called in desmume_init.
 
-    SDL_WM_SetCaption("Desmume SDL", NULL);
-
-    const SDL_VideoInfo *videoInfo;
-    videoInfo = SDL_GetVideoInfo();
-    if (!videoInfo) {
-        fprintf(stderr, "Video query failed: %s\n", SDL_GetError());
-        return -1;
-    }
-
-    if ( videoInfo->blit_hw ) {
-        sdl_videoFlags |= SDL_HWACCEL;
-    }
-
 #ifdef INCLUDE_OPENGL_2D
     if (opengl_2d) {
         /* the flags to pass to SDL_SetVideoMode */
         sdl_videoFlags  = SDL_OPENGL;          /* Enable OpenGL in SDL */
-        sdl_videoFlags |= SDL_HWPALETTE;       /* Store the palette in hardware */
         sdl_videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
-
-
-        /* This checks to see if surfaces can be stored in memory */
-        if ( videoInfo->hw_available )
-          sdl_videoFlags |= SDL_HWSURFACE;
-        else
-          sdl_videoFlags |= SDL_SWSURFACE;
 
 
         /* Sets up OpenGL double buffering */
         SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
-        surface = SDL_SetVideoMode( 256, 192 * 2, 32,
-                                    sdl_videoFlags );
+		window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 192 * 2,
+								   sdl_videoFlags );
 
-        /* Verify there is a surface */
-        if (!surface) {
-          fprintf(stderr, "Video mode set failed: %s\n", SDL_GetError( ));
-          return -1;
-        }
+		/* Verify there is a window */
+		if ( !window ) {
+		  fprintf( stderr, "Window creation failed: %s\n", SDL_GetError( ) );
+		  exit( -1);
+		}
 
 
         /* initialize OpenGL */
@@ -257,13 +231,15 @@ EXPORTED int desmume_draw_window_init(BOOL auto_pause, BOOL use_opengl_if_possib
 
     if (!opengl_2d) {
 #endif
-        sdl_videoFlags |= SDL_SWSURFACE;
-        surface = SDL_SetVideoMode(256, 384, 32, sdl_videoFlags);
+		sdl_videoFlags |= SDL_SWSURFACE;
+		window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 384, sdl_videoFlags );
 
-        if (!surface) {
-            fprintf( stderr, "Video mode set failed: %s\n", SDL_GetError( ) );
-            return -1;
-        }
+		if ( !window ) {
+			fprintf( stderr, "Window creation failed: %s\n", SDL_GetError( ) );
+			exit( -1);
+		}
+
+		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 #ifdef INCLUDE_OPENGL_2D
     }
 

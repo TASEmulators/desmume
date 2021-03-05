@@ -17,13 +17,12 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <SDL.h>
 #include "interface.h"
 
 #include <stdio.h>
 #include "../../NDSSystem.h"
 #include "../../GPU.h"
-// TODO: OSD Support isn't really done yet! Test!
-#include "../modules/osd/agg/agg_osd.h"
 #include "../../SPU.h"
 #include "../../MMU.h"
 #include "../../rasterize.h"
