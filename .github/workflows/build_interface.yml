@@ -82,4 +82,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: win-${{ matrix.arch }}
-          path: desmume/src/frontend/interface/build/windows/__bins/*.dll
+          path: desmume/src/frontend/interface/windows/__bins/*.dll
