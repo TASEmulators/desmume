@@ -60,7 +60,7 @@
 #include "Database.h"
 #include "frontend/modules/Disassembler.h"
 
-#ifdef HOST_WINDOWS
+#if defined(HOST_WINDOWS) && !defined(TARGET_INTERFACE)
 #include "display.h"
 extern HWND DisViewWnd[2];
 #endif
@@ -1920,7 +1920,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 	while(timer < s32next && !sequencer.reschedule && execute)
 	{
 		// breakpoint handling
-		#ifdef HOST_WINDOWS
+		#if defined(HOST_WINDOWS) && !defined(TARGET_INTERFACE)
 		for (int i = 0; i < NDS_ARM9.breakPoints.size(); ++i) {
 			if (NDS_ARM9.instruct_adr == NDS_ARM9.breakPoints[i] && !NDS_ARM9.debugStep) {
 				emu_paused = true;

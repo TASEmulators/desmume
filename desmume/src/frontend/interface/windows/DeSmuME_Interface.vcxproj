@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" InitialTargets="UNDUPOBJ" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Dev+|Win32">
+      <Configuration>Dev+</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Dev+|x64">
+      <Configuration>Dev+</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Fastbuild|Win32">
+      <Configuration>Release Fastbuild</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Fastbuild|x64">
+      <Configuration>Release Fastbuild</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>DeSmuME Interface</ProjectName>
+    <ProjectGuid>{9F5F72A1-D3A5-4918-B460-E076B16D10A9}</ProjectGuid>
+    <RootNamespace>DeSmuME</RootNamespace>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '16.0'" Label="TargetPlatform">
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VisualStudioVersion)' != '16.0'" Label="TargetPlatform">
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <!-- desmume customization: set PlatformToolset to an uptodate choice for vs2015 and leave it to the default vs2010 toolset for vs2010 -->
+  <!-- NOTE: the location of this hack is important or else we break resource editing, intellisense, and ctrl+f7 in vs2010 either; or it doesnt work for vs2015. weird. -->
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '16.0'" Label="Configuration">
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '15.0'" Label="Configuration">
+    <PlatformToolset>v141_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '14.0'" Label="Configuration">
+    <PlatformToolset>v140_xp</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
+    <Import Project="desmume.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Link>
+      <LargeAddressAware>true</LargeAddressAware>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">
+    <Link>
+      <LargeAddressAware>true</LargeAddressAware>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|Win32'">
+    <Link>
+      <LargeAddressAware>true</LargeAddressAware>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Link>
+      <LargeAddressAware>true</LargeAddressAware>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\addons\slot1comp_mc.cpp" />
+    <ClCompile Include="..\..\..\addons\slot1comp_protocol.cpp" />
+    <ClCompile Include="..\..\..\addons\slot1comp_rom.cpp" />
+    <ClCompile Include="..\..\..\addons\slot1_retail_auto.cpp" />
+    <ClCompile Include="..\..\..\addons\slot1_retail_mcrom.cpp" />
+    <ClCompile Include="..\..\..\addons\slot1_retail_mcrom_debug.cpp" />
+    <ClCompile Include="..\..\..\addons\slot2_auto.cpp" />
+    <ClCompile Include="..\..\..\addons\slot2_passme.cpp" />
+    <ClCompile Include="..\..\..\addons\slot2_piano.cpp" />
+    <ClCompile Include="..\..\..\addons\slot1_none.cpp" />
+    <ClCompile Include="..\..\..\addons\slot1_r4.cpp" />
+    <ClCompile Include="..\..\..\addons\slot1_retail_nand.cpp" />
+    <ClCompile Include="..\..\..\addons\slot2_mpcf.cpp" />
+    <ClCompile Include="..\..\..\addons\slot2_paddle.cpp" />
+    <ClCompile Include="..\..\..\arm_instructions.cpp" />
+    <ClCompile Include="..\..\..\armcpu.cpp" />
+    <ClCompile Include="..\..\..\arm_jit.cpp" />
+    <ClCompile Include="..\..\..\bios.cpp" />
+    <ClCompile Include="..\..\..\cheatSystem.cpp" />
+    <ClCompile Include="..\..\..\commandline.cpp" />
+    <ClCompile Include="..\..\..\common.cpp" />
+    <ClCompile Include="..\..\..\cp15.cpp" />
+    <ClCompile Include="..\..\..\Database.cpp" />
+    <ClCompile Include="..\..\..\debug.cpp" />
+    <ClCompile Include="..\..\..\driver.cpp" />
+    <ClCompile Include="..\..\..\emufile.cpp" />
+    <ClCompile Include="..\..\..\encrypt.cpp" />
+    <ClCompile Include="..\..\..\FIFO.cpp" />
+    <ClCompile Include="..\..\..\filter\2xsai.cpp" />
+    <ClCompile Include="..\..\..\filter\bilinear.cpp" />
+    <ClCompile Include="..\..\..\filter\deposterize.cpp" />
+    <ClCompile Include="..\..\..\filter\epx.cpp" />
+    <ClCompile Include="..\..\..\filter\hq2x.cpp" />
+    <ClCompile Include="..\..\..\filter\hq3x.cpp" />
+    <ClCompile Include="..\..\..\filter\hq4x.cpp" />
+    <ClCompile Include="..\..\..\filter\lq2x.cpp" />
+    <ClCompile Include="..\..\..\filter\scanline.cpp" />
+    <ClCompile Include="..\..\..\filter\videofilter.cpp" />
+    <ClCompile Include="..\..\..\filter\xbrz.cpp" />
+    <ClCompile Include="..\..\..\firmware.cpp" />
+    <ClCompile Include="..\..\..\frontend\modules\ImageOut.cpp" />
+    <ClCompile Include="..\..\..\gfx3d.cpp" />
+    <ClCompile Include="..\..\..\GPU.cpp" />
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_fnmatch.c" />
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_getopt.c" />
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_posix_string.c" />
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_snprintf.c" />
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_strcasestr.c" />
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_strl.c" />
+    <ClCompile Include="..\..\..\libretro-common\encodings\encoding_utf.c" />
+    <ClCompile Include="..\..\..\libretro-common\features\features_cpu.c" />
+    <ClCompile Include="..\..\..\libretro-common\file\archive_file.c" />
+    <ClCompile Include="..\..\..\libretro-common\file\archive_file_zlib.c" />
+    <ClCompile Include="..\..\..\libretro-common\file\file_path.c" />
+    <ClCompile Include="..\..\..\libretro-common\file\nbio\nbio_stdio.c" />
+    <ClCompile Include="..\..\..\libretro-common\file\retro_dirent.c" />
+    <ClCompile Include="..\..\..\libretro-common\file\retro_stat.c" />
+    <ClCompile Include="..\..\..\libretro-common\formats\bmp\rbmp_encode.c" />
+    <ClCompile Include="..\..\..\libretro-common\formats\png\rpng.c" />
+    <ClCompile Include="..\..\..\libretro-common\formats\png\rpng_encode.c" />
+    <ClCompile Include="..\..\..\libretro-common\hash\rhash.c" />
+    <ClCompile Include="..\..\..\libretro-common\lists\dir_list.c" />
+    <ClCompile Include="..\..\..\libretro-common\lists\file_list.c" />
+    <ClCompile Include="..\..\..\libretro-common\lists\string_list.c" />
+    <ClCompile Include="..\..\..\libretro-common\rthreads\rsemaphore.c" />
+    <ClCompile Include="..\..\..\libretro-common\rthreads\rthreads.c" />
+    <ClCompile Include="..\..\..\libretro-common\streams\file_stream.c" />
+    <ClCompile Include="..\..\..\libretro-common\streams\memory_stream.c" />
+    <ClCompile Include="..\..\..\matrix.cpp" />
+    <ClCompile Include="..\..\..\mc.cpp" />
+    <ClCompile Include="..\..\..\MMU.cpp" />
+    <ClCompile Include="..\..\..\movie.cpp" />
+    <ClCompile Include="..\..\..\NDSSystem.cpp" />
+    <ClCompile Include="..\..\..\OGLRender.cpp" />
+    <ClCompile Include="..\..\..\OGLRender_3_2.cpp" />
+    <ClCompile Include="..\..\..\path.cpp" />
+    <ClCompile Include="..\..\..\rasterize.cpp" />
+    <ClCompile Include="..\..\..\readwrite.cpp" />
+    <ClCompile Include="..\..\..\render3D.cpp" />
+    <ClCompile Include="..\..\..\ROMReader.cpp" />
+    <ClCompile Include="..\..\..\rtc.cpp" />
+    <ClCompile Include="..\..\..\saves.cpp" />
+    <ClCompile Include="..\..\..\slot1.cpp" />
+    <ClCompile Include="..\..\..\slot2.cpp" />
+    <ClCompile Include="..\..\..\SPU.cpp" />
+    <ClCompile Include="..\..\..\texcache.cpp" />
+    <ClCompile Include="..\..\..\thumb_instructions.cpp" />
+    <ClCompile Include="..\..\..\utils\advanscene.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\assembler.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\assert.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\buffer.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\compiler.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\compilercontext.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\compilerfunc.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\compileritem.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\context.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\cpuinfo.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\defs.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\func.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\logger.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\memorymanager.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\memorymarker.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\operand.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\stringbuilder.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\stringutil.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\virtualmemory.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\core\zonememory.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86assembler.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86compiler.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86compilercontext.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86compilerfunc.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86compileritem.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86cpuinfo.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86defs.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86func.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86operand.cpp" />
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86util.cpp" />
+    <ClCompile Include="..\..\..\utils\colorspacehandler\colorspacehandler.cpp" />
+    <ClCompile Include="..\..\..\utils\colorspacehandler\colorspacehandler_AltiVec.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\colorspacehandler\colorspacehandler_AVX2.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\colorspacehandler\colorspacehandler_SSE2.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\datetime.cpp" />
+    <ClCompile Include="..\..\..\utils\dlditool.cpp" />
+    <ClCompile Include="..\..\..\utils\emufat.cpp" />
+    <ClCompile Include="..\..\..\utils\fsnitro.cpp" />
+    <ClCompile Include="..\..\..\utils\libfat\cache.cpp" />
+    <ClCompile Include="..\..\..\utils\libfat\directory.cpp" />
+    <ClCompile Include="..\..\..\utils\libfat\disc.cpp" />
+    <ClCompile Include="..\..\..\utils\libfat\fatdir.cpp" />
+    <ClCompile Include="..\..\..\utils\libfat\fatfile.cpp" />
+    <ClCompile Include="..\..\..\utils\libfat\filetime.cpp" />
+    <ClCompile Include="..\..\..\utils\libfat\file_allocation_table.cpp" />
+    <ClCompile Include="..\..\..\utils\libfat\libfat.cpp" />
+    <ClCompile Include="..\..\..\utils\libfat\libfat_public_api.cpp" />
+    <ClCompile Include="..\..\..\utils\libfat\lock.cpp" />
+    <ClCompile Include="..\..\..\utils\libfat\partition.cpp" />
+    <ClCompile Include="..\..\..\utils\tinyxml\tinystr.cpp" />
+    <ClCompile Include="..\..\..\utils\tinyxml\tinyxml.cpp" />
+    <ClCompile Include="..\..\..\utils\tinyxml\tinyxmlerror.cpp" />
+    <ClCompile Include="..\..\..\utils\tinyxml\tinyxmlparser.cpp" />
+    <ClCompile Include="..\..\..\utils\vfat.cpp" />
+    <ClCompile Include="..\..\..\version.cpp" />
+    <ClCompile Include="..\..\..\wifi.cpp" />
+    <ClCompile Include="..\..\..\addons\slot2_expMemory.cpp" />
+    <ClCompile Include="..\..\..\addons\slot2_gbagame.cpp" />
+    <ClCompile Include="..\..\..\addons\slot2_guitarGrip.cpp" />
+    <ClCompile Include="..\..\..\addons\slot2_none.cpp" />
+    <ClCompile Include="..\..\..\addons\slot2_rumblepak.cpp" />
+    <ClCompile Include="..\..\..\utils\guid.cpp" />
+    <ClCompile Include="..\..\..\utils\task.cpp" />
+    <ClCompile Include="..\..\..\utils\xstring.cpp" />
+    <ClCompile Include="..\..\..\utils\decrypt\crc.cpp" />
+    <ClCompile Include="..\..\..\utils\decrypt\decrypt.cpp" />
+    <ClCompile Include="..\..\..\utils\decrypt\header.cpp" />
+    <ClCompile Include="..\..\..\metaspu\metaspu.cpp" />
+    <ClCompile Include="..\..\..\metaspu\SndOut.cpp" />
+    <ClCompile Include="..\..\..\metaspu\Timestretcher.cpp" />
+    <ClCompile Include="..\..\..\metaspu\win32\ConfigSoundtouch.cpp" />
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\3dnow_win.cpp" />
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\AAFilter.cpp" />
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\cpu_detect_x86_win.cpp" />
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\FIFOSampleBuffer.cpp" />
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\FIRFilter.cpp" />
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\mmx_optimized.cpp" />
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\RateTransposer.cpp" />
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\SoundTouch.cpp" />
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\sse_optimized.cpp" />
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\TDStretch.cpp" />
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\WavFile.cpp" />
+    <ClCompile Include="..\..\modules\Disassembler.cpp" />
+    <ClCompile Include="..\..\modules\osd\agg\aggdraw.cpp" />
+    <ClCompile Include="..\..\modules\osd\agg\agg_osd.cpp" />
+    <ClCompile Include="..\..\posix\shared\ctrlssdl.cpp" />
+    <ClCompile Include="..\..\posix\shared\sndsdl.cpp" />
+    <ClCompile Include="..\..\windows\mic-win.cpp" />
+    <ClCompile Include="..\..\windows\winutil.cpp" />
+    <ClCompile Include="..\draw_sdl_window.cpp" />
+    <ClCompile Include="..\interface.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\addons\slot1comp_mc.h" />
+    <ClInclude Include="..\..\..\addons\slot1comp_protocol.h" />
+    <ClInclude Include="..\..\..\addons\slot1comp_rom.h" />
+    <ClInclude Include="..\..\..\Database.h" />
+    <ClInclude Include="..\..\..\filter\filter.h" />
+    <ClInclude Include="..\..\..\filter\hq2x.h" />
+    <ClInclude Include="..\..\..\filter\interp.h" />
+    <ClInclude Include="..\..\..\filter\lq2x.h" />
+    <ClInclude Include="..\..\..\filter\videofilter.h" />
+    <ClInclude Include="..\..\..\filter\xbrz.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\compat\getopt.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\compat\msvc.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\encodings\utf.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\features\features_cpu.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\formats\image.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\formats\rbmp.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\formats\rpng.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\libretro.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\rthreads\rthreads.h" />
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\FIRFilter.h" />
+    <ClInclude Include="..\..\..\types.h" />
+    <ClInclude Include="..\..\..\utils\bits.h" />
+    <ClInclude Include="..\..\..\utils\colorspacehandler\colorspacehandler_AltiVec.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\colorspacehandler\colorspacehandler_AVX2.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\colorspacehandler\colorspacehandler_SSE2.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\..\..\version.h" />
+    <ClInclude Include="..\..\..\armcpu.h" />
+    <ClInclude Include="..\..\..\arm_jit.h" />
+    <ClInclude Include="..\..\..\bios.h" />
+    <ClInclude Include="..\..\..\cheatSystem.h" />
+    <ClInclude Include="..\..\..\commandline.h" />
+    <ClInclude Include="..\..\..\common.h" />
+    <ClInclude Include="..\..\..\cp15.h" />
+    <ClInclude Include="..\..\..\debug.h" />
+    <ClInclude Include="..\..\..\driver.h" />
+    <ClInclude Include="..\..\..\emufile.h" />
+    <ClInclude Include="..\..\..\encrypt.h" />
+    <ClInclude Include="..\..\..\FIFO.h" />
+    <ClInclude Include="..\..\..\firmware.h" />
+    <ClInclude Include="..\..\..\frontend\modules\ImageOut.h" />
+    <ClInclude Include="..\..\..\gfx3d.h" />
+    <ClInclude Include="..\..\..\GPU.h" />
+    <ClInclude Include="..\..\..\instructions.h" />
+    <ClInclude Include="..\..\..\instruction_attributes.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\boolean.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\retro_inline.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\retro_miscellaneous.h" />
+    <ClInclude Include="..\..\..\matrix.h" />
+    <ClInclude Include="..\..\..\mc.h" />
+    <ClInclude Include="..\..\..\mem.h" />
+    <ClInclude Include="..\..\..\mic.h" />
+    <ClInclude Include="..\..\..\MMU.h" />
+    <ClInclude Include="..\..\..\MMU_timing.h" />
+    <ClInclude Include="..\..\modules\osd\agg\agg2d.h" />
+    <ClInclude Include="..\..\modules\osd\agg\aggdraw.h" />
+    <ClInclude Include="..\..\modules\osd\agg\agg_osd.h" />
+    <ClInclude Include="..\..\..\movie.h" />
+    <ClInclude Include="..\..\..\NDSSystem.h" />
+    <ClInclude Include="..\..\..\OGLRender.h" />
+    <ClInclude Include="..\..\..\OGLRender_3_2.h" />
+    <ClInclude Include="..\..\..\path.h" />
+    <ClInclude Include="..\..\..\rasterize.h" />
+    <ClInclude Include="..\..\..\readwrite.h" />
+    <ClInclude Include="..\..\..\registers.h" />
+    <ClInclude Include="..\..\..\render3D.h" />
+    <ClInclude Include="..\..\..\ROMReader.h" />
+    <ClInclude Include="..\..\..\rtc.h" />
+    <ClInclude Include="..\..\..\saves.h" />
+    <ClInclude Include="..\..\..\slot1.h" />
+    <ClInclude Include="..\..\..\slot2.h" />
+    <ClInclude Include="..\..\..\SPU.h" />
+    <ClInclude Include="..\..\..\texcache.h" />
+    <ClInclude Include="..\..\..\utils\advanscene.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\asmjit.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\config.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\apibegin.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\apiend.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\assembler.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\assert.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\buffer.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\build.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\compiler.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\compilercontext.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\compilerfunc.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\compileritem.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\context.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\cpuinfo.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\defs.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\func.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\intutil.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\lock.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\logger.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\memorymanager.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\memorymarker.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\operand.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\podvector.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\stringbuilder.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\stringutil.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\virtualmemory.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\core\zonememory.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\x86.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86assembler.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86compiler.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86compilercontext.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86compilerfunc.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86compileritem.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86cpuinfo.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86defs.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86func.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86operand.h" />
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86util.h" />
+    <ClInclude Include="..\..\..\utils\colorspacehandler\colorspacehandler.h" />
+    <ClInclude Include="..\..\..\utils\datetime.h" />
+    <ClInclude Include="..\..\..\utils\emufat.h" />
+    <ClInclude Include="..\..\..\utils\emufat_types.h" />
+    <ClInclude Include="..\..\..\utils\fsnitro.h" />
+    <ClInclude Include="..\..\..\utils\libfat\bit_ops.h" />
+    <ClInclude Include="..\..\..\utils\libfat\cache.h" />
+    <ClInclude Include="..\..\..\utils\libfat\common.h" />
+    <ClInclude Include="..\..\..\utils\libfat\directory.h" />
+    <ClInclude Include="..\..\..\utils\libfat\disc.h" />
+    <ClInclude Include="..\..\..\utils\libfat\disc_io.h" />
+    <ClInclude Include="..\..\..\utils\libfat\fat.h" />
+    <ClInclude Include="..\..\..\utils\libfat\fatdir.h" />
+    <ClInclude Include="..\..\..\utils\libfat\fatfile.h" />
+    <ClInclude Include="..\..\..\utils\libfat\filetime.h" />
+    <ClInclude Include="..\..\..\utils\libfat\file_allocation_table.h" />
+    <ClInclude Include="..\..\..\utils\libfat\libfat_pc.h" />
+    <ClInclude Include="..\..\..\utils\libfat\libfat_public_api.h" />
+    <ClInclude Include="..\..\..\utils\libfat\lock.h" />
+    <ClInclude Include="..\..\..\utils\libfat\mem_allocate.h" />
+    <ClInclude Include="..\..\..\utils\libfat\partition.h" />
+    <ClInclude Include="..\..\..\utils\tinyxml\tinystr.h" />
+    <ClInclude Include="..\..\..\utils\tinyxml\tinyxml.h" />
+    <ClInclude Include="..\..\..\utils\vfat.h" />
+    <ClInclude Include="..\..\modules\Disassembler.h" />
+    <ClInclude Include="..\..\..\wifi.h" />
+    <ClInclude Include="..\..\..\utils\guid.h" />
+    <ClInclude Include="..\..\..\utils\task.h" />
+    <ClInclude Include="..\..\..\utils\decrypt\crc.h" />
+    <ClInclude Include="..\..\..\utils\decrypt\decrypt.h" />
+    <ClInclude Include="..\..\..\utils\decrypt\header.h" />
+    <ClInclude Include="..\..\..\metaspu\metaspu.h" />
+    <ClInclude Include="..\..\..\metaspu\SndOut.h" />
+    <ClInclude Include="..\..\..\metaspu\win32\Dialogs.h" />
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\AAFilter.h" />
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\BPMDetect.h" />
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\cpu_detect.h" />
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\FIFOSampleBuffer.h" />
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\FIFOSamplePipe.h" />
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\RateTransposer.h" />
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\SoundTouch.h" />
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\STTypes.h" />
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\TDStretch.h" />
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\WavFile.h" />
+    <ClInclude Include="..\..\posix\shared\ctrlssdl.h" />
+    <ClInclude Include="..\..\posix\shared\sndsdl.h" />
+    <ClInclude Include="..\..\windows\winutil.h" />
+    <ClInclude Include="..\interface.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\instruction_tabdef.inc" />
+    <None Include="..\..\modules\osd\agg\agg2d.inl" />
+    <None Include="..\thumb_tabdef.inc" />
+    <None Include="..\..\..\utils\AsmJit\COPYING.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
+  </ImportGroup>
+</Project>

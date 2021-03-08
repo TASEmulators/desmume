@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="IntegrityChecks" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<!-- Debug: typical build with max debugging -->
+	<!-- Release: typical public build with with max performance and slow codegen -->
+	<!-- Release Fastbuild: typical public build with with high performance but a few options which slow down codegen disabled. Good for general development. -->
+	<!-- Dev+: a release build with certain developer features enabled including the GDB stubs -->
+
+	<!-- FIX MSBUILD -->
+	<PropertyGroup>
+		<!-- warning MSB8027: Two or more files with the name of X.cpp will produce outputs to the same location. This can lead to an incorrect build result. -->
+		<IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
+		<!-- http://sedodream.com/PermaLink,guid,a5894bad-f2a1-441a-a5b2-74f16c6cf8aa.aspx -->
+		<VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+	</PropertyGroup>
+
+	<!-- reformat version to be more useful -->
+	<PropertyGroup>
+		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '10.0'">10</NDS_VSVER>
+		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '11.0'">11</NDS_VSVER>
+		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '12.0'">12</NDS_VSVER>
+		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '14.0'">14</NDS_VSVER>
+		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '15.0'">15</NDS_VSVER>
+		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '16.0'">16</NDS_VSVER>
+		<!-- others may not be supported, so lets not list them here -->
+		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '10'">VS2010</NDS_VisualStudioName>
+		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '14'">VS2015</NDS_VisualStudioName>
+		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '15'">VS2017</NDS_VisualStudioName>
+		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '16'">VS2019</NDS_VisualStudioName>
+	</PropertyGroup>
+
+	<!-- Generate optimization level property from configuration name -->
+	<PropertyGroup>
+		<NDS_OPT Condition="'$(Configuration)' == 'Debug'">Debug</NDS_OPT>
+		<NDS_OPT Condition="'$(Configuration)' == 'Release'">Release</NDS_OPT>
+		<NDS_OPT Condition="'$(Configuration)' == 'Release FastBuild'">Fastbuild</NDS_OPT>
+		<NDS_OPT Condition="'$(Configuration)' == 'Dev+'">Release</NDS_OPT>
+	</PropertyGroup>
+
+	<!-- General project setup -->
+	<PropertyGroup>
+		<IntDir>$(SolutionDir).obj\$(NDS_VisualStudioName)-$(Platform)-$(Configuration)\</IntDir>
+		<OutDir>$(SolutionDir)__bins\</OutDir>
+		<TargetName>$(ProjectName)-$(NDS_VisualStudioName)-$(Configuration)</TargetName>
+		<TargetName Condition="'$(Platform)' == 'x64'">$(ProjectName)-$(NDS_VisualStudioName)-x64-$(Configuration)</TargetName>
+		<TargetPath>$(OutDir)$(TargetName).dll</TargetPath>
+	</PropertyGroup>
+
+	<!-- some default configurations per build configuration -->
+	<PropertyGroup>
+		<DEVELOPER Condition="'$(Configuration)' == 'Dev+'">true</DEVELOPER>
+		<!-- Not supported yet. <GDB_STUB Condition="'$(Configuration)' == 'Dev+'">true</GDB_STUB>-->
+	</PropertyGroup>
+
+	<!-- load user preferences -->
+	<PropertyGroup>
+		<UserProps_Path>$(MSBuildThisFileDirectory)DeSmuME_Interface-user.props</UserProps_Path>
+		<UserProps_Path Condition="!Exists($(UserProps_Path))">$(MSBuildThisFileDirectory)DeSmuME_Interface-user.props.template</UserProps_Path>
+	</PropertyGroup>
+
+	<Import Project="$(UserProps_Path)" />
+
+	<!-- some defaults and validation of user prefs -->
+	<!-- TODO: throw errors here instead -->
+	<PropertyGroup>
+		<SSE_Level Condition="'$(SSE_Level)' == ''">20</SSE_Level>
+		<AVX_Level Condition="'$(AVX_Level)' == ''">0</AVX_Level>
+		<!-- dont use optimizations the compiler cant handle. this isn't accurate to the compiler capabilities but we're only supporting 2010 and 2015 -->
+		<SSE_Level Condition="'$(NDS_VSVER)' &lt; '14' AND '$(SSE_Level)' &gt; '20'">20</SSE_Level>
+		<!-- validation: x64 14.0 can't handle SSE_Level 1.0 and anyway SSE2 is automatically available -->
+		<SSE_Level Condition="'$(Platform)' == 'x64' AND '$(SSE_Level)' &lt; '20'">20</SSE_Level>
+		<!-- no AVX support on 2010 -->
+		<AVX_Level Condition="'$(NDS_VSVER)' &lt; '14' AND '$(AVX_Level)' != '0'">0</AVX_Level>
+		<!-- AVX implies SSE2 at least -->
+		<SSE_Level Condition="'$(AVX_Level)' != '0' AND '$(SSE_Level)' &lt; '20'">20</SSE_Level>
+	</PropertyGroup>
+
+	<!-- global optimizations -->
+	<PropertyGroup>
+		<WholeProgramOptimization Condition="'$(NDS_OPT)' == 'Release'">true</WholeProgramOptimization>
+	</PropertyGroup>
+
+	<!--==========================================================================-->
+	<!-- ITEM DEFINITIONS (standard build environment) -->
+
+
+	<ItemDefinitionGroup>
+
+		<ClCompile>
+
+			<AdditionalIncludeDirectories>.;..\..;..\..\..;..\..\windows;.\SDL\include;glib-2.20.1\build;..\..\windows\zlib128;..\..\windows\zziplib;..\..\windows\winpcap;userconfig;..\..\windows\agg\include;..\..\windows\agg\examples;..\..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+			
+			<!-- We are building the interface -->
+			<PreprocessorDefinitions>TARGET_INTERFACE;WIN_EXPORT</PreprocessorDefinitions>
+
+			<!-- universal definitions -->
+			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+			<!-- BETA_VERSION ? -->
+			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'Release'">RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'FastBuild'">FASTBUILD;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+
+			<!-- These work together -->
+			<MultiProcessorCompilation>true</MultiProcessorCompilation>
+			<MinimalRebuild>false</MinimalRebuild>
+
+			<!-- Optimization control -->
+			<Optimization Condition="'$(NDS_OPT)' == 'Debug'">Disabled</Optimization>
+			<Optimization Condition="'$(NDS_OPT)' == 'Release'">Full</Optimization>
+			<Optimization Condition="'$(NDS_OPT)' == 'Fastbuild'">Full</Optimization>
+			<WholeProgramOptimization Condition="'$(NDS_OPT)' == 'Release'">true</WholeProgramOptimization>
+			<FloatingPointModel>Fast</FloatingPointModel>
+			<EnableEnhancedInstructionSet Condition="'$(Platform)' == 'Win32'">StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+
+			<!-- Debugging control -->
+			<BufferSecurityCheck Condition="'$(NDS_OPT)' == 'Debug'">true</BufferSecurityCheck>
+			<BasicRuntimeChecks  Condition="'$(NDS_OPT)' == 'Debug'">EnableFastChecks</BasicRuntimeChecks>
+
+			<!-- Feature we dont use that bloats release builds anyway -->
+			<RuntimeTypeInfo>false</RuntimeTypeInfo>
+
+			<!-- Features theres no sense in having disabled -->
+			<StringPooling>true</StringPooling>
+
+			<!-- Not sure if we need this yet -->
+			<ExceptionHandling>Sync</ExceptionHandling>
+
+			<!-- Not sure why we chose this, study it later -->
+			<CallingConvention>Cdecl</CallingConvention>
+
+			<RuntimeLibrary Condition="'$(NDS_OPT)' == 'Debug'">MultiThreadedDebugDll</RuntimeLibrary>
+			<RuntimeLibrary Condition="'$(NDS_OPT)' != 'Debug'">MultiThreadedDll</RuntimeLibrary>
+
+			<!-- optimizatons / instruction sets -->
+			<!-- don't specifically issue SSE1 or SSE2 to vs2015 x64, it doesn't like to see it (SSE1 is impossible on x64 anyway) -->
+			<EnableEnhancedInstructionSet Condition="'$(SSE_Level)' >= '10' AND !('$(NDS_VSVER)' &gt;= '14' AND '$(Platform)' == 'x64')">StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+			<EnableEnhancedInstructionSet Condition="'$(SSE_Level)' >= '20' AND !('$(NDS_VSVER)' &gt;= '14' AND '$(Platform)' == 'x64')">StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+			<EnableEnhancedInstructionSet Condition="'$(SSE_Level)' >= '30'">StreamingSIMDExtensions3</EnableEnhancedInstructionSet>
+			<EnableEnhancedInstructionSet Condition="'$(AVX_Level)' >= '10'">AdvancedVectorExtensions</EnableEnhancedInstructionSet>
+			<EnableEnhancedInstructionSet Condition="'$(AVX_Level)' >= '20'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+			<PreprocessorDefinitions Condition="'$(SSE_Level)' >= '10'">ENABLE_SSE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(SSE_Level)' >= '20'">ENABLE_SSE2=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(SSE_Level)' >= '30'">ENABLE_SSE3=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(SSE_Level)' >= '31'">ENABLE_SSSE3=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(SSE_Level)' >= '40'">ENABLE_SSE4=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(AVX_Level)' >= '10'">ENABLE_AVX=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(AVX_Level)' >= '20'">ENABLE_AVX2=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+			<!-- export other user options to preprocessor -->
+			<PreprocessorDefinitions Condition="'$(DEVELOPER)' == 'true'">DEVELOPER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(GDB_STUB)' == 'true'">GDB_STUB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>EXPERIMENTAL_WIFI_COMM=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+			<!-- desmume configuration: features we always have in windows -->
+			<PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+		</ClCompile>
+
+		<Link>
+			<OutputFile>$(TargetPath)</OutputFile>
+			<ProgramDatabaseFile>$(IntDir)TargetName.pdb</ProgramDatabaseFile>
+
+			<!-- deps config for x64 -->
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">..\..\windows\zlib128;..\..\windows\agg;.libs;.libs\x64;.\SDL\lib\x64</AdditionalLibraryDirectories>
+			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">zlib-vc8-x64.lib;agg-2.5-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+
+			<!-- deps config for Win32 -->
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">..\..\windows\zlib128;..\..\windows\agg;.libs;.libs\win32;.\SDL\lib\x86</AdditionalLibraryDirectories>
+			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">zlib-vc8-Win32.lib;agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
+
+			<!-- special deps config for newer VS -->
+			<AdditionalDependencies Label="Configuration" Condition="'$(NDS_VSVER)' &gt;= '14'">legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+
+			<!-- general deps config -->
+			<AdditionalDependencies>SDL2main.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<!-- (and windows libs) -->
+			<AdditionalDependencies>vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+
+			<!-- debugging options -->
+			<GenerateDebugInformation>true</GenerateDebugInformation>
+			<GenerateMapFile>true</GenerateMapFile>
+
+			<!-- optimization options -->
+			<LinkTimeCodeGeneration Condition="'$(NDS_OPT)' == 'Release'">UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+
+			<!-- random configs -->
+			<SubSystem>Windows</SubSystem>
+			<RandomizedBaseAddress>false</RandomizedBaseAddress>
+			<LinkIncremental>true</LinkIncremental>
+			<TargetMachine Condition="'$(Platform)' == 'x64'">MachineX64</TargetMachine>
+
+			<!-- prebuilt zlib is incompatible with this, and it's useless anyway -->
+			<ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+
+		</Link>
+
+		<Manifest>
+			<AdditionalManifestFiles>DeSmuME_Interface_$(Platform).manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
+		</Manifest>
+
+	</ItemDefinitionGroup>
+
+	<!-- ================ UNDUPOBJ ================ -->
+	<!-- relevant topics -->
+	<!-- http://stackoverflow.com/questions/3729515/visual-studio-2010-2008-cant-handle-source-files-with-identical-names-in-diff/26935613 -->
+	<!-- http://stackoverflow.com/questions/7033855/msvc10-mp-builds-not-multicore-across-folders-in-a-project -->
+	<!-- http://stackoverflow.com/questions/18304911/how-can-one-modify-an-itemdefinitiongroup-from-an-msbuild-target -->
+	<!-- other maybe related info -->
+	<!-- http://stackoverflow.com/questions/841913/modify-msbuild-itemgroup-metadata -->
+	<UsingTask TaskName="UNDUPOBJ_TASK" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+		<ParameterGroup>
+			<OutputDir ParameterType="System.String" Required="true" />
+			<ItemList ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+			<OutputItemList ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+		</ParameterGroup>
+		<Task>
+			<Code>
+				<![CDATA[
+	            //general outline: for each item (in ClCompile) assign it to a subdirectory of $(IntDir) by allocating subdirectories 0,1,2, etc., as needed to prevent duplicate filenames from clobbering each other
+	            //this minimizes the number of batches that need to be run, since each subdirectory will necessarily be in a distinct batch due to /Fo specifying that output subdirectory
+
+	            var assignmentMap = new Dictionary<string,int>();
+	            foreach( var item in ItemList )
+	            {
+	              //solve bug e.g. Checkbox.cpp vs CheckBox.cpp
+	              var filename = item.GetMetadata("Filename").ToUpperInvariant(); 
+
+	              //assign reused filenames to increasing numbers
+	              //assign previously unused filenames to 0
+	              int assignment = 0;
+	              if(assignmentMap.TryGetValue(filename, out assignment))
+	                assignmentMap[filename] = ++assignment;
+	              else
+	                assignmentMap[filename] = 0;
+
+	              var thisFileOutdir = Path.Combine(OutputDir,assignment.ToString()) + "/"; //take care it ends in / so /Fo knows it's a directory and not a filename
+	              item.SetMetadata( "ObjectFileName", thisFileOutdir );
+	            }
+
+	            OutputItemList = ItemList;
+	            ItemList = new Microsoft.Build.Framework.ITaskItem[0];
+
+	        ]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+	<Target Name="UNDUPOBJ">
+		<!-- see stackoverflow topics for discussion on why we need to do some loopy copying stuff here -->
+		<ItemGroup>
+			<ClCompileCopy Include="@(ClCompile)"/>
+			<ClCompile Remove="@(ClCompile)"/>
+		</ItemGroup>
+		<UNDUPOBJ_TASK OutputDir="$(IntDir)" ItemList="@(ClCompileCopy)" OutputItemList="@(ClCompile)">
+			<Output ItemName="ClCompile" TaskParameter="OutputItemList"/>
+		</UNDUPOBJ_TASK>
+	</Target>
+	<!-- ================ UNDUPOBJ ================ -->
+
+</Project>
