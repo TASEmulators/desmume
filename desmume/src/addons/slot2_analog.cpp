@@ -23,6 +23,11 @@
 
 #include "../debug.h"
 
+/* 2^15 / Pi */
+#define ANGLE_TO_SHORT 10430.37835047f
+/* (float) 0x1000 */
+#define FLOAT_TO_FIXED 4096.0f
+
 static u16 state[4];
 
 class Slot2_Analog : public ISlot2Interface {
@@ -62,9 +67,6 @@ public:
 ISlot2Interface* construct_Slot2_Analog() { return new Slot2_Analog(); }
 
 void analog_setValue(float x, float y) {
-	constexpr float angle_to_short = 10430.37835047f; // 2^15 / Pi
-	constexpr float float_to_fixed = static_cast<float>(0x1000);
-
 	float mag = std::hypot(x, y);
 	float ang = std::atan2(x, y);
 	if (mag > 1.0f) {
@@ -73,8 +75,8 @@ void analog_setValue(float x, float y) {
 		mag = 1.0f;
 	}
 
-	state[0] = static_cast<u16>(std::lround(mag * float_to_fixed));
-	state[1] = static_cast<u16>(std::lround(  x * float_to_fixed));
-	state[2] = static_cast<u16>(std::lround(  y * float_to_fixed));
-	state[3] = static_cast<u16>(std::lround(ang * angle_to_short));
+	state[0] = static_cast<u16>(std::lround(mag * FLOAT_TO_FIXED));
+	state[1] = static_cast<u16>(std::lround(  x * FLOAT_TO_FIXED));
+	state[2] = static_cast<u16>(std::lround(  y * FLOAT_TO_FIXED));
+	state[3] = static_cast<u16>(std::lround(ang * ANGLE_TO_SHORT));
 }

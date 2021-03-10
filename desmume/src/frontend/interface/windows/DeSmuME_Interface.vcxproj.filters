@@ -581,6 +581,9 @@
     <ClCompile Include="..\draw_sdl_window.cpp">
       <Filter>frontend\interface</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot2_analog.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\utils\guid.h">
