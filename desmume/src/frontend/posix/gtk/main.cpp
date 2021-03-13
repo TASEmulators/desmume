@@ -2936,6 +2936,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
      * Perhaps it needs a "window" to catch events...? */
+    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS,"1");
     if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO) == -1) {
         g_printerr("Error trying to initialize SDL: %s\n",
                     SDL_GetError());
