@@ -263,7 +263,7 @@ SPaddle Paddle;
 SPaddle DefaultPaddle = { false, 'K', 'L' };
 
 SAnalog Analog;
-SAnalog DefaultAnalog = { false, 1, 2, 15, true, true };
+SAnalog DefaultAnalog = { false, 1, 2, 15, true };
 
 bool killStylusTopScreen = false;
 bool killStylusOffScreen = false;
@@ -485,7 +485,6 @@ static void LoadAnalogConfig()
 	ReadAnalogControl("Y", Analog.Y);
 	ReadAnalogControl("Deadzone", Analog.Deadzone);
 	ReadAnalogBool("Joined", Analog.Joined);
-	ReadAnalogBool("Circle", Analog.Circle);
 }
 
 
@@ -2714,6 +2713,12 @@ static float get_analog_float(WORD axis)
 	return (float) val / 10000.0f;
 }
 
+static float apply_deadzone(float value, float mag, float deadzone) {
+	if (mag <= deadzone) return 0.0f;
+	float cmag = std::min(mag, 1.0f); // clamp mag to 1.0f just in case
+	return value * (cmag - deadzone) / (1.0f - deadzone) / mag;
+}
+
 //void S9xOldAutofireAndStuff ()
 //{
 //	// stuff ripped out of Snes9x that's no longer functional, at least for now
@@ -3058,11 +3063,13 @@ void input_acquire()
 			float y = get_analog_float(Analog.Y);
 
 			if (Analog.Joined) {
-				float value = Analog.Circle ? std::hypot(x, y) : (std::max)(std::abs(x), std::abs(y));
-				if (value < deadzone) x = y = 0.0f;
+				float mag = std::hypot(x, y);
+				x = apply_deadzone(x, mag, deadzone);
+				y = apply_deadzone(y, mag, deadzone);
 			} else {
-				if (x < deadzone && x > -deadzone) x = 0.0f;
-				if (y < deadzone && y > -deadzone) y = 0.0f;
+				// Faster approximation that prioritizes cardinal directions
+				x = apply_deadzone(x, x, deadzone);
+				y = apply_deadzone(y, y, deadzone);
 			}
 
 			analog_setValue(x, y);

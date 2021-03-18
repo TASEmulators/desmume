@@ -527,7 +527,6 @@
 #define IDC_CHECK1                      1074
 #define IDC_CHECK2                      1075
 #define IDC_CAP0_SRC                    1075
-#define IDC_ANALOG_CIRCLE               1075
 #define IDC_CHECK3                      1076
 #define IDC_CAP0_ONESHOT                1076
 #define IDC_CHECK4                      1077

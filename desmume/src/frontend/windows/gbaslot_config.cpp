@@ -488,8 +488,6 @@ INT_PTR CALLBACK GbaSlotAnalog(HWND dialog, UINT msg, WPARAM wparam, LPARAM lpar
 		SendDlgItemMessage(dialog, IDC_ANALOG_DEADZONE_SLIDER, TBM_SETPOS, TRUE, tmp_Analog.Deadzone);
 
 		CheckDlgButton(dialog, IDC_ANALOG_JOINED, tmp_Analog.Joined);
-		CheckDlgButton(dialog, IDC_ANALOG_CIRCLE, tmp_Analog.Circle);
-		EnableWindow(GetDlgItem(dialog, IDC_ANALOG_CIRCLE), tmp_Analog.Joined);
 		return TRUE;
 	}
 
@@ -536,10 +534,7 @@ INT_PTR CALLBACK GbaSlotAnalog(HWND dialog, UINT msg, WPARAM wparam, LPARAM lpar
 			return TRUE;
 		}
 		case MAKELONG(IDC_ANALOG_JOINED, BN_CLICKED):
-		case MAKELONG(IDC_ANALOG_CIRCLE, BN_CLICKED):
 			tmp_Analog.Joined = IsDlgCheckboxChecked(dialog, IDC_ANALOG_JOINED);
-			tmp_Analog.Circle = IsDlgCheckboxChecked(dialog, IDC_ANALOG_CIRCLE);
-			EnableWindow(GetDlgItem(dialog, IDC_ANALOG_CIRCLE), tmp_Analog.Joined);
 			return TRUE;
 		}
 		return FALSE;
@@ -732,7 +727,6 @@ void GBAslotDialog(HWND hwnd)
 				WritePrivateProfileInt("Slot2.Analog", "Y", Analog.Y, IniName);
 				WritePrivateProfileInt("Slot2.Analog", "Deadzone", Analog.Deadzone, IniName);
 				WritePrivateProfileBool("Slot2.Analog", "Joined", Analog.Joined, IniName);
-				WritePrivateProfileBool("Slot2.Analog", "Circle", Analog.Circle, IniName);
 				break;
 			default:
 				return;

@@ -167,7 +167,6 @@ struct SAnalog {
 
 	WORD Deadzone;
 	BOOL Joined;
-	BOOL Circle;
 };
 
 extern SGuitar Guitar;
