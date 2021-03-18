@@ -27,40 +27,58 @@
 #define ANGLE_TO_SHORT 10430.37835047f
 /* (float) 0x1000 */
 #define FLOAT_TO_FIXED 4096.0f
+/* Open-Bus Value (mask) */
+#define OPEN_BUS 0xAFFF
 
-static u16 state[4];
+static u16 analog_x, analog_y, analog_magnitude, analog_angle;
 
 class Slot2_Analog : public ISlot2Interface {
 public:
 	Slot2Info const* info() override {
-		static Slot2InfoSimple info("Analog Stick", "Analog Stick input for Modded SM64DS", 0x09);
+		static Slot2InfoSimple info("Analog Stick", "Analog Stick Input", 0x09);
 		return &info;
 	}
 
 	void connect() override {
-		std::memset(state, 0, sizeof(state));
-	}
-
-	u8 readByte(u8 PROCNUM, u32 addr) override {
-		if ((addr & 0xFFFFFFF8) != 0x09000000)
-			return 0xFF;
-		else if ((addr & 1) == 0)
-			return (u8) state[(addr & 6) >> 1];
-		else
-			return (u8) (state[(addr & 6) >> 1] >> 8);
+		analog_x = analog_y = 0;
+		analog_magnitude = analog_angle = 0;
 	}
 
 	u16 readWord(u8 PROCNUM, u32 addr) override {
-		if ((addr & 0xFFFFFFF8) != 0x09000000)
-			return 0xFFFF;
-		return state[(addr & 6) >> 1];
+		if ((addr & 0xFF000000) != 0x09000000) return OPEN_BUS;
+		switch ((addr >> 8) & 0xFFFF) {
+		case 0: // Generic
+			switch (addr & 0xFF) {
+			// 0x00 and 0x01 are reserved to match the output
+			// of any physical device made for this purpose.
+			// 0x02 through 0x07 are reserved for future DeSmuME use
+			case 0x08: return analog_x;
+			case 0x0A: return analog_y;
+			default: return OPEN_BUS;
+			}
+
+		case 1: // AM64DS
+			// Matches the layout of values used in SM64DS
+			switch (addr & 0xFF) {
+			case 0x00: return analog_magnitude;
+			case 0x02: return analog_x;
+			case 0x04: return analog_y;
+			case 0x06: return analog_angle;
+			default: return OPEN_BUS;
+			}
+
+		default:
+			// Available for future game-specific interfaces
+			return OPEN_BUS;
+		}
+	}
+
+	u8 readByte(u8 PROCNUM, u32 addr) override {
+		return (readWord(PROCNUM, addr & ~((u32) 1)) >> ((addr & 1) * 8)) & 0xFF;
 	}
 
 	u32 readLong(u8 PROCNUM, u32 addr) override {
-		if ((addr & 0xFFFFFFF8) != 0x09000000)
-			return 0xFFFFFFFF;
-		int i = (addr & 4) >> 1;
-		return ((u32) state[i]) | ((u32) state[i + 1] << 16);
+		return (u32) readWord(PROCNUM, addr) | ((u32) readWord(PROCNUM, addr | 2) << 16);
 	}
 };
 
@@ -75,8 +93,8 @@ void analog_setValue(float x, float y) {
 		mag = 1.0f;
 	}
 
-	state[0] = static_cast<u16>(std::lround(mag * FLOAT_TO_FIXED));
-	state[1] = static_cast<u16>(std::lround(  x * FLOAT_TO_FIXED));
-	state[2] = static_cast<u16>(std::lround(  y * FLOAT_TO_FIXED));
-	state[3] = static_cast<u16>(std::lround(ang * ANGLE_TO_SHORT));
+	analog_x = static_cast<u16>(std::lround(x * FLOAT_TO_FIXED));
+	analog_y = static_cast<u16>(std::lround(y * FLOAT_TO_FIXED));
+	analog_magnitude = static_cast<u16>(std::lround(mag * FLOAT_TO_FIXED));
+	analog_angle = static_cast<u16>(std::lround(ang * ANGLE_TO_SHORT));
 }
