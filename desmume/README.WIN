@@ -18,8 +18,8 @@ Contents
           o 2.10 --num-cores=NUM [win]
           o 2.11 --scanline-filter-a=NUM [win]
           o 2.12 --scanline-filter-b=NUM [win]
-          o 2.13 --arm9gdb=PORT_NUM [gtk,win]
-          o 2.14 --arm7gdb=PORT_NUM [gtk,win]
+          o 2.13 --arm9gdb PORT_NUM [gtk,win]
+          o 2.14 --arm7gdb PORT_NUM [gtk,win]
           o 2.15 -h, --help [gtk,win]
           o 2.16 --opengl-2d [gtk]
           o 2.17 --soft-convert [gtk]
@@ -975,7 +975,7 @@ A manual for DeSmuME is over at http://wiki.desmume.org/index.php?title=Manual. 
 Who cares? 0.9.4 is out now. DeSmuME 0.9.3 does not exist. It was sneaked out of our staging area. It has bugs, which is why we hadn't released it yet. So we decided not to release it at all. Any release claiming to be 0.9.3 won't be supported.
 [edit] What is DLDI?
 
-DLDI is a patching system for homebrew ROMs using libfat which makes DS homebrew much easier to write and much more user friendly. As you may know, there are many various flash cartridges for DS. These 'flashcarts' use different hardware, so to make a program run on all cards, you’d have to write support for each and every card into the program. But no-one needs support for any other cards than their own. So a libfat developer, chism, developed DLDI. The program itself knows nothing about the hardware. However, when a “DLDI patch” is applied, libfat can use this patch to know how to write to the flashcart. So, if one user has an M3 flashcart, and downloads a program, they could patch it with the M3 DLDI patch and the program would work with it. Then, another user with a Supercart could download it, apply the Supercard DLDI patch, and it would work on their flashcart, too. The same patch should let the flashcart work with any libfat based program.
+DLDI is a patching system for homebrew ROMs using libfat which makes DS homebrew much easier to write and much more user friendly. As you may know, there are many various flash cartridges for DS. These 'flashcarts' use different hardware, so to make a program run on all cards, youÂ’d have to write support for each and every card into the program. But no-one needs support for any other cards than their own. So a libfat developer, chism, developed DLDI. The program itself knows nothing about the hardware. However, when a Â“DLDI patchÂ” is applied, libfat can use this patch to know how to write to the flashcart. So, if one user has an M3 flashcart, and downloads a program, they could patch it with the M3 DLDI patch and the program would work with it. Then, another user with a Supercart could download it, apply the Supercard DLDI patch, and it would work on their flashcart, too. The same patch should let the flashcart work with any libfat based program.
 [edit] How can I post a save file or AVI capture on the DeSmuME forum?
 
 After you created it, you can upload it to a free external service provider like MediaFire (http://www.mediafire.com/), and then put the provided links to the page in the message you post on the forum.
@@ -1010,13 +1010,13 @@ Due to change in French laws regarding emulation YopYop decided to stop developm
 
 Yopyop said:
 
-    It’s release under GPL. I have just removed the new 3D engine because it’s too much bugged. Hopefully it will be helpful for some of you. 
+    ItÂ’s release under GPL. I have just removed the new 3D engine because itÂ’s too much bugged. Hopefully it will be helpful for some of you. 
 
 
 The latest statement heard from yopyop was:
 
     DeSmuME project is over. 
-    You may don’t know but there are a new law in France that could put me in big trouble. 
+    You may donÂ’t know but there are a new law in France that could put me in big trouble. 
     With DeSmuME, I have closed the doors of game company but I can not offer to pay for it. 
 
     The worst thing is that I have found the bad coded instructions. 
