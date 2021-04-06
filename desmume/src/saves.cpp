@@ -655,7 +655,12 @@ void clear_savestates()
 // Scan for existing savestates and update struct
 void scan_savestates()
 {
+	#ifdef _MSC_VER
+	struct _stat64i32 sbuf;
+	#else 
 	struct stat sbuf;
+	#endif
+
 	char filename[MAX_PATH + 1];
 
 	clear_savestates();
@@ -666,7 +671,14 @@ void scan_savestates()
 
 		if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for i */ > MAX_PATH) return;
 		sprintf(filename + strlen(filename), ".ds%d", i);
+
+		#ifdef _MSC_VER
+		wchar_t wgarbage[1024] = {0};
+		MultiByteToWideChar(CP_UTF8, 0, filename, -1, wgarbage, 1024);
+		if (_wstat(wgarbage, &sbuf) == -1) continue;
+		#else
 		if (stat(filename, &sbuf) == -1) continue;
+		#endif
 		savestates[i].exists = TRUE;
 		strncpy(savestates[i].date, format_time(sbuf.st_mtime), 40);
 		savestates[i].date[40 - 1] = '\0';
