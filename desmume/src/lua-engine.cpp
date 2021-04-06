@@ -4701,7 +4701,7 @@ DEFINE_LUA_FUNCTION(stylus_write, "table")
 // joystickID: a value (0-15) that identifies the controller to read; default is 0 which is the "preferred device" set in the control panel
 // returnDiagonals: a boolean (true/false) that determines whether or not to return diagonal values from a supported D-pad; default is false, which ignores diagonal values
 DEFINE_LUA_FUNCTION(controller_get, "[joystickID = 0 [,returnDiagonals = false]]") {
-#if defined(JOYCAPS)
+#if defined(WIN32_FRONTEND)
 	unsigned int i_joystickID = 0;bool f_returnDiagonals = 0; // initialize optional variables
 	switch (lua_gettop(L)) { // get number of arguments
 		case 1:
