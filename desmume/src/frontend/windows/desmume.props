@@ -94,7 +94,7 @@
 			<AdditionalIncludeDirectories>.;..\..;lua\include;glib-2.20.1\build;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 
 			<!-- universal definitions -->
-			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;WIN32_FRONTEND;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 			<!-- BETA_VERSION ? -->
 			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>

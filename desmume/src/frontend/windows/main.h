@@ -20,9 +20,6 @@
 #define _MAIN_H_
 
 #define WIN32_LEAN_AND_MEAN
-#ifndef TARGET_INTERFACE
-    #define WIN32_FRONTEND
-#endif
 #include <Windows.h>
 #include "types.h"
 #include "CWindow.h"
