@@ -155,11 +155,16 @@ BOOL DirectoryExists(LPCTSTR szPath)
 void createDirectoryRecursively(std::wstring path)
 {
 	signed int pos = 0;
+	std::vector<std::wstring> parts;
 	do
 	{
 		pos = path.find_first_of(L"\\/", pos + 1);
-		CreateDirectoryW(path.substr(0, pos).c_str(), NULL);
+		parts.push_back(path.substr(0, pos));
 	} while (pos != std::wstring::npos);
+	if(parts.size()==0) return;
+	parts.pop_back();
+	for(auto &str : parts)
+		CreateDirectoryW(str.c_str(), NULL);
 }
 
 
