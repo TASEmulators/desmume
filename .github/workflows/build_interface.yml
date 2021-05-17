@@ -44,14 +44,14 @@ jobs:
           cd desmume/src/frontend/interface/
           meson build
         env:
-          CC: gcc-10
-          CXX: g++-10
+          CC: clang
+          CXX: clang++
 
       - name: Build - ninja
         run: ninja -C desmume/src/frontend/interface/build
         env:
-          CC: gcc-10
-          CXX: g++-10
+          CC: clang
+          CXX: clang++
 
       - name: Upload artificat
         uses: actions/upload-artifact@v2

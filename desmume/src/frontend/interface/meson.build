@@ -40,6 +40,11 @@ else
   have_jit = false
 endif
 
+# Clang refuses to compile with this warning
+if meson.get_compiler('cpp').get_id() == 'clang'
+  add_global_arguments('-Wno-c++11-narrowing', language: ['c', 'cpp'])
+endif
+
 includes = include_directories(
   '../../../src',
   '../../../src/libretro-common/include',
