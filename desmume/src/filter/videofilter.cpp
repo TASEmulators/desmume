@@ -143,6 +143,8 @@ VideoFilter::~VideoFilter()
 
 void VideoFilter::__InstanceInit(size_t srcWidth, size_t srcHeight, VideoFilterTypeID typeID, size_t threadCount)
 {
+	threadCount = 0;
+	
 	SSurface newSurface;
 	newSurface.Surface = NULL;
 	newSurface.Pitch = srcWidth*2;

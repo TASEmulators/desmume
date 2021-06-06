@@ -28,7 +28,7 @@
 		#include "frontend/windows/winutil.h"
 		#include "frontend/windows/resource.h"
 #elif !defined(DESMUME_COCOA)
-	#include <glib.h>
+	//#include <glib.h>
 #endif /* HOST_WINDOWS */
 
 #include "time.h"

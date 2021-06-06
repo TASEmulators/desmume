@@ -23,6 +23,7 @@
 #include "path.h"
 #include "utils/xstring.h"
 
+#define DESMUME_COCOA
 
 //-----------------------------------
 //This is taken from mono Path.cs

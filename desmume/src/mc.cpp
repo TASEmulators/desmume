@@ -354,6 +354,7 @@ BackupDevice::BackupDevice()
 		u32 left = 0;
 		if (CommonSettings.autodetectBackupMethod == 1)
 		{
+			/*
 			if (advsc.isLoaded())
 			{
 				_info.type = advsc.getSaveType();
@@ -377,7 +378,7 @@ BackupDevice::BackupDevice()
 
 					fsize = adv_size;
 				}
-			}
+			}*/
 		}
 
 		addr_size = _info.addr_size;

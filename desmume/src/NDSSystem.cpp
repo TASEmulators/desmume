@@ -143,6 +143,7 @@ void NDS_SetupDefaultFirmware()
 
 void NDS_RunAdvansceneAutoImport()
 {
+	/*
 	if (CommonSettings.run_advanscene_import != "")
 	{
 		std::string fname = CommonSettings.run_advanscene_import;
@@ -152,7 +153,7 @@ void NDS_RunAdvansceneAutoImport()
 		if (ret == 0)
 			exit(0);
 		else exit(1);
-	}
+	}*/
 }
 
 int NDS_Init()
@@ -164,6 +165,7 @@ int NDS_Init()
 	//got to print this somewhere..
 	printf("%s\n", EMU_DESMUME_NAME_AND_VERSION());
 	
+#if 0
 	{
 		char	buf[MAX_PATH];
 		memset(buf, 0, MAX_PATH);
@@ -174,7 +176,8 @@ int NDS_Init()
 		//why is this done here? shitty engineering. not intended.
 		NDS_RunAdvansceneAutoImport();
 	}
-	
+#endif
+
 	armcpu_new(&NDS_ARM9,0);
 	NDS_ARM9.SetBaseMemoryInterface(&arm9_base_memory_iface);
 	NDS_ARM9.SetBaseMemoryInterfaceData(NULL);
@@ -757,6 +760,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	buf[2] = gameInfo.header.gameCode[2];
 	buf[3] = gameInfo.header.gameCode[3];
 	buf[4] = 0;
+#if 0
 	if (advsc.checkDB(buf, gameInfo.crc))
 	{
 		u8 sv = advsc.getSaveType();
@@ -777,7 +781,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 		printf("\n\t* ROM crc:\t\t%08X\n", advsc.getCRC32());
 	}
 	printf("\n");
-
+#endif
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
 	if(gameInfo.isHomebrew())
 	{

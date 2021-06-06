@@ -1740,16 +1740,16 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	_HACK_viewer_rasterizerUnit.SetSLI(0, _framebufferHeight, false);
 	
 	const size_t coreCount = CommonSettings.num_cores;
-	_threadCount = coreCount;
+	//_threadCount = coreCount;
 	
 	if (_threadCount > SOFTRASTERIZER_MAX_THREADS)
 	{
-		_threadCount = SOFTRASTERIZER_MAX_THREADS;
+		//	_threadCount = SOFTRASTERIZER_MAX_THREADS;
 	}
 	
-	if (_threadCount < 2)
+	if (true) //(_threadCount < 2)
 	{
-		_threadCount = 0;
+		//_threadCount = 0;
 		
 		_nativeLinesPerThread = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 		_nativePixelsPerThread = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -1800,11 +1800,11 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 #ifdef DESMUME_COCOA
 			// The Cocoa port takes advantage of hand-optimized thread priorities
 			// to help stabilize performance when running SoftRasterizer.
-			_task[i].start(false, 43);
+			//_task[i].start(false, 43);
 #else
 			char name[16];
 			snprintf(name, 16, "rasterizer %d", i);
-			_task[i].start(false, 0, name);
+			//_task[i].start(false, 0, name);
 #endif
 		}
 	}

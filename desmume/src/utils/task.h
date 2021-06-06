@@ -23,26 +23,41 @@
 class Task
 {
 public:
-	Task();
-	~Task();
+	Task() {
+
+	};
+	~Task() {
+
+	};
 	
-	typedef void * (*TWork)(void *);
+	typedef void * (*TWork)(void *) ;
 
 	// initialize task runner
-	void start(bool spinlock);
-	void start(bool spinlock, int threadPriority, const char *name = nullptr);
+	void start(bool spinlock) {
+		printf("Dummy task handler, should not be started...\n");
+
+	};
+	void start(bool spinlock, int threadPriority, const char *name = nullptr) {
+
+	};
 
 	//execute some work
-	void execute(const TWork &work, void* param);
+	void execute(const TWork &work, void* param) {
+
+	};
 
 	//wait for the work to complete
-	void* finish();
+	void* finish() {
+
+	};
 
 	// does the opposite of start
-	void shutdown();
+	void shutdown() {
+		
+	};
 
-	class Impl;
-	Impl *impl;
+	//class Impl;
+	//Impl *impl;
 
 };
 

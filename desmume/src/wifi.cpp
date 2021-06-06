@@ -66,8 +66,12 @@
 #define WPCAP
 #endif
 
-#include <pcap.h>
-typedef struct pcap pcap_t;
+//#include <pcap.h>
+typedef void* pcap_t;
+typedef void* pcap_if_t;
+typedef void* pcap_pkthdr;
+#define htons
+#define ntohs
 
 //sometimes this isnt defined
 #ifndef PCAP_OPENFLAG_PROMISCUOUS
@@ -106,6 +110,13 @@ LegacyWifiSFormat legacyWifiSF;
 
 DummyPCapInterface dummyPCapInterface;
 WifiHandler* wifiHandler = NULL;
+
+#define slock_lock
+#define slock_unlock
+#define slock_new() NULL
+#define slock_free
+
+
 
 /*******************************************************************************
 
@@ -3095,6 +3106,7 @@ static const u8 SoftAP_DeauthFrame[] = {
 
 static void SoftAP_RXPacketGet_Callback(u_char* userData, const pcap_pkthdr* pktHeader, const u_char* pktData)
 {
+	#if 0
 	const WIFI_IOREG_MAP& io = wifiHandler->GetWifiData().io;
 
 	if((userData == NULL) || (pktData == NULL) || (pktHeader == NULL))
@@ -3146,6 +3158,7 @@ static void SoftAP_RXPacketGet_Callback(u_char* userData, const pcap_pkthdr* pkt
 
 	rawPacket->writeLocation += emulatorHeader.emuPacketSize;
 	rawPacket->count++;
+	#endif
 }
 
 static void* Adhoc_RXPacketGetOnThread(void* arg)
@@ -3213,7 +3226,7 @@ void DummyPCapInterface::breakloop(void* dev)
 	// Do nothing.
 }
 
-#ifndef HOST_WINDOWS
+#if 0
 
 int POSIXPCapInterface::findalldevs(void** alldevs, char* errbuf)
 {
@@ -3264,7 +3277,7 @@ void POSIXPCapInterface::breakloop(void* dev)
 
 WifiCommInterface::WifiCommInterface()
 {
-	_rxTask = new Task();
+	_rxTask = NULL;//new Task();
 	_mutexRXThreadRunningFlag = slock_new();
 	_isRXThreadRunning = false;
 	_rawPacket = NULL;
@@ -3273,6 +3286,8 @@ WifiCommInterface::WifiCommInterface()
 
 WifiCommInterface::~WifiCommInterface()
 {
+	return;
+
 	slock_lock(this->_mutexRXThreadRunningFlag);
 
 	if(this->_isRXThreadRunning)
@@ -3315,9 +3330,12 @@ AdhocCommInterface::~AdhocCommInterface()
 
 bool AdhocCommInterface::Start(WifiHandler* currentWifiHandler)
 {
+	return false;
+
 	socket_t& thisSocket = *((socket_t*)this->_wifiSocket);
 	int socketOptValueTrue = 1;
 	int result = -1;
+
 
 	// Create an UDP socket.
 	thisSocket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -3409,6 +3427,8 @@ bool AdhocCommInterface::Start(WifiHandler* currentWifiHandler)
 
 void AdhocCommInterface::Stop()
 {
+	return;
+
 	socket_t& thisSocket = *((socket_t*)this->_wifiSocket);
 
 	if(thisSocket >= 0)
@@ -3439,6 +3459,8 @@ void AdhocCommInterface::Stop()
 
 size_t AdhocCommInterface::TXPacketSend(u8* txTargetBuffer, size_t txLength)
 {
+	return 0;
+
 	size_t txPacketSize = 0;
 	socket_t& thisSocket = *((socket_t*)this->_wifiSocket);
 	sockaddr_t& thisSendAddr = *((sockaddr_t*)this->_sendAddr);
@@ -3501,6 +3523,8 @@ int AdhocCommInterface::_RXPacketGetFromSocket(RXRawPacketData& rawPacket)
 
 void AdhocCommInterface::RXPacketGet()
 {
+	return;
+	
 	socket_t& thisSocket = *((socket_t*)this->_wifiSocket);
 
 	if((thisSocket < 0) || (this->_rawPacket == NULL) || (this->_wifiHandler == NULL))
@@ -3548,6 +3572,8 @@ SoftAPCommInterface::~SoftAPCommInterface()
 
 void* SoftAPCommInterface::_GetBridgeDeviceAtIndex(int deviceIndex, char* outErrorBuf)
 {
+	return NULL;
+	/*
 	void* deviceList = NULL;
 	void* theDevice = NULL;
 	int result = this->_pcap->findalldevs((void**)&deviceList, outErrorBuf);
@@ -3577,7 +3603,7 @@ void* SoftAPCommInterface::_GetBridgeDeviceAtIndex(int deviceIndex, char* outErr
 
 	this->_pcap->freealldevs(deviceList);
 
-	return theDevice;
+	return theDevice;*/
 }
 
 bool SoftAPCommInterface::_IsDNSRequestToWFC(u16 ethertype, const u8* body)
@@ -3649,6 +3675,8 @@ void SoftAPCommInterface::SetBridgeDeviceIndex(int deviceIndex)
 
 bool SoftAPCommInterface::Start(WifiHandler* currentWifiHandler)
 {
+	return false;
+
 	const bool isPCapSupported = (this->_pcap != &dummyPCapInterface);
 	char errbuf[PCAP_ERRBUF_SIZE];
 
@@ -3683,6 +3711,8 @@ bool SoftAPCommInterface::Start(WifiHandler* currentWifiHandler)
 
 void SoftAPCommInterface::Stop()
 {
+	return;
+
 	if(this->_bridgeDevice != NULL)
 	{
 		slock_lock(this->_mutexRXThreadRunningFlag);
@@ -3712,6 +3742,8 @@ void SoftAPCommInterface::Stop()
 
 size_t SoftAPCommInterface::TXPacketSend(u8* txTargetBuffer, size_t txLength)
 {
+	return 0;
+
 	size_t txPacketSize = 0;
 
 	if((this->_bridgeDevice == NULL) || (txTargetBuffer == NULL) || (txLength == 0))
@@ -3730,6 +3762,8 @@ size_t SoftAPCommInterface::TXPacketSend(u8* txTargetBuffer, size_t txLength)
 
 void SoftAPCommInterface::RXPacketGet()
 {
+	return;
+
 	if((this->_bridgeDevice == NULL) || (this->_rawPacket == NULL) || (this->_wifiHandler == NULL))
 	{
 		return;
@@ -3782,7 +3816,7 @@ WifiHandler::WifiHandler()
 
 	_packetCaptureFile = NULL;
 
-	#ifndef HOST_WINDOWS
+	#if 0
 	_pcap = new POSIXPCapInterface;
 	_isSocketsSupported = true;
 	#else
@@ -4482,6 +4516,10 @@ int WifiHandler::GetBridgeDeviceList(std::vector<std::string>* deviceStringList)
 {
 	int result = -1;
 
+	return result;
+
+#if 0
+
 	if(deviceStringList == NULL)
 	{
 		return result;
@@ -4510,6 +4548,7 @@ int WifiHandler::GetBridgeDeviceList(std::vector<std::string>* deviceStringList)
 	}
 
 	return deviceStringList->size();
+	#endif
 }
 
 int WifiHandler::GetSelectedBridgeDeviceIndex()

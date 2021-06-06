@@ -559,7 +559,7 @@ extern struct TCommonSettings
 		use_jit = false;
 #endif
 
-		num_cores = NDS_GetCPUCoreCount();
+		//num_cores = NDS_GetCPUCoreCount();
 		NDS_SetupDefaultFirmware();
 	}
 	bool GFX3D_HighResolutionInterpolateColor;
@@ -600,7 +600,7 @@ extern struct TCommonSettings
 	
 	bool cheatsDisable;
 
-	int num_cores;
+	const int num_cores = 1;
 	bool single_core() { return num_cores==1; }
 	bool rigorous_timing;
 

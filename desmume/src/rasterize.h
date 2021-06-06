@@ -25,7 +25,7 @@
 #include <emmintrin.h>
 #endif
 
-#define SOFTRASTERIZER_MAX_THREADS 32
+#define SOFTRASTERIZER_MAX_THREADS 1
 
 extern GPU3DInterface gpu3DRasterize;
 
@@ -155,7 +155,7 @@ protected:
 	RasterizerUnit<true> _rasterizerUnit[SOFTRASTERIZER_MAX_THREADS];
 	RasterizerUnit<false> _HACK_viewer_rasterizerUnit;
 	
-	size_t _threadCount;
+	const size_t _threadCount = 0;
 	size_t _nativeLinesPerThread;
 	size_t _nativePixelsPerThread;
 	size_t _customLinesPerThread;
