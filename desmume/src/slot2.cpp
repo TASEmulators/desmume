@@ -36,7 +36,7 @@ std::string GBACartridge_SRAMPath;
 ISlot2Interface* slot2_List[NDS_SLOT2_COUNT] = {0};
 
 ISlot2Interface* slot2_device = NULL;
-NDS_SLOT2_TYPE slot2_device_type = NDS_SLOT2_AUTO;
+NDS_SLOT2_TYPE slot2_device_type = NDS_SLOT2_NONE;// NDS_SLOT2_AUTO;
 NDS_SLOT2_TYPE slot2_selected_type = NDS_SLOT2_NONE;
 
 

@@ -415,7 +415,7 @@ void GameInfo::populate()
 
 bool GameInfo::loadROM(std::string fname, u32 type)
 {
-	//printf("ROM %s\n", CommonSettings.loadToMemory?"loaded to RAM":"stream from disk");
+	printf("ROM %s\n", CommonSettings.loadToMemory?"loaded to RAM":"stream from disk");
 
 	closeROM();
 
@@ -785,11 +785,13 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
 	if(gameInfo.isHomebrew())
 	{
+		/*
 		//note: gameInfo.romdataForReader is safe here because we made sure to load the rom into memory for isHomebrew
 		if (slot1_GetCurrentType() == NDS_SLOT1_R4)
 			DLDI::tryPatch((void*)gameInfo.romdataForReader, gameInfo.romsize, 1);
 		else if (slot2_GetCurrentType() == NDS_SLOT2_CFLASH)
 			DLDI::tryPatch((void*)gameInfo.romdataForReader, gameInfo.romsize, 0);
+			*/
 	}
 
 	if (cheats != NULL)
@@ -2647,6 +2649,7 @@ static void NDS_CurrentCPUInfoToNDSError(NDSError &ndsError)
 bool _HACK_DONT_STOPMOVIE = false;
 void NDS_Reset()
 {
+	TRACE_1;
 	//do nothing if nothing is loaded
 	if(lastRom.filename.size()==0)
 		return;
@@ -2709,15 +2712,19 @@ void NDS_Reset()
 	countLid = 0;
 	MicSampleSelection = 0;
 
+	TRACE_1
+
 	MMU_Reset();
+	TRACE_1
 	SetupMMU(nds.Is_DebugConsole(),nds.Is_DSI());
+	TRACE_1
 	JumbleMemory();
 
 	#ifdef HAVE_JIT
 		arm_jit_reset(CommonSettings.use_jit);
 	#endif
 
-
+TRACE_1
 	//initialize CP15 specially for this platform
 	//TODO - how much of this is necessary for firmware boot?
 	//(only ARM9 has CP15)
@@ -2740,7 +2747,7 @@ void NDS_Reset()
 	bool bootResult = false;
 	
 	extFirmwareObj = new CFIRMWARE();
-	
+	TRACE_1
 	// First, load the firmware from an external file if requested.
 	if (CommonSettings.UseExtFirmware && NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded)
 	{
@@ -2759,7 +2766,7 @@ void NDS_Reset()
 		//bios (or firmware) sets this default, which is generally not important for retail games but some homebrews are depending on
 		_MMU_write08<ARMCPU_ARM9>(REG_WRAMCNT,3);
 	}
-	
+	TRACE_1
 	if (didLoadExtFirmware)
 	{
 		// what is the purpose of unpack?
@@ -2771,6 +2778,8 @@ void NDS_Reset()
 		// our own internal firmware as a stand-in.
 		NDS_InitDefaultFirmware(&MMU.fw.data);
 	}
+
+		TRACE_1
 	
 	// Load the firmware settings.
 	if (CommonSettings.UseExtFirmwareSettings && didLoadExtFirmware)
@@ -2804,7 +2813,7 @@ void NDS_Reset()
 
 	wifiHandler->Reset();
 	wifiHandler->CommStart();
-
+	TRACE_1
 	SPU_DeInit();
 	SPU_ReInit(!willBootFromFirmware && bootResult);
 

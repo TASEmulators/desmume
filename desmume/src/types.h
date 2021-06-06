@@ -19,6 +19,8 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
+#define TRACE_1 printf("%s %d\n", __FILE__, __LINE__);
+
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
 #include <math/fxp.h>

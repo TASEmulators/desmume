@@ -1,0 +1,65 @@
+/*inspired by water.css*/
+:root {
+    --background-body: #202b38;
+    --background: #161f27;
+    --background-alt: #1a242f;
+    --selection: #1c76c5;
+    --text-main: #dbdbdb;
+    --text-bright: #fff;
+    --text-muted: #a9b1ba;
+    --links: #41adff;
+    --focus: #0096bfab;
+    --border: #526980;
+    --code: #ffbe85;
+    --animation-duration: 0.1s;
+    --button-hover: #324759;
+    --scrollbar-thumb: var(--button-hover);
+    --scrollbar-thumb-hover: rgb(65, 92, 115);
+    --form-placeholder: #a9a9a9;
+    --form-text: #fff;
+    --variable: #d941e2;
+    --highlight: #efdb43;
+    --active: #1c76c5;
+  }
+
+button {
+    color: #fff;
+    color: var(--form-text);
+    background-color: var(--background);
+    font-family: inherit;
+    font-size: inherit;
+    margin-right: 6px;
+    margin-bottom: 6px;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    outline: none;
+}
+
+button:hover {
+    background-color: var(--active);
+}
+
+input {
+    font-family: inherit;
+    font-size: inherit;
+    margin-right: 6px;
+    margin-bottom: 6px;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    color: var(--form-text);
+    background-color: var(--background);
+}
+
+::placeholder {
+    color: #a9a9a9;
+    color: var(--form-placeholder);
+}
+  
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+    line-height: 1.4;
+    color: white;
+}

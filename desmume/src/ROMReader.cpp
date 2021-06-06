@@ -35,7 +35,7 @@
 
 ROMReader_struct * ROMReaderInit(char ** filename)
 {
-#ifdef HAVE_LIBZ
+#ifdef xHAVE_LIBZ
 	if(!strcasecmp(".gz", *filename + (strlen(*filename) - 3)))
 	{
 		(*filename)[strlen(*filename) - 3] = '\0';
@@ -51,6 +51,9 @@ ROMReader_struct * ROMReaderInit(char ** filename)
 #endif
 	return &STDROMReader;
 }
+
+extern u8* romBuffer;
+extern int romLen;
 
 void * STDROMReaderInit(const char * filename);
 void STDROMReaderDeInit(void *);
@@ -72,32 +75,14 @@ ROMReader_struct STDROMReader =
 };
 
 struct STDROMReaderData
-{
-	FILE* file;
+{ 
 	long pos;
 };
 
 void* STDROMReaderInit(const char* filename)
 {
-#ifndef _MSC_VER
-	struct stat sb;
-	if (stat(filename, &sb) == -1)
-		return 0;
-
- 	if ((sb.st_mode & S_IFMT) != S_IFREG)
-		return 0;
-#endif
-	
-#ifdef WIN32
-	FILE* inf = _wfopen(mbstowcs((std::string)filename).c_str(),L"rb");
-#else
-	FILE* inf = fopen(filename, "rb");
-#endif
-	
-	if(!inf) return NULL;
 
 	STDROMReaderData* ret = new STDROMReaderData();
-	ret->file = inf;
 	ret->pos = 0;
 	return (void*)ret;
 }
@@ -105,41 +90,39 @@ void* STDROMReaderInit(const char* filename)
 
 void STDROMReaderDeInit(void * file)
 {
-	if (!file) return ;
-	fclose(((STDROMReaderData*)file)->file);
 	delete ((STDROMReaderData*)file);
 }
 
 u32 STDROMReaderSize(void * file)
 {
-	u32 size;
 
-	if (!file) return 0;
-
-	FILE* inf = ((STDROMReaderData*)file)->file;
-
-	fseek(inf, 0, SEEK_END);
-	size = ftell(inf);
-	fseek(inf, ((STDROMReaderData*)file)->pos, SEEK_SET);
-
-	return size;
+	return romLen;
 }
 
 int STDROMReaderSeek(void * file, int offset, int whence)
 {
-	//not normal fseek return value meanings. awesome.
-	if (!file) return 0;
-	if(whence == SEEK_SET && offset == ((STDROMReaderData*)file)->pos)
-		return 1;
-	fseek(((STDROMReaderData*)file)->file, offset, whence);
-	((STDROMReaderData*)file)->pos = ftell(((STDROMReaderData*)file)->file);
+	STDROMReaderData* data = (STDROMReaderData*)file;
+
+	if (whence == SEEK_SET) {
+		data->pos = offset;
+	}
+	if (whence == SEEK_CUR) {
+		data->pos += offset;
+	}
+	if (whence == SEEK_END) {
+		data->pos = romLen + offset;
+	}
 	return 1;
 }
 
 int STDROMReaderRead(void * file, void * buffer, u32 size)
 {
-	if (!file) return 0;
-	int read = fread(buffer, 1, size, ((STDROMReaderData*)file)->file);
+	int pos = ((STDROMReaderData*)file)->pos;
+	int read = size;
+	if (pos + read > romLen)  {
+		read = romLen - pos;
+	}
+	memcpy(buffer,romBuffer + pos, read);
 	((STDROMReaderData*)file)->pos += read;
 	return read;
 }
@@ -150,7 +133,7 @@ int STDROMReaderWrite(void *, void *, u32)
 	return 0;
 }
 
-#ifdef HAVE_LIBZ
+#ifdef xHAVE_LIBZ
 void * GZIPROMReaderInit(const char * filename);
 void GZIPROMReaderDeInit(void *);
 u32 GZIPROMReaderSize(void *);
