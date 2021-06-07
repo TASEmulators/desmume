@@ -157,6 +157,7 @@ protected:
 	}
 
 public:
+	bool changed = true;
 
 	EMUFILE_MEMORY(std::vector<u8> *underlying) : vec(underlying), ownvec(false), pos(0), len((s32)underlying->size()) { }
 	EMUFILE_MEMORY(u32 preallocate) : vec(new std::vector<u8>()), ownvec(true), pos(0), len(0) { 
@@ -243,6 +244,8 @@ public:
 
 	virtual size_t _fread(const void *ptr, size_t bytes);
 	virtual size_t fwrite(const void *ptr, size_t bytes){
+		//printf("FWRITE: %d %p %p\n", bytes, this, &(this->changed));
+		changed = true;
 		reserve(pos+(s32)bytes);
 		memcpy(buf()+pos,ptr,bytes);
 		pos += (s32)bytes;

@@ -1,78 +1,100 @@
 
 #include "NDSSystem.h"
+#include "MMU.h"
 #include "rasterize.h"
 #include "SPU.h"
 #include "../src/utils/colorspacehandler/colorspacehandler.h"
+#include "mc.h"
 #include <emscripten.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 
-u8* romBuffer;
+EMUFILE_MEMORY* savFile = new EMUFILE_MEMORY();
+u8 *romBuffer;
 int romBufferCap = 0;
 int romLen;
 volatile bool execute = true;
 volatile bool paused = false;
-SoundInterface_struct *SNDCoreList[] = {
-	&SNDDummy,
-	NULL
-};
+static s16 samplesBuffer[16384 * 2];
+static s16 audioBuffer[16384 * 2];
+int samplesRead = 0;
+int samplesDesired = 1024;
 
+void SNDWasmUpdateAudio(s16 *buffer, u32 num_samples) {
+  // printf("%d\n", num_samples);
+  samplesRead = num_samples;
+  memcpy(samplesBuffer, buffer, sizeof(s16) * num_samples * 2);
+}
+u32 SNDWasmGetAudioSpace() { return samplesDesired; }
+int SNDWasmInit(int buffersize) { return 0; }
+void SNDWasmDeInit() {}
+void SNDWasmMuteAudio() {}
+void SNDWasmUnMuteAudio() {}
+void SNDWasmSetVolume(int volume) {}
+void SNDWasmClearBuffer() {}
 
-GPU3DInterface *core3DList[] = {
-        &gpu3DNull,
-        &gpu3DRasterize,
-        NULL
-};
+SoundInterface_struct SndWasm = {1,
+                                 "Wasm Sound Interface",
+                                 SNDWasmInit,
+                                 SNDWasmDeInit,
+                                 SNDWasmUpdateAudio,
+                                 SNDWasmGetAudioSpace,
+                                 SNDWasmMuteAudio,
+                                 SNDWasmUnMuteAudio,
+                                 SNDWasmSetVolume,
+                                 SNDWasmClearBuffer,
+                                 NULL,
+                                 NULL};
 
+SoundInterface_struct *SNDCoreList[] = {&SNDDummy, &SndWasm, NULL};
+GPU3DInterface *core3DList[] = {&gpu3DNull, &gpu3DRasterize, NULL};
 
 extern "C" {
 
-s16 audioBuffer[16384 * 2];
 u32 dstFrameBuffer[2][256 * 192];
 
-static void gpu_screen_to_rgb(u32* dst)
-{
-    ColorspaceConvertBuffer555To8888Opaque<false, false>((const uint16_t *)GPU->GetDisplayInfo().masterNativeBuffer, dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+static void gpu_screen_to_rgb(u32 *dst) {
+  ColorspaceConvertBuffer555To8888Opaque<false, false>(
+      (const uint16_t *)GPU->GetDisplayInfo().masterNativeBuffer, dst,
+      GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
 }
 
-unsigned cpu_features_get_core_amount(void) {
-  return 1;
-}
+unsigned cpu_features_get_core_amount(void) { return 1; }
 
 int main() {
   NDS_Init();
-  SPU_SetSynchMode(0, 0);
+  SPU_ChangeSoundCore(1, 16384);
+  SPU_SetSynchMode(ESynchMode_Synchronous, ESynchMethod_N);
   SPU_SetVolume(100);
 
   GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
   printf("wasm ready.\n");
   EM_ASM(wasmReady(););
-
 }
 
-void* prepareRomBuffer(int rl) {
+void *prepareRomBuffer(int rl) {
   romLen = rl;
   if (romLen > romBufferCap) {
-    romBuffer = (u8*)realloc((void*)romBuffer, romLen);
+    romBuffer = (u8 *)realloc((void *)romBuffer, romLen);
     romBufferCap = romLen;
   }
   return romBuffer;
 }
 
-void* getSymbol(int id) {
+void *getSymbol(int id) {
   if (id == 0) {
-    //return NDS::ARM7BIOS;
+    // return NDS::ARM7BIOS;
   }
   if (id == 1) {
-    //return NDS::ARM9BIOS;
+    // return NDS::ARM9BIOS;
   }
   if (id == 2) {
-    //return SPI_Firmware::Firmware;
+    // return SPI_Firmware::Firmware;
   }
   if (id == 3) {
-    //return NDSCart::CartROM;
+    // return NDSCart::CartROM;
   }
   if (id == 4) {
     return dstFrameBuffer;
@@ -84,15 +106,11 @@ void* getSymbol(int id) {
   return 0;
 }
 
-void reset() {
-  NDS_Reset();
-}
+void reset() { NDS_Reset(); }
 
-int loadROM(int romLen) {
-  return NDS_LoadROM("rom.nds");
-}
+int loadROM(int romLen) { return NDS_LoadROM("rom.nds"); }
 
-static inline void convertFB(u8* dst, u8* src) {
+static inline void convertFB(u8 *dst, u8 *src) {
   for (int i = 0; i < 256 * 192; i++) {
     uint8_t r = src[2];
     uint8_t g = src[1];
@@ -106,20 +124,45 @@ static inline void convertFB(u8* dst, u8* src) {
   }
 }
 
+int savGetSize() {
+  return savFile->size();
+}
+
+void* savGetPointer(int desiredSize) {
+  if (desiredSize > 0) {
+    savFile->truncate(desiredSize);
+    savFile->fseek(0, SEEK_SET);
+  }
+  return savFile->buf();
+}
+
+int savUpdateChangeFlag() {
+  
+  int ret = (savFile->changed) ? 1 : 0;
+  savFile->changed = 0;
+  return ret;
+}
+
+
 int runFrame(int shouldDraw, u32 keys, int touched, u32 touchX, u32 touchY) {
   if (!shouldDraw) {
     NDS_SkipNextFrame();
+  }
+  if (touched) {
+    NDS_setTouchPos(touchX, touchY);
+  } else {
+    NDS_releaseTouch();
   }
   int ret = 0;
   NDS_beginProcessingInput();
   NDS_endProcessingInput();
   NDS_exec<false>();
-  SPU_Emulate_user();
-  gpu_screen_to_rgb((u32*)dstFrameBuffer);
+
+  gpu_screen_to_rgb((u32 *)dstFrameBuffer);
   return ret;
 }
 
-void AudioOut_Resample(s16* inbuf, int inlen, s16* outbuf, int outlen) {
+void AudioOut_Resample(s16 *inbuf, int inlen, s16 *outbuf, int outlen) {
   float res_incr = inlen / (float)outlen;
   float res_timer = 0;
   int res_pos = 0;
@@ -142,10 +185,16 @@ void AudioOut_Resample(s16* inbuf, int inlen, s16* outbuf, int outlen) {
 }
 
 int fillAudioBuffer(int bufLenToFill, int origSamplesDesired) {
-  static s16 samplesBuffer[16384 * 2];
+  samplesDesired = origSamplesDesired;
+  samplesRead = 0;
+  SPU_Emulate_user();
+  if (samplesRead == bufLenToFill) {
+    memcpy(audioBuffer, samplesBuffer, sizeof(s16) * 2 * bufLenToFill);
+  } else {
+    //printf("resample: %d %d\n", samplesRead, bufLenToFill);
+    AudioOut_Resample(samplesBuffer, samplesRead, audioBuffer, bufLenToFill);
+  }
 
-  int samplesRead = 0;//SPU::ReadOutput(samplesBuffer, origSamplesDesired);
-  AudioOut_Resample(samplesBuffer, samplesRead, audioBuffer, bufLenToFill);
   return samplesRead;
 }
 }

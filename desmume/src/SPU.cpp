@@ -1728,6 +1728,8 @@ void SPU_Emulate_user(bool mix)
 		postProcessBufferSize = freeSampleCount * 2 * sizeof(s16);
 		postProcessBuffer = (s16 *)realloc(postProcessBuffer, postProcessBufferSize);
 	}
+
+	//printf("free %d\n", freeSampleCount);
 	
 	if (soundProcessor->PostProcessSamples != NULL)
 	{

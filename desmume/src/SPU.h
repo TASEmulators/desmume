@@ -297,7 +297,7 @@ void WAV_WavSoundUpdate(void* soundData, int numSamples, WAVMode mode=WAVMODE_CO
 
 // we should make this configurable eventually
 // but at least defining it somewhere is probably a step in the right direction
-#define DESMUME_SAMPLE_RATE 44100
-//#define DESMUME_SAMPLE_RATE 48000
+//#define DESMUME_SAMPLE_RATE 44100
+#define DESMUME_SAMPLE_RATE 48000
 
 #endif

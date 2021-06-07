@@ -7,25 +7,69 @@
     <link href="dark.css" rel="stylesheet">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="icon.png">
+    <title>DS Player</title>
 </head>
 
 <body>
     <style>
+        html,
+        body {
+            overflow-x: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            cursor: inherit;
+        }
+
         body {
             background-color: black;
+            color: white;
+            padding: 0;
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Myriad Set Pro','Helvetica Neue',Helvetica,Arial,sans-serif;
         }
+
         canvas {
+            position: absolute;
+            z-index: 1;
             image-rendering: pixelated;
         }
+
+        #msg-layer {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            top: 40vh;
+            background:rgba(0,0,0,0.5);
+            z-index: 2;
+        }
     </style>
-    <input id="rom" type="file"><br>
-    <div id="fps"></div><br>
+    <div id="welcome" class="menu">
+        <h1>DS Player</h1>
+        <div id="loading">Loading...</div>
+        <div id="loadrom" hidden>
+            <input id="rom" type="file">
+        </div>
+        <div id="ios-hint" hidden>
+            Due to iOS Safari limitations, you may need to add this page to your home screen before you can save the
+            game.
+            <p style="text-align: center;">⬇</p>
+        </div>
+    </div>
+    <div id="fps"></div>
+    <div id="msg-layer" hidden>
+        <p id="msg-text"></p>
+    </div>
     <canvas id="top" width="256" height="192"></canvas><br>
     <canvas id="bottom" width="256" height="192"></canvas><br>
     <script src="localforage.js"></script>
     <script src="build/nds.js"></script>
     <script>
-
+        var html = document.getElementsByTagName('html')[0]
+        var body = document.getElementsByTagName('body')[0]
         window.onerror = function (msg, url, line, col, error) {
             var extra = !col ? '' : '\ncolumn: ' + col;
             extra += !error ? '' : '\nerror: ' + error;
@@ -37,21 +81,38 @@
         function $id(id) {
             return document.getElementById(id);
         }
+
+        var isIOS = !!navigator.platform && /iPad|iPhone|iPod/.test(navigator.platform);
+        var isWebApp = navigator.standalone || false
+        var isSaveSupported = true
+        var isSaveNagAppeared = false
+        if (isIOS) {
+            //document.getElementById('romFile').files = null;
+            if (!isWebApp) {
+                // On iOS Safari, the indexedDB will be cleared after 7 days. 
+                // To prevent users from frustration, we don't allow savegaming on iOS unless the we are in the PWA mode.
+                isSaveSupported = false
+                var divIosHint = $id('ios-hint')
+                divIosHint.hidden = false
+                divIosHint.style = 'position: absolute; bottom: ' + divIosHint.clientHeight + 'px;'
+            }
+        }
+
+        var emuGameID = 'unknown'
         var emuIsRunning = false
         var fps = 0
         var divFPS = $id('fps')
         var fileInput = $id('rom')
-        async function save(name) { var buf = await fileInput.files[0].arrayBuffer(); await localforage.setItem(name, new Uint8Array(buf)) }
-        var MemU8 = new Uint8Array()
+        var romSize = 0
 
-        var FB = [0,0]
+        var FB = [0, 0]
         var screenCanvas = [document.getElementById('top'), document.getElementById('bottom')]
         var ctx2d = screenCanvas.map((v) => { return v.getContext('2d', { alpha: false }) })
 
         var audioContext
         var scriptProcessor
         var AUDIO_BLOCK_SIZE = 1024
-        var AUDIO_ORIG_SAMPLES_DESIRED = (AUDIO_BLOCK_SIZE / 48000) * 32823.6328125
+        var AUDIO_ORIG_SAMPLES_DESIRED = AUDIO_BLOCK_SIZE
         var audioBuffer
 
         var frameCount = 0
@@ -61,6 +122,15 @@
         var touched = 0
         var touchX = 0
         var touchY = 0
+
+
+        function showMsg(msg) {
+            document.getElementById('msg-text').innerText = msg
+            document.getElementById('msg-layer').hidden = false
+            setTimeout(function () {
+                document.getElementById('msg-layer').hidden = true
+            }, 1000)
+        }
 
         function emuRunFrame() {
             shouldDraw = !shouldDraw;
@@ -73,90 +143,154 @@
             }
 
             frameCount++
-            if (frameCount % 8 == 0) {
+            if (frameCount % 4 == 0) {
                 var time = performance.now()
-                fps = 8 / ((time - prevCalcFPSTime) / 1000)
+                fps = 4 / ((time - prevCalcFPSTime) / 1000)
                 prevCalcFPSTime = time
-                divFPS.innerText = 'fps:' + fps
+                divFPS.innerText = 'fps:' + ('' + fps).substring(0, 5)
+            }
+            if (frameCount % 120 == 0) {
+                checkSaveGame()
             }
         }
 
-        async function wasmReady() {
-            MemU8 = Module.HEAPU8
+        function wasmReady() {
+            $id('loading').hidden = true
+            $id('loadrom').hidden = false
+            //setInterval(emuRunFrame, 1000/120)
+        }
+
+
+        function checkSaveGame() {
+            if (Module._savUpdateChangeFlag()) {
+                var size = Module._savGetSize()
+                if ((size > 0) && (isSaveSupported)) {
+                    var ptr = Module._savGetPointer(0)
+                    var tmpSaveBuf = new Uint8Array(size)
+                    tmpSaveBuf.set(Module.HEAPU8.subarray(ptr, ptr + size))
+                    localforage.setItem('sav-' + gameID, tmpSaveBuf)
+                    showMsg('Auto saving...')
+                }
+
+            }
+        }
+
+        async function tryLoadROM(file) {
+            if (!file) {
+                return
+            }
+            if (file.size < 1024) {
+                return
+            }
+            var header = new Uint8Array(await (file.slice(0, 1024)).arrayBuffer())
+            gameID = ''
+            for (var i = 0; i < 0x10; i++) {
+                gameID += (header[i] == 0) ? ' ' : String.fromCharCode(header[i])
+            }
+            if (gameID[0xC] == '#') {
+                // a homebrew!
+                gameID = file.name
+            }
+            console.log('gameID', gameID)
+            romSize = file.size
+            var romBufPtr = Module._prepareRomBuffer(romSize)
+            console.log(romSize, romBufPtr)
+            Module.HEAPU8.set(new Uint8Array(await file.arrayBuffer()), romBufPtr);
+            var saveData = await localforage.getItem('sav-' + gameID)
+            if (saveData) {
+                Module.HEAPU8.set(saveData, Module._savGetPointer(saveData.length))
+            }
+            Module._savUpdateChangeFlag()
+            var ret = Module._loadROM(romSize);
+            if (ret != 1) {
+                alert('LoadROM failed.')
+                return;
+            }
+
+
             ptrFrontBuffer = Module._getSymbol(5)
             var fb = Module._getSymbol(4)
             for (var i = 0; i < 2; i++) {
-                FB[i] = new ImageData(new Uint8ClampedArray(MemU8.buffer).subarray(fb + 256 * 192 * 4 * i, fb + 256 * 192 * 4 * (i + 1)), 256, 192)
+                FB[i] = new ImageData(new Uint8ClampedArray(Module.HEAPU8.buffer).subarray(fb + 256 * 192 * 4 * i, fb + 256 * 192 * 4 * (i + 1)), 256, 192)
             }
             var ptrAudio = Module._getSymbol(6)
-            audioBuffer = new Int16Array(MemU8.buffer).subarray(ptrAudio / 2, ptrAudio / 2 + 2048)
-
-            var ROM = await localforage.getItem('rom')
-
-            if (!(ROM)) {
-                alert('please select file')
-                return
-            }
-            
-            MemU8.set(ROM, Module._prepareRomBuffer(ROM.length));
-            var ret = Module._loadROM(ROM.length);
-            console.log('loadrom result', ret)
+            audioBuffer = new Int16Array(Module.HEAPU8.buffer).subarray(ptrAudio / 2, ptrAudio / 2 + 2048)
+            console.log('Start!!!')
             emuIsRunning = true
-            //emuLoop()
-            setInterval(emuRunFrame, 1000/120)
+            emuLoop()
+            uiSwitchToPlayer()
+        }
+
+
+        function uiAdjustSize() {
+            var maxWidth = window.innerWidth
+            var maxHeight = window.innerHeight / 2
+            var w = maxWidth
+            var h = w / 256 * 192
+            if (h > maxHeight) {
+                h = maxHeight
+                w = h / 192 * 256
+            }
+            var left = 0
+            left += (window.innerWidth - w) / 2;
+            var top = 0
+
+            fbSize = [[w, h], [w, h]]
+            for (var i = 0; i < 2; i++) {
+                screenCanvas[i].style = 'left:' + left + 'px;top:' + top + "px;width:" + w + "px;height:" + h + "px;"
+                top += h
+            }
+        }
+
+        function uiSwitchToPlayer() {
+            body.style = 'touch-action: none;'
+            html.style = 'position: fixed;overflow:hidden;touch-action: none;'
+            $id('welcome').hidden = true
+            uiAdjustSize()
+        }
+
+        function uiSwitchToMenu() {
+
         }
 
         fileInput.onchange = async () => {
-            alert('change')
+            tryInitSound()
             var file = fileInput.files[0]
             if (!file) {
                 return
             }
-            var buf = new Uint8Array(await file.arrayBuffer())
-            var fileType = 'rom'
-            if (buf.length == 4096) {
-                fileType = 'bios9'
-            }
-            if (buf.length == 16384) {
-                fileType = 'bios7'
-            }
-            if (buf.length == 256 * 1024) {
-                fileType = 'firmware'
-            }
-
-            await localforage.setItem(fileType, buf)
-            alert(fileType + ' loaded!')
-
+            await tryLoadROM(file)
         }
 
         function processAudio(event) {
-            var samplesDesired = AUDIO_ORIG_SAMPLES_DESIRED
-            if (fps > 0.1) {
-                samplesDesired = AUDIO_ORIG_SAMPLES_DESIRED * (fps / 59.8261)
-            }
             var outputBuffer = event.outputBuffer
             var audioData0 = outputBuffer.getChannelData(0)
             var audioData1 = outputBuffer.getChannelData(1)
-
-
+            if ((!emuIsRunning) || (fps <= 10)) {
+                for (var i = 0; i < AUDIO_BLOCK_SIZE; i++) {
+                    audioData0[i] = 0
+                    audioData1[i] = 0
+                }
+                return
+            }
+            var samplesDesired = AUDIO_ORIG_SAMPLES_DESIRED
+            samplesDesired = AUDIO_ORIG_SAMPLES_DESIRED * (60 / 59.8261)
             Module._fillAudioBuffer(AUDIO_BLOCK_SIZE, samplesDesired)
             for (var i = 0; i < AUDIO_BLOCK_SIZE; i++) {
                 audioData0[i] = audioBuffer[i * 2] / 32768.0
                 audioData1[i] = audioBuffer[i * 2 + 1] / 32768.0
             }
-
         }
 
         // must be called in user gesture
         function tryInitSound() {
-            return;
-            if (audioContext) {
-                if (audioContext.state != 'running') {
-                    audioContext.resume()
-                }
-                return;
-            }
             try {
+                if (audioContext) {
+                    if (audioContext.state != 'running') {
+                        audioContext.resume()
+                    }
+                    return;
+                }
                 audioContext = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 0.0001, sampleRate: 48000 });
                 scriptProcessor = audioContext.createScriptProcessor(AUDIO_BLOCK_SIZE, 0, 2)
                 scriptProcessor.onaudioprocess = processAudio
@@ -168,11 +302,13 @@
                 //alert('Cannnot init sound ')
             }
         }
-/*
+
         function emuLoop() {
             window.requestAnimationFrame(emuLoop)
-            emuRunFrame()
-        }*/
+            if (emuIsRunning) {
+                emuRunFrame()
+            }
+        }
 
         function handleTouch(event) {
             tryInitSound()
@@ -181,12 +317,26 @@
             }
             event.preventDefault();
             event.stopPropagation();
+
+            var isDown = false
+            var x = 0
+            var y = 0
+
             for (var i = 0; i < event.touches.length; i++) {
                 var t = event.touches[i];
                 var dom = document.elementFromPoint(t.clientX, t.clientY)
                 if (dom == screenCanvas[1]) {
+                    isDown = true
+                    var r = screenCanvas[1].getBoundingClientRect()
+                    x = (t.clientX - r.x) / r.width * 256
+                    y = (t.clientY - r.y) / r.height * 192
+                    break
                 }
             }
+
+            touched = isDown ? 1 : 0;
+            touchX = x
+            touchY = y
         }
         ['touchstart', 'touchmove', 'touchend', 'touchcancel', 'touchenter', 'touchleave'].forEach((val) => {
             window.addEventListener(val, handleTouch)
@@ -218,6 +368,10 @@
             touched = isDown ? 1 : 0;
             touchX = x
             touchY = y
+        }
+
+        window.onresize = window.onorientationchange = () => {
+            uiAdjustSize()
         }
 
     </script>

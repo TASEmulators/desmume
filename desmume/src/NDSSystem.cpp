@@ -3011,6 +3011,7 @@ static void NDS_applyFinalInput();
 
 void NDS_beginProcessingInput()
 {
+	
 	// start off from the raw input
 	intermediateUserInput = rawUserInput;
 

@@ -18,7 +18,7 @@
 */
 
 #include "metaspu.h"
-
+#include <stdio.h>
 #include <queue>
 #include <vector>
 #include <assert.h>
@@ -252,6 +252,11 @@ public:
 
 	virtual void enqueue_samples(s16* buf, int samples_provided)
 	{
+		if (sampleQueue.size() > 1024*2.5) {
+			printf("audio fifo overflow! drop all samples...\n");
+			sampleQueue.clear();
+			return;
+		}
 		for(int i=0;i<samples_provided;i++)
 		{
 			sampleQueue.push_back(ssamp(buf[0],buf[1]));
@@ -263,6 +268,12 @@ public:
 	{
 		int audiosize = samples_requested;
 		int queued = sampleQueue.size();
+		if (queued < 500) {
+			printf("audio fifo underflow!\n");
+			return 0;
+		}
+
+		//printf("%d %d\n", audiosize, queued);
 
 		// I am too lazy to deal with odd numbers
 		audiosize &= ~1;
@@ -272,7 +283,7 @@ public:
 		{
 			// are we going at normal speed?
 			// or more precisely, are the input and output queues/buffers of similar size?
-			if(queued > 900 || audiosize > queued * 2)
+			if (false) //(queued > 900 || audiosize > queued * 2)
 			{
 				// not normal speed. we have to resample it somehow in this case.
 				if(audiosize <= queued)
