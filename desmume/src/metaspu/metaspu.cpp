@@ -252,9 +252,9 @@ public:
 
 	virtual void enqueue_samples(s16* buf, int samples_provided)
 	{
-		if (sampleQueue.size() > 1024*2.5) {
-			printf("audio fifo overflow! drop all samples...\n");
-			sampleQueue.clear();
+		if (sampleQueue.size() > 2048*2.5) {
+			//printf("audio fifo overflow! \n");
+			//sampleQueue.clear();
 			return;
 		}
 		for(int i=0;i<samples_provided;i++)
@@ -269,7 +269,7 @@ public:
 		int audiosize = samples_requested;
 		int queued = sampleQueue.size();
 		if (queued < 500) {
-			printf("audio fifo underflow!\n");
+			//printf("audio fifo underflow!\n");
 			return 0;
 		}
 

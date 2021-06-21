@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <iostream>
 
-EMUFILE_MEMORY* savFile = new EMUFILE_MEMORY();
+EMUFILE_MEMORY *savFile = new EMUFILE_MEMORY();
 u8 *romBuffer;
 int romBufferCap = 0;
 int romLen;
@@ -20,7 +20,7 @@ volatile bool paused = false;
 static s16 samplesBuffer[16384 * 2];
 static s16 audioBuffer[16384 * 2];
 int samplesRead = 0;
-int samplesDesired = 1024;
+int samplesDesired = 0;
 
 void SNDWasmUpdateAudio(s16 *buffer, u32 num_samples) {
   // printf("%d\n", num_samples);
@@ -34,6 +34,13 @@ void SNDWasmMuteAudio() {}
 void SNDWasmUnMuteAudio() {}
 void SNDWasmSetVolume(int volume) {}
 void SNDWasmClearBuffer() {}
+void SNDWasmFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)
+{
+	if (synchMode == ESynchMode_Synchronous)
+	{
+		theSynchronizer->enqueue_samples(sampleBuffer, sampleCount);
+	}
+}
 
 SoundInterface_struct SndWasm = {1,
                                  "Wasm Sound Interface",
@@ -66,8 +73,6 @@ unsigned cpu_features_get_core_amount(void) { return 1; }
 int main() {
   NDS_Init();
   SPU_ChangeSoundCore(1, 16384);
-  SPU_SetSynchMode(ESynchMode_Synchronous, ESynchMethod_N);
-  SPU_SetVolume(100);
 
   GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
   printf("wasm ready.\n");
@@ -103,12 +108,20 @@ void *getSymbol(int id) {
   if (id == 6) {
     return audioBuffer;
   }
+  if (id == 7) {
+    return MMU.MAIN_MEM;
+  }
   return 0;
 }
 
 void reset() { NDS_Reset(); }
 
-int loadROM(int romLen) { return NDS_LoadROM("rom.nds"); }
+int loadROM(int romLen) {
+  int ret = NDS_LoadROM("rom.nds");
+  SPU_SetSynchMode(ESynchMode_Synchronous, ESynchMethod_N);
+  SPU_SetVolume(100);
+  return ret;
+}
 
 static inline void convertFB(u8 *dst, u8 *src) {
   for (int i = 0; i < 256 * 192; i++) {
@@ -124,11 +137,9 @@ static inline void convertFB(u8 *dst, u8 *src) {
   }
 }
 
-int savGetSize() {
-  return savFile->size();
-}
+int savGetSize() { return savFile->size(); }
 
-void* savGetPointer(int desiredSize) {
+void *savGetPointer(int desiredSize) {
   if (desiredSize > 0) {
     savFile->truncate(desiredSize);
     savFile->fseek(0, SEEK_SET);
@@ -137,12 +148,11 @@ void* savGetPointer(int desiredSize) {
 }
 
 int savUpdateChangeFlag() {
-  
+
   int ret = (savFile->changed) ? 1 : 0;
   savFile->changed = 0;
   return ret;
 }
-
 
 int runFrame(int shouldDraw, u32 keys, int touched, u32 touchX, u32 touchY) {
   if (!shouldDraw) {
@@ -188,10 +198,11 @@ int fillAudioBuffer(int bufLenToFill, int origSamplesDesired) {
   samplesDesired = origSamplesDesired;
   samplesRead = 0;
   SPU_Emulate_user();
+  //printf("%d %d\n", samplesRead, bufLenToFill);
   if (samplesRead == bufLenToFill) {
     memcpy(audioBuffer, samplesBuffer, sizeof(s16) * 2 * bufLenToFill);
   } else {
-    //printf("resample: %d %d\n", samplesRead, bufLenToFill);
+    //printf("should not happen...\n");
     AudioOut_Resample(samplesBuffer, samplesRead, audioBuffer, bufLenToFill);
   }
 

@@ -29,7 +29,7 @@
             margin: 0;
             width: 100vw;
             height: 100vh;
-            font-family: 'Myriad Set Pro','Helvetica Neue',Helvetica,Arial,sans-serif;
+            font-family: 'Myriad Set Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
 
         canvas {
@@ -43,8 +43,14 @@
             left: 0;
             width: 100%;
             top: 40vh;
-            background:rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 2;
+        }
+
+        a,
+        a:visited {
+            color: white;
+
         }
     </style>
     <div id="welcome" class="menu">
@@ -53,13 +59,15 @@
         <div id="loadrom" hidden>
             <input id="rom" type="file">
         </div>
+        <a target="_blank" href="https://github.com/44670/desmume-wasm">https://github.com/44670/desmume-wasm</a>
         <div id="ios-hint" hidden>
             Due to iOS Safari limitations, you may need to add this page to your home screen before you can save the
             game.
             <p style="text-align: center;">⬇</p>
         </div>
+
     </div>
-    <div id="fps"></div>
+    <div style="z-index: 2;position: absolute;" id="fps"></div>
     <div id="msg-layer" hidden>
         <p id="msg-text"></p>
     </div>
@@ -68,6 +76,8 @@
     <script src="localforage.js"></script>
     <script src="build/nds.js"></script>
     <script>
+        const AUDIO_FPS = 60.00
+        var plugins = {}
         var html = document.getElementsByTagName('html')[0]
         var body = document.getElementsByTagName('body')[0]
         window.onerror = function (msg, url, line, col, error) {
@@ -111,7 +121,7 @@
 
         var audioContext
         var scriptProcessor
-        var AUDIO_BLOCK_SIZE = 1024
+        var AUDIO_BLOCK_SIZE = 2048
         var AUDIO_ORIG_SAMPLES_DESIRED = AUDIO_BLOCK_SIZE
         var audioBuffer
 
@@ -122,7 +132,16 @@
         var touched = 0
         var touchX = 0
         var touchY = 0
+        var prevSaveFlag = 0
+        var lastTwoFrameTime = 10
 
+        function callPlugin(type, arg) {
+            for (var k in plugins) {
+                if (plugins[k].handler) {
+                    plugins[k].handler(type, arg)
+                }
+            }
+        }
 
         function showMsg(msg) {
             document.getElementById('msg-text').innerText = msg
@@ -133,16 +152,14 @@
         }
 
         function emuRunFrame() {
-            shouldDraw = !shouldDraw;
+            shouldDraw = !shouldDraw
             Module._runFrame(shouldDraw, keyMask, touched, touchX, touchY)
-
-            //console.log(frontBuffer)
             if (shouldDraw) {
                 ctx2d[0].putImageData(FB[0], 0, 0)
                 ctx2d[1].putImageData(FB[1], 0, 0)
             }
 
-            frameCount++
+            frameCount += 1
             if (frameCount % 4 == 0) {
                 var time = performance.now()
                 fps = 4 / ((time - prevCalcFPSTime) / 1000)
@@ -162,7 +179,8 @@
 
 
         function checkSaveGame() {
-            if (Module._savUpdateChangeFlag()) {
+            var saveUpdateFlag = Module._savUpdateChangeFlag()
+            if ((saveUpdateFlag == 0) && (prevSaveFlag == 1)) {
                 var size = Module._savGetSize()
                 if ((size > 0) && (isSaveSupported)) {
                     var ptr = Module._savGetPointer(0)
@@ -171,8 +189,8 @@
                     localforage.setItem('sav-' + gameID, tmpSaveBuf)
                     showMsg('Auto saving...')
                 }
-
             }
+            prevSaveFlag = saveUpdateFlag
         }
 
         async function tryLoadROM(file) {
@@ -214,11 +232,12 @@
                 FB[i] = new ImageData(new Uint8ClampedArray(Module.HEAPU8.buffer).subarray(fb + 256 * 192 * 4 * i, fb + 256 * 192 * 4 * (i + 1)), 256, 192)
             }
             var ptrAudio = Module._getSymbol(6)
-            audioBuffer = new Int16Array(Module.HEAPU8.buffer).subarray(ptrAudio / 2, ptrAudio / 2 + 2048)
+            audioBuffer = new Int16Array(Module.HEAPU8.buffer).subarray(ptrAudio / 2, ptrAudio / 2 + 16384)
             console.log('Start!!!')
             emuIsRunning = true
             emuLoop()
             uiSwitchToPlayer()
+            callPlugin('loaded', gameID)
         }
 
 
@@ -259,6 +278,16 @@
             if (!file) {
                 return
             }
+            if (file.name.endsWith('.json')) {
+                var obj = JSON.parse(await file.text())
+                var pluginName = obj.name || 'unknown'
+                plugins[pluginName] = obj
+                if (obj.js) {
+                    plugins[pluginName].handler = eval(obj.js)(obj)
+                }
+                alert('plugin loaded!')
+                return
+            }
             await tryLoadROM(file)
         }
 
@@ -274,7 +303,13 @@
                 return
             }
             var samplesDesired = AUDIO_ORIG_SAMPLES_DESIRED
-            samplesDesired = AUDIO_ORIG_SAMPLES_DESIRED * (60 / 59.8261)
+            if ((fps < 57) || (fps > 63)) {
+                samplesDesired = AUDIO_ORIG_SAMPLES_DESIRED * (fps) / AUDIO_FPS
+            }
+
+            if (samplesDesired > AUDIO_ORIG_SAMPLES_DESIRED * 2) {
+                samplesDesired = AUDIO_ORIG_SAMPLES_DESIRED * 2
+            }
             Module._fillAudioBuffer(AUDIO_BLOCK_SIZE, samplesDesired)
             for (var i = 0; i < AUDIO_BLOCK_SIZE; i++) {
                 audioData0[i] = audioBuffer[i * 2] / 32768.0

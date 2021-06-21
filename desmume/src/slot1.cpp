@@ -141,7 +141,6 @@ void slot1_Disconnect()
 
 void slot1_Reset()
 {
-	printf("%d\n", slot1_device_type);
 	//disconnect existing device
 	if(slot1_device != NULL) slot1_device->disconnect();
 	
@@ -149,7 +148,6 @@ void slot1_Reset()
 	slot1_device = slot1_List[slot1_device_type];
 	if (slot1_device_type == NDS_SLOT1_R4)
 		scanDir();
-	TRACE_1
 	slot1_device->connect();
 }
 
