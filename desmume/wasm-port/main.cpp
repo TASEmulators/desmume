@@ -17,7 +17,7 @@ int romBufferCap = 0;
 int romLen;
 volatile bool execute = true;
 volatile bool paused = false;
-static s16 samplesBuffer[16384 * 2];
+//static s16 samplesBuffer[16384 * 2];
 static s16 audioBuffer[16384 * 2];
 int samplesRead = 0;
 int samplesDesired = 0;
@@ -25,7 +25,7 @@ int samplesDesired = 0;
 void SNDWasmUpdateAudio(s16 *buffer, u32 num_samples) {
   // printf("%d\n", num_samples);
   samplesRead = num_samples;
-  memcpy(samplesBuffer, buffer, sizeof(s16) * num_samples * 2);
+  memcpy(audioBuffer, buffer, sizeof(s16) * num_samples * 2);
 }
 u32 SNDWasmGetAudioSpace() { return samplesDesired; }
 int SNDWasmInit(int buffersize) { return 0; }
@@ -194,10 +194,11 @@ void AudioOut_Resample(s16 *inbuf, int inlen, s16 *outbuf, int outlen) {
   }
 }
 
-int fillAudioBuffer(int bufLenToFill, int origSamplesDesired) {
-  samplesDesired = origSamplesDesired;
+int fillAudioBuffer(int bufLenToFill) {
+  samplesDesired = bufLenToFill;
   samplesRead = 0;
   SPU_Emulate_user();
+  /*
   //printf("%d %d\n", samplesRead, bufLenToFill);
   if (samplesRead == bufLenToFill) {
     memcpy(audioBuffer, samplesBuffer, sizeof(s16) * 2 * bufLenToFill);
@@ -205,7 +206,7 @@ int fillAudioBuffer(int bufLenToFill, int origSamplesDesired) {
     //printf("should not happen...\n");
     AudioOut_Resample(samplesBuffer, samplesRead, audioBuffer, bufLenToFill);
   }
-
+*/
   return samplesRead;
 }
 }

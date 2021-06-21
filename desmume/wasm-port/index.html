@@ -76,7 +76,8 @@
     <script src="localforage.js"></script>
     <script src="build/nds.js"></script>
     <script>
-        const AUDIO_FPS = 60.00
+        const TARGET_INTERVAL = 33
+        const AUDIO_FPS = 1000.0/33.0*2.0
         var plugins = {}
         var html = document.getElementsByTagName('html')[0]
         var body = document.getElementsByTagName('body')[0]
@@ -124,6 +125,8 @@
         var AUDIO_BLOCK_SIZE = 2048
         var AUDIO_ORIG_SAMPLES_DESIRED = AUDIO_BLOCK_SIZE
         var audioBuffer
+        var tmpAudioBuffer = new Int16Array(16384*2)
+        var audioWorkletNode
 
         var frameCount = 0
         var prevCalcFPSTime = 0
@@ -154,11 +157,16 @@
         function emuRunFrame() {
             shouldDraw = !shouldDraw
             Module._runFrame(shouldDraw, keyMask, touched, touchX, touchY)
+            if (audioWorkletNode) {
+                var samplesRead = Module._fillAudioBuffer(4096)
+                tmpAudioBuffer.set(audioBuffer.subarray(0, samplesRead * 2))
+                audioWorkletNode.port.postMessage(tmpAudioBuffer.subarray(0, samplesRead * 2))
+            }
             if (shouldDraw) {
                 ctx2d[0].putImageData(FB[0], 0, 0)
                 ctx2d[1].putImageData(FB[1], 0, 0)
             }
-
+            
             frameCount += 1
             if (frameCount % 4 == 0) {
                 var time = performance.now()
@@ -232,10 +240,9 @@
                 FB[i] = new ImageData(new Uint8ClampedArray(Module.HEAPU8.buffer).subarray(fb + 256 * 192 * 4 * i, fb + 256 * 192 * 4 * (i + 1)), 256, 192)
             }
             var ptrAudio = Module._getSymbol(6)
-            audioBuffer = new Int16Array(Module.HEAPU8.buffer).subarray(ptrAudio / 2, ptrAudio / 2 + 16384)
+            audioBuffer = new Int16Array(Module.HEAPU8.buffer).subarray(ptrAudio / 2, ptrAudio / 2 + 16384 * 2)
             console.log('Start!!!')
             emuIsRunning = true
-            emuLoop()
             uiSwitchToPlayer()
             callPlugin('loaded', gameID)
         }
@@ -302,23 +309,19 @@
                 }
                 return
             }
-            var samplesDesired = AUDIO_ORIG_SAMPLES_DESIRED
-            if ((fps < 57) || (fps > 63)) {
-                samplesDesired = AUDIO_ORIG_SAMPLES_DESIRED * (fps) / AUDIO_FPS
-            }
-
-            if (samplesDesired > AUDIO_ORIG_SAMPLES_DESIRED * 2) {
-                samplesDesired = AUDIO_ORIG_SAMPLES_DESIRED * 2
-            }
-            Module._fillAudioBuffer(AUDIO_BLOCK_SIZE, samplesDesired)
-            for (var i = 0; i < AUDIO_BLOCK_SIZE; i++) {
+            var samplesRead = Module._fillAudioBuffer(AUDIO_BLOCK_SIZE)
+            for (var i = 0; i < samplesRead; i++) {
                 audioData0[i] = audioBuffer[i * 2] / 32768.0
                 audioData1[i] = audioBuffer[i * 2 + 1] / 32768.0
+            }
+            for (var i = samplesRead; i < AUDIO_BLOCK_SIZE; i++) {
+                audioData0[i] = 0
+                audioData1[i] = 0
             }
         }
 
         // must be called in user gesture
-        function tryInitSound() {
+        async function tryInitSound() {
             try {
                 if (audioContext) {
                     if (audioContext.state != 'running') {
@@ -327,9 +330,19 @@
                     return;
                 }
                 audioContext = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 0.0001, sampleRate: 48000 });
-                scriptProcessor = audioContext.createScriptProcessor(AUDIO_BLOCK_SIZE, 0, 2)
-                scriptProcessor.onaudioprocess = processAudio
-                scriptProcessor.connect(audioContext.destination)
+                if (!audioContext.audioWorklet) {
+                    alert('AudioWorklet is not supported in your browser...')
+                    /*
+                    console.warn('audio worklet not supported, falling back to script processor...')
+                    // fall back to the scriptprocessor
+                    scriptProcessor = audioContext.createScriptProcessor(AUDIO_BLOCK_SIZE, 0, 2)
+                    scriptProcessor.onaudioprocess = processAudio
+                    scriptProcessor.connect(audioContext.destination)*/
+                } else {
+                    await audioContext.audioWorklet.addModule("/audio-worklet.js")
+                    audioWorkletNode = new AudioWorkletNode(audioContext, "my-worklet", {outputChannelCount:[2]})
+                    audioWorkletNode.connect(audioContext.destination)
+                }
 
                 audioContext.resume()
             } catch (e) {
@@ -344,6 +357,7 @@
                 emuRunFrame()
             }
         }
+        emuLoop()
 
         function handleTouch(event) {
             tryInitSound()
