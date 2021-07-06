@@ -96,7 +96,7 @@
 		#define ENABLE_AVX512_0
 	#endif
 
-	#if defined(ENABLE_AVX512_0) && defined(__AVX512BW__) && defined(__AVX512DQ__)
+	#if defined(ENABLE_AVX512_0) && defined(__AVX512BW__) && defined(__AVX512DQ__) && !defined(FORCE_AVX512_0)
 		#define ENABLE_AVX512_1
 	#endif
 

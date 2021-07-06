@@ -143,38 +143,34 @@ std::string Path::GetFileExt(std::string fileName)
 
 //-----------------------------------
 #ifdef HOST_WINDOWS
-void FCEUD_MakePathDirs(const char *fname)
+//https://stackoverflow.com/questions/1530760/how-do-i-recursively-create-a-folder-in-win32
+BOOL DirectoryExists(LPCTSTR szPath)
 {
-	char path[MAX_PATH];
-	const char* div = fname;
+	DWORD dwAttrib = GetFileAttributes(szPath);
 
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+		(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+void createDirectoryRecursively(std::wstring path)
+{
+	signed int pos = 0;
+	std::vector<std::wstring> parts;
 	do
 	{
-		const char* fptr = strchr(div, '\\');
+		pos = path.find_first_of(L"\\/", pos + 1);
+		parts.push_back(path.substr(0, pos));
+	} while (pos != std::wstring::npos);
+	if(parts.size()==0) return;
+	parts.pop_back();
+	for(auto &str : parts)
+		CreateDirectoryW(str.c_str(), NULL);
+}
 
-		if(!fptr)
-		{
-			fptr = strchr(div, '/');
-		}
 
-		if(!fptr)
-		{
-			break;
-		}
-
-		int off = fptr - fname;
-		strncpy(path, fname, off);
-		path[off] = '\0';
-		mkdir(path,0);
-
-		div = fptr + 1;
-		
-		while(div[0] == '\\' || div[0] == '/')
-		{
-			div++;
-		}
-
-	} while(1);
+void FCEUD_MakePathDirs(const char *fname)
+{
+	createDirectoryRecursively(mbstowcs(fname));
 }
 #endif
 //------------------------------

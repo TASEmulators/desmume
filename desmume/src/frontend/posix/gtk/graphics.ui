@@ -97,7 +97,7 @@
             <child>
               <object class="GtkCheckButton" id="posterize">
                 <property name="label" translatable="yes">3D Texture Deposterization</property>
-                <property name="draw_indicator">True</property>
+                <property name="draw-indicator">True</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -107,7 +107,7 @@
             <child>
               <object class="GtkCheckButton" id="smoothing">
                 <property name="label" translatable="yes">3D Texture Smoothing</property>
-                <property name="draw_indicator">True</property>
+                <property name="draw-indicator">True</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -117,7 +117,7 @@
             <child>
               <object class="GtkCheckButton" id="hc_interpolate">
                 <property name="label" translatable="yes">High Resolution Color Interpolation (SoftRasterizer)</property>
-                <property name="draw_indicator">True</property>
+                <property name="draw-indicator">True</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>

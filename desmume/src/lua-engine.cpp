@@ -19,16 +19,21 @@
 
 #if defined(WIN32)
 	#include <windows.h>
-	#include <direct.h>
-	#include <MMSystem.h>
+    #if defined(WIN32_FRONTEND)
+        #include <direct.h>
+        #include <MMSystem.h>
 
-	typedef HMENU PlatformMenu;    // hMenu
-	#define MAX_MENU_COUNT (IDC_LUAMENU_RESERVE_END - IDC_LUAMENU_RESERVE_START + 1)
+        typedef HMENU PlatformMenu;    // hMenu
+        #define MAX_MENU_COUNT (IDC_LUAMENU_RESERVE_END - IDC_LUAMENU_RESERVE_START + 1)
 
-	#include "frontend/windows/main.h"
-	#include "frontend/windows/video.h"
-	#include "frontend/windows/resource.h"
-	#include "frontend/windows/display.h"
+        #include "frontend/windows/main.h"
+        #include "frontend/windows/video.h"
+        #include "frontend/windows/resource.h"
+        #include "frontend/windows/display.h"
+    #else
+        typedef void* PlatformMenu;
+        #define MAX_MENU_COUNT 0
+    #endif
 #else
 	// TODO: define appropriate types for menu
 	typedef void* PlatformMenu;
@@ -507,7 +512,7 @@ static int doPopup(lua_State* L, const char* deftype, const char* deficon)
 
 	static const char * const titles [] = {"Notice", "Question", "Warning", "Error"};
 	const char* answer = "ok";
-#if defined(_WIN32)
+#if defined(WIN32_FRONTEND)
 	static const int etypes [] = {MB_OK, MB_YESNO, MB_YESNOCANCEL, MB_OKCANCEL, MB_ABORTRETRYIGNORE};
 	static const int eicons [] = {MB_ICONINFORMATION, MB_ICONQUESTION, MB_ICONWARNING, MB_ICONERROR};
 //	DialogsOpen++;
@@ -1370,7 +1375,7 @@ bool luabitop_validate(lua_State *L) // originally named as luaopen_bit
   if (b != (UBits)1437217655L || BAD_SAR) {  /* Perform a simple self-test. */
     const char *msg = "compiled with incompatible luaconf.h";
 #ifdef LUA_NUMBER_DOUBLE
-#if defined(_WIN32)
+#if defined(WIN32_FRONTEND)
     if (b == (UBits)1610612736L)
       msg = "use D3DCREATE_FPU_PRESERVE with DirectX";
 #endif
@@ -1442,7 +1447,7 @@ void indicateBusy(lua_State* L, bool busy)
 		lua_pop(L, 1);
 	}
 */
-#if defined(_WIN32)
+#if defined(WIN32_FRONTEND)
 	uintptr_t uid = luaStateToUIDMap[L->l_G->mainthread];
 	HWND hDlg = (HWND)uid;
 	char str [1024];
@@ -1496,7 +1501,7 @@ void LuaRescueHook(lua_State* L, lua_Debug *dbg)
 		if(!info.panic)
 		{
 			SPU_ClearOutputBuffer();
-#if defined(ASK_USER_ON_FREEZE) && defined(_WIN32)
+#if defined(ASK_USER_ON_FREEZE) && defined(WIN32_FRONTEND)
 			DialogsOpen++;
 			int answer = MessageBox(HWnd, "A Lua script has been running for quite a while. Maybe it is in an infinite loop.\n\nWould you like to stop the script?\n\n(Yes to stop it now,\n No to keep running and not ask again,\n Cancel to keep running but ask again later)", "Lua Alert", MB_YESNOCANCEL | MB_DEFBUTTON3 | MB_ICONASTERISK);
 			DialogsOpen--;
@@ -2655,7 +2660,7 @@ static void prepare_reading()
 	}
 	else
 	{
-#if defined(WIN32)
+#if defined(WIN32_FRONTEND)
 		extern VideoInfo video;
 		curGuiData.data = video.buffer;
 		curGuiData.stridePix = 256;
@@ -3285,7 +3290,7 @@ DEFINE_LUA_FUNCTION(gui_settransparency, "transparency_4_to_0")
 // this function is only supported by the windows frontend.
 DEFINE_LUA_FUNCTION(gui_setlayermask, "main,sub")
 {
-#if defined(WIN32)
+#if defined(WIN32_FRONTEND)
 	lua_Integer main = luaL_checkint(L, 1);
 	lua_Integer sub = luaL_checkint(L, 2);
 	SetLayerMasks(main, sub);
@@ -3516,7 +3521,7 @@ static void GetCurrentScriptDir(char* buffer, int bufLen)
 
 DEFINE_LUA_FUNCTION(emu_openscript, "filename")
 {
-#if defined(WIN32)
+#if defined(WIN32_FRONTEND)
 	char curScriptDir[1024]; GetCurrentScriptDir(curScriptDir, 1024); // make sure we can always find scripts that are in the same directory as the current script
 	const char* filename = lua_isstring(L,1) ? lua_tostring(L,1) : NULL;
 	extern const char* OpenLuaScript(const char* filename, const char* extraDirToCheck, bool makeSubservient);
@@ -3538,7 +3543,7 @@ DEFINE_LUA_FUNCTION(emu_reset, "")
 
 static bool IsLuaMenuItem(PlatformMenuItem menuItem)
 {
-#if defined(WIN32)
+#if defined(WIN32_FRONTEND)
 	return (menuItem >= IDC_LUAMENU_RESERVE_START && menuItem <= IDC_LUAMENU_RESERVE_END);
 #else
 	return false;
@@ -3547,7 +3552,7 @@ static bool IsLuaMenuItem(PlatformMenuItem menuItem)
 
 static bool SearchFreeMenuItem(PlatformMenu menu, PlatformMenuItem& menuItem)
 {
-#if defined(WIN32)
+#if defined(WIN32_FRONTEND)
 	for (UINT menuItemId = IDC_LUAMENU_RESERVE_START; menuItemId <= IDC_LUAMENU_RESERVE_END; menuItemId++)
 	{
 		MENUITEMINFO mii;
@@ -3569,7 +3574,7 @@ static bool SearchFreeMenuItem(PlatformMenu menu, PlatformMenuItem& menuItem)
 
 static PlatformMenu AddSubMenu(PlatformMenu topMenu, PlatformMenu menu, const char* menuName)
 {
-#if defined(WIN32)
+#if defined(WIN32_FRONTEND)
 	LuaContextInfo& info = GetCurrentInfo();
 	MENUITEMINFO mii;
 
@@ -3627,7 +3632,7 @@ static PlatformMenu AddSubMenu(PlatformMenu topMenu, PlatformMenu menu, const ch
 
 bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 {
-#if defined(WIN32)
+#if defined(WIN32_FRONTEND)
 	LuaContextInfo& info = GetCurrentInfo();
 	lua_State* L = info.L;
 	luaL_checktype(L, -1, LUA_TTABLE);
@@ -3731,7 +3736,7 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 
 DEFINE_LUA_FUNCTION(emu_addmenu, "menuName, menuEntries")
 {
-#if defined(WIN32)
+#if defined(WIN32_FRONTEND)
 	int nargs = lua_gettop(L);
 	if (nargs > 1 && !lua_isnil(L, 1))
 	{
@@ -3767,7 +3772,7 @@ DEFINE_LUA_FUNCTION(emu_setmenuiteminfo, "menuItem, infoTable")
 {
 	luaL_checktype(L, 1, LUA_TFUNCTION);
 	luaL_checktype(L, 2, LUA_TTABLE);
-#if defined(WIN32)
+#if defined(WIN32_FRONTEND)
 	LuaContextInfo& info = GetCurrentInfo();
 	map<PlatformMenuItem, PlatformMenu>::iterator it = info.menuData.menuItemMap.begin();
 	while(it != info.menuData.menuItemMap.end())
@@ -4054,7 +4059,7 @@ DEFINE_LUA_FUNCTION(sound_clear, "")
 	return 0;
 }
 
-#if defined(_WIN32)
+#if defined(WIN32_FRONTEND)
 const char* s_keyToName[256] =
 {
 	NULL,
@@ -4168,7 +4173,7 @@ DEFINE_LUA_FUNCTION(input_getcurrentinputstatus, "")
 {
 	lua_newtable(L);
 
-#if defined(_WIN32)
+#if defined(WIN32_FRONTEND)
 	// keyboard and mouse button status
 	{
 		extern bool allowBackgroundInput;
@@ -4696,6 +4701,7 @@ DEFINE_LUA_FUNCTION(stylus_write, "table")
 // joystickID: a value (0-15) that identifies the controller to read; default is 0 which is the "preferred device" set in the control panel
 // returnDiagonals: a boolean (true/false) that determines whether or not to return diagonal values from a supported D-pad; default is false, which ignores diagonal values
 DEFINE_LUA_FUNCTION(controller_get, "[joystickID = 0 [,returnDiagonals = false]]") {
+#if defined(WIN32_FRONTEND)
 	unsigned int i_joystickID = 0;bool f_returnDiagonals = 0; // initialize optional variables
 	switch (lua_gettop(L)) { // get number of arguments
 		case 1:
@@ -4799,6 +4805,9 @@ DEFINE_LUA_FUNCTION(controller_get, "[joystickID = 0 [,returnDiagonals = false]]
 	}
 
 	return 1; // return the table
+#else
+    return 0;
+#endif
 }
 static const struct luaL_reg controllerlib [] = {
 	{"get", controller_get},
@@ -5669,7 +5678,7 @@ void StopLuaScript(int uid)
 			for(int i = 0; i < LUAMEMHOOK_COUNT; i++)
 				CalculateMemHookRegions((LuaMemHookType)i);
 
-#if defined(WIN32)
+#if defined(WIN32_FRONTEND)
 			// remove items
 			map<PlatformMenuItem, PlatformMenu>::iterator it = info.menuData.menuItemMap.begin();
 			while(it != info.menuData.menuItemMap.end())

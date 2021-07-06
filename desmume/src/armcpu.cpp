@@ -32,6 +32,9 @@
 #ifdef HAVE_LUA
 #include "lua-engine.h"
 #endif
+#ifdef TARGET_INTERFACE
+#include "frontend/interface/interface.h"
+#endif
 #ifdef HAVE_JIT
 #include "arm_jit.h"
 #endif
@@ -675,6 +678,9 @@ u32 armcpu_exec()
 #ifdef HAVE_LUA
 			CallRegisteredLuaMemHook(ARMPROC.instruct_adr, 4, ARMPROC.instruction, LUAMEMHOOK_EXEC); // should report even if condition=false?
 #endif
+#ifdef TARGET_INTERFACE
+            call_registered_interface_mem_hook(ARMPROC.instruct_adr, 4, HOOK_EXEC);
+#endif
 			#ifdef DEVELOPER
 			DEBUG_statistics.instructionHits[PROCNUM].arm[INSTRUCTION_INDEX(ARMPROC.instruction)]++;
 			#endif
@@ -695,6 +701,9 @@ u32 armcpu_exec()
 
 #ifdef HAVE_LUA
 	CallRegisteredLuaMemHook(ARMPROC.instruct_adr, 2, ARMPROC.instruction, LUAMEMHOOK_EXEC);
+#endif
+#ifdef TARGET_INTERFACE
+    call_registered_interface_mem_hook(ARMPROC.instruct_adr, 2, HOOK_EXEC);
 #endif
 	#ifdef DEVELOPER
 	DEBUG_statistics.instructionHits[PROCNUM].thumb[ARMPROC.instruction>>6]++;

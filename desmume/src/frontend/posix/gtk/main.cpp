@@ -2652,6 +2652,8 @@ static void changesavetype(GSimpleAction *action, GVariant *parameter, gpointer 
     else if (strcmp(string, "flash-4m") == 0)
         savetype = 6;
     backup_setManualBackupType(savetype);
+    config.savetype=savetype;
+    g_simple_action_set_state(action, parameter);
 }
 
 static void desmume_gtk_menu_tool_layers(GtkApplication *app)
@@ -2934,6 +2936,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
      * Perhaps it needs a "window" to catch events...? */
+    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS,"1");
     if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO) == -1) {
         g_printerr("Error trying to initialize SDL: %s\n",
                     SDL_GetError());
@@ -3027,6 +3030,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
     desmume_gtk_menu_view_hud(GTK_APPLICATION(app));
 #endif
     desmume_gtk_menu_tools(GTK_APPLICATION(app));
+    my_config->savetype=config.savetype;
     std::string string;
     switch (my_config->savetype) {
         case 0:
