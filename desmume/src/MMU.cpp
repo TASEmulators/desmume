@@ -911,7 +911,7 @@ void MMU_Init(void)
 	LOG("MMU init\n");
 
 	memset(&MMU, 0, sizeof(MMU_struct));
-	
+
 	MMU.blank_memory = &MMU.ARM9_LCD[0xA4000];
 
 	//MMU.DTCMRegion = 0x027C0000;
@@ -930,14 +930,29 @@ void MMU_Init(void)
 	MMU.fw.isFirmware = true;
 
 	rtcInit();
-	
+
 	slot1_Init();
 	slot2_Init();
-	
-	if(Mic_Init() == FALSE)
+
+	if (Mic_Init() == FALSE)
 		INFO("Microphone init failed.\n");
 	else
 		INFO("Microphone successfully inited.\n");
+
+#ifdef DSI_NEWWRAM
+	// Disable all NWRAM Banks on Init
+	for (int i = 0; i < 20; i++)
+		MMU.regNRWAM_BankControl[i] = 0;
+	// Disable all Windows
+	for (int i = 0; i < 2; i++)
+		for (int q = 0; q < 3; q++)
+			MMU.regNWRAM_Windows[i][q] = 0;
+	// No Write Protection
+	MMU.regNWRAM_Protect = 0 ;
+	// update internal data from these init settings
+	MMU_UpdateNWRAM();
+#endif
+
 } 
 
 void MMU_DeInit(void) {
