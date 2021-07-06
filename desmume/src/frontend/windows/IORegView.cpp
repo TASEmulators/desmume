@@ -229,7 +229,122 @@ IOReg IORegs9[] = {
 											{"DMA 1",9,1},{"DMA 2",10,1},{"DMA 3",11,1},{"Keypad",12,1},
 											{"Game Pak",13,1},{"IPC sync",16,1},{"IPC send FIFO empty",17,1},{"IPC recv FIFO not empty",18,1},
 											{"Gamecard transfer",19,1},{"Gamecard IREQ_MC",20,1},{"GX FIFO",21,1}}},
-
+#ifdef DSI_NEWWRAM		
+		{ CatBegin, "NWRAM registers", 0, 4, 0, {{0}} },
+		{ MMIOReg, "NWRAMCTRL_S0B0", REG_NWRAM_CTRL_SET0BANK0, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S0B1", REG_NWRAM_CTRL_SET0BANK1, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S0B2", REG_NWRAM_CTRL_SET0BANK2, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S0B3", REG_NWRAM_CTRL_SET0BANK3, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S1B0", REG_NWRAM_CTRL_SET0BANK0, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S1B1", REG_NWRAM_CTRL_SET1BANK1, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S1B2", REG_NWRAM_CTRL_SET1BANK2, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S1B3", REG_NWRAM_CTRL_SET1BANK3, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S1B4", REG_NWRAM_CTRL_SET1BANK4, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S1B5", REG_NWRAM_CTRL_SET1BANK5, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S1B6", REG_NWRAM_CTRL_SET1BANK6, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S1B7", REG_NWRAM_CTRL_SET1BANK7, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S2B0", REG_NWRAM_CTRL_SET1BANK0, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S2B1", REG_NWRAM_CTRL_SET1BANK1, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S2B2", REG_NWRAM_CTRL_SET1BANK2, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S2B3", REG_NWRAM_CTRL_SET1BANK3, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S2B4", REG_NWRAM_CTRL_SET1BANK4, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S2B5", REG_NWRAM_CTRL_SET1BANK5, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S2B6", REG_NWRAM_CTRL_SET1BANK6, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_S2B7", REG_NWRAM_CTRL_SET1BANK7, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}} },
+		{ MMIOReg, "NWRAMCTRL_WINDOW_0", REG_NWRAM_WINDOW_SET0, 4, 3, {
+			{"Start block", 3, 8},
+			{"End Block", 19, 10},
+			{"Image Size", 12, 2}} },
+		{ MMIOReg, "NWRAMCTRL_WINDOW_1", REG_NWRAM_WINDOW_SET1, 4, 3, {
+			{"Start block", 3, 8},
+			{"End Block", 19, 10},
+			{"Image Size", 12, 2}} },
+		{ MMIOReg, "NWRAMCTRL_WINDOW_2", REG_NWRAM_WINDOW_SET2, 4, 3, {
+			{"Start block", 3, 8},
+			{"End Block", 19, 10},
+			{"Image Size", 12, 2}} },
+		{ MMIOReg, "NWRAMCTRL_PROTECT", REG_NWRAM_PROTECT, 4, 20, {
+			{"Set 0 Part 0 Protected", 0, 1},
+			{"Set 0 Part 1 Protected", 1, 1},
+			{"Set 0 Part 2 Protected", 2, 1},
+			{"Set 0 Part 3 Protected", 3, 1},
+			{"Set 1 Part 0 Protected", 8, 1},
+			{"Set 1 Part 1 Protected", 9, 1},
+			{"Set 1 Part 2 Protected", 10, 1},
+			{"Set 1 Part 3 Protected", 11, 1},
+			{"Set 1 Part 4 Protected", 12, 1},
+			{"Set 1 Part 5 Protected", 13, 1},
+			{"Set 1 Part 6 Protected", 14, 1},
+			{"Set 1 Part 7 Protected", 15, 1},
+			{"Set 2 Part 0 Protected", 16, 1},
+			{"Set 2 Part 1 Protected", 17, 1},
+			{"Set 2 Part 2 Protected", 18, 1},
+			{"Set 2 Part 3 Protected", 19, 1},
+			{"Set 2 Part 4 Protected", 20, 1},
+			{"Set 2 Part 5 Protected", 21, 1},
+			{"Set 2 Part 6 Protected", 22, 1},
+			{"Set 2 Part 7 Protected", 23, 1}} },
+#endif
 	{ListEnd, "", 0, 0, 0, {{0}}}
 };
 
@@ -271,8 +386,124 @@ IOReg IORegs7[] = {
 		{MMIOReg, "DMA3SAD", REG_DMA3SAD, 4, 1, {{"Value",0,27}}},
 		{MMIOReg, "DMA3DAD", REG_DMA3DAD, 4, 1, {{"Value",0,27}}},
 		{MMIOReg, "DMA3CNT", REG_DMA3CNTL, 4, 8, {{"Word Count",0,21}, {"Dest update method",21,2}, {"Src  update method",23,2}, {"Repeat Flag",25,1}, {"32bit Width Enable",26,1},{"Start Mode",28,2}, {"IRQ Enable",30,1}, {"Enabled",31,1}}},
-		
-		
+#ifdef DSI_NEWWRAM		
+	{CatBegin, "NWRAM registers", 0, 4, 0, {{0}}},
+		{MMIOReg, "NWRAMCTRL_S0B0", REG_NWRAM_CTRL_SET0BANK0, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S0B1", REG_NWRAM_CTRL_SET0BANK1, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S0B2", REG_NWRAM_CTRL_SET0BANK2, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S0B3", REG_NWRAM_CTRL_SET0BANK3, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S1B0", REG_NWRAM_CTRL_SET0BANK0, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S1B1", REG_NWRAM_CTRL_SET1BANK1, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S1B2", REG_NWRAM_CTRL_SET1BANK2, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S1B3", REG_NWRAM_CTRL_SET1BANK3, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S1B4", REG_NWRAM_CTRL_SET1BANK4, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S1B5", REG_NWRAM_CTRL_SET1BANK5, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S1B6", REG_NWRAM_CTRL_SET1BANK6, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S1B7", REG_NWRAM_CTRL_SET1BANK7, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S2B0", REG_NWRAM_CTRL_SET1BANK0, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S2B1", REG_NWRAM_CTRL_SET1BANK1, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S2B2", REG_NWRAM_CTRL_SET1BANK2, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S2B3", REG_NWRAM_CTRL_SET1BANK3, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S2B4", REG_NWRAM_CTRL_SET1BANK4, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S2B5", REG_NWRAM_CTRL_SET1BANK5, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S2B6", REG_NWRAM_CTRL_SET1BANK6, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{MMIOReg, "NWRAMCTRL_S2B7", REG_NWRAM_CTRL_SET1BANK7, 1, 3, {
+			{"Enable", 7, 1},
+			{"Block", 2, 2},
+			{"Owner", 0, 2}}},
+		{ MMIOReg, "NWRAMCTRL_WINDOW_0", REG_NWRAM_WINDOW_SET0, 4, 3, {
+			{"Start block", 3, 8},
+			{"End Block", 19, 10},
+			{"Image Size", 12, 2}} },
+		{ MMIOReg, "NWRAMCTRL_WINDOW_1", REG_NWRAM_WINDOW_SET1, 4, 3, {
+			{"Start block", 3, 8},
+			{"End Block", 19, 10},
+			{"Image Size", 12, 2}} },
+		{ MMIOReg, "NWRAMCTRL_WINDOW_2", REG_NWRAM_WINDOW_SET2, 4, 3, {
+			{"Start block", 3, 8},
+			{"End Block", 19, 10},
+			{"Image Size", 12, 2}} },
+		{ MMIOReg, "NWRAMCTRL_PROTECT", REG_NWRAM_PROTECT, 4, 20, {
+			{"Set 0 Part 0 Protected", 0, 1},
+			{"Set 0 Part 1 Protected", 1, 1},
+			{"Set 0 Part 2 Protected", 2, 1},
+			{"Set 0 Part 3 Protected", 3, 1},
+			{"Set 1 Part 0 Protected", 8, 1},
+			{"Set 1 Part 1 Protected", 9, 1},
+			{"Set 1 Part 2 Protected", 10, 1},
+			{"Set 1 Part 3 Protected", 11, 1},
+			{"Set 1 Part 4 Protected", 12, 1},
+			{"Set 1 Part 5 Protected", 13, 1},
+			{"Set 1 Part 6 Protected", 14, 1},
+			{"Set 1 Part 7 Protected", 15, 1},
+			{"Set 2 Part 0 Protected", 16, 1},
+			{"Set 2 Part 1 Protected", 17, 1},
+			{"Set 2 Part 2 Protected", 18, 1},
+			{"Set 2 Part 3 Protected", 19, 1},
+			{"Set 2 Part 4 Protected", 20, 1},
+			{"Set 2 Part 5 Protected", 21, 1},
+			{"Set 2 Part 6 Protected", 22, 1},
+			{"Set 2 Part 7 Protected", 23, 1}} },
+#endif
+
+
 	{ListEnd, "", 0, 0, 0, {{0}}}
 };
 

@@ -51,6 +51,11 @@
     <Import Project="desmume.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;HAVE_LUA=1;%(PreprocessorDefinitions);DSI_NEWWRAM</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\addons\slot1comp_mc.cpp" />
     <ClCompile Include="..\..\addons\slot1comp_protocol.cpp" />

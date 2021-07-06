@@ -54,6 +54,10 @@
 #define ASSERT_UNALIGNED(x)
 #endif
 
+#ifdef DSI_NEWWRAM
+void FASTCALL MMU_UpdateNWRAM();
+#endif
+
 //TODO - do we need these here?
 static _KEY2 key2;
 
@@ -2709,6 +2713,19 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 				// ...GBA
 			case REG_DISPB_MASTERBRIGHT:
 
+				// NWRAM
+#ifdef DSI_NEWWRAM:
+			case REG_NWRAM_CTRL_SET0BANK0:
+			case REG_NWRAM_CTRL_SET1BANK0:
+			case REG_NWRAM_CTRL_SET1BANK4:
+			case REG_NWRAM_CTRL_SET2BANK0:
+			case REG_NWRAM_CTRL_SET2BANK4:
+			case REG_NWRAM_WINDOW_SET0:
+			case REG_NWRAM_WINDOW_SET1:
+			case REG_NWRAM_WINDOW_SET2:
+			case REG_NWRAM_PROTECT:
+#endif
+				
 			// 0x04100000
 			case REG_IPCFIFORECV:
 			case REG_GCDATAIN:
@@ -2809,6 +2826,19 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 			case REG_BIOSPROT:
 			
 			// Sound
+
+			// NWRAM
+#ifdef DSI_NEWWRAM:
+			case REG_NWRAM_CTRL_SET0BANK0:
+			case REG_NWRAM_CTRL_SET1BANK0:
+			case REG_NWRAM_CTRL_SET1BANK4:
+			case REG_NWRAM_CTRL_SET2BANK0:
+			case REG_NWRAM_CTRL_SET2BANK4:
+			case REG_NWRAM_WINDOW_SET0:
+			case REG_NWRAM_WINDOW_SET1:
+			case REG_NWRAM_WINDOW_SET2:
+			case REG_NWRAM_PROTECT:
+#endif
 
 			// 0x04100000 - IPC
 			case REG_IPCFIFORECV:
@@ -3674,6 +3704,61 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				case 0x040001AF :
 					LOG("%08X : %02X\r\n", adr, val);
 #endif
+#ifdef DSI_NEWWRAM
+				case REG_NWRAM_CTRL_SET0BANK0:
+				case REG_NWRAM_CTRL_SET0BANK1:
+				case REG_NWRAM_CTRL_SET0BANK2:
+				case REG_NWRAM_CTRL_SET0BANK3:
+				case REG_NWRAM_CTRL_SET1BANK0:
+				case REG_NWRAM_CTRL_SET1BANK1:
+				case REG_NWRAM_CTRL_SET1BANK2:
+				case REG_NWRAM_CTRL_SET1BANK3:
+				case REG_NWRAM_CTRL_SET1BANK4:
+				case REG_NWRAM_CTRL_SET1BANK5:
+				case REG_NWRAM_CTRL_SET1BANK6:
+				case REG_NWRAM_CTRL_SET1BANK7:
+				case REG_NWRAM_CTRL_SET2BANK0:
+				case REG_NWRAM_CTRL_SET2BANK1:
+				case REG_NWRAM_CTRL_SET2BANK2:
+				case REG_NWRAM_CTRL_SET2BANK3:
+				case REG_NWRAM_CTRL_SET2BANK4:
+				case REG_NWRAM_CTRL_SET2BANK5:
+				case REG_NWRAM_CTRL_SET2BANK6:
+				case REG_NWRAM_CTRL_SET2BANK7:
+				{
+					// check if this bank is currently writeable
+					uint8_t bit = (adr >= REG_NWRAM_CTRL_SET1BANK0) ? ((adr - REG_NWRAM_CTRL_SET1BANK0) + 8) : (adr - REG_NWRAM_CTRL_SET0BANK0);
+					if (MMU.regNWRAM_Protect & (1 << bit))
+						return;
+					// otherwise update!
+					MMU.regNRWAM_BankControl[adr - REG_NWRAM_CTRL_SET0BANK0] = val;
+					MMU_UpdateNWRAM();
+					return;
+				}
+				case REG_NWRAM_WINDOW_SET0:
+				case REG_NWRAM_WINDOW_SET0 + 1:
+				case REG_NWRAM_WINDOW_SET0 + 2:
+				case REG_NWRAM_WINDOW_SET0 + 3:
+				case REG_NWRAM_WINDOW_SET1:
+				case REG_NWRAM_WINDOW_SET1 + 1:
+				case REG_NWRAM_WINDOW_SET1 + 2:
+				case REG_NWRAM_WINDOW_SET1 + 3:
+				case REG_NWRAM_WINDOW_SET2:
+				case REG_NWRAM_WINDOW_SET2 + 1:
+				case REG_NWRAM_WINDOW_SET2 + 2:
+				case REG_NWRAM_WINDOW_SET2 + 3:
+					MMU.regNWRAM_Windows[1][(adr - REG_NWRAM_WINDOW_SET0) >> 2] &= ~(0xff << ((adr & 3) * 8));
+					MMU.regNWRAM_Windows[1][(adr - REG_NWRAM_WINDOW_SET0) >> 2] |= (val << ((adr & 3) * 8));
+					MMU_UpdateNWRAM();
+					return;
+				case REG_NWRAM_PROTECT:
+				case REG_NWRAM_PROTECT + 1:
+				case REG_NWRAM_PROTECT + 2:
+				case REG_NWRAM_PROTECT + 3:
+					// not writeable on arm9
+					return;
+#endif
+
 			}
 			
 			MMU.MMU_MEM[ARMCPU_ARM9][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
@@ -3685,6 +3770,18 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			return;
 	}
 	
+#ifdef DSI_NEWWRAM
+	if ((adr >> 24) == 0x03)
+	{
+		if (MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000])
+		{
+			MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000][adr & 0x7fff] = val;
+			return;
+		}
+	}
+#endif
+
+
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
 	if(unmapped) return;
@@ -4251,6 +4348,64 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				case REG_GCROMCTRL+2 :
 					MMU_writeToGCControl<ARMCPU_ARM9>( (T1ReadLong(MMU.MMU_MEM[0][0x40], 0x1A4) & 0xFFFF) | ((u32) val << 16));
 					return;
+#ifdef DSI_NEWWRAM
+				case REG_NWRAM_CTRL_SET0BANK0:
+				case REG_NWRAM_CTRL_SET0BANK1:
+				case REG_NWRAM_CTRL_SET0BANK2:
+				case REG_NWRAM_CTRL_SET0BANK3:
+				case REG_NWRAM_CTRL_SET1BANK0:
+				case REG_NWRAM_CTRL_SET1BANK1:
+				case REG_NWRAM_CTRL_SET1BANK2:
+				case REG_NWRAM_CTRL_SET1BANK3:
+				case REG_NWRAM_CTRL_SET1BANK4:
+				case REG_NWRAM_CTRL_SET1BANK5:
+				case REG_NWRAM_CTRL_SET1BANK6:
+				case REG_NWRAM_CTRL_SET1BANK7:
+				case REG_NWRAM_CTRL_SET2BANK0:
+				case REG_NWRAM_CTRL_SET2BANK1:
+				case REG_NWRAM_CTRL_SET2BANK2:
+				case REG_NWRAM_CTRL_SET2BANK3:
+				case REG_NWRAM_CTRL_SET2BANK4:
+				case REG_NWRAM_CTRL_SET2BANK5:
+				case REG_NWRAM_CTRL_SET2BANK6:
+				case REG_NWRAM_CTRL_SET2BANK7:
+				{
+					// check if this bank is currently writeable
+					for (int i = 0; i < 2; i++)
+					{
+						uint8_t bit = ((adr + i) >= REG_NWRAM_CTRL_SET1BANK0) ? (((adr+i) - REG_NWRAM_CTRL_SET1BANK0) + 8) : ((adr + i) - REG_NWRAM_CTRL_SET0BANK0);
+						if (MMU.regNWRAM_Protect & (1 << bit))
+							return;
+						// otherwise update!
+						MMU.regNRWAM_BankControl[adr - REG_NWRAM_CTRL_SET0BANK0] = val >> (i *8);
+						
+					}
+					MMU_UpdateNWRAM();
+					return;
+				}
+				case REG_NWRAM_WINDOW_SET0:
+				case REG_NWRAM_WINDOW_SET0 + 1:
+				case REG_NWRAM_WINDOW_SET0 + 2:
+				case REG_NWRAM_WINDOW_SET0 + 3:
+				case REG_NWRAM_WINDOW_SET1:
+				case REG_NWRAM_WINDOW_SET1 + 1:
+				case REG_NWRAM_WINDOW_SET1 + 2:
+				case REG_NWRAM_WINDOW_SET1 + 3:
+				case REG_NWRAM_WINDOW_SET2:
+				case REG_NWRAM_WINDOW_SET2 + 1:
+				case REG_NWRAM_WINDOW_SET2 + 2:
+				case REG_NWRAM_WINDOW_SET2 + 3:
+					MMU.regNWRAM_Windows[1][(adr - REG_NWRAM_WINDOW_SET0) >> 2] &= ~(0xffff << ((adr & 2) * 8));
+					MMU.regNWRAM_Windows[1][(adr - REG_NWRAM_WINDOW_SET0) >> 2] |= (val << ((adr & 2) * 8));
+					MMU_UpdateNWRAM();
+					return;
+				case REG_NWRAM_PROTECT:
+				case REG_NWRAM_PROTECT + 1:
+				case REG_NWRAM_PROTECT + 2:
+				case REG_NWRAM_PROTECT + 3:
+					// not writeable on arm9
+					return;
+#endif
 			}
 			
 			T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
@@ -4262,6 +4417,17 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			return;
 	}
 	
+#ifdef DSI_NEWWRAM
+	if ((adr >> 24) == 0x03)
+	{
+		if (MMU.NWRAMBLOCKPTRS[1][(adr - 0x03000000) / 0x8000])
+		{
+			T1WriteWord(MMU.NWRAMBLOCKPTRS[1][(adr - 0x03000000) / 0x8000], adr & 0x7fff, val);
+			return;
+		}
+	}
+#endif
+
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
 	if(unmapped) return;
@@ -4760,6 +4926,63 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				case REG_GCDATAIN:
 					MMU_writeToGC<ARMCPU_ARM9>(val);
 					return;
+#ifdef DSI_NEWWRAM
+				case REG_NWRAM_CTRL_SET0BANK0:
+				case REG_NWRAM_CTRL_SET0BANK1:
+				case REG_NWRAM_CTRL_SET0BANK2:
+				case REG_NWRAM_CTRL_SET0BANK3:
+				case REG_NWRAM_CTRL_SET1BANK0:
+				case REG_NWRAM_CTRL_SET1BANK1:
+				case REG_NWRAM_CTRL_SET1BANK2:
+				case REG_NWRAM_CTRL_SET1BANK3:
+				case REG_NWRAM_CTRL_SET1BANK4:
+				case REG_NWRAM_CTRL_SET1BANK5:
+				case REG_NWRAM_CTRL_SET1BANK6:
+				case REG_NWRAM_CTRL_SET1BANK7:
+				case REG_NWRAM_CTRL_SET2BANK0:
+				case REG_NWRAM_CTRL_SET2BANK1:
+				case REG_NWRAM_CTRL_SET2BANK2:
+				case REG_NWRAM_CTRL_SET2BANK3:
+				case REG_NWRAM_CTRL_SET2BANK4:
+				case REG_NWRAM_CTRL_SET2BANK5:
+				case REG_NWRAM_CTRL_SET2BANK6:
+				case REG_NWRAM_CTRL_SET2BANK7:
+				{
+					// check if this bank is currently writeable
+					for (int i = 0; i < 4; i++)
+					{
+						uint8_t bit = ((adr + i) >= REG_NWRAM_CTRL_SET1BANK0) ? (((adr + i) - REG_NWRAM_CTRL_SET1BANK0) + 8) : ((adr + i) - REG_NWRAM_CTRL_SET0BANK0);
+						if (MMU.regNWRAM_Protect & (1 << bit))
+							return;
+						// otherwise update!
+						MMU.regNRWAM_BankControl[adr - REG_NWRAM_CTRL_SET0BANK0] = val >> (i * 8);
+
+					}
+					MMU_UpdateNWRAM();
+					return;
+				}
+				case REG_NWRAM_WINDOW_SET0:
+				case REG_NWRAM_WINDOW_SET0 + 1:
+				case REG_NWRAM_WINDOW_SET0 + 2:
+				case REG_NWRAM_WINDOW_SET0 + 3:
+				case REG_NWRAM_WINDOW_SET1:
+				case REG_NWRAM_WINDOW_SET1 + 1:
+				case REG_NWRAM_WINDOW_SET1 + 2:
+				case REG_NWRAM_WINDOW_SET1 + 3:
+				case REG_NWRAM_WINDOW_SET2:
+				case REG_NWRAM_WINDOW_SET2 + 1:
+				case REG_NWRAM_WINDOW_SET2 + 2:
+				case REG_NWRAM_WINDOW_SET2 + 3:
+					MMU.regNWRAM_Windows[1][(adr - REG_NWRAM_WINDOW_SET0) >> 2] = val;
+					MMU_UpdateNWRAM();
+					return;
+				case REG_NWRAM_PROTECT:
+				case REG_NWRAM_PROTECT + 1:
+				case REG_NWRAM_PROTECT + 2:
+				case REG_NWRAM_PROTECT + 3:
+					// not writeable on arm9
+					return;
+#endif
 			}
 			
 			T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
@@ -4770,6 +4993,17 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			T1WriteLong(MMU.ARM9_OAM, adr & 0x07FF, val);
 			return;
 	}
+
+#ifdef DSI_NEWWRAM
+	if ((adr >> 24) == 0x03)
+	{
+		if (MMU.NWRAMBLOCKPTRS[1][(adr - 0x03000000) / 0x8000])
+		{
+			T1WriteLong(MMU.NWRAMBLOCKPTRS[1][(adr - 0x03000000) / 0x8000], adr & 0x7fff, val);
+			return;
+		}
+	}
+#endif
 
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
@@ -4900,8 +5134,58 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 			case REG_KEYINPUT:
 				LagFrameFlag=0;
 				break;
+#ifdef DSI_NEWWRAM
+			case REG_NWRAM_CTRL_SET0BANK0:
+			case REG_NWRAM_CTRL_SET0BANK1:
+			case REG_NWRAM_CTRL_SET0BANK2:
+			case REG_NWRAM_CTRL_SET0BANK3:
+			case REG_NWRAM_CTRL_SET1BANK0:
+			case REG_NWRAM_CTRL_SET1BANK1:
+			case REG_NWRAM_CTRL_SET1BANK2:
+			case REG_NWRAM_CTRL_SET1BANK3:
+			case REG_NWRAM_CTRL_SET1BANK4:
+			case REG_NWRAM_CTRL_SET1BANK5:
+			case REG_NWRAM_CTRL_SET1BANK6:
+			case REG_NWRAM_CTRL_SET1BANK7:
+			case REG_NWRAM_CTRL_SET2BANK0:
+			case REG_NWRAM_CTRL_SET2BANK1:
+			case REG_NWRAM_CTRL_SET2BANK2:
+			case REG_NWRAM_CTRL_SET2BANK3:
+			case REG_NWRAM_CTRL_SET2BANK4:
+			case REG_NWRAM_CTRL_SET2BANK5:
+			case REG_NWRAM_CTRL_SET2BANK6:
+			case REG_NWRAM_CTRL_SET2BANK7:
+				return MMU.regNRWAM_BankControl[adr - REG_NWRAM_CTRL_SET0BANK0];
+			case REG_NWRAM_WINDOW_SET0:
+			case REG_NWRAM_WINDOW_SET0 + 1:
+			case REG_NWRAM_WINDOW_SET0 + 2:
+			case REG_NWRAM_WINDOW_SET0 + 3:
+			case REG_NWRAM_WINDOW_SET1:
+			case REG_NWRAM_WINDOW_SET1 + 1:
+			case REG_NWRAM_WINDOW_SET1 + 2:
+			case REG_NWRAM_WINDOW_SET1 + 3:
+			case REG_NWRAM_WINDOW_SET2:
+			case REG_NWRAM_WINDOW_SET2 + 1:
+			case REG_NWRAM_WINDOW_SET2 + 2:
+			case REG_NWRAM_WINDOW_SET2 + 3:
+				return (MMU.regNWRAM_Windows[1][(adr - REG_NWRAM_WINDOW_SET0) >> 2] >> ((adr & 3) * 8)) & 0xff;
+			case REG_NWRAM_PROTECT:
+			case REG_NWRAM_PROTECT + 1:
+			case REG_NWRAM_PROTECT + 2:
+			case REG_NWRAM_PROTECT + 3:
+				return (MMU.regNWRAM_Protect >> ((adr & 3) * 8)) & 0xff;
+#endif			
 		}
 	}
+
+#ifdef DSI_NEWWRAM
+	if ((adr >> 24) == 0x03)
+	{
+		if (MMU.NWRAMBLOCKPTRS[1][(adr - 0x03000000) / 0x8000])
+			return MMU.NWRAMBLOCKPTRS[1][(adr - 0x03000000) / 0x8000][adr & 0x7fff];
+	}
+#endif
+
 
 	bool unmapped, restricted;	
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
@@ -5007,10 +5291,58 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case eng_3D_FOG_TABLE+0x10: case eng_3D_FOG_TABLE+0x12: case eng_3D_FOG_TABLE+0x14: case eng_3D_FOG_TABLE+0x16:
 			case eng_3D_FOG_TABLE+0x18: case eng_3D_FOG_TABLE+0x1A: case eng_3D_FOG_TABLE+0x1C: case eng_3D_FOG_TABLE+0x1E:
 				return 0;
+#ifdef DSI_NEWWRAM
+			case REG_NWRAM_CTRL_SET0BANK0:
+			case REG_NWRAM_CTRL_SET0BANK1:
+			case REG_NWRAM_CTRL_SET0BANK2:
+			case REG_NWRAM_CTRL_SET0BANK3:
+			case REG_NWRAM_CTRL_SET1BANK0:
+			case REG_NWRAM_CTRL_SET1BANK1:
+			case REG_NWRAM_CTRL_SET1BANK2:
+			case REG_NWRAM_CTRL_SET1BANK3:
+			case REG_NWRAM_CTRL_SET1BANK4:
+			case REG_NWRAM_CTRL_SET1BANK5:
+			case REG_NWRAM_CTRL_SET1BANK6:
+			case REG_NWRAM_CTRL_SET1BANK7:
+			case REG_NWRAM_CTRL_SET2BANK0:
+			case REG_NWRAM_CTRL_SET2BANK1:
+			case REG_NWRAM_CTRL_SET2BANK2:
+			case REG_NWRAM_CTRL_SET2BANK3:
+			case REG_NWRAM_CTRL_SET2BANK4:
+			case REG_NWRAM_CTRL_SET2BANK5:
+			case REG_NWRAM_CTRL_SET2BANK6:
+				return MMU.regNRWAM_BankControl[adr - REG_NWRAM_CTRL_SET0BANK0] | (MMU.regNRWAM_BankControl[adr + 1 - REG_NWRAM_CTRL_SET0BANK0] << 8);
+			case REG_NWRAM_WINDOW_SET0:
+			case REG_NWRAM_WINDOW_SET0 + 1:
+			case REG_NWRAM_WINDOW_SET0 + 2:
+			case REG_NWRAM_WINDOW_SET0 + 3:
+			case REG_NWRAM_WINDOW_SET1:
+			case REG_NWRAM_WINDOW_SET1 + 1:
+			case REG_NWRAM_WINDOW_SET1 + 2:
+			case REG_NWRAM_WINDOW_SET1 + 3:
+			case REG_NWRAM_WINDOW_SET2:
+			case REG_NWRAM_WINDOW_SET2 + 1:
+			case REG_NWRAM_WINDOW_SET2 + 2:
+			case REG_NWRAM_WINDOW_SET2 + 3:
+				return (MMU.regNWRAM_Windows[1][(adr - REG_NWRAM_WINDOW_SET0) >> 2] >> ((adr & 2) * 8)) & 0xffff;
+			case REG_NWRAM_PROTECT:
+			case REG_NWRAM_PROTECT + 1:
+			case REG_NWRAM_PROTECT + 2:
+			case REG_NWRAM_PROTECT + 3:
+				return (MMU.regNWRAM_Protect >> ((adr & 2) * 8)) & 0xffff;
+#endif					
 		}
 
 		return  T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]);
 	}
+
+#ifdef DSI_NEWWRAM
+	if ((adr >> 24) == 0x03)
+	{
+		if (MMU.NWRAMBLOCKPTRS[1][(adr - 0x03000000) / 0x8000])
+			return T1ReadWord_guaranteedAligned(MMU.NWRAMBLOCKPTRS[1][(adr - 0x03000000) / 0x8000], adr & 0x7fff);
+	}
+#endif
 
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr,unmapped, restricted);
@@ -5152,10 +5484,58 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case REG_KEYINPUT:
 				LagFrameFlag=0;
 				break;
+#ifdef DSI_NEWWRAM
+			case REG_NWRAM_CTRL_SET0BANK0:
+			case REG_NWRAM_CTRL_SET0BANK1:
+			case REG_NWRAM_CTRL_SET0BANK2:
+			case REG_NWRAM_CTRL_SET0BANK3:
+			case REG_NWRAM_CTRL_SET1BANK0:
+			case REG_NWRAM_CTRL_SET1BANK1:
+			case REG_NWRAM_CTRL_SET1BANK2:
+			case REG_NWRAM_CTRL_SET1BANK3:
+			case REG_NWRAM_CTRL_SET1BANK4:
+			case REG_NWRAM_CTRL_SET1BANK5:
+			case REG_NWRAM_CTRL_SET1BANK6:
+			case REG_NWRAM_CTRL_SET1BANK7:
+			case REG_NWRAM_CTRL_SET2BANK0:
+			case REG_NWRAM_CTRL_SET2BANK1:
+			case REG_NWRAM_CTRL_SET2BANK2:
+			case REG_NWRAM_CTRL_SET2BANK3:
+			case REG_NWRAM_CTRL_SET2BANK4:
+				return MMU.regNRWAM_BankControl[adr - REG_NWRAM_CTRL_SET0BANK0] | (MMU.regNRWAM_BankControl[adr + 1 - REG_NWRAM_CTRL_SET0BANK0] << 8)
+					| (MMU.regNRWAM_BankControl[adr + 2 - REG_NWRAM_CTRL_SET0BANK0] << 16) | (MMU.regNRWAM_BankControl[adr + 3 - REG_NWRAM_CTRL_SET0BANK0] << 24);
+			case REG_NWRAM_WINDOW_SET0:
+			case REG_NWRAM_WINDOW_SET0 + 1:
+			case REG_NWRAM_WINDOW_SET0 + 2:
+			case REG_NWRAM_WINDOW_SET0 + 3:
+			case REG_NWRAM_WINDOW_SET1:
+			case REG_NWRAM_WINDOW_SET1 + 1:
+			case REG_NWRAM_WINDOW_SET1 + 2:
+			case REG_NWRAM_WINDOW_SET1 + 3:
+			case REG_NWRAM_WINDOW_SET2:
+			case REG_NWRAM_WINDOW_SET2 + 1:
+			case REG_NWRAM_WINDOW_SET2 + 2:
+			case REG_NWRAM_WINDOW_SET2 + 3:
+				return MMU.regNWRAM_Windows[1][(adr - REG_NWRAM_WINDOW_SET0) >> 2];
+			case REG_NWRAM_PROTECT:
+			case REG_NWRAM_PROTECT + 1:
+			case REG_NWRAM_PROTECT + 2:
+			case REG_NWRAM_PROTECT + 3:
+				return MMU.regNWRAM_Protect;
+#endif					
 		}
 		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]);
 	}
 	
+
+#ifdef DSI_NEWWRAM
+	if ((adr >> 24) == 0x03)
+	{
+		if (MMU.NWRAMBLOCKPTRS[1][(adr - 0x03000000) / 0x8000])
+			return T1ReadLong_guaranteedAligned(MMU.NWRAMBLOCKPTRS[1][(adr - 0x03000000) / 0x8000], adr & 0x7fff);
+	}
+#endif
+
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr,unmapped, restricted);
 	if(unmapped) return 0;
@@ -5261,10 +5641,70 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 				// into RAM at 0x027FF830
 				MMU_writeToSPIData(val);
 				return;
+#ifdef DSI_NEWWRAM
+			case REG_NWRAM_CTRL_SET0BANK0:
+			case REG_NWRAM_CTRL_SET0BANK1:
+			case REG_NWRAM_CTRL_SET0BANK2:
+			case REG_NWRAM_CTRL_SET0BANK3:
+			case REG_NWRAM_CTRL_SET1BANK0:
+			case REG_NWRAM_CTRL_SET1BANK1:
+			case REG_NWRAM_CTRL_SET1BANK2:
+			case REG_NWRAM_CTRL_SET1BANK3:
+			case REG_NWRAM_CTRL_SET1BANK4:
+			case REG_NWRAM_CTRL_SET1BANK5:
+			case REG_NWRAM_CTRL_SET1BANK6:
+			case REG_NWRAM_CTRL_SET1BANK7:
+			case REG_NWRAM_CTRL_SET2BANK0:
+			case REG_NWRAM_CTRL_SET2BANK1:
+			case REG_NWRAM_CTRL_SET2BANK2:
+			case REG_NWRAM_CTRL_SET2BANK3:
+			case REG_NWRAM_CTRL_SET2BANK4:
+			case REG_NWRAM_CTRL_SET2BANK5:
+			case REG_NWRAM_CTRL_SET2BANK6:
+			case REG_NWRAM_CTRL_SET2BANK7:
+				/* These registers can not be changed by the arm7, as of a fuse bit in SCFG
+				   TODO: If that SFCG is implemented this might get writeable */
+				return;
+			case REG_NWRAM_WINDOW_SET0:
+			case REG_NWRAM_WINDOW_SET0 + 1:
+			case REG_NWRAM_WINDOW_SET0 + 2:
+			case REG_NWRAM_WINDOW_SET0 + 3:
+			case REG_NWRAM_WINDOW_SET1:
+			case REG_NWRAM_WINDOW_SET1 + 1:
+			case REG_NWRAM_WINDOW_SET1 + 2:
+			case REG_NWRAM_WINDOW_SET1 + 3:
+			case REG_NWRAM_WINDOW_SET2:
+			case REG_NWRAM_WINDOW_SET2 + 1:
+			case REG_NWRAM_WINDOW_SET2 + 2:
+			case REG_NWRAM_WINDOW_SET2 + 3:
+				MMU.regNWRAM_Windows[0][(adr - REG_NWRAM_WINDOW_SET0) >> 2] &= ~(0xff << ((adr & 3) * 8));
+				MMU.regNWRAM_Windows[0][(adr - REG_NWRAM_WINDOW_SET0) >> 2] |= (val << ((adr & 3) * 8));
+				MMU_UpdateNWRAM();
+				return;
+			case REG_NWRAM_PROTECT:
+			case REG_NWRAM_PROTECT + 1:
+			case REG_NWRAM_PROTECT + 2:
+			case REG_NWRAM_PROTECT + 3:
+				MMU.regNWRAM_Protect &= ~(0xff << ((adr & 3) * 8));
+				MMU.regNWRAM_Protect |= (val << ((adr & 3) * 8));
+				return;
+#endif
 		}
 		MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]]=val;
 		return;
 	}
+
+
+#ifdef DSI_NEWWRAM
+	if ((adr >> 24) == 0x03)
+	{
+		if (MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000])
+		{
+			MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000][adr & 0x7fff] = val;
+			return;
+		}
+	}
+#endif
 
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
@@ -5446,11 +5886,71 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			case REG_GCROMCTRL+2 :
 				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[1][0x40], 0x1A4) & 0xFFFF) | ((u32) val << 16));
 				return;
+#ifdef DSI_NEWWRAM
+			case REG_NWRAM_CTRL_SET0BANK0:
+			case REG_NWRAM_CTRL_SET0BANK1:
+			case REG_NWRAM_CTRL_SET0BANK2:
+			case REG_NWRAM_CTRL_SET0BANK3:
+			case REG_NWRAM_CTRL_SET1BANK0:
+			case REG_NWRAM_CTRL_SET1BANK1:
+			case REG_NWRAM_CTRL_SET1BANK2:
+			case REG_NWRAM_CTRL_SET1BANK3:
+			case REG_NWRAM_CTRL_SET1BANK4:
+			case REG_NWRAM_CTRL_SET1BANK5:
+			case REG_NWRAM_CTRL_SET1BANK6:
+			case REG_NWRAM_CTRL_SET1BANK7:
+			case REG_NWRAM_CTRL_SET2BANK0:
+			case REG_NWRAM_CTRL_SET2BANK1:
+			case REG_NWRAM_CTRL_SET2BANK2:
+			case REG_NWRAM_CTRL_SET2BANK3:
+			case REG_NWRAM_CTRL_SET2BANK4:
+			case REG_NWRAM_CTRL_SET2BANK5:
+			case REG_NWRAM_CTRL_SET2BANK6:
+			case REG_NWRAM_CTRL_SET2BANK7:
+				/* These registers can not be changed by the arm7, as of a fuse bit in SCFG
+				   TODO: If that SFCG is implemented this might get writeable */
+				return;
+			case REG_NWRAM_WINDOW_SET0:
+			case REG_NWRAM_WINDOW_SET0 + 1:
+			case REG_NWRAM_WINDOW_SET0 + 2:
+			case REG_NWRAM_WINDOW_SET0 + 3:
+			case REG_NWRAM_WINDOW_SET1:
+			case REG_NWRAM_WINDOW_SET1 + 1:
+			case REG_NWRAM_WINDOW_SET1 + 2:
+			case REG_NWRAM_WINDOW_SET1 + 3:
+			case REG_NWRAM_WINDOW_SET2:
+			case REG_NWRAM_WINDOW_SET2 + 1:
+			case REG_NWRAM_WINDOW_SET2 + 2:
+			case REG_NWRAM_WINDOW_SET2 + 3:
+				MMU.regNWRAM_Windows[0][(adr - REG_NWRAM_WINDOW_SET0) >> 2] &= ~(0xffff << ((adr & 2) * 8));
+				MMU.regNWRAM_Windows[0][(adr - REG_NWRAM_WINDOW_SET0) >> 2] |= (val << ((adr & 2) * 8));
+				MMU_UpdateNWRAM();
+				return;
+			case REG_NWRAM_PROTECT:
+			case REG_NWRAM_PROTECT + 1:
+			case REG_NWRAM_PROTECT + 2:
+			case REG_NWRAM_PROTECT + 3:
+				MMU.regNWRAM_Protect &= ~(0xffff << ((adr & 2) * 8));
+				MMU.regNWRAM_Protect |= (val << ((adr & 2) * 8));
+				return;
+#endif
 		}
 
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val); 
 		return;
 	}
+
+
+#ifdef DSI_NEWWRAM
+	if ((adr >> 24) == 0x03)
+	{
+		if (MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000])
+		{
+			T1WriteWord(MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000], adr & 0x7fff, val);
+			return;
+		}
+	}
+#endif
 
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
@@ -5546,10 +6046,67 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 			case REG_GCDATAIN:
 				MMU_writeToGC<ARMCPU_ARM7>(val);
 				return;
+#ifdef DSI_NEWWRAM
+			case REG_NWRAM_CTRL_SET0BANK0:
+			case REG_NWRAM_CTRL_SET0BANK1:
+			case REG_NWRAM_CTRL_SET0BANK2:
+			case REG_NWRAM_CTRL_SET0BANK3:
+			case REG_NWRAM_CTRL_SET1BANK0:
+			case REG_NWRAM_CTRL_SET1BANK1:
+			case REG_NWRAM_CTRL_SET1BANK2:
+			case REG_NWRAM_CTRL_SET1BANK3:
+			case REG_NWRAM_CTRL_SET1BANK4:
+			case REG_NWRAM_CTRL_SET1BANK5:
+			case REG_NWRAM_CTRL_SET1BANK6:
+			case REG_NWRAM_CTRL_SET1BANK7:
+			case REG_NWRAM_CTRL_SET2BANK0:
+			case REG_NWRAM_CTRL_SET2BANK1:
+			case REG_NWRAM_CTRL_SET2BANK2:
+			case REG_NWRAM_CTRL_SET2BANK3:
+			case REG_NWRAM_CTRL_SET2BANK4:
+			case REG_NWRAM_CTRL_SET2BANK5:
+			case REG_NWRAM_CTRL_SET2BANK6:
+			case REG_NWRAM_CTRL_SET2BANK7:
+				/* These registers can not be changed by the arm7, as of a fuse bit in SCFG
+				   TODO: If that SFCG is implemented this might get writeable */
+				return;
+			case REG_NWRAM_WINDOW_SET0:
+			case REG_NWRAM_WINDOW_SET0 + 1:
+			case REG_NWRAM_WINDOW_SET0 + 2:
+			case REG_NWRAM_WINDOW_SET0 + 3:
+			case REG_NWRAM_WINDOW_SET1:
+			case REG_NWRAM_WINDOW_SET1 + 1:
+			case REG_NWRAM_WINDOW_SET1 + 2:
+			case REG_NWRAM_WINDOW_SET1 + 3:
+			case REG_NWRAM_WINDOW_SET2:
+			case REG_NWRAM_WINDOW_SET2 + 1:
+			case REG_NWRAM_WINDOW_SET2 + 2:
+			case REG_NWRAM_WINDOW_SET2 + 3:
+				MMU.regNWRAM_Windows[0][(adr - REG_NWRAM_WINDOW_SET0) >> 2] = val;
+				MMU_UpdateNWRAM();
+				return;
+			case REG_NWRAM_PROTECT:
+			case REG_NWRAM_PROTECT + 1:
+			case REG_NWRAM_PROTECT + 2:
+			case REG_NWRAM_PROTECT + 3:
+				MMU.regNWRAM_Protect = val;
+				return;
+#endif
 		}
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
 		return;
 	}
+
+#ifdef DSI_NEWWRAM
+	if ((adr >> 24) == 0x03)
+	{
+		if (MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000])
+		{
+			T1WriteLong(MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000], adr & 0x7fff, val);
+			return;
+		}
+	}
+#endif
 
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
@@ -5638,10 +6195,59 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 			case REG_TM3CNTL+1: return _MMU_ARM7_read16(adr-1)>>8;
 			case REG_TM3CNTL+2: return _MMU_ARM7_read16(adr);
 			case REG_TM3CNTL+3: return _MMU_ARM7_read16(adr-1)>>8;
+#ifdef DSI_NEWWRAM
+			case REG_NWRAM_CTRL_SET0BANK0:
+			case REG_NWRAM_CTRL_SET0BANK1:
+			case REG_NWRAM_CTRL_SET0BANK2:
+			case REG_NWRAM_CTRL_SET0BANK3:
+			case REG_NWRAM_CTRL_SET1BANK0:
+			case REG_NWRAM_CTRL_SET1BANK1:
+			case REG_NWRAM_CTRL_SET1BANK2:
+			case REG_NWRAM_CTRL_SET1BANK3:
+			case REG_NWRAM_CTRL_SET1BANK4:
+			case REG_NWRAM_CTRL_SET1BANK5:
+			case REG_NWRAM_CTRL_SET1BANK6:
+			case REG_NWRAM_CTRL_SET1BANK7:
+			case REG_NWRAM_CTRL_SET2BANK0:
+			case REG_NWRAM_CTRL_SET2BANK1:
+			case REG_NWRAM_CTRL_SET2BANK2:
+			case REG_NWRAM_CTRL_SET2BANK3:
+			case REG_NWRAM_CTRL_SET2BANK4:
+			case REG_NWRAM_CTRL_SET2BANK5:
+			case REG_NWRAM_CTRL_SET2BANK6:
+			case REG_NWRAM_CTRL_SET2BANK7:
+				return MMU.regNRWAM_BankControl[adr - REG_NWRAM_CTRL_SET0BANK0];
+			case REG_NWRAM_WINDOW_SET0:
+			case REG_NWRAM_WINDOW_SET0 + 1:
+			case REG_NWRAM_WINDOW_SET0 + 2:
+			case REG_NWRAM_WINDOW_SET0 + 3:
+			case REG_NWRAM_WINDOW_SET1:
+			case REG_NWRAM_WINDOW_SET1 + 1:
+			case REG_NWRAM_WINDOW_SET1 + 2:
+			case REG_NWRAM_WINDOW_SET1 + 3:
+			case REG_NWRAM_WINDOW_SET2:
+			case REG_NWRAM_WINDOW_SET2 + 1:
+			case REG_NWRAM_WINDOW_SET2 + 2:
+			case REG_NWRAM_WINDOW_SET2 + 3:
+				return (MMU.regNWRAM_Windows[0][(adr - REG_NWRAM_WINDOW_SET0) >> 2] >> ((adr & 3) * 8)) & 0xff;
+			case REG_NWRAM_PROTECT:
+			case REG_NWRAM_PROTECT + 1:
+			case REG_NWRAM_PROTECT + 2:
+			case REG_NWRAM_PROTECT + 3:
+				return (MMU.regNWRAM_Protect >> ((adr & 3) * 8)) & 0xff;
+#endif			
 		}
 
 		return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
 	}
+
+#ifdef DSI_NEWWRAM
+	if ((adr >> 24) == 0x03)
+	{
+		if (MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000])
+			return MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000][adr & 0x7fff];
+	}
+#endif
 
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
@@ -5723,9 +6329,57 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 				//since the arm7 polls this (and EXTKEYIN) every frame, we shouldnt count this as an input check
 				//LagFrameFlag=0;
 				break;
+#ifdef DSI_NEWWRAM
+			case REG_NWRAM_CTRL_SET0BANK0:
+			case REG_NWRAM_CTRL_SET0BANK1:
+			case REG_NWRAM_CTRL_SET0BANK2:
+			case REG_NWRAM_CTRL_SET0BANK3:
+			case REG_NWRAM_CTRL_SET1BANK0:
+			case REG_NWRAM_CTRL_SET1BANK1:
+			case REG_NWRAM_CTRL_SET1BANK2:
+			case REG_NWRAM_CTRL_SET1BANK3:
+			case REG_NWRAM_CTRL_SET1BANK4:
+			case REG_NWRAM_CTRL_SET1BANK5:
+			case REG_NWRAM_CTRL_SET1BANK6:
+			case REG_NWRAM_CTRL_SET1BANK7:
+			case REG_NWRAM_CTRL_SET2BANK0:
+			case REG_NWRAM_CTRL_SET2BANK1:
+			case REG_NWRAM_CTRL_SET2BANK2:
+			case REG_NWRAM_CTRL_SET2BANK3:
+			case REG_NWRAM_CTRL_SET2BANK4:
+			case REG_NWRAM_CTRL_SET2BANK5:
+			case REG_NWRAM_CTRL_SET2BANK6:
+				return MMU.regNRWAM_BankControl[adr - REG_NWRAM_CTRL_SET0BANK0] | (MMU.regNRWAM_BankControl[adr + 1 - REG_NWRAM_CTRL_SET0BANK0] << 8);
+			case REG_NWRAM_WINDOW_SET0:
+			case REG_NWRAM_WINDOW_SET0 + 1:
+			case REG_NWRAM_WINDOW_SET0 + 2:
+			case REG_NWRAM_WINDOW_SET0 + 3:
+			case REG_NWRAM_WINDOW_SET1:
+			case REG_NWRAM_WINDOW_SET1 + 1:
+			case REG_NWRAM_WINDOW_SET1 + 2:
+			case REG_NWRAM_WINDOW_SET1 + 3:
+			case REG_NWRAM_WINDOW_SET2:
+			case REG_NWRAM_WINDOW_SET2 + 1:
+			case REG_NWRAM_WINDOW_SET2 + 2:
+			case REG_NWRAM_WINDOW_SET2 + 3:
+				return (MMU.regNWRAM_Windows[0][(adr - REG_NWRAM_WINDOW_SET0) >> 2] >> ((adr & 2) * 8)) & 0xffff;
+			case REG_NWRAM_PROTECT:
+			case REG_NWRAM_PROTECT + 1:
+			case REG_NWRAM_PROTECT + 2:
+			case REG_NWRAM_PROTECT + 3:
+				return (MMU.regNWRAM_Protect >> ((adr & 2) * 8)) & 0xffff;
+#endif					
 		}
 		return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]); 
 	}
+
+#ifdef DSI_NEWWRAM
+	if ((adr >> 24) == 0x03)
+	{
+		if (MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000])
+			return T1ReadWord_guaranteedAligned(MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000], adr & 0x7fff);
+	}
+#endif
 
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
@@ -5804,10 +6458,57 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 				//make sure WRAMSTAT is stashed and then fallthrough return the value from memory. i know, gross.
 				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, MMU.WRAMCNT);
 				break;
+#ifdef DSI_NEWWRAM
+			case REG_NWRAM_CTRL_SET0BANK0:
+			case REG_NWRAM_CTRL_SET0BANK1:
+			case REG_NWRAM_CTRL_SET0BANK2:
+			case REG_NWRAM_CTRL_SET0BANK3:
+			case REG_NWRAM_CTRL_SET1BANK0:
+			case REG_NWRAM_CTRL_SET1BANK1:
+			case REG_NWRAM_CTRL_SET1BANK2:
+			case REG_NWRAM_CTRL_SET1BANK3:
+			case REG_NWRAM_CTRL_SET1BANK4:
+			case REG_NWRAM_CTRL_SET1BANK5:
+			case REG_NWRAM_CTRL_SET1BANK6:
+			case REG_NWRAM_CTRL_SET1BANK7:
+			case REG_NWRAM_CTRL_SET2BANK0:
+			case REG_NWRAM_CTRL_SET2BANK1:
+			case REG_NWRAM_CTRL_SET2BANK2:
+			case REG_NWRAM_CTRL_SET2BANK3:
+			case REG_NWRAM_CTRL_SET2BANK4:
+				return MMU.regNRWAM_BankControl[adr - REG_NWRAM_CTRL_SET0BANK0] | (MMU.regNRWAM_BankControl[adr + 1 - REG_NWRAM_CTRL_SET0BANK0] << 8)
+					| (MMU.regNRWAM_BankControl[adr + 2 - REG_NWRAM_CTRL_SET0BANK0] << 16) | (MMU.regNRWAM_BankControl[adr + 3 - REG_NWRAM_CTRL_SET0BANK0] << 24);
+			case REG_NWRAM_WINDOW_SET0:
+			case REG_NWRAM_WINDOW_SET0 + 1:
+			case REG_NWRAM_WINDOW_SET0 + 2:
+			case REG_NWRAM_WINDOW_SET0 + 3:
+			case REG_NWRAM_WINDOW_SET1:
+			case REG_NWRAM_WINDOW_SET1 + 1:
+			case REG_NWRAM_WINDOW_SET1 + 2:
+			case REG_NWRAM_WINDOW_SET1 + 3:
+			case REG_NWRAM_WINDOW_SET2:
+			case REG_NWRAM_WINDOW_SET2 + 1:
+			case REG_NWRAM_WINDOW_SET2 + 2:
+			case REG_NWRAM_WINDOW_SET2 + 3:
+				return MMU.regNWRAM_Windows[1][(adr - REG_NWRAM_WINDOW_SET0) >> 2];
+			case REG_NWRAM_PROTECT:
+			case REG_NWRAM_PROTECT + 1:
+			case REG_NWRAM_PROTECT + 2:
+			case REG_NWRAM_PROTECT + 3:
+				return MMU.regNWRAM_Protect;
+#endif					
 		}
 
 		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]);
 	}
+
+#ifdef DSI_NEWWRAM
+	if ((adr >> 24) == 0x03)
+	{
+		if (MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000])
+			return T1ReadLong_guaranteedAligned(MMU.NWRAMBLOCKPTRS[0][(adr - 0x03000000) / 0x8000], adr & 0x7fff);
+	}
+#endif
 
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
@@ -5817,6 +6518,96 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [zeromus, inspired by shash]
 	return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]);
 }
+
+#ifdef DSI_NEWWRAM
+
+
+#pragma optimize( "g", off)
+//================================================= MMU Update new WRAM Mapping
+void FASTCALL MMU_UpdateNWRAM()
+{
+	// move through all 32k Blocks in the 0x03000000 to 0x03FFFFFF range. The range consists of 512 blocks
+	// and check where the data for the arm7/arm9 shall point to
+	// TODO: This does not work when blending NWRAM into the HW Register range
+	uint32_t blockLimits[12];
+	uint32_t arm9BlockLimits[6];
+
+	// pre calculate the window limits in 32k Blocks for each core and window
+	for (int i = 0; i < 2; i++)
+	{
+		blockLimits[i * 6 + 0] = (MMU.regNWRAM_Windows[i][0] & 0x0FF0) >> 3;
+		blockLimits[i * 6 + 2] = (MMU.regNWRAM_Windows[i][1] & 0x0FF8) >> 3;
+		blockLimits[i * 6 + 4] = (MMU.regNWRAM_Windows[i][2] & 0x0FF8) >> 3;
+		blockLimits[i * 6 + 1] = (MMU.regNWRAM_Windows[i][0] & 0x0FF00000) >> 19;
+		blockLimits[i * 6 + 3] = (MMU.regNWRAM_Windows[i][1] & 0x0FF80000) >> 19;
+		blockLimits[i * 6 + 5] = (MMU.regNWRAM_Windows[i][2] & 0x0FF80000) >> 19;
+	}
+
+	// now check every block in the 0x03... range to which nwram page it belongs
+	for (int block = 0; block < 512; block++)
+	{
+		for (int core = 0; core < 2; core++)
+		{
+			u8* data = 0;
+			for (int set = 0; (set < 3) && (data == 0); set++)
+			{
+				// for each of the 3 sets
+				if ((block >= blockLimits[core * 6 + set * 2]) && (block < blockLimits[core * 6 + set * 2 + 1]))
+				{
+					// This set is blended in at this region
+					uint8_t sectorLength = (MMU.regNWRAM_Windows[core][set] >> 12) & 0x03;
+					// the first set does not know an image size of 32kB (0) and will default to 64kB (1)
+					if ((sectorLength == 0) && (set == 0))
+						sectorLength = 1;
+					uint8_t sectorBlocks = 1 << sectorLength;
+					uint8_t sectorPart = block & (sectorBlocks - 1);
+					// now iterate through all banks in the set and check if it is 
+					//		enabled & assigned to the core
+					if (set == 0)
+					{
+						// the set A is special as it combines two 32kB blocks into a single 64kB Block
+						// therefor we have only 4 bank controls which are matching for 2 blocks each
+						for (int bank = 0; bank < 4; bank++)
+						{
+							if (!(MMU.regNRWAM_BankControl[bank] & 0x80))					// not enabled
+								continue;
+							if ((MMU.regNRWAM_BankControl[bank] & 0x03) != (1 - core))		// assigned to dsp or different core
+								continue;
+							if (((MMU.regNRWAM_BankControl[bank] >> 2) & 6) != (sectorPart & ~1))
+								continue;
+							// when this is reached, the current block is found in this set for this core
+							// So remember the data it shall point to
+							// for the first set the parts are of 2 blocks
+							data = &MMU.NWRAM[set][bank | (sectorPart & 1)][0];
+						}
+					}
+					else
+					{
+						// otherwise it is a regular set with each 32kB block having its own bank control register
+						for (int bank = 0; bank < 8; bank++)
+						{
+							if (!(MMU.regNRWAM_BankControl[bank + set * 8 - 4] & 0x80))					// not enabled
+								continue;
+							if ((MMU.regNRWAM_BankControl[bank + set * 8 - 4] & 0x03) != (1 - core))		// assigned to dsp or different core
+								continue;
+							if (((MMU.regNRWAM_BankControl[bank + set * 8 - 4] >> 2) & 7) != sectorPart)
+								continue;
+							// when this is reached, the current block is found in this set for this core
+							// So remember the data it shall point to
+							// for the first set the parts are of 2 blocks
+							data = &MMU.NWRAM[set][bank][0];
+						}
+					}
+				}
+			}
+			MMU.NWRAMBLOCKPTRS[core][block] = data;
+		}
+	}
+	// TODO
+}
+#pragma optimize( "g", on)
+
+#endif
 
 //=========================================================================================================
 
