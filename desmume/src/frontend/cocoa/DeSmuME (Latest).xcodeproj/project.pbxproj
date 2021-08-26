@@ -4454,7 +4454,6 @@
 				AB2DF23215E0834E00B4D0BC /* ShellScript */,
 				AB796CEE15CDCBA200C59155 /* Sources */,
 				AB796D6515CDCBA200C59155 /* Frameworks */,
-				AB8CF4681FBCEA010039C223 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -4475,7 +4474,6 @@
 				AB79004B215B84E50082AE82 /* ShellScript */,
 				AB79004C215B84E50082AE82 /* Sources */,
 				AB790128215B84E50082AE82 /* Frameworks */,
-				AB790139215B84E50082AE82 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -5260,7 +5258,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/sh\n\n# This script creates an application package that merges the ppc binary of an\n# Xcode 3 PowerPC release build to the i386 and x86_64 binaries of an Xcode 4\n# (or later) release build. It also replaces the .nib files with ones that are\n# created specifically in Xcode 6, which is the last version of Xcode that can\n# compile Leopard-compatible .nib files.\n#\n# Before you use this script, make sure that you already have an existing\n# PowerPC Release build from Xcode 3 in the ${SRCROOT}/build/Release directory,\n# as well as an Xcode 6 .app in the same directory.\n\n# Create the Merged Release directory, plus a working copy of the .app.\nmkdir -p \"${SRCROOT}/build/Merged Release\"\ncd \"${SRCROOT}/build/Merged Release\"\ncp -a \"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app\" \"./\"\n\nif test -e \"${SRCROOT}/build/Release/DeSmuME (PPC).app/Contents/MacOS/DeSmuME (PPC)\"\nthen\n\ncd \"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS\"\n\n# Create the temp binaries for Intel.\nlipo \"./${EXECUTABLE_NAME}\" -thin i386 -output \"./${EXECUTABLE_NAME}_i386\"\nlipo \"./${EXECUTABLE_NAME}\" -thin x86_64 -output \"./${EXECUTABLE_NAME}_x86_64\"\n\n# Merge the separate temp binaries into a single binary package.\nrm -f \"${SRCROOT}/build/Merged Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\"\nlipo \"${SRCROOT}/build/Release/DeSmuME (PPC).app/Contents/MacOS/DeSmuME (PPC)\" \"./${EXECUTABLE_NAME}_i386\" \"./${EXECUTABLE_NAME}_x86_64\" -create -output \"${SRCROOT}/build/Merged Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\"\n\n# Remove the temp binaries now that we're done with them.\nrm -f \"./${EXECUTABLE_NAME}_i386\"\nrm -f \"./${EXECUTABLE_NAME}_x86_64\"\n\nfi\n\n# Copy the .nib files from an \"extract NIB\" .app to the Merged Release .app\ncd \"${SRCROOT}/build/Merged Release/${PRODUCT_NAME}.app/Contents/Resources/English.lproj\"\ncp -af \"${SRCROOT}/build/Release/DeSmuME (extract NIB).app/Contents/Resources/English.lproj/MainMenu.nib\" \"./\"\ncp -af \"${SRCROOT}/build/Release/DeSmuME (extract NIB).app/Contents/Resources/English.lproj/DisplayWindow.nib\" \"./\"";
+			shellScript = "#!/bin/sh\n\n# This script creates an application package that merges the ppc binary of an\n# Xcode 3 PowerPC release build to the i386 and x86_64 binaries of an Xcode 4\n# (or later) release build. It also replaces the .nib files with ones that are\n# created specifically in Xcode 6, which is the last version of Xcode that can\n# compile Leopard-compatible .nib files.\n#\n# Before you use this script, make sure that you already have an existing\n# PowerPC Release build from Xcode 3 in the ${SRCROOT}/build/Release directory,\n# as well as an Xcode 6 .app in the same directory.\n\n# Create the Merged Release directory, plus a working copy of the .app.\nmkdir -p \"${SRCROOT}/build/Merged Release\"\ncd \"${SRCROOT}/build/Merged Release\"\ncp -a \"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app\" \"./\"\n\nif test -e \"${SRCROOT}/build/Release/DeSmuME (PPC).app/Contents/MacOS/DeSmuME (PPC)\"\nthen\n\ncd \"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS\"\n\n# Create the temp binaries for Intel.\nlipo \"./${EXECUTABLE_NAME}\" -thin i386 -output \"./${EXECUTABLE_NAME}_i386\"\nlipo \"./${EXECUTABLE_NAME}\" -thin x86_64 -output \"./${EXECUTABLE_NAME}_x86_64\"\n\n# Merge the separate temp binaries into a single binary package.\nrm -f \"${SRCROOT}/build/Merged Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\"\nlipo \"${SRCROOT}/build/Release/DeSmuME (PPC).app/Contents/MacOS/DeSmuME (PPC)\" \"./${EXECUTABLE_NAME}_i386\" \"./${EXECUTABLE_NAME}_x86_64\" -create -output \"${SRCROOT}/build/Merged Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\"\n\n# Remove the temp binaries now that we're done with them.\nrm -f \"./${EXECUTABLE_NAME}_i386\"\nrm -f \"./${EXECUTABLE_NAME}_x86_64\"\n\nfi\n\n# Copy the .nib files from an \"extract NIB\" .app to the Merged Release .app\ncd \"${SRCROOT}/build/Merged Release/${PRODUCT_NAME}.app/Contents/Resources/English.lproj\"\ncp -af \"${SRCROOT}/build/Release/DeSmuME (extract NIB).app/Contents/Resources/English.lproj/MainMenu.nib\" \"./\"\ncp -af \"${SRCROOT}/build/Release/DeSmuME (extract NIB).app/Contents/Resources/English.lproj/DisplayWindow.nib\" \"./\"\n";
 		};
 		AB2DF23215E0834E00B4D0BC /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -5274,7 +5272,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"";
+			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"\n";
 		};
 		AB2DF23515E0839D00B4D0BC /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -5302,20 +5300,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"";
-		};
-		AB790139215B84E50082AE82 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if test -d \"${TARGET_BUILD_DIR}/DeSmuME.app\" ; then\n\nDESCRIBE=`git describe --always --long --dirty=\"+\"`\nif [ \"$DESCRIBE\" == \"\" ] ; then\nDESCRIBE=\"0\"\nfi\n\nNEWBUILDNAME=\"${PRODUCT_NAME} git#$DESCRIBE.app\"\ncd \"${TARGET_BUILD_DIR}\"\nrm -rf \"$NEWBUILDNAME\"\nmv -f \"${PRODUCT_NAME}.app\" \"$NEWBUILDNAME\"\n\nfi";
+			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"\n";
 		};
 		AB790140215B84F20082AE82 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -5330,7 +5315,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
+			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"\n";
 		};
 		AB7901A8215B84F20082AE82 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -5344,7 +5329,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"";
+			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"\n";
 		};
 		AB796CA515CDCBA200C59155 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -5359,7 +5344,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
+			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"\n";
 		};
 		AB79FFE3215B84E50082AE82 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -5374,20 +5359,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
-		};
-		AB8CF4681FBCEA010039C223 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if test -d \"${TARGET_BUILD_DIR}/DeSmuME.app\" ; then\n\nDESCRIBE=`git describe --always --long --dirty=\"+\"`\nif [ \"$DESCRIBE\" == \"\" ] ; then\nDESCRIBE=\"0\"\nfi\n\nNEWBUILDNAME=\"${PRODUCT_NAME} git#$DESCRIBE.app\"\ncd \"${TARGET_BUILD_DIR}\"\nrm -rf \"$NEWBUILDNAME\"\nmv -f \"${PRODUCT_NAME}.app\" \"$NEWBUILDNAME\"\n\nfi";
+			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"\n";
 		};
 		AB8F3C181A53AC2600A80BF6 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -5402,7 +5374,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
+			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"\n";
 		};
 		AB8F3C721A53AC2600A80BF6 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -5416,7 +5388,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"";
+			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -7101,7 +7073,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_X86_VECTOR_INSTRUCTIONS = sse4.1;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/openemu\"",
@@ -7118,7 +7092,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_X86_VECTOR_INSTRUCTIONS = sse4.1;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/openemu\"",

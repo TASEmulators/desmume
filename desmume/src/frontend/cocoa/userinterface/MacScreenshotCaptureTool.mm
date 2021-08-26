@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2018 DeSmuME team
+	Copyright (C) 2017-2021 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -292,7 +292,7 @@ static void* RunFileWriteThread(void *arg)
 	
 	NSString *savePath = [NSString stringWithCString:param.savePath.c_str() encoding:NSUTF8StringEncoding];
 	NSURL *fileURL = [NSURL fileURLWithPath:[savePath stringByAppendingPathComponent:fileName]];
-	[CocoaDSFile saveScreenshot:fileURL bitmapData:newImageRep fileType:param.formatID];
+	[CocoaDSFile saveScreenshot:fileURL bitmapData:newImageRep fileType:(NSBitmapImageFileType)param.formatID];
 	
 	// Clean up.
 	delete cdp;

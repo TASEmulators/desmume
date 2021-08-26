@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2018 DeSmuME team
+	Copyright (C) 2018-2021 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ public:
 	void *refObject;
 	MacClientSharedObject *sharedData;
 	
-	NSInteger formatID;
+	NSUInteger formatID;
 	std::string savePath;
 	std::string romName;
 	bool useDeposterize;

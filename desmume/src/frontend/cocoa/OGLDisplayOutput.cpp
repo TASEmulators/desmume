@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2017 DeSmuME team
+	Copyright (C) 2014-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -7120,8 +7120,8 @@ void OGLDisplayLayer::ProcessOGL()
 	GLuint texMain  = (selectedDisplaySource[NDSDisplayID_Main]  == NDSDisplayID_Main)  ? fetchObj.GetFetchTexture(NDSDisplayID_Main)  : fetchObj.GetFetchTexture(NDSDisplayID_Touch);
 	GLuint texTouch = (selectedDisplaySource[NDSDisplayID_Touch] == NDSDisplayID_Touch) ? fetchObj.GetFetchTexture(NDSDisplayID_Touch) : fetchObj.GetFetchTexture(NDSDisplayID_Main);
 	
-	GLsizei width[2]  = { emuDisplayInfo.renderedWidth[selectedDisplaySource[NDSDisplayID_Main]],  emuDisplayInfo.renderedWidth[selectedDisplaySource[NDSDisplayID_Touch]] };
-	GLsizei height[2] = { emuDisplayInfo.renderedHeight[selectedDisplaySource[NDSDisplayID_Main]], emuDisplayInfo.renderedHeight[selectedDisplaySource[NDSDisplayID_Touch]] };
+	GLsizei width[2]  = { (GLsizei)emuDisplayInfo.renderedWidth[selectedDisplaySource[NDSDisplayID_Main]],  (GLsizei)emuDisplayInfo.renderedWidth[selectedDisplaySource[NDSDisplayID_Touch]] };
+	GLsizei height[2] = { (GLsizei)emuDisplayInfo.renderedHeight[selectedDisplaySource[NDSDisplayID_Main]], (GLsizei)emuDisplayInfo.renderedHeight[selectedDisplaySource[NDSDisplayID_Touch]] };
 	
 	VideoFilter *vfMain  = this->_output->GetPixelScalerObject(NDSDisplayID_Main);
 	VideoFilter *vfTouch = this->_output->GetPixelScalerObject(NDSDisplayID_Touch);

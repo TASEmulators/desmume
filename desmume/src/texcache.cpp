@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1156,8 +1156,8 @@ template <TextureStoreUnpackFormat TEXCACHEFORMAT>
 void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, const u16 *__restrict srcIndex, const u32 palAddress, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer)
 {
 	const u32 limit = srcSize * sizeof(u32);
-	const u16 xTmpSize = sizeX >> 2;
-	const u16 yTmpSize = sizeY >> 2;
+	const u32 xTmpSize = sizeX >> 2;
+	const u32 yTmpSize = sizeY >> 2;
 	
 	//this is flagged whenever a 4x4 overruns its slot.
 	//i am guessing we just generate black in that case
@@ -1165,8 +1165,13 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 	
 	for (size_t y = 0, d = 0; y < yTmpSize; y++)
 	{
-		u32 tmpPos[4]={(y<<2)*sizeX,((y<<2)+1)*sizeX,
-			((y<<2)+2)*sizeX,((y<<2)+3)*sizeX};
+		size_t tmpPos[4] = {
+			((y<<2)+0) * sizeX,
+			((y<<2)+1) * sizeX,
+			((y<<2)+2) * sizeX,
+			((y<<2)+3) * sizeX
+		};
+		
 		for (size_t x = 0; x < xTmpSize; x++, d++)
 		{
 			if (d >= limit)
@@ -1174,9 +1179,9 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 			
 			if (dead)
 			{
-				for (int sy = 0; sy < 4; sy++)
+				for (size_t sy = 0; sy < 4; sy++)
 				{
-					const u32 currentPos = (x<<2) + tmpPos[sy];
+					const size_t currentPos = (x<<2) + tmpPos[sy];
 					dstBuffer[currentPos] = dstBuffer[currentPos+1] = dstBuffer[currentPos+2] = dstBuffer[currentPos+3] = 0;
 				}
 				continue;
@@ -1268,7 +1273,7 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 			for (size_t sy = 0; sy < 4; sy++)
 			{
 				// Texture offset
-				const u32 currentPos = (x<<2) + tmpPos[sy];
+				const size_t currentPos = (x<<2) + tmpPos[sy];
 				const u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
 				
 				dstBuffer[currentPos  ] = tmp_col[ currRow    &3];
