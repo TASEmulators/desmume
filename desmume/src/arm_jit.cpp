@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2011 Loren Merritt
-	Copyright (C) 2012-2017 DeSmuME team
+	Copyright (C) 2012-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -31,7 +31,13 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stddef.h>
+// The static code buffer relies on write+execute privileges provided by mprotect(),
+// which isn't supported by the macOS v10.15 SDK and later, as well as Apple's other
+// modern operating systems. Therefore, we are disabling this on all Apple systems
+// for now.
+#ifndef __APPLE__
 #define HAVE_STATIC_CODE_BUFFER
+#endif
 #endif
 
 #include "utils/bits.h"

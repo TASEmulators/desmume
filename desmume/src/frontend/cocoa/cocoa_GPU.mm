@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2018 DeSmuME team
+	Copyright (C) 2013-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -36,11 +36,13 @@
 	#import "userinterface/MacMetalDisplayView.h"
 #endif
 
+#define GPU_3D_RENDERER_COUNT 3
+
 #ifdef BOOL
 #undef BOOL
 #endif
 
-GPU3DInterface *core3DList[] = {
+GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 	&gpu3DNull,
 	&gpu3DRasterize,
 	&gpu3Dgl,
@@ -394,6 +396,15 @@ public:
 
 - (void) setRender3DRenderingEngine:(NSInteger)rendererID
 {
+	if (rendererID < CORE3DLIST_NULL)
+	{
+		rendererID = CORE3DLIST_NULL;
+	}
+	else if (rendererID > GPU_3D_RENDERER_COUNT)
+	{
+		rendererID = CORE3DLIST_SWRASTERIZE;
+	}
+	
 	gpuEvent->ApplyRender3DSettingsLock();
 	GPU->Set3DRendererByID(rendererID);
 	gpuEvent->ApplyRender3DSettingsUnlock();

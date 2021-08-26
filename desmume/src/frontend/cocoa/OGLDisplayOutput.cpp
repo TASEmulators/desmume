@@ -5613,7 +5613,7 @@ OGLImage::~OGLImage()
 	}
 	
 	delete this->_vf;
-	free(_vfMasterDstBuffer);
+	free_aligned(_vfMasterDstBuffer);
 }
 
 bool OGLImage::GetFiltersPreferGPU()
@@ -6090,7 +6090,7 @@ void OGLImage::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 		
 		_vfMasterDstBuffer = newMasterBuffer;
-		free(oldMasterBuffer);
+		free_aligned(oldMasterBuffer);
 	}
 	
 	this->_vf->ChangeFilterByID(filterID);
