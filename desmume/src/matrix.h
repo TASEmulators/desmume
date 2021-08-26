@@ -1,6 +1,6 @@
 /*  
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2019 DeSmuME team
+	Copyright (C) 2007-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -195,7 +195,94 @@ static void memset_u32_fast(void *dst, const u32 val)
 	MACRODO_N(ELEMENTCOUNT / (sizeof(v512u32) / sizeof(u32)), _mm512_store_si512(dst_vec512 + (X), val_vec512));
 }
 
-#elif defined(ENABLE_AVX)
+template <size_t LENGTH>
+static void stream_copy_fast(void *__restrict dst, void *__restrict src)
+{
+	MACRODO_N( LENGTH / sizeof(v512s8), _mm512_stream_si512((v512s8 *)dst + (X), _mm512_stream_load_si512((v512s8 *)src + (X))) );
+}
+
+template <size_t LENGTH>
+static void buffer_copy_fast(void *__restrict dst, void *__restrict src)
+{
+	MACRODO_N( LENGTH / sizeof(v512s8), _mm512_store_si512((v512s8 *)dst + (X), _mm512_load_si512((v512s8 *)src + (X))) );
+}
+
+template <size_t VECLENGTH>
+static void __buffer_copy_or_constant_fast(void *__restrict dst, const void *__restrict src, const __m512i &c_vec)
+{
+	MACRODO_N( VECLENGTH / sizeof(v512s8), _mm512_store_si512((v512s8 *)dst + (X), _mm512_or_si512(_mm512_load_si512((v512s8 *)src + (X)),c_vec)) );
+}
+
+static void __buffer_copy_or_constant(void *__restrict dst, const void *__restrict src, const size_t vecLength, const __m512i &c_vec)
+{
+	switch (vecLength)
+	{
+		case 128: __buffer_copy_or_constant_fast<128>(dst, src, c_vec); break;
+		case 256: __buffer_copy_or_constant_fast<256>(dst, src, c_vec); break;
+		case 512: __buffer_copy_or_constant_fast<512>(dst, src, c_vec); break;
+		case 768: __buffer_copy_or_constant_fast<768>(dst, src, c_vec); break;
+		case 1024: __buffer_copy_or_constant_fast<1024>(dst, src, c_vec); break;
+		case 2048: __buffer_copy_or_constant_fast<2048>(dst, src, c_vec); break;
+		case 2304: __buffer_copy_or_constant_fast<2304>(dst, src, c_vec); break;
+		case 4096: __buffer_copy_or_constant_fast<4096>(dst, src, c_vec); break;
+		case 4608: __buffer_copy_or_constant_fast<4608>(dst, src, c_vec); break;
+		case 8192: __buffer_copy_or_constant_fast<8192>(dst, src, c_vec); break;
+		case 9216: __buffer_copy_or_constant_fast<9216>(dst, src, c_vec); break;
+		case 16384: __buffer_copy_or_constant_fast<16384>(dst, src, c_vec); break;
+			
+		default:
+		{
+			for (size_t i = 0; i < vecLength; i+=sizeof(v512s8))
+			{
+				_mm512_store_si512((v512s8 *)((s8 *)dst + i), _mm512_or_si512( _mm512_load_si512((v512s8 *)((s8 *)src + i)), c_vec ) );
+			}
+			break;
+		}
+	}
+}
+
+static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
+{
+	const v512s8 c_vec = _mm512_set1_epi8(c);
+	__buffer_copy_or_constant(dst, src, vecLength, c_vec);
+}
+
+template <size_t VECLENGTH>
+static void buffer_copy_or_constant_s8_fast(void *__restrict dst, const void *__restrict src, const s8 c)
+{
+	const v512s8 c_vec = _mm512_set1_epi8(c);
+	__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
+}
+
+template <bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s16(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s16 c)
+{
+	const v512s16 c_vec = _mm512_set1_epi16(c);
+	__buffer_copy_or_constant(dst, src, vecLength, c_vec);
+}
+
+template <size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s16_fast(void *__restrict dst, const void *__restrict src, const s16 c)
+{
+	const v512s16 c_vec = _mm512_set1_epi16(c);
+	__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
+}
+
+template <bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s32(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s32 c)
+{
+	const v512s32 c_vec = _mm512_set1_epi32(c);
+	__buffer_copy_or_constant(dst, src, vecLength, c_vec);
+}
+
+template <size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *__restrict src, const s32 c)
+{
+	const v512s32 c_vec = _mm512_set1_epi32(c);
+	__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
+}
+
+#elif defined(ENABLE_AVX2)
 
 static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 {
@@ -233,6 +320,133 @@ static void memset_u32_fast(void *dst, const u32 val)
 	
 	const v256u32 val_vec256 = _mm256_set1_epi32(val);
 	MACRODO_N(ELEMENTCOUNT / (sizeof(v256u32) / sizeof(u32)), _mm256_store_si256(dst_vec256 + (X), val_vec256));
+}
+
+template <size_t VECLENGTH>
+static void stream_copy_fast(void *__restrict dst, const void *__restrict src)
+{
+	MACRODO_N( VECLENGTH / sizeof(v256s8), _mm256_stream_si256((v256s8 *)dst + (X), _mm256_stream_load_si256((v256s8 *)src + (X))) );
+}
+
+template <size_t VECLENGTH>
+static void buffer_copy_fast(void *__restrict dst, const void *__restrict src)
+{
+	MACRODO_N( VECLENGTH / sizeof(v256s8), _mm256_store_si256((v256s8 *)dst + (X), _mm256_load_si256((v256s8 *)src + (X))) );
+}
+
+template <size_t VECLENGTH>
+static void __buffer_copy_or_constant_fast(void *__restrict dst, const void *__restrict src, const __m256i &c_vec)
+{
+	MACRODO_N( VECLENGTH / sizeof(v256s8), _mm256_store_si256((v256s8 *)dst + (X), _mm256_or_si256(_mm256_load_si256((v256s8 *)src + (X)),c_vec)) );
+}
+
+static void __buffer_copy_or_constant(void *__restrict dst, const void *__restrict src, const size_t vecLength, const __m256i &c_vec)
+{
+	switch (vecLength)
+	{
+		case 128: __buffer_copy_or_constant_fast<128>(dst, src, c_vec); break;
+		case 256: __buffer_copy_or_constant_fast<256>(dst, src, c_vec); break;
+		case 512: __buffer_copy_or_constant_fast<512>(dst, src, c_vec); break;
+		case 768: __buffer_copy_or_constant_fast<768>(dst, src, c_vec); break;
+		case 1024: __buffer_copy_or_constant_fast<1024>(dst, src, c_vec); break;
+		case 2048: __buffer_copy_or_constant_fast<2048>(dst, src, c_vec); break;
+		case 2304: __buffer_copy_or_constant_fast<2304>(dst, src, c_vec); break;
+		case 4096: __buffer_copy_or_constant_fast<4096>(dst, src, c_vec); break;
+		case 4608: __buffer_copy_or_constant_fast<4608>(dst, src, c_vec); break;
+		case 8192: __buffer_copy_or_constant_fast<8192>(dst, src, c_vec); break;
+		
+		default:
+		{
+			for (size_t i = 0; i < vecLength; i+=sizeof(v256s8))
+			{
+				_mm256_store_si256((v256s8 *)((s8 *)dst + i), _mm256_or_si256( _mm256_load_si256((v256s8 *)((s8 *)src + i)), c_vec ) );
+			}
+			break;
+		}
+	}
+}
+
+static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
+{
+	if (c != 0)
+	{
+		const v256s8 c_vec = _mm256_set1_epi8(c);
+		__buffer_copy_or_constant(dst, src, vecLength, c_vec);
+	}
+	else
+	{
+		memcpy(dst, src, vecLength);
+	}
+}
+
+template <size_t VECLENGTH>
+static void buffer_copy_or_constant_s8_fast(void *__restrict dst, const void *__restrict src, const s8 c)
+{
+	if (c != 0)
+	{
+		const v256s8 c_vec = _mm256_set1_epi8(c);
+		__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
+	}
+	else
+	{
+		buffer_copy_fast<VECLENGTH>(dst, src);
+	}
+}
+
+template <bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s16(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s16 c)
+{
+	if (c != 0)
+	{
+		const v256s16 c_vec = _mm256_set1_epi16(c);
+		__buffer_copy_or_constant(dst, src, vecLength, c_vec);
+	}
+	else
+	{
+		memcpy(dst, src, vecLength);
+	}
+}
+
+template <size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s16_fast(void *__restrict dst, const void *__restrict src, const s16 c)
+{
+	if (c != 0)
+	{
+		const v256s16 c_vec = _mm256_set1_epi16(c);
+		__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
+	}
+	else
+	{
+		buffer_copy_fast<VECLENGTH>(dst, src);
+	}
+}
+
+template <bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s32(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s32 c)
+{
+	if (c != 0)
+	{
+		const v256s32 c_vec = _mm256_set1_epi32(c);
+		__buffer_copy_or_constant(dst, src, vecLength, c_vec);
+	}
+	else
+	{
+		memcpy(dst, src, vecLength);
+	}
+}
+
+template <size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *__restrict src, const s32 c)
+{
+	if (c != 0)
+	{
+		const v256s32 c_vec = _mm256_set1_epi32(c);
+		__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
+	}
+	else
+	{
+		buffer_copy_fast<VECLENGTH>(dst, src);
+	}
 }
 
 #elif defined(ENABLE_SSE2)
@@ -275,6 +489,93 @@ static void memset_u32_fast(void *dst, const u32 val)
 	MACRODO_N(ELEMENTCOUNT / (sizeof(v128u32) / sizeof(u32)), _mm_store_si128(dst_vec128 + (X), val_vec128));
 }
 
+template <size_t VECLENGTH>
+static void stream_copy_fast(void *__restrict dst, void *__restrict src)
+{
+#ifdef ENABLE_SSE4_1
+	MACRODO_N( VECLENGTH / sizeof(v128s8), _mm_stream_si128((v128s8 *)dst + (X), _mm_stream_load_si128((v128s8 *)src + (X))) );
+#else
+	MACRODO_N( VECLENGTH / sizeof(v128s8), _mm_stream_si128((v128s8 *)dst + (X), _mm_load_si128((v128s8 *)src + (X))) );
+#endif
+}
+
+template <size_t VECLENGTH>
+static void buffer_copy_fast(void *__restrict dst, void *__restrict src)
+{
+	MACRODO_N( VECLENGTH / sizeof(v128s8), _mm_store_si128((v128s8 *)dst + (X), _mm_load_si128((v128s8 *)src + (X))) );
+}
+
+template <size_t VECLENGTH>
+static void __buffer_copy_or_constant_fast(void *__restrict dst, const void *__restrict src, const __m128i &c_vec)
+{
+	MACRODO_N( VECLENGTH / sizeof(v128s8), _mm_store_si128((v128s8 *)dst + (X), _mm_or_si128(_mm_load_si128((v128s8 *)src + (X)),c_vec)) );
+}
+
+static void __buffer_copy_or_constant(void *__restrict dst, const void *__restrict src, const size_t vecLength, const __m128i &c_vec)
+{
+	switch (vecLength)
+	{
+		case 128: __buffer_copy_or_constant_fast<128>(dst, src, c_vec); break;
+		case 256: __buffer_copy_or_constant_fast<256>(dst, src, c_vec); break;
+		case 512: __buffer_copy_or_constant_fast<512>(dst, src, c_vec); break;
+		case 768: __buffer_copy_or_constant_fast<768>(dst, src, c_vec); break;
+		case 1024: __buffer_copy_or_constant_fast<1024>(dst, src, c_vec); break;
+		case 2048: __buffer_copy_or_constant_fast<2048>(dst, src, c_vec); break;
+		case 2304: __buffer_copy_or_constant_fast<2304>(dst, src, c_vec); break;
+		case 4096: __buffer_copy_or_constant_fast<4096>(dst, src, c_vec); break;
+			
+		default:
+		{
+			for (size_t i = 0; i < vecLength; i+=sizeof(v128s8))
+			{
+				_mm_store_si128((v128s8 *)((s8 *)dst + i), _mm_or_si128( _mm_load_si128((v128s8 *)((s8 *)src + i)), c_vec ) );
+			}
+			break;
+		}
+	}
+}
+
+static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
+{
+	const v128s8 c_vec = _mm_set1_epi8(c);
+	__buffer_copy_or_constant(dst, src, vecLength, c_vec);
+}
+
+template <size_t VECLENGTH>
+static void buffer_copy_or_constant_s8_fast(void *__restrict dst, const void *__restrict src, const s8 c)
+{
+	const v128s8 c_vec = _mm_set1_epi8(c);
+	__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
+}
+
+template <bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s16(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s16 c)
+{
+	const v128s16 c_vec = _mm_set1_epi16(c);
+	__buffer_copy_or_constant(dst, src, vecLength, c_vec);
+}
+
+template <size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s16_fast(void *__restrict dst, const void *__restrict src, const s16 c)
+{
+	const v128s16 c_vec = _mm_set1_epi16(c);
+	__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
+}
+
+template <bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s32(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s32 c)
+{
+	const v128s32 c_vec = _mm_set1_epi32(c);
+	__buffer_copy_or_constant(dst, src, vecLength, c_vec);
+}
+
+template <size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *__restrict src, const s32 c)
+{
+	const v128s32 c_vec = _mm_set1_epi32(c);
+	__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
+}
+
 #elif defined(ENABLE_ALTIVEC)
 
 static void memset_u16(void *dst, const u16 val, const size_t elementCount)
@@ -313,6 +614,94 @@ static void memset_u32_fast(void *dst, const u32 val)
 	
 	const v128u32 val_vec128 = (v128u32){val,val,val,val};
 	MACRODO_N(ELEMENTCOUNT / (sizeof(v128u32) / sizeof(u32)), vec_st(val_vec128, 0, dst_vec128 + (X)));
+}
+
+template <size_t VECLENGTH>
+static void stream_copy_fast(void *__restrict dst, void *__restrict src)
+{
+	memcpy(dst, src, VECLENGTH);
+}
+
+template <size_t VECLENGTH>
+static void buffer_copy_fast(void *__restrict dst, void *__restrict src)
+{
+	MACRODO_N( VECLENGTH / sizeof(v128s8), vec_st(vec_ld((X)*sizeof(v128s8),src), (X)*sizeof(v128s8), dst) );
+}
+
+template <class T, size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void __buffer_copy_or_constant_fast(void *__restrict dst, const void *__restrict src, const T &c_vec)
+{
+	MACRODO_N( VECLENGTH / sizeof(v128s8), vec_st(vec_or(vec_ld((X)*sizeof(v128s8),src),c_vec), (X)*sizeof(v128s8), dst) );
+}
+
+template <class T, bool NEEDENDIANSWAP>
+static void __buffer_copy_or_constant(void *__restrict dst, const void *__restrict src, const size_t vecLength, const T &c_vec)
+{
+	switch (vecLength)
+	{
+		case 128: __buffer_copy_or_constant_fast<T, 128, NEEDENDIANSWAP>(dst, src, c_vec); break;
+		case 256: __buffer_copy_or_constant_fast<T, 256, NEEDENDIANSWAP>(dst, src, c_vec); break;
+		case 512: __buffer_copy_or_constant_fast<T, 512, NEEDENDIANSWAP>(dst, src, c_vec); break;
+		case 768: __buffer_copy_or_constant_fast<T, 768, NEEDENDIANSWAP>(dst, src, c_vec); break;
+		case 1024: __buffer_copy_or_constant_fast<T, 1024, NEEDENDIANSWAP>(dst, src, c_vec); break;
+		case 2048: __buffer_copy_or_constant_fast<T, 2048, NEEDENDIANSWAP>(dst, src, c_vec); break;
+		case 2304: __buffer_copy_or_constant_fast<T, 2304, NEEDENDIANSWAP>(dst, src, c_vec); break;
+		case 4096: __buffer_copy_or_constant_fast<T, 4096, NEEDENDIANSWAP>(dst, src, c_vec); break;
+			
+		default:
+		{
+			for (size_t i = 0; i < vecLength; i+=sizeof(T))
+			{
+				vec_st(vec_or(vec_ld(i,src),c_vec), i, dst);
+			}
+			break;
+		}
+	}
+}
+
+static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
+{
+	const v128s8 c_vec = {c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c};
+	__buffer_copy_or_constant<v128s8>(dst, src, vecLength, c_vec);
+}
+
+template <size_t VECLENGTH>
+static void buffer_copy_or_constant_s8_fast(void *__restrict dst, void *__restrict src, const s8 c)
+{
+	const v128s8 c_vec = {c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c};
+	__buffer_copy_or_constant_fast<v128s8, VECLENGTH>(dst, src, c_vec);
+}
+
+template <bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s16(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s16 c)
+{
+	const s16 c_16 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16(c) : c;
+	const v128s16 c_vec = {c_16, c_16, c_16, c_16, c_16, c_16, c_16, c_16};
+	__buffer_copy_or_constant<v128s16, NEEDENDIANSWAP>(dst, src, vecLength, c_vec);
+}
+
+template <size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s16_fast(void *__restrict dst, void *__restrict src, const s16 c)
+{
+	const s16 c_16 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16(c) : c;
+	const v128s16 c_vec = {c_16, c_16, c_16, c_16, c_16, c_16, c_16, c_16};
+	__buffer_copy_or_constant_fast<v128s16, VECLENGTH, NEEDENDIANSWAP>(dst, src, c_vec);
+}
+
+template <bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s32(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s32 c)
+{
+	const s32 c_32 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32(c) : c;
+	const v128s32 c_vec = {c_32, c_32, c_32, c_32};
+	__buffer_copy_or_constant<v128s32, NEEDENDIANSWAP>(dst, src, vecLength, c_vec);
+}
+
+template <size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s32_fast(void *__restrict dst, void *__restrict src, const s32 c)
+{
+	const s32 c_32 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32(c) : c;
+	const v128s32 c_vec = {c_32, c_32, c_32, c_32};
+	__buffer_copy_or_constant_fast<v128s32, VECLENGTH, NEEDENDIANSWAP>(dst, src, c_vec);
 }
 
 #else // No SIMD
@@ -370,6 +759,205 @@ static void memset_u32_fast(void *dst, const u32 val)
 #else
 	for (size_t i = 0; i < ELEMENTCOUNT; i++)
 		((u16 *)dst)[i] = val;
+#endif
+}
+
+// The difference between buffer_copy_fast() and stream_copy_fast() is that
+// buffer_copy_fast() assumes that both src and dst buffers can be used
+// immediately after the copy operation and that dst will be cached, while
+// stream_copy_fast() assumes that both src and dst buffers will NOT be used
+// immediately after the copy operation and that dst will NOT be cached.
+//
+// In the ANSI-C implementation, we just call memcpy() for both functions,
+// but for the manually vectorized implementations, we use the specific
+// vector intrinsics to control the temporal/caching behavior.
+
+template <size_t VECLENGTH>
+static void stream_copy_fast(void *__restrict dst, void *__restrict src)
+{
+	memcpy(dst, src, VECLENGTH);
+}
+
+template <size_t VECLENGTH>
+static void buffer_copy_fast(void *__restrict dst, void *__restrict src)
+{
+	memcpy(dst, src, VECLENGTH);
+}
+
+static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
+{
+#ifdef HOST_64
+	s64 *src_64 = (s64 *)src;
+	s64 *dst_64 = (s64 *)dst;
+	const s64 c_64 = ((s64)c << 56) | ((s64)c << 48) | ((s64)c << 40) | ((s64)c << 32) | ((s64)c << 24) | ((s64)c << 16) | ((s64)c << 8) | (s64)c;
+	
+	for (size_t i = 0; i < vecLength; i+=sizeof(s64))
+		dst_64[i] = src_64[i] | c_64;
+#else
+	s32 *src_32 = (s32 *)src;
+	s32 *dst_32 = (s32 *)dst;
+	const s32 c_32 = ((s32)c << 24) | ((s32)c << 16) | ((s32)c << 8) | (s32)c;
+	
+	for (size_t i = 0; i < vecLength; i+=sizeof(s32))
+		dst_32[i] = src_32[i] | c_32;
+#endif
+}
+
+template <size_t VECLENGTH>
+static void buffer_copy_or_constant_s8_fast(void *__restrict dst, void *__restrict src, const s8 c)
+{
+#ifdef HOST_64
+	s64 *src_64 = (s64 *)src;
+	s64 *dst_64 = (s64 *)dst;
+	const s64 c_64 = ((s64)c << 56) | ((s64)c << 48) | ((s64)c << 40) | ((s64)c << 32) | ((s64)c << 24) | ((s64)c << 16) | ((s64)c << 8) | (s64)c;
+	
+	for (size_t i = 0; i < VECLENGTH; i+=sizeof(s64))
+		dst_64[i] = src_64[i] | c_64;
+#else
+	s32 *src_32 = (s32 *)src;
+	s32 *dst_32 = (s32 *)dst;
+	const s32 c_32 = ((s32)c << 24) | ((s32)c << 16) | ((s32)c << 8) | (s32)c;
+	
+	for (size_t i = 0; i < VECLENGTH; i+=sizeof(s32))
+		dst_32[i] = src_32[i] | c_32;
+#endif
+}
+
+template <bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s16(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s16 c)
+{
+#ifdef HOST_64
+	s64 *src_64 = (s64 *)src;
+	s64 *dst_64 = (s64 *)dst;
+	const s64 c_16x4 = (NEEDENDIANSWAP) ? (s64)LE_TO_LOCAL_16(c) : (s64)c;
+	const s64 c_64 = (c_16x4 << 48) | (c_16x4 << 32) | (c_16x4 << 16) | c_16x4;
+	
+	for (size_t i = 0; i < vecLength; i+=sizeof(s64))
+	{
+		if (NEEDENDIANSWAP)
+		{
+			dst_64[i] = ( ((src_64[i] & 0xFF00FF00FF00FF00ULL) >> 8) | ((src_64[i] & 0x00FF00FF00FF00FFULL) << 8) ) | c_64;
+		}
+		else
+		{
+			dst_64[i] = src_64[i] | c_64;
+		}
+	}
+#else
+	s32 *src_32 = (s32 *)src;
+	s32 *dst_32 = (s32 *)dst;
+	const s32 c_16x2 = (NEEDENDIANSWAP) ? (s32)LE_TO_LOCAL_16(c) : (s32)c;
+	const s32 c_32 = (c_16x2 << 16) | c_16x2;
+	
+	for (size_t i = 0; i < vecLength; i+=sizeof(s32))
+	{
+		if (NEEDENDIANSWAP)
+		{
+			dst_32[i] = ( ((src_32[i] & 0x00FF00FF) << 8) | ((src_32[i] & 0xFF00FF00) >> 8) ) | c_32;
+		}
+		else
+		{
+			dst_32[i] = src_32[i] | c_32;
+		}
+	}
+#endif
+}
+
+template <size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s16_fast(void *__restrict dst, void *__restrict src, const s16 c)
+{
+#ifdef HOST_64
+	s64 *src_64 = (s64 *)src;
+	s64 *dst_64 = (s64 *)dst;
+	const s64 c_16x4 = (NEEDENDIANSWAP) ? (s64)LE_TO_LOCAL_16(c) : (s64)c;
+	const s64 c_64 = (c_16x4 << 48) | (c_16x4 << 32) | (c_16x4 << 16) | c_16x4;
+	
+	for (size_t i = 0; i < VECLENGTH; i+=sizeof(s64))
+	{
+		if (NEEDENDIANSWAP)
+		{
+			dst_64[i] = ( ((src_64[i] & 0x00FF00FF00FF00FFULL) << 8) | ((src_64[i] & 0xFF00FF00FF00FF00ULL) >> 8) ) | c_64;
+		}
+		else
+		{
+			dst_64[i] = src_64[i] | c_64;
+		}
+	}
+#else
+	s32 *src_32 = (s32 *)src;
+	s32 *dst_32 = (s32 *)dst;
+	const s32 c_16x2 = (NEEDENDIANSWAP) ? (s32)LE_TO_LOCAL_16(c) : (s32)c;
+	const s32 c_32 = (c_16x2 << 16) | c_16x2;
+	
+	for (size_t i = 0; i < VECLENGTH; i+=sizeof(s32))
+	{
+		if (NEEDENDIANSWAP)
+		{
+			dst_32[i] = ( ((src_32[i] & 0x00FF00FF) << 8) | ((src_32[i] & 0xFF00FF00) >> 8) ) | c_32;
+		}
+		else
+		{
+			dst_32[i] = src_32[i] | c_32;
+		}
+	}
+#endif
+}
+
+template <bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s32(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s32 c)
+{
+#ifdef HOST_64
+	s64 *src_64 = (s64 *)src;
+	s64 *dst_64 = (s64 *)dst;
+	const s64 c_32x2 = (NEEDENDIANSWAP) ? (s32)LE_TO_LOCAL_32(c) : (s32)c;
+	const s64 c_64 = (c_32x2 << 32) | c_32x2;
+	
+	for (size_t i = 0; i < vecLength; i+=sizeof(s64))
+	{
+		if (NEEDENDIANSWAP)
+		{
+			dst_64[i] = ( ((src_64[i] & 0x000000FF000000FFULL) << 24) | ((src_64[i] & 0x0000FF000000FF00ULL) << 8) | ((src_64[i] & 0x00FF000000FF0000ULL) >> 8) | ((src_64[i] & 0xFF000000FF000000ULL) >> 24) ) | c_64;
+		}
+		else
+		{
+			dst_64[i] = src_64[i] | c_64;
+		}
+	}
+#else
+	s32 *src_32 = (s32 *)src;
+	s32 *dst_32 = (s32 *)dst;
+	
+	for (size_t i = 0; i < vecLength; i+=sizeof(s32))
+		dst_32[i] = (ENDIANSWAPSTORE) ? LOCAL_TO_LE_32(src_32[i] | c) : src_32[i] | c;
+#endif
+}
+
+template <size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s32_fast(void *__restrict dst, void *__restrict src, const s32 c)
+{
+#ifdef HOST_64
+	s64 *src_64 = (s64 *)src;
+	s64 *dst_64 = (s64 *)dst;
+	const s64 c_32x2 = (NEEDENDIANSWAP) ? (s32)LE_TO_LOCAL_32(c) : (s32)c;
+	const s64 c_64 = (c_32x2 << 32) | c_32x2;
+	
+	for (size_t i = 0; i < VECLENGTH; i+=sizeof(s64))
+	{
+		if (NEEDENDIANSWAP)
+		{
+			dst_64[i] = ( ((src_64[i] & 0x000000FF000000FFULL) << 24) | ((src_64[i] & 0x0000FF000000FF00ULL) << 8) | ((src_64[i] & 0x00FF000000FF0000ULL) >> 8) | ((src_64[i] & 0xFF000000FF000000ULL) >> 24) ) | c_64;
+		}
+		else
+		{
+			dst_64[i] = src_64[i] | c_64;
+		}
+	}
+#else
+	s32 *src_32 = (s32 *)src;
+	s32 *dst_32 = (s32 *)dst;
+	
+	for (size_t i = 0; i < VECLENGTH; i+=sizeof(s32))
+		dst_32[i] = (ENDIANSWAPSTORE) ? LOCAL_TO_LE_32(src_32[i] | c) : src_32[i] | c;
 #endif
 }
 
