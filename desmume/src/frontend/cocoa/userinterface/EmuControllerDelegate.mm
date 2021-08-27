@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2018 DeSmuME Team
+	Copyright (C) 2013-2021 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -174,6 +174,11 @@
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(handleNDSError:)
 												 name:@"org.desmume.DeSmuME.handleNDSError"
+											   object:nil];
+	
+	[[NSNotificationCenter defaultCenter] addObserver:self
+											 selector:@selector(handleEmulatorExecutionState:)
+												 name:@"org.desmume.DeSmuME.handleEmulatorExecutionState"
 											   object:nil];
 	
 	return self;
@@ -2009,6 +2014,17 @@
 		modalDelegate:self
 	   didEndSelector:@selector(didEndErrorSheet:returnCode:contextInfo:)
 		  contextInfo:nil];
+}
+
+- (void) handleEmulatorExecutionState:(NSNotification *)aNotification
+{
+	CocoaDSCore *cdsCore = [aNotification object];
+	NSDictionary *userInfo = [aNotification userInfo];
+	ExecutionBehavior execState = (ExecutionBehavior)[(NSNumber *)[userInfo valueForKey:@"ExecutionState"] integerValue];
+	NSString *frameStatusString = (NSString *)[userInfo valueForKey:@"FrameStatusString"];
+	
+	[cdsCore setEmulationPaused:(execState == ExecutionBehavior_Pause)];
+	[cdsCore setFrameStatus:frameStatusString];
 }
 
 - (void) addOutputToCore:(CocoaDSOutput *)theOutput

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2018 DeSmuME team
+	Copyright (C) 2011-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ volatile bool execute = true;
 @dynamic masterExecute;
 @dynamic isFrameSkipEnabled;
 @dynamic coreState;
+@dynamic emulationPaused;
 @dynamic isSpeedLimitEnabled;
 @dynamic isCheatingEnabled;
 @dynamic speedScalar;
@@ -574,6 +575,8 @@ volatile bool execute = true;
 
 - (void) setCoreState:(NSInteger)coreState
 {
+	NSString *newFrameStatus = nil;
+	
 	if (coreState == ExecutionBehavior_FrameJump)
 	{
 		uint64_t frameIndex = [self frameNumber];
@@ -602,9 +605,7 @@ volatile bool execute = true;
 	}
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	
 	execControl->SetExecutionBehavior((ExecutionBehavior)coreState);
-	
 	pthread_rwlock_rdlock(&threadParam.rwlockOutputList);
 	
 	switch ((ExecutionBehavior)coreState)
@@ -616,7 +617,7 @@ volatile bool execute = true;
 				[cdsOutput setIdle:YES];
 			}
 			
-			[self setFrameStatus:[NSString stringWithFormat:@"%llu", (unsigned long long)[self frameNumber]]];
+			newFrameStatus = [NSString stringWithFormat:@"%llu", (unsigned long long)[self frameNumber]];
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
@@ -629,7 +630,7 @@ volatile bool execute = true;
 				[cdsOutput setIdle:NO];
 			}
 			
-			[self setFrameStatus:[NSString stringWithFormat:@"%llu", (unsigned long long)[self frameNumber]]];
+			newFrameStatus = [NSString stringWithFormat:@"%llu", (unsigned long long)[self frameNumber]];
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
@@ -642,7 +643,7 @@ volatile bool execute = true;
 				[cdsOutput setIdle:NO];
 			}
 			
-			[self setFrameStatus:@"Executing..."];
+			newFrameStatus = @"Executing...";
 			
 			if (_fpsTimer == nil)
 			{
@@ -669,7 +670,7 @@ volatile bool execute = true;
 				}
 			}
 			
-			[self setFrameStatus:[NSString stringWithFormat:@"Jumping to frame %llu.", (unsigned long long)execControl->GetFrameJumpTarget()]];
+			newFrameStatus = [NSString stringWithFormat:@"Jumping to frame %llu.", (unsigned long long)execControl->GetFrameJumpTarget()];
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
@@ -686,12 +687,41 @@ volatile bool execute = true;
 	
 	[[self cdsGPU] respondToPauseState:(coreState == ExecutionBehavior_Pause)];
 	[[self cdsController] setHardwareMicPause:(coreState != ExecutionBehavior_Run)];
+	
+	// This method affects UI updates, but can also be called from a thread that is different from
+	// the main thread. When compiling against the macOS v10.13 SDK and earlier, UI updates were allowed
+	// when doing KVO changes on other threads. However, the macOS v10.14 SDK and later now require that
+	// any KVO changes that affect UI updates MUST be performed on the main thread. Therefore, we need
+	// to push the UI-related stuff to the main thread here.
+	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
+	
+	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:
+							  [NSNumber numberWithInteger:coreState], @"ExecutionState",
+							  newFrameStatus, @"FrameStatusString",
+							  nil];
+	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.handleEmulatorExecutionState" object:self userInfo:userInfo];
+	[userInfo release];
+	
+	[tempPool release];
 }
 
 - (NSInteger) coreState
 {
 	const NSInteger behavior = (NSInteger)execControl->GetExecutionBehavior();
 	return behavior;
+}
+
+- (void) setEmulationPaused:(BOOL)theState
+{
+	// Do nothing. This is for KVO-compliance only.
+	// This method (actually its corresponding getter method) is really intended for
+	// UI updates only. If you want to pause the emulator, call setCoreState: and pass
+	// to it a value of ExecutionBehavior_Pause.
+}
+
+- (BOOL) emulationPaused
+{
+	return (execControl->GetExecutionBehavior() == ExecutionBehavior_Pause) ? YES : NO;
 }
 
 - (void) setArm9ImageURL:(NSURL *)fileURL
