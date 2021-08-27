@@ -685,7 +685,6 @@ volatile bool execute = true;
 	pthread_cond_signal(&threadParam.condThreadExecute);
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	
-	[[self cdsGPU] respondToPauseState:(coreState == ExecutionBehavior_Pause)];
 	[[self cdsController] setHardwareMicPause:(coreState != ExecutionBehavior_Run)];
 	
 	// This method affects UI updates, but can also be called from a thread that is different from
@@ -1178,6 +1177,8 @@ static void* RunCoreThread(void *arg)
 		execControl->ApplySettingsOnExecutionLoopStart();
 		behavior = execControl->GetExecutionBehaviorApplied();
 		
+		[[cdsCore cdsGPU] respondToPauseState:(behavior == ExecutionBehavior_Pause)];
+		
 		while (!(behavior != ExecutionBehavior_Pause && execute))
 		{
 			pthread_cond_wait(&param->condThreadExecute, &param->mutexThreadExecute);
@@ -1186,6 +1187,8 @@ static void* RunCoreThread(void *arg)
 			execControl->ApplySettingsOnExecutionLoopStart();
 			behavior = execControl->GetExecutionBehaviorApplied();
 		}
+		
+		[[cdsCore cdsGPU] respondToPauseState:(behavior == ExecutionBehavior_Pause)];
 		
 		if ( (lastBehavior == ExecutionBehavior_Run) && (behavior != ExecutionBehavior_Run) )
 		{

@@ -306,6 +306,11 @@ public:
 	
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
+	
+	if (_needRestoreRender3DLock)
+	{
+		_needRestoreRender3DLock = NO;
+	}
 }
 
 - (NSSize) gpuDimensions
@@ -374,6 +379,11 @@ public:
 	
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
+	
+	if (_needRestoreRender3DLock)
+	{
+		_needRestoreRender3DLock = NO;
+	}
 }
 
 - (NSUInteger) gpuColorFormat
