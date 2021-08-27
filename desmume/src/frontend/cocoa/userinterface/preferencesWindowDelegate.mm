@@ -126,6 +126,9 @@
 	oglImage->SetOutputFilterOGL(OutputFilterTypeID_Bilinear);
 	oglImage->SetPixelScalerOGL(VideoFilterTypeID_None);
 	
+	[context setView:self];
+	[context update];
+	
 	CGLSetCurrentContext(prevContext);
 	
 	return self;
@@ -250,6 +253,11 @@
 	{
 		[context setView:self];
 	}
+}
+
+- (BOOL)wantsDefaultClipping
+{
+	return NO;
 }
 
 - (void)drawRect:(NSRect)dirtyRect

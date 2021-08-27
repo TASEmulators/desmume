@@ -181,7 +181,6 @@ protected:
 	bool _useShader150;
 	ShaderSupportTier _shaderSupport;
 	
-	bool _needUploadVertices;
 	bool _useDeposterize;
 	bool _useShaderBasedPixelScaler;
 	bool _filtersPreferGPU;
@@ -208,7 +207,6 @@ protected:
 	GLuint _texHQ3xLUT;
 	GLuint _texHQ4xLUT;
 	
-	GLint _vtxBuffer[8];
 	GLfloat _texCoordBuffer[8];
 	
 	GLuint _texVideoInputDataID;
@@ -225,11 +223,6 @@ protected:
 	GLint _uniformRenderFlipped;
 	GLint _uniformBacklightIntensity;
 	
-	void UploadVerticesOGL();
-	void UploadTexCoordsOGL();
-	void UploadTransformationOGL();
-	
-	void UpdateVertices();
 	void UpdateTexCoords(GLfloat s, GLfloat t);
 	
 public:

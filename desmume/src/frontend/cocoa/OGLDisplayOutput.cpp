@@ -5460,7 +5460,6 @@ GLuint OGLFilterDeposterize::RunFilterOGL(GLuint srcTexID)
 
 OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imageHeight, GLsizei viewportWidth, GLsizei viewportHeight)
 {
-	_needUploadVertices = true;
 	_useDeposterize = false;
 	
 	_normalWidth = imageWidth;
@@ -5476,7 +5475,6 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	_displayTexFilter = GL_NEAREST;
 	glViewport(0, 0, _viewportWidth, _viewportHeight);
 	
-	UpdateVertices();
 	UpdateTexCoords(_vf->GetDstWidth(), _vf->GetDstHeight());
 	
 	// Set up textures
@@ -5500,12 +5498,19 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, _vf->GetSrcWidth(), _vf->GetSrcHeight(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _vf->GetSrcBufferPtr());
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
+	const GLint vtxBuffer[8] = {
+		-_normalWidth/2,  _normalHeight/2,
+		 _normalWidth/2,  _normalHeight/2,
+		-_normalWidth/2, -_normalHeight/2,
+		 _normalWidth/2, -_normalHeight/2
+	};
+	
 	// Set up VBOs
 	glGenBuffersARB(1, &_vboVertexID);
 	glGenBuffersARB(1, &_vboTexCoordID);
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(_vtxBuffer), _vtxBuffer, GL_STATIC_DRAW_ARB);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(vtxBuffer), vtxBuffer, GL_STATIC_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(_texCoordBuffer), _texCoordBuffer, GL_STATIC_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
@@ -5637,19 +5642,6 @@ void OGLImage::SetSourceDeposterize(bool useDeposterize)
 	this->_useDeposterize = (this->_canUseShaderBasedFilters) ? useDeposterize : false;
 }
 
-void OGLImage::UpdateVertices()
-{
-	const GLint w = this->_normalWidth;
-	const GLint h = this->_normalHeight;
-	
-	_vtxBuffer[0] = -w/2;	_vtxBuffer[1] =  h/2;
-	_vtxBuffer[2] =  w/2;	_vtxBuffer[3] =  h/2;
-	_vtxBuffer[4] = -w/2;	_vtxBuffer[5] = -h/2;
-	_vtxBuffer[6] =  w/2;	_vtxBuffer[7] = -h/2;
-	
-	this->_needUploadVertices = true;
-}
-
 void OGLImage::UpdateTexCoords(GLfloat s, GLfloat t)
 {
 	_texCoordBuffer[0] = 0.0f;	_texCoordBuffer[1] = 0.0f;
@@ -5667,49 +5659,6 @@ void OGLImage::GetNormalSize(double &w, double &h) const
 {
 	w = this->_normalWidth;
 	h = this->_normalHeight;
-}
-
-void OGLImage::UploadVerticesOGL()
-{
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
-	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(this->_vtxBuffer), this->_vtxBuffer);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	this->_needUploadVertices = false;
-}
-
-void OGLImage::UploadTexCoordsOGL()
-{
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
-	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(this->_texCoordBuffer), this->_texCoordBuffer);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-}
-
-void OGLImage::UploadTransformationOGL()
-{
-	const double w = this->_viewportWidth;
-	const double h = this->_viewportHeight;
-	const GLdouble s = ClientDisplayPresenter::GetMaxScalarWithinBounds(this->_normalWidth, this->_normalHeight, w, h);
-	
-	if (this->_canUseShaderOutput)
-	{
-		glUniform2f(this->_uniformViewSize, w, h);
-		glUniform1f(this->_uniformAngleDegrees, 0.0f);
-		glUniform1f(this->_uniformScalar, s);
-		glUniform1i(this->_uniformRenderFlipped, GL_FALSE);
-	}
-	else
-	{
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-w/2.0, -w/2.0 + w, -h/2.0, -h/2.0 + h, -1.0, 1.0);
-		
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glRotatef(0.0f, 0.0f, 0.0f, 1.0f);
-		glScalef(s, s, 1.0f);
-	}
-	
-	glViewport(0, 0, this->_viewportWidth, this->_viewportHeight);
 }
 
 int OGLImage::GetOutputFilter()
@@ -6153,24 +6102,41 @@ void OGLImage::ProcessOGL()
 	
 	// Output
 	this->_texVideoOutputID = this->_texVideoPixelScalerID;
-	this->UploadTexCoordsOGL();
+	
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
+	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(this->_texCoordBuffer), this->_texCoordBuffer);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 }
 
 void OGLImage::RenderOGL()
 {
+	const double w = this->_viewportWidth;
+	const double h = this->_viewportHeight;
+	const GLdouble s = ClientDisplayPresenter::GetMaxScalarWithinBounds(this->_normalWidth, this->_normalHeight, w, h);
+	
 	if (this->_canUseShaderOutput)
 	{
 		glUseProgram(this->_finalOutputProgram->GetProgramID());
 		glUniform1f(this->_uniformBacklightIntensity, 1.0f);
+		glUniform2f(this->_uniformViewSize, w, h);
+		glUniform1f(this->_uniformAngleDegrees, 0.0f);
+		glUniform1f(this->_uniformScalar, s);
+		glUniform1i(this->_uniformRenderFlipped, GL_FALSE);
 	}
-	
-	this->UploadTransformationOGL();
-	
-	if (this->_needUploadVertices)
+	else
 	{
-		this->UploadVerticesOGL();
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-w/2.0, -w/2.0 + w, -h/2.0, -h/2.0 + h, -1.0, 1.0);
+		
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glRotatef(0.0f, 0.0f, 0.0f, 1.0f);
+		glScalef(s, s, 1.0f);
 	}
+	
+	glViewport(0, 0, w, h);
 	
 	// Enable vertex attributes
 	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
