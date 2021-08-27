@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2019 DeSmuME team
+	Copyright (C) 2009-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2622,17 +2622,17 @@ void SoftRasterizerRenderer_AVX::LoadClearValues(const FragmentColor &clearColor
 
 void SoftRasterizerRenderer_AVX::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
-	for (size_t i = startPixel; i < endPixel; i+=32)
+	for (size_t i = startPixel; i < endPixel; i+=sizeof(v256u8))
 	{
-		_mm256_stream_si256((v256u32 *)(this->_framebufferColor + i +  0), this->_clearColor_v256u32);
-		_mm256_stream_si256((v256u32 *)(this->_framebufferColor + i +  8), this->_clearColor_v256u32);
-		_mm256_stream_si256((v256u32 *)(this->_framebufferColor + i + 16), this->_clearColor_v256u32);
-		_mm256_stream_si256((v256u32 *)(this->_framebufferColor + i + 24), this->_clearColor_v256u32);
+		_mm256_stream_si256((v256u32 *)(this->_framebufferColor + i) + 0, this->_clearColor_v256u32);
+		_mm256_stream_si256((v256u32 *)(this->_framebufferColor + i) + 1, this->_clearColor_v256u32);
+		_mm256_stream_si256((v256u32 *)(this->_framebufferColor + i) + 2, this->_clearColor_v256u32);
+		_mm256_stream_si256((v256u32 *)(this->_framebufferColor + i) + 3, this->_clearColor_v256u32);
 		
-		_mm256_stream_si256((v256u32 *)(this->_framebufferAttributes->depth + i +  0), this->_clearDepth_v256u32);
-		_mm256_stream_si256((v256u32 *)(this->_framebufferAttributes->depth + i +  8), this->_clearDepth_v256u32);
-		_mm256_stream_si256((v256u32 *)(this->_framebufferAttributes->depth + i + 16), this->_clearDepth_v256u32);
-		_mm256_stream_si256((v256u32 *)(this->_framebufferAttributes->depth + i + 24), this->_clearDepth_v256u32);
+		_mm256_stream_si256((v256u32 *)(this->_framebufferAttributes->depth + i) + 0, this->_clearDepth_v256u32);
+		_mm256_stream_si256((v256u32 *)(this->_framebufferAttributes->depth + i) + 1, this->_clearDepth_v256u32);
+		_mm256_stream_si256((v256u32 *)(this->_framebufferAttributes->depth + i) + 2, this->_clearDepth_v256u32);
+		_mm256_stream_si256((v256u32 *)(this->_framebufferAttributes->depth + i) + 3, this->_clearDepth_v256u32);
 		
 		_mm256_stream_si256((v256u8 *)(this->_framebufferAttributes->opaquePolyID + i), this->_clearAttrOpaquePolyID_v256u8);
 		_mm256_stream_si256((v256u8 *)(this->_framebufferAttributes->translucentPolyID + i), this->_clearAttrTranslucentPolyID_v256u8);
@@ -2659,17 +2659,17 @@ void SoftRasterizerRenderer_SSE2::LoadClearValues(const FragmentColor &clearColo
 
 void SoftRasterizerRenderer_SSE2::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
-	for (size_t i = startPixel; i < endPixel; i+=16)
+	for (size_t i = startPixel; i < endPixel; i+=sizeof(v128u8))
 	{
-		_mm_stream_si128((v128u32 *)(this->_framebufferColor + i +  0), this->_clearColor_v128u32);
-		_mm_stream_si128((v128u32 *)(this->_framebufferColor + i +  4), this->_clearColor_v128u32);
-		_mm_stream_si128((v128u32 *)(this->_framebufferColor + i +  8), this->_clearColor_v128u32);
-		_mm_stream_si128((v128u32 *)(this->_framebufferColor + i + 12), this->_clearColor_v128u32);
+		_mm_stream_si128((v128u32 *)(this->_framebufferColor + i) + 0, this->_clearColor_v128u32);
+		_mm_stream_si128((v128u32 *)(this->_framebufferColor + i) + 1, this->_clearColor_v128u32);
+		_mm_stream_si128((v128u32 *)(this->_framebufferColor + i) + 2, this->_clearColor_v128u32);
+		_mm_stream_si128((v128u32 *)(this->_framebufferColor + i) + 3, this->_clearColor_v128u32);
 		
-		_mm_stream_si128((v128u32 *)(this->_framebufferAttributes->depth + i +  0), this->_clearDepth_v128u32);
-		_mm_stream_si128((v128u32 *)(this->_framebufferAttributes->depth + i +  4), this->_clearDepth_v128u32);
-		_mm_stream_si128((v128u32 *)(this->_framebufferAttributes->depth + i +  8), this->_clearDepth_v128u32);
-		_mm_stream_si128((v128u32 *)(this->_framebufferAttributes->depth + i + 12), this->_clearDepth_v128u32);
+		_mm_stream_si128((v128u32 *)(this->_framebufferAttributes->depth + i) + 0, this->_clearDepth_v128u32);
+		_mm_stream_si128((v128u32 *)(this->_framebufferAttributes->depth + i) + 1, this->_clearDepth_v128u32);
+		_mm_stream_si128((v128u32 *)(this->_framebufferAttributes->depth + i) + 2, this->_clearDepth_v128u32);
+		_mm_stream_si128((v128u32 *)(this->_framebufferAttributes->depth + i) + 3, this->_clearDepth_v128u32);
 		
 		_mm_stream_si128((v128u8 *)(this->_framebufferAttributes->opaquePolyID + i), this->_clearAttrOpaquePolyID_v128u8);
 		_mm_stream_si128((v128u8 *)(this->_framebufferAttributes->translucentPolyID + i), this->_clearAttrTranslucentPolyID_v128u8);
