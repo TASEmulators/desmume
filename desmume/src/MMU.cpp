@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2018 DeSmuME team
+	Copyright (C) 2007-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -3427,7 +3427,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 					return;
 					
 				case REG_DISPA_DISPMMEMFIFO:
-					DISP_FIFOsend(val);
+					DISP_FIFOsend_u32(val);
 					return;
 					
 				case REG_DISPB_BG0HOFS:
@@ -3936,7 +3936,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					return;
 					
 				case REG_DISPA_DISPMMEMFIFO:
-					DISP_FIFOsend(val);
+					DISP_FIFOsend_u32(val);
 					return;
 					
 				case REG_DISPA_MASTERBRIGHT:
@@ -4503,7 +4503,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					return;
 					
 				case REG_DISPA_DISPMMEMFIFO:
-					DISP_FIFOsend(val);
+					DISP_FIFOsend_u32(val);
 					return;
 					
 				case REG_DISPA_MASTERBRIGHT:
