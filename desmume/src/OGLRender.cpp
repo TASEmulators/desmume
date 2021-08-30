@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2019 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1300,7 +1300,7 @@ OpenGLRenderer::OpenGLRenderer()
 	_emulateDepthLEqualPolygonFacing = false;
 	
 	// Init OpenGL rendering states
-	ref = new OGLRenderRef;
+	ref = (OGLRenderRef *)malloc(sizeof(OGLRenderRef));
 	memset(ref, 0, sizeof(OGLRenderRef));
 	
 	_mappedFramebuffer = NULL;
@@ -1324,7 +1324,7 @@ OpenGLRenderer::~OpenGLRenderer()
 	free_aligned(this->_workingTextureUnpackBuffer);
 	
 	// Destroy OpenGL rendering states
-	delete this->ref;
+	free(this->ref);
 	this->ref = NULL;
 }
 
