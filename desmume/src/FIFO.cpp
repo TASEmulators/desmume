@@ -503,11 +503,11 @@ void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555To6665Opaque_Altivec<false>(fifoColor, dstLo, dstHi);
+			ColorspaceConvert555To6665Opaque_AltiVec<false>(fifoColor, dstLo, dstHi);
 		}
 		else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 		{
-			ColorspaceConvert555To8888Opaque_Altivec<false>(fifoColor, dstLo, dstHi);
+			ColorspaceConvert555To8888Opaque_AltiVec<false>(fifoColor, dstLo, dstHi);
 		}
 		
 		vec_st(dstLo, d +  0, dst);
