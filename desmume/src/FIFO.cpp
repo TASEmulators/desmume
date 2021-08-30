@@ -409,7 +409,7 @@ void _DISP_FIFOrecv_LineOpaque16_vec(u32 *__restrict dst)
 template <NDSColorFormat OUTPUTFORMAT>
 void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 {
-#if defined(ENABLE_AVX512_0)
+#if defined(ENABLE_AVX512_1)
 	for (size_t i = 0, d = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(v512u16); i++, d+=2)
 	{
 		const v512u16 fifoColor = _mm512_load_si512((v512u16 *)(disp_fifo.buf + disp_fifo.head));
