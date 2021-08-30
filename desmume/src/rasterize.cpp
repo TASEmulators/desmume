@@ -1797,13 +1797,13 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 			_rasterizerUnit[i].SetSLI(_threadPostprocessParam[i].startLine, _threadPostprocessParam[i].endLine, false);
 			_rasterizerUnit[i].SetRenderer(this);
 			
+			char name[16];
+			snprintf(name, 16, "rasterizer %d", (int)i);
 #ifdef DESMUME_COCOA
 			// The Cocoa port takes advantage of hand-optimized thread priorities
 			// to help stabilize performance when running SoftRasterizer.
-			_task[i].start(false, 43);
+			_task[i].start(false, 43, name);
 #else
-			char name[16];
-			snprintf(name, 16, "rasterizer %d", i);
 			_task[i].start(false, 0, name);
 #endif
 		}

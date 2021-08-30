@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -170,7 +170,7 @@ void Task::Impl::shutdown()
 	slock_unlock(this->mutex);
 }
 
-void Task::start(bool spinlock) { impl->start(spinlock, 0, nullptr); }
+void Task::start(bool spinlock) { impl->start(spinlock, 0, NULL); }
 void Task::start(bool spinlock, int threadPriority, const char *name) { impl->start(spinlock, threadPriority, name); }
 void Task::shutdown() { impl->shutdown(); }
 Task::Task() : impl(new Task::Impl()) {}
