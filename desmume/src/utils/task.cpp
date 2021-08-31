@@ -16,10 +16,17 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "types.h"
 #include "task.h"
 #include <rthreads/rthreads.h>
+
+#ifdef __APPLE__
+#include <AvailabilityMacros.h>
+#include <CoreFoundation/CoreFoundation.h>
+#include <pthread.h>
+#endif
 
 class Task::Impl {
 private:
@@ -35,6 +42,9 @@ public:
 	void* finish();
 	void shutdown();
 
+	bool needSetThreadName;
+	char threadName[16]; // pthread_setname_np() assumes a max character length of 16.
+	
 	slock_t *mutex;
 	scond_t *condWork;
 	TWork workFunc;
@@ -46,6 +56,19 @@ public:
 static void taskProc(void *arg)
 {
 	Task::Impl *ctx = (Task::Impl *)arg;
+	
+	// The pthread_setname_np() function is gimped on macOS because it can't set thread
+	// names from any thread other than the current thread. That's why we can only set the
+	// thread name right here. We are not modifying rthreads, which is meant to be
+	// cross-platform, due to the substantially different nature of macOS's gimped version
+	// of pthread_setname_np().
+#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
+	if (ctx->needSetThreadName)
+	{
+		pthread_setname_np(ctx->threadName);
+		ctx->needSetThreadName = false;
+	}
+#endif
 
 	do {
 		slock_lock(ctx->mutex);
@@ -75,6 +98,9 @@ Task::Impl::Impl()
 	workFuncParam = NULL;
 	ret = NULL;
 	exitThread = false;
+	
+	memset(threadName, 0, sizeof(threadName));
+	needSetThreadName = false;
 
 	mutex = slock_new();
 	condWork = scond_new();
@@ -102,8 +128,23 @@ void Task::Impl::start(bool spinlock, int threadPriority, const char *name)
 	this->exitThread = false;
 	this->_thread = sthread_create_with_priority(&taskProc, this, threadPriority);
 	this->_isThreadRunning = true;
-	if (name)
-		sthread_setname(this->_thread, name);
+	
+#if !defined(USE_WIN32_THREADS) && !defined(__APPLE__)
+	sthread_setname(this->_thread, name);
+#else
+	
+#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
+	// Setting the thread name on macOS uses pthread_setname_np(), but this requires macOS v10.6 or later.
+	this->needSetThreadName = (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6) && (name != NULL);
+#else
+	this->needSetThreadName = (name != NULL);
+#endif
+	
+	if (this->needSetThreadName)
+	{
+		strncpy(this->threadName, name, sizeof(this->threadName));
+	}
+#endif
 	
 	slock_unlock(this->mutex);
 }
