@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	Originally written by Ben Jaques.
 
@@ -1505,7 +1505,7 @@ createStub_gdb( uint16_t port,
   stub->active = 0;
 
   /* keep the memory interfaces */
-  stub->cpu_memio = theCPU->GetBaseMemoryInterface();
+  stub->cpu_memio = armcpu_GetBaseMemoryInterface(theCPU);
 
   stub->direct_memio = new armcpu_memory_iface;
   *(stub->direct_memio) = *direct_memio;
@@ -1514,7 +1514,7 @@ createStub_gdb( uint16_t port,
   *(stub->gdb_memio) = gdb_memory_iface;
   stub->gdb_memio->data = stub;
 
-  stub->cpu_ctrl = theCPU->GetControlInterface();
+  stub->cpu_ctrl = armcpu_GetControlInterface(theCPU);
 
   /* put the breakpoint descriptors onto the free list */
   for ( i = 0; i < BREAKPOINT_POOL_SIZE - 1; i++) {
@@ -1644,7 +1644,7 @@ destroyStub_gdb( gdbstub_handle_t instance) {
   //stub->cpu_ctl->unstall( stub->cpu_ctl->data);
   //stub->cpu_ctl->remove_post_ex_fn( stub->cpu_ctl->data);
 
-  theCPU->ResetMemoryInterfaceToBase();
+  armcpu_ResetMemoryInterfaceToBase(theCPU);
 	
   DEBUG_LOG("Destroyed GDB stub on port %d\n", stub->port_num);
   delete stub->direct_memio;
@@ -1659,7 +1659,7 @@ activateStub_gdb( gdbstub_handle_t instance) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)instance;
   armcpu_t *theCPU = (armcpu_t *)stub->arm_cpu_object;
 
-  theCPU->SetCurrentMemoryInterface(stub->gdb_memio);
+  armcpu_SetCurrentMemoryInterface(theCPU, stub->gdb_memio);
 
   /* stall the cpu */
   stub->cpu_ctrl->stall( stub->cpu_ctrl->data);
