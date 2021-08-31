@@ -2,7 +2,7 @@
 	Copyright (C) 2006 Normmatt
 	Copyright (C) 2006 Theo Berkau
 	Copyright (C) 2007 Pascal Giard
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -607,7 +607,7 @@ static void cp15_savestate(EMUFILE &os)
 	//version
 	os.write_32LE(1);
 
-	cp15.saveone(os);
+	armcp15_saveone(&cp15, os);
 	//ARM7 not have coprocessor
 	//cp15_saveone((armcp15_t *)NDS_ARM7.coproc[15],os);
 }
@@ -619,12 +619,12 @@ static bool cp15_loadstate(EMUFILE &is, int size)
 	if (is.read_32LE(version) != 1) return false;
 	if (version > 1) return false;
 
-	if (!cp15.loadone(is)) return false;
+	if (!armcp15_loadone(&cp15, is)) return false;
 	
 	if (version == 0)
 	{
 		//ARM7 not have coprocessor
-		if (!cp15.loadone(is))
+		if (!armcp15_loadone(&cp15, is))
 			return false;
 	}
 

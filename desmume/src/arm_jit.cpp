@@ -2513,7 +2513,7 @@ static void maskPrecalc(u32 _num)
 			mask = 0 ; set = 0 ;   /* (x & 0) == 0  is allways true (enabled) */  \
 		} \
 	}  \
-	cp15.setSingleRegionAccess(num, mask, set) ;  \
+	armcp15_setSingleRegionAccess(&cp15, num, mask, set) ;  \
 }
 	switch(_num)
 	{
@@ -2686,7 +2686,7 @@ static int OP_MCR(const u32 i)
 			bUnknown = true;
 			break;
 		case 9:
-			if((opcode1==0))
+			if(opcode1==0)
 			{
 				switch(CRm)
 				{

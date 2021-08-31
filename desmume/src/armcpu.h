@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2017 DeSmuME team
+	Copyright (C) 2006-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -264,25 +264,6 @@ struct armcpu_t
 	u32 R[16]; //16
 	Status_Reg CPSR;  //80
 	Status_Reg SPSR;
-	
-	void SetControlInterface(const armcpu_ctrl_iface *theCtrlInterface);
-	armcpu_ctrl_iface* GetControlInterface();
-	void SetControlInterfaceData(void *theData);
-	void* GetControlInterfaceData();
-	
-	void SetCurrentMemoryInterface(armcpu_memory_iface *theMemInterface);
-	armcpu_memory_iface* GetCurrentMemoryInterface();
-	void SetCurrentMemoryInterfaceData(void *theData);
-	void* GetCurrentMemoryInterfaceData();
-	
-	void SetBaseMemoryInterface(const armcpu_memory_iface *theMemInterface);
-	armcpu_memory_iface* GetBaseMemoryInterface();
-	void SetBaseMemoryInterfaceData(void *theData);
-	void* GetBaseMemoryInterfaceData();
-	
-	void ResetMemoryInterfaceToBase();
-	
-	void changeCPSR();
 
 	u32 R13_usr, R14_usr;
 	u32 R13_svc, R14_svc;
@@ -332,9 +313,28 @@ struct armcpu_t
 	int runToRetTmp;
 	bool runToRet;
 	int stepOverBreak;
-	std::vector<int> breakPoints;
+	std::vector<int> *breakPoints;
 	bool debugStep;
 };
+
+void armcpu_SetControlInterface(armcpu_t *armcpu, const armcpu_ctrl_iface *theCtrlInterface);
+armcpu_ctrl_iface* armcpu_GetControlInterface(armcpu_t *armcpu);
+void armcpu_SetControlInterfaceData(armcpu_t *armcpu, void *theData);
+void* armcpu_GetControlInterfaceData(const armcpu_t *armcpu);
+
+void armcpu_SetCurrentMemoryInterface(armcpu_t *armcpu, armcpu_memory_iface *theMemInterface);
+armcpu_memory_iface* armcpu_GetCurrentMemoryInterface(const armcpu_t *armcpu);
+void armcpu_SetCurrentMemoryInterfaceData(armcpu_t *armcpu, void *theData);
+void* armcpu_GetCurrentMemoryInterfaceData(const armcpu_t *armcpu);
+
+void armcpu_SetBaseMemoryInterface(armcpu_t *armcpu, const armcpu_memory_iface *theMemInterface);
+armcpu_memory_iface* armcpu_GetBaseMemoryInterface(armcpu_t *armcpu);
+void armcpu_SetBaseMemoryInterfaceData(armcpu_t *armcpu, void *theData);
+void* armcpu_GetBaseMemoryInterfaceData(const armcpu_t *armcpu);
+
+void armcpu_ResetMemoryInterfaceToBase(armcpu_t *armcpu);
+
+void armcpu_changeCPSR();
 
 int armcpu_new( armcpu_t *armcpu, u32 id);
 void armcpu_init(armcpu_t *armcpu, u32 adr);

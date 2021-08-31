@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2019 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -176,14 +176,14 @@ int NDS_Init()
 	}
 	
 	armcpu_new(&NDS_ARM9,0);
-	NDS_ARM9.SetBaseMemoryInterface(&arm9_base_memory_iface);
-	NDS_ARM9.SetBaseMemoryInterfaceData(NULL);
-	NDS_ARM9.ResetMemoryInterfaceToBase();
+	armcpu_SetBaseMemoryInterface(&NDS_ARM9, &arm9_base_memory_iface);
+	armcpu_SetBaseMemoryInterfaceData(&NDS_ARM9, NULL);
+	armcpu_ResetMemoryInterfaceToBase(&NDS_ARM9);
 	
 	armcpu_new(&NDS_ARM7,1);
-	NDS_ARM7.SetBaseMemoryInterface(&arm7_base_memory_iface);
-	NDS_ARM7.SetBaseMemoryInterfaceData(NULL);
-	NDS_ARM7.ResetMemoryInterfaceToBase();
+	armcpu_SetBaseMemoryInterface(&NDS_ARM7, &arm7_base_memory_iface);
+	armcpu_SetBaseMemoryInterfaceData(&NDS_ARM7, NULL);
+	armcpu_ResetMemoryInterfaceToBase(&NDS_ARM7);
 	
 	delete GPU;
 	GPU = new GPUSubsystem;
@@ -1921,8 +1921,9 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 	{
 		// breakpoint handling
 		#if defined(HOST_WINDOWS) && !defined(TARGET_INTERFACE)
-		for (int i = 0; i < NDS_ARM9.breakPoints.size(); ++i) {
-			if (NDS_ARM9.instruct_adr == NDS_ARM9.breakPoints[i] && !NDS_ARM9.debugStep) {
+		const std::vector<int> *breakpointList9 = NDS_ARM9.breakPoints;
+		for (int i = 0; i < breakpointList9->size(); ++i) {
+			if (NDS_ARM9.instruct_adr == (*breakpointList9)[i] && !NDS_ARM9.debugStep) {
 				emu_paused = true;
 				paused = true;
 				execute = false;
@@ -1932,8 +1933,9 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 				return std::make_pair(arm9, arm7);
 			}
 		}
-		for (int i = 0; i < NDS_ARM7.breakPoints.size(); ++i) {
-			if (NDS_ARM7.instruct_adr == NDS_ARM7.breakPoints[i] && !NDS_ARM7.debugStep) {
+		const std::vector<int> *breakpointList7 = NDS_ARM7.breakPoints;
+		for (int i = 0; i < breakpointList7->size(); ++i) {
+			if (NDS_ARM7.instruct_adr == (*breakpointList7)[i] && !NDS_ARM7.debugStep) {
 				emu_paused = true;
 				paused = true;
 				execute = false;
@@ -2717,7 +2719,7 @@ void NDS_Reset()
 	//initialize CP15 specially for this platform
 	//TODO - how much of this is necessary for firmware boot?
 	//(only ARM9 has CP15)
-	reconstruct(&cp15);
+	armcp15_init(&cp15);
 	MMU.ARM9_RW_MODE = BIT7(cp15.ctrl);
 	NDS_ARM9.intVector = 0xFFFF0000 * (BIT13(cp15.ctrl));
 	NDS_ARM9.LDTBit = !BIT15(cp15.ctrl); //TBit
