@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2018 DeSmuME team
+	Copyright (C) 2017-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -65,7 +65,11 @@
 	[device retain];
 	
 	commandQueue = [device newCommandQueue];
+	[commandQueue setLabel:@"CQ_DeSmuME_VideoBlitter"];
+	
 	_fetchCommandQueue = [device newCommandQueue];
+	[_fetchCommandQueue setLabel:@"CQ_DeSmuME_FramebufferFetch"];
+	
 	defaultLibrary = [device newDefaultLibrary];
 	
 	MTLComputePipelineDescriptor *computePipelineDesc = [[MTLComputePipelineDescriptor alloc] init];
