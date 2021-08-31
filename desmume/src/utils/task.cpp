@@ -133,7 +133,7 @@ void Task::Impl::start(bool spinlock, int threadPriority, const char *name)
 	sthread_setname(this->_thread, name);
 #else
 	
-#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
+#if defined(DESMUME_COCOA) && defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
 	// Setting the thread name on macOS uses pthread_setname_np(), but this requires macOS v10.6 or later.
 	this->needSetThreadName = (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6) && (name != NULL);
 #else

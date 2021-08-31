@@ -1769,10 +1769,12 @@ CGLPBufferObj OSXOpenGLRendererPBuffer = NULL;
 
 static void* RunFetchThread(void *arg)
 {
+#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
 	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6)
 	{
 		pthread_setname_np("Video Fetch");
 	}
+#endif
 	
 	MacClientSharedObject *sharedData = (MacClientSharedObject *)arg;
 	[sharedData runFetchLoop];
