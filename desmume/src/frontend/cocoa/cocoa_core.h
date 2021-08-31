@@ -78,6 +78,7 @@ typedef struct
 
 @property (assign) BOOL masterExecute;
 @property (assign) BOOL isFrameSkipEnabled;
+@property (assign) NSInteger framesToSkipSetting;
 @property (assign) NSInteger coreState;
 @property (assign) BOOL emulationPaused;
 

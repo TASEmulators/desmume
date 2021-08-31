@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2018 DeSmuME team
+	Copyright (C) 2017-2021 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -99,6 +99,7 @@ ClientExecutionControl::ClientExecutionControl()
 	_settingsPending.executionSpeed						= SPEED_SCALAR_NORMAL;
 	
 	_settingsPending.enableFrameSkip					= true;
+	_settingsPending.framesToSkipSetting				= 0; // A value of 0 is interpreted as 'automatic'.
 	_settingsPending.frameJumpRelativeTarget			= 60;
 	_settingsPending.frameJumpTarget					= 60;
 	
@@ -744,6 +745,29 @@ void ClientExecutionControl::ResetFramesToSkip()
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
+uint8_t ClientExecutionControl::GetFramesToSkipSetting()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	const uint8_t framesToSkipSetting = this->_settingsPending.framesToSkipSetting;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	
+	return framesToSkipSetting;
+}
+
+uint8_t ClientExecutionControl::GetFramesToSkipSettingApplied()
+{
+	return this->_settingsApplied.framesToSkipSetting;
+}
+
+void ClientExecutionControl::SetFramesToSkipSetting(uint8_t numFrames)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	this->_settingsPending.framesToSkipSetting = numFrames;
+	
+	this->_newSettingsPendingOnExecutionLoopStart = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+}
+
 uint64_t ClientExecutionControl::GetFrameJumpRelativeTarget()
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
@@ -1068,6 +1092,7 @@ void ClientExecutionControl::ApplySettingsOnExecutionLoopStart()
 		const double speedScalar = (this->_settingsPending.executionSpeed > SPEED_SCALAR_MIN) ? this->_settingsPending.executionSpeed : SPEED_SCALAR_MIN;
 		this->_settingsApplied.enableExecutionSpeedLimiter	= this->_settingsPending.enableExecutionSpeedLimiter;
 		this->_settingsApplied.executionSpeed				= speedScalar;
+		this->_settingsApplied.framesToSkipSetting			= this->_settingsPending.framesToSkipSetting;
 		
 		this->_settingsApplied.jumpBehavior					= this->_settingsPending.jumpBehavior;
 		this->_settingsApplied.frameJumpRelativeTarget		= this->_settingsPending.frameJumpRelativeTarget;

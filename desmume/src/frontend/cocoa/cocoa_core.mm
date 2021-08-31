@@ -51,6 +51,7 @@ volatile bool execute = true;
 
 @dynamic masterExecute;
 @dynamic isFrameSkipEnabled;
+@dynamic framesToSkipSetting;
 @dynamic coreState;
 @dynamic emulationPaused;
 @dynamic isSpeedLimitEnabled;
@@ -281,6 +282,25 @@ volatile bool execute = true;
 {
 	const bool enable = execControl->GetEnableFrameSkip();
 	return (enable) ? YES : NO;
+}
+
+- (void) setFramesToSkipSetting:(NSInteger)framesToSkip
+{
+	if (framesToSkip < 0)
+	{
+		framesToSkip = 0; // Actual frame skip values can't be negative.
+	}
+	else if (framesToSkip > MAX_FIXED_FRAMESKIP_VALUE)
+	{
+		framesToSkip = MAX_FIXED_FRAMESKIP_VALUE;
+	}
+	
+	execControl->SetFramesToSkipSetting((uint8_t)framesToSkip);
+}
+
+- (NSInteger) framesToSkipSetting
+{
+	return (NSInteger)execControl->GetFramesToSkipSetting();
 }
 
 - (void) setSpeedScalar:(CGFloat)scalar
@@ -1359,8 +1379,16 @@ static void* RunCoreThread(void *arg)
 					}
 					else
 					{
-						const double frameTimeBias = (lastExecutionSpeedDifference > 0.0) ? 1.0 - lastExecutionSpeedDifference : 1.0;
-						execControl->SetFramesToSkip( execControl->CalculateFrameSkip(startTime, frameTime * frameTimeBias) );
+						const uint8_t framesToSkipSetting = execControl->GetFramesToSkipSettingApplied();
+						if (framesToSkipSetting == 0) // A value of 0 is interpreted as 'automatic'.
+						{
+							const double frameTimeBias = (lastExecutionSpeedDifference > 0.0) ? 1.0 - lastExecutionSpeedDifference : 1.0;
+							execControl->SetFramesToSkip( execControl->CalculateFrameSkip(startTime, frameTime * frameTimeBias) );
+						}
+						else
+						{
+							execControl->SetFramesToSkip(framesToSkipSetting);
+						}
 					}
 				}
 				break;

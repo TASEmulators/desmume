@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2018 DeSmuME Team
+	Copyright (C) 2012-2021 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -182,6 +182,8 @@
 
 #define MAX_VOLUME									100.0f
 #define MAX_BRIGHTNESS								100.0f
+
+#define MAX_FIXED_FRAMESKIP_VALUE					255
 
 #define CHEAT_DESCRIPTION_LENGTH					1024
 

@@ -643,9 +643,9 @@
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 		NSURL *sramURL = [CocoaDSFile fileURLFromRomURL:[[self currentRom] fileURL] toKind:@"ROM Save"];
 		
-		NSFileManager *fileManager = [[NSFileManager alloc] init];
-		const BOOL exists = [fileManager isReadableFileAtPath:[sramURL path]];
-		[fileManager release];
+		//NSFileManager *fileManager = [[NSFileManager alloc] init];
+		//const BOOL exists = [fileManager isReadableFileAtPath:[sramURL path]];
+		//[fileManager release];
 		
 		const BOOL isMovieStarted = [cdsCore startReplayRecording:fileURL sramURL:sramURL];
 		[self setStatusText:(isMovieStarted) ? @"Replay recording started." : @"Replay creation failed!"];
@@ -767,6 +767,12 @@
 - (IBAction) toggleAutoFrameSkip:(id)sender
 {
 	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
+}
+
+- (IBAction) framesToSkipSetting:(id)sender
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore setFramesToSkipSetting:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) toggleGPUState:(id)sender
@@ -2894,6 +2900,13 @@
 		if ([avCaptureToolDelegate isRecording])
 		{
 			enable = NO;
+		}
+	}
+	else if (theAction == @selector(framesToSkipSetting:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:([cdsCore framesToSkipSetting] == [theItem tag]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(toggleCheats:))
