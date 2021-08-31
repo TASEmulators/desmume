@@ -241,6 +241,11 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
+	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6)
+	{
+		pthread_setname_np("App Main Thread");
+	}
+	
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	
 	// Determine if the app was run for the first time.

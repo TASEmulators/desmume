@@ -1142,6 +1142,11 @@ volatile bool execute = true;
 
 static void* RunCoreThread(void *arg)
 {
+	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6)
+	{
+		pthread_setname_np("Emulation Core");
+	}
+	
 	CoreThreadParam *param = (CoreThreadParam *)arg;
 	CocoaDSCore *cdsCore = (CocoaDSCore *)param->cdsCore;
 	ClientExecutionControl *execControl = [cdsCore execControl];

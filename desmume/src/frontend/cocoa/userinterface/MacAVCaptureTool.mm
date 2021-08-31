@@ -1463,6 +1463,11 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 
 static void* RunAVCaptureCloseThread(void *arg)
 {
+	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6)
+	{
+		pthread_setname_np("AVCapture Close");
+	}
+	
 	/*
 	ClientAVCaptureObject *captureObject = (ClientAVCaptureObject *)arg;
 	FFmpegFileStream *ffmpegFS = (FFmpegFileStream *)captureObject->GetOutputFileStream();

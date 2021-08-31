@@ -131,6 +131,11 @@
 
 static void* RunFileWriteThread(void *arg)
 {
+	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6)
+	{
+		pthread_setname_np("Mac File Write");
+	}
+	
 	// Copy the rendering properties from the calling thread.
 	MacCaptureToolParams *inParams = (MacCaptureToolParams *)arg;
 	MacCaptureToolParams param;
