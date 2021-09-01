@@ -982,7 +982,7 @@ static void gfx3d_glLightDirection_cache(const size_t index)
 	MatrixMultVec3x3(mtxCurrent[MATRIXMODE_POSITION_VECTOR], cacheLightDirection[index]);
 
 	//Calculate the half angle vector
-	s32 lineOfSight[4] = {0, 0, 0xFFFFF000, 0};
+	s32 lineOfSight[4] = {0, 0, (s32)0xFFFFF000, 0};
 	for (size_t i = 0; i < 4; i++)
 	{
 		cacheHalfVector[index][i] = ((cacheLightDirection[index][i] + lineOfSight[i]));

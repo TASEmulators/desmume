@@ -100,7 +100,7 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
              for(i = 0; i < nbligne; ++i)
              {
 				 SetBkColor(mem_dc, RGB(255, 255, 255));
-				 for (int j = 0; j < win->cpu->breakPoints.size(); ++j) {
+				 for (u32 j = 0; j < win->cpu->breakPoints.size(); ++j) {
 					 if (adr == win->cpu->breakPoints[j]) {
 						 SetBkColor(mem_dc, RGB(255, 0, 0));
 					 }
@@ -143,7 +143,7 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
              for(i = 0; i < nbligne; ++i)
              {
 				 SetBkColor(mem_dc, RGB(255, 255, 255));
-				 for (int j = 0; j < win->cpu->breakPoints.size(); ++j) {
+				 for (u32 j = 0; j < win->cpu->breakPoints.size(); ++j) {
 					 if (adr == win->cpu->breakPoints[j]) {
 						 SetBkColor(mem_dc, RGB(255, 0, 0));
 					 }
