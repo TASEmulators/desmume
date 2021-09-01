@@ -249,7 +249,7 @@ static void CvtPacketToFloat( StereoOut32* srcdest )
 {
 	StereoOutFloat* dest = (StereoOutFloat*)srcdest;
 	const StereoOut32* src = (StereoOut32*)srcdest;
-	for( uint i=0; i<SndOutPacketSize; ++i, ++dest, ++src )
+	for( int i=0; i<SndOutPacketSize; ++i, ++dest, ++src )
 		*dest = (StereoOutFloat)*src;
 }
 

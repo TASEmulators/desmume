@@ -1,4 +1,4 @@
-/*  Copyright 2009-2015 DeSmuME team
+/*  Copyright 2009-2021 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -492,9 +492,9 @@ public:
 				//SndOutPacketSize
 				StereoOut16 temp[SndOutPacketSize*2];
 				SndBuffer::ReadSamples( temp );
-				for(int i=0;i<SndOutPacketSize;i++) {
-					readySamples.push(temp[i].Left);
-					readySamples.push(temp[i].Right);
+				for(int j=0;j<SndOutPacketSize;j++) {
+					readySamples.push(temp[j].Left);
+					readySamples.push(temp[j].Right);
 				}
 			}
 			*buf++ = readySamples.front(); readySamples.pop();

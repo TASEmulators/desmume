@@ -146,7 +146,7 @@ int armcpu_new( armcpu_t *armcpu, u32 id)
 	armcpu->post_ex_fn = NULL;
 	armcpu->post_ex_fn_data = NULL;
 	
-	armcpu->breakPoints = new std::vector<int>;
+	armcpu->breakPoints = new std::vector<u32>;
 	
 	armcpu_init(armcpu, 0);
 

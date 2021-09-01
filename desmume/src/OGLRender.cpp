@@ -1814,7 +1814,7 @@ FragmentColor* OpenGLRenderer::GetFramebuffer()
 
 GLsizei OpenGLRenderer::GetLimitedMultisampleSize() const
 {
-	GLsizei deviceMultisamples = this->_deviceInfo.maxSamples;
+	u32 deviceMultisamples = this->_deviceInfo.maxSamples;
 	u32 workingMultisamples = (u32)this->_selectedMultisampleSize;
 	
 	if (workingMultisamples == 1)
@@ -1847,7 +1847,7 @@ GLsizei OpenGLRenderer::GetLimitedMultisampleSize() const
 		deviceMultisamples = workingMultisamples;
 	}
 	
-	return deviceMultisamples;
+	return (GLsizei)deviceMultisamples;
 }
 
 OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing)

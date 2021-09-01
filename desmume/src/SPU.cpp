@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	Ideas borrowed from Stephane Dallongeville's SCSP core
 
@@ -1269,6 +1269,7 @@ template<int CHANNELS> FORCEINLINE static void SPU_Mix(SPU_struct* SPU, channel_
 		case 0: MixL(SPU, chan, data); break;
 		case 1: MixLR(SPU, chan, data); break;
 		case 2: MixR(SPU, chan, data); break;
+		default: break;
 	}
 	SPU->lastdata = data;
 }
@@ -1288,6 +1289,7 @@ template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS>
 				case 1: Fetch16BitData<INTERPOLATE_MODE>(chan, &data); break;
 				case 2: FetchADPCMData<INTERPOLATE_MODE>(chan, &data); break;
 				case 3: FetchPSGData(chan, &data); break;
+				default: break;
 			}
 			SPU_Mix<CHANNELS>(SPU, chan, data);
 		}
@@ -1296,6 +1298,7 @@ template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS>
 			case 0: case 1: TestForLoop<FORMAT>(SPU, chan); break;
 			case 2: TestForLoop2(SPU, chan); break;
 			case 3: chan->sampcnt += chan->sampinc; break;
+			default: break;
 		}
 	}
 }
@@ -1441,6 +1444,7 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 			case SPU_struct::REGS::LOM_CH1: sndout[0] = submix[1*2+0]; break;
 			case SPU_struct::REGS::LOM_CH3: sndout[0] = submix[3*2+0]; break;
 			case SPU_struct::REGS::LOM_CH1_PLUS_CH3: sndout[0] = submix[1*2+0] + submix[3*2+0]; break;
+			default: break;
 		}
 		switch (SPU->regs.ctl_right)
 		{
@@ -1448,6 +1452,7 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 			case SPU_struct::REGS::ROM_CH1: sndout[1] = submix[1*2+1]; break;
 			case SPU_struct::REGS::ROM_CH3: sndout[1] = submix[3*2+1]; break;
 			case SPU_struct::REGS::ROM_CH1_PLUS_CH3: sndout[1] = submix[1*2+1] + submix[3*2+1]; break;
+			default: break;
 		}
 
 

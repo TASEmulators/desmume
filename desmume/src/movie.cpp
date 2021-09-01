@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2019 DeSmuME team
+	Copyright 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -335,7 +335,7 @@ void MovieData::installSram(std::string& key, std::string& val) { BinaryDataFrom
 void MovieData::installMicSample(std::string& key, std::string& val)
 {
 	//which sample?
-	int which = atoi(key.c_str()+strlen("micsample"));
+	size_t which = atoi(key.c_str()+strlen("micsample"));
 
 	//make sure we have this many
 	if(micSamples.size()<which+1)
@@ -405,13 +405,13 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	if (sram.size() != 0)
 		fp.fprintf("sram %s\n", BytesToString(&sram[0],sram.size()).c_str());
 
-	for(int i=0;i<256;i++)
+	for (size_t i = 0; i < 256; i++)
 	{
 		//TODO - how do these get put in here
 		if(micSamples.size() > i)
 		{
 			char tmp[32];
-			sprintf(tmp,"micsample%d",i);
+			sprintf(tmp,"micsample%d", (int)i);
 			fp.fprintf("%s %s\n",tmp, BytesToString(&micSamples[i][0],micSamples[i].size()).c_str());
 		}
 	}

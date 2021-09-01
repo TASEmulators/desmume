@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 thoduv
 	Copyright (C) 2006-2007 Theo Berkau
-	Copyright (C) 2008-2018 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1554,8 +1554,8 @@ bool BackupDevice::import_duc(const char* filename, u32 force_size)
 		fseek(file, 0xA4, SEEK_SET);
 
 		//validate size
-		int specifiedSize = (id3[0]<<8)+(id3[1]<<16);
-		if(specifiedSize != size)
+		const u32 specifiedSize = ((u32)id3[0] << 8) + ((u32)id3[1] << 16);
+		if (specifiedSize != size)
 			goto INVALID_DUC;
 	}
 

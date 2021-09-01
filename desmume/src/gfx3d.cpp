@@ -1,6 +1,6 @@
 /*	
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2019 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -538,7 +538,7 @@ void gfx3d_init()
 	// in this case.
 	if (polylists == NULL)
 	{
-		polylists = (POLYLIST *)malloc(sizeof(POLYLIST)*2);
+		polylists = (POLYLIST *)malloc_alignedPage(sizeof(POLYLIST) * 2);
 		polylist = &polylists[0];
 	}
 	
@@ -565,7 +565,7 @@ void gfx3d_deinit()
 {
 	Render3D_DeInit();
 	
-	free(polylists);
+	free_aligned(polylists);
 	polylists = NULL;
 	polylist = NULL;
 	
@@ -982,7 +982,7 @@ static void gfx3d_glLightDirection_cache(const size_t index)
 	MatrixMultVec3x3(mtxCurrent[MATRIXMODE_POSITION_VECTOR], cacheLightDirection[index]);
 
 	//Calculate the half angle vector
-	s32 lineOfSight[4] = {0, 0, (-1)<<12, 0};
+	s32 lineOfSight[4] = {0, 0, 0xFFFFF000, 0};
 	for (size_t i = 0; i < 4; i++)
 	{
 		cacheHalfVector[index][i] = ((cacheLightDirection[index][i] + lineOfSight[i]));
@@ -2416,7 +2416,7 @@ void gfx3d_GenerateRenderLists(const ClipperMode clippingMode)
 		verty = 1.0f-(verty+vertw)/(2*vertw);
 		poly.miny = poly.maxy = verty;
 		
-		for (size_t j = 1; j < poly.type; j++)
+		for (size_t j = 1; j < (size_t)poly.type; j++)
 		{
 			verty = gfx3d.vertList[poly.vertIndexes[j]].y;
 			vertw = (gfx3d.vertList[poly.vertIndexes[j]].w != 0.0f) ? gfx3d.vertList[poly.vertIndexes[j]].w : 0.00000001f;
@@ -3355,7 +3355,7 @@ bool GFX3D_Clipper::ClipPoly(const u16 polyIndex, const POLY &poly, const VERT *
 	CLIPLOG("==Begin poly==\n");
 
 	PolygonType outType;
-	const PolygonType type = poly.type;
+	const PolygonType polyType = poly.type;
 	numScratchClipVerts = 0;
 	
 	switch (CLIPPERMODE)
@@ -3363,7 +3363,7 @@ bool GFX3D_Clipper::ClipPoly(const u16 polyIndex, const POLY &poly, const VERT *
 		case ClipperMode_Full:
 		{
 			clipper1.init(this->_clippedPolyList[this->_clippedPolyCounter].clipVerts);
-			for (size_t i = 0; i < type; i++)
+			for (size_t i = 0; i < (size_t)polyType; i++)
 				clipper1.clipVert(verts[i]);
 			
 			outType = (PolygonType)clipper1.finish();
@@ -3373,7 +3373,7 @@ bool GFX3D_Clipper::ClipPoly(const u16 polyIndex, const POLY &poly, const VERT *
 		case ClipperMode_FullColorInterpolate:
 		{
 			clipper1i.init(this->_clippedPolyList[this->_clippedPolyCounter].clipVerts);
-			for (size_t i = 0; i < type; i++)
+			for (size_t i = 0; i < (size_t)polyType; i++)
 				clipper1i.clipVert(verts[i]);
 			
 			outType = (PolygonType)clipper1i.finish();
@@ -3383,7 +3383,7 @@ bool GFX3D_Clipper::ClipPoly(const u16 polyIndex, const POLY &poly, const VERT *
 		case ClipperMode_DetermineClipOnly:
 		{
 			clipper1d.init(this->_clippedPolyList[this->_clippedPolyCounter].clipVerts);
-			for (size_t i = 0; i < type; i++)
+			for (size_t i = 0; i < (size_t)polyType; i++)
 				clipper1d.clipVert(verts[i]);
 			
 			outType = (PolygonType)clipper1d.finish();

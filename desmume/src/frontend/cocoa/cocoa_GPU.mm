@@ -355,7 +355,7 @@ public:
 	
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	
-	if (colorFormat != dispInfo.colorFormat)
+	if (dispInfo.colorFormat != (NDSColorFormat)colorFormat)
 	{
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 		const size_t maxPages = GPU->GetDisplayInfo().framebufferPageCount;
@@ -521,7 +521,7 @@ public:
 	
 	CommonSettings.num_cores = numberCores;
 	
-	if (renderingEngineID == CORE3DLIST_SWRASTERIZE)
+	if (renderingEngineID == RENDERID_SOFTRASTERIZER)
 	{
 		GPU->Set3DRendererByID(renderingEngineID);
 	}
@@ -558,7 +558,7 @@ public:
 {
 	gpuEvent->ApplyRender3DSettingsLock();
 	
-	const int currentMSAASize = CommonSettings.GFX3D_Renderer_MultisampleSize;
+	const NSUInteger currentMSAASize = (NSUInteger)CommonSettings.GFX3D_Renderer_MultisampleSize;
 	
 	if (currentMSAASize != msaaSize)
 	{
@@ -644,8 +644,8 @@ public:
 			msaaSize = openglDeviceMaxMultisamples;
 		}
 		
-		msaaSize = GetNearestPositivePOT(msaaSize);
-		CommonSettings.GFX3D_Renderer_MultisampleSize = msaaSize;
+		msaaSize = GetNearestPositivePOT((uint32_t)msaaSize);
+		CommonSettings.GFX3D_Renderer_MultisampleSize = (int)msaaSize;
 	}
 	
 	gpuEvent->ApplyRender3DSettingsUnlock();

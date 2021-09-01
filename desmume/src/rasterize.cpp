@@ -1288,7 +1288,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 
 		const CPoly &clippedPoly = this->_softRender->GetClippedPolyByIndex(i);
 		const POLY &thePoly = *clippedPoly.poly;
-		const int vertCount = clippedPoly.type;
+		const size_t vertCount = (size_t)clippedPoly.type;
 		const bool useLineHack = USELINEHACK && (thePoly.vtxFormat & 4);
 		
 		polyAttr = thePoly.attribute;
@@ -1666,8 +1666,8 @@ void SoftRasterizerTexture::SetScalingFactor(size_t scalingFactor)
 		scalingFactor = 1;
 	}
 	
-	u32 newWidth = this->_sizeS * scalingFactor;
-	u32 newHeight = this->_sizeT * scalingFactor;
+	s32 newWidth = (s32)(this->_sizeS * scalingFactor);
+	s32 newHeight = (s32)(this->_sizeT * scalingFactor);
 	
 	if (this->_renderWidth != newWidth || this->_renderHeight != newHeight)
 	{
@@ -1875,7 +1875,7 @@ void SoftRasterizerRenderer::_TransformVertices()
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
 		CPoly &poly = this->_clippedPolyList[i];
-		for (size_t j = 0; j < poly.type; j++)
+		for (size_t j = 0; j < (size_t)poly.type; j++)
 		{
 			VERT &vert = poly.clipVerts[j];
 			

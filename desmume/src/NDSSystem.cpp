@@ -96,8 +96,8 @@ GameInfo gameInfo;
 NDSSystem nds;
 CFIRMWARE *extFirmwareObj = NULL;
 
-std::vector<int> memReadBreakPoints;
-std::vector<int> memWriteBreakPoints;
+std::vector<u32> memReadBreakPoints;
+std::vector<u32> memWriteBreakPoints;
 
 using std::min;
 using std::max;
@@ -707,15 +707,17 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	//run crc over the whole buffer (chunk at a time, to avoid coding a streaming crc
 	gameInfo.reader->Seek(gameInfo.fROM, 0, SEEK_SET);
 	gameInfo.crc = 0;
+	
+	u8 fROMBuffer[4096];
 	bool first = true;
+	
 	for(;;) {
-		u8 buf[4096];
-		int read = gameInfo.reader->Read(gameInfo.fROM,buf,4096);
+		int read = gameInfo.reader->Read(gameInfo.fROM,fROMBuffer,4096);
 		if(read == 0) break;
 		if(first && read >= 512)
-			gameInfo.crcForCheatsDb = ~crc32(0, buf, 512);
+			gameInfo.crcForCheatsDb = ~crc32(0, fROMBuffer, 512);
 		first = false;
-		gameInfo.crc = crc32(gameInfo.crc, buf, read);
+		gameInfo.crc = crc32(gameInfo.crc, fROMBuffer, read);
 	}
 
 	gameInfo.chipID  = 0xC2;														// The Manufacturer ID is defined by JEDEC (C2h = Macronix)
@@ -1921,7 +1923,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 	{
 		// breakpoint handling
 		#if defined(HOST_WINDOWS) && !defined(TARGET_INTERFACE)
-		const std::vector<int> *breakpointList9 = NDS_ARM9.breakPoints;
+		const std::vector<u32> *breakpointList9 = NDS_ARM9.breakPoints;
 		for (int i = 0; i < breakpointList9->size(); ++i) {
 			if (NDS_ARM9.instruct_adr == (*breakpointList9)[i] && !NDS_ARM9.debugStep) {
 				emu_paused = true;
@@ -1933,7 +1935,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 				return std::make_pair(arm9, arm7);
 			}
 		}
-		const std::vector<int> *breakpointList7 = NDS_ARM7.breakPoints;
+		const std::vector<u32> *breakpointList7 = NDS_ARM7.breakPoints;
 		for (int i = 0; i < breakpointList7->size(); ++i) {
 			if (NDS_ARM7.instruct_adr == (*breakpointList7)[i] && !NDS_ARM7.debugStep) {
 				emu_paused = true;

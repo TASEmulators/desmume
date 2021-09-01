@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2009 CrazyMax
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -106,8 +106,8 @@ private:
 		int len = fROM->size();
 		for(;;)
 		{
-			u32 tmp;
-			u32 readed = fROM->fread(&tmp, 4);
+			u32 romType = 0;
+			u32 readed = fROM->fread(&romType, 4);
 
 			int pos = fROM->ftell();
 			int currPct = pos*100/(size-1);
@@ -126,7 +126,7 @@ private:
 				break;
 
 
-			switch (tmp)
+			switch (romType)
 			{
 				case EEPROM:
 					return 1;
@@ -139,6 +139,9 @@ private:
 				}
 				case SIIRTC_V:
 					return 4;
+					
+				default:
+					break;
 			}
 		}
 

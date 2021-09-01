@@ -310,10 +310,10 @@ struct armcpu_t
 	armcpu_ctrl_iface ctrl_iface;
 
 	// debugging stuff
-	int runToRetTmp;
+	u32 runToRetTmp;
 	bool runToRet;
-	int stepOverBreak;
-	std::vector<int> *breakPoints;
+	u32 stepOverBreak;
+	std::vector<u32> *breakPoints;
 	bool debugStep;
 };
 

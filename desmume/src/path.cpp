@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -100,7 +100,7 @@ std::string Path::ScrubInvalid(std::string str)
 	for (std::string::iterator it(str.begin()); it != str.end(); ++it)
 	{
 		bool ok = true;
-		for(int i=0;i<ARRAY_SIZE(InvalidPathChars);i++)
+		for (size_t i = 0; i < ARRAY_SIZE(InvalidPathChars); i++)
 		{
 			if(InvalidPathChars[i] == *it)
 			{

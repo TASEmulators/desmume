@@ -1128,7 +1128,7 @@ static void execdiv() {
 
 DSI_TSC::DSI_TSC()
 {
-	for(int i=0;i<ARRAY_SIZE(registers);i++)
+	for (size_t i = 0; i < ARRAY_SIZE(registers); i++)
 		registers[i] = 0x00;
 	reset_command();
 }
@@ -1224,7 +1224,7 @@ bool DSI_TSC::save_state(EMUFILE &os)
 	os.write_u8(read_flag);
 	os.write_32LE(state);
 	os.write_32LE(readcount);
-	for (int i = 0; i < ARRAY_SIZE(registers); i++)
+	for (size_t i = 0; i < ARRAY_SIZE(registers); i++)
 		os.write_u8(registers[i]);
 
 	return true;
@@ -1239,7 +1239,7 @@ bool DSI_TSC::load_state(EMUFILE &is)
 	is.read_u8(read_flag);
 	is.read_32LE(state);
 	is.read_32LE(readcount);
-	for (int i = 0; i < ARRAY_SIZE(registers); i++)
+	for (size_t i = 0; i < ARRAY_SIZE(registers); i++)
 		is.read_u8(registers[i]);
 
 	return true;
