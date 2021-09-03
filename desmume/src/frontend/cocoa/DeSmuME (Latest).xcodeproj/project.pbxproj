@@ -4074,7 +4074,6 @@
 		AB407F381A620D6E00313213 /* OptimizationProfiles */ = {
 			isa = PBXGroup;
 			children = (
-				AB407F391A620D6E00313213 /* DeSmuME (Latest).profdata */,
 			);
 			path = OptimizationProfiles;
 			sourceTree = "<group>";
