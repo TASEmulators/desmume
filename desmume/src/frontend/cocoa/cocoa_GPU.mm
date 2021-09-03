@@ -1883,10 +1883,13 @@ bool CreateOpenGLRenderer()
 		(CGLPixelFormatAttribute)0
 	};
 	
-#ifdef MAC_OS_X_VERSION_10_7
 	// If we can support a 3.2 Core Profile context, then request that in our
 	// pixel format attributes.
-	useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
+#ifdef MAC_OS_X_VERSION_10_7
+	// As of 2021/09/03, testing has shown that macOS v10.7's OpenGL 3.2 shader
+	// compiler isn't very reliable, and so we're going to require macOS v10.8
+	// instead, which at least has a working shader compiler for OpenGL 3.2.
+	useContext_3_2 = IsOSXVersionSupported(10, 8, 0);
 	if (useContext_3_2)
 	{
 		attrs[9] = kCGLPFAOpenGLProfile;
