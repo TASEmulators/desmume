@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2019 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -131,6 +131,7 @@ layout (std140) uniform PolyStates\n\
 uniform isamplerBuffer PolyStates;\n\
 #endif\n\
 uniform int polyIndex;\n\
+uniform bool polyDrawShadow;\n\
 \n\
 out vec2 vtxTexCoord;\n\
 out vec4 vtxColor;\n\
@@ -141,6 +142,7 @@ flat out int polySetNewDepthForTranslucent;\n\
 flat out int polyMode;\n\
 flat out int polyID;\n\
 flat out int texSingleBitAlpha;\n\
+flat out int isPolyDrawable;\n\
 \n\
 void main()\n\
 {\n\
@@ -164,6 +166,8 @@ void main()\n\
 	polyEnableTexture             = (polyStateBits >> 16) & 0x01;\n\
 	texSingleBitAlpha             = (polyStateBits >> 17) & 0x01;\n\
 	\n\
+	isPolyDrawable                = int((polyMode != 3) || polyDrawShadow);\n\
+	\n\
 	mat2 texScaleMtx	= mat2(	vec2(polyTexScale.x,            0.0), \n\
 								vec2(           0.0, polyTexScale.y)); \n\
 	\n\
@@ -184,6 +188,7 @@ flat in int polySetNewDepthForTranslucent;\n\
 flat in int polyMode;\n\
 flat in int polyID;\n\
 flat in int texSingleBitAlpha;\n\
+flat in int isPolyDrawable;\n\
 \n\
 layout (std140) uniform RenderStates\n\
 {\n\
@@ -258,97 +263,82 @@ layout (depth_less) out float gl_FragDepth;\n\
 \n\
 void main()\n\
 {\n\
-	outFragColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
-#if DRAW_MODE_OPAQUE\n\
-	outBackFacing = vec4(float(!gl_FrontFacing), 0.0, 0.0, 1.0);\n\
-#endif\n\
-#if ENABLE_EDGE_MARK\n\
-	outPolyID = vec4(0.0, 0.0, 0.0, 0.0);\n\
-#endif\n\
-#if ENABLE_FOG\n\
-	outFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
+#if USE_DEPTH_LEQUAL_POLYGON_FACING && !DRAW_MODE_OPAQUE\n\
+	bool isOpaqueDstBackFacing = bool( texelFetch(inBackFacing, ivec2(gl_FragCoord.xy), 0).r );\n\
+	if ( drawModeDepthEqualsTest && (!gl_FrontFacing || !isOpaqueDstBackFacing) )\n\
+	{\n\
+		discard;\n\
+	}\n\
 #endif\n\
 	\n\
-	if ((polyMode != 3) || polyDrawShadow)\n\
+	vec4 mainTexColor = (ENABLE_TEXTURE_SAMPLING && bool(polyEnableTexture)) ? texture(texRenderObject, vtxTexCoord) : vec4(1.0, 1.0, 1.0, 1.0);\n\
+	\n\
+	if (!bool(texSingleBitAlpha))\n\
 	{\n\
-		vec4 mainTexColor = (ENABLE_TEXTURE_SAMPLING && bool(polyEnableTexture)) ? texture(texRenderObject, vtxTexCoord) : vec4(1.0, 1.0, 1.0, 1.0);\n\
-		\n\
-		if (bool(texSingleBitAlpha))\n\
+		if (texDrawOpaque)\n\
 		{\n\
-#if USE_TEXTURE_SMOOTHING\n\
-			if (mainTexColor.a < 0.500)\n\
-			{\n\
-				mainTexColor.a = 0.0;\n\
-			}\n\
-			else\n\
-			{\n\
-				mainTexColor.rgb = mainTexColor.rgb / mainTexColor.a;\n\
-				mainTexColor.a = 1.0;\n\
-			}\n\
-#endif\n\
-		}\n\
-		else\n\
-		{\n\
-			if (texDrawOpaque)\n\
-			{\n\
-				if ( (polyMode != 1) && (mainTexColor.a <= 0.999) )\n\
-				{\n\
-					discard;\n\
-				}\n\
-			}\n\
-			else\n\
-			{\n\
-				if ( ((polyMode != 1) && (mainTexColor.a * vtxColor.a > 0.999)) || ((polyMode == 1) && (vtxColor.a > 0.999)) )\n\
-				{\n\
-					discard;\n\
-				}\n\
-			}\n\
-		}\n\
-		\n\
-		outFragColor = mainTexColor * vtxColor;\n\
-		\n\
-		if (polyMode == 1)\n\
-		{\n\
-			outFragColor.rgb = (ENABLE_TEXTURE_SAMPLING && bool(polyEnableTexture)) ? mix(vtxColor.rgb, mainTexColor.rgb, mainTexColor.a) : vtxColor.rgb;\n\
-			outFragColor.a = vtxColor.a;\n\
-		}\n\
-		else if (polyMode == 2)\n\
-		{\n\
-			vec3 newToonColor = state.toonColor[int((vtxColor.r * 31.0) + 0.5)].rgb;\n\
-#if TOON_SHADING_MODE\n\
-			outFragColor.rgb = min((mainTexColor.rgb * vtxColor.r) + newToonColor.rgb, 1.0);\n\
-#else\n\
-			outFragColor.rgb = mainTexColor.rgb * newToonColor.rgb;\n\
-#endif\n\
-		}\n\
-		else if (polyMode == 3)\n\
-		{\n\
-			outFragColor = vtxColor;\n\
-		}\n\
-		\n\
-		if (outFragColor.a < 0.001 || (ENABLE_ALPHA_TEST && outFragColor.a < state.alphaTestRef))\n\
-		{\n\
-			discard;\n\
-		}\n\
-		\n\
-#if USE_DEPTH_LEQUAL_POLYGON_FACING && !DRAW_MODE_OPAQUE\n\
-		if (drawModeDepthEqualsTest)\n\
-		{\n\
-			bool isOpaqueDstBackFacing = bool( texelFetch(inBackFacing, ivec2(gl_FragCoord.xy), 0).r );\n\
-			if ( !gl_FrontFacing || !isOpaqueDstBackFacing )\n\
+			if ( (polyMode != 1) && (mainTexColor.a <= 0.999) )\n\
 			{\n\
 				discard;\n\
 			}\n\
 		}\n\
+		else\n\
+		{\n\
+			if ( ((polyMode != 1) && (mainTexColor.a * vtxColor.a > 0.999)) || ((polyMode == 1) && (vtxColor.a > 0.999)) )\n\
+			{\n\
+				discard;\n\
+			}\n\
+		}\n\
+	}\n\
+#if USE_TEXTURE_SMOOTHING\n\
+	else\n\
+	{\n\
+		if (mainTexColor.a < 0.500)\n\
+		{\n\
+			mainTexColor.a = 0.0;\n\
+		}\n\
+		else\n\
+		{\n\
+			mainTexColor.rgb = mainTexColor.rgb / mainTexColor.a;\n\
+			mainTexColor.a = 1.0;\n\
+		}\n\
+	}\n\
 #endif\n\
-		\n\
-#if ENABLE_EDGE_MARK\n\
-		outPolyID = vec4( float(polyID)/63.0, float(polyIsWireframe == 1), 0.0, float(outFragColor.a > 0.999) );\n\
-#endif\n\
-#if ENABLE_FOG\n\
-		outFogAttributes = vec4( float(polyEnableFog), 0.0, 0.0, float((outFragColor.a > 0.999) ? 1.0 : 0.5) );\n\
+	\n\
+	outFragColor = mainTexColor * vtxColor;\n\
+	\n\
+	if (polyMode == 1)\n\
+	{\n\
+		outFragColor.rgb = (ENABLE_TEXTURE_SAMPLING && bool(polyEnableTexture)) ? mix(vtxColor.rgb, mainTexColor.rgb, mainTexColor.a) : vtxColor.rgb;\n\
+		outFragColor.a = vtxColor.a;\n\
+	}\n\
+	else if (polyMode == 2)\n\
+	{\n\
+		vec3 newToonColor = state.toonColor[int((vtxColor.r * 31.0) + 0.5)].rgb;\n\
+#if TOON_SHADING_MODE\n\
+		outFragColor.rgb = min((mainTexColor.rgb * vtxColor.r) + newToonColor.rgb, 1.0);\n\
+#else\n\
+		outFragColor.rgb = mainTexColor.rgb * newToonColor.rgb;\n\
 #endif\n\
 	}\n\
+	else if ((polyMode == 3) && polyDrawShadow)\n\
+	{\n\
+		outFragColor = vtxColor;\n\
+	}\n\
+	\n\
+	if ( (isPolyDrawable != 0) && ((outFragColor.a < 0.001) || (ENABLE_ALPHA_TEST && outFragColor.a < state.alphaTestRef)) )\n\
+	{\n\
+		discard;\n\
+	}\n\
+#if ENABLE_EDGE_MARK\n\
+	outPolyID = (isPolyDrawable != 0) ? vec4( float(polyID)/63.0, float(polyIsWireframe == 1), 0.0, float(outFragColor.a > 0.999) ) : vec4(0.0, 0.0, 0.0, 0.0);\n\
+#endif\n\
+#if ENABLE_FOG\n\
+	outFogAttributes = (isPolyDrawable != 0) ? vec4( float(polyEnableFog), 0.0, 0.0, float((outFragColor.a > 0.999) ? 1.0 : 0.5) ) : vec4(0.0, 0.0, 0.0, 0.0);\n\
+#endif\n\
+#if DRAW_MODE_OPAQUE\n\
+	outBackFacing = vec4(float(!gl_FrontFacing), 0.0, 0.0, 1.0);\n\
+#endif\n\
 	\n\
 #if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
 	// It is tempting to perform the NDS depth calculation in the vertex shader rather than in the fragment shader.\n\
