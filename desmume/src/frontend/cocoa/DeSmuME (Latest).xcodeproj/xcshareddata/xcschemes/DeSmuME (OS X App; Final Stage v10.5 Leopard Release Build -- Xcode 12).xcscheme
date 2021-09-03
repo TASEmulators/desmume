@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Scheme
+   LastUpgradeVersion = "0940"
+   version = "2.0">
+   <BuildAction
+      parallelizeBuildables = "YES"
+      buildImplicitDependencies = "YES">
+      <PostActions>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Run Script"
+               scriptText = "#!/bin/sh&#10;&#10;# This script creates an application package that merges the ppc binary of an&#10;# Xcode 3 PowerPC release build, the i386 binary of an Xcode 9 x86 32-bit &#10;# release build, and the x86_64 binary of an Xcode 12 (or later) release build.&#10;#&#10;# It also replaces the .nib files with ones that are created specifically in&#10;# Xcode 6, which is the last version of Xcode that can compile Leopard-compatible&#10;# .nib files.&#10;#&#10;# Before you build this final stage of the DeSmuME release build, make sure that&#10;# you have already created the following builds of DeSmuME and that they are all&#10;# located in the ${SRCROOT}/build/Release directory:&#10;#  - DeSmuME (PPC).app | Use Xcode 3&#10;#  - DeSmuME (extract NIB).app | Use Xcode 6&#10;#  - DeSmuME (32bit).app | Use Xcode 9&#10;&#10;# Create the Merged Release directory, plus a working copy of the .app.&#10;mkdir -p &quot;${SRCROOT}/build/Merged Release&quot;&#10;cd &quot;${SRCROOT}/build/Merged Release&quot;&#10;cp -a &quot;${SRCROOT}/build/Release/${PRODUCT_NAME}.app&quot; &quot;./&quot;&#10;&#10;if test -e &quot;${SRCROOT}/build/Release/DeSmuME (PPC).app/Contents/MacOS/DeSmuME (PPC)&quot;&#10;then&#10;&#10;cd &quot;${SRCROOT}/build/Release/${PRODUCT_NAME}.app/Contents/MacOS&quot;&#10;&#10;# Create the temp binaries for Intel.&#10;cp -a &quot;${SRCROOT}/build/Release/DeSmuME (32bit).app/Contents/MacOS/DeSmuME (32bit)&quot; &quot;./${EXECUTABLE_NAME}_i386&quot;&#10;cp -a &quot;./${EXECUTABLE_NAME}&quot; &quot;./${EXECUTABLE_NAME}_x86_64&quot;&#10;&#10;# Merge the separate temp binaries into a single binary package.&#10;rm -f &quot;${SRCROOT}/build/Merged Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}&quot;&#10;lipo &quot;${SRCROOT}/build/Release/DeSmuME (PPC).app/Contents/MacOS/DeSmuME (PPC)&quot; &quot;./${EXECUTABLE_NAME}_i386&quot; &quot;./${EXECUTABLE_NAME}_x86_64&quot; -create -output &quot;${SRCROOT}/build/Merged Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}&quot;&#10;&#10;# Remove the temp binaries now that we&apos;re done with them.&#10;rm -f &quot;./${EXECUTABLE_NAME}_i386&quot;&#10;rm -f &quot;./${EXECUTABLE_NAME}_x86_64&quot;&#10;&#10;fi&#10;&#10;# Copy the .nib files from an &quot;extract NIB&quot; .app to the Merged Release .app&#10;cd &quot;${SRCROOT}/build/Merged Release/${PRODUCT_NAME}.app/Contents/Resources/English.lproj&quot;&#10;rm -f &quot;./MainMenu.nib&quot;&#10;rm -f &quot;./DisplayWindow.nib&quot;&#10;cp -af &quot;${SRCROOT}/build/Release/DeSmuME (extract NIB).app/Contents/Resources/English.lproj/MainMenu.nib&quot; &quot;./&quot;&#10;cp -af &quot;${SRCROOT}/build/Release/DeSmuME (extract NIB).app/Contents/Resources/English.lproj/DisplayWindow.nib&quot; &quot;./&quot;&#10;&#10;# This final stage build sets the minimum system version to macOS v10.7, so we need to reset it to macOS v10.5 here.&#10;defaults write &quot;${SRCROOT}/build/Merged Release/${PRODUCT_NAME}.app/Contents/Info.plist&quot; LSMinimumSystemVersion -string &apos;10.5&apos;&#10;">
+               <EnvironmentBuildable>
+                  <BuildableReference
+                     BuildableIdentifier = "primary"
+                     BlueprintIdentifier = "ABD2CCE926E05CB000FB15F7"
+                     BuildableName = "DeSmuME.app"
+                     BlueprintName = "DeSmuME (OS X App; Final Stage v10.5 Leopard Release Build -- Xcode 12)"
+                     ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
+                  </BuildableReference>
+               </EnvironmentBuildable>
+            </ActionContent>
+         </ExecutionAction>
+      </PostActions>
+      <BuildActionEntries>
+         <BuildActionEntry
+            buildForTesting = "NO"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "ABD2CCE926E05CB000FB15F7"
+               BuildableName = "DeSmuME.app"
+               BlueprintName = "DeSmuME (OS X App; Final Stage v10.5 Leopard Release Build -- Xcode 12)"
+               ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+      </BuildActionEntries>
+   </BuildAction>
+   <TestAction
+      buildConfiguration = "Debug"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      shouldUseLaunchSchemeArgsEnv = "YES">
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "ABD2CCE926E05CB000FB15F7"
+            BuildableName = "DeSmuME.app"
+            BlueprintName = "DeSmuME (OS X App; Final Stage v10.5 Leopard Release Build -- Xcode 12)"
+            ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
+      <Testables>
+      </Testables>
+   </TestAction>
+   <LaunchAction
+      buildConfiguration = "Debug"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      launchStyle = "0"
+      useCustomWorkingDirectory = "NO"
+      ignoresPersistentStateOnLaunch = "NO"
+      debugDocumentVersioning = "NO"
+      debugXPCServices = "NO"
+      debugServiceExtension = "internal"
+      enableGPUFrameCaptureMode = "3"
+      enableGPUValidationMode = "1"
+      allowLocationSimulation = "NO">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "ABD2CCE926E05CB000FB15F7"
+            BuildableName = "DeSmuME.app"
+            BlueprintName = "DeSmuME (OS X App; Final Stage v10.5 Leopard Release Build -- Xcode 12)"
+            ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
+   </LaunchAction>
+   <ProfileAction
+      buildConfiguration = "Release"
+      shouldUseLaunchSchemeArgsEnv = "YES"
+      savedToolIdentifier = ""
+      useCustomWorkingDirectory = "NO"
+      debugDocumentVersioning = "NO">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "ABD2CCE926E05CB000FB15F7"
+            BuildableName = "DeSmuME.app"
+            BlueprintName = "DeSmuME (OS X App; Final Stage v10.5 Leopard Release Build -- Xcode 12)"
+            ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
+   </ProfileAction>
+   <AnalyzeAction
+      buildConfiguration = "Debug">
+   </AnalyzeAction>
+   <ArchiveAction
+      buildConfiguration = "Release"
+      revealArchiveInOrganizer = "YES">
+   </ArchiveAction>
+</Scheme>
