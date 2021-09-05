@@ -1419,8 +1419,8 @@ static void* SoftRasterizer_RunClearUsingValues(void *arg)
 
 static Render3D* SoftRasterizerRendererCreate()
 {
-#if defined(ENABLE_AVX)
-	return new SoftRasterizerRenderer_AVX;
+#if defined(ENABLE_AVX2)
+	return new SoftRasterizerRenderer_AVX2;
 #elif defined(ENABLE_SSE2)
 	return new SoftRasterizerRenderer_SSE2;
 #elif defined(ENABLE_ALTIVEC)
@@ -1434,8 +1434,8 @@ static void SoftRasterizerRendererDestroy()
 {
 	if (CurrentRenderer != BaseRenderer)
 	{
-#if defined(ENABLE_AVX)
-		SoftRasterizerRenderer_AVX *oldRenderer = (SoftRasterizerRenderer_AVX *)CurrentRenderer;
+#if defined(ENABLE_AVX2)
+		SoftRasterizerRenderer_AVX2 *oldRenderer = (SoftRasterizerRenderer_AVX2 *)CurrentRenderer;
 #elif defined(ENABLE_SSE2)
 		SoftRasterizerRenderer_SSE2 *oldRenderer = (SoftRasterizerRenderer_SSE2 *)CurrentRenderer;
 #elif defined(ENABLE_ALTIVEC)
@@ -2606,9 +2606,9 @@ Render3DError SoftRasterizer_SIMD<SIMDBYTES>::SetFramebufferSize(size_t w, size_
 
 #endif
 
-#if defined(ENABLE_AVX)
+#if defined(ENABLE_AVX2)
 
-void SoftRasterizerRenderer_AVX::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+void SoftRasterizerRenderer_AVX2::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
 {
 	this->_clearColor_v256u32					= _mm256_set1_epi32(clearColor6665.color);
 	this->_clearDepth_v256u32					= _mm256_set1_epi32(clearAttributes.depth);
@@ -2620,7 +2620,7 @@ void SoftRasterizerRenderer_AVX::LoadClearValues(const FragmentColor &clearColor
 	this->_clearAttrPolyFacing_v256u8			= _mm256_set1_epi8(clearAttributes.polyFacing);
 }
 
-void SoftRasterizerRenderer_AVX::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
+void SoftRasterizerRenderer_AVX2::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
 	for (size_t i = startPixel; i < endPixel; i+=sizeof(v256u8))
 	{
