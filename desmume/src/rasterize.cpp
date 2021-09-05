@@ -1424,7 +1424,7 @@ static Render3D* SoftRasterizerRendererCreate()
 #elif defined(ENABLE_SSE2)
 	return new SoftRasterizerRenderer_SSE2;
 #elif defined(ENABLE_ALTIVEC)
-	return new SoftRasterizerRenderer_Altivec;
+	return new SoftRasterizerRenderer_AltiVec;
 #else
 	return new SoftRasterizerRenderer;
 #endif
@@ -1439,7 +1439,7 @@ static void SoftRasterizerRendererDestroy()
 #elif defined(ENABLE_SSE2)
 		SoftRasterizerRenderer_SSE2 *oldRenderer = (SoftRasterizerRenderer_SSE2 *)CurrentRenderer;
 #elif defined(ENABLE_ALTIVEC)
-		SoftRasterizerRenderer_Altivec *oldRenderer = (SoftRasterizerRenderer_Altivec *)CurrentRenderer;
+		SoftRasterizerRenderer_AltiVec *oldRenderer = (SoftRasterizerRenderer_AltiVec *)CurrentRenderer;
 #else
 		SoftRasterizerRenderer *oldRenderer = (SoftRasterizerRenderer *)CurrentRenderer;
 #endif
@@ -2682,7 +2682,7 @@ void SoftRasterizerRenderer_SSE2::ClearUsingValues_Execute(const size_t startPix
 
 #elif defined(ENABLE_ALTIVEC)
 
-void SoftRasterizerRenderer_Altivec::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+void SoftRasterizerRenderer_AltiVec::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
 {
 	this->_clearColor_v128u32					= (v128u32){clearColor6665.color,clearColor6665.color,clearColor6665.color,clearColor6665.color};
 	this->_clearDepth_v128u32					= (v128u32){clearAttributes.depth,clearAttributes.depth,clearAttributes.depth,clearAttributes.depth};
@@ -2718,7 +2718,7 @@ void SoftRasterizerRenderer_Altivec::LoadClearValues(const FragmentColor &clearC
 										           clearAttributes.polyFacing,clearAttributes.polyFacing,clearAttributes.polyFacing,clearAttributes.polyFacing};
 }
 
-void SoftRasterizerRenderer_Altivec::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
+void SoftRasterizerRenderer_AltiVec::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
 	for (size_t i = startPixel; i < endPixel; i+=16)
 	{

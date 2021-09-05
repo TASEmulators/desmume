@@ -507,9 +507,9 @@ void Render3D::_ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *_
 {
 	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT; i++)
 	{
-		outColor16[i] = inColor16[i];
-		outDepth24[i] = DS_DEPTH15TO24(inDepth16[i]);
-		outFog[i] = BIT15(inDepth16[i]);
+		outColor16[i] = LE_TO_LOCAL_16(inColor16[i]);
+		outDepth24[i] = DS_DEPTH15TO24( LE_TO_LOCAL_16(inDepth16[i]) );
+		outFog[i] = BIT15( LE_TO_LOCAL_16(inDepth16[i]) );
 	}
 }
 
@@ -558,7 +558,7 @@ void Render3D::_ClearImageScrolledLoop(const u8 xScroll, const u8 yScroll, const
 				// - Blazer Drive
 				if (!ISCOLORBLANK)
 				{
-					outColor16[dstIndex] = inColor16[srcIndex];
+					outColor16[dstIndex] = LE_TO_LOCAL_16(inColor16[srcIndex]);
 				}
 				
 				// Clear image depth buffer, where the first 15 bits are converted to
@@ -571,8 +571,8 @@ void Render3D::_ClearImageScrolledLoop(const u8 xScroll, const u8 yScroll, const
 				// - The Chronicles of Narnia: The Lion, the Witch and the Wardrobe
 				if (!ISDEPTHBLANK)
 				{
-					outDepth24[dstIndex] = DS_DEPTH15TO24(inDepth16[srcIndex]);
-					outFog[dstIndex] = BIT15(inDepth16[srcIndex]);
+					outDepth24[dstIndex] = DS_DEPTH15TO24( LE_TO_LOCAL_16(inDepth16[srcIndex]) );
+					outFog[dstIndex] = BIT15( LE_TO_LOCAL_16(inDepth16[srcIndex]) );
 				}
 			}
 		}
@@ -863,7 +863,56 @@ void Render3D_SSE2::_ClearImageBaseLoop(const u16 *__restrict inColor16, const u
 		// Write the fog flags to the fog flag buffer.
 		const __m128i clearFogLo = _mm_srli_epi16(clearDepthLo, 15);
 		const __m128i clearFogHi = _mm_srli_epi16(clearDepthHi, 15);
-		_mm_store_si128((__m128i *)(this->clearImageFogBuffer + i), _mm_packs_epi16(clearFogLo, clearFogHi));
+		_mm_store_si128((__m128i *)(outFog + i), _mm_packs_epi16(clearFogLo, clearFogHi));
+	}
+}
+#elif defined(ENABLE_ALTIVEC)
+void Render3D_AltiVec::_ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog)
+{
+	const v128u16 calcDepthMul = ((v128u16){0x0200,0,0x0200,0,0x0200,0,0x0200,0});
+	const v128u32 calcDepthAdd = ((v128u32){0x01FF,0x01FF,0x01FF,0x01FF});
+	
+	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT; i+=sizeof(v128u16))
+	{
+		// Copy the colors to the color buffer.
+		v128u16 inColor16SwappedLo = vec_ld( 0, inColor16 + i);
+		v128u16 inColor16SwappedHi = vec_ld(16, inColor16 + i);
+		
+		inColor16SwappedLo = vec_perm(inColor16SwappedLo, inColor16SwappedLo, ((v128u8){1,0, 3,2, 5,4, 7,6, 9,8, 11,10, 13,12, 15,14}));
+		inColor16SwappedHi = vec_perm(inColor16SwappedHi, inColor16SwappedHi, ((v128u8){1,0, 3,2, 5,4, 7,6, 9,8, 11,10, 13,12, 15,14}));
+		
+		vec_st(inColor16SwappedLo,  0, outColor16 + i);
+		vec_st(inColor16SwappedHi, 16, outColor16 + i);
+		
+		// Write the depth values to the depth buffer using the following formula from GBATEK.
+		// 15-bit to 24-bit depth formula from http://problemkaputt.de/gbatek.htm#ds3drearplane
+		//    D24 = (D15 * 0x0200) + (((D15 + 1) >> 15) * 0x01FF);
+		//
+		// For now, let's forget GBATEK (which could be wrong) and try using a simpified formula:
+		//    D24 = (D15 * 0x0200) + 0x01FF;
+		v128u16 clearDepthLo = vec_ld( 0, inDepth16 + i);
+		v128u16 clearDepthHi = vec_ld(16, inDepth16 + i);
+		
+		clearDepthLo = vec_perm(clearDepthLo, clearDepthLo, ((v128u8){1,0, 3,2, 5,4, 7,6, 9,8, 11,10, 13,12, 15,14}));
+		clearDepthHi = vec_perm(clearDepthHi, clearDepthHi, ((v128u8){1,0, 3,2, 5,4, 7,6, 9,8, 11,10, 13,12, 15,14}));
+		
+		const v128u16 clearDepthValueLo = vec_and(clearDepthLo, ((v128u16){0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF}));
+		const v128u16 clearDepthValueHi = vec_and(clearDepthHi, ((v128u16){0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF}));
+		
+		const v128u16 calcDepth0 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), clearDepthValueLo, ((v128u8){0x10,0x11,0,0,  0x12,0x13,0,0,  0x14,0x15,0,0,  0x16,0x17,0,0}));
+		const v128u16 calcDepth1 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), clearDepthValueLo, ((v128u8){0x18,0x19,0,0,  0x1A,0x1B,0,0,  0x1C,0x1D,0,0,  0x1E,0x1F,0,0}));
+		const v128u16 calcDepth2 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), clearDepthValueHi, ((v128u8){0x10,0x11,0,0,  0x12,0x13,0,0,  0x14,0x15,0,0,  0x16,0x17,0,0}));
+		const v128u16 calcDepth3 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), clearDepthValueHi, ((v128u8){0x18,0x19,0,0,  0x1A,0x1B,0,0,  0x1C,0x1D,0,0,  0x1E,0x1F,0,0}));
+		
+		vec_st( vec_msum(calcDepth0, calcDepthMul, calcDepthAdd),  0, outDepth24 + i);
+		vec_st( vec_msum(calcDepth1, calcDepthMul, calcDepthAdd), 16, outDepth24 + i);
+		vec_st( vec_msum(calcDepth2, calcDepthMul, calcDepthAdd), 32, outDepth24 + i);
+		vec_st( vec_msum(calcDepth3, calcDepthMul, calcDepthAdd), 48, outDepth24 + i);
+		
+		// Write the fog flags to the fog flag buffer.
+		const v128u16 clearFogLo = vec_sr(clearDepthLo, ((v128u16){15,15,15,15,15,15,15,15}));
+		const v128u16 clearFogHi = vec_sr(clearDepthHi, ((v128u16){15,15,15,15,15,15,15,15}));
+		vec_st( vec_pack(clearFogLo, clearFogHi), 0, outFog + i );
 	}
 }
 #endif

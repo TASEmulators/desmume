@@ -417,7 +417,7 @@ static void makeTables()
 		
 		// Is GBATEK actually correct here? Let's try using a simplified formula and see if it's
 		// more accurate.
-		dsDepthExtend_15bit_to_24bit[i] = LE_TO_LOCAL_32( (i*0x0200) + 0x01FF );
+		dsDepthExtend_15bit_to_24bit[i] = (i * 0x0200) + 0x01FF;
 	}
 
 	for (size_t i = 0; i < 65536; i++)

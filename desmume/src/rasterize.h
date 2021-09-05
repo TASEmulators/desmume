@@ -139,7 +139,7 @@ class SoftRasterizerRenderer : public Render3D_AVX2
 #elif defined(ENABLE_SSE2)
 class SoftRasterizerRenderer : public Render3D_SSE2
 #elif defined(ENABLE_ALTIVEC)
-class SoftRasterizerRenderer : public Render3D_Altivec
+class SoftRasterizerRenderer : public Render3D_AltiVec
 #else
 class SoftRasterizerRenderer : public Render3D
 #endif
@@ -268,7 +268,7 @@ public:
 };
 
 #elif defined(ENABLE_ALTIVEC)
-class SoftRasterizerRenderer_Altivec : public SoftRasterizer_SIMD<16>
+class SoftRasterizerRenderer_AltiVec : public SoftRasterizer_SIMD<16>
 {
 protected:
 	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);

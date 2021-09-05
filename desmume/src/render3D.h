@@ -300,8 +300,11 @@ public:
 
 #elif defined(ENABLE_ALTIVEC)
 
-class Render3D_Altivec : public Render3D_SIMD<16>
-{};
+class Render3D_AltiVec : public Render3D_SIMD<16>
+{
+public:
+	virtual void _ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
+};
 
 #endif
 
