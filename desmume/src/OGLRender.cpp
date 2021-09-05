@@ -329,10 +329,12 @@ uniform bool polyDrawShadow;\n\
 \n\
 uniform float polyAlpha; \n\
 uniform vec2 polyTexScale; \n\
+uniform int polyDepthOffsetMode;\n\
 \n\
 varying vec2 vtxTexCoord; \n\
 varying vec4 vtxColor; \n\
 varying float isPolyDrawable;\n\
+varying float depthOffset;\n\
 \n\
 void main() \n\
 { \n\
@@ -342,6 +344,10 @@ void main() \n\
 	vtxTexCoord = texScaleMtx * inTexCoord0; \n\
 	vtxColor = vec4(inColor / 63.0, polyAlpha); \n\
 	isPolyDrawable = ((polyMode != 3) || polyDrawShadow) ? 1.0 : -1.0;\n\
+	\n\
+	depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
+	depthOffset = depthOffset / 16777215.0;\n\
+	\n\
 	gl_Position = inPosition;\n\
 } \n\
 "};
@@ -351,6 +357,7 @@ static const char *GeometryFragShader_100 = {"\
 varying vec2 vtxTexCoord;\n\
 varying vec4 vtxColor;\n\
 varying float isPolyDrawable;\n\
+varying float depthOffset;\n\
 \n\
 uniform sampler2D texRenderObject;\n\
 \n\
@@ -369,7 +376,6 @@ uniform bool texSingleBitAlpha;\n\
 \n\
 uniform bool drawModeDepthEqualsTest;\n\
 uniform bool polyDrawShadow;\n\
-uniform int polyDepthOffsetMode;\n\
 \n\
 #if USE_DEPTH_LEQUAL_POLYGON_FACING && !DRAW_MODE_OPAQUE\n\
 uniform sampler2D inBackFacing;\n\
@@ -389,18 +395,15 @@ void main()\n\
 	\n\
 	if (!texSingleBitAlpha)\n\
 	{\n\
-		if (texDrawOpaque)\n\
+		if (texDrawOpaque && (polyMode != 1) && (mainTexColor.a <= 0.999))\n\
 		{\n\
-			if ( (polyMode != 1) && (mainTexColor.a <= 0.999) )\n\
-			{\n\
-				discard;\n\
-			}\n\
+			discard;\n\
 		}\n\
 	}\n\
 #if USE_TEXTURE_SMOOTHING\n\
 	else\n\
 	{\n\
-	if (mainTexColor.a < 0.500)\n\
+		if (mainTexColor.a < 0.500)\n\
 		{\n\
 			mainTexColor.a = 0.0;\n\
 		}\n\
@@ -456,20 +459,11 @@ void main()\n\
 	// subtle interpolation differences between various GPUs and/or drivers. If the depth calculation is not done\n\
 	// here, then it is very possible for the user to experience Z-fighting in certain rendering situations.\n\
 	\n\
-	#if NEEDS_DEPTH_EQUALS_TEST\n\
-		float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
-		#if ENABLE_W_DEPTH\n\
-		gl_FragDepth = clamp( ( (4096.0/gl_FragCoord.w) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
-		#else\n\
-		gl_FragDepth = clamp( ( (floor(gl_FragCoord.z * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
-		#endif\n\
+	#if ENABLE_W_DEPTH\n\
+	gl_FragDepth = clamp( ((1.0/gl_FragCoord.w) * (4096.0/16777215.0)) + depthOffset, 0.0, 1.0 );\n\
 	#else\n\
-		#if ENABLE_W_DEPTH\n\
-		gl_FragDepth = (4096.0/gl_FragCoord.w) / 16777215.0;\n\
-		#else\n\
-		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-		gl_FragDepth = (floor(gl_FragCoord.z * 4194303.0) * 4.0) / 16777215.0;\n\
-		#endif\n\
+	// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
+	gl_FragDepth = clamp( (floor(gl_FragCoord.z * 4194303.0) * (4.0/16777215.0)) + depthOffset, 0.0, 1.0 );\n\
 	#endif\n\
 #endif\n\
 }\n\
@@ -3144,14 +3138,18 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 	OGLGeometryFlags programFlags;
 	programFlags.value = 0;
 	
+	std::stringstream vtxShaderHeader;
+	vtxShaderHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0\n";
+	vtxShaderHeader << "\n";
+	
+	std::string vtxShaderCode  = vtxShaderHeader.str() + std::string(GeometryVtxShader_100);
+	
 	std::stringstream fragShaderHeader;
 	fragShaderHeader << "#define FRAMEBUFFER_SIZE_X " << this->_framebufferWidth  << ".0 \n";
 	fragShaderHeader << "#define FRAMEBUFFER_SIZE_Y " << this->_framebufferHeight << ".0 \n";
 	fragShaderHeader << "\n";
-	fragShaderHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0 \n";
-	fragShaderHeader << "\n";
 	
-	for (size_t flagsValue = 0; flagsValue < 256; flagsValue++, programFlags.value++)
+	for (size_t flagsValue = 0; flagsValue < 128; flagsValue++, programFlags.value++)
 	{
 		std::stringstream shaderFlags;
 		shaderFlags << "#define USE_TEXTURE_SMOOTHING " << ((this->_enableTextureSmoothing) ? 1 : 0) << "\n";
@@ -3162,7 +3160,6 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		shaderFlags << "#define ENABLE_ALPHA_TEST " << ((programFlags.EnableAlphaTest) ? "true\n" : "false\n");
 		shaderFlags << "#define ENABLE_TEXTURE_SAMPLING " << ((programFlags.EnableTextureSampling) ? "true\n" : "false\n");
 		shaderFlags << "#define TOON_SHADING_MODE " << ((programFlags.ToonShadingMode) ? 1 : 0) << "\n";
-		shaderFlags << "#define NEEDS_DEPTH_EQUALS_TEST " << ((programFlags.NeedsDepthEqualsTest) ? 1 : 0) << "\n";
 		shaderFlags << "#define ENABLE_FOG " << ((programFlags.EnableFog) ? 1 : 0) << "\n";
 		shaderFlags << "#define ENABLE_EDGE_MARK " << ((programFlags.EnableEdgeMark) ? 1 : 0) << "\n";
 		shaderFlags << "#define DRAW_MODE_OPAQUE " << ((programFlags.OpaqueDrawMode) ? 1 : 0) << "\n";
@@ -3177,7 +3174,7 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		error = this->ShaderProgramCreate(OGLRef.vertexGeometryShaderID,
 										  OGLRef.fragmentGeometryShaderID[flagsValue],
 										  OGLRef.programGeometryID[flagsValue],
-										  GeometryVtxShader_100,
+										  vtxShaderCode.c_str(),
 										  fragShaderCode.c_str());
 		if (error != OGLERROR_NOERR)
 		{
@@ -3244,7 +3241,7 @@ void OpenGLRenderer_1_2::DestroyGeometryPrograms()
 	
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	for (size_t flagsValue = 0; flagsValue < 256; flagsValue++)
+	for (size_t flagsValue = 0; flagsValue < 128; flagsValue++)
 	{
 		if (OGLRef.programGeometryID[flagsValue] == 0)
 		{
@@ -4386,7 +4383,6 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	
 	// Generate the clipped polygon list.
 	bool renderNeedsToonTable = false;
-	bool renderNeedsDepthEqualsTest = false;
 	
 	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{
@@ -4472,7 +4468,6 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		}
 		
 		renderNeedsToonTable = (renderNeedsToonTable || (thePoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT)) && this->isShaderSupported;
-		renderNeedsDepthEqualsTest = renderNeedsDepthEqualsTest || (thePoly.attribute.DepthEqualTest_Enable != 0);
 		this->_isPolyFrontFacing[i] = (facing < 0);
 		
 		// Get the texture that is to be attached to this polygon.
@@ -4537,11 +4532,11 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	
 	if (this->isShaderSupported)
 	{
+		this->_geometryProgramFlags.value = 0;
 		this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;
 		this->_geometryProgramFlags.EnableAlphaTest = (engine.renderState.enableAlphaTest) ? 1 : 0;
 		this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
 		this->_geometryProgramFlags.ToonShadingMode = (engine.renderState.shading) ? 1 : 0;
-		this->_geometryProgramFlags.NeedsDepthEqualsTest = (renderNeedsDepthEqualsTest) ? 1 : 0;
 		this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
 		this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
 		this->_geometryProgramFlags.OpaqueDrawMode = 1;
@@ -5654,7 +5649,6 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	
 	// Generate the clipped polygon list.
 	bool renderNeedsToonTable = false;
-	bool renderNeedsDepthEqualsTest = false;
 	
 	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{
@@ -5702,7 +5696,6 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 		}
 		
 		renderNeedsToonTable = renderNeedsToonTable || (thePoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT);
-		renderNeedsDepthEqualsTest = renderNeedsDepthEqualsTest || (thePoly.attribute.DepthEqualTest_Enable != 0);
 		this->_isPolyFrontFacing[i] = (facing < 0);
 		
 		// Get the texture that is to be attached to this polygon.
@@ -5763,11 +5756,11 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	}
 	
 	// Setup render states
+	this->_geometryProgramFlags.value = 0;
 	this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;
 	this->_geometryProgramFlags.EnableAlphaTest = (engine.renderState.enableAlphaTest) ? 1 : 0;
 	this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
 	this->_geometryProgramFlags.ToonShadingMode = (engine.renderState.shading) ? 1 : 0;
-	this->_geometryProgramFlags.NeedsDepthEqualsTest = (renderNeedsDepthEqualsTest) ? 1 : 0;
 	this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
 	this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
 	this->_geometryProgramFlags.OpaqueDrawMode = 1;

@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2019 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -433,27 +433,35 @@ union OGLGeometryFlags
 {
 	u8 value;
 	
+#ifndef MSB_FIRST
 	struct
 	{
-#ifndef MSB_FIRST
+		u8 EnableFog:1;
+		u8 EnableEdgeMark:1;
+		u8 OpaqueDrawMode:1;
 		u8 EnableWDepth:1;
 		u8 EnableAlphaTest:1;
 		u8 EnableTextureSampling:1;
 		u8 ToonShadingMode:1;
-		u8 NeedsDepthEqualsTest:1;
-		u8 EnableFog:1;
-		u8 EnableEdgeMark:1;
-		u8 OpaqueDrawMode:1;
+		u8 unused:1;
+	};
+	
+	struct
+	{
+		u8 DrawBuffersMode:3;
+		u8 :5;
+	};
 #else
-		u8 OpaqueDrawMode:1;
-		u8 EnableEdgeMark:1;
-		u8 EnableFog:1;
-		u8 NeedsDepthEqualsTest:1;
+	struct
+	{
+		u8 unused:1;
 		u8 ToonShadingMode:1;
 		u8 EnableTextureSampling:1;
 		u8 EnableAlphaTest:1;
 		u8 EnableWDepth:1;
-#endif
+		u8 OpaqueDrawMode:1;
+		u8 EnableEdgeMark:1;
+		u8 EnableFog:1;
 	};
 	
 	struct
@@ -461,6 +469,7 @@ union OGLGeometryFlags
 		u8 :5;
 		u8 DrawBuffersMode:3;
 	};
+#endif
 };
 typedef OGLGeometryFlags OGLGeometryFlags;
 
@@ -529,8 +538,8 @@ struct OGLRenderRef
 	
 	// Shader states
 	GLuint vertexGeometryShaderID;
-	GLuint fragmentGeometryShaderID[256];
-	GLuint programGeometryID[256];
+	GLuint fragmentGeometryShaderID[128];
+	GLuint programGeometryID[128];
 	
 	GLuint vtxShaderGeometryZeroDstAlphaID;
 	GLuint fragShaderGeometryZeroDstAlphaID;
