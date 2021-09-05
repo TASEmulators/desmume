@@ -402,7 +402,20 @@ void DISP_FIFOrecv_Line16(u16 *__restrict dst)
 template <NDSColorFormat OUTPUTFORMAT>
 void _DISP_FIFOrecv_LineOpaque16_vec(u32 *__restrict dst)
 {
+#if defined(ENABLE_ALTIVEC)
+	// Big-endian systems read the pixels in their correct bit order, but swap 16-bit chunks
+	// within 32-bit lanes, and so we can't use a standard buffer copy function here.
+	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16); i+=sizeof(v128u16))
+	{
+		v128u16 fifoColor = vec_ld(i, disp_fifo.buf + disp_fifo.head);
+		fifoColor = vec_perm( fifoColor, fifoColor, ((v128u8){2,3, 0,1, 6,7, 4,5, 10,11, 8,9, 14,15, 12,13}) );
+		fifoColor = vec_or(fifoColor, ((v128u16){0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000}));
+		vec_st(fifoColor, i, dst);
+	}
+#else
 	buffer_copy_or_constant_s16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16), false>(dst, disp_fifo.buf + disp_fifo.head, 0x8000);
+#endif
+	
 	_DISP_FIFOrecv_LineAdvance();
 }
 
@@ -490,7 +503,7 @@ void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 #elif defined(ENABLE_ALTIVEC)
 	for (size_t i = 0, d = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16); i+=16, d+=32)
 	{
-		const v128u16 fifoColor = vec_ld(disp_fifo.head, disp_fifo.buf);
+		v128u16 fifoColor = vec_ld(0, disp_fifo.buf + disp_fifo.head);
 		
 		disp_fifo.head += (sizeof(v128u16)/sizeof(u32));
 		if (disp_fifo.head >= 0x6000)
@@ -500,6 +513,7 @@ void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 		
 		v128u32 dstLo = ((v128u32){0,0,0,0});
 		v128u32 dstHi = ((v128u32){0,0,0,0});
+		fifoColor = vec_perm( fifoColor, fifoColor, ((v128u8){10,11, 8,9, 14,15, 12,13, 2,3, 0,1, 6,7, 4,5}) );
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
@@ -509,6 +523,9 @@ void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 		{
 			ColorspaceConvert555To8888Opaque_AltiVec<false>(fifoColor, dstLo, dstHi);
 		}
+		
+		dstLo = vec_perm( dstLo, dstLo, ((v128u8){3,2,1,0, 7,6,5,4,  11,10,9,8, 15,14,13,12}) );
+		dstHi = vec_perm( dstHi, dstHi, ((v128u8){3,2,1,0, 7,6,5,4,  11,10,9,8, 15,14,13,12}) );
 		
 		vec_st(dstLo, d +  0, dst);
 		vec_st(dstHi, d + 16, dst);
