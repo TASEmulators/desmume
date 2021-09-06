@@ -223,13 +223,13 @@ public:
 extern SPU_struct *SPU_core, *SPU_user;
 extern int spu_core_samples;
 
-int SPU_ChangeSoundCore(int coreid, int buffersize);
+int SPU_ChangeSoundCore(int coreid, int newBufferSizeBytes);
 SoundInterface_struct *SPU_SoundCore();
 
 void SPU_ReInit(bool fakeBoot = false);
-int SPU_Init(int coreid, int buffersize);
+int SPU_Init(int coreid, int newBufferSizeBytes);
 void SPU_Pause(int pause);
-void SPU_SetVolume(int volume);
+void SPU_SetVolume(int newVolume);
 void SPU_SetSynchMode(int mode, int method);
 void SPU_ClearOutputBuffer(void);
 void SPU_Reset(void);

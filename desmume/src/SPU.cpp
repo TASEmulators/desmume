@@ -56,21 +56,21 @@ static inline s8 read_s8(u32 addr) { return (s8)_MMU_read08<ARMCPU_ARM7,MMU_AT_D
 	#define FORCEINLINE
 //#endif
 
-//static ISynchronizingAudioBuffer* synchronizer = metaspu_construct(ESynchMethod_Z);
-static ISynchronizingAudioBuffer* synchronizer = metaspu_construct(ESynchMethod_N);
+//static ISynchronizingAudioBuffer* _currentSynchronizer = metaspu_construct(ESynchMethod_Z);
+static ISynchronizingAudioBuffer* _currentSynchronizer = metaspu_construct(ESynchMethod_N);
 
 SPU_struct *SPU_core = 0;
 SPU_struct *SPU_user = 0;
 int SPU_currentCoreNum = SNDCORE_DUMMY;
-static int volume = 100;
+static int _currentVolume = 100;
 
 
-static size_t buffersize = 0;
-static ESynchMode synchmode = ESynchMode_DualSynchAsynch;
-static ESynchMethod synchmethod = ESynchMethod_N;
+static size_t _currentBufferSize = 0;
+static ESynchMode _currentSynchMode = ESynchMode_DualSynchAsynch;
+static ESynchMethod _currentSynchMethod = ESynchMethod_N;
 
-static int SNDCoreId=-1;
-static SoundInterface_struct *SNDCore=NULL;
+static int _currentSNDCoreId = -1;
+static SoundInterface_struct *_currentSNDCore = NULL;
 extern SoundInterface_struct *SNDCoreList[];
 
 //const int shift = (FORMAT == 0 ? 2 : 1);
@@ -115,7 +115,8 @@ static const double ARM7_CLOCK = 33513982;
 
 static const double samples_per_hline = (DESMUME_SAMPLE_RATE / 59.8261f) / 263.0f;
 
-static double samples = 0;
+static double _samples = 0;
+int spu_core_samples = 0;
 
 template<typename T>
 static FORCEINLINE T MinMax(T val, T min, T max)
@@ -130,17 +131,17 @@ static FORCEINLINE T MinMax(T val, T min, T max)
 
 //--------------external spu interface---------------
 
-int SPU_ChangeSoundCore(int coreid, int buffersize)
+int SPU_ChangeSoundCore(int coreid, int newBufferSizeBytes)
 {
 	int i;
 
-	::buffersize = buffersize;
+	_currentBufferSize = newBufferSizeBytes;
 
 	delete SPU_user; SPU_user = NULL;
 
 	// Make sure the old core is freed
-	if (SNDCore)
-		SNDCore->DeInit();
+	if (_currentSNDCore)
+		_currentSNDCore->DeInit();
 
 	// So which core do we want?
 	if (coreid == SNDCORE_DEFAULT)
@@ -154,90 +155,89 @@ int SPU_ChangeSoundCore(int coreid, int buffersize)
 		if (SNDCoreList[i]->id == coreid)
 		{
 			// Set to current core
-			SNDCore = SNDCoreList[i];
+			_currentSNDCore = SNDCoreList[i];
 			break;
 		}
 	}
 
-	SNDCoreId = coreid;
+	_currentSNDCoreId = coreid;
 
 	//If the user picked the dummy core, disable the user spu
-	if(SNDCore == &SNDDummy)
+	if (_currentSNDCore == &SNDDummy)
 		return 0;
 
 	//If the core wasnt found in the list for some reason, disable the user spu
-	if (SNDCore == NULL)
+	if (_currentSNDCore == NULL)
 		return -1;
 
 	// Since it failed, instead of it being fatal, disable the user spu
-	if (SNDCore->Init(buffersize * 2) == -1)
+	if (_currentSNDCore->Init(_currentBufferSize * 2) == -1)
 	{
-		SNDCore = 0;
+		_currentSNDCore = 0;
 		return -1;
 	}
 
-	SNDCore->SetVolume(volume);
+	_currentSNDCore->SetVolume(_currentVolume);
 
-	SPU_SetSynchMode(synchmode,synchmethod);
+	SPU_SetSynchMode(_currentSynchMode, _currentSynchMethod);
 
 	return 0;
 }
 
 SoundInterface_struct *SPU_SoundCore()
 {
-	return SNDCore;
+	return _currentSNDCore;
 }
 
 void SPU_ReInit(bool fakeBoot)
 {
-	SPU_Init(SNDCoreId, buffersize);
+	SPU_Init(_currentSNDCoreId, _currentBufferSize);
 
 	// Firmware set BIAS to 0x200
 	if (fakeBoot)
 		SPU_WriteWord(0x04000504, 0x0200);
 }
 
-int SPU_Init(int coreid, int buffersize)
+int SPU_Init(int coreid, int newBufferSizeBytes)
 {
-	int i, j;
-	
 	// Build the cosine interpolation LUT
-	for(unsigned int i = 0; i < COSINE_INTERPOLATION_RESOLUTION; i++)
+	for (size_t i = 0; i < COSINE_INTERPOLATION_RESOLUTION; i++)
 		cos_lut[i] = (1.0 - cos(((double)i/(double)COSINE_INTERPOLATION_RESOLUTION) * M_PI)) * 0.5;
 
 	SPU_core = new SPU_struct((int)ceil(samples_per_hline));
 	SPU_Reset();
 
 	//create adpcm decode accelerator lookups
-	for(i = 0; i < 16; i++)
+	for (size_t i = 0; i < 16; i++)
 	{
-		for(j = 0; j < 89; j++)
+		for (size_t j = 0; j < 89; j++)
 		{
 			precalcdifftbl[j][i] = (((i & 0x7) * 2 + 1) * adpcmtbl[j] / 8);
-			if(i & 0x8) precalcdifftbl[j][i] = -precalcdifftbl[j][i];
+			if (i & 0x8) precalcdifftbl[j][i] = -precalcdifftbl[j][i];
 		}
 	}
-	for(i = 0; i < 8; i++)
+	for (size_t i = 0; i < 8; i++)
 	{
-		for(j = 0; j < 89; j++)
+		for (s8 j = 0; j < 89; j++)
 		{
-			precalcindextbl[j][i] = MinMax((j + indextbl[i]), 0, 88);
+			const s8 idx = MinMax((j + indextbl[i]), 0, 88);
+			precalcindextbl[j][i] = (u8)idx;
 		}
 	}
 
 	SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
 
-	return SPU_ChangeSoundCore(coreid, buffersize);
+	return SPU_ChangeSoundCore(coreid, newBufferSizeBytes);
 }
 
 void SPU_Pause(int pause)
 {
-	if (SNDCore == NULL) return;
+	if (_currentSNDCore == NULL) return;
 
-	if(pause)
-		SNDCore->MuteAudio();
+	if (pause)
+		_currentSNDCore->MuteAudio();
 	else
-		SNDCore->UnMuteAudio();
+		_currentSNDCore->UnMuteAudio();
 }
 
 void SPU_CloneUser()
@@ -251,37 +251,37 @@ void SPU_CloneUser()
 
 void SPU_SetSynchMode(int mode, int method)
 {
-	synchmode = (ESynchMode)mode;
-	if(synchmethod != (ESynchMethod)method)
+	_currentSynchMode = (ESynchMode)mode;
+	if (_currentSynchMethod != (ESynchMethod)method)
 	{
-		synchmethod = (ESynchMethod)method;
-		delete synchronizer;
+		_currentSynchMethod = (ESynchMethod)method;
+		delete _currentSynchronizer;
 		//grr does this need to be locked? spu might need a lock method
 		  // or maybe not, maybe the platform-specific code that calls this function can deal with it.
-		synchronizer = metaspu_construct(synchmethod);
+		_currentSynchronizer = metaspu_construct(_currentSynchMethod);
 	}
 
 	delete SPU_user;
 	SPU_user = NULL;
 		
-	if(synchmode == ESynchMode_DualSynchAsynch)
+	if (_currentSynchMode == ESynchMode_DualSynchAsynch)
 	{
-		SPU_user = new SPU_struct(buffersize);
+		SPU_user = new SPU_struct(_currentBufferSize);
 		SPU_CloneUser();
 	}
 }
 
 void SPU_ClearOutputBuffer()
 {
-	if(SNDCore && SNDCore->ClearBuffer)
-		SNDCore->ClearBuffer();
+	if (_currentSNDCore && _currentSNDCore->ClearBuffer)
+		_currentSNDCore->ClearBuffer();
 }
 
-void SPU_SetVolume(int volume)
+void SPU_SetVolume(int newVolume)
 {
-	::volume = volume;
-	if (SNDCore)
-		SNDCore->SetVolume(volume);
+	_currentVolume = newVolume;
+	if (_currentSNDCore)
+		_currentSNDCore->SetVolume(newVolume);
 }
 
 
@@ -291,12 +291,13 @@ void SPU_Reset(void)
 
 	SPU_core->reset();
 
-	if(SPU_user) {
-		if(SNDCore)
+	if (SPU_user)
+	{
+		if (_currentSNDCore)
 		{
-			SNDCore->DeInit();
-			SNDCore->Init(SPU_user->bufsize*2);
-			SNDCore->SetVolume(volume);
+			_currentSNDCore->DeInit();
+			_currentSNDCore->Init(SPU_user->bufsize*2);
+			_currentSNDCore->SetVolume(_currentVolume);
 		}
 		SPU_user->reset();
 	}
@@ -307,7 +308,7 @@ void SPU_Reset(void)
 	for (i = 0x400; i < 0x51D; i++)
 		T1WriteByte(MMU.ARM7_REG, i, 0);
 
-	samples = 0;
+	_samples = 0;
 }
 
 //------------------------------------------
@@ -347,9 +348,9 @@ SPU_struct::~SPU_struct()
 
 void SPU_DeInit(void)
 {
-	if(SNDCore)
-		SNDCore->DeInit();
-	SNDCore = 0;
+	if (_currentSNDCore)
+		_currentSNDCore->DeInit();
+	_currentSNDCore = 0;
 
 	delete SPU_core; SPU_core=0;
 	delete SPU_user; SPU_user=0;
@@ -1662,21 +1663,20 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 //emulates one hline of the cpu core.
 //this will produce a variable number of samples, calculated to keep a 44100hz output
 //in sync with the emulator framerate
-int spu_core_samples = 0;
 void SPU_Emulate_core()
 {
 	bool needToMix = true;
 	SoundInterface_struct *soundProcessor = SPU_SoundCore();
 	
-	samples += samples_per_hline;
-	spu_core_samples = (int)(samples);
-	samples -= spu_core_samples;
+	_samples += samples_per_hline;
+	spu_core_samples = (int)(_samples);
+	_samples -= spu_core_samples;
 	
 	// We don't need to mix audio for Dual Synch/Asynch mode since we do this
 	// later in SPU_Emulate_user(). Disable mixing here to speed up processing.
 	// However, recording still needs to mix the audio, so make sure we're also
 	// not recording before we disable mixing.
-	if ( synchmode == ESynchMode_DualSynchAsynch &&
+	if ( _currentSynchMode == ESynchMode_DualSynchAsynch &&
 		!(driver->AVI_IsRecording() || driver->WAV_IsRecording()) )
 	{
 		needToMix = false;
@@ -1691,11 +1691,11 @@ void SPU_Emulate_core()
 	
 	if (soundProcessor->FetchSamples != NULL)
 	{
-		soundProcessor->FetchSamples(SPU_core->outbuf, spu_core_samples, synchmode, synchronizer);
+		soundProcessor->FetchSamples(SPU_core->outbuf, spu_core_samples, _currentSynchMode, _currentSynchronizer);
 	}
 	else
 	{
-		SPU_DefaultFetchSamples(SPU_core->outbuf, spu_core_samples, synchmode, synchronizer);
+		SPU_DefaultFetchSamples(SPU_core->outbuf, spu_core_samples, _currentSynchMode, _currentSynchronizer);
 	}
 }
 
@@ -1721,9 +1721,9 @@ void SPU_Emulate_user(bool mix)
 	}
 	
 	//printf("mix %i samples\n", audiosize);
-	if (freeSampleCount > buffersize)
+	if (freeSampleCount > _currentBufferSize)
 	{
-		freeSampleCount = buffersize;
+		freeSampleCount = _currentBufferSize;
 	}
 	
 	// If needed, resize the post-process buffer to guarantee that
@@ -1736,11 +1736,11 @@ void SPU_Emulate_user(bool mix)
 	
 	if (soundProcessor->PostProcessSamples != NULL)
 	{
-		processedSampleCount = soundProcessor->PostProcessSamples(postProcessBuffer, freeSampleCount, synchmode, synchronizer);
+		processedSampleCount = soundProcessor->PostProcessSamples(postProcessBuffer, freeSampleCount, _currentSynchMode, _currentSynchronizer);
 	}
 	else
 	{
-		processedSampleCount = SPU_DefaultPostProcessSamples(postProcessBuffer, freeSampleCount, synchmode, synchronizer);
+		processedSampleCount = SPU_DefaultPostProcessSamples(postProcessBuffer, freeSampleCount, _currentSynchMode, _currentSynchronizer);
 	}
 	
 	soundProcessor->UpdateAudio(postProcessBuffer, processedSampleCount);
@@ -1988,7 +1988,7 @@ void spu_savestate(EMUFILE &os)
 		os.write_u8(chan.keyon);
 	}
 
-	os.write_doubleLE(samples);
+	os.write_doubleLE(_samples);
 
 	os.write_u8(spu->regs.mastervol);
 	os.write_u8(spu->regs.ctl_left);
@@ -2077,7 +2077,7 @@ bool spu_loadstate(EMUFILE &is, int size)
 
 	if (version >= 2)
 	{
-		is.read_doubleLE(samples);
+		is.read_doubleLE(_samples);
 	}
 
 	if (version >= 4)
