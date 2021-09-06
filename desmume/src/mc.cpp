@@ -121,35 +121,35 @@ void backup_setManualBackupType(int type)
 
 bool BackupDevice::save_state(EMUFILE &os)
 {
-	u32 savePos = fpMC->ftell();
-	std::vector<u8> data(fsize);
-	fpMC->fseek(0, SEEK_SET);
-	if(data.size()!=0)
-		fpMC->fread((char *)&data[0], fsize);
+	u32 savePos = this->_fpMC->ftell();
+	std::vector<u8> data(this->_fsize);
+	this->_fpMC->fseek(0, SEEK_SET);
+	if (data.size() != 0)
+		this->_fpMC->fread((char *)&data[0], this->_fsize);
 
 	u32 version = 5;
 	//v0
 	os.write_32LE(version);
-	os.write_bool32(write_enable);
-	os.write_32LE(com);
-	os.write_32LE(addr_size);
-	os.write_32LE(addr_counter);
-	os.write_32LE((u32)state);
+	os.write_bool32(this->_write_enable);
+	os.write_32LE(this->_com);
+	os.write_32LE(this->_addr_size);
+	os.write_32LE(this->_addr_counter);
+	os.write_32LE((u32)this->_state);
 	os.write_buffer(data);
-	os.write_buffer(data_autodetect);
+	os.write_buffer(this->_data_autodetect);
 	//v1
-	os.write_32LE(addr);
+	os.write_32LE(this->_addr);
 	//v2
-	os.write_u8(motionInitState);
-	os.write_u8(motionFlag);
+	os.write_u8(this->_motionInitState);
+	os.write_u8(this->_motionFlag);
 	//v3
-	os.write_bool32(reset_command_state);
+	os.write_bool32(this->_reset_command_state);
 	//v4
-	os.write_u8(write_protect);
+	os.write_u8(this->_write_protect);
 	//v5
 	os.write_32LE(savePos);
 
-	fpMC->fseek(savePos, SEEK_SET);
+	this->_fpMC->fseek(savePos, SEEK_SET);
 
 	data.clear();
 
@@ -164,58 +164,58 @@ bool BackupDevice::load_state(EMUFILE &is)
 
 	if (is.read_32LE(version) != 1) return false;
 
-	is.read_bool32(write_enable);
-	is.read_32LE(com);
-	is.read_32LE(addr_size);
-	is.read_32LE(addr_counter);
+	is.read_bool32(this->_write_enable);
+	is.read_32LE(this->_com);
+	is.read_32LE(this->_addr_size);
+	is.read_32LE(this->_addr_counter);
 	is.read_32LE(temp);
-	state = (STATE)temp;
+	this->_state = (STATE)temp;
 	is.read_buffer(data);
-	is.read_buffer(data_autodetect);
+	is.read_buffer(this->_data_autodetect);
 
 	if (version >= 1)
-		is.read_32LE(addr);
+		is.read_32LE(this->_addr);
 	
 	if (version >= 2)
 	{
-		is.read_u8(motionInitState);
-		is.read_u8(motionFlag);
+		is.read_u8(this->_motionInitState);
+		is.read_u8(this->_motionFlag);
 	}
 
 	if (version >= 3)
 	{
-		is.read_bool32(reset_command_state);
+		is.read_bool32(this->_reset_command_state);
 	}
 
 	if (version >= 4)
 	{
-		is.read_u8(write_protect);
+		is.read_u8(this->_write_protect);
 	}
 
-	fsize = data.size();
+	this->_fsize = data.size();
 #ifndef _DONT_SAVE_BACKUP
-	fpMC->fseek(0, SEEK_SET);
+	this->_fpMC->fseek(0, SEEK_SET);
 	if (data.size() != 0)
-		fpMC->fwrite((char *)&data[0], fsize);
-	ensure(data.size(), fpMC);
+		this->_fpMC->fwrite((char *)&data[0], this->_fsize);
+	ensure(data.size(), this->_fpMC);
 #endif
 
 	if (version >= 5)
 	{
 		is.read_32LE(temp);
-		fpMC->fseek(temp, SEEK_SET);
+		this->_fpMC->fseek(temp, SEEK_SET);
 	}
 	else
-		fpMC->fseek(addr, SEEK_SET);
+		this->_fpMC->fseek(this->_addr, SEEK_SET);
 
 	return true;
 }
 
 BackupDevice::BackupDevice()
 {
-	fpMC = NULL;
-	fsize = 0;
-	addr_size = 0;
+	_fpMC = NULL;
+	_fsize = 0;
+	_addr_size = 0;
 
 	//default for most games; will be altered where appropriate
 	//usually 0xFF, but occasionally others. If these exceptions could be related to a particular backup memory type, that would be helpful.
@@ -227,10 +227,10 @@ BackupDevice::BackupDevice()
 
 	if (gameInfo.romsize == 0) return;
 
-	char buf[MAX_PATH] = {0};
-	memset(buf, 0, MAX_PATH);
-	path.getpathnoext(path.BATTERY, buf);
-	_fileName = std::string(buf) + ".dsv";
+	char filePathStr[MAX_PATH] = {0};
+	memset(filePathStr, 0, MAX_PATH);
+	path.getpathnoext(path.BATTERY, filePathStr);
+	_fileName = std::string(filePathStr) + ".dsv";
 
 	MCLOG("MC: %s\n", _fileName.c_str());
 
@@ -242,7 +242,7 @@ BackupDevice::BackupDevice()
 
 	if (fexists && CommonSettings.backupSave)
 	{
-		std::string tmp_fsav = std::string(buf) + ".dsv.bak";
+		std::string tmp_fsav = std::string(filePathStr) + ".dsv.bak";
 		EMUFILE_FILE in = EMUFILE_FILE(_fileName, "rb");
 		if (!in.fail())
 		{
@@ -272,7 +272,7 @@ BackupDevice::BackupDevice()
 	if (!fexists)
 	{
 		printf("BackupDevice: DeSmuME .dsv save file not found. Trying to load a .sav file.\n");
-		std::string tmp_fsav = std::string(buf) + ".sav";
+		std::string tmp_fsav = std::string(filePathStr) + ".sav";
 
 		EMUFILE_FILE fpTmp = EMUFILE_FILE(tmp_fsav, "rb");
 		if (!fpTmp.fail())
@@ -284,10 +284,10 @@ BackupDevice::BackupDevice()
 				EMUFILE_FILE fpOut = EMUFILE_FILE(_fileName, "wb");
 				if (!fpOut.fail())
 				{
-					u8 *buf = new u8[sz + 1];
-					if ((buf) && (fpTmp.fread(buf, sz) == sz))
+					u8 *fileData = new u8[sz + 1];
+					if ( (fileData != NULL) && (fpTmp.fread(fileData, sz) == sz) )
 					{
-						if (no_gba_unpack(buf, sz))
+						if (no_gba_unpack(fileData, sz))
 						{
 							printf("BackupDevice: Converting no$gba .sav file.\n");
 						}
@@ -299,17 +299,17 @@ BackupDevice::BackupDevice()
 							//sz = trim(buf, sz);
 						}
 
-						if (fpOut.fwrite(buf, sz) == sz)
+						if (fpOut.fwrite(fileData, sz) == sz)
 						{
 							u8 res = searchFileSaveType(sz);
 							if (res != 0xFF)
 							{
 								_info.type = (res + 1);
-								addr_size = _info.addr_size = save_types[_info.type].addr_size;
-								_info.size = fsize = sz;
-								fpMC = &fpOut; //so ensure() works
+								_addr_size = _info.addr_size = save_types[_info.type].addr_size;
+								_info.size = _fsize = sz;
+								_fpMC = &fpOut; //so ensure() works
 								ensure(sz, &fpOut);
-								fsize = 0;
+								_fsize = 0;
 							}
 							else
 								_info.type = 0;
@@ -320,36 +320,36 @@ BackupDevice::BackupDevice()
 							printf("BackupDevice: Error converting .sav file.\n");
 						}
 					}
-					delete [] buf;
+					delete [] fileData;
 				}
 			}
 		}
 	}
 
-	fpMC = new EMUFILE_FILE(_fileName, fexists?"rb+":"wb+");
-	const bool fileCanReadWrite = (fpMC->get_fp() != NULL);
+	_fpMC = new EMUFILE_FILE(_fileName, fexists?"rb+" : "wb+");
+	const bool fileCanReadWrite = (_fpMC->get_fp() != NULL);
 	if (!fileCanReadWrite)
 	{
-		delete fpMC;
-		fpMC = new EMUFILE_MEMORY();
+		delete _fpMC;
+		_fpMC = new EMUFILE_MEMORY();
 		printf("BackupDevice: WARNING! Failed to get read/write access to the save file! Will operate in RAM instead.\n");
 	}
 	
-	if (!fpMC->fail())
+	if (!_fpMC->fail())
 	{
-		fsize = fpMC->size();
-		if (fsize < saveSizes[0])
-			fpMC->truncate(0);
+		_fsize = _fpMC->size();
+		if (_fsize < saveSizes[0])
+			_fpMC->truncate(0);
 
 		if (readFooter() == 0)
-			fsize -= BackupDevice::GetDSVFooterSize();
+			_fsize -= BackupDevice::GetDSVFooterSize();
 		else
 		{
 			memset(&_info, 0, sizeof(_info));
-			fsize = 0;
+			_fsize = 0;
 		}
 	
-		fpMC->fseek(0, SEEK_SET);
+		_fpMC->fseek(0, SEEK_SET);
 
 		u32 left = 0;
 		if (CommonSettings.autodetectBackupMethod == 1)
@@ -364,8 +364,8 @@ BackupDevice::BackupDevice()
 					if (_info.size > adv_size)
 					{
 						_info.size = adv_size;
-						fpMC->truncate(adv_size);
-						ensure(adv_size, fpMC);
+						_fpMC->truncate(adv_size);
+						ensure(adv_size, _fpMC);
 					}
 					else
 						if (_info.size < adv_size)
@@ -375,13 +375,13 @@ BackupDevice::BackupDevice()
 							ensure(adv_size);
 						}
 
-					fsize = adv_size;
+					_fsize = adv_size;
 				}
 			}
 		}
 
-		addr_size = _info.addr_size;
-		_info.padSize = fsize;
+		_addr_size = _info.addr_size;
+		_info.padSize = _fsize;
 		//none of the other fields are used right now
 
 		if (CommonSettings.autodetectBackupMethod != 1 && _info.type == 0)
@@ -403,20 +403,20 @@ BackupDevice::BackupDevice()
 			printf("BackupDevice: size = %u %cbit\n", ss, _Mbit?'M':'K');
 	}
 
-	state = (fsize > 0)?RUNNING:DETECTING;
+	_state = (_fsize > 0) ? RUNNING : DETECTING;
 	reset();
 }
 
 BackupDevice::~BackupDevice()
 {
-	delete fpMC;
-	fpMC = NULL;
+	delete this->_fpMC;
+	this->_fpMC = NULL;
 }
 
 int BackupDevice::readFooter()
 {
 	// Check if the footer data exists.
-	if (fpMC->size() < BackupDevice::GetDSVFooterSize())
+	if (this->_fpMC->size() < BackupDevice::GetDSVFooterSize())
 	{
 		return -1;
 	}
@@ -425,8 +425,8 @@ int BackupDevice::readFooter()
 	const s32 cookieLen = (s32)strlen(kDesmumeSaveCookie);
 	char *sigbuf = new char[cookieLen];
 	
-	fpMC->fseek(-cookieLen, SEEK_END);
-	fpMC->fread(sigbuf, cookieLen);
+	this->_fpMC->fseek(-cookieLen, SEEK_END);
+	this->_fpMC->fread(sigbuf, cookieLen);
 	int cmp = memcmp(sigbuf,kDesmumeSaveCookie,cookieLen);
 	delete[] sigbuf;
 	
@@ -434,20 +434,20 @@ int BackupDevice::readFooter()
 		return -1;
 
 	//desmume format
-	fpMC->fseek(-cookieLen, SEEK_END);
-	fpMC->fseek(-4, SEEK_CUR);
+	this->_fpMC->fseek(-cookieLen, SEEK_END);
+	this->_fpMC->fseek(-4, SEEK_CUR);
 	
 	u32 version = 0xFFFFFFFF;
-	fpMC->read_32LE(version);
+	this->_fpMC->read_32LE(version);
 	if (version != 0)
 		return -2;
 
-	fpMC->fseek(-24, SEEK_CUR);
-	fpMC->read_32LE(this->_info.size);
-	fpMC->read_32LE(this->_info.padSize);
-	fpMC->read_32LE(this->_info.type);
-	fpMC->read_32LE(this->_info.addr_size);
-	fpMC->read_32LE(this->_info.mem_size);
+	this->_fpMC->fseek(-24, SEEK_CUR);
+	this->_fpMC->read_32LE(this->_info.size);
+	this->_fpMC->read_32LE(this->_info.padSize);
+	this->_fpMC->read_32LE(this->_info.type);
+	this->_fpMC->read_32LE(this->_info.addr_size);
+	this->_fpMC->read_32LE(this->_info.mem_size);
 
 	MCLOG("DeSmuME backup footer:\n");
 	MCLOG("\t* size:\t\t%u\n", this->_info.size);
@@ -462,7 +462,7 @@ int BackupDevice::readFooter()
 u8 BackupDevice::read()
 {
 	u8 val = 0xFF;
-	fpMC->read_u8(val);
+	this->_fpMC->read_u8(val);
 	
 	return val;
 }
@@ -471,8 +471,8 @@ u8 BackupDevice::readByte(u32 addr, const u8 init)
 {
 	u8 val = init;
 
-	fpMC->fseek(addr, SEEK_SET);
-	fpMC->read_u8(val);
+	this->_fpMC->fseek(addr, SEEK_SET);
+	this->_fpMC->read_u8(val);
 	
 	return val;
 }
@@ -480,8 +480,8 @@ u16 BackupDevice::readWord(u32 addr, const u16 init)
 {
 	u16 val = init;
 
-	fpMC->fseek(addr, SEEK_SET);
-	fpMC->read_16LE(val);
+	this->_fpMC->fseek(addr, SEEK_SET);
+	this->_fpMC->read_16LE(val);
 	
 	return val;
 }
@@ -489,8 +489,8 @@ u32 BackupDevice::readLong(u32 addr, const u32 init)
 {
 	u32 val = init;
 
-	fpMC->fseek(addr, SEEK_SET);
-	fpMC->read_32LE(val);
+	this->_fpMC->fseek(addr, SEEK_SET);
+	this->_fpMC->read_32LE(val);
 	
 	return val;
 }
@@ -498,21 +498,21 @@ u32 BackupDevice::readLong(u32 addr, const u32 init)
 u8 BackupDevice::readByte(const u8 init)
 {
 	u8 val = init;
-	fpMC->read_u8(val);
+	this->_fpMC->read_u8(val);
 	
 	return val;
 }
 u16 BackupDevice::readWord(const u16 init)
 {
 	u16 val = init;
-	fpMC->read_16LE(val);
+	this->_fpMC->read_16LE(val);
 	
 	return val;
 }
 u32 BackupDevice::readLong(const u32 init)
 {
 	u32 val = init;
-	fpMC->read_32LE(val);
+	this->_fpMC->read_32LE(val);
 	
 	return val;
 }
@@ -523,59 +523,59 @@ bool  BackupDevice::write(u8 val)
 	return true;
 #endif
 
-	return (fpMC->fwrite(&val, 1) == 1);
+	return (this->_fpMC->fwrite(&val, 1) == 1);
 }
 
 void BackupDevice::writeByte(u32 addr, u8 val)
 {
-	fpMC->fseek(addr, SEEK_SET);
-	fpMC->write_u8(val);
+	this->_fpMC->fseek(addr, SEEK_SET);
+	this->_fpMC->write_u8(val);
 }
 void BackupDevice::writeWord(u32 addr, u16 val)
 {
-	fpMC->fseek(addr, SEEK_SET);
-	fpMC->write_16LE(val);
+	this->_fpMC->fseek(addr, SEEK_SET);
+	this->_fpMC->write_16LE(val);
 }
 void BackupDevice::writeLong(u32 addr, u32 val)
 {
-	fpMC->fseek(addr, SEEK_SET);
-	fpMC->write_32LE(val);
+	this->_fpMC->fseek(addr, SEEK_SET);
+	this->_fpMC->write_32LE(val);
 }
 
 void BackupDevice::writeByte(u8 val)
 {
-	fpMC->write_u8(val);
+	this->_fpMC->write_u8(val);
 }
 void BackupDevice::writeWord(u16 val)
 {
-	fpMC->write_16LE(val);
+	this->_fpMC->write_16LE(val);
 }
 void BackupDevice::writeLong(u32 val)
 {
-	fpMC->write_32LE(val);
+	this->_fpMC->write_32LE(val);
 }
 
 void BackupDevice::seek(u32 pos)
 {
-	fpMC->fseek(pos, SEEK_SET);
+	this->_fpMC->fseek(pos, SEEK_SET);
 }
 
 void BackupDevice::flushBackup()
 {
-	fpMC->fflush();
+	this->_fpMC->fflush();
 }
 
-bool BackupDevice::saveBuffer(u8 *data, u32 size, bool _rewind, bool _truncate)
+bool BackupDevice::saveBuffer(u8 *data, u32 size, bool willRewind, bool willTruncate)
 {
-	if (_rewind)
+	if (willRewind)
 	{
-		fpMC->fseek(0, SEEK_SET);
-		if (_truncate)
-			fpMC->truncate(0);
+		this->_fpMC->fseek(0, SEEK_SET);
+		if (willTruncate)
+			this->_fpMC->truncate(0);
 	}
-	fsize = size;
-	fpMC->fwrite(data, size);
-	ensure(size, fpMC);
+	this->_fsize = size;
+	this->_fpMC->fwrite(data, size);
+	ensure(size, this->_fpMC);
 	return true;
 }
 
@@ -586,53 +586,53 @@ void BackupDevice::movie_mode()
 
 void BackupDevice::reset_hardware()
 {
-	com = 0;
-	reset_command_state = false;
-	write_enable = FALSE;
-	write_protect = 0;
-	addr = addr_counter = 0;
+	this->_com = 0;
+	this->_reset_command_state = false;
+	this->_write_enable = FALSE;
+	this->_write_protect = 0;
+	this->_addr = this->_addr_counter = 0;
 
-	motionInitState = MOTION_INIT_STATE_IDLE;
-	motionFlag = MOTION_FLAG_NONE;
+	this->_motionInitState = MOTION_INIT_STATE_IDLE;
+	this->_motionFlag = MOTION_FLAG_NONE;
 }
 
 void BackupDevice::reset()
 {
 	reset_hardware();
-	data_autodetect.resize(0);
+	this->_data_autodetect.resize(0);
 
 	//if the user has requested a manual choice for backup type, and we havent imported a raw save file, then apply it now
-	if(state == DETECTING && CommonSettings.manualBackupType != MC_TYPE_AUTODETECT)
+	if ( (this->_state == DETECTING) && (CommonSettings.manualBackupType != MC_TYPE_AUTODETECT) )
 	{
-		state = RUNNING;
+		this->_state = RUNNING;
 		int savetype = save_types[CommonSettings.manualBackupType].media_type;
 		int savesize = save_types[CommonSettings.manualBackupType].size;
 		ensure((u32)savesize); //expand properly if necessary
-		addr_size = addr_size_for_old_save_type(savetype);
+		this->_addr_size = addr_size_for_old_save_type(savetype);
 	}
 
 	//automatically detect these hardcodes
-	if(state == DETECTING)
+	if (this->_state == DETECTING)
 	{
-		if(!memcmp(gameInfo.header.gameCode,"ASMK", 4)) addr_size = 1; //super mario 64 ds (KOR, which is different somehow)
-		else if(!memcmp(gameInfo.header.gameCode,"ASM", 3)) addr_size = 2; //super mario 64 ds
-		else if(!memcmp(gameInfo.header.gameCode,"BDE", 3)) addr_size = 2; // Dementium II
-		else if(!memcmp(gameInfo.header.gameCode,"AL3", 3)) addr_size = 1; //spongebob atlantis squarepantis.
-		else if(!memcmp(gameInfo.header.gameCode,"AH5", 3)) addr_size = 1; //over the hedge
-		else if(!memcmp(gameInfo.header.gameCode,"AVH", 3)) addr_size = 1; //over the hedge - Hammy Goes Nuts!
-		else if(!memcmp(gameInfo.header.gameCode,"AQ3", 3)) addr_size = 1; //spider-man 3
-		else if(!memcmp(gameInfo.header.gameCode,"BPV", 3)) addr_size = 2; //puzzler world (should be eeprom 64KBits)
+		if (!memcmp(gameInfo.header.gameCode,"ASMK", 4)) this->_addr_size = 1; //super mario 64 ds (KOR, which is different somehow)
+		else if (!memcmp(gameInfo.header.gameCode,"ASM", 3)) this->_addr_size = 2; //super mario 64 ds
+		else if (!memcmp(gameInfo.header.gameCode,"BDE", 3)) this->_addr_size = 2; // Dementium II
+		else if (!memcmp(gameInfo.header.gameCode,"AL3", 3)) this->_addr_size = 1; //spongebob atlantis squarepantis.
+		else if (!memcmp(gameInfo.header.gameCode,"AH5", 3)) this->_addr_size = 1; //over the hedge
+		else if (!memcmp(gameInfo.header.gameCode,"AVH", 3)) this->_addr_size = 1; //over the hedge - Hammy Goes Nuts!
+		else if (!memcmp(gameInfo.header.gameCode,"AQ3", 3)) this->_addr_size = 1; //spider-man 3
+		else if (!memcmp(gameInfo.header.gameCode,"BPV", 3)) this->_addr_size = 2; //puzzler world (should be eeprom 64KBits)
 		
 		//if we found a whitelist match, we dont need to run detection
-		if(addr_size) state = RUNNING;
+		if (this->_addr_size) this->_state = RUNNING;
 	}
 }
 
 void BackupDevice::close_rom()
 {
-	fpMC->fflush();
-	delete fpMC;
-	fpMC = NULL;
+	this->_fpMC->fflush();
+	delete this->_fpMC;
+	this->_fpMC = NULL;
 }
 
 //todo - this function is horrible. it's only needed due to our big disorganization between save types and sizes.
@@ -652,12 +652,12 @@ u8 BackupDevice::searchFileSaveType(u32 size)
 
 void BackupDevice::detect()
 {
-	if (!reset_command_state) return;
+	if (!this->_reset_command_state) return;
 
-	if(state == DETECTING && data_autodetect.size()>0)
+	if ( (this->_state == DETECTING) && (this->_data_autodetect.size() > 0) )
 	{
 		//we can now safely detect the save address size
-		u32 autodetect_size = data_autodetect.size();
+		u32 autodetect_size = this->_data_autodetect.size();
 
 		printf("Autodetecting with autodetect_size=%d\n",autodetect_size);
 
@@ -666,13 +666,13 @@ void BackupDevice::detect()
 		{
 			case 0:
 			case 1:
-				addr_size = 1; //choose 1 just to keep the busted savefile from growing too big
+				this->_addr_size = 1; //choose 1 just to keep the busted savefile from growing too big
 				msgbox->error("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
 				break;
 
 			case 2:
 				 //the modern typical case for small eeproms
-				addr_size = 1;
+				this->_addr_size = 1;
 				break;
 
 			case 3:
@@ -680,18 +680,18 @@ void BackupDevice::detect()
 				//but unfortunately we select this case on accident sometimes when what it meant to do was present the archaic 1+2 case
 				//(the archaic 1+2 case is: specifying one address byte, and then reading the first two bytes, instead of the first one byte, as most other games would do.)
 				//so, we're gonna hack in checks for the games that are doing this
-				addr_size = 2;
+				this->_addr_size = 2;
 				break;
 
 			case 4:
 				//a modern typical case
-				addr_size = 3;
+				this->_addr_size = 3;
 
 				break;
 			default:
 				//the archaic case: write the address and then some modulo-4 number of bytes
 				//why modulo 4? who knows.
-				addr_size = autodetect_size & 3;
+				this->_addr_size = autodetect_size & 3;
 
 				//SM64 (KOR) makes it here with autodetect_size=11 and nothing interesting in the buffer
 				//we whitelisted it earlier though
@@ -699,22 +699,22 @@ void BackupDevice::detect()
 				break;
 		}
 
-		state = RUNNING;
-		data_autodetect.resize(0);
+		this->_state = RUNNING;
+		this->_data_autodetect.resize(0);
 	}
 }
 
 void BackupDevice::checkReset()
 {
-	if (reset_command_state)
+	if (this->_reset_command_state)
 	{
 		//printf("MC  : reset command\n");
 
-		if(com == BM_CMD_WRITELOW || com == BM_CMD_WRITEHIGH)
-			fpMC->fflush();
+		if ( (this->_com == BM_CMD_WRITELOW) || (this->_com == BM_CMD_WRITEHIGH) )
+			this->_fpMC->fflush();
 		
-		com = 0;
-		reset_command_state = false;
+		this->_com = 0;
+		this->_reset_command_state = false;
 	}
 }
 
@@ -724,82 +724,82 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 
 #ifdef _ENABLE_MOTION
 	//motion: some guessing here... hope it doesn't break anything
-	if(com == BM_CMD_READLOW && motionInitState == MOTION_INIT_STATE_RECEIVED_4_B && val == 0)
+	if (com == BM_CMD_READLOW && this->_motionInitState == MOTION_INIT_STATE_RECEIVED_4_B && val == 0)
 	{
-		motionInitState = MOTION_INIT_STATE_IDLE;
-		motionFlag |= MOTION_FLAG_ENABLED;
+		this->_motionInitState = MOTION_INIT_STATE_IDLE;
+		this->_motionFlag |= MOTION_FLAG_ENABLED;
 		//return 0x04; //return 0x04 to enable motion!!!!!
 		return 0; //but we return 0 to disable it! since we don't emulate it anyway
 	}
 
 	//if the game firmly believes we have motion support, then ignore all motion commands, since theyre not emulated.
-	if(motionFlag & MOTION_FLAG_SENSORMODE)
+	if (this->_motionFlag & MOTION_FLAG_SENSORMODE)
 	{
 		return 0;
 	}
 #endif
 
-	switch (com)
+	switch (this->_com)
 	{
 		case BM_CMD_WRITESTATUS:
 			//printf("MC%c: write status %02X\n", PROCNUM?'7':'9', val);
-			write_protect = (val & 0xFC);
+			this->_write_protect = (val & 0xFC);
 		break;
 
 		case BM_CMD_WRITELOW:
 		case BM_CMD_READLOW:
 			//handle data or address
-			if(state == DETECTING)
+			if (this->_state == DETECTING)
 			{
-				if(com == BM_CMD_WRITELOW)
+				if (this->_com == BM_CMD_WRITELOW)
 					printf("MC%c: Unexpected backup device initialization sequence using writes!\n", PROCNUM?'7':'9');
 
 				//just buffer the data until we're no longer detecting
-				data_autodetect.push_back(val);
+				this->_data_autodetect.push_back(val);
 				detect();
 				val = 0xFF;
 			}
 			else
 			{
-				if(addr_counter<addr_size)
+				if (this->_addr_counter < this->_addr_size)
 				{
 					//continue building address
-					addr <<= 8;
-					addr |= val;
-					addr_counter++;
+					this->_addr <<= 8;
+					this->_addr |= val;
+					this->_addr_counter++;
 					val = 0xFF;
 
 					//if we just finished building the address, seek the FP
-					if (addr_counter == addr_size)
-						fpMC->fseek(addr, SEEK_SET);
+					if (this->_addr_counter == this->_addr_size)
+						this->_fpMC->fseek(this->_addr, SEEK_SET);
 				}
 				else
 				{
 					//why does tomb raider underworld access 0x180 and go clear through to 0x280?
 					//should this wrap around at 0 or at 0x100?
 					//TODO - dont other backup memory types have similar wraparound issues?
-					if(addr_size == 1)
+					if (this->_addr_size == 1)
 					{
-						addr &= 0x1FF;
+						this->_addr &= 0x1FF;
 						//since we changed the address unexpectedly (non-sequentially), be sure to seek the FP
-						fpMC->fseek(addr, SEEK_SET);
+						this->_fpMC->fseek(this->_addr, SEEK_SET);
 					}
 
 					//if we're writing a byte at address 0, we need to ensure that we have at least 1 byte in the file (IOW, ensure to size addr+1 == 0+1)
-					ensure(addr+1);
+					ensure(this->_addr + 1);
 
-					if(com == BM_CMD_READLOW)
+					if (this->_com == BM_CMD_READLOW)
 					{
 						val = read();
 						//MCLOG("BACKUP: Read at 0x%08X, value 0x%02X\n", addr, val);
 					}
 					else 
-						if(write_enable)
+						if (this->_write_enable)
 						{
 							write(val);
 							//MCLOG("BACKUP: Write to %08X, value %02Xh\n", addr, val);
 						}
-					addr++;
+					this->_addr++;
 				}
 			}
 		break;
@@ -807,26 +807,26 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 		case BM_CMD_READSTATUS:
 			//handle request to read status
 			//LOG("Backup Memory Read Status: %02X\n", write_enable << 1);
-			val = (write_enable << 1) | write_protect;
+			val = (this->_write_enable << 1) | this->_write_protect;
 		break;
 
 		case BM_CMD_IRDA:
-			printf("MC%c: Unverified Backup Memory command: %02X FROM %08X\n", PROCNUM?'7':'9', com, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
+			printf("MC%c: Unverified Backup Memory command: %02X FROM %08X\n", PROCNUM?'7':'9', this->_com, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
 			val = 0xAA;
 		break;
 
 		default:
-			if (com != 0)
+			if (this->_com != 0)
 			{
-				printf("MC%c: Unhandled Backup Memory command %02X, value %02X (PC:%08X)\n", PROCNUM?'7':'9', com, val, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
+				printf("MC%c: Unhandled Backup Memory command %02X, value %02X (PC:%08X)\n", PROCNUM?'7':'9', this->_com, val, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
 				break;
 			}
 
-			com = val;
+			this->_com = val;
 			val = 0xFF;
 
 			//there is no current command. receive one
-			switch (com)
+			switch (this->_com)
 			{
 				case BM_CMD_NOP: break;
 
@@ -834,36 +834,36 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 
 #ifdef _ENABLE_MOTION
 				case 0xFE:
-					if(motionInitState == MOTION_INIT_STATE_IDLE) { motionInitState = MOTION_INIT_STATE_FE; return 0; }
+					if (this->_motionInitState == MOTION_INIT_STATE_IDLE) { this->_motionInitState = MOTION_INIT_STATE_FE; return 0; }
 					break;
 				case 0xFD:
-					if(motionInitState == MOTION_INIT_STATE_FE) { motionInitState = MOTION_INIT_STATE_FD; return 0; }
+					if (this->_motionInitState == MOTION_INIT_STATE_FE) { this->_motionInitState = MOTION_INIT_STATE_FD; return 0; }
 					break;
 				case 0xFB:
-					if(motionInitState == MOTION_INIT_STATE_FD) { motionInitState = MOTION_INIT_STATE_FB; return 0; }
+					if (this->_motionInitState == MOTION_INIT_STATE_FD) { this->_motionInitState = MOTION_INIT_STATE_FB; return 0; }
 					break;
 				case 0xF8:
 					//enable sensor mode
-					if(motionInitState == MOTION_INIT_STATE_FD) 
+					if (this->_motionInitState == MOTION_INIT_STATE_FD)
 					{
-						motionInitState = MOTION_INIT_STATE_IDLE;
-						motionFlag |= MOTION_FLAG_SENSORMODE;
+						this->_motionInitState = MOTION_INIT_STATE_IDLE;
+						this->_motionFlag |= MOTION_FLAG_SENSORMODE;
 						return 0;
 					}
 					break;
 				case 0xF9:
 					//disable sensor mode
-					if(motionInitState == MOTION_INIT_STATE_FD) 
+					if (this->_motionInitState == MOTION_INIT_STATE_FD)
 					{
-						motionInitState = MOTION_INIT_STATE_IDLE;
-						motionFlag &= ~MOTION_FLAG_SENSORMODE;
+						this->_motionInitState = MOTION_INIT_STATE_IDLE;
+						this->_motionFlag &= ~MOTION_FLAG_SENSORMODE;
 						return 0;
 					}
 					break;
 #endif
 
 				case BM_CMD_IRDA:
-					printf("MC%c: Unverified Backup Memory command: %02X FROM %08X\n", PROCNUM?'7':'9', com, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
+					printf("MC%c: Unverified Backup Memory command: %02X FROM %08X\n", PROCNUM?'7':'9', this->_com, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
 					
 					val = 0xAA;
 					break;
@@ -871,48 +871,48 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 				case BM_CMD_WRITEDISABLE:
 					//printf("MC%c: write disable\n", PROCNUM?'7':'9');
 #ifdef _ENABLE_MOTION
-					switch (motionInitState)
+					switch (this->_motionInitState)
 					{
-						case MOTION_INIT_STATE_IDLE: motionInitState = MOTION_INIT_STATE_RECEIVED_4; break;
-						case MOTION_INIT_STATE_RECEIVED_4: motionInitState = MOTION_INIT_STATE_RECEIVED_4_B; break;
+						case MOTION_INIT_STATE_IDLE: this->_motionInitState = MOTION_INIT_STATE_RECEIVED_4; break;
+						case MOTION_INIT_STATE_RECEIVED_4: this->_motionInitState = MOTION_INIT_STATE_RECEIVED_4_B; break;
 					}
 #endif
-					write_enable = FALSE;
+					this->_write_enable = FALSE;
 					break;
 								
 				case BM_CMD_READSTATUS: break;
 
 				case BM_CMD_WRITEENABLE:
 					//printf("MC%c: write enable\n", PROCNUM?'7':'9');
-					write_enable = TRUE;
+					this->_write_enable = TRUE;
 					break;
 
 				case BM_CMD_WRITELOW:
 				case BM_CMD_READLOW:
 					//printf("XLO: %08X\n",addr);
-					addr_counter = 0;
-					addr = 0;
+					this->_addr_counter = 0;
+					this->_addr = 0;
 					break;
 
 				case BM_CMD_WRITEHIGH:
 				case BM_CMD_READHIGH:
 					//printf("XHI: %08X\n",addr);
-					if(com == BM_CMD_WRITEHIGH) com = BM_CMD_WRITELOW;
-					if(com == BM_CMD_READHIGH) com = BM_CMD_READLOW;
-					addr_counter = 0;
-					addr = 0;
-					if(addr_size==1)
+					if (this->_com == BM_CMD_WRITEHIGH) this->_com = BM_CMD_WRITELOW;
+					if (this->_com == BM_CMD_READHIGH) this->_com = BM_CMD_READLOW;
+					this->_addr_counter = 0;
+					this->_addr = 0;
+					if (this->_addr_size == 1)
 					{
 						//"write command that's only available on ST M95040-W that I know of"
 						//this makes sense, since this device would only have a 256 bytes address space with writelow
 						//and writehigh would allow access to the upper 256 bytes
 						//but it was detected in pokemon diamond also during the main save process
-						addr = 0x1;
+						this->_addr = 0x1;
 					}
 					break;
 
 				default:
-					printf("MC%c: Unhandled Backup Memory command: %02X FROM %08X\n", PROCNUM?'7':'9', com, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
+					printf("MC%c: Unhandled Backup Memory command: %02X FROM %08X\n", PROCNUM?'7':'9', this->_com, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
 					break;
 			} //switch(val)
 		break;
@@ -920,7 +920,7 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 
 #ifdef _ENABLE_MOTION
 	//motion control state machine broke, return to ground
-	motionInitState = MOTION_INIT_STATE_IDLE;
+	this->_motionInitState = MOTION_INIT_STATE_IDLE;
 #endif
 
 	checkReset();
@@ -936,18 +936,18 @@ void BackupDevice::ensure(u32 addr, EMUFILE *fpOut)
 
 void BackupDevice::ensure(u32 addr, u8 val, EMUFILE *fpOut)
 {
-	if (!fpOut && (addr < fsize)) return;
+	if (!fpOut && (addr < this->_fsize)) return;
 
-	EMUFILE *fp = (fpOut != NULL) ? fpOut : fpMC;
+	EMUFILE *fp = (fpOut != NULL) ? fpOut : this->_fpMC;
 
 #ifndef _DONT_SAVE_BACKUP
-	fp->fseek(fsize, SEEK_SET);
+	fp->fseek(this->_fsize, SEEK_SET);
 #endif
 	
 	u32 padSize = pad_up_size(addr);
-	u32 size = padSize - fsize;
-	this->_info.padSize = this->_info.size = fsize = padSize;
-	int type = searchFileSaveType(fsize);
+	u32 size = padSize - this->_fsize;
+	this->_info.padSize = this->_info.size = this->_fsize = padSize;
+	int type = searchFileSaveType(this->_fsize);
 	if (type != 0xFF) this->_info.type = (type + 1);
 
 #ifndef _DONT_SAVE_BACKUP
@@ -966,7 +966,7 @@ void BackupDevice::ensure(u32 addr, u8 val, EMUFILE *fpOut)
 	fp->write_32LE(addr);			//the size of data that has actually been written
 	fp->write_32LE(padSize);			//the size we padded it to
 	fp->write_32LE(this->_info.type);		//save memory type
-	fp->write_32LE(addr_size);
+	fp->write_32LE(this->_addr_size);
 	fp->write_32LE(this->_info.size);		//save memory size
 	fp->write_32LE((u32)0);		//version number
 	fp->fprintf("%s", kDesmumeSaveCookie); //this is what we'll use to recognize the desmume format save
@@ -979,7 +979,7 @@ void BackupDevice::ensure(u32 addr, u8 val, EMUFILE *fpOut)
 	//IDEALLY, no assumptions about the file pointer can be made.
 	//but someone (actually, not really) so very carefully profiled the save IO code and discovered that not fseeking for every byte read/write was a great optimization.
 	//so, now all this code is depending/assuming on the FP being kept in a precise position, and I dont think its smart to change the main user of this assumption to paper over this bug by making it fseek before read/write, while leaving other unknown assuming clients intact
-	fpMC->fseek(addr-1, SEEK_SET);
+	this->_fpMC->fseek(addr-1, SEEK_SET);
 #endif
 }
 
@@ -1360,11 +1360,11 @@ bool BackupDevice::no_gba_unpack(u8 *&buf, u32 &size)
 
 bool BackupDevice::export_no_gba(const char* fname)
 {
-	std::vector<u8> data(fsize);
-	u32 pos = fpMC->ftell();
-	fpMC->fseek(0, SEEK_SET);
-	fpMC->fread((char *)&data[0], fsize);
-	fpMC->fseek(pos, SEEK_SET);
+	std::vector<u8> data(this->_fsize);
+	u32 pos = this->_fpMC->ftell();
+	this->_fpMC->fseek(0, SEEK_SET);
+	this->_fpMC->fread((char *)&data[0], this->_fsize);
+	this->_fpMC->fseek(pos, SEEK_SET);
 
 	FILE* outf = fopen(fname,"wb");
 	if(!outf) return false;
@@ -1389,11 +1389,11 @@ bool BackupDevice::export_no_gba(const char* fname)
 //======================================================================= no$GBA
 bool BackupDevice::export_raw(const char* filename)
 {
-	std::vector<u8> data(fsize);
-	u32 pos = fpMC->ftell();
-	fpMC->fseek(0, SEEK_SET);
-	fpMC->fread((char *)&data[0], fsize);
-	fpMC->fseek(pos, SEEK_SET);
+	std::vector<u8> data(this->_fsize);
+	u32 pos = this->_fpMC->ftell();
+	this->_fpMC->fseek(0, SEEK_SET);
+	this->_fpMC->fread((char *)&data[0], this->_fsize);
+	this->_fpMC->fseek(pos, SEEK_SET);
 
 	FILE* outf = fopen(filename,"wb");
 	if(!outf) return false;
@@ -1430,7 +1430,7 @@ void BackupDevice::raw_applyUserSettings(u32& size, bool manual)
 	//respect the user's choice of backup memory type
 	if(CommonSettings.manualBackupType == MC_TYPE_AUTODETECT && !manual)
 	{
-		addr_size = addr_size_for_old_save_size(size);
+		this->_addr_size = addr_size_for_old_save_size(size);
 		ensure(size);
 	}
 	else
@@ -1443,10 +1443,10 @@ void BackupDevice::raw_applyUserSettings(u32& size, bool manual)
 		}
 		int savetype = save_types[type].media_type;
 		int savesize = save_types[type].size;
-		addr_size = addr_size_for_old_save_type(savetype);
-		if((u32)savesize<size) size = savesize;
+		this->_addr_size = addr_size_for_old_save_type(savetype);
+		if ((u32)savesize < size) size = savesize;
 	}
-	state = RUNNING;
+	this->_state = RUNNING;
 }
 
 u32 BackupDevice::get_save_raw_size(const char* fname)
@@ -1608,9 +1608,9 @@ bool BackupDevice::import_dsv(const char *filename)
 		return result;
 	}
 	
-	if ( (this->addr_size != 0) && (this->addr_size != 0xFFFFFFFF) && (this->addr_size != importFileFooter.info.addr_size))
+	if ( (this->_addr_size != 0) && (this->_addr_size != 0xFFFFFFFF) && (this->_addr_size != importFileFooter.info.addr_size))
 	{
-		printf("BackupDevice: WARNING! Importing an address bus size that differs from what this game is currently using. (Importing \'%u\'; Expected \'%u\'.\n", (unsigned int)importFileFooter.info.addr_size, (unsigned int)addr_size);
+		printf("BackupDevice: WARNING! Importing an address bus size that differs from what this game is currently using. (Importing \'%u\'; Expected \'%u\'.\n", (unsigned int)importFileFooter.info.addr_size, (unsigned int)this->_addr_size);
 	}
 	
 	if ( (this->_info.padSize > 0) && (this->_info.padSize != importFileFooter.info.padSize) )
@@ -1635,22 +1635,22 @@ bool BackupDevice::import_dsv(const char *filename)
 	// Write out the entirety of the file data to the EMUFILE.
 	// Note: If EMUFILE is an EMUFILE_FILE, know that we are doing a straight overwrite here.
 	// TODO: For better safety, we should create a new file and then swap.
-	this->fpMC->fseek(0, SEEK_SET);
+	this->_fpMC->fseek(0, SEEK_SET);
 	if (importFileFooter.info.padSize > 0)
 	{
-		this->fpMC->fwrite(backupData, importFileFooter.info.padSize);
+		this->_fpMC->fwrite(backupData, importFileFooter.info.padSize);
 	}
 	
-	this->addr_size = importFileFooter.info.addr_size;
-	this->fsize = importFileFooter.info.padSize;
+	this->_addr_size = importFileFooter.info.addr_size;
+	this->_fsize = importFileFooter.info.padSize;
 	
-	this->ensure(importFileFooter.info.padSize, this->fpMC);
+	this->ensure(importFileFooter.info.padSize, this->_fpMC);
 	free(backupData);
 	
 	// Truncate the file if necessary.
 	// * Also see TODO note above, since that applies to this step as well.
 	const size_t newFileSize = this->_info.padSize + BackupDevice::GetDSVFooterSize();
-	this->fpMC->truncate(newFileSize);
+	this->_fpMC->truncate(newFileSize);
 	
 	result = true;
 	
@@ -1659,8 +1659,8 @@ bool BackupDevice::import_dsv(const char *filename)
 
 bool BackupDevice::load_movie(EMUFILE *is)
 {
-	delete fpMC;
-	fpMC = is;
+	delete this->_fpMC;
+	this->_fpMC = is;
 	
 	int ok = readFooter();
 	// TODO - in case we ever change the format again (and we should probably entirely rewrite this if we do) we'd need to detect the old versions
@@ -1669,31 +1669,31 @@ bool BackupDevice::load_movie(EMUFILE *is)
 	is->fseek(0, SEEK_SET);
 
 	EMUFILE_MEMORY* scratchbuf = new EMUFILE_MEMORY(this->_info.padSize);
-	is->fread(scratchbuf->buf(),_info.padSize);
-	fpMC = scratchbuf;
+	is->fread(scratchbuf->buf(), this->_info.padSize);
+	this->_fpMC = scratchbuf;
 
 	//this is what load_movie has always done.
 	//seems sloppy, the original intention was for this to basically be a savestate, so that all fields are saved, but someone wrecked that
-	state = RUNNING;
-	addr_size = _info.addr_size;
+	this->_state = RUNNING;
+	this->_addr_size = this->_info.addr_size;
 
 	return true;
 }
 
 void BackupDevice::load_movie_blank()
 {
-	delete fpMC;
-	fpMC = new EMUFILE_MEMORY();
+	delete this->_fpMC;
+	this->_fpMC = new EMUFILE_MEMORY();
 
-	state = DETECTING;
-	fsize = 0;
-	addr_size = 0;
+	this->_state = DETECTING;
+	this->_fsize = 0;
+	this->_addr_size = 0;
 }
 
 void BackupDevice::forceManualBackupType()
 {
-	addr_size = addr_size_for_old_save_size(save_types[CommonSettings.manualBackupType].size);
-	state = RUNNING;
+	this->_addr_size = addr_size_for_old_save_size(save_types[CommonSettings.manualBackupType].size);
+	this->_state = RUNNING;
 }
 
 BackupDeviceFileInfo BackupDevice::GetFileInfo()

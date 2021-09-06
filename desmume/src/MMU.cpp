@@ -2366,12 +2366,14 @@ void DmaController::doCopy()
 
 void triggerDma(EDMAMode mode)
 {
-	MACRODO2(0, {
-		const int i=X;
-		MACRODO4(0, {
-			const int j=X;
-			MMU_new.dma[i][j].tryTrigger(mode);
-		});
+	MACRODO4(0, {
+		const int j=X;
+		MMU_new.dma[0][j].tryTrigger(mode);
+	});
+	
+	MACRODO4(0, {
+		const int j=X;
+		MMU_new.dma[1][j].tryTrigger(mode);
 	});
 }
 
