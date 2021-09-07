@@ -46,7 +46,7 @@
 #include "driver.h"
 #include "emufile.h"
 #include "matrix.h"
-#include "GPU.h"
+#include "GPU_Operations.h"
 #include "MMU.h"
 #include "render3D.h"
 #include "mem.h"
