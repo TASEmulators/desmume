@@ -2623,6 +2623,12 @@
 		AB1B9E601501A78000464647 /* ringbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ringbuffer.cpp; sourceTree = "<group>"; };
 		AB1B9E611501A78000464647 /* coreaudiosound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreaudiosound.h; sourceTree = "<group>"; };
 		AB1B9E621501A78000464647 /* ringbuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ringbuffer.h; sourceTree = "<group>"; };
+		AB1D4BAF26E6F8D700A9AE42 /* GPU_Operations_AVX2.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations_AVX2.cpp; sourceTree = "<group>"; };
+		AB1D4BB026E6F8D700A9AE42 /* GPU_Operations_AVX2.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GPU_Operations_AVX2.h; sourceTree = "<group>"; };
+		AB1D4BB126E6F8D700A9AE42 /* GPU_Operations.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations.cpp; sourceTree = "<group>"; };
+		AB1D4BB226E6F8D700A9AE42 /* GPU_Operations_SSE2.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GPU_Operations_SSE2.h; sourceTree = "<group>"; };
+		AB1D4BB326E6F8D700A9AE42 /* GPU_Operations.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GPU_Operations.h; sourceTree = "<group>"; };
+		AB1D4BB426E6F8D700A9AE42 /* GPU_Operations_SSE2.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations_SSE2.cpp; sourceTree = "<group>"; };
 		AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = macosx_10_5_compat.cpp; sourceTree = "<group>"; };
 		AB28624720AE3E7A00EAED43 /* MacAVCaptureTool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MacAVCaptureTool.mm; sourceTree = "<group>"; };
 		AB28624820AE3E7A00EAED43 /* MacBaseCaptureTool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MacBaseCaptureTool.mm; sourceTree = "<group>"; };
@@ -4208,16 +4214,16 @@
 		ABBFFF6E1D5F9C10003CD598 /* colorspacehandler */ = {
 			isa = PBXGroup;
 			children = (
-				ABBFFF811D611A36003CD598 /* colorspacehandler_AltiVec.cpp */,
+				ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */,
+				ABBFFF751D5FD2ED003CD598 /* colorspacehandler_SSE2.cpp */,
 				ABBFFF7B1D610457003CD598 /* colorspacehandler_AVX2.cpp */,
 				ABCC19332287879000DFA471 /* colorspacehandler_AVX512.cpp */,
-				ABBFFF751D5FD2ED003CD598 /* colorspacehandler_SSE2.cpp */,
-				ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */,
-				ABBFFF821D611A36003CD598 /* colorspacehandler_AltiVec.h */,
+				ABBFFF811D611A36003CD598 /* colorspacehandler_AltiVec.cpp */,
+				ABBFFF701D5F9C52003CD598 /* colorspacehandler.h */,
+				ABBFFF761D5FD2ED003CD598 /* colorspacehandler_SSE2.h */,
 				ABBFFF7C1D610457003CD598 /* colorspacehandler_AVX2.h */,
 				ABCC19342287879000DFA471 /* colorspacehandler_AVX512.h */,
-				ABBFFF761D5FD2ED003CD598 /* colorspacehandler_SSE2.h */,
-				ABBFFF701D5F9C52003CD598 /* colorspacehandler.h */,
+				ABBFFF821D611A36003CD598 /* colorspacehandler_AltiVec.h */,
 			);
 			path = colorspacehandler;
 			sourceTree = "<group>";
@@ -4336,6 +4342,9 @@
 				ABD1FEB11345AC8400AF11D1 /* firmware.cpp */,
 				ABD1FEB41345AC8400AF11D1 /* gfx3d.cpp */,
 				ABD1FEB71345AC8400AF11D1 /* GPU.cpp */,
+				AB1D4BB126E6F8D700A9AE42 /* GPU_Operations.cpp */,
+				AB1D4BB426E6F8D700A9AE42 /* GPU_Operations_SSE2.cpp */,
+				AB1D4BAF26E6F8D700A9AE42 /* GPU_Operations_AVX2.cpp */,
 				ABD1FEB81345AC8400AF11D1 /* lua-engine.cpp */,
 				ABD1FEB91345AC8400AF11D1 /* matrix.cpp */,
 				ABD1FEBA1345AC8400AF11D1 /* mc.cpp */,
@@ -4376,6 +4385,9 @@
 				ABD1FE801345AC8400AF11D1 /* gdbstub.h */,
 				ABD1FE811345AC8400AF11D1 /* gfx3d.h */,
 				ABD1FE831345AC8400AF11D1 /* GPU.h */,
+				AB1D4BB326E6F8D700A9AE42 /* GPU_Operations.h */,
+				AB1D4BB226E6F8D700A9AE42 /* GPU_Operations_SSE2.h */,
+				AB1D4BB026E6F8D700A9AE42 /* GPU_Operations_AVX2.h */,
 				AB796CA215CDCB6B00C59155 /* instruction_attributes.h */,
 				AB796CA315CDCB6B00C59155 /* instructions.h */,
 				ABD1FE841345AC8400AF11D1 /* lua-engine.h */,
@@ -7731,6 +7743,10 @@
 		AB79013B215B84E50082AE82 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = (
+					i386,
+					x86_64,
+				);
 				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_UNROLL_LOOPS = YES;
 				LLVM_LTO = YES_THIN;
@@ -7740,6 +7756,10 @@
 		AB79013C215B84E50082AE82 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = (
+					i386,
+					x86_64,
+				);
 				GCC_UNROLL_LOOPS = YES;
 				LLVM_LTO = YES;
 			};
@@ -7748,6 +7768,10 @@
 		AB790298215B84F20082AE82 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = (
+					i386,
+					x86_64,
+				);
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					"DEBUG=1",
@@ -7760,6 +7784,10 @@
 		AB790299215B84F20082AE82 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = (
+					i386,
+					x86_64,
+				);
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					NDEBUG,
 					GDB_STUB,
@@ -7771,7 +7799,10 @@
 		AB796D6E15CDCBA200C59155 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				ARCHS = (
+					x86_64,
+					x86_64h,
+				);
 				CLANG_CXX_LIBRARY = "libc++";
 				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_UNROLL_LOOPS = YES;
@@ -7783,7 +7814,10 @@
 		AB796D6F15CDCBA200C59155 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				ARCHS = (
+					x86_64,
+					x86_64h,
+				);
 				CLANG_CXX_LIBRARY = "libc++";
 				GCC_UNROLL_LOOPS = YES;
 				LLVM_LTO = YES;
@@ -7794,7 +7828,10 @@
 		AB8F3D2C1A53AC2600A80BF6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				ARCHS = (
+					x86_64,
+					x86_64h,
+				);
 				CLANG_CXX_LIBRARY = "libc++";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
@@ -7810,7 +7847,10 @@
 		AB8F3D2D1A53AC2600A80BF6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				ARCHS = (
+					x86_64,
+					x86_64h,
+				);
 				CLANG_CXX_LIBRARY = "libc++";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					NDEBUG,
@@ -7825,10 +7865,15 @@
 		ABB3C6581501BC6D00E0C22E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				ARCHS = (
+					x86_64,
+					x86_64h,
+				);
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_X86_VECTOR_INSTRUCTIONS = sse4.1;
+				"CLANG_X86_VECTOR_INSTRUCTIONS[arch=i386]" = sse3;
+				"CLANG_X86_VECTOR_INSTRUCTIONS[arch=x86_64h]" = avx2;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/openemu\"",
@@ -7844,10 +7889,15 @@
 		ABB3C6591501BC6D00E0C22E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				ARCHS = (
+					x86_64,
+					x86_64h,
+				);
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_X86_VECTOR_INSTRUCTIONS = sse4.1;
+				"CLANG_X86_VECTOR_INSTRUCTIONS[arch=i386]" = sse3;
+				"CLANG_X86_VECTOR_INSTRUCTIONS[arch=x86_64h]" = avx2;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/openemu\"",
@@ -7864,7 +7914,10 @@
 		ABD2CE4226E05CB000FB15F7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				ARCHS = (
+					x86_64,
+					x86_64h,
+				);
 				CLANG_CXX_LIBRARY = "libc++";
 				GCC_FAST_OBJC_DISPATCH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
@@ -7884,14 +7937,16 @@
 				PRODUCT_NAME = DeSmuME;
 				SKIP_INSTALL = NO;
 				VALIDATE_PRODUCT = YES;
-				VALID_ARCHS = x86_64;
 			};
 			name = Debug;
 		};
 		ABD2CE4326E05CB000FB15F7 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				ARCHS = (
+					x86_64,
+					x86_64h,
+				);
 				CLANG_CXX_LIBRARY = "libc++";
 				GCC_FAST_OBJC_DISPATCH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
@@ -7907,13 +7962,16 @@
 				LLVM_LTO = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				VALIDATE_PRODUCT = YES;
-				VALID_ARCHS = x86_64;
 			};
 			name = Release;
 		};
 		ABE145B71FBBA71A0097A4A8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = (
+					i386,
+					x86_64,
+				);
 				GCC_FAST_OBJC_DISPATCH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_OPTIMIZATION_LEVEL = fast;
@@ -7938,6 +7996,10 @@
 		ABE145B81FBBA71A0097A4A8 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = (
+					i386,
+					x86_64,
+				);
 				GCC_FAST_OBJC_DISPATCH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_OPTIMIZATION_LEVEL = fast;
@@ -7959,7 +8021,7 @@
 		C01FCF4B08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				ARCHS = i386;
 				GCC_FAST_OBJC_DISPATCH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_OPTIMIZATION_LEVEL = fast;
@@ -7977,14 +8039,13 @@
 				PRODUCT_NAME = "DeSmuME (32bit)";
 				SKIP_INSTALL = NO;
 				VALIDATE_PRODUCT = YES;
-				VALID_ARCHS = i386;
 			};
 			name = Debug;
 		};
 		C01FCF4C08A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				ARCHS = i386;
 				GCC_FAST_OBJC_DISPATCH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_OPTIMIZATION_LEVEL = fast;
@@ -7998,7 +8059,6 @@
 				LLVM_LTO = YES;
 				PRODUCT_NAME = "DeSmuME (32bit)";
 				VALIDATE_PRODUCT = YES;
-				VALID_ARCHS = i386;
 			};
 			name = Release;
 		};
@@ -8017,6 +8077,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
 				"CLANG_X86_VECTOR_INSTRUCTIONS[arch=i386]" = sse3;
+				"CLANG_X86_VECTOR_INSTRUCTIONS[arch=x86_64h]" = avx2;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -8056,6 +8117,7 @@
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
 				STRIP_INSTALLED_PRODUCT = NO;
+				VALID_ARCHS = "i386 x86_64 x86_64h";
 			};
 			name = Debug;
 		};
@@ -8074,6 +8136,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
 				"CLANG_X86_VECTOR_INSTRUCTIONS[arch=i386]" = sse3;
+				"CLANG_X86_VECTOR_INSTRUCTIONS[arch=x86_64h]" = avx2;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				GCC_DYNAMIC_NO_PIC = YES;
@@ -8111,6 +8174,7 @@
 				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 				VALIDATE_PRODUCT = YES;
+				VALID_ARCHS = "i386 x86_64 x86_64h";
 			};
 			name = Release;
 		};
