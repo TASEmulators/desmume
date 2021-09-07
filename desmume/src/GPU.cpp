@@ -4585,15 +4585,16 @@ void GPUEngineA::_RenderLine_DispCapture_Blend_Buffer(const void *srcA, const vo
 	
 #ifdef USEMANUALVECTORIZATION
 	i = this->_RenderLine_DispCapture_Blend_VecLoop<OUTPUTFORMAT>(srcA, srcB, dst, blendEVA, blendEVB, length);
-#pragma LOOPVECTORIZE_DISABLE
 #endif
-	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 	{
 		const FragmentColor *srcA_32 = (const FragmentColor *)srcA;
 		const FragmentColor *srcB_32 = (const FragmentColor *)srcB;
 		FragmentColor *dst32 = (FragmentColor *)dst;
 		
+#ifdef USEMANUALVECTORIZATION
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 		for (; i < length; i++)
 		{
 			const FragmentColor colorA = srcA_32[i];
@@ -4608,6 +4609,9 @@ void GPUEngineA::_RenderLine_DispCapture_Blend_Buffer(const void *srcA, const vo
 		const u16 *srcB_16 = (const u16 *)srcB;
 		u16 *dst16 = (u16 *)dst;
 		
+#ifdef USEMANUALVECTORIZATION
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 		for (; i < length; i++)
 		{
 			const u16 colorA = srcA_16[i];

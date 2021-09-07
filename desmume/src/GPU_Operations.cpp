@@ -1184,7 +1184,12 @@ void CopyLineExpandHinted(const void *__restrict srcBuffer, const size_t srcLine
 				case (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4):
 					CopyLineExpand<4, SCALEVERTICAL, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 4, 4);
 					break;
-					
+
+// Building on MSVC takes too long when LTO is on (typical use case), so remove these extra calls to
+// CopyLineExpand() in order to reduce the number of permutations and make build times more sane.
+// Other compilers, such as GCC and Clang, have no problems with building using LTO within a
+// reasonable time frame.
+#ifndef _MSC_VER
 				case (GPU_FRAMEBUFFER_NATIVE_WIDTH * 5):
 					CopyLineExpand<5, SCALEVERTICAL, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 5, 5);
 					break;
@@ -1200,7 +1205,7 @@ void CopyLineExpandHinted(const void *__restrict srcBuffer, const size_t srcLine
 				case (GPU_FRAMEBUFFER_NATIVE_WIDTH * 8):
 					CopyLineExpand<8, SCALEVERTICAL, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 8, 8);
 					break;
-					
+
 				case (GPU_FRAMEBUFFER_NATIVE_WIDTH * 9):
 					CopyLineExpand<9, SCALEVERTICAL, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 9, 9);
 					break;
@@ -1232,7 +1237,7 @@ void CopyLineExpandHinted(const void *__restrict srcBuffer, const size_t srcLine
 				case (GPU_FRAMEBUFFER_NATIVE_WIDTH * 16):
 					CopyLineExpand<16, SCALEVERTICAL, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * 16, 16);
 					break;
-					
+#endif
 				default:
 				{
 					if ((dstLineWidth % GPU_FRAMEBUFFER_NATIVE_WIDTH) == 0)
