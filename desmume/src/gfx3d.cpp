@@ -3093,7 +3093,7 @@ void gfx3d_parseCurrentDISP3DCNT()
 	gfx3d.state.enableEdgeMarking	= (DISP3DCNT.EnableEdgeMarking != 0);
 	gfx3d.state.enableFogAlphaOnly	= (DISP3DCNT.FogOnlyAlpha != 0);
 	gfx3d.state.enableFog			= (DISP3DCNT.EnableFog != 0);
-	gfx3d.state.fogShift			=  DISP3DCNT.FogShiftSHR;
+	gfx3d.state.fogShift			= (DISP3DCNT.FogShiftSHR <= 10) ? DISP3DCNT.FogShiftSHR : 10;
 	gfx3d.state.enableClearImage	= (DISP3DCNT.RearPlaneMode != 0);
 }
 

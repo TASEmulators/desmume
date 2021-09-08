@@ -2114,67 +2114,58 @@ void SoftRasterizerRenderer::_UpdateEdgeMarkColorTable(const u16 *edgeMarkColorT
 
 void SoftRasterizerRenderer::_UpdateFogTable(const u8 *fogDensityTable)
 {
-#if 0
-	//TODO - this might be a little slow;
-	//we might need to hash all the variables and only recompute this when something changes
-	const int increment = (0x400 >> shift);
-	for (u32 i = 0; i < 32768; i++)
-	{
-		if (i < offset)
-		{
-			this->_fogTable[i] = densityTable[0];
-			continue;
-		}
-		
-		for (int j = 0; j < 32; j++)
-		{
-			u32 value = offset + increment*(j+1);
-			if (i <= value)
-			{
-				if (j == 0)
-				{
-					this->_fogTable[i] = densityTable[0];
-					goto done;
-				}
-				else
-				{
-					this->_fogTable[i] = ((value-i)*(densityTable[j-1]) + (increment-(value-i))*(densityTable[j]))/increment;
-					goto done;
-				}
-			}
-		}
-		this->_fogTable[i] = (densityTable[31]);
-	done: ;
-	}
-#else
-	// this should behave exactly the same as the previous loop,
-	// except much faster. (because it's not a 2d loop and isn't so branchy either)
-	// maybe it's fast enough to not need to be cached, now.
-	const int increment = ((1 << 10) >> this->currentRenderState->fogShift);
-	const int incrementDivShift = 10 - this->currentRenderState->fogShift;
-	u32 fogOffset = min<u32>(max<u32>(this->currentRenderState->fogOffset, 0), 32768);
-	u32 iMin = min<u32>(32768, (( 1 + 1) << incrementDivShift) + fogOffset + 1 - increment);
-	u32 iMax = min<u32>(32768, ((32 + 1) << incrementDivShift) + fogOffset + 1 - increment);
+	const s32 fogStep = 0x400 >> this->currentRenderState->fogShift;
+	const s32 fogShiftInv = 10 - this->currentRenderState->fogShift;
+	const s32 fogOffset = min<s32>( max<s32>((s32)this->currentRenderState->fogOffset, 0), 32768 );
+	const s32 iMin = min<s32>( max<s32>((( 1 + 1) << fogShiftInv) + fogOffset + 1 - fogStep, 0), 32768);
+	const s32 iMax = min<s32>( max<s32>(((32 + 1) << fogShiftInv) + fogOffset + 1 - fogStep, 0), 32768);
 	assert(iMin <= iMax);
 	
 	// If the fog factor is 127, then treat it as 128.
-	u8 fogFactor = (fogDensityTable[0] == 127) ? 128 : fogDensityTable[0];
-	memset(this->_fogTable, fogFactor, iMin);
+	u8 fogWeight = (fogDensityTable[0] >= 127) ? 128 : fogDensityTable[0];
+	memset(this->_fogTable, fogWeight, iMin);
 	
-	for(u32 i = iMin; i < iMax; i++)
+	for (s32 depth = iMin; depth < iMax; depth++)
 	{
-		int num = (i - fogOffset + (increment-1));
-		int j = (num >> incrementDivShift) - 1;
-		u32 value = (num & ~(increment-1)) + fogOffset;
-		u32 diff = value - i;
-		assert(j >= 1 && j < 32);
-		fogFactor = ((diff*(fogDensityTable[j-1]) + (increment-diff)*(fogDensityTable[j])) >> incrementDivShift);
-		this->_fogTable[i] = (fogFactor == 127) ? 128 : fogFactor;
+#if 0
+		// TODO: this might be a little slow;
+		// We might need to hash all the variables and only recompute this when something changes.
+		// But let's keep a naive version of this loop for the sake of clarity.
+		if (depth < fogOffset)
+		{
+			this->_fogTable[depth] = fogDensityTable[0];
+		}
+		else
+		{
+			this->_fogTable[depth] = fogDensityTable[31];
+			
+			for (size_t idx = 0; idx < 32; idx++)
+			{
+				s32 value = fogOffset + (fogStep * (idx+1));
+				if (depth <= value)
+				{
+					this->_fogTable[depth] = (idx == 0) ? fogDensityTable[0] : ((value-depth)*(fogDensityTable[idx-1]) + (fogStep-(value-depth))*(fogDensityTable[idx])) / fogStep;
+					break;
+				}
+			}
+		}
+#else
+		// this should behave exactly the same as the previous loop,
+		// except much faster. (because it's not a 2d loop and isn't so branchy either)
+		// maybe it's fast enough to not need to be cached, now.
+		const s32 diff = depth - fogOffset + (fogStep - 1);
+		const s32 interp = (diff & ~(fogStep - 1)) + fogOffset - depth;
+		
+		const size_t idx = (diff >> fogShiftInv) - 1;
+		assert( (idx >= 1) && (idx < 32) );
+		
+		fogWeight = (u8)( ( (interp * fogDensityTable[idx-1]) + ((fogStep - interp) * fogDensityTable[idx]) ) >> fogShiftInv );
+		this->_fogTable[depth] = (fogWeight >= 127) ? 128 : fogWeight;
+#endif
 	}
 	
-	fogFactor = (fogDensityTable[31] == 127) ? 128 : fogDensityTable[31];
-	memset(this->_fogTable+iMax, fogFactor, 32768-iMax);
-#endif
+	fogWeight = (fogDensityTable[31] >= 127) ? 128 : fogDensityTable[31];
+	memset(this->_fogTable+iMax, fogWeight, 32768-iMax);
 }
 
 Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasterizerPostProcessParams &param)
@@ -2248,16 +2239,16 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 				
 				const size_t fogIndex = depth >> 9;
 				assert(fogIndex < 32768);
-				const u8 fog = (this->_framebufferAttributes->isFogged[i] != 0) ? this->_fogTable[fogIndex] : 0;
+				const u8 fogWeight = (this->_framebufferAttributes->isFogged[i] != 0) ? this->_fogTable[fogIndex] : 0;
 				
 				if (!param.fogAlphaOnly)
 				{
-					dstColor.r = ( (128-fog)*dstColor.r + fogColor.r*fog ) >> 7;
-					dstColor.g = ( (128-fog)*dstColor.g + fogColor.g*fog ) >> 7;
-					dstColor.b = ( (128-fog)*dstColor.b + fogColor.b*fog ) >> 7;
+					dstColor.r = ( (128-fogWeight)*dstColor.r + fogColor.r*fogWeight ) >> 7;
+					dstColor.g = ( (128-fogWeight)*dstColor.g + fogColor.g*fogWeight ) >> 7;
+					dstColor.b = ( (128-fogWeight)*dstColor.b + fogColor.b*fogWeight ) >> 7;
 				}
 				
-				dstColor.a = ( (128-fog)*dstColor.a + fogColor.a*fog ) >> 7;
+				dstColor.a = ( (128-fogWeight)*dstColor.a + fogColor.a*fogWeight ) >> 7;
 			}
 		}
 	}

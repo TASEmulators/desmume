@@ -400,7 +400,7 @@ struct OGLRenderStates
 	GLfloat fogOffset;
 	GLfloat fogStep;
 	GLfloat pad_0; // This needs to be here to preserve alignment
-	GLfloat fogDensity[32];
+	GLvec4 fogDensity[32];
 	GLvec4 fogColor;
 	GLvec4 edgeColor[8];
 	GLvec4 toonColor[32];

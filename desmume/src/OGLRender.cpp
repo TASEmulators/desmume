@@ -638,7 +638,7 @@ uniform sampler2D texInFragDepth;\n\
 uniform sampler2D texInFogAttributes;\n\
 uniform bool stateEnableFogAlphaOnly;\n\
 uniform vec4 stateFogColor;\n\
-uniform float stateFogDensity[32];\n\
+uniform vec4 stateFogDensity[32];\n\
 \n\
 void main()\n\
 {\n\
@@ -654,135 +654,135 @@ void main()\n\
 		\n\
 		if (inFragDepth <= FOG_DEPTH_COMPARE_0)\n\
 		{\n\
-			fogMixWeight = stateFogDensity[0];\n\
+			fogMixWeight = stateFogDensity[0].r;\n\
 		}\n\
 		else if (inFragDepth >= FOG_DEPTH_COMPARE_31)\n\
 		{\n\
-			fogMixWeight = stateFogDensity[31];\n\
+			fogMixWeight = stateFogDensity[31].r;\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_1)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[ 0], stateFogDensity[ 1], (inFragDepth - FOG_DEPTH_COMPARE_0)  * FOG_DEPTH_INVDIFF_1);\n\
+			fogMixWeight = mix(stateFogDensity[ 1].g, stateFogDensity[ 1].r, (inFragDepth - FOG_DEPTH_COMPARE_0)  * FOG_DEPTH_INVDIFF_1);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_2)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[ 1], stateFogDensity[ 2], (inFragDepth - FOG_DEPTH_COMPARE_1)  * FOG_DEPTH_INVDIFF_2);\n\
+			fogMixWeight = mix(stateFogDensity[ 2].g, stateFogDensity[ 2].r, (inFragDepth - FOG_DEPTH_COMPARE_1)  * FOG_DEPTH_INVDIFF_2);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_3)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[ 2], stateFogDensity[ 3], (inFragDepth - FOG_DEPTH_COMPARE_2)  * FOG_DEPTH_INVDIFF_3);\n\
+			fogMixWeight = mix(stateFogDensity[ 3].g, stateFogDensity[ 3].r, (inFragDepth - FOG_DEPTH_COMPARE_2)  * FOG_DEPTH_INVDIFF_3);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_4)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[ 3], stateFogDensity[ 4], (inFragDepth - FOG_DEPTH_COMPARE_3)  * FOG_DEPTH_INVDIFF_4);\n\
+			fogMixWeight = mix(stateFogDensity[ 4].g, stateFogDensity[ 4].r, (inFragDepth - FOG_DEPTH_COMPARE_3)  * FOG_DEPTH_INVDIFF_4);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_5)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[ 4], stateFogDensity[ 5], (inFragDepth - FOG_DEPTH_COMPARE_4)  * FOG_DEPTH_INVDIFF_5);\n\
+			fogMixWeight = mix(stateFogDensity[ 5].g, stateFogDensity[ 5].r, (inFragDepth - FOG_DEPTH_COMPARE_4)  * FOG_DEPTH_INVDIFF_5);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_6)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[ 5], stateFogDensity[ 6], (inFragDepth - FOG_DEPTH_COMPARE_5)  * FOG_DEPTH_INVDIFF_6);\n\
+			fogMixWeight = mix(stateFogDensity[ 6].g, stateFogDensity[ 6].r, (inFragDepth - FOG_DEPTH_COMPARE_5)  * FOG_DEPTH_INVDIFF_6);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_7)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[ 6], stateFogDensity[ 7], (inFragDepth - FOG_DEPTH_COMPARE_6)  * FOG_DEPTH_INVDIFF_7);\n\
+			fogMixWeight = mix(stateFogDensity[ 7].g, stateFogDensity[ 7].r, (inFragDepth - FOG_DEPTH_COMPARE_6)  * FOG_DEPTH_INVDIFF_7);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_8)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[ 7], stateFogDensity[ 8], (inFragDepth - FOG_DEPTH_COMPARE_7)  * FOG_DEPTH_INVDIFF_8);\n\
+			fogMixWeight = mix(stateFogDensity[ 8].g, stateFogDensity[ 8].r, (inFragDepth - FOG_DEPTH_COMPARE_7)  * FOG_DEPTH_INVDIFF_8);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_9)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[ 8], stateFogDensity[ 9], (inFragDepth - FOG_DEPTH_COMPARE_8)  * FOG_DEPTH_INVDIFF_9);\n\
+			fogMixWeight = mix(stateFogDensity[ 9].g, stateFogDensity[ 9].r, (inFragDepth - FOG_DEPTH_COMPARE_8)  * FOG_DEPTH_INVDIFF_9);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_10)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[ 9], stateFogDensity[10], (inFragDepth - FOG_DEPTH_COMPARE_9)  * FOG_DEPTH_INVDIFF_10);\n\
+			fogMixWeight = mix(stateFogDensity[10].g, stateFogDensity[10].r, (inFragDepth - FOG_DEPTH_COMPARE_9)  * FOG_DEPTH_INVDIFF_10);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_11)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[10], stateFogDensity[11], (inFragDepth - FOG_DEPTH_COMPARE_10) * FOG_DEPTH_INVDIFF_11);\n\
+			fogMixWeight = mix(stateFogDensity[11].g, stateFogDensity[11].r, (inFragDepth - FOG_DEPTH_COMPARE_10) * FOG_DEPTH_INVDIFF_11);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_12)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[11], stateFogDensity[12], (inFragDepth - FOG_DEPTH_COMPARE_11) * FOG_DEPTH_INVDIFF_12);\n\
+			fogMixWeight = mix(stateFogDensity[12].g, stateFogDensity[12].r, (inFragDepth - FOG_DEPTH_COMPARE_11) * FOG_DEPTH_INVDIFF_12);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_13)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[12], stateFogDensity[13], (inFragDepth - FOG_DEPTH_COMPARE_12) * FOG_DEPTH_INVDIFF_13);\n\
+			fogMixWeight = mix(stateFogDensity[13].g, stateFogDensity[13].r, (inFragDepth - FOG_DEPTH_COMPARE_12) * FOG_DEPTH_INVDIFF_13);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_14)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[13], stateFogDensity[14], (inFragDepth - FOG_DEPTH_COMPARE_13) * FOG_DEPTH_INVDIFF_14);\n\
+			fogMixWeight = mix(stateFogDensity[14].g, stateFogDensity[14].r, (inFragDepth - FOG_DEPTH_COMPARE_13) * FOG_DEPTH_INVDIFF_14);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_15)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[14], stateFogDensity[15], (inFragDepth - FOG_DEPTH_COMPARE_14) * FOG_DEPTH_INVDIFF_15);\n\
+			fogMixWeight = mix(stateFogDensity[15].g, stateFogDensity[15].r, (inFragDepth - FOG_DEPTH_COMPARE_14) * FOG_DEPTH_INVDIFF_15);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_16)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[15], stateFogDensity[16], (inFragDepth - FOG_DEPTH_COMPARE_15) * FOG_DEPTH_INVDIFF_16);\n\
+			fogMixWeight = mix(stateFogDensity[16].g, stateFogDensity[16].r, (inFragDepth - FOG_DEPTH_COMPARE_15) * FOG_DEPTH_INVDIFF_16);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_17)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[16], stateFogDensity[17], (inFragDepth - FOG_DEPTH_COMPARE_16) * FOG_DEPTH_INVDIFF_17);\n\
+			fogMixWeight = mix(stateFogDensity[17].g, stateFogDensity[17].r, (inFragDepth - FOG_DEPTH_COMPARE_16) * FOG_DEPTH_INVDIFF_17);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_18)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[17], stateFogDensity[18], (inFragDepth - FOG_DEPTH_COMPARE_17) * FOG_DEPTH_INVDIFF_18);\n\
+			fogMixWeight = mix(stateFogDensity[18].g, stateFogDensity[18].r, (inFragDepth - FOG_DEPTH_COMPARE_17) * FOG_DEPTH_INVDIFF_18);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_19)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[18], stateFogDensity[19], (inFragDepth - FOG_DEPTH_COMPARE_18) * FOG_DEPTH_INVDIFF_19);\n\
+			fogMixWeight = mix(stateFogDensity[19].g, stateFogDensity[19].r, (inFragDepth - FOG_DEPTH_COMPARE_18) * FOG_DEPTH_INVDIFF_19);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_20)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[19], stateFogDensity[20], (inFragDepth - FOG_DEPTH_COMPARE_19) * FOG_DEPTH_INVDIFF_20);\n\
+			fogMixWeight = mix(stateFogDensity[20].g, stateFogDensity[20].r, (inFragDepth - FOG_DEPTH_COMPARE_19) * FOG_DEPTH_INVDIFF_20);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_21)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[20], stateFogDensity[21], (inFragDepth - FOG_DEPTH_COMPARE_20) * FOG_DEPTH_INVDIFF_21);\n\
+			fogMixWeight = mix(stateFogDensity[21].g, stateFogDensity[21].r, (inFragDepth - FOG_DEPTH_COMPARE_20) * FOG_DEPTH_INVDIFF_21);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_22)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[21], stateFogDensity[22], (inFragDepth - FOG_DEPTH_COMPARE_21) * FOG_DEPTH_INVDIFF_22);\n\
+			fogMixWeight = mix(stateFogDensity[22].g, stateFogDensity[22].r, (inFragDepth - FOG_DEPTH_COMPARE_21) * FOG_DEPTH_INVDIFF_22);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_23)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[22], stateFogDensity[23], (inFragDepth - FOG_DEPTH_COMPARE_22) * FOG_DEPTH_INVDIFF_23);\n\
+			fogMixWeight = mix(stateFogDensity[23].g, stateFogDensity[23].r, (inFragDepth - FOG_DEPTH_COMPARE_22) * FOG_DEPTH_INVDIFF_23);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_24)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[23], stateFogDensity[24], (inFragDepth - FOG_DEPTH_COMPARE_23) * FOG_DEPTH_INVDIFF_24);\n\
+			fogMixWeight = mix(stateFogDensity[24].g, stateFogDensity[24].r, (inFragDepth - FOG_DEPTH_COMPARE_23) * FOG_DEPTH_INVDIFF_24);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_25)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[24], stateFogDensity[25], (inFragDepth - FOG_DEPTH_COMPARE_24) * FOG_DEPTH_INVDIFF_25);\n\
+			fogMixWeight = mix(stateFogDensity[25].g, stateFogDensity[25].r, (inFragDepth - FOG_DEPTH_COMPARE_24) * FOG_DEPTH_INVDIFF_25);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_26)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[25], stateFogDensity[26], (inFragDepth - FOG_DEPTH_COMPARE_25) * FOG_DEPTH_INVDIFF_26);\n\
+			fogMixWeight = mix(stateFogDensity[26].g, stateFogDensity[26].r, (inFragDepth - FOG_DEPTH_COMPARE_25) * FOG_DEPTH_INVDIFF_26);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_27)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[26], stateFogDensity[27], (inFragDepth - FOG_DEPTH_COMPARE_26) * FOG_DEPTH_INVDIFF_27);\n\
+			fogMixWeight = mix(stateFogDensity[27].g, stateFogDensity[27].r, (inFragDepth - FOG_DEPTH_COMPARE_26) * FOG_DEPTH_INVDIFF_27);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_28)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[27], stateFogDensity[28], (inFragDepth - FOG_DEPTH_COMPARE_27) * FOG_DEPTH_INVDIFF_28);\n\
+			fogMixWeight = mix(stateFogDensity[28].g, stateFogDensity[28].r, (inFragDepth - FOG_DEPTH_COMPARE_27) * FOG_DEPTH_INVDIFF_28);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_29)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[28], stateFogDensity[29], (inFragDepth - FOG_DEPTH_COMPARE_28) * FOG_DEPTH_INVDIFF_29);\n\
+			fogMixWeight = mix(stateFogDensity[29].g, stateFogDensity[29].r, (inFragDepth - FOG_DEPTH_COMPARE_28) * FOG_DEPTH_INVDIFF_29);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_30)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[29], stateFogDensity[30], (inFragDepth - FOG_DEPTH_COMPARE_29) * FOG_DEPTH_INVDIFF_30);\n\
+			fogMixWeight = mix(stateFogDensity[30].g, stateFogDensity[30].r, (inFragDepth - FOG_DEPTH_COMPARE_29) * FOG_DEPTH_INVDIFF_30);\n\
 		}\n\
 		else if (inFragDepth <= FOG_DEPTH_COMPARE_31)\n\
 		{\n\
-			fogMixWeight = mix(stateFogDensity[30], stateFogDensity[31], (inFragDepth - FOG_DEPTH_COMPARE_30) * FOG_DEPTH_INVDIFF_31);\n\
+			fogMixWeight = mix(stateFogDensity[31].g, stateFogDensity[31].r, (inFragDepth - FOG_DEPTH_COMPARE_30) * FOG_DEPTH_INVDIFF_31);\n\
 		}\n\
 		\n\
 		newFoggedColor = mix(inFragColor, (stateEnableFogAlphaOnly) ? vec4(inFragColor.rgb, stateFogColor.a) : stateFogColor, fogMixWeight);\n\
@@ -4514,7 +4514,8 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		
 		for (size_t i = 0; i < 32; i++)
 		{
-			this->_pendingRenderStates.fogDensity[i] = (engine.renderState.fogDensityTable[i] == 127) ? 1.0f : (GLfloat)engine.renderState.fogDensityTable[i] / 128.0f;
+			this->_pendingRenderStates.fogDensity[i].r = (engine.renderState.fogDensityTable[i] == 127) ? 1.0f : (GLfloat)engine.renderState.fogDensityTable[i] / 128.0f; // Current table value is stored in r
+			this->_pendingRenderStates.fogDensity[i].g = (i == 0) ? this->_pendingRenderStates.fogDensity[0].r : this->_pendingRenderStates.fogDensity[i-1].r; // Previous table value is stored in g
 		}
 	}
 	
@@ -4759,7 +4760,7 @@ Render3DError OpenGLRenderer_1_2::PostprocessFramebuffer()
 		glUseProgram(shaderID.program);
 		glUniform1i(OGLRef.uniformStateEnableFogAlphaOnly, this->_pendingRenderStates.enableFogAlphaOnly);
 		glUniform4fv(OGLRef.uniformStateFogColor, 1, (const GLfloat *)&this->_pendingRenderStates.fogColor);
-		glUniform1fv(OGLRef.uniformStateFogDensity, 32, (const GLfloat *)this->_pendingRenderStates.fogDensity);
+		glUniform4fv(OGLRef.uniformStateFogDensity, 32, (const GLfloat *)this->_pendingRenderStates.fogDensity);
 		
 		glDisable(GL_STENCIL_TEST);
 		glDisable(GL_BLEND);
@@ -5739,7 +5740,8 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 		
 		for (size_t i = 0; i < 32; i++)
 		{
-			this->_pendingRenderStates.fogDensity[i] = (engine.renderState.fogDensityTable[i] == 127) ? 1.0f : (GLfloat)engine.renderState.fogDensityTable[i] / 128.0f;
+			this->_pendingRenderStates.fogDensity[i].r = (engine.renderState.fogDensityTable[i] == 127) ? 1.0f : (GLfloat)engine.renderState.fogDensityTable[i] / 128.0f; // Current table value is stored in r
+			this->_pendingRenderStates.fogDensity[i].g = (i == 0) ? this->_pendingRenderStates.fogDensity[0].r : this->_pendingRenderStates.fogDensity[i-1].r; // Previous table value is stored in g
 		}
 	}
 	
