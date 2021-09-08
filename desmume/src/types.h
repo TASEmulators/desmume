@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2005 Guillaume Duhamel
-	Copyright (C) 2008-2019 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 
 // Determine CPU architecture for platforms that don't use the autoconf script
 #if defined(HOST_WINDOWS) || defined(DESMUME_COCOA)
-	#if defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_WIN64)
+	#if defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_WIN64) || defined(__aarch64__) || defined(__ppc64__)
 		#define HOST_64
 	#else
 		#define HOST_32

@@ -5499,10 +5499,10 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	const GLint vtxBuffer[8] = {
-		-_normalWidth/2,  _normalHeight/2,
-		 _normalWidth/2,  _normalHeight/2,
-		-_normalWidth/2, -_normalHeight/2,
-		 _normalWidth/2, -_normalHeight/2
+		(GLint)(-_normalWidth/2.0), (GLint)( _normalHeight/2.0),
+        (GLint)( _normalWidth/2.0), (GLint)( _normalHeight/2.0),
+        (GLint)(-_normalWidth/2.0), (GLint)(-_normalHeight/2.0),
+        (GLint)( _normalWidth/2.0), (GLint)(-_normalHeight/2.0)
 	};
 	
 	// Set up VBOs

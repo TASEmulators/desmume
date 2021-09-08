@@ -928,7 +928,7 @@ static void buffer_copy_or_constant_s32(void *__restrict dst, const void *__rest
 	s32 *dst_32 = (s32 *)dst;
 	
 	for (size_t i = 0; i < vecLength; i+=sizeof(s32))
-		dst_32[i] = (ENDIANSWAPSTORE) ? LOCAL_TO_LE_32(src_32[i] | c) : src_32[i] | c;
+		dst_32[i] = (NEEDENDIANSWAP) ? LOCAL_TO_LE_32(src_32[i] | c) : src_32[i] | c;
 #endif
 }
 
@@ -957,7 +957,7 @@ static void buffer_copy_or_constant_s32_fast(void *__restrict dst, void *__restr
 	s32 *dst_32 = (s32 *)dst;
 	
 	for (size_t i = 0; i < VECLENGTH; i+=sizeof(s32))
-		dst_32[i] = (ENDIANSWAPSTORE) ? LOCAL_TO_LE_32(src_32[i] | c) : src_32[i] | c;
+		dst_32[i] = (NEEDENDIANSWAP) ? LOCAL_TO_LE_32(src_32[i] | c) : src_32[i] | c;
 #endif
 }
 
