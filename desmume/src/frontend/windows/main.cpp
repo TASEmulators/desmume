@@ -2466,6 +2466,22 @@ int _main()
 		CommonSettings.fwConfig.MACAddress[3] = hash >> 16;
 		CommonSettings.fwConfig.MACAddress[4] = (hash >> 8) & 0xFF;
 		CommonSettings.fwConfig.MACAddress[5] = hash & 0xFF;
+
+		//UPDATE 2021 - as of commit e27cc87bdf4c59983e872c0c03d79717e77a6400 desmume began randomizing the mac address.
+		//the FirmwareMACMode was removed and we incorporated an assumption that the mac address would be randomized...
+		//... unless the user specified it otherwise (which would be applied later) .. I think?
+		//a search of internet lore from around that time reveals most users expect desmume to have a stable mac address (FirmwareMACMode_Automatic)
+		//This is the DEFINED BEHAVIOR for desmume.
+		//Until FirmwareMACMode is re-added, we MUST have a standard/automatic/stable mac address.
+		//BEWARE: the way it was formerly implemented is NONSENSE: the wifi module would read that setting and then CHANGE it in the firmware.
+		//WHAT??? The aforementioned commit had the right idea to move this responsibility to the firmware, but we can't have the stable mac address going bye-bye.
+		//So: here's the standard stable mac address
+		CommonSettings.fwConfig.MACAddress[0] = 0x00;
+		CommonSettings.fwConfig.MACAddress[1] = 0x09;
+		CommonSettings.fwConfig.MACAddress[2] = 0xBF;
+		CommonSettings.fwConfig.MACAddress[3] = 0x12;
+		CommonSettings.fwConfig.MACAddress[4] = 0x34;
+		CommonSettings.fwConfig.MACAddress[5] = 0x56;
 	}
 	
 	// Read the firmware settings from the init file
