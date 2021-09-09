@@ -583,7 +583,7 @@ struct OGLRenderRef
 	GLint uniformDrawModeDepthEqualsTest[256];
 	
 	GLint uniformPolyStateIndex[256];
-	GLint uniformPolyDepthOffsetMode[256];
+	GLfloat uniformPolyDepthOffset[256];
 	GLint uniformPolyDrawShadow[256];
 	
 	// VAO

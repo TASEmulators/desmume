@@ -329,12 +329,10 @@ uniform bool polyDrawShadow;\n\
 \n\
 uniform float polyAlpha; \n\
 uniform vec2 polyTexScale; \n\
-uniform int polyDepthOffsetMode;\n\
 \n\
 varying vec2 vtxTexCoord; \n\
 varying vec4 vtxColor; \n\
 varying float isPolyDrawable;\n\
-varying float depthOffset;\n\
 \n\
 void main() \n\
 { \n\
@@ -345,9 +343,6 @@ void main() \n\
 	vtxColor = vec4(inColor / 63.0, polyAlpha); \n\
 	isPolyDrawable = ((polyMode != 3) || polyDrawShadow) ? 1.0 : -1.0;\n\
 	\n\
-	depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
-	depthOffset = depthOffset / 16777215.0;\n\
-	\n\
 	gl_Position = inPosition;\n\
 } \n\
 "};
@@ -357,7 +352,6 @@ static const char *GeometryFragShader_100 = {"\
 varying vec2 vtxTexCoord;\n\
 varying vec4 vtxColor;\n\
 varying float isPolyDrawable;\n\
-varying float depthOffset;\n\
 \n\
 uniform sampler2D texRenderObject;\n\
 \n\
@@ -376,6 +370,7 @@ uniform bool texSingleBitAlpha;\n\
 \n\
 uniform bool drawModeDepthEqualsTest;\n\
 uniform bool polyDrawShadow;\n\
+uniform float polyDepthOffset;\n\
 \n\
 #if USE_DEPTH_LEQUAL_POLYGON_FACING && !DRAW_MODE_OPAQUE\n\
 uniform sampler2D inBackFacing;\n\
@@ -460,10 +455,10 @@ void main()\n\
 	// here, then it is very possible for the user to experience Z-fighting in certain rendering situations.\n\
 	\n\
 	#if ENABLE_W_DEPTH\n\
-	gl_FragDepth = clamp( ((1.0/gl_FragCoord.w) * (4096.0/16777215.0)) + depthOffset, 0.0, 1.0 );\n\
+	gl_FragDepth = clamp( ((1.0/gl_FragCoord.w) * (4096.0/16777215.0)) + polyDepthOffset, 0.0, 1.0 );\n\
 	#else\n\
 	// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-	gl_FragDepth = clamp( (floor(gl_FragCoord.z * 4194303.0) * (4.0/16777215.0)) + depthOffset, 0.0, 1.0 );\n\
+	gl_FragDepth = clamp( (floor(gl_FragCoord.z * 4194303.0) * (4.0/16777215.0)) + polyDepthOffset, 0.0, 1.0 );\n\
 	#endif\n\
 #endif\n\
 }\n\
@@ -2029,7 +2024,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				glDepthMask(GL_FALSE);
 				
 				// Use the stencil buffer to determine which fragments pass the lower-side tolerance.
-				glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 1);
+				glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 				glDepthFunc(GL_LEQUAL);
 				glStencilFunc(GL_ALWAYS, 0x80, 0x80);
 				glStencilOp(GL_ZERO, GL_ZERO, GL_REPLACE);
@@ -2045,7 +2040,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				}
 				
 				// Use the stencil buffer to determine which fragments pass the higher-side tolerance.
-				glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 2);
+				glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)-DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 				glDepthFunc(GL_GEQUAL);
 				glStencilFunc(GL_EQUAL, 0x80, 0x80);
 				glStencilOp(GL_ZERO, GL_ZERO, GL_KEEP);
@@ -2061,7 +2056,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				}
 				
 				// Set up the actual drawing of the polygon, using the mask within the stencil buffer to determine which fragments should pass.
-				glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+				glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 				glDepthFunc(GL_ALWAYS);
 				
 				// First do the transparent polygon ID check for the translucent fragments.
@@ -2120,7 +2115,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_TRUE);
 				
 				// Use the stencil buffer to determine which fragments pass the lower-side tolerance.
-				glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 1);
+				glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 				glDepthFunc(GL_LEQUAL);
 				glStencilFunc(GL_ALWAYS, 0x80, 0x80);
 				glStencilOp(GL_ZERO, GL_ZERO, GL_REPLACE);
@@ -2128,7 +2123,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 				
 				// Use the stencil buffer to determine which fragments pass the higher-side tolerance.
-				glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 2);
+				glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)-DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 				glDepthFunc(GL_GEQUAL);
 				glStencilFunc(GL_EQUAL, 0x80, 0x80);
 				glStencilOp(GL_ZERO, GL_ZERO, GL_KEEP);
@@ -2136,7 +2131,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 				
 				// Set up the actual drawing of the polygon, using the mask within the stencil buffer to determine which fragments should pass.
-				glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+				glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 				glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 				glDepthMask(GL_TRUE);
 				glDepthFunc(GL_ALWAYS);
@@ -2278,7 +2273,7 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive,
 		glDepthMask(GL_FALSE);
 		
 		// Use the stencil buffer to determine which fragments pass the lower-side tolerance.
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 1);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 		glDepthFunc(GL_LEQUAL);
 		glStencilFunc(GL_ALWAYS, 0x80, 0x80);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_REPLACE);
@@ -2286,7 +2281,7 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive,
 		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 		
 		// Use the stencil buffer to determine which fragments pass the higher-side tolerance.
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 2);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)-DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 		glDepthFunc(GL_GEQUAL);
 		glStencilFunc(GL_EQUAL, 0x80, 0x80);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_KEEP);
@@ -2294,7 +2289,7 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive,
 		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 		
 		// Set up the actual drawing of the polygon.
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 		glDepthFunc(GL_ALWAYS);
 		
 		// If this is a transparent polygon, then we need to do the transparent polygon ID check.
@@ -3226,7 +3221,7 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		OGLRef.uniformTexDrawOpaque[flagsValue]					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texDrawOpaque");
 		OGLRef.uniformDrawModeDepthEqualsTest[flagsValue]		= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "drawModeDepthEqualsTest");
 		OGLRef.uniformPolyDrawShadow[flagsValue]				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDrawShadow");
-		OGLRef.uniformPolyDepthOffsetMode[flagsValue]			= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDepthOffsetMode");
+		OGLRef.uniformPolyDepthOffset[flagsValue]				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDepthOffset");
 	}
 	
 	return OGLERROR_NOERR;
@@ -5069,7 +5064,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool treatAs
 		glUniform1i(OGLRef.uniformPolyID[this->_geometryProgramFlags.value], thePoly.attribute.PolygonID);
 		glUniform1i(OGLRef.uniformPolyIsWireframe[this->_geometryProgramFlags.value], (thePoly.isWireframe()) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent[this->_geometryProgramFlags.value], (thePoly.attribute.TranslucentDepthWrite_Enable) ? GL_TRUE : GL_FALSE);
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 	}
 	else
 	{
@@ -5208,7 +5203,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 		if (performDepthEqualTest && this->_emulateNDSDepthCalculation && this->isShaderSupported)
 		{
 			// Use the stencil buffer to determine which fragments fail the depth test using the lower-side tolerance.
-			glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 1);
+			glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 			glDepthFunc(GL_LEQUAL);
 			glStencilFunc(GL_ALWAYS, 0x80, 0x80);
 			glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
@@ -5216,14 +5211,14 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 			
 			// Use the stencil buffer to determine which fragments fail the depth test using the higher-side tolerance.
-			glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 2);
+			glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)-DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 			glDepthFunc(GL_GEQUAL);
 			glStencilFunc(GL_NOTEQUAL, 0x80, 0x80);
 			glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
 			glStencilMask(0x80);
 			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 			
-			glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+			glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 		}
 		else
 		{
@@ -5237,7 +5232,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 	if (performDepthEqualTest && this->_emulateNDSDepthCalculation && this->isShaderSupported)
 	{
 		// Use the stencil buffer to determine which fragments pass the lower-side tolerance.
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 1);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 		glDepthFunc(GL_LEQUAL);
 		glStencilFunc(GL_EQUAL, 0x80, 0x80);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_KEEP);
@@ -5245,7 +5240,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 		
 		// Use the stencil buffer to determine which fragments pass the higher-side tolerance.
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 2);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)-DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 		glDepthFunc(GL_GEQUAL);
 		glStencilFunc(GL_EQUAL, 0x80, 0x80);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_KEEP);
@@ -5253,7 +5248,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 		
 		// Finally, do the polygon ID check.
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 		glDepthFunc(GL_ALWAYS);
 		glStencilFunc(GL_NOTEQUAL, opaquePolyID, 0x3F);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_KEEP);

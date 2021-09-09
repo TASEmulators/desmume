@@ -132,7 +132,6 @@ uniform isamplerBuffer PolyStates;\n\
 #endif\n\
 uniform int polyIndex;\n\
 uniform bool polyDrawShadow;\n\
-uniform int polyDepthOffsetMode;\n\
 \n\
 out vec2 vtxTexCoord;\n\
 out vec4 vtxColor;\n\
@@ -144,7 +143,6 @@ flat out int polyMode;\n\
 flat out int polyID;\n\
 flat out int texSingleBitAlpha;\n\
 flat out int isPolyDrawable;\n\
-flat out float depthOffset;\n\
 \n\
 void main()\n\
 {\n\
@@ -170,9 +168,6 @@ void main()\n\
 	\n\
 	isPolyDrawable                = int((polyMode != 3) || polyDrawShadow);\n\
 	\n\
-    depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
-	depthOffset = depthOffset / 16777215.0;\n\
-	\n\
 	mat2 texScaleMtx	= mat2(	vec2(polyTexScale.x,            0.0), \n\
 								vec2(           0.0, polyTexScale.y)); \n\
 	\n\
@@ -194,7 +189,6 @@ flat in int polyMode;\n\
 flat in int polyID;\n\
 flat in int texSingleBitAlpha;\n\
 flat in int isPolyDrawable;\n\
-flat in float depthOffset;\n\
 \n\
 layout (std140) uniform RenderStates\n\
 {\n\
@@ -216,6 +210,7 @@ uniform sampler2D texRenderObject;\n\
 uniform bool texDrawOpaque;\n\
 uniform bool drawModeDepthEqualsTest;\n\
 uniform bool polyDrawShadow;\n\
+uniform float polyDepthOffset;\n\
 \n\
 #if DRAW_MODE_OPAQUE\n\
 out vec4 outBackFacing;\n\
@@ -321,10 +316,10 @@ void main()\n\
 	// here, then it is very possible for the user to experience Z-fighting in certain rendering situations.\n\
 	\n\
 	#if ENABLE_W_DEPTH\n\
-	gl_FragDepth = clamp( ((1.0/gl_FragCoord.w) * (4096.0/16777215.0)) + depthOffset, 0.0, 1.0 );\n\
+	gl_FragDepth = clamp( ((1.0/gl_FragCoord.w) * (4096.0/16777215.0)) + polyDepthOffset, 0.0, 1.0 );\n\
 	#else\n\
 	// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-	gl_FragDepth = clamp( (floor(gl_FragCoord.z * 4194303.0) * (4.0/16777215.0)) + depthOffset, 0.0, 1.0 );\n\
+	gl_FragDepth = clamp( (floor(gl_FragCoord.z * 4194303.0) * (4.0/16777215.0)) + polyDepthOffset, 0.0, 1.0 );\n\
 	#endif\n\
 #endif\n\
 }\n\
@@ -1326,7 +1321,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 		OGLRef.uniformDrawModeDepthEqualsTest[flagsValue] = glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "drawModeDepthEqualsTest");
 		OGLRef.uniformPolyDrawShadow[flagsValue]          = glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDrawShadow");
 		OGLRef.uniformPolyStateIndex[flagsValue]          = glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyIndex");
-		OGLRef.uniformPolyDepthOffsetMode[flagsValue]     = glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDepthOffsetMode");
+		OGLRef.uniformPolyDepthOffset[flagsValue]         = glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDepthOffset");
 	}
 	
 	return error;
@@ -2428,7 +2423,7 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAs
 	
 	// Set up depth test mode
 	glDepthFunc((thePoly.attribute.DepthEqualTest_Enable) ? GL_EQUAL : GL_LESS);
-	glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+	glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 	
 	// Set up culling mode
 	static const GLenum oglCullingMode[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
