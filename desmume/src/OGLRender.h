@@ -323,7 +323,8 @@ enum OGLTextureUnitID
 	OGLTextureUnitID_DepthStencil,
 	OGLTextureUnitID_GPolyID,
 	OGLTextureUnitID_FogAttr,
-	OGLTextureUnitID_PolyStates
+	OGLTextureUnitID_PolyStates,
+	OGLTextureUnitID_FogDensityTable
 };
 
 enum OGLBindingPointID
@@ -397,10 +398,9 @@ struct OGLRenderStates
 	GLuint clearPolyID;
 	GLfloat clearDepth;
 	GLfloat alphaTestRef;
-	GLfloat fogOffset;
-	GLfloat fogStep;
+	GLfloat fogOffset; // Currently unused, kept to preserve alignment
+	GLfloat fogStep; // Currently unused, kept to preserve alignment
 	GLfloat pad_0; // This needs to be here to preserve alignment
-	GLvec4 fogDensity[32];
 	GLvec4 fogColor;
 	GLvec4 edgeColor[8];
 	GLvec4 toonColor[32];
@@ -522,6 +522,7 @@ struct OGLRenderRef
 	GLuint texGPolyID;
 	GLuint texGDepthStencilID;
 	GLuint texFinalColorID;
+	GLuint texFogDensityTableID;
 	GLuint texMSGColorID;
 	GLuint texMSGWorkingID;
 	
@@ -565,7 +566,6 @@ struct OGLRenderRef
 	GLint uniformStateClearDepth;
 	GLint uniformStateEdgeColor;
 	GLint uniformStateFogColor;
-	GLint uniformStateFogDensity;
 	
 	GLint uniformStateAlphaTestRef[256];
 	GLint uniformStateToonColor[256];

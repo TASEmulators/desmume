@@ -200,7 +200,6 @@ layout (std140) uniform RenderStates\n\
 	float fogOffset;\n\
 	float fogStep;\n\
 	float pad_0;\n\
-	vec4 fogDensity[32];\n\
 	vec4 fogColor;\n\
 	vec4 edgeColor[8];\n\
 	vec4 toonColor[32];\n\
@@ -400,7 +399,6 @@ layout (std140) uniform RenderStates\n\
 	float fogOffset;\n\
 	float fogStep;\n\
 	float pad_0;\n\
-	vec4 fogDensity[32];\n\
 	vec4 fogColor;\n\
 	vec4 edgeColor[8];\n\
 	vec4 toonColor[32];\n\
@@ -518,7 +516,6 @@ layout (std140) uniform RenderStates\n\
 	float fogOffset;\n\
 	float fogStep;\n\
 	float pad_0;\n\
-	vec4 fogDensity[32];\n\
 	vec4 fogColor;\n\
 	vec4 edgeColor[8];\n\
 	vec4 toonColor[32];\n\
@@ -526,6 +523,7 @@ layout (std140) uniform RenderStates\n\
 \n\
 uniform sampler2D texInFragDepth;\n\
 uniform sampler2D texInFogAttributes;\n\
+uniform sampler1D texFogDensityTable;\n\
 \n\
 #if USE_DUAL_SOURCE_BLENDING\n\
 out vec4 outFogColor;\n\
@@ -548,30 +546,18 @@ void main()\n\
 	vec4 inFogAttributes = texelFetch(texInFogAttributes, ivec2(gl_FragCoord.xy), 0);\n\
 	bool polyEnableFog = (inFogAttributes.r > 0.999);\n\
 	\n\
+	float fogMixWeight = 0.0;\n\
+	if (FOG_STEP == 0)\n\
+	{\n\
+		fogMixWeight = texture( texFogDensityTable, (inFragDepth <= FOG_OFFSETF) ? 0.0 : 1.0 ).r;\n\
+	}\n\
+	else\n\
+	{\n\
+		fogMixWeight = texture( texFogDensityTable, (inFragDepth * (1024.0/float(FOG_STEP))) + (((-float(FOG_OFFSET)/float(FOG_STEP)) - 0.5) / 32.0) ).r;\n\
+	}\n\
+	\n\
 	if (polyEnableFog)\n\
 	{\n\
-		float fogMixWeight = 0.0;\n\
-		int inFragDepthi = int( (inFragDepth * 32767.0) + 0.5 );\n\
-		\n\
-		if (FOG_STEP == 0)\n\
-		{\n\
-			fogMixWeight = (inFragDepthi <= FOG_OFFSET) ? state.fogDensity[0].r : state.fogDensity[31].r;\n\
-		}\n\
-		else\n\
-		{\n\
-			int diffi = inFragDepthi - FOG_OFFSET + (FOG_STEP - 1);\n\
-			\n\
-			float interp = 1.0;\n\
-			if ( (inFragDepth > FOG_DEPTH_COMPARE_0) && (inFragDepth < FOG_DEPTH_COMPARE_31) )\n\
-			{\n\
-				interp = float( (diffi & FOG_WEIGHT_TRUNCATE_MASK) + FOG_OFFSET - inFragDepthi ) / float(FOG_STEP);\n\
-			}\n\
-			\n\
-			int idx = (diffi >> FOG_SHIFT_INV) - 1;\n\
-			idx = (idx < 1) ? 0 : (idx > 31) ? 31 : idx;\n\
-			\n\
-			fogMixWeight = mix(state.fogDensity[idx].r, state.fogDensity[idx].g, interp);\n\
-		}\n\
 		\n\
 #if USE_DUAL_SOURCE_BLENDING\n\
 		outFogWeight = (state.enableFogAlphaOnly) ? vec4(vec3(0.0), fogMixWeight) : vec4(fogMixWeight);\n\
@@ -1200,6 +1186,16 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 		}
 	}
 	
+	glGenTextures(1, &OGLRef.texFogDensityTableID);
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogDensityTable);
+	glBindTexture(GL_TEXTURE_1D, OGLRef.texFogDensityTableID);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_R8, 32, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+	glActiveTexture(GL_TEXTURE0);
+	
 	OGLGeometryFlags programFlags;
 	programFlags.value = 0;
 	
@@ -1556,13 +1552,9 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 		return error;
 	}
 	
-	const u32 fogOffset = fogProgramKey.offset;
-	const u32 fogStep = (0x0400 >> fogProgramKey.shift);
-	const u32 fogShiftInv = 10 - fogProgramKey.shift; // Rolls over if fogStep is 0 (do not use in this case)
-	const u32 fogWeightTruncateMask = ~(fogStep - 1); // Rolls over if fogStep is 0 (do not use in this case)
-	
-	const GLfloat fogDepthCompare0  = std::min<GLfloat>((GLfloat)(fogOffset + (fogStep *  1)) / 32767.0f, 1.0f);
-	const GLfloat fogDepthCompare31 = std::min<GLfloat>((GLfloat)(fogOffset + (fogStep * 32)) / 32767.0f, 1.0f);
+	const s32 fogOffset = fogProgramKey.offset;
+	const GLfloat fogOffsetf = (GLfloat)fogOffset / 32767.0f;
+	const s32 fogStep = 0x0400 >> fogProgramKey.shift;
 	
 	std::stringstream shaderHeader;
 	shaderHeader << "#version 150\n";
@@ -1570,12 +1562,9 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	shaderHeader << "\n";
 	
 	std::stringstream fragDepthConstants;
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_0  " << fogDepthCompare0  << (((fogDepthCompare0  == 0.0f) || (fogDepthCompare0  == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_31 " << fogDepthCompare31 << (((fogDepthCompare31 == 0.0f) || (fogDepthCompare31 == 1.0f)) ? ".0" : "") << "\n";
 	fragDepthConstants << "#define FOG_OFFSET " << fogOffset << "\n";
+	fragDepthConstants << "#define FOG_OFFSETF " << fogOffsetf << (((fogOffsetf == 0.0f) || (fogOffsetf == 1.0f)) ? ".0" : "") << "\n";
 	fragDepthConstants << "#define FOG_STEP " << fogStep << "\n";
-	fragDepthConstants << "#define FOG_SHIFT_INV " << fogShiftInv << "\n";
-	fragDepthConstants << "#define FOG_WEIGHT_TRUNCATE_MASK " << fogWeightTruncateMask << "\n";
 	fragDepthConstants << "\n";
 	
 	std::string vtxShaderCode  = shaderHeader.str() + std::string(vtxShaderCString);
@@ -1628,10 +1617,12 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	const GLuint uniformBlockRenderStates = glGetUniformBlockIndex(shaderID.program, "RenderStates");
 	glUniformBlockBinding(shaderID.program, uniformBlockRenderStates, OGLBindingPointID_RenderStates);
 	
-	const GLint uniformTexGDepth		= glGetUniformLocation(shaderID.program, "texInFragDepth");
-	const GLint uniformTexGFog			= glGetUniformLocation(shaderID.program, "texInFogAttributes");
+	const GLint uniformTexGDepth          = glGetUniformLocation(shaderID.program, "texInFragDepth");
+	const GLint uniformTexGFog            = glGetUniformLocation(shaderID.program, "texInFogAttributes");
+	const GLint uniformTexFogDensityTable = glGetUniformLocation(shaderID.program, "texFogDensityTable");
 	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGFog, OGLTextureUnitID_FogAttr);
+	glUniform1i(uniformTexFogDensityTable, OGLTextureUnitID_FogDensityTable);
 	
 	if (!this->_isDualSourceBlendingSupported)
 	{
@@ -2114,11 +2105,14 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		this->_pendingRenderStates.fogOffset = (GLfloat)(engine.renderState.fogOffset & 0x7FFF) / 32767.0f;
 		this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> engine.renderState.fogShift) / 32767.0f;
 		
+		u8 fogDensityTable[32];
 		for (size_t i = 0; i < 32; i++)
 		{
-			this->_pendingRenderStates.fogDensity[i].r = (engine.renderState.fogDensityTable[i] == 127) ? 1.0f : (GLfloat)engine.renderState.fogDensityTable[i] / 128.0f; // Current table value is stored in r
-			this->_pendingRenderStates.fogDensity[i].g = (i == 0) ? this->_pendingRenderStates.fogDensity[0].r : this->_pendingRenderStates.fogDensity[i-1].r; // Previous table value is stored in g
+			fogDensityTable[i] = (engine.renderState.fogDensityTable[i] == 127) ? 255 : engine.renderState.fogDensityTable[i] << 1;
 		}
+		
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogDensityTable);
+		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RED, GL_UNSIGNED_BYTE, fogDensityTable);
 	}
 	
 	if (this->_enableEdgeMark)
