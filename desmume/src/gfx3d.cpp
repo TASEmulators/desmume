@@ -3093,11 +3093,12 @@ void gfx3d_parseCurrentDISP3DCNT()
 	gfx3d.state.enableEdgeMarking	= (DISP3DCNT.EnableEdgeMarking != 0);
 	gfx3d.state.enableFogAlphaOnly	= (DISP3DCNT.FogOnlyAlpha != 0);
 	gfx3d.state.enableFog			= (DISP3DCNT.EnableFog != 0);
-	gfx3d.state.fogShift			= (DISP3DCNT.FogShiftSHR <= 10) ? DISP3DCNT.FogShiftSHR : 11; // According to GBATEK, values higher than 10 force FogStep (0x400 >> FogShiftSHR) to become 0. So set FogShiftSHR to 11 in this case.
-	// TODO: Handle divide-by-zero cases of FogShiftSHR in SoftRasterizer and OpenGL.
-	// The fog weight is calculated using FogShiftSHR. However, if FogShiftSHR == 0, then this calculation can become a problem.
-	// We'll need to deal with the zero case at some point in the future.
 	gfx3d.state.enableClearImage	= (DISP3DCNT.RearPlaneMode != 0);
+	
+	// According to GBATEK, values greater than 10 force FogStep (0x400 >> FogShiftSHR) to become 0.
+	// So set FogShiftSHR to 11 in this case so that calculations using (0x400 >> FogShiftSHR) will
+	// equal 0.
+	gfx3d.state.fogShift			= (DISP3DCNT.FogShiftSHR <= 10) ? DISP3DCNT.FogShiftSHR : 11;
 }
 
 void ParseReg_DISP3DCNT()

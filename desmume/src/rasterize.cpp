@@ -2114,9 +2114,25 @@ void SoftRasterizerRenderer::_UpdateEdgeMarkColorTable(const u16 *edgeMarkColorT
 
 void SoftRasterizerRenderer::_UpdateFogTable(const u8 *fogDensityTable)
 {
-	const s32 fogStep = 0x400 >> this->currentRenderState->fogShift;
-	const s32 fogShiftInv = 10 - this->currentRenderState->fogShift;
 	const s32 fogOffset = min<s32>( max<s32>((s32)this->currentRenderState->fogOffset, 0), 32768 );
+	const s32 fogStep = 0x400 >> this->currentRenderState->fogShift;
+	
+	if (fogStep <= 0)
+	{
+		const s32 iMin = min<s32>( max<s32>(fogOffset, 0), 32768);
+		const s32 iMax = min<s32>( max<s32>(fogOffset + 1, 0), 32768);
+		
+		// If the fog factor is 127, then treat it as 128.
+		u8 fogWeight = (fogDensityTable[0] >= 127) ? 128 : fogDensityTable[0];
+		memset(this->_fogTable, fogWeight, iMin);
+		
+		fogWeight = (fogDensityTable[31] >= 127) ? 128 : fogDensityTable[31];
+		memset(this->_fogTable+iMax, fogWeight, 32768-iMax);
+		
+		return;
+	}
+	
+	const s32 fogShiftInv = 10 - this->currentRenderState->fogShift;
 	const s32 iMin = min<s32>( max<s32>((( 1 + 1) << fogShiftInv) + fogOffset + 1 - fogStep, 0), 32768);
 	const s32 iMax = min<s32>( max<s32>(((32 + 1) << fogShiftInv) + fogOffset + 1 - fogStep, 0), 32768);
 	assert(iMin <= iMax);

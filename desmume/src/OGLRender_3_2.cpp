@@ -550,19 +550,28 @@ void main()\n\
 	\n\
 	if (polyEnableFog)\n\
 	{\n\
+		float fogMixWeight = 0.0;\n\
 		int inFragDepthi = int( (inFragDepth * 32767.0) + 0.5 );\n\
-		int diffi = inFragDepthi - FOG_OFFSET + (FOG_STEP - 1);\n\
 		\n\
-		float interp = 1.0;\n\
-		if ( (inFragDepth > FOG_DEPTH_COMPARE_0) && (inFragDepth < FOG_DEPTH_COMPARE_31) )\n\
+		if (FOG_STEP == 0)\n\
 		{\n\
-			interp = float( (diffi & FOG_WEIGHT_TRUNCATE_MASK) + FOG_OFFSET - inFragDepthi ) / float(FOG_STEP);\n\
+			fogMixWeight = (inFragDepthi <= FOG_OFFSET) ? state.fogDensity[0].r : state.fogDensity[31].r;\n\
 		}\n\
-		\n\
-		int idx = (diffi >> FOG_SHIFT_INV) - 1;\n\
-		idx = (idx < 1) ? 0 : (idx > 31) ? 31 : idx;\n\
-		\n\
-		float fogMixWeight = mix(state.fogDensity[idx].r, state.fogDensity[idx].g, interp);\n\
+		else\n\
+		{\n\
+			int diffi = inFragDepthi - FOG_OFFSET + (FOG_STEP - 1);\n\
+			\n\
+			float interp = 1.0;\n\
+			if ( (inFragDepth > FOG_DEPTH_COMPARE_0) && (inFragDepth < FOG_DEPTH_COMPARE_31) )\n\
+			{\n\
+				interp = float( (diffi & FOG_WEIGHT_TRUNCATE_MASK) + FOG_OFFSET - inFragDepthi ) / float(FOG_STEP);\n\
+			}\n\
+			\n\
+			int idx = (diffi >> FOG_SHIFT_INV) - 1;\n\
+			idx = (idx < 1) ? 0 : (idx > 31) ? 31 : idx;\n\
+			\n\
+			fogMixWeight = mix(state.fogDensity[idx].r, state.fogDensity[idx].g, interp);\n\
+		}\n\
 		\n\
 #if USE_DUAL_SOURCE_BLENDING\n\
 		outFogWeight = (state.enableFogAlphaOnly) ? vec4(vec3(0.0), fogMixWeight) : vec4(fogMixWeight);\n\
@@ -1549,8 +1558,8 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	
 	const u32 fogOffset = fogProgramKey.offset;
 	const u32 fogStep = (0x0400 >> fogProgramKey.shift);
-	const u32 fogShiftInv = 10 - fogProgramKey.shift;
-	const u32 fogWeightTruncateMask = ~(fogStep - 1);
+	const u32 fogShiftInv = 10 - fogProgramKey.shift; // Rolls over if fogStep is 0 (do not use in this case)
+	const u32 fogWeightTruncateMask = ~(fogStep - 1); // Rolls over if fogStep is 0 (do not use in this case)
 	
 	const GLfloat fogDepthCompare0  = std::min<GLfloat>((GLfloat)(fogOffset + (fogStep *  1)) / 32767.0f, 1.0f);
 	const GLfloat fogDepthCompare31 = std::min<GLfloat>((GLfloat)(fogOffset + (fogStep * 32)) / 32767.0f, 1.0f);
