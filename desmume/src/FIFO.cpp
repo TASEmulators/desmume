@@ -32,15 +32,12 @@
 #if defined(ENABLE_AVX512_1)
 	#define USEVECTORSIZE_512
 	#define VECTORSIZE 64
-	#include "./utils/colorspacehandler/colorspacehandler_AVX512.h"
 #elif defined(ENABLE_AVX2)
 	#define USEVECTORSIZE_256
 	#define VECTORSIZE 32
-	#include "./utils/colorspacehandler/colorspacehandler_AVX2.h"
 #elif defined(ENABLE_SSE2)
 	#define USEVECTORSIZE_128
 	#define VECTORSIZE 16
-	#include "./utils/colorspacehandler/colorspacehandler_SSE2.h"
 #elif defined(ENABLE_ALTIVEC)
 	#define USEVECTORSIZE_128
 	#define VECTORSIZE 16
@@ -422,85 +419,7 @@ void _DISP_FIFOrecv_LineOpaque16_vec(u32 *__restrict dst)
 template <NDSColorFormat OUTPUTFORMAT>
 void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 {
-#if defined(ENABLE_AVX512_1)
-	for (size_t i = 0, d = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(v512u16); i++, d+=2)
-	{
-		const v512u16 fifoColor = _mm512_load_si512((v512u16 *)(disp_fifo.buf + disp_fifo.head));
-		
-		disp_fifo.head += (sizeof(v512u16)/sizeof(u32));
-		if (disp_fifo.head >= 0x6000)
-		{
-			disp_fifo.head -= 0x6000;
-		}
-		
-		v512u32 dstLo = _mm512_setzero_si512();
-		v512u32 dstHi = _mm512_setzero_si512();
-		
-		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
-		{
-			ColorspaceConvert555To6665Opaque_AVX512<false>(fifoColor, dstLo, dstHi);
-		}
-		else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
-		{
-			ColorspaceConvert555To8888Opaque_AVX512<false>(fifoColor, dstLo, dstHi);
-		}
-		
-		_mm512_store_si512((v512u32 *)dst + d + 0, dstLo);
-		_mm512_store_si512((v512u32 *)dst + d + 1, dstHi);
-	}
-#elif defined(ENABLE_AVX2)
-	for (size_t i = 0, d = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(v256u16); i++, d+=2)
-	{
-		const v256u16 fifoColor = _mm256_load_si256((v256u16 *)(disp_fifo.buf + disp_fifo.head));
-		
-		disp_fifo.head += (sizeof(v256u16)/sizeof(u32));
-		if (disp_fifo.head >= 0x6000)
-		{
-			disp_fifo.head -= 0x6000;
-		}
-		
-		v256u32 dstLo = _mm256_setzero_si256();
-		v256u32 dstHi = _mm256_setzero_si256();
-		
-		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
-		{
-			ColorspaceConvert555To6665Opaque_AVX2<false>(fifoColor, dstLo, dstHi);
-		}
-		else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
-		{
-			ColorspaceConvert555To8888Opaque_AVX2<false>(fifoColor, dstLo, dstHi);
-		}
-		
-		_mm256_store_si256((v256u32 *)dst + d + 0, dstLo);
-		_mm256_store_si256((v256u32 *)dst + d + 1, dstHi);
-	}
-#elif defined(ENABLE_SSE2)
-	for (size_t i = 0, d = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(v128u16); i++, d+=2)
-	{
-		const v128u16 fifoColor = _mm_load_si128((v128u16 *)(disp_fifo.buf + disp_fifo.head));
-		
-		disp_fifo.head += (sizeof(v128u16)/sizeof(u32));
-		if (disp_fifo.head >= 0x6000)
-		{
-			disp_fifo.head -= 0x6000;
-		}
-		
-		v128u32 dstLo = _mm_setzero_si128();
-		v128u32 dstHi = _mm_setzero_si128();
-		
-		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
-		{
-			ColorspaceConvert555To6665Opaque_SSE2<false>(fifoColor, dstLo, dstHi);
-		}
-		else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
-		{
-			ColorspaceConvert555To8888Opaque_SSE2<false>(fifoColor, dstLo, dstHi);
-		}
-		
-		_mm_store_si128((v128u32 *)dst + d + 0, dstLo);
-		_mm_store_si128((v128u32 *)dst + d + 1, dstHi);
-	}
-#elif defined(ENABLE_ALTIVEC)
+#if defined(ENABLE_ALTIVEC)
 	for (size_t i = 0, d = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16); i+=16, d+=32)
 	{
 		v128u16 fifoColor = vec_ld(0, disp_fifo.buf + disp_fifo.head);
@@ -524,12 +443,19 @@ void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 			ColorspaceConvert555To8888Opaque_AltiVec<false>(fifoColor, dstLo, dstHi);
 		}
 		
-		dstLo = vec_perm( dstLo, dstLo, ((v128u8){3,2,1,0, 7,6,5,4,  11,10,9,8, 15,14,13,12}) );
-		dstHi = vec_perm( dstHi, dstHi, ((v128u8){3,2,1,0, 7,6,5,4,  11,10,9,8, 15,14,13,12}) );
-		
 		vec_st(dstLo, d +  0, dst);
 		vec_st(dstHi, d + 16, dst);
 	}
+#else
+	if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
+	{
+		ColorspaceConvertBuffer555To6665Opaque<false, false>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+	}
+	else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
+	{
+		ColorspaceConvertBuffer555To8888Opaque<false, false>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+	}
+	_DISP_FIFOrecv_LineAdvance();
 #endif
 }
 
