@@ -2034,7 +2034,7 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 	}
 	
 	// Convert the toon table colors
-	ColorspaceConvertBuffer555To6665Opaque<false, false>(engine.renderState.u16ToonTable, (u32 *)this->toonColor32LUT, 32);
+	ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>(engine.renderState.u16ToonTable, (u32 *)this->toonColor32LUT, 32);
 	
 	if (this->_enableEdgeMark)
 	{
@@ -2103,7 +2103,7 @@ void SoftRasterizerRenderer::_UpdateEdgeMarkColorTable(const u16 *edgeMarkColorT
 	//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
 	for (size_t i = 0; i < 8; i++)
 	{
-		this->_edgeMarkTable[i].color = COLOR555TO6665(edgeMarkColorTable[i] & 0x7FFF, (this->currentRenderState->enableAntialiasing) ? 0x10 : 0x1F);
+		this->_edgeMarkTable[i].color = LE_TO_LOCAL_32( COLOR555TO6665(edgeMarkColorTable[i] & 0x7FFF, (this->currentRenderState->enableAntialiasing) ? 0x10 : 0x1F) );
 		
 		//zero 20-jun-2013 - this doesnt make any sense. at least, it should be related to the 0x8000 bit. if this is undocumented behaviour, lets write about which scenario proves it here, or which scenario is requiring this code.
 		//// this seems to be the only thing that selectively disables edge marking
@@ -2251,7 +2251,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 			if (param.enableFog)
 			{
 				FragmentColor fogColor;
-				fogColor.color = COLOR555TO6665( param.fogColor & 0x7FFF, (param.fogColor>>16) & 0x1F );
+				fogColor.color = LE_TO_LOCAL_32( COLOR555TO6665(param.fogColor & 0x7FFF, (param.fogColor>>16) & 0x1F) );
 				
 				const size_t fogIndex = depth >> 9;
 				assert(fogIndex < 32768);
@@ -2309,7 +2309,7 @@ Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colo
 		{
 			const size_t ir = readLine + ((x * xRatio) >> 16);
 			
-			this->_framebufferColor[iw].color = COLOR555TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 0x1F);
+			this->_framebufferColor[iw].color = LE_TO_LOCAL_32( COLOR555TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 0x1F) );
 			this->_framebufferAttributes->depth[iw] = depthBuffer[ir];
 			this->_framebufferAttributes->isFogged[iw] = fogBuffer[ir];
 			this->_framebufferAttributes->opaquePolyID[iw] = opaquePolyID;

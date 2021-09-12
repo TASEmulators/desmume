@@ -4663,7 +4663,7 @@ void OGLClientFetchObject::FetchNativeDisplayToSrcClone(const NDSDisplayID displ
 	
 	if (this->_fetchColorFormatOGL == GL_UNSIGNED_SHORT_1_5_5_5_REV)
 	{
-		ColorspaceConvertBuffer555To8888Opaque<false, false>((const uint16_t *)this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+		ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>((const uint16_t *)this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 	}
 	else
 	{
@@ -5500,9 +5500,9 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	
 	const GLint vtxBuffer[8] = {
 		(GLint)(-_normalWidth/2.0), (GLint)( _normalHeight/2.0),
-        (GLint)( _normalWidth/2.0), (GLint)( _normalHeight/2.0),
-        (GLint)(-_normalWidth/2.0), (GLint)(-_normalHeight/2.0),
-        (GLint)( _normalWidth/2.0), (GLint)(-_normalHeight/2.0)
+		(GLint)( _normalWidth/2.0), (GLint)( _normalHeight/2.0),
+		(GLint)(-_normalWidth/2.0), (GLint)(-_normalHeight/2.0),
+		(GLint)( _normalWidth/2.0), (GLint)(-_normalHeight/2.0)
 	};
 	
 	// Set up VBOs

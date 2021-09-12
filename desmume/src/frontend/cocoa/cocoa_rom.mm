@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2017 DeSmuME team
+	Copyright (C) 2011-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -640,17 +640,15 @@ static NSMutableDictionary *saveTypeValues = nil;
 @end
 
 /********************************************************************************************
-	RomIconToRGBA8888()
+	@function RomIconToRGBA8888()
 
-	Reads the icon image data from a ROM and converts it to an RGBA8888 formatted bitmap.
+	@brief Reads the icon image data from a ROM and converts it to an RGBA8888 formatted bitmap.
 
-	Takes:
-		bitmapData - Write pointer for the icon's pixel data.
+	@param bitmapData Write pointer for the icon's pixel data.
 
-	Returns:
-		Nothing.
+	@return Nothing
 
-	Details:
+	@discussion
 		- If bitmapData is NULL, then this function immediately returns and does nothing.
 		- If no ROM is loaded, then bitmapData will have a black square icon.
 		- The caller is responsible for ensuring that bitmapData points to a valid
@@ -660,110 +658,68 @@ static NSMutableDictionary *saveTypeValues = nil;
  ********************************************************************************************/
 void RomIconToRGBA8888(uint32_t *bitmapData)
 {
-	const RomBanner &ndsRomBanner = gameInfo.getRomBanner(); // Contains the memory addresses we need to get our read pointer locations.
-	const uint16_t *iconClutPtr;	// Read pointer for the icon's CLUT.
-	const uint32_t *iconPixPtr;		// Read pointer for the icon's pixel data.
-	
-	uint32_t clut[16];				// 4-bit indexed CLUT, storing RGBA8888 values for each color.
-	
-	uint32_t pixRowColors;			// Temp location for storing an 8 pixel row of 4-bit indexed color values from the icon's pixel data.
-	unsigned int pixRowIndex;		// Temp location for tracking which pixel row of an 8x8 square that we are reading.
-	unsigned int x;					// Temp location for tracking which of the 8x8 pixel squares that we are reading (x-dimension).
-	unsigned int y;					// Temp location for tracking which of the 8x8 pixel squares that we are reading (y-dimension).
-	
-	uint32_t *bitmapPixPtr;			// Write pointer for the RGBA8888 bitmap pixel data, relative to the passed in *bitmapData pointer.
-	
 	if (bitmapData == NULL)
 	{
 		return;
 	}
 	
-	// Set all of our icon read pointers.
-	iconClutPtr = (uint16_t *)ndsRomBanner.palette + 1;
-	iconPixPtr = (uint32_t *)ndsRomBanner.bitmap;
+	const RomBanner &ndsRomBanner = gameInfo.getRomBanner(); // Contains the memory addresses we need to get our read pointer locations.
+	const uint32_t *iconPixPtr = (uint32_t *)ndsRomBanner.bitmap; // Read pointer for the icon's pixel data.
 	
 	// Setup the 4-bit CLUT.
 	//
 	// The actual color values are stored with the ROM icon data in RGB555 format.
 	// We convert these color values and store them in the CLUT as RGBA8888 values.
 	//
-	// The first entry always represents the alpha, so we can just ignore it.
-	clut[0] = 0x00000000;
-	ColorspaceConvertBuffer555To8888Opaque<false, true>((u16 *)iconClutPtr, &clut[1], 15);
+	// The first entry always represents the alpha, so just set it to 0.
+	const uint16_t *clut4 = (uint16_t *)ndsRomBanner.palette;
+	CACHE_ALIGN uint32_t clut32[16];
+	ColorspaceConvertBuffer555To8888Opaque<false, true, BESwapNone>(clut4, clut32, 16);
+	clut32[0] = 0x00000000;
 	
 	// Load the image from the icon pixel data.
 	//
 	// ROM icons are stored in 4-bit indexed color and have dimensions of 32x32 pixels.
-	// Also, ROM icons are split into 16 separate 8x8 pixel squares arranged in a 4x4
+	// Also, ROM icons are split into 16 separate 8x8 pixel tiles arranged in a 4x4
 	// array. Here, we sequentially read from the ROM data, and adjust our write
 	// location appropriately within the bitmap memory block.
-	for(y = 0; y < 4; y++)
+	for (size_t y = 0; y < 4; y++)
 	{
-		for(x = 0; x < 4; x++)
+		for (size_t x = 0; x < 4; x++)
 		{
-			for(pixRowIndex = 0; pixRowIndex < 8; pixRowIndex++, iconPixPtr++)
+			for (size_t p = 0; p < 8; p++, iconPixPtr++)
 			{
-				// Load the entire row of pixels as a single 32-bit chunk.
-				pixRowColors = *iconPixPtr;
+				// Load an entire row of palette color indices as a single 32-bit chunk.
+				const uint32_t palIdx = LE_TO_LOCAL_32(*iconPixPtr);
 				
 				// Set the write location. The formula below calculates the proper write
 				// location depending on the position of the read pointer. We use a more
 				// optimized version of this formula in practice.
 				//
-				// bitmapPixPtr = bitmapData + ( ((y * 8) + pixRowIndex) * 32 ) + (x * 8);
-				bitmapPixPtr = bitmapData + ( ((y << 3) + pixRowIndex) << 5 ) + (x << 3);
+				// bitmapOutPtr = bitmapData + ( ((y * 8) + palIdx) * 32 ) + (x * 8);
+				uint32_t *bitmapOutPtr = bitmapData + ( ((y << 3) + p) << 5 ) + (x << 3);
+				*bitmapOutPtr = clut32[(palIdx & 0x0000000F) >> 0];
 				
-				// Set the RGBA8888 bitmap pixels using our CLUT from earlier.
+				bitmapOutPtr++;
+				*bitmapOutPtr = clut32[(palIdx & 0x000000F0) >> 4];
 				
-#ifdef MSB_FIRST
-				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x0F000000) >> 24]);
+				bitmapOutPtr++;
+				*bitmapOutPtr = clut32[(palIdx & 0x00000F00) >> 8];
 				
-				bitmapPixPtr++;
-				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0xF0000000) >> 28]);
+				bitmapOutPtr++;
+				*bitmapOutPtr = clut32[(palIdx & 0x0000F000) >> 12];
 				
-				bitmapPixPtr++;
-				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x000F0000) >> 16]);
+				bitmapOutPtr++;
+				*bitmapOutPtr = clut32[(palIdx & 0x000F0000) >> 16];
 				
-				bitmapPixPtr++;
-				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x00F00000) >> 20]);
+				bitmapOutPtr++;
+				*bitmapOutPtr = clut32[(palIdx & 0x00F00000) >> 20];
 				
-				bitmapPixPtr++;
-				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x00000F00) >> 8]);
+				bitmapOutPtr++;
+				*bitmapOutPtr = clut32[(palIdx & 0x0F000000) >> 24];
 				
-				bitmapPixPtr++;
-				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x0000F000) >> 12]);
-				
-				bitmapPixPtr++;
-				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x0000000F)]);
-				
-				bitmapPixPtr++;
-				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x000000F0) >> 4]);
-				
-#else
-				
-				*bitmapPixPtr = clut[(pixRowColors & 0x0000000F)];
-				
-				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0x000000F0) >> 4];
-				
-				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0x00000F00) >> 8];
-				
-				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0x0000F000) >> 12];
-				
-				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0x000F0000) >> 16];
-				
-				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0x00F00000) >> 20];
-				
-				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0x0F000000) >> 24];
-				
-				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0xF0000000) >> 28];
-#endif
+				bitmapOutPtr++;
+				*bitmapOutPtr = clut32[(palIdx & 0xF0000000) >> 28];
 			}
 		}
 	}

@@ -436,11 +436,11 @@ void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555To6665Opaque_AltiVec<false>(fifoColor, dstLo, dstHi);
+			ColorspaceConvert555To6665Opaque_AltiVec<false, BESwapDst>(fifoColor, dstLo, dstHi);
 		}
 		else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 		{
-			ColorspaceConvert555To8888Opaque_AltiVec<false>(fifoColor, dstLo, dstHi);
+			ColorspaceConvert555To8888Opaque_AltiVec<false, BESwapDst>(fifoColor, dstLo, dstHi);
 		}
 		
 		vec_st(dstLo, d +  0, dst);
@@ -449,11 +449,11 @@ void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 #else
 	if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 	{
-		ColorspaceConvertBuffer555To6665Opaque<false, false>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+		ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
 	}
 	else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 	{
-		ColorspaceConvertBuffer555To8888Opaque<false, false>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+		ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
 	}
 	_DISP_FIFOrecv_LineAdvance();
 #endif
@@ -499,13 +499,13 @@ void DISP_FIFOrecv_LineOpaque(u32 *__restrict dst)
 				
 				if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 				{
-					dst[i+0] = COLOR555TO6665_OPAQUE((src >>  0) & 0x7FFF);
-					dst[i+1] = COLOR555TO6665_OPAQUE((src >> 16) & 0x7FFF);
+					dst[i+0] = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>((src >>  0) & 0x7FFF) );
+					dst[i+1] = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>((src >> 16) & 0x7FFF) );
 				}
 				else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 				{
-					dst[i+0] = COLOR555TO8888_OPAQUE((src >>  0) & 0x7FFF);
-					dst[i+1] = COLOR555TO8888_OPAQUE((src >> 16) & 0x7FFF);
+					dst[i+0] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>((src >>  0) & 0x7FFF) );
+					dst[i+1] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>((src >> 16) & 0x7FFF) );
 				}
 			}
 		}

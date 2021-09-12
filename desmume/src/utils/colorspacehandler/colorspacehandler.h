@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2017 DeSmuME team
+	Copyright (C) 2016-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -108,22 +108,12 @@ extern CACHE_ALIGN u32 color_555_to_888[32768];
 #define COLOR555TO6665_OPAQUE(col) (color_555_to_6665_opaque[(col)])					// Convert a 15-bit color to an opaque sparsely packed 32-bit color containing an RGBA6665 color
 #define COLOR555TO6665_OPAQUE_SWAP_RB(col) (color_555_to_6665_opaque_swap_rb[(col)])	// Convert a 15-bit color to an opaque sparsely packed 32-bit color containing an RGBA6665 color with R and B components swapped
 #define COLOR555TO666(col) (color_555_to_666[(col)])									// Convert a 15-bit color to a fully transparent sparsely packed 32-bit color containing an RGBA6665 color
-
-#ifdef MSB_FIRST
-	#define COLOR555TO6665(col,alpha5) ((alpha5) | color_555_to_666[(col)])				// Convert a 15-bit color to a sparsely packed 32-bit color containing an RGBA6665 color with user-defined alpha, big-endian
-#else
-	#define COLOR555TO6665(col,alpha5) (((alpha5)<<24) | color_555_to_666[(col)])		// Convert a 15-bit color to a sparsely packed 32-bit color containing an RGBA6665 color with user-defined alpha, little-endian
-#endif
+#define COLOR555TO6665(col,alpha5) (((alpha5)<<24) | color_555_to_666[(col)])			// Convert a 15-bit color to a sparsely packed 32-bit color containing an RGBA6665 color with user-defined alpha
 
 #define COLOR555TO8888_OPAQUE(col) (color_555_to_8888_opaque[(col)])					// Convert a 15-bit color to an opaque 32-bit color
 #define COLOR555TO8888_OPAQUE_SWAP_RB(col) (color_555_to_8888_opaque_swap_rb[(col)])	// Convert a 15-bit color to an opaque 32-bit color with R and B components swapped
 #define COLOR555TO888(col) (color_555_to_888[(col)])									// Convert a 15-bit color to an opaque 24-bit color or a fully transparent 32-bit color
-
-#ifdef MSB_FIRST
-	#define COLOR555TO8888(col,alpha8) ((alpha8) | color_555_to_888[(col)])				// Convert a 15-bit color to a 32-bit color with user-defined alpha, big-endian
-#else
-	#define COLOR555TO8888(col,alpha8) (((alpha8)<<24) | color_555_to_888[(col)])		// Convert a 15-bit color to a 32-bit color with user-defined alpha, little-endian
-#endif
+#define COLOR555TO8888(col,alpha8) (((alpha8)<<24) | color_555_to_888[(col)])			// Convert a 15-bit color to a 32-bit color with user-defined alpha
 
 //produce a 15bpp color from individual 5bit components
 #define R5G5B5TORGB15(r,g,b) ( (r) | ((g)<<5) | ((b)<<10) )
@@ -350,8 +340,8 @@ FORCEINLINE u32 ColorspaceApplyIntensity32(u32 srcColor, float intensity)
 	return ColorspaceApplyIntensity32<SWAP_RB>(srcColorComponent);
 }
 
-template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB, bool IS_UNALIGNED, BESwapFlags BE_BYTESWAP> void ColorspaceConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB, bool IS_UNALIGNED, BESwapFlags BE_BYTESWAP> void ColorspaceConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
@@ -372,15 +362,15 @@ class ColorspaceHandler
 public:
 	ColorspaceHandler() {};
 	
-	size_t ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
-	size_t ConvertBuffer555To8888Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
-	size_t ConvertBuffer555To8888Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
-	size_t ConvertBuffer555To8888Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
+	template<BESwapFlags BE_BYTESWAP> size_t ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
+	template<BESwapFlags BE_BYTESWAP> size_t ConvertBuffer555To8888Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
+	template<BESwapFlags BE_BYTESWAP> size_t ConvertBuffer555To8888Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
+	template<BESwapFlags BE_BYTESWAP> size_t ConvertBuffer555To8888Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
 	
-	size_t ConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
-	size_t ConvertBuffer555To6665Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
-	size_t ConvertBuffer555To6665Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
-	size_t ConvertBuffer555To6665Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
+	template<BESwapFlags BE_BYTESWAP> size_t ConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
+	template<BESwapFlags BE_BYTESWAP> size_t ConvertBuffer555To6665Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
+	template<BESwapFlags BE_BYTESWAP> size_t ConvertBuffer555To6665Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
+	template<BESwapFlags BE_BYTESWAP> size_t ConvertBuffer555To6665Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const;
 	
 	size_t ConvertBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount) const;
 	size_t ConvertBuffer8888To6665_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const;

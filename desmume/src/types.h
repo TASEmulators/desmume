@@ -414,6 +414,25 @@ inline bool atomic_test_and_clear_barrier32(volatile s32 *V, s32 M)		{ return (s
 
 #endif
 
+// Flags used to determine how a conversion function swaps bytes for big-endian systems.
+// These flags should be ignored on little-endian systems.
+enum BESwapFlags
+{
+	BESwapNone    = 0x00, // No byte swapping for both incoming and outgoing data. All data is used as-is.
+	
+	BESwapIn      = 0x01, // All incoming data is byte swapped; outgoing data is used as-is.
+	BESwapPre     = 0x01, // An alternate name for "BESwapIn"
+	BESwapSrc     = 0x01, // An alternate name for "BESwapIn"
+	
+	BESwapOut     = 0x02, // All incoming data is used as-is; outgoing data is byte swapped.
+	BESwapPost    = 0x02, // An alternate name for "BESwapOut"
+	BESwapDst     = 0x02, // An alternate name for "BESwapOut"
+	
+	BESwapInOut   = 0x03, // Both incoming data and outgoing data are byte swapped.
+	BESwapPrePost = 0x03, // An alternate name for "BESwapInOut"
+	BESwapSrcDst  = 0x03  // An alternate name for "BESwapInOut"
+};
+
 /* little endian (ds' endianess) to local endianess convert macros */
 #ifdef MSB_FIRST	/* local arch is big endian */
 # define LE_TO_LOCAL_16(x) ((((x)&0xff)<<8)|(((x)>>8)&0xff))

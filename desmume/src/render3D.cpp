@@ -698,7 +698,7 @@ Render3DError Render3D::Render(const GFX3D &engine)
 	this->_isPoweredOn = true;
 	
 	const u32 clearColorSwapped = LE_TO_LOCAL_32(engine.renderState.clearColor);
-	this->_clearColor6665.color = COLOR555TO6665(clearColorSwapped & 0x7FFF, (clearColorSwapped >> 16) & 0x1F);
+	this->_clearColor6665.color = LE_TO_LOCAL_32( COLOR555TO6665(clearColorSwapped & 0x7FFF, (clearColorSwapped >> 16) & 0x1F) );
 	
 	this->_clearAttributes.opaquePolyID = (clearColorSwapped >> 24) & 0x3F;
 	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display

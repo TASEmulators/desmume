@@ -2456,7 +2456,7 @@ void MacMetalFetchObject::_FetchNativeDisplayByID(const NDSDisplayID displayID, 
 		
 		if (this->_fetchDisplayInfo[bufferIndex].pixelBytes == 2)
 		{
-			ColorspaceConvertBuffer555To8888Opaque<false, false>((const uint16_t *)this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>((const uint16_t *)this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		}
 		else
 		{
