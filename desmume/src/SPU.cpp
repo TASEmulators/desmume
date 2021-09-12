@@ -113,7 +113,7 @@ static double cos_lut[COSINE_INTERPOLATION_RESOLUTION];
 
 static const double ARM7_CLOCK = 33513982;
 
-static const double samples_per_hline = (DESMUME_SAMPLE_RATE / 59.8261f) / 263.0f;
+static const double samples_per_hline = (DESMUME_SAMPLE_RATE / 59.8261f) / 263.0f; /*59.8261f*/
 
 static double samples = 0;
 

@@ -44,13 +44,47 @@
             width: 100%;
             top: 40vh;
             background: rgba(0, 0, 0, 0.5);
-            z-index: 2;
+            z-index: 3;
         }
+
+        #vk-layer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            touch-action: none;
+        }
+
 
         a,
         a:visited {
             color: white;
 
+        }
+
+        .vk-round {
+            text-align: center;
+            vertical-align: middle;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+
+        .vk {
+            color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(255, 255, 255, 0.25);
+            position: absolute;
+            z-index: 1;
+            text-align: center;
+            vertical-align: middle;
+            display: inline-block;
+        }
+
+
+        .vk-touched {
+            background-color: rgba(255, 255, 255, 0.75) !important
         }
     </style>
     <div id="welcome" class="menu">
@@ -60,6 +94,7 @@
             <input id="rom" type="file">
         </div>
         <a target="_blank" href="https://github.com/44670/desmume-wasm">https://github.com/44670/desmume-wasm</a>
+        <p>Ver. 20210913</p>
         <div id="ios-hint" hidden>
             Due to iOS Safari limitations, you may need to add this page to your home screen before you can save the
             game.
@@ -67,7 +102,19 @@
         </div>
 
     </div>
-    <div style="z-index: 2;position: absolute;" id="fps"></div>
+    <div id="vk-layer" hidden>
+        <div class="vk-rect vk" data-k="menu" id="vk-menu">Menu</div>
+        <div class="vk-rect vk" data-k="l">L</div>
+        <div class="vk-rect vk" data-k="r">R</div>
+        <div class="vk-round vk" data-k="a">A</div>
+        <div class="vk-round vk" data-k="b">B</div>
+        <div class="vk-round vk" data-k="x">X</div>
+        <div class="vk-round vk" data-k="y">Y</div>
+        <div class="vk-rect vk" data-k="select">-</div>
+        <div class="vk-rect vk" data-k="start">+</div>
+        <div class="vk-round vk" data-k="stick" id="vk-stick"></div>
+    </div>
+    <div style="z-index: 2;position: absolute;top: 0px;" id="fps" hidden></div>
     <div id="msg-layer" hidden>
         <p id="msg-text"></p>
     </div>
@@ -76,11 +123,12 @@
     <script src="localforage.js"></script>
     <script src="build/nds.js"></script>
     <script>
-        const TARGET_INTERVAL = 33
-        const AUDIO_FPS = 1000.0/33.0*2.0
+
         var plugins = {}
-        var html = document.getElementsByTagName('html')[0]
-        var body = document.getElementsByTagName('body')[0]
+        var body = document.getElementsByTagName("body")[0]
+        var html = document.getElementsByTagName("html")[0]
+
+
         window.onerror = function (msg, url, line, col, error) {
             var extra = !col ? '' : '\ncolumn: ' + col;
             extra += !error ? '' : '\nerror: ' + error;
@@ -89,6 +137,7 @@
             debugger
             return true;
         };
+
         function $id(id) {
             return document.getElementById(id);
         }
@@ -101,7 +150,7 @@
             //document.getElementById('romFile').files = null;
             if (!isWebApp) {
                 // On iOS Safari, the indexedDB will be cleared after 7 days. 
-                // To prevent users from frustration, we don't allow savegaming on iOS unless the we are in the PWA mode.
+                // To prevent users from frustration, we don't allow savegame on iOS unless the we are in the PWA mode.
                 isSaveSupported = false
                 var divIosHint = $id('ios-hint')
                 divIosHint.hidden = false
@@ -109,6 +158,17 @@
             }
         }
 
+        var emuKeyState = new Array(14)
+        const emuKeyNames = ["right", "left", "down", "up", "select", "start", "b", "a", "y", "x", "l", "r", "debug", "lid"]
+        var vkMap = {}
+        var vkState = {}
+        var keyNameToKeyId = {}
+        var vkStickPos
+        for (var i = 0; i < emuKeyNames.length; i++) {
+            keyNameToKeyId[emuKeyNames[i]] = i
+        }
+
+        const emuKeyboradMapping = [39, 37, 40, 38, 16, 13, 90, 88, 65, 83, 81, 87, -1, 8]
         var emuGameID = 'unknown'
         var emuIsRunning = false
         var fps = 0
@@ -125,18 +185,18 @@
         var AUDIO_BLOCK_SIZE = 2048
         var AUDIO_ORIG_SAMPLES_DESIRED = AUDIO_BLOCK_SIZE
         var audioBuffer
-        var tmpAudioBuffer = new Int16Array(16384*2)
+        var tmpAudioBuffer = new Int16Array(16384 * 2)
         var audioWorkletNode
 
         var frameCount = 0
         var prevCalcFPSTime = 0
         var shouldDraw = 0
-        var keyMask = 0
         var touched = 0
         var touchX = 0
         var touchY = 0
         var prevSaveFlag = 0
         var lastTwoFrameTime = 10
+        var fbSize
 
         function callPlugin(type, arg) {
             for (var k in plugins) {
@@ -155,22 +215,33 @@
         }
 
         function emuRunFrame() {
+            var keyMask = 0;
+            for (var i = 0; i < 14; i++) {
+                if (emuKeyState[i]) {
+                    keyMask |= 1 << i
+                }
+            }
             shouldDraw = !shouldDraw
             Module._runFrame(shouldDraw, keyMask, touched, touchX, touchY)
             if (audioWorkletNode) {
-                var samplesRead = Module._fillAudioBuffer(4096)
-                tmpAudioBuffer.set(audioBuffer.subarray(0, samplesRead * 2))
-                audioWorkletNode.port.postMessage(tmpAudioBuffer.subarray(0, samplesRead * 2))
+                try {
+                    var samplesRead = Module._fillAudioBuffer(4096)
+                    tmpAudioBuffer.set(audioBuffer.subarray(0, samplesRead * 2))
+                    audioWorkletNode.port.postMessage(tmpAudioBuffer.subarray(0, samplesRead * 2))
+                } catch (error) {
+                    // tmpAudioBuffer may be detached if previous message is still processing 
+                    console.log(error)
+                }
             }
             if (shouldDraw) {
                 ctx2d[0].putImageData(FB[0], 0, 0)
                 ctx2d[1].putImageData(FB[1], 0, 0)
             }
-            
+
             frameCount += 1
-            if (frameCount % 4 == 0) {
+            if (frameCount % 120 == 0) {
                 var time = performance.now()
-                fps = 4 / ((time - prevCalcFPSTime) / 1000)
+                fps = 120 / ((time - prevCalcFPSTime) / 1000)
                 prevCalcFPSTime = time
                 divFPS.innerText = 'fps:' + ('' + fps).substring(0, 5)
             }
@@ -247,6 +318,64 @@
             callPlugin('loaded', gameID)
         }
 
+        function initVK() {
+            var vks = document.getElementsByClassName('vk')
+            for (var i = 0; i < vks.length; i++) {
+                var vk = vks[i]
+                var k = vks[i].getAttribute('data-k')
+                if (k) {
+                    vkMap[k] = vk
+                    vkState[k] = [0, 0]
+                }
+            }
+        }
+        initVK()
+
+        function makeVKStyle(top, left, w, h, fontSize) {
+            return 'top:' + top + 'px;left:' + left + 'px;width:' + w + 'px;height:' + h + 'px;' + 'font-size:' + fontSize + 'px;line-height:' + h + 'px;'
+        }
+
+
+        function adjustVKLayout() {
+            var isLandscape = window.innerWidth > window.innerHeight
+            var baseSize = window.innerWidth * 0.14
+            var fontSize = baseSize * 0.7
+            var offTop = fbSize[0][1] + fbSize[1][1]
+            var offLeft = 0
+            var abxyWidth = baseSize * 3
+            var abxyHeight = baseSize * 3
+            var vkw = baseSize
+            var vkh = baseSize
+
+            vkw = baseSize * 1.5
+            vkh = baseSize * 0.6
+            fontSize = baseSize * 0.5
+            vkMap['l'].style = makeVKStyle(offTop, 0, vkw, vkh, fontSize)
+            vkMap['r'].style = makeVKStyle(offTop, window.innerWidth - vkw, vkw, vkh, fontSize)
+            $id('vk-menu').style = makeVKStyle(offTop, window.innerWidth / 2 - vkw / 2, vkw, vkh, fontSize)
+
+
+            offTop += baseSize * 0.62
+            vkw = baseSize
+            vkh = baseSize
+            offLeft = window.innerWidth - abxyWidth
+            vkMap['a'].style = makeVKStyle(offTop + abxyHeight / 2 - vkh / 2, offLeft + abxyWidth - vkw, vkw, vkh, fontSize)
+            vkMap['b'].style = makeVKStyle(offTop + abxyHeight - vkh, offLeft + abxyWidth / 2 - vkw / 2, vkw, vkh, fontSize)
+            vkMap['x'].style = makeVKStyle(offTop, offLeft + abxyWidth / 2 - vkw / 2, vkw, vkh, fontSize)
+            vkMap['y'].style = makeVKStyle(offTop + abxyHeight / 2 - vkh / 2, offLeft, vkw, vkh, fontSize)
+
+            vkw = baseSize * 1.5
+            vkh = baseSize * 1.5
+            offLeft = 0
+            $id('vk-stick').style = makeVKStyle(offTop + abxyHeight / 2 - vkh / 2, offLeft + abxyHeight / 2 - vkw / 2, vkw, vkh, fontSize)
+            vkStickPos = [offTop + abxyHeight / 2, offLeft + abxyHeight / 2, vkw, vkh, fontSize]
+
+            vkw = baseSize * 0.4
+            vkh = baseSize * 0.4
+            fontSize = baseSize * 0.4
+            vkMap['select'].style = makeVKStyle(offTop + abxyHeight - vkh, window.innerWidth / 2 - vkw * 1.5, vkw, vkh, fontSize)
+            vkMap['start'].style = makeVKStyle(offTop + abxyHeight - vkh, window.innerWidth / 2 + vkw * 0.5, vkw, vkh, fontSize)
+        }
 
         function uiAdjustSize() {
             var maxWidth = window.innerWidth
@@ -266,12 +395,17 @@
                 screenCanvas[i].style = 'left:' + left + 'px;top:' + top + "px;width:" + w + "px;height:" + h + "px;"
                 top += h
             }
+            adjustVKLayout()
         }
 
         function uiSwitchToPlayer() {
+            for (var i = 0; i < 14; i++) {
+                emuKeyState[i] = false
+            }
             body.style = 'touch-action: none;'
             html.style = 'position: fixed;overflow:hidden;touch-action: none;'
             $id('welcome').hidden = true
+            $id('vk-layer').hidden = false
             uiAdjustSize()
         }
 
@@ -340,7 +474,7 @@
                     scriptProcessor.connect(audioContext.destination)*/
                 } else {
                     await audioContext.audioWorklet.addModule("/audio-worklet.js")
-                    audioWorkletNode = new AudioWorkletNode(audioContext, "my-worklet", {outputChannelCount:[2]})
+                    audioWorkletNode = new AudioWorkletNode(audioContext, "my-worklet", { outputChannelCount: [2] })
                     audioWorkletNode.connect(audioContext.destination)
                 }
 
@@ -359,6 +493,17 @@
         }
         emuLoop()
 
+        var stickTouchID = false
+
+        function isPointInRect(x, y, r) {
+            if ((x >= r.x) && (x < r.x + r.width)) {
+                if ((y >= r.y) && (y < r.y + r.height)) {
+                    return true
+                }
+            }
+            return false
+        }
+
         function handleTouch(event) {
             tryInitSound()
             if (!emuIsRunning) {
@@ -371,21 +516,105 @@
             var x = 0
             var y = 0
 
+            var needUpdateStick = false
+            var stickY = vkStickPos[0]
+            var stickX = vkStickPos[1]
+            var stickW = vkStickPos[2]
+            var stickH = vkStickPos[3]
+
+            var stickPressed = false
+            var stickDeadZone = stickW * 0.2
+
+            var tsRect = screenCanvas[1].getBoundingClientRect()
+
+            for (var i = 0; i < emuKeyState.length; i++) {
+                emuKeyState[i] = false
+            }
+            for (var k in vkState) {
+                vkState[k][1] = 0
+            }
+
             for (var i = 0; i < event.touches.length; i++) {
                 var t = event.touches[i];
+                var tid = t.identifier
                 var dom = document.elementFromPoint(t.clientX, t.clientY)
-                if (dom == screenCanvas[1]) {
-                    isDown = true
-                    var r = screenCanvas[1].getBoundingClientRect()
-                    x = (t.clientX - r.x) / r.width * 256
-                    y = (t.clientY - r.y) / r.height * 192
-                    break
+                var k = dom.getAttribute('data-k')
+                if ((tid === stickTouchID) || (dom == vkMap['stick'])) {
+                    stickPressed = true
+
+                    vkState['stick'][1] = 1
+                    var sx = t.clientX
+                    var sy = t.clientY
+                    if (sx < stickX - stickDeadZone) {
+                        emuKeyState[1] = true 
+                    }
+                    if (sx > stickX + stickDeadZone) {
+                        emuKeyState[0] = true
+                    }
+                    if (sy < stickY - stickDeadZone) {
+                        emuKeyState[3] = true
+                    }
+                    if (sy > stickY + stickDeadZone) {
+                        emuKeyState[2] = true
+                    }
+                    sx = Math.max(stickX - stickW / 2, sx)
+                    sx = Math.min(stickX + stickW / 2, sx)
+                    sy = Math.max(stickY - stickH / 2, sy)
+                    sy = Math.min(stickY + stickH / 2, sy)
+                    stickX = sx
+                    stickY = sy
+                    needUpdateStick = true
+                    stickTouchID = tid
+                    continue
                 }
+                if (k) {
+
+                    vkState[k][1] = 1
+                    continue
+                }
+
+
+                if (isPointInRect(t.clientX, t.clientY, tsRect)) {
+                    isDown = true
+                    x = (t.clientX - tsRect.x) / tsRect.width * 256
+                    y = (t.clientY - tsRect.y) / tsRect.height * 192
+                }
+
             }
 
             touched = isDown ? 1 : 0;
             touchX = x
             touchY = y
+
+            for (var k in vkState) {
+                if (vkState[k][0] != vkState[k][1]) {
+                    var dom = vkMap[k]
+                    vkState[k][0] = vkState[k][1]
+                    if (vkState[k][1]) {
+                        dom.classList.add('vk-touched')
+                    } else {
+                        dom.classList.remove('vk-touched')
+                        if (k == "stick") {
+                            stickTouchID = false
+                            needUpdateStick = true
+                        }
+                    }
+
+                }
+            }
+
+            for (var i = 0; i < emuKeyState.length; i++) {
+                var k = emuKeyNames[i]
+                if (vkState[k]) {
+                    if (vkState[k][1]) {
+                        emuKeyState[i] = true
+                    }
+                }
+            }
+
+            if (needUpdateStick) {
+                vkMap['stick'].style = makeVKStyle(stickY - stickW / 2, stickX - stickW / 2, stickW, stickH, vkStickPos[4])
+            }
         }
         ['touchstart', 'touchmove', 'touchend', 'touchcancel', 'touchenter', 'touchleave'].forEach((val) => {
             window.addEventListener(val, handleTouch)
@@ -401,16 +630,13 @@
             if (e.type == 'mousedown') {
                 tryInitSound()
             }
-            var target = document.elementFromPoint(e.clientX, e.clientY)
-            if (target != screenCanvas[1]) {
-                if (!touched) {
-                    return
-                }
-            }
+
+            var r = screenCanvas[1].getBoundingClientRect()
+
             e.preventDefault()
             e.stopPropagation()
-            var r = screenCanvas[1].getBoundingClientRect()
-            var isDown = (e.buttons != 0) && (target == screenCanvas[1])
+            
+            var isDown = (e.buttons != 0) && (isPointInRect(e.clientX, e.clientY, r))
             var x = (e.clientX - r.x) / r.width * 256
             var y = (e.clientY - r.y) / r.height * 192
 
@@ -422,6 +648,26 @@
         window.onresize = window.onorientationchange = () => {
             uiAdjustSize()
         }
+        function convertKeyCode(keyCode) {
+            for (var i = 0; i < 14; i++) {
+                if (keyCode == emuKeyboradMapping[i]) {
+                    return i
+                }
+            }
+            return -1
+        }
+        window.onkeydown = window.onkeyup = (e) => {
+            if (!emuIsRunning) {
+                return
+            }
+            e.preventDefault()
+            var isDown = (e.type === "keydown")
+            var k = convertKeyCode(e.keyCode)
+            if (k >= 0) {
+                emuKeyState[k] = isDown
+            }
+        }
+
 
     </script>
 </body>

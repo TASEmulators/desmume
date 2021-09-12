@@ -17,7 +17,7 @@ int romBufferCap = 0;
 int romLen;
 volatile bool execute = true;
 volatile bool paused = false;
-//static s16 samplesBuffer[16384 * 2];
+// static s16 samplesBuffer[16384 * 2];
 static s16 audioBuffer[16384 * 2];
 int samplesRead = 0;
 int samplesDesired = 0;
@@ -34,12 +34,12 @@ void SNDWasmMuteAudio() {}
 void SNDWasmUnMuteAudio() {}
 void SNDWasmSetVolume(int volume) {}
 void SNDWasmClearBuffer() {}
-void SNDWasmFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)
-{
-	if (synchMode == ESynchMode_Synchronous)
-	{
-		theSynchronizer->enqueue_samples(sampleBuffer, sampleCount);
-	}
+void SNDWasmFetchSamples(s16 *sampleBuffer, size_t sampleCount,
+                         ESynchMode synchMode,
+                         ISynchronizingAudioBuffer *theSynchronizer) {
+  if (synchMode == ESynchMode_Synchronous) {
+    theSynchronizer->enqueue_samples(sampleBuffer, sampleCount);
+  }
 }
 
 SoundInterface_struct SndWasm = {1,
@@ -163,6 +163,10 @@ int runFrame(int shouldDraw, u32 keys, int touched, u32 touchX, u32 touchY) {
   } else {
     NDS_releaseTouch();
   }
+  NDS_setPad(keys & (1 << 0), keys & (1 << 1), keys & (1 << 2), keys & (1 << 3),
+             keys & (1 << 4), keys & (1 << 5), keys & (1 << 6), keys & (1 << 7),
+             keys & (1 << 8), keys & (1 << 9), keys & (1 << 10),
+             keys & (1 << 11), keys & (1 << 12), keys & (1 << 13));
   int ret = 0;
   NDS_beginProcessingInput();
   NDS_endProcessingInput();

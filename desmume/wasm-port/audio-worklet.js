@@ -10,7 +10,7 @@ class MyAudioWorklet extends AudioWorkletProcessor {
             //console.log(buf)
             for (var i = 0; i < buf.length; i+=2) {
                 if (this.fifoLen + 2 > this.FIFO_CAP) {
-                    console.log("overflow")
+                    //console.log("overflow")
                     break
                 }
                 this.fifoEnqueue(buf[i])
@@ -39,7 +39,7 @@ class MyAudioWorklet extends AudioWorkletProcessor {
 
         for (var i = 0; i < chan0.length; i++) {
             if (this.fifoLen < 2) {
-                console.log("underflow")
+                //console.log("underflow")
                 break
             }
             chan0[i] = this.fifoDequeue() / 32768.0
