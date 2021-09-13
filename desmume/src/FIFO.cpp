@@ -343,9 +343,9 @@ void DISP_FIFOsend_u32(u32 val)
 	disp_fifo.buf[disp_fifo.tail] = val;
 	
 	disp_fifo.tail++;
-	if (disp_fifo.head >= 0x6000)
+	if (disp_fifo.tail >= 0x6000)
 	{
-		disp_fifo.head -= 0x6000;
+		disp_fifo.tail = 0;
 	}
 }
 
@@ -357,7 +357,7 @@ u32 DISP_FIFOrecv_u32()
 	disp_fifo.head++;
 	if (disp_fifo.head >= 0x6000)
 	{
-		disp_fifo.head -= 0x6000;
+		disp_fifo.head = 0;
 	}
 
 	return val;
