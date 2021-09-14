@@ -3518,7 +3518,7 @@ GPUEngineA::~GPUEngineA()
 
 GPUEngineA* GPUEngineA::Allocate()
 {
-	return new(malloc_aligned64(sizeof(GPUEngineA))) GPUEngineA();
+	return new(malloc_alignedPage(sizeof(GPUEngineA))) GPUEngineA();
 }
 
 void GPUEngineA::FinalizeAndDeallocate()
@@ -4808,7 +4808,7 @@ GPUEngineB::~GPUEngineB()
 
 GPUEngineB* GPUEngineB::Allocate()
 {
-	return new(malloc_aligned64(sizeof(GPUEngineB))) GPUEngineB();
+	return new(malloc_alignedPage(sizeof(GPUEngineB))) GPUEngineB();
 }
 
 void GPUEngineB::FinalizeAndDeallocate()
@@ -5308,7 +5308,7 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
 		currentLineCount += lineCount;
 	}
 	
-	u16 *newGpuDstToSrcIndex = (u16 *)malloc_alignedCacheLine(w * h * sizeof(u16));
+	u16 *newGpuDstToSrcIndex = (u16 *)malloc_alignedPage(w * h * sizeof(u16));
 	u16 *newGpuDstToSrcPtr = newGpuDstToSrcIndex;
 	for (size_t y = 0, dstIdx = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
 	{
@@ -5334,10 +5334,10 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
 		dstIdx += (w * (this->_lineInfo[y].renderCount - 1));
 	}
 	
-	u8 *newGpuDstToSrcSSSE3_u8_8e = (u8 *)malloc_alignedCacheLine(w * sizeof(u8));
-	u8 *newGpuDstToSrcSSSE3_u8_16e = (u8 *)malloc_alignedCacheLine(w * sizeof(u8));
-	u8 *newGpuDstToSrcSSSE3_u16_8e = (u8 *)malloc_alignedCacheLine(w * sizeof(u16));
-	u8 *newGpuDstToSrcSSSE3_u32_4e = (u8 *)malloc_alignedCacheLine(w * sizeof(u32));
+	u8 *newGpuDstToSrcSSSE3_u8_8e = (u8 *)malloc_alignedPage(w * sizeof(u8));
+	u8 *newGpuDstToSrcSSSE3_u8_16e = (u8 *)malloc_alignedPage(w * sizeof(u8));
+	u8 *newGpuDstToSrcSSSE3_u16_8e = (u8 *)malloc_alignedPage(w * sizeof(u16));
+	u8 *newGpuDstToSrcSSSE3_u32_4e = (u8 *)malloc_alignedPage(w * sizeof(u32));
 	
 	for (size_t i = 0; i < w; i++)
 	{
