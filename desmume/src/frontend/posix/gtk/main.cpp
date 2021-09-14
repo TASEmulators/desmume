@@ -647,7 +647,11 @@ void Launch(GSimpleAction *action, GVariant *parameter, gpointer user_data)
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "printscreen")), TRUE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "exportbackup")), TRUE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "importbackup")), TRUE);
+
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "savestate")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "loadstate")), TRUE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "save_state_to")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "load_state_from")), TRUE);
 
     //pause = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/pause")));
     //gtk_widget_grab_focus(pause);
@@ -3310,6 +3314,11 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "cheatsearch")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "importbackup")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "exportbackup")), FALSE);
+
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "savestate")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "loadstate")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "save_state_to")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "load_state_from")), FALSE);
 
     nds_screen.gap_size = config.view_gap ? GAP_SIZE : 0;
 
