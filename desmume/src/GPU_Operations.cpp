@@ -1242,7 +1242,7 @@ void CopyLineExpandHinted(const void *__restrict srcBuffer, const size_t srcLine
 				{
 					if ((dstLineWidth % GPU_FRAMEBUFFER_NATIVE_WIDTH) == 0)
 					{
-						CopyLineExpand<0xFFFF, SCALEVERTICAL, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, dstLineWidth, dstLineCount);
+						CopyLineExpand<0x3FFF, SCALEVERTICAL, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, dstLineWidth, dstLineCount);
 					}
 					else
 					{
@@ -1315,7 +1315,7 @@ void CopyLineReduceHinted(const void *__restrict srcBuffer, const size_t srcLine
 				{
 					if ((srcLineWidth % GPU_FRAMEBUFFER_NATIVE_WIDTH) == 0)
 					{
-						CopyLineReduce<0xFFFF, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, srcLineWidth);
+						CopyLineReduce<0x3FFF, NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, srcLineWidth);
 					}
 					else
 					{
@@ -1337,5 +1337,5 @@ void CopyLineReduceHinted(const GPUEngineLineInfo &lineInfo, const void *__restr
 }
 
 // These functions are used in gfx3d.cpp
-template void CopyLineExpandHinted<0xFFFF, true, false, true, 4>(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer);
-template void CopyLineReduceHinted<0xFFFF, false, true, 4>(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer);
+template void CopyLineExpandHinted<0x3FFF, true, false, true, 4>(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer);
+template void CopyLineReduceHinted<0x3FFF, false, true, 4>(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer);

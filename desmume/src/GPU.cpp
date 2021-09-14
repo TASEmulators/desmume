@@ -1052,16 +1052,16 @@ void GPUEngineBase::_TransitionLineNativeToCustom(GPUEngineCompositorInfo &compI
 		switch (OUTPUTFORMAT)
 		{
 			case NDSColorFormat_BGR555_Rev:
-				CopyLineExpandHinted<0xFFFF, true, false, false, 2>(compInfo.line, compInfo.target.lineColorHeadNative, compInfo.target.lineColorHeadCustom);
+				CopyLineExpandHinted<0x3FFF, true, false, false, 2>(compInfo.line, compInfo.target.lineColorHeadNative, compInfo.target.lineColorHeadCustom);
 				break;
 				
 			case NDSColorFormat_BGR666_Rev:
 			case NDSColorFormat_BGR888_Rev:
-				CopyLineExpandHinted<0xFFFF, true, false, false, 4>(compInfo.line, compInfo.target.lineColorHeadNative, compInfo.target.lineColorHeadCustom);
+				CopyLineExpandHinted<0x3FFF, true, false, false, 4>(compInfo.line, compInfo.target.lineColorHeadNative, compInfo.target.lineColorHeadCustom);
 				break;
 		}
 		
-		CopyLineExpandHinted<0xFFFF, true, false, false, 1>(compInfo.line, compInfo.target.lineLayerIDHeadNative, compInfo.target.lineLayerIDHeadCustom);
+		CopyLineExpandHinted<0x3FFF, true, false, false, 1>(compInfo.line, compInfo.target.lineLayerIDHeadNative, compInfo.target.lineLayerIDHeadCustom);
 	}
 	
 	compInfo.target.lineColorHead = compInfo.target.lineColorHeadCustom;
@@ -1291,8 +1291,8 @@ void GPUEngineBase::_PrecompositeNativeToCustomLineBG(GPUEngineCompositorInfo &c
 		}
 	}
 	
-	CopyLineExpand<0xFFFF, false, false, 2>(this->_deferredColorCustom, this->_deferredColorNative, compInfo.line.widthCustom, 1);
-	CopyLineExpand<0xFFFF, false, false, 1>(this->_deferredIndexCustom, this->_deferredIndexNative, compInfo.line.widthCustom, 1);
+	CopyLineExpand<0x3FFF, false, false, 2>(this->_deferredColorCustom, this->_deferredColorNative, compInfo.line.widthCustom, 1);
+	CopyLineExpand<0x3FFF, false, false, 1>(this->_deferredIndexCustom, this->_deferredIndexNative, compInfo.line.widthCustom, 1);
 }
 
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
@@ -2445,8 +2445,8 @@ void GPUEngineBase::_RenderLine_SetupSprites(GPUEngineCompositorInfo &compInfo)
 		if (isLineComplete)
 		{
 			this->_needExpandSprColorCustom = true;
-			CopyLineExpandHinted<0xFFFF, false, false, false, 1>(compInfo.line, this->_sprAlpha[compInfo.line.indexNative], this->_sprAlphaCustom);
-			CopyLineExpandHinted<0xFFFF, false, false, false, 1>(compInfo.line, this->_sprType[compInfo.line.indexNative], this->_sprTypeCustom);
+			CopyLineExpandHinted<0x3FFF, false, false, false, 1>(compInfo.line, this->_sprAlpha[compInfo.line.indexNative], this->_sprAlphaCustom);
+			CopyLineExpandHinted<0x3FFF, false, false, false, 1>(compInfo.line, this->_sprType[compInfo.line.indexNative], this->_sprTypeCustom);
 		}
 	}
 }
@@ -2503,7 +2503,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 				if (this->_needExpandSprColorCustom)
 				{
 					this->_needExpandSprColorCustom = false;
-					CopyLineExpandHinted<0xFFFF, false, false, false, 2>(compInfo.line, this->_sprColor, this->_sprColorCustom);
+					CopyLineExpandHinted<0x3FFF, false, false, false, 2>(compInfo.line, this->_sprColor, this->_sprColorCustom);
 				}
 				
 				this->_CompositeLineDeferred<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_OBJ, WILLPERFORMWINDOWTEST>(compInfo, this->_sprColorCustom, NULL);
@@ -2961,8 +2961,8 @@ void GPUEngineBase::_PerformWindowTesting(GPUEngineCompositorInfo &compInfo)
 		}
 		else if ((compInfo.line.widthCustom % GPU_FRAMEBUFFER_NATIVE_WIDTH) == 0)
 		{
-			CopyLineExpand<0xFFFF, false, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], compInfo.line.widthCustom, 1);
-			CopyLineExpand<0xFFFF, false, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], compInfo.line.widthCustom, 1);
+			CopyLineExpand<0x3FFF, false, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], compInfo.line.widthCustom, 1);
+			CopyLineExpand<0x3FFF, false, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], compInfo.line.widthCustom, 1);
 		}
 		else
 		{
@@ -3363,7 +3363,7 @@ void GPUEngineBase::ResolveToCustomFramebuffer(NDSDisplayInfo &mutableInfo)
 			for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
 			{
 				const GPUEngineLineInfo &lineInfo = this->_currentCompositorInfo[y].line;
-				CopyLineExpandHinted<0xFFFF, true, false, false, 2>(lineInfo, src, dst);
+				CopyLineExpandHinted<0x3FFF, true, false, false, 2>(lineInfo, src, dst);
 				src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 				dst += lineInfo.pixelCount;
 			}
@@ -3376,7 +3376,7 @@ void GPUEngineBase::ResolveToCustomFramebuffer(NDSDisplayInfo &mutableInfo)
 			for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
 			{
 				const GPUEngineLineInfo &lineInfo = this->_currentCompositorInfo[y].line;
-				CopyLineExpandHinted<0xFFFF, true, false, false, 4>(lineInfo, src, dst);
+				CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, src, dst);
 				src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 				dst += lineInfo.pixelCount;
 			}
@@ -3412,7 +3412,7 @@ void GPUEngineBase::ResolveNativeLines()
 			
 			if (this->_isLineRenderNative[y])
 			{
-				CopyLineExpandHinted<0xFFFF, true, false, false, 2>(lineInfo, src, dst);
+				CopyLineExpandHinted<0x3FFF, true, false, false, 2>(lineInfo, src, dst);
 				this->_isLineRenderNative[y] = false;
 			}
 			
@@ -3431,7 +3431,7 @@ void GPUEngineBase::ResolveNativeLines()
 			
 			if (this->_isLineRenderNative[y])
 			{
-				CopyLineExpandHinted<0xFFFF, true, false, false, 4>(lineInfo, src, dst);
+				CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, src, dst);
 				this->_isLineRenderNative[y] = false;
 			}
 			
@@ -4028,12 +4028,12 @@ void GPUEngineA::_RenderLine_DisplayCaptureCustom(const IOREG_DISPCAPCNT &DISPCA
 			{
 				if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 				{
-					CopyLineExpandHinted<0xFFFF, true, false, false, 2>(lineInfo, srcAPtr, this->_captureWorkingA16);
+					CopyLineExpandHinted<0x3FFF, true, false, false, 2>(lineInfo, srcAPtr, this->_captureWorkingA16);
 					srcAPtr = this->_captureWorkingA16;
 				}
 				else
 				{
-					CopyLineExpandHinted<0xFFFF, true, false, false, 4>(lineInfo, srcAPtr, this->_captureWorkingA32);
+					CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, srcAPtr, this->_captureWorkingA32);
 					srcAPtr = this->_captureWorkingA32;
 				}
 			}
@@ -4042,7 +4042,7 @@ void GPUEngineA::_RenderLine_DisplayCaptureCustom(const IOREG_DISPCAPCNT &DISPCA
 			{
 				if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 				{
-					CopyLineExpandHinted<0xFFFF, true, false, false, 2>(lineInfo, srcBPtr, this->_captureWorkingB16);
+					CopyLineExpandHinted<0x3FFF, true, false, false, 2>(lineInfo, srcBPtr, this->_captureWorkingB16);
 					srcBPtr = this->_captureWorkingB16;
 				}
 				else
@@ -4052,7 +4052,7 @@ void GPUEngineA::_RenderLine_DisplayCaptureCustom(const IOREG_DISPCAPCNT &DISPCA
 						ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(this->_fifoLine16, (u32 *)srcBPtr, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 					}
 					
-					CopyLineExpandHinted<0xFFFF, true, false, false, 4>(lineInfo, srcBPtr, this->_captureWorkingB32);
+					CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, srcBPtr, this->_captureWorkingB32);
 					srcBPtr = this->_captureWorkingB32;
 				}
 			}
@@ -4235,7 +4235,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 			
 			if (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH)
 			{
-				CopyLineReduceHinted<0xFFFF, false, false, 2>(compInfo.line, dstCustomPtr, dstNative16);
+				CopyLineReduceHinted<0x3FFF, false, false, 2>(compInfo.line, dstCustomPtr, dstNative16);
 				needCaptureNative = false;
 			}
 		}
@@ -4256,7 +4256,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 				if (compInfo.line.widthCustom > GPU_FRAMEBUFFER_NATIVE_WIDTH)
 				{
 					dstNative32 = (u32 *)this->_captureWorkingA32; // We're going to reuse _captureWorkingA32, since we should already be done with it by now.
-					CopyLineReduceHinted<0xFFFF, false, false, 4>(compInfo.line, dstCustomPtr, dstNative32);
+					CopyLineReduceHinted<0x3FFF, false, false, 4>(compInfo.line, dstCustomPtr, dstNative32);
 				}
 				
 				ColorspaceConvertBuffer8888To5551<false, false>(dstNative32, dstNative16, GPU_FRAMEBUFFER_NATIVE_WIDTH);
@@ -4333,7 +4333,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 			{
 				if ( ((DISPCAPCNT.SrcA == 0) && !isReadDisplayLineNative) || ((DISPCAPCNT.SrcA != 0) && !isRead3DLineNative) )
 				{
-					CopyLineReduceHinted<0xFFFF, false, false, 2>(srcAPtr, 0, CAPTURELENGTH, this->_captureWorkingA16, 0);
+					CopyLineReduceHinted<0x3FFF, false, false, 2>(srcAPtr, 0, CAPTURELENGTH, this->_captureWorkingA16, 0);
 					srcAPtr = this->_captureWorkingA16;
 				}
 				
@@ -6025,7 +6025,7 @@ u8* GPUSubsystem::_DownscaleAndConvertForSavestate(const NDSDisplayID displayID,
 					
 					for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 					{
-						CopyLineReduceHinted<0xFFFF, false, true, 2>(this->_lineInfo[l], src, dst);
+						CopyLineReduceHinted<0x3FFF, false, true, 2>(this->_lineInfo[l], src, dst);
 						src += this->_lineInfo[l].pixelCount;
 						dst += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 					}
@@ -6040,7 +6040,7 @@ u8* GPUSubsystem::_DownscaleAndConvertForSavestate(const NDSDisplayID displayID,
 						
 						for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 						{
-							CopyLineReduceHinted<0xFFFF, false, true, 4>(this->_lineInfo[l], src, dst);
+							CopyLineReduceHinted<0x3FFF, false, true, 4>(this->_lineInfo[l], src, dst);
 							src += this->_lineInfo[l].pixelCount;
 							dst += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 						}
@@ -6237,7 +6237,7 @@ bool GPUSubsystem::LoadState(EMUFILE &is, int size)
 					
 					for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 					{
-						CopyLineExpandHinted<0xFFFF, true, false, true, 2>(this->_lineInfo[l], src, dst);
+						CopyLineExpandHinted<0x3FFF, true, false, true, 2>(this->_lineInfo[l], src, dst);
 						src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 						dst += this->_lineInfo[l].pixelCount;
 					}
@@ -6252,7 +6252,7 @@ bool GPUSubsystem::LoadState(EMUFILE &is, int size)
 					
 					for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 					{
-						CopyLineExpandHinted<0xFFFF, true, false, true, 4>(this->_lineInfo[l], src, dst);
+						CopyLineExpandHinted<0x3FFF, true, false, true, 4>(this->_lineInfo[l], src, dst);
 						src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 						dst += this->_lineInfo[l].pixelCount;
 					}
@@ -6279,7 +6279,7 @@ bool GPUSubsystem::LoadState(EMUFILE &is, int size)
 					
 					for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 					{
-						CopyLineExpandHinted<0xFFFF, true, false, true, 2>(this->_lineInfo[l], src, dst);
+						CopyLineExpandHinted<0x3FFF, true, false, true, 2>(this->_lineInfo[l], src, dst);
 						src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 						dst += this->_lineInfo[l].pixelCount;
 					}
@@ -6294,7 +6294,7 @@ bool GPUSubsystem::LoadState(EMUFILE &is, int size)
 					
 					for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 					{
-						CopyLineExpandHinted<0xFFFF, true, false, true, 4>(this->_lineInfo[l], src, dst);
+						CopyLineExpandHinted<0x3FFF, true, false, true, 4>(this->_lineInfo[l], src, dst);
 						src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 						dst += this->_lineInfo[l].pixelCount;
 					}
