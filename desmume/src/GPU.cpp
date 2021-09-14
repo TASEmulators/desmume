@@ -812,7 +812,7 @@ void GPUEngineBase::SetupBuffers()
 	{
 		if (this->_renderLineLayerIDCustom != NULL)
 		{
-			memset(this->_renderLineLayerIDCustom, GPULayerID_Backdrop, dispInfo.customWidth * dispInfo.customHeight * sizeof(u8));
+			memset(this->_renderLineLayerIDCustom, GPULayerID_Backdrop, dispInfo.customWidth * (dispInfo.customHeight + (_gpuLargestDstLineCount * 4)) * sizeof(u8));
 		}
 	}
 }
