@@ -201,7 +201,7 @@ static const GActionEntry app_entries[] = {
     { "pause",         Pause },
     { "reset",         Reset },
     { "save_state_to",   SaveStateDialog },
-    { "loadstatefrom", LoadStateDialog },
+    { "load_state_from", LoadStateDialog },
     { "savestate",     MenuSave, "u" },
     { "loadstate",     MenuLoad, "u" },
     { "importbackup",  ImportBackupMemoryDialog },
