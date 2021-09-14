@@ -200,7 +200,7 @@ static const GActionEntry app_entries[] = {
     { "run",           Launch },
     { "pause",         Pause },
     { "reset",         Reset },
-    { "savestateto",   SaveStateDialog },
+    { "save_state_to",   SaveStateDialog },
     { "loadstatefrom", LoadStateDialog },
     { "savestate",     MenuSave, "u" },
     { "loadstate",     MenuLoad, "u" },
@@ -647,6 +647,7 @@ void Launch(GSimpleAction *action, GVariant *parameter, gpointer user_data)
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "printscreen")), TRUE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "exportbackup")), TRUE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "importbackup")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "save_state_to")), TRUE);
 
     //pause = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/pause")));
     //gtk_widget_grab_focus(pause);
