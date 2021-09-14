@@ -507,6 +507,7 @@ static GtkWidget *pWindow;
 static GtkWidget *pToolBar;
 static GtkWidget *pStatusBar;
 static GtkWidget *pDrawingArea;
+static GtkWidget *pContentBox;
 
 struct nds_screen_t {
     guint gap_size;
@@ -3013,7 +3014,15 @@ common_gtk_main(GApplication *app, gpointer user_data)
     pToolBar = GTK_WIDGET(gtk_builder_get_object(builder, "toolbar"));
     pDrawingArea = GTK_WIDGET(gtk_builder_get_object(builder, "drawing-area"));
     pStatusBar = GTK_WIDGET(gtk_builder_get_object(builder, "status-bar"));
+    pContentBox = GTK_WIDGET(gtk_builder_get_object(builder, "content-box"));
     g_object_unref(builder);
+
+    /* Set colors for content box background and status bar text */
+    GdkRGBA color_black = { 0.0, 0.0, 0.0, 1.0 };
+    gtk_widget_override_background_color(pContentBox, GTK_STATE_FLAG_NORMAL, &color_black);
+
+    GdkRGBA color_soft_gray = { 0.8, 0.8, 0.8, 1.0 };
+    gtk_widget_override_color(pStatusBar, GTK_STATE_FLAG_NORMAL, &color_soft_gray);
 
     gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(pWindow));
 
