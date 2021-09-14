@@ -5640,52 +5640,26 @@ void GPUSubsystem::PostprocessDisplay(const NDSDisplayID displayID, NDSDisplayIn
 {
 	if (mutableInfo.isDisplayEnabled[displayID])
 	{
-		if (mutableInfo.colorFormat == NDSColorFormat_BGR666_Rev)
+		if (mutableInfo.needConvertColorFormat[displayID])
 		{
-			if (mutableInfo.needConvertColorFormat[displayID])
+			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)mutableInfo.renderedBuffer[displayID], (u32 *)mutableInfo.renderedBuffer[displayID], mutableInfo.renderedWidth[displayID] * mutableInfo.renderedHeight[displayID]);
+		}
+		
+		if (mutableInfo.needApplyMasterBrightness[displayID])
+		{
+			if (mutableInfo.colorFormat == NDSColorFormat_BGR555_Rev)
 			{
-				ColorspaceConvertBuffer6665To8888<false, false>((u32 *)mutableInfo.renderedBuffer[displayID], (u32 *)mutableInfo.renderedBuffer[displayID], mutableInfo.renderedWidth[displayID] * mutableInfo.renderedHeight[displayID]);
+				this->_display[displayID]->GetEngine()->ApplyMasterBrightness<NDSColorFormat_BGR555_Rev>(mutableInfo);
 			}
-			
-			if (mutableInfo.needApplyMasterBrightness[displayID])
+			else
 			{
 				this->_display[displayID]->GetEngine()->ApplyMasterBrightness<NDSColorFormat_BGR888_Rev>(mutableInfo);
-			}
-		}
-		else
-		{
-			if (mutableInfo.needApplyMasterBrightness[displayID])
-			{
-				switch (mutableInfo.colorFormat)
-				{
-					case NDSColorFormat_BGR555_Rev:
-						this->_display[displayID]->GetEngine()->ApplyMasterBrightness<NDSColorFormat_BGR555_Rev>(mutableInfo);
-						break;
-						
-					case NDSColorFormat_BGR666_Rev:
-						this->_display[displayID]->GetEngine()->ApplyMasterBrightness<NDSColorFormat_BGR666_Rev>(mutableInfo);
-						break;
-						
-					case NDSColorFormat_BGR888_Rev:
-						this->_display[displayID]->GetEngine()->ApplyMasterBrightness<NDSColorFormat_BGR888_Rev>(mutableInfo);
-						break;
-						
-					default:
-						break;
-				}
 			}
 		}
 	}
 	else
 	{
-		if (mutableInfo.colorFormat == NDSColorFormat_BGR555_Rev)
-		{
-			memset(mutableInfo.renderedBuffer[displayID], 0, mutableInfo.renderedWidth[displayID] * mutableInfo.renderedHeight[displayID] * sizeof(u16));
-		}
-		else
-		{
-			memset(mutableInfo.renderedBuffer[displayID], 0, mutableInfo.renderedWidth[displayID] * mutableInfo.renderedHeight[displayID] * sizeof(u32));
-		}
+		memset(mutableInfo.renderedBuffer[displayID], 0, mutableInfo.renderedWidth[displayID] * mutableInfo.renderedHeight[displayID] * mutableInfo.pixelBytes);
 	}
 	
 	mutableInfo.needConvertColorFormat[displayID] = false;
