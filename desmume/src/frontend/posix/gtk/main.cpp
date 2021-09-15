@@ -931,6 +931,7 @@ static void SaveStateDialog(GSimpleAction *action, GVariant *parameter, gpointer
             GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_SAVE,
             "_Save", "_Cancel");
+    gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(pFileSelection), "save.ds");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_ds);
