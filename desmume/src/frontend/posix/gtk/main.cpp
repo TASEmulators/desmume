@@ -200,8 +200,8 @@ static const GActionEntry app_entries[] = {
     { "run",           Launch },
     { "pause",         Pause },
     { "reset",         Reset },
-    { "savestateto",   SaveStateDialog },
-    { "loadstatefrom", LoadStateDialog },
+    { "save_state_to",   SaveStateDialog },
+    { "load_state_from", LoadStateDialog },
     { "savestate",     MenuSave, "u" },
     { "loadstate",     MenuLoad, "u" },
     { "importbackup",  ImportBackupMemoryDialog },
@@ -648,6 +648,11 @@ void Launch(GSimpleAction *action, GVariant *parameter, gpointer user_data)
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "exportbackup")), TRUE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "importbackup")), TRUE);
 
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "savestate")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "loadstate")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "save_state_to")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "load_state_from")), TRUE);
+
     //pause = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/pause")));
     //gtk_widget_grab_focus(pause);
 }
@@ -707,6 +712,7 @@ static void LoadStateDialog(GSimpleAction *action, GVariant *parameter, gpointer
             gtk_widget_destroy(pDialog);
         } else {
             g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "run")), TRUE);
+            RedrawScreen();
         }
 
         g_free(sPath);
@@ -925,6 +931,7 @@ static void SaveStateDialog(GSimpleAction *action, GVariant *parameter, gpointer
             GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_SAVE,
             "_Save", "_Cancel");
+    gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(pFileSelection), "save.ds");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_ds);
@@ -3309,6 +3316,11 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "cheatsearch")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "importbackup")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "exportbackup")), FALSE);
+
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "savestate")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "loadstate")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "save_state_to")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "load_state_from")), FALSE);
 
     nds_screen.gap_size = config.view_gap ? GAP_SIZE : 0;
 
