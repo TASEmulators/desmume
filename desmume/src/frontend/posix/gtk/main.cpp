@@ -712,6 +712,7 @@ static void LoadStateDialog(GSimpleAction *action, GVariant *parameter, gpointer
             gtk_widget_destroy(pDialog);
         } else {
             g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "run")), TRUE);
+            RedrawScreen();
         }
 
         g_free(sPath);
