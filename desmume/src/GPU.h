@@ -1391,8 +1391,9 @@ protected:
 	void *_customBuffer;
 	void *_nativeBuffer;
 	
-	size_t _nativeLineRenderCount;
 	bool _isLineRenderNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	bool _isLineDisplayNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	size_t _nativeLineDisplayCount;
 	
 	bool _enableEngine;
 	bool _enableBGLayer[5];
@@ -1584,12 +1585,10 @@ public:
 	
 	GPUEngineID GetEngineID() const;
 	
-	virtual void SetCustomFramebufferSize(size_t w, size_t h);
-	void ResolveToCustomFramebuffer(NDSDisplayInfo &mutableInfo);
-	template<NDSColorFormat OUTPUTFORMAT> void ResolveNativeLines();
-	
-	size_t GetNativeLineCount();
-	bool GetIsLineNative(const size_t l);
+	virtual void SetupWorkingBuffers(NDSColorFormat requestedColorFormat, size_t w, size_t h);
+	void ResolveFramebufferToCustom(NDSDisplayInfo &mutableInfo);
+	template<NDSColorFormat OUTPUTFORMAT> void ResolveLinesDisplayedNative();
+	size_t GetLinesDisplayedNativeCount();
 	
 	void REG_DISPx_pack_test();
 };
@@ -1669,7 +1668,7 @@ public:
 	void* GetCustomVRAMBlockPtr(const size_t blockID);
 	FragmentColor* Get3DFramebufferMain() const;
 	u16* Get3DFramebuffer16() const;
-	virtual void SetCustomFramebufferSize(size_t w, size_t h);
+	virtual void SetupWorkingBuffers(NDSColorFormat requestedColorFormat, size_t w, size_t h);
 	
 	bool WillRender3DLayer();
 	bool WillCapture3DLayerDirect(const size_t l);
