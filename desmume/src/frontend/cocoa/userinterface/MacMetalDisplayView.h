@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2018 DeSmuME team
+	Copyright (C) 2017-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -95,6 +95,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLComputePipelineState> _fetch888Pipeline;
 	id<MTLComputePipelineState> _fetch555ConvertOnlyPipeline;
 	id<MTLComputePipelineState> _fetch666ConvertOnlyPipeline;
+	id<MTLComputePipelineState> _fetch888ConvertOnlyPipeline;
 	id<MTLComputePipelineState> deposterizePipeline;
 	id<MTLRenderPipelineState> hudPipeline;
 	id<MTLRenderPipelineState> hudRGBAPipeline;
