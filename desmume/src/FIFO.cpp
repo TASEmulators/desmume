@@ -449,11 +449,11 @@ void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 #else
 	if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 	{
-		ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+		ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	}
 	else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 	{
-		ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+		ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	}
 	_DISP_FIFOrecv_LineAdvance();
 #endif
