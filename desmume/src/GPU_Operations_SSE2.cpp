@@ -859,15 +859,15 @@ FORCEINLINE v128u32 ColorOperation_SSE2::blend3D(const v128u32 &colA, const v128
 
 FORCEINLINE v128u16 ColorOperation_SSE2::increase(const v128u16 &col, const v128u16 &blendEVY) const
 {
-	v128u16 r_vec128 = _mm_and_si128(                col,      _mm_set1_epi16(0x001F) );
-	v128u16 g_vec128 = _mm_and_si128( _mm_srli_epi16(col,  5), _mm_set1_epi16(0x001F) );
-	v128u16 b_vec128 = _mm_and_si128( _mm_srli_epi16(col, 10), _mm_set1_epi16(0x001F) );
+	v128u16 r = _mm_and_si128(                col,      _mm_set1_epi16(0x001F) );
+	v128u16 g = _mm_and_si128( _mm_srli_epi16(col,  5), _mm_set1_epi16(0x001F) );
+	v128u16 b = _mm_and_si128( _mm_srli_epi16(col, 10), _mm_set1_epi16(0x001F) );
 	
-	r_vec128 = _mm_add_epi16( r_vec128, _mm_srli_epi16(_mm_mullo_epi16(_mm_sub_epi16(_mm_set1_epi16(31), r_vec128), blendEVY), 4) );
-	g_vec128 = _mm_add_epi16( g_vec128, _mm_srli_epi16(_mm_mullo_epi16(_mm_sub_epi16(_mm_set1_epi16(31), g_vec128), blendEVY), 4) );
-	b_vec128 = _mm_add_epi16( b_vec128, _mm_srli_epi16(_mm_mullo_epi16(_mm_sub_epi16(_mm_set1_epi16(31), b_vec128), blendEVY), 4) );
+	r = _mm_add_epi16( r, _mm_srli_epi16(_mm_mullo_epi16(_mm_sub_epi16(_mm_set1_epi16(31), r), blendEVY), 4) );
+	g = _mm_add_epi16( g, _mm_srli_epi16(_mm_mullo_epi16(_mm_sub_epi16(_mm_set1_epi16(31), g), blendEVY), 4) );
+	b = _mm_add_epi16( b, _mm_srli_epi16(_mm_mullo_epi16(_mm_sub_epi16(_mm_set1_epi16(31), b), blendEVY), 4) );
 	
-	return _mm_or_si128(r_vec128, _mm_or_si128( _mm_slli_epi16(g_vec128, 5), _mm_slli_epi16(b_vec128, 10)) );
+	return _mm_or_si128(r, _mm_or_si128( _mm_slli_epi16(g, 5), _mm_slli_epi16(b, 10)) );
 }
 
 template <NDSColorFormat COLORFORMAT>
@@ -884,15 +884,15 @@ FORCEINLINE v128u32 ColorOperation_SSE2::increase(const v128u32 &col, const v128
 
 FORCEINLINE v128u16 ColorOperation_SSE2::decrease(const v128u16 &col, const v128u16 &blendEVY) const
 {
-	v128u16 r_vec128 = _mm_and_si128(                col,      _mm_set1_epi16(0x001F) );
-	v128u16 g_vec128 = _mm_and_si128( _mm_srli_epi16(col,  5), _mm_set1_epi16(0x001F) );
-	v128u16 b_vec128 = _mm_and_si128( _mm_srli_epi16(col, 10), _mm_set1_epi16(0x001F) );
+	v128u16 r = _mm_and_si128(                col,      _mm_set1_epi16(0x001F) );
+	v128u16 g = _mm_and_si128( _mm_srli_epi16(col,  5), _mm_set1_epi16(0x001F) );
+	v128u16 b = _mm_and_si128( _mm_srli_epi16(col, 10), _mm_set1_epi16(0x001F) );
 	
-	r_vec128 = _mm_sub_epi16( r_vec128, _mm_srli_epi16(_mm_mullo_epi16(r_vec128, blendEVY), 4) );
-	g_vec128 = _mm_sub_epi16( g_vec128, _mm_srli_epi16(_mm_mullo_epi16(g_vec128, blendEVY), 4) );
-	b_vec128 = _mm_sub_epi16( b_vec128, _mm_srli_epi16(_mm_mullo_epi16(b_vec128, blendEVY), 4) );
+	r = _mm_sub_epi16( r, _mm_srli_epi16(_mm_mullo_epi16(r, blendEVY), 4) );
+	g = _mm_sub_epi16( g, _mm_srli_epi16(_mm_mullo_epi16(g, blendEVY), 4) );
+	b = _mm_sub_epi16( b, _mm_srli_epi16(_mm_mullo_epi16(b, blendEVY), 4) );
 	
-	return _mm_or_si128(r_vec128, _mm_or_si128( _mm_slli_epi16(g_vec128, 5), _mm_slli_epi16(b_vec128, 10)) );
+	return _mm_or_si128(r, _mm_or_si128( _mm_slli_epi16(g, 5), _mm_slli_epi16(b, 10)) );
 }
 
 template <NDSColorFormat COLORFORMAT>
@@ -1460,9 +1460,6 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask16(GPUEngineCompositorIn
 #endif
 	
 	dstTargetBlendEnableMask = _mm_andnot_si128( _mm_cmpeq_epi8(dstLayerID, srcLayerID), dstTargetBlendEnableMask );
-	
-	// Select the color effect based on the BLDCNT target flags.
-	const v128u8 colorEffect_vec128 = _mm_blendv_epi8(_mm_set1_epi8(ColorEffect_Disable), _mm_set1_epi8(compInfo.renderState.colorEffect), enableColorEffectMask);
 	v128u8 forceDstTargetBlendMask = (LAYERTYPE == GPULayerType_3D) ? dstTargetBlendEnableMask : _mm_setzero_si128();
 	
 	// Do note that OBJ layers can modify EVA or EVB, meaning that these blend values may not be constant for OBJ layers.
@@ -1480,6 +1477,9 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask16(GPUEngineCompositorIn
 		eva_vec128 = _mm_blendv_epi8(eva_vec128, spriteAlpha, spriteAlphaMask);
 		evb_vec128 = _mm_blendv_epi8(evb_vec128, _mm_sub_epi8(_mm_set1_epi8(16), spriteAlpha), spriteAlphaMask);
 	}
+	
+	// Select the color effect based on the BLDCNT target flags.
+	const v128u8 colorEffect_vec128 = _mm_blendv_epi8(_mm_set1_epi8(ColorEffect_Disable), _mm_set1_epi8(compInfo.renderState.colorEffect), enableColorEffectMask);
 	
 	// ----------
 	
@@ -1508,30 +1508,34 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask16(GPUEngineCompositorIn
 		case ColorEffect_IncreaseBrightness:
 		{
 			const v128u8 brightnessMask8 = _mm_andnot_si128( forceDstTargetBlendMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_IncreaseBrightness))) );
+			const int brightnessUpMaskValue = _mm_movemask_epi8(brightnessMask8);
 			
-			const v128u16 brightnessMask16[2] = {
-				_mm_unpacklo_epi8(brightnessMask8, brightnessMask8),
-				_mm_unpackhi_epi8(brightnessMask8, brightnessMask8)
-			};
-			
-			if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+			if (brightnessUpMaskValue != 0x00000000)
 			{
-				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.increase(tmpSrc[0], evy16), brightnessMask16[0] );
-				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.increase(tmpSrc[1], evy16), brightnessMask16[1] );
-			}
-			else
-			{
-				const v128u32 brightnessMask32[4] = {
-					_mm_unpacklo_epi16(brightnessMask16[0], brightnessMask16[0]),
-					_mm_unpackhi_epi16(brightnessMask16[0], brightnessMask16[0]),
-					_mm_unpacklo_epi16(brightnessMask16[1], brightnessMask16[1]),
-					_mm_unpackhi_epi16(brightnessMask16[1], brightnessMask16[1])
+				const v128u16 brightnessMask16[2] = {
+					_mm_unpacklo_epi8(brightnessMask8, brightnessMask8),
+					_mm_unpackhi_epi8(brightnessMask8, brightnessMask8)
 				};
 				
-				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[0], evy16), brightnessMask32[0] );
-				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[1], evy16), brightnessMask32[1] );
-				tmpSrc[2] = _mm_blendv_epi8( tmpSrc[2], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[2], evy16), brightnessMask32[2] );
-				tmpSrc[3] = _mm_blendv_epi8( tmpSrc[3], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[3], evy16), brightnessMask32[3] );
+				if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+				{
+					tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.increase(tmpSrc[0], evy16), brightnessMask16[0] );
+					tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.increase(tmpSrc[1], evy16), brightnessMask16[1] );
+				}
+				else
+				{
+					const v128u32 brightnessMask32[4] = {
+						_mm_unpacklo_epi16(brightnessMask16[0], brightnessMask16[0]),
+						_mm_unpackhi_epi16(brightnessMask16[0], brightnessMask16[0]),
+						_mm_unpacklo_epi16(brightnessMask16[1], brightnessMask16[1]),
+						_mm_unpackhi_epi16(brightnessMask16[1], brightnessMask16[1])
+					};
+					
+					tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[0], evy16), brightnessMask32[0] );
+					tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[1], evy16), brightnessMask32[1] );
+					tmpSrc[2] = _mm_blendv_epi8( tmpSrc[2], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[2], evy16), brightnessMask32[2] );
+					tmpSrc[3] = _mm_blendv_epi8( tmpSrc[3], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[3], evy16), brightnessMask32[3] );
+				}
 			}
 			break;
 		}
@@ -1539,30 +1543,34 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask16(GPUEngineCompositorIn
 		case ColorEffect_DecreaseBrightness:
 		{
 			const v128u8 brightnessMask8 = _mm_andnot_si128( forceDstTargetBlendMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_DecreaseBrightness))) );
+			const int brightnessDownMaskValue = _mm_movemask_epi8(brightnessMask8);
 			
-			const v128u16 brightnessMask16[2] = {
-				_mm_unpacklo_epi8(brightnessMask8, brightnessMask8),
-				_mm_unpackhi_epi8(brightnessMask8, brightnessMask8)
-			};
-			
-			if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+			if (brightnessDownMaskValue != 0x00000000)
 			{
-				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.decrease(tmpSrc[0], evy16), brightnessMask16[0] );
-				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.decrease(tmpSrc[1], evy16), brightnessMask16[1] );
-			}
-			else
-			{
-				const v128u32 brightnessMask32[4] = {
-					_mm_unpacklo_epi16(brightnessMask16[0], brightnessMask16[0]),
-					_mm_unpackhi_epi16(brightnessMask16[0], brightnessMask16[0]),
-					_mm_unpacklo_epi16(brightnessMask16[1], brightnessMask16[1]),
-					_mm_unpackhi_epi16(brightnessMask16[1], brightnessMask16[1])
+				const v128u16 brightnessMask16[2] = {
+					_mm_unpacklo_epi8(brightnessMask8, brightnessMask8),
+					_mm_unpackhi_epi8(brightnessMask8, brightnessMask8)
 				};
 				
-				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[0], evy16), brightnessMask32[0] );
-				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[1], evy16), brightnessMask32[1] );
-				tmpSrc[2] = _mm_blendv_epi8( tmpSrc[2], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[2], evy16), brightnessMask32[2] );
-				tmpSrc[3] = _mm_blendv_epi8( tmpSrc[3], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[3], evy16), brightnessMask32[3] );
+				if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+				{
+					tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.decrease(tmpSrc[0], evy16), brightnessMask16[0] );
+					tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.decrease(tmpSrc[1], evy16), brightnessMask16[1] );
+				}
+				else
+				{
+					const v128u32 brightnessMask32[4] = {
+						_mm_unpacklo_epi16(brightnessMask16[0], brightnessMask16[0]),
+						_mm_unpackhi_epi16(brightnessMask16[0], brightnessMask16[0]),
+						_mm_unpacklo_epi16(brightnessMask16[1], brightnessMask16[1]),
+						_mm_unpackhi_epi16(brightnessMask16[1], brightnessMask16[1])
+					};
+					
+					tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[0], evy16), brightnessMask32[0] );
+					tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[1], evy16), brightnessMask32[1] );
+					tmpSrc[2] = _mm_blendv_epi8( tmpSrc[2], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[2], evy16), brightnessMask32[2] );
+					tmpSrc[3] = _mm_blendv_epi8( tmpSrc[3], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[3], evy16), brightnessMask32[3] );
+				}
 			}
 			break;
 		}
@@ -1573,11 +1581,7 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask16(GPUEngineCompositorIn
 	
 	// Render the pixel using the selected color effect.
 	const v128u8 blendMask8 = _mm_or_si128( forceDstTargetBlendMask, _mm_and_si128(_mm_and_si128(srcEffectEnableMask, dstTargetBlendEnableMask), _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_Blend))) );
-	
-	const v128u16 blendMask16[2] = {
-		_mm_unpacklo_epi8(blendMask8, blendMask8),
-		_mm_unpackhi_epi8(blendMask8, blendMask8)
-	};
+	const int blendMaskValue = _mm_movemask_epi8(blendMask8);
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
@@ -1586,42 +1590,50 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask16(GPUEngineCompositorIn
 			_mm_load_si128((v128u16 *)compInfo.target.lineColor16 + 1)
 		};
 		
-		v128u16 blendSrc16[2];
-		
-		switch (LAYERTYPE)
+		if (blendMaskValue != 0x00000000)
 		{
-			case GPULayerType_3D:
-				//blendSrc16[0] = colorop_vec.blend3D(src0, src1, dst16[0]);
-				//blendSrc16[1] = colorop_vec.blend3D(src2, src3, dst16[1]);
-				printf("GPU: 3D layers cannot be in RGBA5551 format. To composite a 3D layer, use the _unknownEffectMask32() method instead.\n");
-				assert(false);
-				break;
-				
-			case GPULayerType_BG:
-				blendSrc16[0] = colorop_vec.blend(tmpSrc[0], dst16[0], eva_vec128, evb_vec128);
-				blendSrc16[1] = colorop_vec.blend(tmpSrc[1], dst16[1], eva_vec128, evb_vec128);
-				break;
-				
-			case GPULayerType_OBJ:
+			const v128u16 blendMask16[2] = {
+				_mm_unpacklo_epi8(blendMask8, blendMask8),
+				_mm_unpackhi_epi8(blendMask8, blendMask8)
+			};
+			
+			v128u16 blendSrc16[2];
+			
+			switch (LAYERTYPE)
 			{
-				// For OBJ layers, we need to convert EVA and EVB from vectors of uint8 into vectors of uint16.
-				const v128u16 tempEVA[2] = {
-					_mm_unpacklo_epi8(eva_vec128, _mm_setzero_si128()),
-					_mm_unpackhi_epi8(eva_vec128, _mm_setzero_si128())
-				};
-				const v128u16 tempEVB[2] = {
-					_mm_unpacklo_epi8(evb_vec128, _mm_setzero_si128()),
-					_mm_unpackhi_epi8(evb_vec128, _mm_setzero_si128())
-				};
-				
-				blendSrc16[0] = colorop_vec.blend(tmpSrc[0], dst16[0], tempEVA[0], tempEVB[0]);
-				blendSrc16[1] = colorop_vec.blend(tmpSrc[1], dst16[1], tempEVA[1], tempEVB[1]);
-				break;
+				case GPULayerType_3D:
+					//blendSrc16[0] = colorop_vec.blend3D(src0, src1, dst16[0]);
+					//blendSrc16[1] = colorop_vec.blend3D(src2, src3, dst16[1]);
+					printf("GPU: 3D layers cannot be in RGBA5551 format. To composite a 3D layer, use the _unknownEffectMask32() method instead.\n");
+					assert(false);
+					break;
+					
+				case GPULayerType_BG:
+					blendSrc16[0] = colorop_vec.blend(tmpSrc[0], dst16[0], eva_vec128, evb_vec128);
+					blendSrc16[1] = colorop_vec.blend(tmpSrc[1], dst16[1], eva_vec128, evb_vec128);
+					break;
+					
+				case GPULayerType_OBJ:
+				{
+					// For OBJ layers, we need to convert EVA and EVB from vectors of uint8 into vectors of uint16.
+					const v128u16 tempEVA[2] = {
+						_mm_unpacklo_epi8(eva_vec128, _mm_setzero_si128()),
+						_mm_unpackhi_epi8(eva_vec128, _mm_setzero_si128())
+					};
+					const v128u16 tempEVB[2] = {
+						_mm_unpacklo_epi8(evb_vec128, _mm_setzero_si128()),
+						_mm_unpackhi_epi8(evb_vec128, _mm_setzero_si128())
+					};
+					
+					blendSrc16[0] = colorop_vec.blend(tmpSrc[0], dst16[0], tempEVA[0], tempEVB[0]);
+					blendSrc16[1] = colorop_vec.blend(tmpSrc[1], dst16[1], tempEVA[1], tempEVB[1]);
+					break;
+				}
 			}
+			
+			tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc16[0], blendMask16[0]);
+			tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc16[1], blendMask16[1]);
 		}
-		
-		tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc16[0], blendMask16[0]);
-		tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc16[1], blendMask16[1]);
 		
 		// Store the final colors.
 		const v128u16 passMask16[2] = {
@@ -1635,6 +1647,11 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask16(GPUEngineCompositorIn
 	}
 	else
 	{
+		const v128u16 blendMask16[2] = {
+			_mm_unpacklo_epi8(blendMask8, blendMask8),
+			_mm_unpackhi_epi8(blendMask8, blendMask8)
+		};
+		
 		const v128u32 dst32[4] = {
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 0),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 1),
@@ -1642,72 +1659,75 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask16(GPUEngineCompositorIn
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3),
 		};
 		
-		v128u32 blendSrc32[4];
-		
-		switch (LAYERTYPE)
+		if (blendMaskValue != 0x00000000)
 		{
-			case GPULayerType_3D:
-				//blendSrc32[0] = colorop_vec.blend3D<OUTPUTFORMAT>(src0, dst32[0]);
-				//blendSrc32[1] = colorop_vec.blend3D<OUTPUTFORMAT>(src1, dst32[1]);
-				//blendSrc32[2] = colorop_vec.blend3D<OUTPUTFORMAT>(src2, dst32[2]);
-				//blendSrc32[3] = colorop_vec.blend3D<OUTPUTFORMAT>(src3, dst32[3]);
-				printf("GPU: 3D layers cannot be in RGBA5551 format. To composite a 3D layer, use the _unknownEffectMask32() method instead.\n");
-				assert(false);
-				break;
-				
-			case GPULayerType_BG:
-				blendSrc32[0] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[0], dst32[0], eva_vec128, evb_vec128);
-				blendSrc32[1] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[1], dst32[1], eva_vec128, evb_vec128);
-				blendSrc32[2] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[2], dst32[2], eva_vec128, evb_vec128);
-				blendSrc32[3] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[3], dst32[3], eva_vec128, evb_vec128);
-				break;
-				
-			case GPULayerType_OBJ:
+			v128u32 blendSrc32[4];
+			
+			switch (LAYERTYPE)
 			{
-				// For OBJ layers, we need to convert EVA and EVB from vectors of uint8 into vectors of uint16.
-				//
-				// Note that we are sending only 4 colors for each colorop_vec.blend() call, and so we are only
-				// going to send the 4 correspending EVA/EVB vectors as well. In this case, each individual
-				// EVA/EVB value is mirrored for each adjacent 16-bit boundary.
-				v128u16 tempBlendLo = _mm_unpacklo_epi8(eva_vec128, eva_vec128);
-				v128u16 tempBlendHi = _mm_unpackhi_epi8(eva_vec128, eva_vec128);
-				
-				const v128u16 tempEVA[4] = {
-					_mm_unpacklo_epi8(tempBlendLo, _mm_setzero_si128()),
-					_mm_unpackhi_epi8(tempBlendLo, _mm_setzero_si128()),
-					_mm_unpacklo_epi8(tempBlendHi, _mm_setzero_si128()),
-					_mm_unpackhi_epi8(tempBlendHi, _mm_setzero_si128())
-				};
-				
-				tempBlendLo = _mm_unpacklo_epi8(evb_vec128, evb_vec128);
-				tempBlendHi = _mm_unpackhi_epi8(evb_vec128, evb_vec128);
-				
-				const v128u16 tempEVB[4] = {
-					_mm_unpacklo_epi8(tempBlendLo, _mm_setzero_si128()),
-					_mm_unpackhi_epi8(tempBlendLo, _mm_setzero_si128()),
-					_mm_unpacklo_epi8(tempBlendHi, _mm_setzero_si128()),
-					_mm_unpackhi_epi8(tempBlendHi, _mm_setzero_si128())
-				};
-				
-				blendSrc32[0] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[0], dst32[0], tempEVA[0], tempEVB[0]);
-				blendSrc32[1] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[1], dst32[1], tempEVA[1], tempEVB[1]);
-				blendSrc32[2] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[2], dst32[2], tempEVA[2], tempEVB[2]);
-				blendSrc32[3] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[3], dst32[3], tempEVA[3], tempEVB[3]);
-				break;
+				case GPULayerType_3D:
+					//blendSrc32[0] = colorop_vec.blend3D<OUTPUTFORMAT>(src0, dst32[0]);
+					//blendSrc32[1] = colorop_vec.blend3D<OUTPUTFORMAT>(src1, dst32[1]);
+					//blendSrc32[2] = colorop_vec.blend3D<OUTPUTFORMAT>(src2, dst32[2]);
+					//blendSrc32[3] = colorop_vec.blend3D<OUTPUTFORMAT>(src3, dst32[3]);
+					printf("GPU: 3D layers cannot be in RGBA5551 format. To composite a 3D layer, use the _unknownEffectMask32() method instead.\n");
+					assert(false);
+					break;
+					
+				case GPULayerType_BG:
+					blendSrc32[0] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[0], dst32[0], eva_vec128, evb_vec128);
+					blendSrc32[1] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[1], dst32[1], eva_vec128, evb_vec128);
+					blendSrc32[2] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[2], dst32[2], eva_vec128, evb_vec128);
+					blendSrc32[3] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[3], dst32[3], eva_vec128, evb_vec128);
+					break;
+					
+				case GPULayerType_OBJ:
+				{
+					// For OBJ layers, we need to convert EVA and EVB from vectors of uint8 into vectors of uint16.
+					//
+					// Note that we are sending only 4 colors for each colorop_vec.blend() call, and so we are only
+					// going to send the 4 correspending EVA/EVB vectors as well. In this case, each individual
+					// EVA/EVB value is mirrored for each adjacent 16-bit boundary.
+					v128u16 tempBlendLo = _mm_unpacklo_epi8(eva_vec128, eva_vec128);
+					v128u16 tempBlendHi = _mm_unpackhi_epi8(eva_vec128, eva_vec128);
+					
+					const v128u16 tempEVA[4] = {
+						_mm_unpacklo_epi8(tempBlendLo, _mm_setzero_si128()),
+						_mm_unpackhi_epi8(tempBlendLo, _mm_setzero_si128()),
+						_mm_unpacklo_epi8(tempBlendHi, _mm_setzero_si128()),
+						_mm_unpackhi_epi8(tempBlendHi, _mm_setzero_si128())
+					};
+					
+					tempBlendLo = _mm_unpacklo_epi8(evb_vec128, evb_vec128);
+					tempBlendHi = _mm_unpackhi_epi8(evb_vec128, evb_vec128);
+					
+					const v128u16 tempEVB[4] = {
+						_mm_unpacklo_epi8(tempBlendLo, _mm_setzero_si128()),
+						_mm_unpackhi_epi8(tempBlendLo, _mm_setzero_si128()),
+						_mm_unpacklo_epi8(tempBlendHi, _mm_setzero_si128()),
+						_mm_unpackhi_epi8(tempBlendHi, _mm_setzero_si128())
+					};
+					
+					blendSrc32[0] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[0], dst32[0], tempEVA[0], tempEVB[0]);
+					blendSrc32[1] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[1], dst32[1], tempEVA[1], tempEVB[1]);
+					blendSrc32[2] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[2], dst32[2], tempEVA[2], tempEVB[2]);
+					blendSrc32[3] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[3], dst32[3], tempEVA[3], tempEVB[3]);
+					break;
+				}
 			}
+			
+			const v128u32 blendMask32[4] = {
+				_mm_unpacklo_epi16(blendMask16[0], blendMask16[0]),
+				_mm_unpackhi_epi16(blendMask16[0], blendMask16[0]),
+				_mm_unpacklo_epi16(blendMask16[1], blendMask16[1]),
+				_mm_unpackhi_epi16(blendMask16[1], blendMask16[1])
+			};
+			
+			tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc32[0], blendMask32[0]);
+			tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc32[1], blendMask32[1]);
+			tmpSrc[2] = _mm_blendv_epi8(tmpSrc[2], blendSrc32[2], blendMask32[2]);
+			tmpSrc[3] = _mm_blendv_epi8(tmpSrc[3], blendSrc32[3], blendMask32[3]);
 		}
-		
-		const v128u32 blendMask32[4] = {
-			_mm_unpacklo_epi16(blendMask16[0], blendMask16[0]),
-			_mm_unpackhi_epi16(blendMask16[0], blendMask16[0]),
-			_mm_unpacklo_epi16(blendMask16[1], blendMask16[1]),
-			_mm_unpackhi_epi16(blendMask16[1], blendMask16[1])
-		};
-		
-		tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc32[0], blendMask32[0]);
-		tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc32[1], blendMask32[1]);
-		tmpSrc[2] = _mm_blendv_epi8(tmpSrc[2], blendSrc32[2], blendMask32[2]);
-		tmpSrc[3] = _mm_blendv_epi8(tmpSrc[3], blendSrc32[3], blendMask32[3]);
 		
 		// Store the final colors.
 		const v128u16 passMask16[2] = {
@@ -1759,9 +1779,6 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask32(GPUEngineCompositorIn
 #endif
 	
 	dstTargetBlendEnableMask = _mm_andnot_si128( _mm_cmpeq_epi8(dstLayerID, srcLayerID), dstTargetBlendEnableMask );
-	
-	// Select the color effect based on the BLDCNT target flags.
-	const v128u8 colorEffect_vec128 = _mm_blendv_epi8(_mm_set1_epi8(ColorEffect_Disable), _mm_set1_epi8(compInfo.renderState.colorEffect), enableColorEffectMask);
 	v128u8 forceDstTargetBlendMask = (LAYERTYPE == GPULayerType_3D) ? dstTargetBlendEnableMask : _mm_setzero_si128();
 	
 	// Do note that OBJ layers can modify EVA or EVB, meaning that these blend values may not be constant for OBJ layers.
@@ -1780,6 +1797,9 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask32(GPUEngineCompositorIn
 		evb_vec128 = _mm_blendv_epi8(evb_vec128, _mm_sub_epi8(_mm_set1_epi8(16), spriteAlpha), spriteAlphaMask);
 	}
 	
+	// Select the color effect based on the BLDCNT target flags.
+	const v128u8 colorEffect_vec128 = _mm_blendv_epi8(_mm_set1_epi8(ColorEffect_Disable), _mm_set1_epi8(compInfo.renderState.colorEffect), enableColorEffectMask);
+	
 	// ----------
 	
 	__m128i tmpSrc[4];
@@ -1788,8 +1808,8 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask32(GPUEngineCompositorIn
 	{
 		tmpSrc[0] = ColorspaceConvert6665To5551_SSE2<false>(src0, src1);
 		tmpSrc[1] = ColorspaceConvert6665To5551_SSE2<false>(src2, src3);
-		tmpSrc[0] = _mm_setzero_si128();
-		tmpSrc[1] = _mm_setzero_si128();
+		tmpSrc[2] = _mm_setzero_si128();
+		tmpSrc[3] = _mm_setzero_si128();
 	}
 	else
 	{
@@ -1804,30 +1824,34 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask32(GPUEngineCompositorIn
 		case ColorEffect_IncreaseBrightness:
 		{
 			const v128u8 brightnessMask8 = _mm_andnot_si128( forceDstTargetBlendMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_IncreaseBrightness))) );
+			const int brightnessUpMaskValue = _mm_movemask_epi8(brightnessMask8);
 			
-			const v128u16 brightnessMask16[2] = {
-				_mm_unpacklo_epi8(brightnessMask8, brightnessMask8),
-				_mm_unpackhi_epi8(brightnessMask8, brightnessMask8)
-			};
-			
-			if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+			if (brightnessUpMaskValue != 0x00000000)
 			{
-				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.increase(tmpSrc[0], evy16), brightnessMask16[0] );
-				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.increase(tmpSrc[1], evy16), brightnessMask16[1] );
-			}
-			else
-			{
-				const v128u32 brightnessMask32[4] = {
-					_mm_unpacklo_epi16(brightnessMask16[0], brightnessMask16[0]),
-					_mm_unpackhi_epi16(brightnessMask16[0], brightnessMask16[0]),
-					_mm_unpacklo_epi16(brightnessMask16[1], brightnessMask16[1]),
-					_mm_unpackhi_epi16(brightnessMask16[1], brightnessMask16[1])
+				const v128u16 brightnessMask16[2] = {
+					_mm_unpacklo_epi8(brightnessMask8, brightnessMask8),
+					_mm_unpackhi_epi8(brightnessMask8, brightnessMask8)
 				};
 				
-				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[0], evy16), brightnessMask32[0] );
-				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[1], evy16), brightnessMask32[1] );
-				tmpSrc[2] = _mm_blendv_epi8( tmpSrc[2], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[2], evy16), brightnessMask32[2] );
-				tmpSrc[3] = _mm_blendv_epi8( tmpSrc[3], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[3], evy16), brightnessMask32[3] );
+				if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+				{
+					tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.increase(tmpSrc[0], evy16), brightnessMask16[0] );
+					tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.increase(tmpSrc[1], evy16), brightnessMask16[1] );
+				}
+				else
+				{
+					const v128u32 brightnessMask32[4] = {
+						_mm_unpacklo_epi16(brightnessMask16[0], brightnessMask16[0]),
+						_mm_unpackhi_epi16(brightnessMask16[0], brightnessMask16[0]),
+						_mm_unpacklo_epi16(brightnessMask16[1], brightnessMask16[1]),
+						_mm_unpackhi_epi16(brightnessMask16[1], brightnessMask16[1])
+					};
+					
+					tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[0], evy16), brightnessMask32[0] );
+					tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[1], evy16), brightnessMask32[1] );
+					tmpSrc[2] = _mm_blendv_epi8( tmpSrc[2], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[2], evy16), brightnessMask32[2] );
+					tmpSrc[3] = _mm_blendv_epi8( tmpSrc[3], colorop_vec.increase<OUTPUTFORMAT>(tmpSrc[3], evy16), brightnessMask32[3] );
+				}
 			}
 			break;
 		}
@@ -1835,30 +1859,34 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask32(GPUEngineCompositorIn
 		case ColorEffect_DecreaseBrightness:
 		{
 			const v128u8 brightnessMask8 = _mm_andnot_si128( forceDstTargetBlendMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_DecreaseBrightness))) );
+			const int brightnessDownMaskValue = _mm_movemask_epi8(brightnessMask8);
 			
-			const v128u16 brightnessMask16[2] = {
-				_mm_unpacklo_epi8(brightnessMask8, brightnessMask8),
-				_mm_unpackhi_epi8(brightnessMask8, brightnessMask8)
-			};
-			
-			if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+			if (brightnessDownMaskValue != 0x00000000)
 			{
-				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.decrease(tmpSrc[0], evy16), brightnessMask16[0] );
-				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.decrease(tmpSrc[1], evy16), brightnessMask16[1] );
-			}
-			else
-			{
-				const v128u32 brightnessMask32[4] = {
-					_mm_unpacklo_epi16(brightnessMask16[0], brightnessMask16[0]),
-					_mm_unpackhi_epi16(brightnessMask16[0], brightnessMask16[0]),
-					_mm_unpacklo_epi16(brightnessMask16[1], brightnessMask16[1]),
-					_mm_unpackhi_epi16(brightnessMask16[1], brightnessMask16[1])
+				const v128u16 brightnessMask16[2] = {
+					_mm_unpacklo_epi8(brightnessMask8, brightnessMask8),
+					_mm_unpackhi_epi8(brightnessMask8, brightnessMask8)
 				};
 				
-				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[0], evy16), brightnessMask32[0] );
-				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[1], evy16), brightnessMask32[1] );
-				tmpSrc[2] = _mm_blendv_epi8( tmpSrc[2], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[2], evy16), brightnessMask32[2] );
-				tmpSrc[3] = _mm_blendv_epi8( tmpSrc[3], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[3], evy16), brightnessMask32[3] );
+				if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+				{
+					tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.decrease(tmpSrc[0], evy16), brightnessMask16[0] );
+					tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.decrease(tmpSrc[1], evy16), brightnessMask16[1] );
+				}
+				else
+				{
+					const v128u32 brightnessMask32[4] = {
+						_mm_unpacklo_epi16(brightnessMask16[0], brightnessMask16[0]),
+						_mm_unpackhi_epi16(brightnessMask16[0], brightnessMask16[0]),
+						_mm_unpacklo_epi16(brightnessMask16[1], brightnessMask16[1]),
+						_mm_unpackhi_epi16(brightnessMask16[1], brightnessMask16[1])
+					};
+					
+					tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[0], evy16), brightnessMask32[0] );
+					tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[1], evy16), brightnessMask32[1] );
+					tmpSrc[2] = _mm_blendv_epi8( tmpSrc[2], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[2], evy16), brightnessMask32[2] );
+					tmpSrc[3] = _mm_blendv_epi8( tmpSrc[3], colorop_vec.decrease<OUTPUTFORMAT>(tmpSrc[3], evy16), brightnessMask32[3] );
+				}
 			}
 			break;
 		}
@@ -1869,11 +1897,7 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask32(GPUEngineCompositorIn
 	
 	// Render the pixel using the selected color effect.
 	const v128u8 blendMask8 = _mm_or_si128( forceDstTargetBlendMask, _mm_and_si128(_mm_and_si128(srcEffectEnableMask, dstTargetBlendEnableMask), _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_Blend))) );
-	
-	const v128u16 blendMask16[2] = {
-		_mm_unpacklo_epi8(blendMask8, blendMask8),
-		_mm_unpackhi_epi8(blendMask8, blendMask8)
-	};
+	const int blendMaskValue = _mm_movemask_epi8(blendMask8);
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
@@ -1882,40 +1906,48 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask32(GPUEngineCompositorIn
 			_mm_load_si128((v128u16 *)compInfo.target.lineColor16 + 1)
 		};
 		
-		v128u16 blendSrc16[2];
-		
-		switch (LAYERTYPE)
+		if (blendMaskValue != 0x00000000)
 		{
-			case GPULayerType_3D:
-				blendSrc16[0] = colorop_vec.blend3D(src0, src1, dst16[0]);
-				blendSrc16[1] = colorop_vec.blend3D(src2, src3, dst16[1]);
-				break;
-				
-			case GPULayerType_BG:
-				blendSrc16[0] = colorop_vec.blend(tmpSrc[0], dst16[0], eva_vec128, evb_vec128);
-				blendSrc16[1] = colorop_vec.blend(tmpSrc[1], dst16[1], eva_vec128, evb_vec128);
-				break;
-				
-			case GPULayerType_OBJ:
+			const v128u16 blendMask16[2] = {
+				_mm_unpacklo_epi8(blendMask8, blendMask8),
+				_mm_unpackhi_epi8(blendMask8, blendMask8)
+			};
+			
+			v128u16 blendSrc16[2];
+			
+			switch (LAYERTYPE)
 			{
-				// For OBJ layers, we need to convert EVA and EVB from vectors of uint8 into vectors of uint16.
-				const v128u16 tempEVA[2] = {
-					_mm_unpacklo_epi8(eva_vec128, _mm_setzero_si128()),
-					_mm_unpackhi_epi8(eva_vec128, _mm_setzero_si128())
-				};
-				const v128u16 tempEVB[2] = {
-					_mm_unpacklo_epi8(evb_vec128, _mm_setzero_si128()),
-					_mm_unpackhi_epi8(evb_vec128, _mm_setzero_si128())
-				};
-				
-				blendSrc16[0] = colorop_vec.blend(tmpSrc[0], dst16[0], tempEVA[0], tempEVB[0]);
-				blendSrc16[1] = colorop_vec.blend(tmpSrc[1], dst16[1], tempEVA[1], tempEVB[1]);
-				break;
+				case GPULayerType_3D:
+					blendSrc16[0] = colorop_vec.blend3D(src0, src1, dst16[0]);
+					blendSrc16[1] = colorop_vec.blend3D(src2, src3, dst16[1]);
+					break;
+					
+				case GPULayerType_BG:
+					blendSrc16[0] = colorop_vec.blend(tmpSrc[0], dst16[0], eva_vec128, evb_vec128);
+					blendSrc16[1] = colorop_vec.blend(tmpSrc[1], dst16[1], eva_vec128, evb_vec128);
+					break;
+					
+				case GPULayerType_OBJ:
+				{
+					// For OBJ layers, we need to convert EVA and EVB from vectors of uint8 into vectors of uint16.
+					const v128u16 tempEVA[2] = {
+						_mm_unpacklo_epi8(eva_vec128, _mm_setzero_si128()),
+						_mm_unpackhi_epi8(eva_vec128, _mm_setzero_si128())
+					};
+					const v128u16 tempEVB[2] = {
+						_mm_unpacklo_epi8(evb_vec128, _mm_setzero_si128()),
+						_mm_unpackhi_epi8(evb_vec128, _mm_setzero_si128())
+					};
+					
+					blendSrc16[0] = colorop_vec.blend(tmpSrc[0], dst16[0], tempEVA[0], tempEVB[0]);
+					blendSrc16[1] = colorop_vec.blend(tmpSrc[1], dst16[1], tempEVA[1], tempEVB[1]);
+					break;
+				}
 			}
+			
+			tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc16[0], blendMask16[0]);
+			tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc16[1], blendMask16[1]);
 		}
-		
-		tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc16[0], blendMask16[0]);
-		tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc16[1], blendMask16[1]);
 		
 		// Store the final colors.
 		const v128u16 passMask16[2] = {
@@ -1936,70 +1968,78 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask32(GPUEngineCompositorIn
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3),
 		};
 		
-		v128u32 blendSrc32[4];
-		
-		switch (LAYERTYPE)
+		if (blendMaskValue != 0x00000000)
 		{
-			case GPULayerType_3D:
-				blendSrc32[0] = colorop_vec.blend3D<OUTPUTFORMAT>(tmpSrc[0], dst32[0]);
-				blendSrc32[1] = colorop_vec.blend3D<OUTPUTFORMAT>(tmpSrc[1], dst32[1]);
-				blendSrc32[2] = colorop_vec.blend3D<OUTPUTFORMAT>(tmpSrc[2], dst32[2]);
-				blendSrc32[3] = colorop_vec.blend3D<OUTPUTFORMAT>(tmpSrc[3], dst32[3]);
-				break;
-				
-			case GPULayerType_BG:
-				blendSrc32[0] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[0], dst32[0], eva_vec128, evb_vec128);
-				blendSrc32[1] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[1], dst32[1], eva_vec128, evb_vec128);
-				blendSrc32[2] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[2], dst32[2], eva_vec128, evb_vec128);
-				blendSrc32[3] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[3], dst32[3], eva_vec128, evb_vec128);
-				break;
-				
-			case GPULayerType_OBJ:
+			const v128u16 blendMask16[2] = {
+				_mm_unpacklo_epi8(blendMask8, blendMask8),
+				_mm_unpackhi_epi8(blendMask8, blendMask8)
+			};
+			
+			v128u32 blendSrc32[4];
+			
+			switch (LAYERTYPE)
 			{
-				// For OBJ layers, we need to convert EVA and EVB from vectors of uint8 into vectors of uint16.
-				//
-				// Note that we are sending only 4 colors for each colorop_vec.blend() call, and so we are only
-				// going to send the 4 correspending EVA/EVB vectors as well. In this case, each individual
-				// EVA/EVB value is mirrored for each adjacent 16-bit boundary.
-				v128u16 tempBlendLo = _mm_unpacklo_epi8(eva_vec128, eva_vec128);
-				v128u16 tempBlendHi = _mm_unpackhi_epi8(eva_vec128, eva_vec128);
-				
-				const v128u16 tempEVA[4] = {
-					_mm_unpacklo_epi8(tempBlendLo, _mm_setzero_si128()),
-					_mm_unpackhi_epi8(tempBlendLo, _mm_setzero_si128()),
-					_mm_unpacklo_epi8(tempBlendHi, _mm_setzero_si128()),
-					_mm_unpackhi_epi8(tempBlendHi, _mm_setzero_si128())
-				};
-				
-				tempBlendLo = _mm_unpacklo_epi8(evb_vec128, evb_vec128);
-				tempBlendHi = _mm_unpackhi_epi8(evb_vec128, evb_vec128);
-				
-				const v128u16 tempEVB[4] = {
-					_mm_unpacklo_epi8(tempBlendLo, _mm_setzero_si128()),
-					_mm_unpackhi_epi8(tempBlendLo, _mm_setzero_si128()),
-					_mm_unpacklo_epi8(tempBlendHi, _mm_setzero_si128()),
-					_mm_unpackhi_epi8(tempBlendHi, _mm_setzero_si128())
-				};
-				
-				blendSrc32[0] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[0], dst32[0], tempEVA[0], tempEVB[0]);
-				blendSrc32[1] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[1], dst32[1], tempEVA[1], tempEVB[1]);
-				blendSrc32[2] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[2], dst32[2], tempEVA[2], tempEVB[2]);
-				blendSrc32[3] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[3], dst32[3], tempEVA[3], tempEVB[3]);
-				break;
+				case GPULayerType_3D:
+					blendSrc32[0] = colorop_vec.blend3D<OUTPUTFORMAT>(tmpSrc[0], dst32[0]);
+					blendSrc32[1] = colorop_vec.blend3D<OUTPUTFORMAT>(tmpSrc[1], dst32[1]);
+					blendSrc32[2] = colorop_vec.blend3D<OUTPUTFORMAT>(tmpSrc[2], dst32[2]);
+					blendSrc32[3] = colorop_vec.blend3D<OUTPUTFORMAT>(tmpSrc[3], dst32[3]);
+					break;
+					
+				case GPULayerType_BG:
+					blendSrc32[0] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[0], dst32[0], eva_vec128, evb_vec128);
+					blendSrc32[1] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[1], dst32[1], eva_vec128, evb_vec128);
+					blendSrc32[2] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[2], dst32[2], eva_vec128, evb_vec128);
+					blendSrc32[3] = colorop_vec.blend<OUTPUTFORMAT, true>(tmpSrc[3], dst32[3], eva_vec128, evb_vec128);
+					break;
+					
+				case GPULayerType_OBJ:
+				{
+					// For OBJ layers, we need to convert EVA and EVB from vectors of uint8 into vectors of uint16.
+					//
+					// Note that we are sending only 4 colors for each colorop_vec.blend() call, and so we are only
+					// going to send the 4 correspending EVA/EVB vectors as well. In this case, each individual
+					// EVA/EVB value is mirrored for each adjacent 16-bit boundary.
+					v128u16 tempBlendLo = _mm_unpacklo_epi8(eva_vec128, eva_vec128);
+					v128u16 tempBlendHi = _mm_unpackhi_epi8(eva_vec128, eva_vec128);
+					
+					const v128u16 tempEVA[4] = {
+						_mm_unpacklo_epi8(tempBlendLo, _mm_setzero_si128()),
+						_mm_unpackhi_epi8(tempBlendLo, _mm_setzero_si128()),
+						_mm_unpacklo_epi8(tempBlendHi, _mm_setzero_si128()),
+						_mm_unpackhi_epi8(tempBlendHi, _mm_setzero_si128())
+					};
+					
+					tempBlendLo = _mm_unpacklo_epi8(evb_vec128, evb_vec128);
+					tempBlendHi = _mm_unpackhi_epi8(evb_vec128, evb_vec128);
+					
+					const v128u16 tempEVB[4] = {
+						_mm_unpacklo_epi8(tempBlendLo, _mm_setzero_si128()),
+						_mm_unpackhi_epi8(tempBlendLo, _mm_setzero_si128()),
+						_mm_unpacklo_epi8(tempBlendHi, _mm_setzero_si128()),
+						_mm_unpackhi_epi8(tempBlendHi, _mm_setzero_si128())
+					};
+					
+					blendSrc32[0] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[0], dst32[0], tempEVA[0], tempEVB[0]);
+					blendSrc32[1] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[1], dst32[1], tempEVA[1], tempEVB[1]);
+					blendSrc32[2] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[2], dst32[2], tempEVA[2], tempEVB[2]);
+					blendSrc32[3] = colorop_vec.blend<OUTPUTFORMAT, false>(tmpSrc[3], dst32[3], tempEVA[3], tempEVB[3]);
+					break;
+				}
 			}
+			
+			const v128u32 blendMask32[4] = {
+				_mm_unpacklo_epi16(blendMask16[0], blendMask16[0]),
+				_mm_unpackhi_epi16(blendMask16[0], blendMask16[0]),
+				_mm_unpacklo_epi16(blendMask16[1], blendMask16[1]),
+				_mm_unpackhi_epi16(blendMask16[1], blendMask16[1])
+			};
+			
+			tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc32[0], blendMask32[0]);
+			tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc32[1], blendMask32[1]);
+			tmpSrc[2] = _mm_blendv_epi8(tmpSrc[2], blendSrc32[2], blendMask32[2]);
+			tmpSrc[3] = _mm_blendv_epi8(tmpSrc[3], blendSrc32[3], blendMask32[3]);
 		}
-		
-		const v128u32 blendMask32[4] = {
-			_mm_unpacklo_epi16(blendMask16[0], blendMask16[0]),
-			_mm_unpackhi_epi16(blendMask16[0], blendMask16[0]),
-			_mm_unpacklo_epi16(blendMask16[1], blendMask16[1]),
-			_mm_unpackhi_epi16(blendMask16[1], blendMask16[1])
-		};
-		
-		tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc32[0], blendMask32[0]);
-		tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc32[1], blendMask32[1]);
-		tmpSrc[2] = _mm_blendv_epi8(tmpSrc[2], blendSrc32[2], blendMask32[2]);
-		tmpSrc[3] = _mm_blendv_epi8(tmpSrc[3], blendSrc32[3], blendMask32[3]);
 		
 		// Store the final colors.
 		const v128u16 passMask16[2] = {
