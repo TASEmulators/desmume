@@ -172,7 +172,10 @@ int runFrame(int shouldDraw, u32 keys, int touched, u32 touchX, u32 touchY) {
   NDS_endProcessingInput();
   NDS_exec<false>();
 
-  gpu_screen_to_rgb((u32 *)dstFrameBuffer);
+  if (shouldDraw) {
+    gpu_screen_to_rgb((u32 *)dstFrameBuffer);
+  }
+
   return ret;
 }
 

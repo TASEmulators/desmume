@@ -190,7 +190,7 @@
 
         var frameCount = 0
         var prevCalcFPSTime = 0
-        var shouldDraw = 0
+        var shouldDraw = false
         var touched = 0
         var touchX = 0
         var touchY = 0
@@ -221,8 +221,12 @@
                     keyMask |= 1 << i
                 }
             }
-            shouldDraw = !shouldDraw
-            Module._runFrame(shouldDraw, keyMask, touched, touchX, touchY)
+            shouldDraw = true
+            Module._runFrame(shouldDraw ? 1 : 0, keyMask, touched, touchX, touchY)
+            if (shouldDraw) {
+                ctx2d[0].putImageData(FB[0], 0, 0)
+                ctx2d[1].putImageData(FB[1], 0, 0)
+            }
             if (audioWorkletNode) {
                 try {
                     var samplesRead = Module._fillAudioBuffer(4096)
@@ -232,10 +236,6 @@
                     // tmpAudioBuffer may be detached if previous message is still processing 
                     console.log(error)
                 }
-            }
-            if (shouldDraw) {
-                ctx2d[0].putImageData(FB[0], 0, 0)
-                ctx2d[1].putImageData(FB[1], 0, 0)
             }
 
             frameCount += 1

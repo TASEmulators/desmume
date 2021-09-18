@@ -708,6 +708,7 @@ FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u3
 #endif
 
 	// break points, wheee
+	/*
 	for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
 	{
 		if (addr == memReadBreakPoints[i])
@@ -715,7 +716,7 @@ FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u3
 			execute = false;
 			i = memReadBreakPoints.size();
 		}
-	}
+	}*/
 
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
@@ -756,6 +757,7 @@ FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 #endif
 
 	// break points, wheee
+	/*
 	for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
 	{
 		if (addr == memReadBreakPoints[i])
@@ -763,7 +765,7 @@ FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 			execute = false;
 			i = memReadBreakPoints.size();
 		}
-	}
+	}*/
 
 	//special handling for execution from arm9, since we spend so much time in there
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_CODE)
@@ -816,6 +818,7 @@ FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
     call_registered_interface_mem_hook(addr, 4, HOOK_READ);
 #endif
 	// break points, wheee
+	/*
 	for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
 	{
 		if (addr == memReadBreakPoints[i])
@@ -823,7 +826,7 @@ FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 			execute = false;
 			i = memReadBreakPoints.size();
 		}
-	}
+	}*/
 
 	//special handling for execution from arm9, since we spend so much time in there
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_CODE)
@@ -881,6 +884,7 @@ FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	}
 
 	// break points, wheee
+	/*
 	for (size_t i = 0; i < memWriteBreakPoints.size(); ++i)
 	{
 		if (addr == memWriteBreakPoints[i])
@@ -888,7 +892,7 @@ FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 			execute = false;
 			i = memWriteBreakPoints.size();
 		}
-	}
+	}*/
 
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
@@ -939,6 +943,7 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	}
 
 	// break points, wheee
+	/*
 	for (size_t i = 0; i < memWriteBreakPoints.size(); ++i)
 	{
 		if (addr == memWriteBreakPoints[i])
@@ -946,7 +951,7 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 			execute = false;
 			i = memWriteBreakPoints.size();
 		}
-	}
+	}*/
 
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
@@ -994,6 +999,7 @@ FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	}
 
 	// break points, wheee
+	/*
 	for (size_t i = 0; i < memWriteBreakPoints.size(); ++i)
 	{
 		if (addr == memWriteBreakPoints[i])
@@ -1001,7 +1007,7 @@ FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 			execute = false;
 			i = memWriteBreakPoints.size();
 		}
-	}
+	}*/
 
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
