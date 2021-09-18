@@ -826,52 +826,30 @@ static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restr
 	}
 	else if (INTEGERSCALEHINT > 1)
 	{
-		const size_t S = INTEGERSCALEHINT;
+		const size_t scale = dstWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH;
 		
-		if (SCALEVERTICAL)
+		for (size_t srcX = 0, dstX = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH; srcX++, dstX+=scale)
 		{
-			for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+			for (size_t lx = 0; lx < scale; lx++)
 			{
-				for (size_t q = 0; q < S; q++)
+				if (ELEMENTSIZE == 1)
 				{
-					for (size_t p = 0; p < S; p++)
-					{
-						if (ELEMENTSIZE == 1)
-						{
-							( (u8 *)dst)[(q * (GPU_FRAMEBUFFER_NATIVE_WIDTH * S)) + ((x * S) + p)] = ( (u8 *)src)[x];
-						}
-						else if (ELEMENTSIZE == 2)
-						{
-							((u16 *)dst)[(q * (GPU_FRAMEBUFFER_NATIVE_WIDTH * S)) + ((x * S) + p)] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16( ((u16 *)src)[x] ) : ((u16 *)src)[x];
-						}
-						else if (ELEMENTSIZE == 4)
-						{
-							((u32 *)dst)[(q * (GPU_FRAMEBUFFER_NATIVE_WIDTH * S)) + ((x * S) + p)] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[x] ) : ((u32 *)src)[x];
-						}
-					}
+					( (u8 *)dst)[(srcX * scale) + lx] = ( (u8 *)src)[srcX];
+				}
+				else if (ELEMENTSIZE == 2)
+				{
+					((u16 *)dst)[(srcX * scale) + lx] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16( ((u16 *)src)[srcX] ) : ((u16 *)src)[srcX];
+				}
+				else if (ELEMENTSIZE == 4)
+				{
+					((u32 *)dst)[(srcX * scale) + lx] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[srcX] ) : ((u32 *)src)[srcX];
 				}
 			}
 		}
-		else
+		
+		if (SCALEVERTICAL)
 		{
-			for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
-			{
-				for (size_t p = 0; p < S; p++)
-				{
-					if (ELEMENTSIZE == 1)
-					{
-						( (u8 *)dst)[(x * S) + p] = ( (u8 *)src)[x];
-					}
-					else if (ELEMENTSIZE == 2)
-					{
-						((u16 *)dst)[(x * S) + p] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16( ((u16 *)src)[x] ) : ((u16 *)src)[x];
-					}
-					else if (ELEMENTSIZE == 4)
-					{
-						((u32 *)dst)[(x * S) + p] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[x] ) : ((u32 *)src)[x];
-					}
-				}
-			}
+			CopyLinesForVerticalCount<ELEMENTSIZE>(dst, dstWidth, dstLineCount);
 		}
 	}
 	else
