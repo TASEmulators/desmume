@@ -1,6 +1,6 @@
  /*
 	Copyright (C) 2007 Pascal Giard (evilynux)
-	Copyright (C) 2006-2019 DeSmuME team
+	Copyright (C) 2006-2021 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1309,7 +1309,7 @@ static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpo
 
 static inline void gpu_screen_to_rgb(u32* dst)
 {
-    ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>((const uint16_t *)GPU->GetDisplayInfo().masterNativeBuffer, dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+    ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
 }
 
 static inline void drawScreen(cairo_t* cr, u32* buf, gint w, gint h) {
@@ -1435,7 +1435,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 }
 
 static void RedrawScreen() {
-	ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapDst>((const uint16_t *)GPU->GetDisplayInfo().masterNativeBuffer, (uint32_t *)video->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+	ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, (uint32_t *)video->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
 #ifdef HAVE_LIBAGG
 	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), 256, 384, 1024);
 	osd->update();
@@ -2525,7 +2525,7 @@ gboolean EmuLoop(gpointer data)
     desmume_cycle();    /* Emule ! */
 
     _updateDTools();
-        avout_x264.updateVideo((const uint16_t *)GPU->GetDisplayInfo().masterNativeBuffer);
+        avout_x264.updateVideo(GPU->GetDisplayInfo().masterNativeBuffer16);
 	RedrawScreen();
 
     if (!config.fpslimiter || keys_latch & KEYMASK_(KEY_BOOST - 1)) {

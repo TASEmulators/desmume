@@ -326,6 +326,7 @@ public:
 	bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	
 	void LoadNativeDisplayByID_OGL(const NDSDisplayID displayID);
+	void LoadCustomDisplayByID_OGL(const NDSDisplayID displayID);
 	void ProcessOGL();
 	
 	virtual void RenderOGL(bool isRenderingFlipped);
@@ -374,6 +375,7 @@ public:
 	
 	void CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex);
 	void FetchNativeDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
+	void FetchCustomDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
 	void FetchTextureWriteLock(const NDSDisplayID displayID);
 	void FetchTextureReadLock(const NDSDisplayID displayID);
 	void FetchTextureUnlock(const NDSDisplayID displayID);
@@ -411,6 +413,7 @@ protected:
 	virtual void _UpdateViewScale();
 	
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
+	virtual void _LoadCustomDisplayByID(const NDSDisplayID displayID);
 	virtual void _ResizeCPUPixelScaler(const VideoFilterTypeID filterID);
 	
 public:

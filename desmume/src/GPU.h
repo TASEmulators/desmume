@@ -1169,13 +1169,14 @@ typedef struct
 												// A specific index can be chosen at the DidFrameBegin event.
 	size_t sequenceNumber;						// A unique number assigned to each frame that increments for each DidFrameEnd event. Never resets.
 	
-	void *masterNativeBuffer;					// Pointer to the head of the master native buffer.
+	u16 *masterNativeBuffer16;					// Pointer to the head of the master native buffer.
 	void *masterCustomBuffer;					// Pointer to the head of the master custom buffer.
 												// If GPUSubsystem::GetWillAutoResolveToCustomBuffer() would return true, or if
 												// GPUSubsystem::ResolveDisplayToCustomFramebuffer() is called, then this buffer is used as the
 												// target buffer for resolving any native-sized renders.
 	
-	void *nativeBuffer[2];						// Pointer to the display's native size framebuffer.
+	u32 *workingNativeBuffer32[2];				// Pointer to a native size working framebuffer. (Usually used as an intermediate buffer for internal use, but might be useful for the client.)
+	u16 *nativeBuffer16[2];						// Pointer to the display's native size framebuffer.
 	void *customBuffer[2];						// Pointer to the display's custom size framebuffer.
 	
 	size_t renderedWidth[2];					// The display rendered at this width, measured in pixels.
@@ -1388,8 +1389,9 @@ protected:
 	u8 *_deferredIndexCustom;
 	u16 *_deferredColorCustom;
 	
+	u16 *_nativeBuffer16;
+	u32 *_workingNativeBuffer32;
 	void *_customBuffer;
-	void *_nativeBuffer;
 	
 	bool _isLineRenderNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	bool _isLineDisplayNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT];
@@ -1426,7 +1428,7 @@ protected:
 	
 	NDSDisplayID _targetDisplayID;
 	
-	CACHE_ALIGN FragmentColor _internalRenderLineTargetNative[GPU_FRAMEBUFFER_NATIVE_WIDTH];
+	CACHE_ALIGN u16 _internalRenderLineTargetNative[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	CACHE_ALIGN u8 _renderLineLayerIDNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT][GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	
 	void *_internalRenderLineTargetCustom;
@@ -1707,7 +1709,7 @@ private:
 	NDSDisplayID _ID;
 	GPUEngineBase *_gpu;
 	
-	void *_nativeBuffer;
+	u16 *_nativeBuffer16;
 	void *_customBuffer;
 	
 	void __constructor(const NDSDisplayID displayID, GPUEngineBase *theEngine);
@@ -1723,9 +1725,9 @@ public:
 	GPUEngineID GetEngineID();
 	void SetEngineByID(const GPUEngineID theID);
 	
-	void* GetNativeBuffer() const;
+	u16* GetNativeBuffer16() const;
 	void* GetCustomBuffer() const;
-	void SetDrawBuffers(void *nativeBuffer, void *customBuffer);
+	void SetDrawBuffers(u16 *nativeBuffer16, void *customBuffer);
 };
 
 class GPUEventHandler
@@ -1791,7 +1793,8 @@ private:
 	void _UpdateFPSRender3D();
 	void _AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, size_t h, size_t pageCount);
 	
-	u8* _DownscaleAndConvertForSavestate(const NDSDisplayID displayID, void *__restrict intermediateBuffer);
+	void _DownscaleAndConvertForSavestate(const NDSDisplayID displayID, const void *srcBuffer, u16 *dstBuffer);
+	void _ConvertAndUpscaleForLoadstate(const NDSDisplayID displayID, const u16 *srcBuffer, void *dstBuffer);
 	
 public:
 	GPUSubsystem();

@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2020 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -230,10 +230,10 @@ EXPORTED u16 *desmume_draw_raw()
 {
     const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
     const size_t pixCount = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-    ColorspaceApplyIntensityToBuffer16<false, false>((u16 *)displayInfo.masterNativeBuffer, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
-    ColorspaceApplyIntensityToBuffer16<false, false>((u16 *)displayInfo.masterNativeBuffer + pixCount, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
+    ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Main],  pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
+    ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Touch], pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
 
-    return (u16*) displayInfo.masterNativeBuffer;
+    return displayInfo.masterNativeBuffer16;
 }
 
 EXPORTED void desmume_draw_raw_as_rgbx(u8 *buffer)
@@ -511,7 +511,7 @@ EXPORTED void desmume_memory_register_exec(int address, int size, memory_cb_fnc 
 
 EXPORTED void desmume_screenshot(char *screenshot_buffer)
 {
-    u16 *gpuFramebuffer = (u16 *)GPU->GetDisplayInfo().masterNativeBuffer;
+    u16 *gpuFramebuffer = GPU->GetDisplayInfo().masterNativeBuffer16;
     static int seq = 0;
 
     for (int i = 0; i < SCREENS_PIXEL_SIZE; i++) {

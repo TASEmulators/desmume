@@ -325,6 +325,7 @@ protected:
 	virtual void _UpdateClientSize();
 	virtual void _UpdateViewScale();
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
+	virtual void _LoadCustomDisplayByID(const NDSDisplayID displayID);
 	virtual void _ResizeCPUPixelScaler(const VideoFilterTypeID filterID);
 	
 public:
