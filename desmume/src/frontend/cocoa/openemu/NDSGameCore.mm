@@ -264,7 +264,7 @@ volatile bool execute = true;
 
 - (const void *)getVideoBufferWithHint:(void *)hint
 {
-	return GPU->GetDisplayInfo().masterNativeBuffer;
+	return GPU->GetDisplayInfo().masterNativeBuffer16;
 }
 
 - (OEGameCoreRendering)gameCoreRendering

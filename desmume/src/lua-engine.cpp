@@ -2278,7 +2278,7 @@ public:
 						char temp [256];
 						sprintf(temp, " " /*"mismatch at "*/ "byte %d(0x%X at %p): %d(0x%X) != %d(0x%X)\n", i, i, dst, *src,*src, *dst,*dst);
 
-						if(ptr == dispInfo.masterNativeBuffer || ptr == dispInfo.masterCustomBuffer || ptr == GPU->GetEngineMain()->Get3DFramebufferMain()) // ignore screen-only differences since frame skipping can cause them and it's probably ok
+						if(ptr == dispInfo.masterNativeBuffer16 || ptr == dispInfo.masterCustomBuffer || ptr == GPU->GetEngineMain()->Get3DFramebufferMain()) // ignore screen-only differences since frame skipping can cause them and it's probably ok
 							break;
 
 						differences.push_back(temp); // <-- probably the best place for a breakpoint
