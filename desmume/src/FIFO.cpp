@@ -374,22 +374,35 @@ static void _DISP_FIFOrecv_LineAdvance()
 
 void DISP_FIFOrecv_Line16(u16 *__restrict dst)
 {
-#ifndef ENABLE_ALTIVEC // buffer_copy_fast() doesn't support endian swapping
-	if ( (disp_fifo.head + (GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16)) / sizeof(u32) <= 0x6000)
 #ifdef USEMANUALVECTORIZATION
-		&& (disp_fifo.head == (disp_fifo.head & ~(VECTORSIZE - 1)))
-#endif
-		)
+	if ( (disp_fifo.head + (GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16)) / sizeof(u32) <= 0x6000) && (disp_fifo.head == (disp_fifo.head & ~(VECTORSIZE - 1))) )
 	{
+#ifdef ENABLE_ALTIVEC
+		// Big-endian systems read the pixels in their correct bit order, but swap 16-bit chunks
+		// within 32-bit lanes, and so we can't use a standard buffer copy function here.
+		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16); i+=sizeof(v128u16))
+		{
+			v128u16 fifoColor = vec_ld(i, disp_fifo.buf + disp_fifo.head);
+			fifoColor = vec_perm( fifoColor, fifoColor, ((v128u8){2,3, 0,1, 6,7, 4,5, 10,11, 8,9, 14,15, 12,13}) );
+			vec_st(fifoColor, i, dst);
+		}
+#else
 		buffer_copy_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16)>(dst, disp_fifo.buf + disp_fifo.head);
+#endif // ENABLE_ALTIVEC
+		
 		_DISP_FIFOrecv_LineAdvance();
 	}
 	else
-#endif // ENABLE_ALTIVEC
+#endif // USEMANUALVECTORIZATION
 	{
 		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
 		{
-			((u32 *)dst)[i] = LE_TO_LOCAL_32( DISP_FIFOrecv_u32() );
+			const u32 src = DISP_FIFOrecv_u32();
+#ifdef MSB_FIRST
+			((u32 *)dst)[i] = (src >> 16) | (src << 16);
+#else
+			((u32 *)dst)[i] = src;
+#endif
 		}
 	}
 }
@@ -399,7 +412,7 @@ void DISP_FIFOrecv_Line16(u16 *__restrict dst)
 template <NDSColorFormat OUTPUTFORMAT>
 void _DISP_FIFOrecv_LineOpaque16_vec(u32 *__restrict dst)
 {
-#if defined(ENABLE_ALTIVEC)
+#ifdef ENABLE_ALTIVEC
 	// Big-endian systems read the pixels in their correct bit order, but swap 16-bit chunks
 	// within 32-bit lanes, and so we can't use a standard buffer copy function here.
 	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16); i+=sizeof(v128u16))
@@ -411,7 +424,7 @@ void _DISP_FIFOrecv_LineOpaque16_vec(u32 *__restrict dst)
 	}
 #else
 	buffer_copy_or_constant_s16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16), false>(dst, disp_fifo.buf + disp_fifo.head, 0x8000);
-#endif
+#endif // ENABLE_ALTIVEC
 	
 	_DISP_FIFOrecv_LineAdvance();
 }
@@ -419,7 +432,7 @@ void _DISP_FIFOrecv_LineOpaque16_vec(u32 *__restrict dst)
 template <NDSColorFormat OUTPUTFORMAT>
 void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 {
-#if defined(ENABLE_ALTIVEC)
+#ifdef ENABLE_ALTIVEC
 	for (size_t i = 0, d = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16); i+=16, d+=32)
 	{
 		v128u16 fifoColor = vec_ld(0, disp_fifo.buf + disp_fifo.head);
@@ -456,10 +469,10 @@ void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 		ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	}
 	_DISP_FIFOrecv_LineAdvance();
-#endif
+#endif // ENABLE_ALTIVEC
 }
 
-#endif
+#endif // USEMANUALVECTORIZATION
 
 template <NDSColorFormat OUTPUTFORMAT>
 void DISP_FIFOrecv_LineOpaque(u32 *__restrict dst)
