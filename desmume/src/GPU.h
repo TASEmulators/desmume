@@ -63,6 +63,7 @@
 #endif
 
 class GPUEngineBase;
+class NDSDisplay;
 class EMUFILE;
 class Task;
 struct MMU_struct;
@@ -1175,7 +1176,6 @@ typedef struct
 												// GPUSubsystem::ResolveDisplayToCustomFramebuffer() is called, then this buffer is used as the
 												// target buffer for resolving any native-sized renders.
 	
-	u32 *workingNativeBuffer32[2];				// Pointer to a native size working framebuffer. (Usually used as an intermediate buffer for internal use, but might be useful for the client.)
 	u16 *nativeBuffer16[2];						// Pointer to the display's native size framebuffer.
 	void *customBuffer[2];						// Pointer to the display's custom size framebuffer.
 	
@@ -1389,13 +1389,7 @@ protected:
 	u8 *_deferredIndexCustom;
 	u16 *_deferredColorCustom;
 	
-	u16 *_nativeBuffer16;
-	u32 *_workingNativeBuffer32;
-	void *_customBuffer;
-	
 	bool _isLineRenderNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT];
-	bool _isLineDisplayNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT];
-	size_t _nativeLineDisplayCount;
 	
 	bool _enableEngine;
 	bool _enableBGLayer[5];
@@ -1426,7 +1420,7 @@ protected:
 	CACHE_ALIGN u8 _sprNum[256];
 	CACHE_ALIGN u8 _h_win[2][GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	
-	NDSDisplayID _targetDisplayID;
+	NDSDisplay *_targetDisplay;
 	
 	CACHE_ALIGN u16 _internalRenderLineTargetNative[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	CACHE_ALIGN u8 _renderLineLayerIDNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT][GPU_FRAMEBUFFER_NATIVE_WIDTH];
@@ -1519,6 +1513,7 @@ public:
 	
 	void SetupBuffers();
 	void SetupRenderStates();
+	void DisplayDrawBuffersUpdate();
 	template<NDSColorFormat OUTPUTFORMAT> void UpdateRenderStates(const size_t l);
 	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
 	
@@ -1583,14 +1578,12 @@ public:
 	void RenderLayerBG(const GPULayerID layerID, u16 *dstLineColor);
 
 	NDSDisplayID GetTargetDisplayByID() const;
-	void SetTargetDisplayByID(const NDSDisplayID theDisplayID);
+	NDSDisplay* GetTargetDisplay() const;
+	void SetTargetDisplay(NDSDisplay *theDisplay);
 	
 	GPUEngineID GetEngineID() const;
 	
-	virtual void SetupWorkingBuffers(NDSColorFormat requestedColorFormat, size_t w, size_t h);
-	void ResolveFramebufferToCustom(NDSDisplayInfo &mutableInfo);
-	template<NDSColorFormat OUTPUTFORMAT> void ResolveLinesDisplayedNative();
-	size_t GetLinesDisplayedNativeCount();
+	virtual void AllocateWorkingBuffers(NDSColorFormat requestedColorFormat, size_t w, size_t h);
 	
 	void REG_DISPx_pack_test();
 };
@@ -1670,7 +1663,7 @@ public:
 	void* GetCustomVRAMBlockPtr(const size_t blockID);
 	FragmentColor* Get3DFramebufferMain() const;
 	u16* Get3DFramebuffer16() const;
-	virtual void SetupWorkingBuffers(NDSColorFormat requestedColorFormat, size_t w, size_t h);
+	virtual void AllocateWorkingBuffers(NDSColorFormat requestedColorFormat, size_t w, size_t h);
 	
 	bool WillRender3DLayer();
 	bool WillCapture3DLayerDirect(const size_t l);
@@ -1707,10 +1700,22 @@ class NDSDisplay
 {
 private:
 	NDSDisplayID _ID;
-	GPUEngineBase *_gpu;
+	GPUEngineBase *_gpuEngine;
+	
+	// Native line tracking must be handled at the display level in order to account for
+	// games that use both engines for the same display. For example, "The Legend of Zelda:
+	// Phantom Hourglass" and "The Legend of Zelda: Spirit Tracks" can do this when the
+	// player moves the map to and from the touch screen.
+	bool _isLineDisplayNative[GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	size_t _nativeLineDisplayCount;
 	
 	u16 *_nativeBuffer16;
+	u32 *_workingNativeBuffer32;
 	void *_customBuffer;
+	
+	void *_renderedBuffer;
+ 	size_t _renderedWidth;
+ 	size_t _renderedHeight;
 	
 	void __constructor(const NDSDisplayID displayID, GPUEngineBase *theEngine);
 	
@@ -1719,15 +1724,30 @@ public:
 	NDSDisplay(const NDSDisplayID displayID);
 	NDSDisplay(const NDSDisplayID displayID, GPUEngineBase *theEngine);
 	
+	NDSDisplayID GetDisplayID() const;
+	
 	GPUEngineBase* GetEngine();
 	void SetEngine(GPUEngineBase *theEngine);
 	
 	GPUEngineID GetEngineID();
 	void SetEngineByID(const GPUEngineID theID);
 	
+	size_t GetNativeLineCount();
+ 	bool GetIsLineNative(const size_t l);
+ 	void SetIsLineNative(const size_t l, const bool isNative);
+ 	void ClearAllLinesToNative();
+	template<NDSColorFormat OUTPUTFORMAT> void ResolveLinesDisplayedNative();
+	void ResolveFramebufferToCustom(NDSDisplayInfo &mutableInfo);
+	bool DidPerformCustomRender() const;
+	
 	u16* GetNativeBuffer16() const;
+	u32* GetWorkingNativeBuffer32() const;
 	void* GetCustomBuffer() const;
-	void SetDrawBuffers(u16 *nativeBuffer16, void *customBuffer);
+	void SetDrawBuffers(u16 *nativeBuffer16, u32 *workingNativeBuffer32, void *customBuffer);
+	
+	void* GetRenderedBuffer() const;
+ 	size_t GetRenderedWidth() const;
+ 	size_t GetRenderedHeight() const;
 };
 
 class GPUEventHandler
@@ -1787,6 +1807,7 @@ private:
 	void *_customVRAMBlank;
 	
 	void *_masterFramebuffer;
+	u32 *_masterWorkingNativeBuffer32;
 	
 	NDSDisplayInfo _displayInfo;
 	
@@ -1858,17 +1879,17 @@ public:
 	void SetWillPostprocessDisplays(const bool willPostprocess);
 	void PostprocessDisplay(const NDSDisplayID displayID, NDSDisplayInfo &mutableInfo);
 	
-	// Normally, the GPUs will automatically resolve their native buffers to the master
+	// Normally, the displays will automatically resolve their native buffers to the master
 	// custom framebuffer at the end of V-blank so that all rendered graphics are contained
 	// within a single common buffer. This is necessary for when someone wants to read
 	// the NDS framebuffers, but the reader can only read a single buffer at a time.
-	// Certain functions, such as taking screenshots, as well as many frontends running
+	// Certain functions, such as taking screenshots, as well as many clients running
 	// the NDS video displays, require that they read from only a single buffer.
 	//
-	// However, if SetWillAutoResolveToCustomBuffer() is passed "false", then the frontend
+	// However, if SetWillAutoResolveToCustomBuffer() is passed "false", then the client
 	// becomes responsible for calling GetDisplayInfo() and reading the native and custom buffers
 	// properly for each display. If a single buffer is still needed for certain cases, then the
-	// frontend must manually call ResolveDisplayToCustomFramebuffer() for each display before
+	// client must manually call ResolveDisplayToCustomFramebuffer() for each display before
 	// reading the master custom framebuffer.
 	bool GetWillAutoResolveToCustomBuffer() const;
 	void SetWillAutoResolveToCustomBuffer(const bool willAutoResolve);
