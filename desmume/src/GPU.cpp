@@ -6328,61 +6328,69 @@ void NDSDisplay::ResolveLinesDisplayedNative()
 
 void NDSDisplay::ResolveFramebufferToCustom(NDSDisplayInfo &mutableInfo)
 {
-	if (this->DidPerformCustomRender())
-	{
-		return;
-	}
-	
-	if (!mutableInfo.isCustomSizeRequested)
-	{
-		memcpy(this->_customBuffer, this->_nativeBuffer16, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * mutableInfo.pixelBytes);
-		return;
-	}
-	
 	// All lines should be 15-bit native-sized lines.
 	//
 	// This method is called to transfer these lines into the customBuffer portion of the current
 	// framebuffer page so that clients can access a single continuous buffer.
 	
-	const u16 *__restrict src = this->_nativeBuffer16;
-	u32 *__restrict working = this->_workingNativeBuffer32;
-	
-	switch (mutableInfo.colorFormat)
+	if (this->DidPerformCustomRender())
 	{
-		case NDSColorFormat_BGR666_Rev:
-			ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-			break;
-			
-		case NDSColorFormat_BGR888_Rev:
-			ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-			break;
-			
-		default:
-			break;
+		return;
 	}
 	
-	if (mutableInfo.pixelBytes == 2)
+	if (mutableInfo.isCustomSizeRequested)
 	{
-		u16 *__restrict dst = (u16 *__restrict)this->_customBuffer;
+		const u16 *__restrict src = this->_nativeBuffer16;
+		u32 *__restrict working = this->_workingNativeBuffer32;
 		
-		for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
+		switch (mutableInfo.colorFormat)
 		{
-			const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(y);
-			CopyLineExpandHinted<0x3FFF, true, false, false, 2>(lineInfo, src, dst);
-			src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
-			dst += lineInfo.pixelCount;
+			case NDSColorFormat_BGR666_Rev:
+			case NDSColorFormat_BGR888_Rev:
+				ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				break;
+				
+			default:
+				break;
+		}
+		
+		if (mutableInfo.pixelBytes == 2)
+		{
+			u16 *__restrict dst = (u16 *__restrict)this->_customBuffer;
+			
+			for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
+			{
+				const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(y);
+				CopyLineExpandHinted<0x3FFF, true, false, false, 2>(lineInfo, src, dst);
+				src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				dst += lineInfo.pixelCount;
+			}
+		}
+		else if (mutableInfo.pixelBytes == 4)
+		{
+			u32 *__restrict dst = (u32 *__restrict)this->_customBuffer;
+			
+			for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
+			{
+				const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(y);
+				CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, working, dst);
+				working += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				dst += lineInfo.pixelCount;
+			}
 		}
 	}
-	else if (mutableInfo.pixelBytes == 4)
+	else
 	{
-		u32 *__restrict dst = (u32 *__restrict)this->_customBuffer;
-		
-		for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
+		switch (mutableInfo.colorFormat)
 		{
-			const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(y);
-			CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, working, dst);
-			working += GPU_FRAMEBUFFER_NATIVE_WIDTH;
-			dst += lineInfo.pixelCount;
+			case NDSColorFormat_BGR555_Rev:
+				memcpy(this->_customBuffer, this->_nativeBuffer16, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+				break;
+				
+			case NDSColorFormat_BGR666_Rev:
+			case NDSColorFormat_BGR888_Rev:
+				ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(this->_nativeBuffer16, (u32 *)this->_customBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				break;
 		}
 	}
 	
