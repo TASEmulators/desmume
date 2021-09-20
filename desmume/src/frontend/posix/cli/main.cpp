@@ -708,7 +708,7 @@ int main(int argc, char ** argv) {
   // Now that gtk port draws to RGBA buffer directly, the other one
   // has to use ugly ways to make HUD rendering work again.
   // desmume gtk: Sorry desmume-cli :(
-  T_AGG_RGB555 agg_targetScreen_cli((u8 *)GPU->GetDisplayInfo().customBuffer, 256, 384, 512);
+  T_AGG_RGB555 agg_targetScreen_cli((u8 *)GPU->GetDisplayInfo().masterCustomBuffer, 256, 384, 512);
   aggDraw.hud = &agg_targetScreen_cli;
   aggDraw.hud->setFont("verdana18_bold");
   
