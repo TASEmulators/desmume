@@ -1478,12 +1478,12 @@ protected:
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING> void _LineRot(GPUEngineCompositorInfo &compInfo);
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING> void _LineExtRot(GPUEngineCompositorInfo &compInfo, bool &outUseCustomVRAM);
 	
-	template<NDSColorFormat OUTPUTFORMAT> void _RenderLine_Clear(GPUEngineCompositorInfo &compInfo);
+	void _RenderLine_Clear(GPUEngineCompositorInfo &compInfo);
 	void _RenderLine_SetupSprites(GPUEngineCompositorInfo &compInfo);
 	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _RenderLine_Layers(GPUEngineCompositorInfo &compInfo);
 	
-	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeOff(const size_t l);
-	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeNormal(const size_t l);
+	void _HandleDisplayModeOff(const size_t l);
+	void _HandleDisplayModeNormal(const size_t l);
 	
 	template<size_t WIN_NUM> void _UpdateWINH(GPUEngineCompositorInfo &compInfo);
 	template<size_t WIN_NUM> bool _IsWindowInsideVerticalRange(GPUEngineCompositorInfo &compInfo);
@@ -1517,7 +1517,7 @@ public:
 	void SetupBuffers();
 	void SetupRenderStates();
 	void DisplayDrawBuffersUpdate();
-	template<NDSColorFormat OUTPUTFORMAT> void UpdateRenderStates(const size_t l);
+	void UpdateRenderStates(const size_t l);
 	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
 	
 	void RefreshAffineStartRegs();
@@ -1559,11 +1559,8 @@ public:
 	
 	void ApplySettings();
 	
-	template<NDSColorFormat OUTPUTFORMAT> void RenderLineClearAsync();
-	template<NDSColorFormat OUTPUTFORMAT> void RenderLineClearAsyncStart(bool willClearInternalCustomBuffer,
-																		 s32 startLineIndex,
-																		 u16 clearColor16,
-																		 FragmentColor clearColor32);
+	void RenderLineClearAsync();
+	void RenderLineClearAsyncStart(bool willClearInternalCustomBuffer, s32 startLineIndex, u16 clearColor16, FragmentColor clearColor32);
 	void RenderLineClearAsyncFinish();
 	void RenderLineClearAsyncWaitForCustomLine(const s32 l);
 	
@@ -1650,7 +1647,7 @@ protected:
 	void _RenderLine_DispCapture_Blend(const GPUEngineLineInfo &lineInfo, const void *srcA, const void *srcB, void *dst, const size_t captureLengthExt); // Do not use restrict pointers, since srcB and dst can be the same
 	
 	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeVRAM(const GPUEngineLineInfo &lineInfo);
-	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeMainMemory(const GPUEngineLineInfo &lineInfo);
+	void _HandleDisplayModeMainMemory(const GPUEngineLineInfo &lineInfo);
 	
 public:
 	static GPUEngineA* Allocate();
@@ -1743,7 +1740,7 @@ public:
  	bool GetIsLineNative(const size_t l);
  	void SetIsLineNative(const size_t l, const bool isNative);
  	void ClearAllLinesToNative();
-	template<NDSColorFormat OUTPUTFORMAT> void ResolveLinesDisplayedNative();
+	void ResolveLinesDisplayedNative();
 	void ResolveFramebufferToCustom(NDSDisplayInfo &mutableInfo);
 	bool DidPerformCustomRender() const;
 	
@@ -1928,7 +1925,7 @@ public:
 	void AsyncSetupEngineBuffersStart();
 	void AsyncSetupEngineBuffersFinish();
 	
-	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
+	void RenderLine(const size_t l);
 	void UpdateAverageBacklightIntensityTotal();
 	void ClearWithColor(const u16 colorBGRA5551);
 	

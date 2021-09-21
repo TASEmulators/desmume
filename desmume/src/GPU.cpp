@@ -658,16 +658,14 @@ void GPUEngineBase::ParseReg_BGnY()
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
 void* GPUEngine_RunClearAsynchronous(void *arg)
 {
 	GPUEngineBase *gpuEngine = (GPUEngineBase *)arg;
-	gpuEngine->RenderLineClearAsync<OUTPUTFORMAT>();
+	gpuEngine->RenderLineClearAsync();
 	
 	return NULL;
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineBase::RenderLineClearAsync()
 {
 	s32 asyncClearLineCustom = atomic_and_barrier32(&this->_asyncClearLineCustom, 0x000000FF);
@@ -691,7 +689,7 @@ void GPUEngineBase::RenderLineClearAsync()
 		{
 			const GPUEngineLineInfo &lineInfo = this->_currentCompositorInfo[asyncClearLineCustom].line;
 			
-			switch (OUTPUTFORMAT)
+			switch (this->_targetDisplay->GetColorFormat())
 			{
 				case NDSColorFormat_BGR555_Rev:
 					memset_u16(targetBufferHead + (lineInfo.blockOffsetCustom * sizeof(u16)), this->_asyncClearBackdropColor16, lineInfo.pixelCount);
@@ -721,7 +719,6 @@ void GPUEngineBase::RenderLineClearAsync()
 	atomic_test_and_clear_barrier32(&this->_asyncClearInterrupt, 0x07);
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineBase::RenderLineClearAsyncStart(bool willClearInternalCustomBuffer,
 											  s32 startLineIndex,
 											  u16 clearColor16,
@@ -739,7 +736,7 @@ void GPUEngineBase::RenderLineClearAsyncStart(bool willClearInternalCustomBuffer
 	this->_asyncClearBackdropColor32 = clearColor32;
 	this->_asyncClearUseInternalCustomBuffer = willClearInternalCustomBuffer;
 	
-	this->_asyncClearTask->execute(&GPUEngine_RunClearAsynchronous<OUTPUTFORMAT>, this);
+	this->_asyncClearTask->execute(&GPUEngine_RunClearAsynchronous, this);
 	this->_asyncClearIsRunning = true;
 }
 
@@ -765,7 +762,6 @@ void GPUEngineBase::RenderLineClearAsyncWaitForCustomLine(const s32 l)
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineBase::_RenderLine_Clear(GPUEngineCompositorInfo &compInfo)
 {
 	memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(compInfo.target.lineColor16, compInfo.renderState.workingBackdropColor16);
@@ -829,7 +825,6 @@ void GPUEngineBase::DisplayDrawBuffersUpdate()
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineBase::UpdateRenderStates(const size_t l)
 {
 	GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[l];
@@ -856,7 +851,7 @@ void GPUEngineBase::UpdateRenderStates(const size_t l)
 	{
 		currRenderState.workingBackdropColor16 = currRenderState.backdropColor16;
 	}
-	currRenderState.workingBackdropColor32.color = LOCAL_TO_LE_32( (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? COLOR555TO666(LOCAL_TO_LE_16(currRenderState.workingBackdropColor16)) : COLOR555TO888(LOCAL_TO_LE_16(currRenderState.workingBackdropColor16)) );
+	currRenderState.workingBackdropColor32.color = LOCAL_TO_LE_32( (this->_targetDisplay->GetColorFormat() == NDSColorFormat_BGR666_Rev) ? COLOR555TO666(LOCAL_TO_LE_16(currRenderState.workingBackdropColor16)) : COLOR555TO888(LOCAL_TO_LE_16(currRenderState.workingBackdropColor16)) );
 	
 	// Save the current render states to this line's compositor info.
 	compInfo.renderState = currRenderState;
@@ -873,10 +868,10 @@ void GPUEngineBase::UpdateRenderStates(const size_t l)
 		
 		if (this->_targetDisplay->IsCustomSizeRequested() && wasPreviousHDFrameFullyTransitionedFromBackdrop)
 		{
-			this->RenderLineClearAsyncStart<OUTPUTFORMAT>((compInfo.renderState.displayOutputMode != GPUDisplayMode_Normal),
-														  compInfo.line.indexNative,
-														  compInfo.renderState.workingBackdropColor16,
-														  compInfo.renderState.workingBackdropColor32);
+			this->RenderLineClearAsyncStart((compInfo.renderState.displayOutputMode != GPUDisplayMode_Normal),
+			                                compInfo.line.indexNative,
+			                                compInfo.renderState.workingBackdropColor16,
+			                                compInfo.renderState.workingBackdropColor32);
 		}
 	}
 	else if (this->_asyncClearIsRunning)
@@ -2282,7 +2277,7 @@ void GPUEngineBase::_RenderLine_Layers(GPUEngineCompositorInfo &compInfo)
 	
 	compInfo.renderState.previouslyRenderedLayerID = GPULayerID_Backdrop;
 	
-	this->_RenderLine_Clear<NDSColorFormat_BGR555_Rev>(compInfo);
+	this->_RenderLine_Clear(compInfo);
 	
 	// for all the pixels in the line
 	if (this->_isBGLayerShown[GPULayerID_OBJ])
@@ -2316,27 +2311,27 @@ void GPUEngineBase::_RenderLine_Layers(GPUEngineCompositorInfo &compInfo)
 					
 					if (this->_engineID == GPUEngineID_Main)
 					{
-						if ( (layerID == GPULayerID_BG0) && GPU->GetEngineMain()->WillRender3DLayer() )
+						if ( (layerID == GPULayerID_BG0) && ((GPUEngineA *)this)->WillRender3DLayer() )
 						{
 #ifndef DISABLE_COMPOSITOR_FAST_PATHS
 							if ( !compInfo.renderState.dstAnyBlendEnable && (  (compInfo.renderState.colorEffect == ColorEffect_Disable) ||
 																			   !compInfo.renderState.srcEffectEnable[GPULayerID_BG0] ||
 																			 (((compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) || (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness)) && (compInfo.renderState.blendEVY == 0)) ) )
 							{
-								GPU->GetEngineMain()->RenderLine_Layer3D<GPUCompositorMode_Copy, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
+								((GPUEngineA *)this)->RenderLine_Layer3D<GPUCompositorMode_Copy, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 							}
 							else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcEffectEnable[GPULayerID_BG0] && (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) )
 							{
-								GPU->GetEngineMain()->RenderLine_Layer3D<GPUCompositorMode_BrightUp, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
+								((GPUEngineA *)this)->RenderLine_Layer3D<GPUCompositorMode_BrightUp, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 							}
 							else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcEffectEnable[GPULayerID_BG0] && (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness) )
 							{
-								GPU->GetEngineMain()->RenderLine_Layer3D<GPUCompositorMode_BrightDown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
+								((GPUEngineA *)this)->RenderLine_Layer3D<GPUCompositorMode_BrightDown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 							}
 							else
 #endif
 							{
-								GPU->GetEngineMain()->RenderLine_Layer3D<GPUCompositorMode_Unknown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
+								((GPUEngineA *)this)->RenderLine_Layer3D<GPUCompositorMode_Unknown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 							}
 							continue;
 						}
@@ -2929,7 +2924,6 @@ void GPUEngineBase::RenderLayerBG(const GPULayerID layerID, u16 *dstColorBuffer)
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineBase::_HandleDisplayModeOff(const size_t l)
 {
 	// Native rendering only.
@@ -2937,7 +2931,6 @@ void GPUEngineBase::_HandleDisplayModeOff(const size_t l)
 	memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(this->_targetDisplay->GetNativeBuffer16() + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0xFFFF);
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineBase::_HandleDisplayModeNormal(const size_t l)
 {
 	if (!this->_isLineRenderNative[l])
@@ -3541,11 +3534,11 @@ void GPUEngineA::RenderLine(const size_t l)
 	switch (compInfo.renderState.displayOutputMode)
 	{
 		case GPUDisplayMode_Off: // Display Off (Display white)
-			this->_HandleDisplayModeOff<NDSColorFormat_BGR555_Rev>(l);
+			this->_HandleDisplayModeOff(l);
 			break;
 			
 		case GPUDisplayMode_Normal: // Display BG and OBJ layers
-			this->_HandleDisplayModeNormal<OUTPUTFORMAT>(l);
+			this->_HandleDisplayModeNormal(l);
 			break;
 			
 		case GPUDisplayMode_VRAM: // Display VRAM framebuffer
@@ -3553,7 +3546,7 @@ void GPUEngineA::RenderLine(const size_t l)
 			break;
 			
 		case GPUDisplayMode_MainMemory: // Display Memory FIFO
-			this->_HandleDisplayModeMainMemory<NDSColorFormat_BGR555_Rev>(compInfo.line);
+			this->_HandleDisplayModeMainMemory(compInfo.line);
 			break;
 	}
 	
@@ -4428,7 +4421,6 @@ void GPUEngineA::_HandleDisplayModeVRAM(const GPUEngineLineInfo &lineInfo)
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineA::_HandleDisplayModeMainMemory(const GPUEngineLineInfo &lineInfo)
 {
 	// Native rendering only.
@@ -4536,7 +4528,7 @@ void GPUEngineB::RenderLine(const size_t l)
 	switch (compInfo.renderState.displayOutputMode)
 	{
 		case GPUDisplayMode_Off: // Display Off(Display white)
-			this->_HandleDisplayModeOff<NDSColorFormat_BGR555_Rev>(l);
+			this->_HandleDisplayModeOff(l);
 			break;
 		
 		case GPUDisplayMode_Normal: // Display BG and OBJ layers
@@ -4550,7 +4542,7 @@ void GPUEngineB::RenderLine(const size_t l)
 				this->_RenderLine_Layers<OUTPUTFORMAT, false>(compInfo);
 			}
 			
-			this->_HandleDisplayModeNormal<OUTPUTFORMAT>(l);
+			this->_HandleDisplayModeNormal(l);
 			break;
 		}
 			
@@ -5405,7 +5397,6 @@ void GPUSubsystem::AsyncSetupEngineBuffersFinish()
 	this->_asyncEngineBufferSetupIsRunning = false;
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
 void GPUSubsystem::RenderLine(const size_t l)
 {
 	if (!this->_frameNeedsFinish)
@@ -5451,8 +5442,8 @@ void GPUSubsystem::RenderLine(const size_t l)
 	
 	if (!this->_willFrameSkip)
 	{
-		this->_engineMain->UpdateRenderStates<OUTPUTFORMAT>(l);
-		this->_engineSub->UpdateRenderStates<OUTPUTFORMAT>(l);
+		this->_engineMain->UpdateRenderStates(l);
+		this->_engineSub->UpdateRenderStates(l);
 	}
 	
 	if ( (isFramebufferRenderNeeded[GPUEngineID_Main] || isDisplayCaptureNeeded) && !this->_willFrameSkip )
@@ -5468,7 +5459,7 @@ void GPUSubsystem::RenderLine(const size_t l)
 		// finishes before we read the 3D framebuffer. Otherwise, the map will render incorrectly.
 		
 		const bool need3DCaptureFramebuffer = this->_engineMain->WillCapture3DLayerDirect(l);
-		const bool need3DDisplayFramebuffer = this->_engineMain->WillRender3DLayer() || ((OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) && need3DCaptureFramebuffer);
+		const bool need3DDisplayFramebuffer = this->_engineMain->WillRender3DLayer() || ((this->_engineMain->GetTargetDisplay()->GetColorFormat() == NDSColorFormat_BGR888_Rev) && need3DCaptureFramebuffer);
 		
 		if (need3DCaptureFramebuffer || need3DDisplayFramebuffer)
 		{
@@ -5483,7 +5474,20 @@ void GPUSubsystem::RenderLine(const size_t l)
 			                             need3DCaptureFramebuffer && CurrentRenderer->GetRenderNeedsFlush16());
 		}
 		
-		this->_engineMain->RenderLine<OUTPUTFORMAT>(l);
+		switch (this->_engineMain->GetTargetDisplay()->GetColorFormat())
+		{
+			case NDSColorFormat_BGR555_Rev:
+				this->_engineMain->RenderLine<NDSColorFormat_BGR555_Rev>(l);
+				break;
+				
+			case NDSColorFormat_BGR666_Rev:
+				this->_engineMain->RenderLine<NDSColorFormat_BGR666_Rev>(l);
+				break;
+				
+			case NDSColorFormat_BGR888_Rev:
+				this->_engineMain->RenderLine<NDSColorFormat_BGR888_Rev>(l);
+				break;
+		}
 	}
 	else
 	{
@@ -5492,7 +5496,20 @@ void GPUSubsystem::RenderLine(const size_t l)
 	
 	if (isFramebufferRenderNeeded[GPUEngineID_Sub] && !this->_willFrameSkip)
 	{
-		this->_engineSub->RenderLine<OUTPUTFORMAT>(l);
+		switch (this->_engineSub->GetTargetDisplay()->GetColorFormat())
+		{
+			case NDSColorFormat_BGR555_Rev:
+				this->_engineSub->RenderLine<NDSColorFormat_BGR555_Rev>(l);
+				break;
+				
+			case NDSColorFormat_BGR666_Rev:
+				this->_engineSub->RenderLine<NDSColorFormat_BGR666_Rev>(l);
+				break;
+				
+			case NDSColorFormat_BGR888_Rev:
+				this->_engineSub->RenderLine<NDSColorFormat_BGR888_Rev>(l);
+				break;
+		}
 	}
 	else
 	{
@@ -5508,8 +5525,8 @@ void GPUSubsystem::RenderLine(const size_t l)
 		
 		if (!this->_willFrameSkip)
 		{
-			this->_display[NDSDisplayID_Main]->ResolveLinesDisplayedNative<OUTPUTFORMAT>();
-			this->_display[NDSDisplayID_Touch]->ResolveLinesDisplayedNative<OUTPUTFORMAT>();
+			this->_display[NDSDisplayID_Main]->ResolveLinesDisplayedNative();
+			this->_display[NDSDisplayID_Touch]->ResolveLinesDisplayedNative();
 			
 			this->_engineMain->TransitionRenderStatesToDisplayInfo(this->_displayInfo);
 			this->_engineSub->TransitionRenderStatesToDisplayInfo(this->_displayInfo);
@@ -5527,8 +5544,8 @@ void GPUSubsystem::RenderLine(const size_t l)
 			this->_displayInfo.engineID[NDSDisplayID_Main]  = this->_display[NDSDisplayID_Main]->GetEngineID();
 			this->_displayInfo.engineID[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngineID();
 			
-			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Main]  = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
-			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Touch] = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
+			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Main]  = (this->_display[NDSDisplayID_Main]->GetColorFormat()  == NDSColorFormat_BGR666_Rev);
+			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Touch] = (this->_display[NDSDisplayID_Touch]->GetColorFormat() == NDSColorFormat_BGR666_Rev);
 			
 			// Set the average backlight intensity over 263 H-blanks.
 			this->_displayInfo.backlightIntensity[NDSDisplayID_Main]  = this->_display[NDSDisplayID_Main]->GetBacklightIntensityTotal()  / 263.0f;
@@ -5674,7 +5691,7 @@ void GPUSubsystem::_DownscaleAndConvertForSavestate(const NDSDisplayID displayID
 			working += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 		}
 		
-		switch (this->_displayInfo.colorFormat)
+		switch (this->_display[displayID]->GetColorFormat())
 		{
 			case NDSColorFormat_BGR666_Rev:
 				ColorspaceConvertBuffer6665To5551<false, false>(this->_display[displayID]->GetWorkingNativeBuffer32(), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
@@ -6081,7 +6098,6 @@ void NDSDisplay::ClearAllLinesToNative()
    this->_renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
 void NDSDisplay::ResolveLinesDisplayedNative()
 {
 	if (this->_nativeLineDisplayCount == GPU_FRAMEBUFFER_NATIVE_HEIGHT)
@@ -6101,7 +6117,7 @@ void NDSDisplay::ResolveLinesDisplayedNative()
 	// Rendering should consist of either all native-sized lines or all custom-sized lines.
 	// But if there is a mix of both native-sized and custom-sized lines, then we need to
 	// resolve any remaining native lines to the custom buffer.
-	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+	if (this->_customColorFormat == NDSColorFormat_BGR555_Rev)
 	{
 		u16 *__restrict dst = (u16 *__restrict)this->_customBuffer;
 		
@@ -6130,7 +6146,7 @@ void NDSDisplay::ResolveLinesDisplayedNative()
 			
 			if (this->_isLineDisplayNative[y])
 			{
-				if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
+				if (this->_customColorFormat == NDSColorFormat_BGR888_Rev)
 				{
 					ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				}
@@ -6524,7 +6540,3 @@ template void GPUEngineBase::ParseReg_BGnX<GPULayerID_BG2>();
 template void GPUEngineBase::ParseReg_BGnY<GPULayerID_BG2>();
 template void GPUEngineBase::ParseReg_BGnX<GPULayerID_BG3>();
 template void GPUEngineBase::ParseReg_BGnY<GPULayerID_BG3>();
-
-template void GPUSubsystem::RenderLine<NDSColorFormat_BGR555_Rev>(const size_t l);
-template void GPUSubsystem::RenderLine<NDSColorFormat_BGR666_Rev>(const size_t l);
-template void GPUSubsystem::RenderLine<NDSColorFormat_BGR888_Rev>(const size_t l);
