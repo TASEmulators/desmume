@@ -1144,19 +1144,20 @@ typedef struct
 	
 	// Changed by calling GPUSubsystem::SetColorFormat().
 	NDSColorFormat colorFormat;					// The output color format.
-	size_t pixelBytes;							// The number of bytes per pixel.
+	u32 pixelBytes;								// The number of bytes per pixel.
 	
 	// Changed by calling GPUSubsystem::SetFramebufferSize().
 	bool isCustomSizeRequested;					// Reports that the call to GPUSubsystem::SetFramebufferSize() resulted in a custom rendering size.
 												//    true  - The user requested a custom size.
 												//    false - The user requested the native size.
-	size_t customWidth;							// The requested custom width, measured in pixels.
-	size_t customHeight;						// The requested custom height, measured in pixels.
-	size_t framebufferPageSize;					// The size of a single framebuffer page, which includes the native and custom buffers of both
+	u32 customWidth;							// The requested custom width, measured in pixels.
+	u32 customHeight;							// The requested custom height, measured in pixels.
+	u32 framebufferPageSize;					// The size of a single framebuffer page, which includes the native and custom buffers of both
 												// displays, measured in bytes.
 	
 	// Changed by calling GPUSubsystem::SetColorFormat() or GPUSubsystem::SetFramebufferSize().
-	size_t framebufferPageCount;				// The number of framebuffer pages that were requested by the client.
+	u32 framebufferPageCount;					// The number of framebuffer pages that were requested by the client. The maximum number of pages
+												// is MAX_FRAMEBUFFER_PAGES.
 	void *masterFramebufferHead;				// Pointer to the head of the master framebuffer memory block that encompasses all buffers.
 	
 	// Changed by calling GPUEngineBase::SetEnableState().
@@ -1168,26 +1169,33 @@ typedef struct
 	u8 bufferIndex;								// Index of a specific framebuffer page for the GPU emulation to write data into.
 												// Indexing starts at 0, and must be less than framebufferPageCount.
 												// A specific index can be chosen at the DidFrameBegin event.
-	size_t sequenceNumber;						// A unique number assigned to each frame that increments for each DidFrameEnd event. Never resets.
+	u64 sequenceNumber;							// A unique number assigned to each frame that increments for each DidFrameEnd event. Never resets.
 	
-	u16 *masterNativeBuffer16;					// Pointer to the head of the master native buffer.
+	u16 *masterNativeBuffer16;					// Pointer to the head of the master native-sized 16-bit buffer.
 	void *masterCustomBuffer;					// Pointer to the head of the master custom buffer.
 												// If GPUSubsystem::GetWillAutoResolveToCustomBuffer() would return true, or if
 												// GPUSubsystem::ResolveDisplayToCustomFramebuffer() is called, then this buffer is used as the
-												// target buffer for resolving any native-sized renders.
+												// target buffer for resolving any native-sized 16-bit renders.
 	
-	u16 *nativeBuffer16[2];						// Pointer to the display's native size framebuffer.
-	void *customBuffer[2];						// Pointer to the display's custom size framebuffer.
+	u16 *nativeBuffer16[2];						// Pointer to the display's native-size 16-bit framebuffer.
+	void *customBuffer[2];						// Pointer to the display's custom framebuffer. Used whenever the framebuffer is not native-sized
+												// or when the requested color format is not 15-bit.
 	
-	size_t renderedWidth[2];					// The display rendered at this width, measured in pixels.
-	size_t renderedHeight[2];					// The display rendered at this height, measured in pixels.
+	u32 renderedWidth[2];						// The display rendered at this width, measured in pixels.
+	u32 renderedHeight[2];						// The display rendered at this height, measured in pixels.
 	void *renderedBuffer[2];					// The display rendered to this buffer.
 	
 	GPUEngineID engineID[2];					// ID of the engine sourcing the display.
+												// Technically, NDS displays shouldn't be associated with a single GPU engine since it's possible for
+												// a single display to associate with both. But for the sake of compatibility with how clients use
+												// TCommonSettings.showGpu to show/hide displays, the engineID member must be present here.
 	
-	bool didPerformCustomRender[2];				// Reports that the display actually rendered at a custom size for this frame.
-												//    true  - The display performed a custom-sized render.
-												//    false - The display performed a native-sized render.
+	bool didPerformCustomRender[2];				// Reports that the display rendered to the custom buffer. Rendering to the custom buffers is the
+												// default behavior, but can be turned off by calling GPUSubsystem::SetWillAutoResolveToCustomBuffer()
+												// and passing 'false'. However, rendering to the custom buffers can be forced at any time by calling
+												// GPUSubsystem::ResolveDisplayToCustomFramebuffer().
+												//    true  - The display rendered to the custom buffer.
+												//    false - The display rendered to the native-size 16-bit buffer only.
 	
 	bool masterBrightnessDiffersPerLine[2];		// Reports if the master brightness values may differ per scanline. If true, then it will
 												// need to be applied on a per-scanline basis. Otherwise, it can be applied to the entire
@@ -1399,7 +1407,7 @@ protected:
 	itemsForPriority_t _itemsForPriority[NB_PRIORITIES];
 	
 	struct MosaicColor {
-		CACHE_ALIGN u16 bg[4][GPU_FRAMEBUFFER_NATIVE_WIDTH + sizeof(u32)]; // Pad this buffersa little bit to avoid buffer overruns with vectorized gather instructions.
+		CACHE_ALIGN u16 bg[4][GPU_FRAMEBUFFER_NATIVE_WIDTH + sizeof(u32)]; // Pad this buffer a little bit to avoid buffer overruns with vectorized gather instructions.
 		struct Obj {
 			u16 color;
 			u8 alpha;
@@ -1438,7 +1446,6 @@ protected:
 	FragmentColor _asyncClearBackdropColor32; // Do not modify this variable directly.
 	bool _asyncClearUseInternalCustomBuffer; // Do not modify this variable directly.
 	
-	void _Reset_Base();
 	void _ResortBGLayers();
 	
 	template<NDSColorFormat OUTPUTFORMAT> void _TransitionLineNativeToCustom(GPUEngineCompositorInfo &compInfo);
@@ -1713,9 +1720,17 @@ private:
 	u32 *_workingNativeBuffer32;
 	void *_customBuffer;
 	
+	NDSColorFormat _customColorFormat;
+	size_t _customPixelBytes;
+	size_t _customWidth;
+	size_t _customHeight;
+	bool _isCustomSizeRequested;
+	
 	void *_renderedBuffer;
  	size_t _renderedWidth;
  	size_t _renderedHeight;
+	
+	float _backlightIntensityTotal;
 	
 	void __constructor(const NDSDisplayID displayID, GPUEngineBase *theEngine);
 	
@@ -1745,9 +1760,21 @@ public:
 	void* GetCustomBuffer() const;
 	void SetDrawBuffers(u16 *nativeBuffer16, u32 *workingNativeBuffer32, void *customBuffer);
 	
+	NDSColorFormat GetColorFormat() const;
+	void SetColorFormat(NDSColorFormat colorFormat);
+	
+	size_t GetPixelBytes() const;
+	size_t GetWidth() const;
+	size_t GetHeight() const;
+	void SetDisplaySize(size_t w, size_t h);
+	bool IsCustomSizeRequested() const;
+	
 	void* GetRenderedBuffer() const;
  	size_t GetRenderedWidth() const;
  	size_t GetRenderedHeight() const;
+	
+	float GetBacklightIntensityTotal() const;
+	void SetBacklightIntensityTotal(float intensity);
 };
 
 class GPUEventHandler
@@ -1788,7 +1815,6 @@ private:
 	GPUEngineA *_engineMain;
 	GPUEngineB *_engineSub;
 	NDSDisplay *_display[2];
-	float _backlightIntensityTotal[2];
 	GPUEngineLineInfo _lineInfo[GPU_VRAM_BLOCK_LINES + 1];
 	
 	Task *_asyncEngineBufferSetupTask;
