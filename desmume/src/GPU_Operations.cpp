@@ -1100,14 +1100,14 @@ size_t GPUEngineA::_RenderLine_DispCapture_Blend_VecLoop(const void *srcA, const
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
-size_t GPUEngineBase::_ApplyMasterBrightnessUp_LoopOp(void *__restrict dst, const size_t pixCount, const u8 intensityClamped)
+size_t NDSDisplay::_ApplyMasterBrightnessUp_LoopOp(void *__restrict dst, const size_t pixCount, const u8 intensityClamped)
 {
 	// Do nothing. This is a placeholder for a manually vectorized version of this method.
 	return 0;
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
-size_t GPUEngineBase::_ApplyMasterBrightnessDown_LoopOp(void *__restrict dst, const size_t pixCount, const u8 intensityClamped)
+size_t NDSDisplay::_ApplyMasterBrightnessDown_LoopOp(void *__restrict dst, const size_t pixCount, const u8 intensityClamped)
 {
 	// Do nothing. This is a placeholder for a manually vectorized version of this method.
 	return 0;

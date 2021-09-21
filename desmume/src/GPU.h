@@ -1278,7 +1278,6 @@ typedef struct
 	
 	GPUMasterBrightMode masterBrightnessMode;
 	u8 masterBrightnessIntensity;
-	bool masterBrightnessIsFullIntensity;
 	bool masterBrightnessIsMaxOrMin;
 	
 	TBlendTable *blendTable555;
@@ -1486,9 +1485,6 @@ protected:
 	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeOff(const size_t l);
 	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeNormal(const size_t l);
 	
-	template<NDSColorFormat OUTPUTFORMAT> size_t _ApplyMasterBrightnessUp_LoopOp(void *__restrict dst, const size_t pixCount, const u8 intensityClamped);
-	template<NDSColorFormat OUTPUTFORMAT> size_t _ApplyMasterBrightnessDown_LoopOp(void *__restrict dst, const size_t pixCount, const u8 intensityClamped);
-	
 	template<size_t WIN_NUM> void _UpdateWINH(GPUEngineCompositorInfo &compInfo);
 	template<size_t WIN_NUM> bool _IsWindowInsideVerticalRange(GPUEngineCompositorInfo &compInfo);
 	void _PerformWindowTesting(GPUEngineCompositorInfo &compInfo);
@@ -1553,10 +1549,7 @@ public:
 	
 	const GPU_IOREG& GetIORegisterMap() const;
 	
-	bool IsMasterBrightFullIntensity() const;
 	bool IsMasterBrightMaxOrMin() const;
-	bool IsMasterBrightFullIntensityAtLineZero() const;
-	void GetMasterBrightnessAtLineZero(GPUMasterBrightMode &outMode, u8 &outIntensity);
 	
 	bool GetEnableState();
 	bool GetEnableStateApplied();
@@ -1574,9 +1567,7 @@ public:
 	void RenderLineClearAsyncFinish();
 	void RenderLineClearAsyncWaitForCustomLine(const s32 l);
 	
-	void UpdateMasterBrightnessDisplayInfo(NDSDisplayInfo &mutableInfo);
-	template<NDSColorFormat OUTPUTFORMAT> void ApplyMasterBrightness(const NDSDisplayInfo &displayInfo);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISFULLINTENSITYHINT> void ApplyMasterBrightness(void *dst, const size_t pixCount, const GPUMasterBrightMode mode, const u8 intensity);
+	void TransitionRenderStatesToDisplayInfo(NDSDisplayInfo &mutableInfo);
 	
 	const BGLayerInfo& GetBGLayerInfoByID(const GPULayerID layerID);
 	
@@ -1730,6 +1721,7 @@ private:
  	size_t _renderedWidth;
  	size_t _renderedHeight;
 	
+	bool _isEnabled;
 	float _backlightIntensityTotal;
 	
 	void __constructor(const NDSDisplayID displayID, GPUEngineBase *theEngine);
@@ -1773,8 +1765,19 @@ public:
  	size_t GetRenderedWidth() const;
  	size_t GetRenderedHeight() const;
 	
+	bool IsEnabled() const;
+	void SetIsEnabled(bool stateIsEnabled);
+	
 	float GetBacklightIntensityTotal() const;
 	void SetBacklightIntensityTotal(float intensity);
+	
+	template<NDSColorFormat OUTPUTFORMAT> void ApplyMasterBrightness(const NDSDisplayInfo &displayInfo);
+	template<NDSColorFormat OUTPUTFORMAT> void ApplyMasterBrightness(void *dst, const size_t pixCount, const GPUMasterBrightMode mode, const u8 intensity);
+	
+	template<NDSColorFormat OUTPUTFORMAT> size_t _ApplyMasterBrightnessUp_LoopOp(void *__restrict dst, const size_t pixCount, const u8 intensityClamped);
+	template<NDSColorFormat OUTPUTFORMAT> size_t _ApplyMasterBrightnessDown_LoopOp(void *__restrict dst, const size_t pixCount, const u8 intensityClamped);
+	
+	void Postprocess(NDSDisplayInfo &mutableDisplayInfo);
 };
 
 class GPUEventHandler

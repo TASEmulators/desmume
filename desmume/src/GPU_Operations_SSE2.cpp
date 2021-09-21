@@ -2687,60 +2687,6 @@ void GPUEngineBase::_PerformWindowTestingNative(GPUEngineCompositorInfo &compInf
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
-size_t GPUEngineBase::_ApplyMasterBrightnessUp_LoopOp(void *__restrict dst, const size_t pixCount, const u8 intensityClamped)
-{
-	size_t i = 0;
-	
-	const size_t vecCount = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? pixCount * sizeof(u32) / sizeof(v128u32) : pixCount * sizeof(u16) / sizeof(v128u16);
-	for (; i < vecCount; i++)
-	{
-		if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-		{
-			v128u16 dstColor = _mm_load_si128((v128u16 *)dst + i);
-			dstColor = colorop_vec.increase(dstColor, _mm_set1_epi16(intensityClamped));
-			dstColor = _mm_or_si128(dstColor, _mm_set1_epi16(0x8000));
-			_mm_store_si128((v128u16 *)dst + i, dstColor);
-		}
-		else
-		{
-			v128u32 dstColor = _mm_load_si128((v128u32 *)dst + i);
-			dstColor = colorop_vec.increase<OUTPUTFORMAT>(dstColor, _mm_set1_epi16(intensityClamped));
-			dstColor = _mm_or_si128(dstColor, (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? _mm_set1_epi32(0x1F000000) : _mm_set1_epi32(0xFF000000));
-			_mm_store_si128((v128u32 *)dst + i, dstColor);
-		}
-	}
-	
-	return (i * sizeof(__m128i));
-}
-
-template <NDSColorFormat OUTPUTFORMAT>
-size_t GPUEngineBase::_ApplyMasterBrightnessDown_LoopOp(void *__restrict dst, const size_t pixCount, const u8 intensityClamped)
-{
-	size_t i = 0;
-	
-	const size_t vecCount = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? pixCount * sizeof(u32) / sizeof(v128u32) : pixCount * sizeof(u16) / sizeof(v128u16);
-	for (; i < vecCount; i++)
-	{
-		if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-		{
-			v128u16 dstColor = _mm_load_si128((v128u16 *)dst + i);
-			dstColor = colorop_vec.decrease(dstColor, _mm_set1_epi16(intensityClamped));
-			dstColor = _mm_or_si128(dstColor, _mm_set1_epi16(0x8000));
-			_mm_store_si128((v128u16 *)dst + i, dstColor);
-		}
-		else
-		{
-			v128u32 dstColor = _mm_load_si128((v128u32 *)dst + i);
-			dstColor = colorop_vec.decrease<OUTPUTFORMAT>(dstColor, _mm_set1_epi16(intensityClamped));
-			dstColor = _mm_or_si128(dstColor, (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? _mm_set1_epi32(0x1F000000) : _mm_set1_epi32(0xFF000000));
-			_mm_store_si128((v128u32 *)dst + i, dstColor);
-		}
-	}
-	
-	return (i * sizeof(__m128i));
-}
-
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
 size_t GPUEngineA::_RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo, const FragmentColor *__restrict srcLinePtr)
 {
@@ -2931,6 +2877,60 @@ size_t GPUEngineA::_RenderLine_DispCapture_Blend_VecLoop(const void *srcA, const
 	}
 	
 	return (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? i * sizeof(v128u32) / sizeof(u32) : i * sizeof(v128u16) / sizeof(u16);
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+size_t NDSDisplay::_ApplyMasterBrightnessUp_LoopOp(void *__restrict dst, const size_t pixCount, const u8 intensityClamped)
+{
+	size_t i = 0;
+	
+	const size_t vecCount = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? pixCount * sizeof(u32) / sizeof(v128u32) : pixCount * sizeof(u16) / sizeof(v128u16);
+	for (; i < vecCount; i++)
+	{
+		if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+		{
+			v128u16 dstColor = _mm_load_si128((v128u16 *)dst + i);
+			dstColor = colorop_vec.increase(dstColor, _mm_set1_epi16(intensityClamped));
+			dstColor = _mm_or_si128(dstColor, _mm_set1_epi16(0x8000));
+			_mm_store_si128((v128u16 *)dst + i, dstColor);
+		}
+		else
+		{
+			v128u32 dstColor = _mm_load_si128((v128u32 *)dst + i);
+			dstColor = colorop_vec.increase<OUTPUTFORMAT>(dstColor, _mm_set1_epi16(intensityClamped));
+			dstColor = _mm_or_si128(dstColor, (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? _mm_set1_epi32(0x1F000000) : _mm_set1_epi32(0xFF000000));
+			_mm_store_si128((v128u32 *)dst + i, dstColor);
+		}
+	}
+	
+	return (i * sizeof(__m128i));
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+size_t NDSDisplay::_ApplyMasterBrightnessDown_LoopOp(void *__restrict dst, const size_t pixCount, const u8 intensityClamped)
+{
+	size_t i = 0;
+	
+	const size_t vecCount = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? pixCount * sizeof(u32) / sizeof(v128u32) : pixCount * sizeof(u16) / sizeof(v128u16);
+	for (; i < vecCount; i++)
+	{
+		if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+		{
+			v128u16 dstColor = _mm_load_si128((v128u16 *)dst + i);
+			dstColor = colorop_vec.decrease(dstColor, _mm_set1_epi16(intensityClamped));
+			dstColor = _mm_or_si128(dstColor, _mm_set1_epi16(0x8000));
+			_mm_store_si128((v128u16 *)dst + i, dstColor);
+		}
+		else
+		{
+			v128u32 dstColor = _mm_load_si128((v128u32 *)dst + i);
+			dstColor = colorop_vec.decrease<OUTPUTFORMAT>(dstColor, _mm_set1_epi16(intensityClamped));
+			dstColor = _mm_or_si128(dstColor, (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? _mm_set1_epi32(0x1F000000) : _mm_set1_epi32(0xFF000000));
+			_mm_store_si128((v128u32 *)dst + i, dstColor);
+		}
+	}
+	
+	return (i * sizeof(__m128i));
 }
 
 #endif // ENABLE_SSE2

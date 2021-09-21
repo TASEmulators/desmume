@@ -381,7 +381,6 @@ void GPUEngineBase::Reset()
 	renderState.blendEVY = 0;
 	renderState.masterBrightnessMode = GPUMasterBrightMode_Disable;
 	renderState.masterBrightnessIntensity = 0;
-	renderState.masterBrightnessIsFullIntensity = false;
 	renderState.masterBrightnessIsMaxOrMin = true;
 	renderState.blendTable555 = (TBlendTable *)&PixelOperation::BlendTable555[renderState.blendEVA][renderState.blendEVB][0][0];
 	renderState.brightnessUpTable555 = &PixelOperation::BrightnessUpTable555[renderState.blendEVY][0];
@@ -485,7 +484,6 @@ void GPUEngineBase::ParseReg_MASTER_BRIGHT()
 	
 	renderState.masterBrightnessIntensity = (MASTER_BRIGHT.Intensity >= 16) ? 16 : MASTER_BRIGHT.Intensity;
 	renderState.masterBrightnessMode = (GPUMasterBrightMode)MASTER_BRIGHT.Mode;
-	renderState.masterBrightnessIsFullIntensity = ( (MASTER_BRIGHT.Intensity >= 16) && ((MASTER_BRIGHT.Mode == GPUMasterBrightMode_Up) || (MASTER_BRIGHT.Mode == GPUMasterBrightMode_Down)) );
 	renderState.masterBrightnessIsMaxOrMin = ( (MASTER_BRIGHT.Intensity >= 16) || (MASTER_BRIGHT.Intensity == 0) );
 }
 
@@ -934,25 +932,9 @@ const GPU_IOREG& GPUEngineBase::GetIORegisterMap() const
 	return *this->_IORegisterMap;
 }
 
-bool GPUEngineBase::IsMasterBrightFullIntensity() const
-{
-	return this->_currentRenderState.masterBrightnessIsFullIntensity;
-}
-
 bool GPUEngineBase::IsMasterBrightMaxOrMin() const
 {
 	return this->_currentRenderState.masterBrightnessIsMaxOrMin;
-}
-
-bool GPUEngineBase::IsMasterBrightFullIntensityAtLineZero() const
-{
-	return this->_currentCompositorInfo[0].renderState.masterBrightnessIsFullIntensity;
-}
-
-void GPUEngineBase::GetMasterBrightnessAtLineZero(GPUMasterBrightMode &outMode, u8 &outIntensity)
-{
-	outMode = this->_currentCompositorInfo[0].renderState.masterBrightnessMode;
-	outIntensity = this->_currentCompositorInfo[0].renderState.masterBrightnessIntensity;
 }
 
 /*****************************************************************************/
@@ -1082,8 +1064,6 @@ void GPUEngineBase::_TransitionLineNativeToCustom(GPUEngineCompositorInfo &compI
 				default:
 					break;
 			}
-			
-			
 		}
 		
 		CopyLineExpandHinted<0x3FFF, true, false, false, 1>(compInfo.line, compInfo.target.lineLayerIDHeadNative, compInfo.target.lineLayerIDHeadCustom);
@@ -1979,7 +1959,6 @@ void GPUEngineBase::SpriteRenderDebug(const u16 lineIndex, u16 *dst)
 	compInfo.renderState.selectedLayerID = GPULayerID_OBJ;
 	compInfo.renderState.colorEffect = ColorEffect_Disable;
 	compInfo.renderState.masterBrightnessMode = GPUMasterBrightMode_Disable;
-	compInfo.renderState.masterBrightnessIsFullIntensity = false;
 	compInfo.renderState.masterBrightnessIsMaxOrMin = true;
 	compInfo.renderState.spriteRenderMode = this->_currentRenderState.spriteRenderMode;
 	compInfo.renderState.spriteBoundary = this->_currentRenderState.spriteBoundary;
@@ -2640,184 +2619,50 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 	}
 }
 
-void GPUEngineBase::UpdateMasterBrightnessDisplayInfo(NDSDisplayInfo &mutableInfo)
+void GPUEngineBase::TransitionRenderStatesToDisplayInfo(NDSDisplayInfo &mutableInfo)
 {
+	// The master brightness is normally handled at the GPU engine level as a scanline operation,
+	// but since it is the last color operation that occurs on a scanline, it is possible to push
+	// this work up to the display level instead. This method is used to transition the master
+	// brightness states to the display level so it can be processed as a framebuffer operation.
+	
 	const GPUEngineCompositorInfo &compInfoZero = this->_currentCompositorInfo[0];
-	bool needsApply = false;
-	bool processPerScanline = false;
+	bool needApplyMasterBrightness = false;
+	bool masterBrightnessDiffersPerLine = false;
 	
 	for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
 	{
 		const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[line];
 		
-		if ( !needsApply &&
+		if ( !needApplyMasterBrightness &&
 			 (compInfo.renderState.masterBrightnessIntensity != 0) &&
 			((compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Up) || (compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Down)) )
 		{
-			needsApply = true;
+			needApplyMasterBrightness = true;
 		}
 		
 		mutableInfo.masterBrightnessMode[this->_targetDisplay->GetDisplayID()][line] = compInfo.renderState.masterBrightnessMode;
 		mutableInfo.masterBrightnessIntensity[this->_targetDisplay->GetDisplayID()][line] = compInfo.renderState.masterBrightnessIntensity;
 		
-		if ( !processPerScanline &&
+		// Most games maintain the exact same master brightness values for all 192 lines, so we
+		// can easily apply the master brightness to the entire framebuffer at once, which is
+		// faster than applying it per scanline.
+		//
+		// However, some games need to have the master brightness values applied on a per-scanline
+		// basis since they can differ for each scanline. For example, Mega Man Zero Collection
+		// purposely changes the master brightness intensity to 31 on line 0, 0 on line 16, and
+		// then back to 31 on line 176. Since the MMZC are originally GBA games, the master
+		// brightness intensity changes are done to disable the unused scanlines on the NDS.
+		if ( !masterBrightnessDiffersPerLine &&
 			((compInfo.renderState.masterBrightnessMode != compInfoZero.renderState.masterBrightnessMode) ||
 			 (compInfo.renderState.masterBrightnessIntensity != compInfoZero.renderState.masterBrightnessIntensity)) )
 		{
-			processPerScanline = true;
+			masterBrightnessDiffersPerLine = true;
 		}
 	}
 	
-	mutableInfo.masterBrightnessDiffersPerLine[this->_targetDisplay->GetDisplayID()] = processPerScanline;
-	mutableInfo.needApplyMasterBrightness[this->_targetDisplay->GetDisplayID()] = needsApply;
-}
-
-template <NDSColorFormat OUTPUTFORMAT>
-void GPUEngineBase::ApplyMasterBrightness(const NDSDisplayInfo &displayInfo)
-{
-	// Most games maintain the exact same master brightness values for all 192 lines, so we
-	// can easily apply the master brightness to the entire framebuffer at once, which is
-	// faster than applying it per scanline.
-	//
-	// However, some games need to have the master brightness values applied on a per-scanline
-	// basis since they can differ for each scanline. For example, Mega Man Zero Collection
-	// purposely changes the master brightness intensity to 31 on line 0, 0 on line 16, and
-	// then back to 31 on line 176. Since the MMZC are originally GBA games, the master
-	// brightness intensity changes are done to disable the unused scanlines on the NDS.
-	
-	if (displayInfo.masterBrightnessDiffersPerLine[this->_targetDisplay->GetDisplayID()])
-	{
-		for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
-		{
-			const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(line);
-			void *dstColorLine = (!this->_targetDisplay->DidPerformCustomRender()) ? ((u8 *)this->_targetDisplay->GetNativeBuffer16() + (lineInfo.blockOffsetNative * sizeof(u16))) : ((u8 *)this->_targetDisplay->GetCustomBuffer() + (lineInfo.blockOffsetCustom * this->_targetDisplay->GetPixelBytes()));
-			const size_t pixCount = (!this->_targetDisplay->DidPerformCustomRender()) ? GPU_FRAMEBUFFER_NATIVE_WIDTH : lineInfo.pixelCount;
-			
-			this->ApplyMasterBrightness<OUTPUTFORMAT, false>(dstColorLine,
-															 pixCount,
-															 (GPUMasterBrightMode)displayInfo.masterBrightnessMode[this->_targetDisplay->GetDisplayID()][line],
-															 displayInfo.masterBrightnessIntensity[this->_targetDisplay->GetDisplayID()][line]);
-		}
-	}
-	else
-	{
-		this->ApplyMasterBrightness<OUTPUTFORMAT, false>(this->_targetDisplay->GetRenderedBuffer(),
-														 this->_targetDisplay->GetRenderedWidth() * this->_targetDisplay->GetRenderedHeight(),
-														 (GPUMasterBrightMode)displayInfo.masterBrightnessMode[this->_targetDisplay->GetDisplayID()][0],
-														 displayInfo.masterBrightnessIntensity[this->_targetDisplay->GetDisplayID()][0]);
-	}
-}
-
-template <NDSColorFormat OUTPUTFORMAT, bool ISFULLINTENSITYHINT>
-void GPUEngineBase::ApplyMasterBrightness(void *dst, const size_t pixCount, const GPUMasterBrightMode mode, const u8 intensity)
-{
-	if (!ISFULLINTENSITYHINT && (intensity == 0)) return;
-	
-	const bool isFullIntensity = (intensity >= 16);
-	const u8 intensityClamped = (isFullIntensity) ? 16 : intensity;
-	
-	switch (mode)
-	{
-		case GPUMasterBrightMode_Disable:
-			break;
-			
-		case GPUMasterBrightMode_Up:
-		{
-			if (!ISFULLINTENSITYHINT && !isFullIntensity)
-			{
-				size_t i = 0;
-				
-#ifdef USEMANUALVECTORIZATION
-				i = this->_ApplyMasterBrightnessUp_LoopOp<OUTPUTFORMAT>(dst, pixCount, intensityClamped);
-#pragma LOOPVECTORIZE_DISABLE
-#endif
-				for (; i < pixCount; i++)
-				{
-					if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-					{
-						((u16 *)dst)[i] = PixelOperation::BrightnessUpTable555[intensityClamped][ ((u16 *)dst)[i] & 0x7FFF ] | 0x8000;
-					}
-					else
-					{
-						((FragmentColor *)dst)[i] = colorop.increase<OUTPUTFORMAT>(((FragmentColor *)dst)[i], intensityClamped);
-						((FragmentColor *)dst)[i].a = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F : 0xFF;
-					}
-				}
-			}
-			else
-			{
-				// all white (optimization)
-				switch (OUTPUTFORMAT)
-				{
-					case NDSColorFormat_BGR555_Rev:
-						memset_u16(dst, 0xFFFF, pixCount);
-						break;
-						
-					case NDSColorFormat_BGR666_Rev:
-						memset_u32(dst, 0x1F3F3F3F, pixCount);
-						break;
-						
-					case NDSColorFormat_BGR888_Rev:
-						memset_u32(dst, 0xFFFFFFFF, pixCount);
-						break;
-						
-					default:
-						break;
-				}
-			}
-			break;
-		}
-			
-		case GPUMasterBrightMode_Down:
-		{
-			if (!ISFULLINTENSITYHINT && !isFullIntensity)
-			{
-				size_t i = 0;
-				
-#ifdef USEMANUALVECTORIZATION
-				i = this->_ApplyMasterBrightnessDown_LoopOp<OUTPUTFORMAT>(dst, pixCount, intensityClamped);
-#pragma LOOPVECTORIZE_DISABLE
-#endif
-				for (; i < pixCount; i++)
-				{
-					if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-					{
-						((u16 *)dst)[i] = PixelOperation::BrightnessDownTable555[intensityClamped][ ((u16 *)dst)[i] & 0x7FFF ] | 0x8000;
-					}
-					else
-					{
-						((FragmentColor *)dst)[i] = colorop.decrease<OUTPUTFORMAT>(((FragmentColor *)dst)[i], intensityClamped);
-						((FragmentColor *)dst)[i].a = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F : 0xFF;
-					}
-				}
-			}
-			else
-			{
-				// all black (optimization)
-				switch (OUTPUTFORMAT)
-				{
-					case NDSColorFormat_BGR555_Rev:
-						memset_u16(dst, 0x8000, pixCount);
-						break;
-						
-					case NDSColorFormat_BGR666_Rev:
-						memset_u32(dst, 0x1F000000, pixCount);
-						break;
-						
-					case NDSColorFormat_BGR888_Rev:
-						memset_u32(dst, 0xFF000000, pixCount);
-						break;
-						
-					default:
-						break;
-				}
-			}
-			break;
-		}
-			
-		case GPUMasterBrightMode_Reserved:
-			break;
-	}
+	mutableInfo.masterBrightnessDiffersPerLine[this->_targetDisplay->GetDisplayID()] = masterBrightnessDiffersPerLine;
+	mutableInfo.needApplyMasterBrightness[this->_targetDisplay->GetDisplayID()] = needApplyMasterBrightness;
 }
 
 template <size_t WIN_NUM>
@@ -3047,7 +2892,6 @@ void GPUEngineBase::RenderLayerBG(const GPULayerID layerID, u16 *dstColorBuffer)
 	compInfo.renderState.selectedBGLayer = &this->_BGLayer[layerID];
 	compInfo.renderState.colorEffect = ColorEffect_Disable;
 	compInfo.renderState.masterBrightnessMode = GPUMasterBrightMode_Disable;
-	compInfo.renderState.masterBrightnessIsFullIntensity = false;
 	compInfo.renderState.masterBrightnessIsMaxOrMin = true;
 	compInfo.renderState.spriteRenderMode = this->_currentRenderState.spriteRenderMode;
 	compInfo.renderState.spriteBoundary = this->_currentRenderState.spriteBoundary;
@@ -4692,7 +4536,7 @@ void GPUEngineB::RenderLine(const size_t l)
 	switch (compInfo.renderState.displayOutputMode)
 	{
 		case GPUDisplayMode_Off: // Display Off(Display white)
-			this->_HandleDisplayModeOff<OUTPUTFORMAT>(l);
+			this->_HandleDisplayModeOff<NDSColorFormat_BGR555_Rev>(l);
 			break;
 		
 		case GPUDisplayMode_Normal: // Display BG and OBJ layers
@@ -5506,32 +5350,7 @@ void GPUSubsystem::SetWillPostprocessDisplays(const bool willPostprocess)
 
 void GPUSubsystem::PostprocessDisplay(const NDSDisplayID displayID, NDSDisplayInfo &mutableInfo)
 {
-	if (mutableInfo.isDisplayEnabled[displayID])
-	{
-		if ( (mutableInfo.colorFormat == NDSColorFormat_BGR666_Rev) && mutableInfo.didPerformCustomRender[displayID] && mutableInfo.needConvertColorFormat[displayID] )
-		{
-			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)mutableInfo.renderedBuffer[displayID], (u32 *)mutableInfo.renderedBuffer[displayID], mutableInfo.renderedWidth[displayID] * mutableInfo.renderedHeight[displayID]);
-		}
-		
-		if (mutableInfo.needApplyMasterBrightness[displayID])
-		{
-			if ( (mutableInfo.colorFormat == NDSColorFormat_BGR555_Rev) || !mutableInfo.didPerformCustomRender[displayID] )
-			{
-				this->_display[displayID]->GetEngine()->ApplyMasterBrightness<NDSColorFormat_BGR555_Rev>(mutableInfo);
-			}
-			else
-			{
-				this->_display[displayID]->GetEngine()->ApplyMasterBrightness<NDSColorFormat_BGR888_Rev>(mutableInfo);
-			}
-		}
-	}
-	else
-	{
-		memset(mutableInfo.renderedBuffer[displayID], 0, mutableInfo.renderedWidth[displayID] * mutableInfo.renderedHeight[displayID] * mutableInfo.pixelBytes);
-	}
-	
-	mutableInfo.needConvertColorFormat[displayID] = false;
-	mutableInfo.needApplyMasterBrightness[displayID] = false;
+	this->_display[displayID]->Postprocess(mutableInfo);
 }
 
 void GPUSubsystem::ResolveDisplayToCustomFramebuffer(const NDSDisplayID displayID, NDSDisplayInfo &mutableInfo)
@@ -5596,12 +5415,20 @@ void GPUSubsystem::RenderLine(const size_t l)
 		this->_engineSub->ApplySettings();
 		this->_event->DidApplyGPUSettingsEnd();
 		
+		this->_display[NDSDisplayID_Main]->SetIsEnabled( this->_display[NDSDisplayID_Main]->GetEngine()->GetEnableStateApplied() );
+		this->_display[NDSDisplayID_Touch]->SetIsEnabled( this->_display[NDSDisplayID_Touch]->GetEngine()->GetEnableStateApplied() );
+		this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main]  = this->_display[NDSDisplayID_Main]->IsEnabled();
+		this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->IsEnabled();
+		
 		this->_event->DidFrameBegin(l, this->_willFrameSkip, this->_displayInfo.framebufferPageCount, this->_displayInfo.bufferIndex);
 		this->_frameNeedsFinish = true;
 	}
 	
 	const bool isDisplayCaptureNeeded = this->_engineMain->WillDisplayCapture(l);
-	const bool isFramebufferRenderNeeded[2]	= { this->_engineMain->GetEnableStateApplied(), this->_engineSub->GetEnableStateApplied() };
+	const bool isFramebufferRenderNeeded[2]	= {
+		this->_engineMain->GetEnableStateApplied(),
+		this->_engineSub->GetEnableStateApplied()
+	};
 	
 	if (l == 0)
 	{
@@ -5684,6 +5511,9 @@ void GPUSubsystem::RenderLine(const size_t l)
 			this->_display[NDSDisplayID_Main]->ResolveLinesDisplayedNative<OUTPUTFORMAT>();
 			this->_display[NDSDisplayID_Touch]->ResolveLinesDisplayedNative<OUTPUTFORMAT>();
 			
+			this->_engineMain->TransitionRenderStatesToDisplayInfo(this->_displayInfo);
+			this->_engineSub->TransitionRenderStatesToDisplayInfo(this->_displayInfo);
+			
 			this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = this->_display[NDSDisplayID_Main]->DidPerformCustomRender();
 			this->_displayInfo.renderedBuffer[NDSDisplayID_Main] = this->_display[NDSDisplayID_Main]->GetRenderedBuffer();
 			this->_displayInfo.renderedWidth[NDSDisplayID_Main] = this->_display[NDSDisplayID_Main]->GetRenderedWidth();
@@ -5697,18 +5527,12 @@ void GPUSubsystem::RenderLine(const size_t l)
 			this->_displayInfo.engineID[NDSDisplayID_Main]  = this->_display[NDSDisplayID_Main]->GetEngineID();
 			this->_displayInfo.engineID[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngineID();
 			
-			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main]  = this->_display[NDSDisplayID_Main]->GetEngine()->GetEnableStateApplied();
-			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngine()->GetEnableStateApplied();
-			
 			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Main]  = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
 			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Touch] = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
 			
 			// Set the average backlight intensity over 263 H-blanks.
 			this->_displayInfo.backlightIntensity[NDSDisplayID_Main]  = this->_display[NDSDisplayID_Main]->GetBacklightIntensityTotal()  / 263.0f;
 			this->_displayInfo.backlightIntensity[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetBacklightIntensityTotal() / 263.0f;
-			
-			this->_engineMain->UpdateMasterBrightnessDisplayInfo(this->_displayInfo);
-			this->_engineSub->UpdateMasterBrightnessDisplayInfo(this->_displayInfo);
 			
 			if (this->_willPostprocessDisplays)
 			{
@@ -5821,11 +5645,11 @@ void GPUSubsystem::_DownscaleAndConvertForSavestate(const NDSDisplayID displayID
 		return;
 	}
 	
-	if (!this->_displayInfo.isDisplayEnabled[displayID])
+	if (!this->_display[displayID]->IsEnabled())
 	{
 		memset(dstBuffer, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
 	}
-	else if (this->_displayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+	else if (this->_display[displayID]->GetColorFormat() == NDSColorFormat_BGR555_Rev)
 	{
 		const u16 *__restrict src = (u16 *)srcBuffer;
 		u16 *__restrict dst = dstBuffer;
@@ -5875,11 +5699,11 @@ void GPUSubsystem::_ConvertAndUpscaleForLoadstate(const NDSDisplayID displayID, 
 	
 	const u16 *__restrict src = srcBuffer;
 	
-	if (!this->_displayInfo.isDisplayEnabled[displayID])
+	if (!this->_display[displayID]->IsEnabled())
 	{
-		memset(dstBuffer, 0, this->_displayInfo.customWidth * this->_displayInfo.customHeight * this->_displayInfo.pixelBytes);
+		memset(dstBuffer, 0, this->_display[displayID]->GetWidth() * this->_display[displayID]->GetHeight() * this->_display[displayID]->GetPixelBytes());
 	}
-	else if (this->_displayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+	else if (this->_display[displayID]->GetColorFormat() == NDSColorFormat_BGR555_Rev)
 	{
 		u16 *__restrict dst = (u16 *)dstBuffer;
 		
@@ -5893,9 +5717,9 @@ void GPUSubsystem::_ConvertAndUpscaleForLoadstate(const NDSDisplayID displayID, 
 	else
 	{
 		u32 *__restrict dst = (u32 *)dstBuffer;
-		u32 *__restrict working = (this->_displayInfo.isCustomSizeRequested) ? this->_display[displayID]->GetWorkingNativeBuffer32() : dst;
+		u32 *__restrict working = (this->_display[displayID]->IsCustomSizeRequested()) ? this->_display[displayID]->GetWorkingNativeBuffer32() : dst;
 		
-		switch (this->_displayInfo.colorFormat)
+		switch (this->_display[displayID]->GetColorFormat())
 		{
 			case NDSColorFormat_BGR666_Rev:
 				ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
@@ -5909,7 +5733,7 @@ void GPUSubsystem::_ConvertAndUpscaleForLoadstate(const NDSDisplayID displayID, 
 				break;
 		}
 		
-		if (this->_displayInfo.isCustomSizeRequested)
+		if (this->_display[displayID]->IsCustomSizeRequested())
 		{
 			for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 			{
@@ -5929,11 +5753,11 @@ void GPUSubsystem::SaveState(EMUFILE &os)
 	// Version 0
 	
 	// Downscale and color convert the display framebuffers.
-	this->_DownscaleAndConvertForSavestate(NDSDisplayID_Main,  this->_displayInfo.customBuffer[NDSDisplayID_Main],  this->_displayInfo.nativeBuffer16[NDSDisplayID_Main]);
-	os.fwrite(this->_displayInfo.nativeBuffer16[NDSDisplayID_Main],  GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+	this->_DownscaleAndConvertForSavestate(NDSDisplayID_Main,  this->_display[NDSDisplayID_Main]->GetCustomBuffer(),  this->_display[NDSDisplayID_Main]->GetNativeBuffer16());
+	os.fwrite(this->_display[NDSDisplayID_Main]->GetNativeBuffer16(),  GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
 	
-	this->_DownscaleAndConvertForSavestate(NDSDisplayID_Touch, this->_displayInfo.customBuffer[NDSDisplayID_Touch], this->_displayInfo.nativeBuffer16[NDSDisplayID_Touch]);
-	os.fwrite(this->_displayInfo.nativeBuffer16[NDSDisplayID_Touch], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+	this->_DownscaleAndConvertForSavestate(NDSDisplayID_Touch, this->_display[NDSDisplayID_Touch]->GetCustomBuffer(), this->_display[NDSDisplayID_Touch]->GetNativeBuffer16());
+	os.fwrite(this->_display[NDSDisplayID_Touch]->GetNativeBuffer16(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
 	
 	// Version 1
 	os.write_32LE(this->_engineMain->savedBG2X.value);
@@ -6186,6 +6010,8 @@ void NDSDisplay::__constructor(const NDSDisplayID displayID, GPUEngineBase *theE
 	_renderedBuffer = this->_nativeBuffer16;
  	_renderedWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
  	_renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	
+	_isEnabled = true;
 }
 
 NDSDisplayID NDSDisplay::GetDisplayID() const
@@ -6486,6 +6312,16 @@ size_t NDSDisplay::GetRenderedHeight() const
    return this->_renderedHeight;
 }
 
+bool NDSDisplay::IsEnabled() const
+{
+	return this->_isEnabled;
+}
+
+void NDSDisplay::SetIsEnabled(bool stateIsEnabled)
+{
+	this->_isEnabled = stateIsEnabled;
+}
+
 float NDSDisplay::GetBacklightIntensityTotal() const
 {
 	return this->_backlightIntensityTotal;
@@ -6494,6 +6330,181 @@ float NDSDisplay::GetBacklightIntensityTotal() const
 void NDSDisplay::SetBacklightIntensityTotal(float intensity)
 {
 	this->_backlightIntensityTotal = intensity;
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+void NDSDisplay::ApplyMasterBrightness(const NDSDisplayInfo &displayInfo)
+{
+	if (!displayInfo.masterBrightnessDiffersPerLine[this->_ID])
+	{
+		// Apply the master brightness as a framebuffer operation.
+		this->ApplyMasterBrightness<OUTPUTFORMAT>(this->_renderedBuffer,
+			                                      this->_renderedWidth * this->_renderedHeight,
+			                                      (GPUMasterBrightMode)displayInfo.masterBrightnessMode[this->_ID][0],
+			                                      displayInfo.masterBrightnessIntensity[this->_ID][0]);
+	}
+	else
+	{
+		// Apply the master brightness as a scanline operation.
+		for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
+		{
+			const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(line);
+			void *dstColorLine = (!this->DidPerformCustomRender()) ? ((u8 *)this->_nativeBuffer16 + (lineInfo.blockOffsetNative * sizeof(u16))) : ((u8 *)this->_customBuffer + (lineInfo.blockOffsetCustom * this->_customPixelBytes));
+			const size_t pixCount = (!this->DidPerformCustomRender()) ? GPU_FRAMEBUFFER_NATIVE_WIDTH : lineInfo.pixelCount;
+			
+			this->ApplyMasterBrightness<OUTPUTFORMAT>(dstColorLine,
+			                                          pixCount,
+			                                          (GPUMasterBrightMode)displayInfo.masterBrightnessMode[this->_ID][line],
+			                                          displayInfo.masterBrightnessIntensity[this->_ID][line]);
+		}
+	}
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+void NDSDisplay::ApplyMasterBrightness(void *dst, const size_t pixCount, const GPUMasterBrightMode mode, const u8 intensity)
+{
+	if (intensity == 0)
+	{
+		return;
+	}
+	
+	const bool isFullIntensity = (intensity >= 16);
+	const u8 intensityClamped = (isFullIntensity) ? 16 : intensity;
+	
+	switch (mode)
+	{
+		case GPUMasterBrightMode_Disable:
+			// Do nothing.
+			break;
+			
+		case GPUMasterBrightMode_Up:
+		{
+			if (!isFullIntensity)
+			{
+				size_t i = 0;
+				
+#ifdef USEMANUALVECTORIZATION
+				i = this->_ApplyMasterBrightnessUp_LoopOp<OUTPUTFORMAT>(dst, pixCount, intensityClamped);
+#pragma LOOPVECTORIZE_DISABLE
+#endif
+				for (; i < pixCount; i++)
+				{
+					if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+					{
+						((u16 *)dst)[i] = PixelOperation::BrightnessUpTable555[intensityClamped][ ((u16 *)dst)[i] & 0x7FFF ] | 0x8000;
+					}
+					else
+					{
+						((FragmentColor *)dst)[i] = colorop.increase<OUTPUTFORMAT>(((FragmentColor *)dst)[i], intensityClamped);
+						((FragmentColor *)dst)[i].a = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F : 0xFF;
+					}
+				}
+			}
+			else
+			{
+				// all white (optimization)
+				switch (OUTPUTFORMAT)
+				{
+					case NDSColorFormat_BGR555_Rev:
+						memset_u16(dst, 0xFFFF, pixCount);
+						break;
+						
+					case NDSColorFormat_BGR666_Rev:
+						memset_u32(dst, 0x1F3F3F3F, pixCount);
+						break;
+						
+					case NDSColorFormat_BGR888_Rev:
+						memset_u32(dst, 0xFFFFFFFF, pixCount);
+						break;
+						
+					default:
+						break;
+				}
+			}
+			break;
+		}
+			
+		case GPUMasterBrightMode_Down:
+		{
+			if (!isFullIntensity)
+			{
+				size_t i = 0;
+				
+#ifdef USEMANUALVECTORIZATION
+				i = this->_ApplyMasterBrightnessDown_LoopOp<OUTPUTFORMAT>(dst, pixCount, intensityClamped);
+#pragma LOOPVECTORIZE_DISABLE
+#endif
+				for (; i < pixCount; i++)
+				{
+					if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+					{
+						((u16 *)dst)[i] = PixelOperation::BrightnessDownTable555[intensityClamped][ ((u16 *)dst)[i] & 0x7FFF ] | 0x8000;
+					}
+					else
+					{
+						((FragmentColor *)dst)[i] = colorop.decrease<OUTPUTFORMAT>(((FragmentColor *)dst)[i], intensityClamped);
+						((FragmentColor *)dst)[i].a = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F : 0xFF;
+					}
+				}
+			}
+			else
+			{
+				// all black (optimization)
+				switch (OUTPUTFORMAT)
+				{
+					case NDSColorFormat_BGR555_Rev:
+						memset_u16(dst, 0x8000, pixCount);
+						break;
+						
+					case NDSColorFormat_BGR666_Rev:
+						memset_u32(dst, 0x1F000000, pixCount);
+						break;
+						
+					case NDSColorFormat_BGR888_Rev:
+						memset_u32(dst, 0xFF000000, pixCount);
+						break;
+						
+					default:
+						break;
+				}
+			}
+			break;
+		}
+			
+		case GPUMasterBrightMode_Reserved:
+			// Do nothing.
+			break;
+	}
+}
+
+void NDSDisplay::Postprocess(NDSDisplayInfo &mutableDisplayInfo)
+{
+	if (this->_isEnabled)
+	{
+		if ( (this->_customColorFormat == NDSColorFormat_BGR666_Rev) && this->DidPerformCustomRender() && mutableDisplayInfo.needConvertColorFormat[this->_ID] )
+		{
+			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)this->_renderedBuffer, (u32 *)this->_renderedBuffer, this->_renderedWidth * this->_renderedHeight);
+		}
+		
+		if (mutableDisplayInfo.needApplyMasterBrightness[this->_ID])
+		{
+			if ( (this->_customColorFormat == NDSColorFormat_BGR555_Rev) || !this->DidPerformCustomRender() )
+			{
+				this->ApplyMasterBrightness<NDSColorFormat_BGR555_Rev>(mutableDisplayInfo);
+			}
+			else
+			{
+				this->ApplyMasterBrightness<NDSColorFormat_BGR888_Rev>(mutableDisplayInfo);
+			}
+		}
+	}
+	else
+	{
+		memset(this->_renderedBuffer, 0, this->_renderedWidth * this->_renderedHeight * this->_customPixelBytes);
+	}
+	
+	mutableDisplayInfo.needConvertColorFormat[this->_ID] = false;
+	mutableDisplayInfo.needApplyMasterBrightness[this->_ID] = false;
 }
 
 template void GPUEngineBase::ParseReg_BGnHOFS<GPULayerID_BG0>();
