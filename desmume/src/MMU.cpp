@@ -3337,20 +3337,16 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 					
 				case REG_DISPA_WIN0H:
 					T1WriteByte(MMU.ARM9_REG, 0x0040, val);
-					mainEngine->ParseReg_WINnH<0>();
 					return;
 				case REG_DISPA_WIN0H+1:
 					T1WriteByte(MMU.ARM9_REG, 0x0041, val);
-					mainEngine->ParseReg_WINnH<0>();
 					return;
 					
 				case REG_DISPA_WIN1H:
 					T1WriteByte(MMU.ARM9_REG, 0x0042, val);
-					mainEngine->ParseReg_WINnH<1>();
 					return;
 				case REG_DISPA_WIN1H+1:
 					T1WriteByte(MMU.ARM9_REG, 0x0043, val);
-					mainEngine->ParseReg_WINnH<1>();
 					return;
 					
 				case REG_DISPA_WIN0V:
@@ -3506,20 +3502,16 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 					
 				case REG_DISPB_WIN0H:
 					T1WriteByte(MMU.ARM9_REG, 0x1040, val);
-					subEngine->ParseReg_WINnH<0>();
 					return;
 				case REG_DISPB_WIN0H+1:
 					T1WriteByte(MMU.ARM9_REG, 0x1041, val);
-					subEngine->ParseReg_WINnH<0>();
 					return;
 					
 				case REG_DISPB_WIN1H:
 					T1WriteByte(MMU.ARM9_REG, 0x1042, val);
-					subEngine->ParseReg_WINnH<1>();
 					return;
 				case REG_DISPB_WIN1H+1:
 					T1WriteByte(MMU.ARM9_REG, 0x1043, val);
-					subEngine->ParseReg_WINnH<1>();
 					return;
 					
 				case REG_DISPB_WIN0V:
@@ -3875,12 +3867,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					
 				case REG_DISPA_WIN0H:
 					T1WriteWord(MMU.ARM9_REG, 0x0040, val);
-					mainEngine->ParseReg_WINnH<0>();
 					return;
 					
 				case REG_DISPA_WIN1H:
 					T1WriteWord(MMU.ARM9_REG, 0x0042, val);
-					mainEngine->ParseReg_WINnH<1>();
 					return;
 					
 				case REG_DISPA_WIN0V:
@@ -4062,12 +4052,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					
 				case REG_DISPB_WIN0H:
 					T1WriteWord(MMU.ARM9_REG, 0x1040, val);
-					subEngine->ParseReg_WINnH<0>();
 					return;
 					
 				case REG_DISPB_WIN1H:
 					T1WriteWord(MMU.ARM9_REG, 0x1042, val);
-					subEngine->ParseReg_WINnH<1>();
 					return;
 					
 				case REG_DISPB_WIN0V:
@@ -4462,8 +4450,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					
 				case REG_DISPA_WIN0H:
 					T1WriteLong(MMU.ARM9_REG, 0x0040, val);
-					mainEngine->ParseReg_WINnH<0>();
-					mainEngine->ParseReg_WINnH<1>();
 					return;
 					
 				case REG_DISPA_WIN0V:
@@ -4577,8 +4563,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					
 				case REG_DISPB_WIN0H:
 					T1WriteLong(MMU.ARM9_REG, 0x1040, val);
-					subEngine->ParseReg_WINnH<0>();
-					subEngine->ParseReg_WINnH<1>();
 					return;
 					
 				case REG_DISPB_WIN0V:

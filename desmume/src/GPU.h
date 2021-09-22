@@ -409,6 +409,19 @@ typedef IOREG_WIN0V IOREG_WIN1V;			// 0x400x046: Vertical coordinates of Window 
 
 typedef union
 {
+	u64 value;
+	
+	struct
+	{
+		IOREG_WIN0H WIN0H;					// 0x0400x040
+		IOREG_WIN1H WIN1H;					// 0x0400x042
+		IOREG_WIN0V WIN0V;					// 0x0400x044
+		IOREG_WIN1V WIN1V;					// 0x0400x046
+	};
+} IOREG_WIN_COORD;
+
+typedef union
+{
 	u8 value;
 	
 	struct
@@ -435,6 +448,19 @@ typedef union
 typedef IOREG_WIN0IN IOREG_WIN1IN;			// 0x400x049: Control of inside of Window 1 (medium priority)
 typedef IOREG_WIN0IN IOREG_WINOUT;			// 0x400x04A: Control of outside of all windows
 typedef IOREG_WIN0IN IOREG_WINOBJ;			// 0x400x04B: Control of inside of Window OBJ (lowest priority)
+
+typedef union
+{
+	u32 value;
+	
+	struct
+	{
+		IOREG_WIN0IN WIN0IN;				// 0x0400x048
+		IOREG_WIN1IN WIN1IN;				// 0x0400x049
+		IOREG_WINOUT WINOUT;				// 0x0400x04A
+		IOREG_WINOBJ WINOBJ;				// 0x0400x04B
+	};
+} IOREG_WIN_CTRL;
 
 typedef union
 {
@@ -751,14 +777,31 @@ typedef struct
 		};
 	};
 	
-	IOREG_WIN0H				WIN0H;					// 0x0400x040
-	IOREG_WIN1H				WIN1H;					// 0x0400x042
-	IOREG_WIN0V				WIN0V;					// 0x0400x044
-	IOREG_WIN1V				WIN1V;					// 0x0400x046
-	IOREG_WIN0IN			WIN0IN;					// 0x0400x048
-	IOREG_WIN1IN			WIN1IN;					// 0x0400x049
-	IOREG_WINOUT			WINOUT;					// 0x0400x04A
-	IOREG_WINOBJ			WINOBJ;					// 0x0400x04B
+	union
+	{
+		IOREG_WIN_COORD		WIN_COORD;				// 0x0400x040
+		
+		struct
+		{
+			IOREG_WIN0H		WIN0H;					// 0x0400x040
+			IOREG_WIN1H		WIN1H;					// 0x0400x042
+			IOREG_WIN0V		WIN0V;					// 0x0400x044
+			IOREG_WIN1V		WIN1V;					// 0x0400x046
+		};
+	};
+	
+	union
+	{
+		IOREG_WIN_CTRL		WIN_CTRL;				// 0x0400x048
+		
+		struct
+		{
+			IOREG_WIN0IN	WIN0IN;					// 0x0400x048
+			IOREG_WIN1IN	WIN1IN;					// 0x0400x049
+			IOREG_WINOUT	WINOUT;					// 0x0400x04A
+			IOREG_WINOBJ	WINOBJ;					// 0x0400x04B
+		};
+	};
 	
 	IOREG_MOSAIC			MOSAIC;					// 0x0400x04C
 	
@@ -1222,6 +1265,28 @@ typedef struct
 	u32 trunc32[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 } MosaicTableEntry;
 
+typedef union
+{
+	u16 value;
+	
+	struct
+	{
+		u8 WIN0_ENABLED:1;
+		u8 WIN1_ENABLED:1;
+		u8 WINOBJ_ENABLED:1;
+		u8 IsWithinVerticalRange_WIN0:1;
+		u8 IsWithinVerticalRange_WIN1:1;
+		u8 unused1:3;
+		
+		u8 BG0_Shown:1;
+		u8 BG1_Shown:1;
+		u8 BG2_Shown:1;
+		u8 BG3_Shown:1;
+		u8 OBJ_Shown:1;
+		u8 unused2:3;
+	};
+} WINState;
+
 typedef struct
 {
 	GPULayerID layerID;
@@ -1293,9 +1358,7 @@ typedef struct
 	u8 WINOUT_enable[6];
 	u8 WINOBJ_enable[6];
 	
-	bool WIN0_ENABLED;
-	bool WIN1_ENABLED;
-	bool WINOBJ_ENABLED;
+	WINState windowState;
 	bool isAnyWindowEnabled;
 	
 	u8 srcEffectEnable[6];
@@ -1434,7 +1497,10 @@ protected:
 	
 	void *_internalRenderLineTargetCustom;
 	u8 *_renderLineLayerIDCustom;
-	bool _needUpdateWINH[2];
+	
+	WINState _prevWINState;
+	IOREG_WIN_COORD _prevWINCoord;
+	IOREG_WIN_CTRL _prevWINCtrl;
 	
 	Task *_asyncClearTask;
 	bool _asyncClearIsRunning;
@@ -1467,8 +1533,8 @@ protected:
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST> void _CompositeVRAMLineDeferred(GPUEngineCompositorInfo &compInfo, const void *__restrict vramColorPtr);
 	
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _CompositeNativeLineOBJ_LoopOp(GPUEngineCompositorInfo &compInfo, const u16 *__restrict srcColorNative16, const FragmentColor *__restrict srcColorNative32);
-	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST> size_t _CompositeLineDeferred_LoopOp(GPUEngineCompositorInfo &compInfo, const u16 *__restrict srcColorCustom16, const u8 *__restrict srcIndexCustom);
-	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST> size_t _CompositeVRAMLineDeferred_LoopOp(GPUEngineCompositorInfo &compInfo, const void *__restrict vramColorPtr);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST> size_t _CompositeLineDeferred_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const u16 *__restrict srcColorCustom16, const u8 *__restrict srcIndexCustom);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST> size_t _CompositeVRAMLineDeferred_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const void *__restrict vramColorPtr);
 	
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING> void _RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const u16 XBG, const u16 YBG);
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING> void _RenderLine_BGAffine(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param);
@@ -1528,7 +1594,6 @@ public:
 	template<GPULayerID LAYERID> void ParseReg_BGnVOFS();
 	template<GPULayerID LAYERID> void ParseReg_BGnX();
 	template<GPULayerID LAYERID> void ParseReg_BGnY();
-	template<size_t WINNUM> void ParseReg_WINnH();
 	void ParseReg_WININ();
 	void ParseReg_WINOUT();
 	void ParseReg_MOSAIC();
@@ -1635,7 +1700,7 @@ protected:
 	template<NDSColorFormat COLORFORMAT> FragmentColor _RenderLine_DispCapture_BlendFunc(const FragmentColor srcA, const FragmentColor srcB, const u8 blendEVA, const u8 blendEVB);
 	
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
-	size_t _RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo, const FragmentColor *__restrict srcLinePtr);
+	size_t _RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const FragmentColor *__restrict srcLinePtr);
 	
 	template<NDSColorFormat OUTPUTFORMAT>
 	void _RenderLine_DispCapture_Blend_Buffer(const void *srcA, const void *srcB, void *dst, const u8 blendEVA, const u8 blendEVB, const size_t pixCount); // Do not use restrict pointers, since srcB and dst can be the same

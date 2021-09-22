@@ -2366,7 +2366,7 @@ void GPUEngineBase::_CompositeNativeLineOBJ_LoopOp(GPUEngineCompositorInfo &comp
 }
 
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST>
-size_t GPUEngineBase::_CompositeLineDeferred_LoopOp(GPUEngineCompositorInfo &compInfo, const u16 *__restrict srcColorCustom16, const u8 *__restrict srcIndexCustom)
+size_t GPUEngineBase::_CompositeLineDeferred_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const u16 *__restrict srcColorCustom16, const u8 *__restrict srcIndexCustom)
 {
 	static const size_t step = sizeof(v128u8);
 	
@@ -2393,7 +2393,7 @@ size_t GPUEngineBase::_CompositeLineDeferred_LoopOp(GPUEngineCompositorInfo &com
 			if (WILLPERFORMWINDOWTEST)
 			{
 				// Do the window test.
-				passMask8 = _mm_load_si128((v128u8 *)(this->_didPassWindowTestCustom[compInfo.renderState.selectedLayerID] + compInfo.target.xCustom));
+				passMask8 = _mm_load_si128((v128u8 *)(windowTestPtr + compInfo.target.xCustom));
 			}
 			
 			if (LAYERTYPE == GPULayerType_BG)
@@ -2439,7 +2439,7 @@ size_t GPUEngineBase::_CompositeLineDeferred_LoopOp(GPUEngineCompositorInfo &com
 		                                                                                        src[1], src[0],
 		                                                                                        srcEffectEnableMask,
 		                                                                                        dstBlendEnableMaskLUT,
-		                                                                                        this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID] + compInfo.target.xCustom,
+		                                                                                        colorEffectEnablePtr + compInfo.target.xCustom,
 		                                                                                        this->_sprAlphaCustom + compInfo.target.xCustom,
 		                                                                                        this->_sprTypeCustom + compInfo.target.xCustom);
 	}
@@ -2448,7 +2448,7 @@ size_t GPUEngineBase::_CompositeLineDeferred_LoopOp(GPUEngineCompositorInfo &com
 }
 
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST>
-size_t GPUEngineBase::_CompositeVRAMLineDeferred_LoopOp(GPUEngineCompositorInfo &compInfo, const void *__restrict vramColorPtr)
+size_t GPUEngineBase::_CompositeVRAMLineDeferred_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const void *__restrict vramColorPtr)
 {
 	static const size_t step = sizeof(v128u8);
 	
@@ -2472,7 +2472,7 @@ size_t GPUEngineBase::_CompositeVRAMLineDeferred_LoopOp(GPUEngineCompositorInfo 
 		if (WILLPERFORMWINDOWTEST)
 		{
 			// Do the window test.
-			passMask8 = _mm_load_si128((v128u8 *)(this->_didPassWindowTestCustom[compInfo.renderState.selectedLayerID] + compInfo.target.xCustom));
+			passMask8 = _mm_load_si128((v128u8 *)(windowTestPtr + compInfo.target.xCustom));
 			
 			// If none of the pixels within the vector pass, then reject them all at once.
 			passMaskValue = _mm_movemask_epi8(passMask8);
@@ -2521,7 +2521,7 @@ size_t GPUEngineBase::_CompositeVRAMLineDeferred_LoopOp(GPUEngineCompositorInfo 
 				                                                                                        src16[1], src16[0],
 				                                                                                        srcEffectEnableMask,
 				                                                                                        dstBlendEnableMaskLUT,
-				                                                                                        this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID] + compInfo.target.xCustom,
+				                                                                                        colorEffectEnablePtr + compInfo.target.xCustom,
 				                                                                                        this->_sprAlphaCustom + compInfo.target.xCustom,
 				                                                                                        this->_sprTypeCustom + compInfo.target.xCustom);
 				break;
@@ -2560,7 +2560,7 @@ size_t GPUEngineBase::_CompositeVRAMLineDeferred_LoopOp(GPUEngineCompositorInfo 
 				                                                                                        src32[3], src32[2], src32[1], src32[0],
 				                                                                                        srcEffectEnableMask,
 				                                                                                        dstBlendEnableMaskLUT,
-				                                                                                        this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID] + compInfo.target.xCustom,
+				                                                                                        colorEffectEnablePtr + compInfo.target.xCustom,
 				                                                                                        this->_sprAlphaCustom + compInfo.target.xCustom,
 				                                                                                        this->_sprTypeCustom + compInfo.target.xCustom);
 				break;
@@ -2688,7 +2688,7 @@ void GPUEngineBase::_PerformWindowTestingNative(GPUEngineCompositorInfo &compInf
 }
 
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
-size_t GPUEngineA::_RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo, const FragmentColor *__restrict srcLinePtr)
+size_t GPUEngineA::_RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const FragmentColor *__restrict srcLinePtr)
 {
 	static const size_t step = sizeof(v128u8);
 	
@@ -2713,7 +2713,7 @@ size_t GPUEngineA::_RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo,
 		if (WILLPERFORMWINDOWTEST)
 		{
 			// Do the window test.
-			passMask8 = _mm_load_si128((v128u8 *)(this->_didPassWindowTestCustom[GPULayerID_BG0] + compInfo.target.xCustom));
+			passMask8 = _mm_load_si128((v128u8 *)(windowTestPtr + compInfo.target.xCustom));
 			
 			// If none of the pixels within the vector pass, then reject them all at once.
 			passMaskValue = _mm_movemask_epi8(passMask8);
@@ -2757,7 +2757,7 @@ size_t GPUEngineA::_RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo,
 		                                                                                              src[3], src[2], src[1], src[0],
 		                                                                                              srcEffectEnableMask,
 		                                                                                              dstBlendEnableMaskLUT,
-		                                                                                              this->_enableColorEffectCustom[GPULayerID_BG0] + compInfo.target.xCustom,
+		                                                                                              colorEffectEnablePtr + compInfo.target.xCustom,
 		                                                                                              NULL,
 		                                                                                              NULL);
 	}
