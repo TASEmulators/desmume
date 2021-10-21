@@ -59,8 +59,8 @@ AC_CHECK_LIB(zzip, zzip_open, [
 dnl - Check for X11
 AC_PATH_X
 
-dnl - Check for SDL
-AC_PATH_PROGS(SDLCONFIG, [sdl-config sdl11-config])
+dnl - Check for SDL2
+AC_PATH_PROGS(SDLCONFIG, [sdl2-config])
 if test ! "x$SDLCONFIG" = "x" ; then
   SDL_CFLAGS=`$SDLCONFIG --cflags`
   SDL_LIBS=`$SDLCONFIG --libs`
