@@ -29,6 +29,7 @@
 #include <gdk/gdkkeysyms.h>
 #include <SDL.h>
 #include <X11/Xlib.h>
+#include <sys/stat.h>
 
 #include "types.h"
 #include "firmware.h"
@@ -127,6 +128,7 @@ static void DoQuit();
 static void RecordMovieDialog();
 static void PlayMovieDialog();
 static void StopMovie();
+static void ImportBackupDialog();
 static void OpenNdsDialog();
 static void SaveStateDialog();
 static void LoadStateDialog();
@@ -211,6 +213,8 @@ static const char *ui_description =
 #ifdef GTK_DESMUME_FIRMWARE_BROKEN
 "      <menuitem action='loadfirmware'/>"
 #endif
+"      <separator/>"
+"      <menuitem action='importbackup'/>"
 "      <separator/>"
 "      <menuitem action='recordmovie'/>"
 "      <menuitem action='playmovie'/>"
@@ -400,6 +404,7 @@ static const GtkActionEntry action_entries[] = {
       { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
       { "savestateto",    NULL,         "Save state _to ...",         NULL,  NULL,   SaveStateDialog },
       { "loadstatefrom",  NULL,         "Load state _from ...",         NULL,  NULL,   LoadStateDialog },
+      { "importbackup",  NULL,         "_Import backup from ...",         NULL,  NULL,   ImportBackupDialog },
       { "recordmovie",  NULL,         "Record movie _to ...",         NULL,  NULL,   RecordMovieDialog },
       { "playmovie",  NULL,         "Play movie _from ...",         NULL,  NULL,   PlayMovieDialog },
       { "stopmovie",  NULL,         "Stop movie", NULL,  NULL,   StopMovie },
@@ -1137,6 +1142,59 @@ static void PlayMovieDialog()
     }
     gtk_widget_destroy(pFileSelection);
 }
+
+static void ImportBackupDialog()
+{
+    GtkFileFilter *pFilter_dsm, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
+
+    if (desmume_running())
+        Pause();
+
+    pParent = GTK_WIDGET(pWindow);
+
+    pFilter_dsm = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_dsm, "*.sav");
+    gtk_file_filter_set_name(pFilter_dsm, "Battery save file (.sav)");
+
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*");
+    gtk_file_filter_set_name(pFilter_any, "All files");
+
+    /* Creating the selection window */
+    pFileSelection = gtk_file_chooser_dialog_new("Import backup from...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_OPEN,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_OPEN, GTK_RESPONSE_OK,
+            NULL);
+    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
+
+    /* Only the dialog window is accepting events: */
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_dsm);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+
+    /* Showing the window */
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+	struct stat st; int ret;
+	if(stat(sPath, &st) != -1) {
+		ret = MMU_new.backupDevice.importData(sPath, st.st_size);
+		NDS_Reset(); // reboot game
+	}
+        g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
+}
+
 
 static void SaveStateDialog()
 {
