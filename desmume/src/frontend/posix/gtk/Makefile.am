@@ -21,7 +21,7 @@ desmume_SOURCES = \
 	../shared/sndsdl.cpp \
 	../shared/ctrlssdl.h ../shared/ctrlssdl.cpp \
 	osmesa_3Demu.cpp osmesa_3Demu.h \
-	glx_3Demu.cpp glx_3Demu.h \
+	sdl_3Demu.cpp sdl_3Demu.h \
 	cheatsGTK.h cheatsGTK.cpp \
 	main.cpp main.h
 desmume_LDADD = ../libdesmume.a \
@@ -29,9 +29,6 @@ desmume_LDADD = ../libdesmume.a \
 if HAVE_LIBOSMESA
 desmume_LDADD += $(OSMESA_LIBS)
 else
-if HAVE_GL_GLX
-desmume_LDADD += $(GLX_LIBS)
-endif
 endif
 
 UPDATE_DESKTOP = \
