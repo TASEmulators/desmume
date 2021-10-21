@@ -22,6 +22,7 @@
 
 #ifdef __unix__
 #define _POSIX_C_SOURCE 199309
+#define _GNU_SOURCE
 #endif
 
 #include <stdlib.h>
