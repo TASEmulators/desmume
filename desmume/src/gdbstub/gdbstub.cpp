@@ -48,6 +48,30 @@
 #endif
 #endif // HOST_WINDOWS
 
+#ifdef WIN32
+#define RECV(A,B,C) recv(A, B, C, 0)
+#define SEND(A,B,C) send(A, (char*)B, C, 0)
+#define CLOSESOCKET(A) closesocket(A)
+#define SOCKLEN_T int
+static int set_socket_nodelay(int socket) {
+    BOOL nodelay_opt = 1;
+    return setsockopt( socket, IPPROTO_TCP, TCP_NODELAY,
+                       (char*)&nodelay_opt, sizeof( nodelay_opt));
+}
+#else
+#define INVALID_SOCKET -1
+#define RECV(A,B,C) read(A, (char*)B, C)
+#define SEND(A,B,C) write(A, B, C)
+#define CLOSESOCKET(A) close(A)
+#define SOCKLEN_T socklen_t
+static int set_socket_nodelay(int socket) {
+    int nodelay_opt = 1;
+    return setsockopt( socket, IPPROTO_TCP, TCP_NODELAY,
+                       &nodelay_opt, sizeof( nodelay_opt));
+}
+#endif
+
+
 slock *cpu_mutex = NULL;
 
 #ifdef __GNUC__
@@ -187,23 +211,13 @@ void gdbstub_mutex_unlock()
 static void
 causeQuit_gdb( struct gdb_stub_state *stub) {
   uint8_t command = QUIT_STUB_MESSAGE;
-
-#ifdef WIN32
-  send( stub->ctl_pipe[1], (char*)&command, 1, 0);
-#else
-  write( stub->ctl_pipe[1], &command, 1);
-#endif
+  SEND( stub->ctl_pipe[1], &command, 1);
 }
 
 static void
 indicateCPUStop_gdb( struct gdb_stub_state *stub) {
   uint8_t command = CPU_STOPPED_STUB_MESSAGE;
-
-#ifdef WIN32
-  send( stub->ctl_pipe[1], (char*)&command, 1, 0);
-#else
-  write( stub->ctl_pipe[1], &command, 1);
-#endif
+  SEND( stub->ctl_pipe[1], &command, 1);
 }
 
 
@@ -974,29 +988,17 @@ createSocket ( int port) {
 
   sock = socket (PF_INET, SOCK_STREAM, 0);
 
-#ifdef WIN32
   if ( sock != INVALID_SOCKET)
-#else
-  if (sock != -1)
-#endif
     {
       if (bind (sock, (struct sockaddr *) &bind_addr,
                 sizeof (bind_addr)) == -1) {
         LOG_ERROR("Bind failed \"%s\" port %d\n", strerror( errno), port);
-#ifdef WIN32
-        closesocket( sock);
-#else
-        close (sock);
-#endif
+        CLOSESOCKET( sock);
         sock = -1;
       }
       else if (listen (sock, 5) == -1) {
         LOG_ERROR("Listen failed \"%s\"\n", strerror( errno));
-#ifdef WIN32
-        closesocket( sock);
-#else
-        close (sock);
-#endif
+        CLOSESOCKET( sock);
         sock = -1;
       }
     }
@@ -1083,11 +1085,7 @@ WINAPI listenerThread_gdb( void *data) {
 	uint8_t ctl_command;
 
         //DEBUG_LOG("Control message\n");
-#ifdef WIN32
-	recv( state->ctl_pipe[0], (char*)&ctl_command, 1, 0);
-#else
-	read( state->ctl_pipe[0], (char*)&ctl_command, 1);
-#endif
+	RECV( state->ctl_pipe[0], &ctl_command, 1);
 
 	switch ( ctl_command) {
 
@@ -1131,11 +1129,7 @@ WINAPI listenerThread_gdb( void *data) {
         if ( FD_ISSET( arm_listener, &read_sock_set)) {
           SOCKET_TYPE new_conn;
           struct sockaddr_in gdb_addr;
-#ifdef WIN32
-          int addr_size = sizeof( gdb_addr);
-#else
-          socklen_t addr_size = sizeof( gdb_addr);
-#endif
+          SOCKLEN_T addr_size = sizeof( gdb_addr);
 
           //DEBUG_LOG("listener\n");
 
@@ -1148,24 +1142,14 @@ WINAPI listenerThread_gdb( void *data) {
 
             //DEBUG_LOG("got new socket\n");
             if ( state->sock_fd == -1 && state->active) {
-#ifdef WIN32
-              BOOL nodelay_opt = 1;
-#else
-              int nodelay_opt = 1;
-#endif
+
               int set_res;
 
               //DEBUG_LOG("new connection\n");
 
               close_sock = 0;
               /* make the socket NODELAY */
-#ifdef WIN32
-              set_res = setsockopt( new_conn, IPPROTO_TCP, TCP_NODELAY,
-                                    (char*)&nodelay_opt, sizeof( nodelay_opt));
-#else
-              set_res = setsockopt( new_conn, IPPROTO_TCP, TCP_NODELAY,
-                                    &nodelay_opt, sizeof( nodelay_opt));
-#endif
+              set_res = set_socket_nodelay( new_conn);
 
               if ( set_res != 0) {
                 LOG_ERROR( "Failed to set NODELAY socket option \"%s\"\n", strerror( errno));
@@ -1177,11 +1161,7 @@ WINAPI listenerThread_gdb( void *data) {
 
             if ( close_sock) {
               //DEBUG_LOG("closing new socket\n");
-#ifdef WIN32
-              closesocket( new_conn);
-#else
-              close( new_conn);
-#endif
+              CLOSESOCKET( new_conn);
             }
 	  }
         }
@@ -1201,11 +1181,7 @@ WINAPI listenerThread_gdb( void *data) {
 
             case READ_SOCKET_ERROR:
               /* close the socket */
-#ifdef WIN32
-              closesocket( gdb_sock);
-#else
-              close( gdb_sock);
-#endif
+              CLOSESOCKET( gdb_sock);
               state->sock_fd = -1;
               FD_CLR( gdb_sock, &main_set);
               break;
@@ -1259,11 +1235,7 @@ WINAPI listenerThread_gdb( void *data) {
               }
 
               if ( close_socket) {
-#ifdef WIN32
-                closesocket( gdb_sock);
-#else
-                close( gdb_sock);
-#endif
+                CLOSESOCKET( gdb_sock);
                 state->sock_fd = -1;
                 FD_CLR( gdb_sock, &main_set);
               }
@@ -1279,19 +1251,11 @@ WINAPI listenerThread_gdb( void *data) {
 
   /* tidy up and leave */
   if ( state->sock_fd != -1) {
-#ifdef WIN32
-    closesocket( state->sock_fd);
-#else
-    close( state->sock_fd);
-#endif
+    CLOSESOCKET( state->sock_fd);
   }
 
   /* close the listenering sockets */
-#ifdef WIN32
-  closesocket( state->listen_fd);
-#else
-  close( state->listen_fd);
-#endif
+  CLOSESOCKET( state->listen_fd);
 
   return;
 }
@@ -1582,7 +1546,7 @@ createStub_gdb( uint16_t port,
   if ( res != 0) {
     LOG_ERROR( "Failed to create control socket\n");
   }
-#else
+#else /* not WIN32 */
   /* create the control pipe */
   res = pipe( stub->ctl_pipe);
 
