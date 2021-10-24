@@ -45,6 +45,19 @@ destroyStub_gdb( gdbstub_handle_t stub);
 void
 activateStub_gdb( gdbstub_handle_t stub);
 
+/* wait until either of 2 gdb stubs gives control back to the emulator.
+   pass a stubs[2], one of them may be NULL.
+   return value: response from stub | (stub number<<31),
+   i.e. if stub 1 responded, the high bit is set (and so the result negative).
+   the primary usecase for this is to do a blocking wait until the stub returns
+   control to the emulator, in order to not waste cpu cycles.
+   returns 0 on failure or if no response was available. */
+int gdbstub_wait( gdbstub_handle_t *stubs);
+
+/* enable or disable use of the pipe for gdbstub_wait() */
+void gdbstub_wait_set_enabled(gdbstub_handle_t stub, int on);
+
+
   /*
    * An implementation of the following functions is required
    * for the GDB stub to function.

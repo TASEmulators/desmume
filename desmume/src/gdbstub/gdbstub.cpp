@@ -304,9 +304,35 @@ indicateCPUStop_gdb( struct gdb_stub_state *stub) {
   SEND( stub->ctl_pipe[1], &command, 1);
 }
 
+int gdbstub_wait(gdbstub_handle_t *stubs) {
+	struct gdb_stub_state* g[2];
+	g[0] = (struct gdb_stub_state *) stubs[0];
+	g[1] = (struct gdb_stub_state *) stubs[1];
+	fd_set set;
+	unsigned i;
+	FD_ZERO(&set);
+	for (i = 0; i < 2; ++i)
+		if(g[i]) FD_SET( g[i]->info_pipe[0], &set);
+	int res = select( FD_SETSIZE, &set, NULL, NULL, NULL);
+	if (res <= 0) return 0;
+	for (i = 0; i < 2; ++i)
+		if ( g[i] && FD_ISSET( g[i]->info_pipe[0], &set)) {
+			RECV( g[i]->info_pipe[0], &res, 4);
+			return res | (i << 31);
+		}
+	return 0;
+}
 
+void gdbstub_wait_set_enabled(gdbstub_handle_t stub, int on) {
+	struct gdb_stub_state* g = (struct gdb_stub_state *) stub;
+	if(g) g->info_pipe_enabled = on;
+}
 
-
+static void infopipe_send(struct gdb_stub_state* g, int status) {
+	int resp = status;
+	if (g->info_pipe_enabled)
+		SEND(g->info_pipe[1], &resp, 4);
+}
 /*
  *
  *
@@ -701,6 +727,7 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
     /* remove the cpu stall */
     stub->cpu_ctrl->unstall( stub->cpu_ctrl->data);
 	NDS_debug_continue();
+	infopipe_send(stub, 1);
     break;
 
   case 's': {
@@ -725,6 +752,7 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
     stub->cpu_ctrl->unstall( stub->cpu_ctrl->data);
 	//NDS_debug_step();
 	NDS_debug_continue();
+	infopipe_send(stub, 2);
     break;
   }
 
@@ -1537,7 +1565,7 @@ createStub_gdb( uint16_t port,
   stub->access_breakpoints = NULL;
 
   if ( INIT_SOCKETS() != 0) return NULL;
-  if ( (res = INIT_PIPE(stub->ctl_pipe)) == 0) {
+  if ( (res = INIT_PIPE(stub->ctl_pipe)) == 0 && INIT_PIPE(stub->info_pipe) == 0) {
     stub->active = 1;
 	stub->emu_stub_state = gdb_stub_state::RUNNING_EMU_GDB_STATE;
 	stub->ctl_stub_state = gdb_stub_state::STOPPED_GDB_STATE;
