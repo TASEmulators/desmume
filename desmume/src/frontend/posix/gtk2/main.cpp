@@ -132,6 +132,7 @@ static void ImportBackupDialog();
 static void OpenNdsDialog();
 static void SaveStateDialog();
 static void LoadStateDialog();
+static void DumpRamDialog();
 void Launch();
 void Pause();
 static void ResetSaveStateTimes();
@@ -368,6 +369,8 @@ static const char *ui_description =
 "      <menuitem action='editjoyctrls'/>"
 "    </menu>"
 "    <menu action='ToolsMenu'>"
+"      <menuitem action='dumpram'/>"
+"      <separator/>"
 "      <menuitem action='ioregs'/>"
 "      <separator/>"
 "      <menu action='LayersMenu'>"
@@ -449,6 +452,7 @@ static const GtkActionEntry action_entries[] = {
       { "editjoyctrls",  NULL,     "Edit _Joystick controls",NULL,       NULL,   Edit_Joystick_Controls },
 
     { "ToolsMenu", NULL, "_Tools" },
+      { "dumpram",    NULL,         "Dump ram to ...",         NULL,  NULL,   DumpRamDialog },
       { "LayersMenu", NULL, "View _Layers" },
 
     { "HelpMenu", NULL, "_Help" },
@@ -1249,6 +1253,70 @@ static void SaveStateDialog()
         }
 
         g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
+}
+
+static void DumpRamDialog()
+{
+    GtkFileFilter *pFilter_ds, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
+
+    if (desmume_running())
+        Pause();
+
+    pParent = GTK_WIDGET(pWindow);
+
+    pFilter_ds = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_ds, "*.bin");
+    gtk_file_filter_set_name(pFilter_ds, "raw file (.bin)");
+
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*");
+    gtk_file_filter_set_name(pFilter_any, "All files");
+
+    /* Creating the selection window */
+    pFileSelection = gtk_file_chooser_dialog_new("Save memdump To ...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_SAVE,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
+            NULL);
+    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
+
+    /* Only the dialog window is accepting events: */
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_ds);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+
+    /* Showing the window */
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+	{
+		EMUFILE_FILE f(sPath,"wb");
+		DEBUG_dumpMemory(f);
+/*
+        if(savestate_save(sPath) == false ) {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+                    GTK_DIALOG_MODAL,
+                    GTK_MESSAGE_ERROR,
+                    GTK_BUTTONS_OK,
+                    "Unable to save :\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        } else {
+            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+        }
+*/
+	}
+	g_free(sPath);
         break;
     default:
         break;
