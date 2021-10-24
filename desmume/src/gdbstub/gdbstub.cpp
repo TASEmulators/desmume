@@ -507,8 +507,8 @@ readPacket_gdb( SOCKET_TYPE sock, struct packet_reader_gdb *packet) {
 
     case MID_PACKET_READ_STATE:
       if ( cur_byte == '#') {
-	//DEBUG_LOG( "\nAbout to get checksum\n");
 	packet->buffer[packet->pos_index] = '\0';
+	DEBUG_LOG( "\nAbout to get checksum for %s\n", packet->buffer);
 	packet->state = FIRST_CHECKSUM_READ_STATE;
       }
       else if ( packet->pos_index >= BUFMAX - 1) {
