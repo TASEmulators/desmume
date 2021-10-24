@@ -304,16 +304,22 @@ indicateCPUStop_gdb( struct gdb_stub_state *stub) {
   SEND( stub->ctl_pipe[1], &command, 1);
 }
 
-int gdbstub_wait(gdbstub_handle_t *stubs) {
+int gdbstub_wait(gdbstub_handle_t *stubs, long timeout) {
 	struct gdb_stub_state* g[2];
 	g[0] = (struct gdb_stub_state *) stubs[0];
 	g[1] = (struct gdb_stub_state *) stubs[1];
 	fd_set set;
 	unsigned i;
+	struct timeval tv = {}, *tvp = &tv;
 	FD_ZERO(&set);
 	for (i = 0; i < 2; ++i)
 		if(g[i]) FD_SET( g[i]->info_pipe[0], &set);
-	int res = select( FD_SETSIZE, &set, NULL, NULL, NULL);
+	if (timeout == -1L) tvp = NULL;
+	else {
+		tv.tv_sec = timeout / 1000;
+		tv.tv_usec = (timeout % 1000) * 1000;
+	}
+	int res = select( FD_SETSIZE, &set, NULL, NULL, tvp);
 	if (res <= 0) return 0;
 	for (i = 0; i < 2; ++i)
 		if ( g[i] && FD_ISSET( g[i]->info_pipe[0], &set)) {

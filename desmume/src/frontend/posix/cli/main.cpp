@@ -69,7 +69,7 @@ private:
 	gdbstub_handle_t __stubs[2];
 public:
 	virtual void EMU_DebugIdleUpdate() {
-		gdbstub_wait(__stubs);
+		gdbstub_wait(__stubs, -1L);
 	}
 	virtual void setStubs(gdbstub_handle_t stubs[2]) {
 		this->__stubs[0] = stubs[0];
