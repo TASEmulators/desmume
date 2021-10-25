@@ -497,8 +497,9 @@ int main(int argc, char ** argv) {
       fprintf( stderr, "Window creation failed: %s\n", SDL_GetError( ) );
       exit( -1);
     }
+    ctrls_cfg.window = window;
 
-	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     uint32_t desmume_pixelformat = SDL_MasksToPixelFormatEnum(16, 0x001F, 0x03E0, 0x7C00, 0);
 

@@ -34,6 +34,7 @@ u16 keyboard_cfg[NB_KEYS];
 u16 joypad_cfg[NB_KEYS];
 u16 nbr_joy;
 mouse_status mouse;
+static int fullscreen;
 
 static SDL_Joystick **open_joysticks = NULL;
 
@@ -500,6 +501,12 @@ process_ctrls_event( SDL_Event& event,
         break;
 
       case SDL_KEYDOWN:
+        if ((event.key.keysym.sym == SDLK_RETURN) && (event.key.keysym.mod & KMOD_ALT)) {
+            SDL_SetWindowFullscreen(cfg->window, fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
+            fullscreen = !fullscreen;
+            break;
+        }
+
         switch(event.key.keysym.sym){
             case SDLK_LSHIFT:
                 shift_pressed |= 1;
