@@ -82,6 +82,7 @@ static float nds_screen_size_ratio = 1.0f;
 
 static SDL_Window * window;
 static SDL_Renderer * renderer;
+static SDL_Texture *screen[2];
 
 /* Flags to pass to SDL_SetVideoMode */
 static int sdl_videoFlags;
@@ -263,20 +264,28 @@ resizeWindow_stub (u16 width, u16 height, void *screen_texture) {
 
 static void
 Draw( void) {
-  const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
-  const size_t pixCount = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-  ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Main],  pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
-  ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Touch], pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
-
-  SDL_Surface *rawImage = SDL_CreateRGBSurfaceFrom(displayInfo.masterNativeBuffer16, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, 16, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16), 0x001F, 0x03E0, 0x7C00, 0);
-  if(rawImage == NULL) return;
-
-  SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, rawImage);
-  SDL_FreeSurface(rawImage);
-  SDL_RenderCopy(renderer, texture, NULL, NULL);
-  SDL_RenderPresent(renderer);
-
-  return;
+	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+	const size_t pixCount = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Main],  pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
+	ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Touch], pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
+	static const SDL_Rect destrect[2] = {
+		{ 0,0,
+		  GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT},
+		{ 0, GPU_FRAMEBUFFER_NATIVE_HEIGHT,
+		  GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT},
+	};
+	unsigned i, off = 0, n = pixCount*2;
+	for(i = 0; i < 2; ++i) {
+		void *p = 0;
+		int pitch;
+		SDL_LockTexture(screen[i], NULL, &p, &pitch);
+		memcpy(p, ((char*)displayInfo.masterNativeBuffer16)+off, n);
+		SDL_UnlockTexture(screen[i]);
+		SDL_RenderCopy(renderer, screen[i], NULL, &destrect[i]);
+		off += n;
+	}
+	SDL_RenderPresent(renderer);
+	return;
 }
 
 static void desmume_cycle(struct ctrls_event_config * cfg)
@@ -333,6 +342,7 @@ int main(int argc, char ** argv) {
   int limiter_frame_counter = 0;
   int limiter_tick0 = 0;
   int error;
+  unsigned i;
 
   GKeyFile *keyfile;
 
@@ -471,8 +481,9 @@ int main(int argc, char ** argv) {
       return 1;
     }
 
-    sdl_videoFlags |= SDL_SWSURFACE;
-    window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 384, sdl_videoFlags );
+    sdl_videoFlags |= SDL_WINDOW_OPENGL;
+    window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+	256, 384, sdl_videoFlags );
 
     if ( !window ) {
       fprintf( stderr, "Window creation failed: %s\n", SDL_GetError( ) );
@@ -480,6 +491,13 @@ int main(int argc, char ** argv) {
     }
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+    uint32_t desmume_pixelformat = SDL_MasksToPixelFormatEnum(16, 0x001F, 0x03E0, 0x7C00, 0);
+
+    for(i = 0; i < 2; ++i)
+      screen[i] = SDL_CreateTexture(renderer, desmume_pixelformat, SDL_TEXTUREACCESS_STREAMING,
+	GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+
 
   /* Initialize joysticks */
   if(!init_joy()) return 1;
