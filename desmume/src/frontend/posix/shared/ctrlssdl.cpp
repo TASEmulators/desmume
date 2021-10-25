@@ -259,7 +259,7 @@ u16 get_set_joy_key(int index) {
 
 static signed long
 screen_to_touch_range( signed long scr, float size_ratio) {
-  return (signed long)((float)scr * size_ratio);
+  return (signed long)((float)scr / size_ratio);
 }
 
 /* Set mouse coordinates */

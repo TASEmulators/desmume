@@ -262,17 +262,17 @@ static void
 resizeWindow_stub (u16 width, u16 height, void *screen_texture) {
 }
 
-static void
-Draw( void) {
+static void Draw(class configured_features *cfg) {
+	const float scale = cfg->scale;
+	const unsigned w = GPU_FRAMEBUFFER_NATIVE_WIDTH, h = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	const int ws = w * scale, hs = h * scale;
 	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
-	const size_t pixCount = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	const size_t pixCount = w * h;
 	ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Main],  pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
 	ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Touch], pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
-	static const SDL_Rect destrect[2] = {
-		{ 0,0,
-		  GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT},
-		{ 0, GPU_FRAMEBUFFER_NATIVE_HEIGHT,
-		  GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT},
+	SDL_Rect destrect[2] = {
+		{ 0, 0 , ws, hs},
+		{ 0, hs, ws, hs},
 	};
 	unsigned i, off = 0, n = pixCount*2;
 	for(i = 0; i < 2; ++i) {
@@ -481,9 +481,10 @@ int main(int argc, char ** argv) {
       return 1;
     }
 
+    nds_screen_size_ratio = my_config.scale;
     sdl_videoFlags |= SDL_WINDOW_OPENGL;
     window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-	256, 384, sdl_videoFlags );
+	256*my_config.scale, 384*my_config.scale, sdl_videoFlags );
 
     if ( !window ) {
       fprintf( stderr, "Window creation failed: %s\n", SDL_GetError( ) );
@@ -541,7 +542,7 @@ int main(int argc, char ** argv) {
     DrawHUD();
 #endif
 
-    Draw();
+    Draw(&my_config);
 
 #ifdef HAVE_LIBAGG
     osd->clear();

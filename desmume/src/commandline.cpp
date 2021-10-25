@@ -81,6 +81,7 @@ CommandLine::CommandLine()
 , disable_limiter(0)
 , windowed_fullscreen(0)
 , frameskip(0)
+, scale(1.0)
 , _rtc_day(-1)
 , _rtc_hour(-1)
 {
@@ -123,6 +124,7 @@ static const char* help_string = \
 " --windowed-fullscreen" ENDL
 "                            Launches in windowed fullscreen (same as alt+enter)" ENDL
 #else
+" --scale N                  scale factor for window; default 1.0" ENDL
 " --nojoy                    Disables joystick support" ENDL
 #endif
 " --disable-sound            Disables the sound output" ENDL
@@ -198,6 +200,7 @@ ENDL
 #define OPT_3D_TEXTURE_UPSCALE 81
 #define OPT_GPU_RESOLUTION_MULTIPLIER 82
 #define OPT_FRAMESKIP 83
+#define OPT_SCALE 84
 #define OPT_JIT_SIZE 100
 
 #define OPT_CONSOLE_TYPE 200
@@ -261,6 +264,7 @@ bool CommandLine::parse(int argc,char **argv)
 				{ "windowed-fullscreen", no_argument, &windowed_fullscreen, 1 },
 			#else
 				{ "nojoy", no_argument, &_commandline_linux_nojoy, 1},
+				{ "scale", required_argument, NULL, OPT_SCALE},
 			#endif
 			{ "frameskip", required_argument, NULL, OPT_FRAMESKIP},
 			{ "disable-sound", no_argument, &disable_sound, 1},
@@ -339,6 +343,7 @@ bool CommandLine::parse(int argc,char **argv)
 		case OPT_3D_RENDER: _render3d = optarg; break;
 		case OPT_3D_TEXTURE_UPSCALE: texture_upscale = atoi(optarg); break;
 		case OPT_GPU_RESOLUTION_MULTIPLIER: gpu_resolution_multiplier = atoi(optarg); break;
+		case OPT_SCALE: scale = atof(optarg); break;
 		case OPT_FRAMESKIP: frameskip = atoi(optarg); break;
 
 		//RTC settings
