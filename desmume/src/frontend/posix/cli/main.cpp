@@ -582,7 +582,7 @@ int main(int argc, char ** argv) {
       fps_frame_counter = 0;
       fps_timing = 0;
 
-      snprintf( win_title, sizeof(win_title), "Desmume %f", fps);
+      snprintf( win_title, sizeof(win_title), "Desmume %.02f", fps);
 
       SDL_SetWindowTitle( window, win_title );
     }
