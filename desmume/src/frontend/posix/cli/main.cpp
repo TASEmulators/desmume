@@ -63,6 +63,21 @@
 #ifdef GDB_STUB
 #include "../armcpu.h"
 #include "../gdbstub.h"
+class CliDriver : public BaseDriver
+{
+private:
+	gdbstub_handle_t __stubs[2];
+public:
+	virtual void EMU_DebugIdleUpdate() {
+		gdbstub_wait(__stubs, -1L);
+	}
+	virtual void setStubs(gdbstub_handle_t stubs[2]) {
+		this->__stubs[0] = stubs[0];
+		this->__stubs[1] = stubs[1];
+	}
+};
+#else
+class CliDriver : public BaseDriver {};
 #endif
 
 volatile bool execute = false;
@@ -478,6 +493,19 @@ static void desmume_cycle(struct ctrls_event_config * cfg)
     SPU_Emulate_user();
 }
 
+#ifdef GDB_STUB
+static gdbstub_handle_t setup_gdb_stub(u16 port, armcpu_t *cpu, const armcpu_memory_iface *memio, const char* desc) {
+	gdbstub_handle_t stub = createStub_gdb(port, cpu, memio);
+	if ( stub == NULL) {
+		fprintf( stderr, "Failed to create %s gdbstub on port %d\n", desc, port);
+		exit( 1);
+	} else {
+		activateStub_gdb(stub);
+	}
+	return stub;
+}
+#endif
+
 int main(int argc, char ** argv) {
   class configured_features my_config;
   struct ctrls_event_config ctrls_cfg;
@@ -568,8 +596,8 @@ int main(int argc, char ** argv) {
     slot2_Init();
     slot2_Change((NDS_SLOT2_TYPE)slot2_device_type);
 
-  driver = new BaseDriver();
-  
+  driver = new CliDriver();
+
 #ifdef GDB_STUB
   gdbstub_mutex_init();
 
@@ -577,37 +605,22 @@ int main(int argc, char ** argv) {
    * Activate the GDB stubs
    * This has to come after NDS_Init() where the CPUs are set up.
    */
-  gdbstub_handle_t arm9_gdb_stub = NULL;
-  gdbstub_handle_t arm7_gdb_stub = NULL;
-  
+  gdbstub_handle_t stubs[2] = {};
   if ( my_config.arm9_gdb_port > 0) {
-    arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
+    stubs[0] = setup_gdb_stub(my_config.arm9_gdb_port,
                                    &NDS_ARM9,
-                                   &arm9_direct_memory_iface);
-    
-    if ( arm9_gdb_stub == NULL) {
-      fprintf( stderr, "Failed to create ARM9 gdbstub on port %d\n",
-              my_config.arm9_gdb_port);
-      exit( 1);
-    }
-    else {
-      activateStub_gdb( arm9_gdb_stub);
-    }
+                                   &arm9_direct_memory_iface, "ARM9");
+
   }
   if ( my_config.arm7_gdb_port > 0) {
-    arm7_gdb_stub = createStub_gdb( my_config.arm7_gdb_port,
+    stubs[1] = setup_gdb_stub(my_config.arm7_gdb_port,
                                    &NDS_ARM7,
-                                   &arm7_base_memory_iface);
-    
-    if ( arm7_gdb_stub == NULL) {
-      fprintf( stderr, "Failed to create ARM7 gdbstub on port %d\n",
-              my_config.arm7_gdb_port);
-      exit( 1);
-    }
-    else {
-      activateStub_gdb( arm7_gdb_stub);
-    }
+                                   &arm7_base_memory_iface, "ARM7");
+
   }
+  ((CliDriver*)driver)->setStubs(stubs);
+  gdbstub_wait_set_enabled(stubs[0], 1);
+  gdbstub_wait_set_enabled(stubs[1], 1);
 #endif
 
   if ( !my_config.disable_sound) {
@@ -795,15 +808,12 @@ int main(int argc, char ** argv) {
   uninit_joy();
 
 #ifdef GDB_STUB
-  destroyStub_gdb( arm9_gdb_stub);
-  arm9_gdb_stub = NULL;
-  
-  destroyStub_gdb( arm7_gdb_stub);
-  arm7_gdb_stub = NULL;
+  destroyStub_gdb( stubs[0]);
+  destroyStub_gdb( stubs[1]);
 
   gdbstub_mutex_destroy();
 #endif
-  
+
   SDL_Quit();
   NDS_DeInit();
 

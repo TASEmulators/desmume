@@ -67,6 +67,11 @@ extern HWND DisViewWnd[2];
 
 #ifdef GDB_STUB
 #include "gdbstub.h"
+#define GDBSTUB_MUTEX_LOCK() gdbstub_mutex_lock()
+#define GDBSTUB_MUTEX_UNLOCK() gdbstub_mutex_unlock()
+#else
+#define GDBSTUB_MUTEX_LOCK() do {} while(0)
+#define GDBSTUB_MUTEX_UNLOCK() do {} while(0)
 #endif
 
 //int xxctr=0;
@@ -2056,9 +2061,7 @@ void NDS_debug_step()
 template<bool FORCE>
 void NDS_exec(s32 nb)
 {
-	#ifdef GDB_STUB
-	gdbstub_mutex_lock();
-	#endif
+	GDBSTUB_MUTEX_LOCK();
 
 	LagFrameFlag=1;
 
@@ -2089,19 +2092,15 @@ void NDS_exec(s32 nb)
 				if ((NDS_ARM9.stalled || NDS_ARM7.stalled) && execute)
 				{
 					driver->EMU_DebugIdleEnter();
-					
+
 					while((NDS_ARM9.stalled || NDS_ARM7.stalled) && execute)
 					{
-					        #ifdef GDB_STUB
-					        gdbstub_mutex_unlock();
-					        #endif
+						GDBSTUB_MUTEX_UNLOCK();
 						driver->EMU_DebugIdleUpdate();
-					        #ifdef GDB_STUB
-					        gdbstub_mutex_lock();
-					        #endif
+						GDBSTUB_MUTEX_LOCK();
 						nds_debug_continuing[0] = nds_debug_continuing[1] = true;
 					}
-					
+
 					driver->EMU_DebugIdleWakeUp();
 				}
 			#endif
@@ -2199,9 +2198,7 @@ void NDS_exec(s32 nb)
 	DEBUG_Notify.NextFrame();
 	if(cheats) cheats->process(CHEAT_TYPE_INTERNAL);
 
-        #ifdef GDB_STUB
-        gdbstub_mutex_unlock();
-        #endif
+	GDBSTUB_MUTEX_UNLOCK();
 }
 
 template<int PROCNUM> static void execHardware_interrupts_core()
