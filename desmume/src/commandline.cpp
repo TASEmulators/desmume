@@ -81,6 +81,7 @@ CommandLine::CommandLine()
 , disable_limiter(0)
 , windowed_fullscreen(0)
 , frameskip(0)
+, horizontal(0)
 , scale(1.0)
 , _rtc_day(-1)
 , _rtc_hour(-1)
@@ -125,6 +126,7 @@ static const char* help_string = \
 "                            Launches in windowed fullscreen (same as alt+enter)" ENDL
 #else
 " --scale N                  scale factor for window; default 1.0" ENDL
+" --horizontal               display touch screen to the right; default OFF" ENDL
 " --nojoy                    Disables joystick support" ENDL
 #endif
 " --disable-sound            Disables the sound output" ENDL
@@ -264,6 +266,7 @@ bool CommandLine::parse(int argc,char **argv)
 				{ "windowed-fullscreen", no_argument, &windowed_fullscreen, 1 },
 			#else
 				{ "nojoy", no_argument, &_commandline_linux_nojoy, 1},
+				{ "horizontal", no_argument, &horizontal, 1},
 				{ "scale", required_argument, NULL, OPT_SCALE},
 			#endif
 			{ "frameskip", required_argument, NULL, OPT_FRAMESKIP},

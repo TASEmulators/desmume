@@ -589,8 +589,10 @@ process_ctrls_event( SDL_Event& event,
             screen_to_touch_range( event.button.y,
                                      cfg->nds_screen_size_ratio);
 
-          if( scaled_y >= 192)
+          if(!cfg->horizontal && scaled_y >= 192)
             set_mouse_coord( scaled_x, scaled_y - 192);
+          else if(cfg->horizontal && scaled_x >= 256)
+            set_mouse_coord( scaled_x - 256, scaled_y);
         }
         break;
 

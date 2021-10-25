@@ -270,9 +270,13 @@ static void Draw(class configured_features *cfg) {
 	const size_t pixCount = w * h;
 	ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Main],  pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
 	ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Touch], pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
-	SDL_Rect destrect[2] = {
+	const SDL_Rect destrect_v[2] = {
 		{ 0, 0 , ws, hs},
 		{ 0, hs, ws, hs},
+	};
+	const SDL_Rect destrect_h[2] = {
+		{ 0, 0 , ws, hs},
+		{ ws, 0, ws, hs},
 	};
 	unsigned i, off = 0, n = pixCount*2;
 	for(i = 0; i < 2; ++i) {
@@ -281,7 +285,7 @@ static void Draw(class configured_features *cfg) {
 		SDL_LockTexture(screen[i], NULL, &p, &pitch);
 		memcpy(p, ((char*)displayInfo.masterNativeBuffer16)+off, n);
 		SDL_UnlockTexture(screen[i]);
-		SDL_RenderCopy(renderer, screen[i], NULL, &destrect[i]);
+		SDL_RenderCopy(renderer, screen[i], NULL, cfg->horizontal ? &destrect_h[i] : &destrect_v[i]);
 		off += n;
 	}
 	SDL_RenderPresent(renderer);
@@ -482,9 +486,12 @@ int main(int argc, char ** argv) {
     }
 
     nds_screen_size_ratio = my_config.scale;
+    ctrls_cfg.horizontal = my_config.horizontal;
+    unsigned width = 256 + my_config.horizontal*256;
+    unsigned height = 192 + 192 * !my_config.horizontal;
     sdl_videoFlags |= SDL_WINDOW_OPENGL;
     window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-	256*my_config.scale, 384*my_config.scale, sdl_videoFlags );
+	width*my_config.scale, height*my_config.scale, sdl_videoFlags );
 
     if ( !window ) {
       fprintf( stderr, "Window creation failed: %s\n", SDL_GetError( ) );

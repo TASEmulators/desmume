@@ -85,6 +85,7 @@ extern mouse_status mouse;
 struct ctrls_event_config {
   unsigned short keypad;
   float nds_screen_size_ratio;
+  int horizontal;
   int auto_pause;
   int focused;
   int sdl_quit;
