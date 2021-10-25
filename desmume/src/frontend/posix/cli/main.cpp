@@ -29,18 +29,6 @@
 #define VERSION "Unknown version"
 #endif
 
-/*
- * FIXME: Not sure how to detect OpenGL in a platform portable way.
- */
-#ifdef HAVE_GL_GL_H
-#define INCLUDE_OPENGL_2D
-#endif
-
-#ifdef INCLUDE_OPENGL_2D
-#include <GL/gl.h>
-#include <GL/glu.h>
-#endif
-
 #ifndef CLI_UI
 #define CLI_UI
 #endif
@@ -152,10 +140,6 @@ public:
 
   int engine_3d;
   int savetype;
-  
-#ifdef INCLUDE_OPENGL_2D
-  int opengl_2d;
-#endif
 
   int firmware_language;
 };
@@ -168,10 +152,6 @@ init_config( class configured_features *config) {
 
   config->engine_3d = 1;
   config->savetype = 0;
-
-#ifdef INCLUDE_OPENGL_2D
-  config->opengl_2d = 0;
-#endif
 
   /* use the default language */
   config->firmware_language = -1;
@@ -197,9 +177,6 @@ fill_config( class configured_features *config,
     "\t\t\t\t\t\t  5 = FLASH 2mbit\n"
     "\t\t\t\t\t\t  6 = FLASH 4mbit\n",
     "SAVETYPE"},
-#ifdef INCLUDE_OPENGL_2D
-    { "opengl-2d", 0, 0, G_OPTION_ARG_NONE, &config->opengl_2d, "Enables using OpenGL for screen rendering", NULL},
-#endif
     { "fwlang", 0, 0, G_OPTION_ARG_INT, &config->firmware_language, "Set the language in the firmware, LANG as follows:\n"
     "\t\t\t\t\t\t  0 = Japanese\n"
     "\t\t\t\t\t\t  1 = English\n"
@@ -283,166 +260,9 @@ joinThread_gdb( void *thread_handle) {
 }
 #endif
 
-#ifdef INCLUDE_OPENGL_2D
-/* initialization openGL function */
-static int
-initGL( GLuint *screen_texture) {
-  GLenum errCode;
-  u16 blank_texture[256 * 256];
-
-  memset(blank_texture, 0, sizeof(blank_texture));
-
-  /* Enable Texture Mapping */
-  glEnable( GL_TEXTURE_2D );
-
-  /* Set the background black */
-  glClearColor( 0.0f, 0.0f, 0.0f, 0.5f );
-
-  /* Depth buffer setup */
-  glClearDepth( 1.0f );
-
-  /* Enables Depth Testing */
-  glEnable( GL_DEPTH_TEST );
-
-  /* The Type Of Depth Test To Do */
-  glDepthFunc( GL_LEQUAL );
-
-  /* Create The Texture */
-  glGenTextures(2, screen_texture);
-
-  for (int i = 0; i < 2; i++)
-  {
-    glBindTexture(GL_TEXTURE_2D, screen_texture[i]);
-
-    /* Generate The Texture */
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256,
-      0, GL_RGBA,
-      GL_UNSIGNED_SHORT_1_5_5_5_REV,
-      blank_texture);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    /* Linear Filtering */
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  }
-
-  if ((errCode = glGetError()) != GL_NO_ERROR) {
-    const GLubyte *errString;
-
-    errString = gluErrorString(errCode);
-    fprintf( stderr, "Failed to init GL: %s\n", errString);
-
-    return 0;
-  }
-
-  return 1;
-}
-
-static void
-resizeWindow( u16 width, u16 height, GLuint *screen_texture) {
-
-  int comp_width = 3 * width;
-  int comp_height = 2 * height;
-  GLenum errCode;
-
-  initGL(screen_texture);
-
-#ifdef HAVE_LIBAGG
-  Hud.reset();
-#endif
-
-  if ( comp_width > comp_height) {
-    width = 2*height/3;
-  }
-  height = 3*width/2;
-  nds_screen_size_ratio = 256.0 / (double)width;
-
-  /* Setup our viewport. */
-  glViewport( 0, 0, ( GLint )width, ( GLint )height );
-
-  /*
-   * change to the projection matrix and set
-   * our viewing volume.
-   */
-  glMatrixMode( GL_PROJECTION );
-  glLoadIdentity( );
-
-  gluOrtho2D( 0.0, 256.0, 384.0, 0.0);
-
-  /* Make sure we're chaning the model view and not the projection */
-  glMatrixMode( GL_MODELVIEW );
-
-  /* Reset The View */
-  glLoadIdentity( );
-
-  if ((errCode = glGetError()) != GL_NO_ERROR) {
-    const GLubyte *errString;
-
-    errString = gluErrorString(errCode);
-    fprintf( stderr, "GL resize failed: %s\n", errString);
-  }
-}
-
-
-static void
-opengl_Draw(GLuint *texture) {
-  const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
-
-  /* Clear The Screen And The Depth Buffer */
-  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-  /* Move Into The Screen 5 Units */
-  glLoadIdentity( );
-
-  /* Draw the main screen as a textured quad */
-  glBindTexture(GL_TEXTURE_2D, texture[NDSDisplayID_Main]);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT,
-                  GL_RGBA,
-                  GL_UNSIGNED_SHORT_1_5_5_5_REV,
-                  displayInfo.renderedBuffer[NDSDisplayID_Main]);
-
-  GLfloat backlightIntensity = displayInfo.backlightIntensity[NDSDisplayID_Main];
-
-  glBegin(GL_QUADS);
-    glTexCoord2f(0.00f, 0.00f); glVertex2f(  0.0f,   0.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-    glTexCoord2f(1.00f, 0.00f); glVertex2f(256.0f,   0.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-    glTexCoord2f(1.00f, 0.75f); glVertex2f(256.0f, 192.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-    glTexCoord2f(0.00f, 0.75f); glVertex2f(  0.0f, 192.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-  glEnd();
-
-  /* Draw the touch screen as a textured quad */
-  glBindTexture(GL_TEXTURE_2D, texture[NDSDisplayID_Touch]);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT,
-                  GL_RGBA,
-                  GL_UNSIGNED_SHORT_1_5_5_5_REV,
-                  displayInfo.renderedBuffer[NDSDisplayID_Touch]);
-
-  backlightIntensity = displayInfo.backlightIntensity[NDSDisplayID_Touch];
-
-  glBegin(GL_QUADS);
-    glTexCoord2f(0.00f, 0.00f); glVertex2f(  0.0f, 192.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-    glTexCoord2f(1.00f, 0.00f); glVertex2f(256.0f, 192.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-    glTexCoord2f(1.00f, 0.75f); glVertex2f(256.0f, 384.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-    glTexCoord2f(0.00f, 0.75f); glVertex2f(  0.0f, 384.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-  glEnd();
-
-  /* Flush the drawing to the screen */
-  SDL_GL_SwapBuffers( );
-}
-#endif
-
-/* this is a stub for resizeWindow_stub in the case of no gl headers or no opengl 2d */
-#ifdef INCLUDE_OPENGL_2D
-static void
-resizeWindow_stub (u16 width, u16 height, GLuint *screen_texture) {
-}
-#else
 static void
 resizeWindow_stub (u16 width, u16 height, void *screen_texture) {
 }
-#endif
 
 static void
 Draw( void) {
@@ -525,10 +345,6 @@ int main(int argc, char ** argv) {
   u32 fps_timing = 0;
   u32 fps_frame_counter = 0;
   u32 fps_previous_time = 0;
-#endif
-
-#ifdef INCLUDE_OPENGL_2D
-  GLuint screen_texture[2];
 #endif
 
   NDS_Init();
@@ -658,36 +474,6 @@ int main(int argc, char ** argv) {
       return 1;
     }
 
-#ifdef INCLUDE_OPENGL_2D
-  if ( my_config.opengl_2d) {
-    /* the flags to pass to SDL_SetVideoMode */
-    sdl_videoFlags  = SDL_OPENGL;          /* Enable OpenGL in SDL */
-    sdl_videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
-
-
-    /* Sets up OpenGL double buffering */
-    SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-
-    window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 192 * 2,
-                               sdl_videoFlags );
-
-    /* Verify there is a window */
-    if ( !window ) {
-      fprintf( stderr, "Window creation failed: %s\n", SDL_GetError( ) );
-      exit( -1);
-    }
-
-
-    /* initialize OpenGL */
-    if ( !initGL( screen_texture)) {
-      fprintf( stderr, "Failed to init GL, fall back to software render\n");
-
-      my_config.opengl_2d = 0;
-    }
-  }
-
-  if ( !my_config.opengl_2d) {
-#endif
     sdl_videoFlags |= SDL_SWSURFACE;
     window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 384, sdl_videoFlags );
 
@@ -697,14 +483,6 @@ int main(int argc, char ** argv) {
     }
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-#ifdef INCLUDE_OPENGL_2D
-  }
-
-  /* set the initial window size */
-  if ( my_config.opengl_2d) {
-    resizeWindow( 256, 192*2, screen_texture);
-  }
-#endif
 
   /* Initialize joysticks */
   if(!init_joy()) return 1;
@@ -737,11 +515,7 @@ int main(int argc, char ** argv) {
   ctrls_cfg.focused = 1;
   ctrls_cfg.fake_mic = 0;
   ctrls_cfg.keypad = 0;
-#ifdef INCLUDE_OPENGL_2D
-  ctrls_cfg.screen_texture = screen_texture;
-#else
   ctrls_cfg.screen_texture = NULL;
-#endif
   ctrls_cfg.resize_cb = &resizeWindow_stub;
 
   while(!ctrls_cfg.sdl_quit) {
@@ -752,14 +526,7 @@ int main(int argc, char ** argv) {
     DrawHUD();
 #endif
 
-#ifdef INCLUDE_OPENGL_2D
-    if ( my_config.opengl_2d) {
-      opengl_Draw(screen_texture);
-      ctrls_cfg.resize_cb = &resizeWindow;
-    }
-    else
-#endif
-      Draw();
+    Draw();
 
 #ifdef HAVE_LIBAGG
     osd->clear();
