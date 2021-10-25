@@ -65,6 +65,7 @@ public:
 	int disable_sound;
 	int disable_limiter;
 	int windowed_fullscreen;
+	int frameskip;
 
 	bool parse(int argc,char **argv);
 

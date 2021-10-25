@@ -136,7 +136,6 @@ class configured_features : public CommandLine
 {
 public:
   int auto_pause;
-  int frameskip;
 
   int engine_3d;
   int savetype;
@@ -148,7 +147,6 @@ static void
 init_config( class configured_features *config) {
 
   config->auto_pause = 0;
-  config->frameskip = 0;
 
   config->engine_3d = 1;
   config->savetype = 0;
@@ -163,7 +161,6 @@ fill_config( class configured_features *config,
              int argc, char ** argv) {
   GOptionEntry options[] = {
     { "auto-pause", 0, 0, G_OPTION_ARG_NONE, &config->auto_pause, "Pause emulation if focus is lost", NULL},
-    { "frameskip", 0, 0, G_OPTION_ARG_INT, &config->frameskip, "Set frameskip", "FRAMESKIP"},
     { "3d-engine", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3d rendering engine. Available engines:\n"
         "\t\t\t\t\t\t  0 = 3d disabled\n"
         "\t\t\t\t\t\t  1 = internal rasterizer (default)\n"

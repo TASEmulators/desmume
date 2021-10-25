@@ -80,6 +80,7 @@ CommandLine::CommandLine()
 , disable_sound(0)
 , disable_limiter(0)
 , windowed_fullscreen(0)
+, frameskip(0)
 , _rtc_day(-1)
 , _rtc_hour(-1)
 {
@@ -128,6 +129,7 @@ static const char* help_string = \
 " --disable-limiter          Disables the 60fps limiter" ENDL
 " --rtc-day D                Override RTC day, 0=Sunday, 6=Saturday" ENDL
 " --rtc-hour H               Override RTC hour, 0=midnight, 23=an hour before" ENDL
+" --frameskip N              Set frameskip to N; default 0" ENDL
 ENDL
 "Arguments affecting overall emulation parameters (`sync settings`): " ENDL
 #ifdef HAVE_JIT
@@ -195,6 +197,7 @@ ENDL
 #define OPT_3D_RENDER 3
 #define OPT_3D_TEXTURE_UPSCALE 81
 #define OPT_GPU_RESOLUTION_MULTIPLIER 82
+#define OPT_FRAMESKIP 83
 #define OPT_JIT_SIZE 100
 
 #define OPT_CONSOLE_TYPE 200
@@ -259,6 +262,7 @@ bool CommandLine::parse(int argc,char **argv)
 			#else
 				{ "nojoy", no_argument, &_commandline_linux_nojoy, 1},
 			#endif
+			{ "frameskip", required_argument, NULL, OPT_FRAMESKIP},
 			{ "disable-sound", no_argument, &disable_sound, 1},
 			{ "disable-limiter", no_argument, &disable_limiter, 1},
 			{ "rtc-day", required_argument, NULL, OPT_RTC_DAY},
@@ -335,6 +339,7 @@ bool CommandLine::parse(int argc,char **argv)
 		case OPT_3D_RENDER: _render3d = optarg; break;
 		case OPT_3D_TEXTURE_UPSCALE: texture_upscale = atoi(optarg); break;
 		case OPT_GPU_RESOLUTION_MULTIPLIER: gpu_resolution_multiplier = atoi(optarg); break;
+		case OPT_FRAMESKIP: frameskip = atoi(optarg); break;
 
 		//RTC settings
 		case OPT_RTC_DAY: _rtc_day = atoi(optarg); break;
