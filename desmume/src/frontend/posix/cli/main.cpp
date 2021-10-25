@@ -481,11 +481,14 @@ static void desmume_cycle(struct ctrls_event_config * cfg)
     }
 
     /* Update mouse position and click */
-    if(mouse.down) NDS_setTouchPos(mouse.x, mouse.y);
+    if(mouse.down) {
+	NDS_setTouchPos(mouse.x, mouse.y);
+	mouse.down = 2;
+    }
     if(mouse.click)
       { 
         NDS_releaseTouch();
-        mouse.click = FALSE;
+        mouse.click = 0;
       }
 
     update_keypad(cfg->keypad);     /* Update keypad */

@@ -576,14 +576,12 @@ process_ctrls_event( SDL_Event& event,
         break;
 
       case SDL_MOUSEBUTTONDOWN:
-        if(event.button.button==1)
-          mouse.down = TRUE;
+        if(event.button.button==1 && !mouse.down)
+          mouse.down = 1;
         break;
-                                            
+
       case SDL_MOUSEMOTION:
-        if(!mouse.down)
-          break;
-        else {
+	{
           signed long scaled_x =
             screen_to_touch_range( event.button.x,
                                      cfg->nds_screen_size_ratio);
@@ -597,8 +595,10 @@ process_ctrls_event( SDL_Event& event,
         break;
 
       case SDL_MOUSEBUTTONUP:
-        if(mouse.down) mouse.click = TRUE;
-        mouse.down = FALSE;
+        if(mouse.down) {
+		mouse.click = 1;
+		if(mouse.down > 1) mouse.down = 0;
+	}
         break;
 
       case SDL_QUIT:

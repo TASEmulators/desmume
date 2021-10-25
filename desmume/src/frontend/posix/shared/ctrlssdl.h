@@ -75,8 +75,8 @@ struct mouse_status
 {
   signed long x;
   signed long y;
-  BOOL click;
-  BOOL down;
+  int click;
+  int down;
 };
 
 extern mouse_status mouse;
