@@ -70,7 +70,7 @@ slock *cpu_mutex = NULL;
 #endif
 
 #ifdef WIN32
-#define RECV(A,B,C) recv(A, B, C, 0)
+#define RECV(A,B,C) recv(A, (char*)B, C, 0)
 #define SEND(A,B,C) send(A, (char*)B, C, 0)
 #define CLOSESOCKET(A) closesocket(A)
 #define SOCKLEN_T int
@@ -118,7 +118,7 @@ control_creator( LPVOID lpParameter)
 
  return 0;
 }
-
+static SOCKET_TYPE createSocket ( int port);
 static int INIT_PIPE(SOCKET_TYPE *pipefds) {
     struct socket_creator_data temp_data = {
       pipefds,
@@ -128,7 +128,7 @@ static int INIT_PIPE(SOCKET_TYPE *pipefds) {
     HANDLE temp_thread = INVALID_HANDLE_VALUE;
     DWORD temp_threadID;
 
-    res = -1;
+    int res = -1;
 
     if ( temp_sock != -1) {
       /* create a thread to connect to this socket */
@@ -140,7 +140,7 @@ static int INIT_PIPE(SOCKET_TYPE *pipefds) {
         pipefds[1] = accept( temp_sock, (struct sockaddr *)&ignore_addr, &addr_size);
 
         if ( pipefds[1] != INVALID_SOCKET) {
-          if (set_socket_nodelay( pipefds+1) == 0) {
+          if (set_socket_nodelay( *(pipefds+1)) == 0) {
             closesocket( temp_sock);
             res = 0;
           }
@@ -323,7 +323,7 @@ int gdbstub_wait(gdbstub_handle_t *stubs, long timeout) {
 	if (res <= 0) return 0;
 	for (i = 0; i < 2; ++i)
 		if ( g[i] && FD_ISSET( g[i]->info_pipe[0], &set)) {
-			RECV( g[i]->info_pipe[0], &res, 4);
+			RECV( g[i]->info_pipe[0], ((void*)&res), 4);
 			return res | (i << 31);
 		}
 	return 0;
