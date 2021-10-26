@@ -323,7 +323,7 @@ static u32 clCmd = 0;
 static u32 clInd = 0;
 
 static u32 clInd2 = 0;
-BOOL isSwapBuffers = FALSE;
+u32 isSwapBuffers = FALSE;
 
 static u32 BTind = 0;
 static u32 PTind = 0;
