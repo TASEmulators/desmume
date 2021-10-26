@@ -56,8 +56,14 @@ class CliDriver : public BaseDriver
 private:
 	gdbstub_handle_t __stubs[2];
 public:
+	virtual void EMU_DebugIdleEnter() {
+		SPU_Pause(1);
+	}
 	virtual void EMU_DebugIdleUpdate() {
 		gdbstub_wait(__stubs, -1L);
+	}
+	virtual void EMU_DebugIdleWakeUp() {
+		SPU_Pause(0);
 	}
 	virtual void setStubs(gdbstub_handle_t stubs[2]) {
 		this->__stubs[0] = stubs[0];
