@@ -457,6 +457,16 @@ int main(int argc, char ** argv) {
   ((CliDriver*)driver)->setStubs(stubs);
   gdbstub_wait_set_enabled(stubs[0], 1);
   gdbstub_wait_set_enabled(stubs[1], 1);
+
+  if(stubs[0] || stubs[1]) {
+#ifdef HAVE_JIT
+    if(CommonSettings.use_jit) {
+      fprintf(stderr, "GDB stub enabled, turning off jit (they're incompatible)\n");
+      arm_jit_sync();
+      arm_jit_reset(CommonSettings.use_jit=0);
+    }
+#endif
+  }
 #endif
 
   if ( !my_config.disable_sound) {
