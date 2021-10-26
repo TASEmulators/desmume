@@ -565,6 +565,7 @@ process_ctrls_event( SDL_Event& event,
             case SDLK_F10:
                 int prevexec;
                 prevexec = execute;
+		emu_halt(EMUHALT_REASON_USER_REQUESTED_HALT, NDSErrorTag_None);
                 execute = FALSE;
                 SPU_Pause(1);
                 if(!shift_pressed){
