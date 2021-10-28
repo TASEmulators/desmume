@@ -1294,6 +1294,8 @@ static void StepRunLoop_Core()
 
 static void StepRunLoop_Paused()
 {
+	input_acquire();
+
 	paused = TRUE;
 	Sleep(50);
 
