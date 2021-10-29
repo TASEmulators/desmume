@@ -221,7 +221,7 @@ fi
 dnl - Determine which UIs to build
 UI_DIR="cli $UI_DIR"
 if test "x$HAVE_GTK" = "xyes"; then
-  UI_DIR="gtk $UI_DIR"
+  UI_DIR="gtk2 $UI_DIR"
 fi
 
 if test "x$HAVE_LIBGLADE" = "xyes"; then
