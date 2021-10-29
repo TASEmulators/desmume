@@ -1,0 +1,11 @@
+#!/bin/sh
+
+rm desmume.app.zip
+rm -rf desmume.app
+mkdir desmume.app
+mkdir desmume.app/MacOS
+cp desmume desmume.app/MacOS
+cp Info.plist desmume.app
+./dylibbundler -cd -d desmume.app/libs -b -x desmume.app/MacOS/desmume
+./fixups
+zip -r desmume.app.zip desmume.app
