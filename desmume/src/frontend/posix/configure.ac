@@ -120,7 +120,7 @@ dnl - Check for GTK and/or libglade
 FOUND_GLIB=no
 HAVE_ALSA=no
 GLIB_VER=2.8
-GTK_VER=3.24
+GTK_VER=2.14
 
 PKG_CHECK_MODULES(GLIB,
                   glib-2.0 >= $GLIB_VER,
@@ -128,7 +128,7 @@ PKG_CHECK_MODULES(GLIB,
                   FOUND_GLIB=no)
 
 PKG_CHECK_MODULES(GTK,
-                  gtk+-3.0 >= $GTK_VER,
+                  gtk+-2.0 >= $GTK_VER,
                   HAVE_GTK=yes,
                   HAVE_GTK=no)
 AC_SUBST(GTK_CFLAGS)
