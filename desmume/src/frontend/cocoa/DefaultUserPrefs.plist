@@ -6,6 +6,8 @@
 	<true/>
 	<key>CoreControl_EnableAutoFrameSkip</key>
 	<true/>
+	<key>CoreControl_FramesToSkipSetting</key>
+	<integer>0</integer>
 	<key>CoreControl_EnableCheats</key>
 	<true/>
 	<key>CoreControl_EnableSpeedLimit</key>

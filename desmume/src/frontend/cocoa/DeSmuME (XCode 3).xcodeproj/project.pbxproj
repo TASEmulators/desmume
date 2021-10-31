@@ -2003,6 +2003,18 @@
 		AB6A198116CAD66900384EED /* cocoa_GPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_GPU.h; sourceTree = "<group>"; };
 		AB6A198216CAD66900384EED /* cocoa_GPU.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_GPU.mm; sourceTree = "<group>"; };
 		AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_nand.cpp; sourceTree = "<group>"; };
+		AB6FE66A26E6F7C2002B2106 /* GPU_Operations_AVX2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations_AVX2.cpp; sourceTree = "<group>"; };
+		AB6FE66B26E6F7C2002B2106 /* GPU_Operations_AVX2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GPU_Operations_AVX2.h; sourceTree = "<group>"; };
+		AB6FE66C26E6F7C2002B2106 /* GPU_Operations_SSE2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations_SSE2.cpp; sourceTree = "<group>"; };
+		AB6FE66D26E6F7C2002B2106 /* GPU_Operations_SSE2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GPU_Operations_SSE2.h; sourceTree = "<group>"; };
+		AB6FE66E26E6F7C2002B2106 /* GPU_Operations.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations.cpp; sourceTree = "<group>"; };
+		AB6FE66F26E6F7C2002B2106 /* GPU_Operations.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GPU_Operations.h; sourceTree = "<group>"; };
+		AB6FE67026E6F7C2002B2106 /* OGLRender_3_2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OGLRender_3_2.cpp; sourceTree = "<group>"; };
+		AB6FE67126E6F7C2002B2106 /* OGLRender_3_2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OGLRender_3_2.h; sourceTree = "<group>"; };
+		AB6FE67226E6F815002B2106 /* colorspacehandler_AVX2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_AVX2.cpp; sourceTree = "<group>"; };
+		AB6FE67326E6F815002B2106 /* colorspacehandler_AVX2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_AVX2.h; sourceTree = "<group>"; };
+		AB6FE67426E6F815002B2106 /* colorspacehandler_AVX512.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_AVX512.cpp; sourceTree = "<group>"; };
+		AB6FE67526E6F815002B2106 /* colorspacehandler_AVX512.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_AVX512.h; sourceTree = "<group>"; };
 		AB700DB916CDDBC400FBD336 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/DisplayWindow.xib; sourceTree = "<group>"; };
 		AB700DDC16CDE4C300FBD336 /* DisplayWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DisplayWindowController.h; sourceTree = "<group>"; };
 		AB700DDD16CDE4C300FBD336 /* DisplayWindowController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = DisplayWindowController.mm; sourceTree = "<group>"; };
@@ -3110,11 +3122,15 @@
 			isa = PBXGroup;
 			children = (
 				AB37E36C1D6188BC004A2C0D /* colorspacehandler.cpp */,
-				AB37E36D1D6188BC004A2C0D /* colorspacehandler.h */,
-				AB37E36E1D6188BC004A2C0D /* colorspacehandler_AltiVec.cpp */,
-				AB37E36F1D6188BC004A2C0D /* colorspacehandler_AltiVec.h */,
 				AB37E3721D6188BC004A2C0D /* colorspacehandler_SSE2.cpp */,
+				AB6FE67226E6F815002B2106 /* colorspacehandler_AVX2.cpp */,
+				AB6FE67426E6F815002B2106 /* colorspacehandler_AVX512.cpp */,
+				AB37E36E1D6188BC004A2C0D /* colorspacehandler_AltiVec.cpp */,
+				AB37E36D1D6188BC004A2C0D /* colorspacehandler.h */,
 				AB37E3731D6188BC004A2C0D /* colorspacehandler_SSE2.h */,
+				AB6FE67326E6F815002B2106 /* colorspacehandler_AVX2.h */,
+				AB6FE67526E6F815002B2106 /* colorspacehandler_AVX512.h */,
+				AB37E36F1D6188BC004A2C0D /* colorspacehandler_AltiVec.h */,
 			);
 			path = colorspacehandler;
 			sourceTree = "<group>";
@@ -3312,6 +3328,9 @@
 				ABD1FEB11345AC8400AF11D1 /* firmware.cpp */,
 				ABD1FEB41345AC8400AF11D1 /* gfx3d.cpp */,
 				ABD1FEB71345AC8400AF11D1 /* GPU.cpp */,
+				AB6FE66E26E6F7C2002B2106 /* GPU_Operations.cpp */,
+				AB6FE66C26E6F7C2002B2106 /* GPU_Operations_SSE2.cpp */,
+				AB6FE66A26E6F7C2002B2106 /* GPU_Operations_AVX2.cpp */,
 				ABD1FEB81345AC8400AF11D1 /* lua-engine.cpp */,
 				ABD1FEB91345AC8400AF11D1 /* matrix.cpp */,
 				ABD1FEBA1345AC8400AF11D1 /* mc.cpp */,
@@ -3320,6 +3339,7 @@
 				ABD1FEBF1345AC8400AF11D1 /* movie.cpp */,
 				ABD1FEC01345AC8400AF11D1 /* NDSSystem.cpp */,
 				ABD1FEC11345AC8400AF11D1 /* OGLRender.cpp */,
+				AB6FE67026E6F7C2002B2106 /* OGLRender_3_2.cpp */,
 				ABD1FEC21345AC8400AF11D1 /* path.cpp */,
 				ABD1FEC31345AC8400AF11D1 /* rasterize.cpp */,
 				ABD1FEC41345AC8400AF11D1 /* readwrite.cpp */,
@@ -3351,6 +3371,9 @@
 				ABD1FE801345AC8400AF11D1 /* gdbstub.h */,
 				ABD1FE811345AC8400AF11D1 /* gfx3d.h */,
 				ABD1FE831345AC8400AF11D1 /* GPU.h */,
+				AB6FE66F26E6F7C2002B2106 /* GPU_Operations.h */,
+				AB6FE66D26E6F7C2002B2106 /* GPU_Operations_SSE2.h */,
+				AB6FE66B26E6F7C2002B2106 /* GPU_Operations_AVX2.h */,
 				ABBCE29D15ACB26100A2C965 /* instruction_attributes.h */,
 				ABBCE29E15ACB26100A2C965 /* instructions.h */,
 				ABD1FE841345AC8400AF11D1 /* lua-engine.h */,
@@ -3363,6 +3386,7 @@
 				ABD1FE8B1345AC8400AF11D1 /* movie.h */,
 				ABD1FE8C1345AC8400AF11D1 /* NDSSystem.h */,
 				ABD1FE8D1345AC8400AF11D1 /* OGLRender.h */,
+				AB6FE67126E6F7C2002B2106 /* OGLRender_3_2.h */,
 				ABD1FE8F1345AC8400AF11D1 /* PACKED.h */,
 				ABD1FE8E1345AC8400AF11D1 /* PACKED_END.h */,
 				ABD1FE901345AC8400AF11D1 /* path.h */,

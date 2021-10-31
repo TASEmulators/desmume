@@ -1,6 +1,6 @@
 /*
 		Copyright (C) 2007 Tim Seidel
-		Copyright (C) 2008-2018 DeSmuME team
+		Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -3396,7 +3396,7 @@ bool AdhocCommInterface::Start(WifiHandler* currentWifiHandler)
 	this->_rawPacket = (RXRawPacketData*)calloc(1, sizeof(RXRawPacketData));
 
 	#ifdef DESMUME_COCOA
-	this->_rxTask->start(false, 43);
+	this->_rxTask->start(false, 43, "wifi ad-hoc");
 	#else
 	this->_rxTask->start(false, 0, "wifi ad-hoc");
 	#endif
@@ -3670,7 +3670,7 @@ bool SoftAPCommInterface::Start(WifiHandler* currentWifiHandler)
 		this->_rawPacket = (RXRawPacketData*)calloc(1, sizeof(RXRawPacketData));
 
 		#ifdef DESMUME_COCOA
-		this->_rxTask->start(false, 43);
+		this->_rxTask->start(false, 43, "wifi ap");
 		#else
 		this->_rxTask->start(false, 0, "wifi ap");
 		#endif
@@ -4433,13 +4433,6 @@ void WifiHandler::Reset()
 	_wifi.io.BSSID[3] = 0xFF;
 	_wifi.io.BSSID[4] = 0xFF;
 	_wifi.io.BSSID[5] = 0xFF;
-
-	_wifi.txPacketInfo[0].txLocation = &_wifi.io.TXBUF_LOC1;
-	_wifi.txPacketInfo[1].txLocation = &_wifi.io.TXBUF_CMD;
-	_wifi.txPacketInfo[2].txLocation = &_wifi.io.TXBUF_LOC2;
-	_wifi.txPacketInfo[3].txLocation = &_wifi.io.TXBUF_LOC3;
-	_wifi.txPacketInfo[4].txLocation = &_wifi.io.TXBUF_BEACON;
-	_wifi.txPacketInfo[5].txLocation = &_wifi.io.TXBUF_REPLY2;
 
 	this->_didWarnWFCUser = false;
 }

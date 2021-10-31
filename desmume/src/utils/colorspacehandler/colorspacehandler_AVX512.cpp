@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2019 DeSmuME team
+	Copyright (C) 2016-2021 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -857,41 +857,49 @@ size_t ColorspaceApplyIntensityToBuffer32_AVX512(u32 *dst, size_t pixCountVec512
 	return i;
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler_AVX512::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To8888Opaque_AVX512<false, false>(src, dst, pixCount);
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler_AVX512::ConvertBuffer555To8888Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To8888Opaque_AVX512<true, false>(src, dst, pixCount);
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler_AVX512::ConvertBuffer555To8888Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To8888Opaque_AVX512<false, true>(src, dst, pixCount);
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler_AVX512::ConvertBuffer555To8888Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To8888Opaque_AVX512<true, true>(src, dst, pixCount);
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler_AVX512::ConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To6665Opaque_AVX512<false, false>(src, dst, pixCount);
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler_AVX512::ConvertBuffer555To6665Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To6665Opaque_AVX512<true, false>(src, dst, pixCount);
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler_AVX512::ConvertBuffer555To6665Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To6665Opaque_AVX512<false, true>(src, dst, pixCount);
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler_AVX512::ConvertBuffer555To6665Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To6665Opaque_AVX512<true, true>(src, dst, pixCount);

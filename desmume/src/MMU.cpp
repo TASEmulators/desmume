@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2018 DeSmuME team
+	Copyright (C) 2007-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1128,7 +1128,7 @@ static void execdiv() {
 
 DSI_TSC::DSI_TSC()
 {
-	for(int i=0;i<ARRAY_SIZE(registers);i++)
+	for (size_t i = 0; i < ARRAY_SIZE(registers); i++)
 		registers[i] = 0x00;
 	reset_command();
 }
@@ -1224,7 +1224,7 @@ bool DSI_TSC::save_state(EMUFILE &os)
 	os.write_u8(read_flag);
 	os.write_32LE(state);
 	os.write_32LE(readcount);
-	for (int i = 0; i < ARRAY_SIZE(registers); i++)
+	for (size_t i = 0; i < ARRAY_SIZE(registers); i++)
 		os.write_u8(registers[i]);
 
 	return true;
@@ -1239,7 +1239,7 @@ bool DSI_TSC::load_state(EMUFILE &is)
 	is.read_u8(read_flag);
 	is.read_32LE(state);
 	is.read_32LE(readcount);
-	for (int i = 0; i < ARRAY_SIZE(registers); i++)
+	for (size_t i = 0; i < ARRAY_SIZE(registers); i++)
 		is.read_u8(registers[i]);
 
 	return true;
@@ -2366,12 +2366,14 @@ void DmaController::doCopy()
 
 void triggerDma(EDMAMode mode)
 {
-	MACRODO2(0, {
-		const int i=X;
-		MACRODO4(0, {
-			const int j=X;
-			MMU_new.dma[i][j].tryTrigger(mode);
-		});
+	MACRODO4(0, {
+		const int j=X;
+		MMU_new.dma[0][j].tryTrigger(mode);
+	});
+	
+	MACRODO4(0, {
+		const int j=X;
+		MMU_new.dma[1][j].tryTrigger(mode);
 	});
 }
 
@@ -3335,20 +3337,16 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 					
 				case REG_DISPA_WIN0H:
 					T1WriteByte(MMU.ARM9_REG, 0x0040, val);
-					mainEngine->ParseReg_WINnH<0>();
 					return;
 				case REG_DISPA_WIN0H+1:
 					T1WriteByte(MMU.ARM9_REG, 0x0041, val);
-					mainEngine->ParseReg_WINnH<0>();
 					return;
 					
 				case REG_DISPA_WIN1H:
 					T1WriteByte(MMU.ARM9_REG, 0x0042, val);
-					mainEngine->ParseReg_WINnH<1>();
 					return;
 				case REG_DISPA_WIN1H+1:
 					T1WriteByte(MMU.ARM9_REG, 0x0043, val);
-					mainEngine->ParseReg_WINnH<1>();
 					return;
 					
 				case REG_DISPA_WIN0V:
@@ -3427,7 +3425,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 					return;
 					
 				case REG_DISPA_DISPMMEMFIFO:
-					DISP_FIFOsend(val);
+					DISP_FIFOsend_u32(val);
 					return;
 					
 				case REG_DISPB_BG0HOFS:
@@ -3504,20 +3502,16 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 					
 				case REG_DISPB_WIN0H:
 					T1WriteByte(MMU.ARM9_REG, 0x1040, val);
-					subEngine->ParseReg_WINnH<0>();
 					return;
 				case REG_DISPB_WIN0H+1:
 					T1WriteByte(MMU.ARM9_REG, 0x1041, val);
-					subEngine->ParseReg_WINnH<0>();
 					return;
 					
 				case REG_DISPB_WIN1H:
 					T1WriteByte(MMU.ARM9_REG, 0x1042, val);
-					subEngine->ParseReg_WINnH<1>();
 					return;
 				case REG_DISPB_WIN1H+1:
 					T1WriteByte(MMU.ARM9_REG, 0x1043, val);
-					subEngine->ParseReg_WINnH<1>();
 					return;
 					
 				case REG_DISPB_WIN0V:
@@ -3873,12 +3867,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					
 				case REG_DISPA_WIN0H:
 					T1WriteWord(MMU.ARM9_REG, 0x0040, val);
-					mainEngine->ParseReg_WINnH<0>();
 					return;
 					
 				case REG_DISPA_WIN1H:
 					T1WriteWord(MMU.ARM9_REG, 0x0042, val);
-					mainEngine->ParseReg_WINnH<1>();
 					return;
 					
 				case REG_DISPA_WIN0V:
@@ -3936,7 +3928,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					return;
 					
 				case REG_DISPA_DISPMMEMFIFO:
-					DISP_FIFOsend(val);
+					DISP_FIFOsend_u32(val);
 					return;
 					
 				case REG_DISPA_MASTERBRIGHT:
@@ -4060,12 +4052,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					
 				case REG_DISPB_WIN0H:
 					T1WriteWord(MMU.ARM9_REG, 0x1040, val);
-					subEngine->ParseReg_WINnH<0>();
 					return;
 					
 				case REG_DISPB_WIN1H:
 					T1WriteWord(MMU.ARM9_REG, 0x1042, val);
-					subEngine->ParseReg_WINnH<1>();
 					return;
 					
 				case REG_DISPB_WIN0V:
@@ -4460,8 +4450,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					
 				case REG_DISPA_WIN0H:
 					T1WriteLong(MMU.ARM9_REG, 0x0040, val);
-					mainEngine->ParseReg_WINnH<0>();
-					mainEngine->ParseReg_WINnH<1>();
 					return;
 					
 				case REG_DISPA_WIN0V:
@@ -4503,7 +4491,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					return;
 					
 				case REG_DISPA_DISPMMEMFIFO:
-					DISP_FIFOsend(val);
+					DISP_FIFOsend_u32(val);
 					return;
 					
 				case REG_DISPA_MASTERBRIGHT:
@@ -4575,8 +4563,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					
 				case REG_DISPB_WIN0H:
 					T1WriteLong(MMU.ARM9_REG, 0x1040, val);
-					subEngine->ParseReg_WINnH<0>();
-					subEngine->ParseReg_WINnH<1>();
 					return;
 					
 				case REG_DISPB_WIN0V:

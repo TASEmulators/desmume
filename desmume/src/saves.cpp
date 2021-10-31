@@ -2,7 +2,7 @@
 	Copyright (C) 2006 Normmatt
 	Copyright (C) 2006 Theo Berkau
 	Copyright (C) 2007 Pascal Giard
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -607,7 +607,7 @@ static void cp15_savestate(EMUFILE &os)
 	//version
 	os.write_32LE(1);
 
-	cp15.saveone(os);
+	armcp15_saveone(&cp15, os);
 	//ARM7 not have coprocessor
 	//cp15_saveone((armcp15_t *)NDS_ARM7.coproc[15],os);
 }
@@ -619,12 +619,12 @@ static bool cp15_loadstate(EMUFILE &is, int size)
 	if (is.read_32LE(version) != 1) return false;
 	if (version > 1) return false;
 
-	if (!cp15.loadone(is)) return false;
+	if (!armcp15_loadone(&cp15, is)) return false;
 	
 	if (version == 0)
 	{
 		//ARM7 not have coprocessor
-		if (!cp15.loadone(is))
+		if (!armcp15_loadone(&cp15, is))
 			return false;
 	}
 
@@ -655,7 +655,12 @@ void clear_savestates()
 // Scan for existing savestates and update struct
 void scan_savestates()
 {
+	#ifdef _MSC_VER
+	struct _stat64i32 sbuf;
+	#else 
 	struct stat sbuf;
+	#endif
+
 	char filename[MAX_PATH + 1];
 
 	clear_savestates();
@@ -666,7 +671,14 @@ void scan_savestates()
 
 		if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for i */ > MAX_PATH) return;
 		sprintf(filename + strlen(filename), ".ds%d", i);
+
+		#ifdef _MSC_VER
+		wchar_t wgarbage[1024] = {0};
+		MultiByteToWideChar(CP_UTF8, 0, filename, -1, wgarbage, 1024);
+		if (_wstat(wgarbage, &sbuf) == -1) continue;
+		#else
 		if (stat(filename, &sbuf) == -1) continue;
+		#endif
 		savestates[i].exists = TRUE;
 		strncpy(savestates[i].date, format_time(sbuf.st_mtime), 40);
 		savestates[i].date[40 - 1] = '\0';

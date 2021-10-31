@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ struct CHEATS_LIST
 								// 2 - can increase
 	u32		code[MAX_XX_CODE][2];
 	char	description[1024];
-	int		num;
+	u32		num;
 	u8		size;
 };
 
@@ -93,7 +93,7 @@ public:
 	BOOL	save();
 	BOOL	load();
 	void	process(int targetType);
-	void	getXXcodeString(CHEATS_LIST cheat, char *res_buf);
+	void	getXXcodeString(CHEATS_LIST theList, char *res_buf);
 	
 	static BOOL XXCodeFromString(CHEATS_LIST *cheatItem, const std::string codeString);
 	static BOOL XXCodeFromString(CHEATS_LIST *cheatItem, const char *codeString);

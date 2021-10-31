@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2018 DeSmuME Team
+	Copyright (C) 2013-2021 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -174,6 +174,11 @@
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(handleNDSError:)
 												 name:@"org.desmume.DeSmuME.handleNDSError"
+											   object:nil];
+	
+	[[NSNotificationCenter defaultCenter] addObserver:self
+											 selector:@selector(handleEmulatorExecutionState:)
+												 name:@"org.desmume.DeSmuME.handleEmulatorExecutionState"
 											   object:nil];
 	
 	return self;
@@ -638,9 +643,9 @@
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 		NSURL *sramURL = [CocoaDSFile fileURLFromRomURL:[[self currentRom] fileURL] toKind:@"ROM Save"];
 		
-		NSFileManager *fileManager = [[NSFileManager alloc] init];
-		const BOOL exists = [fileManager isReadableFileAtPath:[sramURL path]];
-		[fileManager release];
+		//NSFileManager *fileManager = [[NSFileManager alloc] init];
+		//const BOOL exists = [fileManager isReadableFileAtPath:[sramURL path]];
+		//[fileManager release];
 		
 		const BOOL isMovieStarted = [cdsCore startReplayRecording:fileURL sramURL:sramURL];
 		[self setStatusText:(isMovieStarted) ? @"Replay recording started." : @"Replay creation failed!"];
@@ -762,6 +767,12 @@
 - (IBAction) toggleAutoFrameSkip:(id)sender
 {
 	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
+}
+
+- (IBAction) framesToSkipSetting:(id)sender
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore setFramesToSkipSetting:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) toggleGPUState:(id)sender
@@ -2011,6 +2022,17 @@
 		  contextInfo:nil];
 }
 
+- (void) handleEmulatorExecutionState:(NSNotification *)aNotification
+{
+	CocoaDSCore *cdsCore = [aNotification object];
+	NSDictionary *userInfo = [aNotification userInfo];
+	ExecutionBehavior execState = (ExecutionBehavior)[(NSNumber *)[userInfo valueForKey:@"ExecutionState"] integerValue];
+	NSString *frameStatusString = (NSString *)[userInfo valueForKey:@"FrameStatusString"];
+	
+	[cdsCore setEmulationPaused:(execState == ExecutionBehavior_Pause)];
+	[cdsCore setFrameStatus:frameStatusString];
+}
+
 - (void) addOutputToCore:(CocoaDSOutput *)theOutput
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
@@ -2878,6 +2900,13 @@
 		if ([avCaptureToolDelegate isRecording])
 		{
 			enable = NO;
+		}
+	}
+	else if (theAction == @selector(framesToSkipSetting:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:([cdsCore framesToSkipSetting] == [theItem tag]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(toggleCheats:))

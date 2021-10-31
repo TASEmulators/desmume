@@ -1,5 +1,5 @@
 /*
-	Copyright 2009-2015 DeSmuME team
+	Copyright 2009-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -557,15 +557,15 @@ bool EmuFatVolume::formatNew(u32 sectors)
 			dev_->writeBlock(bs->fat32.fat32BackBootBlock,(const u8*)bs);
 	}
 	/* seek to start of FATS and write them all */
-	int ctr=bs->reservedSectorCount;
-	for (int i=0;i<bs->fatCount;i++)
-		for(int j=0;j<fat_length;j++,ctr++)
-			dev_->writeBlock(ctr,fat+j*sector_size);
+	u32 ctr = bs->reservedSectorCount;
+	for (u8 i = 0; i < bs->fatCount; i++)
+		for (u32 j = 0; j < fat_length; j++, ctr++)
+			dev_->writeBlock(ctr, fat+j*sector_size);
 
 	/* Write the root directory directly after the last FAT. This is the root
 	* dir area on FAT12/16, and the first cluster on FAT32. */
-	for(int i=0;i<size_root_dir_in_sectors;i++)
-		dev_->writeBlock(ctr,blank_sector);
+	for (u32 i = 0; i < size_root_dir_in_sectors; i++)
+		dev_->writeBlock(ctr, blank_sector);
 
 	delete[] blank_sector;
 	delete[] info_sector;
@@ -1260,7 +1260,7 @@ u8 EmuFatFile::open(EmuFatFile* dirFile, const char* fileName, u8 oflag) {
  * See open() by fileName for definition of flags and return values.
  *
  */
-u8 EmuFatFile::open(EmuFatFile* dirFile, u16 index, u8 oflag) {
+u8 EmuFatFile::open(EmuFatFile* dirFile, u32 index, u8 oflag) {
   // error if already open
   if (isOpen())return false;
 
@@ -1282,7 +1282,7 @@ u8 EmuFatFile::open(EmuFatFile* dirFile, u16 index, u8 oflag) {
     return false;
   }
   // open cached entry
-  return openCachedEntry(index & 0XF, oflag);
+  return openCachedEntry((u8)(index & 0x0F), oflag);
 }
 
 //------------------------------------------------------------------------------
@@ -1601,7 +1601,7 @@ u8 EmuFatFile::rmRfStar(void) {
     EmuFatFile f;
 
     // remember position
-    u16 index = curPosition_/32;
+    u32 index = curPosition_/32;
 
     TDirectoryEntry* p = readDirCache();
     if (!p) return false;

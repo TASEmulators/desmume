@@ -1,7 +1,7 @@
 /*
 The MIT License
 
-Copyright (C) 2009-2019 DeSmuME team
+Copyright (C) 2009-2021 DeSmuME team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -90,7 +90,7 @@ size_t EMUFILE_MEMORY::_fread(const void *ptr, size_t bytes){
 	u32 todo = std::min<u32>(remain,(u32)bytes);
 	if(len==0)
 	{
-		failbit = true;
+		this->_failbit = true;
 		return 0;
 	}
 	if(todo<=4)
@@ -106,43 +106,43 @@ size_t EMUFILE_MEMORY::_fread(const void *ptr, size_t bytes){
 	}
 	pos += todo;
 	if(todo<bytes)
-		failbit = true;
+		this->_failbit = true;
 	return todo;
 }
 
 void EMUFILE_FILE::truncate(s32 length)
 {
-	::fflush(fp);
+	::fflush(this->_fp);
 	#ifdef HOST_WINDOWS 
-		_chsize(_fileno(fp),length);
+		_chsize(_fileno(this->_fp),length);
 	#else
-		ftruncate(fileno(fp),length);
+		ftruncate(fileno(this->_fp),length);
 	#endif
-	fclose(fp);
-	fp = NULL;
-	open(fname.c_str(),mode);
+	fclose(this->_fp);
+	this->_fp = NULL;
+	this->__open(this->_fname.c_str(), this->_mode);
 }
 
 int EMUFILE_FILE::fseek(int offset, int origin)
 {
 	//if the position cache is enabled, and the seek offset matches the known current position, then early exit.
-	if(mPositionCacheEnabled)
+	if (this->_mPositionCacheEnabled)
 	{
-		if(origin == SEEK_SET)
+		if (origin == SEEK_SET)
 		{
-			if(mFilePosition == offset)
+			if (this->_mFilePosition == offset)
 			{
 				return 0;
 			}
 		}
 	}
 
-	mCondition = eCondition_Clean;
+	this->_mCondition = eCondition_Clean;
 
-	int ret = ::fseek(fp, offset, origin);
+	int ret = ::fseek(this->_fp, offset, origin);
  
-	if(mPositionCacheEnabled)
-		mFilePosition = ::ftell(fp);
+	if (this->_mPositionCacheEnabled)
+		this->_mFilePosition = ::ftell(this->_fp);
  
 	return ret;
 }
@@ -150,53 +150,54 @@ int EMUFILE_FILE::fseek(int offset, int origin)
 
 int EMUFILE_FILE::ftell()
 {
-	if(mPositionCacheEnabled)
-		return (int)mFilePosition;
-	return (u32)::ftell(fp);
+	if (this->_mPositionCacheEnabled)
+		return (int)this->_mFilePosition;
+	return (u32)::ftell(this->_fp);
 }
 
 void EMUFILE_FILE::DemandCondition(eCondition cond)
 {
 	//allows switching between reading and writing; an fseek is required, under the circumstances
 
-	if(mCondition == eCondition_Clean)
+	if( this->_mCondition == eCondition_Clean)
 		goto CONCLUDE;
-	if(mCondition == eCondition_Unknown)
+	if (this->_mCondition == eCondition_Unknown)
 		goto RESET;
-	if(mCondition != cond)
+	if (this->_mCondition != cond)
 		goto RESET;
 
 	return;
 
 RESET:
-	::fseek(fp,::ftell(fp),SEEK_SET);
+	::fseek(this->_fp,::ftell(this->_fp),SEEK_SET);
 CONCLUDE:
-	mCondition = cond;
+	this->_mCondition = cond;
 }
 
 size_t EMUFILE_FILE::_fread(const void *ptr, size_t bytes)
 {
 	DemandCondition(eCondition_Read);
-	size_t ret = ::fread((void*)ptr, 1, bytes, fp);
-	mFilePosition += ret;
-	if(ret < bytes)
-		failbit = true;
+	size_t ret = ::fread((void*)ptr, 1, bytes, this->_fp);
+	this->_mFilePosition += ret;
+	if (ret < bytes)
+		this->_failbit = true;
+	
 	return ret;
 }
 
 void EMUFILE_FILE::EnablePositionCache()
 {
-	mPositionCacheEnabled = true; 
-	mFilePosition = ::ftell(fp);
+	this->_mPositionCacheEnabled = true;
+	this->_mFilePosition = ::ftell(this->_fp);
 }
 
 size_t EMUFILE_FILE::fwrite(const void *ptr, size_t bytes)
 {
 	DemandCondition(eCondition_Write);
-	size_t ret = ::fwrite((void*)ptr, 1, bytes, fp);
-	mFilePosition += ret;
-	if(ret < bytes)
-		failbit = true;
+	size_t ret = ::fwrite((void*)ptr, 1, bytes, this->_fp);
+	this->_mFilePosition += ret;
+	if (ret < bytes)
+		this->_failbit = true;
 	
 	return ret;
 }
@@ -511,19 +512,22 @@ size_t EMUFILE::read_MemoryStream(EMUFILE_MEMORY &ms)
 	return 1;
 }
 
-void EMUFILE_FILE::open(const char* fname, const char* mode)
+void EMUFILE_FILE::__open(const char* fname, const char* mode)
 {
-	mPositionCacheEnabled = false;
-	mCondition = eCondition_Clean;
-	mFilePosition = 0;
+	this->_mPositionCacheEnabled = false;
+	this->_mCondition = eCondition_Clean;
+	this->_mFilePosition = 0;
+	
 	#ifdef HOST_WINDOWS
 	auto tmp = mbstowcs((std::string)fname);
-	fp = _wfopen(tmp.c_str(),mbstowcs(mode).c_str());
+	this->_fp = _wfopen(tmp.c_str(),mbstowcs(mode).c_str());
 	#else
-	fp = fopen(fname,mode);
+	this->_fp = fopen(fname, mode);
 	#endif
-	if(!fp)
-		failbit = true;
-	this->fname = fname;
-	strcpy(this->mode,mode);
+	
+	if (this->_fp == NULL)
+		this->_failbit = true;
+	
+	this->_fname = fname;
+	strcpy(this->_mode, mode);
 }

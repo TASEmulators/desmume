@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2005 Guillaume Duhamel
-	Copyright (C) 2008-2019 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 
 // Determine CPU architecture for platforms that don't use the autoconf script
 #if defined(HOST_WINDOWS) || defined(DESMUME_COCOA)
-	#if defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_WIN64)
+	#if defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_WIN64) || defined(__aarch64__) || defined(__ppc64__)
 		#define HOST_64
 	#else
 		#define HOST_32
@@ -413,6 +413,25 @@ inline bool atomic_test_and_clear_32(volatile s32 *V, s32 M)			{ return (std::at
 inline bool atomic_test_and_clear_barrier32(volatile s32 *V, s32 M)		{ return (std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V,~(s32)(0x80>>((M)&0x07)), std::memory_order::memory_order_seq_cst) & (0x80>>((M)&0x07))) ? true : false; }
 
 #endif
+
+// Flags used to determine how a conversion function swaps bytes for big-endian systems.
+// These flags should be ignored on little-endian systems.
+enum BESwapFlags
+{
+	BESwapNone    = 0x00, // No byte swapping for both incoming and outgoing data. All data is used as-is.
+	
+	BESwapIn      = 0x01, // All incoming data is byte swapped; outgoing data is used as-is.
+	BESwapPre     = 0x01, // An alternate name for "BESwapIn"
+	BESwapSrc     = 0x01, // An alternate name for "BESwapIn"
+	
+	BESwapOut     = 0x02, // All incoming data is used as-is; outgoing data is byte swapped.
+	BESwapPost    = 0x02, // An alternate name for "BESwapOut"
+	BESwapDst     = 0x02, // An alternate name for "BESwapOut"
+	
+	BESwapInOut   = 0x03, // Both incoming data and outgoing data are byte swapped.
+	BESwapPrePost = 0x03, // An alternate name for "BESwapInOut"
+	BESwapSrcDst  = 0x03  // An alternate name for "BESwapInOut"
+};
 
 /* little endian (ds' endianess) to local endianess convert macros */
 #ifdef MSB_FIRST	/* local arch is big endian */

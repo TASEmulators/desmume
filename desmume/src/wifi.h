@@ -210,7 +210,7 @@ struct slock;
 typedef slock slock_t;
 
 // RF2958 Register Addresses
-enum RegAddrRF2958
+enum RegAddrRF2958 : s32
 {
 	REG_RF2958_CFG1			= 0,
 	REG_RF2958_IPLL1		= 1,
@@ -753,7 +753,7 @@ typedef struct
 	u8    data[105];
 } bb_t;
 
-enum WifiRFStatus
+enum WifiRFStatus : s32
 {
 	WifiRFStatus0_Initial			= 0,
 	WifiRFStatus1_TXComplete		= 1,
@@ -767,7 +767,7 @@ enum WifiRFStatus
 	WifiRFStatus9_Idle				= 9
 };
 
-enum WifiIRQ
+enum WifiIRQ : s32
 {
 	WifiIRQ00_RXComplete			= 0,
 	WifiIRQ01_TXComplete			= 1,
@@ -787,14 +787,14 @@ enum WifiIRQ
 	WifiIRQ15_TimeslotPreBeacon		= 15
 };
 
-enum EAPStatus
+enum EAPStatus : s32
 {
 	APStatus_Disconnected = 0,
 	APStatus_Authenticated,
 	APStatus_Associated
 };
 
-enum WifiTXLocIndex
+enum WifiTXLocIndex : s32
 {
 	WifiTXLocIndex_LOC1		= 0,
 	WifiTXLocIndex_CMD		= 1,
@@ -804,7 +804,7 @@ enum WifiTXLocIndex
 	WifiTXLocIndex_CMDREPLY	= 5
 };
 
-enum WifiStageID
+enum WifiStageID : s32
 {
 	WifiStageID_PreambleDone			= 0,
 	WifiStageID_TransmitDone			= 1,
@@ -813,14 +813,14 @@ enum WifiStageID
 	WifiStageID_CmdReplyTransferDone	= 4
 };
 
-enum WifiEmulationLevel
+enum WifiEmulationLevel : s32
 {
 	WifiEmulationLevel_Off = 0,
 	WifiEmulationLevel_Normal = 10000,
 	WifiEmulationLevel_Compatibility = 65535
 };
 
-enum WifiCommInterfaceID
+enum WifiCommInterfaceID : s32
 {
 	WifiCommInterfaceID_AdHoc = 0,
 	WifiCommInterfaceID_Infrastructure = 1
@@ -2773,9 +2773,11 @@ typedef struct
 
 typedef struct
 {
-	IOREG_W_TXBUF_LOCATION *txLocation;
-	size_t emuPacketLength;
-	size_t remainingBytes;
+	//do not do this. it will break savestates (pointer sizes may vary, and what sense does it make to save them anyway).
+	//if this is needed later once somebody makes wifi work later, use some integer to ID the packet kind and look up the correct TXBUF from that
+	//IOREG_W_TXBUF_LOCATION *txLocation;
+	u32 emuPacketLength;
+	u32 remainingBytes;
 } TXPacketInfo;
 
 typedef struct
@@ -2820,14 +2822,14 @@ typedef struct
 } DesmumeFrameHeader;				// Should total 16 bytes
 
 // IEEE 802.11 Frame Information
-enum WifiFrameType
+enum WifiFrameType : s32
 {
 	WifiFrameType_Management = 0,
 	WifiFrameType_Control = 1,
 	WifiFrameType_Data = 2
 };
 
-enum WifiFrameManagementSubtype
+enum WifiFrameManagementSubtype : s32
 {
 	WifiFrameManagementSubtype_AssociationRequest		= 0x00,
 	WifiFrameManagementSubtype_AssociationResponse		= 0x01,
@@ -2847,7 +2849,7 @@ enum WifiFrameManagementSubtype
 	WifiFrameManagementSubtype_RESERVED0F				= 0x0F
 };
 
-enum WifiFrameControlSubtype
+enum WifiFrameControlSubtype : s32
 {
 	WifiFrameControlSubtype_RESERVED00		= 0x00,
 	WifiFrameControlSubtype_RESERVED01		= 0x01,
@@ -2867,7 +2869,7 @@ enum WifiFrameControlSubtype
 	WifiFrameControlSubtype_EndAck			= 0x0F
 };
 
-enum WifiFrameDataSubtype
+enum WifiFrameDataSubtype : s32
 {
 	WifiFrameDataSubtype_Data			= 0x00,
 	WifiFrameDataSubtype_DataAck		= 0x01,
@@ -2887,7 +2889,7 @@ enum WifiFrameDataSubtype
 	WifiFrameDataSubtype_RESERVED0F		= 0x0F
 };
 
-enum WifiFCFromToState
+enum WifiFCFromToState : s32
 {
 	WifiFCFromToState_STA2STA			= 0x0,
 	WifiFCFromToState_STA2DS			= 0x1,

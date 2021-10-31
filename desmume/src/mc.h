@@ -112,7 +112,7 @@ public:
 	bool load_state(EMUFILE &is);
 	
 	//commands from mmu
-	void reset_command() { reset_command_state = true; };
+	void reset_command() { this->_reset_command_state = true; };
 	u8 data_command(u8, u8);
 
 	//this info was saved before the last reset (used for savestate compatibility)
@@ -163,26 +163,27 @@ public:
 	u8 uninitializedValue;
 
 private:
-	EMUFILE *fpMC;
+	EMUFILE *_fpMC;
 	std::string _fileName;
-	u32	fsize;
+	u32	_fsize;
 	BackupDeviceFileInfo _info;
 	int readFooter();
 	bool write(u8 val);
 	u8	read();
-	bool saveBuffer(u8 *data, u32 size, bool _rewind, bool _truncate = false);
+	bool saveBuffer(u8 *data, u32 size, bool willRewind, bool willTruncate = false);
 	
-	bool write_enable;
-	bool reset_command_state;
-	u32 com;	//persistent command actually handled
-	u32 addr_size, addr_counter;
-	u32 addr;
-	u8 write_protect;
+	bool _write_enable;
+	bool _reset_command_state;
+	u32 _com;	//persistent command actually handled
+	u32 _addr_size;
+	u32 _addr_counter;
+	u32 _addr;
+	u8 _write_protect;
 
-	std::vector<u8> data_autodetect;
+	std::vector<u8> _data_autodetect;
 	enum STATE {
 		DETECTING = 0, RUNNING = 1
-	} state;
+	} _state;
 
 	enum MOTION_INIT_STATE
 	{
@@ -195,7 +196,7 @@ private:
 		MOTION_FLAG_ENABLED=1,
 		MOTION_FLAG_SENSORMODE=2
 	};
-	u8 motionInitState, motionFlag;
+	u8 _motionInitState, _motionFlag;
 
 	void checkReset();
 	void detect();

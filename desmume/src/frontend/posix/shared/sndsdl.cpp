@@ -51,10 +51,9 @@ SNDSDLUnMuteAudio,
 SNDSDLSetVolume
 };
 
-static u16 *stereodata16;
-static u32 soundoffset;
-static volatile u32 soundpos;
-static u32 soundlen;
+static u8 *stereodata;
+static u8 *mixerdata;
+static u32 soundoff;
 static u32 soundbufsize;
 static SDL_AudioSpec audiofmt;
 int audio_volume;
@@ -81,20 +80,26 @@ DWORD WINAPI SNDXBOXThread( LPVOID )
 
 static void MixAudio(void *userdata, Uint8 *stream, int len) {
    int i;
-   Uint8 *soundbuf=(Uint8 *)stereodata16;
-
-   Uint8 *stream_tmp=(Uint8 *)malloc(len);
-   for (i = 0; i < len; i++)
-   {
-      if (soundpos >= soundbufsize)
-         soundpos = 0;
-
-      stream_tmp[i] = soundbuf[soundpos];
-      soundpos++;
+   /* if the volume is max, we don't need to call the mixer and do additional
+      memory copying/cleaning, but can copy directly into the SDL buffer. */
+   u8 *dest = audio_volume == SDL_MIX_MAXVOLUME ? stream : mixerdata;
+   SDL_LockAudio();
+   if (len > soundoff) {
+        //dprintf(2, "bu: want %u, got %u\n", (unsigned)len, (unsigned)soundoff);
+        /* buffer underrun - rather than zeroing out SDL's audio buffer, we just
+           hand back the existing data, which reduces cracking */
+	len = soundoff;
    }
-   memset(stream, 0, len);
-   SDL_MixAudio(stream, stream_tmp, len, audio_volume);
-   free(stream_tmp);
+   memcpy(dest, stereodata, len);
+   soundoff -= len;
+   /* move rest of prebuffered data to the beginning of the buffer */
+   if (soundoff)
+      memmove(stereodata, stereodata+len, soundoff);
+   SDL_UnlockAudio();
+   if(audio_volume != SDL_MIX_MAXVOLUME) {
+      memset(stream, 0, len);
+      SDL_MixAudio(stream, mixerdata, len, audio_volume);
+   }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -114,33 +119,36 @@ int SNDSDLInit(int buffersize)
    //samples should be a power of 2 according to SDL-doc
    //so normalize it to the nearest power of 2 here
    u32 normSamples = 512;
-   while (normSamples < audiofmt.samples) 
-      normSamples <<= 1;
+   while (normSamples < audiofmt.samples) normSamples <<= 1;
 
    audiofmt.samples = normSamples;
-   
-   soundlen = audiofmt.freq / 60; // 60 for NTSC
-   soundbufsize = buffersize * sizeof(s16) * 2;
 
-   if (SDL_OpenAudio(&audiofmt, NULL) != 0)
+   SDL_AudioSpec obtained;
+   if (SDL_OpenAudio(&audiofmt, &obtained) != 0)
    {
       return -1;
    }
 
-   if ((stereodata16 = (u16 *)malloc(soundbufsize)) == NULL)
+   audiofmt = obtained;
+
+   /* allocate multiple of the size needed by SDL to be able to efficiently pre-buffer.
+      we effectively need the engine to pre-buffer a couple milliseconds because the
+      frontend might call SDL_Delay() to achieve the desired framerate, during which
+      the buffer isn't updated by the SPU. */
+   soundbufsize = audiofmt.size * 4;
+   soundoff = 0;
+
+   if ((stereodata = (u8*)calloc(soundbufsize, 1)) == NULL ||
+       (mixerdata  = (u8*)calloc(soundbufsize, 1)) == NULL)
       return -1;
 
-   memset(stereodata16, 0, soundbufsize);
-
-   soundpos = 0;
-
-   SDL_PauseAudio(0);
-
 #ifdef _XBOX
-   	doterminate = false;
+	doterminate = false;
 	terminated = false;
 	CreateThread(0,0,SNDXBOXThread,0,0,0);
 #endif
+
+   SDL_PauseAudio(0);
 
    return 0;
 }
@@ -157,38 +165,22 @@ void SNDSDLDeInit()
 #endif
    SDL_CloseAudio();
 
-   if (stereodata16)
-      free(stereodata16);
+   free(stereodata);
+   free(mixerdata);
+   stereodata = NULL;
+   mixerdata = NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 void SNDSDLUpdateAudio(s16 *buffer, u32 num_samples)
 {
-   u32 copy1size=0, copy2size=0;
+   // dprintf(2, "up: %u\n", num_samples);
+   u8 *incoming = (u8*) buffer;
+   u32 n = num_samples * 4;
    SDL_LockAudio();
-
-   if ((soundbufsize - soundoffset) < (num_samples * sizeof(s16) * 2))
-   {
-      copy1size = (soundbufsize - soundoffset);
-      copy2size = (num_samples * sizeof(s16) * 2) - copy1size;
-   }
-   else
-   {
-      copy1size = (num_samples * sizeof(s16) * 2);
-      copy2size = 0;
-   }
-
-   memcpy((((u8 *)stereodata16)+soundoffset), buffer, copy1size);
-//   ScspConvert32uto16s((s32 *)leftchanbuffer, (s32 *)rightchanbuffer, (s16 *)(((u8 *)stereodata16)+soundoffset), copy1size / sizeof(s16) / 2);
-
-   if (copy2size)
-      memcpy(stereodata16, ((u8 *)buffer)+copy1size, copy2size);
-//      ScspConvert32uto16s((s32 *)leftchanbuffer, (s32 *)rightchanbuffer, (s16 *)stereodata16, copy2size / sizeof(s16) / 2);
-
-   soundoffset += copy1size + copy2size;
-   soundoffset %= soundbufsize;
-
+   memcpy(stereodata+soundoff, incoming, n);
+   soundoff += n;
    SDL_UnlockAudio();
 }
 
@@ -196,14 +188,11 @@ void SNDSDLUpdateAudio(s16 *buffer, u32 num_samples)
 
 u32 SNDSDLGetAudioSpace()
 {
-   u32 freespace=0;
-
-   if (soundoffset > soundpos)
-      freespace = soundbufsize - soundoffset + soundpos;
-   else
-      freespace = soundpos - soundoffset;
-
-   return (freespace / sizeof(s16) / 2);
+   u32 tmp;
+   SDL_LockAudio();
+   tmp = (soundbufsize - soundoff)/4;
+   SDL_UnlockAudio();
+   return tmp;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -222,16 +211,29 @@ void SNDSDLUnMuteAudio()
 
 //////////////////////////////////////////////////////////////////////////////
 
+/* the engine's min/max is 0/100, SDLs 0/128 */
 void SNDSDLSetVolume(int volume)
 {
+   u32 tmp = volume * SDL_MIX_MAXVOLUME;
+   SDL_LockAudio();
+   audio_volume = tmp / 100;
+   SDL_UnlockAudio();
 }
 
 //////////////////////////////////////////////////////////////////////////////
+/* these 2 are special functions that the GTK frontend calls directly.
+   and it has a slider where its max is 128. doh. */
+
 int SNDSDLGetAudioVolume()
 {
-   return audio_volume;
+   SDL_LockAudio();
+   int tmp = audio_volume;
+   SDL_UnlockAudio();
+   return tmp;
 }
-void SNDSDLSetAudioVolume(int value)
-{
-   audio_volume = value;
+
+void SNDSDLSetAudioVolume(int volume) {
+   SDL_LockAudio();
+   audio_volume = volume;
+   SDL_UnlockAudio();
 }

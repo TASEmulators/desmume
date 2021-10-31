@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2018 DeSmuME Team
+	Copyright (C) 2012-2021 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -126,6 +126,9 @@
 	oglImage->SetOutputFilterOGL(OutputFilterTypeID_Bilinear);
 	oglImage->SetPixelScalerOGL(VideoFilterTypeID_None);
 	
+	[context setView:self];
+	[context update];
+	
 	CGLSetCurrentContext(prevContext);
 	
 	return self;
@@ -250,6 +253,11 @@
 	{
 		[context setView:self];
 	}
+}
+
+- (BOOL)wantsDefaultClipping
+{
+	return NO;
 }
 
 - (void)drawRect:(NSRect)dirtyRect
@@ -991,7 +999,7 @@
 - (void) markUnsupportedOpenGLMSAAMenuItems
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	NSUInteger maxSamples = [[cdsCore cdsGPU] openglDeviceMaxMultisamples];
+	NSInteger maxSamples = (NSInteger)[[cdsCore cdsGPU] openglDeviceMaxMultisamples];
 	size_t itemCount = [openglMSAAPopUpButton numberOfItems];
 	BOOL needAddUnsupportedSeparator = YES;
 	

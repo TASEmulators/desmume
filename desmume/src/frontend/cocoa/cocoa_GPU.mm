@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2018 DeSmuME team
+	Copyright (C) 2013-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -36,11 +36,13 @@
 	#import "userinterface/MacMetalDisplayView.h"
 #endif
 
+#define GPU_3D_RENDERER_COUNT 3
+
 #ifdef BOOL
 #undef BOOL
 #endif
 
-GPU3DInterface *core3DList[] = {
+GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 	&gpu3DNull,
 	&gpu3DRasterize,
 	&gpu3Dgl,
@@ -304,6 +306,11 @@ public:
 	
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
+	
+	if (_needRestoreRender3DLock)
+	{
+		_needRestoreRender3DLock = NO;
+	}
 }
 
 - (NSSize) gpuDimensions
@@ -348,7 +355,7 @@ public:
 	
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	
-	if (colorFormat != dispInfo.colorFormat)
+	if (dispInfo.colorFormat != (NDSColorFormat)colorFormat)
 	{
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 		const size_t maxPages = GPU->GetDisplayInfo().framebufferPageCount;
@@ -372,6 +379,11 @@ public:
 	
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
+	
+	if (_needRestoreRender3DLock)
+	{
+		_needRestoreRender3DLock = NO;
+	}
 }
 
 - (NSUInteger) gpuColorFormat
@@ -394,6 +406,15 @@ public:
 
 - (void) setRender3DRenderingEngine:(NSInteger)rendererID
 {
+	if (rendererID < CORE3DLIST_NULL)
+	{
+		rendererID = CORE3DLIST_NULL;
+	}
+	else if (rendererID > GPU_3D_RENDERER_COUNT)
+	{
+		rendererID = CORE3DLIST_SWRASTERIZE;
+	}
+	
 	gpuEvent->ApplyRender3DSettingsLock();
 	GPU->Set3DRendererByID(rendererID);
 	gpuEvent->ApplyRender3DSettingsUnlock();
@@ -500,7 +521,7 @@ public:
 	
 	CommonSettings.num_cores = numberCores;
 	
-	if (renderingEngineID == CORE3DLIST_SWRASTERIZE)
+	if (renderingEngineID == RENDERID_SOFTRASTERIZER)
 	{
 		GPU->Set3DRendererByID(renderingEngineID);
 	}
@@ -537,7 +558,7 @@ public:
 {
 	gpuEvent->ApplyRender3DSettingsLock();
 	
-	const int currentMSAASize = CommonSettings.GFX3D_Renderer_MultisampleSize;
+	const NSUInteger currentMSAASize = (NSUInteger)CommonSettings.GFX3D_Renderer_MultisampleSize;
 	
 	if (currentMSAASize != msaaSize)
 	{
@@ -623,8 +644,8 @@ public:
 			msaaSize = openglDeviceMaxMultisamples;
 		}
 		
-		msaaSize = GetNearestPositivePOT(msaaSize);
-		CommonSettings.GFX3D_Renderer_MultisampleSize = msaaSize;
+		msaaSize = GetNearestPositivePOT((uint32_t)msaaSize);
+		CommonSettings.GFX3D_Renderer_MultisampleSize = (int)msaaSize;
 	}
 	
 	gpuEvent->ApplyRender3DSettingsUnlock();
@@ -1748,6 +1769,13 @@ CGLPBufferObj OSXOpenGLRendererPBuffer = NULL;
 
 static void* RunFetchThread(void *arg)
 {
+#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
+	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6)
+	{
+		pthread_setname_np("Video Fetch");
+	}
+#endif
+	
 	MacClientSharedObject *sharedData = (MacClientSharedObject *)arg;
 	[sharedData runFetchLoop];
 	
@@ -1855,10 +1883,13 @@ bool CreateOpenGLRenderer()
 		(CGLPixelFormatAttribute)0
 	};
 	
-#ifdef MAC_OS_X_VERSION_10_7
 	// If we can support a 3.2 Core Profile context, then request that in our
 	// pixel format attributes.
-	useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
+#ifdef MAC_OS_X_VERSION_10_7
+	// As of 2021/09/03, testing has shown that macOS v10.7's OpenGL 3.2 shader
+	// compiler isn't very reliable, and so we're going to require macOS v10.8
+	// instead, which at least has a working shader compiler for OpenGL 3.2.
+	useContext_3_2 = IsOSXVersionSupported(10, 8, 0);
 	if (useContext_3_2)
 	{
 		attrs[9] = kCGLPFAOpenGLProfile;

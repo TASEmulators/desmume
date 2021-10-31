@@ -1,5 +1,5 @@
 /*
-	Copyright 2009-2015 DeSmuME team
+	Copyright 2009-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -514,7 +514,7 @@ class EmuFatFile
   u8 timestamp(u8 flag, u16 year, u8 month, u8 day, u8 hour, u8 minute, u8 second);
   u8 sync(void);
   u8 makeDir(EmuFatFile* dir, const char* dirName);
-  u8 open(EmuFatFile* dirFile, u16 index, u8 oflag);
+  u8 open(EmuFatFile* dirFile, u32 index, u8 oflag);
   u8 open(EmuFatFile* dirFile, const char* fileName, u8 oflag);
   u8 remove(EmuFatFile* dirFile, const char* fileName);
   u8 remove(void);

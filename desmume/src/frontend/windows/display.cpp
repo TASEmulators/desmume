@@ -683,7 +683,7 @@ void DoDisplay()
 
 	//we have to do a copy here because we're about to draw the OSD onto it. bummer.
 	if (gpu_bpp == 15)
-		ColorspaceConvertBuffer555To8888Opaque<true, false>((u16 *)video.srcBuffer, video.buffer, video.srcBufferSize / 2);
+		ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapNone>((u16 *)video.srcBuffer, video.buffer, video.srcBufferSize / 2);
 	else
 		ColorspaceConvertBuffer888XTo8888Opaque<true, false>((u32*)video.srcBuffer, video.buffer, video.srcBufferSize / 4);
 

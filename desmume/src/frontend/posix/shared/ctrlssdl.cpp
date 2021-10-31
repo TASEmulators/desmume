@@ -34,6 +34,7 @@ u16 keyboard_cfg[NB_KEYS];
 u16 joypad_cfg[NB_KEYS];
 u16 nbr_joy;
 mouse_status mouse;
+static int fullscreen;
 
 static SDL_Joystick **open_joysticks = NULL;
 
@@ -259,7 +260,7 @@ u16 get_set_joy_key(int index) {
 
 static signed long
 screen_to_touch_range( signed long scr, float size_ratio) {
-  return (signed long)((float)scr * size_ratio);
+  return (signed long)((float)scr / size_ratio);
 }
 
 /* Set mouse coordinates */
@@ -500,6 +501,12 @@ process_ctrls_event( SDL_Event& event,
         break;
 
       case SDL_KEYDOWN:
+        if ((event.key.keysym.sym == SDLK_RETURN) && (event.key.keysym.mod & KMOD_ALT)) {
+            SDL_SetWindowFullscreen(cfg->window, fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
+            fullscreen = !fullscreen;
+            break;
+        }
+
         switch(event.key.keysym.sym){
             case SDLK_LSHIFT:
                 shift_pressed |= 1;
@@ -558,6 +565,7 @@ process_ctrls_event( SDL_Event& event,
             case SDLK_F10:
                 int prevexec;
                 prevexec = execute;
+		emu_halt(EMUHALT_REASON_USER_REQUESTED_HALT, NDSErrorTag_None);
                 execute = FALSE;
                 SPU_Pause(1);
                 if(!shift_pressed){
@@ -576,14 +584,12 @@ process_ctrls_event( SDL_Event& event,
         break;
 
       case SDL_MOUSEBUTTONDOWN:
-        if(event.button.button==1)
-          mouse.down = TRUE;
+        if(event.button.button==1 && !mouse.down)
+          mouse.down = 1;
         break;
-                                            
+
       case SDL_MOUSEMOTION:
-        if(!mouse.down)
-          break;
-        else {
+	{
           signed long scaled_x =
             screen_to_touch_range( event.button.x,
                                      cfg->nds_screen_size_ratio);
@@ -591,14 +597,18 @@ process_ctrls_event( SDL_Event& event,
             screen_to_touch_range( event.button.y,
                                      cfg->nds_screen_size_ratio);
 
-          if( scaled_y >= 192)
+          if(!cfg->horizontal && scaled_y >= 192)
             set_mouse_coord( scaled_x, scaled_y - 192);
+          else if(cfg->horizontal && scaled_x >= 256)
+            set_mouse_coord( scaled_x - 256, scaled_y);
         }
         break;
 
       case SDL_MOUSEBUTTONUP:
-        if(mouse.down) mouse.click = TRUE;
-        mouse.down = FALSE;
+        if(mouse.down) {
+		mouse.click = 1;
+		if(mouse.down > 1) mouse.down = 0;
+	}
         break;
 
       case SDL_QUIT:

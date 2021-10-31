@@ -616,7 +616,7 @@ extern GFX3D gfx3d;
 extern CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 extern CACHE_ALIGN u8 mixTable555[32][32][32];
 
-extern BOOL isSwapBuffers;
+extern u32 isSwapBuffers;
 
 void gfx3d_glFlush(u32 v);
 // end GE commands

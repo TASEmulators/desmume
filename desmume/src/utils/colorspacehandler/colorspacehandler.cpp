@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2019 DeSmuME team
+	Copyright (C) 2016-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -143,13 +143,13 @@ void ColorspaceHandlerInit()
 		
 		for (size_t i = 0; i < 32768; i++)
 		{
-			color_555_to_666[i]					= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) );
-			color_555_to_6665_opaque[i]			= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) | 0x1F000000 );
-			color_555_to_6665_opaque_swap_rb[i]	= LE_TO_LOCAL_32( RGB15TO18_SWAP_RB_BITLOGIC(i) | 0x1F000000 );
+			color_555_to_666[i]					= RGB15TO18_BITLOGIC(i);
+			color_555_to_6665_opaque[i]			= RGB15TO18_BITLOGIC(i) | 0x1F000000;
+			color_555_to_6665_opaque_swap_rb[i]	= RGB15TO18_SWAP_RB_BITLOGIC(i) | 0x1F000000;
 			
-			color_555_to_888[i]					= LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) );
-			color_555_to_8888_opaque[i]			= LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) | 0xFF000000 );
-			color_555_to_8888_opaque_swap_rb[i]	= LE_TO_LOCAL_32( RGB15TO24_SWAP_RB_BITLOGIC(i) | 0xFF000000 );
+			color_555_to_888[i]					= RGB15TO24_BITLOGIC(i);
+			color_555_to_8888_opaque[i]			= RGB15TO24_BITLOGIC(i) | 0xFF000000;
+			color_555_to_8888_opaque_swap_rb[i]	= RGB15TO24_SWAP_RB_BITLOGIC(i) | 0xFF000000;
 		}
 		
 #define RGB16_SWAP_RB_BITLOGIC(col)     ( (((col)&0x001F)<<10) | ((col)&0x03E0) | (((col)&0x7C00)>>10) | ((col)&0x8000) )
@@ -161,7 +161,7 @@ void ColorspaceHandlerInit()
 	}
 }
 
-template <bool SWAP_RB, bool IS_UNALIGNED>
+template <bool SWAP_RB, bool IS_UNALIGNED, BESwapFlags BE_BYTESWAP>
 void ColorspaceConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount)
 {
 	size_t i = 0;
@@ -173,36 +173,51 @@ void ColorspaceConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__re
 	{
 		if (IS_UNALIGNED)
 		{
-			i = csh.ConvertBuffer555To8888Opaque_SwapRB_IsUnaligned(src, dst, pixCountVector);
+			i = csh.ConvertBuffer555To8888Opaque_SwapRB_IsUnaligned<BE_BYTESWAP>(src, dst, pixCountVector);
 		}
 		else
 		{
-			i = csh.ConvertBuffer555To8888Opaque_SwapRB(src, dst, pixCountVector);
+			i = csh.ConvertBuffer555To8888Opaque_SwapRB<BE_BYTESWAP>(src, dst, pixCountVector);
 		}
 	}
 	else
 	{
 		if (IS_UNALIGNED)
 		{
-			i = csh.ConvertBuffer555To8888Opaque_IsUnaligned(src, dst, pixCountVector);
+			i = csh.ConvertBuffer555To8888Opaque_IsUnaligned<BE_BYTESWAP>(src, dst, pixCountVector);
 		}
 		else
 		{
-			i = csh.ConvertBuffer555To8888Opaque(src, dst, pixCountVector);
+			i = csh.ConvertBuffer555To8888Opaque<BE_BYTESWAP>(src, dst, pixCountVector);
 		}
 	}
 	
 #pragma LOOPVECTORIZE_DISABLE
-	
 #endif // USEMANUALVECTORIZATION
-	
 	for (; i < pixCount; i++)
 	{
-		dst[i] = ColorspaceConvert555To8888Opaque<SWAP_RB>(src[i]);
+		switch (BE_BYTESWAP)
+		{
+			case BESwapNone:
+				dst[i] = ColorspaceConvert555To8888Opaque<SWAP_RB>(src[i]);
+				break;
+				
+			case BESwapIn:
+				dst[i] = ColorspaceConvert555To8888Opaque<SWAP_RB>(LE_TO_LOCAL_16(src[i]));
+				break;
+				
+			case BESwapOut:
+				dst[i] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<SWAP_RB>(src[i]) );
+				break;
+				
+			case BESwapInOut:
+				dst[i] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<SWAP_RB>(LE_TO_LOCAL_16(src[i])) );
+				break;
+		}
 	}
 }
 
-template <bool SWAP_RB, bool IS_UNALIGNED>
+template <bool SWAP_RB, bool IS_UNALIGNED, BESwapFlags BE_BYTESWAP>
 void ColorspaceConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount)
 {
 	size_t i = 0;
@@ -214,32 +229,47 @@ void ColorspaceConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__re
 	{
 		if (IS_UNALIGNED)
 		{
-			i = csh.ConvertBuffer555To6665Opaque_SwapRB_IsUnaligned(src, dst, pixCountVector);
+			i = csh.ConvertBuffer555To6665Opaque_SwapRB_IsUnaligned<BE_BYTESWAP>(src, dst, pixCountVector);
 		}
 		else
 		{
-			i = csh.ConvertBuffer555To6665Opaque_SwapRB(src, dst, pixCountVector);
+			i = csh.ConvertBuffer555To6665Opaque_SwapRB<BE_BYTESWAP>(src, dst, pixCountVector);
 		}
 	}
 	else
 	{
 		if (IS_UNALIGNED)
 		{
-			i = csh.ConvertBuffer555To6665Opaque_IsUnaligned(src, dst, pixCountVector);
+			i = csh.ConvertBuffer555To6665Opaque_IsUnaligned<BE_BYTESWAP>(src, dst, pixCountVector);
 		}
 		else
 		{
-			i = csh.ConvertBuffer555To6665Opaque(src, dst, pixCountVector);
+			i = csh.ConvertBuffer555To6665Opaque<BE_BYTESWAP>(src, dst, pixCountVector);
 		}
 	}
 	
 #pragma LOOPVECTORIZE_DISABLE
-	
 #endif // USEMANUALVECTORIZATION
-	
 	for (; i < pixCount; i++)
 	{
-		dst[i] = ColorspaceConvert555To6665Opaque<SWAP_RB>(src[i]);
+		switch (BE_BYTESWAP)
+		{
+			case BESwapNone:
+				dst[i] = ColorspaceConvert555To6665Opaque<SWAP_RB>(src[i]);
+				break;
+				
+			case BESwapIn:
+				dst[i] = ColorspaceConvert555To6665Opaque<SWAP_RB>(LE_TO_LOCAL_16(src[i]));
+				break;
+				
+			case BESwapOut:
+				dst[i] = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<SWAP_RB>(src[i]) );
+				break;
+				
+			case BESwapInOut:
+				dst[i] = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<SWAP_RB>(LE_TO_LOCAL_16(src[i])) );
+				break;
+		}
 	}
 }
 
@@ -275,9 +305,7 @@ void ColorspaceConvertBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount
 	}
 	
 #pragma LOOPVECTORIZE_DISABLE
-	
 #endif // USEMANUALVECTORIZATION
-	
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ColorspaceConvert8888To6665<SWAP_RB>(src[i]);
@@ -316,9 +344,7 @@ void ColorspaceConvertBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount
 	}
 	
 #pragma LOOPVECTORIZE_DISABLE
-	
 #endif // USEMANUALVECTORIZATION
-	
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ColorspaceConvert6665To8888<SWAP_RB>(src[i]);
@@ -357,9 +383,7 @@ void ColorspaceConvertBuffer8888To5551(const u32 *__restrict src, u16 *__restric
 	}
 	
 #pragma LOOPVECTORIZE_DISABLE
-	
 #endif // USEMANUALVECTORIZATION
-	
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ColorspaceConvert8888To5551<SWAP_RB>(src[i]);
@@ -398,9 +422,7 @@ void ColorspaceConvertBuffer6665To5551(const u32 *__restrict src, u16 *__restric
 	}
 	
 #pragma LOOPVECTORIZE_DISABLE
-	
 #endif // USEMANUALVECTORIZATION
-	
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ColorspaceConvert6665To5551<SWAP_RB>(src[i]);
@@ -439,9 +461,7 @@ void ColorspaceConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pi
 	}
 	
 #pragma LOOPVECTORIZE_DISABLE
-	
 #endif // USEMANUALVECTORIZATION
-	
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ColorspaceConvert888XTo8888Opaque<SWAP_RB>(src[i]);
@@ -480,9 +500,7 @@ void ColorspaceConvertBuffer555XTo888(const u16 *__restrict src, u8 *__restrict 
 	}
 	
 #pragma LOOPVECTORIZE_DISABLE
-	
 #endif // USEMANUALVECTORIZATION
-	
 	for (; i < pixCount; i++)
 	{
 		ColorspaceConvert555XTo888<SWAP_RB>(src[i], &dst[i*3]);
@@ -521,9 +539,7 @@ void ColorspaceConvertBuffer888XTo888(const u32 *__restrict src, u8 *__restrict 
 	}
 	
 #pragma LOOPVECTORIZE_DISABLE
-	
 #endif // USEMANUALVECTORIZATION
-	
 	for (; i < pixCount; i++)
 	{
 		ColorspaceConvert888XTo888<SWAP_RB>(src[i], &dst[i*3]);
@@ -554,9 +570,7 @@ void ColorspaceCopyBuffer16(const u16 *src, u16 *dst, size_t pixCount)
 	}
 	
 #pragma LOOPVECTORIZE_DISABLE
-	
 #endif // USEMANUALVECTORIZATION
-	
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ColorspaceCopy16<SWAP_RB>(src[i]);
@@ -587,9 +601,7 @@ void ColorspaceCopyBuffer32(const u32 *src, u32 *dst, size_t pixCount)
 	}
 	
 #pragma LOOPVECTORIZE_DISABLE
-	
 #endif // USEMANUALVECTORIZATION
-	
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ColorspaceCopy32<SWAP_RB>(src[i]);
@@ -773,72 +785,148 @@ void ColorspaceApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensi
 	}
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	size_t i = 0;
 	
 	for (; i < pixCount; i++)
 	{
-		dst[i] = ColorspaceConvert555To8888Opaque<false>(src[i]);
+		switch (BE_BYTESWAP)
+		{
+			case BESwapNone:
+				dst[i] = ColorspaceConvert555To8888Opaque<false>(src[i]);
+				break;
+				
+			case BESwapSrc:
+				dst[i] = ColorspaceConvert555To8888Opaque<false>(LE_TO_LOCAL_16(src[i]));
+				break;
+				
+			case BESwapDst:
+				dst[i] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(src[i]) );
+				break;
+				
+			case BESwapSrcDst:
+				dst[i] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(LE_TO_LOCAL_16(src[i])) );
+				break;
+		}
 	}
 	
 	return i;
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler::ConvertBuffer555To8888Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	size_t i = 0;
 	
 	for (; i < pixCount; i++)
 	{
-		dst[i] = ColorspaceConvert555To8888Opaque<true>(src[i]);
+		switch (BE_BYTESWAP)
+		{
+			case BESwapNone:
+				dst[i] = ColorspaceConvert555To8888Opaque<true>(src[i]);
+				break;
+				
+			case BESwapSrc:
+				dst[i] = ColorspaceConvert555To8888Opaque<true>(LE_TO_LOCAL_16(src[i]));
+				break;
+				
+			case BESwapDst:
+				dst[i] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<true>(src[i]) );
+				break;
+				
+			case BESwapSrcDst:
+				dst[i] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<true>(LE_TO_LOCAL_16(src[i])) );
+				break;
+		}
 	}
 	
 	return i;
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler::ConvertBuffer555To8888Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return this->ColorspaceHandler::ConvertBuffer555To8888Opaque(src, dst, pixCount);
+	return this->ColorspaceHandler::ConvertBuffer555To8888Opaque<BE_BYTESWAP>(src, dst, pixCount);
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler::ConvertBuffer555To8888Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return this->ColorspaceHandler::ConvertBuffer555To8888Opaque_SwapRB(src, dst, pixCount);
+	return this->ColorspaceHandler::ConvertBuffer555To8888Opaque_SwapRB<BE_BYTESWAP>(src, dst, pixCount);
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler::ConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	size_t i = 0;
 	
 	for (; i < pixCount; i++)
 	{
-		dst[i] = ColorspaceConvert555To6665Opaque<false>(src[i]);
+		switch (BE_BYTESWAP)
+		{
+			case BESwapNone:
+				dst[i] = ColorspaceConvert555To6665Opaque<false>(src[i]);
+				break;
+				
+			case BESwapSrc:
+				dst[i] = ColorspaceConvert555To6665Opaque<false>(LE_TO_LOCAL_16(src[i]));
+				break;
+				
+			case BESwapDst:
+				dst[i] = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>(src[i]) );
+				break;
+				
+			case BESwapSrcDst:
+				dst[i] = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>(LE_TO_LOCAL_16(src[i])) );
+				break;
+		}
 	}
 	
 	return i;
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler::ConvertBuffer555To6665Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	size_t i = 0;
 	
 	for (; i < pixCount; i++)
 	{
-		dst[i] = ColorspaceConvert555To6665Opaque<true>(src[i]);
+		switch (BE_BYTESWAP)
+		{
+			case BESwapNone:
+				dst[i] = ColorspaceConvert555To6665Opaque<true>(src[i]);
+				break;
+				
+			case BESwapSrc:
+				dst[i] = ColorspaceConvert555To6665Opaque<true>(LE_TO_LOCAL_16(src[i]));
+				break;
+				
+			case BESwapDst:
+				dst[i] = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<true>(src[i]) );
+				break;
+				
+			case BESwapSrcDst:
+				dst[i] = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<true>(LE_TO_LOCAL_16(src[i])) );
+				break;
+		}
 	}
 	
 	return i;
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler::ConvertBuffer555To6665Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return this->ColorspaceHandler::ConvertBuffer555To6665Opaque(src, dst, pixCount);
+	return this->ColorspaceHandler::ConvertBuffer555To6665Opaque<BE_BYTESWAP>(src, dst, pixCount);
 }
 
+template <BESwapFlags BE_BYTESWAP>
 size_t ColorspaceHandler::ConvertBuffer555To6665Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return this->ColorspaceHandler::ConvertBuffer555To6665Opaque_SwapRB(src, dst, pixCount);
+	return this->ColorspaceHandler::ConvertBuffer555To6665Opaque_SwapRB<BE_BYTESWAP>(src, dst, pixCount);
 }
 
 size_t ColorspaceHandler::ConvertBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount) const
@@ -1283,15 +1371,39 @@ size_t ColorspaceHandler::ApplyIntensityToBuffer32_SwapRB_IsUnaligned(u32 *dst, 
 	return this->ApplyIntensityToBuffer32_SwapRB(dst, pixCount, intensity);
 }
 
-template void ColorspaceConvertBuffer555To8888Opaque<true, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ColorspaceConvertBuffer555To8888Opaque<true, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ColorspaceConvertBuffer555To8888Opaque<false, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ColorspaceConvertBuffer555To8888Opaque<false, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<true, true, BESwapNone>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapNone>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<false, true, BESwapNone>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapNone>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<true, true, BESwapIn>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapIn>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<false, true, BESwapIn>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapIn>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<true, true, BESwapOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<false, true, BESwapOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<true, true, BESwapInOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapInOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<false, true, BESwapInOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapInOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 
-template void ColorspaceConvertBuffer555To6665Opaque<true, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ColorspaceConvertBuffer555To6665Opaque<true, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ColorspaceConvertBuffer555To6665Opaque<false, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ColorspaceConvertBuffer555To6665Opaque<false, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<true, true, BESwapNone>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<true, false, BESwapNone>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<false, true, BESwapNone>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapNone>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<true, true, BESwapIn>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<true, false, BESwapIn>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<false, true, BESwapIn>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapIn>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<true, true, BESwapOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<true, false, BESwapOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<false, true, BESwapOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<true, true, BESwapInOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<true, false, BESwapInOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<false, true, BESwapInOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapInOut>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 
 template void ColorspaceConvertBuffer8888To6665<true, true>(const u32 *src, u32 *dst, size_t pixCount);
 template void ColorspaceConvertBuffer8888To6665<true, false>(const u32 *src, u32 *dst, size_t pixCount);

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 Guillaume Duhamel
-	Copyright (C) 2006-2016 DeSmuME team
+	Copyright (C) 2006-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ static bool acl_check_access(u32 adr, u32 access) {
 	if(NDS_ARM9.CPSR.bits.mode != USR)
 		access |= 1;
 	
-	if (cp15.isAccessAllowed(adr,access)==FALSE) {
+	if (armcp15_isAccessAllowed(&cp15, adr,access)==FALSE) {
 		HandleDebugEvent(DEBUG_EVENT_ACL_EXCEPTION);
 	}
 	return true;

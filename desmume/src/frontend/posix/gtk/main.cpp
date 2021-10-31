@@ -1,6 +1,6 @@
  /*
 	Copyright (C) 2007 Pascal Giard (evilynux)
-	Copyright (C) 2006-2019 DeSmuME team
+	Copyright (C) 2006-2021 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -200,8 +200,8 @@ static const GActionEntry app_entries[] = {
     { "run",           Launch },
     { "pause",         Pause },
     { "reset",         Reset },
-    { "savestateto",   SaveStateDialog },
-    { "loadstatefrom", LoadStateDialog },
+    { "save_state_to",   SaveStateDialog },
+    { "load_state_from", LoadStateDialog },
     { "savestate",     MenuSave, "u" },
     { "loadstate",     MenuLoad, "u" },
     { "importbackup",  ImportBackupMemoryDialog },
@@ -507,6 +507,7 @@ static GtkWidget *pWindow;
 static GtkWidget *pToolBar;
 static GtkWidget *pStatusBar;
 static GtkWidget *pDrawingArea;
+static GtkWidget *pContentBox;
 
 struct nds_screen_t {
     guint gap_size;
@@ -647,6 +648,11 @@ void Launch(GSimpleAction *action, GVariant *parameter, gpointer user_data)
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "exportbackup")), TRUE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "importbackup")), TRUE);
 
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "savestate")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "loadstate")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "save_state_to")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "load_state_from")), TRUE);
+
     //pause = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/pause")));
     //gtk_widget_grab_focus(pause);
 }
@@ -706,6 +712,7 @@ static void LoadStateDialog(GSimpleAction *action, GVariant *parameter, gpointer
             gtk_widget_destroy(pDialog);
         } else {
             g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "run")), TRUE);
+            RedrawScreen();
         }
 
         g_free(sPath);
@@ -924,6 +931,7 @@ static void SaveStateDialog(GSimpleAction *action, GVariant *parameter, gpointer
             GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_SAVE,
             "_Save", "_Cancel");
+    gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(pFileSelection), "save.ds");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_ds);
@@ -1301,7 +1309,7 @@ static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpo
 
 static inline void gpu_screen_to_rgb(u32* dst)
 {
-    ColorspaceConvertBuffer555To8888Opaque<false, false>((const uint16_t *)GPU->GetDisplayInfo().masterNativeBuffer, dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+    ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
 }
 
 static inline void drawScreen(cairo_t* cr, u32* buf, gint w, gint h) {
@@ -1427,7 +1435,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 }
 
 static void RedrawScreen() {
-	ColorspaceConvertBuffer555To8888Opaque<true, false>((const uint16_t *)GPU->GetDisplayInfo().masterNativeBuffer, (uint32_t *)video->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+	ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, (uint32_t *)video->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
 #ifdef HAVE_LIBAGG
 	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), 256, 384, 1024);
 	osd->update();
@@ -2517,7 +2525,7 @@ gboolean EmuLoop(gpointer data)
     desmume_cycle();    /* Emule ! */
 
     _updateDTools();
-        avout_x264.updateVideo((const uint16_t *)GPU->GetDisplayInfo().masterNativeBuffer);
+        avout_x264.updateVideo(GPU->GetDisplayInfo().masterNativeBuffer16);
 	RedrawScreen();
 
     if (!config.fpslimiter || keys_latch & KEYMASK_(KEY_BOOST - 1)) {
@@ -3013,7 +3021,15 @@ common_gtk_main(GApplication *app, gpointer user_data)
     pToolBar = GTK_WIDGET(gtk_builder_get_object(builder, "toolbar"));
     pDrawingArea = GTK_WIDGET(gtk_builder_get_object(builder, "drawing-area"));
     pStatusBar = GTK_WIDGET(gtk_builder_get_object(builder, "status-bar"));
+    pContentBox = GTK_WIDGET(gtk_builder_get_object(builder, "content-box"));
     g_object_unref(builder);
+
+    /* Set colors for content box background and status bar text */
+    GdkRGBA color_black = { 0.0, 0.0, 0.0, 1.0 };
+    gtk_widget_override_background_color(pContentBox, GTK_STATE_FLAG_NORMAL, &color_black);
+
+    GdkRGBA color_soft_gray = { 0.8, 0.8, 0.8, 1.0 };
+    gtk_widget_override_color(pStatusBar, GTK_STATE_FLAG_NORMAL, &color_soft_gray);
 
     gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(pWindow));
 
@@ -3300,6 +3316,11 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "cheatsearch")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "importbackup")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "exportbackup")), FALSE);
+
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "savestate")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "loadstate")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "save_state_to")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "load_state_from")), FALSE);
 
     nds_screen.gap_size = config.view_gap ? GAP_SIZE : 0;
 

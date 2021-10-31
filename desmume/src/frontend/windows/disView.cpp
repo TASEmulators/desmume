@@ -65,6 +65,7 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
         HDC mem_dc;
         HBITMAP mem_bmp;
         u32  nbligne;
+		std::vector<u32>* bpList = win->cpu->breakPoints;
 
         GetClientRect(hwnd, &rect);
         lg = rect.right - rect.left;
@@ -100,8 +101,8 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
              for(i = 0; i < nbligne; ++i)
              {
 				 SetBkColor(mem_dc, RGB(255, 255, 255));
-				 for (int j = 0; j < win->cpu->breakPoints.size(); ++j) {
-					 if (adr == win->cpu->breakPoints[j]) {
+				 for (u32 j = 0; j < bpList->size(); ++j) {
+					 if (adr == (*bpList)[j]) {
 						 SetBkColor(mem_dc, RGB(255, 0, 0));
 					 }
 				 }
@@ -143,8 +144,8 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
              for(i = 0; i < nbligne; ++i)
              {
 				 SetBkColor(mem_dc, RGB(255, 255, 255));
-				 for (int j = 0; j < win->cpu->breakPoints.size(); ++j) {
-					 if (adr == win->cpu->breakPoints[j]) {
+				 for (u32 j = 0; j < bpList->size(); ++j) {
+					 if (adr == (*bpList)[j]) {
 						 SetBkColor(mem_dc, RGB(255, 0, 0));
 					 }
 				 }
@@ -247,10 +248,11 @@ LRESULT DisViewDialog_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPA
         SetWindowText(GetDlgItem(hwnd, IDC_TMP), text);
 
 		// weehee break points drawing
+		std::vector<u32>* bpList = win->cpu->breakPoints;
 		for (int i = 0; i < 8; ++i) {
 			int j = i + win->break_pos;
-			if (j < win->cpu->breakPoints.size()) {
-				sprintf(text, "%08X", win->cpu->breakPoints[j]);
+			if (j < bpList->size()) {
+				sprintf(text, "%08X", (*bpList)[j]);
 			}
 			else {
 				sprintf(text, "%08X", 0);
@@ -545,13 +547,13 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 									continue;
 								}
 							}
-							NDS_ARM7.breakPoints.push_back(adr);
+							NDS_ARM7.breakPoints->push_back(adr);
 							InvalidateRect(hwnd, NULL, FALSE);
 							return 1;
 						}
 						case IDC_DELBP: {
-							if (DisView7->break_pos < NDS_ARM7.breakPoints.size()) {
-								NDS_ARM7.breakPoints.erase(NDS_ARM7.breakPoints.begin() + DisView7->break_pos);
+							if (DisView7->break_pos < NDS_ARM7.breakPoints->size()) {
+								NDS_ARM7.breakPoints->erase(NDS_ARM7.breakPoints->begin() + DisView7->break_pos);
 							}
 							InvalidateRect(hwnd, NULL, FALSE);
 							return 1;
@@ -878,13 +880,13 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 									continue;
 								}
 							}
-							NDS_ARM9.breakPoints.push_back(adr);
+							NDS_ARM9.breakPoints->push_back(adr);
 							InvalidateRect(hwnd, NULL, FALSE);
 							return 1;
 						}
 						case IDC_DELBP: {
-							if (DisView9->break_pos < NDS_ARM9.breakPoints.size()) {
-								NDS_ARM9.breakPoints.erase(NDS_ARM9.breakPoints.begin() + DisView9->break_pos);
+							if (DisView9->break_pos < NDS_ARM9.breakPoints->size()) {
+								NDS_ARM9.breakPoints->erase(NDS_ARM9.breakPoints->begin() + DisView9->break_pos);
 							}
 							InvalidateRect(hwnd, NULL, FALSE);
 							return 1;

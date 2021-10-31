@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2009-2017 DeSmuME team
+	Copyright (C) 2009-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -138,90 +138,92 @@ int armcpu_new( armcpu_t *armcpu, u32 id)
 	armcpu->base_mem_if.write32 = NULL;
 	armcpu->base_mem_if.data = NULL;
 	
-	armcpu->SetControlInterface(&arm_default_ctrl_iface);
-	armcpu->SetControlInterfaceData(armcpu);
-	armcpu->SetCurrentMemoryInterface(NULL);
-	armcpu->SetCurrentMemoryInterfaceData(NULL);
+	armcpu_SetControlInterface(armcpu, &arm_default_ctrl_iface);
+	armcpu_SetControlInterfaceData(armcpu, armcpu);
+	armcpu_SetCurrentMemoryInterface(armcpu, NULL);
+	armcpu_SetCurrentMemoryInterfaceData(armcpu, NULL);
 	
 	armcpu->post_ex_fn = NULL;
 	armcpu->post_ex_fn_data = NULL;
+	
+	armcpu->breakPoints = new std::vector<u32>;
 	
 	armcpu_init(armcpu, 0);
 
 	return 0;
 }
 
-void armcpu_t::SetControlInterface(const armcpu_ctrl_iface *theControlInterface)
+void armcpu_SetControlInterface(armcpu_t *armcpu, const armcpu_ctrl_iface *theControlInterface)
 {
-	this->ctrl_iface = *theControlInterface;
+	armcpu->ctrl_iface = *theControlInterface;
 }
 
-armcpu_ctrl_iface* armcpu_t::GetControlInterface()
+armcpu_ctrl_iface* armcpu_GetControlInterface(armcpu_t *armcpu)
 {
-	return &this->ctrl_iface;
+	return &armcpu->ctrl_iface;
 }
 
-void armcpu_t::SetControlInterfaceData(void *theData)
+void armcpu_SetControlInterfaceData(armcpu_t *armcpu, void *theData)
 {
-	this->ctrl_iface.data = theData;
+	armcpu->ctrl_iface.data = theData;
 }
 
-void* armcpu_t::GetControlInterfaceData()
+void* armcpu_GetControlInterfaceData(const armcpu_t *armcpu)
 {
-	return this->ctrl_iface.data;
+	return armcpu->ctrl_iface.data;
 }
 
-void armcpu_t::SetCurrentMemoryInterface(armcpu_memory_iface *theMemoryInterface)
+void armcpu_SetCurrentMemoryInterface(armcpu_t *armcpu, armcpu_memory_iface *theMemoryInterface)
 {
-	this->mem_if = theMemoryInterface;
+	armcpu->mem_if = theMemoryInterface;
 }
 
-armcpu_memory_iface* armcpu_t::GetCurrentMemoryInterface()
+armcpu_memory_iface* armcpu_GetCurrentMemoryInterface(const armcpu_t *armcpu)
 {
-	return this->mem_if;
+	return armcpu->mem_if;
 }
 
-void armcpu_t::SetCurrentMemoryInterfaceData(void *theData)
+void armcpu_SetCurrentMemoryInterfaceData(armcpu_t *armcpu, void *theData)
 {
-	if (this->mem_if != NULL)
+	if (armcpu->mem_if != NULL)
 	{
-		this->mem_if->data = theData;
+		armcpu->mem_if->data = theData;
 	}
 }
 
-void* armcpu_t::GetCurrentMemoryInterfaceData()
+void* armcpu_GetCurrentMemoryInterfaceData(const armcpu_t *armcpu)
 {
-	return (this->mem_if != NULL) ? this->mem_if->data : NULL;
+	return (armcpu->mem_if != NULL) ? armcpu->mem_if->data : NULL;
 }
 
-void armcpu_t::SetBaseMemoryInterface(const armcpu_memory_iface *theMemInterface)
+void armcpu_SetBaseMemoryInterface(armcpu_t *armcpu, const armcpu_memory_iface *theMemInterface)
 {
-	this->base_mem_if = *theMemInterface;
+	armcpu->base_mem_if = *theMemInterface;
 }
 
-armcpu_memory_iface* armcpu_t::GetBaseMemoryInterface()
+armcpu_memory_iface* armcpu_GetBaseMemoryInterface(armcpu_t *armcpu)
 {
-	return &this->base_mem_if;
+	return &armcpu->base_mem_if;
 }
 
-void armcpu_t::SetBaseMemoryInterfaceData(void *theData)
+void armcpu_SetBaseMemoryInterfaceData(armcpu_t *armcpu, void *theData)
 {
-	this->base_mem_if.data = theData;
+	armcpu->base_mem_if.data = theData;
 }
 
-void* armcpu_t::GetBaseMemoryInterfaceData()
+void* armcpu_GetBaseMemoryInterfaceData(const armcpu_t *armcpu)
 {
-	return this->base_mem_if.data;
+	return armcpu->base_mem_if.data;
 }
 
-void armcpu_t::ResetMemoryInterfaceToBase()
+void armcpu_ResetMemoryInterfaceToBase(armcpu_t *armcpu)
 {
-	this->SetCurrentMemoryInterface(this->GetBaseMemoryInterface());
-	this->SetCurrentMemoryInterfaceData(this->GetBaseMemoryInterfaceData());
+	armcpu_SetCurrentMemoryInterface(armcpu, armcpu_GetBaseMemoryInterface(armcpu));
+	armcpu_SetCurrentMemoryInterfaceData(armcpu, armcpu_GetBaseMemoryInterfaceData(armcpu));
 }
 
 //call this whenever CPSR is changed (other than CNVZQ or T flags); interrupts may need to be unleashed
-void armcpu_t::changeCPSR()
+void armcpu_changeCPSR()
 {
 	//but all it does is give them a chance to unleash by forcing an immediate reschedule
 	//TODO - we could actually set CPSR through here and look for a change in the I bit
@@ -379,7 +381,7 @@ u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
 	}
 	
 	armcpu->CPSR.bits.mode = mode & 0x1F;
-	armcpu->changeCPSR();
+	armcpu_changeCPSR();
 	return oldmode;
 }
 
@@ -512,7 +514,7 @@ void armcpu_exception(armcpu_t *cpu, u32 number)
 	cpu->SPSR = tmp;							//save old CPSR as new SPSR
 	cpu->CPSR.bits.T = 0;						//handle as ARM32 code
 	cpu->CPSR.bits.I = 1;
-	cpu->changeCPSR();
+	armcpu_changeCPSR();
 	cpu->R[15] = cpu->intVector + number;
 	cpu->next_instruction = cpu->R[15];
 	printf("armcpu_exception!\n");

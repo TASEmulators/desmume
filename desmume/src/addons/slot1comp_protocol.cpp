@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2015 DeSmuME team
+	Copyright (C) 2012-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -26,9 +26,9 @@
 
 static _KEY1 key1((const u8*)arm7_key);
 
-void Slot1Comp_Protocol::reset(ISlot1Comp_Protocol_Client* client)
+void Slot1Comp_Protocol::reset(ISlot1Comp_Protocol_Client* theClient)
 {
-	this->client = client;
+	this->client = theClient;
 
 	//we have to initialize this to something.. lets use dummy.
 	//(need to clean this up...)
@@ -40,9 +40,9 @@ void Slot1Comp_Protocol::reset(ISlot1Comp_Protocol_Client* client)
 	mode = eCardMode_RAW;
 }
 
-void Slot1Comp_Protocol::write_command_RAW(GC_Command command)
+void Slot1Comp_Protocol::write_command_RAW(GC_Command theCommand)
 {
-	int cmd = command.bytes[0];
+	int cmd = theCommand.bytes[0];
 	if(cmd == 0x9F)
 	{
 		operation = eSlot1Operation_9F_Dummy;
@@ -74,17 +74,17 @@ void Slot1Comp_Protocol::write_command_RAW(GC_Command command)
 	}
 }
 
-void Slot1Comp_Protocol::write_command_KEY1(GC_Command command)
+void Slot1Comp_Protocol::write_command_KEY1(GC_Command theCommand)
 {
 	//decrypt the KEY1-format command
 	u32 temp[2];
-	command.toCryptoBuffer(temp);
+	theCommand.toCryptoBuffer(temp);
 	key1.decrypt(temp);
-	command.fromCryptoBuffer(temp);
-	GCLOG("[GC] (key1-decrypted):"); command.print();
+	theCommand.fromCryptoBuffer(temp);
+	GCLOG("[GC] (key1-decrypted):"); theCommand.print();
 
 	//and process it:
-	int cmd = command.bytes[0];
+	int cmd = theCommand.bytes[0];
 	switch(cmd&0xF0)
 	{
 		case 0x10:
@@ -100,9 +100,9 @@ void Slot1Comp_Protocol::write_command_KEY1(GC_Command command)
 			//TODO - more endian-safe way of doing this (theres examples in R4)
 			{
 #ifdef MSB_FIRST
-				u64 cmd64 = *(u64*)command.bytes;
+				u64 cmd64 = *(u64*)theCommand.bytes;
 #else
-				u64 cmd64 = bswap64(*(u64*)command.bytes);
+				u64 cmd64 = bswap64(*(u64*)theCommand.bytes);
 #endif
 				//todo - parse into blocknumber
 				u32 blocknumber = (cmd64>>44)&0xFFFF;
@@ -133,7 +133,7 @@ void Slot1Comp_Protocol::write_command_KEY1(GC_Command command)
 	}
 }
 
-void Slot1Comp_Protocol::write_command_NORMAL(GC_Command command)
+void Slot1Comp_Protocol::write_command_NORMAL(GC_Command theCommand)
 {
 	switch(command.bytes[0])
 	{
@@ -143,9 +143,9 @@ void Slot1Comp_Protocol::write_command_NORMAL(GC_Command command)
 
 			//TODO - more endian-safe way of doing this (theres examples in R4)
 #ifdef MSB_FIRST
-			u64 cmd64 = *(u64*)command.bytes;
+			u64 cmd64 = *(u64*)theCommand.bytes;
 #else
-			u64 cmd64 = bswap64(*(u64*)command.bytes);
+			u64 cmd64 = bswap64(*(u64*)theCommand.bytes);
 #endif
 			address = (u32)((cmd64 >> 24));
 			length = 0x200;
@@ -167,9 +167,9 @@ void Slot1Comp_Protocol::write_command_NORMAL(GC_Command command)
 	}
 }
 
-void Slot1Comp_Protocol::write_command(GC_Command command)
+void Slot1Comp_Protocol::write_command(GC_Command theCommand)
 {
-	this->command = command;
+	this->command = theCommand;
 
 	//unrecognized commands will do something depending on the current state of the card
 	delay = 0;
@@ -178,17 +178,20 @@ void Slot1Comp_Protocol::write_command(GC_Command command)
 
 	switch(mode)
 	{
-	case eCardMode_RAW:
-		write_command_RAW(command);
-		break;
+		case eCardMode_RAW:
+			write_command_RAW(theCommand);
+			break;
 
-	case eCardMode_KEY1:
-		write_command_KEY1(command);
-		break;
+		case eCardMode_KEY1:
+			write_command_KEY1(theCommand);
+			break;
 	
-	case eCardMode_NORMAL:
-		write_command_NORMAL(command);
-		break;
+		case eCardMode_NORMAL:
+			write_command_NORMAL(theCommand);
+			break;
+			
+		default:
+			break;
 	}
 }
 
@@ -198,6 +201,9 @@ void Slot1Comp_Protocol::write_GCDATAIN(u8 PROCNUM, u32 val)
 	{
 		case eSlot1Operation_Unknown:
 			client->slot1client_write_GCDATAIN(operation,val);
+			break;
+			
+		default:
 			break;
 	}
 }

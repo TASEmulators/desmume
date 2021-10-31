@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -381,7 +381,7 @@ namespace Database
 	const char *MakerNameForMakerCode(u16 id, bool unknownAsString)
 	{
 		//too bad these aren't sorted
-		for (int i = 0; i < ARRAY_SIZE(makerCodes); i++)
+		for (size_t i = 0; i < ARRAY_SIZE(makerCodes); i++)
 		{
 			if (makerCodes[i].code == id)
 				return makerCodes[i].name;
