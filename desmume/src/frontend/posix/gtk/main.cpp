@@ -2374,8 +2374,7 @@ static void Modify_Frameskip(GSimpleAction *action, GVariant *parameter, gpointe
         Frameskip = autoFrameskipMax;
     }
     char buf[255];
-    memset(buf, 0, 255);
-    sprintf(buf, "Frameskip value is set to %s", string);
+    snprintf(buf, sizeof buf, "Frameskip value is set to %s", string);
     driver->AddLine(buf);
     g_simple_action_set_state(action, parameter);
 }
