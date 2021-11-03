@@ -69,18 +69,21 @@ static void resizeWindow_stub(u16 width, u16 height, void *sdl_ogl_screen_textur
 
 static void sdl_draw_no_opengl()
 {
+	// TODO Mirror the changes from POSIX CLI's main.cpp `Draw` method, if stable
     const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
     const size_t pixCount = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT;
     ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Main],  pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
     ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Touch], pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
 
     SDL_Surface *rawImage = SDL_CreateRGBSurfaceFrom(displayInfo.masterNativeBuffer16, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, 16, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16), 0x001F, 0x03E0, 0x7C00, 0);
-    if(rawImage == NULL) return;
+    if (rawImage == NULL) return;
 
 	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, rawImage);
 	SDL_FreeSurface(rawImage);
+	rawImage = NULL;
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);
+	SDL_DestroyTexture(texture);
 }
 
 #ifdef INCLUDE_OPENGL_2D
