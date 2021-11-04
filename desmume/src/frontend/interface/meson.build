@@ -173,7 +173,9 @@ if have_jit
   ]
 endif
 
-if dep_gl.found()
+if host_machine.system() == 'darwin'
+  dependencies += dependency('appleframeworks', modules: 'OpenGL')
+elif dep_gl.found()
   dependencies += dep_gl
   libdesmume_src += [
     '../../OGLRender.cpp',
