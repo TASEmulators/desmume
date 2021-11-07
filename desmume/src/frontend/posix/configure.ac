@@ -364,8 +364,8 @@ dnl --- Finally, output all the makefiles
 AC_CONFIG_FILES([Makefile
                  cli/Makefile
                  cli/doc/Makefile
-                 gtk/Makefile
-                 gtk/doc/Makefile
+                 gtk2/Makefile
+                 gtk2/doc/Makefile
                  gtk-glade/Makefile
                  gtk-glade/doc/Makefile
 ])
