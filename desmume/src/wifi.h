@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2007 Tim Seidel
     Copyright (C) 2014 pleonex
-    Copyright (C) 2008-2018 DeSmuME team
+    Copyright (C) 2008-2021 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -210,7 +210,7 @@ struct slock;
 typedef slock slock_t;
 
 // RF2958 Register Addresses
-enum RegAddrRF2958 : s32
+enum RegAddrRF2958
 {
 	REG_RF2958_CFG1			= 0,
 	REG_RF2958_IPLL1		= 1,
@@ -753,7 +753,7 @@ typedef struct
 	u8    data[105];
 } bb_t;
 
-enum WifiRFStatus : s32
+enum WifiRFStatus
 {
 	WifiRFStatus0_Initial			= 0,
 	WifiRFStatus1_TXComplete		= 1,
@@ -767,7 +767,7 @@ enum WifiRFStatus : s32
 	WifiRFStatus9_Idle				= 9
 };
 
-enum WifiIRQ : s32
+enum WifiIRQ
 {
 	WifiIRQ00_RXComplete			= 0,
 	WifiIRQ01_TXComplete			= 1,
@@ -787,14 +787,14 @@ enum WifiIRQ : s32
 	WifiIRQ15_TimeslotPreBeacon		= 15
 };
 
-enum EAPStatus : s32
+enum EAPStatus
 {
 	APStatus_Disconnected = 0,
 	APStatus_Authenticated,
 	APStatus_Associated
 };
 
-enum WifiTXLocIndex : s32
+enum WifiTXLocIndex
 {
 	WifiTXLocIndex_LOC1		= 0,
 	WifiTXLocIndex_CMD		= 1,
@@ -804,7 +804,7 @@ enum WifiTXLocIndex : s32
 	WifiTXLocIndex_CMDREPLY	= 5
 };
 
-enum WifiStageID : s32
+enum WifiStageID
 {
 	WifiStageID_PreambleDone			= 0,
 	WifiStageID_TransmitDone			= 1,
@@ -813,14 +813,14 @@ enum WifiStageID : s32
 	WifiStageID_CmdReplyTransferDone	= 4
 };
 
-enum WifiEmulationLevel : s32
+enum WifiEmulationLevel
 {
 	WifiEmulationLevel_Off = 0,
 	WifiEmulationLevel_Normal = 10000,
 	WifiEmulationLevel_Compatibility = 65535
 };
 
-enum WifiCommInterfaceID : s32
+enum WifiCommInterfaceID
 {
 	WifiCommInterfaceID_AdHoc = 0,
 	WifiCommInterfaceID_Infrastructure = 1
@@ -2787,7 +2787,7 @@ typedef struct
 	bb_t bb;
 	u8 RAM[0x2000];
 	
-	WifiTXLocIndex txCurrentSlot;
+	s32 txCurrentSlot; // Possible values are declared in WifiTXLocIndex.
 	TXPacketInfo txPacketInfo[6];
 	u32 cmdCount_u32;
 	u64 usecCounter;
@@ -2822,14 +2822,14 @@ typedef struct
 } DesmumeFrameHeader;				// Should total 16 bytes
 
 // IEEE 802.11 Frame Information
-enum WifiFrameType : s32
+enum WifiFrameType
 {
 	WifiFrameType_Management = 0,
 	WifiFrameType_Control = 1,
 	WifiFrameType_Data = 2
 };
 
-enum WifiFrameManagementSubtype : s32
+enum WifiFrameManagementSubtype
 {
 	WifiFrameManagementSubtype_AssociationRequest		= 0x00,
 	WifiFrameManagementSubtype_AssociationResponse		= 0x01,
@@ -2849,7 +2849,7 @@ enum WifiFrameManagementSubtype : s32
 	WifiFrameManagementSubtype_RESERVED0F				= 0x0F
 };
 
-enum WifiFrameControlSubtype : s32
+enum WifiFrameControlSubtype
 {
 	WifiFrameControlSubtype_RESERVED00		= 0x00,
 	WifiFrameControlSubtype_RESERVED01		= 0x01,
@@ -2869,7 +2869,7 @@ enum WifiFrameControlSubtype : s32
 	WifiFrameControlSubtype_EndAck			= 0x0F
 };
 
-enum WifiFrameDataSubtype : s32
+enum WifiFrameDataSubtype
 {
 	WifiFrameDataSubtype_Data			= 0x00,
 	WifiFrameDataSubtype_DataAck		= 0x01,
@@ -2889,7 +2889,7 @@ enum WifiFrameDataSubtype : s32
 	WifiFrameDataSubtype_RESERVED0F		= 0x0F
 };
 
-enum WifiFCFromToState : s32
+enum WifiFCFromToState
 {
 	WifiFCFromToState_STA2STA			= 0x0,
 	WifiFCFromToState_STA2DS			= 0x1,

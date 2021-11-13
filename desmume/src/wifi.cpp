@@ -4678,7 +4678,7 @@ void WifiHandler::CommTrigger()
 
 	if((io.US_COUNT & 3) == 0)
 	{
-		const WifiTXLocIndex txSlotIndex = wifi.txCurrentSlot;
+		const WifiTXLocIndex txSlotIndex = (WifiTXLocIndex)wifi.txCurrentSlot;
 		bool isTXSlotBusy = false;
 
 		switch(txSlotIndex)
