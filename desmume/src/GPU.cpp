@@ -2710,10 +2710,6 @@ bool GPUEngineBase::_IsWindowInsideVerticalRange(GPUEngineCompositorInfo &compIn
 template <size_t WIN_NUM>
 void GPUEngineBase::_UpdateWINH(GPUEngineCompositorInfo &compInfo)
 {
-	//dont even waste any time in here if the window isnt enabled
-	if (WIN_NUM == 0 && !compInfo.renderState.windowState.WIN0_ENABLED) return;
-	if (WIN_NUM == 1 && !compInfo.renderState.windowState.WIN1_ENABLED) return;
-	
 	const size_t windowLeft  = (WIN_NUM == 0) ? this->_IORegisterMap->WIN0H.Left  : this->_IORegisterMap->WIN1H.Left;
 	const size_t windowRight = (WIN_NUM == 0) ? this->_IORegisterMap->WIN0H.Right : this->_IORegisterMap->WIN1H.Right;
 
