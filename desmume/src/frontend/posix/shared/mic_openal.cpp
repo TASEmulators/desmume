@@ -149,7 +149,17 @@ u8 Mic_ReadSample()
     stats_max = ret;
   if (ret < stats_min)
     stats_min = ret;
-  Mic_BufPos += 2;
+
+  // convert to 2 bytes to transfer over SPI
+  if (Mic_BufPos & 0x1)
+  {
+	  ret = ((ret & 0x01) << 7);
+  }
+  else
+  {
+	  ret = ((ret & 0xFE) >> 1);
+  }
+  Mic_BufPos += 1;
 
   return ret;
 }
