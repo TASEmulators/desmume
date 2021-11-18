@@ -82,7 +82,7 @@ void Mic_Reset()
   if (!Mic_Inited)
     return;
 
-  memset(Mic_Buffer, 0, MIC_BUFSIZE*2*2);
+  memset(Mic_Buffer, 128, MIC_BUFSIZE*2*2);
   Mic_BufPos = 0;
   Mic_PlayBuf = 1;
   Mic_WriteBuf = 0;
@@ -149,7 +149,17 @@ u8 Mic_ReadSample()
     stats_max = ret;
   if (ret < stats_min)
     stats_min = ret;
-  Mic_BufPos += 2;
+
+  // convert to 2 bytes to transfer over SPI
+  if (Mic_BufPos & 0x1)
+  {
+	  ret = ((ret & 0x01) << 7);
+  }
+  else
+  {
+	  ret = ((ret & 0xFE) >> 1);
+  }
+  Mic_BufPos += 1;
 
   return ret;
 }
