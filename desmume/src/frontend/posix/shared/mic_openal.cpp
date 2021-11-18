@@ -82,7 +82,7 @@ void Mic_Reset()
   if (!Mic_Inited)
     return;
 
-  memset(Mic_Buffer, 0, MIC_BUFSIZE*2*2);
+  memset(Mic_Buffer, 128, MIC_BUFSIZE*2*2);
   Mic_BufPos = 0;
   Mic_PlayBuf = 1;
   Mic_WriteBuf = 0;
