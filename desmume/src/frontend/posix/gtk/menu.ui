@@ -231,7 +231,7 @@
         </item>
       </section>
     </submenu>
-    <submenu>
+    <submenu id="popup">
       <attribute name='label' translatable='yes'>_View</attribute>
       <section id='view'>
         <submenu>

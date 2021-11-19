@@ -508,6 +508,7 @@ static GtkWidget *pToolBar;
 static GtkWidget *pStatusBar;
 static GtkWidget *pDrawingArea;
 static GtkWidget *pContentBox;
+static GtkMenu *pPopupMenu;
 
 struct nds_screen_t {
     guint gap_size;
@@ -1563,13 +1564,9 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
     GdkModifierType state;
     gint x, y;
 
-#if 0
     if (e->button == 3) {
-        GtkWidget * pMenu = gtk_menu_item_get_submenu ( GTK_MENU_ITEM(
-                    gtk_ui_manager_get_widget (ui_manager, "/MainMenu/ViewMenu")));
-        gtk_menu_popup(GTK_MENU(pMenu), NULL, NULL, NULL, NULL, 3, e->time);
+        gtk_menu_popup_at_pointer(pPopupMenu, (GdkEvent *) e);
     }
-#endif
 
     if (e->button == 1) {
         gdk_window_get_device_position(gtk_widget_get_window(w), e->device, &x, &y, &state);
@@ -3365,7 +3362,12 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_menu_append_submenu(view_menu, "_HUD", hud);
 
     gtk_application_set_menubar(GTK_APPLICATION(app), menubar);
+
+    GMenu *popup_menu = G_MENU(gtk_builder_get_object(builder, "popup"));
+    pPopupMenu = (GtkMenu *) gtk_menu_new_from_model(G_MENU_MODEL(popup_menu));
+    gtk_menu_attach_to_widget(pPopupMenu, pWindow, NULL);
     g_object_unref(builder);
+
     pApp = GTK_APPLICATION(app);
 
     GtkRecentManager *manager = gtk_recent_manager_get_default();
