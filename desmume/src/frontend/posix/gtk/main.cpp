@@ -3599,6 +3599,8 @@ int main (int argc, char *argv[])
   // The global menu screws up the window size...
   unsetenv("UBUNTU_MENUPROXY");
 
+  // this must be called as early as possible
+  NDS_Init();
 
   my_config.parse(argc, argv);
   init_configured_features( &my_config);

@@ -32,8 +32,6 @@ BOOL click = FALSE;
 
 void desmume_init( int disable_sound)
 {
-	NDS_Init();
-	
 	if ( !disable_sound) {
 		SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
 	}
