@@ -3383,7 +3383,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
         const char *name = gtk_recent_info_get_display_name(info);
         // TODO: Is that enough?  Maybe allocate instead?
         char action[1024];
-        sprintf(action, "app.recent('%s')", uri);
+        sprintf(action, "app.recent(\"%s\")", uri);
         g_menu_append(G_MENU(user_data), name, action);
 
         gtk_recent_info_unref(info);
