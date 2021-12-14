@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    name: Build DeSmuME
+    name: Build DeSmuME (Linux)
     runs-on: ubuntu-20.04
 
     steps:
@@ -23,3 +23,28 @@ jobs:
 
       - name: ninja
         run: ninja -C desmume/src/frontend/posix/build
+
+  build_macos:
+    name: Build DeSmuME (macOS)
+    runs-on: macOS-11
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      
+      - name: xcodebuild
+        run: |
+          cd desmume/src/frontend/cocoa/
+          xcodebuild archive -project "DeSmuME (Latest).xcodeproj" -scheme "DeSmuME (OS X App -- Latest Xcode)" -arch x86_64 -archivePath "$(pwd)/desmume.xcarchive" | xcpretty -c
+      
+      - name: make zip
+        run: |
+          cd desmume/src/frontend/cocoa/desmume.xcarchive/Products/Applications/
+          7z a DeSmuME.app.zip DeSmuME.app
+
+      - name: Upload artifict
+        uses: actions/upload-artifact@v2
+        with:
+          name: macos
+          path: desmume/src/frontend/cocoa/desmume.xcarchive/Products/Applications/DeSmuME.app.zip
+          if-no-files-found: error 
