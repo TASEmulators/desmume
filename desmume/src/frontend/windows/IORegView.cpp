@@ -312,7 +312,7 @@ CIORegView::CIORegView()
 CIORegView::~CIORegView()
 {
 	DestroyWindow(hWnd);
-	UnregWndClass("DeSmuME_IORegView");
+	UnregWndClass(L"DeSmuME_IORegView");
 	//TODO - is this thread safe? which thread do these calls come from
 	liveIORegViews.erase(std::find(liveIORegViews.begin(),liveIORegViews.end(),this));
 	if(liveIORegViews.size()==0) anyLiveIORegViews = false;
@@ -608,7 +608,7 @@ LRESULT CALLBACK IORegView_Proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 {
 	CIORegView* wnd = (CIORegView*)GetWindowLongPtr(hWnd, DWLP_USER);
 	if ((wnd == NULL) && (uMsg != WM_CREATE))
-		return DefWindowProc(hWnd, uMsg, wParam, lParam);
+		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 
 	switch (uMsg)
 	{

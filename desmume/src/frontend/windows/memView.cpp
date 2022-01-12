@@ -229,7 +229,7 @@ CMemView::~CMemView()
 	DestroyWindow(hWnd);
 	hWnd = NULL;
 
-	UnregWndClass("MemView_ViewBox");
+	UnregWndClass(L"MemView_ViewBox");
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1217,7 +1217,7 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 			if(((ch >= '0') && (ch <= '9')) || ((ch >= 'A') && (ch <= 'F')) || ((ch >= 'a') && (ch <= 'f')))
 			{
 				if (!memIsAvailable((MemRegionType)wnd->region, wnd->selAddress))
-					return DefWindowProc(hCtl, uMsg, wParam, lParam);
+					return DefWindowProcW(hCtl, uMsg, wParam, lParam);
 
 				u8 maxSelPart[3] = {2, 4, 8};
 
@@ -1328,7 +1328,7 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 		return 1;
 	}
 
-	return DefWindowProc(hCtl, uMsg, wParam, lParam);
+	return DefWindowProcW(hCtl, uMsg, wParam, lParam);
 }
 
 //////////////////////////////////////////////////////////////////////////////

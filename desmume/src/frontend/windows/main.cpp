@@ -1,4 +1,4 @@
-/*
+﻿/*
 	Copyright (C) 2006 Theo Berkau
 	Copyright (C) 2006-2019 DeSmuME team
 
@@ -1490,7 +1490,7 @@ bool NDS_Pause(bool showMsg)
 	while (!paused) {}
 	if (showMsg) INFO("Emulation paused\n");
 
-	SetWindowText(MainWindow->getHWnd(), "Paused");
+	SetWindowTextW(MainWindow->getHWnd(), L"Paused");
 	MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PLAY);
 	return true;
 }
@@ -1978,7 +1978,7 @@ int _main()
 	CommonSettings.backupSave = GetPrivateProfileBool("General", "backupSave", false, IniName);
 
 	ColorCtrl_Register();
-	if (!RegWndClass("DeSmuME", WindowProcedure, CS_DBLCLKS, LoadIcon(hAppInst, MAKEINTRESOURCE(ICONDESMUME))))
+	if (!RegWndClass(L"DeSmuME", WindowProcedure, CS_DBLCLKS, LoadIcon(hAppInst, MAKEINTRESOURCE(ICONDESMUME))))
 	{
 		MessageBox(NULL, "Error registering windows class", DESMUME_NAME, MB_OK);
 		exit(-1);
@@ -2114,8 +2114,15 @@ int _main()
 	if(CommonSettings.single_core())
 		SetProcessAffinityMask(GetCurrentProcess(),1);
 
-	MainWindow = new WINCLASS("DeSmuME", hAppInst);
-	if (!MainWindow->create((char*)EMU_DESMUME_NAME_AND_VERSION(), WndX, WndY, video.width,video.height+video.screengap,
+	wchar_t boffo[256];
+	const char* emu_desmume_name_and_version = EMU_DESMUME_NAME_AND_VERSION();
+	size_t len = strlen(emu_desmume_name_and_version);
+	for(int i=0;i<len;i++)
+		boffo[i] = emu_desmume_name_and_version[i];
+	boffo[len] = 0;
+
+	MainWindow = new WINCLASS(L"DeSmuME", hAppInst);
+	if (!MainWindow->createW(boffo, WndX, WndY, video.width,video.height+video.screengap,
 		WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 		NULL))
 	{
@@ -2607,7 +2614,7 @@ int _main()
 
 	ddraw.release();
 
-	UnregWndClass("DeSmuME");
+	UnregWndClass(L"DeSmuME");
 
 	return 0;
 }
@@ -4996,7 +5003,7 @@ DOKEYDOWN:
 			return 0;
 		case IDM_IOREG:
 			//ViewRegisters->open();
-			if (!RegWndClass("DeSmuME_IORegView", IORegView_Proc, CS_DBLCLKS, LoadIcon(hAppInst, MAKEINTRESOURCE(ICONDESMUME)), sizeof(CIORegView*)))
+			if (!RegWndClass(L"DeSmuME_IORegView", IORegView_Proc, CS_DBLCLKS, LoadIcon(hAppInst, MAKEINTRESOURCE(ICONDESMUME)), sizeof(CIORegView*)))
 				return 0;
 
 			OpenToolWindow(new CIORegView());
@@ -5004,7 +5011,7 @@ DOKEYDOWN:
 		case IDM_MEMORY:
 			//if(!MemView_IsOpened(ARMCPU_ARM9)) MemView_DlgOpen(HWND_DESKTOP, "ARM9 memory", ARMCPU_ARM9);
 			//if(!MemView_IsOpened(ARMCPU_ARM7)) MemView_DlgOpen(HWND_DESKTOP, "ARM7 memory", ARMCPU_ARM7);
-			if (!RegWndClass("MemView_ViewBox", MemView_ViewBoxProc, 0, sizeof(CMemView*)))
+			if (!RegWndClass(L"MemView_ViewBox", MemView_ViewBoxProc, 0, sizeof(CMemView*)))
 				return 0;
 
 			OpenToolWindow(new CMemView());
@@ -5735,7 +5742,7 @@ DOKEYDOWN:
 			}
 			return 0;
 	}
-	return DefWindowProc (hwnd, message, wParam, lParam);
+	return DefWindowProcW (hwnd, message, wParam, lParam);
 }
 
 void Change3DCoreWithFallbackAndSave(int newCore)
