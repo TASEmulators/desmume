@@ -2989,25 +2989,33 @@ void WavEnd()
 	NDS_UnPause();
 }
 
-void UpdateTitle(const char* currTitle)
+void UpdateTitle()
 {
+	const wchar_t* currTitle = nullptr;
+	wchar_t boffo[256];
+	const char* emu_desmume_name_and_version = EMU_DESMUME_NAME_AND_VERSION();
+	size_t len = strlen(emu_desmume_name_and_version);
+	for(int i=0;i<len;i++)
+		boffo[i] = emu_desmume_name_and_version[i];
+	boffo[len] = 0;
+
 	if (gameInfo.hasRomBanner())
 	{
 		if (currTitle == nullptr) {
-			currTitle = EMU_DESMUME_NAME_AND_VERSION();
+			currTitle = boffo;
 		}
 
-		char newTitle[512];
-		char gameTitle[128];
+		wchar_t newTitle[512];
+		wchar_t gameTitle[128];
 
-		strcpy(newTitle, currTitle);
+		wcscpy(newTitle, currTitle);
 
-		int newLength = strlen(newTitle);
+		int newLength = wcslen(newTitle);
 
 		const RomBanner& banner = gameInfo.getRomBanner();
-		sprintf(gameTitle, " | %ws", banner.titles[CommonSettings.fwConfig.language]);
+		swprintf(gameTitle, L" | %s", (const wchar_t*)banner.titles[CommonSettings.fwConfig.language]);
 
-		int index = 0, gameLength = strlen(gameTitle);
+		int index = 0, gameLength = wcslen(gameTitle);
 		for (int i = 0; i < gameLength; i++)
 		{
 			if (gameTitle[i] == '\n')
@@ -3020,12 +3028,12 @@ void UpdateTitle(const char* currTitle)
 		if (index != 0)
 		{
 			gameTitle[index] = '\0';
-			if (newLength + gameLength < 512) strcat(newTitle + newLength, gameTitle); 
+			if (newLength + gameLength < 512) wcscat(newTitle + newLength, gameTitle); 
 		}
 
 		newTitle[511] = '\0'; // Stay safe
 
-		SetWindowText(MainWindow->getHWnd(), newTitle);
+		SetWindowTextW(MainWindow->getHWnd(), newTitle);
 	}
 }
 
