@@ -22,11 +22,13 @@
 		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '14.0'">14</NDS_VSVER>
 		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '15.0'">15</NDS_VSVER>
 		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '16.0'">16</NDS_VSVER>
+		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '17.0'">17</NDS_VSVER>
 		<!-- others may not be supported, so lets not list them here -->
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '10'">VS2010</NDS_VisualStudioName>
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '14'">VS2015</NDS_VisualStudioName>
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '15'">VS2017</NDS_VisualStudioName>
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '16'">VS2019</NDS_VisualStudioName>
+		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '17'">VS2022</NDS_VisualStudioName>
 	</PropertyGroup>
 
 	<!-- Generate optimization level property from configuration name -->
