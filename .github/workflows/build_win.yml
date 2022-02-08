@@ -1,0 +1,31 @@
+name: DeSmuME Windows build
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  build-sln:
+    runs-on: windows-2019
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup MSBuild.exe
+        uses: microsoft/setup-msbuild@v1.0.3
+        with:
+          msbuild-architecture: x64
+          vs-version: 16.1
+
+      - name: Build solution
+        run: |
+          SET CL=-Wno-c++11-narrowing
+          msbuild 'desmume/src/frontend/windows/DeSmuME.sln' /p:configuration="Release" /p:platform=x64 /p:CL_cgthreads=1 /p:CLToolExe=clang-cl.exe
+          cmd /c desmume\src\frontend\windows\ci_postbuild.bat
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: desmume-win-x64
+          path: desmume/src/frontend/windows/__bins/*.exe
+
