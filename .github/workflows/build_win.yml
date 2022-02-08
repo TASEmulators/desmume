@@ -17,7 +17,7 @@ jobs:
           msbuild-architecture: x64
 
       - name: Build solution
-        run: msbuild 'desmume/src/frontend/windows/DeSmuME.sln' /p:configuration="Release Fastbuild" /p:platform=x64
+        run: msbuild 'desmume/src/frontend/windows/DeSmuME.sln' /p:configuration="Release" /p:platform=x64 /p:CL_cgthreads=1
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
