@@ -1227,7 +1227,6 @@ CompilerItem* X86CompilerFuncRet::translate(CompilerContext& cc)
       }
       break;
 
-    case kInvalidValue:
     default:
       break;
   }
