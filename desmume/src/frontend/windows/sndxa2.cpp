@@ -16,12 +16,7 @@
 */
 
 #include "sndxa2.h"
-
-//https://stackoverflow.com/questions/9593013/using-g-4-6-1-i-get-many-c-compile-errors-when-trying-to-include-xaudio2-h/10628890#10628890
-#undef __cplusplus
 #include "directx/XAudio2.h"
-#define __cplusplus
-
 #include <windows.h>
 
 #include "types.h"
