@@ -18,7 +18,9 @@ jobs:
           vs-version: 16.1
 
       - name: Build solution
-        run: msbuild 'desmume/src/frontend/windows/DeSmuME.sln' /p:configuration="Release" /p:platform=x64 /p:CL_cgthreads=1 /p:CLToolExe=clang-cl.exe
+        run: |
+          CL=-Wno-c++11-narrowing
+          msbuild 'desmume/src/frontend/windows/DeSmuME.sln' /p:configuration="Release" /p:platform=x64 /p:CL_cgthreads=1 /p:CLToolExe=clang-cl.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
