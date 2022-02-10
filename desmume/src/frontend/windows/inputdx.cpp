@@ -553,7 +553,7 @@ BOOL di_init()
 			dipdw.dwData = 0;
 			if ( !FAILED( pJoystick->SetProperty(DIPROP_AUTOCENTER, &dipdw.diph) ) )
 			{
-				DWORD		rgdwAxes[1] = { DIJOFS_Y };
+				DWORD		rgdwAxes[1] = { (DWORD)DIJOFS_Y };
 				LONG		rglDirection[2] = { 0 };
 				DICONSTANTFORCE		cf = { 0 };
 				DIEFFECT	eff;

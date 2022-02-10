@@ -217,8 +217,8 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
 					win->gpu->SpriteRenderDebug(i, (u16*)(bitmap + i * 256));
 				}
 
-		u32 width = dimm_int[(oam->attr1>>14)][(oam->attr0>>14)][0];
-		u32 height = dimm_int[(oam->attr1>>14)][(oam->attr0>>14)][1];
+		int width = dimm_int[(oam->attr1>>14)][(oam->attr0>>14)][0];
+		int height = dimm_int[(oam->attr1>>14)][(oam->attr0>>14)][1];
 		RECT rc = {180 + x, 4 + y, 180 + x + width, 4 + y + height};
         
         SetDIBitsToDevice(hdc, 180, 4, 256, 192, 0, 0, 0, 192, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
