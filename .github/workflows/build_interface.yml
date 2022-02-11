@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install MacOS build deps
-        run: brew install coreutils gcc sdl2 meson
+        run: brew install coreutils gcc sdl2 meson glib
 
       - name: Build - Meson
         run: |
