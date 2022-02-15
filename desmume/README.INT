@@ -1,0 +1,443 @@
+                   DeSmuME DLL/SO
+
+DeSmuME is written in C++ using the SDL libraries.
+
+* http://www.libsdl.org/
+
+
+Reference Usage
+===============
+A Python library using the DLL/SO interface can be found at
+`https://github.com/SkyTemple/py-desmume/blob/master/desmume/emulator.py`.
+
+
+Build Linux & Mac
+=================
+To build, first cd to src/frontend/interface and then run `./autogen.sh`
+
+This will create the file `configure`.
+It does this using the packages `autoconf` and `automake`.
+It also requires `libglib2.0-dev` to generate correctly.
+(`glib` from the AUR if building on Arch)
+
+Run this using `./configure`
+
+Then build the program by running `make`
+
+It will generate a shared object under `.libs/libdesmume.so`.
+
+Build Windows
+=============
+To build open and build the Visual Studio solution at
+`src/frontend/interface/windows/DeSmuME_Interface.sln`.
+
+
+Interface
+=========
+The interface has the following API functions exposed in the DLL/SO.
+
+
+Emulator key indices
+--------------------
+Internal ID numbers for emulator keys (used for some functions):
+
+#define KEY_NONE		0
+#define KEY_A			1
+#define KEY_B			2
+#define KEY_SELECT		3
+#define KEY_START		4
+#define KEY_RIGHT		5
+#define KEY_LEFT		6
+#define KEY_UP			7
+#define KEY_DOWN		8
+#define KEY_R			9
+#define KEY_L			10
+#define KEY_X			11
+#define KEY_Y			12
+#define KEY_DEBUG		13
+#define KEY_BOOST		14
+#define KEY_LID			15
+
+
+int desmume_init(void);
+-----------------------
+Initializes the emulator. Needs to be called before any other API functions.
+
+
+void desmume_free(void);
+------------------------
+Destroys the emulator, needs to be called to free memory. After this no API
+functions must be called.
+
+
+void desmume_set_language(unsigned char language);
+--------------------------------------------------
+Sets the firmware language. Valid values:
+0 = Japanese, 1 = English, 2 = French, 3 = German, 4 = Italian, 5 = Spanish
+
+
+int desmume_open(const char *filename);
+---------------------------------------
+Loads a ROM into the emulator. Returns 0 on success and another number on error.
+
+
+void desmume_set_savetype(int type);
+------------------------------------
+Sets the type of SRAM save. 0 for auto.
+
+
+void desmume_pause(void);
+-------------------------
+Pauses the emulator.
+
+
+void desmume_resume(void);
+--------------------------
+Resumes the emulator.
+
+
+void desmume_reset(void);
+-------------------------
+Resets the emulator and resumes.
+
+
+BOOL desmume_running(void);
+---------------------------
+Returns 0 if the emulator is not running and 1 if it is.
+
+
+void desmume_skip_next_frame(void);
+-----------------------------------
+Instructs the emulator to not draw the next frame.
+
+
+void desmume_cycle(BOOL with_joystick);
+---------------------------------------
+Runs one loop iteration (tick) of the emulation.
+The parameter must be 1 if `desmume_input_joy_init` was called before and
+joystick input should be processed
+and 0 otherwise.
+
+
+int desmume_sdl_get_ticks();
+----------------------------
+Get the current tick number as reported by SDL.
+
+
+void desmume_draw_opengl(GLuint *texture);
+------------------------------------------
+Only available if INCLUDE_OPENGL_2D was defined.
+
+Draws the current tick onto the provided OpenGL texture.
+
+
+BOOL desmume_has_opengl();
+--------------------------
+Returns whether or not OpenGL support is available.
+
+
+int desmume_draw_window_init(BOOL auto_pause, BOOL use_opengl_if_possible);
+---------------------------------------------------------------------------
+Opens an SDL-powered window for drawing the emulator on and processing input.
+If `auto_pause` is >0, the emulator is paused when the window is not in focus.
+If `use_opengl_if_possible` is >0, OpenGL-based drawing is used
+if OpenGL is available.
+
+
+void desmume_draw_window_input();
+---------------------------------
+Process user input on the SDL window for this tick.
+Requires `desmume_draw_window_init` to be called first.
+
+
+void desmume_draw_window_frame();
+---------------------------------
+Draw the SDL window for this tick. Requires `desmume_draw_window_init` to be called first.
+
+
+BOOL desmume_draw_window_has_quit();
+------------------------------------
+Returns 1 if the SDL window was closed by the user and 0 if not.
+Requires `desmume_draw_window_init` to be called first.
+
+
+void desmume_draw_window_free();
+--------------------------------
+Destroys the SDL window and frees memory. Requires `desmume_draw_window_init` to be called first.
+No other SDL window functions must be called after this.
+
+
+unsigned short *desmume_draw_raw();
+-----------------------------------
+Returns the content of the raw framebuffer of the emulator.
+
+
+void desmume_draw_raw_as_rgbx(unsigned char *buffer);
+-----------------------------------------------------
+Fills the provided buffer as an RGBx formatted version of the emulator's framebuffer.
+
+
+void desmume_savestate_clear();
+-------------------------------
+Deletes all savestates stored on slots.
+
+
+BOOL desmume_savestate_load(const char *file_name);
+---------------------------------------------------
+Loads a savestate from a file. Returns 1 on success, 0 on failure.
+
+
+BOOL desmume_savestate_save(const char *file_name);
+---------------------------------------------------
+Saves a savestate to a file. Returns 1 on success, 0 on failure.
+
+
+void desmume_savestate_scan();
+------------------------------
+Scans the savestate slots for data. Required for `desmume_savestate_slot_exists` and
+`desmume_savestate_save_slot` to return the correct data.
+
+
+void desmume_savestate_slot_load(int index);
+--------------------------------------------
+Loads the savestate from slot `index`.
+
+
+void desmume_savestate_slot_save(int index);
+--------------------------------------------
+Saves the current state to the savestate in slot `index`.
+
+
+BOOL desmume_savestate_slot_exists(int index);
+----------------------------------------------
+Returns whether or not the savetstate at slot `index` exists.
+
+
+char* desmume_savestate_slot_date(int index);
+---------------------------------------------
+Returns the date (as string) that the savestate at slot `index` was saved.
+
+
+BOOL desmume_gpu_get_layer_main_enable_state(int layer_index);
+--------------------------------------------------------------
+Returns whether or not the layer with the given index for the main GPU is enabled.
+
+
+BOOL desmume_gpu_get_layer_sub_enable_state(int layer_index);
+-------------------------------------------------------------
+Returns whether or not the layer with the given index for the sub GPU is enabled.
+
+
+void desmume_gpu_set_layer_main_enable_state(int layer_index, BOOL the_state);
+------------------------------------------------------------------------------
+Disables or enables the layer with the given index for the main GPU.
+Disabled layers are not drawn.
+
+
+void desmume_gpu_set_layer_sub_enable_state(int layer_index, BOOL the_state);
+-----------------------------------------------------------------------------
+Disables or enables the layer with the given index for the sub GPU.
+Disabled layers are not drawn.
+
+
+int desmume_volume_get();
+-------------------------
+Returns the current emulator volume in a range from 0-100.
+
+
+void desmume_volume_set(int volume);
+------------------------------------
+Sets the current emulator volume in a range from 0-100.
+
+
+unsigned char desmume_memory_read_byte(int address);
+signed char desmume_memory_read_byte_signed(int address);
+unsigned short desmume_memory_read_short(int address);
+signed short desmume_memory_read_short_signed(int address);
+unsigned long desmume_memory_read_long(int address);
+signed long desmume_memory_read_long_signed(int address);
+-----------------------------------------------------------
+Read the emulated memory at `address` with different sizes and sign settings.
+
+
+void desmume_memory_write_byte(int address, unsigned char value);
+void desmume_memory_write_short(int address, unsigned short value);
+void desmume_memory_write_long(int address, unsigned long value);
+-------------------------------------------------------------------
+Write the value `value` as bytes/shorts/longs to `address` in the emulated memory.
+
+
+int desmume_memory_read_register(char* register_name);
+void desmume_memory_write_register(char* register_name, long value);
+--------------------------------------------------------------------
+Read or write the value of the specified register.
+
+Valid register names:
+- arm9.r0 - arm9.r15 : Registers r0 - r15 on the ARM9 processor.
+- arm9.cpsr
+- arm9.spsr
+- arm7.r0 - arm7.r15 : Registers r0 - r15 on the ARM7 processor.
+- arm7.cpsr
+- arm7.spsr
+
+`main` may be used as an alias for `arm9` and `sub` for `arm7`.
+If the prefix is omitted, `arm9` is used.
+
+
+typedef BOOL (*memory_cb_fnc)(unsigned int, int);
+void desmume_memory_register_write(int address, int size, memory_cb_fnc cb);
+void desmume_memory_register_read(int address, int size, memory_cb_fnc cb);
+void desmume_memory_register_exec(int address, int size, memory_cb_fnc cb);
+----------------------------------------------------------------------------
+Register a callback function to execute when the emulator writes/reads or executes
+an instruction at `address`. `size` is the size in bytes to monitor for that location
+(should always be 2 to exec).
+
+The passed callback function gets to arguments when called. The first argument
+is the address the callback was triggered for, the second the size.
+
+Only one callback can be specified per address and type (write/read/exec).
+Pass 0 instead for `cb` to unregister previously registered callbacks.
+
+
+void desmume_screenshot(char *screenshot_buffer);
+-------------------------------------------------
+Fills the 98304*3 bytes long `screenshot_buffer` with an RGB snapshot of
+the framebuffer.
+
+
+BOOL desmume_input_joy_init(void);
+----------------------------------
+Initialize SDL joypad handling. Returns 1 on success, 0 otherwise.
+Must be called before any other joypad operation.
+
+void desmume_input_joy_uninit(void);
+------------------------------------
+Destroys the joypad functionality. After calling this, no other joypad
+operations must be called.
+
+
+unsigned short desmume_input_joy_number_connected(void);
+--------------------------------------------------------
+Returns the number of connected joypads.
+
+
+unsigned short desmume_input_joy_get_key(int index);
+----------------------------------------------------
+Returns the joypad key assigned to the specified emulator key.
+
+
+unsigned short desmume_input_joy_get_set_key(int index);
+--------------------------------------------------------
+Pause and wait for the user to press a button on a joypad.
+This button will be assigned to the specified emulator key.
+
+void desmume_input_joy_set_key(int index, int joystick_key_index);
+------------------------------------------------------------------
+Sets the emulator key `index` to the specified joypad key `joystick_key_index`.
+
+
+void desmume_input_keypad_update(unsigned short keys);
+------------------------------------------------------
+Update the currently pressed emulator keys. This is a bitmask where each bit
+is one of the emulator's keys. See:
+
+#define ADD_KEY(keypad,key) ( (keypad) |= (key) )
+#define RM_KEY(keypad,key) ( (keypad) &= ~(key) )
+#define KEYMASK_(k)	(1 << (k))
+
+
+unsigned short desmume_input_keypad_get(void);
+----------------------------------------------
+Get the currently pressed emulator keys. This is a bitmask where each bit is
+one of the emulator's keys.
+
+
+void desmume_input_set_touch_pos(unsigned short x, unsigned short y);
+---------------------------------------------------------------------
+Register a touch input at the specified location on the bottom screen.
+Use `desmume_input_release_touch` to release.
+
+
+void desmume_input_release_touch();
+-----------------------------------
+Release the current touch.
+
+
+BOOL desmume_movie_is_active();
+BOOL desmume_movie_is_recording();
+BOOL desmume_movie_is_playing();
+BOOL desmume_movie_is_finished();
+----------------------------------
+Returns whether the movie system is active/recording/playing/finished.
+
+
+int desmume_movie_get_length();
+-------------------------------
+Returns the size of the movie records.
+
+
+char *desmume_movie_get_name();
+-------------------------------
+Returns the name of the movie.
+
+
+int desmume_movie_get_rerecord_count();
+---------------------------------------
+Returns the current rerecount counter value of the movie.
+
+
+void desmume_movie_set_rerecord_count(int count);
+-------------------------------------------------
+Sets the current rerecount counter value of the movie.
+
+
+BOOL desmume_movie_get_readonly();
+----------------------------------
+Returns 1 if the movie can only be read, 0 if it can also be modified.
+
+
+void desmume_movie_set_readonly(BOOL state);
+--------------------------------------------
+Change whether or not the movie is only read-only (can not be modified).
+
+
+// Returns NULL on success, error message otherwise.
+const char *desmume_movie_play(const char *file_name);
+------------------------------------------------------
+Play the movie from the file `file_name`. Returns NULL on success, otherwise
+an error message.
+
+
+enum START_FROM {START_BLANK = 0, START_SRAM, START_SAVESTATE};
+struct SimpleDate {int year; int month; int day; int hour; int minute; int second; int millisecond;};
+void desmume_movie_record_simple(const char *save_file_name, const char *author_name);
+void desmume_movie_record(const char *save_file_name, const char *author_name,
+                          START_FROM start_from, const char* sram_file_name);
+void desmume_movie_record_from_date(const char *save_file_name, const char *author_name,
+                                    START_FROM start_from, const char* sram_file_name,
+                                    SimpleDate date);
+----------------------------------------------------------------------------------------
+Record a movie.
+
+- `save_file_name`: The name of the file to save the movie to.
+- `author_name`: The name of the author of the movie.
+- `start_from`: Where to start from:
+    - START_BLANK (0): Reset the emulator, start without SRAM (no savefile).
+    - START_SRAM (1): Reset the emulator, start using the SRAM loaded from `sram_file_name`.
+    - START_SAVESTATE (2): Not supported.
+- `sram_file_name`: Name of the SRAM to load, if `start_from` == 1. NULL otherwise.
+- `date`: Date to set the emulated device's clock to.
+
+
+void desmume_movie_replay();
+----------------------------
+Restart playback of the current movie.
+
+
+void desmume_movie_stop();
+----------------------------
+Stop playback/recording of the current movie.
+
+
+Visit us on the web at http://www.desmume.org

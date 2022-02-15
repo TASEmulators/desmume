@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -59,9 +59,9 @@ enum eSlot1Operation
 class ISlot1Comp_Protocol_Client
 {
 public:
-	virtual void slot1client_startOperation(eSlot1Operation operation) {}
-	virtual u32 slot1client_read_GCDATAIN(eSlot1Operation operation) = 0;
-	virtual void slot1client_write_GCDATAIN(eSlot1Operation operation, u32 val) {}
+	virtual void slot1client_startOperation(eSlot1Operation theOperation) {}
+	virtual u32 slot1client_read_GCDATAIN(eSlot1Operation theOperation) = 0;
+	virtual void slot1client_write_GCDATAIN(eSlot1Operation theOperation, u32 val) {}
 };
 
 
@@ -73,17 +73,17 @@ public:
 	void loadstate(EMUFILE &is);
 	
 	//set some kind of protocol/hardware reset state
-	void reset(ISlot1Comp_Protocol_Client* client);
+	void reset(ISlot1Comp_Protocol_Client* theClient);
 
 	//signals from the GC bus
-	void write_command(GC_Command command);
+	void write_command(GC_Command theCommand);
 	void write_GCDATAIN(u8 PROCNUM, u32 val);
 	u32 read_GCDATAIN(u8 PROCNUM);
 
 	//helpers for write_command()
-	void write_command_RAW(GC_Command command);
-	void write_command_KEY1(GC_Command command);
-	void write_command_NORMAL(GC_Command command);
+	void write_command_RAW(GC_Command theCommand);
+	void write_command_KEY1(GC_Command theCommand);
+	void write_command_NORMAL(GC_Command theCommand);
 	
 	//operations not related to obscurities of the protocol or otherwise unknown are passed through to the client here
 	ISlot1Comp_Protocol_Client* client;

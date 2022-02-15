@@ -74,3 +74,4 @@ xcuserdata/
 /.cproject
 /config.log
 /.project
+.DS_Store

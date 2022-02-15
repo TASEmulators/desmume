@@ -1,3 +1,5 @@
+//MODIFIED FOR DESMUME
+
 /**************************************************************************
  *
  * Copyright (c) Microsoft Corporation.  All rights reserved.
@@ -39,11 +41,15 @@
 //DEFINE_CLSID(XAudio2, 03219e78, 5bc3, 44d1, b9, 2e, f6, 3d, 89, cc, 65, 26);
 //DEFINE_CLSID(XAudio2_Debug, 4256535c, 1ea4, 4d4b, 8a, d5, f9, db, 76, 2e, ca, 9e);
 
-// XAudio 2.5 (August 2009 SDK)
-DEFINE_CLSID(XAudio2, 4c9b6dde, 6809, 46e6, a2, 78, 9b, 6a, 97, 58, 86, 70);
-DEFINE_CLSID(XAudio2_Debug, 715bdd1a, aa82, 436b, b0, fa, 6a, ce, a3, 9b, d0, a1);
+#define GARBONZOBEAN(className,y) \
+            class DECLSPEC_UUID_WRAPPER(y) className; \
+            EXTERN_C const GUID CLSID_##className
 
-DEFINE_IID(IXAudio2, 8bcf1f58, 9fe7, 4583, 8a, c6, e2, ad, c4, 65, c8, bb);
+// XAudio 2.5 (August 2009 SDK)
+GARBONZOBEAN(XAudio2, 4c9b6dde-6809-46e6-a278-9b6a97588670);
+GARBONZOBEAN(XAudio2_Debug, 715bdd1a-aa82-436b-b0fa-6acea39bd0a1);
+
+GARBONZOBEAN(IXAudio2, 8bcf1f58-9fe7-4583-8ac6-e2adc465c8bb);
 
 
 // Ignore the rest of this header if only the GUID definitions were requested

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2013 DeSmuME team
+	Copyright (C) 2009-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,13 +20,18 @@
 #include "types.h"
 #include <string.h>
 
-struct _KEY1 final
+struct _KEY1
 {
-	_KEY1(const u8 *inKeyBufPtr) : keyBufPtr(inKeyBufPtr) {}
+	_KEY1(const u8 *inKeyBufPtr)
+	{
+		memset(keyBuf, 0, sizeof(keyBuf));
+		memset(keyCode, 0, sizeof(keyCode));
+		keyBufPtr = inKeyBufPtr;
+	}
 
-	u32 keyBuf[0x412] = {};
-	u32 keyCode[3] = {};
-	const u8	*keyBufPtr;
+	u32 keyBuf[0x412];
+	u32 keyCode[3];
+	const u8 *keyBufPtr;
 
 	void init(u32 idcode, u8 level, u8 modulo);
 	void applyKeycode(u8 modulo);
@@ -34,17 +39,23 @@ struct _KEY1 final
 	void encrypt(u32 *ptr);
 };
 
-struct _KEY2 final
+struct _KEY2
 {
 private:
-	u64 seed0 = 0x58C56DE0E8ULL;
-	u64 seed1 = 0x5C879B9B05ULL;
+	u64 seed0;
+	u64 seed1;
 	u64 x;
 	u64 y;
 
 	u64 bitsReverse39(u64 key);
 
 public:
+	_KEY2()
+	{
+		seed0 = 0x58C56DE0E8ULL;
+		seed1 = 0x5C879B9B05ULL;
+	}
+	
 	void applySeed(u8 PROCNUM);
 	u8 apply(u8 data);
 };

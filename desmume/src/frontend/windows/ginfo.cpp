@@ -80,7 +80,8 @@ LRESULT GInfo_Paint(HWND hDlg, WPARAM wParam, LPARAM lParam)
 {
 	HDC				hdc;
 	PAINTSTRUCT		ps;
-	char			text[80];
+	wchar_t			text[80];
+	char			atext[80];
 	u32				icontitleOffset;
 	wchar_t			*utf16text;
 	u32				val;
@@ -90,101 +91,101 @@ LRESULT GInfo_Paint(HWND hDlg, WPARAM wParam, LPARAM lParam)
 
 	const RomBanner& banner = gameInfo.getRomBanner();
 
-	sprintf(text, "%ws", banner.titles[CommonSettings.fwConfig.language]);	// TODO: langID from real/fake fw
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLE), text);
+	swprintf(text, 80, L"%s", (wchar_t*)banner.titles[CommonSettings.fwConfig.language]);	// TODO: langID from real/fake fw
+	SetWindowTextW(GetDlgItem(hDlg, IDC_GI_TITLE), text);
 
-	sprintf(text, "%ws", banner.titles[0]);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEJP), text);
+	swprintf(text, 80, L"%s", (wchar_t*)banner.titles[0]);
+	SetWindowTextW(GetDlgItem(hDlg, IDC_GI_TITLEJP), text);
 
-	sprintf(text, "%ws", banner.titles[1]);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEEN), text);
+	swprintf(text, 80, L"%s", (wchar_t*)banner.titles[1]);
+	SetWindowTextW(GetDlgItem(hDlg, IDC_GI_TITLEEN), text);
 
-	sprintf(text, "%ws", banner.titles[2]);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEFR), text);
+	swprintf(text, 80, L"%s", (wchar_t*)banner.titles[2]);
+	SetWindowTextW(GetDlgItem(hDlg, IDC_GI_TITLEFR), text);
 
-	sprintf(text, "%ws", banner.titles[3]);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEGE), text);
+	swprintf(text, 80, L"%s", (wchar_t*)banner.titles[3]);
+	SetWindowTextW(GetDlgItem(hDlg, IDC_GI_TITLEGE), text);
 
-	sprintf(text, "%ws", banner.titles[4]);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEIT), text);
+	swprintf(text, 80, L"%s", (wchar_t*)banner.titles[4]);
+	SetWindowTextW(GetDlgItem(hDlg, IDC_GI_TITLEIT), text);
 
-	sprintf(text, "%ws", banner.titles[5]);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLESP), text);
+	swprintf(text, 80, L"%s", (wchar_t*)banner.titles[5]);
+	SetWindowTextW(GetDlgItem(hDlg, IDC_GI_TITLESP), text);
 	
 	//TODO - pull this from the header, not straight out of the rom (yuck!)
 
-	memcpy(text, (u8*)&gameInfo.header, 12);
-	text[12] = '\0';
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_GAMETITLE), text);
+	memcpy(atext, (u8*)&gameInfo.header, 12);
+	atext[12] = '\0';
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_GAMETITLE), atext);
 
 	SetDlgItemText(hDlg, IDC_GI_GAMECODE, gameInfo.ROMserial);
 
-	memcpy(text, ((u8*)&gameInfo.header+0x10), 2);
-	text[2] = '\0';
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_MAKERCODE), text);
+	memcpy(atext, ((u8*)&gameInfo.header+0x10), 2);
+	atext[2] = '\0';
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_MAKERCODE), atext);
 	SetWindowText(GetDlgItem(hDlg, IDC_SDEVELOPER), Database::MakerNameForMakerCode(T1ReadWord((u8*)&gameInfo.header, 0x10),true));
 
 	val = T1ReadByte((u8*)&gameInfo.header, 0x14);
-	sprintf(text, "%i kilobytes", (0x80 << val));
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_CHIPSIZE), text);
+	sprintf(atext, "%i kilobytes", (0x80 << val));
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_CHIPSIZE), atext);
 
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x20);
-	sprintf(text, "0x%08X", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9ROM), text);
+	sprintf(atext, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9ROM), atext);
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x24);
-	sprintf(text, "0x%08X", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9ENTRY), text);
+	sprintf(atext, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9ENTRY), atext);
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x28);
-	sprintf(text, "0x%08X", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9START), text);
+	sprintf(atext, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9START), atext);
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x2C);
-	sprintf(text, "%i bytes", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9SIZE), text);
+	sprintf(atext, "%i bytes", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9SIZE), atext);
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x30);
-	sprintf(text, "0x%08X", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7ROM), text);
+	sprintf(atext, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7ROM), atext);
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x34);
-	sprintf(text, "0x%08X", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7ENTRY), text);
+	sprintf(atext, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7ENTRY), atext);
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x38);
-	sprintf(text, "0x%08X", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7START), text);
+	sprintf(atext, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7START), atext);
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x3C);
-	sprintf(text, "%i bytes", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7SIZE), text);
+	sprintf(atext, "%i bytes", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7SIZE), atext);
 
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x40);
-	sprintf(text, "0x%08X", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_FNTOFS), text);
+	sprintf(atext, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_FNTOFS), atext);
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x44);
-	sprintf(text, "%i bytes", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_FNTSIZE), text);
+	sprintf(atext, "%i bytes", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_FNTSIZE), atext);
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x48);
-	sprintf(text, "0x%08X", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_FATOFS), text);
+	sprintf(atext, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_FATOFS), atext);
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x4C);
-	sprintf(text, "%i bytes", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_FATSIZE), text);
+	sprintf(atext, "%i bytes", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_FATSIZE), atext);
 
 	icontitleOffset = T1ReadLong((u8*)&gameInfo.header, 0x68);
-	sprintf(text, "0x%08X", icontitleOffset);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_ICONTITLEOFS), text);
+	sprintf(atext, "0x%08X", icontitleOffset);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ICONTITLEOFS), atext);
 
 	val = T1ReadLong((u8*)&gameInfo.header, 0x80);
-	sprintf(text, "0x%08X", val);
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_USEDROMSIZE), text);
+	sprintf(atext, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_USEDROMSIZE), atext);
 
 	EndPaint(hDlg, &ps);
 

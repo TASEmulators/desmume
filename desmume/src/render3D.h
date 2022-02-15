@@ -193,6 +193,7 @@ protected:
 	CACHE_ALIGN u32 clearImageDepthBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN u8 clearImageFogBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	
+	virtual void _ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
 	template<bool ISCOLORBLANK, bool ISDEPTHBLANK> void _ClearImageScrolledLoop(const u8 xScroll, const u8 yScroll, const u16 *__restrict inColor16, const u16 *__restrict inDepth16,
 																				u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
 	
@@ -281,12 +282,12 @@ public:
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
-#if defined(ENABLE_AVX)
+#if defined(ENABLE_AVX2)
 
-class Render3D_AVX : public Render3D_SIMD<32>
+class Render3D_AVX2 : public Render3D_SIMD<32>
 {
 public:
-	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
+	virtual void _ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
 };
 
 #elif defined(ENABLE_SSE2)
@@ -294,13 +295,16 @@ public:
 class Render3D_SSE2 : public Render3D_SIMD<16>
 {
 public:
-	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
+	virtual void _ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
 };
 
 #elif defined(ENABLE_ALTIVEC)
 
-class Render3D_Altivec : public Render3D_SIMD<16>
-{};
+class Render3D_AltiVec : public Render3D_SIMD<16>
+{
+public:
+	virtual void _ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
+};
 
 #endif
 

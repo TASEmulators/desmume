@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2017 DeSmuME team
+	Copyright (C) 2010-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ public:
 		return protocol.read_GCDATAIN(PROCNUM);
 	}
 
-	virtual void slot1client_startOperation(eSlot1Operation operation)
+	virtual void slot1client_startOperation(eSlot1Operation theOperation)
 	{
 		//INFO("Start command: %02X%02X%02X%02X%02X%02X%02X%02X\t",
 		//	protocol.command.bytes[0], protocol.command.bytes[1], protocol.command.bytes[2], protocol.command.bytes[3],
@@ -98,14 +98,14 @@ public:
 		u32 addressFromProtocol = (protocol.command.bytes[1] << 24) | (protocol.command.bytes[2] << 16) | (protocol.command.bytes[3] << 8) | protocol.command.bytes[4];
 
 		//pass the normal rom operations along to the rom component
-		switch(operation)
+		switch (theOperation)
 		{
 			case eSlot1Operation_00_ReadHeader_Unencrypted:
-				rom.start(operation,addressFromProtocol);
+				rom.start(theOperation, addressFromProtocol);
 				return;
 
 			case eSlot1Operation_2x_SecureAreaLoad:
-				rom.start(operation,protocol.address);
+				rom.start(theOperation, protocol.address);
 				return;
 				
 			default:
@@ -159,7 +159,7 @@ public:
 				}
 				else
 				{
-					rom.start(operation, addressFromProtocol);
+					rom.start(theOperation, addressFromProtocol);
 				}
 				break;
 
@@ -183,6 +183,9 @@ public:
 			case eSlot1Operation_2x_SecureAreaLoad:
 			//case eSlot1Operation_B7_Read:
 				return rom.read();
+				
+			default:
+				break;
 		}
 
 		//handle special commands ourselves
@@ -253,6 +256,9 @@ public:
 			case eSlot1Operation_B7_Read:
 			case eSlot1Operation_2x_SecureAreaLoad:
 				return;
+				
+			default:
+				break;
 		}
 
 		//handle special commands ourselves

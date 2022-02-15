@@ -181,7 +181,6 @@ protected:
 	bool _useShader150;
 	ShaderSupportTier _shaderSupport;
 	
-	bool _needUploadVertices;
 	bool _useDeposterize;
 	bool _useShaderBasedPixelScaler;
 	bool _filtersPreferGPU;
@@ -208,7 +207,6 @@ protected:
 	GLuint _texHQ3xLUT;
 	GLuint _texHQ4xLUT;
 	
-	GLint _vtxBuffer[8];
 	GLfloat _texCoordBuffer[8];
 	
 	GLuint _texVideoInputDataID;
@@ -225,11 +223,6 @@ protected:
 	GLint _uniformRenderFlipped;
 	GLint _uniformBacklightIntensity;
 	
-	void UploadVerticesOGL();
-	void UploadTexCoordsOGL();
-	void UploadTransformationOGL();
-	
-	void UpdateVertices();
 	void UpdateTexCoords(GLfloat s, GLfloat t);
 	
 public:
@@ -333,6 +326,7 @@ public:
 	bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	
 	void LoadNativeDisplayByID_OGL(const NDSDisplayID displayID);
+	void LoadCustomDisplayByID_OGL(const NDSDisplayID displayID);
 	void ProcessOGL();
 	
 	virtual void RenderOGL(bool isRenderingFlipped);
@@ -381,6 +375,7 @@ public:
 	
 	void CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex);
 	void FetchNativeDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
+	void FetchCustomDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
 	void FetchTextureWriteLock(const NDSDisplayID displayID);
 	void FetchTextureReadLock(const NDSDisplayID displayID);
 	void FetchTextureUnlock(const NDSDisplayID displayID);
@@ -418,6 +413,7 @@ protected:
 	virtual void _UpdateViewScale();
 	
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
+	virtual void _LoadCustomDisplayByID(const NDSDisplayID displayID);
 	virtual void _ResizeCPUPixelScaler(const VideoFilterTypeID filterID);
 	
 public:

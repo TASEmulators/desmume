@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2013 DeSmuME team
+	Copyright (C) 2010-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -112,7 +112,7 @@ void slot1_Init()
 
 void slot1_Shutdown()
 {
-	for(int i=0;i<ARRAY_SIZE(slot1_List);i++)
+	for (size_t i = 0; i < ARRAY_SIZE(slot1_List); i++)
 	{
 		if(slot1_List[i])
 			slot1_List[i]->shutdown();

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2017 DeSmuME team
+	Copyright (C) 2013-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -108,7 +108,7 @@ public:
 		rom.loadstate(is);
 	}
 
-	virtual void slot1client_startOperation(eSlot1Operation operation)
+	virtual void slot1client_startOperation(eSlot1Operation theOperation)
 	{
 		if (protocol.operation == eSlot1Operation_B7_Read)
 		{
@@ -168,7 +168,7 @@ public:
 
 			curr_file_id = file_id;
 		}
-		rom.start(operation, protocol.address);
+		rom.start(theOperation, protocol.address);
 	}
 
 private:

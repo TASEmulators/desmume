@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2019 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -404,8 +404,8 @@ typedef struct TSCalInfo
 
 extern GameInfo gameInfo;
 
-extern std::vector<int> memReadBreakPoints;
-extern std::vector<int> memWriteBreakPoints;
+extern std::vector<u32> memReadBreakPoints;
+extern std::vector<u32> memWriteBreakPoints;
 
 
 struct UserButtons : buttonstruct<bool>

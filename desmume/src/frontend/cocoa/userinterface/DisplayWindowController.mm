@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2018 DeSmuME team
+	Copyright (C) 2013-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2049,9 +2049,10 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
 	CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
 	MacClientSharedObject *macSharedData = [cdsGPU sharedData];
-	BOOL isMetalLayer = NO;
 	
 #ifdef ENABLE_APPLE_METAL
+	BOOL isMetalLayer = NO;
+	
 	if ((macSharedData != nil) && [macSharedData isKindOfClass:[MetalDisplayViewSharedData class]])
 	{
 		if ([(MetalDisplayViewSharedData *)macSharedData device] != nil)

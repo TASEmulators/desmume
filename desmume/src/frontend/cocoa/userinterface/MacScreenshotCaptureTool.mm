@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2018 DeSmuME team
+	Copyright (C) 2017-2021 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -130,6 +130,13 @@ static void* RunFileWriteThread(void *arg);
 
 static void* RunFileWriteThread(void *arg)
 {
+#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
+	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6)
+	{
+		pthread_setname_np("Mac File Write");
+	}
+#endif
+	
 	// Copy the rendering properties from the calling thread.
 	MacCaptureToolParams *inParams = (MacCaptureToolParams *)arg;
 	MacCaptureToolParams param;
@@ -287,7 +294,7 @@ static void* RunFileWriteThread(void *arg)
 	
 	NSString *savePath = [NSString stringWithCString:param.savePath.c_str() encoding:NSUTF8StringEncoding];
 	NSURL *fileURL = [NSURL fileURLWithPath:[savePath stringByAppendingPathComponent:fileName]];
-	[CocoaDSFile saveScreenshot:fileURL bitmapData:newImageRep fileType:param.formatID];
+	[CocoaDSFile saveScreenshot:fileURL bitmapData:newImageRep fileType:(NSBitmapImageFileType)param.formatID];
 	
 	// Clean up.
 	delete cdp;

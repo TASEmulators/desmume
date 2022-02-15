@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2015 DeSmuME team
+	Copyright (C) 2010-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -73,9 +73,9 @@ public:
 		return protocol.read_GCDATAIN(PROCNUM);
 	}
 
-	virtual void slot1client_startOperation(eSlot1Operation operation)
+	virtual void slot1client_startOperation(eSlot1Operation theOperation)
 	{
-		rom.start(operation,protocol.address);
+		rom.start(theOperation,protocol.address);
 	}
 
 	virtual void post_fakeboot(int PROCNUM)

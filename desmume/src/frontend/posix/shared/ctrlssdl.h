@@ -25,7 +25,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <SDL.h>
 #include "MMU.h"
 
@@ -76,8 +75,8 @@ struct mouse_status
 {
   signed long x;
   signed long y;
-  BOOL click;
-  BOOL down;
+  int click;
+  int down;
 };
 
 extern mouse_status mouse;
@@ -86,18 +85,15 @@ extern mouse_status mouse;
 struct ctrls_event_config {
   unsigned short keypad;
   float nds_screen_size_ratio;
+  int horizontal;
   int auto_pause;
   int focused;
   int sdl_quit;
   int boost;
   int fake_mic;
-#ifdef HAVE_GL_GL_H
-  GLuint *screen_texture;
-  void (*resize_cb)(u16 width, u16 height, GLuint *screen_texture);
-#else
   void *screen_texture;
   void (*resize_cb)(u16 width, u16 height, void *screen_texture);
-#endif
+  SDL_Window *window;
 };
 
 void load_default_config(const u32 kbCfg[]);

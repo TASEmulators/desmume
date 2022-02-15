@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2018 DeSmuME team
+	Copyright (C) 2017-2021 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -488,6 +488,14 @@ kernel void convert_texture_unorm666X_to_unorm8888(const uint2 position [[thread
 												   texture2d<float, access::write> outTexture [[texture(1)]])
 {
 	const float4 outColor = convert_unorm666X_to_unorm8888( inTexture.read(position) );
+	outTexture.write(outColor, position);
+}
+
+kernel void convert_texture_unorm888X_to_unorm8888(const uint2 position [[thread_position_in_grid]],
+												   const texture2d<float, access::read> inTexture [[texture(0)]],
+												   texture2d<float, access::write> outTexture [[texture(1)]])
+{
+	const float4 outColor = convert_unorm888X_to_unorm8888( inTexture.read(position) );
 	outTexture.write(outColor, position);
 }
 

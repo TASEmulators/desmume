@@ -22,11 +22,13 @@
 		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '14.0'">14</NDS_VSVER>
 		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '15.0'">15</NDS_VSVER>
 		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '16.0'">16</NDS_VSVER>
+		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '17.0'">17</NDS_VSVER>
 		<!-- others may not be supported, so lets not list them here -->
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '10'">VS2010</NDS_VisualStudioName>
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '14'">VS2015</NDS_VisualStudioName>
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '15'">VS2017</NDS_VisualStudioName>
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '16'">VS2019</NDS_VisualStudioName>
+		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '17'">VS2022</NDS_VisualStudioName>
 	</PropertyGroup>
 
 	<!-- Generate optimization level property from configuration name -->
@@ -86,7 +88,7 @@
 	<ItemDefinitionGroup>
 
 		<PreBuildEvent>
-			<Command>"%windir%\Sysnative\cscript" /nologo /E:JScript "defaultconfig\make_scmrev.h.js"</Command>
+			<Command>"%windir%\system32\cscript" /nologo /E:JScript "defaultconfig\make_scmrev.h.js"</Command>
 		</PreBuildEvent>
 
 		<ClCompile>
@@ -94,7 +96,7 @@
 			<AdditionalIncludeDirectories>.;..\..;lua\include;glib-2.20.1\build;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 
 			<!-- universal definitions -->
-			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;WIN32_FRONTEND;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 			<!-- BETA_VERSION ? -->
 			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>

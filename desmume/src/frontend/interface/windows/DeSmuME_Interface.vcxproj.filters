@@ -1,0 +1,991 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="addons">
+      <UniqueIdentifier>{1761f316-4c22-4742-8f37-77ea008d2623}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="filter">
+      <UniqueIdentifier>{0c7156df-b4ef-4cd2-af76-6a6c1e66145a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend">
+      <UniqueIdentifier>{9bac6bce-2c43-4ed8-bc81-139766c97d61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend\modules">
+      <UniqueIdentifier>{bf0f0a1c-c47b-485d-88ef-77ec60ed76d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend\modules\osd">
+      <UniqueIdentifier>{2fa3e628-6c05-4f93-8543-dc1737844f89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend\modules\osd\agg">
+      <UniqueIdentifier>{7f9106f6-6228-4333-bc30-f3aa42054661}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common">
+      <UniqueIdentifier>{96d6a2cc-95dd-4cff-aedb-a4fca349e03e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\rthreads">
+      <UniqueIdentifier>{4081af90-0821-41a7-bfa5-a1ea2e2507b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\include">
+      <UniqueIdentifier>{3d685b20-07d6-40cd-9698-092e3956a99b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\include\rthreads">
+      <UniqueIdentifier>{f073b402-2ede-4541-ac04-8374eb50e6da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\include\formats">
+      <UniqueIdentifier>{9f342479-151c-448b-b5a1-6bf96ec68e4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\include\compat">
+      <UniqueIdentifier>{0e38e634-1de6-4c6e-b1d4-8b3f9e77840a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\include\streams">
+      <UniqueIdentifier>{2eba95b4-6c79-43a6-bc38-ae9ce1df54dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\include\features">
+      <UniqueIdentifier>{3b540aa2-669b-494c-9181-9d7b38549d3a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\formats">
+      <UniqueIdentifier>{c36360aa-3622-438e-9d70-18c859eaeb01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\formats\png">
+      <UniqueIdentifier>{7038db37-0de1-4561-aec4-d628e1d31265}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\formats\bmp">
+      <UniqueIdentifier>{3b266419-458b-493d-9c55-5d5cc6b212ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\file">
+      <UniqueIdentifier>{114f59af-a844-468a-9cb9-2f7faf861035}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\file\nbio">
+      <UniqueIdentifier>{59d051e5-34eb-4b72-b6a1-7a893c6592e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\compat">
+      <UniqueIdentifier>{334a6ab8-9fe9-4577-983a-10f3b6fa95b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\hash">
+      <UniqueIdentifier>{23ac753a-66cd-40c8-92c3-90f145eaf022}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\lists">
+      <UniqueIdentifier>{18cba3ce-aaa6-441d-8111-408d0fcef7d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\features">
+      <UniqueIdentifier>{15ea6bdf-cacd-4fcb-b2ed-5290b6f05007}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="metaspu">
+      <UniqueIdentifier>{53ec9c3c-7653-46ff-83a8-9590482bcf8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="metaspu\win32">
+      <UniqueIdentifier>{a6e751df-3c94-41c0-96a1-5ca50d92b221}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="metaspu\SoundTouch">
+      <UniqueIdentifier>{e51fc8a7-4240-4b5c-8c2a-86c30fef95c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils">
+      <UniqueIdentifier>{1b0f72b3-27d4-4d86-b253-eda5a3ebab7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils\decrypt">
+      <UniqueIdentifier>{80fa193a-2814-401d-8a51-47c8d876eb8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils\libfat">
+      <UniqueIdentifier>{c751e37c-54da-44e2-9be8-0399cb02467a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils\tinyxml">
+      <UniqueIdentifier>{6d47beab-6087-48e1-953d-f5da134a023a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils\AsmJit">
+      <UniqueIdentifier>{faa7804e-deb3-482f-b348-921cb7dacca7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils\AsmJit\core">
+      <UniqueIdentifier>{82c38db3-d06d-44b5-a9a4-be3c002d0db0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils\AsmJit\x86">
+      <UniqueIdentifier>{0d620905-0dcf-47a4-bac2-91f307aa9994}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils\colorspacehandler">
+      <UniqueIdentifier>{db5dc512-2b75-4476-8cac-75fd4acfd85f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\encodings">
+      <UniqueIdentifier>{f411c88e-4cf5-43ea-9af7-96030fbb4839}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\include\encodings">
+      <UniqueIdentifier>{c3763fed-6836-4ede-be25-d6d35bbad418}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend\interface">
+      <UniqueIdentifier>{e9278c1a-48ec-4783-9654-6ab297b919f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend\windows">
+      <UniqueIdentifier>{bb85167f-f8b2-4eb9-b0f6-b32bb93f47fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend\posix">
+      <UniqueIdentifier>{4f0d8122-63a5-4a52-b8b2-332850b3f0f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend\posix\shared">
+      <UniqueIdentifier>{e29895bf-f6e1-486e-814e-bdf2e1414599}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\addons\slot2_expMemory.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot2_gbagame.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot2_guitarGrip.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot2_none.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot2_rumblepak.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\guid.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\task.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\xstring.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\decrypt\crc.cpp">
+      <Filter>utils\decrypt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\decrypt\decrypt.cpp">
+      <Filter>utils\decrypt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\decrypt\header.cpp">
+      <Filter>utils\decrypt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\metaspu.cpp">
+      <Filter>metaspu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SndOut.cpp">
+      <Filter>metaspu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\Timestretcher.cpp">
+      <Filter>metaspu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\win32\ConfigSoundtouch.cpp">
+      <Filter>metaspu\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\3dnow_win.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\AAFilter.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\cpu_detect_x86_win.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\FIFOSampleBuffer.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\FIRFilter.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\mmx_optimized.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\RateTransposer.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\SoundTouch.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\sse_optimized.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\TDStretch.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\WavFile.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot2_piano.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\dlditool.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot1_none.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot1_r4.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot1_retail_nand.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\datetime.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\libfat\partition.cpp">
+      <Filter>utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\libfat\cache.cpp">
+      <Filter>utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\libfat\directory.cpp">
+      <Filter>utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\libfat\disc.cpp">
+      <Filter>utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\libfat\fatdir.cpp">
+      <Filter>utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\libfat\fatfile.cpp">
+      <Filter>utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\libfat\file_allocation_table.cpp">
+      <Filter>utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\libfat\filetime.cpp">
+      <Filter>utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\libfat\libfat.cpp">
+      <Filter>utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\libfat\libfat_public_api.cpp">
+      <Filter>utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\libfat\lock.cpp">
+      <Filter>utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot2_mpcf.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\vfat.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\emufat.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot2_paddle.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\tinyxml\tinystr.cpp">
+      <Filter>utils\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\tinyxml\tinyxml.cpp">
+      <Filter>utils\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\tinyxml\tinyxmlerror.cpp">
+      <Filter>utils\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\tinyxml\tinyxmlparser.cpp">
+      <Filter>utils\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\filter\epx.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\filter\hq2x.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\filter\hq4x.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\filter\lq2x.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\filter\scanline.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\filter\2xsai.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\filter\bilinear.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\assembler.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\assert.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\buffer.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\compiler.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\compilercontext.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\compilerfunc.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\compileritem.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\context.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\cpuinfo.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\defs.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\func.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\logger.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\memorymanager.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\memorymarker.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\operand.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\stringbuilder.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\stringutil.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\virtualmemory.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\core\zonememory.cpp">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86assembler.cpp">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86compiler.cpp">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86compilercontext.cpp">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86compilerfunc.cpp">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86compileritem.cpp">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86cpuinfo.cpp">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86defs.cpp">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86func.cpp">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86operand.cpp">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86util.cpp">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot1_retail_auto.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot1_retail_mcrom.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot1comp_mc.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot1comp_rom.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\advanscene.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot1comp_protocol.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot1_retail_mcrom_debug.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\fsnitro.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot2_passme.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot2_auto.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\filter\xbrz.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\rthreads\rthreads.c">
+      <Filter>libretro-common\rthreads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\frontend\modules\ImageOut.cpp">
+      <Filter>frontend\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\formats\png\rpng_encode.c">
+      <Filter>libretro-common\formats\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\formats\png\rpng.c">
+      <Filter>libretro-common\formats\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\formats\bmp\rbmp_encode.c">
+      <Filter>libretro-common\formats\bmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\file\nbio\nbio_stdio.c">
+      <Filter>libretro-common\file\nbio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_posix_string.c">
+      <Filter>libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_strcasestr.c">
+      <Filter>libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_strl.c">
+      <Filter>libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_getopt.c">
+      <Filter>libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_fnmatch.c">
+      <Filter>libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\file\retro_stat.c">
+      <Filter>libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\file\file_path.c">
+      <Filter>libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\file\retro_dirent.c">
+      <Filter>libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\hash\rhash.c">
+      <Filter>libretro-common\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\rthreads\rsemaphore.c">
+      <Filter>libretro-common\rthreads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_snprintf.c">
+      <Filter>libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\streams\memory_stream.c">
+      <Filter>libretro-common\include\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\streams\file_stream.c">
+      <Filter>libretro-common\include\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\file\archive_file.c">
+      <Filter>libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\lists\file_list.c">
+      <Filter>libretro-common\lists</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\lists\string_list.c">
+      <Filter>libretro-common\lists</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\lists\dir_list.c">
+      <Filter>libretro-common\lists</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\file\archive_file_zlib.c">
+      <Filter>libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\colorspacehandler\colorspacehandler.cpp">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\filter\deposterize.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\osd\agg\aggdraw.cpp">
+      <Filter>frontend\modules\osd\agg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\osd\agg\agg_osd.cpp">
+      <Filter>frontend\modules\osd\agg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\features\features_cpu.c">
+      <Filter>libretro-common\features</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\arm_instructions.cpp" />
+    <ClCompile Include="..\..\..\arm_jit.cpp" />
+    <ClCompile Include="..\..\..\armcpu.cpp" />
+    <ClCompile Include="..\..\..\bios.cpp" />
+    <ClCompile Include="..\..\..\cheatSystem.cpp" />
+    <ClCompile Include="..\..\..\commandline.cpp" />
+    <ClCompile Include="..\..\..\common.cpp" />
+    <ClCompile Include="..\..\..\cp15.cpp" />
+    <ClCompile Include="..\..\..\Database.cpp" />
+    <ClCompile Include="..\..\..\debug.cpp" />
+    <ClCompile Include="..\..\..\driver.cpp" />
+    <ClCompile Include="..\..\..\emufile.cpp" />
+    <ClCompile Include="..\..\..\encrypt.cpp" />
+    <ClCompile Include="..\..\..\FIFO.cpp" />
+    <ClCompile Include="..\..\..\firmware.cpp" />
+    <ClCompile Include="..\..\..\gfx3d.cpp" />
+    <ClCompile Include="..\..\..\GPU.cpp" />
+    <ClCompile Include="..\..\..\matrix.cpp" />
+    <ClCompile Include="..\..\..\mc.cpp" />
+    <ClCompile Include="..\..\..\MMU.cpp" />
+    <ClCompile Include="..\..\..\movie.cpp" />
+    <ClCompile Include="..\..\..\NDSSystem.cpp" />
+    <ClCompile Include="..\..\..\OGLRender.cpp" />
+    <ClCompile Include="..\..\..\OGLRender_3_2.cpp" />
+    <ClCompile Include="..\..\..\path.cpp" />
+    <ClCompile Include="..\..\..\rasterize.cpp" />
+    <ClCompile Include="..\..\..\readwrite.cpp" />
+    <ClCompile Include="..\..\..\render3D.cpp" />
+    <ClCompile Include="..\..\..\ROMReader.cpp" />
+    <ClCompile Include="..\..\..\rtc.cpp" />
+    <ClCompile Include="..\..\..\saves.cpp" />
+    <ClCompile Include="..\..\..\slot1.cpp" />
+    <ClCompile Include="..\..\..\slot2.cpp" />
+    <ClCompile Include="..\..\..\SPU.cpp" />
+    <ClCompile Include="..\..\..\texcache.cpp" />
+    <ClCompile Include="..\..\..\thumb_instructions.cpp" />
+    <ClCompile Include="..\..\..\version.cpp" />
+    <ClCompile Include="..\..\..\wifi.cpp" />
+    <ClCompile Include="..\..\modules\Disassembler.cpp">
+      <Filter>frontend\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\encodings\encoding_utf.c">
+      <Filter>libretro-common\encodings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\colorspacehandler\colorspacehandler_AVX2.cpp">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\colorspacehandler\colorspacehandler_SSE2.cpp">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\utils\colorspacehandler\colorspacehandler_AltiVec.cpp">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\interface.cpp">
+      <Filter>frontend\interface</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\windows\winutil.cpp">
+      <Filter>frontend\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\filter\videofilter.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\filter\hq3x.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\windows\mic-win.cpp">
+      <Filter>frontend\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\posix\shared\ctrlssdl.cpp">
+      <Filter>frontend\posix\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\posix\shared\sndsdl.cpp">
+      <Filter>frontend\posix\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw_sdl_window.cpp">
+      <Filter>frontend\interface</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\utils\guid.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\task.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\decrypt\crc.h">
+      <Filter>utils\decrypt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\decrypt\decrypt.h">
+      <Filter>utils\decrypt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\decrypt\header.h">
+      <Filter>utils\decrypt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\metaspu.h">
+      <Filter>metaspu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SndOut.h">
+      <Filter>metaspu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\win32\Dialogs.h">
+      <Filter>metaspu\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\AAFilter.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\BPMDetect.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\cpu_detect.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\FIFOSampleBuffer.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\FIFOSamplePipe.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\RateTransposer.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\SoundTouch.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\STTypes.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\TDStretch.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\WavFile.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\datetime.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\partition.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\bit_ops.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\cache.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\common.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\directory.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\disc.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\disc_io.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\fat.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\fatdir.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\fatfile.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\file_allocation_table.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\filetime.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\libfat_pc.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\libfat_public_api.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\lock.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\libfat\mem_allocate.h">
+      <Filter>utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\vfat.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\emufat.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\emufat_types.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\tinyxml\tinystr.h">
+      <Filter>utils\tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\tinyxml\tinyxml.h">
+      <Filter>utils\tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\asmjit.h">
+      <Filter>utils\AsmJit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\config.h">
+      <Filter>utils\AsmJit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core.h">
+      <Filter>utils\AsmJit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\x86.h">
+      <Filter>utils\AsmJit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\apibegin.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\apiend.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\assembler.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\assert.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\buffer.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\build.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\compiler.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\compilercontext.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\compilerfunc.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\compileritem.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\context.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\cpuinfo.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\defs.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\func.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\intutil.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\lock.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\logger.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\memorymanager.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\memorymarker.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\operand.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\podvector.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\stringbuilder.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\stringutil.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\virtualmemory.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\core\zonememory.h">
+      <Filter>utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86assembler.h">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86compiler.h">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86compilercontext.h">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86compilerfunc.h">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86compileritem.h">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86cpuinfo.h">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86defs.h">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86func.h">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86operand.h">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86util.h">
+      <Filter>utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\advanscene.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\fsnitro.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\colorspacehandler\colorspacehandler.h">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libretro-common\include\features\features_cpu.h">
+      <Filter>libretro-common\include\features</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\arm_jit.h" />
+    <ClInclude Include="..\..\..\armcpu.h" />
+    <ClInclude Include="..\..\..\bios.h" />
+    <ClInclude Include="..\..\..\cheatSystem.h" />
+    <ClInclude Include="..\..\..\commandline.h" />
+    <ClInclude Include="..\..\..\common.h" />
+    <ClInclude Include="..\..\..\cp15.h" />
+    <ClInclude Include="..\..\..\debug.h" />
+    <ClInclude Include="..\..\..\driver.h" />
+    <ClInclude Include="..\..\..\emufile.h" />
+    <ClInclude Include="..\..\..\encrypt.h" />
+    <ClInclude Include="..\..\..\FIFO.h" />
+    <ClInclude Include="..\..\..\firmware.h" />
+    <ClInclude Include="..\..\..\gfx3d.h" />
+    <ClInclude Include="..\..\..\GPU.h" />
+    <ClInclude Include="..\..\..\instruction_attributes.h" />
+    <ClInclude Include="..\..\..\instructions.h" />
+    <ClInclude Include="..\..\..\matrix.h" />
+    <ClInclude Include="..\..\..\mc.h" />
+    <ClInclude Include="..\..\..\mem.h" />
+    <ClInclude Include="..\..\..\mic.h" />
+    <ClInclude Include="..\..\..\MMU.h" />
+    <ClInclude Include="..\..\..\MMU_timing.h" />
+    <ClInclude Include="..\..\..\movie.h" />
+    <ClInclude Include="..\..\..\NDSSystem.h" />
+    <ClInclude Include="..\..\..\OGLRender.h" />
+    <ClInclude Include="..\..\..\OGLRender_3_2.h" />
+    <ClInclude Include="..\..\..\path.h" />
+    <ClInclude Include="..\..\..\rasterize.h" />
+    <ClInclude Include="..\..\..\readwrite.h" />
+    <ClInclude Include="..\..\..\registers.h" />
+    <ClInclude Include="..\..\..\render3D.h" />
+    <ClInclude Include="..\..\..\ROMReader.h" />
+    <ClInclude Include="..\..\..\rtc.h" />
+    <ClInclude Include="..\..\..\saves.h" />
+    <ClInclude Include="..\..\..\slot1.h" />
+    <ClInclude Include="..\..\..\slot2.h" />
+    <ClInclude Include="..\..\..\SPU.h" />
+    <ClInclude Include="..\..\..\texcache.h" />
+    <ClInclude Include="..\..\..\libretro-common\include\libretro.h">
+      <Filter>libretro-common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libretro-common\include\encodings\utf.h">
+      <Filter>libretro-common\include\encodings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\addons\slot1comp_mc.h">
+      <Filter>addons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\addons\slot1comp_protocol.h">
+      <Filter>addons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\addons\slot1comp_rom.h">
+      <Filter>addons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Database.h" />
+    <ClInclude Include="..\..\..\types.h" />
+    <ClInclude Include="..\..\..\version.h" />
+    <ClInclude Include="..\..\..\wifi.h" />
+    <ClInclude Include="..\..\..\utils\bits.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\Disassembler.h">
+      <Filter>frontend\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\osd\agg\aggdraw.h">
+      <Filter>frontend\modules\osd\agg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\osd\agg\agg2d.h">
+      <Filter>frontend\modules\osd\agg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\osd\agg\agg_osd.h">
+      <Filter>frontend\modules\osd\agg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\FIRFilter.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\frontend\modules\ImageOut.h">
+      <Filter>frontend\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libretro-common\include\compat\msvc.h">
+      <Filter>libretro-common\include\compat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\filter\xbrz.h">
+      <Filter>filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libretro-common\include\boolean.h">
+      <Filter>libretro-common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\filter\filter.h">
+      <Filter>filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libretro-common\include\retro_miscellaneous.h">
+      <Filter>libretro-common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libretro-common\include\retro_inline.h">
+      <Filter>libretro-common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libretro-common\include\formats\rbmp.h">
+      <Filter>libretro-common\include\formats</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libretro-common\include\formats\image.h">
+      <Filter>libretro-common\include\formats</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libretro-common\include\formats\rpng.h">
+      <Filter>libretro-common\include\formats</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libretro-common\include\rthreads\rthreads.h">
+      <Filter>libretro-common\include\rthreads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libretro-common\include\compat\getopt.h">
+      <Filter>libretro-common\include\compat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\colorspacehandler\colorspacehandler_AltiVec.h">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\colorspacehandler\colorspacehandler_AVX2.h">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\colorspacehandler\colorspacehandler_SSE2.h">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interface.h">
+      <Filter>frontend\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\windows\winutil.h">
+      <Filter>frontend\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\filter\videofilter.h">
+      <Filter>filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\filter\hq2x.h">
+      <Filter>filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\filter\interp.h">
+      <Filter>filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\filter\lq2x.h">
+      <Filter>filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\posix\shared\ctrlssdl.h">
+      <Filter>frontend\posix\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\posix\shared\sndsdl.h">
+      <Filter>frontend\posix\shared</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\utils\AsmJit\COPYING.txt">
+      <Filter>utils\AsmJit</Filter>
+    </None>
+    <None Include="..\..\modules\osd\agg\agg2d.inl">
+      <Filter>frontend\modules\osd\agg</Filter>
+    </None>
+    <None Include="..\instruction_tabdef.inc" />
+    <None Include="..\thumb_tabdef.inc" />
+  </ItemGroup>
+</Project>

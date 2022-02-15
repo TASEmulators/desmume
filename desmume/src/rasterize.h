@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2019 DeSmuME team
+	Copyright (C) 2009-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -134,12 +134,12 @@ public:
 	template<bool SLI, bool USELINEHACK> FORCEINLINE void Render();
 };
 
-#if defined(ENABLE_AVX)
-class SoftRasterizerRenderer : public Render3D_AVX
+#if defined(ENABLE_AVX2)
+class SoftRasterizerRenderer : public Render3D_AVX2
 #elif defined(ENABLE_SSE2)
 class SoftRasterizerRenderer : public Render3D_SSE2
 #elif defined(ENABLE_ALTIVEC)
-class SoftRasterizerRenderer : public Render3D_Altivec
+class SoftRasterizerRenderer : public Render3D_AltiVec
 #else
 class SoftRasterizerRenderer : public Render3D
 #endif
@@ -218,7 +218,7 @@ template <size_t SIMDBYTES>
 class SoftRasterizer_SIMD : public SoftRasterizerRenderer
 {
 protected:
-#if defined(ENABLE_AVX)
+#if defined(ENABLE_AVX2)
 	v256u32 _clearColor_v256u32;
 	v256u32 _clearDepth_v256u32;
 	v256u8 _clearAttrOpaquePolyID_v256u8;
@@ -247,8 +247,8 @@ public:
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
-#if defined(ENABLE_AVX)
-class SoftRasterizerRenderer_AVX : public SoftRasterizer_SIMD<32>
+#if defined(ENABLE_AVX2)
+class SoftRasterizerRenderer_AVX2 : public SoftRasterizer_SIMD<32>
 {
 protected:
 	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
@@ -268,7 +268,7 @@ public:
 };
 
 #elif defined(ENABLE_ALTIVEC)
-class SoftRasterizerRenderer_Altivec : public SoftRasterizer_SIMD<16>
+class SoftRasterizerRenderer_AltiVec : public SoftRasterizer_SIMD<16>
 {
 protected:
 	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);

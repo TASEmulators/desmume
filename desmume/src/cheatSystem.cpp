@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2019 DeSmuME team
+	Copyright (C) 2009-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -121,7 +121,7 @@ static void CheatWrite(int size, int proc, u32 addr, u32 val)
 }
 
 
-void CHEATS::ARparser(CHEATS_LIST& list)
+void CHEATS::ARparser(CHEATS_LIST& theList)
 {
 	//primary organizational source (seems to be referenced by cheaters the most) - http://doc.kodewerx.org/hacking_nds.html
 	//secondary clarification and details (for programmers) - http://problemkaputt.de/gbatek.htm#dscartcheatactionreplayds
@@ -167,18 +167,18 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 	CHEATLOG("-----------------------------------\n");
 
-	for (u32 i=0; i < list.num; i++)
+	for (u32 i = 0; i < theList.num; i++)
 	{
-		const u32 hi = list.code[i][0];
-		const u32 lo = list.code[i][1];
+		const u32 hi = theList.code[i][0];
+		const u32 lo = theList.code[i][1];
 
 		CHEATLOG("executing [%02d] %08X %08X (ofs=%08X)\n",i, hi,lo, st.offset);
 
 		//parse codes into types by kodewerx standards
-		u32 type = list.code[i][0] >> 28;
+		u32 type = theList.code[i][0] >> 28;
 		//these two are broken down into subtypes
 		if(type == 0x0C || type == 0x0D)
-			type = list.code[i][0] >> 24;
+			type = theList.code[i][0] >> 24;
 
 		//process current execution status:
 		u32 statusSkip = st.status & 1;
@@ -568,9 +568,9 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				if(y>0) i++; //skip over the current code
 				while(y>=4)
 				{
-					if(i==list.num) break; //if we erroneously went off the end, bail
-					u32 tmp = list.code[i][t];
-					if(t==1) i++;
+					if (i == theList.num) break; //if we erroneously went off the end, bail
+					u32 tmp = theList.code[i][t];
+					if (t == 1) i++;
 					t ^= 1;
 					CheatWrite(32,st.proc,addr,tmp);
 					addr += 4;
@@ -578,8 +578,8 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				}
 				while(y>0)
 				{
-					if(i==list.num) break; //if we erroneously went off the end, bail
-					u32 tmp = list.code[i][t]>>b;
+					if (i == theList.num) break; //if we erroneously went off the end, bail
+					u32 tmp = theList.code[i][t]>>b;
 					CheatWrite(8,st.proc,addr,tmp);
 					addr += 1;
 					y -= 1;
@@ -604,7 +604,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			operand = x; //mis-use of this variable to store dst
 			while(y>=4)
 			{
-				if(i==list.num) break; //if we erroneously went off the end, bail
+				if (i == theList.num) break; //if we erroneously went off the end, bail
 				u32 tmp = _MMU_read32(st.proc,MMU_AT_DEBUG,addr);
 				CheatWrite(32, st.proc,operand,tmp);
 				addr += 4;
@@ -613,7 +613,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			}
 			while(y>0)
 			{
-				if(i==list.num) break; //if we erroneously went off the end, bail
+				if (i == theList.num) break; //if we erroneously went off the end, bail
 				u8 tmp = _MMU_read08(st.proc,MMU_AT_DEBUG,addr);
 				CheatWrite(8,st.proc,operand,tmp);
 				addr += 1;
@@ -821,7 +821,7 @@ BOOL CHEATS::save()
 		sprintf(buf1, "%s %c ", types[list[i].type], list[i].enabled?'1':'0');
 		cheatLineStr = buf1;
 			
-		for (int t = 0; t < list[i].num; t++)
+		for (u32 t = 0; t < list[i].num; t++)
 		{
 			char buf2[10] = { 0 };
 
@@ -946,7 +946,7 @@ BOOL CHEATS::load()
 			INFO("Cheats: Too many values for internal cheat\n", line);
 			continue;
 		}
-		for (int i = 0; i < tmp_cht.num; i++)
+		for (u32 i = 0; i < tmp_cht.num; i++)
 		{
 			char tmp_buf[9] = {0};
 
@@ -1044,13 +1044,13 @@ void CHEATS::process(int targetType)
 #endif
 }
 
-void CHEATS::getXXcodeString(CHEATS_LIST list, char *res_buf)
+void CHEATS::getXXcodeString(CHEATS_LIST theList, char *res_buf)
 {
-	char	buf[50] = { 0 };
+	char buf[50] = { 0 };
 
-	for (int i=0; i < list.num; i++)
+	for (u32 i = 0; i < theList.num; i++)
 	{
-		sprintf(buf, "%08X %08X\n", list.code[i][0], list.code[i][1]);
+		sprintf(buf, "%08X %08X\n", theList.code[i][0], theList.code[i][1]);
 		strcat(res_buf, buf);
 	}
 }
@@ -1564,9 +1564,9 @@ bool CHEATSEXPORT::search()
 			}
 			if (!dataSize) return false;
 			CRC = fat.CRC;
-			char buf[5] = {0};
-			memcpy(&buf, &fat.serial[0], 4);
-			printf("Cheats: found %s CRC %08X at 0x%08llX, size %i byte(s)\n", buf, fat.CRC, fat.addr, dataSize - encOffset);
+			char serialBuf[5] = {0};
+			memcpy(&serialBuf, &fat.serial[0], 4);
+			printf("Cheats: found %s CRC %08X at 0x%08llX, size %i byte(s)\n", serialBuf, fat.CRC, fat.addr, dataSize - encOffset);
 			return true;
 		}
 
@@ -1600,13 +1600,13 @@ bool CHEATSEXPORT::getCodes()
 	if (encrypted)
 		R4decrypt(data, dataSize, fat.addr >> 9);
 	
-	intptr_t ptrMask = (~0 << 2);
+	uintptr_t ptrMask = ~(uintptr_t)0 << 2;
 	u8 *gameTitlePtr = (u8 *)data + encOffset;
 	
 	memset(gametitle, 0, CHEAT_DB_GAME_TITLE_SIZE);
 	memcpy(gametitle, gameTitlePtr, strlen((const char *)gameTitlePtr));
 	
-	u32 *cmd = (u32 *)(((intptr_t)gameTitlePtr + strlen((const char *)gameTitlePtr) + 4) & ptrMask);
+	u32 *cmd = (u32 *)(((uintptr_t)gameTitlePtr + strlen((const char *)gameTitlePtr) + 4) & ptrMask);
 	numCheats = cmd[0] & 0x0FFFFFFF;
 	cmd += 9;
 	cheats = new CHEATS_LIST[numCheats];
@@ -1620,17 +1620,17 @@ bool CHEATSEXPORT::getCodes()
 		if ((*cmd & 0xF0000000) == 0x10000000)	// Folder
 		{
 			folderNum = (*cmd  & 0x00FFFFFF);
-			folderName = (u8*)((intptr_t)cmd + 4);
-			folderNote = (u8*)((intptr_t)folderName + strlen((char*)folderName) + 1);
+			folderName = (u8*)((uintptr_t)cmd + 4);
+			folderNote = (u8*)((uintptr_t)folderName + strlen((char*)folderName) + 1);
 			pos++;
-			cmd = (u32 *)(((intptr_t)folderName + strlen((char*)folderName) + 1 + strlen((char*)folderNote) + 1 + 3) & ptrMask);
+			cmd = (u32 *)(((uintptr_t)folderName + strlen((char*)folderName) + 1 + strlen((char*)folderNote) + 1 + 3) & ptrMask);
 		}
 
 		for (u32 i = 0; i < folderNum; i++)		// in folder
 		{
-			u8 *cheatName = (u8 *)((intptr_t)cmd + 4);
-			u8 *cheatNote = (u8 *)((intptr_t)cheatName + strlen((char*)cheatName) + 1);
-			u32 *cheatData = (u32 *)(((intptr_t)cheatNote + strlen((char*)cheatNote) + 1 + 3) & ptrMask);
+			u8 *cheatName = (u8 *)((uintptr_t)cmd + 4);
+			u8 *cheatNote = (u8 *)((uintptr_t)cheatName + strlen((char*)cheatName) + 1);
+			u32 *cheatData = (u32 *)(((uintptr_t)cheatNote + strlen((char*)cheatNote) + 1 + 3) & ptrMask);
 			u32 cheatDataLen = *cheatData++;
 			u32 numberCodes = cheatDataLen / 2;
 
@@ -1670,7 +1670,7 @@ bool CHEATSEXPORT::getCodes()
 			}
 
 			pos++;
-			cmd = (u32 *)((intptr_t)cmd + ((*cmd + 1)*4));
+			cmd = (u32 *)((uintptr_t)cmd + ((*cmd + 1)*4));
 		}
 		
 	};

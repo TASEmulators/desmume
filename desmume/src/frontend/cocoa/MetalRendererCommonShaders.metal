@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2018 DeSmuME team
+	Copyright (C) 2018-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -53,4 +53,9 @@ uchar4 pack_unorm8888_to_rgba8888(const float4 inColor)
 float4 convert_unorm666X_to_unorm8888(const float4 inColor)
 {
 	return float4( inColor.rgb * (255.0f/63.0f), 1.0f );
+}
+
+float4 convert_unorm888X_to_unorm8888(const float4 inColor)
+{
+	return float4(inColor.rgb, 1.0f);
 }

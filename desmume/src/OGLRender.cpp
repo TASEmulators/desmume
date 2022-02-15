@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2019 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -324,11 +324,15 @@ attribute vec4 inPosition; \n\
 attribute vec2 inTexCoord0; \n\
 attribute vec3 inColor; \n\
 \n\
+uniform int polyMode;\n\
+uniform bool polyDrawShadow;\n\
+\n\
 uniform float polyAlpha; \n\
 uniform vec2 polyTexScale; \n\
 \n\
 varying vec2 vtxTexCoord; \n\
 varying vec4 vtxColor; \n\
+varying float isPolyDrawable;\n\
 \n\
 void main() \n\
 { \n\
@@ -337,6 +341,8 @@ void main() \n\
 	\n\
 	vtxTexCoord = texScaleMtx * inTexCoord0; \n\
 	vtxColor = vec4(inColor / 63.0, polyAlpha); \n\
+	isPolyDrawable = ((polyMode != 3) || polyDrawShadow) ? 1.0 : -1.0;\n\
+	\n\
 	gl_Position = inPosition;\n\
 } \n\
 "};
@@ -345,6 +351,7 @@ void main() \n\
 static const char *GeometryFragShader_100 = {"\
 varying vec2 vtxTexCoord;\n\
 varying vec4 vtxColor;\n\
+varying float isPolyDrawable;\n\
 \n\
 uniform sampler2D texRenderObject;\n\
 \n\
@@ -363,7 +370,7 @@ uniform bool texSingleBitAlpha;\n\
 \n\
 uniform bool drawModeDepthEqualsTest;\n\
 uniform bool polyDrawShadow;\n\
-uniform int polyDepthOffsetMode;\n\
+uniform float polyDepthOffset;\n\
 \n\
 #if USE_DEPTH_LEQUAL_POLYGON_FACING && !DRAW_MODE_OPAQUE\n\
 uniform sampler2D inBackFacing;\n\
@@ -371,119 +378,87 @@ uniform sampler2D inBackFacing;\n\
 \n\
 void main()\n\
 {\n\
-	vec4 newFragColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
-#if ENABLE_EDGE_MARK\n\
-	vec4 newPolyID = vec4(0.0, 0.0, 0.0, 0.0);\n\
-#endif\n\
-#if ENABLE_FOG\n\
-	vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
+#if USE_DEPTH_LEQUAL_POLYGON_FACING && !DRAW_MODE_OPAQUE\n\
+	bool isOpaqueDstBackFacing = bool( texture2D(inBackFacing, vec2(gl_FragCoord.x/FRAMEBUFFER_SIZE_X, gl_FragCoord.y/FRAMEBUFFER_SIZE_Y)).r );\n\
+	if (drawModeDepthEqualsTest && (!gl_FrontFacing || !isOpaqueDstBackFacing))\n\
+	{\n\
+		discard;\n\
+	}\n\
 #endif\n\
 	\n\
-	if ((polyMode != 3) || polyDrawShadow)\n\
+	vec4 mainTexColor = (ENABLE_TEXTURE_SAMPLING && polyEnableTexture) ? texture2D(texRenderObject, vtxTexCoord) : vec4(1.0, 1.0, 1.0, 1.0);\n\
+	\n\
+	if (!texSingleBitAlpha)\n\
 	{\n\
-		vec4 mainTexColor = (ENABLE_TEXTURE_SAMPLING && polyEnableTexture) ? texture2D(texRenderObject, vtxTexCoord) : vec4(1.0, 1.0, 1.0, 1.0);\n\
-		\n\
-		if (texSingleBitAlpha)\n\
-		{\n\
-#if USE_TEXTURE_SMOOTHING\n\
-			if (mainTexColor.a < 0.500)\n\
-			{\n\
-				mainTexColor.a = 0.0;\n\
-			}\n\
-			else\n\
-			{\n\
-				mainTexColor.rgb = mainTexColor.rgb / mainTexColor.a;\n\
-				mainTexColor.a = 1.0;\n\
-			}\n\
-#endif\n\
-		}\n\
-		else\n\
-		{\n\
-			if (texDrawOpaque)\n\
-			{\n\
-				if ( (polyMode != 1) && (mainTexColor.a <= 0.999) )\n\
-				{\n\
-					discard;\n\
-				}\n\
-			}\n\
-		}\n\
-		\n\
-		newFragColor = mainTexColor * vtxColor;\n\
-		\n\
-		if (polyMode == 1)\n\
-		{\n\
-			newFragColor.rgb = (ENABLE_TEXTURE_SAMPLING && polyEnableTexture) ? mix(vtxColor.rgb, mainTexColor.rgb, mainTexColor.a) : vtxColor.rgb;\n\
-			newFragColor.a = vtxColor.a;\n\
-		}\n\
-		else if (polyMode == 2)\n\
-		{\n\
-			vec3 newToonColor = stateToonColor[int((vtxColor.r * 31.0) + 0.5)].rgb;\n\
-#if TOON_SHADING_MODE\n\
-			newFragColor.rgb = min((mainTexColor.rgb * vtxColor.r) + newToonColor.rgb, 1.0);\n\
-#else\n\
-			newFragColor.rgb = mainTexColor.rgb * newToonColor.rgb;\n\
-#endif\n\
-		}\n\
-		else if (polyMode == 3)\n\
-		{\n\
-			newFragColor = vtxColor;\n\
-		}\n\
-		\n\
-		if (newFragColor.a < 0.001 || (ENABLE_ALPHA_TEST && newFragColor.a < stateAlphaTestRef))\n\
+		if (texDrawOpaque && (polyMode != 1) && (mainTexColor.a <= 0.999))\n\
 		{\n\
 			discard;\n\
 		}\n\
-		\n\
-#if USE_DEPTH_LEQUAL_POLYGON_FACING && !DRAW_MODE_OPAQUE\n\
-		if (drawModeDepthEqualsTest)\n\
+	}\n\
+#if USE_TEXTURE_SMOOTHING\n\
+	else\n\
+	{\n\
+		if (mainTexColor.a < 0.500)\n\
 		{\n\
-			bool isOpaqueDstBackFacing = bool( texture2D(inBackFacing, vec2(gl_FragCoord.x/FRAMEBUFFER_SIZE_X, gl_FragCoord.y/FRAMEBUFFER_SIZE_Y)).r );\n\
-			if ( !gl_FrontFacing || !isOpaqueDstBackFacing )\n\
-			{\n\
-				discard;\n\
-			}\n\
+			mainTexColor.a = 0.0;\n\
 		}\n\
+		else\n\
+		{\n\
+			mainTexColor.rgb = mainTexColor.rgb / mainTexColor.a;\n\
+			mainTexColor.a = 1.0;\n\
+		}\n\
+	}\n\
 #endif\n\
-		\n\
-#if ENABLE_EDGE_MARK\n\
-		newPolyID = vec4( float(polyID)/63.0, float(polyIsWireframe), 0.0, float(newFragColor.a > 0.999) );\n\
+	\n\
+	vec4 newFragColor = mainTexColor * vtxColor;\n\
+	\n\
+	if (polyMode == 1)\n\
+	{\n\
+		newFragColor.rgb = (ENABLE_TEXTURE_SAMPLING && polyEnableTexture) ? mix(vtxColor.rgb, mainTexColor.rgb, mainTexColor.a) : vtxColor.rgb;\n\
+		newFragColor.a = vtxColor.a;\n\
+	}\n\
+	else if (polyMode == 2)\n\
+	{\n\
+		vec3 newToonColor = stateToonColor[int((vtxColor.r * 31.0) + 0.5)].rgb;\n\
+#if TOON_SHADING_MODE\n\
+		newFragColor.rgb = min((mainTexColor.rgb * vtxColor.r) + newToonColor.rgb, 1.0);\n\
+#else\n\
+		newFragColor.rgb = mainTexColor.rgb * newToonColor.rgb;\n\
 #endif\n\
-#if ENABLE_FOG\n\
-		newFogAttributes = vec4( float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5) );\n\
-#endif\n\
+	}\n\
+	else if ((polyMode == 3) && polyDrawShadow)\n\
+	{\n\
+		newFragColor = vtxColor;\n\
+	}\n\
+	\n\
+	if ( (isPolyDrawable > 0.0) && ((newFragColor.a < 0.001) || (ENABLE_ALPHA_TEST && (newFragColor.a < stateAlphaTestRef))) )\n\
+	{\n\
+		discard;\n\
 	}\n\
 	\n\
 	gl_FragData[0] = newFragColor;\n\
 	\n\
+#if ENABLE_EDGE_MARK\n\
+	gl_FragData[ATTACHMENT_POLY_ID] = (isPolyDrawable > 0.0) ? vec4( float(polyID)/63.0, float(polyIsWireframe), 0.0, float(newFragColor.a > 0.999) ) : vec4(0.0, 0.0, 0.0, 0.0);\n\
+#endif\n\
+#if ENABLE_FOG\n\
+	gl_FragData[ATTACHMENT_FOG_ATTRIBUTES] = (isPolyDrawable > 0.0) ? vec4( float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5) ) : vec4(0.0, 0.0, 0.0, 0.0);\n\
+#endif\n\
 #if DRAW_MODE_OPAQUE\n\
 	gl_FragData[ATTACHMENT_WORKING_BUFFER] = vec4(float(!gl_FrontFacing), 0.0, 0.0, 1.0);\n\
 #endif\n\
-#if ENABLE_EDGE_MARK\n\
-	gl_FragData[ATTACHMENT_POLY_ID] = newPolyID;\n\
-#endif\n\
-#if ENABLE_FOG\n\
-	gl_FragData[ATTACHMENT_FOG_ATTRIBUTES] = newFogAttributes;\n\
-#endif\n\
+	\n\
 #if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
 	// It is tempting to perform the NDS depth calculation in the vertex shader rather than in the fragment shader.\n\
 	// Resist this temptation! It is much more reliable to do the depth calculation in the fragment shader due to\n\
 	// subtle interpolation differences between various GPUs and/or drivers. If the depth calculation is not done\n\
 	// here, then it is very possible for the user to experience Z-fighting in certain rendering situations.\n\
 	\n\
-	#if NEEDS_DEPTH_EQUALS_TEST\n\
-		float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
-		#if ENABLE_W_DEPTH\n\
-		gl_FragDepth = clamp( ( (4096.0/gl_FragCoord.w) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
-		#else\n\
-		gl_FragDepth = clamp( ( (floor(gl_FragCoord.z * 4194303.0) * 4.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
-		#endif\n\
+	#if ENABLE_W_DEPTH\n\
+	gl_FragDepth = clamp( ((1.0/gl_FragCoord.w) * (4096.0/16777215.0)) + polyDepthOffset, 0.0, 1.0 );\n\
 	#else\n\
-		#if ENABLE_W_DEPTH\n\
-		gl_FragDepth = (4096.0/gl_FragCoord.w) / 16777215.0;\n\
-		#else\n\
-		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-		gl_FragDepth = (floor(gl_FragCoord.z * 4194303.0) * 4.0) / 16777215.0;\n\
-		#endif\n\
+	// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
+	gl_FragDepth = clamp( (floor(gl_FragCoord.z * 4194303.0) * (4.0/16777215.0)) + polyDepthOffset, 0.0, 1.0 );\n\
 	#endif\n\
 #endif\n\
 }\n\
@@ -656,155 +631,30 @@ varying vec2 texCoord;\n\
 uniform sampler2D texInFragColor;\n\
 uniform sampler2D texInFragDepth;\n\
 uniform sampler2D texInFogAttributes;\n\
+uniform sampler1D texFogDensityTable;\n\
 uniform bool stateEnableFogAlphaOnly;\n\
 uniform vec4 stateFogColor;\n\
-uniform float stateFogDensity[32];\n\
 \n\
 void main()\n\
 {\n\
 	vec4 inFragColor = texture2D(texInFragColor, texCoord);\n\
+	float inFragDepth = texture2D(texInFragDepth, texCoord).r;\n\
 	vec4 inFogAttributes = texture2D(texInFogAttributes, texCoord);\n\
 	bool polyEnableFog = (inFogAttributes.r > 0.999);\n\
 	vec4 newFoggedColor = inFragColor;\n\
 	\n\
+	float fogMixWeight = 0.0;\n\
+	if (FOG_STEP == 0)\n\
+	{\n\
+		fogMixWeight = texture1D( texFogDensityTable, (inFragDepth <= FOG_OFFSETF) ? 0.0 : 1.0 ).r;\n\
+	}\n\
+	else\n\
+	{\n\
+		fogMixWeight = texture1D( texFogDensityTable, (inFragDepth * (1024.0/float(FOG_STEP))) + (((-float(FOG_OFFSET)/float(FOG_STEP)) - 0.5) / 32.0) ).r;\n\
+	}\n\
+	\n\
 	if (polyEnableFog)\n\
 	{\n\
-		float inFragDepth = texture2D(texInFragDepth, texCoord).r;\n\
-		float fogMixWeight = 0.0;\n\
-		\n\
-		if (inFragDepth <= FOG_DEPTH_COMPARE_0)\n\
-		{\n\
-			fogMixWeight = stateFogDensity[0];\n\
-		}\n\
-		else if (inFragDepth >= FOG_DEPTH_COMPARE_31)\n\
-		{\n\
-			fogMixWeight = stateFogDensity[31];\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_1)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[ 0], stateFogDensity[ 1], (inFragDepth - FOG_DEPTH_COMPARE_0)  * FOG_DEPTH_INVDIFF_1);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_2)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[ 1], stateFogDensity[ 2], (inFragDepth - FOG_DEPTH_COMPARE_1)  * FOG_DEPTH_INVDIFF_2);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_3)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[ 2], stateFogDensity[ 3], (inFragDepth - FOG_DEPTH_COMPARE_2)  * FOG_DEPTH_INVDIFF_3);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_4)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[ 3], stateFogDensity[ 4], (inFragDepth - FOG_DEPTH_COMPARE_3)  * FOG_DEPTH_INVDIFF_4);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_5)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[ 4], stateFogDensity[ 5], (inFragDepth - FOG_DEPTH_COMPARE_4)  * FOG_DEPTH_INVDIFF_5);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_6)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[ 5], stateFogDensity[ 6], (inFragDepth - FOG_DEPTH_COMPARE_5)  * FOG_DEPTH_INVDIFF_6);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_7)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[ 6], stateFogDensity[ 7], (inFragDepth - FOG_DEPTH_COMPARE_6)  * FOG_DEPTH_INVDIFF_7);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_8)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[ 7], stateFogDensity[ 8], (inFragDepth - FOG_DEPTH_COMPARE_7)  * FOG_DEPTH_INVDIFF_8);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_9)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[ 8], stateFogDensity[ 9], (inFragDepth - FOG_DEPTH_COMPARE_8)  * FOG_DEPTH_INVDIFF_9);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_10)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[ 9], stateFogDensity[10], (inFragDepth - FOG_DEPTH_COMPARE_9)  * FOG_DEPTH_INVDIFF_10);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_11)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[10], stateFogDensity[11], (inFragDepth - FOG_DEPTH_COMPARE_10) * FOG_DEPTH_INVDIFF_11);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_12)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[11], stateFogDensity[12], (inFragDepth - FOG_DEPTH_COMPARE_11) * FOG_DEPTH_INVDIFF_12);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_13)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[12], stateFogDensity[13], (inFragDepth - FOG_DEPTH_COMPARE_12) * FOG_DEPTH_INVDIFF_13);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_14)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[13], stateFogDensity[14], (inFragDepth - FOG_DEPTH_COMPARE_13) * FOG_DEPTH_INVDIFF_14);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_15)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[14], stateFogDensity[15], (inFragDepth - FOG_DEPTH_COMPARE_14) * FOG_DEPTH_INVDIFF_15);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_16)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[15], stateFogDensity[16], (inFragDepth - FOG_DEPTH_COMPARE_15) * FOG_DEPTH_INVDIFF_16);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_17)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[16], stateFogDensity[17], (inFragDepth - FOG_DEPTH_COMPARE_16) * FOG_DEPTH_INVDIFF_17);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_18)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[17], stateFogDensity[18], (inFragDepth - FOG_DEPTH_COMPARE_17) * FOG_DEPTH_INVDIFF_18);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_19)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[18], stateFogDensity[19], (inFragDepth - FOG_DEPTH_COMPARE_18) * FOG_DEPTH_INVDIFF_19);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_20)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[19], stateFogDensity[20], (inFragDepth - FOG_DEPTH_COMPARE_19) * FOG_DEPTH_INVDIFF_20);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_21)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[20], stateFogDensity[21], (inFragDepth - FOG_DEPTH_COMPARE_20) * FOG_DEPTH_INVDIFF_21);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_22)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[21], stateFogDensity[22], (inFragDepth - FOG_DEPTH_COMPARE_21) * FOG_DEPTH_INVDIFF_22);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_23)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[22], stateFogDensity[23], (inFragDepth - FOG_DEPTH_COMPARE_22) * FOG_DEPTH_INVDIFF_23);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_24)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[23], stateFogDensity[24], (inFragDepth - FOG_DEPTH_COMPARE_23) * FOG_DEPTH_INVDIFF_24);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_25)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[24], stateFogDensity[25], (inFragDepth - FOG_DEPTH_COMPARE_24) * FOG_DEPTH_INVDIFF_25);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_26)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[25], stateFogDensity[26], (inFragDepth - FOG_DEPTH_COMPARE_25) * FOG_DEPTH_INVDIFF_26);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_27)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[26], stateFogDensity[27], (inFragDepth - FOG_DEPTH_COMPARE_26) * FOG_DEPTH_INVDIFF_27);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_28)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[27], stateFogDensity[28], (inFragDepth - FOG_DEPTH_COMPARE_27) * FOG_DEPTH_INVDIFF_28);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_29)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[28], stateFogDensity[29], (inFragDepth - FOG_DEPTH_COMPARE_28) * FOG_DEPTH_INVDIFF_29);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_30)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[29], stateFogDensity[30], (inFragDepth - FOG_DEPTH_COMPARE_29) * FOG_DEPTH_INVDIFF_30);\n\
-		}\n\
-		else if (inFragDepth <= FOG_DEPTH_COMPARE_31)\n\
-		{\n\
-			fogMixWeight = mix(stateFogDensity[30], stateFogDensity[31], (inFragDepth - FOG_DEPTH_COMPARE_30) * FOG_DEPTH_INVDIFF_31);\n\
-		}\n\
-		\n\
 		newFoggedColor = mix(inFragColor, (stateEnableFogAlphaOnly) ? vec4(inFragColor.rgb, stateFogColor.a) : stateFogColor, fogMixWeight);\n\
 	}\n\
 	\n\
@@ -1300,7 +1150,7 @@ OpenGLRenderer::OpenGLRenderer()
 	_emulateDepthLEqualPolygonFacing = false;
 	
 	// Init OpenGL rendering states
-	ref = new OGLRenderRef;
+	ref = (OGLRenderRef *)malloc(sizeof(OGLRenderRef));
 	memset(ref, 0, sizeof(OGLRenderRef));
 	
 	_mappedFramebuffer = NULL;
@@ -1324,7 +1174,7 @@ OpenGLRenderer::~OpenGLRenderer()
 	free_aligned(this->_workingTextureUnpackBuffer);
 	
 	// Destroy OpenGL rendering states
-	delete this->ref;
+	free(this->ref);
 	this->ref = NULL;
 }
 
@@ -1814,7 +1664,7 @@ FragmentColor* OpenGLRenderer::GetFramebuffer()
 
 GLsizei OpenGLRenderer::GetLimitedMultisampleSize() const
 {
-	GLsizei deviceMultisamples = this->_deviceInfo.maxSamples;
+	u32 deviceMultisamples = this->_deviceInfo.maxSamples;
 	u32 workingMultisamples = (u32)this->_selectedMultisampleSize;
 	
 	if (workingMultisamples == 1)
@@ -1847,7 +1697,7 @@ GLsizei OpenGLRenderer::GetLimitedMultisampleSize() const
 		deviceMultisamples = workingMultisamples;
 	}
 	
-	return deviceMultisamples;
+	return (GLsizei)deviceMultisamples;
 }
 
 OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing)
@@ -2049,7 +1899,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				glDepthMask(GL_FALSE);
 				
 				// Use the stencil buffer to determine which fragments pass the lower-side tolerance.
-				glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 1);
+				glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 				glDepthFunc(GL_LEQUAL);
 				glStencilFunc(GL_ALWAYS, 0x80, 0x80);
 				glStencilOp(GL_ZERO, GL_ZERO, GL_REPLACE);
@@ -2065,7 +1915,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				}
 				
 				// Use the stencil buffer to determine which fragments pass the higher-side tolerance.
-				glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 2);
+				glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)-DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 				glDepthFunc(GL_GEQUAL);
 				glStencilFunc(GL_EQUAL, 0x80, 0x80);
 				glStencilOp(GL_ZERO, GL_ZERO, GL_KEEP);
@@ -2081,7 +1931,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				}
 				
 				// Set up the actual drawing of the polygon, using the mask within the stencil buffer to determine which fragments should pass.
-				glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+				glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 				glDepthFunc(GL_ALWAYS);
 				
 				// First do the transparent polygon ID check for the translucent fragments.
@@ -2140,7 +1990,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				glUniform1i(OGLRef.uniformTexDrawOpaque[this->_geometryProgramFlags.value], GL_TRUE);
 				
 				// Use the stencil buffer to determine which fragments pass the lower-side tolerance.
-				glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 1);
+				glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 				glDepthFunc(GL_LEQUAL);
 				glStencilFunc(GL_ALWAYS, 0x80, 0x80);
 				glStencilOp(GL_ZERO, GL_ZERO, GL_REPLACE);
@@ -2148,7 +1998,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 				
 				// Use the stencil buffer to determine which fragments pass the higher-side tolerance.
-				glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 2);
+				glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)-DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 				glDepthFunc(GL_GEQUAL);
 				glStencilFunc(GL_EQUAL, 0x80, 0x80);
 				glStencilOp(GL_ZERO, GL_ZERO, GL_KEEP);
@@ -2156,7 +2006,7 @@ Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive
 				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 				
 				// Set up the actual drawing of the polygon, using the mask within the stencil buffer to determine which fragments should pass.
-				glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+				glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 				glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 				glDepthMask(GL_TRUE);
 				glDepthFunc(GL_ALWAYS);
@@ -2298,7 +2148,7 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive,
 		glDepthMask(GL_FALSE);
 		
 		// Use the stencil buffer to determine which fragments pass the lower-side tolerance.
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 1);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 		glDepthFunc(GL_LEQUAL);
 		glStencilFunc(GL_ALWAYS, 0x80, 0x80);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_REPLACE);
@@ -2306,7 +2156,7 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive,
 		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 		
 		// Use the stencil buffer to determine which fragments pass the higher-side tolerance.
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 2);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)-DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 		glDepthFunc(GL_GEQUAL);
 		glStencilFunc(GL_EQUAL, 0x80, 0x80);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_KEEP);
@@ -2314,7 +2164,7 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive,
 		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 		
 		// Set up the actual drawing of the polygon.
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 		glDepthFunc(GL_ALWAYS);
 		
 		// If this is a transparent polygon, then we need to do the transparent polygon ID check.
@@ -3155,17 +3005,31 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
 	
+	glGenTextures(1, &OGLRef.texFogDensityTableID);
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogDensityTable);
+	glBindTexture(GL_TEXTURE_1D, OGLRef.texFogDensityTableID);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_INTENSITY, 32, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+	glActiveTexture(GL_TEXTURE0);
+	
 	OGLGeometryFlags programFlags;
 	programFlags.value = 0;
+	
+	std::stringstream vtxShaderHeader;
+	vtxShaderHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0\n";
+	vtxShaderHeader << "\n";
+	
+	std::string vtxShaderCode  = vtxShaderHeader.str() + std::string(GeometryVtxShader_100);
 	
 	std::stringstream fragShaderHeader;
 	fragShaderHeader << "#define FRAMEBUFFER_SIZE_X " << this->_framebufferWidth  << ".0 \n";
 	fragShaderHeader << "#define FRAMEBUFFER_SIZE_Y " << this->_framebufferHeight << ".0 \n";
 	fragShaderHeader << "\n";
-	fragShaderHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0 \n";
-	fragShaderHeader << "\n";
 	
-	for (size_t flagsValue = 0; flagsValue < 256; flagsValue++, programFlags.value++)
+	for (size_t flagsValue = 0; flagsValue < 128; flagsValue++, programFlags.value++)
 	{
 		std::stringstream shaderFlags;
 		shaderFlags << "#define USE_TEXTURE_SMOOTHING " << ((this->_enableTextureSmoothing) ? 1 : 0) << "\n";
@@ -3176,7 +3040,6 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		shaderFlags << "#define ENABLE_ALPHA_TEST " << ((programFlags.EnableAlphaTest) ? "true\n" : "false\n");
 		shaderFlags << "#define ENABLE_TEXTURE_SAMPLING " << ((programFlags.EnableTextureSampling) ? "true\n" : "false\n");
 		shaderFlags << "#define TOON_SHADING_MODE " << ((programFlags.ToonShadingMode) ? 1 : 0) << "\n";
-		shaderFlags << "#define NEEDS_DEPTH_EQUALS_TEST " << ((programFlags.NeedsDepthEqualsTest) ? 1 : 0) << "\n";
 		shaderFlags << "#define ENABLE_FOG " << ((programFlags.EnableFog) ? 1 : 0) << "\n";
 		shaderFlags << "#define ENABLE_EDGE_MARK " << ((programFlags.EnableEdgeMark) ? 1 : 0) << "\n";
 		shaderFlags << "#define DRAW_MODE_OPAQUE " << ((programFlags.OpaqueDrawMode) ? 1 : 0) << "\n";
@@ -3191,7 +3054,7 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		error = this->ShaderProgramCreate(OGLRef.vertexGeometryShaderID,
 										  OGLRef.fragmentGeometryShaderID[flagsValue],
 										  OGLRef.programGeometryID[flagsValue],
-										  GeometryVtxShader_100,
+										  vtxShaderCode.c_str(),
 										  fragShaderCode.c_str());
 		if (error != OGLERROR_NOERR)
 		{
@@ -3243,7 +3106,7 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		OGLRef.uniformTexDrawOpaque[flagsValue]					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texDrawOpaque");
 		OGLRef.uniformDrawModeDepthEqualsTest[flagsValue]		= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "drawModeDepthEqualsTest");
 		OGLRef.uniformPolyDrawShadow[flagsValue]				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDrawShadow");
-		OGLRef.uniformPolyDepthOffsetMode[flagsValue]			= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDepthOffsetMode");
+		OGLRef.uniformPolyDepthOffset[flagsValue]				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDepthOffset");
 	}
 	
 	return OGLERROR_NOERR;
@@ -3258,7 +3121,7 @@ void OpenGLRenderer_1_2::DestroyGeometryPrograms()
 	
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	for (size_t flagsValue = 0; flagsValue < 256; flagsValue++)
+	for (size_t flagsValue = 0; flagsValue < 128; flagsValue++)
 	{
 		if (OGLRef.programGeometryID[flagsValue] == 0)
 		{
@@ -3276,6 +3139,9 @@ void OpenGLRenderer_1_2::DestroyGeometryPrograms()
 	
 	glDeleteShader(OGLRef.vertexGeometryShaderID);
 	OGLRef.vertexGeometryShaderID = 0;
+	
+	glDeleteTextures(1, &ref->texFogDensityTableID);
+	OGLRef.texFogDensityTableID = 0;
 }
 
 Render3DError OpenGLRenderer_1_2::CreateGeometryZeroDstAlphaProgram(const char *vtxShaderCString, const char *fragShaderCString)
@@ -3438,110 +3304,14 @@ Render3DError OpenGLRenderer_1_2::CreateFogProgram(const OGLFogProgramKey fogPro
 		return error;
 	}
 	
-	const u16 fogOffset = fogProgramKey.offset;
-	const u16 fogShift = (0x0400 >> fogProgramKey.shift);
-	
-	const GLfloat fogDepthCompare[32] = {
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  1)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  2)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  3)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  4)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  5)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  6)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  7)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  8)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift *  9)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 10)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 11)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 12)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 13)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 14)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 15)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 16)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 17)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 18)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 19)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 20)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 21)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 22)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 23)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 24)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 25)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 26)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 27)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 28)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 29)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 30)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 31)) / 32767.0f, 1.0f),
-		std::min<GLfloat>((GLfloat)(fogOffset + (fogShift * 32)) / 32767.0f, 1.0f)
-	};
+	const s32 fogOffset = fogProgramKey.offset;
+	const GLfloat fogOffsetf = (GLfloat)fogOffset / 32767.0f;
+	const s32 fogStep = 0x0400 >> fogProgramKey.shift;
 	
 	std::stringstream fragDepthConstants;
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_0  " << fogDepthCompare[ 0] << (((fogDepthCompare[ 0] == 0.0f) || (fogDepthCompare[ 0] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_1  " << fogDepthCompare[ 1] << (((fogDepthCompare[ 1] == 0.0f) || (fogDepthCompare[ 1] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_2  " << fogDepthCompare[ 2] << (((fogDepthCompare[ 2] == 0.0f) || (fogDepthCompare[ 2] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_3  " << fogDepthCompare[ 3] << (((fogDepthCompare[ 3] == 0.0f) || (fogDepthCompare[ 3] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_4  " << fogDepthCompare[ 4] << (((fogDepthCompare[ 4] == 0.0f) || (fogDepthCompare[ 4] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_5  " << fogDepthCompare[ 5] << (((fogDepthCompare[ 5] == 0.0f) || (fogDepthCompare[ 5] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_6  " << fogDepthCompare[ 6] << (((fogDepthCompare[ 6] == 0.0f) || (fogDepthCompare[ 6] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_7  " << fogDepthCompare[ 7] << (((fogDepthCompare[ 7] == 0.0f) || (fogDepthCompare[ 7] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_8  " << fogDepthCompare[ 8] << (((fogDepthCompare[ 8] == 0.0f) || (fogDepthCompare[ 8] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_9  " << fogDepthCompare[ 9] << (((fogDepthCompare[ 9] == 0.0f) || (fogDepthCompare[ 9] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_10 " << fogDepthCompare[10] << (((fogDepthCompare[10] == 0.0f) || (fogDepthCompare[10] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_11 " << fogDepthCompare[11] << (((fogDepthCompare[11] == 0.0f) || (fogDepthCompare[11] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_12 " << fogDepthCompare[12] << (((fogDepthCompare[12] == 0.0f) || (fogDepthCompare[12] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_13 " << fogDepthCompare[13] << (((fogDepthCompare[13] == 0.0f) || (fogDepthCompare[13] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_14 " << fogDepthCompare[14] << (((fogDepthCompare[14] == 0.0f) || (fogDepthCompare[14] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_15 " << fogDepthCompare[15] << (((fogDepthCompare[15] == 0.0f) || (fogDepthCompare[15] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_16 " << fogDepthCompare[16] << (((fogDepthCompare[16] == 0.0f) || (fogDepthCompare[16] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_17 " << fogDepthCompare[17] << (((fogDepthCompare[17] == 0.0f) || (fogDepthCompare[17] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_18 " << fogDepthCompare[18] << (((fogDepthCompare[18] == 0.0f) || (fogDepthCompare[18] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_19 " << fogDepthCompare[19] << (((fogDepthCompare[19] == 0.0f) || (fogDepthCompare[19] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_20 " << fogDepthCompare[20] << (((fogDepthCompare[20] == 0.0f) || (fogDepthCompare[20] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_21 " << fogDepthCompare[21] << (((fogDepthCompare[21] == 0.0f) || (fogDepthCompare[21] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_22 " << fogDepthCompare[22] << (((fogDepthCompare[22] == 0.0f) || (fogDepthCompare[22] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_23 " << fogDepthCompare[23] << (((fogDepthCompare[23] == 0.0f) || (fogDepthCompare[23] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_24 " << fogDepthCompare[24] << (((fogDepthCompare[24] == 0.0f) || (fogDepthCompare[24] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_25 " << fogDepthCompare[25] << (((fogDepthCompare[25] == 0.0f) || (fogDepthCompare[25] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_26 " << fogDepthCompare[26] << (((fogDepthCompare[26] == 0.0f) || (fogDepthCompare[26] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_27 " << fogDepthCompare[27] << (((fogDepthCompare[27] == 0.0f) || (fogDepthCompare[27] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_28 " << fogDepthCompare[28] << (((fogDepthCompare[28] == 0.0f) || (fogDepthCompare[28] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_29 " << fogDepthCompare[29] << (((fogDepthCompare[29] == 0.0f) || (fogDepthCompare[29] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_30 " << fogDepthCompare[30] << (((fogDepthCompare[30] == 0.0f) || (fogDepthCompare[30] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_COMPARE_31 " << fogDepthCompare[31] << (((fogDepthCompare[31] == 0.0f) || (fogDepthCompare[31] == 1.0f)) ? ".0" : "") << "\n";
-	fragDepthConstants << "\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_0   0.0\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_1  (1.0 / (FOG_DEPTH_COMPARE_1  - FOG_DEPTH_COMPARE_0))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_2  (1.0 / (FOG_DEPTH_COMPARE_2  - FOG_DEPTH_COMPARE_1))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_3  (1.0 / (FOG_DEPTH_COMPARE_3  - FOG_DEPTH_COMPARE_2))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_4  (1.0 / (FOG_DEPTH_COMPARE_4  - FOG_DEPTH_COMPARE_3))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_5  (1.0 / (FOG_DEPTH_COMPARE_5  - FOG_DEPTH_COMPARE_4))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_6  (1.0 / (FOG_DEPTH_COMPARE_6  - FOG_DEPTH_COMPARE_5))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_7  (1.0 / (FOG_DEPTH_COMPARE_7  - FOG_DEPTH_COMPARE_6))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_8  (1.0 / (FOG_DEPTH_COMPARE_8  - FOG_DEPTH_COMPARE_7))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_9  (1.0 / (FOG_DEPTH_COMPARE_9  - FOG_DEPTH_COMPARE_8))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_10 (1.0 / (FOG_DEPTH_COMPARE_10 - FOG_DEPTH_COMPARE_9))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_11 (1.0 / (FOG_DEPTH_COMPARE_11 - FOG_DEPTH_COMPARE_10))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_12 (1.0 / (FOG_DEPTH_COMPARE_12 - FOG_DEPTH_COMPARE_11))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_13 (1.0 / (FOG_DEPTH_COMPARE_13 - FOG_DEPTH_COMPARE_12))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_14 (1.0 / (FOG_DEPTH_COMPARE_14 - FOG_DEPTH_COMPARE_13))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_15 (1.0 / (FOG_DEPTH_COMPARE_15 - FOG_DEPTH_COMPARE_14))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_16 (1.0 / (FOG_DEPTH_COMPARE_16 - FOG_DEPTH_COMPARE_15))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_17 (1.0 / (FOG_DEPTH_COMPARE_17 - FOG_DEPTH_COMPARE_16))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_18 (1.0 / (FOG_DEPTH_COMPARE_18 - FOG_DEPTH_COMPARE_17))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_19 (1.0 / (FOG_DEPTH_COMPARE_19 - FOG_DEPTH_COMPARE_18))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_20 (1.0 / (FOG_DEPTH_COMPARE_20 - FOG_DEPTH_COMPARE_19))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_21 (1.0 / (FOG_DEPTH_COMPARE_21 - FOG_DEPTH_COMPARE_20))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_22 (1.0 / (FOG_DEPTH_COMPARE_22 - FOG_DEPTH_COMPARE_21))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_23 (1.0 / (FOG_DEPTH_COMPARE_23 - FOG_DEPTH_COMPARE_22))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_24 (1.0 / (FOG_DEPTH_COMPARE_24 - FOG_DEPTH_COMPARE_23))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_25 (1.0 / (FOG_DEPTH_COMPARE_25 - FOG_DEPTH_COMPARE_24))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_26 (1.0 / (FOG_DEPTH_COMPARE_26 - FOG_DEPTH_COMPARE_25))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_27 (1.0 / (FOG_DEPTH_COMPARE_27 - FOG_DEPTH_COMPARE_26))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_28 (1.0 / (FOG_DEPTH_COMPARE_28 - FOG_DEPTH_COMPARE_27))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_29 (1.0 / (FOG_DEPTH_COMPARE_29 - FOG_DEPTH_COMPARE_28))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_30 (1.0 / (FOG_DEPTH_COMPARE_30 - FOG_DEPTH_COMPARE_29))\n";
-	fragDepthConstants << "#define FOG_DEPTH_INVDIFF_31 (1.0 / (FOG_DEPTH_COMPARE_31 - FOG_DEPTH_COMPARE_30))\n";
+	fragDepthConstants << "#define FOG_OFFSET " << fogOffset << "\n";
+	fragDepthConstants << "#define FOG_OFFSETF " << fogOffsetf << (((fogOffsetf == 0.0f) || (fogOffsetf == 1.0f)) ? ".0" : "") << "\n";
+	fragDepthConstants << "#define FOG_STEP " << fogStep << "\n";
 	fragDepthConstants << "\n";
 	
 	std::string fragShaderCode = fragDepthConstants.str() + std::string(fragShaderCString);
@@ -3581,16 +3351,17 @@ Render3DError OpenGLRenderer_1_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	glValidateProgram(shaderID.program);
 	glUseProgram(shaderID.program);
 	
-	const GLint uniformTexGColor			= glGetUniformLocation(shaderID.program, "texInFragColor");
-	const GLint uniformTexGDepth			= glGetUniformLocation(shaderID.program, "texInFragDepth");
-	const GLint uniformTexGFog				= glGetUniformLocation(shaderID.program, "texInFogAttributes");
+	const GLint uniformTexGColor          = glGetUniformLocation(shaderID.program, "texInFragColor");
+	const GLint uniformTexGDepth          = glGetUniformLocation(shaderID.program, "texInFragDepth");
+	const GLint uniformTexGFog            = glGetUniformLocation(shaderID.program, "texInFogAttributes");
+	const GLint uniformTexFogDensityTable = glGetUniformLocation(shaderID.program, "texFogDensityTable");
 	glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
 	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGFog, OGLTextureUnitID_FogAttr);
+	glUniform1i(uniformTexFogDensityTable, OGLTextureUnitID_FogDensityTable);
 	
-	OGLRef.uniformStateEnableFogAlphaOnly	= glGetUniformLocation(shaderID.program, "stateEnableFogAlphaOnly");
-	OGLRef.uniformStateFogColor				= glGetUniformLocation(shaderID.program, "stateFogColor");
-	OGLRef.uniformStateFogDensity			= glGetUniformLocation(shaderID.program, "stateFogDensity");
+	OGLRef.uniformStateEnableFogAlphaOnly = glGetUniformLocation(shaderID.program, "stateEnableFogAlphaOnly");
+	OGLRef.uniformStateFogColor           = glGetUniformLocation(shaderID.program, "stateFogColor");
 	
 	return OGLERROR_NOERR;
 }
@@ -4400,7 +4171,6 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	
 	// Generate the clipped polygon list.
 	bool renderNeedsToonTable = false;
-	bool renderNeedsDepthEqualsTest = false;
 	
 	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{
@@ -4486,7 +4256,6 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		}
 		
 		renderNeedsToonTable = (renderNeedsToonTable || (thePoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT)) && this->isShaderSupported;
-		renderNeedsDepthEqualsTest = renderNeedsDepthEqualsTest || (thePoly.attribute.DepthEqualTest_Enable != 0);
 		this->_isPolyFrontFacing[i] = (facing < 0);
 		
 		// Get the texture that is to be attached to this polygon.
@@ -4531,10 +4300,14 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		this->_pendingRenderStates.fogOffset = (GLfloat)(engine.renderState.fogOffset & 0x7FFF) / 32767.0f;
 		this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> engine.renderState.fogShift) / 32767.0f;
 		
+		u8 fogDensityTable[32];
 		for (size_t i = 0; i < 32; i++)
 		{
-			this->_pendingRenderStates.fogDensity[i] = (engine.renderState.fogDensityTable[i] == 127) ? 1.0f : (GLfloat)engine.renderState.fogDensityTable[i] / 128.0f;
+			fogDensityTable[i] = (engine.renderState.fogDensityTable[i] == 127) ? 255 : engine.renderState.fogDensityTable[i] << 1;
 		}
+		
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogDensityTable);
+		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RED, GL_UNSIGNED_BYTE, fogDensityTable);
 	}
 	
 	if (this->_deviceInfo.isEdgeMarkSupported && this->_enableEdgeMark)
@@ -4551,11 +4324,11 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	
 	if (this->isShaderSupported)
 	{
+		this->_geometryProgramFlags.value = 0;
 		this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;
 		this->_geometryProgramFlags.EnableAlphaTest = (engine.renderState.enableAlphaTest) ? 1 : 0;
 		this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
 		this->_geometryProgramFlags.ToonShadingMode = (engine.renderState.shading) ? 1 : 0;
-		this->_geometryProgramFlags.NeedsDepthEqualsTest = (renderNeedsDepthEqualsTest) ? 1 : 0;
 		this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
 		this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
 		this->_geometryProgramFlags.OpaqueDrawMode = 1;
@@ -4778,7 +4551,6 @@ Render3DError OpenGLRenderer_1_2::PostprocessFramebuffer()
 		glUseProgram(shaderID.program);
 		glUniform1i(OGLRef.uniformStateEnableFogAlphaOnly, this->_pendingRenderStates.enableFogAlphaOnly);
 		glUniform4fv(OGLRef.uniformStateFogColor, 1, (const GLfloat *)&this->_pendingRenderStates.fogColor);
-		glUniform1fv(OGLRef.uniformStateFogDensity, 32, (const GLfloat *)this->_pendingRenderStates.fogDensity);
 		
 		glDisable(GL_STENCIL_TEST);
 		glDisable(GL_BLEND);
@@ -5087,7 +4859,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool treatAs
 		glUniform1i(OGLRef.uniformPolyID[this->_geometryProgramFlags.value], thePoly.attribute.PolygonID);
 		glUniform1i(OGLRef.uniformPolyIsWireframe[this->_geometryProgramFlags.value], (thePoly.isWireframe()) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent[this->_geometryProgramFlags.value], (thePoly.attribute.TranslucentDepthWrite_Enable) ? GL_TRUE : GL_FALSE);
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 	}
 	else
 	{
@@ -5226,7 +4998,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 		if (performDepthEqualTest && this->_emulateNDSDepthCalculation && this->isShaderSupported)
 		{
 			// Use the stencil buffer to determine which fragments fail the depth test using the lower-side tolerance.
-			glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 1);
+			glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 			glDepthFunc(GL_LEQUAL);
 			glStencilFunc(GL_ALWAYS, 0x80, 0x80);
 			glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
@@ -5234,14 +5006,14 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 			
 			// Use the stencil buffer to determine which fragments fail the depth test using the higher-side tolerance.
-			glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 2);
+			glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)-DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 			glDepthFunc(GL_GEQUAL);
 			glStencilFunc(GL_NOTEQUAL, 0x80, 0x80);
 			glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
 			glStencilMask(0x80);
 			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 			
-			glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+			glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 		}
 		else
 		{
@@ -5255,7 +5027,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 	if (performDepthEqualTest && this->_emulateNDSDepthCalculation && this->isShaderSupported)
 	{
 		// Use the stencil buffer to determine which fragments pass the lower-side tolerance.
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 1);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 		glDepthFunc(GL_LEQUAL);
 		glStencilFunc(GL_EQUAL, 0x80, 0x80);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_KEEP);
@@ -5263,7 +5035,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 		
 		// Use the stencil buffer to determine which fragments pass the higher-side tolerance.
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 2);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], (float)-DEPTH_EQUALS_TEST_TOLERANCE / 16777215.0f);
 		glDepthFunc(GL_GEQUAL);
 		glStencilFunc(GL_EQUAL, 0x80, 0x80);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_KEEP);
@@ -5271,7 +5043,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 		
 		// Finally, do the polygon ID check.
-		glUniform1i(OGLRef.uniformPolyDepthOffsetMode[this->_geometryProgramFlags.value], 0);
+		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 		glDepthFunc(GL_ALWAYS);
 		glStencilFunc(GL_NOTEQUAL, opaquePolyID, 0x3F);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_KEEP);
@@ -5668,7 +5440,6 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	
 	// Generate the clipped polygon list.
 	bool renderNeedsToonTable = false;
-	bool renderNeedsDepthEqualsTest = false;
 	
 	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{
@@ -5716,7 +5487,6 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 		}
 		
 		renderNeedsToonTable = renderNeedsToonTable || (thePoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT);
-		renderNeedsDepthEqualsTest = renderNeedsDepthEqualsTest || (thePoly.attribute.DepthEqualTest_Enable != 0);
 		this->_isPolyFrontFacing[i] = (facing < 0);
 		
 		// Get the texture that is to be attached to this polygon.
@@ -5758,10 +5528,14 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 		this->_pendingRenderStates.fogOffset = (GLfloat)(engine.renderState.fogOffset & 0x7FFF) / 32767.0f;
 		this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> engine.renderState.fogShift) / 32767.0f;
 		
+		u8 fogDensityTable[32];
 		for (size_t i = 0; i < 32; i++)
 		{
-			this->_pendingRenderStates.fogDensity[i] = (engine.renderState.fogDensityTable[i] == 127) ? 1.0f : (GLfloat)engine.renderState.fogDensityTable[i] / 128.0f;
+			fogDensityTable[i] = (engine.renderState.fogDensityTable[i] == 127) ? 255 : engine.renderState.fogDensityTable[i] << 1;
 		}
+		
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogDensityTable);
+		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RED, GL_UNSIGNED_BYTE, fogDensityTable);
 	}
 	
 	if (this->_deviceInfo.isEdgeMarkSupported && this->_enableEdgeMark)
@@ -5777,11 +5551,11 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	}
 	
 	// Setup render states
+	this->_geometryProgramFlags.value = 0;
 	this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;
 	this->_geometryProgramFlags.EnableAlphaTest = (engine.renderState.enableAlphaTest) ? 1 : 0;
 	this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
 	this->_geometryProgramFlags.ToonShadingMode = (engine.renderState.shading) ? 1 : 0;
-	this->_geometryProgramFlags.NeedsDepthEqualsTest = (renderNeedsDepthEqualsTest) ? 1 : 0;
 	this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
 	this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
 	this->_geometryProgramFlags.OpaqueDrawMode = 1;

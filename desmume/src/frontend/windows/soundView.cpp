@@ -371,7 +371,7 @@ INT_PTR CALLBACK LevelBarProc(HWND hBar, UINT msg, WPARAM wParam, LPARAM lParam)
 		u8 chan = (u8)GetProp(hBar, "chan");
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hBar, &ps);
-		u32 vol =  volBar[chan + chanOfs()];
+		int vol =  volBar[chan + chanOfs()];
 		if (vol > 0)
 		{
 			RECT rc = {0, 0, vol, ps.rcPaint.bottom};

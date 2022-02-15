@@ -833,10 +833,10 @@ static const _OpReg _patchedHiRegs[4] =
 {
   // Operand   |Size|Reserved0|Reserved1| OperandId    | RegisterCode          |
   // ----------+----+---------+---------+--------------+-----------------------+
-  { kOperandReg, 1, {0        ,0       }, kInvalidValue, kX86RegTypeGpbLo | 4 },
-  { kOperandReg, 1, {0        ,0       }, kInvalidValue, kX86RegTypeGpbLo | 5 },
-  { kOperandReg, 1, {0        ,0       }, kInvalidValue, kX86RegTypeGpbLo | 6 },
-  { kOperandReg, 1, {0        ,0       }, kInvalidValue, kX86RegTypeGpbLo | 7 }
+  { kOperandReg, 1, {0        ,0       }, (uint32_t) kInvalidValue, kX86RegTypeGpbLo | 4 },
+  { kOperandReg, 1, {0        ,0       }, (uint32_t) kInvalidValue, kX86RegTypeGpbLo | 5 },
+  { kOperandReg, 1, {0        ,0       }, (uint32_t) kInvalidValue, kX86RegTypeGpbLo | 6 },
+  { kOperandReg, 1, {0        ,0       }, (uint32_t) kInvalidValue, kX86RegTypeGpbLo | 7 }
 };
 
 void X86Assembler::_emitInstruction(uint32_t code)

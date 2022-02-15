@@ -129,20 +129,20 @@ void MakeBitmapPseudoTransparent(HBITMAP hBmp, COLORREF cKeyColor, COLORREF cNew
 // Window class handling
 //-----------------------------------------------------------------------------
 
-vector<string> ReggedWndClasses;
+vector<wstring> ReggedWndClasses;
 
-bool RegWndClass(string name, WNDPROC wndProc, UINT style, int extraSize)
+bool RegWndClass(wstring name, WNDPROC wndProc, UINT style, int extraSize)
 {
 	return RegWndClass(name, wndProc, style, NULL, extraSize);
 }
 
-bool RegWndClass(string name, WNDPROC wndProc, UINT style, HICON icon, int extraSize)
+bool RegWndClass(wstring name, WNDPROC wndProc, UINT style, HICON icon, int extraSize)
 {
 	// If the class is already regged, don't re-reg it
 	if (find(ReggedWndClasses.begin(), ReggedWndClasses.end(), name) != ReggedWndClasses.end())
 		return true;
 
-	WNDCLASSEX wc;
+	WNDCLASSEXW wc;
 
 	wc.cbSize         = sizeof(wc);
 	wc.lpszClassName  = name.c_str();
@@ -157,7 +157,7 @@ bool RegWndClass(string name, WNDPROC wndProc, UINT style, HICON icon, int extra
 	wc.cbWndExtra     = DWLP_USER + extraSize;
 	wc.hIconSm        = 0;
 
-	if (RegisterClassEx(&wc) != 0)
+	if (RegisterClassExW(&wc) != 0)
 	{
 		// If registration succeeded, add the class name into the list
 		ReggedWndClasses.push_back(name);
@@ -167,9 +167,9 @@ bool RegWndClass(string name, WNDPROC wndProc, UINT style, HICON icon, int extra
 		return false;
 }
 
-void UnregWndClass(string name)
+void UnregWndClass(wstring name)
 {
-	vector<string>::iterator it = find(ReggedWndClasses.begin(), ReggedWndClasses.end(), name);
+	vector<wstring>::iterator it = find(ReggedWndClasses.begin(), ReggedWndClasses.end(), name);
 
 	// If the class wasn't regged, we can't unreg it :P
 	if (it == ReggedWndClasses.end())
@@ -178,7 +178,7 @@ void UnregWndClass(string name)
 	// Otherwise unreg the class and remove its name from the list
 	// ONLY if unregging was successful. Unregging will fail if one
 	// or more windows using the class still exist.
-	if (UnregisterClass(name.c_str(), hAppInst) != 0)
+	if (UnregisterClassW(name.c_str(), hAppInst) != 0)
 		ReggedWndClasses.erase(it);
 }
 
@@ -553,6 +553,18 @@ WINCLASS::WINCLASS(LPSTR rclass, HINSTANCE hInst)
 	minHeight = 0;
 }
 
+WINCLASS::WINCLASS(LPWSTR rclass, HINSTANCE hInst)
+{
+	wcscpy(regclassW,rclass);
+
+	hwnd = NULL;
+	hmenu = NULL;
+	hInstance = hInst;
+
+	minWidth = 0;
+	minHeight = 0;
+}
+
 WINCLASS::~WINCLASS()
 {
 }
@@ -563,6 +575,16 @@ bool WINCLASS::create(LPSTR caption, int x, int y, int width, int height, int st
 	
 	hwnd = CreateWindow(regclass, caption, style, x, y, width, height, NULL, menu, hInstance, NULL);
 	
+	if (hwnd != NULL) return true;
+	return false;
+}
+
+bool WINCLASS::createW(LPWSTR caption, int x, int y, int width, int height, int style, HMENU menu)
+{
+	if (hwnd != NULL) return false;
+
+	hwnd = CreateWindowW(regclassW, caption, style, x, y, width, height, NULL, menu, hInstance, NULL);
+
 	if (hwnd != NULL) return true;
 	return false;
 }

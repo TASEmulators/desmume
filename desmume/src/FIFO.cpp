@@ -1,7 +1,7 @@
 /*
 	Copyright 2006 yopyop
 	Copyright 2007 shash
-	Copyright 2007-2015 DeSmuME team
+	Copyright 2007-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,6 +28,26 @@
 #include "registers.h"
 #include "NDSSystem.h"
 #include "gfx3d.h"
+
+#if defined(ENABLE_AVX512_1)
+	#define USEVECTORSIZE_512
+	#define VECTORSIZE 64
+#elif defined(ENABLE_AVX2)
+	#define USEVECTORSIZE_256
+	#define VECTORSIZE 32
+#elif defined(ENABLE_SSE2)
+	#define USEVECTORSIZE_128
+	#define VECTORSIZE 16
+#elif defined(ENABLE_ALTIVEC)
+	#define USEVECTORSIZE_128
+	#define VECTORSIZE 16
+	#include "./utils/colorspacehandler/colorspacehandler_AltiVec.h"
+#endif
+
+#if defined(USEVECTORSIZE_512) || defined(USEVECTORSIZE_256) || defined(USEVECTORSIZE_128)
+	#define USEMANUALVECTORIZATION
+#endif
+
 
 // ========================================================= IPC FIFO
 IPC_FIFO ipc_fifo[2];
@@ -317,23 +337,192 @@ void DISP_FIFOinit()
 	memset(&disp_fifo, 0, sizeof(DISP_FIFO));
 }
 
-void DISP_FIFOsend(u32 val)
+void DISP_FIFOsend_u32(u32 val)
 {
 	//INFO("DISP_FIFO send value 0x%08X (head 0x%06X, tail 0x%06X)\n", val, disp_fifo.head, disp_fifo.tail);
 	disp_fifo.buf[disp_fifo.tail] = val;
+	
 	disp_fifo.tail++;
-	if (disp_fifo.tail > 0x5FFF)
+	if (disp_fifo.tail >= 0x6000)
+	{
 		disp_fifo.tail = 0;
+	}
 }
 
-u32 DISP_FIFOrecv()
+u32 DISP_FIFOrecv_u32()
 {
 	//if (disp_fifo.tail == disp_fifo.head) return (0); // FIFO is empty
 	u32 val = disp_fifo.buf[disp_fifo.head];
+	
 	disp_fifo.head++;
-	if (disp_fifo.head > 0x5FFF)
+	if (disp_fifo.head >= 0x6000)
+	{
 		disp_fifo.head = 0;
-	return (val);
+	}
+
+	return val;
+}
+
+static void _DISP_FIFOrecv_LineAdvance()
+{
+	disp_fifo.head += (GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16)) / sizeof(u32);
+	if (disp_fifo.head >= 0x6000)
+	{
+		disp_fifo.head -= 0x6000;
+	}
+}
+
+void DISP_FIFOrecv_Line16(u16 *__restrict dst)
+{
+#ifdef USEMANUALVECTORIZATION
+	if ( (disp_fifo.head + (GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16)) / sizeof(u32) <= 0x6000) && (disp_fifo.head == (disp_fifo.head & ~(VECTORSIZE - 1))) )
+	{
+#ifdef ENABLE_ALTIVEC
+		// Big-endian systems read the pixels in their correct bit order, but swap 16-bit chunks
+		// within 32-bit lanes, and so we can't use a standard buffer copy function here.
+		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16); i+=sizeof(v128u16))
+		{
+			v128u16 fifoColor = vec_ld(i, disp_fifo.buf + disp_fifo.head);
+			fifoColor = vec_perm( fifoColor, fifoColor, ((v128u8){2,3, 0,1, 6,7, 4,5, 10,11, 8,9, 14,15, 12,13}) );
+			vec_st(fifoColor, i, dst);
+		}
+#else
+		buffer_copy_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16)>(dst, disp_fifo.buf + disp_fifo.head);
+#endif // ENABLE_ALTIVEC
+		
+		_DISP_FIFOrecv_LineAdvance();
+	}
+	else
+#endif // USEMANUALVECTORIZATION
+	{
+		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
+		{
+			const u32 src = DISP_FIFOrecv_u32();
+#ifdef MSB_FIRST
+			((u32 *)dst)[i] = (src >> 16) | (src << 16);
+#else
+			((u32 *)dst)[i] = src;
+#endif
+		}
+	}
+}
+
+#ifdef USEMANUALVECTORIZATION
+
+template <NDSColorFormat OUTPUTFORMAT>
+void _DISP_FIFOrecv_LineOpaque16_vec(u32 *__restrict dst)
+{
+#ifdef ENABLE_ALTIVEC
+	// Big-endian systems read the pixels in their correct bit order, but swap 16-bit chunks
+	// within 32-bit lanes, and so we can't use a standard buffer copy function here.
+	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16); i+=sizeof(v128u16))
+	{
+		v128u16 fifoColor = vec_ld(i, disp_fifo.buf + disp_fifo.head);
+		fifoColor = vec_perm( fifoColor, fifoColor, ((v128u8){2,3, 0,1, 6,7, 4,5, 10,11, 8,9, 14,15, 12,13}) );
+		fifoColor = vec_or(fifoColor, ((v128u16){0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000}));
+		vec_st(fifoColor, i, dst);
+	}
+#else
+	buffer_copy_or_constant_s16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16), false>(dst, disp_fifo.buf + disp_fifo.head, 0x8000);
+#endif // ENABLE_ALTIVEC
+	
+	_DISP_FIFOrecv_LineAdvance();
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
+{
+#ifdef ENABLE_ALTIVEC
+	for (size_t i = 0, d = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16); i+=16, d+=32)
+	{
+		v128u16 fifoColor = vec_ld(0, disp_fifo.buf + disp_fifo.head);
+		
+		disp_fifo.head += (sizeof(v128u16)/sizeof(u32));
+		if (disp_fifo.head >= 0x6000)
+		{
+			disp_fifo.head -= 0x6000;
+		}
+		
+		v128u32 dstLo = ((v128u32){0,0,0,0});
+		v128u32 dstHi = ((v128u32){0,0,0,0});
+		fifoColor = vec_perm( fifoColor, fifoColor, ((v128u8){10,11, 8,9, 14,15, 12,13, 2,3, 0,1, 6,7, 4,5}) );
+		
+		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
+		{
+			ColorspaceConvert555To6665Opaque_AltiVec<false, BESwapDst>(fifoColor, dstLo, dstHi);
+		}
+		else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
+		{
+			ColorspaceConvert555To8888Opaque_AltiVec<false, BESwapDst>(fifoColor, dstLo, dstHi);
+		}
+		
+		vec_st(dstLo, d +  0, dst);
+		vec_st(dstHi, d + 16, dst);
+	}
+#else
+	if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
+	{
+		ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	}
+	else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
+	{
+		ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	}
+	_DISP_FIFOrecv_LineAdvance();
+#endif // ENABLE_ALTIVEC
+}
+
+#endif // USEMANUALVECTORIZATION
+
+template <NDSColorFormat OUTPUTFORMAT>
+void DISP_FIFOrecv_LineOpaque(u32 *__restrict dst)
+{
+#ifdef USEMANUALVECTORIZATION
+	if ( (disp_fifo.head + (GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16)) / sizeof(u32) <= 0x6000) && (disp_fifo.head == (disp_fifo.head & ~(VECTORSIZE - 1))) )
+	{
+		if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+		{
+			_DISP_FIFOrecv_LineOpaque16_vec<OUTPUTFORMAT>(dst);
+		}
+		else
+		{
+			_DISP_FIFOrecv_LineOpaque32_vec<OUTPUTFORMAT>(dst);
+		}
+	}
+	else
+#endif
+	{
+		if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+		{
+			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
+			{
+				const u32 src = DISP_FIFOrecv_u32();
+#ifdef MSB_FIRST
+				dst[i] = (src >> 16) | (src << 16) | 0x80008000;
+#else
+				dst[i] = src | 0x80008000;
+#endif
+			}
+		}
+		else
+		{
+			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i+=2)
+			{
+				const u32 src = DISP_FIFOrecv_u32();
+				
+				if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
+				{
+					dst[i+0] = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>((src >>  0) & 0x7FFF) );
+					dst[i+1] = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>((src >> 16) & 0x7FFF) );
+				}
+				else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
+				{
+					dst[i+0] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>((src >>  0) & 0x7FFF) );
+					dst[i+1] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>((src >> 16) & 0x7FFF) );
+				}
+			}
+		}
+	}
 }
 
 void DISP_FIFOreset()
@@ -341,3 +530,7 @@ void DISP_FIFOreset()
 	disp_fifo.head = 0;
 	disp_fifo.tail = 0;
 }
+
+template void DISP_FIFOrecv_LineOpaque<NDSColorFormat_BGR555_Rev>(u32 *__restrict dst);
+template void DISP_FIFOrecv_LineOpaque<NDSColorFormat_BGR666_Rev>(u32 *__restrict dst);
+template void DISP_FIFOrecv_LineOpaque<NDSColorFormat_BGR888_Rev>(u32 *__restrict dst);

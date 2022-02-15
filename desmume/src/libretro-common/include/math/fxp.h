@@ -42,7 +42,7 @@ static INLINE int64_t fx32_mul(const int32_t a, const int32_t b)
 
 static INLINE int32_t fx32_shiftdown(const int64_t a)
 {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 	return (int32_t)__ll_rshift(a, 12);
 #else
 	return (int32_t)(a >> 12);
@@ -51,7 +51,7 @@ static INLINE int32_t fx32_shiftdown(const int64_t a)
 
 static INLINE int64_t fx32_shiftup(const int32_t a)
 {
-#ifdef _MSC_VER
+   #if defined(_MSC_VER) && !defined(__clang__)
 	return __ll_lshift(a, 12);
 #else
 	return ((int64_t)a) << 12;

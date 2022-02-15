@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2019 DeSmuME team
+	Copyright 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ bool autoMovieBackup = true;
 //version 2 - march 2019, added mic sample
 #define MOVIE_VERSION 2
 
-#ifdef WIN32
+#ifdef WIN32_FRONTEND
 #include "frontend/windows/main.h"
 #endif
 
@@ -335,7 +335,7 @@ void MovieData::installSram(std::string& key, std::string& val) { BinaryDataFrom
 void MovieData::installMicSample(std::string& key, std::string& val)
 {
 	//which sample?
-	int which = atoi(key.c_str()+strlen("micsample"));
+	size_t which = atoi(key.c_str()+strlen("micsample"));
 
 	//make sure we have this many
 	if(micSamples.size()<which+1)
@@ -405,13 +405,13 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	if (sram.size() != 0)
 		fp.fprintf("sram %s\n", BytesToString(&sram[0],sram.size()).c_str());
 
-	for(int i=0;i<256;i++)
+	for (size_t i = 0; i < 256; i++)
 	{
 		//TODO - how do these get put in here
 		if(micSamples.size() > i)
 		{
 			char tmp[32];
-			sprintf(tmp,"micsample%d",i);
+			sprintf(tmp,"micsample%d", (int)i);
 			fp.fprintf("%s %s\n",tmp, BytesToString(&micSamples[i][0],micSamples[i].size()).c_str());
 		}
 	}
@@ -730,7 +730,7 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	else
 		MMU_new.backupDevice.load_movie_blank();
 
-	#ifdef _WIN32
+	#ifdef WIN32_FRONTEND
 	::micSamples = currMovieData.micSamples;
 	#endif
 
@@ -1115,7 +1115,7 @@ bool mov_loadstate(EMUFILE &fp, int size)
 		if(tempMovieData.guid != currMovieData.guid)
 		{
 			//mbg 8/18/08 - this code  can be used to turn the error message into an OK/CANCEL
-			#if defined(WIN32)
+			#if defined(WIN32_FRONTEND)
 				std::string msg = "There is a mismatch between savestate's movie and current movie.\ncurrent: " + currMovieData.guid.toString() + "\nsavestate: " + tempMovieData.guid.toString() + "\n\nThis means that you have loaded a savestate belonging to a different movie than the one you are playing now.\n\nContinue loading this savestate anyway?";
 				int result = MessageBox(MainWindow->getHWnd(),msg.c_str(),"Error loading savestate",MB_OKCANCEL);
 				if(result == IDCANCEL)

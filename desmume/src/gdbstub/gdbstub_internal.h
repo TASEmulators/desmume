@@ -171,8 +171,14 @@ struct gdb_stub_state {
   /** the free breakpoint descriptor list */
   struct breakpoint_gdb *free_breakpoints;
 
-  /** the control pipe (or socket) to the gdb stub */
+  /** the control pipe (or socket) to the gdb stub. this allows to send commands to the stub. */
   SOCKET_TYPE ctl_pipe[2];
+
+  /** this pipe allows the stub to communicate to the controlling program. */
+  SOCKET_TYPE info_pipe[2];
+
+  /** whether above pipe is enabled */
+  int info_pipe_enabled;
 };
 
 

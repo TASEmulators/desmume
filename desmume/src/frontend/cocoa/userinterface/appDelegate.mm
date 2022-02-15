@@ -243,6 +243,13 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
+#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
+	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6)
+	{
+		pthread_setname_np("App Main Thread");
+	}
+#endif
+	
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	
 	// Determine if the app was run for the first time.
@@ -385,6 +392,7 @@
 	[[NSUserDefaults standardUserDefaults] setDouble:[emuControl lastSetSpeedScalar] forKey:@"CoreControl_SpeedScalar"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isSpeedLimitEnabled] forKey:@"CoreControl_EnableSpeedLimit"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isFrameSkipEnabled] forKey:@"CoreControl_EnableAutoFrameSkip"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore framesToSkipSetting] forKey:@"CoreControl_FramesToSkipSetting"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isCheatingEnabled] forKey:@"CoreControl_EnableCheats"];
 	
 #ifdef GDB_STUB
@@ -512,6 +520,7 @@
 	[emuControl changeCoreSpeedWithDouble:[[NSUserDefaults standardUserDefaults] doubleForKey:@"CoreControl_SpeedScalar"]];
 	[cdsCore setIsSpeedLimitEnabled:[[NSUserDefaults standardUserDefaults] boolForKey:@"CoreControl_EnableSpeedLimit"]];
 	[cdsCore setIsFrameSkipEnabled:[[NSUserDefaults standardUserDefaults] boolForKey:@"CoreControl_EnableAutoFrameSkip"]];
+	[cdsCore setFramesToSkipSetting:[[NSUserDefaults standardUserDefaults] integerForKey:@"CoreControl_FramesToSkipSetting"]];
 	[cdsCore setIsCheatingEnabled:[[NSUserDefaults standardUserDefaults] boolForKey:@"CoreControl_EnableCheats"]];
 	
 	// Set up the firmware per user preferences.

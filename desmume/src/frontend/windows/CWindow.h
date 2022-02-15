@@ -84,14 +84,14 @@ void MakeBitmapPseudoTransparent(HBITMAP hBmp, COLORREF cKeyColor, COLORREF cNew
 // Incase the class was already registered, the function
 // just does nothing and returns true.
 // Returns false if registration failed.
-bool RegWndClass(string name, WNDPROC wndProc, UINT style, int extraSize = 0);
-bool RegWndClass(string name, WNDPROC wndProc, UINT style, HICON icon, int extraSize = 0);
+bool RegWndClass(wstring wname, WNDPROC wndProc, UINT style, int extraSize = 0);
+bool RegWndClass(wstring wname, WNDPROC wndProc, UINT style, HICON icon, int extraSize = 0);
 
 // UnregWndClass()
 // Unregisters a previously registered window class.
 // This function will silently fail if one or more windows
 // using the class still exist.
-void UnregWndClass(string name);
+void UnregWndClass(wstring name);
 
 //-----------------------------------------------------------------------------
 // Base toolwindow class
@@ -228,13 +228,17 @@ private:
 	HMENU		hmenu;
 	HINSTANCE	hInstance;
 	char		regclass[256];
+	wchar_t		regclassW[256];
 	int minWidth, minHeight;
 public:
 	WINCLASS(LPSTR rclass, HINSTANCE hInst);
+	WINCLASS(LPWSTR rclass, HINSTANCE hInst);
 	~WINCLASS();
 
 	bool create(LPSTR caption, int x, int y, int width, int height, int style, 
 					HMENU menu);
+	bool createW(LPWSTR caption, int x, int y, int width, int height, int style, 
+		HMENU menu);
 	bool createEx(LPSTR caption, int x, int y, int width, int height, int style, int styleEx,
 					HMENU menu);
 

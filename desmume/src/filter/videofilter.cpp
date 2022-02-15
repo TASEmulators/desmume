@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011-2012 Roger Manuel
-	Copyright (C) 2013-2019 DeSmuME team
+	Copyright (C) 2013-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -189,7 +189,7 @@ void VideoFilter::__InstanceInit(size_t srcWidth, size_t srcHeight, VideoFilterT
 		
 		__vfThread[i].task = new Task;
 		char name[16];
-		snprintf(name, 16, "video filter %d", i);
+		snprintf(name, 16, "video filter %d", (int)i);
 		__vfThread[i].task->start(false, 0, name);
 	}
 	

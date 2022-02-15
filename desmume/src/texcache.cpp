@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ using std::max;
 	#define DO_DEBUG_DUMP_TEXTURE
 #endif
 
-#define CONVERT(color) ((TEXCACHEFORMAT == TexFormat_32bpp)?(COLOR555TO8888_OPAQUE(color)):COLOR555TO6665_OPAQUE(color))
+#define CONVERT(color) ( (TEXCACHEFORMAT == TexFormat_32bpp) ? ColorspaceConvert555To8888Opaque<false>(color) : ColorspaceConvert555To6665Opaque<false>(color) )
 
 //This class represents a number of regions of memory which should be viewed as contiguous
 class MemSpan
@@ -888,16 +888,16 @@ void NDSTextureUnpackI2(const size_t srcSize, const u8 *__restrict srcData, cons
 			u8 idx;
 			
 			idx =  *srcData       & 0x03;
-			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx] & 0x7FFF);
+			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
 			
 			idx = (*srcData >> 2) & 0x03;
-			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx] & 0x7FFF);
+			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
 			
 			idx = (*srcData >> 4) & 0x03;
-			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx] & 0x7FFF);
+			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
 			
 			idx = (*srcData >> 6) & 0x03;
-			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx] & 0x7FFF);
+			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
 		}
 #endif
 	}
@@ -939,10 +939,10 @@ void NDSTextureUnpackI2(const size_t srcSize, const u8 *__restrict srcData, cons
 #else
 		for (size_t i = 0; i < srcSize; i++, srcData++)
 		{
-			*dstBuffer++ = CONVERT(srcPal[ *srcData       & 0x03] & 0x7FFF);
-			*dstBuffer++ = CONVERT(srcPal[(*srcData >> 2) & 0x03] & 0x7FFF);
-			*dstBuffer++ = CONVERT(srcPal[(*srcData >> 4) & 0x03] & 0x7FFF);
-			*dstBuffer++ = CONVERT(srcPal[(*srcData >> 6) & 0x03] & 0x7FFF);
+			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[ *srcData       & 0x03] & 0x7FFF) );
+			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[(*srcData >> 2) & 0x03] & 0x7FFF) );
+			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[(*srcData >> 4) & 0x03] & 0x7FFF) );
+			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[(*srcData >> 6) & 0x03] & 0x7FFF) );
 		}
 #endif
 	}
@@ -1009,10 +1009,10 @@ void NDSTextureUnpackI4(const size_t srcSize, const u8 *__restrict srcData, cons
 			u8 idx;
 			
 			idx = *srcData & 0x0F;
-			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx] & 0x7FFF);
+			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
 			
 			idx = *srcData >> 4;
-			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx] & 0x7FFF);
+			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
 		}
 #endif
 	}
@@ -1059,8 +1059,8 @@ void NDSTextureUnpackI4(const size_t srcSize, const u8 *__restrict srcData, cons
 #else
 		for (size_t i = 0; i < srcSize; i++, srcData++)
 		{
-			*dstBuffer++ = CONVERT(srcPal[*srcData & 0x0F] & 0x7FFF);
-			*dstBuffer++ = CONVERT(srcPal[*srcData >> 4] & 0x7FFF);
+			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[*srcData & 0x0F] & 0x7FFF) );
+			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[*srcData >> 4] & 0x7FFF) );
 		}
 #endif
 	}
@@ -1074,14 +1074,14 @@ void NDSTextureUnpackI8(const size_t srcSize, const u8 *__restrict srcData, cons
 		for (size_t i = 0; i < srcSize; i++, srcData++)
 		{
 			const u8 idx = *srcData;
-			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx] & 0x7FFF);
+			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
 		}
 	}
 	else
 	{
 		for (size_t i = 0; i < srcSize; i++, srcData++)
 		{
-			*dstBuffer++ = CONVERT(srcPal[*srcData] & 0x7FFF);
+			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[*srcData] & 0x7FFF) );
 		}
 	}
 }
@@ -1093,7 +1093,7 @@ void NDSTextureUnpackA3I5(const size_t srcSize, const u8 *__restrict srcData, co
 	{
 		const u16 c = srcPal[*srcData & 0x1F] & 0x7FFF;
 		const u8 alpha = *srcData >> 5;
-		*dstBuffer++ = (TEXCACHEFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, material_3bit_to_5bit[alpha]) : COLOR555TO8888(c, material_3bit_to_8bit[alpha]);
+		*dstBuffer++ = LE_TO_LOCAL_32( (TEXCACHEFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, material_3bit_to_5bit[alpha]) : COLOR555TO8888(c, material_3bit_to_8bit[alpha]) );
 	}
 }
 
@@ -1145,7 +1145,7 @@ void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, co
 	{
 		const u16 c = srcPal[*srcData & 0x07] & 0x7FFF;
 		const u8 alpha = (*srcData >> 3);
-		*dstBuffer++ = (TEXCACHEFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, alpha) : COLOR555TO8888(c, material_5bit_to_8bit[alpha]);
+		*dstBuffer++ = LE_TO_LOCAL_32( (TEXCACHEFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, alpha) : COLOR555TO8888(c, material_5bit_to_8bit[alpha]) );
 	}
 #endif
 }
@@ -1156,8 +1156,8 @@ template <TextureStoreUnpackFormat TEXCACHEFORMAT>
 void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, const u16 *__restrict srcIndex, const u32 palAddress, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer)
 {
 	const u32 limit = srcSize * sizeof(u32);
-	const u16 xTmpSize = sizeX >> 2;
-	const u16 yTmpSize = sizeY >> 2;
+	const u32 xTmpSize = sizeX >> 2;
+	const u32 yTmpSize = sizeY >> 2;
 	
 	//this is flagged whenever a 4x4 overruns its slot.
 	//i am guessing we just generate black in that case
@@ -1165,8 +1165,13 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 	
 	for (size_t y = 0, d = 0; y < yTmpSize; y++)
 	{
-		u32 tmpPos[4]={(y<<2)*sizeX,((y<<2)+1)*sizeX,
-			((y<<2)+2)*sizeX,((y<<2)+3)*sizeX};
+		size_t tmpPos[4] = {
+			((y<<2)+0) * sizeX,
+			((y<<2)+1) * sizeX,
+			((y<<2)+2) * sizeX,
+			((y<<2)+3) * sizeX
+		};
+		
 		for (size_t x = 0; x < xTmpSize; x++, d++)
 		{
 			if (d >= limit)
@@ -1174,9 +1179,9 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 			
 			if (dead)
 			{
-				for (int sy = 0; sy < 4; sy++)
+				for (size_t sy = 0; sy < 4; sy++)
 				{
-					const u32 currentPos = (x<<2) + tmpPos[sy];
+					const size_t currentPos = (x<<2) + tmpPos[sy];
 					dstBuffer[currentPos] = dstBuffer[currentPos+1] = dstBuffer[currentPos+2] = dstBuffer[currentPos+3] = 0;
 				}
 				continue;
@@ -1188,13 +1193,13 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 			const u8  mode			= pal1>>14;
 			CACHE_ALIGN u32 tmp_col[4];
 			
-			tmp_col[0] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset) );
-			tmp_col[1] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset+1) );
+			tmp_col[0] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(PAL4X4(pal1offset+0)) );
+			tmp_col[1] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(PAL4X4(pal1offset+1)) );
 			
 			switch (mode)
 			{
 				case 0:
-					tmp_col[2] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset+2) );
+					tmp_col[2] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(PAL4X4(pal1offset+2)) );
 					tmp_col[3] = 0x00000000;
 					break;
 					
@@ -1214,8 +1219,8 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 					break;
 					
 				case 2:
-					tmp_col[2] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset+2) );
-					tmp_col[3] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset+3) );
+					tmp_col[2] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(PAL4X4(pal1offset+2)) );
+					tmp_col[3] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(PAL4X4(pal1offset+3)) );
 					break;
 					
 				case 3:
@@ -1243,8 +1248,8 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 					                  ( ((g0*3 + g1*5)>>6) <<  5 ) |
 					                  ( ((b0*3 + b1*5)>>6) << 10 );
 					
-					tmp_col[2] = COLOR555TO8888_OPAQUE(tmp1);
-					tmp_col[3] = COLOR555TO8888_OPAQUE(tmp2);
+					tmp_col[2] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(tmp1) );
+					tmp_col[3] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(tmp2) );
 					break;
 				}
 					
@@ -1268,7 +1273,7 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 			for (size_t sy = 0; sy < 4; sy++)
 			{
 				// Texture offset
-				const u32 currentPos = (x<<2) + tmpPos[sy];
+				const size_t currentPos = (x<<2) + tmpPos[sy];
 				const u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
 				
 				dstBuffer[currentPos  ] = tmp_col[ currRow    &3];
@@ -1314,7 +1319,7 @@ void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u16 *__restrict src
 	for (; i < pixCount; i++, srcData++)
 	{
 		const u16 c = LOCAL_TO_LE_16(*srcData);
-		*dstBuffer++ = (c & 0x8000) ? CONVERT(c & 0x7FFF) : 0;
+		*dstBuffer++ = (c & 0x8000) ? LE_TO_LOCAL_32( CONVERT(c & 0x7FFF) ) : 0;
 	}
 }
 

@@ -1,6 +1,6 @@
 /*	
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2019 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@
 #include "driver.h"
 #include "emufile.h"
 #include "matrix.h"
-#include "GPU.h"
+#include "GPU_Operations.h"
 #include "MMU.h"
 #include "render3D.h"
 #include "mem.h"
@@ -323,7 +323,7 @@ static u32 clCmd = 0;
 static u32 clInd = 0;
 
 static u32 clInd2 = 0;
-BOOL isSwapBuffers = FALSE;
+u32 isSwapBuffers = FALSE;
 
 static u32 BTind = 0;
 static u32 PTind = 0;
@@ -417,7 +417,7 @@ static void makeTables()
 		
 		// Is GBATEK actually correct here? Let's try using a simplified formula and see if it's
 		// more accurate.
-		dsDepthExtend_15bit_to_24bit[i] = LE_TO_LOCAL_32( (i*0x0200) + 0x01FF );
+		dsDepthExtend_15bit_to_24bit[i] = (i * 0x0200) + 0x01FF;
 	}
 
 	for (size_t i = 0; i < 65536; i++)
@@ -538,7 +538,7 @@ void gfx3d_init()
 	// in this case.
 	if (polylists == NULL)
 	{
-		polylists = (POLYLIST *)malloc(sizeof(POLYLIST)*2);
+		polylists = (POLYLIST *)malloc_alignedPage(sizeof(POLYLIST) * 2);
 		polylist = &polylists[0];
 	}
 	
@@ -565,7 +565,7 @@ void gfx3d_deinit()
 {
 	Render3D_DeInit();
 	
-	free(polylists);
+	free_aligned(polylists);
 	polylists = NULL;
 	polylist = NULL;
 	
@@ -982,7 +982,7 @@ static void gfx3d_glLightDirection_cache(const size_t index)
 	MatrixMultVec3x3(mtxCurrent[MATRIXMODE_POSITION_VECTOR], cacheLightDirection[index]);
 
 	//Calculate the half angle vector
-	s32 lineOfSight[4] = {0, 0, (-1)<<12, 0};
+	s32 lineOfSight[4] = {0, 0, (s32)0xFFFFF000, 0};
 	for (size_t i = 0; i < 4; i++)
 	{
 		cacheHalfVector[index][i] = ((cacheLightDirection[index][i] + lineOfSight[i]));
@@ -2416,7 +2416,7 @@ void gfx3d_GenerateRenderLists(const ClipperMode clippingMode)
 		verty = 1.0f-(verty+vertw)/(2*vertw);
 		poly.miny = poly.maxy = verty;
 		
-		for (size_t j = 1; j < poly.type; j++)
+		for (size_t j = 1; j < (size_t)poly.type; j++)
 		{
 			verty = gfx3d.vertList[poly.vertIndexes[j]].y;
 			vertw = (gfx3d.vertList[poly.vertIndexes[j]].w != 0.0f) ? gfx3d.vertList[poly.vertIndexes[j]].w : 0.00000001f;
@@ -2844,7 +2844,7 @@ void gfx3d_PrepareSaveStateBufferWrite()
 		for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 		{
 			const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(l);
-			CopyLineReduceHinted<0xFFFF, false, true, 4>(lineInfo, src, dst);
+			CopyLineReduceHinted<0x3FFF, false, true, 4>(lineInfo, src, dst);
 			src += lineInfo.pixelCount;
 			dst += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 		}
@@ -3067,7 +3067,7 @@ void gfx3d_FinishLoadStateBufferRead()
 				for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 				{
 					const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(l);
-					CopyLineExpandHinted<0xFFFF, true, false, true, 4>(lineInfo, src, dst);
+					CopyLineExpandHinted<0x3FFF, true, false, true, 4>(lineInfo, src, dst);
 					src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 					dst += lineInfo.pixelCount;
 				}
@@ -3093,8 +3093,12 @@ void gfx3d_parseCurrentDISP3DCNT()
 	gfx3d.state.enableEdgeMarking	= (DISP3DCNT.EnableEdgeMarking != 0);
 	gfx3d.state.enableFogAlphaOnly	= (DISP3DCNT.FogOnlyAlpha != 0);
 	gfx3d.state.enableFog			= (DISP3DCNT.EnableFog != 0);
-	gfx3d.state.fogShift			=  DISP3DCNT.FogShiftSHR;
 	gfx3d.state.enableClearImage	= (DISP3DCNT.RearPlaneMode != 0);
+	
+	// According to GBATEK, values greater than 10 force FogStep (0x400 >> FogShiftSHR) to become 0.
+	// So set FogShiftSHR to 11 in this case so that calculations using (0x400 >> FogShiftSHR) will
+	// equal 0.
+	gfx3d.state.fogShift			= (DISP3DCNT.FogShiftSHR <= 10) ? DISP3DCNT.FogShiftSHR : 11;
 }
 
 void ParseReg_DISP3DCNT()
@@ -3355,7 +3359,7 @@ bool GFX3D_Clipper::ClipPoly(const u16 polyIndex, const POLY &poly, const VERT *
 	CLIPLOG("==Begin poly==\n");
 
 	PolygonType outType;
-	const PolygonType type = poly.type;
+	const PolygonType polyType = poly.type;
 	numScratchClipVerts = 0;
 	
 	switch (CLIPPERMODE)
@@ -3363,7 +3367,7 @@ bool GFX3D_Clipper::ClipPoly(const u16 polyIndex, const POLY &poly, const VERT *
 		case ClipperMode_Full:
 		{
 			clipper1.init(this->_clippedPolyList[this->_clippedPolyCounter].clipVerts);
-			for (size_t i = 0; i < type; i++)
+			for (size_t i = 0; i < (size_t)polyType; i++)
 				clipper1.clipVert(verts[i]);
 			
 			outType = (PolygonType)clipper1.finish();
@@ -3373,7 +3377,7 @@ bool GFX3D_Clipper::ClipPoly(const u16 polyIndex, const POLY &poly, const VERT *
 		case ClipperMode_FullColorInterpolate:
 		{
 			clipper1i.init(this->_clippedPolyList[this->_clippedPolyCounter].clipVerts);
-			for (size_t i = 0; i < type; i++)
+			for (size_t i = 0; i < (size_t)polyType; i++)
 				clipper1i.clipVert(verts[i]);
 			
 			outType = (PolygonType)clipper1i.finish();
@@ -3383,7 +3387,7 @@ bool GFX3D_Clipper::ClipPoly(const u16 polyIndex, const POLY &poly, const VERT *
 		case ClipperMode_DetermineClipOnly:
 		{
 			clipper1d.init(this->_clippedPolyList[this->_clippedPolyCounter].clipVerts);
-			for (size_t i = 0; i < type; i++)
+			for (size_t i = 0; i < (size_t)polyType; i++)
 				clipper1d.clipVert(verts[i]);
 			
 			outType = (PolygonType)clipper1d.finish();

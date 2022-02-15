@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="19529" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="19529"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -288,6 +288,104 @@
                                 <connections>
                                     <action selector="toggleAutoFrameSkip:" target="6651" id="6716"/>
                                 </connections>
+                            </menuItem>
+                            <menuItem title="Frames To Skip Setting" id="12182">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Frames To Skip Setting" id="12183">
+                                    <items>
+                                        <menuItem title="Automatic" id="12184">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12200"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="12186"/>
+                                        <menuItem title="1" tag="1" id="12185">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12201"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="2" tag="2" id="12187">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12202"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="3" tag="3" id="12188">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12203"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="4" tag="4" id="12189">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12204"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="5" tag="5" id="12190">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12205"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="6" tag="6" id="12191">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12206"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="7" tag="7" id="12192">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12207"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="8" tag="8" id="12193">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12208"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="9" tag="9" id="12194">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12209"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="11" tag="11" id="12195">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12210"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="14" tag="14" id="12196">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12211"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="19" tag="19" id="12197">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12212"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="29" tag="29" id="12198">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12213"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="59" tag="59" id="12199">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="framesToSkipSetting:" target="6651" id="12214"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="3752"/>
                             <menuItem title="Show Cheat Manager..." id="2483">
@@ -1168,7 +1266,7 @@
                     </menu>
                 </menuItem>
             </items>
-            <point key="canvasLocation" x="-148" y="312"/>
+            <point key="canvasLocation" x="-56" y="120"/>
         </menu>
         <customObject id="494" userLabel="App Delegate" customClass="AppDelegate">
             <connections>
@@ -1251,7 +1349,7 @@
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="nai-0h-Zna">
                                                 <rect key="frame" x="0.0" y="0.0" width="505" height="244"/>
-                                                <autoresizingMask key="autoresizingMask"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <textView editable="NO" drawsBackground="NO" importsGraphics="NO" verticallyResizable="YES" findStyle="panel" spellingCorrection="YES" id="5673">
                                                         <rect key="frame" x="0.0" y="0.0" width="505" height="244"/>
@@ -1294,7 +1392,7 @@
                                         <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="5675">
                                             <rect key="frame" x="-3" y="-3" width="505" height="244"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                                            <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="frM-bQ-xJu">
+                                            <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="p9f-et-BnI">
                                                 <rect key="frame" x="0.0" y="0.0" width="505" height="244"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
@@ -1384,7 +1482,7 @@
                                         <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="5685">
                                             <rect key="frame" x="-3" y="-3" width="505" height="244"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                                            <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="E8B-dT-EXf">
+                                            <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="vfP-7u-xKN">
                                                 <rect key="frame" x="0.0" y="0.0" width="505" height="244"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <subviews>
@@ -1449,7 +1547,7 @@
                     </textField>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-148" y="547"/>
+            <point key="canvasLocation" x="139" y="446"/>
         </window>
         <window title="DeSmuME Preferences" allowsToolTipsWhenApplicationIsInactive="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="AppPreferencesWindow" animationBehavior="default" toolbarStyle="preference" id="627">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES"/>
@@ -1502,7 +1600,7 @@
             <connections>
                 <outlet property="delegate" destination="1682" id="2025"/>
             </connections>
-            <point key="canvasLocation" x="-148" y="384"/>
+            <point key="canvasLocation" x="112" y="848"/>
         </window>
         <customView id="1298" userLabel="General Preferences View">
             <rect key="frame" x="0.0" y="0.0" width="520" height="422"/>
@@ -1511,7 +1609,7 @@
                 <box autoresizesSubviews="NO" fixedFrame="YES" borderType="line" title="General Behavior" translatesAutoresizingMaskIntoConstraints="NO" id="1538">
                     <rect key="frame" x="17" y="277" width="486" height="125"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <view key="contentView" id="PbU-Rd-BHj">
+                    <view key="contentView" id="B7M-FB-SwY">
                         <rect key="frame" x="3" y="3" width="480" height="107"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
@@ -1681,7 +1779,7 @@
                 <box autoresizesSubviews="NO" fixedFrame="YES" borderType="line" title="ADVANsCEne Database" translatesAutoresizingMaskIntoConstraints="NO" id="5171">
                     <rect key="frame" x="17" y="16" width="486" height="97"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <view key="contentView" id="h9L-a3-yEQ">
+                    <view key="contentView" id="h5E-0N-bN4">
                         <rect key="frame" x="3" y="3" width="480" height="79"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
@@ -1752,7 +1850,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                     <clipView key="contentView" id="enq-CQ-T6a">
                         <rect key="frame" x="1" y="1" width="640" height="410"/>
-                        <autoresizingMask key="autoresizingMask"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="none" alternatingRowBackgroundColors="YES" columnReordering="NO" multipleSelection="NO" typeSelect="NO" autosaveName="InputPreferences" headerView="7129" indentationPerLevel="13" autosaveExpandedItems="YES" indentationMarkerFollowsCell="NO" autoresizesOutlineColumn="YES" outlineTableColumn="7137" id="7130">
                                 <rect key="frame" x="0.0" y="0.0" width="640" height="382"/>
@@ -1954,7 +2052,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                 <outlet property="prefWindow" destination="627" id="7111"/>
                 <outlet property="turboPatternControl" destination="10397" id="10416"/>
             </connections>
-            <point key="canvasLocation" x="-148" y="549"/>
+            <point key="canvasLocation" x="188" y="-204"/>
         </customView>
         <customView id="1584" userLabel="Display Preferences View">
             <rect key="frame" x="0.0" y="0.0" width="489" height="420"/>
@@ -2963,7 +3061,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                 <box autoresizesSubviews="NO" fixedFrame="YES" borderType="line" title="SPU Interpolation Method" translatesAutoresizingMaskIntoConstraints="NO" id="2327">
                     <rect key="frame" x="17" y="107" width="366" height="98"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <view key="contentView" id="t22-iL-Fv5">
+                    <view key="contentView" id="pY5-Hd-fjR">
                         <rect key="frame" x="3" y="3" width="360" height="80"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
@@ -3193,7 +3291,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                                     <box autoresizesSubviews="NO" fixedFrame="YES" borderType="line" title="CPU Emulation Engine" translatesAutoresizingMaskIntoConstraints="NO" id="6126">
                                         <rect key="frame" x="6" y="219" width="496" height="78"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                        <view key="contentView" id="O2P-Ok-8PY">
+                                        <view key="contentView" id="hKR-Th-T8u">
                                             <rect key="frame" x="3" y="3" width="490" height="60"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
@@ -3344,7 +3442,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                                     <box autoresizesSubviews="NO" fixedFrame="YES" borderType="line" title="ROM Save Configuration" translatesAutoresizingMaskIntoConstraints="NO" id="5186">
                                         <rect key="frame" x="6" y="81" width="496" height="54"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                        <view key="contentView" id="f2j-Y3-Unb">
+                                        <view key="contentView" id="3hL-Gk-NtE">
                                             <rect key="frame" x="3" y="3" width="490" height="36"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
@@ -3411,7 +3509,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                                     <box autoresizesSubviews="NO" borderType="line" title="BIOS Configuration" translatesAutoresizingMaskIntoConstraints="NO" id="2342">
                                         <rect key="frame" x="6" y="184" width="496" height="159"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                        <view key="contentView" id="y0Q-fc-ge2">
+                                        <view key="contentView" id="jNt-T9-QRJ">
                                             <rect key="frame" x="3" y="3" width="490" height="141"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
@@ -3738,7 +3836,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                                     <box autoresizesSubviews="NO" borderType="line" title="SoftRasterizer Options" translatesAutoresizingMaskIntoConstraints="NO" id="3798">
                                         <rect key="frame" x="6" y="104" width="496" height="122"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                        <view key="contentView" id="r98-Wa-5Aa">
+                                        <view key="contentView" id="n3y-09-5fa">
                                             <rect key="frame" x="3" y="3" width="490" height="104"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
@@ -3867,7 +3965,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                                     <box autoresizesSubviews="NO" borderType="line" title="General Settings" translatesAutoresizingMaskIntoConstraints="NO" id="3899">
                                         <rect key="frame" x="6" y="230" width="496" height="133"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                        <view key="contentView" id="Rv2-ze-ITm">
+                                        <view key="contentView" id="rSA-ZQ-cGx">
                                             <rect key="frame" x="3" y="3" width="490" height="115"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
@@ -4024,7 +4122,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                                     <box autoresizesSubviews="NO" borderType="line" title="OpenGL Options" translatesAutoresizingMaskIntoConstraints="NO" id="6622">
                                         <rect key="frame" x="6" y="5" width="496" height="95"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                        <view key="contentView" id="LAu-hA-kfA">
+                                        <view key="contentView" id="fLR-e0-BkG">
                                             <rect key="frame" x="3" y="3" width="490" height="77"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
@@ -4184,7 +4282,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                     <scrollView fixedFrame="YES" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="7517">
                         <rect key="frame" x="-1" y="60" width="622" height="322"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <clipView key="contentView" id="TE4-ST-yVf">
+                        <clipView key="contentView" id="sz0-OR-gPL">
                             <rect key="frame" x="1" y="1" width="620" height="320"/>
                             <autoresizingMask key="autoresizingMask"/>
                             <subviews>
@@ -4254,7 +4352,7 @@ http://www.advanscene.com/offline/datas/ADVANsCEne_RToolDS.zip</string>
                             <rect key="frame" x="584" y="17" width="15" height="102"/>
                             <autoresizingMask key="autoresizingMask"/>
                         </scroller>
-                        <tableHeaderView key="headerView" wantsLayer="YES" id="7518">
+                        <tableHeaderView key="headerView" id="7518">
                             <rect key="frame" x="0.0" y="0.0" width="620" height="28"/>
                             <autoresizingMask key="autoresizingMask"/>
                         </tableHeaderView>
@@ -4360,19 +4458,19 @@ DQ
                     </button>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-148" y="111"/>
         </window>
         <window title="Input Profile Rename" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="7707">
             <windowStyleMask key="styleMask" titled="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="235" y="444" width="452" height="115"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" misplaced="YES" id="7708">
+            <view key="contentView" id="7708">
                 <rect key="frame" x="0.0" y="0.0" width="452" height="115"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7715">
-                        <rect key="frame" x="20" y="48" width="412" height="21"/>
+                    <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7715">
+                        <rect key="frame" x="20" y="48" width="412" height="22"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="7716">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -4392,11 +4490,9 @@ DQ
                             <outlet property="delegate" destination="7014" id="7720"/>
                         </connections>
                     </textField>
-                    <button verticalHuggingPriority="750" tag="1" translatesAutoresizingMaskIntoConstraints="NO" id="7725">
-                        <rect key="frame" x="345" y="13" width="94" height="32"/>
-                        <constraints>
-                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="80" id="OVx-d0-0Se"/>
-                        </constraints>
+                    <button verticalHuggingPriority="750" fixedFrame="YES" tag="1" translatesAutoresizingMaskIntoConstraints="NO" id="7725">
+                        <rect key="frame" x="342" y="12" width="96" height="32"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <buttonCell key="cell" type="push" title="OK" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="7726">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
@@ -4413,8 +4509,9 @@ DQ
                             </binding>
                         </connections>
                     </button>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7729">
-                        <rect key="frame" x="18" y="77" width="204" height="16"/>
+                    <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7729">
+                        <rect key="frame" x="17" y="78" width="215" height="17"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Enter a new name for this profile:" id="7730">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -4422,20 +4519,7 @@ DQ
                         </textFieldCell>
                     </textField>
                 </subviews>
-                <constraints>
-                    <constraint firstItem="7725" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="7708" secondAttribute="leading" constant="20" symbolic="YES" id="Cr7-Pf-2hF"/>
-                    <constraint firstItem="7715" firstAttribute="centerX" secondItem="7708" secondAttribute="centerX" id="R9v-6f-JhE"/>
-                    <constraint firstItem="7715" firstAttribute="top" secondItem="7729" secondAttribute="bottom" constant="8" symbolic="YES" id="S6y-6p-eTp"/>
-                    <constraint firstAttribute="trailing" secondItem="7725" secondAttribute="trailing" constant="20" symbolic="YES" id="TyP-Vl-v6L"/>
-                    <constraint firstItem="7729" firstAttribute="leading" secondItem="7708" secondAttribute="leading" constant="20" symbolic="YES" id="aVH-J1-pf5"/>
-                    <constraint firstItem="7715" firstAttribute="leading" secondItem="7708" secondAttribute="leading" constant="20" symbolic="YES" id="dYO-cv-exz"/>
-                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="7729" secondAttribute="trailing" constant="20" symbolic="YES" id="ePr-iK-YrG"/>
-                    <constraint firstItem="7729" firstAttribute="top" secondItem="7708" secondAttribute="top" constant="20" symbolic="YES" id="mkC-bp-apo"/>
-                    <constraint firstItem="7725" firstAttribute="top" secondItem="7715" secondAttribute="bottom" constant="8" symbolic="YES" id="nC0-Sq-dsk"/>
-                    <constraint firstAttribute="bottom" secondItem="7725" secondAttribute="bottom" constant="20" symbolic="YES" id="stF-YM-NXt"/>
-                </constraints>
             </view>
-            <point key="canvasLocation" x="-148" y="380"/>
         </window>
         <window title="InputSettingsNDSInput" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="9104">
             <windowStyleMask key="styleMask" titled="YES"/>
@@ -4642,7 +4726,6 @@ Gw
                     </button>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-149" y="406"/>
         </window>
         <window title="InputSettingsMicrophone" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="7175">
             <windowStyleMask key="styleMask" titled="YES"/>
@@ -4800,28 +4883,27 @@ Gw
                     </textField>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-1148" y="547"/>
         </window>
         <window title="InputSettingsTouch" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="7171">
             <windowStyleMask key="styleMask" titled="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="235" y="296" width="350" height="244"/>
+            <rect key="contentRect" x="235" y="296" width="350" height="263"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
             <view key="contentView" id="7172">
-                <rect key="frame" x="0.0" y="0.0" width="350" height="244"/>
+                <rect key="frame" x="0.0" y="0.0" width="350" height="263"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <box autoresizesSubviews="NO" horizontalCompressionResistancePriority="250" verticalCompressionResistancePriority="250" borderType="line" title="User Defined Coordinates" translatesAutoresizingMaskIntoConstraints="NO" id="7293">
-                        <rect key="frame" x="17" y="55" width="316" height="87"/>
+                        <rect key="frame" x="17" y="55" width="316" height="106"/>
                         <view key="contentView" id="cnb-Yt-BhE">
-                            <rect key="frame" x="3" y="3" width="310" height="69"/>
+                            <rect key="frame" x="3" y="3" width="310" height="88"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                             <subviews>
                                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="IAw-Ts-uN9">
-                                    <rect key="frame" x="97" y="8" width="117" height="54"/>
+                                    <rect key="frame" x="97" y="24" width="116" height="54"/>
                                     <subviews>
                                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="751" verticalCompressionResistancePriority="751" translatesAutoresizingMaskIntoConstraints="NO" id="7290">
-                                            <rect key="frame" x="21" y="0.0" width="96" height="22"/>
+                                            <rect key="frame" x="20" y="0.0" width="96" height="22"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="22" id="YcO-Hl-jKx"/>
                                             </constraints>
@@ -4844,7 +4926,7 @@ Gw
                                             </connections>
                                         </textField>
                                         <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7289">
-                                            <rect key="frame" x="-1" y="4" width="16" height="16"/>
+                                            <rect key="frame" x="-1" y="4" width="15" height="16"/>
                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="Y:" id="7292">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -4852,7 +4934,7 @@ Gw
                                             </textFieldCell>
                                         </textField>
                                         <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7287">
-                                            <rect key="frame" x="21" y="32" width="96" height="22"/>
+                                            <rect key="frame" x="20" y="32" width="96" height="22"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="22" id="HhQ-up-u9x"/>
                                                 <constraint firstAttribute="width" constant="96" id="bzL-XE-azF"/>
@@ -4876,7 +4958,7 @@ Gw
                                             </connections>
                                         </textField>
                                         <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7285">
-                                            <rect key="frame" x="-2" y="35" width="17" height="16"/>
+                                            <rect key="frame" x="-2" y="35" width="16" height="16"/>
                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="X:" id="7286">
                                                 <font key="font" metaFont="system"/>
                                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -4903,18 +4985,14 @@ Gw
                                 </customView>
                             </subviews>
                             <constraints>
-                                <constraint firstItem="IAw-Ts-uN9" firstAttribute="centerY" secondItem="cnb-Yt-BhE" secondAttribute="centerY" id="5pV-Hf-yMy"/>
-                                <constraint firstItem="IAw-Ts-uN9" firstAttribute="centerX" secondItem="cnb-Yt-BhE" secondAttribute="centerX" id="7zM-R5-TC3"/>
-                                <constraint firstAttribute="bottom" secondItem="IAw-Ts-uN9" secondAttribute="bottom" constant="8" id="muU-0i-ORI"/>
-                                <constraint firstItem="IAw-Ts-uN9" firstAttribute="top" secondItem="cnb-Yt-BhE" secondAttribute="top" constant="8" id="o3B-gy-VLm"/>
+                                <constraint firstItem="IAw-Ts-uN9" firstAttribute="top" secondItem="cnb-Yt-BhE" secondAttribute="top" constant="10" id="Crm-mu-C1b"/>
+                                <constraint firstItem="IAw-Ts-uN9" firstAttribute="leading" secondItem="cnb-Yt-BhE" secondAttribute="leading" constant="97" id="YLX-lF-LQ5"/>
+                                <constraint firstItem="IAw-Ts-uN9" firstAttribute="centerX" secondItem="cnb-Yt-BhE" secondAttribute="centerX" id="edP-ak-GhD"/>
                             </constraints>
                         </view>
                     </box>
                     <button verticalHuggingPriority="750" tag="1" translatesAutoresizingMaskIntoConstraints="NO" id="7305">
                         <rect key="frame" x="241" y="12" width="96" height="32"/>
-                        <constraints>
-                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="82" id="mkR-Zz-dD4"/>
-                        </constraints>
                         <buttonCell key="cell" type="push" title="OK" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="7308">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
@@ -4927,7 +5005,7 @@ DQ
                         </connections>
                     </button>
                     <button verticalHuggingPriority="750" verticalCompressionResistancePriority="754" translatesAutoresizingMaskIntoConstraints="NO" id="7354">
-                        <rect key="frame" x="18" y="184" width="204" height="18"/>
+                        <rect key="frame" x="18" y="203" width="204" height="18"/>
                         <buttonCell key="cell" type="check" title="Use user defined coordinates" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="7355">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
@@ -4940,8 +5018,8 @@ DQ
                             </binding>
                         </connections>
                     </button>
-                    <textField verticalHuggingPriority="750" verticalCompressionResistancePriority="752" preferredMaxLayoutWidth="312" translatesAutoresizingMaskIntoConstraints="NO" id="7358">
-                        <rect key="frame" x="18" y="150" width="314" height="28"/>
+                    <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="312" translatesAutoresizingMaskIntoConstraints="NO" id="7358">
+                        <rect key="frame" x="18" y="169" width="314" height="28"/>
                         <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="If this setting is disabled, then the Touch command will read the coordinates from the input device instead." id="7359">
                             <font key="font" metaFont="smallSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -4950,6 +5028,9 @@ DQ
                     </textField>
                     <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7395">
                         <rect key="frame" x="147" y="12" width="96" height="32"/>
+                        <constraints>
+                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="82" id="SOG-EP-9Z8"/>
+                        </constraints>
                         <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="7396">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
@@ -4962,7 +5043,7 @@ Gw
                         </connections>
                     </button>
                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7433">
-                        <rect key="frame" x="18" y="208" width="142" height="16"/>
+                        <rect key="frame" x="18" y="227" width="142" height="16"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" placeholderString="Device Info Summary" id="7434">
                             <font key="font" metaFont="systemBold"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -4995,15 +5076,15 @@ Gw
                     <constraint firstItem="7433" firstAttribute="leading" secondItem="7358" secondAttribute="leading" id="zj7-q0-NVO"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="-148" y="444"/>
+            <point key="canvasLocation" x="-3553" y="-5057"/>
         </window>
         <window title="InputSettingsLoadStateSlot" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="7173">
             <windowStyleMask key="styleMask" titled="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="235" y="434" width="350" height="125"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" misplaced="YES" id="7174">
-                <rect key="frame" x="0.0" y="0.0" width="350" height="125"/>
+            <view key="contentView" id="7174">
+                <rect key="frame" x="0.0" y="0.0" width="350" height="112"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <popUpButton horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7210">
@@ -5117,15 +5198,15 @@ Gw
                     <constraint firstAttribute="trailing" secondItem="7309" secondAttribute="trailing" constant="20" symbolic="YES" id="uva-We-lgB"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="-148" y="385"/>
+            <point key="canvasLocation" x="-3688" y="-5369"/>
         </window>
         <window title="InputSettingsSaveStateSlot" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="7225">
             <windowStyleMask key="styleMask" titled="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="235" y="459" width="350" height="125"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" misplaced="YES" id="7226">
-                <rect key="frame" x="0.0" y="0.0" width="350" height="125"/>
+            <view key="contentView" id="7226">
+                <rect key="frame" x="0.0" y="0.0" width="350" height="112"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <popUpButton horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7228">
@@ -5239,7 +5320,7 @@ Gw
                     <constraint firstItem="7228" firstAttribute="leading" secondItem="7227" secondAttribute="trailing" constant="8" symbolic="YES" id="xnW-hZ-mD8"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="-148" y="385"/>
+            <point key="canvasLocation" x="-3823" y="-5605"/>
         </window>
         <window title="InputSettingsSpeedLimit" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="7449">
             <windowStyleMask key="styleMask" titled="YES"/>
@@ -5250,8 +5331,8 @@ Gw
                 <rect key="frame" x="0.0" y="0.0" width="467" height="160"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7451">
-                        <rect key="frame" x="18" y="124" width="142" height="16"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7451">
+                        <rect key="frame" x="17" y="123" width="425" height="17"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" placeholderString="Device Info Summary" id="7452">
                             <font key="font" metaFont="systemBold"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -5261,8 +5342,8 @@ Gw
                             <binding destination="7353" name="value" keyPath="selection.deviceInfoSummary" id="7453"/>
                         </connections>
                     </textField>
-                    <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7454">
-                        <rect key="frame" x="30" y="71" width="407" height="28"/>
+                    <slider verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7454">
+                        <rect key="frame" x="30" y="71" width="411" height="26"/>
                         <sliderCell key="cell" continuous="YES" state="on" alignment="left" maxValue="10" doubleValue="1" tickMarkPosition="above" numberOfTickMarks="11" sliderType="linear" id="7474"/>
                         <connections>
                             <binding destination="7353" name="value" keyPath="selection.floatValue0" id="7482">
@@ -5274,8 +5355,8 @@ Gw
                             </binding>
                         </connections>
                     </slider>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7455">
-                        <rect key="frame" x="20" y="100" width="38" height="16"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7455">
+                        <rect key="frame" x="20" y="98" width="38" height="17"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="34" id="FWt-98-8dQ"/>
                         </constraints>
@@ -5285,16 +5366,16 @@ Gw
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7456">
-                        <rect key="frame" x="412" y="100" width="38" height="16"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7456">
+                        <rect key="frame" x="412" y="98" width="38" height="17"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" title="10x" id="7472">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7457">
-                        <rect key="frame" x="98" y="100" width="38" height="16"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7457">
+                        <rect key="frame" x="98" y="98" width="38" height="17"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="34" id="iS8-OO-NdX"/>
                         </constraints>
@@ -5304,8 +5385,8 @@ Gw
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7458">
-                        <rect key="frame" x="177" y="100" width="38" height="16"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7458">
+                        <rect key="frame" x="177" y="98" width="38" height="17"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="34" id="fAg-Rw-5qG"/>
                         </constraints>
@@ -5315,8 +5396,8 @@ Gw
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7459">
-                        <rect key="frame" x="255" y="100" width="38" height="16"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7459">
+                        <rect key="frame" x="255" y="98" width="38" height="17"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="34" id="Dru-y1-fq0"/>
                         </constraints>
@@ -5326,8 +5407,8 @@ Gw
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7460">
-                        <rect key="frame" x="335" y="100" width="38" height="16"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7460">
+                        <rect key="frame" x="335" y="98" width="38" height="17"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="34" id="0oq-mb-96K"/>
                         </constraints>
@@ -5337,8 +5418,8 @@ Gw
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <button verticalHuggingPriority="750" tag="100" translatesAutoresizingMaskIntoConstraints="NO" id="7461">
-                        <rect key="frame" x="14" y="12" width="160" height="32"/>
+                    <button verticalHuggingPriority="750" misplaced="YES" tag="100" translatesAutoresizingMaskIntoConstraints="NO" id="7461">
+                        <rect key="frame" x="14" y="12" width="169" height="32"/>
                         <buttonCell key="cell" type="push" title="Set to Normal Speed" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="7467">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
@@ -5381,8 +5462,8 @@ Gw
                             </binding>
                         </connections>
                     </textField>
-                    <button verticalHuggingPriority="750" tag="1" translatesAutoresizingMaskIntoConstraints="NO" id="7486">
-                        <rect key="frame" x="358" y="12" width="96" height="32"/>
+                    <button verticalHuggingPriority="750" misplaced="YES" tag="1" translatesAutoresizingMaskIntoConstraints="NO" id="7486">
+                        <rect key="frame" x="357" y="12" width="96" height="32"/>
                         <constraints>
                             <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="82" id="mFw-1s-uP8"/>
                         </constraints>
@@ -5397,8 +5478,8 @@ DQ
                             <action selector="closeSettingsSheet:" target="7014" id="7491"/>
                         </connections>
                     </button>
-                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7487">
-                        <rect key="frame" x="262" y="12" width="96" height="32"/>
+                    <button verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7487">
+                        <rect key="frame" x="261" y="12" width="96" height="32"/>
                         <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="7488">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
@@ -5452,7 +5533,6 @@ Gw
                     <constraint firstItem="7455" firstAttribute="top" secondItem="7451" secondAttribute="bottom" constant="8" symbolic="YES" id="uwD-gO-Zm8"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="-149" y="402"/>
         </window>
         <window title="InputSettingsGPUState" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="7179">
             <windowStyleMask key="styleMask" titled="YES"/>
@@ -5583,7 +5663,6 @@ Gw
                     </textField>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-148" y="464"/>
         </window>
         <window title="InputSettingsPaddleController" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="8596">
             <windowStyleMask key="styleMask" titled="YES"/>
@@ -5750,7 +5829,6 @@ Gw
                     </textField>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-55" y="-1292"/>
         </window>
         <window title="Internal Firmware Preferences" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="4181">
             <windowStyleMask key="styleMask" titled="YES"/>
@@ -5997,7 +6075,7 @@ DQ
                             <action selector="generateFirmwareMACAddress:" target="1682" id="12118"/>
                         </connections>
                     </button>
-                    <tabView fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="11789">
+                    <tabView autoresizesSubviews="NO" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="11789">
                         <rect key="frame" x="13" y="96" width="283" height="198"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <font key="font" metaFont="system"/>
@@ -7320,7 +7398,6 @@ DQ
                     </tabView>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="81" y="-799"/>
         </window>
         <window title="Game Data Migration Assistant" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="9705" userLabel="Window (Game Data Migration Assistant)">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" resizable="YES"/>
@@ -7534,8 +7611,8 @@ DQ
                 <rect key="frame" x="0.0" y="0.0" width="380" height="200"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="342" translatesAutoresizingMaskIntoConstraints="NO" id="2894">
-                        <rect key="frame" x="18" y="113" width="344" height="64"/>
+                    <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" misplaced="YES" preferredMaxLayoutWidth="342" translatesAutoresizingMaskIntoConstraints="NO" id="2894">
+                        <rect key="frame" x="17" y="112" width="346" height="68"/>
                         <textFieldCell key="cell" sendsActionOnEndEditing="YES" id="2903">
                             <font key="font" metaFont="systemBold"/>
                             <string key="title">This ROM's save file has not been created yet, but there is a save file with this ROM that has the same file name. Would you like to migrate it to work with DeSmuME?</string>
@@ -7543,8 +7620,8 @@ DQ
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <button verticalHuggingPriority="750" tag="1" translatesAutoresizingMaskIntoConstraints="NO" id="2895">
-                        <rect key="frame" x="286" y="13" width="81" height="32"/>
+                    <button verticalHuggingPriority="750" misplaced="YES" tag="1" translatesAutoresizingMaskIntoConstraints="NO" id="2895">
+                        <rect key="frame" x="270" y="12" width="96" height="32"/>
                         <buttonCell key="cell" type="push" title="Migrate" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="2902">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
@@ -7556,8 +7633,8 @@ DQ
                             <action selector="closeSheet:" target="6651" id="6800"/>
                         </connections>
                     </button>
-                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="2896">
-                        <rect key="frame" x="171" y="13" width="117" height="32"/>
+                    <button verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="2896">
+                        <rect key="frame" x="144" y="12" width="126" height="32"/>
                         <buttonCell key="cell" type="push" title="Don't Migrate" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="2901">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
@@ -7569,9 +7646,9 @@ Gw
                             <action selector="closeSheet:" target="6651" id="6799"/>
                         </connections>
                     </button>
-                    <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="342" translatesAutoresizingMaskIntoConstraints="NO" id="2897">
-                        <rect key="frame" x="18" y="49" width="344" height="56"/>
-                        <textFieldCell key="cell" controlSize="small" allowsUndo="NO" sendsActionOnEndEditing="YES" id="2900">
+                    <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" misplaced="YES" preferredMaxLayoutWidth="342" translatesAutoresizingMaskIntoConstraints="NO" id="2897">
+                        <rect key="frame" x="17" y="48" width="346" height="56"/>
+                        <textFieldCell key="cell" allowsUndo="NO" sendsActionOnEndEditing="YES" id="2900">
                             <font key="font" metaFont="smallSystem"/>
                             <string key="title">Migrating the ROM save file will move it to DeSmuME's game data folder. If you do not migrate the save file now, a new file will be created instead. This will be like starting the ROM for the first time.</string>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -7594,7 +7671,6 @@ Gw
                     <constraint firstItem="2896" firstAttribute="top" secondItem="2897" secondAttribute="bottom" constant="9" id="wW3-FO-1mj"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="216" y="-327"/>
         </window>
         <window title="Save State" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="3456">
             <windowStyleMask key="styleMask" titled="YES"/>
@@ -7605,19 +7681,16 @@ Gw
                 <rect key="frame" x="0.0" y="0.0" width="335" height="163"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="297" translatesAutoresizingMaskIntoConstraints="NO" id="3461">
-                        <rect key="frame" x="18" y="111" width="299" height="32"/>
+                    <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" misplaced="YES" preferredMaxLayoutWidth="297" translatesAutoresizingMaskIntoConstraints="NO" id="3461">
+                        <rect key="frame" x="17" y="109" width="301" height="34"/>
                         <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Would you like to save the emulation state before closing?" id="3462">
                             <font key="font" metaFont="systemBold"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <button verticalHuggingPriority="750" tag="1" translatesAutoresizingMaskIntoConstraints="NO" id="3459">
-                        <rect key="frame" x="226" y="14" width="96" height="32"/>
-                        <constraints>
-                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="82" id="ZTb-c1-jPq"/>
-                        </constraints>
+                    <button verticalHuggingPriority="750" misplaced="YES" tag="1" translatesAutoresizingMaskIntoConstraints="NO" id="3459">
+                        <rect key="frame" x="220" y="12" width="96" height="32"/>
                         <buttonCell key="cell" type="push" title="Save" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="3464">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
@@ -7629,8 +7702,8 @@ DQ
                             <action selector="closeSheet:" target="6651" id="6803"/>
                         </connections>
                     </button>
-                    <button verticalHuggingPriority="750" tag="2" translatesAutoresizingMaskIntoConstraints="NO" id="3458">
-                        <rect key="frame" x="128" y="14" width="100" height="32"/>
+                    <button verticalHuggingPriority="750" misplaced="YES" tag="2" translatesAutoresizingMaskIntoConstraints="NO" id="3458">
+                        <rect key="frame" x="114" y="12" width="106" height="32"/>
                         <constraints>
                             <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="82" id="dy8-T3-aTL"/>
                         </constraints>
@@ -7645,8 +7718,8 @@ DQ
                             <action selector="closeSheet:" target="6651" id="6802"/>
                         </connections>
                     </button>
-                    <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="297" translatesAutoresizingMaskIntoConstraints="NO" id="3460">
-                        <rect key="frame" x="18" y="61" width="299" height="42"/>
+                    <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" misplaced="YES" preferredMaxLayoutWidth="297" translatesAutoresizingMaskIntoConstraints="NO" id="3460">
+                        <rect key="frame" x="17" y="59" width="301" height="42"/>
                         <textFieldCell key="cell" allowsUndo="NO" sendsActionOnEndEditing="YES" id="3463">
                             <font key="font" metaFont="smallSystem"/>
                             <string key="title">If you haven't already saved using this ROM's save, then not saving the emulation state now will cause any unsaved changes to be lost.</string>
@@ -7654,8 +7727,8 @@ DQ
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3471">
-                        <rect key="frame" x="34" y="14" width="96" height="32"/>
+                    <button verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3471">
+                        <rect key="frame" x="18" y="12" width="96" height="32"/>
                         <constraints>
                             <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="82" id="oDt-nR-Z1q"/>
                         </constraints>
@@ -7687,19 +7760,18 @@ Gw
                     <constraint firstItem="3461" firstAttribute="centerX" secondItem="3457" secondAttribute="centerX" id="taT-dc-zK7"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="-149" y="404"/>
         </window>
         <window title="NDS Error" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="10522" userLabel="Window (NDS Error)">
             <windowStyleMask key="styleMask" titled="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="157" y="347" width="400" height="114"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" misplaced="YES" id="10523">
-                <rect key="frame" x="0.0" y="0.0" width="400" height="114"/>
+            <view key="contentView" id="10523">
+                <rect key="frame" x="0.0" y="0.0" width="398" height="114"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="362" translatesAutoresizingMaskIntoConstraints="NO" id="10524">
-                        <rect key="frame" x="18" y="84" width="324" height="16"/>
+                        <rect key="frame" x="17" y="78" width="364" height="16"/>
                         <textFieldCell key="cell" controlSize="mini" sendsActionOnEndEditing="YES" title="The emulation has halted due to an internal issue." id="10525">
                             <font key="font" metaFont="systemBold"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -7707,9 +7779,9 @@ Gw
                         </textFieldCell>
                     </textField>
                     <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="10526">
-                        <rect key="frame" x="291" y="13" width="96" height="32"/>
+                        <rect key="frame" x="288" y="13" width="96" height="32"/>
                         <constraints>
-                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="82" id="Vzn-SW-5qo"/>
+                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="82" id="fdK-R4-SD9"/>
                         </constraints>
                         <buttonCell key="cell" type="push" title="Stop" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="10527">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -7723,7 +7795,7 @@ DQ
                         </connections>
                     </button>
                     <button verticalHuggingPriority="750" tag="2" translatesAutoresizingMaskIntoConstraints="NO" id="10528">
-                        <rect key="frame" x="197" y="13" width="96" height="32"/>
+                        <rect key="frame" x="194" y="13" width="96" height="32"/>
                         <buttonCell key="cell" type="push" title="Reset" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="10529">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
@@ -7733,7 +7805,7 @@ DQ
                         </connections>
                     </button>
                     <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="362" translatesAutoresizingMaskIntoConstraints="NO" id="10530">
-                        <rect key="frame" x="18" y="60" width="72" height="16"/>
+                        <rect key="frame" x="17" y="54" width="364" height="16"/>
                         <constraints>
                             <constraint firstAttribute="width" relation="lessThanOrEqual" constant="360" id="z0J-Th-gjV"/>
                         </constraints>
@@ -7748,22 +7820,21 @@ DQ
                     </textField>
                 </subviews>
                 <constraints>
-                    <constraint firstItem="10524" firstAttribute="leading" secondItem="10523" secondAttribute="leading" constant="20" symbolic="YES" id="013-Q7-mY8"/>
-                    <constraint firstItem="10528" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="10523" secondAttribute="leading" constant="20" symbolic="YES" id="0IU-ko-S4F"/>
-                    <constraint firstAttribute="bottom" secondItem="10526" secondAttribute="bottom" constant="20" symbolic="YES" id="14X-ML-qGM"/>
-                    <constraint firstItem="10524" firstAttribute="top" secondItem="10523" secondAttribute="top" constant="20" symbolic="YES" id="81o-bz-dca"/>
-                    <constraint firstItem="10530" firstAttribute="top" secondItem="10524" secondAttribute="bottom" constant="8" symbolic="YES" id="Apb-tf-8Ta"/>
-                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="10524" secondAttribute="trailing" constant="20" symbolic="YES" id="CrQ-9z-cr3"/>
-                    <constraint firstItem="10530" firstAttribute="leading" secondItem="10523" secondAttribute="leading" constant="20" symbolic="YES" id="WEV-pd-2xN"/>
-                    <constraint firstItem="10526" firstAttribute="top" secondItem="10530" secondAttribute="bottom" constant="20" id="WRm-yg-ccM"/>
-                    <constraint firstItem="10526" firstAttribute="leading" secondItem="10528" secondAttribute="trailing" constant="12" symbolic="YES" id="ZFp-gS-h6h"/>
-                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="10530" secondAttribute="trailing" constant="20" symbolic="YES" id="gYX-u7-nVs"/>
-                    <constraint firstAttribute="trailing" secondItem="10526" secondAttribute="trailing" constant="20" symbolic="YES" id="iQm-we-L77"/>
-                    <constraint firstItem="10526" firstAttribute="width" secondItem="10528" secondAttribute="width" id="l22-QG-U86"/>
-                    <constraint firstItem="10526" firstAttribute="firstBaseline" secondItem="10528" secondAttribute="firstBaseline" id="vzF-oc-KNO"/>
+                    <constraint firstItem="10524" firstAttribute="leading" secondItem="10530" secondAttribute="leading" id="7pS-se-ddd"/>
+                    <constraint firstItem="10528" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="10523" secondAttribute="leading" constant="20" symbolic="YES" id="B89-Bf-9RJ"/>
+                    <constraint firstAttribute="trailing" secondItem="10526" secondAttribute="trailing" constant="21" id="BGS-jU-KFF"/>
+                    <constraint firstItem="10526" firstAttribute="leading" secondItem="10528" secondAttribute="trailing" constant="12" symbolic="YES" id="Bif-Nt-1Cw"/>
+                    <constraint firstItem="10524" firstAttribute="top" secondItem="10523" secondAttribute="top" constant="20" symbolic="YES" id="L0D-5g-BaJ"/>
+                    <constraint firstItem="10524" firstAttribute="centerX" secondItem="10523" secondAttribute="centerX" id="QEm-DF-BA1"/>
+                    <constraint firstItem="10530" firstAttribute="top" secondItem="10524" secondAttribute="bottom" constant="8" symbolic="YES" id="btE-Ht-Lgz"/>
+                    <constraint firstItem="10528" firstAttribute="top" secondItem="10530" secondAttribute="bottom" constant="14" id="di9-09-JQn"/>
+                    <constraint firstItem="10528" firstAttribute="baseline" secondItem="10526" secondAttribute="baseline" id="ncy-ad-Zlw"/>
+                    <constraint firstItem="10526" firstAttribute="width" secondItem="10528" secondAttribute="width" id="qL8-AS-6bR"/>
+                    <constraint firstItem="10524" firstAttribute="trailing" secondItem="10530" secondAttribute="trailing" id="saN-gp-ivz"/>
+                    <constraint firstItem="10524" firstAttribute="leading" secondItem="10523" secondAttribute="leading" constant="19" id="x3Q-UY-hTO"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="-148" y="379"/>
+            <point key="canvasLocation" x="-3418" y="-4751"/>
         </window>
         <window title="Cheat Manager" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="CheatManagerWindow" animationBehavior="default" id="3488">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES"/>
@@ -7956,7 +8027,7 @@ DQ
                                     </connections>
                                 </popUpButton>
                                 <customView fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4580">
-                                    <rect key="frame" x="0.0" y="33" width="320" height="290"/>
+                                    <rect key="frame" x="0.0" y="32.5" width="320" height="290"/>
                                     <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
                                 </customView>
                                 <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4581">
@@ -8107,7 +8178,6 @@ Serial:</string>
             <connections>
                 <outlet property="delegate" destination="4697" id="4700"/>
             </connections>
-            <point key="canvasLocation" x="-3892" y="-5284"/>
         </window>
         <customObject id="4697" customClass="CheatWindowDelegate">
             <connections>
@@ -8348,7 +8418,6 @@ Serial:</string>
                     </textFieldCell>
                 </textField>
             </subviews>
-            <point key="canvasLocation" x="-3757" y="-4741"/>
         </customView>
         <drawer id="715" userLabel="Cheat Search Drawer">
             <size key="contentSize" width="328" height="397"/>
@@ -8548,7 +8617,6 @@ Gw
                     </textField>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-3622" y="-4220"/>
         </window>
         <customView id="4850" userLabel="Exact Value Search View">
             <rect key="frame" x="0.0" y="0.0" width="328" height="134"/>
@@ -8624,7 +8692,6 @@ Gw
                     </connections>
                 </button>
             </subviews>
-            <point key="canvasLocation" x="-3487" y="-3859"/>
         </customView>
         <customView id="4880" userLabel="Comparative Search Start View">
             <rect key="frame" x="0.0" y="0.0" width="328" height="134"/>
@@ -8674,7 +8741,6 @@ Gw
                     </textFieldCell>
                 </textField>
             </subviews>
-            <point key="canvasLocation" x="-3352" y="-3660"/>
         </customView>
         <customView id="4851" userLabel="Comparative Search Continue View">
             <rect key="frame" x="0.0" y="0.0" width="328" height="134"/>
@@ -8831,7 +8897,6 @@ Gw
                     </textFieldCell>
                 </textField>
             </subviews>
-            <point key="canvasLocation" x="-3217" y="-3461"/>
         </customView>
         <customView id="4585" userLabel="Internal Cheat View">
             <rect key="frame" x="0.0" y="0.0" width="320" height="290"/>
@@ -8980,7 +9045,7 @@ Gw
                     </connections>
                 </button>
             </subviews>
-            <point key="canvasLocation" x="-3082" y="-3184"/>
+            <point key="canvasLocation" x="-3283" y="-4463"/>
         </customView>
         <customView id="4610" userLabel="Action Replay Cheat View">
             <rect key="frame" x="0.0" y="0.0" width="320" height="290"/>
@@ -9000,7 +9065,7 @@ Gw
                     <autoresizingMask key="autoresizingMask"/>
                     <clipView key="contentView" id="Nw2-In-y1f">
                         <rect key="frame" x="1" y="1" width="278" height="223"/>
-                        <autoresizingMask key="autoresizingMask"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" baseWritingDirection="leftToRight" findStyle="panel" allowsUndo="YES" allowsNonContiguousLayout="YES" spellingCorrection="YES" id="4634">
                                 <rect key="frame" x="0.0" y="0.0" width="278" height="223"/>
@@ -9030,7 +9095,7 @@ Gw
                     </scroller>
                 </scrollView>
             </subviews>
-            <point key="canvasLocation" x="-2947" y="-2829"/>
+            <point key="canvasLocation" x="-3148" y="-4108"/>
         </customView>
         <customView id="4673" userLabel="Code Breaker Cheat View">
             <rect key="frame" x="0.0" y="0.0" width="320" height="290"/>
@@ -9046,12 +9111,12 @@ Gw
                     </textFieldCell>
                 </textField>
                 <imageView fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4745">
-                    <rect key="frame" x="96" y="133" width="128" height="128"/>
+                    <rect key="frame" x="101" y="133" width="128" height="128"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" image="Icon_CodeBreaker_128x128" id="4746"/>
                 </imageView>
             </subviews>
-            <point key="canvasLocation" x="-2812" y="-2474"/>
+            <point key="canvasLocation" x="-3013" y="-3753"/>
         </customView>
         <window title="SLOT-1 (NDS Slot) Manager" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="Slot1ManagerWindow" animationBehavior="default" id="7855">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES"/>
@@ -9425,7 +9490,7 @@ Serial:</string>
                     </box>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-2677" y="-2081"/>
+            <point key="canvasLocation" x="-2878" y="-3360"/>
         </window>
         <window title="SLOT-2 (GBA Slot) Manager" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="Slot2ManagerWindow" animationBehavior="default" id="8331">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES"/>
@@ -9441,7 +9506,7 @@ Serial:</string>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <clipView key="contentView" id="LdN-xx-f7O">
                             <rect key="frame" x="1" y="1" width="188" height="320"/>
-                            <autoresizingMask key="autoresizingMask"/>
+                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                             <subviews>
                                 <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnReordering="NO" columnResizing="NO" multipleSelection="NO" emptySelection="NO" autosaveColumns="NO" headerView="8351" id="8336">
                                     <rect key="frame" x="0.0" y="0.0" width="188" height="292"/>
@@ -9543,7 +9608,7 @@ Serial:</string>
             <connections>
                 <outlet property="delegate" destination="8356" id="8357"/>
             </connections>
-            <point key="canvasLocation" x="-2812" y="-2538"/>
+            <point key="canvasLocation" x="-2743" y="-2867"/>
         </window>
         <customObject id="8356" userLabel="SLOT-2 Window Delegate" customClass="Slot2WindowDelegate">
             <connections>
@@ -9581,7 +9646,7 @@ Serial:</string>
                     </textFieldCell>
                 </textField>
             </subviews>
-            <point key="canvasLocation" x="-2677" y="-2068"/>
+            <point key="canvasLocation" x="-2608" y="-2397"/>
         </customView>
         <customView id="8366" userLabel="SLOT-2 None View">
             <rect key="frame" x="0.0" y="0.0" width="400" height="320"/>
@@ -9617,7 +9682,7 @@ Serial:</string>
                     </textFieldCell>
                 </textField>
             </subviews>
-            <point key="canvasLocation" x="-2542" y="-1683"/>
+            <point key="canvasLocation" x="-2473" y="-2012"/>
         </customView>
         <customView id="8408" userLabel="SLOT-2 Auto View">
             <rect key="frame" x="0.0" y="0.0" width="400" height="320"/>
@@ -9711,7 +9776,7 @@ Serial:</string>
                     </textFieldCell>
                 </textField>
             </subviews>
-            <point key="canvasLocation" x="-2407" y="-1298"/>
+            <point key="canvasLocation" x="-2338" y="-1627"/>
         </customView>
         <customView id="8369" userLabel="SLOT-2 MPCF Flash Card View">
             <rect key="frame" x="0.0" y="0.0" width="400" height="320"/>
@@ -9784,7 +9849,7 @@ Serial:</string>
                     </textFieldCell>
                 </textField>
             </subviews>
-            <point key="canvasLocation" x="-2272" y="-913"/>
+            <point key="canvasLocation" x="-2203" y="-1242"/>
         </customView>
         <customView id="8402" userLabel="SLOT-2 Rumble Pak View">
             <rect key="frame" x="0.0" y="0.0" width="400" height="320"/>
@@ -9816,7 +9881,7 @@ Serial:</string>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <clipView key="contentView" id="ede-My-FIf">
                         <rect key="frame" x="1" y="1" width="358" height="172"/>
-                        <autoresizingMask key="autoresizingMask"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="none" alternatingRowBackgroundColors="YES" columnReordering="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" headerView="8524" id="8515">
                                 <rect key="frame" x="0.0" y="0.0" width="358" height="144"/>
@@ -9835,7 +9900,7 @@ Serial:</string>
                                             <font key="font" metaFont="system"/>
                                         </buttonCell>
                                         <connections>
-                                            <binding destination="8527" name="value" keyPath="arrangedObjects.forceFeedbackEnabled" id="8528"/>
+                                            <binding destination="8527" name="value" keyPath="arrangedObjects.isForceFeedbackEnabled" id="8528"/>
                                             <binding destination="8527" name="enabled" keyPath="arrangedObjects.supportsForceFeedback" id="8530"/>
                                         </connections>
                                     </tableColumn>
@@ -9886,7 +9951,7 @@ Serial:</string>
                     </textFieldCell>
                 </textField>
             </subviews>
-            <point key="canvasLocation" x="-2137" y="-528"/>
+            <point key="canvasLocation" x="-2068" y="-857"/>
         </customView>
         <customView id="8405" userLabel="SLOT-2 GBA Cartridge View">
             <rect key="frame" x="0.0" y="0.0" width="400" height="320"/>
@@ -9982,7 +10047,7 @@ Serial:</string>
                     </connections>
                 </button>
             </subviews>
-            <point key="canvasLocation" x="-2002" y="-143"/>
+            <point key="canvasLocation" x="-1933" y="-472"/>
         </customView>
         <customView id="8428" userLabel="SLOT-2 Guitar Grip View">
             <rect key="frame" x="0.0" y="0.0" width="400" height="320"/>
@@ -10014,7 +10079,7 @@ Serial:</string>
                     <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" image="Image_GuitarGrip" id="8747"/>
                 </imageView>
             </subviews>
-            <point key="canvasLocation" x="-1867" y="242"/>
+            <point key="canvasLocation" x="-1798" y="-87"/>
         </customView>
         <customView id="8445" userLabel="SLOT-2 Memory Expansion Pack View">
             <rect key="frame" x="0.0" y="0.0" width="400" height="320"/>
@@ -10035,7 +10100,7 @@ Serial:</string>
                     <imageCell key="cell" controlSize="mini" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" image="Image_MemoryExpansionPak" id="8579"/>
                 </imageView>
             </subviews>
-            <point key="canvasLocation" x="-1732" y="627"/>
+            <point key="canvasLocation" x="-1256" y="298"/>
         </customView>
         <customView id="8448" userLabel="SLOT-2 Piano View">
             <rect key="frame" x="0.0" y="0.0" width="400" height="320"/>
@@ -10067,7 +10132,7 @@ Serial:</string>
                     </textFieldCell>
                 </textField>
             </subviews>
-            <point key="canvasLocation" x="-744" y="1012"/>
+            <point key="canvasLocation" x="-397" y="683"/>
         </customView>
         <customView id="8451" userLabel="SLOT-2 Paddle Controller View">
             <rect key="frame" x="0.0" y="0.0" width="400" height="320"/>
@@ -10120,10 +10185,10 @@ Serial:</string>
                     <imageCell key="cell" controlSize="mini" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" image="Image_PassME" id="8478"/>
                 </imageView>
             </subviews>
-            <point key="canvasLocation" x="-744" y="1484"/>
+            <point key="canvasLocation" x="-1614" y="-4093"/>
         </customView>
         <window title="Emulation Settings" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" hidesOnDeactivate="YES" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="EmulationSettingsPanel" animationBehavior="default" id="4027" customClass="NSPanel">
-            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" utility="YES" texturedBackground="YES"/>
+            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" utility="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="230" y="8" width="286" height="533"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
@@ -10524,7 +10589,7 @@ Serial:</string>
                     </box>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-327" y="1135"/>
+            <point key="canvasLocation" x="-1479" y="-3579"/>
         </window>
         <customView id="4053" userLabel="Internal Firmware Drawer Content View">
             <rect key="frame" x="0.0" y="0.0" width="260" height="513"/>
@@ -12087,7 +12152,7 @@ Serial:</string>
                     </tabViewItems>
                 </tabView>
             </subviews>
-            <point key="canvasLocation" x="20" y="1476"/>
+            <point key="canvasLocation" x="-1344" y="-2974"/>
         </customView>
         <drawer id="4054" userLabel="Internal Firmware Drawer">
             <size key="contentSize" width="260" height="328"/>
@@ -12116,18 +12181,17 @@ Serial:</string>
                         </buttonCell>
                         <connections>
                             <action selector="coreExecute:" target="6651" id="9102"/>
-                            <binding destination="1721" name="enabled2" keyPath="selection.coreState" previousBinding="9018" id="9028">
+                            <binding destination="6652" name="enabled" keyPath="selection.currentRom" id="9018">
+                                <dictionary key="options">
+                                    <string key="NSValueTransformerName">NSIsNotNil</string>
+                                </dictionary>
+                            </binding>
+                            <binding destination="1721" name="enabled2" keyPath="selection.emulationPaused" previousBinding="9018" id="12177">
                                 <dictionary key="options">
                                     <integer key="NSMultipleValuesPlaceholder" value="-1"/>
                                     <integer key="NSNoSelectionPlaceholder" value="-1"/>
                                     <integer key="NSNotApplicablePlaceholder" value="-1"/>
                                     <integer key="NSNullPlaceholder" value="-1"/>
-                                    <string key="NSValueTransformerName">NSNegateBoolean</string>
-                                </dictionary>
-                            </binding>
-                            <binding destination="6652" name="enabled" keyPath="selection.currentRom" id="9018">
-                                <dictionary key="options">
-                                    <string key="NSValueTransformerName">NSIsNotNil</string>
                                 </dictionary>
                             </binding>
                         </connections>
@@ -12141,17 +12205,18 @@ Serial:</string>
                         </buttonCell>
                         <connections>
                             <action selector="corePause:" target="6651" id="9103"/>
-                            <binding destination="1721" name="enabled2" keyPath="selection.coreState" previousBinding="9022" id="9029">
+                            <binding destination="6652" name="enabled" keyPath="selection.currentRom" id="9022">
+                                <dictionary key="options">
+                                    <string key="NSValueTransformerName">NSIsNotNil</string>
+                                </dictionary>
+                            </binding>
+                            <binding destination="1721" name="enabled2" keyPath="selection.emulationPaused" previousBinding="9022" id="12179">
                                 <dictionary key="options">
                                     <integer key="NSMultipleValuesPlaceholder" value="-1"/>
                                     <integer key="NSNoSelectionPlaceholder" value="-1"/>
                                     <integer key="NSNotApplicablePlaceholder" value="-1"/>
                                     <integer key="NSNullPlaceholder" value="-1"/>
-                                </dictionary>
-                            </binding>
-                            <binding destination="6652" name="enabled" keyPath="selection.currentRom" id="9022">
-                                <dictionary key="options">
-                                    <string key="NSValueTransformerName">NSIsNotNil</string>
+                                    <string key="NSValueTransformerName">NSNegateBoolean</string>
                                 </dictionary>
                             </binding>
                         </connections>
@@ -12165,18 +12230,17 @@ Serial:</string>
                         </buttonCell>
                         <connections>
                             <action selector="frameAdvance:" target="6651" id="9004"/>
-                            <binding destination="1721" name="enabled2" keyPath="selection.coreState" previousBinding="9012" id="9070">
+                            <binding destination="6652" name="enabled" keyPath="selection.currentRom" id="9012">
+                                <dictionary key="options">
+                                    <string key="NSValueTransformerName">NSIsNotNil</string>
+                                </dictionary>
+                            </binding>
+                            <binding destination="1721" name="enabled2" keyPath="selection.emulationPaused" previousBinding="9012" id="12181">
                                 <dictionary key="options">
                                     <integer key="NSMultipleValuesPlaceholder" value="-1"/>
                                     <integer key="NSNoSelectionPlaceholder" value="-1"/>
                                     <integer key="NSNotApplicablePlaceholder" value="-1"/>
                                     <integer key="NSNullPlaceholder" value="-1"/>
-                                    <string key="NSValueTransformerName">NSNegateBoolean</string>
-                                </dictionary>
-                            </binding>
-                            <binding destination="6652" name="enabled" keyPath="selection.currentRom" id="9012">
-                                <dictionary key="options">
-                                    <string key="NSValueTransformerName">NSIsNotNil</string>
                                 </dictionary>
                             </binding>
                         </connections>
@@ -12459,19 +12523,19 @@ Serial:</string>
                     </textField>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="351" y="1511"/>
+            <point key="canvasLocation" x="-1397" y="-284"/>
         </window>
         <window title="HUD Settings" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" hidesOnDeactivate="YES" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="HUDSettingsPanel" animationBehavior="default" id="794" customClass="NSPanel">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" utility="YES" texturedBackground="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="806" y="204" width="235" height="310"/>
+            <rect key="contentRect" x="806" y="204" width="235" height="355"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="875"/>
-            <view key="contentView" misplaced="YES" id="795">
-                <rect key="frame" x="0.0" y="0.0" width="235" height="310"/>
+            <view key="contentView" id="795">
+                <rect key="frame" x="0.0" y="0.0" width="235" height="355"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <button translatesAutoresizingMaskIntoConstraints="NO" id="823">
-                        <rect key="frame" x="16" y="186" width="86" height="14"/>
+                    <button misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="823">
+                        <rect key="frame" x="16" y="209" width="99" height="18"/>
                         <buttonCell key="cell" type="check" title="Frame Index" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="824">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="smallSystem"/>
@@ -12480,8 +12544,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.isHUDFrameIndexVisible" id="10158"/>
                         </connections>
                     </button>
-                    <button translatesAutoresizingMaskIntoConstraints="NO" id="825">
-                        <rect key="frame" x="16" y="230" width="75" height="14"/>
+                    <button misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="825">
+                        <rect key="frame" x="16" y="259" width="84" height="18"/>
                         <buttonCell key="cell" type="check" title="Video FPS" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" state="on" inset="2" id="826">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="smallSystem"/>
@@ -12490,8 +12554,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.isHUDVideoFPSVisible" id="10156"/>
                         </connections>
                     </button>
-                    <button translatesAutoresizingMaskIntoConstraints="NO" id="827">
-                        <rect key="frame" x="16" y="86" width="48" height="16"/>
+                    <button misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="827">
+                        <rect key="frame" x="16" y="97" width="60" height="18"/>
                         <buttonCell key="cell" type="check" title="Input" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="828">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="smallSystem"/>
@@ -12500,8 +12564,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.isHUDInputVisible" id="10492"/>
                         </connections>
                     </button>
-                    <button translatesAutoresizingMaskIntoConstraints="NO" id="829">
-                        <rect key="frame" x="16" y="207" width="111" height="16"/>
+                    <button misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="829">
+                        <rect key="frame" x="16" y="234" width="121" height="18"/>
                         <buttonCell key="cell" type="check" title="3D Renderer FPS" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="830">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="smallSystem"/>
@@ -12510,8 +12574,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.isHUDRender3DFPSVisible" id="10157"/>
                         </connections>
                     </button>
-                    <button translatesAutoresizingMaskIntoConstraints="NO" id="831">
-                        <rect key="frame" x="16" y="163" width="86" height="16"/>
+                    <button misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="831">
+                        <rect key="frame" x="16" y="184" width="98" height="18"/>
                         <buttonCell key="cell" type="check" title="Lag Counter" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="832">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="smallSystem"/>
@@ -12520,8 +12584,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.isHUDLagFrameCountVisible" id="10159"/>
                         </connections>
                     </button>
-                    <button translatesAutoresizingMaskIntoConstraints="NO" id="835">
-                        <rect key="frame" x="16" y="119" width="106" height="16"/>
+                    <button misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="835">
+                        <rect key="frame" x="16" y="134" width="121" height="18"/>
                         <buttonCell key="cell" type="check" title="Real Time Clock" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="836">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="smallSystem"/>
@@ -12530,8 +12594,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.isHUDRealTimeClockVisible" id="10187"/>
                         </connections>
                     </button>
-                    <button translatesAutoresizingMaskIntoConstraints="NO" id="10191">
-                        <rect key="frame" x="16" y="142" width="119" height="14"/>
+                    <button misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10191">
+                        <rect key="frame" x="16" y="159" width="130" height="18"/>
                         <buttonCell key="cell" type="check" title="CPU Load Average" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="10192">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="smallSystem"/>
@@ -12540,8 +12604,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.isHUDCPULoadAverageVisible" id="10194"/>
                         </connections>
                     </button>
-                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="843">
-                        <rect key="frame" x="37" y="13" width="161" height="19"/>
+                    <button verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="843">
+                        <rect key="frame" x="37" y="13" width="162" height="19"/>
                         <buttonCell key="cell" type="roundRect" title="Save Settings as Default" bezelStyle="roundedRect" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="844">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="titleBar" size="12" textStyle="headline"/>
@@ -12550,8 +12614,8 @@ Serial:</string>
                             <action selector="writeDefaultsHUDSettings:" target="-1" id="8239"/>
                         </connections>
                     </button>
-                    <button horizontalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="3480">
-                        <rect key="frame" x="16" y="284" width="155" height="16"/>
+                    <button misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3480">
+                        <rect key="frame" x="16" y="319" width="167" height="18"/>
                         <buttonCell key="cell" type="check" title="Enable Heads-Up Display" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="3481">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="smallSystem"/>
@@ -12560,11 +12624,11 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.isHUDVisible" id="10151"/>
                         </connections>
                     </button>
-                    <box autoresizesSubviews="NO" verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="3482">
-                        <rect key="frame" x="12" y="275" width="211" height="5"/>
+                    <box autoresizesSubviews="NO" verticalHuggingPriority="750" misplaced="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="3482">
+                        <rect key="frame" x="12" y="310" width="211" height="5"/>
                     </box>
-                    <colorWell translatesAutoresizingMaskIntoConstraints="NO" id="10437">
-                        <rect key="frame" x="171" y="227" width="44" height="20"/>
+                    <colorWell misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10437">
+                        <rect key="frame" x="171" y="256" width="44" height="23"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="20" id="ocD-1l-LSF"/>
                         </constraints>
@@ -12573,8 +12637,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.hudColorVideoFPS" id="10455"/>
                         </connections>
                     </colorWell>
-                    <button translatesAutoresizingMaskIntoConstraints="NO" id="11027">
-                        <rect key="frame" x="16" y="251" width="109" height="16"/>
+                    <button misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="11027">
+                        <rect key="frame" x="16" y="284" width="110" height="18"/>
                         <buttonCell key="cell" type="check" title="Execution Speed" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="11029">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="smallSystem"/>
@@ -12583,8 +12647,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.isHUDExecutionSpeedVisible" id="11032"/>
                         </connections>
                     </button>
-                    <colorWell translatesAutoresizingMaskIntoConstraints="NO" id="11028">
-                        <rect key="frame" x="171" y="249" width="44" height="20"/>
+                    <colorWell misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="11028">
+                        <rect key="frame" x="171" y="281" width="44" height="23"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="20" id="Qpk-xc-DRb"/>
                             <constraint firstAttribute="width" constant="44" id="yOr-dV-hkl"/>
@@ -12594,8 +12658,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.hudColorExecutionSpeed" id="11033"/>
                         </connections>
                     </colorWell>
-                    <colorWell translatesAutoresizingMaskIntoConstraints="NO" id="10438">
-                        <rect key="frame" x="171" y="205" width="44" height="20"/>
+                    <colorWell misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10438">
+                        <rect key="frame" x="171" y="231" width="44" height="23"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="20" id="Kr8-GB-JOw"/>
                         </constraints>
@@ -12604,8 +12668,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.hudColorRender3DFPS" id="10456"/>
                         </connections>
                     </colorWell>
-                    <colorWell translatesAutoresizingMaskIntoConstraints="NO" id="10439">
-                        <rect key="frame" x="171" y="183" width="44" height="20"/>
+                    <colorWell misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10439">
+                        <rect key="frame" x="171" y="206" width="44" height="23"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="20" id="qDd-E9-yyw"/>
                         </constraints>
@@ -12614,8 +12678,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.hudColorFrameIndex" id="10457"/>
                         </connections>
                     </colorWell>
-                    <colorWell translatesAutoresizingMaskIntoConstraints="NO" id="10440">
-                        <rect key="frame" x="171" y="161" width="44" height="20"/>
+                    <colorWell misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10440">
+                        <rect key="frame" x="171" y="181" width="44" height="23"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="20" id="Pym-Zr-ZZZ"/>
                         </constraints>
@@ -12624,8 +12688,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.hudColorLagFrameCount" id="10458"/>
                         </connections>
                     </colorWell>
-                    <colorWell translatesAutoresizingMaskIntoConstraints="NO" id="10441">
-                        <rect key="frame" x="171" y="139" width="44" height="20"/>
+                    <colorWell misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10441">
+                        <rect key="frame" x="171" y="156" width="44" height="23"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="20" id="H1c-la-mEZ"/>
                         </constraints>
@@ -12634,8 +12698,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.hudColorCPULoadAverage" id="10459"/>
                         </connections>
                     </colorWell>
-                    <colorWell translatesAutoresizingMaskIntoConstraints="NO" id="10442">
-                        <rect key="frame" x="171" y="117" width="44" height="20"/>
+                    <colorWell misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10442">
+                        <rect key="frame" x="171" y="131" width="44" height="23"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="20" id="jZe-dj-xBY"/>
                         </constraints>
@@ -12644,8 +12708,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.hudColorRTC" id="10461"/>
                         </connections>
                     </colorWell>
-                    <colorWell translatesAutoresizingMaskIntoConstraints="NO" id="10443">
-                        <rect key="frame" x="171" y="84" width="44" height="20"/>
+                    <colorWell misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10443">
+                        <rect key="frame" x="171" y="95" width="44" height="23"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="20" id="B3r-Rf-eiG"/>
                         </constraints>
@@ -12654,8 +12718,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.hudColorInputPendingAndApplied" id="10493"/>
                         </connections>
                     </colorWell>
-                    <colorWell translatesAutoresizingMaskIntoConstraints="NO" id="10444">
-                        <rect key="frame" x="171" y="62" width="44" height="20"/>
+                    <colorWell misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10444">
+                        <rect key="frame" x="171" y="70" width="44" height="23"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="20" id="LmH-qF-5OK"/>
                         </constraints>
@@ -12664,8 +12728,8 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.hudColorInputAppliedOnly" id="10494"/>
                         </connections>
                     </colorWell>
-                    <colorWell translatesAutoresizingMaskIntoConstraints="NO" id="10495">
-                        <rect key="frame" x="171" y="40" width="44" height="20"/>
+                    <colorWell misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10495">
+                        <rect key="frame" x="171" y="45" width="44" height="23"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="20" id="Xmy-Fc-J8H"/>
                         </constraints>
@@ -12674,24 +12738,24 @@ Serial:</string>
                             <binding destination="6652" name="value" keyPath="selection.mainWindow.view.hudColorInputPendingOnly" id="10497"/>
                         </connections>
                     </colorWell>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="10445">
-                        <rect key="frame" x="108" y="45" width="63" height="11"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10445">
+                        <rect key="frame" x="105" y="45" width="66" height="17"/>
                         <textFieldCell key="cell" controlSize="mini" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="Pending Only" id="10446">
                             <font key="font" metaFont="miniSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="10447">
-                        <rect key="frame" x="109" y="67" width="61" height="11"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10447">
+                        <rect key="frame" x="107" y="69" width="63" height="17"/>
                         <textFieldCell key="cell" controlSize="mini" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="Applied Only" id="10448">
                             <font key="font" metaFont="miniSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="10498">
-                        <rect key="frame" x="85" y="89" width="85" height="11"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10498">
+                        <rect key="frame" x="82" y="94" width="88" height="17"/>
                         <textFieldCell key="cell" controlSize="mini" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="Pending &amp; Applied" id="10499">
                             <font key="font" metaFont="miniSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -12779,7 +12843,6 @@ Serial:</string>
                     <constraint firstItem="11028" firstAttribute="trailing" secondItem="10437" secondAttribute="trailing" id="z4k-fW-Fhe"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="486.5" y="1890"/>
         </window>
         <window title="Video Settings" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" hidesOnDeactivate="YES" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="DisplayVideoSettingsPanel" animationBehavior="default" id="796" customClass="NSPanel">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" utility="YES" texturedBackground="YES"/>
@@ -13531,16 +13594,16 @@ Serial:</string>
                 <rect key="frame" x="0.0" y="0.0" width="294" height="378"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="11344">
-                        <rect key="frame" x="53" y="75" width="119" height="14"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="11344">
+                        <rect key="frame" x="15" y="75" width="132" height="14"/>
                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="Current Session MAC:" id="11347">
                             <font key="font" metaFont="smallSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="11345">
-                        <rect key="frame" x="176" y="75" width="101" height="14"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="11345">
+                        <rect key="frame" x="149" y="75" width="128" height="14"/>
                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" placeholderString="00:09:BF:FF:FF:FF" usesSingleLineMode="YES" id="11346">
                             <font key="font" metaFont="smallSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -13608,8 +13671,8 @@ Serial:</string>
                                         <binding destination="3148" name="selectedTag" keyPath="selection.addressSelection" id="12129"/>
                                     </connections>
                                 </matrix>
-                                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="11363">
-                                    <rect key="frame" x="58" y="8" width="141" height="19"/>
+                                <button verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="11363">
+                                    <rect key="frame" x="52" y="8" width="162" height="19"/>
                                     <buttonCell key="cell" type="roundRect" title="New MAC Address Set" bezelStyle="roundedRect" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="11364">
                                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="cellTitle"/>
@@ -13670,8 +13733,8 @@ Serial:</string>
                             </constraints>
                         </view>
                     </box>
-                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="11365">
-                        <rect key="frame" x="71" y="9" width="152" height="19"/>
+                    <button verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="11365">
+                        <rect key="frame" x="65" y="9" width="162" height="19"/>
                         <buttonCell key="cell" type="roundRect" title="Save Settings as Default" bezelStyle="roundedRect" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="11366">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="cellTitle"/>
@@ -13683,8 +13746,8 @@ Serial:</string>
                     <box autoresizesSubviews="NO" verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="11367">
                         <rect key="frame" x="12" y="36" width="270" height="5"/>
                     </box>
-                    <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="11391">
-                        <rect key="frame" x="174" y="46" width="103" height="22"/>
+                    <popUpButton verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="11391">
+                        <rect key="frame" x="148" y="46" width="129" height="22"/>
                         <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" controlSize="small" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="11392">
                             <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="smallSystem"/>
@@ -13694,8 +13757,8 @@ Serial:</string>
                             <binding destination="11399" name="selectedTag" keyPath="bridgeDeviceSelection" id="11420"/>
                         </connections>
                     </popUpButton>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="11397">
-                        <rect key="frame" x="91" y="51" width="81" height="14"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="11397">
+                        <rect key="frame" x="52" y="51" width="94" height="14"/>
                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="Bridge Device:" id="11398">
                             <font key="font" metaFont="smallSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -13731,7 +13794,6 @@ Serial:</string>
                     <constraint firstItem="11365" firstAttribute="centerX" secondItem="11339" secondAttribute="centerX" id="zNj-ZS-bDN"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="498" y="206"/>
         </window>
         <customObject id="11399" customClass="WifiSettingsPanelDelegate">
             <connections>
@@ -15145,7 +15207,6 @@ Serial:</string>
                 <outlet property="miscSectionView" destination="9819" id="9886"/>
                 <outlet property="titlesSectionView" destination="9805" id="9884"/>
             </connections>
-            <point key="canvasLocation" x="-1315" y="-2970"/>
         </window>
         <window title="Set Rotation" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" hidesOnDeactivate="YES" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="SetRotationPanel" animationBehavior="default" id="1856" customClass="NSPanel">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" utility="YES" texturedBackground="YES"/>
@@ -15283,7 +15344,6 @@ Serial:</string>
                     </button>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-961" y="-2546"/>
         </window>
         <window title="Set Separation" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" hidesOnDeactivate="YES" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="SetSeparationPanel" animationBehavior="default" id="7817" customClass="NSPanel">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" utility="YES" texturedBackground="YES"/>
@@ -15411,7 +15471,6 @@ Serial:</string>
                     </button>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-825" y="-2282"/>
         </window>
         <window title="Screenshot Capture Tool" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" hidesOnDeactivate="YES" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="ScreenshotCaptureToolPanel" animationBehavior="default" id="10540" userLabel="Panel (Snapshot Capture Tool)" customClass="NSPanel">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" utility="YES"/>
@@ -15548,7 +15607,6 @@ Serial:</string>
             <connections>
                 <outlet property="delegate" destination="10961" id="11014"/>
             </connections>
-            <point key="canvasLocation" x="-690" y="-2015"/>
         </window>
         <customView id="10624" userLabel="Screenshot Capture Tool Layout Drawer Content View">
             <rect key="frame" x="0.0" y="0.0" width="474" height="167"/>
@@ -15972,7 +16030,6 @@ Serial:</string>
                     <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
                 </box>
             </subviews>
-            <point key="canvasLocation" x="-555" y="-1361"/>
         </customView>
         <drawer preferredEdge="minY" id="10625" userLabel="Screenshot Capture Tool Drawer">
             <size key="contentSize" width="474" height="167"/>
@@ -16484,7 +16541,6 @@ Serial:</string>
                     </box>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-420" y="-783"/>
         </window>
         <customView id="11066" userLabel="AV Capture Tool Layout Drawer Content View">
             <rect key="frame" x="0.0" y="0.0" width="474" height="167"/>
@@ -16872,7 +16928,6 @@ Serial:</string>
                     <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
                 </box>
             </subviews>
-            <point key="canvasLocation" x="-285" y="-290"/>
         </customView>
         <drawer preferredEdge="minY" id="11062" userLabel="AV Capture Tool Drawer">
             <size key="contentSize" width="474" height="167"/>
@@ -17053,7 +17108,7 @@ Serial:</string>
                     </box>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-149" y="487"/>
+            <point key="canvasLocation" x="-1053" y="-2952"/>
         </window>
         <window title="GDB Stub Control" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" hidesOnDeactivate="YES" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="GDBStubControlPanel" animationBehavior="default" id="9389" customClass="NSPanel">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" utility="YES" texturedBackground="YES"/>
@@ -17064,8 +17119,8 @@ Serial:</string>
                 <rect key="frame" x="0.0" y="0.0" width="290" height="119"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <textField verticalHuggingPriority="750" preferredMaxLayoutWidth="88" translatesAutoresizingMaskIntoConstraints="NO" id="9393">
-                        <rect key="frame" x="182" y="83" width="88" height="19"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="9393">
+                        <rect key="frame" x="190" y="80" width="80" height="19"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="88" id="AjE-Oj-a0r"/>
                         </constraints>
@@ -17096,8 +17151,8 @@ Serial:</string>
                             </binding>
                         </connections>
                     </textField>
-                    <textField verticalHuggingPriority="750" preferredMaxLayoutWidth="88" translatesAutoresizingMaskIntoConstraints="NO" id="9392">
-                        <rect key="frame" x="182" y="56" width="88" height="19"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="9392">
+                        <rect key="frame" x="190" y="55" width="80" height="19"/>
                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="9406">
                             <numberFormatter key="formatter" formatterBehavior="custom10_4" localizesFormat="NO" numberStyle="decimal" allowsFloats="NO" usesGroupingSeparator="NO" formatWidth="-1" minimumIntegerDigits="1" maximumIntegerDigits="5" id="9407">
                                 <real key="minimum" value="1"/>
@@ -17125,8 +17180,8 @@ Serial:</string>
                             </binding>
                         </connections>
                     </textField>
-                    <button translatesAutoresizingMaskIntoConstraints="NO" id="9397">
-                        <rect key="frame" x="19" y="84" width="109" height="16"/>
+                    <button misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="9397">
+                        <rect key="frame" x="17" y="80" width="112" height="18"/>
                         <buttonCell key="cell" type="check" title="Enable for ARM9" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="9400">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="smallSystem"/>
@@ -17149,8 +17204,8 @@ Serial:</string>
                             </binding>
                         </connections>
                     </button>
-                    <button translatesAutoresizingMaskIntoConstraints="NO" id="9396">
-                        <rect key="frame" x="19" y="57" width="108" height="16"/>
+                    <button misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="9396">
+                        <rect key="frame" x="17" y="55" width="112" height="18"/>
                         <buttonCell key="cell" type="check" title="Enable for ARM7" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="9401">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="smallSystem"/>
@@ -17173,24 +17228,24 @@ Serial:</string>
                             </binding>
                         </connections>
                     </button>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="9395">
-                        <rect key="frame" x="146" y="85" width="30" height="14"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="9395">
+                        <rect key="frame" x="147" y="82" width="38" height="14"/>
                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="Port:" id="9402">
                             <font key="font" metaFont="smallSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="9394">
-                        <rect key="frame" x="146" y="58" width="30" height="14"/>
+                    <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="9394">
+                        <rect key="frame" x="147" y="57" width="38" height="14"/>
                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="Port:" id="9403">
                             <font key="font" metaFont="smallSystem"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="9424">
-                        <rect key="frame" x="97" y="19" width="96" height="19"/>
+                    <button verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="9424">
+                        <rect key="frame" x="97" y="18" width="100" height="19"/>
                         <buttonCell key="cell" type="roundRect" title="Start" alternateTitle="Stop" bezelStyle="roundedRect" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="9425">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="titleBar" size="12" textStyle="headline"/>
@@ -17229,10 +17284,10 @@ Serial:</string>
                     <constraint firstItem="9395" firstAttribute="trailing" secondItem="9394" secondAttribute="trailing" id="znq-bs-Wqh"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="-612" y="312"/>
+            <point key="canvasLocation" x="-917" y="-2619"/>
         </window>
         <customView id="5933" userLabel="Export ROM Save Panel Accessory">
-            <rect key="frame" x="0.0" y="0.0" width="417" height="34"/>
+            <rect key="frame" x="0.0" y="0.0" width="450" height="34"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="5935">
@@ -17244,7 +17299,7 @@ Serial:</string>
                     </textFieldCell>
                 </textField>
                 <popUpButton horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="5934">
-                    <rect key="frame" x="180" y="5" width="221" height="25"/>
+                    <rect key="frame" x="180" y="5" width="254" height="25"/>
                     <popUpButtonCell key="cell" type="push" title="DeSmuME ROM Save (.dsv)" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="5942" id="5937">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
@@ -17291,7 +17346,7 @@ Serial:</string>
             <connections>
                 <outlet property="delegate" destination="6440" id="6450"/>
             </connections>
-            <point key="canvasLocation" x="-882" y="-252"/>
+            <point key="canvasLocation" x="-899" y="-251"/>
         </window>
         <customView id="6352" userLabel="Support Request Form View">
             <rect key="frame" x="0.0" y="0.0" width="580" height="567"/>
@@ -17444,7 +17499,7 @@ Serial:</string>
                     <autoresizingMask key="autoresizingMask"/>
                     <clipView key="contentView" id="hfD-1L-KYl">
                         <rect key="frame" x="1" y="1" width="538" height="202"/>
-                        <autoresizingMask key="autoresizingMask"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" spellingCorrection="YES" smartInsertDelete="YES" id="6499">
                                 <rect key="frame" x="0.0" y="0.0" width="538" height="202"/>
@@ -17505,7 +17560,7 @@ Serial:</string>
                     </connections>
                 </progressIndicator>
             </subviews>
-            <point key="canvasLocation" x="-1087" y="-928"/>
+            <point key="canvasLocation" x="-782" y="-2194"/>
         </customView>
         <customView id="6388" userLabel="Bug Report Form View">
             <rect key="frame" x="0.0" y="0.0" width="580" height="567"/>
@@ -17521,8 +17576,8 @@ Serial:</string>
                         <action selector="continueToFinalForm:" target="6440" id="6469"/>
                     </connections>
                 </button>
-                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6390">
-                    <rect key="frame" x="358" y="373" width="209" height="31"/>
+                <button verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6390">
+                    <rect key="frame" x="358" y="370" width="209" height="32"/>
                     <buttonCell key="cell" type="push" title="Use Currently Loaded ROM" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="6428">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
@@ -17531,8 +17586,8 @@ Serial:</string>
                         <action selector="copyRomInfoToTextFields:" target="6440" id="6471"/>
                     </connections>
                 </button>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6391">
-                    <rect key="frame" x="106" y="376" width="249" height="23"/>
+                <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6391">
+                    <rect key="frame" x="105" y="375" width="250" height="22"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="6427">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -17542,8 +17597,8 @@ Serial:</string>
                         <binding destination="6441" name="value" keyPath="selection.romName" id="6463"/>
                     </connections>
                 </textField>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6392">
-                    <rect key="frame" x="106" y="347" width="249" height="21"/>
+                <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6392">
+                    <rect key="frame" x="105" y="345" width="250" height="22"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="6426">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -17553,8 +17608,8 @@ Serial:</string>
                         <binding destination="6441" name="value" keyPath="selection.romSerial" id="6464"/>
                     </connections>
                 </textField>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6393">
-                    <rect key="frame" x="18" y="380" width="83" height="15"/>
+                <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6393">
+                    <rect key="frame" x="17" y="377" width="83" height="17"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="79" id="Zid-Xb-in0"/>
                     </constraints>
@@ -17564,16 +17619,16 @@ Serial:</string>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6394">
-                    <rect key="frame" x="18" y="349" width="83" height="17"/>
+                <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6394">
+                    <rect key="frame" x="17" y="347" width="83" height="17"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="ROM Serial:" id="6424">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="542" translatesAutoresizingMaskIntoConstraints="NO" id="6395">
-                    <rect key="frame" x="18" y="407" width="544" height="42"/>
+                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" misplaced="YES" preferredMaxLayoutWidth="542" translatesAutoresizingMaskIntoConstraints="NO" id="6395">
+                    <rect key="frame" x="17" y="405" width="546" height="42"/>
                     <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" id="6423">
                         <font key="font" metaFont="smallSystem"/>
                         <string key="title">If your bug is related to a specific ROM, enter its name and serial in the fields below. Otherwise, you may leave these fields blank. (It may be easier to load the ROM first, then click Use Currently Loaded ROM to let DeSmuME fill in this information for you.)</string>
@@ -17581,27 +17636,27 @@ Serial:</string>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6396">
-                    <rect key="frame" x="18" y="457" width="149" height="16"/>
+                <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6396">
+                    <rect key="frame" x="17" y="455" width="546" height="17"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Tell us about the ROM." id="6422">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <box autoresizesSubviews="NO" verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="6397">
-                    <rect key="frame" x="12" y="479" width="556" height="5"/>
+                <box autoresizesSubviews="NO" verticalHuggingPriority="750" misplaced="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="6397">
+                    <rect key="frame" x="12" y="478" width="556" height="5"/>
                 </box>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6398">
-                    <rect key="frame" x="197" y="540" width="187" height="16"/>
+                <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6398">
+                    <rect key="frame" x="17" y="539" width="546" height="17"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" title="DeSmuME Bug Report Form" id="6421">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="542" translatesAutoresizingMaskIntoConstraints="NO" id="6399">
-                    <rect key="frame" x="18" y="490" width="544" height="42"/>
+                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" misplaced="YES" preferredMaxLayoutWidth="542" translatesAutoresizingMaskIntoConstraints="NO" id="6399">
+                    <rect key="frame" x="17" y="489" width="546" height="42"/>
                     <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" id="6420">
                         <font key="font" metaFont="smallSystem"/>
                         <string key="title">Think you just spotted a bug with DeSmuME? Be sure to let us know! Just fill out this form and DeSmuME will prepare all the troubleshooting information for you to send to the DeSmuME team. This information will help us respond to your bug report quicker and easier.</string>
@@ -17609,35 +17664,35 @@ Serial:</string>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <box autoresizesSubviews="NO" verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="6400">
-                    <rect key="frame" x="12" y="334" width="556" height="5"/>
+                <box autoresizesSubviews="NO" verticalHuggingPriority="750" misplaced="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="6400">
+                    <rect key="frame" x="12" y="332" width="556" height="5"/>
                 </box>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6401">
-                    <rect key="frame" x="18" y="312" width="171" height="16"/>
+                <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6401">
+                    <rect key="frame" x="17" y="309" width="546" height="17"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Tell us what is happening." id="6419">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="542" translatesAutoresizingMaskIntoConstraints="NO" id="6402">
-                    <rect key="frame" x="18" y="276" width="544" height="28"/>
+                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" misplaced="YES" preferredMaxLayoutWidth="542" translatesAutoresizingMaskIntoConstraints="NO" id="6402">
+                    <rect key="frame" x="17" y="273" width="546" height="28"/>
                     <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="In the fields below, give us specific details on what you OBSERVED happened, and then what you EXPECTED to happen." id="6418">
                         <font key="font" metaFont="smallSystem"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6405">
-                    <rect key="frame" x="18" y="254" width="114" height="14"/>
+                <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6405">
+                    <rect key="frame" x="17" y="251" width="206" height="14"/>
                     <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Observed Behavior:" id="6415">
                         <font key="font" metaFont="smallSystemBold"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6406">
-                    <rect key="frame" x="18" y="145" width="113" height="14"/>
+                <textField verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6406">
+                    <rect key="frame" x="17" y="145" width="206" height="14"/>
                     <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Expected Behavior:" id="6414">
                         <font key="font" metaFont="smallSystemBold"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -17647,27 +17702,27 @@ Serial:</string>
                 <box autoresizesSubviews="NO" verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="6407">
                     <rect key="frame" x="12" y="50" width="556" height="5"/>
                 </box>
-                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="434" translatesAutoresizingMaskIntoConstraints="NO" id="6408">
-                    <rect key="frame" x="101" y="16" width="461" height="28"/>
+                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" misplaced="YES" preferredMaxLayoutWidth="434" translatesAutoresizingMaskIntoConstraints="NO" id="6408">
+                    <rect key="frame" x="125" y="16" width="438" height="28"/>
                     <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="And that's it! Click Continue to review your information before submitting it to the DeSmuME team." id="6413">
                         <font key="font" metaFont="smallSystem"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <scrollView horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6486">
-                    <rect key="frame" x="20" y="167" width="540" height="85"/>
+                <scrollView misplaced="YES" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6486">
+                    <rect key="frame" x="20" y="167" width="540" height="82"/>
                     <clipView key="contentView" id="FRq-Q5-CCu">
-                        <rect key="frame" x="1" y="1" width="538" height="83"/>
-                        <autoresizingMask key="autoresizingMask"/>
+                        <rect key="frame" x="1" y="1" width="538" height="80"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" spellingCorrection="YES" smartInsertDelete="YES" id="6489">
-                                <rect key="frame" x="0.0" y="0.0" width="538" height="83"/>
+                                <rect key="frame" x="0.0" y="0.0" width="538" height="80"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                <size key="minSize" width="538" height="83"/>
-                                <size key="maxSize" width="567" height="10000000"/>
+                                <size key="minSize" width="538" height="80"/>
+                                <size key="maxSize" width="540" height="10000000"/>
                                 <color key="insertionPointColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                 <connections>
                                     <binding destination="6441" name="value" keyPath="selection.bugReportObservedText" id="6490"/>
@@ -17681,22 +17736,22 @@ Serial:</string>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
                     <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="6487">
-                        <rect key="frame" x="523" y="1" width="16" height="83"/>
+                        <rect key="frame" x="523" y="1" width="16" height="80"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
                 </scrollView>
-                <scrollView horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6491">
-                    <rect key="frame" x="20" y="61" width="540" height="82"/>
+                <scrollView misplaced="YES" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6491">
+                    <rect key="frame" x="20" y="61" width="541" height="82"/>
                     <clipView key="contentView" id="kDg-Su-UXe">
-                        <rect key="frame" x="1" y="1" width="538" height="80"/>
-                        <autoresizingMask key="autoresizingMask"/>
+                        <rect key="frame" x="1" y="1" width="539" height="80"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" findStyle="panel" continuousSpellChecking="YES" allowsUndo="YES" spellingCorrection="YES" smartInsertDelete="YES" id="6494">
-                                <rect key="frame" x="0.0" y="0.0" width="538" height="80"/>
+                                <rect key="frame" x="0.0" y="0.0" width="539" height="80"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                <size key="minSize" width="538" height="80"/>
+                                <size key="minSize" width="539" height="80"/>
                                 <size key="maxSize" width="541" height="10000000"/>
                                 <color key="insertionPointColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                 <connections>
@@ -17711,12 +17766,12 @@ Serial:</string>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
                     <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="6492">
-                        <rect key="frame" x="523" y="1" width="16" height="80"/>
+                        <rect key="frame" x="524" y="1" width="16" height="80"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
                 </scrollView>
-                <imageView translatesAutoresizingMaskIntoConstraints="NO" id="8012">
-                    <rect key="frame" x="364" y="341" width="30" height="33"/>
+                <imageView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="8012">
+                    <rect key="frame" x="364" y="341" width="30" height="30"/>
                     <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" image="NSApplicationIcon" id="8016"/>
                     <connections>
                         <binding destination="2653" name="value" keyPath="selection.iconImage" id="8017"/>
@@ -17727,8 +17782,8 @@ Serial:</string>
                         </binding>
                     </connections>
                 </imageView>
-                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="164" translatesAutoresizingMaskIntoConstraints="NO" id="8013">
-                    <rect key="frame" x="396" y="345" width="168" height="29"/>
+                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" misplaced="YES" preferredMaxLayoutWidth="164" translatesAutoresizingMaskIntoConstraints="NO" id="8013">
+                    <rect key="frame" x="396" y="343" width="168" height="28"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="164" id="ssy-D6-5ru"/>
                     </constraints>
@@ -17743,8 +17798,8 @@ Serial:</string>
                         <binding destination="2653" name="value" keyPath="selection.romNameAndSerialInfo" id="8018"/>
                     </connections>
                 </textField>
-                <progressIndicator horizontalHuggingPriority="750" verticalHuggingPriority="750" maxValue="100" displayedWhenStopped="NO" bezeled="NO" indeterminate="YES" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="8014">
-                    <rect key="frame" x="363" y="341" width="32" height="33"/>
+                <progressIndicator horizontalHuggingPriority="750" verticalHuggingPriority="750" misplaced="YES" maxValue="100" displayedWhenStopped="NO" bezeled="NO" indeterminate="YES" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="8014">
+                    <rect key="frame" x="363" y="339" width="32" height="32"/>
                     <connections>
                         <binding destination="6652" name="animate" keyPath="selection.isRomLoading" id="8019"/>
                     </connections>
@@ -17839,7 +17894,7 @@ Serial:</string>
                     <rect key="frame" x="20" y="102" width="540" height="445"/>
                     <clipView key="contentView" id="wxr-Yo-zgs">
                         <rect key="frame" x="1" y="1" width="538" height="443"/>
-                        <autoresizingMask key="autoresizingMask"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textView editable="NO" importsGraphics="NO" richText="NO" verticallyResizable="YES" spellingCorrection="YES" id="6436">
                                 <rect key="frame" x="0.0" y="0.0" width="538" height="443"/>
@@ -17871,8 +17926,8 @@ Serial:</string>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
                 </scrollView>
-                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6432">
-                    <rect key="frame" x="14" y="12" width="94" height="32"/>
+                <button verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6432">
+                    <rect key="frame" x="14" y="12" width="112" height="32"/>
                     <constraints>
                         <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="80" id="yYP-Gy-yiz"/>
                     </constraints>
@@ -17884,8 +17939,8 @@ Serial:</string>
                         <action selector="backForm:" target="6440" id="6472"/>
                     </connections>
                 </button>
-                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6433">
-                    <rect key="frame" x="354" y="12" width="213" height="32"/>
+                <button verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6433">
+                    <rect key="frame" x="342" y="12" width="224" height="32"/>
                     <buttonCell key="cell" type="push" title="Go to Tech Support Webpage" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="6434">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
@@ -17898,8 +17953,8 @@ DQ
                         <binding destination="6441" name="title" keyPath="selection.goWebpageButtonTitle" id="6457"/>
                     </connections>
                 </button>
-                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="322" translatesAutoresizingMaskIntoConstraints="NO" id="6484">
-                    <rect key="frame" x="18" y="52" width="337" height="42"/>
+                <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" misplaced="YES" preferredMaxLayoutWidth="322" translatesAutoresizingMaskIntoConstraints="NO" id="6484">
+                    <rect key="frame" x="17" y="52" width="326" height="42"/>
                     <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="Please copy-paste the above information into our tech support webpage. This will ensure the fastest response time from us." id="6485">
                         <font key="font" metaFont="smallSystem"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -17913,8 +17968,8 @@ DQ
                         </binding>
                     </connections>
                 </textField>
-                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6611">
-                    <rect key="frame" x="354" y="55" width="213" height="32"/>
+                <button verticalHuggingPriority="750" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6611">
+                    <rect key="frame" x="342" y="55" width="224" height="32"/>
                     <buttonCell key="cell" type="push" title="Copy Info to Clipboard" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="6612">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
@@ -18035,7 +18090,9 @@ DQ
                 <string>cdsGPU.openGLEmulateDepthEqualsTestTolerance</string>
                 <string>cdsGPU.openGLEmulateDepthLEqualPolygonFacing</string>
                 <string>cdsGPU.openGLEmulateNDSDepthCalculation</string>
+                <string>emulationPaused</string>
             </declaredKeys>
+            <classReference key="objectClass" className="CocoaDSCore"/>
         </objectController>
         <objectController id="3959" userLabel="CocoaDS Sound Controller">
             <declaredKeys>
@@ -18093,6 +18150,7 @@ DQ
                 <string>mainWindow.view.isHUDExecutionSpeedVisible</string>
                 <string>mainWindow.view.hudColorExecutionSpeed</string>
             </declaredKeys>
+            <classReference key="objectClass" className="EmuControllerDelegate"/>
             <connections>
                 <outlet property="content" destination="6651" id="6826"/>
             </connections>
@@ -18224,6 +18282,7 @@ DQ
                 <string>firmwareMACAddressString</string>
                 <string>firmwareMACAddressPendingString</string>
             </declaredKeys>
+            <classReference key="objectClass" className="CocoaDSFirmware"/>
         </objectController>
         <objectController editable="NO" id="2653" userLabel="ROM Info Panel Controller">
             <declaredKeys>
@@ -18278,6 +18337,7 @@ DQ
                 <string>memAddressString</string>
                 <string>memAddressSixDigitString</string>
             </declaredKeys>
+            <classReference key="objectClass" className="CocoaDSCheatItem"/>
         </objectController>
         <objectController id="7666" userLabel="Input Profile Controller" customClass="InputProfileController">
             <declaredKeys>
@@ -18319,6 +18379,7 @@ DQ
                 <string>description</string>
                 <string>cheatType</string>
             </declaredKeys>
+            <classReference key="objectClass" className="CocoaDSCheatItem"/>
         </arrayController>
         <arrayController editable="NO" preservesSelection="NO" selectsInsertedObjects="NO" avoidsEmptySelection="NO" clearsFilterPredicateOnInsertion="NO" id="4916" userLabel="Cheat Search List Array Controller">
             <declaredKeys>
@@ -18346,6 +18407,7 @@ DQ
                 <string>gbaSRamName</string>
                 <string>gbaSRamPath</string>
             </declaredKeys>
+            <classReference key="objectClass" className="Slot2WindowDelegate"/>
             <connections>
                 <outlet property="content" destination="8356" id="8549"/>
             </connections>
@@ -18358,6 +18420,7 @@ DQ
                 <string>type</string>
                 <string>enabled</string>
             </declaredKeys>
+            <classReference key="objectClass" className="CocoaSlot2Device"/>
         </arrayController>
         <arrayController objectClassName="InputHIDDevice" preservesSelection="NO" selectsInsertedObjects="NO" id="8527" userLabel="Input Device List Array Controller">
             <declaredKeys>
@@ -18367,6 +18430,7 @@ DQ
                 <string>productName</string>
                 <string>serialNumber</string>
             </declaredKeys>
+            <classReference key="objectClass" className="InputHIDDevice"/>
         </arrayController>
         <userDefaultsController representsSharedInstance="YES" id="2098"/>
     </objects>

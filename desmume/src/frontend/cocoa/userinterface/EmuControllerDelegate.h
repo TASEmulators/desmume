@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2018 DeSmuME Team
+	Copyright (C) 2013-2021 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -176,6 +176,7 @@ class AudioSampleBlockGenerator;
 // Emulation Menu
 - (IBAction) toggleSpeedLimiter:(id)sender;
 - (IBAction) toggleAutoFrameSkip:(id)sender;
+- (IBAction) framesToSkipSetting:(id)sender;
 - (IBAction) toggleCheats:(id)sender;
 - (IBAction) toggleExecutePause:(id)sender;
 - (IBAction) coreExecute:(id)sender;

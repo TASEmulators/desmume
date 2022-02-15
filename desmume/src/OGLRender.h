@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2019 DeSmuME team
+	Copyright (C) 2008-2021 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -323,7 +323,8 @@ enum OGLTextureUnitID
 	OGLTextureUnitID_DepthStencil,
 	OGLTextureUnitID_GPolyID,
 	OGLTextureUnitID_FogAttr,
-	OGLTextureUnitID_PolyStates
+	OGLTextureUnitID_PolyStates,
+	OGLTextureUnitID_FogDensityTable
 };
 
 enum OGLBindingPointID
@@ -397,10 +398,9 @@ struct OGLRenderStates
 	GLuint clearPolyID;
 	GLfloat clearDepth;
 	GLfloat alphaTestRef;
-	GLfloat fogOffset;
-	GLfloat fogStep;
+	GLfloat fogOffset; // Currently unused, kept to preserve alignment
+	GLfloat fogStep; // Currently unused, kept to preserve alignment
 	GLfloat pad_0; // This needs to be here to preserve alignment
-	GLfloat fogDensity[32];
 	GLvec4 fogColor;
 	GLvec4 edgeColor[8];
 	GLvec4 toonColor[32];
@@ -433,27 +433,35 @@ union OGLGeometryFlags
 {
 	u8 value;
 	
+#ifndef MSB_FIRST
 	struct
 	{
-#ifndef MSB_FIRST
+		u8 EnableFog:1;
+		u8 EnableEdgeMark:1;
+		u8 OpaqueDrawMode:1;
 		u8 EnableWDepth:1;
 		u8 EnableAlphaTest:1;
 		u8 EnableTextureSampling:1;
 		u8 ToonShadingMode:1;
-		u8 NeedsDepthEqualsTest:1;
-		u8 EnableFog:1;
-		u8 EnableEdgeMark:1;
-		u8 OpaqueDrawMode:1;
+		u8 unused:1;
+	};
+	
+	struct
+	{
+		u8 DrawBuffersMode:3;
+		u8 :5;
+	};
 #else
-		u8 OpaqueDrawMode:1;
-		u8 EnableEdgeMark:1;
-		u8 EnableFog:1;
-		u8 NeedsDepthEqualsTest:1;
+	struct
+	{
+		u8 unused:1;
 		u8 ToonShadingMode:1;
 		u8 EnableTextureSampling:1;
 		u8 EnableAlphaTest:1;
 		u8 EnableWDepth:1;
-#endif
+		u8 OpaqueDrawMode:1;
+		u8 EnableEdgeMark:1;
+		u8 EnableFog:1;
 	};
 	
 	struct
@@ -461,6 +469,7 @@ union OGLGeometryFlags
 		u8 :5;
 		u8 DrawBuffersMode:3;
 	};
+#endif
 };
 typedef OGLGeometryFlags OGLGeometryFlags;
 
@@ -513,6 +522,7 @@ struct OGLRenderRef
 	GLuint texGPolyID;
 	GLuint texGDepthStencilID;
 	GLuint texFinalColorID;
+	GLuint texFogDensityTableID;
 	GLuint texMSGColorID;
 	GLuint texMSGWorkingID;
 	
@@ -529,8 +539,8 @@ struct OGLRenderRef
 	
 	// Shader states
 	GLuint vertexGeometryShaderID;
-	GLuint fragmentGeometryShaderID[256];
-	GLuint programGeometryID[256];
+	GLuint fragmentGeometryShaderID[128];
+	GLuint programGeometryID[128];
 	
 	GLuint vtxShaderGeometryZeroDstAlphaID;
 	GLuint fragShaderGeometryZeroDstAlphaID;
@@ -556,7 +566,6 @@ struct OGLRenderRef
 	GLint uniformStateClearDepth;
 	GLint uniformStateEdgeColor;
 	GLint uniformStateFogColor;
-	GLint uniformStateFogDensity;
 	
 	GLint uniformStateAlphaTestRef[256];
 	GLint uniformStateToonColor[256];
@@ -574,7 +583,7 @@ struct OGLRenderRef
 	GLint uniformDrawModeDepthEqualsTest[256];
 	
 	GLint uniformPolyStateIndex[256];
-	GLint uniformPolyDepthOffsetMode[256];
+	GLfloat uniformPolyDepthOffset[256];
 	GLint uniformPolyDrawShadow[256];
 	
 	// VAO
@@ -670,12 +679,12 @@ public:
 	void SetUpscalingBuffer(void *upscaleBuffer);
 };
 
-#if defined(ENABLE_AVX)
-class OpenGLRenderer : public Render3D_AVX
+#if defined(ENABLE_AVX2)
+class OpenGLRenderer : public Render3D_AVX2
 #elif defined(ENABLE_SSE2)
 class OpenGLRenderer : public Render3D_SSE2
 #elif defined(ENABLE_ALTIVEC)
-class OpenGLRenderer : public Render3D_Altivec
+class OpenGLRenderer : public Render3D_AltiVec
 #else
 class OpenGLRenderer : public Render3D
 #endif

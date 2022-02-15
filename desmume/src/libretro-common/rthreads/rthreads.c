@@ -22,6 +22,7 @@
 
 #ifdef __unix__
 #define _POSIX_C_SOURCE 199309
+#define _GNU_SOURCE
 #endif
 
 #include <stdlib.h>
@@ -314,7 +315,13 @@ void sthread_setname(sthread_t *thread, const char *name)
 {
    if (!thread)
       return;
-   // TODO: implement that for Windows (and Mac?) too.
+   // TODO: implement that for Windows too.
+   // This can't be implemented on Apple OSes because pthread_setname_np() works
+   // substantially different. Not only does pthread_setname_np() take only the
+   // 'name' parameter, but it can only change the thread name on the current
+   // thread, when standard pthread_setname_np() can set the thread name from
+   // any thread. At the time of this writing (2021/08/30), there is no way to
+   // set the thread name from a different thread when running an Apple OS.
 #if !defined(USE_WIN32_THREADS) && !defined(__APPLE__)
    pthread_setname_np(thread->id, name);
 #endif
