@@ -13,18 +13,16 @@ A Python library using the DLL/SO interface can be found at
 
 Build Linux & Mac
 =================
-To build, first cd to src/frontend/interface and then run `./autogen.sh`
 
-This will create the file `configure`.
-It does this using the packages `autoconf` and `automake`.
-It also requires `libglib2.0-dev` to generate correctly.
-(`glib` from the AUR if building on Arch)
+DeSmuME uses the Meson build system to the shared object under Linux and MacOS:
 
-Run this using `./configure`
+* https://mesonbuild.com/
 
-Then build the program by running `make`
+To build, first cd to src/frontend/interface and then run `meson build`
 
-It will generate a shared object under `.libs/libdesmume.so`.
+Then build the library by running `ninja -C build`
+
+It will generate a shared object under `build/libdesmume.so`.
 
 Build Windows
 =============
