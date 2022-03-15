@@ -63,6 +63,7 @@
 #include "SPU.h"
 #include "saves.h"
 #include "emufile.h"
+#include "types.h"
 
 using namespace std;
 
@@ -2022,8 +2023,8 @@ DEFINE_LUA_FUNCTION(memory_getregister, "cpu_dot_registername_string")
 					switch(rpm.dataSize)
 					{ default:
 					case 1: lua_pushinteger(L, *(unsigned char*)rpm.pointer); break;
-					case 2: lua_pushinteger(L, *(unsigned short*)rpm.pointer); break;
-					case 4: lua_pushinteger(L, *(unsigned long*)rpm.pointer); break;
+					case 2: lua_pushinteger(L, *(u16*)rpm.pointer); break;
+					case 4: lua_pushinteger(L, *(u32*)rpm.pointer); break;
 					}
 					return 1;
 				}
@@ -2038,7 +2039,7 @@ DEFINE_LUA_FUNCTION(memory_getregister, "cpu_dot_registername_string")
 DEFINE_LUA_FUNCTION(memory_setregister, "cpu_dot_registername_string,value")
 {
 	const char* qualifiedRegisterName = luaL_checkstring(L,1);
-	unsigned long value = (unsigned long)(luaL_checkinteger(L,2));
+	unsigned long value = (u32)(luaL_checkinteger(L,2));
 	lua_settop(L,0);
 	for(int cpu = 0; cpu < sizeof(cpuToRegisterMaps)/sizeof(*cpuToRegisterMaps); cpu++)
 	{
@@ -2055,8 +2056,8 @@ DEFINE_LUA_FUNCTION(memory_setregister, "cpu_dot_registername_string,value")
 					switch(rpm.dataSize)
 					{ default:
 					case 1: *(unsigned char*)rpm.pointer = (unsigned char)(value & 0xFF); break;
-					case 2: *(unsigned short*)rpm.pointer = (unsigned short)(value & 0xFFFF); break;
-					case 4: *(unsigned long*)rpm.pointer = value; break;
+					case 2: *(u16*)rpm.pointer = (u16)(value & 0xFFFF); break;
+					case 4: *(u32*)rpm.pointer = value; break;
 					}
 					return 0;
 				}
