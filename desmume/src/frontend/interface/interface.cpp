@@ -427,7 +427,7 @@ cpuToRegisterMaps [] =
 	{"", arm9PointerMap},
 };
 
-EXPORTED int desmume_memory_read_register(char* register_name)
+EXPORTED u32 desmume_memory_read_register(char* register_name)
 {
 	for(int cpu = 0; cpu < sizeof(cpuToRegisterMaps)/sizeof(*cpuToRegisterMaps); cpu++)
 	{
@@ -444,8 +444,8 @@ EXPORTED int desmume_memory_read_register(char* register_name)
 					switch(rpm.dataSize)
 					{ default:
 					case 1: return *(unsigned char*)rpm.pointer;
-					case 2: return *(unsigned short*)rpm.pointer;
-					case 4: return *(unsigned long*)rpm.pointer;
+					case 2: return *(u16*)rpm.pointer;
+					case 4: return *(u32*)rpm.pointer;
 					}
 				}
 			}
@@ -455,7 +455,7 @@ EXPORTED int desmume_memory_read_register(char* register_name)
 	return 0;
 }
 
-EXPORTED void desmume_memory_write_register(char* register_name, long value)
+EXPORTED void desmume_memory_write_register(char* register_name, u32 value)
 {
 	for(int cpu = 0; cpu < sizeof(cpuToRegisterMaps)/sizeof(*cpuToRegisterMaps); cpu++)
 	{
@@ -472,8 +472,8 @@ EXPORTED void desmume_memory_write_register(char* register_name, long value)
 					switch(rpm.dataSize)
 					{ default:
 					case 1: *(unsigned char*)rpm.pointer = (unsigned char)(value & 0xFF); break;
-					case 2: *(unsigned short*)rpm.pointer = (unsigned short)(value & 0xFFFF); break;
-					case 4: *(unsigned long*)rpm.pointer = value; break;
+					case 2: *(u16*)rpm.pointer = (u16)(value & 0xFFFF); break;
+					case 4: *(u32*)rpm.pointer = value; break;
 					}
 				}
 			}
