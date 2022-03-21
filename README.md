@@ -6,6 +6,20 @@ Designed for iPhone/iPad, also workable on other devices with a modern browser.
 
 https://ds.44670.org/
 
+# Please Read This File Before Firing a New Issue, Thank You!
+
+# How to save your game progress
+
+You can save your game progress in the game, and it will be stored in browser's local storage automatically. An "auto saving" banner will appear while the saving is in progress.
+
+On iOS(iPhone/iPad), you have to add the page to your **Home Screen** in order to save your game progress. Your save data will be stored on your device until you remove the icon from Home Screen. 
+
+To reduce the risk of accidental deletion of your Home Screen icon, you can import/export your save data from the in-game menu regularly.
+
+On macOS Safari, the game progress will be deleted after **7 days of inactivity** due to the browser's limitation. This behavior of Safari cannot be changed, so it is strongly recommended to use other browsers like Chrome on macOS.
+
+For other platforms, Chrome/Edge may be a good choice.
+
 # Performance
 
 Most 2D games could be run at 60fps on A14-based devices. 
