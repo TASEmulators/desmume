@@ -6,7 +6,9 @@ Designed for iPhone/iPad, also workable on other devices with a modern browser.
 
 https://ds.44670.org/
 
-# Please Read This File Before Firing a New Issue, Thank You!
+# Please Read This Guide Before Firing a New Issue, Thank You!
+
+# Please, Do Not Fire a Duplicated Issue for Feature Request
 
 # How to save your game progress
 
