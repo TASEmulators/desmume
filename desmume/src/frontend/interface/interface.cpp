@@ -39,7 +39,7 @@
 
 #define SCREENS_PIXEL_SIZE 98304
 volatile bool execute = false;
-volatile bool rom_opened = false;
+static bool rom_opened = false;
 TieredRegion hooked_regions [HOOK_COUNT];
 std::map<unsigned int, memory_cb_fnc> hooks[HOOK_COUNT];
 
