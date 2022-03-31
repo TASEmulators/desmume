@@ -40,6 +40,11 @@ else
   have_jit = false
 endif
 
+# Clang refuses to compile with this warning
+if meson.get_compiler('cpp').get_id() == 'clang'
+  add_global_arguments('-Wno-c++11-narrowing', language: ['c', 'cpp'])
+endif
+
 includes = include_directories(
   '../../../src',
   '../../../src/libretro-common/include',
@@ -168,7 +173,9 @@ if have_jit
   ]
 endif
 
-if dep_gl.found()
+if host_machine.system() == 'darwin'
+  dependencies += dependency('appleframeworks', modules: 'OpenGL')
+elif dep_gl.found()
   dependencies += dep_gl
   libdesmume_src += [
     '../../OGLRender.cpp',
