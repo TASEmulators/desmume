@@ -483,12 +483,14 @@ EXPORTED void desmume_memory_write_register(char* register_name, u32 value)
 
 EXPORTED u32 desmume_memory_get_next_instruction()
 {
-    return NDS_ARM9.next_instruction;
+    return CommonSettings.use_jit ? 0 : NDS_ARM9.next_instruction;
 }
 
 EXPORTED void desmume_memory_set_next_instruction(u32 value)
 {
-    NDS_ARM9.next_instruction = value;
+    if (!CommonSettings.use_jit) {
+        NDS_ARM9.next_instruction = value;
+    }
 }
 
 INLINE void memory_register_hook(int addr, MemHookType hook_type, int size, memory_cb_fnc cb)
