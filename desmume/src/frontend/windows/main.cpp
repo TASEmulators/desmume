@@ -1577,9 +1577,10 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 		INFO("Loading %s was successful\n",logicalName);
 		
 		NDS_SLOT2_TYPE selectedSlot2Type = slot2_GetSelectedType();
-		Guitar.Enabled	= (selectedSlot2Type == NDS_SLOT2_GUITARGRIP)?true:false;
-		Piano.Enabled	= (selectedSlot2Type == NDS_SLOT2_EASYPIANO)?true:false;
-		Paddle.Enabled	= (selectedSlot2Type == NDS_SLOT2_PADDLE)?true:false;
+		Guitar.Enabled	= selectedSlot2Type == NDS_SLOT2_GUITARGRIP;
+		Piano.Enabled	= selectedSlot2Type == NDS_SLOT2_EASYPIANO;
+		Paddle.Enabled	= selectedSlot2Type == NDS_SLOT2_PADDLE;
+		Analog.Enabled  = selectedSlot2Type == NDS_SLOT2_ANALOG;
 		
 		LoadSaveStateInfo();
 		lagframecounter=0;
@@ -2258,6 +2259,8 @@ int _main()
 			break;
 		case NDS_SLOT2_PASSME:
 			break;
+		case NDS_SLOT2_ANALOG:
+			break;
 		default:
 			slot2_device_type = NDS_SLOT2_NONE;
 			break;
@@ -2265,9 +2268,10 @@ int _main()
 
 	slot2_Change((NDS_SLOT2_TYPE)slot2_device_type);
 
-	Guitar.Enabled	= (slot2_device_type == NDS_SLOT2_GUITARGRIP)?true:false;
-	Piano.Enabled	= (slot2_device_type == NDS_SLOT2_EASYPIANO)?true:false;
-	Paddle.Enabled	= (slot2_device_type == NDS_SLOT2_PADDLE)?true:false;
+	Guitar.Enabled	= slot2_device_type == NDS_SLOT2_GUITARGRIP;
+	Piano.Enabled	= slot2_device_type == NDS_SLOT2_EASYPIANO;
+	Paddle.Enabled	= slot2_device_type == NDS_SLOT2_PADDLE;
+	Analog.Enabled  = slot2_device_type == NDS_SLOT2_ANALOG;
 
 	CommonSettings.WifiBridgeDeviceID = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 

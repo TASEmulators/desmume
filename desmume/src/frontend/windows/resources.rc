@@ -1589,6 +1589,21 @@ BEGIN
     RTEXT           "Decrease",-1,81,40,44,8
 END
 
+IDD_GBASLOT_ANALOG DIALOGEX 7, 48, 302, 109
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_VISIBLE | WS_SYSMENU
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         " ",IDC_ANALOG_X,"InputCustomAnalog",WS_TABSTOP,75,17,71,12,WS_EX_CLIENTEDGE
+    CONTROL         " ",IDC_ANALOG_Y,"InputCustomAnalog",WS_TABSTOP,180,17,71,12,WS_EX_CLIENTEDGE
+    RTEXT           "Left",-1,47,20,24,8
+    CTEXT           "Analog Stick:",-1,137,2,51,12
+    RTEXT           "Up",-1,152,20,24,8
+    CONTROL         "",IDC_ANALOG_DEADZONE_SLIDER,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,147,41,100,15
+    EDITTEXT        IDC_ANALOG_DEADZONE,105,41,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Deadzone",-1,61,41,38,14,SS_CENTERIMAGE
+    CONTROL         "Joined Deadzone",IDC_ANALOG_JOINED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,66,63,71,10
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1968,9 +1983,21 @@ BEGIN
         BOTTOMMARGIN, 229
     END
 
+    IDD_GBASLOT, DIALOG
+    BEGIN
+    END
+
     IDD_GBASLOT_CFLASH, DIALOG
     BEGIN
         BOTTOMMARGIN, 106
+    END
+
+    IDD_GBASLOT_GBAGAME, DIALOG
+    BEGIN
+    END
+
+    IDD_GBASLOT_GUITARGRIP, DIALOG
+    BEGIN
     END
 
     IDD_MEM_VIEW, DIALOG
@@ -2065,6 +2092,14 @@ BEGIN
         RIGHTMARGIN, 271
         TOPMARGIN, 7
         BOTTOMMARGIN, 34
+    END
+
+    IDD_GBASLOT_PADDLE, DIALOG
+    BEGIN
+    END
+
+    IDD_GBASLOT_ANALOG, DIALOG
+    BEGIN
     END
 END
 #endif    // APSTUDIO_INVOKED

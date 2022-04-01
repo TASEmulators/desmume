@@ -88,6 +88,7 @@ libdesmume_a_SOURCES = \
 	utils/tinyxml/tinyxmlerror.cpp \
 	utils/tinyxml/tinyxmlparser.cpp \
 	utils/glcorearb.h \
+	addons/slot2_analog.cpp \
 	addons/slot2_auto.cpp \
 	addons/slot2_mpcf.cpp \
 	addons/slot2_paddle.cpp \

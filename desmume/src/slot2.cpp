@@ -58,6 +58,7 @@ void slot2_Init()
 	extern TISlot2InterfaceConstructor construct_Slot2_EasyPiano;
 	extern TISlot2InterfaceConstructor construct_Slot2_Paddle;
 	extern TISlot2InterfaceConstructor construct_Slot2_PassME;
+	extern TISlot2InterfaceConstructor construct_Slot2_Analog;
 
 	slot2_List[NDS_SLOT2_NONE]			= construct_Slot2_None();
 	slot2_List[NDS_SLOT2_AUTO]			= construct_Slot2_Auto();
@@ -69,6 +70,7 @@ void slot2_Init()
 	slot2_List[NDS_SLOT2_EASYPIANO]		= construct_Slot2_EasyPiano();
 	slot2_List[NDS_SLOT2_PADDLE]		= construct_Slot2_Paddle();
 	slot2_List[NDS_SLOT2_PASSME]		= construct_Slot2_PassME();
+	slot2_List[NDS_SLOT2_ANALOG]        = construct_Slot2_Analog();
 
 }
 
@@ -252,6 +254,7 @@ NDS_SLOT2_TYPE slot2_DetermineTypeByGameCode(const char *theGameCode)
 		{"CV8", NDS_SLOT2_PADDLE},			// Space Invaders Extreme 2
 		{"AMH", NDS_SLOT2_RUMBLEPAK},		// Metroid Prime Hunters
 		{"AP2", NDS_SLOT2_RUMBLEPAK},		// Metroid Prime Pinball
+		{"ASM", NDS_SLOT2_ANALOG},          // Super Mario 64 DS
 	};
 	
 	for(size_t i = 0; i < ARRAY_SIZE(gameCodeDeviceTypes); i++)

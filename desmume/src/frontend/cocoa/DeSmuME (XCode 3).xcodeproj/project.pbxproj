@@ -1587,6 +1587,11 @@
 		ABFE151314C92FF5005D6699 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150014C92FF5005D6699 /* hq4x.cpp */; };
 		ABFE151514C92FF5005D6699 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150414C92FF5005D6699 /* lq2x.cpp */; };
 		ABFE151614C92FF5005D6699 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
+		D4DB425C25F983C0008216EA /* slot2_analog.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D4DB425B25F983C0008216EA /* slot2_analog.cpp */; };
+		D4DB425D25F983C0008216EA /* slot2_analog.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D4DB425B25F983C0008216EA /* slot2_analog.cpp */; };
+		D4DB425E25F983C0008216EA /* slot2_analog.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D4DB425B25F983C0008216EA /* slot2_analog.cpp */; };
+		D4DB425F25F983C0008216EA /* slot2_analog.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D4DB425B25F983C0008216EA /* slot2_analog.cpp */; };
+		D4DB426025F983C0008216EA /* slot2_analog.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D4DB425B25F983C0008216EA /* slot2_analog.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -2353,6 +2358,7 @@
 		ABFE150414C92FF5005D6699 /* lq2x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = lq2x.cpp; sourceTree = "<group>"; };
 		ABFE150514C92FF5005D6699 /* lq2x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lq2x.h; sourceTree = "<group>"; };
 		ABFE150614C92FF5005D6699 /* scanline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scanline.cpp; sourceTree = "<group>"; };
+		D4DB425B25F983C0008216EA /* slot2_analog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_analog.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -3421,6 +3427,7 @@
 				AB4C808917C5D7780024D479 /* slot1comp_mc.cpp */,
 				ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */,
 				AB4C808B17C5D7780024D479 /* slot1comp_rom.cpp */,
+				D4DB425B25F983C0008216EA /* slot2_analog.cpp */,
 				AB53517E18313E3100CCD532 /* slot2_auto.cpp */,
 				ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */,
 				ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */,
@@ -4714,6 +4721,7 @@
 				ABD1266A20AE80DF00EFE1B2 /* MacBaseCaptureTool.mm in Sources */,
 				ABD1267720AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267820AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
+				D4DB426025F983C0008216EA /* slot2_analog.cpp in Sources */,
 				AB4B5A22217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -4908,6 +4916,7 @@
 				ABD1266C20AE80DF00EFE1B2 /* MacBaseCaptureTool.mm in Sources */,
 				ABD1267920AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267A20AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
+				D4DB425F25F983C0008216EA /* slot2_analog.cpp in Sources */,
 				AB4B5A23217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -5128,6 +5137,7 @@
 				ABC04DCA1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
 				ABAFD2751F7110E4007705BD /* gdbstub.cpp in Sources */,
 				ABAB0AFF1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm in Sources */,
+				D4DB425C25F983C0008216EA /* slot2_analog.cpp in Sources */,
 				ABD1266720AE80DF00EFE1B2 /* MacAVCaptureTool.mm in Sources */,
 				ABD1266820AE80DF00EFE1B2 /* MacBaseCaptureTool.mm in Sources */,
 				ABD1267520AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
@@ -5352,6 +5362,7 @@
 				ABC04DCE1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
 				ABAFD2761F7110E4007705BD /* gdbstub.cpp in Sources */,
 				ABAB0B031F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm in Sources */,
+				D4DB425D25F983C0008216EA /* slot2_analog.cpp in Sources */,
 				ABD1266F20AE80DF00EFE1B2 /* MacAVCaptureTool.mm in Sources */,
 				ABD1267020AE80DF00EFE1B2 /* MacBaseCaptureTool.mm in Sources */,
 				ABD1267D20AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
@@ -5550,6 +5561,7 @@
 				ABD1266E20AE80DF00EFE1B2 /* MacBaseCaptureTool.mm in Sources */,
 				ABD1267B20AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267C20AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
+				D4DB425E25F983C0008216EA /* slot2_analog.cpp in Sources */,
 				AB4B5A24217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -30,6 +30,8 @@
 
 #include <tchar.h>
 #include <io.h>
+#include <cmath>
+#include <algorithm>
 #include <string>
 
 #if (((defined(_MSC_VER) && _MSC_VER >= 1300)) || defined(__MINGW32__))
@@ -97,8 +99,8 @@
 // gaming buttons and axes
 #define GAMEDEVICE_JOYNUMPREFIX "(J%x)" // don't change this
 #define GAMEDEVICE_JOYBUTPREFIX "#[%d]" // don't change this
-#define GAMEDEVICE_XNEG "Left"
-#define GAMEDEVICE_XPOS "Right"
+#define GAMEDEVICE_XPOS "Left"
+#define GAMEDEVICE_XNEG "Right"
 #define GAMEDEVICE_YPOS "Up"
 #define GAMEDEVICE_YNEG "Down"
 #define GAMEDEVICE_POVLEFT "POV Left"
@@ -119,12 +121,12 @@
 #define GAMEDEVICE_VNEG "V Down"
 #define GAMEDEVICE_BUTTON "Button %d"
 
-#define GAMEDEVICE_XROTPOS "X Rot Up"
-#define GAMEDEVICE_XROTNEG "X Rot Down"
+#define GAMEDEVICE_XROTPOS "X Rot Left"
+#define GAMEDEVICE_XROTNEG "X Rot Right"
 #define GAMEDEVICE_YROTPOS "Y Rot Up"
 #define GAMEDEVICE_YROTNEG "Y Rot Down"
-#define GAMEDEVICE_ZROTPOS "Z Rot Up"
-#define GAMEDEVICE_ZROTNEG "Z Rot Down"
+#define GAMEDEVICE_ZROTPOS "Z Rot +"
+#define GAMEDEVICE_ZROTNEG "Z Rot -"
 
 // gaming general
 #define GAMEDEVICE_DISABLED "Disabled"
@@ -206,11 +208,13 @@ static TCHAR szClassName[] = _T("InputCustom");
 static TCHAR szHotkeysClassName[] = _T("InputCustomHot");
 static TCHAR szGuitarClassName[] = _T("InputCustomGuitar");
 static TCHAR szPaddleClassName[] = _T("InputCustomPaddle");
+static TCHAR szAnalogClassName[] = _T("InputCustomAnalog");
 
 static LRESULT CALLBACK InputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK HotInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK GuitarInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK PaddleInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK AnalogInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 SJoyState Joystick [16];
 SJoyState JoystickF [16];
@@ -257,6 +261,9 @@ SPiano DefaultPiano = { false, 'Z', 'S', 'X', 'D', 'C', 'V', 'G', 'B', 'H', 'N',
 
 SPaddle Paddle;
 SPaddle DefaultPaddle = { false, 'K', 'L' };
+
+SAnalog Analog;
+SAnalog DefaultAnalog = { false, 1, 2, 15, true };
 
 bool killStylusTopScreen = false;
 bool killStylusOffScreen = false;
@@ -390,6 +397,24 @@ static void ReadPaddleControl(const char* name, WORD& output)
 	}
 }
 
+static void ReadAnalogControl(const char* name, WORD& output)
+{
+	UINT temp;
+	temp = GetPrivateProfileInt("Slot2.Analog", name, -1, IniName);
+	if (temp != -1) {
+		output = temp;
+	}
+}
+
+static void ReadAnalogBool(const char* name, BOOL& output)
+{
+	UINT temp;
+	temp = GetPrivateProfileInt("Slot2.Analog", name, -1, IniName);
+	if (temp != -1) {
+		output = (BOOL) temp;
+	}
+}
+
 void LoadHotkeyConfig()
 {
 	SCustomKey *key = &CustomKeys.key(0);
@@ -450,6 +475,16 @@ static void LoadPaddleConfig()
 
 	ReadPaddleControl("DEC", Paddle.DEC);
 	ReadPaddleControl("INC", Paddle.INC);
+}
+
+static void LoadAnalogConfig()
+{
+	memcpy(&Analog, &DefaultAnalog, sizeof(Analog));
+
+	ReadAnalogControl("X", Analog.X);
+	ReadAnalogControl("Y", Analog.Y);
+	ReadAnalogControl("Deadzone", Analog.Deadzone);
+	ReadAnalogBool("Joined", Analog.Joined);
 }
 
 
@@ -607,7 +642,7 @@ HWND funky;
 //WPARAM tid;
 
 //
-void JoystickChanged( short ID, short Movement)
+void JoystickChanged( short ID, short Movement, short Axis)
 {
 	// don't allow two changes to happen too close together in time
 	{
@@ -625,12 +660,19 @@ void JoystickChanged( short ID, short Movement)
 	}
 
 	WORD JoyKey;
-
-    JoyKey = 0x8000;
+	JoyKey = 0x8000;
 	JoyKey |= (WORD)(ID << 8);
 	JoyKey |= Movement;
 	SendMessage(funky,WM_USER+45,JoyKey,0);
 //	KillTimer(funky,tid);
+
+	if (Axis > 0)
+	{
+		WORD JoyAxis;
+		JoyAxis = (WORD)(ID << 8);
+		JoyAxis |= Axis;
+		SendMessage(funky,WM_USER+47,JoyAxis,0);
+	}
 }
 
 int FunkyNormalize(int cur, int min, int max)
@@ -652,7 +694,7 @@ int FunkyNormalize(int cur, int min, int max)
 
 #define S9X_JOY_NEUTRAL 60
 
-void CheckAxis (short joy, short control, int val,
+void CheckAxis (short joy, short control, short axis, int val,
                                        int min, int max,
                                        bool &first, bool &second)
 {
@@ -665,7 +707,7 @@ void CheckAxis (short joy, short control, int val,
         second = false;
         if (!first)
         {
-            JoystickChanged (joy, control);
+            JoystickChanged (joy, control, axis);
             first = true;
 
         }
@@ -678,7 +720,7 @@ void CheckAxis (short joy, short control, int val,
         first = false;
         if (!second)
         {
-            JoystickChanged (joy, (short) (control + 1));
+            JoystickChanged (joy, (short) (control + 1), (short) (8 | axis));
             second = true;
         }
     }
@@ -732,6 +774,13 @@ void S9xUpdateJoyState()
 					CheckAxis_game(JoyStatus.lRx,-10000,10000,Joystick[C].XRotMin,Joystick[C].XRotMax);
 					CheckAxis_game(JoyStatus.lRy,-10000,10000,Joystick[C].YRotMin,Joystick[C].YRotMax);
 					CheckAxis_game(JoyStatus.lRz,-10000,10000,Joystick[C].ZRotMin,Joystick[C].ZRotMax);
+
+					Joystick[C].lX = JoyStatus.lX;
+					Joystick[C].lY = JoyStatus.lY;
+					Joystick[C].lZ = JoyStatus.lZ;
+					Joystick[C].lRx = JoyStatus.lRx;
+					Joystick[C].lRy = JoyStatus.lRy;
+					Joystick[C].lRz = JoyStatus.lRz;
 
 					 switch (JoyStatus.rgdwPOV[0])
 					{
@@ -805,18 +854,18 @@ void di_poll_scan()
 				if (FAILED(hr)) hr=pJoystick->Acquire();
 				else
 				{
-					CheckAxis(C,0,JoyStatus.lX,-10000,10000,Joystick[C].Left,Joystick[C].Right);
-					CheckAxis(C,2,JoyStatus.lY,-10000,10000,Joystick[C].Down,Joystick[C].Up);
-					CheckAxis(C,41,JoyStatus.lZ,-10000,10000,Joystick[C].ZNeg,Joystick[C].ZPos);
-					CheckAxis(C,53,JoyStatus.lRx,-10000,10000,Joystick[C].XRotMin,Joystick[C].XRotMax);
-					CheckAxis(C,55,JoyStatus.lRy,-10000,10000,Joystick[C].YRotMin,Joystick[C].YRotMax);
-					CheckAxis(C,57,JoyStatus.lRz,-10000,10000,Joystick[C].ZRotMin,Joystick[C].ZRotMax);
+					CheckAxis(C,0,1,JoyStatus.lX,-10000,10000,Joystick[C].Left,Joystick[C].Right);
+					CheckAxis(C,2,2,JoyStatus.lY,-10000,10000,Joystick[C].Down,Joystick[C].Up);
+					CheckAxis(C,41,3,JoyStatus.lZ,-10000,10000,Joystick[C].ZNeg,Joystick[C].ZPos);
+					CheckAxis(C,53,4,JoyStatus.lRx,-10000,10000,Joystick[C].XRotMin,Joystick[C].XRotMax);
+					CheckAxis(C,55,5,JoyStatus.lRy,-10000,10000,Joystick[C].YRotMin,Joystick[C].YRotMax);
+					CheckAxis(C,57,6,JoyStatus.lRz,-10000,10000,Joystick[C].ZRotMin,Joystick[C].ZRotMax);
 			
 					 switch (JoyStatus.rgdwPOV[0])
 					{
 				 case JOY_POVBACKWARD:
 					if( !JoystickF[C].PovDown)
-					{   JoystickChanged( C, 7); }
+					{   JoystickChanged( C, 7, -1); }
 
 					JoystickF[C].PovDown = true;
 					JoystickF[C].PovUp = false;
@@ -829,7 +878,7 @@ void di_poll_scan()
 					break;
 				case 4500:
 					if( !JoystickF[C].PovUpRight)
-					{   JoystickChanged( C, 52); }
+					{   JoystickChanged( C, 52, -1); }
 					JoystickF[C].PovDown = false;
 					JoystickF[C].PovUp = false;
 					JoystickF[C].PovLeft = false;
@@ -841,7 +890,7 @@ void di_poll_scan()
 					break;
 				case 13500:
 					if( !JoystickF[C].PovDnRight)
-					{   JoystickChanged( C, 50); }
+					{   JoystickChanged( C, 50, -1); }
 					JoystickF[C].PovDown = false;
 					JoystickF[C].PovUp = false;
 					JoystickF[C].PovLeft = false;
@@ -853,7 +902,7 @@ void di_poll_scan()
 					break;
 				case 22500:
 					if( !JoystickF[C].PovDnLeft)
-					{   JoystickChanged( C, 49); }
+					{   JoystickChanged( C, 49, -1); }
 					JoystickF[C].PovDown = false;
 					JoystickF[C].PovUp = false;
 					JoystickF[C].PovLeft = false;
@@ -865,7 +914,7 @@ void di_poll_scan()
 					break;
 				case 31500:
 					if( !JoystickF[C].PovUpLeft)
-					{   JoystickChanged( C, 51); }
+					{   JoystickChanged( C, 51, -1); }
 					JoystickF[C].PovDown = false;
 					JoystickF[C].PovUp = false;
 					JoystickF[C].PovLeft = false;
@@ -878,7 +927,7 @@ void di_poll_scan()
 
 				case JOY_POVFORWARD:
 					if( !JoystickF[C].PovUp)
-					{   JoystickChanged( C, 6); }
+					{   JoystickChanged( C, 6, -1); }
 
 					JoystickF[C].PovDown = false;
 					JoystickF[C].PovUp = true;
@@ -892,7 +941,7 @@ void di_poll_scan()
 
 				case JOY_POVLEFT:
 					if( !JoystickF[C].PovLeft)
-					{   JoystickChanged( C, 4); }
+					{   JoystickChanged( C, 4, -1); }
 
 					JoystickF[C].PovDown = false;
 					JoystickF[C].PovUp = false;
@@ -906,7 +955,7 @@ void di_poll_scan()
 
 				case JOY_POVRIGHT:
 					if( !JoystickF[C].PovRight)
-					{   JoystickChanged( C, 5); }
+					{   JoystickChanged( C, 5, -1); }
 
 					JoystickF[C].PovDown = false;
 					JoystickF[C].PovUp = false;
@@ -935,7 +984,7 @@ void di_poll_scan()
 			{
 				if( !JoystickF[C].Button[B])
 				{
-					JoystickChanged( C, (short)(8+B));
+					JoystickChanged( C, (short)(8+B), -1);
 					JoystickF[C].Button[B] = true;
 				}
 			}
@@ -967,8 +1016,8 @@ void TranslateKey(WORD keyz,char *out)
 		sprintf(out,GAMEDEVICE_JOYNUMPREFIX,((keyz>>8)&0xF));
 		switch(keyz&0xFF)
 		{
-		case 0:  strcat(out,GAMEDEVICE_XNEG); break;
-		case 1:  strcat(out,GAMEDEVICE_XPOS); break;
+		case 0:  strcat(out,GAMEDEVICE_XPOS); break;
+		case 1:  strcat(out,GAMEDEVICE_XNEG); break;
         case 2:  strcat(out,GAMEDEVICE_YPOS); break;
 		case 3:  strcat(out,GAMEDEVICE_YNEG); break;
 		case 4:  strcat(out,GAMEDEVICE_POVLEFT); break;
@@ -1095,11 +1144,28 @@ void TranslateKey(WORD keyz,char *out)
         case VK_F11:		sprintf(out,GAMEDEVICE_VK_F11); break;
         case VK_F12:		sprintf(out,GAMEDEVICE_VK_F12); break;
     }
+}
 
-    return ;
+void TranslateAnalog(WORD axis, char* out)
+{
+	sprintf(out, GAMEDEVICE_JOYNUMPREFIX, ((axis >> 8) & 0xF));
+	switch (axis & 0xF) {
+	case 1:  strcat(out, GAMEDEVICE_XPOS); break;
+	case 2:  strcat(out, GAMEDEVICE_YPOS); break;
+	case 3:  strcat(out, GAMEDEVICE_ZPOS); break;
+	case 4:  strcat(out, GAMEDEVICE_XROTPOS); break;
+	case 5:  strcat(out, GAMEDEVICE_YROTPOS); break;
+	case 6:  strcat(out, GAMEDEVICE_XROTPOS); break;
 
+	case 9:  strcat(out, GAMEDEVICE_XNEG); break;
+	case 10: strcat(out, GAMEDEVICE_YNEG); break;
+	case 11: strcat(out, GAMEDEVICE_ZNEG); break;
+	case 12: strcat(out, GAMEDEVICE_XROTNEG); break;
+	case 13: strcat(out, GAMEDEVICE_YROTNEG); break;
+	case 14: strcat(out, GAMEDEVICE_ZROTNEG); break;
 
-
+	default: strcat(out, "UNKNOWN"); break;
+	}
 }
 
 bool IsReserved (WORD Key, int modifiers)
@@ -1177,8 +1243,8 @@ int GetNumButtonsAssignedTo (WORD Key)
 		if(Key == Joypad[J].Y)          count++;
 		if(Key == Joypad[J].L)          count++;
 		if(Key == Joypad[J].R)          count++;
-		if(Key == Joypad[J].Lid)          count++;
-		if(Key == Joypad[J].Debug)          count++;
+		if(Key == Joypad[J].Lid)        count++;
+		if(Key == Joypad[J].Debug)      count++;
     }
 	return count;
 }
@@ -1297,6 +1363,22 @@ static void InitCustomControls()
 
 
     RegisterClassEx(&wc);
+
+	wc.cbSize         = sizeof(wc);
+	wc.lpszClassName  = szAnalogClassName;
+	wc.hInstance      = GetModuleHandle(0);
+	wc.lpfnWndProc    = AnalogInputCustomWndProc;
+	wc.hCursor        = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon          = 0;
+	wc.lpszMenuName   = 0;
+	wc.hbrBackground  = (HBRUSH) GetSysColorBrush(COLOR_BTNFACE);
+	wc.style          = 0;
+	wc.cbClsExtra     = 0;
+	wc.cbWndExtra     = sizeof(InputCust*);
+	wc.hIconSm        = 0;
+
+
+	RegisterClassEx(&wc);
 }
 
 InputCust * GetInputCustom(HWND hwnd)
@@ -1779,6 +1861,136 @@ static LRESULT CALLBACK PaddleInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wPa
     default:
         break;
     }
+	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+static LRESULT CALLBACK AnalogInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	// retrieve the custom structure POINTER for THIS window
+	InputCust* icp = GetInputCustom(hwnd);
+	HWND pappy = (HWND__*) GetWindowLongPtr(hwnd, GWLP_HWNDPARENT);
+	funky = hwnd;
+
+	static HWND selectedItem = NULL;
+
+	char temp[100];
+	COLORREF col;
+	switch (msg) {
+
+	case WM_GETDLGCODE:
+		return DLGC_WANTARROWS | DLGC_WANTALLKEYS | DLGC_WANTCHARS;
+		break;
+
+
+	case WM_NCCREATE:
+
+		// Allocate a new CustCtrl structure for this window.
+		icp = (InputCust*) malloc(sizeof(InputCust));
+
+		// Failed to allocate, stop window creation.
+		if (icp == NULL) return FALSE;
+
+		// Initialize the CustCtrl structure.
+		icp->hwnd = hwnd;
+		icp->crForeGnd = GetSysColor(COLOR_WINDOWTEXT);
+		icp->crBackGnd = GetSysColor(COLOR_WINDOW);
+		icp->hFont = (HFONT__*) GetStockObject(DEFAULT_GUI_FONT);
+
+		// Assign the window text specified in the call to CreateWindow.
+		SetWindowText(hwnd, ((CREATESTRUCT*) lParam)->lpszName);
+
+		// Attach custom structure to this window.
+		SetInputCustom(hwnd, icp);
+
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+
+		selectedItem = NULL;
+
+		SetTimer(hwnd, 777, 125, NULL);
+
+		// Continue with window creation.
+		return TRUE;
+
+		// Clean up when the window is destroyed.
+	case WM_NCDESTROY:
+		free(icp);
+		break;
+	case WM_PAINT:
+		return InputCustom_OnPaint(icp, wParam, lParam);
+		break;
+	case WM_ERASEBKGND:
+		return 1;
+	case WM_USER+47:
+		TranslateAnalog(wParam, temp);
+		icp->crForeGnd = RGB(0, 0, 0);
+		icp->crBackGnd = RGB(255, 255, 255);
+		SetWindowText(hwnd, temp);
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+		SendMessage(pappy, WM_USER + 43, wParam, (LPARAM) hwnd);
+
+		break;
+
+	case WM_USER+44:
+		TranslateAnalog(wParam, temp);
+		if (IsWindowEnabled(hwnd)) {
+			col = RGB(255, 255, 255);
+		} else {
+			col = RGB(192, 192, 192);
+		}
+		icp->crForeGnd = ((~col) & 0x00ffffff);
+		icp->crBackGnd = col;
+		SetWindowText(hwnd, temp);
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+
+		break;
+
+	case WM_SETFOCUS:
+	{
+		selectedItem = hwnd;
+		col = RGB(0, 255, 0);
+		icp->crForeGnd = ((~col) & 0x00ffffff);
+		icp->crBackGnd = col;
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+		//		tid = wParam;
+
+		break;
+	}
+	case WM_KILLFOCUS:
+	{
+		selectedItem = NULL;
+		SendMessage(pappy, WM_USER + 46, wParam, (LPARAM) hwnd); // refresh fields on deselect
+		break;
+	}
+
+	case WM_TIMER:
+		if (hwnd == selectedItem) {
+			FunkyJoyStickTimer();
+		}
+		SetTimer(hwnd, 777, 125, NULL);
+		break;
+	case WM_LBUTTONDOWN:
+		SetFocus(hwnd);
+		break;
+	case WM_ENABLE:
+		COLORREF col;
+		if (wParam) {
+			col = RGB(255, 255, 255);
+			icp->crForeGnd = ((~col) & 0x00ffffff);
+			icp->crBackGnd = col;
+		} else {
+			col = RGB(192, 192, 192);
+			icp->crForeGnd = ((~col) & 0x00ffffff);
+			icp->crBackGnd = col;
+		}
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+		return true;
+	default:
+		break;
+	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
@@ -2481,6 +2693,32 @@ void S9xWinScanJoypads(const bool willAcceptInput)
 	}
 }
 
+static float get_analog_float(WORD axis)
+{
+	int J = axis >> 8;
+	LONG val;
+
+	switch (axis & 0x7)
+	{
+		case 1: val = Joystick[J].lX; break;
+		case 2: val = Joystick[J].lY; break;
+		case 3: val = Joystick[J].lZ; break;
+		case 4: val = Joystick[J].lRx; break;
+		case 5: val = Joystick[J].lRy; break;
+		case 6: val = Joystick[J].lRz; break;
+		default: val = 0; break;
+	}
+
+	if (axis & 8) val = -val;
+	return (float) val / 10000.0f;
+}
+
+static float apply_deadzone(float value, float mag, float deadzone) {
+	if (mag <= deadzone) return 0.0f;
+	float cmag = std::min(mag, 1.0f); // clamp mag to 1.0f just in case
+	return value * (cmag - deadzone) / (1.0f - deadzone) / mag;
+}
+
 //void S9xOldAutofireAndStuff ()
 //{
 //	// stuff ripped out of Snes9x that's no longer functional, at least for now
@@ -2690,6 +2928,7 @@ void input_init()
 	LoadGuitarConfig();
 	LoadPianoConfig();
 	LoadPaddleConfig();
+	LoadAnalogConfig();
 
 	di_init();
 	FeedbackON = input_feedback;
@@ -2816,6 +3055,25 @@ void input_acquire()
 			if (inc) nds.paddle += 5;
 			if (dec) nds.paddle -= 5;
 		}
+
+		if (Analog.Enabled)
+		{
+			float deadzone = Analog.Deadzone / 100.0f;
+			float x = get_analog_float(Analog.X);
+			float y = get_analog_float(Analog.Y);
+
+			if (Analog.Joined) {
+				float mag = std::hypot(x, y);
+				x = apply_deadzone(x, mag, deadzone);
+				y = apply_deadzone(y, mag, deadzone);
+			} else {
+				// Faster approximation that prioritizes cardinal directions
+				x = apply_deadzone(x, x, deadzone);
+				y = apply_deadzone(y, y, deadzone);
+			}
+
+			analog_setValue(x, y);
+		}
 	}
 	else
 	{
@@ -2827,6 +3085,10 @@ void input_acquire()
 		if (Piano.Enabled)
 		{
 			piano_setKey(false, false, false, false, false, false, false, false, false, false, false, false, false);
+		}
+
+		if (Analog.Enabled) {
+			analog_setValue(0.0f, 0.0f);
 		}
 	}
 }

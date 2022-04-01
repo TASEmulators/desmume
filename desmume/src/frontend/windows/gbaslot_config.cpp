@@ -19,6 +19,7 @@
 
 #include <windowsx.h>
 #include <shlobj.h>
+#include <richedit.h>
 
 #include "debug.h"
 #include "slot2.h"
@@ -42,6 +43,7 @@ bool		_OKbutton = false;
 SGuitar		tmp_Guitar;
 SPiano		tmp_Piano;
 SPaddle		tmp_Paddle;
+SAnalog		tmp_Analog;
 
 //these are the remembered preset values for directory and filename
 //they are named very verbosely to distinguish them from the currently-configured values in addons.cpp
@@ -467,6 +469,89 @@ INT_PTR CALLBACK GbaSlotPiano(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 	return FALSE;
 }
 
+INT_PTR CALLBACK GbaSlotAnalog(HWND dialog, UINT msg, WPARAM wparam, LPARAM lparam) {
+	int which = 0;
+
+	switch (msg) {
+	case WM_INITDIALOG:
+	{
+		_OKbutton = TRUE;
+		SendDlgItemMessage(dialog, IDC_ANALOG_X, WM_USER + 44, tmp_Analog.X, 0);
+		SendDlgItemMessage(dialog, IDC_ANALOG_Y, WM_USER + 44, tmp_Analog.Y, 0);
+
+		std::string deadzone_val = std::to_string(tmp_Analog.Deadzone);
+		SendDlgItemMessage(dialog, IDC_ANALOG_DEADZONE, EM_SETLIMITTEXT, 3, 0);
+		SendDlgItemMessage(dialog, IDC_ANALOG_DEADZONE, EM_SETEVENTMASK, 0, ENM_UPDATE);
+		SetWindowTextA(GetDlgItem(dialog, IDC_ANALOG_DEADZONE), deadzone_val.c_str());
+
+		SendDlgItemMessage(dialog, IDC_ANALOG_DEADZONE_SLIDER, TBM_SETRANGE, FALSE, MAKELONG(0, 100));
+		SendDlgItemMessage(dialog, IDC_ANALOG_DEADZONE_SLIDER, TBM_SETPOS, TRUE, tmp_Analog.Deadzone);
+
+		CheckDlgButton(dialog, IDC_ANALOG_JOINED, tmp_Analog.Joined);
+		return TRUE;
+	}
+
+	case WM_USER + 46:
+		SendDlgItemMessage(dialog, IDC_ANALOG_X, WM_USER + 44, tmp_Analog.X, 0);
+		SendDlgItemMessage(dialog, IDC_ANALOG_Y, WM_USER + 44, tmp_Analog.Y, 0);
+		return TRUE;
+
+	case WM_USER + 43:
+		which = GetDlgCtrlID((HWND) lparam);
+		switch (which) {
+		case IDC_ANALOG_X:
+			tmp_Analog.X = wparam;
+
+			break;
+		case IDC_ANALOG_Y:
+			tmp_Analog.Y = wparam;
+
+			break;
+		}
+
+		SendDlgItemMessage(dialog, IDC_ANALOG_X, WM_USER + 44, tmp_Analog.X, 0);
+		SendDlgItemMessage(dialog, IDC_ANALOG_Y, WM_USER + 44, tmp_Analog.Y, 0);
+		PostMessage(dialog, WM_NEXTDLGCTL, 0, 0);
+		return TRUE;
+
+	case WM_COMMAND:
+		switch (wparam) {
+		case MAKELONG(IDC_ANALOG_DEADZONE, EN_UPDATE):
+		{
+			char text[4];
+			WORD value = 0;
+			bool dirty = false;
+			HWND en = GetDlgItem(dialog, IDC_ANALOG_DEADZONE);
+			GetWindowTextA(en, text, 4);
+			if (text[0] != '\0') value = std::stoi(text);
+			if (value < 0) value = 0, dirty = true;
+			if (value > 100) value = 100, dirty = true;
+			if (dirty) SetWindowTextA(en, std::to_string(value).c_str());
+			if (tmp_Analog.Deadzone != value) {
+				tmp_Analog.Deadzone = value;
+				SendDlgItemMessage(dialog, IDC_ANALOG_DEADZONE_SLIDER, TBM_SETPOS, TRUE, value);
+			}
+			return TRUE;
+		}
+		case MAKELONG(IDC_ANALOG_JOINED, BN_CLICKED):
+			tmp_Analog.Joined = IsDlgCheckboxChecked(dialog, IDC_ANALOG_JOINED);
+			return TRUE;
+		}
+		return FALSE;
+		
+	case WM_NOTIFY:
+		if (wparam == IDC_ANALOG_DEADZONE_SLIDER) {
+			HWND en = GetDlgItem(dialog, IDC_ANALOG_DEADZONE);
+			WORD value = (WORD) SendDlgItemMessage(dialog, IDC_ANALOG_DEADZONE_SLIDER, TBM_GETPOS, 0, 0);
+			if (tmp_Analog.Deadzone != value) {
+				tmp_Analog.Deadzone = value;
+				SetWindowTextA(en, std::to_string(value).c_str());
+			}
+		}
+	}
+	return FALSE;
+}
+
 u32		GBAslot_IDDs[NDS_SLOT2_COUNT] = {
 	IDD_GBASLOT_NONE,
 	IDD_GBASLOT_NONE,
@@ -478,6 +563,7 @@ u32		GBAslot_IDDs[NDS_SLOT2_COUNT] = {
 	IDD_GBASLOT_PIANO,
 	IDD_GBASLOT_PADDLE, //paddle
 	IDD_GBASLOT_NONE, //PassME
+	IDD_GBASLOT_ANALOG,
 };
 
 DLGPROC GBAslot_Procs[NDS_SLOT2_COUNT] = {
@@ -490,7 +576,8 @@ DLGPROC GBAslot_Procs[NDS_SLOT2_COUNT] = {
 	GbaSlotNone,  //expmem
 	GbaSlotPiano,
 	GbaSlotPaddle,
-	GbaSlotNone			// PassME
+	GbaSlotNone,  // PassME
+	GbaSlotAnalog,
 };
 
 
@@ -569,6 +656,7 @@ void GBAslotDialog(HWND hwnd)
 	memcpy(&tmp_Guitar, &Guitar, sizeof(Guitar));
 	memcpy(&tmp_Piano, &Piano, sizeof(Piano));
 	memcpy(&tmp_Paddle, &Paddle, sizeof(Paddle));
+	memcpy(&tmp_Analog, &Analog, sizeof(Analog));
 	tmp_CFlashMode = CFlash_Mode;
 	_OKbutton = false;
 	
@@ -633,6 +721,13 @@ void GBAslotDialog(HWND hwnd)
 				break;
 			case NDS_SLOT2_PASSME:
 				break;
+			case NDS_SLOT2_ANALOG:
+				memcpy(&Analog, &tmp_Analog, sizeof(tmp_Analog));
+				WritePrivateProfileInt("Slot2.Analog", "X", Analog.X, IniName);
+				WritePrivateProfileInt("Slot2.Analog", "Y", Analog.Y, IniName);
+				WritePrivateProfileInt("Slot2.Analog", "Deadzone", Analog.Deadzone, IniName);
+				WritePrivateProfileBool("Slot2.Analog", "Joined", Analog.Joined, IniName);
+				break;
 			default:
 				return;
 		}
@@ -641,9 +736,10 @@ void GBAslotDialog(HWND hwnd)
 
 		WritePrivateProfileInt("Slot2", "id", slot2_List[(u8)slot2_GetCurrentType()]->info()->id(), IniName);
 
-		Guitar.Enabled	= (slot2_GetCurrentType() == NDS_SLOT2_GUITARGRIP)?true:false;
-		Piano.Enabled	= (slot2_GetCurrentType() == NDS_SLOT2_EASYPIANO)?true:false;
-		Paddle.Enabled	= (slot2_GetCurrentType() == NDS_SLOT2_PADDLE)?true:false;
+		Guitar.Enabled	= slot2_GetCurrentType() == NDS_SLOT2_GUITARGRIP;
+		Piano.Enabled	= slot2_GetCurrentType() == NDS_SLOT2_EASYPIANO;
+		Paddle.Enabled	= slot2_GetCurrentType() == NDS_SLOT2_PADDLE;
+		Analog.Enabled = slot2_GetCurrentType() == NDS_SLOT2_ANALOG;
 	}
 }
 
