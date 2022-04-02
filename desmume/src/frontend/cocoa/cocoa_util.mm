@@ -81,7 +81,7 @@
 	}
 	
 #if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
-	if ([[sheet sheetParent] respondsToSelector:@selector(endSheet:returnCode:)])
+	if ([sheet respondsToSelector:@selector(sheetParent)] && [[sheet sheetParent] respondsToSelector:@selector(endSheet:returnCode:)])
 	{
 		[[sheet sheetParent] endSheet:sheet returnCode:code];
 	}
