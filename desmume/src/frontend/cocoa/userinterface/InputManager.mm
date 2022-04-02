@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2018 DeSmuME Team
+	Copyright (C) 2012-2022 DeSmuME Team
 	
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,6 +22,10 @@
 #import "cocoa_globals.h"
 #import "cocoa_input.h"
 #import "cocoa_util.h"
+
+#if defined(MAC_OS_X_VERSION_10_8) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_8)
+	#include <IOKit/pwr_mgt/IOPMLib.h>
+#endif
 
 #include <AudioToolbox/AudioToolbox.h>
 
@@ -116,7 +120,7 @@ static NSDictionary *hidUsageTable = nil;
     CFRelease(elementArray);
 	
 	// Set up force feedback.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
+#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
 	if (IsOSXVersionSupported(10, 6, 0))
 	{
 		ioService = IOHIDDeviceGetService(hidDeviceRef);
@@ -126,7 +130,7 @@ static NSDictionary *hidUsageTable = nil;
 		}
 	}
 	else
-#else
+#endif
 	{
 		ioService = MACH_PORT_NULL;
 		
@@ -149,7 +153,6 @@ static NSDictionary *hidUsageTable = nil;
 			}
 		}
 	}
-#endif
 	
 	ffDevice = NULL;
 	ffEffect = NULL;
@@ -219,7 +222,7 @@ static NSDictionary *hidUsageTable = nil;
 	
 	[identifier retain];
 	
-	spinlockRunLoop = OS_SPINLOCK_INIT;
+	_unfairlockRunLoop = apple_unfairlock_create();
 	[self setRunLoop:[NSRunLoop currentRunLoop]];
 	
 	return self;
@@ -231,6 +234,8 @@ static NSDictionary *hidUsageTable = nil;
 	[self stop];
 	[self setRunLoop:nil];
 	[self setHidManager:nil];
+	
+	apple_unfairlock_destroy(_unfairlockRunLoop);
 	
 	if (hidQueueRef != NULL)
 	{
@@ -310,11 +315,11 @@ static NSDictionary *hidUsageTable = nil;
 
 - (void) setRunLoop:(NSRunLoop *)theRunLoop
 {
-	OSSpinLockLock(&spinlockRunLoop);
+	apple_unfairlock_lock(_unfairlockRunLoop);
 	
 	if (theRunLoop == runLoop)
 	{
-		OSSpinLockUnlock(&spinlockRunLoop);
+		apple_unfairlock_unlock(_unfairlockRunLoop);
 		return;
 	}
 	
@@ -332,14 +337,14 @@ static NSDictionary *hidUsageTable = nil;
 	[runLoop release];
 	runLoop = theRunLoop;
 	
-	OSSpinLockUnlock(&spinlockRunLoop);
+	apple_unfairlock_unlock(_unfairlockRunLoop);
 }
 
 - (NSRunLoop *) runLoop
 {
-	OSSpinLockLock(&spinlockRunLoop);
+	apple_unfairlock_lock(_unfairlockRunLoop);
 	NSRunLoop *theRunLoop = runLoop;
-	OSSpinLockUnlock(&spinlockRunLoop);
+	apple_unfairlock_unlock(_unfairlockRunLoop);
 	
 	return theRunLoop;
 }
@@ -527,7 +532,7 @@ ClientInputDevicePropertiesList InputListFromHIDValue(IOHIDValueRef hidValueRef,
 	// IOHIDValueGetIntegerValue() will crash if the value length is too large.
 	// Do a bounds check here to prevent crashing. This workaround makes the PS3
 	// controller usable, since it returns a length of 39 on some elements.
-	if(IOHIDValueGetLength(hidValueRef) > 2)
+	if (IOHIDValueGetLength(hidValueRef) > 2)
 	{
 		return inputPropertyList;
 	}
@@ -791,13 +796,6 @@ size_t ClearHIDQueue(const IOHIDQueueRef hidQueue)
 		hidInputClearCount++;
 	} while (1);
 	
-	if (hidInputClearCount > 0)
-	{
-		// HID input devices don't register events, so we need to manually prevent
-		// sleep and screensaver whenever we detect an input.
-		UpdateSystemActivity(UsrActivity);
-	}
-	
 	return hidInputClearCount;
 }
 
@@ -817,7 +815,12 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	else
 	{
 		// We must make sure the HID queue is emptied or else HID input will stall.
-		ClearHIDQueue(hidQueue);
+		size_t hidInputClearCount = ClearHIDQueue(hidQueue);
+		
+		if (hidInputClearCount > 0)
+		{
+			[hidManager reportUserActivity];
+		}
 	}
 }
 
@@ -838,6 +841,10 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 		return self;
 	}
 	
+	// kIOPMNullAssertionID isn't available on macOS v10.6 Snow Leopard,
+	// so just initialize the ID directly to 0.
+	_pmAssertionID = 0;
+	
 	target = nil;
 	deviceListController = nil;
 	inputManager = [theInputManager retain];
@@ -848,7 +855,7 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 		[self release];
 		return nil;
 	}
-		
+	
 	CFMutableDictionaryRef cfJoystickMatcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 	CFDictionarySetValue(cfJoystickMatcher, CFSTR(kIOHIDDeviceUsagePageKey), (CFNumberRef)[NSNumber numberWithInteger:kHIDPage_GenericDesktop]);
 	CFDictionarySetValue(cfJoystickMatcher, CFSTR(kIOHIDDeviceUsageKey), (CFNumberRef)[NSNumber numberWithInteger:kHIDUsage_GD_Joystick]);
@@ -870,7 +877,7 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	CFRelease(cfGamepadMatcher);
 	CFRelease(cfGenericControllerMatcher);
 	
-	spinlockRunLoop = OS_SPINLOCK_INIT;
+	_unfairlockRunLoop = apple_unfairlock_create();
 	
 	IOReturn result = IOHIDManagerOpen(hidManagerRef, kIOHIDOptionsTypeNone);
 	if (result != kIOReturnSuccess)
@@ -896,16 +903,26 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 		hidManagerRef = NULL;
 	}
 	
+	if (_pmAssertionID > 0)
+	{
+#if defined(MAC_OS_X_VERSION_10_8) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_8)
+		IOPMAssertionRelease((IOPMAssertionID)_pmAssertionID);
+#endif
+		_pmAssertionID = 0;
+	}
+	
+	apple_unfairlock_destroy(_unfairlockRunLoop);
+	
 	[super dealloc];
 }
 
 - (void) setRunLoop:(NSRunLoop *)theRunLoop
 {
-	OSSpinLockLock(&spinlockRunLoop);
+	apple_unfairlock_lock(_unfairlockRunLoop);
 	
 	if (theRunLoop == runLoop)
 	{
-		OSSpinLockUnlock(&spinlockRunLoop);
+		apple_unfairlock_unlock(_unfairlockRunLoop);
 		return;
 	}
 	
@@ -926,16 +943,50 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	[runLoop release];
 	runLoop = theRunLoop;
 	
-	OSSpinLockUnlock(&spinlockRunLoop);
+	apple_unfairlock_unlock(_unfairlockRunLoop);
 }
 
 - (NSRunLoop *) runLoop
 {
-	OSSpinLockLock(&spinlockRunLoop);
+	apple_unfairlock_lock(_unfairlockRunLoop);
 	NSRunLoop *theRunLoop = runLoop;
-	OSSpinLockUnlock(&spinlockRunLoop);
+	apple_unfairlock_unlock(_unfairlockRunLoop);
 	
 	return theRunLoop;
+}
+
+// HID input devices don't register events, so we need to manually prevent
+// sleep and screensaver whenever we detect an input.
+- (void) reportUserActivity
+{
+	// Even though Apple deprecates UpdateSystemActivity(), it is still mandatory that we use it
+	// because there is no other way to prevent the screensaver without pushing fake events to
+	// the OS. UpdateSystemActivity() is amazingly useful for its ability to prevent both sleep
+	// and screensaver in one simple function, but it does not have the ability to wake up the
+	// the host if it is already in sleep mode. Therefore, IOPMAssertionDeclareUserActivity(),
+	// with its ability to wake up the host, still has usefulness and will be called if the OS
+	// version supports it.
+	
+#if defined(MAC_OS_X_VERSION_10_8) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_8)
+	if (IsOSXVersionSupported(10, 7, 3))
+	{
+		// IOPMAssertionDeclareUserActivity() lets us prevent sleep and can wake up the host
+		// if it is already in sleep mode. But unfortunately, IOPMAssertionDeclareUserActivity()
+		// DOES NOT prevent the screensaver, so we'll call UpdateSystemActivity() to do that.
+		IOPMAssertionID thePMAssertionID = (IOPMAssertionID)_pmAssertionID;
+		IOReturn result = IOPMAssertionDeclareUserActivity(CFSTR("DeSmuME: User activated HID input device."), kIOPMUserActiveLocal, &thePMAssertionID);
+		if (result == kIOReturnSuccess)
+		{
+			_pmAssertionID = thePMAssertionID;
+		}
+	}
+#endif
+	
+	// UpdateSystemActivity() lets us prevent sleep and the screensaver, but it DOES NOT have
+	// the ability to wake up the host if it is already in sleep mode. Wake up is a lesser
+	// priority than preventing sleep in the first place, but wake up is still a useful
+	// feature, and so we'll call IOPMAssertionDeclareUserActivity() to do that.
+	SILENCE_DEPRECATION_MACOS_10_8( UpdateSystemActivity(UsrActivity) );
 }
 
 @end
@@ -2347,9 +2398,7 @@ ClientInputDevicePropertiesList MacInputDevicePropertiesEncoder::EncodeHIDQueue(
 	
 	if (!inputPropertyList.empty())
 	{
-		// HID input devices don't register events, so we need to manually prevent
-		// sleep and screensaver whenever we detect an input.
-		UpdateSystemActivity(UsrActivity);
+		[[inputManager hidManager] reportUserActivity];
 	}
 	
 	return inputPropertyList;

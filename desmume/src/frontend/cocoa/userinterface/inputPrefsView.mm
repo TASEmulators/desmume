@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2014 DeSmuME Team
+	Copyright (C) 2012-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -403,7 +403,7 @@
 
 - (void) didEndSettingsSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
 {
-    [sheet orderOut:self];
+	[sheet orderOut:self];
 	
 	NSOutlineView *outlineView = (NSOutlineView *)contextInfo;
 	NSMutableDictionary *editedDeviceInfo = (NSMutableDictionary *)[inputSettingsController content];
@@ -411,10 +411,10 @@
 	
 	switch (returnCode)
 	{
-		case NSCancelButton:
+		case GUI_RESPONSE_CANCEL:
 			break;
 			
-		case NSOKButton:
+		case GUI_RESPONSE_OK:
 			[deviceInfoInEdit setDictionary:editedDeviceInfo];
 			[self setMappingUsingDeviceInfoDictionary:deviceInfoInEdit];
 			[outlineView reloadItem:deviceInfoInEdit reloadChildren:NO];
@@ -446,7 +446,12 @@
 	
 	if (cmdTagTarget == nil)
 	{
-		ClearHIDQueue(hidQueue);
+		size_t hidInputClearCount = ClearHIDQueue(hidQueue);
+		if (hidInputClearCount > 0)
+		{
+			[hidManager reportUserActivity];
+		}
+		
 		return isHandled;
 	}
 	
@@ -828,18 +833,42 @@
 		[self updateCustomTurboPatternControls:turboPatternControl];
 	}
 	
-	[NSApp beginSheet:theSheet
-	   modalForWindow:prefWindow
-		modalDelegate:self
-	   didEndSelector:@selector(didEndSettingsSheet:returnCode:contextInfo:)
-		  contextInfo:outlineView];
+#if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+	if ([prefWindow respondsToSelector:@selector(beginSheet:completionHandler:)])
+	{
+		[prefWindow beginSheet:theSheet
+			 completionHandler:^(NSModalResponse response) {
+				[self didEndSettingsSheet:nil returnCode:response contextInfo:outlineView];
+		} ];
+	}
+	else
+#endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_10( [NSApp beginSheet:theSheet
+											modalForWindow:prefWindow
+											 modalDelegate:self
+											didEndSelector:@selector(didEndSettingsSheet:returnCode:contextInfo:)
+											   contextInfo:outlineView] );
+	}
 }
 
 - (IBAction) closeSettingsSheet:(id)sender
 {
 	NSWindow *sheet = [(NSControl *)sender window];
+	const NSInteger code = [CocoaDSUtil getIBActionSenderTag:sender];
+	
 	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
-    [NSApp endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
+	
+#if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+	if ([[sheet sheetParent] respondsToSelector:@selector(endSheet:returnCode:)])
+	{
+		[[sheet sheetParent] endSheet:sheet returnCode:code];
+	}
+	else
+#endif
+	{
+		[NSApp endSheet:sheet returnCode:code];
+	}
 }
 
 - (IBAction) updateCustomTurboPatternControls:(id)sender
@@ -1000,11 +1029,23 @@
 
 - (IBAction) profileView:(id)sender
 {
-	[NSApp beginSheet:inputProfileSheet
-	   modalForWindow:prefWindow
-		modalDelegate:self
-	   didEndSelector:@selector(didEndProfileSheet:returnCode:contextInfo:)
-		  contextInfo:nil];
+#if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+	if ([prefWindow respondsToSelector:@selector(beginSheet:completionHandler:)])
+	{
+		[prefWindow beginSheet:inputProfileSheet
+			 completionHandler:^(NSModalResponse response) {
+				// Do nothing.
+		} ];
+	}
+	else
+#endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_10( [NSApp beginSheet:inputProfileSheet
+											modalForWindow:prefWindow
+											 modalDelegate:self
+											didEndSelector:@selector(didEndProfileSheet:returnCode:contextInfo:)
+											   contextInfo:nil] );
+	}
 }
 
 - (IBAction) profileApply:(id)sender
@@ -1026,11 +1067,23 @@
 
 - (IBAction) profileRename:(id)sender
 {
-	[NSApp beginSheet:inputProfileRenameSheet
-	   modalForWindow:prefWindow
-		modalDelegate:self
-	   didEndSelector:@selector(didEndProfileRenameSheet:returnCode:contextInfo:)
-		  contextInfo:nil];
+#if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+	if ([prefWindow respondsToSelector:@selector(beginSheet:completionHandler:)])
+	{
+		[prefWindow beginSheet:inputProfileRenameSheet
+			 completionHandler:^(NSModalResponse response) {
+				// Do nothing.
+		} ];
+	}
+	else
+#endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_10( [NSApp beginSheet:inputProfileRenameSheet
+											modalForWindow:prefWindow
+											 modalDelegate:self
+											didEndSelector:@selector(didEndProfileRenameSheet:returnCode:contextInfo:)
+											   contextInfo:nil] );
+	}
 }
 
 - (IBAction) profileSave:(id)sender
@@ -1110,20 +1163,25 @@
 - (IBAction) closeProfileSheet:(id)sender
 {
 	NSWindow *sheet = [(NSControl *)sender window];
+	const NSInteger code = [CocoaDSUtil getIBActionSenderTag:sender];
+	
 	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
-	[NSApp endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[CocoaDSUtil endSheet:sheet returnCode:code];
 }
 
 - (IBAction) closeProfileRenameSheet:(id)sender
 {
 	NSWindow *sheet = [(NSControl *)sender window];
+	const NSInteger code = [CocoaDSUtil getIBActionSenderTag:sender];
+	
 	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
-	[NSApp endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[CocoaDSUtil endSheet:sheet returnCode:code];
 }
 
 - (IBAction) audioFileChoose:(id)sender
 {
 	NSURL *selectedFileURL = nil;
+	NSInteger buttonClicked = 0;
 	
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setCanChooseDirectories:NO];
@@ -1155,16 +1213,24 @@
 						  @"wav",
 						  nil];
 	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
+	// While [NSOpenPanel setAllowedFileTypes:] and [NSOpenPanel runModal]
+	// are available in Leopard, the allowedFileTypes property is ignored on
+	// that version of macOS. To maintain compatibility with Leopard, we need
+	// to call the deprecated method [NSOpenPanel runModalForDirectory:file:types]
+	// instead.
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	const NSInteger buttonClicked = [panel runModal];
-#else
-	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		buttonClicked = [panel runModal];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes] );
+	}
 	
-	if (buttonClicked == NSFileHandlingPanelOKButton)
+	if (buttonClicked == GUI_RESPONSE_OK)
 	{
 		selectedFileURL = [[panel URLs] lastObject];
 		if(selectedFileURL == nil)

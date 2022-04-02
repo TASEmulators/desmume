@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2018 DeSmuME team
+	Copyright (C) 2013-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,12 +18,12 @@
 #import <Foundation/Foundation.h>
 #import <CoreVideo/CoreVideo.h>
 #include <pthread.h>
-#include <libkern/OSAtomic.h>
 #include <mach/task.h>
 #include <mach/semaphore.h>
 #include <mach/sync_policy.h>
 #include <map>
 #include <vector>
+#include "utilities.h"
 
 #import "cocoa_util.h"
 #include "../../GPU.h"
@@ -70,7 +70,7 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 	GPUClientFetchObject *GPUFetchObject;
 	task_t _taskEmulationLoop;
 	
-	OSSpinLock _spinlockFramebufferStates[MAX_FRAMEBUFFER_PAGES];
+	apple_unfairlock_t _unfairlockFramebufferStates[MAX_FRAMEBUFFER_PAGES];
 	semaphore_t _semFramebuffer[MAX_FRAMEBUFFER_PAGES];
 	volatile ClientDisplayBufferState _framebufferState[MAX_FRAMEBUFFER_PAGES];
 	
@@ -82,7 +82,6 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 	DisplayLinksActiveMap _displayLinksActiveList;
 	DisplayLinkFlushTimeLimitMap _displayLinkFlushTimeList;
 	
-	OSSpinLock spinlockFetchSignal;
 	uint32_t _threadMessageID;
 	uint8_t _fetchIndex;
 	pthread_t _threadFetch;
@@ -128,7 +127,7 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 	BOOL isCPUCoreCountAuto;
 	BOOL _needRestoreRender3DLock;
 	
-	OSSpinLock spinlockGpuState;
+	apple_unfairlock_t _unfairlockGpuState;
 	GPUEventHandlerOSX *gpuEvent;
 	
 	GPUClientFetchObject *fetchObject;

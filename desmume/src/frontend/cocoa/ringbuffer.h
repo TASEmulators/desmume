@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ private:
 	
 	size_t _elementCapacity;
 	size_t _elementSize;
-	int32_t _elementFillCount; // need to use int32_t for OSAtomicAdd32Barrier()
+	int32_t _elementFillCount; // need to use int32_t for atomic_add_barrier32()
 	size_t _readPosition;
 	size_t _writePosition;
 	

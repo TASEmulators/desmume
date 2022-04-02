@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2021 DeSmuME Team
+	Copyright (C) 2013-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -111,8 +111,8 @@
 		return nil;
 	}
 	
-	spinlockFirmware = OS_SPINLOCK_INIT;
-	spinlockSpeaker = OS_SPINLOCK_INIT;
+	_unfairlockFirmware = apple_unfairlock_create();
+	_unfairlockSpeaker = apple_unfairlock_create();
 	
 	mainWindow = nil;
 	windowList = [[NSMutableArray alloc] initWithCapacity:32];
@@ -222,6 +222,9 @@
 	[self setMainWindow:nil];
 	[windowList release];
 	
+	apple_unfairlock_destroy(_unfairlockFirmware);
+	apple_unfairlock_destroy(_unfairlockSpeaker);
+	
 	[super dealloc];
 }
 
@@ -229,11 +232,11 @@
 
 - (void) setCdsFirmware:(CocoaDSFirmware *)theFirmware
 {
-	OSSpinLockLock(&spinlockFirmware);
+	apple_unfairlock_lock(_unfairlockFirmware);
 	
 	if (theFirmware == cdsFirmware)
 	{
-		OSSpinLockUnlock(&spinlockFirmware);
+		apple_unfairlock_unlock(_unfairlockFirmware);
 		return;
 	}
 	
@@ -250,25 +253,25 @@
 	[cdsFirmware release];
 	cdsFirmware = theFirmware;
 	
-	OSSpinLockUnlock(&spinlockFirmware);
+	apple_unfairlock_unlock(_unfairlockFirmware);
 }
 
 - (CocoaDSFirmware *) cdsFirmware
 {
-	OSSpinLockLock(&spinlockFirmware);
+	apple_unfairlock_lock(_unfairlockFirmware);
 	CocoaDSFirmware *theFirmware = cdsFirmware;
-	OSSpinLockUnlock(&spinlockFirmware);
+	apple_unfairlock_unlock(_unfairlockFirmware);
 	
 	return theFirmware;
 }
 
 - (void) setCdsSpeaker:(CocoaDSSpeaker *)theSpeaker
 {
-	OSSpinLockLock(&spinlockSpeaker);
+	apple_unfairlock_lock(_unfairlockSpeaker);
 	
 	if (theSpeaker == cdsSpeaker)
 	{
-		OSSpinLockUnlock(&spinlockSpeaker);
+		apple_unfairlock_unlock(_unfairlockSpeaker);
 		return;
 	}
 	
@@ -282,14 +285,14 @@
 	[cdsSpeaker release];
 	cdsSpeaker = theSpeaker;
 	
-	OSSpinLockUnlock(&spinlockSpeaker);
+	apple_unfairlock_unlock(_unfairlockSpeaker);
 }
 
 - (CocoaDSSpeaker *) cdsSpeaker
 {
-	OSSpinLockLock(&spinlockSpeaker);
+	apple_unfairlock_lock(_unfairlockSpeaker);
 	CocoaDSSpeaker *theSpeaker = cdsSpeaker;
-	OSSpinLockUnlock(&spinlockSpeaker);
+	apple_unfairlock_unlock(_unfairlockSpeaker);
 	
 	return theSpeaker;
 }
@@ -361,6 +364,7 @@
 	}
 	
 	NSURL *selectedFile = nil;
+	NSInteger buttonClicked = 0;
 	
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setCanChooseDirectories:NO];
@@ -370,16 +374,24 @@
 	[panel setTitle:NSSTRING_TITLE_OPEN_ROM_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_DS, @FILE_EXT_ROM_GBA, nil]; 
 	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
+	// While [NSOpenPanel setAllowedFileTypes:] and [NSOpenPanel runModal]
+	// are available in Leopard, the allowedFileTypes property is ignored on
+	// that version of macOS. To maintain compatibility with Leopard, we need
+	// to call the deprecated method [NSOpenPanel runModalForDirectory:file:types]
+	// instead.
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	const NSInteger buttonClicked = [panel runModal];
-#else
-	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		buttonClicked = [panel runModal];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes] );
+	}
 	
-	if (buttonClicked == NSFileHandlingPanelOKButton)
+	if (buttonClicked == GUI_RESPONSE_OK)
 	{
 		selectedFile = [[panel URLs] lastObject];
 		if(selectedFile == nil)
@@ -420,6 +432,7 @@
 - (IBAction) openEmuSaveState:(id)sender
 {
 	NSURL *selectedFile = nil;
+	NSInteger buttonClicked = 0;
 	
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setCanChooseDirectories:NO];
@@ -429,16 +442,24 @@
 	[panel setTitle:NSSTRING_TITLE_OPEN_STATE_FILE_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_SAVE_STATE, nil];
 	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
+	// While [NSOpenPanel setAllowedFileTypes:] and [NSOpenPanel runModal]
+	// are available in Leopard, the allowedFileTypes property is ignored on
+	// that version of macOS. To maintain compatibility with Leopard, we need
+	// to call the deprecated method [NSOpenPanel runModalForDirectory:file:types]
+	// instead.
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	const NSInteger buttonClicked = [panel runModal];
-#else
-	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		buttonClicked = [panel runModal];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes] );
+	}
 	
-	if (buttonClicked == NSFileHandlingPanelOKButton)
+	if (buttonClicked == GUI_RESPONSE_OK)
 	{
 		selectedFile = [[panel URLs] lastObject];
 		if(selectedFile == nil)
@@ -507,17 +528,24 @@
 	[panel setCanCreateDirectories:YES];
 	[panel setTitle:NSSTRING_TITLE_SAVE_STATE_FILE_PANEL];
 	
-	// The NSSavePanel method -(void)setRequiredFileType:
-	// is deprecated in Mac OS X v10.6.
+	// While [NSSavePanel setAllowedFileTypes:] is available in Leopard, the
+	// allowedFileTypes property is ignored on that version of macOS. To maintain
+	// compatibility with Leopard, we need to call the deprecated method
+	// [NSSavePanel setRequiredFileType:] instead.
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_SAVE_STATE, nil];
-	[panel setAllowedFileTypes:fileTypes];
-#else
-	[panel setRequiredFileType:@FILE_EXT_SAVE_STATE];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_SAVE_STATE, nil];
+		[panel setAllowedFileTypes:fileTypes];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( [panel setRequiredFileType:@FILE_EXT_SAVE_STATE] );
+	}
 	
 	const NSInteger buttonClicked = [panel runModal];
-	if(buttonClicked == NSOKButton)
+	if (buttonClicked == GUI_RESPONSE_OK)
 	{
 		NSURL *saveFileURL = [panel URL];
 		
@@ -582,6 +610,7 @@
 - (IBAction) openReplay:(id)sender
 {
 	NSURL *selectedFile = nil;
+	NSInteger buttonClicked = 0;
 	
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setCanChooseDirectories:NO];
@@ -591,16 +620,24 @@
 	[panel setTitle:@"Load Replay"];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@"dsm", nil];
 	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
+	// While [NSOpenPanel setAllowedFileTypes:] and [NSOpenPanel runModal]
+	// are available in Leopard, the allowedFileTypes property is ignored on
+	// that version of macOS. To maintain compatibility with Leopard, we need
+	// to call the deprecated method [NSOpenPanel runModalForDirectory:file:types]
+	// instead.
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	const NSInteger buttonClicked = [panel runModal];
-#else
-	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		buttonClicked = [panel runModal];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes] );
+	}
 	
-	if (buttonClicked == NSFileHandlingPanelOKButton)
+	if (buttonClicked == GUI_RESPONSE_OK)
 	{
 		selectedFile = [[panel URLs] lastObject];
 		if(selectedFile == nil)
@@ -621,17 +658,24 @@
 	[panel setCanCreateDirectories:YES];
 	[panel setTitle:@"Record Replay"];
 	
-	// The NSSavePanel method -(void)setRequiredFileType:
-	// is deprecated in Mac OS X v10.6.
+	// While [NSSavePanel setAllowedFileTypes:] is available in Leopard, the
+	// allowedFileTypes property is ignored on that version of macOS. To maintain
+	// compatibility with Leopard, we need to call the deprecated method
+	// [NSSavePanel setRequiredFileType:] instead.
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	NSArray *fileTypes = [NSArray arrayWithObjects:@"dsm", nil];
-	[panel setAllowedFileTypes:fileTypes];
-#else
-	[panel setRequiredFileType:@"dsm"];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		NSArray *fileTypes = [NSArray arrayWithObjects:@"dsm", nil];
+		[panel setAllowedFileTypes:fileTypes];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( [panel setRequiredFileType:@"dsm"] );
+	}
 	
 	const NSInteger buttonClicked = [panel runModal];
-	if (buttonClicked == NSFileHandlingPanelOKButton)
+	if (buttonClicked == GUI_RESPONSE_OK)
 	{
 		NSURL *fileURL = [panel URL];
 		if(fileURL == nil)
@@ -666,6 +710,7 @@
 - (IBAction) importRomSave:(id)sender
 {
 	NSURL *selectedFile = nil;
+	NSInteger buttonClicked = 0;
 	
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setCanChooseDirectories:NO];
@@ -682,16 +727,24 @@
 	
 	[self pauseCore];
 	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
+	// While [NSOpenPanel setAllowedFileTypes:] and [NSOpenPanel runModal]
+	// are available in Leopard, the allowedFileTypes property is ignored on
+	// that version of macOS. To maintain compatibility with Leopard, we need
+	// to call the deprecated method [NSOpenPanel runModalForDirectory:file:types]
+	// instead.
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	const NSInteger buttonClicked = [panel runModal];
-#else
-	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		buttonClicked = [panel runModal];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes] );
+	}
 	
-	if (buttonClicked == NSFileHandlingPanelOKButton)
+	if (buttonClicked == GUI_RESPONSE_OK)
 	{
 		selectedFile = [[panel URLs] lastObject];
 		if(selectedFile == nil)
@@ -716,7 +769,7 @@
 	[self pauseCore];
 	
 	const NSInteger buttonClicked = [panel runModal];
-	if(buttonClicked == NSOKButton)
+	if (buttonClicked == GUI_RESPONSE_OK)
 	{
 		NSURL *romSaveURL = [CocoaDSFile fileURLFromRomURL:[[self currentRom] fileURL] toKind:@"ROM Save"];
 		if (romSaveURL != nil)
@@ -914,22 +967,25 @@
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTitle:@"Select R4 Directory"];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	[panel beginSheetModalForWindow:slot1ManagerWindow
-				  completionHandler:^(NSInteger result) {
-					  [self didEndChooseSlot1R4Directory:panel returnCode:result contextInfo:nil];
-				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:nil
-				   modalForWindow:slot1ManagerWindow
-					modalDelegate:self
-				   didEndSelector:@selector(didEndChooseSlot1R4Directory:returnCode:contextInfo:)
-					  contextInfo:nil];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel beginSheetModalForWindow:slot1ManagerWindow
+					  completionHandler:^(NSInteger result) {
+						  [self didEndChooseSlot1R4Directory:panel returnCode:result contextInfo:nil];
+					  } ];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( [panel beginSheetForDirectory:nil
+																 file:nil
+																types:nil
+													   modalForWindow:slot1ManagerWindow
+														modalDelegate:self
+													   didEndSelector:@selector(didEndChooseSlot1R4Directory:returnCode:contextInfo:)
+														  contextInfo:nil] );
+	}
 }
 
 - (IBAction) slot1Eject:(id)sender
@@ -1116,7 +1172,7 @@
 	NSWindow *sheet = [(NSControl *)sender window];
 	const NSInteger code = [(NSControl *)sender tag];
 	
-    [NSApp endSheet:sheet returnCode:code];
+	[CocoaDSUtil endSheet:sheet returnCode:code];
 }
 
 #pragma mark Class Methods
@@ -1643,11 +1699,25 @@
 		[self setIsUserInterfaceBlockingExecution:YES];
 		[self setIsShowingFileMigrationDialog:YES];
 		
-		[NSApp beginSheet:saveFileMigrationSheet
-		   modalForWindow:[[windowList objectAtIndex:0] window]
-            modalDelegate:self
-		   didEndSelector:@selector(didEndFileMigrationSheet:returnCode:contextInfo:)
-			  contextInfo:fileURL];
+		NSWindow *window = [[windowList objectAtIndex:0] window];
+		
+#if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+		if ([window respondsToSelector:@selector(beginSheet:completionHandler:)])
+		{
+			[window beginSheet:saveFileMigrationSheet
+			 completionHandler:^(NSModalResponse response) {
+				[self didEndFileMigrationSheet:nil returnCode:response contextInfo:fileURL];
+			} ];
+		}
+		else
+#endif
+		{
+			SILENCE_DEPRECATION_MACOS_10_10( [NSApp beginSheet:saveFileMigrationSheet
+												modalForWindow:window
+												 modalDelegate:self
+												didEndSelector:@selector(didEndFileMigrationSheet:returnCode:contextInfo:)
+												   contextInfo:fileURL] );
+		}
 	}
 	else
 	{
@@ -1690,11 +1760,41 @@
 		[self setIsUserInterfaceBlockingExecution:YES];
 		[self setIsShowingSaveStateDialog:YES];
 		
-		[NSApp beginSheet:saveStatePrecloseSheet
-		   modalForWindow:(NSWindow *)[[windowList objectAtIndex:0] window]
-            modalDelegate:self
-		   didEndSelector:endSheetSelector
-			  contextInfo:romURL];
+		NSWindow *window = [[windowList objectAtIndex:0] window];
+		
+#if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+		if ([window respondsToSelector:@selector(beginSheet:completionHandler:)])
+		{
+			[window beginSheet:saveStatePrecloseSheet
+			 completionHandler:^(NSModalResponse response) {
+				switch (reasonID)
+				{
+					case REASONFORCLOSE_NORMAL:
+						[self didEndSaveStateSheet:nil returnCode:response contextInfo:romURL];
+						break;
+						
+					case REASONFORCLOSE_OPEN:
+						[self didEndSaveStateSheetOpen:nil returnCode:response contextInfo:romURL];
+						break;
+						
+					case REASONFORCLOSE_TERMINATE:
+						[self didEndSaveStateSheetTerminate:nil returnCode:response contextInfo:romURL];
+						break;
+						
+					default:
+						break;
+				}
+			} ];
+		}
+		else
+#endif
+		{
+			SILENCE_DEPRECATION_MACOS_10_10( [NSApp beginSheet:saveStatePrecloseSheet
+												modalForWindow:window
+												 modalDelegate:self
+												didEndSelector:endSheetSelector
+												   contextInfo:romURL] );
+		}
 	}
 	else
 	{
@@ -2015,11 +2115,25 @@
 	newTextFieldRect.size.height = 16.0f * lineCount;
 	[ndsErrorStatusTextField setFrame:newTextFieldRect];
 	
-	[NSApp beginSheet:ndsErrorSheet
-	   modalForWindow:(NSWindow *)[[windowList objectAtIndex:0] window]
-		modalDelegate:self
-	   didEndSelector:@selector(didEndErrorSheet:returnCode:contextInfo:)
-		  contextInfo:nil];
+	NSWindow *window = [[windowList objectAtIndex:0] window];
+	
+#if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+	if ([window respondsToSelector:@selector(beginSheet:completionHandler:)])
+	{
+		[window beginSheet:ndsErrorSheet
+		 completionHandler:^(NSModalResponse response) {
+			[self didEndErrorSheet:nil returnCode:response contextInfo:nil];
+		} ];
+	}
+	else
+#endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_10( [NSApp beginSheet:ndsErrorSheet
+											modalForWindow:window
+											 modalDelegate:self
+											didEndSelector:@selector(didEndErrorSheet:returnCode:contextInfo:)
+											   contextInfo:nil] );
+	}
 }
 
 - (void) handleEmulatorExecutionState:(NSNotification *)aNotification
@@ -2133,7 +2247,7 @@
 	
 	switch (returnCode)
 	{
-		case NSOKButton:
+		case GUI_RESPONSE_OK:
 			[CocoaDSFile moveFileToCurrentDirectory:romSaveURL];
 			break;
 			
@@ -2155,7 +2269,7 @@
 	
 	switch (returnCode)
 	{
-		case NSCancelButton: // Cancel
+		case GUI_RESPONSE_CANCEL: // Cancel
 			[self restoreCoreState];
 			[self setIsUserInterfaceBlockingExecution:NO];
 			[self setIsShowingSaveStateDialog:NO];
@@ -2199,7 +2313,7 @@
 {
 	[self didEndSaveStateSheet:sheet returnCode:returnCode contextInfo:contextInfo];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		[NSApp replyToApplicationShouldTerminate:NO];
 	}
@@ -2216,7 +2330,7 @@
 {
 	[sheet orderOut:self];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		return;
 	}
@@ -2244,7 +2358,7 @@
 			[self reset:self];
 			break;
 			
-		case NSCancelButton: // Stop
+		case GUI_RESPONSE_CANCEL: // Stop
 		default:
 			break;
 	}
@@ -2814,11 +2928,11 @@
 		{
 			if ([CocoaDSFile saveStateExistsForSlot:[[self currentRom] fileURL] slotNumber:[theItem tag] + 1])
 			{
-				[(NSMenuItem*)theItem setState:NSOnState];
+				[(NSMenuItem*)theItem setState:GUI_STATE_ON];
 			}
 			else
 			{
-				[(NSMenuItem*)theItem setState:NSOffState];
+				[(NSMenuItem*)theItem setState:GUI_STATE_OFF];
 			}
 		}
 	}
@@ -2855,16 +2969,16 @@
 					speedScalar == (NSInteger)(SPEED_SCALAR_NORMAL * 100.0) ||
 					speedScalar == (NSInteger)(SPEED_SCALAR_DOUBLE * 100.0))
 				{
-					[(NSMenuItem*)theItem setState:NSOffState];
+					[(NSMenuItem*)theItem setState:GUI_STATE_OFF];
 				}
 				else
 				{
-					[(NSMenuItem*)theItem setState:NSOnState];
+					[(NSMenuItem*)theItem setState:GUI_STATE_ON];
 				}
 			}
 			else
 			{
-				[(NSMenuItem*)theItem setState:(speedScalar == [theItem tag]) ? NSOnState : NSOffState];
+				[(NSMenuItem*)theItem setState:(speedScalar == [theItem tag]) ? GUI_STATE_ON : GUI_STATE_OFF];
 			}
 		}
 		else if ([(id)theItem isMemberOfClass:[NSToolbarItem class]])
@@ -2906,7 +3020,7 @@
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem*)theItem setState:([cdsCore framesToSkipSetting] == [theItem tag]) ? NSOnState : NSOffState];
+			[(NSMenuItem*)theItem setState:([cdsCore framesToSkipSetting] == [theItem tag]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(toggleCheats:))
@@ -2920,7 +3034,7 @@
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem*)theItem setState:([self selectedRomSaveTypeID] == [theItem tag]) ? NSOnState : NSOffState];
+			[(NSMenuItem*)theItem setState:([self selectedRomSaveTypeID] == [theItem tag]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(openEmuSaveState:) ||
@@ -2946,7 +3060,7 @@
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem*)theItem setState:([cdsCore.cdsGPU gpuStateByBit:[theItem tag]]) ? NSOnState : NSOffState];
+			[(NSMenuItem*)theItem setState:([[cdsCore cdsGPU] gpuStateByBit:[theItem tag]]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	

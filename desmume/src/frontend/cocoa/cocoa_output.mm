@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2021 DeSmuME team
+	Copyright (C) 2011-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -63,7 +63,7 @@
 	_pthread = NULL;
 	
 	_idleState = NO;
-	spinlockIdle = OS_SPINLOCK_INIT;
+	_unfairlockIdle = apple_unfairlock_create();
 	
 	return self;
 }
@@ -73,22 +73,23 @@
 	[self exitThread];
 	
 	[property release];
+	apple_unfairlock_destroy(_unfairlockIdle);
 	
 	[super dealloc];
 }
 
 - (void) setIdle:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIdle);
+	apple_unfairlock_lock(_unfairlockIdle);
 	_idleState = theState;
-	OSSpinLockUnlock(&spinlockIdle);
+	apple_unfairlock_unlock(_unfairlockIdle);
 }
 
 - (BOOL) idle
 {
-	OSSpinLockLock(&spinlockIdle);
+	apple_unfairlock_lock(_unfairlockIdle);
 	const BOOL theState = _idleState;
-	OSSpinLockUnlock(&spinlockIdle);
+	apple_unfairlock_unlock(_unfairlockIdle);
 	
 	return theState;
 }
@@ -202,12 +203,12 @@
 		return self;
 	}
 	
-	spinlockAudioOutputEngine = OS_SPINLOCK_INIT;
-	spinlockVolume = OS_SPINLOCK_INIT;
-	spinlockSpuAdvancedLogic = OS_SPINLOCK_INIT;
-	spinlockSpuInterpolationMode = OS_SPINLOCK_INIT;
-	spinlockSpuSyncMode = OS_SPINLOCK_INIT;
-	spinlockSpuSyncMethod = OS_SPINLOCK_INIT;
+	_unfairlockAudioOutputEngine = apple_unfairlock_create();
+	_unfairlockVolume = apple_unfairlock_create();
+	_unfairlockSpuAdvancedLogic = apple_unfairlock_create();
+	_unfairlockSpuInterpolationMode = apple_unfairlock_create();
+	_unfairlockSpuSyncMode = apple_unfairlock_create();
+	_unfairlockSpuSyncMethod = apple_unfairlock_create();
 	
 	_idleState = YES;
 	bufferSize = 0;
@@ -223,6 +224,18 @@
 	[property setValue:[NSNumber numberWithInteger:SPU_SYNC_METHOD_N] forKey:@"spuSyncMethod"];
 	
 	return self;
+}
+
+- (void)dealloc
+{
+	apple_unfairlock_destroy(_unfairlockAudioOutputEngine);
+	apple_unfairlock_destroy(_unfairlockVolume);
+	apple_unfairlock_destroy(_unfairlockSpuAdvancedLogic);
+	apple_unfairlock_destroy(_unfairlockSpuInterpolationMode);
+	apple_unfairlock_destroy(_unfairlockSpuSyncMode);
+	apple_unfairlock_destroy(_unfairlockSpuSyncMethod);
+	
+	[super dealloc];
 }
 
 - (void) setIdle:(BOOL)theState
@@ -250,27 +263,27 @@
 		vol = MAX_VOLUME;
 	}
 	
-	OSSpinLockLock(&spinlockVolume);
+	apple_unfairlock_lock(_unfairlockVolume);
 	[property setValue:[NSNumber numberWithFloat:vol] forKey:@"volume"];
-	OSSpinLockUnlock(&spinlockVolume);
+	apple_unfairlock_unlock(_unfairlockVolume);
 	
 	SPU_SetVolume((int)vol);
 }
 
 - (float) volume
 {
-	OSSpinLockLock(&spinlockVolume);
+	apple_unfairlock_lock(_unfairlockVolume);
 	float vol = [(NSNumber *)[property valueForKey:@"volume"] floatValue];
-	OSSpinLockUnlock(&spinlockVolume);
+	apple_unfairlock_unlock(_unfairlockVolume);
 	
 	return vol;
 }
 
 - (void) setAudioOutputEngine:(NSInteger)methodID
 {
-	OSSpinLockLock(&spinlockAudioOutputEngine);
+	apple_unfairlock_lock(_unfairlockAudioOutputEngine);
 	[property setValue:[NSNumber numberWithInteger:methodID] forKey:@"audioOutputEngine"];
-	OSSpinLockUnlock(&spinlockAudioOutputEngine);
+	apple_unfairlock_unlock(_unfairlockAudioOutputEngine);
 	
 	pthread_rwlock_wrlock(self.rwlockProducer);
 	
@@ -294,18 +307,18 @@
 
 - (NSInteger) audioOutputEngine
 {
-	OSSpinLockLock(&spinlockAudioOutputEngine);
+	apple_unfairlock_lock(_unfairlockAudioOutputEngine);
 	NSInteger methodID = [(NSNumber *)[property valueForKey:@"audioOutputEngine"] integerValue];
-	OSSpinLockUnlock(&spinlockAudioOutputEngine);
+	apple_unfairlock_unlock(_unfairlockAudioOutputEngine);
 	
 	return methodID;
 }
 
 - (void) setSpuAdvancedLogic:(BOOL)state
 {
-	OSSpinLockLock(&spinlockSpuAdvancedLogic);
+	apple_unfairlock_lock(_unfairlockSpuAdvancedLogic);
 	[property setValue:[NSNumber numberWithBool:state] forKey:@"spuAdvancedLogic"];
-	OSSpinLockUnlock(&spinlockSpuAdvancedLogic);
+	apple_unfairlock_unlock(_unfairlockSpuAdvancedLogic);
 	
 	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.spu_advanced = state;
@@ -314,18 +327,18 @@
 
 - (BOOL) spuAdvancedLogic
 {
-	OSSpinLockLock(&spinlockSpuAdvancedLogic);
+	apple_unfairlock_lock(_unfairlockSpuAdvancedLogic);
 	BOOL state = [(NSNumber *)[property valueForKey:@"spuAdvancedLogic"] boolValue];
-	OSSpinLockUnlock(&spinlockSpuAdvancedLogic);
+	apple_unfairlock_unlock(_unfairlockSpuAdvancedLogic);
 	
 	return state;
 }
 
 - (void) setSpuInterpolationMode:(NSInteger)modeID
 {
-	OSSpinLockLock(&spinlockSpuInterpolationMode);
+	apple_unfairlock_lock(_unfairlockSpuInterpolationMode);
 	[property setValue:[NSNumber numberWithInteger:modeID] forKey:@"spuInterpolationMode"];
-	OSSpinLockUnlock(&spinlockSpuInterpolationMode);
+	apple_unfairlock_unlock(_unfairlockSpuInterpolationMode);
 	
 	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.spuInterpolationMode = (SPUInterpolationMode)modeID;
@@ -334,18 +347,18 @@
 
 - (NSInteger) spuInterpolationMode
 {
-	OSSpinLockLock(&spinlockSpuInterpolationMode);
+	apple_unfairlock_lock(_unfairlockSpuInterpolationMode);
 	NSInteger modeID = [(NSNumber *)[property valueForKey:@"spuInterpolationMode"] integerValue];
-	OSSpinLockUnlock(&spinlockSpuInterpolationMode);
+	apple_unfairlock_unlock(_unfairlockSpuInterpolationMode);
 	
 	return modeID;
 }
 
 - (void) setSpuSyncMode:(NSInteger)modeID
 {
-	OSSpinLockLock(&spinlockSpuSyncMode);
+	apple_unfairlock_lock(_unfairlockSpuSyncMode);
 	[property setValue:[NSNumber numberWithInteger:modeID] forKey:@"spuSyncMode"];
-	OSSpinLockUnlock(&spinlockSpuSyncMode);
+	apple_unfairlock_unlock(_unfairlockSpuSyncMode);
 	
 	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.SPU_sync_mode = (int)modeID;
@@ -355,18 +368,18 @@
 
 - (NSInteger) spuSyncMode
 {
-	OSSpinLockLock(&spinlockSpuSyncMode);
+	apple_unfairlock_lock(_unfairlockSpuSyncMode);
 	NSInteger modeID = [(NSNumber *)[property valueForKey:@"spuSyncMode"] integerValue];
-	OSSpinLockUnlock(&spinlockSpuSyncMode);
+	apple_unfairlock_unlock(_unfairlockSpuSyncMode);
 	
 	return modeID;
 }
 
 - (void) setSpuSyncMethod:(NSInteger)methodID
 {
-	OSSpinLockLock(&spinlockSpuSyncMethod);
+	apple_unfairlock_lock(_unfairlockSpuSyncMethod);
 	[property setValue:[NSNumber numberWithInteger:methodID] forKey:@"spuSyncMethod"];
-	OSSpinLockUnlock(&spinlockSpuSyncMethod);
+	apple_unfairlock_unlock(_unfairlockSpuSyncMethod);
 	
 	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.SPU_sync_method = (int)methodID;
@@ -376,9 +389,9 @@
 
 - (NSInteger) spuSyncMethod
 {
-	OSSpinLockLock(&spinlockSpuSyncMethod);
+	apple_unfairlock_lock(_unfairlockSpuSyncMethod);
 	NSInteger methodID = [(NSNumber *)[property valueForKey:@"spuSyncMethod"] integerValue];
-	OSSpinLockUnlock(&spinlockSpuSyncMethod);
+	apple_unfairlock_unlock(_unfairlockSpuSyncMethod);
 	
 	return methodID;
 }
@@ -505,8 +518,8 @@
 		return self;
 	}
 	
-	spinlockReceivedFrameIndex = OS_SPINLOCK_INIT;
-	spinlockNDSFrameInfo = OS_SPINLOCK_INIT;
+	_unfairlockReceivedFrameIndex = apple_unfairlock_create();
+	_unfairlockNDSFrameInfo = apple_unfairlock_create();
 	
 	_ndsFrameInfo.clear();
 	
@@ -517,6 +530,14 @@
 	[self createThread];
 	
 	return self;
+}
+
+- (void)dealloc
+{
+	apple_unfairlock_destroy(_unfairlockReceivedFrameIndex);
+	apple_unfairlock_destroy(_unfairlockNDSFrameInfo);
+	
+	[super dealloc];
 }
 
 - (void) handleSignalMessageID:(int32_t)messageID
@@ -535,24 +556,24 @@
 
 - (void) handleReceiveGPUFrame
 {
-	OSSpinLockLock(&spinlockReceivedFrameIndex);
+	apple_unfairlock_lock(_unfairlockReceivedFrameIndex);
 	_receivedFrameIndex++;
-	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
+	apple_unfairlock_unlock(_unfairlockReceivedFrameIndex);
 }
 
 - (void) takeFrameCount
 {
-	OSSpinLockLock(&spinlockReceivedFrameIndex);
+	apple_unfairlock_lock(_unfairlockReceivedFrameIndex);
 	_receivedFrameCount = _receivedFrameIndex - _currentReceivedFrameIndex;
 	_currentReceivedFrameIndex = _receivedFrameIndex;
-	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
+	apple_unfairlock_unlock(_unfairlockReceivedFrameIndex);
 }
 
 - (void) setNDSFrameInfo:(const NDSFrameInfo &)ndsFrameInfo
 {
-	OSSpinLockLock(&spinlockNDSFrameInfo);
+	apple_unfairlock_lock(_unfairlockNDSFrameInfo);
 	_ndsFrameInfo.copyFrom(ndsFrameInfo);
-	OSSpinLockUnlock(&spinlockNDSFrameInfo);
+	apple_unfairlock_unlock(_unfairlockNDSFrameInfo);
 }
 
 @end
@@ -664,24 +685,39 @@
 	
 	_cdv = NULL;
 	
-	spinlockViewProperties = OS_SPINLOCK_INIT;
-	spinlockIsHUDVisible = OS_SPINLOCK_INIT;
-	spinlockUseVerticalSync = OS_SPINLOCK_INIT;
-	spinlockVideoFiltersPreferGPU = OS_SPINLOCK_INIT;
-	spinlockOutputFilter = OS_SPINLOCK_INIT;
-	spinlockSourceDeposterize = OS_SPINLOCK_INIT;
-	spinlockPixelScaler = OS_SPINLOCK_INIT;
-	spinlockDisplayVideoSource = OS_SPINLOCK_INIT;
-	spinlockDisplayID = OS_SPINLOCK_INIT;
+	_unfairlockViewProperties = apple_unfairlock_create();
+	_unfairlockIsHUDVisible = apple_unfairlock_create();
+	_unfairlockUseVerticalSync = apple_unfairlock_create();
+	_unfairlockVideoFiltersPreferGPU = apple_unfairlock_create();
+	_unfairlockOutputFilter = apple_unfairlock_create();
+	_unfairlockSourceDeposterize = apple_unfairlock_create();
+	_unfairlockPixelScaler = apple_unfairlock_create();
+	_unfairlockDisplayVideoSource = apple_unfairlock_create();
+	_unfairlockDisplayID = apple_unfairlock_create();
 		
 	return self;
 }
 
+- (void)dealloc
+{
+	apple_unfairlock_destroy(_unfairlockViewProperties);
+	apple_unfairlock_destroy(_unfairlockIsHUDVisible);
+	apple_unfairlock_destroy(_unfairlockUseVerticalSync);
+	apple_unfairlock_destroy(_unfairlockVideoFiltersPreferGPU);
+	apple_unfairlock_destroy(_unfairlockOutputFilter);
+	apple_unfairlock_destroy(_unfairlockSourceDeposterize);
+	apple_unfairlock_destroy(_unfairlockPixelScaler);
+	apple_unfairlock_destroy(_unfairlockDisplayVideoSource);
+	apple_unfairlock_destroy(_unfairlockDisplayID);
+	
+	[super dealloc];
+}
+
 - (void) commitPresenterProperties:(const ClientDisplayPresenterProperties &)viewProps
 {
-	OSSpinLockLock(&spinlockViewProperties);
+	apple_unfairlock_lock(_unfairlockViewProperties);
 	_intermediateViewProps = viewProps;
-	OSSpinLockUnlock(&spinlockViewProperties);
+	apple_unfairlock_unlock(_unfairlockViewProperties);
 	
 	[self handleChangeViewProperties];
 }
@@ -698,470 +734,470 @@
 
 - (void) setIsHUDVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDVisibility((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDVisibility()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return theState;
 }
 
 - (void) setIsHUDExecutionSpeedVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDShowExecutionSpeed((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDExecutionSpeedVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowExecutionSpeed()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return theState;
 }
 
 - (void) setIsHUDVideoFPSVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDShowVideoFPS((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDVideoFPSVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowVideoFPS()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return theState;
 }
 
 - (void) setIsHUDRender3DFPSVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDShowRender3DFPS((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDRender3DFPSVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowRender3DFPS()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return theState;
 }
 
 - (void) setIsHUDFrameIndexVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDShowFrameIndex((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDFrameIndexVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowFrameIndex()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return theState;
 }
 
 - (void) setIsHUDLagFrameCountVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDShowLagFrameCount((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDLagFrameCountVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowLagFrameCount()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return theState;
 }
 
 - (void) setIsHUDCPULoadAverageVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDShowCPULoadAverage((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDCPULoadAverageVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowCPULoadAverage()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return theState;
 }
 
 - (void) setIsHUDRealTimeClockVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDShowRTC((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDRealTimeClockVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowRTC()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return theState;
 }
 
 - (void) setIsHUDInputVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDShowInput((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDInputVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowInput()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return theState;
 }
 
 - (void) setHudColorExecutionSpeed:(uint32_t)theColor
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDColorExecutionSpeed(theColor);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorExecutionSpeed
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorExecutionSpeed();
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return color32;
 }
 
 - (void) setHudColorVideoFPS:(uint32_t)theColor
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDColorVideoFPS(theColor);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorVideoFPS
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorVideoFPS();
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return color32;
 }
 
 - (void) setHudColorRender3DFPS:(uint32_t)theColor
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDColorRender3DFPS(theColor);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorRender3DFPS
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorRender3DFPS();
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return color32;
 }
 
 - (void) setHudColorFrameIndex:(uint32_t)theColor
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDColorFrameIndex(theColor);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorFrameIndex
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorFrameIndex();
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return color32;
 }
 
 - (void) setHudColorLagFrameCount:(uint32_t)theColor
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDColorLagFrameCount(theColor);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorLagFrameCount
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorLagFrameCount();
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return color32;
 }
 
 - (void) setHudColorCPULoadAverage:(uint32_t)theColor
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDColorCPULoadAverage(theColor);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorCPULoadAverage
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorCPULoadAverage();
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return color32;
 }
 
 - (void) setHudColorRTC:(uint32_t)theColor
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDColorRTC(theColor);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorRTC
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorRTC();
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return color32;
 }
 
 - (void) setHudColorInputPendingAndApplied:(uint32_t)theColor
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDColorInputPendingAndApplied(theColor);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorInputPendingAndApplied
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorInputPendingAndApplied();
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return color32;
 }
 
 - (void) setHudColorInputAppliedOnly:(uint32_t)theColor
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDColorInputAppliedOnly(theColor);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorInputAppliedOnly
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorInputAppliedOnly();
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return color32;
 }
 
 - (void) setHudColorInputPendingOnly:(uint32_t)theColor
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetHUDColorInputPendingOnly(theColor);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorInputPendingOnly
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorInputPendingOnly();
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 	
 	return color32;
 }
 
 - (void) setDisplayMainVideoSource:(NSInteger)displaySourceID
 {
-	OSSpinLockLock(&spinlockDisplayVideoSource);
+	apple_unfairlock_lock(_unfairlockDisplayVideoSource);
 	_cdv->Get3DPresenter()->SetDisplayVideoSource(NDSDisplayID_Main, (ClientDisplaySource)displaySourceID);
-	OSSpinLockUnlock(&spinlockDisplayVideoSource);
+	apple_unfairlock_unlock(_unfairlockDisplayVideoSource);
 }
 
 - (NSInteger) displayMainVideoSource
 {
-	OSSpinLockLock(&spinlockDisplayVideoSource);
+	apple_unfairlock_lock(_unfairlockDisplayVideoSource);
 	const NSInteger displayVideoSource = _cdv->Get3DPresenter()->GetDisplayVideoSource(NDSDisplayID_Main);
-	OSSpinLockUnlock(&spinlockDisplayVideoSource);
+	apple_unfairlock_unlock(_unfairlockDisplayVideoSource);
 	
 	return displayVideoSource;
 }
 
 - (void) setDisplayTouchVideoSource:(NSInteger)displaySourceID
 {
-	OSSpinLockLock(&spinlockDisplayVideoSource);
+	apple_unfairlock_lock(_unfairlockDisplayVideoSource);
 	_cdv->Get3DPresenter()->SetDisplayVideoSource(NDSDisplayID_Touch, (ClientDisplaySource)displaySourceID);
-	OSSpinLockUnlock(&spinlockDisplayVideoSource);
+	apple_unfairlock_unlock(_unfairlockDisplayVideoSource);
 }
 
 - (NSInteger) displayTouchVideoSource
 {
-	OSSpinLockLock(&spinlockDisplayVideoSource);
+	apple_unfairlock_lock(_unfairlockDisplayVideoSource);
 	const NSInteger displayVideoSource = _cdv->Get3DPresenter()->GetDisplayVideoSource(NDSDisplayID_Touch);
-	OSSpinLockUnlock(&spinlockDisplayVideoSource);
+	apple_unfairlock_unlock(_unfairlockDisplayVideoSource);
 	
 	return displayVideoSource;
 }
 
 - (void) setCurrentDisplayID:(uint32_t)theDisplayID
 {
-	OSSpinLockLock(&spinlockDisplayID);
+	apple_unfairlock_lock(_unfairlockDisplayID);
 	_cdv->SetDisplayViewID((int64_t)theDisplayID);
-	OSSpinLockUnlock(&spinlockDisplayID);
+	apple_unfairlock_unlock(_unfairlockDisplayID);
 }
 
 - (uint32_t) currentDisplayID
 {
-	OSSpinLockLock(&spinlockDisplayID);
+	apple_unfairlock_lock(_unfairlockDisplayID);
 	const uint32_t displayID = (uint32_t)_cdv->GetDisplayViewID();
-	OSSpinLockUnlock(&spinlockDisplayID);
+	apple_unfairlock_unlock(_unfairlockDisplayID);
 	
 	return displayID;
 }
 
 - (void) setUseVerticalSync:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockUseVerticalSync);
+	apple_unfairlock_lock(_unfairlockUseVerticalSync);
 	_cdv->SetUseVerticalSync((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockUseVerticalSync);
+	apple_unfairlock_unlock(_unfairlockUseVerticalSync);
 }
 
 - (BOOL) useVerticalSync
 {
-	OSSpinLockLock(&spinlockUseVerticalSync);
+	apple_unfairlock_lock(_unfairlockUseVerticalSync);
 	const BOOL theState = (_cdv->GetUseVerticalSync()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockUseVerticalSync);
+	apple_unfairlock_unlock(_unfairlockUseVerticalSync);
 	
 	return theState;
 }
 
 - (void) setVideoFiltersPreferGPU:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockVideoFiltersPreferGPU);
+	apple_unfairlock_lock(_unfairlockVideoFiltersPreferGPU);
 	_cdv->Get3DPresenter()->SetFiltersPreferGPU((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
+	apple_unfairlock_unlock(_unfairlockVideoFiltersPreferGPU);
 }
 
 - (BOOL) videoFiltersPreferGPU
 {
-	OSSpinLockLock(&spinlockVideoFiltersPreferGPU);
+	apple_unfairlock_lock(_unfairlockVideoFiltersPreferGPU);
 	const BOOL theState = (_cdv->Get3DPresenter()->GetFiltersPreferGPU()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
+	apple_unfairlock_unlock(_unfairlockVideoFiltersPreferGPU);
 	
 	return theState;
 }
 
 - (void) setSourceDeposterize:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockSourceDeposterize);
+	apple_unfairlock_lock(_unfairlockSourceDeposterize);
 	_cdv->Get3DPresenter()->SetSourceDeposterize((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockSourceDeposterize);
+	apple_unfairlock_unlock(_unfairlockSourceDeposterize);
 }
 
 - (BOOL) sourceDeposterize
 {
-	OSSpinLockLock(&spinlockSourceDeposterize);
+	apple_unfairlock_lock(_unfairlockSourceDeposterize);
 	const BOOL theState = (_cdv->Get3DPresenter()->GetSourceDeposterize()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockSourceDeposterize);
+	apple_unfairlock_unlock(_unfairlockSourceDeposterize);
 	
 	return theState;
 }
 
 - (void) setOutputFilter:(NSInteger)filterID
 {
-	OSSpinLockLock(&spinlockOutputFilter);
+	apple_unfairlock_lock(_unfairlockOutputFilter);
 	_cdv->Get3DPresenter()->SetOutputFilter((OutputFilterTypeID)filterID);
-	OSSpinLockUnlock(&spinlockOutputFilter);
+	apple_unfairlock_unlock(_unfairlockOutputFilter);
 }
 
 - (NSInteger) outputFilter
 {
-	OSSpinLockLock(&spinlockOutputFilter);
+	apple_unfairlock_lock(_unfairlockOutputFilter);
 	const NSInteger filterID = _cdv->Get3DPresenter()->GetOutputFilter();
-	OSSpinLockUnlock(&spinlockOutputFilter);
+	apple_unfairlock_unlock(_unfairlockOutputFilter);
 	
 	return filterID;
 }
 
 - (void) setPixelScaler:(NSInteger)filterID
 {
-	OSSpinLockLock(&spinlockPixelScaler);
+	apple_unfairlock_lock(_unfairlockPixelScaler);
 	_cdv->Get3DPresenter()->SetPixelScaler((VideoFilterTypeID)filterID);
-	OSSpinLockUnlock(&spinlockPixelScaler);
+	apple_unfairlock_unlock(_unfairlockPixelScaler);
 }
 
 - (NSInteger) pixelScaler
 {
-	OSSpinLockLock(&spinlockPixelScaler);
+	apple_unfairlock_lock(_unfairlockPixelScaler);
 	const NSInteger filterID = _cdv->Get3DPresenter()->GetPixelScaler();
-	OSSpinLockUnlock(&spinlockPixelScaler);
+	apple_unfairlock_unlock(_unfairlockPixelScaler);
 	
 	return filterID;
 }
@@ -1205,9 +1241,9 @@
 
 - (void) handleChangeViewProperties
 {
-	OSSpinLockLock(&spinlockViewProperties);
+	apple_unfairlock_lock(_unfairlockViewProperties);
 	_cdv->Get3DPresenter()->CommitPresenterProperties(_intermediateViewProps);
-	OSSpinLockUnlock(&spinlockViewProperties);
+	apple_unfairlock_unlock(_unfairlockViewProperties);
 	
 	_cdv->Get3DPresenter()->SetupPresenterProperties();
 	_cdv->SetViewNeedsFlush();
@@ -1249,27 +1285,27 @@
 	}
 	
 	NSPasteboard *pboard = [NSPasteboard generalPasteboard];
-	[pboard declareTypes:[NSArray arrayWithObjects:NSTIFFPboardType, nil] owner:self];
-	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSTIFFPboardType];
+	[pboard declareTypes:[NSArray arrayWithObjects:PASTEBOARDTYPE_TIFF, nil] owner:self];
+	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:PASTEBOARDTYPE_TIFF];
 }
 
 - (void) setScaleFactor:(float)theScaleFactor
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
+	apple_unfairlock_lock(_unfairlockIsHUDVisible);
 	_cdv->Get3DPresenter()->SetScaleFactor(theScaleFactor);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	apple_unfairlock_unlock(_unfairlockIsHUDVisible);
 }
 
 - (void) hudUpdate
 {
-	OSSpinLockLock(&spinlockReceivedFrameIndex);
+	apple_unfairlock_lock(_unfairlockReceivedFrameIndex);
 	ClientFrameInfo clientFrameInfo;
 	clientFrameInfo.videoFPS = _receivedFrameCount;
-	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
+	apple_unfairlock_unlock(_unfairlockReceivedFrameIndex);
 	
-	OSSpinLockLock(&spinlockNDSFrameInfo);
+	apple_unfairlock_lock(_unfairlockNDSFrameInfo);
 	_cdv->Get3DPresenter()->SetHUDInfo(clientFrameInfo, _ndsFrameInfo);
-	OSSpinLockUnlock(&spinlockNDSFrameInfo);
+	apple_unfairlock_unlock(_unfairlockNDSFrameInfo);
 }
 
 - (NSImage *) image

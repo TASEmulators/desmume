@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2021 DeSmuME team
+	Copyright (C) 2014-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -364,6 +364,10 @@ static const char *Sample1x1_VertShader_110 = {"\
 	}\n\
 "};
 
+// For the sake of completeness, we need a 2x2 version of this vertex
+// shader just in case a future fragment shader needs it. Therefore,
+// silencing the unused variable warning is justified here.
+SILENCE_WARNING_UNUSED_VARIABLE_BEGIN
 static const char *Sample2x2_VertShader_110 = {"\
 	//---------------------------------------\n\
 	// Input Pixel Mapping:  00|01\n\
@@ -383,6 +387,7 @@ static const char *Sample2x2_VertShader_110 = {"\
 		gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 	}\n\
 "};
+SILENCE_WARNING_UNUSED_VARIABLE_END
 
 static const char *Sample3x3_VertShader_110 = {"\
 	//---------------------------------------\n\

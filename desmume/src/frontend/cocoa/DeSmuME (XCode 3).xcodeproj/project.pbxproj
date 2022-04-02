@@ -1918,7 +1918,7 @@
 		AB27CD3C1F99169300396812 /* lvm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lvm.h; sourceTree = "<group>"; };
 		AB27CD3D1F99169300396812 /* lzio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lzio.c; sourceTree = "<group>"; };
 		AB27CD3E1F99169300396812 /* lzio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lzio.h; sourceTree = "<group>"; };
-		AB2A9A791725F00F0062C1A1 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB2A9A791725F00F0062C1A1 /* DeSmuME (ppc32).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (ppc32).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB2C25061DEBFBD400706BFC /* encoding_utf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = encoding_utf.c; sourceTree = "<group>"; };
 		AB2F3C4515CF9C6000858373 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB2F56EE1704C86900E28885 /* utilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utilities.h; sourceTree = "<group>"; };
@@ -2561,7 +2561,7 @@
 				AB73AA331507C9F500A310C8 /* DeSmuME.app */,
 				ABAD104915ACE7A00000EC47 /* DeSmuME (PPC).app */,
 				AB2F3C4515CF9C6000858373 /* DeSmuME (PPC).app */,
-				AB2A9A791725F00F0062C1A1 /* DeSmuME (PPC).app */,
+				AB2A9A791725F00F0062C1A1 /* DeSmuME (ppc32).app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -3692,9 +3692,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AB2A99A41725F00F0062C1A1 /* DeSmuME (OS X App; PowerPC Release Build) */ = {
+		AB2A99A41725F00F0062C1A1 /* DeSmuME (macOS App; Release Stage 1 PowerPC32 -- Xcode 3) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB2A9A761725F00F0062C1A1 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; PowerPC Release Build)" */;
+			buildConfigurationList = AB2A9A761725F00F0062C1A1 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Release Stage 1 PowerPC32 -- Xcode 3)" */;
 			buildPhases = (
 				AB2A99A51725F00F0062C1A1 /* ShellScript */,
 				AB2A99A61725F00F0062C1A1 /* Resources */,
@@ -3706,15 +3706,15 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App; PowerPC Release Build)";
+			name = "DeSmuME (macOS App; Release Stage 1 PowerPC32 -- Xcode 3)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
-			productReference = AB2A9A791725F00F0062C1A1 /* DeSmuME (PPC).app */;
+			productReference = AB2A9A791725F00F0062C1A1 /* DeSmuME (ppc32).app */;
 			productType = "com.apple.product-type.application";
 		};
-		AB2F3B7A15CF9C6000858373 /* DeSmuME (OS X App; PowerPC; LLVM-GCC) */ = {
+		AB2F3B7A15CF9C6000858373 /* DeSmuME (macOS App; PowerPC; LLVM-GCC) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB2F3C4215CF9C6000858373 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; PowerPC; LLVM-GCC)" */;
+			buildConfigurationList = AB2F3C4215CF9C6000858373 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; PowerPC; LLVM-GCC)" */;
 			buildPhases = (
 				AB2F3B7B15CF9C6000858373 /* ShellScript */,
 				AB2F3B7C15CF9C6000858373 /* Resources */,
@@ -3726,15 +3726,15 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App; PowerPC; LLVM-GCC)";
+			name = "DeSmuME (macOS App; PowerPC; LLVM-GCC)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = AB2F3C4515CF9C6000858373 /* DeSmuME (PPC).app */;
 			productType = "com.apple.product-type.application";
 		};
-		AB711EBD1481C35F009011C8 /* DeSmuME (OS X App; Intel; LLVM-Clang) */ = {
+		AB711EBD1481C35F009011C8 /* DeSmuME (macOS App; Intel; LLVM-Clang) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB711F7C1481C35F009011C8 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; Intel; LLVM-Clang)" */;
+			buildConfigurationList = AB711F7C1481C35F009011C8 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel; LLVM-Clang)" */;
 			buildPhases = (
 				AB75222C14C799C1009B97B3 /* ShellScript */,
 				AB711EBE1481C35F009011C8 /* Resources */,
@@ -3746,15 +3746,15 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App; Intel; LLVM-Clang)";
+			name = "DeSmuME (macOS App; Intel; LLVM-Clang)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = AB711F7F1481C35F009011C8 /* DeSmuME.app */;
 			productType = "com.apple.product-type.application";
 		};
-		AB73A9671507C9F500A310C8 /* DeSmuME (OS X App; Intel; LLVM-GCC) */ = {
+		AB73A9671507C9F500A310C8 /* DeSmuME (macOS App; Intel; LLVM-GCC) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB73AA301507C9F500A310C8 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; Intel; LLVM-GCC)" */;
+			buildConfigurationList = AB73AA301507C9F500A310C8 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel; LLVM-GCC)" */;
 			buildPhases = (
 				AB73A9681507C9F500A310C8 /* ShellScript */,
 				AB73A9691507C9F500A310C8 /* Resources */,
@@ -3766,15 +3766,15 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App; Intel; LLVM-GCC)";
+			name = "DeSmuME (macOS App; Intel; LLVM-GCC)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = AB73AA331507C9F500A310C8 /* DeSmuME.app */;
 			productType = "com.apple.product-type.application";
 		};
-		ABAD0F7015ACE7A00000EC47 /* DeSmuME (OS X App; PowerPC; LLVM-Clang) */ = {
+		ABAD0F7015ACE7A00000EC47 /* DeSmuME (macOS App; PowerPC; LLVM-Clang) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = ABAD104615ACE7A00000EC47 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; PowerPC; LLVM-Clang)" */;
+			buildConfigurationList = ABAD104615ACE7A00000EC47 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; PowerPC; LLVM-Clang)" */;
 			buildPhases = (
 				ABAD0F7115ACE7A00000EC47 /* ShellScript */,
 				ABAD0F7215ACE7A00000EC47 /* Resources */,
@@ -3786,7 +3786,7 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (OS X App; PowerPC; LLVM-Clang)";
+			name = "DeSmuME (macOS App; PowerPC; LLVM-Clang)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = ABAD104915ACE7A00000EC47 /* DeSmuME (PPC).app */;
@@ -3818,11 +3818,11 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AB711EBD1481C35F009011C8 /* DeSmuME (OS X App; Intel; LLVM-Clang) */,
-				AB73A9671507C9F500A310C8 /* DeSmuME (OS X App; Intel; LLVM-GCC) */,
-				ABAD0F7015ACE7A00000EC47 /* DeSmuME (OS X App; PowerPC; LLVM-Clang) */,
-				AB2F3B7A15CF9C6000858373 /* DeSmuME (OS X App; PowerPC; LLVM-GCC) */,
-				AB2A99A41725F00F0062C1A1 /* DeSmuME (OS X App; PowerPC Release Build) */,
+				AB711EBD1481C35F009011C8 /* DeSmuME (macOS App; Intel; LLVM-Clang) */,
+				AB73A9671507C9F500A310C8 /* DeSmuME (macOS App; Intel; LLVM-GCC) */,
+				ABAD0F7015ACE7A00000EC47 /* DeSmuME (macOS App; PowerPC; LLVM-Clang) */,
+				AB2F3B7A15CF9C6000858373 /* DeSmuME (macOS App; PowerPC; LLVM-GCC) */,
+				AB2A99A41725F00F0062C1A1 /* DeSmuME (macOS App; Release Stage 1 PowerPC32 -- Xcode 3) */,
 			);
 		};
 /* End PBXProject section */
@@ -5604,9 +5604,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = ppc;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc]" = G5;
-				PRODUCT_NAME = "DeSmuME (Debug-PPC)";
+				PRODUCT_NAME = "DeSmuME (ppc)";
 				SDKROOT = macosx10.5;
 				SKIP_INSTALL = NO;
 			};
@@ -5620,7 +5619,7 @@
 					NDEBUG,
 					PUBLIC_RELEASE,
 				);
-				PRODUCT_NAME = "DeSmuME (PPC)";
+				PRODUCT_NAME = "DeSmuME (ppc32)";
 				SDKROOT = macosx10.5;
 			};
 			name = Release;
@@ -5632,7 +5631,6 @@
 					ppc,
 					ppc64,
 				);
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				"GCC_VERSION[sdk=macosx10.5][arch=ppc64]" = 4.2;
 				PRODUCT_NAME = "DeSmuME (Debug-PPC)";
@@ -5658,7 +5656,6 @@
 		AB711F7D1481C35F009011C8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				OTHER_LDFLAGS = (
 					"-weak_library",
 					/usr/lib/libSystem.B.dylib,
@@ -5680,7 +5677,6 @@
 		AB73AA311507C9F500A310C8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				"GCC_VERSION[sdk=macosx10.5][arch=ppc64]" = 4.2;
 				OTHER_LDFLAGS = (
@@ -5710,7 +5706,6 @@
 					ppc,
 					ppc64,
 				);
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				PRODUCT_NAME = "DeSmuME (Debug-PPC)";
 				SDKROOT = macosx10.5;
 				SKIP_INSTALL = NO;
@@ -5783,7 +5778,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-I./../../";
 				PRODUCT_NAME = "DeSmuME (Debug)";
-				SDKROOT = macosx;
+				SDKROOT = macosx10.6;
 				SKIP_INSTALL = YES;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
@@ -5838,7 +5833,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = "-I./../../";
 				PRODUCT_NAME = DeSmuME;
-				SDKROOT = macosx;
+				SDKROOT = macosx10.6;
 				STRIP_INSTALLED_PRODUCT = NO;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -5847,7 +5842,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AB2A9A761725F00F0062C1A1 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; PowerPC Release Build)" */ = {
+		AB2A9A761725F00F0062C1A1 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Release Stage 1 PowerPC32 -- Xcode 3)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB2A9A771725F00F0062C1A1 /* Debug */,
@@ -5856,7 +5851,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB2F3C4215CF9C6000858373 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; PowerPC; LLVM-GCC)" */ = {
+		AB2F3C4215CF9C6000858373 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; PowerPC; LLVM-GCC)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB2F3C4315CF9C6000858373 /* Debug */,
@@ -5865,7 +5860,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB711F7C1481C35F009011C8 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; Intel; LLVM-Clang)" */ = {
+		AB711F7C1481C35F009011C8 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel; LLVM-Clang)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB711F7D1481C35F009011C8 /* Debug */,
@@ -5874,7 +5869,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB73AA301507C9F500A310C8 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; Intel; LLVM-GCC)" */ = {
+		AB73AA301507C9F500A310C8 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel; LLVM-GCC)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB73AA311507C9F500A310C8 /* Debug */,
@@ -5883,7 +5878,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		ABAD104615ACE7A00000EC47 /* Build configuration list for PBXNativeTarget "DeSmuME (OS X App; PowerPC; LLVM-Clang)" */ = {
+		ABAD104615ACE7A00000EC47 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; PowerPC; LLVM-Clang)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				ABAD104715ACE7A00000EC47 /* Debug */,

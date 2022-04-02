@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2018 DeSmuME team
+	Copyright (C) 2011-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 #import <Foundation/Foundation.h>
 #include <pthread.h>
-#include <libkern/OSAtomic.h>
+#include "utilities.h"
 
 #import "cocoa_util.h"
 #include "ClientDisplayView.h"
@@ -45,7 +45,7 @@ class ClientAVCaptureObject;
 	pthread_rwlock_t *rwlockProducer;
 	
 	BOOL _idleState;
-	OSSpinLock spinlockIdle;
+	apple_unfairlock_t _unfairlockIdle;
 }
 
 @property (readonly) NSMutableDictionary *property;
@@ -67,12 +67,12 @@ class ClientAVCaptureObject;
 {
 	NSUInteger bufferSize;
 	
-	OSSpinLock spinlockAudioOutputEngine;
-	OSSpinLock spinlockVolume;
-	OSSpinLock spinlockSpuAdvancedLogic;
-	OSSpinLock spinlockSpuInterpolationMode;
-	OSSpinLock spinlockSpuSyncMode;
-	OSSpinLock spinlockSpuSyncMethod;
+	apple_unfairlock_t _unfairlockAudioOutputEngine;
+	apple_unfairlock_t _unfairlockVolume;
+	apple_unfairlock_t _unfairlockSpuAdvancedLogic;
+	apple_unfairlock_t _unfairlockSpuInterpolationMode;
+	apple_unfairlock_t _unfairlockSpuSyncMode;
+	apple_unfairlock_t _unfairlockSpuSyncMethod;
 }
 
 @property (assign) NSUInteger bufferSize;
@@ -112,8 +112,8 @@ class ClientAVCaptureObject;
 	
 	NDSFrameInfo _ndsFrameInfo;
 	
-	OSSpinLock spinlockReceivedFrameIndex;
-	OSSpinLock spinlockNDSFrameInfo;
+	apple_unfairlock_t _unfairlockReceivedFrameIndex;
+	apple_unfairlock_t _unfairlockNDSFrameInfo;
 }
 
 - (void) handleReceiveGPUFrame;
@@ -144,15 +144,15 @@ class ClientAVCaptureObject;
 	ClientDisplay3DView *_cdv;
 	ClientDisplayPresenterProperties _intermediateViewProps;
 	
-	OSSpinLock spinlockViewProperties;
-	OSSpinLock spinlockIsHUDVisible;
-	OSSpinLock spinlockUseVerticalSync;
-	OSSpinLock spinlockVideoFiltersPreferGPU;
-	OSSpinLock spinlockOutputFilter;
-	OSSpinLock spinlockSourceDeposterize;
-	OSSpinLock spinlockPixelScaler;
-	OSSpinLock spinlockDisplayVideoSource;
-	OSSpinLock spinlockDisplayID;
+	apple_unfairlock_t _unfairlockViewProperties;
+	apple_unfairlock_t _unfairlockIsHUDVisible;
+	apple_unfairlock_t _unfairlockUseVerticalSync;
+	apple_unfairlock_t _unfairlockVideoFiltersPreferGPU;
+	apple_unfairlock_t _unfairlockOutputFilter;
+	apple_unfairlock_t _unfairlockSourceDeposterize;
+	apple_unfairlock_t _unfairlockPixelScaler;
+	apple_unfairlock_t _unfairlockDisplayVideoSource;
+	apple_unfairlock_t _unfairlockDisplayID;
 }
 
 @property (assign, nonatomic, getter=clientDisplay3DView, setter=setClientDisplay3DView:) ClientDisplay3DView *_cdv;

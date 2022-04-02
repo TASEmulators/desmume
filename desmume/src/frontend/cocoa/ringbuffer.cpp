@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 #include "ringbuffer.h"
 
 #include <string.h>
-#include <libkern/OSAtomic.h>
+#include "types.h"
 
 
 RingBuffer::RingBuffer(const size_t numberElements, const size_t elementSize)
@@ -123,7 +123,7 @@ size_t RingBuffer::read(void *__restrict__ destBuffer, size_t requestedNumberEle
 	this->_readPosition = inputDataReadPos;
 	
 	// Decrease the fill size now that we're done reading.
-	OSAtomicAdd32Barrier(-(int32_t)requestedNumberElements, &this->_elementFillCount);
+	atomic_add_barrier32(&this->_elementFillCount, -(s32)requestedNumberElements);
 	
 	return requestedNumberElements;
 }
@@ -170,7 +170,7 @@ size_t RingBuffer::write(const void *__restrict__ srcBuffer, size_t requestedNum
 	}
 	
 	// Increase the fill size before writing anything.
-	OSAtomicAdd32Barrier((int32_t)requestedNumberElements, &this->_elementFillCount);
+	atomic_add_barrier32(&this->_elementFillCount, (s32)requestedNumberElements);
 	
 	// Copy source buffer to ring buffer.
 	if (requestedNumberElements <= hiElementsAvailable)
@@ -240,7 +240,7 @@ size_t RingBuffer::drop(size_t requestedNumberElements)
 	this->_readPosition = inputDataReadPos;
 	
 	// Decrease the fill size now that we're done reading.
-	OSAtomicAdd32Barrier(-(int32_t)requestedNumberElements, &this->_elementFillCount);
+	atomic_add_barrier32(&this->_elementFillCount, -(s32)requestedNumberElements);
 	
 	return requestedNumberElements;
 }

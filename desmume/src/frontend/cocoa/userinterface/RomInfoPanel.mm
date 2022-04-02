@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2015 DeSmuME Team
+	Copyright (C) 2015-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@
 
 - (void) setIsExpanded:(BOOL)theState
 {
-	[disclosureButton setState:(theState) ? NSOnState : NSOffState];
+	[disclosureButton setState:(theState) ? GUI_STATE_ON : GUI_STATE_OFF];
 	
 	NSRect newFrame = [self frame];
 	newFrame.size.height = (theState) ?  expandedHeight : collapsedHeight;
@@ -53,7 +53,7 @@
 
 - (BOOL) isExpanded
 {
-	return ([disclosureButton state] == NSOnState);
+	return ([disclosureButton state] == GUI_STATE_ON);
 }
 
 - (NSString *) stringFromSectionLabel

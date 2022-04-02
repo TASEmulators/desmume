@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2018 DeSmuME team
+	Copyright (C) 2012-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,12 +18,7 @@
 
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
-#include <libkern/OSAtomic.h>
 #include "utilities.h"
-
-#if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
-	#include "macosx_10_4_compat.h"
-#endif
 
 
 @interface CocoaDSUtil : NSObject
@@ -33,6 +28,8 @@
 
 + (NSInteger) getIBActionSenderTag:(id)sender;
 + (BOOL) getIBActionSenderButtonStateBool:(id)sender;
+
++ (void) endSheet:(NSWindow *)sheet returnCode:(NSInteger)code;
 
 + (NSColor *) NSColorFromRGBA8888:(uint32_t)theColor;
 + (uint32_t) RGBA8888FromNSColor:(NSColor *)theColor;

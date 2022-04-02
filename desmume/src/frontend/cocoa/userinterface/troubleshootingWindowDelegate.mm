@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2018 DeSmuME team
+	Copyright (C) 2012-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -202,8 +202,8 @@
 - (IBAction) copyInfoToPasteboard:(id)sender
 {
 	NSPasteboard *pboard = [NSPasteboard generalPasteboard];
-	[pboard declareTypes:[NSArray arrayWithObjects:NSStringPboardType, nil] owner:self];
-	[pboard setString:(NSString *)[bindings valueForKey:@"finalFormText"] forType:NSStringPboardType];
+	[pboard declareTypes:[NSArray arrayWithObjects:PASTEBOARDTYPE_STRING, nil] owner:self];
+	[pboard setString:(NSString *)[bindings valueForKey:@"finalFormText"] forType:PASTEBOARDTYPE_STRING];
 }
 
 - (IBAction) goToWebpage:(id)sender

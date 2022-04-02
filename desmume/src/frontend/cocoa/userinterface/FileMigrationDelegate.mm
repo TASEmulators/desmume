@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 #import "FileMigrationDelegate.h"
 #import "cocoa_file.h"
 #import "cocoa_globals.h"
+#include "../utilities.h"
 
 @implementation FileMigrationDelegate
 
@@ -348,7 +349,7 @@
 						{
 							if (willMigrateFileCount > 0)
 							{
-								return [NSNumber numberWithInteger:NSMixedState];
+								return [NSNumber numberWithInteger:GUI_STATE_MIXED];
 							}
 						}
 					}
@@ -357,7 +358,7 @@
 					{
 						if (willMigrateKindCount > 0)
 						{
-							return [NSNumber numberWithInteger:NSMixedState];
+							return [NSNumber numberWithInteger:GUI_STATE_MIXED];
 						}
 					}
 					else if (willMigrateFileCount == fileCount)
@@ -366,21 +367,21 @@
 					}
 					else
 					{
-						return [NSNumber numberWithInteger:NSMixedState];
+						return [NSNumber numberWithInteger:GUI_STATE_MIXED];
 					}
 				}
 				
 				if (willMigrateKindCount == 0)
 				{
-					return [NSNumber numberWithInteger:NSOffState];
+					return [NSNumber numberWithInteger:GUI_STATE_OFF];
 				}
 				else if (willMigrateKindCount == kindCount)
 				{
-					return [NSNumber numberWithInteger:NSOnState];
+					return [NSNumber numberWithInteger:GUI_STATE_ON];
 				}
 				else
 				{
-					return [NSNumber numberWithInteger:NSMixedState];
+					return [NSNumber numberWithInteger:GUI_STATE_MIXED];
 				}
 			}
 		}
@@ -400,22 +401,22 @@
 				{
 					if (willMigrateFileCount > 0)
 					{
-						return [NSNumber numberWithInteger:NSMixedState];
+						return [NSNumber numberWithInteger:GUI_STATE_MIXED];
 					}
 				}
 			}
 			
 			if (willMigrateFileCount == 0)
 			{
-				return [NSNumber numberWithInteger:NSOffState];
+				return [NSNumber numberWithInteger:GUI_STATE_OFF];
 			}
 			else if (willMigrateFileCount == fileCount)
 			{
-				return [NSNumber numberWithInteger:NSOnState];
+				return [NSNumber numberWithInteger:GUI_STATE_ON];
 			}
 			else
 			{
-				return [NSNumber numberWithInteger:NSMixedState];
+				return [NSNumber numberWithInteger:GUI_STATE_MIXED];
 			}
 		}
 		else if ([item isKindOfClass:[NSDictionary class]])
@@ -463,7 +464,7 @@
 		if ([item isKindOfClass:[NSString class]])
 		{
 			NSMutableDictionary *versionDict = (NSMutableDictionary *)[_fileTree objectForKey:(NSString *)item];
-			const BOOL newSelectState = !([itemCell state] == NSOnState);
+			const BOOL newSelectState = !([itemCell state] == GUI_STATE_ON);
 			
 			for (NSString *kindKey in versionDict)
 			{
@@ -500,7 +501,7 @@
 		}
 		else if ([item isKindOfClass:[NSArray class]])
 		{
-			const BOOL newSelectState = !([itemCell state] == NSOnState);
+			const BOOL newSelectState = !([itemCell state] == GUI_STATE_ON);
 			NSArray *fileList = (NSArray *)item;
 			
 			if ([outlineView isItemExpanded:item])
@@ -523,7 +524,7 @@
 		}
 		else if ([item isKindOfClass:[NSDictionary class]])
 		{
-			const BOOL newSelectState = !([itemCell state] == NSOnState);
+			const BOOL newSelectState = !([itemCell state] == GUI_STATE_ON);
 			[self setFileSelectionInOutlineView:outlineView file:(NSMutableDictionary *)item isSelected:newSelectState];
 			[outlineView reloadItem:[outlineView parentForItem:item]];
 			[outlineView reloadItem:[outlineView parentForItem:[outlineView parentForItem:item]]];

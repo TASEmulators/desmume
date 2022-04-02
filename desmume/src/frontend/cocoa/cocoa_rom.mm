@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2021 DeSmuME team
+	Copyright (C) 2011-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -202,15 +202,15 @@ static NSMutableDictionary *saveTypeValues = nil;
 		[self.bindings setValue:[NSString stringWithFormat:@"0x%08X", [[self.header objectForKey:@"arm9BinaryOffset"] intValue]] forKey:@"arm9BinaryOffset"];
 		[self.bindings setValue:[NSString stringWithFormat:@"0x%08X", [[self.header objectForKey:@"arm9BinaryEntryAddress"] intValue]] forKey:@"arm9BinaryEntryAddress"];
 		[self.bindings setValue:[NSString stringWithFormat:@"0x%08X", [[self.header objectForKey:@"arm9BinaryStartAddress"] intValue]] forKey:@"arm9BinaryStartAddress"];
-		[self.bindings setValue:[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, [[self.header objectForKey:@"arm9BinarySize"] intValue]] forKey:@"arm9BinarySize"];
+		[self.bindings setValue:[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, (unsigned long long)[[self.header objectForKey:@"arm9BinarySize"] intValue]] forKey:@"arm9BinarySize"];
 		[self.bindings setValue:[NSString stringWithFormat:@"0x%08X", [[self.header objectForKey:@"arm7BinaryOffset"] intValue]] forKey:@"arm7BinaryOffset"];
 		[self.bindings setValue:[NSString stringWithFormat:@"0x%08X", [[self.header objectForKey:@"arm7BinaryEntryAddress"] intValue]] forKey:@"arm7BinaryEntryAddress"];
 		[self.bindings setValue:[NSString stringWithFormat:@"0x%08X", [[self.header objectForKey:@"arm7BinaryStartAddress"] intValue]] forKey:@"arm7BinaryStartAddress"];
-		[self.bindings setValue:[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, [[self.header objectForKey:@"arm7BinarySize"] intValue]] forKey:@"arm7BinarySize"];
+		[self.bindings setValue:[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, (unsigned long long)[[self.header objectForKey:@"arm7BinarySize"] intValue]] forKey:@"arm7BinarySize"];
 		[self.bindings setValue:[NSString stringWithFormat:@"0x%08X", [[self.header objectForKey:@"fntOffset"] intValue]] forKey:@"fntOffset"];
-		[self.bindings setValue:[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, [[self.header objectForKey:@"fntTableSize"] intValue]] forKey:@"fntTableSize"];
+		[self.bindings setValue:[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, (unsigned long long)[[self.header objectForKey:@"fntTableSize"] intValue]] forKey:@"fntTableSize"];
 		[self.bindings setValue:[NSString stringWithFormat:@"0x%08X", [[self.header objectForKey:@"fatOffset"] intValue]] forKey:@"fatOffset"];
-		[self.bindings setValue:[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, [[self.header objectForKey:@"fatSize"] intValue]] forKey:@"fatSize"];
+		[self.bindings setValue:[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, (unsigned long long)[[self.header objectForKey:@"fatSize"] intValue]] forKey:@"fatSize"];
 		[self.bindings setValue:[NSString stringWithFormat:@"0x%08X", [[self.header objectForKey:@"fatOffset"] intValue]] forKey:@"fatOffset"];
 		[self.bindings setValue:[NSString stringWithFormat:@"0x%08X", [[self.header objectForKey:@"iconOffset"] intValue]] forKey:@"iconOffset"];
 		[self.bindings setValue:[CocoaDSRom byteSizeStringWithLargerUnit:[[self.header objectForKey:@"usedRomSize"] intValue]] forKey:@"usedRomSize"];
@@ -592,22 +592,22 @@ static NSMutableDictionary *saveTypeValues = nil;
 			NSSTRING_STATUS_NO_ROM_LOADED, @"gameDeveloperWithCode",
 			NSSTRING_STATUS_NO_ROM_LOADED, @"unitCode",
 			NSSTRING_STATUS_NO_ROM_LOADED, @"makerCode",
-			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0], @"romSize",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0ull], @"romSize",
 			@"----------", @"arm9BinaryOffset",
 			@"----------", @"arm9BinaryEntryAddress",
 			@"----------", @"arm9BinaryStartAddress",
-			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0], @"arm9BinarySize",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0ull], @"arm9BinarySize",
 			@"----------", @"arm7BinaryOffset",
 			@"----------", @"arm7BinaryEntryAddress",
 			@"----------", @"arm7BinaryStartAddress",
-			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0], @"arm7BinarySize",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0ull], @"arm7BinarySize",
 			@"----------", @"fntOffset",
-			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0], @"fntTableSize",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0ull], @"fntTableSize",
 			@"----------", @"fatOffset",
-			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0], @"fatSize",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0ull], @"fatSize",
 			@"----------", @"iconOffset",
-			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0], @"usedRomSize",
-			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0], @"unusedCapacity",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0ull], @"usedRomSize",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0ull], @"unusedCapacity",
 			iconImage, @"iconImage",
 			nil];
 }
@@ -618,7 +618,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 	const float megabyteSize = byteSize / 1024.0f / 1024.0f;
 	const float gigabyteSize = byteSize / 1024.0f / 1024.0f / 1024.0f;
 	
-	NSString *byteString = [NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, byteSize];
+	NSString *byteString = [NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, (unsigned long long)byteSize];
 	NSString *unitString = byteString;
 	
 	if (gigabyteSize > 1.0f)

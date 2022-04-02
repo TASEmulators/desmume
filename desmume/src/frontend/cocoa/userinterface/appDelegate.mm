@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2018 DeSmuME Team
+	Copyright (C) 2011-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -151,7 +151,12 @@
 	NSDictionary *prefsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultUserPrefs" ofType:@"plist"]];
 	if (prefsDict == nil)
 	{
-		[[NSAlert alertWithMessageText:NSSTRING_ALERT_CRITICAL_FILE_MISSING_PRI defaultButton:nil alternateButton:nil otherButton:nil informativeTextWithFormat:NSSTRING_ALERT_CRITICAL_FILE_MISSING_SEC] runModal];
+		NSAlert *criticalErrorAlert = [[[NSAlert alloc] init] autorelease];
+		[criticalErrorAlert setAlertStyle:ALERTSTYLE_CRITICAL];
+		[criticalErrorAlert setMessageText:NSSTRING_ALERT_CRITICAL_FILE_MISSING_PRI];
+		[criticalErrorAlert setInformativeText:NSSTRING_ALERT_CRITICAL_FILE_MISSING_SEC];
+		[criticalErrorAlert runModal];
+		
 		[NSApp terminate:nil];
 		return;
 	}
@@ -171,10 +176,10 @@
 	
 	[CocoaDSFile setupAllFilePaths];
 	
-	// On macOS v10.13 and later, some unwanted menu items will show up in the View menu.
+	// On macOS v10.12 and later, some unwanted menu items will show up in the View menu.
 	// Disable automatic window tabbing for all NSWindows in order to rid ourselves of
 	// these unwanted menu items.
-#if defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+#if defined(MAC_OS_X_VERSION_10_12) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_12)
 	if ([[NSWindow class] respondsToSelector:@selector(setAllowsAutomaticWindowTabbing:)])
 	{
 		[NSWindow setAllowsAutomaticWindowTabbing:NO];
@@ -192,15 +197,23 @@
 	buildInfoStr = [[buildInfoStr stringByAppendingString:@"\nOperating System: "] stringByAppendingString:[CocoaDSUtil operatingSystemString]];
 	buildInfoStr = [[buildInfoStr stringByAppendingString:@"\nModel Identifier: "] stringByAppendingString:[CocoaDSUtil modelIdentifierString]];
 	
-	NSFont *aboutTextFilesFont = [NSFont fontWithName:@"Monaco" size:10];
+	NSString *readMeTextData = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@FILENAME_README ofType:@""] encoding:NSUTF8StringEncoding error:NULL];
+	NSString *licenseTextData = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@FILENAME_COPYING ofType:@""] encoding:NSUTF8StringEncoding error:NULL];
+	NSString *authorsTextData = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@FILENAME_AUTHORS ofType:@""] encoding:NSMacOSRomanStringEncoding error:NULL];
+	NSString *changeLogTextData = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@FILENAME_CHANGELOG ofType:@""] encoding:NSMacOSRomanStringEncoding error:NULL];
+	
+	NSDictionary *aboutTextAttr = [NSDictionary dictionaryWithObjectsAndKeys:
+								   [NSColor controlTextColor], NSForegroundColorAttributeName,
+								   [NSFont fontWithName:@"Monaco" size:10], NSFontAttributeName,
+								   nil];
+	
 	NSMutableDictionary *aboutWindowProperties = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-												  [[NSBundle mainBundle] pathForResource:@FILENAME_README ofType:@""], @"readMePath",
-												  [[NSBundle mainBundle] pathForResource:@FILENAME_COPYING ofType:@""], @"licensePath",
-												  [[NSBundle mainBundle] pathForResource:@FILENAME_AUTHORS ofType:@""], @"authorsPath",
-												  [[NSBundle mainBundle] pathForResource:@FILENAME_CHANGELOG ofType:@""], @"changeLogPath",
+												  [[[NSAttributedString alloc] initWithString:readMeTextData attributes:aboutTextAttr] autorelease], @"readMeTextData",
+												  [[[NSAttributedString alloc] initWithString:licenseTextData attributes:aboutTextAttr] autorelease], @"licenseTextData",
+												  [[[NSAttributedString alloc] initWithString:authorsTextData attributes:aboutTextAttr] autorelease], @"authorsTextData",
+												  [[[NSAttributedString alloc] initWithString:changeLogTextData attributes:aboutTextAttr] autorelease], @"changeLogTextData",
 												  descriptionStr, @"descriptionString",
 												  buildInfoStr, @"buildInfoString",
-												  aboutTextFilesFont, @"aboutTextFilesFont",
 												  nil];
 	
 	[aboutWindowController setContent:aboutWindowProperties];
@@ -452,7 +465,7 @@
 		[loadItem setAction:@selector(loadEmuSaveStateSlot:)];
 		
 		saveItem = [self addSlotMenuItem:mSaveStateSlot slotNumber:(NSUInteger)(i + 1)];
-		[saveItem setKeyEquivalentModifierMask:NSShiftKeyMask];
+		[saveItem setKeyEquivalentModifierMask:EVENT_MODIFIERFLAG_SHIFT];
 		[saveItem setTag:i];
 		[saveItem setAction:@selector(saveEmuSaveStateSlot:)];
 	}

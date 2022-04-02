@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2018 DeSmuME team
+	Copyright (C) 2012-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -53,19 +53,43 @@
 + (BOOL) getIBActionSenderButtonStateBool:(id)sender
 {
 	BOOL theState = NO;
-	NSInteger buttonState = NSOffState;
+	
+#if defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
+	NSControlStateValue buttonState = GUI_STATE_OFF;
+#else
+	NSInteger buttonState = GUI_STATE_OFF;
+#endif
 	
 	if ([sender respondsToSelector:@selector(state)])
 	{
 		buttonState = [sender state];
 	}
 	
-	if (buttonState == NSOnState)
+	if (buttonState == GUI_STATE_ON)
 	{
 		theState = YES;
 	}
 	
 	return theState;
+}
+
++ (void) endSheet:(NSWindow *)sheet returnCode:(NSInteger)code
+{
+	if (sheet == nil)
+	{
+		return;
+	}
+	
+#if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+	if ([[sheet sheetParent] respondsToSelector:@selector(endSheet:returnCode:)])
+	{
+		[[sheet sheetParent] endSheet:sheet returnCode:code];
+	}
+	else
+#endif
+	{
+		[NSApp endSheet:sheet returnCode:code];
+	}
 }
 
 + (NSColor *) NSColorFromRGBA8888:(uint32_t)theColor
@@ -87,9 +111,9 @@
 
 + (uint32_t) RGBA8888FromNSColor:(NSColor *)theColor
 {
-	if (![[theColor colorSpaceName] isEqualToString:NSDeviceRGBColorSpace])
+	if ([theColor colorSpace] != [NSColorSpace deviceRGBColorSpace])
 	{
-		theColor = [theColor colorUsingColorSpaceName:NSDeviceRGBColorSpace];
+		theColor = [theColor colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
 		if (theColor == nil)
 		{
 			return 0x00000000;
@@ -230,7 +254,14 @@
 		return self;
 	}
 	
-	[self registerForDraggedTypes:[NSArray arrayWithObjects: NSURLPboardType, nil]];
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+	// We need to use @available here when compiling against macOS v10.13 SDK and later in order to
+	// silence a silly warning.
+	if (@available(macOS 10_13, *))
+#endif
+	{
+		[self registerForDraggedTypes:[NSArray arrayWithObjects:PASTEBOARDTYPE_URL, nil]];
+	}
 	
 	return self;
 }
@@ -245,8 +276,18 @@
 {
 	NSDragOperation dragOp = NSDragOperationNone;
 	NSPasteboard *pboard = [sender draggingPasteboard];
+	BOOL pboardHasURL = NO;
 	
-	if ([[pboard types] containsObject:NSURLPboardType])
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+	// We need to use @available here when compiling against macOS v10.13 SDK and later in order to
+	// silence a silly warning.
+	if (@available(macOS 10_13, *))
+#endif
+	{
+		pboardHasURL = [[pboard types] containsObject:PASTEBOARDTYPE_URL];
+	}
+	
+	if (pboardHasURL)
 	{
 		NSURL *fileURL = [NSURL URLFromPasteboard:pboard];
 		NSString *filePath = [fileURL path];
@@ -271,9 +312,19 @@
 	NSWindow *window = [self window];
 	id <DirectoryURLDragDestTextFieldProtocol> delegate = (id <DirectoryURLDragDestTextFieldProtocol>)[window delegate];
 	NSPasteboard *pboard = [sender draggingPasteboard];
+	BOOL pboardHasURL = NO;
 	NSString *filePath = NULL;
 	
-	if ([[pboard types] containsObject:NSURLPboardType])
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+	// We need to use @available here when compiling against macOS v10.13 SDK and later in order to
+	// silence a silly warning.
+	if (@available(macOS 10_13, *))
+#endif
+	{
+		pboardHasURL = [[pboard types] containsObject:PASTEBOARDTYPE_URL];
+	}
+	
+	if (pboardHasURL)
 	{
 		NSURL *fileURL = [NSURL URLFromPasteboard:pboard];
 		filePath = [fileURL path];

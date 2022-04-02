@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2021 DeSmuME team
+	Copyright (C) 2017-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
-#include <libkern/OSAtomic.h>
+#include "../utilities.h"
 
 #include <mach/task.h>
 #include <mach/semaphore.h>
@@ -209,7 +209,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	BOOL needsScreenVerticesUpdate;
 	BOOL needsHUDVerticesUpdate;
 	
-	OSSpinLock _spinlockRenderBufferStates[RENDER_BUFFER_COUNT];
+	apple_unfairlock_t _unfairlockRenderBufferStates[RENDER_BUFFER_COUNT];
 	dispatch_semaphore_t _semRenderBuffers[RENDER_BUFFER_COUNT];
 	volatile ClientDisplayBufferState _renderBufferState[RENDER_BUFFER_COUNT];
 	
@@ -359,7 +359,7 @@ private:
 	void __InstanceInit(MacClientSharedObject *sharedObject);
 	
 protected:
-	OSSpinLock _spinlockViewNeedsFlush;
+	apple_unfairlock_t _unfairlockViewNeedsFlush;
 	
 public:
 	MacMetalDisplayView();

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2005 Guillaume Duhamel
-	Copyright (C) 2008-2021 DeSmuME team
+	Copyright (C) 2008-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,6 +22,10 @@
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
 #include <math/fxp.h>
+
+#ifdef __APPLE__
+	#include <AvailabilityMacros.h>
+#endif
 
 //analyze microsoft compilers
 #ifdef _MSC_VER
@@ -366,7 +370,7 @@ inline bool atomic_test_and_set_barrier32(volatile s32 *V, s32 M)		{ return (_in
 inline bool atomic_test_and_clear_32(volatile s32 *V, s32 M)			{ return (_interlockedbittestandreset((volatile LONG *)V, (LONG)M)) ? true : false; }
 inline bool atomic_test_and_clear_barrier32(volatile s32 *V, s32 M)		{ return (_interlockedbittestandreset((volatile LONG *)V, (LONG)M)) ? true : false; }
 
-#elif defined(DESMUME_COCOA)
+#elif defined(DESMUME_COCOA) && ( !defined(__clang__) || (__clang_major__ < 9) || !defined(MAC_OS_X_VERSION_10_7) || (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_7) )
 #include <libkern/OSAtomic.h>
 
 #define atomic_add_32(V,M)						OSAtomicAdd32((M),(V))

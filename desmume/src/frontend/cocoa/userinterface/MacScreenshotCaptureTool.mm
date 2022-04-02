@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2021 DeSmuME team
+	Copyright (C) 2017-2022 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@
 		return nil;
 	}
 	
-	formatID = NSTIFFFileType;
+	formatID = FILETYPE_TIFF;
 	
 	return self;
 }

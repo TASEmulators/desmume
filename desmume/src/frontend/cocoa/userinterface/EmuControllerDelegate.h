@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2021 DeSmuME Team
+	Copyright (C) 2013-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  */
 
 #import <Cocoa/Cocoa.h>
-#include <libkern/OSAtomic.h>
 #import "../cocoa_input.h"
+#include "../utilities.h"
 
 @class InputManager;
 @class CocoaDSRom;
@@ -120,8 +120,8 @@ class AudioSampleBlockGenerator;
 	DisplayWindowController *mainWindow;
 	NSMutableArray *windowList;
 	
-	OSSpinLock spinlockFirmware;
-	OSSpinLock spinlockSpeaker;
+	apple_unfairlock_t _unfairlockFirmware;
+	apple_unfairlock_t _unfairlockSpeaker;
 }
 
 @property (readonly) IBOutlet InputManager *inputManager;

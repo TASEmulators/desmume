@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2017 DeSmuME team
+	Copyright (C) 2012-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 #import <OpenEmuBase/OEGameCore.h>
 #import "OENDSSystemResponderClient.h"
 #import "../cocoa_input.h"
-#include <libkern/OSAtomic.h>
+#include "../utilities.h"
 #include <pthread.h>
 
 @class CocoaDSCheatManager;
@@ -41,7 +41,7 @@
 	OEIntSize displayAspectRatio;
 	NSUInteger inputID[OENDSButtonCount]; // Key = OpenEmu's input ID, Value = DeSmuME's input ID
 	
-	OSSpinLock spinlockDisplayMode;
+	apple_unfairlock_t unfairlockDisplayMode;
 	pthread_rwlock_t rwlockCoreExecute;
 }
 

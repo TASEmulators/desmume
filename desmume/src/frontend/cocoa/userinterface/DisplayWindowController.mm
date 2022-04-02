@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2021 DeSmuME team
+	Copyright (C) 2013-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -592,7 +592,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	screenRect.origin.y = 0.0;
 	
 	DisplayFullScreenWindow *newFullScreenWindow = [[[DisplayFullScreenWindow alloc] initWithContentRect:screenRect
-																							   styleMask:NSBorderlessWindowMask
+																							   styleMask:WINDOWSTYLEMASK_BORDERLESS
 																								 backing:NSBackingStoreBuffered
 																								   defer:NO
 																								  screen:targetScreen] autorelease];
@@ -1015,7 +1015,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:(viewScale == [theItem tag]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:(viewScale == [theItem tag]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(changeRotation:))
@@ -1031,16 +1031,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 					viewRotation == 180 ||
 					viewRotation == 270)
 				{
-					[(NSMenuItem *)theItem setState:NSOffState];
+					[(NSMenuItem *)theItem setState:GUI_STATE_OFF];
 				}
 				else
 				{
-					[(NSMenuItem *)theItem setState:NSOnState];
+					[(NSMenuItem *)theItem setState:GUI_STATE_ON];
 				}
 			}
 			else
 			{
-				[(NSMenuItem *)theItem setState:(viewRotation == [theItem tag]) ? NSOnState : NSOffState];
+				[(NSMenuItem *)theItem setState:(viewRotation == [theItem tag]) ? GUI_STATE_ON : GUI_STATE_OFF];
 			}
 		}
 	}
@@ -1048,21 +1048,21 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([self displayMode] == [theItem tag]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([self displayMode] == [theItem tag]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(changeDisplayOrientation:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([self displayOrientation] == [theItem tag]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([self displayOrientation] == [theItem tag]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(changeDisplayOrder:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([self displayOrder] == [theItem tag]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([self displayOrder] == [theItem tag]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(changeDisplayGap:))
@@ -1081,16 +1081,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 						gapScalar == 150 ||
 						gapScalar == 200)
 					{
-						[(NSMenuItem *)theItem setState:NSOffState];
+						[(NSMenuItem *)theItem setState:GUI_STATE_OFF];
 					}
 					else
 					{
-						[(NSMenuItem *)theItem setState:NSOnState];
+						[(NSMenuItem *)theItem setState:GUI_STATE_ON];
 					}
 				}
 				else
 				{
-					[(NSMenuItem *)theItem setState:(gapScalar == [theItem tag]) ? NSOnState : NSOffState];
+					[(NSMenuItem *)theItem setState:(gapScalar == [theItem tag]) ? GUI_STATE_ON : GUI_STATE_OFF];
 				}
 			}
 		}
@@ -1101,11 +1101,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		{
 			if ([theItem tag] >= DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE)
 			{
-				[(NSMenuItem *)theItem setState:([[self view] displayTouchVideoSource] == ([theItem tag]-DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE)) ? NSOnState : NSOffState];
+				[(NSMenuItem *)theItem setState:([[self view] displayTouchVideoSource] == ([theItem tag]-DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE)) ? GUI_STATE_ON : GUI_STATE_OFF];
 			}
 			else
 			{
-				[(NSMenuItem *)theItem setState:([[self view] displayMainVideoSource]  == ([theItem tag]-DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE)) ? NSOnState : NSOffState];
+				[(NSMenuItem *)theItem setState:([[self view] displayMainVideoSource]  == ([theItem tag]-DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE)) ? GUI_STATE_ON : GUI_STATE_OFF];
 			}
 		}
 	}
@@ -1113,7 +1113,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] outputFilter] == [theItem tag]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] outputFilter] == [theItem tag]) ? GUI_STATE_ON : GUI_STATE_OFF];
 			enable = ([theItem tag] == OutputFilterTypeID_NearestNeighbor || [theItem tag] == OutputFilterTypeID_Bilinear) || [[self view] canUseShaderBasedFilters];
 		}
 	}
@@ -1121,7 +1121,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] sourceDeposterize]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] sourceDeposterize]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 		
 		enable = [[self view] canUseShaderBasedFilters];
@@ -1130,14 +1130,14 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] videoFiltersPreferGPU]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] videoFiltersPreferGPU]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(changeVideoPixelScaler:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] pixelScaler] == [theItem tag]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] pixelScaler] == [theItem tag]) ? GUI_STATE_ON : GUI_STATE_OFF];
 			
 			bool isSupportingCPU = false;
 			bool isSupportingShader = false;
@@ -1150,63 +1150,63 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] isHUDVisible]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] isHUDVisible]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(toggleShowHUDExecutionSpeed:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] isHUDExecutionSpeedVisible]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] isHUDExecutionSpeedVisible]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(toggleShowHUDVideoFPS:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] isHUDVideoFPSVisible]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] isHUDVideoFPSVisible]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(toggleShowHUDRender3DFPS:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] isHUDRender3DFPSVisible]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] isHUDRender3DFPSVisible]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(toggleShowHUDFrameIndex:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] isHUDFrameIndexVisible]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] isHUDFrameIndexVisible]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(toggleShowHUDLagFrameCount:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] isHUDLagFrameCountVisible]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] isHUDLagFrameCountVisible]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(toggleShowHUDCPULoadAverage:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] isHUDCPULoadAverageVisible]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] isHUDCPULoadAverageVisible]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(toggleShowHUDRealTimeClock:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] isHUDRealTimeClockVisible]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] isHUDRealTimeClockVisible]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(toggleShowHUDInput:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([[self view] isHUDInputVisible]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] isHUDInputVisible]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	else if (theAction == @selector(toggleStatusBar:))
@@ -1232,7 +1232,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([self isMinSizeNormal]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([self isMinSizeNormal]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 		
 		if ([self isFullScreen])
@@ -1701,7 +1701,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		const ClientDisplayPresenterProperties &props = cdv->Get3DPresenter()->GetPresenterProperties();
 		const double scaleFactor = cdv->Get3DPresenter()->GetScaleFactor();
 		const NSEventType eventType = [theEvent type];
-		const bool isInitialMouseDown = (eventType == NSLeftMouseDown) || (eventType == NSRightMouseDown) || (eventType == NSOtherMouseDown);
+		const bool isInitialMouseDown = (eventType == EVENT_MOUSEDOWN_LEFT) || (eventType == EVENT_MOUSEDOWN_RIGHT) || (eventType == EVENT_MOUSEDOWN_OTHER);
 		
 		// Convert the clicked location from window coordinates, to view coordinates, and finally to NDS touchscreen coordinates.
 		const NSPoint clientLoc = [self convertPoint:[theEvent locationInWindow] fromView:nil];
@@ -2113,7 +2113,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
 			if ([self respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
 			{
-				[self setWantsBestResolutionOpenGLSurface:YES];
+				SILENCE_DEPRECATION_MACOS_10_14([self setWantsBestResolutionOpenGLSurface:YES])
 			}
 #endif
 			localOGLContext = ((MacOGLDisplayPresenter *)macOGLCDV->Get3DPresenter())->GetNSContext();

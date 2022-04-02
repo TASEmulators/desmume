@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2021 DeSmuME Team
+	Copyright (C) 2012-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -106,7 +106,7 @@
 #define NSSTRING_STATUS_HUD_ENABLED					NSLocalizedString(@"HUD enabled.", nil)
 #define NSSTRING_STATUS_VOLUME						NSLocalizedString(@"Volume: %1.1f%%", nil)
 #define NSSTRING_STATUS_NO_ROM_LOADED				NSLocalizedString(@"No ROM loaded.", nil)
-#define NSSTRING_STATUS_SIZE_BYTES					NSLocalizedString(@"%i bytes", nil)
+#define NSSTRING_STATUS_SIZE_BYTES					NSLocalizedString(@"%llu bytes", nil)
 
 #define NSSTRING_STATUS_EMULATION_NOT_RUNNING		NSLocalizedString(@"Emulation is not running.", nil)
 #define NSSTRING_STATUS_SLOT1_UNKNOWN_STATE			NSLocalizedString(@"Unknown state.", nil)

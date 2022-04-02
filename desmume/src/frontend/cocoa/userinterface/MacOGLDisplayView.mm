@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2018 DeSmuME team
+	Copyright (C) 2017-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -158,8 +158,16 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 	
 	_clientData = [[MacClientSharedObject alloc] init];
 	
-	_spinlockTexFetch[NDSDisplayID_Main]  = OS_SPINLOCK_INIT;
-	_spinlockTexFetch[NDSDisplayID_Touch] = OS_SPINLOCK_INIT;
+	_unfairlockTexFetch[NDSDisplayID_Main] = apple_unfairlock_create();
+	_unfairlockTexFetch[NDSDisplayID_Touch] = apple_unfairlock_create();
+}
+
+MacOGLClientFetchObject::~MacOGLClientFetchObject()
+{
+	apple_unfairlock_destroy(this->_unfairlockTexFetch[NDSDisplayID_Main]);
+	this->_unfairlockTexFetch[NDSDisplayID_Main] = NULL;
+	apple_unfairlock_destroy(this->_unfairlockTexFetch[NDSDisplayID_Touch]);
+	this->_unfairlockTexFetch[NDSDisplayID_Touch] = NULL;
 }
 
 NSOpenGLContext* MacOGLClientFetchObject::GetNSContext() const
@@ -209,18 +217,18 @@ void MacOGLClientFetchObject::FetchFromBufferIndex(const u8 index)
 
 GLuint MacOGLClientFetchObject::GetFetchTexture(const NDSDisplayID displayID)
 {
-	OSSpinLockLock(&this->_spinlockTexFetch[displayID]);
+	apple_unfairlock_lock(this->_unfairlockTexFetch[displayID]);
 	const GLuint texFetchID = this->OGLClientFetchObject::GetFetchTexture(displayID);
-	OSSpinLockUnlock(&this->_spinlockTexFetch[displayID]);
+	apple_unfairlock_unlock(this->_unfairlockTexFetch[displayID]);
 	
 	return texFetchID;
 }
 
 void MacOGLClientFetchObject::SetFetchTexture(const NDSDisplayID displayID, GLuint texID)
 {
-	OSSpinLockLock(&this->_spinlockTexFetch[displayID]);
+	apple_unfairlock_lock(this->_unfairlockTexFetch[displayID]);
 	this->OGLClientFetchObject::SetFetchTexture(displayID, texID);
-	OSSpinLockUnlock(&this->_spinlockTexFetch[displayID]);
+	apple_unfairlock_unlock(this->_unfairlockTexFetch[displayID]);
 }
 
 #pragma mark -
@@ -297,12 +305,18 @@ void MacOGLDisplayPresenter::__InstanceInit(MacClientSharedObject *sharedObject)
 	
 	_nsContext = nil;
 	_context = nil;
-	_spinlockProcessedInfo = OS_SPINLOCK_INIT;
+	_unfairlockProcessedInfo = apple_unfairlock_create();
 	
 	if (sharedObject != nil)
 	{
 		SetFetchObject([sharedObject GPUFetchObject]);
 	}
+}
+
+MacOGLDisplayPresenter::~MacOGLDisplayPresenter()
+{
+	apple_unfairlock_destroy(this->_unfairlockProcessedInfo);
+	this->_unfairlockProcessedInfo = NULL;
 }
 
 void MacOGLDisplayPresenter::Init()
@@ -419,18 +433,18 @@ void MacOGLDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)
 
 const OGLProcessedFrameInfo& MacOGLDisplayPresenter::GetProcessedFrameInfo()
 {
-	OSSpinLockLock(&this->_spinlockProcessedInfo);
+	apple_unfairlock_lock(this->_unfairlockProcessedInfo);
 	const OGLProcessedFrameInfo &processedInfo = this->OGLVideoOutput::GetProcessedFrameInfo();
-	OSSpinLockUnlock(&this->_spinlockProcessedInfo);
+	apple_unfairlock_unlock(this->_unfairlockProcessedInfo);
 	
 	return processedInfo;
 }
 
 void MacOGLDisplayPresenter::SetProcessedFrameInfo(const OGLProcessedFrameInfo &processedInfo)
 {
-	OSSpinLockLock(&this->_spinlockProcessedInfo);
+	apple_unfairlock_lock(this->_unfairlockProcessedInfo);
 	this->OGLVideoOutput::SetProcessedFrameInfo(processedInfo);
-	OSSpinLockUnlock(&this->_spinlockProcessedInfo);
+	apple_unfairlock_unlock(this->_unfairlockProcessedInfo);
 }
 
 void MacOGLDisplayPresenter::WriteLockEmuFramebuffer(const uint8_t bufferIndex)
@@ -472,12 +486,15 @@ MacOGLDisplayView::MacOGLDisplayView(MacClientSharedObject *sharedObject)
 MacOGLDisplayView::~MacOGLDisplayView()
 {
 	[this->_caLayer release];
+	
+	apple_unfairlock_destroy(this->_unfairlockViewNeedsFlush);
+	this->_unfairlockViewNeedsFlush = NULL;
 }
 
 void MacOGLDisplayView::__InstanceInit(MacClientSharedObject *sharedObject)
 {
 	_allowViewUpdates = false;
-	_spinlockViewNeedsFlush = OS_SPINLOCK_INIT;
+	_unfairlockViewNeedsFlush = apple_unfairlock_create();
 	
 	MacOGLDisplayPresenter *newOpenGLPresenter = new MacOGLDisplayPresenter(sharedObject);
 	_presenter = newOpenGLPresenter;
@@ -488,9 +505,9 @@ void MacOGLDisplayView::__InstanceInit(MacClientSharedObject *sharedObject)
 
 bool MacOGLDisplayView::GetViewNeedsFlush()
 {
-	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+	apple_unfairlock_lock(this->_unfairlockViewNeedsFlush);
 	const bool viewNeedsFlush = this->_viewNeedsFlush;
-	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+	apple_unfairlock_unlock(this->_unfairlockViewNeedsFlush);
 	
 	return viewNeedsFlush;
 }
@@ -513,9 +530,9 @@ void MacOGLDisplayView::SetViewNeedsFlush()
 		// will eventually get flushed.
 		this->SetAllowViewFlushes(true);
 		
-		OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+		apple_unfairlock_lock(this->_unfairlockViewNeedsFlush);
 		this->_viewNeedsFlush = true;
-		OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+		apple_unfairlock_unlock(this->_unfairlockViewNeedsFlush);
 	}
 }
 
@@ -540,9 +557,9 @@ void MacOGLDisplayView::SetUseVerticalSync(const bool useVerticalSync)
 
 void MacOGLDisplayView::FlushView(void *userData)
 {
-	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+	apple_unfairlock_lock(this->_unfairlockViewNeedsFlush);
 	this->_viewNeedsFlush = false;
-	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+	apple_unfairlock_unlock(this->_unfairlockViewNeedsFlush);
 	
 	CGLContextObj context = ((MacOGLDisplayPresenter *)this->_presenter)->GetContext();
 	

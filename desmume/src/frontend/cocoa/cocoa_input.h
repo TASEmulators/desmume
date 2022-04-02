@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2017 DeSmuME Team
+	Copyright (C) 2012-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,9 +17,6 @@
 */
 
 #import <Cocoa/Cocoa.h>
-#include <libkern/OSAtomic.h>
-#include <vector>
-
 #include "ClientInputHandler.h"
 
 @class CocoaDSController;

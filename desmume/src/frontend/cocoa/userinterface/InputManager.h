@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2017 DeSmuME Team
+	Copyright (C) 2013-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
  */
 
 #import <Cocoa/Cocoa.h>
-#include <libkern/OSAtomic.h>
 #include <IOKit/hid/IOHIDManager.h>
 #include <ForceFeedback/ForceFeedback.h>
 
@@ -32,6 +31,7 @@
 
 #include "../audiosamplegenerator.h"
 #include "../ClientInputHandler.h"
+#include "../utilities.h"
 
 struct ClientCommandAttributes;
 struct ClientInputDeviceProperties;
@@ -82,7 +82,7 @@ typedef std::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Ke
 	BOOL isForceFeedbackEnabled;
 	
 	NSRunLoop *runLoop;
-	OSSpinLock spinlockRunLoop;
+	apple_unfairlock_t _unfairlockRunLoop;
 }
 
 @property (retain) InputHIDManager *hidManager;
@@ -127,8 +127,9 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	NSRunLoop *runLoop;
 	NSArrayController *deviceListController;
 	id<InputHIDManagerTarget> target;
+	uint32_t _pmAssertionID;
 	
-	OSSpinLock spinlockRunLoop;
+	apple_unfairlock_t _unfairlockRunLoop;
 }
 
 @property (retain) NSArrayController *deviceListController;
@@ -138,6 +139,7 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 @property (retain) NSRunLoop *runLoop;
 
 - (id) initWithInputManager:(InputManager *)theInputManager;
+- (void) reportUserActivity;
 
 @end
 

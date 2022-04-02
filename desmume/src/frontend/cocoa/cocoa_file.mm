@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2015 DeSmuME team
+	Copyright (C) 2012-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 */
 
 #import "cocoa_file.h"
-#include <libkern/OSAtomic.h>
 #import "cocoa_globals.h"
 #import "cocoa_util.h"
 
@@ -561,27 +560,27 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	NSString *fileExt = nil;
 	switch (fileType)
 	{
-		case NSTIFFFileType:
+		case FILETYPE_TIFF:
 			fileExt = @"tiff";
 			break;
 			
-		case NSBMPFileType:
+		case FILETYPE_BMP:
 			fileExt = @"bmp";
 			break;
 			
-		case NSGIFFileType:
+		case FILETYPE_GIF:
 			fileExt = @"gif";
 			break;
 			
-		case NSJPEGFileType:
+		case FILETYPE_JPEG:
 			fileExt = @"jpg";
 			break;
 			
-		case NSPNGFileType:
+		case FILETYPE_PNG:
 			fileExt = @"png";
 			break;
 			
-		case NSJPEG2000FileType:
+		case FILETYPE_JPEG2000:
 			fileExt = @"jp2";
 			break;
 			

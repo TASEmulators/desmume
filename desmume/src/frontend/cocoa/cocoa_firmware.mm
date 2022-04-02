@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2018 DeSmuME team
+	Copyright (C) 2012-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -841,36 +841,39 @@
 
 - (void) setBirthday:(NSDate *)theDate
 {
+	int theMonth = 1;
+	int theDay   = 1;
+	int theYear  = 1970;
+	
 	if (theDate != nil)
 	{
-		NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+		NSDateFormatter *df = [[NSDateFormatter alloc] init];
+		[df setDateFormat:@"Y M d"];
 		
-		[dateFormatter setDateFormat:@"M"];
-		NSInteger theMonth = [[dateFormatter stringFromDate:theDate] integerValue];
-		
-		[dateFormatter setDateFormat:@"d"];
-		NSInteger theDay = [[dateFormatter stringFromDate:theDate] integerValue];
-		
-		[dateFormatter setDateFormat:@"Y"];
-		NSInteger theYear = [[dateFormatter stringFromDate:theDate] integerValue];
-		
-		[dateFormatter release];
-		
-		_fwConfigInterface->SetBirthdayMonth((uint8_t)theMonth);
-		_fwConfigInterface->SetBirthdayDay((uint8_t)theDay);
-		_birth_year = theYear;
+		NSString *dateString = [df stringFromDate:theDate];
+		sscanf([dateString cStringUsingEncoding:NSUTF8StringEncoding], "%i %i %i", &theYear, &theMonth, &theDay);
+		[df release];
 	}
-	else
-	{
-		_fwConfigInterface->SetBirthdayMonth(1);
-		_fwConfigInterface->SetBirthdayDay(1);
-		_birth_year = 1970;
-	}
+	
+	_fwConfigInterface->SetBirthdayMonth(theMonth);
+	_fwConfigInterface->SetBirthdayDay(theDay);
+	_birth_year = theYear;
 }
 
 - (NSDate *) birthday
 {
-	return [NSDate dateWithString:[NSString stringWithFormat:@"%ld-%ld-%ld 12:00:00 +0000", (unsigned long)_birth_year, (unsigned long)_fwConfigInterface->GetBirthdayMonth(), (unsigned long)_fwConfigInterface->GetBirthdayDay()]];
+	int theMonth = _fwConfigInterface->GetBirthdayMonth();
+	int theDay   = _fwConfigInterface->GetBirthdayDay();
+	int theYear  = (int)_birth_year;
+	
+	NSDateFormatter *df = [[NSDateFormatter alloc] init];
+	[df setDateFormat:@"YYYY-MM-dd HH:mm:ss Z"];
+	
+	NSString *dateString = [NSString stringWithFormat:@"%i-%i-%i 12:00:00 +0000", theYear, theMonth, theDay];
+	NSDate *birthdayDate = [df dateFromString:dateString];
+	[df release];
+	
+	return birthdayDate;
 }
 
 - (void) setLanguage:(NSInteger)languageID

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2021 DeSmuME team
+	Copyright (C) 2011-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
 #include "../../slot1.h"
 #include "../../slot2.h"
 #include "../../SPU.h"
+#include "../../wifi.h"
 #undef BOOL
 
 //accessed from other files
@@ -44,8 +45,8 @@ volatile bool execute = true;
 
 @synthesize execControl;
 
-@dynamic cdsController;
 @synthesize cdsFirmware;
+@synthesize cdsController;
 @synthesize cdsGPU;
 @synthesize cdsOutputList;
 
@@ -119,17 +120,16 @@ volatile bool execute = true;
 	_isTimerAtSecond = NO;
 	
 	cdsFirmware = nil;
-	cdsGPU = [[[[CocoaDSGPU alloc] init] autorelease] retain];
-	cdsController = [[[[CocoaDSController alloc] init] autorelease] retain];
-	cdsOutputList = [[[[NSMutableArray alloc] initWithCapacity:32] autorelease] retain];
+	cdsController = [[CocoaDSController alloc] init];
+	cdsGPU = [[CocoaDSGPU alloc] init];
+	cdsOutputList = [[NSMutableArray alloc] initWithCapacity:32];
 	
 	ClientInputHandler *inputHandler = [cdsController inputHandler];
 	inputHandler->SetClientExecutionController(execControl);
 	execControl->SetClientInputHandler(inputHandler);
 	execControl->SetWifiEmulationMode(WifiEmulationLevel_Off);
 	
-	spinlockMasterExecute = OS_SPINLOCK_INIT;
-	spinlockCdsController = OS_SPINLOCK_INIT;
+	_unfairlockMasterExecute = apple_unfairlock_create();
 	
 	threadParam.cdsCore = self;
 	
@@ -190,14 +190,23 @@ volatile bool execute = true;
 	
 	[[cdsGPU sharedData] semaphoreFramebufferDestroy];
 	
-	[self setCdsController:nil];
 	[self setCdsFirmware:nil];
-	[self setCdsGPU:nil];
-	[self setCdsOutputList:nil];
+	
+	[cdsController release];
+	cdsController = nil;
+	
+	[cdsGPU release];
+	cdsGPU = nil;
+	
+	[cdsOutputList release];
+	cdsOutputList = nil;
+	
 	[self setErrorStatus:nil];
 	[self setExtFirmwareMACAddressString:nil];
 	[self setFirmwareMACAddressSelectionString:nil];
 	[self setCurrentSessionMACAddressString:nil];
+	
+	apple_unfairlock_destroy(_unfairlockMasterExecute);
 	
 	pthread_cancel(coreThread);
 	pthread_join(coreThread, NULL);
@@ -218,7 +227,7 @@ volatile bool execute = true;
 
 - (void) setMasterExecute:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockMasterExecute);
+	apple_unfairlock_lock(_unfairlockMasterExecute);
 	
 	if (theState)
 	{
@@ -229,48 +238,16 @@ volatile bool execute = true;
 		emu_halt(EMUHALT_REASON_UNKNOWN, NDSErrorTag_BothCPUs);
 	}
 	
-	OSSpinLockUnlock(&spinlockMasterExecute);
+	apple_unfairlock_unlock(_unfairlockMasterExecute);
 }
 
 - (BOOL) masterExecute
 {
-	OSSpinLockLock(&spinlockMasterExecute);
+	apple_unfairlock_lock(_unfairlockMasterExecute);
 	const BOOL theState = (execute) ? YES : NO;
-	OSSpinLockUnlock(&spinlockMasterExecute);
+	apple_unfairlock_unlock(_unfairlockMasterExecute);
 	
 	return theState;
-}
-
-- (void) setCdsController:(CocoaDSController *)theController
-{
-	OSSpinLockLock(&spinlockCdsController);
-	
-	if (theController == cdsController)
-	{
-		OSSpinLockUnlock(&spinlockCdsController);
-		return;
-	}
-	
-	if (theController != nil)
-	{
-		[theController retain];
-	}
-	
-	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	[cdsController release];
-	cdsController = theController;
-	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-	
-	OSSpinLockUnlock(&spinlockCdsController);
-}
-
-- (CocoaDSController *) cdsController
-{
-	OSSpinLockLock(&spinlockCdsController);
-	CocoaDSController *theController = cdsController;
-	OSSpinLockUnlock(&spinlockCdsController);
-	
-	return theController;
 }
 
 - (void) setIsFrameSkipEnabled:(BOOL)enable
@@ -595,8 +572,6 @@ volatile bool execute = true;
 
 - (void) setCoreState:(NSInteger)coreState
 {
-	NSString *newFrameStatus = nil;
-	
 	if (coreState == ExecutionBehavior_FrameJump)
 	{
 		uint64_t frameIndex = [self frameNumber];
@@ -628,6 +603,8 @@ volatile bool execute = true;
 	execControl->SetExecutionBehavior((ExecutionBehavior)coreState);
 	pthread_rwlock_rdlock(&threadParam.rwlockOutputList);
 	
+	char frameStatusCStr[128] = {0};
+	
 	switch ((ExecutionBehavior)coreState)
 	{
 		case ExecutionBehavior_Pause:
@@ -637,7 +614,8 @@ volatile bool execute = true;
 				[cdsOutput setIdle:YES];
 			}
 			
-			newFrameStatus = [NSString stringWithFormat:@"%llu", (unsigned long long)[self frameNumber]];
+			sprintf(frameStatusCStr, "%llu", (unsigned long long)[self frameNumber]);
+			
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
@@ -650,7 +628,8 @@ volatile bool execute = true;
 				[cdsOutput setIdle:NO];
 			}
 			
-			newFrameStatus = [NSString stringWithFormat:@"%llu", (unsigned long long)[self frameNumber]];
+			sprintf(frameStatusCStr, "%llu", (unsigned long long)[self frameNumber]);
+			
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
@@ -663,8 +642,8 @@ volatile bool execute = true;
 				[cdsOutput setIdle:NO];
 			}
 			
-			newFrameStatus = @"Executing...";
-			
+			sprintf(frameStatusCStr, "%s", "Executing...");
+
 			if (_fpsTimer == nil)
 			{
 				_isTimerAtSecond = NO;
@@ -690,7 +669,8 @@ volatile bool execute = true;
 				}
 			}
 			
-			newFrameStatus = [NSString stringWithFormat:@"Jumping to frame %llu.", (unsigned long long)execControl->GetFrameJumpTarget()];
+			sprintf(frameStatusCStr, "Jumping to frame %llu.", (unsigned long long)execControl->GetFrameJumpTarget());
+			
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
@@ -716,7 +696,7 @@ volatile bool execute = true;
 	
 	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:
 							  [NSNumber numberWithInteger:coreState], @"ExecutionState",
-							  newFrameStatus, @"FrameStatusString",
+							  [NSString stringWithCString:frameStatusCStr encoding:NSUTF8StringEncoding], @"FrameStatusString",
 							  nil];
 	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.handleEmulatorExecutionState" object:self userInfo:userInfo];
 	[userInfo release];
@@ -1020,10 +1000,14 @@ volatile bool execute = true;
 	std::string sramPath = (sramURL != nil) ? [[sramURL path] cStringUsingEncoding:NSUTF8StringEncoding] : "";
 	const char *fileName = [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding];
 	
-	NSDate *currentDate = [NSDate date];
-	NSString *currentDateStr = [currentDate descriptionWithCalendarFormat:@"%Y %m %d %H %M %S %F"
-																 timeZone:nil
-																   locale:[[NSUserDefaults standardUserDefaults] dictionaryRepresentation]];
+	NSDateFormatter *df = [[NSDateFormatter alloc] init];
+	[df setDateFormat:@"Y M d H m s SSS"];
+	
+	 // Copy the current date into a formatted string.
+	NSString *dateString = [df stringFromDate:[NSDate date]];
+	
+	[df release];
+	df = nil;
 	
 	int dateYear = 2009;
 	int dateMonth = 1;
@@ -1032,8 +1016,8 @@ volatile bool execute = true;
 	int dateMinute = 0;
 	int dateSecond = 0;
 	int dateMillisecond = 0;
-	const char *dateCStr = [currentDateStr cStringUsingEncoding:NSUTF8StringEncoding];
-	sscanf(dateCStr, "%i %i %i %i %i %i %i", &dateYear, &dateMonth, &dateDay, &dateHour, &dateMinute, &dateSecond, &dateMillisecond);
+	sscanf([dateString cStringUsingEncoding:NSUTF8StringEncoding], "%i %i %i %i %i %i %i",
+		   &dateYear, &dateMonth, &dateDay, &dateHour, &dateMinute, &dateSecond, &dateMillisecond);
 	
 	DateTime rtcDate = DateTime(dateYear,
 								dateMonth,
@@ -1171,6 +1155,7 @@ static void* RunCoreThread(void *arg)
 	
 	CoreThreadParam *param = (CoreThreadParam *)arg;
 	CocoaDSCore *cdsCore = (CocoaDSCore *)param->cdsCore;
+	CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
 	ClientExecutionControl *execControl = [cdsCore execControl];
 	ClientInputHandler *inputHandler = execControl->GetClientInputHandler();
 	NSMutableArray *cdsOutputList = [cdsCore cdsOutputList];
@@ -1194,7 +1179,7 @@ static void* RunCoreThread(void *arg)
 	ExecutionBehavior lastBehavior = ExecutionBehavior_Pause;
 	uint64_t frameJumpTarget = 0;
 	
-	[[[cdsCore cdsGPU] sharedData] semaphoreFramebufferCreate];
+	[[cdsGPU sharedData] semaphoreFramebufferCreate];
 	
 	do
 	{
@@ -1204,7 +1189,7 @@ static void* RunCoreThread(void *arg)
 		execControl->ApplySettingsOnExecutionLoopStart();
 		behavior = execControl->GetExecutionBehaviorApplied();
 		
-		[[cdsCore cdsGPU] respondToPauseState:(behavior == ExecutionBehavior_Pause)];
+		[cdsGPU respondToPauseState:(behavior == ExecutionBehavior_Pause)];
 		
 		while (!(behavior != ExecutionBehavior_Pause && execute))
 		{
@@ -1215,7 +1200,7 @@ static void* RunCoreThread(void *arg)
 			behavior = execControl->GetExecutionBehaviorApplied();
 		}
 		
-		[[cdsCore cdsGPU] respondToPauseState:(behavior == ExecutionBehavior_Pause)];
+		[cdsGPU respondToPauseState:(behavior == ExecutionBehavior_Pause)];
 		
 		if ( (lastBehavior == ExecutionBehavior_Run) && (behavior != ExecutionBehavior_Run) )
 		{
@@ -1264,7 +1249,10 @@ static void* RunCoreThread(void *arg)
 			
 			inputHandler->SetHardwareMicPause(true);
 			inputHandler->ClearAverageMicLevel();
+			
+			NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
 			inputHandler->ReportAverageMicLevel();
+			[tempPool release];
 			
 			[cdsCore postNDSError:ndsError];
 			continue;
@@ -1279,7 +1267,10 @@ static void* RunCoreThread(void *arg)
 		// of whether the NDS actually reads the mic or not.
 		if ((ndsFrameInfo.frameIndex & 0x07) == 0x07)
 		{
+			NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
 			inputHandler->ReportAverageMicLevel();
+			[tempPool release];
+			
 			inputHandler->ClearAverageMicLevel();
 		}
 		

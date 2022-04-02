@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -187,11 +187,23 @@
 
 - (IBAction) viewDatabase:(id)sender
 {
-	[NSApp beginSheet:cheatDatabaseSheet
-	   modalForWindow:window
-		modalDelegate:self
-	   didEndSelector:@selector(didEndCheatDatabaseSheet:returnCode:contextInfo:)
-		  contextInfo:nil];
+#if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+	if ([window respondsToSelector:@selector(beginSheet:completionHandler:)])
+	{
+		[window beginSheet:cheatDatabaseSheet
+		 completionHandler:^(NSModalResponse response) {
+			[self didEndCheatDatabaseSheet:nil returnCode:response contextInfo:nil];
+		} ];
+	}
+	else
+#endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_10( [NSApp beginSheet:cheatDatabaseSheet
+											modalForWindow:window
+											 modalDelegate:self
+											didEndSelector:@selector(didEndCheatDatabaseSheet:returnCode:contextInfo:)
+											   contextInfo:nil] );
+	}
 }
 
 - (IBAction) setInternalCheatValue:(id)sender
@@ -463,9 +475,9 @@
 - (IBAction) closeCheatDatabaseSheet:(id)sender
 {
 	NSWindow *sheet = [(NSControl *)sender window];
-	NSInteger code = [(NSControl *)sender tag];
+	const NSInteger code = [(NSControl *)sender tag];
 	
-    [NSApp endSheet:sheet returnCode:code];
+	[CocoaDSUtil endSheet:sheet returnCode:code];
 }
 
 - (void) didEndCheatDatabaseSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
@@ -474,11 +486,11 @@
 	
 	switch (returnCode)
 	{
-		case NSCancelButton:
+		case GUI_RESPONSE_CANCEL:
 			return;
 			break;
 			
-		case NSOKButton:
+		case GUI_RESPONSE_OK:
 			[self addSelectedFromCheatDatabase];
 			break;
 			

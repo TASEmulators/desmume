@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2021 DeSmuME team
+	Copyright (C) 2017-2022 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,6 +17,12 @@
 
 #include <metal_stdlib>
 using namespace metal;
+
+// For some reason, the Clang major version here has to be 4 instead of 8 (Xcode's version)
+// or 3 (LLVM's version). Seems like Clang's Metal compiler has its own version too.
+#if defined(__clang__) && (__clang_major__ < 4)
+	#error Metal support requires Metal Shader Language v1.1 from Xcode 8.0 and later.
+#endif
 
 #include "../MetalRendererCommonShaders.h"
 

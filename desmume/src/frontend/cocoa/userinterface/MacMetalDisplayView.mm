@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2021 DeSmuME team
+	Copyright (C) 2017-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -14,6 +14,10 @@
 	You should have received a copy of the GNU General Public License
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#if defined(__clang__) && (__clang_major__ < 8)
+	#error Metal support requires Metal Shader Language v1.1 from Xcode 8.0 or later.
+#endif
 
 #include "MacMetalDisplayView.h"
 #include "../cocoa_globals.h"
@@ -87,7 +91,7 @@
 	[computePipelineDesc setComputeFunction:[defaultLibrary newFunctionWithName:@"src_filter_deposterize"]];
 	deposterizePipeline = [[device newComputePipelineStateWithDescriptor:computePipelineDesc options:MTLPipelineOptionNone reflection:nil error:nil] retain];
 	
-#if defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
 	if (@available(macOS 10.13, *))
 	{
 		[[[computePipelineDesc buffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
@@ -142,7 +146,7 @@
 	[hudPipelineDesc setVertexFunction:[defaultLibrary newFunctionWithName:@"hud_vertex"]];
 	[hudPipelineDesc setFragmentFunction:hudFragmentFunction];
 	
-#if defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
 	if (@available(macOS 10.13, *))
 	{
 		[[[hudPipelineDesc vertexBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
@@ -866,7 +870,7 @@
 	{
 		_semRenderBuffers[i] = dispatch_semaphore_create(1);
 		_renderBufferState[i] = ClientDisplayBufferState_Idle;
-		_spinlockRenderBufferStates[i] = OS_SPINLOCK_INIT;
+		_unfairlockRenderBufferStates[i] = apple_unfairlock_create();
 	}
 	
 	MTLViewport newViewport;
@@ -927,6 +931,7 @@
 	for (size_t i = 0; i < RENDER_BUFFER_COUNT; i++)
 	{
 		dispatch_release(_semRenderBuffers[i]);
+		apple_unfairlock_destroy(_unfairlockRenderBufferStates[i]);
 	}
 	
 	[super dealloc];
@@ -1155,7 +1160,7 @@
 		[self setOutputDrawablePipeline:[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil]];
 	}
 	
-#if defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
 	if (@available(macOS 10.13, *))
 	{
 		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
@@ -1181,7 +1186,7 @@
 	[outputPipelineDesc setVertexFunction:[[sharedData defaultLibrary] newFunctionWithName:@"display_output_vertex"]];
 	[outputPipelineDesc setFragmentFunction:[[sharedData defaultLibrary] newFunctionWithName:@"output_filter_bilinear"]];
 	
-#if defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
 	if (@available(macOS 10.13, *))
 	{
 		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
@@ -2117,18 +2122,18 @@
 
 - (ClientDisplayBufferState) renderBufferStateAtIndex:(uint8_t)index
 {
-	OSSpinLockLock(&_spinlockRenderBufferStates[index]);
+	apple_unfairlock_lock(_unfairlockRenderBufferStates[index]);
 	const ClientDisplayBufferState bufferState = _renderBufferState[index];
-	OSSpinLockUnlock(&_spinlockRenderBufferStates[index]);
+	apple_unfairlock_unlock(_unfairlockRenderBufferStates[index]);
 	
 	return bufferState;
 }
 
 - (void) setRenderBufferState:(ClientDisplayBufferState)bufferState index:(uint8_t)index
 {
-	OSSpinLockLock(&_spinlockRenderBufferStates[index]);
+	apple_unfairlock_lock(_unfairlockRenderBufferStates[index]);
 	_renderBufferState[index] = bufferState;
-	OSSpinLockUnlock(&_spinlockRenderBufferStates[index]);
+	apple_unfairlock_unlock(_unfairlockRenderBufferStates[index]);
 }
 
 - (void) renderToBuffer:(uint32_t *)dstBuffer
@@ -2705,12 +2710,13 @@ MacMetalDisplayView::MacMetalDisplayView(MacClientSharedObject *sharedObject)
 MacMetalDisplayView::~MacMetalDisplayView()
 {
 	[this->_caLayer release];
+	apple_unfairlock_destroy(_unfairlockViewNeedsFlush);
 }
 
 void MacMetalDisplayView::__InstanceInit(MacClientSharedObject *sharedObject)
 {
 	_allowViewUpdates = false;
-	_spinlockViewNeedsFlush = OS_SPINLOCK_INIT;
+	_unfairlockViewNeedsFlush = apple_unfairlock_create();
 	
 	MacMetalDisplayPresenter *newMetalPresenter = new MacMetalDisplayPresenter(sharedObject);
 	_presenter = newMetalPresenter;
@@ -2727,9 +2733,9 @@ void MacMetalDisplayView::Init()
 
 bool MacMetalDisplayView::GetViewNeedsFlush()
 {
-	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+	apple_unfairlock_lock(this->_unfairlockViewNeedsFlush);
 	const bool viewNeedsFlush = this->_viewNeedsFlush;
-	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+	apple_unfairlock_unlock(this->_unfairlockViewNeedsFlush);
 	
 	return viewNeedsFlush;
 }
@@ -2754,9 +2760,9 @@ void MacMetalDisplayView::SetViewNeedsFlush()
 		this->SetAllowViewFlushes(true);
 		this->_presenter->UpdateLayout();
 		
-		OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+		apple_unfairlock_lock(this->_unfairlockViewNeedsFlush);
 		this->_viewNeedsFlush = true;
-		OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+		apple_unfairlock_unlock(this->_unfairlockViewNeedsFlush);
 	}
 }
 
@@ -2769,9 +2775,9 @@ void MacMetalDisplayView::SetAllowViewFlushes(bool allowFlushes)
 
 void MacMetalDisplayView::FlushView(void *userData)
 {
-	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+	apple_unfairlock_lock(this->_unfairlockViewNeedsFlush);
 	this->_viewNeedsFlush = false;
-	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+	apple_unfairlock_unlock(this->_unfairlockViewNeedsFlush);
 	
 	[(DisplayViewMetalLayer *)this->_caLayer renderToDrawableUsingCommandBuffer:(id<MTLCommandBuffer>)userData];
 }

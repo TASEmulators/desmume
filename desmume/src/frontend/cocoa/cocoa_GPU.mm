@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2021 DeSmuME team
+	Copyright (C) 2013-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -141,7 +141,7 @@ public:
 		return self;
 	}
 	
-	spinlockGpuState = OS_SPINLOCK_INIT;
+	_unfairlockGpuState = apple_unfairlock_create();
 	
 	_gpuScale = 1;
 	gpuStateFlags	= GPUSTATE_MAIN_GPU_MASK |
@@ -234,6 +234,8 @@ public:
 	
 	[self setRender3DMultisampleSizeString:nil];
 	
+	apple_unfairlock_destroy(_unfairlockGpuState);
+	
 	[super dealloc];
 }
 
@@ -249,9 +251,9 @@ public:
 
 - (void) setGpuStateFlags:(UInt32)flags
 {
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = flags;
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 	
 	[self setLayerMainGPU:((flags & GPUSTATE_MAIN_GPU_MASK) != 0)];
 	[self setLayerMainBG0:((flags & GPUSTATE_MAIN_BG0_MASK) != 0)];
@@ -270,9 +272,9 @@ public:
 
 - (UInt32) gpuStateFlags
 {
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	const UInt32 flags = gpuStateFlags;
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 	
 	return flags;
 }
@@ -814,9 +816,9 @@ public:
 	GPU->GetEngineMain()->SetEnableState((gpuState) ? true : false);
 	gpuEvent->ApplyGPUSettingsUnlock();
 	
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = (gpuState) ? (gpuStateFlags | GPUSTATE_MAIN_GPU_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_GPU_MASK);
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 }
 
 - (BOOL) layerMainGPU
@@ -834,9 +836,9 @@ public:
 	GPU->GetEngineMain()->SetLayerEnableState(GPULayerID_BG0, (layerState) ? true : false);
 	gpuEvent->ApplyGPUSettingsUnlock();
 	
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_BG0_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_BG0_MASK);
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 }
 
 - (BOOL) layerMainBG0
@@ -854,9 +856,9 @@ public:
 	GPU->GetEngineMain()->SetLayerEnableState(GPULayerID_BG1, (layerState) ? true : false);
 	gpuEvent->ApplyGPUSettingsUnlock();
 	
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_BG1_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_BG1_MASK);
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 }
 
 - (BOOL) layerMainBG1
@@ -874,9 +876,9 @@ public:
 	GPU->GetEngineMain()->SetLayerEnableState(GPULayerID_BG2, (layerState) ? true : false);
 	gpuEvent->ApplyGPUSettingsUnlock();
 	
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_BG2_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_BG2_MASK);
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 }
 
 - (BOOL) layerMainBG2
@@ -894,9 +896,9 @@ public:
 	GPU->GetEngineMain()->SetLayerEnableState(GPULayerID_BG3, (layerState) ? true : false);
 	gpuEvent->ApplyGPUSettingsUnlock();
 	
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_BG3_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_BG3_MASK);
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 }
 
 - (BOOL) layerMainBG3
@@ -914,9 +916,9 @@ public:
 	GPU->GetEngineMain()->SetLayerEnableState(GPULayerID_OBJ, (layerState) ? true : false);
 	gpuEvent->ApplyGPUSettingsUnlock();
 	
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_OBJ_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_OBJ_MASK);
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 }
 
 - (BOOL) layerMainOBJ
@@ -934,9 +936,9 @@ public:
 	GPU->GetEngineSub()->SetEnableState((gpuState) ? true : false);
 	gpuEvent->ApplyGPUSettingsUnlock();
 	
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = (gpuState) ? (gpuStateFlags | GPUSTATE_SUB_GPU_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_GPU_MASK);
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 }
 
 - (BOOL) layerSubGPU
@@ -954,9 +956,9 @@ public:
 	GPU->GetEngineSub()->SetLayerEnableState(GPULayerID_BG0, (layerState) ? true : false);
 	gpuEvent->ApplyGPUSettingsUnlock();
 	
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_BG0_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_BG0_MASK);
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 }
 
 - (BOOL) layerSubBG0
@@ -974,9 +976,9 @@ public:
 	GPU->GetEngineSub()->SetLayerEnableState(GPULayerID_BG1, (layerState) ? true : false);
 	gpuEvent->ApplyGPUSettingsUnlock();
 	
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_BG1_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_BG1_MASK);
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 }
 
 - (BOOL) layerSubBG1
@@ -994,9 +996,9 @@ public:
 	GPU->GetEngineSub()->SetLayerEnableState(GPULayerID_BG2, (layerState) ? true : false);
 	gpuEvent->ApplyGPUSettingsUnlock();
 	
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_BG2_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_BG2_MASK);
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 }
 
 - (BOOL) layerSubBG2
@@ -1014,9 +1016,9 @@ public:
 	GPU->GetEngineSub()->SetLayerEnableState(GPULayerID_BG3, (layerState) ? true : false);
 	gpuEvent->ApplyGPUSettingsUnlock();
 	
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_BG3_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_BG3_MASK);
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 }
 
 - (BOOL) layerSubBG3
@@ -1034,9 +1036,9 @@ public:
 	GPU->GetEngineSub()->SetLayerEnableState(GPULayerID_OBJ, (layerState) ? true : false);
 	gpuEvent->ApplyGPUSettingsUnlock();
 	
-	OSSpinLockLock(&spinlockGpuState);
+	apple_unfairlock_lock(_unfairlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_OBJ_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_OBJ_MASK);
-	OSSpinLockUnlock(&spinlockGpuState);
+	apple_unfairlock_unlock(_unfairlockGpuState);
 }
 
 - (BOOL) layerSubOBJ
@@ -1151,7 +1153,6 @@ public:
 	_displayLinkFlushTimeList.clear();
 	[self displayLinkListUpdate];
 	
-	spinlockFetchSignal = OS_SPINLOCK_INIT;
 	_threadMessageID = MESSAGE_NONE;
 	_fetchIndex = 0;
 	pthread_cond_init(&_condSignalFetch, NULL);
@@ -1175,7 +1176,7 @@ public:
 	{
 		_semFramebuffer[i] = 0;
 		_framebufferState[i] = ClientDisplayBufferState_Idle;
-		_spinlockFramebufferStates[i] = OS_SPINLOCK_INIT;
+		_unfairlockFramebufferStates[i] = apple_unfairlock_create();
 	}
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
@@ -1335,18 +1336,18 @@ public:
 
 - (ClientDisplayBufferState) framebufferStateAtIndex:(uint8_t)index
 {
-	OSSpinLockLock(&_spinlockFramebufferStates[index]);
+	apple_unfairlock_lock(_unfairlockFramebufferStates[index]);
 	const ClientDisplayBufferState bufferState = _framebufferState[index];
-	OSSpinLockUnlock(&_spinlockFramebufferStates[index]);
+	apple_unfairlock_unlock(_unfairlockFramebufferStates[index]);
 	
 	return bufferState;
 }
 
 - (void) setFramebufferState:(ClientDisplayBufferState)bufferState index:(uint8_t)index
 {
-	OSSpinLockLock(&_spinlockFramebufferStates[index]);
+	apple_unfairlock_lock(_unfairlockFramebufferStates[index]);
 	_framebufferState[index] = bufferState;
-	OSSpinLockUnlock(&_spinlockFramebufferStates[index]);
+	apple_unfairlock_unlock(_unfairlockFramebufferStates[index]);
 }
 
 - (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock
@@ -1372,12 +1373,12 @@ public:
 
 - (void) incrementViewsUsingDirectToCPUFiltering
 {
-	OSAtomicIncrement32(&numberViewsUsingDirectToCPUFiltering);
+	atomic_inc_32(&numberViewsUsingDirectToCPUFiltering);
 }
 
 - (void) decrementViewsUsingDirectToCPUFiltering
 {
-	OSAtomicDecrement32(&numberViewsUsingDirectToCPUFiltering);
+	atomic_dec_32(&numberViewsUsingDirectToCPUFiltering);
 }
 
 - (void) pushVideoDataToAllDisplayViews
@@ -1759,11 +1760,7 @@ bool GPUEventHandlerOSX::GetRender3DNeedsFinish()
 #pragma mark -
 
 CGLContextObj OSXOpenGLRendererContext = NULL;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-CGLPBufferObj OSXOpenGLRendererPBuffer = NULL;
-#pragma GCC diagnostic pop
+SILENCE_DEPRECATION_MACOS_10_7( CGLPBufferObj OSXOpenGLRendererPBuffer = NULL );
 
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 
@@ -1820,9 +1817,6 @@ void OSXOpenGLRendererEnd()
 	
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
 bool OSXOpenGLRendererFramebufferDidResize(const bool isFBOSupported, size_t w, size_t h)
 {
 	bool result = false;
@@ -1840,8 +1834,8 @@ bool OSXOpenGLRendererFramebufferDidResize(const bool isFBOSupported, size_t w, 
 	}
 	
 	// Create a PBuffer if FBOs are not supported.
-	CGLPBufferObj newPBuffer = NULL;
-	CGLError error = CGLCreatePBuffer(w, h, GL_TEXTURE_2D, GL_RGBA, 0, &newPBuffer);
+	SILENCE_DEPRECATION_MACOS_10_7( CGLPBufferObj newPBuffer = NULL );
+	SILENCE_DEPRECATION_MACOS_10_7( CGLError error = CGLCreatePBuffer(w, h, GL_TEXTURE_2D, GL_RGBA, 0, &newPBuffer) );
 	
 	if ( (newPBuffer == NULL) || (error != kCGLNoError) )
 	{
@@ -1852,18 +1846,16 @@ bool OSXOpenGLRendererFramebufferDidResize(const bool isFBOSupported, size_t w, 
 	{
 		GLint virtualScreenID = 0;
 		CGLGetVirtualScreen(OSXOpenGLRendererContext, &virtualScreenID);
-		CGLSetPBuffer(OSXOpenGLRendererContext, newPBuffer, 0, 0, virtualScreenID);
+		SILENCE_DEPRECATION_MACOS_10_7( CGLSetPBuffer(OSXOpenGLRendererContext, newPBuffer, 0, 0, virtualScreenID) );
 	}
 	
-	CGLPBufferObj oldPBuffer = OSXOpenGLRendererPBuffer;
+	SILENCE_DEPRECATION_MACOS_10_7( CGLPBufferObj oldPBuffer = OSXOpenGLRendererPBuffer );
 	OSXOpenGLRendererPBuffer = newPBuffer;
-	CGLReleasePBuffer(oldPBuffer);
+	SILENCE_DEPRECATION_MACOS_10_7( CGLReleasePBuffer(oldPBuffer) );
 	
 	result = true;
 	return result;
 }
-
-#pragma GCC diagnostic pop
 
 bool CreateOpenGLRenderer()
 {
@@ -1920,9 +1912,6 @@ bool CreateOpenGLRenderer()
 	return result;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
 void DestroyOpenGLRenderer()
 {
 	if (OSXOpenGLRendererContext == NULL)
@@ -1930,14 +1919,12 @@ void DestroyOpenGLRenderer()
 		return;
 	}
 	
-	CGLReleasePBuffer(OSXOpenGLRendererPBuffer);
+	SILENCE_DEPRECATION_MACOS_10_7( CGLReleasePBuffer(OSXOpenGLRendererPBuffer) );
 	OSXOpenGLRendererPBuffer = NULL;
 	
 	CGLReleaseContext(OSXOpenGLRendererContext);
 	OSXOpenGLRendererContext = NULL;
 }
-
-#pragma GCC diagnostic pop
 
 void RequestOpenGLRenderer_3_2(bool request_3_2)
 {

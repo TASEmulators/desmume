@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014 DeSmuME Team
+	Copyright (C) 2014-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -365,23 +365,26 @@
 	
 	NSNumber *mpcfOptionNumber = [[NSNumber numberWithInteger:mpcfOptionTag] retain]; // Released in chooseMPCFPathDidEnd:returnCode:contextInfo:
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	[panel beginSheetModalForWindow:window
-				  completionHandler:^(NSInteger result) {
-					  [self chooseMPCFPathDidEnd:panel returnCode:result contextInfo:mpcfOptionNumber];
-				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseMPCFPathDidEnd:returnCode:contextInfo:)
-					  contextInfo:mpcfOptionNumber];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		[panel beginSheetModalForWindow:window
+					  completionHandler:^(NSInteger result) {
+						  [self chooseMPCFPathDidEnd:panel returnCode:result contextInfo:mpcfOptionNumber];
+					  } ];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( [panel beginSheetForDirectory:nil
+																 file:nil
+																types:fileTypes
+													   modalForWindow:window
+														modalDelegate:self
+													   didEndSelector:@selector(chooseMPCFPathDidEnd:returnCode:contextInfo:)
+														  contextInfo:mpcfOptionNumber] );
+	}
 }
 
 - (void) chooseMPCFPathDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
@@ -397,7 +400,7 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:mpcfOptionTag forKey:@"Slot2_MPCF_PathOption"];
 	[[NSUserDefaults standardUserDefaults] synchronize];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		[[NSUserDefaults standardUserDefaults] setInteger:prevMpcfOption forKey:@"Slot2_MPCF_PathOption"];
 		return;
@@ -509,30 +512,33 @@
 	[panel setCanChooseFiles:YES];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_GBA_ROM, nil];
 		
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	[panel beginSheetModalForWindow:window
-				  completionHandler:^(NSInteger result) {
-					  [self chooseGbaCartridgePathDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseGbaCartridgePathDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		[panel beginSheetModalForWindow:window
+					  completionHandler:^(NSInteger result) {
+						  [self chooseGbaCartridgePathDidEnd:panel returnCode:result contextInfo:nil];
+					  } ];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( [panel beginSheetForDirectory:nil
+																 file:nil
+																types:fileTypes
+													   modalForWindow:window
+														modalDelegate:self
+													   didEndSelector:@selector(chooseGbaCartridgePathDidEnd:returnCode:contextInfo:)
+														  contextInfo:nil] );
+	}
 }
 
 - (void) chooseGbaCartridgePathDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		return;
 	}
@@ -568,30 +574,33 @@
 	[panel setCanChooseFiles:YES];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_GBA_SRAM, nil];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	[panel beginSheetModalForWindow:window
-				  completionHandler:^(NSInteger result) {
-					  [self chooseGbaSRamPathDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseGbaSRamPathDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		[panel beginSheetModalForWindow:window
+					  completionHandler:^(NSInteger result) {
+						  [self chooseGbaSRamPathDidEnd:panel returnCode:result contextInfo:nil];
+					  } ];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( [panel beginSheetForDirectory:nil
+																 file:nil
+																types:fileTypes
+													   modalForWindow:window
+														modalDelegate:self
+													   didEndSelector:@selector(chooseGbaSRamPathDidEnd:returnCode:contextInfo:)
+														  contextInfo:nil] );
+	}
 }
 
 - (void) chooseGbaSRamPathDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		return;
 	}

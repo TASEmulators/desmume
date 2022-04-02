@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2015 DeSmuME team
+	Copyright (C) 2012-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,8 +21,8 @@
 #include <CoreServices/CoreServices.h>
 #include <AudioUnit/AudioUnit.h>
 #include <AudioToolbox/AudioToolbox.h>
-#include <libkern/OSAtomic.h>
 
+#include "utilities.h"
 #include "ringbuffer.h"
 #include "audiosamplegenerator.h"
 
@@ -48,7 +48,7 @@ typedef void (*CoreAudioInputHardwareGainChangedCallback)(float normalizedGain, 
 class CoreAudioInput : public AudioGenerator
 {
 private:
-	OSSpinLock *_spinlockAUHAL;
+	apple_unfairlock_t _unfairlockAUHAL;
 	
 	CoreAudioInputHardwareStateChangedCallback _hwStateChangedCallbackFunc;
 	void *_hwStateChangedCallbackParam1;
@@ -112,7 +112,7 @@ class CoreAudioOutput
 private:
 	AudioUnit _au;
 	RingBuffer *_buffer;
-	OSSpinLock *_spinlockAU;
+	apple_unfairlock_t _unfairlockAU;
 	float _volume;
 	
 public:

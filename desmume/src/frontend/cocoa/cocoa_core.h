@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2021 DeSmuME team
+	Copyright (C) 2011-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 
 #import <Cocoa/Cocoa.h>
 #include <pthread.h>
-#include <libkern/OSAtomic.h>
 #include <string>
 #import "cocoa_util.h"
 
@@ -65,16 +64,15 @@ typedef struct
 	NSString *firmwareMACAddressSelectionString;
 	NSString *currentSessionMACAddressString;
 	
-	OSSpinLock spinlockCdsController;
-	OSSpinLock spinlockMasterExecute;
+	apple_unfairlock_t _unfairlockMasterExecute;
 }
 
 @property (readonly, nonatomic) ClientExecutionControl *execControl;
 
-@property (retain) CocoaDSController *cdsController;
 @property (retain) CocoaDSFirmware *cdsFirmware;
-@property (retain) CocoaDSGPU *cdsGPU;
-@property (retain) NSMutableArray *cdsOutputList;
+@property (readonly) CocoaDSController *cdsController;
+@property (readonly) CocoaDSGPU *cdsGPU;
+@property (readonly) NSMutableArray *cdsOutputList;
 
 @property (assign) BOOL masterExecute;
 @property (assign) BOOL isFrameSkipEnabled;

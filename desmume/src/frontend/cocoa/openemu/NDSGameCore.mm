@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2021 DeSmuME team
+	Copyright (C) 2012-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ volatile bool execute = true;
 	}
 	
 	// Set up threading locks
-	spinlockDisplayMode = OS_SPINLOCK_INIT;
+	unfairlockDisplayMode = apple_unfairlock_create();
 	pthread_rwlock_init(&rwlockCoreExecute, NULL);
 	
 	// Set up input handling
@@ -136,15 +136,16 @@ volatile bool execute = true;
 	[self setCdsFirmware:nil];
 	
 	pthread_rwlock_destroy(&rwlockCoreExecute);
+	apple_unfairlock_destroy(unfairlockDisplayMode);
 	
 	[super dealloc];
 }
 
 - (NSInteger) displayMode
 {
-	OSSpinLockLock(&spinlockDisplayMode);
+	apple_unfairlock_lock(unfairlockDisplayMode);
 	const NSInteger theMode = displayMode;
-	OSSpinLockUnlock(&spinlockDisplayMode);
+	apple_unfairlock_unlock(unfairlockDisplayMode);
 	
 	return theMode;
 }
@@ -176,11 +177,11 @@ volatile bool execute = true;
 			break;
 	}
 	
-	OSSpinLockLock(&spinlockDisplayMode);
+	apple_unfairlock_lock(unfairlockDisplayMode);
 	displayMode = theMode;
 	displayRect = newDisplayRect;
 	displayAspectRatio = newDisplayAspectRatio;
-	OSSpinLockUnlock(&spinlockDisplayMode);
+	apple_unfairlock_unlock(unfairlockDisplayMode);
 }
 
 #pragma mark - Plug-in Support
@@ -289,18 +290,18 @@ volatile bool execute = true;
 
 - (OEIntRect)screenRect
 {
-	OSSpinLockLock(&spinlockDisplayMode);
+	apple_unfairlock_lock(unfairlockDisplayMode);
 	const OEIntRect theRect = displayRect;
-	OSSpinLockUnlock(&spinlockDisplayMode);
+	apple_unfairlock_unlock(unfairlockDisplayMode);
 	
 	return theRect;
 }
 
 - (OEIntSize)aspectSize
 {
-	OSSpinLockLock(&spinlockDisplayMode);
+	apple_unfairlock_lock(unfairlockDisplayMode);
 	const OEIntSize theAspectRatio = displayAspectRatio;
-	OSSpinLockUnlock(&spinlockDisplayMode);
+	apple_unfairlock_unlock(unfairlockDisplayMode);
 	
 	return theAspectRatio;
 }

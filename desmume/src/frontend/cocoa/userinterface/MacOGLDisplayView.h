@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/OpenGL.h>
-#include <libkern/OSAtomic.h>
+#include "../utilities.h"
 
 #import "DisplayViewCALayer.h"
 #import "../cocoa_GPU.h"
@@ -50,11 +50,12 @@ protected:
 	NSOpenGLContext *_nsContext;
 	CGLContextObj _context;
 	
-	OSSpinLock _spinlockTexFetch[2];
+	apple_unfairlock_t _unfairlockTexFetch[2];
 	
 public:
 	void operator delete(void *ptr);
 	MacOGLClientFetchObject();
+	~MacOGLClientFetchObject();
 	
 	NSOpenGLContext* GetNSContext() const;
 	CGLContextObj GetContext() const;
@@ -77,12 +78,13 @@ protected:
 	NSOpenGLPixelFormat *_nsPixelFormat;
 	CGLContextObj _context;
 	CGLPixelFormatObj _pixelFormat;
-	OSSpinLock _spinlockProcessedInfo;
+	apple_unfairlock_t _unfairlockProcessedInfo;
 	
 public:
 	void operator delete(void *ptr);
 	MacOGLDisplayPresenter();
 	MacOGLDisplayPresenter(MacClientSharedObject *sharedObject);
+	~MacOGLDisplayPresenter();
 	
 	virtual void Init();
 	
@@ -118,7 +120,7 @@ private:
 	void __InstanceInit(MacClientSharedObject *sharedObject);
 	
 protected:
-	OSSpinLock _spinlockViewNeedsFlush;
+	apple_unfairlock_t _unfairlockViewNeedsFlush;
 		
 public:
 	MacOGLDisplayView();

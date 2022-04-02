@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2017 DeSmuME team
+	Copyright (C) 2013-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,6 +17,11 @@
 
 #include "utilities.h"
 #include <ApplicationServices/ApplicationServices.h>
+#include <libkern/OSAtomic.h>
+
+#ifdef HAS_SIERRA_UNFAIR_LOCK
+	#include <os/lock.h>
+#endif
 
 static CFStringRef OSXProductName = NULL;
 static CFStringRef OSXProductVersion = NULL;
@@ -30,21 +35,53 @@ static bool isSystemVersionAlreadyRead = false;
 
 static void ReadSystemVersionPListFile()
 {
+	Boolean status = 0;
+	bool isXMLFileFormat = false;
+	CFDictionaryRef systemDict = NULL;
+	
 	// Read the SystemVersion.plist file.
-	CFDataRef resourceData = NULL;
 	CFURLRef systemPListURL = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, CFSTR("/System/Library/CoreServices/SystemVersion.plist"), kCFURLPOSIXPathStyle, false);
-	Boolean status = CFURLCreateDataAndPropertiesFromResource(kCFAllocatorDefault, systemPListURL, &resourceData, NULL, NULL, NULL);
-	if (!status)
+	CFReadStreamRef theStream = CFReadStreamCreateWithFile(kCFAllocatorDefault, systemPListURL);
+	CFRelease(systemPListURL);
+	systemPListURL = NULL;
+	
+	if (theStream == NULL)
 	{
-		CFRelease(systemPListURL);
 		return;
 	}
 	
-	CFDictionaryRef systemDict = (CFDictionaryRef)CFPropertyListCreateFromXMLData(kCFAllocatorDefault, resourceData, kCFPropertyListImmutable, NULL);
-	if (systemDict == NULL)
+	CFPropertyListFormat *xmlFormat = (CFPropertyListFormat *)malloc(sizeof(CFPropertyListFormat));
+	*xmlFormat = 0;
+	
+	status = CFReadStreamOpen(theStream);
+	if (!status)
 	{
-		CFRelease(resourceData);
-		CFRelease(systemPListURL);
+		CFRelease(theStream);
+		free(xmlFormat);
+		return;
+	}
+	
+#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
+	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6)
+	{
+		systemDict = CFPropertyListCreateWithStream(kCFAllocatorDefault, theStream, 0, kCFPropertyListImmutable, xmlFormat, NULL);
+	}
+	else
+#endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_10( systemDict = CFPropertyListCreateFromStream(kCFAllocatorDefault, theStream, 0, kCFPropertyListImmutable, xmlFormat, NULL) );
+	}
+	
+	CFReadStreamClose(theStream);
+	CFRelease(theStream);
+	theStream = NULL;
+	
+	isXMLFileFormat = (*xmlFormat == kCFPropertyListXMLFormat_v1_0);
+	free(xmlFormat);
+	xmlFormat = NULL;
+	
+	if ( (systemDict == NULL) || !isXMLFileFormat )
+	{
 		return;
 	}
 	
@@ -89,13 +126,13 @@ static void ReadSystemVersionPListFile()
 		CFRetain(OSXProductBuildVersion);
 	}
 	
-	// Release all resources now that the system version string has been copied.
-	CFRelease(resourceData);
-	CFRelease(systemPListURL);
+	// Release all resources now that the system version strings have been copied.
 	CFRelease(systemDict);
+	systemDict = NULL;
 	
-	// Mark that we've already read the SystemVersion.plist file so that we don't
-	// have to do this again.
+	// Mark that we've already read the SystemVersion.plist file so that we don't have to do this again.
+	// However, this function can be called again at any time to force reload the system version strings
+	// from the system file.
 	isSystemVersionAlreadyRead = true;
 }
 
@@ -130,6 +167,77 @@ bool IsOSXVersion(const unsigned int major, const unsigned int minor, const unsi
 	
 	result = (isSystemVersionAlreadyRead && (OSXVersionMajor == major) && (OSXVersionMinor == minor) && (OSXVersionRevision == revision));
 	return result;
+}
+
+#ifdef HAS_SIERRA_UNFAIR_LOCK
+static apple_unfairlock_t apple_unfairlock_create_sierra()
+{
+	apple_unfairlock_t theLock = (apple_unfairlock_t)malloc(sizeof(os_unfair_lock));
+	*(os_unfair_lock *)theLock = OS_UNFAIR_LOCK_INIT;
+	return theLock;
+}
+
+static void apple_unfairlock_destroy_sierra(apple_unfairlock_t theLock)
+{
+	free(theLock);
+}
+
+static inline void apple_unfairlock_lock_sierra(apple_unfairlock_t theLock)
+{
+	os_unfair_lock_lock((os_unfair_lock_t)theLock);
+}
+
+static inline void apple_unfairlock_unlock_sierra(apple_unfairlock_t theLock)
+{
+	os_unfair_lock_unlock((os_unfair_lock_t)theLock);
+}
+#endif
+
+static apple_unfairlock_t apple_unfairlock_create_legacy()
+{
+	SILENCE_DEPRECATION_MACOS_10_12( apple_unfairlock_t theLock = (apple_unfairlock_t)malloc(sizeof(OSSpinLock)) );
+	SILENCE_DEPRECATION_MACOS_10_12( *(OSSpinLock *)theLock = OS_SPINLOCK_INIT );
+	return theLock;
+}
+
+static void apple_unfairlock_destroy_legacy(apple_unfairlock_t theLock)
+{
+	free(theLock);
+}
+
+static inline void apple_unfairlock_lock_legacy(apple_unfairlock_t theLock)
+{
+	SILENCE_DEPRECATION_MACOS_10_12( OSSpinLockLock((OSSpinLock *)theLock) );
+}
+
+static inline void apple_unfairlock_unlock_legacy(apple_unfairlock_t theLock)
+{
+	SILENCE_DEPRECATION_MACOS_10_12( OSSpinLockUnlock((OSSpinLock *)theLock) );
+}
+
+apple_unfairlock_t (*apple_unfairlock_create)() = &apple_unfairlock_create_legacy;
+void (*apple_unfairlock_destroy)(apple_unfairlock_t theLock) = &apple_unfairlock_destroy_legacy;
+void (*apple_unfairlock_lock)(apple_unfairlock_t theLock) = &apple_unfairlock_lock_legacy;
+void (*apple_unfairlock_unlock)(apple_unfairlock_t theLock) = &apple_unfairlock_unlock_legacy;
+
+void AppleUnfairLockSystemInitialize()
+{
+#ifdef HAS_SIERRA_UNFAIR_LOCK
+	if (IsOSXVersionSupported(10, 12, 0))
+	{
+		apple_unfairlock_create = &apple_unfairlock_create_sierra;
+		apple_unfairlock_destroy = &apple_unfairlock_destroy_sierra;
+		apple_unfairlock_lock = &apple_unfairlock_lock_sierra;
+		apple_unfairlock_unlock = &apple_unfairlock_unlock_sierra;
+	}
+	else
+#endif
+	{
+		apple_unfairlock_create = &apple_unfairlock_create_legacy;
+		apple_unfairlock_destroy = &apple_unfairlock_destroy_legacy;
+		apple_unfairlock_lock = &apple_unfairlock_lock_legacy;
+		apple_unfairlock_unlock = &apple_unfairlock_unlock_legacy;
+	}
 }
 
 /********************************************************************************************

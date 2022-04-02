@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2021 DeSmuME Team
+	Copyright (C) 2012-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -218,7 +218,7 @@
 	{
 		const uint32_t color = bitmapData[i];
 		
-#if defined(__i386__) || defined(__x86_64__)
+#ifndef MSB_FIRST
 		bitmapData[i]	=           0xFF000000         | // lA
 						  ((color & 0x00FF0000) >> 16) | // lB -> lR
 						   (color & 0x0000FF00)        | // lG
@@ -410,23 +410,26 @@
 	[panel setTitle:NSSTRING_TITLE_SELECT_ROM_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_DS, @FILE_EXT_ROM_GBA, nil];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	[panel beginSheetModalForWindow:window
-				  completionHandler:^(NSInteger result) {
-					  [self chooseRomForAutoloadDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseRomForAutoloadDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		[panel beginSheetModalForWindow:window
+					  completionHandler:^(NSInteger result) {
+						  [self chooseRomForAutoloadDidEnd:panel returnCode:result contextInfo:nil];
+					  } ];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( [panel beginSheetForDirectory:nil
+																 file:nil
+																types:fileTypes
+													   modalForWindow:window
+														modalDelegate:self
+													   didEndSelector:@selector(chooseRomForAutoloadDidEnd:returnCode:contextInfo:)
+														  contextInfo:nil] );
+	}
 }
 
 - (void) chooseRomForAutoloadDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
@@ -438,7 +441,7 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_CHOOSE_ROM forKey:@"General_AutoloadROMOption"];
 	[[NSUserDefaults standardUserDefaults] synchronize];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_NONE forKey:@"General_AutoloadROMOption"];
 		return;
@@ -468,30 +471,33 @@
 	[panel setTitle:NSSTRING_TITLE_SELECT_ADVANSCENE_DB_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ADVANSCENE_DB, nil];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	[panel beginSheetModalForWindow:window
-				  completionHandler:^(NSInteger result) {
-					  [self chooseAdvansceneDatabaseDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseAdvansceneDatabaseDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		[panel beginSheetModalForWindow:window
+					  completionHandler:^(NSInteger result) {
+						  [self chooseAdvansceneDatabaseDidEnd:panel returnCode:result contextInfo:nil];
+					  } ];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( [panel beginSheetForDirectory:nil
+																 file:nil
+																types:fileTypes
+													   modalForWindow:window
+														modalDelegate:self
+													   didEndSelector:@selector(chooseAdvansceneDatabaseDidEnd:returnCode:contextInfo:)
+														  contextInfo:nil] );
+	}
 }
 
 - (void) chooseAdvansceneDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		return;
 	}
@@ -521,27 +527,32 @@
 	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
 	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	[panel beginSheetModalForWindow:window
-				  completionHandler:^(NSInteger result) {
-					  [self chooseCheatDatabaseDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseCheatDatabaseDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		[panel beginSheetModalForWindow:window
+					  completionHandler:^(NSInteger result) {
+						  [self chooseCheatDatabaseDidEnd:panel returnCode:result contextInfo:nil];
+					  } ];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( [panel beginSheetForDirectory:nil
+																 file:nil
+																types:fileTypes
+													   modalForWindow:window
+														modalDelegate:self
+													   didEndSelector:@selector(chooseCheatDatabaseDidEnd:returnCode:contextInfo:)
+														  contextInfo:nil] );
+	}
 }
 
 - (void) chooseCheatDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		return;
 	}
@@ -727,23 +738,26 @@
 	[panel setTitle:NSSTRING_TITLE_SELECT_ARM9_IMAGE_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_HW_IMAGE_FILE, nil];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	[panel beginSheetModalForWindow:window
-				  completionHandler:^(NSInteger result) {
-					  [self chooseArm9BiosImageDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseArm9BiosImageDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		[panel beginSheetModalForWindow:window
+					  completionHandler:^(NSInteger result) {
+						  [self chooseArm9BiosImageDidEnd:panel returnCode:result contextInfo:nil];
+					  } ];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( [panel beginSheetForDirectory:nil
+																 file:nil
+																types:fileTypes
+													   modalForWindow:window
+														modalDelegate:self
+													   didEndSelector:@selector(chooseArm9BiosImageDidEnd:returnCode:contextInfo:)
+														  contextInfo:nil] );
+	}
 }
 
 - (IBAction) chooseARM7BiosImage:(id)sender
@@ -756,23 +770,26 @@
 	[panel setTitle:NSSTRING_TITLE_SELECT_ARM7_IMAGE_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_HW_IMAGE_FILE, nil];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	[panel beginSheetModalForWindow:window
-				  completionHandler:^(NSInteger result) {
-					  [self chooseArm7BiosImageDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseArm7BiosImageDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		[panel beginSheetModalForWindow:window
+					  completionHandler:^(NSInteger result) {
+						  [self chooseArm7BiosImageDidEnd:panel returnCode:result contextInfo:nil];
+					  } ];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( [panel beginSheetForDirectory:nil
+																 file:nil
+																types:fileTypes
+													   modalForWindow:window
+														modalDelegate:self
+													   didEndSelector:@selector(chooseArm7BiosImageDidEnd:returnCode:contextInfo:)
+														  contextInfo:nil] );
+	}
 }
 
 - (IBAction) chooseFirmwareImage:(id)sender
@@ -785,30 +802,33 @@
 	[panel setTitle:NSSTRING_TITLE_SELECT_FIRMWARE_IMAGE_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_HW_IMAGE_FILE, nil];
 	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	[panel beginSheetModalForWindow:window
-				  completionHandler:^(NSInteger result) {
-					  [self chooseFirmwareImageDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:fileTypes
-				   modalForWindow:window
-					modalDelegate:self
-				   didEndSelector:@selector(chooseFirmwareImageDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		[panel setAllowedFileTypes:fileTypes];
+		[panel beginSheetModalForWindow:window
+					  completionHandler:^(NSInteger result) {
+						  [self chooseFirmwareImageDidEnd:panel returnCode:result contextInfo:nil];
+					  } ];
+	}
+	else
 #endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_6( [panel beginSheetForDirectory:nil
+																 file:nil
+																types:fileTypes
+													   modalForWindow:window
+														modalDelegate:self
+													   didEndSelector:@selector(chooseFirmwareImageDidEnd:returnCode:contextInfo:)
+														  contextInfo:nil] );
+	}
 }
 
 - (void) chooseArm9BiosImageDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		return;
 	}
@@ -832,7 +852,7 @@
 {
 	[sheet orderOut:self];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		return;
 	}
@@ -856,7 +876,7 @@
 {
 	[sheet orderOut:self];
 	
-	if (returnCode == NSCancelButton)
+	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		return;
 	}
@@ -878,11 +898,23 @@
 
 - (IBAction) configureInternalFirmware:(id)sender
 {
-	[NSApp beginSheet:firmwareConfigSheet
-	   modalForWindow:window
-		modalDelegate:self
-	   didEndSelector:@selector(didEndFirmwareConfigSheet:returnCode:contextInfo:)
-		  contextInfo:nil];
+#if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+	if ([window respondsToSelector:@selector(beginSheet:completionHandler:)])
+	{
+		[window beginSheet:firmwareConfigSheet
+		 completionHandler:^(NSModalResponse response) {
+			// Do nothing.
+		} ];
+	}
+	else
+#endif
+	{
+		SILENCE_DEPRECATION_MACOS_10_10( [NSApp beginSheet:firmwareConfigSheet
+											modalForWindow:window
+											 modalDelegate:self
+											didEndSelector:@selector(didEndFirmwareConfigSheet:returnCode:contextInfo:)
+											   contextInfo:nil] );
+	}
 }
 
 - (IBAction) closeFirmwareConfigSheet:(id)sender
@@ -890,10 +922,8 @@
 	NSWindow *sheet = [(NSControl *)sender window];
 	const NSInteger code = [CocoaDSUtil getIBActionSenderTag:sender];
 	
-	// Force end of editing of any text fields.
-	[sheet makeFirstResponder:nil];
-	
-    [NSApp endSheet:sheet returnCode:code];
+	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
+	[CocoaDSUtil endSheet:sheet returnCode:code];
 }
 
 - (void) didEndFirmwareConfigSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
