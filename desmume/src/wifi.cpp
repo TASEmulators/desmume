@@ -1,6 +1,6 @@
 /*
 		Copyright (C) 2007 Tim Seidel
-		Copyright (C) 2008-2021 DeSmuME team
+		Copyright (C) 2008-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -4678,7 +4678,7 @@ void WifiHandler::CommTrigger()
 
 	if((io.US_COUNT & 3) == 0)
 	{
-		const WifiTXLocIndex txSlotIndex = wifi.txCurrentSlot;
+		const WifiTXLocIndex txSlotIndex = (WifiTXLocIndex)wifi.txCurrentSlot;
 		bool isTXSlotBusy = false;
 
 		switch(txSlotIndex)
