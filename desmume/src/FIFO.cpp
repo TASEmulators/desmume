@@ -1,7 +1,7 @@
 /*
 	Copyright 2006 yopyop
 	Copyright 2007 shash
-	Copyright 2007-2021 DeSmuME team
+	Copyright 2007-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -383,7 +383,7 @@ void DISP_FIFOrecv_Line16(u16 *__restrict dst)
 		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16); i+=sizeof(v128u16))
 		{
 			v128u16 fifoColor = vec_ld(i, disp_fifo.buf + disp_fifo.head);
-			fifoColor = vec_perm( fifoColor, fifoColor, ((v128u8){2,3, 0,1, 6,7, 4,5, 10,11, 8,9, 14,15, 12,13}) );
+			fifoColor = vec_perm( (v128u8)fifoColor, (v128u8)fifoColor, ((v128u8){2,3, 0,1, 6,7, 4,5, 10,11, 8,9, 14,15, 12,13}) );
 			vec_st(fifoColor, i, dst);
 		}
 #else
@@ -418,7 +418,7 @@ void _DISP_FIFOrecv_LineOpaque16_vec(u32 *__restrict dst)
 	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16); i+=sizeof(v128u16))
 	{
 		v128u16 fifoColor = vec_ld(i, disp_fifo.buf + disp_fifo.head);
-		fifoColor = vec_perm( fifoColor, fifoColor, ((v128u8){2,3, 0,1, 6,7, 4,5, 10,11, 8,9, 14,15, 12,13}) );
+		fifoColor = vec_perm( (v128u8)fifoColor, (v128u8)fifoColor, ((v128u8){2,3, 0,1, 6,7, 4,5, 10,11, 8,9, 14,15, 12,13}) );
 		fifoColor = vec_or(fifoColor, ((v128u16){0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000}));
 		vec_st(fifoColor, i, dst);
 	}
@@ -445,7 +445,7 @@ void _DISP_FIFOrecv_LineOpaque32_vec(u32 *__restrict dst)
 		
 		v128u32 dstLo = ((v128u32){0,0,0,0});
 		v128u32 dstHi = ((v128u32){0,0,0,0});
-		fifoColor = vec_perm( fifoColor, fifoColor, ((v128u8){10,11, 8,9, 14,15, 12,13, 2,3, 0,1, 6,7, 4,5}) );
+		fifoColor = vec_perm( (v128u8)fifoColor, (v128u8)fifoColor, ((v128u8){10,11, 8,9, 14,15, 12,13, 2,3, 0,1, 6,7, 4,5}) );
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{

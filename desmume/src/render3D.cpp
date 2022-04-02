@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2021 DeSmuME team
+	Copyright (C) 2008-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -878,8 +878,8 @@ void Render3D_AltiVec::_ClearImageBaseLoop(const u16 *__restrict inColor16, cons
 		v128u16 inColor16SwappedLo = vec_ld( 0, inColor16 + i);
 		v128u16 inColor16SwappedHi = vec_ld(16, inColor16 + i);
 		
-		inColor16SwappedLo = vec_perm(inColor16SwappedLo, inColor16SwappedLo, ((v128u8){1,0, 3,2, 5,4, 7,6, 9,8, 11,10, 13,12, 15,14}));
-		inColor16SwappedHi = vec_perm(inColor16SwappedHi, inColor16SwappedHi, ((v128u8){1,0, 3,2, 5,4, 7,6, 9,8, 11,10, 13,12, 15,14}));
+		inColor16SwappedLo = vec_perm((v128u8)inColor16SwappedLo, (v128u8)inColor16SwappedLo, ((v128u8){1,0, 3,2, 5,4, 7,6, 9,8, 11,10, 13,12, 15,14}));
+		inColor16SwappedHi = vec_perm((v128u8)inColor16SwappedHi, (v128u8)inColor16SwappedHi, ((v128u8){1,0, 3,2, 5,4, 7,6, 9,8, 11,10, 13,12, 15,14}));
 		
 		vec_st(inColor16SwappedLo,  0, outColor16 + i);
 		vec_st(inColor16SwappedHi, 16, outColor16 + i);
@@ -893,16 +893,16 @@ void Render3D_AltiVec::_ClearImageBaseLoop(const u16 *__restrict inColor16, cons
 		v128u16 clearDepthLo = vec_ld( 0, inDepth16 + i);
 		v128u16 clearDepthHi = vec_ld(16, inDepth16 + i);
 		
-		clearDepthLo = vec_perm(clearDepthLo, clearDepthLo, ((v128u8){1,0, 3,2, 5,4, 7,6, 9,8, 11,10, 13,12, 15,14}));
-		clearDepthHi = vec_perm(clearDepthHi, clearDepthHi, ((v128u8){1,0, 3,2, 5,4, 7,6, 9,8, 11,10, 13,12, 15,14}));
+		clearDepthLo = vec_perm((v128u8)clearDepthLo, (v128u8)clearDepthLo, ((v128u8){1,0, 3,2, 5,4, 7,6, 9,8, 11,10, 13,12, 15,14}));
+		clearDepthHi = vec_perm((v128u8)clearDepthHi, (v128u8)clearDepthHi, ((v128u8){1,0, 3,2, 5,4, 7,6, 9,8, 11,10, 13,12, 15,14}));
 		
 		const v128u16 clearDepthValueLo = vec_and(clearDepthLo, ((v128u16){0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF}));
 		const v128u16 clearDepthValueHi = vec_and(clearDepthHi, ((v128u16){0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF}));
 		
-		const v128u16 calcDepth0 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), clearDepthValueLo, ((v128u8){0x10,0x11,0,0,  0x12,0x13,0,0,  0x14,0x15,0,0,  0x16,0x17,0,0}));
-		const v128u16 calcDepth1 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), clearDepthValueLo, ((v128u8){0x18,0x19,0,0,  0x1A,0x1B,0,0,  0x1C,0x1D,0,0,  0x1E,0x1F,0,0}));
-		const v128u16 calcDepth2 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), clearDepthValueHi, ((v128u8){0x10,0x11,0,0,  0x12,0x13,0,0,  0x14,0x15,0,0,  0x16,0x17,0,0}));
-		const v128u16 calcDepth3 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), clearDepthValueHi, ((v128u8){0x18,0x19,0,0,  0x1A,0x1B,0,0,  0x1C,0x1D,0,0,  0x1E,0x1F,0,0}));
+		const v128u16 calcDepth0 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), (v128u8)clearDepthValueLo, ((v128u8){0x10,0x11,0,0,  0x12,0x13,0,0,  0x14,0x15,0,0,  0x16,0x17,0,0}));
+		const v128u16 calcDepth1 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), (v128u8)clearDepthValueLo, ((v128u8){0x18,0x19,0,0,  0x1A,0x1B,0,0,  0x1C,0x1D,0,0,  0x1E,0x1F,0,0}));
+		const v128u16 calcDepth2 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), (v128u8)clearDepthValueHi, ((v128u8){0x10,0x11,0,0,  0x12,0x13,0,0,  0x14,0x15,0,0,  0x16,0x17,0,0}));
+		const v128u16 calcDepth3 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), (v128u8)clearDepthValueHi, ((v128u8){0x18,0x19,0,0,  0x1A,0x1B,0,0,  0x1C,0x1D,0,0,  0x1E,0x1F,0,0}));
 		
 		vec_st( vec_msum(calcDepth0, calcDepthMul, calcDepthAdd),  0, outDepth24 + i);
 		vec_st( vec_msum(calcDepth1, calcDepthMul, calcDepthAdd), 16, outDepth24 + i);
