@@ -3636,6 +3636,8 @@
 		AB96EE861F990E4700B7AA67 /* lzio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lzio.c; sourceTree = "<group>"; };
 		AB96EE871F990E4700B7AA67 /* lzio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lzio.h; sourceTree = "<group>"; };
 		AB9971CE134EDA0800531BA7 /* cocoa_globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_globals.h; sourceTree = "<group>"; };
+		ABA48DF527F95C2E00D961FB /* colorspacehandler_NEON.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_NEON.h; sourceTree = "<group>"; };
+		ABA48DF627F95C2E00D961FB /* colorspacehandler_NEON.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_NEON.cpp; sourceTree = "<group>"; };
 		ABA6574914511EC90077E5E9 /* cocoa_cheat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_cheat.h; sourceTree = "<group>"; };
 		ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_cheat.mm; sourceTree = "<group>"; };
 		ABA731251BB5104200B26147 /* SIL Open Font License.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SIL Open Font License.txt"; sourceTree = "<group>"; };
@@ -4968,11 +4970,13 @@
 				ABBFFF751D5FD2ED003CD598 /* colorspacehandler_SSE2.cpp */,
 				ABBFFF7B1D610457003CD598 /* colorspacehandler_AVX2.cpp */,
 				ABCC19332287879000DFA471 /* colorspacehandler_AVX512.cpp */,
+				ABA48DF627F95C2E00D961FB /* colorspacehandler_NEON.cpp */,
 				ABBFFF811D611A36003CD598 /* colorspacehandler_AltiVec.cpp */,
 				ABBFFF701D5F9C52003CD598 /* colorspacehandler.h */,
 				ABBFFF761D5FD2ED003CD598 /* colorspacehandler_SSE2.h */,
 				ABBFFF7C1D610457003CD598 /* colorspacehandler_AVX2.h */,
 				ABCC19342287879000DFA471 /* colorspacehandler_AVX512.h */,
+				ABA48DF527F95C2E00D961FB /* colorspacehandler_NEON.h */,
 				ABBFFF821D611A36003CD598 /* colorspacehandler_AltiVec.h */,
 			);
 			path = colorspacehandler;

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2021 DeSmuME team
+	Copyright (C) 2016-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,6 +30,10 @@
 	#include "colorspacehandler_SSE2.cpp"
 #endif
 
+#if defined(ENABLE_NEON_A64)
+	#include "colorspacehandler_NEON.cpp"
+#endif
+
 #if defined(ENABLE_ALTIVEC)
 	#include "colorspacehandler_AltiVec.cpp"
 #endif
@@ -40,7 +44,7 @@
 #elif defined(ENABLE_AVX2)
 	#define USEVECTORSIZE_256
 	#define VECTORSIZE 32
-#elif defined(ENABLE_SSE2) || defined(ENABLE_ALTIVEC)
+#elif defined(ENABLE_SSE2) || defined(ENABLE_NEON_A64) || defined(ENABLE_ALTIVEC)
 	#define USEVECTORSIZE_128
 	#define VECTORSIZE 16
 #endif
@@ -60,6 +64,8 @@
 	static const ColorspaceHandler_AVX2 csh;
 	#elif defined(ENABLE_SSE2)
 	static const ColorspaceHandler_SSE2 csh;
+	#elif defined(ENABLE_NEON_A64)
+	static const ColorspaceHandler_NEON csh;
 	#elif defined(ENABLE_ALTIVEC)
 	static const ColorspaceHandler_AltiVec csh;
 	#else
