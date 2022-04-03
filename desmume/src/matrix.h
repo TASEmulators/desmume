@@ -1,6 +1,6 @@
 /*  
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2021 DeSmuME team
+	Copyright (C) 2007-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -573,6 +573,129 @@ template <size_t VECLENGTH, bool NEEDENDIANSWAP>
 static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *__restrict src, const s32 c)
 {
 	const v128s32 c_vec = _mm_set1_epi32(c);
+	__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
+}
+
+#elif defined(ENABLE_NEON_A64)
+
+static void memset_u16(void *dst, const u16 val, const size_t elementCount)
+{
+	u16 *dst16 = (u16 *)dst;
+	
+	const v128u16 val_vec128 = vdupq_n_u16(val);
+	for (size_t i = 0; i < elementCount; i+=(sizeof(v128u16)/sizeof(u16)))
+		vst1q_u16(dst16 + i, val_vec128);
+}
+
+template <size_t ELEMENTCOUNT>
+static void memset_u16_fast(void *dst, const u16 val)
+{
+	u16 *dst16 = (u16 *)dst;
+	
+	const v128u16 val_vec128 = vdupq_n_u16(val);
+	const uint16x8x4_t val_vec128x4 = { val_vec128, val_vec128, val_vec128, val_vec128 };
+	MACRODO_N( ELEMENTCOUNT / (sizeof(uint16x8x4_t) / sizeof(u16)), vst1q_u16_x4(dst16 + ((X) * (sizeof(uint16x8x4_t)/sizeof(u16))), val_vec128x4) );
+}
+
+static void memset_u32(void *dst, const u32 val, const size_t elementCount)
+{
+	u32 *dst32 = (u32 *)dst;
+	
+	const v128u32 val_vec128 = vdupq_n_u32(val);
+	for (size_t i = 0; i < elementCount; i+=(sizeof(v128u32)/sizeof(u32)))
+		vst1q_u32(dst32 + i, val_vec128);
+}
+
+template <size_t ELEMENTCOUNT>
+static void memset_u32_fast(void *dst, const u32 val)
+{
+	u32 *dst32 = (u32 *)dst;
+	
+	const v128u32 val_vec128 = vdupq_n_u32(val);
+	const uint32x4x4_t val_vec128x4 = { val_vec128, val_vec128, val_vec128, val_vec128 };
+	MACRODO_N( ELEMENTCOUNT / (sizeof(uint32x4x4_t) / sizeof(u32)), vst1q_u32_x4(dst32 + ((X) * (sizeof(uint32x4x4_t)/sizeof(u32))), val_vec128x4) );
+}
+
+template <size_t VECLENGTH>
+static void stream_copy_fast(void *__restrict dst, void *__restrict src)
+{
+	memcpy(dst, src, VECLENGTH);
+}
+
+template <size_t VECLENGTH>
+static void buffer_copy_fast(void *__restrict dst, void *__restrict src)
+{
+	MACRODO_N( VECLENGTH / sizeof(uint8x16x4_t), vst1q_u8_x4((u8 *)dst + ((X) * sizeof(uint8x16x4_t)), vld1q_u8_x4((u8 *)src + ((X) * sizeof(uint8x16x4_t)))) );
+}
+
+template <size_t VECLENGTH>
+static void __buffer_copy_or_constant_fast(void *__restrict dst, const void *__restrict src, const v128u8 &c_vec)
+{
+	MACRODO_N( VECLENGTH / sizeof(v128u8), vst1q_u8((u8 *)dst + ((X) * sizeof(v128u8)), vorrq_u8(vld1q_u8((u8 *)src + ((X) * sizeof(v128u8))), c_vec)) );
+}
+
+static void __buffer_copy_or_constant(void *__restrict dst, const void *__restrict src, const size_t vecLength, const v128u8 &c_vec)
+{
+	switch (vecLength)
+	{
+		case 128: __buffer_copy_or_constant_fast<128>(dst, src, c_vec); break;
+		case 256: __buffer_copy_or_constant_fast<256>(dst, src, c_vec); break;
+		case 512: __buffer_copy_or_constant_fast<512>(dst, src, c_vec); break;
+		case 768: __buffer_copy_or_constant_fast<768>(dst, src, c_vec); break;
+		case 1024: __buffer_copy_or_constant_fast<1024>(dst, src, c_vec); break;
+		case 2048: __buffer_copy_or_constant_fast<2048>(dst, src, c_vec); break;
+		case 2304: __buffer_copy_or_constant_fast<2304>(dst, src, c_vec); break;
+		case 4096: __buffer_copy_or_constant_fast<4096>(dst, src, c_vec); break;
+			
+		default:
+		{
+			for (size_t i = 0; i < vecLength; i+=sizeof(v128u8))
+			{
+				vst1q_u8( (u8 *)dst + i, vorrq_u8(vld1q_u8((u8 *)src + i), c_vec) );
+			}
+			break;
+		}
+	}
+}
+
+static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
+{
+	const v128u8 c_vec = vreinterpretq_u8_s8( vdupq_n_s8(c) );
+	__buffer_copy_or_constant(dst, src, vecLength, c_vec);
+}
+
+template <size_t VECLENGTH>
+static void buffer_copy_or_constant_s8_fast(void *__restrict dst, void *__restrict src, const s8 c)
+{
+	const v128u8 c_vec = vreinterpretq_u8_s8( vdupq_n_s8(c) );
+	__buffer_copy_or_constant_fast<VECLENGTH, false>(dst, src, c_vec);
+}
+
+template <bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s16(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s16 c)
+{
+	const v128u8 c_vec = vreinterpretq_u8_s16( vdupq_n_s16(c) );
+	__buffer_copy_or_constant(dst, src, vecLength, c_vec);
+}
+
+template <size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s16_fast(void *__restrict dst, void *__restrict src, const s16 c)
+{
+	const v128u8 c_vec = vreinterpretq_u8_s16( vdupq_n_s16(c) );
+	__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
+}
+
+template <bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s32(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s32 c)
+{
+	const v128u8 c_vec = vreinterpretq_u8_s32( vdupq_n_s32(c) );
+	__buffer_copy_or_constant(dst, src, vecLength, c_vec);
+}
+
+template <size_t VECLENGTH, bool NEEDENDIANSWAP>
+static void buffer_copy_or_constant_s32_fast(void *__restrict dst, void *__restrict src, const s32 c)
+{
+	const v128u8 c_vec = vreinterpretq_u8_s32( vdupq_n_s32(c) );
 	__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
 }
 

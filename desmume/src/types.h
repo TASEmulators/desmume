@@ -34,7 +34,7 @@
 
 // Determine CPU architecture for platforms that don't use the autoconf script
 #if defined(HOST_WINDOWS) || defined(DESMUME_COCOA)
-	#if defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_WIN64) || defined(__aarch64__) || defined(__ppc64__)
+	#if defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_WIN64) || defined(__aarch64__) || defined(_M_ARM64) || defined(__ppc64__)
 		#define HOST_64
 	#else
 		#define HOST_32
@@ -55,6 +55,14 @@
 #ifdef __GNUC__
 	#ifdef __ALTIVEC__
 		#define ENABLE_ALTIVEC
+	#endif
+
+// For now, we'll be starting off with only using NEON-A64 for easier testing
+// and development. If the development for A64 goes well and if an A32 backport
+// is discovered to be feasible, then we may explore backporting the NEON code
+// to A32 at a later date.
+	#if (defined(__ARM_NEON__) || defined(__ARM_NEON)) && (defined(__aarch64__) || defined(_M_ARM64))
+		#define ENABLE_NEON_A64
 	#endif
 
 	#ifdef __SSE__
@@ -260,6 +268,16 @@ typedef vector unsigned short v128u16;
 typedef vector signed short v128s16;
 typedef vector unsigned int v128u32;
 typedef vector signed int v128s32;
+#endif
+
+#ifdef ENABLE_NEON_A64
+#include <arm_neon.h>
+typedef uint8x16_t v128u8;
+typedef int8x16_t v128s8;
+typedef uint16x8_t v128u16;
+typedef int16x8_t v128s16;
+typedef uint32x4_t v128u32;
+typedef int32x4_t v128s32;
 #endif
 
 #ifdef ENABLE_SSE2

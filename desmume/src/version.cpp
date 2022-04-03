@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2021 DeSmuME team
+	Copyright (C) 2009-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@
 	#define DESMUME_PLATFORM_STRING " ARM"
 #elif defined(__thumb__)
 	#define DESMUME_PLATFORM_STRING " ARM-Thumb"
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(_M_ARM64)
     #if defined(__APPLE__)
 	#define DESMUME_PLATFORM_STRING " ARM64"
     #else
@@ -78,6 +78,8 @@
 	#define DESMUME_CPUEXT_PRIMARY_STRING " SSE"
 #elif defined(ENABLE_ALTIVEC)
 	#define DESMUME_CPUEXT_PRIMARY_STRING " AltiVec"
+#elif defined(ENABLE_NEON_A64)
+	#define DESMUME_CPUEXT_PRIMARY_STRING " NEON-A64"
 #endif
 
 #if defined(ENABLE_AVX512_3)
