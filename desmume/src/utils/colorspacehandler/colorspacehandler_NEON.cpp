@@ -244,7 +244,7 @@ FORCEINLINE v128u16 _ConvertColorBaseTo5551_NEON(const v128u32 &srcLo, const v12
 		}
 		
 		// Convert alpha
-		alpha = vuzp1q_u16( vreinterpretq_u32_u16(vandq_u32(vshrq_n_u32(srcLo, 24), vdupq_n_u32(0x0000001F))), vreinterpretq_u32_u16(vandq_u32(vshrq_n_u32(srcHi, 24), vdupq_n_u32(0x0000001F))) );
+		alpha = vuzp1q_u16( vreinterpretq_u16_u32(vandq_u32(vshrq_n_u32(srcLo, 24), vdupq_n_u32(0x0000001F))), vreinterpretq_u16_u32(vandq_u32(vshrq_n_u32(srcHi, 24), vdupq_n_u32(0x0000001F))) );
 		alpha = vcgtq_u16(alpha, vdupq_n_u16(0));
 		alpha = vandq_u16(alpha, vdupq_n_u16(0x8000));
 	}
@@ -276,12 +276,12 @@ FORCEINLINE v128u16 _ConvertColorBaseTo5551_NEON(const v128u32 &srcLo, const v12
 		}
 		
 		// Convert alpha
-		alpha = vuzp1q_u16( vreinterpretq_u32_u16(vshrq_n_u32(srcLo, 24)), vreinterpretq_u32_u16(vshrq_n_u32(srcHi, 24)) );
+		alpha = vuzp1q_u16( vreinterpretq_u16_u32(vshrq_n_u32(srcLo, 24)), vreinterpretq_u16_u32(vshrq_n_u32(srcHi, 24)) );
 		alpha = vcgtq_u16(alpha, vdupq_n_u16(0));
 		alpha = vandq_u16(alpha, vdupq_n_u16(0x8000));
 	}
 	
-	return vorrq_u16( vuzp1q_u16(vreinterpretq_u32_u16(rgbLo), vreinterpretq_u32_u16(rgbHi)), alpha );
+	return vorrq_u16( vuzp1q_u16(vreinterpretq_u16_u32(rgbLo), vreinterpretq_u16_u32(rgbHi)), alpha );
 }
 
 template <bool SWAP_RB>
@@ -351,8 +351,8 @@ FORCEINLINE v128u16 ColorspaceApplyIntensity16_NEON(const v128u16 &src, float in
 	const uint16x4_t intensityVec = vdup_n_u16( (u16)(intensity * (float)(0xFFFF)) );
 	
 	r =              vuzp2q_u16( vreinterpretq_u16_u32(vmull_u16(vget_low_u16(r), intensityVec)), vreinterpretq_u16_u32(vmull_u16(vget_high_u16(r), intensityVec)) );
-	g = vshlq_n_u32( vuzp2q_u16( vreinterpretq_u16_u32(vmull_u16(vget_low_u16(g), intensityVec)), vreinterpretq_u16_u32(vmull_u16(vget_high_u16(g), intensityVec)) ),  5 );
-	b = vshlq_n_u32( vuzp2q_u16( vreinterpretq_u16_u32(vmull_u16(vget_low_u16(b), intensityVec)), vreinterpretq_u16_u32(vmull_u16(vget_high_u16(b), intensityVec)) ), 10 );
+	g = vshlq_n_u16( vuzp2q_u16( vreinterpretq_u16_u32(vmull_u16(vget_low_u16(g), intensityVec)), vreinterpretq_u16_u32(vmull_u16(vget_high_u16(g), intensityVec)) ),  5 );
+	b = vshlq_n_u16( vuzp2q_u16( vreinterpretq_u16_u32(vmull_u16(vget_low_u16(b), intensityVec)), vreinterpretq_u16_u32(vmull_u16(vget_high_u16(b), intensityVec)) ), 10 );
 	
 	return vorrq_u16( vorrq_u16( vorrq_u16(r, g), b), a);
 }
@@ -650,8 +650,8 @@ size_t ColorspaceApplyIntensityToBuffer16_NEON(u16 *dst, size_t pixCountVec128, 
 			v128u16 a = vandq_u16(             tempDst,      vdupq_n_u16(0x8000) );
 	  
 			r =              vuzp2q_u16( vreinterpretq_u16_u32(vmull_u16(vget_low_u16(r), intensityVec)), vreinterpretq_u16_u32(vmull_u16(vget_high_u16(r), intensityVec)) );
-			g = vshlq_n_u32( vuzp2q_u16( vreinterpretq_u16_u32(vmull_u16(vget_low_u16(g), intensityVec)), vreinterpretq_u16_u32(vmull_u16(vget_high_u16(g), intensityVec)) ),  5 );
-			b = vshlq_n_u32( vuzp2q_u16( vreinterpretq_u16_u32(vmull_u16(vget_low_u16(b), intensityVec)), vreinterpretq_u16_u32(vmull_u16(vget_high_u16(b), intensityVec)) ), 10 );
+			g = vshlq_n_u16( vuzp2q_u16( vreinterpretq_u16_u32(vmull_u16(vget_low_u16(g), intensityVec)), vreinterpretq_u16_u32(vmull_u16(vget_high_u16(g), intensityVec)) ),  5 );
+			b = vshlq_n_u16( vuzp2q_u16( vreinterpretq_u16_u32(vmull_u16(vget_low_u16(b), intensityVec)), vreinterpretq_u16_u32(vmull_u16(vget_high_u16(b), intensityVec)) ), 10 );
 			
 			tempDst = vorrq_u32( vorrq_u32( vorrq_u32(r, g), b), a);
 			
