@@ -617,15 +617,17 @@ static void memset_u32_fast(void *dst, const u32 val)
 }
 
 template <size_t VECLENGTH>
-static void stream_copy_fast(void *__restrict dst, void *__restrict src)
-{
-	memcpy(dst, src, VECLENGTH);
-}
-
-template <size_t VECLENGTH>
 static void buffer_copy_fast(void *__restrict dst, void *__restrict src)
 {
 	MACRODO_N( VECLENGTH / sizeof(uint8x16x4_t), vst1q_u8_x4((u8 *)dst + ((X) * sizeof(uint8x16x4_t)), vld1q_u8_x4((u8 *)src + ((X) * sizeof(uint8x16x4_t)))) );
+}
+
+template <size_t VECLENGTH>
+static void stream_copy_fast(void *__restrict dst, void *__restrict src)
+{
+	// NEON doesn't have the same temporal/caching distinctions that SSE and AVX do,
+	// so just use buffer_copy_fast() for this function too.
+	buffer_copy_fast<VECLENGTH>(dst, src);
 }
 
 template <size_t VECLENGTH>
@@ -740,15 +742,17 @@ static void memset_u32_fast(void *dst, const u32 val)
 }
 
 template <size_t VECLENGTH>
-static void stream_copy_fast(void *__restrict dst, void *__restrict src)
-{
-	memcpy(dst, src, VECLENGTH);
-}
-
-template <size_t VECLENGTH>
 static void buffer_copy_fast(void *__restrict dst, void *__restrict src)
 {
 	MACRODO_N( VECLENGTH / sizeof(v128s8), vec_st(vec_ld((X)*sizeof(v128s8),src), (X)*sizeof(v128s8), dst) );
+}
+
+template <size_t VECLENGTH>
+static void stream_copy_fast(void *__restrict dst, void *__restrict src)
+{
+	// AltiVec doesn't have the same temporal/caching distinctions that SSE and AVX do,
+	// so just use buffer_copy_fast() for this function too.
+	buffer_copy_fast<VECLENGTH>(dst, src, VECLENGTH);
 }
 
 template <class T, size_t VECLENGTH, bool NEEDENDIANSWAP>
