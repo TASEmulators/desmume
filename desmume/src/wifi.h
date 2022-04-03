@@ -29,7 +29,6 @@
 #include <deque>
 #include <string>
 #include <vector>
-#include "emufile.h"
 
 #if defined(__cplusplus) && (__cplusplus < 201103L)
 	#define DESMUME_ENUM(type,name) enum name
@@ -212,6 +211,7 @@
 
 class WifiHandler;
 class Task;
+class EMUFILE;
 struct slock;
 typedef slock slock_t;
 

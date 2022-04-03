@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2021 DeSmuME team
+	Copyright (C) 2009-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include "mem.h"
 #include "MMU.h"
 #include "debug.h"
+#include "emufile.h"
 
 #ifndef _MSC_VER 
 #include <stdint.h>

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2021 DeSmuME team
+	Copyright (C) 2017-2022 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include "../../NDSSystem.h"
 #include "../../gdbstub.h"
 #include "../../rtc.h"
+#include "../../wifi.h"
 
 #include "ClientAVCaptureObject.h"
 #include "ClientExecutionControl.h"

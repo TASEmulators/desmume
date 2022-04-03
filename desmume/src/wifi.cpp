@@ -20,6 +20,7 @@
 #include "wifi.h"
 #include "armcpu.h"
 #include "NDSSystem.h"
+#include "emufile.h"
 #include "debug.h"
 #include "utils/bits.h"
 #include "utils/task.h"

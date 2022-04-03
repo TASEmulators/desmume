@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Guillaume Duhamel
-	Copyright (C) 2007-20017 DeSmuME team
+	Copyright (C) 2007-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,6 +15,9 @@
 	You should have received a copy of the GNU General Public License
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifndef _ROMREADER_H_
+#define _ROMREADER_H_
 
 #ifdef HAVE_LIBZ
 #include <zlib.h>
@@ -51,3 +54,5 @@ extern ROMReader_struct ZIPROMReader;
 
 ROMReader_struct * ROMReaderInit(char ** filename);
 ROMReader_struct * MemROMReaderRead_TrueInit(void* buf, int length);
+
+#endif // _ROMREADER_H_
