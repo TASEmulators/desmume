@@ -295,7 +295,7 @@ typedef __m128i v128s32;
 	// Note: Technically, the shift count of palignr can be any value of [0-255]. But practically speaking, the
 	// shift count should be a value of [0-15]. If we assume that the value range will always be [0-15], we can
 	// then substitute the palignr instruction with an SSE2 equivalent.
-	#define _mm_alignr_epi8(a, b, immShiftCount) _mm_or_si128(_mm_slli_si128(a, 16-(immShiftCount)), _mm_srli_si128(b, (immShiftCount)))
+	#define _mm_alignr_epi8(a, b, immShiftCount) _mm_or_si128(_mm_slli_si128((a), 16-(immShiftCount)), _mm_srli_si128((b), (immShiftCount)))
 #endif // ENABLE_SSSE3
 
 #ifdef ENABLE_SSE4_1
