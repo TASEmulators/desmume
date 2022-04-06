@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2021 DeSmuME team
+	Copyright (C) 2021-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #else
 
 #include "GPU_Operations_AVX2.h"
+#include "./utils/colorspacehandler/colorspacehandler_AVX2.h"
 
 
 static const ColorOperation_AVX2 colorop_vec;

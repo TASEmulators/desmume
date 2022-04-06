@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2021 DeSmuME team
+	Copyright (C) 2021-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 #else
 
 #include "GPU_Operations_SSE2.h"
-#include <emmintrin.h>
+#include "./utils/colorspacehandler/colorspacehandler_SSE2.h"
 
 
 static const ColorOperation_SSE2 colorop_vec;

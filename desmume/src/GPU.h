@@ -2,7 +2,7 @@
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
-	Copyright (C) 2009-2021 DeSmuME team
+	Copyright (C) 2009-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -26,41 +26,6 @@
 
 #include "types.h"
 #include "./utils/colorspacehandler/colorspacehandler.h"
-
-#ifdef ENABLE_SSE2
-#include "./utils/colorspacehandler/colorspacehandler_SSE2.h"
-#endif
-
-#ifdef ENABLE_SSSE3
-#include <tmmintrin.h>
-#endif
-
-#ifdef ENABLE_SSE4_1
-#include <smmintrin.h>
-#endif
-
-#ifdef ENABLE_AVX2
-#include "./utils/colorspacehandler/colorspacehandler_AVX2.h"
-#endif
-
-#ifdef ENABLE_AVX512_1
-#include "./utils/colorspacehandler/colorspacehandler_AVX512.h"
-#endif
-
-// Note: Technically, the shift count of palignr can be any value of [0-255]. But practically speaking, the
-// shift count should be a value of [0-15]. If we assume that the value range will always be [0-15], we can
-// then substitute the palignr instruction with an SSE2 equivalent.
-#if defined(ENABLE_SSE2) && !defined(ENABLE_SSSE3)
-	#define _mm_alignr_epi8(a, b, immShiftCount) _mm_or_si128(_mm_slli_si128(a, 16-(immShiftCount)), _mm_srli_si128(b, (immShiftCount)))
-#endif
-
-// Note: The SSE4.1 version of pblendvb only requires that the MSBs of the 8-bit mask vector are set in order to
-// pass the b byte through. However, our SSE2 substitute of pblendvb requires that all of the bits of the 8-bit
-// mask vector are set. So when using this intrinsic in practice, just set/clear all mask bits together, and it
-// should work fine for both SSE4.1 and SSE2.
-#if defined(ENABLE_SSE2) && !defined(ENABLE_SSE4_1)
-	#define _mm_blendv_epi8(a, b, fullmask) _mm_or_si128(_mm_and_si128((fullmask), (b)), _mm_andnot_si128((fullmask), (a)))
-#endif
 
 class GPUEngineBase;
 class NDSDisplay;
