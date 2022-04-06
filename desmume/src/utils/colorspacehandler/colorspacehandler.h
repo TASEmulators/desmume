@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2021 DeSmuME team
+	Copyright (C) 2016-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -89,12 +89,12 @@ union FragmentColor
 };
 
 extern CACHE_ALIGN const u32 material_5bit_to_31bit[32];
-extern CACHE_ALIGN const u8 material_5bit_to_6bit[32];
-extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];
+extern CACHE_ALIGN const u8 material_5bit_to_6bit[64];   // Padded for vector lookup table routines. Only the first 32 indices are valid. Data is mirrored across 256-bit lanes.
+extern CACHE_ALIGN const u8 material_5bit_to_8bit[64];   // Padded for vector lookup table routines. Only the first 32 indices are valid. Data is mirrored across 256-bit lanes.
 extern CACHE_ALIGN const u8 material_6bit_to_8bit[64];
-extern CACHE_ALIGN const u8 material_3bit_to_5bit[8];
-extern CACHE_ALIGN const u8 material_3bit_to_6bit[8];
-extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
+extern CACHE_ALIGN const u8 material_3bit_to_5bit[64];   // Padded for vector lookup table routines. Only the first 8 indices are valid. Data is mirrored across 128-bit lanes.
+extern CACHE_ALIGN const u8 material_3bit_to_6bit[64];   // Padded for vector lookup table routines. Only the first 8 indices are valid. Data is mirrored across 128-bit lanes.
+extern CACHE_ALIGN const u8 material_3bit_to_8bit[64];   // Padded for vector lookup table routines. Only the first 8 indices are valid. Data is mirrored across 128-bit lanes.
 
 extern CACHE_ALIGN u16 color_5551_swap_rb[65536];
 extern CACHE_ALIGN u32 color_555_to_6665_opaque[32768];
