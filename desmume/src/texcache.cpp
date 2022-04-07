@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2021 DeSmuME team
+	Copyright (C) 2008-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,8 +30,14 @@
 #include "MMU.h"
 #include "NDSSystem.h"
 
-#ifdef ENABLE_SSE2
+#if defined(ENABLE_AVX2)
+#include "./utils/colorspacehandler/colorspacehandler_AVX2.h"
+#elif defined(ENABLE_SSE2)
 #include "./utils/colorspacehandler/colorspacehandler_SSE2.h"
+#elif defined(ENABLE_NEON_A64)
+#include "./utils/colorspacehandler/colorspacehandler_NEON.h"
+#elif defined(ENABLE_ALTIVEC)
+#include "./utils/colorspacehandler/colorspacehandler_AltiVec.h"
 #endif
 
 using std::min;
@@ -833,55 +839,238 @@ void TextureStore::DebugDump()
 }
 #endif
 
+#if defined(ENABLE_AVX2)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT, bool ISPALZEROTRANSPARENT>
+void __NDSTextureUnpackI2_AVX2(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	v256u32 convertedColor[4];
+	const v256u8 pal16_LUT = _mm256_set_epi64x(0, *(u64 *)srcPal, 0, *(u64 *)srcPal);
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v256u8), srcData+=8, dstBuffer+=sizeof(v256u8))
+	{
+		v256u8 idx = _mm256_set_epi64x(0, 0, 0, *(u64 *)srcData);
+		idx = _mm256_unpacklo_epi8(idx, idx);
+		idx = _mm256_permute4x64_epi64(idx, 0xD8);
+		idx = _mm256_unpacklo_epi8(idx, idx);
+		
+		idx = _mm256_or_si256( _mm256_or_si256( _mm256_or_si256( _mm256_and_si256(idx, _mm256_set1_epi32(0x00000003)), _mm256_and_si256(_mm256_srli_epi32(idx, 2), _mm256_set1_epi32(0x00000300)) ), _mm256_and_si256(_mm256_srli_epi32(idx, 4), _mm256_set1_epi32(0x00030000)) ), _mm256_and_si256(_mm256_srli_epi32(idx, 6), _mm256_set1_epi32(0x03000000)) );
+		idx = _mm256_slli_epi16(idx, 1);
+		
+		idx = _mm256_permute4x64_epi64(idx, 0xD8);
+		v256u8 idx0 = _mm256_add_epi8( _mm256_unpacklo_epi8(idx, idx), _mm256_set1_epi16(0x0100) );
+		v256u8 idx1 = _mm256_add_epi8( _mm256_unpackhi_epi8(idx, idx), _mm256_set1_epi16(0x0100) );
+		idx = _mm256_permute4x64_epi64(idx, 0xD8);
+		
+		const v256u16 palColor0 = _mm256_shuffle_epi8(pal16_LUT, idx0);
+		const v256u16 palColor1 = _mm256_shuffle_epi8(pal16_LUT, idx1);
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			ColorspaceConvert555To6665Opaque_AVX2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555To6665Opaque_AVX2<false>(palColor1, convertedColor[2], convertedColor[3]);
+		}
+		else
+		{
+			ColorspaceConvert555To8888Opaque_AVX2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555To8888Opaque_AVX2<false>(palColor1, convertedColor[2], convertedColor[3]);
+		}
+		
+		// Set converted colors to 0 if the palette index is 0.
+		if (ISPALZEROTRANSPARENT)
+		{
+			const v256u8 idxMask = _mm256_permute4x64_epi64( _mm256_cmpgt_epi8(idx, _mm256_setzero_si256()), 0xD8 );
+			idx0 = _mm256_unpacklo_epi8(idxMask, idxMask);
+			idx1 = _mm256_unpackhi_epi8(idxMask, idxMask);
+			
+			idx0 = _mm256_permute4x64_epi64(idx0, 0xD8);
+			idx1 = _mm256_permute4x64_epi64(idx1, 0xD8);
+			
+			convertedColor[0] = _mm256_and_si256(convertedColor[0], _mm256_unpacklo_epi16(idx0, idx0));
+			convertedColor[1] = _mm256_and_si256(convertedColor[1], _mm256_unpackhi_epi16(idx0, idx0));
+			convertedColor[2] = _mm256_and_si256(convertedColor[2], _mm256_unpacklo_epi16(idx1, idx1));
+			convertedColor[3] = _mm256_and_si256(convertedColor[3], _mm256_unpackhi_epi16(idx1, idx1));
+		}
+		
+		_mm256_store_si256((v256u32 *)dstBuffer + 0, convertedColor[0]);
+		_mm256_store_si256((v256u32 *)dstBuffer + 1, convertedColor[1]);
+		_mm256_store_si256((v256u32 *)dstBuffer + 2, convertedColor[2]);
+		_mm256_store_si256((v256u32 *)dstBuffer + 3, convertedColor[3]);
+	}
+}
+
+#elif defined(ENABLE_SSSE3)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT, bool ISPALZEROTRANSPARENT>
+void __NDSTextureUnpackI2_SSSE3(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	v128u32 convertedColor[4];
+	const v128u8 pal16_LUT = _mm_loadl_epi64((v128u16 *)srcPal);
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v128u8), srcData+=4, dstBuffer+=sizeof(v128u8))
+	{
+		v128u8 idx = _mm_cvtsi32_si128(*(u32 *)srcData);
+		idx = _mm_unpacklo_epi8(idx, idx);
+		idx = _mm_unpacklo_epi8(idx, idx);
+		idx = _mm_or_si128( _mm_or_si128( _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi32(0x00000003)), _mm_and_si128(_mm_srli_epi32(idx, 2), _mm_set1_epi32(0x00000300)) ), _mm_and_si128(_mm_srli_epi32(idx, 4), _mm_set1_epi32(0x00030000)) ), _mm_and_si128(_mm_srli_epi32(idx, 6), _mm_set1_epi32(0x03000000)) );
+		idx = _mm_slli_epi16(idx, 1);
+		
+		v128u8 idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+		v128u8 idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+		
+		const v128u16 palColor0 = _mm_shuffle_epi8(pal16_LUT, idx0);
+		const v128u16 palColor1 = _mm_shuffle_epi8(pal16_LUT, idx1);
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
+		}
+		else
+		{
+			ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
+		}
+		
+		// Set converted colors to 0 if the palette index is 0.
+		if (ISPALZEROTRANSPARENT)
+		{
+			const v128u8 idxMask = _mm_cmpgt_epi8(idx, _mm_setzero_si128());
+			idx0 = _mm_unpacklo_epi8(idxMask, idxMask);
+			idx1 = _mm_unpackhi_epi8(idxMask, idxMask);
+			convertedColor[0] = _mm_and_si128(convertedColor[0], _mm_unpacklo_epi16(idx0, idx0));
+			convertedColor[1] = _mm_and_si128(convertedColor[1], _mm_unpackhi_epi16(idx0, idx0));
+			convertedColor[2] = _mm_and_si128(convertedColor[2], _mm_unpacklo_epi16(idx1, idx1));
+			convertedColor[3] = _mm_and_si128(convertedColor[3], _mm_unpackhi_epi16(idx1, idx1));
+		}
+		
+		_mm_store_si128((v128u32 *)dstBuffer + 0, convertedColor[0]);
+		_mm_store_si128((v128u32 *)dstBuffer + 1, convertedColor[1]);
+		_mm_store_si128((v128u32 *)dstBuffer + 2, convertedColor[2]);
+		_mm_store_si128((v128u32 *)dstBuffer + 3, convertedColor[3]);
+	}
+}
+
+#elif defined(ENABLE_NEON_A64)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT, bool ISPALZEROTRANSPARENT>
+void __NDSTextureUnpackI2_NEON(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	uint32x4x4_t convertedColor;
+	const v128u8 pal16_LUT = vcombine_u8( vld1_u8((const u8 *__restrict)srcPal), ((uint8x8_t){0,0,0,0,0,0,0,0}) );
+	v128u8 idx = vdupq_n_u8(0);
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v128u8), srcData+=4, dstBuffer+=sizeof(v128u8))
+	{
+		idx = vreinterpretq_u8_u32( vsetq_lane_u32(*(u32 *)srcData, vreinterpretq_u32_u8(idx), 0) );
+		idx = vzip1q_u8(idx, idx);
+		idx = vzip1q_u8(idx, idx);
+		
+		idx = vshlq_u8(idx, ((v128s8){1,-1,-3,-5,  1,-1,-3,-5,  1,-1,-3,-5,  1,-1,-3,-5}));
+		idx = vandq_u8(idx, vdupq_n_u8(0x06));
+		
+		v128u8 idx0 = vaddq_u8( vzip1q_u8(idx, idx), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		v128u8 idx1 = vaddq_u8( vzip2q_u8(idx, idx), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		
+		const v128u16 palColor0 = vreinterpretq_u16_u8( vqtbl1q_u8(pal16_LUT, idx0) );
+		const v128u16 palColor1 = vreinterpretq_u16_u8( vqtbl1q_u8(pal16_LUT, idx1) );
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			ColorspaceConvert555To6665Opaque_NEON<false>(palColor0, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555To6665Opaque_NEON<false>(palColor1, convertedColor.val[2], convertedColor.val[3]);
+		}
+		else
+		{
+			ColorspaceConvert555To8888Opaque_NEON<false>(palColor0, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555To8888Opaque_NEON<false>(palColor1, convertedColor.val[2], convertedColor.val[3]);
+		}
+		
+		// Set converted colors to 0 if the palette index is 0.
+		if (ISPALZEROTRANSPARENT)
+		{
+			const v128u8 idxMask = vcgtzq_s8( vreinterpretq_s8_u8(idx) );
+			idx0 = vzip1q_u8(idxMask, idxMask);
+			idx1 = vzip2q_u8(idxMask, idxMask);
+			convertedColor.val[0] = vandq_u32( convertedColor.val[0], vreinterpretq_u32_u8(vzip1q_u8(idx0, idx0)) );
+			convertedColor.val[1] = vandq_u32( convertedColor.val[1], vreinterpretq_u32_u8(vzip2q_u8(idx0, idx0)) );
+			convertedColor.val[2] = vandq_u32( convertedColor.val[2], vreinterpretq_u32_u8(vzip1q_u8(idx1, idx1)) );
+			convertedColor.val[3] = vandq_u32( convertedColor.val[3], vreinterpretq_u32_u8(vzip2q_u8(idx1, idx1)) );
+		}
+		
+		vst1q_u32_x4(dstBuffer, convertedColor);
+	}
+}
+
+#elif defined(ENABLE_ALTIVEC)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT, bool ISPALZEROTRANSPARENT>
+void __NDSTextureUnpackI2_AltiVec(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	v128u32 convertedColor[4];
+	const u32 *__restrict p = (const u32 *__restrict)srcPal;
+	const v128u16 pal16_LUT = (v128u16)((v128u32){p[0], p[1], 0,0});
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v128u8), srcData+=4, dstBuffer+=sizeof(v128u8))
+	{
+		v128u8 idx = (v128u8)((v128u32){*(u32 *)srcData, 0,0,0});
+		idx = vec_perm(idx, idx, ((v128u8){0,0,0,0,  1,1,1,1,  2,2,2,2,  3,3,3,3}));
+		
+		idx = vec_sr(idx, ((v128u8){0,2,4,6,  0,2,4,6,  0,2,4,6,  0,2,4,6}));
+		idx = vec_and(idx, ((v128u8){0x03,0x03,0x03,0x03,  0x03,0x03,0x03,0x03,  0x03,0x03,0x03,0x03,  0x03,0x03,0x03,0x03}));
+		idx = vec_sl(idx, ((v128u8){1,1,1,1,  1,1,1,1,  1,1,1,1,  1,1,1,1}));
+		
+		v128u8 idx0 = vec_add( vec_perm(idx,idx,((v128u8){ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7})), ((v128u8){0,1,0,1,  0,1,0,1,  0,1,0,1,  0,1,0,1}) );
+		v128u8 idx1 = vec_add( vec_perm(idx,idx,((v128u8){ 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15})), ((v128u8){0,1,0,1,  0,1,0,1,  0,1,0,1,  0,1,0,1}) );
+		
+		const v128u16 palColor0 = vec_perm((v128u8)pal16_LUT, (v128u8)pal16_LUT, idx0);
+		const v128u16 palColor1 = vec_perm((v128u8)pal16_LUT, (v128u8)pal16_LUT, idx1);
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			ColorspaceConvert555To6665Opaque_AltiVec<false, BESwapDst>(palColor0, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555To6665Opaque_AltiVec<false, BESwapDst>(palColor1, convertedColor[3], convertedColor[2]);
+		}
+		else
+		{
+			ColorspaceConvert555To8888Opaque_AltiVec<false, BESwapDst>(palColor0, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555To8888Opaque_AltiVec<false, BESwapDst>(palColor1, convertedColor[3], convertedColor[2]);
+		}
+		
+		// Set converted colors to 0 if the palette index is 0.
+		if (ISPALZEROTRANSPARENT)
+		{
+			const v128u8 idxMask = vec_cmpgt(idx, ((v128u8){0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0}));
+			convertedColor[0] = vec_and( convertedColor[0], vec_perm(idxMask, idxMask, ((v128u8){ 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3})) );
+			convertedColor[1] = vec_and( convertedColor[1], vec_perm(idxMask, idxMask, ((v128u8){ 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7})) );
+			convertedColor[2] = vec_and( convertedColor[2], vec_perm(idxMask, idxMask, ((v128u8){ 8, 8, 8, 8, 9, 9, 9, 9,10,10,10,10,11,11,11,11})) );
+			convertedColor[3] = vec_and( convertedColor[3], vec_perm(idxMask, idxMask, ((v128u8){12,12,12,12,13,13,13,13,14,14,14,14,15,15,15,15})) );
+		}
+		
+		vec_st(convertedColor[0],  0, dstBuffer);
+		vec_st(convertedColor[1], 16, dstBuffer);
+		vec_st(convertedColor[2], 32, dstBuffer);
+		vec_st(convertedColor[3], 48, dstBuffer);
+	}
+}
+
+#endif
+
 template <TextureStoreUnpackFormat TEXCACHEFORMAT>
 void NDSTextureUnpackI2(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer)
 {
-#ifdef ENABLE_SSSE3
-	const __m128i pal_vec128 = _mm_loadl_epi64((__m128i *)srcPal);
-#endif
+	const size_t texelCount = srcSize * 4; // 4 indices packed into a single 8-bit value
+	
 	if (isPalZeroTransparent)
 	{
-#ifdef ENABLE_SSSE3
-		for (size_t i = 0; i < srcSize; i+=4, srcData+=4, dstBuffer+=16)
-		{
-			__m128i idx = _mm_set_epi32(0, 0, 0, *(u32 *)srcData);
-			idx = _mm_unpacklo_epi8(idx, idx);
-			idx = _mm_unpacklo_epi8(idx, idx);
-			idx = _mm_or_si128( _mm_or_si128( _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi32(0x00000003)), _mm_and_si128(_mm_srli_epi32(idx, 2), _mm_set1_epi32(0x00000300)) ), _mm_and_si128(_mm_srli_epi32(idx, 4), _mm_set1_epi32(0x00030000)) ), _mm_and_si128(_mm_srli_epi32(idx, 6), _mm_set1_epi32(0x03000000)) );
-			idx = _mm_slli_epi16(idx, 1);
-			
-			__m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-			__m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-			
-			const __m128i palColor0 = _mm_shuffle_epi8(pal_vec128, idx0);
-			const __m128i palColor1 = _mm_shuffle_epi8(pal_vec128, idx1);
-			
-			__m128i convertedColor[4];
-			
-			if (TEXCACHEFORMAT == TexFormat_15bpp)
-			{
-				ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-				ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-			}
-			else
-			{
-				ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-				ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-			}
-			
-			// Set converted colors to 0 if the palette index is 0.
-			idx0 = _mm_cmpeq_epi16(idx0, _mm_set1_epi16(0x0100));
-			idx1 = _mm_cmpeq_epi16(idx1, _mm_set1_epi16(0x0100));
-			convertedColor[0] = _mm_andnot_si128(_mm_unpacklo_epi16(idx0, idx0), convertedColor[0]);
-			convertedColor[1] = _mm_andnot_si128(_mm_unpackhi_epi16(idx0, idx0), convertedColor[1]);
-			convertedColor[2] = _mm_andnot_si128(_mm_unpacklo_epi16(idx1, idx1), convertedColor[2]);
-			convertedColor[3] = _mm_andnot_si128(_mm_unpackhi_epi16(idx1, idx1), convertedColor[3]);
-			
-			_mm_store_si128((__m128i *)(dstBuffer +  0), convertedColor[0]);
-			_mm_store_si128((__m128i *)(dstBuffer +  4), convertedColor[1]);
-			_mm_store_si128((__m128i *)(dstBuffer +  8), convertedColor[2]);
-			_mm_store_si128((__m128i *)(dstBuffer + 12), convertedColor[3]);
-		}
+#if defined(ENABLE_AVX2)
+		__NDSTextureUnpackI2_AVX2<TEXCACHEFORMAT, true>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_SSSE3)
+		__NDSTextureUnpackI2_SSSE3<TEXCACHEFORMAT, true>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_NEON_A64)
+		__NDSTextureUnpackI2_NEON<TEXCACHEFORMAT, true>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_ALTIVEC)
+		__NDSTextureUnpackI2_AltiVec<TEXCACHEFORMAT, true>(texelCount, srcData, srcPal, dstBuffer);
 #else
 		for (size_t i = 0; i < srcSize; i++, srcData++)
 		{
@@ -903,39 +1092,14 @@ void NDSTextureUnpackI2(const size_t srcSize, const u8 *__restrict srcData, cons
 	}
 	else
 	{
-#ifdef ENABLE_SSSE3
-		for (size_t i = 0; i < srcSize; i+=4, srcData+=4, dstBuffer+=16)
-		{
-			__m128i idx = _mm_set_epi32(0, 0, 0, *(u32 *)srcData);
-			idx = _mm_unpacklo_epi8(idx, idx);
-			idx = _mm_unpacklo_epi8(idx, idx);
-			idx = _mm_or_si128( _mm_or_si128( _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi32(0x00000003)), _mm_and_si128(_mm_srli_epi32(idx, 2), _mm_set1_epi32(0x00000300)) ), _mm_and_si128(_mm_srli_epi32(idx, 4), _mm_set1_epi32(0x00030000)) ), _mm_and_si128(_mm_srli_epi32(idx, 6), _mm_set1_epi32(0x03000000)) );
-			idx = _mm_slli_epi16(idx, 1);
-			
-			const __m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-			const __m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-			
-			const __m128i palColor0 = _mm_shuffle_epi8(pal_vec128, idx0);
-			const __m128i palColor1 = _mm_shuffle_epi8(pal_vec128, idx1);
-			
-			__m128i convertedColor[4];
-			
-			if (TEXCACHEFORMAT == TexFormat_15bpp)
-			{
-				ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-				ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-			}
-			else
-			{
-				ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-				ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-			}
-			
-			_mm_store_si128((__m128i *)(dstBuffer +  0), convertedColor[0]);
-			_mm_store_si128((__m128i *)(dstBuffer +  4), convertedColor[1]);
-			_mm_store_si128((__m128i *)(dstBuffer +  8), convertedColor[2]);
-			_mm_store_si128((__m128i *)(dstBuffer + 12), convertedColor[3]);
-		}
+#if defined(ENABLE_AVX2)
+		__NDSTextureUnpackI2_AVX2<TEXCACHEFORMAT, false>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_SSSE3)
+		__NDSTextureUnpackI2_SSSE3<TEXCACHEFORMAT, false>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_NEON_A64)
+		__NDSTextureUnpackI2_NEON<TEXCACHEFORMAT, false>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_ALTIVEC)
+		__NDSTextureUnpackI2_AltiVec<TEXCACHEFORMAT, false>(texelCount, srcData, srcPal, dstBuffer);
 #else
 		for (size_t i = 0; i < srcSize; i++, srcData++)
 		{
@@ -948,61 +1112,249 @@ void NDSTextureUnpackI2(const size_t srcSize, const u8 *__restrict srcData, cons
 	}
 }
 
+#if defined(ENABLE_AVX2)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT, bool ISPALZEROTRANSPARENT>
+void __NDSTextureUnpackI4_AVX2(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	v256u32 convertedColor[4];
+	const v256u16 pal16_LUT = _mm256_load_si256((v256u16 *)srcPal);
+	const v256u16 pal16Lo_LUT = _mm256_permute4x64_epi64(pal16_LUT, 0x44);
+	const v256u16 pal16Hi_LUT = _mm256_permute4x64_epi64(pal16_LUT, 0xEE);
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v256u8), srcData+=16, dstBuffer+=sizeof(v256u8))
+	{
+		v256u8 idx = _mm256_set_epi64x(0, 0, ((u64 *)srcData)[1], ((u64 *)srcData)[0]);
+		idx = _mm256_permute4x64_epi64(idx, 0xD8);
+		idx = _mm256_unpacklo_epi8(idx, idx);
+		idx = _mm256_or_si256( _mm256_and_si256(idx, _mm256_set1_epi16(0x000F)), _mm256_and_si256(_mm256_srli_epi16(idx, 4), _mm256_set1_epi16(0x0F00)) );
+		idx = _mm256_slli_epi16(idx, 1);
+		
+		idx = _mm256_permute4x64_epi64(idx, 0xD8);
+		v256u8 idx0 = _mm256_add_epi8( _mm256_unpacklo_epi8(idx, idx), _mm256_set1_epi16(0x0100) );
+		v256u8 idx1 = _mm256_add_epi8( _mm256_unpackhi_epi8(idx, idx), _mm256_set1_epi16(0x0100) );
+		idx = _mm256_permute4x64_epi64(idx, 0xD8);
+		
+		const v256u8 palColor0A = _mm256_shuffle_epi8(pal16Lo_LUT, idx0);
+		const v256u8 palColor0B = _mm256_shuffle_epi8(pal16Hi_LUT, idx0);
+		const v256u8 palColor1A = _mm256_shuffle_epi8(pal16Lo_LUT, idx1);
+		const v256u8 palColor1B = _mm256_shuffle_epi8(pal16Hi_LUT, idx1);
+		
+		const v256u8 palMask = _mm256_permute4x64_epi64( _mm256_cmpgt_epi8(idx, _mm256_set1_epi8(0x0F)), 0xD8 );
+		const v256u16 palColor0 = _mm256_blendv_epi8( palColor0A, palColor0B, _mm256_unpacklo_epi8(palMask, palMask) );
+		const v256u16 palColor1 = _mm256_blendv_epi8( palColor1A, palColor1B, _mm256_unpackhi_epi8(palMask, palMask) );
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			ColorspaceConvert555To6665Opaque_AVX2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555To6665Opaque_AVX2<false>(palColor1, convertedColor[2], convertedColor[3]);
+		}
+		else
+		{
+			ColorspaceConvert555To8888Opaque_AVX2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555To8888Opaque_AVX2<false>(palColor1, convertedColor[2], convertedColor[3]);
+		}
+		
+		// Set converted colors to 0 if the palette index is 0.
+		if (ISPALZEROTRANSPARENT)
+		{
+			const v256u8 idxMask = _mm256_permute4x64_epi64( _mm256_cmpgt_epi8(idx, _mm256_setzero_si256()), 0xD8 );
+			idx0 = _mm256_unpacklo_epi8(idxMask, idxMask);
+			idx1 = _mm256_unpackhi_epi8(idxMask, idxMask);
+			
+			idx0 = _mm256_permute4x64_epi64(idx0, 0xD8);
+			idx1 = _mm256_permute4x64_epi64(idx1, 0xD8);
+			
+			convertedColor[0] = _mm256_and_si256(convertedColor[0], _mm256_unpacklo_epi16(idx0, idx0));
+			convertedColor[1] = _mm256_and_si256(convertedColor[1], _mm256_unpackhi_epi16(idx0, idx0));
+			convertedColor[2] = _mm256_and_si256(convertedColor[2], _mm256_unpacklo_epi16(idx1, idx1));
+			convertedColor[3] = _mm256_and_si256(convertedColor[3], _mm256_unpackhi_epi16(idx1, idx1));
+		}
+		
+		_mm256_store_si256((v256u32 *)dstBuffer + 0, convertedColor[0]);
+		_mm256_store_si256((v256u32 *)dstBuffer + 1, convertedColor[1]);
+		_mm256_store_si256((v256u32 *)dstBuffer + 2, convertedColor[2]);
+		_mm256_store_si256((v256u32 *)dstBuffer + 3, convertedColor[3]);
+	}
+}
+
+#elif defined(ENABLE_SSSE3)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT, bool ISPALZEROTRANSPARENT>
+void __NDSTextureUnpackI4_SSSE3(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	v128u32 convertedColor[4];
+	const v128u16 palLo = _mm_load_si128((v128u16 *)srcPal + 0);
+	const v128u16 palHi = _mm_load_si128((v128u16 *)srcPal + 1);
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v128u8), srcData+=8, dstBuffer+=sizeof(v128u8))
+	{
+		v128u8 idx = _mm_loadl_epi64((__m128i *)srcData);
+		idx = _mm_unpacklo_epi8(idx, idx);
+		idx = _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi16(0x000F)), _mm_and_si128(_mm_srli_epi16(idx, 4), _mm_set1_epi16(0x0F00)) );
+		idx = _mm_slli_epi16(idx, 1);
+		
+		v128u8 idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+		v128u8 idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+		
+		const v128u16 palColor0A = _mm_shuffle_epi8(palLo, idx0);
+		const v128u16 palColor0B = _mm_shuffle_epi8(palHi, idx0);
+		const v128u16 palColor1A = _mm_shuffle_epi8(palLo, idx1);
+		const v128u16 palColor1B = _mm_shuffle_epi8(palHi, idx1);
+		
+		const v128u8 palMask = _mm_cmpgt_epi8(idx, _mm_set1_epi8(0x0F));
+		const v128u16 palColor0 = _mm_blendv_epi8( palColor0A, palColor0B, _mm_unpacklo_epi8(palMask, palMask) );
+		const v128u16 palColor1 = _mm_blendv_epi8( palColor1A, palColor1B, _mm_unpackhi_epi8(palMask, palMask) );
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
+		}
+		else
+		{
+			ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
+		}
+		
+		// Set converted colors to 0 if the palette index is 0.
+		if (ISPALZEROTRANSPARENT)
+		{
+			const v128u8 idxMask = _mm_cmpgt_epi8(idx, _mm_setzero_si128());
+			idx0 = _mm_unpacklo_epi8(idxMask, idxMask);
+			idx1 = _mm_unpackhi_epi8(idxMask, idxMask);
+			convertedColor[0] = _mm_and_si128(convertedColor[0], _mm_unpacklo_epi16(idx0, idx0));
+			convertedColor[1] = _mm_and_si128(convertedColor[1], _mm_unpackhi_epi16(idx0, idx0));
+			convertedColor[2] = _mm_and_si128(convertedColor[2], _mm_unpacklo_epi16(idx1, idx1));
+			convertedColor[3] = _mm_and_si128(convertedColor[3], _mm_unpackhi_epi16(idx1, idx1));
+		}
+		
+		_mm_store_si128((v128u32 *)dstBuffer + 0, convertedColor[0]);
+		_mm_store_si128((v128u32 *)dstBuffer + 1, convertedColor[1]);
+		_mm_store_si128((v128u32 *)dstBuffer + 2, convertedColor[2]);
+		_mm_store_si128((v128u32 *)dstBuffer + 3, convertedColor[3]);
+	}
+}
+
+#elif defined(ENABLE_NEON_A64)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT, bool ISPALZEROTRANSPARENT>
+void __NDSTextureUnpackI4_NEON(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	uint32x4x4_t convertedColor;
+	const uint8x16x2_t pal16_LUT = vld1q_u8_x2((const u8 *__restrict)srcPal);
+	v128u8 idx = vdupq_n_u8(0);
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v128u8), srcData+=8, dstBuffer+=sizeof(v128u8))
+	{
+		idx = vreinterpretq_u8_u64( vsetq_lane_u64(*(u64 *)srcData, vreinterpretq_u64_u8(idx), 0) );
+		idx = vzip1q_u8(idx, idx);
+		
+		idx = vshlq_u8(idx, ((v128s8){1,-3,  1,-3,  1,-3,  1,-3,  1,-3,  1,-3,  1,-3,  1,-3}));
+		idx = vandq_u8(idx, vdupq_n_u8(0x1E));
+		
+		v128u8 idx0 = vaddq_u8( vzip1q_u8(idx, idx), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		v128u8 idx1 = vaddq_u8( vzip2q_u8(idx, idx), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		
+		const v128u16 palColor0 = vreinterpretq_u16_u8( vqtbl2q_u8(pal16_LUT, idx0) );
+		const v128u16 palColor1 = vreinterpretq_u16_u8( vqtbl2q_u8(pal16_LUT, idx1) );
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			ColorspaceConvert555To6665Opaque_NEON<false>(palColor0, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555To6665Opaque_NEON<false>(palColor1, convertedColor.val[2], convertedColor.val[3]);
+		}
+		else
+		{
+			ColorspaceConvert555To8888Opaque_NEON<false>(palColor0, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555To8888Opaque_NEON<false>(palColor1, convertedColor.val[2], convertedColor.val[3]);
+		}
+		
+		// Set converted colors to 0 if the palette index is 0.
+		if (ISPALZEROTRANSPARENT)
+		{
+			const v128u8 idxMask = vcgtzq_s8( vreinterpretq_s8_u8(idx) );
+			idx0 = vzip1q_u8(idxMask, idxMask);
+			idx1 = vzip2q_u8(idxMask, idxMask);
+			convertedColor.val[0] = vandq_u32( convertedColor.val[0], vreinterpretq_u32_u8(vzip1q_u8(idx0, idx0)) );
+			convertedColor.val[1] = vandq_u32( convertedColor.val[1], vreinterpretq_u32_u8(vzip2q_u8(idx0, idx0)) );
+			convertedColor.val[2] = vandq_u32( convertedColor.val[2], vreinterpretq_u32_u8(vzip1q_u8(idx1, idx1)) );
+			convertedColor.val[3] = vandq_u32( convertedColor.val[3], vreinterpretq_u32_u8(vzip2q_u8(idx1, idx1)) );
+		}
+		
+		vst1q_u32_x4(dstBuffer, convertedColor);
+	}
+}
+
+#elif defined(ENABLE_ALTIVEC)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT, bool ISPALZEROTRANSPARENT>
+void __NDSTextureUnpackI4_AltiVec(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	v128u32 convertedColor[4];
+	const v128u16 palLo16 = vec_ld( 0, srcPal);
+	const v128u16 palHi16 = vec_ld(16, srcPal);
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v128u8), srcData+=8, dstBuffer+=sizeof(v128u8))
+	{
+		v128u8 idx = (v128u8)((v128u32){((u32 *)srcData)[0], ((u32 *)srcData)[1],0,0});
+		idx = vec_perm(idx, idx, ((v128u8){0,0,1,1,  2,2,3,3,  4,4,5,5,  6,6,7,7}));
+		
+		idx = vec_sr(idx, ((v128u8){0,4,0,4,  0,4,0,4,  0,4,0,4,  0,4,0,4}));
+		idx = vec_and(idx, ((v128u8){0x0F,0x0F,0x0F,0x0F,  0x0F,0x0F,0x0F,0x0F,  0x0F,0x0F,0x0F,0x0F,  0x0F,0x0F,0x0F,0x0F}));
+		idx = vec_sl(idx, ((v128u8){1,1,1,1,  1,1,1,1,  1,1,1,1,  1,1,1,1}));
+		
+		v128u8 idx0 = vec_add( vec_perm(idx,idx,((v128u8){ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7})), ((v128u8){0,1,0,1,  0,1,0,1,  0,1,0,1,  0,1,0,1}) );
+		v128u8 idx1 = vec_add( vec_perm(idx,idx,((v128u8){ 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15})), ((v128u8){0,1,0,1,  0,1,0,1,  0,1,0,1,  0,1,0,1}) );
+		
+		const v128u16 palColor0 = vec_perm((v128u8)palLo16, (v128u8)palHi16, idx0);
+		const v128u16 palColor1 = vec_perm((v128u8)palLo16, (v128u8)palHi16, idx1);
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			ColorspaceConvert555To6665Opaque_AltiVec<false, BESwapDst>(palColor0, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555To6665Opaque_AltiVec<false, BESwapDst>(palColor1, convertedColor[3], convertedColor[2]);
+		}
+		else
+		{
+			ColorspaceConvert555To8888Opaque_AltiVec<false, BESwapDst>(palColor0, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555To8888Opaque_AltiVec<false, BESwapDst>(palColor1, convertedColor[3], convertedColor[2]);
+		}
+		
+		// Set converted colors to 0 if the palette index is 0.
+		if (ISPALZEROTRANSPARENT)
+		{
+			const v128u8 idxMask = vec_cmpgt(idx, ((v128u8){0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0}));
+			convertedColor[0] = vec_and( convertedColor[0], vec_perm(idxMask, idxMask, ((v128u8){ 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3})) );
+			convertedColor[1] = vec_and( convertedColor[1], vec_perm(idxMask, idxMask, ((v128u8){ 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7})) );
+			convertedColor[2] = vec_and( convertedColor[2], vec_perm(idxMask, idxMask, ((v128u8){ 8, 8, 8, 8, 9, 9, 9, 9,10,10,10,10,11,11,11,11})) );
+			convertedColor[3] = vec_and( convertedColor[3], vec_perm(idxMask, idxMask, ((v128u8){12,12,12,12,13,13,13,13,14,14,14,14,15,15,15,15})) );
+		}
+		
+		vec_st(convertedColor[0],  0, dstBuffer);
+		vec_st(convertedColor[1], 16, dstBuffer);
+		vec_st(convertedColor[2], 32, dstBuffer);
+		vec_st(convertedColor[3], 48, dstBuffer);
+	}
+}
+
+#endif
+
 template <TextureStoreUnpackFormat TEXCACHEFORMAT>
 void NDSTextureUnpackI4(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer)
 {
-#ifdef ENABLE_SSSE3
-	const __m128i palLo = _mm_load_si128((__m128i *)srcPal + 0);
-	const __m128i palHi = _mm_load_si128((__m128i *)srcPal + 1);
-#endif
+	const size_t texelCount = srcSize * 2; // 2 indices packed into a single 8-bit value
+	
 	if (isPalZeroTransparent)
 	{
-#ifdef ENABLE_SSSE3
-		for (size_t i = 0; i < srcSize; i+=8, srcData+=8, dstBuffer+=16)
-		{
-			__m128i idx = _mm_loadl_epi64((__m128i *)srcData);
-			idx = _mm_unpacklo_epi8(idx, idx);
-			idx = _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi16(0x000F)), _mm_and_si128(_mm_srli_epi16(idx, 4), _mm_set1_epi16(0x0F00)) );
-			idx = _mm_slli_epi16(idx, 1);
-			
-			__m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-			__m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-			
-			const __m128i palMask = _mm_cmpeq_epi8( _mm_and_si128(idx, _mm_set1_epi8(0x10)), _mm_setzero_si128() );
-			const __m128i palColor0A = _mm_shuffle_epi8(palLo, idx0);
-			const __m128i palColor0B = _mm_shuffle_epi8(palHi, idx0);
-			const __m128i palColor1A = _mm_shuffle_epi8(palLo, idx1);
-			const __m128i palColor1B = _mm_shuffle_epi8(palHi, idx1);
-			
-			const __m128i palColor0 = _mm_blendv_epi8( palColor0B, palColor0A, _mm_unpacklo_epi8(palMask, palMask) );
-			const __m128i palColor1 = _mm_blendv_epi8( palColor1B, palColor1A, _mm_unpackhi_epi8(palMask, palMask) );
-			
-			__m128i convertedColor[4];
-			
-			if (TEXCACHEFORMAT == TexFormat_15bpp)
-			{
-				ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-				ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-			}
-			else
-			{
-				ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-				ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-			}
-			
-			// Set converted colors to 0 if the palette index is 0.
-			idx0 = _mm_cmpeq_epi16(idx0, _mm_set1_epi16(0x0100));
-			idx1 = _mm_cmpeq_epi16(idx1, _mm_set1_epi16(0x0100));
-			convertedColor[0] = _mm_andnot_si128(_mm_unpacklo_epi16(idx0, idx0), convertedColor[0]);
-			convertedColor[1] = _mm_andnot_si128(_mm_unpackhi_epi16(idx0, idx0), convertedColor[1]);
-			convertedColor[2] = _mm_andnot_si128(_mm_unpacklo_epi16(idx1, idx1), convertedColor[2]);
-			convertedColor[3] = _mm_andnot_si128(_mm_unpackhi_epi16(idx1, idx1), convertedColor[3]);
-			
-			_mm_store_si128((__m128i *)(dstBuffer +  0), convertedColor[0]);
-			_mm_store_si128((__m128i *)(dstBuffer +  4), convertedColor[1]);
-			_mm_store_si128((__m128i *)(dstBuffer +  8), convertedColor[2]);
-			_mm_store_si128((__m128i *)(dstBuffer + 12), convertedColor[3]);
-		}
+#if defined(ENABLE_AVX2)
+		__NDSTextureUnpackI4_AVX2<TEXCACHEFORMAT, true>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_SSSE3)
+		__NDSTextureUnpackI4_SSSE3<TEXCACHEFORMAT, true>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_NEON_A64)
+		__NDSTextureUnpackI4_NEON<TEXCACHEFORMAT, true>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_ALTIVEC)
+		__NDSTextureUnpackI4_AltiVec<TEXCACHEFORMAT, true>(texelCount, srcData, srcPal, dstBuffer);
 #else
 		for (size_t i = 0; i < srcSize; i++, srcData++)
 		{
@@ -1018,44 +1370,14 @@ void NDSTextureUnpackI4(const size_t srcSize, const u8 *__restrict srcData, cons
 	}
 	else
 	{
-#ifdef ENABLE_SSSE3
-		for (size_t i = 0; i < srcSize; i+=8, srcData+=8, dstBuffer+=16)
-		{
-			__m128i idx = _mm_loadl_epi64((__m128i *)srcData);
-			idx = _mm_unpacklo_epi8(idx, idx);
-			idx = _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi16(0x000F)), _mm_and_si128(_mm_srli_epi16(idx, 4), _mm_set1_epi16(0x0F00)) );
-			idx = _mm_slli_epi16(idx, 1);
-			
-			const __m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-			const __m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-			
-			const __m128i palMask = _mm_cmpeq_epi8( _mm_and_si128(idx, _mm_set1_epi8(0x10)), _mm_setzero_si128() );
-			const __m128i palColor0A = _mm_shuffle_epi8(palLo, idx0);
-			const __m128i palColor0B = _mm_shuffle_epi8(palHi, idx0);
-			const __m128i palColor1A = _mm_shuffle_epi8(palLo, idx1);
-			const __m128i palColor1B = _mm_shuffle_epi8(palHi, idx1);
-			
-			const __m128i palColor0 = _mm_blendv_epi8( palColor0B, palColor0A, _mm_unpacklo_epi8(palMask, palMask) );
-			const __m128i palColor1 = _mm_blendv_epi8( palColor1B, palColor1A, _mm_unpackhi_epi8(palMask, palMask) );
-			
-			__m128i convertedColor[4];
-			
-			if (TEXCACHEFORMAT == TexFormat_15bpp)
-			{
-				ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-				ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-			}
-			else
-			{
-				ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-				ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-			}
-			
-			_mm_store_si128((__m128i *)(dstBuffer +  0), convertedColor[0]);
-			_mm_store_si128((__m128i *)(dstBuffer +  4), convertedColor[1]);
-			_mm_store_si128((__m128i *)(dstBuffer +  8), convertedColor[2]);
-			_mm_store_si128((__m128i *)(dstBuffer + 12), convertedColor[3]);
-		}
+#if defined(ENABLE_AVX2)
+		__NDSTextureUnpackI4_AVX2<TEXCACHEFORMAT, false>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_SSSE3)
+		__NDSTextureUnpackI4_SSSE3<TEXCACHEFORMAT, false>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_NEON_A64)
+		__NDSTextureUnpackI4_NEON<TEXCACHEFORMAT, false>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_ALTIVEC)
+		__NDSTextureUnpackI4_AltiVec<TEXCACHEFORMAT, false>(texelCount, srcData, srcPal, dstBuffer);
 #else
 		for (size_t i = 0; i < srcSize; i++, srcData++)
 		{
@@ -1086,62 +1408,598 @@ void NDSTextureUnpackI8(const size_t srcSize, const u8 *__restrict srcData, cons
 	}
 }
 
+#if defined(ENABLE_NEON_A64)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT>
+void __NDSTextureUnpackA3I5_NEON(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	uint32x4x4_t convertedColor;
+	const uint8x16x4_t pal16_LUT = vld1q_u8_x4((const u8 *__restrict)srcPal);
+	const uint8x16_t alpha_LUT = (TEXCACHEFORMAT == TexFormat_15bpp) ? vld1q_u8(material_3bit_to_5bit) : vld1q_u8(material_3bit_to_8bit);
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v128u8))
+	{
+		const v128u8 bits = vld1q_u8(srcData+i);
+		
+		const v128u8 idx = vshlq_n_u8( vandq_u8(bits, vdupq_n_u8(0x1F)), 1 );
+		const v128u8 idx0 = vaddq_u8( vzip1q_u8(idx, idx), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		const v128u8 idx1 = vaddq_u8( vzip2q_u8(idx, idx), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		
+		const v128u16 palColor0 = vreinterpretq_u16_u8( vqtbl4q_u8(pal16_LUT, idx0) );
+		const v128u16 palColor1 = vreinterpretq_u16_u8( vqtbl4q_u8(pal16_LUT, idx1) );
+		
+		const v128u8 alpha = vqtbl1q_u8( alpha_LUT, vshrq_n_u8(bits, 5) );
+		const v128u16 alphaLo = vzip1q_u8(vdupq_n_u8(0), alpha);
+		const v128u16 alphaHi = vzip2q_u8(vdupq_n_u8(0), alpha);
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			ColorspaceConvert555To6665_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555To6665_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
+		}
+		else
+		{
+			ColorspaceConvert555To8888_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555To8888_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
+		}
+		
+		vst1q_u32_x4(dstBuffer + i, convertedColor);
+	}
+}
+
+#elif defined(ENABLE_ALTIVEC)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT>
+void __NDSTextureUnpackA3I5_AltiVec(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	v128u32 convertedColor[4];
+	const v128u8 pal16_LUT[4] = { vec_ld(0, srcPal), vec_ld(16, srcPal), vec_ld(32, srcPal), vec_ld(48, srcPal) };
+	const v128u8 alpha_LUT = (TEXCACHEFORMAT == TexFormat_15bpp) ? vec_ld(0, material_3bit_to_5bit) : vec_ld(0, material_3bit_to_8bit);
+	const v128u8 unalignedShift = vec_lvsl(0, srcData);
+	/*
+	CACHE_ALIGN u8 lut[16] = {
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[0]  : material_3bit_to_8bit[0],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[1]  : material_3bit_to_8bit[1],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[2]  : material_3bit_to_8bit[2],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[3]  : material_3bit_to_8bit[3],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[4]  : material_3bit_to_8bit[4],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[5]  : material_3bit_to_8bit[5],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[6]  : material_3bit_to_8bit[6],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[7]  : material_3bit_to_8bit[7],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[8]  : material_3bit_to_8bit[8],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[9]  : material_3bit_to_8bit[9],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[10] : material_3bit_to_8bit[10],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[11] : material_3bit_to_8bit[11],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[12] : material_3bit_to_8bit[12],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[13] : material_3bit_to_8bit[13],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[14] : material_3bit_to_8bit[14],
+		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[15] : material_3bit_to_8bit[15]
+	};
+	*/
+	CACHE_ALIGN u8  bs[16];
+	CACHE_ALIGN u8  is[16];
+	CACHE_ALIGN u8  as[16];
+	
+	CACHE_ALIGN u16 ps[16];
+	//CACHE_ALIGN u16 ahs[16];
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v128u8), srcData+=sizeof(v128u8), dstBuffer+=sizeof(v128u8))
+	{
+		/*
+		bs[0]  = srcData[0];
+		bs[1]  = srcData[1];
+		bs[2]  = srcData[2];
+		bs[3]  = srcData[3];
+		bs[4]  = srcData[4];
+		bs[5]  = srcData[5];
+		bs[6]  = srcData[6];
+		bs[7]  = srcData[7];
+		bs[8]  = srcData[8];
+		bs[9]  = srcData[9];
+		bs[10] = srcData[10];
+		bs[11] = srcData[11];
+		bs[12] = srcData[12];
+		bs[13] = srcData[13];
+		bs[14] = srcData[14];
+		bs[15] = srcData[15];
+		
+		is[0]  = bs[0]  & 0x1F;
+		is[1]  = bs[1]  & 0x1F;
+		is[2]  = bs[2]  & 0x1F;
+		is[3]  = bs[3]  & 0x1F;
+		is[4]  = bs[4]  & 0x1F;
+		is[5]  = bs[5]  & 0x1F;
+		is[6]  = bs[6]  & 0x1F;
+		is[7]  = bs[7]  & 0x1F;
+		is[8]  = bs[8]  & 0x1F;
+		is[9]  = bs[9]  & 0x1F;
+		is[10] = bs[10] & 0x1F;
+		is[11] = bs[11] & 0x1F;
+		is[12] = bs[12] & 0x1F;
+		is[13] = bs[13] & 0x1F;
+		is[14] = bs[14] & 0x1F;
+		is[15] = bs[15] & 0x1F;
+		
+		is[0]  = bs[4]  & 0x1F;
+		is[1]  = bs[5]  & 0x1F;
+		is[2]  = bs[6]  & 0x1F;
+		is[3]  = bs[7]  & 0x1F;
+		is[4]  = bs[0]  & 0x1F;
+		is[5]  = bs[1]  & 0x1F;
+		is[6]  = bs[2]  & 0x1F;
+		is[7]  = bs[3]  & 0x1F;
+		is[8]  = bs[12]  & 0x1F;
+		is[9]  = bs[13]  & 0x1F;
+		is[10] = bs[14] & 0x1F;
+		is[11] = bs[15] & 0x1F;
+		is[12] = bs[8] & 0x1F;
+		is[13] = bs[9] & 0x1F;
+		is[14] = bs[10] & 0x1F;
+		is[15] = bs[11] & 0x1F;
+		
+		ps[0]  = srcPal[ is[0]] & 0x7FFF;
+		ps[1]  = srcPal[ is[1]] & 0x7FFF;
+		ps[2]  = srcPal[ is[2]] & 0x7FFF;
+		ps[3]  = srcPal[ is[3]] & 0x7FFF;
+		ps[4]  = srcPal[ is[4]] & 0x7FFF;
+		ps[5]  = srcPal[ is[5]] & 0x7FFF;
+		ps[6]  = srcPal[ is[6]] & 0x7FFF;
+		ps[7]  = srcPal[ is[7]] & 0x7FFF;
+		ps[8]  = srcPal[ is[8]] & 0x7FFF;
+		ps[9]  = srcPal[ is[9]] & 0x7FFF;
+		ps[10] = srcPal[is[10]] & 0x7FFF;
+		ps[11] = srcPal[is[11]] & 0x7FFF;
+		ps[12] = srcPal[is[12]] & 0x7FFF;
+		ps[13] = srcPal[is[13]] & 0x7FFF;
+		ps[14] = srcPal[is[14]] & 0x7FFF;
+		ps[15] = srcPal[is[15]] & 0x7FFF;
+		*/
+		/*
+		ps[0]  = srcPal[ is[4]] & 0x7FFF;
+		ps[1]  = srcPal[ is[5]] & 0x7FFF;
+		ps[2]  = srcPal[ is[6]] & 0x7FFF;
+		ps[3]  = srcPal[ is[7]] & 0x7FFF;
+		ps[4]  = srcPal[ is[0]] & 0x7FFF;
+		ps[5]  = srcPal[ is[1]] & 0x7FFF;
+		ps[6]  = srcPal[ is[2]] & 0x7FFF;
+		ps[7]  = srcPal[ is[3]] & 0x7FFF;
+		ps[8]  = srcPal[ is[12]] & 0x7FFF;
+		ps[9]  = srcPal[ is[13]] & 0x7FFF;
+		ps[10] = srcPal[is[14]] & 0x7FFF;
+		ps[11] = srcPal[is[15]] & 0x7FFF;
+		ps[12] = srcPal[is[8]] & 0x7FFF;
+		ps[13] = srcPal[is[9]] & 0x7FFF;
+		ps[14] = srcPal[is[10]] & 0x7FFF;
+		ps[15] = srcPal[is[11]] & 0x7FFF;
+		*/
+		/*
+		as[0]  = lut[bs[0]  >> 5];
+		as[1]  = lut[bs[1]  >> 5];
+		as[2]  = lut[bs[2]  >> 5];
+		as[3]  = lut[bs[3]  >> 5];
+		as[4]  = lut[bs[4]  >> 5];
+		as[5]  = lut[bs[5]  >> 5];
+		as[6]  = lut[bs[6]  >> 5];
+		as[7]  = lut[bs[7]  >> 5];
+		as[8]  = lut[bs[8]  >> 5];
+		as[9]  = lut[bs[9]  >> 5];
+		as[10] = lut[bs[10] >> 5];
+		as[11] = lut[bs[11] >> 5];
+		as[12] = lut[bs[12] >> 5];
+		as[13] = lut[bs[13] >> 5];
+		as[14] = lut[bs[14] >> 5];
+		as[15] = lut[bs[15] >> 5];
+		
+		ahs[0]  = (u16)as[0]  << 8;
+		ahs[1]  = (u16)as[1]  << 8;
+		ahs[2]  = (u16)as[2]  << 8;
+		ahs[3]  = (u16)as[3]  << 8;
+		ahs[4]  = (u16)as[4]  << 8;
+		ahs[5]  = (u16)as[5]  << 8;
+		ahs[6]  = (u16)as[6]  << 8;
+		ahs[7]  = (u16)as[7]  << 8;
+		ahs[8]  = (u16)as[8]  << 8;
+		ahs[9]  = (u16)as[9]  << 8;
+		ahs[10] = (u16)as[10] << 8;
+		ahs[11] = (u16)as[11] << 8;
+		ahs[12] = (u16)as[12] << 8;
+		ahs[13] = (u16)as[13] << 8;
+		ahs[14] = (u16)as[14] << 8;
+		ahs[15] = (u16)as[15] << 8;
+		*/
+		// Must be unaligned since srcData could sit outside of a 16-byte boundary.
+		const v128u8 bits = vec_perm( vec_ld(0, srcData), vec_ld(16, srcData), unalignedShift );
+		
+		v128u8 idx = vec_and(bits, ((v128u8){0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F}));
+		idx = vec_sl(idx, ((v128u8){1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}));
+		
+		v128u8 idx0 = vec_add( vec_perm(idx, idx, ((v128u8){ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		//v128u8 idx0 = vec_add( vec_perm(idx, idx, ((v128u8){ 4, 4, 5, 5, 6, 6, 7, 7, 0, 0, 1, 1, 2, 2, 3, 3})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		idx0 = vec_and(idx0, ((v128u8){0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F}));
+		
+		v128u8 idx1 = vec_add( vec_perm(idx, idx, ((v128u8){ 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		//v128u8 idx1 = vec_add( vec_perm(idx, idx, ((v128u8){12,12,13,13,14,14,15,15, 8, 8, 9, 9,10,10,11,11})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		idx1 = vec_and(idx1, ((v128u8){0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F}));
+		
+		const v128u16 palColor0A = vec_perm(pal16_LUT[0], pal16_LUT[1], idx0);
+		const v128u16 palColor0B = vec_perm(pal16_LUT[2], pal16_LUT[3], idx0);
+		const v128u16 palColor1A = vec_perm(pal16_LUT[0], pal16_LUT[1], idx1);
+		const v128u16 palColor1B = vec_perm(pal16_LUT[2], pal16_LUT[3], idx1);
+		
+		const v128u8 palMask = vec_cmpgt(idx, ((v128u8){0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F}));
+		const v128u16 palColor0 = vec_sel( palColor0A, palColor0B, vec_perm(palMask, palMask, ((v128u8){ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7})) );
+		const v128u16 palColor1 = vec_sel( palColor1A, palColor1B, vec_perm(palMask, palMask, ((v128u8){ 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15})) );
+		
+		
+		//const v128u16 palColor0 = vec_ld(0,  ps);
+		//const v128u16 palColor1 = vec_ld(16, ps);
+		
+		const v128u8 alpha = vec_perm( alpha_LUT, alpha_LUT, vec_sr(bits, ((v128u8){5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5})) );
+		//const v128u16 alphaLo = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03,0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07}) );
+		//const v128u16 alphaHi = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B,0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F}) );
+		
+		const v128u16 alphaLo = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07, 0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03}) );
+		const v128u16 alphaHi = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F, 0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B}) );
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			/*
+			vec_st(palColor0, 0,  ps);
+			vec_st(palColor1, 16, ps);
+			vec_st(alpha, 0, as);
+			*/
+			/*
+			convertedColor[0] = (v128u32){
+				COLOR555TO6665(ps[0],  as[0]),
+				COLOR555TO6665(ps[1],  as[1]),
+				COLOR555TO6665(ps[2],  as[2]),
+				COLOR555TO6665(ps[3],  as[3])
+			};
+			
+			convertedColor[1] = (v128u32){
+				COLOR555TO6665(ps[4],  as[4]),
+				COLOR555TO6665(ps[5],  as[5]),
+				COLOR555TO6665(ps[6],  as[6]),
+				COLOR555TO6665(ps[7],  as[7])
+			};
+			
+			convertedColor[2] = (v128u32){
+				COLOR555TO6665(ps[8],  as[8]),
+				COLOR555TO6665(ps[9],  as[9]),
+				COLOR555TO6665(ps[10], as[10]),
+				COLOR555TO6665(ps[11], as[11])
+			};
+			
+			convertedColor[3] = (v128u32){
+				COLOR555TO6665(ps[12], as[12]),
+				COLOR555TO6665(ps[13], as[13]),
+				COLOR555TO6665(ps[14], as[14]),
+				COLOR555TO6665(ps[15], as[15])
+			};
+			 */
+			/*
+			convertedColor[0] = (v128u32){
+				color_555_to_666[ps[0]],
+				color_555_to_666[ps[1]],
+				color_555_to_666[ps[2]],
+				color_555_to_666[ps[3]]
+			};
+			
+			convertedColor[1] = (v128u32){
+				color_555_to_666[ps[4]],
+				color_555_to_666[ps[5]],
+				color_555_to_666[ps[6]],
+				color_555_to_666[ps[7]]
+			};
+			
+			convertedColor[2] = (v128u32){
+				color_555_to_666[ps[8]],
+				color_555_to_666[ps[9]],
+				color_555_to_666[ps[10]],
+				color_555_to_666[ps[11]]
+			};
+			
+			convertedColor[3] = (v128u32){
+				color_555_to_666[ps[12]],
+				color_555_to_666[ps[13]],
+				color_555_to_666[ps[14]],
+				color_555_to_666[ps[15]]
+			};
+			*/
+			/*
+			convertedColor[0] = vec_unpackh((vector pixel)palColor0);
+			convertedColor[0] = vec_or( vec_sl((v128u8)convertedColor[0], ((v128u8){0,1,1,1,  0,1,1,1,  0,1,1,1,  0,1,1,1})), vec_sr((v128u8)convertedColor[0], ((v128u8){0,4,4,4,  0,4,4,4,  0,4,4,4,  0,4,4,4})) );
+			
+			convertedColor[1] = vec_unpackl((vector pixel)palColor0);
+			convertedColor[1] = vec_or( vec_sl((v128u8)convertedColor[1], ((v128u8){0,1,1,1,  0,1,1,1,  0,1,1,1,  0,1,1,1})), vec_sr((v128u8)convertedColor[1], ((v128u8){0,4,4,4,  0,4,4,4,  0,4,4,4,  0,4,4,4})) );
+			
+			convertedColor[2] = (v128u32){
+				color_555_to_666[ps[8]],
+				color_555_to_666[ps[9]],
+				color_555_to_666[ps[10]],
+				color_555_to_666[ps[11]]
+			};
+			
+			convertedColor[3] = (v128u32){
+				color_555_to_666[ps[12]],
+				color_555_to_666[ps[13]],
+				color_555_to_666[ps[14]],
+				color_555_to_666[ps[15]]
+			};
+			
+			convertedColor[0] = vec_perm( (v128u8)convertedColor[0], (v128u8)alphaLo, ((v128u8){0x03,0x02,0x01,0x11,  0x07,0x06,0x05,0x13,  0x0B,0x0A,0x09,0x15,  0x0F,0x0E,0x0D,0x17}) );
+			convertedColor[1] = vec_perm( (v128u8)convertedColor[1], (v128u8)alphaLo, ((v128u8){0x03,0x02,0x01,0x19,  0x07,0x06,0x05,0x1B,  0x0B,0x0A,0x09,0x1D,  0x0F,0x0E,0x0D,0x1F}) );
+			convertedColor[2] = vec_perm( (v128u8)convertedColor[2], (v128u8)alphaHi, ((v128u8){0x03,0x02,0x01,0x11,  0x07,0x06,0x05,0x13,  0x0B,0x0A,0x09,0x15,  0x0F,0x0E,0x0D,0x17}) );
+			convertedColor[3] = vec_perm( (v128u8)convertedColor[3], (v128u8)alphaHi, ((v128u8){0x03,0x02,0x01,0x19,  0x07,0x06,0x05,0x1B,  0x0B,0x0A,0x09,0x1D,  0x0F,0x0E,0x0D,0x1F}) );
+			*/
+			ColorspaceConvert555To6665_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555To6665_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
+			
+			//convertedColor[0] = (v128u32){0x3F00001F, 0x3F00001F, 0x3F00001F, 0x3F00001F};
+			//convertedColor[1] = (v128u32){0x3F00001F, 0x3F00001F, 0x3F00001F, 0x3F00001F};
+			//convertedColor[2] = (v128u32){0x3F00001F, 0x3F00001F, 0x3F00001F, 0x3F00001F};
+			//convertedColor[3] = (v128u32){0x3F00001F, 0x3F00001F, 0x3F00001F, 0x3F00001F};
+		}
+		else
+		{
+			ColorspaceConvert555To8888_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555To8888_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
+			
+			//convertedColor[0] = (v128u32){0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF};
+			//convertedColor[1] = (v128u32){0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF};
+			//convertedColor[2] = (v128u32){0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF};
+			//convertedColor[3] = (v128u32){0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF};
+		}
+		
+		vec_st(convertedColor[0],  0, dstBuffer);
+		vec_st(convertedColor[1], 16, dstBuffer);
+		vec_st(convertedColor[2], 32, dstBuffer);
+		vec_st(convertedColor[3], 48, dstBuffer);
+	}
+}
+
+#endif
+
 template <TextureStoreUnpackFormat TEXCACHEFORMAT>
 void NDSTextureUnpackA3I5(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
 {
-	for (size_t i = 0; i < srcSize; i++, srcData++)
+	const size_t texelCount = srcSize / sizeof(u8);
+	
+#if defined(ENABLE_NEON_A64)
+	// Only ARM NEON-A64 can perform register-based table lookups across 64 bytes, which just
+	// so happens to be the size of the palette table we need to search. As of this writing,
+	// no other SIMD instruction sets we're currently using have this capability.
+	// - rogerman, 2022/04/04
+	__NDSTextureUnpackA3I5_NEON<TEXCACHEFORMAT>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_ALTIVEC)
+	// Although AltiVec can only perform register-based table lookups across 32 bytes, it
+	// isn't too much more expensive because vperm is fast enough to compensate for the extra
+	// overhead of performing two separate 32 byte lookups. Also, AltiVec's native 16-bit RGBA
+	// to 32-bit RGBA color conversion makes this function worth it, despite the extra overhead.
+	__NDSTextureUnpackA3I5_AltiVec<TEXCACHEFORMAT>(texelCount, srcData, srcPal, dstBuffer);
+#else
+	for (size_t i = 0; i < texelCount; i++, srcData++)
 	{
 		const u16 c = srcPal[*srcData & 0x1F] & 0x7FFF;
 		const u8 alpha = *srcData >> 5;
 		*dstBuffer++ = LE_TO_LOCAL_32( (TEXCACHEFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, material_3bit_to_5bit[alpha]) : COLOR555TO8888(c, material_3bit_to_8bit[alpha]) );
 	}
+#endif
 }
 
+#if defined(ENABLE_AVX2)
+
 template <TextureStoreUnpackFormat TEXCACHEFORMAT>
-void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+void __NDSTextureUnpackA5I3_AVX2(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
 {
-#ifdef ENABLE_SSSE3
-	const __m128i pal_vec128 = _mm_load_si128((__m128i *)srcPal);
+	v256u32 convertedColor[4];
 	
-	for (size_t i = 0; i < srcSize; i+=16, srcData+=16, dstBuffer+=16)
+	// We must assume that srcPal is only 16 bytes, so we're simply going to read this
+	// same range of bytes twice in order to fill the 32 byte vector.
+	const v256u16 pal16_LUT = _mm256_loadu2_m128i((v128u16 *)srcPal, (v128u16 *)srcPal);
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v256u8), srcData+=sizeof(v256u8), dstBuffer+=sizeof(v256u32))
 	{
-		const __m128i bits = _mm_loadu_si128((__m128i *)srcData);
+		// Must be unaligned since srcData could sit outside of a 32-byte boundary.
+		// Not as big a deal on AVX2, since most AVX2-capable CPUs don't have as bad
+		// of a latency penalty compared to earlier CPUs when doing unaligned loads.
+		const v256u8 bits = _mm256_loadu_si256((v256u8 *)srcData);
 		
-		const __m128i idx = _mm_slli_epi16( _mm_and_si128(bits, _mm_set1_epi8(0x07)), 1 );
-		const __m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-		const __m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+		v256u8 idx = _mm256_slli_epi16( _mm256_and_si256(bits, _mm256_set1_epi8(0x07)), 1 );
 		
-		const __m128i palColor0 = _mm_shuffle_epi8(pal_vec128, idx0);
-		const __m128i palColor1 = _mm_shuffle_epi8(pal_vec128, idx1);
+		idx = _mm256_permute4x64_epi64(idx, 0xD8);
+		const v256u8 idx0 = _mm256_add_epi8( _mm256_unpacklo_epi8(idx, idx), _mm256_set1_epi16(0x0100) );
+		const v256u8 idx1 = _mm256_add_epi8( _mm256_unpackhi_epi8(idx, idx), _mm256_set1_epi16(0x0100) );
 		
-		__m128i convertedColor[4];
+		const v256u16 palColor0 = _mm256_shuffle_epi8(pal16_LUT, idx0);
+		const v256u16 palColor1 = _mm256_shuffle_epi8(pal16_LUT, idx1);
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			const __m128i alpha = _mm_srli_epi16( _mm_and_si128(bits, _mm_set1_epi8(0xF8)), 3 );
-			const __m128i alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
-			const __m128i alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
+			v256u8 alpha = _mm256_srli_epi16( _mm256_and_si256(bits, _mm256_set1_epi8(0xF8)), 3 );
+			
+			alpha = _mm256_permute4x64_epi64(alpha, 0xD8);
+			const v256u16 alphaLo = _mm256_unpacklo_epi8(_mm256_setzero_si256(), alpha);
+			const v256u16 alphaHi = _mm256_unpackhi_epi8(_mm256_setzero_si256(), alpha);
+			
+			ColorspaceConvert555To6665_AVX2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555To6665_AVX2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
+		}
+		else
+		{
+			v256u8 alpha = _mm256_or_si256( _mm256_and_si256(bits, _mm256_set1_epi8(0xF8)), _mm256_srli_epi16(_mm256_and_si256(bits, _mm256_set1_epi8(0xE0)), 5) );
+			
+			alpha = _mm256_permute4x64_epi64(alpha, 0xD8);
+			const v256u16 alphaLo = _mm256_unpacklo_epi8(_mm256_setzero_si256(), alpha);
+			const v256u16 alphaHi = _mm256_unpackhi_epi8(_mm256_setzero_si256(), alpha);
+			
+			ColorspaceConvert555To8888_AVX2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555To8888_AVX2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
+		}
+		
+		_mm256_store_si256((v256u32 *)dstBuffer + 0, convertedColor[0]);
+		_mm256_store_si256((v256u32 *)dstBuffer + 1, convertedColor[1]);
+		_mm256_store_si256((v256u32 *)dstBuffer + 2, convertedColor[2]);
+		_mm256_store_si256((v256u32 *)dstBuffer + 3, convertedColor[3]);
+	}
+}
+
+#elif defined(ENABLE_SSSE3)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT>
+void __NDSTextureUnpackA5I3_SSSE3(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	v128u32 convertedColor[4];
+	const v128u16 pal16_LUT = _mm_load_si128((v128u16 *)srcPal);
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v128u8))
+	{
+		// Must be unaligned since srcData could sit outside of a 16-byte boundary.
+		const v128u8 bits = _mm_loadu_si128((v128u8 *)(srcData+i));
+		
+		const v128u8 idx = _mm_slli_epi16( _mm_and_si128(bits, _mm_set1_epi8(0x07)), 1 ); // No, there is no _mm_slli_epi8() function (psllb instruction). Bummer.
+		const v128u8 idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+		const v128u8 idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+		
+		// These pshufb instructions are why we need SSSE3, since we are using them as the palette table lookup.
+		const v128u16 palColor0 = _mm_shuffle_epi8(pal16_LUT, idx0);
+		const v128u16 palColor1 = _mm_shuffle_epi8(pal16_LUT, idx1);
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			const v128u8 alpha = _mm_srli_epi16( _mm_and_si128(bits, _mm_set1_epi8(0xF8)), 3 ); // And no, there is no _mm_srli_epi8() function (psrlb instruction). Double bummer!
+			const v128u16 alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
+			const v128u16 alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
 			
 			ColorspaceConvert555To6665_SSE2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
 			ColorspaceConvert555To6665_SSE2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
 		}
 		else
 		{
-			const __m128i alpha = _mm_or_si128( _mm_and_si128(bits, _mm_set1_epi8(0xF8)), _mm_srli_epi16(_mm_and_si128(bits, _mm_set1_epi8(0xE0)), 5) );
-			const __m128i alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
-			const __m128i alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
+			const v128u8 alpha = _mm_or_si128( _mm_and_si128(bits, _mm_set1_epi8(0xF8)), _mm_srli_epi16(_mm_and_si128(bits, _mm_set1_epi8(0xE0)), 5) );
+			const v128u16 alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
+			const v128u16 alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
 			
 			ColorspaceConvert555To8888_SSE2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
 			ColorspaceConvert555To8888_SSE2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
 		}
 		
-		_mm_store_si128((__m128i *)(dstBuffer +  0), convertedColor[0]);
-		_mm_store_si128((__m128i *)(dstBuffer +  4), convertedColor[1]);
-		_mm_store_si128((__m128i *)(dstBuffer +  8), convertedColor[2]);
-		_mm_store_si128((__m128i *)(dstBuffer + 12), convertedColor[3]);
+		_mm_store_si128((v128u32 *)(dstBuffer + i) + 0, convertedColor[0]);
+		_mm_store_si128((v128u32 *)(dstBuffer + i) + 1, convertedColor[1]);
+		_mm_store_si128((v128u32 *)(dstBuffer + i) + 2, convertedColor[2]);
+		_mm_store_si128((v128u32 *)(dstBuffer + i) + 3, convertedColor[3]);
 	}
+}
+
+#elif defined(ENABLE_NEON_A64)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT>
+void __NDSTextureUnpackA5I3_NEON(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	uint32x4x4_t convertedColor;
+	const v128u8 pal16_LUT = vld1q_u8((const u8 *__restrict)srcPal);
+	const uint8x16x2_t alpha8_LUT = vld1q_u8_x2(material_5bit_to_8bit);
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v128u8))
+	{
+		const v128u8 bits = vld1q_u8(srcData+i);
+		
+		const v128u8 idx = vshlq_n_u8( vandq_u8(bits, vdupq_n_u8(0x07)), 1 );
+		const v128u8 idx0 = vaddq_u8( vzip1q_u8(idx, idx), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		const v128u8 idx1 = vaddq_u8( vzip2q_u8(idx, idx), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		
+		const v128u16 palColor0 = vreinterpretq_u16_u8( vqtbl1q_u8(pal16_LUT, idx0) );
+		const v128u16 palColor1 = vreinterpretq_u16_u8( vqtbl1q_u8(pal16_LUT, idx1) );
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			const v128u8 alpha = vshrq_n_u8(bits, 3);
+			const v128u16 alphaLo = vzip1q_u8(vdupq_n_u8(0), alpha);
+			const v128u16 alphaHi = vzip2q_u8(vdupq_n_u8(0), alpha);
+			
+			ColorspaceConvert555To6665_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555To6665_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
+		}
+		else
+		{
+			const v128u8 alpha = vqtbl2q_u8( alpha8_LUT, vshrq_n_u8(bits, 3) );
+			const v128u16 alphaLo = vzip1q_u8(vdupq_n_u8(0), alpha);
+			const v128u16 alphaHi = vzip2q_u8(vdupq_n_u8(0), alpha);
+			
+			ColorspaceConvert555To8888_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555To8888_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
+		}
+		
+		vst1q_u32_x4(dstBuffer + i, convertedColor);
+	}
+}
+
+#elif defined(ENABLE_ALTIVEC)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT>
+void __NDSTextureUnpackA5I3_AltiVec(const size_t texelCount, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	v128u32 convertedColor[4];
+	const v128u16 pal16_LUT = vec_ld(0, srcPal);
+	const v128u8 unalignedShift = vec_lvsl(0, srcData);
+	
+	for (size_t i = 0; i < texelCount; i+=sizeof(v128u8), srcData+=sizeof(v128u8), dstBuffer+=sizeof(v128u8))
+	{
+		// Must be unaligned since srcData could sit outside of a 16-byte boundary.
+		const v128u8 bits = vec_perm( vec_ld(0, srcData), vec_ld(16, srcData), unalignedShift );
+		
+		v128u8 idx = vec_and(bits, ((v128u8){0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07}));
+		idx = vec_sl(idx, ((v128u8){1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}));
+		
+		const v128u8 idx0 = vec_add( vec_perm(idx, idx, ((v128u8){ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		const v128u8 idx1 = vec_add( vec_perm(idx, idx, ((v128u8){ 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
+		
+		const v128u16 palColor0 = vec_perm((v128u8)pal16_LUT, (v128u8)pal16_LUT, idx0);
+		const v128u16 palColor1 = vec_perm((v128u8)pal16_LUT, (v128u8)pal16_LUT, idx1);
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			const v128u8 alpha = vec_sr(bits, ((v128u8){3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3}));
+			const v128u16 alphaLo = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07, 0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03}) );
+			const v128u16 alphaHi = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F, 0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B}) );
+			
+			ColorspaceConvert555To6665_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555To6665_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
+		}
+		else
+		{
+			const v128u8 alpha = vec_or( vec_and(bits, ((v128u8){0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8})), vec_sr(bits, ((v128u8){5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5})) );
+			const v128u16 alphaLo = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07, 0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03}) );
+			const v128u16 alphaHi = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F, 0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B}) );
+			
+			ColorspaceConvert555To8888_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555To8888_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
+		}
+		
+		vec_st(convertedColor[0],  0, dstBuffer);
+		vec_st(convertedColor[1], 16, dstBuffer);
+		vec_st(convertedColor[2], 32, dstBuffer);
+		vec_st(convertedColor[3], 48, dstBuffer);
+	}
+}
+
+#endif
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT>
+void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
+{
+	const size_t texelCount = srcSize / sizeof(u8);
+	
+#if defined(ENABLE_AVX2)
+	__NDSTextureUnpackA5I3_AVX2<TEXCACHEFORMAT>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_SSSE3)
+	__NDSTextureUnpackA5I3_SSSE3<TEXCACHEFORMAT>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_NEON_A64)
+	__NDSTextureUnpackA5I3_NEON<TEXCACHEFORMAT>(texelCount, srcData, srcPal, dstBuffer);
+#elif defined(ENABLE_ALTIVEC)
+	__NDSTextureUnpackA5I3_AltiVec<TEXCACHEFORMAT>(texelCount, srcData, srcPal, dstBuffer);
 #else
-	for (size_t i = 0; i < srcSize; i++, srcData++)
+	for (size_t i = 0; i < texelCount; i++, srcData++)
 	{
 		const u16 c = srcPal[*srcData & 0x07] & 0x7FFF;
 		const u8 alpha = (*srcData >> 3);
@@ -1285,19 +2143,46 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 	}
 }
 
+#if defined(ENABLE_AVX2)
+
 template <TextureStoreUnpackFormat TEXCACHEFORMAT>
-void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u16 *__restrict srcData, u32 *__restrict dstBuffer)
+void __NDSTextureUnpackDirect16Bit_AVX2(const size_t texelCount, const u16 *__restrict srcData, u32 *__restrict dstBuffer)
 {
-	const size_t pixCount = srcSize >> 1;
-	size_t i = 0;
+	v256u32 convertedColor[2];
 	
-#ifdef ENABLE_SSE2
-	const size_t pixCountVec128 = pixCount - (pixCount % 8);
-	for (; i < pixCountVec128; i+=8, srcData+=8, dstBuffer+=8)
+	for (size_t i = 0; i < texelCount; i+=(sizeof(v256u16)/sizeof(u16)), srcData+=(sizeof(v256u16)/sizeof(u16)), dstBuffer+=(sizeof(v256u16)/sizeof(u16)))
+	{
+		const v256u16 c = _mm256_load_si256((v256u16 *)srcData);
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			ColorspaceConvert555To6665Opaque_AVX2<false>(c, convertedColor[0], convertedColor[1]);
+		}
+		else
+		{
+			ColorspaceConvert555To8888Opaque_AVX2<false>(c, convertedColor[0], convertedColor[1]);
+		}
+		
+		v256u16 alpha = _mm256_cmpeq_epi16(_mm256_srli_epi16(c, 15), _mm256_set1_epi16(1));
+		alpha = _mm256_permute4x64_epi64(alpha, 0xD8);
+		convertedColor[0] = _mm256_and_si256(convertedColor[0], _mm256_unpacklo_epi16(alpha, alpha));
+		convertedColor[1] = _mm256_and_si256(convertedColor[1], _mm256_unpackhi_epi16(alpha, alpha));
+		
+		_mm256_store_si256((v256u32 *)dstBuffer + 0, convertedColor[0]);
+		_mm256_store_si256((v256u32 *)dstBuffer + 1, convertedColor[1]);
+	}
+}
+
+#elif defined(ENABLE_SSE2)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT>
+void __NDSTextureUnpackDirect16Bit_SSE2(const size_t texelCount, const u16 *__restrict srcData, u32 *__restrict dstBuffer)
+{
+	v128u32 convertedColor[2];
+	
+	for (size_t i = 0; i < texelCount; i+=(sizeof(v128u16)/sizeof(u16)), srcData+=(sizeof(v128u16)/sizeof(u16)), dstBuffer+=(sizeof(v128u16)/sizeof(u16)))
 	{
 		const v128u16 c = _mm_load_si128((v128u16 *)srcData);
-		const v128u16 alpha = _mm_cmpeq_epi16(_mm_srli_epi16(c, 15), _mm_set1_epi16(1));
-		v128u32 convertedColor[2];
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
@@ -1308,19 +2193,95 @@ void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u16 *__restrict src
 			ColorspaceConvert555To8888Opaque_SSE2<false>(c, convertedColor[0], convertedColor[1]);
 		}
 		
-		convertedColor[0] = _mm_blendv_epi8(_mm_setzero_si128(), convertedColor[0], _mm_unpacklo_epi16(alpha, alpha));
-		convertedColor[1] = _mm_blendv_epi8(_mm_setzero_si128(), convertedColor[1], _mm_unpackhi_epi16(alpha, alpha));
+		const v128u16 alpha = _mm_cmpeq_epi16(_mm_srli_epi16(c, 15), _mm_set1_epi16(1));
+		convertedColor[0] = _mm_and_si128(convertedColor[0], _mm_unpacklo_epi16(alpha, alpha));
+		convertedColor[1] = _mm_and_si128(convertedColor[1], _mm_unpackhi_epi16(alpha, alpha));
 		
-		_mm_store_si128((v128u32 *)(dstBuffer + 0), convertedColor[0]);
-		_mm_store_si128((v128u32 *)(dstBuffer + 4), convertedColor[1]);
+		_mm_store_si128((v128u32 *)dstBuffer + 0, convertedColor[0]);
+		_mm_store_si128((v128u32 *)dstBuffer + 1, convertedColor[1]);
 	}
-#endif
+}
+
+#elif defined(ENABLE_NEON_A64)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT>
+void __NDSTextureUnpackDirect16Bit_NEON(const size_t texelCount, const u16 *__restrict srcData, u32 *__restrict dstBuffer)
+{
+	uint32x4x2_t convertedColor;
 	
-	for (; i < pixCount; i++, srcData++)
+	for (size_t i = 0; i < texelCount; i+=(sizeof(v128u16)/sizeof(u16)), srcData+=(sizeof(v128u16)/sizeof(u16)), dstBuffer+=(sizeof(v128u16)/sizeof(u16)))
+	{
+		const v128u16 c = vld1q_u16(srcData);
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			ColorspaceConvert555To6665Opaque_NEON<false>(c, convertedColor.val[0], convertedColor.val[1]);
+		}
+		else
+		{
+			ColorspaceConvert555To8888Opaque_NEON<false>(c, convertedColor.val[0], convertedColor.val[1]);
+		}
+		
+		const v128u16 alpha = vceqq_u16(vshrq_n_u16(c,15), vdupq_n_u16(1));
+		convertedColor.val[0] = vandq_u16( convertedColor.val[0], vzip1q_u16(alpha, alpha) );
+		convertedColor.val[1] = vandq_u16( convertedColor.val[1], vzip2q_u16(alpha, alpha) );
+		
+		vst1q_u32_x2(dstBuffer, convertedColor);
+	}
+}
+
+#elif defined(ENABLE_ALTIVEC)
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT>
+void __NDSTextureUnpackDirect16Bit_AltiVec(const size_t texelCount, const u16 *__restrict srcData, u32 *__restrict dstBuffer)
+{
+	v128u32 convertedColor[2];
+	
+	for (size_t i = 0; i < texelCount; i+=(sizeof(v128u16)/sizeof(u16)), srcData+=(sizeof(v128u16)/sizeof(u16)), dstBuffer+=(sizeof(v128u16)/sizeof(u16)))
+	{
+		const v128u16 c = vec_ld(0, srcData);
+		
+		if (TEXCACHEFORMAT == TexFormat_15bpp)
+		{
+			ColorspaceConvert555To6665Opaque_AltiVec<false, BESwapSrcDst>(c, convertedColor[1], convertedColor[0]);
+		}
+		else
+		{
+			ColorspaceConvert555To8888Opaque_AltiVec<false, BESwapSrcDst>(c, convertedColor[1], convertedColor[0]);
+		}
+		
+		const v128u16 alpha = vec_and(c, ((v128u16){0x0080,0x0080,0x0080,0x0080,0x0080,0x0080,0x0080,0x0080}));
+		const v128u16 alphaMask = vec_cmpeq( alpha, ((v128u16){0x0080,0x0080,0x0080,0x0080,0x0080,0x0080,0x0080,0x0080}) );
+		convertedColor[0] = vec_and( convertedColor[0], vec_perm((v128u8)alphaMask, (v128u8)alphaMask, ((v128u8){ 8, 9,  8, 9,  10,11, 10,11,  12,13, 12,13,  14,15, 14,15})) );
+		convertedColor[1] = vec_and( convertedColor[1], vec_perm((v128u8)alphaMask, (v128u8)alphaMask, ((v128u8){ 0, 1,  0, 1,   2, 3,  2, 3,   4, 5,  4, 5,   6, 7,  6, 7})) );
+		
+		vec_st(convertedColor[0],  0, dstBuffer);
+		vec_st(convertedColor[1], 16, dstBuffer);
+	}
+}
+
+#endif
+
+template <TextureStoreUnpackFormat TEXCACHEFORMAT>
+void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u16 *__restrict srcData, u32 *__restrict dstBuffer)
+{
+	const size_t texelCount = srcSize / sizeof(u16);
+	
+#if defined(ENABLE_AVX2)
+	__NDSTextureUnpackDirect16Bit_AVX2<TEXCACHEFORMAT>(texelCount, srcData, dstBuffer);
+#elif defined(ENABLE_SSE2)
+	__NDSTextureUnpackDirect16Bit_SSE2<TEXCACHEFORMAT>(texelCount, srcData, dstBuffer);
+#elif defined(ENABLE_NEON_A64)
+	__NDSTextureUnpackDirect16Bit_NEON<TEXCACHEFORMAT>(texelCount, srcData, dstBuffer);
+#elif defined(ENABLE_ALTIVEC)
+	__NDSTextureUnpackDirect16Bit_AltiVec<TEXCACHEFORMAT>(texelCount, srcData, dstBuffer);
+#else
+	for (size_t i = 0; i < texelCount; i++, srcData++)
 	{
 		const u16 c = LOCAL_TO_LE_16(*srcData);
 		*dstBuffer++ = (c & 0x8000) ? LE_TO_LOCAL_32( CONVERT(c & 0x7FFF) ) : 0;
 	}
+#endif
 }
 
 template void TextureStore::Unpack<TexFormat_15bpp>(u32 *unpackBuffer);
