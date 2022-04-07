@@ -1456,157 +1456,9 @@ void __NDSTextureUnpackA3I5_AltiVec(const size_t texelCount, const u8 *__restric
 	const v128u8 pal16_LUT[4] = { vec_ld(0, srcPal), vec_ld(16, srcPal), vec_ld(32, srcPal), vec_ld(48, srcPal) };
 	const v128u8 alpha_LUT = (TEXCACHEFORMAT == TexFormat_15bpp) ? vec_ld(0, material_3bit_to_5bit) : vec_ld(0, material_3bit_to_8bit);
 	const v128u8 unalignedShift = vec_lvsl(0, srcData);
-	/*
-	CACHE_ALIGN u8 lut[16] = {
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[0]  : material_3bit_to_8bit[0],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[1]  : material_3bit_to_8bit[1],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[2]  : material_3bit_to_8bit[2],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[3]  : material_3bit_to_8bit[3],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[4]  : material_3bit_to_8bit[4],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[5]  : material_3bit_to_8bit[5],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[6]  : material_3bit_to_8bit[6],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[7]  : material_3bit_to_8bit[7],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[8]  : material_3bit_to_8bit[8],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[9]  : material_3bit_to_8bit[9],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[10] : material_3bit_to_8bit[10],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[11] : material_3bit_to_8bit[11],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[12] : material_3bit_to_8bit[12],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[13] : material_3bit_to_8bit[13],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[14] : material_3bit_to_8bit[14],
-		(TEXCACHEFORMAT == TexFormat_15bpp) ? material_3bit_to_5bit[15] : material_3bit_to_8bit[15]
-	};
-	*/
-	CACHE_ALIGN u8  bs[16];
-	CACHE_ALIGN u8  is[16];
-	CACHE_ALIGN u8  as[16];
-	
-	CACHE_ALIGN u16 ps[16];
-	//CACHE_ALIGN u16 ahs[16];
 	
 	for (size_t i = 0; i < texelCount; i+=sizeof(v128u8), srcData+=sizeof(v128u8), dstBuffer+=sizeof(v128u8))
 	{
-		/*
-		bs[0]  = srcData[0];
-		bs[1]  = srcData[1];
-		bs[2]  = srcData[2];
-		bs[3]  = srcData[3];
-		bs[4]  = srcData[4];
-		bs[5]  = srcData[5];
-		bs[6]  = srcData[6];
-		bs[7]  = srcData[7];
-		bs[8]  = srcData[8];
-		bs[9]  = srcData[9];
-		bs[10] = srcData[10];
-		bs[11] = srcData[11];
-		bs[12] = srcData[12];
-		bs[13] = srcData[13];
-		bs[14] = srcData[14];
-		bs[15] = srcData[15];
-		
-		is[0]  = bs[0]  & 0x1F;
-		is[1]  = bs[1]  & 0x1F;
-		is[2]  = bs[2]  & 0x1F;
-		is[3]  = bs[3]  & 0x1F;
-		is[4]  = bs[4]  & 0x1F;
-		is[5]  = bs[5]  & 0x1F;
-		is[6]  = bs[6]  & 0x1F;
-		is[7]  = bs[7]  & 0x1F;
-		is[8]  = bs[8]  & 0x1F;
-		is[9]  = bs[9]  & 0x1F;
-		is[10] = bs[10] & 0x1F;
-		is[11] = bs[11] & 0x1F;
-		is[12] = bs[12] & 0x1F;
-		is[13] = bs[13] & 0x1F;
-		is[14] = bs[14] & 0x1F;
-		is[15] = bs[15] & 0x1F;
-		
-		is[0]  = bs[4]  & 0x1F;
-		is[1]  = bs[5]  & 0x1F;
-		is[2]  = bs[6]  & 0x1F;
-		is[3]  = bs[7]  & 0x1F;
-		is[4]  = bs[0]  & 0x1F;
-		is[5]  = bs[1]  & 0x1F;
-		is[6]  = bs[2]  & 0x1F;
-		is[7]  = bs[3]  & 0x1F;
-		is[8]  = bs[12]  & 0x1F;
-		is[9]  = bs[13]  & 0x1F;
-		is[10] = bs[14] & 0x1F;
-		is[11] = bs[15] & 0x1F;
-		is[12] = bs[8] & 0x1F;
-		is[13] = bs[9] & 0x1F;
-		is[14] = bs[10] & 0x1F;
-		is[15] = bs[11] & 0x1F;
-		
-		ps[0]  = srcPal[ is[0]] & 0x7FFF;
-		ps[1]  = srcPal[ is[1]] & 0x7FFF;
-		ps[2]  = srcPal[ is[2]] & 0x7FFF;
-		ps[3]  = srcPal[ is[3]] & 0x7FFF;
-		ps[4]  = srcPal[ is[4]] & 0x7FFF;
-		ps[5]  = srcPal[ is[5]] & 0x7FFF;
-		ps[6]  = srcPal[ is[6]] & 0x7FFF;
-		ps[7]  = srcPal[ is[7]] & 0x7FFF;
-		ps[8]  = srcPal[ is[8]] & 0x7FFF;
-		ps[9]  = srcPal[ is[9]] & 0x7FFF;
-		ps[10] = srcPal[is[10]] & 0x7FFF;
-		ps[11] = srcPal[is[11]] & 0x7FFF;
-		ps[12] = srcPal[is[12]] & 0x7FFF;
-		ps[13] = srcPal[is[13]] & 0x7FFF;
-		ps[14] = srcPal[is[14]] & 0x7FFF;
-		ps[15] = srcPal[is[15]] & 0x7FFF;
-		*/
-		/*
-		ps[0]  = srcPal[ is[4]] & 0x7FFF;
-		ps[1]  = srcPal[ is[5]] & 0x7FFF;
-		ps[2]  = srcPal[ is[6]] & 0x7FFF;
-		ps[3]  = srcPal[ is[7]] & 0x7FFF;
-		ps[4]  = srcPal[ is[0]] & 0x7FFF;
-		ps[5]  = srcPal[ is[1]] & 0x7FFF;
-		ps[6]  = srcPal[ is[2]] & 0x7FFF;
-		ps[7]  = srcPal[ is[3]] & 0x7FFF;
-		ps[8]  = srcPal[ is[12]] & 0x7FFF;
-		ps[9]  = srcPal[ is[13]] & 0x7FFF;
-		ps[10] = srcPal[is[14]] & 0x7FFF;
-		ps[11] = srcPal[is[15]] & 0x7FFF;
-		ps[12] = srcPal[is[8]] & 0x7FFF;
-		ps[13] = srcPal[is[9]] & 0x7FFF;
-		ps[14] = srcPal[is[10]] & 0x7FFF;
-		ps[15] = srcPal[is[11]] & 0x7FFF;
-		*/
-		/*
-		as[0]  = lut[bs[0]  >> 5];
-		as[1]  = lut[bs[1]  >> 5];
-		as[2]  = lut[bs[2]  >> 5];
-		as[3]  = lut[bs[3]  >> 5];
-		as[4]  = lut[bs[4]  >> 5];
-		as[5]  = lut[bs[5]  >> 5];
-		as[6]  = lut[bs[6]  >> 5];
-		as[7]  = lut[bs[7]  >> 5];
-		as[8]  = lut[bs[8]  >> 5];
-		as[9]  = lut[bs[9]  >> 5];
-		as[10] = lut[bs[10] >> 5];
-		as[11] = lut[bs[11] >> 5];
-		as[12] = lut[bs[12] >> 5];
-		as[13] = lut[bs[13] >> 5];
-		as[14] = lut[bs[14] >> 5];
-		as[15] = lut[bs[15] >> 5];
-		
-		ahs[0]  = (u16)as[0]  << 8;
-		ahs[1]  = (u16)as[1]  << 8;
-		ahs[2]  = (u16)as[2]  << 8;
-		ahs[3]  = (u16)as[3]  << 8;
-		ahs[4]  = (u16)as[4]  << 8;
-		ahs[5]  = (u16)as[5]  << 8;
-		ahs[6]  = (u16)as[6]  << 8;
-		ahs[7]  = (u16)as[7]  << 8;
-		ahs[8]  = (u16)as[8]  << 8;
-		ahs[9]  = (u16)as[9]  << 8;
-		ahs[10] = (u16)as[10] << 8;
-		ahs[11] = (u16)as[11] << 8;
-		ahs[12] = (u16)as[12] << 8;
-		ahs[13] = (u16)as[13] << 8;
-		ahs[14] = (u16)as[14] << 8;
-		ahs[15] = (u16)as[15] << 8;
-		*/
 		// Must be unaligned since srcData could sit outside of a 16-byte boundary.
 		const v128u8 bits = vec_perm( vec_ld(0, srcData), vec_ld(16, srcData), unalignedShift );
 		
@@ -1614,11 +1466,9 @@ void __NDSTextureUnpackA3I5_AltiVec(const size_t texelCount, const u8 *__restric
 		idx = vec_sl(idx, ((v128u8){1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}));
 		
 		v128u8 idx0 = vec_add( vec_perm(idx, idx, ((v128u8){ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
-		//v128u8 idx0 = vec_add( vec_perm(idx, idx, ((v128u8){ 4, 4, 5, 5, 6, 6, 7, 7, 0, 0, 1, 1, 2, 2, 3, 3})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
 		idx0 = vec_and(idx0, ((v128u8){0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F}));
 		
 		v128u8 idx1 = vec_add( vec_perm(idx, idx, ((v128u8){ 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
-		//v128u8 idx1 = vec_add( vec_perm(idx, idx, ((v128u8){12,12,13,13,14,14,15,15, 8, 8, 9, 9,10,10,11,11})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
 		idx1 = vec_and(idx1, ((v128u8){0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F}));
 		
 		const v128u16 palColor0A = vec_perm(pal16_LUT[0], pal16_LUT[1], idx0);
@@ -1630,125 +1480,19 @@ void __NDSTextureUnpackA3I5_AltiVec(const size_t texelCount, const u8 *__restric
 		const v128u16 palColor0 = vec_sel( palColor0A, palColor0B, vec_perm(palMask, palMask, ((v128u8){ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7})) );
 		const v128u16 palColor1 = vec_sel( palColor1A, palColor1B, vec_perm(palMask, palMask, ((v128u8){ 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15})) );
 		
-		
-		//const v128u16 palColor0 = vec_ld(0,  ps);
-		//const v128u16 palColor1 = vec_ld(16, ps);
-		
 		const v128u8 alpha = vec_perm( alpha_LUT, alpha_LUT, vec_sr(bits, ((v128u8){5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5})) );
-		//const v128u16 alphaLo = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03,0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07}) );
-		//const v128u16 alphaHi = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B,0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F}) );
-		
 		const v128u16 alphaLo = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07, 0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03}) );
 		const v128u16 alphaHi = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F, 0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B}) );
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			/*
-			vec_st(palColor0, 0,  ps);
-			vec_st(palColor1, 16, ps);
-			vec_st(alpha, 0, as);
-			*/
-			/*
-			convertedColor[0] = (v128u32){
-				COLOR555TO6665(ps[0],  as[0]),
-				COLOR555TO6665(ps[1],  as[1]),
-				COLOR555TO6665(ps[2],  as[2]),
-				COLOR555TO6665(ps[3],  as[3])
-			};
-			
-			convertedColor[1] = (v128u32){
-				COLOR555TO6665(ps[4],  as[4]),
-				COLOR555TO6665(ps[5],  as[5]),
-				COLOR555TO6665(ps[6],  as[6]),
-				COLOR555TO6665(ps[7],  as[7])
-			};
-			
-			convertedColor[2] = (v128u32){
-				COLOR555TO6665(ps[8],  as[8]),
-				COLOR555TO6665(ps[9],  as[9]),
-				COLOR555TO6665(ps[10], as[10]),
-				COLOR555TO6665(ps[11], as[11])
-			};
-			
-			convertedColor[3] = (v128u32){
-				COLOR555TO6665(ps[12], as[12]),
-				COLOR555TO6665(ps[13], as[13]),
-				COLOR555TO6665(ps[14], as[14]),
-				COLOR555TO6665(ps[15], as[15])
-			};
-			 */
-			/*
-			convertedColor[0] = (v128u32){
-				color_555_to_666[ps[0]],
-				color_555_to_666[ps[1]],
-				color_555_to_666[ps[2]],
-				color_555_to_666[ps[3]]
-			};
-			
-			convertedColor[1] = (v128u32){
-				color_555_to_666[ps[4]],
-				color_555_to_666[ps[5]],
-				color_555_to_666[ps[6]],
-				color_555_to_666[ps[7]]
-			};
-			
-			convertedColor[2] = (v128u32){
-				color_555_to_666[ps[8]],
-				color_555_to_666[ps[9]],
-				color_555_to_666[ps[10]],
-				color_555_to_666[ps[11]]
-			};
-			
-			convertedColor[3] = (v128u32){
-				color_555_to_666[ps[12]],
-				color_555_to_666[ps[13]],
-				color_555_to_666[ps[14]],
-				color_555_to_666[ps[15]]
-			};
-			*/
-			/*
-			convertedColor[0] = vec_unpackh((vector pixel)palColor0);
-			convertedColor[0] = vec_or( vec_sl((v128u8)convertedColor[0], ((v128u8){0,1,1,1,  0,1,1,1,  0,1,1,1,  0,1,1,1})), vec_sr((v128u8)convertedColor[0], ((v128u8){0,4,4,4,  0,4,4,4,  0,4,4,4,  0,4,4,4})) );
-			
-			convertedColor[1] = vec_unpackl((vector pixel)palColor0);
-			convertedColor[1] = vec_or( vec_sl((v128u8)convertedColor[1], ((v128u8){0,1,1,1,  0,1,1,1,  0,1,1,1,  0,1,1,1})), vec_sr((v128u8)convertedColor[1], ((v128u8){0,4,4,4,  0,4,4,4,  0,4,4,4,  0,4,4,4})) );
-			
-			convertedColor[2] = (v128u32){
-				color_555_to_666[ps[8]],
-				color_555_to_666[ps[9]],
-				color_555_to_666[ps[10]],
-				color_555_to_666[ps[11]]
-			};
-			
-			convertedColor[3] = (v128u32){
-				color_555_to_666[ps[12]],
-				color_555_to_666[ps[13]],
-				color_555_to_666[ps[14]],
-				color_555_to_666[ps[15]]
-			};
-			
-			convertedColor[0] = vec_perm( (v128u8)convertedColor[0], (v128u8)alphaLo, ((v128u8){0x03,0x02,0x01,0x11,  0x07,0x06,0x05,0x13,  0x0B,0x0A,0x09,0x15,  0x0F,0x0E,0x0D,0x17}) );
-			convertedColor[1] = vec_perm( (v128u8)convertedColor[1], (v128u8)alphaLo, ((v128u8){0x03,0x02,0x01,0x19,  0x07,0x06,0x05,0x1B,  0x0B,0x0A,0x09,0x1D,  0x0F,0x0E,0x0D,0x1F}) );
-			convertedColor[2] = vec_perm( (v128u8)convertedColor[2], (v128u8)alphaHi, ((v128u8){0x03,0x02,0x01,0x11,  0x07,0x06,0x05,0x13,  0x0B,0x0A,0x09,0x15,  0x0F,0x0E,0x0D,0x17}) );
-			convertedColor[3] = vec_perm( (v128u8)convertedColor[3], (v128u8)alphaHi, ((v128u8){0x03,0x02,0x01,0x19,  0x07,0x06,0x05,0x1B,  0x0B,0x0A,0x09,0x1D,  0x0F,0x0E,0x0D,0x1F}) );
-			*/
 			ColorspaceConvert555To6665_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
 			ColorspaceConvert555To6665_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
-			
-			//convertedColor[0] = (v128u32){0x3F00001F, 0x3F00001F, 0x3F00001F, 0x3F00001F};
-			//convertedColor[1] = (v128u32){0x3F00001F, 0x3F00001F, 0x3F00001F, 0x3F00001F};
-			//convertedColor[2] = (v128u32){0x3F00001F, 0x3F00001F, 0x3F00001F, 0x3F00001F};
-			//convertedColor[3] = (v128u32){0x3F00001F, 0x3F00001F, 0x3F00001F, 0x3F00001F};
 		}
 		else
 		{
 			ColorspaceConvert555To8888_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
 			ColorspaceConvert555To8888_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
-			
-			//convertedColor[0] = (v128u32){0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF};
-			//convertedColor[1] = (v128u32){0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF};
-			//convertedColor[2] = (v128u32){0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF};
-			//convertedColor[3] = (v128u32){0xFF0000FF, 0xFF0000FF, 0xFF0000FF, 0xFF0000FF};
 		}
 		
 		vec_st(convertedColor[0],  0, dstBuffer);
