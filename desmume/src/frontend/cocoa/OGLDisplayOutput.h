@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2018 DeSmuME team
+	Copyright (C) 2014-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -65,6 +65,7 @@ protected:
 	GLint _versionMajor;
 	GLint _versionMinor;
 	GLint _versionRevision;
+	char _rendererString[256];
 	ShaderSupportTier _shaderSupport;
 	bool _useShader150;
 	
@@ -76,6 +77,11 @@ protected:
 public:
 	OGLContextInfo();
 	virtual ~OGLContextInfo() {};
+	
+	int GetVersionMajor() const;
+	int GetVersionMinor() const;
+	int GetVersionRevision() const;
+	const char* GetRendererString() const;
 		
 	bool IsUsingShader150();
 	bool IsVBOSupported();

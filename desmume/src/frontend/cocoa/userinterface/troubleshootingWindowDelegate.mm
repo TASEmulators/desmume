@@ -95,13 +95,13 @@
 		romSerialStr = unspecifiedStr;
 	}
 	
-	NSString *finalFormTextStr = @"App Version: ";
-	finalFormTextStr = [finalFormTextStr stringByAppendingString:appVersionStr];
+	NSString *finalFormTextStr = @"[ BEGIN DESMUME RUNTIME INFORMATION ]\n";
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nApp Version: "] stringByAppendingString:appVersionStr];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nOperating System: "] stringByAppendingString:[CocoaDSUtil operatingSystemString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nModel Identifier: "] stringByAppendingString:[CocoaDSUtil modelIdentifierString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nROM Name: "] stringByAppendingString:romNameStr];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nROM Serial: "] stringByAppendingString:romSerialStr];
-	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n-----------------------------------"];
+	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n"];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nEmulation Speed: "] stringByAppendingString:([cdsCore isSpeedLimitEnabled] ? [NSString stringWithFormat:@"%1.2fx", [emuControl lastSetSpeedScalar]] : @"Unlimited")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAuto Frame Skip: "] stringByAppendingString:([cdsCore isFrameSkipEnabled] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nSLOT-1 Device Type: "] stringByAppendingString:[cdsCore slot1DeviceTypeString]];
@@ -147,13 +147,14 @@
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Texture Scaling Factor: "] stringByAppendingString:[NSString stringWithFormat:@"%ldx", (unsigned long)[[cdsCore cdsGPU] render3DTextureScalingFactor]]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Edge Marking: "] stringByAppendingString:([[cdsCore cdsGPU] render3DEdgeMarking] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Fog: "] stringByAppendingString:([[cdsCore cdsGPU] render3DFog] ? @"YES" : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nVideo - Output Engine: "] stringByAppendingString:[NSString stringWithFormat:@"%s (%s)", [[cdsCore cdsGPU] fetchObject]->GetName(), [[cdsCore cdsGPU] fetchObject]->GetDescription()]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Output Engine: "] stringByAppendingString:[[emuControl cdsSpeaker] audioOutputEngineString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Advanced SPU Logic: "] stringByAppendingString:([[emuControl cdsSpeaker] spuAdvancedLogic] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Interpolation Method: "] stringByAppendingString:[[emuControl cdsSpeaker] spuInterpolationModeString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Synchronization Method: "] stringByAppendingString:[[emuControl cdsSpeaker] spuSyncMethodString]];
-	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n-----------------------------------"];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCheats: "] stringByAppendingString:([cdsCore isCheatingEnabled] ? [NSString stringWithFormat:@"YES (ActiveCheatCount=%ld)", (unsigned long)[[emuControl cdsCheats] activeCount]] : @"NO")];
-	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n-----------------------------------"];
+	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n"];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCheats: "] stringByAppendingString:(([cdsCore isCheatingEnabled] && ([[emuControl cdsCheats] activeCount] > 0)) ? [NSString stringWithFormat:@"YES (ActiveCheatCount=%ld)", (unsigned long)[[emuControl cdsCheats] activeCount]] : @"NO")];
+	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n"];
 	
 	if ([window contentView] == viewSupportRequest)
 	{
@@ -186,6 +187,8 @@
 		[bindings setValue:NSSTRING_HELP_COPY_PASTE_BUG_REPORT forKey:@"copyPasteHelpText"];
 		[bindings setValue:NSSTRING_TITLE_GO_BUG_REPORT_WEBPAGE_TITLE forKey:@"goWebpageButtonTitle"];
 	}
+	
+	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n\n[ END DESMUME RUNTIME INFORMATION ]"];
 	
 	[bindings setValue:finalFormTextStr forKey:@"finalFormText"];
 	

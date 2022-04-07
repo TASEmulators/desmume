@@ -156,6 +156,9 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 	
 	CGLSetCurrentContext(prevContext);
 	
+	snprintf(_name, sizeof(_name) - 1, "macOS OpenGL v%i.%i.%i", _contextInfo->GetVersionMajor(), _contextInfo->GetVersionMinor(), _contextInfo->GetVersionRevision());
+	strlcpy(_description, _contextInfo->GetRendererString(), sizeof(_description) - 1);
+	
 	_clientData = [[MacClientSharedObject alloc] init];
 	
 	_unfairlockTexFetch[NDSDisplayID_Main] = apple_unfairlock_create();

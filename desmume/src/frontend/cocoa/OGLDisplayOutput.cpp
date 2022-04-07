@@ -3937,7 +3937,7 @@ enum OGLVertexAttributeID
 
 static const GLint filterVtxBuffer[8] = {-1, -1, 1, -1, -1, 1, 1, 1};
 
-void GetGLVersionOGL(GLint *outMajor, GLint *outMinor, GLint *outRevision)
+static void GetGLVersionOGL(GLint *outMajor, GLint *outMinor, GLint *outRevision)
 {
 	const char *oglVersionString = (const char *)glGetString(GL_VERSION);
 	if (oglVersionString == NULL)
@@ -4076,6 +4076,11 @@ void DeleteHQnxLUTs_OGL(GLenum textureIndex, GLuint &texLQ2xLUT, GLuint &texHQ2x
 OGLContextInfo::OGLContextInfo()
 {
 	GetGLVersionOGL(&_versionMajor, &_versionMinor, &_versionRevision);
+	
+	const char *oglRendererString = (const char *)glGetString(GL_RENDERER);
+	memset(_rendererString, 0, sizeof(_rendererString));
+	strlcpy(_rendererString, oglRendererString, sizeof(_rendererString) - 1);
+	
 	_shaderSupport = ShaderSupport_Unsupported;
 	_useShader150 = false;
 	
@@ -4088,6 +4093,26 @@ OGLContextInfo::OGLContextInfo()
 ShaderSupportTier OGLContextInfo::GetShaderSupport()
 {
 	return this->_shaderSupport;
+}
+
+int OGLContextInfo::GetVersionMajor() const
+{
+	return (int)this->_versionMajor;
+}
+
+int OGLContextInfo::GetVersionMinor() const
+{
+	return (int)this->_versionMinor;
+}
+
+int OGLContextInfo::GetVersionRevision() const
+{
+	return (int)this->_versionRevision;
+}
+
+const char* OGLContextInfo::GetRendererString() const
+{
+	return this->_rendererString;
 }
 
 bool OGLContextInfo::IsUsingShader150()

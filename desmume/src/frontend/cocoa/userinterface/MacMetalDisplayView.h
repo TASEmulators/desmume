@@ -86,6 +86,9 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @interface MetalDisplayViewSharedData : MacClientSharedObject
 {
 	id<MTLDevice> device;
+	NSString *name;
+	NSString *description;
+	
 	id<MTLCommandQueue> _fetchCommandQueue;
 	id<MTLCommandQueue> commandQueue;
 	id<MTLLibrary> defaultLibrary;
@@ -139,6 +142,9 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 }
 
 @property (readonly, nonatomic) id<MTLDevice> device;
+@property (readonly, nonatomic) NSString *name;
+@property (readonly, nonatomic) NSString *description;
+
 @property (readonly, nonatomic) id<MTLCommandQueue> commandQueue;
 @property (readonly, nonatomic) id<MTLLibrary> defaultLibrary;
 

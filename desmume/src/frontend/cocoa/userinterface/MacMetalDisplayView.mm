@@ -27,6 +27,8 @@
 @implementation MetalDisplayViewSharedData
 
 @synthesize device;
+@synthesize name;
+@synthesize description;
 @synthesize commandQueue;
 @synthesize defaultLibrary;
 
@@ -67,6 +69,33 @@
 	}
 	
 	[device retain];
+	
+	NSString *tempVersionStr = @"Metal - Unknown GPU Family";
+	const BOOL isRWTexSupported = [device supportsFeatureSet:10002]; // MTLFeatureSet_macOS_ReadWriteTextureTier2
+	
+	if ([device supportsFeatureSet:10005]) // MTLFeatureSet_macOS_GPUFamily2_v1
+	{
+		tempVersionStr = @"macOS Metal GPUFamily2_v1";
+	}
+	else if ([device supportsFeatureSet:10004]) // MTLFeatureSet_macOS_GPUFamily1_v4
+	{
+		tempVersionStr = (isRWTexSupported) ? @"macOS Metal GPUFamily1_v4 w/ Tier2 R/W Textures" : @"macOS Metal GPUFamily1_v4";
+	}
+	else if ([device supportsFeatureSet:10003]) // MTLFeatureSet_macOS_GPUFamily1_v3
+	{
+		tempVersionStr = (isRWTexSupported) ? @"macOS Metal GPUFamily1_v3 w/ Tier2 R/W Textures" : @"macOS Metal GPUFamily1_v3";
+	}
+	else if ([device supportsFeatureSet:10001]) // MTLFeatureSet_macOS_GPUFamily1_v2
+	{
+		tempVersionStr = (isRWTexSupported) ? @"macOS Metal GPUFamily1_v2 w/ Tier2 R/W Textures" : @"macOS Metal GPUFamily1_v2";
+	}
+	else if ([device supportsFeatureSet:MTLFeatureSet_macOS_GPUFamily1_v1])
+	{
+		tempVersionStr = (isRWTexSupported) ? @"macOS Metal GPUFamily1_v1 w/ Tier2 R/W Textures" : @"macOS Metal GPUFamily1_v1";
+	}
+	
+	name = [[NSString alloc] initWithString:tempVersionStr];
+	description = [[NSString alloc] initWithString:[device name]];
 	
 	commandQueue = [device newCommandQueue];
 	[commandQueue setLabel:@"CQ_DeSmuME_VideoBlitter"];
@@ -324,6 +353,9 @@
 	
 	[samplerHUDBox release];
 	[samplerHUDText release];
+	
+	[name release];
+	[description release];
 	
 	[super dealloc];
 }
@@ -2424,6 +2456,8 @@ MacMetalFetchObject::MacMetalFetchObject()
 	}
 	
 	_clientData = [[MetalDisplayViewSharedData alloc] init];
+	strlcpy(_name, [[(MetalDisplayViewSharedData *)_clientData name] cStringUsingEncoding:NSUTF8StringEncoding], sizeof(_name) - 1);
+	strlcpy(_description, [[(MetalDisplayViewSharedData *)_clientData description] cStringUsingEncoding:NSUTF8StringEncoding], sizeof(_description) - 1);
 }
 
 MacMetalFetchObject::~MacMetalFetchObject()
