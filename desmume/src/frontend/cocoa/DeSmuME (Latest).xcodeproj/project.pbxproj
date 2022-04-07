@@ -3255,7 +3255,7 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		8C43E89F27E3CD0100A35F65 /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		8C43E9FE27E3CD4C00A35F65 /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		8C43E9FE27E3CD4C00A35F65 /* DeSmuME (Debug, dev+).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug, dev+).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CCD851027E40B730024BDD5 /* DeSmuME (arm64).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (arm64).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AB000DC01CCC6B0700413F02 /* file_path.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = file_path.c; sourceTree = "<group>"; };
@@ -4375,7 +4375,7 @@
 				AB79029A215B84F20082AE82 /* DeSmuME (Debug, dev+).app */,
 				ABD2CE4426E05CB000FB15F7 /* DeSmuME (x86_64h).app */,
 				8C43E89F27E3CD0100A35F65 /* DeSmuME (Debug).app */,
-				8C43E9FE27E3CD4C00A35F65 /* DeSmuME (Debug).app */,
+				8C43E9FE27E3CD4C00A35F65 /* DeSmuME (Debug, dev+).app */,
 				8CCD851027E40B730024BDD5 /* DeSmuME (arm64).app */,
 				AB36C89027F2C8AE00C763C8 /* DeSmuME (i386 x86_64).app */,
 				AB497B1227F2E97A00E8A244 /* DeSmuME.app */,
@@ -5574,7 +5574,7 @@
 			name = "DeSmuME (macOS App; AppleSilicon dev+ -- Latest Xcode)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
-			productReference = 8C43E9FE27E3CD4C00A35F65 /* DeSmuME (Debug).app */;
+			productReference = 8C43E9FE27E3CD4C00A35F65 /* DeSmuME (Debug, dev+).app */;
 			productType = "com.apple.product-type.application";
 		};
 		8CCD83B527E40B730024BDD5 /* DeSmuME (macOS App; Release Stage Final AppleSilicon -- Latest Xcode) */ = {
@@ -9307,6 +9307,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				PRODUCT_NAME = "DeSmuME (Debug, dev+)";
 			};
 			name = Debug;
 		};
@@ -9320,6 +9321,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				PRODUCT_NAME = "DeSmuME (dev+)";
 			};
 			name = Release;
 		};

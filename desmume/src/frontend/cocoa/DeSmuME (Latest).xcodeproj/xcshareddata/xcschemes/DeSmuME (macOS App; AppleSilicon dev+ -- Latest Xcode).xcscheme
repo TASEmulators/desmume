@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8C43E8A127E3CD4C00A35F65"
-               BuildableName = "DeSmuME.app"
+               BuildableName = "DeSmuME (dev+).app"
                BlueprintName = "DeSmuME (macOS App; AppleSilicon dev+ -- Latest Xcode)"
                ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
             </BuildableReference>
@@ -29,6 +29,8 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
       </Testables>
+      <AdditionalOptions>
+      </AdditionalOptions>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
@@ -45,11 +47,13 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8C43E8A127E3CD4C00A35F65"
-            BuildableName = "DeSmuME.app"
+            BuildableName = "DeSmuME (dev+).app"
             BlueprintName = "DeSmuME (macOS App; AppleSilicon dev+ -- Latest Xcode)"
             ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <AdditionalOptions>
+      </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -62,7 +66,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8C43E8A127E3CD4C00A35F65"
-            BuildableName = "DeSmuME.app"
+            BuildableName = "DeSmuME (dev+).app"
             BlueprintName = "DeSmuME (macOS App; AppleSilicon dev+ -- Latest Xcode)"
             ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
          </BuildableReference>
