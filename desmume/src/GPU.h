@@ -1991,6 +1991,9 @@ public:
 class GPUClientFetchObject
 {
 protected:
+	char _name[256];
+	char _description[256];
+	
 	NDSDisplayInfo _fetchDisplayInfo[MAX_FRAMEBUFFER_PAGES];
 	volatile u8 _lastFetchIndex;
 	void *_clientData;
@@ -2005,6 +2008,9 @@ public:
 	virtual void Init();
 	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);
 	virtual void FetchFromBufferIndex(const u8 index);
+	
+	const char* GetName() const;
+	const char* GetDescription() const;
 	
 	u8 GetLastFetchIndex() const;
 	void SetLastFetchIndex(const u8 fetchIndex);

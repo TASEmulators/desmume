@@ -5913,6 +5913,12 @@ GPUClientFetchObject::GPUClientFetchObject()
 		memset(&_fetchDisplayInfo[i], 0, sizeof(NDSDisplayInfo));
 	}
 	
+	memset(_name, 0, sizeof(_name));
+	strncpy(_name, "Generic Video", sizeof(_name) - 1);
+	
+	memset(_description, 0, sizeof(_description));
+	strncpy(_description, "No description.", sizeof(_description) - 1);
+	
 	_clientData = NULL;
 	_lastFetchIndex = 0;
 }
@@ -5995,6 +6001,16 @@ const NDSDisplayInfo& GPUClientFetchObject::GetFetchDisplayInfoForBufferIndex(co
 void GPUClientFetchObject::SetFetchDisplayInfo(const NDSDisplayInfo &displayInfo)
 {
 	this->_fetchDisplayInfo[displayInfo.bufferIndex] = displayInfo;
+}
+
+const char* GPUClientFetchObject::GetName() const
+{
+	return this->_name;
+}
+
+const char* GPUClientFetchObject::GetDescription() const
+{
+	return this->_description;
 }
 
 u8 GPUClientFetchObject::GetLastFetchIndex() const
