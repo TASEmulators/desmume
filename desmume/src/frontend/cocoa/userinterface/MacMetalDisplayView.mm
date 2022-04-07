@@ -89,7 +89,7 @@
 	{
 		tempVersionStr = (isRWTexSupported) ? @"macOS Metal GPUFamily1_v2 w/ Tier2 R/W Textures" : @"macOS Metal GPUFamily1_v2";
 	}
-	else if ([device supportsFeatureSet:MTLFeatureSet_macOS_GPUFamily1_v1])
+	else if ([device supportsFeatureSet:MTLFeatureSet_OSX_GPUFamily1_v1])
 	{
 		tempVersionStr = (isRWTexSupported) ? @"macOS Metal GPUFamily1_v1 w/ Tier2 R/W Textures" : @"macOS Metal GPUFamily1_v1";
 	}
@@ -2456,8 +2456,12 @@ MacMetalFetchObject::MacMetalFetchObject()
 	}
 	
 	_clientData = [[MetalDisplayViewSharedData alloc] init];
-	strlcpy(_name, [[(MetalDisplayViewSharedData *)_clientData name] cStringUsingEncoding:NSUTF8StringEncoding], sizeof(_name) - 1);
-	strlcpy(_description, [[(MetalDisplayViewSharedData *)_clientData description] cStringUsingEncoding:NSUTF8StringEncoding], sizeof(_description) - 1);
+	
+	if (_clientData != nil)
+	{
+		strlcpy(_name, [[(MetalDisplayViewSharedData *)_clientData name] cStringUsingEncoding:NSUTF8StringEncoding], sizeof(_name) - 1);
+		strlcpy(_description, [[(MetalDisplayViewSharedData *)_clientData description] cStringUsingEncoding:NSUTF8StringEncoding], sizeof(_description) - 1);
+	}
 }
 
 MacMetalFetchObject::~MacMetalFetchObject()
