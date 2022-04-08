@@ -95,7 +95,7 @@
 		romSerialStr = unspecifiedStr;
 	}
 	
-	NSString *finalFormTextStr = @"[ BEGIN DESMUME RUNTIME INFORMATION ]\n";
+	NSString *finalFormTextStr = @"[ BEGIN DESMUME TROUBLESHOOTING INFORMATION ]\n";
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nApp Version: "] stringByAppendingString:appVersionStr];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nOperating System: "] stringByAppendingString:[CocoaDSUtil operatingSystemString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nModel Identifier: "] stringByAppendingString:[CocoaDSUtil modelIdentifierString]];
@@ -188,7 +188,7 @@
 		[bindings setValue:NSSTRING_TITLE_GO_BUG_REPORT_WEBPAGE_TITLE forKey:@"goWebpageButtonTitle"];
 	}
 	
-	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n\n[ END DESMUME RUNTIME INFORMATION ]"];
+	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n\n[ END DESMUME TROUBLESHOOTING INFORMATION ]"];
 	
 	[bindings setValue:finalFormTextStr forKey:@"finalFormText"];
 	

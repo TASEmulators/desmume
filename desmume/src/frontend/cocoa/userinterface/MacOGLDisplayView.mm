@@ -156,7 +156,7 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 	
 	CGLSetCurrentContext(prevContext);
 	
-	snprintf(_name, sizeof(_name) - 1, "macOS OpenGL v%i.%i.%i", _contextInfo->GetVersionMajor(), _contextInfo->GetVersionMinor(), _contextInfo->GetVersionRevision());
+	snprintf(_name, sizeof(_name) - 1, "macOS OpenGL v%i.%i", _contextInfo->GetVersionMajor(), _contextInfo->GetVersionMinor());
 	strlcpy(_description, _contextInfo->GetRendererString(), sizeof(_description) - 1);
 	
 	_clientData = [[MacClientSharedObject alloc] init];
