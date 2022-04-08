@@ -5561,7 +5561,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8C43E9FB27E3CD4C00A35F65 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; AppleSilicon dev+ -- Latest Xcode)" */;
 			buildPhases = (
-				8C43E8A227E3CD4C00A35F65 /* ShellScript */,
 				8C43E8A327E3CD4C00A35F65 /* Resources */,
 				8C43E90A27E3CD4C00A35F65 /* ShellScript */,
 				8C43E90B27E3CD4C00A35F65 /* Sources */,
@@ -5636,7 +5635,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = AB790297215B84F20082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel32 Intel64 dev+ -- Xcode 9)" */;
 			buildPhases = (
-				AB790140215B84F20082AE82 /* ShellScript */,
 				AB790141215B84F20082AE82 /* Resources */,
 				AB7901A8215B84F20082AE82 /* ShellScript */,
 				AB7901A9215B84F20082AE82 /* Sources */,
@@ -5694,7 +5692,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = AB8F3D2B1A53AC2600A80BF6 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel64 dev+ -- Latest Xcode)" */;
 			buildPhases = (
-				AB8F3C181A53AC2600A80BF6 /* ShellScript */,
 				AB8F3C191A53AC2600A80BF6 /* Resources */,
 				AB8F3C721A53AC2600A80BF6 /* ShellScript */,
 				AB8F3C731A53AC2600A80BF6 /* Sources */,
@@ -6907,21 +6904,6 @@
 			shellPath = /bin/sh;
 			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"\n";
 		};
-		8C43E8A227E3CD4C00A35F65 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/translations/English.lproj/MainMenu.xib",
-			);
-			outputPaths = (
-				"$(SRCROOT)/translations/English.lproj/MainMenu.strings",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"\n";
-		};
 		8C43E90A27E3CD4C00A35F65 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -7034,21 +7016,6 @@
 			shellPath = /bin/sh;
 			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"\n";
 		};
-		AB790140215B84F20082AE82 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/translations/English.lproj/MainMenu.xib",
-			);
-			outputPaths = (
-				"$(SRCROOT)/translations/English.lproj/MainMenu.strings",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"\n";
-		};
 		AB7901A8215B84F20082AE82 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -7062,21 +7029,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"\n";
-		};
-		AB8F3C181A53AC2600A80BF6 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/translations/English.lproj/MainMenu.xib",
-			);
-			outputPaths = (
-				"$(SRCROOT)/translations/English.lproj/MainMenu.strings",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"\n";
 		};
 		AB8F3C721A53AC2600A80BF6 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
