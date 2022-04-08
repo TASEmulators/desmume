@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Jeff Bland
-	Copyright (C) 2007-2014 DeSmuME team
+	Copyright (C) 2007-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ static CoreAudioOutput *coreAudioPlaybackManager = NULL;
 // Sound interface to the SPU
 SoundInterface_struct SNDOSX = {
 	SNDCORE_OSX,
-	"OS X Core Audio Sound Interface",
+	"macOS Core Audio Sound Interface",
 	SNDOSXInit,
 	SNDOSXDeInit,
 	SNDOSXUpdateAudio,
