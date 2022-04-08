@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2021 DeSmuME team
+	Copyright (C) 2008-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -683,6 +683,8 @@ public:
 class OpenGLRenderer : public Render3D_AVX2
 #elif defined(ENABLE_SSE2)
 class OpenGLRenderer : public Render3D_SSE2
+#elif defined(ENABLE_NEON_A64)
+class OpenGLRenderer : public Render3D_NEON
 #elif defined(ENABLE_ALTIVEC)
 class OpenGLRenderer : public Render3D_AltiVec
 #else

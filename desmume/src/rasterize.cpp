@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2021 DeSmuME team
+	Copyright (C) 2009-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1423,6 +1423,8 @@ static Render3D* SoftRasterizerRendererCreate()
 	return new SoftRasterizerRenderer_AVX2;
 #elif defined(ENABLE_SSE2)
 	return new SoftRasterizerRenderer_SSE2;
+#elif defined(ENABLE_NEON_A64)
+	return new SoftRasterizerRenderer_NEON;
 #elif defined(ENABLE_ALTIVEC)
 	return new SoftRasterizerRenderer_AltiVec;
 #else
@@ -1438,6 +1440,8 @@ static void SoftRasterizerRendererDestroy()
 		SoftRasterizerRenderer_AVX2 *oldRenderer = (SoftRasterizerRenderer_AVX2 *)CurrentRenderer;
 #elif defined(ENABLE_SSE2)
 		SoftRasterizerRenderer_SSE2 *oldRenderer = (SoftRasterizerRenderer_SSE2 *)CurrentRenderer;
+#elif defined(ENABLE_NEON_A64)
+		SoftRasterizerRenderer_NEON *oldRenderer = (SoftRasterizerRenderer_NEON *)CurrentRenderer;
 #elif defined(ENABLE_ALTIVEC)
 		SoftRasterizerRenderer_AltiVec *oldRenderer = (SoftRasterizerRenderer_AltiVec *)CurrentRenderer;
 #else
@@ -2501,7 +2505,7 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 	return RENDER3DERROR_NOERR;
 }
 
-#if defined(ENABLE_AVX) || defined(ENABLE_SSE2) || defined(ENABLE_ALTIVEC)
+#if defined(ENABLE_AVX) || defined(ENABLE_SSE2) || defined(ENABLE_NEON_A64) || defined(ENABLE_ALTIVEC)
 
 template <size_t SIMDBYTES>
 SoftRasterizer_SIMD<SIMDBYTES>::SoftRasterizer_SIMD()
@@ -2611,7 +2615,7 @@ Render3DError SoftRasterizer_SIMD<SIMDBYTES>::SetFramebufferSize(size_t w, size_
 	return RENDER3DERROR_NOERR;
 }
 
-#endif
+#endif // defined(ENABLE_AVX) || defined(ENABLE_SSE2) || defined(ENABLE_NEON_A64) || defined(ENABLE_ALTIVEC)
 
 #if defined(ENABLE_AVX2)
 
@@ -2687,6 +2691,74 @@ void SoftRasterizerRenderer_SSE2::ClearUsingValues_Execute(const size_t startPix
 	}
 }
 
+#elif defined(ENABLE_NEON_A64)
+
+void SoftRasterizerRenderer_NEON::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+{
+	this->_clearColor_v128u32x4.val[0]                = vdupq_n_u32(clearColor6665.color);
+	this->_clearColor_v128u32x4.val[1]                = this->_clearColor_v128u32x4.val[0];
+	this->_clearColor_v128u32x4.val[2]                = this->_clearColor_v128u32x4.val[0];
+	this->_clearColor_v128u32x4.val[3]                = this->_clearColor_v128u32x4.val[0];
+	
+	this->_clearDepth_v128u32x4.val[0]                = vdupq_n_u32(clearAttributes.depth);
+	this->_clearDepth_v128u32x4.val[1]                = this->_clearDepth_v128u32x4.val[0];
+	this->_clearDepth_v128u32x4.val[2]                = this->_clearDepth_v128u32x4.val[0];
+	this->_clearDepth_v128u32x4.val[3]                = this->_clearDepth_v128u32x4.val[0];
+	
+	this->_clearAttrOpaquePolyID_v128u8x4.val[0]      = vdupq_n_u8(clearAttributes.opaquePolyID);
+	this->_clearAttrOpaquePolyID_v128u8x4.val[1]      = this->_clearAttrOpaquePolyID_v128u8x4.val[0];
+	this->_clearAttrOpaquePolyID_v128u8x4.val[2]      = this->_clearAttrOpaquePolyID_v128u8x4.val[0];
+	this->_clearAttrOpaquePolyID_v128u8x4.val[3]      = this->_clearAttrOpaquePolyID_v128u8x4.val[0];
+	
+	this->_clearAttrTranslucentPolyID_v128u8x4.val[0] = vdupq_n_u8(clearAttributes.translucentPolyID);
+	this->_clearAttrTranslucentPolyID_v128u8x4.val[1] = this->_clearAttrTranslucentPolyID_v128u8x4.val[0];
+	this->_clearAttrTranslucentPolyID_v128u8x4.val[2] = this->_clearAttrTranslucentPolyID_v128u8x4.val[0];
+	this->_clearAttrTranslucentPolyID_v128u8x4.val[3] = this->_clearAttrTranslucentPolyID_v128u8x4.val[0];
+	
+	this->_clearAttrStencil_v128u8x4.val[0]           = vdupq_n_u8(clearAttributes.stencil);
+	this->_clearAttrStencil_v128u8x4.val[1]           = this->_clearAttrStencil_v128u8x4.val[0];
+	this->_clearAttrStencil_v128u8x4.val[2]           = this->_clearAttrStencil_v128u8x4.val[0];
+	this->_clearAttrStencil_v128u8x4.val[3]           = this->_clearAttrStencil_v128u8x4.val[0];
+	
+	this->_clearAttrIsFogged_v128u8x4.val[0]          = vdupq_n_u8(clearAttributes.isFogged);
+	this->_clearAttrIsFogged_v128u8x4.val[1]          = this->_clearAttrIsFogged_v128u8x4.val[0];
+	this->_clearAttrIsFogged_v128u8x4.val[2]          = this->_clearAttrIsFogged_v128u8x4.val[0];
+	this->_clearAttrIsFogged_v128u8x4.val[3]          = this->_clearAttrIsFogged_v128u8x4.val[0];
+	
+	this->_clearAttrIsTranslucentPoly_v128u8x4.val[0] = vdupq_n_u8(clearAttributes.isTranslucentPoly);
+	this->_clearAttrIsTranslucentPoly_v128u8x4.val[1] = this->_clearAttrIsTranslucentPoly_v128u8x4.val[0];
+	this->_clearAttrIsTranslucentPoly_v128u8x4.val[2] = this->_clearAttrIsTranslucentPoly_v128u8x4.val[0];
+	this->_clearAttrIsTranslucentPoly_v128u8x4.val[3] = this->_clearAttrIsTranslucentPoly_v128u8x4.val[0];
+	
+	this->_clearAttrPolyFacing_v128u8x4.val[0]        = vdupq_n_u8(clearAttributes.polyFacing);
+	this->_clearAttrPolyFacing_v128u8x4.val[1]        = this->_clearAttrPolyFacing_v128u8x4.val[0];
+	this->_clearAttrPolyFacing_v128u8x4.val[2]        = this->_clearAttrPolyFacing_v128u8x4.val[0];
+	this->_clearAttrPolyFacing_v128u8x4.val[3]        = this->_clearAttrPolyFacing_v128u8x4.val[0];
+}
+
+void SoftRasterizerRenderer_NEON::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
+{
+	for (size_t i = startPixel; i < endPixel; i+=(sizeof(v128u8)*4))
+	{
+		vst1q_u32_x4((u32 *)(this->_framebufferColor + i) +  0, this->_clearColor_v128u32x4);
+		vst1q_u32_x4((u32 *)(this->_framebufferColor + i) + 16, this->_clearColor_v128u32x4);
+		vst1q_u32_x4((u32 *)(this->_framebufferColor + i) + 32, this->_clearColor_v128u32x4);
+		vst1q_u32_x4((u32 *)(this->_framebufferColor + i) + 48, this->_clearColor_v128u32x4);
+		
+		vst1q_u32_x4((this->_framebufferAttributes->depth + i) +  0, this->_clearDepth_v128u32x4);
+		vst1q_u32_x4((this->_framebufferAttributes->depth + i) + 16, this->_clearDepth_v128u32x4);
+		vst1q_u32_x4((this->_framebufferAttributes->depth + i) + 32, this->_clearDepth_v128u32x4);
+		vst1q_u32_x4((this->_framebufferAttributes->depth + i) + 48, this->_clearDepth_v128u32x4);
+		
+		vst1q_u8_x4((this->_framebufferAttributes->opaquePolyID + i),      this->_clearAttrOpaquePolyID_v128u8x4);
+		vst1q_u8_x4((this->_framebufferAttributes->translucentPolyID + i), this->_clearAttrTranslucentPolyID_v128u8x4);
+		vst1q_u8_x4((this->_framebufferAttributes->stencil + i),           this->_clearAttrStencil_v128u8x4);
+		vst1q_u8_x4((this->_framebufferAttributes->isFogged + i),          this->_clearAttrIsFogged_v128u8x4);
+		vst1q_u8_x4((this->_framebufferAttributes->isTranslucentPoly + i), this->_clearAttrIsTranslucentPoly_v128u8x4);
+		vst1q_u8_x4((this->_framebufferAttributes->polyFacing + i),        this->_clearAttrPolyFacing_v128u8x4);
+	}
+}
+
 #elif defined(ENABLE_ALTIVEC)
 
 void SoftRasterizerRenderer_AltiVec::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
@@ -2727,7 +2799,7 @@ void SoftRasterizerRenderer_AltiVec::LoadClearValues(const FragmentColor &clearC
 
 void SoftRasterizerRenderer_AltiVec::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
-	for (size_t i = startPixel; i < endPixel; i+=16)
+	for (size_t i = startPixel; i < endPixel; i+=sizeof(v128u8))
 	{
 		vec_st(this->_clearColor_v128u32, (i * 4) +  0, this->_framebufferColor);
 		vec_st(this->_clearColor_v128u32, (i * 4) + 16, this->_framebufferColor);

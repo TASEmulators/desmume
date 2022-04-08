@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2021 DeSmuME team
+	Copyright (C) 2009-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,9 +21,6 @@
 #include "render3D.h"
 #include "gfx3d.h"
 
-#ifdef ENABLE_SSE2
-#include <emmintrin.h>
-#endif
 
 #define SOFTRASTERIZER_MAX_THREADS 32
 
@@ -138,6 +135,8 @@ public:
 class SoftRasterizerRenderer : public Render3D_AVX2
 #elif defined(ENABLE_SSE2)
 class SoftRasterizerRenderer : public Render3D_SSE2
+#elif defined(ENABLE_NEON_A64)
+class SoftRasterizerRenderer : public Render3D_NEON
 #elif defined(ENABLE_ALTIVEC)
 class SoftRasterizerRenderer : public Render3D_AltiVec
 #else
@@ -218,26 +217,6 @@ template <size_t SIMDBYTES>
 class SoftRasterizer_SIMD : public SoftRasterizerRenderer
 {
 protected:
-#if defined(ENABLE_AVX2)
-	v256u32 _clearColor_v256u32;
-	v256u32 _clearDepth_v256u32;
-	v256u8 _clearAttrOpaquePolyID_v256u8;
-	v256u8 _clearAttrTranslucentPolyID_v256u8;
-	v256u8 _clearAttrStencil_v256u8;
-	v256u8 _clearAttrIsFogged_v256u8;
-	v256u8 _clearAttrIsTranslucentPoly_v256u8;
-	v256u8 _clearAttrPolyFacing_v256u8;
-#elif defined(ENABLE_SSE2) || defined(ENABLE_ALTIVEC)
-	v128u32 _clearColor_v128u32;
-	v128u32 _clearDepth_v128u32;
-	v128u8 _clearAttrOpaquePolyID_v128u8;
-	v128u8 _clearAttrTranslucentPolyID_v128u8;
-	v128u8 _clearAttrStencil_v128u8;
-	v128u8 _clearAttrIsFogged_v128u8;
-	v128u8 _clearAttrIsTranslucentPoly_v128u8;
-	v128u8 _clearAttrPolyFacing_v128u8;
-#endif
-	
 	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) = 0;
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
 	
@@ -251,6 +230,15 @@ public:
 class SoftRasterizerRenderer_AVX2 : public SoftRasterizer_SIMD<32>
 {
 protected:
+	v256u32 _clearColor_v256u32;
+	v256u32 _clearDepth_v256u32;
+	v256u8 _clearAttrOpaquePolyID_v256u8;
+	v256u8 _clearAttrTranslucentPolyID_v256u8;
+	v256u8 _clearAttrStencil_v256u8;
+	v256u8 _clearAttrIsFogged_v256u8;
+	v256u8 _clearAttrIsTranslucentPoly_v256u8;
+	v256u8 _clearAttrPolyFacing_v256u8;
+	
 	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 public:
@@ -261,6 +249,34 @@ public:
 class SoftRasterizerRenderer_SSE2 : public SoftRasterizer_SIMD<16>
 {
 protected:
+	v128u32 _clearColor_v128u32;
+	v128u32 _clearDepth_v128u32;
+	v128u8 _clearAttrOpaquePolyID_v128u8;
+	v128u8 _clearAttrTranslucentPolyID_v128u8;
+	v128u8 _clearAttrStencil_v128u8;
+	v128u8 _clearAttrIsFogged_v128u8;
+	v128u8 _clearAttrIsTranslucentPoly_v128u8;
+	v128u8 _clearAttrPolyFacing_v128u8;
+	
+	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	
+public:
+	virtual void ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel);
+};
+
+#elif defined(ENABLE_NEON_A64)
+class SoftRasterizerRenderer_NEON : public SoftRasterizer_SIMD<16>
+{
+protected:
+	uint32x4x4_t _clearColor_v128u32x4;
+	uint32x4x4_t _clearDepth_v128u32x4;
+	uint8x16x4_t _clearAttrOpaquePolyID_v128u8x4;
+	uint8x16x4_t _clearAttrTranslucentPolyID_v128u8x4;
+	uint8x16x4_t _clearAttrStencil_v128u8x4;
+	uint8x16x4_t _clearAttrIsFogged_v128u8x4;
+	uint8x16x4_t _clearAttrIsTranslucentPoly_v128u8x4;
+	uint8x16x4_t _clearAttrPolyFacing_v128u8x4;
+	
 	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 public:
@@ -271,6 +287,15 @@ public:
 class SoftRasterizerRenderer_AltiVec : public SoftRasterizer_SIMD<16>
 {
 protected:
+	v128u32 _clearColor_v128u32;
+	v128u32 _clearDepth_v128u32;
+	v128u8 _clearAttrOpaquePolyID_v128u8;
+	v128u8 _clearAttrTranslucentPolyID_v128u8;
+	v128u8 _clearAttrStencil_v128u8;
+	v128u8 _clearAttrIsFogged_v128u8;
+	v128u8 _clearAttrIsTranslucentPoly_v128u8;
+	v128u8 _clearAttrPolyFacing_v128u8;
+	
 	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 public:

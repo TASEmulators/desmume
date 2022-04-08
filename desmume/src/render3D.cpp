@@ -20,10 +20,6 @@
 
 #include <string.h>
 
-#ifdef ENABLE_SSE2
-#include <emmintrin.h>
-#endif
-
 #include "utils/bits.h"
 #include "MMU.h"
 #include "NDSSystem.h"
@@ -779,6 +775,7 @@ Render3DError Render3D_SIMD<SIMDBYTES>::SetFramebufferSize(size_t w, size_t h)
 }
 
 #if defined(ENABLE_AVX2)
+
 void Render3D_AVX2::_ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog)
 {
 	const __m256i calcDepthConstants = _mm256_set1_epi32(0x01FF0200);
@@ -822,7 +819,9 @@ void Render3D_AVX2::_ClearImageBaseLoop(const u16 *__restrict inColor16, const u
 		_mm256_store_si256( (__m256i *)(outFog + i), _mm256_permute4x64_epi64(_mm256_packus_epi16(clearFogLo, clearFogHi), 0xD8) );
 	}
 }
+
 #elif defined(ENABLE_SSE2)
+
 void Render3D_SSE2::_ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog)
 {
 	const __m128i calcDepthConstants = _mm_set1_epi32(0x01FF0200);
@@ -866,7 +865,46 @@ void Render3D_SSE2::_ClearImageBaseLoop(const u16 *__restrict inColor16, const u
 		_mm_store_si128((__m128i *)(outFog + i), _mm_packs_epi16(clearFogLo, clearFogHi));
 	}
 }
+
+#elif defined(ENABLE_NEON_A64)
+
+void Render3D_NEON::_ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog)
+{
+	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT; i+=sizeof(v128u16))
+	{
+		// Copy the colors to the color buffer.
+		vst1q_u16_x2( outColor16 + i, vld1q_u16_x2(inColor16 + i) );
+		
+		// Write the depth values to the depth buffer using the following formula from GBATEK.
+		// 15-bit to 24-bit depth formula from http://problemkaputt.de/gbatek.htm#ds3drearplane
+		//    D24 = (D15 * 0x0200) + (((D15 + 1) >> 15) * 0x01FF);
+		//
+		// For now, let's forget GBATEK (which could be wrong) and try using a simpified formula:
+		//    D24 = (D15 * 0x0200) + 0x01FF;
+		
+		const uint16x8x2_t clearDepth = vld1q_u16_x2(inDepth16 + i);
+		
+		const uint16x8x2_t clearDepthValue = {
+			vandq_u16(clearDepth.val[0], vdupq_n_u16(0x7FFF)),
+			vandq_u16(clearDepth.val[1], vdupq_n_u16(0x7FFF))
+		};
+		
+		const uint32x4x4_t calcDepth = {
+			vmlal_n_u16( vdupq_n_u32(0x000001FF), vget_low_u16(clearDepthValue.val[0]),  0x0200 ),
+			vmlal_n_u16( vdupq_n_u32(0x000001FF), vget_high_u16(clearDepthValue.val[0]), 0x0200 ),
+			vmlal_n_u16( vdupq_n_u32(0x000001FF), vget_low_u16(clearDepthValue.val[1]),  0x0200 ),
+			vmlal_n_u16( vdupq_n_u32(0x000001FF), vget_high_u16(clearDepthValue.val[1]), 0x0200 )
+		};
+		
+		vst1q_u32_x4(outDepth24 + i, calcDepth);
+		
+		// Write the fog flags to the fog flag buffer.
+		vst1q_u8( outFog + i, vuzp1q_u16(vshrq_n_u16(clearDepth.val[0], 15), vshrq_n_u16(clearDepth.val[1], 15)) );
+	}
+}
+
 #elif defined(ENABLE_ALTIVEC)
+
 void Render3D_AltiVec::_ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog)
 {
 	const v128u16 calcDepthMul = ((v128u16){0x0200,0,0x0200,0,0x0200,0,0x0200,0});
@@ -915,6 +953,7 @@ void Render3D_AltiVec::_ClearImageBaseLoop(const u16 *__restrict inColor16, cons
 		vec_st( vec_pack(clearFogLo, clearFogHi), 0, outFog + i );
 	}
 }
+
 #endif
 
 template Render3D_SIMD<16>::Render3D_SIMD();

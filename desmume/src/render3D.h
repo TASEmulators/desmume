@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2019 DeSmuME team
+	Copyright (C) 2007-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -293,6 +293,14 @@ public:
 #elif defined(ENABLE_SSE2)
 
 class Render3D_SSE2 : public Render3D_SIMD<16>
+{
+public:
+	virtual void _ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
+};
+
+#elif defined(ENABLE_NEON_A64)
+
+class Render3D_NEON : public Render3D_SIMD<16>
 {
 public:
 	virtual void _ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
