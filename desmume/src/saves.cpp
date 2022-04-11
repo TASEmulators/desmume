@@ -744,25 +744,34 @@ void loadstate_slot(int num)
 			static const char PSS = '/';
 			#endif
 			mkdir(dirname.c_str(),0777);
-			static unsigned seed;
-			for(;;)
-			{
-				std::string fname = dirname + PSS;
-				char mini[100];
-				sprintf(mini,"%u",seed);
-				fname += mini + (std::string)".dst";
-				FILE* f = fopen(fname.c_str(),"rb");
-				if(f)
-				{
-					seed = rand()*16000+rand();
-					fclose(f);
-					continue;
-				}
-				seed++;
-				savestate_save(fname.c_str());
-				printf("Creating backup of current state prior to loadstate as path: %s\n",fname.c_str());
-				break;
+			
+			int cur_index = -1; // setup index, -1 in case it is first instance
+			int max_index = 5; // Would be better to get from config instead of hardcodding
+			
+			std::string index_fname = dirname + PSS + "backup.index";
+			FILE* index_file = fopen(index_fname.c_str(), "r+"); // Read/update but don't create
+			if (index_file) {
+				fscanf(index_file, "%d", &cur_index);
+				rewind(index_file); // prepare to overwrite
 			}
+			else
+			{
+				index_file = fopen(index_fname.c_str(), "w"); // Create if doesn't exist
+			}
+			
+			cur_index = (cur_index + 1) % max_index; // next
+
+			fprintf(index_file, "%d", cur_index); // Store new index
+			fclose(index_file);
+
+			std::string fname = dirname + PSS;
+			char mini[100];
+			sprintf(mini,"%u", cur_index);
+			fname += mini + (std::string)".dst";
+
+			savestate_save(fname.c_str());
+			printf("Creating backup of current state prior to loadstate as path: %s\n",fname.c_str());
+			
 		}
 	}
 
