@@ -746,7 +746,7 @@ void loadstate_slot(int num)
 			mkdir(dirname.c_str(),0777);
 			
 			int cur_index = -1; // setup index, -1 in case it is first instance
-			int max_index = 5; // Would be better to get from config instead of hardcodding
+			int max_index = 200; // Would be better to get from config instead of hardcodding
 			
 			std::string index_fname = dirname + PSS + "backup.index";
 			FILE* index_file = fopen(index_fname.c_str(), "r+"); // Read/update but don't create
@@ -762,6 +762,7 @@ void loadstate_slot(int num)
 			cur_index = (cur_index + 1) % max_index; // next
 
 			fprintf(index_file, "%d", cur_index); // Store new index
+			fprintf(index_file, "%d", EOF); // Avoid overwriting just most significant digits(e.g.: 1 -> 200 = 100 )
 			fclose(index_file);
 
 			std::string fname = dirname + PSS;
