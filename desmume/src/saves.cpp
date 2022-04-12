@@ -765,19 +765,24 @@ void loadstate_slot(int num)
 				index_file = fopen(index_fname.c_str(), "w"); // Create if doesn't exist
 			}
 			
-			cur_index = (cur_index + 1) % max_index; // next
+			if (index_file) {
+				cur_index = (cur_index + 1) % max_index; // next
 
-			fprintf(index_file, "%d", cur_index); // Store new index
-			fprintf(index_file, "%d", EOF); // Avoid overwriting just most significant digits(e.g.: 1 -> 200 = 100 )
-			fclose(index_file);
+				fprintf(index_file, "%d", cur_index); // Store new index
+				fprintf(index_file, "%d", EOF); // Avoid overwriting just most significant digits(e.g.: 1 -> 200 = 100 )
+				fclose(index_file);
 
-			std::string fname = dirname + PSS;
-			char mini[100];
-			sprintf(mini,"%u", cur_index);
-			fname += mini + (std::string)".dst";
+				std::string fname = dirname + PSS;
+				char mini[100];
+				sprintf(mini, "%u", cur_index);
+				fname += mini + (std::string)".dst";
 
-			savestate_save(fname.c_str());
-			printf("Creating backup of current state prior to loadstate as path: %s\n",fname.c_str());
+				savestate_save(fname.c_str());
+				printf("Creating backup of current state prior to loadstate as path: %s\n", fname.c_str());
+			}
+			else {
+				printf("Failed to open indexing file %s\n Prior state backup not created, check location write permissions.\n", index_fname.c_str());
+			}
 			
 		}
 	}
