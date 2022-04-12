@@ -732,7 +732,11 @@ void loadstate_slot(int num)
 
 	//save the state before we load the state, to give people a path for recovery in case they hit the wrong key
 	#ifdef HOST_WINDOWS
-	if(!GetPrivateProfileInt("General", "BackupSavestateSuppress", 0, IniName))
+	// Maximum backup number can be set in config: [General] BackupSavesMax=<n>
+	// Setting BackupSavesMax=0 would disable backups
+	int max_index = GetPrivateProfileInt("General", "BackupSavesMax", -1, IniName); // 0 for disabled
+	int suppress_backups = GetPrivateProfileInt("General", "BackupSavestateSuppress", 0, IniName);
+	if(!suppress_backups && max_index != 0 )
 	#endif
 	{
 		if(movieMode == MOVIEMODE_INACTIVE)
@@ -746,7 +750,9 @@ void loadstate_slot(int num)
 			mkdir(dirname.c_str(),0777);
 			
 			int cur_index = -1; // setup index, -1 in case it is first instance
-			int max_index = 200; // Would be better to get from config instead of hardcodding
+			if (max_index == -1) { // If not set
+				max_index = 200;
+			}
 			
 			std::string index_fname = dirname + PSS + "backup.index";
 			FILE* index_file = fopen(index_fname.c_str(), "r+"); // Read/update but don't create
