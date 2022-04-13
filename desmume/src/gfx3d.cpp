@@ -1199,8 +1199,6 @@ static BOOL gfx3d_glLoadMatrix4x4(s32 v)
 
 	GFX_DELAY(19);
 
-	//vector_fix2float<4>(mtxCurrent[mode], 4096.f);
-
 	if (mode == MATRIXMODE_POSITION_VECTOR)
 		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 
@@ -1216,8 +1214,6 @@ static BOOL gfx3d_glLoadMatrix4x3(s32 v)
 	if((ML4x3ind & 0x03) == 3) ML4x3ind++;
 	if(ML4x3ind<16) return FALSE;
 	ML4x3ind = 0;
-
-	//vector_fix2float<4>(mtxCurrent[mode], 4096.f);
 
 	//fill in the unusued matrix values
 	mtxCurrent[mode][3] = mtxCurrent[mode][7] = mtxCurrent[mode][11] = 0;
@@ -1240,8 +1236,6 @@ static BOOL gfx3d_glMultMatrix4x4(s32 v)
 	MM4x4ind = 0;
 
 	GFX_DELAY(35);
-
-	//vector_fix2float<4>(mtxTemporal, 4096.f);
 
 	MatrixMultiply(mtxCurrent[mode], mtxTemporal);
 
@@ -1272,8 +1266,6 @@ static BOOL gfx3d_glMultMatrix4x3(s32 v)
 	MM4x3ind = 0;
 
 	GFX_DELAY(31);
-
-	//vector_fix2float<4>(mtxTemporal, 4096.f);
 
 	//fill in the unusued matrix values
 	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0;
@@ -1309,8 +1301,6 @@ static BOOL gfx3d_glMultMatrix3x3(s32 v)
 	MM3x3ind = 0;
 
 	GFX_DELAY(28);
-
-	//vector_fix2float<3>(mtxTemporal, 4096.f);
 
 	//fill in the unusued matrix values
 	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0;
@@ -1796,8 +1786,6 @@ static BOOL gfx3d_glBoxTest(u32 v)
 
 		//DS_ALIGN(16) VERT_POS4f vert = { verts[i].x, verts[i].y, verts[i].z, verts[i].w };
 		
-		//_MatrixMultVec4x4_NoSIMD(mtxCurrent[MATRIXMODE_POSITION], verts[i].coord);
-		//_MatrixMultVec4x4_NoSIMD(mtxCurrent[MATRIXMODE_PROJECTION], verts[i].coord);
 		MatrixMultVec4x4(mtxCurrent[MATRIXMODE_POSITION], verts[i].coord);
 		MatrixMultVec4x4(mtxCurrent[MATRIXMODE_PROJECTION], verts[i].coord);
 	}

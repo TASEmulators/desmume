@@ -95,16 +95,11 @@ void Vector3Normalize(float *dst);
 
 void Vector4Copy(float *dst, const float *src);
 
-
-void _MatrixMultVec4x4_NoSIMD(const s32 (&__restrict mtx)[16], float (&__restrict vec)[4]);
-
 void MatrixMultVec4x4(const s32 (&__restrict mtx)[16], float (&__restrict vec)[4]);
 void MatrixMultVec3x3(const s32 (&__restrict mtx)[16], float (&__restrict vec)[4]);
 void MatrixTranslate(float (&__restrict mtx)[16], const float (&__restrict vec)[4]);
 void MatrixScale(float (&__restrict mtx)[16], const float (&__restrict vec)[4]);
 void MatrixMultiply(float (&__restrict mtxA)[16], const s32 (&__restrict mtxB)[16]);
-
-template<size_t NUM_ROWS> FORCEINLINE void vector_fix2float(float (&mtx)[16], const float divisor);
 
 void MatrixMultVec4x4(const s32 (&__restrict mtx)[16], s32 (&__restrict vec)[4]);
 void MatrixMultVec3x3(const s32 (&__restrict mtx)[16], s32 (&__restrict vec)[4]);
