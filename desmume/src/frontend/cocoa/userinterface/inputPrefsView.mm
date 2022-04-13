@@ -850,17 +850,7 @@
 	const NSInteger code = [CocoaDSUtil getIBActionSenderTag:sender];
 	
 	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
-	
-#if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
-	if ([[sheet sheetParent] respondsToSelector:@selector(endSheet:returnCode:)])
-	{
-		[[sheet sheetParent] endSheet:sheet returnCode:code];
-	}
-	else
-#endif
-	{
-		[NSApp endSheet:sheet returnCode:code];
-	}
+	[CocoaDSUtil endSheet:sheet returnCode:code];
 }
 
 - (IBAction) updateCustomTurboPatternControls:(id)sender
