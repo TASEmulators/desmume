@@ -124,11 +124,7 @@ static FORCEINLINE void __mtx4_multiply_mtx4_float(float (&__restrict mtxA)[16],
 	CACHE_ALIGN float b[16];
 	
 	MatrixCopy(a, mtxA);
-	
-	// Can't call normal MatrixCopy() because the types would cause mtxB to become normalized.
-	// So instead, we need to call __mtx4_copy_mtx4_float() directly to copy the unmodified
-	// matrix values.
-	__mtx4_copy_mtx4_float(b, mtxB);
+	MatrixCopy(b, mtxB);
 	
 	mtxA[ 0] = (a[ 0] * b[ 0]) + (a[ 4] * b[ 1]) + (a[ 8] * b[ 2]) + (a[12] * b[ 3]);
 	mtxA[ 1] = (a[ 1] * b[ 0]) + (a[ 5] * b[ 1]) + (a[ 9] * b[ 2]) + (a[13] * b[ 3]);
@@ -310,7 +306,9 @@ static FORCEINLINE void __vec3_multiply_mtx3_float_SSE(float (&__restrict inoutV
 	outVec = _mm_add_ps( outVec, _mm_mul_ps(row[1], v[1]) );
 	outVec = _mm_add_ps( outVec, _mm_mul_ps(row[2], v[2]) );
 	
+	const float retainedElement = inoutVec[3];
 	_mm_store_ps(inoutVec, outVec);
+	inoutVec[3] = retainedElement;
 }
 
 static FORCEINLINE void __mtx4_multiply_mtx4_float_SSE(float (&__restrict mtxA)[16], const s32 (&__restrict mtxB)[16])
@@ -426,6 +424,190 @@ static FORCEINLINE void __mtx4_translate_vec3_float_SSE(float (&__restrict inout
 }
 
 #endif // ENABLE_SSE
+
+#ifdef ENABLE_NEON_A64
+
+static FORCEINLINE void __mtx4_copy_mtx4_float_NEON(float (&__restrict outMtx)[16], const s32 (&__restrict inMtx)[16])
+{
+	int32x4x4_t m = vld1q_s32_x4(inMtx);
+	float32x4x4_t f;
+	
+	f.val[0] = vcvtq_f32_s32(m.val[0]);
+	f.val[1] = vcvtq_f32_s32(m.val[1]);
+	f.val[2] = vcvtq_f32_s32(m.val[2]);
+	f.val[3] = vcvtq_f32_s32(m.val[3]);
+	
+	vst1q_f32_x4(outMtx, f);
+}
+
+static FORCEINLINE void __mtx4_copynormalize_mtx4_float_NEON(float (&__restrict outMtx)[16], const s32 (&__restrict inMtx)[16])
+{
+	const int32x4x4_t m = vld1q_s32_x4(inMtx);
+	float32x4x4_t f;
+	
+	f.val[0] = vcvtq_n_f32_s32(m.val[0], 12);
+	f.val[1] = vcvtq_n_f32_s32(m.val[1], 12);
+	f.val[2] = vcvtq_n_f32_s32(m.val[2], 12);
+	f.val[3] = vcvtq_n_f32_s32(m.val[3], 12);
+	
+	vst1q_f32_x4(outMtx, f);
+}
+
+static FORCEINLINE float __vec4_dotproduct_vec4_float_NEON(const float (&__restrict vecA)[4], const float (&__restrict vecB)[4])
+{
+	const float32x4_t a = vld1q_f32(vecA);
+	const float32x4_t b = vld1q_f32(vecB);
+	const float32x4_t mul = vmulq_f32(a, b);
+	const float sum = vaddvq_f32(mul);
+	
+	return sum;
+}
+
+static FORCEINLINE void __vec4_multiply_mtx4_float_NEON(float (&__restrict inoutVec)[4], const s32 (&__restrict inMtx)[16])
+{
+	const int32x4x4_t m = vld1q_s32_x4(inMtx);
+	
+	float32x4x4_t row;
+	row.val[0] = vcvtq_n_f32_s32(m.val[0], 12);
+	row.val[1] = vcvtq_n_f32_s32(m.val[1], 12);
+	row.val[2] = vcvtq_n_f32_s32(m.val[2], 12);
+	row.val[3] = vcvtq_n_f32_s32(m.val[3], 12);
+	
+	const float32x4_t inVec = vld1q_f32(inoutVec);
+	const float32x4_t v[4] = {
+		vdupq_laneq_f32(inVec, 0),
+		vdupq_laneq_f32(inVec, 1),
+		vdupq_laneq_f32(inVec, 2),
+		vdupq_laneq_f32(inVec, 3)
+	};
+	
+	float32x4_t outVec;
+	outVec =                    vmulq_f32(row.val[0], v[0]);
+	outVec = vaddq_f32( outVec, vmulq_f32(row.val[1], v[1]) );
+	outVec = vaddq_f32( outVec, vmulq_f32(row.val[2], v[2]) );
+	outVec = vaddq_f32( outVec, vmulq_f32(row.val[3], v[3]) );
+	
+	vst1q_f32(inoutVec, outVec);
+}
+
+static FORCEINLINE void __vec3_multiply_mtx3_float_NEON(float (&__restrict inoutVec)[4], const s32 (&__restrict inMtx)[16])
+{
+	const int32x4x3_t m = vld1q_s32_x3(inMtx);
+	
+	float32x4x3_t row;
+	row.val[0] = vcvtq_n_f32_s32(m.val[0], 12);
+	row.val[1] = vcvtq_n_f32_s32(m.val[1], 12);
+	row.val[2] = vcvtq_n_f32_s32(m.val[2], 12);
+	
+	const float32x4_t inVec = vld1q_f32(inoutVec);
+	const float32x4_t v[3] = {
+		vdupq_laneq_f32(inVec, 0),
+		vdupq_laneq_f32(inVec, 1),
+		vdupq_laneq_f32(inVec, 2)
+	};
+	
+	float32x4_t outVec;
+	outVec =                    vmulq_f32(row.val[0], v[0]);
+	outVec = vaddq_f32( outVec, vmulq_f32(row.val[1], v[1]) );
+	outVec = vaddq_f32( outVec, vmulq_f32(row.val[2], v[2]) );
+	outVec = vcopyq_laneq_f32(outVec, 3, inVec, 3);
+	
+	vst1q_f32(inoutVec, outVec);
+}
+
+static FORCEINLINE void __mtx4_multiply_mtx4_float_NEON(float (&__restrict mtxA)[16], const s32 (&__restrict mtxB)[16])
+{
+	const int32x4x4_t b = vld1q_s32_x4(mtxB);
+	
+	float32x4x4_t rowB;
+	rowB.val[0] = vcvtq_n_f32_s32(b.val[0], 12);
+	rowB.val[1] = vcvtq_n_f32_s32(b.val[1], 12);
+	rowB.val[2] = vcvtq_n_f32_s32(b.val[2], 12);
+	rowB.val[3] = vcvtq_n_f32_s32(b.val[3], 12);
+	
+	float32x4x4_t rowA = vld1q_f32_x4(mtxA);
+	
+	float32x4_t vecB[4];
+	float32x4_t outRow;
+	
+	vecB[0] = vdupq_laneq_f32(rowB.val[0], 0);
+	vecB[1] = vdupq_laneq_f32(rowB.val[0], 1);
+	vecB[2] = vdupq_laneq_f32(rowB.val[0], 2);
+	vecB[3] = vdupq_laneq_f32(rowB.val[0], 3);
+	outRow =                    vmulq_f32(rowA.val[0], vecB[0]);
+	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[1], vecB[1]) );
+	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[2], vecB[2]) );
+	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[3], vecB[3]) );
+	vst1q_f32(mtxA + 0, outRow);
+	
+	vecB[0] = vdupq_laneq_f32(rowB.val[1], 0);
+	vecB[1] = vdupq_laneq_f32(rowB.val[1], 1);
+	vecB[2] = vdupq_laneq_f32(rowB.val[1], 2);
+	vecB[3] = vdupq_laneq_f32(rowB.val[1], 3);
+	outRow =                    vmulq_f32(rowA.val[0], vecB[0]);
+	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[1], vecB[1]) );
+	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[2], vecB[2]) );
+	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[3], vecB[3]) );
+	vst1q_f32(mtxA + 4, outRow);
+	
+	vecB[0] = vdupq_laneq_f32(rowB.val[2], 0);
+	vecB[1] = vdupq_laneq_f32(rowB.val[2], 1);
+	vecB[2] = vdupq_laneq_f32(rowB.val[2], 2);
+	vecB[3] = vdupq_laneq_f32(rowB.val[2], 3);
+	outRow =                    vmulq_f32(rowA.val[0], vecB[0]);
+	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[1], vecB[1]) );
+	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[2], vecB[2]) );
+	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[3], vecB[3]) );
+	vst1q_f32(mtxA + 8, outRow);
+	
+	vecB[0] = vdupq_laneq_f32(rowB.val[3], 0);
+	vecB[1] = vdupq_laneq_f32(rowB.val[3], 1);
+	vecB[2] = vdupq_laneq_f32(rowB.val[3], 2);
+	vecB[3] = vdupq_laneq_f32(rowB.val[3], 3);
+	outRow =                    vmulq_f32(rowA.val[0], vecB[0]);
+	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[1], vecB[1]) );
+	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[2], vecB[2]) );
+	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[3], vecB[3]) );
+	vst1q_f32(mtxA +12, outRow);
+}
+
+static FORCEINLINE void __mtx4_scale_vec3_float_NEON(float (&__restrict inoutMtx)[16], const float (&__restrict inVec)[4])
+{
+	const float32x4_t inVec128 = vld1q_f32(inVec);
+	const float32x4_t v[3] = {
+		vdupq_laneq_f32(inVec128, 0),
+		vdupq_laneq_f32(inVec128, 1),
+		vdupq_laneq_f32(inVec128, 2)
+	};
+	
+	float32x4x3_t row = vld1q_f32_x3(inoutMtx);
+	row.val[0] = vmulq_f32(row.val[0], v[0]);
+	row.val[1] = vmulq_f32(row.val[1], v[1]);
+	row.val[2] = vmulq_f32(row.val[2], v[2]);
+	
+	vst1q_f32_x3(inoutMtx, row);
+}
+
+static FORCEINLINE void __mtx4_translate_vec3_float_NEON(float (&__restrict inoutMtx)[16], const float (&__restrict inVec)[4])
+{
+	const float32x4_t inVec128 = vld1q_f32(inVec);
+	const float32x4_t v[3] = {
+		vdupq_laneq_f32(inVec128, 0),
+		vdupq_laneq_f32(inVec128, 1),
+		vdupq_laneq_f32(inVec128, 2)
+	};
+	
+	const float32x4x3_t row = vld1q_f32_x3(inoutMtx);
+	
+	float32x4_t outVec;
+	outVec =                    vmulq_f32(row.val[0], v[0]);
+	outVec = vaddq_f32( outVec, vmulq_f32(row.val[1], v[1]) );
+	outVec = vaddq_f32( outVec, vmulq_f32(row.val[2], v[2]) );
+	
+	vst1q_f32(inoutMtx + 12, outVec);
+}
+
+#endif // ENABLE_NEON_A64
 
 static FORCEINLINE s32 ___s32_saturate_shiftdown_accum64_fixed(s64 inAccum)
 {
@@ -550,28 +732,6 @@ static FORCEINLINE void ___s32_saturate_shiftdown_accum64_fixed_SSE4(__m128i &in
 	
 	inoutAccum = _mm_srli_epi64(inoutAccum, 12);
 	inoutAccum = _mm_shuffle_epi32(inoutAccum, 0xD8);
-}
-
-static FORCEINLINE s32 __vec4_dotproduct_vec4_fixed_SSE4(const s32 (&__restrict vecA)[4], const s32 (&__restrict vecB)[4])
-{
-	// Due to SSE4.1's limitations, this function is actually slower than its scalar counterpart,
-	// and so we're just going to use that here. The SSE4.1 code is being included for reference
-	// as inspiration for porting to other ISAs that could see more benefit.
-	return __vec4_dotproduct_vec4_fixed(vecA, vecB);
-	
-	/*
-	const v128s32 inA = _mm_load_si128((v128s32 *)vecA);
-	const v128s32 inB = _mm_load_si128((v128s32 *)vecB);
-	
-	const v128s32 lo = _mm_mul_epi32( _mm_shuffle_epi32(inA, 0x50), _mm_shuffle_epi32(inB, 0x50) );
-	const v128s32 hi = _mm_mul_epi32( _mm_shuffle_epi32(inA, 0xFA), _mm_shuffle_epi32(inB, 0xFA) );
-	
-	s64 accum[4];
-	_mm_store_si128((v128s32 *)&accum[0], lo);
-	_mm_store_si128((v128s32 *)&accum[2], hi);
-	
-	return ___s32_saturate_shiftdown_accum64_fixed( accum[0] + accum[1] + accum[2] + accum[3] );
-	*/
 }
 
 static FORCEINLINE void __vec4_multiply_mtx4_fixed_SSE4(s32 (&__restrict inoutVec)[4], const s32 (&__restrict inMtx)[16])
@@ -868,6 +1028,231 @@ static FORCEINLINE void __mtx4_translate_vec3_fixed_SSE4(s32 (&__restrict inoutM
 
 #endif // ENABLE_SSE4_1
 
+#if defined(ENABLE_NEON_A64)
+
+static FORCEINLINE void ___s32_saturate_shiftdown_accum64_fixed_NEON(int64x2_t &inoutAccum)
+{
+#ifdef FIXED_POINT_MATH_FUNCTIONS_USE_ACCUMULATOR_SATURATE
+	int64x2_t outVecMask;
+	
+	outVecMask = vcgtq_s64( inoutAccum, vdupq_n_s64((s64)0x000007FFFFFFFFFFULL) );
+	inoutAccum = vbslq_s64( outVecMask, vdupq_n_s64((s64)0x000007FFFFFFFFFFULL), inoutAccum );
+	
+	outVecMask = vcltq_s64( inoutAccum, vdupq_n_s64((s64)0xFFFFF80000000000ULL) );
+	inoutAccum = vbslq_s64( outVecMask, vdupq_n_s64((s64)0xFFFFF80000000000ULL), inoutAccum );
+#endif // FIXED_POINT_MATH_FUNCTIONS_USE_ACCUMULATOR_SATURATE
+	
+	inoutAccum = vshrq_n_s64(inoutAccum, 12);
+	inoutAccum = vreinterpretq_s64_s32( vuzp1q_s32(inoutAccum, vdupq_n_s32(0)) );
+}
+
+static FORCEINLINE s32 __vec4_dotproduct_vec4_fixed_NEON(const s32 (&__restrict vecA)[4], const s32 (&__restrict vecB)[4])
+{
+	const v128s32 a = vld1q_s32(vecA);
+	const v128s32 b = vld1q_s32(vecB);
+	const int64x2_t lo = vmull_s32( vget_low_s32(a), vget_low_s32(b) );
+	const int64x2_t hi = vmull_s32( vget_high_s32(a), vget_high_s32(b) );
+	const s64 sum = vaddvq_s64( vpaddq_s64(lo,hi) );
+	
+	return ___s32_saturate_shiftdown_accum64_fixed(sum);
+}
+
+static FORCEINLINE void __vec4_multiply_mtx4_fixed_NEON(s32 (&__restrict inoutVec)[4], const s32 (&__restrict inMtx)[16])
+{
+	const v128s32 inVec128 = vld1q_s32(inoutVec);
+	
+	const int32x2_t v[4] = {
+		vdup_laneq_s32(inVec128, 0),
+		vdup_laneq_s32(inVec128, 1),
+		vdup_laneq_s32(inVec128, 2),
+		vdup_laneq_s32(inVec128, 3),
+	};
+	
+	const int32x4x4_t row = vld1q_s32_x4(inMtx);
+	
+	int64x2_t outVecLo =            vmull_s32(vget_low_s32(row.val[0]), v[0]);
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[1]), v[1]) );
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[2]), v[2]) );
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[3]), v[3]) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
+	
+	int64x2_t outVecHi =            vmull_s32(vget_high_s32(row.val[0]), v[0]);
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[1]), v[1]) );
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[2]), v[2]) );
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[3]), v[3]) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	
+	vst1q_s32( inoutVec, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
+}
+
+static FORCEINLINE void __vec3_multiply_mtx3_fixed_NEON(s32 (&__restrict inoutVec)[4], const s32 (&__restrict inMtx)[16])
+{
+	const v128s32 inVec = vld1q_s32(inoutVec);
+	
+	const int32x2_t v[3] = {
+		vdup_laneq_s32(inVec, 0),
+		vdup_laneq_s32(inVec, 1),
+		vdup_laneq_s32(inVec, 2)
+	};
+	
+	const int32x4x3_t row = vld1q_s32_x3(inMtx);
+	
+	int64x2_t outVecLo =            vmull_s32(vget_low_s32(row.val[0]), v[0]);
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[1]), v[1]) );
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[2]), v[2]) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
+	
+	int64x2_t outVecHi =            vmull_s32(vget_high_s32(row.val[0]), v[0]);
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[1]), v[1]) );
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[2]), v[2]) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	
+	v128s32 outVec = vreinterpretq_s32_s64( vzip1q_s64(outVecLo, outVecHi) );
+	outVec = vcopyq_laneq_s32(outVec, 3, inVec, 3);
+	
+	vst1q_s32(inoutVec, outVec);
+}
+
+static FORCEINLINE void __mtx4_multiply_mtx4_fixed_NEON(s32 (&__restrict mtxA)[16], const s32 (&__restrict mtxB)[16])
+{
+	const int32x4x4_t rowA = vld1q_s32_x4(mtxA);
+	const int32x4x4_t rowB = vld1q_s32_x4(mtxB);
+	
+	int64x2_t outVecLo;
+	int64x2_t outVecHi;
+	int32x2_t v[4];
+	
+	v[0] = vdup_laneq_s32(rowB.val[0], 0);
+	v[1] = vdup_laneq_s32(rowB.val[0], 1);
+	v[2] = vdup_laneq_s32(rowB.val[0], 2);
+	v[3] = vdup_laneq_s32(rowB.val[0], 3);
+	outVecLo =                      vmull_s32(vget_low_s32(rowA.val[0]), v[0]);
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[1]), v[1]) );
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[2]), v[2]) );
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[3]), v[3]) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
+	outVecHi =                      vmull_s32(vget_high_s32(rowA.val[0]), v[0]);
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[1]), v[1]) );
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[2]), v[2]) );
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[3]), v[3]) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	vst1q_s32( mtxA + 0, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
+	
+	v[0] = vdup_laneq_s32(rowB.val[1], 0);
+	v[1] = vdup_laneq_s32(rowB.val[1], 1);
+	v[2] = vdup_laneq_s32(rowB.val[1], 2);
+	v[3] = vdup_laneq_s32(rowB.val[1], 3);
+	outVecLo =                      vmull_s32(vget_low_s32(rowA.val[0]), v[0]);
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[1]), v[1]) );
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[2]), v[2]) );
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[3]), v[3]) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
+	outVecHi =                      vmull_s32(vget_high_s32(rowA.val[0]), v[0]);
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[1]), v[1]) );
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[2]), v[2]) );
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[3]), v[3]) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	vst1q_s32( mtxA + 4, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
+	
+	v[0] = vdup_laneq_s32(rowB.val[2], 0);
+	v[1] = vdup_laneq_s32(rowB.val[2], 1);
+	v[2] = vdup_laneq_s32(rowB.val[2], 2);
+	v[3] = vdup_laneq_s32(rowB.val[2], 3);
+	outVecLo =                      vmull_s32(vget_low_s32(rowA.val[0]), v[0]);
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[1]), v[1]) );
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[2]), v[2]) );
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[3]), v[3]) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
+	outVecHi =                      vmull_s32(vget_high_s32(rowA.val[0]), v[0]);
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[1]), v[1]) );
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[2]), v[2]) );
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[3]), v[3]) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	vst1q_s32( mtxA + 8, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
+	
+	v[0] = vdup_laneq_s32(rowB.val[3], 0);
+	v[1] = vdup_laneq_s32(rowB.val[3], 1);
+	v[2] = vdup_laneq_s32(rowB.val[3], 2);
+	v[3] = vdup_laneq_s32(rowB.val[3], 3);
+	outVecLo =                      vmull_s32(vget_low_s32(rowA.val[0]), v[0]);
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[1]), v[1]) );
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[2]), v[2]) );
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[3]), v[3]) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
+	outVecHi =                      vmull_s32(vget_high_s32(rowA.val[0]), v[0]);
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[1]), v[1]) );
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[2]), v[2]) );
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[3]), v[3]) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	vst1q_s32( mtxA +12, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
+}
+
+static FORCEINLINE void __mtx4_scale_vec3_fixed_NEON(s32 (&__restrict inoutMtx)[16], const s32 (&__restrict inVec)[4])
+{
+	const v128s32 inVec128 = vld1q_s32(inVec);
+	
+	const int32x2_t v[3] = {
+		vdup_laneq_s32(inVec128, 0),
+		vdup_laneq_s32(inVec128, 1),
+		vdup_laneq_s32(inVec128, 2)
+	};
+	
+	const int32x4x3_t row = vld1q_s32_x3(inoutMtx);
+	
+	int64x2_t outVecLo;
+	int64x2_t outVecHi;
+	
+	outVecLo = vmull_s32(vget_low_s32(row.val[0]), v[0]);
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
+	
+	outVecHi = vmull_s32(vget_high_s32(row.val[0]), v[0]);
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	vst1q_s32( inoutMtx + 0, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
+	
+	outVecLo = vmull_s32(vget_low_s32(row.val[1]), v[1]);
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
+	
+	outVecHi = vmull_s32(vget_high_s32(row.val[1]), v[1]);
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	vst1q_s32( inoutMtx + 4, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
+	
+	outVecLo = vmull_s32(vget_low_s32(row.val[2]), v[2]);
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
+	
+	outVecHi = vmull_s32(vget_high_s32(row.val[2]), v[2]);
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	vst1q_s32( inoutMtx + 8, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
+}
+
+static FORCEINLINE void __mtx4_translate_vec3_fixed_NEON(s32 (&__restrict inoutMtx)[16], const s32 (&__restrict inVec)[4])
+{
+	const v128s32 inVec128 = vld1q_s32(inVec);
+	
+	const int32x2_t v[3] = {
+		vdup_laneq_s32(inVec128, 0),
+		vdup_laneq_s32(inVec128, 1),
+		vdup_laneq_s32(inVec128, 2)
+	};
+	
+	const int32x4x4_t row = vld1q_s32_x4(inoutMtx);
+	
+	int64x2_t outVecLo =            vmull_s32(vget_low_s32(row.val[0]), v[0]);
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[1]), v[1]) );
+	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[2]), v[2]) );
+	outVecLo = vaddq_s64( outVecLo, vshlq_n_s64(vmovl_s32(vget_low_s32(row.val[3])), 12) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
+	
+	int64x2_t outVecHi =            vmull_s32(vget_high_s32(row.val[0]), v[0]);
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[1]), v[1]) );
+	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[2]), v[2]) );
+	outVecHi = vaddq_s64( outVecHi, vshlq_n_s64(vmovl_s32(vget_high_s32(row.val[3])), 12) );
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	
+	vst1q_s32( inoutMtx + 12, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
+}
+
+#endif // ENABLE_NEON_A64
+
 void MatrixInit(s32 (&mtx)[16])
 {
 	MatrixIdentity(mtx);
@@ -933,6 +1318,8 @@ void MatrixCopy(float (&__restrict mtxDst)[16], const s32 (&__restrict mtxSrc)[1
 {
 #if defined(ENABLE_SSE)
 	__mtx4_copynormalize_mtx4_float_SSE(mtxDst, mtxSrc);
+#elif defined(ENABLE_NEON_A64)
+	__mtx4_copynormalize_mtx4_float_NEON(mtxDst, mtxSrc);
 #else
 	__mtx4_copynormalize_mtx4_float(mtxDst, mtxSrc);
 #endif
@@ -958,8 +1345,8 @@ s32 MatrixGetMultipliedIndex(const u32 index, const s32 (&__restrict mtxA)[16], 
 	const s32 vecA[4] = { mtxA[col+0], mtxA[col+4], mtxA[col+8], mtxA[col+12] };
 	const s32 vecB[4] = { mtxB[row+0], mtxB[row+1], mtxB[row+2], mtxB[row+3] };
 	
-#if defined(ENABLE_SSE4_1)
-	return __vec4_dotproduct_vec4_fixed_SSE4(vecA, vecB);
+#if defined(ENABLE_NEON_A64)
+	return __vec4_dotproduct_vec4_fixed_NEON(vecA, vecB);
 #else
 	return __vec4_dotproduct_vec4_fixed(vecA, vecB);
 #endif
@@ -977,6 +1364,8 @@ float MatrixGetMultipliedIndex(const u32 index, const float (&__restrict mtxA)[1
 	
 #if defined(ENABLE_SSE4_1)
 	return __vec4_dotproduct_vec4_float_SSE4(vecA, vecB);
+#elif defined(ENABLE_NEON_A64)
+	return __vec4_dotproduct_vec4_float_NEON(vecA, vecB);
 #else
 	return __vec4_dotproduct_vec4_float(vecA, vecB);
 #endif
@@ -1104,6 +1493,8 @@ void MatrixMultVec4x4(const s32 (&__restrict mtx)[16], s32 (&__restrict vec)[4])
 {
 #if defined(ENABLE_SSE4_1)
 	__vec4_multiply_mtx4_fixed_SSE4(vec, mtx);
+#elif defined(ENABLE_NEON_A64)
+	__vec4_multiply_mtx4_fixed_NEON(vec, mtx);
 #else
 	__vec4_multiply_mtx4_fixed(vec, mtx);
 #endif
@@ -1113,6 +1504,8 @@ void MatrixMultVec4x4(const s32 (&__restrict mtx)[16], float (&__restrict vec)[4
 {
 #if defined(ENABLE_SSE)
 	__vec4_multiply_mtx4_float_SSE(vec, mtx);
+#elif defined(ENABLE_NEON_A64)
+	__vec4_multiply_mtx4_float_NEON(vec, mtx);
 #else
 	__vec4_multiply_mtx4_float(vec, mtx);
 #endif
@@ -1122,6 +1515,8 @@ void MatrixMultVec3x3(const s32 (&__restrict mtx)[16], s32 (&__restrict vec)[4])
 {
 #if defined(ENABLE_SSE4_1)
 	__vec3_multiply_mtx3_fixed_SSE4(vec, mtx);
+#elif defined(ENABLE_NEON_A64)
+	__vec3_multiply_mtx3_fixed_NEON(vec, mtx);
 #else
 	__vec3_multiply_mtx3_fixed(vec, mtx);
 #endif
@@ -1131,6 +1526,8 @@ void MatrixMultVec3x3(const s32 (&__restrict mtx)[16], float (&__restrict vec)[4
 {
 #if defined(ENABLE_SSE)
 	__vec3_multiply_mtx3_float_SSE(vec, mtx);
+#elif defined(ENABLE_NEON_A64)
+	__vec3_multiply_mtx3_float_NEON(vec, mtx);
 #else
 	__vec3_multiply_mtx3_float(vec, mtx);
 #endif
@@ -1140,6 +1537,8 @@ void MatrixTranslate(s32 (&__restrict mtx)[16], const s32 (&__restrict vec)[4])
 {
 #if defined(ENABLE_SSE4_1)
 	__mtx4_translate_vec3_fixed_SSE4(mtx, vec);
+#elif defined(ENABLE_NEON_A64)
+	__mtx4_translate_vec3_fixed_NEON(mtx, vec);
 #else
 	__mtx4_translate_vec3_fixed(mtx, vec);
 #endif
@@ -1149,6 +1548,8 @@ void MatrixTranslate(float (&__restrict mtx)[16], const float (&__restrict vec)[
 {
 #if defined(ENABLE_SSE)
 	__mtx4_translate_vec3_float_SSE(mtx, vec);
+#elif defined(ENABLE_NEON_A64)
+	__mtx4_translate_vec3_float_NEON(mtx, vec);
 #else
 	__mtx4_translate_vec3_float(mtx, vec);
 #endif
@@ -1158,6 +1559,8 @@ void MatrixScale(s32 (&__restrict mtx)[16], const s32 (&__restrict vec)[4])
 {
 #if defined(ENABLE_SSE4_1)
 	__mtx4_scale_vec3_fixed_SSE4(mtx, vec);
+#elif defined(ENABLE_NEON_A64)
+	__mtx4_scale_vec3_fixed_NEON(mtx, vec);
 #else
 	__mtx4_scale_vec3_fixed(mtx, vec);
 #endif
@@ -1167,6 +1570,8 @@ void MatrixScale(float (&__restrict mtx)[16], const float (&__restrict vec)[4])
 {
 #if defined(ENABLE_SSE)
 	__mtx4_scale_vec3_float_SSE(mtx, vec);
+#elif defined(ENABLE_NEON_A64)
+	__mtx4_scale_vec3_float_NEON(mtx, vec);
 #else
 	__mtx4_scale_vec3_float(mtx, vec);
 #endif
@@ -1176,6 +1581,8 @@ void MatrixMultiply(s32 (&__restrict mtxA)[16], const s32 (&__restrict mtxB)[16]
 {
 #if defined(ENABLE_SSE4_1)
 	__mtx4_multiply_mtx4_fixed_SSE4(mtxA, mtxB);
+#elif defined(ENABLE_NEON_A64)
+	__mtx4_multiply_mtx4_fixed_NEON(mtxA, mtxB);
 #else
 	__mtx4_multiply_mtx4_fixed(mtxA, mtxB);
 #endif
@@ -1185,6 +1592,8 @@ void MatrixMultiply(float (&__restrict mtxA)[16], const s32 (&__restrict mtxB)[1
 {
 #if defined(ENABLE_SSE)
 	__mtx4_multiply_mtx4_float_SSE(mtxA, mtxB);
+#elif defined(ENABLE_NEON_A64)
+	__mtx4_multiply_mtx4_float_NEON(mtxA, mtxB);
 #else
 	__mtx4_multiply_mtx4_float(mtxA, mtxB);
 #endif
