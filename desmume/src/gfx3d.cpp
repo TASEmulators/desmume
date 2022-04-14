@@ -1,6 +1,6 @@
 /*	
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2021 DeSmuME team
+	Copyright (C) 2008-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -286,11 +286,12 @@ static float normalTable[1024];
 static CACHE_ALIGN FragmentColor _gfx3d_savestateBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 
 // Matrix stack handling
-//TODO: decouple stack pointers from matrix stack type
-CACHE_ALIGN MatrixStack<MATRIXMODE_PROJECTION> mtxStackProjection;
-CACHE_ALIGN MatrixStack<MATRIXMODE_POSITION> mtxStackPosition;
-CACHE_ALIGN MatrixStack<MATRIXMODE_POSITION_VECTOR> mtxStackPositionVector;
-CACHE_ALIGN MatrixStack<MATRIXMODE_TEXTURE> mtxStackTexture;
+CACHE_ALIGN NDSMatrixStack1  mtxStackProjection;
+CACHE_ALIGN NDSMatrixStack32 mtxStackPosition;
+CACHE_ALIGN NDSMatrixStack32 mtxStackPositionVector;
+CACHE_ALIGN NDSMatrixStack1  mtxStackTexture;
+
+u32 mtxStackIndex[4];
 
 static CACHE_ALIGN s32 mtxCurrent[4][16];
 static CACHE_ALIGN s32 mtxTemporal[16];
@@ -632,11 +633,16 @@ void gfx3d_reset()
 	MatrixInit(mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 	MatrixInit(mtxCurrent[MATRIXMODE_TEXTURE]);
 	MatrixInit(mtxTemporal);
-
-	MatrixStackInit(&mtxStackProjection);
-	MatrixStackInit(&mtxStackPosition);
-	MatrixStackInit(&mtxStackPositionVector);
-	MatrixStackInit(&mtxStackTexture);
+	
+	mtxStackIndex[MATRIXMODE_PROJECTION] = 0;
+	mtxStackIndex[MATRIXMODE_POSITION] = 0;
+	mtxStackIndex[MATRIXMODE_POSITION_VECTOR] = 0;
+	mtxStackIndex[MATRIXMODE_TEXTURE] = 0;
+	
+	MatrixInit(mtxStackProjection[0]);
+	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION);        i++) { MatrixInit(mtxStackPosition[i]);       }
+	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++) { MatrixInit(mtxStackPositionVector[i]); }
+	MatrixInit(mtxStackTexture[0]);
 
 	clCmd = 0;
 	clInd = 0;
@@ -1028,9 +1034,9 @@ static void gfx3d_glPushMatrix()
 	{
 		if (mode == MATRIXMODE_PROJECTION)
 		{
-			MatrixCopy(mtxStackProjection.matrix[0], mtxCurrent[mode]);
+			MatrixCopy(mtxStackProjection[0], mtxCurrent[mode]);
 			
-			u32 &index = mtxStackProjection.position;
+			u32 &index = mtxStackIndex[MATRIXMODE_PROJECTION];
 			if (index == 1) MMU_new.gxstat.se = 1;
 			index += 1;
 			index &= 1;
@@ -1039,9 +1045,9 @@ static void gfx3d_glPushMatrix()
 		}
 		else
 		{
-			MatrixCopy(mtxStackTexture.matrix[0], mtxCurrent[mode]);
+			MatrixCopy(mtxStackTexture[0], mtxCurrent[mode]);
 			
-			u32 &index = mtxStackTexture.position;
+			u32 &index = mtxStackIndex[MATRIXMODE_TEXTURE];
 			if (index == 1) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
 			index += 1;
 			index &= 1;
@@ -1049,10 +1055,10 @@ static void gfx3d_glPushMatrix()
 	}
 	else
 	{
-		u32 &index = mtxStackPosition.position;
+		u32 &index = mtxStackIndex[MATRIXMODE_POSITION];
 		
-		MatrixCopy(mtxStackPosition.matrix[index & 31], mtxCurrent[MATRIXMODE_POSITION]);
-		MatrixCopy(mtxStackPositionVector.matrix[index & 31], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+		MatrixCopy(mtxStackPosition[index & 31], mtxCurrent[MATRIXMODE_POSITION]);
+		MatrixCopy(mtxStackPositionVector[index & 31], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 		
 		index += 1;
 		index &= 63;
@@ -1079,31 +1085,31 @@ static void gfx3d_glPopMatrix(u32 v)
 		
 		if (mode == MATRIXMODE_PROJECTION)
 		{
-			u32 &index = mtxStackProjection.position;
+			u32 &index = mtxStackIndex[MATRIXMODE_PROJECTION];
 			index ^= 1;
 			if (index == 1) MMU_new.gxstat.se = 1;
-			MatrixCopy(mtxCurrent[mode], mtxStackProjection.matrix[0]);
+			MatrixCopy(mtxCurrent[mode], mtxStackProjection[0]);
 
 			UpdateProjection();
 		}
 		else
 		{
-			u32 &index = mtxStackTexture.position;
+			u32 &index = mtxStackIndex[MATRIXMODE_TEXTURE];
 			index ^= 1;
 			if (index == 1) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
-			MatrixCopy(mtxCurrent[mode], mtxStackTexture.matrix[0]);
+			MatrixCopy(mtxCurrent[mode], mtxStackTexture[0]);
 		}
 	}
 	else
 	{
-		u32 &index = mtxStackPosition.position;
-			
+		u32 &index = mtxStackIndex[MATRIXMODE_POSITION];
+		
 		index -= v & 63;
 		index &= 63;
 		if (index >= 32) MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
 		
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxStackPosition.matrix[index & 31]);
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], mtxStackPositionVector.matrix[index & 31]);
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxStackPosition[index & 31]);
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], mtxStackPositionVector[index & 31]);
 	}
 
 	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
@@ -1123,12 +1129,12 @@ static void gfx3d_glStoreMatrix(u32 v)
 		
 		if (mode == MATRIXMODE_PROJECTION)
 		{
-			MatrixCopy(mtxStackProjection.matrix[0], mtxCurrent[MATRIXMODE_PROJECTION]);
+			MatrixCopy(mtxStackProjection[0], mtxCurrent[MATRIXMODE_PROJECTION]);
 			UpdateProjection();
 		}
 		else
 		{
-			MatrixCopy(mtxStackTexture.matrix[0], mtxCurrent[MATRIXMODE_TEXTURE]);
+			MatrixCopy(mtxStackTexture[0], mtxCurrent[MATRIXMODE_TEXTURE]);
 		}
 	}
 	else
@@ -1138,8 +1144,8 @@ static void gfx3d_glStoreMatrix(u32 v)
 		//out of bounds function fully properly, but set errors (not sure, this might be off by 1)
 		if (v >= 31) MMU_new.gxstat.se = 1;
 		
-		MatrixCopy(mtxStackPosition.matrix[v], mtxCurrent[MATRIXMODE_POSITION]);
-		MatrixCopy(mtxStackPositionVector.matrix[v], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+		MatrixCopy(mtxStackPosition[v], mtxCurrent[MATRIXMODE_POSITION]);
+		MatrixCopy(mtxStackPositionVector[v], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 	}
 
 	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
@@ -1156,12 +1162,12 @@ static void gfx3d_glRestoreMatrix(u32 v)
 		
 		if (mode == MATRIXMODE_PROJECTION)
 		{
-			MatrixCopy(mtxCurrent[MATRIXMODE_PROJECTION], mtxStackProjection.matrix[0]);
+			MatrixCopy(mtxCurrent[MATRIXMODE_PROJECTION], mtxStackProjection[0]);
 			UpdateProjection();
 		}
 		else
 		{
-			MatrixCopy(mtxCurrent[MATRIXMODE_TEXTURE], mtxStackTexture.matrix[0]);
+			MatrixCopy(mtxCurrent[MATRIXMODE_TEXTURE], mtxStackTexture[0]);
 		}
 	}
 	else
@@ -1169,8 +1175,8 @@ static void gfx3d_glRestoreMatrix(u32 v)
 		//out of bounds errors function fully properly, but set errors
 		MMU_new.gxstat.se = (v >= 31) ? 1 : 0; //(not sure, this might be off by 1)
 		
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxStackPosition.matrix[v]);
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], mtxStackPositionVector.matrix[v]);
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxStackPosition[v]);
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], mtxStackPositionVector[v]);
 	}
 
 
@@ -2659,19 +2665,19 @@ void gfx3d_glGetMatrix(const int index, float (&dst)[16])
 		switch (MODE)
 		{
 			case MATRIXMODE_PROJECTION:
-				MatrixCopy(dst, mtxStackProjection.matrix[0]);
+				MatrixCopy(dst, mtxStackProjection[0]);
 				break;
 				
 			case MATRIXMODE_POSITION:
-				MatrixCopy(dst, mtxStackPosition.matrix[0]);
+				MatrixCopy(dst, mtxStackPosition[0]);
 				break;
 				
 			case MATRIXMODE_POSITION_VECTOR:
-				MatrixCopy(dst, mtxStackPositionVector.matrix[0]);
+				MatrixCopy(dst, mtxStackPositionVector[0]);
 				break;
 				
 			case MATRIXMODE_TEXTURE:
-				MatrixCopy(dst, mtxStackTexture.matrix[0]);
+				MatrixCopy(dst, mtxStackTexture[0]);
 				break;
 				
 			default:
@@ -2859,34 +2865,34 @@ void gfx3d_savestate(EMUFILE &os)
 		polylist->list[i].save(os);
 
 	// Write matrix stack data
-	os.write_32LE(mtxStackProjection.position);
+	os.write_32LE(mtxStackIndex[MATRIXMODE_PROJECTION]);
 	for (size_t j = 0; j < 16; j++)
 	{
-		os.write_32LE(mtxStackProjection.matrix[0][j]);
+		os.write_32LE(mtxStackProjection[0][j]);
 	}
 	
-	os.write_32LE(mtxStackPosition.position);
-	for (size_t i = 0; i < MatrixStack<MATRIXMODE_POSITION>::size; i++)
+	os.write_32LE(mtxStackIndex[MATRIXMODE_POSITION]);
+	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION); i++)
 	{
 		for (size_t j = 0; j < 16; j++)
 		{
-			os.write_32LE(mtxStackPosition.matrix[i][j]);
+			os.write_32LE(mtxStackPosition[i][j]);
 		}
 	}
 	
-	os.write_32LE(mtxStackPositionVector.position);
-	for (size_t i = 0; i < MatrixStack<MATRIXMODE_POSITION_VECTOR>::size; i++)
+	os.write_32LE(mtxStackIndex[MATRIXMODE_POSITION_VECTOR]);
+	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++)
 	{
 		for (size_t j = 0; j < 16; j++)
 		{
-			os.write_32LE(mtxStackPositionVector.matrix[i][j]);
+			os.write_32LE(mtxStackPositionVector[i][j]);
 		}
 	}
 	
-	os.write_32LE(mtxStackTexture.position);
+	os.write_32LE(mtxStackIndex[MATRIXMODE_TEXTURE]);
 	for (size_t j = 0; j < 16; j++)
 	{
-		os.write_32LE(mtxStackTexture.matrix[0][j]);
+		os.write_32LE(mtxStackTexture[0][j]);
 	}
 
 	gxf_hardware.savestate(os);
@@ -2953,34 +2959,34 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 	if (version >= 2)
 	{
 		// Read matrix stack data
-		is.read_32LE(mtxStackProjection.position);
+		is.read_32LE(mtxStackIndex[MATRIXMODE_PROJECTION]);
 		for (size_t j = 0; j < 16; j++)
 		{
-			is.read_32LE(mtxStackProjection.matrix[0][j]);
+			is.read_32LE(mtxStackProjection[0][j]);
 		}
 		
-		is.read_32LE(mtxStackPosition.position);
-		for (size_t i = 0; i < MatrixStack<MATRIXMODE_POSITION>::size; i++)
+		is.read_32LE(mtxStackIndex[MATRIXMODE_POSITION]);
+		for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION); i++)
 		{
 			for (size_t j = 0; j < 16; j++)
 			{
-				is.read_32LE(mtxStackPosition.matrix[i][j]);
+				is.read_32LE(mtxStackPosition[i][j]);
 			}
 		}
 		
-		is.read_32LE(mtxStackPositionVector.position);
-		for (size_t i = 0; i < MatrixStack<MATRIXMODE_POSITION_VECTOR>::size; i++)
+		is.read_32LE(mtxStackIndex[MATRIXMODE_POSITION_VECTOR]);
+		for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++)
 		{
 			for (size_t j = 0; j < 16; j++)
 			{
-				is.read_32LE(mtxStackPositionVector.matrix[i][j]);
+				is.read_32LE(mtxStackPositionVector[i][j]);
 			}
 		}
 		
-		is.read_32LE(mtxStackTexture.position);
+		is.read_32LE(mtxStackIndex[MATRIXMODE_TEXTURE]);
 		for (size_t j = 0; j < 16; j++)
 		{
-			is.read_32LE(mtxStackTexture.matrix[0][j]);
+			is.read_32LE(mtxStackTexture[0][j]);
 		}
 	}
 

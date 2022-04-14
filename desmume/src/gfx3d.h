@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2019 DeSmuME team
+	Copyright (C) 2008-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -77,10 +77,12 @@ class EMUFILE;
 extern CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 #define DS_DEPTH15TO24(depth) ( dsDepthExtend_15bit_to_24bit[(depth) & 0x7FFF] )
 
-extern CACHE_ALIGN MatrixStack<MATRIXMODE_PROJECTION> mtxStackProjection;
-extern CACHE_ALIGN MatrixStack<MATRIXMODE_POSITION> mtxStackPosition;
-extern CACHE_ALIGN MatrixStack<MATRIXMODE_POSITION_VECTOR> mtxStackPositionVector;
-extern CACHE_ALIGN MatrixStack<MATRIXMODE_TEXTURE> mtxStackTexture;
+extern CACHE_ALIGN NDSMatrixStack1  mtxStackProjection;
+extern CACHE_ALIGN NDSMatrixStack32 mtxStackPosition;
+extern CACHE_ALIGN NDSMatrixStack32 mtxStackPositionVector;
+extern CACHE_ALIGN NDSMatrixStack1  mtxStackTexture;
+
+extern u32 mtxStackIndex[4];
 
 // POLYGON PRIMITIVE TYPES
 enum PolygonPrimitiveType

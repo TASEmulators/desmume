@@ -1263,33 +1263,6 @@ float MatrixGetMultipliedIndex(const u32 index, const float (&__restrict mtxA)[1
 #endif
 }
 
-template <MatrixMode MODE>
-void MatrixStackInit(MatrixStack<MODE> *stack)
-{
-	for (size_t i = 0; i < MatrixStack<MODE>::size; i++)
-	{
-		MatrixInit(stack->matrix[i]);
-	}
-	
-	stack->position = 0;
-}
-
-template <MatrixMode MODE>
-s32* MatrixStackGet(MatrixStack<MODE> *stack)
-{
-	return stack->matrix[stack->position];
-}
-
-template void MatrixStackInit(MatrixStack<MATRIXMODE_PROJECTION> *stack);
-template void MatrixStackInit(MatrixStack<MATRIXMODE_POSITION> *stack);
-template void MatrixStackInit(MatrixStack<MATRIXMODE_POSITION_VECTOR> *stack);
-template void MatrixStackInit(MatrixStack<MATRIXMODE_TEXTURE> *stack);
-
-template s32* MatrixStackGet(MatrixStack<MATRIXMODE_PROJECTION> *stack);
-template s32* MatrixStackGet(MatrixStack<MATRIXMODE_POSITION> *stack);
-template s32* MatrixStackGet(MatrixStack<MATRIXMODE_POSITION_VECTOR> *stack);
-template s32* MatrixStackGet(MatrixStack<MATRIXMODE_TEXTURE> *stack);
-
 // TODO: All of these float-based vector functions are obsolete and should be deleted.
 void Vector2Copy(float *dst, const float *src)
 {

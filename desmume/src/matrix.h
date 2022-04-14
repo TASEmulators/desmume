@@ -45,15 +45,12 @@ enum MatrixMode
 	MATRIXMODE_TEXTURE			= 3
 };
 
-template<MatrixMode MODE>
-struct MatrixStack
-{
-	static const size_t size = ((MODE == MATRIXMODE_PROJECTION) || (MODE == MATRIXMODE_TEXTURE)) ? 1 : 32;
-	static const MatrixMode type = MODE;
-	
-	s32 matrix[size][16];
-	u32 position;
-};
+#define NDSMATRIXSTACK_COUNT(mode) ( (((mode) == MATRIXMODE_PROJECTION) || ((mode) == MATRIXMODE_TEXTURE)) ? 1 : 32 )
+
+typedef float NDSMatrixFloat[16];
+typedef s32 NDSMatrix[16];
+typedef NDSMatrix NDSMatrixStack1[1]; // Used for MATRIXMODE_PROJECTION and MATRIXMODE_TEXTURE
+typedef NDSMatrix NDSMatrixStack32[32]; // Used for MATRIXMODE_POSITION and MATRIXMODE_POSITION_VECTOR
 
 void MatrixInit(s32 (&mtx)[16]);
 void MatrixInit(float (&mtx)[16]);
@@ -74,9 +71,6 @@ int MatrixCompare(const float (&__restrict mtxDst)[16], const float (&__restrict
 
 s32	MatrixGetMultipliedIndex(const u32 index, const s32 (&__restrict mtxA)[16], const s32 (&__restrict mtxB)[16]);
 float MatrixGetMultipliedIndex(const u32 index, const float (&__restrict mtxA)[16], const float (&__restrict mtxB)[16]);
-
-template<MatrixMode MODE> void MatrixStackInit(MatrixStack<MODE> *stack);
-template<MatrixMode MODE> s32* MatrixStackGet(MatrixStack<MODE> *stack);
 
 void Vector2Copy(float *dst, const float *src);
 void Vector2Add(float *dst, const float *src);
