@@ -1263,9 +1263,9 @@ static void* RunCoreThread(void *arg)
 			avCaptureObject->StreamWriteStart();
 		}
 		
-		// Make sure that the mic level is updated at least once every 8 frames, regardless
+		// Make sure that the mic level is updated at least once every 4 frames, regardless
 		// of whether the NDS actually reads the mic or not.
-		if ((ndsFrameInfo.frameIndex & 0x07) == 0x07)
+		if ((ndsFrameInfo.frameIndex & 0x03) == 0x03)
 		{
 			NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
 			inputHandler->ReportAverageMicLevel();
