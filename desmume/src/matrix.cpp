@@ -345,44 +345,26 @@ static FORCEINLINE void __mtx4_multiply_mtx4_float_SSE(float (&__restrict mtxA)[
 	__m128 vecB[4];
 	__m128 outRow;
 	
-	vecB[0] = _mm_shuffle_ps(rowB[0], rowB[0], 0x00);
-	vecB[1] = _mm_shuffle_ps(rowB[0], rowB[0], 0x55);
-	vecB[2] = _mm_shuffle_ps(rowB[0], rowB[0], 0xAA);
-	vecB[3] = _mm_shuffle_ps(rowB[0], rowB[0], 0xFF);
-	outRow =                     _mm_mul_ps(rowA[0], vecB[0]);
-	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[1], vecB[1]) );
-	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[2], vecB[2]) );
+#define CALCULATE_MATRIX_ROW_FLOAT_SSE(indexRowB) \
+	vecB[0] = _mm_shuffle_ps(rowB[(indexRowB)], rowB[(indexRowB)], 0x00);\
+	vecB[1] = _mm_shuffle_ps(rowB[(indexRowB)], rowB[(indexRowB)], 0x55);\
+	vecB[2] = _mm_shuffle_ps(rowB[(indexRowB)], rowB[(indexRowB)], 0xAA);\
+	vecB[3] = _mm_shuffle_ps(rowB[(indexRowB)], rowB[(indexRowB)], 0xFF);\
+	outRow =                     _mm_mul_ps(rowA[0], vecB[0]);\
+	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[1], vecB[1]) );\
+	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[2], vecB[2]) );\
 	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[3], vecB[3]) );
+	
+	CALCULATE_MATRIX_ROW_FLOAT_SSE(0);
 	_mm_store_ps(mtxA +  0, outRow);
 	
-	vecB[0] = _mm_shuffle_ps(rowB[1], rowB[1], 0x00);
-	vecB[1] = _mm_shuffle_ps(rowB[1], rowB[1], 0x55);
-	vecB[2] = _mm_shuffle_ps(rowB[1], rowB[1], 0xAA);
-	vecB[3] = _mm_shuffle_ps(rowB[1], rowB[1], 0xFF);
-	outRow =                     _mm_mul_ps(rowA[0], vecB[0]);
-	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[1], vecB[1]) );
-	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[2], vecB[2]) );
-	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[3], vecB[3]) );
+	CALCULATE_MATRIX_ROW_FLOAT_SSE(1);
 	_mm_store_ps(mtxA +  4, outRow);
 	
-	vecB[0] = _mm_shuffle_ps(rowB[2], rowB[2], 0x00);
-	vecB[1] = _mm_shuffle_ps(rowB[2], rowB[2], 0x55);
-	vecB[2] = _mm_shuffle_ps(rowB[2], rowB[2], 0xAA);
-	vecB[3] = _mm_shuffle_ps(rowB[2], rowB[2], 0xFF);
-	outRow =                     _mm_mul_ps(rowA[0], vecB[0]);
-	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[1], vecB[1]) );
-	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[2], vecB[2]) );
-	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[3], vecB[3]) );
+	CALCULATE_MATRIX_ROW_FLOAT_SSE(2);
 	_mm_store_ps(mtxA +  8, outRow);
 	
-	vecB[0] = _mm_shuffle_ps(rowB[3], rowB[3], 0x00);
-	vecB[1] = _mm_shuffle_ps(rowB[3], rowB[3], 0x55);
-	vecB[2] = _mm_shuffle_ps(rowB[3], rowB[3], 0xAA);
-	vecB[3] = _mm_shuffle_ps(rowB[3], rowB[3], 0xFF);
-	outRow =                     _mm_mul_ps(rowA[0], vecB[0]);
-	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[1], vecB[1]) );
-	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[2], vecB[2]) );
-	outRow = _mm_add_ps( outRow, _mm_mul_ps(rowA[3], vecB[3]) );
+	CALCULATE_MATRIX_ROW_FLOAT_SSE(3);
 	_mm_store_ps(mtxA + 12, outRow);
 }
 
@@ -482,10 +464,10 @@ static FORCEINLINE void __vec4_multiply_mtx4_float_NEON(float (&__restrict inout
 	};
 	
 	float32x4_t outVec;
-	outVec =                    vmulq_f32(row.val[0], v[0]);
-	outVec = vaddq_f32( outVec, vmulq_f32(row.val[1], v[1]) );
-	outVec = vaddq_f32( outVec, vmulq_f32(row.val[2], v[2]) );
-	outVec = vaddq_f32( outVec, vmulq_f32(row.val[3], v[3]) );
+	outVec =         vmulq_f32( row.val[0], v[0] );
+	outVec = vfmaq_f32( outVec, row.val[1], v[1] );
+	outVec = vfmaq_f32( outVec, row.val[2], v[2] );
+	outVec = vfmaq_f32( outVec, row.val[3], v[3] );
 	
 	vst1q_f32(inoutVec, outVec);
 }
@@ -507,9 +489,9 @@ static FORCEINLINE void __vec3_multiply_mtx3_float_NEON(float (&__restrict inout
 	};
 	
 	float32x4_t outVec;
-	outVec =                    vmulq_f32(row.val[0], v[0]);
-	outVec = vaddq_f32( outVec, vmulq_f32(row.val[1], v[1]) );
-	outVec = vaddq_f32( outVec, vmulq_f32(row.val[2], v[2]) );
+	outVec =         vmulq_f32( row.val[0], v[0] );
+	outVec = vfmaq_f32( outVec, row.val[1], v[1] );
+	outVec = vfmaq_f32( outVec, row.val[2], v[2] );
 	outVec = vcopyq_laneq_f32(outVec, 3, inVec, 3);
 	
 	vst1q_f32(inoutVec, outVec);
@@ -530,44 +512,26 @@ static FORCEINLINE void __mtx4_multiply_mtx4_float_NEON(float (&__restrict mtxA)
 	float32x4_t vecB[4];
 	float32x4_t outRow;
 	
-	vecB[0] = vdupq_laneq_f32(rowB.val[0], 0);
-	vecB[1] = vdupq_laneq_f32(rowB.val[0], 1);
-	vecB[2] = vdupq_laneq_f32(rowB.val[0], 2);
-	vecB[3] = vdupq_laneq_f32(rowB.val[0], 3);
-	outRow =                    vmulq_f32(rowA.val[0], vecB[0]);
-	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[1], vecB[1]) );
-	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[2], vecB[2]) );
-	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[3], vecB[3]) );
+#define CALCULATE_MATRIX_ROW_FLOAT_NEON(indexRowB) \
+	vecB[0] = vdupq_laneq_f32(rowB.val[(indexRowB)], 0);\
+	vecB[1] = vdupq_laneq_f32(rowB.val[(indexRowB)], 1);\
+	vecB[2] = vdupq_laneq_f32(rowB.val[(indexRowB)], 2);\
+	vecB[3] = vdupq_laneq_f32(rowB.val[(indexRowB)], 3);\
+	outRow =         vmulq_f32( rowA.val[0], vecB[0] );\
+	outRow = vfmaq_f32( outRow, rowA.val[1], vecB[1] );\
+	outRow = vfmaq_f32( outRow, rowA.val[2], vecB[2] );\
+	outRow = vfmaq_f32( outRow, rowA.val[3], vecB[3] );
+	
+	CALCULATE_MATRIX_ROW_FLOAT_NEON(0);
 	vst1q_f32(mtxA + 0, outRow);
 	
-	vecB[0] = vdupq_laneq_f32(rowB.val[1], 0);
-	vecB[1] = vdupq_laneq_f32(rowB.val[1], 1);
-	vecB[2] = vdupq_laneq_f32(rowB.val[1], 2);
-	vecB[3] = vdupq_laneq_f32(rowB.val[1], 3);
-	outRow =                    vmulq_f32(rowA.val[0], vecB[0]);
-	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[1], vecB[1]) );
-	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[2], vecB[2]) );
-	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[3], vecB[3]) );
+	CALCULATE_MATRIX_ROW_FLOAT_NEON(1);
 	vst1q_f32(mtxA + 4, outRow);
 	
-	vecB[0] = vdupq_laneq_f32(rowB.val[2], 0);
-	vecB[1] = vdupq_laneq_f32(rowB.val[2], 1);
-	vecB[2] = vdupq_laneq_f32(rowB.val[2], 2);
-	vecB[3] = vdupq_laneq_f32(rowB.val[2], 3);
-	outRow =                    vmulq_f32(rowA.val[0], vecB[0]);
-	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[1], vecB[1]) );
-	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[2], vecB[2]) );
-	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[3], vecB[3]) );
+	CALCULATE_MATRIX_ROW_FLOAT_NEON(2);
 	vst1q_f32(mtxA + 8, outRow);
 	
-	vecB[0] = vdupq_laneq_f32(rowB.val[3], 0);
-	vecB[1] = vdupq_laneq_f32(rowB.val[3], 1);
-	vecB[2] = vdupq_laneq_f32(rowB.val[3], 2);
-	vecB[3] = vdupq_laneq_f32(rowB.val[3], 3);
-	outRow =                    vmulq_f32(rowA.val[0], vecB[0]);
-	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[1], vecB[1]) );
-	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[2], vecB[2]) );
-	outRow = vaddq_f32( outRow, vmulq_f32(rowA.val[3], vecB[3]) );
+	CALCULATE_MATRIX_ROW_FLOAT_NEON(3);
 	vst1q_f32(mtxA +12, outRow);
 }
 
@@ -600,9 +564,9 @@ static FORCEINLINE void __mtx4_translate_vec3_float_NEON(float (&__restrict inou
 	const float32x4x3_t row = vld1q_f32_x3(inoutMtx);
 	
 	float32x4_t outVec;
-	outVec =                    vmulq_f32(row.val[0], v[0]);
-	outVec = vaddq_f32( outVec, vmulq_f32(row.val[1], v[1]) );
-	outVec = vaddq_f32( outVec, vmulq_f32(row.val[2], v[2]) );
+	outVec =         vmulq_f32( row.val[0], v[0] );
+	outVec = vfmaq_f32( outVec, row.val[1], v[1] );
+	outVec = vfmaq_f32( outVec, row.val[2], v[2] );
 	
 	vst1q_f32(inoutMtx + 12, outVec);
 }
@@ -859,68 +823,32 @@ static FORCEINLINE void __mtx4_multiply_mtx4_fixed_SSE4(s32 (&__restrict mtxA)[1
 	v128s32 outVecHi;
 	v128s32 v[4];
 	
-	v[0] = _mm_shuffle_epi32(rowB[0], 0x00);
-	v[1] = _mm_shuffle_epi32(rowB[0], 0x55);
-	v[2] = _mm_shuffle_epi32(rowB[0], 0xAA);
-	v[3] = _mm_shuffle_epi32(rowB[0], 0xFF);
-	outVecLo =                          _mm_mul_epi32(rowLo[0], v[0]);
-	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[1], v[1]) );
-	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[2], v[2]) );
-	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[3], v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_SSE4(outVecLo);
-	outVecHi =                          _mm_mul_epi32(rowHi[0], v[0]);
-	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[1], v[1]) );
-	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[2], v[2]) );
-	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[3], v[3]) );
+#define CALCULATE_MATRIX_ROW_FIXED_SSE4(indexRowB) \
+	v[0] = _mm_shuffle_epi32(rowB[(indexRowB)], 0x00);\
+	v[1] = _mm_shuffle_epi32(rowB[(indexRowB)], 0x55);\
+	v[2] = _mm_shuffle_epi32(rowB[(indexRowB)], 0xAA);\
+	v[3] = _mm_shuffle_epi32(rowB[(indexRowB)], 0xFF);\
+	outVecLo =                          _mm_mul_epi32(rowLo[0], v[0]);\
+	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[1], v[1]) );\
+	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[2], v[2]) );\
+	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[3], v[3]) );\
+	___s32_saturate_shiftdown_accum64_fixed_SSE4(outVecLo);\
+	outVecHi =                          _mm_mul_epi32(rowHi[0], v[0]);\
+	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[1], v[1]) );\
+	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[2], v[2]) );\
+	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[3], v[3]) );\
 	___s32_saturate_shiftdown_accum64_fixed_SSE4(outVecHi);
+	
+	CALCULATE_MATRIX_ROW_FIXED_SSE4(0);
 	_mm_store_si128( (v128s32 *)(mtxA + 0), _mm_unpacklo_epi64(outVecLo, outVecHi) );
 	
-	v[0] = _mm_shuffle_epi32(rowB[1], 0x00);
-	v[1] = _mm_shuffle_epi32(rowB[1], 0x55);
-	v[2] = _mm_shuffle_epi32(rowB[1], 0xAA);
-	v[3] = _mm_shuffle_epi32(rowB[1], 0xFF);
-	outVecLo =                          _mm_mul_epi32(rowLo[0], v[0]);
-	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[1], v[1]) );
-	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[2], v[2]) );
-	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[3], v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_SSE4(outVecLo);
-	outVecHi =                          _mm_mul_epi32(rowHi[0], v[0]);
-	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[1], v[1]) );
-	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[2], v[2]) );
-	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[3], v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_SSE4(outVecHi);
+	CALCULATE_MATRIX_ROW_FIXED_SSE4(1);
 	_mm_store_si128( (v128s32 *)(mtxA + 4), _mm_unpacklo_epi64(outVecLo, outVecHi) );
 	
-	v[0] = _mm_shuffle_epi32(rowB[2], 0x00);
-	v[1] = _mm_shuffle_epi32(rowB[2], 0x55);
-	v[2] = _mm_shuffle_epi32(rowB[2], 0xAA);
-	v[3] = _mm_shuffle_epi32(rowB[2], 0xFF);
-	outVecLo =                          _mm_mul_epi32(rowLo[0], v[0]);
-	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[1], v[1]) );
-	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[2], v[2]) );
-	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[3], v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_SSE4(outVecLo);
-	outVecHi =                          _mm_mul_epi32(rowHi[0], v[0]);
-	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[1], v[1]) );
-	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[2], v[2]) );
-	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[3], v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_SSE4(outVecHi);
+	CALCULATE_MATRIX_ROW_FIXED_SSE4(2);
 	_mm_store_si128( (v128s32 *)(mtxA + 8), _mm_unpacklo_epi64(outVecLo, outVecHi) );
 	
-	v[0] = _mm_shuffle_epi32(rowB[3], 0x00);
-	v[1] = _mm_shuffle_epi32(rowB[3], 0x55);
-	v[2] = _mm_shuffle_epi32(rowB[3], 0xAA);
-	v[3] = _mm_shuffle_epi32(rowB[3], 0xFF);
-	outVecLo =                          _mm_mul_epi32(rowLo[0], v[0]);
-	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[1], v[1]) );
-	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[2], v[2]) );
-	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[3], v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_SSE4(outVecLo);
-	outVecHi =                          _mm_mul_epi32(rowHi[0], v[0]);
-	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[1], v[1]) );
-	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[2], v[2]) );
-	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[3], v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_SSE4(outVecHi);
+	CALCULATE_MATRIX_ROW_FIXED_SSE4(3);
 	_mm_store_si128( (v128s32 *)(mtxA +12), _mm_unpacklo_epi64(outVecLo, outVecHi) );
 }
 
@@ -1070,16 +998,16 @@ static FORCEINLINE void __vec4_multiply_mtx4_fixed_NEON(s32 (&__restrict inoutVe
 	
 	const int32x4x4_t row = vld1q_s32_x4(inMtx);
 	
-	int64x2_t outVecLo =            vmull_s32(vget_low_s32(row.val[0]), v[0]);
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[1]), v[1]) );
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[2]), v[2]) );
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[3]), v[3]) );
+	int64x2_t outVecLo = vmull_s32( vget_low_s32(row.val[0]), v[0] );
+	outVecLo = vmlal_s32( outVecLo, vget_low_s32(row.val[1]), v[1] );
+	outVecLo = vmlal_s32( outVecLo, vget_low_s32(row.val[2]), v[2] );
+	outVecLo = vmlal_s32( outVecLo, vget_low_s32(row.val[3]), v[3] );
 	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
 	
-	int64x2_t outVecHi =            vmull_s32(vget_high_s32(row.val[0]), v[0]);
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[1]), v[1]) );
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[2]), v[2]) );
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[3]), v[3]) );
+	int64x2_t outVecHi = vmull_s32( vget_high_s32(row.val[0]), v[0] );
+	outVecHi = vmlal_s32( outVecHi, vget_high_s32(row.val[1]), v[1] );
+	outVecHi = vmlal_s32( outVecHi, vget_high_s32(row.val[2]), v[2] );
+	outVecHi = vmlal_s32( outVecHi, vget_high_s32(row.val[3]), v[3] );
 	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
 	
 	vst1q_s32( inoutVec, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
@@ -1097,14 +1025,14 @@ static FORCEINLINE void __vec3_multiply_mtx3_fixed_NEON(s32 (&__restrict inoutVe
 	
 	const int32x4x3_t row = vld1q_s32_x3(inMtx);
 	
-	int64x2_t outVecLo =            vmull_s32(vget_low_s32(row.val[0]), v[0]);
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[1]), v[1]) );
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[2]), v[2]) );
+	int64x2_t outVecLo = vmull_s32( vget_low_s32(row.val[0]), v[0] );
+	outVecLo = vmlal_s32( outVecLo, vget_low_s32(row.val[1]), v[1] );
+	outVecLo = vmlal_s32( outVecLo, vget_low_s32(row.val[2]), v[2] );
 	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
 	
-	int64x2_t outVecHi =            vmull_s32(vget_high_s32(row.val[0]), v[0]);
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[1]), v[1]) );
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[2]), v[2]) );
+	int64x2_t outVecHi = vmull_s32( vget_high_s32(row.val[0]), v[0] );
+	outVecHi = vmlal_s32( outVecHi, vget_high_s32(row.val[1]), v[1] );
+	outVecHi = vmlal_s32( outVecHi, vget_high_s32(row.val[2]), v[2] );
 	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
 	
 	v128s32 outVec = vreinterpretq_s32_s64( vzip1q_s64(outVecLo, outVecHi) );
@@ -1122,68 +1050,32 @@ static FORCEINLINE void __mtx4_multiply_mtx4_fixed_NEON(s32 (&__restrict mtxA)[1
 	int64x2_t outVecHi;
 	int32x2_t v[4];
 	
-	v[0] = vdup_laneq_s32(rowB.val[0], 0);
-	v[1] = vdup_laneq_s32(rowB.val[0], 1);
-	v[2] = vdup_laneq_s32(rowB.val[0], 2);
-	v[3] = vdup_laneq_s32(rowB.val[0], 3);
-	outVecLo =                      vmull_s32(vget_low_s32(rowA.val[0]), v[0]);
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[1]), v[1]) );
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[2]), v[2]) );
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[3]), v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
-	outVecHi =                      vmull_s32(vget_high_s32(rowA.val[0]), v[0]);
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[1]), v[1]) );
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[2]), v[2]) );
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[3]), v[3]) );
+#define CALCULATE_MATRIX_ROW_FIXED_NEON(indexRowB) \
+	v[0] = vdup_laneq_s32(rowB.val[(indexRowB)], 0);\
+	v[1] = vdup_laneq_s32(rowB.val[(indexRowB)], 1);\
+	v[2] = vdup_laneq_s32(rowB.val[(indexRowB)], 2);\
+	v[3] = vdup_laneq_s32(rowB.val[(indexRowB)], 3);\
+	outVecLo =           vmull_s32( vget_low_s32(rowA.val[0]), v[0] );\
+	outVecLo = vmlal_s32( outVecLo, vget_low_s32(rowA.val[1]), v[1] );\
+	outVecLo = vmlal_s32( outVecLo, vget_low_s32(rowA.val[2]), v[2] );\
+	outVecLo = vmlal_s32( outVecLo, vget_low_s32(rowA.val[3]), v[3] );\
+	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);\
+	outVecHi =           vmull_s32( vget_high_s32(rowA.val[0]), v[0] );\
+	outVecHi = vmlal_s32( outVecHi, vget_high_s32(rowA.val[1]), v[1] );\
+	outVecHi = vmlal_s32( outVecHi, vget_high_s32(rowA.val[2]), v[2] );\
+	outVecHi = vmlal_s32( outVecHi, vget_high_s32(rowA.val[3]), v[3] );\
 	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	
+	CALCULATE_MATRIX_ROW_FIXED_NEON(0);
 	vst1q_s32( mtxA + 0, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
 	
-	v[0] = vdup_laneq_s32(rowB.val[1], 0);
-	v[1] = vdup_laneq_s32(rowB.val[1], 1);
-	v[2] = vdup_laneq_s32(rowB.val[1], 2);
-	v[3] = vdup_laneq_s32(rowB.val[1], 3);
-	outVecLo =                      vmull_s32(vget_low_s32(rowA.val[0]), v[0]);
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[1]), v[1]) );
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[2]), v[2]) );
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[3]), v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
-	outVecHi =                      vmull_s32(vget_high_s32(rowA.val[0]), v[0]);
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[1]), v[1]) );
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[2]), v[2]) );
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[3]), v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	CALCULATE_MATRIX_ROW_FIXED_NEON(1);
 	vst1q_s32( mtxA + 4, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
 	
-	v[0] = vdup_laneq_s32(rowB.val[2], 0);
-	v[1] = vdup_laneq_s32(rowB.val[2], 1);
-	v[2] = vdup_laneq_s32(rowB.val[2], 2);
-	v[3] = vdup_laneq_s32(rowB.val[2], 3);
-	outVecLo =                      vmull_s32(vget_low_s32(rowA.val[0]), v[0]);
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[1]), v[1]) );
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[2]), v[2]) );
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[3]), v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
-	outVecHi =                      vmull_s32(vget_high_s32(rowA.val[0]), v[0]);
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[1]), v[1]) );
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[2]), v[2]) );
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[3]), v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	CALCULATE_MATRIX_ROW_FIXED_NEON(2);
 	vst1q_s32( mtxA + 8, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
 	
-	v[0] = vdup_laneq_s32(rowB.val[3], 0);
-	v[1] = vdup_laneq_s32(rowB.val[3], 1);
-	v[2] = vdup_laneq_s32(rowB.val[3], 2);
-	v[3] = vdup_laneq_s32(rowB.val[3], 3);
-	outVecLo =                      vmull_s32(vget_low_s32(rowA.val[0]), v[0]);
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[1]), v[1]) );
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[2]), v[2]) );
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(rowA.val[3]), v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
-	outVecHi =                      vmull_s32(vget_high_s32(rowA.val[0]), v[0]);
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[1]), v[1]) );
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[2]), v[2]) );
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(rowA.val[3]), v[3]) );
-	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	CALCULATE_MATRIX_ROW_FIXED_NEON(3);
 	vst1q_s32( mtxA +12, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
 }
 
@@ -1236,16 +1128,16 @@ static FORCEINLINE void __mtx4_translate_vec3_fixed_NEON(s32 (&__restrict inoutM
 	
 	const int32x4x4_t row = vld1q_s32_x4(inoutMtx);
 	
-	int64x2_t outVecLo =            vmull_s32(vget_low_s32(row.val[0]), v[0]);
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[1]), v[1]) );
-	outVecLo = vaddq_s64( outVecLo, vmull_s32(vget_low_s32(row.val[2]), v[2]) );
-	outVecLo = vaddq_s64( outVecLo, vshlq_n_s64(vmovl_s32(vget_low_s32(row.val[3])), 12) );
+	int64x2_t outVecLo = vshlq_n_s64( vmovl_s32(vget_low_s32(row.val[3])), 12 );
+	outVecLo = vmlal_s32( outVecLo, vget_low_s32(row.val[0]), v[0] );
+	outVecLo = vmlal_s32( outVecLo, vget_low_s32(row.val[1]), v[1] );
+	outVecLo = vmlal_s32( outVecLo, vget_low_s32(row.val[2]), v[2] );
 	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);
 	
-	int64x2_t outVecHi =            vmull_s32(vget_high_s32(row.val[0]), v[0]);
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[1]), v[1]) );
-	outVecHi = vaddq_s64( outVecHi, vmull_s32(vget_high_s32(row.val[2]), v[2]) );
-	outVecHi = vaddq_s64( outVecHi, vshlq_n_s64(vmovl_s32(vget_high_s32(row.val[3])), 12) );
+	int64x2_t outVecHi = vshlq_n_s64( vmovl_s32(vget_high_s32(row.val[3])), 12 );
+	outVecHi = vmlal_s32( outVecHi, vget_high_s32(row.val[0]), v[0] );
+	outVecHi = vmlal_s32( outVecHi, vget_high_s32(row.val[1]), v[1] );
+	outVecHi = vmlal_s32( outVecHi, vget_high_s32(row.val[2]), v[2] );
 	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
 	
 	vst1q_s32( inoutMtx + 12, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
