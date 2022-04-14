@@ -89,6 +89,7 @@
 @synthesize currentMicGainValue;
 @dynamic currentVolumeValue;
 @synthesize currentMicStatusIcon;
+@synthesize ndsMicLevelIndicator;
 @synthesize currentVolumeIcon;
 
 @synthesize isShowingSaveStateDialog;
@@ -2224,6 +2225,8 @@
 	{
 		[self performSelectorOnMainThread:@selector(setCurrentMicStatusIcon:) withObject:micIcon waitUntilDone:NO];
 	}
+	
+	[ndsMicLevelIndicator performSelectorOnMainThread:@selector(setNeedsDisplay) withObject:nil waitUntilDone:NO];
 }
 
 - (AudioSampleBlockGenerator *) selectedAudioFileGenerator

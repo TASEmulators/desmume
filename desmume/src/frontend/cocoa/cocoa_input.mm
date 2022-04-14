@@ -326,6 +326,7 @@ bool MacInputHandler::IsHardwareMicAvailable()
 
 void MacInputHandler::ReportAverageMicLevel()
 {
+	this->ApplyAverageMicLevel();
 	[this->_cdsController setMicLevel:this->GetAverageMicLevel()];
 }
 

@@ -378,7 +378,8 @@ protected:
 	int16_t _paddleValueApplied;
 	int16_t _paddleAdjustApplied;
 	
-	float _avgMicLevel;
+	float _avgMicLevelPending;
+	float _avgMicLevelApplied;
 	float _avgMicLevelTotal;
 	float _avgMicLevelsRead;
 	bool _isHardwareMicMuted;
@@ -407,6 +408,7 @@ public:
 	float GetAverageMicLevel();	
 	void AddSampleToAverageMicLevel(uint8_t sampleValue);
 	void ClearAverageMicLevel();
+	void ApplyAverageMicLevel();
 	
 	bool IsMicrophoneIdle();
 	bool IsMicrophoneClipping();

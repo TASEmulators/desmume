@@ -78,6 +78,7 @@ class AudioSampleBlockGenerator;
 	NSWindow *ndsErrorSheet;
 	NSTextField *ndsErrorStatusTextField;
 	NSView *exportRomSavePanelAccessoryView;
+	NSLevelIndicator *ndsMicLevelIndicator;
 	
 	NSPopUpButton *openglMSAAPopUpButton;
 	
@@ -159,6 +160,7 @@ class AudioSampleBlockGenerator;
 @property (readonly) IBOutlet NSWindow *ndsErrorSheet;
 @property (readonly) IBOutlet NSTextField *ndsErrorStatusTextField;
 @property (readonly) IBOutlet NSView *exportRomSavePanelAccessoryView;
+@property (readonly) IBOutlet NSLevelIndicator *ndsMicLevelIndicator;
 
 @property (readonly) IBOutlet NSPopUpButton *openglMSAAPopUpButton;
 

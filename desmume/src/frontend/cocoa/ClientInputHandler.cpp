@@ -76,7 +76,8 @@ ClientInputHandler::ClientInputHandler()
 	_selectedAudioFileGenerator = NULL; // Note that this value can be NULL.
 	_hardwareMicSampleGenerator = _nullSampleGenerator;
 	
-	_avgMicLevel = 0.0f;
+	_avgMicLevelPending = 0.0f;
+	_avgMicLevelApplied = 0.0f;
 	_avgMicLevelTotal = 0.0f;
 	_avgMicLevelsRead = 0.0f;
 	_isHardwareMicMuted = true;
@@ -268,31 +269,36 @@ void ClientInputHandler::SetSineWaveFrequency(double freq)
 
 float ClientInputHandler::GetAverageMicLevel()
 {
-	return this->_avgMicLevel;
+	return this->_avgMicLevelApplied;
 }
 
 void ClientInputHandler::AddSampleToAverageMicLevel(uint8_t sampleValue)
 {
 	this->_avgMicLevelTotal += (float)( (MIC_NULL_SAMPLE_VALUE > sampleValue) ? MIC_NULL_SAMPLE_VALUE - sampleValue : sampleValue - MIC_NULL_SAMPLE_VALUE );
 	this->_avgMicLevelsRead += 1.0f;
-	this->_avgMicLevel = this->_avgMicLevelTotal / this->_avgMicLevelsRead;
+	this->_avgMicLevelPending = this->_avgMicLevelTotal / this->_avgMicLevelsRead;
 }
 
 void ClientInputHandler::ClearAverageMicLevel()
 {
 	this->_avgMicLevelTotal = 0.0f;
 	this->_avgMicLevelsRead = 0.0f;
-	this->_avgMicLevel = 0.0f;
+	this->_avgMicLevelPending = 0.0f;
+}
+
+void ClientInputHandler::ApplyAverageMicLevel()
+{
+	this->_avgMicLevelApplied = this->_avgMicLevelPending;
 }
 
 bool ClientInputHandler::IsMicrophoneIdle()
 {
-	return (this->_avgMicLevel < MIC_NULL_LEVEL_THRESHOLD);
+	return (this->_avgMicLevelApplied < MIC_NULL_LEVEL_THRESHOLD);
 }
 
 bool ClientInputHandler::IsMicrophoneClipping()
 {
-	return (this->_avgMicLevel >= MIC_CLIP_LEVEL_THRESHOLD);
+	return (this->_avgMicLevelApplied >= MIC_CLIP_LEVEL_THRESHOLD);
 }
 
 AudioGenerator* ClientInputHandler::GetClientSoftwareMicSampleGenerator()
@@ -694,9 +700,13 @@ uint8_t ClientInputHandler::HandleMicSampleRead()
 
 void ClientInputHandler::ReportAverageMicLevel()
 {
-	// Do nothing. This is implementation-dependent.
-	// This method mainly exists for implementations to do some stuff during the
-	// emulation loop.
+	// This method is called regularly during the emulation loop so that
+	// implementations can report the microphone level. Implementations
+	// should either override this method and retain the call to
+	// ApplyAverageMicLevel(), or call GetAverageMicLevel() after this
+	// method finishes.
+	
+	this->ApplyAverageMicLevel();
 }
 
 bool ClientInputHandler::GetHardwareMicMute()
