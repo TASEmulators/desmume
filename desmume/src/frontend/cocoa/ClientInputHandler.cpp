@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2022 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -671,6 +671,17 @@ void ClientInputHandler::ApplyInputs()
 	{
 		FCEUMOV_HandleRecording();
 	}
+}
+
+void ClientInputHandler::SetHardwareMicAuthorized(bool isAuthorized)
+{
+	// Do nothing. This is implementation-dependent.
+}
+
+bool ClientInputHandler::IsHardwareMicAuthorized()
+{
+	// Do nothing. This is implementation-dependent.
+	return true;
 }
 
 bool ClientInputHandler::IsHardwareMicAvailable()

@@ -49,6 +49,7 @@ CoreAudioInput::CoreAudioInput()
 	_isPaused = true;
 	_isHardwareEnabled = false;
 	_isHardwareLocked = true;
+	_isHardwareAuthorized = true;
 	_captureFrames = 0;
 	
 	_auHALInputDevice = NULL;
@@ -514,7 +515,7 @@ void CoreAudioInput::Start()
 		this->_isHardwareEnabled = false;
 	}
 	
-	if (this->IsHardwareEnabled() && !this->IsHardwareLocked() && !this->GetPauseState())
+	if (this->IsHardwareEnabled() && this->IsHardwareAuthorized() && !this->IsHardwareLocked() && !this->GetPauseState())
 	{
 		AudioOutputUnitStart(this->_auHALInputDevice);
 	}
@@ -532,6 +533,7 @@ void CoreAudioInput::Start()
 	this->_hwStateChangedCallbackFunc(&this->_hwDeviceInfo,
 									  this->IsHardwareEnabled(),
 									  this->IsHardwareLocked(),
+									  this->IsHardwareAuthorized(),
 									  this->_hwStateChangedCallbackParam1,
 									  this->_hwStateChangedCallbackParam2);
 }
@@ -575,6 +577,22 @@ bool CoreAudioInput::IsHardwareLocked() const
 	return this->_isHardwareLocked;
 }
 
+bool CoreAudioInput::IsHardwareAuthorized() const
+{
+	return this->_isHardwareAuthorized;
+}
+
+void CoreAudioInput::SetHardwareAuthorized(bool isAuthorized)
+{
+	const bool didStateChange = (this->_isHardwareAuthorized != isAuthorized);
+	
+	this->_isHardwareAuthorized = isAuthorized;
+	if (didStateChange)
+	{
+		this->SetPauseState( this->GetPauseState() );
+	}
+}
+
 bool CoreAudioInput::GetPauseState() const
 {
 	return this->_isPaused;
@@ -582,22 +600,24 @@ bool CoreAudioInput::GetPauseState() const
 
 void CoreAudioInput::SetPauseState(bool pauseState)
 {
-	if (pauseState && !this->GetPauseState())
+	if (!this->_isPaused && pauseState)
 	{
+		this->_isPaused = true;
+		
 		apple_unfairlock_lock(this->_unfairlockAUHAL);
 		AudioOutputUnitStop(this->_auHALInputDevice);
 		apple_unfairlock_unlock(this->_unfairlockAUHAL);
 		AUGraphStop(this->_auGraph);
 	}
-	else if (!pauseState && this->GetPauseState() && !this->IsHardwareLocked())
+	else if (this->_isPaused && !pauseState)
 	{
+		this->_isPaused = false;
+		
 		apple_unfairlock_lock(this->_unfairlockAUHAL);
 		AudioOutputUnitStart(this->_auHALInputDevice);
 		apple_unfairlock_unlock(this->_unfairlockAUHAL);
 		AUGraphStart(this->_auGraph);
 	}
-	
-	this->_isPaused = (this->IsHardwareLocked()) ? true : pauseState;
 }
 
 float CoreAudioInput::GetNormalizedGain() const
@@ -683,15 +703,18 @@ void CoreAudioInput::UpdateHardwareLock()
 		hardwareLocked = true;
 	}
 	
+	const bool didStateChange = (this->_isHardwareLocked != hardwareLocked);
 	this->_isHardwareLocked = hardwareLocked;
-	if (this->_isHardwareLocked && !this->GetPauseState())
+	
+	if (didStateChange)
 	{
-		this->SetPauseState(true);
+		this->SetPauseState( this->GetPauseState() );
 	}
 	
 	this->_hwStateChangedCallbackFunc(&this->_hwDeviceInfo,
 									  this->IsHardwareEnabled(),
 									  this->IsHardwareLocked(),
+									  this->IsHardwareAuthorized(),
 									  this->_hwStateChangedCallbackParam1,
 									  this->_hwStateChangedCallbackParam2);
 }
@@ -708,7 +731,7 @@ uint8_t CoreAudioInput::generateSample()
 {
 	uint8_t theSample = MIC_NULL_SAMPLE_VALUE;
 	
-	if (this->_isPaused)
+	if ( this->GetPauseState() || !this->IsHardwareEnabled() || this->IsHardwareLocked() || !this->IsHardwareAuthorized() )
 	{
 		return theSample;
 	}
@@ -866,6 +889,7 @@ void CoreAudioInputAUHALChanged(void *inRefCon,
 void CoreAudioInputDefaultHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
 													   const bool isHardwareEnabled,
 													   const bool isHardwareLocked,
+													   const bool isHardwareAuthorized,
 													   void *inParam1,
 													   void *inParam2)
 {

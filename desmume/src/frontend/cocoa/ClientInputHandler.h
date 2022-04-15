@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2022 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -437,6 +437,9 @@ public:
 	
 	void ProcessInputs();
 	void ApplyInputs();
+	
+	virtual void SetHardwareMicAuthorized(bool isAuthorized);
+	virtual bool IsHardwareMicAuthorized();
 	
 	virtual bool IsHardwareMicAvailable();
 	virtual void ResetHardwareMic();

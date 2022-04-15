@@ -1332,6 +1332,16 @@
 		AB3BF4351E256309003E2B24 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */; };
 		AB3BF4381E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */; };
 		AB3BF4391E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */; };
+		AB3E8AEC2808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB3E8AEB2808FDF3007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB3E8AED2808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB3E8AEB2808FDF3007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB3E8AEE2808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB3E8AEB2808FDF3007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB3E8AEF2808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB3E8AEB2808FDF3007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB3E8AF02808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB3E8AEB2808FDF3007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB3E8AF12808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB3E8AEB2808FDF3007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB3E8AF22808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB3E8AEB2808FDF3007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB3E8AF32808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB3E8AEB2808FDF3007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB3E8AF42808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB3E8AEB2808FDF3007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB3E8AF52808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB3E8AEB2808FDF3007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
 		AB3FBD802176DE95005722D0 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
 		AB3FBD812176DE95005722D0 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
 		AB3FBD822176DE95005722D0 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
@@ -2740,16 +2750,6 @@
 		ABA67CDF2808B97E00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB22808B97D00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png */; };
 		ABA67CE02808B97E00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB22808B97D00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png */; };
 		ABA67CE12808B97E00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB22808B97D00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png */; };
-		ABA67CE22808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB32808B97D00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
-		ABA67CE32808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB32808B97D00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
-		ABA67CE42808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB32808B97D00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
-		ABA67CE52808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB32808B97D00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
-		ABA67CE62808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB32808B97D00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
-		ABA67CE72808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB32808B97D00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
-		ABA67CE82808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB32808B97D00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
-		ABA67CE92808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB32808B97D00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
-		ABA67CEA2808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB32808B97D00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
-		ABA67CEB2808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB32808B97D00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
 		ABA67CEC2808B97E00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB42808B97D00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png */; };
 		ABA67CED2808B97E00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB42808B97D00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png */; };
 		ABA67CEE2808B97E00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB42808B97D00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png */; };
@@ -2760,16 +2760,6 @@
 		ABA67CF32808B97E00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB42808B97D00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png */; };
 		ABA67CF42808B97E00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB42808B97D00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png */; };
 		ABA67CF52808B97E00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB42808B97D00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png */; };
-		ABA67CF62808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB52808B97D00B5208D /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA67CF72808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB52808B97D00B5208D /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA67CF82808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB52808B97D00B5208D /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA67CF92808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB52808B97D00B5208D /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA67CFA2808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB52808B97D00B5208D /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA67CFB2808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB52808B97D00B5208D /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA67CFC2808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB52808B97D00B5208D /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA67CFD2808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB52808B97D00B5208D /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA67CFE2808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB52808B97D00B5208D /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA67CFF2808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB52808B97D00B5208D /* Icon_MicrophoneDenied_256x256.png */; };
 		ABA67D002808B97E00B5208D /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB62808B97D00B5208D /* Icon_VolumeFull_DarkMode_16x16@2x.png */; };
 		ABA67D012808B97E00B5208D /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB62808B97D00B5208D /* Icon_VolumeFull_DarkMode_16x16@2x.png */; };
 		ABA67D022808B97E00B5208D /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA67CB62808B97D00B5208D /* Icon_VolumeFull_DarkMode_16x16@2x.png */; };
@@ -3564,6 +3554,7 @@
 		AB3BF4401E262943003E2B24 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		AB3E34C7134AF4500056477A /* cocoa_output.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_output.h; sourceTree = "<group>"; };
 		AB3E34C8134AF4500056477A /* cocoa_output.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_output.mm; sourceTree = "<group>"; };
+		AB3E8AEB2808FDF3007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneIdleNoHardware_256x256.png; path = images/Icon_MicrophoneIdleNoHardware_256x256.png; sourceTree = "<group>"; };
 		AB3FBD7E2176DE95005722D0 /* WifiSettingsPanel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WifiSettingsPanel.h; sourceTree = "<group>"; };
 		AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = WifiSettingsPanel.mm; sourceTree = "<group>"; };
 		AB4055ED169F59380016AC3E /* AsmJit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AsmJit.h; sourceTree = "<group>"; };
@@ -3764,9 +3755,7 @@
 		ABA67CB02808B97C00B5208D /* Icon_VolumeOneThird_DarkMode_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeOneThird_DarkMode_16x16.png; path = images/Icon_VolumeOneThird_DarkMode_16x16.png; sourceTree = "<group>"; };
 		ABA67CB12808B97D00B5208D /* Icon_VolumeOneThird_DarkMode_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeOneThird_DarkMode_16x16@2x.png"; path = "images/Icon_VolumeOneThird_DarkMode_16x16@2x.png"; sourceTree = "<group>"; };
 		ABA67CB22808B97D00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeTwoThird_DarkMode_16x16@2x.png"; path = "images/Icon_VolumeTwoThird_DarkMode_16x16@2x.png"; sourceTree = "<group>"; };
-		ABA67CB32808B97D00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneDenied_DarkMode_256x256.png; path = images/Icon_MicrophoneDenied_DarkMode_256x256.png; sourceTree = "<group>"; };
 		ABA67CB42808B97D00B5208D /* Icon_VolumeTwoThird_DarkMode_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeTwoThird_DarkMode_16x16.png; path = images/Icon_VolumeTwoThird_DarkMode_16x16.png; sourceTree = "<group>"; };
-		ABA67CB52808B97D00B5208D /* Icon_MicrophoneDenied_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneDenied_256x256.png; path = images/Icon_MicrophoneDenied_256x256.png; sourceTree = "<group>"; };
 		ABA67CB62808B97D00B5208D /* Icon_VolumeFull_DarkMode_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeFull_DarkMode_16x16@2x.png"; path = "images/Icon_VolumeFull_DarkMode_16x16@2x.png"; sourceTree = "<group>"; };
 		ABA67CB72808B97E00B5208D /* Icon_VolumeFull_DarkMode_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeFull_DarkMode_16x16.png; path = images/Icon_VolumeFull_DarkMode_16x16.png; sourceTree = "<group>"; };
 		ABA67CB82808B97E00B5208D /* Icon_MicrophoneOff_DarkMode_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneOff_DarkMode_256x256.png; path = images/Icon_MicrophoneOff_DarkMode_256x256.png; sourceTree = "<group>"; };
@@ -5179,10 +5168,9 @@
 				ABB0FBC81A9EED350060C55A /* Icon_MicrophoneBlack_256x256.png */,
 				ABB0FBC91A9EED350060C55A /* Icon_MicrophoneBlueGlow_256x256.png */,
 				ABC503AC1AAC2B71002FCD43 /* Icon_MicrophoneDarkGreen_256x256.png */,
-				ABA67CB52808B97D00B5208D /* Icon_MicrophoneDenied_256x256.png */,
-				ABA67CB32808B97D00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png */,
 				ABB0FBD81A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png */,
 				ABB0FBCA1A9EED350060C55A /* Icon_MicrophoneGreen_256x256.png */,
+				AB3E8AEB2808FDF3007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png */,
 				ABA67CB82808B97E00B5208D /* Icon_MicrophoneOff_DarkMode_256x256.png */,
 				ABB0FBCB1A9EED350060C55A /* Icon_MicrophoneRed_256x256.png */,
 				AB0F29A014BE7213009ABC6F /* Icon_OpenROM_420x420.png */,
@@ -5959,7 +5947,6 @@
 				ABA67D162808B97E00B5208D /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				8C43E75127E3CD0100A35F65 /* InfoPlist.strings in Resources */,
 				8C43E75227E3CD0100A35F65 /* MainMenu.xib in Resources */,
-				ABA67CF82808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */,
 				8C43E75327E3CD0100A35F65 /* Localizable.strings in Resources */,
 				8C43E75427E3CD0100A35F65 /* Icon_ActionReplay_32x32.png in Resources */,
 				8C43E75527E3CD0100A35F65 /* Icon_CodeBreaker_32x32.png in Resources */,
@@ -6026,6 +6013,7 @@
 				8C43E78C27E3CD0100A35F65 /* Icon_DSButtonB_420x420.png in Resources */,
 				8C43E78D27E3CD0100A35F65 /* Icon_Piano_256x256.png in Resources */,
 				8C43E78E27E3CD0100A35F65 /* Icon_FrameAdvance_420x420.png in Resources */,
+				AB3E8AEE2808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 				8C43E78F27E3CD0100A35F65 /* Icon_DSButtonL_420x420.png in Resources */,
 				8C43E79027E3CD0100A35F65 /* Icon_DSButtonR_420x420.png in Resources */,
 				8C43E79127E3CD0100A35F65 /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -6051,7 +6039,6 @@
 				8C43E7A427E3CD0100A35F65 /* Icon_MicrophoneRed_256x256.png in Resources */,
 				8C43E7A527E3CD0100A35F65 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
 				8C43E7A627E3CD0100A35F65 /* SourceSansPro-Bold.otf in Resources */,
-				ABA67CE42808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				8C43E7A727E3CD0100A35F65 /* Image_GuitarGrip.png in Resources */,
 				8C43E7A827E3CD0100A35F65 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
 				8C43E7A927E3CD0100A35F65 /* README.MAC in Resources */,
@@ -6079,7 +6066,6 @@
 				ABA67D172808B97E00B5208D /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				8C43E8AF27E3CD4C00A35F65 /* InfoPlist.strings in Resources */,
 				8C43E8B027E3CD4C00A35F65 /* MainMenu.xib in Resources */,
-				ABA67CF92808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */,
 				8C43E8B127E3CD4C00A35F65 /* Localizable.strings in Resources */,
 				8C43E8B227E3CD4C00A35F65 /* Icon_ActionReplay_32x32.png in Resources */,
 				8C43E8B327E3CD4C00A35F65 /* Icon_CodeBreaker_32x32.png in Resources */,
@@ -6146,6 +6132,7 @@
 				8C43E8EA27E3CD4C00A35F65 /* Icon_DSButtonB_420x420.png in Resources */,
 				8C43E8EB27E3CD4C00A35F65 /* Icon_Piano_256x256.png in Resources */,
 				8C43E8EC27E3CD4C00A35F65 /* Icon_FrameAdvance_420x420.png in Resources */,
+				AB3E8AEF2808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 				8C43E8ED27E3CD4C00A35F65 /* Icon_DSButtonL_420x420.png in Resources */,
 				8C43E8EE27E3CD4C00A35F65 /* Icon_DSButtonR_420x420.png in Resources */,
 				8C43E8EF27E3CD4C00A35F65 /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -6171,7 +6158,6 @@
 				8C43E90227E3CD4C00A35F65 /* Icon_MicrophoneRed_256x256.png in Resources */,
 				8C43E90327E3CD4C00A35F65 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
 				8C43E90427E3CD4C00A35F65 /* SourceSansPro-Bold.otf in Resources */,
-				ABA67CE52808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				8C43E90527E3CD4C00A35F65 /* Image_GuitarGrip.png in Resources */,
 				8C43E90627E3CD4C00A35F65 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
 				8C43E90727E3CD4C00A35F65 /* README.MAC in Resources */,
@@ -6199,7 +6185,6 @@
 				ABA67D1D2808B97E00B5208D /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				8CCD83C227E40B730024BDD5 /* InfoPlist.strings in Resources */,
 				8CCD83C327E40B730024BDD5 /* MainMenu.xib in Resources */,
-				ABA67CFF2808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */,
 				8CCD83C427E40B730024BDD5 /* Localizable.strings in Resources */,
 				8CCD83C527E40B730024BDD5 /* Icon_ActionReplay_32x32.png in Resources */,
 				8CCD83C627E40B730024BDD5 /* Icon_CodeBreaker_32x32.png in Resources */,
@@ -6266,6 +6251,7 @@
 				8CCD83FD27E40B730024BDD5 /* Icon_DSButtonB_420x420.png in Resources */,
 				8CCD83FE27E40B730024BDD5 /* Icon_Piano_256x256.png in Resources */,
 				8CCD83FF27E40B730024BDD5 /* Icon_FrameAdvance_420x420.png in Resources */,
+				AB3E8AF52808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 				8CCD840027E40B730024BDD5 /* Icon_DSButtonL_420x420.png in Resources */,
 				8CCD840127E40B730024BDD5 /* Icon_DSButtonR_420x420.png in Resources */,
 				8CCD840227E40B730024BDD5 /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -6291,7 +6277,6 @@
 				8CCD841527E40B730024BDD5 /* Icon_MicrophoneRed_256x256.png in Resources */,
 				8CCD841627E40B730024BDD5 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
 				8CCD841727E40B730024BDD5 /* SourceSansPro-Bold.otf in Resources */,
-				ABA67CEB2808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				8CCD841827E40B730024BDD5 /* Image_GuitarGrip.png in Resources */,
 				8CCD841927E40B730024BDD5 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
 				8CCD841A27E40B730024BDD5 /* README.MAC in Resources */,
@@ -6319,7 +6304,6 @@
 				ABA67D1B2808B97E00B5208D /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				AB36C74227F2C8AE00C763C8 /* InfoPlist.strings in Resources */,
 				AB36C74327F2C8AE00C763C8 /* MainMenu.xib in Resources */,
-				ABA67CFD2808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */,
 				AB36C74427F2C8AE00C763C8 /* Localizable.strings in Resources */,
 				AB36C74527F2C8AE00C763C8 /* Icon_ActionReplay_32x32.png in Resources */,
 				AB36C74627F2C8AE00C763C8 /* Icon_CodeBreaker_32x32.png in Resources */,
@@ -6386,6 +6370,7 @@
 				AB36C77D27F2C8AE00C763C8 /* Icon_DSButtonB_420x420.png in Resources */,
 				AB36C77E27F2C8AE00C763C8 /* Icon_Piano_256x256.png in Resources */,
 				AB36C77F27F2C8AE00C763C8 /* Icon_FrameAdvance_420x420.png in Resources */,
+				AB3E8AF32808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 				AB36C78027F2C8AE00C763C8 /* Icon_DSButtonL_420x420.png in Resources */,
 				AB36C78127F2C8AE00C763C8 /* Icon_DSButtonR_420x420.png in Resources */,
 				AB36C78227F2C8AE00C763C8 /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -6411,7 +6396,6 @@
 				AB36C79527F2C8AE00C763C8 /* Icon_MicrophoneRed_256x256.png in Resources */,
 				AB36C79627F2C8AE00C763C8 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
 				AB36C79727F2C8AE00C763C8 /* SourceSansPro-Bold.otf in Resources */,
-				ABA67CE92808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				AB36C79827F2C8AE00C763C8 /* Image_GuitarGrip.png in Resources */,
 				AB36C79927F2C8AE00C763C8 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
 				AB36C79A27F2C8AE00C763C8 /* README.MAC in Resources */,
@@ -6439,7 +6423,6 @@
 				ABA67D1A2808B97E00B5208D /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				AB4979C827F2E97A00E8A244 /* InfoPlist.strings in Resources */,
 				AB4979C927F2E97A00E8A244 /* MainMenu.xib in Resources */,
-				ABA67CFC2808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */,
 				AB4979CA27F2E97A00E8A244 /* Localizable.strings in Resources */,
 				AB4979CB27F2E97A00E8A244 /* Icon_ActionReplay_32x32.png in Resources */,
 				AB4979CC27F2E97A00E8A244 /* Icon_CodeBreaker_32x32.png in Resources */,
@@ -6506,6 +6489,7 @@
 				AB497A0327F2E97A00E8A244 /* Icon_DSButtonB_420x420.png in Resources */,
 				AB497A0427F2E97A00E8A244 /* Icon_Piano_256x256.png in Resources */,
 				AB497A0527F2E97A00E8A244 /* Icon_FrameAdvance_420x420.png in Resources */,
+				AB3E8AF22808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 				AB497A0627F2E97A00E8A244 /* Icon_DSButtonL_420x420.png in Resources */,
 				AB497A0727F2E97A00E8A244 /* Icon_DSButtonR_420x420.png in Resources */,
 				AB497A0827F2E97A00E8A244 /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -6531,7 +6515,6 @@
 				AB497A1B27F2E97A00E8A244 /* Icon_MicrophoneRed_256x256.png in Resources */,
 				AB497A1C27F2E97A00E8A244 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
 				AB497A1D27F2E97A00E8A244 /* SourceSansPro-Bold.otf in Resources */,
-				ABA67CE82808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				AB497A1E27F2E97A00E8A244 /* Image_GuitarGrip.png in Resources */,
 				AB497A1F27F2E97A00E8A244 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
 				AB497A2027F2E97A00E8A244 /* README.MAC in Resources */,
@@ -6559,7 +6542,6 @@
 				ABA67D192808B97E00B5208D /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				AB79014D215B84F20082AE82 /* InfoPlist.strings in Resources */,
 				AB79014E215B84F20082AE82 /* MainMenu.xib in Resources */,
-				ABA67CFB2808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */,
 				AB79014F215B84F20082AE82 /* Localizable.strings in Resources */,
 				AB790150215B84F20082AE82 /* Icon_ActionReplay_32x32.png in Resources */,
 				AB790151215B84F20082AE82 /* Icon_CodeBreaker_32x32.png in Resources */,
@@ -6626,6 +6608,7 @@
 				AB790188215B84F20082AE82 /* Icon_DSButtonB_420x420.png in Resources */,
 				AB790189215B84F20082AE82 /* Icon_Piano_256x256.png in Resources */,
 				AB79018A215B84F20082AE82 /* Icon_FrameAdvance_420x420.png in Resources */,
+				AB3E8AF12808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 				AB79018B215B84F20082AE82 /* Icon_DSButtonL_420x420.png in Resources */,
 				AB79018C215B84F20082AE82 /* Icon_DSButtonR_420x420.png in Resources */,
 				AB79018D215B84F20082AE82 /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -6651,7 +6634,6 @@
 				AB7901A0215B84F20082AE82 /* Icon_MicrophoneRed_256x256.png in Resources */,
 				AB7901A1215B84F20082AE82 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
 				AB7901A2215B84F20082AE82 /* SourceSansPro-Bold.otf in Resources */,
-				ABA67CE72808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				AB7901A3215B84F20082AE82 /* Image_GuitarGrip.png in Resources */,
 				AB7901A4215B84F20082AE82 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
 				AB7901A5215B84F20082AE82 /* README.MAC in Resources */,
@@ -6679,7 +6661,6 @@
 				ABA67D142808B97E00B5208D /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				AB796CAF15CDCBA200C59155 /* InfoPlist.strings in Resources */,
 				AB796CB015CDCBA200C59155 /* MainMenu.xib in Resources */,
-				ABA67CF62808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */,
 				AB796CB115CDCBA200C59155 /* Localizable.strings in Resources */,
 				AB796CB215CDCBA200C59155 /* Icon_ActionReplay_32x32.png in Resources */,
 				AB796CB315CDCBA200C59155 /* Icon_CodeBreaker_32x32.png in Resources */,
@@ -6746,6 +6727,7 @@
 				AB796CD815CDCBA200C59155 /* Icon_DSButtonB_420x420.png in Resources */,
 				AB681027187D4AEF0049F2C2 /* Icon_Piano_256x256.png in Resources */,
 				ABDDF7C91898F032007583C1 /* Icon_FrameAdvance_420x420.png in Resources */,
+				AB3E8AEC2808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 				AB796CD915CDCBA200C59155 /* Icon_DSButtonL_420x420.png in Resources */,
 				AB796CDA15CDCBA200C59155 /* Icon_DSButtonR_420x420.png in Resources */,
 				AB796CDB15CDCBA200C59155 /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -6771,7 +6753,6 @@
 				ABB0FBD51A9EED350060C55A /* Icon_MicrophoneRed_256x256.png in Resources */,
 				AB68101F187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
 				ABA7313B1BB5104200B26147 /* SourceSansPro-Bold.otf in Resources */,
-				ABA67CE22808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				ABAB454F187CDB70007BE20C /* Image_GuitarGrip.png in Resources */,
 				AB681021187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
 				AB796CEC15CDCBA200C59155 /* README.MAC in Resources */,
@@ -6799,7 +6780,6 @@
 				ABA67D182808B97E00B5208D /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				AB79FFF0215B84E50082AE82 /* InfoPlist.strings in Resources */,
 				AB79FFF1215B84E50082AE82 /* MainMenu.xib in Resources */,
-				ABA67CFA2808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */,
 				AB79FFF2215B84E50082AE82 /* Localizable.strings in Resources */,
 				AB79FFF3215B84E50082AE82 /* Icon_ActionReplay_32x32.png in Resources */,
 				AB79FFF4215B84E50082AE82 /* Icon_CodeBreaker_32x32.png in Resources */,
@@ -6866,6 +6846,7 @@
 				AB79002B215B84E50082AE82 /* Icon_DSButtonB_420x420.png in Resources */,
 				AB79002C215B84E50082AE82 /* Icon_Piano_256x256.png in Resources */,
 				AB79002D215B84E50082AE82 /* Icon_FrameAdvance_420x420.png in Resources */,
+				AB3E8AF02808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 				AB79002E215B84E50082AE82 /* Icon_DSButtonL_420x420.png in Resources */,
 				AB79002F215B84E50082AE82 /* Icon_DSButtonR_420x420.png in Resources */,
 				AB790030215B84E50082AE82 /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -6891,7 +6872,6 @@
 				AB790043215B84E50082AE82 /* Icon_MicrophoneRed_256x256.png in Resources */,
 				AB790044215B84E50082AE82 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
 				AB790045215B84E50082AE82 /* SourceSansPro-Bold.otf in Resources */,
-				ABA67CE62808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				AB790046215B84E50082AE82 /* Image_GuitarGrip.png in Resources */,
 				AB790047215B84E50082AE82 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
 				AB790048215B84E50082AE82 /* README.MAC in Resources */,
@@ -6919,7 +6899,6 @@
 				ABA67D152808B97E00B5208D /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				AB8F3C221A53AC2600A80BF6 /* InfoPlist.strings in Resources */,
 				AB8F3C231A53AC2600A80BF6 /* MainMenu.xib in Resources */,
-				ABA67CF72808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */,
 				AB8F3C241A53AC2600A80BF6 /* Localizable.strings in Resources */,
 				AB8F3C251A53AC2600A80BF6 /* Icon_ActionReplay_32x32.png in Resources */,
 				AB8F3C261A53AC2600A80BF6 /* Icon_CodeBreaker_32x32.png in Resources */,
@@ -6986,6 +6965,7 @@
 				AB8F3C541A53AC2600A80BF6 /* Icon_DSButtonB_420x420.png in Resources */,
 				AB8F3C551A53AC2600A80BF6 /* Icon_Piano_256x256.png in Resources */,
 				AB8F3C561A53AC2600A80BF6 /* Icon_FrameAdvance_420x420.png in Resources */,
+				AB3E8AED2808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 				AB8F3C571A53AC2600A80BF6 /* Icon_DSButtonL_420x420.png in Resources */,
 				AB8F3C581A53AC2600A80BF6 /* Icon_DSButtonR_420x420.png in Resources */,
 				AB8F3C591A53AC2600A80BF6 /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -7011,7 +6991,6 @@
 				ABB0FBD71A9EED350060C55A /* Icon_MicrophoneRed_256x256.png in Resources */,
 				AB8F3C6C1A53AC2600A80BF6 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
 				ABA7313D1BB5104200B26147 /* SourceSansPro-Bold.otf in Resources */,
-				ABA67CE32808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				AB8F3C6D1A53AC2600A80BF6 /* Image_GuitarGrip.png in Resources */,
 				AB8F3C6E1A53AC2600A80BF6 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
 				AB8F3C6F1A53AC2600A80BF6 /* README.MAC in Resources */,
@@ -7048,7 +7027,6 @@
 				ABA67D1C2808B97E00B5208D /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				ABD2CCF626E05CB000FB15F7 /* InfoPlist.strings in Resources */,
 				ABD2CCF726E05CB000FB15F7 /* MainMenu.xib in Resources */,
-				ABA67CFE2808B97E00B5208D /* Icon_MicrophoneDenied_256x256.png in Resources */,
 				ABD2CCF826E05CB000FB15F7 /* Localizable.strings in Resources */,
 				ABD2CCF926E05CB000FB15F7 /* Icon_ActionReplay_32x32.png in Resources */,
 				ABD2CCFA26E05CB000FB15F7 /* Icon_CodeBreaker_32x32.png in Resources */,
@@ -7115,6 +7093,7 @@
 				ABD2CD3126E05CB000FB15F7 /* Icon_DSButtonB_420x420.png in Resources */,
 				ABD2CD3226E05CB000FB15F7 /* Icon_Piano_256x256.png in Resources */,
 				ABD2CD3326E05CB000FB15F7 /* Icon_FrameAdvance_420x420.png in Resources */,
+				AB3E8AF42808FDF4007FF5C7 /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 				ABD2CD3426E05CB000FB15F7 /* Icon_DSButtonL_420x420.png in Resources */,
 				ABD2CD3526E05CB000FB15F7 /* Icon_DSButtonR_420x420.png in Resources */,
 				ABD2CD3626E05CB000FB15F7 /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -7140,7 +7119,6 @@
 				ABD2CD4926E05CB000FB15F7 /* Icon_MicrophoneRed_256x256.png in Resources */,
 				ABD2CD4A26E05CB000FB15F7 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
 				ABD2CD4B26E05CB000FB15F7 /* SourceSansPro-Bold.otf in Resources */,
-				ABA67CEA2808B97E00B5208D /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				ABD2CD4C26E05CB000FB15F7 /* Image_GuitarGrip.png in Resources */,
 				ABD2CD4D26E05CB000FB15F7 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
 				ABD2CD4E26E05CB000FB15F7 /* README.MAC in Resources */,

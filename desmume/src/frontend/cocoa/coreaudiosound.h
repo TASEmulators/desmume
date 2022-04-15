@@ -40,6 +40,7 @@ typedef CoreAudioInputDeviceInfo CoreAudioInputDeviceInfo;
 typedef void (*CoreAudioInputHardwareStateChangedCallback)(CoreAudioInputDeviceInfo *deviceInfo,
 														   const bool isHardwareEnabled,
 														   const bool isHardwareLocked,
+														   const bool isHardwareAuthorized,
 														   void *inParam1,
 														   void *inParam2);
 
@@ -75,6 +76,7 @@ private:
 	CoreAudioInputDeviceInfo _hwDeviceInfo;
 	bool _isHardwareEnabled;
 	bool _isHardwareLocked;
+	bool _isHardwareAuthorized;
 	
 	OSStatus InitInputAUHAL(UInt32 deviceID);
 	
@@ -93,6 +95,8 @@ public:
 	
 	bool IsHardwareEnabled() const;
 	bool IsHardwareLocked() const;
+	bool IsHardwareAuthorized() const;
+	void SetHardwareAuthorized(bool isAuthorized);
 	bool GetPauseState() const;
 	void SetPauseState(bool pauseState);
 	float GetNormalizedGain() const;
@@ -174,6 +178,7 @@ OSStatus CoreAudioOutputRenderCallback(void *inRefCon,
 void CoreAudioInputDefaultHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
 													   const bool isHardwareEnabled,
 													   const bool isHardwareLocked,
+													   const bool isHardwareAuthorized,
 													   void *inParam1,
 													   void *inParam2);
 

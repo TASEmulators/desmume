@@ -32,7 +32,8 @@ class AudioSampleBlockGenerator;
 - (void) doMicLevelUpdateFromController:(CocoaDSController *)cdsController;
 - (void) doMicHardwareStateChangedFromController:(CocoaDSController *)cdsController
 									   isEnabled:(BOOL)isHardwareEnabled
-										isLocked:(BOOL)isHardwareLocked;
+										isLocked:(BOOL)isHardwareLocked
+									isAuthorized:(BOOL)isAuthorized;
 
 - (void) doMicHardwareGainChangedFromController:(CocoaDSController *)cdsController gain:(float)gainValue;
 
@@ -56,6 +57,7 @@ class AudioSampleBlockGenerator;
 @property (assign) BOOL autohold;
 @property (assign) NSInteger paddleAdjust;
 @property (assign) NSInteger stylusPressure;
+@property (assign) BOOL hardwareMicAuthorization;
 @property (readonly) BOOL isHardwareMicAvailable;
 @property (readonly) BOOL isHardwareMicIdle;
 @property (readonly) BOOL isHardwareMicInClip;
@@ -81,7 +83,8 @@ class AudioSampleBlockGenerator;
 
 - (void) handleMicHardwareStateChanged:(CoreAudioInputDeviceInfo *)deviceInfo
 							 isEnabled:(BOOL)isHardwareEnabled
-							  isLocked:(BOOL)isHardwareLocked;
+							  isLocked:(BOOL)isHardwareLocked
+						  isAuthorized:(BOOL)isAuthorized;
 - (void) handleMicHardwareGainChanged:(float)gainValue;
 
 @end
@@ -100,6 +103,9 @@ public:
 	void SetCocoaController(CocoaDSController *theController);
 	
 	void StartHardwareMicDevice();
+	
+	virtual void SetHardwareMicAuthorized(bool isAuthorized);
+	virtual bool IsHardwareMicAuthorized();
 	
 	virtual bool IsHardwareMicAvailable();
 	virtual void ReportAverageMicLevel();
@@ -123,6 +129,7 @@ uint8_t CASampleReadCallback(void *inParam1, void *inParam2);
 void CAHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
 									const bool isHardwareEnabled,
 									const bool isHardwareLocked,
+									const bool isHardwareAuthorized,
 									void *inParam1,
 									void *inParam2);
 void CAHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2);

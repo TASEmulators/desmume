@@ -838,6 +838,11 @@
 		AB6A198416CAD66900384EED /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A198216CAD66900384EED /* cocoa_GPU.mm */; };
 		AB6A198516CAD66900384EED /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A198216CAD66900384EED /* cocoa_GPU.mm */; };
 		AB6A198616CAD66900384EED /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A198216CAD66900384EED /* cocoa_GPU.mm */; };
+		AB6D78942809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB6D78932809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB6D78952809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB6D78932809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB6D78962809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB6D78932809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB6D78972809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB6D78932809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
+		AB6D78982809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB6D78932809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
 		AB700DBA16CDDBC400FBD336 /* DisplayWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB700DB816CDDBC400FBD336 /* DisplayWindow.xib */; };
 		AB700DBB16CDDBC400FBD336 /* DisplayWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB700DB816CDDBC400FBD336 /* DisplayWindow.xib */; };
 		AB700DBC16CDDBC400FBD336 /* DisplayWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB700DB816CDDBC400FBD336 /* DisplayWindow.xib */; };
@@ -1159,8 +1164,6 @@
 		ABA1658F2808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165812808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png */; };
 		ABA165902808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165822808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png */; };
 		ABA165912808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165832808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png */; };
-		ABA165922808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165842808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA165932808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165852808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
 		ABA165942808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165862808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png */; };
 		ABA165952808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165872808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png */; };
 		ABA165962808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165882808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png */; };
@@ -1173,8 +1176,6 @@
 		ABA1659D2808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165812808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png */; };
 		ABA1659E2808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165822808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png */; };
 		ABA1659F2808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165832808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png */; };
-		ABA165A02808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165842808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA165A12808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165852808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
 		ABA165A22808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165862808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png */; };
 		ABA165A32808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165872808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png */; };
 		ABA165A42808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165882808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png */; };
@@ -1187,8 +1188,6 @@
 		ABA165AB2808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165812808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png */; };
 		ABA165AC2808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165822808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png */; };
 		ABA165AD2808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165832808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png */; };
-		ABA165AE2808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165842808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA165AF2808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165852808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
 		ABA165B02808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165862808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png */; };
 		ABA165B12808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165872808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png */; };
 		ABA165B22808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165882808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png */; };
@@ -1201,8 +1200,6 @@
 		ABA165B92808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165812808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png */; };
 		ABA165BA2808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165822808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png */; };
 		ABA165BB2808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165832808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png */; };
-		ABA165BC2808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165842808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA165BD2808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165852808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
 		ABA165BE2808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165862808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png */; };
 		ABA165BF2808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165872808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png */; };
 		ABA165C02808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165882808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png */; };
@@ -1215,8 +1212,6 @@
 		ABA165C72808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165812808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png */; };
 		ABA165C82808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165822808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png */; };
 		ABA165C92808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165832808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png */; };
-		ABA165CA2808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165842808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png */; };
-		ABA165CB2808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165852808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png */; };
 		ABA165CC2808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165862808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png */; };
 		ABA165CD2808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165872808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png */; };
 		ABA165CE2808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ABA165882808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png */; };
@@ -2057,6 +2052,7 @@
 		AB6A187B16C9951C00384EED /* EmuControllerDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = EmuControllerDelegate.mm; sourceTree = "<group>"; };
 		AB6A198116CAD66900384EED /* cocoa_GPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_GPU.h; sourceTree = "<group>"; };
 		AB6A198216CAD66900384EED /* cocoa_GPU.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_GPU.mm; sourceTree = "<group>"; };
+		AB6D78932809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneIdleNoHardware_256x256.png; path = images/Icon_MicrophoneIdleNoHardware_256x256.png; sourceTree = "<group>"; };
 		AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_nand.cpp; sourceTree = "<group>"; };
 		AB6FE66A26E6F7C2002B2106 /* GPU_Operations_AVX2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations_AVX2.cpp; sourceTree = "<group>"; };
 		AB6FE66B26E6F7C2002B2106 /* GPU_Operations_AVX2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GPU_Operations_AVX2.h; sourceTree = "<group>"; };
@@ -2092,8 +2088,6 @@
 		ABA165812808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ActionReplay_32x32.png; path = images/Icon_ActionReplay_32x32.png; sourceTree = "<group>"; };
 		ABA165822808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_CodeBreaker_32x32.png; path = images/Icon_CodeBreaker_32x32.png; sourceTree = "<group>"; };
 		ABA165832808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DeSmuME_32x32.png; path = images/Icon_DeSmuME_32x32.png; sourceTree = "<group>"; };
-		ABA165842808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneDenied_256x256.png; path = images/Icon_MicrophoneDenied_256x256.png; sourceTree = "<group>"; };
-		ABA165852808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneDenied_DarkMode_256x256.png; path = images/Icon_MicrophoneDenied_DarkMode_256x256.png; sourceTree = "<group>"; };
 		ABA165862808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneOff_DarkMode_256x256.png; path = images/Icon_MicrophoneOff_DarkMode_256x256.png; sourceTree = "<group>"; };
 		ABA165872808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeFull_DarkMode_16x16.png; path = images/Icon_VolumeFull_DarkMode_16x16.png; sourceTree = "<group>"; };
 		ABA165882808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeFull_DarkMode_16x16@2x.png"; path = "images/Icon_VolumeFull_DarkMode_16x16@2x.png"; sourceTree = "<group>"; };
@@ -3336,10 +3330,9 @@
 				AB1CC8161AA50C8D008B0A16 /* Icon_MicrophoneBlack_256x256.png */,
 				AB1CC8171AA50C8D008B0A16 /* Icon_MicrophoneBlueGlow_256x256.png */,
 				ABACB7391AAC46B20066F429 /* Icon_MicrophoneDarkGreen_256x256.png */,
-				ABA165842808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png */,
-				ABA165852808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png */,
 				AB1CC8181AA50C8D008B0A16 /* Icon_MicrophoneGray_256x256.png */,
 				AB1CC8191AA50C8D008B0A16 /* Icon_MicrophoneGreen_256x256.png */,
+				AB6D78932809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png */,
 				ABA165862808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png */,
 				AB1CC81A1AA50C8D008B0A16 /* Icon_MicrophoneRed_256x256.png */,
 				AB0F29A014BE7213009ABC6F /* Icon_OpenROM_420x420.png */,
@@ -4011,8 +4004,6 @@
 				ABA1658F2808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png in Resources */,
 				ABA165902808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png in Resources */,
 				ABA165912808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png in Resources */,
-				ABA165922808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png in Resources */,
-				ABA165932808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				ABA165942808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				ABA165952808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png in Resources */,
 				ABA165962808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */,
@@ -4022,6 +4013,7 @@
 				ABA1659A2808BD6A00C8CFF5 /* Icon_VolumeOneThird_DarkMode_16x16@2x.png in Resources */,
 				ABA1659B2808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */,
 				ABA1659C2808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */,
+				AB6D78942809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4131,8 +4123,6 @@
 				ABA1659D2808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png in Resources */,
 				ABA1659E2808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png in Resources */,
 				ABA1659F2808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png in Resources */,
-				ABA165A02808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png in Resources */,
-				ABA165A12808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				ABA165A22808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				ABA165A32808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png in Resources */,
 				ABA165A42808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */,
@@ -4142,6 +4132,7 @@
 				ABA165A82808BD6A00C8CFF5 /* Icon_VolumeOneThird_DarkMode_16x16@2x.png in Resources */,
 				ABA165A92808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */,
 				ABA165AA2808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */,
+				AB6D78952809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4251,8 +4242,6 @@
 				ABA165C72808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png in Resources */,
 				ABA165C82808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png in Resources */,
 				ABA165C92808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png in Resources */,
-				ABA165CA2808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png in Resources */,
-				ABA165CB2808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				ABA165CC2808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				ABA165CD2808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png in Resources */,
 				ABA165CE2808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */,
@@ -4262,6 +4251,7 @@
 				ABA165D22808BD6A00C8CFF5 /* Icon_VolumeOneThird_DarkMode_16x16@2x.png in Resources */,
 				ABA165D32808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */,
 				ABA165D42808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */,
+				AB6D78982809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4371,8 +4361,6 @@
 				ABA165B92808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png in Resources */,
 				ABA165BA2808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png in Resources */,
 				ABA165BB2808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png in Resources */,
-				ABA165BC2808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png in Resources */,
-				ABA165BD2808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				ABA165BE2808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				ABA165BF2808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png in Resources */,
 				ABA165C02808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */,
@@ -4382,6 +4370,7 @@
 				ABA165C42808BD6A00C8CFF5 /* Icon_VolumeOneThird_DarkMode_16x16@2x.png in Resources */,
 				ABA165C52808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */,
 				ABA165C62808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */,
+				AB6D78972809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4491,8 +4480,6 @@
 				ABA165AB2808BD6A00C8CFF5 /* Icon_ActionReplay_32x32.png in Resources */,
 				ABA165AC2808BD6A00C8CFF5 /* Icon_CodeBreaker_32x32.png in Resources */,
 				ABA165AD2808BD6A00C8CFF5 /* Icon_DeSmuME_32x32.png in Resources */,
-				ABA165AE2808BD6A00C8CFF5 /* Icon_MicrophoneDenied_256x256.png in Resources */,
-				ABA165AF2808BD6A00C8CFF5 /* Icon_MicrophoneDenied_DarkMode_256x256.png in Resources */,
 				ABA165B02808BD6A00C8CFF5 /* Icon_MicrophoneOff_DarkMode_256x256.png in Resources */,
 				ABA165B12808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16.png in Resources */,
 				ABA165B22808BD6A00C8CFF5 /* Icon_VolumeFull_DarkMode_16x16@2x.png in Resources */,
@@ -4502,6 +4489,7 @@
 				ABA165B62808BD6A00C8CFF5 /* Icon_VolumeOneThird_DarkMode_16x16@2x.png in Resources */,
 				ABA165B72808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */,
 				ABA165B82808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */,
+				AB6D78962809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

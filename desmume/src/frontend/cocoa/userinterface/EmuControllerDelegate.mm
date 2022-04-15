@@ -35,6 +35,10 @@
 #import "cocoa_rom.h"
 #import "cocoa_slot2.h"
 
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
+	#import <AVFoundation/AVFoundation.h>
+#endif
+
 @implementation EmuControllerDelegate
 
 @synthesize inputManager;
@@ -88,6 +92,7 @@
 @synthesize isHardwareMicAvailable;
 @synthesize currentMicGainValue;
 @dynamic currentVolumeValue;
+@synthesize micStatusTooltip;
 @synthesize currentMicStatusIcon;
 @synthesize ndsMicLevelIndicator;
 @synthesize currentVolumeIcon;
@@ -144,27 +149,36 @@
 	isSoundMuted = NO;
 	lastSetVolumeValue = MAX_VOLUME;
 	
-	iconExecute				= [[NSImage imageNamed:@"Icon_Execute_420x420"] retain];
-	iconPause				= [[NSImage imageNamed:@"Icon_Pause_420x420"] retain];
-	iconSpeedNormal			= [[NSImage imageNamed:@"Icon_Speed1x_420x420"] retain];
-	iconSpeedDouble			= [[NSImage imageNamed:@"Icon_Speed2x_420x420"] retain];
+	iconExecute           = [[NSImage imageNamed:@"Icon_Execute_420x420"] retain];
+	iconPause             = [[NSImage imageNamed:@"Icon_Pause_420x420"] retain];
+	iconSpeedNormal       = [[NSImage imageNamed:@"Icon_Speed1x_420x420"] retain];
+	iconSpeedDouble       = [[NSImage imageNamed:@"Icon_Speed2x_420x420"] retain];
 	
-	iconMicDisabled			= [[NSImage imageNamed:@"Icon_MicrophoneBlack_256x256"] retain];
-	iconMicIdle				= [[NSImage imageNamed:@"Icon_MicrophoneDarkGreen_256x256"] retain];
-	iconMicActive			= [[NSImage imageNamed:@"Icon_MicrophoneGreen_256x256"] retain];
-	iconMicInClip			= [[NSImage imageNamed:@"Icon_MicrophoneRed_256x256"] retain];
-	iconMicManualOverride	= [[NSImage imageNamed:@"Icon_MicrophoneGray_256x256"] retain];
+	iconMicDisabled       = [[NSImage imageNamed:@"Icon_MicrophoneBlack_256x256"] retain];
+	iconMicDisabledDM     = [[NSImage imageNamed:@"Icon_MicrophoneOff_DarkMode_256x256"] retain];
+	iconMicIdle           = [[NSImage imageNamed:@"Icon_MicrophoneDarkGreen_256x256"] retain];
+	iconMicIdleNoHardware = [[NSImage imageNamed:@"Icon_MicrophoneIdleNoHardware_256x256"] retain];
+	iconMicActive         = [[NSImage imageNamed:@"Icon_MicrophoneGreen_256x256"] retain];
+	iconMicInClip         = [[NSImage imageNamed:@"Icon_MicrophoneRed_256x256"] retain];
+	iconMicManualOverride = [[NSImage imageNamed:@"Icon_MicrophoneGray_256x256"] retain];
 	
-	iconVolumeFull			= [[NSImage imageNamed:@"Icon_VolumeFull_16x16"] retain];
-	iconVolumeTwoThird		= [[NSImage imageNamed:@"Icon_VolumeTwoThird_16x16"] retain];
-	iconVolumeOneThird		= [[NSImage imageNamed:@"Icon_VolumeOneThird_16x16"] retain];
-	iconVolumeMute			= [[NSImage imageNamed:@"Icon_VolumeMute_16x16"] retain];
+	iconVolumeFull        = [[NSImage imageNamed:@"Icon_VolumeFull_16x16"] retain];
+	iconVolumeTwoThird    = [[NSImage imageNamed:@"Icon_VolumeTwoThird_16x16"] retain];
+	iconVolumeOneThird    = [[NSImage imageNamed:@"Icon_VolumeOneThird_16x16"] retain];
+	iconVolumeMute        = [[NSImage imageNamed:@"Icon_VolumeMute_16x16"] retain];
+	
+	iconVolumeFullDM      = [[NSImage imageNamed:@"Icon_VolumeFull_DarkMode_16x16"] retain];
+	iconVolumeTwoThirdDM  = [[NSImage imageNamed:@"Icon_VolumeTwoThird_DarkMode_16x16"] retain];
+	iconVolumeOneThirdDM  = [[NSImage imageNamed:@"Icon_VolumeOneThird_DarkMode_16x16"] retain];
+	iconVolumeMuteDM      = [[NSImage imageNamed:@"Icon_VolumeMute_DarkMode_16x16"] retain];
 	
 	isWorking = NO;
 	isRomLoading = NO;
 	statusText = NSSTRING_STATUS_READY;
 	currentVolumeValue = MAX_VOLUME;
-	currentMicStatusIcon = [iconMicDisabled retain];
+	micStatusTooltip = @"";
+	BOOL isRunningDarkMode = NO;
+	currentMicStatusIcon = (isRunningDarkMode) ? [iconMicDisabledDM retain] : [iconMicDisabled retain];
 	currentVolumeIcon = [iconVolumeFull retain];
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
@@ -195,7 +209,9 @@
 	[iconSpeedDouble release];
 	
 	[iconMicDisabled release];
+	[iconMicDisabledDM release];
 	[iconMicIdle release];
+	[iconMicIdleNoHardware release];
 	[iconMicActive release];
 	[iconMicInClip release];
 	[iconMicManualOverride release];
@@ -204,6 +220,11 @@
 	[iconVolumeTwoThird release];
 	[iconVolumeOneThird release];
 	[iconVolumeMute release];
+	
+	[iconVolumeFullDM release];
+	[iconVolumeTwoThirdDM release];
+	[iconVolumeOneThirdDM release];
+	[iconVolumeMuteDM release];
 	
 	[[self currentRom] release];
 	[self setCurrentRom:nil];
@@ -300,6 +321,8 @@
 
 - (void) setCurrentVolumeValue:(float)vol
 {
+	BOOL isRunningDarkMode = NO;
+	
 	currentVolumeValue = vol;
 	
 	// Update the icon.
@@ -307,23 +330,23 @@
 	NSImage *newImage = nil;
 	if (vol <= 0.0f)
 	{
-		newImage = iconVolumeMute;
+		newImage = (isRunningDarkMode) ? iconVolumeMuteDM : iconVolumeMute;
 	}
 	else if (vol > 0.0f && vol <= VOLUME_THRESHOLD_LOW)
 	{
-		newImage = iconVolumeOneThird;
+		newImage = (isRunningDarkMode) ? iconVolumeOneThirdDM : iconVolumeOneThird;
 		isSoundMuted = NO;
 		lastSetVolumeValue = vol;
 	}
 	else if (vol > VOLUME_THRESHOLD_LOW && vol <= VOLUME_THRESHOLD_HIGH)
 	{
-		newImage = iconVolumeTwoThird;
+		newImage = (isRunningDarkMode) ? iconVolumeTwoThirdDM : iconVolumeTwoThird;
 		isSoundMuted = NO;
 		lastSetVolumeValue = vol;
 	}
 	else
 	{
-		newImage = iconVolumeFull;
+		newImage = (isRunningDarkMode) ? iconVolumeFullDM : iconVolumeFull;
 		isSoundMuted = NO;
 		lastSetVolumeValue = vol;
 	}
@@ -852,6 +875,31 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore changeRomSaveType:saveTypeID];
+}
+
+- (IBAction) changeHostMicrophonePermission:(id)sender
+{
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
+	if (IsOSXVersionSupported(10, 14, 0))
+	{
+		if (@available(macOS 10.14, *))
+		{
+			[AVCaptureDevice requestAccessForMediaType:AVMediaTypeAudio completionHandler:^(BOOL isAuthorized) {
+				if (isAuthorized)
+				{
+					puts("DeSmuME: User has just granted access to the microphone.");
+				}
+				
+				[self updateHostMicrophonePermissionStatus];
+			}];
+		}
+	}
+	else
+#endif
+	{
+		puts("DeSmuME: User is not running macOS v10.14 Mojave or later -- microphone usage is automatically authorized.");
+		[self updateHostMicrophonePermissionStatus];
+	}
 }
 
 - (IBAction) toggleCheats:(id)sender
@@ -2190,9 +2238,11 @@
 
 - (void) updateMicStatusIcon
 {
+	BOOL isRunningDarkMode = NO;
+	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	CocoaDSController *cdsController = [cdsCore cdsController];
-	NSImage *micIcon = iconMicDisabled;
+	NSImage *micIcon = (isRunningDarkMode) ? iconMicDisabledDM : iconMicDisabled;
 	
 	if ([cdsController softwareMicState])
 	{
@@ -2200,23 +2250,30 @@
 	}
 	else
 	{
-		if ([cdsController isHardwareMicAvailable])
+		if ([cdsController hardwareMicPause])
 		{
-			if ([cdsController hardwareMicPause])
+			micIcon = (isRunningDarkMode) ? iconMicDisabledDM : iconMicDisabled;
+		}
+		else
+		{
+			if ([cdsController isHardwareMicAvailable])
 			{
-				micIcon = iconMicDisabled;
-			}
-			else if ([cdsController isHardwareMicInClip])
-			{
-				micIcon = iconMicInClip;
-			}
-			else if ([cdsController isHardwareMicIdle])
-			{
-				micIcon = iconMicIdle;
+				if ([cdsController isHardwareMicInClip])
+				{
+					micIcon = iconMicInClip;
+				}
+				else if ([cdsController isHardwareMicIdle])
+				{
+					micIcon = iconMicIdle;
+				}
+				else
+				{
+					micIcon = iconMicActive;
+				}
 			}
 			else
 			{
-				micIcon = iconMicActive;
+				micIcon = iconMicIdleNoHardware;
 			}
 		}
 	}
@@ -2485,6 +2542,60 @@
 	}
 	
 	[openglMSAAPopUpButton selectItemAtIndex:0];
+}
+
+- (NSInteger) updateHostMicrophonePermissionStatus
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	CocoaDSController *cdsController = [cdsCore cdsController];
+	
+	NSInteger authStatus = 0;
+	BOOL authFlag = NO;
+	
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
+	if (IsOSXVersionSupported(10, 14, 0))
+	{
+		if (@available(macOS 10.14, *))
+		{
+			authStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
+			
+			switch (authStatus)
+			{
+				case AVAuthorizationStatusNotDetermined:
+					[self setMicStatusTooltip:@"Hardware microphone usage has yet to be authorized. If you need access, click \"OK\" when DeSmuME requests permission from the system."];
+					break;
+					
+				case AVAuthorizationStatusRestricted:
+					[self setMicStatusTooltip:@"Hardware microphone usage has been restricted. Please see your system administrator."];
+					break;
+					
+				case AVAuthorizationStatusDenied:
+					[self setMicStatusTooltip:@"Hardware microphone usage has been denied. If you need access, change your microphone privacy settings for DeSmuME in System Preferences."];
+					break;
+						
+				case AVAuthorizationStatusAuthorized:
+					[self setMicStatusTooltip:@""];
+					authFlag = YES;
+					break;
+					
+				default:
+					[self setMicStatusTooltip:@"Hardware microphone usage is currently unknown. If you need access, change your microphone privacy settings for DeSmuME in System Preferences."];
+					break;
+			}
+			
+			[cdsController setHardwareMicAuthorization:authFlag];
+		}
+	}
+	else
+#endif
+	{
+		authStatus = 3; // AVAuthorizationStatusAuthorized
+		[self setMicStatusTooltip:@""];
+		[cdsController setHardwareMicAuthorization:YES];
+	}
+	
+	[self updateMicStatusIcon];
+	return authStatus;
 }
 
 - (void) readUserDefaults
@@ -3080,8 +3191,9 @@
 - (void) doMicHardwareStateChangedFromController:(CocoaDSController *)cdsController
 									   isEnabled:(BOOL)isHardwareEnabled
 										isLocked:(BOOL)isHardwareLocked
+									isAuthorized:(BOOL)isAuthorized
 {
-	const BOOL hwMicAvailable = (isHardwareEnabled && !isHardwareLocked);
+	const BOOL hwMicAvailable = (isHardwareEnabled && !isHardwareLocked && isAuthorized);
 	[self setIsHardwareMicAvailable:hwMicAvailable];
 	[self updateMicStatusIcon];
 }

@@ -67,7 +67,7 @@
 		return nil;
 	}
 	
-	// Determine if we're running on Intel or PPC.
+	// Determine if we're running on Intel or non-Intel (PowerPC or ARM64).
 #if defined(__i386__) || defined(__x86_64__)
 	isAppRunningOnIntel = YES;
 #else
@@ -371,6 +371,14 @@
 	{
 		[self application:NSApp openFile:[self delayedROMFileName]];
 		[self setDelayedROMFileName:nil];
+	}
+	
+	// Request hardware microphone permissions now. Hopefully, the user will address the
+	// permissions dialog before the ROM program actually needs the microphone input.
+	const NSInteger micPermStatus = [emuControl updateHostMicrophonePermissionStatus];
+	if (micPermStatus == 0) // (micPermStatus == AVAuthorizationStatusNotDetermined)
+	{
+		[emuControl changeHostMicrophonePermission:self];
 	}
 }
 
