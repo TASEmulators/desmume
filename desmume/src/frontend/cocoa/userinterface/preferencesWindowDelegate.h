@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2018 DeSmuME Team
+	Copyright (C) 2012-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -80,6 +80,10 @@ class OGLImage;
 	NSImage *iconVolumeTwoThird;
 	NSImage *iconVolumeOneThird;
 	NSImage *iconVolumeMute;
+	NSImage *iconVolumeFullDM;
+	NSImage *iconVolumeTwoThirdDM;
+	NSImage *iconVolumeOneThirdDM;
+	NSImage *iconVolumeMuteDM;
 	NSPopUpButton *spuSyncMethodMenu;
 	
 	DisplayPreviewView *previewView;
@@ -90,6 +94,7 @@ class OGLImage;
 	NSString *subnetMaskString_AP3;
 	
 	NSMutableDictionary *bindings;
+	BOOL _isRunningDarkMode;
 }
 
 @property (readonly) IBOutlet NSObject *dummyObject;

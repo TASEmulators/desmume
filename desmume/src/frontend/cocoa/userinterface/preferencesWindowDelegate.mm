@@ -344,14 +344,40 @@
 	subnetMaskString_AP2 = @"0.0.0.0";
 	subnetMaskString_AP3 = @"0.0.0.0";
 	
+	_isRunningDarkMode = NO;
+	
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
+	if (IsOSXVersionSupported(10, 14, 0))
+	{
+		if (@available(macOS 10.14, *))
+		{
+			NSAppearanceName currentAppearanceName = [[NSApp effectiveAppearance] name];
+			
+			if ( (currentAppearanceName == NSAppearanceNameDarkAqua) ||
+				 (currentAppearanceName == NSAppearanceNameVibrantDark) ||
+				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastDarkAqua) ||
+				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastVibrantDark) )
+			{
+				_isRunningDarkMode = YES;
+			}
+		}
+	}
+#endif
+	
 	// Load the volume icons.
-	iconVolumeFull		= [[NSImage imageNamed:@"Icon_VolumeFull_16x16"] retain];
-	iconVolumeTwoThird	= [[NSImage imageNamed:@"Icon_VolumeTwoThird_16x16"] retain];
-	iconVolumeOneThird	= [[NSImage imageNamed:@"Icon_VolumeOneThird_16x16"] retain];
-	iconVolumeMute		= [[NSImage imageNamed:@"Icon_VolumeMute_16x16"] retain];
-	[bindings setObject:iconVolumeFull forKey:@"volumeIconImage"];
+	iconVolumeFull       = [[NSImage imageNamed:@"Icon_VolumeFull_16x16"] retain];
+	iconVolumeTwoThird   = [[NSImage imageNamed:@"Icon_VolumeTwoThird_16x16"] retain];
+	iconVolumeOneThird   = [[NSImage imageNamed:@"Icon_VolumeOneThird_16x16"] retain];
+	iconVolumeMute       = [[NSImage imageNamed:@"Icon_VolumeMute_16x16"] retain];
+	iconVolumeFullDM     = [[NSImage imageNamed:@"Icon_VolumeFull_DarkMode_16x16"] retain];
+	iconVolumeTwoThirdDM = [[NSImage imageNamed:@"Icon_VolumeTwoThird_DarkMode_16x16"] retain];
+	iconVolumeOneThirdDM = [[NSImage imageNamed:@"Icon_VolumeOneThird_DarkMode_16x16"] retain];
+	iconVolumeMuteDM     = [[NSImage imageNamed:@"Icon_VolumeMute_DarkMode_16x16"] retain];
+	[bindings setObject:((_isRunningDarkMode) ? iconVolumeFullDM : iconVolumeFull) forKey:@"volumeIconImage"];
 	
 	prefViewDict = nil;
+	
+	[[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(handleSystemThemeChange:) name:@"AppleInterfaceThemeChangedNotification" object:nil];
 	
 	return self;
 }
@@ -362,6 +388,10 @@
 	[iconVolumeTwoThird release];
 	[iconVolumeOneThird release];
 	[iconVolumeMute release];
+	[iconVolumeFullDM release];
+	[iconVolumeTwoThirdDM release];
+	[iconVolumeOneThirdDM release];
+	[iconVolumeMuteDM release];
 	[bindings release];
 	[prefViewDict release];
 	
@@ -672,19 +702,19 @@
 	
 	if (vol <= 0.0f)
 	{
-		newIconImage = iconVolumeMute;
+		newIconImage = (_isRunningDarkMode) ? iconVolumeMuteDM : iconVolumeMute;
 	}
 	else if (vol > 0.0f && vol <= VOLUME_THRESHOLD_LOW)
 	{
-		newIconImage = iconVolumeOneThird;
+		newIconImage = (_isRunningDarkMode) ? iconVolumeOneThirdDM : iconVolumeOneThird;
 	}
 	else if (vol > VOLUME_THRESHOLD_LOW && vol <= VOLUME_THRESHOLD_HIGH)
 	{
-		newIconImage = iconVolumeTwoThird;
+		newIconImage = (_isRunningDarkMode) ? iconVolumeTwoThirdDM : iconVolumeTwoThird;
 	}
 	else
 	{
-		newIconImage = iconVolumeFull;
+		newIconImage = (_isRunningDarkMode) ? iconVolumeFullDM : iconVolumeFull;
 	}
 	
 	if (newIconImage == iconImage)
@@ -1128,6 +1158,35 @@
 	else
 	{
 		[bindings setValue:NSSTRING_STATUS_NO_ROM_CHOSEN forKey:@"AutoloadRomName"];
+	}
+}
+
+- (void) handleSystemThemeChange:(NSNotification *) notification
+{
+	BOOL newDarkModeState = NO;
+	
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
+	if (IsOSXVersionSupported(10, 14, 0))
+	{
+		if (@available(macOS 10.14, *))
+		{
+			NSAppearanceName currentAppearanceName = [[[self viewSound] effectiveAppearance] name];
+			
+			if ( (currentAppearanceName == NSAppearanceNameDarkAqua) ||
+				 (currentAppearanceName == NSAppearanceNameVibrantDark) ||
+				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastDarkAqua) ||
+				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastVibrantDark) )
+			{
+				newDarkModeState = YES;
+			}
+		}
+	}
+#endif
+	
+	if (newDarkModeState != _isRunningDarkMode)
+	{
+		_isRunningDarkMode = newDarkModeState;
+		[self updateVolumeIcon:self];
 	}
 }
 

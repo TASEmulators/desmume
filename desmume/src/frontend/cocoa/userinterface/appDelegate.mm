@@ -228,6 +228,7 @@
 	
 	// Init the DS emulation core.
 	CocoaDSCore *newCore = [[[CocoaDSCore alloc] init] autorelease];
+	[cdsCoreController setContent:newCore];
 	
 	// Init the DS controller.
 	[[newCore cdsController] setDelegate:emuControl];
@@ -245,7 +246,6 @@
 	[emuControl setCdsSpeaker:newSpeaker];
 	
 	// Set up all the object controllers.
-	[cdsCoreController setContent:newCore];
 	[prefWindowController setContent:[prefWindowDelegate bindings]];
 	
 	[emuControl appInit];

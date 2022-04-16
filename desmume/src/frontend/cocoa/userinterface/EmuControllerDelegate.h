@@ -84,6 +84,7 @@ class AudioSampleBlockGenerator;
 	
 	BOOL isSaveStateEdited;
 	
+	BOOL isRunningDarkMode;
 	BOOL isWorking;
 	BOOL isRomLoading;
 	NSString *statusText;
@@ -178,6 +179,7 @@ class AudioSampleBlockGenerator;
 
 @property (readonly) CGFloat lastSetSpeedScalar;
 
+@property (assign) BOOL isRunningDarkMode;
 @property (assign) BOOL isWorking;
 @property (assign) BOOL isRomLoading;
 @property (assign) NSString *statusText;
@@ -299,6 +301,7 @@ class AudioSampleBlockGenerator;
 - (BOOL) handleUnloadRom:(NSInteger)reasonID romToLoad:(NSURL *)romURL;
 - (BOOL) loadRomByURL:(NSURL *)romURL asynchronous:(BOOL)willLoadAsync;
 - (void) loadRomDidFinish:(NSNotification *)aNotification;
+- (void) handleSystemThemeChange:(NSNotification *) notification;
 - (BOOL) unloadRom;
 
 - (void) addOutputToCore:(CocoaDSOutput *)theOutput;

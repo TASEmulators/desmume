@@ -86,6 +86,7 @@
 
 @synthesize lastSetSpeedScalar;
 
+@synthesize isRunningDarkMode;
 @synthesize isWorking;
 @synthesize isRomLoading;
 @synthesize statusText;
@@ -122,6 +123,26 @@
 	
 	mainWindow = nil;
 	windowList = [[NSMutableArray alloc] initWithCapacity:32];
+	
+	isRunningDarkMode = NO;
+	
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
+	if (IsOSXVersionSupported(10, 14, 0))
+	{
+		if (@available(macOS 10.14, *))
+		{
+			NSAppearanceName currentAppearanceName = [[NSApp effectiveAppearance] name];
+			
+			if ( (currentAppearanceName == NSAppearanceNameDarkAqua) ||
+				 (currentAppearanceName == NSAppearanceNameVibrantDark) ||
+				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastDarkAqua) ||
+				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastVibrantDark) )
+			{
+				isRunningDarkMode = YES;
+			}
+		}
+	}
+#endif
 	
 	_displayRotationPanelTitle = nil;
 	_displaySeparationPanelTitle = nil;
@@ -177,9 +198,8 @@
 	statusText = NSSTRING_STATUS_READY;
 	currentVolumeValue = MAX_VOLUME;
 	micStatusTooltip = @"";
-	BOOL isRunningDarkMode = NO;
 	currentMicStatusIcon = (isRunningDarkMode) ? [iconMicDisabledDM retain] : [iconMicDisabled retain];
-	currentVolumeIcon = [iconVolumeFull retain];
+	currentVolumeIcon = (isRunningDarkMode) ? [iconVolumeFullDM retain] : [iconVolumeFull retain];
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(loadRomDidFinish:)
@@ -195,6 +215,8 @@
 											 selector:@selector(handleEmulatorExecutionState:)
 												 name:@"org.desmume.DeSmuME.handleEmulatorExecutionState"
 											   object:nil];
+	
+	[[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(handleSystemThemeChange:) name:@"AppleInterfaceThemeChangedNotification" object:nil];
 	
 	return self;
 }
@@ -321,8 +343,7 @@
 
 - (void) setCurrentVolumeValue:(float)vol
 {
-	BOOL isRunningDarkMode = NO;
-	
+	const BOOL currentDarkModeState = [self isRunningDarkMode];
 	currentVolumeValue = vol;
 	
 	// Update the icon.
@@ -330,23 +351,23 @@
 	NSImage *newImage = nil;
 	if (vol <= 0.0f)
 	{
-		newImage = (isRunningDarkMode) ? iconVolumeMuteDM : iconVolumeMute;
+		newImage = (currentDarkModeState) ? iconVolumeMuteDM : iconVolumeMute;
 	}
 	else if (vol > 0.0f && vol <= VOLUME_THRESHOLD_LOW)
 	{
-		newImage = (isRunningDarkMode) ? iconVolumeOneThirdDM : iconVolumeOneThird;
+		newImage = (currentDarkModeState) ? iconVolumeOneThirdDM : iconVolumeOneThird;
 		isSoundMuted = NO;
 		lastSetVolumeValue = vol;
 	}
 	else if (vol > VOLUME_THRESHOLD_LOW && vol <= VOLUME_THRESHOLD_HIGH)
 	{
-		newImage = (isRunningDarkMode) ? iconVolumeTwoThirdDM : iconVolumeTwoThird;
+		newImage = (currentDarkModeState) ? iconVolumeTwoThirdDM : iconVolumeTwoThird;
 		isSoundMuted = NO;
 		lastSetVolumeValue = vol;
 	}
 	else
 	{
-		newImage = (isRunningDarkMode) ? iconVolumeFullDM : iconVolumeFull;
+		newImage = (currentDarkModeState) ? iconVolumeFullDM : iconVolumeFull;
 		isSoundMuted = NO;
 		lastSetVolumeValue = vol;
 	}
@@ -2196,6 +2217,45 @@
 	[cdsCore setFrameStatus:frameStatusString];
 }
 
+- (void) handleSystemThemeChange:(NSNotification *) notification
+{
+	BOOL newDarkModeState = NO;
+	
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
+	if (IsOSXVersionSupported(10, 14, 0))
+	{
+		if (@available(macOS 10.14, *))
+		{
+			NSAppearanceName currentAppearanceName = nil;
+			
+			if (mainWindow != nil)
+			{
+				currentAppearanceName = [[[mainWindow view] effectiveAppearance] name];
+			}
+			else
+			{
+				currentAppearanceName = [[NSApp effectiveAppearance] name];
+			}
+			
+			if ( (currentAppearanceName == NSAppearanceNameDarkAqua) ||
+				 (currentAppearanceName == NSAppearanceNameVibrantDark) ||
+				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastDarkAqua) ||
+				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastVibrantDark) )
+			{
+				newDarkModeState = YES;
+			}
+		}
+	}
+#endif
+	
+	if (newDarkModeState != [self isRunningDarkMode])
+	{
+		[self setIsRunningDarkMode:newDarkModeState];
+		[self setCurrentVolumeValue:[self currentVolumeValue]];
+		[self updateMicStatusIcon];
+	}
+}
+
 - (void) addOutputToCore:(CocoaDSOutput *)theOutput
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
@@ -2238,42 +2298,37 @@
 
 - (void) updateMicStatusIcon
 {
-	BOOL isRunningDarkMode = NO;
-	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	CocoaDSController *cdsController = [cdsCore cdsController];
-	NSImage *micIcon = (isRunningDarkMode) ? iconMicDisabledDM : iconMicDisabled;
+	NSImage *micIcon = ([self isRunningDarkMode]) ? iconMicDisabledDM : iconMicDisabled;
 	
-	if ([cdsController softwareMicState])
+	if (![cdsCore emulationPaused])
 	{
-		micIcon = iconMicManualOverride;
-	}
-	else
-	{
-		if ([cdsController hardwareMicPause])
+		if ([cdsController softwareMicState])
 		{
-			micIcon = (isRunningDarkMode) ? iconMicDisabledDM : iconMicDisabled;
+			micIcon = iconMicManualOverride;
 		}
 		else
 		{
-			if ([cdsController isHardwareMicAvailable])
+			micIcon = iconMicIdleNoHardware;
+			
+			if (![cdsController hardwareMicMute])
 			{
-				if ([cdsController isHardwareMicInClip])
+				if ([cdsController isHardwareMicAvailable])
 				{
-					micIcon = iconMicInClip;
+					if ([cdsController isHardwareMicInClip])
+					{
+						micIcon = iconMicInClip;
+					}
+					else if ([cdsController isHardwareMicIdle])
+					{
+						micIcon = iconMicIdle;
+					}
+					else
+					{
+						micIcon = iconMicActive;
+					}
 				}
-				else if ([cdsController isHardwareMicIdle])
-				{
-					micIcon = iconMicIdle;
-				}
-				else
-				{
-					micIcon = iconMicActive;
-				}
-			}
-			else
-			{
-				micIcon = iconMicIdleNoHardware;
 			}
 		}
 	}
@@ -2550,13 +2605,13 @@
 	CocoaDSController *cdsController = [cdsCore cdsController];
 	
 	NSInteger authStatus = 0;
-	BOOL authFlag = NO;
 	
 #if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
 	if (IsOSXVersionSupported(10, 14, 0))
 	{
 		if (@available(macOS 10.14, *))
 		{
+			BOOL authFlag = NO;
 			authStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
 			
 			switch (authStatus)
