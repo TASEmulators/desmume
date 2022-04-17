@@ -77,12 +77,6 @@
 	[window makeFirstResponder:nil];
 	
 	// Set final form text.
-#ifdef PUBLIC_RELEASE
-	NSString *appVersionStr = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
-#else
-	NSString *appVersionStr = [[CocoaDSUtil appInternalVersionString] stringByAppendingString:[CocoaDSUtil appCompilerDetailString]];
-#endif
-	
 	NSString *romNameStr = (NSString *)[bindings valueForKey:@"romName"];
 	if (romNameStr == nil)
 	{
@@ -96,7 +90,7 @@
 	}
 	
 	NSString *finalFormTextStr = @"[ BEGIN DESMUME TROUBLESHOOTING INFORMATION ]\n";
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nApp Version: "] stringByAppendingString:appVersionStr];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nApp Version: "] stringByAppendingString:[[CocoaDSUtil appInternalVersionString] stringByAppendingString:[CocoaDSUtil appCompilerDetailString]]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nOperating System: "] stringByAppendingString:[CocoaDSUtil operatingSystemString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nModel Identifier: "] stringByAppendingString:[CocoaDSUtil modelIdentifierString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nROM Name: "] stringByAppendingString:romNameStr];
