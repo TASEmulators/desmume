@@ -173,5 +173,6 @@ class OGLImage;
 - (void) switchContentView:(NSView *)theView;
 - (void) markUnsupportedOpenGLMSAAMenuItems;
 - (void) setupUserDefaults;
+- (void) handleAppearanceChange;
 
 @end

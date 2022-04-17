@@ -124,25 +124,7 @@
 	mainWindow = nil;
 	windowList = [[NSMutableArray alloc] initWithCapacity:32];
 	
-	isRunningDarkMode = NO;
-	
-#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
-	if (IsOSXVersionSupported(10, 14, 0))
-	{
-		if (@available(macOS 10.14, *))
-		{
-			NSAppearanceName currentAppearanceName = [[NSApp effectiveAppearance] name];
-			
-			if ( (currentAppearanceName == NSAppearanceNameDarkAqua) ||
-				 (currentAppearanceName == NSAppearanceNameVibrantDark) ||
-				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastDarkAqua) ||
-				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastVibrantDark) )
-			{
-				isRunningDarkMode = YES;
-			}
-		}
-	}
-#endif
+	isRunningDarkMode = [CocoaDSUtil determineDarkModeAppearance];
 	
 	_displayRotationPanelTitle = nil;
 	_displaySeparationPanelTitle = nil;
@@ -215,8 +197,6 @@
 											 selector:@selector(handleEmulatorExecutionState:)
 												 name:@"org.desmume.DeSmuME.handleEmulatorExecutionState"
 											   object:nil];
-	
-	[[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(handleSystemThemeChange:) name:@"AppleInterfaceThemeChangedNotification" object:nil];
 	
 	return self;
 }
@@ -2217,45 +2197,6 @@
 	[cdsCore setFrameStatus:frameStatusString];
 }
 
-- (void) handleSystemThemeChange:(NSNotification *) notification
-{
-	BOOL newDarkModeState = NO;
-	
-#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
-	if (IsOSXVersionSupported(10, 14, 0))
-	{
-		if (@available(macOS 10.14, *))
-		{
-			NSAppearanceName currentAppearanceName = nil;
-			
-			if (mainWindow != nil)
-			{
-				currentAppearanceName = [[[mainWindow view] effectiveAppearance] name];
-			}
-			else
-			{
-				currentAppearanceName = [[NSApp effectiveAppearance] name];
-			}
-			
-			if ( (currentAppearanceName == NSAppearanceNameDarkAqua) ||
-				 (currentAppearanceName == NSAppearanceNameVibrantDark) ||
-				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastDarkAqua) ||
-				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastVibrantDark) )
-			{
-				newDarkModeState = YES;
-			}
-		}
-	}
-#endif
-	
-	if (newDarkModeState != [self isRunningDarkMode])
-	{
-		[self setIsRunningDarkMode:newDarkModeState];
-		[self setCurrentVolumeValue:[self currentVolumeValue]];
-		[self updateMicStatusIcon];
-	}
-}
-
 - (void) addOutputToCore:(CocoaDSOutput *)theOutput
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
@@ -2937,6 +2878,18 @@
 	else
 	{
 		[[NSUserDefaults standardUserDefaults] removeObjectForKey:@"General_DisplayWindowRestorableStates"];
+	}
+}
+
+- (void) handleAppearanceChange
+{
+	const BOOL newDarkModeState = [CocoaDSUtil determineDarkModeAppearance];
+	
+	if (newDarkModeState != [self isRunningDarkMode])
+	{
+		[self setIsRunningDarkMode:newDarkModeState];
+		[self setCurrentVolumeValue:[self currentVolumeValue]];
+		[self updateMicStatusIcon];
 	}
 }
 

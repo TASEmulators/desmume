@@ -344,25 +344,7 @@
 	subnetMaskString_AP2 = @"0.0.0.0";
 	subnetMaskString_AP3 = @"0.0.0.0";
 	
-	_isRunningDarkMode = NO;
-	
-#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
-	if (IsOSXVersionSupported(10, 14, 0))
-	{
-		if (@available(macOS 10.14, *))
-		{
-			NSAppearanceName currentAppearanceName = [[NSApp effectiveAppearance] name];
-			
-			if ( (currentAppearanceName == NSAppearanceNameDarkAqua) ||
-				 (currentAppearanceName == NSAppearanceNameVibrantDark) ||
-				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastDarkAqua) ||
-				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastVibrantDark) )
-			{
-				_isRunningDarkMode = YES;
-			}
-		}
-	}
-#endif
+	_isRunningDarkMode = [CocoaDSUtil determineDarkModeAppearance];
 	
 	// Load the volume icons.
 	iconVolumeFull       = [[NSImage imageNamed:@"Icon_VolumeFull_16x16"] retain];
@@ -376,8 +358,6 @@
 	[bindings setObject:((_isRunningDarkMode) ? iconVolumeFullDM : iconVolumeFull) forKey:@"volumeIconImage"];
 	
 	prefViewDict = nil;
-	
-	[[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(handleSystemThemeChange:) name:@"AppleInterfaceThemeChangedNotification" object:nil];
 	
 	return self;
 }
@@ -1161,28 +1141,9 @@
 	}
 }
 
-- (void) handleSystemThemeChange:(NSNotification *) notification
+- (void) handleAppearanceChange
 {
-	BOOL newDarkModeState = NO;
-	
-#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
-	if (IsOSXVersionSupported(10, 14, 0))
-	{
-		if (@available(macOS 10.14, *))
-		{
-			NSAppearanceName currentAppearanceName = [[[self viewSound] effectiveAppearance] name];
-			
-			if ( (currentAppearanceName == NSAppearanceNameDarkAqua) ||
-				 (currentAppearanceName == NSAppearanceNameVibrantDark) ||
-				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastDarkAqua) ||
-				 (currentAppearanceName == NSAppearanceNameAccessibilityHighContrastVibrantDark) )
-			{
-				newDarkModeState = YES;
-			}
-		}
-	}
-#endif
-	
+	const BOOL newDarkModeState = [CocoaDSUtil determineDarkModeAppearance];
 	if (newDarkModeState != _isRunningDarkMode)
 	{
 		_isRunningDarkMode = newDarkModeState;

@@ -156,6 +156,42 @@
 	return [NSString stringWithCString:EMU_DESMUME_COMPILER_DETAIL() encoding:NSUTF8StringEncoding];
 }
 
++ (BOOL) determineDarkModeAppearance
+{
+	const NSInteger appAppearanceMode = [[NSUserDefaults standardUserDefaults] integerForKey:@"Debug_AppAppearanceMode"];
+	BOOL darkModeState = NO; // Default to Light Mode appearance
+	
+	if ( (appAppearanceMode == APP_APPEARANCEMODE_AUTOMATIC) && IsOSXVersionSupported(10, 10, 0) )
+	{
+		// We're doing a Yosemite-style check for Dark Mode by reading the AppleInterfaceStyle key from NSGlobalDomain.
+		//
+		// Apple recommends using [[NSView effectiveAppearance] name] to check for Dark Mode, which requires Mojave.
+		// While this Mojave method may be the "correct" method according to Apple, we would be forcing the user to
+		// run Mojave or later, with this method only being useful if DeSmuME's GUI uses a mix of both Light Mode and
+		// Dark Mode windows. We want to keep DeSmuME's GUI simple by only using a single appearance mode for the
+		// entire app, and so the Mojave method gives no benefits to DeSmuME over the Yosemite method, and because we
+		// don't want DeSmuME to be limited to running only on the more advanced versions of macOS.
+		//
+		// And so we call this method in response to the "AppleInterfaceThemeChangedNotification" notification from
+		// NSDistributedNotificationCenter. Doing this causes a serious technical problem to occur for the Mojave
+		// method, in which macOS Mojave and Cataline experience a race condition if you try to call
+		// [[NSView effectiveAppearance] name] when the user switches appearance modes in System Preferences. This
+		// race condition causes an unreliable read of the Dark Mode state on Mojave and Catalina.
+		//
+		// With the aforementioned reliability issue being the final straw on top of the previously mentioned reasons,
+		// this makes the Yosemite method for checking the Dark Mode state the correct choice.
+		const NSDictionary *globalPersistentDomain = [[NSUserDefaults standardUserDefaults] persistentDomainForName:NSGlobalDomain];
+		const NSString *interfaceStyle = [globalPersistentDomain valueForKey:@"AppleInterfaceStyle"];
+		darkModeState = (interfaceStyle != nil) && [interfaceStyle isEqualToString:@"Dark"] && IsOSXVersionSupported(10, 14, 0);
+	}
+	else if (appAppearanceMode == APP_APPEARANCEMODE_DARK)
+	{
+		darkModeState = YES; // Force Dark Mode appearance
+	}
+	
+	return darkModeState;
+}
+
 + (NSString *) operatingSystemString
 {
 	NSDictionary *systemDict = [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"];

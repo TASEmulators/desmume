@@ -14,6 +14,8 @@
 	<true/>
 	<key>CoreControl_SpeedScalar</key>
 	<real>1</real>
+	<key>Debug_AppAppearanceMode</key>
+	<integer>0</integer>
 	<key>Debug_DisableMetal</key>
 	<false/>
 	<key>Debug_GDBStubEnableARM9</key>

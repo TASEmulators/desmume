@@ -217,6 +217,13 @@
 
 enum
 {
+	APP_APPEARANCEMODE_AUTOMATIC                    = 0,
+	APP_APPEARANCEMODE_LIGHT                        = 1,
+	APP_APPEARANCEMODE_DARK                         = 2
+};
+
+enum
+{
 	ROMAUTOLOADOPTION_LOAD_LAST						= 0,
 	ROMAUTOLOADOPTION_LOAD_SELECTED					= 1,
 	ROMAUTOLOADOPTION_LOAD_NONE						= 10000,

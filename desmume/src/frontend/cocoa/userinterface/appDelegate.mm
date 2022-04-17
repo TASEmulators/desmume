@@ -86,6 +86,8 @@
 	RGBA8888ToNSColorValueTransformer *nsColorTransformer = [[[RGBA8888ToNSColorValueTransformer alloc] init] autorelease];
 	[NSValueTransformer setValueTransformer:nsColorTransformer forName:@"RGBA8888ToNSColorValueTransformer"];
 	
+	[[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(handleSystemAppearanceThemeChange:) name:@"AppleInterfaceThemeChangedNotification" object:nil];
+	
 	return self;
 }
 
@@ -459,6 +461,15 @@
 	[troubleshootingWindow makeKeyAndOrderFront:sender];
 }
 
+- (IBAction) changeAppAppearance:(id)sender
+{
+	const NSInteger appAppearanceMode = [CocoaDSUtil getIBActionSenderTag:sender];
+	[[NSUserDefaults standardUserDefaults] setInteger:appAppearanceMode forKey:@"Debug_AppAppearanceMode"];
+	[[NSUserDefaults standardUserDefaults] synchronize];
+	
+	[self handleSystemAppearanceThemeChange:nil];
+}
+
 #pragma mark Class Methods
 - (void) setupSlotMenuItems
 {
@@ -705,6 +716,35 @@
 	
 	// Set up the preferences window.
 	[prefWindowDelegate setupUserDefaults];
+}
+
+- (void) handleSystemAppearanceThemeChange:(NSNotification *) notification
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
+	PreferencesWindowDelegate *prefWindowDelegate = (PreferencesWindowDelegate *)[prefWindow delegate];
+	
+	[emuControl handleAppearanceChange];
+	[prefWindowDelegate handleAppearanceChange];
+}
+
+#pragma mark NSUserInterfaceValidations Protocol
+
+- (BOOL)validateUserInterfaceItem:(id <NSValidatedUserInterfaceItem>)theItem
+{
+	BOOL enable = YES;
+	const SEL theAction = [theItem action];
+	
+	if (theAction == @selector(changeAppAppearance:))
+	{
+		const NSInteger appAppearanceMode = [[NSUserDefaults standardUserDefaults] integerForKey:@"Debug_AppAppearanceMode"];
+		
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:([theItem tag] == appAppearanceMode) ? GUI_STATE_ON : GUI_STATE_OFF];
+		}
+	}
+	
+	return enable;
 }
 
 @end

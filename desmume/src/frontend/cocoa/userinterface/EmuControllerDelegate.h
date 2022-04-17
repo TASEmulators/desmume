@@ -301,7 +301,6 @@ class AudioSampleBlockGenerator;
 - (BOOL) handleUnloadRom:(NSInteger)reasonID romToLoad:(NSURL *)romURL;
 - (BOOL) loadRomByURL:(NSURL *)romURL asynchronous:(BOOL)willLoadAsync;
 - (void) loadRomDidFinish:(NSNotification *)aNotification;
-- (void) handleSystemThemeChange:(NSNotification *) notification;
 - (BOOL) unloadRom;
 
 - (void) addOutputToCore:(CocoaDSOutput *)theOutput;
@@ -330,5 +329,6 @@ class AudioSampleBlockGenerator;
 - (void) writeUserDefaults;
 - (void) restoreDisplayWindowStates;
 - (void) saveDisplayWindowStates;
+- (void) handleAppearanceChange;
 
 @end

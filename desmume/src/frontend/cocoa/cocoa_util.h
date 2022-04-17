@@ -39,6 +39,8 @@
 + (NSString *) appInternalNameAndVersionString;
 + (NSString *) appCompilerDetailString;
 
++ (BOOL) determineDarkModeAppearance;
+
 + (NSString *) operatingSystemString;
 + (NSString *) modelIdentifierString;
 + (uint32_t) hostIP4AddressAsUInt32;

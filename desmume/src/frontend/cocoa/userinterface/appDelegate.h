@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2018 DeSmuME Team
+	Copyright (C) 2011-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -25,9 +25,9 @@
 
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-@interface AppDelegate : NSObject <NSApplicationDelegate>
+@interface AppDelegate : NSObject <NSApplicationDelegate, NSUserInterfaceValidations>
 #else
-@interface AppDelegate : NSObject
+@interface AppDelegate : NSObject<NSUserInterfaceValidations>
 #endif
 {
 	NSObject *dummyObject;
@@ -77,9 +77,11 @@
 - (IBAction) launchForums:(id)sender;
 - (IBAction) supportRequest:(id)sender;
 - (IBAction) bugReport:(id)sender;
+- (IBAction) changeAppAppearance:(id)sender;
 
 - (void) setupSlotMenuItems;
 - (NSMenuItem *) addSlotMenuItem:(NSMenu *)menu slotNumber:(NSUInteger)slotNumber;
 - (void) setupUserDefaults;
+- (void) handleSystemAppearanceThemeChange:(NSNotification *) notification;
 
 @end
