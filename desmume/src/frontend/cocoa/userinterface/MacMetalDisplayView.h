@@ -26,6 +26,8 @@
 #include <mach/semaphore.h>
 #include <mach/sync_policy.h>
 
+#include <queue>
+
 #import "DisplayViewCALayer.h"
 #import "../cocoa_GPU.h"
 #import "../cocoa_util.h"
@@ -269,7 +271,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MacDisplayLayeredView *_cdv;
 	MacMetalDisplayPresenterObject *presenterObject;
 	dispatch_semaphore_t _semDrawable;
-	id<CAMetalDrawable> _currentDrawable;
+	std::queue< id<CAMetalDrawable> > *_drawableQueue;
 	id<CAMetalDrawable> layerDrawable0;
 	id<CAMetalDrawable> layerDrawable1;
 	id<CAMetalDrawable> layerDrawable2;

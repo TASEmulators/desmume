@@ -2261,7 +2261,7 @@
 	
 	_cdv = NULL;
 	_semDrawable = dispatch_semaphore_create(3);
-	_currentDrawable = nil;
+	_drawableQueue = new std::queue< id<CAMetalDrawable> >;
 	layerDrawable0 = nil;
 	layerDrawable1 = nil;
 	layerDrawable2 = nil;
@@ -2290,6 +2290,8 @@
 	[self setLayerDrawable2:nil];
 	dispatch_release(_semDrawable);
 	
+	delete _drawableQueue;
+	
 	[_displayTexturePair.main  release];
 	[_displayTexturePair.touch release];
 	
@@ -2312,7 +2314,6 @@
 	id<CAMetalDrawable> drawable = [self nextDrawable];
 	if (drawable == nil)
 	{
-		_currentDrawable = nil;
 		dispatch_semaphore_signal(_semDrawable);
 		return;
 	}
@@ -2331,6 +2332,8 @@
 			[self setLayerDrawable2:drawable];
 		}
 	}
+	
+	_drawableQueue->push(drawable);
 	
 	id<MTLTexture> texDrawable = [drawable texture];
 	[[presenterObject colorAttachment0Desc] setTexture:texDrawable];
@@ -2363,18 +2366,18 @@
 	[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
 		[presenterObject renderFinishAtIndex:mrfi.renderIndex];
 	}];
-	
-	_currentDrawable = drawable;
 }
 
 - (void) presentDrawableWithCommandBuffer:(id<MTLCommandBuffer>)cb outputTime:(uint64_t)outputTime
 {
-	id<CAMetalDrawable> drawable = _currentDrawable;
-	if (drawable == nil)
+	if (_drawableQueue->empty())
 	{
 		printf("Metal: No drawable was assigned!\n");
 		return;
 	}
+	
+	id<CAMetalDrawable> drawable = _drawableQueue->front();
+	_drawableQueue->pop();
 	
 	// Apple's documentation might seem to suggest that [MTLCommandBuffer presentDrawable:atTime:]
 	// and [MTLDrawable presentAtTime:] inside of a [MTLCommandBuffer addScheduledHandler:] block
