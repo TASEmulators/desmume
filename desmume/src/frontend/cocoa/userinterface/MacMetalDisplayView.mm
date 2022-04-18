@@ -2392,7 +2392,21 @@
 	[cb addScheduledHandler:^(id<MTLCommandBuffer> block) {
 		@autoreleasepool
 		{
-			[drawable presentAtTime:(CFTimeInterval)outputTime / 1000000000.0];
+			// Let's try [MTLDrawable present] instead of [MTLDrawable presentAtTime:] in
+			// an effort to reduce microstuttering even further. Testing on various Metal
+			// machines shows a minor, but still slightly noticeable, reduction in
+			// microstuttering.
+			//
+			// This probably works because this method is called in response to a
+			// CVDisplayLink output callback, which is already expecting to see a frame
+			// very very soon. [MTLDrawable presentAtTime:] does have a little more
+			// overhead than [MTLDrawable present], and so it is possible that the former
+			// method might be pushing the rendered frame ahead by up to 2 frames, whereas
+			// the latter method will always push the rendered frame at most 1 frame ahead.
+			// This best explains the observed behavior in certain rendering scenarios.
+			
+			//[drawable presentAtTime:(CFTimeInterval)outputTime / 1000000000.0];
+			[drawable present];
 			
 			if (drawable == [self layerDrawable0])
 			{
