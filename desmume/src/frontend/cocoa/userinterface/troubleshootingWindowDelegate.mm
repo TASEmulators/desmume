@@ -184,7 +184,11 @@
 	
 	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n\n[ END DESMUME TROUBLESHOOTING INFORMATION ]"];
 	
-	[bindings setValue:finalFormTextStr forKey:@"finalFormText"];
+	NSDictionary *formTextAttr = [NSDictionary dictionaryWithObjectsAndKeys:
+								  [NSColor controlTextColor], NSForegroundColorAttributeName,
+								  nil];
+	
+	[bindings setValue:[[[NSAttributedString alloc] initWithString:finalFormTextStr attributes:formTextAttr] autorelease] forKey:@"finalFormText"];
 	
 	// Remember the current form and switch the window view.
 	currentForm = [window contentView];
