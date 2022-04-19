@@ -3300,7 +3300,7 @@
 		ABD2CE3926E05CB000FB15F7 /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB564906186E6F0C002740F4 /* ForceFeedback.framework */; };
 		ABD2CE3A26E05CB000FB15F7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97325FDCFA39411CA2CEA /* Foundation.framework */; };
 		ABD2CE3B26E05CB000FB15F7 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
-		ABD2CE3C26E05CB000FB15F7 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4401E262943003E2B24 /* Metal.framework */; settings = {ATTRIBUTES = (Required, ); }; };
+		ABD2CE3C26E05CB000FB15F7 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4401E262943003E2B24 /* Metal.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		ABD2CE3D26E05CB000FB15F7 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		ABD2CE3E26E05CB000FB15F7 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */; };
 		ABD2CE3F26E05CB000FB15F7 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABAE1F6E1F6873E70080EFE3 /* CoreVideo.framework */; };
