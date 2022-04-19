@@ -26,8 +26,8 @@
 
 // NDS matrix math functions uses 20.12 fixed-point for calculations. According to
 // GEM_TransformVertex(), dot product calculations use accumulation that goes beyond
-// 32-bits and then saturates. Therefore, all fixed-point math functions will also
-// support that feature here.
+// 32-bits and then saturates. Therefore, all fixed-point math functions (with the
+// exception of matrix-by-matrix multiplication,) will also support that feature here.
 //
 // But for historical reasons, we can't enable this right away. Therefore, the scalar
 // function GEM_TransformVertex() will continue to be used for SetVertex() while these
@@ -619,25 +619,30 @@ static FORCEINLINE void __mtx4_multiply_mtx4_fixed(s32 (&__restrict mtxA)[16], c
 	CACHE_ALIGN s32 a[16];
 	MatrixCopy(a, mtxA);
 	
-	mtxA[ 0] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 0],mtxB[ 0]) + fx32_mul(a[ 4],mtxB[ 1]) + fx32_mul(a[ 8],mtxB[ 2]) + fx32_mul(a[12],mtxB[ 3]) );
-	mtxA[ 1] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 1],mtxB[ 0]) + fx32_mul(a[ 5],mtxB[ 1]) + fx32_mul(a[ 9],mtxB[ 2]) + fx32_mul(a[13],mtxB[ 3]) );
-	mtxA[ 2] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 2],mtxB[ 0]) + fx32_mul(a[ 6],mtxB[ 1]) + fx32_mul(a[10],mtxB[ 2]) + fx32_mul(a[14],mtxB[ 3]) );
-	mtxA[ 3] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 3],mtxB[ 0]) + fx32_mul(a[ 7],mtxB[ 1]) + fx32_mul(a[11],mtxB[ 2]) + fx32_mul(a[15],mtxB[ 3]) );
+	// We can't saturate the accumulated results here because it breaks
+	// character conversations in "Kingdom Hears: Re-coded", causing the
+	// characters to disappear. Therefore, we will simply do a standalone
+	// shiftdown, and that's it.
 	
-	mtxA[ 4] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 0],mtxB[ 4]) + fx32_mul(a[ 4],mtxB[ 5]) + fx32_mul(a[ 8],mtxB[ 6]) + fx32_mul(a[12],mtxB[ 7]) );
-	mtxA[ 5] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 1],mtxB[ 4]) + fx32_mul(a[ 5],mtxB[ 5]) + fx32_mul(a[ 9],mtxB[ 6]) + fx32_mul(a[13],mtxB[ 7]) );
-	mtxA[ 6] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 2],mtxB[ 4]) + fx32_mul(a[ 6],mtxB[ 5]) + fx32_mul(a[10],mtxB[ 6]) + fx32_mul(a[14],mtxB[ 7]) );
-	mtxA[ 7] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 3],mtxB[ 4]) + fx32_mul(a[ 7],mtxB[ 5]) + fx32_mul(a[11],mtxB[ 6]) + fx32_mul(a[15],mtxB[ 7]) );
+	mtxA[ 0] = sfx32_shiftdown( fx32_mul(a[ 0],mtxB[ 0]) + fx32_mul(a[ 4],mtxB[ 1]) + fx32_mul(a[ 8],mtxB[ 2]) + fx32_mul(a[12],mtxB[ 3]) );
+	mtxA[ 1] = sfx32_shiftdown( fx32_mul(a[ 1],mtxB[ 0]) + fx32_mul(a[ 5],mtxB[ 1]) + fx32_mul(a[ 9],mtxB[ 2]) + fx32_mul(a[13],mtxB[ 3]) );
+	mtxA[ 2] = sfx32_shiftdown( fx32_mul(a[ 2],mtxB[ 0]) + fx32_mul(a[ 6],mtxB[ 1]) + fx32_mul(a[10],mtxB[ 2]) + fx32_mul(a[14],mtxB[ 3]) );
+	mtxA[ 3] = sfx32_shiftdown( fx32_mul(a[ 3],mtxB[ 0]) + fx32_mul(a[ 7],mtxB[ 1]) + fx32_mul(a[11],mtxB[ 2]) + fx32_mul(a[15],mtxB[ 3]) );
 	
-	mtxA[ 8] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 0],mtxB[ 8]) + fx32_mul(a[ 4],mtxB[ 9]) + fx32_mul(a[ 8],mtxB[10]) + fx32_mul(a[12],mtxB[11]) );
-	mtxA[ 9] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 1],mtxB[ 8]) + fx32_mul(a[ 5],mtxB[ 9]) + fx32_mul(a[ 9],mtxB[10]) + fx32_mul(a[13],mtxB[11]) );
-	mtxA[10] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 2],mtxB[ 8]) + fx32_mul(a[ 6],mtxB[ 9]) + fx32_mul(a[10],mtxB[10]) + fx32_mul(a[14],mtxB[11]) );
-	mtxA[11] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 3],mtxB[ 8]) + fx32_mul(a[ 7],mtxB[ 9]) + fx32_mul(a[11],mtxB[10]) + fx32_mul(a[15],mtxB[11]) );
+	mtxA[ 4] = sfx32_shiftdown( fx32_mul(a[ 0],mtxB[ 4]) + fx32_mul(a[ 4],mtxB[ 5]) + fx32_mul(a[ 8],mtxB[ 6]) + fx32_mul(a[12],mtxB[ 7]) );
+	mtxA[ 5] = sfx32_shiftdown( fx32_mul(a[ 1],mtxB[ 4]) + fx32_mul(a[ 5],mtxB[ 5]) + fx32_mul(a[ 9],mtxB[ 6]) + fx32_mul(a[13],mtxB[ 7]) );
+	mtxA[ 6] = sfx32_shiftdown( fx32_mul(a[ 2],mtxB[ 4]) + fx32_mul(a[ 6],mtxB[ 5]) + fx32_mul(a[10],mtxB[ 6]) + fx32_mul(a[14],mtxB[ 7]) );
+	mtxA[ 7] = sfx32_shiftdown( fx32_mul(a[ 3],mtxB[ 4]) + fx32_mul(a[ 7],mtxB[ 5]) + fx32_mul(a[11],mtxB[ 6]) + fx32_mul(a[15],mtxB[ 7]) );
 	
-	mtxA[12] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 0],mtxB[12]) + fx32_mul(a[ 4],mtxB[13]) + fx32_mul(a[ 8],mtxB[14]) + fx32_mul(a[12],mtxB[15]) );
-	mtxA[13] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 1],mtxB[12]) + fx32_mul(a[ 5],mtxB[13]) + fx32_mul(a[ 9],mtxB[14]) + fx32_mul(a[13],mtxB[15]) );
-	mtxA[14] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 2],mtxB[12]) + fx32_mul(a[ 6],mtxB[13]) + fx32_mul(a[10],mtxB[14]) + fx32_mul(a[14],mtxB[15]) );
-	mtxA[15] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(a[ 3],mtxB[12]) + fx32_mul(a[ 7],mtxB[13]) + fx32_mul(a[11],mtxB[14]) + fx32_mul(a[15],mtxB[15]) );
+	mtxA[ 8] = sfx32_shiftdown( fx32_mul(a[ 0],mtxB[ 8]) + fx32_mul(a[ 4],mtxB[ 9]) + fx32_mul(a[ 8],mtxB[10]) + fx32_mul(a[12],mtxB[11]) );
+	mtxA[ 9] = sfx32_shiftdown( fx32_mul(a[ 1],mtxB[ 8]) + fx32_mul(a[ 5],mtxB[ 9]) + fx32_mul(a[ 9],mtxB[10]) + fx32_mul(a[13],mtxB[11]) );
+	mtxA[10] = sfx32_shiftdown( fx32_mul(a[ 2],mtxB[ 8]) + fx32_mul(a[ 6],mtxB[ 9]) + fx32_mul(a[10],mtxB[10]) + fx32_mul(a[14],mtxB[11]) );
+	mtxA[11] = sfx32_shiftdown( fx32_mul(a[ 3],mtxB[ 8]) + fx32_mul(a[ 7],mtxB[ 9]) + fx32_mul(a[11],mtxB[10]) + fx32_mul(a[15],mtxB[11]) );
+	
+	mtxA[12] = sfx32_shiftdown( fx32_mul(a[ 0],mtxB[12]) + fx32_mul(a[ 4],mtxB[13]) + fx32_mul(a[ 8],mtxB[14]) + fx32_mul(a[12],mtxB[15]) );
+	mtxA[13] = sfx32_shiftdown( fx32_mul(a[ 1],mtxB[12]) + fx32_mul(a[ 5],mtxB[13]) + fx32_mul(a[ 9],mtxB[14]) + fx32_mul(a[13],mtxB[15]) );
+	mtxA[14] = sfx32_shiftdown( fx32_mul(a[ 2],mtxB[12]) + fx32_mul(a[ 6],mtxB[13]) + fx32_mul(a[10],mtxB[14]) + fx32_mul(a[14],mtxB[15]) );
+	mtxA[15] = sfx32_shiftdown( fx32_mul(a[ 3],mtxB[12]) + fx32_mul(a[ 7],mtxB[13]) + fx32_mul(a[11],mtxB[14]) + fx32_mul(a[15],mtxB[15]) );
 }
 
 static FORCEINLINE void __mtx4_scale_vec3_fixed(s32 (&__restrict inoutMtx)[16], const s32 (&__restrict inVec)[4])
@@ -832,12 +837,14 @@ static FORCEINLINE void __mtx4_multiply_mtx4_fixed_SSE4(s32 (&__restrict mtxA)[1
 	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[1], v[1]) );\
 	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[2], v[2]) );\
 	outVecLo = _mm_add_epi64( outVecLo, _mm_mul_epi32(rowLo[3], v[3]) );\
-	___s32_saturate_shiftdown_accum64_fixed_SSE4(outVecLo);\
+	outVecLo = _mm_srli_epi64(outVecLo, 12);\
+	outVecLo = _mm_shuffle_epi32(outVecLo, 0xD8);\
 	outVecHi =                          _mm_mul_epi32(rowHi[0], v[0]);\
 	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[1], v[1]) );\
 	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[2], v[2]) );\
 	outVecHi = _mm_add_epi64( outVecHi, _mm_mul_epi32(rowHi[3], v[3]) );\
-	___s32_saturate_shiftdown_accum64_fixed_SSE4(outVecHi);
+	outVecHi = _mm_srli_epi64(outVecHi, 12);\
+	outVecHi = _mm_shuffle_epi32(outVecHi, 0xD8);
 	
 	CALCULATE_MATRIX_ROW_FIXED_SSE4(0);
 	_mm_store_si128( (v128s32 *)(mtxA + 0), _mm_unpacklo_epi64(outVecLo, outVecHi) );
@@ -971,7 +978,7 @@ static FORCEINLINE void ___s32_saturate_shiftdown_accum64_fixed_NEON(int64x2_t &
 #endif // FIXED_POINT_MATH_FUNCTIONS_USE_ACCUMULATOR_SATURATE
 	
 	inoutAccum = vshrq_n_s64(inoutAccum, 12);
-	inoutAccum = vreinterpretq_s64_s32( vuzp1q_s32(inoutAccum, vdupq_n_s32(0)) );
+	inoutAccum = vreinterpretq_s64_s32( vuzp1q_s32(vreinterpretq_s32_s64(inoutAccum), vdupq_n_s32(0)) );
 }
 
 static FORCEINLINE s32 __vec4_dotproduct_vec4_fixed_NEON(const s32 (&__restrict vecA)[4], const s32 (&__restrict vecB)[4])
@@ -1059,12 +1066,14 @@ static FORCEINLINE void __mtx4_multiply_mtx4_fixed_NEON(s32 (&__restrict mtxA)[1
 	outVecLo = vmlal_s32( outVecLo, vget_low_s32(rowA.val[1]), v[1] );\
 	outVecLo = vmlal_s32( outVecLo, vget_low_s32(rowA.val[2]), v[2] );\
 	outVecLo = vmlal_s32( outVecLo, vget_low_s32(rowA.val[3]), v[3] );\
-	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecLo);\
+	outVecLo = vshrq_n_s64(outVecLo, 12);\
+	outVecLo = vreinterpretq_s64_s32( vuzp1q_s32(vreinterpretq_s32_s64(outVecLo), vdupq_n_s32(0)) );\
 	outVecHi =           vmull_s32( vget_high_s32(rowA.val[0]), v[0] );\
 	outVecHi = vmlal_s32( outVecHi, vget_high_s32(rowA.val[1]), v[1] );\
 	outVecHi = vmlal_s32( outVecHi, vget_high_s32(rowA.val[2]), v[2] );\
 	outVecHi = vmlal_s32( outVecHi, vget_high_s32(rowA.val[3]), v[3] );\
-	___s32_saturate_shiftdown_accum64_fixed_NEON(outVecHi);
+	outVecHi = vshrq_n_s64(outVecHi, 12);\
+	outVecHi = vreinterpretq_s64_s32( vuzp1q_s32(vreinterpretq_s32_s64(outVecHi), vdupq_n_s32(0)) );
 	
 	CALCULATE_MATRIX_ROW_FIXED_NEON(0);
 	vst1q_s32( mtxA + 0, vreinterpretq_s32_s64(vzip1q_s64(outVecLo, outVecHi)) );
