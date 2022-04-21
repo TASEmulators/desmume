@@ -54,7 +54,9 @@
 @synthesize wifiSettingsPanelDelegate;
 @synthesize migrationDelegate;
 
+@synthesize isAppRunningOnPowerPC;
 @synthesize isAppRunningOnIntel;
+@synthesize isAppRunningOnARM64;
 @synthesize isDeveloperPlusBuild;
 @synthesize didApplicationFinishLaunching;
 @synthesize delayedROMFileName;
@@ -67,11 +69,23 @@
 		return nil;
 	}
 	
+#if defined(__ppc__) || defined(__ppc64__)
+	isAppRunningOnPowerPC = YES;
+#else
+	isAppRunningOnPowerPC = NO;
+#endif
+	
 	// Determine if we're running on Intel or non-Intel (PowerPC or ARM64).
 #if defined(__i386__) || defined(__x86_64__)
 	isAppRunningOnIntel = YES;
 #else
 	isAppRunningOnIntel = NO;
+#endif
+	
+#if defined(__aarch64__)
+	isAppRunningOnARM64 = YES;
+#else
+	isAppRunningOnARM64 = NO;
 #endif
     
 #if defined(GDB_STUB)
@@ -556,12 +570,6 @@
 	[cdsCore setEmuFlagFirmwareBoot:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_FirmwareBoot"]];
 	[cdsCore setEmuFlagEmulateEnsata:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_EmulateEnsata"]];
 	[cdsCore setEmuFlagDebugConsole:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_UseDebugConsole"]];
-	
-	// If we're not running on Intel, force the CPU emulation engine to use the interpreter engine.
-	if (!isAppRunningOnIntel)
-	{
-		[[NSUserDefaults standardUserDefaults] setInteger:CPUEmulationEngineID_Interpreter forKey:@"Emulation_CPUEmulationEngine"];
-	}
 	
 	// Set the CPU emulation engine per user preferences.
 	[cdsCore setCpuEmulationEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_CPUEmulationEngine"]];

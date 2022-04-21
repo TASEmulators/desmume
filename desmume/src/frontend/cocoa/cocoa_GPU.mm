@@ -412,10 +412,19 @@ public:
 	{
 		rendererID = CORE3DLIST_NULL;
 	}
-	else if (rendererID > GPU_3D_RENDERER_COUNT)
+	else if (rendererID >= GPU_3D_RENDERER_COUNT)
 	{
+		puts("DeSmuME: Invalid 3D renderer chosen; falling back to SoftRasterizer.");
 		rendererID = CORE3DLIST_SWRASTERIZE;
 	}
+	
+#if defined(__ppc__) || defined(__ppc64__)
+	if ( (rendererID != CORE3DLIST_NULL) && (rendererID != CORE3DLIST_SWRASTERIZE) )
+	{
+		puts("DeSmuME: PowerPC Macs only support SoftRasterizer; falling back to SoftRasterizer.");
+		rendererID = CORE3DLIST_SWRASTERIZE;
+	}
+#endif
 	
 	gpuEvent->ApplyRender3DSettingsLock();
 	GPU->Set3DRendererByID(rendererID);

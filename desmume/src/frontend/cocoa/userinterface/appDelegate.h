@@ -47,8 +47,12 @@
 	NSMenu *mLoadStateSlot;
 	NSMenu *mSaveStateSlot;
 	
+	BOOL isAppRunningOnPowerPC;
 	BOOL isAppRunningOnIntel;
+	BOOL isAppRunningOnARM64;
+	
     BOOL isDeveloperPlusBuild;
+	
 	BOOL didApplicationFinishLaunching;
 	NSString *delayedROMFileName;
 }
@@ -68,8 +72,12 @@
 @property (readonly) IBOutlet NSMenu *mSaveStateSlot;
 @property (readonly) IBOutlet InputPrefsView *inputPrefsView;
 
-@property (assign) BOOL isAppRunningOnIntel;
-@property (assign) BOOL isDeveloperPlusBuild;
+@property (readonly) BOOL isAppRunningOnPowerPC;
+@property (readonly) BOOL isAppRunningOnIntel;
+@property (readonly) BOOL isAppRunningOnARM64;
+
+@property (readonly) BOOL isDeveloperPlusBuild;
+
 @property (assign) BOOL didApplicationFinishLaunching;
 @property (copy) NSString *delayedROMFileName;
 
