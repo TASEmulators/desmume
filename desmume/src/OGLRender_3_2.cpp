@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2021 DeSmuME team
+	Copyright (C) 2008-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1187,7 +1187,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	}
 	
 	glGenTextures(1, &OGLRef.texFogDensityTableID);
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogDensityTable);
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
 	glBindTexture(GL_TEXTURE_1D, OGLRef.texFogDensityTableID);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1622,7 +1622,7 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	const GLint uniformTexFogDensityTable = glGetUniformLocation(shaderID.program, "texFogDensityTable");
 	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGFog, OGLTextureUnitID_FogAttr);
-	glUniform1i(uniformTexFogDensityTable, OGLTextureUnitID_FogDensityTable);
+	glUniform1i(uniformTexFogDensityTable, OGLTextureUnitID_LookupTable);
 	
 	if (!this->_isDualSourceBlendingSupported)
 	{
@@ -2111,7 +2111,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 			fogDensityTable[i] = (engine.renderState.fogDensityTable[i] == 127) ? 255 : engine.renderState.fogDensityTable[i] << 1;
 		}
 		
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogDensityTable);
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
 		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RED, GL_UNSIGNED_BYTE, fogDensityTable);
 	}
 	

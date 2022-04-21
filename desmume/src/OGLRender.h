@@ -324,7 +324,7 @@ enum OGLTextureUnitID
 	OGLTextureUnitID_GPolyID,
 	OGLTextureUnitID_FogAttr,
 	OGLTextureUnitID_PolyStates,
-	OGLTextureUnitID_FogDensityTable
+	OGLTextureUnitID_LookupTable,
 };
 
 enum OGLBindingPointID
@@ -523,6 +523,8 @@ struct OGLRenderRef
 	GLuint texGDepthStencilID;
 	GLuint texFinalColorID;
 	GLuint texFogDensityTableID;
+	GLuint texToonTableID;
+	GLuint texEdgeColorTableID;
 	GLuint texMSGColorID;
 	GLuint texMSGWorkingID;
 	
@@ -564,11 +566,9 @@ struct OGLRenderRef
 	GLint uniformStateEnableFogAlphaOnly;
 	GLint uniformStateClearPolyID;
 	GLint uniformStateClearDepth;
-	GLint uniformStateEdgeColor;
 	GLint uniformStateFogColor;
 	
 	GLint uniformStateAlphaTestRef[256];
-	GLint uniformStateToonColor[256];
 	GLint uniformPolyTexScale[256];
 	GLint uniformPolyMode[256];
 	GLint uniformPolyIsWireframe[256];
@@ -721,6 +721,7 @@ protected:
 	bool _emulateSpecialZeroAlphaBlending;
 	bool _emulateNDSDepthCalculation;
 	bool _emulateDepthLEqualPolygonFacing;
+	bool _isDepthLEqualPolygonFacingSupported;
 	
 	FragmentColor *_mappedFramebuffer;
 	FragmentColor *_workingTextureUnpackBuffer;
