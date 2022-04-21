@@ -26,6 +26,7 @@
 #define HAVE_LIBZ
 //#define HAVE_LUA
 //#define HAVE_AV_CONFIG_H
+//#define EXPERIMENTAL_WIFI_COMM
 
 #define FT2_BUILD_LIBRARY
 #define DARWIN_NO_CARBON
