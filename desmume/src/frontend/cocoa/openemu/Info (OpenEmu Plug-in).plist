@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>DeSmuME requires your host microphone to emulate the NDS microphone.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
@@ -27,7 +29,7 @@
 	<key>CSResourcesFileMapped</key>
 	<string>yes</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2012-2017 DeSmuME Team. All rights reserved.</string>
+	<string>Copyright © 2012-2022 DeSmuME Team. All rights reserved.</string>
 	<key>NSPrincipalClass</key>
 	<string>OEGameCoreController</string>
 	<key>OEGameCoreClass</key>
@@ -37,6 +39,8 @@
 		<key>openemu.system.nds</key>
 		<dict>
 			<key>OEGameCoreSupportsCheatCode</key>
+			<true/>
+			<key>OEGameCoreSupportsDisplayModeChange</key>
 			<true/>
 		</dict>
 	</dict>
