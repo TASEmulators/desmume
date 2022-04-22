@@ -1347,63 +1347,34 @@
 		AB3FBD822176DE95005722D0 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
 		AB3FBD832176DE95005722D0 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
 		AB40562A169F5DBB0016AC3E /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
-		AB40562C169F5DBB0016AC3E /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
 		AB40562D169F5DBB0016AC3E /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405602169F5DBB0016AC3E /* assert.cpp */; };
-		AB40562F169F5DBB0016AC3E /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405602169F5DBB0016AC3E /* assert.cpp */; };
 		AB405630169F5DBB0016AC3E /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405604169F5DBB0016AC3E /* buffer.cpp */; };
-		AB405632169F5DBB0016AC3E /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405604169F5DBB0016AC3E /* buffer.cpp */; };
 		AB405633169F5DBB0016AC3E /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405607169F5DBB0016AC3E /* compiler.cpp */; };
-		AB405635169F5DBB0016AC3E /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405607169F5DBB0016AC3E /* compiler.cpp */; };
 		AB405636169F5DBB0016AC3E /* compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405609169F5DBB0016AC3E /* compilercontext.cpp */; };
-		AB405638169F5DBB0016AC3E /* compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405609169F5DBB0016AC3E /* compilercontext.cpp */; };
 		AB405639169F5DBB0016AC3E /* compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40560B169F5DBB0016AC3E /* compilerfunc.cpp */; };
-		AB40563B169F5DBB0016AC3E /* compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40560B169F5DBB0016AC3E /* compilerfunc.cpp */; };
 		AB40563C169F5DBB0016AC3E /* compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40560D169F5DBB0016AC3E /* compileritem.cpp */; };
-		AB40563E169F5DBB0016AC3E /* compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40560D169F5DBB0016AC3E /* compileritem.cpp */; };
 		AB40563F169F5DBB0016AC3E /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40560F169F5DBB0016AC3E /* context.cpp */; };
-		AB405641169F5DBB0016AC3E /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40560F169F5DBB0016AC3E /* context.cpp */; };
 		AB405642169F5DBB0016AC3E /* cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405611169F5DBB0016AC3E /* cpuinfo.cpp */; };
-		AB405644169F5DBB0016AC3E /* cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405611169F5DBB0016AC3E /* cpuinfo.cpp */; };
 		AB405645169F5DBB0016AC3E /* defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405613169F5DBB0016AC3E /* defs.cpp */; };
-		AB405647169F5DBB0016AC3E /* defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405613169F5DBB0016AC3E /* defs.cpp */; };
 		AB405648169F5DBB0016AC3E /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405615169F5DBB0016AC3E /* func.cpp */; };
-		AB40564A169F5DBB0016AC3E /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405615169F5DBB0016AC3E /* func.cpp */; };
 		AB40564B169F5DBB0016AC3E /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405619169F5DBB0016AC3E /* logger.cpp */; };
-		AB40564D169F5DBB0016AC3E /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405619169F5DBB0016AC3E /* logger.cpp */; };
 		AB40564E169F5DBB0016AC3E /* memorymanager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40561B169F5DBB0016AC3E /* memorymanager.cpp */; };
-		AB405650169F5DBB0016AC3E /* memorymanager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40561B169F5DBB0016AC3E /* memorymanager.cpp */; };
 		AB405651169F5DBB0016AC3E /* memorymarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40561D169F5DBB0016AC3E /* memorymarker.cpp */; };
-		AB405653169F5DBB0016AC3E /* memorymarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40561D169F5DBB0016AC3E /* memorymarker.cpp */; };
 		AB405654169F5DBB0016AC3E /* operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40561F169F5DBB0016AC3E /* operand.cpp */; };
-		AB405656169F5DBB0016AC3E /* operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40561F169F5DBB0016AC3E /* operand.cpp */; };
 		AB405657169F5DBB0016AC3E /* stringbuilder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405622169F5DBB0016AC3E /* stringbuilder.cpp */; };
-		AB405659169F5DBB0016AC3E /* stringbuilder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405622169F5DBB0016AC3E /* stringbuilder.cpp */; };
 		AB40565A169F5DBB0016AC3E /* stringutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405624169F5DBB0016AC3E /* stringutil.cpp */; };
-		AB40565C169F5DBB0016AC3E /* stringutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405624169F5DBB0016AC3E /* stringutil.cpp */; };
 		AB40565D169F5DBB0016AC3E /* virtualmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405626169F5DBB0016AC3E /* virtualmemory.cpp */; };
-		AB40565F169F5DBB0016AC3E /* virtualmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405626169F5DBB0016AC3E /* virtualmemory.cpp */; };
 		AB405660169F5DBB0016AC3E /* zonememory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405628169F5DBB0016AC3E /* zonememory.cpp */; };
-		AB405662169F5DBB0016AC3E /* zonememory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405628169F5DBB0016AC3E /* zonememory.cpp */; };
 		AB405678169F5DCC0016AC3E /* x86assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405664169F5DCC0016AC3E /* x86assembler.cpp */; };
-		AB40567A169F5DCC0016AC3E /* x86assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405664169F5DCC0016AC3E /* x86assembler.cpp */; };
 		AB40567B169F5DCC0016AC3E /* x86compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405666169F5DCC0016AC3E /* x86compiler.cpp */; };
-		AB40567D169F5DCC0016AC3E /* x86compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405666169F5DCC0016AC3E /* x86compiler.cpp */; };
 		AB40567E169F5DCC0016AC3E /* x86compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405668169F5DCC0016AC3E /* x86compilercontext.cpp */; };
-		AB405680169F5DCC0016AC3E /* x86compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405668169F5DCC0016AC3E /* x86compilercontext.cpp */; };
 		AB405681169F5DCC0016AC3E /* x86compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40566A169F5DCC0016AC3E /* x86compilerfunc.cpp */; };
-		AB405683169F5DCC0016AC3E /* x86compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40566A169F5DCC0016AC3E /* x86compilerfunc.cpp */; };
 		AB405684169F5DCC0016AC3E /* x86compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40566C169F5DCC0016AC3E /* x86compileritem.cpp */; };
-		AB405686169F5DCC0016AC3E /* x86compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40566C169F5DCC0016AC3E /* x86compileritem.cpp */; };
 		AB405687169F5DCC0016AC3E /* x86cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40566E169F5DCC0016AC3E /* x86cpuinfo.cpp */; };
-		AB405689169F5DCC0016AC3E /* x86cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB40566E169F5DCC0016AC3E /* x86cpuinfo.cpp */; };
 		AB40568A169F5DCC0016AC3E /* x86defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405670169F5DCC0016AC3E /* x86defs.cpp */; };
-		AB40568C169F5DCC0016AC3E /* x86defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405670169F5DCC0016AC3E /* x86defs.cpp */; };
 		AB40568D169F5DCC0016AC3E /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405672169F5DCC0016AC3E /* x86func.cpp */; };
-		AB40568F169F5DCC0016AC3E /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405672169F5DCC0016AC3E /* x86func.cpp */; };
 		AB405690169F5DCC0016AC3E /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405674169F5DCC0016AC3E /* x86operand.cpp */; };
-		AB405692169F5DCC0016AC3E /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405674169F5DCC0016AC3E /* x86operand.cpp */; };
 		AB405693169F5DCC0016AC3E /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405676169F5DCC0016AC3E /* x86util.cpp */; };
-		AB405695169F5DCC0016AC3E /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405676169F5DCC0016AC3E /* x86util.cpp */; };
 		AB407F371A6206FB00313213 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		AB47B52F18A45C35009A42AF /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		AB4979BD27F2E97A00E8A244 /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
@@ -2701,6 +2672,7 @@
 		AB9038B717C5ED2200F410BD /* slot1comp_mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AB17C5ED2200F410BD /* slot1comp_mc.cpp */; };
 		AB9038B817C5ED2200F410BD /* slot1comp_rom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AD17C5ED2200F410BD /* slot1comp_rom.cpp */; };
 		AB9038BA17C5ED2200F410BD /* slot1comp_rom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AD17C5ED2200F410BD /* slot1comp_rom.cpp */; };
+		AB93384A28132CD000851FEA /* OEBuildInterface.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB93384928132CD000851FEA /* OEBuildInterface.cpp */; };
 		ABA67CA62808B8DE00B5208D /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABA67CA52808B8D000B5208D /* AVFoundation.framework */; };
 		ABA67CA72808B8E000B5208D /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABA67CA52808B8D000B5208D /* AVFoundation.framework */; };
 		ABA67CA82808B8E700B5208D /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABA67CA52808B8D000B5208D /* AVFoundation.framework */; };
@@ -3693,6 +3665,7 @@
 		AB9038AC17C5ED2200F410BD /* slot1comp_mc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_mc.h; sourceTree = "<group>"; };
 		AB9038AD17C5ED2200F410BD /* slot1comp_rom.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_rom.cpp; sourceTree = "<group>"; };
 		AB9038AE17C5ED2200F410BD /* slot1comp_rom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_rom.h; sourceTree = "<group>"; };
+		AB93384928132CD000851FEA /* OEBuildInterface.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OEBuildInterface.cpp; sourceTree = "<group>"; };
 		AB96EE541F990E4700B7AA67 /* lapi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lapi.c; sourceTree = "<group>"; };
 		AB96EE551F990E4700B7AA67 /* lapi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lapi.h; sourceTree = "<group>"; };
 		AB96EE561F990E4700B7AA67 /* lauxlib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lauxlib.c; sourceTree = "<group>"; };
@@ -5082,6 +5055,7 @@
 		ABB3C63A1501BB8300E0C22E /* openemu */ = {
 			isa = PBXGroup;
 			children = (
+				AB93384928132CD000851FEA /* OEBuildInterface.cpp */,
 				ABB3C63D1501BB8300E0C22E /* NDSGameCore.h */,
 				ABB3C63F1501BB8300E0C22E /* OENDSSystemResponderClient.h */,
 				ABB3C6411501BB8300E0C22E /* OESoundInterface.h */,
@@ -9146,42 +9120,14 @@
 				ABB3C6D51501C04F00E0C22E /* thumb_instructions.cpp in Sources */,
 				AB2EE13317D57F5000F68622 /* fsnitro.cpp in Sources */,
 				ABB3C6D61501C04F00E0C22E /* version.cpp in Sources */,
+				AB93384A28132CD000851FEA /* OEBuildInterface.cpp in Sources */,
 				AB35BD921DEBF41800844310 /* encoding_utf.c in Sources */,
 				ABB3C6D71501C04F00E0C22E /* wifi.cpp in Sources */,
 				ABE9EEEA1501C6EB00D3FB19 /* cocoa_firmware.mm in Sources */,
 				AB1949DB15034F900098793E /* OESoundInterface.mm in Sources */,
 				AB796C9F15CDCB0F00C59155 /* arm_jit.cpp in Sources */,
-				AB40562C169F5DBB0016AC3E /* assembler.cpp in Sources */,
-				AB40562F169F5DBB0016AC3E /* assert.cpp in Sources */,
-				AB405632169F5DBB0016AC3E /* buffer.cpp in Sources */,
-				AB405635169F5DBB0016AC3E /* compiler.cpp in Sources */,
-				AB405638169F5DBB0016AC3E /* compilercontext.cpp in Sources */,
-				AB40563B169F5DBB0016AC3E /* compilerfunc.cpp in Sources */,
-				AB40563E169F5DBB0016AC3E /* compileritem.cpp in Sources */,
-				AB405641169F5DBB0016AC3E /* context.cpp in Sources */,
-				AB405644169F5DBB0016AC3E /* cpuinfo.cpp in Sources */,
-				AB405647169F5DBB0016AC3E /* defs.cpp in Sources */,
-				AB40564A169F5DBB0016AC3E /* func.cpp in Sources */,
-				AB40564D169F5DBB0016AC3E /* logger.cpp in Sources */,
 				AB2ABA421C9F9CFA00173B15 /* rsemaphore.c in Sources */,
-				AB405650169F5DBB0016AC3E /* memorymanager.cpp in Sources */,
-				AB405653169F5DBB0016AC3E /* memorymarker.cpp in Sources */,
 				AB000DD91CCC6B4300413F02 /* retro_stat.c in Sources */,
-				AB405656169F5DBB0016AC3E /* operand.cpp in Sources */,
-				AB405659169F5DBB0016AC3E /* stringbuilder.cpp in Sources */,
-				AB40565C169F5DBB0016AC3E /* stringutil.cpp in Sources */,
-				AB40565F169F5DBB0016AC3E /* virtualmemory.cpp in Sources */,
-				AB405662169F5DBB0016AC3E /* zonememory.cpp in Sources */,
-				AB40567A169F5DCC0016AC3E /* x86assembler.cpp in Sources */,
-				AB40567D169F5DCC0016AC3E /* x86compiler.cpp in Sources */,
-				AB405680169F5DCC0016AC3E /* x86compilercontext.cpp in Sources */,
-				AB405683169F5DCC0016AC3E /* x86compilerfunc.cpp in Sources */,
-				AB405686169F5DCC0016AC3E /* x86compileritem.cpp in Sources */,
-				AB405689169F5DCC0016AC3E /* x86cpuinfo.cpp in Sources */,
-				AB40568C169F5DCC0016AC3E /* x86defs.cpp in Sources */,
-				AB40568F169F5DCC0016AC3E /* x86func.cpp in Sources */,
-				AB405692169F5DCC0016AC3E /* x86operand.cpp in Sources */,
-				AB405695169F5DCC0016AC3E /* x86util.cpp in Sources */,
 				AB68A0DD16B139BC00DE0546 /* OGLRender_3_2.cpp in Sources */,
 				AB9038B717C5ED2200F410BD /* slot1comp_mc.cpp in Sources */,
 				AB3A656316CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
@@ -9795,6 +9741,7 @@
 				ARCHS = (
 					x86_64,
 					x86_64h,
+					arm64,
 				);
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_X86_VECTOR_INSTRUCTIONS = sse4.1;
@@ -9804,8 +9751,10 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/openemu\"",
 				);
+				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_PREFIX_HEADER = openemu/DeSmuME_Prefix_OpenEmu.pch;
 				INFOPLIST_FILE = "openemu/Info (OpenEmu Plug-in).plist";
+				LLVM_LTO = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_NAME = DeSmuME;
 				WRAPPER_EXTENSION = oecoreplugin;
@@ -9818,6 +9767,7 @@
 				ARCHS = (
 					x86_64,
 					x86_64h,
+					arm64,
 				);
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_X86_VECTOR_INSTRUCTIONS = sse4.1;
@@ -9827,6 +9777,7 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/openemu\"",
 				);
+				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_PREFIX_HEADER = openemu/DeSmuME_Prefix_OpenEmu.pch;
 				INFOPLIST_FILE = "openemu/Info (OpenEmu Plug-in).plist";
 				LLVM_LTO = YES;

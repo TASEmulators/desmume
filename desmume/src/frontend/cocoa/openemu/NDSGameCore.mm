@@ -126,7 +126,11 @@ volatile bool execute = true;
 	// Set up the emulation core
 	CommonSettings.advanced_timing = true;
 	CommonSettings.jit_max_block_size = 12;
+#ifdef HAVE_JIT
 	CommonSettings.use_jit = true;
+#else
+	CommonSettings.use_jit = false;
+#endif
 	NDS_Init();
 	
 	// Set up the DS GPU
