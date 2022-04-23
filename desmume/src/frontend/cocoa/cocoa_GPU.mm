@@ -1587,10 +1587,13 @@ public:
 
 - (void) runFetchLoop
 {
+	NSAutoreleasePool *tempPool = nil;
 	pthread_mutex_lock(&_mutexFetchExecute);
 	
 	do
 	{
+		tempPool = [[NSAutoreleasePool alloc] init];
+		
 		while (_threadMessageID == MESSAGE_NONE)
 		{
 			pthread_cond_wait(&_condSignalFetch, &_mutexFetchExecute);
@@ -1599,6 +1602,8 @@ public:
 		GPUFetchObject->FetchFromBufferIndex(_fetchIndex);
 		[self pushVideoDataToAllDisplayViews];
 		_threadMessageID = MESSAGE_NONE;
+		
+		[tempPool release];
 		
 	} while(true);
 }
@@ -1796,7 +1801,10 @@ CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
 								void *displayLinkContext)
 {
 	MacClientSharedObject *sharedData = (MacClientSharedObject *)displayLinkContext;
+	
+	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
 	[sharedData flushAllDisplaysOnDisplayLink:displayLink timeStampNow:inNow timeStampOutput:inOutputTime];
+	[tempPool release];
 	
 	return kCVReturnSuccess;
 }

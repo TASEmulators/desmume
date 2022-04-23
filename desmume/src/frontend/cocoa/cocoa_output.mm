@@ -136,10 +136,13 @@
 
 - (void) runMessageLoop
 {
+	NSAutoreleasePool *tempPool = nil;
 	pthread_mutex_lock(&_mutexMessageLoop);
 	
 	do
 	{
+		tempPool = [[NSAutoreleasePool alloc] init];
+		
 		while (_threadMessageID == MESSAGE_NONE)
 		{
 			pthread_cond_wait(&_condSignalMessage, &_mutexMessageLoop);
@@ -148,6 +151,7 @@
 		[self handleSignalMessageID:_threadMessageID];
 		_threadMessageID = MESSAGE_NONE;
 		
+		[tempPool release];
 	} while(true);
 }
 

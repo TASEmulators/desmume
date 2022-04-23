@@ -778,33 +778,30 @@
 {
 	const size_t listSize = cdvFlushList.size();
 	
-	@autoreleasepool
+	id<MTLCommandBuffer> cbFlush = [commandQueue commandBufferWithUnretainedReferences];
+	id<MTLCommandBuffer> cbFinalize = [commandQueue commandBufferWithUnretainedReferences];
+	
+	for (size_t i = 0; i < listSize; i++)
 	{
-		id<MTLCommandBuffer> cbFlush = [commandQueue commandBufferWithUnretainedReferences];
-		id<MTLCommandBuffer> cbFinalize = [commandQueue commandBufferWithUnretainedReferences];
-		
-		for (size_t i = 0; i < listSize; i++)
-		{
-			ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
-			cdv->FlushView(cbFlush);
-		}
-		
-		for (size_t i = 0; i < listSize; i++)
-		{
-			ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
-			cdv->FinalizeFlush(cbFinalize, timeStampOutput->hostTime);
-		}
-		
-		[cbFlush enqueue];
-		[cbFinalize enqueue];
-		
-		[cbFlush commit];
-		[cbFinalize commit];
-		
-#ifdef DEBUG
-		[commandQueue insertDebugCaptureBoundary];
-#endif
+		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
+		cdv->FlushView(cbFlush);
 	}
+	
+	for (size_t i = 0; i < listSize; i++)
+	{
+		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
+		cdv->FinalizeFlush(cbFinalize, timeStampOutput->hostTime);
+	}
+	
+	[cbFlush enqueue];
+	[cbFinalize enqueue];
+	
+	[cbFlush commit];
+	[cbFinalize commit];
+	
+#ifdef DEBUG
+	[commandQueue insertDebugCaptureBoundary];
+#endif
 }
 
 @end
@@ -2528,10 +2525,7 @@ void MacMetalFetchObject::FetchFromBufferIndex(const u8 index)
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_clientData;
 	this->_useDirectToCPUFilterPipeline = ([sharedViewObject numberViewsUsingDirectToCPUFiltering] > 0);
 	
-	@autoreleasepool
-	{
-		[(MetalDisplayViewSharedData *)this->_clientData fetchFromBufferIndex:index];
-	}
+	[(MetalDisplayViewSharedData *)this->_clientData fetchFromBufferIndex:index];
 }
 
 void MacMetalFetchObject::_FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex)
