@@ -197,7 +197,7 @@ const char* ClientExecutionControl::GetCPUEmulationEngineName()
 
 void ClientExecutionControl::SetCPUEmulationEngineByID(CPUEmulationEngineID engineID)
 {
-#if !defined(__i386__) && !defined(__x86_64__) && !defined(__aarch64__)
+#ifndef HAVE_JIT
 	engineID = CPUEmulationEngineID_Interpreter;
 #endif
 	
