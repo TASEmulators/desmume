@@ -92,10 +92,10 @@ static void *armjitarm_alloc_func(size_t size) {
 static  void freeFuncs() {
 	std::map<JittedFunc, u_int>::iterator it;
 	for (it=allFuncs.begin(); it!=allFuncs.end(); ++it) {
-		// TODO: Calling munmap() causes a crash when resetting the emulator. Need to research why this happens.
-		//munmap((void *)it->first, (uintptr_t)it->second);
+		munmap((void *)it->first, (uintptr_t)it->second);
 	}
 	allFuncs.clear();
+	g_curr_jit_block = NULL;
 }
 
 static void allocNewBlock() {
@@ -174,7 +174,6 @@ void releaseBytes(t_bytes *bytes) {
 }
 	
 JittedFunc createFunc(t_bytes *bytes) {
-
     for (auto const& lbl : g_LABELS) {
         int nj = lbl.second.jumps.size();
         for (int i = 0; i < nj; i++) {

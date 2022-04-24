@@ -4116,10 +4116,7 @@ static u32 compile_basicblock()
 	emit_endfunc(g_out);
 	
 	ArmOpCompiled f;
-
-	
 	f = createFunc(g_out);
-	g_out = NULL;
 
 	jit_exec();
 		
@@ -4177,8 +4174,8 @@ void arm_jit_reset(bool enable, bool suppress_msg)
 #ifdef MAPPED_JIT_FUNCS
 
 		//these pointers are allocated by asmjit and need freeing
-		#define JITFREE(x)  for(int iii=0;iii<ARRAY_SIZE(x);iii++) if(x[iii]) AsmJit::MemoryManager::getGlobal()->free((void*)x[iii]);  memset(x,0,sizeof(x));
-/*			JITFREE(JIT.MAIN_MEM);
+#define JITFREE(x)  for(int iii=0;iii<ARRAY_SIZE(x);iii++) if(x[iii]) x[iii] = NULL;
+			JITFREE(JIT.MAIN_MEM);
 			JITFREE(JIT.SWIRAM);
 			JITFREE(JIT.ARM9_ITCM);
 			JITFREE(JIT.ARM9_LCDC);
@@ -4186,9 +4183,8 @@ void arm_jit_reset(bool enable, bool suppress_msg)
 			JITFREE(JIT.ARM7_BIOS);
 			JITFREE(JIT.ARM7_ERAM);
 			JITFREE(JIT.ARM7_WIRAM);
-			JITFREE(JIT.ARM7_WRAM);*/
+			JITFREE(JIT.ARM7_WRAM);
 		#undef JITFREE
-
 		memset(recompile_counts, 0, sizeof(recompile_counts));
 		init_jit_mem();
 #else
