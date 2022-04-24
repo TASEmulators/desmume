@@ -36,7 +36,7 @@
 
 #define GL_SILENCE_DEPRECATION
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__aarch64__)
 	#define HAVE_JIT
 #endif
 

@@ -1376,6 +1376,9 @@
 		AB405690169F5DCC0016AC3E /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405674169F5DCC0016AC3E /* x86operand.cpp */; };
 		AB405693169F5DCC0016AC3E /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405676169F5DCC0016AC3E /* x86util.cpp */; };
 		AB407F371A6206FB00313213 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
+		AB46E54F2814F42500A4E3D6 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; };
+		AB46E5502814F42700A4E3D6 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; };
+		AB46E5522814F43300A4E3D6 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; };
 		AB47B52F18A45C35009A42AF /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		AB4979BD27F2E97A00E8A244 /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
 		AB4979BE27F2E97A00E8A244 /* Icon_MicrophoneGray_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB0FBD81A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png */; };
@@ -3597,6 +3600,10 @@
 		AB405675169F5DCC0016AC3E /* x86operand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86operand.h; sourceTree = "<group>"; };
 		AB405676169F5DCC0016AC3E /* x86util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86util.cpp; sourceTree = "<group>"; };
 		AB405677169F5DCC0016AC3E /* x86util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86util.h; sourceTree = "<group>"; };
+		AB46E54B2814F40800A4E3D6 /* arm64_emit.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = arm64_emit.cpp; sourceTree = "<group>"; };
+		AB46E54C2814F40800A4E3D6 /* arm_emit.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = arm_emit.cpp; sourceTree = "<group>"; };
+		AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = arm_jit_arm.cpp; sourceTree = "<group>"; };
+		AB46E54E2814F40800A4E3D6 /* emit_core.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = emit_core.cpp; sourceTree = "<group>"; };
 		AB47B52B18A3F722009A42AF /* xbrz.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xbrz.h; sourceTree = "<group>"; };
 		AB47B52C18A3F722009A42AF /* xbrz.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = xbrz.cpp; sourceTree = "<group>"; };
 		AB497B1227F2E97A00E8A244 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -4939,6 +4946,17 @@
 			path = OptimizationProfiles;
 			sourceTree = "<group>";
 		};
+		AB46E54A2814F40800A4E3D6 /* arm_jit */ = {
+			isa = PBXGroup;
+			children = (
+				AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */,
+				AB46E54E2814F40800A4E3D6 /* emit_core.cpp */,
+				AB46E54C2814F40800A4E3D6 /* arm_emit.cpp */,
+				AB46E54B2814F40800A4E3D6 /* arm64_emit.cpp */,
+			);
+			path = arm_jit;
+			sourceTree = "<group>";
+		};
 		AB796D7415CDD20E00C59155 /* AsmJit */ = {
 			isa = PBXGroup;
 			children = (
@@ -5332,6 +5350,7 @@
 		ABD1FF1C1345ACBF00AF11D1 /* utils */ = {
 			isa = PBXGroup;
 			children = (
+				AB46E54A2814F40800A4E3D6 /* arm_jit */,
 				AB796D7415CDD20E00C59155 /* AsmJit */,
 				ABD1FF211345ACBF00AF11D1 /* decrypt */,
 				ABD1FF2E1345ACBF00AF11D1 /* libfat */,
@@ -7398,6 +7417,7 @@
 				8C43E83027E3CD0100A35F65 /* wifi.cpp in Sources */,
 				8C43E83127E3CD0100A35F65 /* xstring.cpp in Sources */,
 				8C43E83227E3CD0100A35F65 /* main.m in Sources */,
+				AB46E54F2814F42500A4E3D6 /* arm_jit_arm.cpp in Sources */,
 				8C43E83327E3CD0100A35F65 /* rthreads.c in Sources */,
 				8C43E83427E3CD0100A35F65 /* cocoa_cheat.mm in Sources */,
 				8C43E83527E3CD0100A35F65 /* cocoa_core.mm in Sources */,
@@ -7489,6 +7509,7 @@
 				8C43E92327E3CD4C00A35F65 /* ftbase.c in Sources */,
 				8C43E92427E3CD4C00A35F65 /* ftsynth.c in Sources */,
 				8C43E92527E3CD4C00A35F65 /* ftbitmap.c in Sources */,
+				AB46E5502814F42700A4E3D6 /* arm_jit_arm.cpp in Sources */,
 				8C43E92627E3CD4C00A35F65 /* ftgxval.c in Sources */,
 				8C43E92727E3CD4C00A35F65 /* ClientAVCaptureObject.cpp in Sources */,
 				8C43E92827E3CD4C00A35F65 /* AAFilter.cpp in Sources */,
@@ -7795,6 +7816,7 @@
 				8CCD84A127E40B730024BDD5 /* MacMetalDisplayView.mm in Sources */,
 				8CCD84A227E40B730024BDD5 /* MacOGLDisplayView.mm in Sources */,
 				8CCD84A327E40B730024BDD5 /* cocoa_firmware.mm in Sources */,
+				AB46E5522814F43300A4E3D6 /* arm_jit_arm.cpp in Sources */,
 				8CCD84A427E40B730024BDD5 /* cocoa_input.mm in Sources */,
 				8CCD84A527E40B730024BDD5 /* cocoa_output.mm in Sources */,
 				8CCD84A627E40B730024BDD5 /* smooth.c in Sources */,
