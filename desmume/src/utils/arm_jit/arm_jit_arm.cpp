@@ -3253,8 +3253,9 @@ static int OP_SUB_REG(const u32 i)
 //-----------------------------------------------------------------------------
 static int OP_ADC_REG(const u32 i)
 {
-	reg_pos_thumb(3, tmp, VALUE);
+	
 	GET_CARRY(0);
+	reg_pos_thumb(3, tmp, VALUE);
 	reg_pos_thumb(0, tmp2, VALUE);
 	emit_adcs(g_out, tmp2, tmp, tmp2);
 	emit_write_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_thumb(0, R1, ADDRESS)), tmp2);
@@ -3268,8 +3269,8 @@ static int OP_ADC_REG(const u32 i)
 //-----------------------------------------------------------------------------
 static int OP_SBC_REG(const u32 i)
 {
-	reg_pos_thumb(3, tmp, VALUE);
 	GET_CARRY(1);
+	reg_pos_thumb(3, tmp, VALUE);
 	reg_pos_thumb(0, tmp2, VALUE);
 	emit_sbcs(g_out, tmp2, tmp, tmp2);
 	emit_write_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_thumb(0, R1, ADDRESS)), tmp2);

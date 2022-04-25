@@ -710,8 +710,8 @@ static void emit_negs(t_bytes *out, int rs, int rt)
 
 static void emit_mvns(t_bytes *out, int rs,int rt)
 {
-  output_w32(out, 0x2a200000|rs<<16|WZR<<5|rt);
-  emit_cmp(out, rt, rt);
+	output_w32(out, 0x2A2003E0|rs<<16|WZR<<5|rt);
+	emit_cmpimm(out, rt, 0);
 }
 
 static void emit_zeroreg(t_bytes *out, int rt)
