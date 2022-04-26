@@ -1213,8 +1213,8 @@ static int OP_SMLAL_S(const u32 i) { OP_MUL_(emit_smlals(g_out, reg_pos_ptr(12, 
 #undef hi
 
 #define OP_MULxy_(op, x, y, width, accum, flags) \
-	reg_pos_ptrS##x(0, lhs, VALUE); \
-	reg_pos_ptrS##y(8, rhs, VALUE); \
+	reg_pos_ptr(0, lhs, VALUE); \
+	reg_pos_ptr(8, rhs, VALUE); \
 	op; \
 	if(width && accum) \
 	{ \
@@ -1278,7 +1278,7 @@ static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(emit_smlaltt(g_out, reg_pos_ptr
 //-----------------------------------------------------------------------------
 
 #define OP_SMxxW_(op, x, accum, flags) \
-	reg_pos_ptrS##x(8, lhs, VALUE);\
+	reg_pos_ptr(8, lhs, VALUE);\
 	reg_pos_ptr(0, rhs, VALUE); \
 	op; \
 	if (accum) { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), hi); } \

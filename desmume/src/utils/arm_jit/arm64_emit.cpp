@@ -239,7 +239,7 @@ static void emit_lsr(t_bytes *out, int reg, int n) {
 
 static void emit_lsr64(t_bytes *out, int reg, int n) {
 	if (n < 32) {
-		output_w32(out, 0xD340FC00|n<<16|0x1f<<10|reg<<5|reg);
+		output_w32(out, 0xD340FC00|n<<16|reg<<5|reg);
 	}
 	else {
 		emit_movimm(out, n, SHIFT_REG);
@@ -260,8 +260,13 @@ static void emit_asr(t_bytes *out, int reg, int num)
 
 static void emit_asr64(t_bytes *out, int reg, int num)
 {
-    emit_movimm(out, num, SHIFT_REG);
+  if (num < 32) {
+	output_w32(out, 0x9340FC00|num<<16|reg<<5|reg);
+  }
+  else {
+	emit_movimm(out, num, SHIFT_REG);
 	  output_w32(out, 0x9AC02800|SHIFT_REG<<16|reg<<5|reg);
+  }
 }
 
 static void emit_asr_reg(t_bytes *out, int reg, int nreg) {
@@ -964,32 +969,41 @@ static void emit_smultt(t_bytes *out, u_int rs1, u_int rs2) {
   // mul
   output_w32(out, 0x1B007C00|(18<<16)|(17<<5)|rs1);
 }
+
+
 static void emit_smulwt(t_bytes *out, u_int rs1, u_int rs2) {
-  output_w32(out, 0x93507C12|rs2<<5); // SBFX x18, x0, #16, #16
+  output_w32(out, 0x93507C12|rs1<<5); // SBFX x18, x0, #16, #16
 
   // mul
-  output_w32(out, 0x1B007C00|(18<<16)|(rs1<<5)|rs1);
+  //output_w32(out, 0x9B007C00|(18<<16)|(rs2<<5)|rs1);
+  output_w32(out, 0x9B207C00|(18<<16)|(rs2<<5)|rs1);
+  emit_asr64(out, rs1, 16);
 }
 static void emit_smulwb(t_bytes *out, u_int rs1, u_int rs2) {
-  output_w32(out, 0x93403C12|rs2<<5); // SBFX x18, x0, #0, #16
+  output_w32(out, 0x93403C12|rs1<<5); // SBFX x18, x0, #0, #16
 
   // mul
-  output_w32(out, 0x1B007C00|(18<<16)|(rs1<<5)|rs1);
+  //output_w32(out, 0x9B007C00|(18<<16)|(rs2<<5)|rs1);
+  output_w32(out, 0x9B207C00|(18<<16)|(rs2<<5)|rs1);
+  
+  emit_asr64(out, rs1, 16);
 }
 
 static void emit_smlawb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
 {
-  output_w32(out, 0x93403C12|rs2<<5); // SBFX x18, x0, #0, #16
-
-  output_w32(out, 0x1B007C00|(18<<16)|(rs1<<5)|hi);
-  emit_adds(out, hi, lo, hi); // sets carry flag - need to use in SET_Q
+  output_w32(out, 0x93403C12|rs1<<5); // SBFX x18, x0, #0, #16
+  //output_w32(out, 0x9B007C00|(18<<16)|(rs2<<5)|14);
+  output_w32(out, 0x9B207C00|(18<<16)|(rs2<<5)|14);
+  emit_asr64(out, 14, 16);
+  emit_adds(out, 14, lo, hi); // sets carry flag - need to use in SET_Q
 }
 static void emit_smlawt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
 {
-  output_w32(out, 0x93507C12|rs2<<5); // SBFX x18, x0, #16, #16
-
-  output_w32(out, 0x1B007C00|(18<<16)|(rs1<<5)|hi);
-  emit_adds(out, hi, lo, hi); // sets carry flag - need to use in SET_Q
+  output_w32(out, 0x93507C12|rs1<<5); // SBFX x18, x0, #16, #16
+  //output_w32(out, 0x9B007C00|(18<<16)|(rs2<<5)|14);
+  output_w32(out, 0x9B207C00|(18<<16)|(rs2<<5)|14);
+  emit_asr64(out, 14, 16);
+  emit_adds(out, 14, lo, hi); // sets carry flag - need to use in SET_Q
 }
 
 static void emit_smlabb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
