@@ -214,8 +214,11 @@ static void output_w32_full(t_bytes *bytes, unsigned int word, int type, int lab
 
 static void emit_lsr_reg_quick(t_bytes *out, int reg, int nreg);
 
+static void emit_mul(t_bytes *out, u_int rs1,u_int rs2);
+
 
 static void emit_setnz(t_bytes *out, int reg);
+static void emit_setz(t_bytes *out, int reg);
 static void emit_movimm(t_bytes *out, uintptr_t imm,u_int rt);
 static void emit_mov(t_bytes *out, int rs,int rt);
 static void emit_jmpreg(t_bytes *out, u_int r);
@@ -379,19 +382,22 @@ static void emit_lsls_reg(t_bytes *out, int reg, int nreg) {
     int done=genlabel();
     int eq32=genlabel();
     int gt32=genlabel();
+	
+	emit_andimm(out, nreg, 0xff, nreg);
 
     emit_cmpimm(out, nreg, 0);
     emit_branch_label(out, nonzero, 0x1);
 
     /* eq 0 */
 
-  get_carry_flag(out, 5);
+	get_carry_flag(out, 5);
     emit_branch_label(out, done, 0xE);
 
     /* end eq 0 */
 
     emit_label(out, (int)nonzero);
-
+	
+	emit_mov(out, nreg, 19);
     emit_mov(out, reg, 20);
 
    /* non zero */
@@ -400,7 +406,6 @@ static void emit_lsls_reg(t_bytes *out, int reg, int nreg) {
     emit_branch_label(out, gt32, 12); // gt 32
 
     // get last shifted bit
-    emit_andimm(out, nreg, 0xff, 19);
     emit_movimm(out, 32, 18);
     output_w32(out, 0x4B130252); // sub w18, w18, w19
 
@@ -412,7 +417,6 @@ static void emit_lsls_reg(t_bytes *out, int reg, int nreg) {
     emit_lsl_reg_quick(out, 22, 18);
     emit_test(out, 20, 22);
 
-
     emit_setnz(out, 5);
     emit_branch_label(out, done, 0xE);
 
@@ -423,11 +427,10 @@ static void emit_lsls_reg(t_bytes *out, int reg, int nreg) {
     /* equal 32 */
 
     emit_movimm(out, 1, 22);
-    emit_movimm(out, 31, 18);
-    emit_lsl_reg_quick(out, 22, 18); // get BIT31 for carry
-    emit_test(out, 20, 22); // test BIT31(reg 22) of original reg 20
+    emit_test(out, 20, 22); // test BIT0(reg 22) of original reg 20
 
     emit_setnz(out, 5);
+	emit_movimm(out, 0, reg);
     emit_branch_label(out, done, 0xE);
 
     /* end equal 32 */
@@ -437,10 +440,7 @@ static void emit_lsls_reg(t_bytes *out, int reg, int nreg) {
     /* gt 32 */
 
     emit_movimm(out, 0, reg);
-
     emit_movimm(out, 0, 5);
-
-    // fall into clrb
 
      /* end gt 32 */
 
@@ -453,6 +453,8 @@ static void emit_lsrs_reg(t_bytes *out, int reg, int nreg) {
     int done=genlabel();
     int eq32=genlabel();
     int gt32=genlabel();
+	
+	emit_andimm(out, nreg, 0xff, nreg);
 
     emit_cmpimm(out, nreg, 0);
     emit_branch_label(out, nonzero, 0x1);
@@ -465,7 +467,9 @@ static void emit_lsrs_reg(t_bytes *out, int reg, int nreg) {
     /* end eq 0 */
 
     emit_label(out, (int)nonzero);
-
+	
+	//emit_andimm(out, nreg, 0xff, nreg);
+	emit_mov(out, nreg, 19);
     emit_mov(out, reg, 20);
 
    /* non zero */
@@ -473,8 +477,7 @@ static void emit_lsrs_reg(t_bytes *out, int reg, int nreg) {
     emit_branch_label(out, eq32, 0x0); // nreg == 32
     emit_branch_label(out, gt32, 12); // gt 32
 
-	  // get last shifted bit
-    emit_andimm(out, nreg, 0xff, 19);
+	// get last shifted bit
     emit_movimm(out, 1, 18);
     output_w32(out, 0x4B120272); // sub w18, w19, w18
 
@@ -494,12 +497,12 @@ static void emit_lsrs_reg(t_bytes *out, int reg, int nreg) {
 
     /* equal 32 */
 
-    emit_movimm(out, 1, 22);
-    emit_movimm(out, 31, 18);
-    emit_lsl_reg_quick(out, 22, 18); // get BIT31 for carry
+    emit_movimm(out, 1<<31, 22);
     emit_test(out, 20, 22); // test BIT31(reg 22) of original reg 20
 
     emit_setnz(out, 5);
+	emit_movimm(out, 0, reg);
+	
     emit_branch_label(out, done, 0xE);
 
     /* end equal 32 */
@@ -509,6 +512,7 @@ static void emit_lsrs_reg(t_bytes *out, int reg, int nreg) {
     /* gt 32 */
 
     emit_movimm(out, 0, reg);
+	emit_movimm(out, 0, 5);
     // fall into clrb
 
      /* end gt 32 */
@@ -523,7 +527,9 @@ static void emit_asrs_reg(t_bytes *out, int reg, int nreg) {
     int done=genlabel();
     int gteq32=genlabel();
 
-    emit_cmpimm(out, nreg, 0);
+	emit_andimm(out, nreg, 0xff, nreg);
+	
+	emit_cmpimm(out, nreg, 0);
     emit_branch_label(out, nonzero, 0x1);
 
     /* eq 0 */
@@ -534,15 +540,15 @@ static void emit_asrs_reg(t_bytes *out, int reg, int nreg) {
     /* end eq 0 */
 
     emit_label(out, (int)nonzero);
-
+	
+	emit_mov(out, nreg, 19);
     emit_mov(out, reg, 20);
 
-   /* non zero */
+	/* non zero */
     emit_cmpimm(out, nreg, 32);
     emit_branch_label(out, gteq32, 10); // gteq 32
 
-	  // get last shifted bit
-    emit_andimm(out, nreg, 0xff, 19);
+	// get last shifted bit
     emit_movimm(out, 1, 18);
     output_w32(out, 0x4B120272); // sub w18, w19, w18
 
@@ -565,32 +571,33 @@ static void emit_asrs_reg(t_bytes *out, int reg, int nreg) {
     // perform shifft
     output_w32(out, 0x1AC02800|nreg<<16|reg<<5|reg);
 
-    emit_movimm(out, 1, 22);
-    emit_movimm(out, 31, 18);
-    emit_lsl_reg_quick(out, 22, 18); // get BIT31 for carry
+    emit_movimm(out, 1<<31, 22);
     emit_test(out, 20, 22); // test BIT31(reg 22) of original reg 20
 
-
-    emit_setnz(out, 5);    
+    emit_setnz(out, 5);
+	
+	emit_mov(out, 5, reg);
+	emit_movimm(out, 0xFFFFFFFF, 22);
+	emit_mul(out, reg, 22);
 
     emit_label(out, (int)done);
 
     emit_cmpimm(out, reg, 0);
-
 }
 static void emit_rors_reg(t_bytes *out, int reg, int nreg) {
-
 
     int nonzero=genlabel();
     int done=genlabel();
     int and0=genlabel();
 
     emit_mov(out, reg, 20);
+	
+	emit_andimm(out, nreg, 0xff, nreg);
 
     emit_cmpimm(out, nreg, 0);
     emit_branch_label(out, nonzero, 0x1);
 
-   get_carry_flag(out, 5);
+	get_carry_flag(out, 5);
     emit_branch_label(out, done, 0xE);
 
     /* eq 0 */
@@ -600,11 +607,12 @@ static void emit_rors_reg(t_bytes *out, int reg, int nreg) {
     emit_label(out, (int)nonzero);
 
    /* non zero */
-    emit_andimm(out, nreg, 0x1F, 19);
+    emit_andimm(out, nreg, 0x1F, nreg);
+	emit_mov(out, nreg, 19);
     emit_cmpimm(out, 19, 0);
     emit_branch_label(out, and0, 0x0); // eq 0
 
-	  // get last shifted bit
+	// get last shifted bit
     emit_movimm(out, 1, 18);
     output_w32(out, 0x4B120272); // sub w18, w19, w18
 
@@ -618,9 +626,6 @@ static void emit_rors_reg(t_bytes *out, int reg, int nreg) {
 
     emit_setnz(out, 5);
     emit_branch_label(out, done, 0xE);
-    //emit_branch_label(out, setb, 0x1);
-    //emit_branch_label(out, clrb, 0xE);
-
 
     /* end non zero */
 
@@ -629,16 +634,12 @@ static void emit_rors_reg(t_bytes *out, int reg, int nreg) {
     /* equal 32 */
 
     // perform shifft
-    //output_w32(out, 0x1AC02800|nreg<<16|reg<<5|reg);
     emit_mov(out, 20, reg);
 
-    emit_movimm(out, 1, 22);
-    emit_movimm(out, 31, 18);
-    emit_lsl_reg_quick(out, 22, 18); // get BIT31 for carry
+    emit_movimm(out, 1<<31, 22);
     emit_test(out, 20, 22); // test BIT31(reg 22) of original reg 20
 
-
-emit_setnz(out, 5);
+	emit_setnz(out, 5);
     emit_branch_label(out, done, 0xE);
 
     emit_label(out, (int)done);
@@ -944,14 +945,14 @@ static void emit_smulbb(t_bytes *out, u_int rs1, u_int rs2) {
   output_w32(out, 0x93403C12|rs2<<5); // SBFX x18, x0, #0, #16
 
   // mul
-  output_w32(out, 0x1B007C00|(18<<16)|(17<<5)|rs1);
+  output_w32(out, 0x9B207C00|(18<<16)|(17<<5)|rs1);
 }
 
 static void emit_smulbt(t_bytes *out, u_int rs1, u_int rs2) {
   output_w32(out, 0x93403C11|rs1<<5); // SBFX x17, x0, #0, #16
   output_w32(out, 0x93507C12|rs2<<5); // SBFX x18, x0, #16, #16
   // mu;
-  output_w32(out, 0x1B007C00|(18<<16)|(17<<5)|rs1);
+  output_w32(out, 0x9B207C00|(18<<16)|(17<<5)|rs1);
 }
 
 static void emit_smultb(t_bytes *out, u_int rs1, u_int rs2) {
@@ -959,7 +960,7 @@ static void emit_smultb(t_bytes *out, u_int rs1, u_int rs2) {
   output_w32(out, 0x93403C12|rs2<<5); // SBFX x18, x0, #0, #16
 
   // mul
-  output_w32(out, 0x1B007C00|(18<<16)|(17<<5)|rs1);
+  output_w32(out, 0x9B207C00|(18<<16)|(17<<5)|rs1);
 }
 
 static void emit_smultt(t_bytes *out, u_int rs1, u_int rs2) {
@@ -967,7 +968,7 @@ static void emit_smultt(t_bytes *out, u_int rs1, u_int rs2) {
   output_w32(out, 0x93507C12|rs2<<5); // SBFX x18, rs2, #16, #16
 
   // mul
-  output_w32(out, 0x1B007C00|(18<<16)|(17<<5)|rs1);
+  output_w32(out, 0x9B207C00|(18<<16)|(17<<5)|rs1);
 }
 
 
@@ -1011,7 +1012,7 @@ static void emit_smlabb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
   output_w32(out, 0x93403C11|rs1<<5); // SBFX x17, x0, #0, #16  
   output_w32(out, 0x93403C12|rs2<<5); // SBFX x18, x0, #0, #16
 
-  output_w32(out, 0x1B007C00|(18<<16)|(17<<5)|hi);
+  output_w32(out, 0x9B207C00|(18<<16)|(17<<5)|hi);
   emit_adds(out, hi, lo, hi); // sets carry flag - need to use in SET_Q
 }
 static void emit_smlabt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
@@ -1019,7 +1020,7 @@ static void emit_smlabt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
   output_w32(out, 0x93403C11|rs1<<5); // SBFX x17, x0, #0, #16
   output_w32(out, 0x93507C12|rs2<<5); // SBFX x18, x0, #16, #16
 
-  output_w32(out, 0x1B007C00|(18<<16)|(17<<5)|hi);
+  output_w32(out, 0x9B207C00|(18<<16)|(17<<5)|hi);
   emit_adds(out, hi, lo, hi); // sets carry flag - need to use in SET_Q
 }
 static void emit_smlatb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
@@ -1027,7 +1028,7 @@ static void emit_smlatb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
   output_w32(out, 0x93507C11|rs1<<5); // SBFX x17, x0, #16, #16
   output_w32(out, 0x93403C12|rs2<<5); // sbfx x18, x0, #0, #16
 
-  output_w32(out, 0x1B007C00|(18<<16)|(17<<5)|hi);
+  output_w32(out, 0x9B207C00|(18<<16)|(17<<5)|hi);
   emit_adds(out, hi, lo, hi); // sets carry flag - need to use in SET_Q
 }
 static void emit_smlatt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
@@ -1035,7 +1036,7 @@ static void emit_smlatt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
   output_w32(out, 0x93507C11|rs1<<5); // SBFX x17, rs1, #16, #16
   output_w32(out, 0x93507C12|rs2<<5); // SBFX x18, rs2, #16, #16
 
-  output_w32(out, 0x1B007C00|(18<<16)|(17<<5)|hi);
+  output_w32(out, 0x9B207C00|(18<<16)|(17<<5)|hi);
   emit_adds(out, hi, lo, hi); // sets carry flag - need to use in SET_Q
 }
 

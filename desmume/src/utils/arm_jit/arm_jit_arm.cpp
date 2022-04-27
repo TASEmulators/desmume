@@ -2979,7 +2979,6 @@ static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return
 
 #define OP_SHIFTS_REG(x86inst, bit) \
 	u8 cf_change = 1; \
-	GET_CARRY(0); \
 	reg_pos_thumb(3, imm_reg, VALUE); \
 	x86inst(g_out, reg_pos_thumb(0, R1, VALUE), imm_reg); \
 	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R0, ADDRESS), R1); \
