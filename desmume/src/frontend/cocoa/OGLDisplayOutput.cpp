@@ -6516,7 +6516,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 		
 		if (this->_needUpdateViewport)
 		{
-			glUniform2f(this->_uniformViewSize, this->_output->GetPresenterProperties().clientWidth, this->_output->GetPresenterProperties().clientHeight);
+			glUniform2f(this->_uniformViewSize, this->_output->GetViewportWidth(), this->_output->GetViewportHeight());
 			glUniform1i(this->_uniformRenderFlipped, (isRenderingFlipped) ? GL_TRUE : GL_FALSE);
 			this->_needUpdateViewport = false;
 		}
@@ -6589,7 +6589,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	
 	// Finally, draw each character inside the box.
-	const GLfloat textBoxScale = (GLfloat)HUD_TEXTBOX_BASE_SCALE * this->_output->GetHUDObjectScale() / this->_output->GetScaleFactor();
+	const GLfloat textBoxScale = (GLfloat)HUD_TEXTBOX_BASE_SCALE * this->_output->GetHUDObjectScale();
 	if (textBoxScale >= (2.0/3.0))
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

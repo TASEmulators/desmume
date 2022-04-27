@@ -2101,6 +2101,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		
 		localLayer = macOGLCDV->GetCALayer();
 		
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+		if ([[self window] respondsToSelector:@selector(backingScaleFactor)] && [localLayer respondsToSelector:@selector(setContentsScale:)])
+		{
+			[localLayer setContentsScale:[[self window] backingScaleFactor]];
+		}
+#endif
+		
 		// For macOS 10.8 Mountain Lion and later, we can use the CAOpenGLLayer directly. But for
 		// earlier versions of macOS, using the CALayer directly will cause too many strange issues,
 		// so we'll just keep using the old-school NSOpenGLContext for these older macOS versions.
@@ -2268,7 +2275,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		}
 		else if ([localLayer isKindOfClass:[CAOpenGLLayer class]])
 		{
-			[localLayer setBounds:CGRectMake(0.0f, 0.0f, props.clientWidth, props.clientHeight)];
+			const double scaleFactor = [[self cdsVideoOutput] clientDisplay3DView]->Get3DPresenter()->GetScaleFactor();
+			[localLayer setBounds:CGRectMake(0.0f, 0.0f, props.clientWidth / scaleFactor, props.clientHeight / scaleFactor)];
 		}
 #ifdef ENABLE_APPLE_METAL
 		else if ([localLayer isKindOfClass:[CAMetalLayer class]])
