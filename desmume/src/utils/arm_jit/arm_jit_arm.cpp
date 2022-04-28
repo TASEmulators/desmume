@@ -3358,8 +3358,8 @@ static int OP_CMP(const u32 i)
 static int OP_CMP_SPE(const u32 i) 
 {
 	u32 Rn = (i&7) | ((i>>4)&8);
-	reg_pos_ptr(3, tmp, VALUE);
-	reg_ptr(Rn, tmp2, VALUE);
+	reg_pos_ptr(3, tmp2, VALUE);
+	reg_ptr(Rn, tmp, VALUE);
 	emit_cmp(g_out, tmp, tmp2);
 	SET_NZCV(1);
 	
