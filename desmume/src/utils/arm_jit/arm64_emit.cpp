@@ -200,6 +200,8 @@ static void emit_rrxs_reg(t_bytes *out, int reg, int nreg);
 static void emit_rrx_reg(t_bytes *out, int reg, int nreg);
 static void emit_ror_reg(t_bytes *out, int reg, int nreg);
 
+static void emit_andimm(t_bytes *out,int rs,int imm,int rt);
+
 static void emit_lsr_reg(t_bytes *out, int reg, int nreg);
 static void emit_testimm(t_bytes *out, int rs,int imm);
 
@@ -207,6 +209,9 @@ static void output_w32_FROM_PC(t_bytes *bytes, unsigned int word);
 static void emit_movimm(t_bytes *out, uintptr_t imm,u_int rt);
 static void emit_movimm2pad(t_bytes *out, u_int imm,u_int rt);
 static void emit_addnop(t_bytes *out, u_int r);
+
+static void emit_setc(t_bytes *out, int reg);
+static void emit_or(t_bytes *out, u_int rs1,u_int rs2,u_int rt);
 
 static void output_w32(t_bytes *bytes, unsigned int word);
 
@@ -295,9 +300,14 @@ static void emit_ror(t_bytes *out, int reg, int n) {
 	}
 }
 static void emit_rrx(t_bytes *out, int reg, int n) {
+	emit_setc(out, 13);
+	output_w32(out, 0x530101AD); // lsl w13, w13, #31
+	emit_andimm(out, reg, 1, 5);
 
 	emit_movimm(out, n, SHIFT_REG);
-  emit_ror_reg(out, reg, SHIFT_REG);
+	emit_ror_reg(out, reg, SHIFT_REG);
+	emit_andimm(out, reg, 0x7fffffff, reg);
+	emit_or(out, reg, 13, reg);
 }
 static void emit_lsl_reg(t_bytes *out, int reg, int nreg) {
     int setb=genlabel();
@@ -372,8 +382,19 @@ static void emit_rors(t_bytes *out, int reg, int n) {
     emit_rors_reg(out, reg, SHIFT_REG);
 }
 static void emit_rrxs(t_bytes *out, int reg, int n) {
+	
+	emit_setc(out, 13);
+	output_w32(out, 0x530101AD); // lsl w13, w13, #31
+	emit_andimm(out, reg, 1, 5);
+
 	emit_movimm(out, n, SHIFT_REG);
-	emit_rrxs_reg(out, reg, SHIFT_REG);
+	emit_ror_reg(out, reg, SHIFT_REG);
+	emit_andimm(out, reg, 0x7fffffff, reg);
+	emit_or(out, reg, 13, reg);
+	
+	//emit_mov(out, 14, 5);
+	//emit_movimm(out, n, SHIFT_REG);
+	//emit_rrxs_reg(out, reg, SHIFT_REG);
 }
 static void emit_lsls_reg(t_bytes *out, int reg, int nreg) {
 
