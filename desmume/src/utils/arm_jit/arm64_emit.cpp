@@ -280,11 +280,25 @@ static void emit_asr64(t_bytes *out, int reg, int num)
 static void emit_asr_reg(t_bytes *out, int reg, int nreg) {
 
     int done=genlabel();
+	int setb=genlabel();
+	emit_andimm(out, nreg, 0xff, nreg);
 
     emit_cmpimm(out, nreg, 0);
-    emit_branch_label(out, done, 0); // eq 0
+	emit_branch_label(out, done, 0); // eq 0
+	emit_cmpimm(out, nreg, 32);
+	emit_branch_label(out, setb, 10); // greater than or equal to 32
+    
 
     output_w32(out, 0x1ac02800|nreg<<16|reg<<5|reg); // do shift
+	
+	emit_branch_label(out, done, 0xE);
+	
+	emit_label(out, (int)setb);
+	emit_movimm(out, 1<<31, 22);
+	emit_test(out, reg, 22); // test BIT31(reg 22) of original reg 20
+	emit_setnz(out, reg);
+	emit_movimm(out, 0xFFFFFFFF, 22);
+	emit_mul(out, reg, 22);
 
     emit_label(out, (int)done);
 }
@@ -312,6 +326,8 @@ static void emit_rrx(t_bytes *out, int reg, int n) {
 static void emit_lsl_reg(t_bytes *out, int reg, int nreg) {
     int setb=genlabel();
     int done=genlabel();
+	
+	emit_andimm(out, nreg, 0xff, nreg);
 
     emit_cmpimm(out, nreg, 32);
     emit_branch_label(out, setb, 10); // greater than or equal to 32
@@ -337,6 +353,8 @@ static void emit_lsr_reg(t_bytes *out, int reg, int nreg)
 {
     int setb=genlabel();
     int done=genlabel();
+	
+	emit_andimm(out, nreg, 0xff, nreg);
 
     emit_cmpimm(out, nreg, 32);
     emit_branch_label(out, setb, 10); // greater than or equal to 32
@@ -354,6 +372,8 @@ static void emit_andsimm(t_bytes *out,int rs,int imm,int rt);
 static void emit_ror_reg(t_bytes *out, int reg, int nreg) {
 
     int done=genlabel();
+	
+	emit_andimm(out, nreg, 0xff, nreg);
 
     emit_cmpimm(out, nreg, 0);
     emit_branch_label(out, done, 0); // 0
@@ -391,10 +411,6 @@ static void emit_rrxs(t_bytes *out, int reg, int n) {
 	emit_ror_reg(out, reg, SHIFT_REG);
 	emit_andimm(out, reg, 0x7fffffff, reg);
 	emit_or(out, reg, 13, reg);
-	
-	//emit_mov(out, 14, 5);
-	//emit_movimm(out, n, SHIFT_REG);
-	//emit_rrxs_reg(out, reg, SHIFT_REG);
 }
 static void emit_lsls_reg(t_bytes *out, int reg, int nreg) {
 

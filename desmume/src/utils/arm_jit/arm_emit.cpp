@@ -512,20 +512,22 @@ static void emit_smultb(t_bytes *out, u_int rs1, u_int rs2) {
 static void emit_smultt(t_bytes *out, u_int rs1, u_int rs2) {
 	output_w32(out, 0xE16000E0|(rs1<<16)|(rs2<<8)|rs1);
 }
+
+
 static void emit_smulwt(t_bytes *out, u_int rs1, u_int rs2) {
-	output_w32(out, 0xE12000E0|(rs1<<16)|(rs2<<8)|rs1);
+	output_w32(out, 0xE12000E0|(rs1<<16)|(rs1<<8)|rs2);
 }
 static void emit_smulwb(t_bytes *out, u_int rs1, u_int rs2) {
-	output_w32(out, 0xE12000A0|(rs1<<16)|(rs2<<8)|rs1);
+	output_w32(out, 0xE12000A0|(rs1<<16)|(rs1<<8)|rs2);
 }
 
 static void emit_smlawb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
 {
-  output_w32(out, 0xE1200080|(hi<<16)|(lo<<12)|(rs2<<8)|rs1);
+  output_w32(out, 0xE1200080|(hi<<16)|(lo<<12)|(rs1<<8)|rs2);
 }
 static void emit_smlawt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
 {
-  output_w32(out, 0xE12000C0|(hi<<16)|(lo<<12)|(rs2<<8)|rs1);
+  output_w32(out, 0xE12000C0|(hi<<16)|(lo<<12)|(rs1<<8)|rs2);
 }
 
 static void emit_smlabb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
