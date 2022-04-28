@@ -4570,7 +4570,7 @@ bool OGLShaderProgram::LinkOGL()
 
 #pragma mark -
 
-OGLClientFetchObject::OGLClientFetchObject()
+OGLClientSharedData::OGLClientSharedData()
 {
 	_contextInfo = NULL;
 	_useDirectToCPUFilterPipeline = true;
@@ -4595,9 +4595,9 @@ OGLClientFetchObject::OGLClientFetchObject()
 	}
 }
 
-OGLClientFetchObject::~OGLClientFetchObject()
+OGLClientSharedData::~OGLClientSharedData()
 {
-	if (this->_contextInfo->IsShaderSupported())
+	if ( (this->_contextInfo != NULL) && this->_contextInfo->IsShaderSupported() )
 	{
 		DeleteHQnxLUTs_OGL(GL_TEXTURE0 + 1, this->_texLQ2xLUT, this->_texHQ2xLUT, this->_texHQ3xLUT, this->_texHQ4xLUT);
 	}
@@ -4628,54 +4628,79 @@ OGLClientFetchObject::~OGLClientFetchObject()
 	pthread_rwlock_destroy(&this->_texFetchRWLock[NDSDisplayID_Touch]);
 }
 
-OGLContextInfo* OGLClientFetchObject::GetContextInfo() const
+void OGLClientSharedData::SetContextInfo(OGLContextInfo *contextInfo)
+{
+	this->_contextInfo = contextInfo;
+}
+
+OGLContextInfo* OGLClientSharedData::GetContextInfo() const
 {
 	return this->_contextInfo;
 }
 
-uint32_t* OGLClientFetchObject::GetSrcClone(const NDSDisplayID displayID, const u8 bufferIndex) const
+void OGLClientSharedData::SetUseDirectToCPUFilterPipeline(bool willUseDirectCPU)
+{
+	this->_useDirectToCPUFilterPipeline = willUseDirectCPU;
+}
+
+bool OGLClientSharedData::UseDirectToCPUFilterPipeline() const
+{
+	return this->_useDirectToCPUFilterPipeline;
+}
+
+GLuint OGLClientSharedData::GetFetchTexture(const NDSDisplayID displayID)
+{
+	return this->_texFetch[displayID];
+}
+
+void OGLClientSharedData::SetFetchTexture(const NDSDisplayID displayID, GLuint texID)
+{
+	this->_texFetch[displayID] = texID;
+}
+
+uint32_t* OGLClientSharedData::GetSrcClone(const NDSDisplayID displayID, const u8 bufferIndex) const
 {
 	return this->_srcNativeClone[displayID][bufferIndex];
 }
 
-GLuint OGLClientFetchObject::GetTexNative(const NDSDisplayID displayID, const u8 bufferIndex) const
+GLuint OGLClientSharedData::GetTexNative(const NDSDisplayID displayID, const u8 bufferIndex) const
 {
 	return this->_texDisplayFetchNative[displayID][bufferIndex];
 }
 
-GLuint OGLClientFetchObject::GetTexCustom(const NDSDisplayID displayID, const u8 bufferIndex) const
+GLuint OGLClientSharedData::GetTexCustom(const NDSDisplayID displayID, const u8 bufferIndex) const
 {
 	return this->_texDisplayFetchCustom[displayID][bufferIndex];
 }
 
-GLuint OGLClientFetchObject::GetTexLQ2xLUT() const
+GLuint OGLClientSharedData::GetTexLQ2xLUT() const
 {
 	return this->_texLQ2xLUT;
 }
 
-GLuint OGLClientFetchObject::GetTexHQ2xLUT() const
+GLuint OGLClientSharedData::GetTexHQ2xLUT() const
 {
 	return this->_texHQ2xLUT;
 }
 
-GLuint OGLClientFetchObject::GetTexHQ3xLUT() const
+GLuint OGLClientSharedData::GetTexHQ3xLUT() const
 {
 	return this->_texHQ3xLUT;
 }
 
-GLuint OGLClientFetchObject::GetTexHQ4xLUT() const
+GLuint OGLClientSharedData::GetTexHQ4xLUT() const
 {
 	return this->_texHQ4xLUT;
 }
 
-void OGLClientFetchObject::CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex)
+void OGLClientSharedData::CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex)
 {
 	pthread_rwlock_rdlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 	memcpy(dstBufferPtr, this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(uint32_t));
 	pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 }
 
-void OGLClientFetchObject::FetchNativeDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock)
+void OGLClientSharedData::FetchNativeDisplayToSrcClone(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock)
 {
 	if (needsLock)
 	{
@@ -4691,7 +4716,7 @@ void OGLClientFetchObject::FetchNativeDisplayToSrcClone(const NDSDisplayID displ
 		return;
 	}
 	
-	ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapNone>(this->_fetchDisplayInfo[bufferIndex].nativeBuffer16[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapNone>(displayInfoList[bufferIndex].nativeBuffer16[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 	this->_srcCloneNeedsUpdate[displayID][bufferIndex] = false;
 	
 	if (needsLock)
@@ -4700,7 +4725,7 @@ void OGLClientFetchObject::FetchNativeDisplayToSrcClone(const NDSDisplayID displ
 	}
 }
 
-void OGLClientFetchObject::FetchCustomDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock)
+void OGLClientSharedData::FetchCustomDisplayToSrcClone(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock)
 {
 	if (needsLock)
 	{
@@ -4716,7 +4741,7 @@ void OGLClientFetchObject::FetchCustomDisplayToSrcClone(const NDSDisplayID displ
 		return;
 	}
 	
-	ColorspaceConvertBuffer888XTo8888Opaque<false, false>((u32 *)this->_fetchDisplayInfo[bufferIndex].customBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	ColorspaceConvertBuffer888XTo8888Opaque<false, false>((u32 *)displayInfoList[bufferIndex].customBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 	this->_srcCloneNeedsUpdate[displayID][bufferIndex] = false;
 	
 	if (needsLock)
@@ -4725,22 +4750,22 @@ void OGLClientFetchObject::FetchCustomDisplayToSrcClone(const NDSDisplayID displ
 	}
 }
 
-void OGLClientFetchObject::FetchTextureWriteLock(const NDSDisplayID displayID)
+void OGLClientSharedData::FetchTextureWriteLock(const NDSDisplayID displayID)
 {
 	pthread_rwlock_wrlock(&this->_texFetchRWLock[displayID]);
 }
 
-void OGLClientFetchObject::FetchTextureReadLock(const NDSDisplayID displayID)
+void OGLClientSharedData::FetchTextureReadLock(const NDSDisplayID displayID)
 {
 	pthread_rwlock_rdlock(&this->_texFetchRWLock[displayID]);
 }
 
-void OGLClientFetchObject::FetchTextureUnlock(const NDSDisplayID displayID)
+void OGLClientSharedData::FetchTextureUnlock(const NDSDisplayID displayID)
 {
 	pthread_rwlock_unlock(&this->_texFetchRWLock[displayID]);
 }
 
-void OGLClientFetchObject::Init()
+void OGLClientSharedData::InitOGL()
 {
 	glGenTextures(2 * OPENGL_FETCH_BUFFER_COUNT, &this->_texDisplayFetchNative[0][0]);
 	glGenTextures(2 * OPENGL_FETCH_BUFFER_COUNT, &this->_texDisplayFetchCustom[0][0]);
@@ -4784,16 +4809,14 @@ void OGLClientFetchObject::Init()
 	this->_texFetch[NDSDisplayID_Main]  = this->_texDisplayFetchNative[NDSDisplayID_Main][0];
 	this->_texFetch[NDSDisplayID_Touch] = this->_texDisplayFetchNative[NDSDisplayID_Touch][0];
 	
-	if (this->_contextInfo->IsShaderSupported())
+	if ( (this->_contextInfo != NULL) && this->_contextInfo->IsShaderSupported() )
 	{
 		SetupHQnxLUTs_OGL(GL_TEXTURE0 + 1, this->_texLQ2xLUT, this->_texHQ2xLUT, this->_texHQ3xLUT, this->_texHQ4xLUT);
 	}
 }
 
-void OGLClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo)
+void OGLClientSharedData::SetFetchBuffersOGL(const NDSDisplayInfo *displayInfoList, const NDSDisplayInfo &currentDisplayInfo)
 {
-	this->GPUClientFetchObject::SetFetchBuffers(currentDisplayInfo);
-	
 #ifdef MSB_FIRST
 	this->_fetchColorFormatOGL = (currentDisplayInfo.pixelBytes == 2) ? GL_UNSIGNED_SHORT_1_5_5_5_REV : GL_UNSIGNED_INT_8_8_8_8;
 #else
@@ -4809,19 +4832,19 @@ void OGLClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDisplayI
 	{
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Main][i]);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_fetchDisplayInfo[i].nativeBuffer16[NDSDisplayID_Main]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, displayInfoList[i].nativeBuffer16[NDSDisplayID_Main]);
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Touch][i]);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_fetchDisplayInfo[i].nativeBuffer16[NDSDisplayID_Touch]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, displayInfoList[i].nativeBuffer16[NDSDisplayID_Touch]);
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Main][i]);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[i].customBuffer[NDSDisplayID_Main]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, displayInfoList[i].customBuffer[NDSDisplayID_Main]);
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Touch][i]);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[i].customBuffer[NDSDisplayID_Touch]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, displayInfoList[i].customBuffer[NDSDisplayID_Touch]);
 		
 		pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Main][i]);
 		this->_srcCloneNeedsUpdate[NDSDisplayID_Main][i] = true;
@@ -4837,14 +4860,12 @@ void OGLClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDisplayI
 	glFinish();
 }
 
-void OGLClientFetchObject::FetchFromBufferIndex(const u8 index)
+void OGLClientSharedData::FetchFromBufferIndexOGL(const u8 index, const NDSDisplayInfo &currentDisplayInfo)
 {
-	GPUClientFetchObject::FetchFromBufferIndex(index);
 	glFlush();
 	
 	GLuint texFetchMain = 0;
 	GLuint texFetchTouch = 0;
-	const NDSDisplayInfo &currentDisplayInfo = this->GetFetchDisplayInfoForBufferIndex(index);
 	const bool isMainEnabled  = currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
 	const bool isTouchEnabled = currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
 	
@@ -4876,42 +4897,32 @@ void OGLClientFetchObject::FetchFromBufferIndex(const u8 index)
 	this->SetFetchTexture(NDSDisplayID_Touch, texFetchTouch);
 }
 
-void OGLClientFetchObject::_FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex)
+void OGLClientSharedData::FetchNativeDisplayByID_OGL(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex)
 {
 	if (this->_useDirectToCPUFilterPipeline)
 	{
 		pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 		this->_srcCloneNeedsUpdate[displayID][bufferIndex] = true;
-		this->FetchNativeDisplayToSrcClone(displayID, bufferIndex, false);
+		this->FetchNativeDisplayToSrcClone(displayInfoList, displayID, bufferIndex, false);
 		pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 	}
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[displayID][bufferIndex]);
-	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_fetchDisplayInfo[bufferIndex].nativeBuffer16[displayID]);
+	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, displayInfoList[bufferIndex].nativeBuffer16[displayID]);
 }
 
-void OGLClientFetchObject::_FetchCustomDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex)
+void OGLClientSharedData::FetchCustomDisplayByID_OGL(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex)
 {
-	if (this->_useDirectToCPUFilterPipeline && (this->_fetchDisplayInfo[bufferIndex].renderedWidth[displayID] == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (this->_fetchDisplayInfo[bufferIndex].renderedHeight[displayID] == GPU_FRAMEBUFFER_NATIVE_HEIGHT))
+	if (this->_useDirectToCPUFilterPipeline && (displayInfoList[bufferIndex].renderedWidth[displayID] == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (displayInfoList[bufferIndex].renderedHeight[displayID] == GPU_FRAMEBUFFER_NATIVE_HEIGHT))
 	{
 		pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 		this->_srcCloneNeedsUpdate[displayID][bufferIndex] = true;
-		this->FetchCustomDisplayToSrcClone(displayID, bufferIndex, false);
+		this->FetchCustomDisplayToSrcClone(displayInfoList, displayID, bufferIndex, false);
 		pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 	}
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[displayID][bufferIndex]);
-	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_fetchDisplayInfo[bufferIndex].customWidth, this->_fetchDisplayInfo[bufferIndex].customHeight, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[bufferIndex].customBuffer[displayID]);
-}
-
-GLuint OGLClientFetchObject::GetFetchTexture(const NDSDisplayID displayID)
-{
-	return this->_texFetch[displayID];
-}
-
-void OGLClientFetchObject::SetFetchTexture(const NDSDisplayID displayID, GLuint texID)
-{
-	this->_texFetch[displayID] = texID;
+	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, displayInfoList[bufferIndex].customWidth, displayInfoList[bufferIndex].customHeight, GL_RGBA, this->_fetchColorFormatOGL, displayInfoList[bufferIndex].customBuffer[displayID]);
 }
 
 #pragma mark -
@@ -6873,10 +6884,12 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		return willUseShaderBasedPixelScaler;
 	}
 	
+	OGLClientSharedData *sharedData = (OGLClientSharedData *)this->_output->GetFetchObject().GetClientData();
+	
 	for (size_t i = 0; i < 2; i++)
 	{
 		OGLShaderProgram *shaderFilterProgram = _shaderFilter[i]->GetProgram();
-		const bool useShader150 = _output->GetContextInfo()->IsUsingShader150();
+		const bool useShader150 = this->_output->GetContextInfo()->IsUsingShader150();
 		const ShaderSupportTier shaderSupport = _output->GetContextInfo()->GetShaderSupport();
 		
 		switch (filterID)
@@ -6942,22 +6955,22 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 				
 			case VideoFilterTypeID_LQ2X:
 				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xFragShader_110, false, useShader150);
-				currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexLQ2xLUT();
+				currentHQnxLUT = sharedData->GetTexLQ2xLUT();
 				break;
 				
 			case VideoFilterTypeID_LQ2XS:
 				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xSFragShader_110, false, useShader150);
-				currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexLQ2xLUT();
+				currentHQnxLUT = sharedData->GetTexLQ2xLUT();
 				break;
 				
 			case VideoFilterTypeID_HQ2X:
 				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xFragShader_110, false, useShader150);
-				currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ2xLUT();
+				currentHQnxLUT = sharedData->GetTexHQ2xLUT();
 				break;
 				
 			case VideoFilterTypeID_HQ2XS:
 				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xSFragShader_110, false, useShader150);
-				currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ2xLUT();
+				currentHQnxLUT = sharedData->GetTexHQ2xLUT();
 				break;
 				
 			case VideoFilterTypeID_HQ3X:
@@ -6965,7 +6978,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 				if (shaderSupport >= ShaderSupport_LowTier)
 				{
 					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xFragShader_110, false, useShader150);
-					currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ3xLUT();
+					currentHQnxLUT = sharedData->GetTexHQ3xLUT();
 				}
 				else
 				{
@@ -6979,7 +6992,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 				if (shaderSupport >= ShaderSupport_LowTier)
 				{
 					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xSFragShader_110, false, useShader150);
-					currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ3xLUT();
+					currentHQnxLUT = sharedData->GetTexHQ3xLUT();
 				}
 				else
 				{
@@ -6993,7 +7006,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 				if (shaderSupport >= ShaderSupport_LowTier)
 				{
 					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xFragShader_110, false, useShader150);
-					currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ4xLUT();
+					currentHQnxLUT = sharedData->GetTexHQ4xLUT();
 				}
 				else
 				{
@@ -7007,7 +7020,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 				if (shaderSupport >= ShaderSupport_LowTier)
 				{
 					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xSFragShader_110, false, useShader150);
-					currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ4xLUT();
+					currentHQnxLUT = sharedData->GetTexHQ4xLUT();
 				}
 				else
 				{
@@ -7119,13 +7132,14 @@ void OGLDisplayLayer::LoadNativeDisplayByID_OGL(const NDSDisplayID displayID)
 {
 	if ((this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !this->_output->WillFilterOnGPU() && !this->_output->GetSourceDeposterize())
 	{
-		OGLClientFetchObject &fetchObjMutable = (OGLClientFetchObject &)this->_output->GetFetchObject();
+		const GPUClientFetchObject &fetchObj = this->_output->GetFetchObject();
+		OGLClientSharedData *sharedData = (OGLClientSharedData *)fetchObj.GetClientData();
 		VideoFilter *vf = this->_output->GetPixelScalerObject(displayID);
 		
-		const uint8_t bufferIndex = fetchObjMutable.GetLastFetchIndex();
+		const uint8_t bufferIndex = fetchObj.GetLastFetchIndex();
 		
 		pthread_rwlock_wrlock(&this->_cpuFilterRWLock[displayID][bufferIndex]);
-		fetchObjMutable.CopyFromSrcClone(vf->GetSrcBufferPtr(), displayID, bufferIndex);
+		sharedData->CopyFromSrcClone(vf->GetSrcBufferPtr(), displayID, bufferIndex);
 		pthread_rwlock_unlock(&this->_cpuFilterRWLock[displayID][bufferIndex]);
 	}
 }
@@ -7134,20 +7148,23 @@ void OGLDisplayLayer::LoadCustomDisplayByID_OGL(const NDSDisplayID displayID)
 {
 	if ((this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !this->_output->WillFilterOnGPU() && !this->_output->GetSourceDeposterize() && (this->_output->GetEmuDisplayInfo().customWidth == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (this->_output->GetEmuDisplayInfo().customHeight == GPU_FRAMEBUFFER_NATIVE_HEIGHT) )
 	{
-		OGLClientFetchObject &fetchObjMutable = (OGLClientFetchObject &)this->_output->GetFetchObject();
+		const GPUClientFetchObject &fetchObj = this->_output->GetFetchObject();
+		OGLClientSharedData *sharedData = (OGLClientSharedData *)fetchObj.GetClientData();
 		VideoFilter *vf = this->_output->GetPixelScalerObject(displayID);
 		
-		const uint8_t bufferIndex = fetchObjMutable.GetLastFetchIndex();
+		const uint8_t bufferIndex = fetchObj.GetLastFetchIndex();
 		
 		pthread_rwlock_wrlock(&this->_cpuFilterRWLock[displayID][bufferIndex]);
-		fetchObjMutable.CopyFromSrcClone(vf->GetSrcBufferPtr(), displayID, bufferIndex);
+		sharedData->CopyFromSrcClone(vf->GetSrcBufferPtr(), displayID, bufferIndex);
 		pthread_rwlock_unlock(&this->_cpuFilterRWLock[displayID][bufferIndex]);
 	}
 }
 
 void OGLDisplayLayer::ProcessOGL()
 {
-	OGLClientFetchObject &fetchObj = (OGLClientFetchObject &)this->_output->GetFetchObject();
+	const GPUClientFetchObject &fetchObj = this->_output->GetFetchObject();
+	OGLClientSharedData *sharedData = (OGLClientSharedData *)fetchObj.GetClientData();
+	
 	const uint8_t bufferIndex = fetchObj.GetLastFetchIndex();
 	const NDSDisplayInfo &emuDisplayInfo = this->_output->GetEmuDisplayInfo();
 	const ClientDisplayMode mode = this->_output->GetPresenterProperties().mode;
@@ -7156,8 +7173,8 @@ void OGLDisplayLayer::ProcessOGL()
 	
 	const bool didRenderNative[2] = { !emuDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Main]], !emuDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Touch]] };
 
-	GLuint texMain  = (selectedDisplaySource[NDSDisplayID_Main]  == NDSDisplayID_Main)  ? fetchObj.GetFetchTexture(NDSDisplayID_Main)  : fetchObj.GetFetchTexture(NDSDisplayID_Touch);
-	GLuint texTouch = (selectedDisplaySource[NDSDisplayID_Touch] == NDSDisplayID_Touch) ? fetchObj.GetFetchTexture(NDSDisplayID_Touch) : fetchObj.GetFetchTexture(NDSDisplayID_Main);
+	GLuint texMain  = (selectedDisplaySource[NDSDisplayID_Main]  == NDSDisplayID_Main)  ? sharedData->GetFetchTexture(NDSDisplayID_Main)  : sharedData->GetFetchTexture(NDSDisplayID_Touch);
+	GLuint texTouch = (selectedDisplaySource[NDSDisplayID_Touch] == NDSDisplayID_Touch) ? sharedData->GetFetchTexture(NDSDisplayID_Touch) : sharedData->GetFetchTexture(NDSDisplayID_Main);
 	
 	GLsizei width[2]  = { (GLsizei)emuDisplayInfo.renderedWidth[selectedDisplaySource[NDSDisplayID_Main]],  (GLsizei)emuDisplayInfo.renderedWidth[selectedDisplaySource[NDSDisplayID_Touch]] };
 	GLsizei height[2] = { (GLsizei)emuDisplayInfo.renderedHeight[selectedDisplaySource[NDSDisplayID_Main]], (GLsizei)emuDisplayInfo.renderedHeight[selectedDisplaySource[NDSDisplayID_Touch]] };
@@ -7190,7 +7207,7 @@ void OGLDisplayLayer::ProcessOGL()
 			{
 				if (texFetchMainNeedsLock)
 				{
-					fetchObj.FetchTextureReadLock(NDSDisplayID_Main);
+					sharedData->FetchTextureReadLock(NDSDisplayID_Main);
 				}
 				
 				// For all shader-based filters, we need to temporarily disable GL_UNPACK_CLIENT_STORAGE_APPLE.
@@ -7202,7 +7219,7 @@ void OGLDisplayLayer::ProcessOGL()
 				
 				if (texFetchMainNeedsLock)
 				{
-					fetchObj.FetchTextureUnlock(NDSDisplayID_Main);
+					sharedData->FetchTextureUnlock(NDSDisplayID_Main);
 				}
 				
 				isDisplayProcessedMain = true;
@@ -7219,7 +7236,7 @@ void OGLDisplayLayer::ProcessOGL()
 			{
 				if (texFetchTouchNeedsLock)
 				{
-					fetchObj.FetchTextureReadLock(NDSDisplayID_Touch);
+					sharedData->FetchTextureReadLock(NDSDisplayID_Touch);
 				}
 				
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
@@ -7228,7 +7245,7 @@ void OGLDisplayLayer::ProcessOGL()
 				
 				if (texFetchTouchNeedsLock)
 				{
-					fetchObj.FetchTextureUnlock(NDSDisplayID_Touch);
+					sharedData->FetchTextureUnlock(NDSDisplayID_Touch);
 				}
 				
 				isDisplayProcessedTouch = true;
@@ -7250,7 +7267,7 @@ void OGLDisplayLayer::ProcessOGL()
 			{
 				if (texFetchMainNeedsLock)
 				{
-					fetchObj.FetchTextureReadLock(NDSDisplayID_Main);
+					sharedData->FetchTextureReadLock(NDSDisplayID_Main);
 				}
 				
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
@@ -7259,7 +7276,7 @@ void OGLDisplayLayer::ProcessOGL()
 				
 				if (texFetchMainNeedsLock)
 				{
-					fetchObj.FetchTextureUnlock(NDSDisplayID_Main);
+					sharedData->FetchTextureUnlock(NDSDisplayID_Main);
 				}
 				
 				width[NDSDisplayID_Main]  = (GLsizei)vfMain->GetDstWidth();
@@ -7278,7 +7295,7 @@ void OGLDisplayLayer::ProcessOGL()
 			{
 				if (texFetchTouchNeedsLock)
 				{
-					fetchObj.FetchTextureReadLock(NDSDisplayID_Touch);
+					sharedData->FetchTextureReadLock(NDSDisplayID_Touch);
 				}
 				
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
@@ -7287,7 +7304,7 @@ void OGLDisplayLayer::ProcessOGL()
 				
 				if (texFetchTouchNeedsLock)
 				{
-					fetchObj.FetchTextureUnlock(NDSDisplayID_Touch);
+					sharedData->FetchTextureUnlock(NDSDisplayID_Touch);
 				}
 				
 				width[NDSDisplayID_Touch]  = (GLsizei)vfTouch->GetDstWidth();
@@ -7444,7 +7461,8 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 		this->_UpdateVerticesOGL();
 	}
 	
-	OGLClientFetchObject &fetchObj = (OGLClientFetchObject &)this->_output->GetFetchObject();
+	const GPUClientFetchObject &fetchObj = this->_output->GetFetchObject();
+	OGLClientSharedData *sharedData = (OGLClientSharedData *)fetchObj.GetClientData();
 	const NDSDisplayInfo &emuDisplayInfo = this->_output->GetEmuDisplayInfo();
 	const float backlightIntensity[2] = { emuDisplayInfo.backlightIntensity[NDSDisplayID_Main], emuDisplayInfo.backlightIntensity[NDSDisplayID_Touch] };
 	
@@ -7473,7 +7491,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (texFetchMainNeedsLock)
 				{
-					fetchObj.FetchTextureWriteLock(NDSDisplayID_Main);
+					sharedData->FetchTextureWriteLock(NDSDisplayID_Main);
 				}
 				
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, processedInfo.texID[NDSDisplayID_Main]);
@@ -7483,7 +7501,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (texFetchMainNeedsLock)
 				{
-					fetchObj.FetchTextureUnlock(NDSDisplayID_Main);
+					sharedData->FetchTextureUnlock(NDSDisplayID_Main);
 					texFetchMainNeedsLock = false;
 				}
 			}
@@ -7501,7 +7519,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (texFetchTouchNeedsLock)
 				{
-					fetchObj.FetchTextureWriteLock(NDSDisplayID_Touch);
+					sharedData->FetchTextureWriteLock(NDSDisplayID_Touch);
 				}
 				
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, processedInfo.texID[NDSDisplayID_Touch]);
@@ -7511,7 +7529,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (texFetchTouchNeedsLock)
 				{
-					fetchObj.FetchTextureUnlock(NDSDisplayID_Touch);
+					sharedData->FetchTextureUnlock(NDSDisplayID_Touch);
 					texFetchTouchNeedsLock = false;
 				}
 			}
@@ -7543,7 +7561,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 						
 						if (texFetchMajorNeedsLock)
 						{
-							fetchObj.FetchTextureWriteLock(majorDisplayID);
+							sharedData->FetchTextureWriteLock(majorDisplayID);
 						}
 						
 						glBindTexture(GL_TEXTURE_RECTANGLE_ARB, processedInfo.texID[majorDisplayID]);
@@ -7579,7 +7597,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (texFetchMainNeedsLock && !texFetchMainAlreadyLocked)
 				{
-					fetchObj.FetchTextureWriteLock(NDSDisplayID_Main);
+					sharedData->FetchTextureWriteLock(NDSDisplayID_Main);
 				}
 				
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, processedInfo.texID[NDSDisplayID_Main]);
@@ -7589,7 +7607,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (texFetchMainNeedsLock)
 				{
-					fetchObj.FetchTextureUnlock(NDSDisplayID_Main);
+					sharedData->FetchTextureUnlock(NDSDisplayID_Main);
 					texFetchMainNeedsLock = false;
 				}
 			}
@@ -7603,7 +7621,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (texFetchTouchNeedsLock && !texFetchTouchAlreadyLocked)
 				{
-					fetchObj.FetchTextureWriteLock(NDSDisplayID_Touch);
+					sharedData->FetchTextureWriteLock(NDSDisplayID_Touch);
 				}
 				
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, processedInfo.texID[NDSDisplayID_Touch]);
@@ -7613,7 +7631,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (texFetchTouchNeedsLock)
 				{
-					fetchObj.FetchTextureUnlock(NDSDisplayID_Touch);
+					sharedData->FetchTextureUnlock(NDSDisplayID_Touch);
 					texFetchTouchNeedsLock = false;
 				}
 			}

@@ -24,7 +24,7 @@
 @synthesize dummyObject;
 @synthesize window;
 @synthesize saveDirectoryPathTextField;
-@synthesize sharedData;
+@synthesize fetchObject;
 @synthesize saveDirectoryPath;
 @synthesize romName;
 @synthesize formatID;
@@ -46,7 +46,7 @@
 		return nil;
 	}
 	
-	sharedData			= nil;
+	fetchObject			= nil;
 	saveDirectoryPath	= nil;
 	romName				= @"No_ROM_loaded";
 	
@@ -66,7 +66,6 @@
 
 - (void)dealloc
 {
-	[self setSharedData:nil];
 	[self setSaveDirectoryPath:nil];
 	[self setRomName:nil];
 	

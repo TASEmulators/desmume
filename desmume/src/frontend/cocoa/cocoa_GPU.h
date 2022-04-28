@@ -15,12 +15,30 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if defined(PORT_VERSION_OS_X_APP)
+	#define ENABLE_ASYNC_FETCH
+	#define ENABLE_DISPLAYLINK_FETCH
+	#define ENABLE_SHARED_FETCH_OBJECT
+#endif
+
+#ifdef ENABLE_ASYNC_FETCH
+	#include <pthread.h>
+	#include <mach/task.h>
+	#include <mach/semaphore.h>
+	#include <mach/sync_policy.h>
+
+	// This symbol only exists in the kernel headers, but not in the user headers.
+	// Manually define the symbol here, since we will be Mach semaphores in the user-space.
+	#ifndef SYNC_POLICY_PREPOST
+		#define SYNC_POLICY_PREPOST 0x4
+	#endif
+#endif
+
+#ifdef ENABLE_DISPLAYLINK_FETCH
+	#import <CoreVideo/CoreVideo.h>
+#endif
+
 #import <Foundation/Foundation.h>
-#import <CoreVideo/CoreVideo.h>
-#include <pthread.h>
-#include <mach/task.h>
-#include <mach/semaphore.h>
-#include <mach/sync_policy.h>
 #include <map>
 #include <vector>
 #include "utilities.h"
@@ -28,21 +46,11 @@
 #import "cocoa_util.h"
 #include "../../GPU.h"
 
-// This symbol only exists in the kernel headers, but not in the user headers.
-// Manually define the symbol here, since we will be Mach semaphores in the user-space.
-#ifndef SYNC_POLICY_PREPOST
-#define SYNC_POLICY_PREPOST 0x4
-#endif
-
 #ifdef BOOL
 #undef BOOL
 #endif
 
-#if defined(PORT_VERSION_OS_X_APP)
-	#define ENABLE_SHARED_FETCH_OBJECT
-#endif
-
-#if defined(ENABLE_SHARED_FETCH_OBJECT) && !defined(METAL_DISABLE_FOR_BUILD_TARGET) && defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
+#if defined(ENABLE_ASYNC_FETCH) && defined(ENABLE_DISPLAYLINK_FETCH) && !defined(METAL_DISABLE_FOR_BUILD_TARGET) && defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
 	#define ENABLE_APPLE_METAL
 #endif
 
@@ -60,63 +68,132 @@ enum ClientDisplayBufferState
 class GPUEventHandlerOSX;
 class ClientDisplay3DView;
 
-#ifdef ENABLE_SHARED_FETCH_OBJECT
+#ifdef ENABLE_ASYNC_FETCH
 
-typedef std::map<CGDirectDisplayID, CVDisplayLinkRef> DisplayLinksActiveMap;
-typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
-
-@interface MacClientSharedObject : NSObject
+class MacGPUFetchObjectAsync : public GPUClientFetchObject
 {
-	GPUClientFetchObject *GPUFetchObject;
+protected:
 	task_t _taskEmulationLoop;
 	
 	apple_unfairlock_t _unfairlockFramebufferStates[MAX_FRAMEBUFFER_PAGES];
 	semaphore_t _semFramebuffer[MAX_FRAMEBUFFER_PAGES];
 	volatile ClientDisplayBufferState _framebufferState[MAX_FRAMEBUFFER_PAGES];
 	
-	pthread_rwlock_t *_rwlockOutputList;
-	pthread_mutex_t _mutexDisplayLinkLists;
-	NSMutableArray *_cdsOutputList;
-	volatile int32_t numberViewsUsingDirectToCPUFiltering;
-	
-	DisplayLinksActiveMap _displayLinksActiveList;
-	DisplayLinkFlushTimeLimitMap _displayLinkFlushTimeList;
-	
 	uint32_t _threadMessageID;
 	uint8_t _fetchIndex;
 	pthread_t _threadFetch;
 	pthread_cond_t _condSignalFetch;
 	pthread_mutex_t _mutexFetchExecute;
+	
+public:
+	MacGPUFetchObjectAsync();
+	~MacGPUFetchObjectAsync();
+	
+	virtual void Init();
+	
+	void SemaphoreFramebufferCreate();
+	void SemaphoreFramebufferDestroy();
+	uint8_t SelectBufferIndex(const uint8_t currentIndex, size_t pageCount);
+	semaphore_t SemaphoreFramebufferPageAtIndex(const u8 bufferIndex);
+	ClientDisplayBufferState FramebufferStateAtIndex(uint8_t index);
+	void SetFramebufferState(ClientDisplayBufferState bufferState, uint8_t index);
+	
+	void FetchSynchronousAtIndex(uint8_t index);
+	void SignalFetchAtIndex(uint8_t index, int32_t messageID);
+	void RunFetchLoop();
+	virtual void DoPostFetchActions();
+};
+
+#ifdef ENABLE_DISPLAYLINK_FETCH
+
+typedef std::map<CGDirectDisplayID, CVDisplayLinkRef> DisplayLinksActiveMap;
+typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
+
+class MacGPUFetchObjectDisplayLink : public MacGPUFetchObjectAsync
+{
+protected:
+	pthread_rwlock_t *_rwlockOutputList;
+	pthread_mutex_t _mutexDisplayLinkLists;
+	NSMutableArray *_cdsOutputList;
+	volatile int32_t _numberViewsUsingDirectToCPUFiltering;
+	
+	DisplayLinksActiveMap _displayLinksActiveList;
+	DisplayLinkFlushTimeLimitMap _displayLinkFlushTimeList;
+	
+public:
+	MacGPUFetchObjectDisplayLink();
+	~MacGPUFetchObjectDisplayLink();
+	
+	volatile int32_t GetNumberViewsUsingDirectToCPUFiltering() const;
+	
+	void SetOutputList(NSMutableArray *theOutputList, pthread_rwlock_t *theRWLock);
+	void IncrementViewsUsingDirectToCPUFiltering();
+	void DecrementViewsUsingDirectToCPUFiltering();
+	void PushVideoDataToAllDisplayViews();
+	
+	void DisplayLinkStartUsingID(CGDirectDisplayID displayID);
+	void DisplayLinkListUpdate();
+	
+	virtual void FlushAllDisplaysOnDisplayLink(CVDisplayLinkRef displayLink, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput);
+	virtual void FlushMultipleViews(const std::vector<ClientDisplay3DView *> &cdvFlushList, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput);
+	
+	virtual void DoPostFetchActions();
+};
+
+@interface MacClientSharedObject : NSObject
+{
+	MacGPUFetchObjectDisplayLink *GPUFetchObject;
 }
 
-@property (assign, nonatomic) GPUClientFetchObject *GPUFetchObject;
-@property (readonly, nonatomic) volatile int32_t numberViewsUsingDirectToCPUFiltering;
-
-- (void) semaphoreFramebufferCreate;
-- (void) semaphoreFramebufferDestroy;
-- (u8) selectBufferIndex:(const u8)currentIndex pageCount:(size_t)pageCount;
-- (semaphore_t) semaphoreFramebufferPageAtIndex:(const u8)bufferIndex;
-- (ClientDisplayBufferState) framebufferStateAtIndex:(uint8_t)index;
-- (void) setFramebufferState:(ClientDisplayBufferState)bufferState index:(uint8_t)index;
-
-- (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock;
-- (void) incrementViewsUsingDirectToCPUFiltering;
-- (void) decrementViewsUsingDirectToCPUFiltering;
-- (void) pushVideoDataToAllDisplayViews;
-
-- (void) flushAllDisplaysOnDisplayLink:(CVDisplayLinkRef)displayLink timeStampNow:(const CVTimeStamp *)timeStampNow timeStampOutput:(const CVTimeStamp *)timeStampOutput;
-- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList timeStampNow:(const CVTimeStamp *)timeStampNow timeStampOutput:(const CVTimeStamp *)timeStampOutput;
-
-- (void) displayLinkStartUsingID:(CGDirectDisplayID)displayID;
-- (void) displayLinkListUpdate;
-
-- (void) fetchSynchronousAtIndex:(uint8_t)index;
-- (void) signalFetchAtIndex:(uint8_t)index message:(int32_t)messageID;
-- (void) runFetchLoop;
+@property (assign, nonatomic) MacGPUFetchObjectDisplayLink *GPUFetchObject;
 
 @end
 
+#endif // ENABLE_DISPLAYLINK_FETCH
+
+#endif // ENABLE_ASYNC_FETCH
+
+class GPUEventHandlerOSX : public GPUEventHandlerDefault
+{
+private:
+	GPUClientFetchObject *_fetchObject;
+	
+	pthread_mutex_t _mutexFrame;
+	pthread_mutex_t _mutex3DRender;
+	pthread_mutex_t _mutexApplyGPUSettings;
+	pthread_mutex_t _mutexApplyRender3DSettings;
+	bool _render3DNeedsFinish;
+	
+public:
+	GPUEventHandlerOSX();
+	~GPUEventHandlerOSX();
+	
+	GPUClientFetchObject* GetFetchObject() const;
+	void SetFetchObject(GPUClientFetchObject *fetchObject);
+	
+	void FramebufferLock();
+	void FramebufferUnlock();
+	void Render3DLock();
+	void Render3DUnlock();
+	void ApplyGPUSettingsLock();
+	void ApplyGPUSettingsUnlock();
+	void ApplyRender3DSettingsLock();
+	void ApplyRender3DSettingsUnlock();
+	
+	bool GetRender3DNeedsFinish();
+	
+#ifdef ENABLE_ASYNC_FETCH
+	virtual void DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut);
+	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo);
 #endif
+	
+	virtual void DidRender3DBegin();
+	virtual void DidRender3DEnd();
+	virtual void DidApplyGPUSettingsBegin();
+	virtual void DidApplyGPUSettingsEnd();
+	virtual void DidApplyRender3DSettingsBegin();
+	virtual void DidApplyRender3DSettingsEnd();
+};
 
 @interface CocoaDSGPU : NSObject
 {
@@ -170,11 +247,9 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @property (assign) BOOL openGLEmulateSpecialZeroAlphaBlending;
 @property (assign) BOOL openGLEmulateNDSDepthCalculation;
 @property (assign) BOOL openGLEmulateDepthLEqualPolygonFacing;
-
-#ifdef ENABLE_SHARED_FETCH_OBJECT
 @property (readonly, nonatomic) GPUClientFetchObject *fetchObject;
-@property (readonly, nonatomic) MacClientSharedObject *sharedData;
 
+#ifdef ENABLE_DISPLAYLINK_FETCH
 - (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock;
 #endif
 
@@ -188,18 +263,6 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 #ifdef __cplusplus
 extern "C"
 {
-#endif
-
-#ifdef ENABLE_SHARED_FETCH_OBJECT
-
-static void* RunFetchThread(void *arg);
-
-CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
-								const CVTimeStamp *inNow,
-								const CVTimeStamp *inOutputTime,
-								CVOptionFlags flagsIn,
-								CVOptionFlags *flagsOut,
-								void *displayLinkContext);
 #endif
 
 bool OSXOpenGLRendererInit();

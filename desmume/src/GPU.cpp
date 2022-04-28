@@ -5908,10 +5908,7 @@ void GPUEventHandlerDefault::DidFrameBegin(const size_t line, const bool isFrame
 
 GPUClientFetchObject::GPUClientFetchObject()
 {
-	for (size_t i = 0; i < MAX_FRAMEBUFFER_PAGES; i++)
-	{
-		memset(&_fetchDisplayInfo[i], 0, sizeof(NDSDisplayInfo));
-	}
+	_id = 0;
 	
 	memset(_name, 0, sizeof(_name));
 	strncpy(_name, "Generic Video", sizeof(_name) - 1);
@@ -5921,6 +5918,11 @@ GPUClientFetchObject::GPUClientFetchObject()
 	
 	_clientData = NULL;
 	_lastFetchIndex = 0;
+	
+	for (size_t i = 0; i < MAX_FRAMEBUFFER_PAGES; i++)
+	{
+		memset(&_fetchDisplayInfo[i], 0, sizeof(NDSDisplayInfo));
+	}
 }
 
 void GPUClientFetchObject::Init()
@@ -6001,6 +6003,11 @@ const NDSDisplayInfo& GPUClientFetchObject::GetFetchDisplayInfoForBufferIndex(co
 void GPUClientFetchObject::SetFetchDisplayInfo(const NDSDisplayInfo &displayInfo)
 {
 	this->_fetchDisplayInfo[displayInfo.bufferIndex] = displayInfo;
+}
+
+const s32 GPUClientFetchObject::GetID() const
+{
+	return this->_id;
 }
 
 const char* GPUClientFetchObject::GetName() const

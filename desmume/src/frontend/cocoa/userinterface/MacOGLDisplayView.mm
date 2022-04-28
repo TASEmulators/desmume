@@ -18,6 +18,7 @@
 #include "MacOGLDisplayView.h"
 #include <mach/semaphore.h>
 #include "../utilities.h"
+#import "../cocoa_globals.h"
 
 
 @implementation DisplayViewOpenGLLayer
@@ -74,21 +75,49 @@
 
 #pragma mark -
 
+MacOGLClientSharedData::MacOGLClientSharedData()
+{
+	_unfairlockTexFetch[NDSDisplayID_Main] = apple_unfairlock_create();
+	_unfairlockTexFetch[NDSDisplayID_Touch] = apple_unfairlock_create();
+}
+
+MacOGLClientSharedData::~MacOGLClientSharedData()
+{
+	apple_unfairlock_destroy(this->_unfairlockTexFetch[NDSDisplayID_Main]);
+	this->_unfairlockTexFetch[NDSDisplayID_Main] = NULL;
+	apple_unfairlock_destroy(this->_unfairlockTexFetch[NDSDisplayID_Touch]);
+	this->_unfairlockTexFetch[NDSDisplayID_Touch] = NULL;
+}
+
+GLuint MacOGLClientSharedData::GetFetchTexture(const NDSDisplayID displayID)
+{
+	apple_unfairlock_lock(this->_unfairlockTexFetch[displayID]);
+	const GLuint texFetchID = this->OGLClientSharedData::GetFetchTexture(displayID);
+	apple_unfairlock_unlock(this->_unfairlockTexFetch[displayID]);
+	
+	return texFetchID;
+}
+
+void MacOGLClientSharedData::SetFetchTexture(const NDSDisplayID displayID, GLuint texID)
+{
+	apple_unfairlock_lock(this->_unfairlockTexFetch[displayID]);
+	this->OGLClientSharedData::SetFetchTexture(displayID, texID);
+	apple_unfairlock_unlock(this->_unfairlockTexFetch[displayID]);
+}
+
+#pragma mark -
+
 void MacOGLClientFetchObject::operator delete(void *ptr)
 {
 	MacOGLClientFetchObject *fetchObjectPtr = (MacOGLClientFetchObject *)ptr;
-	[(MacClientSharedObject *)(fetchObjectPtr->GetClientData()) release];
-	
 	CGLContextObj context = fetchObjectPtr->GetContext();
 	
 	if (context != NULL)
 	{
-		OGLContextInfo *contextInfo = fetchObjectPtr->GetContextInfo();
 		CGLContextObj prevContext = CGLGetCurrentContext();
 		CGLSetCurrentContext(context);
 		
 		[fetchObjectPtr->GetNSContext() release];
-		delete contextInfo;
 		::operator delete(ptr);
 		
 		CGLSetCurrentContext(prevContext);
@@ -143,34 +172,32 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(_context);
 	
+	OGLContextInfo *newContextInfo = NULL;
+	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	if (useContext_3_2)
 	{
-		_contextInfo = new OGLContextInfo_3_2;
+		newContextInfo = new OGLContextInfo_3_2;
 	}
 	else
 #endif
 	{
-		_contextInfo = new OGLContextInfo_Legacy;
+		newContextInfo = new OGLContextInfo_Legacy;
 	}
 	
 	CGLSetCurrentContext(prevContext);
 	
-	snprintf(_name, sizeof(_name) - 1, "macOS OpenGL v%i.%i", _contextInfo->GetVersionMajor(), _contextInfo->GetVersionMinor());
-	strlcpy(_description, _contextInfo->GetRendererString(), sizeof(_description) - 1);
+	_id = GPUClientFetchObjectID_MacOpenGL;
+	snprintf(_name, sizeof(_name) - 1, "macOS OpenGL v%i.%i", newContextInfo->GetVersionMajor(), newContextInfo->GetVersionMinor());
+	strlcpy(_description, newContextInfo->GetRendererString(), sizeof(_description) - 1);
 	
-	_clientData = [[MacClientSharedObject alloc] init];
-	
-	_unfairlockTexFetch[NDSDisplayID_Main] = apple_unfairlock_create();
-	_unfairlockTexFetch[NDSDisplayID_Touch] = apple_unfairlock_create();
+	_clientData = new MacOGLClientSharedData;
+	((MacOGLClientSharedData *)_clientData)->SetContextInfo(newContextInfo);
 }
 
 MacOGLClientFetchObject::~MacOGLClientFetchObject()
 {
-	apple_unfairlock_destroy(this->_unfairlockTexFetch[NDSDisplayID_Main]);
-	this->_unfairlockTexFetch[NDSDisplayID_Main] = NULL;
-	apple_unfairlock_destroy(this->_unfairlockTexFetch[NDSDisplayID_Touch]);
-	this->_unfairlockTexFetch[NDSDisplayID_Touch] = NULL;
+	delete (MacOGLClientSharedData *)this->_clientData;
 }
 
 NSOpenGLContext* MacOGLClientFetchObject::GetNSContext() const
@@ -183,55 +210,80 @@ CGLContextObj MacOGLClientFetchObject::GetContext() const
 	return this->_context;
 }
 
+void MacOGLClientFetchObject::FetchNativeDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock)
+{
+	MacOGLClientSharedData *sharedData = (MacOGLClientSharedData *)this->_clientData;
+	sharedData->FetchNativeDisplayToSrcClone(this->_fetchDisplayInfo, displayID, bufferIndex, needsLock);
+}
+
+void MacOGLClientFetchObject::FetchCustomDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock)
+{
+	MacOGLClientSharedData *sharedData = (MacOGLClientSharedData *)this->_clientData;
+	sharedData->FetchCustomDisplayToSrcClone(this->_fetchDisplayInfo, displayID, bufferIndex, needsLock);
+}
+
 void MacOGLClientFetchObject::Init()
 {
-	[(MacClientSharedObject *)this->_clientData setGPUFetchObject:this];
+	MacOGLClientSharedData *sharedData = (MacOGLClientSharedData *)this->_clientData;
 	
 	CGLContextObj prevContext = CGLGetCurrentContext();
-	CGLSetCurrentContext(_context);
-	this->OGLClientFetchObject::Init();
+	CGLSetCurrentContext(this->_context);
+	sharedData->InitOGL();
 	CGLSetCurrentContext(prevContext);
+	
+	this->MacGPUFetchObjectDisplayLink::Init();
 }
 
 void MacOGLClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo)
 {
+	MacOGLClientSharedData *sharedData = (MacOGLClientSharedData *)this->_clientData;
+	
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLClientFetchObject::SetFetchBuffers(currentDisplayInfo);
+	this->GPUClientFetchObject::SetFetchBuffers(currentDisplayInfo);
+	sharedData->SetFetchBuffersOGL(this->_fetchDisplayInfo, currentDisplayInfo);
 	CGLUnlockContext(this->_context);
 }
 
 void MacOGLClientFetchObject::FetchFromBufferIndex(const u8 index)
 {
-	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_clientData;
-	this->_useDirectToCPUFilterPipeline = ([sharedViewObject numberViewsUsingDirectToCPUFiltering] > 0);
+	MacOGLClientSharedData *sharedData = (MacOGLClientSharedData *)this->_clientData;
 	
-	semaphore_wait([sharedViewObject semaphoreFramebufferPageAtIndex:index]);
-	[sharedViewObject setFramebufferState:ClientDisplayBufferState_Reading index:index];
+	const bool willUseDirectCPU = (this->GetNumberViewsUsingDirectToCPUFiltering() > 0);
+	sharedData->SetUseDirectToCPUFilterPipeline(willUseDirectCPU);
+	
+	semaphore_wait( this->SemaphoreFramebufferPageAtIndex(index) );
+	this->SetFramebufferState(ClientDisplayBufferState_Reading, index);
 	
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLClientFetchObject::FetchFromBufferIndex(index);
+	
+	this->GPUClientFetchObject::FetchFromBufferIndex(index);
+	glFlush();
+	
+	const NDSDisplayInfo &currentDisplayInfo = this->GetFetchDisplayInfoForBufferIndex(index);
+	sharedData->FetchFromBufferIndexOGL(index, currentDisplayInfo);
+	
 	CGLUnlockContext(this->_context);
 	
-	[sharedViewObject setFramebufferState:ClientDisplayBufferState_Idle index:index];
-	semaphore_signal([sharedViewObject semaphoreFramebufferPageAtIndex:index]);
+	this->SetFramebufferState(ClientDisplayBufferState_Idle, index);
+	semaphore_signal( this->SemaphoreFramebufferPageAtIndex(index) );
 }
 
-GLuint MacOGLClientFetchObject::GetFetchTexture(const NDSDisplayID displayID)
+void MacOGLClientFetchObject::_FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex)
 {
-	apple_unfairlock_lock(this->_unfairlockTexFetch[displayID]);
-	const GLuint texFetchID = this->OGLClientFetchObject::GetFetchTexture(displayID);
-	apple_unfairlock_unlock(this->_unfairlockTexFetch[displayID]);
-	
-	return texFetchID;
+	// This method is called from MacOGLClientFetchObject::FetchFromBufferIndex(), and so
+	// we should have already been assigned the current context.
+	MacOGLClientSharedData *sharedData = (MacOGLClientSharedData *)this->_clientData;
+	sharedData->FetchNativeDisplayByID_OGL(this->_fetchDisplayInfo, displayID, bufferIndex);
 }
 
-void MacOGLClientFetchObject::SetFetchTexture(const NDSDisplayID displayID, GLuint texID)
+void MacOGLClientFetchObject::_FetchCustomDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex)
 {
-	apple_unfairlock_lock(this->_unfairlockTexFetch[displayID]);
-	this->OGLClientFetchObject::SetFetchTexture(displayID, texID);
-	apple_unfairlock_unlock(this->_unfairlockTexFetch[displayID]);
+	// This method is called from MacOGLClientFetchObject::FetchFromBufferIndex(), and so
+	// we should have already been assigned the current context.
+	MacOGLClientSharedData *sharedData = (MacOGLClientSharedData *)this->_clientData;
+	sharedData->FetchCustomDisplayByID_OGL(this->_fetchDisplayInfo, displayID, bufferIndex);
 }
 
 #pragma mark -
@@ -260,12 +312,12 @@ MacOGLDisplayPresenter::MacOGLDisplayPresenter()
 	__InstanceInit(nil);
 }
 
-MacOGLDisplayPresenter::MacOGLDisplayPresenter(MacClientSharedObject *sharedObject) : MacDisplayPresenterInterface(sharedObject)
+MacOGLDisplayPresenter::MacOGLDisplayPresenter(MacOGLClientFetchObject *fetchObject)
 {
-	__InstanceInit(sharedObject);
+	__InstanceInit(fetchObject);
 }
 
-void MacOGLDisplayPresenter::__InstanceInit(MacClientSharedObject *sharedObject)
+void MacOGLDisplayPresenter::__InstanceInit(MacOGLClientFetchObject *fetchObject)
 {
 	// Initialize the OpenGL context.
 	//
@@ -310,10 +362,7 @@ void MacOGLDisplayPresenter::__InstanceInit(MacClientSharedObject *sharedObject)
 	_context = nil;
 	_unfairlockProcessedInfo = apple_unfairlock_create();
 	
-	if (sharedObject != nil)
-	{
-		SetFetchObject([sharedObject GPUFetchObject]);
-	}
+	SetFetchObject(fetchObject);
 }
 
 MacOGLDisplayPresenter::~MacOGLDisplayPresenter()
@@ -452,26 +501,20 @@ void MacOGLDisplayPresenter::SetProcessedFrameInfo(const OGLProcessedFrameInfo &
 
 void MacOGLDisplayPresenter::WriteLockEmuFramebuffer(const uint8_t bufferIndex)
 {
-	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
-	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
-	
-	semaphore_wait([sharedViewObject semaphoreFramebufferPageAtIndex:bufferIndex]);
+	MacOGLClientFetchObject &fetchObj = (MacOGLClientFetchObject &)this->GetFetchObject();
+	semaphore_wait( fetchObj.SemaphoreFramebufferPageAtIndex(bufferIndex) );
 }
 
 void MacOGLDisplayPresenter::ReadLockEmuFramebuffer(const uint8_t bufferIndex)
 {
-	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
-	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
-	
-	semaphore_wait([sharedViewObject semaphoreFramebufferPageAtIndex:bufferIndex]);
+	MacOGLClientFetchObject &fetchObj = (MacOGLClientFetchObject &)this->GetFetchObject();
+	semaphore_wait( fetchObj.SemaphoreFramebufferPageAtIndex(bufferIndex) );
 }
 
 void MacOGLDisplayPresenter::UnlockEmuFramebuffer(const uint8_t bufferIndex)
 {
-	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
-	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
-	
-	semaphore_signal([sharedViewObject semaphoreFramebufferPageAtIndex:bufferIndex]);
+	MacOGLClientFetchObject &fetchObj = (MacOGLClientFetchObject &)this->GetFetchObject();
+	semaphore_signal( fetchObj.SemaphoreFramebufferPageAtIndex(bufferIndex) );
 }
 
 #pragma mark -
@@ -481,9 +524,9 @@ MacOGLDisplayView::MacOGLDisplayView()
 	__InstanceInit(nil);
 }
 
-MacOGLDisplayView::MacOGLDisplayView(MacClientSharedObject *sharedObject)
+MacOGLDisplayView::MacOGLDisplayView(MacOGLClientFetchObject *fetchObject)
 {
-	__InstanceInit(sharedObject);
+	__InstanceInit(fetchObject);
 }
 
 MacOGLDisplayView::~MacOGLDisplayView()
@@ -494,12 +537,12 @@ MacOGLDisplayView::~MacOGLDisplayView()
 	this->_unfairlockViewNeedsFlush = NULL;
 }
 
-void MacOGLDisplayView::__InstanceInit(MacClientSharedObject *sharedObject)
+void MacOGLDisplayView::__InstanceInit(MacOGLClientFetchObject *fetchObject)
 {
 	_allowViewUpdates = false;
 	_unfairlockViewNeedsFlush = apple_unfairlock_create();
 	
-	MacOGLDisplayPresenter *newOpenGLPresenter = new MacOGLDisplayPresenter(sharedObject);
+	MacOGLDisplayPresenter *newOpenGLPresenter = new MacOGLDisplayPresenter(fetchObject);
 	_presenter = newOpenGLPresenter;
 	
 	_caLayer = [[DisplayViewOpenGLLayer alloc] init];
@@ -542,8 +585,8 @@ void MacOGLDisplayView::SetViewNeedsFlush()
 void MacOGLDisplayView::SetAllowViewFlushes(bool allowFlushes)
 {
 	CGDirectDisplayID displayID = (CGDirectDisplayID)this->GetDisplayViewID();
-	MacClientSharedObject *sharedData = ((MacOGLDisplayPresenter *)this->_presenter)->GetSharedData();
-	[sharedData displayLinkStartUsingID:displayID];
+	MacOGLClientFetchObject &fetchObj = (MacOGLClientFetchObject &)this->_presenter->GetFetchObject();
+	fetchObj.DisplayLinkStartUsingID(displayID);
 }
 
 void MacOGLDisplayView::SetUseVerticalSync(const bool useVerticalSync)

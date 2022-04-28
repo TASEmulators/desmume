@@ -294,7 +294,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 
 #pragma mark -
 
-class MacMetalFetchObject : public GPUClientFetchObject
+class MacMetalFetchObject : public MacGPUFetchObjectDisplayLink
 {
 protected:
 	bool _useDirectToCPUFilterPipeline;
@@ -313,6 +313,8 @@ public:
 	virtual void CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex);
 	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);
 	virtual void FetchFromBufferIndex(const u8 index);
+	
+	virtual void FlushMultipleViews(const std::vector<ClientDisplay3DView *> &cdvFlushList, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput);
 };
 
 #pragma mark -

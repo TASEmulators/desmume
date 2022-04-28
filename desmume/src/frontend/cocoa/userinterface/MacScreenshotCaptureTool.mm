@@ -73,7 +73,7 @@
 	// Note: We're allocating the parameter's memory block here, but we will be freeing it once we copy it in the detached thread.
 	MacCaptureToolParams *param = new MacCaptureToolParams;
 	param->refObject				= NULL;
-	param->sharedData				= [self sharedData];
+	param->fetchObject				= [self fetchObject];
 	param->formatID					= [self formatID];
 	param->savePath					= std::string([savePath cStringUsingEncoding:NSUTF8StringEncoding]);
 	param->romName					= std::string([romName cStringUsingEncoding:NSUTF8StringEncoding]);
@@ -143,7 +143,7 @@ static void* RunFileWriteThread(void *arg)
 	MacCaptureToolParams param;
 	
 	param.refObject					= inParams->refObject;
-	param.sharedData				= inParams->sharedData;
+	param.fetchObject				= inParams->fetchObject;
 	param.formatID					= inParams->formatID;
 	param.savePath					= inParams->savePath;
 	param.romName					= inParams->romName;
@@ -162,19 +162,13 @@ static void* RunFileWriteThread(void *arg)
 	inParams = NULL;
 	
 	// Do a few sanity checks before proceeding.
-	if (param.sharedData == nil)
+	if (param.fetchObject == NULL)
 	{
 		return NULL;
 	}
 	
-	GPUClientFetchObject *fetchObject = [param.sharedData GPUFetchObject];
-	if (fetchObject == NULL)
-	{
-		return NULL;
-	}
-	
-	const u8 lastBufferIndex = fetchObject->GetLastFetchIndex();
-	const NDSDisplayInfo &displayInfo = fetchObject->GetFetchDisplayInfoForBufferIndex(lastBufferIndex);
+	const u8 lastBufferIndex = param.fetchObject->GetLastFetchIndex();
+	const NDSDisplayInfo &displayInfo = param.fetchObject->GetFetchDisplayInfoForBufferIndex(lastBufferIndex);
 	
 	if ( (displayInfo.renderedWidth[NDSDisplayID_Main]  == 0) || (displayInfo.renderedHeight[NDSDisplayID_Main]  == 0) ||
 		 (displayInfo.renderedWidth[NDSDisplayID_Touch] == 0) || (displayInfo.renderedHeight[NDSDisplayID_Touch] == 0) )
@@ -227,22 +221,22 @@ static void* RunFileWriteThread(void *arg)
 	bool isUsingMetal = false;
 	
 #ifdef ENABLE_APPLE_METAL
-	if ([param.sharedData isKindOfClass:[MetalDisplayViewSharedData class]])
+	if (param.fetchObject->GetID() == GPUClientFetchObjectID_MacMetal)
 	{
-		if ([(MetalDisplayViewSharedData *)param.sharedData device] == nil)
+		if ([(MetalDisplayViewSharedData *)param.fetchObject->GetClientData() device] == nil)
 		{
 			[newImageRep release];
 			[autoreleasePool release];
 			return NULL;
 		}
 		
-		cdp = new MacMetalDisplayPresenter(param.sharedData);
+		cdp = new MacMetalDisplayPresenter((MetalDisplayViewSharedData *)param.fetchObject->GetClientData());
 		isUsingMetal = true;
 	}
 	else
 #endif
 	{
-		cdp = new MacOGLDisplayPresenter(param.sharedData);
+		cdp = new MacOGLDisplayPresenter((MacOGLClientFetchObject *)param.fetchObject);
 	}
 	
 	cdp->Init();
@@ -276,12 +270,12 @@ static void* RunFileWriteThread(void *arg)
 		{
 			if ( (param.cdpProperty.mode == ClientDisplayMode_Main) || (param.cdpProperty.mode == ClientDisplayMode_Dual) )
 			{
-				((OGLClientFetchObject *)fetchObject)->FetchNativeDisplayToSrcClone(NDSDisplayID_Main, lastBufferIndex, true);
+				((MacOGLClientFetchObject *)param.fetchObject)->FetchNativeDisplayToSrcClone(NDSDisplayID_Main, lastBufferIndex, true);
 			}
 			
 			if ( (param.cdpProperty.mode == ClientDisplayMode_Touch) || (param.cdpProperty.mode == ClientDisplayMode_Dual) )
 			{
-				((OGLClientFetchObject *)fetchObject)->FetchNativeDisplayToSrcClone(NDSDisplayID_Touch, lastBufferIndex, true);
+				((MacOGLClientFetchObject *)param.fetchObject)->FetchNativeDisplayToSrcClone(NDSDisplayID_Touch, lastBufferIndex, true);
 			}
 		}
 	}

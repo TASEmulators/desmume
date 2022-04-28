@@ -1978,16 +1978,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
-		CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
-		MacClientSharedObject *macSharedData = [cdsGPU sharedData];
+		MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[[cdsCore cdsGPU] fetchObject];
 		
 		if (newState)
 		{
-			[macSharedData incrementViewsUsingDirectToCPUFiltering];
+			dlFetchObj->IncrementViewsUsingDirectToCPUFiltering();
 		}
 		else
 		{
-			[macSharedData decrementViewsUsingDirectToCPUFiltering];
+			dlFetchObj->DecrementViewsUsingDirectToCPUFiltering();
 		}
 		
 		[[self cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
@@ -2009,16 +2008,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
-		CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
-		MacClientSharedObject *macSharedData = [cdsGPU sharedData];
+		MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[[cdsCore cdsGPU] fetchObject];
 		
 		if (newState)
 		{
-			[macSharedData incrementViewsUsingDirectToCPUFiltering];
+			dlFetchObj->IncrementViewsUsingDirectToCPUFiltering();
 		}
 		else
 		{
-			[macSharedData decrementViewsUsingDirectToCPUFiltering];
+			dlFetchObj->DecrementViewsUsingDirectToCPUFiltering();
 		}
 	}
 	
@@ -2051,16 +2049,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
-		CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
-		MacClientSharedObject *macSharedData = [cdsGPU sharedData];
+		MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[[cdsCore cdsGPU] fetchObject];
 		
 		if (newState)
 		{
-			[macSharedData incrementViewsUsingDirectToCPUFiltering];
+			dlFetchObj->IncrementViewsUsingDirectToCPUFiltering();
 		}
 		else
 		{
-			[macSharedData decrementViewsUsingDirectToCPUFiltering];
+			dlFetchObj->DecrementViewsUsingDirectToCPUFiltering();
 		}
 	}
 	
@@ -2076,17 +2073,18 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
-	CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
-	MacClientSharedObject *macSharedData = [cdsGPU sharedData];
+	MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[[cdsCore cdsGPU] fetchObject];
 	
 #ifdef ENABLE_APPLE_METAL
 	BOOL isMetalLayer = NO;
 	
-	if ((macSharedData != nil) && [macSharedData isKindOfClass:[MetalDisplayViewSharedData class]])
+	if ( (dlFetchObj->GetClientData() != nil) && (dlFetchObj->GetID() == GPUClientFetchObjectID_MacMetal) )
 	{
-		if ([(MetalDisplayViewSharedData *)macSharedData device] != nil)
+		MetalDisplayViewSharedData *metalSharedData = (MetalDisplayViewSharedData *)dlFetchObj->GetClientData();
+		
+		if ([metalSharedData device] != nil)
 		{
-			MacMetalDisplayView *macMTLCDV = new MacMetalDisplayView(macSharedData);
+			MacMetalDisplayView *macMTLCDV = new MacMetalDisplayView(metalSharedData);
 			macMTLCDV->Init();
 			
 			localLayer = macMTLCDV->GetCALayer();
@@ -2096,7 +2094,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	else
 #endif
 	{
-		MacOGLDisplayView *macOGLCDV = new MacOGLDisplayView(macSharedData);
+		MacOGLDisplayView *macOGLCDV = new MacOGLDisplayView((MacOGLClientFetchObject *)dlFetchObj);
 		macOGLCDV->Init();
 		
 		localLayer = macOGLCDV->GetCALayer();

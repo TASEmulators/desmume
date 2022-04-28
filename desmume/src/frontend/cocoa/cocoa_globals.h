@@ -395,3 +395,24 @@ enum
 	PADDLE_CONTROL_RELATIVE = 0,
 	PADDLE_CONTROL_DIRECT
 };
+
+enum
+{
+	GPUClientFetchObjectIDMask_Async       = (1 << 0),
+	GPUClientFetchObjectIDMask_DisplayLink = (1 << 1),
+	GPUClientFetchObjectIDMask_OpenGL      = (1 << 2),
+	GPUClientFetchObjectIDMask_Metal       = (1 << 3),
+	GPUClientFetchObjectIDMask_macOS       = (1 << 4),
+	GPUClientFetchObjectIDMask_OpenEmu     = (1 << 5)
+};
+
+enum
+{
+	GPUClientFetchObjectID_Default            = 0,
+	GPUClientFetchObjectID_GenericAsync       = GPUClientFetchObjectIDMask_Async,
+	GPUClientFetchObjectID_GenericDisplayLink = GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink,
+	GPUClientFetchObjectID_GenericOpenGL      = GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink | GPUClientFetchObjectIDMask_OpenGL,
+	GPUClientFetchObjectID_MacOpenGL          = GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink | GPUClientFetchObjectIDMask_OpenGL | GPUClientFetchObjectIDMask_macOS,
+	GPUClientFetchObjectID_MacMetal           = GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink | GPUClientFetchObjectIDMask_Metal  | GPUClientFetchObjectIDMask_macOS,
+	GPUClientFetchObjectID_OpenEmu            = GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink | GPUClientFetchObjectIDMask_OpenGL | GPUClientFetchObjectIDMask_OpenEmu
+};

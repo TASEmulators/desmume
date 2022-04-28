@@ -44,13 +44,28 @@ class MacOGLDisplayView;
 
 @end
 
-class MacOGLClientFetchObject : public OGLClientFetchObject
+class MacOGLClientSharedData : public OGLClientSharedData
+{
+protected:
+	apple_unfairlock_t _unfairlockTexFetch[2];
+	
+public:
+	MacOGLClientSharedData();
+	~MacOGLClientSharedData();
+	
+	virtual GLuint GetFetchTexture(const NDSDisplayID displayID);
+	virtual void SetFetchTexture(const NDSDisplayID displayID, GLuint texID);
+};
+
+class MacOGLClientFetchObject : public MacGPUFetchObjectDisplayLink
 {
 protected:
 	NSOpenGLContext *_nsContext;
 	CGLContextObj _context;
 	
-	apple_unfairlock_t _unfairlockTexFetch[2];
+	// GPUClientFetchObject methods
+	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
+	virtual void _FetchCustomDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
 	
 public:
 	void operator delete(void *ptr);
@@ -60,18 +75,19 @@ public:
 	NSOpenGLContext* GetNSContext() const;
 	CGLContextObj GetContext() const;
 	
+	void FetchNativeDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
+	void FetchCustomDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
+	
+	// GPUClientFetchObject methods
 	virtual void Init();
 	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);
 	virtual void FetchFromBufferIndex(const u8 index);
-	
-	virtual GLuint GetFetchTexture(const NDSDisplayID displayID);
-	virtual void SetFetchTexture(const NDSDisplayID displayID, GLuint texID);
 };
 
-class MacOGLDisplayPresenter : public OGLVideoOutput, public MacDisplayPresenterInterface
+class MacOGLDisplayPresenter : public OGLVideoOutput
 {
 private:
-	void __InstanceInit(MacClientSharedObject *sharedObject);
+	void __InstanceInit(MacOGLClientFetchObject *fetchObject);
 	
 protected:
 	NSOpenGLContext *_nsContext;
@@ -83,7 +99,7 @@ protected:
 public:
 	void operator delete(void *ptr);
 	MacOGLDisplayPresenter();
-	MacOGLDisplayPresenter(MacClientSharedObject *sharedObject);
+	MacOGLDisplayPresenter(MacOGLClientFetchObject *fetchObject);
 	~MacOGLDisplayPresenter();
 	
 	virtual void Init();
@@ -117,14 +133,14 @@ public:
 class MacOGLDisplayView : public MacDisplayLayeredView
 {
 private:
-	void __InstanceInit(MacClientSharedObject *sharedObject);
+	void __InstanceInit(MacOGLClientFetchObject *fetchObject);
 	
 protected:
 	apple_unfairlock_t _unfairlockViewNeedsFlush;
 		
 public:
 	MacOGLDisplayView();
-	MacOGLDisplayView(MacClientSharedObject *sharedObject);
+	MacOGLDisplayView(MacOGLClientFetchObject *fetchObject);
 	virtual ~MacOGLDisplayView();
 	
 	virtual bool GetViewNeedsFlush();

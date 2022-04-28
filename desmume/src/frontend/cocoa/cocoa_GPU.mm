@@ -29,63 +29,24 @@
 	#include "../../OGLRender.h"
 #endif
 
-#include <OpenGL/OpenGL.h>
-#import "userinterface/MacOGLDisplayView.h"
+#ifdef PORT_VERSION_OS_X_APP
+	#import "userinterface/MacOGLDisplayView.h"
 
-#ifdef ENABLE_APPLE_METAL
-	#import "userinterface/MacMetalDisplayView.h"
+	#ifdef ENABLE_APPLE_METAL
+		#import "userinterface/MacMetalDisplayView.h"
+	#endif
 #endif
-
-#define GPU_3D_RENDERER_COUNT 3
 
 #ifdef BOOL
 #undef BOOL
 #endif
 
+#define GPU_3D_RENDERER_COUNT 3
 GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 	&gpu3DNull,
 	&gpu3DRasterize,
 	&gpu3Dgl,
 	NULL
-};
-
-class GPUEventHandlerOSX : public GPUEventHandlerDefault
-{
-private:
-	GPUClientFetchObject *_fetchObject;
-	
-	pthread_mutex_t _mutexFrame;
-	pthread_mutex_t _mutex3DRender;
-	pthread_mutex_t _mutexApplyGPUSettings;
-	pthread_mutex_t _mutexApplyRender3DSettings;
-	bool _render3DNeedsFinish;
-	
-public:
-	GPUEventHandlerOSX();
-	~GPUEventHandlerOSX();
-	
-	GPUClientFetchObject* GetFetchObject() const;
-	void SetFetchObject(GPUClientFetchObject *fetchObject);
-	
-	void FramebufferLock();
-	void FramebufferUnlock();
-	void Render3DLock();
-	void Render3DUnlock();
-	void ApplyGPUSettingsLock();
-	void ApplyGPUSettingsUnlock();
-	void ApplyRender3DSettingsLock();
-	void ApplyRender3DSettingsUnlock();
-	
-	bool GetRender3DNeedsFinish();
-	
-	virtual void DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut);
-	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo);
-	virtual void DidRender3DBegin();
-	virtual void DidRender3DEnd();
-	virtual void DidApplyGPUSettingsBegin();
-	virtual void DidApplyGPUSettingsEnd();
-	virtual void DidApplyRender3DSettingsBegin();
-	virtual void DidApplyRender3DSettingsEnd();
 };
 
 @implementation CocoaDSGPU
@@ -127,11 +88,7 @@ public:
 @dynamic openGLEmulateSpecialZeroAlphaBlending;
 @dynamic openGLEmulateNDSDepthCalculation;
 @dynamic openGLEmulateDepthLEqualPolygonFacing;
-
-#ifdef ENABLE_SHARED_FETCH_OBJECT
 @synthesize fetchObject;
-@dynamic sharedData;
-#endif
 
 - (id)init
 {
@@ -239,16 +196,6 @@ public:
 	[super dealloc];
 }
 
-- (GPUClientFetchObject *) fetchObject
-{
-	return fetchObject;
-}
-
-- (MacClientSharedObject *) sharedData
-{
-	return (MacClientSharedObject *)fetchObject->GetClientData();
-}
-
 - (void) setGpuStateFlags:(UInt32)flags
 {
 	apple_unfairlock_lock(_unfairlockGpuState);
@@ -287,22 +234,22 @@ public:
 	gpuEvent->Render3DLock();
 	gpuEvent->FramebufferLock();
 	
-#ifdef ENABLE_SHARED_FETCH_OBJECT
+#ifdef ENABLE_ASYNC_FETCH
 	const size_t maxPages = GPU->GetDisplayInfo().framebufferPageCount;
 	for (size_t i = 0; i < maxPages; i++)
 	{
-		semaphore_wait([[self sharedData] semaphoreFramebufferPageAtIndex:i]);
+		semaphore_wait( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
 	}
 #endif
 	
 	GPU->SetCustomFramebufferSize(w, h);
 	
-#ifdef ENABLE_SHARED_FETCH_OBJECT
+#ifdef ENABLE_ASYNC_FETCH
 	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
 	
 	for (size_t i = maxPages - 1; i < maxPages; i--)
 	{
-		semaphore_signal([[self sharedData] semaphoreFramebufferPageAtIndex:i]);
+		semaphore_signal( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
 	}
 #endif
 	
@@ -359,22 +306,22 @@ public:
 	
 	if (dispInfo.colorFormat != (NDSColorFormat)colorFormat)
 	{
-#ifdef ENABLE_SHARED_FETCH_OBJECT
+#ifdef ENABLE_ASYNC_FETCH
 		const size_t maxPages = GPU->GetDisplayInfo().framebufferPageCount;
 		for (size_t i = 0; i < maxPages; i++)
 		{
-			semaphore_wait([[self sharedData] semaphoreFramebufferPageAtIndex:i]);
+			semaphore_wait( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
 		}
 #endif
 		
 		GPU->SetColorFormat((NDSColorFormat)colorFormat);
 		
-#ifdef ENABLE_SHARED_FETCH_OBJECT
+#ifdef ENABLE_ASYNC_FETCH
 		fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
 		
 		for (size_t i = maxPages - 1; i < maxPages; i--)
 		{
-			semaphore_signal([[self sharedData] semaphoreFramebufferPageAtIndex:i]);
+			semaphore_signal( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
 		}
 #endif
 	}
@@ -399,10 +346,10 @@ public:
 	return colorFormat;
 }
 
-#ifdef ENABLE_SHARED_FETCH_OBJECT
+#ifdef ENABLE_DISPLAYLINK_FETCH
 - (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock
 {
-	[(MacClientSharedObject *)fetchObject->GetClientData() setOutputList:theOutputList rwlock:theRWLock];
+	((MacGPUFetchObjectDisplayLink *)fetchObject)->SetOutputList(theOutputList, theRWLock);
 }
 #endif
 
@@ -1088,28 +1035,28 @@ public:
 {
 	gpuEvent->FramebufferLock();
 	
-#ifdef ENABLE_SHARED_FETCH_OBJECT
+#ifdef ENABLE_ASYNC_FETCH
 	const size_t maxPages = GPU->GetDisplayInfo().framebufferPageCount;
 	for (size_t i = 0; i < maxPages; i++)
 	{
-		semaphore_wait([[self sharedData] semaphoreFramebufferPageAtIndex:i]);
+		semaphore_wait( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
 	}
 #endif
 	
 	GPU->ClearWithColor(colorBGRA5551);
 	
-#ifdef ENABLE_SHARED_FETCH_OBJECT
+#ifdef ENABLE_ASYNC_FETCH
 	for (size_t i = maxPages - 1; i < maxPages; i--)
 	{
-		semaphore_signal([[self sharedData] semaphoreFramebufferPageAtIndex:i]);
+		semaphore_signal( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
 	}
 #endif
 	
 	gpuEvent->FramebufferUnlock();
 	
-#ifdef ENABLE_SHARED_FETCH_OBJECT
+#ifdef ENABLE_ASYNC_FETCH
 	const u8 bufferIndex = GPU->GetDisplayInfo().bufferIndex;
-	[[self sharedData] signalFetchAtIndex:bufferIndex message:MESSAGE_FETCH_AND_PUSH_VIDEO];
+	((MacGPUFetchObjectAsync *)fetchObject)->SignalFetchAtIndex(bufferIndex, MESSAGE_FETCH_AND_PUSH_VIDEO);
 #endif
 }
 
@@ -1141,7 +1088,6 @@ public:
 @implementation MacClientSharedObject
 
 @synthesize GPUFetchObject;
-@synthesize numberViewsUsingDirectToCPUFiltering;
 
 - (id)init
 {
@@ -1151,33 +1097,45 @@ public:
 		return self;
 	}
 	
-	pthread_mutex_init(&_mutexDisplayLinkLists, NULL);
-	
 	GPUFetchObject = nil;
-	_rwlockOutputList = NULL;
-	_cdsOutputList = nil;
-	numberViewsUsingDirectToCPUFiltering = 0;
 	
-	_displayLinksActiveList.clear();
-	_displayLinkFlushTimeList.clear();
-	[self displayLinkListUpdate];
+	return self;
+}
+
+@end
+
+#pragma mark -
+
+static void* RunFetchThread(void *arg)
+{
+#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
+	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6)
+	{
+		pthread_setname_np("Video Fetch");
+	}
+#endif
 	
+	MacGPUFetchObjectAsync *asyncFetchObj = (MacGPUFetchObjectAsync *)arg;
+	asyncFetchObj->RunFetchLoop();
+	
+	return NULL;
+}
+
+MacGPUFetchObjectAsync::MacGPUFetchObjectAsync()
+{
+	_threadFetch = NULL;
 	_threadMessageID = MESSAGE_NONE;
 	_fetchIndex = 0;
 	pthread_cond_init(&_condSignalFetch, NULL);
 	pthread_mutex_init(&_mutexFetchExecute, NULL);
 	
-	pthread_attr_t threadAttr;
-	pthread_attr_init(&threadAttr);
-	pthread_attr_setschedpolicy(&threadAttr, SCHED_RR);
+	_id = GPUClientFetchObjectID_GenericAsync;
 	
-	struct sched_param sp;
-	memset(&sp, 0, sizeof(struct sched_param));
-	sp.sched_priority = 44;
-	pthread_attr_setschedparam(&threadAttr, &sp);
+	memset(_name, 0, sizeof(_name));
+	strncpy(_name, "Generic Asynchronous Video", sizeof(_name) - 1);
 	
-	pthread_create(&_threadFetch, &threadAttr, &RunFetchThread, self);
-	pthread_attr_destroy(&threadAttr);
+	memset(_description, 0, sizeof(_description));
+	strncpy(_description, "No description.", sizeof(_description) - 1);
 	
 	_taskEmulationLoop = 0;
 	
@@ -1187,88 +1145,58 @@ public:
 		_framebufferState[i] = ClientDisplayBufferState_Idle;
 		_unfairlockFramebufferStates[i] = apple_unfairlock_create();
 	}
-	
-	[[NSNotificationCenter defaultCenter] addObserver:self
-											 selector:@selector(respondToScreenChange:)
-												 name:@"NSApplicationDidChangeScreenParametersNotification"
-											   object:NSApp];
-	
-	return self;
 }
 
-- (void)dealloc
+MacGPUFetchObjectAsync::~MacGPUFetchObjectAsync()
 {
-	pthread_cancel(_threadFetch);
-	pthread_join(_threadFetch, NULL);
-	_threadFetch = NULL;
+	pthread_cancel(this->_threadFetch);
+	pthread_join(this->_threadFetch, NULL);
+	this->_threadFetch = NULL;
 	
-	pthread_cond_destroy(&_condSignalFetch);
-	pthread_mutex_destroy(&_mutexFetchExecute);
-	
-	pthread_mutex_lock(&_mutexDisplayLinkLists);
-	
-	while (_displayLinksActiveList.size() > 0)
-	{
-		DisplayLinksActiveMap::iterator it = _displayLinksActiveList.begin();
-		CGDirectDisplayID displayID = it->first;
-		CVDisplayLinkRef displayLinkRef = it->second;
-		
-		if (CVDisplayLinkIsRunning(displayLinkRef))
-		{
-			CVDisplayLinkStop(displayLinkRef);
-		}
-		
-		CVDisplayLinkRelease(displayLinkRef);
-		
-		_displayLinksActiveList.erase(displayID);
-		_displayLinkFlushTimeList.erase(displayID);
-	}
-	
-	pthread_mutex_unlock(&_mutexDisplayLinkLists);
-	pthread_mutex_destroy(&_mutexDisplayLinkLists);
-	
-	pthread_rwlock_t *currentRWLock = _rwlockOutputList;
-	
-	if (currentRWLock != NULL)
-	{
-		pthread_rwlock_wrlock(currentRWLock);
-	}
-	
-	[_cdsOutputList release];
-	
-	if (currentRWLock != NULL)
-	{
-		pthread_rwlock_unlock(currentRWLock);
-	}
-	
-	[super dealloc];
+	pthread_cond_destroy(&this->_condSignalFetch);
+	pthread_mutex_destroy(&this->_mutexFetchExecute);
 }
 
-- (void) semaphoreFramebufferCreate
+void MacGPUFetchObjectAsync::Init()
 {
-	_taskEmulationLoop = mach_task_self();
+	pthread_attr_t threadAttr;
+	pthread_attr_init(&threadAttr);
+	pthread_attr_setschedpolicy(&threadAttr, SCHED_RR);
+	
+	struct sched_param sp;
+	memset(&sp, 0, sizeof(struct sched_param));
+	sp.sched_priority = 44;
+	pthread_attr_setschedparam(&threadAttr, &sp);
+	
+	pthread_create(&_threadFetch, &threadAttr, &RunFetchThread, this);
+	pthread_attr_destroy(&threadAttr);
+}
+
+void MacGPUFetchObjectAsync::SemaphoreFramebufferCreate()
+{
+	this->_taskEmulationLoop = mach_task_self();
 	
 	for (size_t i = 0; i < MAX_FRAMEBUFFER_PAGES; i++)
 	{
-		semaphore_create(_taskEmulationLoop, &_semFramebuffer[i], SYNC_POLICY_FIFO, 1);
+		semaphore_create(this->_taskEmulationLoop, &this->_semFramebuffer[i], SYNC_POLICY_FIFO, 1);
 	}
 }
 
-- (void) semaphoreFramebufferDestroy
+void MacGPUFetchObjectAsync::SemaphoreFramebufferDestroy()
 {
 	for (size_t i = MAX_FRAMEBUFFER_PAGES - 1; i < MAX_FRAMEBUFFER_PAGES; i--)
 	{
-		if (_semFramebuffer[i] != 0)
+		if (this->_semFramebuffer[i] != 0)
 		{
-			semaphore_destroy(_taskEmulationLoop, _semFramebuffer[i]);
-			_semFramebuffer[i] = 0;
+			semaphore_destroy(this->_taskEmulationLoop, this->_semFramebuffer[i]);
+			this->_semFramebuffer[i] = 0;
 		}
 	}
 }
 
-- (u8) selectBufferIndex:(const u8)currentIndex pageCount:(size_t)pageCount
+uint8_t MacGPUFetchObjectAsync::SelectBufferIndex(const uint8_t currentIndex, size_t pageCount)
 {
-	u8 selectedIndex = currentIndex;
+	uint8_t selectedIndex = currentIndex;
 	bool stillSearching = true;
 	
 	// First, search for an idle buffer along with its corresponding semaphore.
@@ -1277,7 +1205,7 @@ public:
 		selectedIndex = (selectedIndex + 1) % pageCount;
 		for (; selectedIndex != currentIndex; selectedIndex = (selectedIndex + 1) % pageCount)
 		{
-			if ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Idle)
+			if (this->FramebufferStateAtIndex(selectedIndex) == ClientDisplayBufferState_Idle)
 			{
 				stillSearching = false;
 				break;
@@ -1291,8 +1219,8 @@ public:
 		selectedIndex = (selectedIndex + 1) % pageCount;
 		for (size_t spin = 0; spin < 100ULL * pageCount; selectedIndex = (selectedIndex + 1) % pageCount, spin++)
 		{
-			if ( ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Idle) ||
-				(([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Ready) && (selectedIndex != currentIndex)) )
+			if ( (this->FramebufferStateAtIndex(selectedIndex) == ClientDisplayBufferState_Idle) ||
+				((this->FramebufferStateAtIndex(selectedIndex) == ClientDisplayBufferState_Ready) && (selectedIndex != currentIndex)) )
 			{
 				stillSearching = false;
 				break;
@@ -1308,7 +1236,7 @@ public:
 		selectedIndex = (selectedIndex + 1) % pageCount;
 		for (size_t spin = 0; spin < 10000ULL * pageCount; selectedIndex = (selectedIndex + 1) % pageCount, spin++)
 		{
-			if ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Idle)
+			if (this->FramebufferStateAtIndex(selectedIndex) == ClientDisplayBufferState_Idle)
 			{
 				stillSearching = false;
 				break;
@@ -1324,9 +1252,9 @@ public:
 		selectedIndex = (selectedIndex + 1) % pageCount;
 		for (; selectedIndex != currentIndex; selectedIndex = (selectedIndex + 1) % pageCount)
 		{
-			if ( ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Idle) ||
-				 ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Ready) ||
-				 ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Reading) )
+			if ( (this->FramebufferStateAtIndex(selectedIndex) == ClientDisplayBufferState_Idle) ||
+				 (this->FramebufferStateAtIndex(selectedIndex) == ClientDisplayBufferState_Ready) ||
+				 (this->FramebufferStateAtIndex(selectedIndex) == ClientDisplayBufferState_Reading) )
 			{
 				stillSearching = false;
 				break;
@@ -1337,69 +1265,211 @@ public:
 	return selectedIndex;
 }
 
-- (semaphore_t) semaphoreFramebufferPageAtIndex:(const u8)bufferIndex
+semaphore_t MacGPUFetchObjectAsync::SemaphoreFramebufferPageAtIndex(const u8 bufferIndex)
 {
 	assert(bufferIndex < MAX_FRAMEBUFFER_PAGES);
-	return _semFramebuffer[bufferIndex];
+	return this->_semFramebuffer[bufferIndex];
 }
 
-- (ClientDisplayBufferState) framebufferStateAtIndex:(uint8_t)index
+ClientDisplayBufferState MacGPUFetchObjectAsync::FramebufferStateAtIndex(uint8_t index)
 {
-	apple_unfairlock_lock(_unfairlockFramebufferStates[index]);
-	const ClientDisplayBufferState bufferState = _framebufferState[index];
-	apple_unfairlock_unlock(_unfairlockFramebufferStates[index]);
+	apple_unfairlock_lock(this->_unfairlockFramebufferStates[index]);
+	const ClientDisplayBufferState bufferState = this->_framebufferState[index];
+	apple_unfairlock_unlock(this->_unfairlockFramebufferStates[index]);
 	
 	return bufferState;
 }
 
-- (void) setFramebufferState:(ClientDisplayBufferState)bufferState index:(uint8_t)index
+void MacGPUFetchObjectAsync::SetFramebufferState(ClientDisplayBufferState bufferState, uint8_t index)
 {
-	apple_unfairlock_lock(_unfairlockFramebufferStates[index]);
-	_framebufferState[index] = bufferState;
-	apple_unfairlock_unlock(_unfairlockFramebufferStates[index]);
+	apple_unfairlock_lock(this->_unfairlockFramebufferStates[index]);
+	this->_framebufferState[index] = bufferState;
+	apple_unfairlock_unlock(this->_unfairlockFramebufferStates[index]);
 }
 
-- (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock
+void MacGPUFetchObjectAsync::FetchSynchronousAtIndex(uint8_t index)
 {
-	pthread_rwlock_t *currentRWLock = _rwlockOutputList;
+	this->FetchFromBufferIndex(index);
+}
+
+void MacGPUFetchObjectAsync::SignalFetchAtIndex(uint8_t index, int32_t messageID)
+{
+	pthread_mutex_lock(&this->_mutexFetchExecute);
+	
+	this->_fetchIndex = index;
+	this->_threadMessageID = messageID;
+	pthread_cond_signal(&this->_condSignalFetch);
+	
+	pthread_mutex_unlock(&this->_mutexFetchExecute);
+}
+
+void MacGPUFetchObjectAsync::RunFetchLoop()
+{
+	NSAutoreleasePool *tempPool = nil;
+	pthread_mutex_lock(&this->_mutexFetchExecute);
+	
+	do
+	{
+		tempPool = [[NSAutoreleasePool alloc] init];
+		
+		while (this->_threadMessageID == MESSAGE_NONE)
+		{
+			pthread_cond_wait(&this->_condSignalFetch, &this->_mutexFetchExecute);
+		}
+		
+		this->FetchFromBufferIndex(this->_fetchIndex);
+		this->DoPostFetchActions();
+		this->_threadMessageID = MESSAGE_NONE;
+		
+		[tempPool release];
+	} while(true);
+}
+
+void MacGPUFetchObjectAsync::DoPostFetchActions()
+{
+	// Do nothing.
+}
+
+#pragma mark -
+
+static void ScreenChangeCallback(CFNotificationCenterRef center,
+                                 void *observer,
+                                 CFStringRef name,
+                                 const void *object,
+                                 CFDictionaryRef userInfo)
+{
+	((MacGPUFetchObjectDisplayLink *)observer)->DisplayLinkListUpdate();
+}
+
+static CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
+                                       const CVTimeStamp *inNow,
+                                       const CVTimeStamp *inOutputTime,
+                                       CVOptionFlags flagsIn,
+                                       CVOptionFlags *flagsOut,
+                                       void *displayLinkContext)
+{
+	MacGPUFetchObjectDisplayLink *fetchObj = (MacGPUFetchObjectDisplayLink *)displayLinkContext;
+	
+	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
+	fetchObj->FlushAllDisplaysOnDisplayLink(displayLink, inNow, inOutputTime);
+	[tempPool release];
+	
+	return kCVReturnSuccess;
+}
+
+MacGPUFetchObjectDisplayLink::MacGPUFetchObjectDisplayLink()
+{
+	_id = GPUClientFetchObjectID_GenericDisplayLink;
+	
+	memset(_name, 0, sizeof(_name));
+	strncpy(_name, "Generic Mac Display Link Video", sizeof(_name) - 1);
+	
+	memset(_description, 0, sizeof(_description));
+	strncpy(_description, "No description.", sizeof(_description) - 1);
+	
+	pthread_mutex_init(&_mutexDisplayLinkLists, NULL);
+	
+	_rwlockOutputList = NULL;
+	_cdsOutputList = nil;
+	_numberViewsUsingDirectToCPUFiltering = 0;
+	
+	_displayLinksActiveList.clear();
+	_displayLinkFlushTimeList.clear();
+	DisplayLinkListUpdate();
+	
+    CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(),
+									this,
+									ScreenChangeCallback,
+                                    CFSTR("NSApplicationDidChangeScreenParametersNotification"),
+									NULL,
+                                    CFNotificationSuspensionBehaviorDeliverImmediately);
+}
+
+MacGPUFetchObjectDisplayLink::~MacGPUFetchObjectDisplayLink()
+{
+	pthread_mutex_lock(&this->_mutexDisplayLinkLists);
+	
+	while (this->_displayLinksActiveList.size() > 0)
+	{
+		DisplayLinksActiveMap::iterator it = this->_displayLinksActiveList.begin();
+		CGDirectDisplayID displayID = it->first;
+		CVDisplayLinkRef displayLinkRef = it->second;
+		
+		if (CVDisplayLinkIsRunning(displayLinkRef))
+		{
+			CVDisplayLinkStop(displayLinkRef);
+		}
+		
+		CVDisplayLinkRelease(displayLinkRef);
+		
+		this->_displayLinksActiveList.erase(displayID);
+		this->_displayLinkFlushTimeList.erase(displayID);
+	}
+	
+	pthread_mutex_unlock(&this->_mutexDisplayLinkLists);
+	pthread_mutex_destroy(&this->_mutexDisplayLinkLists);
+	
+	pthread_rwlock_t *currentRWLock = this->_rwlockOutputList;
 	
 	if (currentRWLock != NULL)
 	{
 		pthread_rwlock_wrlock(currentRWLock);
 	}
 	
-	[_cdsOutputList release];
-	_cdsOutputList = theOutputList;
-	[_cdsOutputList retain];
+	[this->_cdsOutputList release];
+	
+	if (currentRWLock != NULL)
+	{
+		pthread_rwlock_unlock(currentRWLock);
+	}
+}
+
+volatile int32_t MacGPUFetchObjectDisplayLink::GetNumberViewsUsingDirectToCPUFiltering() const
+{
+	return this->_numberViewsUsingDirectToCPUFiltering;
+}
+
+void MacGPUFetchObjectDisplayLink::SetOutputList(NSMutableArray *theOutputList, pthread_rwlock_t *theRWLock)
+{
+	pthread_rwlock_t *currentRWLock = this->_rwlockOutputList;
+	
+	if (currentRWLock != NULL)
+	{
+		pthread_rwlock_wrlock(currentRWLock);
+	}
+	
+	[this->_cdsOutputList release];
+	this->_cdsOutputList = theOutputList;
+	[this->_cdsOutputList retain];
 	
 	if (currentRWLock != NULL)
 	{
 		pthread_rwlock_unlock(currentRWLock);
 	}
 	
-	_rwlockOutputList = theRWLock;
+	this->_rwlockOutputList = theRWLock;
 }
 
-- (void) incrementViewsUsingDirectToCPUFiltering
+void MacGPUFetchObjectDisplayLink::IncrementViewsUsingDirectToCPUFiltering()
 {
-	atomic_inc_32(&numberViewsUsingDirectToCPUFiltering);
+	atomic_inc_32(&this->_numberViewsUsingDirectToCPUFiltering);
 }
 
-- (void) decrementViewsUsingDirectToCPUFiltering
+void MacGPUFetchObjectDisplayLink::DecrementViewsUsingDirectToCPUFiltering()
 {
-	atomic_dec_32(&numberViewsUsingDirectToCPUFiltering);
+	atomic_dec_32(&this->_numberViewsUsingDirectToCPUFiltering);
 }
 
-- (void) pushVideoDataToAllDisplayViews
+void MacGPUFetchObjectDisplayLink::PushVideoDataToAllDisplayViews()
 {
-	pthread_rwlock_t *currentRWLock = _rwlockOutputList;
+	pthread_rwlock_t *currentRWLock = this->_rwlockOutputList;
 	
 	if (currentRWLock != NULL)
 	{
 		pthread_rwlock_rdlock(currentRWLock);
 	}
 	
-	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
+	for (CocoaDSOutput *cdsOutput in this->_cdsOutputList)
 	{
 		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
 		{
@@ -1413,9 +1483,95 @@ public:
 	}
 }
 
-- (void) flushAllDisplaysOnDisplayLink:(CVDisplayLinkRef)displayLink timeStampNow:(const CVTimeStamp *)timeStampNow timeStampOutput:(const CVTimeStamp *)timeStampOutput
+void MacGPUFetchObjectDisplayLink::DisplayLinkStartUsingID(CGDirectDisplayID displayID)
 {
-	pthread_rwlock_t *currentRWLock = _rwlockOutputList;
+	CVDisplayLinkRef displayLink = NULL;
+	
+	pthread_mutex_lock(&this->_mutexDisplayLinkLists);
+	
+	if (this->_displayLinksActiveList.find(displayID) != this->_displayLinksActiveList.end())
+	{
+		displayLink = this->_displayLinksActiveList[displayID];
+	}
+	
+	if ( (displayLink != NULL) && !CVDisplayLinkIsRunning(displayLink) )
+	{
+		CVDisplayLinkStart(displayLink);
+	}
+	
+	pthread_mutex_unlock(&this->_mutexDisplayLinkLists);
+}
+
+void MacGPUFetchObjectDisplayLink::DisplayLinkListUpdate()
+{
+	// Set up the display links
+	NSArray *screenList = [NSScreen screens];
+	std::set<CGDirectDisplayID> screenActiveDisplayIDsList;
+	
+	pthread_mutex_lock(&this->_mutexDisplayLinkLists);
+	
+	// Add new CGDirectDisplayIDs for new screens
+	for (size_t i = 0; i < [screenList count]; i++)
+	{
+		NSScreen *screen = [screenList objectAtIndex:i];
+		NSDictionary *deviceDescription = [screen deviceDescription];
+		NSNumber *idNumber = (NSNumber *)[deviceDescription valueForKey:@"NSScreenNumber"];
+		
+		CGDirectDisplayID displayID = [idNumber unsignedIntValue];
+		bool isDisplayLinkStillActive = (this->_displayLinksActiveList.find(displayID) != this->_displayLinksActiveList.end());
+		
+		if (!isDisplayLinkStillActive)
+		{
+			CVDisplayLinkRef newDisplayLink;
+			CVDisplayLinkCreateWithCGDisplay(displayID, &newDisplayLink);
+			CVDisplayLinkSetOutputCallback(newDisplayLink, &MacDisplayLinkCallback, this);
+			
+			this->_displayLinksActiveList[displayID] = newDisplayLink;
+			this->_displayLinkFlushTimeList[displayID] = 0;
+		}
+		
+		// While we're iterating through NSScreens, save the CGDirectDisplayID to a temporary list for later use.
+		screenActiveDisplayIDsList.insert(displayID);
+	}
+	
+	// Remove old CGDirectDisplayIDs for screens that no longer exist
+	for (DisplayLinksActiveMap::iterator it = this->_displayLinksActiveList.begin(); it != this->_displayLinksActiveList.end(); )
+	{
+		CGDirectDisplayID displayID = it->first;
+		CVDisplayLinkRef displayLinkRef = it->second;
+		
+		if (screenActiveDisplayIDsList.find(displayID) == screenActiveDisplayIDsList.end())
+		{
+			if (CVDisplayLinkIsRunning(displayLinkRef))
+			{
+				CVDisplayLinkStop(displayLinkRef);
+			}
+			
+			CVDisplayLinkRelease(displayLinkRef);
+			
+			this->_displayLinksActiveList.erase(displayID);
+			this->_displayLinkFlushTimeList.erase(displayID);
+			
+			if (this->_displayLinksActiveList.empty())
+			{
+				break;
+			}
+			else
+			{
+				it = this->_displayLinksActiveList.begin();
+				continue;
+			}
+		}
+		
+		++it;
+	}
+	
+	pthread_mutex_unlock(&this->_mutexDisplayLinkLists);
+}
+
+void MacGPUFetchObjectDisplayLink::FlushAllDisplaysOnDisplayLink(CVDisplayLinkRef displayLink, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput)
+{
+	pthread_rwlock_t *currentRWLock = this->_rwlockOutputList;
 	CGDirectDisplayID displayID = CVDisplayLinkGetCurrentCGDisplay(displayLink);
 	bool didFlushOccur = false;
 	
@@ -1426,7 +1582,7 @@ public:
 		pthread_rwlock_rdlock(currentRWLock);
 	}
 	
-	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
+	for (CocoaDSOutput *cdsOutput in this->_cdsOutputList)
 	{
 		if ([cdsOutput isKindOfClass:[CocoaDSDisplayVideo class]])
 		{
@@ -1446,7 +1602,7 @@ public:
 	
 	if (listSize > 0)
 	{
-		[self flushMultipleViews:cdvFlushList timeStampNow:timeStampNow timeStampOutput:timeStampOutput];
+		this->FlushMultipleViews(cdvFlushList, timeStampNow, timeStampOutput);
 		didFlushOccur = true;
 	}
 	
@@ -1458,15 +1614,15 @@ public:
 	if (didFlushOccur)
 	{
 		// Set the new time limit to 8 seconds after the current time.
-		_displayLinkFlushTimeList[displayID] = timeStampNow->videoTime + (timeStampNow->videoTimeScale * VIDEO_FLUSH_TIME_LIMIT_OFFSET);
+		this->_displayLinkFlushTimeList[displayID] = timeStampNow->videoTime + (timeStampNow->videoTimeScale * VIDEO_FLUSH_TIME_LIMIT_OFFSET);
 	}
-	else if (timeStampNow->videoTime > _displayLinkFlushTimeList[displayID])
+	else if (timeStampNow->videoTime > this->_displayLinkFlushTimeList[displayID])
 	{
 		CVDisplayLinkStop(displayLink);
 	}
 }
 
-- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList timeStampNow:(const CVTimeStamp *)timeStampNow timeStampOutput:(const CVTimeStamp *)timeStampOutput
+void MacGPUFetchObjectDisplayLink::FlushMultipleViews(const std::vector<ClientDisplay3DView *> &cdvFlushList, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput)
 {
 	const size_t listSize = cdvFlushList.size();
 	
@@ -1483,139 +1639,12 @@ public:
 	}
 }
 
-- (void) displayLinkStartUsingID:(CGDirectDisplayID)displayID
+void MacGPUFetchObjectDisplayLink::DoPostFetchActions()
 {
-	CVDisplayLinkRef displayLink = NULL;
-	
-	pthread_mutex_lock(&_mutexDisplayLinkLists);
-	
-	if (_displayLinksActiveList.find(displayID) != _displayLinksActiveList.end())
-	{
-		displayLink = _displayLinksActiveList[displayID];
-	}
-	
-	if ( (displayLink != NULL) && !CVDisplayLinkIsRunning(displayLink) )
-	{
-		CVDisplayLinkStart(displayLink);
-	}
-	
-	pthread_mutex_unlock(&_mutexDisplayLinkLists);
+	this->PushVideoDataToAllDisplayViews();
 }
 
-- (void) displayLinkListUpdate
-{
-	// Set up the display links
-	NSArray *screenList = [NSScreen screens];
-	std::set<CGDirectDisplayID> screenActiveDisplayIDsList;
-	
-	pthread_mutex_lock(&_mutexDisplayLinkLists);
-	
-	// Add new CGDirectDisplayIDs for new screens
-	for (size_t i = 0; i < [screenList count]; i++)
-	{
-		NSScreen *screen = [screenList objectAtIndex:i];
-		NSDictionary *deviceDescription = [screen deviceDescription];
-		NSNumber *idNumber = (NSNumber *)[deviceDescription valueForKey:@"NSScreenNumber"];
-		
-		CGDirectDisplayID displayID = [idNumber unsignedIntValue];
-		bool isDisplayLinkStillActive = (_displayLinksActiveList.find(displayID) != _displayLinksActiveList.end());
-		
-		if (!isDisplayLinkStillActive)
-		{
-			CVDisplayLinkRef newDisplayLink;
-			CVDisplayLinkCreateWithCGDisplay(displayID, &newDisplayLink);
-			CVDisplayLinkSetOutputCallback(newDisplayLink, &MacDisplayLinkCallback, self);
-			
-			_displayLinksActiveList[displayID] = newDisplayLink;
-			_displayLinkFlushTimeList[displayID] = 0;
-		}
-		
-		// While we're iterating through NSScreens, save the CGDirectDisplayID to a temporary list for later use.
-		screenActiveDisplayIDsList.insert(displayID);
-	}
-	
-	// Remove old CGDirectDisplayIDs for screens that no longer exist
-	for (DisplayLinksActiveMap::iterator it = _displayLinksActiveList.begin(); it != _displayLinksActiveList.end(); )
-	{
-		CGDirectDisplayID displayID = it->first;
-		CVDisplayLinkRef displayLinkRef = it->second;
-		
-		if (screenActiveDisplayIDsList.find(displayID) == screenActiveDisplayIDsList.end())
-		{
-			if (CVDisplayLinkIsRunning(displayLinkRef))
-			{
-				CVDisplayLinkStop(displayLinkRef);
-			}
-			
-			CVDisplayLinkRelease(displayLinkRef);
-			
-			_displayLinksActiveList.erase(displayID);
-			_displayLinkFlushTimeList.erase(displayID);
-			
-			if (_displayLinksActiveList.empty())
-			{
-				break;
-			}
-			else
-			{
-				it = _displayLinksActiveList.begin();
-				continue;
-			}
-		}
-		
-		++it;
-	}
-	
-	pthread_mutex_unlock(&_mutexDisplayLinkLists);
-}
-
-- (void) fetchSynchronousAtIndex:(uint8_t)index
-{
-	GPUFetchObject->FetchFromBufferIndex(index);
-}
-
-- (void) signalFetchAtIndex:(uint8_t)index message:(int32_t)messageID
-{
-	pthread_mutex_lock(&_mutexFetchExecute);
-	
-	_fetchIndex = index;
-	_threadMessageID = messageID;
-	pthread_cond_signal(&_condSignalFetch);
-	
-	pthread_mutex_unlock(&_mutexFetchExecute);
-}
-
-- (void) runFetchLoop
-{
-	NSAutoreleasePool *tempPool = nil;
-	pthread_mutex_lock(&_mutexFetchExecute);
-	
-	do
-	{
-		tempPool = [[NSAutoreleasePool alloc] init];
-		
-		while (_threadMessageID == MESSAGE_NONE)
-		{
-			pthread_cond_wait(&_condSignalFetch, &_mutexFetchExecute);
-		}
-		
-		GPUFetchObject->FetchFromBufferIndex(_fetchIndex);
-		[self pushVideoDataToAllDisplayViews];
-		_threadMessageID = MESSAGE_NONE;
-		
-		[tempPool release];
-		
-	} while(true);
-}
-
-- (void) respondToScreenChange:(NSNotification *)aNotification
-{
-	[self displayLinkListUpdate];
-}
-
-@end
-
-#endif
+#endif // ENABLE_SHARED_FETCH_OBJECT
 
 #pragma mark -
 
@@ -1652,47 +1681,46 @@ void GPUEventHandlerOSX::SetFetchObject(GPUClientFetchObject *fetchObject)
 	this->_fetchObject = fetchObject;
 }
 
+#ifdef ENABLE_ASYNC_FETCH
+
 void GPUEventHandlerOSX::DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut)
 {
+	MacGPUFetchObjectAsync *asyncFetchObj = (MacGPUFetchObjectAsync *)this->_fetchObject;
+	
 	this->FramebufferLock();
 	
-#ifdef ENABLE_SHARED_FETCH_OBJECT
 	if (!isFrameSkipRequested)
 	{
-		MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_fetchObject->GetClientData();
-		
 		if ( (pageCount > 1) && (line == 0) )
 		{
-			selectedBufferIndexInOut = [sharedViewObject selectBufferIndex:selectedBufferIndexInOut pageCount:pageCount];
+			selectedBufferIndexInOut = asyncFetchObj->SelectBufferIndex(selectedBufferIndexInOut, pageCount);
 		}
 		
-		semaphore_wait([sharedViewObject semaphoreFramebufferPageAtIndex:selectedBufferIndexInOut]);
-		[sharedViewObject setFramebufferState:ClientDisplayBufferState_Writing index:selectedBufferIndexInOut];
+		semaphore_wait( asyncFetchObj->SemaphoreFramebufferPageAtIndex(selectedBufferIndexInOut) );
+		asyncFetchObj->SetFramebufferState(ClientDisplayBufferState_Writing, selectedBufferIndexInOut);
 	}
-#endif
 }
 
 void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo)
 {
-#ifdef ENABLE_SHARED_FETCH_OBJECT
-	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_fetchObject->GetClientData();
+	MacGPUFetchObjectAsync *asyncFetchObj = (MacGPUFetchObjectAsync *)this->_fetchObject;
+	
 	if (!isFrameSkipped)
 	{
-		this->_fetchObject->SetFetchDisplayInfo(latestDisplayInfo);
-		[sharedViewObject setFramebufferState:ClientDisplayBufferState_Ready index:latestDisplayInfo.bufferIndex];
-		semaphore_signal([sharedViewObject semaphoreFramebufferPageAtIndex:latestDisplayInfo.bufferIndex]);
+		asyncFetchObj->SetFetchDisplayInfo(latestDisplayInfo);
+		asyncFetchObj->SetFramebufferState(ClientDisplayBufferState_Ready, latestDisplayInfo.bufferIndex);
+		semaphore_signal( asyncFetchObj->SemaphoreFramebufferPageAtIndex(latestDisplayInfo.bufferIndex) );
 	}
-#endif
 	
 	this->FramebufferUnlock();
 	
-#ifdef ENABLE_SHARED_FETCH_OBJECT
 	if (!isFrameSkipped)
 	{
-		[sharedViewObject signalFetchAtIndex:latestDisplayInfo.bufferIndex message:MESSAGE_FETCH_AND_PUSH_VIDEO];
+		asyncFetchObj->SignalFetchAtIndex(latestDisplayInfo.bufferIndex, MESSAGE_FETCH_AND_PUSH_VIDEO);
 	}
-#endif
 }
+
+#endif // ENABLE_ASYNC_FETCH
 
 void GPUEventHandlerOSX::DidRender3DBegin()
 {
@@ -1775,41 +1803,6 @@ bool GPUEventHandlerOSX::GetRender3DNeedsFinish()
 
 CGLContextObj OSXOpenGLRendererContext = NULL;
 SILENCE_DEPRECATION_MACOS_10_7( CGLPBufferObj OSXOpenGLRendererPBuffer = NULL );
-
-#ifdef ENABLE_SHARED_FETCH_OBJECT
-
-static void* RunFetchThread(void *arg)
-{
-#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
-	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6)
-	{
-		pthread_setname_np("Video Fetch");
-	}
-#endif
-	
-	MacClientSharedObject *sharedData = (MacClientSharedObject *)arg;
-	[sharedData runFetchLoop];
-	
-	return NULL;
-}
-
-CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
-								const CVTimeStamp *inNow,
-								const CVTimeStamp *inOutputTime,
-								CVOptionFlags flagsIn,
-								CVOptionFlags *flagsOut,
-								void *displayLinkContext)
-{
-	MacClientSharedObject *sharedData = (MacClientSharedObject *)displayLinkContext;
-	
-	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
-	[sharedData flushAllDisplaysOnDisplayLink:displayLink timeStampNow:inNow timeStampOutput:inOutputTime];
-	[tempPool release];
-	
-	return kCVReturnSuccess;
-}
-
-#endif
 
 bool OSXOpenGLRendererInit()
 {

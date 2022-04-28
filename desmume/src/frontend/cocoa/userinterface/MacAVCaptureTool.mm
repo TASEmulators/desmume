@@ -1242,20 +1242,16 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 
 - (void) setVideoSizeUsingEmulatorSettings
 {
+	GPUClientFetchObject *currentFetchObj = [self fetchObject];
+	
 	// Do a few sanity checks before proceeding.
-	if ([self sharedData] == nil)
+	if (currentFetchObj == NULL)
 	{
 		return;
 	}
 	
-	GPUClientFetchObject *fetchObject = [[self sharedData] GPUFetchObject];
-	if (fetchObject == NULL)
-	{
-		return;
-	}
-	
-	const u8 lastBufferIndex = fetchObject->GetLastFetchIndex();
-	const NDSDisplayInfo &displayInfo = fetchObject->GetFetchDisplayInfoForBufferIndex(lastBufferIndex);
+	const u8 lastBufferIndex = currentFetchObj->GetLastFetchIndex();
+	const NDSDisplayInfo &displayInfo = currentFetchObj->GetFetchDisplayInfoForBufferIndex(lastBufferIndex);
 	
 	double normalWidth = 0.0;
 	double normalHeight = 0.0;
@@ -1308,6 +1304,8 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 
 - (void) openFileStream
 {
+	GPUClientFetchObject *currentFetchObj = [self fetchObject];
+	
 	// One final check for the video size if we're using the emulator settings.
 	if (videoSizeOption == VideoSizeOption_UseEmulatorSettings)
 	{
@@ -1315,13 +1313,7 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	}
 	
 	// Do a few sanity checks before proceeding.
-	if ([self sharedData] == nil)
-	{
-		return;
-	}
-	
-	GPUClientFetchObject *fetchObject = [[self sharedData] GPUFetchObject];
-	if (fetchObject == NULL)
+	if (currentFetchObj == NULL)
 	{
 		return;
 	}
@@ -1356,7 +1348,7 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	// Set up the rendering properties.
 	MacCaptureToolParams param;
 	param.refObject					= newCaptureObject;
-	param.sharedData				= [self sharedData];
+	param.fetchObject				= currentFetchObj;
 	param.formatID					= [self formatID];
 	param.savePath					= std::string([savePath cStringUsingEncoding:NSUTF8StringEncoding]);
 	param.romName					= std::string([romName cStringUsingEncoding:NSUTF8StringEncoding]);
@@ -1372,8 +1364,8 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	param.cdpProperty.clientWidth	= [self videoWidth];
 	param.cdpProperty.clientHeight	= [self videoHeight];
 	
-	const u8 lastBufferIndex = fetchObject->GetLastFetchIndex();
-	const NDSDisplayInfo &displayInfo = fetchObject->GetFetchDisplayInfoForBufferIndex(lastBufferIndex);
+	const u8 lastBufferIndex = currentFetchObj->GetLastFetchIndex();
+	const NDSDisplayInfo &displayInfo = currentFetchObj->GetFetchDisplayInfoForBufferIndex(lastBufferIndex);
 	
 	if ( (displayInfo.renderedWidth[NDSDisplayID_Main]  == 0) || (displayInfo.renderedHeight[NDSDisplayID_Main]  == 0) ||
 	     (displayInfo.renderedWidth[NDSDisplayID_Touch] == 0) || (displayInfo.renderedHeight[NDSDisplayID_Touch] == 0) )

@@ -707,8 +707,8 @@
 {
 	id<MTLCommandBuffer> cb = [_fetchCommandQueue commandBufferWithUnretainedReferences];
 	
-	semaphore_wait([self semaphoreFramebufferPageAtIndex:index]);
-	[self setFramebufferState:ClientDisplayBufferState_Reading index:index];
+	semaphore_wait( GPUFetchObject->SemaphoreFramebufferPageAtIndex(index) );
+	GPUFetchObject->SetFramebufferState(ClientDisplayBufferState_Reading, index);
 	
 	id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
 	[self setBceFetch:bce];
@@ -726,8 +726,8 @@
 		[oldTexPair.main  release];
 		[oldTexPair.touch release];
 		
-		[self setFramebufferState:ClientDisplayBufferState_Idle index:index];
-		semaphore_signal([self semaphoreFramebufferPageAtIndex:index]);
+		GPUFetchObject->SetFramebufferState(ClientDisplayBufferState_Idle, index);
+		semaphore_signal( GPUFetchObject->SemaphoreFramebufferPageAtIndex(index) );
 	}];
 	
 	[cb commit];
@@ -2473,6 +2473,7 @@ MacMetalFetchObject::MacMetalFetchObject()
 	
 	if (_clientData != nil)
 	{
+		_id = GPUClientFetchObjectID_MacMetal;
 		strlcpy(_name, [[(MetalDisplayViewSharedData *)_clientData name] cStringUsingEncoding:NSUTF8StringEncoding], sizeof(_name) - 1);
 		strlcpy(_description, [[(MetalDisplayViewSharedData *)_clientData description] cStringUsingEncoding:NSUTF8StringEncoding], sizeof(_description) - 1);
 	}
@@ -2505,6 +2506,7 @@ MacMetalFetchObject::~MacMetalFetchObject()
 void MacMetalFetchObject::Init()
 {
 	[(MacClientSharedObject *)this->_clientData setGPUFetchObject:this];
+	this->MacGPUFetchObjectAsync::Init();
 }
 
 void MacMetalFetchObject::CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex)
@@ -2522,8 +2524,7 @@ void MacMetalFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDisplayIn
 
 void MacMetalFetchObject::FetchFromBufferIndex(const u8 index)
 {
-	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_clientData;
-	this->_useDirectToCPUFilterPipeline = ([sharedViewObject numberViewsUsingDirectToCPUFiltering] > 0);
+	this->_useDirectToCPUFilterPipeline = (this->GetNumberViewsUsingDirectToCPUFiltering() > 0);
 	
 	[(MetalDisplayViewSharedData *)this->_clientData fetchFromBufferIndex:index];
 }
@@ -2554,6 +2555,11 @@ void MacMetalFetchObject::_FetchCustomDisplayByID(const NDSDisplayID displayID, 
 	}
 	
 	[(MetalDisplayViewSharedData *)this->_clientData fetchCustomDisplayByID:displayID bufferIndex:bufferIndex blitCommandEncoder:[(MetalDisplayViewSharedData *)this->_clientData bceFetch]];
+}
+
+void MacMetalFetchObject::FlushMultipleViews(const std::vector<ClientDisplay3DView *> &cdvFlushList, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput)
+{
+	[(MetalDisplayViewSharedData *)this->_clientData flushMultipleViews:cdvFlushList timeStampNow:timeStampNow timeStampOutput:timeStampOutput];
 }
 
 #pragma mark -
@@ -2818,8 +2824,8 @@ void MacMetalDisplayView::SetViewNeedsFlush()
 void MacMetalDisplayView::SetAllowViewFlushes(bool allowFlushes)
 {
 	CGDirectDisplayID displayID = (CGDirectDisplayID)this->GetDisplayViewID();
-	MacClientSharedObject *sharedData = ((MacMetalDisplayPresenter *)this->_presenter)->GetSharedData();
-	[sharedData displayLinkStartUsingID:displayID];
+	MacGPUFetchObjectDisplayLink &fetchObj = (MacGPUFetchObjectDisplayLink &)this->_presenter->GetFetchObject();
+	fetchObj.DisplayLinkStartUsingID(displayID);
 }
 
 void MacMetalDisplayView::FlushView(void *userData)

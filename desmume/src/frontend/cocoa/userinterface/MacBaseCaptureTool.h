@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2018-2021 DeSmuME team
+	Copyright (C) 2018-2022 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 #undef BOOL
 #endif
 
-@class MacClientSharedObject;
+class GPUClientFetchObject;
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface MacBaseCaptureToolDelegate : NSObject <NSWindowDelegate, DirectoryURLDragDestTextFieldProtocol>
@@ -40,7 +40,7 @@
 	NSWindow *window;
 	DirectoryURLDragDestTextField *saveDirectoryPathTextField;
 	
-	MacClientSharedObject *sharedData;
+	GPUClientFetchObject *fetchObject;
 	
 	NSString *saveDirectoryPath;
 	NSString *romName;
@@ -60,7 +60,7 @@
 @property (readonly) IBOutlet NSWindow *window;
 @property (readonly) IBOutlet DirectoryURLDragDestTextField *saveDirectoryPathTextField;
 
-@property (retain) MacClientSharedObject *sharedData;
+@property (assign) GPUClientFetchObject *fetchObject;
 
 @property (copy) NSString *saveDirectoryPath;
 @property (copy) NSString *romName;
@@ -84,7 +84,7 @@ class MacCaptureToolParams
 {
 public:
 	void *refObject;
-	MacClientSharedObject *sharedData;
+	GPUClientFetchObject *fetchObject;
 	
 	NSUInteger formatID;
 	std::string savePath;

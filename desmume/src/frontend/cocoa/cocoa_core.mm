@@ -188,7 +188,7 @@ volatile bool execute = true;
 	
 	[self removeAllOutputs];
 	
-	[[cdsGPU sharedData] semaphoreFramebufferDestroy];
+	((MacGPUFetchObjectAsync *)[cdsGPU fetchObject])->SemaphoreFramebufferDestroy();
 	
 	[self setCdsFirmware:nil];
 	
@@ -1179,7 +1179,7 @@ static void* RunCoreThread(void *arg)
 	ExecutionBehavior lastBehavior = ExecutionBehavior_Pause;
 	uint64_t frameJumpTarget = 0;
 	
-	[[cdsGPU sharedData] semaphoreFramebufferCreate];
+	((MacGPUFetchObjectAsync *)[cdsGPU fetchObject])->SemaphoreFramebufferCreate();
 	
 	do
 	{

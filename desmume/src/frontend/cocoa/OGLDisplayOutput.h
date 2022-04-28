@@ -338,7 +338,7 @@ public:
 	virtual void RenderOGL(bool isRenderingFlipped);
 };
 
-class OGLClientFetchObject : public GPUClientFetchObject
+class OGLClientSharedData
 {
 protected:
 	OGLContextInfo *_contextInfo;
@@ -360,14 +360,19 @@ protected:
 	pthread_rwlock_t _texFetchRWLock[2];
 	bool _srcCloneNeedsUpdate[2][OPENGL_FETCH_BUFFER_COUNT];
 	
-	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
-	virtual void _FetchCustomDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
-	
 public:
-	OGLClientFetchObject();
-	virtual ~OGLClientFetchObject();
+	OGLClientSharedData();
+	virtual ~OGLClientSharedData();
 	
+	void SetContextInfo(OGLContextInfo *contextInfo);
 	OGLContextInfo* GetContextInfo() const;
+	
+	void SetUseDirectToCPUFilterPipeline(bool willUseDirectCPU);
+	bool UseDirectToCPUFilterPipeline() const;
+	
+	virtual GLuint GetFetchTexture(const NDSDisplayID displayID);
+	virtual void SetFetchTexture(const NDSDisplayID displayID, GLuint texID);
+	
 	uint32_t* GetSrcClone(const NDSDisplayID displayID, const u8 bufferIndex) const;
 	GLuint GetTexNative(const NDSDisplayID displayID, const u8 bufferIndex) const;
 	GLuint GetTexCustom(const NDSDisplayID displayID, const u8 bufferIndex) const;
@@ -380,18 +385,19 @@ public:
 	GLuint GetTexHQ4xLUT() const;
 	
 	void CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex);
-	void FetchNativeDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
-	void FetchCustomDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
+	void FetchNativeDisplayToSrcClone(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
+	void FetchCustomDisplayToSrcClone(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
 	void FetchTextureWriteLock(const NDSDisplayID displayID);
 	void FetchTextureReadLock(const NDSDisplayID displayID);
 	void FetchTextureUnlock(const NDSDisplayID displayID);
 	
-	virtual void Init();
-	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);
-	virtual void FetchFromBufferIndex(const u8 index);
-	
-	virtual GLuint GetFetchTexture(const NDSDisplayID displayID);
-	virtual void SetFetchTexture(const NDSDisplayID displayID, GLuint texID);
+	// OpenGL-specific functions that must be called in response to their
+	// corresponding GPUClientFetchObject methods.
+	void InitOGL();
+	void SetFetchBuffersOGL(const NDSDisplayInfo *displayInfoList, const NDSDisplayInfo &currentDisplayInfo);
+	void FetchFromBufferIndexOGL(const u8 index, const NDSDisplayInfo &currentDisplayInfo);
+	void FetchNativeDisplayByID_OGL(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex);
+	void FetchCustomDisplayByID_OGL(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex);
 };
 
 class OGLVideoOutput : public ClientDisplay3DPresenter
