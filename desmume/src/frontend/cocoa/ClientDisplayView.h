@@ -139,8 +139,8 @@ private:
 	void __InstanceInit(const ClientDisplayPresenterProperties &props);
 	
 protected:
-	ClientDisplayPresenterProperties _renderProperty;
-	ClientDisplayPresenterProperties _stagedProperty;
+	ClientDisplayPresenterProperties _propsPending;
+	ClientDisplayPresenterProperties _propsApplied;
 	GPUClientFetchObject *_fetchObject;
 	
 	bool _useDeposterize;

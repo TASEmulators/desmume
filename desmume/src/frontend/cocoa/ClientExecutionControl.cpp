@@ -1198,72 +1198,84 @@ void ClientExecutionControl::ApplySettingsOnNDSExec()
 	}
 }
 
-void ClientExecutionControl::FetchOutputPostNDSExec()
+void ClientExecutionControl::GenerateNDSFrameInfo(ClientInputHandler *inputHandler, NDSFrameInfo &outInfo)
 {
-	pthread_mutex_lock(&this->_mutexOutputPostNDSExec);
+	outInfo.frameIndex		= currFrameCounter;
+	outInfo.render3DFPS		= GPU->GetFPSRender3D();
+	outInfo.lagFrameCount	= TotalLagFrames;
 	
-	this->_ndsFrameInfo.frameIndex		= currFrameCounter;
-	this->_ndsFrameInfo.render3DFPS		= GPU->GetFPSRender3D();
-	this->_ndsFrameInfo.lagFrameCount	= TotalLagFrames;
-	
-	if ((this->_ndsFrameInfo.frameIndex & 0xF) == 0xF)
+	if ((outInfo.frameIndex & 0xF) == 0xF)
 	{
-		NDS_GetCPULoadAverage(this->_ndsFrameInfo.cpuLoadAvgARM9, this->_ndsFrameInfo.cpuLoadAvgARM7);
+		NDS_GetCPULoadAverage(outInfo.cpuLoadAvgARM9, outInfo.cpuLoadAvgARM7);
 	}
 	
 	char *tempBuffer = (char *)calloc(25, sizeof(char));
 	rtcGetTimeAsString(tempBuffer);
-	this->_ndsFrameInfo.rtcString = tempBuffer;
+	outInfo.rtcString = std::string(tempBuffer);
 	free(tempBuffer);
 	
-	this->_ndsFrameInfo.inputStatesApplied.value              = INPUT_STATES_CLEAR_VALUE;
+	ClientExecutionControl::UpdateNDSFrameInfoInput(inputHandler, outInfo);
+}
+
+void ClientExecutionControl::UpdateNDSFrameInfoInput(ClientInputHandler *inputHandler, NDSFrameInfo &outInfo)
+{
+	outInfo.inputStatesApplied.value              = INPUT_STATES_CLEAR_VALUE;
 	
-	if (this->_inputHandler != NULL)
+	if (inputHandler == NULL)
 	{
-		const ClientInput *appliedInput = this->_inputHandler->GetClientInputsApplied();
-		
-		this->_ndsFrameInfo.inputStatesApplied.A                  = (appliedInput[NDSInputID_A].isPressed)                 ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.B                  = (appliedInput[NDSInputID_B].isPressed)                 ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Select             = (appliedInput[NDSInputID_Select].isPressed)            ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Start              = (appliedInput[NDSInputID_Start].isPressed)             ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Right              = (appliedInput[NDSInputID_Right].isPressed)             ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Left               = (appliedInput[NDSInputID_Left].isPressed)              ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Up                 = (appliedInput[NDSInputID_Up].isPressed)                ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Down               = (appliedInput[NDSInputID_Down].isPressed)              ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.R                  = (appliedInput[NDSInputID_R].isPressed)                 ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.L                  = (appliedInput[NDSInputID_L].isPressed)                 ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.X                  = (appliedInput[NDSInputID_X].isPressed)                 ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Y                  = (appliedInput[NDSInputID_Y].isPressed)                 ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Debug              = (appliedInput[NDSInputID_Debug].isPressed)             ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Touch              = (appliedInput[NDSInputID_Touch].isPressed)             ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Lid                = (appliedInput[NDSInputID_Lid].isPressed)               ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoC             = (appliedInput[NDSInputID_Piano_C].isPressed)           ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoCSharp        = (appliedInput[NDSInputID_Piano_CSharp].isPressed)      ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoD             = (appliedInput[NDSInputID_Piano_D].isPressed)           ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoDSharp        = (appliedInput[NDSInputID_Piano_DSharp].isPressed)      ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoE             = (appliedInput[NDSInputID_Piano_E].isPressed)           ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoF             = (appliedInput[NDSInputID_Piano_F].isPressed)           ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoFSharp        = (appliedInput[NDSInputID_Piano_FSharp].isPressed)      ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoG             = (appliedInput[NDSInputID_Piano_G].isPressed)           ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoGSharp        = (appliedInput[NDSInputID_Piano_GSharp].isPressed)      ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoA             = (appliedInput[NDSInputID_Piano_A].isPressed)           ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoASharp        = (appliedInput[NDSInputID_Piano_ASharp].isPressed)      ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoB             = (appliedInput[NDSInputID_Piano_B].isPressed)           ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.PianoHighC         = (appliedInput[NDSInputID_Piano_HighC].isPressed)       ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.GuitarGripBlue     = (appliedInput[NDSInputID_GuitarGrip_Blue].isPressed)   ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.GuitarGripYellow   = (appliedInput[NDSInputID_GuitarGrip_Yellow].isPressed) ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.GuitarGripRed      = (appliedInput[NDSInputID_GuitarGrip_Red].isPressed)    ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.GuitarGripGreen    = (appliedInput[NDSInputID_GuitarGrip_Green].isPressed)  ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Paddle             = (appliedInput[NDSInputID_Paddle].isPressed)            ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Microphone         = (appliedInput[NDSInputID_Microphone].isPressed)        ? 0 : 1;
-		this->_ndsFrameInfo.inputStatesApplied.Reset              = (appliedInput[NDSInputID_Reset].isPressed)             ? 0 : 1;
-		this->_ndsFrameInfo.touchLocXApplied                      = this->_inputHandler->GetTouchLocXApplied();
-		this->_ndsFrameInfo.touchLocYApplied                      = this->_inputHandler->GetTouchLocYApplied();
-		this->_ndsFrameInfo.touchPressureApplied                  = this->_inputHandler->GetTouchPressureApplied();
-		this->_ndsFrameInfo.paddleValueApplied                    = this->_inputHandler->GetPaddleValueApplied();
-		this->_ndsFrameInfo.paddleAdjustApplied                   = this->_inputHandler->GetPaddleAdjustApplied();
+		// If the passed in input handler is NULL then this method has
+		// the effect of clearing the input states of the NDS frame info.
+		return;
 	}
 	
+	const ClientInput *appliedInput = inputHandler->GetClientInputsApplied();
+	
+	outInfo.inputStatesApplied.A                  = (appliedInput[NDSInputID_A].isPressed)                 ? 0 : 1;
+	outInfo.inputStatesApplied.B                  = (appliedInput[NDSInputID_B].isPressed)                 ? 0 : 1;
+	outInfo.inputStatesApplied.Select             = (appliedInput[NDSInputID_Select].isPressed)            ? 0 : 1;
+	outInfo.inputStatesApplied.Start              = (appliedInput[NDSInputID_Start].isPressed)             ? 0 : 1;
+	outInfo.inputStatesApplied.Right              = (appliedInput[NDSInputID_Right].isPressed)             ? 0 : 1;
+	outInfo.inputStatesApplied.Left               = (appliedInput[NDSInputID_Left].isPressed)              ? 0 : 1;
+	outInfo.inputStatesApplied.Up                 = (appliedInput[NDSInputID_Up].isPressed)                ? 0 : 1;
+	outInfo.inputStatesApplied.Down               = (appliedInput[NDSInputID_Down].isPressed)              ? 0 : 1;
+	outInfo.inputStatesApplied.R                  = (appliedInput[NDSInputID_R].isPressed)                 ? 0 : 1;
+	outInfo.inputStatesApplied.L                  = (appliedInput[NDSInputID_L].isPressed)                 ? 0 : 1;
+	outInfo.inputStatesApplied.X                  = (appliedInput[NDSInputID_X].isPressed)                 ? 0 : 1;
+	outInfo.inputStatesApplied.Y                  = (appliedInput[NDSInputID_Y].isPressed)                 ? 0 : 1;
+	outInfo.inputStatesApplied.Debug              = (appliedInput[NDSInputID_Debug].isPressed)             ? 0 : 1;
+	outInfo.inputStatesApplied.Touch              = (appliedInput[NDSInputID_Touch].isPressed)             ? 0 : 1;
+	outInfo.inputStatesApplied.Lid                = (appliedInput[NDSInputID_Lid].isPressed)               ? 0 : 1;
+	outInfo.inputStatesApplied.PianoC             = (appliedInput[NDSInputID_Piano_C].isPressed)           ? 0 : 1;
+	outInfo.inputStatesApplied.PianoCSharp        = (appliedInput[NDSInputID_Piano_CSharp].isPressed)      ? 0 : 1;
+	outInfo.inputStatesApplied.PianoD             = (appliedInput[NDSInputID_Piano_D].isPressed)           ? 0 : 1;
+	outInfo.inputStatesApplied.PianoDSharp        = (appliedInput[NDSInputID_Piano_DSharp].isPressed)      ? 0 : 1;
+	outInfo.inputStatesApplied.PianoE             = (appliedInput[NDSInputID_Piano_E].isPressed)           ? 0 : 1;
+	outInfo.inputStatesApplied.PianoF             = (appliedInput[NDSInputID_Piano_F].isPressed)           ? 0 : 1;
+	outInfo.inputStatesApplied.PianoFSharp        = (appliedInput[NDSInputID_Piano_FSharp].isPressed)      ? 0 : 1;
+	outInfo.inputStatesApplied.PianoG             = (appliedInput[NDSInputID_Piano_G].isPressed)           ? 0 : 1;
+	outInfo.inputStatesApplied.PianoGSharp        = (appliedInput[NDSInputID_Piano_GSharp].isPressed)      ? 0 : 1;
+	outInfo.inputStatesApplied.PianoA             = (appliedInput[NDSInputID_Piano_A].isPressed)           ? 0 : 1;
+	outInfo.inputStatesApplied.PianoASharp        = (appliedInput[NDSInputID_Piano_ASharp].isPressed)      ? 0 : 1;
+	outInfo.inputStatesApplied.PianoB             = (appliedInput[NDSInputID_Piano_B].isPressed)           ? 0 : 1;
+	outInfo.inputStatesApplied.PianoHighC         = (appliedInput[NDSInputID_Piano_HighC].isPressed)       ? 0 : 1;
+	outInfo.inputStatesApplied.GuitarGripBlue     = (appliedInput[NDSInputID_GuitarGrip_Blue].isPressed)   ? 0 : 1;
+	outInfo.inputStatesApplied.GuitarGripYellow   = (appliedInput[NDSInputID_GuitarGrip_Yellow].isPressed) ? 0 : 1;
+	outInfo.inputStatesApplied.GuitarGripRed      = (appliedInput[NDSInputID_GuitarGrip_Red].isPressed)    ? 0 : 1;
+	outInfo.inputStatesApplied.GuitarGripGreen    = (appliedInput[NDSInputID_GuitarGrip_Green].isPressed)  ? 0 : 1;
+	outInfo.inputStatesApplied.Paddle             = (appliedInput[NDSInputID_Paddle].isPressed)            ? 0 : 1;
+	outInfo.inputStatesApplied.Microphone         = (appliedInput[NDSInputID_Microphone].isPressed)        ? 0 : 1;
+	outInfo.inputStatesApplied.Reset              = (appliedInput[NDSInputID_Reset].isPressed)             ? 0 : 1;
+	outInfo.touchLocXApplied                      = inputHandler->GetTouchLocXApplied();
+	outInfo.touchLocYApplied                      = inputHandler->GetTouchLocYApplied();
+	outInfo.touchPressureApplied                  = inputHandler->GetTouchPressureApplied();
+	outInfo.paddleValueApplied                    = inputHandler->GetPaddleValueApplied();
+	outInfo.paddleAdjustApplied                   = inputHandler->GetPaddleAdjustApplied();
+}
+
+void ClientExecutionControl::FetchOutputPostNDSExec()
+{
+	pthread_mutex_lock(&this->_mutexOutputPostNDSExec);
+	ClientExecutionControl::GenerateNDSFrameInfo(this->_inputHandler, this->_ndsFrameInfo);
 	pthread_mutex_unlock(&this->_mutexOutputPostNDSExec);
 }
 

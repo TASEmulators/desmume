@@ -378,6 +378,8 @@ public:
 	
 	void FetchOutputPostNDSExec();
 	const NDSFrameInfo& GetNDSFrameInfo();
+	static void GenerateNDSFrameInfo(ClientInputHandler *inputHandler, NDSFrameInfo &outInfo);
+	static void UpdateNDSFrameInfoInput(ClientInputHandler *inputHandler, NDSFrameInfo &outInfo);
 	void SetFrameInfoExecutionSpeed(double executionSpeed);
 	uint64_t GetFrameIndex();
 	

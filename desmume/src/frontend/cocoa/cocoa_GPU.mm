@@ -1056,7 +1056,7 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 	
 #ifdef ENABLE_ASYNC_FETCH
 	const u8 bufferIndex = GPU->GetDisplayInfo().bufferIndex;
-	((MacGPUFetchObjectAsync *)fetchObject)->SignalFetchAtIndex(bufferIndex, MESSAGE_FETCH_AND_PUSH_VIDEO);
+	((MacGPUFetchObjectAsync *)fetchObject)->SignalFetchAtIndex(bufferIndex, MESSAGE_FETCH_AND_PERFORM_ACTIONS);
 #endif
 }
 
@@ -1317,8 +1317,14 @@ void MacGPUFetchObjectAsync::RunFetchLoop()
 			pthread_cond_wait(&this->_condSignalFetch, &this->_mutexFetchExecute);
 		}
 		
+		const uint32_t lastMessageID = this->_threadMessageID;
 		this->FetchFromBufferIndex(this->_fetchIndex);
-		this->DoPostFetchActions();
+		
+		if (lastMessageID == MESSAGE_FETCH_AND_PERFORM_ACTIONS)
+		{
+			this->DoPostFetchActions();
+		}
+		
 		this->_threadMessageID = MESSAGE_NONE;
 		
 		[tempPool release];
@@ -1716,7 +1722,7 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &
 	
 	if (!isFrameSkipped)
 	{
-		asyncFetchObj->SignalFetchAtIndex(latestDisplayInfo.bufferIndex, MESSAGE_FETCH_AND_PUSH_VIDEO);
+		asyncFetchObj->SignalFetchAtIndex(latestDisplayInfo.bufferIndex, MESSAGE_FETCH_AND_PERFORM_ACTIONS);
 	}
 }
 

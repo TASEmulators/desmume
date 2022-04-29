@@ -4987,8 +4987,8 @@ void OGLVideoOutput::_UpdateRotation()
 
 void OGLVideoOutput::_UpdateClientSize()
 {
-	this->_viewportWidth  = (GLsizei)(this->_renderProperty.clientWidth  + 0.0001);
-	this->_viewportHeight = (GLsizei)(this->_renderProperty.clientHeight + 0.0001);
+	this->_viewportWidth  = (GLsizei)(this->_propsApplied.clientWidth  + 0.0001);
+	this->_viewportHeight = (GLsizei)(this->_propsApplied.clientHeight + 0.0001);
 	this->_needUpdateViewport = true;
 	
 	this->GetHUDLayer()->SetNeedsUpdateVertices();
@@ -5199,9 +5199,9 @@ void OGLVideoOutput::CopyFrameToBuffer(uint32_t *dstBuffer)
 	this->RenderFrameOGL(true);
 	
 #ifdef MSB_FIRST
-	glReadPixels(0, 0, this->_renderProperty.clientWidth, this->_renderProperty.clientHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, dstBuffer);
+	glReadPixels(0, 0, this->_propsApplied.clientWidth, this->_propsApplied.clientHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, dstBuffer);
 #else
-	glReadPixels(0, 0, this->_renderProperty.clientWidth, this->_renderProperty.clientHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, dstBuffer);
+	glReadPixels(0, 0, this->_propsApplied.clientWidth, this->_propsApplied.clientHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, dstBuffer);
 #endif
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
