@@ -1310,9 +1310,9 @@ void ClientDisplayViewInterface::FlushAndFinalizeImmediate()
 // Touch screen input handling
 void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterProperties &props,
 											 const double logicalClientWidth, const double logicalClientHeight,
-											 const int inputID, const bool isInitialTouchPress,
 											 const double clientX, const double clientY,
-											 uint8_t &outX, uint8_t &outY) const
+											 const bool isInitialTouchPress,
+											 uint8_t &outX, uint8_t &outY, bool &outTouchPressInMajorDisplay)
 {
 	double x = clientX;
 	double y = clientY;
@@ -1349,10 +1349,10 @@ void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterPropert
 				if (isInitialTouchPress)
 				{
 					const bool isClickWithinMajorDisplay = (props.order == ClientDisplayOrder_TouchFirst) && (x >= 0.0) && (x < 256.0);
-					(*_initialTouchInMajorDisplay)[inputID] = isClickWithinMajorDisplay;
+					outTouchPressInMajorDisplay = isClickWithinMajorDisplay;
 				}
 				
-				const bool handleClickInMajorDisplay = (*_initialTouchInMajorDisplay)[inputID];
+				const bool handleClickInMajorDisplay = outTouchPressInMajorDisplay;
 				if (!handleClickInMajorDisplay)
 				{
 					const double minorDisplayScale = (props.normalWidth - (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
@@ -1396,6 +1396,23 @@ void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterPropert
 	
 	outX = (u8)(x + 0.001);
 	outY = (u8)(y + 0.001);
+}
+
+void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterProperties &props,
+											 const double logicalClientWidth, const double logicalClientHeight,
+											 const double clientX, const double clientY,
+											 const int inputID, const bool isInitialTouchPress,
+											 uint8_t &outX, uint8_t &outY) const
+{
+	bool isClickInMajorDisplay = (*this->_initialTouchInMajorDisplay)[inputID];
+	
+	ClientDisplayViewInterface::GetNDSPoint(props,
+											logicalClientWidth, logicalClientHeight,
+											clientX, clientY,
+											isInitialTouchPress,
+											outX, outY, isClickInMajorDisplay);
+	
+	(*this->_initialTouchInMajorDisplay)[inputID] = isClickInMajorDisplay;
 }
 
 /********************************************************************************************

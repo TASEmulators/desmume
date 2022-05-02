@@ -1708,7 +1708,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		
 		cdv->GetNDSPoint(props,
 						 props.clientWidth / scaleFactor, props.clientHeight / scaleFactor,
-						 (int)buttonNumber, isInitialMouseDown, clientLoc.x, clientLoc.y, x, y);
+						 clientLoc.x, clientLoc.y, (int)buttonNumber, isInitialMouseDown, x, y);
 	}
 	
 	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];

@@ -360,10 +360,16 @@ public:
 	virtual void FlushAndFinalizeImmediate();
 	
 	// Touch screen input handling
+	static void GetNDSPoint(const ClientDisplayPresenterProperties &props,
+					 const double logicalClientWidth, const double logicalClientHeight,
+					 const double clientX, const double clientY,
+					 const bool isInitialTouchPress,
+					 uint8_t &outX, uint8_t &outY, bool &outTouchPressInMajorDisplay);
+	
 	void GetNDSPoint(const ClientDisplayPresenterProperties &props,
 					 const double logicalClientWidth, const double logicalClientHeight,
-					 const int inputID, const bool isInitialTouchPress,
 					 const double clientX, const double clientY,
+					 const int inputID, const bool isInitialTouchPress,
 					 uint8_t &outX, uint8_t &outY) const;
 	
 	// Utility methods
