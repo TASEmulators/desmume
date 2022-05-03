@@ -5060,14 +5060,21 @@ void OGLVideoOutput::Init()
 	this->_filtersPreferGPU = this->_canFilterOnGPU;
 	this->_willFilterOnGPU = false;
 	
-	for (size_t i = 0; i < _layerList->size(); i++)
+	std::vector<bool> wasPreviouslyVisibleList;
+	for (size_t i = 0; i < this->_layerList->size(); i++)
 	{
-		delete (*_layerList)[i];
+		wasPreviouslyVisibleList.push_back( (*this->_layerList)[i]->IsVisible() );
+		delete (*this->_layerList)[i];
 	}
 	
 	this->_layerList->clear();
 	this->_layerList->push_back(new OGLDisplayLayer(this));
 	this->_layerList->push_back(new OGLHUDLayer(this));
+	
+	for (size_t i = 0; i < wasPreviouslyVisibleList.size(); i++)
+	{
+		(*this->_layerList)[i]->SetVisibility(wasPreviouslyVisibleList[i]);
+	}
 	
 	// Render State Setup (common to both shaders and fixed-function pipeline)
 	glEnable(GL_BLEND);
