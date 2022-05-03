@@ -186,6 +186,8 @@ protected:
 	
 	FT_Library _ftLibrary;
 	const char *_lastFontFilePath;
+	uint8_t *_hudFontFileCache;
+	size_t _hudFontFileCacheSize;
 	GlyphInfo _glyphInfo[256];
 	size_t _glyphSize;
 	size_t _glyphTileSize;

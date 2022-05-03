@@ -23,6 +23,9 @@
 ClientDisplayPresenter::ClientDisplayPresenter()
 {
 	_fetchObject = NULL;
+	_lastFontFilePath = NULL;
+	_hudFontFileCache = NULL;
+	_hudFontFileCacheSize = 0;
 	
 	ClientDisplayPresenterProperties defaultProperty;
 	defaultProperty.normalWidth		= GPU_FRAMEBUFFER_NATIVE_WIDTH;
@@ -56,6 +59,13 @@ ClientDisplayPresenter::~ClientDisplayPresenter()
 	{
 		FT_Done_FreeType(this->_ftLibrary);
 		this->_ftLibrary = NULL;
+	}
+	
+	if (this->_hudFontFileCache != NULL)
+	{
+		free(this->_hudFontFileCache);
+		this->_hudFontFileCache = NULL;
+		this->_hudFontFileCacheSize = 0;
 	}
 	
 	pthread_mutex_destroy(&this->_mutexHUDString);
@@ -478,7 +488,36 @@ void ClientDisplayPresenter::LoadHUDFont()
 	FT_Face fontFace;
 	FT_Error error = FT_Err_Ok;
 	
-	error = FT_New_Face(this->_ftLibrary, this->_lastFontFilePath, 0, &fontFace);
+	// Cache the entire font file in memory just in case the client needs to repeatedly
+	// reload the font. Font files are small (usually less than 1MB), so we shouldn't be
+	// wasting too much memory by doing this.
+	if (this->_hudFontFileCache == NULL)
+	{
+		FILE *fp = fopen(this->_lastFontFilePath, "rb");
+		if (fp == NULL)
+		{
+			return;
+		}
+		
+		// Do some basic validation of the font file.
+		fseek(fp, 0, SEEK_END);
+		const size_t fileSize = ftell(fp);
+		
+		this->_hudFontFileCache = (uint8_t *)malloc(fileSize);
+		fseek(fp, 0, SEEK_SET);
+		this->_hudFontFileCacheSize = fread(this->_hudFontFileCache, 1, fileSize, fp);
+		fclose(fp);
+		
+		if (this->_hudFontFileCacheSize != fileSize)
+		{
+			free(this->_hudFontFileCache);
+			this->_hudFontFileCache = NULL;
+			this->_hudFontFileCacheSize = 0;
+			return;
+		}
+	}
+	
+	error = FT_New_Memory_Face(this->_ftLibrary, this->_hudFontFileCache, this->_hudFontFileCacheSize, 0, &fontFace);
 	if (error == FT_Err_Unknown_File_Format)
 	{
 		printf("ClientDisplayPresenter: FreeType failed to load font face because it is in an unknown format from:\n%s\n", this->_lastFontFilePath);
