@@ -19,9 +19,11 @@
 
 #import "../cocoa_globals.h"
 #include <pthread.h>
+#include "NDSGameCore.h"
 
 
 OERingBuffer *openEmuSoundInterfaceBuffer = nil;
+static BOOL kWillUseOldAPI = NO;
 
 // Sound interface to the SPU
 SoundInterface_struct SNDOpenEmu = {
@@ -48,6 +50,7 @@ SoundInterface_struct *SNDCoreList[] = {
 int SNDOpenEmuInit(int buffer_size)
 {
 	[openEmuSoundInterfaceBuffer setLength:buffer_size * 4 / SPU_SAMPLE_SIZE];
+	kWillUseOldAPI = ![openEmuSoundInterfaceBuffer respondsToSelector:@selector(freeBytes)];
 	
 	return 0;
 }
@@ -70,6 +73,11 @@ void SNDOpenEmuUpdateAudio(s16 *buffer, u32 num_samples)
 
 u32 SNDOpenEmuGetAudioSpace()
 {
+	if (kWillUseOldAPI)
+	{
+		SILENCE_DEPRECATION_OPENEMU( return (u32)[openEmuSoundInterfaceBuffer usedBytes] / SPU_SAMPLE_SIZE; )
+	}
+	
 	return (u32)[openEmuSoundInterfaceBuffer freeBytes] / SPU_SAMPLE_SIZE;
 }
 

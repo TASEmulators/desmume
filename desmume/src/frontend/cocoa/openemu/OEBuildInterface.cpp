@@ -60,5 +60,8 @@
 		#include "../../utils/AsmJit/x86/x86func.cpp"
 		#include "../../utils/AsmJit/x86/x86operand.cpp"
 		#include "../../utils/AsmJit/x86/x86util.cpp"
+		#include "../../arm_jit.cpp"
+	#elif defined(__aarch64__)
+		#include "../../utils/arm_jit/arm_jit_arm.cpp"
 	#endif
 #endif

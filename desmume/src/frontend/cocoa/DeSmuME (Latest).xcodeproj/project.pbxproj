@@ -1482,6 +1482,37 @@
 		AB497A2027F2E97A00E8A244 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3D14C24D5400D7D192 /* README.MAC */; };
 		AB497A2127F2E97A00E8A244 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB75226D14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns */; };
 		AB497A2227F2E97A00E8A244 /* DisplayWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB8967DB16D2ED2700F826F1 /* DisplayWindow.xib */; };
+		AB49B53A281687B90069F1D7 /* cff.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7B01BB4EC1000B08C25 /* cff.c */; };
+		AB49B53B281687B90069F1D7 /* ftbase.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7751BB4EC1000B08C25 /* ftbase.c */; };
+		AB49B53C281687B90069F1D7 /* ftbbox.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7771BB4EC1000B08C25 /* ftbbox.c */; };
+		AB49B53D281687B90069F1D7 /* ftbitmap.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7791BB4EC1000B08C25 /* ftbitmap.c */; };
+		AB49B53E281687B90069F1D7 /* ftdebug.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA77D1BB4EC1000B08C25 /* ftdebug.c */; };
+		AB49B53F281687B90069F1D7 /* ftfntfmt.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA77E1BB4EC1000B08C25 /* ftfntfmt.c */; };
+		AB49B540281687B90069F1D7 /* ftfstype.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA77F1BB4EC1000B08C25 /* ftfstype.c */; };
+		AB49B541281687B90069F1D7 /* ftgasp.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7801BB4EC1000B08C25 /* ftgasp.c */; };
+		AB49B542281687B90069F1D7 /* ftglyph.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7821BB4EC1000B08C25 /* ftglyph.c */; };
+		AB49B543281687B90069F1D7 /* ftgxval.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7831BB4EC1000B08C25 /* ftgxval.c */; };
+		AB49B544281687B90069F1D7 /* ftinit.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7841BB4EC1000B08C25 /* ftinit.c */; };
+		AB49B545281687B90069F1D7 /* ftlcdfil.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7851BB4EC1000B08C25 /* ftlcdfil.c */; };
+		AB49B546281687B90069F1D7 /* ftmm.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7871BB4EC1000B08C25 /* ftmm.c */; };
+		AB49B547281687B90069F1D7 /* ftotval.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7891BB4EC1000B08C25 /* ftotval.c */; };
+		AB49B548281687B90069F1D7 /* ftpatent.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA78B1BB4EC1000B08C25 /* ftpatent.c */; };
+		AB49B549281687B90069F1D7 /* ftpfr.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA78C1BB4EC1000B08C25 /* ftpfr.c */; };
+		AB49B54A281687B90069F1D7 /* ftstroke.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7911BB4EC1000B08C25 /* ftstroke.c */; };
+		AB49B54B281687B90069F1D7 /* ftsynth.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7921BB4EC1000B08C25 /* ftsynth.c */; };
+		AB49B54C281687B90069F1D7 /* ftsystem.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7931BB4EC1000B08C25 /* ftsystem.c */; };
+		AB49B54D281687B90069F1D7 /* fttype1.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731611BB51F6700B26147 /* fttype1.c */; };
+		AB49B54E281687B90069F1D7 /* psaux.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731661BB51FDC00B26147 /* psaux.c */; };
+		AB49B54F281687B90069F1D7 /* pshinter.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA7315D1BB51E7000B26147 /* pshinter.c */; };
+		AB49B550281687B90069F1D7 /* psnames.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731591BB51A8D00B26147 /* psnames.c */; };
+		AB49B551281687B90069F1D7 /* sfnt.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7C81BB4EC1000B08C25 /* sfnt.c */; };
+		AB49B552281687B90069F1D7 /* smooth.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7E41BB4EC1000B08C25 /* smooth.c */; };
+		AB49B553281687B90069F1D7 /* truetype.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7E61BB4EC1000B08C25 /* truetype.c */; };
+		AB49B554281687B90069F1D7 /* type1.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731671BB51FDC00B26147 /* type1.c */; };
+		AB49B555281687B90069F1D7 /* type1cid.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731651BB51FDC00B26147 /* type1cid.c */; };
+		AB49B556281707590069F1D7 /* OGLDisplayOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6840B189E33BC007FD69C /* OGLDisplayOutput.cpp */; };
+		AB49B5572817075D0069F1D7 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
+		AB49B558281707B90069F1D7 /* ClientDisplayView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD07DA1E19CAA6007867CA /* ClientDisplayView.cpp */; };
 		AB4C81E41B21676C00ACECD5 /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C81E31B21676C00ACECD5 /* hq3x.cpp */; };
 		AB4C81E61B21676C00ACECD5 /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C81E31B21676C00ACECD5 /* hq3x.cpp */; };
 		AB4C81E71B21677700ACECD5 /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C81E31B21676C00ACECD5 /* hq3x.cpp */; };
@@ -1495,6 +1526,7 @@
 		AB53B0C7211E6407003D0ED9 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB53B0BD211E63E8003D0ED9 /* libz.tbd */; };
 		AB54718B1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */; };
 		AB54718C1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */; };
+		AB552DC8281A079000F48ECD /* OEDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB49B5382816879E0069F1D7 /* OEDisplayView.mm */; };
 		AB5648FF186E6EA8002740F4 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */; };
 		AB564901186E6EA8002740F4 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */; };
 		AB564904186E6EBC002740F4 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */; };
@@ -2168,7 +2200,6 @@
 		AB790294215B84F20082AE82 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		AB790295215B84F20082AE82 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */; };
 		AB790296215B84F20082AE82 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABAE1F6E1F6873E70080EFE3 /* CoreVideo.framework */; };
-		AB796C9F15CDCB0F00C59155 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; };
 		AB796CA715CDCBA200C59155 /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
 		AB796CA815CDCBA200C59155 /* DefaultKeyMappings.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */; };
 		AB796CA915CDCBA200C59155 /* DefaultUserPrefs.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABBC0F8C1394B1AA0028B6BD /* DefaultUserPrefs.plist */; };
@@ -2930,6 +2961,7 @@
 		ABC503AE1AAC2B90002FCD43 /* Icon_MicrophoneDarkGreen_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC503AC1AAC2B71002FCD43 /* Icon_MicrophoneDarkGreen_256x256.png */; };
 		ABC503B01AAC42C2002FCD43 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
 		ABC503B11AAC4355002FCD43 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB0FBC41A9E5CEA0060C55A /* CoreAudio.framework */; };
+		ABCC497B281B0684004BA9F0 /* SourceSansPro-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = ABA731281BB5104200B26147 /* SourceSansPro-Bold.otf */; };
 		ABCFA9F4178BDE920030C8BA /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABCFA9F3178BDE920030C8BA /* encrypt.cpp */; };
 		ABCFA9F6178BDE920030C8BA /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABCFA9F3178BDE920030C8BA /* encrypt.cpp */; };
 		ABD10AE71715FCDD00B5729D /* audiosamplegenerator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD10AE51715FCDD00B5729D /* audiosamplegenerator.cpp */; };
@@ -3607,6 +3639,8 @@
 		AB47B52B18A3F722009A42AF /* xbrz.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xbrz.h; sourceTree = "<group>"; };
 		AB47B52C18A3F722009A42AF /* xbrz.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = xbrz.cpp; sourceTree = "<group>"; };
 		AB497B1227F2E97A00E8A244 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB49B5372816879E0069F1D7 /* OEDisplayView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OEDisplayView.h; sourceTree = "<group>"; };
+		AB49B5382816879E0069F1D7 /* OEDisplayView.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = OEDisplayView.mm; sourceTree = "<group>"; };
 		AB4C81E31B21676C00ACECD5 /* hq3x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hq3x.cpp; sourceTree = "<group>"; };
 		AB4FCEBC1692AB82000F498F /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		AB53B0BC211E63E4003D0ED9 /* libpcap.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libpcap.tbd; path = usr/lib/libpcap.tbd; sourceTree = SDKROOT; };
@@ -5073,6 +5107,8 @@
 		ABB3C63A1501BB8300E0C22E /* openemu */ = {
 			isa = PBXGroup;
 			children = (
+				AB49B5372816879E0069F1D7 /* OEDisplayView.h */,
+				AB49B5382816879E0069F1D7 /* OEDisplayView.mm */,
 				AB93384928132CD000851FEA /* OEBuildInterface.cpp */,
 				ABB3C63D1501BB8300E0C22E /* NDSGameCore.h */,
 				ABB3C63F1501BB8300E0C22E /* OENDSSystemResponderClient.h */,
@@ -6997,6 +7033,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				ABB3C6621501BF4E00E0C22E /* InfoPlist.strings in Resources */,
+				ABCC497B281B0684004BA9F0 /* SourceSansPro-Bold.otf in Resources */,
 				ABB3C6631501BF4E00E0C22E /* FileTypeInfo.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -9029,14 +9066,17 @@
 				ABCFA9F6178BDE920030C8BA /* encrypt.cpp in Sources */,
 				ABB3C66C1501C04F00E0C22E /* NDSGameCore.mm in Sources */,
 				ABB3C6701501C04F00E0C22E /* videofilter.cpp in Sources */,
+				AB49B54B281687B90069F1D7 /* ftsynth.c in Sources */,
 				ABB3C6721501C04F00E0C22E /* cocoa_file.mm in Sources */,
 				ABB3C6751501C04F00E0C22E /* cocoa_rom.mm in Sources */,
 				AB29B16418313AF5009B7982 /* slot2.cpp in Sources */,
 				ABB3C6781501C04F00E0C22E /* slot1_none.cpp in Sources */,
 				AB29B16818313C14009B7982 /* slot2_auto.cpp in Sources */,
 				AB9038B417C5ED2200F410BD /* slot1_retail_mcrom.cpp in Sources */,
+				AB49B546281687B90069F1D7 /* ftmm.c in Sources */,
 				ABB3C6791501C04F00E0C22E /* slot1_r4.cpp in Sources */,
 				AB2ABA3E1C9F9CFA00173B15 /* async_job.c in Sources */,
+				AB49B53A281687B90069F1D7 /* cff.c in Sources */,
 				ABB3C67A1501C04F00E0C22E /* slot1_retail_nand.cpp in Sources */,
 				ABB3C67C1501C04F00E0C22E /* slot2_expMemory.cpp in Sources */,
 				ABB3C67D1501C04F00E0C22E /* slot2_gbagame.cpp in Sources */,
@@ -9046,17 +9086,26 @@
 				ABB3C6801501C04F00E0C22E /* slot2_none.cpp in Sources */,
 				ABB3C6811501C04F00E0C22E /* slot2_paddle.cpp in Sources */,
 				ABB3C6821501C04F00E0C22E /* slot2_piano.cpp in Sources */,
+				AB49B541281687B90069F1D7 /* ftgasp.c in Sources */,
 				ABB3C6831501C04F00E0C22E /* slot2_rumblepak.cpp in Sources */,
 				ABB3C6841501C04F00E0C22E /* 2xsai.cpp in Sources */,
 				ABC503B01AAC42C2002FCD43 /* coreaudiosound.cpp in Sources */,
 				ABB3C6851501C04F00E0C22E /* bilinear.cpp in Sources */,
+				AB49B54A281687B90069F1D7 /* ftstroke.c in Sources */,
+				AB49B53D281687B90069F1D7 /* ftbitmap.c in Sources */,
+				AB49B53B281687B90069F1D7 /* ftbase.c in Sources */,
 				ABB3C6861501C04F00E0C22E /* epx.cpp in Sources */,
 				ABB3C6871501C04F00E0C22E /* hq2x.cpp in Sources */,
 				ABB1C94B1F5281AE0004844F /* ClientExecutionControl.cpp in Sources */,
 				ABB3C6881501C04F00E0C22E /* hq4x.cpp in Sources */,
 				ABB3C6891501C04F00E0C22E /* lq2x.cpp in Sources */,
+				AB49B558281707B90069F1D7 /* ClientDisplayView.cpp in Sources */,
+				AB49B551281687B90069F1D7 /* sfnt.c in Sources */,
+				AB49B555281687B90069F1D7 /* type1cid.c in Sources */,
 				ABB3C68A1501C04F00E0C22E /* scanline.cpp in Sources */,
 				ABB3C68B1501C04F00E0C22E /* AAFilter.cpp in Sources */,
+				AB49B540281687B90069F1D7 /* ftfstype.c in Sources */,
+				AB49B53F281687B90069F1D7 /* ftfntfmt.c in Sources */,
 				ABB3C68C1501C04F00E0C22E /* cpu_detect_x86_gcc.cpp in Sources */,
 				ABB3C68D1501C04F00E0C22E /* FIFOSampleBuffer.cpp in Sources */,
 				AB9038A817C5ECFD00F410BD /* advanscene.cpp in Sources */,
@@ -9083,16 +9132,21 @@
 				ABB3C69D1501C04F00E0C22E /* disc.cpp in Sources */,
 				ABB3C69E1501C04F00E0C22E /* fatdir.cpp in Sources */,
 				AB11AD8C1F6757F800CB298E /* ClientInputHandler.cpp in Sources */,
+				AB49B54E281687B90069F1D7 /* psaux.c in Sources */,
+				AB49B54D281687B90069F1D7 /* fttype1.c in Sources */,
 				ABB3C69F1501C04F00E0C22E /* fatfile.cpp in Sources */,
 				ABB3C6A01501C04F00E0C22E /* file_allocation_table.cpp in Sources */,
 				ABB3C6A11501C04F00E0C22E /* filetime.cpp in Sources */,
+				AB49B543281687B90069F1D7 /* ftgxval.c in Sources */,
 				ABB3C6A21501C04F00E0C22E /* libfat.cpp in Sources */,
 				ABB3C6A31501C04F00E0C22E /* libfat_public_api.cpp in Sources */,
 				ABB3C6A41501C04F00E0C22E /* lock.cpp in Sources */,
 				ABB3C6A51501C04F00E0C22E /* partition.cpp in Sources */,
 				ABB3C6A61501C04F00E0C22E /* tinystr.cpp in Sources */,
+				AB49B554281687B90069F1D7 /* type1.c in Sources */,
 				ABB3C6A71501C04F00E0C22E /* tinyxml.cpp in Sources */,
 				ABB3C6A81501C04F00E0C22E /* tinyxmlerror.cpp in Sources */,
+				AB49B552281687B90069F1D7 /* smooth.c in Sources */,
 				ABB3C6A91501C04F00E0C22E /* tinyxmlparser.cpp in Sources */,
 				ABADF11E1DEA4CFC00A142B1 /* features_cpu.c in Sources */,
 				ABB3C6AB1501C04F00E0C22E /* datetime.cpp in Sources */,
@@ -9105,6 +9159,7 @@
 				ABB3C6B21501C04F00E0C22E /* xstring.cpp in Sources */,
 				ABB3C6B41501C04F00E0C22E /* arm_instructions.cpp in Sources */,
 				ABB3C6B51501C04F00E0C22E /* armcpu.cpp in Sources */,
+				AB49B54F281687B90069F1D7 /* pshinter.c in Sources */,
 				ABB3C6B61501C04F00E0C22E /* bios.cpp in Sources */,
 				ABB3C6B71501C04F00E0C22E /* cheatSystem.cpp in Sources */,
 				ABB3C6B81501C04F00E0C22E /* common.cpp in Sources */,
@@ -9112,15 +9167,20 @@
 				AB407F371A6206FB00313213 /* xbrz.cpp in Sources */,
 				AB301BE21D9C8BCF00246A93 /* deposterize.cpp in Sources */,
 				ABB3C6BA1501C04F00E0C22E /* debug.cpp in Sources */,
+				AB49B545281687B90069F1D7 /* ftlcdfil.c in Sources */,
 				ABB3C6BB1501C04F00E0C22E /* Disassembler.cpp in Sources */,
 				ABB3C6BC1501C04F00E0C22E /* driver.cpp in Sources */,
 				ABB3C6BD1501C04F00E0C22E /* emufile.cpp in Sources */,
 				ABB3C6BE1501C04F00E0C22E /* FIFO.cpp in Sources */,
 				ABB3C6BF1501C04F00E0C22E /* firmware.cpp in Sources */,
 				ABB3C6C01501C04F00E0C22E /* gfx3d.cpp in Sources */,
+				AB49B5572817075D0069F1D7 /* OGLDisplayOutput_3_2.cpp in Sources */,
 				ABB3C6C11501C04F00E0C22E /* GPU.cpp in Sources */,
 				ABB3C6C31501C04F00E0C22E /* matrix.cpp in Sources */,
 				ABB3C6C41501C04F00E0C22E /* mc.cpp in Sources */,
+				AB49B548281687B90069F1D7 /* ftpatent.c in Sources */,
+				AB49B542281687B90069F1D7 /* ftglyph.c in Sources */,
+				AB552DC8281A079000F48ECD /* OEDisplayView.mm in Sources */,
 				ABB3C6C61501C04F00E0C22E /* MMU.cpp in Sources */,
 				ABB3C6C71501C04F00E0C22E /* movie.cpp in Sources */,
 				AB8B7AAE17CE8C440051CEBF /* slot1comp_protocol.cpp in Sources */,
@@ -9130,34 +9190,42 @@
 				AB2ABA461C9F9CFA00173B15 /* rthreads.c in Sources */,
 				ABB3C6CB1501C04F00E0C22E /* rasterize.cpp in Sources */,
 				ABB3C6CC1501C04F00E0C22E /* readwrite.cpp in Sources */,
+				AB49B553281687B90069F1D7 /* truetype.c in Sources */,
 				ABB3C6CD1501C04F00E0C22E /* render3D.cpp in Sources */,
 				ABB3C6CE1501C04F00E0C22E /* ROMReader.cpp in Sources */,
 				ABB3C6CF1501C04F00E0C22E /* rtc.cpp in Sources */,
 				ABB3C6D01501C04F00E0C22E /* saves.cpp in Sources */,
+				AB49B54C281687B90069F1D7 /* ftsystem.c in Sources */,
+				AB49B544281687B90069F1D7 /* ftinit.c in Sources */,
 				ABB3C6D11501C04F00E0C22E /* slot1.cpp in Sources */,
 				ABB3C6D31501C04F00E0C22E /* SPU.cpp in Sources */,
 				ABB3C6D41501C04F00E0C22E /* texcache.cpp in Sources */,
+				AB49B53C281687B90069F1D7 /* ftbbox.c in Sources */,
 				ABADF1211DEA4D0000A142B1 /* Database.cpp in Sources */,
+				AB49B547281687B90069F1D7 /* ftotval.c in Sources */,
 				AB9038BA17C5ED2200F410BD /* slot1comp_rom.cpp in Sources */,
 				ABB3C6D51501C04F00E0C22E /* thumb_instructions.cpp in Sources */,
 				AB2EE13317D57F5000F68622 /* fsnitro.cpp in Sources */,
 				ABB3C6D61501C04F00E0C22E /* version.cpp in Sources */,
 				AB93384A28132CD000851FEA /* OEBuildInterface.cpp in Sources */,
 				AB35BD921DEBF41800844310 /* encoding_utf.c in Sources */,
+				AB49B550281687B90069F1D7 /* psnames.c in Sources */,
 				ABB3C6D71501C04F00E0C22E /* wifi.cpp in Sources */,
 				ABE9EEEA1501C6EB00D3FB19 /* cocoa_firmware.mm in Sources */,
 				AB1949DB15034F900098793E /* OESoundInterface.mm in Sources */,
-				AB796C9F15CDCB0F00C59155 /* arm_jit.cpp in Sources */,
 				AB2ABA421C9F9CFA00173B15 /* rsemaphore.c in Sources */,
 				AB000DD91CCC6B4300413F02 /* retro_stat.c in Sources */,
+				AB49B549281687B90069F1D7 /* ftpfr.c in Sources */,
 				AB68A0DD16B139BC00DE0546 /* OGLRender_3_2.cpp in Sources */,
 				AB9038B717C5ED2200F410BD /* slot1comp_mc.cpp in Sources */,
 				AB3A656316CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
 				AB82445D1704AE9A00B8EE20 /* utilities.c in Sources */,
+				AB49B556281707590069F1D7 /* OGLDisplayOutput.cpp in Sources */,
 				ABD10AE91715FCDD00B5729D /* audiosamplegenerator.cpp in Sources */,
 				ABD10AEC1715FCDD00B5729D /* mic_ext.cpp in Sources */,
 				ABD10AED17160C9300B5729D /* ringbuffer.cpp in Sources */,
 				ABD10AEE17160CDD00B5729D /* cocoa_input.mm in Sources */,
+				AB49B53E281687B90069F1D7 /* ftdebug.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -9773,10 +9841,13 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/openemu\"",
 				);
-				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_PREFIX_HEADER = openemu/DeSmuME_Prefix_OpenEmu.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					_DEBUG,
+					"DEBUG=1",
+					METAL_DISABLE_FOR_BUILD_TARGET,
+				);
 				INFOPLIST_FILE = "openemu/Info (OpenEmu Plug-in).plist";
-				LLVM_LTO = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_NAME = DeSmuME;
 				WRAPPER_EXTENSION = oecoreplugin;
@@ -9799,8 +9870,11 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/openemu\"",
 				);
-				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_PREFIX_HEADER = openemu/DeSmuME_Prefix_OpenEmu.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NDEBUG,
+					METAL_DISABLE_FOR_BUILD_TARGET,
+				);
 				INFOPLIST_FILE = "openemu/Info (OpenEmu Plug-in).plist";
 				LLVM_LTO = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;

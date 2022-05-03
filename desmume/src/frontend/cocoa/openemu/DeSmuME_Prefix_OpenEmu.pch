@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,8 +23,9 @@
 #define DESMUME_COCOA
 #define HAVE_OPENGL
 #define HAVE_LIBZ
+#define FT2_BUILD_LIBRARY
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__aarch64__)
 	#define HAVE_JIT
 #endif
 

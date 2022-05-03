@@ -27,65 +27,78 @@
 #import "../cocoa_input.h"
 #import "../ClientDisplayView.h"
 #import "../ClientInputHandler.h"
+#include "../OGLDisplayOutput_3_2.h"
 
-#include <OpenGL/gl.h>
+#import "OEDisplayView.h"
+
 #include "../../NDSSystem.h"
 #include "../../GPU.h"
 #undef BOOL
 
-#define DISPLAYMODE_STATEBIT_CHECK(_STATEBITS_, _ID_) ((((_STATEBITS_) >> (_ID_)) & 1) != 0)
+#define DISPLAYMODE_STATEBIT_CHECK(_STATEBITS_, _ID_) ((((_STATEBITS_) >> ((uint64_t)_ID_)) & 1ULL) != 0ULL)
 #define DISPLAYMODE_STATEBITGROUP_CLEAR(_STATEBITS_, _BITMASK_) _STATEBITS_ = (((_STATEBITS_) | (_BITMASK_)) ^ (_BITMASK_))
 
 
-static const NDSDisplayMenuItem kDisplayModeItem[NDSDisplayOptionID_Count] = {
-	{ @NDSDISPLAYMODE_NAMEKEY_MODE_DUALSCREEN, @NDSDISPLAYMODE_PREFKEY_DISPLAYMODE },
-	{ @NDSDISPLAYMODE_NAMEKEY_MODE_MAIN,       @NDSDISPLAYMODE_PREFKEY_DISPLAYMODE },
-	{ @NDSDISPLAYMODE_NAMEKEY_MODE_TOUCH,      @NDSDISPLAYMODE_PREFKEY_DISPLAYMODE },
+static const OEMenuItemDesc kDisplayModeItem[NDSDisplayOptionID_Count] = {
+	{ @NDSDISPLAYMODE_NAMEKEY_MODE_DUALSCREEN, @NDSDISPLAYMODE_PREFKEY_DISPLAYMODE, NDSDISPLAYMODE_GROUPBITMASK_DISPLAYMODE, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_MODE_MAIN,       @NDSDISPLAYMODE_PREFKEY_DISPLAYMODE, NDSDISPLAYMODE_GROUPBITMASK_DISPLAYMODE, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_MODE_TOUCH,      @NDSDISPLAYMODE_PREFKEY_DISPLAYMODE, NDSDISPLAYMODE_GROUPBITMASK_DISPLAYMODE, nil },
 	
-	{ @NDSDISPLAYMODE_NAMEKEY_ROTATION_0,   @NDSDISPLAYMODE_PREFKEY_ROTATION },
-	{ @NDSDISPLAYMODE_NAMEKEY_ROTATION_90,  @NDSDISPLAYMODE_PREFKEY_ROTATION },
-	{ @NDSDISPLAYMODE_NAMEKEY_ROTATION_180, @NDSDISPLAYMODE_PREFKEY_ROTATION },
-	{ @NDSDISPLAYMODE_NAMEKEY_ROTATION_270, @NDSDISPLAYMODE_PREFKEY_ROTATION },
+	{ @NDSDISPLAYMODE_NAMEKEY_ROTATION_0,   @NDSDISPLAYMODE_PREFKEY_ROTATION, NDSDISPLAYMODE_GROUPBITMASK_ROTATION, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_ROTATION_90,  @NDSDISPLAYMODE_PREFKEY_ROTATION, NDSDISPLAYMODE_GROUPBITMASK_ROTATION, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_ROTATION_180, @NDSDISPLAYMODE_PREFKEY_ROTATION, NDSDISPLAYMODE_GROUPBITMASK_ROTATION, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_ROTATION_270, @NDSDISPLAYMODE_PREFKEY_ROTATION, NDSDISPLAYMODE_GROUPBITMASK_ROTATION, nil },
 	
-	{ @NDSDISPLAYMODE_NAMEKEY_LAYOUT_VERTICAL,     @NDSDISPLAYMODE_PREFKEY_LAYOUT },
-	{ @NDSDISPLAYMODE_NAMEKEY_LAYOUT_HORIZONTAL,   @NDSDISPLAYMODE_PREFKEY_LAYOUT },
-	{ @NDSDISPLAYMODE_NAMEKEY_LAYOUT_HYBRID_2_1,   @NDSDISPLAYMODE_PREFKEY_LAYOUT },
-	{ @NDSDISPLAYMODE_NAMEKEY_LAYOUT_HYBRID_16_9,  @NDSDISPLAYMODE_PREFKEY_LAYOUT },
-	{ @NDSDISPLAYMODE_NAMEKEY_LAYOUT_HYBRID_16_10, @NDSDISPLAYMODE_PREFKEY_LAYOUT },
+	{ @NDSDISPLAYMODE_NAMEKEY_LAYOUT_VERTICAL,     @NDSDISPLAYMODE_PREFKEY_LAYOUT, NDSDISPLAYMODE_GROUPBITMASK_LAYOUT, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_LAYOUT_HORIZONTAL,   @NDSDISPLAYMODE_PREFKEY_LAYOUT, NDSDISPLAYMODE_GROUPBITMASK_LAYOUT, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_LAYOUT_HYBRID_2_1,   @NDSDISPLAYMODE_PREFKEY_LAYOUT, NDSDISPLAYMODE_GROUPBITMASK_LAYOUT, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_LAYOUT_HYBRID_16_9,  @NDSDISPLAYMODE_PREFKEY_LAYOUT, NDSDISPLAYMODE_GROUPBITMASK_LAYOUT, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_LAYOUT_HYBRID_16_10, @NDSDISPLAYMODE_PREFKEY_LAYOUT, NDSDISPLAYMODE_GROUPBITMASK_LAYOUT, nil },
 	
-	{ @NDSDISPLAYMODE_NAMEKEY_DISPLAYORDER_MAIN,  @NDSDISPLAYMODE_PREFKEY_ORDER },
-	{ @NDSDISPLAYMODE_NAMEKEY_DISPLAYORDER_TOUCH, @NDSDISPLAYMODE_PREFKEY_ORDER },
+	{ @NDSDISPLAYMODE_NAMEKEY_DISPLAYORDER_MAIN,  @NDSDISPLAYMODE_PREFKEY_ORDER, NDSDISPLAYMODE_GROUPBITMASK_ORDER, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_DISPLAYORDER_TOUCH, @NDSDISPLAYMODE_PREFKEY_ORDER, NDSDISPLAYMODE_GROUPBITMASK_ORDER, nil },
 	
-	{ @NDSDISPLAYMODE_NAMEKEY_SEPARATION_0,   @NDSDISPLAYMODE_PREFKEY_SEPARATION },
-	{ @NDSDISPLAYMODE_NAMEKEY_SEPARATION_50,  @NDSDISPLAYMODE_PREFKEY_SEPARATION },
-	{ @NDSDISPLAYMODE_NAMEKEY_SEPARATION_100, @NDSDISPLAYMODE_PREFKEY_SEPARATION },
-	{ @NDSDISPLAYMODE_NAMEKEY_SEPARATION_150, @NDSDISPLAYMODE_PREFKEY_SEPARATION },
-	{ @NDSDISPLAYMODE_NAMEKEY_SEPARATION_200, @NDSDISPLAYMODE_PREFKEY_SEPARATION },
+	{ @NDSDISPLAYMODE_NAMEKEY_SEPARATION_0,   @NDSDISPLAYMODE_PREFKEY_SEPARATION, NDSDISPLAYMODE_GROUPBITMASK_SEPARATION, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_SEPARATION_50,  @NDSDISPLAYMODE_PREFKEY_SEPARATION, NDSDISPLAYMODE_GROUPBITMASK_SEPARATION, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_SEPARATION_100, @NDSDISPLAYMODE_PREFKEY_SEPARATION, NDSDISPLAYMODE_GROUPBITMASK_SEPARATION, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_SEPARATION_150, @NDSDISPLAYMODE_PREFKEY_SEPARATION, NDSDISPLAYMODE_GROUPBITMASK_SEPARATION, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_SEPARATION_200, @NDSDISPLAYMODE_PREFKEY_SEPARATION, NDSDISPLAYMODE_GROUPBITMASK_SEPARATION, nil },
 	
-	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCEMAIN_NONE,       @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_MAIN },
-	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCEMAIN_NDS,        @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_MAIN },
-	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCEMAIN_FORCEMAIN,  @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_MAIN },
-	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCEMAIN_FORCETOUCH, @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_MAIN },
+	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCEMAIN_NONE,      @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_MAIN, NDSDISPLAYMODE_GROUPBITMASK_VIDEOSOURCEMAIN, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCEMAIN_NDS,       @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_MAIN, NDSDISPLAYMODE_GROUPBITMASK_VIDEOSOURCEMAIN, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCEMAIN_FORCEMAIN, @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_MAIN, NDSDISPLAYMODE_GROUPBITMASK_VIDEOSOURCEMAIN, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCEMAIN_FORCESUB,  @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_MAIN, NDSDISPLAYMODE_GROUPBITMASK_VIDEOSOURCEMAIN, nil },
 	
-	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCETOUCH_NONE,       @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_TOUCH },
-	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCETOUCH_NDS,        @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_TOUCH },
-	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCETOUCH_FORCEMAIN,  @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_TOUCH },
-	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCETOUCH_FORCETOUCH, @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_TOUCH }
+	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCETOUCH_NONE,      @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_TOUCH, NDSDISPLAYMODE_GROUPBITMASK_VIDEOSOURCETOUCH, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCETOUCH_NDS,       @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_TOUCH, NDSDISPLAYMODE_GROUPBITMASK_VIDEOSOURCETOUCH, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCETOUCH_FORCEMAIN, @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_TOUCH, NDSDISPLAYMODE_GROUPBITMASK_VIDEOSOURCETOUCH, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCETOUCH_FORCESUB,  @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_TOUCH, NDSDISPLAYMODE_GROUPBITMASK_VIDEOSOURCETOUCH, nil },
+	
+	{ @NDSDISPLAYMODE_NAMEKEY_HUD_ENABLE,          @NDSDISPLAYMODE_PREFKEY_HUD_ENABLE, 0, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_HUD_EXECUTIONSPEED,  @NDSDISPLAYMODE_PREFKEY_HUD_EXECUTIONSPEED, 0, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_HUD_VIDEOFPS,        @NDSDISPLAYMODE_PREFKEY_HUD_VIDEOFPS, 0, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_HUD_3DRENDERERFPS,   @NDSDISPLAYMODE_PREFKEY_HUD_3DRENDERERFPS, 0, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_HUD_FRAMEINDEX,      @NDSDISPLAYMODE_PREFKEY_HUD_FRAMEINDEX, 0, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_HUD_LAGFRAMECOUNTER, @NDSDISPLAYMODE_PREFKEY_HUD_LAGFRAMECOUNTER, 0, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_HUD_CPULOADAVERAGE,  @NDSDISPLAYMODE_PREFKEY_HUD_CPULOADAVERAGE, 0, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_HUD_REALTIMECLOCK,   @NDSDISPLAYMODE_PREFKEY_HUD_REALTIMECLOCK, 0, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_HUD_INPUT,           @NDSDISPLAYMODE_PREFKEY_HUD_INPUT, 0, nil }
 };
 
-static const uint64_t kDisplayModeStatesDefault = (1 << NDSDisplayOptionID_Mode_DualScreen) |
-                                                  (1 << NDSDisplayOptionID_Rotation_0) |
-                                                  (1 << NDSDisplayOptionID_Layout_Vertical) |
-                                                  (1 << NDSDisplayOptionID_Order_MainFirst) |
-                                                  (1 << NDSDisplayOptionID_Separation_0) |
-                                                  (1 << NDSDisplayOptionID_VideoSourceMain_NDS) |
-                                                  (1 << NDSDisplayOptionID_VideoSourceTouch_NDS);
+static const uint64_t kDisplayModeStatesDefault = (1LLU << NDSDisplayOptionID_Mode_DualScreen) |
+                                                  (1LLU << NDSDisplayOptionID_Rotation_0) |
+                                                  (1LLU << NDSDisplayOptionID_Layout_Vertical) |
+                                                  (1LLU << NDSDisplayOptionID_Order_MainFirst) |
+                                                  (1LLU << NDSDisplayOptionID_Separation_0) |
+                                                  (1LLU << NDSDisplayOptionID_VideoSourceMain_NDS) |
+                                                  (1LLU << NDSDisplayOptionID_VideoSourceTouch_NDS) |
+                                                  (1LLU << NDSDisplayOptionID_HUD_ExecutionSpeed) |
+                                                  (1LLU << NDSDisplayOptionID_HUD_VideoFPS);
 
 volatile bool execute = true;
 
 @implementation NDSGameCore
 
-@synthesize cdsController;
 @synthesize cdsGPU;
 @synthesize cdsFirmware;
 @synthesize cdsCheats;
@@ -99,13 +112,30 @@ volatile bool execute = true;
 		return self;
 	}
 	
+	// Retrieve the file path for the HUD font file.
+	// Because this file must be reloaded due to repeated context changes, we'll
+	// need to maintain a copy of the file path.
+	NSString *fontPath = [[NSBundle bundleForClass:[self class]] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
+	const char *gameCoreFontPath = [[NSFileManager defaultManager] fileSystemRepresentationWithPath:fontPath];
+	memset(_hudFontPath, 0, sizeof(_hudFontPath));
+	strlcpy(_hudFontPath, gameCoreFontPath, sizeof(_hudFontPath));
+	
+	_fpsTimer = nil;
+	_videoContext = NULL;
+	_cdp = NULL;
+	cdsGPU = NULL;
+	
 	// Set up threading locks
+	_unfairlockReceivedFrameIndex = apple_unfairlock_create();
+	_unfairlockNDSFrameInfo = apple_unfairlock_create();
+	
 	unfairlockDisplayMode = apple_unfairlock_create();
-	pthread_rwlock_init(&rwlockCoreExecute, NULL);
 	
 	// Set up input handling
-	touchLocation.x = 0;
-	touchLocation.y = 0;
+	_lastTouchLocation.x = 0;
+	_lastTouchLocation.y = 0;
+	_isInitialTouchPress = false;
+	_isTouchPressInMajorDisplay = false;
 	
 	inputID[OENDSButtonUp]			= NDSInputID_Up;
 	inputID[OENDSButtonDown]		= NDSInputID_Down;
@@ -123,6 +153,16 @@ volatile bool execute = true;
 	inputID[OENDSButtonLid]			= NDSInputID_Lid;
 	inputID[OENDSButtonDebug]		= NDSInputID_Debug;
 	
+	memset(&_clientFrameInfo, 0, sizeof(_clientFrameInfo));
+	_ndsFrameInfo.clear();
+	
+	_isTimerAtSecond =  NO;
+	_receivedFrameIndex = 0;
+	_currentReceivedFrameIndex = 0;
+	_receivedFrameCount = 0;
+	
+	_executionSpeedAverageFramesCollected = 0.0;
+	
 	// Set up the emulation core
 	CommonSettings.advanced_timing = true;
 	CommonSettings.jit_max_block_size = 12;
@@ -131,17 +171,11 @@ volatile bool execute = true;
 #else
 	CommonSettings.use_jit = false;
 #endif
+	pthread_rwlock_init(&rwlockCoreExecute, NULL);
 	NDS_Init();
 	
-	// Set up the DS GPU
-	cdsGPU = [[CocoaDSGPU alloc] init];
-	[cdsGPU setRender3DThreads:0]; // Pass 0 to automatically set the number of rendering threads
-	[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
-	[cdsGPU setGpuScale:1];
-	[cdsGPU setGpuColorFormat:NDSColorFormat_BGR666_Rev];
-	
 	// Set up the DS controller
-	cdsController = [[CocoaDSController alloc] init];
+	_inputHandler = new MacInputHandler;
 	
 	// Set up the cheat system
 	cdsCheats = [[CocoaDSCheatManager alloc] init];
@@ -157,7 +191,15 @@ volatile bool execute = true;
 	CommonSettings.spuInterpolationMode = SPUInterpolation_Cosine;
 	CommonSettings.SPU_sync_mode = SPU_SYNC_MODE_SYNCHRONOUS;
 	CommonSettings.SPU_sync_method = SPU_SYNC_METHOD_N;
-	openEmuSoundInterfaceBuffer = [self audioBufferAtIndex:0];
+	
+	if ([self respondsToSelector:@selector(audioBufferAtIndex:)])
+	{
+		openEmuSoundInterfaceBuffer = [self audioBufferAtIndex:0];
+	}
+	else
+	{
+		SILENCE_DEPRECATION_OPENEMU( openEmuSoundInterfaceBuffer = [self ringBufferAtIndex:0]; )
+	}
 	
 	NSInteger result = SPU_ChangeSoundCore(SNDCORE_OPENEMU, (int)SPU_BUFFER_BYTES);
 	if (result == -1)
@@ -169,8 +211,12 @@ volatile bool execute = true;
 	SPU_SetVolume(100);
     
 	// Set up the DS display
-	ndsDisplayMode = kDisplayModeStatesDefault;
-	_displayRect = OEIntRectMake(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+	_displayModeStatesPending = kDisplayModeStatesDefault;
+	_displayModeStatesApplied = kDisplayModeStatesDefault;
+	_OEViewSize.width  = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_OEViewSize.height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2;
+	_displayBufferSize = OEIntSizeMake(_OEViewSize.width, _OEViewSize.height);
+	_displayRect = OEIntRectMake(0, 0, _OEViewSize.width, _OEViewSize.height);
 	_displayAspectRatio = OEIntSizeMake(2, 3);
 	
 	_displayModeIDFromString = [[NSDictionary alloc] initWithObjectsAndKeys:
@@ -198,15 +244,25 @@ volatile bool execute = true;
 								[NSNumber numberWithInteger:NDSDisplayOptionID_Separation_150], kDisplayModeItem[NDSDisplayOptionID_Separation_150].nameKey,
 								[NSNumber numberWithInteger:NDSDisplayOptionID_Separation_200], kDisplayModeItem[NDSDisplayOptionID_Separation_200].nameKey,
 								
-								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceMain_None],       kDisplayModeItem[NDSDisplayOptionID_VideoSourceMain_None].nameKey,
-								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceMain_NDS],        kDisplayModeItem[NDSDisplayOptionID_VideoSourceMain_NDS].nameKey,
-								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceMain_ForceMain],  kDisplayModeItem[NDSDisplayOptionID_VideoSourceMain_ForceMain].nameKey,
-								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceMain_ForceTouch], kDisplayModeItem[NDSDisplayOptionID_VideoSourceMain_ForceTouch].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceMain_None],      kDisplayModeItem[NDSDisplayOptionID_VideoSourceMain_None].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceMain_NDS],       kDisplayModeItem[NDSDisplayOptionID_VideoSourceMain_NDS].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceMain_ForceMain], kDisplayModeItem[NDSDisplayOptionID_VideoSourceMain_ForceMain].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceMain_ForceSub],  kDisplayModeItem[NDSDisplayOptionID_VideoSourceMain_ForceSub].nameKey,
 								
-								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceTouch_None],       kDisplayModeItem[NDSDisplayOptionID_VideoSourceTouch_None].nameKey,
-								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceTouch_NDS],        kDisplayModeItem[NDSDisplayOptionID_VideoSourceTouch_NDS].nameKey,
-								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceTouch_ForceMain],  kDisplayModeItem[NDSDisplayOptionID_VideoSourceTouch_ForceMain].nameKey,
-								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceTouch_ForceTouch], kDisplayModeItem[NDSDisplayOptionID_VideoSourceTouch_ForceTouch].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceTouch_None],      kDisplayModeItem[NDSDisplayOptionID_VideoSourceTouch_None].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceTouch_NDS],       kDisplayModeItem[NDSDisplayOptionID_VideoSourceTouch_NDS].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceTouch_ForceMain], kDisplayModeItem[NDSDisplayOptionID_VideoSourceTouch_ForceMain].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_VideoSourceTouch_ForceSub],  kDisplayModeItem[NDSDisplayOptionID_VideoSourceTouch_ForceSub].nameKey,
+								
+								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_Enable],          kDisplayModeItem[NDSDisplayOptionID_HUD_Enable].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_ExecutionSpeed],  kDisplayModeItem[NDSDisplayOptionID_HUD_ExecutionSpeed].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_VideoFPS],        kDisplayModeItem[NDSDisplayOptionID_HUD_VideoFPS].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_3DRendererFPS],   kDisplayModeItem[NDSDisplayOptionID_HUD_3DRendererFPS].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_FrameIndex],      kDisplayModeItem[NDSDisplayOptionID_HUD_FrameIndex].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_LagFrameCounter], kDisplayModeItem[NDSDisplayOptionID_HUD_LagFrameCounter].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_CPULoadAverage],  kDisplayModeItem[NDSDisplayOptionID_HUD_CPULoadAverage].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_RealTimeClock],   kDisplayModeItem[NDSDisplayOptionID_HUD_RealTimeClock].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_Input],           kDisplayModeItem[NDSDisplayOptionID_HUD_Input].nameKey,
 								nil];
 	
 	return self;
@@ -214,62 +270,281 @@ volatile bool execute = true;
 
 - (void)dealloc
 {
-	SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
-	NDS_DeInit();
+	[_fpsTimer invalidate];
+	_fpsTimer = nil;
 	
 	[addedCheatsDict release];
 	[cdsCheats release];
-	[cdsController release];
-	[cdsGPU release];
 	[cdsFirmware release];
 	
 	[_displayModeIDFromString release];
 	
+	CGLReleaseContext(_videoContext);
+	_videoContext = NULL;
+	
+	delete _cdp;
+	delete _inputHandler;
+	
+	SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
+	NDS_DeInit();
+	
+	// Release cdsGPU after NDS_DeInit() to avoid potential crashes.
+	[cdsGPU release];
+	
 	pthread_rwlock_destroy(&rwlockCoreExecute);
 	apple_unfairlock_destroy(unfairlockDisplayMode);
 	
+	apple_unfairlock_destroy(_unfairlockReceivedFrameIndex);
+	apple_unfairlock_destroy(_unfairlockNDSFrameInfo);
+	
 	[super dealloc];
+}
+
+- (void) initVideoWithCurrentOpenEmuContext
+{
+	CGLContextObj oldContext = _videoContext;
+	OE_OGLClientFetchObject *fetchObj = NULL;
+	
+	// Set up the NDS GPU
+	if (cdsGPU == nil)
+	{
+		cdsGPU = [[CocoaDSGPU alloc] init];
+		[cdsGPU setRender3DThreads:0]; // Pass 0 to automatically set the number of rendering threads
+		[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
+		[cdsGPU setGpuScale:1];
+		[cdsGPU setGpuColorFormat:NDSColorFormat_BGR666_Rev];
+		
+		fetchObj = (OE_OGLClientFetchObject *)[cdsGPU fetchObject];
+	}
+	else
+	{
+		fetchObj = (OE_OGLClientFetchObject *)[cdsGPU fetchObject];
+		fetchObj->Init();
+		fetchObj->SetFetchBuffers( GPU->GetDisplayInfo() );
+	}
+	
+	_videoContext = fetchObj->GetContext();
+	CGLRetainContext(_videoContext);
+	
+	// Set up the presenter
+	if (_cdp == NULL)
+	{
+		_cdp = new OE_OGLDisplayPresenter(fetchObj);
+		_cdp->Init();
+		_cdp->SetHUDFontPath(_hudFontPath);
+		
+		// OpenEmu doesn't provide us with the backing scaling factor, which is used to
+		// adapt ClientDisplayPresenter to HiDPI/Retina displays. But if OpenEmu ever
+		// does provide this information, we can give ClientDisplayPresenter this hint.
+		// For now, just assume that the backing scale is 1.0.
+		double scaleFactor = 1.0;
+		if (scaleFactor != 1.0)
+		{
+			_cdp->SetScaleFactor(scaleFactor);
+		}
+		else
+		{
+			_cdp->LoadHUDFont();
+		}
+		
+		_cdp->SetOutputFilter(OutputFilterTypeID_NearestNeighbor);
+		_cdp->SetPixelScaler(VideoFilterTypeID_None);
+		_cdp->SetFiltersPreferGPU(true);
+		_cdp->SetSourceDeposterize(false);
+		_cdp->SetHUDColorInputAppliedOnly(0xFFFFFFFF);
+		_cdp->SetHUDColorInputPendingOnly(0xFFFFFFFF);
+		_cdp->SetHUDColorInputPendingAndApplied(0xFFFFFFFF);
+	}
+	else
+	{
+		_cdp->Init();
+		_cdp->LoadHUDFont();
+	}
+	
+	if (oldContext != NULL)
+	{
+		CGLReleaseContext(oldContext);
+	}
+}
+
+- (void) newFPSTimer
+{
+	if (_fpsTimer != nil)
+	{
+		[_fpsTimer invalidate];
+	}
+	
+	_isTimerAtSecond = NO;
+	_fpsTimer = [NSTimer timerWithTimeInterval:0.5
+										target:self
+									  selector:@selector(getTimedEmulatorStatistics:)
+									  userInfo:nil
+									   repeats:YES];
+	
+	[[NSRunLoop currentRunLoop] addTimer:_fpsTimer forMode:NSRunLoopCommonModes];
+}
+
+- (void) getTimedEmulatorStatistics:(NSTimer *)timer
+{
+	// The timer should fire every 0.5 seconds, so only take the frame
+	// count every other instance the timer fires.
+	_isTimerAtSecond = !_isTimerAtSecond;
+	
+	if (_isTimerAtSecond)
+	{
+		apple_unfairlock_lock(_unfairlockReceivedFrameIndex);
+		_receivedFrameCount = _receivedFrameIndex - _currentReceivedFrameIndex;
+		_currentReceivedFrameIndex = _receivedFrameIndex;
+		apple_unfairlock_unlock(_unfairlockReceivedFrameIndex);
+	}
 }
 
 - (uint64_t) ndsDisplayMode
 {
 	apple_unfairlock_lock(unfairlockDisplayMode);
-	const uint64_t displayModeStates = ndsDisplayMode;
+	const uint64_t displayModeStates = _displayModeStatesApplied;
 	apple_unfairlock_unlock(unfairlockDisplayMode);
 	
 	return displayModeStates;
 }
 
+void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplayPresenterProperties &outProps)
+{
+	     if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Mode_DualScreen) ) outProps.mode = ClientDisplayMode_Dual;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Mode_Main) )       outProps.mode = ClientDisplayMode_Main;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Mode_Touch) )      outProps.mode = ClientDisplayMode_Touch;
+	
+	     if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Layout_Vertical) )     outProps.layout = ClientDisplayLayout_Vertical;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Layout_Horizontal) )   outProps.layout = ClientDisplayLayout_Horizontal;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Layout_Hybrid_2_1) )   outProps.layout = ClientDisplayLayout_Hybrid_2_1;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Layout_Hybrid_16_9) )  outProps.layout = ClientDisplayLayout_Hybrid_16_9;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Layout_Hybrid_16_10) ) outProps.layout = ClientDisplayLayout_Hybrid_16_10;
+	
+	     if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Order_MainFirst) )  outProps.order = ClientDisplayOrder_MainFirst;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Order_TouchFirst) ) outProps.order = ClientDisplayOrder_TouchFirst;
+	
+	     if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Separation_0) )   outProps.gapScale = 0.0;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Separation_50) )  outProps.gapScale = 0.5;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Separation_100) ) outProps.gapScale = 1.0;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Separation_150) ) outProps.gapScale = 1.5;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Separation_200) ) outProps.gapScale = 2.0;
+	
+	     if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Rotation_0) )   outProps.rotation = 0.0;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Rotation_90) )  outProps.rotation = 90.0;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Rotation_180) ) outProps.rotation = 180.0;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Rotation_270) ) outProps.rotation = 270.0;
+}
+
 - (void) setNdsDisplayMode:(uint64_t)displayModeStates
 {
-	OEIntRect newDisplayRect;
-	OEIntSize newDisplayAspectRatio;
+	ClientDisplayPresenterProperties newProps;
+	UpdateDisplayPropertiesFromStates(displayModeStates, newProps);
+	newProps.clientWidth  = _OEViewSize.width;
+	newProps.clientHeight = _OEViewSize.height;
+	newProps.gapDistance = (double)DS_DISPLAY_UNSCALED_GAP * newProps.gapScale;
 	
-	if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Mode_DualScreen) )
-	{
-		newDisplayRect = OEIntRectMake(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
-		newDisplayAspectRatio = OEIntSizeMake(2, 3);
-	}
-	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Mode_Main) )
-	{
-		newDisplayRect = OEIntRectMake(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-		newDisplayAspectRatio = OEIntSizeMake(4, 3);
-	}
-	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Mode_Touch) )
-	{
-		newDisplayRect = OEIntRectMake(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT + 1, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-		newDisplayAspectRatio = OEIntSizeMake(4, 3);
-	}
-	else
+	ClientDisplayPresenter::CalculateNormalSize(newProps.mode, newProps.layout, newProps.gapScale, newProps.normalWidth, newProps.normalHeight);
+	
+	double transformNormalWidth  = newProps.normalWidth;
+	double transformNormalHeight = newProps.normalHeight;
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, newProps.rotation, transformNormalWidth, transformNormalHeight);
+	newProps.viewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(transformNormalWidth, transformNormalHeight, newProps.clientWidth, newProps.clientHeight);
+	
+	newProps.viewScale = 1.0;
+	newProps.clientWidth  = transformNormalWidth;
+	newProps.clientHeight = transformNormalHeight;
+	
+	apple_unfairlock_lock(unfairlockDisplayMode);
+	
+	// Actual display rendering will be changed in [OEGameCore executeFrame] (see notes
+	// in that method for why this is so), and so we need to push this change by setting
+	// _displayModeStatesPending to a non-zero value.
+	_displayModeStatesPending = displayModeStates;
+	
+	// The display buffer size represents the size of an IOSurface, which is fixed by
+	// OpenEmu. However, ClientDisplayPresenter can draw into any sized framebuffer
+	// while also assuming that it is drawing into the maximum available space that the
+	// view can provide. Therefore, we need to manually set the display buffer size to
+	// whatever size the OpenEmu view is.
+	_displayBufferSize = _OEViewSize;
+	
+	// The display aspect ratio represents the actual drawable area within the view. Due
+	// to this, the aspect ratio is implicitly defined by its drawable area. Since we
+	// want to use the entire view as drawable area, this means that we must set the
+	// "aspect ratio" to the view size.
+	_displayAspectRatio = _OEViewSize;
+	
+	// The display rect represents the emulator's video output at a 1x scaling. Despite
+	// the description given by OpenEmu's SDK, the "display rect" is what actually sets
+	// the aspect ratio, but only for the emulator's video output. When the user changes
+	// the view size, the Scale menu changes itself relative to the display size.
+	//
+	// And unlike what the OpenEmu SDK suggests, the "display rect" has absolutely nothing
+	// to do with the drawable area, since we can draw things, such as the HUD, outside the
+	// "display rect". Of course, drawing the HUD relative to the view rather than relative
+	// to the emulator's video output is the intended behavior, but the OpenEmu SDK notes
+	// don't make this easy to figure out!
+	_displayRect = OEIntRectMake(0, 0, transformNormalWidth + 0.0005, transformNormalHeight + 0.0005);
+	
+	apple_unfairlock_unlock(unfairlockDisplayMode);
+}
+
+- (void) applyDisplayMode:(uint64_t)appliedState
+{
+	if (appliedState == 0)
 	{
 		return;
 	}
 	
-	apple_unfairlock_lock(unfairlockDisplayMode);
-	ndsDisplayMode = displayModeStates;
-	_displayRect = newDisplayRect;
-	_displayAspectRatio = newDisplayAspectRatio;
-	apple_unfairlock_unlock(unfairlockDisplayMode);
+	ClientDisplaySource displaySource[2] = { ClientDisplaySource_DeterminedByNDS, ClientDisplaySource_DeterminedByNDS };
+	
+         if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_None) )       displaySource[NDSDisplayID_Main]  = ClientDisplaySource_None;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_NDS) )        displaySource[NDSDisplayID_Main]  = ClientDisplaySource_DeterminedByNDS;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_ForceMain) )  displaySource[NDSDisplayID_Main]  = ClientDisplaySource_EngineMain;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_ForceSub) )   displaySource[NDSDisplayID_Main]  = ClientDisplaySource_EngineSub;
+	
+         if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_None) )      displaySource[NDSDisplayID_Touch] = ClientDisplaySource_None;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_NDS) )       displaySource[NDSDisplayID_Touch] = ClientDisplaySource_DeterminedByNDS;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_ForceMain) ) displaySource[NDSDisplayID_Touch] = ClientDisplaySource_EngineMain;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_ForceSub) )  displaySource[NDSDisplayID_Touch] = ClientDisplaySource_EngineSub;
+	
+	_cdp->SetDisplayVideoSource(NDSDisplayID_Main,  displaySource[NDSDisplayID_Main]);
+	_cdp->SetDisplayVideoSource(NDSDisplayID_Touch, displaySource[NDSDisplayID_Touch]);
+	
+	_cdp->SetHUDVisibility( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_Enable) );
+	_cdp->SetHUDShowExecutionSpeed( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_ExecutionSpeed) );
+	_cdp->SetHUDShowRender3DFPS( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_3DRendererFPS) );
+	_cdp->SetHUDShowFrameIndex( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_FrameIndex) );
+	_cdp->SetHUDShowLagFrameCount( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_LagFrameCounter) );
+	_cdp->SetHUDShowCPULoadAverage( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_CPULoadAverage) );
+	_cdp->SetHUDShowRTC( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_RealTimeClock) );
+	_cdp->SetHUDShowInput( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_Input) );
+	
+	const bool isVideoFPSEnabled = DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_VideoFPS);
+	if (isVideoFPSEnabled)
+	{
+		if (_fpsTimer == nil)
+		{
+			[self newFPSTimer];
+		}
+	}
+	else
+	{
+		[_fpsTimer invalidate];
+		_fpsTimer = nil;
+	}
+	_cdp->SetHUDShowVideoFPS(isVideoFPSEnabled);
+	
+	ClientDisplayPresenterProperties newProps;
+	UpdateDisplayPropertiesFromStates(appliedState, newProps);
+	newProps.clientWidth  = _OEViewSize.width;
+	newProps.clientHeight = _OEViewSize.height;
+	
+	_cdp->CommitPresenterProperties(newProps);
+	_cdp->SetupPresenterProperties();
+	
+	_displayModeStatesApplied = _displayModeStatesPending;
+	_displayModeStatesPending = 0;
 }
 
 #pragma mark - Plug-in Support
@@ -288,6 +563,12 @@ volatile bool execute = true;
  * You can do any setup you want here.
  */
 - (BOOL)loadFileAtPath:(NSString *)path error:(NSError **)error
+{
+	SILENCE_DEPRECATION_OPENEMU( return [self loadFileAtPath:path]; )
+}
+
+// This older version of [OEGameCore loadFileAtPath:] exists for backwards compatibility.
+- (BOOL)loadFileAtPath:(NSString*)path
 {
 	BOOL isRomLoaded = NO;
 	NSString *openEmuDataPath = [self batterySavesDirectoryPath];
@@ -322,21 +603,27 @@ volatile bool execute = true;
 		userDefaultsDisplayMode = [self displayModeInfo];
 	}
 	
-#define GENDISPLAYMODESTATE(_PREFKEY_, _DEFAULTID_) \
-	( ([userDefaultsDisplayMode objectForKey:(_PREFKEY_)] == nil) || ([_displayModeIDFromString objectForKey:(NSString *)[userDefaultsDisplayMode objectForKey:(_PREFKEY_)]] == nil) ) ? \
-		(1 << (_DEFAULTID_)) : \
-		(1 << [(NSNumber *)[_displayModeIDFromString objectForKey:(NSString *)[userDefaultsDisplayMode objectForKey:(_PREFKEY_)]] integerValue])
+	uint64_t s = _displayModeStatesPending;
+	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_DISPLAYMODE]];
+	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_ROTATION]];
+	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_LAYOUT]];
+	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_ORDER]];
+	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_SEPARATION]];
+	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_MAIN]];
+	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_TOUCH]];
 	
-	uint64_t newDisplayModeStates = 0;
-	newDisplayModeStates |= GENDISPLAYMODESTATE( @NDSDISPLAYMODE_PREFKEY_DISPLAYMODE, NDSDisplayOptionID_Mode_DualScreen );
-	newDisplayModeStates |= GENDISPLAYMODESTATE( @NDSDISPLAYMODE_PREFKEY_ROTATION, NDSDisplayOptionID_Rotation_0 );
-	newDisplayModeStates |= GENDISPLAYMODESTATE( @NDSDISPLAYMODE_PREFKEY_LAYOUT, NDSDisplayOptionID_Layout_Vertical );
-	newDisplayModeStates |= GENDISPLAYMODESTATE( @NDSDISPLAYMODE_PREFKEY_ORDER, NDSDisplayOptionID_Order_MainFirst );
-	newDisplayModeStates |= GENDISPLAYMODESTATE( @NDSDISPLAYMODE_PREFKEY_SEPARATION, NDSDisplayOptionID_Separation_0 );
-	newDisplayModeStates |= GENDISPLAYMODESTATE( @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_MAIN, NDSDisplayOptionID_VideoSourceMain_NDS );
-	newDisplayModeStates |= GENDISPLAYMODESTATE( @NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_TOUCH, NDSDisplayOptionID_VideoSourceTouch_NDS );
+	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_Enable state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_ENABLE]];
+	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_ExecutionSpeed state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_EXECUTIONSPEED]];
+	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_VideoFPS state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_VIDEOFPS]];
+	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_3DRendererFPS state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_3DRENDERERFPS]];
+	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_FrameIndex state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_FRAMEINDEX]];
+	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_LagFrameCounter state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_LAGFRAMECOUNTER]];
+	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_CPULoadAverage state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_CPULOADAVERAGE]];
+	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_RealTimeClock state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_REALTIMECLOCK]];
+	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_Input state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_INPUT]];
 	
-	[self setNdsDisplayMode:newDisplayModeStates];
+	[self setNdsDisplayMode:s];
+	_displayModeStatesApplied = _displayModeStatesPending;
 	
 	return isRomLoaded;
 }
@@ -393,15 +680,65 @@ volatile bool execute = true;
  */
 - (void)executeFrame
 {
-	ClientInputHandler *inputHandler = [cdsController inputHandler];
-	inputHandler->ProcessInputs();
-	inputHandler->ApplyInputs();
+	// The notes for the [OEGameCore startEmulation] method suggest that the
+	// OpenGL context is available in that method. That statement is false!
+	// The only time it's guaranteed to be available is right here in this
+	// method. Therefore, we have to lazy init this entire side of the
+	// graphics stack right before we execute the frame because there is no
+	// other viable way to get the current OpenGL context from OpenEmu.
+	if ( (_videoContext == NULL) || (_videoContext != CGLGetCurrentContext()) )
+	{
+		[self initVideoWithCurrentOpenEmuContext];
+	}
+	
+	// Applying the current display mode not only requires a working context,
+	// which is only guaranteed now, and also requires the current view size,
+	// which is also only guaranteed now. Due to those reasons, we can only
+	// apply the display mode right now!
+	if (_displayModeStatesPending != 0)
+	{
+		[self applyDisplayMode:_displayModeStatesPending];
+	}
+	
+	_inputHandler->ProcessInputs();
+	_inputHandler->ApplyInputs();
 	
 	pthread_rwlock_wrlock(&rwlockCoreExecute);
 	NDS_exec<false>();
 	pthread_rwlock_unlock(&rwlockCoreExecute);
 	
+	apple_unfairlock_lock(_unfairlockReceivedFrameIndex);
+	_receivedFrameIndex++;
+	apple_unfairlock_unlock(_unfairlockReceivedFrameIndex);
+	
 	SPU_Emulate_user();
+	
+	// Fetch the frame from the core emulator
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	OE_OGLClientFetchObject &fetchObj = (OE_OGLClientFetchObject &)_cdp->GetFetchObject();
+	fetchObj.SetFetchDisplayInfo(dispInfo);
+	fetchObj.FetchFromBufferIndex(dispInfo.bufferIndex);
+	
+	// Update HUD information
+	apple_unfairlock_lock(_unfairlockReceivedFrameIndex);
+	_clientFrameInfo.videoFPS = _receivedFrameCount;
+	_executionSpeedAverageFramesCollected += (double)_receivedFrameCount;
+	apple_unfairlock_unlock(_unfairlockReceivedFrameIndex);
+	
+	if ((_ndsFrameInfo.frameIndex & 0x3F) == 0x3F)
+	{
+		_ndsFrameInfo.executionSpeed = 100.0 * _executionSpeedAverageFramesCollected / DS_FRAMES_PER_SECOND / ((double)0x3F + 1.0);
+		_executionSpeedAverageFramesCollected = 0.0;
+	}
+	
+	ClientExecutionControl::GenerateNDSFrameInfo(_inputHandler, _ndsFrameInfo);
+	_cdp->SetHUDInfo(_clientFrameInfo, _ndsFrameInfo);
+	
+	// Render the frame to the presenter
+	_cdp->LoadDisplays();
+	_cdp->ProcessDisplays();
+	_cdp->UpdateLayout();
+	_cdp->RenderFrameOGL(false);
 }
 
 /*!
@@ -438,10 +775,7 @@ volatile bool execute = true;
  * buffer may be faster. Besides that, returning the same buffer each time
  * may be faster.
  */
-- (const void *)getVideoBufferWithHint:(void *)hint
-{
-	return GPU->GetDisplayInfo().masterCustomBuffer;
-}
+//- (const void *)getVideoBufferWithHint:(void *)hint;
 
 /*!
  * @method tryToResizeVideoTo:
@@ -451,7 +785,13 @@ volatile bool execute = true;
  * -executeFrame will have a newly sized framebuffer.
  * It is assumed that only 3D cores can do this.
  */
-//- (BOOL)tryToResizeVideoTo:(OEIntSize)size;
+- (BOOL)tryToResizeVideoTo:(OEIntSize)size
+{
+	_OEViewSize = size;
+	[self setNdsDisplayMode:_displayModeStatesApplied];
+	
+	return YES;
+}
 
 /*!
  * @property gameCoreRendering
@@ -461,7 +801,7 @@ volatile bool execute = true;
  */
 - (OEGameCoreRendering)gameCoreRendering
 {
-	return OEGameCoreRendering2DVideo;
+	return OEGameCoreRenderingOpenGL3Video;
 }
 
 /*!
@@ -503,7 +843,11 @@ volatile bool execute = true;
  */
 - (OEIntSize)bufferSize
 {
-	return OEIntSizeMake(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+	apple_unfairlock_lock(unfairlockDisplayMode);
+	const OEIntSize theBufferSize = _displayBufferSize;
+	apple_unfairlock_unlock(unfairlockDisplayMode);
+	
+	return theBufferSize;
 }
 
 /*!
@@ -545,10 +889,7 @@ volatile bool execute = true;
  * Defaults to GL_RGB (sometimes GL_SRGB8). You probably do not need to override this.
  * Ignored for 3D cores.
  */
-- (GLenum)internalPixelFormat
-{
-	return GL_RGBA;
-}
+//- (GLenum)internalPixelFormat;
 
 /*!
  * @property pixelFormat
@@ -557,10 +898,7 @@ volatile bool execute = true;
  * GL_BGRA is preferred, but avoid doing any conversions inside the core.
  * Ignored for 3D cores.
  */
-- (GLenum)pixelType
-{
-	return GL_UNSIGNED_INT_8_8_8_8_REV;
-}
+//- (GLenum)pixelType;
 
 /*!
  * @property pixelFormat
@@ -570,10 +908,7 @@ volatile bool execute = true;
  * avoid doing any conversions inside the core.
  * Ignored for 3D cores.
  */
-- (GLenum)pixelFormat
-{
-	return GL_RGBA;
-}
+//- (GLenum)pixelFormat;
 
 /*!
  * @property bytesPerRow
@@ -731,6 +1066,21 @@ volatile bool execute = true;
 
 #pragma mark - Display Mode - Optional
 
+- (NSDictionary<NSString *, id> *) generateDisplayModeItemByID:(NDSDisplayOptionID)optionID states:(const uint64_t)states
+{
+	if ( (optionID < 0) || (optionID >= NDSDisplayOptionID_Count) )
+	{
+		return nil;
+	}
+	
+	return [NSDictionary dictionaryWithObjectsAndKeys:
+			kDisplayModeItem[optionID].nameKey, OEGameCoreDisplayModeNameKey,
+			kDisplayModeItem[optionID].prefKey, OEGameCoreDisplayModePrefKeyNameKey,
+			[NSNumber numberWithBool:(kDisplayModeItem[optionID].groupBitmask == 0) ? YES : NO], OEGameCoreDisplayModeAllowsToggleKey,
+			[NSNumber numberWithBool:DISPLAYMODE_STATEBIT_CHECK(states, optionID) ? YES : NO], OEGameCoreDisplayModeStateKey,
+			nil];
+}
+
 /** An array describing the available display mode options and the
  *  appearance of the menu used to select them.
  *  @discussion Each NSDictionary in the array corresponds to an item
@@ -745,23 +1095,9 @@ volatile bool execute = true;
  *    See OEGameCoreController.h for a detailed discussion of the keys contained
  *    in each item dictionary. */
 
-- (NSDictionary<NSString *, id> *) generateDisplayModeItemByID:(NDSDisplayOptionID)optionID states:(const uint64_t)states
-{
-	if ( (optionID < 0) || (optionID >= NDSDisplayOptionID_Count) )
-	{
-		return nil;
-	}
-	
-	return [NSDictionary dictionaryWithObjectsAndKeys:
-			kDisplayModeItem[optionID].nameKey, OEGameCoreDisplayModeNameKey,
-			kDisplayModeItem[optionID].prefKey, OEGameCoreDisplayModePrefKeyNameKey,
-			[NSNumber numberWithBool:DISPLAYMODE_STATEBIT_CHECK(states, optionID) ? YES : NO], OEGameCoreDisplayModeStateKey,
-			nil];
-}
-
 - (NSArray<NSDictionary<NSString *, id> *> *) displayModes
 {
-	const uint64_t currentDisplayMode = [self ndsDisplayMode];
+	const uint64_t currentDisplayMode = _displayModeStatesPending;
 	
 	// Generate each display option submenu.
 	NSArray< NSDictionary<NSString *, id> *> *displayModeMenu =
@@ -808,12 +1144,26 @@ volatile bool execute = true;
 	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_None states:currentDisplayMode],
 	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_NDS states:currentDisplayMode],
 	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_ForceMain states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_ForceTouch states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_ForceSub states:currentDisplayMode],
 	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
 	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_None states:currentDisplayMode],
 	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_NDS states:currentDisplayMode],
 	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_ForceMain states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_ForceTouch states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_ForceSub states:currentDisplayMode],
+	 nil];
+	
+	NSArray< NSDictionary<NSString *, id> *> *displayHUDMenu =
+	[NSArray arrayWithObjects:
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_Enable states:currentDisplayMode],
+	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_ExecutionSpeed states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_VideoFPS states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_3DRendererFPS states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_FrameIndex states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_LagFrameCounter states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_CPULoadAverage states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_RealTimeClock states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_Input states:currentDisplayMode],
 	 nil];
 	
 	// Add each submenu to the menu descriptor.
@@ -822,7 +1172,7 @@ volatile bool execute = true;
 	// OpenEmu wants to have a full immutable copy of the menu descriptor so that it can use it for
 	// its Next/Last Display Mode switching feature. Because of this, we can't just generate a
 	// single menu descriptor at init time, modify it as needed, and then send OpenEmu the pointer
-	// to our menu descriptor. as OpenEmu can modify it in some unpredictable ways. We would have
+	// to our menu descriptor, as OpenEmu can modify it in some unpredictable ways. We would have
 	// to send a copy to keep our internal working menu descriptor from getting borked.
 	//
 	// Maintaining a mutable version of the menu descriptor for our internal usage is a pain, as
@@ -831,7 +1181,7 @@ volatile bool execute = true;
 	// OpenEmu a copy of the menu descriptor anyways, it ends up being easier to just use a single
 	// integer ID, NDSDisplayOptionID in our case, to keep track of all of the data associations
 	// and then use that ID to generate the menu.
-	/*
+	
 	NSArray< NSDictionary<NSString *, id> *> *newDisplayModeMenuDescription =
 	[[NSArray alloc] initWithObjects:
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"Mode", OEGameCoreDisplayModeGroupNameKey,         displayModeMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
@@ -840,15 +1190,8 @@ volatile bool execute = true;
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"Order", OEGameCoreDisplayModeGroupNameKey,        displayOrderMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"Separation", OEGameCoreDisplayModeGroupNameKey,   displaySeparationMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"Video Source", OEGameCoreDisplayModeGroupNameKey, displayVideoSourceMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
-	 nil];
-	*/
-	
-	// Still working on other display modes, so just support the original display modes for now.
-	NSArray< NSDictionary<NSString *, id> *> *newDisplayModeMenuDescription =
-	[[NSArray alloc] initWithObjects:
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Mode_DualScreen states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Mode_Main states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Mode_Touch states:currentDisplayMode],
+	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
+	 [NSDictionary dictionaryWithObjectsAndKeys: @"Heads-Up Display", OEGameCoreDisplayModeGroupNameKey, displayHUDMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 nil];
 	
 	return newDisplayModeMenuDescription;
@@ -858,73 +1201,100 @@ volatile bool execute = true;
  *  @param displayMode The name of the display mode to enable or disable, as
  *    specified in its OEGameCoreDisplayModeNameKey key. */
 
+- (uint64_t) switchDisplayModeState:(uint64_t)displayModeState nameKey:(NSString *)nameKey
+{
+	// Validate the incoming nameKey string.
+	if (nameKey == nil)
+	{
+		return displayModeState;
+	}
+	
+	NSNumber *optionIDNumber = [_displayModeIDFromString objectForKey:nameKey];
+	if (optionIDNumber == nil)
+	{
+		return displayModeState;
+	}
+	
+	// Retrieve the NDSDisplayOptionID and generate its associated state bit.
+	const NDSDisplayOptionID optionID = (NDSDisplayOptionID)[optionIDNumber integerValue];
+	const uint64_t optionBit = (1LLU << optionID);
+	
+	// Manipulate our current display mode state using only nameKey.
+	//
+	// OpenEmu menu items are explicitly typed as toggle or group. Technically, these are
+	// two separate switches that make for four possible permutations of menu item type.
+	// But practically speaking, a toggle item already implies that the menu item is not
+	// part of a group, while a group item already implies that the menu item will not
+	// toggle. The code below is written in such a way as to reflect the above behavior.
+	if (kDisplayModeItem[optionID].groupBitmask == 0)
+	{
+		displayModeState ^= optionBit;
+	}
+	else
+	{
+		DISPLAYMODE_STATEBITGROUP_CLEAR(displayModeState, kDisplayModeItem[optionID].groupBitmask);
+		displayModeState |= optionBit;
+	}
+	
+	return displayModeState;
+}
+
+- (uint64_t) setDisplayModeState:(uint64_t)displayModeState optionID:(NDSDisplayOptionID)optionID state:(NSNumber *)stateObj
+{
+	if (stateObj == nil)
+	{
+		return displayModeState;
+	}
+	
+	const uint64_t optionBit = (1LLU << optionID);
+	BOOL newState = [stateObj boolValue];
+	
+	if (newState)
+	{
+		displayModeState |= optionBit;
+	}
+	else
+	{
+		displayModeState &= ~optionBit;
+	}
+	
+	return displayModeState;
+}
+
 - (void)changeDisplayWithMode:(NSString *)displayMode
 {
-	NSNumber *optionIDNumber = [_displayModeIDFromString objectForKey:displayMode];
-	if ( (displayMode == nil) || (optionIDNumber == nil) )
+	uint64_t oldState = [self ndsDisplayMode];
+	uint64_t newState = [self switchDisplayModeState:oldState nameKey:displayMode];
+
+	if (newState == oldState)
 	{
 		return;
 	}
 	
-	uint64_t displayModeStates = [self ndsDisplayMode];
-	
-	const NDSDisplayOptionID optionID = (NDSDisplayOptionID)[optionIDNumber integerValue];
-	switch (optionID)
-	{
-		case NDSDisplayOptionID_Mode_DualScreen:
-		case NDSDisplayOptionID_Mode_Main:
-		case NDSDisplayOptionID_Mode_Touch:
-			DISPLAYMODE_STATEBITGROUP_CLEAR(displayModeStates, NDSDisplayOptionStateBitmask_DisplayMode);
-			break;
-			
-		case NDSDisplayOptionID_Rotation_0:
-		case NDSDisplayOptionID_Rotation_90:
-		case NDSDisplayOptionID_Rotation_180:
-		case NDSDisplayOptionID_Rotation_270:
-			DISPLAYMODE_STATEBITGROUP_CLEAR(displayModeStates, NDSDisplayOptionStateBitmask_Rotation);
-			break;
-			
-		case NDSDisplayOptionID_Layout_Vertical:
-		case NDSDisplayOptionID_Layout_Horizontal:
-		case NDSDisplayOptionID_Layout_Hybrid_2_1:
-		case NDSDisplayOptionID_Layout_Hybrid_16_9:
-		case NDSDisplayOptionID_Layout_Hybrid_16_10:
-			DISPLAYMODE_STATEBITGROUP_CLEAR(displayModeStates, NDSDisplayOptionStateBitmask_Layout);
-			break;
-			
-		case NDSDisplayOptionID_Order_MainFirst:
-		case NDSDisplayOptionID_Order_TouchFirst:
-			DISPLAYMODE_STATEBITGROUP_CLEAR(displayModeStates, NDSDisplayOptionStateBitmask_Order);
-			break;
-			
-		case NDSDisplayOptionID_Separation_0:
-		case NDSDisplayOptionID_Separation_50:
-		case NDSDisplayOptionID_Separation_100:
-		case NDSDisplayOptionID_Separation_150:
-		case NDSDisplayOptionID_Separation_200:
-			DISPLAYMODE_STATEBITGROUP_CLEAR(displayModeStates, NDSDisplayOptionStateBitmask_Separation);
-			break;
-			
-		case NDSDisplayOptionID_VideoSourceMain_None:
-		case NDSDisplayOptionID_VideoSourceMain_NDS:
-		case NDSDisplayOptionID_VideoSourceMain_ForceMain:
-		case NDSDisplayOptionID_VideoSourceMain_ForceTouch:
-			DISPLAYMODE_STATEBITGROUP_CLEAR(displayModeStates, NDSDisplayOptionStateBitmask_VideoSourceMain);
-			break;
-			
-		case NDSDisplayOptionID_VideoSourceTouch_None:
-		case NDSDisplayOptionID_VideoSourceTouch_NDS:
-		case NDSDisplayOptionID_VideoSourceTouch_ForceMain:
-		case NDSDisplayOptionID_VideoSourceTouch_ForceTouch:
-			DISPLAYMODE_STATEBITGROUP_CLEAR(displayModeStates, NDSDisplayOptionStateBitmask_VideoSourceTouch);
-			break;
-			
-		default:
-			break;
-	}
+	[self setNdsDisplayMode:newState];
+}
 
-	displayModeStates |= (1 << optionID);
-	[self setNdsDisplayMode:displayModeStates];
+// This older version of [OEGameCore changeDisplayMode] exists for backwards compatibility.
+// It cycles through the three NDS display modes, and that's it.
+- (void)changeDisplayMode
+{
+	uint64_t displayModeState = [self ndsDisplayMode];
+	
+	if ( DISPLAYMODE_STATEBIT_CHECK(displayModeState, NDSDisplayOptionID_Mode_DualScreen) )
+	{
+		_OEViewSize.height = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+		[self changeDisplayWithMode:kDisplayModeItem[NDSDisplayOptionID_Mode_Main].nameKey];
+	}
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeState, NDSDisplayOptionID_Mode_Main) )
+	{
+		_OEViewSize.height = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+		[self changeDisplayWithMode:kDisplayModeItem[NDSDisplayOptionID_Mode_Touch].nameKey];
+	}
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeState, NDSDisplayOptionID_Mode_Touch) )
+	{
+		_OEViewSize.height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2;
+		[self changeDisplayWithMode:kDisplayModeItem[NDSDisplayOptionID_Mode_DualScreen].nameKey];
+	}
 }
 
 #pragma mark - Internal
@@ -949,9 +1319,9 @@ volatile bool execute = true;
  */
 - (void)startEmulation
 {
-	[cdsController startHardwareMicDevice];
-	[cdsController setHardwareMicMute:NO];
-	[cdsController setHardwareMicPause:NO];
+	_inputHandler->StartHardwareMicDevice();
+	_inputHandler->SetHardwareMicMute(false);
+	_inputHandler->SetHardwareMicPause(false);
 	
 	[super startEmulation];
 }
@@ -983,7 +1353,20 @@ volatile bool execute = true;
  */
 - (void)setPauseEmulation:(BOOL)pauseEmulation
 {
-	[cdsController setHardwareMicPause:pauseEmulation];
+	_inputHandler->SetHardwareMicPause((pauseEmulation) ? YES : NO);
+	
+	if (pauseEmulation)
+	{
+		[_fpsTimer invalidate];
+		_fpsTimer = nil;
+	}
+	else
+	{
+		if (_fpsTimer == nil)
+		{
+			[self newFPSTimer];
+		}
+	}
 	
 	[super setPauseEmulation:pauseEmulation];
 }
@@ -995,90 +1378,107 @@ volatile bool execute = true;
 
 - (oneway void)didPushNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player
 {
-	switch (inputID[button])
+	const NDSInputID theInput = (NDSInputID)inputID[button];
+	
+	switch (theInput)
 	{
 		case NDSInputID_Microphone:
-			[cdsController setSoftwareMicState:YES mode:MicrophoneMode_InternalNoise];
+			_inputHandler->SetClientSoftwareMicState(true, MicrophoneMode_InternalNoise);
 			break;
 			
 		case NDSInputID_Paddle:
 			// Do nothing for now. OpenEmu doesn't currently support the Taito Paddle Controller.
-			//[cdsController setPaddleAdjust:0];
+			//_inputHandler->SetClientPaddleAdjust(0);
 			break;
 			
 		default:
-			[cdsController setControllerState:YES controlID:inputID[button]];
+			_inputHandler->SetClientInputStateUsingID(theInput, true);
 			break;
 	}
+	
+	ClientExecutionControl::UpdateNDSFrameInfoInput(_inputHandler, _ndsFrameInfo);
+	_cdp->SetHUDInfo(_clientFrameInfo, _ndsFrameInfo);
 }
 
 - (oneway void)didReleaseNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player
 {
-	switch (inputID[button])
+	const NDSInputID theInput = (NDSInputID)inputID[button];
+	
+	switch (theInput)
 	{
 		case NDSInputID_Microphone:
-			[cdsController setSoftwareMicState:NO mode:MicrophoneMode_InternalNoise];
+			_inputHandler->SetClientSoftwareMicState(false, MicrophoneMode_InternalNoise);
 			break;
 			
 		case NDSInputID_Paddle:
-			[cdsController setPaddleAdjust:0];
+			_inputHandler->SetClientPaddleAdjust(0);
 			break;
 			
 		default:
-			[cdsController setControllerState:NO controlID:inputID[button]];
+			_inputHandler->SetClientInputStateUsingID(theInput, false);
 			break;
 	}
+	
+	ClientExecutionControl::UpdateNDSFrameInfoInput(_inputHandler, _ndsFrameInfo);
+	_cdp->SetHUDInfo(_clientFrameInfo, _ndsFrameInfo);
 }
 
 - (oneway void)didTouchScreenPoint:(OEIntPoint)aPoint
 {
-	BOOL isTouchPressed = NO;
 	uint64_t displayModeStates = [self ndsDisplayMode];
 	
-	if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Mode_DualScreen) )
+	// Reject touch input if showing only the main screen.
+	if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Mode_Main) )
 	{
-		isTouchPressed = YES;
-		aPoint.y -= GPU_FRAMEBUFFER_NATIVE_HEIGHT; // Normalize the y-coordinate to the DS.
-	}
-	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Mode_Main) )
-	{
-		isTouchPressed = NO; // Reject touch input if showing only the main screen.
-	}
-	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Mode_Touch) )
-	{
-		isTouchPressed = YES;
-	}
-	else
-	{
+		if (!_isInitialTouchPress)
+		{
+			[self didReleaseTouch];
+		}
+		
 		return;
 	}
 	
-	// Constrain the touch point to the DS dimensions.
-	if (aPoint.x < 0)
-	{
-		aPoint.x = 0;
-	}
-	else if (aPoint.x > (GPU_FRAMEBUFFER_NATIVE_WIDTH - 1))
-	{
-		aPoint.x = (GPU_FRAMEBUFFER_NATIVE_WIDTH - 1);
-	}
+	ClientDisplayPresenterProperties propsCopy = _cdp->GetPresenterProperties();
 	
-	if (aPoint.y < 0)
-	{
-		aPoint.y = 0;
-	}
-	else if (aPoint.y > (GPU_FRAMEBUFFER_NATIVE_HEIGHT - 1))
-	{
-		aPoint.y = (GPU_FRAMEBUFFER_NATIVE_HEIGHT - 1);
-	}
+	// GetNDSPoint() is intended for views where the origin point is in the bottom left,
+	// translating it into an NDS point where the origin point is in the top left.
+	// OpenEmu tries to be helpful by flipping the origin point to the top left for us,
+	// but that's not what GetNDSPoint() wants, and so we need to flip OpenEmu's touch
+	// point here.
+	aPoint.y = _displayRect.size.height - aPoint.y; // Normalize the y-coordinate to the DS.
 	
-	touchLocation = NSMakePoint(aPoint.x, aPoint.y);
-	[cdsController setTouchState:isTouchPressed location:touchLocation];
+	// We also need to center the touch point within the view, since OpenEmu has a hard time
+	// (due to view behavior bugs) sizing the view to the drawable rect. More than likely,
+	// there will be some kind of extraneous area around the drawable area, and so we need
+	// to compensate for that here.
+	const double displayRectWidthScaled  = _displayRect.size.width  * propsCopy.viewScale;
+	const double displayRectHeightScaled = _displayRect.size.height * propsCopy.viewScale;
+	aPoint.x = aPoint.x - (int)( ((((double)_OEViewSize.width  - displayRectWidthScaled)  / 2.0) / propsCopy.viewScale) + 0.0005 );
+	aPoint.y = aPoint.y + (int)( ((((double)_OEViewSize.height - displayRectHeightScaled) / 2.0) / propsCopy.viewScale) + 0.0005 );
+	
+	uint8_t x = 0;
+	uint8_t y = 0;
+	
+	ClientDisplayViewInterface::GetNDSPoint(propsCopy,
+											_displayRect.size.width, _displayRect.size.height,
+											aPoint.x, aPoint.y,
+											_isInitialTouchPress, x, y, _isTouchPressInMajorDisplay);
+	_isInitialTouchPress = false;
+	
+	_lastTouchLocation = OEIntPointMake(x, y);
+	_inputHandler->SetClientTouchState(true, x, y, 50);
+	
+	ClientExecutionControl::UpdateNDSFrameInfoInput(_inputHandler, _ndsFrameInfo);
+	_cdp->SetHUDInfo(_clientFrameInfo, _ndsFrameInfo);
 }
 
 - (oneway void)didReleaseTouch
 {
-	[cdsController setTouchState:NO location:touchLocation];
+	_inputHandler->SetClientTouchState(false, _lastTouchLocation.x, _lastTouchLocation.y, 50);
+	_isInitialTouchPress = true;
+	
+	ClientExecutionControl::UpdateNDSFrameInfoInput(_inputHandler, _ndsFrameInfo);
+	_cdp->SetHUDInfo(_clientFrameInfo, _ndsFrameInfo);
 }
 
 @end

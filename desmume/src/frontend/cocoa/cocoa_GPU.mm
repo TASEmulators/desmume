@@ -35,6 +35,8 @@
 	#ifdef ENABLE_APPLE_METAL
 		#import "userinterface/MacMetalDisplayView.h"
 	#endif
+#else
+	#import "openemu/OEDisplayView.h"
 #endif
 
 #ifdef BOOL
@@ -145,10 +147,13 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 	}
 #endif
 	
-#ifdef ENABLE_SHARED_FETCH_OBJECT
 	if (fetchObject == NULL)
 	{
+#ifdef PORT_VERSION_OS_X_APP
 		fetchObject = new MacOGLClientFetchObject;
+#else
+		fetchObject = new OE_OGLClientFetchObject;
+#endif
 		GPU->SetFramebufferPageCount(OPENGL_FETCH_BUFFER_COUNT);
 	}
 	
@@ -156,7 +161,6 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 	gpuEvent->SetFetchObject(fetchObject);
 	
 	GPU->SetWillAutoResolveToCustomBuffer(false);
-#endif
 	
 	openglDeviceMaxMultisamples = 0;
 	render3DMultisampleSizeString = @"Off";
@@ -164,7 +168,9 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 	bool isTempContextCreated = OSXOpenGLRendererInit();
 	if (isTempContextCreated)
 	{
+		CGLContextObj prevContext = CGLGetCurrentContext();
 		OSXOpenGLRendererBegin();
+		
 		GLint maxSamplesOGL = 0;
 		
 #if defined(GL_MAX_SAMPLES)
@@ -177,6 +183,7 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 		
 		OSXOpenGLRendererEnd();
 		DestroyOpenGLRenderer();
+		CGLSetCurrentContext(prevContext);
 	}
 	
 	return self;
@@ -243,10 +250,9 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 #endif
 	
 	GPU->SetCustomFramebufferSize(w, h);
-	
-#ifdef ENABLE_ASYNC_FETCH
 	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
-	
+
+#ifdef ENABLE_ASYNC_FETCH
 	for (size_t i = maxPages - 1; i < maxPages; i--)
 	{
 		semaphore_signal( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
@@ -315,10 +321,9 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 #endif
 		
 		GPU->SetColorFormat((NDSColorFormat)colorFormat);
-		
-#ifdef ENABLE_ASYNC_FETCH
 		fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
-		
+
+#ifdef ENABLE_ASYNC_FETCH
 		for (size_t i = maxPages - 1; i < maxPages; i--)
 		{
 			semaphore_signal( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
