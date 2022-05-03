@@ -739,6 +739,7 @@ static NSImage *iconCodeBreaker = nil;
 	self.dbDate = nil;
 	[list release];
 	delete (CHEATS *)self.listData;
+	cheats = NULL;
 	
 	if (isUsingDummyRWlock)
 	{
