@@ -647,12 +647,11 @@ volatile bool execute = true;
 			if (_fpsTimer == nil)
 			{
 				_isTimerAtSecond = NO;
-				_fpsTimer = [[NSTimer alloc] initWithFireDate:[NSDate date]
-													 interval:0.5
-													   target:self
-													 selector:@selector(getTimedEmulatorStatistics:)
-													 userInfo:nil
-													  repeats:YES];
+				_fpsTimer = [NSTimer timerWithTimeInterval:0.5
+													target:self
+												  selector:@selector(getTimedEmulatorStatistics:)
+												  userInfo:nil
+												   repeats:YES];
 				
 				[[NSRunLoop currentRunLoop] addTimer:_fpsTimer forMode:NSRunLoopCommonModes];
 			}
@@ -1278,7 +1277,7 @@ static void* RunCoreThread(void *arg)
 		
 		if ( (behavior == ExecutionBehavior_Run) || (behavior == ExecutionBehavior_FrameJump) )
 		{
-			if ((ndsFrameInfo.frameIndex & 0x1F) == 0x1F)
+			if ((ndsFrameInfo.frameIndex & 0x3F) == 0x3F)
 			{
 				if (executionSpeedAverageFramesCollected > 0.0001)
 				{
