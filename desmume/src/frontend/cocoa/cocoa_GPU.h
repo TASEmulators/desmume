@@ -65,7 +65,6 @@ enum ClientDisplayBufferState
 	ClientDisplayBufferState_Reading		= 4		// The buffer is currently being read. It cannot be accessed.
 };
 
-class GPUEventHandlerOSX;
 class ClientDisplay3DView;
 
 #ifdef ENABLE_ASYNC_FETCH
@@ -153,7 +152,7 @@ public:
 
 #endif // ENABLE_ASYNC_FETCH
 
-class GPUEventHandlerOSX : public GPUEventHandlerDefault
+class GPUEventHandlerAsync : public GPUEventHandlerDefault
 {
 private:
 	GPUClientFetchObject *_fetchObject;
@@ -165,8 +164,8 @@ private:
 	bool _render3DNeedsFinish;
 	
 public:
-	GPUEventHandlerOSX();
-	~GPUEventHandlerOSX();
+	GPUEventHandlerAsync();
+	~GPUEventHandlerAsync();
 	
 	GPUClientFetchObject* GetFetchObject() const;
 	void SetFetchObject(GPUClientFetchObject *fetchObject);
@@ -195,6 +194,14 @@ public:
 	virtual void DidApplyRender3DSettingsEnd();
 };
 
+// This stub version is useful for clients that want to run the entire emulation on a single thread.
+class GPUEventHandlerAsync_Stub : public GPUEventHandlerAsync
+{
+public:
+	virtual void DidRender3DBegin() {};
+	virtual void DidRender3DEnd() {};
+};
+
 @interface CocoaDSGPU : NSObject
 {
 	UInt32 gpuStateFlags;
@@ -205,7 +212,7 @@ public:
 	BOOL _needRestoreRender3DLock;
 	
 	apple_unfairlock_t _unfairlockGpuState;
-	GPUEventHandlerOSX *gpuEvent;
+	GPUEventHandlerAsync *gpuEvent;
 	
 	GPUClientFetchObject *fetchObject;
 }

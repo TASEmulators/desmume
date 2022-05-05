@@ -124,7 +124,11 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 							   &OSXOpenGLRendererEnd,
 							   &OSXOpenGLRendererFramebufferDidResize);
 	
-	gpuEvent = new GPUEventHandlerOSX;
+#ifdef PORT_VERSION_OS_X_APP
+	gpuEvent = new GPUEventHandlerAsync;
+#else
+	gpuEvent = new GPUEventHandlerAsync_Stub;
+#endif
 	GPU->SetEventHandler(gpuEvent);
 	
 	fetchObject = NULL;
@@ -1659,7 +1663,7 @@ void MacGPUFetchObjectDisplayLink::DoPostFetchActions()
 
 #pragma mark -
 
-GPUEventHandlerOSX::GPUEventHandlerOSX()
+GPUEventHandlerAsync::GPUEventHandlerAsync()
 {
 	_fetchObject = nil;
 	_render3DNeedsFinish = false;
@@ -1669,7 +1673,7 @@ GPUEventHandlerOSX::GPUEventHandlerOSX()
 	pthread_mutex_init(&_mutexApplyRender3DSettings, NULL);
 }
 
-GPUEventHandlerOSX::~GPUEventHandlerOSX()
+GPUEventHandlerAsync::~GPUEventHandlerAsync()
 {
 	if (this->_render3DNeedsFinish)
 	{
@@ -1682,19 +1686,19 @@ GPUEventHandlerOSX::~GPUEventHandlerOSX()
 	pthread_mutex_destroy(&this->_mutexApplyRender3DSettings);
 }
 
-GPUClientFetchObject* GPUEventHandlerOSX::GetFetchObject() const
+GPUClientFetchObject* GPUEventHandlerAsync::GetFetchObject() const
 {
 	return this->_fetchObject;
 }
 
-void GPUEventHandlerOSX::SetFetchObject(GPUClientFetchObject *fetchObject)
+void GPUEventHandlerAsync::SetFetchObject(GPUClientFetchObject *fetchObject)
 {
 	this->_fetchObject = fetchObject;
 }
 
 #ifdef ENABLE_ASYNC_FETCH
 
-void GPUEventHandlerOSX::DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut)
+void GPUEventHandlerAsync::DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut)
 {
 	MacGPUFetchObjectAsync *asyncFetchObj = (MacGPUFetchObjectAsync *)this->_fetchObject;
 	
@@ -1712,7 +1716,7 @@ void GPUEventHandlerOSX::DidFrameBegin(const size_t line, const bool isFrameSkip
 	}
 }
 
-void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo)
+void GPUEventHandlerAsync::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo)
 {
 	MacGPUFetchObjectAsync *asyncFetchObj = (MacGPUFetchObjectAsync *)this->_fetchObject;
 	
@@ -1733,79 +1737,79 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &
 
 #endif // ENABLE_ASYNC_FETCH
 
-void GPUEventHandlerOSX::DidRender3DBegin()
+void GPUEventHandlerAsync::DidRender3DBegin()
 {
 	this->Render3DLock();
 	this->_render3DNeedsFinish = true;
 }
 
-void GPUEventHandlerOSX::DidRender3DEnd()
+void GPUEventHandlerAsync::DidRender3DEnd()
 {
 	this->_render3DNeedsFinish = false;
 	this->Render3DUnlock();
 }
 
-void GPUEventHandlerOSX::DidApplyGPUSettingsBegin()
+void GPUEventHandlerAsync::DidApplyGPUSettingsBegin()
 {
 	this->ApplyGPUSettingsLock();
 }
 
-void GPUEventHandlerOSX::DidApplyGPUSettingsEnd()
+void GPUEventHandlerAsync::DidApplyGPUSettingsEnd()
 {
 	this->ApplyGPUSettingsUnlock();
 }
 
-void GPUEventHandlerOSX::DidApplyRender3DSettingsBegin()
+void GPUEventHandlerAsync::DidApplyRender3DSettingsBegin()
 {
 	this->ApplyRender3DSettingsLock();
 }
 
-void GPUEventHandlerOSX::DidApplyRender3DSettingsEnd()
+void GPUEventHandlerAsync::DidApplyRender3DSettingsEnd()
 {
 	this->ApplyRender3DSettingsUnlock();
 }
 
-void GPUEventHandlerOSX::FramebufferLock()
+void GPUEventHandlerAsync::FramebufferLock()
 {
 	pthread_mutex_lock(&this->_mutexFrame);
 }
 
-void GPUEventHandlerOSX::FramebufferUnlock()
+void GPUEventHandlerAsync::FramebufferUnlock()
 {
 	pthread_mutex_unlock(&this->_mutexFrame);
 }
 
-void GPUEventHandlerOSX::Render3DLock()
+void GPUEventHandlerAsync::Render3DLock()
 {
 	pthread_mutex_lock(&this->_mutex3DRender);
 }
 
-void GPUEventHandlerOSX::Render3DUnlock()
+void GPUEventHandlerAsync::Render3DUnlock()
 {
 	pthread_mutex_unlock(&this->_mutex3DRender);
 }
 
-void GPUEventHandlerOSX::ApplyGPUSettingsLock()
+void GPUEventHandlerAsync::ApplyGPUSettingsLock()
 {
 	pthread_mutex_lock(&this->_mutexApplyGPUSettings);
 }
 
-void GPUEventHandlerOSX::ApplyGPUSettingsUnlock()
+void GPUEventHandlerAsync::ApplyGPUSettingsUnlock()
 {
 	pthread_mutex_unlock(&this->_mutexApplyGPUSettings);
 }
 
-void GPUEventHandlerOSX::ApplyRender3DSettingsLock()
+void GPUEventHandlerAsync::ApplyRender3DSettingsLock()
 {
 	pthread_mutex_lock(&this->_mutexApplyRender3DSettings);
 }
 
-void GPUEventHandlerOSX::ApplyRender3DSettingsUnlock()
+void GPUEventHandlerAsync::ApplyRender3DSettingsUnlock()
 {
 	pthread_mutex_unlock(&this->_mutexApplyRender3DSettings);
 }
 
-bool GPUEventHandlerOSX::GetRender3DNeedsFinish()
+bool GPUEventHandlerAsync::GetRender3DNeedsFinish()
 {
 	return this->_render3DNeedsFinish;
 }
