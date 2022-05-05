@@ -37,7 +37,7 @@ static const char *HUDOutputVertShader_100 = {"\
 	uniform bool renderFlipped; \n\
 	\n\
 	VARYING vec4 vtxColor; \n\
-	VARYING vec2 texCoord[1]; \n\
+	VARYING vec2 texCoord; \n\
 	\n\
 	void main() \n\
 	{ \n\
@@ -53,7 +53,7 @@ static const char *HUDOutputVertShader_100 = {"\
 								vec2(   0.0, scalar)); \n\
 		\n\
 		vtxColor = inColor; \n\
-		texCoord[0] = inTexCoord0; \n\
+		texCoord = inTexCoord0; \n\
 		gl_Position = vec4(projection * rotation * scale * inPosition, 0.0, 1.0);\n\
 		\n\
 		if (renderFlipped)\n\
@@ -66,12 +66,12 @@ static const char *HUDOutputVertShader_100 = {"\
 // FRAGMENT SHADER FOR HUD OUTPUT
 static const char *HUDOutputFragShader_110 = {"\
 	VARYING vec4 vtxColor;\n\
-	VARYING vec2 texCoord[1];\n\
+	VARYING vec2 texCoord;\n\
 	uniform sampler2D tex;\n\
 	\n\
 	void main()\n\
 	{\n\
-		OUT_FRAG_COLOR = SAMPLE4_TEX_2D(tex, texCoord[0]) * vtxColor;\n\
+		OUT_FRAG_COLOR = SAMPLE4_TEX_2D(tex, texCoord) * vtxColor;\n\
 	}\n\
 "};
 
@@ -5076,25 +5076,7 @@ void OGLVideoOutput::Init()
 		(*this->_layerList)[i]->SetVisibility(wasPreviouslyVisibleList[i]);
 	}
 	
-	// Render State Setup (common to both shaders and fixed-function pipeline)
-	glEnable(GL_BLEND);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_DITHER);
-	glDisable(GL_STENCIL_TEST);
-	
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
-	
-	// Set up fixed-function pipeline render states.
-	if (!this->_contextInfo->IsShaderSupported())
-	{
-		glDisable(GL_ALPHA_TEST);
-		glDisable(GL_LIGHTING);
-		glDisable(GL_FOG);
-		glEnable(GL_TEXTURE_RECTANGLE_ARB);
-	}
-	
-	// Set up clear attributes
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	this->PrerenderStateSetupOGL();
 	
 	// Set up textures
 	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, this->_vfMasterDstBufferSize, this->_vfMasterDstBuffer);
@@ -5216,6 +5198,36 @@ void OGLVideoOutput::CopyFrameToBuffer(uint32_t *dstBuffer)
 	glDeleteTextures(1, &texFrameCopyID);
 	
 	this->_needUpdateViewport = true;
+}
+
+void OGLVideoOutput::PrerenderStateSetupOGL()
+{
+	// If the context is managed by us, then setting all of OpenGL's states
+	// once at initialization time should be enough.
+	//
+	// But if the context is managed by a third party, then this method can
+	// be manually called before rendering the video output if necessary.
+	//
+	// The most notable state here is enabling blending, which HUD rendering
+	// requires.
+	
+	// Render State Setup (common to both shaders and fixed-function pipeline)
+	glEnable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_DITHER);
+	glDisable(GL_STENCIL_TEST);
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	
+	// Set up fixed-function pipeline render states.
+	if (!this->_contextInfo->IsShaderSupported())
+	{
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_LIGHTING);
+		glDisable(GL_FOG);
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_TEXTURE_RECTANGLE_ARB);
+	}
 }
 
 void OGLVideoOutput::RenderFrameOGL(bool isRenderingFlipped)
@@ -6274,6 +6286,9 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 		_uniformScalar = glGetUniformLocation(_program->GetProgramID(), "scalar");
 		_uniformViewSize = glGetUniformLocation(_program->GetProgramID(), "viewSize");
 		_uniformRenderFlipped = glGetUniformLocation(_program->GetProgramID(), "renderFlipped");
+		
+		GLint uniformTexSampler = glGetUniformLocation(_program->GetProgramID(), "tex");
+		glUniform1i(uniformTexSampler, 0);
 		glUseProgram(0);
 	}
 	else
@@ -6370,24 +6385,33 @@ OGLHUDLayer::~OGLHUDLayer()
 void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
 {
 	FT_Error error = FT_Err_Ok;
+	std::vector<uint32_t *> workingBufferList;
+	workingBufferList.reserve(16);
 	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, this->_texCharMap);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
 	GLint texLevel = 0;
-	for (size_t tileSize = glyphTileSize, gSize = glyphSize; tileSize >= 4; texLevel++, tileSize >>= 1, gSize = (GLfloat)tileSize * 0.75f)
+	for (size_t tileSize = glyphTileSize, texSize = glyphTileSize * 16, gSize = glyphSize; texSize >= 1; texLevel++, tileSize >>= 1, texSize >>= 1, gSize = (GLfloat)tileSize * 0.75f)
 	{
-		const size_t charMapBufferPixCount = (16 * tileSize) * (16 * tileSize);
-		
+		const size_t charMapBufferPixCount = texSize * texSize;
 		const uint32_t fontColor = 0x00FFFFFF;
+		
+		// Allocate a working buffer for FreeType to draw in. We then need to add
+		// it to a list so that we can deallocate the working buffer after OpenGL
+		// has copied the buffer to its associated texture.
 		uint32_t *charMapBuffer = (uint32_t *)malloc(charMapBufferPixCount * 2 * sizeof(uint32_t));
+		workingBufferList.push_back(charMapBuffer);
 		for (size_t i = 0; i < charMapBufferPixCount; i++)
 		{
 			charMapBuffer[i] = fontColor;
+		}
+		
+		if (tileSize == 0)
+		{
+			continue;
 		}
 		
 		error = FT_Set_Char_Size(fontFace, gSize << 6, gSize << 6, 72, 72);
@@ -6404,7 +6428,7 @@ void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, c
 			for (size_t pixIndex = 0; pixIndex < tileSize; pixIndex++)
 			{
 				const uint32_t colorRGBA8888 = 0xFFFFFFFF;
-				charMapBuffer[(tileSize + pixIndex) + (rowIndex * (16 * tileSize))] = colorRGBA8888;
+				charMapBuffer[(tileSize + pixIndex) + (rowIndex * texSize)] = colorRGBA8888;
 			}
 		}
 		
@@ -6420,7 +6444,6 @@ void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, c
 			const uint16_t tileOffsetX = (c & 0x0F) * tileSize;
 			const uint16_t tileOffsetY = (c >> 4) * tileSize;
 			const uint16_t tileOffsetY_texture = tileOffsetY - (tileSize - gSize + (gSize / 16));
-			const uint16_t texSize = tileSize * 16;
 			const GLuint glyphWidth = glyphSlot->bitmap.width;
 			
 			if (tileSize == glyphTileSize)
@@ -6444,12 +6467,19 @@ void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, c
 			}
 		}
 		
-		glTexImage2D(GL_TEXTURE_2D, texLevel, GL_RGBA, 16 * tileSize, 16 * tileSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, charMapBuffer);
+		glTexImage2D(GL_TEXTURE_2D, texLevel, GL_RGBA, texSize, texSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, charMapBuffer);
 	}
 	
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, texLevel - 1);
 	glBindTexture(GL_TEXTURE_2D, 0);
+	
+	// Synchronize here, then free all previously allocated working buffers.
+	glFinish();
+	for (size_t i = 0; i < workingBufferList.size(); i++)
+	{
+		free(workingBufferList[i]);
+	}
 }
 
 void OGLHUDLayer::_UpdateVerticesOGL()
@@ -6551,19 +6581,19 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 	// First, draw the inputs.
 	if (this->_output->GetHUDShowInput())
 	{
-		const ClientDisplayPresenterProperties &cdv = this->_output->GetPresenterProperties();
+		const ClientDisplayPresenterProperties &cdp = this->_output->GetPresenterProperties();
 		
 		if (this->_output->GetContextInfo()->IsShaderSupported())
 		{
-			glUniform1f(this->_uniformAngleDegrees, cdv.rotation);
-			glUniform1f(this->_uniformScalar, cdv.viewScale);
+			glUniform1f(this->_uniformAngleDegrees, cdp.rotation);
+			glUniform1f(this->_uniformScalar, cdp.viewScale);
 		}
 		else
 		{
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
-			glRotatef(cdv.rotation, 0.0f, 0.0f, 1.0f);
-			glScalef(cdv.viewScale, cdv.viewScale, 1.0f);
+			glRotatef(cdp.rotation, 0.0f, 0.0f, 1.0f);
+			glScalef(cdp.viewScale, cdp.viewScale, 1.0f);
 		}
 		
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -6616,7 +6646,15 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 	}
 	else
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		if (this->_output->WillHUDRenderMipmapped())
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		}
+		else
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		}
+		
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -0.50f);
 	}
@@ -6696,6 +6734,9 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 		_uniformViewSize = glGetUniformLocation(finalOutputProgramID, "viewSize");
 		_uniformRenderFlipped = glGetUniformLocation(finalOutputProgramID, "renderFlipped");
 		_uniformBacklightIntensity = glGetUniformLocation(finalOutputProgramID, "backlightIntensity");
+		
+		GLint uniformTexSampler = glGetUniformLocation(finalOutputProgramID, "tex");
+		glUniform1i(uniformTexSampler, 0);
 		glUseProgram(0);
 	}
 	else

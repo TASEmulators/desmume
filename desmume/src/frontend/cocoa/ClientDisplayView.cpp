@@ -90,6 +90,7 @@ void ClientDisplayPresenter::__InstanceInit(const ClientDisplayPresenterProperti
 	_scaleFactor = 1.0;
 	
 	_hudObjectScale = 1.0;
+	_isHUDRenderMipmapped = false;
 	_isHUDVisible = false;
 	_showExecutionSpeed = false;
 	_showVideoFPS = true;
@@ -564,6 +565,17 @@ float ClientDisplayPresenter::GetHUDObjectScale() const
 void ClientDisplayPresenter::SetHUDObjectScale(float objectScale)
 {
 	this->_hudObjectScale = objectScale;
+}
+
+
+bool ClientDisplayPresenter::WillHUDRenderMipmapped() const
+{
+	return this->_isHUDRenderMipmapped;
+}
+
+void ClientDisplayPresenter::SetHUDRenderMipmapped(const bool mipmapState)
+{
+	this->_isHUDRenderMipmapped = mipmapState;
 }
 
 bool ClientDisplayPresenter::GetHUDVisibility() const

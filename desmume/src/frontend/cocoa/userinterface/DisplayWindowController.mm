@@ -1296,6 +1296,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
 	cdv->Get3DPresenter()->SetHUDFontPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
+	cdv->Get3DPresenter()->SetHUDRenderMipmapped(true);
 	
 	if (scaleFactor != 1.0f)
 	{

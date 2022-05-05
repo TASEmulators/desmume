@@ -455,6 +455,7 @@ public:
 	// Client view interface
 	virtual void ProcessDisplays();
 	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
+	virtual void PrerenderStateSetupOGL();
 	virtual void RenderFrameOGL(bool isRenderingFlipped);
 	
 	virtual const OGLProcessedFrameInfo& GetProcessedFrameInfo();

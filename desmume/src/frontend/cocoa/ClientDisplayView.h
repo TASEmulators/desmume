@@ -154,6 +154,7 @@ protected:
 	double _scaleFactor;
 	
 	double _hudObjectScale;
+	bool _isHUDRenderMipmapped;
 	bool _isHUDVisible;
 	bool _showExecutionSpeed;
 	bool _showVideoFPS;
@@ -260,6 +261,8 @@ public:
 	float GetHUDObjectScale() const;
 	virtual void SetHUDObjectScale(float objectScale);
 	
+	bool WillHUDRenderMipmapped() const;
+	void SetHUDRenderMipmapped(const bool mipmapState);
 	bool GetHUDVisibility() const;
 	virtual void SetHUDVisibility(const bool visibleState);
 	bool GetHUDShowExecutionSpeed() const;
