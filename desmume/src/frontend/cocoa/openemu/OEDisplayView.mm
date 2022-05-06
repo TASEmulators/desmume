@@ -75,6 +75,13 @@ void OE_OGLClientFetchObject::Init()
 	if (this->_clientData == NULL)
 	{
 		OGLContextInfo *newContextInfo = new OGLContextInfo_3_2;
+		if ( (newContextInfo->GetVersionMajor() <= 2) ||
+			((newContextInfo->GetVersionMajor() == 3) && (newContextInfo->GetVersionMinor() <= 1)) )
+		{
+			delete newContextInfo;
+			newContextInfo = new OGLContextInfo_Legacy;
+		}
+		
 		snprintf(_name, sizeof(_name) - 1, "OpenEmu OpenGL v%i.%i", newContextInfo->GetVersionMajor(), newContextInfo->GetVersionMinor());
 		strlcpy(_description, newContextInfo->GetRendererString(), sizeof(_description) - 1);
 		

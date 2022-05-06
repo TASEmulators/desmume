@@ -87,6 +87,15 @@ class OE_OGLDisplayPresenter;
 #define NDSDISPLAYMODE_NAMEKEY_HUD_CPULOADAVERAGE          "CPU Load Average"
 #define NDSDISPLAYMODE_NAMEKEY_HUD_REALTIMECLOCK           "Real-Time Clock"
 #define NDSDISPLAYMODE_NAMEKEY_HUD_INPUT                   "Input"
+
+#define NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_1X         "1x Native Resolution"
+#define NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_2X         "2x Resolution"
+#define NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_3X         "3x Resolution"
+#define NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_4X         "4x Resolution"
+
+#define NDSDISPLAYMODE_NAMEKEY_3D_TEXTURESCALING_1X        "1x Native Texture"
+#define NDSDISPLAYMODE_NAMEKEY_3D_TEXTURESCALING_2X        "2x Texture Upscaling"
+#define NDSDISPLAYMODE_NAMEKEY_3D_TEXTURESCALING_4X        "4x Texture Upscaling"
 	
 #define NDSDISPLAYMODE_PREFKEY_DISPLAYMODE                 "displayMode"
 #define NDSDISPLAYMODE_PREFKEY_LAYOUT                      "layout"
@@ -104,6 +113,8 @@ class OE_OGLDisplayPresenter;
 #define NDSDISPLAYMODE_PREFKEY_HUD_CPULOADAVERAGE          "hud_cpuloadaverage"
 #define NDSDISPLAYMODE_PREFKEY_HUD_REALTIMECLOCK           "hud_realtimeclock"
 #define NDSDISPLAYMODE_PREFKEY_HUD_INPUT                   "hud_input"
+#define NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING            "3D_renderscaling"
+#define NDSDISPLAYMODE_PREFKEY_3D_TEXTURESCALING           "3D_texturescaling"
 
 // These IDs are used to maintain the data associations for all of
 // the display mode menu items.
@@ -153,6 +164,15 @@ enum NDSDisplayOptionID
 	NDSDisplayOptionID_HUD_RealTimeClock,
 	NDSDisplayOptionID_HUD_Input,
 	
+	NDSDisplayOptionID_3D_RenderScaling_1x,
+	NDSDisplayOptionID_3D_RenderScaling_2x,
+	NDSDisplayOptionID_3D_RenderScaling_3x,
+	NDSDisplayOptionID_3D_RenderScaling_4x,
+	
+	NDSDisplayOptionID_3D_TextureScaling_1x,
+	NDSDisplayOptionID_3D_TextureScaling_2x,
+	NDSDisplayOptionID_3D_TextureScaling_4x,
+	
 	NDSDisplayOptionID_Count
 };
 
@@ -190,6 +210,15 @@ enum NDSDisplayOptionID
                                                       (1ULL << NDSDisplayOptionID_VideoSourceTouch_NDS) | \
                                                       (1ULL << NDSDisplayOptionID_VideoSourceTouch_ForceMain) | \
                                                       (1ULL << NDSDisplayOptionID_VideoSourceTouch_ForceSub))
+
+#define NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING    ((1ULL << NDSDisplayOptionID_3D_RenderScaling_1x) | \
+                                                      (1ULL << NDSDisplayOptionID_3D_RenderScaling_2x) | \
+                                                      (1ULL << NDSDisplayOptionID_3D_RenderScaling_3x) | \
+                                                      (1ULL << NDSDisplayOptionID_3D_RenderScaling_4x))
+
+#define NDSDISPLAYMODE_GROUPBITMASK_TEXTURESCALING   ((1ULL << NDSDisplayOptionID_3D_TextureScaling_1x) | \
+                                                      (1ULL << NDSDisplayOptionID_3D_TextureScaling_2x) | \
+                                                      (1ULL << NDSDisplayOptionID_3D_TextureScaling_4x))
 
 // Describes the data associations for a single display mode menu item, used for generating
 // the NSDictionary items that are part of the display mode menu descriptor. This struct
@@ -244,7 +273,11 @@ typedef struct OEMenuItemDesc OEMenuItemDesc;
 	OEIntSize _displayAspectRatio;
 	OEIntSize _displayBufferSize;
 	OEIntSize _OEViewSize;
+	BOOL _canRespondToViewResize;
+	NSUInteger _selectedRenderScaling;
+	NSUInteger _selectedTextureScaling;
 	
+	bool _willUseOpenGL3Context;
 	CGLContextObj _videoContext;
 	OE_OGLDisplayPresenter *_cdp;
 	

@@ -4229,6 +4229,10 @@ OGLContextInfo_Legacy::OGLContextInfo_Legacy()
 		}
 	}
 	
+	glBindVertexArrayDESMUME = &glBindVertexArray_LegacyAPPLE;
+	glDeleteVertexArraysDESMUME = &glDeleteVertexArrays_LegacyAPPLE;
+	glGenVertexArraysDESMUME = &glGenVertexArrays_LegacyAPPLE;
+	
 	_isVAOSupported =   isShaderSupported &&
 	                   _isVBOSupported &&
 	                  (this->IsExtensionPresent(oglExtensionSet, "GL_ARB_vertex_array_object") ||

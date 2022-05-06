@@ -33,6 +33,7 @@
 
 #include "../../NDSSystem.h"
 #include "../../GPU.h"
+#include "../../render3D.h"
 #undef BOOL
 
 #define DISPLAYMODE_STATEBIT_CHECK(_STATEBITS_, _ID_) ((((_STATEBITS_) >> ((uint64_t)_ID_)) & 1ULL) != 0ULL)
@@ -82,7 +83,16 @@ static const OEMenuItemDesc kDisplayModeItem[NDSDisplayOptionID_Count] = {
 	{ @NDSDISPLAYMODE_NAMEKEY_HUD_LAGFRAMECOUNTER, @NDSDISPLAYMODE_PREFKEY_HUD_LAGFRAMECOUNTER, 0, nil },
 	{ @NDSDISPLAYMODE_NAMEKEY_HUD_CPULOADAVERAGE,  @NDSDISPLAYMODE_PREFKEY_HUD_CPULOADAVERAGE, 0, nil },
 	{ @NDSDISPLAYMODE_NAMEKEY_HUD_REALTIMECLOCK,   @NDSDISPLAYMODE_PREFKEY_HUD_REALTIMECLOCK, 0, nil },
-	{ @NDSDISPLAYMODE_NAMEKEY_HUD_INPUT,           @NDSDISPLAYMODE_PREFKEY_HUD_INPUT, 0, nil }
+	{ @NDSDISPLAYMODE_NAMEKEY_HUD_INPUT,           @NDSDISPLAYMODE_PREFKEY_HUD_INPUT, 0, nil },
+	
+	{ @NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_1X, @NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING, NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_2X, @NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING, NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_3X, @NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING, NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_4X, @NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING, NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING, nil },
+	
+	{ @NDSDISPLAYMODE_NAMEKEY_3D_TEXTURESCALING_1X, @NDSDISPLAYMODE_PREFKEY_3D_TEXTURESCALING, NDSDISPLAYMODE_GROUPBITMASK_TEXTURESCALING, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_3D_TEXTURESCALING_2X, @NDSDISPLAYMODE_PREFKEY_3D_TEXTURESCALING, NDSDISPLAYMODE_GROUPBITMASK_TEXTURESCALING, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_3D_TEXTURESCALING_4X, @NDSDISPLAYMODE_PREFKEY_3D_TEXTURESCALING, NDSDISPLAYMODE_GROUPBITMASK_TEXTURESCALING, nil }
 };
 
 static const uint64_t kDisplayModeStatesDefault = (1LLU << NDSDisplayOptionID_Mode_DualScreen) |
@@ -93,7 +103,9 @@ static const uint64_t kDisplayModeStatesDefault = (1LLU << NDSDisplayOptionID_Mo
                                                   (1LLU << NDSDisplayOptionID_VideoSourceMain_NDS) |
                                                   (1LLU << NDSDisplayOptionID_VideoSourceTouch_NDS) |
                                                   (1LLU << NDSDisplayOptionID_HUD_ExecutionSpeed) |
-                                                  (1LLU << NDSDisplayOptionID_HUD_VideoFPS);
+                                                  (1LLU << NDSDisplayOptionID_HUD_VideoFPS) |
+                                                  (1LLU << NDSDisplayOptionID_3D_RenderScaling_1x) |
+                                                  (1LLU << NDSDisplayOptionID_3D_TextureScaling_1x);
 
 volatile bool execute = true;
 
@@ -121,6 +133,7 @@ volatile bool execute = true;
 	strlcpy(_hudFontPath, gameCoreFontPath, sizeof(_hudFontPath));
 	
 	_fpsTimer = nil;
+	_willUseOpenGL3Context = true;
 	_videoContext = NULL;
 	_cdp = NULL;
 	cdsGPU = NULL;
@@ -217,7 +230,10 @@ volatile bool execute = true;
 	_OEViewSize.height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2;
 	_displayBufferSize = OEIntSizeMake(_OEViewSize.width, _OEViewSize.height);
 	_displayRect = OEIntRectMake(0, 0, _OEViewSize.width, _OEViewSize.height);
-	_displayAspectRatio = OEIntSizeMake(2, 3);
+	_displayAspectRatio = OEIntSizeMake(_OEViewSize.width, _OEViewSize.height);
+	_canRespondToViewResize = NO;
+	_selectedRenderScaling = 1;
+	_selectedTextureScaling = 1;
 	
 	_displayModeIDFromString = [[NSDictionary alloc] initWithObjectsAndKeys:
 								[NSNumber numberWithInteger:NDSDisplayOptionID_Mode_DualScreen], kDisplayModeItem[NDSDisplayOptionID_Mode_DualScreen].nameKey,
@@ -263,6 +279,15 @@ volatile bool execute = true;
 								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_CPULoadAverage],  kDisplayModeItem[NDSDisplayOptionID_HUD_CPULoadAverage].nameKey,
 								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_RealTimeClock],   kDisplayModeItem[NDSDisplayOptionID_HUD_RealTimeClock].nameKey,
 								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_Input],           kDisplayModeItem[NDSDisplayOptionID_HUD_Input].nameKey,
+								
+								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_RenderScaling_1x], kDisplayModeItem[NDSDisplayOptionID_3D_RenderScaling_1x].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_RenderScaling_2x], kDisplayModeItem[NDSDisplayOptionID_3D_RenderScaling_2x].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_RenderScaling_3x], kDisplayModeItem[NDSDisplayOptionID_3D_RenderScaling_3x].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_RenderScaling_4x], kDisplayModeItem[NDSDisplayOptionID_3D_RenderScaling_4x].nameKey,
+								
+								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_TextureScaling_1x], kDisplayModeItem[NDSDisplayOptionID_3D_TextureScaling_1x].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_TextureScaling_2x], kDisplayModeItem[NDSDisplayOptionID_3D_TextureScaling_2x].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_TextureScaling_4x], kDisplayModeItem[NDSDisplayOptionID_3D_TextureScaling_4x].nameKey,
 								nil];
 	
 	return self;
@@ -311,6 +336,7 @@ volatile bool execute = true;
 		cdsGPU = [[CocoaDSGPU alloc] init];
 		[cdsGPU setRender3DThreads:0]; // Pass 0 to automatically set the number of rendering threads
 		[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
+		[cdsGPU setRender3DTextureScalingFactor:1];
 		[cdsGPU setGpuScale:1];
 		[cdsGPU setGpuColorFormat:NDSColorFormat_BGR666_Rev];
 		
@@ -332,6 +358,7 @@ volatile bool execute = true;
 		_cdp = new OE_OGLDisplayPresenter(fetchObj);
 		_cdp->Init();
 		_cdp->SetHUDFontPath(_hudFontPath);
+		_cdp->SetHUDRenderMipmapped(false); // Mipmapped HUD rendering doesn't work on OpenEmu!
 		
 		// OpenEmu doesn't provide us with the backing scaling factor, which is used to
 		// adapt ClientDisplayPresenter to HiDPI/Retina displays. But if OpenEmu ever
@@ -439,20 +466,56 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 {
 	ClientDisplayPresenterProperties newProps;
 	UpdateDisplayPropertiesFromStates(displayModeStates, newProps);
-	newProps.clientWidth  = _OEViewSize.width;
-	newProps.clientHeight = _OEViewSize.height;
-	newProps.gapDistance = (double)DS_DISPLAY_UNSCALED_GAP * newProps.gapScale;
 	
 	ClientDisplayPresenter::CalculateNormalSize(newProps.mode, newProps.layout, newProps.gapScale, newProps.normalWidth, newProps.normalHeight);
-	
 	double transformNormalWidth  = newProps.normalWidth;
 	double transformNormalHeight = newProps.normalHeight;
 	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, newProps.rotation, transformNormalWidth, transformNormalHeight);
-	newProps.viewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(transformNormalWidth, transformNormalHeight, newProps.clientWidth, newProps.clientHeight);
 	
-	newProps.viewScale = 1.0;
-	newProps.clientWidth  = transformNormalWidth;
-	newProps.clientHeight = transformNormalHeight;
+	     if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_1x) ) _selectedRenderScaling = 1;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_2x) ) _selectedRenderScaling = 2;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_3x) ) _selectedRenderScaling = 3;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_4x) ) _selectedRenderScaling = 4;
+	
+         if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_TextureScaling_1x) ) _selectedTextureScaling = 1;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_TextureScaling_2x) ) _selectedTextureScaling = 2;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_TextureScaling_4x) ) _selectedTextureScaling = 4;
+	
+	// If we're on an older version of OpenEmu that doesn't send us view resizing events via
+	// [OEGameCore tryToResizeVideoTo:], then we need to guess an appropriate draw size based
+	// on the transformed normal size of the presenter. If we don't do this, then OpenEmu will
+	// draw at 1x scaling, which starts looking uglier as the view size is increased.
+	if (!_canRespondToViewResize)
+	{
+		int legacyVersionScale = 1;
+		_OEViewSize.width  = (int)(transformNormalWidth  + 0.0005);
+		_OEViewSize.height = (int)(transformNormalHeight + 0.0005);
+		
+		if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Mode_DualScreen) )
+		{
+			// Let's increase the size of the hybrid display modes so that the minor displays
+			// don't look so lo-res.
+			if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Layout_Hybrid_2_1) )
+			{
+				legacyVersionScale = 2;
+			}
+			else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Layout_Hybrid_16_9) ||
+					  DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_Layout_Hybrid_16_10) )
+			{
+				legacyVersionScale = 4;
+			}
+		}
+		
+		// Also give hi-res 3D rendering a shot at increasing the scaling.
+		if (legacyVersionScale < _selectedRenderScaling)
+		{
+			legacyVersionScale = _selectedRenderScaling;
+		}
+		
+		// Multiply the normal size by our fixed scaling value.
+		_OEViewSize.width  *= legacyVersionScale;
+		_OEViewSize.height *= legacyVersionScale;
+	}
 	
 	apple_unfairlock_lock(unfairlockDisplayMode);
 	
@@ -484,7 +547,17 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	// "display rect". Of course, drawing the HUD relative to the view rather than relative
 	// to the emulator's video output is the intended behavior, but the OpenEmu SDK notes
 	// don't make this easy to figure out!
-	_displayRect = OEIntRectMake(0, 0, transformNormalWidth + 0.0005, transformNormalHeight + 0.0005);
+	if (_canRespondToViewResize)
+	{
+		// For newer OpenEmu versions, the display rect size is 1x normal scaled.
+		_displayRect = OEIntRectMake(0, 0, (int)(transformNormalWidth + 0.0005), (int)(transformNormalHeight + 0.0005));
+	}
+	else
+	{
+		// For older OpenEmu versions, the display rect size includes a fixed prescaling.
+		// We'll need to keep this in mind when we calculate touch coordinates.
+		_displayRect = OEIntRectMake(0, 0, _OEViewSize.width, _OEViewSize.height);
+	}
 	
 	apple_unfairlock_unlock(unfairlockDisplayMode);
 }
@@ -542,6 +615,9 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	
 	_cdp->CommitPresenterProperties(newProps);
 	_cdp->SetupPresenterProperties();
+	
+	[cdsGPU setGpuScale:_selectedRenderScaling];
+	[cdsGPU setRender3DTextureScalingFactor:_selectedTextureScaling];
 	
 	_displayModeStatesApplied = _displayModeStatesPending;
 	_displayModeStatesPending = 0;
@@ -611,6 +687,8 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_SEPARATION]];
 	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_MAIN]];
 	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_TOUCH]];
+	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING]];
+	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_3D_TEXTURESCALING]];
 	
 	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_Enable state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_ENABLE]];
 	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_ExecutionSpeed state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_EXECUTIONSPEED]];
@@ -738,6 +816,7 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	_cdp->LoadDisplays();
 	_cdp->ProcessDisplays();
 	_cdp->UpdateLayout();
+	_cdp->PrerenderStateSetupOGL(); // Need this to enable OpenGL blending for the HUD.
 	_cdp->RenderFrameOGL(false);
 }
 
@@ -787,6 +866,7 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
  */
 - (BOOL)tryToResizeVideoTo:(OEIntSize)size
 {
+	_canRespondToViewResize = YES;
 	_OEViewSize = size;
 	[self setNdsDisplayMode:_displayModeStatesApplied];
 	
@@ -801,7 +881,15 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
  */
 - (OEGameCoreRendering)gameCoreRendering
 {
+	_willUseOpenGL3Context = true;
 	return OEGameCoreRenderingOpenGL3Video;
+}
+
+- (BOOL)rendersToOpenGL
+{
+	// This method is retained for backwards compatibility.
+	_willUseOpenGL3Context = false;
+	return YES; // Equivalent to OEGameCoreRenderingOpenGL2Video
 }
 
 /*!
@@ -892,7 +980,7 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 //- (GLenum)internalPixelFormat;
 
 /*!
- * @property pixelFormat
+ * @property pixelType
  * @discussion
  * The 'type' parameter to glTexImage2D, used to create the framebuffer.
  * GL_BGRA is preferred, but avoid doing any conversions inside the core.
@@ -993,7 +1081,7 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 
 - (void)saveStateToFileAtPath:(NSString *)fileName completionHandler:(void(^)(BOOL success, NSError *error))block
 {
-	BOOL fileSuccess = [CocoaDSFile saveState:[NSURL fileURLWithPath:fileName]];
+	BOOL fileSuccess = [self saveStateToFileAtPath:fileName];
 	
 	if (block != nil)
 	{
@@ -1001,14 +1089,26 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	}
 }
 
+- (BOOL)saveStateToFileAtPath:(NSString *)fileName
+{
+	// This method is retained for backwards compatibility.
+	return [CocoaDSFile saveState:[NSURL fileURLWithPath:fileName]];
+}
+
 - (void)loadStateFromFileAtPath:(NSString *)fileName completionHandler:(void(^)(BOOL success, NSError *error))block
 {
-	BOOL fileSuccess = [CocoaDSFile loadState:[NSURL fileURLWithPath:fileName]];
+	BOOL fileSuccess = [self loadStateFromFileAtPath:fileName];
 	
 	if (block != nil)
 	{
 		block(fileSuccess, nil);
 	}
+}
+
+- (BOOL)loadStateFromFileAtPath:(NSString *)fileName
+{
+	// This method is retained for backwards compatibility.
+	return [CocoaDSFile loadState:[NSURL fileURLWithPath:fileName]];
 }
 
 #pragma mark - Optional
@@ -1166,6 +1266,18 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_Input states:currentDisplayMode],
 	 nil];
 	
+	NSArray< NSDictionary<NSString *, id> *> *display3DRenderingMenu =
+	[NSArray arrayWithObjects:
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_1x states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_2x states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_3x states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_4x states:currentDisplayMode],
+	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_TextureScaling_1x states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_TextureScaling_2x states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_TextureScaling_4x states:currentDisplayMode],
+	 nil];
+	
 	// Add each submenu to the menu descriptor.
 	//
 	// You may wonder why we're generating the menu from scratch every time. The reason is because
@@ -1192,6 +1304,8 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"Video Source", OEGameCoreDisplayModeGroupNameKey, displayVideoSourceMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"Heads-Up Display", OEGameCoreDisplayModeGroupNameKey, displayHUDMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
+	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
+	 [NSDictionary dictionaryWithObjectsAndKeys: @"3D Rendering", OEGameCoreDisplayModeGroupNameKey, display3DRenderingMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 nil];
 	
 	return newDisplayModeMenuDescription;
@@ -1282,17 +1396,14 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	
 	if ( DISPLAYMODE_STATEBIT_CHECK(displayModeState, NDSDisplayOptionID_Mode_DualScreen) )
 	{
-		_OEViewSize.height = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 		[self changeDisplayWithMode:kDisplayModeItem[NDSDisplayOptionID_Mode_Main].nameKey];
 	}
 	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeState, NDSDisplayOptionID_Mode_Main) )
 	{
-		_OEViewSize.height = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 		[self changeDisplayWithMode:kDisplayModeItem[NDSDisplayOptionID_Mode_Touch].nameKey];
 	}
 	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeState, NDSDisplayOptionID_Mode_Touch) )
 	{
-		_OEViewSize.height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2;
 		[self changeDisplayWithMode:kDisplayModeItem[NDSDisplayOptionID_Mode_DualScreen].nameKey];
 	}
 }
@@ -1438,8 +1549,6 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 		return;
 	}
 	
-	ClientDisplayPresenterProperties propsCopy = _cdp->GetPresenterProperties();
-	
 	// GetNDSPoint() is intended for views where the origin point is in the bottom left,
 	// translating it into an NDS point where the origin point is in the top left.
 	// OpenEmu tries to be helpful by flipping the origin point to the top left for us,
@@ -1447,18 +1556,21 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	// point here.
 	aPoint.y = _displayRect.size.height - aPoint.y; // Normalize the y-coordinate to the DS.
 	
+	// The display rect should be at 1x normal scaling, but could include prescaling for
+	// older OpenEmu versions, so we need to account for both cases here.
+	ClientDisplayPresenterProperties propsCopy = _cdp->GetPresenterProperties();
+	const double displayRectWidthScaled  = (_canRespondToViewResize) ? _displayRect.size.width  * propsCopy.viewScale : _displayRect.size.width;
+	const double displayRectHeightScaled = (_canRespondToViewResize) ? _displayRect.size.height * propsCopy.viewScale : _displayRect.size.height;
+	
 	// We also need to center the touch point within the view, since OpenEmu has a hard time
 	// (due to view behavior bugs) sizing the view to the drawable rect. More than likely,
 	// there will be some kind of extraneous area around the drawable area, and so we need
 	// to compensate for that here.
-	const double displayRectWidthScaled  = _displayRect.size.width  * propsCopy.viewScale;
-	const double displayRectHeightScaled = _displayRect.size.height * propsCopy.viewScale;
 	aPoint.x = aPoint.x - (int)( ((((double)_OEViewSize.width  - displayRectWidthScaled)  / 2.0) / propsCopy.viewScale) + 0.0005 );
 	aPoint.y = aPoint.y + (int)( ((((double)_OEViewSize.height - displayRectHeightScaled) / 2.0) / propsCopy.viewScale) + 0.0005 );
 	
 	uint8_t x = 0;
 	uint8_t y = 0;
-	
 	ClientDisplayViewInterface::GetNDSPoint(propsCopy,
 											_displayRect.size.width, _displayRect.size.height,
 											aPoint.x, aPoint.y,
