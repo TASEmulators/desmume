@@ -124,14 +124,6 @@ volatile bool execute = true;
 		return self;
 	}
 	
-	// Retrieve the file path for the HUD font file.
-	// Because this file must be reloaded due to repeated context changes, we'll
-	// need to maintain a copy of the file path.
-	NSString *fontPath = [[NSBundle bundleForClass:[self class]] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
-	const char *gameCoreFontPath = [[NSFileManager defaultManager] fileSystemRepresentationWithPath:fontPath];
-	memset(_hudFontPath, 0, sizeof(_hudFontPath));
-	strlcpy(_hudFontPath, gameCoreFontPath, sizeof(_hudFontPath));
-	
 	_fpsTimer = nil;
 	_willUseOpenGL3Context = true;
 	_videoContext = NULL;
@@ -355,9 +347,12 @@ volatile bool execute = true;
 	// Set up the presenter
 	if (_cdp == NULL)
 	{
+		NSString *gameCoreFontPath = [[NSBundle bundleForClass:[self class]] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
+		const char *hudFontPath = [[NSFileManager defaultManager] fileSystemRepresentationWithPath:gameCoreFontPath];
+		
 		_cdp = new OE_OGLDisplayPresenter(fetchObj);
 		_cdp->Init();
-		_cdp->SetHUDFontPath(_hudFontPath);
+		_cdp->SetHUDFontPath(hudFontPath);
 		_cdp->SetHUDRenderMipmapped(false); // Mipmapped HUD rendering doesn't work on OpenEmu!
 		
 		// OpenEmu doesn't provide us with the backing scaling factor, which is used to

@@ -254,7 +254,6 @@ typedef struct OEMenuItemDesc OEMenuItemDesc;
 
 @interface NDSGameCore : OEGameCore
 {
-	char _hudFontPath[4096]; // This should be plenty for storing a file path!
 	apple_unfairlock_t unfairlockDisplayMode;
 	pthread_rwlock_t rwlockCoreExecute;
 	

@@ -6301,6 +6301,8 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	}
 	
 	glGenTextures(1, &_texCharMap);
+	_workingCharBufferList = new std::vector<uint32_t *>;
+	_workingCharBufferList->reserve(16);
 	
 	// Set up VBOs
 	glGenBuffersARB(1, &_vboPositionVertexID);
@@ -6384,13 +6386,20 @@ OGLHUDLayer::~OGLHUDLayer()
 	glDeleteBuffersARB(1, &this->_vboElementID);
 	
 	glDeleteTextures(1, &this->_texCharMap);
+	
+	// We can only deallocate the working buffers now because some clients
+	// require that these buffers remain for the entire lifetime of the
+	// texture. Do this to avoid crashes.
+	for (size_t i = 0; i < this->_workingCharBufferList->size(); i++)
+	{
+		free((*this->_workingCharBufferList)[i]);
+	}
+	delete this->_workingCharBufferList;
 }
 
 void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
 {
 	FT_Error error = FT_Err_Ok;
-	std::vector<uint32_t *> workingBufferList;
-	workingBufferList.reserve(16);
 	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, this->_texCharMap);
@@ -6404,10 +6413,10 @@ void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, c
 		const uint32_t fontColor = 0x00FFFFFF;
 		
 		// Allocate a working buffer for FreeType to draw in. We then need to add
-		// it to a list so that we can deallocate the working buffer after OpenGL
-		// has copied the buffer to its associated texture.
+		// it to a list so that we can deallocate the working buffer at texture
+		// deletion time.
 		uint32_t *charMapBuffer = (uint32_t *)malloc(charMapBufferPixCount * 2 * sizeof(uint32_t));
-		workingBufferList.push_back(charMapBuffer);
+		this->_workingCharBufferList->push_back(charMapBuffer);
 		for (size_t i = 0; i < charMapBufferPixCount; i++)
 		{
 			charMapBuffer[i] = fontColor;
@@ -6477,13 +6486,6 @@ void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, c
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, texLevel - 1);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	
-	// Synchronize here, then free all previously allocated working buffers.
-	glFinish();
-	for (size_t i = 0; i < workingBufferList.size(); i++)
-	{
-		free(workingBufferList[i]);
-	}
 }
 
 void OGLHUDLayer::_UpdateVerticesOGL()
@@ -6642,7 +6644,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 	
 	// Finally, draw each character inside the box.
 	const GLfloat textBoxScale = (GLfloat)HUD_TEXTBOX_BASE_SCALE * this->_output->GetHUDObjectScale();
-	if (textBoxScale >= (2.0/3.0))
+	if ( (textBoxScale >= (2.0/3.0)) || !this->_output->WillHUDRenderMipmapped() )
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -6650,15 +6652,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 	}
 	else
 	{
-		if (this->_output->WillHUDRenderMipmapped())
-		{
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		}
-		else
-		{
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		}
-		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -0.50f);
 	}

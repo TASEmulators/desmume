@@ -296,6 +296,8 @@ protected:
 	GLuint _vboElementID;
 	GLuint _texCharMap;
 	
+	std::vector<uint32_t *> *_workingCharBufferList;
+	
 	void _UpdateVerticesOGL();
 	
 public:
