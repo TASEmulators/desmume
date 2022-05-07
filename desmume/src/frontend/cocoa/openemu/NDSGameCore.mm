@@ -591,44 +591,76 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 		return;
 	}
 	
-	ClientDisplaySource displaySource[2] = { ClientDisplaySource_DeterminedByNDS, ClientDisplaySource_DeterminedByNDS };
-	
-         if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_None) )       displaySource[NDSDisplayID_Main]  = ClientDisplaySource_None;
-	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_NDS) )        displaySource[NDSDisplayID_Main]  = ClientDisplaySource_DeterminedByNDS;
-	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_ForceMain) )  displaySource[NDSDisplayID_Main]  = ClientDisplaySource_EngineMain;
-	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_ForceSub) )   displaySource[NDSDisplayID_Main]  = ClientDisplaySource_EngineSub;
-	
-         if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_None) )      displaySource[NDSDisplayID_Touch] = ClientDisplaySource_None;
-	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_NDS) )       displaySource[NDSDisplayID_Touch] = ClientDisplaySource_DeterminedByNDS;
-	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_ForceMain) ) displaySource[NDSDisplayID_Touch] = ClientDisplaySource_EngineMain;
-	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_ForceSub) )  displaySource[NDSDisplayID_Touch] = ClientDisplaySource_EngineSub;
-	
-	_cdp->SetDisplayVideoSource(NDSDisplayID_Main,  displaySource[NDSDisplayID_Main]);
-	_cdp->SetDisplayVideoSource(NDSDisplayID_Touch, displaySource[NDSDisplayID_Touch]);
-	
-	_cdp->SetHUDVisibility( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_Enable) );
-	_cdp->SetHUDShowExecutionSpeed( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_ExecutionSpeed) );
-	_cdp->SetHUDShowRender3DFPS( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_3DRendererFPS) );
-	_cdp->SetHUDShowFrameIndex( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_FrameIndex) );
-	_cdp->SetHUDShowLagFrameCount( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_LagFrameCounter) );
-	_cdp->SetHUDShowCPULoadAverage( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_CPULoadAverage) );
-	_cdp->SetHUDShowRTC( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_RealTimeClock) );
-	_cdp->SetHUDShowInput( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_Input) );
-	
-	const bool isVideoFPSEnabled = DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_VideoFPS);
-	if (isVideoFPSEnabled)
+	if (appliedState != _displayModeStatesApplied)
 	{
-		if (_fpsTimer == nil)
+		ClientDisplaySource displaySource[2] = { ClientDisplaySource_DeterminedByNDS, ClientDisplaySource_DeterminedByNDS };
+		
+			 if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_None) )       displaySource[NDSDisplayID_Main]  = ClientDisplaySource_None;
+		else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_NDS) )        displaySource[NDSDisplayID_Main]  = ClientDisplaySource_DeterminedByNDS;
+		else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_ForceMain) )  displaySource[NDSDisplayID_Main]  = ClientDisplaySource_EngineMain;
+		else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_ForceSub) )   displaySource[NDSDisplayID_Main]  = ClientDisplaySource_EngineSub;
+		
+			 if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_None) )      displaySource[NDSDisplayID_Touch] = ClientDisplaySource_None;
+		else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_NDS) )       displaySource[NDSDisplayID_Touch] = ClientDisplaySource_DeterminedByNDS;
+		else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_ForceMain) ) displaySource[NDSDisplayID_Touch] = ClientDisplaySource_EngineMain;
+		else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_ForceSub) )  displaySource[NDSDisplayID_Touch] = ClientDisplaySource_EngineSub;
+		
+		_cdp->SetDisplayVideoSource(NDSDisplayID_Main,  displaySource[NDSDisplayID_Main]);
+		_cdp->SetDisplayVideoSource(NDSDisplayID_Touch, displaySource[NDSDisplayID_Touch]);
+		
+		_cdp->SetHUDVisibility( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_Enable) );
+		_cdp->SetHUDShowExecutionSpeed( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_ExecutionSpeed) );
+		_cdp->SetHUDShowRender3DFPS( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_3DRendererFPS) );
+		_cdp->SetHUDShowFrameIndex( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_FrameIndex) );
+		_cdp->SetHUDShowLagFrameCount( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_LagFrameCounter) );
+		_cdp->SetHUDShowCPULoadAverage( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_CPULoadAverage) );
+		_cdp->SetHUDShowRTC( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_RealTimeClock) );
+		_cdp->SetHUDShowInput( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_Input) );
+		
+		const bool isVideoFPSEnabled = DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_HUD_VideoFPS);
+		if (isVideoFPSEnabled)
 		{
-			[self newFPSTimer];
+			if (_fpsTimer == nil)
+			{
+				[self newFPSTimer];
+			}
 		}
+		else
+		{
+			[_fpsTimer invalidate];
+			_fpsTimer = nil;
+		}
+		_cdp->SetHUDShowVideoFPS(isVideoFPSEnabled);
+		
+		[cdsGPU setRender3DFragmentSamplingHack:(DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Software_FragmentSamplingHack)) ? YES : NO];
+		[cdsGPU setRender3DTextureSmoothing:(DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_OpenGL_SmoothTextures)) ? YES : NO];
+		
+		if ( (appliedState & NDSDISPLAYMODE_GROUPBITMASK_GPUENGINE) != (_displayModeStatesApplied & NDSDISPLAYMODE_GROUPBITMASK_GPUENGINE) )
+		{
+			if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Engine_Software) )
+			{
+				[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
+				[cdsGPU setGpuColorFormat:NDSColorFormat_BGR666_Rev];
+			}
+			else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Engine_OpenGL) )
+			{
+				[cdsGPU setRender3DRenderingEngine:CORE3DLIST_OPENGL];
+				[cdsGPU setGpuColorFormat:NDSColorFormat_BGR888_Rev];
+			}
+		}
+		
+		if ( (appliedState & NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING) != (_displayModeStatesApplied & NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING) )
+		{
+			[cdsGPU setGpuScale:_selectedRenderScaling];
+		}
+		
+		if ( (appliedState & NDSDISPLAYMODE_GROUPBITMASK_TEXTURESCALING) != (_displayModeStatesApplied & NDSDISPLAYMODE_GROUPBITMASK_TEXTURESCALING) )
+		{
+			[cdsGPU setRender3DTextureScalingFactor:_selectedTextureScaling];
+		}
+		
+		_displayModeStatesApplied = appliedState;
 	}
-	else
-	{
-		[_fpsTimer invalidate];
-		_fpsTimer = nil;
-	}
-	_cdp->SetHUDShowVideoFPS(isVideoFPSEnabled);
 	
 	ClientDisplayPresenterProperties newProps;
 	UpdateDisplayPropertiesFromStates(appliedState, newProps);
@@ -638,23 +670,6 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	_cdp->CommitPresenterProperties(newProps);
 	_cdp->SetupPresenterProperties();
 	
-	if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Engine_Software) )
-	{
-		[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
-		[cdsGPU setGpuColorFormat:NDSColorFormat_BGR666_Rev];
-	}
-	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Engine_OpenGL) )
-	{
-		[cdsGPU setRender3DRenderingEngine:CORE3DLIST_OPENGL];
-		[cdsGPU setGpuColorFormat:NDSColorFormat_BGR888_Rev];
-	}
-	
-	[cdsGPU setRender3DFragmentSamplingHack:(DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Software_FragmentSamplingHack)) ? YES : NO];
-	[cdsGPU setRender3DTextureSmoothing:(DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_OpenGL_SmoothTextures)) ? YES : NO];
-	[cdsGPU setGpuScale:_selectedRenderScaling];
-	[cdsGPU setRender3DTextureScalingFactor:_selectedTextureScaling];
-	
-	_displayModeStatesApplied = _displayModeStatesPending;
 	_displayModeStatesPending = 0;
 }
 
@@ -740,7 +755,6 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_GPU_OpenGL_SmoothTextures state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_GPU_OPENGL_SMOOTHTEXTURES]];
 	
 	[self setNdsDisplayMode:s];
-	_displayModeStatesApplied = _displayModeStatesPending;
 	
 	return isRomLoaded;
 }
@@ -907,7 +921,15 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 {
 	_canRespondToViewResize = YES;
 	_OEViewSize = size;
-	[self setNdsDisplayMode:_displayModeStatesApplied];
+	
+	if (_displayModeStatesPending != 0)
+	{
+		[self setNdsDisplayMode:_displayModeStatesPending];
+	}
+	else
+	{
+		[self setNdsDisplayMode:_displayModeStatesApplied];
+	}
 	
 	return YES;
 }
