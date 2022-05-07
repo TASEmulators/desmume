@@ -1,49 +1,69 @@
                                        DeSmuME
                       _________________________________________
                       Copyright (C) 2006 yopyop
-                      Copyright (C) 2006-2015 DeSmuME team
-                      Last Updated: March 28, 2015
+                      Copyright (C) 2006-2022 DeSmuME team
+                      Last Updated: May 7, 2022
 
 Contents:
-1) System Requirements ..................................................... 15
-2) Quick Start Guide for Using DeSmuME for OS X ............................ 36
-3) Additional Documentation ............................................... 201
-4) Contact Information .................................................... 231
-5) License ................................................................ 333
+1) System Requirements ..................................................... 16
+2) Quick Start Guide for Using DeSmuME for macOS ........................... 56
+3) Improving Emulation Performance ........................................ 201
+4) Additional Documentation ............................................... 225
+5) Contact Information .................................................... 255
+6) License ................................................................ 357
 
 
 1) System Requirements ________________________________________________________
 
-DeSmuME is a very demanding app, especially for CPU usage. Before you begin,
-make sure that your Mac meets the listed system requirements.
-
-If your Mac meets only the minimum requirements, then you should expect to run
-most simple 2D-only games with some frameskip, but you will be unable to run
-complex 2D games or any 3D-heavy games. However, if your Mac meets the
-recommended requirements, then you should expect to run almost every game,
-including very complex 3D-heavy games, with minimal to no frameskip.
-
 Operating System: OS X v10.5 (Leopard) or later
 
 CPU:              Can run on any PowerPC G4, G5, or Intel processor
-                  2.1 GHz Intel Core 2 Duo (minimum)
-                  3.0 GHz Intel Core 2 Duo or faster (recommended)
+                  Minimum Recommended: 2.4 GHz Intel Core 2 Duo (Penryn)
+                  Best Experience Recommended: 2.4 GHz Intel i5 (Haswell)
 
 RAM:              512 MB (minimum)
                   2 GB (recommended)
 
+Before you begin, make sure that your Mac meets the listed system requirements.
+In general, any Mac with an Intel Penryn processor (from early 2008) should be
+sufficient for basic gaming. However, it is possible to run DeSmuME with even
+older hardware than that. In this case, you will need to use the settings
+listed in the section "Improving Emulation Performance" to make things usable.
+With this level of hardware, running any additional graphics enhancing features
+will result in a poor experience. Some frameskip will also be necessary in
+order maintain your execution speed.
 
-2) Quick Start Guide for Using DeSmuME for OS X _______________________________
+If your Mac meets the minimum recommended requirements, then you should be able
+to run all games at full speed without any frameskip. You may need to use some
+of the settings listed in the section "Improving Emulation Performance" for
+certain games, but they should not be required for most games. You will also be
+able to use some basic graphical enhancements, such as using some of the
+display filters. However, increased 3D rendering resolution may not be possible
+for this level of hardware.
+
+However, if your Mac has an Intel Haswell (from late 2013) or an Apple Silicon
+processor (from 2020), you will be able to run all games with all of DeSmuME's
+features without any performance problems. Graphics enhancements, such as
+increased 3D rendering resolution, can be adjusted as needed to fit the
+performance level of your hardware.
+
+Please note that running DeSmuME on a PowerPC, while possible, is not fully
+supported. The PowerPC binary exists mostly for testing and development
+purposes, and also just because we can. Most games don't work well on PowerPC,
+and so you will be limited to running only the most basic of games, such as
+"Phoenix Wright: Ace Attorney."
+
+2) Quick Start Guide for Using DeSmuME for macOS ______________________________
 
 Installing DeSmuME is as easy as copying DeSmuME.app to your Applications
 folder (or other folder of your choice). Double-click the app to start DeSmuME.
 
-Note that DeSmuME for OS X may have a different feature set than DeSmuME for
+Note that DeSmuME for macOS may have a different feature set than DeSmuME for
 Windows and DeSmuME for Linux. As of this writing, some features that are
-present in DeSmuME for Windows are not present in DeSmuME for OS X.
+present in DeSmuME for Windows are not present in DeSmuME for macOS.
 
 The rest of this section will be a guide to help you quickly get started using
-DeSmuME for OS X.
+DeSmuME for macOS.
 
 Loading a ROM and Starting the Emulator:
 Simply double-click the desired ROM from the Finder to play the game. By
@@ -54,8 +74,8 @@ you need them.
 Using the NDS Controller:
 Each NDS controller button can be mapped to a button of your choice on your
 keyboard, gamepad, or joystick. You can view the mappings by clicking on Input
-in DeSmuME > Preferences. To change a mapping, click on the NDS control that you
-want to change, then press the button on your input device to map it.
+in DeSmuME > Preferences. To change a mapping, click on the NDS control that
+you want to change, then press the button on your input device to map it.
 
 By default, the NDS controller is mapped to the following keys on your keyboard:
     Up - Up Arrow
@@ -116,15 +136,16 @@ click in the touch pad area of the NDS display window to use the NDS touch pad.
 
 Using the NDS Microphone:
 Some games make use of the NDS microphone. DeSmuME emulates the NDS microphone
-by using the default input device selected in your System Preferences. You can
-choose Emulation > Show Microphone Settings to view the input device that
-DeSmuME is currently using, as well as setting its gain.
+by using the default audio input device selected in your System Preferences.
+You can choose Emulation > Show Microphone Settings to view the audio input
+device that DeSmuME is currently using, as well as setting its gain.
 
-DeSmuME will track the input level on the meter as the NDS reads the
-microphone. The meter reflects the input level as seen by the NDS. Note that
-some games ignore the microphone, and therefore will not register on the meter.
-If you need to view the input level from the host machine's perspective, you
-can view the host's input level in your System Preferences.
+DeSmuME will track the audio input level on the meter as the NDS reads the
+microphone. The meter reflects the audio input level as seen by the NDS, not
+the host. Note that some games ignore the microphone, and therefore will not
+register on the meter. If you need to view the audio input level from the host
+machine's perspective, you can view the host's audio input level in your System
+Preferences.
 
 Finally, you can generate audio samples in software by using one of DeSmuME's
 audio generators, and send those audio samples to the NDS. This is what the
@@ -135,17 +156,21 @@ input device.
 
 The microphone icon serves to indicate the current status of the NDS
 microphone, and will change color for each status:
-    Black - The microphone is inactive.
-    Dark Green - The microphone is active. However, the input level is too
-                 low to be meaningful, or the game is ignoring the microphone.
+    Black - The microphone is inactive due to the emulation being paused.
+    Dark Gray - The host audio input is inactive because the user has muted it
+                or because the user never authorized its usage. The emulation
+                is currently only accepting software-generated sources.
+    Bright Gray - A software-generated source is being used for the microphone
+                  input. This overrides any host audio input.
+    Dark Green - The host audio input is active. However, the input level is
+                 too low to be meaningful, or the game is ignoring the
+                 microphone.
     Bright Green - The microphone is active and the game is reading a
-                   meaningful input level.
+                   meaningful input level from the host audio input.
     Bright Red - The microphone is active and the game is reading a clipped
                  input level. Depending on the situation, this may or may not
-                 be desirable. Use the gain slider to influence the input
-                 level if needed.
-    Gray - The host input device is being temporarily ignored because a
-           Microphone command is currently engaged.
+                 be desirable. Use the gain slider to influence the host audio
+                 input level if needed.
 
 Rotating the NDS Display:
 Some games require that the NDS display be at a certain rotation in order to
@@ -173,7 +198,7 @@ use to quickly freeze/restore the emulation state.
 - To quick restore the emulation state, choose File > Load State Slot > Slot #.
   The default hotkey for this is (#).
 
-Improving Emulation Performance:
+3) Improving Emulation Performance ____________________________________________
 There are many settings you can change in order to improve DeSmuME's emulation
 performance. All of the settings listed below affect performance the most. Use
 the settings as shown for the best possible performance. All of these settings
@@ -181,24 +206,23 @@ may be found in DeSmuME > Preferences.
 
 - WARNING: Changing any Emulation setting may cause emulation glitches in
            certain ROMs. Do not change these settings unless you are willing to
-           accept reduced ROM compatibility.
-
-    Display:
-        Video Output:
-            Use Vertical Sync - Off
-            Video Filter - None
-        3D Rendering:
-            3D Rendering Engine - SoftRasterizer
-            Rendering Threads - Automatic
+           accept reduced emulation accuracy or ROM compatibility.
     
     Emulation:
         Advanced Bus Level Timing - Off (May cause glitches)
-        Rigourous 3D Rendering Timing - On (May cause graphical glitches)
-        3D Rendering Engine - Dynamic Recompiler (May reduce ROM compatibility)
+        Rigorous 3D Rendering Timing - On (May cause graphical glitches)
+        CPU Emulation Engine - Dynamic Recompiler (Reduces ROM compatibility)
             Dynamic Recompiler Block Size - 100 (May cause glitches)
         Use External BIOS Images - Off (May reduce ROM compatibility)
+        
+    3D Rendering:
+        3D Rendering Engine - SoftRasterizer (or OpenGL if GPU Scaling Factor
+                              is greater than 4)
+        GPU Scaling Factor - 1
+        GPU Color Depth - 15-bit (Reduces color accuracy of 3D rendering)
+        Texture Scaling Factor - 1
 
-3) Additional Documentation ___________________________________________________
+4) Additional Documentation ___________________________________________________
 
 The quick start guide in this Read Me is by no means a complete reference to
 everything that DeSmuME can do! If you need any additional information about
@@ -213,22 +237,22 @@ This is the main Wiki page that contains all of our official documentation.
 
 The Frequently Asked Questions (FAQ) page has a lot of useful general
 information about DeSmuME. Do note that some of the information may be platform
-specific, and may not directly apply to the OS X version of DeSmuME.
+specific, and may not directly apply to the macOS version of DeSmuME.
 
-* DeSmuME Manual for OS X:
+* DeSmuME Manual for macOS:
 http://wiki.desmume.org/index.php?title=DeSmuME_Manual_for_the_Macintosh_port
 
 This page contains complete and detailed information about how to operate
-DeSmuME for OS X.
+DeSmuME for macOS.
 
-* DeSmuME Build Instructions for OS X:
+* DeSmuME Build Instructions for macOS:
 http://wiki.desmume.org/index.php?title=Installing_DeSmuME_from_source_on_OS_X
 
 This page contains complete and detailed instructions about how to make your
-own build of DeSmuME for OS X directly from the source code.
+own build of DeSmuME for macOS directly from the source code.
 
 
-4) Contact Information ________________________________________________________
+5) Contact Information ________________________________________________________
 
 Thank you for you interest in DeSmuME! If you want to tell us how useful
 DeSmuME is in your life, your love (or hate) of certain NDS games, your passion
@@ -272,9 +296,9 @@ If you still need to ask a question, choose Help > Submit a Support Request in
 the DeSmuME application. Follow the onscreen instructions on the Support
 Request Form.
 
-* Live Developer Chat Channel: irc://irc.freenode.net/desmume
+* Live Developer Chat Channel: irc://irc.libera.chat:6697/desmume
 
-We have a live developer chatline on Freenode IRC at #desmume. This channel
+We have a live developer chatline on Libera IRC at #desmume. This channel
 is meant for discussing the development of DeSmuME, and shows the real work
 that goes on behind the scenes. If you are interested in doing any sort of
 software programming, software testing, documentation, or graphics work, then
@@ -309,12 +333,12 @@ from Help > Submit a Bug Report.
 
 When you write your description, make sure that they are as detailed as
 possible. The better your descriptions are, the faster we can test and fix
-bugs. For example, if you observed a bug in the game Golden Sun: Dark Dawn, then
-the bug report could look something like this:
+bugs. For example, if you observed a bug in the game "Golden Sun: Dark Dawn,"
+then the bug report could look something like this:
 
-    App Version: v0.9.11
-    Operating System: OS X v10.10.2 (14C1510)
-    Mac Model Identifier: iMac11,2
+    App Version: 0.9.12
+    Operating System: OS X v10.14.6 (18G9323)
+    Mac Model Identifier: MacBookPro15,1
     ROM Name: GOLDENSUN_DD
     ROM Serial: NTR-BO5E-USA
     Observed Behavior: I tried to load a save state using the
@@ -330,7 +354,7 @@ logs. For the above example, we would probably ask you for your save states to
 help us track down the bug.
 
 
-5) License ____________________________________________________________________
+6) License ____________________________________________________________________
 
 This file is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
