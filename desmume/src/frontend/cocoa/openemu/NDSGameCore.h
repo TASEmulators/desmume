@@ -54,8 +54,8 @@ class OE_OGLDisplayPresenter;
 #define NDSDISPLAYMODE_NAMEKEY_LAYOUT_HYBRID_16_9          "Hybrid (16:9)"
 #define NDSDISPLAYMODE_NAMEKEY_LAYOUT_HYBRID_16_10         "Hybrid (16:10)"
 	
-#define NDSDISPLAYMODE_NAMEKEY_DISPLAYORDER_MAIN           "Main First"
-#define NDSDISPLAYMODE_NAMEKEY_DISPLAYORDER_TOUCH          "Touch First"
+#define NDSDISPLAYMODE_NAMEKEY_DISPLAYORDER_MAIN           "Main Display First"
+#define NDSDISPLAYMODE_NAMEKEY_DISPLAYORDER_TOUCH          "Touch Display First"
 	
 #define NDSDISPLAYMODE_NAMEKEY_ROTATION_0                  "0°"
 #define NDSDISPLAYMODE_NAMEKEY_ROTATION_90                 "90°"
@@ -78,7 +78,7 @@ class OE_OGLDisplayPresenter;
 #define NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCETOUCH_FORCEMAIN  "Touch Display - Force Main Engine"
 #define NDSDISPLAYMODE_NAMEKEY_VIDEOSOURCETOUCH_FORCESUB   "Touch Display - Force Sub Engine"
 
-#define NDSDISPLAYMODE_NAMEKEY_HUD_ENABLE                  "Enable HUD"
+#define NDSDISPLAYMODE_NAMEKEY_HUD_ENABLE                  "Enable Heads-Up Display"
 #define NDSDISPLAYMODE_NAMEKEY_HUD_EXECUTIONSPEED          "Execution Speed"
 #define NDSDISPLAYMODE_NAMEKEY_HUD_VIDEOFPS                "Video FPS"
 #define NDSDISPLAYMODE_NAMEKEY_HUD_3DRENDERERFPS           "3D Renderer FPS"

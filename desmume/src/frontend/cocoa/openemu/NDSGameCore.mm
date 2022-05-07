@@ -1293,8 +1293,6 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	
 	NSArray< NSDictionary<NSString *, id> *> *displayHUDMenu =
 	[NSArray arrayWithObjects:
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_Enable states:s],
-	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
 	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_ExecutionSpeed states:s],
 	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_VideoFPS states:s],
 	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_3DRendererFPS states:s],
@@ -1349,13 +1347,14 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	NSArray< NSDictionary<NSString *, id> *> *newDisplayModeMenuDescription =
 	[[NSArray alloc] initWithObjects:
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"Mode", OEGameCoreDisplayModeGroupNameKey,         displayModeMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
-	 [NSDictionary dictionaryWithObjectsAndKeys: @"Rotation", OEGameCoreDisplayModeGroupNameKey,     displayRotationMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"Layout", OEGameCoreDisplayModeGroupNameKey,       displayLayoutMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
+	 [NSDictionary dictionaryWithObjectsAndKeys: @"Rotation", OEGameCoreDisplayModeGroupNameKey,     displayRotationMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"Order", OEGameCoreDisplayModeGroupNameKey,        displayOrderMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"Separation", OEGameCoreDisplayModeGroupNameKey,   displaySeparationMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"Video Source", OEGameCoreDisplayModeGroupNameKey, displayVideoSourceMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
-	 [NSDictionary dictionaryWithObjectsAndKeys: @"Heads-Up Display", OEGameCoreDisplayModeGroupNameKey, displayHUDMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_Enable states:s],
+	 [NSDictionary dictionaryWithObjectsAndKeys: @"HUD Info Visibility", OEGameCoreDisplayModeGroupNameKey, displayHUDMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"GPU Emulation", OEGameCoreDisplayModeGroupNameKey, displayGPUEmulationMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"3D Rendering", OEGameCoreDisplayModeGroupNameKey, display3DRenderingMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
