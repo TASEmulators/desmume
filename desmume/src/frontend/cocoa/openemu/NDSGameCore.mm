@@ -499,7 +499,7 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_7x) ) _selectedRenderScaling = 7;
 	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_8x) ) _selectedRenderScaling = 8;
 	
-         if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_TextureScaling_1x) ) _selectedTextureScaling = 1;
+	     if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_TextureScaling_1x) ) _selectedTextureScaling = 1;
 	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_TextureScaling_2x) ) _selectedTextureScaling = 2;
 	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_TextureScaling_4x) ) _selectedTextureScaling = 4;
 	
@@ -595,12 +595,12 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	{
 		ClientDisplaySource displaySource[2] = { ClientDisplaySource_DeterminedByNDS, ClientDisplaySource_DeterminedByNDS };
 		
-			 if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_None) )       displaySource[NDSDisplayID_Main]  = ClientDisplaySource_None;
+		     if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_None) )       displaySource[NDSDisplayID_Main]  = ClientDisplaySource_None;
 		else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_NDS) )        displaySource[NDSDisplayID_Main]  = ClientDisplaySource_DeterminedByNDS;
 		else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_ForceMain) )  displaySource[NDSDisplayID_Main]  = ClientDisplaySource_EngineMain;
 		else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceMain_ForceSub) )   displaySource[NDSDisplayID_Main]  = ClientDisplaySource_EngineSub;
 		
-			 if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_None) )      displaySource[NDSDisplayID_Touch] = ClientDisplaySource_None;
+		     if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_None) )      displaySource[NDSDisplayID_Touch] = ClientDisplaySource_None;
 		else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_NDS) )       displaySource[NDSDisplayID_Touch] = ClientDisplaySource_DeterminedByNDS;
 		else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_ForceMain) ) displaySource[NDSDisplayID_Touch] = ClientDisplaySource_EngineMain;
 		else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_VideoSourceTouch_ForceSub) )  displaySource[NDSDisplayID_Touch] = ClientDisplaySource_EngineSub;
@@ -1628,7 +1628,7 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	// OpenEmu tries to be helpful by flipping the origin point to the top left for us,
 	// but that's not what GetNDSPoint() wants, and so we need to flip OpenEmu's touch
 	// point here.
-	aPoint.y = _displayRect.size.height - aPoint.y; // Normalize the y-coordinate to the DS.
+	aPoint.y = _displayRect.size.height - aPoint.y;
 	
 	// The display rect should be at 1x normal scaling, but could include prescaling for
 	// older OpenEmu versions, so we need to account for both cases here.
