@@ -88,14 +88,24 @@ class OE_OGLDisplayPresenter;
 #define NDSDISPLAYMODE_NAMEKEY_HUD_REALTIMECLOCK           "Real-Time Clock"
 #define NDSDISPLAYMODE_NAMEKEY_HUD_INPUT                   "Input"
 
+#define NDSDISPLAYMODE_NAMEKEY_GPU_ENGINE_SOFTWARE         "Use SoftRasterizer Engine"
+#define NDSDISPLAYMODE_NAMEKEY_GPU_ENGINE_OPENGL           "Use OpenGL Engine"
+
 #define NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_1X         "1x Native Resolution"
 #define NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_2X         "2x Resolution"
 #define NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_3X         "3x Resolution"
 #define NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_4X         "4x Resolution"
+#define NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_5X         "5x Resolution"
+#define NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_6X         "6x Resolution"
+#define NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_7X         "7x Resolution"
+#define NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_8X         "8x Resolution"
 
 #define NDSDISPLAYMODE_NAMEKEY_3D_TEXTURESCALING_1X        "1x Native Texture"
 #define NDSDISPLAYMODE_NAMEKEY_3D_TEXTURESCALING_2X        "2x Texture Upscaling"
 #define NDSDISPLAYMODE_NAMEKEY_3D_TEXTURESCALING_4X        "4x Texture Upscaling"
+
+#define NDSDISPLAYMODE_NAMEKEY_GPU_SOFTWARE_FRAGMENTSAMPLINGHACK  "Fragment Sampling Hack"
+#define NDSDISPLAYMODE_NAMEKEY_GPU_OPENGL_SMOOTHTEXTURES   "Smooth Textures"
 	
 #define NDSDISPLAYMODE_PREFKEY_DISPLAYMODE                 "displayMode"
 #define NDSDISPLAYMODE_PREFKEY_LAYOUT                      "layout"
@@ -113,6 +123,9 @@ class OE_OGLDisplayPresenter;
 #define NDSDISPLAYMODE_PREFKEY_HUD_CPULOADAVERAGE          "hud_cpuloadaverage"
 #define NDSDISPLAYMODE_PREFKEY_HUD_REALTIMECLOCK           "hud_realtimeclock"
 #define NDSDISPLAYMODE_PREFKEY_HUD_INPUT                   "hud_input"
+#define NDSDISPLAYMODE_PREFKEY_GPU_ENGINE                  "gpu_engine"
+#define NDSDISPLAYMODE_PREFKEY_GPU_SOFTWARE_FRAGMENTSAMPLINGHACK  "gpu_software_fragmentsamplinghack"
+#define NDSDISPLAYMODE_PREFKEY_GPU_OPENGL_SMOOTHTEXTURES   "gpu_opengl_smoothtextures"
 #define NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING            "3D_renderscaling"
 #define NDSDISPLAYMODE_PREFKEY_3D_TEXTURESCALING           "3D_texturescaling"
 
@@ -164,10 +177,20 @@ enum NDSDisplayOptionID
 	NDSDisplayOptionID_HUD_RealTimeClock,
 	NDSDisplayOptionID_HUD_Input,
 	
+	NDSDisplayOptionID_GPU_Engine_Software,
+	NDSDisplayOptionID_GPU_Engine_OpenGL,
+	
+	NDSDisplayOptionID_GPU_Software_FragmentSamplingHack,
+	NDSDisplayOptionID_GPU_OpenGL_SmoothTextures,
+	
 	NDSDisplayOptionID_3D_RenderScaling_1x,
 	NDSDisplayOptionID_3D_RenderScaling_2x,
 	NDSDisplayOptionID_3D_RenderScaling_3x,
 	NDSDisplayOptionID_3D_RenderScaling_4x,
+	NDSDisplayOptionID_3D_RenderScaling_5x,
+	NDSDisplayOptionID_3D_RenderScaling_6x,
+	NDSDisplayOptionID_3D_RenderScaling_7x,
+	NDSDisplayOptionID_3D_RenderScaling_8x,
 	
 	NDSDisplayOptionID_3D_TextureScaling_1x,
 	NDSDisplayOptionID_3D_TextureScaling_2x,
@@ -211,10 +234,17 @@ enum NDSDisplayOptionID
                                                       (1ULL << NDSDisplayOptionID_VideoSourceTouch_ForceMain) | \
                                                       (1ULL << NDSDisplayOptionID_VideoSourceTouch_ForceSub))
 
+#define NDSDISPLAYMODE_GROUPBITMASK_GPUENGINE        ((1ULL << NDSDisplayOptionID_GPU_Engine_Software) | \
+													  (1ULL << NDSDisplayOptionID_GPU_Engine_OpenGL))
+
 #define NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING    ((1ULL << NDSDisplayOptionID_3D_RenderScaling_1x) | \
                                                       (1ULL << NDSDisplayOptionID_3D_RenderScaling_2x) | \
                                                       (1ULL << NDSDisplayOptionID_3D_RenderScaling_3x) | \
-                                                      (1ULL << NDSDisplayOptionID_3D_RenderScaling_4x))
+                                                      (1ULL << NDSDisplayOptionID_3D_RenderScaling_4x) | \
+                                                      (1ULL << NDSDisplayOptionID_3D_RenderScaling_5x) | \
+                                                      (1ULL << NDSDisplayOptionID_3D_RenderScaling_6x) | \
+                                                      (1ULL << NDSDisplayOptionID_3D_RenderScaling_7x) | \
+                                                      (1ULL << NDSDisplayOptionID_3D_RenderScaling_8x))
 
 #define NDSDISPLAYMODE_GROUPBITMASK_TEXTURESCALING   ((1ULL << NDSDisplayOptionID_3D_TextureScaling_1x) | \
                                                       (1ULL << NDSDisplayOptionID_3D_TextureScaling_2x) | \

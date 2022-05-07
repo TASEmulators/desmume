@@ -85,10 +85,20 @@ static const OEMenuItemDesc kDisplayModeItem[NDSDisplayOptionID_Count] = {
 	{ @NDSDISPLAYMODE_NAMEKEY_HUD_REALTIMECLOCK,   @NDSDISPLAYMODE_PREFKEY_HUD_REALTIMECLOCK, 0, nil },
 	{ @NDSDISPLAYMODE_NAMEKEY_HUD_INPUT,           @NDSDISPLAYMODE_PREFKEY_HUD_INPUT, 0, nil },
 	
+	{ @NDSDISPLAYMODE_NAMEKEY_GPU_ENGINE_SOFTWARE, @NDSDISPLAYMODE_PREFKEY_GPU_ENGINE, NDSDISPLAYMODE_GROUPBITMASK_GPUENGINE, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_GPU_ENGINE_OPENGL,   @NDSDISPLAYMODE_PREFKEY_GPU_ENGINE, NDSDISPLAYMODE_GROUPBITMASK_GPUENGINE, nil },
+	
+	{ @NDSDISPLAYMODE_NAMEKEY_GPU_SOFTWARE_FRAGMENTSAMPLINGHACK, @NDSDISPLAYMODE_PREFKEY_GPU_SOFTWARE_FRAGMENTSAMPLINGHACK, 0, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_GPU_OPENGL_SMOOTHTEXTURES,         @NDSDISPLAYMODE_PREFKEY_GPU_OPENGL_SMOOTHTEXTURES, 0, nil },
+	
 	{ @NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_1X, @NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING, NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING, nil },
 	{ @NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_2X, @NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING, NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING, nil },
 	{ @NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_3X, @NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING, NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING, nil },
 	{ @NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_4X, @NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING, NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_5X, @NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING, NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_6X, @NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING, NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_7X, @NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING, NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING, nil },
+	{ @NDSDISPLAYMODE_NAMEKEY_3D_RENDERSCALING_8X, @NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING, NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING, nil },
 	
 	{ @NDSDISPLAYMODE_NAMEKEY_3D_TEXTURESCALING_1X, @NDSDISPLAYMODE_PREFKEY_3D_TEXTURESCALING, NDSDISPLAYMODE_GROUPBITMASK_TEXTURESCALING, nil },
 	{ @NDSDISPLAYMODE_NAMEKEY_3D_TEXTURESCALING_2X, @NDSDISPLAYMODE_PREFKEY_3D_TEXTURESCALING, NDSDISPLAYMODE_GROUPBITMASK_TEXTURESCALING, nil },
@@ -104,6 +114,7 @@ static const uint64_t kDisplayModeStatesDefault = (1LLU << NDSDisplayOptionID_Mo
                                                   (1LLU << NDSDisplayOptionID_VideoSourceTouch_NDS) |
                                                   (1LLU << NDSDisplayOptionID_HUD_ExecutionSpeed) |
                                                   (1LLU << NDSDisplayOptionID_HUD_VideoFPS) |
+                                                  (1LLU << NDSDisplayOptionID_GPU_Engine_Software) |
                                                   (1LLU << NDSDisplayOptionID_3D_RenderScaling_1x) |
                                                   (1LLU << NDSDisplayOptionID_3D_TextureScaling_1x);
 
@@ -272,10 +283,20 @@ volatile bool execute = true;
 								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_RealTimeClock],   kDisplayModeItem[NDSDisplayOptionID_HUD_RealTimeClock].nameKey,
 								[NSNumber numberWithInteger:NDSDisplayOptionID_HUD_Input],           kDisplayModeItem[NDSDisplayOptionID_HUD_Input].nameKey,
 								
+								[NSNumber numberWithInteger:NDSDisplayOptionID_GPU_Engine_Software], kDisplayModeItem[NDSDisplayOptionID_GPU_Engine_Software].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_GPU_Engine_OpenGL],   kDisplayModeItem[NDSDisplayOptionID_GPU_Engine_OpenGL].nameKey,
+								
+								[NSNumber numberWithInteger:NDSDisplayOptionID_GPU_Software_FragmentSamplingHack], kDisplayModeItem[NDSDisplayOptionID_GPU_Software_FragmentSamplingHack].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_GPU_OpenGL_SmoothTextures],         kDisplayModeItem[NDSDisplayOptionID_GPU_OpenGL_SmoothTextures].nameKey,
+								
 								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_RenderScaling_1x], kDisplayModeItem[NDSDisplayOptionID_3D_RenderScaling_1x].nameKey,
 								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_RenderScaling_2x], kDisplayModeItem[NDSDisplayOptionID_3D_RenderScaling_2x].nameKey,
 								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_RenderScaling_3x], kDisplayModeItem[NDSDisplayOptionID_3D_RenderScaling_3x].nameKey,
 								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_RenderScaling_4x], kDisplayModeItem[NDSDisplayOptionID_3D_RenderScaling_4x].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_RenderScaling_5x], kDisplayModeItem[NDSDisplayOptionID_3D_RenderScaling_5x].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_RenderScaling_6x], kDisplayModeItem[NDSDisplayOptionID_3D_RenderScaling_6x].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_RenderScaling_7x], kDisplayModeItem[NDSDisplayOptionID_3D_RenderScaling_7x].nameKey,
+								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_RenderScaling_8x], kDisplayModeItem[NDSDisplayOptionID_3D_RenderScaling_8x].nameKey,
 								
 								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_TextureScaling_1x], kDisplayModeItem[NDSDisplayOptionID_3D_TextureScaling_1x].nameKey,
 								[NSNumber numberWithInteger:NDSDisplayOptionID_3D_TextureScaling_2x], kDisplayModeItem[NDSDisplayOptionID_3D_TextureScaling_2x].nameKey,
@@ -328,6 +349,8 @@ volatile bool execute = true;
 		cdsGPU = [[CocoaDSGPU alloc] init];
 		[cdsGPU setRender3DThreads:0]; // Pass 0 to automatically set the number of rendering threads
 		[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
+		[cdsGPU setRender3DFragmentSamplingHack:NO];
+		[cdsGPU setRender3DTextureSmoothing:NO];
 		[cdsGPU setRender3DTextureScalingFactor:1];
 		[cdsGPU setGpuScale:1];
 		[cdsGPU setGpuColorFormat:NDSColorFormat_BGR666_Rev];
@@ -471,6 +494,10 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_2x) ) _selectedRenderScaling = 2;
 	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_3x) ) _selectedRenderScaling = 3;
 	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_4x) ) _selectedRenderScaling = 4;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_5x) ) _selectedRenderScaling = 5;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_6x) ) _selectedRenderScaling = 6;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_7x) ) _selectedRenderScaling = 7;
+	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_8x) ) _selectedRenderScaling = 8;
 	
          if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_TextureScaling_1x) ) _selectedTextureScaling = 1;
 	else if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_TextureScaling_2x) ) _selectedTextureScaling = 2;
@@ -611,6 +638,19 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	_cdp->CommitPresenterProperties(newProps);
 	_cdp->SetupPresenterProperties();
 	
+	if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Engine_Software) )
+	{
+		[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
+		[cdsGPU setGpuColorFormat:NDSColorFormat_BGR666_Rev];
+	}
+	else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Engine_OpenGL) )
+	{
+		[cdsGPU setRender3DRenderingEngine:CORE3DLIST_OPENGL];
+		[cdsGPU setGpuColorFormat:NDSColorFormat_BGR888_Rev];
+	}
+	
+	[cdsGPU setRender3DFragmentSamplingHack:(DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Software_FragmentSamplingHack)) ? YES : NO];
+	[cdsGPU setRender3DTextureSmoothing:(DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_OpenGL_SmoothTextures)) ? YES : NO];
 	[cdsGPU setGpuScale:_selectedRenderScaling];
 	[cdsGPU setRender3DTextureScalingFactor:_selectedTextureScaling];
 	
@@ -682,6 +722,7 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_SEPARATION]];
 	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_MAIN]];
 	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_VIDEOSOURCE_TOUCH]];
+	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_GPU_ENGINE]];
 	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_3D_RENDERSCALING]];
 	s = [self switchDisplayModeState:s nameKey:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_3D_TEXTURESCALING]];
 	
@@ -694,6 +735,9 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_CPULoadAverage state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_CPULOADAVERAGE]];
 	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_RealTimeClock state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_REALTIMECLOCK]];
 	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_HUD_Input state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_HUD_INPUT]];
+	
+	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_GPU_Software_FragmentSamplingHack state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_GPU_SOFTWARE_FRAGMENTSAMPLINGHACK]];
+	s = [self setDisplayModeState:s optionID:NDSDisplayOptionID_GPU_OpenGL_SmoothTextures state:[userDefaultsDisplayMode objectForKey:@NDSDISPLAYMODE_PREFKEY_GPU_OPENGL_SMOOTHTEXTURES]];
 	
 	[self setNdsDisplayMode:s];
 	_displayModeStatesApplied = _displayModeStatesPending;
@@ -1192,85 +1236,98 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 
 - (NSArray<NSDictionary<NSString *, id> *> *) displayModes
 {
-	const uint64_t currentDisplayMode = _displayModeStatesPending;
+	const uint64_t s = _displayModeStatesPending;
 	
 	// Generate each display option submenu.
 	NSArray< NSDictionary<NSString *, id> *> *displayModeMenu =
 	[NSArray arrayWithObjects:
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Mode_DualScreen states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Mode_Main states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Mode_Touch states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Mode_DualScreen states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Mode_Main states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Mode_Touch states:s],
 	 nil];
 	
 	NSArray< NSDictionary<NSString *, id> *> *displayRotationMenu =
 	[NSArray arrayWithObjects:
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Rotation_0 states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Rotation_90 states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Rotation_180 states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Rotation_270 states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Rotation_0 states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Rotation_90 states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Rotation_180 states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Rotation_270 states:s],
 	 nil];
 	
 	NSArray< NSDictionary<NSString *, id> *> *displayLayoutMenu =
 	[NSArray arrayWithObjects:
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Layout_Vertical states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Layout_Horizontal states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Layout_Hybrid_2_1 states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Layout_Hybrid_16_9 states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Layout_Hybrid_16_10 states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Layout_Vertical states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Layout_Horizontal states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Layout_Hybrid_2_1 states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Layout_Hybrid_16_9 states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Layout_Hybrid_16_10 states:s],
 	 nil];
 	
 	NSArray< NSDictionary<NSString *, id> *> *displayOrderMenu =
 	[NSArray arrayWithObjects:
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Order_MainFirst states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Order_TouchFirst states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Order_MainFirst states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Order_TouchFirst states:s],
 	 nil];
 	
 	NSArray< NSDictionary<NSString *, id> *> *displaySeparationMenu =
 	[NSArray arrayWithObjects:
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Separation_0 states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Separation_50 states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Separation_100 states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Separation_150 states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Separation_200 states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Separation_0 states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Separation_50 states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Separation_100 states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Separation_150 states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_Separation_200 states:s],
 	 nil];
 	 
 	NSArray< NSDictionary<NSString *, id> *> *displayVideoSourceMenu =
 	[NSArray arrayWithObjects:
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_None states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_NDS states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_ForceMain states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_ForceSub states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_None states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_NDS states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_ForceMain states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceMain_ForceSub states:s],
 	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_None states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_NDS states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_ForceMain states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_ForceSub states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_None states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_NDS states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_ForceMain states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_VideoSourceTouch_ForceSub states:s],
 	 nil];
 	
 	NSArray< NSDictionary<NSString *, id> *> *displayHUDMenu =
 	[NSArray arrayWithObjects:
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_Enable states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_Enable states:s],
 	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_ExecutionSpeed states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_VideoFPS states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_3DRendererFPS states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_FrameIndex states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_LagFrameCounter states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_CPULoadAverage states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_RealTimeClock states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_Input states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_ExecutionSpeed states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_VideoFPS states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_3DRendererFPS states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_FrameIndex states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_LagFrameCounter states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_CPULoadAverage states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_RealTimeClock states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_HUD_Input states:s],
+	 nil];
+	
+	NSArray< NSDictionary<NSString *, id> *> *displayGPUEmulationMenu =
+	[NSArray arrayWithObjects:
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_GPU_Engine_Software states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_GPU_Software_FragmentSamplingHack states:s],
+	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_GPU_Engine_OpenGL states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_GPU_OpenGL_SmoothTextures states:s],
 	 nil];
 	
 	NSArray< NSDictionary<NSString *, id> *> *display3DRenderingMenu =
 	[NSArray arrayWithObjects:
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_1x states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_2x states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_3x states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_4x states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_1x states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_2x states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_3x states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_4x states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_5x states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_6x states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_7x states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_RenderScaling_8x states:s],
 	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_TextureScaling_1x states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_TextureScaling_2x states:currentDisplayMode],
-	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_TextureScaling_4x states:currentDisplayMode],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_TextureScaling_1x states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_TextureScaling_2x states:s],
+	 [self generateDisplayModeItemByID:NDSDisplayOptionID_3D_TextureScaling_4x states:s],
 	 nil];
 	
 	// Add each submenu to the menu descriptor.
@@ -1300,6 +1357,7 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"Heads-Up Display", OEGameCoreDisplayModeGroupNameKey, displayHUDMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys:@"---", OEGameCoreDisplayModeSeparatorItemKey, nil],
+	 [NSDictionary dictionaryWithObjectsAndKeys: @"GPU Emulation", OEGameCoreDisplayModeGroupNameKey, displayGPUEmulationMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 [NSDictionary dictionaryWithObjectsAndKeys: @"3D Rendering", OEGameCoreDisplayModeGroupNameKey, display3DRenderingMenu, OEGameCoreDisplayModeGroupItemsKey, nil],
 	 nil];
 	

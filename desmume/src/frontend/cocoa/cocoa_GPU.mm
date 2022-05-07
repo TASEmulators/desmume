@@ -172,7 +172,6 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 	bool isTempContextCreated = OSXOpenGLRendererInit();
 	if (isTempContextCreated)
 	{
-		CGLContextObj prevContext = CGLGetCurrentContext();
 		OSXOpenGLRendererBegin();
 		
 		GLint maxSamplesOGL = 0;
@@ -187,7 +186,6 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 		
 		OSXOpenGLRendererEnd();
 		DestroyOpenGLRenderer();
-		CGLSetCurrentContext(prevContext);
 	}
 	
 	return self;
@@ -1817,6 +1815,7 @@ bool GPUEventHandlerAsync::GetRender3DNeedsFinish()
 #pragma mark -
 
 CGLContextObj OSXOpenGLRendererContext = NULL;
+CGLContextObj OSXOpenGLRendererContextPrev = NULL;
 SILENCE_DEPRECATION_MACOS_10_7( CGLPBufferObj OSXOpenGLRendererPBuffer = NULL );
 
 bool OSXOpenGLRendererInit()
@@ -1832,6 +1831,7 @@ bool OSXOpenGLRendererInit()
 
 bool OSXOpenGLRendererBegin()
 {
+	OSXOpenGLRendererContextPrev = CGLGetCurrentContext();
 	CGLSetCurrentContext(OSXOpenGLRendererContext);
 	
 	return true;
@@ -1839,7 +1839,7 @@ bool OSXOpenGLRendererBegin()
 
 void OSXOpenGLRendererEnd()
 {
-	
+	CGLSetCurrentContext(OSXOpenGLRendererContextPrev);
 }
 
 bool OSXOpenGLRendererFramebufferDidResize(const bool isFBOSupported, size_t w, size_t h)
@@ -1944,11 +1944,14 @@ void DestroyOpenGLRenderer()
 		return;
 	}
 	
+	OSXOpenGLRendererEnd();
+	
 	SILENCE_DEPRECATION_MACOS_10_7( CGLReleasePBuffer(OSXOpenGLRendererPBuffer) );
 	OSXOpenGLRendererPBuffer = NULL;
 	
 	CGLReleaseContext(OSXOpenGLRendererContext);
 	OSXOpenGLRendererContext = NULL;
+	OSXOpenGLRendererContextPrev = NULL;
 }
 
 void RequestOpenGLRenderer_3_2(bool request_3_2)
