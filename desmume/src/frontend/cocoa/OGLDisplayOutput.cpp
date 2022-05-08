@@ -6407,7 +6407,7 @@ void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, c
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	
 	GLint texLevel = 0;
-	for (size_t tileSize = glyphTileSize, texSize = glyphTileSize * 16, gSize = glyphSize; texSize >= 1; texLevel++, tileSize >>= 1, texSize >>= 1, gSize = (GLfloat)tileSize * 0.75f)
+	for (size_t tileSize = glyphTileSize, texSize = glyphTileSize * 16, gSize = glyphSize; gSize >= 1; texLevel++, tileSize >>= 1, texSize >>= 1, gSize = (GLfloat)tileSize * 0.75f)
 	{
 		const size_t charMapBufferPixCount = texSize * texSize;
 		const uint32_t fontColor = 0x00FFFFFF;
@@ -6420,11 +6420,6 @@ void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, c
 		for (size_t i = 0; i < charMapBufferPixCount; i++)
 		{
 			charMapBuffer[i] = fontColor;
-		}
-		
-		if (tileSize == 0)
-		{
-			continue;
 		}
 		
 		error = FT_Set_Char_Size(fontFace, gSize << 6, gSize << 6, 72, 72);

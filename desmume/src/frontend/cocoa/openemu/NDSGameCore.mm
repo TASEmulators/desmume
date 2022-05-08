@@ -376,7 +376,7 @@ volatile bool execute = true;
 		_cdp = new OE_OGLDisplayPresenter(fetchObj);
 		_cdp->Init();
 		_cdp->SetHUDFontPath(hudFontPath);
-		_cdp->SetHUDRenderMipmapped(false); // Mipmapped HUD rendering doesn't work on OpenEmu!
+		_cdp->SetHUDRenderMipmapped(true);
 		
 		// OpenEmu doesn't provide us with the backing scaling factor, which is used to
 		// adapt ClientDisplayPresenter to HiDPI/Retina displays. But if OpenEmu ever
