@@ -1482,7 +1482,7 @@ void MacGPUFetchObjectDisplayLink::PushVideoDataToAllDisplayViews()
 		pthread_rwlock_rdlock(currentRWLock);
 	}
 	
-	for (CocoaDSOutput *cdsOutput in this->_cdsOutputList)
+	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
 	{
 		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
 		{
@@ -1595,7 +1595,7 @@ void MacGPUFetchObjectDisplayLink::FlushAllDisplaysOnDisplayLink(CVDisplayLinkRe
 		pthread_rwlock_rdlock(currentRWLock);
 	}
 	
-	for (CocoaDSOutput *cdsOutput in this->_cdsOutputList)
+	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
 	{
 		if ([cdsOutput isKindOfClass:[CocoaDSDisplayVideo class]])
 		{
