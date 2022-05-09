@@ -5,12 +5,13 @@
                       Last Updated: May 7, 2022
 
 Contents:
-1) System Requirements ..................................................... 16
-2) Quick Start Guide for Using DeSmuME for macOS ........................... 56
-3) Improving Emulation Performance ........................................ 201
-4) Additional Documentation ............................................... 225
-5) Contact Information .................................................... 255
-6) License ................................................................ 357
+1) System Requirements ..................................................... 17
+2) Quick Start Guide for Using DeSmuME for macOS ........................... 58
+3) Improving Emulation Performance ........................................ 204
+4) Troubleshooting ........................................................ 230
+5) Additional Documentation ............................................... 245
+6) Contact Information .................................................... 275
+7) License ................................................................ 377
 
 
 1) System Requirements ________________________________________________________
@@ -39,7 +40,7 @@ of the settings listed in the section "Improving Emulation Performance" for
 certain games, but they should not be required for most games. You will also be
 able to use some basic graphical enhancements, such as using some of the
 display filters. However, increased 3D rendering resolution may not be possible
-for this level of hardware.
+for all games for this level of hardware.
 
 However, if your Mac has an Intel Haswell (from late 2013) or an Apple Silicon
 processor (from 2020), you will be able to run all games with all of DeSmuME's
@@ -52,6 +53,7 @@ supported. The PowerPC binary exists mostly for testing and development
 purposes, and also just because we can. Most games don't work well on PowerPC,
 and so you will be limited to running only the most basic of games, such as
 "Phoenix Wright: Ace Attorney."
+
 
 2) Quick Start Guide for Using DeSmuME for macOS ______________________________
 
@@ -197,8 +199,10 @@ use to quickly freeze/restore the emulation state.
   The default hotkey for this is (Shift-#).
 - To quick restore the emulation state, choose File > Load State Slot > Slot #.
   The default hotkey for this is (#).
+  
 
 3) Improving Emulation Performance ____________________________________________
+
 There are many settings you can change in order to improve DeSmuME's emulation
 performance. All of the settings listed below affect performance the most. Use
 the settings as shown for the best possible performance. All of these settings
@@ -222,7 +226,23 @@ may be found in DeSmuME > Preferences.
         GPU Color Depth - 15-bit (Reduces color accuracy of 3D rendering)
         Texture Scaling Factor - 1
 
-4) Additional Documentation ___________________________________________________
+
+4) Troubleshooting ____________________________________________________________
+
+The vast majority of problems can be resolved by simply resetting DeSmuME's
+settings back to their defaults. The easiest way to do this is to delete the
+org.desmume.DeSmuME.plist file in your ~/Library/Preferences folder. There is
+also a DeleteUserDefaults.applescript script that is included with your DeSmuME
+installation that will do this for you.
+
+If you are still experiencing problems after restoring your DeSmuME settings to
+their defaults, then you may want to post your issue on our DeSmuME forum. Your
+post may gain the attention of another user, or even a DeSmuME developer, to
+help assist you with your issue. See the section "Contact Information" for how
+to contact us on the forum.
+
+
+5) Additional Documentation ___________________________________________________
 
 The quick start guide in this Read Me is by no means a complete reference to
 everything that DeSmuME can do! If you need any additional information about
@@ -252,7 +272,7 @@ This page contains complete and detailed instructions about how to make your
 own build of DeSmuME for macOS directly from the source code.
 
 
-5) Contact Information ________________________________________________________
+6) Contact Information ________________________________________________________
 
 Thank you for you interest in DeSmuME! If you want to tell us how useful
 DeSmuME is in your life, your love (or hate) of certain NDS games, your passion
@@ -354,7 +374,7 @@ logs. For the above example, we would probably ask you for your save states to
 help us track down the bug.
 
 
-6) License ____________________________________________________________________
+7) License ____________________________________________________________________
 
 This file is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
