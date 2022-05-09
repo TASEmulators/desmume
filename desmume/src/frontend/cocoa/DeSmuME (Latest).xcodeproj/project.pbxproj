@@ -6171,9 +6171,9 @@
 			productReference = AB497B1227F2E97A00E8A244 /* DeSmuME.app */;
 			productType = "com.apple.product-type.application";
 		};
-		AB79013F215B84F20082AE82 /* DeSmuME (macOS App; Intel32 Intel64 dev+ -- Xcode 9) */ = {
+		AB79013F215B84F20082AE82 /* DeSmuME (macOS App; Intel32 Intel64 dev+ -- Xcode 8) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB790297215B84F20082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel32 Intel64 dev+ -- Xcode 9)" */;
+			buildConfigurationList = AB790297215B84F20082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel32 Intel64 dev+ -- Xcode 8)" */;
 			buildPhases = (
 				AB790141215B84F20082AE82 /* Resources */,
 				AB7901A8215B84F20082AE82 /* ShellScript */,
@@ -6184,7 +6184,7 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (macOS App; Intel32 Intel64 dev+ -- Xcode 9)";
+			name = "DeSmuME (macOS App; Intel32 Intel64 dev+ -- Xcode 8)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = AB79029A215B84F20082AE82 /* DeSmuME (Debug, dev+).app */;
@@ -6209,9 +6209,9 @@
 			productReference = AB796D7015CDCBA200C59155 /* DeSmuME (Debug).app */;
 			productType = "com.apple.product-type.application";
 		};
-		AB79FFE2215B84E50082AE82 /* DeSmuME (macOS App; Intel32 Intel64 -- Xcode 9) */ = {
+		AB79FFE2215B84E50082AE82 /* DeSmuME (macOS App; Intel32 Intel64 -- Xcode 8) */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB79013A215B84E50082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel32 Intel64 -- Xcode 9)" */;
+			buildConfigurationList = AB79013A215B84E50082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel32 Intel64 -- Xcode 8)" */;
 			buildPhases = (
 				AB79FFE4215B84E50082AE82 /* Resources */,
 				AB79004B215B84E50082AE82 /* ShellScript */,
@@ -6222,7 +6222,7 @@
 			);
 			dependencies = (
 			);
-			name = "DeSmuME (macOS App; Intel32 Intel64 -- Xcode 9)";
+			name = "DeSmuME (macOS App; Intel32 Intel64 -- Xcode 8)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
 			productReference = AB79013D215B84E50082AE82 /* DeSmuME (Debug).app */;
@@ -6335,8 +6335,8 @@
 				AB8F3C171A53AC2600A80BF6 /* DeSmuME (macOS App; Intel64 dev+ -- Latest Xcode) */,
 				8C43E74327E3CD0100A35F65 /* DeSmuME (macOS App; AppleSilicon -- Latest Xcode) */,
 				8C43E8A127E3CD4C00A35F65 /* DeSmuME (macOS App; AppleSilicon dev+ -- Latest Xcode) */,
-				AB79FFE2215B84E50082AE82 /* DeSmuME (macOS App; Intel32 Intel64 -- Xcode 9) */,
-				AB79013F215B84F20082AE82 /* DeSmuME (macOS App; Intel32 Intel64 dev+ -- Xcode 9) */,
+				AB79FFE2215B84E50082AE82 /* DeSmuME (macOS App; Intel32 Intel64 -- Xcode 8) */,
+				AB79013F215B84F20082AE82 /* DeSmuME (macOS App; Intel32 Intel64 dev+ -- Xcode 8) */,
 				AB4979BB27F2E97A00E8A244 /* DeSmuME (macOS App; Release Stage 2 Leopard NIB -- Xcode 6) */,
 				AB36C73527F2C8AE00C763C8 /* DeSmuME (macOS App; Release Stage 3 Intel32 -- Xcode 8) */,
 				ABC8582A28273FEE00A03EA9 /* DeSmuME (macOS App; Release Stage 4 Intel64 -- Xcode 8) */,
@@ -10900,7 +10900,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB79013A215B84E50082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel32 Intel64 -- Xcode 9)" */ = {
+		AB79013A215B84E50082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel32 Intel64 -- Xcode 8)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB79013B215B84E50082AE82 /* Debug */,
@@ -10909,7 +10909,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB790297215B84F20082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel32 Intel64 dev+ -- Xcode 9)" */ = {
+		AB790297215B84F20082AE82 /* Build configuration list for PBXNativeTarget "DeSmuME (macOS App; Intel32 Intel64 dev+ -- Xcode 8)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AB790298215B84F20082AE82 /* Debug */,
