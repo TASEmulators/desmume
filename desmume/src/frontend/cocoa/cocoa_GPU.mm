@@ -1839,7 +1839,13 @@ bool OSXOpenGLRendererBegin()
 
 void OSXOpenGLRendererEnd()
 {
+#ifndef PORT_VERSION_OS_X_APP
+	// The OpenEmu plug-in needs the context reset after 3D rendering since OpenEmu's context
+	// is assumed to be the default context. However, resetting the context for our standalone
+	// app can cause problems since the core emulator's context is assumed to be the default
+	// context. So reset the context for OpenEmu and skip resetting for us.
 	CGLSetCurrentContext(OSXOpenGLRendererContextPrev);
+#endif
 }
 
 bool OSXOpenGLRendererFramebufferDidResize(const bool isFBOSupported, size_t w, size_t h)
