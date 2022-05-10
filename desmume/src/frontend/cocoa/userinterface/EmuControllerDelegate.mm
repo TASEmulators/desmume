@@ -2049,10 +2049,12 @@
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[self setCurrentSaveStateURL:nil];
 	
+	[self setIsWorking:YES];
 	isSaveStateEdited = NO;
 	for (DisplayWindowController *windowController in windowList)
 	{
 		[[windowController window] setDocumentEdited:isSaveStateEdited];
+		[[windowController window] displayIfNeeded];
 	}
 	
 	// Save the ROM's cheat list before unloading.
@@ -2071,13 +2073,6 @@
 	[cheatWindowBindings setValue:@"No ROM loaded." forKey:@"cheatDBDate"];
 	[cheatWindowBindings setValue:@"---" forKey:@"cheatDBItemCount"];
 	[cheatWindowBindings setValue:nil forKey:@"cheatList"];
-	
-	[self setIsWorking:YES];
-	
-	for (DisplayWindowController *windowController in windowList)
-	{
-		[[windowController window] displayIfNeeded];
-	}
 	
 	// Unload the ROM.
 	if (![cdsCore emuFlagUseExternalBios] || ![cdsCore emuFlagUseExternalFirmware])
@@ -2113,11 +2108,6 @@
 	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2WindowController content];
 	[slot2WindowDelegate setAutoSelectedDeviceText:[[slot2WindowDelegate deviceManager] autoSelectedDeviceName]];
 	[[slot2WindowDelegate deviceManager] updateStatus];
-	
-	for (DisplayWindowController *windowController in windowList)
-	{
-		[[windowController window] displayIfNeeded];
-	}
 	
 	[cdsCore setSlot1StatusText:NSSTRING_STATUS_EMULATION_NOT_RUNNING];
 	[cdsCore updateCurrentSessionMACAddressString:NO];
