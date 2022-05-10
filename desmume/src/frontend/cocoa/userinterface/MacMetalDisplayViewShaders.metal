@@ -46,16 +46,16 @@ struct DisplayVtx
 struct DisplayVtxTex16
 {
 	float4 position [[position]];
-	float2 texCoord0;
-	float2 texCoord1;
-	float2 texCoord2;
-	float2 texCoord3;
-	float2 texCoord4;
-	float2 texCoord5;
-	float2 texCoord6;
-	float2 texCoord7;
-	float2 texCoord8;
-	float2 texCoord9;
+	float2 texCoord00;
+	float2 texCoord01;
+	float2 texCoord02;
+	float2 texCoord03;
+	float2 texCoord04;
+	float2 texCoord05;
+	float2 texCoord06;
+	float2 texCoord07;
+	float2 texCoord08;
+	float2 texCoord09;
 	float2 texCoord10;
 	float2 texCoord11;
 	float2 texCoord12;
@@ -228,49 +228,49 @@ vertex DisplayVtx display_output_vertex(const device float2 *inPosition [[buffer
 	return outVtx;
 }
 
-vertex DisplayVtxTex16 display_output_bicubic_vertex(const device float2 *inPosition [[buffer(0)]],
-												const device float2 *inTexCoord [[buffer(1)]],
-												const constant DisplayViewShaderProperties &viewProps [[buffer(2)]],
-												const constant uint8_t &doYFlip [[buffer(3)]],
-												const uint vid [[vertex_id]])
+vertex DisplayVtxTex16 display_output_sampletex16_vertex(const device float2 *inPosition [[buffer(0)]],
+                                                         const device float2 *inTexCoord [[buffer(1)]],
+                                                         const constant DisplayViewShaderProperties &viewProps [[buffer(2)]],
+                                                         const constant uint8_t &doYFlip [[buffer(3)]],
+                                                         const uint vid [[vertex_id]])
 {
-	const float angleRadians    = viewProps.rotation * (M_PI_F/180.0f);
+	const float angleRadians  = viewProps.rotation * (M_PI_F/180.0f);
 	
-	const float2x2 projection   = float2x2(	float2(2.0f/viewProps.width,                  0.0f),
-	                                        float2(                0.0f, 2.0f/viewProps.height));
+	const float2x2 projection = float2x2( float2(2.0f/viewProps.width,                  0.0f),
+	                                      float2(                0.0f, 2.0f/viewProps.height));
 	
-	const float2x2 rotation     = float2x2(	float2( cos(angleRadians), sin(angleRadians)),
-	                                        float2(-sin(angleRadians), cos(angleRadians)));
+	const float2x2 rotation   = float2x2( float2( cos(angleRadians), sin(angleRadians)),
+	                                      float2(-sin(angleRadians), cos(angleRadians)));
 	
-	const float2x2 scale        = float2x2(	float2(viewProps.viewScale,                0.0f),
-	                                        float2(               0.0f, viewProps.viewScale));
+	const float2x2 scale      = float2x2( float2(viewProps.viewScale,                0.0f),
+	                                      float2(               0.0f, viewProps.viewScale));
 	
 	const float2 yFlip = (doYFlip != 0) ? float2(1.0f, -1.0f) : float2(1.0f, 1.0f);
 	
 	DisplayVtxTex16 outVtx;
 	outVtx.position = float4(projection * rotation * scale * inPosition[vid] * yFlip, 0.0f, 1.0f);
 	
-	float2 xystart = floor(inTexCoord[vid] - 0.5f) + 0.5f;
+	const float2 texCenterPosition = floor(inTexCoord[vid] - 0.5f) + 0.5f;
 	
-	outVtx.texCoord6 = xystart + float2(-1.0,-1.0);
-	outVtx.texCoord7 = xystart + float2( 0.0,-1.0);
-	outVtx.texCoord8 = xystart + float2( 1.0,-1.0);
-	outVtx.texCoord9 = xystart + float2( 2.0,-1.0);
+	outVtx.texCoord00 = texCenterPosition + float2(-1.0,-1.0);
+	outVtx.texCoord01 = texCenterPosition + float2( 0.0,-1.0);
+	outVtx.texCoord02 = texCenterPosition + float2( 1.0,-1.0);
+	outVtx.texCoord03 = texCenterPosition + float2( 2.0,-1.0);
 	
-	outVtx.texCoord5 = xystart + float2(-1.0, 0.0);
-	outVtx.texCoord0 = xystart + float2( 0.0, 0.0); // Center pixel
-	outVtx.texCoord1 = xystart + float2( 1.0, 0.0);
-	outVtx.texCoord10 = xystart + float2( 2.0, 0.0);
+	outVtx.texCoord04 = texCenterPosition + float2(-1.0, 0.0);
+	outVtx.texCoord05 = texCenterPosition + float2( 0.0, 0.0); // Center pixel
+	outVtx.texCoord06 = texCenterPosition + float2( 1.0, 0.0);
+	outVtx.texCoord07 = texCenterPosition + float2( 2.0, 0.0);
 	
-	outVtx.texCoord4 = xystart + float2(-1.0, 1.0);
-	outVtx.texCoord3 = xystart + float2( 0.0, 1.0);
-	outVtx.texCoord2 = xystart + float2( 1.0, 1.0);
-	outVtx.texCoord11 = xystart + float2( 2.0, 1.0);
+	outVtx.texCoord08 = texCenterPosition + float2(-1.0, 1.0);
+	outVtx.texCoord09 = texCenterPosition + float2( 0.0, 1.0);
+	outVtx.texCoord10 = texCenterPosition + float2( 1.0, 1.0);
+	outVtx.texCoord11 = texCenterPosition + float2( 2.0, 1.0);
 	
-	outVtx.texCoord15 = xystart + float2(-1.0, 2.0);
-	outVtx.texCoord14 = xystart + float2( 0.0, 2.0);
-	outVtx.texCoord13 = xystart + float2( 1.0, 2.0);
-	outVtx.texCoord12 = xystart + float2( 2.0, 2.0);
+	outVtx.texCoord12 = texCenterPosition + float2(-1.0, 2.0);
+	outVtx.texCoord13 = texCenterPosition + float2( 0.0, 2.0);
+	outVtx.texCoord14 = texCenterPosition + float2( 1.0, 2.0);
+	outVtx.texCoord15 = texCenterPosition + float2( 2.0, 2.0);
 	
 	return outVtx;
 }
@@ -303,7 +303,7 @@ fragment float4 output_filter_bicubic_bspline(const DisplayVtxTex16 vtx [[stage_
 											  const texture2d<float> tex [[texture(0)]],
 											  const device float *inBacklightIntensity [[buffer(0)]])
 {
-	float2 f = fract(vtx.texCoord0);
+	float2 f = fract(vtx.texCoord05);
 	float4 wx = bicubic_weight_bspline(f.x);
 	float4 wy = bicubic_weight_bspline(f.y);
 	
@@ -311,48 +311,22 @@ fragment float4 output_filter_bicubic_bspline(const DisplayVtxTex16 vtx [[stage_
 	wx /= dot(wx, float4(1.0f));
 	wy /= dot(wy, float4(1.0f));
 	
-	float4 outFragment	=   (tex.sample(genSampler, vtx.texCoord6) * wx.r
-						  +  tex.sample(genSampler, vtx.texCoord7) * wx.g
-						  +  tex.sample(genSampler, vtx.texCoord8) * wx.b
-						  +  tex.sample(genSampler, vtx.texCoord9) * wx.a) * wy.r
-						  + (tex.sample(genSampler, vtx.texCoord5) * wx.r
-						  +  tex.sample(genSampler, vtx.texCoord0) * wx.g
-						  +  tex.sample(genSampler, vtx.texCoord1) * wx.b
-						  +  tex.sample(genSampler, vtx.texCoord10) * wx.a) * wy.g
-						  + (tex.sample(genSampler, vtx.texCoord4) * wx.r
-						  +  tex.sample(genSampler, vtx.texCoord3) * wx.g
-						  +  tex.sample(genSampler, vtx.texCoord2) * wx.b
-						  +  tex.sample(genSampler, vtx.texCoord11) * wx.a) * wy.b
-						  + (tex.sample(genSampler, vtx.texCoord15) * wx.r
-						  +  tex.sample(genSampler, vtx.texCoord14) * wx.g
-						  +  tex.sample(genSampler, vtx.texCoord13) * wx.b
-						  +  tex.sample(genSampler, vtx.texCoord12) * wx.a) * wy.a;
-	
-	return float4(outFragment.rgb * *inBacklightIntensity, 1.0f);
-}
-
-fragment float4 output_filter_bicubic_bspline_fast(const DisplayVtx vtx [[stage_in]],
-											  const texture2d<float> tex [[texture(0)]],
-											  const device float *inBacklightIntensity [[buffer(0)]])
-{
-	float2 texCenterPosition = floor(vtx.texCoord - 0.5f) + 0.5f;
-	float2 f = abs(vtx.texCoord - texCenterPosition);
-	
-	float2 w0 = ((1.0f-f)*(1.0f-f)*(1.0f-f)) / 6.0f;
-	float2 w1 = (4.0f - 6.0f*f*f + 3.0f*f*f*f) / 6.0f;
-	float2 w3 = f*f*f / 6.0f;
-	float2 w2 = 1.0f - w0 - w1 - w3;
-	
-	float2 s0 = w0 + w1;
-	float2 s1 = w2 + w3;
-	
-	float2 t0 = texCenterPosition - 1.0f + (w1 / s0);
-	float2 t1 = texCenterPosition + 1.0f + (w3 / s1);
-	
-	float4 outFragment = (tex.sample(genSampler, float2(t0.x, t0.y)) * s0.x +
-	                      tex.sample(genSampler, float2(t1.x, t0.y)) * s1.x) * s0.y +
-	                     (tex.sample(genSampler, float2(t0.x, t1.y)) * s0.x +
-	                      tex.sample(genSampler, float2(t1.x, t1.y)) * s1.x) * s1.y;
+	const float4 outFragment = (tex.sample(genSampler, vtx.texCoord00) * wx.r
+	                         +  tex.sample(genSampler, vtx.texCoord01) * wx.g
+	                         +  tex.sample(genSampler, vtx.texCoord02) * wx.b
+	                         +  tex.sample(genSampler, vtx.texCoord03) * wx.a) * wy.r
+	                         + (tex.sample(genSampler, vtx.texCoord04) * wx.r
+	                         +  tex.sample(genSampler, vtx.texCoord05) * wx.g
+	                         +  tex.sample(genSampler, vtx.texCoord06) * wx.b
+	                         +  tex.sample(genSampler, vtx.texCoord07) * wx.a) * wy.g
+	                         + (tex.sample(genSampler, vtx.texCoord08) * wx.r
+	                         +  tex.sample(genSampler, vtx.texCoord09) * wx.g
+	                         +  tex.sample(genSampler, vtx.texCoord10) * wx.b
+	                         +  tex.sample(genSampler, vtx.texCoord11) * wx.a) * wy.b
+	                         + (tex.sample(genSampler, vtx.texCoord12) * wx.r
+	                         +  tex.sample(genSampler, vtx.texCoord13) * wx.g
+	                         +  tex.sample(genSampler, vtx.texCoord14) * wx.b
+	                         +  tex.sample(genSampler, vtx.texCoord15) * wx.a) * wy.a;
 	
 	return float4(outFragment.rgb * *inBacklightIntensity, 1.0f);
 }
@@ -362,12 +336,11 @@ fragment float4 output_filter_bicubic_bspline_fast(const DisplayVtx vtx [[stage_
 //                       04|05|06|07
 //                       08|09|10|11
 //                       12|13|14|15
-fragment float4 output_filter_bicubic_mitchell_netravali(const DisplayVtx vtx [[stage_in]],
+fragment float4 output_filter_bicubic_mitchell_netravali(const DisplayVtxTex16 vtx [[stage_in]],
 														 const texture2d<float> tex [[texture(0)]],
 														 const device float *inBacklightIntensity [[buffer(0)]])
 {
-	float2 texCenterPosition = floor(vtx.texCoord - 0.5f) + 0.5f;
-	float2 f = fract(texCenterPosition);
+	float2 f = fract(vtx.texCoord05);
 	float4 wx = bicubic_weight_mitchell_netravali(f.x);
 	float4 wy = bicubic_weight_mitchell_netravali(f.y);
 	
@@ -375,22 +348,22 @@ fragment float4 output_filter_bicubic_mitchell_netravali(const DisplayVtx vtx [[
 	wx /= dot(wx, float4(1.0f));
 	wy /= dot(wy, float4(1.0f));
 	
-	float4 outFragment	=   (tex.sample(genSampler, texCenterPosition, int2(-1,-1)) * wx.r
-						  +  tex.sample(genSampler, texCenterPosition, int2( 0,-1)) * wx.g
-						  +  tex.sample(genSampler, texCenterPosition, int2( 1,-1)) * wx.b
-						  +  tex.sample(genSampler, texCenterPosition, int2( 2,-1)) * wx.a) * wy.r
-						  + (tex.sample(genSampler, texCenterPosition, int2(-1, 0)) * wx.r
-						  +  tex.sample(genSampler, texCenterPosition, int2( 0, 0)) * wx.g
-						  +  tex.sample(genSampler, texCenterPosition, int2( 1, 0)) * wx.b
-						  +  tex.sample(genSampler, texCenterPosition, int2( 2, 0)) * wx.a) * wy.g
-						  + (tex.sample(genSampler, texCenterPosition, int2(-1, 1)) * wx.r
-						  +  tex.sample(genSampler, texCenterPosition, int2( 0, 1)) * wx.g
-						  +  tex.sample(genSampler, texCenterPosition, int2( 1, 1)) * wx.b
-						  +  tex.sample(genSampler, texCenterPosition, int2( 2, 1)) * wx.a) * wy.b
-						  + (tex.sample(genSampler, texCenterPosition, int2(-1, 2)) * wx.r
-						  +  tex.sample(genSampler, texCenterPosition, int2( 0, 2)) * wx.g
-						  +  tex.sample(genSampler, texCenterPosition, int2( 1, 2)) * wx.b
-						  +  tex.sample(genSampler, texCenterPosition, int2( 2, 2)) * wx.a) * wy.a;
+	const float4 outFragment = (tex.sample(genSampler, vtx.texCoord00) * wx.r
+	                         +  tex.sample(genSampler, vtx.texCoord01) * wx.g
+	                         +  tex.sample(genSampler, vtx.texCoord02) * wx.b
+	                         +  tex.sample(genSampler, vtx.texCoord03) * wx.a) * wy.r
+	                         + (tex.sample(genSampler, vtx.texCoord04) * wx.r
+	                         +  tex.sample(genSampler, vtx.texCoord05) * wx.g
+	                         +  tex.sample(genSampler, vtx.texCoord06) * wx.b
+	                         +  tex.sample(genSampler, vtx.texCoord07) * wx.a) * wy.g
+	                         + (tex.sample(genSampler, vtx.texCoord08) * wx.r
+	                         +  tex.sample(genSampler, vtx.texCoord09) * wx.g
+	                         +  tex.sample(genSampler, vtx.texCoord10) * wx.b
+	                         +  tex.sample(genSampler, vtx.texCoord11) * wx.a) * wy.b
+	                         + (tex.sample(genSampler, vtx.texCoord12) * wx.r
+	                         +  tex.sample(genSampler, vtx.texCoord13) * wx.g
+	                         +  tex.sample(genSampler, vtx.texCoord14) * wx.b
+	                         +  tex.sample(genSampler, vtx.texCoord15) * wx.a) * wy.a;
 	
 	return float4(outFragment.rgb * *inBacklightIntensity, 1.0f);
 }
@@ -404,7 +377,7 @@ fragment float4 output_filter_lanczos2(const DisplayVtxTex16 vtx [[stage_in]],
 									   const texture2d<float> tex [[texture(0)]],
 									   const device float *inBacklightIntensity [[buffer(0)]])
 {
-	const float2 f = fract(vtx.texCoord0);
+	const float2 f = fract(vtx.texCoord05);
 	float4 wx = bicubic_weight_lanczos2(f.x);
 	float4 wy = bicubic_weight_lanczos2(f.y);
 	
@@ -412,22 +385,22 @@ fragment float4 output_filter_lanczos2(const DisplayVtxTex16 vtx [[stage_in]],
 	wx /= dot(wx, float4(1.0f));
 	wy /= dot(wy, float4(1.0f));
 	
-	const float4 outFragment	= (tex.sample(genSampler, vtx.texCoord6) * wx.r
-								+  tex.sample(genSampler, vtx.texCoord7) * wx.g
-								+  tex.sample(genSampler, vtx.texCoord8) * wx.b
-								+  tex.sample(genSampler, vtx.texCoord9) * wx.a) * wy.r
-								+ (tex.sample(genSampler, vtx.texCoord5) * wx.r
-								+  tex.sample(genSampler, vtx.texCoord0) * wx.g
-								+  tex.sample(genSampler, vtx.texCoord1) * wx.b
-								+  tex.sample(genSampler, vtx.texCoord10) * wx.a) * wy.g
-								+ (tex.sample(genSampler, vtx.texCoord4) * wx.r
-								+  tex.sample(genSampler, vtx.texCoord3) * wx.g
-								+  tex.sample(genSampler, vtx.texCoord2) * wx.b
-								+  tex.sample(genSampler, vtx.texCoord11) * wx.a) * wy.b
-								+ (tex.sample(genSampler, vtx.texCoord15) * wx.r
-								+  tex.sample(genSampler, vtx.texCoord14) * wx.g
-								+  tex.sample(genSampler, vtx.texCoord13) * wx.b
-								+  tex.sample(genSampler, vtx.texCoord12) * wx.a) * wy.a;
+	const float4 outFragment = (tex.sample(genSampler, vtx.texCoord00) * wx.r
+	                         +  tex.sample(genSampler, vtx.texCoord01) * wx.g
+	                         +  tex.sample(genSampler, vtx.texCoord02) * wx.b
+	                         +  tex.sample(genSampler, vtx.texCoord03) * wx.a) * wy.r
+	                         + (tex.sample(genSampler, vtx.texCoord04) * wx.r
+	                         +  tex.sample(genSampler, vtx.texCoord05) * wx.g
+	                         +  tex.sample(genSampler, vtx.texCoord06) * wx.b
+	                         +  tex.sample(genSampler, vtx.texCoord07) * wx.a) * wy.g
+	                         + (tex.sample(genSampler, vtx.texCoord08) * wx.r
+	                         +  tex.sample(genSampler, vtx.texCoord09) * wx.g
+	                         +  tex.sample(genSampler, vtx.texCoord10) * wx.b
+	                         +  tex.sample(genSampler, vtx.texCoord11) * wx.a) * wy.b
+	                         + (tex.sample(genSampler, vtx.texCoord12) * wx.r
+	                         +  tex.sample(genSampler, vtx.texCoord13) * wx.g
+	                         +  tex.sample(genSampler, vtx.texCoord14) * wx.b
+	                         +  tex.sample(genSampler, vtx.texCoord15) * wx.a) * wy.a;
 	
 	return float4(outFragment.rgb * *inBacklightIntensity, 1.0f);
 }
@@ -439,12 +412,11 @@ fragment float4 output_filter_lanczos2(const DisplayVtxTex16 vtx [[stage_in]],
 //                      18|19|20|21|22|23
 //                      24|25|26|27|28|29
 //                      30|31|32|33|34|35
-fragment float4 output_filter_lanczos3(const DisplayVtx vtx [[stage_in]],
+fragment float4 output_filter_lanczos3(const DisplayVtxTex16 vtx [[stage_in]],
 									   const texture2d<float> tex [[texture(0)]],
 									   const device float *inBacklightIntensity [[buffer(0)]])
 {
-	float2 texCenterPosition = vtx.texCoord - 0.5f;
-	const float2 f = fract(texCenterPosition);
+	const float2 f = fract(vtx.texCoord05);
 	float3 wx1 = bicubic_weight_lanczos3(0.5f - f.x * 0.5f);
 	float3 wx2 = bicubic_weight_lanczos3(1.0f - f.x * 0.5f);
 	float3 wy1 = bicubic_weight_lanczos3(0.5f - f.y * 0.5f);
@@ -458,42 +430,53 @@ fragment float4 output_filter_lanczos3(const DisplayVtx vtx [[stage_in]],
 	wy1 /= sumY;
 	wy2 /= sumY;
 	
-	const float4 outFragment	= (tex.sample(genSampler, texCenterPosition, int2(-2,-2)) * wx1.r
-								+  tex.sample(genSampler, texCenterPosition, int2(-1,-2)) * wx2.r
-								+  tex.sample(genSampler, texCenterPosition, int2( 0,-2)) * wx1.g
-								+  tex.sample(genSampler, texCenterPosition, int2( 1,-2)) * wx2.g
-								+  tex.sample(genSampler, texCenterPosition, int2( 2,-2)) * wx1.b
-								+  tex.sample(genSampler, texCenterPosition, int2( 3,-2)) * wx2.b) * wy1.r
-								+ (tex.sample(genSampler, texCenterPosition, int2(-2,-1)) * wx1.r
-								+  tex.sample(genSampler, texCenterPosition, int2(-1,-1)) * wx2.r
-								+  tex.sample(genSampler, texCenterPosition, int2( 0,-1)) * wx1.g
-								+  tex.sample(genSampler, texCenterPosition, int2( 1,-1)) * wx2.g
-								+  tex.sample(genSampler, texCenterPosition, int2( 2,-1)) * wx1.b
-								+  tex.sample(genSampler, texCenterPosition, int2( 3,-1)) * wx2.b) * wy2.r
-								+ (tex.sample(genSampler, texCenterPosition, int2(-2, 0)) * wx1.r
-								+  tex.sample(genSampler, texCenterPosition, int2(-1, 0)) * wx2.r
-								+  tex.sample(genSampler, texCenterPosition, int2( 0, 0)) * wx1.g
-								+  tex.sample(genSampler, texCenterPosition, int2( 1, 0)) * wx2.g
-								+  tex.sample(genSampler, texCenterPosition, int2( 2, 0)) * wx1.b
-								+  tex.sample(genSampler, texCenterPosition, int2( 3, 0)) * wx2.b) * wy1.g
-								+ (tex.sample(genSampler, texCenterPosition, int2(-2, 1)) * wx1.r
-								+  tex.sample(genSampler, texCenterPosition, int2(-1, 1)) * wx2.r
-								+  tex.sample(genSampler, texCenterPosition, int2( 0, 1)) * wx1.g
-								+  tex.sample(genSampler, texCenterPosition, int2( 1, 1)) * wx2.g
-								+  tex.sample(genSampler, texCenterPosition, int2( 2, 1)) * wx1.b
-								+  tex.sample(genSampler, texCenterPosition, int2( 3, 1)) * wx2.b) * wy2.g
-								+ (tex.sample(genSampler, texCenterPosition, int2(-2, 2)) * wx1.r
-								+  tex.sample(genSampler, texCenterPosition, int2(-1, 2)) * wx2.r
-								+  tex.sample(genSampler, texCenterPosition, int2( 0, 2)) * wx1.g
-								+  tex.sample(genSampler, texCenterPosition, int2( 1, 2)) * wx2.g
-								+  tex.sample(genSampler, texCenterPosition, int2( 2, 2)) * wx1.b
-								+  tex.sample(genSampler, texCenterPosition, int2( 3, 2)) * wx2.b) * wy1.b
-								+ (tex.sample(genSampler, texCenterPosition, int2(-2, 3)) * wx1.r
-								+  tex.sample(genSampler, texCenterPosition, int2(-1, 3)) * wx2.r
-								+  tex.sample(genSampler, texCenterPosition, int2( 0, 3)) * wx1.g
-								+  tex.sample(genSampler, texCenterPosition, int2( 1, 3)) * wx2.g
-								+  tex.sample(genSampler, texCenterPosition, int2( 2, 3)) * wx1.b
-								+  tex.sample(genSampler, texCenterPosition, int2( 3, 3)) * wx2.b) * wy2.b;
+	// As nice as it would be to use the full 36 element texture coordinate
+	// array for the sampling locations, lots of GPUs can't handle that many.
+	// Therefore, we just use the usual 16 element array and calculate the
+	// rest on-the-fly.
+	//
+	// Note: Resist the temptation of using the sample function's texel
+	// offset method! While it works on most GPUs, it fails miserably on
+	// other GPUs, such as the Intel HD 6000. Although the performance
+	// benefits of not having to perform dependent texture reads in the
+	// fragment shader are tempting, we still need to do things this way for
+	// GPU compatibility.
+	const float4 outFragment = (tex.sample(genSampler, vtx.texCoord05 + float2(-2.0,-2.0)) * wx1.r
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2(-1.0,-2.0)) * wx2.r
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 0.0,-2.0)) * wx1.g
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 1.0,-2.0)) * wx2.g
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 2.0,-2.0)) * wx1.b
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 3.0,-2.0)) * wx2.b) * wy1.r
+	                         + (tex.sample(genSampler, vtx.texCoord05 + float2(-2.0,-1.0)) * wx1.r
+	                         +  tex.sample(genSampler, vtx.texCoord00                    ) * wx2.r
+	                         +  tex.sample(genSampler, vtx.texCoord01                    ) * wx1.g
+	                         +  tex.sample(genSampler, vtx.texCoord02                    ) * wx2.g
+	                         +  tex.sample(genSampler, vtx.texCoord03                    ) * wx1.b
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 3.0,-1.0)) * wx2.b) * wy2.r
+	                         + (tex.sample(genSampler, vtx.texCoord05 + float2(-2.0, 0.0)) * wx1.r
+	                         +  tex.sample(genSampler, vtx.texCoord04                    ) * wx2.r
+	                         +  tex.sample(genSampler, vtx.texCoord05                    ) * wx1.g
+	                         +  tex.sample(genSampler, vtx.texCoord06                    ) * wx2.g
+	                         +  tex.sample(genSampler, vtx.texCoord07                    ) * wx1.b
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 3.0, 0.0)) * wx2.b) * wy1.g
+	                         + (tex.sample(genSampler, vtx.texCoord05 + float2(-2.0, 1.0)) * wx1.r
+	                         +  tex.sample(genSampler, vtx.texCoord08                    ) * wx2.r
+	                         +  tex.sample(genSampler, vtx.texCoord09                    ) * wx1.g
+	                         +  tex.sample(genSampler, vtx.texCoord10                    ) * wx2.g
+	                         +  tex.sample(genSampler, vtx.texCoord11                    ) * wx1.b
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 3.0, 1.0)) * wx2.b) * wy2.g
+	                         + (tex.sample(genSampler, vtx.texCoord05 + float2(-2.0, 2.0)) * wx1.r
+	                         +  tex.sample(genSampler, vtx.texCoord12                    ) * wx2.r
+	                         +  tex.sample(genSampler, vtx.texCoord13                    ) * wx1.g
+	                         +  tex.sample(genSampler, vtx.texCoord14                    ) * wx2.g
+	                         +  tex.sample(genSampler, vtx.texCoord15                    ) * wx1.b
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 3.0, 2.0)) * wx2.b) * wy1.b
+	                         + (tex.sample(genSampler, vtx.texCoord05 + float2(-2.0, 3.0)) * wx1.r
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2(-1.0, 3.0)) * wx2.r
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 0.0, 3.0)) * wx1.g
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 1.0, 3.0)) * wx2.g
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 2.0, 3.0)) * wx1.b
+	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 3.0, 3.0)) * wx2.b) * wy2.b;
 	
 	return float4(outFragment.rgb * *inBacklightIntensity, 1.0f);
 }
