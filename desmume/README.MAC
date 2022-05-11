@@ -2,7 +2,7 @@
                       _________________________________________
                       Copyright (C) 2006 yopyop
                       Copyright (C) 2006-2022 DeSmuME team
-                      Last Updated: May 7, 2022
+                      Last Updated: May 12, 2022
 
 Contents:
 1) System Requirements ..................................................... 17
@@ -16,19 +16,19 @@ Contents:
 
 1) System Requirements ________________________________________________________
 
-Operating System: OS X v10.5 (Leopard) or later
+Operating System: macOS v10.5 (Leopard) or later
 
 CPU:              Can run on any PowerPC G4, G5, or Intel processor
-                  Minimum Recommended: 2.4 GHz Intel Core 2 Duo (Penryn)
+                  Minimum Recommended: 2.4 GHz Intel Core 2 Duo
                   Best Experience Recommended: 2.4 GHz Intel i5 (Haswell)
 
 RAM:              512 MB (minimum)
                   2 GB (recommended)
 
 Before you begin, make sure that your Mac meets the listed system requirements.
-In general, any Mac with an Intel Penryn processor (from early 2008) should be
-sufficient for basic gaming. However, it is possible to run DeSmuME with even
-older hardware than that. In this case, you will need to use the settings
+In general, any Mac with an Intel Core 2 Duo processor (from Mid-2007) should
+be sufficient for basic gaming. However, it is possible to run DeSmuME with
+even older hardware than that. In this case, you will need to use the settings
 listed in the section "Improving Emulation Performance" to make things usable.
 With this level of hardware, running any additional graphics enhancing features
 will result in a poor experience. Some frameskip will also be necessary in
@@ -357,7 +357,7 @@ bugs. For example, if you observed a bug in the game "Golden Sun: Dark Dawn,"
 then the bug report could look something like this:
 
     App Version: 0.9.12
-    Operating System: OS X v10.14.6 (18G9323)
+    Operating System: macOS v12.3.1 (21E258)
     Mac Model Identifier: MacBookPro15,1
     ROM Name: GOLDENSUN_DD
     ROM Serial: NTR-BO5E-USA
