@@ -548,18 +548,18 @@ static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restr
 #else
 				srcPix[0] = _mm_shuffle_epi32(srcPix[0], 0xD8);
 				srcPix[1] = _mm_shuffle_epi32(srcPix[1], 0xD8);
-				srcPix[2] = _mm_shuffle_epi32(srcPix[2], 0xD8);
-				srcPix[3] = _mm_shuffle_epi32(srcPix[3], 0xD8);
+				srcPix[2] = _mm_shuffle_epi32(srcPix[2], 0x8D);
+				srcPix[3] = _mm_shuffle_epi32(srcPix[3], 0x8D);
 				
-				srcPix[0] = _mm_unpacklo_epi32(srcPix[0], srcPix[1]);
-				srcPix[1] = _mm_unpacklo_epi32(srcPix[2], srcPix[3]);
+				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[2]);
+				srcPix[1] = _mm_or_si128(srcPix[1], srcPix[3]);
 				
-				srcPix[0] = _mm_shuffle_epi32(srcPix[0], 0xD8);
-				srcPix[1] = _mm_shuffle_epi32(srcPix[1], 0x8D);
-				
-				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[1]);
 				srcPix[0] = _mm_shufflelo_epi16(srcPix[0], 0xD8);
 				srcPix[0] = _mm_shufflehi_epi16(srcPix[0], 0xD8);
+				srcPix[1] = _mm_shufflelo_epi16(srcPix[1], 0x8D);
+				srcPix[1] = _mm_shufflehi_epi16(srcPix[1], 0x8D);
+				
+				srcPix[0] = _mm_or_si128(srcPix[0], srcPix[1]);
 				
 				_mm_store_si128((__m128i *)dst + dstX, srcPix[0]);
 #endif
