@@ -33,7 +33,7 @@
 @synthesize defaultLibrary;
 
 @synthesize deposterizePipeline;
-@synthesize hudPipeline;
+@synthesize hudBGRAPipeline;
 @synthesize hudRGBAPipeline;
 @synthesize samplerHUDBox;
 @synthesize samplerHUDText;
@@ -184,13 +184,14 @@
 		[[[hudPipelineDesc vertexBuffers] objectAtIndexedSubscript:3] setMutability:MTLMutabilityImmutable];
 		[[[hudPipelineDesc vertexBuffers] objectAtIndexedSubscript:4] setMutability:MTLMutabilityImmutable];
 		[[[hudPipelineDesc vertexBuffers] objectAtIndexedSubscript:5] setMutability:MTLMutabilityImmutable];
+		[[[hudPipelineDesc fragmentBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
 	}
 #endif
 	
 	[[[hudPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:MTLPixelFormatBGRA8Unorm];
-	hudPipeline = [[device newRenderPipelineStateWithDescriptor:hudPipelineDesc error:nil] retain];
+	hudBGRAPipeline = [[device newRenderPipelineStateWithDescriptor:hudPipelineDesc error:nil] retain];
 	
-	[[[hudPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:MTLPixelFormatBGRA8Unorm];
+	[[[hudPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:MTLPixelFormatRGBA8Unorm];
 	hudRGBAPipeline = [[device newRenderPipelineStateWithDescriptor:hudPipelineDesc error:nil] retain];
 	
 	[hudPipelineDesc release];
@@ -318,7 +319,7 @@
 	[_fetch666ConvertOnlyPipeline release];
 	[_fetch888ConvertOnlyPipeline release];
 	[deposterizePipeline release];
-	[hudPipeline release];
+	[hudBGRAPipeline release];
 	[hudRGBAPipeline release];
 	[hudIndexBuffer release];
 	
@@ -812,7 +813,6 @@
 @synthesize sharedData;
 @synthesize colorAttachment0Desc;
 @synthesize pixelScalePipeline;
-@synthesize outputRGBAPipeline;
 @synthesize outputDrawablePipeline;
 @synthesize drawableFormat;
 @synthesize bufCPUFilterDstMain;
@@ -855,9 +855,8 @@
 	[colorAttachment0Desc setTexture:nil];
 	
 	pixelScalePipeline = nil;
-	outputRGBAPipeline = nil;
 	outputDrawablePipeline = nil;
-	drawableFormat = MTLPixelFormatInvalid;
+	drawableFormat = MTLPixelFormatRGBA8Unorm;
 	
 	_texDisplaySrcDeposterize[NDSDisplayID_Main][0]  = nil;
 	_texDisplaySrcDeposterize[NDSDisplayID_Touch][0] = nil;
@@ -951,7 +950,6 @@
 	[texPairProcess.touch release];
 	
 	[self setPixelScalePipeline:nil];
-	[self setOutputRGBAPipeline:nil];
 	[self setOutputDrawablePipeline:nil];
 	[self setTexHUDCharMap:nil];
 	
@@ -1180,14 +1178,8 @@
 			break;
 	}
 	
-	[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:MTLPixelFormatBGRA8Unorm];
-	[self setOutputRGBAPipeline:[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil]];
-	
-	if ([self drawableFormat] != MTLPixelFormatInvalid)
-	{
-		[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:[self drawableFormat]];
-		[self setOutputDrawablePipeline:[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil]];
-	}
+	[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:[self drawableFormat]];
+	[self setOutputDrawablePipeline:[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil]];
 	
 #if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
 	if (@available(macOS 10.13, *))
@@ -1197,6 +1189,7 @@
 		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:2] setMutability:MTLMutabilityImmutable];
 		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:3] setMutability:MTLMutabilityImmutable];
 		[[[outputPipelineDesc fragmentBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
+		[[[outputPipelineDesc fragmentBuffers] objectAtIndexedSubscript:1] setMutability:MTLMutabilityImmutable];
 	}
 #endif
 	
@@ -1223,18 +1216,12 @@
 		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:2] setMutability:MTLMutabilityImmutable];
 		[[[outputPipelineDesc vertexBuffers] objectAtIndexedSubscript:3] setMutability:MTLMutabilityImmutable];
 		[[[outputPipelineDesc fragmentBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
+		[[[outputPipelineDesc fragmentBuffers] objectAtIndexedSubscript:1] setMutability:MTLMutabilityImmutable];
 	}
 #endif
 	
-	[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:MTLPixelFormatBGRA8Unorm];
-	outputRGBAPipeline = [[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil] retain];
-	
-	if ([self drawableFormat] != MTLPixelFormatInvalid)
-	{
-		[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:[self drawableFormat]];
-		outputDrawablePipeline = [[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil] retain];
-	}
-	
+	[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:[self drawableFormat]];
+	outputDrawablePipeline = [[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil] retain];
 	[outputPipelineDesc release];
 	
 	// Set up processing textures.
@@ -1988,6 +1975,7 @@
 					texDisplays:(MetalTexturePair)texDisplay
 						   mrfi:(MetalRenderFrameInfo)mrfi
 						doYFlip:(BOOL)willFlip
+					   doSwapRB:(BOOL)willSwapRB
 {
 	// Generate the command encoder.
 	id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:_outputRenderPassDesc];
@@ -2011,6 +1999,7 @@
 	[rce setVertexBytes:_texCoordBuffer length:sizeof(_texCoordBuffer) atIndex:1];
 	[rce setVertexBytes:&_cdvPropertiesBuffer length:sizeof(_cdvPropertiesBuffer) atIndex:2];
 	[rce setVertexBytes:&doYFlip length:sizeof(uint8_t) atIndex:3];
+	[rce setFragmentBytes:&willSwapRB length:sizeof(uint8_t) atIndex:1];
 	
 	switch (cdp->GetPresenterProperties().mode)
 	{
@@ -2093,6 +2082,7 @@
 		[rce setVertexBytes:&_cdvPropertiesBuffer length:sizeof(_cdvPropertiesBuffer) atIndex:3];
 		[rce setVertexBytes:&doYFlip length:sizeof(uint8_t) atIndex:4];
 		[rce setFragmentTexture:[self texHUDCharMap] atIndex:0];
+		[rce setFragmentBytes:&willSwapRB length:sizeof(uint8_t) atIndex:0];
 		
 		// First, draw the inputs.
 		if (mrfi.willDrawHUDInput)
@@ -2176,7 +2166,12 @@
 	
 	@autoreleasepool
 	{
-		MTLTextureDescriptor *texRenderDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
+		// Note that this method should ALWAYS return 32-bit RGBA format, not BGRA format.
+		MTLPixelFormat viewDrawableFormat = [self drawableFormat];
+		BOOL willSwapRB = (viewDrawableFormat == MTLPixelFormatBGRA8Unorm) ? YES : NO;
+		id<MTLRenderPipelineState> hudPipelineState = (willSwapRB) ? [sharedData hudBGRAPipeline] : [sharedData hudRGBAPipeline];
+		
+		MTLTextureDescriptor *texRenderDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:viewDrawableFormat
 																								 width:clientWidth
 																								height:clientHeight
 																							 mipmapped:NO];
@@ -2195,11 +2190,12 @@
 		const MetalRenderFrameInfo mrfi = [self renderFrameInfo];
 		
 		[self renderForCommandBuffer:cb
-				 outputPipelineState:[self outputRGBAPipeline]
-					hudPipelineState:[sharedData hudRGBAPipeline]
+				 outputPipelineState:[self outputDrawablePipeline]
+					hudPipelineState:hudPipelineState
 						 texDisplays:texProcess
 								mrfi:mrfi
-							 doYFlip:NO];
+							 doYFlip:NO
+							doSwapRB:willSwapRB];
 		
 		id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
 		
@@ -2348,13 +2344,15 @@
 	[oldTexTouch release];
 	
 	const MetalRenderFrameInfo mrfi = [presenterObject renderFrameInfo];
+	id<MTLRenderPipelineState> hudPipelineState = ([presenterObject drawableFormat] == MTLPixelFormatBGRA8Unorm) ? [[presenterObject sharedData] hudBGRAPipeline] : [[presenterObject sharedData] hudRGBAPipeline];
 	
 	[presenterObject renderForCommandBuffer:cb
 						outputPipelineState:[presenterObject outputDrawablePipeline]
-						   hudPipelineState:[[presenterObject sharedData] hudPipeline]
+						   hudPipelineState:hudPipelineState
 								texDisplays:_displayTexturePair
 									   mrfi:mrfi
-									doYFlip:NO];
+									doYFlip:NO
+								   doSwapRB:NO];
 	
 	[cb addScheduledHandler:^(id<MTLCommandBuffer> block) {
 		[presenterObject setRenderBufferState:ClientDisplayBufferState_Reading index:mrfi.renderIndex];

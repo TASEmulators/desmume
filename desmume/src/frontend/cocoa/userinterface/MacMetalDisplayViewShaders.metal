@@ -195,9 +195,11 @@ vertex HUDVtx hud_vertex(const device float2 *inPosition [[buffer(0)]],
 
 fragment float4 hud_fragment(const HUDVtx vtx [[stage_in]],
 							 const texture2d<float> tex [[texture(0)]],
-							 const sampler samp [[sampler(0)]])
+							 const sampler samp [[sampler(0)]],
+							 const constant uint8_t &doSwapRB [[buffer(0)]])
 {
-	return tex.sample(samp, vtx.texCoord, (vtx.lowerHUDMipMapLevel) ? level(-0.50f) : level(0.00f)) * vtx.color;
+	const float4 outColor = tex.sample(samp, vtx.texCoord, (vtx.lowerHUDMipMapLevel) ? level(-0.50f) : level(0.00f)) * vtx.color;
+	return (doSwapRB == 0) ? outColor.rgba : outColor.bgra;
 }
 
 #pragma mark Output Filters
@@ -279,9 +281,10 @@ vertex DisplayVtxTex16 display_output_sampletex16_vertex(const device float2 *in
 // Input Pixel Mapping:  00
 fragment float4 output_filter_nearest(const DisplayVtx vtx [[stage_in]],
 									  const texture2d<float> tex [[texture(0)]],
-									  const device float *inBacklightIntensity [[buffer(0)]])
+									  const device float *inBacklightIntensity [[buffer(0)]],
+									  const constant uint8_t &doSwapRB [[buffer(1)]])
 {
-	return float4(tex.sample(genSampler, vtx.texCoord).rgb * *inBacklightIntensity, 1.0f);
+	return (doSwapRB == 0) ? float4(tex.sample(genSampler, vtx.texCoord).rgb * *inBacklightIntensity, 1.0f) : float4(tex.sample(genSampler, vtx.texCoord).bgr * *inBacklightIntensity, 1.0f);
 }
 
 //---------------------------------------
@@ -289,9 +292,10 @@ fragment float4 output_filter_nearest(const DisplayVtx vtx [[stage_in]],
 //                       02|03
 fragment float4 output_filter_bilinear(const DisplayVtx vtx [[stage_in]],
 									   const texture2d<float> tex [[texture(0)]],
-									   const device float *inBacklightIntensity [[buffer(0)]])
+									   const device float *inBacklightIntensity [[buffer(0)]],
+									   const constant uint8_t &doSwapRB [[buffer(1)]])
 {
-	return float4(tex.sample(outputSamplerBilinear, vtx.texCoord).rgb * *inBacklightIntensity, 1.0f);
+	return (doSwapRB == 0) ? float4(tex.sample(outputSamplerBilinear, vtx.texCoord).rgb * *inBacklightIntensity, 1.0f) : float4(tex.sample(outputSamplerBilinear, vtx.texCoord).bgr * *inBacklightIntensity, 1.0f);
 }
 
 //---------------------------------------
@@ -301,7 +305,8 @@ fragment float4 output_filter_bilinear(const DisplayVtx vtx [[stage_in]],
 //                       12|13|14|15
 fragment float4 output_filter_bicubic_bspline(const DisplayVtxTex16 vtx [[stage_in]],
 											  const texture2d<float> tex [[texture(0)]],
-											  const device float *inBacklightIntensity [[buffer(0)]])
+											  const device float *inBacklightIntensity [[buffer(0)]],
+											  const constant uint8_t &doSwapRB [[buffer(1)]])
 {
 	float2 f = fract(vtx.texCoord05);
 	float4 wx = bicubic_weight_bspline(f.x);
@@ -328,7 +333,7 @@ fragment float4 output_filter_bicubic_bspline(const DisplayVtxTex16 vtx [[stage_
 	                         +  tex.sample(genSampler, vtx.texCoord14) * wx.b
 	                         +  tex.sample(genSampler, vtx.texCoord15) * wx.a) * wy.a;
 	
-	return float4(outFragment.rgb * *inBacklightIntensity, 1.0f);
+	return (doSwapRB == 0) ? float4(outFragment.rgb * *inBacklightIntensity, 1.0f) : float4(outFragment.bgr * *inBacklightIntensity, 1.0f);
 }
 
 //---------------------------------------
@@ -338,7 +343,8 @@ fragment float4 output_filter_bicubic_bspline(const DisplayVtxTex16 vtx [[stage_
 //                       12|13|14|15
 fragment float4 output_filter_bicubic_mitchell_netravali(const DisplayVtxTex16 vtx [[stage_in]],
 														 const texture2d<float> tex [[texture(0)]],
-														 const device float *inBacklightIntensity [[buffer(0)]])
+														 const device float *inBacklightIntensity [[buffer(0)]],
+														 const constant uint8_t &doSwapRB [[buffer(1)]])
 {
 	float2 f = fract(vtx.texCoord05);
 	float4 wx = bicubic_weight_mitchell_netravali(f.x);
@@ -365,7 +371,7 @@ fragment float4 output_filter_bicubic_mitchell_netravali(const DisplayVtxTex16 v
 	                         +  tex.sample(genSampler, vtx.texCoord14) * wx.b
 	                         +  tex.sample(genSampler, vtx.texCoord15) * wx.a) * wy.a;
 	
-	return float4(outFragment.rgb * *inBacklightIntensity, 1.0f);
+	return (doSwapRB == 0) ? float4(outFragment.rgb * *inBacklightIntensity, 1.0f) : float4(outFragment.bgr * *inBacklightIntensity, 1.0f);
 }
 
 //---------------------------------------
@@ -375,7 +381,8 @@ fragment float4 output_filter_bicubic_mitchell_netravali(const DisplayVtxTex16 v
 //                       12|13|14|15
 fragment float4 output_filter_lanczos2(const DisplayVtxTex16 vtx [[stage_in]],
 									   const texture2d<float> tex [[texture(0)]],
-									   const device float *inBacklightIntensity [[buffer(0)]])
+									   const device float *inBacklightIntensity [[buffer(0)]],
+									   const constant uint8_t &doSwapRB [[buffer(1)]])
 {
 	const float2 f = fract(vtx.texCoord05);
 	float4 wx = bicubic_weight_lanczos2(f.x);
@@ -402,7 +409,7 @@ fragment float4 output_filter_lanczos2(const DisplayVtxTex16 vtx [[stage_in]],
 	                         +  tex.sample(genSampler, vtx.texCoord14) * wx.b
 	                         +  tex.sample(genSampler, vtx.texCoord15) * wx.a) * wy.a;
 	
-	return float4(outFragment.rgb * *inBacklightIntensity, 1.0f);
+	return (doSwapRB == 0) ? float4(outFragment.rgb * *inBacklightIntensity, 1.0f) : float4(outFragment.bgr * *inBacklightIntensity, 1.0f);
 }
 
 //---------------------------------------
@@ -414,7 +421,8 @@ fragment float4 output_filter_lanczos2(const DisplayVtxTex16 vtx [[stage_in]],
 //                      30|31|32|33|34|35
 fragment float4 output_filter_lanczos3(const DisplayVtxTex16 vtx [[stage_in]],
 									   const texture2d<float> tex [[texture(0)]],
-									   const device float *inBacklightIntensity [[buffer(0)]])
+									   const device float *inBacklightIntensity [[buffer(0)]],
+									   const constant uint8_t &doSwapRB [[buffer(1)]])
 {
 	const float2 f = fract(vtx.texCoord05);
 	float3 wx1 = bicubic_weight_lanczos3(0.5f - f.x * 0.5f);
@@ -478,7 +486,7 @@ fragment float4 output_filter_lanczos3(const DisplayVtxTex16 vtx [[stage_in]],
 	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 2.0, 3.0)) * wx1.b
 	                         +  tex.sample(genSampler, vtx.texCoord05 + float2( 3.0, 3.0)) * wx2.b) * wy2.b;
 	
-	return float4(outFragment.rgb * *inBacklightIntensity, 1.0f);
+	return (doSwapRB == 0) ? float4(outFragment.rgb * *inBacklightIntensity, 1.0f) : float4(outFragment.bgr * *inBacklightIntensity, 1.0f);
 }
 
 #pragma mark NDS Emulation Functions

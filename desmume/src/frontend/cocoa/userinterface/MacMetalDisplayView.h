@@ -102,7 +102,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLComputePipelineState> _fetch666ConvertOnlyPipeline;
 	id<MTLComputePipelineState> _fetch888ConvertOnlyPipeline;
 	id<MTLComputePipelineState> deposterizePipeline;
-	id<MTLRenderPipelineState> hudPipeline;
+	id<MTLRenderPipelineState> hudBGRAPipeline;
 	id<MTLRenderPipelineState> hudRGBAPipeline;
 	
 	id<MTLSamplerState> samplerHUDBox;
@@ -151,7 +151,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) id<MTLLibrary> defaultLibrary;
 
 @property (readonly, nonatomic) id<MTLComputePipelineState> deposterizePipeline;
-@property (readonly, nonatomic) id<MTLRenderPipelineState> hudPipeline;
+@property (readonly, nonatomic) id<MTLRenderPipelineState> hudBGRAPipeline;
 @property (readonly, nonatomic) id<MTLRenderPipelineState> hudRGBAPipeline;
 @property (readonly, nonatomic) id<MTLSamplerState> samplerHUDBox;
 @property (readonly, nonatomic) id<MTLSamplerState> samplerHUDText;
@@ -188,7 +188,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MTLRenderPassDescriptor *_outputRenderPassDesc;
 	MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
 	id<MTLComputePipelineState> pixelScalePipeline;
-	id<MTLRenderPipelineState> outputRGBAPipeline;
 	id<MTLRenderPipelineState> outputDrawablePipeline;
 	MTLPixelFormat drawableFormat;
 	
@@ -229,7 +228,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (assign, nonatomic) MetalDisplayViewSharedData *sharedData;
 @property (readonly, nonatomic) MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
 @property (retain) id<MTLComputePipelineState> pixelScalePipeline;
-@property (retain) id<MTLRenderPipelineState> outputRGBAPipeline;
 @property (retain) id<MTLRenderPipelineState> outputDrawablePipeline;
 @property (assign) MTLPixelFormat drawableFormat;
 @property (retain) id<MTLBuffer> bufCPUFilterDstMain;
@@ -257,7 +255,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 			   hudPipelineState:(id<MTLRenderPipelineState>)hudPipelineState
 					texDisplays:(MetalTexturePair)texDisplay
 						   mrfi:(MetalRenderFrameInfo)mrfi
-						doYFlip:(BOOL)willFlip;
+						doYFlip:(BOOL)willFlip
+					   doSwapRB:(BOOL)willSwapRB;
 - (void) renderStartAtIndex:(uint8_t)index;
 - (void) renderFinishAtIndex:(uint8_t)index;
 - (ClientDisplayBufferState) renderBufferStateAtIndex:(uint8_t)index;
