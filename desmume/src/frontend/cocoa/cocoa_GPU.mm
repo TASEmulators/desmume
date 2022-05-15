@@ -1391,15 +1391,20 @@ MacGPUFetchObjectDisplayLink::MacGPUFetchObjectDisplayLink()
 	DisplayLinkListUpdate();
 	
     CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(),
-									this,
-									ScreenChangeCallback,
-                                    CFSTR("NSApplicationDidChangeScreenParametersNotification"),
-									NULL,
-                                    CFNotificationSuspensionBehaviorDeliverImmediately);
+	                                this,
+	                                ScreenChangeCallback,
+	                                CFSTR("NSApplicationDidChangeScreenParametersNotification"),
+	                                NULL,
+	                                CFNotificationSuspensionBehaviorDeliverImmediately);
 }
 
 MacGPUFetchObjectDisplayLink::~MacGPUFetchObjectDisplayLink()
 {
+	CFNotificationCenterRemoveObserver(CFNotificationCenterGetLocalCenter(),
+	                                   this,
+	                                   CFSTR("NSApplicationDidChangeScreenParametersNotification"),
+	                                   NULL);
+	
 	pthread_mutex_lock(&this->_mutexDisplayLinkLists);
 	
 	while (this->_displayLinksActiveList.size() > 0)
