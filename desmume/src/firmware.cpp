@@ -1,5 +1,5 @@
 /*	
-	Copyright (C) 2009-2019 DeSmuME Team
+	Copyright (C) 2009-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -531,7 +531,7 @@ std::string CFIRMWARE::GetUserSettingsFilePath(const char *firmwareFilePath)
 	return finalPath;
 }
 
-bool CFIRMWARE::loaded()
+bool CFIRMWARE::isLoaded()
 {
 	return this->_isLoaded;
 }
@@ -1319,9 +1319,12 @@ bool NDS_ReadFirmwareDataFromFile(const char *fileName, NDSFirmwareData *outFirm
 
 void fw_reset_com(fw_memory_chip *mc)
 {
-	if(mc->com == FW_CMD_PAGEWRITE)
+	if (mc->com == FW_CMD_PAGEWRITE)
 	{
-		if (mc->isFirmware && CommonSettings.UseExtFirmware && CommonSettings.UseExtFirmwareSettings && (extFirmwareObj != NULL))
+		if (mc->isFirmware &&
+		    CommonSettings.UseExtFirmware &&
+		    CommonSettings.UseExtFirmwareSettings &&
+		    (extFirmwareObj != NULL) && extFirmwareObj->isLoaded())
 		{
 			extFirmwareObj->saveSettings(CommonSettings.ExtFirmwareUserSettingsPath);
 		}

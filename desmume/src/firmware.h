@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2019 DeSmuME Team
+	Copyright (C) 2009-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -439,7 +439,7 @@ public:
 	bool loadSettings(const char *firmwareUserSettingsFilePath);
 	bool saveSettings(const char *firmwareUserSettingsFilePath);
 
-	bool loaded();
+	bool isLoaded();
 	void* getTouchCalibrate();
 	
 	static std::string GetUserSettingsFilePath(const char *firmwareFilePath);
