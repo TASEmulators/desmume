@@ -1565,10 +1565,10 @@
 						
 						cb = [self newCommandBuffer];
 						
+						dispatch_semaphore_wait(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main), DISPATCH_TIME_FOREVER);
+						
 						[cb addScheduledHandler:^(id<MTLCommandBuffer> block) {
-							dispatch_semaphore_wait(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main), DISPATCH_TIME_FOREVER);
 							vfMain->RunFilter();
-							dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main));
 						}];
 						
 						bce = [cb blitCommandEncoder];
@@ -1591,6 +1591,10 @@
 						}
 						
 						[bce endEncoding];
+						
+						[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+							dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main));
+						}];
 					}
 				}
 				
@@ -1632,10 +1636,10 @@
 						
 						cb = [self newCommandBuffer];
 						
+						dispatch_semaphore_wait(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch), DISPATCH_TIME_FOREVER);
+						
 						[cb addScheduledHandler:^(id<MTLCommandBuffer> block) {
-							dispatch_semaphore_wait(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch), DISPATCH_TIME_FOREVER);
 							vfTouch->RunFilter();
-							dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch));
 						}];
 						
 						bce = [cb blitCommandEncoder];
@@ -1653,6 +1657,10 @@
 						newTexProcess.touch = _texDisplayPixelScaler[NDSDisplayID_Touch];
 						
 						[bce endEncoding];
+						
+						[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+							dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch));
+						}];
 					}
 				}
 				
@@ -1680,10 +1688,10 @@
 				
 				if (shouldProcessDisplayMain && (_texDisplayPixelScaler[NDSDisplayID_Main] != nil))
 				{
+					dispatch_semaphore_wait(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main), DISPATCH_TIME_FOREVER);
+					
 					[cb addScheduledHandler:^(id<MTLCommandBuffer> block) {
-						dispatch_semaphore_wait(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main), DISPATCH_TIME_FOREVER);
 						vfMain->RunFilter();
-						dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main));
 					}];
 					
 					id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
@@ -1700,6 +1708,10 @@
 					
 					[bce endEncoding];
 					
+					[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+						dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main));
+					}];
+					
 					[cb commit];
 					cb = [self newCommandBuffer];
 					
@@ -1713,10 +1725,10 @@
 				
 				if (shouldProcessDisplayTouch && (_texDisplayPixelScaler[NDSDisplayID_Touch] != nil))
 				{
+					dispatch_semaphore_wait(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch), DISPATCH_TIME_FOREVER);
+					
 					[cb addScheduledHandler:^(id<MTLCommandBuffer> block) {
-						dispatch_semaphore_wait(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch), DISPATCH_TIME_FOREVER);
 						vfTouch->RunFilter();
-						dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch));
 					}];
 					
 					id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
@@ -1732,6 +1744,10 @@
 					  destinationOrigin:MTLOriginMake(0, 0, 0)];
 					
 					[bce endEncoding];
+					
+					[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+						dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch));
+					}];
 					
 					newTexProcess.touch = _texDisplayPixelScaler[NDSDisplayID_Touch];
 				}
