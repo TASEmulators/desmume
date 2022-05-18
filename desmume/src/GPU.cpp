@@ -909,8 +909,8 @@ void GPUEngineBase::UpdatePropertiesWithoutRender(const u16 l)
 	{
 		IOREG_BG2Parameter &BG2Param = this->_IORegisterMap->BG2Param;
 		
-		BG2Param.BG2X.value += BG2Param.BG2PB.value;
-		BG2Param.BG2Y.value += BG2Param.BG2PD.value;
+		BG2Param.BG2X.value += LE_TO_LOCAL_16(BG2Param.BG2PB.value);
+		BG2Param.BG2Y.value += LE_TO_LOCAL_16(BG2Param.BG2PD.value);
 	}
 	
 	if (  this->_isBGLayerShown[GPULayerID_BG3] &&
@@ -918,8 +918,8 @@ void GPUEngineBase::UpdatePropertiesWithoutRender(const u16 l)
 	{
 		IOREG_BG3Parameter &BG3Param = this->_IORegisterMap->BG3Param;
 		
-		BG3Param.BG3X.value += BG3Param.BG3PB.value;
-		BG3Param.BG3Y.value += BG3Param.BG3PD.value;
+		BG3Param.BG3X.value += LE_TO_LOCAL_16(BG3Param.BG3PB.value);
+		BG3Param.BG3Y.value += LE_TO_LOCAL_16(BG3Param.BG3PD.value);
 	}
 }
 
@@ -1127,22 +1127,8 @@ void GPUEngineBase::_RenderPixelIterate_Final(GPUEngineCompositorInfo &compInfo,
 	const s32 wmask = wh - 1;
 	const s32 hmask = ht - 1;
 	
-	IOREG_BGnX x;
-	IOREG_BGnY y;
-	x.value = LOCAL_TO_LE_32(param.BGnX.value);
-	y.value = LOCAL_TO_LE_32(param.BGnY.value);
-	
-#ifdef MSB_FIRST
-	// This only seems to work in the unrotated/unscaled case.
-	//
-	// All the working values should be correct on big-endian, but there is something else wrong going
-	// on somewhere else, but that remains a mystery at this time. In the meantime, this hack will have
-	// to remain in order to fix a bunch of games that use affine or extended layers, just as long as
-	// they don't perform any rotation/scaling.
-	// - rogerman, 2017-10-17
-	x.value = ((x.value & 0xFF000000) >> 16) | (x.value & 0x00FF00FF) | ((x.value & 0x0000FF00) << 16);
-	y.value = ((y.value & 0xFF000000) >> 16) | (y.value & 0x00FF00FF) | ((y.value & 0x0000FF00) << 16);
-#endif
+	IOREG_BGnX x = param.BGnX;
+	IOREG_BGnY y = param.BGnY;
 	
 	u8 index;
 	u16 srcColor;
@@ -1738,8 +1724,8 @@ void GPUEngineBase::_LineRot(GPUEngineCompositorInfo &compInfo)
 		IOREG_BGnParameter *__restrict bgParams = (compInfo.renderState.selectedLayerID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
 		this->_RenderLine_BGAffine<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo, *bgParams);
 		
-		bgParams->BGnX.value += bgParams->BGnPB.value;
-		bgParams->BGnY.value += bgParams->BGnPD.value;
+		bgParams->BGnX.value += LE_TO_LOCAL_16(bgParams->BGnPB.value);
+		bgParams->BGnY.value += LE_TO_LOCAL_16(bgParams->BGnPD.value);
 	}
 }
 
@@ -1756,8 +1742,8 @@ void GPUEngineBase::_LineExtRot(GPUEngineCompositorInfo &compInfo, bool &outUseC
 		IOREG_BGnParameter *__restrict bgParams = (compInfo.renderState.selectedLayerID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
 		this->_RenderLine_BGExtended<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo, *bgParams, outUseCustomVRAM);
 		
-		bgParams->BGnX.value += bgParams->BGnPB.value;
-		bgParams->BGnY.value += bgParams->BGnPD.value;
+		bgParams->BGnX.value += LE_TO_LOCAL_16(bgParams->BGnPB.value);
+		bgParams->BGnY.value += LE_TO_LOCAL_16(bgParams->BGnPD.value);
 	}
 }
 

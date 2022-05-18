@@ -3826,42 +3826,42 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					return;
 					
 				case REG_DISPA_BG2XL:
-					T1WriteWord(MMU.ARM9_REG, 0x0028, val);
+					HostWriteWord(MMU.ARM9_REG, 0x0028, val);
 					mainEngine->ParseReg_BGnX<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPA_BG2XH:
-					T1WriteWord(MMU.ARM9_REG, 0x002A, val);
+					HostWriteWord(MMU.ARM9_REG, 0x002A, val);
 					mainEngine->ParseReg_BGnX<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPA_BG2YL:
-					T1WriteWord(MMU.ARM9_REG, 0x002C, val);
+					HostWriteWord(MMU.ARM9_REG, 0x002C, val);
 					mainEngine->ParseReg_BGnY<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPA_BG2YH:
-					T1WriteWord(MMU.ARM9_REG, 0x002E, val);
+					HostWriteWord(MMU.ARM9_REG, 0x002E, val);
 					mainEngine->ParseReg_BGnY<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPA_BG3XL:
-					T1WriteWord(MMU.ARM9_REG, 0x0038, val);
+					HostWriteWord(MMU.ARM9_REG, 0x0038, val);
 					mainEngine->ParseReg_BGnX<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPA_BG3XH:
-					T1WriteWord(MMU.ARM9_REG, 0x003A, val);
+					HostWriteWord(MMU.ARM9_REG, 0x003A, val);
 					mainEngine->ParseReg_BGnX<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPA_BG3YL:
-					T1WriteWord(MMU.ARM9_REG, 0x003C, val);
+					HostWriteWord(MMU.ARM9_REG, 0x003C, val);
 					mainEngine->ParseReg_BGnY<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPA_BG3YH:
-					T1WriteWord(MMU.ARM9_REG, 0x003E, val);
+					HostWriteWord(MMU.ARM9_REG, 0x003E, val);
 					mainEngine->ParseReg_BGnY<GPULayerID_BG3>();
 					return;
 					
@@ -4011,42 +4011,42 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					return;
 					
 				case REG_DISPB_BG2XL:
-					T1WriteWord(MMU.ARM9_REG, 0x1028, val);
+					HostWriteWord(MMU.ARM9_REG, 0x1028, val);
 					subEngine->ParseReg_BGnX<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPB_BG2XH:
-					T1WriteWord(MMU.ARM9_REG, 0x102A, val);
+					HostWriteWord(MMU.ARM9_REG, 0x102A, val);
 					subEngine->ParseReg_BGnX<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPB_BG2YL:
-					T1WriteWord(MMU.ARM9_REG, 0x102C, val);
+					HostWriteWord(MMU.ARM9_REG, 0x102C, val);
 					subEngine->ParseReg_BGnY<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPB_BG2YH:
-					T1WriteWord(MMU.ARM9_REG, 0x102E, val);
+					HostWriteWord(MMU.ARM9_REG, 0x102E, val);
 					subEngine->ParseReg_BGnY<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPB_BG3XL:
-					T1WriteWord(MMU.ARM9_REG, 0x1038, val);
+					HostWriteWord(MMU.ARM9_REG, 0x1038, val);
 					subEngine->ParseReg_BGnX<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPB_BG3XH:
-					T1WriteWord(MMU.ARM9_REG, 0x103A, val);
+					HostWriteWord(MMU.ARM9_REG, 0x103A, val);
 					subEngine->ParseReg_BGnX<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPB_BG3YL:
-					T1WriteWord(MMU.ARM9_REG, 0x103C, val);
+					HostWriteWord(MMU.ARM9_REG, 0x103C, val);
 					subEngine->ParseReg_BGnY<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPB_BG3YH:
-					T1WriteWord(MMU.ARM9_REG, 0x103E, val);
+					HostWriteWord(MMU.ARM9_REG, 0x103E, val);
 					subEngine->ParseReg_BGnY<GPULayerID_BG3>();
 					return;
 					
@@ -4429,22 +4429,22 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					return;
 					
 				case REG_DISPA_BG2XL:
-					T1WriteLong(MMU.ARM9_REG, 0x0028, val);
+					HostWriteLong(MMU.ARM9_REG, 0x0028, val);
 					mainEngine->ParseReg_BGnX<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPA_BG2YL:
-					T1WriteLong(MMU.ARM9_REG, 0x002C, val);
+					HostWriteLong(MMU.ARM9_REG, 0x002C, val);
 					mainEngine->ParseReg_BGnY<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPA_BG3XL:
-					T1WriteLong(MMU.ARM9_REG, 0x0038, val);
+					HostWriteLong(MMU.ARM9_REG, 0x0038, val);
 					mainEngine->ParseReg_BGnX<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPA_BG3YL:
-					T1WriteLong(MMU.ARM9_REG, 0x003C, val);
+					HostWriteLong(MMU.ARM9_REG, 0x003C, val);
 					mainEngine->ParseReg_BGnY<GPULayerID_BG3>();
 					return;
 					
@@ -4542,22 +4542,22 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					return;
 					
 				case REG_DISPB_BG2XL:
-					T1WriteLong(MMU.ARM9_REG, 0x1028, val);
+					HostWriteLong(MMU.ARM9_REG, 0x1028, val);
 					subEngine->ParseReg_BGnX<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPB_BG2YL:
-					T1WriteLong(MMU.ARM9_REG, 0x102C, val);
+					HostWriteLong(MMU.ARM9_REG, 0x102C, val);
 					subEngine->ParseReg_BGnY<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPB_BG3XL:
-					T1WriteLong(MMU.ARM9_REG, 0x1038, val);
+					HostWriteLong(MMU.ARM9_REG, 0x1038, val);
 					subEngine->ParseReg_BGnX<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPB_BG3YL:
-					T1WriteLong(MMU.ARM9_REG, 0x103C, val);
+					HostWriteLong(MMU.ARM9_REG, 0x103C, val);
 					subEngine->ParseReg_BGnY<GPULayerID_BG3>();
 					return;
 					
