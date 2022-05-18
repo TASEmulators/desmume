@@ -61,9 +61,17 @@
 	}
 	
 	device = MTLCreateSystemDefaultDevice();
-	
 	if (device == nil)
 	{
+		NSLog(@"Metal: A Metal device could not be found.");
+		[self release];
+		return nil;
+	}
+	
+	defaultLibrary = [device newDefaultLibrary];
+	if (defaultLibrary == nil)
+	{
+		NSLog(@"Metal: The default.metallib could not be loaded!");
 		[self release];
 		return nil;
 	}
@@ -102,8 +110,6 @@
 	
 	_fetchCommandQueue = [device newCommandQueue];
 	[_fetchCommandQueue setLabel:@"CQ_DeSmuME_FramebufferFetch"];
-	
-	defaultLibrary = [device newDefaultLibrary];
 	
 	MTLComputePipelineDescriptor *computePipelineDesc = [[MTLComputePipelineDescriptor alloc] init];
 	[computePipelineDesc setThreadGroupSizeIsMultipleOfThreadExecutionWidth:YES];
