@@ -697,9 +697,9 @@ static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 	v128u16 *dst_vec128 = (v128u16 *)dst;
 	const size_t length_vec128 = elementCount / (sizeof(v128u16) / sizeof(u16));
 	
-	const v128u16 val_vec128 = (v128u16){val,val,val,val,val,val,val,val};
+	v128u16 val_vec128 = (v128u16){val,val,val,val,val,val,val,val}; // Don't set as const, since vec_st() cannot store a const vector.
 	for (size_t i = 0; i < length_vec128; i++)
-		vec_st(val_vec128, 0, dst_vec128 + i);
+		vec_st(val_vec128, i*sizeof(v128u16), dst_vec128);
 }
 
 template <size_t ELEMENTCOUNT>
@@ -707,8 +707,8 @@ static void memset_u16_fast(void *dst, const u16 val)
 {
 	v128u16 *dst_vec128 = (v128u16 *)dst;
 	
-	const v128u16 val_vec128 = (v128u16){val,val,val,val,val,val,val,val};
-	MACRODO_N(ELEMENTCOUNT / (sizeof(v128u16) / sizeof(u16)), vec_st(val_vec128, 0, dst_vec128 + (X)));
+	v128u16 val_vec128 = (v128u16){val,val,val,val,val,val,val,val}; // Don't set as const, since vec_st() cannot store a const vector.
+	MACRODO_N(ELEMENTCOUNT / (sizeof(v128u16) / sizeof(u16)), vec_st(val_vec128, (X)*sizeof(v128u16), dst_vec128));
 }
 
 static void memset_u32(void *dst, const u32 val, const size_t elementCount)
@@ -716,9 +716,9 @@ static void memset_u32(void *dst, const u32 val, const size_t elementCount)
 	v128u32 *dst_vec128 = (v128u32 *)dst;
 	const size_t length_vec128 = elementCount / (sizeof(v128u32) / sizeof(u32));
 	
-	const v128u32 val_vec128 = (v128u32){val,val,val,val};
+	v128u32 val_vec128 = (v128u32){val,val,val,val}; // Don't set as const, since vec_st() cannot store a const vector.
 	for (size_t i = 0; i < length_vec128; i++)
-		vec_st(val_vec128, 0, dst_vec128 + i);
+		vec_st(val_vec128, i*sizeof(v128u32), dst_vec128);
 }
 
 template <size_t ELEMENTCOUNT>
@@ -726,8 +726,8 @@ static void memset_u32_fast(void *dst, const u32 val)
 {
 	v128u32 *dst_vec128 = (v128u32 *)dst;
 	
-	const v128u32 val_vec128 = (v128u32){val,val,val,val};
-	MACRODO_N(ELEMENTCOUNT / (sizeof(v128u32) / sizeof(u32)), vec_st(val_vec128, 0, dst_vec128 + (X)));
+	v128u32 val_vec128 = (v128u32){val,val,val,val}; // Don't set as const, since vec_st() cannot store a const vector.
+	MACRODO_N(ELEMENTCOUNT / (sizeof(v128u32) / sizeof(u32)), vec_st(val_vec128, (X)*sizeof(v128u32), dst_vec128));
 }
 
 template <size_t VECLENGTH>
