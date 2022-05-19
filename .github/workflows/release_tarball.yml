@@ -23,7 +23,7 @@ jobs:
         cd desmume/src/frontend/posix
         autoreconf -i
         cd "$THISDIR"
-        VERSION=$(printf "%s\n" ${{ github.event.release.tag_name }} | sed 's/^v//')
+        VERSION=$(printf "%s\n" ${{ github.event.release.tag_name }} | sed -e 's/^release_//' -e 's/_/./g')
         PKGNAME="desmume-$VERSION"
         mkdir -p /tmp/$PKGNAME
         mv * /tmp/$PKGNAME
