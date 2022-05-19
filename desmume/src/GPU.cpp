@@ -617,12 +617,7 @@ void GPUEngineBase::ParseReg_BGnHOFS()
 {
 	const IOREG_BGnHOFS &BGnHOFS = this->_IORegisterMap->BGnOFS[LAYERID].BGnHOFS;
 	this->_BGLayer[LAYERID].BGnHOFS = BGnHOFS;
-	
-#ifdef MSB_FIRST
-	this->_BGLayer[LAYERID].xOffset = LOCAL_TO_LE_16(BGnHOFS.value) & 0x01FF;
-#else
-	this->_BGLayer[LAYERID].xOffset = BGnHOFS.Offset;
-#endif
+	this->_BGLayer[LAYERID].xOffset = BGnHOFS.value & 0x01FF;
 }
 
 template <GPULayerID LAYERID>
@@ -630,12 +625,7 @@ void GPUEngineBase::ParseReg_BGnVOFS()
 {
 	const IOREG_BGnVOFS &BGnVOFS = this->_IORegisterMap->BGnOFS[LAYERID].BGnVOFS;
 	this->_BGLayer[LAYERID].BGnVOFS = BGnVOFS;
-	
-#ifdef MSB_FIRST
-	this->_BGLayer[LAYERID].yOffset = LOCAL_TO_LE_16(BGnVOFS.value) & 0x01FF;
-#else
-	this->_BGLayer[LAYERID].yOffset = BGnVOFS.Offset;
-#endif
+	this->_BGLayer[LAYERID].yOffset = BGnVOFS.value & 0x01FF;
 }
 
 template <GPULayerID LAYERID>
@@ -909,8 +899,8 @@ void GPUEngineBase::UpdatePropertiesWithoutRender(const u16 l)
 	{
 		IOREG_BG2Parameter &BG2Param = this->_IORegisterMap->BG2Param;
 		
-		BG2Param.BG2X.value += LE_TO_LOCAL_16(BG2Param.BG2PB.value);
-		BG2Param.BG2Y.value += LE_TO_LOCAL_16(BG2Param.BG2PD.value);
+		BG2Param.BG2X.value += BG2Param.BG2PB.value;
+		BG2Param.BG2Y.value += BG2Param.BG2PD.value;
 	}
 	
 	if (  this->_isBGLayerShown[GPULayerID_BG3] &&
@@ -918,8 +908,8 @@ void GPUEngineBase::UpdatePropertiesWithoutRender(const u16 l)
 	{
 		IOREG_BG3Parameter &BG3Param = this->_IORegisterMap->BG3Param;
 		
-		BG3Param.BG3X.value += LE_TO_LOCAL_16(BG3Param.BG3PB.value);
-		BG3Param.BG3Y.value += LE_TO_LOCAL_16(BG3Param.BG3PD.value);
+		BG3Param.BG3X.value += BG3Param.BG3PB.value;
+		BG3Param.BG3Y.value += BG3Param.BG3PD.value;
 	}
 }
 
@@ -1168,8 +1158,8 @@ void GPUEngineBase::_RenderPixelIterate_Final(GPUEngineCompositorInfo &compInfo,
 		}
 	}
 	
-	const s16 dx = (s16)LOCAL_TO_LE_16(param.BGnPA.value);
-	const s16 dy = (s16)LOCAL_TO_LE_16(param.BGnPC.value);
+	const s16 dx = param.BGnPA.value;
+	const s16 dy = param.BGnPC.value;
 	
 	for (size_t i = 0; i < lineWidth; i++, x.value+=dx, y.value+=dy)
 	{
@@ -1655,10 +1645,12 @@ void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, co
 			
 			if (!MOSAIC)
 			{
-				const bool isRotationScaled = ( (param.BGnPA.value != 0x100) ||
-				                                (param.BGnPC.value !=     0) ||
-				                                (param.BGnX.value  !=     0) ||
-				                                (param.BGnY.value  != (0x100 * (s32)compInfo.line.indexNative)) );
+				const bool isRotationScaled = ( (param.BGnPA.Integer  != 1) ||
+				                                (param.BGnPA.Fraction != 0) ||
+				                                (param.BGnPC.value    != 0) ||
+				                                (param.BGnX.value     != 0) ||
+				                                (param.BGnY.Integer   != (s32)compInfo.line.indexNative) ||
+				                                (param.BGnY.Fraction  != 0) );
 				if (!isRotationScaled)
 				{
 					const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(compInfo.renderState.selectedBGLayer->BMPAddress) - MMU.ARM9_LCD) / sizeof(u16);
@@ -1724,8 +1716,8 @@ void GPUEngineBase::_LineRot(GPUEngineCompositorInfo &compInfo)
 		IOREG_BGnParameter *__restrict bgParams = (compInfo.renderState.selectedLayerID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
 		this->_RenderLine_BGAffine<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo, *bgParams);
 		
-		bgParams->BGnX.value += LE_TO_LOCAL_16(bgParams->BGnPB.value);
-		bgParams->BGnY.value += LE_TO_LOCAL_16(bgParams->BGnPD.value);
+		bgParams->BGnX.value += bgParams->BGnPB.value;
+		bgParams->BGnY.value += bgParams->BGnPD.value;
 	}
 }
 
@@ -1742,8 +1734,8 @@ void GPUEngineBase::_LineExtRot(GPUEngineCompositorInfo &compInfo, bool &outUseC
 		IOREG_BGnParameter *__restrict bgParams = (compInfo.renderState.selectedLayerID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
 		this->_RenderLine_BGExtended<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo, *bgParams, outUseCustomVRAM);
 		
-		bgParams->BGnX.value += LE_TO_LOCAL_16(bgParams->BGnPB.value);
-		bgParams->BGnY.value += LE_TO_LOCAL_16(bgParams->BGnPD.value);
+		bgParams->BGnX.value += bgParams->BGnPB.value;
+		bgParams->BGnY.value += bgParams->BGnPD.value;
 	}
 }
 

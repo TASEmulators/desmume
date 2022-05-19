@@ -290,8 +290,13 @@ typedef union
 	
 	struct
 	{
+#ifndef MSB_FIRST
 		u16 Fraction:8;
 		s16 Integer:8;
+#else
+		s16 Integer:8;
+		u16 Fraction:8;
+#endif
 	};
 } IOREG_BGnPA;								// 0x400x020, 0x400x030: BGn rotation/scaling parameter A (Engine A+B)
 typedef IOREG_BGnPA IOREG_BGnPB;			// 0x400x022, 0x400x032: BGn rotation/scaling parameter B (Engine A+B)
