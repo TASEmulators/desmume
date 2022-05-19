@@ -3842,22 +3842,38 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					return;
 					
 				case REG_DISPA_BG2XL:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x0028, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x002A, val);
+#endif
 					mainEngine->ParseReg_BGnX<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPA_BG2XH:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x002A, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x0028, val);
+#endif
 					mainEngine->ParseReg_BGnX<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPA_BG2YL:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x002C, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x002E, val);
+#endif
 					mainEngine->ParseReg_BGnY<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPA_BG2YH:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x002E, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x002C, val);
+#endif
 					mainEngine->ParseReg_BGnY<GPULayerID_BG2>();
 					return;
 					
@@ -3878,22 +3894,38 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					return;
 					
 				case REG_DISPA_BG3XL:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x0038, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x003A, val);
+#endif
 					mainEngine->ParseReg_BGnX<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPA_BG3XH:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x003A, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x0038, val);
+#endif
 					mainEngine->ParseReg_BGnX<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPA_BG3YL:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x003C, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x003E, val);
+#endif
 					mainEngine->ParseReg_BGnY<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPA_BG3YH:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x003E, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x003C, val);
+#endif
 					mainEngine->ParseReg_BGnY<GPULayerID_BG3>();
 					return;
 					
@@ -4059,22 +4091,38 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					return;
 					
 				case REG_DISPB_BG2XL:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x1028, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x102A, val);
+#endif
 					subEngine->ParseReg_BGnX<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPB_BG2XH:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x102A, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x1028, val);
+#endif
 					subEngine->ParseReg_BGnX<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPB_BG2YL:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x102C, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x102E, val);
+#endif
 					subEngine->ParseReg_BGnY<GPULayerID_BG2>();
 					return;
 					
 				case REG_DISPB_BG2YH:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x102E, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x102C, val);
+#endif
 					subEngine->ParseReg_BGnY<GPULayerID_BG2>();
 					return;
 					
@@ -4095,22 +4143,38 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					return;
 					
 				case REG_DISPB_BG3XL:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x1038, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x103A, val);
+#endif
 					subEngine->ParseReg_BGnX<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPB_BG3XH:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x103A, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x1038, val);
+#endif
 					subEngine->ParseReg_BGnX<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPB_BG3YL:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x103C, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x103E, val);
+#endif
 					subEngine->ParseReg_BGnY<GPULayerID_BG3>();
 					return;
 					
 				case REG_DISPB_BG3YH:
+#ifndef MSB_FIRST
 					HostWriteWord(MMU.ARM9_REG, 0x103E, val);
+#else
+					HostWriteWord(MMU.ARM9_REG, 0x103C, val);
+#endif
 					subEngine->ParseReg_BGnY<GPULayerID_BG3>();
 					return;
 					
