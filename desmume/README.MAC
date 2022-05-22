@@ -2,7 +2,7 @@
                       _________________________________________
                       Copyright (C) 2006 yopyop
                       Copyright (C) 2006-2022 DeSmuME team
-                      Last Updated: May 12, 2022
+                      Last Updated: May 22, 2022
 
 Contents:
 1) System Requirements ..................................................... 17
@@ -52,7 +52,7 @@ Please note that running DeSmuME on a PowerPC, while possible, is not fully
 supported. The PowerPC binary exists mostly for testing and development
 purposes, and also just because we can. Most games don't work well on PowerPC,
 and so you will be limited to running only the most basic of games, such as
-"Phoenix Wright: Ace Attorney."
+"Phoenix Wright: Ace Attorney" or "Picross DS."
 
 
 2) Quick Start Guide for Using DeSmuME for macOS ______________________________
@@ -356,8 +356,8 @@ possible. The better your descriptions are, the faster we can test and fix
 bugs. For example, if you observed a bug in the game "Golden Sun: Dark Dawn,"
 then the bug report could look something like this:
 
-    App Version: 0.9.12
-    Operating System: macOS v12.3.1 (21E258)
+    App Version: 0.9.13
+    Operating System: macOS v12.4 (21F79)
     Mac Model Identifier: MacBookPro15,1
     ROM Name: GOLDENSUN_DD
     ROM Serial: NTR-BO5E-USA
