@@ -45,7 +45,7 @@ static std::string fatDir;
 
 static void scanDir()
 {
-	if(fatDir == "") return;
+	if(fatDir == "" && !slot1_R4_path_type) return;
 	
 	if (fatImage)
 	{
