@@ -61,9 +61,13 @@ Windows:
  enh: improve pen&touch support
 
 Linux:
- note: countless improvements to usability, buildability, and feature parity, of CLI and GTK frontends
  note: SDL2 now employed
- note: GTK3 now employed, built with meson
+ note: GTK3 port added, built with meson
+ note: CLI and GTK ports improved, according to their respective niche (gaming vs functionality)
+ note: CLI: added horizontal screen layout
+ note: CLI: added floating-point scale factor support with HW stretching
+ note: CLI/GTK2: improved gdb stub for game debugging
+ note: CLI/GTK2/GTK3: various other improvements
 
 0.9.11 -> 0.9.12
 
