@@ -1,4 +1,75 @@
-0.9.11 -> 0.9.12 (r5146-r????)
+0.9.12 -> 0.9.13
+
+In this version we have added "HD 3D" rendering support. Look for "GPU Scaling Factor",
+We have continued radical enhancements to the Cocoa frontend and incremental enhancements to the windows Frontend.
+
+General/Core:
+ bug: numerous host compatibility and accuracy improvements to OpenGL renderer, tho off-by-1 sampling bugs will remain.
+ bug: fixes to 'edge marking', shadows, box tests, maths & depths precision, and some other rarer 3d rendering usecases
+ bug: fixes to AR cheat processing
+ bug: fixes to cheat database game identification
+ bug: fix interpolation at SPU loop points, emulation of SPU half/byte size registers & others
+ bug: backlight emulation added (for fade effects)
+ bug: other small ongoing fixes to 2d rendering and GPU memory maps
+ bug: emulate slot-1 read timings, probably for AP-related purposes
+ bug: general improvement to hardware component power-off state handling, especially 3d engine
+ bug: fix virtual fat (homebrew) building in environment with symlinks
+ bug: fix some rarely-bugged CPU instructions
+ bug: fix bugs in homebrew filesystems
+ bug: fix bugs in big-endian hosts
+ bug: fix loading gzipped files and some newer rars
+ bug: fix inconsistencies and omissions in command-line processing
+ bug: extensive improvement to wifi emulation, though wifi is still not supported.
+ bug: firmware file settings/management now behaves more or less sensibly as advertised
+ bug: fix movie (dsm) being bitrotted and failing to sync settings or manage sram properly
+ enh: movie (dsm) add record from state feature
+ enh: HD 3D Rendering
+ enh: user-selectable internal GPU bpp 15/18/24 to change from accuracy to attractiveness
+ enh: game-specific hacks library finally implemented internally, user-selectable. 
+ enh: game-specific hack for popular games that randomly corrupt their sprites when going in and out of doors
+ enh: officially supported arm and arm64 jits and overall improvements on arm hosts
+ enh: emulator now makes "(backups)" states on every loadstate, for in case you hit loadstate on accident
+ enh: User-selectable MSAA level for OpenGL renderer.
+ enh: "interface" for dll/so control of a desmume core
+ enh: optimizations, cpu arch-specific, and otherwise, to all 3d and 2d rendering, ranging from SSE to AVX2
+ enh: lua - Add raw joystick API and setlayermask API (windows only)
+ enh: lua - Add gamecode APU for game-specific hacks in scripts and 'freelook' script functionality
+ enh: add options to emulate game cards more badly, to trip AP on purpose
+ enh: fix some save type / slot type autodetections and save memory import codepaths
+ enh: add fake impossible debug AR code to select CPU: DFFFFFFF 77777777/99999999
+ enh: add --rtc-day and --rtc-hour to specify an offset from host RTC
+ enh: support newer duc files
+ enh: upgrade and add some upscalers, hq3x, 6xBRZ, etc.
+ enh: add "interface" frontend for use via dll/so
+
+Windows:
+ note: windows xp and x86 support is dropped for official builds. windows 7 support will be dropped over my dead body.
+ bug: fix numerous bugs involving filenames and path with non-latin characters
+ bug: fix bugs in various display layout, rotate, vsync, gaps, and display method configurations
+ bug: fix bugs in user configured paths
+ bug: aviout/wavout is now more robust
+ bug: fix bugs in window clearing and various display method configurations which leave garbage on screen
+ enh: add fullscreen display options
+ enh: major revisions to mic sample feature, loaded as a bunch and rotated with hotkeys
+ enh: add user-facing option to control console window visibility
+ enh: add some crude capability for breakpoints to cpu debugger and memory viewer, and other bugfixes
+ enh: add "screen size ratio" for smaller sub-screens, etc.
+ enh: add some hotkeys
+ enh: add option to kill stylus input when outside the NDS screen
+ enh: improve cheat list UX
+ enh: optimizations to reduce cpu usage overall and during idle especially for high resolutions, scalers, etc.
+ enh: improve pen&touch support
+
+Linux:
+ note: countless improvements to usability, buildability, and feature parity, of CLI and GTK frontends
+ note: SDL2 now employed
+ note: GTK3 now employed, built with meson
+
+0.9.11 -> 0.9.12
+
+We decided to start skipping even versions to disambiguate official releases from several years of interim builds,
+and to insulate ourselves from consideration for world record of "longest time between consecutive releases" by
+creating confusion as to what constitutes a consecutive release.
 
 0.9.10 -> 0.9.11 (r4908-r5146)
 
