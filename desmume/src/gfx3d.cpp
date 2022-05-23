@@ -691,35 +691,9 @@ FORCEINLINE s64 GEM_Mul32x32To64(const s32 a, const s32 b)
 #endif
 }
 
-static s32 GEM_SaturateAndShiftdown36To32(const s64 val)
-{
-	if(val>(s64)0x000007FFFFFFFFFFULL) return (s32)0x7FFFFFFFU;
-	if(val<(s64)0xFFFFF80000000000ULL) return (s32)0x80000000U;
-
-	return fx32_shiftdown(val);
-}
-
 static void GEM_TransformVertex(const s32 (&__restrict mtx)[16], s32 (&__restrict vec)[4])
 {
-	const s32 x = vec[0];
-	const s32 y = vec[1];
-	const s32 z = vec[2];
-	const s32 w = vec[3];
-
-	//saturation logic is most carefully tested by:
-	//+ spectrobes beyond the portals excavation blower and drill tools: sets very large overflowing +x,+y in the modelview matrix to push things offscreen
-	//You can see this happening quite clearly: vertices will get translated to extreme values and overflow from a 7FFF-like to an 8000-like
-	//but if it's done wrongly, you can get bugs in:
-	//+ kingdom hearts re-coded: first conversation with cast characters will place them oddly with something overflowing to about 0xA???????
-	
-	//other test cases that cropped up during this development, but are probably not actually related to this after all
-	//+ SM64: outside castle skybox
-	//+ NSMB: mario head screen wipe
-
-	vec[0] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtx[0]) + GEM_Mul32x32To64(y,mtx[4]) + GEM_Mul32x32To64(z,mtx[ 8]) + GEM_Mul32x32To64(w,mtx[12]) );
-	vec[1] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtx[1]) + GEM_Mul32x32To64(y,mtx[5]) + GEM_Mul32x32To64(z,mtx[ 9]) + GEM_Mul32x32To64(w,mtx[13]) );
-	vec[2] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtx[2]) + GEM_Mul32x32To64(y,mtx[6]) + GEM_Mul32x32To64(z,mtx[10]) + GEM_Mul32x32To64(w,mtx[14]) );
-	vec[3] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtx[3]) + GEM_Mul32x32To64(y,mtx[7]) + GEM_Mul32x32To64(z,mtx[11]) + GEM_Mul32x32To64(w,mtx[15]) );
+	MatrixMultVec4x4(mtx, vec);
 }
 //---------------
 

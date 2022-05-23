@@ -24,20 +24,6 @@
 #include "matrix.h"
 #include "MMU.h"
 
-// NDS matrix math functions uses 20.12 fixed-point for calculations. According to
-// GEM_TransformVertex(), dot product calculations use accumulation that goes beyond
-// 32-bits and then saturates. Therefore, all fixed-point math functions (with the
-// exception of matrix-by-matrix multiplication,) will also support that feature here.
-//
-// But for historical reasons, we can't enable this right away. Therefore, the scalar
-// function GEM_TransformVertex() will continue to be used for SetVertex() while these
-// fixed-point functions will remain as they are. In order to document the future
-// intent of the fixed-point functions while retaining the existing functionality, the
-// saturate code will be hidden by this macro.
-//
-// Testing is highly encouraged! Simply uncomment to try out this feature.
-//#define FIXED_POINT_MATH_FUNCTIONS_USE_ACCUMULATOR_SATURATE
-
 
 // The following floating-point functions exist for historical reasons and are deprecated.
 // They should be obsoleted and removed as more of the geometry engine moves to fixed-point.
@@ -575,7 +561,6 @@ static FORCEINLINE void __mtx4_translate_vec3_float_NEON(float (&__restrict inou
 
 static FORCEINLINE s32 ___s32_saturate_shiftdown_accum64_fixed(s64 inAccum)
 {
-#ifdef FIXED_POINT_MATH_FUNCTIONS_USE_ACCUMULATOR_SATURATE
 	if (inAccum > (s64)0x000007FFFFFFFFFFULL)
 	{
 		return (s32)0x7FFFFFFFU;
@@ -584,7 +569,6 @@ static FORCEINLINE s32 ___s32_saturate_shiftdown_accum64_fixed(s64 inAccum)
 	{
 		return (s32)0x80000000U;
 	}
-#endif // FIXED_POINT_MATH_FUNCTIONS_USE_ACCUMULATOR_SATURATE
 	
 	return sfx32_shiftdown(inAccum);
 }
@@ -596,6 +580,16 @@ static FORCEINLINE s32 __vec4_dotproduct_vec4_fixed(const s32 (&__restrict vecA)
 
 static FORCEINLINE void __vec4_multiply_mtx4_fixed(s32 (&__restrict inoutVec)[4], const s32 (&__restrict inMtx)[16])
 {
+	//saturation logic is most carefully tested by:
+	//+ spectrobes beyond the portals excavation blower and drill tools: sets very large overflowing +x,+y in the modelview matrix to push things offscreen
+	//You can see this happening quite clearly: vertices will get translated to extreme values and overflow from a 7FFF-like to an 8000-like
+	//but if it's done wrongly, you can get bugs in:
+	//+ kingdom hearts re-coded: first conversation with cast characters will place them oddly with something overflowing to about 0xA???????
+	
+	//other test cases that cropped up during this development, but are probably not actually related to this after all
+	//+ SM64: outside castle skybox
+	//+ NSMB: mario head screen wipe
+	
 	const CACHE_ALIGN s32 v[4] = {inoutVec[0], inoutVec[1], inoutVec[2], inoutVec[3]};
 	
 	inoutVec[0] = ___s32_saturate_shiftdown_accum64_fixed( fx32_mul(inMtx[0],v[0]) + fx32_mul(inMtx[4],v[1]) + fx32_mul(inMtx[ 8],v[2]) + fx32_mul(inMtx[12],v[3]) );
@@ -675,7 +669,6 @@ static FORCEINLINE void __mtx4_translate_vec3_fixed(s32 (&__restrict inoutMtx)[1
 
 static FORCEINLINE void ___s32_saturate_shiftdown_accum64_fixed_SSE4(__m128i &inoutAccum)
 {
-#ifdef FIXED_POINT_MATH_FUNCTIONS_USE_ACCUMULATOR_SATURATE
 	v128u8 outVecMask;
 	
 #if defined(ENABLE_SSE4_2)
@@ -696,8 +689,6 @@ static FORCEINLINE void ___s32_saturate_shiftdown_accum64_fixed_SSE4(__m128i &in
 	
 	inoutAccum = _mm_blendv_epi8(outVecNeg, outVecPos, outVecSignMask);
 #endif // ENABLE_SSE4_2
-	
-#endif // FIXED_POINT_MATH_FUNCTIONS_USE_ACCUMULATOR_SATURATE
 	
 	inoutAccum = _mm_srli_epi64(inoutAccum, 12);
 	inoutAccum = _mm_shuffle_epi32(inoutAccum, 0xD8);
@@ -967,7 +958,6 @@ static FORCEINLINE void __mtx4_translate_vec3_fixed_SSE4(s32 (&__restrict inoutM
 
 static FORCEINLINE void ___s32_saturate_shiftdown_accum64_fixed_NEON(int64x2_t &inoutAccum)
 {
-#ifdef FIXED_POINT_MATH_FUNCTIONS_USE_ACCUMULATOR_SATURATE
 	int64x2_t outVecMask;
 	
 	outVecMask = vcgtq_s64( inoutAccum, vdupq_n_s64((s64)0x000007FFFFFFFFFFULL) );
@@ -975,7 +965,6 @@ static FORCEINLINE void ___s32_saturate_shiftdown_accum64_fixed_NEON(int64x2_t &
 	
 	outVecMask = vcltq_s64( inoutAccum, vdupq_n_s64((s64)0xFFFFF80000000000ULL) );
 	inoutAccum = vbslq_s64( outVecMask, vdupq_n_s64((s64)0xFFFFF80000000000ULL), inoutAccum );
-#endif // FIXED_POINT_MATH_FUNCTIONS_USE_ACCUMULATOR_SATURATE
 	
 	inoutAccum = vshrq_n_s64(inoutAccum, 12);
 	inoutAccum = vreinterpretq_s64_s32( vuzp1q_s32(vreinterpretq_s32_s64(inoutAccum), vdupq_n_s32(0)) );
