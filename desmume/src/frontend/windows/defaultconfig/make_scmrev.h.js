@@ -38,6 +38,10 @@ function GetGitExe()
 	if (oFS.FileExists(gitexe)) {
 		return gitexe;
 	}
+	gitexe = wshShell.ExpandEnvironmentStrings("%ProgramW6432%") + msyspath;
+	if (oFS.FileExists(gitexe)) {
+		return gitexe;
+	}	
 
 	WScript.Echo("Cannot find git or git.cmd, check your PATH:\n" +
 		wshShell.ExpandEnvironmentStrings("%PATH%"));
