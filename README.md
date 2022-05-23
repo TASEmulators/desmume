@@ -10,15 +10,28 @@ https://ds.44670.org/
 
 # Please, Do Not Create a Duplicated Issue for Feature Request
 
-# How to save your game progress
+# Frequent Asked Questions
+**Q: It can't load any files.**
+A: Only iOS >= 14.7 is supported, please update your OS first.
+**Q: The performance is very slow.**
+A: Please make sure iOS's "Low Power Mode" is disabled.
+**Q: There is no sound.**
+A: The "Silent Switch" of your device should be "Off".
+**Q: How do I save my progress?**
+A: After you added the web page to the Home Screen, just save in the game and wait a few seconds, an 'auto-saving' banner will appear. 
+**Q: Do I need to export the save data?**
+A: You don't have to export the save data in normal usecases. However to prevent the data loss caused by the accidental deletion of the Home Screen icon or the damage of your device, you can export the save data to a file. These feature should not be confused with "save states", you have to save in the game before exporting the save data.
+**Q: After importing the save data, it takes me back to the main menu.**
+A: It is an expected behavior, the save data was imported and you can continue playing by loading the game file again.
 
+# About Save Data
 You can save your game progress in the game, and it will be stored in browser's local storage automatically. An "auto saving" banner will appear while the saving is in progress.
 
 On iOS(iPhone/iPad), you have to add the page to your **Home Screen** in order to save your game progress. Your save data will be stored on your device until you remove the icon from Home Screen. 
 
 To reduce the risk of accidental deletion of your Home Screen icon, you can import/export your save data from the in-game menu regularly.
 
-On macOS Safari, the game progress will be deleted after **7 days of inactivity** due to the browser's limitation. This behavior of Safari cannot be changed, so it is strongly recommended to use other browsers like Chrome on macOS.
+On macOS Safari, the game progress will be deleted after **7 days of inactivity** due to software limitation. This behavior of Safari cannot be changed, so it is strongly recommended to use other browsers like Chrome on macOS.
 
 For other platforms, Chrome/Edge may be a good choice.
 
