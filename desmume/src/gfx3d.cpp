@@ -270,17 +270,12 @@ Viewer3d_State* viewer3d_state = NULL;
 static GFX3D_Clipper boxtestClipper;
 
 //tables that are provided to anyone
-CACHE_ALIGN u8 mixTable555[32][32][32];
 CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 
 //private acceleration tables
 static float float16table[65536];
-static float float10Table[1024];
-static float float10RelTable[1024];
-static float normalTable[1024];
 
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
-#define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
 // Color buffer that is filled by the 3D renderer and is read by the GPU engine.
 static CACHE_ALIGN FragmentColor _gfx3d_savestateBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
@@ -329,7 +324,11 @@ u32 isSwapBuffers = FALSE;
 static u32 BTind = 0;
 static u32 PTind = 0;
 static CACHE_ALIGN u16 BTcoords[6] = {0, 0, 0, 0, 0, 0};
-static CACHE_ALIGN float PTcoords[4] = {0.0, 0.0, 0.0, 1.0};
+static CACHE_ALIGN s32 PTcoords[4] = { 0, 0, 0, (1<<12) };
+
+// Exists for save state compatibility. Historically, PTcoords were stored
+// as floating point values, not as integers.
+static CACHE_ALIGN float PTcoords_legacySave[4] = { 0, 0, 0, 1.0f };
 
 //raw ds format poly attributes
 static POLYGON_ATTR polyAttrInProcess;
@@ -423,23 +422,6 @@ static void makeTables()
 
 	for (size_t i = 0; i < 65536; i++)
 		float16table[i] = fix2float((signed short)i);
-
-	for (size_t i = 0; i < 1024; i++)
-		float10Table[i] = ((signed short)(i<<6)) / (float)(1<<12);
-
-	for (size_t i = 0; i < 1024; i++)
-		float10RelTable[i] = ((signed short)(i<<6)) / (float)(1<<18);
-
-	for (size_t i = 0; i < 1024; i++)
-		normalTable[i] = ((signed short)(i<<6)) / (float)(1<<15);
-
-	for (size_t r = 0; r <= 31; r++)
-		for (size_t oldr = 0; oldr <= 31; oldr++)
-			for (size_t a = 0; a <= 31; a++)
-			{
-				int temp = (r*a + oldr*(31-a)) / 31;
-				mixTable555[a][r][oldr] = temp;
-			}
 }
 
 void POLY::save(EMUFILE &os)
@@ -1831,6 +1813,9 @@ static BOOL gfx3d_glBoxTest(u32 v)
 static BOOL gfx3d_glPosTest(u32 v)
 {
 	//this is apparently tested by transformers decepticons and ultimate spiderman
+	
+	// "Apollo Justice: Ace Attorney" also uses the position test for the evidence
+	// viewer, such as the card color check in Case 1.
 
 	//clear result flag. busy flag has been set by fifo component already
 	MMU_new.gxstat.tr = 0;
@@ -1838,13 +1823,23 @@ static BOOL gfx3d_glPosTest(u32 v)
 	//now that we're executing this, we're not busy anymore
 	MMU_new.gxstat.tb = 0;
 
-	PTcoords[PTind++] = float16table[v & 0xFFFF];
-	PTcoords[PTind++] = float16table[v >> 16];
+	// Values for the position test come in as a pair of 16-bit coordinates
+	// in 4.12 fixed-point format:
+	//     1-bit sign, 3-bit integer, 12-bit fraction
+	//
+	// Parameter 1, bits  0-15: X-component
+	// Parameter 1, bits 16-31: Y-component
+	// Parameter 2, bits  0-15: Z-component
+	// Parameter 2, bits 16-31: Ignored
+	
+	// Convert the coordinates to 20.12 fixed-point format for our vector-matrix multiplication.
+	PTcoords[PTind++] = (s32)((s16)(v & 0xFFFF));
+	PTcoords[PTind++] = (s32)((s16)(v >> 16));
 
 	if (PTind < 3) return FALSE;
 	PTind = 0;
 	
-	PTcoords[3] = 1.0f;
+	PTcoords[3] = 1 << 12;
 	
 	MatrixMultVec4x4(mtxCurrent[MATRIXMODE_POSITION], PTcoords);
 	MatrixMultVec4x4(mtxCurrent[MATRIXMODE_PROJECTION], PTcoords);
@@ -1864,19 +1859,29 @@ static void gfx3d_glVecTest(u32 v)
 	//this is tested by phoenix wright in its evidence inspector modelviewer
 	//i am not sure exactly what it is doing, maybe it is testing to ensure
 	//that the normal vector for the point of interest is camera-facing.
-
-	CACHE_ALIGN float normal[4] = {
-		normalTable[v&1023],
-		normalTable[(v>>10)&1023],
-		normalTable[(v>>20)&1023],
+	
+	// Values for the vector test come in as a trio of 10-bit coordinates
+	// in 1.9 fixed-point format:
+	//     1-bit sign, 9-bit fraction
+	//
+	// Bits  0- 9: X-component
+	// Bits 10-19: Y-component
+	// Bits 20-29: Z-component
+	// Bits 30-31: Ignored
+	
+	// Convert the coordinates to 20.12 fixed-point format for our vector-matrix multiplication.
+	CACHE_ALIGN s32 normal[4] = {
+		( (s32)((v & 0x000003FF) << 22) >> 19 ) | (s32)((v & 0x000001C0) >>  6),
+		( (s32)((v & 0x000FFC00) << 12) >> 19 ) | (s32)((v & 0x00007000) >> 16),
+		( (s32)((v & 0x3FF00000) <<  2) >> 19 ) | (s32)((v & 0x01C00000) >> 26),
 		0
 	};
 	
 	MatrixMultVec4x4(mtxCurrent[MATRIXMODE_POSITION_VECTOR], normal);
 
-	s16 x = (s16)(normal[0]*4096);
-	s16 y = (s16)(normal[1]*4096);
-	s16 z = (s16)(normal[2]*4096);
+	const u16 x = (u16)((s16)normal[0]);
+	const u16 y = (u16)((s16)normal[1]);
+	const u16 z = (u16)((s16)normal[2]);
 
 	MMU_new.gxstat.tb = 0;		// clear busy
 	T1WriteWord(MMU.MMU_MEM[0][0x40], 0x630, x);
@@ -1972,7 +1977,7 @@ void gfx3d_glAlphaFunc(u32 v)
 
 u32 gfx3d_glGetPosRes(const size_t index)
 {
-	return (u32)(s32)(PTcoords[index] * 4096.0f);
+	return (u32)PTcoords[index];
 }
 
 //#define _3D_LOG_EXEC
@@ -2732,7 +2737,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GLSB", 4, 1, &isSwapBuffers},
 	{ "GLBT", 4, 1, &BTind},
 	{ "GLPT", 4, 1, &PTind},
-	{ "GLPC", 4, 4, PTcoords},
+	{ "GLPC", 4, 4, PTcoords_legacySave},
 	{ "GBTC", 2, 6, &BTcoords[0]},
 	{ "GFHE", 4, 1, &gxFIFO.head},
 	{ "GFTA", 4, 1, &gxFIFO.tail},
@@ -2848,6 +2853,12 @@ void gfx3d_PrepareSaveStateBufferWrite()
 			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)_gfx3d_savestateBuffer, (u32 *)_gfx3d_savestateBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		}
 	}
+	
+	// For save state compatibility
+	PTcoords_legacySave[0] = (float)PTcoords[0] / 4096.0f;
+	PTcoords_legacySave[1] = (float)PTcoords[1] / 4096.0f;
+	PTcoords_legacySave[2] = (float)PTcoords[2] / 4096.0f;
+	PTcoords_legacySave[3] = (float)PTcoords[3] / 4096.0f;
 }
 
 void gfx3d_savestate(EMUFILE &os)
@@ -3073,6 +3084,12 @@ void gfx3d_FinishLoadStateBufferRead()
 			// Do nothing. Loading the 3D framebuffer is unsupported on this 3D renderer.
 			break;
 	}
+	
+	// For save state compatibility
+	PTcoords[0] = (s32)(PTcoords_legacySave[0] * 4096.0f);
+	PTcoords[1] = (s32)(PTcoords_legacySave[1] * 4096.0f);
+	PTcoords[2] = (s32)(PTcoords_legacySave[2] * 4096.0f);
+	PTcoords[3] = (s32)(PTcoords_legacySave[3] * 4096.0f);
 }
 
 void gfx3d_parseCurrentDISP3DCNT()
@@ -3129,7 +3146,7 @@ template void gfx3d_glGetMatrix<MATRIXMODE_TEXTURE>(const int index, float(&dst)
 template<typename T>
 static T interpolate(const float ratio, const T& x0, const T& x1)
 {
-	return (T)(x0 + (float)(x1-x0) * (ratio));
+	return (T)(x0 + (float)(x1-x0) * ratio);
 }
 
 //http://www.cs.berkeley.edu/~ug/slide/pipeline/assignments/as6/discussion.shtml

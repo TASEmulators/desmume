@@ -616,7 +616,6 @@ extern GFX3D gfx3d;
 //---------------------
 
 extern CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
-extern CACHE_ALIGN u8 mixTable555[32][32][32];
 
 extern u32 isSwapBuffers;
 
