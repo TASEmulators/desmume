@@ -5409,7 +5409,7 @@ DOKEYDOWN:
 
 #ifndef BETA_VERSION
 		case IDM_SUBMITBUGREPORT:
-			ShellExecute(NULL, "open", "http://sourceforge.net/p/desmume/bugs/", NULL, NULL, SW_SHOWNORMAL);
+			ShellExecute(NULL, "open", "https://github.com/TASEmulators/desmume/issues/", NULL, NULL, SW_SHOWNORMAL);
 			return 0;
 #endif
 
