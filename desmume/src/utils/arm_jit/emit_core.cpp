@@ -16,6 +16,10 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef __APPLE__
+#include <libkern/OSCacheControl.h>
+#endif
+
 #define CHUNK_SIZE 6048*4
 
 struct s_bytes {
@@ -42,17 +46,23 @@ t_bytes *g_currBlock = NULL;
 
 std::map<JittedFunc, u_int> allFuncs;
 
-static void* alloc_executable_memory(size_t size) {
-#ifdef __APPLE__
-	void* ptr = mmap (NULL, size,
-                    PROT_READ | PROT_WRITE | PROT_EXEC,
-                    MAP_PRIVATE | MAP_ANONYMOUS |  MAP_JIT,
-                    -1, 0);
-#else
-  void* ptr = mmap(0, size,
-                   PROT_READ | PROT_WRITE | PROT_EXEC,
-                MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#ifndef MAP_ANONYMOUS
+	#ifdef MAP_ANON
+		#define MAP_ANONYMOUS MAP_ANON
+	#else
+		#define MAP_ANONYMOUS 0
+	#endif
 #endif
+
+#ifndef MAP_JIT
+	#define MAP_JIT 0
+#endif
+
+static void* alloc_executable_memory(size_t size) {
+  void *ptr = mmap(NULL, size,
+                   PROT_READ | PROT_WRITE | PROT_EXEC,
+                   MAP_PRIVATE | MAP_ANONYMOUS | MAP_JIT, -1, 0);
+  
   if (ptr == (void*)-1) {
     return NULL;
   }
@@ -174,10 +184,10 @@ void releaseBytes(t_bytes *bytes) {
 }
 	
 JittedFunc createFunc(t_bytes *bytes) {
-    for (auto const& lbl : g_LABELS) {
-        int nj = lbl.second.jumps.size();
+    for (std::map<int, t_labelmap>::iterator lbl = g_LABELS.begin(); lbl != g_LABELS.end(); lbl++) {
+        int nj = lbl->second.jumps.size();
         for (int i = 0; i < nj; i++) {
-            MOD_JUMP(lbl.second.jumps[i].instruct_ptr, lbl.second.jumps[i].cond, lbl.second.num_bytes, lbl.second.jumps[i].num_bytes)
+            MOD_JUMP(lbl->second.jumps[i].instruct_ptr, lbl->second.jumps[i].cond, lbl->second.num_bytes, lbl->second.jumps[i].num_bytes)
         }
     }
 
@@ -201,7 +211,11 @@ JittedFunc createFunc(t_bytes *bytes) {
         curr_bytes = curr_bytes->next;
     }
 	
+#ifdef __APPLE__
+	sys_icache_invalidate(fn, g_TOTALBYTES);
+#else
 	__builtin___clear_cache(fn, fn+g_TOTALBYTES);
+#endif
 	
 	return (JittedFunc)fn;
 }

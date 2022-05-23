@@ -53,17 +53,25 @@ t_bytes *g_out = NULL;
 #include <pthread.h>
 static int g_jitWrite = 0;
 void jit_exec() {
-  if (g_jitWrite) {
-    (void)pthread_jit_write_protect_np(1);
-    g_jitWrite = 0;
-  }
+	if (g_jitWrite) {
+#if defined(MAC_OS_VERSION_11_0) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0)
+		if (__builtin_available(macOS 11.0, *)) {
+			pthread_jit_write_protect_np(1);
+		}
+#endif
+		g_jitWrite = 0;
+	}
 }
 
 void jit_write() {
-  if (! g_jitWrite) {
-    (void)pthread_jit_write_protect_np(0);
-    g_jitWrite = 1;
-  }
+	if (! g_jitWrite) {
+#if defined(MAC_OS_VERSION_11_0) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0)
+		if (__builtin_available(macOS 11.0, *)) {
+			pthread_jit_write_protect_np(0);
+		}
+#endif
+		g_jitWrite = 1;
+	}
 }
 #else
 #define jit_write(...)
