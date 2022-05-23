@@ -1,7 +1,8 @@
 0.9.12 -> 0.9.13
 
-In this version we have added "HD 3D" rendering support. Look for "GPU Scaling Factor",
-We have continued radical enhancements to the Cocoa frontend and incremental enhancements to the windows Frontend.
+In this version we have added support for high-resolution 3D rendering. Try the new "GPU Scaling Factor" feature to
+increase the 3D resolution beyond the native resolution of 256x192 pixels. Also, the Cocoa frontend sees continued
+radical enhancements and while the Windows frontend sees some new incremental enhancements.
 
 General/Core:
  bug: numerous host compatibility and accuracy improvements to OpenGL renderer, tho off-by-1 sampling bugs will remain.
@@ -23,7 +24,9 @@ General/Core:
  bug: firmware file settings/management now behaves more or less sensibly as advertised
  bug: fix movie (dsm) being bitrotted and failing to sync settings or manage sram properly
  enh: movie (dsm) add record from state feature
- enh: HD 3D Rendering
+ enh: high-resolution 3d rendering, from 1x-16x the native resolution of 256x192 pixels
+ enh: texture upscaling for 3d rendering, from 1x-4x the native texture size
+ enh: texture smoothing option for OpenGL renderer
  enh: user-selectable internal GPU bpp 15/18/24 to change from accuracy to attractiveness
  enh: game-specific hacks library finally implemented internally, user-selectable. 
  enh: game-specific hack for popular games that randomly corrupt their sprites when going in and out of doors
@@ -59,6 +62,23 @@ Windows:
  enh: improve cheat list UX
  enh: optimizations to reduce cpu usage overall and during idle especially for high resolutions, scalers, etc.
  enh: improve pen&touch support
+ 
+Cocoa:
+ bug: fix issues with v-sync causing frame rate issues under various circumstances
+ bug: fix issues when running a display window in fullscreen
+ enh: add native binary support for Apple Silicon CPUs
+ enh: Macs with an Intel Haswell or later CPU now benefit from the new AVX2 optimizations
+ enh: add support for Apple's Dark Mode user interface introduced in macOS Mojave
+ enh: add some new toolbar items for the following: Frame Advance, Enable/Disable HUD, Toggle Displays
+ enh: turbo inputs can now be configured with a frame-by-frame press/release pattern
+ enh: display windows now run their video output using Metal, if available
+ enh: display windows now support HiDPI monitors like Apple's Retina monitors
+ enh: display windows have new "Hybrid" layouts for better fit on modern widescreen monitors (View > Display Layout)
+ enh: display windows can now change the video source going to each individual DS screen (View > Display Video Source)
+ enh: display windows can now run a Heads-Up Display for reporting useful info (View > Show HUD Settings)
+ enh: add support for changing the NDS stylus pressure (Emulation > Show Stylus Settings)
+ enh: screenshots can now be captured using a dedicated tool for it (Tools > Show Screenshot Capture Tool)
+ enh: lots of miscellaneous stability and performance improvements
 
 Linux:
  note: SDL2 now employed
@@ -308,8 +328,8 @@ Linux:
  enh: cli: better fps limiting (Thomas Jones)
  
 Wx: 
-  bug: some small fixes here and there (Jan Bücken)
-  enh: lot of code cleanup (Jan Bücken) 
+  bug: some small fixes here and there (Jan BÃ¼cken)
+  enh: lot of code cleanup (Jan BÃ¼cken) 
 
 0.9.6 -> 0.9.7 (r3493-r3812)
 
@@ -694,7 +714,7 @@ CPU/MMU:
  bug: Fixed Thumb LDMIA (fixes ingame Dead'n'Furious) [shash]
  bug: Fix repeating DMA (fixes NSMB parallax BG) [zeromus]
  bug: Proper handling for unaligned CPU accesses [luigi__]
- bug: Proper handling for undefined instruction exceptions [Salva Peiró]
+ bug: Proper handling for undefined instruction exceptions [Salva PeirÃ³]
  bug: correctly return vram control register values (fixes homebrew 3d games) [zeromus]
  enh: Remove 16MB of WRAM at 0x01****** from arm9. Mapped to unused instead. Nobody knows what this was. [zeromus]
  enh: Changed instruction execution to 16 at a time blocks (tested and stable) [shash]
@@ -740,8 +760,8 @@ Mac OS X port:
  bug: Fixed: Frozen video output (and/or messed 3d emulation) after loading a state. [Jeff]
  bug: Added option to load the most recent file upon launching the program. [Jeff]
  enh: Added French translation (thanks to Pierre Rudloff). [Jeff]
- enh: Added basic key mapping configuration to application preferences (thanks to Julio GorgŽ). [Jeff]
- enh: Added keyboard shortcuts for Execute, Pause and Reset command (thanks to Julio GorgŽ). [Jeff]
+ enh: Added basic key mapping configuration to application preferences (thanks to Julio GorgÂŽ). [Jeff]
+ enh: Added keyboard shortcuts for Execute, Pause and Reset command (thanks to Julio GorgÂŽ). [Jeff]
  enh: Default key mappings are no longer case sensitive. [Jeff]
  enh: Added ability to limit speed. [Jeff]
  enh: Fixed: Video output should work on software-only 3D renderers. [Jeff]
