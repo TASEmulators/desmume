@@ -10,7 +10,7 @@ https://ds.44670.org/
 
 # Please, Do Not Create a Duplicated Issue for Feature Request
 
-# Frequent Asked Questions
+# Frequently Asked Questions
 **Q: It can't load any files.**
 
 A: Only iOS >= 14.7 is supported, please update your OS first.
