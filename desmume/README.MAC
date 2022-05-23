@@ -2,7 +2,7 @@
                       _________________________________________
                       Copyright (C) 2006 yopyop
                       Copyright (C) 2006-2022 DeSmuME team
-                      Last Updated: May 22, 2022
+                      Last Updated: May 23, 2022
 
 Contents:
 1) System Requirements ..................................................... 17
@@ -249,24 +249,24 @@ everything that DeSmuME can do! If you need any additional information about
 DeSmuME, then you can reference our online Wiki pages for up-to-date
 information.
 
-* Official Documentation: http://wiki.desmume.org/index.php?title=Main_Page
+* Official Documentation: https://wiki.desmume.org/index.php?title=Main_Page
 
 This is the main Wiki page that contains all of our official documentation.
 
-* FAQ: http://wiki.desmume.org/index.php?title=Faq
+* FAQ: https://wiki.desmume.org/index.php?title=Faq
 
 The Frequently Asked Questions (FAQ) page has a lot of useful general
 information about DeSmuME. Do note that some of the information may be platform
 specific, and may not directly apply to the macOS version of DeSmuME.
 
 * DeSmuME Manual for macOS:
-http://wiki.desmume.org/index.php?title=DeSmuME_Manual_for_the_Macintosh_port
+https://wiki.desmume.org/index.php?title=DeSmuME_Manual_for_the_Macintosh_port
 
 This page contains complete and detailed information about how to operate
 DeSmuME for macOS.
 
 * DeSmuME Build Instructions for macOS:
-http://wiki.desmume.org/index.php?title=Installing_DeSmuME_from_source_on_OS_X
+https://wiki.desmume.org/index.php?title=Installing_DeSmuME_from_source_on_OS_X
 
 This page contains complete and detailed instructions about how to make your
 own build of DeSmuME for macOS directly from the source code.
@@ -295,14 +295,14 @@ However, keep in mind that there are a few of rules that you need to follow:
   go to the Support forum. In short, use the appropriate contact method. That's
   why the different methods exist!
 
-* Official Website: http://desmume.org
+* Official Website: https://desmume.org
 
 Our official website has the latest news on DeSmuME releases, and also has a
 lot of other useful information about DeSmuME. You can comment on different
 posts telling us how you feel about DeSmuME. Is DeSmuME the best thing in your
 life? Is it making you cry? Or is it a bunch of blah? Let us know here!
 
-* Public Forum: http://forums.desmume.org
+* Public Forum: https://forums.desmume.org
 
 If you have a question about DeSmuME, then this is the place to ask it. But
 before you ask it, be aware that your question may have already been answered
@@ -386,7 +386,7 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
-this software.  If not, see <http://www.gnu.org/licenses/>.
+this software.  If not, see <https://www.gnu.org/licenses/>.
 
 
     * See the GNU General Public License details in COPYING.

@@ -16,11 +16,11 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define STRING_DESMUME_WEBSITE						"http://desmume.org"
+#define STRING_DESMUME_WEBSITE						"https://desmume.org"
 #define STRING_DESMUME_SHORT_DESCRIPTION			"Nintendo DS Emulator"
-#define STRING_DESMUME_FORUM_SITE					"http://forums.desmume.org/index.php"
-#define STRING_DESMUME_TECH_SUPPORT_SITE			"http://forums.desmume.org/viewforum.php?id=4"
-#define STRING_DESMUME_BUG_REPORT_SITE				"https://github.com/TASVideos/desmume/issues"
+#define STRING_DESMUME_FORUM_SITE					"https://forums.desmume.org/index.php"
+#define STRING_DESMUME_TECH_SUPPORT_SITE			"https://forums.desmume.org/viewforum.php?id=4"
+#define STRING_DESMUME_BUG_REPORT_SITE				"https://github.com/TASEmulators/desmume/issues"
 
 // User Interface Localized Strings
 #define NSSTRING_TITLE_OPEN_ROM_PANEL				NSLocalizedString(@"Open ROM", nil)

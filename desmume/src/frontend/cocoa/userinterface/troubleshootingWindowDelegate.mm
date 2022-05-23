@@ -204,7 +204,7 @@
 {
 	NSPasteboard *pboard = [NSPasteboard generalPasteboard];
 	[pboard declareTypes:[NSArray arrayWithObjects:PASTEBOARDTYPE_STRING, nil] owner:self];
-	[pboard setString:(NSString *)[bindings valueForKey:@"finalFormText"] forType:PASTEBOARDTYPE_STRING];
+	[pboard setString:[(NSAttributedString *)[bindings valueForKey:@"finalFormText"] string] forType:PASTEBOARDTYPE_STRING];
 }
 
 - (IBAction) goToWebpage:(id)sender
