@@ -272,11 +272,6 @@ static GFX3D_Clipper boxtestClipper;
 //tables that are provided to anyone
 CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 
-//private acceleration tables
-static float float16table[65536];
-
-#define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
-
 // Color buffer that is filled by the 3D renderer and is read by the GPU engine.
 static CACHE_ALIGN FragmentColor _gfx3d_savestateBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 
@@ -419,9 +414,6 @@ static void makeTables()
 		// more accurate.
 		dsDepthExtend_15bit_to_24bit[i] = (i * 0x0200) + 0x01FF;
 	}
-
-	for (size_t i = 0; i < 65536; i++)
-		float16table[i] = fix2float((signed short)i);
 }
 
 void POLY::save(EMUFILE &os)
@@ -1647,8 +1639,8 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	//clear result flag. busy flag has been set by fifo component already
 	MMU_new.gxstat.tr = 0;		
 
-	BTcoords[BTind++] = v & 0xFFFF;
-	BTcoords[BTind++] = v >> 16;
+	BTcoords[BTind++] = (u16)(v & 0xFFFF);
+	BTcoords[BTind++] = (u16)(v >> 16);
 
 	if (BTind < 5) return FALSE;
 	BTind = 0;
@@ -1674,32 +1666,34 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	//nanostray title, ff4, ice age 3 depend on this and work
 	//garfields nightmare and strawberry shortcake DO DEPEND on the overflow behavior.
 
-	u16 ux = BTcoords[0];
-	u16 uy = BTcoords[1];
-	u16 uz = BTcoords[2];
-	u16 uw = BTcoords[3];
-	u16 uh = BTcoords[4];
-	u16 ud = BTcoords[5];
+	const u16 ux = BTcoords[0];
+	const u16 uy = BTcoords[1];
+	const u16 uz = BTcoords[2];
+	const u16 uw = BTcoords[3];
+	const u16 uh = BTcoords[4];
+	const u16 ud = BTcoords[5];
 
 	//craft the coords by adding extents to startpoint
-	float x = float16table[ux];
-	float y = float16table[uy];
-	float z = float16table[uz];
-	float xw = float16table[(ux+uw)&0xFFFF]; //&0xFFFF not necessary for u16+u16 addition but added for emphasis
-	float yh = float16table[(uy+uh)&0xFFFF];
-	float zd = float16table[(uz+ud)&0xFFFF];
-
+	const s32 fixedOne = 1 << 12;
+	const s32 __x = (s32)((s16)ux);
+	const s32 __y = (s32)((s16)uy);
+	const s32 __z = (s32)((s16)uz);
+	const s32 x_w = (s32)( (s16)((ux+uw) & 0xFFFF) );
+	const s32 y_h = (s32)( (s16)((uy+uh) & 0xFFFF) );
+	const s32 z_d = (s32)( (s16)((uz+ud) & 0xFFFF) );
+	
 	//eight corners of cube
-	CACHE_ALIGN VERT verts[8];
-	verts[0].set_coord(x,y,z,1);
-	verts[1].set_coord(xw,y,z,1);
-	verts[2].set_coord(xw,yh,z,1);
-	verts[3].set_coord(x,yh,z,1);
-	verts[4].set_coord(x,y,zd,1);
-	verts[5].set_coord(xw,y,zd,1);
-	verts[6].set_coord(xw,yh,zd,1);
-	verts[7].set_coord(x,yh,zd,1);
-
+	CACHE_ALIGN VtxCoord32 vtx[8] = {
+		{ __x, __y, __z, fixedOne },
+		{ x_w, __y, __z, fixedOne },
+		{ x_w, y_h, __z, fixedOne },
+		{ __x, y_h, __z, fixedOne },
+		{ __x, __y, z_d, fixedOne },
+		{ x_w, __y, z_d, fixedOne },
+		{ x_w, __y, z_d, fixedOne },
+		{ __x, y_h, z_d, fixedOne }
+	};
+	
 	//craft the faces of the box (clockwise)
 	POLY polys[6];
 	polys[0].setVertIndexes(7,6,5,4); //near 
@@ -1737,19 +1731,24 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	//	gfx3d_glEnd();
 	//}
 	////---------------------
+	
+	// TODO: Remove these floating-point vertices.
+	// The internal vertices for the box test are calculated using 20.12 fixed-point, but
+	// clipping and interpolation are still calculated in floating-point. We really need
+	// to rework the entire clipping and interpolation system to work in fixed-point also.
+	CACHE_ALIGN VERT verts[8];
 
 	//transform all coords
 	for (size_t i = 0; i < 8; i++)
 	{
-		//this cant work. its left as a reminder that we could (and probably should) do the boxtest in all fixed point values
-		//MatrixMultVec4x4_M2(mtxCurrent[0], verts[i].coord);
-
-		//but change it all to floating point and do it that way instead
-
-		//DS_ALIGN(16) VERT_POS4f vert = { verts[i].x, verts[i].y, verts[i].z, verts[i].w };
+		MatrixMultVec4x4(mtxCurrent[MATRIXMODE_POSITION], vtx[i].coord);
+		MatrixMultVec4x4(mtxCurrent[MATRIXMODE_PROJECTION], vtx[i].coord);
 		
-		MatrixMultVec4x4(mtxCurrent[MATRIXMODE_POSITION], verts[i].coord);
-		MatrixMultVec4x4(mtxCurrent[MATRIXMODE_PROJECTION], verts[i].coord);
+		// TODO: Remove this fixed-point to floating-point conversion.
+		verts[i].set_coord( (float)(vtx[i].x) / 4096.0f,
+		                    (float)(vtx[i].y) / 4096.0f,
+		                    (float)(vtx[i].z) / 4096.0f,
+		                    (float)(vtx[i].w) / 4096.0f );
 	}
 
 	//clip each poly

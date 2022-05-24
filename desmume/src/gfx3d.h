@@ -463,6 +463,26 @@ struct VERT
 
 #include "PACKED_END.h"
 
+union VtxCoord32
+{
+	s32 coord[4];
+	struct
+	{
+		s32 x, y, z, w;
+	};
+};
+typedef union VtxCoord32 VtxCoord32;
+
+union VtxTexCoord16
+{
+	s16 coord[2];
+	struct
+	{
+		s16 u, v;
+	};
+};
+typedef union VtxTexCoord16 VtxTexCoord16;
+
 #define INDEXLIST_SIZE (POLYLIST_SIZE * 4)
 struct INDEXLIST {
 	int list[INDEXLIST_SIZE];
