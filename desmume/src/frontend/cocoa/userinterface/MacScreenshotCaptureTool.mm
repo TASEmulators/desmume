@@ -75,8 +75,8 @@
 	param->refObject				= NULL;
 	param->fetchObject				= [self fetchObject];
 	param->formatID					= [self formatID];
-	param->savePath					= std::string([savePath cStringUsingEncoding:NSUTF8StringEncoding]);
-	param->romName					= std::string([romName cStringUsingEncoding:NSUTF8StringEncoding]);
+	param->savePath					= std::string([savePath fileSystemRepresentation]);
+	param->romName					= std::string([romName fileSystemRepresentation]);
 	param->useDeposterize			= [self useDeposterize] ? true : false;
 	param->outputFilterID			= (OutputFilterTypeID)[self outputFilterID];
 	param->pixelScalerID			= (VideoFilterTypeID)[self pixelScalerID];

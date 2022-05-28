@@ -708,7 +708,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	if (fileURL != nil)
 	{
-		listData->init((char *)[[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding]);
+		listData->init((char *)[[fileURL path] fileSystemRepresentation]);
 		list = [[CocoaDSCheatManager cheatListWithListObject:listData] retain];
 	}
 	else
@@ -805,7 +805,7 @@ static NSImage *iconCodeBreaker = nil;
 			
 		case CHEAT_TYPE_ACTION_REPLAY:
 		{
-			char *cheatCodes = (char *)[cheatItem.code cStringUsingEncoding:NSUTF8StringEncoding];
+			char *cheatCodes = (char *)[cheatItem.code fileSystemRepresentation];
 			if (cheatCodes != nil)
 			{
 				result = self.listData->add_AR(cheatCodes, [cheatItem descriptionCString], cheatItem.enabled);
@@ -815,7 +815,7 @@ static NSImage *iconCodeBreaker = nil;
 			
 		case CHEAT_TYPE_CODE_BREAKER:
 		{
-			char *cheatCodes = (char *)[cheatItem.code cStringUsingEncoding:NSUTF8StringEncoding];
+			char *cheatCodes = (char *)[cheatItem.code fileSystemRepresentation];
 			if (cheatCodes != nil)
 			{
 				result = self.listData->add_CB(cheatCodes, [cheatItem descriptionCString], cheatItem.enabled);
@@ -908,7 +908,7 @@ static NSImage *iconCodeBreaker = nil;
 			
 		case CHEAT_TYPE_ACTION_REPLAY:
 		{
-			char *cheatCodes = (char *)[cheatItem.code cStringUsingEncoding:NSUTF8StringEncoding];
+			char *cheatCodes = (char *)[cheatItem.code fileSystemRepresentation];
 			if (cheatCodes != nil)
 			{
 				result = self.listData->update_AR(cheatCodes, [cheatItem descriptionCString], cheatItem.enabled, selectionIndex);
@@ -918,7 +918,7 @@ static NSImage *iconCodeBreaker = nil;
 			
 		case CHEAT_TYPE_CODE_BREAKER:
 		{
-			char *cheatCodes = (char *)[cheatItem.code cStringUsingEncoding:NSUTF8StringEncoding];
+			char *cheatCodes = (char *)[cheatItem.code fileSystemRepresentation];
 			if (cheatCodes != nil)
 			{
 				result = self.listData->update_CB(cheatCodes, [cheatItem descriptionCString], cheatItem.enabled, selectionIndex);
@@ -966,7 +966,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	CHEATSEXPORT *exporter = new CHEATSEXPORT();
 	
-	BOOL result = exporter->load((char *)[[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding]);
+	BOOL result = exporter->load((char *)[[fileURL path] fileSystemRepresentation]);
 	if (!result)
 	{
 		if (error != nil)

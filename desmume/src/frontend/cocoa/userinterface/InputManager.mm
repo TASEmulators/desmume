@@ -1802,7 +1802,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	}
 	
 	// Check if the audio file is already loaded. If it is, don't load it again.
-	std::string filePathStr = std::string([filePath cStringUsingEncoding:NSUTF8StringEncoding]);
+	std::string filePathStr = std::string([filePath fileSystemRepresentation]);
 	for (AudioFileSampleGeneratorMap::iterator it=audioFileGenerators.begin(); it!=audioFileGenerators.end(); ++it)
 	{
 		if (it->first.find(filePathStr) != std::string::npos)
@@ -1905,7 +1905,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 		return NULL;
 	}
 	
-	std::string filePathStr = std::string([filePath cStringUsingEncoding:NSUTF8StringEncoding]);
+	std::string filePathStr = std::string([filePath fileSystemRepresentation]);
 	for (AudioFileSampleGeneratorMap::iterator it=audioFileGenerators.begin(); it!=audioFileGenerators.end(); ++it)
 	{
 		if (it->first.find(filePathStr) != std::string::npos)

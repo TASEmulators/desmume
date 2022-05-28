@@ -146,7 +146,7 @@
 		[fileManager fileExistsAtPath:thePath isDirectory:&isDirectory];
 		
 		CFlash_Mode = (isDirectory) ? ADDON_CFLASH_MODE_Path : ADDON_CFLASH_MODE_File;
-		CFlash_Path = [thePath cStringUsingEncoding:NSUTF8StringEncoding];
+		CFlash_Path = [thePath fileSystemRepresentation];
 		
 		[fileManager release];
 	}
@@ -166,7 +166,7 @@
 {
 	if (fileURL != nil)
 	{
-		GBACartridge_RomPath = [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+		GBACartridge_RomPath = [[fileURL path] fileSystemRepresentation];
 	}
 	else
 	{
@@ -176,14 +176,15 @@
 
 - (NSURL *) gbaCartridgeURL
 {
-	return [NSURL fileURLWithPath:[NSString stringWithCString:GBACartridge_RomPath.c_str() encoding:NSUTF8StringEncoding]];
+	const char *filePath = GBACartridge_RomPath.c_str();
+	return [NSURL fileURLWithPath:[[NSFileManager defaultManager] stringWithFileSystemRepresentation:filePath length:strlen(filePath)]];
 }
 
 - (void) setGbaSRamURL:(NSURL *)fileURL
 {
 	if (fileURL != nil)
 	{
-		GBACartridge_SRAMPath = [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+		GBACartridge_SRAMPath = [[fileURL path] fileSystemRepresentation];
 	}
 	else
 	{
@@ -193,7 +194,8 @@
 
 - (NSURL *) gbaSRamURL;
 {
-	return [NSURL fileURLWithPath:[NSString stringWithCString:GBACartridge_SRAMPath.c_str() encoding:NSUTF8StringEncoding]];
+	const char *filePath = GBACartridge_SRAMPath.c_str();
+	return [NSURL fileURLWithPath:[[NSFileManager defaultManager] stringWithFileSystemRepresentation:filePath length:strlen(filePath)]];
 }
 
 - (BOOL) doesGbaCartridgeSaveExist
