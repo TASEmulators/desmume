@@ -388,11 +388,10 @@ int main(int argc, char ** argv) {
 
         //set the GBA rom and sav paths
         GBACartridge_RomPath = my_config.gbaslot_rom.c_str();
-        if(toupper(strright(GBACartridge_RomPath,4)) == ".GBA")
-          GBACartridge_SRAMPath = strright(GBACartridge_RomPath,4) + ".sav";
-        else
-          //what to do? lets just do the same thing for now
-          GBACartridge_SRAMPath = strright(GBACartridge_RomPath,4) + ".sav";
+        // finds the index of the file extension separator
+        int RomPath_ExtIdx = GBACartridge_RomPath.find_last_of(".");
+        // checks if file has extension, if so replaces extension with .sav for SRAM Path, otherwise append .sav
+        GBACartridge_SRAMPath = GBACartridge_RomPath.substr(0, RomPath_ExtIdx) + ".sav";
 
         // Check if the file exists and can be opened
         FILE * test = fopen(GBACartridge_RomPath.c_str(), "rb");
