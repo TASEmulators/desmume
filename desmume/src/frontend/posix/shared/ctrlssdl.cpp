@@ -507,18 +507,14 @@ process_ctrls_event( SDL_Event& event,
             break;
         }
 
-        switch(event.key.keysym.sym){
-            case SDLK_LSHIFT:
-                shift_pressed |= 1;
-                break;
-            case SDLK_RSHIFT:
-                shift_pressed |= 2;
-                break;
-            default:
-                key = lookup_key(event.key.keysym.sym);
-                ADD_KEY( cfg->keypad, key );
-                break;
+        if (event.key.keysym.sym == SDLK_LSHIFT) {
+            shift_pressed |= 1;
+        } else if (event.key.keysym.sym == SDLK_RSHIFT) {
+            shift_pressed |= 2;
         }
+
+        key = lookup_key(event.key.keysym.sym);
+        ADD_KEY( cfg->keypad, key );
         break;
 
       case SDL_KEYUP:
