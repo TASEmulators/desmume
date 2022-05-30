@@ -75,8 +75,8 @@
 	param->refObject				= NULL;
 	param->fetchObject				= [self fetchObject];
 	param->formatID					= [self formatID];
-	param->savePath					= std::string([savePath cStringUsingEncoding:NSUTF8StringEncoding]);
-	param->romName					= std::string([romName cStringUsingEncoding:NSUTF8StringEncoding]);
+	param->savePath					= std::string([CocoaDSUtil cPathFromFilePath:savePath]);
+	param->romName					= std::string([CocoaDSUtil cPathFromFilePath:romName]);
 	param->useDeposterize			= [self useDeposterize] ? true : false;
 	param->outputFilterID			= (OutputFilterTypeID)[self outputFilterID];
 	param->pixelScalerID			= (VideoFilterTypeID)[self pixelScalerID];
@@ -291,7 +291,7 @@ static void* RunFileWriteThread(void *arg)
 	NSString *fileName = [[dateFormatter stringFromDate:[NSDate date]] stringByAppendingString:[NSString stringWithCString:param.romName.c_str() encoding:NSUTF8StringEncoding]];
 	[dateFormatter release];
 	
-	NSString *savePath = [NSString stringWithCString:param.savePath.c_str() encoding:NSUTF8StringEncoding];
+	NSString *savePath = [CocoaDSUtil filePathFromCPath:param.savePath.c_str()];
 	NSURL *fileURL = [NSURL fileURLWithPath:[savePath stringByAppendingPathComponent:fileName]];
 	[CocoaDSFile saveScreenshot:fileURL bitmapData:newImageRep fileType:(NSBitmapImageFileType)param.formatID];
 	

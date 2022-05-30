@@ -34,6 +34,11 @@
 + (NSColor *) NSColorFromRGBA8888:(uint32_t)theColor;
 + (uint32_t) RGBA8888FromNSColor:(NSColor *)theColor;
 
++ (NSString *) filePathFromCPath:(const char *)cPath;
++ (NSURL *) fileURLFromCPath:(const char *)cPath;
++ (const char *) cPathFromFilePath:(NSString *)filePath;
++ (const char *) cPathFromFileURL:(NSURL *)fileURL;
+
 + (NSInteger) appVersionNumeric;
 + (NSString *) appInternalVersionString;
 + (NSString *) appInternalNameAndVersionString;

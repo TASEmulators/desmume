@@ -724,50 +724,42 @@ volatile bool execute = true;
 
 - (void) setArm9ImageURL:(NSURL *)fileURL
 {
-	const char *filePath = (fileURL != NULL) ? [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding] : NULL;
-	execControl->SetARM9ImagePath(filePath);
+	execControl->SetARM9ImagePath([CocoaDSUtil cPathFromFileURL:fileURL]);
 }
 
 - (NSURL *) arm9ImageURL
 {
-	const char *filePath = execControl->GetARM9ImagePath();
-	return [NSURL fileURLWithPath:[NSString stringWithCString:filePath encoding:NSUTF8StringEncoding]];
+	return [CocoaDSUtil fileURLFromCPath:execControl->GetARM9ImagePath()];
 }
 
 - (void) setArm7ImageURL:(NSURL *)fileURL
 {
-	const char *filePath = (fileURL != NULL) ? [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding] : NULL;
-	execControl->SetARM7ImagePath(filePath);
+	execControl->SetARM7ImagePath([CocoaDSUtil cPathFromFileURL:fileURL]);
 }
 
 - (NSURL *) arm7ImageURL
 {
-	const char *filePath = execControl->GetARM7ImagePath();
-	return [NSURL fileURLWithPath:[NSString stringWithCString:filePath encoding:NSUTF8StringEncoding]];
+	return [CocoaDSUtil fileURLFromCPath:execControl->GetARM7ImagePath()];
 }
 
 - (void) setFirmwareImageURL:(NSURL *)fileURL
 {
-	const char *filePath = (fileURL != NULL) ? [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding] : NULL;
-	execControl->SetFirmwareImagePath(filePath);
+	execControl->SetFirmwareImagePath([CocoaDSUtil cPathFromFileURL:fileURL]);
 }
 
 - (NSURL *) firmwareImageURL
 {
-	const char *filePath = execControl->GetFirmwareImagePath();
-	return [NSURL fileURLWithPath:[NSString stringWithCString:filePath encoding:NSUTF8StringEncoding]];
+	return [CocoaDSUtil fileURLFromCPath:execControl->GetFirmwareImagePath()];
 }
 
 - (void) setSlot1R4URL:(NSURL *)fileURL
 {
-	const char *filePath = (fileURL != NULL) ? [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding] : NULL;
-	execControl->SetSlot1R4Path(filePath);
+	execControl->SetSlot1R4Path([CocoaDSUtil cPathFromFileURL:fileURL]);
 }
 
 - (NSURL *) slot1R4URL
 {
-	const char *filePath = execControl->GetSlot1R4Path();
-	return [NSURL fileURLWithPath:[NSString stringWithCString:filePath encoding:NSUTF8StringEncoding]];
+	return [CocoaDSUtil fileURLFromCPath:execControl->GetSlot1R4Path()];
 }
 
 - (void) updateFirmwareMACAddressString
@@ -996,8 +988,9 @@ volatile bool execute = true;
 		return NO;
 	}
 	
-	std::string sramPath = (sramURL != nil) ? [[sramURL path] cStringUsingEncoding:NSUTF8StringEncoding] : "";
-	const char *fileName = [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+	const char *cSramPath = [CocoaDSUtil cPathFromFileURL:sramURL];
+	std::string sramPath = (cSramPath != NULL) ? std::string(cSramPath) : "";
+	const char *fileName = [CocoaDSUtil cPathFromFileURL:fileURL];
 	
 	NSDateFormatter *df = [[NSDateFormatter alloc] init];
 	[df setDateFormat:@"Y M d H m s SSS"];

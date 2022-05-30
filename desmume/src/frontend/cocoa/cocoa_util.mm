@@ -136,6 +136,31 @@
 #endif
 }
 
++ (NSString *) filePathFromCPath:(const char *)cPath
+{
+	if (cPath == NULL)
+	{
+		return nil;
+	}
+	
+	return [[NSFileManager defaultManager] stringWithFileSystemRepresentation:cPath length:strlen(cPath)];
+}
+
++ (NSURL *) fileURLFromCPath:(const char *)cPath
+{
+	return [NSURL fileURLWithPath:[CocoaDSUtil filePathFromCPath:cPath]];
+}
+
++ (const char *) cPathFromFilePath:(NSString *)filePath
+{
+	return (filePath != nil) ? [filePath fileSystemRepresentation] : NULL;
+}
+
++ (const char *) cPathFromFileURL:(NSURL *)fileURL
+{
+	return (fileURL != nil) ? [CocoaDSUtil cPathFromFilePath:[fileURL path]] : NULL;
+}
+
 + (NSInteger) appVersionNumeric
 {
 	return (NSInteger)EMU_DESMUME_VERSION_NUMERIC();

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2018 DeSmuME Team
+	Copyright (C) 2014-2022 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -135,18 +135,18 @@
 	return currentDevice;
 }
 
-- (void) setMpcfFileSearchURL:(NSURL *)theURL
+- (void) setMpcfFileSearchURL:(NSURL *)fileURL
 {
-	if (theURL != nil)
+	if (fileURL != nil)
 	{
 		BOOL isDirectory = NO;
-		NSString *thePath = [theURL path];
+		NSString *filePath = [fileURL path];
 		
 		NSFileManager *fileManager = [[NSFileManager alloc] init];
-		[fileManager fileExistsAtPath:thePath isDirectory:&isDirectory];
+		[fileManager fileExistsAtPath:[fileURL path] isDirectory:&isDirectory];
 		
 		CFlash_Mode = (isDirectory) ? ADDON_CFLASH_MODE_Path : ADDON_CFLASH_MODE_File;
-		CFlash_Path = [thePath cStringUsingEncoding:NSUTF8StringEncoding];
+		CFlash_Path = [CocoaDSUtil cPathFromFileURL:fileURL];
 		
 		[fileManager release];
 	}
@@ -159,14 +159,14 @@
 
 - (NSURL *) mpcfFileSearchURL
 {
-	return [NSURL fileURLWithPath:[NSString stringWithCString:CFlash_Path.c_str() encoding:NSUTF8StringEncoding]];
+	return [CocoaDSUtil fileURLFromCPath:CFlash_Path.c_str()];
 }
 
 - (void) setGbaCartridgeURL:(NSURL *)fileURL
 {
 	if (fileURL != nil)
 	{
-		GBACartridge_RomPath = [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+		GBACartridge_RomPath = [CocoaDSUtil cPathFromFileURL:fileURL];
 	}
 	else
 	{
@@ -176,14 +176,14 @@
 
 - (NSURL *) gbaCartridgeURL
 {
-	return [NSURL fileURLWithPath:[NSString stringWithCString:GBACartridge_RomPath.c_str() encoding:NSUTF8StringEncoding]];
+	return [CocoaDSUtil fileURLFromCPath:GBACartridge_RomPath.c_str()];
 }
 
 - (void) setGbaSRamURL:(NSURL *)fileURL
 {
 	if (fileURL != nil)
 	{
-		GBACartridge_SRAMPath = [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+		GBACartridge_SRAMPath = [CocoaDSUtil cPathFromFileURL:fileURL];
 	}
 	else
 	{
@@ -193,7 +193,7 @@
 
 - (NSURL *) gbaSRamURL;
 {
-	return [NSURL fileURLWithPath:[NSString stringWithCString:GBACartridge_SRAMPath.c_str() encoding:NSUTF8StringEncoding]];
+	return [CocoaDSUtil fileURLFromCPath:GBACartridge_SRAMPath.c_str()];
 }
 
 - (BOOL) doesGbaCartridgeSaveExist

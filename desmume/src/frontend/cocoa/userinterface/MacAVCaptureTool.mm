@@ -1350,8 +1350,8 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	param.refObject					= newCaptureObject;
 	param.fetchObject				= currentFetchObj;
 	param.formatID					= [self formatID];
-	param.savePath					= std::string([savePath cStringUsingEncoding:NSUTF8StringEncoding]);
-	param.romName					= std::string([romName cStringUsingEncoding:NSUTF8StringEncoding]);
+	param.savePath					= std::string([CocoaDSUtil cPathFromFilePath:savePath]);
+	param.romName					= std::string([CocoaDSUtil cPathFromFilePath:romName]);
 	param.useDeposterize			= [self useDeposterize] ? true : false;
 	param.outputFilterID			= (OutputFilterTypeID)[self outputFilterID];
 	param.pixelScalerID				= (VideoFilterTypeID)[self pixelScalerID];
@@ -1383,7 +1383,8 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	NSString *fileNameNSString = [[dateFormatter stringFromDate:[NSDate date]] stringByAppendingString:[NSString stringWithCString:param.romName.c_str() encoding:NSUTF8StringEncoding]];
 	[dateFormatter release];
 	
-	std::string fileName = param.savePath + "/" + std::string([fileNameNSString cStringUsingEncoding:NSUTF8StringEncoding]);
+	NSString *savePathNSString = [CocoaDSUtil filePathFromCPath:param.savePath.c_str()];
+	std::string fileName = std::string([CocoaDSUtil cPathFromFilePath:[savePathNSString stringByAppendingPathComponent:fileNameNSString]]);
 	
 	// Create the output file stream.
 	ClientAVCaptureError error = ClientAVCaptureError_None;

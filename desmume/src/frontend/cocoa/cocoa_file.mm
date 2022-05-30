@@ -142,7 +142,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 		return result;
 	}
 	
-	const char *statePath = [[saveStateURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+	const char *statePath = [CocoaDSUtil cPathFromFileURL:saveStateURL];
 	bool cResult = savestate_load(statePath);
 	if(cResult)
 	{
@@ -161,7 +161,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 		return result;
 	}
 	
-	const char *statePath = [[saveStateURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+	const char *statePath = [CocoaDSUtil cPathFromFileURL:saveStateURL];
 	bool cResult = savestate_save(statePath);
 	if(cResult)
 	{
@@ -180,7 +180,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 		return result;
 	}
 	
-	const char *romPath = [[romURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+	const char *romPath = [CocoaDSUtil cPathFromFileURL:romURL];
 	NSInteger resultCode = NDS_LoadROM(romPath, NULL, NULL);
 	if (resultCode > 0)
 	{
@@ -199,7 +199,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 		return result;
 	}
 	
-	const char *replayPath = [[replayURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+	const char *replayPath = [CocoaDSUtil cPathFromFileURL:replayURL];
 	const char *resultCode = FCEUI_LoadMovie(replayPath, true, false, -1);
 	if (resultCode == NULL)
 	{
@@ -212,7 +212,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 + (BOOL) importRomSave:(NSURL *)romSaveURL
 {
 	BOOL result = NO;
-	const char *romSavePath = [[romSaveURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+	const char *romSavePath = [CocoaDSUtil cPathFromFileURL:romSaveURL];
 	
 	NSInteger resultCode = MMU_new.backupDevice.importData(romSavePath, 0);
 	if (resultCode == 0)
@@ -243,7 +243,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 #endif
 		case ROMSAVEFORMAT_NOGBA:
 		{
-			const char *destinationPath = [[[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE_NOGBA] cStringUsingEncoding:NSUTF8StringEncoding];
+			const char *destinationPath = [CocoaDSUtil cPathFromFilePath:[[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE_NOGBA]];
 			bool resultCode = MMU_new.backupDevice.exportData(destinationPath);
 			if (resultCode)
 			{
@@ -254,7 +254,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 			
 		case ROMSAVEFORMAT_RAW:
 		{
-			const char *destinationPath = [[[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE_RAW] cStringUsingEncoding:NSUTF8StringEncoding];
+			const char *destinationPath = [CocoaDSUtil cPathFromFilePath:[[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE_RAW]];
 			bool resultCode = MMU_new.backupDevice.exportData(destinationPath);
 			if (resultCode)
 			{
@@ -358,55 +358,55 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	NSURL *romURL = [CocoaDSFile directoryURLByKind:@"ROM" version:versionString port:portString];
 	if (romURL != nil)
 	{
-		strlcpy(path.pathToRoms, [[romURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToRoms, [CocoaDSUtil cPathFromFileURL:romURL], MAX_PATH);
 	}
 	
 	NSURL *romSaveURL = [CocoaDSFile directoryURLByKind:@"ROM Save" version:versionString port:portString];
 	if (romSaveURL != nil)
 	{
-		strlcpy(path.pathToBattery, [[romSaveURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToBattery, [CocoaDSUtil cPathFromFileURL:romSaveURL], MAX_PATH);
 	}
 	
 	NSURL *saveStateURL = [CocoaDSFile directoryURLByKind:@"Save State" version:versionString port:portString];
 	if (saveStateURL != nil)
 	{
-		strlcpy(path.pathToStates, [[saveStateURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToStates, [CocoaDSUtil cPathFromFileURL:saveStateURL], MAX_PATH);
 	}
 	
 	NSURL *screenshotURL = [CocoaDSFile directoryURLByKind:@"Screenshot" version:versionString port:portString];
 	if (screenshotURL != nil)
 	{
-		strlcpy(path.pathToScreenshots, [[screenshotURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToScreenshots, [CocoaDSUtil cPathFromFileURL:screenshotURL], MAX_PATH);
 	}
 	
 	NSURL *aviURL = [CocoaDSFile directoryURLByKind:@"Video" version:versionString port:portString];
 	if (aviURL != nil)
 	{
-		strlcpy(path.pathToAviFiles, [[aviURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToAviFiles, [CocoaDSUtil cPathFromFileURL:aviURL], MAX_PATH);
 	}
 	
 	NSURL *cheatURL = [CocoaDSFile directoryURLByKind:@"Cheat" version:versionString port:portString];
 	if (cheatURL != nil)
 	{
-		strlcpy(path.pathToCheats, [[cheatURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToCheats, [CocoaDSUtil cPathFromFileURL:cheatURL], MAX_PATH);
 	}
 	
 	NSURL *soundSamplesURL = [CocoaDSFile directoryURLByKind:@"Sound Sample" version:versionString port:portString];
 	if (soundSamplesURL != nil)
 	{
-		strlcpy(path.pathToSounds, [[soundSamplesURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToSounds, [CocoaDSUtil cPathFromFileURL:soundSamplesURL], MAX_PATH);
 	}
 	
 	NSURL *firmwareURL = [CocoaDSFile directoryURLByKind:@"Firmware Configuration" version:versionString port:portString];
 	if (firmwareURL != nil)
 	{
-		strlcpy(path.pathToFirmware, [[firmwareURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToFirmware, [CocoaDSUtil cPathFromFileURL:firmwareURL], MAX_PATH);
 	}
 	
 	NSURL *luaURL = [CocoaDSFile directoryURLByKind:@"Lua Script" version:versionString port:portString];
 	if (luaURL != nil)
 	{
-		strlcpy(path.pathToLua, [[luaURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToLua, [CocoaDSUtil cPathFromFileURL:luaURL], MAX_PATH);
 	}
 }
 
@@ -438,55 +438,55 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	NSURL *romURL = (NSURL *)[URLDictionary valueForKey:@"ROM"];
 	if (romURL != nil)
 	{
-		strlcpy(path.pathToRoms, [[romURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToRoms, [CocoaDSUtil cPathFromFileURL:romURL], MAX_PATH);
 	}
 	
 	NSURL *romSaveURL = (NSURL *)[URLDictionary valueForKey:@"ROM Save"];
 	if (romSaveURL != nil)
 	{
-		strlcpy(path.pathToBattery, [[romSaveURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToBattery, [CocoaDSUtil cPathFromFileURL:romSaveURL], MAX_PATH);
 	}
 	
 	NSURL *saveStateURL = (NSURL *)[URLDictionary valueForKey:@"Save State"];
 	if (saveStateURL != nil)
 	{
-		strlcpy(path.pathToStates, [[saveStateURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToStates, [CocoaDSUtil cPathFromFileURL:saveStateURL], MAX_PATH);
 	}
 	
 	NSURL *screenshotURL = (NSURL *)[URLDictionary valueForKey:@"Screenshot"];
 	if (screenshotURL != nil)
 	{
-		strlcpy(path.pathToScreenshots, [[screenshotURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToScreenshots, [CocoaDSUtil cPathFromFileURL:screenshotURL], MAX_PATH);
 	}
 	
 	NSURL *aviURL = (NSURL *)[URLDictionary valueForKey:@"Video"];
 	if (aviURL != nil)
 	{
-		strlcpy(path.pathToAviFiles, [[aviURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToAviFiles, [CocoaDSUtil cPathFromFileURL:aviURL], MAX_PATH);
 	}
 	
 	NSURL *cheatURL = (NSURL *)[URLDictionary valueForKey:@"Cheat"];
 	if (cheatURL != nil)
 	{
-		strlcpy(path.pathToCheats, [[cheatURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToCheats, [CocoaDSUtil cPathFromFileURL:cheatURL], MAX_PATH);
 	}
 	
 	NSURL *soundSamplesURL = (NSURL *)[URLDictionary valueForKey:@"Sound Sample"];
 	if (soundSamplesURL != nil)
 	{
-		strlcpy(path.pathToSounds, [[soundSamplesURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToSounds, [CocoaDSUtil cPathFromFileURL:soundSamplesURL], MAX_PATH);
 	}
 	
 	NSURL *firmwareURL = (NSURL *)[URLDictionary valueForKey:@"Firmware Configuration"];
 	if (firmwareURL != nil)
 	{
-		strlcpy(path.pathToFirmware, [[firmwareURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToFirmware, [CocoaDSUtil cPathFromFileURL:firmwareURL], MAX_PATH);
 	}
 	
 	NSURL *luaURL = (NSURL *)[URLDictionary valueForKey:@"Lua Script"];
 	if (luaURL != nil)
 	{
-		strlcpy(path.pathToLua, [[luaURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+		strlcpy(path.pathToLua, [CocoaDSUtil cPathFromFileURL:luaURL], MAX_PATH);
 	}
 }
 

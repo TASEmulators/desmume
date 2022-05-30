@@ -371,7 +371,7 @@ volatile bool execute = true;
 	if (_cdp == NULL)
 	{
 		NSString *gameCoreFontPath = [[NSBundle bundleForClass:[self class]] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
-		const char *hudFontPath = [[NSFileManager defaultManager] fileSystemRepresentationWithPath:gameCoreFontPath];
+		const char *hudFontPath = [CocoaDSUtil cPathFromFilePath:gameCoreFontPath];
 		
 		_cdp = new OE_OGLDisplayPresenter(fetchObj);
 		_cdp->Init();
