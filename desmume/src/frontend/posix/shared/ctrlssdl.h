@@ -64,7 +64,7 @@
 /* Keypad key names */
 extern const char *key_names[NB_KEYS];
 /* Current keyboard configuration */
-extern u16 keyboard_cfg[NB_KEYS];
+extern u32 keyboard_cfg[NB_KEYS];
 /* Current joypad configuration */
 extern u16 joypad_cfg[NB_KEYS];
 /* Number of detected joypads */
@@ -103,7 +103,7 @@ u16 get_joy_key(int index);
 u16 get_set_joy_key(int index);
 void update_keypad(u16 keys);
 u16 get_keypad( void);
-u16 lookup_key (u16 keyval);
+u32 lookup_key (u32 keyval);
 u16 lookup_joy_key (u16 keyval);
 void
 process_ctrls_event( SDL_Event& event,

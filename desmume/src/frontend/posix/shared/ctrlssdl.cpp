@@ -30,7 +30,7 @@
 
 
 
-u16 keyboard_cfg[NB_KEYS];
+u32 keyboard_cfg[NB_KEYS];
 u16 joypad_cfg[NB_KEYS];
 u16 nbr_joy;
 mouse_status mouse;
@@ -171,7 +171,7 @@ u16 lookup_joy_key (u16 keyval) {
 }
 
 /* Return keypad vector with given key set to 1 */
-u16 lookup_key (u16 keyval) {
+u32 lookup_key (u32 keyval) {
   int i;
   u16 Key = 0;
 
