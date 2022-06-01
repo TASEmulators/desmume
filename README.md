@@ -6,9 +6,7 @@ Designed for iPhone/iPad, also workable on other devices with a modern browser.
 
 https://ds.44670.org/
 
-# Please Read This Guide Before Creating a New Issue, Thank You!
-
-# Please, Do Not Create a Duplicated Issue for Feature Request
+Please read this guide before creating a new issue, thanks！
 
 # Frequently Asked Questions
 **Q: It can't load any files.**
