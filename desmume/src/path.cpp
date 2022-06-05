@@ -193,18 +193,22 @@ void PathInfo::LoadModulePath()
 {
 #if defined(HOST_WINDOWS)
 
-	char *p;
+	wchar_t *p;
 	ZeroMemory(pathToModule, sizeof(pathToModule));
 
-	GetModuleFileName(NULL, pathToModule, sizeof(pathToModule));
-	p = pathToModule + lstrlen(pathToModule);
-	while (p >= pathToModule && *p != DIRECTORY_DELIMITER_CHAR) p--;
-	if (++p >= pathToModule) *p = 0;
+	wchar_t wPathToModule[MAX_PATH];
+	GetModuleFileNameW(NULL, wPathToModule, sizeof(wPathToModule));
+	p = wPathToModule + wcslen(wPathToModule);
+	while (p >= wPathToModule && *p != DIRECTORY_DELIMITER_CHAR) p--;
+	if (++p >= wPathToModule) *p = 0;
 
-	extern char* _hack_alternateModulePath;
-	if (_hack_alternateModulePath)
+	auto tmp = wcstombs(wPathToModule);
+	strcpy(pathToModule,tmp.c_str());
+
+	extern std::string _hack_alternateModulePathUtf8;
+	if (!_hack_alternateModulePathUtf8.empty())
 	{
-		strcpy(pathToModule, _hack_alternateModulePath);
+		strcpy(pathToModule, _hack_alternateModulePathUtf8.c_str());
 	}
 #elif defined(DESMUME_COCOA)
 	std::string pathStr = Path::GetFileDirectoryPath(path);
