@@ -232,6 +232,8 @@ retro_time_t cpu_features_get_time_usec(void)
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__)
 #define CPU_X86
+#elif defined(__loongarch__) || defined(__loongarch64)
+#define CPU_LOONGARCH
 #endif
 
 #if defined(_MSC_VER) && !defined(_XBOX)
@@ -310,7 +312,7 @@ static void arm_enable_runfast_mode(void)
 }
 #endif
 
-#if defined(__linux__) && !defined(CPU_X86)
+#if defined(__linux__) && !defined(CPU_X86) && !defined(CPU_LOONGARCH)
 #if __ARM_ARCH
 #include <sys/auxv.h>
 #endif
@@ -720,6 +722,8 @@ uint64_t cpu_features_get(void)
       if (flags[3] & (1 << 22))
          cpu |= RETRO_SIMD_MMXEXT;
    }
+#elif defined(CPU_LOONGARCH)
+//no ASEs yet
 #elif defined(__linux__)
    if (check_arm_cpu_feature("neon"))
    {
