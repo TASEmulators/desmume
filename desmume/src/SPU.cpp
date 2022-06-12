@@ -1120,12 +1120,7 @@ static FORCEINLINE s32 FetchPSGData(channel_struct *chan, s32 pos)
 	if(chan->num < 14)
 	{
 		// Doing this avoids using a LUT
-		// Duty==0 (12.5%): -_______
-		// Duty==1 (25.0%): --______
-		// Duty==2 (50.0%): ----____
-		// Duty==3 (75.0%): ------__
-		u32 wavepos = (pos%8u) + (chan->waveduty != 0);
-		return (wavepos > chan->waveduty*2) ? (-0x7FFF) : (+0x7FFF);
+		return ((pos%8u) > chan->waveduty) ? (-0x7FFF) : (+0x7FFF);
 	}
 	else
 	{
