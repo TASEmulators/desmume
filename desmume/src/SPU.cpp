@@ -1096,11 +1096,6 @@ static FORCEINLINE s32 FetchADPCMData(channel_struct *chan, s32 pos)
 {
 	if(pos < 8) return 0;
 
-	const u32 shift    = (pos&1) * 4;
-	const u32 data4bit = ((u32)read08(chan->addr + (pos>>1))) >> shift;
-	const s32 diff = precalcdifftbl [chan->index][data4bit & 0xF];
-	chan->index    = precalcindextbl[chan->index][data4bit & 0x7];
-
 	s16 last = chan->pcm16b[SPUCHAN_PCM16B_AT(chan->pcm16bOffs)];
 
 	if(pos == (chan->loopstart<<3)) {
@@ -1108,6 +1103,11 @@ static FORCEINLINE s32 FetchADPCMData(channel_struct *chan, s32 pos)
 		chan->loop_pcm16b = last;
 		chan->loop_index = chan->index;
 	}
+	
+	const u32 shift    = (pos&1) * 4;
+	const u32 data4bit = ((u32)read08(chan->addr + (pos>>1))) >> shift;
+	const s32 diff = precalcdifftbl [chan->index][data4bit & 0xF];
+	chan->index    = precalcindextbl[chan->index][data4bit & 0x7];
 
 	return MinMax(last + diff, -0x8000, 0x7FFF);
 }
