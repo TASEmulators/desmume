@@ -1275,7 +1275,7 @@ template<SPUInterpolationMode INTERPOLATE_MODE>
 		case 0: ___SPU_ChanUpdate<0,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
 		case 1: ___SPU_ChanUpdate<1,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
 		case 2: ___SPU_ChanUpdate<2,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
-		case 3: ___SPU_ChanUpdate<3,SPUInterpolationMode::SPUInterpolation_None>(actuallyMix, SPU, chan); break;
+		case 3: ___SPU_ChanUpdate<3,SPUInterpolation_None>(actuallyMix, SPU, chan); break;
 		default: assert(false);
 	}
 }
