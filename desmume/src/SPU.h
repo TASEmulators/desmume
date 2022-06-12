@@ -36,10 +36,9 @@ class EMUFILE;
 #define CHANSTAT_STOPPED          0
 #define CHANSTAT_PLAY             1
 
+#define SPUINTERPOLATION_TAPS 4 // Must be at least 4 for Catmull-Rom interpolation
 
 //who made these static? theyre used in multiple places.
-FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
-FORCEINLINE u32 sputrunc(double d) { return u32floor(d); }
 FORCEINLINE s32 spumuldiv7(s32 val, u8 multiplier) {
 	assert(multiplier <= 127);
 	return (multiplier == 127) ? val : ((val * multiplier) >> 7);
@@ -49,7 +48,8 @@ enum SPUInterpolationMode
 {
 	SPUInterpolation_None   = 0,
 	SPUInterpolation_Linear = 1,
-	SPUInterpolation_Cosine = 2
+	SPUInterpolation_Cosine = 2,
+	SPUInterpolation_CatmullRom = 3,
 };
 
 struct SoundInterface_struct
@@ -84,22 +84,19 @@ struct channel_struct
 						format(0),
 						keyon(0),
 						status(0),
+						pcm16bOffs(0),
 						addr(0),
 						timer(0),
 						loopstart(0),
 						length(0),
 						totlength(0),
-						double_totlength_shifted(0.0),
-						sampcnt(0.0),
-						sampinc(0.0),
-						lastsampcnt(0),
-						pcm16b(0),
-						pcm16b_last(0),
+						totlength_shifted(0),
+						sampcnt(0),
+						sampinc(0),
 						loop_pcm16b(0),
 						index(0),
 						loop_index(0),
-						x(0),
-						psgnoise_last(0)
+						x(0)
 	{}
 	u32 num;
    u8 vol;
@@ -111,22 +108,22 @@ struct channel_struct
    u8 format;
    u8 keyon;
    u8 status;
+   u8 pcm16bOffs;
    u32 addr;
    u16 timer;
    u16 loopstart;
    u32 length;
    u32 totlength;
-   double double_totlength_shifted;
-   double sampcnt;
-   double sampinc;
+   s64 totlength_shifted;
+   s64 sampcnt; // .32fxp
+   s64 sampinc; // .32fxp
+   s16 pcm16b[SPUINTERPOLATION_TAPS];
    // ADPCM specific
-   u32 lastsampcnt;
-   s16 pcm16b, pcm16b_last;
    s16 loop_pcm16b;
    s32 index;
    int loop_index;
+   // PSG noise
    u16 x;
-   s16 psgnoise_last;
 };
 
 class SPUFifo
@@ -196,7 +193,7 @@ public:
 			   u8 running;
 			   u32 curdad;
 			   u32 maxdad;
-			   double sampcnt;
+			   s64 sampcnt;
 			   SPUFifo fifo;
 		   } runtime;
 	   } cap[2];

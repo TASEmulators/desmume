@@ -49,7 +49,14 @@ static inline u8 read08(u32 addr) { return _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>
 static inline s8 read_s8(u32 addr) { return (s8)_MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr); }
 
 #define K_ADPCM_LOOPING_RECOVERY_INDEX 99999
-#define COSINE_INTERPOLATION_RESOLUTION 8192
+
+#define CATMULLROM_INTERPOLATION_RESOLUTION_BITS 11
+#define CATMULLROM_INTERPOLATION_RESOLUTION (1<<CATMULLROM_INTERPOLATION_RESOLUTION_BITS)
+
+#define COSINE_INTERPOLATION_RESOLUTION_BITS 13
+#define COSINE_INTERPOLATION_RESOLUTION (1<<COSINE_INTERPOLATION_RESOLUTION_BITS)
+
+#define SPUCHAN_PCM16B_AT(x) ((u32)(x) % SPUINTERPOLATION_TAPS)
 
 //#ifdef FASTBUILD
 	#undef FORCEINLINE
@@ -96,20 +103,10 @@ static const u16 adpcmtbl[89] =
 	0x41B2, 0x4844, 0x4F7E, 0x5771, 0x602F, 0x69CE, 0x7462, 0x7FFF
 };
 
-static const s16 wavedutytbl[8][8] = {
-	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF },
-	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF, 0x7FFF },
-	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF },
-	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF },
-	{ -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF },
-	{ -0x7FFF, -0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF },
-	{ -0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF },
-	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF }
-};
-
 static s32 precalcdifftbl[89][16];
 static u8 precalcindextbl[89][8];
-static double cos_lut[COSINE_INTERPOLATION_RESOLUTION];
+static s16 catmullrom_lut[CATMULLROM_INTERPOLATION_RESOLUTION][4];
+static s16 cos_lut[COSINE_INTERPOLATION_RESOLUTION];
 
 static const double ARM7_CLOCK = 33513982;
 
@@ -200,9 +197,23 @@ void SPU_ReInit(bool fakeBoot)
 
 int SPU_Init(int coreid, int newBufferSizeBytes)
 {
-	// Build the cosine interpolation LUT
+	// Build the interpolation LUTs
+	for (size_t i = 0; i < CATMULLROM_INTERPOLATION_RESOLUTION; i++) {
+		// This is the Catmull-Rom spline, refactored into a FIR filter
+		// If we wanted to, we could stick entirely to integer maths
+		// here, but I doubt it's worth the hassle.
+		double x = i / (double)CATMULLROM_INTERPOLATION_RESOLUTION;
+		double a = x*(x*(-x + 2) - 1);
+		double b = x*x*(3*x - 5) + 2;
+		double c = x*(x*(-3*x + 4) + 1);
+		double d = x*x*(x - 1);
+		catmullrom_lut[i][0] = (s16)(32767 * 0.5*a);
+		catmullrom_lut[i][1] = (s16)(32767 * 0.5*b);
+		catmullrom_lut[i][2] = (s16)(32767 * 0.5*c);
+		catmullrom_lut[i][3] = (s16)(32767 * 0.5*d);
+	}
 	for (size_t i = 0; i < COSINE_INTERPOLATION_RESOLUTION; i++)
-		cos_lut[i] = (1.0 - cos(((double)i/(double)COSINE_INTERPOLATION_RESOLUTION) * M_PI)) * 0.5;
+		cos_lut[i] = (s16)(32767 * ((1.0 - cos(((double)i/(double)COSINE_INTERPOLATION_RESOLUTION) * M_PI)) * 0.5));
 
 	SPU_core = new SPU_struct((int)ceil(samples_per_hline));
 	SPU_Reset();
@@ -366,7 +377,10 @@ void SPU_struct::ShutUp()
 
 static FORCEINLINE void adjust_channel_timer(channel_struct *chan)
 {
-	chan->sampinc = (((double)ARM7_CLOCK) / (DESMUME_SAMPLE_RATE * 2)) / (double)(0x10000 - chan->timer);
+	//  ARM7_CLOCK / (DESMUME_SAMPLE_RATE*2) / (2^16 - Timer)
+	// = ARM7_CLOCK / (DESMUME_SAMPLE_RATE*2 * (2^16 - Timer))
+	// ... and then round up for good measure
+	chan->sampinc = ((u32)ARM7_CLOCK*(1ull<<32)-1) / (DESMUME_SAMPLE_RATE*2ull * (0x10000 - chan->timer)) + 1;
 }
 
 void SPU_struct::KeyProbe(int chan_num)
@@ -399,6 +413,12 @@ void SPU_struct::KeyOn(int channel)
 	thischan.totlength = thischan.length + thischan.loopstart;
 	adjust_channel_timer(&thischan);
 
+	thischan.pcm16bOffs = 0;
+	for(int i=0;i<SPUINTERPOLATION_TAPS;i++)
+	{
+		thischan.pcm16b[i] = 0;
+	}
+
 	//printf("keyon %d totlength:%d\n",channel,thischan.totlength);
 
 
@@ -411,39 +431,33 @@ void SPU_struct::KeyOn(int channel)
 	case 0: // 8-bit
 	//	thischan.loopstart = thischan.loopstart << 2;
 	//	thischan.length = (thischan.length << 2) + thischan.loopstart;
-		thischan.sampcnt = -3;
+		thischan.sampcnt = -3 * (1ll<<32);
 		break;
 	case 1: // 16-bit
 	//	thischan.loopstart = thischan.loopstart << 1;
 	//	thischan.length = (thischan.length << 1) + thischan.loopstart;
-		thischan.sampcnt = -3;
+		thischan.sampcnt = -3 * (1ll<<32);
 		break;
 	case 2: // ADPCM
-		{
-			thischan.pcm16b = (s16)read16(thischan.addr);
-			thischan.pcm16b_last = thischan.pcm16b;
-			thischan.index = read08(thischan.addr + 2) & 0x7F;;
-			thischan.lastsampcnt = 7;
-			thischan.sampcnt = -3;
-			thischan.loop_index = K_ADPCM_LOOPING_RECOVERY_INDEX;
-		//	thischan.loopstart = thischan.loopstart << 3;
-		//	thischan.length = (thischan.length << 3) + thischan.loopstart;
-			break;
-		}
+		thischan.pcm16b[0] = (s16)read16(thischan.addr);
+		thischan.index = read08(thischan.addr + 2) & 0x7F;
+		thischan.sampcnt = -3 * (1ll<<32);
+		thischan.loop_index = K_ADPCM_LOOPING_RECOVERY_INDEX;
+	//	thischan.loopstart = thischan.loopstart << 3;
+	//	thischan.length = (thischan.length << 3) + thischan.loopstart;
+		break;
 	case 3: // PSG
-		{
-			thischan.sampcnt = -1;
-			thischan.x = 0x7FFF;
-			break;
-		}
+		thischan.sampcnt = -1 * (1ll<<32);
+		thischan.x = 0x7FFF;
+		break;
 	default: break;
 	}
 
-	thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
+	thischan.totlength_shifted = thischan.totlength << format_shift[thischan.format];
 
 	if(thischan.format != 3)
 	{
-		if(thischan.double_totlength_shifted == 0)
+		if(thischan.totlength_shifted == 0)
 		{
 			printf("INFO: Stopping channel %d due to zero length\n",channel);
 			thischan.status = CHANSTAT_STOPPED;
@@ -493,7 +507,7 @@ u8 SPU_struct::ReadByte(u32 addr)
 		//SOUNDBIAS
 		case 0x504: return regs.soundbias >> 0;
 		case 0x505: return regs.soundbias >> 8;
-	
+		
 		//SNDCAP0CNT/SNDCAP1CNT
 		case 0x508:
 		case 0x509:
@@ -1018,161 +1032,113 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 	} //switch on address
 }
 
-template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpolate(s32 a, s32 b, double ratio)
+//////////////////////////////////////////////////////////////////////////////
+
+template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpolate(const s16 *pcm16b, u8 pcm16bOffs, u32 subPos)
 {
-	double sampleA = (double)a;
-	double sampleB = (double)b;
-	ratio = ratio - sputrunc(ratio);
-	
 	switch (INTERPOLATE_MODE)
 	{
+		case SPUInterpolation_CatmullRom:
+		{
+			// Catmull-Rom spline
+			// Delay: 2 samples
+			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 3)];
+			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 2)];
+			s32 c = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
+			s32 d = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
+			const s16 *w = catmullrom_lut[subPos >> (32 - CATMULLROM_INTERPOLATION_RESOLUTION_BITS)];
+			return (a*w[0] + b*w[1] + c*w[2] + d*w[3]) >> 15;
+		}
+
 		case SPUInterpolation_Cosine:
+		{
 			// Cosine Interpolation Formula:
 			// ratio2 = (1 - cos(ratio * M_PI)) / 2
 			// sampleI = sampleA * (1 - ratio2) + sampleB * ratio2
-			return s32floor((cos_lut[(unsigned int)(ratio * (double)COSINE_INTERPOLATION_RESOLUTION)] * (sampleB - sampleA)) + sampleA);
-			break;
-			
+			// Delay: 1 sample
+			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
+			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
+			return a + ((b - a)*cos_lut[subPos >> (32 - COSINE_INTERPOLATION_RESOLUTION_BITS)] >> 15);
+		}
+
 		case SPUInterpolation_Linear:
+		{
 			// Linear Interpolation Formula:
 			// sampleI = sampleA * (1 - ratio) + sampleB * ratio
-			return s32floor((ratio * (sampleB - sampleA)) + sampleA);
-			break;
-			
+			// Delay: 1 sample
+			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
+			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
+			s32 subPos15 = subPos >> (32 - 15);
+			return a + ((b - a)*subPos15 >> 15);
+		}
+
 		default:
-			break;
+			// Delay: 0 samples
+			return pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs)];
 	}
-	
-	return a;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch8BitData(channel_struct *chan, s32 *data)
+static FORCEINLINE s32 Fetch8BitData(channel_struct *chan, s32 pos)
 {
-	if (chan->sampcnt < 0)
-	{
-		*data = 0;
-		return;
+	if(pos < 0) return 0;
+
+	return read_s8(chan->addr + pos*1) << 8;
+}
+
+static FORCEINLINE s32 Fetch16BitData(channel_struct *chan, s32 pos)
+{
+	if(pos < 0) return 0;
+
+	return read16(chan->addr + pos*2);
+}
+
+static FORCEINLINE s32 FetchADPCMData(channel_struct *chan, s32 pos)
+{
+	if(pos < 8) return 0;
+
+	const u32 shift    = (pos&1) * 4;
+	const u32 data4bit = ((u32)read08(chan->addr + (pos>>1))) >> shift;
+	const s32 diff = precalcdifftbl [chan->index][data4bit & 0xF];
+	chan->index    = precalcindextbl[chan->index][data4bit & 0x7];
+
+	s16 last = chan->pcm16b[SPUCHAN_PCM16B_AT(chan->pcm16bOffs)];
+
+	if(pos == (chan->loopstart<<3)) {
+		//if(chan->loop_index != K_ADPCM_LOOPING_RECOVERY_INDEX) printf("over-snagging\n");
+		chan->loop_pcm16b = last;
+		chan->loop_index = chan->index;
 	}
 
-	u32 loc = sputrunc(chan->sampcnt);
-	if(INTERPOLATE_MODE != SPUInterpolation_None)
+	return MinMax(last + diff, -0x8000, 0x7FFF);
+}
+
+static FORCEINLINE s32 FetchPSGData(channel_struct *chan, s32 pos)
+{
+	if(pos < 0 || chan->num < 8) return 0;
+
+	// Chan 8..13: Square wave, Chan 14..15: Noise
+	if(chan->num < 14)
 	{
-		s32 a = (s32)(read_s8(chan->addr + loc) << 8), b = a;
-		if(loc < (chan->totlength << 2) - 1)
-			b = (s32)(read_s8(chan->addr + loc + 1) << 8);
-		else if(chan->repeat == 1)
-			b = (s32)(read_s8(chan->addr + chan->loopstart*4) << 8);
-		*data = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
+		// Doing this avoids using a LUT
+		// Duty==0 (12.5%): -_______
+		// Duty==1 (25.0%): --______
+		// Duty==2 (50.0%): ----____
+		// Duty==3 (75.0%): ------__
+		u32 wavepos = (pos%8u) + (chan->waveduty != 0);
+		return (wavepos > chan->waveduty*2) ? (-0x7FFF) : (+0x7FFF);
 	}
 	else
-		*data = (s32)read_s8(chan->addr + loc)<< 8;
-}
-
-template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch16BitData(const channel_struct * const chan, s32 *data)
-{
-	if (chan->sampcnt < 0)
 	{
-		*data = 0;
-		return;
-	}
-
-	u32 loc = sputrunc(chan->sampcnt);
-	if(INTERPOLATE_MODE != SPUInterpolation_None)
-	{
-		s32 a = (s32)read16(loc*2 + chan->addr), b = a;
-		if(loc < (chan->totlength << 1) - 1)
-			b = (s32)read16(chan->addr + loc*2 + 2);
-		else if(chan->repeat == 1)
-			b = (s32)read16(chan->addr + chan->loopstart*2);
-		*data = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
-	}
-	else
-		*data = read16(chan->addr + loc*2);
-}
-
-template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void FetchADPCMData(channel_struct * const chan, s32 * const data)
-{
-	if (chan->sampcnt < 8)
-	{
-		*data = 0;
-		return;
-	}
-
-	// No sense decoding, just return the last sample
-	if (chan->lastsampcnt != sputrunc(chan->sampcnt)){
-
-		const u32 endExclusive = sputrunc(chan->sampcnt+1);
-		for (u32 i = chan->lastsampcnt+1; i < endExclusive; i++)
+		if(chan->x & 0x1)
 		{
-			const u32 shift = (i&1)<<2;
-			const u32 data4bit = ((u32)read08(chan->addr + (i>>1))) >> shift;
-
-			const s32 diff = precalcdifftbl[chan->index][data4bit & 0xF];
-			chan->index = precalcindextbl[chan->index][data4bit & 0x7];
-
-			chan->pcm16b_last = chan->pcm16b;
-			chan->pcm16b = MinMax(chan->pcm16b+diff, -0x8000, 0x7FFF);
-
-			if(i == (chan->loopstart<<3)) {
-				if(chan->loop_index != K_ADPCM_LOOPING_RECOVERY_INDEX) printf("over-snagging\n");
-				chan->loop_pcm16b = chan->pcm16b;
-				chan->loop_index = chan->index;
-			}
+			chan->x = (chan->x >> 1) ^ 0x6000;
+			return -0x7FFF;
 		}
-
-		chan->lastsampcnt = sputrunc(chan->sampcnt);
-	}
-
-	if(INTERPOLATE_MODE != SPUInterpolation_None)
-		*data = Interpolate<INTERPOLATE_MODE>((s32)chan->pcm16b_last,(s32)chan->pcm16b,chan->sampcnt);
-	else
-		*data = (s32)chan->pcm16b;
-}
-
-static FORCEINLINE void FetchPSGData(channel_struct *chan, s32 *data)
-{
-	if (chan->sampcnt < 0)
-	{
-		*data = 0;
-		return;
-	}
-
-	if(chan->num < 8)
-	{
-		*data = 0;
-	}
-	else if(chan->num < 14)
-	{
-		*data = (s32)wavedutytbl[chan->waveduty][(sputrunc(chan->sampcnt)) & 0x7];
-	}
-	else
-	{
-		if(chan->lastsampcnt == sputrunc(chan->sampcnt))
+		else
 		{
-			*data = (s32)chan->psgnoise_last;
-			return;
+			chan->x >>= 1;
+			return +0x7FFF;
 		}
-
-		u32 max = sputrunc(chan->sampcnt);
-		for(u32 i = chan->lastsampcnt; i < max; i++)
-		{
-			if(chan->x & 0x1)
-			{
-				chan->x = (chan->x >> 1) ^ 0x6000;
-				chan->psgnoise_last = -0x7FFF;
-			}
-			else
-			{
-				chan->x >>= 1;
-				chan->psgnoise_last = 0x7FFF;
-			}
-		}
-
-		chan->lastsampcnt = sputrunc(chan->sampcnt);
-
-		*data = (s32)chan->psgnoise_last;
 	}
 }
 
@@ -1201,66 +1167,42 @@ static FORCEINLINE void MixLR(SPU_struct* SPU, channel_struct *chan, s32 data)
 
 template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channel_struct *chan)
 {
-	const int shift = (FORMAT == 0 ? 2 : 1);
+	// Do nothing if we haven't reached the end
+	if((chan->sampcnt >> 32) < chan->totlength_shifted) return;
 
-	chan->sampcnt += chan->sampinc;
-
-	if (chan->sampcnt > chan->double_totlength_shifted)
+	// Kill the channel if we don't repeat
+	if(chan->repeat != 1)
 	{
-		// Do we loop? Or are we done?
-		if (chan->repeat == 1)
+		SPU->KeyOff(chan->num);
+		SPU->bufpos = SPU->buflength;
+		return;
+	}
+
+	// ADPCM needs special handling
+	if(FORMAT == 2)
+	{
+		// Minimum length (the sum of PNT+LEN) is 4 words (16 bytes), 
+		// smaller values (0..3 words) are causing hang-ups 
+		// (busy bit remains set infinite, but no sound output occurs).
+		// fix: 7th Dragon (JP) - http://sourceforge.net/p/desmume/bugs/1357/
+		if (chan->totlength < 4) return;
+
+		// Stash loop sample and index
+		if(chan->loop_index == K_ADPCM_LOOPING_RECOVERY_INDEX)
 		{
-			while (chan->sampcnt > chan->double_totlength_shifted)
-				chan->sampcnt -= chan->double_totlength_shifted - (double)(chan->loopstart << shift);
-			//chan->sampcnt = (double)(chan->loopstart << shift);
+			chan->pcm16b[SPUCHAN_PCM16B_AT(chan->pcm16bOffs)] = (s16)read16(chan->addr);
+			chan->index = read08(chan->addr+2) & 0x7F;
 		}
 		else
 		{
-			SPU->KeyOff(chan->num);
-			SPU->bufpos = SPU->buflength;
+			chan->pcm16b[SPUCHAN_PCM16B_AT(chan->pcm16bOffs)] = chan->loop_pcm16b;
+			chan->index = chan->loop_index;
 		}
 	}
-}
 
-static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
-{
-	// Minimum length (the sum of PNT+LEN) is 4 words (16 bytes), 
-	// smaller values (0..3 words) are causing hang-ups 
-	// (busy bit remains set infinite, but no sound output occurs).
-	// fix: 7th Dragon (JP) - http://sourceforge.net/p/desmume/bugs/1357/
-	if (chan->totlength < 4) return;
-
-	chan->sampcnt += chan->sampinc;
-
-	if (chan->sampcnt > chan->double_totlength_shifted)
-	{
-		// Do we loop? Or are we done?
-		if (chan->repeat == 1)
-		{
-			double step = (chan->double_totlength_shifted - (double)(chan->loopstart << 3));
-			
-			while (chan->sampcnt > chan->double_totlength_shifted) chan->sampcnt -= step;
-
-			if(chan->loop_index == K_ADPCM_LOOPING_RECOVERY_INDEX)
-			{
-				chan->pcm16b = (s16)read16(chan->addr);
-				chan->index = read08(chan->addr+2) & 0x7F;
-				chan->lastsampcnt = 7;
-			}
-			else
-			{
-				chan->pcm16b = chan->loop_pcm16b;
-				chan->index = chan->loop_index;
-				chan->lastsampcnt = (chan->loopstart << 3);
-			}
-		}
-		else
-		{
-			chan->status = CHANSTAT_STOPPED;
-			SPU->KeyOff(chan->num);
-			SPU->bufpos = SPU->buflength;
-		}
-	}
+	// Wrap sampcnt
+	s64 step = chan->totlength_shifted - (chan->loopstart << format_shift[FORMAT]);
+	while ((chan->sampcnt >> 32) >= chan->totlength_shifted) chan->sampcnt -= step * (1ll << 32);
 }
 
 template<int CHANNELS> FORCEINLINE static void SPU_Mix(SPU_struct* SPU, channel_struct *chan, s32 data)
@@ -1281,25 +1223,36 @@ template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS>
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
-		if(CHANNELS != -1)
+		// Advance sampcnt one sample at a time. This is
+		// needed to keep pcm16b[] filled for interpolation.
+		// We need to do some janky things here to keep the
+		// fractional bits in place when we loop :/
+		s64 newsampcnt = chan->sampcnt + chan->sampinc;
+		u32 nSamplesToSkip = (u32)((newsampcnt >> 32) - (chan->sampcnt >> 32));
+		while(nSamplesToSkip--)
 		{
-			s32 data;
+			s16 data = 0;
+			s32 pos = chan->sampcnt >> 32;
 			switch(FORMAT)
 			{
-				case 0: Fetch8BitData<INTERPOLATE_MODE>(chan, &data); break;
-				case 1: Fetch16BitData<INTERPOLATE_MODE>(chan, &data); break;
-				case 2: FetchADPCMData<INTERPOLATE_MODE>(chan, &data); break;
-				case 3: FetchPSGData(chan, &data); break;
+				case 0: data = Fetch8BitData (chan, pos); break;
+				case 1: data = Fetch16BitData(chan, pos); break;
+				case 2: data = FetchADPCMData(chan, pos); break;
+				case 3: data = FetchPSGData  (chan, pos); break;
 				default: break;
 			}
-			SPU_Mix<CHANNELS>(SPU, chan, data);
-		}
+			chan->pcm16bOffs++;
+			chan->pcm16b[SPUCHAN_PCM16B_AT(chan->pcm16bOffs)] = data;
 
-		switch(FORMAT) {
-			case 0: case 1: TestForLoop<FORMAT>(SPU, chan); break;
-			case 2: TestForLoop2(SPU, chan); break;
-			case 3: chan->sampcnt += chan->sampinc; break;
-			default: break;
+			chan->sampcnt += 1ll << 32;
+			if (FORMAT != 3) TestForLoop<FORMAT>(SPU, chan);
+		}
+		chan->sampcnt = ((chan->sampcnt >> 32) << 32) | (u32)newsampcnt;
+
+		if(CHANNELS != -1)
+		{
+			s32 data = Interpolate<INTERPOLATE_MODE>(chan->pcm16b, chan->pcm16bOffs, (u32)chan->sampcnt);
+			SPU_Mix<CHANNELS>(SPU, chan, data);
 		}
 	}
 }
@@ -1320,12 +1273,14 @@ template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE>
 template<SPUInterpolationMode INTERPOLATE_MODE> 
 	FORCEINLINE static void __SPU_ChanUpdate(const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
 {
+	// NOTE: PSG doesn't use interpolation, or it would try to
+	// interpolate between the raw sample points (very bad)
 	switch(chan->format)
 	{
 		case 0: ___SPU_ChanUpdate<0,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
 		case 1: ___SPU_ChanUpdate<1,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
 		case 2: ___SPU_ChanUpdate<2,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
-		case 3: ___SPU_ChanUpdate<3,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
+		case 3: ___SPU_ChanUpdate<3,SPUInterpolationMode::SPUInterpolation_None>(actuallyMix, SPU, chan); break;
 		default: assert(false);
 	}
 }
@@ -1334,9 +1289,10 @@ FORCEINLINE static void _SPU_ChanUpdate(const bool actuallyMix, SPU_struct* cons
 {
 	switch(CommonSettings.spuInterpolationMode)
 	{
-	case SPUInterpolation_None: __SPU_ChanUpdate<SPUInterpolation_None>(actuallyMix, SPU, chan); break;
-	case SPUInterpolation_Linear: __SPU_ChanUpdate<SPUInterpolation_Linear>(actuallyMix, SPU, chan); break;
-	case SPUInterpolation_Cosine: __SPU_ChanUpdate<SPUInterpolation_Cosine>(actuallyMix, SPU, chan); break;
+	case SPUInterpolation_None:       __SPU_ChanUpdate<SPUInterpolation_None>(actuallyMix, SPU, chan); break;
+	case SPUInterpolation_Linear:     __SPU_ChanUpdate<SPUInterpolation_Linear>(actuallyMix, SPU, chan); break;
+	case SPUInterpolation_Cosine:     __SPU_ChanUpdate<SPUInterpolation_Cosine>(actuallyMix, SPU, chan); break;
+	case SPUInterpolation_CatmullRom: __SPU_ChanUpdate<SPUInterpolation_CatmullRom>(actuallyMix, SPU, chan); break;
 	default: assert(false);
 	}
 }
@@ -1490,9 +1446,9 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 			if (SPU->regs.cap[capchan].runtime.running)
 			{
 				SPU_struct::REGS::CAP& cap = SPU->regs.cap[capchan];
-				u32 last = sputrunc(cap.runtime.sampcnt);
+				u32 last = cap.runtime.sampcnt >> 32;
 				cap.runtime.sampcnt += SPU->channels[1+2*capchan].sampinc;
-				u32 curr = sputrunc(cap.runtime.sampcnt);
+				u32 curr = cap.runtime.sampcnt >> 32;
 				for (u32 j = last; j < curr; j++)
 				{
 					//so, this is a little strange. why go through a fifo?
@@ -1544,7 +1500,7 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 					if (cap.runtime.curdad >= cap.runtime.maxdad)
 					{
 						cap.runtime.curdad = cap.dad;
-						cap.runtime.sampcnt -= cap.len*multiplier;
+						cap.runtime.sampcnt -= cap.len*multiplier * (1ull<<32);
 					}
 				} //sampinc loop
 			} //if capchan running
@@ -1608,9 +1564,9 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 			{
 				for (int samp = 0; samp < length; samp++)
 				{
-					u32 last = sputrunc(cap.runtime.sampcnt);
+					u32 last = cap.runtime.sampcnt >> 32;
 					cap.runtime.sampcnt += SPU->channels[1+2*capchan].sampinc;
-					u32 curr = sputrunc(cap.runtime.sampcnt);
+					u32 curr = cap.runtime.sampcnt >> 32;
 					for (u32 j = last; j < curr; j++)
 					{
 						if (cap.bits8)
@@ -1627,7 +1583,7 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 						if (cap.runtime.curdad >= cap.runtime.maxdad)
 						{
 							cap.runtime.curdad = cap.dad;
-							cap.runtime.sampcnt -= cap.len*(cap.bits8?4:2);
+							cap.runtime.sampcnt -= cap.len*(cap.bits8?4:2) * (1ull<<32);
 						}
 					}
 				}
@@ -1733,7 +1689,7 @@ void SPU_Emulate_user(bool mix)
 		postProcessBufferSize = freeSampleCount * 2 * sizeof(s16);
 		postProcessBuffer = (s16 *)realloc(postProcessBuffer, postProcessBufferSize);
 	}
-	
+
 	if (soundProcessor->PostProcessSamples != NULL)
 	{
 		processedSampleCount = soundProcessor->PostProcessSamples(postProcessBuffer, freeSampleCount, _currentSynchMode, _currentSynchronizer);
@@ -1957,7 +1913,7 @@ void WAV_WavSoundUpdate(void* soundData, int numSamples, WAVMode mode)
 void spu_savestate(EMUFILE &os)
 {
 	//version
-	os.write_32LE(6);
+	os.write_32LE(7);
 
 	SPU_struct *spu = SPU_core;
 
@@ -1973,18 +1929,16 @@ void spu_savestate(EMUFILE &os)
 		os.write_u8(chan.repeat);
 		os.write_u8(chan.format);
 		os.write_u8(chan.status);
+		os.write_u8(chan.pcm16bOffs);
 		os.write_32LE(chan.addr);
 		os.write_16LE(chan.timer);
 		os.write_16LE(chan.loopstart);
 		os.write_32LE(chan.length);
-		os.write_doubleLE(chan.sampcnt);
-		os.write_doubleLE(chan.sampinc);
-		os.write_32LE(chan.lastsampcnt);
-		os.write_16LE(chan.pcm16b);
-		os.write_16LE(chan.pcm16b_last);
+		os.write_64LE(chan.sampcnt);
+		os.write_64LE(chan.sampinc);
+		for (int i = 0; i < SPUINTERPOLATION_TAPS; i++) os.write_16LE(chan.pcm16b[i]);
 		os.write_32LE(chan.index);
 		os.write_16LE(chan.x);
-		os.write_16LE(chan.psgnoise_last);
 		os.write_u8(chan.keyon);
 	}
 
@@ -2010,7 +1964,7 @@ void spu_savestate(EMUFILE &os)
 		os.write_u8(spu->regs.cap[i].runtime.running);
 		os.write_32LE(spu->regs.cap[i].runtime.curdad);
 		os.write_32LE(spu->regs.cap[i].runtime.maxdad);
-		os.write_doubleLE(spu->regs.cap[i].runtime.sampcnt);
+		os.write_64LE(spu->regs.cap[i].runtime.sampcnt);
 	}
 
 	for (int i = 0; i < 2; i++)
@@ -2044,29 +1998,44 @@ bool spu_loadstate(EMUFILE &is, int size)
 		is.read_u8(chan.repeat);
 		is.read_u8(chan.format);
 		is.read_u8(chan.status);
+		if (version >= 7) is.read_u8(chan.pcm16bOffs); else chan.pcm16bOffs = 0;
 		is.read_32LE(chan.addr);
 		is.read_16LE(chan.timer);
 		is.read_16LE(chan.loopstart);
 		is.read_32LE(chan.length);
 		chan.totlength = chan.length + chan.loopstart;
-		chan.double_totlength_shifted = (double)(chan.totlength << format_shift[chan.format]);
-		//printf("%f\n",chan.double_totlength_shifted);
-		if (version >= 2)
+		chan.totlength_shifted = chan.totlength << format_shift[chan.format];
+		if(version >= 7) {
+			is.read_64LE(chan.sampcnt);
+			is.read_64LE(chan.sampinc);
+		}
+		else if (version >= 2)
 		{
-			is.read_doubleLE(chan.sampcnt);
-			is.read_doubleLE(chan.sampinc);
+			double temp;
+			is.read_doubleLE(temp); chan.sampcnt = (s64)(temp * (1ll<<32));
+			is.read_doubleLE(temp); chan.sampinc = (s64)(temp * (1ll<<32));
 		}
 		else
 		{
+			// FIXME
+			// What even is supposed to be happening here?
+			// sampcnt and sampinc were double type before
+			// I even made any changes, so this is broken.
 			is.read_32LE(*(u32 *)&chan.sampcnt);
 			is.read_32LE(*(u32 *)&chan.sampinc);
 		}
-		is.read_32LE(chan.lastsampcnt);
-		is.read_16LE(chan.pcm16b);
-		is.read_16LE(chan.pcm16b_last);
+		if (version >= 7) {
+			for (int i = 0; i < SPUINTERPOLATION_TAPS; i++) is.read_16LE(chan.pcm16b[i]);
+		}
+		else
+		{
+			is.fseek(4, SEEK_CUR);        // chan.lastsampcnt (LE32)
+			is.read_16LE(chan.pcm16b[0]); // chan.pcm16b
+			is.fseek(2, SEEK_CUR);        // chan.pcm16b_last
+		}
 		is.read_32LE(chan.index);
 		is.read_16LE(chan.x);
-		is.read_16LE(chan.psgnoise_last);
+		if (version < 7) is.fseek(2, SEEK_CUR); // chan.psgnoise_last (LE16)
 
 		if (version >= 4)
 			is.read_u8(chan.keyon);
@@ -2105,7 +2074,14 @@ bool spu_loadstate(EMUFILE &is, int size)
 			is.read_u8(spu->regs.cap[i].runtime.running);
 			is.read_32LE(spu->regs.cap[i].runtime.curdad);
 			is.read_32LE(spu->regs.cap[i].runtime.maxdad);
-			is.read_doubleLE(spu->regs.cap[i].runtime.sampcnt);
+			if (version >= 7) {
+				is.read_64LE(spu->regs.cap[i].runtime.sampcnt);
+			}
+			else
+			{
+				double temp;
+				is.read_doubleLE(temp); spu->regs.cap[i].runtime.sampcnt = temp * (1ull << 32);
+			}
 		}
 	}
 
