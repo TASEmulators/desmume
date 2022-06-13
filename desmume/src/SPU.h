@@ -91,8 +91,10 @@ struct channel_struct
 						length(0),
 						totlength(0),
 						totlength_shifted(0),
-						sampcnt(0),
-						sampinc(0),
+						sampcntFrac(0),
+						sampcntInt(0),
+						sampincFrac(0),
+						sampincInt(0),
 						loop_pcm16b(0),
 						index(0),
 						loop_index(0),
@@ -114,9 +116,11 @@ struct channel_struct
    u16 loopstart;
    u32 length;
    u32 totlength;
-   s64 totlength_shifted;
-   s64 sampcnt; // .32fxp
-   s64 sampinc; // .32fxp
+   s32 totlength_shifted;
+   u32 sampcntFrac;
+   s32 sampcntInt;
+   u32 sampincFrac;
+   u32 sampincInt;
    s16 pcm16b[SPUINTERPOLATION_TAPS];
    // ADPCM specific
    s16 loop_pcm16b;
@@ -193,7 +197,8 @@ public:
 			   u8 running;
 			   u32 curdad;
 			   u32 maxdad;
-			   s64 sampcnt;
+			   u32 sampcntFrac;
+			   u32 sampcntInt;
 			   SPUFifo fifo;
 		   } runtime;
 	   } cap[2];

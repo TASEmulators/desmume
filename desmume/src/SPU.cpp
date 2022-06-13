@@ -126,6 +126,14 @@ static FORCEINLINE T MinMax(T val, T min, T max)
 	return val;
 }
 
+// T must be unsigned type
+template<typename T>
+static FORCEINLINE T AddAndReturnCarry(T *a, T b) {
+	T c = (*a >= (-b));
+	*a += b;
+	return c;
+}
+
 //--------------external spu interface---------------
 
 int SPU_ChangeSoundCore(int coreid, int newBufferSizeBytes)
@@ -380,7 +388,8 @@ static FORCEINLINE void adjust_channel_timer(channel_struct *chan)
 	//  ARM7_CLOCK / (DESMUME_SAMPLE_RATE*2) / (2^16 - Timer)
 	// = ARM7_CLOCK / (DESMUME_SAMPLE_RATE*2 * (2^16 - Timer))
 	// ... and then round up for good measure
-	chan->sampinc = ((u32)ARM7_CLOCK*(1ull<<32)-1) / (DESMUME_SAMPLE_RATE*2ull * (0x10000 - chan->timer)) + 1;
+	u64 sampinc = ((u32)ARM7_CLOCK*(1ull << 32) - 1) / (DESMUME_SAMPLE_RATE * 2ull * (0x10000 - chan->timer)) + 1;
+	chan->sampincInt = (u32)(sampinc >> 32), chan->sampincFrac = (u32)sampinc;
 }
 
 void SPU_struct::KeyProbe(int chan_num)
@@ -431,23 +440,23 @@ void SPU_struct::KeyOn(int channel)
 	case 0: // 8-bit
 	//	thischan.loopstart = thischan.loopstart << 2;
 	//	thischan.length = (thischan.length << 2) + thischan.loopstart;
-		thischan.sampcnt = -3 * (1ll<<32);
+		thischan.sampcntFrac = 0, thischan.sampcntInt = -3;
 		break;
 	case 1: // 16-bit
 	//	thischan.loopstart = thischan.loopstart << 1;
 	//	thischan.length = (thischan.length << 1) + thischan.loopstart;
-		thischan.sampcnt = -3 * (1ll<<32);
+		thischan.sampcntFrac = 0, thischan.sampcntInt = -3;
 		break;
 	case 2: // ADPCM
 		thischan.pcm16b[0] = (s16)read16(thischan.addr);
 		thischan.index = read08(thischan.addr + 2) & 0x7F;
-		thischan.sampcnt = -3 * (1ll<<32);
+		thischan.sampcntFrac = 0, thischan.sampcntInt = -3;
 		thischan.loop_index = K_ADPCM_LOOPING_RECOVERY_INDEX;
 	//	thischan.loopstart = thischan.loopstart << 3;
 	//	thischan.length = (thischan.length << 3) + thischan.loopstart;
 		break;
 	case 3: // PSG
-		thischan.sampcnt = -1 * (1ll<<32);
+		thischan.sampcntFrac = 0, thischan.sampcntInt = -1;
 		thischan.x = 0x7FFF;
 		break;
 	default: break;
@@ -756,7 +765,7 @@ void SPU_struct::ProbeCapture(int which)
 	u32 len = cap.len;
 	if(len==0) len=1;
 	cap.runtime.maxdad = cap.dad + len*4;
-	cap.runtime.sampcnt = 0;
+	cap.runtime.sampcntFrac = cap.runtime.sampcntInt = 0;
 	cap.runtime.fifo.reset();
 }
 
@@ -1163,7 +1172,7 @@ static FORCEINLINE void MixLR(SPU_struct* SPU, channel_struct *chan, s32 data)
 template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channel_struct *chan)
 {
 	// Do nothing if we haven't reached the end
-	if((chan->sampcnt >> 32) < chan->totlength_shifted) return;
+	if(chan->sampcntInt < chan->totlength_shifted) return;
 
 	// Kill the channel if we don't repeat
 	if(chan->repeat != 1)
@@ -1196,8 +1205,8 @@ template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channe
 	}
 
 	// Wrap sampcnt
-	s64 step = chan->totlength_shifted - (chan->loopstart << format_shift[FORMAT]);
-	while ((chan->sampcnt >> 32) >= chan->totlength_shifted) chan->sampcnt -= step * (1ll << 32);
+	u32 step = chan->totlength_shifted - (chan->loopstart << format_shift[FORMAT]);
+	while (chan->sampcntInt >= chan->totlength_shifted) chan->sampcntInt -= step;
 }
 
 template<int CHANNELS> FORCEINLINE static void SPU_Mix(SPU_struct* SPU, channel_struct *chan, s32 data)
@@ -1220,14 +1229,11 @@ template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS>
 	{
 		// Advance sampcnt one sample at a time. This is
 		// needed to keep pcm16b[] filled for interpolation.
-		// We need to do some janky things here to keep the
-		// fractional bits in place when we loop :/
-		s64 newsampcnt = chan->sampcnt + chan->sampinc;
-		u32 nSamplesToSkip = (u32)((newsampcnt >> 32) - (chan->sampcnt >> 32));
+		u32 nSamplesToSkip = chan->sampincInt + AddAndReturnCarry(&chan->sampcntFrac, chan->sampincFrac);
 		while(nSamplesToSkip--)
 		{
 			s16 data = 0;
-			s32 pos = chan->sampcnt >> 32;
+			s32 pos = chan->sampcntInt;
 			switch(FORMAT)
 			{
 				case 0: data = Fetch8BitData (chan, pos); break;
@@ -1239,14 +1245,13 @@ template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS>
 			chan->pcm16bOffs++;
 			chan->pcm16b[SPUCHAN_PCM16B_AT(chan->pcm16bOffs)] = data;
 
-			chan->sampcnt += 1ll << 32;
+			chan->sampcntInt++;
 			if (FORMAT != 3) TestForLoop<FORMAT>(SPU, chan);
 		}
-		chan->sampcnt = ((chan->sampcnt >> 32) << 32) | (u32)newsampcnt;
 
 		if(CHANNELS != -1)
 		{
-			s32 data = Interpolate<INTERPOLATE_MODE>(chan->pcm16b, chan->pcm16bOffs, (u32)chan->sampcnt);
+			s32 data = Interpolate<INTERPOLATE_MODE>(chan->pcm16b, chan->pcm16bOffs, chan->sampcntFrac);
 			SPU_Mix<CHANNELS>(SPU, chan, data);
 		}
 	}
@@ -1438,13 +1443,13 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 
 		for (int capchan = 0; capchan < 2; capchan++)
 		{
+			SPU_struct::REGS::CAP& cap = SPU->regs.cap[capchan];
+			channel_struct& srcChan = SPU->channels[1 + 2 * capchan];
 			if (SPU->regs.cap[capchan].runtime.running)
 			{
-				SPU_struct::REGS::CAP& cap = SPU->regs.cap[capchan];
-				u32 last = cap.runtime.sampcnt >> 32;
-				cap.runtime.sampcnt += SPU->channels[1+2*capchan].sampinc;
-				u32 curr = cap.runtime.sampcnt >> 32;
-				for (u32 j = last; j < curr; j++)
+				u32 nSamplesToProcess = srcChan.sampincInt + AddAndReturnCarry(&cap.runtime.sampcntFrac, srcChan.sampincFrac);
+				cap.runtime.sampcntInt += nSamplesToProcess;
+				while(nSamplesToProcess--)
 				{
 					//so, this is a little strange. why go through a fifo?
 					//it seems that some games will set up a reverb effect by capturing
@@ -1495,7 +1500,7 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 					if (cap.runtime.curdad >= cap.runtime.maxdad)
 					{
 						cap.runtime.curdad = cap.dad;
-						cap.runtime.sampcnt -= cap.len*multiplier * (1ull<<32);
+						cap.runtime.sampcntInt -= cap.len*multiplier;
 					}
 				} //sampinc loop
 			} //if capchan running
@@ -1555,14 +1560,14 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 		for (int capchan = 0; capchan < 2; capchan++)
 		{
 			SPU_struct::REGS::CAP& cap = SPU->regs.cap[capchan];
+			channel_struct& srcChan = SPU->channels[1 + 2 * capchan];
 			if (cap.runtime.running)
 			{
 				for (int samp = 0; samp < length; samp++)
 				{
-					u32 last = cap.runtime.sampcnt >> 32;
-					cap.runtime.sampcnt += SPU->channels[1+2*capchan].sampinc;
-					u32 curr = cap.runtime.sampcnt >> 32;
-					for (u32 j = last; j < curr; j++)
+					u32 nSamplesToProcess = srcChan.sampincInt + AddAndReturnCarry(&cap.runtime.sampcntFrac, srcChan.sampincFrac);
+					cap.runtime.sampcntInt += nSamplesToProcess;
+					while (nSamplesToProcess--)
 					{
 						if (cap.bits8)
 						{
@@ -1578,7 +1583,7 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 						if (cap.runtime.curdad >= cap.runtime.maxdad)
 						{
 							cap.runtime.curdad = cap.dad;
-							cap.runtime.sampcnt -= cap.len*(cap.bits8?4:2) * (1ull<<32);
+							cap.runtime.sampcntInt -= cap.len*(cap.bits8?4:2);
 						}
 					}
 				}
@@ -1929,8 +1934,10 @@ void spu_savestate(EMUFILE &os)
 		os.write_16LE(chan.timer);
 		os.write_16LE(chan.loopstart);
 		os.write_32LE(chan.length);
-		os.write_64LE(chan.sampcnt);
-		os.write_64LE(chan.sampinc);
+		os.write_32LE(chan.sampcntFrac);
+		os.write_32LE(chan.sampcntInt);
+		os.write_32LE(chan.sampincFrac);
+		os.write_32LE(chan.sampincInt);
 		for (int i = 0; i < SPUINTERPOLATION_TAPS; i++) os.write_16LE(chan.pcm16b[i]);
 		os.write_32LE(chan.index);
 		os.write_16LE(chan.x);
@@ -1959,7 +1966,8 @@ void spu_savestate(EMUFILE &os)
 		os.write_u8(spu->regs.cap[i].runtime.running);
 		os.write_32LE(spu->regs.cap[i].runtime.curdad);
 		os.write_32LE(spu->regs.cap[i].runtime.maxdad);
-		os.write_64LE(spu->regs.cap[i].runtime.sampcnt);
+		os.write_32LE(spu->regs.cap[i].runtime.sampcntFrac);
+		os.write_32LE(spu->regs.cap[i].runtime.sampcntInt);
 	}
 
 	for (int i = 0; i < 2; i++)
@@ -2001,14 +2009,21 @@ bool spu_loadstate(EMUFILE &is, int size)
 		chan.totlength = chan.length + chan.loopstart;
 		chan.totlength_shifted = chan.totlength << format_shift[chan.format];
 		if(version >= 7) {
-			is.read_64LE(chan.sampcnt);
-			is.read_64LE(chan.sampinc);
+			is.read_32LE(chan.sampcntFrac);
+			is.read_32LE(chan.sampcntInt);
+			is.read_32LE(chan.sampincFrac);
+			is.read_32LE(chan.sampincInt);
 		}
 		else if (version >= 2)
 		{
 			double temp;
-			is.read_doubleLE(temp); chan.sampcnt = (s64)(temp * (1ll<<32));
-			is.read_doubleLE(temp); chan.sampinc = (s64)(temp * (1ll<<32));
+			s64 temp2;
+			is.read_doubleLE(temp); temp2 = (s64)(temp * (1ll << 32));
+			chan.sampcntFrac = (u32)temp2;
+			chan.sampcntInt  = (s32)(temp2 >> 32);
+			is.read_doubleLE(temp); temp2 = (u64)(temp * (1ull << 32)); // Intentionally unsigned
+			chan.sampincFrac = (u32)temp2;
+			chan.sampincInt  = (u32)(temp2 >> 32);
 		}
 		else
 		{
@@ -2016,8 +2031,10 @@ bool spu_loadstate(EMUFILE &is, int size)
 			// What even is supposed to be happening here?
 			// sampcnt and sampinc were double type before
 			// I even made any changes, so this is broken.
-			is.read_32LE(*(u32 *)&chan.sampcnt);
-			is.read_32LE(*(u32 *)&chan.sampinc);
+			chan.sampcntFrac = 0;
+			is.read_32LE(chan.sampcntInt);
+			chan.sampincFrac = 0;
+			is.read_32LE(chan.sampincInt);
 		}
 		if (version >= 7) {
 			for (int i = 0; i < SPUINTERPOLATION_TAPS; i++) is.read_16LE(chan.pcm16b[i]);
@@ -2070,12 +2087,16 @@ bool spu_loadstate(EMUFILE &is, int size)
 			is.read_32LE(spu->regs.cap[i].runtime.curdad);
 			is.read_32LE(spu->regs.cap[i].runtime.maxdad);
 			if (version >= 7) {
-				is.read_64LE(spu->regs.cap[i].runtime.sampcnt);
+				is.read_32LE(spu->regs.cap[i].runtime.sampcntFrac);
+				is.read_32LE(spu->regs.cap[i].runtime.sampcntInt);
 			}
 			else
 			{
 				double temp;
-				is.read_doubleLE(temp); spu->regs.cap[i].runtime.sampcnt = temp * (1ull << 32);
+				u64 temp2;
+				is.read_doubleLE(temp); temp2 = (u64)(temp * (1ull << 32));
+				spu->regs.cap[i].runtime.sampcntFrac = (u32)temp2;
+				spu->regs.cap[i].runtime.sampcntInt  = (u32)(temp2 >> 32);
 			}
 		}
 	}

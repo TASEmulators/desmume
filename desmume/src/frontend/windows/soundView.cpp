@@ -195,7 +195,7 @@ void SoundView_Refresh(bool forceRedraw)
 			sprintf(buf, "$%04X (%.1f Hz)", thischan.timer, (ARM7_CLOCK/2) / (double)(0x10000 - thischan.timer));
 			SetDlgItemText(hDlg, IDC_SOUND0TMR+chanId, buf);
 
-			sprintf(buf, "samp #%d / #%d", (s32)(thischan.sampcnt >> 32), thischan.totlength << format_shift[thischan.format]);
+			sprintf(buf, "samp #%d / #%d", thischan.sampcntInt, thischan.totlength_shifted);
 			SetDlgItemText(hDlg, IDC_SOUND0POSLEN+chanId, buf);
 		}
 		else {
