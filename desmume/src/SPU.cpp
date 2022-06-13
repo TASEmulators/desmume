@@ -105,8 +105,8 @@ static const u16 adpcmtbl[89] =
 
 static s32 precalcdifftbl[89][16];
 static u8 precalcindextbl[89][8];
-static s16 catmullrom_lut[CATMULLROM_INTERPOLATION_RESOLUTION][4];
-static s16 cos_lut[COSINE_INTERPOLATION_RESOLUTION];
+static u16 catmullrom_lut[CATMULLROM_INTERPOLATION_RESOLUTION][4];
+static u16 cos_lut[COSINE_INTERPOLATION_RESOLUTION];
 
 static const double ARM7_CLOCK = 33513982;
 
@@ -215,13 +215,13 @@ int SPU_Init(int coreid, int newBufferSizeBytes)
 		double b = x*x*(3*x - 5) + 2;
 		double c = x*(x*(-3*x + 4) + 1);
 		double d = x*x*(x - 1);
-		catmullrom_lut[i][0] = (s16)(32767 * 0.5*a);
-		catmullrom_lut[i][1] = (s16)(32767 * 0.5*b);
-		catmullrom_lut[i][2] = (s16)(32767 * 0.5*c);
-		catmullrom_lut[i][3] = (s16)(32767 * 0.5*d);
+		catmullrom_lut[i][0] = (u16)(65535 * -0.5*a);
+		catmullrom_lut[i][1] = (u16)(65535 *  0.5*b);
+		catmullrom_lut[i][2] = (u16)(65535 *  0.5*c);
+		catmullrom_lut[i][3] = (u16)(65535 * -0.5*d);
 	}
 	for (size_t i = 0; i < COSINE_INTERPOLATION_RESOLUTION; i++)
-		cos_lut[i] = (s16)(32767 * ((1.0 - cos(((double)i/(double)COSINE_INTERPOLATION_RESOLUTION) * M_PI)) * 0.5));
+		cos_lut[i] = (u16)((1u<<16) * ((1.0 - cos(((double)i/(double)COSINE_INTERPOLATION_RESOLUTION) * M_PI)) * 0.5));
 
 	SPU_core = new SPU_struct((int)ceil(samples_per_hline));
 	SPU_Reset();
@@ -1050,13 +1050,13 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpola
 		case SPUInterpolation_CatmullRom:
 		{
 			// Catmull-Rom spline
-			// Delay: 2 samples
+			// Delay: 2 samples, Maximum gain: 1.25
 			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 3)];
 			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 2)];
 			s32 c = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
 			s32 d = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
-			const s16 *w = catmullrom_lut[subPos >> (32 - CATMULLROM_INTERPOLATION_RESOLUTION_BITS)];
-			return (a*w[0] + b*w[1] + c*w[2] + d*w[3]) >> 15;
+			const u16 *w = catmullrom_lut[subPos >> (32 - CATMULLROM_INTERPOLATION_RESOLUTION_BITS)];
+			return (-a*(s32)w[0] + b*(s32)w[1] + c*(s32)w[2] - d*(s32)w[3]) >> 16;
 		}
 
 		case SPUInterpolation_Cosine:
@@ -1064,25 +1064,26 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpola
 			// Cosine Interpolation Formula:
 			// ratio2 = (1 - cos(ratio * M_PI)) / 2
 			// sampleI = sampleA * (1 - ratio2) + sampleB * ratio2
-			// Delay: 1 sample
+			// Delay: 1 sample, Maximum gain: 1.0
 			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
 			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
-			return a + ((b - a)*cos_lut[subPos >> (32 - COSINE_INTERPOLATION_RESOLUTION_BITS)] >> 15);
+			s32 subPos16 = (s32)cos_lut[subPos >> (32 - COSINE_INTERPOLATION_RESOLUTION_BITS)];
+			return a + ((b - a)*subPos16 >> 16);
 		}
 
 		case SPUInterpolation_Linear:
 		{
 			// Linear Interpolation Formula:
 			// sampleI = sampleA * (1 - ratio) + sampleB * ratio
-			// Delay: 1 sample
+			// Delay: 1 sample, Maximum gain: 1.0
 			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
 			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
-			s32 subPos15 = subPos >> (32 - 15);
-			return a + ((b - a)*subPos15 >> 15);
+			s32 subPos16 = subPos >> (32 - 16);
+			return a + ((b - a)*subPos16 >> 16);
 		}
 
 		default:
-			// Delay: 0 samples
+			// Delay: 0 samples, Maximum gain: 1.0
 			return pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs)];
 	}
 }
