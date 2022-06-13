@@ -215,13 +215,13 @@ int SPU_Init(int coreid, int newBufferSizeBytes)
 		double b = x*x*(3*x - 5) + 2;
 		double c = x*(x*(-3*x + 4) + 1);
 		double d = x*x*(x - 1);
-		catmullrom_lut[i][0] = (u16)(65535 * -0.5*a);
-		catmullrom_lut[i][1] = (u16)(65535 *  0.5*b);
-		catmullrom_lut[i][2] = (u16)(65535 *  0.5*c);
-		catmullrom_lut[i][3] = (u16)(65535 * -0.5*d);
+		catmullrom_lut[i][0] = (u16)floor((1u<<15) * -0.5*a);
+		catmullrom_lut[i][1] = (u16)floor((1u<<15) *  0.5*b);
+		catmullrom_lut[i][2] = (u16)floor((1u<<15) *  0.5*c);
+		catmullrom_lut[i][3] = (u16)floor((1u<<15) * -0.5*d);
 	}
 	for (size_t i = 0; i < COSINE_INTERPOLATION_RESOLUTION; i++)
-		cos_lut[i] = (u16)((1u<<16) * ((1.0 - cos(((double)i/(double)COSINE_INTERPOLATION_RESOLUTION) * M_PI)) * 0.5));
+		cos_lut[i] = (u16)floor((1u<<16) * ((1.0 - cos(((double)i/(double)COSINE_INTERPOLATION_RESOLUTION) * M_PI)) * 0.5));
 
 	SPU_core = new SPU_struct((int)ceil(samples_per_hline));
 	SPU_Reset();
@@ -1056,7 +1056,7 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpola
 			s32 c = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
 			s32 d = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
 			const u16 *w = catmullrom_lut[subPos >> (32 - CATMULLROM_INTERPOLATION_RESOLUTION_BITS)];
-			return (-a*(s32)w[0] + b*(s32)w[1] + c*(s32)w[2] - d*(s32)w[3]) >> 16;
+			return (-a*(s32)w[0] + b*(s32)w[1] + c*(s32)w[2] - d*(s32)w[3]) >> 15;
 		}
 
 		case SPUInterpolation_Cosine:
