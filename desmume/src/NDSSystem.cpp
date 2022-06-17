@@ -635,7 +635,8 @@ bool GameInfo::isDSiEnhanced()
 
 bool GameInfo::isHomebrew()
 {
-	return ((header.ARM9src < 0x4000) && (T1ReadLong(header.logo, 0) != 0x51AEFF24) && (T1ReadLong(header.logo, 4) != 0x699AA221));
+	return ((header.ARM9src < 0x4000) && (T1ReadLong(header.logo, 0) != 0x51AEFF24) && (T1ReadLong(header.logo, 4) != 0x699AA221)) ||
+	       (!memcmp(header.gameCode, "####", 4)); // <- ndstool default signature
 }
 
 static int rom_init_path(const char *filename, const char *physicalName, const char *logicalFilename)
