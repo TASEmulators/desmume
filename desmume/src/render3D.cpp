@@ -899,7 +899,7 @@ void Render3D_NEON::_ClearImageBaseLoop(const u16 *__restrict inColor16, const u
 		vst1q_u32_x4(outDepth24 + i, calcDepth);
 		
 		// Write the fog flags to the fog flag buffer.
-		vst1q_u8( outFog + i, vuzp1q_u16(vshrq_n_u16(clearDepth.val[0], 15), vshrq_n_u16(clearDepth.val[1], 15)) );
+		vst1q_u8( outFog + i, vreinterpretq_u8_u16( vuzp1q_u16(vshrq_n_u16(clearDepth.val[0], 15), vshrq_n_u16(clearDepth.val[1], 15)) ) );
 	}
 }
 

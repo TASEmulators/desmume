@@ -1429,8 +1429,8 @@ void __NDSTextureUnpackA3I5_NEON(const size_t texelCount, const u8 *__restrict s
 		const v128u16 palColor1 = vreinterpretq_u16_u8( vqtbl4q_u8(pal16_LUT, idx1) );
 		
 		const v128u8 alpha = vqtbl1q_u8( alpha_LUT, vshrq_n_u8(bits, 5) );
-		const v128u16 alphaLo = vzip1q_u8(vdupq_n_u8(0), alpha);
-		const v128u16 alphaHi = vzip2q_u8(vdupq_n_u8(0), alpha);
+		const v128u16 alphaLo = vreinterpretq_u16_u8( vzip1q_u8(vdupq_n_u8(0), alpha) );
+		const v128u16 alphaHi = vreinterpretq_u16_u8( vzip2q_u8(vdupq_n_u8(0), alpha) );
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
@@ -1658,8 +1658,8 @@ void __NDSTextureUnpackA5I3_NEON(const size_t texelCount, const u8 *__restrict s
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
 			const v128u8 alpha = vshrq_n_u8(bits, 3);
-			const v128u16 alphaLo = vzip1q_u8(vdupq_n_u8(0), alpha);
-			const v128u16 alphaHi = vzip2q_u8(vdupq_n_u8(0), alpha);
+			const v128u16 alphaLo = vreinterpretq_u16_u8( vzip1q_u8(vdupq_n_u8(0), alpha) );
+			const v128u16 alphaHi = vreinterpretq_u16_u8( vzip2q_u8(vdupq_n_u8(0), alpha) );
 			
 			ColorspaceConvert555To6665_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
 			ColorspaceConvert555To6665_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
@@ -1667,8 +1667,8 @@ void __NDSTextureUnpackA5I3_NEON(const size_t texelCount, const u8 *__restrict s
 		else
 		{
 			const v128u8 alpha = vqtbl2q_u8( alpha8_LUT, vshrq_n_u8(bits, 3) );
-			const v128u16 alphaLo = vzip1q_u8(vdupq_n_u8(0), alpha);
-			const v128u16 alphaHi = vzip2q_u8(vdupq_n_u8(0), alpha);
+			const v128u16 alphaLo = vreinterpretq_u16_u8( vzip1q_u8(vdupq_n_u8(0), alpha) );
+			const v128u16 alphaHi = vreinterpretq_u16_u8( vzip2q_u8(vdupq_n_u8(0), alpha) );
 			
 			ColorspaceConvert555To8888_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
 			ColorspaceConvert555To8888_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
@@ -1967,8 +1967,8 @@ void __NDSTextureUnpackDirect16Bit_NEON(const size_t texelCount, const u16 *__re
 		}
 		
 		const v128u16 alpha = vceqq_u16(vshrq_n_u16(c,15), vdupq_n_u16(1));
-		convertedColor.val[0] = vandq_u16( convertedColor.val[0], vzip1q_u16(alpha, alpha) );
-		convertedColor.val[1] = vandq_u16( convertedColor.val[1], vzip2q_u16(alpha, alpha) );
+		convertedColor.val[0] = vandq_u32( convertedColor.val[0], vreinterpretq_u32_u16(vzip1q_u16(alpha, alpha)) );
+		convertedColor.val[1] = vandq_u32( convertedColor.val[1], vreinterpretq_u32_u16(vzip2q_u16(alpha, alpha)) );
 		
 		vst1q_u32_x2(dstBuffer, convertedColor);
 	}
