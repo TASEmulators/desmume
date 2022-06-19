@@ -36,7 +36,9 @@ class EMUFILE;
 #define CHANSTAT_STOPPED          0
 #define CHANSTAT_PLAY             1
 
-#define SPUINTERPOLATION_TAPS 4 // Must be at least 4 for Catmull-Rom interpolation
+#define SPUINTERPOLATION_TAPS 4 // Must be 2^n, and at least 4 for Catmull-Rom interpolation
+
+#define SPUCAPTURE_FIFO_SIZE 16 // Must be 2^n
 
 //who made these static? theyre used in multiple places.
 FORCEINLINE s32 spumuldiv7(s32 val, u8 multiplier) {
@@ -147,11 +149,10 @@ class SPU_struct
 {
 public:
 	SPU_struct(int buffersize);
-   u32 bufpos;
-   u32 buflength;
-   s32 *sndbuf;
-   s32 lastdata; //the last sample that a channel generated
-   s16 *outbuf;
+   s32 *mixbuf;  // Mixer output (unclipped) (L,R)
+   s16 *outbuf;  // Device output source (L,R)
+   s16 *capbuf;  // Capture output source (cap[0],cap[1])
+   s16 *chanbuf; // Channel output source (L,R)
    u32 bufsize;
    channel_struct channels[16];
 
@@ -192,14 +193,15 @@ public:
 		   u16 len;
 		   struct Runtime {
 			   Runtime()
-				   : running(0), curdad(0), maxdad(0)
+				   : running(0), pcm16bOffs(0), curdad(0), maxdad(0)
 			   {}
 			   u8 running;
+			   u8 pcm16bOffs;
 			   u32 curdad;
 			   u32 maxdad;
 			   u32 sampcntFrac;
-			   u32 sampcntInt;
-			   SPUFifo fifo;
+			   s32 sampcntInt;
+			   s16 pcm16b[SPUCAPTURE_FIFO_SIZE];
 		   } runtime;
 	   } cap[2];
    } regs;

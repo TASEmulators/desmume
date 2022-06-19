@@ -51,7 +51,6 @@ CommandLine::CommandLine()
 , _fw_boot(0)
 , _spu_sync_mode(-1)
 , _spu_sync_method(-1)
-, _spu_advanced(0)
 , _num_cores(-1)
 , _rigorous_timing(0)
 , _advanced_timing(-1)
@@ -283,7 +282,6 @@ bool CommandLine::parse(int argc,char **argv)
 			{ "rigorous-timing", no_argument, &_rigorous_timing, 1},
 			{ "advanced-timing", no_argument, &_advanced_timing, 1},
 			{ "gamehacks", no_argument, &_gamehacks, 1},
-			{ "spu-advanced", no_argument, &_spu_advanced, 1},
 			{ "backupmem-db", no_argument, &autodetect_method, 1},
 
 			//system equipment
@@ -458,7 +456,6 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_slot1_no8000prot) CommonSettings.RetailCardProtection8000 = false;
 	if(_spu_sync_mode != -1) CommonSettings.SPU_sync_mode = _spu_sync_mode;
 	if(_spu_sync_method != -1) CommonSettings.SPU_sync_method = _spu_sync_method;
-	if(_spu_advanced) CommonSettings.spu_advanced = true;
 
 	free(_bios_arm9);
 	free(_bios_arm7);

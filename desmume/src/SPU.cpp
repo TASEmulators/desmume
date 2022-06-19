@@ -58,6 +58,8 @@ static inline s8 read_s8(u32 addr) { return (s8)_MMU_read08<ARMCPU_ARM7,MMU_AT_D
 
 #define SPUCHAN_PCM16B_AT(x) ((u32)(x) % SPUINTERPOLATION_TAPS)
 
+#define SPUCAPTURE_PCM16B_AT(x) ((u32)(x) % SPUCAPTURE_FIFO_SIZE)
+
 //#ifdef FASTBUILD
 	#undef FORCEINLINE
 	#define FORCEINLINE
@@ -108,11 +110,16 @@ static u8 precalcindextbl[89][8];
 static u16 catmullrom_lut[CATMULLROM_INTERPOLATION_RESOLUTION][4];
 static u16 cos_lut[COSINE_INTERPOLATION_RESOLUTION];
 
-static const double ARM7_CLOCK = 33513982;
+static const u32 ARM7_CLOCK = 33513982;
 
-static const double samples_per_hline = (DESMUME_SAMPLE_RATE / 59.8261f) / 263.0f;
-
-static double _samples = 0;
+// This is set to update once per scanline (SAMPLE_RATE / FRAME_RATE / HDOTS), as
+// implemented via calling SPU_Emulate_core() in execHardware_hblank() (NDSSystem.cpp).
+// For better performance, it might work better to update slightly less often, as this
+// should reduce the mixing overhead. So in case we ever get around to changing the
+// execution frequency, this has been pre-emptively renamed to "samples per update"
+// rather than "samples per hblank".
+static const u64 samples_per_core_update = ((DESMUME_SAMPLE_RATE*355*6*(1ull<<32)-1) / ARM7_CLOCK + 1); // 355 hdots, 6c per dot
+static u32 _spucore_samplesFrac = 0; // We only need to keep track of the fractional part
 int spu_core_samples = 0;
 
 template<typename T>
@@ -223,7 +230,7 @@ int SPU_Init(int coreid, int newBufferSizeBytes)
 	for (size_t i = 0; i < COSINE_INTERPOLATION_RESOLUTION; i++)
 		cos_lut[i] = (u16)floor((1u<<16) * ((1.0 - cos(((double)i/(double)COSINE_INTERPOLATION_RESOLUTION) * M_PI)) * 0.5));
 
-	SPU_core = new SPU_struct((int)ceil(samples_per_hline));
+	SPU_core = new SPU_struct((samples_per_core_update >> 32) + ((u32)samples_per_core_update != 0)); // ceil(samples_per_core_update)
 	SPU_Reset();
 
 	//create adpcm decode accelerator lookups
@@ -327,15 +334,15 @@ void SPU_Reset(void)
 	for (i = 0x400; i < 0x51D; i++)
 		T1WriteByte(MMU.ARM7_REG, i, 0);
 
-	_samples = 0;
+	_spucore_samplesFrac = 0;
 }
 
 //------------------------------------------
 
 void SPU_struct::reset()
 {
-	memset(sndbuf,0,bufsize*2*4);
-	memset(outbuf,0,bufsize*2*2);
+	memset(mixbuf,0,SPUCAPTURE_FIFO_SIZE*sizeof(s32)*2);
+	memset(outbuf,0,bufsize*sizeof(s16)*2);
 
 	memset((void *)channels, 0, sizeof(channel_struct) * 16);
 
@@ -348,21 +355,28 @@ void SPU_struct::reset()
 }
 
 SPU_struct::SPU_struct(int buffersize)
-	: bufpos(0)
-	, buflength(0)
-	, sndbuf(0)
-	, outbuf(0)
+	: mixbuf(NULL)
+	, outbuf(NULL)
+	, capbuf(NULL)
+	, chanbuf(NULL)
 	, bufsize(buffersize)
 {
-	sndbuf = new s32[buffersize*2];
-	outbuf = new s16[buffersize*2];
+	// We process at most SPUCAPTURE_FIFO_SIZE samples
+	// per mixing batch, so mixbuf[],capbuf[],chanbuf[]
+	// only need to be as large as that
+	mixbuf  = new s32[SPUCAPTURE_FIFO_SIZE*2];
+	outbuf  = new s16[buffersize*2];
+	capbuf  = new s16[SPUCAPTURE_FIFO_SIZE*2];
+	chanbuf = new s16[SPUCAPTURE_FIFO_SIZE*2];
 	reset();
 }
 
 SPU_struct::~SPU_struct()
 {
-	if(sndbuf) delete[] sndbuf;
-	if(outbuf) delete[] outbuf;
+	if(mixbuf)  delete[] mixbuf;
+	if(outbuf)  delete[] outbuf;
+	if(capbuf)  delete[] capbuf;
+	if(chanbuf) delete[] chanbuf;
 }
 
 void SPU_DeInit(void)
@@ -388,7 +402,7 @@ static FORCEINLINE void adjust_channel_timer(channel_struct *chan)
 	//  ARM7_CLOCK / (DESMUME_SAMPLE_RATE*2) / (2^16 - Timer)
 	// = ARM7_CLOCK / (DESMUME_SAMPLE_RATE*2 * (2^16 - Timer))
 	// ... and then round up for good measure
-	u64 sampinc = ((u32)ARM7_CLOCK*(1ull << 32) - 1) / (DESMUME_SAMPLE_RATE * 2ull * (0x10000 - chan->timer)) + 1;
+	u64 sampinc = (ARM7_CLOCK*(1ull << 32) - 1) / (DESMUME_SAMPLE_RATE * 2ull * (0x10000 - chan->timer)) + 1;
 	chan->sampincInt = (u32)(sampinc >> 32), chan->sampincFrac = (u32)sampinc;
 }
 
@@ -759,14 +773,26 @@ void SPU_struct::ProbeCapture(int which)
 		return;
 	}
 
+	// Original notes on the reasoning behind a FIFO for capture:
+	//so, this is a little strange. why go through a fifo?
+	//it seems that some games will set up a reverb effect by capturing
+	//to the nearly same address as playback, but ahead by a couple.
+	//So, playback will always end up being what was captured a couple of samples ago.
+	//This system counts on playback always having read ahead 16 samples.
+	//In that case, playback will end up being what was processed at one entire buffer length ago,
+	//since the 16 samples would have read ahead before they got captured over
+
+	//It's actually the source channels which should have a fifo, but we are
+	//not going to take the hit in speed and complexity. Save it for a future rewrite.
+	//Instead, what we do here is delay the capture by 16 samples to create a similar effect.
+	//Subjectively, it seems to be working.
 	REGS::CAP &cap = regs.cap[which];
 	cap.runtime.running = 1;
 	cap.runtime.curdad = cap.dad;
 	u32 len = cap.len;
 	if(len==0) len=1;
 	cap.runtime.maxdad = cap.dad + len*4;
-	cap.runtime.sampcntFrac = cap.runtime.sampcntInt = 0;
-	cap.runtime.fifo.reset();
+	cap.runtime.sampcntFrac = 0, cap.runtime.sampcntInt = -SPUCAPTURE_FIFO_SIZE;
 }
 
 void SPU_struct::WriteByte(u32 addr, u8 val)
@@ -1043,7 +1069,7 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 
 //////////////////////////////////////////////////////////////////////////////
 
-template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpolate(const s16 *pcm16b, u8 pcm16bOffs, u32 subPos)
+template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s16 Interpolate(const s16 *pcm16b, u8 pcm16bOffs, u32 subPos)
 {
 	switch (INTERPOLATE_MODE)
 	{
@@ -1051,12 +1077,20 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpola
 		{
 			// Catmull-Rom spline
 			// Delay: 2 samples, Maximum gain: 1.25
+			// NOTE: Ideally, we would just re-scale the resampling
+			// kernel to have a maximum gain of 1.0. However, this
+			// would mean reducing the output volume, which can then
+			// go on to make feedback capture (ie. echo effects)
+			// decay abnormally quickly. Since Catmull-Rom is more
+			// of a 'luxury' thing, we should be able to use MinMax
+			// since if the user is using this interpolation method,
+			// there's likely enough processing power to handle it.
 			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 3)];
 			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 2)];
 			s32 c = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
 			s32 d = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
 			const u16 *w = catmullrom_lut[subPos >> (32 - CATMULLROM_INTERPOLATION_RESOLUTION_BITS)];
-			return (-a*(s32)w[0] + b*(s32)w[1] + c*(s32)w[2] - d*(s32)w[3]) >> 15;
+			return (s16)MinMax((-a*(s32)w[0] + b*(s32)w[1] + c*(s32)w[2] - d*(s32)w[3]) >> 15, -0x8000, +0x7FFF);
 		}
 
 		case SPUInterpolation_Cosine:
@@ -1065,10 +1099,18 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpola
 			// ratio2 = (1 - cos(ratio * M_PI)) / 2
 			// sampleI = sampleA * (1 - ratio2) + sampleB * ratio2
 			// Delay: 1 sample, Maximum gain: 1.0
+			// NOTE: The weird casts are necessary to get correct
+			// results. This is because (b-a) can overflow in 16bit
+			// arithmetic, but a+(b-a)*subPos can't. This workaround
+			// ensures that the overflowed result wraps back around
+			// to the intended, not-overflowed result. Note that if
+			// we ever return something larger than 16bit in the
+			// future, the cast to s16 must still remain, as this
+			// workaround only works when the result is 16bit.
 			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
 			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
 			s32 subPos16 = (s32)cos_lut[subPos >> (32 - COSINE_INTERPOLATION_RESOLUTION_BITS)];
-			return a + ((b - a)*subPos16 >> 16);
+			return (s16)(a + ((u32)((b - a)*subPos16) >> 16));
 		}
 
 		case SPUInterpolation_Linear:
@@ -1076,10 +1118,11 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpola
 			// Linear Interpolation Formula:
 			// sampleI = sampleA * (1 - ratio) + sampleB * ratio
 			// Delay: 1 sample, Maximum gain: 1.0
+			// NOTE: Same weird casts as in cosine interpolation.
 			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
 			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
 			s32 subPos16 = subPos >> (32 - 16);
-			return a + ((b - a)*subPos16 >> 16);
+			return (s16)(a + ((u32)((b - a)*subPos16) >> 16));
 		}
 
 		default:
@@ -1088,21 +1131,21 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpola
 	}
 }
 
-static FORCEINLINE s32 Fetch8BitData(channel_struct *chan, s32 pos)
+static FORCEINLINE s16 Fetch8BitData(channel_struct *chan, s32 pos)
 {
 	if(pos < 0) return 0;
 
 	return read_s8(chan->addr + pos*1) << 8;
 }
 
-static FORCEINLINE s32 Fetch16BitData(channel_struct *chan, s32 pos)
+static FORCEINLINE s16 Fetch16BitData(channel_struct *chan, s32 pos)
 {
 	if(pos < 0) return 0;
 
 	return read16(chan->addr + pos*2);
 }
 
-static FORCEINLINE s32 FetchADPCMData(channel_struct *chan, s32 pos)
+static FORCEINLINE s16 FetchADPCMData(channel_struct *chan, s32 pos)
 {
 	if(pos < 8) return 0;
 
@@ -1122,7 +1165,7 @@ static FORCEINLINE s32 FetchADPCMData(channel_struct *chan, s32 pos)
 	return MinMax(last + diff, -0x8000, 0x7FFF);
 }
 
-static FORCEINLINE s32 FetchPSGData(channel_struct *chan, s32 pos)
+static FORCEINLINE s16 FetchPSGData(channel_struct *chan, s32 pos)
 {
 	if(pos < 0 || chan->num < 8) return 0;
 
@@ -1149,38 +1192,17 @@ static FORCEINLINE s32 FetchPSGData(channel_struct *chan, s32 pos)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static FORCEINLINE void MixL(SPU_struct* SPU, channel_struct *chan, s32 data)
-{
-	data = spumuldiv7(data, chan->vol) >> volume_shift[chan->volumeDiv];
-	SPU->sndbuf[SPU->bufpos<<1] += data;
-}
-
-static FORCEINLINE void MixR(SPU_struct* SPU, channel_struct *chan, s32 data)
-{
-	data = spumuldiv7(data, chan->vol) >> volume_shift[chan->volumeDiv];
-	SPU->sndbuf[(SPU->bufpos<<1)+1] += data;
-}
-
-static FORCEINLINE void MixLR(SPU_struct* SPU, channel_struct *chan, s32 data)
-{
-	data = spumuldiv7(data, chan->vol) >> volume_shift[chan->volumeDiv];
-	SPU->sndbuf[SPU->bufpos<<1] += spumuldiv7(data, 127 - chan->pan);
-	SPU->sndbuf[(SPU->bufpos<<1)+1] += spumuldiv7(data, chan->pan);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channel_struct *chan)
+// Returns false when the channel needs to stop
+template<int FORMAT> static FORCEINLINE bool TestForLoop(SPU_struct *SPU, channel_struct *chan)
 {
 	// Do nothing if we haven't reached the end
-	if(chan->sampcntInt < chan->totlength_shifted) return;
+	if(chan->sampcntInt < chan->totlength_shifted) return true;
 
 	// Kill the channel if we don't repeat
 	if(chan->repeat != 1)
 	{
 		SPU->KeyOff(chan->num);
-		SPU->bufpos = SPU->buflength;
-		return;
+		return false;
 	}
 
 	// ADPCM needs special handling
@@ -1190,7 +1212,7 @@ template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channe
 		// smaller values (0..3 words) are causing hang-ups 
 		// (busy bit remains set infinite, but no sound output occurs).
 		// fix: 7th Dragon (JP) - http://sourceforge.net/p/desmume/bugs/1357/
-		if (chan->totlength < 4) return;
+		if (chan->totlength < 4) return true;
 
 		// Stash loop sample and index
 		if(chan->loop_index == K_ADPCM_LOOPING_RECOVERY_INDEX)
@@ -1208,25 +1230,50 @@ template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channe
 	// Wrap sampcnt
 	u32 step = chan->totlength_shifted - (chan->loopstart << format_shift[FORMAT]);
 	while (chan->sampcntInt >= chan->totlength_shifted) chan->sampcntInt -= step;
+	return true;
 }
 
-template<int CHANNELS> FORCEINLINE static void SPU_Mix(SPU_struct* SPU, channel_struct *chan, s32 data)
-{
-	switch(CHANNELS)
-	{
-		case 0: MixL(SPU, chan, data); break;
-		case 1: MixLR(SPU, chan, data); break;
-		case 2: MixR(SPU, chan, data); break;
-		default: break;
-	}
-	SPU->lastdata = data;
-}
+//////////////////////////////////////////////////////////////////////////////
 
 //WORK
-template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS> 
-	FORCEINLINE static void ____SPU_ChanUpdate(SPU_struct* const SPU, channel_struct* const chan)
+// Outputs {L,R} into chanbuf[]
+template<int CHANNELS, int FORMAT, SPUInterpolationMode INTERPOLATE_MODE> 
+FORCEINLINE static void ____SPU_GenerateChanData(SPU_struct* const SPU, channel_struct* const chan, s16 *chanbuf, int length)
 {
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
+	if (!CHANNELS)
+	{
+		// When we aren't mixing at all, take a much
+		// faster path where we simply update sampcnt
+		s64 pos64  = (chan->sampcntFrac | (s64)chan->sampcntInt<<32);
+		    pos64 += (chan->sampincFrac | (u64)chan->sampincInt<<32) * length;
+		chan->sampcntFrac = (u32)pos64;
+		chan->sampcntInt  = (s32)(pos64 >> 32);
+		if (FORMAT != 3) TestForLoop<FORMAT>(SPU, chan);
+		return;
+	}
+
+	// chan->vol is .7fxp, plus .4fxp for chan->volumeDiv (total .11fxp)
+	// chan->pan is .7fxp
+	// This gives us .18fxp, but we need at most .16fxp, so we shift down.
+	s32 vol_shifted   = chan->vol;
+	    vol_shifted  += (vol_shifted == 127);
+	    vol_shifted <<= (4 - volume_shift[chan->volumeDiv]);
+	s32 vol_left      = 127 - chan->pan;
+	    vol_left     += (vol_left == 127);
+	    vol_left     *= vol_shifted;
+	    vol_left    >>= 2; // .16fxp
+	s32 vol_right     = chan->pan;
+	    vol_right    += (vol_right == 127);
+	    vol_right    *= vol_shifted;
+	    vol_right   >>= 2; // .16fxp
+	
+	// If we are only mixing to one channel, it should be more
+	// performant to clear the buffer once rather than doing a
+	// partial fill with 0s in every other sample
+	if(CHANNELS != ((1<<0)|(1<<1)))
+		memset(chanbuf, 0, length*sizeof(s16)*2);
+
+	while(length--)
 	{
 		// Advance sampcnt one sample at a time. This is
 		// needed to keep pcm16b[] filled for interpolation.
@@ -1247,279 +1294,109 @@ template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS>
 			chan->pcm16b[SPUCHAN_PCM16B_AT(chan->pcm16bOffs)] = data;
 
 			chan->sampcntInt++;
-			if (FORMAT != 3) TestForLoop<FORMAT>(SPU, chan);
+			if (FORMAT != 3)
+			{
+				// If channel stops, fill the rest of the buffer with 0
+				if(!TestForLoop<FORMAT>(SPU, chan))
+				{
+					// length is post-decremented and we haven't
+					// stored a sample yet, so increase length by 1.
+					// Note that if we aren't mixing to both channels,
+					// the buffer was already cleared earlier.
+					if(CHANNELS == ((1<<0)|(1<<1))) memset(chanbuf, 0, (length+1)*sizeof(s16)*2);
+					return;
+				}
+			}
 		}
 
-		if(CHANNELS != -1)
-		{
-			s32 data = Interpolate<INTERPOLATE_MODE>(chan->pcm16b, chan->pcm16bOffs, chan->sampcntFrac);
-			SPU_Mix<CHANNELS>(SPU, chan, data);
-		}
+		s32 sample = Interpolate<INTERPOLATE_MODE>(chan->pcm16b, chan->pcm16bOffs, chan->sampcntFrac);
+		if(CHANNELS & (1<<0)) chanbuf[0] = (s16)(sample * vol_left  >> 16);
+		if(CHANNELS & (1<<1)) chanbuf[1] = (s16)(sample * vol_right >> 16);
+		chanbuf += 2;
 	}
 }
 
 template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE> 
-	FORCEINLINE static void ___SPU_ChanUpdate(const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
+FORCEINLINE static void ___SPU_GenerateChanData(bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan, s16 *chanbuf, int length)
 {
-	if(!actuallyMix)
-		____SPU_ChanUpdate<FORMAT,INTERPOLATE_MODE,-1>(SPU,chan);
-	else if (chan->pan == 0)
-		____SPU_ChanUpdate<FORMAT,INTERPOLATE_MODE,0>(SPU,chan);
-	else if (chan->pan == 127)
-		____SPU_ChanUpdate<FORMAT,INTERPOLATE_MODE,2>(SPU,chan);
-	else
-		____SPU_ChanUpdate<FORMAT,INTERPOLATE_MODE,1>(SPU,chan);
+	if(!actuallyMix)          ____SPU_GenerateChanData<(0<<0)|(0<<1),FORMAT,INTERPOLATE_MODE>(SPU, chan, chanbuf, length);
+	else if(chan->pan == 0)   ____SPU_GenerateChanData<(1<<0)|(0<<1),FORMAT,INTERPOLATE_MODE>(SPU, chan, chanbuf, length);
+	else if(chan->pan == 127) ____SPU_GenerateChanData<(0<<0)|(1<<1),FORMAT,INTERPOLATE_MODE>(SPU, chan, chanbuf, length);
+	else                      ____SPU_GenerateChanData<(1<<0)|(1<<1),FORMAT,INTERPOLATE_MODE>(SPU, chan, chanbuf, length);
 }
 
 template<SPUInterpolationMode INTERPOLATE_MODE> 
-	FORCEINLINE static void __SPU_ChanUpdate(const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
+FORCEINLINE static void __SPU_GenerateChanData(bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan, s16 *chanbuf, int length)
 {
 	// NOTE: PSG doesn't use interpolation, or it would try to
 	// interpolate between the raw sample points (very bad)
 	switch(chan->format)
 	{
-		case 0: ___SPU_ChanUpdate<0,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
-		case 1: ___SPU_ChanUpdate<1,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
-		case 2: ___SPU_ChanUpdate<2,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
-		case 3: ___SPU_ChanUpdate<3,SPUInterpolation_None>(actuallyMix, SPU, chan); break;
+		case 0: ___SPU_GenerateChanData<0,INTERPOLATE_MODE>(actuallyMix, SPU, chan, chanbuf, length); break;
+		case 1: ___SPU_GenerateChanData<1,INTERPOLATE_MODE>(actuallyMix, SPU, chan, chanbuf, length); break;
+		case 2: ___SPU_GenerateChanData<2,INTERPOLATE_MODE>(actuallyMix, SPU, chan, chanbuf, length); break;
+		case 3: ___SPU_GenerateChanData<3,SPUInterpolation_None>(actuallyMix, SPU, chan, chanbuf, length); break;
 		default: assert(false);
 	}
 }
 
-FORCEINLINE static void _SPU_ChanUpdate(const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
+FORCEINLINE static void _SPU_GenerateChanData(bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan, s16 *chanbuf, int length)
 {
 	switch(CommonSettings.spuInterpolationMode)
 	{
-	case SPUInterpolation_None:       __SPU_ChanUpdate<SPUInterpolation_None>(actuallyMix, SPU, chan); break;
-	case SPUInterpolation_Linear:     __SPU_ChanUpdate<SPUInterpolation_Linear>(actuallyMix, SPU, chan); break;
-	case SPUInterpolation_Cosine:     __SPU_ChanUpdate<SPUInterpolation_Cosine>(actuallyMix, SPU, chan); break;
-	case SPUInterpolation_CatmullRom: __SPU_ChanUpdate<SPUInterpolation_CatmullRom>(actuallyMix, SPU, chan); break;
+	case SPUInterpolation_None:       __SPU_GenerateChanData<SPUInterpolation_None>(actuallyMix, SPU, chan, chanbuf, length); break;
+	case SPUInterpolation_Linear:     __SPU_GenerateChanData<SPUInterpolation_Linear>(actuallyMix, SPU, chan, chanbuf, length); break;
+	case SPUInterpolation_Cosine:     __SPU_GenerateChanData<SPUInterpolation_Cosine>(actuallyMix, SPU, chan, chanbuf, length); break;
+	case SPUInterpolation_CatmullRom: __SPU_GenerateChanData<SPUInterpolation_CatmullRom>(actuallyMix, SPU, chan, chanbuf, length); break;
 	default: assert(false);
 	}
 }
 
-//ENTERNEW
-static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
+template<int CAP_BITS>
+FORCEINLINE static void _SPU_WriteCapture(SPU_struct::REGS::CAP& cap, const channel_struct& srcChan, const s16 *srcBuf, int length)
 {
-	//the advanced spu function correctly handles all sound control mixing options, as well as capture
-	//this code is not entirely optimal, as it relies on sort of manhandling the core mixing functions
-	//in order to get the results it needs.
-
-	//THIS IS MAX HACKS!!!!
-	//AND NEEDS TO BE REWRITTEN ALONG WITH THE DEEPEST PARTS OF THE SPU
-	//ONCE WE KNOW THAT IT WORKS
-	
-	//BIAS gets ignored since our spu is still not bit perfect,
-	//and it doesnt matter for purposes of capture
-
-	//-----------DEBUG CODE
-	bool skipcap = false;
-	//-----------------
-
-	s32 samp0[2] = {0,0};
-	
-	//believe it or not, we are going to do this one sample at a time.
-	//like i said, it is slower.
-	for (int samp = 0; samp < length; samp++)
+	u32 capLen_shifted = cap.len * (32 / CAP_BITS);
+	SPU_struct::REGS::CAP::Runtime& runtime = cap.runtime;
+	for(int i=0; i < length; i++)
 	{
-		SPU->sndbuf[0] = 0;
-		SPU->sndbuf[1] = 0;
-		SPU->buflength = 1;
-
-		s32 capmix[2] = {0,0};
-		s32 mix[2] = {0,0};
-		s32 chanout[16];
-		s32 submix[32];
-
-		//generate each channel, and helpfully mix it at the same time
-		for (int i = 0; i < 16; i++)
+		u32 nSamplesToProcess = srcChan.sampincInt + AddAndReturnCarry(&runtime.sampcntFrac, srcChan.sampincFrac);
+		while(nSamplesToProcess--)
 		{
-			channel_struct *chan = &SPU->channels[i];
+			s16 *data = &runtime.pcm16b[SPUCAPTURE_PCM16B_AT(runtime.pcm16bOffs)];
 
-			if (chan->status == CHANSTAT_PLAY)
+			if(runtime.sampcntInt >= 0)
 			{
-				SPU->bufpos = 0;
-
-				bool bypass = false;
-				if (i==1 && SPU->regs.ctl_ch1bypass) bypass=true;
-				if (i==3 && SPU->regs.ctl_ch3bypass) bypass=true;
-
-
-				//output to mixer unless we are bypassed.
-				//dont output to mixer if the user muted us
-				bool outputToMix = true;
-				if (CommonSettings.spu_muteChannels[i]) outputToMix = false;
-				if (bypass) outputToMix = false;
-				bool outputToCap = outputToMix;
-				if (CommonSettings.spu_captureMuted && !bypass) outputToCap = true;
-
-				//channels 1 and 3 should probably always generate their audio
-				//internally at least, just in case they get used by the spu output
-				bool domix = outputToCap || outputToMix || i==1 || i==3;
-
-				//clear the output buffer since this is where _SPU_ChanUpdate wants to accumulate things
-				SPU->sndbuf[0] = SPU->sndbuf[1] = 0;
-
-				//get channel's next output sample.
-				_SPU_ChanUpdate(domix, SPU, chan);
-				chanout[i] = SPU->lastdata >> volume_shift[chan->volumeDiv];
-
-				//save the panned results
-				submix[i*2] = SPU->sndbuf[0];
-				submix[i*2+1] = SPU->sndbuf[1];
-
-				//send sample to our capture mix
-				if (outputToCap)
+				if (CAP_BITS == 8)
 				{
-					capmix[0] += submix[i*2];
-					capmix[1] += submix[i*2+1];
+					_MMU_write08<ARMCPU_ARM7,MMU_AT_DMA>(runtime.curdad, (u8)(*data >> 8));
+					runtime.curdad += 1;
+				}
+				else
+				{
+					_MMU_write16<ARMCPU_ARM7,MMU_AT_DMA>(runtime.curdad, (u16)(*data));
+					runtime.curdad += 2;
 				}
 
-				//send sample to our main mixer
-				if (outputToMix)
+				if(runtime.curdad >= runtime.maxdad)
 				{
-					mix[0] += submix[i*2];
-					mix[1] += submix[i*2+1];
+					runtime.curdad = cap.dad;
+					runtime.sampcntInt -= capLen_shifted;
 				}
 			}
-			else 
-			{
-				chanout[i] = 0;
-				submix[i*2] = 0;
-				submix[i*2+1] = 0;
-			}
-		} //foreach channel
 
-		s32 mixout[2] = {mix[0],mix[1]};
-		s32 capmixout[2] = {capmix[0],capmix[1]};
-		s32 sndout[2];
-		s32 capout[2];
-
-		//create SPU output
-		switch (SPU->regs.ctl_left)
-		{
-			case SPU_struct::REGS::LOM_LEFT_MIXER: sndout[0] = mixout[0]; break;
-			case SPU_struct::REGS::LOM_CH1: sndout[0] = submix[1*2+0]; break;
-			case SPU_struct::REGS::LOM_CH3: sndout[0] = submix[3*2+0]; break;
-			case SPU_struct::REGS::LOM_CH1_PLUS_CH3: sndout[0] = submix[1*2+0] + submix[3*2+0]; break;
-			default: break;
+			// srcBuf[] stores two samples per time unit
+			// Either {Ch0[+Ch1],Ch2[+Ch3]}, or {LMix,RMix}
+			*data = srcBuf[i*2];
+			runtime.pcm16bOffs++;
+			runtime.sampcntInt++;
 		}
-		switch (SPU->regs.ctl_right)
-		{
-			case SPU_struct::REGS::ROM_RIGHT_MIXER: sndout[1] = mixout[1]; break;
-			case SPU_struct::REGS::ROM_CH1: sndout[1] = submix[1*2+1]; break;
-			case SPU_struct::REGS::ROM_CH3: sndout[1] = submix[3*2+1]; break;
-			case SPU_struct::REGS::ROM_CH1_PLUS_CH3: sndout[1] = submix[1*2+1] + submix[3*2+1]; break;
-			default: break;
-		}
-
-
-		//generate capture output ("capture bugs" from gbatek are not emulated)
-		if (SPU->regs.cap[0].source == 0)
-			capout[0] = capmixout[0]; //cap0 = L-mix
-		else if (SPU->regs.cap[0].add)
-			capout[0] = chanout[0] + chanout[1]; //cap0 = ch0+ch1
-		else capout[0] = chanout[0]; //cap0 = ch0
-
-		if (SPU->regs.cap[1].source == 0)
-			capout[1] = capmixout[1]; //cap1 = R-mix
-		else if (SPU->regs.cap[1].add)
-			capout[1] = chanout[2] + chanout[3]; //cap1 = ch2+ch3
-		else capout[1] = chanout[2]; //cap1 = ch2
-
-		capout[0] = MinMax(capout[0],-0x8000,0x7FFF);
-		capout[1] = MinMax(capout[1],-0x8000,0x7FFF);
-
-		//write the output sample where it is supposed to go
-		if (samp == 0)
-		{
-			samp0[0] = sndout[0];
-			samp0[1] = sndout[1];
-		}
-		else
-		{
-			SPU->sndbuf[samp*2+0] = sndout[0];
-			SPU->sndbuf[samp*2+1] = sndout[1];
-		}
-
-		for (int capchan = 0; capchan < 2; capchan++)
-		{
-			SPU_struct::REGS::CAP& cap = SPU->regs.cap[capchan];
-			channel_struct& srcChan = SPU->channels[1 + 2 * capchan];
-			if (SPU->regs.cap[capchan].runtime.running)
-			{
-				u32 nSamplesToProcess = srcChan.sampincInt + AddAndReturnCarry(&cap.runtime.sampcntFrac, srcChan.sampincFrac);
-				cap.runtime.sampcntInt += nSamplesToProcess;
-				while(nSamplesToProcess--)
-				{
-					//so, this is a little strange. why go through a fifo?
-					//it seems that some games will set up a reverb effect by capturing
-					//to the nearly same address as playback, but ahead by a couple.
-					//So, playback will always end up being what was captured a couple of samples ago.
-					//This system counts on playback always having read ahead 16 samples.
-					//In that case, playback will end up being what was processed at one entire buffer length ago,
-					//since the 16 samples would have read ahead before they got captured over
-
-					//It's actually the source channels which should have a fifo, but we are
-					//not going to take the hit in speed and complexity. Save it for a future rewrite.
-					//Instead, what we do here is delay the capture by 16 samples to create a similar effect.
-					//Subjectively, it seems to be working.
-
-					//Don't do anything until the fifo is filled, so as to delay it
-					if (cap.runtime.fifo.size < 16)
-					{
-						cap.runtime.fifo.enqueue(capout[capchan]);
-						continue;
-					}
-
-					//(actually capture sample from fifo instead of most recently generated)
-					u32 multiplier;
-					s32 sample = cap.runtime.fifo.dequeue();
-					cap.runtime.fifo.enqueue(capout[capchan]);
-
-					//static FILE* fp = NULL;
-					//if(!fp) fp = fopen("d:\\capout.raw","wb");
-					//fwrite(&sample,2,1,fp);
-					
-					if (cap.bits8)
-					{
-						s8 sample8 = sample >> 8;
-						if (skipcap) _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,0);
-						else _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,sample8);
-						cap.runtime.curdad++;
-						multiplier = 4;
-					}
-					else
-					{
-						s16 sample16 = sample;
-						if (skipcap) _MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,0);
-						else _MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,sample16);
-						cap.runtime.curdad+=2;
-						multiplier = 2;
-					}
-
-					if (cap.runtime.curdad >= cap.runtime.maxdad)
-					{
-						cap.runtime.curdad = cap.dad;
-						cap.runtime.sampcntInt -= cap.len*multiplier;
-					}
-				} //sampinc loop
-			} //if capchan running
-		} //capchan loop
-	} //main sample loop
-
-	SPU->sndbuf[0] = samp0[0];
-	SPU->sndbuf[1] = samp0[1];
+	}
 }
 
 //ENTER
 static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 {
-	if (actuallyMix)
-	{
-		memset(SPU->sndbuf, 0, length*4*2);
-		memset(SPU->outbuf, 0, length*2*2);
-	}
+	if(actuallyMix) memset(SPU->outbuf, 0, length*sizeof(s16)*2);
 
 	//we used to use master enable here, and do nothing if audio is disabled.
 	//now, master enable is emulated better..
@@ -1527,91 +1404,252 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 	//is this still a good idea? zeroing the capture buffers is important...
 	if(!SPU->regs.masteren) return;
 
-	bool advanced = CommonSettings.spu_advanced;
+	// We used to branch here into advanced/non-advanced mode here.
+	// Hopefully, the current code is good enough to avoid the need now...
 
-	//branch here so that slow computers don't have to take the advanced (slower) codepath.
-	//it remainds to be seen exactly how much slower it is
-	//if it isnt much slower then we should refactor everything to be simpler, once it is working
-	if (advanced && SPU == SPU_core)
-	{
-		SPU_MixAudio_Advanced(actuallyMix, SPU, length);
-	}
-	else
-	{
-		//non-advanced mode
-		for (int i = 0; i < 16; i++)
-		{
-			channel_struct *chan = &SPU->channels[i];
+	/************************************************/
 
-			if (chan->status != CHANSTAT_PLAY)
-				continue;
+	// Overall flow:
+	//  For each channel:
+	//    Generate L/R sample data into chanbuf[]
+	//    If not muted or bypassed:
+	//      Mix chanbuf[] into mixbuf[]
+	//    If capturing from channels:
+	//      Copy/mix chanbuf[] into capbuf[]
+	//    If not playing from mixer:
+	//      Copy/mix chanbuf[] into outbuf[]
+	//  If capturing from channels:
+	//    Output capbuf[] to capture units
+	//  If playing from mixer:
+	//    Output mixbuf[] to outbuf[]
+	//  If capturing from mixer:
+	//    Output mixbuf[] to capture units
 
-			SPU->bufpos = 0;
-			SPU->buflength = length;
-
-			// Mix audio
-			_SPU_ChanUpdate(!CommonSettings.spu_muteChannels[i] && actuallyMix, SPU, chan);
-		}
-
-		//zero out capture buffers - effectively transform no-advanced-spu-emulation to capturing-zeroes
-		//this is needed so when the option is changed (or a state with a different setting is loaded)
-		//this code is bulkier and slower than it might otherwise be to reduce the chance of bugs 
-		//IDEALLY the non-advanced codepath would be removed (while the advanced codepath was optimized and improved)
-		//and this code would disappear, to be replaced with code more capable of emitting zeroes at the opportune time.
-		for (int capchan = 0; capchan < 2; capchan++)
-		{
-			SPU_struct::REGS::CAP& cap = SPU->regs.cap[capchan];
-			channel_struct& srcChan = SPU->channels[1 + 2 * capchan];
-			if (cap.runtime.running)
-			{
-				for (int samp = 0; samp < length; samp++)
-				{
-					u32 nSamplesToProcess = srcChan.sampincInt + AddAndReturnCarry(&cap.runtime.sampcntFrac, srcChan.sampincFrac);
-					cap.runtime.sampcntInt += nSamplesToProcess;
-					while (nSamplesToProcess--)
-					{
-						if (cap.bits8)
-						{
-							_MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,0);
-							cap.runtime.curdad++;
-						}
-						else
-						{
-							_MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,0);
-							cap.runtime.curdad+=2;
-						}
-
-						if (cap.runtime.curdad >= cap.runtime.maxdad)
-						{
-							cap.runtime.curdad = cap.dad;
-							cap.runtime.sampcntInt -= cap.len*(cap.bits8?4:2);
-						}
-					}
-				}
-			}
-		}
-	} //non-advanced branch
+	// PONDER: Can we put mixbuf[],capbuf[],chanbuf[] on the stack?
+	s32 *mixbuf  = SPU->mixbuf;
+	s16 *outbuf  = SPU->outbuf;
+	s16 *capbuf  = SPU->capbuf;
+	s16 *chanbuf = SPU->chanbuf;
+	s32 masterVol = SPU->regs.mastervol; masterVol += (masterVol == 127);
 
 	//we used to bail out if speakers were disabled.
 	//this is technically wrong. sound may still be captured, or something.
 	//in all likelihood, any game doing this probably master disabled the SPU also
 	//so, optimization of this case is probably not necessary.
 	//later, we'll just silence the output
-	bool speakers = T1ReadWord(MMU.ARM7_REG, 0x304) & 0x01;
+	bool speakersOn = T1ReadWord(MMU.ARM7_REG, 0x304) & 0x01;
 
-	u8 vol = SPU->regs.mastervol;
+	// Translate the capture sources into something friendlier
+	enum
+	{
+		CAPSRC_NONE,
+		CAPSRC_MIXER,
+		CAPSRC_CHAN,
+		CAPSRC_MIXED,
+	};
+	u8 cap0Src = CAPSRC_NONE;
+	u8 cap1Src = CAPSRC_NONE;
+	if(SPU->regs.cap[0].runtime.running)
+	{
+		if(SPU->regs.cap[0].source == 0) cap0Src = CAPSRC_MIXER;
+		else if(SPU->regs.cap[0].add) cap0Src = CAPSRC_MIXED;
+		else cap0Src = CAPSRC_CHAN;
+	}
+	if(SPU->regs.cap[1].runtime.running)
+	{
+		if(SPU->regs.cap[1].source == 0) cap1Src = CAPSRC_MIXER;
+		else if(SPU->regs.cap[1].add) cap1Src = CAPSRC_MIXED;
+		else cap1Src = CAPSRC_CHAN;
+	}
 
-	// convert from 32-bit->16-bit
-	if (actuallyMix && speakers)
-		for (int i = 0; i < length*2; i++)
+	// Translate the mixer and capture states into a bitarray
+	// This should improve the code generation so that
+	// it doesn't have to reference a lot of memory and
+	// can instead just bitwise-test as needed.
+	//  -bypassMixer controls whether chanbuf[] should NOT be added to mixbuf[]
+	//  -captureFlags controls the following:
+	//    Chan == 0: Store chanbuf[] in cap[0]'s capbuf[] (Src == Chan0 or Chan0+Chan1)
+	//    Chan == 1: Add chanbuf[] to cap[0]'s capbuf[]   (Src == Chan0+Chan1)
+	//    Chan == 2: Store chanbuf[] in cap[1]'s capbuf   (Src == Chan2 or Chan2+Chan3)
+	//    Chan == 3: Add chanbuf[] to cap[1]'s capbuf[]   (Src == Chan2+Chan3)
+	u8 bypassMixer  = 0;
+	u8 captureFlags = 0;
+	u8 outbufSetL   = 0;
+	u8 outbufSetR   = 0;
+	u8 outbufMixL   = 0;
+	u8 outbufMixR   = 0;
+	if(SPU->regs.ctl_ch1bypass) bypassMixer |= (1 << 1);
+	if(SPU->regs.ctl_ch3bypass) bypassMixer |= (1 << 3);
+	if(cap0Src == CAPSRC_CHAN || cap0Src == CAPSRC_MIXED) captureFlags |= (1 << 0);
+	if(                          cap0Src == CAPSRC_MIXED) captureFlags |= (1 << 1);
+	if(cap1Src == CAPSRC_CHAN || cap1Src == CAPSRC_MIXED) captureFlags |= (1 << 2);
+	if(                          cap1Src == CAPSRC_MIXED) captureFlags |= (1 << 3);
+	switch(SPU->regs.ctl_left)
+	{
+		case SPU_struct::REGS::LOM_CH1:
+			outbufSetL = 1 << 1;
+			break;
+		case SPU_struct::REGS::LOM_CH3:
+			outbufSetL = 1 << 3;
+			break;
+		case SPU_struct::REGS::LOM_CH1_PLUS_CH3:
+			outbufSetL = 1 << 1;
+			outbufMixL = 1 << 3;
+			break;
+	}
+	switch(SPU->regs.ctl_right)
+	{
+		case SPU_struct::REGS::ROM_CH1:
+			outbufSetR = 1 << 1;
+			break;
+		case SPU_struct::REGS::ROM_CH3:
+			outbufSetR = 1 << 3;
+			break;
+		case SPU_struct::REGS::ROM_CH1_PLUS_CH3:
+			outbufSetR = 1 << 1;
+			outbufMixR = 1 << 3;
+			break;
+	}
+
+	// We can only process at most SPUCAPTURE_FIFO_SIZE samples
+	// per mixing batch, in case the capture buffers wrap around.
+	// Technically, we could actually check if this is needed at
+	// all, but this should work well enough as is.
+	while(length)
+	{
+		int thisLength = MIN(length, SPUCAPTURE_FIFO_SIZE);
+		length -= thisLength;
+
+		// Giving memset a constant size should hopefully make things better
+		memset(mixbuf, 0, SPUCAPTURE_FIFO_SIZE*sizeof(s32)*2);
+		memset(capbuf, 0, SPUCAPTURE_FIFO_SIZE*sizeof(s16)*2);
+
+		// Process each channel in turn
+		for (int i=0; i < 16; i++)
 		{
-			// Apply Master Volume
-			SPU->sndbuf[i] = spumuldiv7(SPU->sndbuf[i], vol);
-			s16 outsample = MinMax(SPU->sndbuf[i],-0x8000,0x7FFF);
-			SPU->outbuf[i] = outsample;
+			channel_struct *chan = &SPU->channels[i];
+			if (chan->status != CHANSTAT_PLAY) continue;
+			u8 chanBit = (u8)(1 << i);
+		
+			// Generate data into chanbuf[]
+			// NOTE: If actuallyMix==false, no data is generated
+			// and the channels are simply updated, nothing more.
+			_SPU_GenerateChanData(actuallyMix, SPU, chan, chanbuf, thisLength);
+			if(!actuallyMix) continue;
+
+			// Mix into mixbuf[] only when not muted or bypassed
+			if(!CommonSettings.spu_muteChannels[i] && (bypassMixer & chanBit) == 0)
+				for(int n=0; n<thisLength*2; n++) mixbuf[n] += chanbuf[n];
+
+			// Generate outputs for channel capture
+			// Yes, we have to undo the panning here, but that's fine.
+			// Incidentally, this emulates the ch(a)+ch(b) overflow bug
+			if((captureFlags & chanBit) != 0)
+			{
+				switch(i)
+				{
+				case 0:
+					for(int n=0; n < thisLength; n++)
+						capbuf[n*2+0]  = chanbuf[n*2+0] + chanbuf[n*2+1];
+					break;
+				case 1:
+					for(int n=0; n < thisLength; n++)
+						capbuf[n*2+0] += chanbuf[n*2+0] + chanbuf[n*2+1];
+					break;
+				case 2:
+					for(int n=0; n < thisLength; n++)
+						capbuf[n*2+1]  = chanbuf[n*2+0] + chanbuf[n*2+1];
+					break;
+				case 3:
+					for(int n=0; n < thisLength; n++)
+						capbuf[n*2+1] += chanbuf[n*2+0] + chanbuf[n*2+1];
+					break;
+				}
+			}
+
+			// Set outbuf[] from chanbuf[] when L/R source is not the mixer
+			// Note that Ch1+Ch3 mode clips as intended; only capture has overflow bugs
+			if(!speakersOn) continue;
+			if((outbufSetL & chanBit) != 0)
+			{
+				for(int n=0; n < thisLength; n++)
+					outbuf[n*2+0] = chanbuf[n*2+0] * masterVol >> 7;
+				continue;
+			}
+			if((outbufSetR & chanBit) != 0)
+			{
+				for(int n=0; n < thisLength; n++)
+					outbuf[n*2+1] = chanbuf[n*2+1] * masterVol >> 7;
+				continue;
+			}
+			if((outbufMixL & chanBit) != 0)
+			{
+				for(int n=0; n < thisLength; n++)
+					outbuf[n*2+0] = MinMax(outbuf[n*2+0] + (chanbuf[n*2+0] * masterVol >> 7), -0x8000, +0x7FFF);
+				continue;
+			}
+			if((outbufMixR & chanBit) != 0)
+			{
+				for(int n=0; n < thisLength; n++)
+					outbuf[n*2+1] = MinMax(outbuf[n*2+1] + (chanbuf[n*2+1] * masterVol >> 7), -0x8000, +0x7FFF);
+				continue;
+			}
 		}
 
+		// Generate final channel capture
+		if(cap0Src == CAPSRC_CHAN || cap0Src == CAPSRC_MIXED)
+		{
+			if(SPU->regs.cap[0].bits8)
+				_SPU_WriteCapture<8> (SPU->regs.cap[0], SPU->channels[1], capbuf, thisLength);
+			else
+				_SPU_WriteCapture<16>(SPU->regs.cap[0], SPU->channels[1], capbuf, thisLength);
+		}
+		if(cap1Src == CAPSRC_CHAN || cap1Src == CAPSRC_MIXED)
+		{
+			if(SPU->regs.cap[1].bits8)
+				_SPU_WriteCapture<8> (SPU->regs.cap[1], SPU->channels[3], capbuf+1, thisLength);
+			else
+				_SPU_WriteCapture<16>(SPU->regs.cap[1], SPU->channels[3], capbuf+1, thisLength);
+		}
 
+		// Generate mixer output to outbuf[]
+		if(actuallyMix && speakersOn)
+		{
+			if(SPU->regs.ctl_left == SPU_struct::REGS::LOM_LEFT_MIXER)
+			{
+				for(int i=0; i < thisLength; i++)
+					outbuf[i*2+0] = MinMax(mixbuf[i*2+0] * masterVol >> 7, -0x8000, +0x7FFF);
+			}
+			if(SPU->regs.ctl_right == SPU_struct::REGS::ROM_RIGHT_MIXER)
+			{
+				for(int i=0; i < thisLength; i++)
+					outbuf[i*2+1] = MinMax(mixbuf[i*2+1] * masterVol >> 7, -0x8000, +0x7FFF);
+			}
+		}
+
+		// Generate final mixer capture
+		if(cap0Src == CAPSRC_MIXER)
+		{
+			for(int i=0; i < thisLength; i++)
+				capbuf[i*2+0] = MinMax(mixbuf[i*2+0], -0x8000, +0x7FFF);
+			if(SPU->regs.cap[0].bits8)
+				_SPU_WriteCapture<8> (SPU->regs.cap[0], SPU->channels[1], capbuf, thisLength);
+			else
+				_SPU_WriteCapture<16>(SPU->regs.cap[0], SPU->channels[1], capbuf, thisLength);
+		}
+		if(cap1Src == CAPSRC_MIXER)
+		{
+			for(int i=0; i < thisLength; i++)
+				capbuf[i*2+1] = MinMax(mixbuf[i*2+1], -0x8000, +0x7FFF);
+			if(SPU->regs.cap[1].bits8)
+				_SPU_WriteCapture<8> (SPU->regs.cap[1], SPU->channels[3], capbuf+1, thisLength);
+			else
+				_SPU_WriteCapture<16>(SPU->regs.cap[1], SPU->channels[3], capbuf+1, thisLength);
+		}
+
+		// Advance buffer
+		outbuf += thisLength*2;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1625,15 +1663,13 @@ void SPU_Emulate_core()
 	bool needToMix = true;
 	SoundInterface_struct *soundProcessor = SPU_SoundCore();
 	
-	_samples += samples_per_hline;
-	spu_core_samples = (int)(_samples);
-	_samples -= spu_core_samples;
+	spu_core_samples = (samples_per_core_update >> 32) + AddAndReturnCarry(&_spucore_samplesFrac, (u32)(samples_per_core_update));
 	
 	// We don't need to mix audio for Dual Synch/Asynch mode since we do this
 	// later in SPU_Emulate_user(). Disable mixing here to speed up processing.
 	// However, recording still needs to mix the audio, so make sure we're also
 	// not recording before we disable mixing.
-	if ( _currentSynchMode == ESynchMode_DualSynchAsynch &&
+	if ( (_currentSynchMode == ESynchMode_DualSynchAsynch || soundProcessor == NULL || soundProcessor == &SNDDummy) &&
 		!(driver->AVI_IsRecording() || driver->WAV_IsRecording()) )
 	{
 		needToMix = false;
@@ -1914,7 +1950,7 @@ void WAV_WavSoundUpdate(void* soundData, int numSamples, WAVMode mode)
 void spu_savestate(EMUFILE &os)
 {
 	//version
-	os.write_32LE(7);
+	os.write_32LE(8);
 
 	SPU_struct *spu = SPU_core;
 
@@ -1945,7 +1981,7 @@ void spu_savestate(EMUFILE &os)
 		os.write_u8(chan.keyon);
 	}
 
-	os.write_doubleLE(_samples);
+	os.write_32LE(_spucore_samplesFrac);
 
 	os.write_u8(spu->regs.mastervol);
 	os.write_u8(spu->regs.ctl_left);
@@ -1972,7 +2008,11 @@ void spu_savestate(EMUFILE &os)
 	}
 
 	for (int i = 0; i < 2; i++)
-		spu->regs.cap[i].runtime.fifo.save(os);
+	{
+		os.write_u8(spu->regs.cap[i].runtime.pcm16bOffs);
+		for (int n = 0; n < SPUCAPTURE_FIFO_SIZE; n++)
+			os.write_16LE(spu->regs.cap[i].runtime.pcm16b[n]);
+	}
 }
 
 bool spu_loadstate(EMUFILE &is, int size)
@@ -2057,9 +2097,14 @@ bool spu_loadstate(EMUFILE &is, int size)
 		chan.loop_index = K_ADPCM_LOOPING_RECOVERY_INDEX;
 	}
 
-	if (version >= 2)
+	if (version >= 8)
 	{
-		is.read_doubleLE(_samples);
+		is.read_32LE(_spucore_samplesFrac);
+	}
+	else if (version >= 2)
+	{
+		double temp; is.read_doubleLE(temp);
+		_spucore_samplesFrac = (u32)(temp * (1ull<<32));
 	}
 
 	if (version >= 4)
@@ -2097,15 +2142,43 @@ bool spu_loadstate(EMUFILE &is, int size)
 				u64 temp2;
 				is.read_doubleLE(temp); temp2 = (u64)(temp * (1ull << 32));
 				spu->regs.cap[i].runtime.sampcntFrac = (u32)temp2;
-				spu->regs.cap[i].runtime.sampcntInt  = (u32)(temp2 >> 32);
+				spu->regs.cap[i].runtime.sampcntInt  = (s32)(temp2 >> 32);
+			}
+			if(version <= 7)
+			{
+				// Before, sampcnt incremented "as expected" and the FIFO
+				// delay was implemented within the SndFifo construct.
+				// Now, though, we create the delay by setting sampcnt to
+				// -FIFO_SIZE on starting capture, so account for this here.
+				spu->regs.cap[i].runtime.sampcntInt -= SPUCAPTURE_FIFO_SIZE;
 			}
 		}
 	}
 
-	if (version >= 6)
-		for (int i=0;i<2;i++) spu->regs.cap[i].runtime.fifo.load(is);
+	if (version >= 8)
+		for (int i=0;i<2;i++)
+		{
+			is.read_u8(spu->regs.cap[i].runtime.pcm16bOffs);
+			for (int n = 0; n < SPUCAPTURE_FIFO_SIZE; n++)
+				is.read_16LE(spu->regs.cap[i].runtime.pcm16b[n]);
+		}
+	else if (version >= 6)
+		for (int i=0;i<2;i++)
+		{
+			// Setting pcm16bOffs to -fifo.size ensures that we always
+			// fill at the correct offset relative to the FIFO queue size
+			SPUFifo fifo;
+			fifo.load(is);
+			spu->regs.cap[i].runtime.pcm16bOffs = (u8)(-fifo.size);
+			for (int n = 0; n < 16; n++)
+				spu->regs.cap[i].runtime.pcm16b[n] = fifo.dequeue();
+		}
 	else
-		for (int i=0;i<2;i++) spu->regs.cap[i].runtime.fifo.reset();
+		for (int i=0;i<2;i++)
+		{
+			for (int n = 0; n < 16; n++)
+				spu->regs.cap[i].runtime.pcm16b[n] = 0;
+		}
 
 	//older versions didnt store a mastervol; 
 	//we must reload this or else games will start silent

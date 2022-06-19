@@ -531,7 +531,6 @@ extern struct TCommonSettings
 		, manualBackupType(0)
 		, autodetectBackupMethod(0)
 		, spu_captureMuted(false)
-		, spu_advanced(true)
 		, StylusPressure(50)
 		, ConsoleType(NDS_CONSOLE_TYPE_FAT)
 		, backupSave(false)
@@ -654,7 +653,6 @@ extern struct TCommonSettings
 
 	bool spu_muteChannels[16];
 	bool spu_captureMuted;
-	bool spu_advanced;
 
 	struct _ShowGpu {
 		_ShowGpu() : main(true), sub(true) {}
