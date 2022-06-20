@@ -300,10 +300,17 @@ static void arm_enable_runfast_mode(void)
    static const unsigned y = 0x03000000;
    int r;
    __asm__ volatile(
+#if defined(__aarch64__) || defined(_M_ARM64)
+         "fmrx	%w0, fpscr   \n\t" /* w0 = FPSCR */
+         "and	%w0, %w0, %w1  \n\t" /* w0 = w0 & 0x04086060 */
+         "orr	%w0, %w0, %w2  \n\t" /* w0 = w0 | 0x03000000 */
+         "fmxr	fpscr, %w0   \n\t" /* FPSCR = w0 */
+#else
          "fmrx	%0, fpscr   \n\t" /* r0 = FPSCR */
          "and	%0, %0, %1  \n\t" /* r0 = r0 & 0x04086060 */
          "orr	%0, %0, %2  \n\t" /* r0 = r0 | 0x03000000 */
          "fmxr	fpscr, %0   \n\t" /* FPSCR = r0 */
+#endif
          : "=r"(r)
          : "r"(x), "r"(y)
         );
@@ -311,13 +318,13 @@ static void arm_enable_runfast_mode(void)
 #endif
 
 #if defined(__linux__) && !defined(CPU_X86)
-#if __ARM_ARCH
+#if defined(__ARM_ARCH) && (__ARM_ARCH > 0)
 #include <sys/auxv.h>
 #endif
 
 static unsigned char check_arm_cpu_feature(const char* feature)
 {
-#if __ARM_ARCH < 8
+#if defined(__ARM_ARCH) && (__ARM_ARCH < 8)
    uint64_t hwcap = getauxval(AT_HWCAP);
    if (!strcmp(feature, "neon"))
       return (hwcap & HWCAP_ARM_NEON) != 0;
@@ -326,7 +333,7 @@ static unsigned char check_arm_cpu_feature(const char* feature)
    if (!strcmp(feature, "vfpv4"))
       return (hwcap & HWCAP_ARM_VFPv4) != 0;
    return 0;
-#elif __ARM_ARCH == 8
+#elif defined(__ARM_ARCH) && (__ARM_ARCH == 8)
    uint64_t hwcap = getauxval(AT_HWCAP);
    if (!strcmp(feature, "asimd"))
       return (hwcap & HWCAP_ASIMD) != 0;
