@@ -19,7 +19,7 @@
 #include <time.h>
 
 #define TIXML_USE_STL
-#include "tinyxml/tinyxml.h"
+#include <tinyxml.h>
 
 #include "advanscene.h"
 #include "../common.h"

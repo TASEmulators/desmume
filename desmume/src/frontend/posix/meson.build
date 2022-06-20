@@ -15,6 +15,7 @@ dep_sdl = dependency('sdl2')
 dep_pcap = dependency('pcap')
 dep_zlib = dependency('zlib')
 dep_threads = dependency('threads')
+dep_tinyxml = dependency('tinyxml')
 dep_gl = dependency('gl', required: false)
 dep_openal = dependency('openal', required: get_option('openal'))
 dep_alsa = dependency('alsa', required: false)
@@ -28,7 +29,7 @@ if get_option('wifi')
   add_global_arguments('-DEXPERIMENTAL_WIFI_COMM', language: ['c', 'cpp'])
 endif
 
-dependencies = [dep_glib2, dep_sdl, dep_pcap, dep_zlib, dep_threads]
+dependencies = [dep_glib2, dep_sdl, dep_pcap, dep_zlib, dep_threads, dep_tinyxml]
 
 if target_machine.cpu() == 'x86_64'
   add_global_arguments('-DHAVE_JIT', language: ['c', 'cpp'])
@@ -99,10 +100,6 @@ libdesmume_src = [
   '../../utils/libfat/libfat_public_api.cpp',
   '../../utils/libfat/lock.cpp',
   '../../utils/libfat/partition.cpp',
-  '../../utils/tinyxml/tinystr.cpp',
-  '../../utils/tinyxml/tinyxml.cpp',
-  '../../utils/tinyxml/tinyxmlerror.cpp',
-  '../../utils/tinyxml/tinyxmlparser.cpp',
   '../../utils/colorspacehandler/colorspacehandler.cpp',
   '../../addons/slot2_auto.cpp', '../../addons/slot2_mpcf.cpp', '../../addons/slot2_paddle.cpp', '../../addons/slot2_gbagame.cpp', '../../addons/slot2_none.cpp', '../../addons/slot2_rumblepak.cpp', '../../addons/slot2_guitarGrip.cpp', '../../addons/slot2_expMemory.cpp', '../../addons/slot2_piano.cpp', '../../addons/slot2_passme.cpp', '../../addons/slot1_none.cpp', '../../addons/slot1_r4.cpp', '../../addons/slot1_retail_nand.cpp', '../../addons/slot1_retail_auto.cpp', '../../addons/slot1_retail_mcrom.cpp', '../../addons/slot1_retail_mcrom_debug.cpp', '../../addons/slot1comp_mc.cpp', '../../addons/slot1comp_rom.cpp', '../../addons/slot1comp_protocol.cpp',
   '../../cheatSystem.cpp',
