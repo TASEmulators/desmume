@@ -53,7 +53,10 @@
 #endif
 
 #ifdef __GNUC__
-	#ifdef __ALTIVEC__
+// Our AltiVec code assumes that its being run on a big-endian system. While
+// the ppcle and ppc64le architectures do exist, our AltiVec code does not
+// support little-endian right now.
+	#if defined(__ALTIVEC__) && defined(MSB_FIRST) && (MSB_FIRST > 0)
 		#define ENABLE_ALTIVEC
 	#endif
 
