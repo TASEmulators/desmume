@@ -1240,10 +1240,12 @@ template<int FORMAT> static FORCEINLINE bool TestForLoop(SPU_struct *SPU, channe
 template<int CHANNELS, int FORMAT, SPUInterpolationMode INTERPOLATE_MODE> 
 FORCEINLINE static void ____SPU_GenerateChanData(SPU_struct* const SPU, channel_struct* const chan, s16 *chanbuf, int length)
 {
-	if (!CHANNELS)
+	if (!CHANNELS && FORMAT != 2)
 	{
 		// When we aren't mixing at all, take a much
 		// faster path where we simply update sampcnt
+		// NOTE: This fast path can't be used for ADPCM
+		// as we need to keep the decoding state updated
 		s64 pos64  = (chan->sampcntFrac | (s64)chan->sampcntInt<<32);
 		    pos64 += (chan->sampincFrac | (u64)chan->sampincInt<<32) * length;
 		chan->sampcntFrac = (u32)pos64;
@@ -1270,7 +1272,7 @@ FORCEINLINE static void ____SPU_GenerateChanData(SPU_struct* const SPU, channel_
 	// If we are only mixing to one channel, it should be more
 	// performant to clear the buffer once rather than doing a
 	// partial fill with 0s in every other sample
-	if(CHANNELS != ((1<<0)|(1<<1)))
+	if(CHANNELS && CHANNELS != ((1<<0)|(1<<1)))
 		memset(chanbuf, 0, length*sizeof(s16)*2);
 
 	while(length--)
@@ -1309,7 +1311,8 @@ FORCEINLINE static void ____SPU_GenerateChanData(SPU_struct* const SPU, channel_
 			}
 		}
 
-		s32 sample = Interpolate<INTERPOLATE_MODE>(chan->pcm16b, chan->pcm16bOffs, chan->sampcntFrac);
+		s32 sample;
+		if(CHANNELS) sample = Interpolate<INTERPOLATE_MODE>(chan->pcm16b, chan->pcm16bOffs, chan->sampcntFrac);
 		if(CHANNELS & (1<<0)) chanbuf[0] = (s16)(sample * vol_left  >> 16);
 		if(CHANNELS & (1<<1)) chanbuf[1] = (s16)(sample * vol_right >> 16);
 		chanbuf += 2;
@@ -1574,25 +1577,21 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 			{
 				for(int n=0; n < thisLength; n++)
 					outbuf[n*2+0] = chanbuf[n*2+0] * masterVol >> 7;
-				continue;
 			}
 			if((outbufSetR & chanBit) != 0)
 			{
 				for(int n=0; n < thisLength; n++)
 					outbuf[n*2+1] = chanbuf[n*2+1] * masterVol >> 7;
-				continue;
 			}
 			if((outbufMixL & chanBit) != 0)
 			{
 				for(int n=0; n < thisLength; n++)
 					outbuf[n*2+0] = MinMax(outbuf[n*2+0] + (chanbuf[n*2+0] * masterVol >> 7), -0x8000, +0x7FFF);
-				continue;
 			}
 			if((outbufMixR & chanBit) != 0)
 			{
 				for(int n=0; n < thisLength; n++)
 					outbuf[n*2+1] = MinMax(outbuf[n*2+1] + (chanbuf[n*2+1] * masterVol >> 7), -0x8000, +0x7FFF);
-				continue;
 			}
 		}
 
