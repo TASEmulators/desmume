@@ -958,7 +958,7 @@ static FORCEINLINE void __mtx4_translate_vec3_fixed_SSE4(s32 (&__restrict inoutM
 
 static FORCEINLINE void ___s32_saturate_shiftdown_accum64_fixed_NEON(int64x2_t &inoutAccum)
 {
-	int64x2_t outVecMask;
+	uint64x2_t outVecMask;
 	
 	outVecMask = vcgtq_s64( inoutAccum, vdupq_n_s64((s64)0x000007FFFFFFFFFFULL) );
 	inoutAccum = vbslq_s64( outVecMask, vdupq_n_s64((s64)0x000007FFFFFFFFFFULL), inoutAccum );
