@@ -1382,6 +1382,11 @@ FORCEINLINE static void _SPU_WriteCapture(SPU_struct::REGS::CAP& cap, const chan
 
 				if(runtime.curdad >= runtime.maxdad)
 				{
+					if(cap.oneshot)
+					{
+						cap.active = runtime.running = 0;
+						return;
+					}
 					runtime.curdad = cap.dad;
 					runtime.sampcntInt -= capLen_shifted;
 				}
@@ -1645,6 +1650,10 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 			else
 				_SPU_WriteCapture<16>(SPU->regs.cap[1], SPU->channels[3], capbuf+1, thisLength);
 		}
+
+		// Capture can end in one-shot mode, so update state when this happens
+		if(!SPU->regs.cap[0].runtime.running) cap0Src = CAPSRC_NONE, captureFlags &= ~(1<<0 | 1<<1);
+		if(!SPU->regs.cap[1].runtime.running) cap1Src = CAPSRC_NONE, captureFlags &= ~(1<<2 | 1<<3);
 
 		// Advance buffer
 		outbuf += thisLength*2;
