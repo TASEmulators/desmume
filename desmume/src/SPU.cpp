@@ -1193,10 +1193,12 @@ static FORCEINLINE s16 FetchPSGData(channel_struct *chan, s32 pos)
 //////////////////////////////////////////////////////////////////////////////
 
 // Returns false when the channel needs to stop
-template<int FORMAT> static FORCEINLINE bool TestForLoop(SPU_struct *SPU, channel_struct *chan)
+template<int FORMAT> static FORCEINLINE bool TestForLoop(SPU_struct *SPU, channel_struct *chan, s32& pos)
 {
+	s32 totalLength = chan->totlength_shifted;
+
 	// Do nothing if we haven't reached the end
-	if(chan->sampcntInt < chan->totlength_shifted) return true;
+	if(pos < totalLength) return true;
 
 	// Kill the channel if we don't repeat
 	if(chan->repeat != 1)
@@ -1212,7 +1214,7 @@ template<int FORMAT> static FORCEINLINE bool TestForLoop(SPU_struct *SPU, channe
 		// smaller values (0..3 words) are causing hang-ups 
 		// (busy bit remains set infinite, but no sound output occurs).
 		// fix: 7th Dragon (JP) - http://sourceforge.net/p/desmume/bugs/1357/
-		if (chan->totlength < 4) return true;
+		if (totalLength < (4 << format_shift[FORMAT])) return true;
 
 		// Stash loop sample and index
 		if(chan->loop_index == K_ADPCM_LOOPING_RECOVERY_INDEX)
@@ -1228,8 +1230,8 @@ template<int FORMAT> static FORCEINLINE bool TestForLoop(SPU_struct *SPU, channe
 	}
 
 	// Wrap sampcnt
-	u32 step = chan->totlength_shifted - (chan->loopstart << format_shift[FORMAT]);
-	while (chan->sampcntInt >= chan->totlength_shifted) chan->sampcntInt -= step;
+	u32 step = totalLength - (chan->loopstart << format_shift[FORMAT]);
+	do pos -= step; while (pos >= totalLength);
 	return true;
 }
 
@@ -1250,7 +1252,7 @@ FORCEINLINE static void ____SPU_GenerateChanData(SPU_struct* const SPU, channel_
 		    pos64 += (chan->sampincFrac | (u64)chan->sampincInt<<32) * length;
 		chan->sampcntFrac = (u32)pos64;
 		chan->sampcntInt  = (s32)(pos64 >> 32);
-		if (FORMAT != 3) TestForLoop<FORMAT>(SPU, chan);
+		if (FORMAT != 3) TestForLoop<FORMAT>(SPU, chan, chan->sampcntInt);
 		return;
 	}
 
@@ -1259,13 +1261,14 @@ FORCEINLINE static void ____SPU_GenerateChanData(SPU_struct* const SPU, channel_
 	// This gives us .18fxp, but we need at most .16fxp, so we shift down.
 	s32 vol_shifted   = chan->vol;
 	    vol_shifted  += (vol_shifted == 127);
-	    vol_shifted <<= (4 - volume_shift[chan->volumeDiv]);
+	    vol_shifted <<= 4;
+	    vol_shifted >>= volume_shift[chan->volumeDiv];
 	s32 vol_left      = 127 - chan->pan;
-	    vol_left     += (vol_left == 127);
+	    vol_left     += (vol_left >= 127); // Using >= might generate better code on some platforms
 	    vol_left     *= vol_shifted;
 	    vol_left    >>= 2; // .16fxp
 	s32 vol_right     = chan->pan;
-	    vol_right    += (vol_right == 127);
+	    vol_right    += (vol_right >= 127);
 	    vol_right    *= vol_shifted;
 	    vol_right   >>= 2; // .16fxp
 	
@@ -1275,7 +1278,8 @@ FORCEINLINE static void ____SPU_GenerateChanData(SPU_struct* const SPU, channel_
 	if(CHANNELS && CHANNELS != ((1<<0)|(1<<1)))
 		memset(chanbuf, 0, length*sizeof(s16)*2);
 
-	while(length--)
+	s32 pos = chan->sampcntInt;
+	do
 	{
 		// Advance sampcnt one sample at a time. This is
 		// needed to keep pcm16b[] filled for interpolation.
@@ -1283,7 +1287,6 @@ FORCEINLINE static void ____SPU_GenerateChanData(SPU_struct* const SPU, channel_
 		while(nSamplesToSkip--)
 		{
 			s16 data = 0;
-			s32 pos = chan->sampcntInt;
 			switch(FORMAT)
 			{
 				case 0: data = Fetch8BitData (chan, pos); break;
@@ -1295,17 +1298,15 @@ FORCEINLINE static void ____SPU_GenerateChanData(SPU_struct* const SPU, channel_
 			chan->pcm16bOffs++;
 			chan->pcm16b[SPUCHAN_PCM16B_AT(chan->pcm16bOffs)] = data;
 
-			chan->sampcntInt++;
+			pos++;
 			if (FORMAT != 3)
 			{
 				// If channel stops, fill the rest of the buffer with 0
-				if(!TestForLoop<FORMAT>(SPU, chan))
+				if(!TestForLoop<FORMAT>(SPU, chan, pos))
 				{
-					// length is post-decremented and we haven't
-					// stored a sample yet, so increase length by 1.
 					// Note that if we aren't mixing to both channels,
 					// the buffer was already cleared earlier.
-					if(CHANNELS == ((1<<0)|(1<<1))) memset(chanbuf, 0, (length+1)*sizeof(s16)*2);
+					if(CHANNELS == ((1<<0)|(1<<1))) memset(chanbuf, 0, length*sizeof(s16)*2);
 					return;
 				}
 			}
@@ -1316,7 +1317,8 @@ FORCEINLINE static void ____SPU_GenerateChanData(SPU_struct* const SPU, channel_
 		if(CHANNELS & (1<<0)) chanbuf[0] = (s16)(sample * vol_left  >> 16);
 		if(CHANNELS & (1<<1)) chanbuf[1] = (s16)(sample * vol_right >> 16);
 		chanbuf += 2;
-	}
+	} while(--length);
+	chan->sampcntInt = pos;
 }
 
 template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE> 
@@ -1360,7 +1362,7 @@ FORCEINLINE static void _SPU_WriteCapture(SPU_struct::REGS::CAP& cap, const chan
 {
 	u32 capLen_shifted = cap.len * (32 / CAP_BITS);
 	SPU_struct::REGS::CAP::Runtime& runtime = cap.runtime;
-	for(int i=0; i < length; i++)
+	do
 	{
 		u32 nSamplesToProcess = srcChan.sampincInt + AddAndReturnCarry(&runtime.sampcntFrac, srcChan.sampincFrac);
 		while(nSamplesToProcess--)
@@ -1394,11 +1396,11 @@ FORCEINLINE static void _SPU_WriteCapture(SPU_struct::REGS::CAP& cap, const chan
 
 			// srcBuf[] stores two samples per time unit
 			// Either {Ch0[+Ch1],Ch2[+Ch3]}, or {LMix,RMix}
-			*data = srcBuf[i*2];
+			*data = *srcBuf; srcBuf += 2;
 			runtime.pcm16bOffs++;
 			runtime.sampcntInt++;
 		}
-	}
+	} while(--length);
 }
 
 //ENTER
@@ -1529,8 +1531,11 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 		length -= thisLength;
 
 		// Giving memset a constant size should hopefully make things better
-		memset(mixbuf, 0, SPUCAPTURE_FIFO_SIZE*sizeof(s32)*2);
-		memset(capbuf, 0, SPUCAPTURE_FIFO_SIZE*sizeof(s16)*2);
+		// ^ Nope. Unless we are in Dual SPU mode, we mix in such small batches
+		// that it's actually faster to give thisLength to memset().
+		// capbuf[] doesn't need to be cleared, as it will be set directly.
+		memset(mixbuf, 0, thisLength*sizeof(s32)*2);
+		//memset(capbuf, 0, thisLength*sizeof(s16)*2);
 
 		// Process each channel in turn
 		for (int i=0; i < 16; i++)
