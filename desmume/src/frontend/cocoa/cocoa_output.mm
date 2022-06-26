@@ -209,7 +209,6 @@
 	
 	_unfairlockAudioOutputEngine = apple_unfairlock_create();
 	_unfairlockVolume = apple_unfairlock_create();
-	_unfairlockSpuAdvancedLogic = apple_unfairlock_create();
 	_unfairlockSpuInterpolationMode = apple_unfairlock_create();
 	_unfairlockSpuSyncMode = apple_unfairlock_create();
 	_unfairlockSpuSyncMethod = apple_unfairlock_create();
@@ -222,7 +221,6 @@
 	[property setValue:[NSNumber numberWithBool:NO] forKey:@"mute"];
 	[property setValue:[NSNumber numberWithInteger:0] forKey:@"filter"];
 	[property setValue:[NSNumber numberWithInteger:SNDCORE_DUMMY] forKey:@"audioOutputEngine"];
-	[property setValue:[NSNumber numberWithBool:NO] forKey:@"spuAdvancedLogic"];
 	[property setValue:[NSNumber numberWithInteger:SPUInterpolation_None] forKey:@"spuInterpolationMode"];
 	[property setValue:[NSNumber numberWithInteger:SPU_SYNC_MODE_DUAL_SYNC_ASYNC] forKey:@"spuSyncMode"];
 	[property setValue:[NSNumber numberWithInteger:SPU_SYNC_METHOD_N] forKey:@"spuSyncMethod"];
@@ -234,7 +232,6 @@
 {
 	apple_unfairlock_destroy(_unfairlockAudioOutputEngine);
 	apple_unfairlock_destroy(_unfairlockVolume);
-	apple_unfairlock_destroy(_unfairlockSpuAdvancedLogic);
 	apple_unfairlock_destroy(_unfairlockSpuInterpolationMode);
 	apple_unfairlock_destroy(_unfairlockSpuSyncMode);
 	apple_unfairlock_destroy(_unfairlockSpuSyncMethod);
@@ -316,26 +313,6 @@
 	apple_unfairlock_unlock(_unfairlockAudioOutputEngine);
 	
 	return methodID;
-}
-
-- (void) setSpuAdvancedLogic:(BOOL)state
-{
-	apple_unfairlock_lock(_unfairlockSpuAdvancedLogic);
-	[property setValue:[NSNumber numberWithBool:state] forKey:@"spuAdvancedLogic"];
-	apple_unfairlock_unlock(_unfairlockSpuAdvancedLogic);
-	
-	pthread_rwlock_wrlock(self.rwlockProducer);
-	CommonSettings.spu_advanced = state;
-	pthread_rwlock_unlock(self.rwlockProducer);
-}
-
-- (BOOL) spuAdvancedLogic
-{
-	apple_unfairlock_lock(_unfairlockSpuAdvancedLogic);
-	BOOL state = [(NSNumber *)[property valueForKey:@"spuAdvancedLogic"] boolValue];
-	apple_unfairlock_unlock(_unfairlockSpuAdvancedLogic);
-	
-	return state;
 }
 
 - (void) setSpuInterpolationMode:(NSInteger)modeID

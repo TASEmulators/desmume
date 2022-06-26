@@ -69,7 +69,6 @@ class ClientAVCaptureObject;
 	
 	apple_unfairlock_t _unfairlockAudioOutputEngine;
 	apple_unfairlock_t _unfairlockVolume;
-	apple_unfairlock_t _unfairlockSpuAdvancedLogic;
 	apple_unfairlock_t _unfairlockSpuInterpolationMode;
 	apple_unfairlock_t _unfairlockSpuSyncMode;
 	apple_unfairlock_t _unfairlockSpuSyncMethod;
@@ -83,8 +82,6 @@ class ClientAVCaptureObject;
 - (float) volume;
 - (void) setAudioOutputEngine:(NSInteger)methodID;
 - (NSInteger) audioOutputEngine;
-- (void) setSpuAdvancedLogic:(BOOL)state;
-- (BOOL) spuAdvancedLogic;
 - (void) setSpuInterpolationMode:(NSInteger)modeID;
 - (NSInteger) spuInterpolationMode;
 - (void) setSpuSyncMode:(NSInteger)modeID;

@@ -942,8 +942,6 @@
 	<integer>58325</integer>
 	<key>Sound_Volume</key>
 	<integer>100</integer>
-	<key>SPU_AdvancedLogic</key>
-	<true/>
 	<key>SPU_InterpolationMode</key>
 	<integer>2</integer>
 	<key>SPU_SyncMethod</key>

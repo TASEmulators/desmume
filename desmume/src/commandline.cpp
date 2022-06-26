@@ -142,7 +142,6 @@ ENDL
 " --advanced-timing          Use advanced bus-level timing; default ON" ENDL
 " --rigorous-timing          Use more realistic component timings; default OFF" ENDL
 " --gamehacks                Use game-specific hacks; default ON" ENDL
-" --spu-advanced             Enable advanced SPU capture functions (reverb)" ENDL
 " --backupmem-db             Use DB for autodetecting backup memory type" ENDL
 ENDL
 "Arguments affecting the emulated requipment:" ENDL
