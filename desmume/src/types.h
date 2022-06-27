@@ -265,12 +265,12 @@ typedef u32 uint32;
 	#ifndef __APPLE_ALTIVEC__
 		#include <altivec.h>
 	#endif
-typedef vector unsigned char v128u8;
-typedef vector signed char v128s8;
-typedef vector unsigned short v128u16;
-typedef vector signed short v128s16;
-typedef vector unsigned int v128u32;
-typedef vector signed int v128s32;
+typedef __vector unsigned char v128u8;
+typedef __vector signed char v128s8;
+typedef __vector unsigned short v128u16;
+typedef __vector signed short v128s16;
+typedef __vector unsigned int v128u32;
+typedef __vector signed int v128s32;
 #endif
 
 #ifdef ENABLE_NEON_A64
