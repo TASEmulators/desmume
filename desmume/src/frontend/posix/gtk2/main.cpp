@@ -670,7 +670,7 @@ struct modify_key_ctx {
 
 static u16 keys_latch = 0;
 static u16 gdk_shift_pressed = 0;
-u16 Keypad_Temp[NB_KEYS];
+u32 Keypad_Temp[NB_KEYS];
 
 class configured_features : public CommandLine
 {
