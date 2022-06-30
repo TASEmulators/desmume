@@ -41,6 +41,18 @@ jobs:
           autoreconf -i
           ./configure --prefix=/usr --enable-gdb-stub --enable-wifi
           make -j
+          make DESTDIR=/tmp/DeSmuME install
+
+      - name: Pack artifact
+        run: |
+          cd /tmp
+          tar cJf DeSmuME.tar.xz DeSmuME/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: desmume-linux-gtk2-cli-x86_64
+          path: /tmp/DeSmuME.tar.xz
 
   build_macos:
     name: Build DeSmuME (macOS)
