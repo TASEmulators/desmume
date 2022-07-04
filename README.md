@@ -73,4 +73,4 @@ space: Select
 
 # Microphone
 
-Press 'R' will send a waveform to microphone. It *may* be useful for playing some games.
+Press 'R' will emulate a blow on microphone. It *may* be useful for playing some games.
