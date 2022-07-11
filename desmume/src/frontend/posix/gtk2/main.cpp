@@ -349,6 +349,7 @@ static const char *ui_description =
 "        <menuitem action='SPUInterpolationNone'/>"
 "        <menuitem action='SPUInterpolationLinear'/>"
 "        <menuitem action='SPUInterpolationCosine'/>"
+"        <menuitem action='SPUInterpolationCatmullRom'/>"
 "      </menu>"
 "      <menu action='CheatMenu'>"
 "        <menuitem action='cheatsearch'/>"
@@ -587,7 +588,8 @@ static const GtkRadioActionEntry spumode_entries[] = {
 static const GtkRadioActionEntry spuinterpolation_entries[] = {
     { "SPUInterpolationNone", NULL, "_None", NULL, NULL, SPUInterpolation_None },
     { "SPUInterpolationLinear", NULL, "_Linear", NULL, NULL, SPUInterpolation_Linear },
-    { "SPUInterpolationCosine", NULL, "_Cosine", NULL, NULL, SPUInterpolation_Cosine }
+    { "SPUInterpolationCosine", NULL, "_Cosine", NULL, NULL, SPUInterpolation_Cosine },
+    { "SPUInterpolationCatmullRom", NULL, "_CatmullRom", NULL, NULL, SPUInterpolation_CatmullRom }
 };
 
 enum frameskip_enum {

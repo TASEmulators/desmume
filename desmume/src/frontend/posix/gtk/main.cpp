@@ -2357,6 +2357,8 @@ static void Modify_SPUInterpolation(GSimpleAction *action, GVariant *parameter, 
         mode = SPUInterpolation_Linear;
     else if (strcmp(string, "cosine") == 0)
         mode = SPUInterpolation_Cosine;
+    else if (strcmp(string, "catmullrom") == 0)
+        mode = SPUInterpolation_CatmullRom;
     CommonSettings.spuInterpolationMode = mode;
     config.audio_interpolation = CommonSettings.spuInterpolationMode;
     g_simple_action_set_state(action, parameter);
@@ -3226,6 +3228,9 @@ common_gtk_main(GApplication *app, gpointer user_data)
             break;
         case SPUInterpolation_Cosine:
             string = "cosine";
+            break;
+        case SPUInterpolation_CatmullRom:
+            string = "catmullrom";
             break;
     }
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "spu_interpolation")), g_variant_new_string(string.c_str()));
