@@ -1183,6 +1183,10 @@ template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channe
 		return;
 	}
 
+	// Wrap sampcnt
+	u32 loopSize = chan->totlength_shifted - (chan->loopstart << format_shift[FORMAT]);
+	do chan->sampcntInt -= loopSize; while(chan->sampcntInt >= chan->totlength_shifted)
+
 	// ADPCM needs special handling
 	if(FORMAT == 2)
 	{
@@ -1192,22 +1196,33 @@ template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channe
 		// fix: 7th Dragon (JP) - http://sourceforge.net/p/desmume/bugs/1357/
 		if (chan->totlength < 4) return;
 
-		// Stash loop sample and index
+		// Fetch loop sample and index, and get the "new" current decoding position
+		s32 curpos;
+		s16 *pcm16Dst = &chan->pcm16b[SPUCHAN_PCM16B_AT(chan->pcm16bOffs)];
 		if(chan->loop_index == K_ADPCM_LOOPING_RECOVERY_INDEX)
 		{
-			chan->pcm16b[SPUCHAN_PCM16B_AT(chan->pcm16bOffs)] = (s16)read16(chan->addr);
+			// We need to decode from the start until current position,
+			// as the loop sample/index is very likely to be incorrect
+			*pcm16Dst = (s16)read16(chan->addr);
 			chan->index = read08(chan->addr+2) & 0x7F;
+			curpos = 8;
 		}
 		else
 		{
-			chan->pcm16b[SPUCHAN_PCM16B_AT(chan->pcm16bOffs)] = chan->loop_pcm16b;
+			*pcm16Dst = chan->loop_pcm16b;
 			chan->index = chan->loop_index;
+			curpos = (chan->loopstart << format_shift[FORMAT]);
+		}
+
+		// Decode until we reach the target position
+		// This is really only used for fast seeking (ie. SNDDummy
+		// and loop reset), but makes the code much cleaner.
+		while(curpos < chan->sampcntInt)
+		{
+			*pcm16Dst = FetchADPCMData(chan, curpos);
+			curpos++;
 		}
 	}
-
-	// Wrap sampcnt
-	u32 step = chan->totlength_shifted - (chan->loopstart << format_shift[FORMAT]);
-	while (chan->sampcntInt >= chan->totlength_shifted) chan->sampcntInt -= step;
 }
 
 template<int CHANNELS> FORCEINLINE static void SPU_Mix(SPU_struct* SPU, channel_struct *chan, s32 data)
