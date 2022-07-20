@@ -2365,7 +2365,7 @@ static void Edit_Joystick_Controls()
 
     switch (gtk_dialog_run(GTK_DIALOG(ecDialog))) {
     case GTK_RESPONSE_OK:
-        memcpy(&joypad_cfg, &Keypad_Temp, sizeof(keyboard_cfg));
+        memcpy(&joypad_cfg, &Keypad_Temp, sizeof(joypad_cfg));
         desmume_config_update_joykeys(keyfile);
         break;
     case GTK_RESPONSE_CANCEL:
