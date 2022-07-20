@@ -2852,8 +2852,10 @@ static void ToggleAutoFrameskip(GSimpleAction *action, GVariant *parameter, gpoi
 static void desmume_gtk_menu_tools(GtkApplication *app)
 {
     std::vector<GActionEntry> entries;
+    std::vector<std::string> names;
     for (int i = 0; i < dTools_list_size; i++) {
-        GActionEntry entry = {dTools_list[i]->shortname, Start_dTool, "u", std::to_string(i).c_str(), NULL};
+        names.push_back(std::to_string(i));
+        GActionEntry entry = {dTools_list[i]->shortname, Start_dTool, "u", names.back().c_str(), NULL};
         entries.push_back(entry);
     }
     g_action_map_add_action_entries(G_ACTION_MAP(app), entries.data(), entries.size(), NULL);
