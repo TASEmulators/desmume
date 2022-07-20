@@ -31,7 +31,10 @@
 
 
 u32 keyboard_cfg[NB_KEYS];
-u16 joypad_cfg[NB_KEYS];
+u32 joypad_cfg[NB_KEYS];
+
+static_assert(sizeof(keyboard_cfg) == sizeof(joypad_cfg), "");
+
 u16 nbr_joy;
 mouse_status mouse;
 static int fullscreen;

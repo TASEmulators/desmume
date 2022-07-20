@@ -66,7 +66,7 @@ extern const char *key_names[NB_KEYS];
 /* Current keyboard configuration */
 extern u32 keyboard_cfg[NB_KEYS];
 /* Current joypad configuration */
-extern u16 joypad_cfg[NB_KEYS];
+extern u32 joypad_cfg[NB_KEYS];
 /* Number of detected joypads */
 extern u16 nbr_joy;
 
