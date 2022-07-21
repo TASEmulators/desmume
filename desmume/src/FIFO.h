@@ -1,7 +1,7 @@
 /*
 	Copyright 2006 yopyop
 	Copyright 2007 shash
-	Copyright 2007-2021 DeSmuME team
+	Copyright 2007-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@ typedef struct
 extern DISP_FIFO disp_fifo;
 void DISP_FIFOinit();
 
-void DISP_FIFOsend_u32(u32 val);
+template<typename T, size_t ADDROFFSET> void DISP_FIFOsend(const T val);
 u32 DISP_FIFOrecv_u32();
 
 void DISP_FIFOrecv_Line16(u16 *__restrict dst);

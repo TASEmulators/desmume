@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2005 Theo Berkau
 	Copyright (C) 2005-2006 Guillaume Duhamel
-	Copyright (C) 2008-2010 DeSmuME team
+	Copyright (C) 2008-2022 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -138,6 +138,11 @@ static INLINE void T1WriteQuad(u8* const mem, const u32 addr, const u64 val)
 static INLINE u16 HostReadWord(u8* const mem, const u32 addr)
 {
    return *((u16 *) (mem + addr));
+}
+
+static INLINE void HostWriteByte(u8* const mem, const u32 addr, const u8 val)
+{
+   mem[addr] = val;
 }
 
 static INLINE void HostWriteWord(u8* const mem, const u32 addr, const u16 val)

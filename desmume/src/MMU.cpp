@@ -3425,7 +3425,19 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 					return;
 					
 				case REG_DISPA_DISPMMEMFIFO:
-					DISP_FIFOsend_u32(val);
+					DISP_FIFOsend<u8, 0>(val);
+					return;
+					
+				case REG_DISPA_DISPMMEMFIFO+1:
+					DISP_FIFOsend<u8, 1>(val);
+					return;
+					
+				case REG_DISPA_DISPMMEMFIFO+2:
+					DISP_FIFOsend<u8, 2>(val);
+					return;
+					
+				case REG_DISPA_DISPMMEMFIFO+3:
+					DISP_FIFOsend<u8, 3>(val);
 					return;
 					
 				case REG_DISPB_BG0HOFS:
@@ -3992,7 +4004,11 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					return;
 					
 				case REG_DISPA_DISPMMEMFIFO:
-					DISP_FIFOsend_u32(val);
+					DISP_FIFOsend<u16, 0>(val);
+					return;
+					
+				case REG_DISPA_DISPMMEMFIFO+2:
+					DISP_FIFOsend<u16, 2>(val);
 					return;
 					
 				case REG_DISPA_MASTERBRIGHT:
@@ -4635,7 +4651,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					return;
 					
 				case REG_DISPA_DISPMMEMFIFO:
-					DISP_FIFOsend_u32(val);
+					DISP_FIFOsend<u32, 0>(val);
 					return;
 					
 				case REG_DISPA_MASTERBRIGHT:
