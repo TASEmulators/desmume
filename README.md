@@ -10,6 +10,10 @@ Please read this guide before creating a new issue, thanks!
 
 # Frequently Asked Questions
 
+**Q: The performance is too slow/laggy.**
+
+A: Please make sure iOS's system-wide "Low Power Mode" is disabled. The battery icon is yellow if it is enabled.
+
 **Q: How do I save my progress?**
 
 A: Just save in the game and wait a few seconds, an auto-saving banner will appear, your save data will be stored in the web app's local storage automatically. On iOS you have to add the site to Home Screen first, and your data will be deleted when the Home Screen icon is removed.
@@ -25,10 +29,6 @@ A: It is an expected behavior, the save data was imported and you can continue p
 **Q: It can't load any files.**
 
 A: Only iOS >= 14.7 is supported, please update your OS first.
-
-**Q: The performance is too slow/laggy.**
-
-A: Please make sure iOS's system-wide "Low Power Mode" is disabled. The battery icon is yellow if it is enabled.
 
 **Q: There is no sound.**
 
