@@ -36,6 +36,7 @@
 
 #ifdef _MSC_VER
 #include <Windows.h>
+#include "winutil.h"
 #else
 #include <sys/time.h>
 #endif
@@ -174,6 +175,12 @@ void HudStruct::reset()
 	SavestateSlots.y = 160;
 	SavestateSlots.xsize = 240;
 	SavestateSlots.ysize = 24;
+
+	#ifdef _MSC_VER
+	#define AGG_OSD_SETTING(which,comp) which.comp = GetPrivateProfileInt("HudEdit", #which "." #comp, which.comp, IniName);
+	#include "agg_osd_settings.inc"
+	#undef AGG_OSD_SETTING
+	#endif
 
 	SetHudDummy(&Dummy);
 	clicked = false;
@@ -790,4 +797,15 @@ void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
 void OSDCLASS::border(bool enabled)
 {
 	//render51.setTextBoxBorder(enabled);
+}
+
+void OSDCLASS::SaveHudEditor()
+{
+	#ifdef _MSC_VER
+	#define AGG_OSD_SETTING(which,comp) WritePrivateProfileInt("HudEdit", #which "." #comp, Hud.which.comp, IniName);
+	#include "agg_osd_settings.inc"
+	#undef AGG_OSD_SETTING
+	#endif
+
+	//WritePrivateProfileInt("HudEdit", "FpsDisplay" "." "x", FpsDisplay.x, IniName);
 }

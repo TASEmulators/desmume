@@ -125,6 +125,8 @@ public:
 	void	addLine(const char* fmt, va_list args);
 	void	addFixed(u16 x, u16 y, const char *fmt, ...);
 	void	border(bool enabled);
+
+	void SaveHudEditor();
 };
 
 extern OSDCLASS	*osd;
@@ -139,6 +141,7 @@ public:
   void    clear();
   void    setLineColor(u8 r, u8 b, u8 g);
   void    addLine(const char *fmt, ...);
+		void SaveHudEditor() {}
 };
 
 extern OSDCLASS        *osd;

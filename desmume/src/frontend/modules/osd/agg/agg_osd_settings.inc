@@ -1,0 +1,12 @@
+#define AGG_OSD_SETTING_ALL(which) AGG_OSD_SETTING(which,x) AGG_OSD_SETTING(which,y) AGG_OSD_SETTING(which,xsize) AGG_OSD_SETTING(which,ysize)
+
+AGG_OSD_SETTING_ALL(FpsDisplay);
+AGG_OSD_SETTING_ALL(FrameCounter);
+AGG_OSD_SETTING_ALL(InputDisplay);
+AGG_OSD_SETTING_ALL(GraphicalInputDisplay);
+AGG_OSD_SETTING_ALL(LagFrameCounter);
+AGG_OSD_SETTING_ALL(Microphone);
+AGG_OSD_SETTING_ALL(RTCDisplay);
+AGG_OSD_SETTING_ALL(SavestateSlots);
+
+#undef AGG_OSD_SETTING_ALL
