@@ -65,7 +65,7 @@ const char *key_names[NB_KEYS] =
  */
  
 /* Default joypad configuration */
-const u16 default_joypad_cfg[NB_KEYS] =
+const u32 default_joypad_cfg[NB_KEYS] =
   { 0x0201,  // A
     0x0200,  // B
     0x0205,  // select
@@ -91,7 +91,7 @@ void load_default_config(const u32 kbCfg[])
 }
 
 /* Set all buttons at once */
-static void set_joy_keys(const u16 joyCfg[])
+static void set_joy_keys(const u32 joyCfg[])
 {
   memcpy(joypad_cfg, joyCfg, sizeof(joypad_cfg));
 }
