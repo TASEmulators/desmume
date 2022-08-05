@@ -725,6 +725,7 @@ void savestate_slot(int num)
 void loadstate_slot(int num)
 {
 	char filename[MAX_PATH];
+	int max_index = -1;
 
 	lastSaveState = num;		//Set last savestate used
 
@@ -734,7 +735,7 @@ void loadstate_slot(int num)
 	#ifdef HOST_WINDOWS
 	// Maximum backup number can be set in config: [General] BackupSavesMax=<n>
 	// Setting BackupSavesMax=0 would disable backups
-	int max_index = GetPrivateProfileInt("General", "BackupSavesMax", -1, IniName); // 0 for disabled
+	max_index = GetPrivateProfileInt("General", "BackupSavesMax", -1, IniName); // 0 for disabled
 	int suppress_backups = GetPrivateProfileInt("General", "BackupSavestateSuppress", 0, IniName);
 	if(!suppress_backups && max_index != 0 )
 	#endif
