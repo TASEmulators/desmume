@@ -1465,22 +1465,15 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 					//Instead, what we do here is delay the capture by 16 samples to create a similar effect.
 					//Subjectively, it seems to be working.
 
-					//Don't do anything until the fifo is filled, so as to delay it
-					if (cap.runtime.fifo.size < 16)
-					{
-						cap.runtime.fifo.enqueue(capout[capchan]);
-						continue;
-					}
-
-					//(actually capture sample from fifo instead of most recently generated)
-					u32 multiplier;
-					s32 sample = cap.runtime.fifo.dequeue();
+					//Fetch the FIFO-buffered sample and enqueue the most recently generated sample
+					s32 sample = (cap.runtime.fifo.size >= 16) ? cap.runtime.fifo.dequeue() : 0;
 					cap.runtime.fifo.enqueue(capout[capchan]);
 
 					//static FILE* fp = NULL;
 					//if(!fp) fp = fopen("d:\\capout.raw","wb");
 					//fwrite(&sample,2,1,fp);
 					
+					u32 multiplier;
 					if (cap.bits8)
 					{
 						s8 sample8 = sample >> 8;
