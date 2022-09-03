@@ -472,6 +472,22 @@ void SPU_struct::KeyOn(int channel)
 			thischan.status = CHANSTAT_STOPPED;
 		}
 	}
+
+	// If we are targetting data that is being played back by a
+	// channel, then make sure to delay it by at least 4 samples
+	// so that we don't get ourselves into buffer overrun.
+	// This (and the corresponding fixup in ProbeCapture()) are a
+	// nasty hack, but it's about all we can do, really :/
+	if(channel == 1 || channel == 3) {
+		const SPU_struct::REGS::CAP *cap = &regs.cap[(channel == 1) ? 0 : 1];
+		if(cap->active && (cap->runtime.maxdad - cap->len*4) == thischan.addr) {
+			// We are assuming that the channel and capture have the same length
+			int capLen_shifted = cap->len * (32 / (cap->bits8 ? 8 : 16));
+			int d = cap->runtime.sampcntInt - thischan.sampcntInt;
+			if(d < 0) d += capLen_shifted;
+			if(d < 4) thischan.sampcntInt -= 4 - d;
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -767,6 +783,15 @@ void SPU_struct::ProbeCapture(int which)
 	cap.runtime.maxdad = cap.dad + len*4;
 	cap.runtime.sampcntFrac = cap.runtime.sampcntInt = 0;
 	cap.runtime.fifo.reset();
+
+	// Fix playback position for feedback capture - see notes in KeyProbe()
+	const channel_struct *ch = &channels[(which == 0) ? 1 : 3];
+	if(ch->status == CHANSTAT_PLAY && ch->addr == cap.dad) {
+		int capLen_shifted = cap.len * (32 / (cap.bits8 ? 8 : 16));
+		int d = cap.runtime.sampcntInt - ch->sampcntInt; // cap.runtime.sampcntInt - ch->sampcntInt, wrapped around
+		if(d < 0) d += capLen_shifted;
+		if(d < 4) cap.runtime.sampcntInt += 4 - d;
+	}
 }
 
 void SPU_struct::WriteByte(u32 addr, u8 val)
