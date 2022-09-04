@@ -55,6 +55,19 @@ static inline s8 read_s8(u32 addr) { return (s8)_MMU_read08<ARMCPU_ARM7,MMU_AT_D
 // as this is guaranteed to be safe.
 #define ENABLE_DUMMY_SPU_CAPTURE 1
 
+// This specifies how many samples to buffer for the channel FIFO
+// If this is too low, then badly-synchronized streams can cause
+// buffer overrun.
+#define SPUCHAN_FIFO_DELAY 3
+#if SPUCHAN_FIFO_DELAY >= SPUCHAN_PCM16B_SIZE
+# error "Channel FIFO delay must less than SPUCHAN_PCM16B_SIZE"
+#endif
+
+// This controls the delay for the capture unit (how many output
+// samples to stall for before actually writing anything).
+// This seems to need matching to the channel playback delay (see KeyOn())?
+#define SPUCAPTURE_FIFO_DELAY 3
+
 #define K_ADPCM_LOOPING_RECOVERY_INDEX 255
 
 #define CATMULLROM_INTERPOLATION_RESOLUTION_BITS 11
@@ -785,7 +798,7 @@ void SPU_struct::ProbeCapture(int which)
 	cap.runtime.dad = cap.dad;
 	u32 len = cap.len;
 	if(len==0) len=1;
-	cap.runtime.sampcntFrac = 0, cap.runtime.sampcntInt = -SPUCAPTURE_FIFO_SIZE;
+	cap.runtime.sampcntFrac = 0, cap.runtime.sampcntInt = -SPUCAPTURE_FIFO_DELAY;
 }
 
 void SPU_struct::WriteByte(u32 addr, u8 val)
@@ -1079,10 +1092,10 @@ FORCEINLINE static s16 Interpolate(const s16 *pcm16b, u8 pcm16bOffs, u32 subPos)
 			// of a 'luxury' thing, we should be able to use MinMax
 			// since if the user is using this interpolation method,
 			// there's likely enough processing power to handle it.
-			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 3)];
-			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 2)];
-			s32 c = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
-			s32 d = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
+			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs-SPUCHAN_FIFO_DELAY+0)];
+			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs-SPUCHAN_FIFO_DELAY+1)];
+			s32 c = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs-SPUCHAN_FIFO_DELAY+2)];
+			s32 d = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs-SPUCHAN_FIFO_DELAY+3)];
 			const u16 *w = catmullrom_lut[subPos >> (32 - CATMULLROM_INTERPOLATION_RESOLUTION_BITS)];
 			return (s16)MinMax((-a*(s32)w[0] + b*(s32)w[1] + c*(s32)w[2] - d*(s32)w[3]) >> 15, -0x8000, +0x7FFF);
 		}
@@ -1096,8 +1109,8 @@ FORCEINLINE static s16 Interpolate(const s16 *pcm16b, u8 pcm16bOffs, u32 subPos)
 			// NOTE: Always cast the result to s16. (b-a) can
 			// overflow, but a+(b-a)*subPos can't. So we might
 			// have garbage in the upper 16 bits.
-			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
-			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
+			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs-SPUCHAN_FIFO_DELAY+0)];
+			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs-SPUCHAN_FIFO_DELAY+1)];
 			s32 subPos16 = (s32)cos_lut[subPos >> (32 - COSINE_INTERPOLATION_RESOLUTION_BITS)];
 			return (s16)(a + (((b - a)*subPos16) >> 16));
 		}
@@ -1108,15 +1121,15 @@ FORCEINLINE static s16 Interpolate(const s16 *pcm16b, u8 pcm16bOffs, u32 subPos)
 			// sampleI = sampleA * (1 - ratio) + sampleB * ratio
 			// Delay: 1 sample, Maximum gain: 1.0
 			// NOTE: Always cast the result to s16 (see above).
-			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 1)];
-			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs - 0)];
+			s32 a = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs-SPUCHAN_FIFO_DELAY+0)];
+			s32 b = pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs-SPUCHAN_FIFO_DELAY+1)];
 			s32 subPos16 = subPos >> (32 - 16);
 			return (s16)(a + (((b - a)*subPos16) >> 16));
 		}
 
 		default:
 			// Delay: 0 samples, Maximum gain: 1.0
-			return pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs)];
+			return pcm16b[SPUCHAN_PCM16B_AT(pcm16bOffs-SPUCHAN_FIFO_DELAY+0)];
 	}
 }
 
@@ -1411,7 +1424,7 @@ template<int CAP_BITS, bool USE_SRCBUF>
 	s32 pos = runtime.sampcntInt;
 	do
 	{
-		s16 sample = USE_SRCBUF ? (*srcBuf) : 0;
+		s16 *data = &runtime.pcm16b[SPUCAPTURE_PCM16B_AT(runtime.pcm16bOffs)];
 		u32 nSamplesToProcess = srcChan.sampincInt + AddAndReturnCarry(&runtime.sampcntFrac, srcChan.sampincFrac);
 		while(nSamplesToProcess--)
 		{
@@ -1425,22 +1438,22 @@ template<int CAP_BITS, bool USE_SRCBUF>
 				pos -= capLen_shifted;
 			}
 
-			s16 *data = &runtime.pcm16b[SPUCAPTURE_PCM16B_AT(runtime.pcm16bOffs)];
 			if(pos >= 0)
 			{
+				s16 sample = *data;
 				if (CAP_BITS == 8)
 				{
-					_MMU_write08<ARMCPU_ARM7,MMU_AT_DMA>(runtime.dad + pos*sizeof(s8), (u8)(*data >> 8));
+					_MMU_write08<ARMCPU_ARM7,MMU_AT_DMA>(runtime.dad + pos*sizeof(s8), (u8)(sample >> 8));
 				}
 				else
 				{
-					_MMU_write16<ARMCPU_ARM7,MMU_AT_DMA>(runtime.dad + pos*sizeof(s16), (u16)(*data));
+					_MMU_write16<ARMCPU_ARM7,MMU_AT_DMA>(runtime.dad + pos*sizeof(s16), (u16)(sample));
 				}
 			}
-			*data = sample;
-			runtime.pcm16bOffs++;
 			pos++;
 		}
+		*data = USE_SRCBUF ? (*srcBuf) : 0;
+		runtime.pcm16bOffs++;
 
 		// srcBuf[] stores two samples per time unit
 		// Either {Ch0[+Ch1],Ch2[+Ch3]}, or {LMix,RMix}
