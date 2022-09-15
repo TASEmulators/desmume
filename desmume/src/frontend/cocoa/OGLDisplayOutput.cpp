@@ -4233,8 +4233,7 @@ OGLContextInfo_Legacy::OGLContextInfo_Legacy()
 	glDeleteVertexArraysDESMUME = &glDeleteVertexArrays_LegacyAPPLE;
 	glGenVertexArraysDESMUME = &glGenVertexArrays_LegacyAPPLE;
 	
-	_isVAOSupported =   isShaderSupported &&
-	                   _isVBOSupported &&
+	_isVAOSupported =  _isVBOSupported &&
 	                  (this->IsExtensionPresent(oglExtensionSet, "GL_ARB_vertex_array_object") ||
 	                   this->IsExtensionPresent(oglExtensionSet, "GL_APPLE_vertex_array_object"));
 	
@@ -5216,11 +5215,12 @@ void OGLVideoOutput::PrerenderStateSetupOGL()
 	// requires.
 	
 	// Render State Setup (common to both shaders and fixed-function pipeline)
-	glEnable(GL_BLEND);
+	glDisable(GL_BLEND); // The display layer can disable this, but the HUD layer needs this enabled.
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_DITHER);
 	glDisable(GL_STENCIL_TEST);
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
+	glDisable(GL_SCISSOR_TEST);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	
 	// Set up fixed-function pipeline render states.
@@ -5229,8 +5229,13 @@ void OGLVideoOutput::PrerenderStateSetupOGL()
 		glDisable(GL_ALPHA_TEST);
 		glDisable(GL_LIGHTING);
 		glDisable(GL_FOG);
-		glEnable(GL_TEXTURE_2D);
-		glEnable(GL_TEXTURE_RECTANGLE_ARB);
+		
+		// Note that in fixed-function mode, you can only enable GL_TEXTURE_2D or
+		// GL_TEXTURE_RECTANGLE_ARB at any one time, but you cannot ahve both enabled
+		// at the same time. The display layer requires GL_TEXTURE_RECTANGLE_ARB
+		// enabled, while the HUD layer requires GL_TEXTURE_2D enabled.
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_TEXTURE_RECTANGLE_ARB);
 	}
 }
 
@@ -5569,6 +5574,23 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	
 	UpdateTexCoords(_vf->GetDstWidth(), _vf->GetDstHeight());
 	
+	// Render State Setup (common to both shaders and fixed-function pipeline)
+	glDisable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_DITHER);
+	glDisable(GL_STENCIL_TEST);
+	glDisable(GL_SCISSOR_TEST);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	
+	// Set up fixed-function pipeline render states.
+	if (!contextInfo->IsShaderSupported())
+	{
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_LIGHTING);
+		glDisable(GL_FOG);
+		glEnable(GL_TEXTURE_RECTANGLE_ARB);
+	}
+	
 	// Set up textures
 	glGenTextures(1, &_texCPUFilterDstID);
 	glGenTextures(1, &_texVideoInputDataID);
@@ -5679,7 +5701,7 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	}
 	
 	_useShaderBasedPixelScaler = false;
-	_filtersPreferGPU = true;
+	_filtersPreferGPU = _canUseShaderBasedFilters && _canUseShaderOutput;
 	_outputFilter = OutputFilterTypeID_Bilinear;
 }
 
@@ -6128,7 +6150,6 @@ void OGLImage::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID);
 		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, newDstBufferWidth, newDstBufferHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, newMasterBuffer);
-		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 		
 		_vfMasterDstBuffer = newMasterBuffer;
 		free_aligned(oldMasterBuffer);
@@ -6141,7 +6162,6 @@ void OGLImage::LoadFrameOGL(const uint32_t *frameData, GLint x, GLint y, GLsizei
 {
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataID);
 	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, w, h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, frameData);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	memcpy(this->_vf->GetSrcBufferPtr(), frameData, w * h * sizeof(uint32_t));
 }
 
@@ -6197,8 +6217,6 @@ void OGLImage::ProcessOGL()
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
 	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(this->_texCoordBuffer), this->_texCoordBuffer);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 }
 
 void OGLImage::RenderOGL()
@@ -6238,7 +6256,6 @@ void OGLImage::RenderOGL()
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	// Disable vertex attributes
 	glBindVertexArrayDESMUME(0);
@@ -6559,6 +6576,8 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 		return;
 	}
 	
+	glEnable(GL_BLEND);
+	
 	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
 		glUseProgram(this->_program->GetProgramID());
@@ -6569,6 +6588,26 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 			glUniform1i(this->_uniformRenderFlipped, (isRenderingFlipped) ? GL_TRUE : GL_FALSE);
 			this->_needUpdateViewport = false;
 		}
+	}
+	else
+	{
+		const GLdouble w = this->_output->GetViewportWidth();
+		const GLdouble h = this->_output->GetViewportHeight();
+		
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		
+		if (isRenderingFlipped)
+		{
+			glOrtho(-w/2.0, -w/2.0 + w, -h/2.0 + h, -h/2.0, -1.0, 1.0);
+		}
+		else
+		{
+			glOrtho(-w/2.0, -w/2.0 + w, -h/2.0, -h/2.0 + h, -1.0, 1.0);
+		}
+		
+		glDisable(GL_TEXTURE_RECTANGLE_ARB);
+		glEnable(GL_TEXTURE_2D);
 	}
 	
 	if (this->_output->HUDNeedsUpdate())
@@ -6584,6 +6623,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 	{
 		const ClientDisplayPresenterProperties &cdp = this->_output->GetPresenterProperties();
 		
+		// Draw the touch lines first.
 		if (this->_output->GetContextInfo()->IsShaderSupported())
 		{
 			glUniform1f(this->_uniformAngleDegrees, cdp.rotation);
@@ -6601,6 +6641,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glDrawElements(GL_TRIANGLES, hudTouchLineLength * 6, GL_UNSIGNED_SHORT, (GLvoid *)((this->_output->GetHUDString().length() + HUD_INPUT_ELEMENT_LENGTH) * 6 * sizeof(uint16_t)));
 		
+		// Then draw the input buttons overlay.
 		if (this->_output->GetContextInfo()->IsShaderSupported())
 		{
 			glUniform1f(this->_uniformAngleDegrees, 0.0f);
@@ -6702,9 +6743,9 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	else
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-		glVertexPointer(2, GL_FLOAT, 0, 0);
+		glVertexPointer(2, GL_FLOAT, 0, NULL);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
-		glTexCoordPointer(2, GL_FLOAT, 0, 0);
+		glTexCoordPointer(2, GL_FLOAT, 0, NULL);
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -7460,6 +7501,8 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 {
 	const bool isShaderSupported = this->_output->GetContextInfo()->IsShaderSupported();
 	
+	glDisable(GL_BLEND);
+	
 	if (isShaderSupported)
 	{
 		glUseProgram(this->_finalOutputProgram->GetProgramID());
@@ -7470,9 +7513,13 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 			glUniform1i(this->_uniformRenderFlipped, (isRenderingFlipped) ? GL_TRUE : GL_FALSE);
 			this->_needUpdateViewport = false;
 		}
+		
+		if (this->_needUpdateRotationScale)
+		{
+			this->_UpdateRotationScaleOGL();
+		}
 	}
-	
-	if (this->_needUpdateViewport)
+	else
 	{
 		const GLdouble w = this->_output->GetViewportWidth();
 		const GLdouble h = this->_output->GetViewportHeight();
@@ -7489,12 +7536,10 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 			glOrtho(-w/2.0, -w/2.0 + w, -h/2.0, -h/2.0 + h, -1.0, 1.0);
 		}
 		
-		this->_needUpdateViewport = false;
-	}
-	
-	if (this->_needUpdateRotationScale)
-	{
 		this->_UpdateRotationScaleOGL();
+		
+		glDisable(GL_TEXTURE_2D);
+		glEnable(GL_TEXTURE_RECTANGLE_ARB);
 	}
 	
 	if (this->_needUpdateVertices)
