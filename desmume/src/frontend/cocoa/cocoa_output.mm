@@ -325,7 +325,7 @@
 	apple_unfairlock_unlock(_unfairlockSpuAdvancedLogic);
 	
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	CommonSettings.spu_advanced = state;
+	//CommonSettings.spu_advanced = state;
 	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
