@@ -36,12 +36,16 @@ class EMUFILE;
 #define CHANSTAT_STOPPED          0
 #define CHANSTAT_PLAY             1
 
-#define SPUINTERPOLATION_TAPS 4 // Must be at least 4 for Catmull-Rom interpolation
+#define SPUCHAN_PCM16B_SIZE   4 // Must be 2^n, and at least 4 for Catmull-Rom interpolation
+#define SPUCAPTURE_FIFO_SIZE 16 // Must be 2^n
 
-//who made these static? theyre used in multiple places.
-FORCEINLINE s32 spumuldiv7(s32 val, u8 multiplier) {
-	assert(multiplier <= 127);
-	return (multiplier == 127) ? val : ((val * multiplier) >> 7);
+// This converts a value of 127/128 into 128/128. Needed for volume/pan/etc. calculations
+template<typename T>
+FORCEINLINE T spumuladjust7(T x)
+{
+	// Using >= can result in better code on some platforms
+	assert(x <= 127);
+	return x + (x >= (T)127);
 }
 
 enum SPUInterpolationMode
@@ -95,6 +99,7 @@ struct channel_struct
 						sampcntInt(0),
 						sampincFrac(0),
 						sampincInt(0),
+						pcm16b(),
 						loop_pcm16b(0),
 						index(0),
 						loop_index(0),
@@ -121,11 +126,11 @@ struct channel_struct
    s32 sampcntInt;
    u32 sampincFrac;
    u32 sampincInt;
-   s16 pcm16b[SPUINTERPOLATION_TAPS];
+   s16 pcm16b[SPUCHAN_PCM16B_SIZE];
    // ADPCM specific
    s16 loop_pcm16b;
-   s32 index;
-   int loop_index;
+   u8  index;
+   u8  loop_index;
    // PSG noise
    u16 x;
 };
@@ -146,12 +151,9 @@ public:
 class SPU_struct
 {
 public:
-	SPU_struct(int buffersize);
-   u32 bufpos;
-   u32 buflength;
-   s32 *sndbuf;
-   s32 lastdata; //the last sample that a channel generated
-   s16 *outbuf;
+	SPU_struct();
+   s32 *mixdata; // Mixing buffers
+   s16 *outbuf;  // Device output source (L,R)
    u32 bufsize;
    channel_struct channels[16];
 
@@ -192,19 +194,22 @@ public:
 		   u16 len;
 		   struct Runtime {
 			   Runtime()
-				   : running(0), curdad(0), maxdad(0)
+				   : running(0), pcm16bOffs(0), dad(0), len(0), sampcntFrac(0), sampcntInt(0), pcm16b()
 			   {}
+
 			   u8 running;
-			   u32 curdad;
-			   u32 maxdad;
+			   u8 pcm16bOffs;
+			   u32 dad;
+			   u32 len;
 			   u32 sampcntFrac;
-			   u32 sampcntInt;
-			   SPUFifo fifo;
+			   s32 sampcntInt;
+			   s16 pcm16b[SPUCAPTURE_FIFO_SIZE];
 		   } runtime;
 	   } cap[2];
    } regs;
 
    void reset();
+   void resizeBuffer(int buffersize);
    ~SPU_struct();
    void KeyOff(int channel);
    void KeyOn(int channel);
@@ -223,7 +228,6 @@ public:
 };
 
 extern SPU_struct *SPU_core, *SPU_user;
-extern int spu_core_samples;
 
 int SPU_ChangeSoundCore(int coreid, int newBufferSizeBytes);
 SoundInterface_struct *SPU_SoundCore();
@@ -236,7 +240,7 @@ void SPU_SetSynchMode(int mode, int method);
 void SPU_ClearOutputBuffer(void);
 void SPU_Reset(void);
 void SPU_DeInit(void);
-void SPU_KeyOn(int channel);
+
 static FORCEINLINE void SPU_WriteByte(u32 addr, u8 val)
 {
 	addr &= 0xFFF;
@@ -264,7 +268,8 @@ static FORCEINLINE void SPU_WriteLong(u32 addr, u32 val)
 static FORCEINLINE u8 SPU_ReadByte(u32 addr) { return SPU_core->ReadByte(addr & 0x0FFF); }
 static FORCEINLINE u16 SPU_ReadWord(u32 addr) { return SPU_core->ReadWord(addr & 0x0FFF); }
 static FORCEINLINE u32 SPU_ReadLong(u32 addr) { return SPU_core->ReadLong(addr & 0x0FFF); }
-void SPU_Emulate_core(void);
+
+int SPU_Emulate_core(u32 numberOfARM7Cycles);
 void SPU_Emulate_user(bool mix = true);
 void SPU_DefaultFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
 size_t SPU_DefaultPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
