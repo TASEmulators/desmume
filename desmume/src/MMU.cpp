@@ -1068,7 +1068,6 @@ static void execsqrt() {
 }
 
 static void execdiv() {
-
 	s64 num,den;
 	s64 res,mod;
 	u8 mode = MMU_new.div.mode;
@@ -1096,14 +1095,28 @@ static void execdiv() {
 		break;
 	}
 
-	if(den==0)
+	if(den == 0)
 	{
 		res = ((num < 0) ? 1 : -1);
 		mod = num;
+		
+		// when the result is 32bits, the upper 32bits of the sign-extended result are inverted
+		if (mode == 0)
+			res ^= 0xFFFFFFFF00000000;
 
 		// the DIV0 flag in DIVCNT is set only if the full 64bit DIV_DENOM value is zero, even in 32bit mode
 		if ((u64)T1ReadQuad(MMU.ARM9_REG, 0x298) == 0) 
 			MMU_new.div.div0 = 1;
+	}
+	else if((mode != 0) && (num == 0x8000000000000000) && (den == -1))
+	{
+		res = 0x8000000000000000;
+		mod = 0;
+	}
+	else if((mode == 0) && (num == (s64) (s32) 0x80000000) && (den == -1))
+	{
+		res = 0x80000000;
+		mod = 0;
 	}
 	else
 	{
