@@ -357,7 +357,7 @@ Lock::~Lock() { LeaveCriticalSection(m_cs); }
 
 LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
 
-char SavName[MAX_PATH] = {0};
+wchar_t SavName[MAX_PATH] = {0};
 char ImportSavName[MAX_PATH] = {0};
 char szClassName[ ] = "DeSmuME";
 int romnum = 0;
@@ -4804,60 +4804,60 @@ DOKEYDOWN:
 
 		case IDM_STATE_LOAD:
 			{
-				OPENFILENAME ofn;
+				OPENFILENAMEW ofn;
 				NDS_Pause();
 				ZeroMemory(&ofn, sizeof(ofn));
 				ofn.lStructSize = sizeof(ofn);
 				ofn.hwndOwner = hwnd;
-				ofn.lpstrFilter = "DeSmuME Savestate (*.dst or *.ds#)\0*.dst;*.ds0*;*.ds1*;*.ds2*;*.ds3*;*.ds4*;*.ds5*;*.ds6*;*.ds7*;*.ds8*;*.ds9*;*.ds-*\0DeSmuME Savestate (*.dst only)\0*.dst\0All files (*.*)\0*.*\0\0";
+				ofn.lpstrFilter = L"DeSmuME Savestate (*.dst or *.ds#)\0*.dst;*.ds0*;*.ds1*;*.ds2*;*.ds3*;*.ds4*;*.ds5*;*.ds6*;*.ds7*;*.ds8*;*.ds9*;*.ds-*\0DeSmuME Savestate (*.dst only)\0*.dst\0All files (*.*)\0*.*\0\0";
 				ofn.nFilterIndex = 1;
 				ofn.lpstrFile =  SavName;
 				ofn.nMaxFile = MAX_PATH;
-				ofn.lpstrDefExt = "dst";
+				ofn.lpstrDefExt = L"dst";
 				ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-				std::string dir = path.getpath(path.STATES);
+				std::wstring dir = mbstowcs(path.getpath(path.STATES));
 				ofn.lpstrInitialDir = dir.c_str();
 
-				if(!GetOpenFileName(&ofn))
+				if(!GetOpenFileNameW(&ofn))
 				{
 					NDS_UnPause();
 					return 0;
 				}
 
-				dir = Path::GetFileDirectoryPath(SavName);
-				path.setpath(path.STATES, dir);
-				WritePrivateProfileString(SECTION, STATEKEY, dir.c_str(), IniName);
+				std::string utf8dir = Path::GetFileDirectoryPath(wcstombs(SavName));
+				path.setpath(path.STATES, utf8dir);
+				WritePrivateProfileString(SECTION, STATEKEY, utf8dir.c_str(), IniName);
 
-				savestate_load(SavName);
+				savestate_load(wcstombs(SavName).c_str());
 				UpdateToolWindows();
 				NDS_UnPause();
 			}
 			return 0;
 		case IDM_STATE_SAVE:
 			{
-				OPENFILENAME ofn;
+				OPENFILENAMEW ofn;
 				bool unpause = NDS_Pause();
 				ZeroMemory(&ofn, sizeof(ofn));
 				ofn.lStructSize = sizeof(ofn);
 				ofn.hwndOwner = hwnd;
-				ofn.lpstrFilter = "DeSmuME Savestate (*.dst or *.ds#)\0*.dst;*.ds0*;*.ds1*;*.ds2*;*.ds3*;*.ds4*;*.ds5*;*.ds6*;*.ds7*;*.ds8*;*.ds9*;*.ds-*\0DeSmuME Savestate (*.dst only)\0*.dst\0All files (*.*)\0*.*\0\0";
+				ofn.lpstrFilter = L"DeSmuME Savestate (*.dst or *.ds#)\0*.dst;*.ds0*;*.ds1*;*.ds2*;*.ds3*;*.ds4*;*.ds5*;*.ds6*;*.ds7*;*.ds8*;*.ds9*;*.ds-*\0DeSmuME Savestate (*.dst only)\0*.dst\0All files (*.*)\0*.*\0\0";
 				ofn.nFilterIndex = 1;
 				ofn.lpstrFile =  SavName;
 				ofn.nMaxFile = MAX_PATH;
-				ofn.lpstrDefExt = "dst";
+				ofn.lpstrDefExt = L"dst";
 				ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
-				std::string dir = path.getpath(path.STATES);
+				std::wstring dir = mbstowcs(path.getpath(path.STATES));
 				ofn.lpstrInitialDir = dir.c_str();
 
-				if(GetSaveFileName(&ofn))
+				if(GetSaveFileNameW(&ofn))
 				{
-					savestate_save(SavName);
+					savestate_save(wcstombs(SavName).c_str());
 					LoadSaveStateInfo();
 				}
 
-				dir = Path::GetFileDirectoryPath(SavName);
-				path.setpath(path.STATES, dir);
-				WritePrivateProfileString(SECTION, STATEKEY, dir.c_str(), IniName);
+				std::string utf8dir = Path::GetFileDirectoryPath(wcstombs(SavName));
+				path.setpath(path.STATES, utf8dir);
+				WritePrivateProfileString(SECTION, STATEKEY, utf8dir.c_str(), IniName);
 
 				if(unpause) NDS_UnPause();
 				return 0;
