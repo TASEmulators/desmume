@@ -589,6 +589,8 @@ struct GFX3D_State
 	bool invalidateToon;
 	CACHE_ALIGN u16 u16ToonTable[32];
 	u8 shininessTable[128];
+
+	//TODO: copy these in instead of this sloppy memory mapping
 	u8 *fogDensityTable;		// Alias to MMU.ARM9_REG+0x0360
 	u16 *edgeMarkColorTable;	// Alias to MMU.ARM9_REG+0x0330
 };

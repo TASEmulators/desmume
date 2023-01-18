@@ -529,7 +529,13 @@ void gfx3d_init()
 	gfx3d.state.savedDISP3DCNT.value = 0;
 	gfx3d.state.fogDensityTable = MMU.ARM9_REG+0x0360;
 	gfx3d.state.edgeMarkColorTable = (u16 *)(MMU.ARM9_REG+0x0330);
-	
+
+	//TODO: these should probably be copied into renderState when it's latched..
+	//THIS IS A SUPER BAD HACK
+	//see TODO TODO TODO TODO
+	gfx3d.renderState.fogDensityTable = MMU.ARM9_REG+0x0360;
+	gfx3d.renderState.edgeMarkColorTable = (u16 *)(MMU.ARM9_REG+0x0330);
+
 	gfx3d.render3DFrameCount = 0;
 	
 	makeTables();
@@ -2443,6 +2449,7 @@ static void gfx3d_doFlush()
 	//latch the current renderer and geometry engine states
 	//NOTE: the geometry lists are copied elsewhere by another operation.
 	//that's pretty annoying.
+	//TODO: see TODO TODO TODO TODO
 	gfx3d.renderState = gfx3d.state;
 	
 	gfx3d.state.activeFlushCommand = gfx3d.state.pendingFlushCommand;
