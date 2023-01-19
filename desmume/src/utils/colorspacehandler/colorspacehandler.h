@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2022 DeSmuME team
+	Copyright (C) 2016-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -82,6 +82,8 @@ enum NDSColorFormat
 union FragmentColor
 {
 	u32 color;
+	u8 component[4];
+	
 	struct
 	{
 		u8 r,g,b,a;
