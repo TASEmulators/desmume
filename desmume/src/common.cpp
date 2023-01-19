@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -105,22 +105,12 @@ void* malloc_aligned64(size_t length)
 
 void* malloc_alignedCacheLine(size_t length)
 {
-#if defined(HOST_32)
-	return malloc_aligned32(length);
-#elif defined(HOST_64)
-	return malloc_aligned64(length);
-#else
-	return malloc_aligned16(length);
-#endif
+	return malloc_aligned(length, CACHE_ALIGN_SIZE);
 }
 
 void* malloc_alignedPage(size_t length)
 {
-	// WARNING!
-	//
-	// This may fail for SPARC users, which have a page size
-	// of 8KB instead of the more typical 4KB.
-	return malloc_aligned(length, 4096);
+	return malloc_aligned(length, PAGE_ALIGN_SIZE);
 }
 
 void free_aligned(void *ptr)

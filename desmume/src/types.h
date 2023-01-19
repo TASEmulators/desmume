@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2005 Guillaume Duhamel
-	Copyright (C) 2008-2022 DeSmuME team
+	Copyright (C) 2008-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -165,8 +165,15 @@
 	#define CACHE_ALIGN_SIZE 32
 #endif
 
+#if defined(__sparc_v9__) || defined(__sparcv9)
+	#define PAGE_ALIGN_SIZE 8192 // UltraSPARC architecture uses 8 KB pages.
+#else
+	#define PAGE_ALIGN_SIZE 4096 // Most architectures use 4 KB pages.
+#endif
+
 //use this for example when you want a byte value to be better-aligned
 #define CACHE_ALIGN DS_ALIGN(CACHE_ALIGN_SIZE)
+#define PAGE_ALIGN DS_ALIGN(PAGE_ALIGN_SIZE)
 #define FAST_ALIGN DS_ALIGN(4)
 //---------------------------------------------
 
