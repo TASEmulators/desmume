@@ -34,6 +34,7 @@
 static _KEY1	enc(&MMU.ARM7_BIOS[0x0030]);
 const char *defaultNickname = DESMUME_NAME;
 const char *defaultMessage = DESMUME_NAME " makes you happy!";
+const char *defaultMacAddressStr = "0009BF123456";
 
 u16 CFIRMWARE::_getBootCodeCRC16(const u8 *arm9Data, const u32 arm9Size, const u8 *arm7Data, const u32 arm7Size)
 {
@@ -673,6 +674,47 @@ int copy_firmware_user_data( u8 *dest_buffer, const u8 *fw_data)
 	}
 
 	return copy_good;
+}
+
+
+void NDS_GetFirmwareMACAddressAsStr(const FirmwareConfig& config, char outMacStr[13])
+{
+	for (u8 i = 0; i < 6; i++) {
+		for (u8 j = 0; j < 2; j++) {
+			u8 u4Bits = j == 0 ? config.MACAddress[i] / 16 : config.MACAddress[i] % 16;
+			outMacStr[i * 2 + j] = u4Bits >= 10 ? 'A' + (u4Bits - 10) : '0' + u4Bits;
+		}
+	}
+	outMacStr[12] = '\0';
+}
+
+void NDS_SetFirmwareMACAddressFromStr(FirmwareConfig& config, const char* macStr)
+{
+	for (size_t i = 0; i < sizeof(config.MACAddress); i++)
+		config.MACAddress[i] = 0;
+
+	// Each letter in macStr represents a 4-bits value (u4) of the mac address.
+	size_t macStrLen = strlen(macStr);
+	if (macStrLen > 12)
+		macStrLen = 12;
+
+	const size_t missingLetterCount = 12 - macStrLen;
+	for (size_t i = 0; i < macStrLen; i++) {
+		char letter = macStr[i];
+		u8 macU4Val = 0;
+		if (letter >= '0' && letter <= '9')
+			macU4Val = letter - '0';
+		else if (letter >= 'A' && letter <= 'F')
+			macU4Val = letter - 'A' + 10;
+		else if (letter >= 'a' && letter <= 'f')
+			macU4Val = letter - 'a' + 10;
+		// Invalid letters are treated as 0.
+
+		const size_t u4Idx = i + missingLetterCount; // u4Idx is between 0-12
+		const size_t u8Idx = u4Idx / 2;
+		const bool isHighBits = u4Idx % 2 == 0;
+		config.MACAddress[u8Idx] += isHighBits ? macU4Val << 4 : macU4Val;
+	}
 }
 
 void NDS_GetDefaultFirmwareConfig(FirmwareConfig &outConfig)

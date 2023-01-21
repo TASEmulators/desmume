@@ -67,6 +67,9 @@ static void WriteFirmConfig(const FirmwareConfig &fwConfig)
 	}
 	temp_str[i] = '\0';
 	WritePrivateProfileString("Firmware","Message", temp_str, IniName);
+
+	NDS_GetFirmwareMACAddressAsStr(fwConfig, temp_str);
+	WritePrivateProfileString("Firmware", "macAddress", temp_str, IniName);
 }
 
 BOOL CALLBACK FirmConfig_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam)
@@ -74,6 +77,7 @@ BOOL CALLBACK FirmConfig_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lp
 	FirmwareConfig &fwConfig = CommonSettings.fwConfig;
 	int i;
 	char temp_str[27];
+	char mac_buffer[13];
 
 	switch(komunikat)
 	{
@@ -88,8 +92,10 @@ BOOL CALLBACK FirmConfig_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lp
 				SendDlgItemMessage(dialog,IDC_COMBO4,CB_SETCURSEL,fwConfig.language,0);
 				SendDlgItemMessage(dialog,IDC_EDIT1,EM_SETLIMITTEXT,10,0);
 				SendDlgItemMessage(dialog,IDC_EDIT2,EM_SETLIMITTEXT,26,0);
+				SendDlgItemMessage(dialog,IDC_EDIT3,EM_SETLIMITTEXT,12,0);
 				SendDlgItemMessage(dialog,IDC_EDIT1,EM_SETSEL,0,10);
 				SendDlgItemMessage(dialog,IDC_EDIT2,EM_SETSEL,0,26);
+				SendDlgItemMessage(dialog,IDC_EDIT3,EM_SETSEL,0,12);
 
 				for ( i = 0; i < fwConfig.nicknameLength; i++) {
 					nickname_buffer[i] = fwConfig.nickname[i];
@@ -102,6 +108,10 @@ BOOL CALLBACK FirmConfig_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lp
 				}
 				message_buffer[i] = '\0';
 				SendDlgItemMessage(dialog,IDC_EDIT2,WM_SETTEXT,0,(LPARAM)message_buffer);
+
+				NDS_GetFirmwareMACAddressAsStr(fwConfig, mac_buffer);
+				SendDlgItemMessage(dialog, IDC_EDIT3, WM_SETTEXT, 0, (LPARAM)mac_buffer);
+
 				break;
 	
 		case WM_COMMAND:
@@ -141,6 +151,10 @@ BOOL CALLBACK FirmConfig_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lp
 				for ( char_index = 0; char_index < fwConfig.messageLength; char_index++) {
 					fwConfig.message[char_index] = temp_str[char_index];
 				}
+
+				*(WORD*)temp_str = 13;
+				res = SendDlgItemMessage(dialog, IDC_EDIT3, EM_GETLINE, 0, (LPARAM)temp_str);
+				NDS_SetFirmwareMACAddressFromStr(fwConfig, temp_str);
 
 				WriteFirmConfig(fwConfig);
 				EndDialog(dialog,0);
