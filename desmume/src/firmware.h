@@ -35,6 +35,7 @@
 
 extern const char *defaultNickname;
 extern const char *defaultMessage;
+extern const char* defaultMacAddressStr;
 
 struct FirmwareConfig
 {
@@ -447,6 +448,8 @@ public:
 
 int copy_firmware_user_data( u8 *dest_buffer, const u8 *fw_data);
 
+void NDS_GetFirmwareMACAddressAsStr(const FirmwareConfig& config, char outMacStr[13]);
+void NDS_SetFirmwareMACAddressFromStr(FirmwareConfig& config, const char* MacStr);
 void NDS_GetDefaultFirmwareConfig(FirmwareConfig &outConfig);
 void NDS_GetCurrentWFCUserID(u8 *outMAC, u8 *outUserID);
 void NDS_ApplyFirmwareSettings(NDSFirmwareData *outFirmware,
