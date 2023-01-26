@@ -619,7 +619,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 	
 	// handle alpha test
 	if ( shaderOutput.a == 0 ||
-		(this->_softRender->currentRenderState->enableAlphaTest && shaderOutput.a < this->_softRender->currentRenderState->alphaTestRef) )
+	    (renderState.DISP3DCNT.EnableAlphaTest && (shaderOutput.a < renderState.alphaTestRef)) )
 	{
 		return;
 	}
@@ -895,7 +895,8 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAt
 	this->_shade<ISSHADOWPOLYGON>((PolygonMode)polyAttr.Mode, newDstColor32, shaderOutput, invu * w, invv * w);
 	
 	// handle alpha test
-	if ( shaderOutput.a == 0 || (renderState.DISP3DCNT.EnableAlphaTest && (shaderOutput.a < renderState.alphaTestRef)) )
+	if ( shaderOutput.a == 0 ||
+	    (renderState.DISP3DCNT.EnableAlphaTest && (shaderOutput.a < renderState.alphaTestRef)) )
 	{
 		return;
 	}
