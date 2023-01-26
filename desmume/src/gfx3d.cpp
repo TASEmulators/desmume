@@ -1,6 +1,6 @@
 /*	
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2022 DeSmuME team
+	Copyright (C) 2008-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,12 +19,6 @@
 //This file implements the geometry engine hardware component.
 //This handles almost all of the work of 3d rendering, leaving the renderer
 //plugin responsible only for drawing primitives.
-
-//---------------
-//TODO TODO TODO TODO
-//make up mind once and for all whether fog, toon, etc. should reside in memory buffers (for easier handling in MMU)
-//if they do, then we need to copy them out in doFlush!!!
-//---------------
 
 //old tests of matrix stack:
 //without the mymode==(texture) namco classics galaxian will try to use pos=1 and overrun the stack, corrupting emu
@@ -266,8 +260,12 @@ using std::max;
 using std::min;
 
 GFX3D gfx3d;
-Viewer3d_State* viewer3d_state = NULL;
+GFX3D_IOREG *_GFX3D_IORegisterMap = NULL;
+Viewer3D_State viewer3D;
 static GFX3D_Clipper boxtestClipper;
+
+LegacyGFX3DStateSFormat legacyGFX3DStateSFormatPending;
+LegacyGFX3DStateSFormat legacyGFX3DStateSFormatApplied;
 
 //tables that are provided to anyone
 CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
@@ -305,7 +303,9 @@ static CACHE_ALIGN s32	trans[4] = {0, 0, 0, 0};
 static u8		transind = 0;
 static CACHE_ALIGN s32	scale[4] = {0, 0, 0, 0};
 static u8		scaleind = 0;
-static u32 viewport = 0;
+
+static GFX3D_Viewport gfx3dViewport;
+static IOREG_VIEWPORT viewportLegacySave; // For save state compatibility
 
 //various other registers
 static s32 _t=0, _s=0;
@@ -360,21 +360,14 @@ static CACHE_ALIGN s32 cacheHalfVector[4][4];
 #define RENDER_BACK_SURFACE 0X40
 
 
-//-------------poly and vertex lists and such things
-POLYLIST* polylists = NULL;
-POLYLIST* polylist = NULL;
-VERT *vertLists = NULL;
-VERT *vertList = NULL;
-
+//-------------working polygon lists
 GFX3D_Clipper *_clipper = NULL;
-CPoly _clippedPolyWorkingList[POLYLIST_SIZE * 2];
-CPoly _clippedPolyUnsortedList[POLYLIST_SIZE];
-CPoly _clippedPolySortedList[POLYLIST_SIZE];
+static PAGE_ALIGN int _polyWorkingIndexList[INDEXLIST_SIZE];
+static PAGE_ALIGN CPoly _clippedPolyWorkingList[POLYLIST_SIZE * 2];
+static PAGE_ALIGN CPoly _clippedPolyUnsortedList[POLYLIST_SIZE];
 
-size_t vertListCount[2] = {0, 0};
 int polygonListCompleted = 0;
 
-static int listTwiddle = 1;
 static u8 triStripToggle;
 
 //list-building state
@@ -388,18 +381,6 @@ struct tmpVertInfo
 	BOOL first;
 } tempVertInfo;
 
-
-static void twiddleLists()
-{
-	listTwiddle++;
-	listTwiddle &= 1;
-	polylist = &polylists[listTwiddle];
-	vertList = vertLists + (VERTLIST_SIZE * listTwiddle);
-	polylist->count = 0;
-	polylist->opaqueCount = 0;
-	vertListCount[listTwiddle] = 0;
-}
-
 static BOOL drawPending = FALSE;
 //------------------------------------------------------------
 
@@ -412,8 +393,35 @@ static void makeTables()
 		
 		// Is GBATEK actually correct here? Let's try using a simplified formula and see if it's
 		// more accurate.
-		dsDepthExtend_15bit_to_24bit[i] = (i * 0x0200) + 0x01FF;
+		dsDepthExtend_15bit_to_24bit[i] = (u32)((i * 0x0200) + 0x01FF);
 	}
+}
+
+GFX3D_Viewport GFX3D_ViewportParse(const u32 inValue)
+{
+	GFX3D_Viewport outViewport;
+	IOREG_VIEWPORT reg;
+	
+	reg.value = inValue;
+	
+	//I'm 100% sure this is basically 99% correct
+	//the modular math is right. the details of how the +1 is handled may be wrong (this might should be dealt with in the viewport transformation instead)
+	//Its an off by one error in any event so we may never know
+	outViewport.width  = (u8)(reg.X2 - reg.X1) + 1;
+	outViewport.height = (u8)(reg.Y2 - reg.Y1) + 1;
+	outViewport.x      = (s16)reg.X1;
+	
+	//test: homie rollerz character select chooses nonsense for Y. they did the math backwards. their goal was a fullscreen viewport, they just messed up.
+	//they also messed up the width...
+	
+	// The maximum viewport y-value is 191. Values above 191 need to wrap
+	// around and go negative.
+	//
+	// Test case: The Homie Rollerz character select screen sets the y-value
+	// to 253, which then wraps around to -2.
+	outViewport.y      = (reg.Y1 > 191) ? ((s16)reg.Y1 - 0x00FF) : (s16)reg.Y1;
+	
+	return outViewport;
 }
 
 void POLY::save(EMUFILE &os)
@@ -426,7 +434,7 @@ void POLY::save(EMUFILE &os)
 	os.write_32LE(attribute.value);
 	os.write_32LE(texParam.value);
 	os.write_32LE(texPalette);
-	os.write_32LE(viewport);
+	os.write_32LE(viewportLegacySave.value);
 	os.write_floatLE(miny);
 	os.write_floatLE(maxy);
 }
@@ -444,9 +452,11 @@ void POLY::load(EMUFILE &is)
 	is.read_32LE(attribute.value);
 	is.read_32LE(texParam.value);
 	is.read_32LE(texPalette);
-	is.read_32LE(viewport);
+	is.read_32LE(viewportLegacySave.value);
 	is.read_floatLE(miny);
 	is.read_floatLE(maxy);
+	
+	viewport = GFX3D_ViewportParse(viewportLegacySave.value);
 }
 
 void VERT::save(EMUFILE &os)
@@ -482,6 +492,8 @@ void VERT::load(EMUFILE &is)
 
 void gfx3d_init()
 {
+	_GFX3D_IORegisterMap = (GFX3D_IOREG *)(&MMU.ARM9_REG[0x0320]);
+	
 	_clipper = new GFX3D_Clipper;
 	_clipper->SetClippedPolyBufferPtr(_clippedPolyWorkingList);
 	
@@ -506,37 +518,6 @@ void gfx3d_init()
 	//DWORD diff2 = end-start;
 
 	//printf("SPEED TEST %d %d\n",diff,diff2);
-
-	// Use malloc() instead of new because, for some unknown reason, GCC 4.9 has a bug
-	// that causes a std::bad_alloc exception on certain memory allocations. Right now,
-	// POLYLIST and VERT are POD-style structs, so malloc() can substitute for new
-	// in this case.
-	if (polylists == NULL)
-	{
-		polylists = (POLYLIST *)malloc_alignedPage(sizeof(POLYLIST) * 2);
-		polylist = &polylists[0];
-	}
-	
-	if (vertLists == NULL)
-	{
-		vertLists = (VERT *)malloc_alignedPage(VERTLIST_SIZE * sizeof(VERT) * 2);
-		vertList = vertLists;
-		
-		vertListCount[0] = 0;
-		vertListCount[1] = 0;
-	}
-	
-	gfx3d.state.savedDISP3DCNT.value = 0;
-	gfx3d.state.fogDensityTable = MMU.ARM9_REG+0x0360;
-	gfx3d.state.edgeMarkColorTable = (u16 *)(MMU.ARM9_REG+0x0330);
-
-	//TODO: these should probably be copied into renderState when it's latched..
-	//THIS IS A SUPER BAD HACK
-	//see TODO TODO TODO TODO
-	gfx3d.renderState.fogDensityTable = MMU.ARM9_REG+0x0360;
-	gfx3d.renderState.edgeMarkColorTable = (u16 *)(MMU.ARM9_REG+0x0330);
-
-	gfx3d.render3DFrameCount = 0;
 	
 	makeTables();
 	Render3D_Init();
@@ -545,15 +526,6 @@ void gfx3d_init()
 void gfx3d_deinit()
 {
 	Render3D_DeInit();
-	
-	free_aligned(polylists);
-	polylists = NULL;
-	polylist = NULL;
-	
-	free_aligned(vertLists);
-	vertLists = NULL;
-	vertList = NULL;
-	
 	delete _clipper;
 }
 
@@ -570,24 +542,28 @@ void gfx3d_reset()
 	max_polys = max_verts = 0;
 #endif
 
-	reconstruct(&gfx3d);
-	delete viewer3d_state;
-	viewer3d_state = new Viewer3d_State();
+	memset(&viewer3D, 0, sizeof(Viewer3D_State));
 	
 	gxf_hardware.reset();
 
 	drawPending = FALSE;
-	memset(polylists, 0, sizeof(POLYLIST)*2);
-	memset(vertLists, 0, VERTLIST_SIZE * sizeof(VERT) * 2);
-	gfx3d.state.invalidateToon = true;
-	listTwiddle = 1;
-	twiddleLists();
-	gfx3d.polylist = polylist;
-	gfx3d.vertList = vertList;
-	gfx3d.vertListCount = vertListCount[listTwiddle];
-	gfx3d.clippedPolyCount = 0;
-	gfx3d.clippedPolyOpaqueCount = 0;
-	gfx3d.clippedPolyList = _clippedPolySortedList;
+	
+	memset(&gfx3d, 0, sizeof(GFX3D));
+	
+	gfx3d.pendingState.DISP3DCNT.EnableTexMapping = 1;
+	gfx3d.pendingState.DISP3DCNT.PolygonShading = PolygonShadingMode_Toon;
+	gfx3d.pendingState.DISP3DCNT.EnableAlphaTest = 1;
+	gfx3d.pendingState.DISP3DCNT.EnableAlphaBlending = 1;
+	gfx3d.pendingState.clearDepth = DS_DEPTH15TO24(0x7FFF);
+	
+	gfx3d.appliedState.DISP3DCNT.EnableTexMapping = 1;
+	gfx3d.appliedState.DISP3DCNT.PolygonShading = PolygonShadingMode_Toon;
+	gfx3d.appliedState.DISP3DCNT.EnableAlphaTest = 1;
+	gfx3d.appliedState.DISP3DCNT.EnableAlphaBlending = 1;
+	gfx3d.appliedState.clearDepth = DS_DEPTH15TO24(0x7FFF);
+	
+	gfx3d.pendingListIndex = 0;
+	gfx3d.appliedListIndex = 1;
 
 	polyAttrInProcess.value = 0;
 	currentPolyAttr.value = 0;
@@ -601,7 +577,6 @@ void gfx3d_reset()
 	transind = 0;
 	memset(scale, 0, sizeof(scale));
 	scaleind = 0;
-	viewport = 0;
 	memset(gxPIPE.cmd, 0, sizeof(gxPIPE.cmd));
 	memset(gxPIPE.param, 0, sizeof(gxPIPE.param));
 	memset(colorRGB, 0, sizeof(colorRGB));
@@ -640,15 +615,23 @@ void gfx3d_reset()
 	_s=0;
 	last_t = 0;
 	last_s = 0;
-	viewport = 0xBFFF0000;
+	
+	gfx3dViewport.x = 0;
+	gfx3dViewport.y = 0;
+	gfx3dViewport.width = 256;
+	gfx3dViewport.height = 192;
+	
+	// Init for save state compatibility
+	_GFX3D_IORegisterMap->VIEWPORT.X1 = viewportLegacySave.X1 = 0;
+	_GFX3D_IORegisterMap->VIEWPORT.Y1 = viewportLegacySave.Y1 = 0;
+	_GFX3D_IORegisterMap->VIEWPORT.X2 = viewportLegacySave.X2 = 255;
+	_GFX3D_IORegisterMap->VIEWPORT.Y2 = viewportLegacySave.Y2 = 191;
 	
 	clInd2 = 0;
 	isSwapBuffers = FALSE;
 
 	GFX_PIPEclear();
 	GFX_FIFOclear();
-	
-	gfx3d.render3DFrameCount = 0;
 	
 	CurrentRenderer->Reset();
 }
@@ -696,10 +679,12 @@ static void GEM_TransformVertex(const s32 (&__restrict mtx)[16], s32 (&__restric
 //---------------
 
 
-#define SUBMITVERTEX(ii, nn) polylist->list[polylist->count].vertIndexes[ii] = tempVertInfo.map[nn];
+#define SUBMITVERTEX(ii, nn) pendingGList.polyList[pendingGList.polyCount].vertIndexes[ii] = tempVertInfo.map[nn];
 //Submit a vertex to the GE
 static void SetVertex()
 {
+	GFX3D_GeometryList &pendingGList = gfx3d.gList[gfx3d.pendingListIndex];
+	
 	s32 coord[3] = {
 		s16coord[0],
 		s16coord[1],
@@ -718,10 +703,15 @@ static void SetVertex()
 
 	//refuse to do anything if we have too many verts or polys
 	polygonListCompleted = 0;
-	if(vertListCount[listTwiddle] >= VERTLIST_SIZE)
-			return;
-	if(polylist->count >= POLYLIST_SIZE) 
-			return;
+	if (pendingGList.vertListCount >= VERTLIST_SIZE)
+	{
+		return;
+	}
+	
+	if (pendingGList.polyCount >= POLYLIST_SIZE)
+	{
+		return;
+	}
 
 	if(freelookMode == 2)
 	{
@@ -748,21 +738,20 @@ static void SetVertex()
 	//TODO - culling should be done here.
 	//TODO - viewport transform?
 
-	int continuation = 0;
+	s32 continuation = 0;
 	if (vtxFormat==GFX3D_TRIANGLE_STRIP && !tempVertInfo.first)
 		continuation = 2;
 	else if (vtxFormat==GFX3D_QUAD_STRIP && !tempVertInfo.first)
 		continuation = 2;
 
 	//record the vertex
-	//VERT &vert = tempVertList.list[tempVertList.count];
-	const size_t vertIndex = vertListCount[listTwiddle] + tempVertInfo.count - continuation;
+	const size_t vertIndex = pendingGList.vertListCount + tempVertInfo.count - continuation;
 	if (vertIndex >= VERTLIST_SIZE)
 	{
 		printf("wtf\n");
 	}
 	
-	VERT &vert = vertList[vertIndex];
+	VERT &vert = pendingGList.vertList[vertIndex];
 
 	//printf("%f %f %f\n",coordTransformed[0],coordTransformed[1],coordTransformed[2]);
 	//if(coordTransformed[1] > 20) 
@@ -786,7 +775,7 @@ static void SetVertex()
 	vert.color[1] = GFX3D_5TO6_LOOKUP(colorRGB[1]);
 	vert.color[2] = GFX3D_5TO6_LOOKUP(colorRGB[2]);
 	vert.color_to_float();
-	tempVertInfo.map[tempVertInfo.count] = vertListCount[listTwiddle] + tempVertInfo.count - continuation;
+	tempVertInfo.map[tempVertInfo.count] = (s32)pendingGList.vertListCount + tempVertInfo.count - continuation;
 	tempVertInfo.count++;
 
 	//possibly complete a polygon
@@ -798,12 +787,11 @@ static void SetVertex()
 				if(tempVertInfo.count!=3)
 					break;
 				polygonListCompleted = 1;
-				//vertlist->list[polylist->list[polylist->count].vertIndexes[i] = vertlist->count++] = tempVertList.list[n];
 				SUBMITVERTEX(0,0);
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
-				vertListCount[listTwiddle] += 3;
-				polylist->list[polylist->count].type = POLYGON_TYPE_TRIANGLE;
+				gfx3d.gList[gfx3d.pendingListIndex].vertListCount += 3;
+				pendingGList.polyList[pendingGList.polyCount].type = POLYGON_TYPE_TRIANGLE;
 				tempVertInfo.count = 0;
 				break;
 				
@@ -815,8 +803,8 @@ static void SetVertex()
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
 				SUBMITVERTEX(3,3);
-				vertListCount[listTwiddle] += 4;
-				polylist->list[polylist->count].type = POLYGON_TYPE_QUAD;
+				gfx3d.gList[gfx3d.pendingListIndex].vertListCount += 4;
+				pendingGList.polyList[pendingGList.polyCount].type = POLYGON_TYPE_QUAD;
 				tempVertInfo.count = 0;
 				break;
 				
@@ -827,17 +815,17 @@ static void SetVertex()
 				SUBMITVERTEX(0,0);
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
-				polylist->list[polylist->count].type = POLYGON_TYPE_TRIANGLE;
+				pendingGList.polyList[pendingGList.polyCount].type = POLYGON_TYPE_TRIANGLE;
 
 				if(triStripToggle)
-					tempVertInfo.map[1] = vertListCount[listTwiddle]+2-continuation;
+					tempVertInfo.map[1] = (s32)pendingGList.vertListCount + 2 - continuation;
 				else
-					tempVertInfo.map[0] = vertListCount[listTwiddle]+2-continuation;
+					tempVertInfo.map[0] = (s32)pendingGList.vertListCount + 2 - continuation;
 				
 				if(tempVertInfo.first)
-					vertListCount[listTwiddle] += 3;
+					pendingGList.vertListCount += 3;
 				else
-					vertListCount[listTwiddle] += 1;
+					pendingGList.vertListCount += 1;
 
 				triStripToggle ^= 1;
 				tempVertInfo.first = false;
@@ -852,12 +840,12 @@ static void SetVertex()
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,3);
 				SUBMITVERTEX(3,2);
-				polylist->list[polylist->count].type = POLYGON_TYPE_QUAD;
-				tempVertInfo.map[0] = vertListCount[listTwiddle]+2-continuation;
-				tempVertInfo.map[1] = vertListCount[listTwiddle]+3-continuation;
+				pendingGList.polyList[pendingGList.polyCount].type = POLYGON_TYPE_QUAD;
+				tempVertInfo.map[0] = (s32)pendingGList.vertListCount + 2 - continuation;
+				tempVertInfo.map[1] = (s32)pendingGList.vertListCount + 3 - continuation;
 				if(tempVertInfo.first)
-					vertListCount[listTwiddle] += 4;
-				else vertListCount[listTwiddle] += 2;
+					pendingGList.vertListCount += 4;
+				else pendingGList.vertListCount += 2;
 				tempVertInfo.first = false;
 				tempVertInfo.count = 2;
 				break;
@@ -868,7 +856,7 @@ static void SetVertex()
 
 		if (polygonListCompleted == 1)
 		{
-			POLY &poly = polylist->list[polylist->count];
+			POLY &poly = pendingGList.polyList[pendingGList.polyCount];
 			
 			poly.vtxFormat = vtxFormat;
 
@@ -877,9 +865,9 @@ static void SetVertex()
 			if (currentPolyTexParam.PackedFormat == TEXMODE_NONE)
 			{
 				bool duplicated = false;
-				const VERT &vert0 = vertList[poly.vertIndexes[0]];
-				const VERT &vert1 = vertList[poly.vertIndexes[1]];
-				const VERT &vert2 = vertList[poly.vertIndexes[2]];
+				const VERT &vert0 = pendingGList.vertList[poly.vertIndexes[0]];
+				const VERT &vert1 = pendingGList.vertList[poly.vertIndexes[1]];
+				const VERT &vert2 = pendingGList.vertList[poly.vertIndexes[2]];
 				if ( (vert0.x == vert1.x) && (vert0.y == vert1.y) ) duplicated = true;
 				else
 					if ( (vert1.x == vert2.x) && (vert1.y == vert2.y) ) duplicated = true;
@@ -897,8 +885,9 @@ static void SetVertex()
 			poly.attribute = polyAttrInProcess;
 			poly.texParam = currentPolyTexParam;
 			poly.texPalette = currentPolyTexPalette;
-			poly.viewport = viewport;
-			polylist->count++;
+			poly.viewport = gfx3dViewport;
+			poly.viewportLegacySave = viewportLegacySave;
+			pendingGList.polyCount++;
 		}
 	}
 }
@@ -1421,7 +1410,7 @@ static void gfx3d_glNormal(s32 v)
 			//shininess is 20.12 fixed point, so >>5 gives us .7 which is 128 entries
 			//the entries are 8bits each so <<4 gives us .12 again, compatible with the lighting formulas below
 			//(according to other normal nds procedures, we might should fill the bottom bits with 1 or 0 according to rules...)
-			fixedshininess = gfx3d.state.shininessTable[fixedshininess>>5]<<4;
+			fixedshininess = gfx3d.pendingState.shininessTable[fixedshininess>>5]<<4;
 		}
 
 		for (size_t c = 0; c < 3; c++)
@@ -1600,10 +1589,10 @@ static void gfx3d_glLightColor(u32 v)
 
 static BOOL gfx3d_glShininess(u32 val)
 {
-	gfx3d.state.shininessTable[shininessInd++] =   (val        & 0xFF);
-	gfx3d.state.shininessTable[shininessInd++] = (((val >>  8) & 0xFF));
-	gfx3d.state.shininessTable[shininessInd++] = (((val >> 16) & 0xFF));
-	gfx3d.state.shininessTable[shininessInd++] = (((val >> 24) & 0xFF));
+	gfx3d.pendingState.shininessTable[shininessInd++] =   (u8)(val        & 0x000000FF);
+	gfx3d.pendingState.shininessTable[shininessInd++] = (u8)(((val >>  8) & 0x000000FF));
+	gfx3d.pendingState.shininessTable[shininessInd++] = (u8)(((val >> 16) & 0x000000FF));
+	gfx3d.pendingState.shininessTable[shininessInd++] = (u8)(((val >> 24) & 0x000000FF));
 
 	if (shininessInd < 128) return FALSE;
 	shininessInd = 0;
@@ -1632,9 +1621,12 @@ static void gfx3d_glEnd(void)
 
 // swap buffers - skipped
 
-static void gfx3d_glViewPort(u32 v)
+static void gfx3d_glViewport(u32 v)
 {
-	viewport = v;
+	_GFX3D_IORegisterMap->VIEWPORT.value = v;
+	viewportLegacySave.value = v;
+	gfx3dViewport = GFX3D_ViewportParse(v);
+	
 	GFX_DELAY(1);
 }
 
@@ -1824,6 +1816,10 @@ static BOOL gfx3d_glPosTest(u32 v)
 	MatrixMultVec4x4(mtxCurrent[MATRIXMODE_PROJECTION], PTcoords);
 
 	MMU_new.gxstat.tb = 0;
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x620, (u32)PTcoords[0]);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x624, (u32)PTcoords[1]);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x628, (u32)PTcoords[2]);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x62C, (u32)PTcoords[3]);
 
 	GFX_DELAY(9);
 
@@ -1863,77 +1859,105 @@ static void gfx3d_glVecTest(u32 v)
 	const u16 z = (u16)((s16)normal[2]);
 
 	MMU_new.gxstat.tb = 0;		// clear busy
-	T1WriteWord(MMU.MMU_MEM[0][0x40], 0x630, x);
-	T1WriteWord(MMU.MMU_MEM[0][0x40], 0x632, y);
-	T1WriteWord(MMU.MMU_MEM[0][0x40], 0x634, z);
+	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x630, x);
+	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x632, y);
+	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x634, z);
 
 }
 //================================================================================= Geometry Engine
 //================================================================================= (end)
 //=================================================================================
-
-void VIEWPORT::decode(const u32 v)
-{
-	//test: homie rollerz character select chooses nonsense for Y. they did the math backwards. their goal was a fullscreen viewport, they just messed up.
-	//they also messed up the width...
-
-	u8 x1 = (v>> 0)&0xFF;
-	u8 y1 = (v>> 8)&0xFF;
-	u8 x2 = (v>>16)&0xFF;
-	u8 y2 = (v>>24)&0xFF;
-
-	//I'm 100% sure this is basically 99% correct
-	//the modular math is right. the details of how the +1 is handled may be wrong (this might should be dealt with in the viewport transformation instead)
-	//Its an off by one error in any event so we may never know
-	width = (u8)(x2-x1)+1;
-	height = (u8)(y2-y1)+1;
-	x = x1;
-	y = y1;
-}
-
 void gfx3d_glFogColor(u32 v)
 {
-	gfx3d.state.fogColor = v;
+	gfx3d.pendingState.fogColor = v;
 }
 
 void gfx3d_glFogOffset(u32 v)
 {
-	gfx3d.state.fogOffset = (v & 0x7FFF);
+	gfx3d.pendingState.fogOffset = (v & 0x7FFF);
 }
 
-void gfx3d_glClearDepth(u32 v)
+template <typename T, size_t ADDROFFSET>
+void gfx3d_glClearDepth(const T val)
 {
-	gfx3d.state.clearDepth = DS_DEPTH15TO24(v);
+	const size_t numBytes = sizeof(T);
+
+	switch (numBytes)
+	{
+		case 1:
+		{
+			if (ADDROFFSET == 1)
+			{
+				gfx3d.pendingState.clearDepth = DS_DEPTH15TO24(_GFX3D_IORegisterMap->CLEAR_DEPTH);
+			}
+			break;
+		}
+			
+		case 2:
+			gfx3d.pendingState.clearDepth = DS_DEPTH15TO24(val);
+			break;
+			
+		default:
+			break;
+	}
 }
 
-int gfx3d_GetNumPolys()
+template void gfx3d_glClearDepth< u8, 0>(const  u8 val);
+template void gfx3d_glClearDepth< u8, 1>(const  u8 val);
+template void gfx3d_glClearDepth<u16, 0>(const u16 val);
+
+template <typename T, size_t ADDROFFSET>
+void gfx3d_glClearImageOffset(const T val)
+{
+	((T *)&gfx3d.pendingState.clearImageOffset)[ADDROFFSET >> (sizeof(T) >> 1)] = val;
+}
+
+template void gfx3d_glClearImageOffset< u8, 0>(const  u8 val);
+template void gfx3d_glClearImageOffset< u8, 1>(const  u8 val);
+template void gfx3d_glClearImageOffset<u16, 0>(const u16 val);
+
+u32 gfx3d_GetNumPolys()
 {
 	//so is this in the currently-displayed or currently-built list?
-	return (polylists[listTwiddle].count);
+	return (u32)(gfx3d.gList[gfx3d.pendingListIndex].polyCount);
 }
 
-int gfx3d_GetNumVertex()
+u32 gfx3d_GetNumVertex()
 {
 	//so is this in the currently-displayed or currently-built list?
-	return (vertListCount[listTwiddle]);
+	return (u32)gfx3d.gList[gfx3d.pendingListIndex].vertListCount;
 }
 
-void gfx3d_UpdateToonTable(u8 offset, u16 val)
+template <typename T>
+void gfx3d_UpdateEdgeMarkColorTable(const u8 offset, const T val)
 {
-	gfx3d.state.invalidateToon = true;
-	gfx3d.state.u16ToonTable[offset] = val;
-	//printf("toon %d set to %04X\n",offset,val);
+	((T *)(gfx3d.pendingState.edgeMarkColorTable))[offset >> (sizeof(T) >> 1)] = val;
 }
 
-void gfx3d_UpdateToonTable(u8 offset, u32 val)
+template void gfx3d_UpdateEdgeMarkColorTable< u8>(const u8 offset, const  u8 val);
+template void gfx3d_UpdateEdgeMarkColorTable<u16>(const u8 offset, const u16 val);
+template void gfx3d_UpdateEdgeMarkColorTable<u32>(const u8 offset, const u32 val);
+
+template <typename T>
+void gfx3d_UpdateFogTable(const u8 offset, const T val)
+{
+	((T *)(gfx3d.pendingState.fogDensityTable))[offset >> (sizeof(T) >> 1)] = val;
+}
+
+template void gfx3d_UpdateFogTable< u8>(const u8 offset, const  u8 val);
+template void gfx3d_UpdateFogTable<u16>(const u8 offset, const u16 val);
+template void gfx3d_UpdateFogTable<u32>(const u8 offset, const u32 val);
+
+template <typename T>
+void gfx3d_UpdateToonTable(const u8 offset, const T val)
 {
 	//C.O.P. sets toon table via this method
-	gfx3d.state.invalidateToon = true;
-	gfx3d.state.u16ToonTable[offset] = val & 0xFFFF;
-	gfx3d.state.u16ToonTable[offset+1] = val >> 16;
-	//printf("toon %d set to %04X\n",offset,gfx3d.state.u16ToonTable[offset]);
-	//printf("toon %d set to %04X\n",offset+1,gfx3d.state.u16ToonTable[offset+1]);
+	((T *)(gfx3d.pendingState.toonTable16))[offset >> (sizeof(T) >> 1)] = val;
 }
+
+template void gfx3d_UpdateToonTable< u8>(const u8 offset, const  u8 val);
+template void gfx3d_UpdateToonTable<u16>(const u8 offset, const u16 val);
+template void gfx3d_UpdateToonTable<u32>(const u8 offset, const u32 val);
 
 s32 gfx3d_GetClipMatrix(const u32 index)
 {
@@ -1951,7 +1975,7 @@ s32 gfx3d_GetDirectionalMatrix(const u32 index)
 
 void gfx3d_glAlphaFunc(u32 v)
 {
-	gfx3d.state.alphaTestRef = v & 0x1F;
+	gfx3d.pendingState.alphaTestRef = (u8)(v & 0x0000001F);
 }
 
 u32 gfx3d_glGetPosRes(const size_t index)
@@ -2193,7 +2217,7 @@ static void gfx3d_execute(u8 cmd, u32 param)
 			gfx3d_glFlush(param);
 		break;
 		case 0x60:		// VIEWPORT - Set Viewport (W)
-			gfx3d_glViewPort(param);
+			gfx3d_glViewport(param);
 		break;
 		case 0x70:		// BOX_TEST - Test if Cuboid Sits inside View Volume (W)
 			gfx3d_glBoxTest(param);
@@ -2256,7 +2280,7 @@ void gfx3d_execute3D()
 void gfx3d_glFlush(u32 v)
 {
 	//printf("-------------FLUSH------------- (vcount=%d\n",nds.VCount);
-	gfx3d.state.pendingFlushCommand = v;
+	gfx3d.pendingState.SWAP_BUFFERS.value = v;
 #if 0
 	if (isSwapBuffers)
 	{
@@ -2293,20 +2317,20 @@ static bool gfx3d_ysort_compare(int num1, int num2)
 }
 
 template <ClipperMode CLIPPERMODE>
-void gfx3d_PerformClipping(const VERT *vtxList, const POLYLIST *polyList)
+void gfx3d_PerformClipping(const GFX3D_GeometryList &gList)
 {
 	bool isPolyUnclipped = false;
 	_clipper->Reset();
 	
-	for (size_t polyIndex = 0, clipCount = 0; polyIndex < polyList->count; polyIndex++)
+	for (size_t polyIndex = 0, clipCount = 0; polyIndex < gList.polyCount; polyIndex++)
 	{
-		const POLY &poly = polyList->list[polyIndex];
+		const POLY &poly = gList.polyList[polyIndex];
 		
 		const VERT *clipVerts[4] = {
-			&vtxList[poly.vertIndexes[0]],
-			&vtxList[poly.vertIndexes[1]],
-			&vtxList[poly.vertIndexes[2]],
-			(poly.type == POLYGON_TYPE_QUAD) ? &vtxList[poly.vertIndexes[3]] : NULL
+			&gList.vertList[poly.vertIndexes[0]],
+			&gList.vertList[poly.vertIndexes[1]],
+			&gList.vertList[poly.vertIndexes[2]],
+			(poly.type == POLYGON_TYPE_QUAD) ? &gList.vertList[poly.vertIndexes[3]] : NULL
 		};
 		
 		isPolyUnclipped = _clipper->ClipPoly<CLIPPERMODE>(polyIndex, poly, clipVerts);
@@ -2331,49 +2355,51 @@ void gfx3d_PerformClipping(const VERT *vtxList, const POLYLIST *polyList)
 	}
 }
 
-void gfx3d_GenerateRenderLists(const ClipperMode clippingMode)
+void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State &inState, GFX3D_GeometryList &outGList)
 {
+	const VERT *__restrict appliedVertList = outGList.vertList;
+	
 	switch (clippingMode)
 	{
 		case ClipperMode_Full:
-			gfx3d_PerformClipping<ClipperMode_Full>(gfx3d.vertList, gfx3d.polylist);
+			gfx3d_PerformClipping<ClipperMode_Full>(outGList);
 			break;
 			
 		case ClipperMode_FullColorInterpolate:
-			gfx3d_PerformClipping<ClipperMode_FullColorInterpolate>(gfx3d.vertList, gfx3d.polylist);
+			gfx3d_PerformClipping<ClipperMode_FullColorInterpolate>(outGList);
 			break;
 			
 		case ClipperMode_DetermineClipOnly:
-			gfx3d_PerformClipping<ClipperMode_DetermineClipOnly>(gfx3d.vertList, gfx3d.polylist);
+			gfx3d_PerformClipping<ClipperMode_DetermineClipOnly>(outGList);
 			break;
 	}
 	
-	gfx3d.clippedPolyCount = _clipper->GetPolyCount();
+	outGList.clippedPolyCount = _clipper->GetPolyCount();
 
 #ifdef _SHOW_VTX_COUNTERS
-	max_polys = max((u32)polycount, max_polys);
-	max_verts = max((u32)vertListCount[listTwiddle], max_verts);
-	osd->addFixed(180, 20, "%i/%i", polycount, vertListCount[listTwiddle]);		// current
+	max_polys = max((u32)outGList.polyCount, max_polys);
+	max_verts = max((u32)outGList.vertListCount, max_verts);
+	osd->addFixed(180, 20, "%i/%i", outGList.polyCount, outGList.vertListCount);		// current
 	osd->addFixed(180, 35, "%i/%i", max_polys, max_verts);		// max
 #endif
 	
 	//we need to sort the poly list with alpha polys last
 	//first, look for opaque polys
 	size_t ctr = 0;
-	for (size_t i = 0; i < gfx3d.clippedPolyCount; i++)
+	for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 	{
 		const CPoly &clippedPoly = _clipper->GetClippedPolyByIndex(i);
 		if (!clippedPoly.poly->isTranslucent())
-			gfx3d.indexlist.list[ctr++] = clippedPoly.index;
+			_polyWorkingIndexList[ctr++] = (int)clippedPoly.index;
 	}
-	gfx3d.clippedPolyOpaqueCount = ctr;
+	outGList.clippedPolyOpaqueCount = ctr;
 	
 	//then look for translucent polys
-	for (size_t i = 0; i < gfx3d.clippedPolyCount; i++)
+	for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 	{
 		const CPoly &clippedPoly = _clipper->GetClippedPolyByIndex(i);
 		if (clippedPoly.poly->isTranslucent())
-			gfx3d.indexlist.list[ctr++] = clippedPoly.index;
+			_polyWorkingIndexList[ctr++] = (int)clippedPoly.index;
 	}
 	
 	//find the min and max y values for each poly.
@@ -2382,22 +2408,22 @@ void gfx3d_GenerateRenderLists(const ClipperMode clippingMode)
 	//we process all polys here instead of just the opaque ones (which have been sorted to the beginning of the index list earlier) because
 	//1. otherwise it is basically two passes through the list and will probably run slower than one pass through the list
 	//2. most geometry is opaque which is always sorted anyway
-	for (size_t i = 0; i < gfx3d.clippedPolyCount; i++)
+	for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 	{
 		// TODO: Possible divide by zero with the w-coordinate.
 		// Is the vertex being read correctly? Is 0 a valid value for w?
 		// If both of these questions answer to yes, then how does the NDS handle a NaN?
 		// For now, simply prevent w from being zero.
 		POLY &poly = *_clipper->GetClippedPolyByIndex(i).poly;
-		float verty = gfx3d.vertList[poly.vertIndexes[0]].y;
-		float vertw = (gfx3d.vertList[poly.vertIndexes[0]].w != 0.0f) ? gfx3d.vertList[poly.vertIndexes[0]].w : 0.00000001f;
+		float verty = appliedVertList[poly.vertIndexes[0]].y;
+		float vertw = (appliedVertList[poly.vertIndexes[0]].w != 0.0f) ? appliedVertList[poly.vertIndexes[0]].w : 0.00000001f;
 		verty = 1.0f-(verty+vertw)/(2*vertw);
 		poly.miny = poly.maxy = verty;
 		
 		for (size_t j = 1; j < (size_t)poly.type; j++)
 		{
-			verty = gfx3d.vertList[poly.vertIndexes[j]].y;
-			vertw = (gfx3d.vertList[poly.vertIndexes[j]].w != 0.0f) ? gfx3d.vertList[poly.vertIndexes[j]].w : 0.00000001f;
+			verty = appliedVertList[poly.vertIndexes[j]].y;
+			vertw = (appliedVertList[poly.vertIndexes[j]].w != 0.0f) ? appliedVertList[poly.vertIndexes[j]].w : 0.00000001f;
 			verty = 1.0f-(verty+vertw)/(2*vertw);
 			poly.miny = min(poly.miny, verty);
 			poly.maxy = max(poly.maxy, verty);
@@ -2407,72 +2433,75 @@ void gfx3d_GenerateRenderLists(const ClipperMode clippingMode)
 	//now we have to sort the opaque polys by y-value.
 	//(test case: harvest moon island of happiness character creator UI)
 	//should this be done after clipping??
-	std::sort(gfx3d.indexlist.list, gfx3d.indexlist.list + gfx3d.clippedPolyOpaqueCount, gfx3d_ysort_compare);
+	std::sort(_polyWorkingIndexList, _polyWorkingIndexList + outGList.clippedPolyOpaqueCount, gfx3d_ysort_compare);
 	
-	if (!gfx3d.state.sortmode)
+	if (inState.SWAP_BUFFERS.YSortMode == 0)
 	{
 		//if we are autosorting translucent polys, we need to do this also
 		//TODO - this is unverified behavior. need a test case
-		std::sort(gfx3d.indexlist.list + gfx3d.clippedPolyOpaqueCount, gfx3d.indexlist.list + gfx3d.clippedPolyCount, gfx3d_ysort_compare);
+		std::sort(_polyWorkingIndexList + outGList.clippedPolyOpaqueCount, _polyWorkingIndexList + outGList.clippedPolyCount, gfx3d_ysort_compare);
 	}
 	
 	// Reorder the clipped polygon list to match our sorted index list.
 	if (clippingMode == ClipperMode_DetermineClipOnly)
 	{
-		for (size_t i = 0; i < gfx3d.clippedPolyCount; i++)
+		for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 		{
-			_clippedPolySortedList[i].poly = _clippedPolyUnsortedList[gfx3d.indexlist.list[i]].poly;
+			outGList.clippedPolyList[i].poly = _clippedPolyUnsortedList[_polyWorkingIndexList[i]].poly;
 		}
 	}
 	else
 	{
-		for (size_t i = 0; i < gfx3d.clippedPolyCount; i++)
+		for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 		{
-			_clippedPolySortedList[i] = _clippedPolyUnsortedList[gfx3d.indexlist.list[i]];
+			outGList.clippedPolyList[i] = _clippedPolyUnsortedList[_polyWorkingIndexList[i]];
 		}
 	}
 }
 
 static void gfx3d_doFlush()
 {
-	gfx3d.render3DFrameCount++;
-
-	//the renderer will get the lists we just built
-	gfx3d.polylist = polylist;
-	gfx3d.vertList = vertList;
-	gfx3d.vertListCount = vertListCount[listTwiddle];
-
-	//and also our current render state
-	gfx3d.state.sortmode = BIT0(gfx3d.state.activeFlushCommand);
-	gfx3d.state.wbuffer = BIT1(gfx3d.state.activeFlushCommand);
-
 	//latch the current renderer and geometry engine states
 	//NOTE: the geometry lists are copied elsewhere by another operation.
 	//that's pretty annoying.
-	//TODO: see TODO TODO TODO TODO
-	gfx3d.renderState = gfx3d.state;
+	gfx3d.appliedListIndex = gfx3d.pendingListIndex;
+	gfx3d.appliedState = gfx3d.pendingState;
 	
-	gfx3d.state.activeFlushCommand = gfx3d.state.pendingFlushCommand;
-	
+	// Finalize the geometry lists for our 3D renderers.
+	GFX3D_GeometryList &appliedGList = gfx3d.gList[gfx3d.appliedListIndex];
 	const ClipperMode clippingMode = CurrentRenderer->GetPreferredPolygonClippingMode();
-	gfx3d_GenerateRenderLists(clippingMode);
+	GFX3D_GenerateRenderLists(clippingMode, gfx3d.appliedState, appliedGList);
 	
 	//switch to the new lists
-	twiddleLists();
+	gfx3d.pendingListIndex++;
+	gfx3d.pendingListIndex &= 1;
+	
+	GFX3D_GeometryList &pendingGList = gfx3d.gList[gfx3d.pendingListIndex];
+	pendingGList.polyCount = 0;
+	pendingGList.polyOpaqueCount = 0;
+	pendingGList.vertListCount = 0;
+	pendingGList.clippedPolyCount = 0;
+	pendingGList.clippedPolyOpaqueCount = 0;
 
 	if (driver->view3d->IsRunning())
 	{
-		viewer3d_state->frameNumber = currFrameCounter;
-		viewer3d_state->state = gfx3d.state;
-		viewer3d_state->polylist = *gfx3d.polylist;
-		viewer3d_state->indexlist = gfx3d.indexlist;
-		viewer3d_state->vertListCount = gfx3d.vertListCount;
+		viewer3D.frameNumber = currFrameCounter;
+		viewer3D.state = gfx3d.appliedState;
+		viewer3D.gList.polyCount = appliedGList.polyCount;
+		viewer3D.gList.polyOpaqueCount = appliedGList.polyOpaqueCount;
+		viewer3D.gList.clippedPolyCount = appliedGList.clippedPolyCount;
+		viewer3D.gList.clippedPolyOpaqueCount = appliedGList.clippedPolyOpaqueCount;
+		viewer3D.gList.vertListCount = appliedGList.vertListCount;
 		
-		memcpy(viewer3d_state->vertList, gfx3d.vertList, gfx3d.vertListCount * sizeof(VERT));
+		memcpy(viewer3D.gList.polyList, appliedGList.polyList, appliedGList.polyCount * sizeof(POLY));
+		memcpy(viewer3D.gList.vertList, appliedGList.vertList, appliedGList.vertListCount * sizeof(VERT));
+		memcpy(viewer3D.gList.clippedPolyList, appliedGList.clippedPolyList, appliedGList.clippedPolyCount * sizeof(CPoly));
+		memcpy(viewer3D.indexList, _polyWorkingIndexList, appliedGList.clippedPolyCount * sizeof(int));
 		
 		driver->view3d->NewFrame();
 	}
-
+	
+	gfx3d.render3DFrameCount++;
 	drawPending = TRUE;
 }
 
@@ -2521,13 +2550,9 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	//The time to fix this will be when we rearchitect things to have more geometry processing lower-level in GFX3D..
 	//..since we'll be ripping a lot of stuff apart anyway
 	bool forceDraw = false;
-	if(gfx3d.state.enableClearImage) {
+	if (gfx3d.appliedState.DISP3DCNT.RearPlaneMode)
+	{
 		forceDraw = true;
-		//Well, now this makes it definite HACK caliber
-		//We're using this as a sentinel for whether anything's ever been drawn--since we glitch out and crashing trying to render (if only for the clear image)
-		//when no geometry's ever been swapped in
-		if(!gfx3d.renderState.fogDensityTable)
-			forceDraw = false;
 	}
 	
 	if (!drawPending && !forceDraw)
@@ -2545,10 +2570,10 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	
 	if (oldClippingMode != newClippingMode)
 	{
-		gfx3d_GenerateRenderLists(newClippingMode);
+		GFX3D_GenerateRenderLists(newClippingMode, gfx3d.appliedState, gfx3d.gList[gfx3d.appliedListIndex]);
 	}
 	
-	CurrentRenderer->ApplyRenderingSettings(gfx3d.renderState);
+	CurrentRenderer->ApplyRenderingSettings(gfx3d.appliedState);
 	GPU->GetEventHandler()->DidApplyRender3DSettingsEnd();
 	
 	GPU->GetEventHandler()->DidRender3DBegin();
@@ -2558,7 +2583,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	if (GPU->GetEngineMain()->GetEnableStateApplied() && nds.power_render)
 	{
 		CurrentRenderer->SetTextureProcessingProperties();
-		CurrentRenderer->Render(gfx3d);
+		CurrentRenderer->Render(gfx3d.appliedState, gfx3d.gList[gfx3d.appliedListIndex]);
 	}
 	else
 	{
@@ -2686,7 +2711,7 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 //consider building a little state structure that looks exactly like this describes
 
 SFORMAT SF_GFX3D[]={
-	{ "GCTL", 4, 1, &gfx3d.state.savedDISP3DCNT},
+	{ "GCTL", 4, 1, &gfx3d.pendingState.DISP3DCNT},
 	{ "GPAT", 4, 1, &polyAttrInProcess.value},
 	{ "GPAP", 4, 1, &currentPolyAttr.value},
 	{ "GINB", 4, 1, &inBegin},
@@ -2738,51 +2763,51 @@ SFORMAT SF_GFX3D[]={
 	{ "GMSP", 2, 1, &dsSpecular},
 	{ "GMEM", 2, 1, &dsEmission},
 	{ "GDRP", 4, 1, &drawPending},
-	{ "GSET", 4, 1, &gfx3d.state.enableTexturing},
-	{ "GSEA", 4, 1, &gfx3d.state.enableAlphaTest},
-	{ "GSEB", 4, 1, &gfx3d.state.enableAlphaBlending},
-	{ "GSEX", 4, 1, &gfx3d.state.enableAntialiasing},
-	{ "GSEE", 4, 1, &gfx3d.state.enableEdgeMarking},
-	{ "GSEC", 4, 1, &gfx3d.state.enableClearImage},
-	{ "GSEF", 4, 1, &gfx3d.state.enableFog},
-	{ "GSEO", 4, 1, &gfx3d.state.enableFogAlphaOnly},
-	{ "GFSH", 4, 1, &gfx3d.state.fogShift},
-	{ "GSSH", 4, 1, &gfx3d.state.shading},
-	{ "GSWB", 4, 1, &gfx3d.state.wbuffer},
-	{ "GSSM", 4, 1, &gfx3d.state.sortmode},
-	{ "GSAR", 1, 1, &gfx3d.state.alphaTestRef},
-	{ "GSCC", 4, 1, &gfx3d.state.clearColor},
-	{ "GSCD", 4, 1, &gfx3d.state.clearDepth},
-	{ "GSFC", 4, 4, &gfx3d.state.fogColor},
-	{ "GSFO", 4, 1, &gfx3d.state.fogOffset},
-	{ "GST4", 2, 32, gfx3d.state.u16ToonTable},
-	{ "GSSU", 1, 128, &gfx3d.state.shininessTable[0]},
-	{ "GSAF", 4, 1, &gfx3d.state.activeFlushCommand},
-	{ "GSPF", 4, 1, &gfx3d.state.pendingFlushCommand},
+	{ "GSET", 4, 1, &legacyGFX3DStateSFormatPending.enableTexturing},
+	{ "GSEA", 4, 1, &legacyGFX3DStateSFormatPending.enableAlphaTest},
+	{ "GSEB", 4, 1, &legacyGFX3DStateSFormatPending.enableAlphaBlending},
+	{ "GSEX", 4, 1, &legacyGFX3DStateSFormatPending.enableAntialiasing},
+	{ "GSEE", 4, 1, &legacyGFX3DStateSFormatPending.enableEdgeMarking},
+	{ "GSEC", 4, 1, &legacyGFX3DStateSFormatPending.enableClearImage},
+	{ "GSEF", 4, 1, &legacyGFX3DStateSFormatPending.enableFog},
+	{ "GSEO", 4, 1, &legacyGFX3DStateSFormatPending.enableFogAlphaOnly},
+	{ "GFSH", 4, 1, &legacyGFX3DStateSFormatPending.fogShift},
+	{ "GSSH", 4, 1, &legacyGFX3DStateSFormatPending.toonShadingMode},
+	{ "GSWB", 4, 1, &legacyGFX3DStateSFormatPending.enableWDepth},
+	{ "GSSM", 4, 1, &legacyGFX3DStateSFormatPending.polygonTransparentSortMode},
+	{ "GSAR", 1, 1, &legacyGFX3DStateSFormatPending.alphaTestRef},
+	{ "GSCC", 4, 1, &legacyGFX3DStateSFormatPending.clearColor},
+	{ "GSCD", 4, 1, &legacyGFX3DStateSFormatPending.clearDepth},
+	{ "GSFC", 4, 4,  legacyGFX3DStateSFormatPending.fogColor},
+	{ "GSFO", 4, 1, &legacyGFX3DStateSFormatPending.fogOffset},
+	{ "GST4", 2, 32, legacyGFX3DStateSFormatPending.toonTable16},
+	{ "GSSU", 1, 128, legacyGFX3DStateSFormatPending.shininessTable},
+	{ "GSAF", 4, 1, &legacyGFX3DStateSFormatPending.activeFlushCommand},
+	{ "GSPF", 4, 1, &legacyGFX3DStateSFormatPending.pendingFlushCommand},
 
-	{ "gSET", 4, 1, &gfx3d.renderState.enableTexturing},
-	{ "gSEA", 4, 1, &gfx3d.renderState.enableAlphaTest},
-	{ "gSEB", 4, 1, &gfx3d.renderState.enableAlphaBlending},
-	{ "gSEX", 4, 1, &gfx3d.renderState.enableAntialiasing},
-	{ "gSEE", 4, 1, &gfx3d.renderState.enableEdgeMarking},
-	{ "gSEC", 4, 1, &gfx3d.renderState.enableClearImage},
-	{ "gSEF", 4, 1, &gfx3d.renderState.enableFog},
-	{ "gSEO", 4, 1, &gfx3d.renderState.enableFogAlphaOnly},
-	{ "gFSH", 4, 1, &gfx3d.renderState.fogShift},
-	{ "gSSH", 4, 1, &gfx3d.renderState.shading},
-	{ "gSWB", 4, 1, &gfx3d.renderState.wbuffer},
-	{ "gSSM", 4, 1, &gfx3d.renderState.sortmode},
-	{ "gSAR", 1, 1, &gfx3d.renderState.alphaTestRef},
-	{ "gSCC", 4, 1, &gfx3d.renderState.clearColor},
-	{ "gSCD", 4, 1, &gfx3d.renderState.clearDepth},
-	{ "gSFC", 4, 4, &gfx3d.renderState.fogColor},
-	{ "gSFO", 4, 1, &gfx3d.renderState.fogOffset},
-	{ "gST4", 2, 32, gfx3d.renderState.u16ToonTable},
-	{ "gSSU", 1, 128, &gfx3d.renderState.shininessTable[0]},
-	{ "gSAF", 4, 1, &gfx3d.renderState.activeFlushCommand},
-	{ "gSPF", 4, 1, &gfx3d.renderState.pendingFlushCommand},
+	{ "gSET", 4, 1, &legacyGFX3DStateSFormatApplied.enableTexturing},
+	{ "gSEA", 4, 1, &legacyGFX3DStateSFormatApplied.enableAlphaTest},
+	{ "gSEB", 4, 1, &legacyGFX3DStateSFormatApplied.enableAlphaBlending},
+	{ "gSEX", 4, 1, &legacyGFX3DStateSFormatApplied.enableAntialiasing},
+	{ "gSEE", 4, 1, &legacyGFX3DStateSFormatApplied.enableEdgeMarking},
+	{ "gSEC", 4, 1, &legacyGFX3DStateSFormatApplied.enableClearImage},
+	{ "gSEF", 4, 1, &legacyGFX3DStateSFormatApplied.enableFog},
+	{ "gSEO", 4, 1, &legacyGFX3DStateSFormatApplied.enableFogAlphaOnly},
+	{ "gFSH", 4, 1, &legacyGFX3DStateSFormatApplied.fogShift},
+	{ "gSSH", 4, 1, &legacyGFX3DStateSFormatApplied.toonShadingMode},
+	{ "gSWB", 4, 1, &legacyGFX3DStateSFormatApplied.enableWDepth},
+	{ "gSSM", 4, 1, &legacyGFX3DStateSFormatApplied.polygonTransparentSortMode},
+	{ "gSAR", 1, 1, &legacyGFX3DStateSFormatApplied.alphaTestRef},
+	{ "gSCC", 4, 1, &legacyGFX3DStateSFormatApplied.clearColor},
+	{ "gSCD", 4, 1, &legacyGFX3DStateSFormatApplied.clearDepth},
+	{ "gSFC", 4, 4,  legacyGFX3DStateSFormatApplied.fogColor},
+	{ "gSFO", 4, 1, &legacyGFX3DStateSFormatApplied.fogOffset},
+	{ "gST4", 2, 32, legacyGFX3DStateSFormatApplied.toonTable16},
+	{ "gSSU", 1, 128, legacyGFX3DStateSFormatApplied.shininessTable},
+	{ "gSAF", 4, 1, &legacyGFX3DStateSFormatApplied.activeFlushCommand},
+	{ "gSPF", 4, 1, &legacyGFX3DStateSFormatApplied.pendingFlushCommand},
 
-	{ "GSVP", 4, 1, &viewport},
+	{ "GSVP", 4, 1, &viewportLegacySave},
 	{ "GSSI", 1, 1, &shininessInd},
 	//------------------------
 	{ "GTST", 1, 1, &triStripToggle},
@@ -2839,6 +2864,56 @@ void gfx3d_PrepareSaveStateBufferWrite()
 	PTcoords_legacySave[1] = (float)PTcoords[1] / 4096.0f;
 	PTcoords_legacySave[2] = (float)PTcoords[2] / 4096.0f;
 	PTcoords_legacySave[3] = (float)PTcoords[3] / 4096.0f;
+	
+	legacyGFX3DStateSFormatPending.enableTexturing     = (gfx3d.pendingState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
+	legacyGFX3DStateSFormatPending.enableAlphaTest     = (gfx3d.pendingState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
+	legacyGFX3DStateSFormatPending.enableAlphaBlending = (gfx3d.pendingState.DISP3DCNT.EnableAlphaBlending) ? TRUE : FALSE;
+	legacyGFX3DStateSFormatPending.enableAntialiasing  = (gfx3d.pendingState.DISP3DCNT.EnableAntialiasing)  ? TRUE : FALSE;
+	legacyGFX3DStateSFormatPending.enableEdgeMarking   = (gfx3d.pendingState.DISP3DCNT.EnableEdgeMarking)   ? TRUE : FALSE;
+	legacyGFX3DStateSFormatPending.enableClearImage    = (gfx3d.pendingState.DISP3DCNT.RearPlaneMode)       ? TRUE : FALSE;
+	legacyGFX3DStateSFormatPending.enableFog           = (gfx3d.pendingState.DISP3DCNT.EnableFog)           ? TRUE : FALSE;
+	legacyGFX3DStateSFormatPending.enableFogAlphaOnly  = (gfx3d.pendingState.DISP3DCNT.FogOnlyAlpha)        ? TRUE : FALSE;
+	legacyGFX3DStateSFormatPending.fogShift            = gfx3d.pendingState.fogShift;
+	legacyGFX3DStateSFormatPending.toonShadingMode     = gfx3d.pendingState.DISP3DCNT.PolygonShading;
+	legacyGFX3DStateSFormatPending.enableWDepth        = (gfx3d.pendingState.SWAP_BUFFERS.DepthMode)        ? TRUE : FALSE;
+	legacyGFX3DStateSFormatPending.polygonTransparentSortMode = (gfx3d.pendingState.SWAP_BUFFERS.YSortMode) ? TRUE : FALSE;
+	legacyGFX3DStateSFormatPending.alphaTestRef        = gfx3d.pendingState.alphaTestRef;
+	legacyGFX3DStateSFormatPending.clearColor          = gfx3d.pendingState.clearColor;
+	legacyGFX3DStateSFormatPending.clearDepth          = gfx3d.pendingState.clearDepth;
+	legacyGFX3DStateSFormatPending.fogColor[0]         = gfx3d.pendingState.fogColor;
+	legacyGFX3DStateSFormatPending.fogColor[1]         = gfx3d.pendingState.fogColor;
+	legacyGFX3DStateSFormatPending.fogColor[2]         = gfx3d.pendingState.fogColor;
+	legacyGFX3DStateSFormatPending.fogColor[3]         = gfx3d.pendingState.fogColor;
+	legacyGFX3DStateSFormatPending.fogOffset           = gfx3d.pendingState.fogOffset;
+	legacyGFX3DStateSFormatPending.activeFlushCommand  = gfx3d.appliedState.SWAP_BUFFERS.value;
+	legacyGFX3DStateSFormatPending.pendingFlushCommand = gfx3d.pendingState.SWAP_BUFFERS.value;
+	memcpy(legacyGFX3DStateSFormatPending.toonTable16, gfx3d.pendingState.toonTable16, sizeof(gfx3d.pendingState.toonTable16));
+	memcpy(legacyGFX3DStateSFormatPending.shininessTable, gfx3d.pendingState.shininessTable, sizeof(gfx3d.pendingState.shininessTable));
+	
+	legacyGFX3DStateSFormatApplied.enableTexturing     = (gfx3d.appliedState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
+	legacyGFX3DStateSFormatApplied.enableAlphaTest     = (gfx3d.appliedState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
+	legacyGFX3DStateSFormatApplied.enableAlphaBlending = (gfx3d.appliedState.DISP3DCNT.EnableAlphaBlending) ? TRUE : FALSE;
+	legacyGFX3DStateSFormatApplied.enableAntialiasing  = (gfx3d.appliedState.DISP3DCNT.EnableAntialiasing)  ? TRUE : FALSE;
+	legacyGFX3DStateSFormatApplied.enableEdgeMarking   = (gfx3d.appliedState.DISP3DCNT.EnableEdgeMarking)   ? TRUE : FALSE;
+	legacyGFX3DStateSFormatApplied.enableClearImage    = (gfx3d.appliedState.DISP3DCNT.RearPlaneMode)       ? TRUE : FALSE;
+	legacyGFX3DStateSFormatApplied.enableFog           = (gfx3d.appliedState.DISP3DCNT.EnableFog)           ? TRUE : FALSE;
+	legacyGFX3DStateSFormatApplied.enableFogAlphaOnly  = (gfx3d.appliedState.DISP3DCNT.FogOnlyAlpha)        ? TRUE : FALSE;
+	legacyGFX3DStateSFormatApplied.fogShift            = gfx3d.appliedState.fogShift;
+	legacyGFX3DStateSFormatApplied.toonShadingMode     = gfx3d.appliedState.DISP3DCNT.PolygonShading;
+	legacyGFX3DStateSFormatApplied.enableWDepth        = (gfx3d.appliedState.SWAP_BUFFERS.DepthMode)        ? TRUE : FALSE;
+	legacyGFX3DStateSFormatApplied.polygonTransparentSortMode = (gfx3d.appliedState.SWAP_BUFFERS.YSortMode) ? TRUE : FALSE;
+	legacyGFX3DStateSFormatApplied.alphaTestRef        = gfx3d.appliedState.alphaTestRef;
+	legacyGFX3DStateSFormatApplied.clearColor          = gfx3d.appliedState.clearColor;
+	legacyGFX3DStateSFormatApplied.clearDepth          = gfx3d.appliedState.clearDepth;
+	legacyGFX3DStateSFormatApplied.fogColor[0]         = gfx3d.appliedState.fogColor;
+	legacyGFX3DStateSFormatApplied.fogColor[1]         = gfx3d.appliedState.fogColor;
+	legacyGFX3DStateSFormatApplied.fogColor[2]         = gfx3d.appliedState.fogColor;
+	legacyGFX3DStateSFormatApplied.fogColor[3]         = gfx3d.appliedState.fogColor;
+	legacyGFX3DStateSFormatApplied.fogOffset           = gfx3d.appliedState.fogOffset;
+	legacyGFX3DStateSFormatApplied.activeFlushCommand  = gfx3d.appliedState.SWAP_BUFFERS.value;
+	legacyGFX3DStateSFormatApplied.pendingFlushCommand = gfx3d.pendingState.SWAP_BUFFERS.value;
+	memcpy(legacyGFX3DStateSFormatApplied.toonTable16, gfx3d.appliedState.toonTable16, sizeof(gfx3d.appliedState.toonTable16));
+	memcpy(legacyGFX3DStateSFormatApplied.shininessTable, gfx3d.appliedState.shininessTable, sizeof(gfx3d.appliedState.shininessTable));
 }
 
 void gfx3d_savestate(EMUFILE &os)
@@ -2847,13 +2922,13 @@ void gfx3d_savestate(EMUFILE &os)
 	os.write_32LE(4);
 
 	//dump the render lists
-	os.write_32LE((u32)vertListCount[listTwiddle]);
-	for (size_t i = 0; i < vertListCount[listTwiddle]; i++)
-		vertList[i].save(os);
+	os.write_32LE((u32)gfx3d.gList[gfx3d.pendingListIndex].vertListCount);
+	for (size_t i = 0; i < gfx3d.gList[gfx3d.pendingListIndex].vertListCount; i++)
+		gfx3d.gList[gfx3d.pendingListIndex].vertList[i].save(os);
 	
-	os.write_32LE((u32)polylist->count);
-	for (size_t i = 0; i < polylist->count; i++)
-		polylist->list[i].save(os);
+	os.write_32LE((u32)gfx3d.gList[gfx3d.pendingListIndex].polyCount);
+	for (size_t i = 0; i < gfx3d.gList[gfx3d.pendingListIndex].polyCount; i++)
+		gfx3d.gList[gfx3d.pendingListIndex].polyList[i].save(os);
 
 	// Write matrix stack data
 	os.write_32LE(mtxStackIndex[MATRIXMODE_PROJECTION]);
@@ -2924,11 +2999,6 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 	gfx3d_glLightDirection_cache(2);
 	gfx3d_glLightDirection_cache(3);
 
-	//jiggle the lists. and also wipe them. this is clearly not the best thing to be doing.
-	listTwiddle = 0;
-	polylist = &polylists[0];
-	vertList = vertLists;
-	
 	gfx3d_parseCurrentDISP3DCNT();
 	
 	if (version >= 1)
@@ -2937,14 +3007,22 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 		u32 polyListCount32 = 0;
 		
 		is.read_32LE(vertListCount32);
-		vertListCount[0] = vertListCount32;
-		for (size_t i = 0; i < vertListCount[0]; i++)
-			vertList[i].load(is);
+		gfx3d.gList[gfx3d.pendingListIndex].vertListCount = vertListCount32;
+		gfx3d.gList[gfx3d.appliedListIndex].vertListCount = vertListCount32;
+		for (size_t i = 0; i < gfx3d.gList[gfx3d.appliedListIndex].vertListCount; i++)
+		{
+			gfx3d.gList[gfx3d.pendingListIndex].vertList[i].load(is);
+			gfx3d.gList[gfx3d.appliedListIndex].vertList[i].load(is);
+		}
 		
 		is.read_32LE(polyListCount32);
-		polylist->count = polyListCount32;
-		for (size_t i = 0; i < polylist->count; i++)
-			polylist->list[i].load(is);
+		gfx3d.gList[gfx3d.pendingListIndex].polyCount = polyListCount32;
+		gfx3d.gList[gfx3d.appliedListIndex].polyCount = polyListCount32;
+		for (size_t i = 0; i < gfx3d.gList[gfx3d.appliedListIndex].polyCount; i++)
+		{
+			gfx3d.gList[gfx3d.pendingListIndex].polyList[i].load(is);
+			gfx3d.gList[gfx3d.appliedListIndex].polyList[i].load(is);
+		}
 	}
 
 	if (version >= 2)
@@ -2985,11 +3063,6 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 	{
 		gxf_hardware.loadstate(is);
 	}
-
-	gfx3d.polylist = &polylists[listTwiddle^1];
-	gfx3d.vertList = vertLists + VERTLIST_SIZE;
-	gfx3d.polylist->count = 0;
-	gfx3d.vertListCount = 0;
 
 	if (version >= 4)
 	{
@@ -3066,42 +3139,81 @@ void gfx3d_FinishLoadStateBufferRead()
 	}
 	
 	// For save state compatibility
+	const GPU_IOREG &GPUREG = GPU->GetEngineMain()->GetIORegisterMap();
+	const GFX3D_IOREG &GFX3DREG = GFX3D_GetIORegisterMap();
+	
 	PTcoords[0] = (s32)(PTcoords_legacySave[0] * 4096.0f);
 	PTcoords[1] = (s32)(PTcoords_legacySave[1] * 4096.0f);
 	PTcoords[2] = (s32)(PTcoords_legacySave[2] * 4096.0f);
 	PTcoords[3] = (s32)(PTcoords_legacySave[3] * 4096.0f);
+	
+	gfx3dViewport = GFX3D_ViewportParse(GFX3DREG.VIEWPORT.value);
+	
+	gfx3d.pendingState.DISP3DCNT = GPUREG.DISP3DCNT;
+	gfx3d_parseCurrentDISP3DCNT();
+	
+	gfx3d.pendingState.SWAP_BUFFERS = GFX3DREG.SWAP_BUFFERS;
+	gfx3d.pendingState.clearColor = legacyGFX3DStateSFormatPending.clearColor;
+	gfx3d.pendingState.clearDepth = legacyGFX3DStateSFormatPending.clearDepth;
+	gfx3d.pendingState.fogColor = legacyGFX3DStateSFormatPending.fogColor[0];
+	gfx3d.pendingState.fogOffset = legacyGFX3DStateSFormatPending.fogOffset;
+	gfx3d.pendingState.alphaTestRef = legacyGFX3DStateSFormatPending.alphaTestRef;
+	memcpy(gfx3d.pendingState.toonTable16, legacyGFX3DStateSFormatPending.toonTable16, sizeof(gfx3d.pendingState.toonTable16));
+	memcpy(gfx3d.pendingState.shininessTable, legacyGFX3DStateSFormatPending.shininessTable, sizeof(gfx3d.pendingState.shininessTable));
+	memcpy(gfx3d.pendingState.edgeMarkColorTable, GFX3DREG.EDGE_COLOR, sizeof(GFX3DREG.EDGE_COLOR));
+	memcpy(gfx3d.pendingState.fogDensityTable, GFX3DREG.FOG_TABLE, sizeof(GFX3DREG.FOG_TABLE));
+	
+	gfx3d.appliedState.DISP3DCNT.value               = 0;
+	gfx3d.appliedState.DISP3DCNT.EnableTexMapping    = (legacyGFX3DStateSFormatApplied.enableTexturing)     ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableAlphaTest     = (legacyGFX3DStateSFormatApplied.enableAlphaTest)     ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableAlphaBlending = (legacyGFX3DStateSFormatApplied.enableAlphaBlending) ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableAntialiasing  = (legacyGFX3DStateSFormatApplied.enableAntialiasing)  ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableEdgeMarking   = (legacyGFX3DStateSFormatApplied.enableEdgeMarking)   ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.RearPlaneMode       = (legacyGFX3DStateSFormatApplied.enableClearImage)    ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableFog           = (legacyGFX3DStateSFormatApplied.enableFog)           ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.FogOnlyAlpha        = (legacyGFX3DStateSFormatApplied.enableFogAlphaOnly)  ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.PolygonShading      = (legacyGFX3DStateSFormatApplied.toonShadingMode)     ? 1 : 0;
+	gfx3d.appliedState.SWAP_BUFFERS.value            = 0;
+	gfx3d.appliedState.SWAP_BUFFERS.DepthMode        = (legacyGFX3DStateSFormatApplied.enableWDepth)        ? 1 : 0;
+	gfx3d.appliedState.SWAP_BUFFERS.YSortMode        = (legacyGFX3DStateSFormatApplied.polygonTransparentSortMode) ? 1 : 0;
+	gfx3d.appliedState.fogShift                      = legacyGFX3DStateSFormatApplied.fogShift;
+	gfx3d.appliedState.clearColor                    = legacyGFX3DStateSFormatApplied.clearColor;
+	gfx3d.appliedState.clearDepth                    = legacyGFX3DStateSFormatApplied.clearDepth;
+	gfx3d.appliedState.fogColor                      = legacyGFX3DStateSFormatApplied.fogColor[0];
+	gfx3d.appliedState.fogOffset                     = legacyGFX3DStateSFormatApplied.fogOffset;
+	gfx3d.appliedState.alphaTestRef                  = legacyGFX3DStateSFormatApplied.alphaTestRef;
+	gfx3d.appliedState.SWAP_BUFFERS.value            = legacyGFX3DStateSFormatApplied.activeFlushCommand;
+	memcpy(gfx3d.appliedState.toonTable16, legacyGFX3DStateSFormatApplied.toonTable16, sizeof(gfx3d.appliedState.toonTable16));
+	memcpy(gfx3d.appliedState.shininessTable, legacyGFX3DStateSFormatApplied.shininessTable, sizeof(gfx3d.appliedState.shininessTable));
+	memcpy(gfx3d.appliedState.edgeMarkColorTable, GFX3DREG.EDGE_COLOR, sizeof(GFX3DREG.EDGE_COLOR));
+	memcpy(gfx3d.appliedState.fogDensityTable, GFX3DREG.FOG_TABLE, sizeof(GFX3DREG.FOG_TABLE));
 }
 
 void gfx3d_parseCurrentDISP3DCNT()
 {
-	const IOREG_DISP3DCNT &DISP3DCNT = gfx3d.state.savedDISP3DCNT;
-	
-	gfx3d.state.enableTexturing		= (DISP3DCNT.EnableTexMapping != 0);
-	gfx3d.state.shading				=  DISP3DCNT.PolygonShading;
-	gfx3d.state.enableAlphaTest		= (DISP3DCNT.EnableAlphaTest != 0);
-	gfx3d.state.enableAlphaBlending	= (DISP3DCNT.EnableAlphaBlending != 0);
-	gfx3d.state.enableAntialiasing	= (DISP3DCNT.EnableAntiAliasing != 0);
-	gfx3d.state.enableEdgeMarking	= (DISP3DCNT.EnableEdgeMarking != 0);
-	gfx3d.state.enableFogAlphaOnly	= (DISP3DCNT.FogOnlyAlpha != 0);
-	gfx3d.state.enableFog			= (DISP3DCNT.EnableFog != 0);
-	gfx3d.state.enableClearImage	= (DISP3DCNT.RearPlaneMode != 0);
+	const IOREG_DISP3DCNT &DISP3DCNT = gfx3d.pendingState.DISP3DCNT;
 	
 	// According to GBATEK, values greater than 10 force FogStep (0x400 >> FogShiftSHR) to become 0.
 	// So set FogShiftSHR to 11 in this case so that calculations using (0x400 >> FogShiftSHR) will
 	// equal 0.
-	gfx3d.state.fogShift			= (DISP3DCNT.FogShiftSHR <= 10) ? DISP3DCNT.FogShiftSHR : 11;
+	gfx3d.pendingState.fogShift = (DISP3DCNT.FogShiftSHR <= 10) ? DISP3DCNT.FogShiftSHR : 11;
+}
+
+const GFX3D_IOREG& GFX3D_GetIORegisterMap()
+{
+	return *_GFX3D_IORegisterMap;
 }
 
 void ParseReg_DISP3DCNT()
 {
 	const IOREG_DISP3DCNT &DISP3DCNT = GPU->GetEngineMain()->GetIORegisterMap().DISP3DCNT;
 	
-	if (gfx3d.state.savedDISP3DCNT.value == DISP3DCNT.value)
+	if (gfx3d.pendingState.DISP3DCNT.value == DISP3DCNT.value)
 	{
 		return;
 	}
 	
-	gfx3d.state.savedDISP3DCNT.value = DISP3DCNT.value;
+	gfx3d.pendingState.DISP3DCNT.value = DISP3DCNT.value;
 	gfx3d_parseCurrentDISP3DCNT();
 }
 

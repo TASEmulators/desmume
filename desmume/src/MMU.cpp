@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2022 DeSmuME team
+	Copyright (C) 2007-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1830,13 +1830,28 @@ static void writereg_POWCNT1(const int size, const u32 adr, const u32 val)
 	if(wasGeomEnabled && !isGeomEnabled)
 	{
 		//kill the geometry data when the power goes off
-		//but save these tables, first. they shouldnt be cleared.
 		//so, so bad. we need to model this with hardware-like operations instead of c++ code
-		GFX3D_State prior = gfx3d.state;
-		reconstruct(&gfx3d.state);
-		memcpy(gfx3d.state.u16ToonTable, prior.u16ToonTable, sizeof(prior.u16ToonTable));
-		//dont think we should save this one: it's sent with 3d commands, not random bonus immediate register writes like the toon table
-		//memcpy(gfx3d.state.shininessTable, prior.shininessTable, sizeof(prior.shininessTable)); 
+		
+		// TODO: Test which geometry data should be cleared on power off.
+		// The code below doesn't make any sense. You would think that only the data that
+		// is derived from geometry commands (either via GXFIFO or if writing to registers
+		// 0x04000440 - 0x040006A4) is what should be cleared. And that outside of geometry
+		// command data, other data (even if related to the 3D engine) shouldn't be touched.
+		// This will need further testing, but for now, we'll leave things as they are.
+		//    - 2023/01/22, rogerman
+		gfx3d.pendingState.DISP3DCNT.value = 0;
+		gfx3d.pendingState.DISP3DCNT.EnableTexMapping = 1;
+		gfx3d.pendingState.DISP3DCNT.PolygonShading = PolygonShadingMode_Toon;
+		gfx3d.pendingState.DISP3DCNT.EnableAlphaTest = 1;
+		gfx3d.pendingState.DISP3DCNT.EnableAlphaBlending = 1;
+		gfx3d.pendingState.SWAP_BUFFERS.value = 0;
+		gfx3d.pendingState.alphaTestRef = 0;
+		gfx3d.pendingState.clearDepth = DS_DEPTH15TO24(0x7FFF);
+		gfx3d.pendingState.clearColor = 0;
+		gfx3d.pendingState.fogColor = 0;
+		gfx3d.pendingState.fogOffset = 0;
+		gfx3d.pendingState.fogShift = 0;
+		memset(gfx3d.pendingState.shininessTable, 0, sizeof(gfx3d.pendingState.shininessTable));
 	}
 }
 
@@ -3271,6 +3286,28 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				return;
 			}
 			
+			switch (adr >> 4)
+			{
+				case 0x400033: // Edge Mark Color Table
+					MMU.ARM9_REG[adr & 0xFFF] = val;
+					gfx3d_UpdateEdgeMarkColorTable<u8>((u8)(adr & 0x0000000F), val);
+					return;
+					
+				case 0x400036:
+				case 0x400037: // Fog Table
+					MMU.ARM9_REG[adr & 0xFFF] = val & 0x7F;
+					gfx3d_UpdateFogTable<u8>((u8)(adr & 0x0000001F), val & 0x7F); // Drop the highest bit of each 8-bit value to limit the range to [0...127]
+					return;
+					
+				case 0x400038:
+				case 0x400039:
+				case 0x40003A:
+				case 0x40003B: // Toon Table
+					MMU.ARM9_REG[adr & 0xFFF] = val;
+					gfx3d_UpdateToonTable<u8>((u8)(adr & 0x0000003F), val);
+					return;
+			}
+			
 			GPUEngineA *mainEngine = GPU->GetEngineMain();
 			GPUEngineB *subEngine = GPU->GetEngineSub();
 			
@@ -3615,18 +3652,6 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				case REG_DIVCNT+3: printf("ERROR 8bit DIVCNT+3 WRITE\n"); return;
 #endif
 					
-					//fog table: only write bottom 7 bits
-				case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x01: case eng_3D_FOG_TABLE+0x02: case eng_3D_FOG_TABLE+0x03: 
-				case eng_3D_FOG_TABLE+0x04: case eng_3D_FOG_TABLE+0x05: case eng_3D_FOG_TABLE+0x06: case eng_3D_FOG_TABLE+0x07: 
-				case eng_3D_FOG_TABLE+0x08: case eng_3D_FOG_TABLE+0x09: case eng_3D_FOG_TABLE+0x0A: case eng_3D_FOG_TABLE+0x0B: 
-				case eng_3D_FOG_TABLE+0x0C: case eng_3D_FOG_TABLE+0x0D: case eng_3D_FOG_TABLE+0x0E: case eng_3D_FOG_TABLE+0x0F: 
-				case eng_3D_FOG_TABLE+0x10: case eng_3D_FOG_TABLE+0x11: case eng_3D_FOG_TABLE+0x12: case eng_3D_FOG_TABLE+0x13: 
-				case eng_3D_FOG_TABLE+0x14: case eng_3D_FOG_TABLE+0x15: case eng_3D_FOG_TABLE+0x16: case eng_3D_FOG_TABLE+0x17: 
-				case eng_3D_FOG_TABLE+0x18: case eng_3D_FOG_TABLE+0x19: case eng_3D_FOG_TABLE+0x1A: case eng_3D_FOG_TABLE+0x1B: 
-				case eng_3D_FOG_TABLE+0x1C: case eng_3D_FOG_TABLE+0x1D: case eng_3D_FOG_TABLE+0x1E: case eng_3D_FOG_TABLE+0x1F: 
-					val &= 0x7F;
-					break;
-					
 					//ensata putchar port
 				case 0x04FFF000:
 					if(nds.ensataEmulation)
@@ -3663,8 +3688,28 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 					
 				case eng_3D_CLEAR_COLOR+0: case eng_3D_CLEAR_COLOR+1:
 				case eng_3D_CLEAR_COLOR+2: case eng_3D_CLEAR_COLOR+3:
-					T1WriteByte((u8*)&gfx3d.state.clearColor,adr-eng_3D_CLEAR_COLOR,val); 
+					T1WriteByte((u8*)&gfx3d.pendingState.clearColor, adr-eng_3D_CLEAR_COLOR, val);
 					break;
+					
+				case eng_3D_CLEAR_DEPTH:
+					HostWriteByte(MMU.ARM9_REG, 0x0354, val);
+					gfx3d_glClearDepth<u8, 0>(val);
+					return;
+					
+				case eng_3D_CLEAR_DEPTH+1:
+					HostWriteByte(MMU.ARM9_REG, 0x0355, val);
+					gfx3d_glClearDepth<u8, 1>(val);
+					return;
+					
+				case eng_3D_CLRIMAGE_OFFSET:
+					HostWriteByte(MMU.ARM9_REG, 0x0356, val);
+					gfx3d_glClearImageOffset<u8, 0>(val);
+					return;
+					
+				case eng_3D_CLRIMAGE_OFFSET+1:
+					HostWriteByte(MMU.ARM9_REG, 0x0357, val);
+					gfx3d_glClearImageOffset<u8, 1>(val);
+					return;
 					
 				case REG_VRAMCNTA:
 				case REG_VRAMCNTB:
@@ -3761,13 +3806,23 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			
 			switch (adr >> 4)
 			{
-					//toon table
-				case 0x0400038:
-				case 0x0400039:
-				case 0x040003A:
-				case 0x040003B:
-					((u16 *)(MMU.ARM9_REG))[(adr & 0xFFF)>>1] = val;
-					gfx3d_UpdateToonTable((adr & 0x3F) >> 1, val);
+				case 0x400033: // Edge Mark Color Table
+					((u16 *)(MMU.ARM9_REG))[(adr & 0xFFF) >> (sizeof(u16) >> 1)] = val;
+					gfx3d_UpdateEdgeMarkColorTable<u16>((u8)(adr & 0x0000000F), val);
+					return;
+					
+				case 0x400036:
+				case 0x400037: // Fog Table
+					((u16 *)(MMU.ARM9_REG))[(adr & 0xFFF) >> (sizeof(u16) >> 1)] = val & 0x7F7F;
+					gfx3d_UpdateFogTable<u16>((u8)(adr & 0x0000001F), val & 0x7F7F); // Drop the highest bit of each 8-bit value to limit the range to [0...127]
+					return;
+					
+				case 0x400038:
+				case 0x400039:
+				case 0x40003A:
+				case 0x40003B: // Toon Table
+					((u16 *)(MMU.ARM9_REG))[(adr & 0xFFF) >> (sizeof(u16) >> 1)] = val;
+					gfx3d_UpdateToonTable<u16>((u8)(adr & 0x0000003F), val);
 					return;
 			}
 			
@@ -4262,14 +4317,6 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					MMU_new.gxstat.write(16,adr,val);
 					break;
 					
-					//fog table: only write bottom 7 bits
-				case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x02: case eng_3D_FOG_TABLE+0x04: case eng_3D_FOG_TABLE+0x06:
-				case eng_3D_FOG_TABLE+0x08: case eng_3D_FOG_TABLE+0x0A: case eng_3D_FOG_TABLE+0x0C: case eng_3D_FOG_TABLE+0x0E:
-				case eng_3D_FOG_TABLE+0x10: case eng_3D_FOG_TABLE+0x12: case eng_3D_FOG_TABLE+0x14: case eng_3D_FOG_TABLE+0x16:
-				case eng_3D_FOG_TABLE+0x18: case eng_3D_FOG_TABLE+0x1A: case eng_3D_FOG_TABLE+0x1C: case eng_3D_FOG_TABLE+0x1E:
-					val &= 0x7F7F;
-					break;
-					
 					// Alpha test reference value - Parameters:1
 				case eng_3D_ALPHA_TEST_REF:
 					HostWriteWord(MMU.ARM9_REG, 0x0340, val);
@@ -4278,13 +4325,18 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					
 				case eng_3D_CLEAR_COLOR:
 				case eng_3D_CLEAR_COLOR+2:
-					T1WriteWord((u8*)&gfx3d.state.clearColor,adr-eng_3D_CLEAR_COLOR,val);
+					T1WriteWord((u8 *)&gfx3d.pendingState.clearColor, adr-eng_3D_CLEAR_COLOR, val);
 					break;
 					
 					// Clear background depth setup - Parameters:2
 				case eng_3D_CLEAR_DEPTH:
 					HostWriteWord(MMU.ARM9_REG, 0x0354, val);
-					gfx3d_glClearDepth(val);
+					gfx3d_glClearDepth<u16, 0>(val);
+					return;
+					
+				case eng_3D_CLRIMAGE_OFFSET:
+					HostWriteWord(MMU.ARM9_REG, 0x0356, val);
+					gfx3d_glClearImageOffset<u16, 0>(val);
 					return;
 					
 					// Fog Color - Parameters:4b
@@ -4477,16 +4529,23 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			// lookups by the compiler
 			switch (adr >> 4)
 			{
-				case 0x400033:		//edge color table
-					((u32 *)(MMU.ARM9_REG))[(adr & 0xFFF) >> 2] = val;
+				case 0x400033: // Edge Mark Color Table
+					((u32 *)(MMU.ARM9_REG))[(adr & 0xFFF) >> (sizeof(u32) >> 1)] = val;
+					gfx3d_UpdateEdgeMarkColorTable<u32>((u8)(adr & 0x0000000F), val);
+					return;
+					
+				case 0x400036:
+				case 0x400037: // Fog Table
+					((u32 *)(MMU.ARM9_REG))[(adr & 0xFFF) >> (sizeof(u32) >> 1)] = val & 0x7F7F7F7F;
+					gfx3d_UpdateFogTable<u32>((u8)(adr & 0x0000001F), val & 0x7F7F7F7F); // Drop the highest bit of each 8-bit value to limit the range to [0...127]
 					return;
 					
 				case 0x400038:
 				case 0x400039:
 				case 0x40003A:
-				case 0x40003B:		//toon table
-					((u32 *)(MMU.ARM9_REG))[(adr & 0xFFF) >> 2] = val;
-					gfx3d_UpdateToonTable((adr & 0x3F) >> 1, val);
+				case 0x40003B: // Toon Table
+					((u32 *)(MMU.ARM9_REG))[(adr & 0xFFF) >> (sizeof(u32) >> 1)] = val;
+					gfx3d_UpdateToonTable<u32>((u8)(adr & 0x0000003F), val);
 					return;
 					
 				case 0x400040:
@@ -4790,12 +4849,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					
 				case REG_POWCNT1: writereg_POWCNT1(32,adr,val); break;
 					
-					//fog table: only write bottom 7 bits
-				case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x04: case eng_3D_FOG_TABLE+0x08: case eng_3D_FOG_TABLE+0x0C:
-				case eng_3D_FOG_TABLE+0x10: case eng_3D_FOG_TABLE+0x14: case eng_3D_FOG_TABLE+0x18: case eng_3D_FOG_TABLE+0x1C:
-					val &= 0x7F7F7F7F;
-					break;
-					
 					//ensata handshaking port?
 				case 0x04FFF010:
 					if(nds.ensataEmulation && nds.ensataHandshake == ENSATA_HANDSHAKE_ack && val == 0x13579bdf)
@@ -4828,13 +4881,14 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					return;
 					
 				case eng_3D_CLEAR_COLOR:
-					T1WriteLong((u8*)&gfx3d.state.clearColor,0,val); 
+					T1WriteLong((u8 *)&gfx3d.pendingState.clearColor, 0, val);
 					break;
 					
 					// Clear background depth setup - Parameters:2
 				case eng_3D_CLEAR_DEPTH:
 					HostWriteLong(MMU.ARM9_REG, 0x0354, val);
-					gfx3d_glClearDepth(val);
+					gfx3d_glClearDepth<u16, 0>((u16)(val & 0x0000FFFF));
+					gfx3d_glClearImageOffset<u16, 0>((u16)(val >> 16));
 					return;
 					
 					// Fog Color - Parameters:4b

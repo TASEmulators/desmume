@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2022 DeSmuME team
+	Copyright (C) 2008-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -412,12 +412,12 @@ size_t Render3D::GetClippedPolyCount() const
 
 Render3DError Render3D::ApplyRenderingSettings(const GFX3D_State &renderState)
 {
-	this->_enableEdgeMark = (CommonSettings.GFX3D_EdgeMark) ? renderState.enableEdgeMarking : false;
-	this->_enableFog = (CommonSettings.GFX3D_Fog) ? renderState.enableFog : false;
+	this->_enableEdgeMark = (CommonSettings.GFX3D_EdgeMark) ? (renderState.DISP3DCNT.EnableEdgeMarking != 0) : false;
+	this->_enableFog = (CommonSettings.GFX3D_Fog) ? (renderState.DISP3DCNT.EnableFog != 0) : false;
 	this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
 	
 	this->_prevEnableTextureSampling = this->_enableTextureSampling;
-	this->_enableTextureSampling = (CommonSettings.GFX3D_Texture) ? renderState.enableTexturing : false;
+	this->_enableTextureSampling = (CommonSettings.GFX3D_Texture) ? (renderState.DISP3DCNT.EnableTexMapping != 0) : false;
 	
 	this->_prevEnableTextureDeposterize = this->_enableTextureDeposterize;
 	this->_enableTextureDeposterize = CommonSettings.GFX3D_Renderer_TextureDeposterize;
@@ -436,7 +436,7 @@ Render3DError Render3D::ApplyRenderingSettings(const GFX3D_State &renderState)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::BeginRender(const GFX3D &engine)
+Render3DError Render3D::BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList)
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -579,15 +579,14 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
-	if (renderState.enableClearImage)
+	if (renderState.DISP3DCNT.RearPlaneMode)
 	{
 		//the lion, the witch, and the wardrobe (thats book 1, suck it you new-school numberers)
 		//uses the scroll registers in the main game engine
 		const u16 *__restrict clearColorBuffer = (u16 *__restrict)MMU.texInfo.textureSlotAddr[2];
 		const u16 *__restrict clearDepthBuffer = (u16 *__restrict)MMU.texInfo.textureSlotAddr[3];
-		const u16 scrollBits = T1ReadWord(MMU.ARM9_REG, 0x356); //CLRIMAGE_OFFSET
-		const u8 xScroll = scrollBits & 0xFF;
-		const u8 yScroll = (scrollBits >> 8) & 0xFF;
+		const u8 xScroll = renderState.clearImageOffset.XOffset;
+		const u8 yScroll = renderState.clearImageOffset.YOffset;
 		
 		if (xScroll == 0 && yScroll == 0)
 		{
@@ -649,7 +648,7 @@ Render3DError Render3D::SetupTexture(const POLY &thePoly, size_t polyRenderIndex
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::SetupViewport(const u32 viewportValue)
+Render3DError Render3D::SetupViewport(const GFX3D_Viewport viewport)
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -688,12 +687,12 @@ Render3DError Render3D::RenderPowerOff()
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::Render(const GFX3D &engine)
+Render3DError Render3D::Render(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	this->_isPoweredOn = true;
 	
-	const u32 clearColorSwapped = LE_TO_LOCAL_32(engine.renderState.clearColor);
+	const u32 clearColorSwapped = LE_TO_LOCAL_32(renderState.clearColor);
 	this->_clearColor6665.color = LE_TO_LOCAL_32( COLOR555TO6665(clearColorSwapped & 0x7FFF, (clearColorSwapped >> 16) & 0x1F) );
 	
 	this->_clearAttributes.opaquePolyID = (clearColorSwapped >> 24) & 0x3F;
@@ -701,20 +700,20 @@ Render3DError Render3D::Render(const GFX3D &engine)
 	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
 	//but in spiderman2 some fires with polyid 0 try to render on top of the background
 	this->_clearAttributes.translucentPolyID = kUnsetTranslucentPolyID;
-	this->_clearAttributes.depth = engine.renderState.clearDepth;
+	this->_clearAttributes.depth = renderState.clearDepth;
 	this->_clearAttributes.stencil = 0;
 	this->_clearAttributes.isTranslucentPoly = 0;
 	this->_clearAttributes.polyFacing = PolyFacing_Unwritten;
 	this->_clearAttributes.isFogged = BIT15(clearColorSwapped);
 	
-	error = this->BeginRender(engine);
+	error = this->BeginRender(renderState, renderGList);
 	if (error != RENDER3DERROR_NOERR)
 	{
 		this->EndRender();
 		return error;
 	}
 	
-	error = this->ClearFramebuffer(engine.renderState);
+	error = this->ClearFramebuffer(renderState);
 	if (error != RENDER3DERROR_NOERR)
 	{
 		this->EndRender();

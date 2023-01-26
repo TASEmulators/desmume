@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2022 DeSmuME team
+	Copyright (C) 2009-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -313,25 +313,25 @@ FORCEINLINE int edge_fx_fl::Step() {
 
 
 
-static FORCEINLINE void alphaBlend(FragmentColor &dst, const FragmentColor src)
+static FORCEINLINE void alphaBlend(const bool isAlphaBlendingEnabled, const FragmentColor inSrc, FragmentColor &outDst)
 {
-	if (src.a == 0)
+	if (inSrc.a == 0)
 	{
 		return;
 	}
 	
-	if (src.a == 31 || dst.a == 0 || !gfx3d.renderState.enableAlphaBlending)
+	if (inSrc.a == 31 || outDst.a == 0 || !isAlphaBlendingEnabled)
 	{
-		dst = src;
+		outDst = inSrc;
 	}
 	else
 	{
-		const u8 alpha = src.a + 1;
+		const u8 alpha = inSrc.a + 1;
 		const u8 invAlpha = 32 - alpha;
-		dst.r = (alpha*src.r + invAlpha*dst.r) >> 5;
-		dst.g = (alpha*src.g + invAlpha*dst.g) >> 5;
-		dst.b = (alpha*src.b + invAlpha*dst.b) >> 5;
-		dst.a = max(src.a, dst.a);
+		outDst.r = (alpha*inSrc.r + invAlpha*outDst.r) >> 5;
+		outDst.g = (alpha*inSrc.g + invAlpha*outDst.g) >> 5;
+		outDst.b = (alpha*inSrc.b + invAlpha*outDst.b) >> 5;
+		outDst.a = max(inSrc.a, outDst.a);
 	}
 }
 
@@ -424,6 +424,8 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode,
 		return;
 	}
 	
+	const GFX3D_State &renderState = *this->_softRender->currentRenderState;
+	
 	static const FragmentColor colorWhite = MakeFragmentColor(0x3F, 0x3F, 0x3F, 0x1F);
 	const FragmentColor mainTexColor = (this->_currentTexture->IsSamplingEnabled()) ? this->_sample(texCoordU, texCoordV) : colorWhite;
 	
@@ -468,7 +470,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode,
 		{
 			const FragmentColor toonColor = this->_softRender->toonColor32LUT[src.r >> 1];
 			
-			if (gfx3d.renderState.shading == PolygonShadingMode_Highlight)
+			if (renderState.DISP3DCNT.PolygonShading == PolygonShadingMode_Highlight)
 			{
 				// Tested in the "Shadows of Almia" logo in the Pokemon Ranger: Shadows of Almia title screen.
 				// Also tested in Advance Wars: Dual Strike and Advance Wars: Days of Ruin when tiles highlight
@@ -502,6 +504,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode,
 template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON>
 FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, FragmentColor &dstColor, float r, float g, float b, float invu, float invv, float z, float w)
 {
+	const GFX3D_State &renderState = *this->_softRender->currentRenderState;
 	FragmentColor newDstColor32;
 	FragmentColor shaderOutput;
 	bool isOpaquePixel;
@@ -522,7 +525,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 
 	// Note that an IEEE-754 single-precision float uses a 23-bit significand. Therefore, we will multiply the
 	// Z-depth by a 22-bit significand for safety.
-	const u32 newDepth = (gfx3d.renderState.wbuffer) ? u32floor(w * 4096.0f) : u32floor(z * 4194303.0f) << 2;
+	const u32 newDepth = (renderState.SWAP_BUFFERS.DepthMode) ? u32floor(w * 4096.0f) : u32floor(z * 4194303.0f) << 2;
 	
 	// run the depth test
 	bool depthFail = false;
@@ -642,7 +645,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 		dstAttributeTranslucentPolyID = polyAttr.PolygonID;
 		
 		//alpha blending and write color
-		alphaBlend(dstColor, shaderOutput);
+		alphaBlend((renderState.DISP3DCNT.EnableAlphaBlending != 0), shaderOutput, dstColor);
 		
 		dstAttributeIsFogged = (dstAttributeIsFogged && polyAttr.Fog_Enable);
 	}
@@ -779,6 +782,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON>
 FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, FragmentColor &dstColor, const __m128 &srcColorf, float invu, float invv, float z, float w)
 {
+	const GFX3D_State &renderState = *this->_softRender->currentRenderState;
 	FragmentColor newDstColor32;
 	FragmentColor shaderOutput;
 	bool isOpaquePixel;
@@ -799,7 +803,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAt
 	
 	// Note that an IEEE-754 single-precision float uses a 23-bit significand. Therefore, we will multiply the
 	// Z-depth by a 22-bit significand for safety.
-	const u32 newDepth = (gfx3d.renderState.wbuffer) ? u32floor(w * 4096.0f) : u32floor(z * 4194303.0f) << 2;
+	const u32 newDepth = (renderState.SWAP_BUFFERS.DepthMode) ? u32floor(w * 4096.0f) : u32floor(z * 4194303.0f) << 2;
 	
 	// run the depth test
 	bool depthFail = false;
@@ -891,7 +895,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAt
 	this->_shade<ISSHADOWPOLYGON>((PolygonMode)polyAttr.Mode, newDstColor32, shaderOutput, invu * w, invv * w);
 	
 	// handle alpha test
-	if ( shaderOutput.a == 0 || (this->_softRender->currentRenderState->enableAlphaTest && shaderOutput.a < this->_softRender->currentRenderState->alphaTestRef) )
+	if ( shaderOutput.a == 0 || (renderState.DISP3DCNT.EnableAlphaTest && (shaderOutput.a < renderState.alphaTestRef)) )
 	{
 		return;
 	}
@@ -917,7 +921,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAt
 		dstAttributeTranslucentPolyID = polyAttr.PolygonID;
 		
 		//alpha blending and write color
-		alphaBlend(dstColor, shaderOutput);
+		alphaBlend((renderState.DISP3DCNT.EnableAlphaBlending != 0), shaderOutput, dstColor);
 		
 		dstAttributeIsFogged = (dstAttributeIsFogged && polyAttr.Fog_Enable);
 	}
@@ -1910,21 +1914,13 @@ void SoftRasterizerRenderer::_TransformVertices()
 			vert.fcolor[2] /= vertw;
 			
 			//viewport transformation
-			VIEWPORT viewport;
-			viewport.decode(poly.poly->viewport);
-			vert.coord[0] *= viewport.width;
-			vert.coord[0] += viewport.x;
-			
-			// The maximum viewport y-value is 191. Values above 191 need to wrap
-			// around and go negative.
-			//
-			// Test case: The Homie Rollerz character select screen sets the y-value
-			// to 253, which then wraps around to -2.
-			vert.coord[1] *= viewport.height;
-			vert.coord[1] += (viewport.y > 191) ? (viewport.y - 0xFF) : viewport.y;
-			vert.coord[1] = 192 - vert.coord[1];
-
+			vert.coord[0] *= poly.poly->viewport.width;
+			vert.coord[0] += poly.poly->viewport.x;
 			vert.coord[0] *= wScalar;
+			
+			vert.coord[1] *= poly.poly->viewport.height;
+			vert.coord[1] += poly.poly->viewport.y;
+			vert.coord[1] = 192 - vert.coord[1];
 			vert.coord[1] *= hScalar;
 			
 			//here is a hack which needs to be removed.
@@ -2010,7 +2006,7 @@ Render3DError SoftRasterizerRenderer::ApplyRenderingSettings(const GFX3D_State &
 	return Render3D::ApplyRenderingSettings(renderState);
 }
 
-Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
+Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList)
 {
 	// Force all threads to finish before rendering with new data
 	for (size_t i = 0; i < this->_threadCount; i++)
@@ -2019,10 +2015,10 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 	}
 	
 	// Keep the current render states for later use
-	this->currentRenderState = (GFX3D_State *)&engine.renderState;
-	this->_clippedPolyCount = engine.clippedPolyCount;
-	this->_clippedPolyOpaqueCount = engine.clippedPolyOpaqueCount;
-	memcpy(this->_clippedPolyList, engine.clippedPolyList, this->_clippedPolyCount * sizeof(CPoly));
+	this->currentRenderState = (GFX3D_State *)&renderState;
+	this->_clippedPolyCount = renderGList.clippedPolyCount;
+	this->_clippedPolyOpaqueCount = renderGList.clippedPolyOpaqueCount;
+	memcpy(this->_clippedPolyList, renderGList.clippedPolyList, this->_clippedPolyCount * sizeof(CPoly));
 	
 	const bool doMultithreadedStateSetup = (this->_threadCount >= 2);
 	
@@ -2038,16 +2034,16 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 	}
 	
 	// Convert the toon table colors
-	ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>(engine.renderState.u16ToonTable, (u32 *)this->toonColor32LUT, 32);
+	ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>(renderState.toonTable16, (u32 *)this->toonColor32LUT, 32);
 	
 	if (this->_enableEdgeMark)
 	{
-		this->_UpdateEdgeMarkColorTable(this->currentRenderState->edgeMarkColorTable);
+		this->_UpdateEdgeMarkColorTable(renderState.edgeMarkColorTable);
 	}
 	
 	if (this->_enableFog)
 	{
-		this->_UpdateFogTable(this->currentRenderState->fogDensityTable);
+		this->_UpdateFogTable(renderState.fogDensityTable);
 	}
 	
 	if (doMultithreadedStateSetup)
@@ -2107,7 +2103,7 @@ void SoftRasterizerRenderer::_UpdateEdgeMarkColorTable(const u16 *edgeMarkColorT
 	//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
 	for (size_t i = 0; i < 8; i++)
 	{
-		this->_edgeMarkTable[i].color = LE_TO_LOCAL_32( COLOR555TO6665(edgeMarkColorTable[i] & 0x7FFF, (this->currentRenderState->enableAntialiasing) ? 0x10 : 0x1F) );
+		this->_edgeMarkTable[i].color = LE_TO_LOCAL_32( COLOR555TO6665(edgeMarkColorTable[i] & 0x7FFF, (this->currentRenderState->DISP3DCNT.EnableAntialiasing) ? 0x10 : 0x1F) );
 		
 		//zero 20-jun-2013 - this doesnt make any sense. at least, it should be related to the 0x8000 bit. if this is undocumented behaviour, lets write about which scenario proves it here, or which scenario is requiring this code.
 		//// this seems to be the only thing that selectively disables edge marking
@@ -2390,7 +2386,7 @@ Render3DError SoftRasterizerRenderer::EndRender()
 			this->_threadPostprocessParam[0].enableEdgeMarking = this->_enableEdgeMark;
 			this->_threadPostprocessParam[0].enableFog = this->_enableFog;
 			this->_threadPostprocessParam[0].fogColor = this->currentRenderState->fogColor;
-			this->_threadPostprocessParam[0].fogAlphaOnly = this->currentRenderState->enableFogAlphaOnly;
+			this->_threadPostprocessParam[0].fogAlphaOnly = (this->currentRenderState->DISP3DCNT.FogOnlyAlpha != 0);
 			
 			this->RenderEdgeMarkingAndFog(this->_threadPostprocessParam[0]);
 		}
@@ -2426,7 +2422,7 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 				this->_threadPostprocessParam[i].enableEdgeMarking = this->_enableEdgeMark;
 				this->_threadPostprocessParam[i].enableFog = this->_enableFog;
 				this->_threadPostprocessParam[i].fogColor = this->currentRenderState->fogColor;
-				this->_threadPostprocessParam[i].fogAlphaOnly = this->currentRenderState->enableFogAlphaOnly;
+				this->_threadPostprocessParam[i].fogAlphaOnly = (this->currentRenderState->DISP3DCNT.FogOnlyAlpha != 0);
 				
 				this->_task[i].execute(&SoftRasterizer_RunRenderEdgeMarkAndFog, &this->_threadPostprocessParam[i]);
 			}

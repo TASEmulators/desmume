@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2022 DeSmuME team
+	Copyright (C) 2007-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -198,7 +198,7 @@ protected:
 																				u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
 	
 	
-	virtual Render3DError BeginRender(const GFX3D &engine);
+	virtual Render3DError BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);
 	virtual Render3DError RenderGeometry();
 	virtual Render3DError PostprocessFramebuffer();
 	virtual Render3DError EndRender();
@@ -208,7 +208,7 @@ protected:
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
-	virtual Render3DError SetupViewport(const u32 viewportValue);
+	virtual Render3DError SetupViewport(const GFX3D_Viewport viewport);
 	
 public:
 	static void* operator new(size_t size);
@@ -232,7 +232,7 @@ public:
 	
 	virtual Render3DError RenderPowerOff();				// Called when the renderer needs to handle a power-off condition by clearing its framebuffers.
 	
-	virtual Render3DError Render(const GFX3D &engine);	// Called when the renderer should do its job and render the current display lists.
+	virtual Render3DError Render(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);	// Called whenever the 3D renderer needs to render the geometry lists.
 	
 	virtual Render3DError RenderFinish();				// Called whenever 3D rendering needs to finish. This function should block the calling thread
 														// and only release the block when 3D rendering is finished. (Before reading the 3D layer, be

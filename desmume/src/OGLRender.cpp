@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2022 DeSmuME team
+	Copyright (C) 2008-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1777,7 +1777,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const CPoly *clippedPolyList, c
 	const POLY &initialPoly = *clippedPolyList[firstIndex].poly;
 	TEXIMAGE_PARAM lastTexParams = initialPoly.texParam;
 	u32 lastTexPalette = initialPoly.texPalette;
-	u32 lastViewport = initialPoly.viewport;
+	GFX3D_Viewport lastViewport = initialPoly.viewport;
 	
 	this->SetupTexture(initialPoly, firstIndex);
 	this->SetupViewport(initialPoly.viewport);
@@ -1806,7 +1806,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const CPoly *clippedPolyList, c
 		}
 		
 		// Set up the viewport if it changed
-		if (lastViewport != thePoly.viewport)
+		if (lastViewport.value != thePoly.viewport.value)
 		{
 			lastViewport = thePoly.viewport;
 			this->SetupViewport(thePoly.viewport);
@@ -1833,7 +1833,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const CPoly *clippedPolyList, c
 			if (lastPolyAttr.value == nextPoly.attribute.value &&
 				lastTexParams.value == nextPoly.texParam.value &&
 				lastTexPalette == nextPoly.texPalette &&
-				lastViewport == nextPoly.viewport &&
+				lastViewport.value == nextPoly.viewport.value &&
 				polyPrimitive == oglPrimitiveType[nextPoly.vtxFormat] &&
 				polyPrimitive != GL_LINE_LOOP &&
 				polyPrimitive != GL_LINE_STRIP &&
@@ -3874,7 +3874,7 @@ Render3DError OpenGLRenderer_1_2::DisableVertexAttributes()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const CPoly *clippedPolyList, const size_t clippedPolyCount, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr)
+Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const CPoly *clippedPolyList, const size_t clippedPolyCount, const size_t clippedPolyOpaqueCount, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -3957,7 +3957,7 @@ Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const CPoly *clippedPolyList,
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
 	glStencilFunc(GL_NOTEQUAL, 0x40, 0x40);
 	
-	this->DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(clippedPolyList, clippedPolyCount, this->_clippedPolyOpaqueCount, clippedPolyCount - 1, indexOffset, lastPolyAttr);
+	this->DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(clippedPolyList, clippedPolyCount, clippedPolyOpaqueCount, clippedPolyCount - 1, indexOffset, lastPolyAttr);
 	
 	// Restore OpenGL states back to normal.
 	this->_geometryProgramFlags = oldGProgramFlags;
@@ -4157,7 +4157,7 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
+Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -4166,11 +4166,11 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
-	this->_clippedPolyCount = engine.clippedPolyCount;
-	this->_clippedPolyOpaqueCount = engine.clippedPolyOpaqueCount;
-	this->_clippedPolyList = engine.clippedPolyList;
+	this->_clippedPolyCount = renderGList.clippedPolyCount;
+	this->_clippedPolyOpaqueCount = renderGList.clippedPolyOpaqueCount;
+	this->_clippedPolyList = (CPoly *)renderGList.clippedPolyList;
 	
-	this->_enableAlphaBlending = (engine.renderState.enableAlphaBlending) ? true : false;
+	this->_enableAlphaBlending = (renderState.DISP3DCNT.EnableAlphaBlending) ? true : false;
 	
 	if (this->isVBOSupported)
 	{
@@ -4178,14 +4178,14 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, OGLRef.iboGeometryIndexID);
 		
 		// Only copy as much vertex data as we need to, since this can be a potentially large upload size.
-		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * engine.vertListCount, engine.vertList);
+		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * renderGList.vertListCount, renderGList.vertList);
 	}
 	else
 	{
 		// If VBOs aren't supported, we need to use the client-side buffers here.
-		OGLRef.vtxPtrPosition = &engine.vertList[0].coord;
-		OGLRef.vtxPtrTexCoord = &engine.vertList[0].texcoord;
-		OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)&engine.vertList[0].color : OGLRef.color4fBuffer;
+		OGLRef.vtxPtrPosition = (GLvoid *)&renderGList.vertList[0].coord;
+		OGLRef.vtxPtrTexCoord = (GLvoid *)&renderGList.vertList[0].texcoord;
+		OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)&renderGList.vertList[0].color : OGLRef.color4fBuffer;
 	}
 	
 	// Generate the clipped polygon list.
@@ -4197,10 +4197,10 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		
 		const size_t polyType = thePoly.type;
 		const VERT vert[4] = {
-			engine.vertList[thePoly.vertIndexes[0]],
-			engine.vertList[thePoly.vertIndexes[1]],
-			engine.vertList[thePoly.vertIndexes[2]],
-			engine.vertList[thePoly.vertIndexes[3]]
+			renderGList.vertList[thePoly.vertIndexes[0]],
+			renderGList.vertList[thePoly.vertIndexes[1]],
+			renderGList.vertList[thePoly.vertIndexes[2]],
+			renderGList.vertList[thePoly.vertIndexes[3]]
 		};
 		
 		if (this->isShaderSupported)
@@ -4238,7 +4238,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 				
 				// Consolidate the vertex color and the poly alpha to our internal color buffer
 				// so that OpenGL can use it.
-				const VERT *vertForAlpha = &engine.vertList[vertIndex];
+				const VERT *vertForAlpha = &renderGList.vertList[vertIndex];
 				OGLRef.color4fBuffer[colorIndex+0] = divide6bitBy63_LUT[vertForAlpha->color[0]];
 				OGLRef.color4fBuffer[colorIndex+1] = divide6bitBy63_LUT[vertForAlpha->color[1]];
 				OGLRef.color4fBuffer[colorIndex+2] = divide6bitBy63_LUT[vertForAlpha->color[2]];
@@ -4289,29 +4289,29 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	}
 	
 	// Set up rendering states that will remain constant for the entire frame.
-	this->_pendingRenderStates.enableAntialiasing = (engine.renderState.enableAntialiasing) ? GL_TRUE : GL_FALSE;
-	this->_pendingRenderStates.enableFogAlphaOnly = (engine.renderState.enableFogAlphaOnly) ? GL_TRUE : GL_FALSE;
+	this->_pendingRenderStates.enableAntialiasing = (renderState.DISP3DCNT.EnableAntialiasing) ? GL_TRUE : GL_FALSE;
+	this->_pendingRenderStates.enableFogAlphaOnly = (renderState.DISP3DCNT.FogOnlyAlpha) ? GL_TRUE : GL_FALSE;
 	this->_pendingRenderStates.clearPolyID = this->_clearAttributes.opaquePolyID;
 	this->_pendingRenderStates.clearDepth = (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF;
-	this->_pendingRenderStates.alphaTestRef = divide5bitBy31_LUT[engine.renderState.alphaTestRef];
+	this->_pendingRenderStates.alphaTestRef = divide5bitBy31_LUT[renderState.alphaTestRef];
 	
 	if (this->_enableFog && this->_deviceInfo.isFogSupported)
 	{
 		this->_fogProgramKey.key = 0;
-		this->_fogProgramKey.offset = engine.renderState.fogOffset & 0x7FFF;
-		this->_fogProgramKey.shift = engine.renderState.fogShift;
+		this->_fogProgramKey.offset = renderState.fogOffset & 0x7FFF;
+		this->_fogProgramKey.shift = renderState.fogShift;
 		
-		this->_pendingRenderStates.fogColor.r = divide5bitBy31_LUT[(engine.renderState.fogColor      ) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.g = divide5bitBy31_LUT[(engine.renderState.fogColor >>  5) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.b = divide5bitBy31_LUT[(engine.renderState.fogColor >> 10) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.a = divide5bitBy31_LUT[(engine.renderState.fogColor >> 16) & 0x0000001F];
-		this->_pendingRenderStates.fogOffset = (GLfloat)(engine.renderState.fogOffset & 0x7FFF) / 32767.0f;
-		this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> engine.renderState.fogShift) / 32767.0f;
+		this->_pendingRenderStates.fogColor.r = divide5bitBy31_LUT[(renderState.fogColor      ) & 0x0000001F];
+		this->_pendingRenderStates.fogColor.g = divide5bitBy31_LUT[(renderState.fogColor >>  5) & 0x0000001F];
+		this->_pendingRenderStates.fogColor.b = divide5bitBy31_LUT[(renderState.fogColor >> 10) & 0x0000001F];
+		this->_pendingRenderStates.fogColor.a = divide5bitBy31_LUT[(renderState.fogColor >> 16) & 0x0000001F];
+		this->_pendingRenderStates.fogOffset = (GLfloat)(renderState.fogOffset & 0x7FFF) / 32767.0f;
+		this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> renderState.fogShift) / 32767.0f;
 		
 		u8 fogDensityTable[32];
 		for (size_t i = 0; i < 32; i++)
 		{
-			fogDensityTable[i] = (engine.renderState.fogDensityTable[i] == 127) ? 255 : engine.renderState.fogDensityTable[i] << 1;
+			fogDensityTable[i] = (renderState.fogDensityTable[i] == 127) ? 255 : renderState.fogDensityTable[i] << 1;
 		}
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
@@ -4321,12 +4321,12 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	
 	if (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported)
 	{
-		const u8 alpha8 = (engine.renderState.enableAntialiasing) ? 0x80 : 0xFF;
+		const u8 alpha8 = (renderState.DISP3DCNT.EnableAntialiasing) ? 0x80 : 0xFF;
 		FragmentColor edgeColor32[8];
 		
 		for (size_t i = 0; i < 8; i++)
 		{
-			edgeColor32[i].color = COLOR555TO8888(engine.renderState.edgeMarkColorTable[i] & 0x7FFF, alpha8);
+			edgeColor32[i].color = COLOR555TO8888(renderState.edgeMarkColorTable[i] & 0x7FFF, alpha8);
 		}
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
@@ -4337,10 +4337,10 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	if (this->isShaderSupported)
 	{
 		this->_geometryProgramFlags.value = 0;
-		this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;
-		this->_geometryProgramFlags.EnableAlphaTest = (engine.renderState.enableAlphaTest) ? 1 : 0;
+		this->_geometryProgramFlags.EnableWDepth = renderState.SWAP_BUFFERS.DepthMode;
+		this->_geometryProgramFlags.EnableAlphaTest = renderState.DISP3DCNT.EnableAlphaTest;
 		this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
-		this->_geometryProgramFlags.ToonShadingMode = (engine.renderState.shading) ? 1 : 0;
+		this->_geometryProgramFlags.ToonShadingMode = renderState.DISP3DCNT.PolygonShading;
 		this->_geometryProgramFlags.EnableFog = (this->_enableFog && this->_deviceInfo.isFogSupported) ? 1 : 0;
 		this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) ? 1 : 0;
 		this->_geometryProgramFlags.OpaqueDrawMode = (this->_isDepthLEqualPolygonFacingSupported) ? 1 : 0;
@@ -4351,14 +4351,14 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		{
 			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
 			glBindTexture(GL_TEXTURE_1D, OGLRef.texToonTableID);
-			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, engine.renderState.u16ToonTable);
+			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, renderState.toonTable16);
 		}
 	}
 	else
 	{
-		if (engine.renderState.enableAlphaTest && (engine.renderState.alphaTestRef > 0))
+		if (renderState.DISP3DCNT.EnableAlphaTest && (renderState.alphaTestRef > 0))
 		{
-			glAlphaFunc(GL_GEQUAL, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
+			glAlphaFunc(GL_GEQUAL, divide5bitBy31_LUT[renderState.alphaTestRef]);
 		}
 		else
 		{
@@ -4426,7 +4426,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 					this->SetupPolygon(firstPoly, true, false);
 				}
 				
-				this->ZeroDstAlphaPass(this->_clippedPolyList, this->_clippedPolyCount, this->_enableAlphaBlending, indexOffset, lastPolyAttr);
+				this->ZeroDstAlphaPass(this->_clippedPolyList, this->_clippedPolyCount, this->_clippedPolyOpaqueCount, this->_enableAlphaBlending, indexOffset, lastPolyAttr);
 				
 				if (this->_clippedPolyOpaqueCount > 0)
 				{
@@ -4956,23 +4956,15 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, size_t polyR
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::SetupViewport(const u32 viewportValue)
+Render3DError OpenGLRenderer_1_2::SetupViewport(const GFX3D_Viewport viewport)
 {
 	const GLfloat wScalar = this->_framebufferWidth  / (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	const GLfloat hScalar = this->_framebufferHeight / (GLfloat)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
-	VIEWPORT viewport;
-	viewport.decode(viewportValue);
-	
-	// The maximum viewport y-value is 191. Values above 191 need to wrap
-	// around and go negative.
-	//
-	// Test case: The Homie Rollerz character select screen sets the y-value
-	// to 253, which then wraps around to -2.
-	glViewport( viewport.x * wScalar,
-			   (viewport.y > 191) ? (viewport.y - 0xFF) * hScalar : viewport.y * hScalar,
-			    viewport.width  * wScalar,
-			    viewport.height * hScalar);
+	glViewport(viewport.x * wScalar,
+	           viewport.y * hScalar,
+	           viewport.width * wScalar,
+	           viewport.height * hScalar);
 	
 	return OGLERROR_NOERR;
 }
@@ -5446,7 +5438,7 @@ Render3DError OpenGLRenderer_2_0::DisableVertexAttributes()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
+Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -5455,17 +5447,17 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
-	this->_clippedPolyCount = engine.clippedPolyCount;
-	this->_clippedPolyOpaqueCount = engine.clippedPolyOpaqueCount;
-	this->_clippedPolyList = engine.clippedPolyList;
+	this->_clippedPolyCount = renderGList.clippedPolyCount;
+	this->_clippedPolyOpaqueCount = renderGList.clippedPolyOpaqueCount;
+	this->_clippedPolyList = (CPoly *)renderGList.clippedPolyList;
 	
-	this->_enableAlphaBlending = (engine.renderState.enableAlphaBlending) ? true : false;
+	this->_enableAlphaBlending = (renderState.DISP3DCNT.EnableAlphaBlending) ? true : false;
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 	
 	// Only copy as much vertex data as we need to, since this can be a potentially large upload size.
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * engine.vertListCount, engine.vertList);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * renderGList.vertListCount, renderGList.vertList);
 	
 	// Generate the clipped polygon list.
 	bool renderNeedsToonTable = false;
@@ -5476,10 +5468,10 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 		
 		const size_t polyType = thePoly.type;
 		const VERT vert[4] = {
-			engine.vertList[thePoly.vertIndexes[0]],
-			engine.vertList[thePoly.vertIndexes[1]],
-			engine.vertList[thePoly.vertIndexes[2]],
-			engine.vertList[thePoly.vertIndexes[3]]
+			renderGList.vertList[thePoly.vertIndexes[0]],
+			renderGList.vertList[thePoly.vertIndexes[1]],
+			renderGList.vertList[thePoly.vertIndexes[2]],
+			renderGList.vertList[thePoly.vertIndexes[3]]
 		};
 		
 		for (size_t j = 0; j < polyType; j++)
@@ -5527,29 +5519,29 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
 	
 	// Set up rendering states that will remain constant for the entire frame.
-	this->_pendingRenderStates.enableAntialiasing = (engine.renderState.enableAntialiasing) ? GL_TRUE : GL_FALSE;
-	this->_pendingRenderStates.enableFogAlphaOnly = (engine.renderState.enableFogAlphaOnly) ? GL_TRUE : GL_FALSE;
+	this->_pendingRenderStates.enableAntialiasing = (renderState.DISP3DCNT.EnableAntialiasing) ? GL_TRUE : GL_FALSE;
+	this->_pendingRenderStates.enableFogAlphaOnly = (renderState.DISP3DCNT.FogOnlyAlpha) ? GL_TRUE : GL_FALSE;
 	this->_pendingRenderStates.clearPolyID = this->_clearAttributes.opaquePolyID;
 	this->_pendingRenderStates.clearDepth = (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF;
-	this->_pendingRenderStates.alphaTestRef = divide5bitBy31_LUT[engine.renderState.alphaTestRef];
+	this->_pendingRenderStates.alphaTestRef = divide5bitBy31_LUT[renderState.alphaTestRef];
 	
 	if (this->_enableFog && this->_deviceInfo.isFogSupported)
 	{
 		this->_fogProgramKey.key = 0;
-		this->_fogProgramKey.offset = engine.renderState.fogOffset & 0x7FFF;
-		this->_fogProgramKey.shift = engine.renderState.fogShift;
+		this->_fogProgramKey.offset = renderState.fogOffset & 0x7FFF;
+		this->_fogProgramKey.shift = renderState.fogShift;
 		
-		this->_pendingRenderStates.fogColor.r = divide5bitBy31_LUT[(engine.renderState.fogColor      ) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.g = divide5bitBy31_LUT[(engine.renderState.fogColor >>  5) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.b = divide5bitBy31_LUT[(engine.renderState.fogColor >> 10) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.a = divide5bitBy31_LUT[(engine.renderState.fogColor >> 16) & 0x0000001F];
-		this->_pendingRenderStates.fogOffset = (GLfloat)(engine.renderState.fogOffset & 0x7FFF) / 32767.0f;
-		this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> engine.renderState.fogShift) / 32767.0f;
+		this->_pendingRenderStates.fogColor.r = divide5bitBy31_LUT[(renderState.fogColor      ) & 0x0000001F];
+		this->_pendingRenderStates.fogColor.g = divide5bitBy31_LUT[(renderState.fogColor >>  5) & 0x0000001F];
+		this->_pendingRenderStates.fogColor.b = divide5bitBy31_LUT[(renderState.fogColor >> 10) & 0x0000001F];
+		this->_pendingRenderStates.fogColor.a = divide5bitBy31_LUT[(renderState.fogColor >> 16) & 0x0000001F];
+		this->_pendingRenderStates.fogOffset = (GLfloat)(renderState.fogOffset & 0x7FFF) / 32767.0f;
+		this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> renderState.fogShift) / 32767.0f;
 		
 		u8 fogDensityTable[32];
 		for (size_t i = 0; i < 32; i++)
 		{
-			fogDensityTable[i] = (engine.renderState.fogDensityTable[i] == 127) ? 255 : engine.renderState.fogDensityTable[i] << 1;
+			fogDensityTable[i] = (renderState.fogDensityTable[i] == 127) ? 255 : renderState.fogDensityTable[i] << 1;
 		}
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
@@ -5559,12 +5551,12 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	
 	if (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported)
 	{
-		const u8 alpha8 = (engine.renderState.enableAntialiasing) ? 0x80 : 0xFF;
+		const u8 alpha8 = (renderState.DISP3DCNT.EnableAntialiasing) ? 0x80 : 0xFF;
 		FragmentColor edgeColor32[8];
 		
 		for (size_t i = 0; i < 8; i++)
 		{
-			edgeColor32[i].color = COLOR555TO8888(engine.renderState.edgeMarkColorTable[i] & 0x7FFF, alpha8);
+			edgeColor32[i].color = COLOR555TO8888(renderState.edgeMarkColorTable[i] & 0x7FFF, alpha8);
 		}
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
@@ -5574,10 +5566,10 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	
 	// Setup render states
 	this->_geometryProgramFlags.value = 0;
-	this->_geometryProgramFlags.EnableWDepth = (engine.renderState.wbuffer) ? 1 : 0;
-	this->_geometryProgramFlags.EnableAlphaTest = (engine.renderState.enableAlphaTest) ? 1 : 0;
+	this->_geometryProgramFlags.EnableWDepth = renderState.SWAP_BUFFERS.DepthMode;
+	this->_geometryProgramFlags.EnableAlphaTest = renderState.DISP3DCNT.EnableAlphaTest;
 	this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
-	this->_geometryProgramFlags.ToonShadingMode = (engine.renderState.shading) ? 1 : 0;
+	this->_geometryProgramFlags.ToonShadingMode = renderState.DISP3DCNT.PolygonShading;
 	this->_geometryProgramFlags.EnableFog = (this->_enableFog && this->_deviceInfo.isFogSupported) ? 1 : 0;
 	this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) ? 1 : 0;
 	this->_geometryProgramFlags.OpaqueDrawMode = (this->_isDepthLEqualPolygonFacingSupported) ? 1 : 0;
@@ -5588,7 +5580,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	{
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
 		glBindTexture(GL_TEXTURE_1D, OGLRef.texToonTableID);
-		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, engine.renderState.u16ToonTable);
+		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, renderState.toonTable16);
 	}
 	
 	glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);

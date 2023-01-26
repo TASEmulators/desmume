@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2022 DeSmuME team
+	Copyright (C) 2009-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -176,7 +176,7 @@ protected:
 	void _GetPolygonStates();
 	
 	// Base rendering methods
-	virtual Render3DError BeginRender(const GFX3D &engine);
+	virtual Render3DError BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);
 	virtual Render3DError RenderGeometry();
 	virtual Render3DError EndRender();
 	
