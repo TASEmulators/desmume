@@ -3012,7 +3012,7 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 		for (size_t i = 0; i < gfx3d.gList[gfx3d.appliedListIndex].vertListCount; i++)
 		{
 			gfx3d.gList[gfx3d.pendingListIndex].vertList[i].load(is);
-			gfx3d.gList[gfx3d.appliedListIndex].vertList[i].load(is);
+			gfx3d.gList[gfx3d.appliedListIndex].vertList[i] = gfx3d.gList[gfx3d.pendingListIndex].vertList[i];
 		}
 		
 		is.read_32LE(polyListCount32);
@@ -3021,7 +3021,7 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 		for (size_t i = 0; i < gfx3d.gList[gfx3d.appliedListIndex].polyCount; i++)
 		{
 			gfx3d.gList[gfx3d.pendingListIndex].polyList[i].load(is);
-			gfx3d.gList[gfx3d.appliedListIndex].polyList[i].load(is);
+			gfx3d.gList[gfx3d.appliedListIndex].polyList[i] = gfx3d.gList[gfx3d.pendingListIndex].polyList[i];
 		}
 	}
 
