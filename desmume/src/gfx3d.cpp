@@ -412,70 +412,71 @@ GFX3D_Viewport GFX3D_ViewportParse(const u32 inValue)
 	return outViewport;
 }
 
-void POLY::save(EMUFILE &os)
+void GFX3D_SaveStatePOLY(const POLY &p, EMUFILE &os)
 {
-	os.write_32LE((u32)type);
-	os.write_16LE(vertIndexes[0]);
-	os.write_16LE(vertIndexes[1]);
-	os.write_16LE(vertIndexes[2]);
-	os.write_16LE(vertIndexes[3]);
-	os.write_32LE(attribute.value);
-	os.write_32LE(texParam.value);
-	os.write_32LE(texPalette);
-	os.write_32LE(viewportLegacySave.value);
-	os.write_floatLE(miny);
-	os.write_floatLE(maxy);
+	os.write_32LE((u32)p.type);
+	os.write_16LE(p.vertIndexes[0]);
+	os.write_16LE(p.vertIndexes[1]);
+	os.write_16LE(p.vertIndexes[2]);
+	os.write_16LE(p.vertIndexes[3]);
+	os.write_32LE(p.attribute.value);
+	os.write_32LE(p.texParam.value);
+	os.write_32LE(p.texPalette);
+	os.write_32LE(p.viewportLegacySave.value);
+	os.write_floatLE(p.miny);
+	os.write_floatLE(p.maxy);
 }
 
-void POLY::load(EMUFILE &is)
+void GFX3D_LoadStatePOLY(POLY &p, EMUFILE &is)
 {
 	u32 polyType32;
 	is.read_32LE(polyType32);
-	type = (PolygonType)polyType32;
+	p.type = (PolygonType)polyType32;
 	
-	is.read_16LE(vertIndexes[0]);
-	is.read_16LE(vertIndexes[1]);
-	is.read_16LE(vertIndexes[2]);
-	is.read_16LE(vertIndexes[3]);
-	is.read_32LE(attribute.value);
-	is.read_32LE(texParam.value);
-	is.read_32LE(texPalette);
-	is.read_32LE(viewportLegacySave.value);
-	is.read_floatLE(miny);
-	is.read_floatLE(maxy);
+	is.read_16LE(p.vertIndexes[0]);
+	is.read_16LE(p.vertIndexes[1]);
+	is.read_16LE(p.vertIndexes[2]);
+	is.read_16LE(p.vertIndexes[3]);
+	is.read_32LE(p.attribute.value);
+	is.read_32LE(p.texParam.value);
+	is.read_32LE(p.texPalette);
+	is.read_32LE(p.viewportLegacySave.value);
+	is.read_floatLE(p.miny);
+	is.read_floatLE(p.maxy);
 	
-	viewport = GFX3D_ViewportParse(viewportLegacySave.value);
+	p.viewport = GFX3D_ViewportParse(p.viewportLegacySave.value);
 }
 
-void VERT::save(EMUFILE &os)
+void GFX3D_SaveStateVERT(const VERT &vtx, EMUFILE &os)
 {
-	os.write_floatLE(x);
-	os.write_floatLE(y);
-	os.write_floatLE(z);
-	os.write_floatLE(w);
-	os.write_floatLE(u);
-	os.write_floatLE(v);
-	os.write_u8(color[0]);
-	os.write_u8(color[1]);
-	os.write_u8(color[2]);
-	os.write_floatLE(fcolor[0]);
-	os.write_floatLE(fcolor[1]);
-	os.write_floatLE(fcolor[2]);
+	os.write_floatLE(vtx.x);
+	os.write_floatLE(vtx.y);
+	os.write_floatLE(vtx.z);
+	os.write_floatLE(vtx.w);
+	os.write_floatLE(vtx.u);
+	os.write_floatLE(vtx.v);
+	os.write_u8(vtx.color[0]);
+	os.write_u8(vtx.color[1]);
+	os.write_u8(vtx.color[2]);
+	os.write_floatLE(vtx.fcolor[0]);
+	os.write_floatLE(vtx.fcolor[1]);
+	os.write_floatLE(vtx.fcolor[2]);
 }
-void VERT::load(EMUFILE &is)
+
+void GFX3D_LoadStateVERT(VERT &vtx, EMUFILE &is)
 {
-	is.read_floatLE(x);
-	is.read_floatLE(y);
-	is.read_floatLE(z);
-	is.read_floatLE(w);
-	is.read_floatLE(u);
-	is.read_floatLE(v);
-	is.read_u8(color[0]);
-	is.read_u8(color[1]);
-	is.read_u8(color[2]);
-	is.read_floatLE(fcolor[0]);
-	is.read_floatLE(fcolor[1]);
-	is.read_floatLE(fcolor[2]);
+	is.read_floatLE(vtx.x);
+	is.read_floatLE(vtx.y);
+	is.read_floatLE(vtx.z);
+	is.read_floatLE(vtx.w);
+	is.read_floatLE(vtx.u);
+	is.read_floatLE(vtx.v);
+	is.read_u8(vtx.color[0]);
+	is.read_u8(vtx.color[1]);
+	is.read_u8(vtx.color[2]);
+	is.read_floatLE(vtx.fcolor[0]);
+	is.read_floatLE(vtx.fcolor[1]);
+	is.read_floatLE(vtx.fcolor[2]);
 }
 
 void gfx3d_init()
@@ -763,7 +764,10 @@ static void SetVertex()
 	vert.color[0] = GFX3D_5TO6_LOOKUP(colorRGB[0]);
 	vert.color[1] = GFX3D_5TO6_LOOKUP(colorRGB[1]);
 	vert.color[2] = GFX3D_5TO6_LOOKUP(colorRGB[2]);
-	vert.color_to_float();
+	vert.rf = (float)vert.r;
+	vert.gf = (float)vert.g;
+	vert.bf = (float)vert.b;
+	vert.af = (float)vert.a;
 	tempVertInfo.map[tempVertInfo.count] = (s32)pendingGList.vertListCount + tempVertInfo.count - continuation;
 	tempVertInfo.count++;
 
@@ -1681,15 +1685,23 @@ static BOOL gfx3d_glBoxTest(u32 v)
 		{ __x, y_h, z_d, fixedOne }
 	};
 	
+#define SET_VERT_INDICES(p,  a,b,c,d) \
+	polys[p].type = POLYGON_TYPE_QUAD; \
+	polys[p].vertIndexes[0] = a; \
+	polys[p].vertIndexes[1] = b; \
+	polys[p].vertIndexes[2] = c; \
+	polys[p].vertIndexes[3] = d;
+	
 	//craft the faces of the box (clockwise)
 	POLY polys[6];
-	polys[0].setVertIndexes(7,6,5,4); //near 
-	polys[1].setVertIndexes(0,1,2,3); //far
-	polys[2].setVertIndexes(0,3,7,4); //left
-	polys[3].setVertIndexes(6,2,1,5); //right
-	polys[4].setVertIndexes(3,2,6,7); //top
-	polys[5].setVertIndexes(0,4,5,1); //bottom
-
+	SET_VERT_INDICES(0,  7,6,5,4) // near
+	SET_VERT_INDICES(1,  0,1,2,3) // far
+	SET_VERT_INDICES(2,  0,3,7,4) // left
+	SET_VERT_INDICES(3,  6,2,1,5) // right
+	SET_VERT_INDICES(4,  3,2,6,7) // top
+	SET_VERT_INDICES(5,  0,4,5,1) // bottom
+#undef SET_VERT_INDICES
+	
 	//setup the clipper
 	CPoly tempClippedPoly;
 	boxtestClipper.SetClippedPolyBufferPtr(&tempClippedPoly);
@@ -1732,10 +1744,10 @@ static BOOL gfx3d_glBoxTest(u32 v)
 		MatrixMultVec4x4(mtxCurrent[MATRIXMODE_PROJECTION], vtx[i].coord);
 		
 		// TODO: Remove this fixed-point to floating-point conversion.
-		verts[i].set_coord( (float)(vtx[i].x) / 4096.0f,
-		                    (float)(vtx[i].y) / 4096.0f,
-		                    (float)(vtx[i].z) / 4096.0f,
-		                    (float)(vtx[i].w) / 4096.0f );
+		verts[i].x = (float)(vtx[i].x) / 4096.0f;
+		verts[i].y = (float)(vtx[i].y) / 4096.0f;
+		verts[i].z = (float)(vtx[i].z) / 4096.0f;
+		verts[i].w = (float)(vtx[i].w) / 4096.0f;
 	}
 
 	//clip each poly
@@ -2378,7 +2390,7 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 	{
 		const CPoly &clippedPoly = _clipper->GetClippedPolyByIndex(i);
-		if (!clippedPoly.poly->isTranslucent())
+		if ( !GFX3D_IsPolyTranslucent(*clippedPoly.poly) )
 			gfx3d.polyWorkingIndexList[ctr++] = (int)clippedPoly.index;
 	}
 	outGList.clippedPolyOpaqueCount = ctr;
@@ -2387,7 +2399,7 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 	{
 		const CPoly &clippedPoly = _clipper->GetClippedPolyByIndex(i);
-		if (clippedPoly.poly->isTranslucent())
+		if ( GFX3D_IsPolyTranslucent(*clippedPoly.poly) )
 			gfx3d.polyWorkingIndexList[ctr++] = (int)clippedPoly.index;
 	}
 	
@@ -2913,11 +2925,15 @@ void gfx3d_savestate(EMUFILE &os)
 	//dump the render lists
 	os.write_32LE((u32)gfx3d.gList[gfx3d.pendingListIndex].vertListCount);
 	for (size_t i = 0; i < gfx3d.gList[gfx3d.pendingListIndex].vertListCount; i++)
-		gfx3d.gList[gfx3d.pendingListIndex].vertList[i].save(os);
+	{
+		GFX3D_SaveStateVERT(gfx3d.gList[gfx3d.pendingListIndex].vertList[i], os);
+	}
 	
 	os.write_32LE((u32)gfx3d.gList[gfx3d.pendingListIndex].polyCount);
 	for (size_t i = 0; i < gfx3d.gList[gfx3d.pendingListIndex].polyCount; i++)
-		gfx3d.gList[gfx3d.pendingListIndex].polyList[i].save(os);
+	{
+		GFX3D_SaveStatePOLY(gfx3d.gList[gfx3d.pendingListIndex].polyList[i], os);
+	}
 
 	// Write matrix stack data
 	os.write_32LE(mtxStackIndex[MATRIXMODE_PROJECTION]);
@@ -3000,7 +3016,7 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 		gfx3d.gList[gfx3d.appliedListIndex].vertListCount = vertListCount32;
 		for (size_t i = 0; i < gfx3d.gList[gfx3d.appliedListIndex].vertListCount; i++)
 		{
-			gfx3d.gList[gfx3d.pendingListIndex].vertList[i].load(is);
+			GFX3D_LoadStateVERT(gfx3d.gList[gfx3d.pendingListIndex].vertList[i], is);
 			gfx3d.gList[gfx3d.appliedListIndex].vertList[i] = gfx3d.gList[gfx3d.pendingListIndex].vertList[i];
 		}
 		
@@ -3009,7 +3025,7 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 		gfx3d.gList[gfx3d.appliedListIndex].polyCount = polyListCount32;
 		for (size_t i = 0; i < gfx3d.gList[gfx3d.appliedListIndex].polyCount; i++)
 		{
-			gfx3d.gList[gfx3d.pendingListIndex].polyList[i].load(is);
+			GFX3D_LoadStatePOLY(gfx3d.gList[gfx3d.pendingListIndex].polyList[i], is);
 			gfx3d.gList[gfx3d.appliedListIndex].polyList[i] = gfx3d.gList[gfx3d.pendingListIndex].polyList[i];
 		}
 	}
@@ -3207,6 +3223,35 @@ void ParseReg_DISP3DCNT()
 	gfx3d_parseCurrentDISP3DCNT();
 }
 
+bool GFX3D_IsPolyWireframe(const POLY &p)
+{
+	return (p.attribute.Alpha == 0);
+}
+
+bool GFX3D_IsPolyOpaque(const POLY &p)
+{
+	return (p.attribute.Alpha == 31);
+}
+
+bool GFX3D_IsPolyTranslucent(const POLY &p)
+{
+	// First, check if the polygon is wireframe or opaque.
+	// If neither, then it must be translucent.
+	if ( !GFX3D_IsPolyWireframe(p) && !GFX3D_IsPolyOpaque(p) )
+	{
+		return true;
+	}
+	
+	// Also check for translucent texture format.
+	const NDSTextureFormat texFormat = (NDSTextureFormat)p.texParam.PackedFormat;
+	const PolygonMode polyMode = (PolygonMode)p.attribute.Mode;
+	
+	//a5i3 or a3i5 -> translucent
+	return ( ((texFormat == TEXMODE_A3I5) || (texFormat == TEXMODE_A5I3)) &&
+	         (polyMode != POLYGON_MODE_DECAL) &&
+	         (polyMode != POLYGON_MODE_SHADOW) );
+}
+
 template void gfx3d_glGetMatrix<MATRIXMODE_PROJECTION>(const int index, float(&dst)[16]);
 template void gfx3d_glGetMatrix<MATRIXMODE_POSITION>(const int index, float(&dst)[16]);
 template void gfx3d_glGetMatrix<MATRIXMODE_POSITION_VECTOR>(const int index, float(&dst)[16]);
@@ -3251,7 +3296,10 @@ static FORCEINLINE VERT clipPoint(const VERT *inside, const VERT *outside)
 		case ClipperMode_Full:
 			INTERP(texcoord[0]); INTERP(texcoord[1]);
 			INTERP(color[0]); INTERP(color[1]); INTERP(color[2]);
-			ret.color_to_float();
+			ret.rf = (float)ret.r;
+			ret.gf = (float)ret.g;
+			ret.bf = (float)ret.b;
+			ret.af = (float)ret.a;
 			break;
 			
 		case ClipperMode_FullColorInterpolate:

@@ -2040,7 +2040,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 			// vertices here to convert them to GL_TRIANGLES, which are much easier
 			// to work with and won't be deprecated in future OpenGL versions.
 			OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
-			if (!thePoly.isWireframe() && (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP))
+			if (!GFX3D_IsPolyWireframe(thePoly) && (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP))
 			{
 				if (j == 2)
 				{
@@ -2152,8 +2152,8 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 		polyStates[i].PolygonID = thePoly.attribute.PolygonID;
 		polyStates[i].PolygonMode = thePoly.attribute.Mode;
 		
-		polyStates[i].PolygonAlpha = (thePoly.isWireframe()) ? 0x1F : thePoly.attribute.Alpha;
-		polyStates[i].IsWireframe = (thePoly.isWireframe()) ? 1 : 0;
+		polyStates[i].PolygonAlpha = (GFX3D_IsPolyWireframe(thePoly)) ? 0x1F : thePoly.attribute.Alpha;
+		polyStates[i].IsWireframe = (GFX3D_IsPolyWireframe(thePoly)) ? 1 : 0;
 		polyStates[i].EnableFog = (thePoly.attribute.Fog_Enable) ? 1 : 0;
 		polyStates[i].SetNewDepthForTranslucent = (thePoly.attribute.TranslucentDepthWrite_Enable) ? 1 : 0;
 		

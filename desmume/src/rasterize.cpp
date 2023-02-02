@@ -1297,7 +1297,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 		const bool useLineHack = USELINEHACK && (thePoly.vtxFormat & 4);
 		
 		polyAttr = thePoly.attribute;
-		const bool isTranslucent = thePoly.isTranslucent();
+		const bool isTranslucent = GFX3D_IsPolyTranslucent(thePoly);
 		
 		if (lastTexParams.value != thePoly.texParam.value || lastTexPalette != thePoly.texPalette)
 		{

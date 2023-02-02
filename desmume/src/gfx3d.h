@@ -520,86 +520,34 @@ union GFX3D_Viewport
 };
 typedef union GFX3D_Viewport GFX3D_Viewport;
 
-struct POLY {
+struct POLY
+{
 	PolygonType type; //tri or quad
 	PolygonPrimitiveType vtxFormat;
 	u16 vertIndexes[4]; //up to four verts can be referenced by this poly
+	
 	POLYGON_ATTR attribute;
 	TEXIMAGE_PARAM texParam;
 	u32 texPalette; //the hardware rendering params
 	GFX3D_Viewport viewport;
 	IOREG_VIEWPORT viewportLegacySave; // Exists for save state compatibility.
-	float miny, maxy;
-
-	void setVertIndexes(int a, int b, int c, int d=-1)
-	{
-		vertIndexes[0] = a;
-		vertIndexes[1] = b;
-		vertIndexes[2] = c;
-		if(d != -1) { vertIndexes[3] = d; type = POLYGON_TYPE_QUAD; }
-		else type = POLYGON_TYPE_TRIANGLE;
-	}
 	
-	bool isWireframe() const
-	{
-		return (this->attribute.Alpha == 0);
-	}
-	
-	bool isOpaque() const
-	{
-		return (this->attribute.Alpha == 31);
-	}
-	
-	bool isTranslucent() const
-	{
-		// First, check if the polygon is wireframe or opaque.
-		// If neither, then it must be translucent.
-		if (!this->isWireframe() && !this->isOpaque())
-		{
-			return true;
-		}
-		
-		// Also check for translucent texture format.
-		const NDSTextureFormat texFormat = (NDSTextureFormat)this->texParam.PackedFormat;
-		const PolygonMode mode = (PolygonMode)this->attribute.Mode;
-		
-		//a5i3 or a3i5 -> translucent
-		if ( (texFormat == TEXMODE_A3I5 || texFormat == TEXMODE_A5I3) && (mode != POLYGON_MODE_DECAL && mode != POLYGON_MODE_SHADOW) )
-		{
-			return true;
-		}
-		
-		return false;
-	}
-	
-	void save(EMUFILE &os);
-	void load(EMUFILE &is);
+	float miny;
+	float maxy;
 };
+typedef struct POLY POLY;
+
+// TODO: Handle these polygon utility functions in a class rather than as standalone functions.
+// Most likely, the class will be some kind of polygon processing class, such as a polygon list
+// handler or a polygon clipping handler. But before such a class is designed, simply handle
+// these function here so that the POLY struct can remain as a POD struct.
+bool GFX3D_IsPolyWireframe(const POLY &p);
+bool GFX3D_IsPolyOpaque(const POLY &p);
+bool GFX3D_IsPolyTranslucent(const POLY &p);
 
 #define POLYLIST_SIZE 20000
 #define VERTLIST_SIZE (POLYLIST_SIZE * 4)
 #define INDEXLIST_SIZE (POLYLIST_SIZE * 4)
-
-//just a vert with a 4 float position
-struct VERT_POS4f
-{
-	union {
-		float coord[4];
-		struct {
-			float x,y,z,w;
-		};
-		struct {
-			float x,y,z,w;
-		} position;
-	};
-	void set_coord(float x, float y, float z, float w)
-	{ 
-		this->x = x; 
-		this->y = y; 
-		this->z = z; 
-		this->w = w; 
-	}
-};
 
 #include "PACKED.h"
 
@@ -645,34 +593,8 @@ struct VERT
 	};
 	
 	u8 padFinal[12]; // Final padding to bring the struct to exactly 64 bytes.
-	
-	void set_coord(float x, float y, float z, float w)
-	{
-		this->x = x; 
-		this->y = y; 
-		this->z = z; 
-		this->w = w; 
-	}
-	
-	void set_coord(float* coords)
-	{
-		x = coords[0];
-		y = coords[1];
-		z = coords[2];
-		w = coords[3];
-	}
-	
-	void color_to_float()
-	{
-		rf = (float)r;
-		gf = (float)g;
-		bf = (float)b;
-		af = (float)a;
-	}
-	
-	void save(EMUFILE &os);
-	void load(EMUFILE &is);
 };
+typedef struct VERT VERT;
 
 #include "PACKED_END.h"
 
