@@ -260,18 +260,15 @@ using std::max;
 using std::min;
 
 GFX3D gfx3d;
-GFX3D_IOREG *_GFX3D_IORegisterMap = NULL;
+static GFX3D_IOREG *_GFX3D_IORegisterMap = NULL;
 Viewer3D_State viewer3D;
 static GFX3D_Clipper boxtestClipper;
 
-LegacyGFX3DStateSFormat legacyGFX3DStateSFormatPending;
-LegacyGFX3DStateSFormat legacyGFX3DStateSFormatApplied;
+static LegacyGFX3DStateSFormat legacyGFX3DStateSFormatPending;
+static LegacyGFX3DStateSFormat legacyGFX3DStateSFormatApplied;
 
 //tables that are provided to anyone
 CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
-
-// Color buffer that is filled by the 3D renderer and is read by the GPU engine.
-static CACHE_ALIGN FragmentColor _gfx3d_savestateBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 
 // Matrix stack handling
 CACHE_ALIGN NDSMatrixStack1  mtxStackProjection;
@@ -293,19 +290,16 @@ static u8 MM4x3ind = 0;
 static u8 MM3x3ind = 0;
 
 // Data for vertex submission
-static CACHE_ALIGN s16		s16coord[4] = {0, 0, 0, 0};
+static CACHE_ALIGN s16 s16coord[4] = {0, 0, 0, 0};
 static u8 coordind = 0;
 static PolygonPrimitiveType vtxFormat = GFX3D_TRIANGLES;
 static BOOL inBegin = FALSE;
 
 // Data for basic transforms
-static CACHE_ALIGN s32	trans[4] = {0, 0, 0, 0};
-static u8		transind = 0;
-static CACHE_ALIGN s32	scale[4] = {0, 0, 0, 0};
-static u8		scaleind = 0;
-
-static GFX3D_Viewport gfx3dViewport;
-static IOREG_VIEWPORT viewportLegacySave; // For save state compatibility
+static CACHE_ALIGN s32 trans[4] = {0, 0, 0, 0};
+static u8 transind = 0;
+static CACHE_ALIGN s32 scale[4] = {0, 0, 0, 0};
+static u8 scaleind = 0;
 
 //various other registers
 static s32 _t=0, _s=0;
@@ -320,10 +314,6 @@ static u32 BTind = 0;
 static u32 PTind = 0;
 static CACHE_ALIGN u16 BTcoords[6] = {0, 0, 0, 0, 0, 0};
 static CACHE_ALIGN s32 PTcoords[4] = { 0, 0, 0, (1<<12) };
-
-// Exists for save state compatibility. Historically, PTcoords were stored
-// as floating point values, not as integers.
-static CACHE_ALIGN float PTcoords_legacySave[4] = { 0, 0, 0, 1.0f };
 
 //raw ds format poly attributes
 static POLYGON_ATTR polyAttrInProcess;
@@ -349,7 +339,7 @@ s32 freelookMatrix[16];
 //-----------cached things:
 //these dont need to go into the savestate. they can be regenerated from HW registers
 //from polygonattr:
-static u32 lightMask=0;
+static u32 lightMask = 0;
 //other things:
 static TextureTransformationMode texCoordTransformMode = TextureTransformationMode_None;
 static CACHE_ALIGN s32 cacheLightDirection[4][4];
@@ -361,13 +351,11 @@ static CACHE_ALIGN s32 cacheHalfVector[4][4];
 
 
 //-------------working polygon lists
-GFX3D_Clipper *_clipper = NULL;
-static PAGE_ALIGN int _polyWorkingIndexList[INDEXLIST_SIZE];
+static GFX3D_Clipper *_clipper = NULL;
 static PAGE_ALIGN CPoly _clippedPolyWorkingList[POLYLIST_SIZE * 2];
 static PAGE_ALIGN CPoly _clippedPolyUnsortedList[POLYLIST_SIZE];
 
-int polygonListCompleted = 0;
-
+static int polygonListCompleted = 0;
 static u8 triStripToggle;
 
 //list-building state
@@ -581,7 +569,7 @@ void gfx3d_reset()
 	memset(gxPIPE.param, 0, sizeof(gxPIPE.param));
 	memset(colorRGB, 0, sizeof(colorRGB));
 	memset(&tempVertInfo, 0, sizeof(tempVertInfo));
-	memset(_gfx3d_savestateBuffer, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u32));
+	memset(gfx3d.framebufferNativeSave, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u32));
 
 	MatrixInit(mtxCurrent[MATRIXMODE_PROJECTION]);
 	MatrixInit(mtxCurrent[MATRIXMODE_POSITION]);
@@ -616,16 +604,17 @@ void gfx3d_reset()
 	last_t = 0;
 	last_s = 0;
 	
-	gfx3dViewport.x = 0;
-	gfx3dViewport.y = 0;
-	gfx3dViewport.width = 256;
-	gfx3dViewport.height = 192;
+	gfx3d.viewport.x = 0;
+	gfx3d.viewport.y = 0;
+	gfx3d.viewport.width = 256;
+	gfx3d.viewport.height = 192;
 	
 	// Init for save state compatibility
-	_GFX3D_IORegisterMap->VIEWPORT.X1 = viewportLegacySave.X1 = 0;
-	_GFX3D_IORegisterMap->VIEWPORT.Y1 = viewportLegacySave.Y1 = 0;
-	_GFX3D_IORegisterMap->VIEWPORT.X2 = viewportLegacySave.X2 = 255;
-	_GFX3D_IORegisterMap->VIEWPORT.Y2 = viewportLegacySave.Y2 = 191;
+	_GFX3D_IORegisterMap->VIEWPORT.X1 = 0;
+	_GFX3D_IORegisterMap->VIEWPORT.Y1 = 0;
+	_GFX3D_IORegisterMap->VIEWPORT.X2 = 255;
+	_GFX3D_IORegisterMap->VIEWPORT.Y2 = 191;
+	gfx3d.viewportLegacySave = _GFX3D_IORegisterMap->VIEWPORT;
 	
 	clInd2 = 0;
 	isSwapBuffers = FALSE;
@@ -885,8 +874,8 @@ static void SetVertex()
 			poly.attribute = polyAttrInProcess;
 			poly.texParam = currentPolyTexParam;
 			poly.texPalette = currentPolyTexPalette;
-			poly.viewport = gfx3dViewport;
-			poly.viewportLegacySave = viewportLegacySave;
+			poly.viewport = gfx3d.viewport;
+			poly.viewportLegacySave = _GFX3D_IORegisterMap->VIEWPORT;
 			pendingGList.polyCount++;
 		}
 	}
@@ -1624,8 +1613,8 @@ static void gfx3d_glEnd(void)
 static void gfx3d_glViewport(u32 v)
 {
 	_GFX3D_IORegisterMap->VIEWPORT.value = v;
-	viewportLegacySave.value = v;
-	gfx3dViewport = GFX3D_ViewportParse(v);
+	gfx3d.viewportLegacySave = _GFX3D_IORegisterMap->VIEWPORT;
+	gfx3d.viewport = GFX3D_ViewportParse(v);
 	
 	GFX_DELAY(1);
 }
@@ -2390,7 +2379,7 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	{
 		const CPoly &clippedPoly = _clipper->GetClippedPolyByIndex(i);
 		if (!clippedPoly.poly->isTranslucent())
-			_polyWorkingIndexList[ctr++] = (int)clippedPoly.index;
+			gfx3d.polyWorkingIndexList[ctr++] = (int)clippedPoly.index;
 	}
 	outGList.clippedPolyOpaqueCount = ctr;
 	
@@ -2399,7 +2388,7 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	{
 		const CPoly &clippedPoly = _clipper->GetClippedPolyByIndex(i);
 		if (clippedPoly.poly->isTranslucent())
-			_polyWorkingIndexList[ctr++] = (int)clippedPoly.index;
+			gfx3d.polyWorkingIndexList[ctr++] = (int)clippedPoly.index;
 	}
 	
 	//find the min and max y values for each poly.
@@ -2433,13 +2422,13 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	//now we have to sort the opaque polys by y-value.
 	//(test case: harvest moon island of happiness character creator UI)
 	//should this be done after clipping??
-	std::sort(_polyWorkingIndexList, _polyWorkingIndexList + outGList.clippedPolyOpaqueCount, gfx3d_ysort_compare);
+	std::sort(gfx3d.polyWorkingIndexList, gfx3d.polyWorkingIndexList + outGList.clippedPolyOpaqueCount, gfx3d_ysort_compare);
 	
 	if (inState.SWAP_BUFFERS.YSortMode == 0)
 	{
 		//if we are autosorting translucent polys, we need to do this also
 		//TODO - this is unverified behavior. need a test case
-		std::sort(_polyWorkingIndexList + outGList.clippedPolyOpaqueCount, _polyWorkingIndexList + outGList.clippedPolyCount, gfx3d_ysort_compare);
+		std::sort(gfx3d.polyWorkingIndexList + outGList.clippedPolyOpaqueCount, gfx3d.polyWorkingIndexList + outGList.clippedPolyCount, gfx3d_ysort_compare);
 	}
 	
 	// Reorder the clipped polygon list to match our sorted index list.
@@ -2447,14 +2436,14 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	{
 		for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 		{
-			outGList.clippedPolyList[i].poly = _clippedPolyUnsortedList[_polyWorkingIndexList[i]].poly;
+			outGList.clippedPolyList[i].poly = _clippedPolyUnsortedList[gfx3d.polyWorkingIndexList[i]].poly;
 		}
 	}
 	else
 	{
 		for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 		{
-			outGList.clippedPolyList[i] = _clippedPolyUnsortedList[_polyWorkingIndexList[i]];
+			outGList.clippedPolyList[i] = _clippedPolyUnsortedList[gfx3d.polyWorkingIndexList[i]];
 		}
 	}
 }
@@ -2496,7 +2485,7 @@ static void gfx3d_doFlush()
 		memcpy(viewer3D.gList.polyList, appliedGList.polyList, appliedGList.polyCount * sizeof(POLY));
 		memcpy(viewer3D.gList.vertList, appliedGList.vertList, appliedGList.vertListCount * sizeof(VERT));
 		memcpy(viewer3D.gList.clippedPolyList, appliedGList.clippedPolyList, appliedGList.clippedPolyCount * sizeof(CPoly));
-		memcpy(viewer3D.indexList, _polyWorkingIndexList, appliedGList.clippedPolyCount * sizeof(int));
+		memcpy(viewer3D.indexList, gfx3d.polyWorkingIndexList, appliedGList.clippedPolyCount * sizeof(int));
 		
 		driver->view3d->NewFrame();
 	}
@@ -2742,7 +2731,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GLSB", 4, 1, &isSwapBuffers},
 	{ "GLBT", 4, 1, &BTind},
 	{ "GLPT", 4, 1, &PTind},
-	{ "GLPC", 4, 4, PTcoords_legacySave},
+	{ "GLPC", 4, 4, gfx3d.PTcoordsLegacySave},
 	{ "GBTC", 2, 6, &BTcoords[0]},
 	{ "GFHE", 4, 1, &gxFIFO.head},
 	{ "GFTA", 4, 1, &gxFIFO.tail},
@@ -2807,14 +2796,14 @@ SFORMAT SF_GFX3D[]={
 	{ "gSAF", 4, 1, &legacyGFX3DStateSFormatApplied.activeFlushCommand},
 	{ "gSPF", 4, 1, &legacyGFX3DStateSFormatApplied.pendingFlushCommand},
 
-	{ "GSVP", 4, 1, &viewportLegacySave},
+	{ "GSVP", 4, 1, &gfx3d.viewportLegacySave},
 	{ "GSSI", 1, 1, &shininessInd},
 	//------------------------
 	{ "GTST", 1, 1, &triStripToggle},
 	{ "GTVC", 4, 1, &tempVertInfo.count},
 	{ "GTVM", 4, 4, tempVertInfo.map},
 	{ "GTVF", 4, 1, &tempVertInfo.first},
-	{ "G3CX", 1, 4*GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT, _gfx3d_savestateBuffer},
+	{ "G3CX", 1, 4*GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT, gfx3d.framebufferNativeSave},
 	{ 0 }
 };
 
@@ -2833,17 +2822,17 @@ void gfx3d_PrepareSaveStateBufferWrite()
 	{
 		if (CurrentRenderer->GetColorFormat() == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)CurrentRenderer->GetFramebuffer(), (u32 *)_gfx3d_savestateBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)CurrentRenderer->GetFramebuffer(), (u32 *)gfx3d.framebufferNativeSave, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		}
 		else
 		{
-			ColorspaceCopyBuffer32<false, false>((u32 *)CurrentRenderer->GetFramebuffer(), (u32 *)_gfx3d_savestateBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			ColorspaceCopyBuffer32<false, false>((u32 *)CurrentRenderer->GetFramebuffer(), (u32 *)gfx3d.framebufferNativeSave, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		}
 	}
 	else // Framebuffer is at a custom size
 	{
 		const FragmentColor *__restrict src = CurrentRenderer->GetFramebuffer();
-		FragmentColor *__restrict dst = _gfx3d_savestateBuffer;
+		FragmentColor *__restrict dst = gfx3d.framebufferNativeSave;
 		
 		for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 		{
@@ -2855,15 +2844,15 @@ void gfx3d_PrepareSaveStateBufferWrite()
 		
 		if (CurrentRenderer->GetColorFormat() == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)_gfx3d_savestateBuffer, (u32 *)_gfx3d_savestateBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)gfx3d.framebufferNativeSave, (u32 *)gfx3d.framebufferNativeSave, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		}
 	}
 	
 	// For save state compatibility
-	PTcoords_legacySave[0] = (float)PTcoords[0] / 4096.0f;
-	PTcoords_legacySave[1] = (float)PTcoords[1] / 4096.0f;
-	PTcoords_legacySave[2] = (float)PTcoords[2] / 4096.0f;
-	PTcoords_legacySave[3] = (float)PTcoords[3] / 4096.0f;
+	gfx3d.PTcoordsLegacySave[0] = (float)PTcoords[0] / 4096.0f;
+	gfx3d.PTcoordsLegacySave[1] = (float)PTcoords[1] / 4096.0f;
+	gfx3d.PTcoordsLegacySave[2] = (float)PTcoords[2] / 4096.0f;
+	gfx3d.PTcoordsLegacySave[3] = (float)PTcoords[3] / 4096.0f;
 	
 	legacyGFX3DStateSFormatPending.enableTexturing     = (gfx3d.pendingState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
 	legacyGFX3DStateSFormatPending.enableAlphaTest     = (gfx3d.pendingState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
@@ -3105,21 +3094,21 @@ void gfx3d_FinishLoadStateBufferRead()
 			{
 				if (CurrentRenderer->GetColorFormat() == NDSColorFormat_BGR666_Rev)
 				{
-					ColorspaceConvertBuffer8888To6665<false, false>((u32 *)_gfx3d_savestateBuffer, (u32 *)CurrentRenderer->GetFramebuffer(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+					ColorspaceConvertBuffer8888To6665<false, false>((u32 *)gfx3d.framebufferNativeSave, (u32 *)CurrentRenderer->GetFramebuffer(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				}
 				else
 				{
-					ColorspaceCopyBuffer32<false, false>((u32 *)_gfx3d_savestateBuffer, (u32 *)CurrentRenderer->GetFramebuffer(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+					ColorspaceCopyBuffer32<false, false>((u32 *)gfx3d.framebufferNativeSave, (u32 *)CurrentRenderer->GetFramebuffer(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				}
 			}
 			else // Framebuffer is at a custom size
 			{
 				if (CurrentRenderer->GetColorFormat() == NDSColorFormat_BGR666_Rev)
 				{
-					ColorspaceConvertBuffer8888To6665<false, false>((u32 *)_gfx3d_savestateBuffer, (u32 *)_gfx3d_savestateBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+					ColorspaceConvertBuffer8888To6665<false, false>((u32 *)gfx3d.framebufferNativeSave, (u32 *)gfx3d.framebufferNativeSave, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				}
 				
-				const FragmentColor *__restrict src = _gfx3d_savestateBuffer;
+				const FragmentColor *__restrict src = gfx3d.framebufferNativeSave;
 				FragmentColor *__restrict dst = CurrentRenderer->GetFramebuffer();
 				
 				for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
@@ -3142,12 +3131,13 @@ void gfx3d_FinishLoadStateBufferRead()
 	const GPU_IOREG &GPUREG = GPU->GetEngineMain()->GetIORegisterMap();
 	const GFX3D_IOREG &GFX3DREG = GFX3D_GetIORegisterMap();
 	
-	PTcoords[0] = (s32)(PTcoords_legacySave[0] * 4096.0f);
-	PTcoords[1] = (s32)(PTcoords_legacySave[1] * 4096.0f);
-	PTcoords[2] = (s32)(PTcoords_legacySave[2] * 4096.0f);
-	PTcoords[3] = (s32)(PTcoords_legacySave[3] * 4096.0f);
+	PTcoords[0] = (s32)((gfx3d.PTcoordsLegacySave[0] * 4096.0f) + 0.000000001f);
+	PTcoords[1] = (s32)((gfx3d.PTcoordsLegacySave[1] * 4096.0f) + 0.000000001f);
+	PTcoords[2] = (s32)((gfx3d.PTcoordsLegacySave[2] * 4096.0f) + 0.000000001f);
+	PTcoords[3] = (s32)((gfx3d.PTcoordsLegacySave[3] * 4096.0f) + 0.000000001f);
 	
-	gfx3dViewport = GFX3D_ViewportParse(GFX3DREG.VIEWPORT.value);
+	gfx3d.viewport = GFX3D_ViewportParse(GFX3DREG.VIEWPORT.value);
+	gfx3d.viewportLegacySave = GFX3DREG.VIEWPORT;
 	
 	gfx3d.pendingState.DISP3DCNT = GPUREG.DISP3DCNT;
 	gfx3d_parseCurrentDISP3DCNT();

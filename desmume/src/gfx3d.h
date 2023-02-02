@@ -817,13 +817,23 @@ extern Viewer3D_State viewer3D;
 
 struct GFX3D
 {
+	GFX3D_Viewport viewport;
+	
 	GFX3D_State pendingState;
 	GFX3D_State appliedState;
 	GFX3D_GeometryList gList[2];
 	
 	u8 pendingListIndex;
 	u8 appliedListIndex;
-	u32 render3DFrameCount;			// Increments when gfx3d_doFlush() is called. Resets every 60 video frames.
+	u32 render3DFrameCount; // Increments when gfx3d_doFlush() is called. Resets every 60 video frames.
+	
+	// Working lists for rendering.
+	PAGE_ALIGN int polyWorkingIndexList[INDEXLIST_SIZE];
+	
+	// Everything below is for save state compatibility.
+	IOREG_VIEWPORT viewportLegacySave; // Historically, the viewport was stored as its raw register value.
+	float PTcoordsLegacySave[4]; // Historically, PTcoords were stored as floating point values, not as integers.
+	PAGE_ALIGN FragmentColor framebufferNativeSave[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // Rendered 3D framebuffer that is saved in RGBA8888 color format at the native size.
 };
 typedef struct GFX3D GFX3D;
 
