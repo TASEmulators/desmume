@@ -20,84 +20,100 @@
 
 #define DEPOSTERIZE_THRESHOLD 23	// Possible values are [0-255], where lower a value prevents blending and a higher value allows for more blending
 
-
-static u32 Deposterize_InterpLTE(const u32 pixA, const u32 pixB)
+namespace
 {
-	const u32 aB = (pixB & 0xFF000000) >> 24;
-	if (aB == 0)
+	template <u32 Den>
+	struct UnpackedPixel
 	{
-		return pixA;
-	}
-	
-	const u32 rA = (pixA & 0x000000FF);
-	const u32 gA = (pixA & 0x0000FF00) >> 8;
-	const u32 bA = (pixA & 0x00FF0000) >> 16;
-	const u32 aA = (pixA & 0xFF000000) >> 24;
-	
-	const u32 rB = (pixB & 0x000000FF);
-	const u32 gB = (pixB & 0x0000FF00) >> 8;
-	const u32 bB = (pixB & 0x00FF0000) >> 16;
-	
-	const u32 rC = ( (rB - rA <= DEPOSTERIZE_THRESHOLD) || (rA - rB <= DEPOSTERIZE_THRESHOLD) ) ? ((rA+rB)>>1) : rA;
-	const u32 gC = ( (gB - gA <= DEPOSTERIZE_THRESHOLD) || (gA - gB <= DEPOSTERIZE_THRESHOLD) ) ? ((gA+gB)>>1) : gA;
-	const u32 bC = ( (bB - bA <= DEPOSTERIZE_THRESHOLD) || (bA - bB <= DEPOSTERIZE_THRESHOLD) ) ? ((bA+bB)>>1) : bA;
-	const u32 aC = ( (aB - aA <= DEPOSTERIZE_THRESHOLD) || (aA - aB <= DEPOSTERIZE_THRESHOLD) ) ? ((aA+aB)>>1) : aA;
-		
-	return (rC | (gC << 8) | (bC << 16) | (aC << 24));
-}
+		u32 r;
+		u32 g;
+		u32 b;
+		u32 a;
 
-static u32 Deposterize_Blend(const u32 pixA, const u32 pixB, const u32 weightA, const u32 weightB)
-{
-	const u32  aB = (pixB & 0xFF000000) >> 24;
-	if (aB == 0)
-	{
-		return pixA;
-	}
-	
-	const u32 rbA =  pixA & 0x00FF00FF;
-	const u32  gA =  pixA & 0x0000FF00;
-	const u32  aA = (pixA & 0xFF000000) >> 24;
-	
-	const u32 rbB =  pixB & 0x00FF00FF;
-	const u32  gB =  pixB & 0x0000FF00;
-	
-	// Note: The sum of weightA and weightB must equal 16.
-	const u32 rbC = ( ((rbA * weightA) + (rbB * weightB)) / 16 ) & 0x00FF00FF;
-	const u32  gC = ( (( gA * weightA) + ( gB * weightB)) / 16 ) & 0x0000FF00;
-	const u32  aC = ( (( aA * weightA) + ( aB * weightB)) / 16 ) << 24;
-	
-	return (rbC | gC | aC);
-}
+		explicit UnpackedPixel() = default;
+		UnpackedPixel(const UnpackedPixel &) = default;
+		UnpackedPixel &operator=(const UnpackedPixel &) & = default;
 
-static u32 Deposterize_BlendPixel(const u32 color[9])
-{
-	const u32 blend[9] = {
-		color[0],
-		Deposterize_InterpLTE(color[0], color[1]),
-		Deposterize_InterpLTE(color[0], color[2]),
-		Deposterize_InterpLTE(color[0], color[3]),
-		Deposterize_InterpLTE(color[0], color[4]),
-		Deposterize_InterpLTE(color[0], color[5]),
-		Deposterize_InterpLTE(color[0], color[6]),
-		Deposterize_InterpLTE(color[0], color[7]),
-		Deposterize_InterpLTE(color[0], color[8])
+		explicit UnpackedPixel(u32 pix) :
+			r(Den * ( pix        & 0xff)),
+			g(Den * ((pix >>  8) & 0xff)),
+			b(Den * ((pix >> 16) & 0xff)),
+			a(Den * ((pix >> 24) & 0xff))
+		{}
+
+		u32 pack() const
+		{
+			return r/Den +
+				(g/Den << 8) +
+				(b/Den << 16) +
+				(a/Den << 24);
+		}
 	};
-	
-	return Deposterize_Blend(Deposterize_Blend(Deposterize_Blend(Deposterize_Blend(blend[0], blend[5], 2, 14),
-																 Deposterize_Blend(blend[0], blend[1], 2, 14),
-																 8, 8),
-											   Deposterize_Blend(Deposterize_Blend(blend[0], blend[7], 2, 14),
-																 Deposterize_Blend(blend[0], blend[3], 2, 14),
-																 8, 8),
-											   8, 8),
-							 Deposterize_Blend(Deposterize_Blend(Deposterize_Blend(blend[0], blend[6], 7, 9),
-																 Deposterize_Blend(blend[0], blend[2], 7, 9),
-																 8, 8),
-											   Deposterize_Blend(Deposterize_Blend(blend[0], blend[8], 7, 9),
-																 Deposterize_Blend(blend[0], blend[4], 7, 9),
-																 8, 8),
-											   8, 8),
-							 12, 4);
+
+	template <u32 Mult, u32 Den, class Func>
+	inline UnpackedPixel<Den*Mult> combine(const UnpackedPixel<Den> &pixA, const UnpackedPixel<Den> &pixB, Func &&func)
+	{
+		UnpackedPixel<Den*Mult> ret;
+		ret.r = func(pixA.r, pixB.r);
+		ret.g = func(pixA.g, pixB.g);
+		ret.b = func(pixA.b, pixB.b);
+		ret.a = func(pixA.a, pixB.a);
+		return ret;
+	}
+
+	inline UnpackedPixel<2> Deposterize_InterpLTE(const UnpackedPixel<1> &pixA, const UnpackedPixel<1> &pixB)
+	{
+		return combine<2>(pixA, pixB, [&](u32 a, u32 b) {
+			if (pixB.a == 0)
+				return 2 * a;
+			int diff = a - b;
+			if (-DEPOSTERIZE_THRESHOLD <= diff && diff <= DEPOSTERIZE_THRESHOLD)
+				return a + b;
+			return 2 * a;
+		});
+	}
+
+	template <u32 WeightA, u32 WeightB, u32 Den>
+	inline UnpackedPixel<Den*(WeightA+WeightB)> Deposterize_Blend(const UnpackedPixel<Den> &pixA, const UnpackedPixel<Den> &pixB)
+	{
+		return combine<WeightA+WeightB>(pixA, pixB, [](u32 a, u32 b) {
+			return a * WeightA + b * WeightB;
+		});
+	}
+
+	u32 Deposterize_BlendPixel(const u32 color[9])
+	{
+		UnpackedPixel<1> center(color[0]);
+		UnpackedPixel<2> center2 = Deposterize_Blend<1,1>(center, center);
+
+		auto interp = [&](int i) {
+			return Deposterize_InterpLTE(center, UnpackedPixel<1>(color[i]));
+		};
+
+		auto result = Deposterize_Blend<3, 1>(
+			Deposterize_Blend<1, 1>(
+				Deposterize_Blend<1, 1>(
+					Deposterize_Blend<2, 14>(center2, interp(5)),
+					Deposterize_Blend<2, 14>(center2, interp(1))
+				),
+				Deposterize_Blend<1, 1>(
+					Deposterize_Blend<2, 14>(center2, interp(7)),
+					Deposterize_Blend<2, 14>(center2, interp(3))
+				)
+			),
+			Deposterize_Blend<1, 1>(
+				Deposterize_Blend<1, 1>(
+					Deposterize_Blend<7, 9>(center2, interp(6)),
+					Deposterize_Blend<7, 9>(center2, interp(2))
+				),
+				Deposterize_Blend<1, 1>(
+					Deposterize_Blend<7, 9>(center2, interp(8)),
+					Deposterize_Blend<7, 9>(center2, interp(4))
+				)
+			)
+		);
+		return result.pack();
+	}
 }
 
 void RenderDeposterize(SSurface Src, SSurface Dst)
