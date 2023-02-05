@@ -1102,15 +1102,15 @@ static void execdiv() {
 		
 		// when the result is 32bits, the upper 32bits of the sign-extended result are inverted
 		if (mode == 0)
-			res ^= 0xFFFFFFFF00000000;
+			res ^= 0xFFFFFFFF00000000LL;
 
 		// the DIV0 flag in DIVCNT is set only if the full 64bit DIV_DENOM value is zero, even in 32bit mode
 		if ((u64)T1ReadQuad(MMU.ARM9_REG, 0x298) == 0) 
 			MMU_new.div.div0 = 1;
 	}
-	else if((mode != 0) && (num == 0x8000000000000000) && (den == -1))
+	else if((mode != 0) && (num == 0x8000000000000000LL) && (den == -1))
 	{
-		res = 0x8000000000000000;
+		res = 0x8000000000000000LL;
 		mod = 0;
 	}
 	else if((mode == 0) && (num == (s64) (s32) 0x80000000) && (den == -1))

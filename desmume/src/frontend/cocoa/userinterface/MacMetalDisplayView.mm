@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2022 DeSmuME team
+	Copyright (C) 2017-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -79,21 +79,21 @@
 	[device retain];
 	
 	NSString *tempVersionStr = @"Metal - Unknown GPU Family";
-	const BOOL isRWTexSupported = [device supportsFeatureSet:10002]; // MTLFeatureSet_macOS_ReadWriteTextureTier2
+	const BOOL isRWTexSupported = [device supportsFeatureSet:(MTLFeatureSet)10002]; // MTLFeatureSet_macOS_ReadWriteTextureTier2
 	
-	if ([device supportsFeatureSet:10005]) // MTLFeatureSet_macOS_GPUFamily2_v1
+	if ([device supportsFeatureSet:(MTLFeatureSet)10005]) // MTLFeatureSet_macOS_GPUFamily2_v1
 	{
 		tempVersionStr = @"macOS Metal GPUFamily2_v1";
 	}
-	else if ([device supportsFeatureSet:10004]) // MTLFeatureSet_macOS_GPUFamily1_v4
+	else if ([device supportsFeatureSet:(MTLFeatureSet)10004]) // MTLFeatureSet_macOS_GPUFamily1_v4
 	{
 		tempVersionStr = (isRWTexSupported) ? @"macOS Metal GPUFamily1_v4 w/ Tier2 R/W Textures" : @"macOS Metal GPUFamily1_v4";
 	}
-	else if ([device supportsFeatureSet:10003]) // MTLFeatureSet_macOS_GPUFamily1_v3
+	else if ([device supportsFeatureSet:(MTLFeatureSet)10003]) // MTLFeatureSet_macOS_GPUFamily1_v3
 	{
 		tempVersionStr = (isRWTexSupported) ? @"macOS Metal GPUFamily1_v3 w/ Tier2 R/W Textures" : @"macOS Metal GPUFamily1_v3";
 	}
-	else if ([device supportsFeatureSet:10001]) // MTLFeatureSet_macOS_GPUFamily1_v2
+	else if ([device supportsFeatureSet:(MTLFeatureSet)10001]) // MTLFeatureSet_macOS_GPUFamily1_v2
 	{
 		tempVersionStr = (isRWTexSupported) ? @"macOS Metal GPUFamily1_v2 w/ Tier2 R/W Textures" : @"macOS Metal GPUFamily1_v2";
 	}
