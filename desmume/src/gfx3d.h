@@ -789,6 +789,6 @@ void gfx3d_parseCurrentDISP3DCNT();
 const GFX3D_IOREG& GFX3D_GetIORegisterMap();
 void ParseReg_DISP3DCNT();
 
-template<ClipperMode CLIPPERMODE> PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const VERT **rawVtx, CPoly &outCPoly);
+template<ClipperMode CLIPPERMODE> PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const VERT *(&rawVtx)[4], CPoly &outCPoly);
 
 #endif //_GFX3D_H_

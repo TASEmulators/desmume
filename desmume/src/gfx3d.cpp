@@ -3245,24 +3245,23 @@ template void gfx3d_glGetMatrix<MATRIXMODE_TEXTURE>(const int index, float(&dst)
 #define CLIPLOG(X)
 #define CLIPLOG2(X,Y,Z)
 
-template<typename T>
-static T interpolate(const float ratio, const T& x0, const T& x1)
+template <typename T>
+static T GFX3D_ClipPointInterpolate(const float ratio, const T& x0, const T& x1)
 {
 	return (T)(x0 + (float)(x1-x0) * ratio);
 }
 
 //http://www.cs.berkeley.edu/~ug/slide/pipeline/assignments/as6/discussion.shtml
 template <ClipperMode CLIPPERMODE, int COORD, int WHICH>
-static FORCEINLINE VERT clipPoint(const VERT *inside, const VERT *outside)
+static FORCEINLINE void GFX3D_ClipPoint(const VERT &insideVtx, const VERT &outsideVtx, VERT &outClippedVtx)
 {
-	VERT ret;
-	const float coord_inside = inside->coord[COORD];
-	const float coord_outside = outside->coord[COORD];
-	const float w_inside = (WHICH == -1) ? -inside->coord[3] : inside->coord[3];
-	const float w_outside = (WHICH == -1) ? -outside->coord[3] : outside->coord[3];
+	const float coord_inside  = insideVtx.coord[COORD];
+	const float coord_outside = outsideVtx.coord[COORD];
+	const float w_inside  = (WHICH == -1) ? -insideVtx.coord[3]  : insideVtx.coord[3];
+	const float w_outside = (WHICH == -1) ? -outsideVtx.coord[3] : outsideVtx.coord[3];
 	const float t = (coord_inside - w_inside) / ((w_outside-w_inside) - (coord_outside-coord_inside));
 	
-#define INTERP(X) ret . X = interpolate(t, inside-> X ,outside-> X )
+#define INTERP(X) outClippedVtx . X = GFX3D_ClipPointInterpolate (t, insideVtx. X ,outsideVtx. X )
 	
 	INTERP(coord[0]); INTERP(coord[1]); INTERP(coord[2]); INTERP(coord[3]);
 	
@@ -3271,10 +3270,10 @@ static FORCEINLINE VERT clipPoint(const VERT *inside, const VERT *outside)
 		case ClipperMode_Full:
 			INTERP(texcoord[0]); INTERP(texcoord[1]);
 			INTERP(color[0]); INTERP(color[1]); INTERP(color[2]);
-			ret.rf = (float)ret.r;
-			ret.gf = (float)ret.g;
-			ret.bf = (float)ret.b;
-			ret.af = (float)ret.a;
+			outClippedVtx.rf = (float)outClippedVtx.r;
+			outClippedVtx.gf = (float)outClippedVtx.g;
+			outClippedVtx.bf = (float)outClippedVtx.b;
+			outClippedVtx.af = (float)outClippedVtx.a;
 			break;
 			
 		case ClipperMode_FullColorInterpolate:
@@ -3290,11 +3289,9 @@ static FORCEINLINE VERT clipPoint(const VERT *inside, const VERT *outside)
 	//this seems like a prudent measure to make sure that math doesnt make a point pop back out
 	//of the clip volume through interpolation
 	if (WHICH == -1)
-		ret.coord[COORD] = -ret.coord[3];
+		outClippedVtx.coord[COORD] = -outClippedVtx.coord[3];
 	else
-		ret.coord[COORD] = ret.coord[3];
-
-	return ret;
+		outClippedVtx.coord[COORD] = outClippedVtx.coord[3];
 }
 
 #define MAX_SCRATCH_CLIP_VERTS (4*6 + 40)
@@ -3314,19 +3311,20 @@ public:
 		m_next.init(verts);
 	}
 
-	void clipVert(const VERT *vert)
+	void clipVert(const VERT &vert)
 	{
 		if (m_prevVert)
-			this->clipSegmentVsPlane(m_prevVert, vert);
+			this->clipSegmentVsPlane(*m_prevVert, vert);
 		else
-			m_firstVert = (VERT *)vert;
-		m_prevVert = (VERT *)vert;
+			m_firstVert = (VERT *)&vert;
+		
+		m_prevVert = (VERT *)&vert;
 	}
 
 	// closes the loop and returns the number of clipped output verts
 	int finish()
 	{
-		this->clipVert(m_firstVert);
+		this->clipVert(*m_firstVert);
 		return m_next.finish();
 	}
 
@@ -3335,10 +3333,10 @@ private:
 	VERT* m_firstVert;
 	NEXT& m_next;
 	
-	FORCEINLINE void clipSegmentVsPlane(const VERT *vert0, const VERT *vert1)
+	FORCEINLINE void clipSegmentVsPlane(const VERT &vert0, const VERT &vert1)
 	{
-		const float *vert0coord = vert0->coord;
-		const float *vert1coord = vert1->coord;
+		const float *vert0coord = vert0.coord;
+		const float *vert1coord = vert1.coord;
 		const bool out0 = (WHICH == -1) ? (vert0coord[COORD] < -vert0coord[3]) : (vert0coord[COORD] > vert0coord[3]);
 		const bool out1 = (WHICH == -1) ? (vert1coord[COORD] < -vert1coord[3]) : (vert1coord[COORD] > vert1coord[3]);
 		
@@ -3366,8 +3364,8 @@ private:
 		{
 			CLIPLOG(" exiting\n");
 			assert((u32)numScratchClipVerts < MAX_SCRATCH_CLIP_VERTS);
-			scratchClipVerts[numScratchClipVerts] = clipPoint<CLIPPERMODE, COORD, WHICH>(vert0, vert1);
-			m_next.clipVert(&scratchClipVerts[numScratchClipVerts++]);
+			GFX3D_ClipPoint<CLIPPERMODE, COORD, WHICH>(vert0, vert1, scratchClipVerts[numScratchClipVerts]);
+			m_next.clipVert(scratchClipVerts[numScratchClipVerts++]);
 		}
 
 		//entering volume: insert clipped point and the next (interior) point
@@ -3375,8 +3373,8 @@ private:
 		{
 			CLIPLOG(" entering\n");
 			assert((u32)numScratchClipVerts < MAX_SCRATCH_CLIP_VERTS);
-			scratchClipVerts[numScratchClipVerts] = clipPoint<CLIPPERMODE, COORD, WHICH>(vert1, vert0);
-			m_next.clipVert(&scratchClipVerts[numScratchClipVerts++]);
+			GFX3D_ClipPoint<CLIPPERMODE, COORD, WHICH>(vert1, vert0, scratchClipVerts[numScratchClipVerts]);
+			m_next.clipVert(scratchClipVerts[numScratchClipVerts++]);
 			m_next.clipVert(vert1);
 		}
 	}
@@ -3391,10 +3389,10 @@ public:
 		m_numVerts = 0;
 	}
 	
-	void clipVert(const VERT *vert)
+	void clipVert(const VERT &vert)
 	{
 		assert((u32)m_numVerts < MAX_CLIPPED_VERTS);
-		*m_nextDestVert++ = *vert;
+		*m_nextDestVert++ = vert;
 		m_numVerts++;
 	}
 	
@@ -3439,7 +3437,7 @@ typedef ClipperPlane<ClipperMode_DetermineClipOnly, 0, 1,Stage3d> Stage2d;      
 typedef ClipperPlane<ClipperMode_DetermineClipOnly, 0,-1,Stage2d> Stage1d;       static Stage1d clipper1d (clipper2d); // left plane
 
 template <ClipperMode CLIPPERMODE>
-PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const VERT **rawVtx, CPoly &outCPoly)
+PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const VERT *(&rawVtx)[4], CPoly &outCPoly)
 {
 	CLIPLOG("==Begin poly==\n");
 
@@ -3452,7 +3450,7 @@ PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType 
 		{
 			clipper1.init(outCPoly.clipVerts);
 			for (size_t i = 0; i < (size_t)rawPolyType; i++)
-				clipper1.clipVert(rawVtx[i]);
+				clipper1.clipVert(*rawVtx[i]);
 			
 			outClippedType = (PolygonType)clipper1.finish();
 			break;
@@ -3462,7 +3460,7 @@ PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType 
 		{
 			clipper1i.init(outCPoly.clipVerts);
 			for (size_t i = 0; i < (size_t)rawPolyType; i++)
-				clipper1i.clipVert(rawVtx[i]);
+				clipper1i.clipVert(*rawVtx[i]);
 			
 			outClippedType = (PolygonType)clipper1i.finish();
 			break;
@@ -3472,7 +3470,7 @@ PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType 
 		{
 			clipper1d.init(outCPoly.clipVerts);
 			for (size_t i = 0; i < (size_t)rawPolyType; i++)
-				clipper1d.clipVert(rawVtx[i]);
+				clipper1d.clipVert(*rawVtx[i]);
 			
 			outClippedType = (PolygonType)clipper1d.finish();
 			break;
