@@ -262,7 +262,6 @@ using std::min;
 GFX3D gfx3d;
 static GFX3D_IOREG *_GFX3D_IORegisterMap = NULL;
 Viewer3D_State viewer3D;
-static GFX3D_Clipper boxtestClipper;
 
 static LegacyGFX3DStateSFormat legacyGFX3DStateSFormatPending;
 static LegacyGFX3DStateSFormat legacyGFX3DStateSFormatApplied;
@@ -351,8 +350,6 @@ static CACHE_ALIGN s32 cacheHalfVector[4][4];
 
 
 //-------------working polygon lists
-static GFX3D_Clipper *_clipper = NULL;
-static PAGE_ALIGN CPoly _clippedPolyWorkingList[POLYLIST_SIZE * 2];
 static PAGE_ALIGN CPoly _clippedPolyUnsortedList[POLYLIST_SIZE];
 
 static int polygonListCompleted = 0;
@@ -483,9 +480,6 @@ void gfx3d_init()
 {
 	_GFX3D_IORegisterMap = (GFX3D_IOREG *)(&MMU.ARM9_REG[0x0320]);
 	
-	_clipper = new GFX3D_Clipper;
-	_clipper->SetClippedPolyBufferPtr(_clippedPolyWorkingList);
-	
 	polyAttrInProcess.value = 0;
 	currentPolyAttr.value = 0;
 	currentPolyTexParam.value = 0;
@@ -515,7 +509,6 @@ void gfx3d_init()
 void gfx3d_deinit()
 {
 	Render3D_DeInit();
-	delete _clipper;
 }
 
 void gfx3d_reset()
@@ -669,7 +662,7 @@ static void GEM_TransformVertex(const s32 (&__restrict mtx)[16], s32 (&__restric
 //---------------
 
 
-#define SUBMITVERTEX(ii, nn) pendingGList.polyList[pendingGList.polyCount].vertIndexes[ii] = tempVertInfo.map[nn];
+#define SUBMITVERTEX(ii, nn) pendingGList.rawPolyList[pendingGList.rawPolyCount].vertIndexes[ii] = tempVertInfo.map[nn];
 //Submit a vertex to the GE
 static void SetVertex()
 {
@@ -693,12 +686,12 @@ static void SetVertex()
 
 	//refuse to do anything if we have too many verts or polys
 	polygonListCompleted = 0;
-	if (pendingGList.vertListCount >= VERTLIST_SIZE)
+	if (pendingGList.rawVertCount >= VERTLIST_SIZE)
 	{
 		return;
 	}
 	
-	if (pendingGList.polyCount >= POLYLIST_SIZE)
+	if (pendingGList.rawPolyCount >= POLYLIST_SIZE)
 	{
 		return;
 	}
@@ -735,13 +728,13 @@ static void SetVertex()
 		continuation = 2;
 
 	//record the vertex
-	const size_t vertIndex = pendingGList.vertListCount + tempVertInfo.count - continuation;
+	const size_t vertIndex = pendingGList.rawVertCount + tempVertInfo.count - continuation;
 	if (vertIndex >= VERTLIST_SIZE)
 	{
 		printf("wtf\n");
 	}
 	
-	VERT &vert = pendingGList.vertList[vertIndex];
+	VERT &vert = pendingGList.rawVertList[vertIndex];
 
 	//printf("%f %f %f\n",coordTransformed[0],coordTransformed[1],coordTransformed[2]);
 	//if(coordTransformed[1] > 20) 
@@ -768,7 +761,7 @@ static void SetVertex()
 	vert.gf = (float)vert.g;
 	vert.bf = (float)vert.b;
 	vert.af = (float)vert.a;
-	tempVertInfo.map[tempVertInfo.count] = (s32)pendingGList.vertListCount + tempVertInfo.count - continuation;
+	tempVertInfo.map[tempVertInfo.count] = (s32)pendingGList.rawVertCount + tempVertInfo.count - continuation;
 	tempVertInfo.count++;
 
 	//possibly complete a polygon
@@ -783,8 +776,8 @@ static void SetVertex()
 				SUBMITVERTEX(0,0);
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
-				gfx3d.gList[gfx3d.pendingListIndex].vertListCount += 3;
-				pendingGList.polyList[pendingGList.polyCount].type = POLYGON_TYPE_TRIANGLE;
+				gfx3d.gList[gfx3d.pendingListIndex].rawVertCount += 3;
+				pendingGList.rawPolyList[pendingGList.rawPolyCount].type = POLYGON_TYPE_TRIANGLE;
 				tempVertInfo.count = 0;
 				break;
 				
@@ -796,8 +789,8 @@ static void SetVertex()
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
 				SUBMITVERTEX(3,3);
-				gfx3d.gList[gfx3d.pendingListIndex].vertListCount += 4;
-				pendingGList.polyList[pendingGList.polyCount].type = POLYGON_TYPE_QUAD;
+				gfx3d.gList[gfx3d.pendingListIndex].rawVertCount += 4;
+				pendingGList.rawPolyList[pendingGList.rawPolyCount].type = POLYGON_TYPE_QUAD;
 				tempVertInfo.count = 0;
 				break;
 				
@@ -808,17 +801,17 @@ static void SetVertex()
 				SUBMITVERTEX(0,0);
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
-				pendingGList.polyList[pendingGList.polyCount].type = POLYGON_TYPE_TRIANGLE;
+				pendingGList.rawPolyList[pendingGList.rawPolyCount].type = POLYGON_TYPE_TRIANGLE;
 
 				if(triStripToggle)
-					tempVertInfo.map[1] = (s32)pendingGList.vertListCount + 2 - continuation;
+					tempVertInfo.map[1] = (s32)pendingGList.rawVertCount + 2 - continuation;
 				else
-					tempVertInfo.map[0] = (s32)pendingGList.vertListCount + 2 - continuation;
+					tempVertInfo.map[0] = (s32)pendingGList.rawVertCount + 2 - continuation;
 				
 				if(tempVertInfo.first)
-					pendingGList.vertListCount += 3;
+					pendingGList.rawVertCount += 3;
 				else
-					pendingGList.vertListCount += 1;
+					pendingGList.rawVertCount += 1;
 
 				triStripToggle ^= 1;
 				tempVertInfo.first = false;
@@ -833,12 +826,12 @@ static void SetVertex()
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,3);
 				SUBMITVERTEX(3,2);
-				pendingGList.polyList[pendingGList.polyCount].type = POLYGON_TYPE_QUAD;
-				tempVertInfo.map[0] = (s32)pendingGList.vertListCount + 2 - continuation;
-				tempVertInfo.map[1] = (s32)pendingGList.vertListCount + 3 - continuation;
+				pendingGList.rawPolyList[pendingGList.rawPolyCount].type = POLYGON_TYPE_QUAD;
+				tempVertInfo.map[0] = (s32)pendingGList.rawVertCount + 2 - continuation;
+				tempVertInfo.map[1] = (s32)pendingGList.rawVertCount + 3 - continuation;
 				if(tempVertInfo.first)
-					pendingGList.vertListCount += 4;
-				else pendingGList.vertListCount += 2;
+					pendingGList.rawVertCount += 4;
+				else pendingGList.rawVertCount += 2;
 				tempVertInfo.first = false;
 				tempVertInfo.count = 2;
 				break;
@@ -849,7 +842,7 @@ static void SetVertex()
 
 		if (polygonListCompleted == 1)
 		{
-			POLY &poly = pendingGList.polyList[pendingGList.polyCount];
+			POLY &poly = pendingGList.rawPolyList[pendingGList.rawPolyCount];
 			
 			poly.vtxFormat = vtxFormat;
 
@@ -858,9 +851,9 @@ static void SetVertex()
 			if (currentPolyTexParam.PackedFormat == TEXMODE_NONE)
 			{
 				bool duplicated = false;
-				const VERT &vert0 = pendingGList.vertList[poly.vertIndexes[0]];
-				const VERT &vert1 = pendingGList.vertList[poly.vertIndexes[1]];
-				const VERT &vert2 = pendingGList.vertList[poly.vertIndexes[2]];
+				const VERT &vert0 = pendingGList.rawVertList[poly.vertIndexes[0]];
+				const VERT &vert1 = pendingGList.rawVertList[poly.vertIndexes[1]];
+				const VERT &vert2 = pendingGList.rawVertList[poly.vertIndexes[2]];
 				if ( (vert0.x == vert1.x) && (vert0.y == vert1.y) ) duplicated = true;
 				else
 					if ( (vert1.x == vert2.x) && (vert1.y == vert2.y) ) duplicated = true;
@@ -880,7 +873,7 @@ static void SetVertex()
 			poly.texPalette = currentPolyTexPalette;
 			poly.viewport = gfx3d.viewport;
 			poly.viewportLegacySave = _GFX3D_IORegisterMap->VIEWPORT;
-			pendingGList.polyCount++;
+			pendingGList.rawPolyCount++;
 		}
 	}
 }
@@ -1686,14 +1679,14 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	};
 	
 #define SET_VERT_INDICES(p,  a,b,c,d) \
-	polys[p].type = POLYGON_TYPE_QUAD; \
-	polys[p].vertIndexes[0] = a; \
-	polys[p].vertIndexes[1] = b; \
-	polys[p].vertIndexes[2] = c; \
-	polys[p].vertIndexes[3] = d;
+	tempRawPoly[p].type = POLYGON_TYPE_QUAD; \
+	tempRawPoly[p].vertIndexes[0] = a; \
+	tempRawPoly[p].vertIndexes[1] = b; \
+	tempRawPoly[p].vertIndexes[2] = c; \
+	tempRawPoly[p].vertIndexes[3] = d;
 	
 	//craft the faces of the box (clockwise)
-	POLY polys[6];
+	POLY tempRawPoly[6];
 	SET_VERT_INDICES(0,  7,6,5,4) // near
 	SET_VERT_INDICES(1,  0,1,2,3) // far
 	SET_VERT_INDICES(2,  0,3,7,4) // left
@@ -1704,8 +1697,6 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	
 	//setup the clipper
 	CPoly tempClippedPoly;
-	boxtestClipper.SetClippedPolyBufferPtr(&tempClippedPoly);
-	boxtestClipper.Reset();
 
 	////-----------------------------
 	////awesome hack:
@@ -1753,25 +1744,22 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	//clip each poly
 	for (size_t i = 0; i < 6; i++)
 	{
-		const POLY &thePoly = polys[i];
+		const POLY &rawPoly = tempRawPoly[i];
 		const VERT *vertTable[4] = {
-			&verts[thePoly.vertIndexes[0]],
-			&verts[thePoly.vertIndexes[1]],
-			&verts[thePoly.vertIndexes[2]],
-			&verts[thePoly.vertIndexes[3]]
+			&verts[rawPoly.vertIndexes[0]],
+			&verts[rawPoly.vertIndexes[1]],
+			&verts[rawPoly.vertIndexes[2]],
+			&verts[rawPoly.vertIndexes[3]]
 		};
 
-		const bool isPolyUnclipped = boxtestClipper.ClipPoly<ClipperMode_DetermineClipOnly>(0, thePoly, vertTable);
+		const PolygonType cpType = GFX3D_GenerateClippedPoly<ClipperMode_DetermineClipOnly>(0, rawPoly.type, vertTable, tempClippedPoly);
 		
 		//if any portion of this poly was retained, then the test passes.
-		if (isPolyUnclipped)
+		if (cpType != POLYGON_TYPE_UNDEFINED)
 		{
 			//printf("%06d PASS %d\n",gxFIFO.size, i);
 			MMU_new.gxstat.tr = 1;
 			break;
-		}
-		else
-		{
 		}
 
 		//if(i==5) printf("%06d FAIL\n",gxFIFO.size);
@@ -1920,13 +1908,13 @@ template void gfx3d_glClearImageOffset<u16, 0>(const u16 val);
 u32 gfx3d_GetNumPolys()
 {
 	//so is this in the currently-displayed or currently-built list?
-	return (u32)(gfx3d.gList[gfx3d.pendingListIndex].polyCount);
+	return (u32)(gfx3d.gList[gfx3d.pendingListIndex].rawPolyCount);
 }
 
 u32 gfx3d_GetNumVertex()
 {
 	//so is this in the currently-displayed or currently-built list?
-	return (u32)gfx3d.gList[gfx3d.pendingListIndex].vertListCount;
+	return (u32)gfx3d.gList[gfx3d.pendingListIndex].rawVertCount;
 }
 
 template <typename T>
@@ -2294,10 +2282,12 @@ void gfx3d_glFlush(u32 v)
 	GFX_DELAY(1);
 }
 
-static bool gfx3d_ysort_compare(int num1, int num2)
+static bool gfx3d_ysort_compare(const u16 idx1, const u16 idx2)
 {
-	const POLY &poly1 = *_clippedPolyUnsortedList[num1].poly;
-	const POLY &poly2 = *_clippedPolyUnsortedList[num2].poly;
+	const CPoly &cp1 = _clippedPolyUnsortedList[idx1];
+	const CPoly &cp2 = _clippedPolyUnsortedList[idx2];
+	const POLY &poly1 = gfx3d.gList[gfx3d.appliedListIndex].rawPolyList[cp1.index];
+	const POLY &poly2 = gfx3d.gList[gfx3d.appliedListIndex].rawPolyList[cp2.index];
 	
 	//this may be verified by checking the game create menus in harvest moon island of happiness
 	//also the buttons in the knights in the nightmare frontend depend on this and the perspective division
@@ -2314,73 +2304,59 @@ static bool gfx3d_ysort_compare(int num1, int num2)
 	//make sure we respect the game's ordering in cases of complete ties
 	//this makes it a stable sort.
 	//this must be a stable sort or else advance wars DOR will flicker in the main map mode
-	return (num1 < num2);
+	return (idx1 < idx2);
 }
 
 template <ClipperMode CLIPPERMODE>
-void gfx3d_PerformClipping(const GFX3D_GeometryList &gList)
+size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUnsortedList)
 {
-	bool isPolyUnclipped = false;
-	_clipper->Reset();
+	size_t clipCount = 0;
+	PolygonType cpType = POLYGON_TYPE_UNDEFINED;
 	
-	for (size_t polyIndex = 0, clipCount = 0; polyIndex < gList.polyCount; polyIndex++)
+	for (size_t polyIndex = 0; polyIndex < gList.rawPolyCount; polyIndex++)
 	{
-		const POLY &poly = gList.polyList[polyIndex];
+		const POLY &rawPoly = gList.rawPolyList[polyIndex];
 		
-		const VERT *clipVerts[4] = {
-			&gList.vertList[poly.vertIndexes[0]],
-			&gList.vertList[poly.vertIndexes[1]],
-			&gList.vertList[poly.vertIndexes[2]],
-			(poly.type == POLYGON_TYPE_QUAD) ? &gList.vertList[poly.vertIndexes[3]] : NULL
+		const VERT *rawVerts[4] = {
+			&gList.rawVertList[rawPoly.vertIndexes[0]],
+			&gList.rawVertList[rawPoly.vertIndexes[1]],
+			&gList.rawVertList[rawPoly.vertIndexes[2]],
+			(rawPoly.type == POLYGON_TYPE_QUAD) ? &gList.rawVertList[rawPoly.vertIndexes[3]] : NULL
 		};
 		
-		isPolyUnclipped = _clipper->ClipPoly<CLIPPERMODE>(polyIndex, poly, clipVerts);
-		
-		if (CLIPPERMODE == ClipperMode_DetermineClipOnly)
+		cpType = GFX3D_GenerateClippedPoly<CLIPPERMODE>(polyIndex, rawPoly.type, rawVerts, outCPolyUnsortedList[clipCount]);
+		if (cpType != POLYGON_TYPE_UNDEFINED)
 		{
-			if (isPolyUnclipped)
-			{
-				_clippedPolyUnsortedList[polyIndex].index = _clipper->GetClippedPolyByIndex(clipCount).index;
-				_clippedPolyUnsortedList[polyIndex].poly = _clipper->GetClippedPolyByIndex(clipCount).poly;
-				clipCount++;
-			}
-		}
-		else
-		{
-			if (isPolyUnclipped)
-			{
-				_clippedPolyUnsortedList[polyIndex] = _clipper->GetClippedPolyByIndex(clipCount);
-				clipCount++;
-			}
+			clipCount++;
 		}
 	}
+	
+	return clipCount;
 }
 
 void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State &inState, GFX3D_GeometryList &outGList)
 {
-	const VERT *__restrict appliedVertList = outGList.vertList;
+	const VERT *__restrict appliedVertList = outGList.rawVertList;
 	
 	switch (clippingMode)
 	{
 		case ClipperMode_Full:
-			gfx3d_PerformClipping<ClipperMode_Full>(outGList);
+			outGList.clippedPolyCount = gfx3d_PerformClipping<ClipperMode_Full>(outGList, _clippedPolyUnsortedList);
 			break;
 			
 		case ClipperMode_FullColorInterpolate:
-			gfx3d_PerformClipping<ClipperMode_FullColorInterpolate>(outGList);
+			outGList.clippedPolyCount = gfx3d_PerformClipping<ClipperMode_FullColorInterpolate>(outGList, _clippedPolyUnsortedList);
 			break;
 			
 		case ClipperMode_DetermineClipOnly:
-			gfx3d_PerformClipping<ClipperMode_DetermineClipOnly>(outGList);
+			outGList.clippedPolyCount = gfx3d_PerformClipping<ClipperMode_DetermineClipOnly>(outGList, _clippedPolyUnsortedList);
 			break;
 	}
-	
-	outGList.clippedPolyCount = _clipper->GetPolyCount();
 
 #ifdef _SHOW_VTX_COUNTERS
-	max_polys = max((u32)outGList.polyCount, max_polys);
-	max_verts = max((u32)outGList.vertListCount, max_verts);
-	osd->addFixed(180, 20, "%i/%i", outGList.polyCount, outGList.vertListCount);		// current
+	max_polys = max((u32)outGList.rawPolyCount, max_polys);
+	max_verts = max((u32)outGList.rawVertCount, max_verts);
+	osd->addFixed(180, 20, "%i/%i", outGList.rawPolyCount, outGList.rawVertCount);		// current
 	osd->addFixed(180, 35, "%i/%i", max_polys, max_verts);		// max
 #endif
 	
@@ -2389,18 +2365,18 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	size_t ctr = 0;
 	for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 	{
-		const CPoly &clippedPoly = _clipper->GetClippedPolyByIndex(i);
-		if ( !GFX3D_IsPolyTranslucent(*clippedPoly.poly) )
-			gfx3d.polyWorkingIndexList[ctr++] = (int)clippedPoly.index;
+		const CPoly &clippedPoly = _clippedPolyUnsortedList[i];
+		if ( !GFX3D_IsPolyTranslucent(outGList.rawPolyList[clippedPoly.index]) )
+			gfx3d.polyWorkingIndexList[ctr++] = i;
 	}
 	outGList.clippedPolyOpaqueCount = ctr;
 	
 	//then look for translucent polys
 	for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 	{
-		const CPoly &clippedPoly = _clipper->GetClippedPolyByIndex(i);
-		if ( GFX3D_IsPolyTranslucent(*clippedPoly.poly) )
-			gfx3d.polyWorkingIndexList[ctr++] = (int)clippedPoly.index;
+		const CPoly &clippedPoly = _clippedPolyUnsortedList[i];
+		if ( GFX3D_IsPolyTranslucent(outGList.rawPolyList[clippedPoly.index]) )
+			gfx3d.polyWorkingIndexList[ctr++] = i;
 	}
 	
 	//find the min and max y values for each poly.
@@ -2411,11 +2387,12 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	//2. most geometry is opaque which is always sorted anyway
 	for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 	{
+		POLY &poly = outGList.rawPolyList[_clippedPolyUnsortedList[i].index];
+		
 		// TODO: Possible divide by zero with the w-coordinate.
 		// Is the vertex being read correctly? Is 0 a valid value for w?
 		// If both of these questions answer to yes, then how does the NDS handle a NaN?
 		// For now, simply prevent w from being zero.
-		POLY &poly = *_clipper->GetClippedPolyByIndex(i).poly;
 		float verty = appliedVertList[poly.vertIndexes[0]].y;
 		float vertw = (appliedVertList[poly.vertIndexes[0]].w != 0.0f) ? appliedVertList[poly.vertIndexes[0]].w : 0.00000001f;
 		verty = 1.0f-(verty+vertw)/(2*vertw);
@@ -2448,7 +2425,7 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	{
 		for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 		{
-			outGList.clippedPolyList[i].poly = _clippedPolyUnsortedList[gfx3d.polyWorkingIndexList[i]].poly;
+			outGList.clippedPolyList[i].index = _clippedPolyUnsortedList[gfx3d.polyWorkingIndexList[i]].index;
 		}
 	}
 	else
@@ -2478,9 +2455,8 @@ static void gfx3d_doFlush()
 	gfx3d.pendingListIndex &= 1;
 	
 	GFX3D_GeometryList &pendingGList = gfx3d.gList[gfx3d.pendingListIndex];
-	pendingGList.polyCount = 0;
-	pendingGList.polyOpaqueCount = 0;
-	pendingGList.vertListCount = 0;
+	pendingGList.rawPolyCount = 0;
+	pendingGList.rawVertCount = 0;
 	pendingGList.clippedPolyCount = 0;
 	pendingGList.clippedPolyOpaqueCount = 0;
 
@@ -2488,14 +2464,13 @@ static void gfx3d_doFlush()
 	{
 		viewer3D.frameNumber = currFrameCounter;
 		viewer3D.state = gfx3d.appliedState;
-		viewer3D.gList.polyCount = appliedGList.polyCount;
-		viewer3D.gList.polyOpaqueCount = appliedGList.polyOpaqueCount;
+		viewer3D.gList.rawVertCount = appliedGList.rawVertCount;
+		viewer3D.gList.rawPolyCount = appliedGList.rawPolyCount;
 		viewer3D.gList.clippedPolyCount = appliedGList.clippedPolyCount;
 		viewer3D.gList.clippedPolyOpaqueCount = appliedGList.clippedPolyOpaqueCount;
-		viewer3D.gList.vertListCount = appliedGList.vertListCount;
 		
-		memcpy(viewer3D.gList.polyList, appliedGList.polyList, appliedGList.polyCount * sizeof(POLY));
-		memcpy(viewer3D.gList.vertList, appliedGList.vertList, appliedGList.vertListCount * sizeof(VERT));
+		memcpy(viewer3D.gList.rawVertList, appliedGList.rawVertList, appliedGList.rawVertCount * sizeof(VERT));
+		memcpy(viewer3D.gList.rawPolyList, appliedGList.rawPolyList, appliedGList.rawPolyCount * sizeof(POLY));
 		memcpy(viewer3D.gList.clippedPolyList, appliedGList.clippedPolyList, appliedGList.clippedPolyCount * sizeof(CPoly));
 		memcpy(viewer3D.indexList, gfx3d.polyWorkingIndexList, appliedGList.clippedPolyCount * sizeof(int));
 		
@@ -2923,16 +2898,16 @@ void gfx3d_savestate(EMUFILE &os)
 	os.write_32LE(4);
 
 	//dump the render lists
-	os.write_32LE((u32)gfx3d.gList[gfx3d.pendingListIndex].vertListCount);
-	for (size_t i = 0; i < gfx3d.gList[gfx3d.pendingListIndex].vertListCount; i++)
+	os.write_32LE((u32)gfx3d.gList[gfx3d.pendingListIndex].rawVertCount);
+	for (size_t i = 0; i < gfx3d.gList[gfx3d.pendingListIndex].rawVertCount; i++)
 	{
-		GFX3D_SaveStateVERT(gfx3d.gList[gfx3d.pendingListIndex].vertList[i], os);
+		GFX3D_SaveStateVERT(gfx3d.gList[gfx3d.pendingListIndex].rawVertList[i], os);
 	}
 	
-	os.write_32LE((u32)gfx3d.gList[gfx3d.pendingListIndex].polyCount);
-	for (size_t i = 0; i < gfx3d.gList[gfx3d.pendingListIndex].polyCount; i++)
+	os.write_32LE((u32)gfx3d.gList[gfx3d.pendingListIndex].rawPolyCount);
+	for (size_t i = 0; i < gfx3d.gList[gfx3d.pendingListIndex].rawPolyCount; i++)
 	{
-		GFX3D_SaveStatePOLY(gfx3d.gList[gfx3d.pendingListIndex].polyList[i], os);
+		GFX3D_SaveStatePOLY(gfx3d.gList[gfx3d.pendingListIndex].rawPolyList[i], os);
 	}
 
 	// Write matrix stack data
@@ -3012,21 +2987,21 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 		u32 polyListCount32 = 0;
 		
 		is.read_32LE(vertListCount32);
-		gfx3d.gList[gfx3d.pendingListIndex].vertListCount = vertListCount32;
-		gfx3d.gList[gfx3d.appliedListIndex].vertListCount = vertListCount32;
-		for (size_t i = 0; i < gfx3d.gList[gfx3d.appliedListIndex].vertListCount; i++)
+		gfx3d.gList[gfx3d.pendingListIndex].rawVertCount = vertListCount32;
+		gfx3d.gList[gfx3d.appliedListIndex].rawVertCount = vertListCount32;
+		for (size_t i = 0; i < gfx3d.gList[gfx3d.appliedListIndex].rawVertCount; i++)
 		{
-			GFX3D_LoadStateVERT(gfx3d.gList[gfx3d.pendingListIndex].vertList[i], is);
-			gfx3d.gList[gfx3d.appliedListIndex].vertList[i] = gfx3d.gList[gfx3d.pendingListIndex].vertList[i];
+			GFX3D_LoadStateVERT(gfx3d.gList[gfx3d.pendingListIndex].rawVertList[i], is);
+			gfx3d.gList[gfx3d.appliedListIndex].rawVertList[i] = gfx3d.gList[gfx3d.pendingListIndex].rawVertList[i];
 		}
 		
 		is.read_32LE(polyListCount32);
-		gfx3d.gList[gfx3d.pendingListIndex].polyCount = polyListCount32;
-		gfx3d.gList[gfx3d.appliedListIndex].polyCount = polyListCount32;
-		for (size_t i = 0; i < gfx3d.gList[gfx3d.appliedListIndex].polyCount; i++)
+		gfx3d.gList[gfx3d.pendingListIndex].rawPolyCount = polyListCount32;
+		gfx3d.gList[gfx3d.appliedListIndex].rawPolyCount = polyListCount32;
+		for (size_t i = 0; i < gfx3d.gList[gfx3d.appliedListIndex].rawPolyCount; i++)
 		{
-			GFX3D_LoadStatePOLY(gfx3d.gList[gfx3d.pendingListIndex].polyList[i], is);
-			gfx3d.gList[gfx3d.appliedListIndex].polyList[i] = gfx3d.gList[gfx3d.pendingListIndex].polyList[i];
+			GFX3D_LoadStatePOLY(gfx3d.gList[gfx3d.pendingListIndex].rawPolyList[i], is);
+			gfx3d.gList[gfx3d.appliedListIndex].rawPolyList[i] = gfx3d.gList[gfx3d.pendingListIndex].rawPolyList[i];
 		}
 	}
 
@@ -3463,95 +3438,57 @@ typedef ClipperPlane<ClipperMode_DetermineClipOnly, 1,-1,Stage4d> Stage3d;      
 typedef ClipperPlane<ClipperMode_DetermineClipOnly, 0, 1,Stage3d> Stage2d;       static Stage2d clipper2d (clipper3d); // right plane
 typedef ClipperPlane<ClipperMode_DetermineClipOnly, 0,-1,Stage2d> Stage1d;       static Stage1d clipper1d (clipper2d); // left plane
 
-GFX3D_Clipper::GFX3D_Clipper()
-{
-	_clippedPolyList = NULL;
-	_clippedPolyCounter = 0;
-}
-
-const CPoly* GFX3D_Clipper::GetClippedPolyBufferPtr()
-{
-	return this->_clippedPolyList;
-}
-
-void GFX3D_Clipper::SetClippedPolyBufferPtr(CPoly *bufferPtr)
-{
-	this->_clippedPolyList = bufferPtr;
-}
-
-const CPoly& GFX3D_Clipper::GetClippedPolyByIndex(size_t index) const
-{
-	return this->_clippedPolyList[index];
-}
-
-size_t GFX3D_Clipper::GetPolyCount() const
-{
-	return this->_clippedPolyCounter;
-}
-
-void GFX3D_Clipper::Reset()
-{
-	this->_clippedPolyCounter = 0;
-}
-
 template <ClipperMode CLIPPERMODE>
-bool GFX3D_Clipper::ClipPoly(const u16 polyIndex, const POLY &poly, const VERT **verts)
+PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const VERT **rawVtx, CPoly &outCPoly)
 {
 	CLIPLOG("==Begin poly==\n");
 
-	PolygonType outType;
-	const PolygonType polyType = poly.type;
+	PolygonType outClippedType;
 	numScratchClipVerts = 0;
 	
 	switch (CLIPPERMODE)
 	{
 		case ClipperMode_Full:
 		{
-			clipper1.init(this->_clippedPolyList[this->_clippedPolyCounter].clipVerts);
-			for (size_t i = 0; i < (size_t)polyType; i++)
-				clipper1.clipVert(verts[i]);
+			clipper1.init(outCPoly.clipVerts);
+			for (size_t i = 0; i < (size_t)rawPolyType; i++)
+				clipper1.clipVert(rawVtx[i]);
 			
-			outType = (PolygonType)clipper1.finish();
+			outClippedType = (PolygonType)clipper1.finish();
 			break;
 		}
 			
 		case ClipperMode_FullColorInterpolate:
 		{
-			clipper1i.init(this->_clippedPolyList[this->_clippedPolyCounter].clipVerts);
-			for (size_t i = 0; i < (size_t)polyType; i++)
-				clipper1i.clipVert(verts[i]);
+			clipper1i.init(outCPoly.clipVerts);
+			for (size_t i = 0; i < (size_t)rawPolyType; i++)
+				clipper1i.clipVert(rawVtx[i]);
 			
-			outType = (PolygonType)clipper1i.finish();
+			outClippedType = (PolygonType)clipper1i.finish();
 			break;
 		}
 			
 		case ClipperMode_DetermineClipOnly:
 		{
-			clipper1d.init(this->_clippedPolyList[this->_clippedPolyCounter].clipVerts);
-			for (size_t i = 0; i < (size_t)polyType; i++)
-				clipper1d.clipVert(verts[i]);
+			clipper1d.init(outCPoly.clipVerts);
+			for (size_t i = 0; i < (size_t)rawPolyType; i++)
+				clipper1d.clipVert(rawVtx[i]);
 			
-			outType = (PolygonType)clipper1d.finish();
+			outClippedType = (PolygonType)clipper1d.finish();
 			break;
 		}
 	}
 	
-	assert((u32)outType < MAX_CLIPPED_VERTS);
-	if (outType < POLYGON_TYPE_TRIANGLE)
+	assert((u32)outClippedType < MAX_CLIPPED_VERTS);
+	if (outClippedType < POLYGON_TYPE_TRIANGLE)
 	{
 		//a totally clipped poly. discard it.
 		//or, a degenerate poly. we're not handling these right now
-		return false;
-	}
-	else
-	{
-		CPoly &thePoly = this->_clippedPolyList[this->_clippedPolyCounter];
-		thePoly.index = polyIndex;
-		thePoly.type = outType;
-		thePoly.poly = (POLY *)&poly;
-		
-		this->_clippedPolyCounter++;
+		return POLYGON_TYPE_UNDEFINED;
 	}
 	
-	return true;
+	outCPoly.index = rawPolyIndex;
+	outCPoly.type = outClippedType;
+	
+	return outClippedType;
 }

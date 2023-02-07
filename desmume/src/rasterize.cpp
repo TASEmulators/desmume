@@ -1266,8 +1266,8 @@ void RasterizerUnit<RENDERER>::SetRenderer(SoftRasterizerRenderer *theRenderer)
 template<bool RENDERER> template <bool SLI, bool USELINEHACK>
 FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 {
-	const size_t polyCount = this->_softRender->GetClippedPolyCount();
-	if (polyCount == 0)
+	const size_t clippedPolyCount = this->_softRender->GetClippedPolyCount();
+	if (clippedPolyCount == 0)
 	{
 		return;
 	}
@@ -1276,8 +1276,9 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 	const size_t dstWidth = this->_softRender->GetFramebufferWidth();
 	const size_t dstHeight = this->_softRender->GetFramebufferHeight();
 	
+	const POLY *rawPolyList = this->_softRender->GetRawPolyList();
 	const CPoly &firstClippedPoly = this->_softRender->GetClippedPolyByIndex(0);
-	const POLY &firstPoly = *firstClippedPoly.poly;
+	const POLY &firstPoly = rawPolyList[firstClippedPoly.index];
 	POLYGON_ATTR polyAttr = firstPoly.attribute;
 	TEXIMAGE_PARAM lastTexParams = firstPoly.texParam;
 	u32 lastTexPalette = firstPoly.texPalette;
@@ -1285,25 +1286,24 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 	this->_SetupTexture(firstPoly, 0);
 
 	//iterate over polys
-	for (size_t i = 0; i < polyCount; i++)
+	for (size_t i = 0; i < clippedPolyCount; i++)
 	{
 		if (!RENDERER) _debug_thisPoly = (i == this->_softRender->_debug_drawClippedUserPoly);
 		if (!this->_softRender->isPolyVisible[i]) continue;
-		this->_polynum = i;
 
 		const CPoly &clippedPoly = this->_softRender->GetClippedPolyByIndex(i);
-		const POLY &thePoly = *clippedPoly.poly;
+		const POLY &rawPoly = rawPolyList[clippedPoly.index];
 		const size_t vertCount = (size_t)clippedPoly.type;
-		const bool useLineHack = USELINEHACK && (thePoly.vtxFormat & 4);
+		const bool useLineHack = USELINEHACK && (rawPoly.vtxFormat & 4);
 		
-		polyAttr = thePoly.attribute;
-		const bool isTranslucent = GFX3D_IsPolyTranslucent(thePoly);
+		polyAttr = rawPoly.attribute;
+		const bool isTranslucent = GFX3D_IsPolyTranslucent(rawPoly);
 		
-		if (lastTexParams.value != thePoly.texParam.value || lastTexPalette != thePoly.texPalette)
+		if (lastTexParams.value != rawPoly.texParam.value || lastTexPalette != rawPoly.texPalette)
 		{
-			lastTexParams = thePoly.texParam;
-			lastTexPalette = thePoly.texPalette;
-			this->_SetupTexture(thePoly, i);
+			lastTexParams = rawPoly.texParam;
+			lastTexPalette = rawPoly.texPalette;
+			this->_SetupTexture(rawPoly, i);
 		}
 		
 		for (size_t j = 0; j < vertCount; j++)
@@ -1877,16 +1877,17 @@ ClipperMode SoftRasterizerRenderer::GetPreferredPolygonClippingMode() const
 
 void SoftRasterizerRenderer::_TransformVertices()
 {
+	const POLY *rawPolyList = this->_rawPolyList;
 	const float wScalar = (float)this->_framebufferWidth  / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	const float hScalar = (float)this->_framebufferHeight / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
 	//viewport transforms
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
-		CPoly &poly = this->_clippedPolyList[i];
-		for (size_t j = 0; j < (size_t)poly.type; j++)
+		CPoly &cPoly = this->_clippedPolyList[i];
+		for (size_t j = 0; j < (size_t)cPoly.type; j++)
 		{
-			VERT &vert = poly.clipVerts[j];
+			VERT &vert = cPoly.clipVerts[j];
 			
 			// TODO: Possible divide by zero with the w-coordinate.
 			// Is the vertex being read correctly? Is 0 a valid value for w?
@@ -1915,12 +1916,13 @@ void SoftRasterizerRenderer::_TransformVertices()
 			vert.fcolor[2] /= vertw;
 			
 			//viewport transformation
-			vert.coord[0] *= poly.poly->viewport.width;
-			vert.coord[0] += poly.poly->viewport.x;
+			const GFX3D_Viewport theViewport = rawPolyList[cPoly.index].viewport;
+			vert.coord[0] *= theViewport.width;
+			vert.coord[0] += theViewport.x;
 			vert.coord[0] *= wScalar;
 			
-			vert.coord[1] *= poly.poly->viewport.height;
-			vert.coord[1] += poly.poly->viewport.y;
+			vert.coord[1] *= theViewport.height;
+			vert.coord[1] += theViewport.y;
 			vert.coord[1] = 192 - vert.coord[1];
 			vert.coord[1] *= hScalar;
 			
@@ -1941,13 +1943,15 @@ void SoftRasterizerRenderer::_GetPolygonStates()
 		{ false, true, false, true }
 	};
 	
+	const POLY *rawPolyList = this->_rawPolyList;
+	
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
 		const CPoly &clippedPoly = this->_clippedPolyList[i];
-		const POLY &thePoly = *clippedPoly.poly;
+		const POLY &rawPoly = rawPolyList[clippedPoly.index];
 		const PolygonType polyType = clippedPoly.type;
 		const VERT *vert = &clippedPoly.clipVerts[0];
-		const u8 cullingMode = thePoly.attribute.SurfaceCullingMode;
+		const u8 cullingMode = rawPoly.attribute.SurfaceCullingMode;
 		
 		//HACK: backface culling
 		//this should be moved to gfx3d, but first we need to redo the way the lists are built
@@ -1979,16 +1983,18 @@ void SoftRasterizerRenderer::_GetPolygonStates()
 
 void SoftRasterizerRenderer::GetAndLoadAllTextures()
 {
+	const POLY *rawPolyList = this->_rawPolyList;
+	
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
 		const CPoly &clippedPoly = this->_clippedPolyList[i];
-		const POLY &thePoly = *clippedPoly.poly;
+		const POLY &rawPoly = rawPolyList[clippedPoly.index];
 		
 		//make sure all the textures we'll need are cached
 		//(otherwise on a multithreaded system there will be multiple writers--
 		//this SHOULD be read-only, although some day the texcache may collect statistics or something
 		//and then it won't be safe.
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, this->_enableTextureSampling);
+		this->_textureList[i] = this->GetLoadedTextureFromPolygon(rawPoly, this->_enableTextureSampling);
 	}
 }
 
@@ -2020,6 +2026,7 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D_State &renderState
 	this->_clippedPolyCount = renderGList.clippedPolyCount;
 	this->_clippedPolyOpaqueCount = renderGList.clippedPolyOpaqueCount;
 	memcpy(this->_clippedPolyList, renderGList.clippedPolyList, this->_clippedPolyCount * sizeof(CPoly));
+	this->_rawPolyList = (POLY *)renderGList.rawPolyList;
 	
 	const bool doMultithreadedStateSetup = (this->_threadCount >= 2);
 	

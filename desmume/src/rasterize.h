@@ -104,7 +104,6 @@ protected:
 	SoftRasterizerRenderer *_softRender;
 	SoftRasterizerTexture *_currentTexture;
 	const VERT *_verts[MAX_CLIPPED_VERTS];
-	size_t _polynum;
 	u8 _textureWrapMode;
 	
 	Render3DError _SetupTexture(const POLY &thePoly, size_t polyRenderIndex);

@@ -1743,7 +1743,7 @@ OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, 
 }
 
 template <OGLPolyDrawMode DRAWMODE>
-size_t OpenGLRenderer::DrawPolygonsForIndexRange(const CPoly *clippedPolyList, const size_t clippedPolyCount, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr)
+size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -1774,7 +1774,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const CPoly *clippedPolyList, c
 	};
 	
 	// Set up the initial polygon
-	const POLY &initialPoly = *clippedPolyList[firstIndex].poly;
+	const POLY &initialPoly = rawPolyList[clippedPolyList[firstIndex].index];
 	TEXIMAGE_PARAM lastTexParams = initialPoly.texParam;
 	u32 lastTexPalette = initialPoly.texPalette;
 	GFX3D_Viewport lastViewport = initialPoly.viewport;
@@ -1788,28 +1788,28 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const CPoly *clippedPolyList, c
 	
 	for (size_t i = firstIndex; i <= lastIndex; i++)
 	{
-		const POLY &thePoly = *clippedPolyList[i].poly;
+		const POLY &rawPoly = rawPolyList[clippedPolyList[i].index];
 		
 		// Set up the polygon if it changed
-		if (lastPolyAttr.value != thePoly.attribute.value)
+		if (lastPolyAttr.value != rawPoly.attribute.value)
 		{
-			lastPolyAttr = thePoly.attribute;
-			this->SetupPolygon(thePoly, (DRAWMODE != OGLPolyDrawMode_DrawOpaquePolys), (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass));
+			lastPolyAttr = rawPoly.attribute;
+			this->SetupPolygon(rawPoly, (DRAWMODE != OGLPolyDrawMode_DrawOpaquePolys), (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass));
 		}
 		
 		// Set up the texture if it changed
-		if (lastTexParams.value != thePoly.texParam.value || lastTexPalette != thePoly.texPalette)
+		if (lastTexParams.value != rawPoly.texParam.value || lastTexPalette != rawPoly.texPalette)
 		{
-			lastTexParams = thePoly.texParam;
-			lastTexPalette = thePoly.texPalette;
-			this->SetupTexture(thePoly, i);
+			lastTexParams = rawPoly.texParam;
+			lastTexPalette = rawPoly.texPalette;
+			this->SetupTexture(rawPoly, i);
 		}
 		
 		// Set up the viewport if it changed
-		if (lastViewport.value != thePoly.viewport.value)
+		if (lastViewport.value != rawPoly.viewport.value)
 		{
-			lastViewport = thePoly.viewport;
-			this->SetupViewport(thePoly.viewport);
+			lastViewport = rawPoly.viewport;
+			this->SetupViewport(rawPoly.viewport);
 		}
 		
 		// In wireframe mode, redefine all primitives as GL_LINE_LOOP rather than
@@ -1817,7 +1817,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const CPoly *clippedPolyList, c
 		// drawing more accurate this way, but it also allows GFX3D_QUADS and
 		// GFX3D_QUAD_STRIP primitives to properly draw as wireframe without the
 		// extra diagonal line.
-		const size_t LUTIndex = (!GFX3D_IsPolyWireframe(thePoly)) ? thePoly.vtxFormat : (0x08 | thePoly.vtxFormat);
+		const size_t LUTIndex = (!GFX3D_IsPolyWireframe(rawPoly)) ? rawPoly.vtxFormat : (0x08 | rawPoly.vtxFormat);
 		const GLenum polyPrimitive = oglPrimitiveType[LUTIndex];
 		
 		// Increment the vertex count
@@ -1828,7 +1828,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const CPoly *clippedPolyList, c
 		// the same and we're not drawing a line loop or line strip.
 		if (i+1 <= lastIndex)
 		{
-			const POLY &nextPoly = *clippedPolyList[i+1].poly;
+			const POLY &nextPoly = rawPolyList[clippedPolyList[i+1].index];
 			
 			if (lastPolyAttr.value == nextPoly.attribute.value &&
 				lastTexParams.value == nextPoly.texParam.value &&
@@ -1848,33 +1848,38 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const CPoly *clippedPolyList, c
 		// Render the polygons
 		this->SetPolygonIndex(i);
 		
-		if (thePoly.attribute.Mode == POLYGON_MODE_SHADOW)
+		if (rawPoly.attribute.Mode == POLYGON_MODE_SHADOW)
 		{
 			if ((DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass) && this->_emulateShadowPolygon)
 			{
-				this->DrawShadowPolygon(polyPrimitive, vertIndexCount, indexBufferPtr, thePoly.attribute.DepthEqualTest_Enable, thePoly.attribute.TranslucentDepthWrite_Enable, (DRAWMODE == OGLPolyDrawMode_DrawTranslucentPolys), thePoly.attribute.PolygonID);
+				this->DrawShadowPolygon(polyPrimitive,
+				                        vertIndexCount,
+				                        indexBufferPtr,
+				                        rawPoly.attribute.DepthEqualTest_Enable,
+				                        rawPoly.attribute.TranslucentDepthWrite_Enable,
+				                        (DRAWMODE == OGLPolyDrawMode_DrawTranslucentPolys), rawPoly.attribute.PolygonID);
 			}
 		}
-		else if ( (thePoly.texParam.PackedFormat == TEXMODE_A3I5) || (thePoly.texParam.PackedFormat == TEXMODE_A5I3) )
+		else if ( (rawPoly.texParam.PackedFormat == TEXMODE_A3I5) || (rawPoly.texParam.PackedFormat == TEXMODE_A5I3) )
 		{
 			this->DrawAlphaTexturePolygon<DRAWMODE>(polyPrimitive,
-													vertIndexCount,
-													indexBufferPtr,
-													thePoly.attribute.DepthEqualTest_Enable,
-													thePoly.attribute.TranslucentDepthWrite_Enable,
-													GFX3D_IsPolyWireframe(thePoly) || GFX3D_IsPolyOpaque(thePoly),
-													thePoly.attribute.PolygonID,
-													this->_isPolyFrontFacing[i]);
+			                                        vertIndexCount,
+			                                        indexBufferPtr,
+			                                        rawPoly.attribute.DepthEqualTest_Enable,
+			                                        rawPoly.attribute.TranslucentDepthWrite_Enable,
+			                                        GFX3D_IsPolyWireframe(rawPoly) || GFX3D_IsPolyOpaque(rawPoly),
+			                                        rawPoly.attribute.PolygonID,
+			                                        this->_isPolyFrontFacing[i]);
 		}
 		else
 		{
 			this->DrawOtherPolygon<DRAWMODE>(polyPrimitive,
-											 vertIndexCount,
-											 indexBufferPtr,
-											 thePoly.attribute.DepthEqualTest_Enable,
-											 thePoly.attribute.TranslucentDepthWrite_Enable,
-											 thePoly.attribute.PolygonID,
-											 this->_isPolyFrontFacing[i]);
+			                                 vertIndexCount,
+			                                 indexBufferPtr,
+			                                 rawPoly.attribute.DepthEqualTest_Enable,
+			                                 rawPoly.attribute.TranslucentDepthWrite_Enable,
+			                                 rawPoly.attribute.PolygonID,
+			                                 this->_isPolyFrontFacing[i]);
 		}
 		
 		indexBufferPtr += vertIndexCount;
@@ -3874,7 +3879,7 @@ Render3DError OpenGLRenderer_1_2::DisableVertexAttributes()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const CPoly *clippedPolyList, const size_t clippedPolyCount, const size_t clippedPolyOpaqueCount, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr)
+Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, const size_t clippedPolyOpaqueCount, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -3957,7 +3962,7 @@ Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const CPoly *clippedPolyList,
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
 	glStencilFunc(GL_NOTEQUAL, 0x40, 0x40);
 	
-	this->DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(clippedPolyList, clippedPolyCount, clippedPolyOpaqueCount, clippedPolyCount - 1, indexOffset, lastPolyAttr);
+	this->DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(rawPolyList, clippedPolyList, clippedPolyCount, clippedPolyOpaqueCount, clippedPolyCount - 1, indexOffset, lastPolyAttr);
 	
 	// Restore OpenGL states back to normal.
 	this->_geometryProgramFlags = oldGProgramFlags;
@@ -4169,6 +4174,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 	this->_clippedPolyCount = renderGList.clippedPolyCount;
 	this->_clippedPolyOpaqueCount = renderGList.clippedPolyOpaqueCount;
 	this->_clippedPolyList = (CPoly *)renderGList.clippedPolyList;
+	this->_rawPolyList = (POLY *)renderGList.rawPolyList;
 	
 	this->_enableAlphaBlending = (renderState.DISP3DCNT.EnableAlphaBlending) ? true : false;
 	
@@ -4178,14 +4184,14 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, OGLRef.iboGeometryIndexID);
 		
 		// Only copy as much vertex data as we need to, since this can be a potentially large upload size.
-		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * renderGList.vertListCount, renderGList.vertList);
+		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * renderGList.rawVertCount, renderGList.rawVertList);
 	}
 	else
 	{
 		// If VBOs aren't supported, we need to use the client-side buffers here.
-		OGLRef.vtxPtrPosition = (GLvoid *)&renderGList.vertList[0].coord;
-		OGLRef.vtxPtrTexCoord = (GLvoid *)&renderGList.vertList[0].texcoord;
-		OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)&renderGList.vertList[0].color : OGLRef.color4fBuffer;
+		OGLRef.vtxPtrPosition = (GLvoid *)&renderGList.rawVertList[0].coord;
+		OGLRef.vtxPtrTexCoord = (GLvoid *)&renderGList.rawVertList[0].texcoord;
+		OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)&renderGList.rawVertList[0].color : OGLRef.color4fBuffer;
 	}
 	
 	// Generate the clipped polygon list.
@@ -4193,28 +4199,28 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 	
 	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{
-		const POLY &thePoly = *this->_clippedPolyList[i].poly;
+		const POLY &rawPoly = this->_rawPolyList[this->_clippedPolyList[i].index];
 		
-		const size_t polyType = thePoly.type;
+		const size_t polyType = rawPoly.type;
 		const VERT vert[4] = {
-			renderGList.vertList[thePoly.vertIndexes[0]],
-			renderGList.vertList[thePoly.vertIndexes[1]],
-			renderGList.vertList[thePoly.vertIndexes[2]],
-			renderGList.vertList[thePoly.vertIndexes[3]]
+			renderGList.rawVertList[rawPoly.vertIndexes[0]],
+			renderGList.rawVertList[rawPoly.vertIndexes[1]],
+			renderGList.rawVertList[rawPoly.vertIndexes[2]],
+			renderGList.rawVertList[rawPoly.vertIndexes[3]]
 		};
 		
 		if (this->isShaderSupported)
 		{
 			for (size_t j = 0; j < polyType; j++)
 			{
-				const GLushort vertIndex = thePoly.vertIndexes[j];
+				const GLushort vertIndex = rawPoly.vertIndexes[j];
 				
 				// While we're looping through our vertices, add each vertex index to
 				// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 				// vertices here to convert them to GL_TRIANGLES, which are much easier
 				// to work with and won't be deprecated in future OpenGL versions.
 				OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
-				if (!GFX3D_IsPolyWireframe(thePoly) && (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP))
+				if (!GFX3D_IsPolyWireframe(rawPoly) && (rawPoly.vtxFormat == GFX3D_QUADS || rawPoly.vtxFormat == GFX3D_QUAD_STRIP))
 				{
 					if (j == 2)
 					{
@@ -4222,23 +4228,23 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 					}
 					else if (j == 3)
 					{
-						OGLRef.vertIndexBuffer[vertIndexCount++] = thePoly.vertIndexes[0];
+						OGLRef.vertIndexBuffer[vertIndexCount++] = rawPoly.vertIndexes[0];
 					}
 				}
 			}
 		}
 		else
 		{
-			const GLfloat thePolyAlpha = (GFX3D_IsPolyWireframe(thePoly)) ? 1.0f : divide5bitBy31_LUT[thePoly.attribute.Alpha];
+			const GLfloat thePolyAlpha = (GFX3D_IsPolyWireframe(rawPoly)) ? 1.0f : divide5bitBy31_LUT[rawPoly.attribute.Alpha];
 			
 			for (size_t j = 0; j < polyType; j++)
 			{
-				const GLushort vertIndex = thePoly.vertIndexes[j];
+				const GLushort vertIndex = rawPoly.vertIndexes[j];
 				const size_t colorIndex = vertIndex * 4;
 				
 				// Consolidate the vertex color and the poly alpha to our internal color buffer
 				// so that OpenGL can use it.
-				const VERT *vertForAlpha = &renderGList.vertList[vertIndex];
+				const VERT *vertForAlpha = &renderGList.rawVertList[vertIndex];
 				OGLRef.color4fBuffer[colorIndex+0] = divide6bitBy63_LUT[vertForAlpha->color[0]];
 				OGLRef.color4fBuffer[colorIndex+1] = divide6bitBy63_LUT[vertForAlpha->color[1]];
 				OGLRef.color4fBuffer[colorIndex+2] = divide6bitBy63_LUT[vertForAlpha->color[2]];
@@ -4249,7 +4255,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 				// vertices here to convert them to GL_TRIANGLES, which are much easier
 				// to work with and won't be deprecated in future OpenGL versions.
 				OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
-				if (!GFX3D_IsPolyWireframe(thePoly) && (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP))
+				if (!GFX3D_IsPolyWireframe(rawPoly) && (rawPoly.vtxFormat == GFX3D_QUADS || rawPoly.vtxFormat == GFX3D_QUAD_STRIP))
 				{
 					if (j == 2)
 					{
@@ -4257,7 +4263,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 					}
 					else if (j == 3)
 					{
-						OGLRef.vertIndexBuffer[vertIndexCount++] = thePoly.vertIndexes[0];
+						OGLRef.vertIndexBuffer[vertIndexCount++] = rawPoly.vertIndexes[0];
 					}
 				}
 			}
@@ -4274,11 +4280,11 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 			facing += (vert[j+1].y + vert[j].y) * (vert[j+1].x - vert[j].x);
 		}
 		
-		renderNeedsToonTable = (renderNeedsToonTable || (thePoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT)) && this->isShaderSupported;
+		renderNeedsToonTable = (renderNeedsToonTable || (rawPoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT)) && this->isShaderSupported;
 		this->_isPolyFrontFacing[i] = (facing < 0);
 		
 		// Get the texture that is to be attached to this polygon.
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, this->_enableTextureSampling);
+		this->_textureList[i] = this->GetLoadedTextureFromPolygon(rawPoly, this->_enableTextureSampling);
 	}
 	
 	if (this->isVBOSupported)
@@ -4406,13 +4412,14 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 		
 		size_t indexOffset = 0;
 		
-		const POLY &firstPoly = *this->_clippedPolyList[0].poly;
+		const POLY *rawPolyList = this->_rawPolyList;
+		const POLY &firstPoly = rawPolyList[this->_clippedPolyList[0].index];
 		POLYGON_ATTR lastPolyAttr = firstPoly.attribute;
 		
 		if (this->_clippedPolyOpaqueCount > 0)
 		{
 			this->SetupPolygon(firstPoly, false, true);
-			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(this->_clippedPolyList, this->_clippedPolyCount, 0, this->_clippedPolyOpaqueCount - 1, indexOffset, lastPolyAttr);
+			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(rawPolyList, this->_clippedPolyList, this->_clippedPolyCount, 0, this->_clippedPolyOpaqueCount - 1, indexOffset, lastPolyAttr);
 		}
 		
 		if (this->_clippedPolyOpaqueCount < this->_clippedPolyCount)
@@ -4426,11 +4433,11 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 					this->SetupPolygon(firstPoly, true, false);
 				}
 				
-				this->ZeroDstAlphaPass(this->_clippedPolyList, this->_clippedPolyCount, this->_clippedPolyOpaqueCount, this->_enableAlphaBlending, indexOffset, lastPolyAttr);
+				this->ZeroDstAlphaPass(rawPolyList, this->_clippedPolyList, this->_clippedPolyCount, this->_clippedPolyOpaqueCount, this->_enableAlphaBlending, indexOffset, lastPolyAttr);
 				
 				if (this->_clippedPolyOpaqueCount > 0)
 				{
-					const POLY &lastOpaquePoly = *this->_clippedPolyList[this->_clippedPolyOpaqueCount - 1].poly;
+					const POLY &lastOpaquePoly = rawPolyList[this->_clippedPolyList[this->_clippedPolyOpaqueCount - 1].index];
 					lastPolyAttr = lastOpaquePoly.attribute;
 					this->SetupPolygon(lastOpaquePoly, false, true);
 				}
@@ -4456,7 +4463,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 				this->_ResolveWorkingBackFacing();
 			}
 			
-			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(this->_clippedPolyList, this->_clippedPolyCount, this->_clippedPolyOpaqueCount, this->_clippedPolyCount - 1, indexOffset, lastPolyAttr);
+			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(rawPolyList, this->_clippedPolyList, this->_clippedPolyCount, this->_clippedPolyOpaqueCount, this->_clippedPolyCount - 1, indexOffset, lastPolyAttr);
 		}
 		
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -5450,6 +5457,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 	this->_clippedPolyCount = renderGList.clippedPolyCount;
 	this->_clippedPolyOpaqueCount = renderGList.clippedPolyOpaqueCount;
 	this->_clippedPolyList = (CPoly *)renderGList.clippedPolyList;
+	this->_rawPolyList = (POLY *)renderGList.rawPolyList;
 	
 	this->_enableAlphaBlending = (renderState.DISP3DCNT.EnableAlphaBlending) ? true : false;
 	
@@ -5457,33 +5465,33 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 	
 	// Only copy as much vertex data as we need to, since this can be a potentially large upload size.
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * renderGList.vertListCount, renderGList.vertList);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * renderGList.rawVertCount, renderGList.rawVertList);
 	
 	// Generate the clipped polygon list.
 	bool renderNeedsToonTable = false;
 	
 	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{
-		const POLY &thePoly = *this->_clippedPolyList[i].poly;
+		const POLY &rawPoly = this->_rawPolyList[this->_clippedPolyList[i].index];
 		
-		const size_t polyType = thePoly.type;
+		const size_t polyType = rawPoly.type;
 		const VERT vert[4] = {
-			renderGList.vertList[thePoly.vertIndexes[0]],
-			renderGList.vertList[thePoly.vertIndexes[1]],
-			renderGList.vertList[thePoly.vertIndexes[2]],
-			renderGList.vertList[thePoly.vertIndexes[3]]
+			renderGList.rawVertList[rawPoly.vertIndexes[0]],
+			renderGList.rawVertList[rawPoly.vertIndexes[1]],
+			renderGList.rawVertList[rawPoly.vertIndexes[2]],
+			renderGList.rawVertList[rawPoly.vertIndexes[3]]
 		};
 		
 		for (size_t j = 0; j < polyType; j++)
 		{
-			const GLushort vertIndex = thePoly.vertIndexes[j];
+			const GLushort vertIndex = rawPoly.vertIndexes[j];
 			
 			// While we're looping through our vertices, add each vertex index to
 			// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 			// vertices here to convert them to GL_TRIANGLES, which are much easier
 			// to work with and won't be deprecated in future OpenGL versions.
 			OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
-			if (!GFX3D_IsPolyWireframe(thePoly) && (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP))
+			if (!GFX3D_IsPolyWireframe(rawPoly) && (rawPoly.vtxFormat == GFX3D_QUADS || rawPoly.vtxFormat == GFX3D_QUAD_STRIP))
 			{
 				if (j == 2)
 				{
@@ -5491,7 +5499,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 				}
 				else if (j == 3)
 				{
-					OGLRef.vertIndexBuffer[vertIndexCount++] = thePoly.vertIndexes[0];
+					OGLRef.vertIndexBuffer[vertIndexCount++] = rawPoly.vertIndexes[0];
 				}
 			}
 		}
@@ -5507,11 +5515,11 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 			facing += (vert[j+1].y + vert[j].y) * (vert[j+1].x - vert[j].x);
 		}
 		
-		renderNeedsToonTable = renderNeedsToonTable || (thePoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT);
+		renderNeedsToonTable = renderNeedsToonTable || (rawPoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT);
 		this->_isPolyFrontFacing[i] = (facing < 0);
 		
 		// Get the texture that is to be attached to this polygon.
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, this->_enableTextureSampling);
+		this->_textureList[i] = this->GetLoadedTextureFromPolygon(rawPoly, this->_enableTextureSampling);
 	}
 	
 	// Replace the entire index buffer as a hint to the driver that we can orphan the index buffer and
@@ -5677,6 +5685,6 @@ Render3DError OpenGLRenderer_2_1::RenderFlush(bool willFlushBuffer32, bool willF
 	return RENDER3DERROR_NOERR;
 }
 
-template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(const CPoly *clippedPolyList, const size_t clippedPolyCount, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
-template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(const CPoly *clippedPolyList, const size_t clippedPolyCount, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
-template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(const CPoly *clippedPolyList, const size_t clippedPolyCount, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
+template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
+template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
+template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);

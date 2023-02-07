@@ -188,6 +188,7 @@ protected:
 	size_t _clippedPolyCount;
 	size_t _clippedPolyOpaqueCount;
 	CPoly *_clippedPolyList;
+	POLY *_rawPolyList;
 	
 	CACHE_ALIGN u16 clearImageColor16Buffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN u32 clearImageDepthBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
@@ -271,6 +272,8 @@ public:
 	virtual ClipperMode GetPreferredPolygonClippingMode() const;
 	const CPoly& GetClippedPolyByIndex(size_t index) const;
 	size_t GetClippedPolyCount() const;
+	
+	const POLY* GetRawPolyList() const;
 };
 
 template <size_t SIMDBYTES>

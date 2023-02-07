@@ -245,9 +245,14 @@ Render3D::Render3D()
 		_textureList[i] = NULL;
 	}
 	
-	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));
-	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
-	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
+	_clippedPolyCount = 0;
+	_clippedPolyOpaqueCount = 0;
+	_clippedPolyList = NULL;
+	_rawPolyList = NULL;
+	
+	memset(clearImageColor16Buffer, 0, sizeof(clearImageColor16Buffer));
+	memset(clearImageDepthBuffer, 0, sizeof(clearImageDepthBuffer));
+	memset(clearImageFogBuffer, 0, sizeof(clearImageFogBuffer));
 	
 	Reset();
 }
@@ -408,6 +413,11 @@ const CPoly& Render3D::GetClippedPolyByIndex(size_t index) const
 size_t Render3D::GetClippedPolyCount() const
 {
 	return this->_clippedPolyCount;
+}
+
+const POLY* Render3D::GetRawPolyList() const
+{
+	return this->_rawPolyList;
 }
 
 Render3DError Render3D::ApplyRenderingSettings(const GFX3D_State &renderState)

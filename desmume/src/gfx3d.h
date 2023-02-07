@@ -109,8 +109,9 @@ enum PolygonMode
 // POLYGON TYPES
 enum PolygonType
 {
-	POLYGON_TYPE_TRIANGLE	= 3,
-	POLYGON_TYPE_QUAD		   = 4
+	POLYGON_TYPE_UNDEFINED		= 0,
+	POLYGON_TYPE_TRIANGLE		= 3,
+	POLYGON_TYPE_QUAD			= 4
 };
 
 // TEXTURE PARAMETERS - FORMAT ID
@@ -634,29 +635,9 @@ struct CPoly
 {
 	u16 index; // The index number of this polygon in the full polygon list.
 	PolygonType type; //otherwise known as "count" of verts
-	POLY *poly;
 	VERT clipVerts[MAX_CLIPPED_VERTS];
 };
 typedef struct CPoly CPoly;
-
-class GFX3D_Clipper
-{
-protected:
-	size_t _clippedPolyCounter;
-	CPoly *_clippedPolyList; // The output of clipping operations goes into here. Be sure you init it before clipping!
-	
-public:
-	GFX3D_Clipper();
-	
-	const CPoly* GetClippedPolyBufferPtr();
-	void SetClippedPolyBufferPtr(CPoly *bufferPtr);
-	
-	const CPoly& GetClippedPolyByIndex(size_t index) const;
-	size_t GetPolyCount() const;
-	
-	void Reset();
-	template<ClipperMode CLIPPERMODE> bool ClipPoly(const u16 polyIndex, const POLY &poly, const VERT **verts); // the entry point for poly clipping
-};
 
 //used to communicate state to the renderer
 struct GFX3D_State
@@ -682,13 +663,12 @@ typedef struct GFX3D_State GFX3D_State;
 
 struct GFX3D_GeometryList
 {
-	PAGE_ALIGN VERT vertList[VERTLIST_SIZE];
-	PAGE_ALIGN POLY polyList[POLYLIST_SIZE];
+	PAGE_ALIGN VERT rawVertList[VERTLIST_SIZE];
+	PAGE_ALIGN POLY rawPolyList[POLYLIST_SIZE];
 	PAGE_ALIGN CPoly clippedPolyList[POLYLIST_SIZE];
 	
-	size_t vertListCount;
-	size_t polyCount;
-	size_t polyOpaqueCount;
+	size_t rawVertCount;
+	size_t rawPolyCount;
 	size_t clippedPolyCount;
 	size_t clippedPolyOpaqueCount;
 };
@@ -750,7 +730,7 @@ struct GFX3D
 	u32 render3DFrameCount; // Increments when gfx3d_doFlush() is called. Resets every 60 video frames.
 	
 	// Working lists for rendering.
-	PAGE_ALIGN int polyWorkingIndexList[INDEXLIST_SIZE];
+	PAGE_ALIGN u16 polyWorkingIndexList[POLYLIST_SIZE * 2];
 	
 	// Everything below is for save state compatibility.
 	IOREG_VIEWPORT viewportLegacySave; // Historically, the viewport was stored as its raw register value.
@@ -808,5 +788,7 @@ void gfx3d_ClearStack();
 void gfx3d_parseCurrentDISP3DCNT();
 const GFX3D_IOREG& GFX3D_GetIORegisterMap();
 void ParseReg_DISP3DCNT();
+
+template<ClipperMode CLIPPERMODE> PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const VERT **rawVtx, CPoly &outCPoly);
 
 #endif //_GFX3D_H_
