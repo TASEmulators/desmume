@@ -374,7 +374,7 @@ namespace Database
 		size_t regions_num = ARRAY_SIZE(regions);
 		
 		const char* found = strchr(regions_index,code);
-		if(found) return regions[found-regions_index];
+		if(found && found-regions_index < strlen(regions_index)) return regions[found-regions_index];
 		else return unknownAsString ? "???" : NULL;
 	}
 
