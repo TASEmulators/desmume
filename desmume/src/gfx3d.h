@@ -531,10 +531,6 @@ struct POLY
 	TEXIMAGE_PARAM texParam;
 	u32 texPalette; //the hardware rendering params
 	GFX3D_Viewport viewport;
-	IOREG_VIEWPORT viewportLegacySave; // Exists for save state compatibility.
-	
-	float miny;
-	float maxy;
 };
 typedef struct POLY POLY;
 
@@ -711,7 +707,6 @@ struct Viewer3D_State
 	int frameNumber;
 	GFX3D_State state;
 	GFX3D_GeometryList gList;
-	int indexList[INDEXLIST_SIZE];
 };
 typedef struct Viewer3D_State Viewer3D_State;
 
@@ -730,10 +725,14 @@ struct GFX3D
 	u32 render3DFrameCount; // Increments when gfx3d_doFlush() is called. Resets every 60 video frames.
 	
 	// Working lists for rendering.
-	PAGE_ALIGN u16 polyWorkingIndexList[POLYLIST_SIZE * 2];
+	CACHE_ALIGN CPoly clippedPolyUnsortedList[POLYLIST_SIZE * 2]; // Records clipped polygon info on first pass
+	CACHE_ALIGN u16 indexOfClippedPolyUnsortedList[POLYLIST_SIZE * 2];
+	CACHE_ALIGN float rawPolySortYMin[POLYLIST_SIZE]; // Temp buffer used for processing polygon Y-sorting
+	CACHE_ALIGN float rawPolySortYMax[POLYLIST_SIZE]; // Temp buffer used for processing polygon Y-sorting
 	
 	// Everything below is for save state compatibility.
 	IOREG_VIEWPORT viewportLegacySave; // Historically, the viewport was stored as its raw register value.
+	IOREG_VIEWPORT rawPolyViewportLegacySave[POLYLIST_SIZE]; // Historically, pending polygons kept a copy of the current viewport as a raw register value.
 	float PTcoordsLegacySave[4]; // Historically, PTcoords were stored as floating point values, not as integers.
 	PAGE_ALIGN FragmentColor framebufferNativeSave[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // Rendered 3D framebuffer that is saved in RGBA8888 color format at the native size.
 };

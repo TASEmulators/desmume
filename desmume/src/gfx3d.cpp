@@ -348,10 +348,6 @@ static CACHE_ALIGN s32 cacheHalfVector[4][4];
 #define RENDER_FRONT_SURFACE 0x80
 #define RENDER_BACK_SURFACE 0X40
 
-
-//-------------working polygon lists
-static PAGE_ALIGN CPoly _clippedPolyUnsortedList[POLYLIST_SIZE];
-
 static int polygonListCompleted = 0;
 static u8 triStripToggle;
 
@@ -419,9 +415,6 @@ void GFX3D_SaveStatePOLY(const POLY &p, EMUFILE &os)
 	os.write_32LE(p.attribute.value);
 	os.write_32LE(p.texParam.value);
 	os.write_32LE(p.texPalette);
-	os.write_32LE(p.viewportLegacySave.value);
-	os.write_floatLE(p.miny);
-	os.write_floatLE(p.maxy);
 }
 
 void GFX3D_LoadStatePOLY(POLY &p, EMUFILE &is)
@@ -437,11 +430,6 @@ void GFX3D_LoadStatePOLY(POLY &p, EMUFILE &is)
 	is.read_32LE(p.attribute.value);
 	is.read_32LE(p.texParam.value);
 	is.read_32LE(p.texPalette);
-	is.read_32LE(p.viewportLegacySave.value);
-	is.read_floatLE(p.miny);
-	is.read_floatLE(p.maxy);
-	
-	p.viewport = GFX3D_ViewportParse(p.viewportLegacySave.value);
 }
 
 void GFX3D_SaveStateVERT(const VERT &vtx, EMUFILE &os)
@@ -872,7 +860,7 @@ static void SetVertex()
 			poly.texParam = currentPolyTexParam;
 			poly.texPalette = currentPolyTexPalette;
 			poly.viewport = gfx3d.viewport;
-			poly.viewportLegacySave = _GFX3D_IORegisterMap->VIEWPORT;
+			gfx3d.rawPolyViewportLegacySave[pendingGList.rawPolyCount] = _GFX3D_IORegisterMap->VIEWPORT;
 			pendingGList.rawPolyCount++;
 		}
 	}
@@ -2284,17 +2272,21 @@ void gfx3d_glFlush(u32 v)
 
 static bool gfx3d_ysort_compare(const u16 idx1, const u16 idx2)
 {
-	const CPoly &cp1 = _clippedPolyUnsortedList[idx1];
-	const CPoly &cp2 = _clippedPolyUnsortedList[idx2];
-	const POLY &poly1 = gfx3d.gList[gfx3d.appliedListIndex].rawPolyList[cp1.index];
-	const POLY &poly2 = gfx3d.gList[gfx3d.appliedListIndex].rawPolyList[cp2.index];
+	const CPoly &cp1 = gfx3d.clippedPolyUnsortedList[idx1];
+	const CPoly &cp2 = gfx3d.clippedPolyUnsortedList[idx2];
+	
+	const float &y1Max = gfx3d.rawPolySortYMax[cp1.index];
+	const float &y2Max = gfx3d.rawPolySortYMax[cp2.index];
+	
+	const float &y1Min = gfx3d.rawPolySortYMin[cp1.index];
+	const float &y2Min = gfx3d.rawPolySortYMin[cp2.index];
 	
 	//this may be verified by checking the game create menus in harvest moon island of happiness
 	//also the buttons in the knights in the nightmare frontend depend on this and the perspective division
-	if (poly1.maxy != poly2.maxy)
-		return (poly1.maxy < poly2.maxy);
-	if (poly1.miny != poly2.miny)
-		return (poly1.miny < poly2.miny);
+	if (y1Max != y2Max)
+		return (y1Max < y2Max);
+	if (y1Min != y2Min)
+		return (y1Min < y2Min);
 	
 	//notably, the main shop interface in harvest moon will not have a correct RTN button
 	//i think this is due to a math error rounding its position to one pixel too high and it popping behind
@@ -2341,15 +2333,15 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	switch (clippingMode)
 	{
 		case ClipperMode_Full:
-			outGList.clippedPolyCount = gfx3d_PerformClipping<ClipperMode_Full>(outGList, _clippedPolyUnsortedList);
+			outGList.clippedPolyCount = gfx3d_PerformClipping<ClipperMode_Full>(outGList, gfx3d.clippedPolyUnsortedList);
 			break;
 			
 		case ClipperMode_FullColorInterpolate:
-			outGList.clippedPolyCount = gfx3d_PerformClipping<ClipperMode_FullColorInterpolate>(outGList, _clippedPolyUnsortedList);
+			outGList.clippedPolyCount = gfx3d_PerformClipping<ClipperMode_FullColorInterpolate>(outGList, gfx3d.clippedPolyUnsortedList);
 			break;
 			
 		case ClipperMode_DetermineClipOnly:
-			outGList.clippedPolyCount = gfx3d_PerformClipping<ClipperMode_DetermineClipOnly>(outGList, _clippedPolyUnsortedList);
+			outGList.clippedPolyCount = gfx3d_PerformClipping<ClipperMode_DetermineClipOnly>(outGList, gfx3d.clippedPolyUnsortedList);
 			break;
 	}
 
@@ -2365,18 +2357,18 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	size_t ctr = 0;
 	for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 	{
-		const CPoly &clippedPoly = _clippedPolyUnsortedList[i];
+		const CPoly &clippedPoly = gfx3d.clippedPolyUnsortedList[i];
 		if ( !GFX3D_IsPolyTranslucent(outGList.rawPolyList[clippedPoly.index]) )
-			gfx3d.polyWorkingIndexList[ctr++] = i;
+			gfx3d.indexOfClippedPolyUnsortedList[ctr++] = i;
 	}
 	outGList.clippedPolyOpaqueCount = ctr;
 	
 	//then look for translucent polys
 	for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 	{
-		const CPoly &clippedPoly = _clippedPolyUnsortedList[i];
+		const CPoly &clippedPoly = gfx3d.clippedPolyUnsortedList[i];
 		if ( GFX3D_IsPolyTranslucent(outGList.rawPolyList[clippedPoly.index]) )
-			gfx3d.polyWorkingIndexList[ctr++] = i;
+			gfx3d.indexOfClippedPolyUnsortedList[ctr++] = i;
 	}
 	
 	//find the min and max y values for each poly.
@@ -2387,7 +2379,8 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	//2. most geometry is opaque which is always sorted anyway
 	for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 	{
-		POLY &poly = outGList.rawPolyList[_clippedPolyUnsortedList[i].index];
+		const u16 rawPolyIndex = gfx3d.clippedPolyUnsortedList[i].index;
+		const POLY &poly = outGList.rawPolyList[rawPolyIndex];
 		
 		// TODO: Possible divide by zero with the w-coordinate.
 		// Is the vertex being read correctly? Is 0 a valid value for w?
@@ -2396,28 +2389,29 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 		float verty = appliedVertList[poly.vertIndexes[0]].y;
 		float vertw = (appliedVertList[poly.vertIndexes[0]].w != 0.0f) ? appliedVertList[poly.vertIndexes[0]].w : 0.00000001f;
 		verty = 1.0f-(verty+vertw)/(2*vertw);
-		poly.miny = poly.maxy = verty;
+		gfx3d.rawPolySortYMin[rawPolyIndex] = verty;
+		gfx3d.rawPolySortYMax[rawPolyIndex] = verty;
 		
 		for (size_t j = 1; j < (size_t)poly.type; j++)
 		{
 			verty = appliedVertList[poly.vertIndexes[j]].y;
 			vertw = (appliedVertList[poly.vertIndexes[j]].w != 0.0f) ? appliedVertList[poly.vertIndexes[j]].w : 0.00000001f;
 			verty = 1.0f-(verty+vertw)/(2*vertw);
-			poly.miny = min(poly.miny, verty);
-			poly.maxy = max(poly.maxy, verty);
+			gfx3d.rawPolySortYMin[rawPolyIndex] = min(gfx3d.rawPolySortYMin[rawPolyIndex], verty);
+			gfx3d.rawPolySortYMax[rawPolyIndex] = max(gfx3d.rawPolySortYMax[rawPolyIndex], verty);
 		}
 	}
 
 	//now we have to sort the opaque polys by y-value.
 	//(test case: harvest moon island of happiness character creator UI)
 	//should this be done after clipping??
-	std::sort(gfx3d.polyWorkingIndexList, gfx3d.polyWorkingIndexList + outGList.clippedPolyOpaqueCount, gfx3d_ysort_compare);
+	std::sort(gfx3d.indexOfClippedPolyUnsortedList, gfx3d.indexOfClippedPolyUnsortedList + outGList.clippedPolyOpaqueCount, gfx3d_ysort_compare);
 	
 	if (inState.SWAP_BUFFERS.YSortMode == 0)
 	{
 		//if we are autosorting translucent polys, we need to do this also
 		//TODO - this is unverified behavior. need a test case
-		std::sort(gfx3d.polyWorkingIndexList + outGList.clippedPolyOpaqueCount, gfx3d.polyWorkingIndexList + outGList.clippedPolyCount, gfx3d_ysort_compare);
+		std::sort(gfx3d.indexOfClippedPolyUnsortedList + outGList.clippedPolyOpaqueCount, gfx3d.indexOfClippedPolyUnsortedList + outGList.clippedPolyCount, gfx3d_ysort_compare);
 	}
 	
 	// Reorder the clipped polygon list to match our sorted index list.
@@ -2425,14 +2419,14 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	{
 		for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 		{
-			outGList.clippedPolyList[i].index = _clippedPolyUnsortedList[gfx3d.polyWorkingIndexList[i]].index;
+			outGList.clippedPolyList[i].index = gfx3d.clippedPolyUnsortedList[gfx3d.indexOfClippedPolyUnsortedList[i]].index;
 		}
 	}
 	else
 	{
 		for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 		{
-			outGList.clippedPolyList[i] = _clippedPolyUnsortedList[gfx3d.polyWorkingIndexList[i]];
+			outGList.clippedPolyList[i] = gfx3d.clippedPolyUnsortedList[gfx3d.indexOfClippedPolyUnsortedList[i]];
 		}
 	}
 }
@@ -2472,7 +2466,6 @@ static void gfx3d_doFlush()
 		memcpy(viewer3D.gList.rawVertList, appliedGList.rawVertList, appliedGList.rawVertCount * sizeof(VERT));
 		memcpy(viewer3D.gList.rawPolyList, appliedGList.rawPolyList, appliedGList.rawPolyCount * sizeof(POLY));
 		memcpy(viewer3D.gList.clippedPolyList, appliedGList.clippedPolyList, appliedGList.clippedPolyCount * sizeof(CPoly));
-		memcpy(viewer3D.indexList, gfx3d.polyWorkingIndexList, appliedGList.clippedPolyCount * sizeof(int));
 		
 		driver->view3d->NewFrame();
 	}
@@ -2908,6 +2901,9 @@ void gfx3d_savestate(EMUFILE &os)
 	for (size_t i = 0; i < gfx3d.gList[gfx3d.pendingListIndex].rawPolyCount; i++)
 	{
 		GFX3D_SaveStatePOLY(gfx3d.gList[gfx3d.pendingListIndex].rawPolyList[i], os);
+		os.write_32LE(gfx3d.rawPolyViewportLegacySave[i].value);
+		os.write_floatLE(gfx3d.rawPolySortYMin[i]);
+		os.write_floatLE(gfx3d.rawPolySortYMax[i]);
 	}
 
 	// Write matrix stack data
@@ -3000,8 +2996,16 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 		gfx3d.gList[gfx3d.appliedListIndex].rawPolyCount = polyListCount32;
 		for (size_t i = 0; i < gfx3d.gList[gfx3d.appliedListIndex].rawPolyCount; i++)
 		{
-			GFX3D_LoadStatePOLY(gfx3d.gList[gfx3d.pendingListIndex].rawPolyList[i], is);
-			gfx3d.gList[gfx3d.appliedListIndex].rawPolyList[i] = gfx3d.gList[gfx3d.pendingListIndex].rawPolyList[i];
+			POLY &p = gfx3d.gList[gfx3d.pendingListIndex].rawPolyList[i];
+			
+			GFX3D_LoadStatePOLY(p, is);
+			is.read_32LE(gfx3d.rawPolyViewportLegacySave[i].value);
+			is.read_floatLE(gfx3d.rawPolySortYMin[i]);
+			is.read_floatLE(gfx3d.rawPolySortYMax[i]);
+			
+			p.viewport = GFX3D_ViewportParse(gfx3d.rawPolyViewportLegacySave[i].value);
+			
+			gfx3d.gList[gfx3d.appliedListIndex].rawPolyList[i] = p;
 		}
 	}
 
