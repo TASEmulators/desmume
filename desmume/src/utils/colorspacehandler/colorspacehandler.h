@@ -81,13 +81,14 @@ enum NDSColorFormat
 
 union FragmentColor
 {
-	u32 color;
 	u8 component[4];
 	
 	struct
 	{
 		u8 r,g,b,a;
 	};
+	
+	u32 color;
 };
 
 extern CACHE_ALIGN const u32 material_5bit_to_31bit[32];
