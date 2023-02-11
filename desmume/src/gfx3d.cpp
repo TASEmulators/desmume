@@ -1790,12 +1790,15 @@ static void gfx3d_glBoxTest(const u32 param)
 	// clipping and interpolation are still calculated in floating-point. We really need
 	// to rework the entire clipping and interpolation system to work in fixed-point also.
 	CACHE_ALIGN VERT verts[8];
+	CACHE_ALIGN NDSVertex tempRawVtx[8];
 
 	//transform all coords
 	for (size_t i = 0; i < 8; i++)
 	{
 		MatrixMultVec4x4(_mtxCurrent[MATRIXMODE_POSITION], vtxPosition[i].coord);
 		MatrixMultVec4x4(_mtxCurrent[MATRIXMODE_PROJECTION], vtxPosition[i].coord);
+		
+		tempRawVtx[i].position = vtxPosition[i];
 		
 		// TODO: Remove this fixed-point to floating-point conversion.
 		verts[i].x = (float)(vtxPosition[i].x) / 4096.0f;
@@ -1808,14 +1811,22 @@ static void gfx3d_glBoxTest(const u32 param)
 	for (size_t i = 0; i < 6; i++)
 	{
 		const POLY &rawPoly = tempRawPoly[i];
-		const VERT *vertTable[4] = {
+		/*
+		const VERT *rawPolyVtx[4] = {
 			&verts[rawPoly.vertIndexes[0]],
 			&verts[rawPoly.vertIndexes[1]],
 			&verts[rawPoly.vertIndexes[2]],
 			&verts[rawPoly.vertIndexes[3]]
 		};
-
-		const PolygonType cpType = GFX3D_GenerateClippedPoly<ClipperMode_DetermineClipOnly>(0, rawPoly.type, vertTable, tempClippedPoly);
+		*/
+		const NDSVertex *rawPolyVtx[4] = {
+			&tempRawVtx[rawPoly.vertIndexes[0]],
+			&tempRawVtx[rawPoly.vertIndexes[1]],
+			&tempRawVtx[rawPoly.vertIndexes[2]],
+			&tempRawVtx[rawPoly.vertIndexes[3]]
+		};
+		
+		const PolygonType cpType = GFX3D_GenerateClippedPoly<ClipperMode_DetermineClipOnly>(0, rawPoly.type, rawPolyVtx, tempClippedPoly);
 		
 		//if any portion of this poly was retained, then the test passes.
 		if (cpType != POLYGON_TYPE_UNDEFINED)
@@ -3342,9 +3353,21 @@ template void gfx3d_glGetMatrix<MATRIXMODE_TEXTURE>(const int index, float(&dst)
 #define CLIPLOG2(X,Y,Z)
 
 template <typename T>
-static T GFX3D_ClipPointInterpolate(const float ratio, const T& x0, const T& x1)
+static T GFX3D_LerpFloat(const float ratio, const T& x0, const T& x1)
 {
-	return (T)(x0 + (float)(x1-x0) * ratio);
+	return (T)((float)x0 + ((float)(x1 - x0) * ratio));
+}
+
+template <typename T>
+static T GFX3D_LerpSigned(const s64 ratio_20_12, const s64 x0, const s64 x1)
+{
+	return (T)( ((x0 * 4096) + ((x1 - x0) * ratio_20_12)) / 4096 );
+}
+
+template <typename T>
+static T GFX3D_LerpUnsigned(const u64 ratio_20_12, const u64 x0, const u64 x1)
+{
+	return (T)( ((x0 << 12) + ((x1 - x0) * ratio_20_12)) >> 12 );
 }
 
 //http://www.cs.berkeley.edu/~ug/slide/pipeline/assignments/as6/discussion.shtml
@@ -3357,24 +3380,33 @@ static FORCEINLINE void GFX3D_ClipPoint(const VERT &insideVtx, const VERT &outsi
 	const float w_outside = (WHICH == -1) ? -outsideVtx.coord[3] : outsideVtx.coord[3];
 	const float t = (coord_inside - w_inside) / ((w_outside-w_inside) - (coord_outside-coord_inside));
 	
-#define INTERP(X) outClippedVtx . X = GFX3D_ClipPointInterpolate (t, insideVtx. X ,outsideVtx. X )
-	
-	INTERP(coord[0]); INTERP(coord[1]); INTERP(coord[2]); INTERP(coord[3]);
+	outClippedVtx.x = GFX3D_LerpFloat<float>(t, insideVtx.x, outsideVtx.x);
+	outClippedVtx.y = GFX3D_LerpFloat<float>(t, insideVtx.y, outsideVtx.y);
+	outClippedVtx.z = GFX3D_LerpFloat<float>(t, insideVtx.z, outsideVtx.z);
+	outClippedVtx.w = GFX3D_LerpFloat<float>(t, insideVtx.w, outsideVtx.w);
 	
 	switch (CLIPPERMODE)
 	{
 		case ClipperMode_Full:
-			INTERP(texcoord[0]); INTERP(texcoord[1]);
-			INTERP(color[0]); INTERP(color[1]); INTERP(color[2]);
+			outClippedVtx.u = GFX3D_LerpFloat<float>(t, insideVtx.u, outsideVtx.u);
+			outClippedVtx.v = GFX3D_LerpFloat<float>(t, insideVtx.v, outsideVtx.v);
+			
+			outClippedVtx.r = GFX3D_LerpFloat<u8>(t, insideVtx.r, outsideVtx.r);
+			outClippedVtx.g = GFX3D_LerpFloat<u8>(t, insideVtx.g, outsideVtx.g);
+			outClippedVtx.b = GFX3D_LerpFloat<u8>(t, insideVtx.b, outsideVtx.b);
+			
 			outClippedVtx.rf = (float)outClippedVtx.r;
 			outClippedVtx.gf = (float)outClippedVtx.g;
 			outClippedVtx.bf = (float)outClippedVtx.b;
-			outClippedVtx.af = (float)outClippedVtx.a;
 			break;
 			
 		case ClipperMode_FullColorInterpolate:
-			INTERP(texcoord[0]); INTERP(texcoord[1]);
-			INTERP(fcolor[0]); INTERP(fcolor[1]); INTERP(fcolor[2]);
+			outClippedVtx.u = GFX3D_LerpFloat<float>(t, insideVtx.u, outsideVtx.u);
+			outClippedVtx.v = GFX3D_LerpFloat<float>(t, insideVtx.v, outsideVtx.v);
+			
+			outClippedVtx.rf = GFX3D_LerpFloat<float>(t, insideVtx.rf, outsideVtx.rf);
+			outClippedVtx.gf = GFX3D_LerpFloat<float>(t, insideVtx.gf, outsideVtx.gf);
+			outClippedVtx.bf = GFX3D_LerpFloat<float>(t, insideVtx.bf, outsideVtx.bf);
 			break;
 			
 		case ClipperMode_DetermineClipOnly:
@@ -3390,44 +3422,136 @@ static FORCEINLINE void GFX3D_ClipPoint(const VERT &insideVtx, const VERT &outsi
 		outClippedVtx.coord[COORD] = outClippedVtx.coord[3];
 }
 
+template <ClipperMode CLIPPERMODE, int COORD, int WHICH>
+static FORCEINLINE void GFX3D_ClipPoint(const NDSVertex &insideVtx, const NDSVertex &outsideVtx, NDSVertex &outClippedVtx)
+{
+	const s64 coord_inside  = insideVtx.position.coord[COORD];
+	const s64 coord_outside = outsideVtx.position.coord[COORD];
+	const s64 w_inside  = (WHICH == -1) ? -insideVtx.position.coord[3]  : insideVtx.position.coord[3];
+	const s64 w_outside = (WHICH == -1) ? -outsideVtx.position.coord[3] : outsideVtx.position.coord[3];
+	
+	// Calculating the ratio as-is would result in dividing a 20.12 numerator by a 20.12
+	// denominator, thus stripping the quotient of its fractional component. We want to
+	// retain the fractional component for this calculation, so we shift the numerator up
+	// 16 bits to 36.28 so that the quotient becomes 24.16. Finally, we shift down 4 bits
+	// to make the final value 20.12.
+	const s64 t_s64 = ( ((coord_inside * 65536) - (w_inside * 65536)) / ((w_outside-w_inside) - (coord_outside-coord_inside)) ) / 16;
+	const u64 t_u64 = (u64)t_s64; // Note: We are assuming that the ratio will never be negative. If it is... then oops!
+	
+	outClippedVtx.position.x = GFX3D_LerpSigned<s32>(t_s64, insideVtx.position.x, outsideVtx.position.x);
+	outClippedVtx.position.y = GFX3D_LerpSigned<s32>(t_s64, insideVtx.position.y, outsideVtx.position.y);
+	outClippedVtx.position.z = GFX3D_LerpSigned<s32>(t_s64, insideVtx.position.z, outsideVtx.position.z);
+	outClippedVtx.position.w = GFX3D_LerpSigned<s32>(t_s64, insideVtx.position.w, outsideVtx.position.w);
+	
+	switch (CLIPPERMODE)
+	{
+		case ClipperMode_Full:
+			outClippedVtx.texCoord.u = GFX3D_LerpSigned<s16>(t_s64, insideVtx.texCoord.u, outsideVtx.texCoord.u);
+			outClippedVtx.texCoord.v = GFX3D_LerpSigned<s16>(t_s64, insideVtx.texCoord.v, outsideVtx.texCoord.v);
+			outClippedVtx.color.r = GFX3D_LerpUnsigned<u8>(t_u64, insideVtx.color.r, outsideVtx.color.r);
+			outClippedVtx.color.g = GFX3D_LerpUnsigned<u8>(t_u64, insideVtx.color.g, outsideVtx.color.g);
+			outClippedVtx.color.b = GFX3D_LerpUnsigned<u8>(t_u64, insideVtx.color.b, outsideVtx.color.b);
+			break;
+			
+		case ClipperMode_FullColorInterpolate:
+			outClippedVtx.texCoord.u = GFX3D_LerpSigned<s16>(t_s64, insideVtx.texCoord.u, outsideVtx.texCoord.u);
+			outClippedVtx.texCoord.v = GFX3D_LerpSigned<s16>(t_s64, insideVtx.texCoord.v, outsideVtx.texCoord.v);
+			outClippedVtx.color.r = GFX3D_LerpUnsigned<u8>(t_u64, insideVtx.color.r, outsideVtx.color.r);
+			outClippedVtx.color.g = GFX3D_LerpUnsigned<u8>(t_u64, insideVtx.color.g, outsideVtx.color.g);
+			outClippedVtx.color.b = GFX3D_LerpUnsigned<u8>(t_u64, insideVtx.color.b, outsideVtx.color.b);
+			break;
+			
+		case ClipperMode_DetermineClipOnly:
+			// Do nothing.
+			break;
+	}
+	
+	//this seems like a prudent measure to make sure that math doesnt make a point pop back out
+	//of the clip volume through interpolation
+	if (WHICH == -1)
+	{
+		outClippedVtx.position.coord[COORD] = -outClippedVtx.position.coord[3];
+	}
+	else
+	{
+		outClippedVtx.position.coord[COORD] = outClippedVtx.position.coord[3];
+	}
+}
+
 #define MAX_SCRATCH_CLIP_VERTS (4*6 + 40)
 static VERT scratchClipVerts[MAX_SCRATCH_CLIP_VERTS];
+static NDSVertex scratchClipVertsFixed[MAX_SCRATCH_CLIP_VERTS];
 static size_t numScratchClipVerts = 0;
 
 template <ClipperMode CLIPPERMODE, int COORD, int WHICH, class NEXT>
 class ClipperPlane
 {
 public:
-	ClipperPlane(NEXT& next) : m_next(next) {}
+	ClipperPlane(NEXT &next) : m_next(next) {}
 
-	void init(VERT* verts)
+	void init(VERT *verts)
 	{
 		m_prevVert =  NULL;
 		m_firstVert = NULL;
+		m_prevVertFixed =  NULL;
+		m_firstVertFixed = NULL;
 		m_next.init(verts);
 	}
+	
+	void init(NDSVertex *vtxList)
+	{
+		m_prevVert =  NULL;
+		m_firstVert = NULL;
+		m_prevVertFixed =  NULL;
+		m_firstVertFixed = NULL;
+		m_next.init(vtxList);
+	}
 
-	void clipVert(const VERT &vert)
+	void clipVert(const VERT &vtx)
 	{
 		if (m_prevVert)
-			this->clipSegmentVsPlane(*m_prevVert, vert);
+			this->clipSegmentVsPlane(*m_prevVert, vtx);
 		else
-			m_firstVert = (VERT *)&vert;
+			m_firstVert = (VERT *)&vtx;
 		
-		m_prevVert = (VERT *)&vert;
+		m_prevVert = (VERT *)&vtx;
+	}
+	
+	void clipVert(const NDSVertex &vtx)
+	{
+		if (m_prevVertFixed != NULL)
+		{
+			this->clipSegmentVsPlane(*m_prevVertFixed, vtx);
+		}
+		else
+		{
+			m_firstVertFixed = (NDSVertex *)&vtx;
+		}
+		
+		m_prevVertFixed = (NDSVertex *)&vtx;
 	}
 
 	// closes the loop and returns the number of clipped output verts
 	int finish()
 	{
-		this->clipVert(*m_firstVert);
+		if (m_firstVert != NULL)
+		{
+			this->clipVert(*m_firstVert);
+		}
+		else if (m_prevVertFixed != NULL)
+		{
+			this->clipVert(*m_firstVertFixed);
+		}
+		
 		return m_next.finish();
 	}
 
 private:
-	VERT* m_prevVert;
-	VERT* m_firstVert;
-	NEXT& m_next;
+	VERT *m_prevVert;
+	VERT *m_firstVert;
+	NDSVertex *m_prevVertFixed;
+	NDSVertex *m_firstVertFixed;
+	NEXT &m_next;
 	
 	FORCEINLINE void clipSegmentVsPlane(const VERT &vert0, const VERT &vert1)
 	{
@@ -3474,14 +3598,66 @@ private:
 			m_next.clipVert(vert1);
 		}
 	}
+	
+	FORCEINLINE void clipSegmentVsPlane(const NDSVertex &vtx0, const NDSVertex &vtx1)
+	{
+		const bool out0 = (WHICH == -1) ? (vtx0.position.coord[COORD] < -vtx0.position.coord[3]) : (vtx0.position.coord[COORD] > vtx0.position.coord[3]);
+		const bool out1 = (WHICH == -1) ? (vtx1.position.coord[COORD] < -vtx1.position.coord[3]) : (vtx1.position.coord[COORD] > vtx1.position.coord[3]);
+		
+		//CONSIDER: should we try and clip things behind the eye? does this code even successfully do it? not sure.
+		//if (COORD==2 && WHICH==1) {
+		//	out0 = vtx0.position.coord[2] < 0;
+		//	out1 = vtx1.position.coord[2] < 0;
+		//}
+		
+		//both outside: insert no points
+		if (out0 && out1)
+		{
+			CLIPLOG(" both outside\n");
+		}
+		
+		//both inside: insert the next point
+		if (!out0 && !out1)
+		{
+			CLIPLOG(" both inside\n");
+			m_next.clipVert(vtx1);
+		}
+		
+		//exiting volume: insert the clipped point
+		if (!out0 && out1)
+		{
+			CLIPLOG(" exiting\n");
+			assert((u32)numScratchClipVerts < MAX_SCRATCH_CLIP_VERTS);
+			GFX3D_ClipPoint<CLIPPERMODE, COORD, WHICH>(vtx0, vtx1, scratchClipVertsFixed[numScratchClipVerts]);
+			m_next.clipVert(scratchClipVertsFixed[numScratchClipVerts++]);
+		}
+		
+		//entering volume: insert clipped point and the next (interior) point
+		if (out0 && !out1)
+		{
+			CLIPLOG(" entering\n");
+			assert((u32)numScratchClipVerts < MAX_SCRATCH_CLIP_VERTS);
+			GFX3D_ClipPoint<CLIPPERMODE, COORD, WHICH>(vtx1, vtx0, scratchClipVertsFixed[numScratchClipVerts]);
+			m_next.clipVert(scratchClipVertsFixed[numScratchClipVerts++]);
+			m_next.clipVert(vtx1);
+		}
+	}
 };
 
 class ClipperOutput
 {
 public:
-	void init(VERT* verts)
+	void init(VERT *verts)
 	{
 		m_nextDestVert = verts;
+		m_nextDestVertFixed = NULL;
+		m_numVerts = 0;
+	}
+	
+	void init(NDSVertex *vtxList)
+	{
+		m_nextDestVert = NULL;
+		m_nextDestVertFixed = vtxList;
 		m_numVerts = 0;
 	}
 	
@@ -3492,13 +3668,21 @@ public:
 		m_numVerts++;
 	}
 	
+	void clipVert(const NDSVertex &vtx)
+	{
+		assert((u32)m_numVerts < MAX_CLIPPED_VERTS);
+		*m_nextDestVertFixed++ = vtx;
+		m_numVerts++;
+	}
+	
 	int finish()
 	{
 		return m_numVerts;
 	}
 	
 private:
-	VERT* m_nextDestVert;
+	VERT *m_nextDestVert;
+	NDSVertex *m_nextDestVertFixed;
 	int m_numVerts;
 };
 
@@ -3586,3 +3770,59 @@ PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType 
 	
 	return outClippedType;
 }
+
+template <ClipperMode CLIPPERMODE>
+PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const NDSVertex *(&rawVtx)[4], CPoly &outCPoly)
+{
+	CLIPLOG("==Begin poly==\n");
+	
+	PolygonType outClippedType;
+	numScratchClipVerts = 0;
+	
+	switch (CLIPPERMODE)
+	{
+		case ClipperMode_Full:
+		{
+			clipper1.init(outCPoly.clipVtxFixed);
+			for (size_t i = 0; i < (size_t)rawPolyType; i++)
+				clipper1.clipVert(*rawVtx[i]);
+			
+			outClippedType = (PolygonType)clipper1.finish();
+			break;
+		}
+			
+		case ClipperMode_FullColorInterpolate:
+		{
+			clipper1i.init(outCPoly.clipVtxFixed);
+			for (size_t i = 0; i < (size_t)rawPolyType; i++)
+				clipper1i.clipVert(*rawVtx[i]);
+			
+			outClippedType = (PolygonType)clipper1i.finish();
+			break;
+		}
+			
+		case ClipperMode_DetermineClipOnly:
+		{
+			clipper1d.init(outCPoly.clipVtxFixed);
+			for (size_t i = 0; i < (size_t)rawPolyType; i++)
+				clipper1d.clipVert(*rawVtx[i]);
+			
+			outClippedType = (PolygonType)clipper1d.finish();
+			break;
+		}
+	}
+	
+	assert((u32)outClippedType < MAX_CLIPPED_VERTS);
+	if (outClippedType < POLYGON_TYPE_TRIANGLE)
+	{
+		//a totally clipped poly. discard it.
+		//or, a degenerate poly. we're not handling these right now
+		return POLYGON_TYPE_UNDEFINED;
+	}
+	
+	outCPoly.index = rawPolyIndex;
+	outCPoly.type = outClippedType;
+	
+	return outClippedType;
+}
+

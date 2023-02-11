@@ -744,6 +744,7 @@ struct CPoly
 	u16 index; // The index number of this polygon in the full polygon list.
 	PolygonType type; //otherwise known as "count" of verts
 	VERT clipVerts[MAX_CLIPPED_VERTS];
+	NDSVertex clipVtxFixed[MAX_CLIPPED_VERTS];
 };
 typedef struct CPoly CPoly;
 
@@ -909,5 +910,6 @@ const GFX3D_IOREG& GFX3D_GetIORegisterMap();
 void ParseReg_DISP3DCNT();
 
 template<ClipperMode CLIPPERMODE> PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const VERT *(&rawVtx)[4], CPoly &outCPoly);
+template<ClipperMode CLIPPERMODE> PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const NDSVertex *(&rawVtx)[4], CPoly &outCPoly);
 
 #endif //_GFX3D_H_
