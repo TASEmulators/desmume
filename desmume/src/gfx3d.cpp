@@ -263,8 +263,8 @@ GFX3D gfx3d;
 static GFX3D_IOREG *_GFX3D_IORegisterMap = NULL;
 Viewer3D_State viewer3D;
 
-static LegacyGFX3DStateSFormat legacyGFX3DStateSFormatPending;
-static LegacyGFX3DStateSFormat legacyGFX3DStateSFormatApplied;
+static LegacyGFX3DStateSFormat _legacyGFX3DStateSFormatPending;
+static LegacyGFX3DStateSFormat _legacyGFX3DStateSFormatApplied;
 
 //tables that are provided to anyone
 CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
@@ -277,59 +277,60 @@ CACHE_ALIGN NDSMatrixStack1  mtxStackTexture;
 
 u32 mtxStackIndex[4];
 
-static CACHE_ALIGN s32 mtxCurrent[4][16];
-static CACHE_ALIGN s32 mtxTemporal[16];
-static MatrixMode mode = MATRIXMODE_PROJECTION;
+static CACHE_ALIGN s32 _mtxCurrent[4][16];
+static CACHE_ALIGN s32 _mtxTemporal[16];
+static MatrixMode _mtxMode = MATRIXMODE_PROJECTION;
 
 // Indexes for matrix loading/multiplication
-static u8 ML4x4ind = 0;
-static u8 ML4x3ind = 0;
-static u8 MM4x4ind = 0;
-static u8 MM4x3ind = 0;
-static u8 MM3x3ind = 0;
+static u8 _ML4x4ind = 0;
+static u8 _ML4x3ind = 0;
+static u8 _MM4x4ind = 0;
+static u8 _MM4x3ind = 0;
+static u8 _MM3x3ind = 0;
 
 // Data for vertex submission
-static CACHE_ALIGN s16 s16coord[4] = {0, 0, 0, 0};
-static u8 coordind = 0;
-static PolygonPrimitiveType vtxFormat = GFX3D_TRIANGLES;
-static BOOL inBegin = FALSE;
+static CACHE_ALIGN VertexCoord16x4 _vtxCoord16 = {0, 0, 0, 0};
+static u8 _vtxCoord16CurrentIndex = 0;
+static PolygonPrimitiveType _vtxFormat = GFX3D_TRIANGLES;
+static bool _inBegin = false;
 
 // Data for basic transforms
-static CACHE_ALIGN s32 trans[4] = {0, 0, 0, 0};
-static u8 transind = 0;
-static CACHE_ALIGN s32 scale[4] = {0, 0, 0, 0};
-static u8 scaleind = 0;
+static CACHE_ALIGN Vector32x4 _regTranslate = {0, 0, 0, 0};
+static u8 _regTranslateCurrentIndex = 0;
+static CACHE_ALIGN Vector32x4 _regScale = {0, 0, 0, 0};
+static u8 _regScaleCurrentIndex = 0;
 
 //various other registers
-static s32 _t=0, _s=0;
-static s32 last_t, last_s;
-static u32 clCmd = 0;
-static u32 clInd = 0;
+static VertexCoord32x2 _regTexCoord = {0, 0};
+static VertexCoord32x2 _texCoordTransformed = {0, 0};
 
-static u32 clInd2 = 0;
 u32 isSwapBuffers = FALSE;
 
-static u32 BTind = 0;
-static u32 PTind = 0;
-static CACHE_ALIGN u16 BTcoords[6] = {0, 0, 0, 0, 0, 0};
-static CACHE_ALIGN s32 PTcoords[4] = { 0, 0, 0, (1<<12) };
+static u32 _BTind = 0;
+static u32 _PTind = 0;
+static CACHE_ALIGN u16 _BTcoords[6] = {0, 0, 0, 0, 0, 0};
+static CACHE_ALIGN VertexCoord32x4 _PTcoords = {0, 0, 0, (s32)(1<<12)};
 
 //raw ds format poly attributes
-static POLYGON_ATTR polyAttrInProcess;
-static POLYGON_ATTR currentPolyAttr;
-static TEXIMAGE_PARAM currentPolyTexParam;
-static u32 currentPolyTexPalette = 0;
+static POLYGON_ATTR _polyAttrInProcess;
+static POLYGON_ATTR _currentPolyAttr;
+static TEXIMAGE_PARAM _currentPolyTexParam;
+static u32 _currentPolyTexPalette = 0;
 
 //the current vertex color, 5bit values
-static u8 colorRGB[4] = { 31,31,31,31 };
+static FragmentColor _vtxColor555X = {31, 31, 31, 0};
 
 //light state:
-static u32 lightColor[4] = {0,0,0,0};
-static s32 lightDirection[4] = {0,0,0,0};
+static u32 _regLightColor[4] = {0, 0, 0, 0};
+static u32 _regLightDirection[4] = {0, 0, 0, 0};
 //material state:
-static u16 dsDiffuse, dsAmbient, dsSpecular, dsEmission;
+static u16 _regDiffuse  = 0;
+static u16 _regAmbient  = 0;
+static u16 _regSpecular = 0;
+static u16 _regEmission = 0;
+
 //used for indexing the shininess table during parameters to shininess command
-static u8 shininessInd = 0;
+static u8 _shininessTableCurrentIndex = 0;
 
 // "Freelook" related things
 int freelookMode = 0;
@@ -338,31 +339,31 @@ s32 freelookMatrix[16];
 //-----------cached things:
 //these dont need to go into the savestate. they can be regenerated from HW registers
 //from polygonattr:
-static u32 lightMask = 0;
+static u32 _lightMask = 0;
 //other things:
-static TextureTransformationMode texCoordTransformMode = TextureTransformationMode_None;
-static CACHE_ALIGN s32 cacheLightDirection[4][4];
-static CACHE_ALIGN s32 cacheHalfVector[4][4];
+static TextureTransformationMode _texCoordTransformMode = TextureTransformationMode_None;
+static CACHE_ALIGN Vector32x4 _cacheLightDirection[4];
+static CACHE_ALIGN Vector32x4 _cacheHalfVector[4];
 //------------------
 
 #define RENDER_FRONT_SURFACE 0x80
 #define RENDER_BACK_SURFACE 0X40
 
-static int polygonListCompleted = 0;
-static u8 triStripToggle;
+static int _polygonListCompleted = 0;
+static u8 _triStripToggle;
 
 //list-building state
-struct tmpVertInfo
+struct PolygonGenerationInfo
 {
-	//the number of verts registered in this list
-	s32 count;
-	//indices to the main vert list
-	s32 map[4];
-	//indicates that the first poly in a list has been completed
-	BOOL first;
-} tempVertInfo;
+	size_t vtxCount;  // the number of vertices registered in this list
+	u16 vtxIndex[4]; // indices to the main vert list
+	bool isFirstPolyCompleted; // indicates that the first poly in a list has been completed
+};
+typedef struct PolygonGenerationInfo PolygonGenerationInfo;
 
-static BOOL drawPending = FALSE;
+static PolygonGenerationInfo _polyGenInfo;
+
+static bool _isDrawPending = false;
 //------------------------------------------------------------
 
 static void makeTables()
@@ -380,10 +381,8 @@ static void makeTables()
 
 GFX3D_Viewport GFX3D_ViewportParse(const u32 inValue)
 {
+	const IOREG_VIEWPORT reg = { inValue };
 	GFX3D_Viewport outViewport;
-	IOREG_VIEWPORT reg;
-	
-	reg.value = inValue;
 	
 	//I'm 100% sure this is basically 99% correct
 	//the modular math is right. the details of how the +1 is handled may be wrong (this might should be dealt with in the viewport transformation instead)
@@ -468,27 +467,11 @@ void gfx3d_init()
 {
 	_GFX3D_IORegisterMap = (GFX3D_IOREG *)(&MMU.ARM9_REG[0x0320]);
 	
-	polyAttrInProcess.value = 0;
-	currentPolyAttr.value = 0;
-	currentPolyTexParam.value = 0;
+	_polyAttrInProcess.value = 0;
+	_currentPolyAttr.value = 0;
+	_currentPolyTexParam.value = 0;
 	
 	gxf_hardware.reset();
-	//gxf_hardware.test();
-	int zzz=9;
-
-	//DWORD start = timeGetTime();
-	//for(int i=0;i<1000000000;i++)
-	//	MatrixMultVec4x4(mtxCurrent[0],mtxCurrent[1]);
-	//DWORD end = timeGetTime();
-	//DWORD diff = end-start;
-
-	//start = timeGetTime();
-	//for(int i=0;i<1000000000;i++)
-	//	MatrixMultVec4x4_b(mtxCurrent[0],mtxCurrent[1]);
-	//end = timeGetTime();
-	//DWORD diff2 = end-start;
-
-	//printf("SPEED TEST %d %d\n",diff,diff2);
 	
 	makeTables();
 	Render3D_Init();
@@ -516,7 +499,7 @@ void gfx3d_reset()
 	
 	gxf_hardware.reset();
 
-	drawPending = FALSE;
+	_isDrawPending = false;
 	
 	memset(&gfx3d, 0, sizeof(GFX3D));
 	
@@ -535,29 +518,29 @@ void gfx3d_reset()
 	gfx3d.pendingListIndex = 0;
 	gfx3d.appliedListIndex = 1;
 
-	polyAttrInProcess.value = 0;
-	currentPolyAttr.value = 0;
-	currentPolyTexParam.value = 0;
-	currentPolyTexPalette = 0;
-	mode = MATRIXMODE_PROJECTION;
-	s16coord[0] = s16coord[1] = s16coord[2] = s16coord[3] = 0;
-	coordind = 0;
-	vtxFormat = GFX3D_TRIANGLES;
-	memset(trans, 0, sizeof(trans));
-	transind = 0;
-	memset(scale, 0, sizeof(scale));
-	scaleind = 0;
+	_polyAttrInProcess.value = 0;
+	_currentPolyAttr.value = 0;
+	_currentPolyTexParam.value = 0;
+	_currentPolyTexPalette = 0;
+	_mtxMode = MATRIXMODE_PROJECTION;
+	_vtxCoord16.value = 0;
+	_vtxCoord16CurrentIndex = 0;
+	_vtxFormat = GFX3D_TRIANGLES;
+	memset(&_regTranslate, 0, sizeof(_regTranslate));
+	_regTranslateCurrentIndex = 0;
+	memset(&_regScale, 0, sizeof(_regScale));
+	_regScaleCurrentIndex = 0;
 	memset(gxPIPE.cmd, 0, sizeof(gxPIPE.cmd));
 	memset(gxPIPE.param, 0, sizeof(gxPIPE.param));
-	memset(colorRGB, 0, sizeof(colorRGB));
-	memset(&tempVertInfo, 0, sizeof(tempVertInfo));
+	_vtxColor555X.color = 0;
+	memset(&_polyGenInfo, 0, sizeof(_polyGenInfo));
 	memset(gfx3d.framebufferNativeSave, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u32));
 
-	MatrixInit(mtxCurrent[MATRIXMODE_PROJECTION]);
-	MatrixInit(mtxCurrent[MATRIXMODE_POSITION]);
-	MatrixInit(mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
-	MatrixInit(mtxCurrent[MATRIXMODE_TEXTURE]);
-	MatrixInit(mtxTemporal);
+	MatrixInit(_mtxCurrent[MATRIXMODE_PROJECTION]);
+	MatrixInit(_mtxCurrent[MATRIXMODE_POSITION]);
+	MatrixInit(_mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+	MatrixInit(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	MatrixInit(_mtxTemporal);
 	
 	mtxStackIndex[MATRIXMODE_PROJECTION] = 0;
 	mtxStackIndex[MATRIXMODE_POSITION] = 0;
@@ -569,22 +552,19 @@ void gfx3d_reset()
 	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++) { MatrixInit(mtxStackPositionVector[i]); }
 	MatrixInit(mtxStackTexture[0]);
 
-	clCmd = 0;
-	clInd = 0;
+	_ML4x4ind = 0;
+	_ML4x3ind = 0;
+	_MM4x4ind = 0;
+	_MM4x3ind = 0;
+	_MM3x3ind = 0;
 
-	ML4x4ind = 0;
-	ML4x3ind = 0;
-	MM4x4ind = 0;
-	MM4x3ind = 0;
-	MM3x3ind = 0;
+	_BTind = 0;
+	_PTind = 0;
 
-	BTind = 0;
-	PTind = 0;
-
-	_t=0;
-	_s=0;
-	last_t = 0;
-	last_s = 0;
+	_regTexCoord.s = 0;
+	_regTexCoord.t = 0;
+	_texCoordTransformed.s = 0;
+	_texCoordTransformed.t = 0;
 	
 	gfx3d.viewport.x = 0;
 	gfx3d.viewport.y = 0;
@@ -598,7 +578,6 @@ void gfx3d_reset()
 	_GFX3D_IORegisterMap->VIEWPORT.Y2 = 191;
 	gfx3d.viewportLegacySave = _GFX3D_IORegisterMap->VIEWPORT;
 	
-	clInd2 = 0;
 	isSwapBuffers = FALSE;
 
 	GFX_PIPEclear();
@@ -650,30 +629,22 @@ static void GEM_TransformVertex(const s32 (&__restrict mtx)[16], s32 (&__restric
 //---------------
 
 
-#define SUBMITVERTEX(ii, nn) pendingGList.rawPolyList[pendingGList.rawPolyCount].vertIndexes[ii] = tempVertInfo.map[nn];
+#define SUBMITVERTEX(ii, nn) pendingGList.rawPolyList[pendingGList.rawPolyCount].vertIndexes[ii] = _polyGenInfo.vtxIndex[nn];
 //Submit a vertex to the GE
 static void SetVertex()
 {
 	GFX3D_GeometryList &pendingGList = gfx3d.gList[gfx3d.pendingListIndex];
-	
-	s32 coord[3] = {
-		s16coord[0],
-		s16coord[1],
-		s16coord[2]
-	};
 
-	DS_ALIGN(16) s32 coordTransformed[4] = { coord[0], coord[1], coord[2], (1<<12) };
-
-	if (texCoordTransformMode == TextureTransformationMode_VertexSource)
+	if (_texCoordTransformMode == TextureTransformationMode_VertexSource)
 	{
 		//Tested by: Eledees The Adventures of Kai and Zero (E) [title screen and frontend menus]
-		const s32 *mtxTex = mtxCurrent[MATRIXMODE_TEXTURE];
-		last_s = (s32)( (s64)(GEM_Mul32x16To64(mtxTex[0], s16coord[0]) + GEM_Mul32x16To64(mtxTex[4], s16coord[1]) + GEM_Mul32x16To64(mtxTex[8], s16coord[2]) + ((s64)_s << 24)) >> 24 );
-		last_t = (s32)( (s64)(GEM_Mul32x16To64(mtxTex[1], s16coord[0]) + GEM_Mul32x16To64(mtxTex[5], s16coord[1]) + GEM_Mul32x16To64(mtxTex[9], s16coord[2]) + ((s64)_t << 24)) >> 24 );
+		const s32 *mtxTex = _mtxCurrent[MATRIXMODE_TEXTURE];
+		_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x16To64(mtxTex[0], _vtxCoord16.x) + GEM_Mul32x16To64(mtxTex[4], _vtxCoord16.y) + GEM_Mul32x16To64(mtxTex[8], _vtxCoord16.z) + ((s64)_regTexCoord.s << 24)) >> 24 );
+		_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x16To64(mtxTex[1], _vtxCoord16.x) + GEM_Mul32x16To64(mtxTex[5], _vtxCoord16.y) + GEM_Mul32x16To64(mtxTex[9], _vtxCoord16.z) + ((s64)_regTexCoord.t << 24)) >> 24 );
 	}
 
 	//refuse to do anything if we have too many verts or polys
-	polygonListCompleted = 0;
+	_polygonListCompleted = 0;
 	if (pendingGList.rawVertCount >= VERTLIST_SIZE)
 	{
 		return;
@@ -683,40 +654,47 @@ static void SetVertex()
 	{
 		return;
 	}
+	
+	CACHE_ALIGN VertexCoord32x4 coordTransformed = {
+		(s32)_vtxCoord16.x,
+		(s32)_vtxCoord16.y,
+		(s32)_vtxCoord16.z,
+		(s32)(1<<12)
+	};
 
-	if(freelookMode == 2)
+	if (freelookMode == 2)
 	{
 		//adjust projection
 		s32 tmp[16];
-		MatrixCopy(tmp,mtxCurrent[MATRIXMODE_PROJECTION]);
+		MatrixCopy(tmp, _mtxCurrent[MATRIXMODE_PROJECTION]);
 		MatrixMultiply(tmp, freelookMatrix);
-		GEM_TransformVertex(mtxCurrent[MATRIXMODE_POSITION], coordTransformed); //modelview
-		GEM_TransformVertex(tmp, coordTransformed); //projection
+		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_POSITION], coordTransformed.coord); //modelview
+		GEM_TransformVertex(tmp, coordTransformed.coord); //projection
 	}
-	else if(freelookMode == 3)
+	else if (freelookMode == 3)
 	{
 		//use provided projection
-		GEM_TransformVertex(mtxCurrent[MATRIXMODE_POSITION], coordTransformed); //modelview
-		GEM_TransformVertex(freelookMatrix, coordTransformed); //projection
+		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_POSITION], coordTransformed.coord); //modelview
+		GEM_TransformVertex(freelookMatrix, coordTransformed.coord); //projection
 	}
 	else
 	{
 		//no freelook
-		GEM_TransformVertex(mtxCurrent[MATRIXMODE_POSITION], coordTransformed); //modelview
-		GEM_TransformVertex(mtxCurrent[MATRIXMODE_PROJECTION], coordTransformed); //projection
+		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_POSITION], coordTransformed.coord); //modelview
+		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_PROJECTION], coordTransformed.coord); //projection
 	}
 
 	//TODO - culling should be done here.
 	//TODO - viewport transform?
 
-	s32 continuation = 0;
-	if (vtxFormat==GFX3D_TRIANGLE_STRIP && !tempVertInfo.first)
+	size_t continuation = 0;
+	if ((_vtxFormat == GFX3D_TRIANGLE_STRIP) && !_polyGenInfo.isFirstPolyCompleted)
 		continuation = 2;
-	else if (vtxFormat==GFX3D_QUAD_STRIP && !tempVertInfo.first)
+	else if ((_vtxFormat == GFX3D_QUAD_STRIP) && !_polyGenInfo.isFirstPolyCompleted)
 		continuation = 2;
 
 	//record the vertex
-	const size_t vertIndex = pendingGList.rawVertCount + tempVertInfo.count - continuation;
+	const size_t vertIndex = pendingGList.rawVertCount + _polyGenInfo.vtxCount - continuation;
 	if (vertIndex >= VERTLIST_SIZE)
 	{
 		printf("wtf\n");
@@ -730,118 +708,153 @@ static void SetVertex()
 
 	//printf("y-> %f\n",coord[1]);
 
-	//if(mtxCurrent[1][14]>15) {
+	//if(_mtxCurrent[1][14]>15) {
 	//	printf("ACK!\n");
 	//	printf("----> modelview 1 state for that ack:\n");
-	//	//MatrixPrint(mtxCurrent[1]);
+	//	//MatrixPrint(_mtxCurrent[1]);
 	//}
 
-	vert.texcoord[0] = last_s/16.0f;
-	vert.texcoord[1] = last_t/16.0f;
-	vert.coord[0] = coordTransformed[0]/4096.0f;
-	vert.coord[1] = coordTransformed[1]/4096.0f;
-	vert.coord[2] = coordTransformed[2]/4096.0f;
-	vert.coord[3] = coordTransformed[3]/4096.0f;
-	vert.color[0] = GFX3D_5TO6_LOOKUP(colorRGB[0]);
-	vert.color[1] = GFX3D_5TO6_LOOKUP(colorRGB[1]);
-	vert.color[2] = GFX3D_5TO6_LOOKUP(colorRGB[2]);
+	vert.texcoord[0] = (float)_texCoordTransformed.s / 16.0f;
+	vert.texcoord[1] = (float)_texCoordTransformed.t / 16.0f;
+	vert.coord[0] = (float)coordTransformed.x / 4096.0f;
+	vert.coord[1] = (float)coordTransformed.y / 4096.0f;
+	vert.coord[2] = (float)coordTransformed.z / 4096.0f;
+	vert.coord[3] = (float)coordTransformed.w / 4096.0f;
+	vert.color[0] = GFX3D_5TO6_LOOKUP(_vtxColor555X.r);
+	vert.color[1] = GFX3D_5TO6_LOOKUP(_vtxColor555X.g);
+	vert.color[2] = GFX3D_5TO6_LOOKUP(_vtxColor555X.b);
 	vert.rf = (float)vert.r;
 	vert.gf = (float)vert.g;
 	vert.bf = (float)vert.b;
-	vert.af = (float)vert.a;
-	tempVertInfo.map[tempVertInfo.count] = (s32)pendingGList.rawVertCount + tempVertInfo.count - continuation;
-	tempVertInfo.count++;
+	_polyGenInfo.vtxIndex[_polyGenInfo.vtxCount] = (u16)(pendingGList.rawVertCount + _polyGenInfo.vtxCount - continuation);
+	_polyGenInfo.vtxCount++;
 
 	//possibly complete a polygon
 	{
-		polygonListCompleted = 2;
-		switch(vtxFormat)
+		_polygonListCompleted = 2;
+		switch(_vtxFormat)
 		{
 			case GFX3D_TRIANGLES:
-				if(tempVertInfo.count!=3)
+			{
+				if (_polyGenInfo.vtxCount != 3)
+				{
 					break;
-				polygonListCompleted = 1;
+				}
+				
+				_polygonListCompleted = 1;
 				SUBMITVERTEX(0,0);
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
 				gfx3d.gList[gfx3d.pendingListIndex].rawVertCount += 3;
 				pendingGList.rawPolyList[pendingGList.rawPolyCount].type = POLYGON_TYPE_TRIANGLE;
-				tempVertInfo.count = 0;
+				_polyGenInfo.vtxCount = 0;
 				break;
+			}
 				
 			case GFX3D_QUADS:
-				if(tempVertInfo.count!=4)
+			{
+				if (_polyGenInfo.vtxCount != 4)
+				{
 					break;
-				polygonListCompleted = 1;
+				}
+				
+				_polygonListCompleted = 1;
 				SUBMITVERTEX(0,0);
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
 				SUBMITVERTEX(3,3);
 				gfx3d.gList[gfx3d.pendingListIndex].rawVertCount += 4;
 				pendingGList.rawPolyList[pendingGList.rawPolyCount].type = POLYGON_TYPE_QUAD;
-				tempVertInfo.count = 0;
+				_polyGenInfo.vtxCount = 0;
 				break;
+			}
 				
 			case GFX3D_TRIANGLE_STRIP:
-				if(tempVertInfo.count!=3)
+			{
+				if (_polyGenInfo.vtxCount != 3)
+				{
 					break;
-				polygonListCompleted = 1;
+				}
+				
+				_polygonListCompleted = 1;
 				SUBMITVERTEX(0,0);
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
 				pendingGList.rawPolyList[pendingGList.rawPolyCount].type = POLYGON_TYPE_TRIANGLE;
-
-				if(triStripToggle)
-					tempVertInfo.map[1] = (s32)pendingGList.rawVertCount + 2 - continuation;
-				else
-					tempVertInfo.map[0] = (s32)pendingGList.rawVertCount + 2 - continuation;
 				
-				if(tempVertInfo.first)
-					pendingGList.rawVertCount += 3;
+				if (_triStripToggle)
+				{
+					_polyGenInfo.vtxIndex[1] = (u16)(pendingGList.rawVertCount + 2 - continuation);
+				}
 				else
+				{
+					_polyGenInfo.vtxIndex[0] = (u16)(pendingGList.rawVertCount + 2 - continuation);
+				}
+				
+				if (_polyGenInfo.isFirstPolyCompleted)
+				{
+					pendingGList.rawVertCount += 3;
+				}
+				else
+				{
 					pendingGList.rawVertCount += 1;
-
-				triStripToggle ^= 1;
-				tempVertInfo.first = false;
-				tempVertInfo.count = 2;
+				}
+				
+				_triStripToggle ^= 1;
+				_polyGenInfo.isFirstPolyCompleted = false;
+				_polyGenInfo.vtxCount = 2;
 				break;
+			}
 				
 			case GFX3D_QUAD_STRIP:
-				if(tempVertInfo.count!=4)
+			{
+				if (_polyGenInfo.vtxCount != 4)
+				{
 					break;
-				polygonListCompleted = 1;
+				}
+				
+				_polygonListCompleted = 1;
 				SUBMITVERTEX(0,0);
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,3);
 				SUBMITVERTEX(3,2);
 				pendingGList.rawPolyList[pendingGList.rawPolyCount].type = POLYGON_TYPE_QUAD;
-				tempVertInfo.map[0] = (s32)pendingGList.rawVertCount + 2 - continuation;
-				tempVertInfo.map[1] = (s32)pendingGList.rawVertCount + 3 - continuation;
-				if(tempVertInfo.first)
-					pendingGList.rawVertCount += 4;
-				else pendingGList.rawVertCount += 2;
-				tempVertInfo.first = false;
-				tempVertInfo.count = 2;
-				break;
+				_polyGenInfo.vtxIndex[0] = (u16)(pendingGList.rawVertCount + 2 - continuation);
+				_polyGenInfo.vtxIndex[1] = (u16)(pendingGList.rawVertCount + 3 - continuation);
 				
-			default: 
+				if (_polyGenInfo.isFirstPolyCompleted)
+				{
+					pendingGList.rawVertCount += 4;
+				}
+				else
+				{
+					pendingGList.rawVertCount += 2;
+				}
+				
+				_polyGenInfo.isFirstPolyCompleted = false;
+				_polyGenInfo.vtxCount = 2;
+				break;
+			}
+				
+			default:
 				return;
 		}
 
-		if (polygonListCompleted == 1)
+		if (_polygonListCompleted == 1)
 		{
 			POLY &poly = pendingGList.rawPolyList[pendingGList.rawPolyCount];
 			
-			poly.vtxFormat = vtxFormat;
+			poly.vtxFormat = _vtxFormat;
 
 			// Line segment detect
 			// Tested" Castlevania POR - warp stone, trajectory of ricochet, "Eye of Decay"
-			if (currentPolyTexParam.PackedFormat == TEXMODE_NONE)
+			if (_currentPolyTexParam.PackedFormat == TEXMODE_NONE)
 			{
 				bool duplicated = false;
 				const VERT &vert0 = pendingGList.rawVertList[poly.vertIndexes[0]];
 				const VERT &vert1 = pendingGList.rawVertList[poly.vertIndexes[1]];
 				const VERT &vert2 = pendingGList.rawVertList[poly.vertIndexes[2]];
+				
 				if ( (vert0.x == vert1.x) && (vert0.y == vert1.y) ) duplicated = true;
 				else
 					if ( (vert1.x == vert2.x) && (vert1.y == vert2.y) ) duplicated = true;
@@ -851,14 +864,14 @@ static void SetVertex()
 							if ( (vert0.x == vert1.x) && (vert1.x == vert2.x) ) duplicated = true;
 				if (duplicated)
 				{
-					//printf("Line Segmet detected (poly type %i, mode %i, texparam %08X)\n", poly.type, poly.vtxFormat, textureFormat);
-					poly.vtxFormat = (PolygonPrimitiveType)(vtxFormat + 4);
+					//printf("Line Segmet detected (poly type %i, mode %i, texparam %08X)\n", poly.type, poly._vtxFormat, textureFormat);
+					poly.vtxFormat = (PolygonPrimitiveType)(_vtxFormat + 4);
 				}
 			}
 
-			poly.attribute = polyAttrInProcess;
-			poly.texParam = currentPolyTexParam;
-			poly.texPalette = currentPolyTexPalette;
+			poly.attribute = _polyAttrInProcess;
+			poly.texParam = _currentPolyTexParam;
+			poly.texPalette = _currentPolyTexPalette;
 			poly.viewport = gfx3d.viewport;
 			gfx3d.rawPolyViewportLegacySave[pendingGList.rawPolyCount] = _GFX3D_IORegisterMap->VIEWPORT;
 			pendingGList.rawPolyCount++;
@@ -872,7 +885,7 @@ static void UpdateProjection()
 	if(freelookMode == 0) return;
 	float floatproj[16];
 	for(int i=0;i<16;i++)
-		floatproj[i] = mtxCurrent[MATRIXMODE_PROJECTION][i]/((float)(1<<12));
+		floatproj[i] = _mtxCurrent[MATRIXMODE_PROJECTION][i]/((float)(1<<12));
 	CallRegistered3dEvent(0,floatproj);
 #endif
 }
@@ -880,40 +893,35 @@ static void UpdateProjection()
 static void gfx3d_glPolygonAttrib_cache()
 {
 	// Light enable/disable
-	lightMask = polyAttrInProcess.LightMask;
+	_lightMask = _polyAttrInProcess.LightMask;
 }
 
 static void gfx3d_glTexImage_cache()
 {
-	texCoordTransformMode = (TextureTransformationMode)currentPolyTexParam.TexCoordTransformMode;
+	_texCoordTransformMode = (TextureTransformationMode)_currentPolyTexParam.TexCoordTransformMode;
 }
 
 static void gfx3d_glLightDirection_cache(const size_t index)
 {
-	s32 v = lightDirection[index];
-
-	s16 x = ((v<<22)>>22)<<3;
-	s16 y = ((v<<12)>>22)<<3;
-	s16 z = ((v<<2)>>22)<<3;
-
-	cacheLightDirection[index][0] = x;
-	cacheLightDirection[index][1] = y;
-	cacheLightDirection[index][2] = z;
-	cacheLightDirection[index][3] = 0;
+	const u32 v = _regLightDirection[index];
+	_cacheLightDirection[index].x = ((s32)((v<<22) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
+	_cacheLightDirection[index].y = ((s32)((v<<12) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
+	_cacheLightDirection[index].z = ((s32)((v<< 2) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
+	_cacheLightDirection[index].w = 0;
 
 	//Multiply the vector by the directional matrix
-	MatrixMultVec3x3(mtxCurrent[MATRIXMODE_POSITION_VECTOR], cacheLightDirection[index]);
+	MatrixMultVec3x3(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], _cacheLightDirection[index].vec);
 
 	//Calculate the half angle vector
-	s32 lineOfSight[4] = {0, 0, (s32)0xFFFFF000, 0};
-	for (size_t i = 0; i < 4; i++)
-	{
-		cacheHalfVector[index][i] = ((cacheLightDirection[index][i] + lineOfSight[i]));
-	}
-
+	CACHE_ALIGN const Vector32x4 lineOfSight = {0, 0, (s32)0xFFFFF000, 0};
+	_cacheHalfVector[index].x = _cacheLightDirection[index].x + lineOfSight.x;
+	_cacheHalfVector[index].y = _cacheLightDirection[index].y + lineOfSight.y;
+	_cacheHalfVector[index].z = _cacheLightDirection[index].z + lineOfSight.z;
+	_cacheHalfVector[index].w = _cacheLightDirection[index].w + lineOfSight.w;
+	
 	//normalize the half angle vector
 	//can't believe the hardware really does this... but yet it seems...
-	s32 halfLength = ((s32)(sqrt((double)vec3dot_fixed32(cacheHalfVector[index],cacheHalfVector[index]))))<<6;
+	s32 halfLength = ((s32)(sqrt((double)vec3dot_fixed32(_cacheHalfVector[index].vec, _cacheHalfVector[index].vec))))<<6;
 
 	if (halfLength != 0)
 	{
@@ -921,20 +929,19 @@ static void gfx3d_glLightDirection_cache(const size_t index)
 		halfLength >>= 6;
 		for (size_t i = 0; i < 4; i++)
 		{
-			s32 temp = cacheHalfVector[index][i];
+			s32 temp = _cacheHalfVector[index].vec[i];
 			temp <<= 6;
 			temp /= halfLength;
-			cacheHalfVector[index][i] = temp;
+			_cacheHalfVector[index].vec[i] = temp;
 		}
 	}
 }
 
 
 //===============================================================================
-static void gfx3d_glMatrixMode(u32 v)
+static void gfx3d_glMatrixMode(const u32 param)
 {
-	mode = (MatrixMode)(v & 0x03);
-
+	_mtxMode = (MatrixMode)(param & 0x00000003);
 	GFX_DELAY(1);
 }
 
@@ -945,16 +952,19 @@ static void gfx3d_glPushMatrix()
 	//3. SE is set depending on resulting internal counter
 
 	//printf("%d %d %d %d -> ",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
-	//printf("PUSH mode: %d -> ",mode,mtxStack[mode].position);
+	//printf("PUSH mode: %d -> ",_mtxMode,mtxStack[_mtxMode].position);
 
-	if (mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
+	if (_mtxMode == MATRIXMODE_PROJECTION || _mtxMode == MATRIXMODE_TEXTURE)
 	{
-		if (mode == MATRIXMODE_PROJECTION)
+		if (_mtxMode == MATRIXMODE_PROJECTION)
 		{
-			MatrixCopy(mtxStackProjection[0], mtxCurrent[mode]);
+			MatrixCopy(mtxStackProjection[0], _mtxCurrent[_mtxMode]);
 			
 			u32 &index = mtxStackIndex[MATRIXMODE_PROJECTION];
-			if (index == 1) MMU_new.gxstat.se = 1;
+			if (index == 1)
+			{
+				MMU_new.gxstat.se = 1;
+			}
 			index += 1;
 			index &= 1;
 
@@ -962,10 +972,13 @@ static void gfx3d_glPushMatrix()
 		}
 		else
 		{
-			MatrixCopy(mtxStackTexture[0], mtxCurrent[mode]);
+			MatrixCopy(mtxStackTexture[0], _mtxCurrent[_mtxMode]);
 			
 			u32 &index = mtxStackIndex[MATRIXMODE_TEXTURE];
-			if (index == 1) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
+			if (index == 1)
+			{
+				MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
+			}
 			index += 1;
 			index &= 1;
 		}
@@ -974,12 +987,15 @@ static void gfx3d_glPushMatrix()
 	{
 		u32 &index = mtxStackIndex[MATRIXMODE_POSITION];
 		
-		MatrixCopy(mtxStackPosition[index & 31], mtxCurrent[MATRIXMODE_POSITION]);
-		MatrixCopy(mtxStackPositionVector[index & 31], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+		MatrixCopy(mtxStackPosition[index & 0x0000001F], _mtxCurrent[MATRIXMODE_POSITION]);
+		MatrixCopy(mtxStackPositionVector[index & 0x0000001F], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 		
 		index += 1;
-		index &= 63;
-		if (index >= 32) MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
+		index &= 0x0000003F;
+		if (index >= 32)
+		{
+			MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
+		}
 	}
 
 	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
@@ -987,25 +1003,28 @@ static void gfx3d_glPushMatrix()
 	GFX_DELAY(17);
 }
 
-static void gfx3d_glPopMatrix(u32 v)
+static void gfx3d_glPopMatrix(const u32 param)
 {
 	//1. apply offset specified by pop to internal counter
 	//2. SE is set depending on resulting internal counter
 	//3. mask that bit off to actually index the matrix for reading
 
 	//printf("%d %d %d %d -> ",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
-	//printf("POP   (%d): mode: %d -> ",v,mode,mtxStack[mode].position);
+	//printf("POP   (%d): mode: %d -> ",v,_mtxMode,mtxStack[_mtxMode].position);
 
-	if (mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
+	if (_mtxMode == MATRIXMODE_PROJECTION || _mtxMode == MATRIXMODE_TEXTURE)
 	{
 		//parameter is ignored and treated as sensible (always 1)
 		
-		if (mode == MATRIXMODE_PROJECTION)
+		if (_mtxMode == MATRIXMODE_PROJECTION)
 		{
 			u32 &index = mtxStackIndex[MATRIXMODE_PROJECTION];
 			index ^= 1;
-			if (index == 1) MMU_new.gxstat.se = 1;
-			MatrixCopy(mtxCurrent[mode], mtxStackProjection[0]);
+			if (index == 1)
+			{
+				MMU_new.gxstat.se = 1;
+			}
+			MatrixCopy(_mtxCurrent[_mtxMode], mtxStackProjection[0]);
 
 			UpdateProjection();
 		}
@@ -1013,20 +1032,26 @@ static void gfx3d_glPopMatrix(u32 v)
 		{
 			u32 &index = mtxStackIndex[MATRIXMODE_TEXTURE];
 			index ^= 1;
-			if (index == 1) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
-			MatrixCopy(mtxCurrent[mode], mtxStackTexture[0]);
+			if (index == 1)
+			{
+				MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
+			}
+			MatrixCopy(_mtxCurrent[_mtxMode], mtxStackTexture[0]);
 		}
 	}
 	else
 	{
-		u32 &index = mtxStackIndex[MATRIXMODE_POSITION];
+		u32 &i = mtxStackIndex[MATRIXMODE_POSITION];
 		
-		index -= v & 63;
-		index &= 63;
-		if (index >= 32) MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
+		i -= param & 0x0000003F;
+		i &= 0x0000003F;
+		if (i >= 32)
+		{
+			MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
+		}
 		
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxStackPosition[index & 31]);
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], mtxStackPositionVector[index & 31]);
+		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], mtxStackPosition[i & 0x0000001F]);
+		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], mtxStackPositionVector[i & 0x0000001F]);
 	}
 
 	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
@@ -1034,35 +1059,35 @@ static void gfx3d_glPopMatrix(u32 v)
 	GFX_DELAY(36);
 }
 
-static void gfx3d_glStoreMatrix(u32 v)
+static void gfx3d_glStoreMatrix(const u32 param)
 {
 	//printf("%d %d %d %d -> ",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
-	//printf("STORE (%d): mode: %d -> ",v,mode,mtxStack[mode].position);
+	//printf("STORE (%d): mode: %d -> ",v,_mtxMode,mtxStack[_mtxMode].position);
 
-	if (mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
+	if (_mtxMode == MATRIXMODE_PROJECTION || _mtxMode == MATRIXMODE_TEXTURE)
 	{
 		//parameter ignored and treated as sensible
-		v = 0;
-		
-		if (mode == MATRIXMODE_PROJECTION)
+		if (_mtxMode == MATRIXMODE_PROJECTION)
 		{
-			MatrixCopy(mtxStackProjection[0], mtxCurrent[MATRIXMODE_PROJECTION]);
+			MatrixCopy(mtxStackProjection[0], _mtxCurrent[MATRIXMODE_PROJECTION]);
 			UpdateProjection();
 		}
 		else
 		{
-			MatrixCopy(mtxStackTexture[0], mtxCurrent[MATRIXMODE_TEXTURE]);
+			MatrixCopy(mtxStackTexture[0], _mtxCurrent[MATRIXMODE_TEXTURE]);
 		}
 	}
 	else
 	{
-		v &= 31;
-
 		//out of bounds function fully properly, but set errors (not sure, this might be off by 1)
-		if (v >= 31) MMU_new.gxstat.se = 1;
+		if (param >= 31)
+		{
+			MMU_new.gxstat.se = 1;
+		}
 		
-		MatrixCopy(mtxStackPosition[v], mtxCurrent[MATRIXMODE_POSITION]);
-		MatrixCopy(mtxStackPositionVector[v], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+		const u32 i = param & 0x0000001F;
+		MatrixCopy(mtxStackPosition[i], _mtxCurrent[MATRIXMODE_POSITION]);
+		MatrixCopy(mtxStackPositionVector[i], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 	}
 
 	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
@@ -1070,299 +1095,333 @@ static void gfx3d_glStoreMatrix(u32 v)
 	GFX_DELAY(17);
 }
 
-static void gfx3d_glRestoreMatrix(u32 v)
+static void gfx3d_glRestoreMatrix(const u32 param)
 {
-	if (mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
+	if (_mtxMode == MATRIXMODE_PROJECTION || _mtxMode == MATRIXMODE_TEXTURE)
 	{
 		//parameter ignored and treated as sensible
-		v = 0;
-		
-		if (mode == MATRIXMODE_PROJECTION)
+		if (_mtxMode == MATRIXMODE_PROJECTION)
 		{
-			MatrixCopy(mtxCurrent[MATRIXMODE_PROJECTION], mtxStackProjection[0]);
+			MatrixCopy(_mtxCurrent[MATRIXMODE_PROJECTION], mtxStackProjection[0]);
 			UpdateProjection();
 		}
 		else
 		{
-			MatrixCopy(mtxCurrent[MATRIXMODE_TEXTURE], mtxStackTexture[0]);
+			MatrixCopy(_mtxCurrent[MATRIXMODE_TEXTURE], mtxStackTexture[0]);
 		}
 	}
 	else
 	{
 		//out of bounds errors function fully properly, but set errors
-		MMU_new.gxstat.se = (v >= 31) ? 1 : 0; //(not sure, this might be off by 1)
+		MMU_new.gxstat.se = (param >= 31) ? 1 : 0; //(not sure, this might be off by 1)
 		
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxStackPosition[v]);
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], mtxStackPositionVector[v]);
+		const u32 i = param & 0x0000001F;
+		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], mtxStackPosition[i]);
+		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], mtxStackPositionVector[i]);
 	}
-
 
 	GFX_DELAY(36);
 }
 
 static void gfx3d_glLoadIdentity()
 {
-	MatrixIdentity(mtxCurrent[mode]);
+	MatrixIdentity(_mtxCurrent[_mtxMode]);
+	GFX_DELAY(19);
+
+	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+		MatrixIdentity(_mtxCurrent[MATRIXMODE_POSITION]);
+
+	//printf("identity: %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
+}
+
+static void gfx3d_glLoadMatrix4x4(const u32 param)
+{
+	_mtxCurrent[_mtxMode][_ML4x4ind] = (s32)param;
+	_ML4x4ind++;
+	
+	if (_ML4x4ind < 16)
+	{
+		return;
+	}
+	_ML4x4ind = 0;
 
 	GFX_DELAY(19);
 
-	if (mode == MATRIXMODE_POSITION_VECTOR)
-		MatrixIdentity(mtxCurrent[MATRIXMODE_POSITION]);
+	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 
-	//printf("identity: %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
+	//printf("load4x4: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 }
 
-static BOOL gfx3d_glLoadMatrix4x4(s32 v)
+static void gfx3d_glLoadMatrix4x3(const u32 param)
 {
-	mtxCurrent[mode][ML4x4ind] = v;
-
-	++ML4x4ind;
-	if(ML4x4ind<16) return FALSE;
-	ML4x4ind = 0;
-
-	GFX_DELAY(19);
-
-	if (mode == MATRIXMODE_POSITION_VECTOR)
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
-
-	//printf("load4x4: matrix %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
-	return TRUE;
-}
-
-static BOOL gfx3d_glLoadMatrix4x3(s32 v)
-{
-	mtxCurrent[mode][ML4x3ind] = v;
-
-	ML4x3ind++;
-	if((ML4x3ind & 0x03) == 3) ML4x3ind++;
-	if(ML4x3ind<16) return FALSE;
-	ML4x3ind = 0;
+	_mtxCurrent[_mtxMode][_ML4x3ind] = (s32)param;
+	_ML4x3ind++;
+	
+	if ((_ML4x3ind & 0x03) == 3)
+	{
+		_ML4x3ind++;
+	}
+	
+	if (_ML4x3ind < 16)
+	{
+		return;
+	}
+	_ML4x3ind = 0;
 
 	//fill in the unusued matrix values
-	mtxCurrent[mode][3] = mtxCurrent[mode][7] = mtxCurrent[mode][11] = 0;
-	mtxCurrent[mode][15] = (1<<12);
+	_mtxCurrent[_mtxMode][3] = _mtxCurrent[_mtxMode][7] = _mtxCurrent[_mtxMode][11] = 0;
+	_mtxCurrent[_mtxMode][15] = (s32)(1 << 12);
 
 	GFX_DELAY(30);
 
-	if (mode == MATRIXMODE_POSITION_VECTOR)
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
-	//printf("load4x3: matrix %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
-	return TRUE;
+	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+	//printf("load4x3: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 }
 
-static BOOL gfx3d_glMultMatrix4x4(s32 v)
+static void gfx3d_glMultMatrix4x4(const u32 param)
 {
-	mtxTemporal[MM4x4ind] = v;
+	_mtxTemporal[_MM4x4ind] = (s32)param;
+	_MM4x4ind++;
+	
+	if (_MM4x4ind < 16)
+	{
+		return;
+	}
+	_MM4x4ind = 0;
 
-	MM4x4ind++;
-	if(MM4x4ind<16) return FALSE;
-	MM4x4ind = 0;
-
+	MatrixMultiply(_mtxCurrent[_mtxMode], _mtxTemporal);
 	GFX_DELAY(35);
 
-	MatrixMultiply(mtxCurrent[mode], mtxTemporal);
-
-	if (mode == MATRIXMODE_POSITION_VECTOR)
+	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixMultiply(mtxCurrent[MATRIXMODE_POSITION], mtxTemporal);
+		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], _mtxTemporal);
 		GFX_DELAY_M2(30);
 	}
 
-	if(mode == MATRIXMODE_PROJECTION)
+	if (_mtxMode == MATRIXMODE_PROJECTION)
 	{
 		UpdateProjection();
 	}
 
-	//printf("mult4x4: matrix %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
+	//printf("mult4x4: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 
-	MatrixIdentity(mtxTemporal);
-	return TRUE;
+	MatrixIdentity(_mtxTemporal);
 }
 
-static BOOL gfx3d_glMultMatrix4x3(s32 v)
+static void gfx3d_glMultMatrix4x3(const u32 param)
 {
-	mtxTemporal[MM4x3ind] = v;
+	_mtxTemporal[_MM4x3ind] = (s32)param;
+	_MM4x3ind++;
+	
+	if ((_MM4x3ind & 0x03) == 3)
+	{
+		_MM4x3ind++;
+	}
+	
+	if (_MM4x3ind < 16)
+	{
+		return;
+	}
+	_MM4x3ind = 0;
 
-	MM4x3ind++;
-	if ((MM4x3ind & 0x03) == 3) MM4x3ind++;
-	if (MM4x3ind < 16) return FALSE;
-	MM4x3ind = 0;
+	//fill in the unusued matrix values
+	_mtxTemporal[3] = _mtxTemporal[7] = _mtxTemporal[11] = 0;
+	_mtxTemporal[15] = (s32)(1 << 12);
 
+	MatrixMultiply(_mtxCurrent[_mtxMode], _mtxTemporal);
 	GFX_DELAY(31);
 
-	//fill in the unusued matrix values
-	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0;
-	mtxTemporal[15] = 1 << 12;
-
-	MatrixMultiply (mtxCurrent[mode], mtxTemporal);
-
-	if (mode == MATRIXMODE_POSITION_VECTOR)
+	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixMultiply (mtxCurrent[MATRIXMODE_POSITION], mtxTemporal);
+		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], _mtxTemporal);
 		GFX_DELAY_M2(30);
 	}
 
-	if(mode == MATRIXMODE_PROJECTION)
+	if (_mtxMode == MATRIXMODE_PROJECTION)
 	{
 		UpdateProjection();
 	}
 
-	//printf("mult4x3: matrix %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
+	//printf("mult4x3: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 
 	//does this really need to be done?
-	MatrixIdentity(mtxTemporal);
-	return TRUE;
+	MatrixIdentity(_mtxTemporal);
 }
 
-static BOOL gfx3d_glMultMatrix3x3(s32 v)
+static void gfx3d_glMultMatrix3x3(const u32 param)
 {
-	mtxTemporal[MM3x3ind] = v;
+	_mtxTemporal[_MM3x3ind] = (s32)param;
+	_MM3x3ind++;
 	
-	MM3x3ind++;
-	if ((MM3x3ind & 0x03) == 3) MM3x3ind++;
-	if (MM3x3ind<12) return FALSE;
-	MM3x3ind = 0;
+	if ((_MM3x3ind & 0x03) == 3)
+	{
+		_MM3x3ind++;
+	}
+	
+	if (_MM3x3ind < 12)
+	{
+		return;
+	}
+	_MM3x3ind = 0;
 
+	//fill in the unusued matrix values
+	_mtxTemporal[3] = _mtxTemporal[7] = _mtxTemporal[11] = 0;
+	_mtxTemporal[15] = 1<<12;
+	_mtxTemporal[12] = _mtxTemporal[13] = _mtxTemporal[14] = 0;
+
+	MatrixMultiply(_mtxCurrent[_mtxMode], _mtxTemporal);
 	GFX_DELAY(28);
 
-	//fill in the unusued matrix values
-	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0;
-	mtxTemporal[15] = 1<<12;
-	mtxTemporal[12] = mtxTemporal[13] = mtxTemporal[14] = 0;
-
-	MatrixMultiply(mtxCurrent[mode], mtxTemporal);
-
-	if (mode == MATRIXMODE_POSITION_VECTOR)
+	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixMultiply(mtxCurrent[MATRIXMODE_POSITION], mtxTemporal);
+		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], _mtxTemporal);
 		GFX_DELAY_M2(30);
 	}
 
-	if(mode == MATRIXMODE_PROJECTION)
+	if (_mtxMode == MATRIXMODE_PROJECTION)
 	{
 		UpdateProjection();
 	}
 
-	//printf("mult3x3: matrix %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
+	//printf("mult3x3: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 
 
 	//does this really need to be done?
-	MatrixIdentity(mtxTemporal);
-	return TRUE;
+	MatrixIdentity(_mtxTemporal);
 }
 
-static BOOL gfx3d_glScale(s32 v)
+static void gfx3d_glScale(const u32 param)
 {
-	scale[scaleind] = v;
+	_regScale.vec[_regScaleCurrentIndex] = (s32)param;
+	_regScaleCurrentIndex++;
 
-	++scaleind;
+	if (_regScaleCurrentIndex < 3)
+	{
+		return;
+	}
+	_regScaleCurrentIndex = 0;
 
-	if (scaleind < 3) return FALSE;
-	scaleind = 0;
-
-	MatrixScale(mtxCurrent[(mode == MATRIXMODE_POSITION_VECTOR ? MATRIXMODE_POSITION : mode)], scale);
-	//printf("scale: matrix %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
-
+	MatrixScale(_mtxCurrent[(_mtxMode == MATRIXMODE_POSITION_VECTOR ? MATRIXMODE_POSITION : _mtxMode)], _regScale.vec);
 	GFX_DELAY(22);
+	//printf("scale: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 
 	//note: pos-vector mode should not cause both matrices to scale.
 	//the whole purpose is to keep the vector matrix orthogonal
 	//so, I am leaving this commented out as an example of what not to do.
-	//if (mode == MATRIXMODE_POSITION_VECTOR)
-	//	MatrixScale (mtxCurrent[MATRIXMODE_POSITION], scale);
-	return TRUE;
+	//if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+	//	MatrixScale (_mtxCurrent[MATRIXMODE_POSITION], _regScale.vec);
 }
 
-static BOOL gfx3d_glTranslate(s32 v)
+static void gfx3d_glTranslate(const u32 param)
 {
-	trans[transind] = v;
+	_regTranslate.vec[_regTranslateCurrentIndex] = (s32)param;
+	_regTranslateCurrentIndex++;
 
-	++transind;
+	if (_regTranslateCurrentIndex < 3)
+	{
+		return;
+	}
+	_regTranslateCurrentIndex = 0;
 
-	if (transind < 3) return FALSE;
-	transind = 0;
-
-	MatrixTranslate(mtxCurrent[mode], trans);
-
+	MatrixTranslate(_mtxCurrent[_mtxMode], _regTranslate.vec);
 	GFX_DELAY(22);
 
-	if (mode == MATRIXMODE_POSITION_VECTOR)
+	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixTranslate(mtxCurrent[MATRIXMODE_POSITION], trans);
+		MatrixTranslate(_mtxCurrent[MATRIXMODE_POSITION], _regTranslate.vec);
 		GFX_DELAY_M2(30);
 	}
 
-	//printf("translate: matrix %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
-
-	return TRUE;
+	//printf("translate: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 }
 
-static void gfx3d_glColor3b(u32 v)
+static void gfx3d_glColor3b(const u32 param)
 {
-	colorRGB[0] = (v&0x1F);
-	colorRGB[1] = ((v>>5)&0x1F);
-	colorRGB[2] = ((v>>10)&0x1F);
+	_vtxColor555X.r = (u8)((param >>  0) & 0x0000001F);
+	_vtxColor555X.g = (u8)((param >>  5) & 0x0000001F);
+	_vtxColor555X.b = (u8)((param >> 10) & 0x0000001F);
+	
 	GFX_DELAY(1);
 }
 
-static void gfx3d_glNormal(s32 v)
+static void gfx3d_glNormal(const u32 param)
 {
-	s16 nx = ((v<<22)>>22)<<3;
-	s16 ny = ((v<<12)>>22)<<3;
-	s16 nz = ((v<<2)>>22)<<3;
+	CACHE_ALIGN Vector32x4 normal = {
+		((s32)((param << 22) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3),
+		((s32)((param << 12) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3),
+		((s32)((param <<  2) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3),
+		 (s32)(1 << 12)
+	};
 
-	CACHE_ALIGN s32 normal[4] =  { nx,ny,nz,(1<<12) };
-
-	if (texCoordTransformMode == TextureTransformationMode_NormalSource)
+	if (_texCoordTransformMode == TextureTransformationMode_NormalSource)
 	{
 		//SM64 highlight rendered star in main menu tests this
 		//also smackdown 2010 player textures tested this (needed cast on _s and _t)
-		const s32 *mtxTex = mtxCurrent[MATRIXMODE_TEXTURE];
-		last_s = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[0], normal[0]) + GEM_Mul32x32To64(mtxTex[4], normal[1]) + GEM_Mul32x32To64(mtxTex[8], normal[2]) + ((s64)_s << 24)) >> 24 );
-		last_t = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[1], normal[0]) + GEM_Mul32x32To64(mtxTex[5], normal[1]) + GEM_Mul32x32To64(mtxTex[9], normal[2]) + ((s64)_t << 24)) >> 24 );
+		const s32 *mtxTex = _mtxCurrent[MATRIXMODE_TEXTURE];
+		_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[0], normal.x) + GEM_Mul32x32To64(mtxTex[4], normal.y) + GEM_Mul32x32To64(mtxTex[8], normal.z) + ((s64)_regTexCoord.s << 24)) >> 24 );
+		_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[1], normal.x) + GEM_Mul32x32To64(mtxTex[5], normal.y) + GEM_Mul32x32To64(mtxTex[9], normal.z) + ((s64)_regTexCoord.t << 24)) >> 24 );
 	}
 
-	MatrixMultVec3x3(mtxCurrent[MATRIXMODE_POSITION_VECTOR], normal);
+	MatrixMultVec3x3(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], normal.vec);
 
 	//apply lighting model
-	u8 diffuse[3] = {
-		(u8)( dsDiffuse        & 0x1F),
-		(u8)((dsDiffuse >>  5) & 0x1F),
-		(u8)((dsDiffuse >> 10) & 0x1F) };
+	const s32 diffuse32[3] = {
+		(s32)( _regDiffuse        & 0x001F),
+		(s32)((_regDiffuse >>  5) & 0x001F),
+		(s32)((_regDiffuse >> 10) & 0x001F)
+	};
 
-	u8 ambient[3] = {
-		(u8)( dsAmbient        & 0x1F),
-		(u8)((dsAmbient >>  5) & 0x1F),
-		(u8)((dsAmbient >> 10) & 0x1F) };
+	const s32 ambient32[3] = {
+		(s32)( _regAmbient        & 0x001F),
+		(s32)((_regAmbient >>  5) & 0x001F),
+		(s32)((_regAmbient >> 10) & 0x001F)
+	};
 
-	u8 emission[3] = {
-		(u8)( dsEmission        & 0x1F),
-		(u8)((dsEmission >>  5) & 0x1F),
-		(u8)((dsEmission >> 10) & 0x1F) };
+	const s32 emission32[3] = {
+		(s32)( _regEmission        & 0x001F),
+		(s32)((_regEmission >>  5) & 0x001F),
+		(s32)((_regEmission >> 10) & 0x001F)
+	};
 
-	u8 specular[3] = {
-		(u8)( dsSpecular        & 0x1F),
-		(u8)((dsSpecular >>  5) & 0x1F),
-		(u8)((dsSpecular >> 10) & 0x1F) };
+	const s32 specular32[3] = {
+		(s32)( _regSpecular        & 0x001F),
+		(s32)((_regSpecular >>  5) & 0x001F),
+		(s32)((_regSpecular >> 10) & 0x001F)
+	};
 
-	int vertexColor[3] = { emission[0], emission[1], emission[2] };
+	s32 vertexColor[3] = {
+		emission32[0],
+		emission32[1],
+		emission32[2]
+	};
 
 	for (size_t i = 0; i < 4; i++)
 	{
-		if (!((lightMask>>i)&1)) continue;
-
-		u8 _lightColor[3] = {
-			(u8)( lightColor[i]        & 0x1F),
-			(u8)((lightColor[i] >> 5)  & 0x1F),
-			(u8)((lightColor[i] >> 10) & 0x1F) };
+		if (!((_lightMask >> i) & 1))
+		{
+			continue;
+		}
+		
+		const s32 lightColor32[3] = {
+			(s32)( _regLightColor[i]        & 0x0000001F),
+			(s32)((_regLightColor[i] >>  5) & 0x0000001F),
+			(s32)((_regLightColor[i] >> 10) & 0x0000001F)
+		};
 
 		//This formula is the one used by the DS
 		//Reference : http://nocash.emubase.de/gbatek.htm#ds3dpolygonlightparameters
-		s32 fixed_diffuse = std::max(0,-vec3dot_fixed32(cacheLightDirection[i],normal));
+		const s32 fixed_diffuse = std::max( 0, -vec3dot_fixed32(_cacheLightDirection[i].vec, normal.vec) );
 		
 		//todo - this could be cached in this form
-		s32 fixedTempNegativeHalf[] = {-cacheHalfVector[i][0],-cacheHalfVector[i][1],-cacheHalfVector[i][2],-cacheHalfVector[i][3]};
-		s32 dot = vec3dot_fixed32(fixedTempNegativeHalf, normal);
+		const Vector32x4 fixedTempNegativeHalf = {
+			-_cacheHalfVector[i].x,
+			-_cacheHalfVector[i].y,
+			-_cacheHalfVector[i].z,
+			-_cacheHalfVector[i].w
+		};
+		const s32 dot = vec3dot_fixed32(fixedTempNegativeHalf.vec, normal.vec);
 
 		s32 fixedshininess = 0;
 		if (dot > 0) //prevent shininess on opposite side
@@ -1370,7 +1429,7 @@ static void gfx3d_glNormal(s32 v)
 			//we have cos(a). it seems that we need cos(2a). trig identity is a fast way to get it.
 			//cos^2(a)=(1/2)(1+cos(2a))
 			//2*cos^2(a)-1=cos(2a)
-			fixedshininess = 2*mul_fixed32(dot,dot)-4096;
+			fixedshininess = 2 * mul_fixed32(dot,dot) - 4096;
 			//gbatek is almost right but not quite!
 		}
 
@@ -1379,7 +1438,7 @@ static void gfx3d_glNormal(s32 v)
 		fixedshininess = std::min(fixedshininess,4095);
 		fixedshininess = std::max(fixedshininess,0);
 		
-		if (dsSpecular & 0x8000)
+		if (_regSpecular & 0x8000)
 		{
 			//shininess is 20.12 fixed point, so >>5 gives us .7 which is 128 entries
 			//the entries are 8bits each so <<4 gives us .12 again, compatible with the lighting formulas below
@@ -1389,123 +1448,127 @@ static void gfx3d_glNormal(s32 v)
 
 		for (size_t c = 0; c < 3; c++)
 		{
-			s32 specComp = ((specular[c] * _lightColor[c] * fixedshininess)>>17);  //5 bits for color*color and 12 bits for the shininess
-			s32 diffComp = ((diffuse[c] * _lightColor[c] * fixed_diffuse)>>17); //5bits for the color*color and 12 its for the diffuse
-			s32 ambComp = ((ambient[c] * _lightColor[c])>>5); //5bits for color*color
+			const s32 specComp = ((specular32[c] * lightColor32[c] * fixedshininess) >> 17); // 5 bits for color*color and 12 bits for shininess
+			const s32 diffComp = (( diffuse32[c] * lightColor32[c] * fixed_diffuse)  >> 17); // 5 bits for color*color and 12 bits for diffuse
+			const s32 ambComp  = (( ambient32[c] * lightColor32[c]) >> 5); // 5 bits for color*color
 			vertexColor[c] += specComp + diffComp + ambComp;
 		}
 	}
 
-	for (size_t c = 0; c < 3; c++)
-	{
-		colorRGB[c] = std::min(31,vertexColor[c]);
-	}
+	_vtxColor555X.r = (u8)std::min<s32>(31, vertexColor[0]);
+	_vtxColor555X.g = (u8)std::min<s32>(31, vertexColor[1]);
+	_vtxColor555X.b = (u8)std::min<s32>(31, vertexColor[2]);
 
 	GFX_DELAY(9);
-	GFX_DELAY_M2((lightMask) & 0x01);
-	GFX_DELAY_M2((lightMask>>1) & 0x01);
-	GFX_DELAY_M2((lightMask>>2) & 0x01);
-	GFX_DELAY_M2((lightMask>>3) & 0x01);
+	GFX_DELAY_M2((_lightMask) & 0x01);
+	GFX_DELAY_M2((_lightMask>>1) & 0x01);
+	GFX_DELAY_M2((_lightMask>>2) & 0x01);
+	GFX_DELAY_M2((_lightMask>>3) & 0x01);
 }
 
-static void gfx3d_glTexCoord(s32 val)
+static void gfx3d_glTexCoord(const u32 param)
 {
-	_s = ((val<<16)>>16);
-	_t = (val>>16);
+	VertexCoord16x2 inTexCoord16x2;
+	inTexCoord16x2.value = param;
+	
+	_regTexCoord.s = (s32)inTexCoord16x2.s;
+	_regTexCoord.t = (s32)inTexCoord16x2.t;
 
-	if (texCoordTransformMode == TextureTransformationMode_TexCoordSource)
+	if (_texCoordTransformMode == TextureTransformationMode_TexCoordSource)
 	{
 		//dragon quest 4 overworld will test this
-		const s32 *mtxTex = mtxCurrent[MATRIXMODE_TEXTURE];
-		last_s = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[0], _s) + GEM_Mul32x32To64(mtxTex[4], _t) + (s64)mtxTex[8] + (s64)mtxTex[12]) >> 12 );
-		last_t = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[1], _s) + GEM_Mul32x32To64(mtxTex[5], _t) + (s64)mtxTex[9] + (s64)mtxTex[13]) >> 12 );
+		const s32 *mtxTex = _mtxCurrent[MATRIXMODE_TEXTURE];
+		_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[0], _regTexCoord.s) + GEM_Mul32x32To64(mtxTex[4], _regTexCoord.t) + (s64)mtxTex[8] + (s64)mtxTex[12]) >> 12 );
+		_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[1], _regTexCoord.s) + GEM_Mul32x32To64(mtxTex[5], _regTexCoord.t) + (s64)mtxTex[9] + (s64)mtxTex[13]) >> 12 );
 	}
-	else if (texCoordTransformMode == TextureTransformationMode_None)
+	else if (_texCoordTransformMode == TextureTransformationMode_None)
 	{
-		last_s=_s;
-		last_t=_t;
+		_texCoordTransformed.s = _regTexCoord.s;
+		_texCoordTransformed.t = _regTexCoord.t;
 	}
+	
 	GFX_DELAY(1);
 }
 
-static BOOL gfx3d_glVertex16b(s32 v)
+static void gfx3d_glVertex16b(const u32 param)
 {
-	if (coordind == 0)
+	VertexCoord16x2 inVtx16x2;
+	inVtx16x2.value = param;
+	
+	if (_vtxCoord16CurrentIndex == 0)
 	{
-		s16coord[0] = (v<<16)>>16;
-		s16coord[1] = (v>>16)&0xFFFF;
-
-		++coordind;
-		return FALSE;
+		_vtxCoord16.coord[0] = (s32)inVtx16x2.coord[0];
+		_vtxCoord16.coord[1] = (s32)inVtx16x2.coord[1];
+		_vtxCoord16CurrentIndex++;
+		return;
 	}
 
-	s16coord[2] = (v<<16)>>16;
-
-	coordind = 0;
-	SetVertex ();
-
+	_vtxCoord16.coord[2] = (s32)inVtx16x2.coord[0];
+	_vtxCoord16CurrentIndex = 0;
+	
+	SetVertex();
 	GFX_DELAY(9);
-	return TRUE;
 }
 
-static void gfx3d_glVertex10b(s32 v)
+static void gfx3d_glVertex10b(const u32 param)
 {
-	//TODO TODO TODO - contemplate the sign extension - shift in zeroes or ones? zeroes is certainly more normal..
-	s16coord[0] = ((v<<22)>>22)<<6;
-	s16coord[1] = ((v<<12)>>22)<<6;
-	s16coord[2] = ((v<<2)>>22)<<6;
-
+	_vtxCoord16.x = (s16)( (u16)(((param << 22) >> 22) << 6) );
+	_vtxCoord16.y = (s16)( (u16)(((param << 12) >> 22) << 6) );
+	_vtxCoord16.z = (s16)( (u16)(((param <<  2) >> 22) << 6) );
+	
+	SetVertex();
 	GFX_DELAY(8);
-	SetVertex ();
 }
 
 template<int ONE, int TWO>
-static void gfx3d_glVertex3_cord(s32 v)
+static void gfx3d_glVertex3_cord(const u32 param)
 {
-	s16coord[ONE]		= (v<<16)>>16;
-	s16coord[TWO]		= (v>>16);
+	VertexCoord16x2 inVtx16x2;
+	inVtx16x2.value = param;
+	
+	_vtxCoord16.coord[ONE] = (s32)inVtx16x2.coord[0];
+	_vtxCoord16.coord[TWO] = (s32)inVtx16x2.coord[1];
 
-	SetVertex ();
-
+	SetVertex();
 	GFX_DELAY(8);
 }
 
-static void gfx3d_glVertex_rel(s32 v)
+static void gfx3d_glVertex_rel(const u32 param)
 {
-	s16 x = ((v<<22)>>22);
-	s16 y = ((v<<12)>>22);
-	s16 z = ((v<<2)>>22);
+	const s16 x = (s16)( (s32)((param << 22) & 0xFFC00000) / (s32)(1 << 22) );
+	const s16 y = (s16)( (s32)((param << 12) & 0xFFC00000) / (s32)(1 << 22) );
+	const s16 z = (s16)( (s32)((param <<  2) & 0xFFC00000) / (s32)(1 << 22) );
+	
+	_vtxCoord16.coord[0] += x;
+	_vtxCoord16.coord[1] += y;
+	_vtxCoord16.coord[2] += z;
 
-	s16coord[0] += x;
-	s16coord[1] += y;
-	s16coord[2] += z;
-
-
-	SetVertex ();
-
+	SetVertex();
 	GFX_DELAY(8);
 }
 
-static void gfx3d_glPolygonAttrib (u32 val)
+static void gfx3d_glPolygonAttrib(const u32 param)
 {
-	if(inBegin) {
+	if (_inBegin)
+	{
 		//PROGINFO("Set polyattr in the middle of a begin/end pair.\n  (This won't be activated until the next begin)\n");
 		//TODO - we need some some similar checking for teximageparam etc.
 	}
-	currentPolyAttr.value = val;
+	
+	_currentPolyAttr.value = param;
 	GFX_DELAY(1);
 }
 
-static void gfx3d_glTexImage(u32 val)
+static void gfx3d_glTexImage(const u32 param)
 {
-	currentPolyTexParam.value = val;
+	_currentPolyTexParam.value = param;
 	gfx3d_glTexImage_cache();
 	GFX_DELAY(1);
 }
 
-static void gfx3d_glTexPalette(u32 val)
+static void gfx3d_glTexPalette(const u32 param)
 {
-	currentPolyTexPalette = val;
+	_currentPolyTexPalette = param;
 	GFX_DELAY(1);
 }
 
@@ -1518,104 +1581,116 @@ static void gfx3d_glTexPalette(u32 val)
 	21-25 Ambient Reflection Green
 	26-30 Ambient Reflection Blue
 */
-static void gfx3d_glMaterial0(u32 val)
+static void gfx3d_glMaterial0(const u32 param)
 {
-	dsDiffuse = val&0xFFFF;
-	dsAmbient = val>>16;
+	_regDiffuse = (u16)(param & 0x0000FFFF);
+	_regAmbient = (u16)(param >> 16);
 
-	if (BIT15(val))
+	if (BIT15(param))
 	{
-		colorRGB[0] = (val)&0x1F;
-		colorRGB[1] = (val>>5)&0x1F;
-		colorRGB[2] = (val>>10)&0x1F;
+		_vtxColor555X.r = (u8)((param >>  0) & 0x0000001F);
+		_vtxColor555X.g = (u8)((param >>  5) & 0x0000001F);
+		_vtxColor555X.b = (u8)((param >> 10) & 0x0000001F);
 	}
 	GFX_DELAY(4);
 }
 
-static void gfx3d_glMaterial1(u32 val)
+static void gfx3d_glMaterial1(const u32 param)
 {
-	dsSpecular = val&0xFFFF;
-	dsEmission = val>>16;
+	_regSpecular = (u16)(param & 0x0000FFFF);
+	_regEmission = (u16)(param >> 16);
 	GFX_DELAY(4);
 }
 
-/*
-	0-9   Directional Vector's X component (1bit sign + 9bit fractional part)
-	10-19 Directional Vector's Y component (1bit sign + 9bit fractional part)
-	20-29 Directional Vector's Z component (1bit sign + 9bit fractional part)
-	30-31 Light Number                     (0..3)
-*/
-static void gfx3d_glLightDirection(u32 v)
-{
-	const size_t index = v >> 30;
 
-	lightDirection[index] = (s32)(v & 0x3FFFFFFF);
+// 0-9   Directional Vector's X component (1bit sign + 9bit fractional part)
+// 10-19 Directional Vector's Y component (1bit sign + 9bit fractional part)
+// 20-29 Directional Vector's Z component (1bit sign + 9bit fractional part)
+// 30-31 Light Number                     (0..3)
+static void gfx3d_glLightDirection(const u32 param)
+{
+	const size_t index = param >> 30;
+
+	_regLightDirection[index] = param & 0x3FFFFFFF;
 	gfx3d_glLightDirection_cache(index);
 	GFX_DELAY(6);
 }
 
-static void gfx3d_glLightColor(u32 v)
+static void gfx3d_glLightColor(const u32 param)
 {
-	const size_t index = v >> 30;
-	lightColor[index] = v;
+	const size_t index = param >> 30;
+	_regLightColor[index] = param;
 	GFX_DELAY(1);
 }
 
-static BOOL gfx3d_glShininess(u32 val)
+static void gfx3d_glShininess(const u32 param)
 {
-	gfx3d.pendingState.shininessTable[shininessInd++] =   (u8)(val        & 0x000000FF);
-	gfx3d.pendingState.shininessTable[shininessInd++] = (u8)(((val >>  8) & 0x000000FF));
-	gfx3d.pendingState.shininessTable[shininessInd++] = (u8)(((val >> 16) & 0x000000FF));
-	gfx3d.pendingState.shininessTable[shininessInd++] = (u8)(((val >> 24) & 0x000000FF));
-
-	if (shininessInd < 128) return FALSE;
-	shininessInd = 0;
+#ifdef MSB_FIRST
+	u8 *targetShininess = (u8 *)gfx3d.pendingState.shininessTable;
+	targetShininess[_shininessTableCurrentIndex+0] =   (u8)(param        & 0x000000FF);
+	targetShininess[_shininessTableCurrentIndex+1] = (u8)(((param >>  8) & 0x000000FF));
+	targetShininess[_shininessTableCurrentIndex+2] = (u8)(((param >> 16) & 0x000000FF));
+	targetShininess[_shininessTableCurrentIndex+3] = (u8)(((param >> 24) & 0x000000FF));
+#else
+	u32 &targetShininess = (u32 &)gfx3d.pendingState.shininessTable[_shininessTableCurrentIndex];
+	targetShininess = param;
+#endif
+	
+	_shininessTableCurrentIndex += 4;
+	
+	if (_shininessTableCurrentIndex < 128)
+	{
+		return;
+	}
+	_shininessTableCurrentIndex = 0;
 	GFX_DELAY(32);
-	return TRUE;
 }
 
-static void gfx3d_glBegin(u32 v)
+static void gfx3d_glBegin(const u32 param)
 {
-	inBegin = TRUE;
-	vtxFormat = (PolygonPrimitiveType)(v & 0x03);
-	triStripToggle = 0;
-	tempVertInfo.count = 0;
-	tempVertInfo.first = true;
-	polyAttrInProcess = currentPolyAttr;
+	_inBegin = true;
+	_vtxFormat = (PolygonPrimitiveType)(param & 0x00000003);
+	_triStripToggle = 0;
+	_polyGenInfo.vtxCount = 0;
+	_polyGenInfo.isFirstPolyCompleted = true;
+	_polyAttrInProcess = _currentPolyAttr;
 	gfx3d_glPolygonAttrib_cache();
 	GFX_DELAY(1);
 }
 
-static void gfx3d_glEnd(void)
+static void gfx3d_glEnd()
 {
-	tempVertInfo.count = 0;
-	inBegin = FALSE;
+	_polyGenInfo.vtxCount = 0;
+	_inBegin = false;
 	GFX_DELAY(1);
 }
 
 // swap buffers - skipped
 
-static void gfx3d_glViewport(u32 v)
+static void gfx3d_glViewport(const u32 param)
 {
-	_GFX3D_IORegisterMap->VIEWPORT.value = v;
+	_GFX3D_IORegisterMap->VIEWPORT.value = param;
 	gfx3d.viewportLegacySave = _GFX3D_IORegisterMap->VIEWPORT;
-	gfx3d.viewport = GFX3D_ViewportParse(v);
+	gfx3d.viewport = GFX3D_ViewportParse(param);
 	
 	GFX_DELAY(1);
 }
 
-static BOOL gfx3d_glBoxTest(u32 v)
+static void gfx3d_glBoxTest(const u32 param)
 {
 	//printf("boxtest\n");
 
 	//clear result flag. busy flag has been set by fifo component already
 	MMU_new.gxstat.tr = 0;		
 
-	BTcoords[BTind++] = (u16)(v & 0xFFFF);
-	BTcoords[BTind++] = (u16)(v >> 16);
+	_BTcoords[_BTind++] = (u16)(param & 0x0000FFFF);
+	_BTcoords[_BTind++] = (u16)(param >> 16);
 
-	if (BTind < 5) return FALSE;
-	BTind = 0;
+	if (_BTind < 5)
+	{
+		return;
+	}
+	_BTind = 0;
 
 	GFX_DELAY(103);
 
@@ -1624,10 +1699,10 @@ static BOOL gfx3d_glBoxTest(u32 v)
 
 #if 0
 	INFO("BoxTEST: x %f y %f width %f height %f depth %f\n", 
-				BTcoords[0], BTcoords[1], BTcoords[2], BTcoords[3], BTcoords[4], BTcoords[5]);
+				_BTcoords[0], _BTcoords[1], _BTcoords[2], _BTcoords[3], _BTcoords[4], _BTcoords[5]);
 	/*for (int i = 0; i < 16; i++)
 	{
-		INFO("mtx1[%i] = %f ", i, mtxCurrent[1][i]);
+		INFO("mtx1[%i] = %f ", i, _mtxCurrent[1][i]);
 		if ((i+1) % 4 == 0) INFO("\n");
 	}
 	INFO("\n");*/
@@ -1638,12 +1713,12 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	//nanostray title, ff4, ice age 3 depend on this and work
 	//garfields nightmare and strawberry shortcake DO DEPEND on the overflow behavior.
 
-	const u16 ux = BTcoords[0];
-	const u16 uy = BTcoords[1];
-	const u16 uz = BTcoords[2];
-	const u16 uw = BTcoords[3];
-	const u16 uh = BTcoords[4];
-	const u16 ud = BTcoords[5];
+	const u16 ux = _BTcoords[0];
+	const u16 uy = _BTcoords[1];
+	const u16 uz = _BTcoords[2];
+	const u16 uw = _BTcoords[3];
+	const u16 uh = _BTcoords[4];
+	const u16 ud = _BTcoords[5];
 
 	//craft the coords by adding extents to startpoint
 	const s32 fixedOne = 1 << 12;
@@ -1655,7 +1730,7 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	const s32 z_d = (s32)( (s16)((uz+ud) & 0xFFFF) );
 	
 	//eight corners of cube
-	CACHE_ALIGN VtxCoord32 vtx[8] = {
+	CACHE_ALIGN VertexCoord32x4 vtxPosition[8] = {
 		{ __x, __y, __z, fixedOne },
 		{ x_w, __y, __z, fixedOne },
 		{ x_w, y_h, __z, fixedOne },
@@ -1719,14 +1794,14 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	//transform all coords
 	for (size_t i = 0; i < 8; i++)
 	{
-		MatrixMultVec4x4(mtxCurrent[MATRIXMODE_POSITION], vtx[i].coord);
-		MatrixMultVec4x4(mtxCurrent[MATRIXMODE_PROJECTION], vtx[i].coord);
+		MatrixMultVec4x4(_mtxCurrent[MATRIXMODE_POSITION], vtxPosition[i].coord);
+		MatrixMultVec4x4(_mtxCurrent[MATRIXMODE_PROJECTION], vtxPosition[i].coord);
 		
 		// TODO: Remove this fixed-point to floating-point conversion.
-		verts[i].x = (float)(vtx[i].x) / 4096.0f;
-		verts[i].y = (float)(vtx[i].y) / 4096.0f;
-		verts[i].z = (float)(vtx[i].z) / 4096.0f;
-		verts[i].w = (float)(vtx[i].w) / 4096.0f;
+		verts[i].x = (float)(vtxPosition[i].x) / 4096.0f;
+		verts[i].y = (float)(vtxPosition[i].y) / 4096.0f;
+		verts[i].z = (float)(vtxPosition[i].z) / 4096.0f;
+		verts[i].w = (float)(vtxPosition[i].w) / 4096.0f;
 	}
 
 	//clip each poly
@@ -1754,11 +1829,9 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	}
 
 	//printf("%06d RESULT %d\n",gxFIFO.size, MMU_new.gxstat.tr);
-
-	return TRUE;
 }
 
-static BOOL gfx3d_glPosTest(u32 v)
+static void gfx3d_glPosTest(const u32 param)
 {
 	//this is apparently tested by transformers decepticons and ultimate spiderman
 	
@@ -1781,29 +1854,28 @@ static BOOL gfx3d_glPosTest(u32 v)
 	// Parameter 2, bits 16-31: Ignored
 	
 	// Convert the coordinates to 20.12 fixed-point format for our vector-matrix multiplication.
-	PTcoords[PTind++] = (s32)((s16)(v & 0xFFFF));
-	PTcoords[PTind++] = (s32)((s16)(v >> 16));
+	_PTcoords.coord[_PTind++] = (s32)( (s16)((u16)(param & 0x0000FFFF)) );
+	_PTcoords.coord[_PTind++] = (s32)( (s16)((u16)(param >> 16)) );
 
-	if (PTind < 3) return FALSE;
-	PTind = 0;
+	if (_PTind < 3)
+	{
+		return;
+	}
+	_PTind = 0;
 	
-	PTcoords[3] = 1 << 12;
-	
-	MatrixMultVec4x4(mtxCurrent[MATRIXMODE_POSITION], PTcoords);
-	MatrixMultVec4x4(mtxCurrent[MATRIXMODE_PROJECTION], PTcoords);
-
-	MMU_new.gxstat.tb = 0;
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x620, (u32)PTcoords[0]);
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x624, (u32)PTcoords[1]);
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x628, (u32)PTcoords[2]);
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x62C, (u32)PTcoords[3]);
-
+	_PTcoords.coord[3] = (s32)(1 << 12);
+	MatrixMultVec4x4(_mtxCurrent[MATRIXMODE_POSITION], _PTcoords.coord);
+	MatrixMultVec4x4(_mtxCurrent[MATRIXMODE_PROJECTION], _PTcoords.coord);
 	GFX_DELAY(9);
 
-	return TRUE;
+	MMU_new.gxstat.tb = 0;
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x620, (u32)_PTcoords.coord[0]);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x624, (u32)_PTcoords.coord[1]);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x628, (u32)_PTcoords.coord[2]);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x62C, (u32)_PTcoords.coord[3]);
 }
 
-static void gfx3d_glVecTest(u32 v)
+static void gfx3d_glVecTest(const u32 param)
 {
 	//printf("vectest\n");
 	GFX_DELAY(5);
@@ -1822,18 +1894,18 @@ static void gfx3d_glVecTest(u32 v)
 	// Bits 30-31: Ignored
 	
 	// Convert the coordinates to 20.12 fixed-point format for our vector-matrix multiplication.
-	CACHE_ALIGN s32 normal[4] = {
-		( (s32)((v & 0x000003FF) << 22) >> 19 ) | (s32)((v & 0x000001C0) >>  6),
-		( (s32)((v & 0x000FFC00) << 12) >> 19 ) | (s32)((v & 0x00007000) >> 16),
-		( (s32)((v & 0x3FF00000) <<  2) >> 19 ) | (s32)((v & 0x01C00000) >> 26),
+	CACHE_ALIGN Vector32x4 normal = {
+		( (s32)((param << 22) & 0xFFC00000) / (s32)(1 << 19) ) | (s32)((param & 0x000001C0) >>  6),
+		( (s32)((param << 12) & 0xFFC00000) / (s32)(1 << 19) ) | (s32)((param & 0x00007000) >> 16),
+		( (s32)((param <<  2) & 0xFFC00000) / (s32)(1 << 19) ) | (s32)((param & 0x01C00000) >> 26),
 		0
 	};
 	
-	MatrixMultVec4x4(mtxCurrent[MATRIXMODE_POSITION_VECTOR], normal);
+	MatrixMultVec4x4(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], normal.vec);
 
-	const u16 x = (u16)((s16)normal[0]);
-	const u16 y = (u16)((s16)normal[1]);
-	const u16 z = (u16)((s16)normal[2]);
+	const u16 x = (u16)((s16)normal.x);
+	const u16 y = (u16)((s16)normal.y);
+	const u16 z = (u16)((s16)normal.z);
 
 	MMU_new.gxstat.tb = 0;		// clear busy
 	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x630, x);
@@ -1844,18 +1916,18 @@ static void gfx3d_glVecTest(u32 v)
 //================================================================================= Geometry Engine
 //================================================================================= (end)
 //=================================================================================
-void gfx3d_glFogColor(u32 v)
+void gfx3d_glFogColor(const u32 v)
 {
 	gfx3d.pendingState.fogColor = v;
 }
 
-void gfx3d_glFogOffset(u32 v)
+void gfx3d_glFogOffset(const u32 v)
 {
-	gfx3d.pendingState.fogOffset = (v & 0x7FFF);
+	gfx3d.pendingState.fogOffset = (u16)(v & 0x00007FFF);
 }
 
 template <typename T, size_t ADDROFFSET>
-void gfx3d_glClearDepth(const T val)
+void gfx3d_glClearDepth(const T v)
 {
 	const size_t numBytes = sizeof(T);
 
@@ -1871,7 +1943,7 @@ void gfx3d_glClearDepth(const T val)
 		}
 			
 		case 2:
-			gfx3d.pendingState.clearDepth = DS_DEPTH15TO24(val);
+			gfx3d.pendingState.clearDepth = DS_DEPTH15TO24(v);
 			break;
 			
 		default:
@@ -1879,19 +1951,19 @@ void gfx3d_glClearDepth(const T val)
 	}
 }
 
-template void gfx3d_glClearDepth< u8, 0>(const  u8 val);
-template void gfx3d_glClearDepth< u8, 1>(const  u8 val);
-template void gfx3d_glClearDepth<u16, 0>(const u16 val);
+template void gfx3d_glClearDepth< u8, 0>(const  u8 v);
+template void gfx3d_glClearDepth< u8, 1>(const  u8 v);
+template void gfx3d_glClearDepth<u16, 0>(const u16 v);
 
 template <typename T, size_t ADDROFFSET>
-void gfx3d_glClearImageOffset(const T val)
+void gfx3d_glClearImageOffset(const T v)
 {
-	((T *)&gfx3d.pendingState.clearImageOffset)[ADDROFFSET >> (sizeof(T) >> 1)] = val;
+	((T *)&gfx3d.pendingState.clearImageOffset)[ADDROFFSET >> (sizeof(T) >> 1)] = v;
 }
 
-template void gfx3d_glClearImageOffset< u8, 0>(const  u8 val);
-template void gfx3d_glClearImageOffset< u8, 1>(const  u8 val);
-template void gfx3d_glClearImageOffset<u16, 0>(const u16 val);
+template void gfx3d_glClearImageOffset< u8, 0>(const  u8 v);
+template void gfx3d_glClearImageOffset< u8, 1>(const  u8 v);
+template void gfx3d_glClearImageOffset<u16, 0>(const u16 v);
 
 u32 gfx3d_GetNumPolys()
 {
@@ -1906,58 +1978,58 @@ u32 gfx3d_GetNumVertex()
 }
 
 template <typename T>
-void gfx3d_UpdateEdgeMarkColorTable(const u8 offset, const T val)
+void gfx3d_UpdateEdgeMarkColorTable(const u8 offset, const T v)
 {
-	((T *)(gfx3d.pendingState.edgeMarkColorTable))[offset >> (sizeof(T) >> 1)] = val;
+	((T *)(gfx3d.pendingState.edgeMarkColorTable))[offset >> (sizeof(T) >> 1)] = v;
 }
 
-template void gfx3d_UpdateEdgeMarkColorTable< u8>(const u8 offset, const  u8 val);
-template void gfx3d_UpdateEdgeMarkColorTable<u16>(const u8 offset, const u16 val);
-template void gfx3d_UpdateEdgeMarkColorTable<u32>(const u8 offset, const u32 val);
+template void gfx3d_UpdateEdgeMarkColorTable< u8>(const u8 offset, const  u8 v);
+template void gfx3d_UpdateEdgeMarkColorTable<u16>(const u8 offset, const u16 v);
+template void gfx3d_UpdateEdgeMarkColorTable<u32>(const u8 offset, const u32 v);
 
 template <typename T>
-void gfx3d_UpdateFogTable(const u8 offset, const T val)
+void gfx3d_UpdateFogTable(const u8 offset, const T v)
 {
-	((T *)(gfx3d.pendingState.fogDensityTable))[offset >> (sizeof(T) >> 1)] = val;
+	((T *)(gfx3d.pendingState.fogDensityTable))[offset >> (sizeof(T) >> 1)] = v;
 }
 
-template void gfx3d_UpdateFogTable< u8>(const u8 offset, const  u8 val);
-template void gfx3d_UpdateFogTable<u16>(const u8 offset, const u16 val);
-template void gfx3d_UpdateFogTable<u32>(const u8 offset, const u32 val);
+template void gfx3d_UpdateFogTable< u8>(const u8 offset, const  u8 v);
+template void gfx3d_UpdateFogTable<u16>(const u8 offset, const u16 v);
+template void gfx3d_UpdateFogTable<u32>(const u8 offset, const u32 v);
 
 template <typename T>
-void gfx3d_UpdateToonTable(const u8 offset, const T val)
+void gfx3d_UpdateToonTable(const u8 offset, const T v)
 {
 	//C.O.P. sets toon table via this method
-	((T *)(gfx3d.pendingState.toonTable16))[offset >> (sizeof(T) >> 1)] = val;
+	((T *)(gfx3d.pendingState.toonTable16))[offset >> (sizeof(T) >> 1)] = v;
 }
 
-template void gfx3d_UpdateToonTable< u8>(const u8 offset, const  u8 val);
-template void gfx3d_UpdateToonTable<u16>(const u8 offset, const u16 val);
-template void gfx3d_UpdateToonTable<u32>(const u8 offset, const u32 val);
+template void gfx3d_UpdateToonTable< u8>(const u8 offset, const  u8 v);
+template void gfx3d_UpdateToonTable<u16>(const u8 offset, const u16 v);
+template void gfx3d_UpdateToonTable<u32>(const u8 offset, const u32 v);
 
 s32 gfx3d_GetClipMatrix(const u32 index)
 {
 	//printf("reading clip matrix: %d\n",index);
-	return MatrixGetMultipliedIndex(index, mtxCurrent[MATRIXMODE_PROJECTION], mtxCurrent[MATRIXMODE_POSITION]);
+	return MatrixGetMultipliedIndex(index, _mtxCurrent[MATRIXMODE_PROJECTION], _mtxCurrent[MATRIXMODE_POSITION]);
 }
 
 s32 gfx3d_GetDirectionalMatrix(const u32 index)
 {
 	const size_t _index = (((index / 3) * 4) + (index % 3));
 
-	//return (s32)(mtxCurrent[2][_index]*(1<<12));
-	return mtxCurrent[MATRIXMODE_POSITION_VECTOR][_index];
+	//return (s32)(_mtxCurrent[2][_index]*(1<<12));
+	return _mtxCurrent[MATRIXMODE_POSITION_VECTOR][_index];
 }
 
-void gfx3d_glAlphaFunc(u32 v)
+void gfx3d_glAlphaFunc(const u32 v)
 {
 	gfx3d.pendingState.alphaTestRef = (u8)(v & 0x0000001F);
 }
 
 u32 gfx3d_glGetPosRes(const size_t index)
 {
-	return (u32)PTcoords[index];
+	return (u32)_PTcoords.coord[index];
 }
 
 //#define _3D_LOG_EXEC
@@ -2254,10 +2326,10 @@ void gfx3d_execute3D()
 
 }
 
-void gfx3d_glFlush(u32 v)
+void gfx3d_glFlush(const u32 param)
 {
 	//printf("-------------FLUSH------------- (vcount=%d\n",nds.VCount);
-	gfx3d.pendingState.SWAP_BUFFERS.value = v;
+	gfx3d.pendingState.SWAP_BUFFERS.value = param;
 #if 0
 	if (isSwapBuffers)
 	{
@@ -2471,7 +2543,7 @@ static void gfx3d_doFlush()
 	}
 	
 	gfx3d.render3DFrameCount++;
-	drawPending = TRUE;
+	_isDrawPending = true;
 }
 
 void gfx3d_VBlankSignal()
@@ -2524,12 +2596,12 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 		forceDraw = true;
 	}
 	
-	if (!drawPending && !forceDraw)
+	if (!_isDrawPending && !forceDraw)
 		return;
 
 	if (skipFrame) return;
 
-	drawPending = FALSE;
+	_isDrawPending = false;
 	
 	GPU->GetEventHandler()->DidApplyRender3DSettingsBegin();
 	
@@ -2562,11 +2634,11 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 
 //#define _3D_LOG
 
-void gfx3d_sendCommandToFIFO(u32 val)
+void gfx3d_sendCommandToFIFO(const u32 v)
 {
 	//printf("gxFIFO: send val=0x%08X, size=%03i (fifo)\n", val, gxFIFO.size);
 
-	gxf_hardware.receive(val);
+	gxf_hardware.receive(v);
 }
 
 void gfx3d_sendCommand(u32 cmd, u32 param)
@@ -2637,7 +2709,7 @@ void gfx3d_glGetMatrix(const int index, float (&dst)[16])
 {
 	if (index == -1)
 	{
-		MatrixCopy(dst, mtxCurrent[MODE]);
+		MatrixCopy(dst, _mtxCurrent[MODE]);
 	}
 	else
 	{
@@ -2667,12 +2739,12 @@ void gfx3d_glGetMatrix(const int index, float (&dst)[16])
 
 void gfx3d_glGetLightDirection(const size_t index, u32 &dst)
 {
-	dst = lightDirection[index];
+	dst = _regLightDirection[index];
 }
 
 void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 {
-	dst = lightColor[index];
+	dst = _regLightColor[index];
 }
 
 //http://www.opengl.org/documentation/specs/version1.1/glspec1.1/node17.html
@@ -2681,38 +2753,38 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 
 SFORMAT SF_GFX3D[]={
 	{ "GCTL", 4, 1, &gfx3d.pendingState.DISP3DCNT},
-	{ "GPAT", 4, 1, &polyAttrInProcess.value},
-	{ "GPAP", 4, 1, &currentPolyAttr.value},
-	{ "GINB", 4, 1, &inBegin},
-	{ "GTFM", 4, 1, &currentPolyTexParam.value},
-	{ "GTPA", 4, 1, &currentPolyTexPalette},
-	{ "GMOD", 4, 1, &mode},
-	{ "GMTM", 4,16, mtxTemporal},
-	{ "GMCU", 4,64, mtxCurrent},
-	{ "ML4I", 1, 1, &ML4x4ind},
-	{ "ML3I", 1, 1, &ML4x3ind},
-	{ "MM4I", 1, 1, &MM4x4ind},
-	{ "MM3I", 1, 1, &MM4x3ind},
-	{ "MMxI", 1, 1, &MM3x3ind},
-	{ "GSCO", 2, 4, s16coord},
-	{ "GCOI", 1, 1, &coordind},
-	{ "GVFM", 4, 1, &vtxFormat},
-	{ "GTRN", 4, 4, trans},
-	{ "GTRI", 1, 1, &transind},
-	{ "GSCA", 4, 4, scale},
-	{ "GSCI", 1, 1, &scaleind},
-	{ "G_T_", 4, 1, &_t},
-	{ "G_S_", 4, 1, &_s},
-	{ "GL_T", 4, 1, &last_t},
-	{ "GL_S", 4, 1, &last_s},
-	{ "GLCM", 4, 1, &clCmd},
-	{ "GLIN", 4, 1, &clInd},
-	{ "GLI2", 4, 1, &clInd2},
+	{ "GPAT", 4, 1, &_polyAttrInProcess},
+	{ "GPAP", 4, 1, &_currentPolyAttr},
+	{ "GINB", 4, 1, &gfx3d.inBeginLegacySave},
+	{ "GTFM", 4, 1, &_currentPolyTexParam},
+	{ "GTPA", 4, 1, &_currentPolyTexPalette},
+	{ "GMOD", 4, 1, &_mtxMode},
+	{ "GMTM", 4,16, _mtxTemporal},
+	{ "GMCU", 4,64, _mtxCurrent},
+	{ "ML4I", 1, 1, &_ML4x4ind},
+	{ "ML3I", 1, 1, &_ML4x3ind},
+	{ "MM4I", 1, 1, &_MM4x4ind},
+	{ "MM3I", 1, 1, &_MM4x3ind},
+	{ "MMxI", 1, 1, &_MM3x3ind},
+	{ "GSCO", 2, 4, &_vtxCoord16},
+	{ "GCOI", 1, 1, &_vtxCoord16CurrentIndex},
+	{ "GVFM", 4, 1, &_vtxFormat},
+	{ "GTRN", 4, 4, &_regTranslate},
+	{ "GTRI", 1, 1, &_regTranslateCurrentIndex},
+	{ "GSCA", 4, 4, &_regScale},
+	{ "GSCI", 1, 1, &_regScaleCurrentIndex},
+	{ "G_T_", 4, 1, &_regTexCoord.t},
+	{ "G_S_", 4, 1, &_regTexCoord.s},
+	{ "GL_T", 4, 1, &_texCoordTransformed.t},
+	{ "GL_S", 4, 1, &_texCoordTransformed.s},
+	{ "GLCM", 4, 1, &gfx3d.clCommandLegacySave},
+	{ "GLIN", 4, 1, &gfx3d.clIndexLegacySave},
+	{ "GLI2", 4, 1, &gfx3d.clIndex2LegacySave},
 	{ "GLSB", 4, 1, &isSwapBuffers},
-	{ "GLBT", 4, 1, &BTind},
-	{ "GLPT", 4, 1, &PTind},
+	{ "GLBT", 4, 1, &_BTind},
+	{ "GLPT", 4, 1, &_PTind},
 	{ "GLPC", 4, 4, gfx3d.PTcoordsLegacySave},
-	{ "GBTC", 2, 6, &BTcoords[0]},
+	{ "GBTC", 2, 6, &_BTcoords[0]},
 	{ "GFHE", 4, 1, &gxFIFO.head},
 	{ "GFTA", 4, 1, &gxFIFO.tail},
 	{ "GFSZ", 4, 1, &gxFIFO.size},
@@ -2724,65 +2796,65 @@ SFORMAT SF_GFX3D[]={
 	{ "GPSZ", 1, 1, &gxPIPE.size},
 	{ "GPCM", 1, 4, &gxPIPE.cmd[0]},
 	{ "GPPM", 4, 4, &gxPIPE.param[0]},
-	{ "GCOL", 1, 4, &colorRGB[0]},
-	{ "GLCO", 4, 4, lightColor},
-	{ "GLDI", 4, 4, lightDirection},
-	{ "GMDI", 2, 1, &dsDiffuse},
-	{ "GMAM", 2, 1, &dsAmbient},
-	{ "GMSP", 2, 1, &dsSpecular},
-	{ "GMEM", 2, 1, &dsEmission},
-	{ "GDRP", 4, 1, &drawPending},
-	{ "GSET", 4, 1, &legacyGFX3DStateSFormatPending.enableTexturing},
-	{ "GSEA", 4, 1, &legacyGFX3DStateSFormatPending.enableAlphaTest},
-	{ "GSEB", 4, 1, &legacyGFX3DStateSFormatPending.enableAlphaBlending},
-	{ "GSEX", 4, 1, &legacyGFX3DStateSFormatPending.enableAntialiasing},
-	{ "GSEE", 4, 1, &legacyGFX3DStateSFormatPending.enableEdgeMarking},
-	{ "GSEC", 4, 1, &legacyGFX3DStateSFormatPending.enableClearImage},
-	{ "GSEF", 4, 1, &legacyGFX3DStateSFormatPending.enableFog},
-	{ "GSEO", 4, 1, &legacyGFX3DStateSFormatPending.enableFogAlphaOnly},
-	{ "GFSH", 4, 1, &legacyGFX3DStateSFormatPending.fogShift},
-	{ "GSSH", 4, 1, &legacyGFX3DStateSFormatPending.toonShadingMode},
-	{ "GSWB", 4, 1, &legacyGFX3DStateSFormatPending.enableWDepth},
-	{ "GSSM", 4, 1, &legacyGFX3DStateSFormatPending.polygonTransparentSortMode},
-	{ "GSAR", 1, 1, &legacyGFX3DStateSFormatPending.alphaTestRef},
-	{ "GSCC", 4, 1, &legacyGFX3DStateSFormatPending.clearColor},
-	{ "GSCD", 4, 1, &legacyGFX3DStateSFormatPending.clearDepth},
-	{ "GSFC", 4, 4,  legacyGFX3DStateSFormatPending.fogColor},
-	{ "GSFO", 4, 1, &legacyGFX3DStateSFormatPending.fogOffset},
-	{ "GST4", 2, 32, legacyGFX3DStateSFormatPending.toonTable16},
-	{ "GSSU", 1, 128, legacyGFX3DStateSFormatPending.shininessTable},
-	{ "GSAF", 4, 1, &legacyGFX3DStateSFormatPending.activeFlushCommand},
-	{ "GSPF", 4, 1, &legacyGFX3DStateSFormatPending.pendingFlushCommand},
+	{ "GCOL", 1, 4, &_vtxColor555X},
+	{ "GLCO", 4, 4, _regLightColor},
+	{ "GLDI", 4, 4, &_regLightDirection},
+	{ "GMDI", 2, 1, &_regDiffuse},
+	{ "GMAM", 2, 1, &_regAmbient},
+	{ "GMSP", 2, 1, &_regSpecular},
+	{ "GMEM", 2, 1, &_regEmission},
+	{ "GDRP", 4, 1, &gfx3d.isDrawPendingLegacySave},
+	{ "GSET", 4, 1, &_legacyGFX3DStateSFormatPending.enableTexturing},
+	{ "GSEA", 4, 1, &_legacyGFX3DStateSFormatPending.enableAlphaTest},
+	{ "GSEB", 4, 1, &_legacyGFX3DStateSFormatPending.enableAlphaBlending},
+	{ "GSEX", 4, 1, &_legacyGFX3DStateSFormatPending.enableAntialiasing},
+	{ "GSEE", 4, 1, &_legacyGFX3DStateSFormatPending.enableEdgeMarking},
+	{ "GSEC", 4, 1, &_legacyGFX3DStateSFormatPending.enableClearImage},
+	{ "GSEF", 4, 1, &_legacyGFX3DStateSFormatPending.enableFog},
+	{ "GSEO", 4, 1, &_legacyGFX3DStateSFormatPending.enableFogAlphaOnly},
+	{ "GFSH", 4, 1, &_legacyGFX3DStateSFormatPending.fogShift},
+	{ "GSSH", 4, 1, &_legacyGFX3DStateSFormatPending.toonShadingMode},
+	{ "GSWB", 4, 1, &_legacyGFX3DStateSFormatPending.enableWDepth},
+	{ "GSSM", 4, 1, &_legacyGFX3DStateSFormatPending.polygonTransparentSortMode},
+	{ "GSAR", 1, 1, &_legacyGFX3DStateSFormatPending.alphaTestRef},
+	{ "GSCC", 4, 1, &_legacyGFX3DStateSFormatPending.clearColor},
+	{ "GSCD", 4, 1, &_legacyGFX3DStateSFormatPending.clearDepth},
+	{ "GSFC", 4, 4,  _legacyGFX3DStateSFormatPending.fogColor},
+	{ "GSFO", 4, 1, &_legacyGFX3DStateSFormatPending.fogOffset},
+	{ "GST4", 2, 32, _legacyGFX3DStateSFormatPending.toonTable16},
+	{ "GSSU", 1, 128, _legacyGFX3DStateSFormatPending.shininessTable},
+	{ "GSAF", 4, 1, &_legacyGFX3DStateSFormatPending.activeFlushCommand},
+	{ "GSPF", 4, 1, &_legacyGFX3DStateSFormatPending.pendingFlushCommand},
 
-	{ "gSET", 4, 1, &legacyGFX3DStateSFormatApplied.enableTexturing},
-	{ "gSEA", 4, 1, &legacyGFX3DStateSFormatApplied.enableAlphaTest},
-	{ "gSEB", 4, 1, &legacyGFX3DStateSFormatApplied.enableAlphaBlending},
-	{ "gSEX", 4, 1, &legacyGFX3DStateSFormatApplied.enableAntialiasing},
-	{ "gSEE", 4, 1, &legacyGFX3DStateSFormatApplied.enableEdgeMarking},
-	{ "gSEC", 4, 1, &legacyGFX3DStateSFormatApplied.enableClearImage},
-	{ "gSEF", 4, 1, &legacyGFX3DStateSFormatApplied.enableFog},
-	{ "gSEO", 4, 1, &legacyGFX3DStateSFormatApplied.enableFogAlphaOnly},
-	{ "gFSH", 4, 1, &legacyGFX3DStateSFormatApplied.fogShift},
-	{ "gSSH", 4, 1, &legacyGFX3DStateSFormatApplied.toonShadingMode},
-	{ "gSWB", 4, 1, &legacyGFX3DStateSFormatApplied.enableWDepth},
-	{ "gSSM", 4, 1, &legacyGFX3DStateSFormatApplied.polygonTransparentSortMode},
-	{ "gSAR", 1, 1, &legacyGFX3DStateSFormatApplied.alphaTestRef},
-	{ "gSCC", 4, 1, &legacyGFX3DStateSFormatApplied.clearColor},
-	{ "gSCD", 4, 1, &legacyGFX3DStateSFormatApplied.clearDepth},
-	{ "gSFC", 4, 4,  legacyGFX3DStateSFormatApplied.fogColor},
-	{ "gSFO", 4, 1, &legacyGFX3DStateSFormatApplied.fogOffset},
-	{ "gST4", 2, 32, legacyGFX3DStateSFormatApplied.toonTable16},
-	{ "gSSU", 1, 128, legacyGFX3DStateSFormatApplied.shininessTable},
-	{ "gSAF", 4, 1, &legacyGFX3DStateSFormatApplied.activeFlushCommand},
-	{ "gSPF", 4, 1, &legacyGFX3DStateSFormatApplied.pendingFlushCommand},
+	{ "gSET", 4, 1, &_legacyGFX3DStateSFormatApplied.enableTexturing},
+	{ "gSEA", 4, 1, &_legacyGFX3DStateSFormatApplied.enableAlphaTest},
+	{ "gSEB", 4, 1, &_legacyGFX3DStateSFormatApplied.enableAlphaBlending},
+	{ "gSEX", 4, 1, &_legacyGFX3DStateSFormatApplied.enableAntialiasing},
+	{ "gSEE", 4, 1, &_legacyGFX3DStateSFormatApplied.enableEdgeMarking},
+	{ "gSEC", 4, 1, &_legacyGFX3DStateSFormatApplied.enableClearImage},
+	{ "gSEF", 4, 1, &_legacyGFX3DStateSFormatApplied.enableFog},
+	{ "gSEO", 4, 1, &_legacyGFX3DStateSFormatApplied.enableFogAlphaOnly},
+	{ "gFSH", 4, 1, &_legacyGFX3DStateSFormatApplied.fogShift},
+	{ "gSSH", 4, 1, &_legacyGFX3DStateSFormatApplied.toonShadingMode},
+	{ "gSWB", 4, 1, &_legacyGFX3DStateSFormatApplied.enableWDepth},
+	{ "gSSM", 4, 1, &_legacyGFX3DStateSFormatApplied.polygonTransparentSortMode},
+	{ "gSAR", 1, 1, &_legacyGFX3DStateSFormatApplied.alphaTestRef},
+	{ "gSCC", 4, 1, &_legacyGFX3DStateSFormatApplied.clearColor},
+	{ "gSCD", 4, 1, &_legacyGFX3DStateSFormatApplied.clearDepth},
+	{ "gSFC", 4, 4,  _legacyGFX3DStateSFormatApplied.fogColor},
+	{ "gSFO", 4, 1, &_legacyGFX3DStateSFormatApplied.fogOffset},
+	{ "gST4", 2, 32, _legacyGFX3DStateSFormatApplied.toonTable16},
+	{ "gSSU", 1, 128, _legacyGFX3DStateSFormatApplied.shininessTable},
+	{ "gSAF", 4, 1, &_legacyGFX3DStateSFormatApplied.activeFlushCommand},
+	{ "gSPF", 4, 1, &_legacyGFX3DStateSFormatApplied.pendingFlushCommand},
 
 	{ "GSVP", 4, 1, &gfx3d.viewportLegacySave},
-	{ "GSSI", 1, 1, &shininessInd},
+	{ "GSSI", 1, 1, &_shininessTableCurrentIndex},
 	//------------------------
-	{ "GTST", 1, 1, &triStripToggle},
-	{ "GTVC", 4, 1, &tempVertInfo.count},
-	{ "GTVM", 4, 4, tempVertInfo.map},
-	{ "GTVF", 4, 1, &tempVertInfo.first},
+	{ "GTST", 1, 1, &_triStripToggle},
+	{ "GTVC", 4, 1, &gfx3d.polyGenVtxCountLegacySave},
+	{ "GTVM", 4, 4, gfx3d.polyGenVtxIndexLegacySave},
+	{ "GTVF", 4, 1, &gfx3d.polyGenIsFirstCompletedLegacySave},
 	{ "G3CX", 1, 4*GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT, gfx3d.framebufferNativeSave},
 	{ 0 }
 };
@@ -2829,60 +2901,70 @@ void gfx3d_PrepareSaveStateBufferWrite()
 	}
 	
 	// For save state compatibility
-	gfx3d.PTcoordsLegacySave[0] = (float)PTcoords[0] / 4096.0f;
-	gfx3d.PTcoordsLegacySave[1] = (float)PTcoords[1] / 4096.0f;
-	gfx3d.PTcoordsLegacySave[2] = (float)PTcoords[2] / 4096.0f;
-	gfx3d.PTcoordsLegacySave[3] = (float)PTcoords[3] / 4096.0f;
+	gfx3d.inBeginLegacySave = (_inBegin) ? TRUE : FALSE;
+	gfx3d.isDrawPendingLegacySave = (_isDrawPending) ? TRUE : FALSE;
 	
-	legacyGFX3DStateSFormatPending.enableTexturing     = (gfx3d.pendingState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
-	legacyGFX3DStateSFormatPending.enableAlphaTest     = (gfx3d.pendingState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
-	legacyGFX3DStateSFormatPending.enableAlphaBlending = (gfx3d.pendingState.DISP3DCNT.EnableAlphaBlending) ? TRUE : FALSE;
-	legacyGFX3DStateSFormatPending.enableAntialiasing  = (gfx3d.pendingState.DISP3DCNT.EnableAntialiasing)  ? TRUE : FALSE;
-	legacyGFX3DStateSFormatPending.enableEdgeMarking   = (gfx3d.pendingState.DISP3DCNT.EnableEdgeMarking)   ? TRUE : FALSE;
-	legacyGFX3DStateSFormatPending.enableClearImage    = (gfx3d.pendingState.DISP3DCNT.RearPlaneMode)       ? TRUE : FALSE;
-	legacyGFX3DStateSFormatPending.enableFog           = (gfx3d.pendingState.DISP3DCNT.EnableFog)           ? TRUE : FALSE;
-	legacyGFX3DStateSFormatPending.enableFogAlphaOnly  = (gfx3d.pendingState.DISP3DCNT.FogOnlyAlpha)        ? TRUE : FALSE;
-	legacyGFX3DStateSFormatPending.fogShift            = gfx3d.pendingState.fogShift;
-	legacyGFX3DStateSFormatPending.toonShadingMode     = gfx3d.pendingState.DISP3DCNT.PolygonShading;
-	legacyGFX3DStateSFormatPending.enableWDepth        = (gfx3d.pendingState.SWAP_BUFFERS.DepthMode)        ? TRUE : FALSE;
-	legacyGFX3DStateSFormatPending.polygonTransparentSortMode = (gfx3d.pendingState.SWAP_BUFFERS.YSortMode) ? TRUE : FALSE;
-	legacyGFX3DStateSFormatPending.alphaTestRef        = gfx3d.pendingState.alphaTestRef;
-	legacyGFX3DStateSFormatPending.clearColor          = gfx3d.pendingState.clearColor;
-	legacyGFX3DStateSFormatPending.clearDepth          = gfx3d.pendingState.clearDepth;
-	legacyGFX3DStateSFormatPending.fogColor[0]         = gfx3d.pendingState.fogColor;
-	legacyGFX3DStateSFormatPending.fogColor[1]         = gfx3d.pendingState.fogColor;
-	legacyGFX3DStateSFormatPending.fogColor[2]         = gfx3d.pendingState.fogColor;
-	legacyGFX3DStateSFormatPending.fogColor[3]         = gfx3d.pendingState.fogColor;
-	legacyGFX3DStateSFormatPending.fogOffset           = gfx3d.pendingState.fogOffset;
-	legacyGFX3DStateSFormatPending.activeFlushCommand  = gfx3d.appliedState.SWAP_BUFFERS.value;
-	legacyGFX3DStateSFormatPending.pendingFlushCommand = gfx3d.pendingState.SWAP_BUFFERS.value;
-	memcpy(legacyGFX3DStateSFormatPending.toonTable16, gfx3d.pendingState.toonTable16, sizeof(gfx3d.pendingState.toonTable16));
-	memcpy(legacyGFX3DStateSFormatPending.shininessTable, gfx3d.pendingState.shininessTable, sizeof(gfx3d.pendingState.shininessTable));
+	gfx3d.polyGenVtxCountLegacySave = (u32)_polyGenInfo.vtxCount;
+	gfx3d.polyGenVtxIndexLegacySave[0] = (u32)_polyGenInfo.vtxIndex[0];
+	gfx3d.polyGenVtxIndexLegacySave[1] = (u32)_polyGenInfo.vtxIndex[1];
+	gfx3d.polyGenVtxIndexLegacySave[2] = (u32)_polyGenInfo.vtxIndex[2];
+	gfx3d.polyGenVtxIndexLegacySave[3] = (u32)_polyGenInfo.vtxIndex[3];
+	gfx3d.polyGenIsFirstCompletedLegacySave = (_polyGenInfo.isFirstPolyCompleted) ? TRUE : FALSE;
 	
-	legacyGFX3DStateSFormatApplied.enableTexturing     = (gfx3d.appliedState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
-	legacyGFX3DStateSFormatApplied.enableAlphaTest     = (gfx3d.appliedState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
-	legacyGFX3DStateSFormatApplied.enableAlphaBlending = (gfx3d.appliedState.DISP3DCNT.EnableAlphaBlending) ? TRUE : FALSE;
-	legacyGFX3DStateSFormatApplied.enableAntialiasing  = (gfx3d.appliedState.DISP3DCNT.EnableAntialiasing)  ? TRUE : FALSE;
-	legacyGFX3DStateSFormatApplied.enableEdgeMarking   = (gfx3d.appliedState.DISP3DCNT.EnableEdgeMarking)   ? TRUE : FALSE;
-	legacyGFX3DStateSFormatApplied.enableClearImage    = (gfx3d.appliedState.DISP3DCNT.RearPlaneMode)       ? TRUE : FALSE;
-	legacyGFX3DStateSFormatApplied.enableFog           = (gfx3d.appliedState.DISP3DCNT.EnableFog)           ? TRUE : FALSE;
-	legacyGFX3DStateSFormatApplied.enableFogAlphaOnly  = (gfx3d.appliedState.DISP3DCNT.FogOnlyAlpha)        ? TRUE : FALSE;
-	legacyGFX3DStateSFormatApplied.fogShift            = gfx3d.appliedState.fogShift;
-	legacyGFX3DStateSFormatApplied.toonShadingMode     = gfx3d.appliedState.DISP3DCNT.PolygonShading;
-	legacyGFX3DStateSFormatApplied.enableWDepth        = (gfx3d.appliedState.SWAP_BUFFERS.DepthMode)        ? TRUE : FALSE;
-	legacyGFX3DStateSFormatApplied.polygonTransparentSortMode = (gfx3d.appliedState.SWAP_BUFFERS.YSortMode) ? TRUE : FALSE;
-	legacyGFX3DStateSFormatApplied.alphaTestRef        = gfx3d.appliedState.alphaTestRef;
-	legacyGFX3DStateSFormatApplied.clearColor          = gfx3d.appliedState.clearColor;
-	legacyGFX3DStateSFormatApplied.clearDepth          = gfx3d.appliedState.clearDepth;
-	legacyGFX3DStateSFormatApplied.fogColor[0]         = gfx3d.appliedState.fogColor;
-	legacyGFX3DStateSFormatApplied.fogColor[1]         = gfx3d.appliedState.fogColor;
-	legacyGFX3DStateSFormatApplied.fogColor[2]         = gfx3d.appliedState.fogColor;
-	legacyGFX3DStateSFormatApplied.fogColor[3]         = gfx3d.appliedState.fogColor;
-	legacyGFX3DStateSFormatApplied.fogOffset           = gfx3d.appliedState.fogOffset;
-	legacyGFX3DStateSFormatApplied.activeFlushCommand  = gfx3d.appliedState.SWAP_BUFFERS.value;
-	legacyGFX3DStateSFormatApplied.pendingFlushCommand = gfx3d.pendingState.SWAP_BUFFERS.value;
-	memcpy(legacyGFX3DStateSFormatApplied.toonTable16, gfx3d.appliedState.toonTable16, sizeof(gfx3d.appliedState.toonTable16));
-	memcpy(legacyGFX3DStateSFormatApplied.shininessTable, gfx3d.appliedState.shininessTable, sizeof(gfx3d.appliedState.shininessTable));
+	gfx3d.PTcoordsLegacySave[0] = (float)_PTcoords.x / 4096.0f;
+	gfx3d.PTcoordsLegacySave[1] = (float)_PTcoords.y / 4096.0f;
+	gfx3d.PTcoordsLegacySave[2] = (float)_PTcoords.z / 4096.0f;
+	gfx3d.PTcoordsLegacySave[3] = (float)_PTcoords.w / 4096.0f;
+	
+	_legacyGFX3DStateSFormatPending.enableTexturing     = (gfx3d.pendingState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatPending.enableAlphaTest     = (gfx3d.pendingState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatPending.enableAlphaBlending = (gfx3d.pendingState.DISP3DCNT.EnableAlphaBlending) ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatPending.enableAntialiasing  = (gfx3d.pendingState.DISP3DCNT.EnableAntialiasing)  ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatPending.enableEdgeMarking   = (gfx3d.pendingState.DISP3DCNT.EnableEdgeMarking)   ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatPending.enableClearImage    = (gfx3d.pendingState.DISP3DCNT.RearPlaneMode)       ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatPending.enableFog           = (gfx3d.pendingState.DISP3DCNT.EnableFog)           ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatPending.enableFogAlphaOnly  = (gfx3d.pendingState.DISP3DCNT.FogOnlyAlpha)        ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatPending.fogShift            = gfx3d.pendingState.fogShift;
+	_legacyGFX3DStateSFormatPending.toonShadingMode     = gfx3d.pendingState.DISP3DCNT.PolygonShading;
+	_legacyGFX3DStateSFormatPending.enableWDepth        = (gfx3d.pendingState.SWAP_BUFFERS.DepthMode)        ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatPending.polygonTransparentSortMode = (gfx3d.pendingState.SWAP_BUFFERS.YSortMode) ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatPending.alphaTestRef        = gfx3d.pendingState.alphaTestRef;
+	_legacyGFX3DStateSFormatPending.clearColor          = gfx3d.pendingState.clearColor;
+	_legacyGFX3DStateSFormatPending.clearDepth          = gfx3d.pendingState.clearDepth;
+	_legacyGFX3DStateSFormatPending.fogColor[0]         = gfx3d.pendingState.fogColor;
+	_legacyGFX3DStateSFormatPending.fogColor[1]         = gfx3d.pendingState.fogColor;
+	_legacyGFX3DStateSFormatPending.fogColor[2]         = gfx3d.pendingState.fogColor;
+	_legacyGFX3DStateSFormatPending.fogColor[3]         = gfx3d.pendingState.fogColor;
+	_legacyGFX3DStateSFormatPending.fogOffset           = gfx3d.pendingState.fogOffset;
+	_legacyGFX3DStateSFormatPending.activeFlushCommand  = gfx3d.appliedState.SWAP_BUFFERS.value;
+	_legacyGFX3DStateSFormatPending.pendingFlushCommand = gfx3d.pendingState.SWAP_BUFFERS.value;
+	memcpy(_legacyGFX3DStateSFormatPending.toonTable16, gfx3d.pendingState.toonTable16, sizeof(gfx3d.pendingState.toonTable16));
+	memcpy(_legacyGFX3DStateSFormatPending.shininessTable, gfx3d.pendingState.shininessTable, sizeof(gfx3d.pendingState.shininessTable));
+	
+	_legacyGFX3DStateSFormatApplied.enableTexturing     = (gfx3d.appliedState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatApplied.enableAlphaTest     = (gfx3d.appliedState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatApplied.enableAlphaBlending = (gfx3d.appliedState.DISP3DCNT.EnableAlphaBlending) ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatApplied.enableAntialiasing  = (gfx3d.appliedState.DISP3DCNT.EnableAntialiasing)  ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatApplied.enableEdgeMarking   = (gfx3d.appliedState.DISP3DCNT.EnableEdgeMarking)   ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatApplied.enableClearImage    = (gfx3d.appliedState.DISP3DCNT.RearPlaneMode)       ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatApplied.enableFog           = (gfx3d.appliedState.DISP3DCNT.EnableFog)           ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatApplied.enableFogAlphaOnly  = (gfx3d.appliedState.DISP3DCNT.FogOnlyAlpha)        ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatApplied.fogShift            = gfx3d.appliedState.fogShift;
+	_legacyGFX3DStateSFormatApplied.toonShadingMode     = gfx3d.appliedState.DISP3DCNT.PolygonShading;
+	_legacyGFX3DStateSFormatApplied.enableWDepth        = (gfx3d.appliedState.SWAP_BUFFERS.DepthMode)        ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatApplied.polygonTransparentSortMode = (gfx3d.appliedState.SWAP_BUFFERS.YSortMode) ? TRUE : FALSE;
+	_legacyGFX3DStateSFormatApplied.alphaTestRef        = gfx3d.appliedState.alphaTestRef;
+	_legacyGFX3DStateSFormatApplied.clearColor          = gfx3d.appliedState.clearColor;
+	_legacyGFX3DStateSFormatApplied.clearDepth          = gfx3d.appliedState.clearDepth;
+	_legacyGFX3DStateSFormatApplied.fogColor[0]         = gfx3d.appliedState.fogColor;
+	_legacyGFX3DStateSFormatApplied.fogColor[1]         = gfx3d.appliedState.fogColor;
+	_legacyGFX3DStateSFormatApplied.fogColor[2]         = gfx3d.appliedState.fogColor;
+	_legacyGFX3DStateSFormatApplied.fogColor[3]         = gfx3d.appliedState.fogColor;
+	_legacyGFX3DStateSFormatApplied.fogOffset           = gfx3d.appliedState.fogOffset;
+	_legacyGFX3DStateSFormatApplied.activeFlushCommand  = gfx3d.appliedState.SWAP_BUFFERS.value;
+	_legacyGFX3DStateSFormatApplied.pendingFlushCommand = gfx3d.pendingState.SWAP_BUFFERS.value;
+	memcpy(_legacyGFX3DStateSFormatApplied.toonTable16, gfx3d.appliedState.toonTable16, sizeof(gfx3d.appliedState.toonTable16));
+	memcpy(_legacyGFX3DStateSFormatApplied.shininessTable, gfx3d.appliedState.shininessTable, sizeof(gfx3d.appliedState.shininessTable));
 }
 
 void gfx3d_savestate(EMUFILE &os)
@@ -2942,18 +3024,18 @@ void gfx3d_savestate(EMUFILE &os)
 	// evidently these need to be saved because we don't cache the matrix that would need to be used to properly regenerate them
 	for (size_t i = 0; i < 4; i++)
 	{
-		for (size_t j = 0; j < 4; j++)
-		{
-			os.write_32LE(cacheLightDirection[i][j]);
-		}
+		os.write_32LE(_cacheLightDirection[i].x);
+		os.write_32LE(_cacheLightDirection[i].y);
+		os.write_32LE(_cacheLightDirection[i].z);
+		os.write_32LE(_cacheLightDirection[i].w);
 	}
 	
 	for (size_t i = 0; i < 4; i++)
 	{
-		for (size_t j = 0; j < 4; j++)
-		{
-			os.write_32LE(cacheHalfVector[i][j]);
-		}
+		os.write_32LE(_cacheHalfVector[i].x);
+		os.write_32LE(_cacheHalfVector[i].y);
+		os.write_32LE(_cacheHalfVector[i].z);
+		os.write_32LE(_cacheHalfVector[i].w);
 	}
 }
 
@@ -3052,18 +3134,18 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 	{
 		for (size_t i = 0; i < 4; i++)
 		{
-			for (size_t j = 0; j < 4; j++)
-			{
-				is.read_32LE(cacheLightDirection[i][j]);
-			}
+			is.read_32LE(_cacheLightDirection[i].x);
+			is.read_32LE(_cacheLightDirection[i].y);
+			is.read_32LE(_cacheLightDirection[i].z);
+			is.read_32LE(_cacheLightDirection[i].w);
 		}
 		
 		for (size_t i = 0; i < 4; i++)
 		{
-			for (size_t j = 0; j < 4; j++)
-			{
-				is.read_32LE(cacheHalfVector[i][j]);
-			}
+			is.read_32LE(_cacheHalfVector[i].x);
+			is.read_32LE(_cacheHalfVector[i].y);
+			is.read_32LE(_cacheHalfVector[i].z);
+			is.read_32LE(_cacheHalfVector[i].w);
 		}
 	}
 
@@ -3126,10 +3208,20 @@ void gfx3d_FinishLoadStateBufferRead()
 	const GPU_IOREG &GPUREG = GPU->GetEngineMain()->GetIORegisterMap();
 	const GFX3D_IOREG &GFX3DREG = GFX3D_GetIORegisterMap();
 	
-	PTcoords[0] = (s32)((gfx3d.PTcoordsLegacySave[0] * 4096.0f) + 0.000000001f);
-	PTcoords[1] = (s32)((gfx3d.PTcoordsLegacySave[1] * 4096.0f) + 0.000000001f);
-	PTcoords[2] = (s32)((gfx3d.PTcoordsLegacySave[2] * 4096.0f) + 0.000000001f);
-	PTcoords[3] = (s32)((gfx3d.PTcoordsLegacySave[3] * 4096.0f) + 0.000000001f);
+	_inBegin = (gfx3d.inBeginLegacySave) ? true : false;
+	_isDrawPending = (gfx3d.isDrawPendingLegacySave) ? true : false;
+	
+	_polyGenInfo.vtxCount = (size_t)gfx3d.polyGenVtxCountLegacySave;
+	_polyGenInfo.vtxIndex[0] = (u16)gfx3d.polyGenVtxIndexLegacySave[0];
+	_polyGenInfo.vtxIndex[1] = (u16)gfx3d.polyGenVtxIndexLegacySave[1];
+	_polyGenInfo.vtxIndex[2] = (u16)gfx3d.polyGenVtxIndexLegacySave[2];
+	_polyGenInfo.vtxIndex[3] = (u16)gfx3d.polyGenVtxIndexLegacySave[3];
+	_polyGenInfo.isFirstPolyCompleted = (gfx3d.polyGenIsFirstCompletedLegacySave) ? true : false;
+	
+	_PTcoords.x = (s32)((gfx3d.PTcoordsLegacySave[0] * 4096.0f) + 0.000000001f);
+	_PTcoords.y = (s32)((gfx3d.PTcoordsLegacySave[1] * 4096.0f) + 0.000000001f);
+	_PTcoords.z = (s32)((gfx3d.PTcoordsLegacySave[2] * 4096.0f) + 0.000000001f);
+	_PTcoords.w = (s32)((gfx3d.PTcoordsLegacySave[3] * 4096.0f) + 0.000000001f);
 	
 	gfx3d.viewport = GFX3D_ViewportParse(GFX3DREG.VIEWPORT.value);
 	gfx3d.viewportLegacySave = GFX3DREG.VIEWPORT;
@@ -3138,38 +3230,38 @@ void gfx3d_FinishLoadStateBufferRead()
 	gfx3d_parseCurrentDISP3DCNT();
 	
 	gfx3d.pendingState.SWAP_BUFFERS = GFX3DREG.SWAP_BUFFERS;
-	gfx3d.pendingState.clearColor = legacyGFX3DStateSFormatPending.clearColor;
-	gfx3d.pendingState.clearDepth = legacyGFX3DStateSFormatPending.clearDepth;
-	gfx3d.pendingState.fogColor = legacyGFX3DStateSFormatPending.fogColor[0];
-	gfx3d.pendingState.fogOffset = legacyGFX3DStateSFormatPending.fogOffset;
-	gfx3d.pendingState.alphaTestRef = legacyGFX3DStateSFormatPending.alphaTestRef;
-	memcpy(gfx3d.pendingState.toonTable16, legacyGFX3DStateSFormatPending.toonTable16, sizeof(gfx3d.pendingState.toonTable16));
-	memcpy(gfx3d.pendingState.shininessTable, legacyGFX3DStateSFormatPending.shininessTable, sizeof(gfx3d.pendingState.shininessTable));
+	gfx3d.pendingState.clearColor = _legacyGFX3DStateSFormatPending.clearColor;
+	gfx3d.pendingState.clearDepth = _legacyGFX3DStateSFormatPending.clearDepth;
+	gfx3d.pendingState.fogColor = _legacyGFX3DStateSFormatPending.fogColor[0];
+	gfx3d.pendingState.fogOffset = _legacyGFX3DStateSFormatPending.fogOffset;
+	gfx3d.pendingState.alphaTestRef = _legacyGFX3DStateSFormatPending.alphaTestRef;
+	memcpy(gfx3d.pendingState.toonTable16, _legacyGFX3DStateSFormatPending.toonTable16, sizeof(gfx3d.pendingState.toonTable16));
+	memcpy(gfx3d.pendingState.shininessTable, _legacyGFX3DStateSFormatPending.shininessTable, sizeof(gfx3d.pendingState.shininessTable));
 	memcpy(gfx3d.pendingState.edgeMarkColorTable, GFX3DREG.EDGE_COLOR, sizeof(GFX3DREG.EDGE_COLOR));
 	memcpy(gfx3d.pendingState.fogDensityTable, GFX3DREG.FOG_TABLE, sizeof(GFX3DREG.FOG_TABLE));
 	
 	gfx3d.appliedState.DISP3DCNT.value               = 0;
-	gfx3d.appliedState.DISP3DCNT.EnableTexMapping    = (legacyGFX3DStateSFormatApplied.enableTexturing)     ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.EnableAlphaTest     = (legacyGFX3DStateSFormatApplied.enableAlphaTest)     ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.EnableAlphaBlending = (legacyGFX3DStateSFormatApplied.enableAlphaBlending) ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.EnableAntialiasing  = (legacyGFX3DStateSFormatApplied.enableAntialiasing)  ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.EnableEdgeMarking   = (legacyGFX3DStateSFormatApplied.enableEdgeMarking)   ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.RearPlaneMode       = (legacyGFX3DStateSFormatApplied.enableClearImage)    ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.EnableFog           = (legacyGFX3DStateSFormatApplied.enableFog)           ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.FogOnlyAlpha        = (legacyGFX3DStateSFormatApplied.enableFogAlphaOnly)  ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.PolygonShading      = (legacyGFX3DStateSFormatApplied.toonShadingMode)     ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableTexMapping    = (_legacyGFX3DStateSFormatApplied.enableTexturing)     ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableAlphaTest     = (_legacyGFX3DStateSFormatApplied.enableAlphaTest)     ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableAlphaBlending = (_legacyGFX3DStateSFormatApplied.enableAlphaBlending) ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableAntialiasing  = (_legacyGFX3DStateSFormatApplied.enableAntialiasing)  ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableEdgeMarking   = (_legacyGFX3DStateSFormatApplied.enableEdgeMarking)   ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.RearPlaneMode       = (_legacyGFX3DStateSFormatApplied.enableClearImage)    ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableFog           = (_legacyGFX3DStateSFormatApplied.enableFog)           ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.FogOnlyAlpha        = (_legacyGFX3DStateSFormatApplied.enableFogAlphaOnly)  ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.PolygonShading      = (_legacyGFX3DStateSFormatApplied.toonShadingMode)     ? 1 : 0;
 	gfx3d.appliedState.SWAP_BUFFERS.value            = 0;
-	gfx3d.appliedState.SWAP_BUFFERS.DepthMode        = (legacyGFX3DStateSFormatApplied.enableWDepth)        ? 1 : 0;
-	gfx3d.appliedState.SWAP_BUFFERS.YSortMode        = (legacyGFX3DStateSFormatApplied.polygonTransparentSortMode) ? 1 : 0;
-	gfx3d.appliedState.fogShift                      = legacyGFX3DStateSFormatApplied.fogShift;
-	gfx3d.appliedState.clearColor                    = legacyGFX3DStateSFormatApplied.clearColor;
-	gfx3d.appliedState.clearDepth                    = legacyGFX3DStateSFormatApplied.clearDepth;
-	gfx3d.appliedState.fogColor                      = legacyGFX3DStateSFormatApplied.fogColor[0];
-	gfx3d.appliedState.fogOffset                     = legacyGFX3DStateSFormatApplied.fogOffset;
-	gfx3d.appliedState.alphaTestRef                  = legacyGFX3DStateSFormatApplied.alphaTestRef;
-	gfx3d.appliedState.SWAP_BUFFERS.value            = legacyGFX3DStateSFormatApplied.activeFlushCommand;
-	memcpy(gfx3d.appliedState.toonTable16, legacyGFX3DStateSFormatApplied.toonTable16, sizeof(gfx3d.appliedState.toonTable16));
-	memcpy(gfx3d.appliedState.shininessTable, legacyGFX3DStateSFormatApplied.shininessTable, sizeof(gfx3d.appliedState.shininessTable));
+	gfx3d.appliedState.SWAP_BUFFERS.DepthMode        = (_legacyGFX3DStateSFormatApplied.enableWDepth)        ? 1 : 0;
+	gfx3d.appliedState.SWAP_BUFFERS.YSortMode        = (_legacyGFX3DStateSFormatApplied.polygonTransparentSortMode) ? 1 : 0;
+	gfx3d.appliedState.fogShift                      = _legacyGFX3DStateSFormatApplied.fogShift;
+	gfx3d.appliedState.clearColor                    = _legacyGFX3DStateSFormatApplied.clearColor;
+	gfx3d.appliedState.clearDepth                    = _legacyGFX3DStateSFormatApplied.clearDepth;
+	gfx3d.appliedState.fogColor                      = _legacyGFX3DStateSFormatApplied.fogColor[0];
+	gfx3d.appliedState.fogOffset                     = _legacyGFX3DStateSFormatApplied.fogOffset;
+	gfx3d.appliedState.alphaTestRef                  = _legacyGFX3DStateSFormatApplied.alphaTestRef;
+	gfx3d.appliedState.SWAP_BUFFERS.value            = _legacyGFX3DStateSFormatApplied.activeFlushCommand;
+	memcpy(gfx3d.appliedState.toonTable16, _legacyGFX3DStateSFormatApplied.toonTable16, sizeof(gfx3d.appliedState.toonTable16));
+	memcpy(gfx3d.appliedState.shininessTable, _legacyGFX3DStateSFormatApplied.shininessTable, sizeof(gfx3d.appliedState.shininessTable));
 	memcpy(gfx3d.appliedState.edgeMarkColorTable, GFX3DREG.EDGE_COLOR, sizeof(GFX3DREG.EDGE_COLOR));
 	memcpy(gfx3d.appliedState.fogDensityTable, GFX3DREG.FOG_TABLE, sizeof(GFX3DREG.FOG_TABLE));
 }

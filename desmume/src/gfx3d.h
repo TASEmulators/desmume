@@ -595,25 +595,137 @@ typedef struct VERT VERT;
 
 #include "PACKED_END.h"
 
-union VtxCoord32
+union Vector16x2
 {
+	s16 vec[2];
+	s16 coord[2];
+	
+	struct
+	{
+		s16 s, t;
+	};
+	
+	struct
+	{
+		s16 u, v;
+	};
+	
+	struct
+	{
+		s16 x, y;
+	} XY;
+	
+	struct
+	{
+		s16 y, z;
+	} YZ;
+	
+	struct
+	{
+		s16 x, z;
+	} XZ;
+	
+	u32 value;
+};
+typedef union Vector16x2 Vector16x2;
+typedef Vector16x2 VertexCoord16x2;
+
+union Vector16x3
+{
+	s16 vec[3];
+	s16 coord[3];
+	
+	struct
+	{
+		s16 x, y, z;
+	};
+};
+typedef union Vector16x3 Vector16x3;
+typedef Vector16x3 VertexCoord16x3;
+
+union Vector16x4
+{
+	s16 vec[4];
+	s16 coord[4];
+	
+	struct
+	{
+		s16 x, y, z, w;
+	};
+	
+	u64 value;
+};
+typedef union Vector16x4 Vector16x4;
+typedef Vector16x4 VertexCoord16x4;
+
+union Vector32x2
+{
+	s32 vec[2];
+	s32 coord[2];
+	
+	struct
+	{
+		s32 s, t;
+	};
+	
+	struct
+	{
+		s32 u, v;
+	};
+	
+	struct
+	{
+		s32 x, y;
+	} XY;
+	
+	struct
+	{
+		s32 y, z;
+	} YZ;
+	
+	struct
+	{
+		s32 x, z;
+	} XZ;
+	
+	u64 value;
+};
+typedef union Vector32x2 Vector32x2;
+typedef Vector32x2 VertexCoord32x2;
+
+union Vector32x3
+{
+	s32 vec[3];
+	s32 coord[3];
+	
+	struct
+	{
+		s32 x, y, z;
+	};
+};
+typedef union Vector32x3 Vector32x3;
+typedef Vector32x3 VertexCoord32x3;
+
+union Vector32x4
+{
+	s32 vec[4];
 	s32 coord[4];
+	
 	struct
 	{
 		s32 x, y, z, w;
 	};
 };
-typedef union VtxCoord32 VtxCoord32;
+typedef union Vector32x4 Vector32x4;
+typedef Vector32x4 VertexCoord32x4;
 
-union VtxTexCoord16
+struct NDSVertex
 {
-	s16 coord[2];
-	struct
-	{
-		s16 u, v;
-	};
+	VertexCoord32x4 position;
+	VertexCoord16x2 texCoord;
+	FragmentColor color;
 };
-typedef union VtxTexCoord16 VtxTexCoord16;
+typedef struct NDSVertex NDSVertex;
 
 //ok, imagine the plane that cuts diagonally across a cube such that it clips
 //out to be a hexagon. within that plane, draw a quad such that it cuts off
@@ -731,6 +843,14 @@ struct GFX3D
 	CACHE_ALIGN float rawPolySortYMax[POLYLIST_SIZE]; // Temp buffer used for processing polygon Y-sorting
 	
 	// Everything below is for save state compatibility.
+	u32 inBeginLegacySave;
+	u32 isDrawPendingLegacySave;
+	u32 polyGenVtxCountLegacySave;
+	u32 polyGenVtxIndexLegacySave[4];
+	u32 polyGenIsFirstCompletedLegacySave;
+	u32 clCommandLegacySave; // Exists purely for save state compatibility, historically went unused.
+	u32 clIndexLegacySave; // Exists purely for save state compatibility, historically went unused.
+	u32 clIndex2LegacySave; // Exists purely for save state compatibility, historically went unused.
 	IOREG_VIEWPORT viewportLegacySave; // Historically, the viewport was stored as its raw register value.
 	IOREG_VIEWPORT rawPolyViewportLegacySave[POLYLIST_SIZE]; // Historically, pending polygons kept a copy of the current viewport as a raw register value.
 	float PTcoordsLegacySave[4]; // Historically, PTcoords were stored as floating point values, not as integers.
@@ -746,20 +866,20 @@ extern CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 
 extern u32 isSwapBuffers;
 
-void gfx3d_glFlush(u32 v);
+void gfx3d_glFlush(const u32 v);
 // end GE commands
 
-void gfx3d_glFogColor(u32 v);
-void gfx3d_glFogOffset (u32 v);
-template<typename T, size_t ADDROFFSET> void gfx3d_glClearDepth(const T val);
-template<typename T, size_t ADDROFFSET> void gfx3d_glClearImageOffset(const T val);
+void gfx3d_glFogColor(const u32 v);
+void gfx3d_glFogOffset(const u32 v);
+template<typename T, size_t ADDROFFSET> void gfx3d_glClearDepth(const T v);
+template<typename T, size_t ADDROFFSET> void gfx3d_glClearImageOffset(const T v);
 void gfx3d_glSwapScreen(u32 screen);
 u32 gfx3d_GetNumPolys();
 u32 gfx3d_GetNumVertex();
-template<typename T> void gfx3d_UpdateEdgeMarkColorTable(const u8 offset, const T val);
-template<typename T> void gfx3d_UpdateFogTable(const u8 offset, const T val);
-template<typename T> void gfx3d_UpdateToonTable(const u8 offset, const T val);
-s32 gfx3d_GetClipMatrix (const u32 index);
+template<typename T> void gfx3d_UpdateEdgeMarkColorTable(const u8 offset, const T v);
+template<typename T> void gfx3d_UpdateFogTable(const u8 offset, const T v);
+template<typename T> void gfx3d_UpdateToonTable(const u8 offset, const T v);
+s32 gfx3d_GetClipMatrix(const u32 index);
 s32 gfx3d_GetDirectionalMatrix(const u32 index);
 void gfx3d_glAlphaFunc(u32 v);
 u32 gfx3d_glGetPosRes(const size_t index);
@@ -767,7 +887,7 @@ u16 gfx3d_glGetVecRes(const size_t index);
 void gfx3d_VBlankSignal();
 void gfx3d_VBlankEndSignal(bool skipFrame);
 void gfx3d_execute3D();
-void gfx3d_sendCommandToFIFO(u32 val);
+void gfx3d_sendCommandToFIFO(const u32 v);
 void gfx3d_sendCommand(u32 cmd, u32 param);
 
 //other misc stuff
