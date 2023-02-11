@@ -65,7 +65,7 @@ public:
 	bool fail(bool unset=false) { bool ret = this->_failbit; if(unset) unfail(); return ret; }
 	void unfail() { this->_failbit = false; }
 
-	bool eof() { return size()==ftell(); }
+	virtual bool eof() { return size()==ftell(); }
 
 	size_t fread(const void *ptr, size_t bytes){
 		return _fread(ptr,bytes);
@@ -326,6 +326,8 @@ public:
 	void DemandCondition(eCondition cond);
 
 	virtual void truncate(s32 length);
+
+	virtual bool eof() { return !!::feof(this->_fp); }
 
 	virtual int fprintf(const char *format, ...) {
 		va_list argptr;
