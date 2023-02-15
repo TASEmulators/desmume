@@ -653,6 +653,12 @@ union Vector16x4
 		s16 x, y, z, w;
 	};
 	
+	struct
+	{
+		Vector16x3 vec3;
+		s16 :16;
+	};
+	
 	u64 value;
 };
 typedef union Vector16x4 Vector16x4;
@@ -714,6 +720,12 @@ union Vector32x4
 	struct
 	{
 		s32 x, y, z, w;
+	};
+	
+	struct
+	{
+		Vector32x3 vec3;
+		s32 :32;
 	};
 };
 typedef union Vector32x4 Vector32x4;
@@ -815,6 +827,41 @@ struct LegacyGFX3DStateSFormat
 };
 typedef struct LegacyGFX3D_StateSFormat LegacyGFX3D_StateSFormat;
 
+struct GeometryEngineLegacySave
+{
+	u32 vtxFormat;
+	VertexCoord16x4 vtxCoord;
+	FragmentColor vtxColor;
+	u32 texCoordS;
+	u32 texCoordT;
+	u32 texCoordTransformedS;
+	u32 texCoordTransformedT;
+	TEXIMAGE_PARAM texParam;
+	u32 texPalette;
+	
+	u8 vtxCoord16CurrentIndex;
+	
+	u32 inBegin;
+	u32 vtxCount;
+	u32 vtxIndex[4];
+	u32 isGeneratingFirstPolyOfStrip;
+	u8 generateTriangleStripIndexToggle;
+	
+	IOREG_VIEWPORT regViewport; // Historically, the viewport was stored as its raw register value.
+};
+typedef struct GeometryEngineLegacySave GeometryEngineLegacySave;
+
+struct GFX3D_LegacySave
+{
+	u32 isDrawPending;
+	u32 clCommand; // Exists purely for save state compatibility, historically went unused.
+	u32 clIndex; // Exists purely for save state compatibility, historically went unused.
+	u32 clIndex2; // Exists purely for save state compatibility, historically went unused.
+	IOREG_VIEWPORT rawPolyViewport[POLYLIST_SIZE]; // Historically, pending polygons kept a copy of the current viewport as a raw register value.
+	float PTcoords[4]; // Historically, PTcoords were stored as floating point values, not as integers.
+};
+typedef struct GFX3D_LegacySave GFX3D_LegacySave;
+
 struct Viewer3D_State
 {
 	int frameNumber;
@@ -827,8 +874,6 @@ extern Viewer3D_State viewer3D;
 
 struct GFX3D
 {
-	GFX3D_Viewport viewport;
-	
 	GFX3D_State pendingState;
 	GFX3D_State appliedState;
 	GFX3D_GeometryList gList[2];
@@ -844,22 +889,86 @@ struct GFX3D
 	CACHE_ALIGN float rawPolySortYMax[POLYLIST_SIZE]; // Temp buffer used for processing polygon Y-sorting
 	
 	// Everything below is for save state compatibility.
-	u32 inBeginLegacySave;
-	u32 isDrawPendingLegacySave;
-	u32 polyGenVtxCountLegacySave;
-	u32 polyGenVtxIndexLegacySave[4];
-	u32 polyGenIsFirstCompletedLegacySave;
-	u32 clCommandLegacySave; // Exists purely for save state compatibility, historically went unused.
-	u32 clIndexLegacySave; // Exists purely for save state compatibility, historically went unused.
-	u32 clIndex2LegacySave; // Exists purely for save state compatibility, historically went unused.
-	IOREG_VIEWPORT viewportLegacySave; // Historically, the viewport was stored as its raw register value.
-	IOREG_VIEWPORT rawPolyViewportLegacySave[POLYLIST_SIZE]; // Historically, pending polygons kept a copy of the current viewport as a raw register value.
-	float PTcoordsLegacySave[4]; // Historically, PTcoords were stored as floating point values, not as integers.
+	GeometryEngineLegacySave gEngineLegacySave;
+	GFX3D_LegacySave legacySave;
 	PAGE_ALIGN FragmentColor framebufferNativeSave[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // Rendered 3D framebuffer that is saved in RGBA8888 color format at the native size.
 };
 typedef struct GFX3D GFX3D;
 
 extern GFX3D gfx3d;
+
+class NDSGeometryEngine
+{
+private:
+	void __Init();
+	
+protected:
+	CACHE_ALIGN Vector32x4 _normal32;
+	CACHE_ALIGN s32 _mtxTexture32[16];
+	CACHE_ALIGN VertexCoord16x3 _vtxCoord16;
+	FragmentColor _vtxColor555X;
+	CACHE_ALIGN VertexCoord16x2 _texCoord16;
+	CACHE_ALIGN VertexCoord32x2 _texCoordTransformed;
+	
+	u32 _vtxColor15;
+	FragmentColor _vtxColor666X;
+	float _vtxColorFloat[4];
+	float _texCoordTransformedFloat[2];
+	
+	bool _doesViewportNeedUpdate;
+	bool _doesVertexColorNeedUpdate;
+	bool _doesTransformedTexCoordsNeedUpdate;
+	
+	IOREG_VIEWPORT _regViewport;
+	GFX3D_Viewport _currentViewport;
+	POLYGON_ATTR _polyAttribute;
+	PolygonPrimitiveType _vtxFormat;
+	TEXIMAGE_PARAM _texParam;
+	TextureTransformationMode _texCoordTransformMode;
+	u32 _texPalette;
+	u8 _vtxCoord16CurrentIndex;
+	
+	bool _inBegin;
+	size_t _vtxCount; // the number of vertices registered in this list
+	u16 _vtxIndex[4]; // indices to the main vert list
+	bool _isGeneratingFirstPolyOfStrip;
+	bool _generateTriangleStripIndexToggle;
+	
+public:
+	NDSGeometryEngine();
+	
+	void Reset();
+	
+	void SetViewport(const u32 param);
+	void SetViewport(const IOREG_VIEWPORT regViewport);
+	void SetViewport(const GFX3D_Viewport viewport);
+	void SetNormal(const Vector32x4 inNormal);
+	void SetVertexColor(const u32 param);
+	void SetVertexColor(const FragmentColor vtxColor555X);
+	void SetTextureParameters(const u32 param);
+	void SetTextureParameters(const TEXIMAGE_PARAM texParams);
+	void SetTexturePalette(const u32 texPalette);
+	void SetTextureCoordinates(const u32 param);
+	void SetTextureCoordinates(const VertexCoord16x2 &texCoord16);
+	void SetTextureMatrix(const s32 (&__restrict inTextureMatrix)[16]);
+	
+	void VertexListBegin(const u32 param, const POLYGON_ATTR polyAttr);
+	void VertexListBegin(const PolygonPrimitiveType vtxFormat, const POLYGON_ATTR polyAttr);
+	void VertexListEnd();
+	bool SetCurrentVertex16x2(const u32 param);
+	bool SetCurrentVertex16x2(const VertexCoord16x2 inVtxCoord16x2);
+	void SetCurrentVertex10x3(const u32 param);
+	void SetCurrentVertex(const VertexCoord16x3 inVtxCoord16x3);
+	template<size_t ONE, size_t TWO> void SetCurrentVertex16x2Immediate(const u32 param);
+	template<size_t ONE, size_t TWO> void SetCurrentVertex16x2Immediate(const VertexCoord16x2 inVtxCoord16x2);
+	void SetCurrentVertex10x3Relative(const u32 param);
+	void SetCurrentVertexRelative(const VertexCoord16x3 inVtxCoord16x3);
+	void AddCurrentVertexToList(GFX3D_GeometryList &targetGList);
+	void GeneratePolygon(POLY &targetPoly, GFX3D_GeometryList &targetGList);
+	
+	void SaveState(GeometryEngineLegacySave &outLegacySave);
+	void LoadState(const GeometryEngineLegacySave &inLegacySave);
+};
 
 //---------------------
 

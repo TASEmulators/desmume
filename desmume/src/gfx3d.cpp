@@ -263,6 +263,8 @@ GFX3D gfx3d;
 static GFX3D_IOREG *_GFX3D_IORegisterMap = NULL;
 Viewer3D_State viewer3D;
 
+static NDSGeometryEngine _gEngine;
+
 static LegacyGFX3DStateSFormat _legacyGFX3DStateSFormatPending;
 static LegacyGFX3DStateSFormat _legacyGFX3DStateSFormatApplied;
 
@@ -288,21 +290,11 @@ static u8 _MM4x4ind = 0;
 static u8 _MM4x3ind = 0;
 static u8 _MM3x3ind = 0;
 
-// Data for vertex submission
-static CACHE_ALIGN VertexCoord16x4 _vtxCoord16 = {0, 0, 0, 0};
-static u8 _vtxCoord16CurrentIndex = 0;
-static PolygonPrimitiveType _vtxFormat = GFX3D_TRIANGLES;
-static bool _inBegin = false;
-
 // Data for basic transforms
 static CACHE_ALIGN Vector32x4 _regTranslate = {0, 0, 0, 0};
 static u8 _regTranslateCurrentIndex = 0;
 static CACHE_ALIGN Vector32x4 _regScale = {0, 0, 0, 0};
 static u8 _regScaleCurrentIndex = 0;
-
-//various other registers
-static VertexCoord32x2 _regTexCoord = {0, 0};
-static VertexCoord32x2 _texCoordTransformed = {0, 0};
 
 u32 isSwapBuffers = FALSE;
 
@@ -312,13 +304,8 @@ static CACHE_ALIGN u16 _BTcoords[6] = {0, 0, 0, 0, 0, 0};
 static CACHE_ALIGN VertexCoord32x4 _PTcoords = {0, 0, 0, (s32)(1<<12)};
 
 //raw ds format poly attributes
-static POLYGON_ATTR _polyAttrInProcess;
-static POLYGON_ATTR _currentPolyAttr;
-static TEXIMAGE_PARAM _currentPolyTexParam;
-static u32 _currentPolyTexPalette = 0;
-
-//the current vertex color, 5bit values
-static FragmentColor _vtxColor555X = {31, 31, 31, 0};
+static POLYGON_ATTR _regPolyAttrPending;
+static POLYGON_ATTR _regPolyAttrApplied;
 
 //light state:
 static u32 _regLightColor[4] = {0, 0, 0, 0};
@@ -339,29 +326,12 @@ s32 freelookMatrix[16];
 //-----------cached things:
 //these dont need to go into the savestate. they can be regenerated from HW registers
 //from polygonattr:
-static u32 _lightMask = 0;
-//other things:
-static TextureTransformationMode _texCoordTransformMode = TextureTransformationMode_None;
 static CACHE_ALIGN Vector32x4 _cacheLightDirection[4];
 static CACHE_ALIGN Vector32x4 _cacheHalfVector[4];
 //------------------
 
 #define RENDER_FRONT_SURFACE 0x80
 #define RENDER_BACK_SURFACE 0X40
-
-static int _polygonListCompleted = 0;
-static u8 _triStripToggle;
-
-//list-building state
-struct PolygonGenerationInfo
-{
-	size_t vtxCount;  // the number of vertices registered in this list
-	u16 vtxIndex[4]; // indices to the main vert list
-	bool isFirstPolyCompleted; // indicates that the first poly in a list has been completed
-};
-typedef struct PolygonGenerationInfo PolygonGenerationInfo;
-
-static PolygonGenerationInfo _polyGenInfo;
 
 static bool _isDrawPending = false;
 //------------------------------------------------------------
@@ -379,9 +349,8 @@ static void makeTables()
 	}
 }
 
-GFX3D_Viewport GFX3D_ViewportParse(const u32 inValue)
+GFX3D_Viewport GFX3D_ViewportParse(const IOREG_VIEWPORT reg)
 {
-	const IOREG_VIEWPORT reg = { inValue };
 	GFX3D_Viewport outViewport;
 	
 	//I'm 100% sure this is basically 99% correct
@@ -402,6 +371,12 @@ GFX3D_Viewport GFX3D_ViewportParse(const u32 inValue)
 	outViewport.y      = (reg.Y1 > 191) ? ((s16)reg.Y1 - 0x00FF) : (s16)reg.Y1;
 	
 	return outViewport;
+}
+
+GFX3D_Viewport GFX3D_ViewportParse(const u32 param)
+{
+	const IOREG_VIEWPORT regViewport = { param };
+	return GFX3D_ViewportParse(regViewport);
 }
 
 void GFX3D_SaveStatePOLY(const POLY &p, EMUFILE &os)
@@ -467,9 +442,7 @@ void gfx3d_init()
 {
 	_GFX3D_IORegisterMap = (GFX3D_IOREG *)(&MMU.ARM9_REG[0x0320]);
 	
-	_polyAttrInProcess.value = 0;
-	_currentPolyAttr.value = 0;
-	_currentPolyTexParam.value = 0;
+	_regPolyAttrPending.value = 0;
 	
 	gxf_hardware.reset();
 	
@@ -518,22 +491,14 @@ void gfx3d_reset()
 	gfx3d.pendingListIndex = 0;
 	gfx3d.appliedListIndex = 1;
 
-	_polyAttrInProcess.value = 0;
-	_currentPolyAttr.value = 0;
-	_currentPolyTexParam.value = 0;
-	_currentPolyTexPalette = 0;
+	_regPolyAttrPending.value = 0;
 	_mtxMode = MATRIXMODE_PROJECTION;
-	_vtxCoord16.value = 0;
-	_vtxCoord16CurrentIndex = 0;
-	_vtxFormat = GFX3D_TRIANGLES;
 	memset(&_regTranslate, 0, sizeof(_regTranslate));
 	_regTranslateCurrentIndex = 0;
 	memset(&_regScale, 0, sizeof(_regScale));
 	_regScaleCurrentIndex = 0;
 	memset(gxPIPE.cmd, 0, sizeof(gxPIPE.cmd));
 	memset(gxPIPE.param, 0, sizeof(gxPIPE.param));
-	_vtxColor555X.color = 0;
-	memset(&_polyGenInfo, 0, sizeof(_polyGenInfo));
 	memset(gfx3d.framebufferNativeSave, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u32));
 
 	MatrixInit(_mtxCurrent[MATRIXMODE_PROJECTION]);
@@ -560,29 +525,19 @@ void gfx3d_reset()
 
 	_BTind = 0;
 	_PTind = 0;
-
-	_regTexCoord.s = 0;
-	_regTexCoord.t = 0;
-	_texCoordTransformed.s = 0;
-	_texCoordTransformed.t = 0;
-	
-	gfx3d.viewport.x = 0;
-	gfx3d.viewport.y = 0;
-	gfx3d.viewport.width = 256;
-	gfx3d.viewport.height = 192;
 	
 	// Init for save state compatibility
 	_GFX3D_IORegisterMap->VIEWPORT.X1 = 0;
 	_GFX3D_IORegisterMap->VIEWPORT.Y1 = 0;
 	_GFX3D_IORegisterMap->VIEWPORT.X2 = 255;
 	_GFX3D_IORegisterMap->VIEWPORT.Y2 = 191;
-	gfx3d.viewportLegacySave = _GFX3D_IORegisterMap->VIEWPORT;
 	
 	isSwapBuffers = FALSE;
 
 	GFX_PIPEclear();
 	GFX_FIFOclear();
 	
+	_gEngine.Reset();
 	CurrentRenderer->Reset();
 }
 
@@ -629,254 +584,640 @@ static void GEM_TransformVertex(const s32 (&__restrict mtx)[16], s32 (&__restric
 //---------------
 
 
-#define SUBMITVERTEX(ii, nn) pendingGList.rawPolyList[pendingGList.rawPolyCount].vertIndexes[ii] = _polyGenInfo.vtxIndex[nn];
-//Submit a vertex to the GE
-static void SetVertex()
+NDSGeometryEngine::NDSGeometryEngine()
 {
-	GFX3D_GeometryList &pendingGList = gfx3d.gList[gfx3d.pendingListIndex];
+	__Init();
+}
 
-	if (_texCoordTransformMode == TextureTransformationMode_VertexSource)
+void NDSGeometryEngine::__Init()
+{
+	_polyAttribute.value = 0;
+	_texParam.value = 0;
+	_texPalette = 0;
+	
+	_vtxColor15 = 0x7FFF;
+	
+	_vtxColor555X.r = 31;
+	_vtxColor555X.g = 31;
+	_vtxColor555X.b = 31;
+	_vtxColor555X.a = 0;
+	
+	_vtxColor666X.r = 63;
+	_vtxColor666X.g = 63;
+	_vtxColor666X.b = 63;
+	_vtxColor666X.a = 0;
+	
+	_vtxColorFloat[0] = (float)_vtxColor666X.r;
+	_vtxColorFloat[1] = (float)_vtxColor666X.g;
+	_vtxColorFloat[2] = (float)_vtxColor666X.b;
+	_vtxColorFloat[3] = (float)_vtxColor666X.a;
+	
+	_vtxCoord16.x = 0;
+	_vtxCoord16.y = 0;
+	_vtxCoord16.z = 0;
+	
+	_normal32.x = 0;
+	_normal32.y = 0;
+	_normal32.z = 0;
+	_normal32.w = 0;
+	
+	_regViewport.X1 = 0;
+	_regViewport.Y1 = 0;
+	_regViewport.X2 = GPU_FRAMEBUFFER_NATIVE_WIDTH - 1;
+	_regViewport.Y2 = GPU_FRAMEBUFFER_NATIVE_HEIGHT - 1;
+	
+	_currentViewport.x = 0;
+	_currentViewport.y = 0;
+	_currentViewport.width = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_currentViewport.height = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	
+	_texCoordTransformMode = TextureTransformationMode_None;
+	_texCoord16.s = 0;
+	_texCoord16.t = 0;
+	_texCoordTransformed.s = (s32)_texCoord16.s;
+	_texCoordTransformed.t = (s32)_texCoord16.t;
+	_texCoordTransformedFloat[0] = (float)_texCoordTransformed.s;
+	_texCoordTransformedFloat[1] = (float)_texCoordTransformed.t;
+	
+	_doesViewportNeedUpdate = true;
+	_doesVertexColorNeedUpdate = true;
+	_doesTransformedTexCoordsNeedUpdate = true;
+	_vtxCoord16CurrentIndex = 0;
+	
+	_inBegin = false;
+	_vtxFormat = GFX3D_TRIANGLES;
+	_vtxCount = 0;
+	_vtxIndex[0] = 0;
+	_vtxIndex[1] = 0;
+	_vtxIndex[2] = 0;
+	_vtxIndex[3] = 0;
+	_isGeneratingFirstPolyOfStrip = true;
+}
+
+void NDSGeometryEngine::Reset()
+{
+	this->__Init();
+}
+
+void NDSGeometryEngine::SetViewport(const u32 param)
+{
+	if (this->_regViewport.value != param)
 	{
-		//Tested by: Eledees The Adventures of Kai and Zero (E) [title screen and frontend menus]
-		const s32 *mtxTex = _mtxCurrent[MATRIXMODE_TEXTURE];
-		_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x16To64(mtxTex[0], _vtxCoord16.x) + GEM_Mul32x16To64(mtxTex[4], _vtxCoord16.y) + GEM_Mul32x16To64(mtxTex[8], _vtxCoord16.z) + ((s64)_regTexCoord.s << 24)) >> 24 );
-		_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x16To64(mtxTex[1], _vtxCoord16.x) + GEM_Mul32x16To64(mtxTex[5], _vtxCoord16.y) + GEM_Mul32x16To64(mtxTex[9], _vtxCoord16.z) + ((s64)_regTexCoord.t << 24)) >> 24 );
+		this->_regViewport.value = param;
+		this->_doesViewportNeedUpdate = true;
 	}
+}
 
+void NDSGeometryEngine::SetViewport(const IOREG_VIEWPORT regViewport)
+{
+	if (this->_regViewport.value != regViewport.value)
+	{
+		this->_regViewport = regViewport;
+		this->_doesViewportNeedUpdate = true;
+	}
+}
+
+void NDSGeometryEngine::SetViewport(const GFX3D_Viewport viewport)
+{
+	this->_regViewport = _GFX3D_IORegisterMap->VIEWPORT;
+	this->_currentViewport = viewport;
+	this->_doesViewportNeedUpdate = false;
+}
+
+void NDSGeometryEngine::SetNormal(const Vector32x4 inNormal)
+{
+	this->_normal32 = inNormal;
+	
+	if (this->_texCoordTransformMode == TextureTransformationMode_NormalSource)
+	{
+		this->_doesTransformedTexCoordsNeedUpdate = true;
+	}
+}
+
+void NDSGeometryEngine::SetVertexColor(const u32 param)
+{
+	const u32 param15 = (param & 0x00007FFF);
+	if (this->_vtxColor15 != param15)
+	{
+		this->_vtxColor15 = param15;
+		this->_vtxColor555X.r = (u8)((param >>  0) & 0x0000001F);
+		this->_vtxColor555X.g = (u8)((param >>  5) & 0x0000001F);
+		this->_vtxColor555X.b = (u8)((param >> 10) & 0x0000001F);
+		this->_doesVertexColorNeedUpdate = true;
+	}
+}
+
+void NDSGeometryEngine::SetVertexColor(const FragmentColor vtxColor555X)
+{
+	if (this->_vtxColor555X.color != vtxColor555X.color)
+	{
+		this->_vtxColor15 = (vtxColor555X.r << 0) | (vtxColor555X.g << 5) | (vtxColor555X.b << 10);
+		this->_vtxColor555X = vtxColor555X;
+		this->_doesVertexColorNeedUpdate = true;
+	}
+}
+
+void NDSGeometryEngine::SetTextureParameters(const u32 param)
+{
+	const TEXIMAGE_PARAM newTexParam = { param };
+	this->SetTextureParameters(newTexParam);
+}
+
+void NDSGeometryEngine::SetTextureParameters(const TEXIMAGE_PARAM texParams)
+{
+	this->_texParam = texParams;
+	
+	if (this->_texCoordTransformMode != texParams.TexCoordTransformMode)
+	{
+		this->_texCoordTransformMode = (TextureTransformationMode)texParams.TexCoordTransformMode;
+		this->_doesTransformedTexCoordsNeedUpdate = true;
+	}
+}
+
+void NDSGeometryEngine::SetTexturePalette(const u32 texPalette)
+{
+	this->_texPalette = texPalette;
+}
+
+void NDSGeometryEngine::SetTextureCoordinates(const u32 param)
+{
+	VertexCoord16x2 inTexCoord16x2;
+	inTexCoord16x2.value = param;
+	
+	this->SetTextureCoordinates(inTexCoord16x2);
+}
+
+void NDSGeometryEngine::SetTextureCoordinates(const VertexCoord16x2 &texCoord16)
+{
+	if (this->_texCoord16.value != texCoord16.value)
+	{
+		this->_texCoord16 = texCoord16;
+		this->_doesTransformedTexCoordsNeedUpdate = true;
+	}
+}
+
+void NDSGeometryEngine::SetTextureMatrix(const s32 (&__restrict inTextureMatrix)[16])
+{
+	for (size_t i = 0; i < 16; i++)
+	{
+		this->_mtxTexture32[i] = inTextureMatrix[i];
+	}
+	
+	if (this->_texCoordTransformMode != TextureTransformationMode_None)
+	{
+		this->_doesTransformedTexCoordsNeedUpdate = true;
+	}
+}
+
+void NDSGeometryEngine::VertexListBegin(const u32 param, const POLYGON_ATTR polyAttr)
+{
+	const PolygonPrimitiveType vtxFormat = (PolygonPrimitiveType)(param & 0x00000003);
+	this->VertexListBegin(vtxFormat, polyAttr);
+}
+
+void NDSGeometryEngine::VertexListBegin(const PolygonPrimitiveType vtxFormat, const POLYGON_ATTR polyAttr)
+{
+	this->_inBegin = true;
+	
+	this->_polyAttribute = polyAttr;
+	this->_vtxFormat = vtxFormat;
+	this->_vtxCount = 0;
+	this->_vtxIndex[0] = 0;
+	this->_vtxIndex[1] = 0;
+	this->_vtxIndex[2] = 0;
+	this->_vtxIndex[3] = 0;
+	this->_isGeneratingFirstPolyOfStrip = true;
+	this->_generateTriangleStripIndexToggle = false;
+}
+
+void NDSGeometryEngine::VertexListEnd()
+{
+	this->_inBegin = false;
+	this->_vtxCount = 0;
+}
+
+bool NDSGeometryEngine::SetCurrentVertex16x2(const u32 param)
+{
+	VertexCoord16x2 inVtxCoord16x2;
+	inVtxCoord16x2.value = param;
+	
+	return this->SetCurrentVertex16x2(inVtxCoord16x2);
+}
+
+bool NDSGeometryEngine::SetCurrentVertex16x2(const VertexCoord16x2 inVtxCoord16x2)
+{
+	if (this->_vtxCoord16CurrentIndex == 0)
+	{
+		this->SetCurrentVertex16x2Immediate<0, 1>(inVtxCoord16x2);
+		this->_vtxCoord16CurrentIndex++;
+		return false;
+	}
+	
+	this->SetCurrentVertex16x2Immediate<2, 3>(inVtxCoord16x2);
+	this->_vtxCoord16CurrentIndex = 0;
+	return true;
+}
+
+void NDSGeometryEngine::SetCurrentVertex10x3(const u32 param)
+{
+	const VertexCoord16x3 inVtxCoord16x3 = {
+		(s16)( (u16)(((param << 22) >> 22) << 6) ),
+		(s16)( (u16)(((param << 12) >> 22) << 6) ),
+		(s16)( (u16)(((param <<  2) >> 22) << 6) )
+	};
+	
+	this->SetCurrentVertex(inVtxCoord16x3);
+}
+
+void NDSGeometryEngine::SetCurrentVertex(const VertexCoord16x3 inVtxCoord16x3)
+{
+	this->_vtxCoord16 = inVtxCoord16x3;
+}
+
+template <size_t ONE, size_t TWO>
+void NDSGeometryEngine::SetCurrentVertex16x2Immediate(const u32 param)
+{
+	VertexCoord16x2 inVtxCoord16x2;
+	inVtxCoord16x2.value = param;
+	
+	this->SetCurrentVertex16x2Immediate<ONE, TWO>(inVtxCoord16x2);
+}
+
+template <size_t ONE, size_t TWO>
+void NDSGeometryEngine::SetCurrentVertex16x2Immediate(const VertexCoord16x2 inVtxCoord16x2)
+{
+	if (ONE < 3)
+	{
+		this->_vtxCoord16.coord[ONE] = inVtxCoord16x2.coord[0];
+	}
+	
+	if (TWO < 3)
+	{
+		this->_vtxCoord16.coord[TWO] = inVtxCoord16x2.coord[1];
+	}
+}
+
+void NDSGeometryEngine::SetCurrentVertex10x3Relative(const u32 param)
+{
+	const VertexCoord16x3 inVtxCoord16x3 = {
+		(s16)( (s32)((param << 22) & 0xFFC00000) / (s32)(1 << 22) ),
+		(s16)( (s32)((param << 12) & 0xFFC00000) / (s32)(1 << 22) ),
+		(s16)( (s32)((param <<  2) & 0xFFC00000) / (s32)(1 << 22) )
+	};
+	
+	this->SetCurrentVertexRelative(inVtxCoord16x3);
+}
+
+void NDSGeometryEngine::SetCurrentVertexRelative(const VertexCoord16x3 inVtxCoord16x3)
+{
+	this->_vtxCoord16.x += inVtxCoord16x3.x;
+	this->_vtxCoord16.y += inVtxCoord16x3.y;
+	this->_vtxCoord16.z += inVtxCoord16x3.z;
+}
+
+//Submit a vertex to the GE
+void NDSGeometryEngine::AddCurrentVertexToList(GFX3D_GeometryList &targetGList)
+{
 	//refuse to do anything if we have too many verts or polys
-	_polygonListCompleted = 0;
-	if (pendingGList.rawVertCount >= VERTLIST_SIZE)
+	if (targetGList.rawVertCount >= VERTLIST_SIZE)
 	{
 		return;
 	}
 	
-	if (pendingGList.rawPolyCount >= POLYLIST_SIZE)
+	if (targetGList.rawPolyCount >= POLYLIST_SIZE)
 	{
 		return;
 	}
 	
-	CACHE_ALIGN VertexCoord32x4 coordTransformed = {
-		(s32)_vtxCoord16.x,
-		(s32)_vtxCoord16.y,
-		(s32)_vtxCoord16.z,
+	CACHE_ALIGN VertexCoord32x4 vtxCoordTransformed = {
+		(s32)this->_vtxCoord16.x,
+		(s32)this->_vtxCoord16.y,
+		(s32)this->_vtxCoord16.z,
 		(s32)(1<<12)
 	};
 
+	// Perform the vertex coordinate transformation.
 	if (freelookMode == 2)
 	{
 		//adjust projection
 		s32 tmp[16];
 		MatrixCopy(tmp, _mtxCurrent[MATRIXMODE_PROJECTION]);
 		MatrixMultiply(tmp, freelookMatrix);
-		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_POSITION], coordTransformed.coord); //modelview
-		GEM_TransformVertex(tmp, coordTransformed.coord); //projection
+		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_POSITION], vtxCoordTransformed.coord); //modelview
+		GEM_TransformVertex(tmp, vtxCoordTransformed.coord); //projection
 	}
 	else if (freelookMode == 3)
 	{
 		//use provided projection
-		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_POSITION], coordTransformed.coord); //modelview
-		GEM_TransformVertex(freelookMatrix, coordTransformed.coord); //projection
+		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_POSITION], vtxCoordTransformed.coord); //modelview
+		GEM_TransformVertex(freelookMatrix, vtxCoordTransformed.coord); //projection
 	}
 	else
 	{
 		//no freelook
-		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_POSITION], coordTransformed.coord); //modelview
-		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_PROJECTION], coordTransformed.coord); //projection
+		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_POSITION], vtxCoordTransformed.coord); //modelview
+		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_PROJECTION], vtxCoordTransformed.coord); //projection
 	}
 
-	//TODO - culling should be done here.
-	//TODO - viewport transform?
-
+	// TODO: Culling should be done here.
+	// TODO: Perform viewport transform here?
+	
+	// Perform the vertex color conversion if needed.
+	if (this->_doesVertexColorNeedUpdate)
+	{
+		this->_vtxColor666X.r = GFX3D_5TO6_LOOKUP(this->_vtxColor555X.r);
+		this->_vtxColor666X.g = GFX3D_5TO6_LOOKUP(this->_vtxColor555X.g);
+		this->_vtxColor666X.b = GFX3D_5TO6_LOOKUP(this->_vtxColor555X.b);
+		this->_vtxColor666X.a = 0;
+		this->_vtxColorFloat[0] = (float)this->_vtxColor666X.r;
+		this->_vtxColorFloat[1] = (float)this->_vtxColor666X.g;
+		this->_vtxColorFloat[2] = (float)this->_vtxColor666X.b;
+		this->_vtxColorFloat[3] = (float)this->_vtxColor666X.a;
+		
+		this->_doesVertexColorNeedUpdate = false;
+	}
+	
+	// Perform the texture coordinate transformation if needed.
+	if ( this->_doesTransformedTexCoordsNeedUpdate ||
+	    (this->_texParam.TexCoordTransformMode == TextureTransformationMode_VertexSource) )
+	{
+		switch (this->_texCoordTransformMode)
+		{
+			//dragon quest 4 overworld will test this
+			case TextureTransformationMode_TexCoordSource:
+				this->_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x16To64(this->_mtxTexture32[0], this->_texCoord16.s) + GEM_Mul32x16To64(this->_mtxTexture32[4], this->_texCoord16.t) + (s64)this->_mtxTexture32[8] + (s64)this->_mtxTexture32[12]) >> 12 );
+				this->_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x16To64(this->_mtxTexture32[1], this->_texCoord16.s) + GEM_Mul32x16To64(this->_mtxTexture32[5], this->_texCoord16.t) + (s64)this->_mtxTexture32[9] + (s64)this->_mtxTexture32[13]) >> 12 );
+				break;
+				
+			//SM64 highlight rendered star in main menu tests this
+			//also smackdown 2010 player textures tested this (needed cast on _s and _t)
+			case TextureTransformationMode_NormalSource:
+				this->_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x32To64(this->_mtxTexture32[0], this->_normal32.x) + GEM_Mul32x32To64(this->_mtxTexture32[4], this->_normal32.y) + GEM_Mul32x32To64(this->_mtxTexture32[8], this->_normal32.z) + ((s64)this->_texCoord16.s << 24)) >> 24 );
+				this->_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x32To64(this->_mtxTexture32[1], this->_normal32.x) + GEM_Mul32x32To64(this->_mtxTexture32[5], this->_normal32.y) + GEM_Mul32x32To64(this->_mtxTexture32[9], this->_normal32.z) + ((s64)this->_texCoord16.t << 24)) >> 24 );
+				break;
+				
+			//Tested by: Eledees The Adventures of Kai and Zero (E) [title screen and frontend menus]
+			case TextureTransformationMode_VertexSource:
+				this->_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x16To64(this->_mtxTexture32[0], this->_vtxCoord16.x) + GEM_Mul32x16To64(this->_mtxTexture32[4], this->_vtxCoord16.y) + GEM_Mul32x16To64(this->_mtxTexture32[8], this->_vtxCoord16.z) + ((s64)this->_texCoord16.s << 24)) >> 24 );
+				this->_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x16To64(this->_mtxTexture32[1], this->_vtxCoord16.x) + GEM_Mul32x16To64(this->_mtxTexture32[5], this->_vtxCoord16.y) + GEM_Mul32x16To64(this->_mtxTexture32[9], this->_vtxCoord16.z) + ((s64)this->_texCoord16.t << 24)) >> 24 );
+				break;
+				
+			default: // TextureTransformationMode_None
+				this->_texCoordTransformed.s = (s32)this->_texCoord16.s;
+				this->_texCoordTransformed.t = (s32)this->_texCoord16.t;
+				break;
+		}
+		
+		this->_texCoordTransformedFloat[0] = (float)this->_texCoordTransformed.s / 16.0f;
+		this->_texCoordTransformedFloat[1] = (float)this->_texCoordTransformed.t / 16.0f;
+		this->_doesTransformedTexCoordsNeedUpdate = false;
+	}
+	
 	size_t continuation = 0;
-	if ((_vtxFormat == GFX3D_TRIANGLE_STRIP) && !_polyGenInfo.isFirstPolyCompleted)
+	if ( !this->_isGeneratingFirstPolyOfStrip &&
+	    ((this->_vtxFormat == GFX3D_TRIANGLE_STRIP) || (this->_vtxFormat == GFX3D_QUAD_STRIP)) )
+	{
 		continuation = 2;
-	else if ((_vtxFormat == GFX3D_QUAD_STRIP) && !_polyGenInfo.isFirstPolyCompleted)
-		continuation = 2;
+	}
 
 	//record the vertex
-	const size_t vertIndex = pendingGList.rawVertCount + _polyGenInfo.vtxCount - continuation;
+	const size_t vertIndex = targetGList.rawVertCount + this->_vtxCount - continuation;
 	if (vertIndex >= VERTLIST_SIZE)
 	{
 		printf("wtf\n");
 	}
 	
-	VERT &vert = pendingGList.rawVertList[vertIndex];
-
-	//printf("%f %f %f\n",coordTransformed[0],coordTransformed[1],coordTransformed[2]);
-	//if(coordTransformed[1] > 20) 
-	//	coordTransformed[1] = 20;
-
-	//printf("y-> %f\n",coord[1]);
-
-	//if(_mtxCurrent[1][14]>15) {
-	//	printf("ACK!\n");
-	//	printf("----> modelview 1 state for that ack:\n");
-	//	//MatrixPrint(_mtxCurrent[1]);
-	//}
-
-	vert.texcoord[0] = (float)_texCoordTransformed.s / 16.0f;
-	vert.texcoord[1] = (float)_texCoordTransformed.t / 16.0f;
-	vert.coord[0] = (float)coordTransformed.x / 4096.0f;
-	vert.coord[1] = (float)coordTransformed.y / 4096.0f;
-	vert.coord[2] = (float)coordTransformed.z / 4096.0f;
-	vert.coord[3] = (float)coordTransformed.w / 4096.0f;
-	vert.color[0] = GFX3D_5TO6_LOOKUP(_vtxColor555X.r);
-	vert.color[1] = GFX3D_5TO6_LOOKUP(_vtxColor555X.g);
-	vert.color[2] = GFX3D_5TO6_LOOKUP(_vtxColor555X.b);
-	vert.rf = (float)vert.r;
-	vert.gf = (float)vert.g;
-	vert.bf = (float)vert.b;
-	_polyGenInfo.vtxIndex[_polyGenInfo.vtxCount] = (u16)(pendingGList.rawVertCount + _polyGenInfo.vtxCount - continuation);
-	_polyGenInfo.vtxCount++;
+	VERT &vert = targetGList.rawVertList[vertIndex];
+	
+	vert.coord[0] = (float)vtxCoordTransformed.x / 4096.0f;
+	vert.coord[1] = (float)vtxCoordTransformed.y / 4096.0f;
+	vert.coord[2] = (float)vtxCoordTransformed.z / 4096.0f;
+	vert.coord[3] = (float)vtxCoordTransformed.w / 4096.0f;
+	vert.texcoord[0] = this->_texCoordTransformedFloat[0];
+	vert.texcoord[1] = this->_texCoordTransformedFloat[1];
+	vert.texcoord[2] = 0.0f;
+	vert.texcoord[3] = 0.0f;
+	vert.fcolor[0] = this->_vtxColorFloat[0];
+	vert.fcolor[1] = this->_vtxColorFloat[1];
+	vert.fcolor[2] = this->_vtxColorFloat[2];
+	vert.fcolor[3] = this->_vtxColorFloat[3];
+	vert.color[0] = this->_vtxColor666X.r;
+	vert.color[1] = this->_vtxColor666X.g;
+	vert.color[2] = this->_vtxColor666X.b;
+	vert.color[3] = this->_vtxColor666X.a;
+	this->_vtxIndex[this->_vtxCount] = (u16)(targetGList.rawVertCount + this->_vtxCount - continuation);
+	this->_vtxCount++;
 
 	//possibly complete a polygon
+	POLY &poly = targetGList.rawPolyList[targetGList.rawPolyCount];
+	bool isCompletedPoly = false;
+	
+	switch (this->_vtxFormat)
 	{
-		_polygonListCompleted = 2;
-		switch(_vtxFormat)
+		case GFX3D_TRIANGLES:
 		{
-			case GFX3D_TRIANGLES:
+			if (this->_vtxCount != 3)
 			{
-				if (_polyGenInfo.vtxCount != 3)
-				{
-					break;
-				}
-				
-				_polygonListCompleted = 1;
-				SUBMITVERTEX(0,0);
-				SUBMITVERTEX(1,1);
-				SUBMITVERTEX(2,2);
-				gfx3d.gList[gfx3d.pendingListIndex].rawVertCount += 3;
-				pendingGList.rawPolyList[pendingGList.rawPolyCount].type = POLYGON_TYPE_TRIANGLE;
-				_polyGenInfo.vtxCount = 0;
 				break;
 			}
-				
-			case GFX3D_QUADS:
-			{
-				if (_polyGenInfo.vtxCount != 4)
-				{
-					break;
-				}
-				
-				_polygonListCompleted = 1;
-				SUBMITVERTEX(0,0);
-				SUBMITVERTEX(1,1);
-				SUBMITVERTEX(2,2);
-				SUBMITVERTEX(3,3);
-				gfx3d.gList[gfx3d.pendingListIndex].rawVertCount += 4;
-				pendingGList.rawPolyList[pendingGList.rawPolyCount].type = POLYGON_TYPE_QUAD;
-				_polyGenInfo.vtxCount = 0;
-				break;
-			}
-				
-			case GFX3D_TRIANGLE_STRIP:
-			{
-				if (_polyGenInfo.vtxCount != 3)
-				{
-					break;
-				}
-				
-				_polygonListCompleted = 1;
-				SUBMITVERTEX(0,0);
-				SUBMITVERTEX(1,1);
-				SUBMITVERTEX(2,2);
-				pendingGList.rawPolyList[pendingGList.rawPolyCount].type = POLYGON_TYPE_TRIANGLE;
-				
-				if (_triStripToggle)
-				{
-					_polyGenInfo.vtxIndex[1] = (u16)(pendingGList.rawVertCount + 2 - continuation);
-				}
-				else
-				{
-					_polyGenInfo.vtxIndex[0] = (u16)(pendingGList.rawVertCount + 2 - continuation);
-				}
-				
-				if (_polyGenInfo.isFirstPolyCompleted)
-				{
-					pendingGList.rawVertCount += 3;
-				}
-				else
-				{
-					pendingGList.rawVertCount += 1;
-				}
-				
-				_triStripToggle ^= 1;
-				_polyGenInfo.isFirstPolyCompleted = false;
-				_polyGenInfo.vtxCount = 2;
-				break;
-			}
-				
-			case GFX3D_QUAD_STRIP:
-			{
-				if (_polyGenInfo.vtxCount != 4)
-				{
-					break;
-				}
-				
-				_polygonListCompleted = 1;
-				SUBMITVERTEX(0,0);
-				SUBMITVERTEX(1,1);
-				SUBMITVERTEX(2,3);
-				SUBMITVERTEX(3,2);
-				pendingGList.rawPolyList[pendingGList.rawPolyCount].type = POLYGON_TYPE_QUAD;
-				_polyGenInfo.vtxIndex[0] = (u16)(pendingGList.rawVertCount + 2 - continuation);
-				_polyGenInfo.vtxIndex[1] = (u16)(pendingGList.rawVertCount + 3 - continuation);
-				
-				if (_polyGenInfo.isFirstPolyCompleted)
-				{
-					pendingGList.rawVertCount += 4;
-				}
-				else
-				{
-					pendingGList.rawVertCount += 2;
-				}
-				
-				_polyGenInfo.isFirstPolyCompleted = false;
-				_polyGenInfo.vtxCount = 2;
-				break;
-			}
-				
-			default:
-				return;
-		}
-
-		if (_polygonListCompleted == 1)
-		{
-			POLY &poly = pendingGList.rawPolyList[pendingGList.rawPolyCount];
 			
-			poly.vtxFormat = _vtxFormat;
-
-			// Line segment detect
-			// Tested" Castlevania POR - warp stone, trajectory of ricochet, "Eye of Decay"
-			if (_currentPolyTexParam.PackedFormat == TEXMODE_NONE)
+			isCompletedPoly = true;
+			poly.type = POLYGON_TYPE_TRIANGLE;
+			poly.vertIndexes[0] = this->_vtxIndex[0];
+			poly.vertIndexes[1] = this->_vtxIndex[1];
+			poly.vertIndexes[2] = this->_vtxIndex[2];
+			poly.vertIndexes[3] = 0;
+			
+			targetGList.rawVertCount += 3;
+			this->_vtxCount = 0;
+			break;
+		}
+			
+		case GFX3D_QUADS:
+		{
+			if (this->_vtxCount != 4)
 			{
-				bool duplicated = false;
-				const VERT &vert0 = pendingGList.rawVertList[poly.vertIndexes[0]];
-				const VERT &vert1 = pendingGList.rawVertList[poly.vertIndexes[1]];
-				const VERT &vert2 = pendingGList.rawVertList[poly.vertIndexes[2]];
-				
-				if ( (vert0.x == vert1.x) && (vert0.y == vert1.y) ) duplicated = true;
-				else
-					if ( (vert1.x == vert2.x) && (vert1.y == vert2.y) ) duplicated = true;
-					else
-						if ( (vert0.y == vert1.y) && (vert1.y == vert2.y) ) duplicated = true;
-						else
-							if ( (vert0.x == vert1.x) && (vert1.x == vert2.x) ) duplicated = true;
-				if (duplicated)
-				{
-					//printf("Line Segmet detected (poly type %i, mode %i, texparam %08X)\n", poly.type, poly._vtxFormat, textureFormat);
-					poly.vtxFormat = (PolygonPrimitiveType)(_vtxFormat + 4);
-				}
+				break;
 			}
+			
+			isCompletedPoly = true;
+			poly.type = POLYGON_TYPE_QUAD;
+			poly.vertIndexes[0] = this->_vtxIndex[0];
+			poly.vertIndexes[1] = this->_vtxIndex[1];
+			poly.vertIndexes[2] = this->_vtxIndex[2];
+			poly.vertIndexes[3] = this->_vtxIndex[3];
+			
+			targetGList.rawVertCount += 4;
+			this->_vtxCount = 0;
+			break;
+		}
+			
+		case GFX3D_TRIANGLE_STRIP:
+		{
+			if (this->_vtxCount != 3)
+			{
+				break;
+			}
+			
+			isCompletedPoly = true;
+			poly.type = POLYGON_TYPE_TRIANGLE;
+			poly.vertIndexes[0] = this->_vtxIndex[0];
+			poly.vertIndexes[1] = this->_vtxIndex[1];
+			poly.vertIndexes[2] = this->_vtxIndex[2];
+			poly.vertIndexes[3] = 0;
+			
+			if (this->_generateTriangleStripIndexToggle)
+			{
+				this->_vtxIndex[1] = (u16)(targetGList.rawVertCount + 2 - continuation);
+			}
+			else
+			{
+				this->_vtxIndex[0] = (u16)(targetGList.rawVertCount + 2 - continuation);
+			}
+			
+			if (this->_isGeneratingFirstPolyOfStrip)
+			{
+				targetGList.rawVertCount += 3;
+			}
+			else
+			{
+				targetGList.rawVertCount += 1;
+			}
+			
+			this->_generateTriangleStripIndexToggle = !this->_generateTriangleStripIndexToggle;
+			this->_isGeneratingFirstPolyOfStrip = false;
+			this->_vtxCount = 2;
+			break;
+		}
+			
+		case GFX3D_QUAD_STRIP:
+		{
+			if (this->_vtxCount != 4)
+			{
+				break;
+			}
+			
+			isCompletedPoly = true;
+			poly.type = POLYGON_TYPE_QUAD;
+			poly.vertIndexes[0] = this->_vtxIndex[0];
+			poly.vertIndexes[1] = this->_vtxIndex[1];
+			poly.vertIndexes[2] = this->_vtxIndex[3]; // Note that the vertex index differs here.
+			poly.vertIndexes[3] = this->_vtxIndex[2]; // Note that the vertex index differs here.
+			
+			this->_vtxIndex[0] = (u16)(targetGList.rawVertCount + 2 - continuation);
+			this->_vtxIndex[1] = (u16)(targetGList.rawVertCount + 3 - continuation);
+			
+			if (this->_isGeneratingFirstPolyOfStrip)
+			{
+				targetGList.rawVertCount += 4;
+			}
+			else
+			{
+				targetGList.rawVertCount += 2;
+			}
+			
+			this->_isGeneratingFirstPolyOfStrip = false;
+			this->_vtxCount = 2;
+			break;
+		}
+			
+		default:
+			return;
+	}
+	
+	if (isCompletedPoly)
+	{
+		this->GeneratePolygon(poly, targetGList);
+	}
+}
 
-			poly.attribute = _polyAttrInProcess;
-			poly.texParam = _currentPolyTexParam;
-			poly.texPalette = _currentPolyTexPalette;
-			poly.viewport = gfx3d.viewport;
-			gfx3d.rawPolyViewportLegacySave[pendingGList.rawPolyCount] = _GFX3D_IORegisterMap->VIEWPORT;
-			pendingGList.rawPolyCount++;
+void NDSGeometryEngine::GeneratePolygon(POLY &targetPoly, GFX3D_GeometryList &targetGList)
+{
+	targetPoly.vtxFormat = this->_vtxFormat;
+
+	// Line segment detect
+	// Tested" Castlevania POR - warp stone, trajectory of ricochet, "Eye of Decay"
+	if (this->_texParam.PackedFormat == TEXMODE_NONE)
+	{
+		const VERT &vert0 = targetGList.rawVertList[targetPoly.vertIndexes[0]];
+		const VERT &vert1 = targetGList.rawVertList[targetPoly.vertIndexes[1]];
+		const VERT &vert2 = targetGList.rawVertList[targetPoly.vertIndexes[2]];
+		
+		if ( ((vert0.x == vert1.x) && (vert0.y == vert1.y)) ||
+		     ((vert1.x == vert2.x) && (vert1.y == vert2.y)) ||
+		     ((vert0.y == vert1.y) && (vert1.y == vert2.y)) ||
+		     ((vert0.x == vert1.x) && (vert1.x == vert2.x)) )
+		{
+			//printf("Line Segmet detected (poly type %i, mode %i, texparam %08X)\n", poly.type, poly.vtxFormat, textureFormat);
+			targetPoly.vtxFormat = (PolygonPrimitiveType)(this->_vtxFormat + 4);
 		}
 	}
+	
+	if (this->_doesViewportNeedUpdate)
+	{
+		this->_currentViewport = GFX3D_ViewportParse(this->_regViewport);
+	}
+	
+	targetPoly.attribute  = this->_polyAttribute;
+	targetPoly.texParam   = this->_texParam;
+	targetPoly.texPalette = this->_texPalette;
+	targetPoly.viewport   = this->_currentViewport;
+	gfx3d.legacySave.rawPolyViewport[targetGList.rawPolyCount] = _GFX3D_IORegisterMap->VIEWPORT;
+	
+	targetGList.rawPolyCount++;
+}
+
+void NDSGeometryEngine::SaveState(GeometryEngineLegacySave &outLegacySave)
+{
+	outLegacySave.vtxFormat = (u32)this->_vtxFormat;
+	outLegacySave.vtxCoord.vec3 = this->_vtxCoord16;
+	outLegacySave.vtxCoord.coord[3] = 0;
+	outLegacySave.vtxColor = this->_vtxColor555X;
+	outLegacySave.texCoordS = (u32)((u16)this->_texCoord16.s);
+	outLegacySave.texCoordT = (u32)((u16)this->_texCoord16.t);
+	outLegacySave.texCoordTransformedS = (u32)this->_texCoordTransformed.s;
+	outLegacySave.texCoordTransformedT = (u32)this->_texCoordTransformed.t;
+	outLegacySave.texParam = this->_texParam;
+	outLegacySave.texPalette = this->_texPalette;
+	
+	outLegacySave.vtxCoord16CurrentIndex = this->_vtxCoord16CurrentIndex;
+	
+	outLegacySave.inBegin = (this->_inBegin) ? TRUE : FALSE;
+	outLegacySave.vtxCount = (u32)this->_vtxCount;
+	outLegacySave.vtxIndex[0] = (u32)this->_vtxIndex[0];
+	outLegacySave.vtxIndex[1] = (u32)this->_vtxIndex[1];
+	outLegacySave.vtxIndex[2] = (u32)this->_vtxIndex[2];
+	outLegacySave.vtxIndex[3] = (u32)this->_vtxIndex[3];
+	outLegacySave.isGeneratingFirstPolyOfStrip = (this->_isGeneratingFirstPolyOfStrip) ? TRUE : FALSE;
+	outLegacySave.generateTriangleStripIndexToggle = (this->_generateTriangleStripIndexToggle) ? 1 : 0;
+	
+	outLegacySave.regViewport = this->_regViewport;
+}
+
+void NDSGeometryEngine::LoadState(const GeometryEngineLegacySave &inLegacySave)
+{
+	this->_vtxFormat = (PolygonPrimitiveType)inLegacySave.vtxFormat;
+	this->_vtxCoord16 = inLegacySave.vtxCoord.vec3;
+	this->_vtxColor555X = inLegacySave.vtxColor;
+	this->_texCoord16.s = (s16)((u16)(inLegacySave.texCoordS & 0x0000FFFF));
+	this->_texCoord16.t = (s16)((u16)(inLegacySave.texCoordT & 0x0000FFFF));
+	this->_texCoordTransformed.s = (s32)inLegacySave.texCoordTransformedS;
+	this->_texCoordTransformed.t = (s32)inLegacySave.texCoordTransformedT;
+	this->_texParam = inLegacySave.texParam;
+	this->_texPalette = inLegacySave.texPalette;
+	
+	this->_vtxCoord16CurrentIndex = inLegacySave.vtxCoord16CurrentIndex;
+	
+	this->_inBegin = (inLegacySave.inBegin) ? true : false;
+	this->_vtxCount = (size_t)inLegacySave.vtxCount;
+	this->_vtxIndex[0] = (u16)inLegacySave.vtxIndex[0];
+	this->_vtxIndex[1] = (u16)inLegacySave.vtxIndex[1];
+	this->_vtxIndex[2] = (u16)inLegacySave.vtxIndex[2];
+	this->_vtxIndex[3] = (u16)inLegacySave.vtxIndex[3];
+	this->_isGeneratingFirstPolyOfStrip = (inLegacySave.isGeneratingFirstPolyOfStrip) ? true : false;
+	this->_generateTriangleStripIndexToggle = (inLegacySave.generateTriangleStripIndexToggle != 0) ? true : false;
+	
+	this->SetViewport(inLegacySave.regViewport);
 }
 
 static void UpdateProjection()
@@ -888,17 +1229,6 @@ static void UpdateProjection()
 		floatproj[i] = _mtxCurrent[MATRIXMODE_PROJECTION][i]/((float)(1<<12));
 	CallRegistered3dEvent(0,floatproj);
 #endif
-}
-
-static void gfx3d_glPolygonAttrib_cache()
-{
-	// Light enable/disable
-	_lightMask = _polyAttrInProcess.LightMask;
-}
-
-static void gfx3d_glTexImage_cache()
-{
-	_texCoordTransformMode = (TextureTransformationMode)_currentPolyTexParam.TexCoordTransformMode;
 }
 
 static void gfx3d_glLightDirection_cache(const size_t index)
@@ -958,7 +1288,7 @@ static void gfx3d_glPushMatrix()
 	{
 		if (_mtxMode == MATRIXMODE_PROJECTION)
 		{
-			MatrixCopy(mtxStackProjection[0], _mtxCurrent[_mtxMode]);
+			MatrixCopy(mtxStackProjection[0], _mtxCurrent[MATRIXMODE_PROJECTION]);
 			
 			u32 &index = mtxStackIndex[MATRIXMODE_PROJECTION];
 			if (index == 1)
@@ -972,7 +1302,7 @@ static void gfx3d_glPushMatrix()
 		}
 		else
 		{
-			MatrixCopy(mtxStackTexture[0], _mtxCurrent[_mtxMode]);
+			MatrixCopy(mtxStackTexture[0], _mtxCurrent[MATRIXMODE_TEXTURE]);
 			
 			u32 &index = mtxStackIndex[MATRIXMODE_TEXTURE];
 			if (index == 1)
@@ -1024,7 +1354,7 @@ static void gfx3d_glPopMatrix(const u32 param)
 			{
 				MMU_new.gxstat.se = 1;
 			}
-			MatrixCopy(_mtxCurrent[_mtxMode], mtxStackProjection[0]);
+			MatrixCopy(_mtxCurrent[MATRIXMODE_PROJECTION], mtxStackProjection[0]);
 
 			UpdateProjection();
 		}
@@ -1036,7 +1366,8 @@ static void gfx3d_glPopMatrix(const u32 param)
 			{
 				MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
 			}
-			MatrixCopy(_mtxCurrent[_mtxMode], mtxStackTexture[0]);
+			MatrixCopy(_mtxCurrent[MATRIXMODE_TEXTURE], mtxStackTexture[0]);
+			_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
 		}
 	}
 	else
@@ -1108,6 +1439,7 @@ static void gfx3d_glRestoreMatrix(const u32 param)
 		else
 		{
 			MatrixCopy(_mtxCurrent[MATRIXMODE_TEXTURE], mtxStackTexture[0]);
+			_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
 		}
 	}
 	else
@@ -1127,9 +1459,15 @@ static void gfx3d_glLoadIdentity()
 {
 	MatrixIdentity(_mtxCurrent[_mtxMode]);
 	GFX_DELAY(19);
-
-	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+	
+	if (_mtxMode == MATRIXMODE_TEXTURE)
+	{
+		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+	{
 		MatrixIdentity(_mtxCurrent[MATRIXMODE_POSITION]);
+	}
 
 	//printf("identity: %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 }
@@ -1147,8 +1485,14 @@ static void gfx3d_glLoadMatrix4x4(const u32 param)
 
 	GFX_DELAY(19);
 
-	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+	if (_mtxMode == MATRIXMODE_TEXTURE)
+	{
+		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+	{
 		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+	}
 
 	//printf("load4x4: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 }
@@ -1175,8 +1519,14 @@ static void gfx3d_glLoadMatrix4x3(const u32 param)
 
 	GFX_DELAY(30);
 
-	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+	if (_mtxMode == MATRIXMODE_TEXTURE)
+	{
+		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+	{
 		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+	}
 	//printf("load4x3: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 }
 
@@ -1194,15 +1544,18 @@ static void gfx3d_glMultMatrix4x4(const u32 param)
 	MatrixMultiply(_mtxCurrent[_mtxMode], _mtxTemporal);
 	GFX_DELAY(35);
 
-	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+	if (_mtxMode == MATRIXMODE_TEXTURE)
+	{
+		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (_mtxMode == MATRIXMODE_PROJECTION)
+	{
+		UpdateProjection();
+	}
+	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
 	{
 		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], _mtxTemporal);
 		GFX_DELAY_M2(30);
-	}
-
-	if (_mtxMode == MATRIXMODE_PROJECTION)
-	{
-		UpdateProjection();
 	}
 
 	//printf("mult4x4: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
@@ -1233,15 +1586,18 @@ static void gfx3d_glMultMatrix4x3(const u32 param)
 	MatrixMultiply(_mtxCurrent[_mtxMode], _mtxTemporal);
 	GFX_DELAY(31);
 
-	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+	if (_mtxMode == MATRIXMODE_TEXTURE)
+	{
+		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (_mtxMode == MATRIXMODE_PROJECTION)
+	{
+		UpdateProjection();
+	}
+	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
 	{
 		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], _mtxTemporal);
 		GFX_DELAY_M2(30);
-	}
-
-	if (_mtxMode == MATRIXMODE_PROJECTION)
-	{
-		UpdateProjection();
 	}
 
 	//printf("mult4x3: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
@@ -1274,15 +1630,18 @@ static void gfx3d_glMultMatrix3x3(const u32 param)
 	MatrixMultiply(_mtxCurrent[_mtxMode], _mtxTemporal);
 	GFX_DELAY(28);
 
-	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+	if (_mtxMode == MATRIXMODE_TEXTURE)
+	{
+		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (_mtxMode == MATRIXMODE_PROJECTION)
+	{
+		UpdateProjection();
+	}
+	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
 	{
 		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], _mtxTemporal);
 		GFX_DELAY_M2(30);
-	}
-
-	if (_mtxMode == MATRIXMODE_PROJECTION)
-	{
-		UpdateProjection();
 	}
 
 	//printf("mult3x3: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
@@ -1311,7 +1670,12 @@ static void gfx3d_glScale(const u32 param)
 	//the whole purpose is to keep the vector matrix orthogonal
 	//so, I am leaving this commented out as an example of what not to do.
 	//if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
-	//	MatrixScale (_mtxCurrent[MATRIXMODE_POSITION], _regScale.vec);
+	//	MatrixScale(_mtxCurrent[MATRIXMODE_POSITION], _regScale.vec);
+	
+	if (_mtxMode == MATRIXMODE_TEXTURE)
+	{
+		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
 }
 
 static void gfx3d_glTranslate(const u32 param)
@@ -1328,7 +1692,11 @@ static void gfx3d_glTranslate(const u32 param)
 	MatrixTranslate(_mtxCurrent[_mtxMode], _regTranslate.vec);
 	GFX_DELAY(22);
 
-	if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
+	if (_mtxMode == MATRIXMODE_TEXTURE)
+	{
+		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
 	{
 		MatrixTranslate(_mtxCurrent[MATRIXMODE_POSITION], _regTranslate.vec);
 		GFX_DELAY_M2(30);
@@ -1339,10 +1707,7 @@ static void gfx3d_glTranslate(const u32 param)
 
 static void gfx3d_glColor3b(const u32 param)
 {
-	_vtxColor555X.r = (u8)((param >>  0) & 0x0000001F);
-	_vtxColor555X.g = (u8)((param >>  5) & 0x0000001F);
-	_vtxColor555X.b = (u8)((param >> 10) & 0x0000001F);
-	
+	_gEngine.SetVertexColor(param);
 	GFX_DELAY(1);
 }
 
@@ -1354,16 +1719,8 @@ static void gfx3d_glNormal(const u32 param)
 		((s32)((param <<  2) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3),
 		 (s32)(1 << 12)
 	};
-
-	if (_texCoordTransformMode == TextureTransformationMode_NormalSource)
-	{
-		//SM64 highlight rendered star in main menu tests this
-		//also smackdown 2010 player textures tested this (needed cast on _s and _t)
-		const s32 *mtxTex = _mtxCurrent[MATRIXMODE_TEXTURE];
-		_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[0], normal.x) + GEM_Mul32x32To64(mtxTex[4], normal.y) + GEM_Mul32x32To64(mtxTex[8], normal.z) + ((s64)_regTexCoord.s << 24)) >> 24 );
-		_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[1], normal.x) + GEM_Mul32x32To64(mtxTex[5], normal.y) + GEM_Mul32x32To64(mtxTex[9], normal.z) + ((s64)_regTexCoord.t << 24)) >> 24 );
-	}
-
+	
+	_gEngine.SetNormal(normal); // Retain a copy of the passed in normal vector before we transform it.
 	MatrixMultVec3x3(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], normal.vec);
 
 	//apply lighting model
@@ -1397,9 +1754,11 @@ static void gfx3d_glNormal(const u32 param)
 		emission32[2]
 	};
 
+	const u8 lightMask = _regPolyAttrApplied.LightMask;
+	
 	for (size_t i = 0; i < 4; i++)
 	{
-		if (!((_lightMask >> i) & 1))
+		if (!((lightMask >> i) & 1))
 		{
 			continue;
 		}
@@ -1454,121 +1813,82 @@ static void gfx3d_glNormal(const u32 param)
 			vertexColor[c] += specComp + diffComp + ambComp;
 		}
 	}
-
-	_vtxColor555X.r = (u8)std::min<s32>(31, vertexColor[0]);
-	_vtxColor555X.g = (u8)std::min<s32>(31, vertexColor[1]);
-	_vtxColor555X.b = (u8)std::min<s32>(31, vertexColor[2]);
+	
+	const FragmentColor newVtxColor = {
+		(u8)std::min<s32>(31, vertexColor[0]),
+		(u8)std::min<s32>(31, vertexColor[1]),
+		(u8)std::min<s32>(31, vertexColor[2]),
+		0
+	};
+	
+	_gEngine.SetVertexColor(newVtxColor);
 
 	GFX_DELAY(9);
-	GFX_DELAY_M2((_lightMask) & 0x01);
-	GFX_DELAY_M2((_lightMask>>1) & 0x01);
-	GFX_DELAY_M2((_lightMask>>2) & 0x01);
-	GFX_DELAY_M2((_lightMask>>3) & 0x01);
+	GFX_DELAY_M2((lightMask >> 0) & 0x01);
+	GFX_DELAY_M2((lightMask >> 1) & 0x01);
+	GFX_DELAY_M2((lightMask >> 2) & 0x01);
+	GFX_DELAY_M2((lightMask >> 3) & 0x01);
 }
 
 static void gfx3d_glTexCoord(const u32 param)
 {
-	VertexCoord16x2 inTexCoord16x2;
-	inTexCoord16x2.value = param;
-	
-	_regTexCoord.s = (s32)inTexCoord16x2.s;
-	_regTexCoord.t = (s32)inTexCoord16x2.t;
-
-	if (_texCoordTransformMode == TextureTransformationMode_TexCoordSource)
-	{
-		//dragon quest 4 overworld will test this
-		const s32 *mtxTex = _mtxCurrent[MATRIXMODE_TEXTURE];
-		_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[0], _regTexCoord.s) + GEM_Mul32x32To64(mtxTex[4], _regTexCoord.t) + (s64)mtxTex[8] + (s64)mtxTex[12]) >> 12 );
-		_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[1], _regTexCoord.s) + GEM_Mul32x32To64(mtxTex[5], _regTexCoord.t) + (s64)mtxTex[9] + (s64)mtxTex[13]) >> 12 );
-	}
-	else if (_texCoordTransformMode == TextureTransformationMode_None)
-	{
-		_texCoordTransformed.s = _regTexCoord.s;
-		_texCoordTransformed.t = _regTexCoord.t;
-	}
-	
+	_gEngine.SetTextureCoordinates(param);
 	GFX_DELAY(1);
 }
 
 static void gfx3d_glVertex16b(const u32 param)
 {
-	VertexCoord16x2 inVtx16x2;
-	inVtx16x2.value = param;
-	
-	if (_vtxCoord16CurrentIndex == 0)
+	const bool isVtxComplete = _gEngine.SetCurrentVertex16x2(param);
+	if (isVtxComplete)
 	{
-		_vtxCoord16.coord[0] = (s32)inVtx16x2.coord[0];
-		_vtxCoord16.coord[1] = (s32)inVtx16x2.coord[1];
-		_vtxCoord16CurrentIndex++;
-		return;
+		_gEngine.AddCurrentVertexToList(gfx3d.gList[gfx3d.pendingListIndex]);
+		GFX_DELAY(9);
 	}
-
-	_vtxCoord16.coord[2] = (s32)inVtx16x2.coord[0];
-	_vtxCoord16CurrentIndex = 0;
-	
-	SetVertex();
-	GFX_DELAY(9);
 }
 
 static void gfx3d_glVertex10b(const u32 param)
 {
-	_vtxCoord16.x = (s16)( (u16)(((param << 22) >> 22) << 6) );
-	_vtxCoord16.y = (s16)( (u16)(((param << 12) >> 22) << 6) );
-	_vtxCoord16.z = (s16)( (u16)(((param <<  2) >> 22) << 6) );
-	
-	SetVertex();
+	_gEngine.SetCurrentVertex10x3(param);
+	_gEngine.AddCurrentVertexToList(gfx3d.gList[gfx3d.pendingListIndex]);
 	GFX_DELAY(8);
 }
 
-template<int ONE, int TWO>
+template <size_t ONE, size_t TWO>
 static void gfx3d_glVertex3_cord(const u32 param)
 {
-	VertexCoord16x2 inVtx16x2;
-	inVtx16x2.value = param;
-	
-	_vtxCoord16.coord[ONE] = (s32)inVtx16x2.coord[0];
-	_vtxCoord16.coord[TWO] = (s32)inVtx16x2.coord[1];
-
-	SetVertex();
+	_gEngine.SetCurrentVertex16x2Immediate<ONE, TWO>(param);
+	_gEngine.AddCurrentVertexToList(gfx3d.gList[gfx3d.pendingListIndex]);
 	GFX_DELAY(8);
 }
 
 static void gfx3d_glVertex_rel(const u32 param)
 {
-	const s16 x = (s16)( (s32)((param << 22) & 0xFFC00000) / (s32)(1 << 22) );
-	const s16 y = (s16)( (s32)((param << 12) & 0xFFC00000) / (s32)(1 << 22) );
-	const s16 z = (s16)( (s32)((param <<  2) & 0xFFC00000) / (s32)(1 << 22) );
-	
-	_vtxCoord16.coord[0] += x;
-	_vtxCoord16.coord[1] += y;
-	_vtxCoord16.coord[2] += z;
-
-	SetVertex();
+	_gEngine.SetCurrentVertex10x3Relative(param);
+	_gEngine.AddCurrentVertexToList(gfx3d.gList[gfx3d.pendingListIndex]);
 	GFX_DELAY(8);
 }
 
 static void gfx3d_glPolygonAttrib(const u32 param)
 {
-	if (_inBegin)
+	//if (_inBegin)
 	{
 		//PROGINFO("Set polyattr in the middle of a begin/end pair.\n  (This won't be activated until the next begin)\n");
 		//TODO - we need some some similar checking for teximageparam etc.
 	}
 	
-	_currentPolyAttr.value = param;
+	_regPolyAttrPending.value = param; // Only applied on BEGIN_VTXS
 	GFX_DELAY(1);
 }
 
 static void gfx3d_glTexImage(const u32 param)
 {
-	_currentPolyTexParam.value = param;
-	gfx3d_glTexImage_cache();
+	_gEngine.SetTextureParameters(param);
 	GFX_DELAY(1);
 }
 
 static void gfx3d_glTexPalette(const u32 param)
 {
-	_currentPolyTexPalette = param;
+	_gEngine.SetTexturePalette(param);
 	GFX_DELAY(1);
 }
 
@@ -1588,9 +1908,7 @@ static void gfx3d_glMaterial0(const u32 param)
 
 	if (BIT15(param))
 	{
-		_vtxColor555X.r = (u8)((param >>  0) & 0x0000001F);
-		_vtxColor555X.g = (u8)((param >>  5) & 0x0000001F);
-		_vtxColor555X.b = (u8)((param >> 10) & 0x0000001F);
+		_gEngine.SetVertexColor(param);
 	}
 	GFX_DELAY(4);
 }
@@ -1648,20 +1966,15 @@ static void gfx3d_glShininess(const u32 param)
 
 static void gfx3d_glBegin(const u32 param)
 {
-	_inBegin = true;
-	_vtxFormat = (PolygonPrimitiveType)(param & 0x00000003);
-	_triStripToggle = 0;
-	_polyGenInfo.vtxCount = 0;
-	_polyGenInfo.isFirstPolyCompleted = true;
-	_polyAttrInProcess = _currentPolyAttr;
-	gfx3d_glPolygonAttrib_cache();
+	_regPolyAttrApplied = _regPolyAttrPending;
+	
+	_gEngine.VertexListBegin(param, _regPolyAttrApplied);
 	GFX_DELAY(1);
 }
 
 static void gfx3d_glEnd()
 {
-	_polyGenInfo.vtxCount = 0;
-	_inBegin = false;
+	_gEngine.VertexListEnd();
 	GFX_DELAY(1);
 }
 
@@ -1670,9 +1983,7 @@ static void gfx3d_glEnd()
 static void gfx3d_glViewport(const u32 param)
 {
 	_GFX3D_IORegisterMap->VIEWPORT.value = param;
-	gfx3d.viewportLegacySave = _GFX3D_IORegisterMap->VIEWPORT;
-	gfx3d.viewport = GFX3D_ViewportParse(param);
-	
+	_gEngine.SetViewport(param);
 	GFX_DELAY(1);
 }
 
@@ -2762,13 +3073,13 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 //talks about the state required to process verts in quadlists etc. helpful ideas.
 //consider building a little state structure that looks exactly like this describes
 
-SFORMAT SF_GFX3D[]={
+SFORMAT SF_GFX3D[] = {
 	{ "GCTL", 4, 1, &gfx3d.pendingState.DISP3DCNT},
-	{ "GPAT", 4, 1, &_polyAttrInProcess},
-	{ "GPAP", 4, 1, &_currentPolyAttr},
-	{ "GINB", 4, 1, &gfx3d.inBeginLegacySave},
-	{ "GTFM", 4, 1, &_currentPolyTexParam},
-	{ "GTPA", 4, 1, &_currentPolyTexPalette},
+	{ "GPAT", 4, 1, &_regPolyAttrApplied},
+	{ "GPAP", 4, 1, &_regPolyAttrPending},
+	{ "GINB", 4, 1, &gfx3d.gEngineLegacySave.inBegin},
+	{ "GTFM", 4, 1, &gfx3d.gEngineLegacySave.texParam},
+	{ "GTPA", 4, 1, &gfx3d.gEngineLegacySave.texPalette},
 	{ "GMOD", 4, 1, &_mtxMode},
 	{ "GMTM", 4,16, _mtxTemporal},
 	{ "GMCU", 4,64, _mtxCurrent},
@@ -2777,24 +3088,24 @@ SFORMAT SF_GFX3D[]={
 	{ "MM4I", 1, 1, &_MM4x4ind},
 	{ "MM3I", 1, 1, &_MM4x3ind},
 	{ "MMxI", 1, 1, &_MM3x3ind},
-	{ "GSCO", 2, 4, &_vtxCoord16},
-	{ "GCOI", 1, 1, &_vtxCoord16CurrentIndex},
-	{ "GVFM", 4, 1, &_vtxFormat},
+	{ "GSCO", 2, 4, &gfx3d.gEngineLegacySave.vtxCoord},
+	{ "GCOI", 1, 1, &gfx3d.gEngineLegacySave.vtxCoord16CurrentIndex},
+	{ "GVFM", 4, 1, &gfx3d.gEngineLegacySave.vtxFormat},
 	{ "GTRN", 4, 4, &_regTranslate},
 	{ "GTRI", 1, 1, &_regTranslateCurrentIndex},
 	{ "GSCA", 4, 4, &_regScale},
 	{ "GSCI", 1, 1, &_regScaleCurrentIndex},
-	{ "G_T_", 4, 1, &_regTexCoord.t},
-	{ "G_S_", 4, 1, &_regTexCoord.s},
-	{ "GL_T", 4, 1, &_texCoordTransformed.t},
-	{ "GL_S", 4, 1, &_texCoordTransformed.s},
-	{ "GLCM", 4, 1, &gfx3d.clCommandLegacySave},
-	{ "GLIN", 4, 1, &gfx3d.clIndexLegacySave},
-	{ "GLI2", 4, 1, &gfx3d.clIndex2LegacySave},
+	{ "G_T_", 4, 1, &gfx3d.gEngineLegacySave.texCoordT},
+	{ "G_S_", 4, 1, &gfx3d.gEngineLegacySave.texCoordS},
+	{ "GL_T", 4, 1, &gfx3d.gEngineLegacySave.texCoordTransformedT},
+	{ "GL_S", 4, 1, &gfx3d.gEngineLegacySave.texCoordTransformedS},
+	{ "GLCM", 4, 1, &gfx3d.legacySave.clCommand},
+	{ "GLIN", 4, 1, &gfx3d.legacySave.clIndex},
+	{ "GLI2", 4, 1, &gfx3d.legacySave.clIndex2},
 	{ "GLSB", 4, 1, &isSwapBuffers},
 	{ "GLBT", 4, 1, &_BTind},
 	{ "GLPT", 4, 1, &_PTind},
-	{ "GLPC", 4, 4, gfx3d.PTcoordsLegacySave},
+	{ "GLPC", 4, 4, gfx3d.legacySave.PTcoords},
 	{ "GBTC", 2, 6, &_BTcoords[0]},
 	{ "GFHE", 4, 1, &gxFIFO.head},
 	{ "GFTA", 4, 1, &gxFIFO.tail},
@@ -2807,14 +3118,14 @@ SFORMAT SF_GFX3D[]={
 	{ "GPSZ", 1, 1, &gxPIPE.size},
 	{ "GPCM", 1, 4, &gxPIPE.cmd[0]},
 	{ "GPPM", 4, 4, &gxPIPE.param[0]},
-	{ "GCOL", 1, 4, &_vtxColor555X},
+	{ "GCOL", 1, 4, &gfx3d.gEngineLegacySave.vtxColor},
 	{ "GLCO", 4, 4, _regLightColor},
 	{ "GLDI", 4, 4, &_regLightDirection},
 	{ "GMDI", 2, 1, &_regDiffuse},
 	{ "GMAM", 2, 1, &_regAmbient},
 	{ "GMSP", 2, 1, &_regSpecular},
 	{ "GMEM", 2, 1, &_regEmission},
-	{ "GDRP", 4, 1, &gfx3d.isDrawPendingLegacySave},
+	{ "GDRP", 4, 1, &gfx3d.legacySave.isDrawPending},
 	{ "GSET", 4, 1, &_legacyGFX3DStateSFormatPending.enableTexturing},
 	{ "GSEA", 4, 1, &_legacyGFX3DStateSFormatPending.enableAlphaTest},
 	{ "GSEB", 4, 1, &_legacyGFX3DStateSFormatPending.enableAlphaBlending},
@@ -2859,13 +3170,13 @@ SFORMAT SF_GFX3D[]={
 	{ "gSAF", 4, 1, &_legacyGFX3DStateSFormatApplied.activeFlushCommand},
 	{ "gSPF", 4, 1, &_legacyGFX3DStateSFormatApplied.pendingFlushCommand},
 
-	{ "GSVP", 4, 1, &gfx3d.viewportLegacySave},
+	{ "GSVP", 4, 1, &gfx3d.gEngineLegacySave.regViewport},
 	{ "GSSI", 1, 1, &_shininessTableCurrentIndex},
 	//------------------------
-	{ "GTST", 1, 1, &_triStripToggle},
-	{ "GTVC", 4, 1, &gfx3d.polyGenVtxCountLegacySave},
-	{ "GTVM", 4, 4, gfx3d.polyGenVtxIndexLegacySave},
-	{ "GTVF", 4, 1, &gfx3d.polyGenIsFirstCompletedLegacySave},
+	{ "GTST", 1, 1, &gfx3d.gEngineLegacySave.generateTriangleStripIndexToggle},
+	{ "GTVC", 4, 1, &gfx3d.gEngineLegacySave.vtxCount},
+	{ "GTVM", 4, 4, gfx3d.gEngineLegacySave.vtxIndex},
+	{ "GTVF", 4, 1, &gfx3d.gEngineLegacySave.isGeneratingFirstPolyOfStrip},
 	{ "G3CX", 1, 4*GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT, gfx3d.framebufferNativeSave},
 	{ 0 }
 };
@@ -2912,20 +3223,13 @@ void gfx3d_PrepareSaveStateBufferWrite()
 	}
 	
 	// For save state compatibility
-	gfx3d.inBeginLegacySave = (_inBegin) ? TRUE : FALSE;
-	gfx3d.isDrawPendingLegacySave = (_isDrawPending) ? TRUE : FALSE;
+	_gEngine.SaveState(gfx3d.gEngineLegacySave);
 	
-	gfx3d.polyGenVtxCountLegacySave = (u32)_polyGenInfo.vtxCount;
-	gfx3d.polyGenVtxIndexLegacySave[0] = (u32)_polyGenInfo.vtxIndex[0];
-	gfx3d.polyGenVtxIndexLegacySave[1] = (u32)_polyGenInfo.vtxIndex[1];
-	gfx3d.polyGenVtxIndexLegacySave[2] = (u32)_polyGenInfo.vtxIndex[2];
-	gfx3d.polyGenVtxIndexLegacySave[3] = (u32)_polyGenInfo.vtxIndex[3];
-	gfx3d.polyGenIsFirstCompletedLegacySave = (_polyGenInfo.isFirstPolyCompleted) ? TRUE : FALSE;
-	
-	gfx3d.PTcoordsLegacySave[0] = (float)_PTcoords.x / 4096.0f;
-	gfx3d.PTcoordsLegacySave[1] = (float)_PTcoords.y / 4096.0f;
-	gfx3d.PTcoordsLegacySave[2] = (float)_PTcoords.z / 4096.0f;
-	gfx3d.PTcoordsLegacySave[3] = (float)_PTcoords.w / 4096.0f;
+	gfx3d.legacySave.isDrawPending = (_isDrawPending) ? TRUE : FALSE;
+	gfx3d.legacySave.PTcoords[0] = (float)_PTcoords.x / 4096.0f;
+	gfx3d.legacySave.PTcoords[1] = (float)_PTcoords.y / 4096.0f;
+	gfx3d.legacySave.PTcoords[2] = (float)_PTcoords.z / 4096.0f;
+	gfx3d.legacySave.PTcoords[3] = (float)_PTcoords.w / 4096.0f;
 	
 	_legacyGFX3DStateSFormatPending.enableTexturing     = (gfx3d.pendingState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
 	_legacyGFX3DStateSFormatPending.enableAlphaTest     = (gfx3d.pendingState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
@@ -2994,7 +3298,7 @@ void gfx3d_savestate(EMUFILE &os)
 	for (size_t i = 0; i < gfx3d.gList[gfx3d.pendingListIndex].rawPolyCount; i++)
 	{
 		GFX3D_SaveStatePOLY(gfx3d.gList[gfx3d.pendingListIndex].rawPolyList[i], os);
-		os.write_32LE(gfx3d.rawPolyViewportLegacySave[i].value);
+		os.write_32LE(gfx3d.legacySave.rawPolyViewport[i].value);
 		os.write_floatLE(gfx3d.rawPolySortYMin[i]);
 		os.write_floatLE(gfx3d.rawPolySortYMax[i]);
 	}
@@ -3061,8 +3365,6 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 		GPU->ForceRender3DFinishAndFlush(false);
 	}
 
-	gfx3d_glPolygonAttrib_cache();
-	gfx3d_glTexImage_cache();
 	gfx3d_glLightDirection_cache(0);
 	gfx3d_glLightDirection_cache(1);
 	gfx3d_glLightDirection_cache(2);
@@ -3092,11 +3394,11 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 			POLY &p = gfx3d.gList[gfx3d.pendingListIndex].rawPolyList[i];
 			
 			GFX3D_LoadStatePOLY(p, is);
-			is.read_32LE(gfx3d.rawPolyViewportLegacySave[i].value);
+			is.read_32LE(gfx3d.legacySave.rawPolyViewport[i].value);
 			is.read_floatLE(gfx3d.rawPolySortYMin[i]);
 			is.read_floatLE(gfx3d.rawPolySortYMax[i]);
 			
-			p.viewport = GFX3D_ViewportParse(gfx3d.rawPolyViewportLegacySave[i].value);
+			p.viewport = GFX3D_ViewportParse(gfx3d.legacySave.rawPolyViewport[i]);
 			
 			gfx3d.gList[gfx3d.appliedListIndex].rawPolyList[i] = p;
 		}
@@ -3219,23 +3521,13 @@ void gfx3d_FinishLoadStateBufferRead()
 	const GPU_IOREG &GPUREG = GPU->GetEngineMain()->GetIORegisterMap();
 	const GFX3D_IOREG &GFX3DREG = GFX3D_GetIORegisterMap();
 	
-	_inBegin = (gfx3d.inBeginLegacySave) ? true : false;
-	_isDrawPending = (gfx3d.isDrawPendingLegacySave) ? true : false;
+	_gEngine.LoadState(gfx3d.gEngineLegacySave);
 	
-	_polyGenInfo.vtxCount = (size_t)gfx3d.polyGenVtxCountLegacySave;
-	_polyGenInfo.vtxIndex[0] = (u16)gfx3d.polyGenVtxIndexLegacySave[0];
-	_polyGenInfo.vtxIndex[1] = (u16)gfx3d.polyGenVtxIndexLegacySave[1];
-	_polyGenInfo.vtxIndex[2] = (u16)gfx3d.polyGenVtxIndexLegacySave[2];
-	_polyGenInfo.vtxIndex[3] = (u16)gfx3d.polyGenVtxIndexLegacySave[3];
-	_polyGenInfo.isFirstPolyCompleted = (gfx3d.polyGenIsFirstCompletedLegacySave) ? true : false;
-	
-	_PTcoords.x = (s32)((gfx3d.PTcoordsLegacySave[0] * 4096.0f) + 0.000000001f);
-	_PTcoords.y = (s32)((gfx3d.PTcoordsLegacySave[1] * 4096.0f) + 0.000000001f);
-	_PTcoords.z = (s32)((gfx3d.PTcoordsLegacySave[2] * 4096.0f) + 0.000000001f);
-	_PTcoords.w = (s32)((gfx3d.PTcoordsLegacySave[3] * 4096.0f) + 0.000000001f);
-	
-	gfx3d.viewport = GFX3D_ViewportParse(GFX3DREG.VIEWPORT.value);
-	gfx3d.viewportLegacySave = GFX3DREG.VIEWPORT;
+	_isDrawPending = (gfx3d.legacySave.isDrawPending) ? true : false;
+	_PTcoords.x = (s32)((gfx3d.legacySave.PTcoords[0] * 4096.0f) + 0.000000001f);
+	_PTcoords.y = (s32)((gfx3d.legacySave.PTcoords[1] * 4096.0f) + 0.000000001f);
+	_PTcoords.z = (s32)((gfx3d.legacySave.PTcoords[2] * 4096.0f) + 0.000000001f);
+	_PTcoords.w = (s32)((gfx3d.legacySave.PTcoords[3] * 4096.0f) + 0.000000001f);
 	
 	gfx3d.pendingState.DISP3DCNT = GPUREG.DISP3DCNT;
 	gfx3d_parseCurrentDISP3DCNT();
