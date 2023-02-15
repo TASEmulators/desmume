@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2022 DeSmuME team
+	Copyright (C) 2014-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -5038,14 +5038,14 @@ void OGLVideoOutput::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
 	
 	this->ClientDisplay3DPresenter::_ResizeCPUPixelScaler(filterID);
 	
-	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, this->_vfMasterDstBufferSize, this->_vfMasterDstBuffer);
+	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, (GLsizei)this->_vfMasterDstBufferSize, this->_vfMasterDstBuffer);
 	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[NDSDisplayID_Main]);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_vf[NDSDisplayID_Main]->GetSrcWidth()  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide, this->_vf[NDSDisplayID_Main]->GetSrcWidth()  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Main]->GetDstBufferPtr());
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, (GLsizei)(this->_vf[NDSDisplayID_Main]->GetSrcWidth()  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide), (GLsizei)(this->_vf[NDSDisplayID_Main]->GetSrcWidth()  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Main]->GetDstBufferPtr());
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[NDSDisplayID_Touch]);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_vf[NDSDisplayID_Touch]->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide, this->_vf[NDSDisplayID_Touch]->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Touch]->GetDstBufferPtr());
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, (GLsizei)(this->_vf[NDSDisplayID_Touch]->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide), (GLsizei)(this->_vf[NDSDisplayID_Touch]->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Touch]->GetDstBufferPtr());
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
@@ -5082,7 +5082,7 @@ void OGLVideoOutput::Init()
 	this->PrerenderStateSetupOGL();
 	
 	// Set up textures
-	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, this->_vfMasterDstBufferSize, this->_vfMasterDstBuffer);
+	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, (GLsizei)this->_vfMasterDstBufferSize, this->_vfMasterDstBuffer);
 	
 	glGenTextures(2, this->_texCPUFilterDstID);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[NDSDisplayID_Main]);
@@ -5091,7 +5091,7 @@ void OGLVideoOutput::Init()
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_vf[NDSDisplayID_Main]->GetDstWidth(),  this->_vf[NDSDisplayID_Main]->GetDstHeight(),  0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Main]->GetDstBufferPtr());
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, (GLsizei)this->_vf[NDSDisplayID_Main]->GetDstWidth(),  (GLsizei)this->_vf[NDSDisplayID_Main]->GetDstHeight(),  0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Main]->GetDstBufferPtr());
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[NDSDisplayID_Touch]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -5099,11 +5099,14 @@ void OGLVideoOutput::Init()
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_vf[NDSDisplayID_Touch]->GetDstWidth(), this->_vf[NDSDisplayID_Touch]->GetDstHeight(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Touch]->GetDstBufferPtr());
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, (GLsizei)this->_vf[NDSDisplayID_Touch]->GetDstWidth(), (GLsizei)this->_vf[NDSDisplayID_Touch]->GetDstHeight(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Touch]->GetDstBufferPtr());
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
-	glGenFramebuffersEXT(1, &this->_fboFrameCopyID);
+	if (this->_contextInfo->IsFBOSupported())
+	{
+		glGenFramebuffersEXT(1, &this->_fboFrameCopyID);
+	}
 }
 
 void OGLVideoOutput::SetOutputFilter(const OutputFilterTypeID filterID)
@@ -5174,6 +5177,11 @@ void OGLVideoOutput::ProcessDisplays()
 
 void OGLVideoOutput::CopyFrameToBuffer(uint32_t *dstBuffer)
 {
+	if (!this->_contextInfo->IsFBOSupported())
+	{
+		return;
+	}
+	
 	GLuint texFrameCopyID = 0;
 	
 	glGenTextures(1, &texFrameCopyID);
@@ -5471,7 +5479,7 @@ void OGLFilter::DownloadDstBufferOGL(uint32_t *dstBuffer, size_t lineOffset, siz
 	}
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, this->_fboID);
-	glReadPixels(0, lineOffset, this->_dstWidth, readLineCount, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, dstBuffer);
+	glReadPixels(0, (GLint)lineOffset, this->_dstWidth, (GLsizei)readLineCount, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, dstBuffer);
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 }
 
@@ -5609,7 +5617,7 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, _vf->GetSrcWidth(), _vf->GetSrcHeight(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _vf->GetSrcBufferPtr());
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, (GLsizei)_vf->GetSrcWidth(), (GLsizei)_vf->GetSrcHeight(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _vf->GetSrcBufferPtr());
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	const GLint vtxBuffer[8] = {
@@ -5685,9 +5693,9 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	_canUseShaderBasedFilters = (contextInfo->IsShaderSupported() && contextInfo->IsFBOSupported());
 	if (_canUseShaderBasedFilters)
 	{
-		_filterDeposterize = new OGLFilterDeposterize(_vf->GetSrcWidth(), _vf->GetSrcHeight(), _shaderSupport, _useShader150);
+		_filterDeposterize = new OGLFilterDeposterize((GLsizei)_vf->GetSrcWidth(), (GLsizei)_vf->GetSrcHeight(), _shaderSupport, _useShader150);
 		
-		_shaderFilter = new OGLFilter(_vf->GetSrcWidth(), _vf->GetSrcHeight(), 1);
+		_shaderFilter = new OGLFilter((GLsizei)_vf->GetSrcWidth(), (GLsizei)_vf->GetSrcHeight(), 1);
 		OGLShaderProgram *shaderFilterProgram = _shaderFilter->GetProgram();
 		shaderFilterProgram->SetShaderSupport(_shaderSupport);
 		shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, _useShader150);
@@ -6132,10 +6140,10 @@ void OGLImage::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 {
 	bool needResizeTexture = false;
 	const VideoFilterAttributes newFilterAttr = VideoFilter::GetAttributesByID(filterID);
-	const GLsizei oldDstBufferWidth = this->_vf->GetDstWidth();
-	const GLsizei oldDstBufferHeight = this->_vf->GetDstHeight();
-	const GLsizei newDstBufferWidth = this->_vf->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
-	const GLsizei newDstBufferHeight = this->_vf->GetSrcHeight() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
+	const GLsizei oldDstBufferWidth  = (GLsizei)this->_vf->GetDstWidth();
+	const GLsizei oldDstBufferHeight = (GLsizei)this->_vf->GetDstHeight();
+	const GLsizei newDstBufferWidth  = (GLsizei)(this->_vf->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide);
+	const GLsizei newDstBufferHeight = (GLsizei)(this->_vf->GetSrcHeight() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide);
 	
 	if (oldDstBufferWidth != newDstBufferWidth || oldDstBufferHeight != newDstBufferHeight)
 	{
@@ -6492,7 +6500,7 @@ void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, c
 			}
 		}
 		
-		glTexImage2D(GL_TEXTURE_2D, texLevel, GL_RGBA, texSize, texSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, charMapBuffer);
+		glTexImage2D(GL_TEXTURE_2D, texLevel, GL_RGBA, (GLsizei)texSize, (GLsizei)texSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, charMapBuffer);
 	}
 	
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
@@ -6639,7 +6647,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 		
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glDrawElements(GL_TRIANGLES, hudTouchLineLength * 6, GL_UNSIGNED_SHORT, (GLvoid *)((this->_output->GetHUDString().length() + HUD_INPUT_ELEMENT_LENGTH) * 6 * sizeof(uint16_t)));
+		glDrawElements(GL_TRIANGLES, (GLsizei)(hudTouchLineLength * 6), GL_UNSIGNED_SHORT, (GLvoid *)((this->_output->GetHUDString().length() + HUD_INPUT_ELEMENT_LENGTH) * 6 * sizeof(uint16_t)));
 		
 		// Then draw the input buttons overlay.
 		if (this->_output->GetContextInfo()->IsShaderSupported())
@@ -6692,7 +6700,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -0.50f);
 	}
-	glDrawElements(GL_TRIANGLES, (this->_output->GetHUDString().length() - 1) * 6, GL_UNSIGNED_SHORT, (GLvoid *)(6 * sizeof(GLshort)));
+	glDrawElements(GL_TRIANGLES, (GLsizei)((this->_output->GetHUDString().length() - 1) * 6), GL_UNSIGNED_SHORT, (GLvoid *)(6 * sizeof(GLshort)));
 	
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindVertexArrayDESMUME(0);
@@ -7438,7 +7446,7 @@ void OGLDisplayLayer::ProcessOGL()
 			{
 				texMain = this->_output->GetTexCPUFilterDstID(NDSDisplayID_Main);
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texMain);
-				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, vfMain->GetDstWidth(), vfMain->GetDstHeight(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, vfMain->GetDstBufferPtr());
+				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, (GLsizei)vfMain->GetDstWidth(), (GLsizei)vfMain->GetDstHeight(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, vfMain->GetDstBufferPtr());
 				
 				width[NDSDisplayID_Main]  = (GLsizei)vfMain->GetDstWidth();
 				height[NDSDisplayID_Main] = (GLsizei)vfMain->GetDstHeight();
@@ -7454,7 +7462,7 @@ void OGLDisplayLayer::ProcessOGL()
 			{
 				texTouch = this->_output->GetTexCPUFilterDstID(NDSDisplayID_Touch);
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texTouch);
-				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, vfTouch->GetDstWidth(), vfTouch->GetDstHeight(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, vfTouch->GetDstBufferPtr());
+				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, (GLsizei)vfTouch->GetDstWidth(), (GLsizei)vfTouch->GetDstHeight(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, vfTouch->GetDstBufferPtr());
 				
 				width[NDSDisplayID_Touch]  = (GLsizei)vfTouch->GetDstWidth();
 				height[NDSDisplayID_Touch] = (GLsizei)vfTouch->GetDstHeight();
@@ -7653,7 +7661,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 						glBindTexture(GL_TEXTURE_RECTANGLE_ARB, processedInfo.texID[majorDisplayID]);
 						glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[majorDisplayID]);
 						glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[majorDisplayID]);
-						glDrawArrays(GL_TRIANGLE_STRIP, majorDisplayVtx, 4);
+						glDrawArrays(GL_TRIANGLE_STRIP, (GLint)majorDisplayVtx, 4);
 						
 						if (texFetchMajorNeedsLock)
 						{
