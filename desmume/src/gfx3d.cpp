@@ -302,11 +302,9 @@ static u8 _shininessTableCurrentIndex = 0;
 int freelookMode = 0;
 s32 freelookMatrix[16];
 
-//-----------cached things:
-//these dont need to go into the savestate. they can be regenerated from HW registers
-//from polygonattr:
-static CACHE_ALIGN Vector32x4 _cacheLightDirection[4];
-static CACHE_ALIGN Vector32x4 _cacheHalfVector[4];
+static CACHE_ALIGN Vector32x4 _vecLightDirectionTransformed[4];
+static CACHE_ALIGN Vector32x4 _vecLightDirectionHalfNegative[4];
+static bool _doesLightHalfVectorNeedUpdate[4];
 //------------------
 
 #define RENDER_FRONT_SURFACE 0x80
@@ -484,6 +482,16 @@ void gfx3d_reset()
 	mtxStackIndex[MATRIXMODE_POSITION] = 0;
 	mtxStackIndex[MATRIXMODE_POSITION_VECTOR] = 0;
 	mtxStackIndex[MATRIXMODE_TEXTURE] = 0;
+	
+	_regLightDirection[0] = 0;
+	_regLightDirection[1] = 0;
+	_regLightDirection[2] = 0;
+	_regLightDirection[3] = 0;
+	memset(&_vecLightDirectionTransformed[0], 0, sizeof(Vector32x4) * 4);
+	_doesLightHalfVectorNeedUpdate[0] = true;
+	_doesLightHalfVectorNeedUpdate[1] = true;
+	_doesLightHalfVectorNeedUpdate[2] = true;
+	_doesLightHalfVectorNeedUpdate[3] = true;
 
 	_BTind = 0;
 	_PTind = 0;
@@ -1811,27 +1819,21 @@ void NDSGeometryEngine::LoadState(const GeometryEngineLegacySave &inLegacySave)
 	this->SetViewport(inLegacySave.regViewport);
 }
 
-static void gfx3d_glLightDirection_cache(const size_t index)
+static void gfx3d_UpdateLightDirectionHalfAngleVector(const size_t index)
 {
-	const u32 v = _regLightDirection[index];
-	_cacheLightDirection[index].x = ((s32)((v<<22) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
-	_cacheLightDirection[index].y = ((s32)((v<<12) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
-	_cacheLightDirection[index].z = ((s32)((v<< 2) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
-	_cacheLightDirection[index].w = 0;
-
-	//Multiply the vector by the directional matrix
-	MatrixMultVec3x3(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], _cacheLightDirection[index].vec);
-
 	//Calculate the half angle vector
-	CACHE_ALIGN const Vector32x4 lineOfSight = {0, 0, (s32)0xFFFFF000, 0};
-	_cacheHalfVector[index].x = _cacheLightDirection[index].x + lineOfSight.x;
-	_cacheHalfVector[index].y = _cacheLightDirection[index].y + lineOfSight.y;
-	_cacheHalfVector[index].z = _cacheLightDirection[index].z + lineOfSight.z;
-	_cacheHalfVector[index].w = _cacheLightDirection[index].w + lineOfSight.w;
+	CACHE_ALIGN static const Vector32x4 lineOfSight = {0, 0, (s32)0xFFFFF000, 0};
+	
+	Vector32x4 half = {
+		_vecLightDirectionTransformed[index].x + lineOfSight.x,
+		_vecLightDirectionTransformed[index].y + lineOfSight.y,
+		_vecLightDirectionTransformed[index].z + lineOfSight.z,
+		_vecLightDirectionTransformed[index].w + lineOfSight.w
+	};
 	
 	//normalize the half angle vector
 	//can't believe the hardware really does this... but yet it seems...
-	s32 halfLength = ((s32)(sqrt((double)vec3dot_fixed32(_cacheHalfVector[index].vec, _cacheHalfVector[index].vec))))<<6;
+	s32 halfLength = ( (s32)(sqrt((double)vec3dot_fixed32(half.vec, half.vec))) ) << 6;
 
 	if (halfLength != 0)
 	{
@@ -1839,12 +1841,18 @@ static void gfx3d_glLightDirection_cache(const size_t index)
 		halfLength >>= 6;
 		for (size_t i = 0; i < 4; i++)
 		{
-			s32 temp = _cacheHalfVector[index].vec[i];
+			s32 temp = half.vec[i];
 			temp <<= 6;
 			temp /= halfLength;
-			_cacheHalfVector[index].vec[i] = temp;
+			half.vec[i] = temp;
 		}
 	}
+	
+	_vecLightDirectionHalfNegative[index].x = -half.x;
+	_vecLightDirectionHalfNegative[index].y = -half.y;
+	_vecLightDirectionHalfNegative[index].z = -half.z;
+	_vecLightDirectionHalfNegative[index].w = -half.w;
+	_doesLightHalfVectorNeedUpdate[index] = false;
 }
 
 
@@ -2045,16 +2053,14 @@ static void gfx3d_glNormal(const u32 param)
 
 		//This formula is the one used by the DS
 		//Reference : http://nocash.emubase.de/gbatek.htm#ds3dpolygonlightparameters
-		const s32 fixed_diffuse = std::max( 0, -vec3dot_fixed32(_cacheLightDirection[i].vec, normal.vec) );
+		const s32 fixed_diffuse = std::max( 0, -vec3dot_fixed32(_vecLightDirectionTransformed[i].vec, normal.vec) );
 		
-		//todo - this could be cached in this form
-		const Vector32x4 fixedTempNegativeHalf = {
-			-_cacheHalfVector[i].x,
-			-_cacheHalfVector[i].y,
-			-_cacheHalfVector[i].z,
-			-_cacheHalfVector[i].w
-		};
-		const s32 dot = vec3dot_fixed32(fixedTempNegativeHalf.vec, normal.vec);
+		if (_doesLightHalfVectorNeedUpdate[i])
+		{
+			gfx3d_UpdateLightDirectionHalfAngleVector(i);
+		}
+		
+		const s32 dot = vec3dot_fixed32(_vecLightDirectionHalfNegative[i].vec, normal.vec);
 
 		s32 fixedshininess = 0;
 		if (dot > 0) //prevent shininess on opposite side
@@ -2098,10 +2104,10 @@ static void gfx3d_glNormal(const u32 param)
 	_gEngine.SetVertexColor(newVtxColor);
 
 	GFX_DELAY(9);
-	GFX_DELAY_M2((lightMask >> 0) & 0x01);
-	GFX_DELAY_M2((lightMask >> 1) & 0x01);
-	GFX_DELAY_M2((lightMask >> 2) & 0x01);
-	GFX_DELAY_M2((lightMask >> 3) & 0x01);
+	GFX_DELAY_M2(_regPolyAttrApplied.Light0);
+	GFX_DELAY_M2(_regPolyAttrApplied.Light1);
+	GFX_DELAY_M2(_regPolyAttrApplied.Light2);
+	GFX_DELAY_M2(_regPolyAttrApplied.Light3);
 }
 
 static void gfx3d_glTexCoord(const u32 param)
@@ -2201,10 +2207,18 @@ static void gfx3d_glMaterial1(const u32 param)
 // 30-31 Light Number                     (0..3)
 static void gfx3d_glLightDirection(const u32 param)
 {
-	const size_t index = param >> 30;
-
-	_regLightDirection[index] = param & 0x3FFFFFFF;
-	gfx3d_glLightDirection_cache(index);
+	const size_t index = (param >> 30) & 0x00000003;
+	const u32 v = param & 0x3FFFFFFF;
+	_regLightDirection[index] = v;
+	
+	// Unpack the vector, and then multiply it by the current directional matrix.
+	_vecLightDirectionTransformed[index].x = ((s32)((v<<22) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
+	_vecLightDirectionTransformed[index].y = ((s32)((v<<12) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
+	_vecLightDirectionTransformed[index].z = ((s32)((v<< 2) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
+	_vecLightDirectionTransformed[index].w = 0;
+	MatrixMultVec3x3(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], _vecLightDirectionTransformed[index].vec);
+	
+	_doesLightHalfVectorNeedUpdate[index] = true;
 	GFX_DELAY(6);
 }
 
@@ -3602,18 +3616,24 @@ void gfx3d_savestate(EMUFILE &os)
 	// evidently these need to be saved because we don't cache the matrix that would need to be used to properly regenerate them
 	for (size_t i = 0; i < 4; i++)
 	{
-		os.write_32LE(_cacheLightDirection[i].x);
-		os.write_32LE(_cacheLightDirection[i].y);
-		os.write_32LE(_cacheLightDirection[i].z);
-		os.write_32LE(_cacheLightDirection[i].w);
+		os.write_32LE(_vecLightDirectionTransformed[i].x);
+		os.write_32LE(_vecLightDirectionTransformed[i].y);
+		os.write_32LE(_vecLightDirectionTransformed[i].z);
+		os.write_32LE(_vecLightDirectionTransformed[i].w);
 	}
 	
 	for (size_t i = 0; i < 4; i++)
 	{
-		os.write_32LE(_cacheHalfVector[i].x);
-		os.write_32LE(_cacheHalfVector[i].y);
-		os.write_32LE(_cacheHalfVector[i].z);
-		os.write_32LE(_cacheHalfVector[i].w);
+		if (_doesLightHalfVectorNeedUpdate[i])
+		{
+			gfx3d_UpdateLightDirectionHalfAngleVector(i);
+		}
+		
+		// Historically, these values were saved with the opposite sign.
+		os.write_32LE(-_vecLightDirectionHalfNegative[i].x);
+		os.write_32LE(-_vecLightDirectionHalfNegative[i].y);
+		os.write_32LE(-_vecLightDirectionHalfNegative[i].z);
+		os.write_32LE(-_vecLightDirectionHalfNegative[i].w);
 	}
 }
 
@@ -3627,11 +3647,6 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 	{
 		GPU->ForceRender3DFinishAndFlush(false);
 	}
-
-	gfx3d_glLightDirection_cache(0);
-	gfx3d_glLightDirection_cache(1);
-	gfx3d_glLightDirection_cache(2);
-	gfx3d_glLightDirection_cache(3);
 
 	gfx3d_parseCurrentDISP3DCNT();
 	
@@ -3716,18 +3731,25 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 	{
 		for (size_t i = 0; i < 4; i++)
 		{
-			is.read_32LE(_cacheLightDirection[i].x);
-			is.read_32LE(_cacheLightDirection[i].y);
-			is.read_32LE(_cacheLightDirection[i].z);
-			is.read_32LE(_cacheLightDirection[i].w);
+			is.read_32LE(_vecLightDirectionTransformed[i].x);
+			is.read_32LE(_vecLightDirectionTransformed[i].y);
+			is.read_32LE(_vecLightDirectionTransformed[i].z);
+			is.read_32LE(_vecLightDirectionTransformed[i].w);
 		}
 		
 		for (size_t i = 0; i < 4; i++)
 		{
-			is.read_32LE(_cacheHalfVector[i].x);
-			is.read_32LE(_cacheHalfVector[i].y);
-			is.read_32LE(_cacheHalfVector[i].z);
-			is.read_32LE(_cacheHalfVector[i].w);
+			is.read_32LE(_vecLightDirectionHalfNegative[i].x);
+			is.read_32LE(_vecLightDirectionHalfNegative[i].y);
+			is.read_32LE(_vecLightDirectionHalfNegative[i].z);
+			is.read_32LE(_vecLightDirectionHalfNegative[i].w);
+			
+			// Historically, these values were saved with the opposite sign.
+			_vecLightDirectionHalfNegative[i].x = -_vecLightDirectionHalfNegative[i].x;
+			_vecLightDirectionHalfNegative[i].y = -_vecLightDirectionHalfNegative[i].y;
+			_vecLightDirectionHalfNegative[i].z = -_vecLightDirectionHalfNegative[i].z;
+			_vecLightDirectionHalfNegative[i].w = -_vecLightDirectionHalfNegative[i].w;
+			_doesLightHalfVectorNeedUpdate[i] = false;
 		}
 	}
 
