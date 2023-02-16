@@ -77,11 +77,6 @@ class EMUFILE;
 extern CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 #define DS_DEPTH15TO24(depth) ( dsDepthExtend_15bit_to_24bit[(depth) & 0x7FFF] )
 
-extern CACHE_ALIGN NDSMatrixStack1  mtxStackProjection;
-extern CACHE_ALIGN NDSMatrixStack32 mtxStackPosition;
-extern CACHE_ALIGN NDSMatrixStack32 mtxStackPositionVector;
-extern CACHE_ALIGN NDSMatrixStack1  mtxStackTexture;
-
 extern u32 mtxStackIndex[4];
 
 // POLYGON PRIMITIVE TYPES
@@ -829,6 +824,20 @@ typedef struct LegacyGFX3D_StateSFormat LegacyGFX3D_StateSFormat;
 
 struct GeometryEngineLegacySave
 {
+	NDSMatrix currentMultiplyMatrix;
+	
+	Vector32x4 vecTranslate;
+	Vector32x4 vecScale;
+	
+	u32 mtxCurrentMode;
+	u8 mtxLoad4x4CurrentIndex;
+	u8 mtxLoad4x3CurrentIndex;
+	u8 mtxMultiply4x4CurrentIndex;
+	u8 mtxMultiply4x3CurrentIndex;
+	u8 mtxMultiply3x3CurrentIndex;
+	u8 vecScaleCurrentIndex;
+	u8 vecTranslateCurrentIndex;
+	
 	u32 vtxFormat;
 	VertexCoord16x4 vtxCoord;
 	FragmentColor vtxColor;
@@ -903,14 +912,38 @@ private:
 	void __Init();
 	
 protected:
+	CACHE_ALIGN Vector32x4 _vecTranslate;
+	CACHE_ALIGN Vector32x4 _vecScale;
+	
+	CACHE_ALIGN NDSMatrix _currentMtxLoad4x4;
+	CACHE_ALIGN NDSMatrix _currentMtxLoad4x3;
+	CACHE_ALIGN NDSMatrix _currentMtxMult4x4;
+	CACHE_ALIGN NDSMatrix _currentMtxMult4x3;
+	CACHE_ALIGN NDSMatrix _currentMtxMult3x3;
+	
+	// Matrix stack handling
+	CACHE_ALIGN NDSMatrixStack1  _mtxStackProjection;
+	CACHE_ALIGN NDSMatrixStack32 _mtxStackPosition;
+	CACHE_ALIGN NDSMatrixStack32 _mtxStackPositionVector;
+	CACHE_ALIGN NDSMatrixStack1  _mtxStackTexture;
+	
 	CACHE_ALIGN Vector32x4 _normal32;
-	CACHE_ALIGN s32 _mtxTexture32[16];
+	CACHE_ALIGN NDSMatrix _mtxTexture32;
 	CACHE_ALIGN VertexCoord16x3 _vtxCoord16;
-	FragmentColor _vtxColor555X;
 	CACHE_ALIGN VertexCoord16x2 _texCoord16;
 	CACHE_ALIGN VertexCoord32x2 _texCoordTransformed;
 	
+	MatrixMode _mtxCurrentMode;
+	u8 _vecScaleCurrentIndex;
+	u8 _vecTranslateCurrentIndex;
+	u8 _mtxLoad4x4CurrentIndex;
+	u8 _mtxLoad4x3CurrentIndex;
+	u8 _mtxMultiply4x4CurrentIndex;
+	u8 _mtxMultiply4x3CurrentIndex;
+	u8 _mtxMultiply3x3CurrentIndex;
+	
 	u32 _vtxColor15;
+	FragmentColor _vtxColor555X;
 	FragmentColor _vtxColor666X;
 	float _vtxColorFloat[4];
 	float _texCoordTransformedFloat[2];
@@ -934,10 +967,42 @@ protected:
 	bool _isGeneratingFirstPolyOfStrip;
 	bool _generateTriangleStripIndexToggle;
 	
+	// This enum serves no real functional purpose except to be used for save state compatibility.
+	enum LastMtxMultCommand
+	{
+		LastMtxMultCommand_4x4 = 0,
+		LastMtxMultCommand_4x3 = 1,
+		LastMtxMultCommand_3x3 = 2
+	} _lastMtxMultCommand;
+	
 public:
 	NDSGeometryEngine();
 	
 	void Reset();
+	
+	MatrixMode GetMatrixMode() const;
+	
+	void SetMatrixMode(const u32 param);
+	bool SetCurrentMatrixLoad4x4(const u32 param);
+	bool SetCurrentMatrixLoad4x3(const u32 param);
+	bool SetCurrentMatrixMultiply4x4(const u32 param);
+	bool SetCurrentMatrixMultiply4x3(const u32 param);
+	bool SetCurrentMatrixMultiply3x3(const u32 param);
+	bool SetCurrentScaleVector(const u32 param);
+	bool SetCurrentTranslateVector(const u32 param);
+	
+	void MatrixPush();
+	void MatrixPop(const u32 param);
+	void MatrixStore(const u32 param);
+	void MatrixRestore(const u32 param);
+	void MatrixLoadIdentityToCurrent();
+	void MatrixLoad4x4();
+	void MatrixLoad4x3();
+	void MatrixMultiply4x4();
+	void MatrixMultiply4x3();
+	void MatrixMultiply3x3();
+	void MatrixScale();
+	void MatrixTranslate();
 	
 	void SetViewport(const u32 param);
 	void SetViewport(const IOREG_VIEWPORT regViewport);
@@ -950,7 +1015,7 @@ public:
 	void SetTexturePalette(const u32 texPalette);
 	void SetTextureCoordinates(const u32 param);
 	void SetTextureCoordinates(const VertexCoord16x2 &texCoord16);
-	void SetTextureMatrix(const s32 (&__restrict inTextureMatrix)[16]);
+	void SetTextureMatrix(const NDSMatrix &__restrict inTextureMatrix);
 	
 	void VertexListBegin(const u32 param, const POLYGON_ATTR polyAttr);
 	void VertexListBegin(const PolygonPrimitiveType vtxFormat, const POLYGON_ATTR polyAttr);
@@ -965,6 +1030,11 @@ public:
 	void SetCurrentVertexRelative(const VertexCoord16x3 inVtxCoord16x3);
 	void AddCurrentVertexToList(GFX3D_GeometryList &targetGList);
 	void GeneratePolygon(POLY &targetPoly, GFX3D_GeometryList &targetGList);
+	
+	void MatrixCopyFromStack(const MatrixMode whichMatrix, const size_t stackIndex, NDSMatrixFloat &outMtx);
+	void MatrixCopyFromStack(const MatrixMode whichMatrix, const size_t stackIndex, NDSMatrix &outMtx);
+	void MatrixCopyToStack(const MatrixMode whichMatrix, const size_t stackIndex, const NDSMatrix &inMtx);
+	void UpdateMatrixProjectionLua();
 	
 	void SaveState(GeometryEngineLegacySave &outLegacySave);
 	void LoadState(const GeometryEngineLegacySave &inLegacySave);

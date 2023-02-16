@@ -271,30 +271,9 @@ static LegacyGFX3DStateSFormat _legacyGFX3DStateSFormatApplied;
 //tables that are provided to anyone
 CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 
-// Matrix stack handling
-CACHE_ALIGN NDSMatrixStack1  mtxStackProjection;
-CACHE_ALIGN NDSMatrixStack32 mtxStackPosition;
-CACHE_ALIGN NDSMatrixStack32 mtxStackPositionVector;
-CACHE_ALIGN NDSMatrixStack1  mtxStackTexture;
-
 u32 mtxStackIndex[4];
 
 static CACHE_ALIGN s32 _mtxCurrent[4][16];
-static CACHE_ALIGN s32 _mtxTemporal[16];
-static MatrixMode _mtxMode = MATRIXMODE_PROJECTION;
-
-// Indexes for matrix loading/multiplication
-static u8 _ML4x4ind = 0;
-static u8 _ML4x3ind = 0;
-static u8 _MM4x4ind = 0;
-static u8 _MM4x3ind = 0;
-static u8 _MM3x3ind = 0;
-
-// Data for basic transforms
-static CACHE_ALIGN Vector32x4 _regTranslate = {0, 0, 0, 0};
-static u8 _regTranslateCurrentIndex = 0;
-static CACHE_ALIGN Vector32x4 _regScale = {0, 0, 0, 0};
-static u8 _regScaleCurrentIndex = 0;
 
 u32 isSwapBuffers = FALSE;
 
@@ -492,11 +471,6 @@ void gfx3d_reset()
 	gfx3d.appliedListIndex = 1;
 
 	_regPolyAttrPending.value = 0;
-	_mtxMode = MATRIXMODE_PROJECTION;
-	memset(&_regTranslate, 0, sizeof(_regTranslate));
-	_regTranslateCurrentIndex = 0;
-	memset(&_regScale, 0, sizeof(_regScale));
-	_regScaleCurrentIndex = 0;
 	memset(gxPIPE.cmd, 0, sizeof(gxPIPE.cmd));
 	memset(gxPIPE.param, 0, sizeof(gxPIPE.param));
 	memset(gfx3d.framebufferNativeSave, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u32));
@@ -505,23 +479,11 @@ void gfx3d_reset()
 	MatrixInit(_mtxCurrent[MATRIXMODE_POSITION]);
 	MatrixInit(_mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 	MatrixInit(_mtxCurrent[MATRIXMODE_TEXTURE]);
-	MatrixInit(_mtxTemporal);
 	
 	mtxStackIndex[MATRIXMODE_PROJECTION] = 0;
 	mtxStackIndex[MATRIXMODE_POSITION] = 0;
 	mtxStackIndex[MATRIXMODE_POSITION_VECTOR] = 0;
 	mtxStackIndex[MATRIXMODE_TEXTURE] = 0;
-	
-	MatrixInit(mtxStackProjection[0]);
-	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION);        i++) { MatrixInit(mtxStackPosition[i]);       }
-	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++) { MatrixInit(mtxStackPositionVector[i]); }
-	MatrixInit(mtxStackTexture[0]);
-
-	_ML4x4ind = 0;
-	_ML4x3ind = 0;
-	_MM4x4ind = 0;
-	_MM4x3ind = 0;
-	_MM3x3ind = 0;
 
 	_BTind = 0;
 	_PTind = 0;
@@ -591,6 +553,31 @@ NDSGeometryEngine::NDSGeometryEngine()
 
 void NDSGeometryEngine::__Init()
 {
+	_mtxCurrentMode = MATRIXMODE_PROJECTION;
+	
+	MatrixInit(_mtxStackProjection[0]);
+	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION);        i++) { MatrixInit(_mtxStackPosition[i]);       }
+	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++) { MatrixInit(_mtxStackPositionVector[i]); }
+	MatrixInit(_mtxStackTexture[0]);
+	
+	_vecScale.vec[0] = 0;
+	_vecScale.vec[1] = 0;
+	_vecScale.vec[2] = 0;
+	_vecScale.vec[3] = 0;
+	
+	_vecTranslate.vec[0] = 0;
+	_vecTranslate.vec[1] = 0;
+	_vecTranslate.vec[2] = 0;
+	_vecTranslate.vec[3] = 0;
+	
+	_mtxLoad4x4CurrentIndex = 0;
+	_mtxLoad4x3CurrentIndex = 0;
+	_mtxMultiply4x4CurrentIndex = 0;
+	_mtxMultiply4x3CurrentIndex = 0;
+	_mtxMultiply3x3CurrentIndex = 0;
+	_vecScaleCurrentIndex = 0;
+	_vecTranslateCurrentIndex = 0;
+	
 	_polyAttribute.value = 0;
 	_texParam.value = 0;
 	_texPalette = 0;
@@ -652,11 +639,469 @@ void NDSGeometryEngine::__Init()
 	_vtxIndex[2] = 0;
 	_vtxIndex[3] = 0;
 	_isGeneratingFirstPolyOfStrip = true;
+	
+	_lastMtxMultCommand = LastMtxMultCommand_4x4;
 }
 
 void NDSGeometryEngine::Reset()
 {
 	this->__Init();
+}
+
+MatrixMode NDSGeometryEngine::GetMatrixMode() const
+{
+	return this->_mtxCurrentMode;
+}
+
+void NDSGeometryEngine::SetMatrixMode(const u32 param)
+{
+	this->_mtxCurrentMode = (MatrixMode)(param & 0x00000003);
+}
+
+bool NDSGeometryEngine::SetCurrentMatrixLoad4x4(const u32 param)
+{
+	this->_currentMtxLoad4x4[this->_mtxLoad4x4CurrentIndex] = (s32)param;
+	this->_mtxLoad4x4CurrentIndex++;
+	
+	if (this->_mtxLoad4x4CurrentIndex < 16)
+	{
+		return false;
+	}
+	
+	this->_mtxLoad4x4CurrentIndex = 0;
+	return true;
+}
+
+bool NDSGeometryEngine::SetCurrentMatrixLoad4x3(const u32 param)
+{
+	this->_currentMtxLoad4x3[this->_mtxLoad4x3CurrentIndex] = (s32)param;
+	this->_mtxLoad4x3CurrentIndex++;
+	
+	if ((this->_mtxLoad4x3CurrentIndex & 0x03) == 3)
+	{
+		// For a 3 column matrix, every 4th value must be set to 0.
+		this->_currentMtxLoad4x3[this->_mtxLoad4x3CurrentIndex] = 0;
+		this->_mtxLoad4x3CurrentIndex++;
+	}
+	
+	if (this->_mtxLoad4x3CurrentIndex < 16)
+	{
+		return false;
+	}
+	
+	// The last value needs to be a fixed 20.12 value of 1.
+	this->_currentMtxLoad4x3[15] = (s32)(1 << 12);
+	
+	this->_mtxLoad4x3CurrentIndex = 0;
+	return true;
+}
+
+bool NDSGeometryEngine::SetCurrentMatrixMultiply4x4(const u32 param)
+{
+	this->_currentMtxMult4x4[this->_mtxMultiply4x4CurrentIndex] = (s32)param;
+	this->_mtxMultiply4x4CurrentIndex++;
+	this->_lastMtxMultCommand = LastMtxMultCommand_4x4;
+	
+	if (this->_mtxMultiply4x4CurrentIndex < 16)
+	{
+		return false;
+	}
+	
+	this->_mtxMultiply4x4CurrentIndex = 0;
+	return true;
+}
+
+bool NDSGeometryEngine::SetCurrentMatrixMultiply4x3(const u32 param)
+{
+	this->_currentMtxMult4x3[this->_mtxMultiply4x3CurrentIndex] = (s32)param;
+	this->_mtxMultiply4x3CurrentIndex++;
+	this->_lastMtxMultCommand = LastMtxMultCommand_4x3;
+	
+	if ((this->_mtxMultiply4x3CurrentIndex & 0x03) == 3)
+	{
+		// For a 3 column matrix, every 4th value must be set to 0.
+		this->_currentMtxMult4x3[this->_mtxMultiply4x3CurrentIndex] = 0;
+		this->_mtxMultiply4x3CurrentIndex++;
+	}
+	
+	if (this->_mtxMultiply4x3CurrentIndex < 16)
+	{
+		return false;
+	}
+	
+	// The last value needs to be a fixed 20.12 value of 1.
+	this->_currentMtxMult4x3[15] = (s32)(1 << 12);
+	
+	this->_mtxMultiply4x3CurrentIndex = 0;
+	return true;
+}
+
+bool NDSGeometryEngine::SetCurrentMatrixMultiply3x3(const u32 param)
+{
+	this->_currentMtxMult3x3[this->_mtxMultiply3x3CurrentIndex] = (s32)param;
+	this->_mtxMultiply3x3CurrentIndex++;
+	this->_lastMtxMultCommand = LastMtxMultCommand_3x3;
+	
+	if ((this->_mtxMultiply3x3CurrentIndex & 0x03) == 3)
+	{
+		// For a 3 column matrix, every 4th value must be set to 0.
+		this->_currentMtxMult3x3[this->_mtxMultiply3x3CurrentIndex] = 0;
+		this->_mtxMultiply3x3CurrentIndex++;
+	}
+	
+	if (this->_mtxMultiply3x3CurrentIndex < 12)
+	{
+		return false;
+	}
+	
+	// Fill in the last matrix row.
+	this->_currentMtxMult3x3[12] = 0;
+	this->_currentMtxMult3x3[13] = 0;
+	this->_currentMtxMult3x3[14] = 0;
+	this->_currentMtxMult3x3[15] = (s32)(1 << 12);
+	
+	this->_mtxMultiply3x3CurrentIndex = 0;
+	return true;
+}
+
+bool NDSGeometryEngine::SetCurrentScaleVector(const u32 param)
+{
+	this->_vecScale.vec[this->_vecScaleCurrentIndex] = (s32)param;
+	this->_vecScaleCurrentIndex++;
+
+	if (this->_vecScaleCurrentIndex < 3)
+	{
+		return false;
+	}
+	
+	this->_vecScaleCurrentIndex = 0;
+	return true;
+}
+
+bool NDSGeometryEngine::SetCurrentTranslateVector(const u32 param)
+{
+	this->_vecTranslate.vec[this->_vecTranslateCurrentIndex] = (s32)param;
+	this->_vecTranslateCurrentIndex++;
+
+	if (this->_vecTranslateCurrentIndex < 3)
+	{
+		return false;
+	}
+	
+	this->_vecTranslateCurrentIndex = 0;
+	return true;
+}
+
+void NDSGeometryEngine::MatrixPush()
+{
+	//1. apply offset specified by push (well, it's always +1) to internal counter
+	//2. mask that bit off to actually index the matrix for reading
+	//3. SE is set depending on resulting internal counter
+
+	//printf("%d %d %d %d -> ", mtxStack[0].position, mtxStack[1].position, mtxStack[2].position, mtxStack[3].position);
+	//printf("PUSH mode: %d -> ", this->_mtxCurrentMode, mtxStack[this->_mtxCurrentMode].position);
+
+	if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION || this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
+	{
+		if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
+		{
+			MatrixCopy(this->_mtxStackProjection[0], _mtxCurrent[MATRIXMODE_PROJECTION]);
+			
+			u32 &index = mtxStackIndex[MATRIXMODE_PROJECTION];
+			if (index == 1)
+			{
+				MMU_new.gxstat.se = 1;
+			}
+			index += 1;
+			index &= 1;
+
+			this->UpdateMatrixProjectionLua();
+		}
+		else
+		{
+			MatrixCopy(this->_mtxStackTexture[0], _mtxCurrent[MATRIXMODE_TEXTURE]);
+			
+			u32 &index = mtxStackIndex[MATRIXMODE_TEXTURE];
+			if (index == 1)
+			{
+				MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
+			}
+			index += 1;
+			index &= 1;
+		}
+	}
+	else
+	{
+		u32 &index = mtxStackIndex[MATRIXMODE_POSITION];
+		
+		MatrixCopy(this->_mtxStackPosition[index & 0x0000001F], _mtxCurrent[MATRIXMODE_POSITION]);
+		MatrixCopy(this->_mtxStackPositionVector[index & 0x0000001F], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+		
+		index += 1;
+		index &= 0x0000003F;
+		if (index >= 32)
+		{
+			MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
+		}
+	}
+
+	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
+}
+
+void NDSGeometryEngine::MatrixPop(const u32 param)
+{
+	//1. apply offset specified by pop to internal counter
+	//2. SE is set depending on resulting internal counter
+	//3. mask that bit off to actually index the matrix for reading
+
+	//printf("%d %d %d %d -> ", mtxStack[0].position, mtxStack[1].position, mtxStack[2].position, mtxStack[3].position);
+	//printf("POP   (%d): mode: %d -> ",v, this->_mtxCurrentMode,mtxStack[this->_mtxCurrentMode].position);
+
+	if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION || this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
+	{
+		//parameter is ignored and treated as sensible (always 1)
+		
+		if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
+		{
+			u32 &index = mtxStackIndex[MATRIXMODE_PROJECTION];
+			index ^= 1;
+			if (index == 1)
+			{
+				MMU_new.gxstat.se = 1;
+			}
+			MatrixCopy(_mtxCurrent[MATRIXMODE_PROJECTION], this->_mtxStackProjection[0]);
+
+			this->UpdateMatrixProjectionLua();
+		}
+		else
+		{
+			u32 &index = mtxStackIndex[MATRIXMODE_TEXTURE];
+			index ^= 1;
+			if (index == 1)
+			{
+				MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
+			}
+			MatrixCopy(_mtxCurrent[MATRIXMODE_TEXTURE], this->_mtxStackTexture[0]);
+			this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+		}
+	}
+	else
+	{
+		u32 &i = mtxStackIndex[MATRIXMODE_POSITION];
+		
+		i -= param & 0x0000003F;
+		i &= 0x0000003F;
+		if (i >= 32)
+		{
+			MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
+		}
+		
+		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], this->_mtxStackPosition[i & 0x0000001F]);
+		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], this->_mtxStackPositionVector[i & 0x0000001F]);
+	}
+
+	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
+}
+
+void NDSGeometryEngine::MatrixStore(const u32 param)
+{
+	//printf("%d %d %d %d -> ", mtxStack[0].position, mtxStack[1].position, mtxStack[2].position, mtxStack[3].position);
+	//printf("STORE (%d): mode: %d -> ",v, this->_mtxCurrentMode, mtxStack[this->_mtxCurrentMode].position);
+
+	if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION || this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
+	{
+		//parameter ignored and treated as sensible
+		if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
+		{
+			MatrixCopy(this->_mtxStackProjection[0], _mtxCurrent[MATRIXMODE_PROJECTION]);
+			this->UpdateMatrixProjectionLua();
+		}
+		else
+		{
+			MatrixCopy(this->_mtxStackTexture[0], _mtxCurrent[MATRIXMODE_TEXTURE]);
+		}
+	}
+	else
+	{
+		//out of bounds function fully properly, but set errors (not sure, this might be off by 1)
+		if (param >= 31)
+		{
+			MMU_new.gxstat.se = 1;
+		}
+		
+		const u32 i = param & 0x0000001F;
+		MatrixCopy(this->_mtxStackPosition[i], _mtxCurrent[MATRIXMODE_POSITION]);
+		MatrixCopy(this->_mtxStackPositionVector[i], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+	}
+
+	//printf("%d %d %d %d\n", mtxStack[0].position, mtxStack[1].position, mtxStack[2].position, mtxStack[3].position);
+}
+
+void NDSGeometryEngine::MatrixRestore(const u32 param)
+{
+	if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION || this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
+	{
+		//parameter ignored and treated as sensible
+		if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
+		{
+			MatrixCopy(_mtxCurrent[MATRIXMODE_PROJECTION], this->_mtxStackProjection[0]);
+			this->UpdateMatrixProjectionLua();
+		}
+		else
+		{
+			MatrixCopy(_mtxCurrent[MATRIXMODE_TEXTURE], this->_mtxStackTexture[0]);
+			this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+		}
+	}
+	else
+	{
+		//out of bounds errors function fully properly, but set errors
+		MMU_new.gxstat.se = (param >= 31) ? 1 : 0; //(not sure, this might be off by 1)
+		
+		const u32 i = param & 0x0000001F;
+		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], this->_mtxStackPosition[i]);
+		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], this->_mtxStackPositionVector[i]);
+	}
+}
+
+void NDSGeometryEngine::MatrixLoadIdentityToCurrent()
+{
+	MatrixIdentity(_mtxCurrent[this->_mtxCurrentMode]);
+	
+	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
+	{
+		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
+	{
+		MatrixIdentity(_mtxCurrent[MATRIXMODE_POSITION]);
+	}
+
+	//printf("identity: %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+}
+
+void NDSGeometryEngine::MatrixLoad4x4()
+{
+	MatrixCopy(_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxLoad4x4);
+	
+	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
+	{
+		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
+	{
+		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+	}
+
+	//printf("load4x4: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+}
+
+void NDSGeometryEngine::MatrixLoad4x3()
+{
+	MatrixCopy(_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxLoad4x3);
+
+	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
+	{
+		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
+	{
+		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+	}
+	//printf("load4x3: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+}
+
+void NDSGeometryEngine::MatrixMultiply4x4()
+{
+	MatrixMultiply(_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxMult4x4);
+	
+	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
+	{
+		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
+	{
+		this->UpdateMatrixProjectionLua();
+	}
+	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
+	{
+		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], this->_currentMtxMult4x4);
+	}
+
+	//printf("mult4x4: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+}
+
+void NDSGeometryEngine::MatrixMultiply4x3()
+{
+	MatrixMultiply(_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxMult4x3);
+	
+	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
+	{
+		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
+	{
+		this->UpdateMatrixProjectionLua();
+	}
+	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
+	{
+		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], this->_currentMtxMult4x3);
+	}
+
+	//printf("mult4x3: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+}
+
+void NDSGeometryEngine::MatrixMultiply3x3()
+{
+	MatrixMultiply(_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxMult3x3);
+	
+	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
+	{
+		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
+	{
+		this->UpdateMatrixProjectionLua();
+	}
+	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
+	{
+		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], this->_currentMtxMult3x3);
+	}
+
+	//printf("mult3x3: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+}
+
+void NDSGeometryEngine::MatrixScale()
+{
+	::MatrixScale(_mtxCurrent[(this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR ? MATRIXMODE_POSITION : this->_mtxCurrentMode)], this->_vecScale.vec);
+	//printf("scale: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+
+	//note: pos-vector mode should not cause both matrices to scale.
+	//the whole purpose is to keep the vector matrix orthogonal
+	//so, I am leaving this commented out as an example of what not to do.
+	//if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
+	//	::MatrixScale(_mtxCurrent[MATRIXMODE_POSITION], this->_vecScale.vec);
+	
+	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
+	{
+		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+}
+
+void NDSGeometryEngine::MatrixTranslate()
+{
+	::MatrixTranslate(_mtxCurrent[this->_mtxCurrentMode], this->_vecTranslate.vec);
+	
+	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
+	{
+		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+	}
+	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
+	{
+		::MatrixTranslate(_mtxCurrent[MATRIXMODE_POSITION], this->_vecTranslate.vec);
+	}
+
+	//printf("translate: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
 }
 
 void NDSGeometryEngine::SetViewport(const u32 param)
@@ -756,12 +1201,9 @@ void NDSGeometryEngine::SetTextureCoordinates(const VertexCoord16x2 &texCoord16)
 	}
 }
 
-void NDSGeometryEngine::SetTextureMatrix(const s32 (&__restrict inTextureMatrix)[16])
+void NDSGeometryEngine::SetTextureMatrix(const NDSMatrix &__restrict inTextureMatrix)
 {
-	for (size_t i = 0; i < 16; i++)
-	{
-		this->_mtxTexture32[i] = inTextureMatrix[i];
-	}
+	MatrixCopy(this->_mtxTexture32, inTextureMatrix);
 	
 	if (this->_texCoordTransformMode != TextureTransformationMode_None)
 	{
@@ -1167,8 +1609,141 @@ void NDSGeometryEngine::GeneratePolygon(POLY &targetPoly, GFX3D_GeometryList &ta
 	targetGList.rawPolyCount++;
 }
 
+void NDSGeometryEngine::MatrixCopyFromStack(const MatrixMode whichMatrix, const size_t stackIndex, NDSMatrixFloat &outMtx)
+{
+	if (stackIndex > 31)
+	{
+		return;
+	}
+	
+	switch (whichMatrix)
+	{
+		case MATRIXMODE_PROJECTION:
+			MatrixCopy(outMtx, this->_mtxStackProjection[0]);
+			break;
+			
+		case MATRIXMODE_POSITION:
+			MatrixCopy(outMtx, this->_mtxStackPosition[stackIndex]);
+			break;
+			
+		case MATRIXMODE_POSITION_VECTOR:
+			MatrixCopy(outMtx, this->_mtxStackPositionVector[stackIndex]);
+			break;
+			
+		case MATRIXMODE_TEXTURE:
+			MatrixCopy(outMtx, this->_mtxStackTexture[0]);
+			break;
+			
+		default:
+			break;
+	}
+}
+
+void NDSGeometryEngine::MatrixCopyFromStack(const MatrixMode whichMatrix, const size_t stackIndex, NDSMatrix &outMtx)
+{
+	if (stackIndex > 31)
+	{
+		return;
+	}
+	
+	switch (whichMatrix)
+	{
+		case MATRIXMODE_PROJECTION:
+			MatrixCopy(outMtx, this->_mtxStackProjection[0]);
+			break;
+			
+		case MATRIXMODE_POSITION:
+			MatrixCopy(outMtx, this->_mtxStackPosition[stackIndex]);
+			break;
+			
+		case MATRIXMODE_POSITION_VECTOR:
+			MatrixCopy(outMtx, this->_mtxStackPositionVector[stackIndex]);
+			break;
+			
+		case MATRIXMODE_TEXTURE:
+			MatrixCopy(outMtx, this->_mtxStackTexture[0]);
+			break;
+			
+		default:
+			break;
+	}
+}
+
+void NDSGeometryEngine::MatrixCopyToStack(const MatrixMode whichMatrix, const size_t stackIndex, const NDSMatrix &inMtx)
+{
+	if (stackIndex > 31)
+	{
+		return;
+	}
+	
+	switch (whichMatrix)
+	{
+		case MATRIXMODE_PROJECTION:
+			MatrixCopy(this->_mtxStackProjection[0], inMtx);
+			break;
+			
+		case MATRIXMODE_POSITION:
+			MatrixCopy(this->_mtxStackPosition[stackIndex], inMtx);
+			break;
+			
+		case MATRIXMODE_POSITION_VECTOR:
+			MatrixCopy(this->_mtxStackPositionVector[stackIndex], inMtx);
+			break;
+			
+		case MATRIXMODE_TEXTURE:
+			MatrixCopy(this->_mtxStackTexture[0], inMtx);
+			break;
+			
+		default:
+			break;
+	}
+}
+
+void NDSGeometryEngine::UpdateMatrixProjectionLua()
+{
+#ifdef HAVE_LUA
+	if (freelookMode == 0)
+	{
+		return;
+	}
+	
+	float floatproj[16];
+	MatrixCopy(floatproj, _mtxCurrent[MATRIXMODE_PROJECTION]);
+	
+	CallRegistered3dEvent(0, floatproj);
+#endif
+}
+
 void NDSGeometryEngine::SaveState(GeometryEngineLegacySave &outLegacySave)
 {
+	// Historically, only the last multiply matrix used is the one that is saved.
+	switch (this->_lastMtxMultCommand)
+	{
+		case LastMtxMultCommand_4x3:
+			MatrixCopy(outLegacySave.currentMultiplyMatrix, this->_currentMtxMult4x3);
+			break;
+			
+		case LastMtxMultCommand_3x3:
+			MatrixCopy(outLegacySave.currentMultiplyMatrix, this->_currentMtxMult3x3);
+			break;
+			
+		default: // LastMtxMultCommand_4x4
+			MatrixCopy(outLegacySave.currentMultiplyMatrix, this->_currentMtxMult4x4);
+			break;
+	}
+	
+	outLegacySave.vecTranslate = this->_vecTranslate;
+	outLegacySave.vecScale = this->_vecScale;
+	
+	outLegacySave.mtxCurrentMode = (u32)this->_mtxCurrentMode;
+	outLegacySave.mtxLoad4x4CurrentIndex = this->_mtxLoad4x4CurrentIndex;
+	outLegacySave.mtxLoad4x3CurrentIndex = this->_mtxLoad4x3CurrentIndex;
+	outLegacySave.mtxMultiply4x4CurrentIndex = this->_mtxMultiply4x4CurrentIndex;
+	outLegacySave.mtxMultiply4x3CurrentIndex = this->_mtxMultiply4x3CurrentIndex;
+	outLegacySave.mtxMultiply3x3CurrentIndex = this->_mtxMultiply3x3CurrentIndex;
+	outLegacySave.vecScaleCurrentIndex = this->_vecScaleCurrentIndex;
+	outLegacySave.vecTranslateCurrentIndex = this->_vecTranslateCurrentIndex;
+	
 	outLegacySave.vtxFormat = (u32)this->_vtxFormat;
 	outLegacySave.vtxCoord.vec3 = this->_vtxCoord16;
 	outLegacySave.vtxCoord.coord[3] = 0;
@@ -1196,6 +1771,22 @@ void NDSGeometryEngine::SaveState(GeometryEngineLegacySave &outLegacySave)
 
 void NDSGeometryEngine::LoadState(const GeometryEngineLegacySave &inLegacySave)
 {
+	MatrixCopy(this->_currentMtxMult4x4, inLegacySave.currentMultiplyMatrix);
+	MatrixCopy(this->_currentMtxMult4x3, inLegacySave.currentMultiplyMatrix);
+	MatrixCopy(this->_currentMtxMult3x3, inLegacySave.currentMultiplyMatrix);
+	
+	this->_vecTranslate = inLegacySave.vecTranslate;
+	this->_vecScale = inLegacySave.vecScale;
+	
+	this->_mtxCurrentMode = (MatrixMode)inLegacySave.mtxCurrentMode;
+	this->_mtxLoad4x4CurrentIndex = inLegacySave.mtxLoad4x4CurrentIndex;
+	this->_mtxLoad4x3CurrentIndex = inLegacySave.mtxLoad4x3CurrentIndex;
+	this->_mtxMultiply4x4CurrentIndex = inLegacySave.mtxMultiply4x4CurrentIndex;
+	this->_mtxMultiply4x3CurrentIndex = inLegacySave.mtxMultiply4x3CurrentIndex;
+	this->_mtxMultiply3x3CurrentIndex = inLegacySave.mtxMultiply3x3CurrentIndex;
+	this->_vecScaleCurrentIndex = inLegacySave.vecScaleCurrentIndex;
+	this->_vecTranslateCurrentIndex = inLegacySave.vecTranslateCurrentIndex;
+	
 	this->_vtxFormat = (PolygonPrimitiveType)inLegacySave.vtxFormat;
 	this->_vtxCoord16 = inLegacySave.vtxCoord.vec3;
 	this->_vtxColor555X = inLegacySave.vtxColor;
@@ -1218,17 +1809,6 @@ void NDSGeometryEngine::LoadState(const GeometryEngineLegacySave &inLegacySave)
 	this->_generateTriangleStripIndexToggle = (inLegacySave.generateTriangleStripIndexToggle != 0) ? true : false;
 	
 	this->SetViewport(inLegacySave.regViewport);
-}
-
-static void UpdateProjection()
-{
-#ifdef HAVE_LUA
-	if(freelookMode == 0) return;
-	float floatproj[16];
-	for(int i=0;i<16;i++)
-		floatproj[i] = _mtxCurrent[MATRIXMODE_PROJECTION][i]/((float)(1<<12));
-	CallRegistered3dEvent(0,floatproj);
-#endif
 }
 
 static void gfx3d_glLightDirection_cache(const size_t index)
@@ -1271,438 +1851,132 @@ static void gfx3d_glLightDirection_cache(const size_t index)
 //===============================================================================
 static void gfx3d_glMatrixMode(const u32 param)
 {
-	_mtxMode = (MatrixMode)(param & 0x00000003);
+	_gEngine.SetMatrixMode(param);
 	GFX_DELAY(1);
 }
 
 static void gfx3d_glPushMatrix()
 {
-	//1. apply offset specified by push (well, it's always +1) to internal counter
-	//2. mask that bit off to actually index the matrix for reading
-	//3. SE is set depending on resulting internal counter
-
-	//printf("%d %d %d %d -> ",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
-	//printf("PUSH mode: %d -> ",_mtxMode,mtxStack[_mtxMode].position);
-
-	if (_mtxMode == MATRIXMODE_PROJECTION || _mtxMode == MATRIXMODE_TEXTURE)
-	{
-		if (_mtxMode == MATRIXMODE_PROJECTION)
-		{
-			MatrixCopy(mtxStackProjection[0], _mtxCurrent[MATRIXMODE_PROJECTION]);
-			
-			u32 &index = mtxStackIndex[MATRIXMODE_PROJECTION];
-			if (index == 1)
-			{
-				MMU_new.gxstat.se = 1;
-			}
-			index += 1;
-			index &= 1;
-
-			UpdateProjection();
-		}
-		else
-		{
-			MatrixCopy(mtxStackTexture[0], _mtxCurrent[MATRIXMODE_TEXTURE]);
-			
-			u32 &index = mtxStackIndex[MATRIXMODE_TEXTURE];
-			if (index == 1)
-			{
-				MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
-			}
-			index += 1;
-			index &= 1;
-		}
-	}
-	else
-	{
-		u32 &index = mtxStackIndex[MATRIXMODE_POSITION];
-		
-		MatrixCopy(mtxStackPosition[index & 0x0000001F], _mtxCurrent[MATRIXMODE_POSITION]);
-		MatrixCopy(mtxStackPositionVector[index & 0x0000001F], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
-		
-		index += 1;
-		index &= 0x0000003F;
-		if (index >= 32)
-		{
-			MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
-		}
-	}
-
-	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
-
+	_gEngine.MatrixPush();
 	GFX_DELAY(17);
 }
 
 static void gfx3d_glPopMatrix(const u32 param)
 {
-	//1. apply offset specified by pop to internal counter
-	//2. SE is set depending on resulting internal counter
-	//3. mask that bit off to actually index the matrix for reading
-
-	//printf("%d %d %d %d -> ",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
-	//printf("POP   (%d): mode: %d -> ",v,_mtxMode,mtxStack[_mtxMode].position);
-
-	if (_mtxMode == MATRIXMODE_PROJECTION || _mtxMode == MATRIXMODE_TEXTURE)
-	{
-		//parameter is ignored and treated as sensible (always 1)
-		
-		if (_mtxMode == MATRIXMODE_PROJECTION)
-		{
-			u32 &index = mtxStackIndex[MATRIXMODE_PROJECTION];
-			index ^= 1;
-			if (index == 1)
-			{
-				MMU_new.gxstat.se = 1;
-			}
-			MatrixCopy(_mtxCurrent[MATRIXMODE_PROJECTION], mtxStackProjection[0]);
-
-			UpdateProjection();
-		}
-		else
-		{
-			u32 &index = mtxStackIndex[MATRIXMODE_TEXTURE];
-			index ^= 1;
-			if (index == 1)
-			{
-				MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
-			}
-			MatrixCopy(_mtxCurrent[MATRIXMODE_TEXTURE], mtxStackTexture[0]);
-			_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
-		}
-	}
-	else
-	{
-		u32 &i = mtxStackIndex[MATRIXMODE_POSITION];
-		
-		i -= param & 0x0000003F;
-		i &= 0x0000003F;
-		if (i >= 32)
-		{
-			MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
-		}
-		
-		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], mtxStackPosition[i & 0x0000001F]);
-		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], mtxStackPositionVector[i & 0x0000001F]);
-	}
-
-	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
-
+	_gEngine.MatrixPop(param);
 	GFX_DELAY(36);
 }
 
 static void gfx3d_glStoreMatrix(const u32 param)
 {
-	//printf("%d %d %d %d -> ",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
-	//printf("STORE (%d): mode: %d -> ",v,_mtxMode,mtxStack[_mtxMode].position);
-
-	if (_mtxMode == MATRIXMODE_PROJECTION || _mtxMode == MATRIXMODE_TEXTURE)
-	{
-		//parameter ignored and treated as sensible
-		if (_mtxMode == MATRIXMODE_PROJECTION)
-		{
-			MatrixCopy(mtxStackProjection[0], _mtxCurrent[MATRIXMODE_PROJECTION]);
-			UpdateProjection();
-		}
-		else
-		{
-			MatrixCopy(mtxStackTexture[0], _mtxCurrent[MATRIXMODE_TEXTURE]);
-		}
-	}
-	else
-	{
-		//out of bounds function fully properly, but set errors (not sure, this might be off by 1)
-		if (param >= 31)
-		{
-			MMU_new.gxstat.se = 1;
-		}
-		
-		const u32 i = param & 0x0000001F;
-		MatrixCopy(mtxStackPosition[i], _mtxCurrent[MATRIXMODE_POSITION]);
-		MatrixCopy(mtxStackPositionVector[i], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
-	}
-
-	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
-
+	_gEngine.MatrixStore(param);
 	GFX_DELAY(17);
 }
 
 static void gfx3d_glRestoreMatrix(const u32 param)
 {
-	if (_mtxMode == MATRIXMODE_PROJECTION || _mtxMode == MATRIXMODE_TEXTURE)
-	{
-		//parameter ignored and treated as sensible
-		if (_mtxMode == MATRIXMODE_PROJECTION)
-		{
-			MatrixCopy(_mtxCurrent[MATRIXMODE_PROJECTION], mtxStackProjection[0]);
-			UpdateProjection();
-		}
-		else
-		{
-			MatrixCopy(_mtxCurrent[MATRIXMODE_TEXTURE], mtxStackTexture[0]);
-			_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
-		}
-	}
-	else
-	{
-		//out of bounds errors function fully properly, but set errors
-		MMU_new.gxstat.se = (param >= 31) ? 1 : 0; //(not sure, this might be off by 1)
-		
-		const u32 i = param & 0x0000001F;
-		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], mtxStackPosition[i]);
-		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], mtxStackPositionVector[i]);
-	}
-
+	_gEngine.MatrixRestore(param);
 	GFX_DELAY(36);
 }
 
 static void gfx3d_glLoadIdentity()
 {
-	MatrixIdentity(_mtxCurrent[_mtxMode]);
+	_gEngine.MatrixLoadIdentityToCurrent();
 	GFX_DELAY(19);
-	
-	if (_mtxMode == MATRIXMODE_TEXTURE)
-	{
-		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
-	}
-	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
-	{
-		MatrixIdentity(_mtxCurrent[MATRIXMODE_POSITION]);
-	}
-
-	//printf("identity: %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 }
 
 static void gfx3d_glLoadMatrix4x4(const u32 param)
 {
-	_mtxCurrent[_mtxMode][_ML4x4ind] = (s32)param;
-	_ML4x4ind++;
-	
-	if (_ML4x4ind < 16)
+	const bool isMatrixComplete = _gEngine.SetCurrentMatrixLoad4x4(param);
+	if (isMatrixComplete)
 	{
-		return;
+		_gEngine.MatrixLoad4x4();
+		GFX_DELAY(19);
 	}
-	_ML4x4ind = 0;
-
-	GFX_DELAY(19);
-
-	if (_mtxMode == MATRIXMODE_TEXTURE)
-	{
-		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
-	}
-	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
-	{
-		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
-	}
-
-	//printf("load4x4: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 }
 
 static void gfx3d_glLoadMatrix4x3(const u32 param)
 {
-	_mtxCurrent[_mtxMode][_ML4x3ind] = (s32)param;
-	_ML4x3ind++;
-	
-	if ((_ML4x3ind & 0x03) == 3)
+	const bool isMatrixComplete = _gEngine.SetCurrentMatrixLoad4x3(param);
+	if (isMatrixComplete)
 	{
-		_ML4x3ind++;
+		_gEngine.MatrixLoad4x3();
+		GFX_DELAY(30);
 	}
-	
-	if (_ML4x3ind < 16)
-	{
-		return;
-	}
-	_ML4x3ind = 0;
-
-	//fill in the unusued matrix values
-	_mtxCurrent[_mtxMode][3] = _mtxCurrent[_mtxMode][7] = _mtxCurrent[_mtxMode][11] = 0;
-	_mtxCurrent[_mtxMode][15] = (s32)(1 << 12);
-
-	GFX_DELAY(30);
-
-	if (_mtxMode == MATRIXMODE_TEXTURE)
-	{
-		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
-	}
-	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
-	{
-		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
-	}
-	//printf("load4x3: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 }
 
 static void gfx3d_glMultMatrix4x4(const u32 param)
 {
-	_mtxTemporal[_MM4x4ind] = (s32)param;
-	_MM4x4ind++;
-	
-	if (_MM4x4ind < 16)
+	const bool isMatrixComplete = _gEngine.SetCurrentMatrixMultiply4x4(param);
+	if (isMatrixComplete)
 	{
-		return;
+		_gEngine.MatrixMultiply4x4();
+		GFX_DELAY(35);
+		
+		const MatrixMode mtxCurrentMode = _gEngine.GetMatrixMode();
+		if (mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
+		{
+			GFX_DELAY_M2(30);
+		}
 	}
-	_MM4x4ind = 0;
-
-	MatrixMultiply(_mtxCurrent[_mtxMode], _mtxTemporal);
-	GFX_DELAY(35);
-
-	if (_mtxMode == MATRIXMODE_TEXTURE)
-	{
-		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
-	}
-	else if (_mtxMode == MATRIXMODE_PROJECTION)
-	{
-		UpdateProjection();
-	}
-	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
-	{
-		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], _mtxTemporal);
-		GFX_DELAY_M2(30);
-	}
-
-	//printf("mult4x4: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
-
-	MatrixIdentity(_mtxTemporal);
 }
 
 static void gfx3d_glMultMatrix4x3(const u32 param)
 {
-	_mtxTemporal[_MM4x3ind] = (s32)param;
-	_MM4x3ind++;
-	
-	if ((_MM4x3ind & 0x03) == 3)
+	const bool isMatrixComplete = _gEngine.SetCurrentMatrixMultiply4x3(param);
+	if (isMatrixComplete)
 	{
-		_MM4x3ind++;
+		_gEngine.MatrixMultiply4x3();
+		GFX_DELAY(31);
+		
+		const MatrixMode mtxCurrentMode = _gEngine.GetMatrixMode();
+		if (mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
+		{
+			GFX_DELAY_M2(30);
+		}
 	}
-	
-	if (_MM4x3ind < 16)
-	{
-		return;
-	}
-	_MM4x3ind = 0;
-
-	//fill in the unusued matrix values
-	_mtxTemporal[3] = _mtxTemporal[7] = _mtxTemporal[11] = 0;
-	_mtxTemporal[15] = (s32)(1 << 12);
-
-	MatrixMultiply(_mtxCurrent[_mtxMode], _mtxTemporal);
-	GFX_DELAY(31);
-
-	if (_mtxMode == MATRIXMODE_TEXTURE)
-	{
-		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
-	}
-	else if (_mtxMode == MATRIXMODE_PROJECTION)
-	{
-		UpdateProjection();
-	}
-	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
-	{
-		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], _mtxTemporal);
-		GFX_DELAY_M2(30);
-	}
-
-	//printf("mult4x3: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
-
-	//does this really need to be done?
-	MatrixIdentity(_mtxTemporal);
 }
 
 static void gfx3d_glMultMatrix3x3(const u32 param)
 {
-	_mtxTemporal[_MM3x3ind] = (s32)param;
-	_MM3x3ind++;
-	
-	if ((_MM3x3ind & 0x03) == 3)
+	const bool isMatrixComplete = _gEngine.SetCurrentMatrixMultiply3x3(param);
+	if (isMatrixComplete)
 	{
-		_MM3x3ind++;
+		_gEngine.MatrixMultiply3x3();
+		GFX_DELAY(28);
+		
+		const MatrixMode mtxCurrentMode = _gEngine.GetMatrixMode();
+		if (mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
+		{
+			GFX_DELAY_M2(30);
+		}
 	}
-	
-	if (_MM3x3ind < 12)
-	{
-		return;
-	}
-	_MM3x3ind = 0;
-
-	//fill in the unusued matrix values
-	_mtxTemporal[3] = _mtxTemporal[7] = _mtxTemporal[11] = 0;
-	_mtxTemporal[15] = 1<<12;
-	_mtxTemporal[12] = _mtxTemporal[13] = _mtxTemporal[14] = 0;
-
-	MatrixMultiply(_mtxCurrent[_mtxMode], _mtxTemporal);
-	GFX_DELAY(28);
-
-	if (_mtxMode == MATRIXMODE_TEXTURE)
-	{
-		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
-	}
-	else if (_mtxMode == MATRIXMODE_PROJECTION)
-	{
-		UpdateProjection();
-	}
-	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
-	{
-		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], _mtxTemporal);
-		GFX_DELAY_M2(30);
-	}
-
-	//printf("mult3x3: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
-
-
-	//does this really need to be done?
-	MatrixIdentity(_mtxTemporal);
 }
 
 static void gfx3d_glScale(const u32 param)
 {
-	_regScale.vec[_regScaleCurrentIndex] = (s32)param;
-	_regScaleCurrentIndex++;
-
-	if (_regScaleCurrentIndex < 3)
+	const bool isVectorComplete = _gEngine.SetCurrentScaleVector(param);
+	if (isVectorComplete)
 	{
-		return;
-	}
-	_regScaleCurrentIndex = 0;
-
-	MatrixScale(_mtxCurrent[(_mtxMode == MATRIXMODE_POSITION_VECTOR ? MATRIXMODE_POSITION : _mtxMode)], _regScale.vec);
-	GFX_DELAY(22);
-	//printf("scale: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
-
-	//note: pos-vector mode should not cause both matrices to scale.
-	//the whole purpose is to keep the vector matrix orthogonal
-	//so, I am leaving this commented out as an example of what not to do.
-	//if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
-	//	MatrixScale(_mtxCurrent[MATRIXMODE_POSITION], _regScale.vec);
-	
-	if (_mtxMode == MATRIXMODE_TEXTURE)
-	{
-		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+		_gEngine.MatrixScale();
+		GFX_DELAY(22);
 	}
 }
 
 static void gfx3d_glTranslate(const u32 param)
 {
-	_regTranslate.vec[_regTranslateCurrentIndex] = (s32)param;
-	_regTranslateCurrentIndex++;
-
-	if (_regTranslateCurrentIndex < 3)
+	const bool isVectorComplete = _gEngine.SetCurrentTranslateVector(param);
+	if (isVectorComplete)
 	{
-		return;
+		_gEngine.MatrixTranslate();
+		GFX_DELAY(22);
+		
+		const MatrixMode mtxCurrentMode = _gEngine.GetMatrixMode();
+		if (mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
+		{
+			GFX_DELAY_M2(30);
+		}
 	}
-	_regTranslateCurrentIndex = 0;
-
-	MatrixTranslate(_mtxCurrent[_mtxMode], _regTranslate.vec);
-	GFX_DELAY(22);
-
-	if (_mtxMode == MATRIXMODE_TEXTURE)
-	{
-		_gEngine.SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
-	}
-	else if (_mtxMode == MATRIXMODE_POSITION_VECTOR)
-	{
-		MatrixTranslate(_mtxCurrent[MATRIXMODE_POSITION], _regTranslate.vec);
-		GFX_DELAY_M2(30);
-	}
-
-	//printf("translate: matrix %d to: \n",_mtxMode); MatrixPrint(_mtxCurrent[1]);
 }
 
 static void gfx3d_glColor3b(const u32 param)
@@ -2878,7 +3152,7 @@ void gfx3d_VBlankSignal()
 		
 		//let's consider this the beginning of the next 3d frame.
 		//in case the game isn't constantly restoring the projection matrix, we want to ping lua
-		UpdateProjection();
+		_gEngine.UpdateMatrixProjectionLua();
 	}
 }
 
@@ -3035,27 +3309,10 @@ void gfx3d_glGetMatrix(const int index, float (&dst)[16])
 	}
 	else
 	{
-		switch (MODE)
-		{
-			case MATRIXMODE_PROJECTION:
-				MatrixCopy(dst, mtxStackProjection[0]);
-				break;
-				
-			case MATRIXMODE_POSITION:
-				MatrixCopy(dst, mtxStackPosition[0]);
-				break;
-				
-			case MATRIXMODE_POSITION_VECTOR:
-				MatrixCopy(dst, mtxStackPositionVector[0]);
-				break;
-				
-			case MATRIXMODE_TEXTURE:
-				MatrixCopy(dst, mtxStackTexture[0]);
-				break;
-				
-			default:
-				break;
-		}
+		// Theoretically, we COULD use the index parameter here to choose which
+		// specific matrix to retrieve from the matrix stack, but historically,
+		// this call always returned the matrix at stack location 0.
+		_gEngine.MatrixCopyFromStack(MODE, 0, dst);
 	}
 }
 
@@ -3080,21 +3337,21 @@ SFORMAT SF_GFX3D[] = {
 	{ "GINB", 4, 1, &gfx3d.gEngineLegacySave.inBegin},
 	{ "GTFM", 4, 1, &gfx3d.gEngineLegacySave.texParam},
 	{ "GTPA", 4, 1, &gfx3d.gEngineLegacySave.texPalette},
-	{ "GMOD", 4, 1, &_mtxMode},
-	{ "GMTM", 4,16, _mtxTemporal},
+	{ "GMOD", 4, 1, &gfx3d.gEngineLegacySave.mtxCurrentMode},
+	{ "GMTM", 4,16, &gfx3d.gEngineLegacySave.currentMultiplyMatrix},
 	{ "GMCU", 4,64, _mtxCurrent},
-	{ "ML4I", 1, 1, &_ML4x4ind},
-	{ "ML3I", 1, 1, &_ML4x3ind},
-	{ "MM4I", 1, 1, &_MM4x4ind},
-	{ "MM3I", 1, 1, &_MM4x3ind},
-	{ "MMxI", 1, 1, &_MM3x3ind},
+	{ "ML4I", 1, 1, &gfx3d.gEngineLegacySave.mtxLoad4x4CurrentIndex},
+	{ "ML3I", 1, 1, &gfx3d.gEngineLegacySave.mtxLoad4x3CurrentIndex},
+	{ "MM4I", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply4x4CurrentIndex},
+	{ "MM3I", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply4x3CurrentIndex},
+	{ "MMxI", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply3x3CurrentIndex},
 	{ "GSCO", 2, 4, &gfx3d.gEngineLegacySave.vtxCoord},
 	{ "GCOI", 1, 1, &gfx3d.gEngineLegacySave.vtxCoord16CurrentIndex},
 	{ "GVFM", 4, 1, &gfx3d.gEngineLegacySave.vtxFormat},
-	{ "GTRN", 4, 4, &_regTranslate},
-	{ "GTRI", 1, 1, &_regTranslateCurrentIndex},
-	{ "GSCA", 4, 4, &_regScale},
-	{ "GSCI", 1, 1, &_regScaleCurrentIndex},
+	{ "GTRN", 4, 4, &gfx3d.gEngineLegacySave.vecTranslate},
+	{ "GTRI", 1, 1, &gfx3d.gEngineLegacySave.vecTranslateCurrentIndex},
+	{ "GSCA", 4, 4, &gfx3d.gEngineLegacySave.vecScale},
+	{ "GSCI", 1, 1, &gfx3d.gEngineLegacySave.vecScaleCurrentIndex},
 	{ "G_T_", 4, 1, &gfx3d.gEngineLegacySave.texCoordT},
 	{ "G_S_", 4, 1, &gfx3d.gEngineLegacySave.texCoordS},
 	{ "GL_T", 4, 1, &gfx3d.gEngineLegacySave.texCoordTransformedT},
@@ -3304,34 +3561,40 @@ void gfx3d_savestate(EMUFILE &os)
 	}
 
 	// Write matrix stack data
+	NDSMatrix savingMtx;
+	
 	os.write_32LE(mtxStackIndex[MATRIXMODE_PROJECTION]);
+	_gEngine.MatrixCopyFromStack(MATRIXMODE_PROJECTION, 0, savingMtx);
 	for (size_t j = 0; j < 16; j++)
 	{
-		os.write_32LE(mtxStackProjection[0][j]);
+		os.write_32LE(savingMtx[j]);
 	}
 	
 	os.write_32LE(mtxStackIndex[MATRIXMODE_POSITION]);
 	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION); i++)
 	{
+		_gEngine.MatrixCopyFromStack(MATRIXMODE_POSITION, i, savingMtx);
 		for (size_t j = 0; j < 16; j++)
 		{
-			os.write_32LE(mtxStackPosition[i][j]);
+			os.write_32LE(savingMtx[j]);
 		}
 	}
 	
 	os.write_32LE(mtxStackIndex[MATRIXMODE_POSITION_VECTOR]);
 	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++)
 	{
+		_gEngine.MatrixCopyFromStack(MATRIXMODE_POSITION_VECTOR, i, savingMtx);
 		for (size_t j = 0; j < 16; j++)
 		{
-			os.write_32LE(mtxStackPositionVector[i][j]);
+			os.write_32LE(savingMtx[j]);
 		}
 	}
 	
 	os.write_32LE(mtxStackIndex[MATRIXMODE_TEXTURE]);
+	_gEngine.MatrixCopyFromStack(MATRIXMODE_TEXTURE, 0, savingMtx);
 	for (size_t j = 0; j < 16; j++)
 	{
-		os.write_32LE(mtxStackTexture[0][j]);
+		os.write_32LE(savingMtx[j]);
 	}
 
 	gxf_hardware.savestate(os);
@@ -3406,20 +3669,24 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 
 	if (version >= 2)
 	{
+		NDSMatrix loadingMtx;
+		
 		// Read matrix stack data
 		is.read_32LE(mtxStackIndex[MATRIXMODE_PROJECTION]);
 		for (size_t j = 0; j < 16; j++)
 		{
-			is.read_32LE(mtxStackProjection[0][j]);
+			is.read_32LE(loadingMtx[j]);
 		}
+		_gEngine.MatrixCopyToStack(MATRIXMODE_PROJECTION, 0, loadingMtx);
 		
 		is.read_32LE(mtxStackIndex[MATRIXMODE_POSITION]);
 		for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION); i++)
 		{
 			for (size_t j = 0; j < 16; j++)
 			{
-				is.read_32LE(mtxStackPosition[i][j]);
+				is.read_32LE(loadingMtx[j]);
 			}
+			_gEngine.MatrixCopyToStack(MATRIXMODE_POSITION, i, loadingMtx);
 		}
 		
 		is.read_32LE(mtxStackIndex[MATRIXMODE_POSITION_VECTOR]);
@@ -3427,15 +3694,17 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 		{
 			for (size_t j = 0; j < 16; j++)
 			{
-				is.read_32LE(mtxStackPositionVector[i][j]);
+				is.read_32LE(loadingMtx[j]);
 			}
+			_gEngine.MatrixCopyToStack(MATRIXMODE_POSITION_VECTOR, i, loadingMtx);
 		}
 		
 		is.read_32LE(mtxStackIndex[MATRIXMODE_TEXTURE]);
 		for (size_t j = 0; j < 16; j++)
 		{
-			is.read_32LE(mtxStackTexture[0][j]);
+			is.read_32LE(loadingMtx[j]);
 		}
+		_gEngine.MatrixCopyToStack(MATRIXMODE_TEXTURE, 0, loadingMtx);
 	}
 
 	if (version >= 3)
