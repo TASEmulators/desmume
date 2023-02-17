@@ -540,11 +540,11 @@ void NDSGeometryEngine::__Init()
 	_mtxStackIndex[MATRIXMODE_POSITION] = 0;
 	_mtxStackIndex[MATRIXMODE_POSITION_VECTOR] = 0;
 	_mtxStackIndex[MATRIXMODE_TEXTURE] = 0;
-	_mtxLoad4x4CurrentIndex = 0;
-	_mtxLoad4x3CurrentIndex = 0;
-	_mtxMultiply4x4CurrentIndex = 0;
-	_mtxMultiply4x3CurrentIndex = 0;
-	_mtxMultiply3x3CurrentIndex = 0;
+	_mtxLoad4x4PendingIndex = 0;
+	_mtxLoad4x3PendingIndex = 0;
+	_mtxMultiply4x4TempIndex = 0;
+	_mtxMultiply4x3TempIndex = 0;
+	_mtxMultiply3x3TempIndex = 0;
 	_vecScaleCurrentIndex = 0;
 	_vecTranslateCurrentIndex = 0;
 	
@@ -586,8 +586,8 @@ void NDSGeometryEngine::__Init()
 	_texCoord16 = zeroVec16x2;
 	_texCoordTransformed.s = (s32)_texCoord16.s;
 	_texCoordTransformed.t = (s32)_texCoord16.t;
-	_texCoordTransformedFloat[0] = (float)_texCoordTransformed.s;
-	_texCoordTransformedFloat[1] = (float)_texCoordTransformed.t;
+	_texCoordTransformedFloat[0] = (float)_texCoordTransformed.s / 16.0f;
+	_texCoordTransformedFloat[1] = (float)_texCoordTransformed.t / 16.0f;
 	
 	_doesViewportNeedUpdate = true;
 	_doesVertexColorNeedUpdate = true;
@@ -704,107 +704,107 @@ void NDSGeometryEngine::SetMatrixMode(const u32 param)
 
 bool NDSGeometryEngine::SetCurrentMatrixLoad4x4(const u32 param)
 {
-	this->_currentMtxLoad4x4[this->_mtxLoad4x4CurrentIndex] = (s32)param;
-	this->_mtxLoad4x4CurrentIndex++;
+	this->_pendingMtxLoad4x4[this->_mtxLoad4x4PendingIndex] = (s32)param;
+	this->_mtxLoad4x4PendingIndex++;
 	
-	if (this->_mtxLoad4x4CurrentIndex < 16)
+	if (this->_mtxLoad4x4PendingIndex < 16)
 	{
 		return false;
 	}
 	
-	this->_mtxLoad4x4CurrentIndex = 0;
+	this->_mtxLoad4x4PendingIndex = 0;
 	return true;
 }
 
 bool NDSGeometryEngine::SetCurrentMatrixLoad4x3(const u32 param)
 {
-	this->_currentMtxLoad4x3[this->_mtxLoad4x3CurrentIndex] = (s32)param;
-	this->_mtxLoad4x3CurrentIndex++;
+	this->_pendingMtxLoad4x3[this->_mtxLoad4x3PendingIndex] = (s32)param;
+	this->_mtxLoad4x3PendingIndex++;
 	
-	if ((this->_mtxLoad4x3CurrentIndex & 0x03) == 3)
+	if ((this->_mtxLoad4x3PendingIndex & 0x03) == 3)
 	{
 		// For a 3 column matrix, every 4th value must be set to 0.
-		this->_currentMtxLoad4x3[this->_mtxLoad4x3CurrentIndex] = 0;
-		this->_mtxLoad4x3CurrentIndex++;
+		this->_pendingMtxLoad4x3[this->_mtxLoad4x3PendingIndex] = 0;
+		this->_mtxLoad4x3PendingIndex++;
 	}
 	
-	if (this->_mtxLoad4x3CurrentIndex < 16)
+	if (this->_mtxLoad4x3PendingIndex < 16)
 	{
 		return false;
 	}
 	
 	// The last value needs to be a fixed 20.12 value of 1.
-	this->_currentMtxLoad4x3[15] = (s32)(1 << 12);
+	this->_pendingMtxLoad4x3[15] = (s32)(1 << 12);
 	
-	this->_mtxLoad4x3CurrentIndex = 0;
+	this->_mtxLoad4x3PendingIndex = 0;
 	return true;
 }
 
 bool NDSGeometryEngine::SetCurrentMatrixMultiply4x4(const u32 param)
 {
-	this->_currentMtxMult4x4[this->_mtxMultiply4x4CurrentIndex] = (s32)param;
-	this->_mtxMultiply4x4CurrentIndex++;
+	this->_tempMtxMultiply4x4[this->_mtxMultiply4x4TempIndex] = (s32)param;
+	this->_mtxMultiply4x4TempIndex++;
 	this->_lastMtxMultCommand = LastMtxMultCommand_4x4;
 	
-	if (this->_mtxMultiply4x4CurrentIndex < 16)
+	if (this->_mtxMultiply4x4TempIndex < 16)
 	{
 		return false;
 	}
 	
-	this->_mtxMultiply4x4CurrentIndex = 0;
+	this->_mtxMultiply4x4TempIndex = 0;
 	return true;
 }
 
 bool NDSGeometryEngine::SetCurrentMatrixMultiply4x3(const u32 param)
 {
-	this->_currentMtxMult4x3[this->_mtxMultiply4x3CurrentIndex] = (s32)param;
-	this->_mtxMultiply4x3CurrentIndex++;
+	this->_tempMtxMultiply4x3[this->_mtxMultiply4x3TempIndex] = (s32)param;
+	this->_mtxMultiply4x3TempIndex++;
 	this->_lastMtxMultCommand = LastMtxMultCommand_4x3;
 	
-	if ((this->_mtxMultiply4x3CurrentIndex & 0x03) == 3)
+	if ((this->_mtxMultiply4x3TempIndex & 0x03) == 3)
 	{
 		// For a 3 column matrix, every 4th value must be set to 0.
-		this->_currentMtxMult4x3[this->_mtxMultiply4x3CurrentIndex] = 0;
-		this->_mtxMultiply4x3CurrentIndex++;
+		this->_tempMtxMultiply4x3[this->_mtxMultiply4x3TempIndex] = 0;
+		this->_mtxMultiply4x3TempIndex++;
 	}
 	
-	if (this->_mtxMultiply4x3CurrentIndex < 16)
+	if (this->_mtxMultiply4x3TempIndex < 16)
 	{
 		return false;
 	}
 	
 	// The last value needs to be a fixed 20.12 value of 1.
-	this->_currentMtxMult4x3[15] = (s32)(1 << 12);
+	this->_tempMtxMultiply4x3[15] = (s32)(1 << 12);
 	
-	this->_mtxMultiply4x3CurrentIndex = 0;
+	this->_mtxMultiply4x3TempIndex = 0;
 	return true;
 }
 
 bool NDSGeometryEngine::SetCurrentMatrixMultiply3x3(const u32 param)
 {
-	this->_currentMtxMult3x3[this->_mtxMultiply3x3CurrentIndex] = (s32)param;
-	this->_mtxMultiply3x3CurrentIndex++;
+	this->_tempMtxMultiply3x3[this->_mtxMultiply3x3TempIndex] = (s32)param;
+	this->_mtxMultiply3x3TempIndex++;
 	this->_lastMtxMultCommand = LastMtxMultCommand_3x3;
 	
-	if ((this->_mtxMultiply3x3CurrentIndex & 0x03) == 3)
+	if ((this->_mtxMultiply3x3TempIndex & 0x03) == 3)
 	{
 		// For a 3 column matrix, every 4th value must be set to 0.
-		this->_currentMtxMult3x3[this->_mtxMultiply3x3CurrentIndex] = 0;
-		this->_mtxMultiply3x3CurrentIndex++;
+		this->_tempMtxMultiply3x3[this->_mtxMultiply3x3TempIndex] = 0;
+		this->_mtxMultiply3x3TempIndex++;
 	}
 	
-	if (this->_mtxMultiply3x3CurrentIndex < 12)
+	if (this->_mtxMultiply3x3TempIndex < 12)
 	{
 		return false;
 	}
 	
 	// Fill in the last matrix row.
-	this->_currentMtxMult3x3[12] = 0;
-	this->_currentMtxMult3x3[13] = 0;
-	this->_currentMtxMult3x3[14] = 0;
-	this->_currentMtxMult3x3[15] = (s32)(1 << 12);
+	this->_tempMtxMultiply3x3[12] = 0;
+	this->_tempMtxMultiply3x3[13] = 0;
+	this->_tempMtxMultiply3x3[14] = 0;
+	this->_tempMtxMultiply3x3[15] = (s32)(1 << 12);
 	
-	this->_mtxMultiply3x3CurrentIndex = 0;
+	this->_mtxMultiply3x3TempIndex = 0;
 	return true;
 }
 
@@ -1032,7 +1032,7 @@ void NDSGeometryEngine::MatrixLoadIdentityToCurrent()
 
 void NDSGeometryEngine::MatrixLoad4x4()
 {
-	MatrixCopy(this->_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxLoad4x4);
+	MatrixCopy(this->_mtxCurrent[this->_mtxCurrentMode], this->_pendingMtxLoad4x4);
 	
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
@@ -1048,7 +1048,7 @@ void NDSGeometryEngine::MatrixLoad4x4()
 
 void NDSGeometryEngine::MatrixLoad4x3()
 {
-	MatrixCopy(this->_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxLoad4x3);
+	MatrixCopy(this->_mtxCurrent[this->_mtxCurrentMode], this->_pendingMtxLoad4x3);
 
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
@@ -1063,7 +1063,7 @@ void NDSGeometryEngine::MatrixLoad4x3()
 
 void NDSGeometryEngine::MatrixMultiply4x4()
 {
-	MatrixMultiply(this->_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxMult4x4);
+	MatrixMultiply(this->_mtxCurrent[this->_mtxCurrentMode], this->_tempMtxMultiply4x4);
 	
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
@@ -1075,7 +1075,7 @@ void NDSGeometryEngine::MatrixMultiply4x4()
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixMultiply(this->_mtxCurrent[MATRIXMODE_POSITION], this->_currentMtxMult4x4);
+		MatrixMultiply(this->_mtxCurrent[MATRIXMODE_POSITION], this->_tempMtxMultiply4x4);
 	}
 
 	//printf("mult4x4: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(this->_mtxCurrent[1]);
@@ -1083,7 +1083,7 @@ void NDSGeometryEngine::MatrixMultiply4x4()
 
 void NDSGeometryEngine::MatrixMultiply4x3()
 {
-	MatrixMultiply(this->_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxMult4x3);
+	MatrixMultiply(this->_mtxCurrent[this->_mtxCurrentMode], this->_tempMtxMultiply4x3);
 	
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
@@ -1095,7 +1095,7 @@ void NDSGeometryEngine::MatrixMultiply4x3()
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixMultiply(this->_mtxCurrent[MATRIXMODE_POSITION], this->_currentMtxMult4x3);
+		MatrixMultiply(this->_mtxCurrent[MATRIXMODE_POSITION], this->_tempMtxMultiply4x3);
 	}
 
 	//printf("mult4x3: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(this->_mtxCurrent[1]);
@@ -1103,7 +1103,7 @@ void NDSGeometryEngine::MatrixMultiply4x3()
 
 void NDSGeometryEngine::MatrixMultiply3x3()
 {
-	MatrixMultiply(this->_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxMult3x3);
+	MatrixMultiply(this->_mtxCurrent[this->_mtxCurrentMode], this->_tempMtxMultiply3x3);
 	
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
@@ -1115,7 +1115,7 @@ void NDSGeometryEngine::MatrixMultiply3x3()
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixMultiply(this->_mtxCurrent[MATRIXMODE_POSITION], this->_currentMtxMult3x3);
+		MatrixMultiply(this->_mtxCurrent[MATRIXMODE_POSITION], this->_tempMtxMultiply3x3);
 	}
 
 	//printf("mult3x3: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(this->_mtxCurrent[1]);
@@ -2202,38 +2202,68 @@ u32 NDSGeometryEngine::GetPositionTestResult(const u32 requestedIndex) const
 
 void NDSGeometryEngine::SaveState_LegacyFormat(GeometryEngineLegacySave &outLegacySave)
 {
-	MatrixCopy(outLegacySave.currentWorkingMatrix[MATRIXMODE_PROJECTION],      this->_mtxCurrent[MATRIXMODE_PROJECTION]);
-	MatrixCopy(outLegacySave.currentWorkingMatrix[MATRIXMODE_POSITION],        this->_mtxCurrent[MATRIXMODE_POSITION]);
-	MatrixCopy(outLegacySave.currentWorkingMatrix[MATRIXMODE_POSITION_VECTOR], this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
-	MatrixCopy(outLegacySave.currentWorkingMatrix[MATRIXMODE_TEXTURE],         this->_mtxCurrent[MATRIXMODE_TEXTURE]);
+	outLegacySave.inBegin = (this->_inBegin) ? TRUE : FALSE;
+	outLegacySave.texParam = this->_texParam;
+	outLegacySave.texPalette = this->_texPalette;
+	
+	outLegacySave.mtxCurrentMode = (u32)this->_mtxCurrentMode;
 	
 	// Historically, only the last multiply matrix used is the one that is saved.
 	switch (this->_lastMtxMultCommand)
 	{
 		case LastMtxMultCommand_4x3:
-			MatrixCopy(outLegacySave.currentMultiplyMatrix, this->_currentMtxMult4x3);
+			MatrixCopy(outLegacySave.tempMultiplyMatrix, this->_tempMtxMultiply4x3);
 			break;
 			
 		case LastMtxMultCommand_3x3:
-			MatrixCopy(outLegacySave.currentMultiplyMatrix, this->_currentMtxMult3x3);
+			MatrixCopy(outLegacySave.tempMultiplyMatrix, this->_tempMtxMultiply3x3);
 			break;
 			
 		default: // LastMtxMultCommand_4x4
-			MatrixCopy(outLegacySave.currentMultiplyMatrix, this->_currentMtxMult4x4);
+			MatrixCopy(outLegacySave.tempMultiplyMatrix, this->_tempMtxMultiply4x4);
 			break;
 	}
 	
-	outLegacySave.vecTranslate = this->_vecTranslate;
-	outLegacySave.vecScale = this->_vecScale;
+	MatrixCopy(outLegacySave.currentMatrix[MATRIXMODE_PROJECTION],      this->_mtxCurrent[MATRIXMODE_PROJECTION]);
+	MatrixCopy(outLegacySave.currentMatrix[MATRIXMODE_POSITION],        this->_mtxCurrent[MATRIXMODE_POSITION]);
+	MatrixCopy(outLegacySave.currentMatrix[MATRIXMODE_POSITION_VECTOR], this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+	MatrixCopy(outLegacySave.currentMatrix[MATRIXMODE_TEXTURE],         this->_mtxCurrent[MATRIXMODE_TEXTURE]);
 	
-	outLegacySave.mtxCurrentMode = (u32)this->_mtxCurrentMode;
-	outLegacySave.mtxLoad4x4CurrentIndex = this->_mtxLoad4x4CurrentIndex;
-	outLegacySave.mtxLoad4x3CurrentIndex = this->_mtxLoad4x3CurrentIndex;
-	outLegacySave.mtxMultiply4x4CurrentIndex = this->_mtxMultiply4x4CurrentIndex;
-	outLegacySave.mtxMultiply4x3CurrentIndex = this->_mtxMultiply4x3CurrentIndex;
-	outLegacySave.mtxMultiply3x3CurrentIndex = this->_mtxMultiply3x3CurrentIndex;
-	outLegacySave.vecScaleCurrentIndex = this->_vecScaleCurrentIndex;
+	outLegacySave.mtxLoad4x4PendingIndex = this->_mtxLoad4x4PendingIndex;
+	outLegacySave.mtxLoad4x3PendingIndex = this->_mtxLoad4x3PendingIndex;
+	outLegacySave.mtxMultiply4x4TempIndex = this->_mtxMultiply4x4TempIndex;
+	outLegacySave.mtxMultiply4x3TempIndex = this->_mtxMultiply4x3TempIndex;
+	outLegacySave.mtxMultiply3x3TempIndex = this->_mtxMultiply3x3TempIndex;
+	
+	outLegacySave.vtxCoord.vec3 = this->_vtxCoord16;
+	outLegacySave.vtxCoord.coord[3] = 0;
+	outLegacySave.vtxCoord16CurrentIndex = this->_vtxCoord16CurrentIndex;
+	outLegacySave.vtxFormat = (u32)this->_vtxFormat;
+	
+	outLegacySave.vecTranslate = this->_vecTranslate;
 	outLegacySave.vecTranslateCurrentIndex = this->_vecTranslateCurrentIndex;
+	outLegacySave.vecScale = this->_vecScale;
+	outLegacySave.vecScaleCurrentIndex = this->_vecScaleCurrentIndex;
+	
+	outLegacySave.texCoordT = (u32)((u16)this->_texCoord16.t);
+	outLegacySave.texCoordS = (u32)((u16)this->_texCoord16.s);
+	outLegacySave.texCoordTransformedT = (u32)this->_texCoordTransformed.t;
+	outLegacySave.texCoordTransformedS = (u32)this->_texCoordTransformed.s;
+	
+	outLegacySave.boxTestCoordCurrentIndex = (u32)this->_boxTestCoordCurrentIndex;
+	outLegacySave.positionTestCoordCurrentIndex = (u32)this->_positionTestCoordCurrentIndex;
+	outLegacySave.positionTestVtxFloat[0] = (float)this->_positionTestVtx32.x / 4096.f;
+	outLegacySave.positionTestVtxFloat[1] = (float)this->_positionTestVtx32.y / 4096.f;
+	outLegacySave.positionTestVtxFloat[2] = (float)this->_positionTestVtx32.z / 4096.f;
+	outLegacySave.positionTestVtxFloat[3] = (float)this->_positionTestVtx32.w / 4096.f;
+	outLegacySave.boxTestCoord16[0] = this->_boxTestCoord16[0];
+	outLegacySave.boxTestCoord16[1] = this->_boxTestCoord16[1];
+	outLegacySave.boxTestCoord16[2] = this->_boxTestCoord16[2];
+	outLegacySave.boxTestCoord16[3] = this->_boxTestCoord16[3];
+	outLegacySave.boxTestCoord16[4] = this->_boxTestCoord16[4];
+	outLegacySave.boxTestCoord16[5] = this->_boxTestCoord16[5];
+	
+	outLegacySave.vtxColor = this->_vtxColor555X;
 	
 	outLegacySave.regLightColor[0] = this->_regLightColor[0];
 	outLegacySave.regLightColor[1] = this->_regLightColor[1];
@@ -2248,67 +2278,65 @@ void NDSGeometryEngine::SaveState_LegacyFormat(GeometryEngineLegacySave &outLega
 	outLegacySave.regSpecular = this->_regSpecular;
 	outLegacySave.regEmission = this->_regEmission;
 	
-	outLegacySave.vtxFormat = (u32)this->_vtxFormat;
-	outLegacySave.vtxCoord.vec3 = this->_vtxCoord16;
-	outLegacySave.vtxCoord.coord[3] = 0;
-	outLegacySave.vtxColor = this->_vtxColor555X;
-	outLegacySave.texCoordS = (u32)((u16)this->_texCoord16.s);
-	outLegacySave.texCoordT = (u32)((u16)this->_texCoord16.t);
-	outLegacySave.texCoordTransformedS = (u32)this->_texCoordTransformed.s;
-	outLegacySave.texCoordTransformedT = (u32)this->_texCoordTransformed.t;
-	outLegacySave.texParam = this->_texParam;
-	outLegacySave.texPalette = this->_texPalette;
+	outLegacySave.regViewport = this->_regViewport;
 	
-	outLegacySave.vtxCoord16CurrentIndex = this->_vtxCoord16CurrentIndex;
-	
-	outLegacySave.inBegin = (this->_inBegin) ? TRUE : FALSE;
+	outLegacySave.generateTriangleStripIndexToggle = (this->_generateTriangleStripIndexToggle) ? 1 : 0;
 	outLegacySave.vtxCount = (u32)this->_vtxCount;
 	outLegacySave.vtxIndex[0] = (u32)this->_vtxIndex[0];
 	outLegacySave.vtxIndex[1] = (u32)this->_vtxIndex[1];
 	outLegacySave.vtxIndex[2] = (u32)this->_vtxIndex[2];
 	outLegacySave.vtxIndex[3] = (u32)this->_vtxIndex[3];
 	outLegacySave.isGeneratingFirstPolyOfStrip = (this->_isGeneratingFirstPolyOfStrip) ? TRUE : FALSE;
-	outLegacySave.generateTriangleStripIndexToggle = (this->_generateTriangleStripIndexToggle) ? 1 : 0;
-	
-	outLegacySave.boxTestCoordCurrentIndex = (u32)this->_boxTestCoordCurrentIndex;
-	outLegacySave.positionTestCoordCurrentIndex = (u32)this->_positionTestCoordCurrentIndex;
-	outLegacySave.boxTestCoord16[0] = this->_boxTestCoord16[0];
-	outLegacySave.boxTestCoord16[1] = this->_boxTestCoord16[1];
-	outLegacySave.boxTestCoord16[2] = this->_boxTestCoord16[2];
-	outLegacySave.boxTestCoord16[3] = this->_boxTestCoord16[3];
-	outLegacySave.boxTestCoord16[4] = this->_boxTestCoord16[4];
-	outLegacySave.boxTestCoord16[5] = this->_boxTestCoord16[5];
-	
-	outLegacySave.positionTestVtxFloat[0] = (float)this->_positionTestVtx32.x / 4096.f;
-	outLegacySave.positionTestVtxFloat[1] = (float)this->_positionTestVtx32.y / 4096.f;
-	outLegacySave.positionTestVtxFloat[2] = (float)this->_positionTestVtx32.z / 4096.f;
-	outLegacySave.positionTestVtxFloat[3] = (float)this->_positionTestVtx32.w / 4096.f;
-	
-	outLegacySave.regViewport = this->_regViewport;
 }
 
 void NDSGeometryEngine::LoadState_LegacyFormat(const GeometryEngineLegacySave &inLegacySave)
 {
-	MatrixCopy(this->_mtxCurrent[MATRIXMODE_PROJECTION],      inLegacySave.currentWorkingMatrix[MATRIXMODE_PROJECTION]);
-	MatrixCopy(this->_mtxCurrent[MATRIXMODE_POSITION],        inLegacySave.currentWorkingMatrix[MATRIXMODE_POSITION]);
-	MatrixCopy(this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR], inLegacySave.currentWorkingMatrix[MATRIXMODE_POSITION_VECTOR]);
-	MatrixCopy(this->_mtxCurrent[MATRIXMODE_TEXTURE],         inLegacySave.currentWorkingMatrix[MATRIXMODE_TEXTURE]);
-	
-	MatrixCopy(this->_currentMtxMult4x4, inLegacySave.currentMultiplyMatrix);
-	MatrixCopy(this->_currentMtxMult4x3, inLegacySave.currentMultiplyMatrix);
-	MatrixCopy(this->_currentMtxMult3x3, inLegacySave.currentMultiplyMatrix);
-	
-	this->_vecTranslate = inLegacySave.vecTranslate;
-	this->_vecScale = inLegacySave.vecScale;
+	this->_inBegin = (inLegacySave.inBegin) ? true : false;
+	this->_texParam = inLegacySave.texParam;
+	this->_texPalette = inLegacySave.texPalette;
 	
 	this->_mtxCurrentMode = (MatrixMode)inLegacySave.mtxCurrentMode;
-	this->_mtxLoad4x4CurrentIndex = inLegacySave.mtxLoad4x4CurrentIndex;
-	this->_mtxLoad4x3CurrentIndex = inLegacySave.mtxLoad4x3CurrentIndex;
-	this->_mtxMultiply4x4CurrentIndex = inLegacySave.mtxMultiply4x4CurrentIndex;
-	this->_mtxMultiply4x3CurrentIndex = inLegacySave.mtxMultiply4x3CurrentIndex;
-	this->_mtxMultiply3x3CurrentIndex = inLegacySave.mtxMultiply3x3CurrentIndex;
-	this->_vecScaleCurrentIndex = inLegacySave.vecScaleCurrentIndex;
+	MatrixCopy(this->_tempMtxMultiply4x4, inLegacySave.tempMultiplyMatrix);
+	MatrixCopy(this->_tempMtxMultiply4x3, inLegacySave.tempMultiplyMatrix);
+	MatrixCopy(this->_tempMtxMultiply3x3, inLegacySave.tempMultiplyMatrix);
+	MatrixCopy(this->_mtxCurrent[MATRIXMODE_PROJECTION],      inLegacySave.currentMatrix[MATRIXMODE_PROJECTION]);
+	MatrixCopy(this->_mtxCurrent[MATRIXMODE_POSITION],        inLegacySave.currentMatrix[MATRIXMODE_POSITION]);
+	MatrixCopy(this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR], inLegacySave.currentMatrix[MATRIXMODE_POSITION_VECTOR]);
+	MatrixCopy(this->_mtxCurrent[MATRIXMODE_TEXTURE],         inLegacySave.currentMatrix[MATRIXMODE_TEXTURE]);
+	this->_mtxLoad4x4PendingIndex = inLegacySave.mtxLoad4x4PendingIndex;
+	this->_mtxLoad4x3PendingIndex = inLegacySave.mtxLoad4x3PendingIndex;
+	this->_mtxMultiply4x4TempIndex = inLegacySave.mtxMultiply4x4TempIndex;
+	this->_mtxMultiply4x3TempIndex = inLegacySave.mtxMultiply4x3TempIndex;
+	this->_mtxMultiply3x3TempIndex = inLegacySave.mtxMultiply3x3TempIndex;
+	
+	this->_vtxCoord16 = inLegacySave.vtxCoord.vec3;
+	this->_vtxCoord16CurrentIndex = inLegacySave.vtxCoord16CurrentIndex;
+	this->_vtxFormat = (PolygonPrimitiveType)inLegacySave.vtxFormat;
+	
+	this->_vecTranslate = inLegacySave.vecTranslate;
 	this->_vecTranslateCurrentIndex = inLegacySave.vecTranslateCurrentIndex;
+	this->_vecScale = inLegacySave.vecScale;
+	this->_vecScaleCurrentIndex = inLegacySave.vecScaleCurrentIndex;
+	
+	this->_texCoord16.t = (s16)((u16)(inLegacySave.texCoordT & 0x0000FFFF));
+	this->_texCoord16.s = (s16)((u16)(inLegacySave.texCoordS & 0x0000FFFF));
+	this->_texCoordTransformed.t = (s32)inLegacySave.texCoordTransformedT;
+	this->_texCoordTransformed.s = (s32)inLegacySave.texCoordTransformedS;
+	
+	this->_boxTestCoordCurrentIndex = (u8)inLegacySave.boxTestCoordCurrentIndex;
+	this->_positionTestCoordCurrentIndex = (u8)inLegacySave.positionTestCoordCurrentIndex;
+	this->_positionTestVtx32.x = (s32)((inLegacySave.positionTestVtxFloat[0] * 4096.0f) + 0.000000001f);
+	this->_positionTestVtx32.y = (s32)((inLegacySave.positionTestVtxFloat[1] * 4096.0f) + 0.000000001f);
+	this->_positionTestVtx32.z = (s32)((inLegacySave.positionTestVtxFloat[2] * 4096.0f) + 0.000000001f);
+	this->_positionTestVtx32.w = (s32)((inLegacySave.positionTestVtxFloat[3] * 4096.0f) + 0.000000001f);
+	this->_boxTestCoord16[0] = inLegacySave.boxTestCoord16[0];
+	this->_boxTestCoord16[1] = inLegacySave.boxTestCoord16[1];
+	this->_boxTestCoord16[2] = inLegacySave.boxTestCoord16[2];
+	this->_boxTestCoord16[3] = inLegacySave.boxTestCoord16[3];
+	this->_boxTestCoord16[4] = inLegacySave.boxTestCoord16[4];
+	this->_boxTestCoord16[5] = inLegacySave.boxTestCoord16[5];
+	
+	this->_vtxColor555X = inLegacySave.vtxColor;
 	
 	this->_regLightColor[0] = inLegacySave.regLightColor[0];
 	this->_regLightColor[1] = inLegacySave.regLightColor[1];
@@ -2323,42 +2351,15 @@ void NDSGeometryEngine::LoadState_LegacyFormat(const GeometryEngineLegacySave &i
 	this->_regSpecular = inLegacySave.regSpecular;
 	this->_regEmission = inLegacySave.regEmission;
 	
-	this->_vtxFormat = (PolygonPrimitiveType)inLegacySave.vtxFormat;
-	this->_vtxCoord16 = inLegacySave.vtxCoord.vec3;
-	this->_vtxColor555X = inLegacySave.vtxColor;
-	this->_texCoord16.s = (s16)((u16)(inLegacySave.texCoordS & 0x0000FFFF));
-	this->_texCoord16.t = (s16)((u16)(inLegacySave.texCoordT & 0x0000FFFF));
-	this->_texCoordTransformed.s = (s32)inLegacySave.texCoordTransformedS;
-	this->_texCoordTransformed.t = (s32)inLegacySave.texCoordTransformedT;
-	this->_texParam = inLegacySave.texParam;
-	this->_texPalette = inLegacySave.texPalette;
+	this->SetViewport(inLegacySave.regViewport);
 	
-	this->_vtxCoord16CurrentIndex = inLegacySave.vtxCoord16CurrentIndex;
-	
-	this->_inBegin = (inLegacySave.inBegin) ? true : false;
+	this->_generateTriangleStripIndexToggle = (inLegacySave.generateTriangleStripIndexToggle != 0) ? true : false;
 	this->_vtxCount = (size_t)inLegacySave.vtxCount;
 	this->_vtxIndex[0] = (u16)inLegacySave.vtxIndex[0];
 	this->_vtxIndex[1] = (u16)inLegacySave.vtxIndex[1];
 	this->_vtxIndex[2] = (u16)inLegacySave.vtxIndex[2];
 	this->_vtxIndex[3] = (u16)inLegacySave.vtxIndex[3];
 	this->_isGeneratingFirstPolyOfStrip = (inLegacySave.isGeneratingFirstPolyOfStrip) ? true : false;
-	this->_generateTriangleStripIndexToggle = (inLegacySave.generateTriangleStripIndexToggle != 0) ? true : false;
-	
-	this->_boxTestCoordCurrentIndex = (u8)inLegacySave.boxTestCoordCurrentIndex;
-	this->_positionTestCoordCurrentIndex = (u8)inLegacySave.positionTestCoordCurrentIndex;
-	this->_boxTestCoord16[0] = inLegacySave.boxTestCoord16[0];
-	this->_boxTestCoord16[1] = inLegacySave.boxTestCoord16[1];
-	this->_boxTestCoord16[2] = inLegacySave.boxTestCoord16[2];
-	this->_boxTestCoord16[3] = inLegacySave.boxTestCoord16[3];
-	this->_boxTestCoord16[4] = inLegacySave.boxTestCoord16[4];
-	this->_boxTestCoord16[5] = inLegacySave.boxTestCoord16[5];
-	
-	this->_positionTestVtx32.x = (s32)((inLegacySave.positionTestVtxFloat[0] * 4096.0f) + 0.000000001f);
-	this->_positionTestVtx32.y = (s32)((inLegacySave.positionTestVtxFloat[1] * 4096.0f) + 0.000000001f);
-	this->_positionTestVtx32.z = (s32)((inLegacySave.positionTestVtxFloat[2] * 4096.0f) + 0.000000001f);
-	this->_positionTestVtx32.w = (s32)((inLegacySave.positionTestVtxFloat[3] * 4096.0f) + 0.000000001f);
-	
-	this->SetViewport(inLegacySave.regViewport);
 }
 
 void NDSGeometryEngine::SaveState_v2(EMUFILE &os)
@@ -3616,13 +3617,13 @@ SFORMAT SF_GFX3D[] = {
 	{ "GTFM", 4, 1, &gfx3d.gEngineLegacySave.texParam},
 	{ "GTPA", 4, 1, &gfx3d.gEngineLegacySave.texPalette},
 	{ "GMOD", 4, 1, &gfx3d.gEngineLegacySave.mtxCurrentMode},
-	{ "GMTM", 4,16, &gfx3d.gEngineLegacySave.currentMultiplyMatrix},
-	{ "GMCU", 4,64, &gfx3d.gEngineLegacySave.currentWorkingMatrix},
-	{ "ML4I", 1, 1, &gfx3d.gEngineLegacySave.mtxLoad4x4CurrentIndex},
-	{ "ML3I", 1, 1, &gfx3d.gEngineLegacySave.mtxLoad4x3CurrentIndex},
-	{ "MM4I", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply4x4CurrentIndex},
-	{ "MM3I", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply4x3CurrentIndex},
-	{ "MMxI", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply3x3CurrentIndex},
+	{ "GMTM", 4,16, &gfx3d.gEngineLegacySave.tempMultiplyMatrix},
+	{ "GMCU", 4,64, &gfx3d.gEngineLegacySave.currentMatrix},
+	{ "ML4I", 1, 1, &gfx3d.gEngineLegacySave.mtxLoad4x4PendingIndex},
+	{ "ML3I", 1, 1, &gfx3d.gEngineLegacySave.mtxLoad4x3PendingIndex},
+	{ "MM4I", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply4x4TempIndex},
+	{ "MM3I", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply4x3TempIndex},
+	{ "MMxI", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply3x3TempIndex},
 	{ "GSCO", 2, 4, &gfx3d.gEngineLegacySave.vtxCoord},
 	{ "GCOI", 1, 1, &gfx3d.gEngineLegacySave.vtxCoord16CurrentIndex},
 	{ "GVFM", 4, 1, &gfx3d.gEngineLegacySave.vtxFormat},

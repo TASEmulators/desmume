@@ -822,20 +822,39 @@ typedef struct LegacyGFX3D_StateSFormat LegacyGFX3D_StateSFormat;
 
 struct GeometryEngineLegacySave
 {
-	NDSMatrix currentWorkingMatrix[4];
-	NDSMatrix currentMultiplyMatrix;
-	
-	Vector32x4 vecTranslate;
-	Vector32x4 vecScale;
+	u32 inBegin;
+	TEXIMAGE_PARAM texParam;
+	u32 texPalette;
 	
 	u32 mtxCurrentMode;
-	u8 mtxLoad4x4CurrentIndex;
-	u8 mtxLoad4x3CurrentIndex;
-	u8 mtxMultiply4x4CurrentIndex;
-	u8 mtxMultiply4x3CurrentIndex;
-	u8 mtxMultiply3x3CurrentIndex;
-	u8 vecScaleCurrentIndex;
+	NDSMatrix tempMultiplyMatrix;
+	NDSMatrix currentMatrix[4];
+	u8 mtxLoad4x4PendingIndex;
+	u8 mtxLoad4x3PendingIndex;
+	u8 mtxMultiply4x4TempIndex;
+	u8 mtxMultiply4x3TempIndex;
+	u8 mtxMultiply3x3TempIndex;
+	
+	VertexCoord16x4 vtxCoord;
+	u8 vtxCoord16CurrentIndex;
+	u32 vtxFormat;
+	
+	Vector32x4 vecTranslate;
 	u8 vecTranslateCurrentIndex;
+	Vector32x4 vecScale;
+	u8 vecScaleCurrentIndex;
+	
+	u32 texCoordT;
+	u32 texCoordS;
+	u32 texCoordTransformedT;
+	u32 texCoordTransformedS;
+	
+	u32 boxTestCoordCurrentIndex;
+	u32 positionTestCoordCurrentIndex;
+	float positionTestVtxFloat[4]; // Historically, the position test vertices were stored as floating point values, not as integers.
+	u16 boxTestCoord16[6];
+	
+	FragmentColor vtxColor;
 	
 	u32 regLightColor[4];
 	u32 regLightDirection[4];
@@ -844,39 +863,22 @@ struct GeometryEngineLegacySave
 	u16 regSpecular;
 	u16 regEmission;
 	
-	u32 vtxFormat;
-	VertexCoord16x4 vtxCoord;
-	FragmentColor vtxColor;
-	u32 texCoordS;
-	u32 texCoordT;
-	u32 texCoordTransformedS;
-	u32 texCoordTransformedT;
-	TEXIMAGE_PARAM texParam;
-	u32 texPalette;
+	IOREG_VIEWPORT regViewport; // Historically, the viewport was stored as its raw register value.
 	
-	u8 vtxCoord16CurrentIndex;
-	
-	u32 inBegin;
+	u8 generateTriangleStripIndexToggle;
 	u32 vtxCount;
 	u32 vtxIndex[4];
 	u32 isGeneratingFirstPolyOfStrip;
-	u8 generateTriangleStripIndexToggle;
-	
-	u32 boxTestCoordCurrentIndex;
-	u32 positionTestCoordCurrentIndex;
-	u16 boxTestCoord16[6];
-	float positionTestVtxFloat[4]; // Historically, the position test vertices were stored as floating point values, not as integers.
-	
-	IOREG_VIEWPORT regViewport; // Historically, the viewport was stored as its raw register value.
 };
 typedef struct GeometryEngineLegacySave GeometryEngineLegacySave;
 
 struct GFX3D_LegacySave
 {
-	u32 isDrawPending;
 	u32 clCommand; // Exists purely for save state compatibility, historically went unused.
 	u32 clIndex; // Exists purely for save state compatibility, historically went unused.
 	u32 clIndex2; // Exists purely for save state compatibility, historically went unused.
+	u32 isDrawPending;
+	
 	IOREG_VIEWPORT rawPolyViewport[POLYLIST_SIZE]; // Historically, pending polygons kept a copy of the current viewport as a raw register value.
 };
 typedef struct GFX3D_LegacySave GFX3D_LegacySave;
@@ -922,15 +924,14 @@ private:
 	void __Init();
 	
 protected:
+	CACHE_ALIGN NDSMatrix _mtxCurrent[4];
+	CACHE_ALIGN NDSMatrix _pendingMtxLoad4x4;
+	CACHE_ALIGN NDSMatrix _pendingMtxLoad4x3;
+	CACHE_ALIGN NDSMatrix _tempMtxMultiply4x4;
+	CACHE_ALIGN NDSMatrix _tempMtxMultiply4x3;
+	CACHE_ALIGN NDSMatrix _tempMtxMultiply3x3;
 	CACHE_ALIGN Vector32x4 _vecTranslate;
 	CACHE_ALIGN Vector32x4 _vecScale;
-	
-	CACHE_ALIGN NDSMatrix _mtxCurrent[4];
-	CACHE_ALIGN NDSMatrix _currentMtxLoad4x4;
-	CACHE_ALIGN NDSMatrix _currentMtxLoad4x3;
-	CACHE_ALIGN NDSMatrix _currentMtxMult4x4;
-	CACHE_ALIGN NDSMatrix _currentMtxMult4x3;
-	CACHE_ALIGN NDSMatrix _currentMtxMult3x3;
 	
 	// Matrix stack handling
 	CACHE_ALIGN NDSMatrixStack1  _mtxStackProjection;
@@ -945,11 +946,11 @@ protected:
 	
 	MatrixMode _mtxCurrentMode;
 	u8 _mtxStackIndex[4];
-	u8 _mtxLoad4x4CurrentIndex;
-	u8 _mtxLoad4x3CurrentIndex;
-	u8 _mtxMultiply4x4CurrentIndex;
-	u8 _mtxMultiply4x3CurrentIndex;
-	u8 _mtxMultiply3x3CurrentIndex;
+	u8 _mtxLoad4x4PendingIndex;
+	u8 _mtxLoad4x3PendingIndex;
+	u8 _mtxMultiply4x4TempIndex;
+	u8 _mtxMultiply4x3TempIndex;
+	u8 _mtxMultiply3x3TempIndex;
 	u8 _vecScaleCurrentIndex;
 	u8 _vecTranslateCurrentIndex;
 	
