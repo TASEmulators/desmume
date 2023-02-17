@@ -271,29 +271,11 @@ static LegacyGFX3DStateSFormat _legacyGFX3DStateSFormatApplied;
 //tables that are provided to anyone
 CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 
-u32 mtxStackIndex[4];
-
-static CACHE_ALIGN s32 _mtxCurrent[4][16];
-
 u32 isSwapBuffers = FALSE;
-
-static u32 _BTind = 0;
-static u32 _PTind = 0;
-static CACHE_ALIGN u16 _BTcoords[6] = {0, 0, 0, 0, 0, 0};
-static CACHE_ALIGN VertexCoord32x4 _PTcoords = {0, 0, 0, (s32)(1<<12)};
 
 //raw ds format poly attributes
 static POLYGON_ATTR _regPolyAttrPending;
 static POLYGON_ATTR _regPolyAttrApplied;
-
-//light state:
-static u32 _regLightColor[4] = {0, 0, 0, 0};
-static u32 _regLightDirection[4] = {0, 0, 0, 0};
-//material state:
-static u16 _regDiffuse  = 0;
-static u16 _regAmbient  = 0;
-static u16 _regSpecular = 0;
-static u16 _regEmission = 0;
 
 //used for indexing the shininess table during parameters to shininess command
 static u8 _shininessTableCurrentIndex = 0;
@@ -302,9 +284,6 @@ static u8 _shininessTableCurrentIndex = 0;
 int freelookMode = 0;
 s32 freelookMatrix[16];
 
-static CACHE_ALIGN Vector32x4 _vecLightDirectionTransformed[4];
-static CACHE_ALIGN Vector32x4 _vecLightDirectionHalfNegative[4];
-static bool _doesLightHalfVectorNeedUpdate[4];
 //------------------
 
 #define RENDER_FRONT_SURFACE 0x80
@@ -472,29 +451,6 @@ void gfx3d_reset()
 	memset(gxPIPE.cmd, 0, sizeof(gxPIPE.cmd));
 	memset(gxPIPE.param, 0, sizeof(gxPIPE.param));
 	memset(gfx3d.framebufferNativeSave, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u32));
-
-	MatrixInit(_mtxCurrent[MATRIXMODE_PROJECTION]);
-	MatrixInit(_mtxCurrent[MATRIXMODE_POSITION]);
-	MatrixInit(_mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
-	MatrixInit(_mtxCurrent[MATRIXMODE_TEXTURE]);
-	
-	mtxStackIndex[MATRIXMODE_PROJECTION] = 0;
-	mtxStackIndex[MATRIXMODE_POSITION] = 0;
-	mtxStackIndex[MATRIXMODE_POSITION_VECTOR] = 0;
-	mtxStackIndex[MATRIXMODE_TEXTURE] = 0;
-	
-	_regLightDirection[0] = 0;
-	_regLightDirection[1] = 0;
-	_regLightDirection[2] = 0;
-	_regLightDirection[3] = 0;
-	memset(&_vecLightDirectionTransformed[0], 0, sizeof(Vector32x4) * 4);
-	_doesLightHalfVectorNeedUpdate[0] = true;
-	_doesLightHalfVectorNeedUpdate[1] = true;
-	_doesLightHalfVectorNeedUpdate[2] = true;
-	_doesLightHalfVectorNeedUpdate[3] = true;
-
-	_BTind = 0;
-	_PTind = 0;
 	
 	// Init for save state compatibility
 	_GFX3D_IORegisterMap->VIEWPORT.X1 = 0;
@@ -561,23 +517,29 @@ NDSGeometryEngine::NDSGeometryEngine()
 
 void NDSGeometryEngine::__Init()
 {
+	static const Vector16x2 zeroVec16x2 = {0, 0};
+	static const Vector16x3 zeroVec16x3 = {0, 0, 0};
+	static const Vector32x4 zeroVec32x4 = {0, 0, 0, 0};
+	
 	_mtxCurrentMode = MATRIXMODE_PROJECTION;
+	
+	MatrixInit(_mtxCurrent[MATRIXMODE_PROJECTION]);
+	MatrixInit(_mtxCurrent[MATRIXMODE_POSITION]);
+	MatrixInit(_mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+	MatrixInit(_mtxCurrent[MATRIXMODE_TEXTURE]);
 	
 	MatrixInit(_mtxStackProjection[0]);
 	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION);        i++) { MatrixInit(_mtxStackPosition[i]);       }
 	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++) { MatrixInit(_mtxStackPositionVector[i]); }
 	MatrixInit(_mtxStackTexture[0]);
 	
-	_vecScale.vec[0] = 0;
-	_vecScale.vec[1] = 0;
-	_vecScale.vec[2] = 0;
-	_vecScale.vec[3] = 0;
+	_vecScale = zeroVec32x4;
+	_vecTranslate = zeroVec32x4;
 	
-	_vecTranslate.vec[0] = 0;
-	_vecTranslate.vec[1] = 0;
-	_vecTranslate.vec[2] = 0;
-	_vecTranslate.vec[3] = 0;
-	
+	_mtxStackIndex[MATRIXMODE_PROJECTION] = 0;
+	_mtxStackIndex[MATRIXMODE_POSITION] = 0;
+	_mtxStackIndex[MATRIXMODE_POSITION_VECTOR] = 0;
+	_mtxStackIndex[MATRIXMODE_TEXTURE] = 0;
 	_mtxLoad4x4CurrentIndex = 0;
 	_mtxLoad4x3CurrentIndex = 0;
 	_mtxMultiply4x4CurrentIndex = 0;
@@ -607,14 +569,8 @@ void NDSGeometryEngine::__Init()
 	_vtxColorFloat[2] = (float)_vtxColor666X.b;
 	_vtxColorFloat[3] = (float)_vtxColor666X.a;
 	
-	_vtxCoord16.x = 0;
-	_vtxCoord16.y = 0;
-	_vtxCoord16.z = 0;
-	
-	_normal32.x = 0;
-	_normal32.y = 0;
-	_normal32.z = 0;
-	_normal32.w = 0;
+	_vtxCoord16 = zeroVec16x3;
+	_vecNormal = zeroVec32x4;
 	
 	_regViewport.X1 = 0;
 	_regViewport.Y1 = 0;
@@ -627,8 +583,7 @@ void NDSGeometryEngine::__Init()
 	_currentViewport.height = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
 	_texCoordTransformMode = TextureTransformationMode_None;
-	_texCoord16.s = 0;
-	_texCoord16.t = 0;
+	_texCoord16 = zeroVec16x2;
 	_texCoordTransformed.s = (s32)_texCoord16.s;
 	_texCoordTransformed.t = (s32)_texCoord16.t;
 	_texCoordTransformedFloat[0] = (float)_texCoordTransformed.s;
@@ -647,8 +602,62 @@ void NDSGeometryEngine::__Init()
 	_vtxIndex[2] = 0;
 	_vtxIndex[3] = 0;
 	_isGeneratingFirstPolyOfStrip = true;
+	_generateTriangleStripIndexToggle = false;
+	
+	_regLightColor[0] = 0;
+	_regLightColor[1] = 0;
+	_regLightColor[2] = 0;
+	_regLightColor[3] = 0;
+	
+	_regLightDirection[0] = 0;
+	_regLightDirection[1] = 0;
+	_regLightDirection[2] = 0;
+	_regLightDirection[3] = 0;
+	
+	_vecLightDirectionTransformed[0] = zeroVec32x4;
+	_vecLightDirectionTransformed[1] = zeroVec32x4;
+	_vecLightDirectionTransformed[2] = zeroVec32x4;
+	_vecLightDirectionTransformed[3] = zeroVec32x4;
+	
+	_vecLightDirectionHalfNegative[0] = zeroVec32x4;
+	_vecLightDirectionHalfNegative[1] = zeroVec32x4;
+	_vecLightDirectionHalfNegative[2] = zeroVec32x4;
+	_vecLightDirectionHalfNegative[3] = zeroVec32x4;
+	
+	_doesLightHalfVectorNeedUpdate[0] = true;
+	_doesLightHalfVectorNeedUpdate[1] = true;
+	_doesLightHalfVectorNeedUpdate[2] = true;
+	_doesLightHalfVectorNeedUpdate[3] = true;
+
+	_boxTestCoordCurrentIndex = 0;
+	_positionTestCoordCurrentIndex = 0;
+	
+	_boxTestCoord16[0] = 0;
+	_boxTestCoord16[1] = 0;
+	_boxTestCoord16[2] = 0;
+	_boxTestCoord16[3] = 0;
+	_boxTestCoord16[4] = 0;
+	_boxTestCoord16[5] = 0;
+	
+	_positionTestVtx32.x = 0;
+	_positionTestVtx32.y = 0;
+	_positionTestVtx32.z = 0;
+	_positionTestVtx32.w = (s32)(1 << 12);
+	
+	_regDiffuse  = 0;
+	_regAmbient  = 0;
+	_regSpecular = 0;
+	_regEmission = 0;
 	
 	_lastMtxMultCommand = LastMtxMultCommand_4x4;
+}
+
+void NDSGeometryEngine::_UpdateTransformedTexCoordsIfNeeded()
+{
+	if (this->_texCoordTransformMode != TextureTransformationMode_None)
+	{
+		this->_doesTransformedTexCoordsNeedUpdate = true;
+	}
 }
 
 void NDSGeometryEngine::Reset()
@@ -659,6 +668,33 @@ void NDSGeometryEngine::Reset()
 MatrixMode NDSGeometryEngine::GetMatrixMode() const
 {
 	return this->_mtxCurrentMode;
+}
+
+u32 NDSGeometryEngine::GetLightDirectionRegisterAtIndex(const size_t i) const
+{
+	return this->_regLightDirection[i];
+}
+
+u32 NDSGeometryEngine::GetLightColorRegisterAtIndex(const size_t i) const
+{
+	return this->_regLightColor[i];
+}
+
+u8 NDSGeometryEngine::GetMatrixStackIndex(const MatrixMode whichMatrix) const
+{
+	if ( (whichMatrix == MATRIXMODE_POSITION) ||
+	     (whichMatrix == MATRIXMODE_POSITION_VECTOR) )
+	{
+		return this->_mtxStackIndex[whichMatrix] & 0x1F;
+	}
+	
+	// MATRIXMODE_PROJECTION || MATRIXMODE_TEXTURE
+	return this->_mtxStackIndex[whichMatrix] & 0x01;
+}
+
+void NDSGeometryEngine::ResetMatrixStackPointer()
+{
+	this->_mtxStackIndex[MATRIXMODE_PROJECTION] = 0;
 }
 
 void NDSGeometryEngine::SetMatrixMode(const u32 param)
@@ -813,41 +849,44 @@ void NDSGeometryEngine::MatrixPush()
 	{
 		if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
 		{
-			MatrixCopy(this->_mtxStackProjection[0], _mtxCurrent[MATRIXMODE_PROJECTION]);
+			MatrixCopy(this->_mtxStackProjection[0], this->_mtxCurrent[MATRIXMODE_PROJECTION]);
 			
-			u32 &index = mtxStackIndex[MATRIXMODE_PROJECTION];
-			if (index == 1)
+			u8 &i = this->_mtxStackIndex[MATRIXMODE_PROJECTION];
+			if (i == 1)
 			{
 				MMU_new.gxstat.se = 1;
 			}
-			index += 1;
-			index &= 1;
+			
+			i += 1;
+			i &= 1;
 
 			this->UpdateMatrixProjectionLua();
 		}
 		else
 		{
-			MatrixCopy(this->_mtxStackTexture[0], _mtxCurrent[MATRIXMODE_TEXTURE]);
+			MatrixCopy(this->_mtxStackTexture[0], this->_mtxCurrent[MATRIXMODE_TEXTURE]);
 			
-			u32 &index = mtxStackIndex[MATRIXMODE_TEXTURE];
-			if (index == 1)
+			u8 &i = this->_mtxStackIndex[MATRIXMODE_TEXTURE];
+			if (i == 1)
 			{
 				MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
 			}
-			index += 1;
-			index &= 1;
+			
+			i += 1;
+			i &= 1;
 		}
 	}
 	else
 	{
-		u32 &index = mtxStackIndex[MATRIXMODE_POSITION];
+		u8 &i = this->_mtxStackIndex[MATRIXMODE_POSITION];
 		
-		MatrixCopy(this->_mtxStackPosition[index & 0x0000001F], _mtxCurrent[MATRIXMODE_POSITION]);
-		MatrixCopy(this->_mtxStackPositionVector[index & 0x0000001F], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+		MatrixCopy(this->_mtxStackPosition[i & 0x1F], this->_mtxCurrent[MATRIXMODE_POSITION]);
+		MatrixCopy(this->_mtxStackPositionVector[i & 0x1F], this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 		
-		index += 1;
-		index &= 0x0000003F;
-		if (index >= 32)
+		i += 1;
+		i &= 0x3F;
+		
+		if (i >= 32)
 		{
 			MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
 		}
@@ -871,41 +910,44 @@ void NDSGeometryEngine::MatrixPop(const u32 param)
 		
 		if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
 		{
-			u32 &index = mtxStackIndex[MATRIXMODE_PROJECTION];
-			index ^= 1;
-			if (index == 1)
+			u8 &i = this->_mtxStackIndex[MATRIXMODE_PROJECTION];
+			i ^= 1;
+			
+			if (i == 1)
 			{
 				MMU_new.gxstat.se = 1;
 			}
-			MatrixCopy(_mtxCurrent[MATRIXMODE_PROJECTION], this->_mtxStackProjection[0]);
-
+			
+			MatrixCopy(this->_mtxCurrent[MATRIXMODE_PROJECTION], this->_mtxStackProjection[0]);
 			this->UpdateMatrixProjectionLua();
 		}
 		else
 		{
-			u32 &index = mtxStackIndex[MATRIXMODE_TEXTURE];
-			index ^= 1;
-			if (index == 1)
+			u8 &i = this->_mtxStackIndex[MATRIXMODE_TEXTURE];
+			i ^= 1;
+			
+			if (i == 1)
 			{
 				MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
 			}
-			MatrixCopy(_mtxCurrent[MATRIXMODE_TEXTURE], this->_mtxStackTexture[0]);
-			this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+			
+			MatrixCopy(this->_mtxCurrent[MATRIXMODE_TEXTURE], this->_mtxStackTexture[0]);
+			this->_UpdateTransformedTexCoordsIfNeeded();
 		}
 	}
 	else
 	{
-		u32 &i = mtxStackIndex[MATRIXMODE_POSITION];
+		u8 &i = this->_mtxStackIndex[MATRIXMODE_POSITION];
+		i -= (u8)(param & 0x0000003F);
+		i &= 0x3F;
 		
-		i -= param & 0x0000003F;
-		i &= 0x0000003F;
 		if (i >= 32)
 		{
 			MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
 		}
 		
-		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], this->_mtxStackPosition[i & 0x0000001F]);
-		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], this->_mtxStackPositionVector[i & 0x0000001F]);
+		MatrixCopy(this->_mtxCurrent[MATRIXMODE_POSITION], this->_mtxStackPosition[i & 0x1F]);
+		MatrixCopy(this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR], this->_mtxStackPositionVector[i & 0x1F]);
 	}
 
 	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
@@ -921,12 +963,12 @@ void NDSGeometryEngine::MatrixStore(const u32 param)
 		//parameter ignored and treated as sensible
 		if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
 		{
-			MatrixCopy(this->_mtxStackProjection[0], _mtxCurrent[MATRIXMODE_PROJECTION]);
+			MatrixCopy(this->_mtxStackProjection[0], this->_mtxCurrent[MATRIXMODE_PROJECTION]);
 			this->UpdateMatrixProjectionLua();
 		}
 		else
 		{
-			MatrixCopy(this->_mtxStackTexture[0], _mtxCurrent[MATRIXMODE_TEXTURE]);
+			MatrixCopy(this->_mtxStackTexture[0], this->_mtxCurrent[MATRIXMODE_TEXTURE]);
 		}
 	}
 	else
@@ -938,8 +980,8 @@ void NDSGeometryEngine::MatrixStore(const u32 param)
 		}
 		
 		const u32 i = param & 0x0000001F;
-		MatrixCopy(this->_mtxStackPosition[i], _mtxCurrent[MATRIXMODE_POSITION]);
-		MatrixCopy(this->_mtxStackPositionVector[i], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+		MatrixCopy(this->_mtxStackPosition[i], this->_mtxCurrent[MATRIXMODE_POSITION]);
+		MatrixCopy(this->_mtxStackPositionVector[i], this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 	}
 
 	//printf("%d %d %d %d\n", mtxStack[0].position, mtxStack[1].position, mtxStack[2].position, mtxStack[3].position);
@@ -952,13 +994,13 @@ void NDSGeometryEngine::MatrixRestore(const u32 param)
 		//parameter ignored and treated as sensible
 		if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
 		{
-			MatrixCopy(_mtxCurrent[MATRIXMODE_PROJECTION], this->_mtxStackProjection[0]);
+			MatrixCopy(this->_mtxCurrent[MATRIXMODE_PROJECTION], this->_mtxStackProjection[0]);
 			this->UpdateMatrixProjectionLua();
 		}
 		else
 		{
-			MatrixCopy(_mtxCurrent[MATRIXMODE_TEXTURE], this->_mtxStackTexture[0]);
-			this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+			MatrixCopy(this->_mtxCurrent[MATRIXMODE_TEXTURE], this->_mtxStackTexture[0]);
+			this->_UpdateTransformedTexCoordsIfNeeded();
 		}
 	}
 	else
@@ -967,65 +1009,65 @@ void NDSGeometryEngine::MatrixRestore(const u32 param)
 		MMU_new.gxstat.se = (param >= 31) ? 1 : 0; //(not sure, this might be off by 1)
 		
 		const u32 i = param & 0x0000001F;
-		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], this->_mtxStackPosition[i]);
-		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], this->_mtxStackPositionVector[i]);
+		MatrixCopy(this->_mtxCurrent[MATRIXMODE_POSITION], this->_mtxStackPosition[i]);
+		MatrixCopy(this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR], this->_mtxStackPositionVector[i]);
 	}
 }
 
 void NDSGeometryEngine::MatrixLoadIdentityToCurrent()
 {
-	MatrixIdentity(_mtxCurrent[this->_mtxCurrentMode]);
+	MatrixIdentity(this->_mtxCurrent[this->_mtxCurrentMode]);
 	
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
-		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+		this->_UpdateTransformedTexCoordsIfNeeded();
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixIdentity(_mtxCurrent[MATRIXMODE_POSITION]);
+		MatrixIdentity(this->_mtxCurrent[MATRIXMODE_POSITION]);
 	}
 
-	//printf("identity: %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+	//printf("identity: %d to: \n", this->_mtxCurrentMode); MatrixPrint(this->_mtxCurrent[1]);
 }
 
 void NDSGeometryEngine::MatrixLoad4x4()
 {
-	MatrixCopy(_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxLoad4x4);
+	MatrixCopy(this->_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxLoad4x4);
 	
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
-		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+		this->_UpdateTransformedTexCoordsIfNeeded();
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+		MatrixCopy(this->_mtxCurrent[MATRIXMODE_POSITION], this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 	}
 
-	//printf("load4x4: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+	//printf("load4x4: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(this->_mtxCurrent[1]);
 }
 
 void NDSGeometryEngine::MatrixLoad4x3()
 {
-	MatrixCopy(_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxLoad4x3);
+	MatrixCopy(this->_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxLoad4x3);
 
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
-		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+		this->_UpdateTransformedTexCoordsIfNeeded();
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixCopy(_mtxCurrent[MATRIXMODE_POSITION], _mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+		MatrixCopy(this->_mtxCurrent[MATRIXMODE_POSITION], this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 	}
-	//printf("load4x3: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+	//printf("load4x3: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(this->_mtxCurrent[1]);
 }
 
 void NDSGeometryEngine::MatrixMultiply4x4()
 {
-	MatrixMultiply(_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxMult4x4);
+	MatrixMultiply(this->_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxMult4x4);
 	
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
-		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+		this->_UpdateTransformedTexCoordsIfNeeded();
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
 	{
@@ -1033,19 +1075,19 @@ void NDSGeometryEngine::MatrixMultiply4x4()
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], this->_currentMtxMult4x4);
+		MatrixMultiply(this->_mtxCurrent[MATRIXMODE_POSITION], this->_currentMtxMult4x4);
 	}
 
-	//printf("mult4x4: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+	//printf("mult4x4: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(this->_mtxCurrent[1]);
 }
 
 void NDSGeometryEngine::MatrixMultiply4x3()
 {
-	MatrixMultiply(_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxMult4x3);
+	MatrixMultiply(this->_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxMult4x3);
 	
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
-		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+		this->_UpdateTransformedTexCoordsIfNeeded();
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
 	{
@@ -1053,19 +1095,19 @@ void NDSGeometryEngine::MatrixMultiply4x3()
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], this->_currentMtxMult4x3);
+		MatrixMultiply(this->_mtxCurrent[MATRIXMODE_POSITION], this->_currentMtxMult4x3);
 	}
 
-	//printf("mult4x3: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+	//printf("mult4x3: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(this->_mtxCurrent[1]);
 }
 
 void NDSGeometryEngine::MatrixMultiply3x3()
 {
-	MatrixMultiply(_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxMult3x3);
+	MatrixMultiply(this->_mtxCurrent[this->_mtxCurrentMode], this->_currentMtxMult3x3);
 	
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
-		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+		this->_UpdateTransformedTexCoordsIfNeeded();
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_PROJECTION)
 	{
@@ -1073,43 +1115,207 @@ void NDSGeometryEngine::MatrixMultiply3x3()
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixMultiply(_mtxCurrent[MATRIXMODE_POSITION], this->_currentMtxMult3x3);
+		MatrixMultiply(this->_mtxCurrent[MATRIXMODE_POSITION], this->_currentMtxMult3x3);
 	}
 
-	//printf("mult3x3: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+	//printf("mult3x3: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(this->_mtxCurrent[1]);
 }
 
 void NDSGeometryEngine::MatrixScale()
 {
-	::MatrixScale(_mtxCurrent[(this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR ? MATRIXMODE_POSITION : this->_mtxCurrentMode)], this->_vecScale.vec);
-	//printf("scale: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+	::MatrixScale(this->_mtxCurrent[(this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR ? MATRIXMODE_POSITION : this->_mtxCurrentMode)], this->_vecScale.vec);
+	//printf("scale: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(this->_mtxCurrent[1]);
 
 	//note: pos-vector mode should not cause both matrices to scale.
 	//the whole purpose is to keep the vector matrix orthogonal
 	//so, I am leaving this commented out as an example of what not to do.
 	//if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
-	//	::MatrixScale(_mtxCurrent[MATRIXMODE_POSITION], this->_vecScale.vec);
+	//	::MatrixScale(this->_mtxCurrent[MATRIXMODE_POSITION], this->_vecScale.vec);
 	
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
-		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+		this->_UpdateTransformedTexCoordsIfNeeded();
 	}
 }
 
 void NDSGeometryEngine::MatrixTranslate()
 {
-	::MatrixTranslate(_mtxCurrent[this->_mtxCurrentMode], this->_vecTranslate.vec);
+	::MatrixTranslate(this->_mtxCurrent[this->_mtxCurrentMode], this->_vecTranslate.vec);
 	
 	if (this->_mtxCurrentMode == MATRIXMODE_TEXTURE)
 	{
-		this->SetTextureMatrix(_mtxCurrent[MATRIXMODE_TEXTURE]);
+		this->_UpdateTransformedTexCoordsIfNeeded();
 	}
 	else if (this->_mtxCurrentMode == MATRIXMODE_POSITION_VECTOR)
 	{
-		::MatrixTranslate(_mtxCurrent[MATRIXMODE_POSITION], this->_vecTranslate.vec);
+		::MatrixTranslate(this->_mtxCurrent[MATRIXMODE_POSITION], this->_vecTranslate.vec);
 	}
 
-	//printf("translate: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(_mtxCurrent[1]);
+	//printf("translate: matrix %d to: \n", this->_mtxCurrentMode); MatrixPrint(this->_mtxCurrent[1]);
+}
+
+// 0-4   Diffuse Reflection Red
+// 5-9   Diffuse Reflection Green
+// 10-14 Diffuse Reflection Blue
+// 15    Set Vertex Color (0=No, 1=Set Diffuse Reflection Color as Vertex Color)
+// 16-20 Ambient Reflection Red
+// 21-25 Ambient Reflection Green
+// 26-30 Ambient Reflection Blue
+void NDSGeometryEngine::SetDiffuseAmbient(const u32 param)
+{
+	this->_regDiffuse = (u16)(param & 0x0000FFFF);
+	this->_regAmbient = (u16)(param >> 16);
+
+	if (BIT15(param))
+	{
+		this->SetVertexColor(param);
+	}
+}
+
+void NDSGeometryEngine::SetSpecularEmission(const u32 param)
+{
+	this->_regSpecular = (u16)(param & 0x0000FFFF);
+	this->_regEmission = (u16)(param >> 16);
+}
+
+// 0-9   Directional Vector's X component (1bit sign + 9bit fractional part)
+// 10-19 Directional Vector's Y component (1bit sign + 9bit fractional part)
+// 20-29 Directional Vector's Z component (1bit sign + 9bit fractional part)
+// 30-31 Light Number                     (0...3)
+void NDSGeometryEngine::SetLightDirection(const u32 param)
+{
+	const size_t index = (param >> 30) & 0x00000003;
+	const u32 v = param & 0x3FFFFFFF;
+	this->_regLightDirection[index] = param;
+	
+	// Unpack the vector, and then multiply it by the current directional matrix.
+	this->_vecLightDirectionTransformed[index].x = ((s32)((v<<22) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
+	this->_vecLightDirectionTransformed[index].y = ((s32)((v<<12) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
+	this->_vecLightDirectionTransformed[index].z = ((s32)((v<< 2) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
+	this->_vecLightDirectionTransformed[index].w = 0;
+	MatrixMultVec3x3(this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR], this->_vecLightDirectionTransformed[index].vec);
+	
+	this->_doesLightHalfVectorNeedUpdate[index] = true;
+}
+
+void NDSGeometryEngine::SetLightColor(const u32 param)
+{
+	const size_t index = param >> 30;
+	this->_regLightColor[index] = param;
+}
+
+void NDSGeometryEngine::SetNormal(const u32 param)
+{
+	this->_vecNormal.x = ((s32)((param << 22) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
+	this->_vecNormal.y = ((s32)((param << 12) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
+	this->_vecNormal.z = ((s32)((param <<  2) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
+	this->_vecNormal.w =  (s32)(1 << 12);
+	
+	if (this->_texCoordTransformMode == TextureTransformationMode_NormalSource)
+	{
+		this->_doesTransformedTexCoordsNeedUpdate = true;
+	}
+	
+	CACHE_ALIGN Vector32x4 normalTransformed = this->_vecNormal;
+	MatrixMultVec3x3(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], normalTransformed.vec);
+
+	//apply lighting model
+	const s32 diffuse32[3] = {
+		(s32)( this->_regDiffuse        & 0x001F),
+		(s32)((this->_regDiffuse >>  5) & 0x001F),
+		(s32)((this->_regDiffuse >> 10) & 0x001F)
+	};
+
+	const s32 ambient32[3] = {
+		(s32)( this->_regAmbient        & 0x001F),
+		(s32)((this->_regAmbient >>  5) & 0x001F),
+		(s32)((this->_regAmbient >> 10) & 0x001F)
+	};
+
+	const s32 emission32[3] = {
+		(s32)( this->_regEmission        & 0x001F),
+		(s32)((this->_regEmission >>  5) & 0x001F),
+		(s32)((this->_regEmission >> 10) & 0x001F)
+	};
+
+	const s32 specular32[3] = {
+		(s32)( this->_regSpecular        & 0x001F),
+		(s32)((this->_regSpecular >>  5) & 0x001F),
+		(s32)((this->_regSpecular >> 10) & 0x001F)
+	};
+
+	s32 vertexColor[3] = {
+		emission32[0],
+		emission32[1],
+		emission32[2]
+	};
+
+	const u8 lightMask = _regPolyAttrApplied.LightMask;
+	
+	for (size_t i = 0; i < 4; i++)
+	{
+		if (!((lightMask >> i) & 1))
+		{
+			continue;
+		}
+		
+		const s32 lightColor32[3] = {
+			(s32)( this->_regLightColor[i]        & 0x0000001F),
+			(s32)((this->_regLightColor[i] >>  5) & 0x0000001F),
+			(s32)((this->_regLightColor[i] >> 10) & 0x0000001F)
+		};
+
+		//This formula is the one used by the DS
+		//Reference : http://nocash.emubase.de/gbatek.htm#ds3dpolygonlightparameters
+		const s32 fixed_diffuse = std::max( 0, -vec3dot_fixed32(this->_vecLightDirectionTransformed[i].vec, normalTransformed.vec) );
+		
+		if (this->_doesLightHalfVectorNeedUpdate[i])
+		{
+			this->UpdateLightDirectionHalfAngleVector(i);
+		}
+		
+		const s32 dot = vec3dot_fixed32(this->_vecLightDirectionHalfNegative[i].vec, normalTransformed.vec);
+
+		s32 fixedshininess = 0;
+		if (dot > 0) //prevent shininess on opposite side
+		{
+			//we have cos(a). it seems that we need cos(2a). trig identity is a fast way to get it.
+			//cos^2(a)=(1/2)(1+cos(2a))
+			//2*cos^2(a)-1=cos(2a)
+			fixedshininess = 2 * mul_fixed32(dot,dot) - 4096;
+			//gbatek is almost right but not quite!
+		}
+
+		//this seems to need to be saturated, or else the table will overflow.
+		//even without a table, failure to saturate is bad news
+		fixedshininess = std::min(fixedshininess,4095);
+		fixedshininess = std::max(fixedshininess,0);
+		
+		if (this->_regSpecular & 0x8000)
+		{
+			//shininess is 20.12 fixed point, so >>5 gives us .7 which is 128 entries
+			//the entries are 8bits each so <<4 gives us .12 again, compatible with the lighting formulas below
+			//(according to other normal nds procedures, we might should fill the bottom bits with 1 or 0 according to rules...)
+			fixedshininess = gfx3d.pendingState.shininessTable[fixedshininess>>5]<<4;
+		}
+
+		for (size_t c = 0; c < 3; c++)
+		{
+			const s32 specComp = ((specular32[c] * lightColor32[c] * fixedshininess) >> 17); // 5 bits for color*color and 12 bits for shininess
+			const s32 diffComp = (( diffuse32[c] * lightColor32[c] * fixed_diffuse)  >> 17); // 5 bits for color*color and 12 bits for diffuse
+			const s32 ambComp  = (( ambient32[c] * lightColor32[c]) >> 5); // 5 bits for color*color
+			vertexColor[c] += specComp + diffComp + ambComp;
+		}
+	}
+	
+	const FragmentColor newVtxColor = {
+		(u8)std::min<s32>(31, vertexColor[0]),
+		(u8)std::min<s32>(31, vertexColor[1]),
+		(u8)std::min<s32>(31, vertexColor[2]),
+		0
+	};
+	
+	this->SetVertexColor(newVtxColor);
 }
 
 void NDSGeometryEngine::SetViewport(const u32 param)
@@ -1135,16 +1341,6 @@ void NDSGeometryEngine::SetViewport(const GFX3D_Viewport viewport)
 	this->_regViewport = _GFX3D_IORegisterMap->VIEWPORT;
 	this->_currentViewport = viewport;
 	this->_doesViewportNeedUpdate = false;
-}
-
-void NDSGeometryEngine::SetNormal(const Vector32x4 inNormal)
-{
-	this->_normal32 = inNormal;
-	
-	if (this->_texCoordTransformMode == TextureTransformationMode_NormalSource)
-	{
-		this->_doesTransformedTexCoordsNeedUpdate = true;
-	}
 }
 
 void NDSGeometryEngine::SetVertexColor(const u32 param)
@@ -1205,16 +1401,6 @@ void NDSGeometryEngine::SetTextureCoordinates(const VertexCoord16x2 &texCoord16)
 	if (this->_texCoord16.value != texCoord16.value)
 	{
 		this->_texCoord16 = texCoord16;
-		this->_doesTransformedTexCoordsNeedUpdate = true;
-	}
-}
-
-void NDSGeometryEngine::SetTextureMatrix(const NDSMatrix &__restrict inTextureMatrix)
-{
-	MatrixCopy(this->_mtxTexture32, inTextureMatrix);
-	
-	if (this->_texCoordTransformMode != TextureTransformationMode_None)
-	{
 		this->_doesTransformedTexCoordsNeedUpdate = true;
 	}
 }
@@ -1351,22 +1537,22 @@ void NDSGeometryEngine::AddCurrentVertexToList(GFX3D_GeometryList &targetGList)
 	{
 		//adjust projection
 		s32 tmp[16];
-		MatrixCopy(tmp, _mtxCurrent[MATRIXMODE_PROJECTION]);
+		MatrixCopy(tmp, this->_mtxCurrent[MATRIXMODE_PROJECTION]);
 		MatrixMultiply(tmp, freelookMatrix);
-		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_POSITION], vtxCoordTransformed.coord); //modelview
+		GEM_TransformVertex(this->_mtxCurrent[MATRIXMODE_POSITION], vtxCoordTransformed.coord); //modelview
 		GEM_TransformVertex(tmp, vtxCoordTransformed.coord); //projection
 	}
 	else if (freelookMode == 3)
 	{
 		//use provided projection
-		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_POSITION], vtxCoordTransformed.coord); //modelview
+		GEM_TransformVertex(this->_mtxCurrent[MATRIXMODE_POSITION], vtxCoordTransformed.coord); //modelview
 		GEM_TransformVertex(freelookMatrix, vtxCoordTransformed.coord); //projection
 	}
 	else
 	{
 		//no freelook
-		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_POSITION], vtxCoordTransformed.coord); //modelview
-		GEM_TransformVertex(_mtxCurrent[MATRIXMODE_PROJECTION], vtxCoordTransformed.coord); //projection
+		GEM_TransformVertex(this->_mtxCurrent[MATRIXMODE_POSITION], vtxCoordTransformed.coord); //modelview
+		GEM_TransformVertex(this->_mtxCurrent[MATRIXMODE_PROJECTION], vtxCoordTransformed.coord); //projection
 	}
 
 	// TODO: Culling should be done here.
@@ -1391,25 +1577,27 @@ void NDSGeometryEngine::AddCurrentVertexToList(GFX3D_GeometryList &targetGList)
 	if ( this->_doesTransformedTexCoordsNeedUpdate ||
 	    (this->_texParam.TexCoordTransformMode == TextureTransformationMode_VertexSource) )
 	{
+		const NDSMatrix &mtxTexture = this->_mtxCurrent[MATRIXMODE_TEXTURE];
+		
 		switch (this->_texCoordTransformMode)
 		{
 			//dragon quest 4 overworld will test this
 			case TextureTransformationMode_TexCoordSource:
-				this->_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x16To64(this->_mtxTexture32[0], this->_texCoord16.s) + GEM_Mul32x16To64(this->_mtxTexture32[4], this->_texCoord16.t) + (s64)this->_mtxTexture32[8] + (s64)this->_mtxTexture32[12]) >> 12 );
-				this->_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x16To64(this->_mtxTexture32[1], this->_texCoord16.s) + GEM_Mul32x16To64(this->_mtxTexture32[5], this->_texCoord16.t) + (s64)this->_mtxTexture32[9] + (s64)this->_mtxTexture32[13]) >> 12 );
+				this->_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x16To64(mtxTexture[0], this->_texCoord16.s) + GEM_Mul32x16To64(mtxTexture[4], this->_texCoord16.t) + (s64)mtxTexture[8] + (s64)mtxTexture[12]) >> 12 );
+				this->_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x16To64(mtxTexture[1], this->_texCoord16.s) + GEM_Mul32x16To64(mtxTexture[5], this->_texCoord16.t) + (s64)mtxTexture[9] + (s64)mtxTexture[13]) >> 12 );
 				break;
 				
 			//SM64 highlight rendered star in main menu tests this
 			//also smackdown 2010 player textures tested this (needed cast on _s and _t)
 			case TextureTransformationMode_NormalSource:
-				this->_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x32To64(this->_mtxTexture32[0], this->_normal32.x) + GEM_Mul32x32To64(this->_mtxTexture32[4], this->_normal32.y) + GEM_Mul32x32To64(this->_mtxTexture32[8], this->_normal32.z) + ((s64)this->_texCoord16.s << 24)) >> 24 );
-				this->_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x32To64(this->_mtxTexture32[1], this->_normal32.x) + GEM_Mul32x32To64(this->_mtxTexture32[5], this->_normal32.y) + GEM_Mul32x32To64(this->_mtxTexture32[9], this->_normal32.z) + ((s64)this->_texCoord16.t << 24)) >> 24 );
+				this->_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x32To64(mtxTexture[0], this->_vecNormal.x) + GEM_Mul32x32To64(mtxTexture[4], this->_vecNormal.y) + GEM_Mul32x32To64(mtxTexture[8], this->_vecNormal.z) + ((s64)this->_texCoord16.s << 24)) >> 24 );
+				this->_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x32To64(mtxTexture[1], this->_vecNormal.x) + GEM_Mul32x32To64(mtxTexture[5], this->_vecNormal.y) + GEM_Mul32x32To64(mtxTexture[9], this->_vecNormal.z) + ((s64)this->_texCoord16.t << 24)) >> 24 );
 				break;
 				
 			//Tested by: Eledees The Adventures of Kai and Zero (E) [title screen and frontend menus]
 			case TextureTransformationMode_VertexSource:
-				this->_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x16To64(this->_mtxTexture32[0], this->_vtxCoord16.x) + GEM_Mul32x16To64(this->_mtxTexture32[4], this->_vtxCoord16.y) + GEM_Mul32x16To64(this->_mtxTexture32[8], this->_vtxCoord16.z) + ((s64)this->_texCoord16.s << 24)) >> 24 );
-				this->_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x16To64(this->_mtxTexture32[1], this->_vtxCoord16.x) + GEM_Mul32x16To64(this->_mtxTexture32[5], this->_vtxCoord16.y) + GEM_Mul32x16To64(this->_mtxTexture32[9], this->_vtxCoord16.z) + ((s64)this->_texCoord16.t << 24)) >> 24 );
+				this->_texCoordTransformed.s = (s32)( (s64)(GEM_Mul32x16To64(mtxTexture[0], this->_vtxCoord16.x) + GEM_Mul32x16To64(mtxTexture[4], this->_vtxCoord16.y) + GEM_Mul32x16To64(mtxTexture[8], this->_vtxCoord16.z) + ((s64)this->_texCoord16.s << 24)) >> 24 );
+				this->_texCoordTransformed.t = (s32)( (s64)(GEM_Mul32x16To64(mtxTexture[1], this->_vtxCoord16.x) + GEM_Mul32x16To64(mtxTexture[5], this->_vtxCoord16.y) + GEM_Mul32x16To64(mtxTexture[9], this->_vtxCoord16.z) + ((s64)this->_texCoord16.t << 24)) >> 24 );
 				break;
 				
 			default: // TextureTransformationMode_None
@@ -1617,6 +1805,238 @@ void NDSGeometryEngine::GeneratePolygon(POLY &targetPoly, GFX3D_GeometryList &ta
 	targetGList.rawPolyCount++;
 }
 
+bool NDSGeometryEngine::SetCurrentBoxTestCoords(const u32 param)
+{
+	//clear result flag. busy flag has been set by fifo component already
+	MMU_new.gxstat.tr = 0;
+
+	this->_boxTestCoord16[this->_boxTestCoordCurrentIndex++] = (u16)(param & 0x0000FFFF);
+	this->_boxTestCoord16[this->_boxTestCoordCurrentIndex++] = (u16)(param >> 16);
+
+	if (this->_boxTestCoordCurrentIndex < 5)
+	{
+		return false;
+	}
+	
+	this->_boxTestCoordCurrentIndex = 0;
+	return true;
+}
+
+void NDSGeometryEngine::BoxTest()
+{
+	//now that we're executing this, we're not busy anymore
+	MMU_new.gxstat.tb = 0;
+
+	//(crafted to be clear, not fast.)
+	//nanostray title, ff4, ice age 3 depend on this and work
+	//garfields nightmare and strawberry shortcake DO DEPEND on the overflow behavior.
+
+	const u16 ux = this->_boxTestCoord16[0];
+	const u16 uy = this->_boxTestCoord16[1];
+	const u16 uz = this->_boxTestCoord16[2];
+	const u16 uw = this->_boxTestCoord16[3];
+	const u16 uh = this->_boxTestCoord16[4];
+	const u16 ud = this->_boxTestCoord16[5];
+
+	//craft the coords by adding extents to startpoint
+	const s32 fixedOne = 1 << 12;
+	const s32 __x = (s32)((s16)ux);
+	const s32 __y = (s32)((s16)uy);
+	const s32 __z = (s32)((s16)uz);
+	const s32 x_w = (s32)( (s16)((ux+uw) & 0xFFFF) );
+	const s32 y_h = (s32)( (s16)((uy+uh) & 0xFFFF) );
+	const s32 z_d = (s32)( (s16)((uz+ud) & 0xFFFF) );
+	
+	//eight corners of cube
+	CACHE_ALIGN VertexCoord32x4 vtxPosition[8] = {
+		{ __x, __y, __z, fixedOne },
+		{ x_w, __y, __z, fixedOne },
+		{ x_w, y_h, __z, fixedOne },
+		{ __x, y_h, __z, fixedOne },
+		{ __x, __y, z_d, fixedOne },
+		{ x_w, __y, z_d, fixedOne },
+		{ x_w, __y, z_d, fixedOne },
+		{ __x, y_h, z_d, fixedOne }
+	};
+	
+#define SET_VERT_INDICES(p,  a,b,c,d) \
+	tempRawPoly[p].type = POLYGON_TYPE_QUAD; \
+	tempRawPoly[p].vertIndexes[0] = a; \
+	tempRawPoly[p].vertIndexes[1] = b; \
+	tempRawPoly[p].vertIndexes[2] = c; \
+	tempRawPoly[p].vertIndexes[3] = d;
+	
+	//craft the faces of the box (clockwise)
+	POLY tempRawPoly[6];
+	SET_VERT_INDICES(0,  7,6,5,4) // near
+	SET_VERT_INDICES(1,  0,1,2,3) // far
+	SET_VERT_INDICES(2,  0,3,7,4) // left
+	SET_VERT_INDICES(3,  6,2,1,5) // right
+	SET_VERT_INDICES(4,  3,2,6,7) // top
+	SET_VERT_INDICES(5,  0,4,5,1) // bottom
+#undef SET_VERT_INDICES
+	
+	//setup the clipper
+	CPoly tempClippedPoly;
+
+	////-----------------------------
+	////awesome hack:
+	////emit the box as geometry for testing
+	//for(int i=0;i<6;i++)
+	//{
+	//	POLY* poly = &polys[i];
+	//	VERT* vertTable[4] = {
+	//		&verts[poly->vertIndexes[0]],
+	//		&verts[poly->vertIndexes[1]],
+	//		&verts[poly->vertIndexes[2]],
+	//		&verts[poly->vertIndexes[3]]
+	//	};
+
+	//	gfx3d_glBegin(1);
+	//	for(int i=0;i<4;i++) {
+	//		coord[0] = vertTable[i]->x;
+	//		coord[1] = vertTable[i]->y;
+	//		coord[2] = vertTable[i]->z;
+	//		SetVertex();
+	//	}
+	//	gfx3d_glEnd();
+	//}
+	////---------------------
+	
+	CACHE_ALIGN NDSVertex tempRawVtx[8];
+
+	//transform all coords
+	for (size_t i = 0; i < 8; i++)
+	{
+		MatrixMultVec4x4(this->_mtxCurrent[MATRIXMODE_POSITION], vtxPosition[i].coord);
+		MatrixMultVec4x4(this->_mtxCurrent[MATRIXMODE_PROJECTION], vtxPosition[i].coord);
+		
+		tempRawVtx[i].position = vtxPosition[i];
+	}
+
+	//clip each poly
+	for (size_t i = 0; i < 6; i++)
+	{
+		const POLY &rawPoly = tempRawPoly[i];
+		const NDSVertex *rawPolyVtx[4] = {
+			&tempRawVtx[rawPoly.vertIndexes[0]],
+			&tempRawVtx[rawPoly.vertIndexes[1]],
+			&tempRawVtx[rawPoly.vertIndexes[2]],
+			&tempRawVtx[rawPoly.vertIndexes[3]]
+		};
+		
+		const PolygonType cpType = GFX3D_GenerateClippedPoly<ClipperMode_DetermineClipOnly>(0, rawPoly.type, rawPolyVtx, tempClippedPoly);
+		
+		//if any portion of this poly was retained, then the test passes.
+		if (cpType != POLYGON_TYPE_UNDEFINED)
+		{
+			MMU_new.gxstat.tr = 1;
+			break;
+		}
+	}
+}
+
+bool NDSGeometryEngine::SetCurrentPositionTestCoords(const u32 param)
+{
+	//this is apparently tested by transformers decepticons and ultimate spiderman
+	
+	// "Apollo Justice: Ace Attorney" also uses the position test for the evidence
+	// viewer, such as the card color check in Case 1.
+
+	//clear result flag. busy flag has been set by fifo component already
+	MMU_new.gxstat.tr = 0;
+
+	//now that we're executing this, we're not busy anymore
+	MMU_new.gxstat.tb = 0;
+
+	// Values for the position test come in as a pair of 16-bit coordinates
+	// in 4.12 fixed-point format:
+	//     1-bit sign, 3-bit integer, 12-bit fraction
+	//
+	// Parameter 1, bits  0-15: X-component
+	// Parameter 1, bits 16-31: Y-component
+	// Parameter 2, bits  0-15: Z-component
+	// Parameter 2, bits 16-31: Ignored
+	
+	// Convert the coordinates to 20.12 fixed-point format for our vector-matrix multiplication.
+	this->_positionTestVtx32.coord[this->_positionTestCoordCurrentIndex++] = (s32)( (s16)((u16)(param & 0x0000FFFF)) );
+	this->_positionTestVtx32.coord[this->_positionTestCoordCurrentIndex++] = (s32)( (s16)((u16)(param >> 16)) );
+
+	if (this->_positionTestCoordCurrentIndex < 3)
+	{
+		return false;
+	}
+	
+	this->_positionTestCoordCurrentIndex = 0;
+	this->_positionTestVtx32.coord[3] = (s32)(1 << 12);
+	
+	return true;
+}
+
+void NDSGeometryEngine::PositionTest()
+{
+	MatrixMultVec4x4(this->_mtxCurrent[MATRIXMODE_POSITION], this->_positionTestVtx32.coord);
+	MatrixMultVec4x4(this->_mtxCurrent[MATRIXMODE_PROJECTION], this->_positionTestVtx32.coord);
+	
+	MMU_new.gxstat.tb = 0;
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x620, (u32)this->_positionTestVtx32.coord[0]);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x624, (u32)this->_positionTestVtx32.coord[1]);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x628, (u32)this->_positionTestVtx32.coord[2]);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x62C, (u32)this->_positionTestVtx32.coord[3]);
+}
+
+void NDSGeometryEngine::VectorTest(const u32 param)
+{
+	//this is tested by phoenix wright in its evidence inspector modelviewer
+	//i am not sure exactly what it is doing, maybe it is testing to ensure
+	//that the normal vector for the point of interest is camera-facing.
+	
+	// Values for the vector test come in as a trio of 10-bit coordinates
+	// in 1.9 fixed-point format:
+	//     1-bit sign, 9-bit fraction
+	//
+	// Bits  0- 9: X-component
+	// Bits 10-19: Y-component
+	// Bits 20-29: Z-component
+	// Bits 30-31: Ignored
+	
+	// Convert the coordinates to 20.12 fixed-point format for our vector-matrix multiplication.
+	CACHE_ALIGN Vector32x4 testVec = {
+		( (s32)((param << 22) & 0xFFC00000) / (s32)(1 << 19) ) | (s32)((param & 0x000001C0) >>  6),
+		( (s32)((param << 12) & 0xFFC00000) / (s32)(1 << 19) ) | (s32)((param & 0x00007000) >> 16),
+		( (s32)((param <<  2) & 0xFFC00000) / (s32)(1 << 19) ) | (s32)((param & 0x01C00000) >> 26),
+		0
+	};
+	
+	MatrixMultVec4x4(this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR], testVec.vec);
+	
+	// The result vector is 4.12 fixed-point, but the upper 4 bits are all sign bits with no
+	// integer part. There is also an overflow and sign-expansion behavior that occurs for values
+	// greater than or equal to 1.0f (or 4096 in fixed-point). All of this means that for all
+	// values >= 1.0f or < -1.0f will result in the sign bits becoming 1111b; otherwise, the sign
+	// bits will become 0000b.
+	const Vector16x3 resultVec = {
+		((testVec.x > 0) && (testVec.x < 4096)) ? ((s16)testVec.x & 0x0FFF) : ((s16)testVec.x | 0xF000),
+		((testVec.y > 0) && (testVec.y < 4096)) ? ((s16)testVec.y & 0x0FFF) : ((s16)testVec.y | 0xF000),
+		((testVec.z > 0) && (testVec.z < 4096)) ? ((s16)testVec.z & 0x0FFF) : ((s16)testVec.z | 0xF000)
+	};
+	
+	MMU_new.gxstat.tb = 0; // clear busy
+	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x630, (u16)resultVec.x);
+	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x632, (u16)resultVec.y);
+	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x634, (u16)resultVec.z);
+}
+
+void NDSGeometryEngine::MatrixCopyFromCurrent(const MatrixMode whichMatrix, NDSMatrixFloat &outMtx)
+{
+	MatrixCopy(outMtx, this->_mtxCurrent[whichMatrix]);
+}
+
+void NDSGeometryEngine::MatrixCopyFromCurrent(const MatrixMode whichMatrix, NDSMatrix &outMtx)
+{
+	MatrixCopy(outMtx, this->_mtxCurrent[whichMatrix]);
+}
+
 void NDSGeometryEngine::MatrixCopyFromStack(const MatrixMode whichMatrix, const size_t stackIndex, NDSMatrixFloat &outMtx)
 {
 	if (stackIndex > 31)
@@ -1707,6 +2127,41 @@ void NDSGeometryEngine::MatrixCopyToStack(const MatrixMode whichMatrix, const si
 	}
 }
 
+void NDSGeometryEngine::UpdateLightDirectionHalfAngleVector(const size_t index)
+{
+	static const CACHE_ALIGN Vector32x4 lineOfSight = {0, 0, (s32)0xFFFFF000, 0};
+	
+	Vector32x4 half = {
+		this->_vecLightDirectionTransformed[index].x + lineOfSight.x,
+		this->_vecLightDirectionTransformed[index].y + lineOfSight.y,
+		this->_vecLightDirectionTransformed[index].z + lineOfSight.z,
+		this->_vecLightDirectionTransformed[index].w + lineOfSight.w
+	};
+	
+	//normalize the half angle vector
+	//can't believe the hardware really does this... but yet it seems...
+	s32 halfLength = ( (s32)(sqrt((double)vec3dot_fixed32(half.vec, half.vec))) ) << 6;
+
+	if (halfLength != 0)
+	{
+		halfLength = abs(halfLength);
+		halfLength >>= 6;
+		for (size_t i = 0; i < 4; i++)
+		{
+			s32 temp = half.vec[i];
+			temp <<= 6;
+			temp /= halfLength;
+			half.vec[i] = temp;
+		}
+	}
+	
+	this->_vecLightDirectionHalfNegative[index].x = -half.x;
+	this->_vecLightDirectionHalfNegative[index].y = -half.y;
+	this->_vecLightDirectionHalfNegative[index].z = -half.z;
+	this->_vecLightDirectionHalfNegative[index].w = -half.w;
+	this->_doesLightHalfVectorNeedUpdate[index] = false;
+}
+
 void NDSGeometryEngine::UpdateMatrixProjectionLua()
 {
 #ifdef HAVE_LUA
@@ -1716,14 +2171,42 @@ void NDSGeometryEngine::UpdateMatrixProjectionLua()
 	}
 	
 	float floatproj[16];
-	MatrixCopy(floatproj, _mtxCurrent[MATRIXMODE_PROJECTION]);
+	MatrixCopy(floatproj, this->_mtxCurrent[MATRIXMODE_PROJECTION]);
 	
 	CallRegistered3dEvent(0, floatproj);
 #endif
 }
 
-void NDSGeometryEngine::SaveState(GeometryEngineLegacySave &outLegacySave)
+u32 NDSGeometryEngine::GetClipMatrixAtIndex(const u32 requestedIndex) const
 {
+	return (u32)MatrixGetMultipliedIndex(requestedIndex, this->_mtxCurrent[MATRIXMODE_PROJECTION], this->_mtxCurrent[MATRIXMODE_POSITION]);
+}
+
+u32 NDSGeometryEngine::GetDirectionalMatrixAtIndex(const u32 requestedIndex) const
+{
+	// When reading the current directional matrix, the read indices are sent
+	// sequentially, with values [0...8], assuming a 3x3 matrix. However, the
+	// directional matrix is stored as a 4x4 matrix with 16 values [0...16]. This
+	// means that in order to read the correct element from the directional matrix,
+	// the requested index needs to be mapped to the actual element index of the
+	// matrix.
+	
+	const size_t elementIndex = (((requestedIndex / 3) * 4) + (requestedIndex % 3));
+	return (u32)this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR][elementIndex];
+}
+
+u32 NDSGeometryEngine::GetPositionTestResult(const u32 requestedIndex) const
+{
+	return (u32)_positionTestVtx32.coord[requestedIndex];
+}
+
+void NDSGeometryEngine::SaveState_LegacyFormat(GeometryEngineLegacySave &outLegacySave)
+{
+	MatrixCopy(outLegacySave.currentWorkingMatrix[MATRIXMODE_PROJECTION],      this->_mtxCurrent[MATRIXMODE_PROJECTION]);
+	MatrixCopy(outLegacySave.currentWorkingMatrix[MATRIXMODE_POSITION],        this->_mtxCurrent[MATRIXMODE_POSITION]);
+	MatrixCopy(outLegacySave.currentWorkingMatrix[MATRIXMODE_POSITION_VECTOR], this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+	MatrixCopy(outLegacySave.currentWorkingMatrix[MATRIXMODE_TEXTURE],         this->_mtxCurrent[MATRIXMODE_TEXTURE]);
+	
 	// Historically, only the last multiply matrix used is the one that is saved.
 	switch (this->_lastMtxMultCommand)
 	{
@@ -1752,6 +2235,19 @@ void NDSGeometryEngine::SaveState(GeometryEngineLegacySave &outLegacySave)
 	outLegacySave.vecScaleCurrentIndex = this->_vecScaleCurrentIndex;
 	outLegacySave.vecTranslateCurrentIndex = this->_vecTranslateCurrentIndex;
 	
+	outLegacySave.regLightColor[0] = this->_regLightColor[0];
+	outLegacySave.regLightColor[1] = this->_regLightColor[1];
+	outLegacySave.regLightColor[2] = this->_regLightColor[2];
+	outLegacySave.regLightColor[3] = this->_regLightColor[3];
+	outLegacySave.regLightDirection[0] = this->_regLightDirection[0];
+	outLegacySave.regLightDirection[1] = this->_regLightDirection[1];
+	outLegacySave.regLightDirection[2] = this->_regLightDirection[2];
+	outLegacySave.regLightDirection[3] = this->_regLightDirection[3];
+	outLegacySave.regDiffuse  = this->_regDiffuse;
+	outLegacySave.regAmbient  = this->_regAmbient;
+	outLegacySave.regSpecular = this->_regSpecular;
+	outLegacySave.regEmission = this->_regEmission;
+	
 	outLegacySave.vtxFormat = (u32)this->_vtxFormat;
 	outLegacySave.vtxCoord.vec3 = this->_vtxCoord16;
 	outLegacySave.vtxCoord.coord[3] = 0;
@@ -1774,11 +2270,30 @@ void NDSGeometryEngine::SaveState(GeometryEngineLegacySave &outLegacySave)
 	outLegacySave.isGeneratingFirstPolyOfStrip = (this->_isGeneratingFirstPolyOfStrip) ? TRUE : FALSE;
 	outLegacySave.generateTriangleStripIndexToggle = (this->_generateTriangleStripIndexToggle) ? 1 : 0;
 	
+	outLegacySave.boxTestCoordCurrentIndex = (u32)this->_boxTestCoordCurrentIndex;
+	outLegacySave.positionTestCoordCurrentIndex = (u32)this->_positionTestCoordCurrentIndex;
+	outLegacySave.boxTestCoord16[0] = this->_boxTestCoord16[0];
+	outLegacySave.boxTestCoord16[1] = this->_boxTestCoord16[1];
+	outLegacySave.boxTestCoord16[2] = this->_boxTestCoord16[2];
+	outLegacySave.boxTestCoord16[3] = this->_boxTestCoord16[3];
+	outLegacySave.boxTestCoord16[4] = this->_boxTestCoord16[4];
+	outLegacySave.boxTestCoord16[5] = this->_boxTestCoord16[5];
+	
+	outLegacySave.positionTestVtxFloat[0] = (float)this->_positionTestVtx32.x / 4096.f;
+	outLegacySave.positionTestVtxFloat[1] = (float)this->_positionTestVtx32.y / 4096.f;
+	outLegacySave.positionTestVtxFloat[2] = (float)this->_positionTestVtx32.z / 4096.f;
+	outLegacySave.positionTestVtxFloat[3] = (float)this->_positionTestVtx32.w / 4096.f;
+	
 	outLegacySave.regViewport = this->_regViewport;
 }
 
-void NDSGeometryEngine::LoadState(const GeometryEngineLegacySave &inLegacySave)
+void NDSGeometryEngine::LoadState_LegacyFormat(const GeometryEngineLegacySave &inLegacySave)
 {
+	MatrixCopy(this->_mtxCurrent[MATRIXMODE_PROJECTION],      inLegacySave.currentWorkingMatrix[MATRIXMODE_PROJECTION]);
+	MatrixCopy(this->_mtxCurrent[MATRIXMODE_POSITION],        inLegacySave.currentWorkingMatrix[MATRIXMODE_POSITION]);
+	MatrixCopy(this->_mtxCurrent[MATRIXMODE_POSITION_VECTOR], inLegacySave.currentWorkingMatrix[MATRIXMODE_POSITION_VECTOR]);
+	MatrixCopy(this->_mtxCurrent[MATRIXMODE_TEXTURE],         inLegacySave.currentWorkingMatrix[MATRIXMODE_TEXTURE]);
+	
 	MatrixCopy(this->_currentMtxMult4x4, inLegacySave.currentMultiplyMatrix);
 	MatrixCopy(this->_currentMtxMult4x3, inLegacySave.currentMultiplyMatrix);
 	MatrixCopy(this->_currentMtxMult3x3, inLegacySave.currentMultiplyMatrix);
@@ -1794,6 +2309,19 @@ void NDSGeometryEngine::LoadState(const GeometryEngineLegacySave &inLegacySave)
 	this->_mtxMultiply3x3CurrentIndex = inLegacySave.mtxMultiply3x3CurrentIndex;
 	this->_vecScaleCurrentIndex = inLegacySave.vecScaleCurrentIndex;
 	this->_vecTranslateCurrentIndex = inLegacySave.vecTranslateCurrentIndex;
+	
+	this->_regLightColor[0] = inLegacySave.regLightColor[0];
+	this->_regLightColor[1] = inLegacySave.regLightColor[1];
+	this->_regLightColor[2] = inLegacySave.regLightColor[2];
+	this->_regLightColor[3] = inLegacySave.regLightColor[3];
+	this->_regLightDirection[0] = inLegacySave.regLightDirection[0];
+	this->_regLightDirection[1] = inLegacySave.regLightDirection[1];
+	this->_regLightDirection[2] = inLegacySave.regLightDirection[2];
+	this->_regLightDirection[3] = inLegacySave.regLightDirection[3];
+	this->_regDiffuse  = inLegacySave.regDiffuse;
+	this->_regAmbient  = inLegacySave.regAmbient;
+	this->_regSpecular = inLegacySave.regSpecular;
+	this->_regEmission = inLegacySave.regEmission;
 	
 	this->_vtxFormat = (PolygonPrimitiveType)inLegacySave.vtxFormat;
 	this->_vtxCoord16 = inLegacySave.vtxCoord.vec3;
@@ -1816,45 +2344,145 @@ void NDSGeometryEngine::LoadState(const GeometryEngineLegacySave &inLegacySave)
 	this->_isGeneratingFirstPolyOfStrip = (inLegacySave.isGeneratingFirstPolyOfStrip) ? true : false;
 	this->_generateTriangleStripIndexToggle = (inLegacySave.generateTriangleStripIndexToggle != 0) ? true : false;
 	
+	this->_boxTestCoordCurrentIndex = (u8)inLegacySave.boxTestCoordCurrentIndex;
+	this->_positionTestCoordCurrentIndex = (u8)inLegacySave.positionTestCoordCurrentIndex;
+	this->_boxTestCoord16[0] = inLegacySave.boxTestCoord16[0];
+	this->_boxTestCoord16[1] = inLegacySave.boxTestCoord16[1];
+	this->_boxTestCoord16[2] = inLegacySave.boxTestCoord16[2];
+	this->_boxTestCoord16[3] = inLegacySave.boxTestCoord16[3];
+	this->_boxTestCoord16[4] = inLegacySave.boxTestCoord16[4];
+	this->_boxTestCoord16[5] = inLegacySave.boxTestCoord16[5];
+	
+	this->_positionTestVtx32.x = (s32)((inLegacySave.positionTestVtxFloat[0] * 4096.0f) + 0.000000001f);
+	this->_positionTestVtx32.y = (s32)((inLegacySave.positionTestVtxFloat[1] * 4096.0f) + 0.000000001f);
+	this->_positionTestVtx32.z = (s32)((inLegacySave.positionTestVtxFloat[2] * 4096.0f) + 0.000000001f);
+	this->_positionTestVtx32.w = (s32)((inLegacySave.positionTestVtxFloat[3] * 4096.0f) + 0.000000001f);
+	
 	this->SetViewport(inLegacySave.regViewport);
 }
 
-static void gfx3d_UpdateLightDirectionHalfAngleVector(const size_t index)
+void NDSGeometryEngine::SaveState_v2(EMUFILE &os)
 {
-	//Calculate the half angle vector
-	CACHE_ALIGN static const Vector32x4 lineOfSight = {0, 0, (s32)0xFFFFF000, 0};
-	
-	Vector32x4 half = {
-		_vecLightDirectionTransformed[index].x + lineOfSight.x,
-		_vecLightDirectionTransformed[index].y + lineOfSight.y,
-		_vecLightDirectionTransformed[index].z + lineOfSight.z,
-		_vecLightDirectionTransformed[index].w + lineOfSight.w
-	};
-	
-	//normalize the half angle vector
-	//can't believe the hardware really does this... but yet it seems...
-	s32 halfLength = ( (s32)(sqrt((double)vec3dot_fixed32(half.vec, half.vec))) ) << 6;
-
-	if (halfLength != 0)
+	os.write_32LE((u32)this->_mtxStackIndex[MATRIXMODE_PROJECTION]);
+	for (size_t j = 0; j < 16; j++)
 	{
-		halfLength = abs(halfLength);
-		halfLength >>= 6;
-		for (size_t i = 0; i < 4; i++)
+		os.write_32LE(this->_mtxStackProjection[0][j]);
+	}
+	
+	os.write_32LE((u32)this->_mtxStackIndex[MATRIXMODE_POSITION]);
+	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION); i++)
+	{
+		for (size_t j = 0; j < 16; j++)
 		{
-			s32 temp = half.vec[i];
-			temp <<= 6;
-			temp /= halfLength;
-			half.vec[i] = temp;
+			os.write_32LE(this->_mtxStackPosition[i][j]);
 		}
 	}
 	
-	_vecLightDirectionHalfNegative[index].x = -half.x;
-	_vecLightDirectionHalfNegative[index].y = -half.y;
-	_vecLightDirectionHalfNegative[index].z = -half.z;
-	_vecLightDirectionHalfNegative[index].w = -half.w;
-	_doesLightHalfVectorNeedUpdate[index] = false;
+	os.write_32LE((u32)this->_mtxStackIndex[MATRIXMODE_POSITION_VECTOR]);
+	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++)
+	{
+		for (size_t j = 0; j < 16; j++)
+		{
+			os.write_32LE(_mtxStackPositionVector[i][j]);
+		}
+	}
+	
+	os.write_32LE((u32)this->_mtxStackIndex[MATRIXMODE_TEXTURE]);
+	for (size_t j = 0; j < 16; j++)
+	{
+		os.write_32LE(this->_mtxStackTexture[0][j]);
+	}
 }
 
+void NDSGeometryEngine::LoadState_v2(EMUFILE &is)
+{
+	u32 loadingIdx;
+	
+	is.read_32LE(loadingIdx);
+	this->_mtxStackIndex[MATRIXMODE_PROJECTION] = (u8)loadingIdx;
+	for (size_t j = 0; j < 16; j++)
+	{
+		is.read_32LE(this->_mtxStackProjection[0][j]);
+	}
+	
+	is.read_32LE(loadingIdx);
+	this->_mtxStackIndex[MATRIXMODE_POSITION] = (u8)loadingIdx;
+	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION); i++)
+	{
+		for (size_t j = 0; j < 16; j++)
+		{
+			is.read_32LE(this->_mtxStackPosition[i][j]);
+		}
+	}
+	
+	is.read_32LE(loadingIdx);
+	this->_mtxStackIndex[MATRIXMODE_POSITION_VECTOR] = (u8)loadingIdx;
+	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++)
+	{
+		for (size_t j = 0; j < 16; j++)
+		{
+			is.read_32LE(this->_mtxStackPositionVector[i][j]);
+		}
+	}
+	
+	is.read_32LE(loadingIdx);
+	this->_mtxStackIndex[MATRIXMODE_TEXTURE] = (u8)loadingIdx;
+	for (size_t j = 0; j < 16; j++)
+	{
+		is.read_32LE(this->_mtxStackTexture[0][j]);
+	}
+}
+
+void NDSGeometryEngine::SaveState_v4(EMUFILE &os)
+{
+	for (size_t i = 0; i < 4; i++)
+	{
+		os.write_32LE(this->_vecLightDirectionTransformed[i].x);
+		os.write_32LE(this->_vecLightDirectionTransformed[i].y);
+		os.write_32LE(this->_vecLightDirectionTransformed[i].z);
+		os.write_32LE(this->_vecLightDirectionTransformed[i].w);
+	}
+	
+	for (size_t i = 0; i < 4; i++)
+	{
+		if (this->_doesLightHalfVectorNeedUpdate[i])
+		{
+			this->UpdateLightDirectionHalfAngleVector(i);
+		}
+		
+		// Historically, these values were saved with the opposite sign.
+		os.write_32LE(-this->_vecLightDirectionHalfNegative[i].x);
+		os.write_32LE(-this->_vecLightDirectionHalfNegative[i].y);
+		os.write_32LE(-this->_vecLightDirectionHalfNegative[i].z);
+		os.write_32LE(-this->_vecLightDirectionHalfNegative[i].w);
+	}
+}
+
+void NDSGeometryEngine::LoadState_v4(EMUFILE &is)
+{
+	for (size_t i = 0; i < 4; i++)
+	{
+		is.read_32LE(this->_vecLightDirectionTransformed[i].x);
+		is.read_32LE(this->_vecLightDirectionTransformed[i].y);
+		is.read_32LE(this->_vecLightDirectionTransformed[i].z);
+		is.read_32LE(this->_vecLightDirectionTransformed[i].w);
+	}
+	
+	for (size_t i = 0; i < 4; i++)
+	{
+		is.read_32LE(this->_vecLightDirectionHalfNegative[i].x);
+		is.read_32LE(this->_vecLightDirectionHalfNegative[i].y);
+		is.read_32LE(this->_vecLightDirectionHalfNegative[i].z);
+		is.read_32LE(this->_vecLightDirectionHalfNegative[i].w);
+		
+		// Historically, these values were saved with the opposite sign.
+		this->_vecLightDirectionHalfNegative[i].x = -this->_vecLightDirectionHalfNegative[i].x;
+		this->_vecLightDirectionHalfNegative[i].y = -this->_vecLightDirectionHalfNegative[i].y;
+		this->_vecLightDirectionHalfNegative[i].z = -this->_vecLightDirectionHalfNegative[i].z;
+		this->_vecLightDirectionHalfNegative[i].w = -this->_vecLightDirectionHalfNegative[i].w;
+		this->_doesLightHalfVectorNeedUpdate[i] = false;
+	}
+}
 
 //===============================================================================
 static void gfx3d_glMatrixMode(const u32 param)
@@ -1995,114 +2623,8 @@ static void gfx3d_glColor3b(const u32 param)
 
 static void gfx3d_glNormal(const u32 param)
 {
-	CACHE_ALIGN Vector32x4 normal = {
-		((s32)((param << 22) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3),
-		((s32)((param << 12) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3),
-		((s32)((param <<  2) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3),
-		 (s32)(1 << 12)
-	};
+	_gEngine.SetNormal(param);
 	
-	_gEngine.SetNormal(normal); // Retain a copy of the passed in normal vector before we transform it.
-	MatrixMultVec3x3(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], normal.vec);
-
-	//apply lighting model
-	const s32 diffuse32[3] = {
-		(s32)( _regDiffuse        & 0x001F),
-		(s32)((_regDiffuse >>  5) & 0x001F),
-		(s32)((_regDiffuse >> 10) & 0x001F)
-	};
-
-	const s32 ambient32[3] = {
-		(s32)( _regAmbient        & 0x001F),
-		(s32)((_regAmbient >>  5) & 0x001F),
-		(s32)((_regAmbient >> 10) & 0x001F)
-	};
-
-	const s32 emission32[3] = {
-		(s32)( _regEmission        & 0x001F),
-		(s32)((_regEmission >>  5) & 0x001F),
-		(s32)((_regEmission >> 10) & 0x001F)
-	};
-
-	const s32 specular32[3] = {
-		(s32)( _regSpecular        & 0x001F),
-		(s32)((_regSpecular >>  5) & 0x001F),
-		(s32)((_regSpecular >> 10) & 0x001F)
-	};
-
-	s32 vertexColor[3] = {
-		emission32[0],
-		emission32[1],
-		emission32[2]
-	};
-
-	const u8 lightMask = _regPolyAttrApplied.LightMask;
-	
-	for (size_t i = 0; i < 4; i++)
-	{
-		if (!((lightMask >> i) & 1))
-		{
-			continue;
-		}
-		
-		const s32 lightColor32[3] = {
-			(s32)( _regLightColor[i]        & 0x0000001F),
-			(s32)((_regLightColor[i] >>  5) & 0x0000001F),
-			(s32)((_regLightColor[i] >> 10) & 0x0000001F)
-		};
-
-		//This formula is the one used by the DS
-		//Reference : http://nocash.emubase.de/gbatek.htm#ds3dpolygonlightparameters
-		const s32 fixed_diffuse = std::max( 0, -vec3dot_fixed32(_vecLightDirectionTransformed[i].vec, normal.vec) );
-		
-		if (_doesLightHalfVectorNeedUpdate[i])
-		{
-			gfx3d_UpdateLightDirectionHalfAngleVector(i);
-		}
-		
-		const s32 dot = vec3dot_fixed32(_vecLightDirectionHalfNegative[i].vec, normal.vec);
-
-		s32 fixedshininess = 0;
-		if (dot > 0) //prevent shininess on opposite side
-		{
-			//we have cos(a). it seems that we need cos(2a). trig identity is a fast way to get it.
-			//cos^2(a)=(1/2)(1+cos(2a))
-			//2*cos^2(a)-1=cos(2a)
-			fixedshininess = 2 * mul_fixed32(dot,dot) - 4096;
-			//gbatek is almost right but not quite!
-		}
-
-		//this seems to need to be saturated, or else the table will overflow.
-		//even without a table, failure to saturate is bad news
-		fixedshininess = std::min(fixedshininess,4095);
-		fixedshininess = std::max(fixedshininess,0);
-		
-		if (_regSpecular & 0x8000)
-		{
-			//shininess is 20.12 fixed point, so >>5 gives us .7 which is 128 entries
-			//the entries are 8bits each so <<4 gives us .12 again, compatible with the lighting formulas below
-			//(according to other normal nds procedures, we might should fill the bottom bits with 1 or 0 according to rules...)
-			fixedshininess = gfx3d.pendingState.shininessTable[fixedshininess>>5]<<4;
-		}
-
-		for (size_t c = 0; c < 3; c++)
-		{
-			const s32 specComp = ((specular32[c] * lightColor32[c] * fixedshininess) >> 17); // 5 bits for color*color and 12 bits for shininess
-			const s32 diffComp = (( diffuse32[c] * lightColor32[c] * fixed_diffuse)  >> 17); // 5 bits for color*color and 12 bits for diffuse
-			const s32 ambComp  = (( ambient32[c] * lightColor32[c]) >> 5); // 5 bits for color*color
-			vertexColor[c] += specComp + diffComp + ambComp;
-		}
-	}
-	
-	const FragmentColor newVtxColor = {
-		(u8)std::min<s32>(31, vertexColor[0]),
-		(u8)std::min<s32>(31, vertexColor[1]),
-		(u8)std::min<s32>(31, vertexColor[2]),
-		0
-	};
-	
-	_gEngine.SetVertexColor(newVtxColor);
-
 	GFX_DELAY(9);
 	GFX_DELAY_M2(_regPolyAttrApplied.Light0);
 	GFX_DELAY_M2(_regPolyAttrApplied.Light1);
@@ -2172,60 +2694,27 @@ static void gfx3d_glTexPalette(const u32 param)
 	GFX_DELAY(1);
 }
 
-/*
-	0-4   Diffuse Reflection Red
-	5-9   Diffuse Reflection Green
-	10-14 Diffuse Reflection Blue
-	15    Set Vertex Color (0=No, 1=Set Diffuse Reflection Color as Vertex Color)
-	16-20 Ambient Reflection Red
-	21-25 Ambient Reflection Green
-	26-30 Ambient Reflection Blue
-*/
 static void gfx3d_glMaterial0(const u32 param)
 {
-	_regDiffuse = (u16)(param & 0x0000FFFF);
-	_regAmbient = (u16)(param >> 16);
-
-	if (BIT15(param))
-	{
-		_gEngine.SetVertexColor(param);
-	}
+	_gEngine.SetDiffuseAmbient(param);
 	GFX_DELAY(4);
 }
 
 static void gfx3d_glMaterial1(const u32 param)
 {
-	_regSpecular = (u16)(param & 0x0000FFFF);
-	_regEmission = (u16)(param >> 16);
+	_gEngine.SetSpecularEmission(param);
 	GFX_DELAY(4);
 }
 
-
-// 0-9   Directional Vector's X component (1bit sign + 9bit fractional part)
-// 10-19 Directional Vector's Y component (1bit sign + 9bit fractional part)
-// 20-29 Directional Vector's Z component (1bit sign + 9bit fractional part)
-// 30-31 Light Number                     (0..3)
 static void gfx3d_glLightDirection(const u32 param)
 {
-	const size_t index = (param >> 30) & 0x00000003;
-	const u32 v = param & 0x3FFFFFFF;
-	_regLightDirection[index] = v;
-	
-	// Unpack the vector, and then multiply it by the current directional matrix.
-	_vecLightDirectionTransformed[index].x = ((s32)((v<<22) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
-	_vecLightDirectionTransformed[index].y = ((s32)((v<<12) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
-	_vecLightDirectionTransformed[index].z = ((s32)((v<< 2) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
-	_vecLightDirectionTransformed[index].w = 0;
-	MatrixMultVec3x3(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], _vecLightDirectionTransformed[index].vec);
-	
-	_doesLightHalfVectorNeedUpdate[index] = true;
+	_gEngine.SetLightDirection(param);
 	GFX_DELAY(6);
 }
 
 static void gfx3d_glLightColor(const u32 param)
 {
-	const size_t index = param >> 30;
-	_regLightColor[index] = param;
+	_gEngine.SetLightColor(param);
 	GFX_DELAY(1);
 }
 
@@ -2271,256 +2760,35 @@ static void gfx3d_glEnd()
 static void gfx3d_glViewport(const u32 param)
 {
 	_GFX3D_IORegisterMap->VIEWPORT.value = param;
+	
 	_gEngine.SetViewport(param);
 	GFX_DELAY(1);
 }
 
 static void gfx3d_glBoxTest(const u32 param)
 {
-	//printf("boxtest\n");
-
-	//clear result flag. busy flag has been set by fifo component already
-	MMU_new.gxstat.tr = 0;		
-
-	_BTcoords[_BTind++] = (u16)(param & 0x0000FFFF);
-	_BTcoords[_BTind++] = (u16)(param >> 16);
-
-	if (_BTind < 5)
+	const bool isBoxTestCoordsCompleted = _gEngine.SetCurrentBoxTestCoords(param);
+	if (isBoxTestCoordsCompleted)
 	{
-		return;
+		_gEngine.BoxTest();
+		GFX_DELAY(103);
 	}
-	_BTind = 0;
-
-	GFX_DELAY(103);
-
-	//now that we're executing this, we're not busy anymore
-	MMU_new.gxstat.tb = 0;
-
-#if 0
-	INFO("BoxTEST: x %f y %f width %f height %f depth %f\n", 
-				_BTcoords[0], _BTcoords[1], _BTcoords[2], _BTcoords[3], _BTcoords[4], _BTcoords[5]);
-	/*for (int i = 0; i < 16; i++)
-	{
-		INFO("mtx1[%i] = %f ", i, _mtxCurrent[1][i]);
-		if ((i+1) % 4 == 0) INFO("\n");
-	}
-	INFO("\n");*/
-#endif
-
-	//(crafted to be clear, not fast.)
-
-	//nanostray title, ff4, ice age 3 depend on this and work
-	//garfields nightmare and strawberry shortcake DO DEPEND on the overflow behavior.
-
-	const u16 ux = _BTcoords[0];
-	const u16 uy = _BTcoords[1];
-	const u16 uz = _BTcoords[2];
-	const u16 uw = _BTcoords[3];
-	const u16 uh = _BTcoords[4];
-	const u16 ud = _BTcoords[5];
-
-	//craft the coords by adding extents to startpoint
-	const s32 fixedOne = 1 << 12;
-	const s32 __x = (s32)((s16)ux);
-	const s32 __y = (s32)((s16)uy);
-	const s32 __z = (s32)((s16)uz);
-	const s32 x_w = (s32)( (s16)((ux+uw) & 0xFFFF) );
-	const s32 y_h = (s32)( (s16)((uy+uh) & 0xFFFF) );
-	const s32 z_d = (s32)( (s16)((uz+ud) & 0xFFFF) );
-	
-	//eight corners of cube
-	CACHE_ALIGN VertexCoord32x4 vtxPosition[8] = {
-		{ __x, __y, __z, fixedOne },
-		{ x_w, __y, __z, fixedOne },
-		{ x_w, y_h, __z, fixedOne },
-		{ __x, y_h, __z, fixedOne },
-		{ __x, __y, z_d, fixedOne },
-		{ x_w, __y, z_d, fixedOne },
-		{ x_w, __y, z_d, fixedOne },
-		{ __x, y_h, z_d, fixedOne }
-	};
-	
-#define SET_VERT_INDICES(p,  a,b,c,d) \
-	tempRawPoly[p].type = POLYGON_TYPE_QUAD; \
-	tempRawPoly[p].vertIndexes[0] = a; \
-	tempRawPoly[p].vertIndexes[1] = b; \
-	tempRawPoly[p].vertIndexes[2] = c; \
-	tempRawPoly[p].vertIndexes[3] = d;
-	
-	//craft the faces of the box (clockwise)
-	POLY tempRawPoly[6];
-	SET_VERT_INDICES(0,  7,6,5,4) // near
-	SET_VERT_INDICES(1,  0,1,2,3) // far
-	SET_VERT_INDICES(2,  0,3,7,4) // left
-	SET_VERT_INDICES(3,  6,2,1,5) // right
-	SET_VERT_INDICES(4,  3,2,6,7) // top
-	SET_VERT_INDICES(5,  0,4,5,1) // bottom
-#undef SET_VERT_INDICES
-	
-	//setup the clipper
-	CPoly tempClippedPoly;
-
-	////-----------------------------
-	////awesome hack:
-	////emit the box as geometry for testing
-	//for(int i=0;i<6;i++) 
-	//{
-	//	POLY* poly = &polys[i];
-	//	VERT* vertTable[4] = {
-	//		&verts[poly->vertIndexes[0]],
-	//		&verts[poly->vertIndexes[1]],
-	//		&verts[poly->vertIndexes[2]],
-	//		&verts[poly->vertIndexes[3]]
-	//	};
-
-	//	gfx3d_glBegin(1);
-	//	for(int i=0;i<4;i++) {
-	//		coord[0] = vertTable[i]->x;
-	//		coord[1] = vertTable[i]->y;
-	//		coord[2] = vertTable[i]->z;
-	//		SetVertex();
-	//	}
-	//	gfx3d_glEnd();
-	//}
-	////---------------------
-	
-	// TODO: Remove these floating-point vertices.
-	// The internal vertices for the box test are calculated using 20.12 fixed-point, but
-	// clipping and interpolation are still calculated in floating-point. We really need
-	// to rework the entire clipping and interpolation system to work in fixed-point also.
-	CACHE_ALIGN VERT verts[8];
-	CACHE_ALIGN NDSVertex tempRawVtx[8];
-
-	//transform all coords
-	for (size_t i = 0; i < 8; i++)
-	{
-		MatrixMultVec4x4(_mtxCurrent[MATRIXMODE_POSITION], vtxPosition[i].coord);
-		MatrixMultVec4x4(_mtxCurrent[MATRIXMODE_PROJECTION], vtxPosition[i].coord);
-		
-		tempRawVtx[i].position = vtxPosition[i];
-		
-		// TODO: Remove this fixed-point to floating-point conversion.
-		verts[i].x = (float)(vtxPosition[i].x) / 4096.0f;
-		verts[i].y = (float)(vtxPosition[i].y) / 4096.0f;
-		verts[i].z = (float)(vtxPosition[i].z) / 4096.0f;
-		verts[i].w = (float)(vtxPosition[i].w) / 4096.0f;
-	}
-
-	//clip each poly
-	for (size_t i = 0; i < 6; i++)
-	{
-		const POLY &rawPoly = tempRawPoly[i];
-		/*
-		const VERT *rawPolyVtx[4] = {
-			&verts[rawPoly.vertIndexes[0]],
-			&verts[rawPoly.vertIndexes[1]],
-			&verts[rawPoly.vertIndexes[2]],
-			&verts[rawPoly.vertIndexes[3]]
-		};
-		*/
-		const NDSVertex *rawPolyVtx[4] = {
-			&tempRawVtx[rawPoly.vertIndexes[0]],
-			&tempRawVtx[rawPoly.vertIndexes[1]],
-			&tempRawVtx[rawPoly.vertIndexes[2]],
-			&tempRawVtx[rawPoly.vertIndexes[3]]
-		};
-		
-		const PolygonType cpType = GFX3D_GenerateClippedPoly<ClipperMode_DetermineClipOnly>(0, rawPoly.type, rawPolyVtx, tempClippedPoly);
-		
-		//if any portion of this poly was retained, then the test passes.
-		if (cpType != POLYGON_TYPE_UNDEFINED)
-		{
-			//printf("%06d PASS %d\n",gxFIFO.size, i);
-			MMU_new.gxstat.tr = 1;
-			break;
-		}
-
-		//if(i==5) printf("%06d FAIL\n",gxFIFO.size);
-	}
-
-	//printf("%06d RESULT %d\n",gxFIFO.size, MMU_new.gxstat.tr);
 }
 
 static void gfx3d_glPosTest(const u32 param)
 {
-	//this is apparently tested by transformers decepticons and ultimate spiderman
-	
-	// "Apollo Justice: Ace Attorney" also uses the position test for the evidence
-	// viewer, such as the card color check in Case 1.
-
-	//clear result flag. busy flag has been set by fifo component already
-	MMU_new.gxstat.tr = 0;
-
-	//now that we're executing this, we're not busy anymore
-	MMU_new.gxstat.tb = 0;
-
-	// Values for the position test come in as a pair of 16-bit coordinates
-	// in 4.12 fixed-point format:
-	//     1-bit sign, 3-bit integer, 12-bit fraction
-	//
-	// Parameter 1, bits  0-15: X-component
-	// Parameter 1, bits 16-31: Y-component
-	// Parameter 2, bits  0-15: Z-component
-	// Parameter 2, bits 16-31: Ignored
-	
-	// Convert the coordinates to 20.12 fixed-point format for our vector-matrix multiplication.
-	_PTcoords.coord[_PTind++] = (s32)( (s16)((u16)(param & 0x0000FFFF)) );
-	_PTcoords.coord[_PTind++] = (s32)( (s16)((u16)(param >> 16)) );
-
-	if (_PTind < 3)
+	const bool isPositionTestCoordsCompleted = _gEngine.SetCurrentPositionTestCoords(param);
+	if (isPositionTestCoordsCompleted)
 	{
-		return;
+		_gEngine.PositionTest();
+		GFX_DELAY(9);
 	}
-	_PTind = 0;
-	
-	_PTcoords.coord[3] = (s32)(1 << 12);
-	MatrixMultVec4x4(_mtxCurrent[MATRIXMODE_POSITION], _PTcoords.coord);
-	MatrixMultVec4x4(_mtxCurrent[MATRIXMODE_PROJECTION], _PTcoords.coord);
-	GFX_DELAY(9);
-
-	MMU_new.gxstat.tb = 0;
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x620, (u32)_PTcoords.coord[0]);
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x624, (u32)_PTcoords.coord[1]);
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x628, (u32)_PTcoords.coord[2]);
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x62C, (u32)_PTcoords.coord[3]);
 }
 
 static void gfx3d_glVecTest(const u32 param)
 {
-	//printf("vectest\n");
+	_gEngine.VectorTest(param);
 	GFX_DELAY(5);
-
-	//this is tested by phoenix wright in its evidence inspector modelviewer
-	//i am not sure exactly what it is doing, maybe it is testing to ensure
-	//that the normal vector for the point of interest is camera-facing.
-	
-	// Values for the vector test come in as a trio of 10-bit coordinates
-	// in 1.9 fixed-point format:
-	//     1-bit sign, 9-bit fraction
-	//
-	// Bits  0- 9: X-component
-	// Bits 10-19: Y-component
-	// Bits 20-29: Z-component
-	// Bits 30-31: Ignored
-	
-	// Convert the coordinates to 20.12 fixed-point format for our vector-matrix multiplication.
-	CACHE_ALIGN Vector32x4 normal = {
-		( (s32)((param << 22) & 0xFFC00000) / (s32)(1 << 19) ) | (s32)((param & 0x000001C0) >>  6),
-		( (s32)((param << 12) & 0xFFC00000) / (s32)(1 << 19) ) | (s32)((param & 0x00007000) >> 16),
-		( (s32)((param <<  2) & 0xFFC00000) / (s32)(1 << 19) ) | (s32)((param & 0x01C00000) >> 26),
-		0
-	};
-	
-	MatrixMultVec4x4(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], normal.vec);
-
-	const u16 x = (u16)((s16)normal.x);
-	const u16 y = (u16)((s16)normal.y);
-	const u16 z = (u16)((s16)normal.z);
-
-	MMU_new.gxstat.tb = 0;		// clear busy
-	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x630, x);
-	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x632, y);
-	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x634, z);
 
 }
 //================================================================================= Geometry Engine
@@ -2618,28 +2886,24 @@ template void gfx3d_UpdateToonTable< u8>(const u8 offset, const  u8 v);
 template void gfx3d_UpdateToonTable<u16>(const u8 offset, const u16 v);
 template void gfx3d_UpdateToonTable<u32>(const u8 offset, const u32 v);
 
-s32 gfx3d_GetClipMatrix(const u32 index)
+u32 gfx3d_GetClipMatrix(const u32 index)
 {
-	//printf("reading clip matrix: %d\n",index);
-	return MatrixGetMultipliedIndex(index, _mtxCurrent[MATRIXMODE_PROJECTION], _mtxCurrent[MATRIXMODE_POSITION]);
+	return _gEngine.GetClipMatrixAtIndex(index);
 }
 
-s32 gfx3d_GetDirectionalMatrix(const u32 index)
+u32 gfx3d_GetDirectionalMatrix(const u32 index)
 {
-	const size_t _index = (((index / 3) * 4) + (index % 3));
+	return _gEngine.GetDirectionalMatrixAtIndex(index);
+}
 
-	//return (s32)(_mtxCurrent[2][_index]*(1<<12));
-	return _mtxCurrent[MATRIXMODE_POSITION_VECTOR][_index];
+u32 gfx3d_glGetPosRes(const u32 index)
+{
+	return _gEngine.GetPositionTestResult(index);
 }
 
 void gfx3d_glAlphaFunc(const u32 v)
 {
 	gfx3d.pendingState.alphaTestRef = (u8)(v & 0x0000001F);
-}
-
-u32 gfx3d_glGetPosRes(const size_t index)
-{
-	return (u32)_PTcoords.coord[index];
 }
 
 //#define _3D_LOG_EXEC
@@ -3314,12 +3578,12 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 
 //--------------
 //other misc stuff
-template<MatrixMode MODE>
+template <MatrixMode MODE>
 void gfx3d_glGetMatrix(const int index, float (&dst)[16])
 {
 	if (index == -1)
 	{
-		MatrixCopy(dst, _mtxCurrent[MODE]);
+		_gEngine.MatrixCopyFromCurrent(MODE, dst);
 	}
 	else
 	{
@@ -3332,12 +3596,12 @@ void gfx3d_glGetMatrix(const int index, float (&dst)[16])
 
 void gfx3d_glGetLightDirection(const size_t index, u32 &dst)
 {
-	dst = _regLightDirection[index];
+	dst = _gEngine.GetLightDirectionRegisterAtIndex(index);
 }
 
 void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 {
-	dst = _regLightColor[index];
+	dst = _gEngine.GetLightColorRegisterAtIndex(index);
 }
 
 //http://www.opengl.org/documentation/specs/version1.1/glspec1.1/node17.html
@@ -3353,7 +3617,7 @@ SFORMAT SF_GFX3D[] = {
 	{ "GTPA", 4, 1, &gfx3d.gEngineLegacySave.texPalette},
 	{ "GMOD", 4, 1, &gfx3d.gEngineLegacySave.mtxCurrentMode},
 	{ "GMTM", 4,16, &gfx3d.gEngineLegacySave.currentMultiplyMatrix},
-	{ "GMCU", 4,64, _mtxCurrent},
+	{ "GMCU", 4,64, &gfx3d.gEngineLegacySave.currentWorkingMatrix},
 	{ "ML4I", 1, 1, &gfx3d.gEngineLegacySave.mtxLoad4x4CurrentIndex},
 	{ "ML3I", 1, 1, &gfx3d.gEngineLegacySave.mtxLoad4x3CurrentIndex},
 	{ "MM4I", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply4x4CurrentIndex},
@@ -3374,10 +3638,10 @@ SFORMAT SF_GFX3D[] = {
 	{ "GLIN", 4, 1, &gfx3d.legacySave.clIndex},
 	{ "GLI2", 4, 1, &gfx3d.legacySave.clIndex2},
 	{ "GLSB", 4, 1, &isSwapBuffers},
-	{ "GLBT", 4, 1, &_BTind},
-	{ "GLPT", 4, 1, &_PTind},
-	{ "GLPC", 4, 4, gfx3d.legacySave.PTcoords},
-	{ "GBTC", 2, 6, &_BTcoords[0]},
+	{ "GLBT", 4, 1, &gfx3d.gEngineLegacySave.boxTestCoordCurrentIndex},
+	{ "GLPT", 4, 1, &gfx3d.gEngineLegacySave.positionTestCoordCurrentIndex},
+	{ "GLPC", 4, 4,  gfx3d.gEngineLegacySave.positionTestVtxFloat},
+	{ "GBTC", 2, 6,  gfx3d.gEngineLegacySave.boxTestCoord16},
 	{ "GFHE", 4, 1, &gxFIFO.head},
 	{ "GFTA", 4, 1, &gxFIFO.tail},
 	{ "GFSZ", 4, 1, &gxFIFO.size},
@@ -3390,12 +3654,12 @@ SFORMAT SF_GFX3D[] = {
 	{ "GPCM", 1, 4, &gxPIPE.cmd[0]},
 	{ "GPPM", 4, 4, &gxPIPE.param[0]},
 	{ "GCOL", 1, 4, &gfx3d.gEngineLegacySave.vtxColor},
-	{ "GLCO", 4, 4, _regLightColor},
-	{ "GLDI", 4, 4, &_regLightDirection},
-	{ "GMDI", 2, 1, &_regDiffuse},
-	{ "GMAM", 2, 1, &_regAmbient},
-	{ "GMSP", 2, 1, &_regSpecular},
-	{ "GMEM", 2, 1, &_regEmission},
+	{ "GLCO", 4, 4,  gfx3d.gEngineLegacySave.regLightColor},
+	{ "GLDI", 4, 4,  gfx3d.gEngineLegacySave.regLightDirection},
+	{ "GMDI", 2, 1, &gfx3d.gEngineLegacySave.regDiffuse},
+	{ "GMAM", 2, 1, &gfx3d.gEngineLegacySave.regAmbient},
+	{ "GMSP", 2, 1, &gfx3d.gEngineLegacySave.regSpecular},
+	{ "GMEM", 2, 1, &gfx3d.gEngineLegacySave.regEmission},
 	{ "GDRP", 4, 1, &gfx3d.legacySave.isDrawPending},
 	{ "GSET", 4, 1, &_legacyGFX3DStateSFormatPending.enableTexturing},
 	{ "GSEA", 4, 1, &_legacyGFX3DStateSFormatPending.enableAlphaTest},
@@ -3446,7 +3710,7 @@ SFORMAT SF_GFX3D[] = {
 	//------------------------
 	{ "GTST", 1, 1, &gfx3d.gEngineLegacySave.generateTriangleStripIndexToggle},
 	{ "GTVC", 4, 1, &gfx3d.gEngineLegacySave.vtxCount},
-	{ "GTVM", 4, 4, gfx3d.gEngineLegacySave.vtxIndex},
+	{ "GTVM", 4, 4,  gfx3d.gEngineLegacySave.vtxIndex},
 	{ "GTVF", 4, 1, &gfx3d.gEngineLegacySave.isGeneratingFirstPolyOfStrip},
 	{ "G3CX", 1, 4*GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT, gfx3d.framebufferNativeSave},
 	{ 0 }
@@ -3494,13 +3758,9 @@ void gfx3d_PrepareSaveStateBufferWrite()
 	}
 	
 	// For save state compatibility
-	_gEngine.SaveState(gfx3d.gEngineLegacySave);
+	_gEngine.SaveState_LegacyFormat(gfx3d.gEngineLegacySave);
 	
 	gfx3d.legacySave.isDrawPending = (_isDrawPending) ? TRUE : FALSE;
-	gfx3d.legacySave.PTcoords[0] = (float)_PTcoords.x / 4096.0f;
-	gfx3d.legacySave.PTcoords[1] = (float)_PTcoords.y / 4096.0f;
-	gfx3d.legacySave.PTcoords[2] = (float)_PTcoords.z / 4096.0f;
-	gfx3d.legacySave.PTcoords[3] = (float)_PTcoords.w / 4096.0f;
 	
 	_legacyGFX3DStateSFormatPending.enableTexturing     = (gfx3d.pendingState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
 	_legacyGFX3DStateSFormatPending.enableAlphaTest     = (gfx3d.pendingState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
@@ -3573,68 +3833,10 @@ void gfx3d_savestate(EMUFILE &os)
 		os.write_floatLE(gfx3d.rawPolySortYMin[i]);
 		os.write_floatLE(gfx3d.rawPolySortYMax[i]);
 	}
-
-	// Write matrix stack data
-	NDSMatrix savingMtx;
 	
-	os.write_32LE(mtxStackIndex[MATRIXMODE_PROJECTION]);
-	_gEngine.MatrixCopyFromStack(MATRIXMODE_PROJECTION, 0, savingMtx);
-	for (size_t j = 0; j < 16; j++)
-	{
-		os.write_32LE(savingMtx[j]);
-	}
-	
-	os.write_32LE(mtxStackIndex[MATRIXMODE_POSITION]);
-	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION); i++)
-	{
-		_gEngine.MatrixCopyFromStack(MATRIXMODE_POSITION, i, savingMtx);
-		for (size_t j = 0; j < 16; j++)
-		{
-			os.write_32LE(savingMtx[j]);
-		}
-	}
-	
-	os.write_32LE(mtxStackIndex[MATRIXMODE_POSITION_VECTOR]);
-	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++)
-	{
-		_gEngine.MatrixCopyFromStack(MATRIXMODE_POSITION_VECTOR, i, savingMtx);
-		for (size_t j = 0; j < 16; j++)
-		{
-			os.write_32LE(savingMtx[j]);
-		}
-	}
-	
-	os.write_32LE(mtxStackIndex[MATRIXMODE_TEXTURE]);
-	_gEngine.MatrixCopyFromStack(MATRIXMODE_TEXTURE, 0, savingMtx);
-	for (size_t j = 0; j < 16; j++)
-	{
-		os.write_32LE(savingMtx[j]);
-	}
-
+	_gEngine.SaveState_v2(os);
 	gxf_hardware.savestate(os);
-
-	// evidently these need to be saved because we don't cache the matrix that would need to be used to properly regenerate them
-	for (size_t i = 0; i < 4; i++)
-	{
-		os.write_32LE(_vecLightDirectionTransformed[i].x);
-		os.write_32LE(_vecLightDirectionTransformed[i].y);
-		os.write_32LE(_vecLightDirectionTransformed[i].z);
-		os.write_32LE(_vecLightDirectionTransformed[i].w);
-	}
-	
-	for (size_t i = 0; i < 4; i++)
-	{
-		if (_doesLightHalfVectorNeedUpdate[i])
-		{
-			gfx3d_UpdateLightDirectionHalfAngleVector(i);
-		}
-		
-		// Historically, these values were saved with the opposite sign.
-		os.write_32LE(-_vecLightDirectionHalfNegative[i].x);
-		os.write_32LE(-_vecLightDirectionHalfNegative[i].y);
-		os.write_32LE(-_vecLightDirectionHalfNegative[i].z);
-		os.write_32LE(-_vecLightDirectionHalfNegative[i].w);
-	}
+	_gEngine.SaveState_v4(os);
 }
 
 bool gfx3d_loadstate(EMUFILE &is, int size)
@@ -3684,42 +3886,7 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 
 	if (version >= 2)
 	{
-		NDSMatrix loadingMtx;
-		
-		// Read matrix stack data
-		is.read_32LE(mtxStackIndex[MATRIXMODE_PROJECTION]);
-		for (size_t j = 0; j < 16; j++)
-		{
-			is.read_32LE(loadingMtx[j]);
-		}
-		_gEngine.MatrixCopyToStack(MATRIXMODE_PROJECTION, 0, loadingMtx);
-		
-		is.read_32LE(mtxStackIndex[MATRIXMODE_POSITION]);
-		for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION); i++)
-		{
-			for (size_t j = 0; j < 16; j++)
-			{
-				is.read_32LE(loadingMtx[j]);
-			}
-			_gEngine.MatrixCopyToStack(MATRIXMODE_POSITION, i, loadingMtx);
-		}
-		
-		is.read_32LE(mtxStackIndex[MATRIXMODE_POSITION_VECTOR]);
-		for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++)
-		{
-			for (size_t j = 0; j < 16; j++)
-			{
-				is.read_32LE(loadingMtx[j]);
-			}
-			_gEngine.MatrixCopyToStack(MATRIXMODE_POSITION_VECTOR, i, loadingMtx);
-		}
-		
-		is.read_32LE(mtxStackIndex[MATRIXMODE_TEXTURE]);
-		for (size_t j = 0; j < 16; j++)
-		{
-			is.read_32LE(loadingMtx[j]);
-		}
-		_gEngine.MatrixCopyToStack(MATRIXMODE_TEXTURE, 0, loadingMtx);
+		_gEngine.LoadState_v2(is);
 	}
 
 	if (version >= 3)
@@ -3729,28 +3896,7 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 
 	if (version >= 4)
 	{
-		for (size_t i = 0; i < 4; i++)
-		{
-			is.read_32LE(_vecLightDirectionTransformed[i].x);
-			is.read_32LE(_vecLightDirectionTransformed[i].y);
-			is.read_32LE(_vecLightDirectionTransformed[i].z);
-			is.read_32LE(_vecLightDirectionTransformed[i].w);
-		}
-		
-		for (size_t i = 0; i < 4; i++)
-		{
-			is.read_32LE(_vecLightDirectionHalfNegative[i].x);
-			is.read_32LE(_vecLightDirectionHalfNegative[i].y);
-			is.read_32LE(_vecLightDirectionHalfNegative[i].z);
-			is.read_32LE(_vecLightDirectionHalfNegative[i].w);
-			
-			// Historically, these values were saved with the opposite sign.
-			_vecLightDirectionHalfNegative[i].x = -_vecLightDirectionHalfNegative[i].x;
-			_vecLightDirectionHalfNegative[i].y = -_vecLightDirectionHalfNegative[i].y;
-			_vecLightDirectionHalfNegative[i].z = -_vecLightDirectionHalfNegative[i].z;
-			_vecLightDirectionHalfNegative[i].w = -_vecLightDirectionHalfNegative[i].w;
-			_doesLightHalfVectorNeedUpdate[i] = false;
-		}
+		_gEngine.LoadState_v4(is);
 	}
 
 	return true;
@@ -3812,13 +3958,9 @@ void gfx3d_FinishLoadStateBufferRead()
 	const GPU_IOREG &GPUREG = GPU->GetEngineMain()->GetIORegisterMap();
 	const GFX3D_IOREG &GFX3DREG = GFX3D_GetIORegisterMap();
 	
-	_gEngine.LoadState(gfx3d.gEngineLegacySave);
+	_gEngine.LoadState_LegacyFormat(gfx3d.gEngineLegacySave);
 	
 	_isDrawPending = (gfx3d.legacySave.isDrawPending) ? true : false;
-	_PTcoords.x = (s32)((gfx3d.legacySave.PTcoords[0] * 4096.0f) + 0.000000001f);
-	_PTcoords.y = (s32)((gfx3d.legacySave.PTcoords[1] * 4096.0f) + 0.000000001f);
-	_PTcoords.z = (s32)((gfx3d.legacySave.PTcoords[2] * 4096.0f) + 0.000000001f);
-	_PTcoords.w = (s32)((gfx3d.legacySave.PTcoords[3] * 4096.0f) + 0.000000001f);
 	
 	gfx3d.pendingState.DISP3DCNT = GPUREG.DISP3DCNT;
 	gfx3d_parseCurrentDISP3DCNT();
@@ -3886,6 +4028,16 @@ void ParseReg_DISP3DCNT()
 	
 	gfx3d.pendingState.DISP3DCNT.value = DISP3DCNT.value;
 	gfx3d_parseCurrentDISP3DCNT();
+}
+
+u8 GFX3D_GetMatrixStackIndex(const MatrixMode whichMatrix)
+{
+	return _gEngine.GetMatrixStackIndex(whichMatrix);
+}
+
+void GFX3D_ResetMatrixStackPointer()
+{
+	_gEngine.ResetMatrixStackPointer();
 }
 
 bool GFX3D_IsPolyWireframe(const POLY &p)

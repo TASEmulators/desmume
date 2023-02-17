@@ -1975,8 +1975,8 @@ u32 TGXSTAT::read32()
 
 	// stack position always equal zero. possible timings is wrong
 	// using in "The Wild West"
-	int proj_level = mtxStackIndex[MATRIXMODE_PROJECTION] & 1;
-	int mv_level = mtxStackIndex[MATRIXMODE_POSITION] & 31;
+	u32 proj_level = (u32)GFX3D_GetMatrixStackIndex(MATRIXMODE_PROJECTION);
+	u32 mv_level   = (u32)GFX3D_GetMatrixStackIndex(MATRIXMODE_POSITION);
 	ret |= ((proj_level << 13) | (mv_level << 8));
 
 	ret |= sb<<14;	//stack busy
@@ -2011,7 +2011,7 @@ void TGXSTAT::write32(const u32 val)
 		// Writing "1" to Bit15 does reset the Error Flag (Bit15), 
 		// and additionally resets the Projection Stack Pointer (Bit13)
 		// (and probably (?) also the Texture Stack Pointer)??
-		mtxStackIndex[MATRIXMODE_PROJECTION] = 0;
+		GFX3D_ResetMatrixStackPointer();
 		se = 0; //clear stack error flag
 	}
 	//printf("gxstat write: %08X while gxfifo.size=%d\n",val,gxFIFO.size);

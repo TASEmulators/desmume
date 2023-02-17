@@ -77,8 +77,6 @@ class EMUFILE;
 extern CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 #define DS_DEPTH15TO24(depth) ( dsDepthExtend_15bit_to_24bit[(depth) & 0x7FFF] )
 
-extern u32 mtxStackIndex[4];
-
 // POLYGON PRIMITIVE TYPES
 enum PolygonPrimitiveType
 {
@@ -824,6 +822,7 @@ typedef struct LegacyGFX3D_StateSFormat LegacyGFX3D_StateSFormat;
 
 struct GeometryEngineLegacySave
 {
+	NDSMatrix currentWorkingMatrix[4];
 	NDSMatrix currentMultiplyMatrix;
 	
 	Vector32x4 vecTranslate;
@@ -837,6 +836,13 @@ struct GeometryEngineLegacySave
 	u8 mtxMultiply3x3CurrentIndex;
 	u8 vecScaleCurrentIndex;
 	u8 vecTranslateCurrentIndex;
+	
+	u32 regLightColor[4];
+	u32 regLightDirection[4];
+	u16 regDiffuse;
+	u16 regAmbient;
+	u16 regSpecular;
+	u16 regEmission;
 	
 	u32 vtxFormat;
 	VertexCoord16x4 vtxCoord;
@@ -856,6 +862,11 @@ struct GeometryEngineLegacySave
 	u32 isGeneratingFirstPolyOfStrip;
 	u8 generateTriangleStripIndexToggle;
 	
+	u32 boxTestCoordCurrentIndex;
+	u32 positionTestCoordCurrentIndex;
+	u16 boxTestCoord16[6];
+	float positionTestVtxFloat[4]; // Historically, the position test vertices were stored as floating point values, not as integers.
+	
 	IOREG_VIEWPORT regViewport; // Historically, the viewport was stored as its raw register value.
 };
 typedef struct GeometryEngineLegacySave GeometryEngineLegacySave;
@@ -867,7 +878,6 @@ struct GFX3D_LegacySave
 	u32 clIndex; // Exists purely for save state compatibility, historically went unused.
 	u32 clIndex2; // Exists purely for save state compatibility, historically went unused.
 	IOREG_VIEWPORT rawPolyViewport[POLYLIST_SIZE]; // Historically, pending polygons kept a copy of the current viewport as a raw register value.
-	float PTcoords[4]; // Historically, PTcoords were stored as floating point values, not as integers.
 };
 typedef struct GFX3D_LegacySave GFX3D_LegacySave;
 
@@ -915,6 +925,7 @@ protected:
 	CACHE_ALIGN Vector32x4 _vecTranslate;
 	CACHE_ALIGN Vector32x4 _vecScale;
 	
+	CACHE_ALIGN NDSMatrix _mtxCurrent[4];
 	CACHE_ALIGN NDSMatrix _currentMtxLoad4x4;
 	CACHE_ALIGN NDSMatrix _currentMtxLoad4x3;
 	CACHE_ALIGN NDSMatrix _currentMtxMult4x4;
@@ -927,20 +938,20 @@ protected:
 	CACHE_ALIGN NDSMatrixStack32 _mtxStackPositionVector;
 	CACHE_ALIGN NDSMatrixStack1  _mtxStackTexture;
 	
-	CACHE_ALIGN Vector32x4 _normal32;
-	CACHE_ALIGN NDSMatrix _mtxTexture32;
+	CACHE_ALIGN Vector32x4 _vecNormal;
 	CACHE_ALIGN VertexCoord16x3 _vtxCoord16;
 	CACHE_ALIGN VertexCoord16x2 _texCoord16;
 	CACHE_ALIGN VertexCoord32x2 _texCoordTransformed;
 	
 	MatrixMode _mtxCurrentMode;
-	u8 _vecScaleCurrentIndex;
-	u8 _vecTranslateCurrentIndex;
+	u8 _mtxStackIndex[4];
 	u8 _mtxLoad4x4CurrentIndex;
 	u8 _mtxLoad4x3CurrentIndex;
 	u8 _mtxMultiply4x4CurrentIndex;
 	u8 _mtxMultiply4x3CurrentIndex;
 	u8 _mtxMultiply3x3CurrentIndex;
+	u8 _vecScaleCurrentIndex;
+	u8 _vecTranslateCurrentIndex;
 	
 	u32 _vtxColor15;
 	FragmentColor _vtxColor555X;
@@ -967,6 +978,22 @@ protected:
 	bool _isGeneratingFirstPolyOfStrip;
 	bool _generateTriangleStripIndexToggle;
 	
+	u8 _boxTestCoordCurrentIndex;
+	u8 _positionTestCoordCurrentIndex;
+	CACHE_ALIGN u16 _boxTestCoord16[6];
+	CACHE_ALIGN VertexCoord32x4 _positionTestVtx32;
+	
+	u32 _regLightColor[4];
+	u32 _regLightDirection[4];
+	u16 _regDiffuse;
+	u16 _regAmbient;
+	u16 _regSpecular;
+	u16 _regEmission;
+	
+	CACHE_ALIGN Vector32x4 _vecLightDirectionTransformed[4];
+	CACHE_ALIGN Vector32x4 _vecLightDirectionHalfNegative[4];
+	bool _doesLightHalfVectorNeedUpdate[4];
+	
 	// This enum serves no real functional purpose except to be used for save state compatibility.
 	enum LastMtxMultCommand
 	{
@@ -975,12 +1002,19 @@ protected:
 		LastMtxMultCommand_3x3 = 2
 	} _lastMtxMultCommand;
 	
+	void _UpdateTransformedTexCoordsIfNeeded();
+	
 public:
 	NDSGeometryEngine();
 	
 	void Reset();
 	
 	MatrixMode GetMatrixMode() const;
+	u32 GetLightDirectionRegisterAtIndex(const size_t i) const;
+	u32 GetLightColorRegisterAtIndex(const size_t i) const;
+	
+	u8 GetMatrixStackIndex(const MatrixMode whichMatrix) const;
+	void ResetMatrixStackPointer();
 	
 	void SetMatrixMode(const u32 param);
 	bool SetCurrentMatrixLoad4x4(const u32 param);
@@ -1004,10 +1038,15 @@ public:
 	void MatrixScale();
 	void MatrixTranslate();
 	
+	void SetDiffuseAmbient(const u32 param);
+	void SetSpecularEmission(const u32 param);
+	void SetLightDirection(const u32 param);
+	void SetLightColor(const u32 param);
+	void SetNormal(const u32 param);
+	
 	void SetViewport(const u32 param);
 	void SetViewport(const IOREG_VIEWPORT regViewport);
 	void SetViewport(const GFX3D_Viewport viewport);
-	void SetNormal(const Vector32x4 inNormal);
 	void SetVertexColor(const u32 param);
 	void SetVertexColor(const FragmentColor vtxColor555X);
 	void SetTextureParameters(const u32 param);
@@ -1015,7 +1054,6 @@ public:
 	void SetTexturePalette(const u32 texPalette);
 	void SetTextureCoordinates(const u32 param);
 	void SetTextureCoordinates(const VertexCoord16x2 &texCoord16);
-	void SetTextureMatrix(const NDSMatrix &__restrict inTextureMatrix);
 	
 	void VertexListBegin(const u32 param, const POLYGON_ATTR polyAttr);
 	void VertexListBegin(const PolygonPrimitiveType vtxFormat, const POLYGON_ATTR polyAttr);
@@ -1031,13 +1069,32 @@ public:
 	void AddCurrentVertexToList(GFX3D_GeometryList &targetGList);
 	void GeneratePolygon(POLY &targetPoly, GFX3D_GeometryList &targetGList);
 	
+	bool SetCurrentBoxTestCoords(const u32 param);
+	void BoxTest();
+	bool SetCurrentPositionTestCoords(const u32 param);
+	void PositionTest();
+	void VectorTest(const u32 param);
+	
+	u32 GetClipMatrixAtIndex(const u32 requestedIndex) const;
+	u32 GetDirectionalMatrixAtIndex(const u32 requestedIndex) const;
+	u32 GetPositionTestResult(const u32 requestedIndex) const;
+	
+	void MatrixCopyFromCurrent(const MatrixMode whichMatrix, NDSMatrixFloat &outMtx);
+	void MatrixCopyFromCurrent(const MatrixMode whichMatrix, NDSMatrix &outMtx);
 	void MatrixCopyFromStack(const MatrixMode whichMatrix, const size_t stackIndex, NDSMatrixFloat &outMtx);
 	void MatrixCopyFromStack(const MatrixMode whichMatrix, const size_t stackIndex, NDSMatrix &outMtx);
 	void MatrixCopyToStack(const MatrixMode whichMatrix, const size_t stackIndex, const NDSMatrix &inMtx);
+	void UpdateLightDirectionHalfAngleVector(const size_t index);
 	void UpdateMatrixProjectionLua();
 	
-	void SaveState(GeometryEngineLegacySave &outLegacySave);
-	void LoadState(const GeometryEngineLegacySave &inLegacySave);
+	void SaveState_LegacyFormat(GeometryEngineLegacySave &outLegacySave);
+	void LoadState_LegacyFormat(const GeometryEngineLegacySave &inLegacySave);
+	
+	void SaveState_v2(EMUFILE &os);
+	void LoadState_v2(EMUFILE &is);
+	
+	void SaveState_v4(EMUFILE &os);
+	void LoadState_v4(EMUFILE &is);
 };
 
 //---------------------
@@ -1059,11 +1116,11 @@ u32 gfx3d_GetNumVertex();
 template<typename T> void gfx3d_UpdateEdgeMarkColorTable(const u8 offset, const T v);
 template<typename T> void gfx3d_UpdateFogTable(const u8 offset, const T v);
 template<typename T> void gfx3d_UpdateToonTable(const u8 offset, const T v);
-s32 gfx3d_GetClipMatrix(const u32 index);
-s32 gfx3d_GetDirectionalMatrix(const u32 index);
+u32 gfx3d_GetClipMatrix(const u32 index);
+u32 gfx3d_GetDirectionalMatrix(const u32 index);
 void gfx3d_glAlphaFunc(u32 v);
-u32 gfx3d_glGetPosRes(const size_t index);
-u16 gfx3d_glGetVecRes(const size_t index);
+u32 gfx3d_glGetPosRes(const u32 index);
+u16 gfx3d_glGetVecRes(const u32 index);
 void gfx3d_VBlankSignal();
 void gfx3d_VBlankEndSignal(bool skipFrame);
 void gfx3d_execute3D();
@@ -1087,6 +1144,9 @@ void gfx3d_ClearStack();
 void gfx3d_parseCurrentDISP3DCNT();
 const GFX3D_IOREG& GFX3D_GetIORegisterMap();
 void ParseReg_DISP3DCNT();
+
+u8 GFX3D_GetMatrixStackIndex(const MatrixMode whichMatrix);
+void GFX3D_ResetMatrixStackPointer();
 
 template<ClipperMode CLIPPERMODE> PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const VERT *(&rawVtx)[4], CPoly &outCPoly);
 template<ClipperMode CLIPPERMODE> PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const NDSVertex *(&rawVtx)[4], CPoly &outCPoly);
