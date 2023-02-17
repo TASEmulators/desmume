@@ -2016,9 +2016,9 @@ void NDSGeometryEngine::VectorTest(const u32 param)
 	// values >= 1.0f or < -1.0f will result in the sign bits becoming 1111b; otherwise, the sign
 	// bits will become 0000b.
 	const Vector16x3 resultVec = {
-		((testVec.x > 0) && (testVec.x < 4096)) ? ((s16)testVec.x & 0x0FFF) : ((s16)testVec.x | 0xF000),
-		((testVec.y > 0) && (testVec.y < 4096)) ? ((s16)testVec.y & 0x0FFF) : ((s16)testVec.y | 0xF000),
-		((testVec.z > 0) && (testVec.z < 4096)) ? ((s16)testVec.z & 0x0FFF) : ((s16)testVec.z | 0xF000)
+		(s16)( ((testVec.x > 0) && (testVec.x < 4096)) ? ((s16)testVec.x & 0x0FFF) : ((s16)testVec.x | 0xF000) ),
+		(s16)( ((testVec.y > 0) && (testVec.y < 4096)) ? ((s16)testVec.y & 0x0FFF) : ((s16)testVec.y | 0xF000) ),
+		(s16)( ((testVec.z > 0) && (testVec.z < 4096)) ? ((s16)testVec.z & 0x0FFF) : ((s16)testVec.z | 0xF000) )
 	};
 	
 	MMU_new.gxstat.tb = 0; // clear busy
