@@ -771,7 +771,6 @@ struct GFX3D_State
 	CACHE_ALIGN u16 edgeMarkColorTable[8];
 	CACHE_ALIGN u8 fogDensityTable[32];
 	CACHE_ALIGN u16 toonTable16[32];
-	CACHE_ALIGN u8 shininessTable[128];
 };
 typedef struct GFX3D_State GFX3D_State;
 
@@ -813,7 +812,6 @@ struct LegacyGFX3DStateSFormat
 	u32 fogOffset;
 	
 	u16 toonTable16[32];
-	u8 shininessTable[128];
 	
 	u32 activeFlushCommand;
 	u32 pendingFlushCommand;
@@ -863,7 +861,12 @@ struct GeometryEngineLegacySave
 	u16 regSpecular;
 	u16 regEmission;
 	
+	u8 shininessTablePending[128];
+	u8 shininessTableApplied[128];
+	
 	IOREG_VIEWPORT regViewport; // Historically, the viewport was stored as its raw register value.
+	
+	u8 shininessTablePendingIndex;
 	
 	u8 generateTriangleStripIndexToggle;
 	u32 vtxCount;
@@ -944,6 +947,9 @@ protected:
 	CACHE_ALIGN VertexCoord16x2 _texCoord16;
 	CACHE_ALIGN VertexCoord32x2 _texCoordTransformed;
 	
+	CACHE_ALIGN u8 _shininessTablePending[128];
+	CACHE_ALIGN u8 _shininessTableApplied[128];
+	
 	MatrixMode _mtxCurrentMode;
 	u8 _mtxStackIndex[4];
 	u8 _mtxLoad4x4PendingIndex;
@@ -990,6 +996,7 @@ protected:
 	u16 _regAmbient;
 	u16 _regSpecular;
 	u16 _regEmission;
+	u8 _shininessTablePendingIndex;
 	
 	CACHE_ALIGN Vector32x4 _vecLightDirectionTransformed[4];
 	CACHE_ALIGN Vector32x4 _vecLightDirectionHalfNegative[4];
@@ -1043,6 +1050,7 @@ public:
 	void SetSpecularEmission(const u32 param);
 	void SetLightDirection(const u32 param);
 	void SetLightColor(const u32 param);
+	void SetShininess(const u32 param);
 	void SetNormal(const u32 param);
 	
 	void SetViewport(const u32 param);

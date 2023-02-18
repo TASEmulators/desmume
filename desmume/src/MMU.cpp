@@ -1851,7 +1851,6 @@ static void writereg_POWCNT1(const int size, const u32 adr, const u32 val)
 		gfx3d.pendingState.fogColor = 0;
 		gfx3d.pendingState.fogOffset = 0;
 		gfx3d.pendingState.fogShift = 0;
-		memset(gfx3d.pendingState.shininessTable, 0, sizeof(gfx3d.pendingState.shininessTable));
 	}
 }
 

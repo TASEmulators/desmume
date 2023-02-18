@@ -277,9 +277,6 @@ u32 isSwapBuffers = FALSE;
 static POLYGON_ATTR _regPolyAttrPending;
 static POLYGON_ATTR _regPolyAttrApplied;
 
-//used for indexing the shininess table during parameters to shininess command
-static u8 _shininessTableCurrentIndex = 0;
-
 // "Freelook" related things
 int freelookMode = 0;
 s32 freelookMatrix[16];
@@ -648,6 +645,9 @@ void NDSGeometryEngine::__Init()
 	_regAmbient  = 0;
 	_regSpecular = 0;
 	_regEmission = 0;
+	_shininessTablePendingIndex = 0;
+	memset(_shininessTablePending, 0, sizeof(_shininessTablePending));
+	memset(_shininessTableApplied, 0, sizeof(_shininessTableApplied));
 	
 	_lastMtxMultCommand = LastMtxMultCommand_4x4;
 }
@@ -1204,6 +1204,30 @@ void NDSGeometryEngine::SetLightColor(const u32 param)
 	this->_regLightColor[index] = param;
 }
 
+void NDSGeometryEngine::SetShininess(const u32 param)
+{
+#ifdef MSB_FIRST
+	u8 *targetShininess = (u8 *)this->_shininessTablePending;
+	targetShininess[this->_shininessTablePendingIndex+0] =   (u8)(param        & 0x000000FF);
+	targetShininess[this->_shininessTablePendingIndex+1] = (u8)(((param >>  8) & 0x000000FF));
+	targetShininess[this->_shininessTablePendingIndex+2] = (u8)(((param >> 16) & 0x000000FF));
+	targetShininess[this->_shininessTablePendingIndex+3] = (u8)(((param >> 24) & 0x000000FF));
+#else
+	u32 &targetShininess = (u32 &)this->_shininessTablePending[this->_shininessTablePendingIndex];
+	targetShininess = param;
+#endif
+	
+	this->_shininessTablePendingIndex += 4;
+	
+	if (this->_shininessTablePendingIndex < 128)
+	{
+		return;
+	}
+	
+	memcpy(this->_shininessTableApplied, this->_shininessTablePending, sizeof(this->_shininessTablePending));
+	this->_shininessTablePendingIndex = 0;
+}
+
 void NDSGeometryEngine::SetNormal(const u32 param)
 {
 	this->_vecNormal.x = ((s32)((param << 22) & 0xFFC00000) / (s32)(1<<22)) * (s32)(1<<3);
@@ -1296,7 +1320,7 @@ void NDSGeometryEngine::SetNormal(const u32 param)
 			//shininess is 20.12 fixed point, so >>5 gives us .7 which is 128 entries
 			//the entries are 8bits each so <<4 gives us .12 again, compatible with the lighting formulas below
 			//(according to other normal nds procedures, we might should fill the bottom bits with 1 or 0 according to rules...)
-			fixedshininess = gfx3d.pendingState.shininessTable[fixedshininess>>5]<<4;
+			fixedshininess = this->_shininessTableApplied[fixedshininess>>5] << 4;
 		}
 
 		for (size_t c = 0; c < 3; c++)
@@ -2278,7 +2302,12 @@ void NDSGeometryEngine::SaveState_LegacyFormat(GeometryEngineLegacySave &outLega
 	outLegacySave.regSpecular = this->_regSpecular;
 	outLegacySave.regEmission = this->_regEmission;
 	
+	memcpy(outLegacySave.shininessTablePending, this->_shininessTablePending, sizeof(outLegacySave.shininessTablePending));
+	memcpy(outLegacySave.shininessTableApplied, this->_shininessTableApplied, sizeof(outLegacySave.shininessTableApplied));
+	
 	outLegacySave.regViewport = this->_regViewport;
+	
+	outLegacySave.shininessTablePendingIndex = this->_shininessTablePendingIndex;
 	
 	outLegacySave.generateTriangleStripIndexToggle = (this->_generateTriangleStripIndexToggle) ? 1 : 0;
 	outLegacySave.vtxCount = (u32)this->_vtxCount;
@@ -2351,7 +2380,12 @@ void NDSGeometryEngine::LoadState_LegacyFormat(const GeometryEngineLegacySave &i
 	this->_regSpecular = inLegacySave.regSpecular;
 	this->_regEmission = inLegacySave.regEmission;
 	
+	memcpy(this->_shininessTablePending, inLegacySave.shininessTablePending, sizeof(inLegacySave.shininessTablePending));
+	memcpy(this->_shininessTableApplied, inLegacySave.shininessTableApplied, sizeof(inLegacySave.shininessTableApplied));
+	
 	this->SetViewport(inLegacySave.regViewport);
+	
+	this->_shininessTablePendingIndex = inLegacySave.shininessTablePendingIndex;
 	
 	this->_generateTriangleStripIndexToggle = (inLegacySave.generateTriangleStripIndexToggle != 0) ? true : false;
 	this->_vtxCount = (size_t)inLegacySave.vtxCount;
@@ -2721,24 +2755,7 @@ static void gfx3d_glLightColor(const u32 param)
 
 static void gfx3d_glShininess(const u32 param)
 {
-#ifdef MSB_FIRST
-	u8 *targetShininess = (u8 *)gfx3d.pendingState.shininessTable;
-	targetShininess[_shininessTableCurrentIndex+0] =   (u8)(param        & 0x000000FF);
-	targetShininess[_shininessTableCurrentIndex+1] = (u8)(((param >>  8) & 0x000000FF));
-	targetShininess[_shininessTableCurrentIndex+2] = (u8)(((param >> 16) & 0x000000FF));
-	targetShininess[_shininessTableCurrentIndex+3] = (u8)(((param >> 24) & 0x000000FF));
-#else
-	u32 &targetShininess = (u32 &)gfx3d.pendingState.shininessTable[_shininessTableCurrentIndex];
-	targetShininess = param;
-#endif
-	
-	_shininessTableCurrentIndex += 4;
-	
-	if (_shininessTableCurrentIndex < 128)
-	{
-		return;
-	}
-	_shininessTableCurrentIndex = 0;
+	_gEngine.SetShininess(param);
 	GFX_DELAY(32);
 }
 
@@ -3680,7 +3697,7 @@ SFORMAT SF_GFX3D[] = {
 	{ "GSFC", 4, 4,  _legacyGFX3DStateSFormatPending.fogColor},
 	{ "GSFO", 4, 1, &_legacyGFX3DStateSFormatPending.fogOffset},
 	{ "GST4", 2, 32, _legacyGFX3DStateSFormatPending.toonTable16},
-	{ "GSSU", 1, 128, _legacyGFX3DStateSFormatPending.shininessTable},
+	{ "GSSU", 1, 128, gfx3d.gEngineLegacySave.shininessTablePending},
 	{ "GSAF", 4, 1, &_legacyGFX3DStateSFormatPending.activeFlushCommand},
 	{ "GSPF", 4, 1, &_legacyGFX3DStateSFormatPending.pendingFlushCommand},
 
@@ -3702,12 +3719,12 @@ SFORMAT SF_GFX3D[] = {
 	{ "gSFC", 4, 4,  _legacyGFX3DStateSFormatApplied.fogColor},
 	{ "gSFO", 4, 1, &_legacyGFX3DStateSFormatApplied.fogOffset},
 	{ "gST4", 2, 32, _legacyGFX3DStateSFormatApplied.toonTable16},
-	{ "gSSU", 1, 128, _legacyGFX3DStateSFormatApplied.shininessTable},
+	{ "gSSU", 1, 128, gfx3d.gEngineLegacySave.shininessTableApplied},
 	{ "gSAF", 4, 1, &_legacyGFX3DStateSFormatApplied.activeFlushCommand},
 	{ "gSPF", 4, 1, &_legacyGFX3DStateSFormatApplied.pendingFlushCommand},
 
 	{ "GSVP", 4, 1, &gfx3d.gEngineLegacySave.regViewport},
-	{ "GSSI", 1, 1, &_shininessTableCurrentIndex},
+	{ "GSSI", 1, 1, &gfx3d.gEngineLegacySave.shininessTablePendingIndex},
 	//------------------------
 	{ "GTST", 1, 1, &gfx3d.gEngineLegacySave.generateTriangleStripIndexToggle},
 	{ "GTVC", 4, 1, &gfx3d.gEngineLegacySave.vtxCount},
@@ -3786,7 +3803,6 @@ void gfx3d_PrepareSaveStateBufferWrite()
 	_legacyGFX3DStateSFormatPending.activeFlushCommand  = gfx3d.appliedState.SWAP_BUFFERS.value;
 	_legacyGFX3DStateSFormatPending.pendingFlushCommand = gfx3d.pendingState.SWAP_BUFFERS.value;
 	memcpy(_legacyGFX3DStateSFormatPending.toonTable16, gfx3d.pendingState.toonTable16, sizeof(gfx3d.pendingState.toonTable16));
-	memcpy(_legacyGFX3DStateSFormatPending.shininessTable, gfx3d.pendingState.shininessTable, sizeof(gfx3d.pendingState.shininessTable));
 	
 	_legacyGFX3DStateSFormatApplied.enableTexturing     = (gfx3d.appliedState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
 	_legacyGFX3DStateSFormatApplied.enableAlphaTest     = (gfx3d.appliedState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
@@ -3811,7 +3827,6 @@ void gfx3d_PrepareSaveStateBufferWrite()
 	_legacyGFX3DStateSFormatApplied.activeFlushCommand  = gfx3d.appliedState.SWAP_BUFFERS.value;
 	_legacyGFX3DStateSFormatApplied.pendingFlushCommand = gfx3d.pendingState.SWAP_BUFFERS.value;
 	memcpy(_legacyGFX3DStateSFormatApplied.toonTable16, gfx3d.appliedState.toonTable16, sizeof(gfx3d.appliedState.toonTable16));
-	memcpy(_legacyGFX3DStateSFormatApplied.shininessTable, gfx3d.appliedState.shininessTable, sizeof(gfx3d.appliedState.shininessTable));
 }
 
 void gfx3d_savestate(EMUFILE &os)
@@ -3973,7 +3988,6 @@ void gfx3d_FinishLoadStateBufferRead()
 	gfx3d.pendingState.fogOffset = _legacyGFX3DStateSFormatPending.fogOffset;
 	gfx3d.pendingState.alphaTestRef = _legacyGFX3DStateSFormatPending.alphaTestRef;
 	memcpy(gfx3d.pendingState.toonTable16, _legacyGFX3DStateSFormatPending.toonTable16, sizeof(gfx3d.pendingState.toonTable16));
-	memcpy(gfx3d.pendingState.shininessTable, _legacyGFX3DStateSFormatPending.shininessTable, sizeof(gfx3d.pendingState.shininessTable));
 	memcpy(gfx3d.pendingState.edgeMarkColorTable, GFX3DREG.EDGE_COLOR, sizeof(GFX3DREG.EDGE_COLOR));
 	memcpy(gfx3d.pendingState.fogDensityTable, GFX3DREG.FOG_TABLE, sizeof(GFX3DREG.FOG_TABLE));
 	
@@ -3998,7 +4012,6 @@ void gfx3d_FinishLoadStateBufferRead()
 	gfx3d.appliedState.alphaTestRef                  = _legacyGFX3DStateSFormatApplied.alphaTestRef;
 	gfx3d.appliedState.SWAP_BUFFERS.value            = _legacyGFX3DStateSFormatApplied.activeFlushCommand;
 	memcpy(gfx3d.appliedState.toonTable16, _legacyGFX3DStateSFormatApplied.toonTable16, sizeof(gfx3d.appliedState.toonTable16));
-	memcpy(gfx3d.appliedState.shininessTable, _legacyGFX3DStateSFormatApplied.shininessTable, sizeof(gfx3d.appliedState.shininessTable));
 	memcpy(gfx3d.appliedState.edgeMarkColorTable, GFX3DREG.EDGE_COLOR, sizeof(GFX3DREG.EDGE_COLOR));
 	memcpy(gfx3d.appliedState.fogDensityTable, GFX3DREG.FOG_TABLE, sizeof(GFX3DREG.FOG_TABLE));
 }
