@@ -259,23 +259,14 @@ public:
 using std::max;
 using std::min;
 
-GFX3D gfx3d;
-static GFX3D_IOREG *_GFX3D_IORegisterMap = NULL;
 Viewer3D_State viewer3D;
 
+static GFX3D_IOREG *_GFX3D_IORegisterMap = NULL;
 static NDSGeometryEngine _gEngine;
-
-static LegacyGFX3DStateSFormat _legacyGFX3DStateSFormatPending;
-static LegacyGFX3DStateSFormat _legacyGFX3DStateSFormatApplied;
+static GFX3D gfx3d;
 
 //tables that are provided to anyone
 CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
-
-u32 isSwapBuffers = FALSE;
-
-//raw ds format poly attributes
-static POLYGON_ATTR _regPolyAttrPending;
-static POLYGON_ATTR _regPolyAttrApplied;
 
 // "Freelook" related things
 int freelookMode = 0;
@@ -286,7 +277,6 @@ s32 freelookMatrix[16];
 #define RENDER_FRONT_SURFACE 0x80
 #define RENDER_BACK_SURFACE 0X40
 
-static bool _isDrawPending = false;
 //------------------------------------------------------------
 
 static void makeTables()
@@ -395,8 +385,6 @@ void gfx3d_init()
 {
 	_GFX3D_IORegisterMap = (GFX3D_IOREG *)(&MMU.ARM9_REG[0x0320]);
 	
-	_regPolyAttrPending.value = 0;
-	
 	gxf_hardware.reset();
 	
 	makeTables();
@@ -424,8 +412,6 @@ void gfx3d_reset()
 	memset(&viewer3D, 0, sizeof(Viewer3D_State));
 	
 	gxf_hardware.reset();
-
-	_isDrawPending = false;
 	
 	memset(&gfx3d, 0, sizeof(GFX3D));
 	
@@ -443,8 +429,7 @@ void gfx3d_reset()
 	
 	gfx3d.pendingListIndex = 0;
 	gfx3d.appliedListIndex = 1;
-
-	_regPolyAttrPending.value = 0;
+	
 	memset(gxPIPE.cmd, 0, sizeof(gxPIPE.cmd));
 	memset(gxPIPE.param, 0, sizeof(gxPIPE.param));
 	memset(gfx3d.framebufferNativeSave, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u32));
@@ -454,8 +439,6 @@ void gfx3d_reset()
 	_GFX3D_IORegisterMap->VIEWPORT.Y1 = 0;
 	_GFX3D_IORegisterMap->VIEWPORT.X2 = 255;
 	_GFX3D_IORegisterMap->VIEWPORT.Y2 = 191;
-	
-	isSwapBuffers = FALSE;
 
 	GFX_PIPEclear();
 	GFX_FIFOclear();
@@ -1274,7 +1257,7 @@ void NDSGeometryEngine::SetNormal(const u32 param)
 		emission32[2]
 	};
 
-	const u8 lightMask = _regPolyAttrApplied.LightMask;
+	const u8 lightMask = gfx3d.regPolyAttrApplied.LightMask;
 	
 	for (size_t i = 0; i < 4; i++)
 	{
@@ -2210,7 +2193,7 @@ u32 NDSGeometryEngine::GetDirectionalMatrixAtIndex(const u32 requestedIndex) con
 {
 	// When reading the current directional matrix, the read indices are sent
 	// sequentially, with values [0...8], assuming a 3x3 matrix. However, the
-	// directional matrix is stored as a 4x4 matrix with 16 values [0...16]. This
+	// directional matrix is stored as a 4x4 matrix with 16 values [0...15]. This
 	// means that in order to read the correct element from the directional matrix,
 	// the requested index needs to be mapped to the actual element index of the
 	// matrix.
@@ -2661,10 +2644,10 @@ static void gfx3d_glNormal(const u32 param)
 	_gEngine.SetNormal(param);
 	
 	GFX_DELAY(9);
-	GFX_DELAY_M2(_regPolyAttrApplied.Light0);
-	GFX_DELAY_M2(_regPolyAttrApplied.Light1);
-	GFX_DELAY_M2(_regPolyAttrApplied.Light2);
-	GFX_DELAY_M2(_regPolyAttrApplied.Light3);
+	GFX_DELAY_M2(gfx3d.regPolyAttrApplied.Light0);
+	GFX_DELAY_M2(gfx3d.regPolyAttrApplied.Light1);
+	GFX_DELAY_M2(gfx3d.regPolyAttrApplied.Light2);
+	GFX_DELAY_M2(gfx3d.regPolyAttrApplied.Light3);
 }
 
 static void gfx3d_glTexCoord(const u32 param)
@@ -2713,7 +2696,7 @@ static void gfx3d_glPolygonAttrib(const u32 param)
 		//TODO - we need some some similar checking for teximageparam etc.
 	}
 	
-	_regPolyAttrPending.value = param; // Only applied on BEGIN_VTXS
+	gfx3d.regPolyAttrPending.value = param; // Only applied on BEGIN_VTXS
 	GFX_DELAY(1);
 }
 
@@ -2761,9 +2744,9 @@ static void gfx3d_glShininess(const u32 param)
 
 static void gfx3d_glBegin(const u32 param)
 {
-	_regPolyAttrApplied = _regPolyAttrPending;
+	gfx3d.regPolyAttrApplied = gfx3d.regPolyAttrPending;
 	
-	_gEngine.VertexListBegin(param, _regPolyAttrApplied);
+	_gEngine.VertexListBegin(param, gfx3d.regPolyAttrApplied);
 	GFX_DELAY(1);
 }
 
@@ -2821,6 +2804,17 @@ void gfx3d_glFogOffset(const u32 v)
 {
 	gfx3d.pendingState.fogOffset = (u16)(v & 0x00007FFF);
 }
+
+
+template <typename T>
+void gfx3d_glClearColor(const u8 offset, const T v)
+{
+	((T *)&gfx3d.pendingState.clearColor)[offset >> (sizeof(T) >> 1)] = v;
+}
+
+template void gfx3d_glClearColor< u8>(const u8 offset, const  u8 v);
+template void gfx3d_glClearColor<u16>(const u8 offset, const u16 v);
+template void gfx3d_glClearColor<u32>(const u8 offset, const u32 v);
 
 template <typename T, size_t ADDROFFSET>
 void gfx3d_glClearDepth(const T v)
@@ -3182,7 +3176,7 @@ void gfx3d_execute3D()
 
 	//3d engine is locked up, or something.
 	//I dont think this should happen....
-	if (isSwapBuffers) return;
+	if (gfx3d.isSwapBuffersPending) return;
 
 	//this is a SPEED HACK
 	//fifo is currently emulated more accurately than it probably needs to be.
@@ -3193,7 +3187,7 @@ void gfx3d_execute3D()
 	{
 		if (GFX_PIPErecv(&cmd, &param))
 		{
-			//if (isSwapBuffers) printf("Executing while swapbuffers is pending: %d:%08X\n",cmd,param);
+			//if (gfx3d.isSwapBuffersPending) printf("Executing while swapbuffers is pending: %d:%08X\n",cmd,param);
 
 			//since we did anything at all, incur a pipeline motion cost.
 			//also, we can't let gxfifo sequencer stall until the fifo is empty.
@@ -3221,15 +3215,15 @@ void gfx3d_execute3D()
 void gfx3d_glFlush(const u32 param)
 {
 	//printf("-------------FLUSH------------- (vcount=%d\n",nds.VCount);
-	gfx3d.pendingState.SWAP_BUFFERS.value = param;
 #if 0
-	if (isSwapBuffers)
+	if (gfx3d.isSwapBuffersPending)
 	{
 		INFO("Error: swapBuffers already use\n");
 	}
 #endif
 	
-	isSwapBuffers = TRUE;
+	gfx3d.pendingState.SWAP_BUFFERS.value = param;
+	gfx3d.isSwapBuffersPending = true;
 
 	GFX_DELAY(1);
 }
@@ -3435,16 +3429,16 @@ static void gfx3d_doFlush()
 	}
 	
 	gfx3d.render3DFrameCount++;
-	_isDrawPending = true;
+	gfx3d.isDrawPending = true;
 }
 
 void gfx3d_VBlankSignal()
 {
-	if (isSwapBuffers)
+	if (gfx3d.isSwapBuffersPending)
 	{
 		gfx3d_doFlush();
 		GFX_DELAY(392);
-		isSwapBuffers = FALSE;
+		gfx3d.isSwapBuffersPending = false;
 		
 		//let's consider this the beginning of the next 3d frame.
 		//in case the game isn't constantly restoring the projection matrix, we want to ping lua
@@ -3488,12 +3482,12 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 		forceDraw = true;
 	}
 	
-	if (!_isDrawPending && !forceDraw)
+	if (!gfx3d.isDrawPending && !forceDraw)
 		return;
 
 	if (skipFrame) return;
 
-	_isDrawPending = false;
+	gfx3d.isDrawPending = false;
 	
 	GPU->GetEventHandler()->DidApplyRender3DSettingsBegin();
 	
@@ -3628,8 +3622,8 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 
 SFORMAT SF_GFX3D[] = {
 	{ "GCTL", 4, 1, &gfx3d.pendingState.DISP3DCNT},
-	{ "GPAT", 4, 1, &_regPolyAttrApplied},
-	{ "GPAP", 4, 1, &_regPolyAttrPending},
+	{ "GPAT", 4, 1, &gfx3d.regPolyAttrApplied},
+	{ "GPAP", 4, 1, &gfx3d.regPolyAttrPending},
 	{ "GINB", 4, 1, &gfx3d.gEngineLegacySave.inBegin},
 	{ "GTFM", 4, 1, &gfx3d.gEngineLegacySave.texParam},
 	{ "GTPA", 4, 1, &gfx3d.gEngineLegacySave.texPalette},
@@ -3655,7 +3649,7 @@ SFORMAT SF_GFX3D[] = {
 	{ "GLCM", 4, 1, &gfx3d.legacySave.clCommand},
 	{ "GLIN", 4, 1, &gfx3d.legacySave.clIndex},
 	{ "GLI2", 4, 1, &gfx3d.legacySave.clIndex2},
-	{ "GLSB", 4, 1, &isSwapBuffers},
+	{ "GLSB", 4, 1, &gfx3d.legacySave.isSwapBuffersPending},
 	{ "GLBT", 4, 1, &gfx3d.gEngineLegacySave.boxTestCoordCurrentIndex},
 	{ "GLPT", 4, 1, &gfx3d.gEngineLegacySave.positionTestCoordCurrentIndex},
 	{ "GLPC", 4, 4,  gfx3d.gEngineLegacySave.positionTestVtxFloat},
@@ -3679,49 +3673,49 @@ SFORMAT SF_GFX3D[] = {
 	{ "GMSP", 2, 1, &gfx3d.gEngineLegacySave.regSpecular},
 	{ "GMEM", 2, 1, &gfx3d.gEngineLegacySave.regEmission},
 	{ "GDRP", 4, 1, &gfx3d.legacySave.isDrawPending},
-	{ "GSET", 4, 1, &_legacyGFX3DStateSFormatPending.enableTexturing},
-	{ "GSEA", 4, 1, &_legacyGFX3DStateSFormatPending.enableAlphaTest},
-	{ "GSEB", 4, 1, &_legacyGFX3DStateSFormatPending.enableAlphaBlending},
-	{ "GSEX", 4, 1, &_legacyGFX3DStateSFormatPending.enableAntialiasing},
-	{ "GSEE", 4, 1, &_legacyGFX3DStateSFormatPending.enableEdgeMarking},
-	{ "GSEC", 4, 1, &_legacyGFX3DStateSFormatPending.enableClearImage},
-	{ "GSEF", 4, 1, &_legacyGFX3DStateSFormatPending.enableFog},
-	{ "GSEO", 4, 1, &_legacyGFX3DStateSFormatPending.enableFogAlphaOnly},
-	{ "GFSH", 4, 1, &_legacyGFX3DStateSFormatPending.fogShift},
-	{ "GSSH", 4, 1, &_legacyGFX3DStateSFormatPending.toonShadingMode},
-	{ "GSWB", 4, 1, &_legacyGFX3DStateSFormatPending.enableWDepth},
-	{ "GSSM", 4, 1, &_legacyGFX3DStateSFormatPending.polygonTransparentSortMode},
-	{ "GSAR", 1, 1, &_legacyGFX3DStateSFormatPending.alphaTestRef},
-	{ "GSCC", 4, 1, &_legacyGFX3DStateSFormatPending.clearColor},
-	{ "GSCD", 4, 1, &_legacyGFX3DStateSFormatPending.clearDepth},
-	{ "GSFC", 4, 4,  _legacyGFX3DStateSFormatPending.fogColor},
-	{ "GSFO", 4, 1, &_legacyGFX3DStateSFormatPending.fogOffset},
-	{ "GST4", 2, 32, _legacyGFX3DStateSFormatPending.toonTable16},
+	{ "GSET", 4, 1, &gfx3d.legacySave.statePending.enableTexturing},
+	{ "GSEA", 4, 1, &gfx3d.legacySave.statePending.enableAlphaTest},
+	{ "GSEB", 4, 1, &gfx3d.legacySave.statePending.enableAlphaBlending},
+	{ "GSEX", 4, 1, &gfx3d.legacySave.statePending.enableAntialiasing},
+	{ "GSEE", 4, 1, &gfx3d.legacySave.statePending.enableEdgeMarking},
+	{ "GSEC", 4, 1, &gfx3d.legacySave.statePending.enableClearImage},
+	{ "GSEF", 4, 1, &gfx3d.legacySave.statePending.enableFog},
+	{ "GSEO", 4, 1, &gfx3d.legacySave.statePending.enableFogAlphaOnly},
+	{ "GFSH", 4, 1, &gfx3d.legacySave.statePending.fogShift},
+	{ "GSSH", 4, 1, &gfx3d.legacySave.statePending.toonShadingMode},
+	{ "GSWB", 4, 1, &gfx3d.legacySave.statePending.enableWDepth},
+	{ "GSSM", 4, 1, &gfx3d.legacySave.statePending.polygonTransparentSortMode},
+	{ "GSAR", 1, 1, &gfx3d.legacySave.statePending.alphaTestRef},
+	{ "GSCC", 4, 1, &gfx3d.legacySave.statePending.clearColor},
+	{ "GSCD", 4, 1, &gfx3d.legacySave.statePending.clearDepth},
+	{ "GSFC", 4, 4,  gfx3d.legacySave.statePending.fogColor},
+	{ "GSFO", 4, 1, &gfx3d.legacySave.statePending.fogOffset},
+	{ "GST4", 2, 32, gfx3d.legacySave.statePending.toonTable16},
 	{ "GSSU", 1, 128, gfx3d.gEngineLegacySave.shininessTablePending},
-	{ "GSAF", 4, 1, &_legacyGFX3DStateSFormatPending.activeFlushCommand},
-	{ "GSPF", 4, 1, &_legacyGFX3DStateSFormatPending.pendingFlushCommand},
+	{ "GSAF", 4, 1, &gfx3d.legacySave.statePending.activeFlushCommand},
+	{ "GSPF", 4, 1, &gfx3d.legacySave.statePending.pendingFlushCommand},
 
-	{ "gSET", 4, 1, &_legacyGFX3DStateSFormatApplied.enableTexturing},
-	{ "gSEA", 4, 1, &_legacyGFX3DStateSFormatApplied.enableAlphaTest},
-	{ "gSEB", 4, 1, &_legacyGFX3DStateSFormatApplied.enableAlphaBlending},
-	{ "gSEX", 4, 1, &_legacyGFX3DStateSFormatApplied.enableAntialiasing},
-	{ "gSEE", 4, 1, &_legacyGFX3DStateSFormatApplied.enableEdgeMarking},
-	{ "gSEC", 4, 1, &_legacyGFX3DStateSFormatApplied.enableClearImage},
-	{ "gSEF", 4, 1, &_legacyGFX3DStateSFormatApplied.enableFog},
-	{ "gSEO", 4, 1, &_legacyGFX3DStateSFormatApplied.enableFogAlphaOnly},
-	{ "gFSH", 4, 1, &_legacyGFX3DStateSFormatApplied.fogShift},
-	{ "gSSH", 4, 1, &_legacyGFX3DStateSFormatApplied.toonShadingMode},
-	{ "gSWB", 4, 1, &_legacyGFX3DStateSFormatApplied.enableWDepth},
-	{ "gSSM", 4, 1, &_legacyGFX3DStateSFormatApplied.polygonTransparentSortMode},
-	{ "gSAR", 1, 1, &_legacyGFX3DStateSFormatApplied.alphaTestRef},
-	{ "gSCC", 4, 1, &_legacyGFX3DStateSFormatApplied.clearColor},
-	{ "gSCD", 4, 1, &_legacyGFX3DStateSFormatApplied.clearDepth},
-	{ "gSFC", 4, 4,  _legacyGFX3DStateSFormatApplied.fogColor},
-	{ "gSFO", 4, 1, &_legacyGFX3DStateSFormatApplied.fogOffset},
-	{ "gST4", 2, 32, _legacyGFX3DStateSFormatApplied.toonTable16},
+	{ "gSET", 4, 1, &gfx3d.legacySave.stateApplied.enableTexturing},
+	{ "gSEA", 4, 1, &gfx3d.legacySave.stateApplied.enableAlphaTest},
+	{ "gSEB", 4, 1, &gfx3d.legacySave.stateApplied.enableAlphaBlending},
+	{ "gSEX", 4, 1, &gfx3d.legacySave.stateApplied.enableAntialiasing},
+	{ "gSEE", 4, 1, &gfx3d.legacySave.stateApplied.enableEdgeMarking},
+	{ "gSEC", 4, 1, &gfx3d.legacySave.stateApplied.enableClearImage},
+	{ "gSEF", 4, 1, &gfx3d.legacySave.stateApplied.enableFog},
+	{ "gSEO", 4, 1, &gfx3d.legacySave.stateApplied.enableFogAlphaOnly},
+	{ "gFSH", 4, 1, &gfx3d.legacySave.stateApplied.fogShift},
+	{ "gSSH", 4, 1, &gfx3d.legacySave.stateApplied.toonShadingMode},
+	{ "gSWB", 4, 1, &gfx3d.legacySave.stateApplied.enableWDepth},
+	{ "gSSM", 4, 1, &gfx3d.legacySave.stateApplied.polygonTransparentSortMode},
+	{ "gSAR", 1, 1, &gfx3d.legacySave.stateApplied.alphaTestRef},
+	{ "gSCC", 4, 1, &gfx3d.legacySave.stateApplied.clearColor},
+	{ "gSCD", 4, 1, &gfx3d.legacySave.stateApplied.clearDepth},
+	{ "gSFC", 4, 4,  gfx3d.legacySave.stateApplied.fogColor},
+	{ "gSFO", 4, 1, &gfx3d.legacySave.stateApplied.fogOffset},
+	{ "gST4", 2, 32, gfx3d.legacySave.stateApplied.toonTable16},
 	{ "gSSU", 1, 128, gfx3d.gEngineLegacySave.shininessTableApplied},
-	{ "gSAF", 4, 1, &_legacyGFX3DStateSFormatApplied.activeFlushCommand},
-	{ "gSPF", 4, 1, &_legacyGFX3DStateSFormatApplied.pendingFlushCommand},
+	{ "gSAF", 4, 1, &gfx3d.legacySave.stateApplied.activeFlushCommand},
+	{ "gSPF", 4, 1, &gfx3d.legacySave.stateApplied.pendingFlushCommand},
 
 	{ "GSVP", 4, 1, &gfx3d.gEngineLegacySave.regViewport},
 	{ "GSSI", 1, 1, &gfx3d.gEngineLegacySave.shininessTablePendingIndex},
@@ -3778,55 +3772,56 @@ void gfx3d_PrepareSaveStateBufferWrite()
 	// For save state compatibility
 	_gEngine.SaveState_LegacyFormat(gfx3d.gEngineLegacySave);
 	
-	gfx3d.legacySave.isDrawPending = (_isDrawPending) ? TRUE : FALSE;
+	gfx3d.legacySave.isSwapBuffersPending = (gfx3d.isSwapBuffersPending) ? TRUE : FALSE;
+	gfx3d.legacySave.isDrawPending = (gfx3d.isDrawPending) ? TRUE : FALSE;
 	
-	_legacyGFX3DStateSFormatPending.enableTexturing     = (gfx3d.pendingState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatPending.enableAlphaTest     = (gfx3d.pendingState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatPending.enableAlphaBlending = (gfx3d.pendingState.DISP3DCNT.EnableAlphaBlending) ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatPending.enableAntialiasing  = (gfx3d.pendingState.DISP3DCNT.EnableAntialiasing)  ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatPending.enableEdgeMarking   = (gfx3d.pendingState.DISP3DCNT.EnableEdgeMarking)   ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatPending.enableClearImage    = (gfx3d.pendingState.DISP3DCNT.RearPlaneMode)       ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatPending.enableFog           = (gfx3d.pendingState.DISP3DCNT.EnableFog)           ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatPending.enableFogAlphaOnly  = (gfx3d.pendingState.DISP3DCNT.FogOnlyAlpha)        ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatPending.fogShift            = gfx3d.pendingState.fogShift;
-	_legacyGFX3DStateSFormatPending.toonShadingMode     = gfx3d.pendingState.DISP3DCNT.PolygonShading;
-	_legacyGFX3DStateSFormatPending.enableWDepth        = (gfx3d.pendingState.SWAP_BUFFERS.DepthMode)        ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatPending.polygonTransparentSortMode = (gfx3d.pendingState.SWAP_BUFFERS.YSortMode) ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatPending.alphaTestRef        = gfx3d.pendingState.alphaTestRef;
-	_legacyGFX3DStateSFormatPending.clearColor          = gfx3d.pendingState.clearColor;
-	_legacyGFX3DStateSFormatPending.clearDepth          = gfx3d.pendingState.clearDepth;
-	_legacyGFX3DStateSFormatPending.fogColor[0]         = gfx3d.pendingState.fogColor;
-	_legacyGFX3DStateSFormatPending.fogColor[1]         = gfx3d.pendingState.fogColor;
-	_legacyGFX3DStateSFormatPending.fogColor[2]         = gfx3d.pendingState.fogColor;
-	_legacyGFX3DStateSFormatPending.fogColor[3]         = gfx3d.pendingState.fogColor;
-	_legacyGFX3DStateSFormatPending.fogOffset           = gfx3d.pendingState.fogOffset;
-	_legacyGFX3DStateSFormatPending.activeFlushCommand  = gfx3d.appliedState.SWAP_BUFFERS.value;
-	_legacyGFX3DStateSFormatPending.pendingFlushCommand = gfx3d.pendingState.SWAP_BUFFERS.value;
-	memcpy(_legacyGFX3DStateSFormatPending.toonTable16, gfx3d.pendingState.toonTable16, sizeof(gfx3d.pendingState.toonTable16));
+	gfx3d.legacySave.statePending.enableTexturing     = (gfx3d.pendingState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
+	gfx3d.legacySave.statePending.enableAlphaTest     = (gfx3d.pendingState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
+	gfx3d.legacySave.statePending.enableAlphaBlending = (gfx3d.pendingState.DISP3DCNT.EnableAlphaBlending) ? TRUE : FALSE;
+	gfx3d.legacySave.statePending.enableAntialiasing  = (gfx3d.pendingState.DISP3DCNT.EnableAntialiasing)  ? TRUE : FALSE;
+	gfx3d.legacySave.statePending.enableEdgeMarking   = (gfx3d.pendingState.DISP3DCNT.EnableEdgeMarking)   ? TRUE : FALSE;
+	gfx3d.legacySave.statePending.enableClearImage    = (gfx3d.pendingState.DISP3DCNT.RearPlaneMode)       ? TRUE : FALSE;
+	gfx3d.legacySave.statePending.enableFog           = (gfx3d.pendingState.DISP3DCNT.EnableFog)           ? TRUE : FALSE;
+	gfx3d.legacySave.statePending.enableFogAlphaOnly  = (gfx3d.pendingState.DISP3DCNT.FogOnlyAlpha)        ? TRUE : FALSE;
+	gfx3d.legacySave.statePending.fogShift            = gfx3d.pendingState.fogShift;
+	gfx3d.legacySave.statePending.toonShadingMode     = gfx3d.pendingState.DISP3DCNT.PolygonShading;
+	gfx3d.legacySave.statePending.enableWDepth        = (gfx3d.pendingState.SWAP_BUFFERS.DepthMode)        ? TRUE : FALSE;
+	gfx3d.legacySave.statePending.polygonTransparentSortMode = (gfx3d.pendingState.SWAP_BUFFERS.YSortMode) ? TRUE : FALSE;
+	gfx3d.legacySave.statePending.alphaTestRef        = gfx3d.pendingState.alphaTestRef;
+	gfx3d.legacySave.statePending.clearColor          = gfx3d.pendingState.clearColor;
+	gfx3d.legacySave.statePending.clearDepth          = gfx3d.pendingState.clearDepth;
+	gfx3d.legacySave.statePending.fogColor[0]         = gfx3d.pendingState.fogColor;
+	gfx3d.legacySave.statePending.fogColor[1]         = gfx3d.pendingState.fogColor;
+	gfx3d.legacySave.statePending.fogColor[2]         = gfx3d.pendingState.fogColor;
+	gfx3d.legacySave.statePending.fogColor[3]         = gfx3d.pendingState.fogColor;
+	gfx3d.legacySave.statePending.fogOffset           = gfx3d.pendingState.fogOffset;
+	gfx3d.legacySave.statePending.activeFlushCommand  = gfx3d.appliedState.SWAP_BUFFERS.value;
+	gfx3d.legacySave.statePending.pendingFlushCommand = gfx3d.pendingState.SWAP_BUFFERS.value;
+	memcpy(gfx3d.legacySave.statePending.toonTable16, gfx3d.pendingState.toonTable16, sizeof(gfx3d.pendingState.toonTable16));
 	
-	_legacyGFX3DStateSFormatApplied.enableTexturing     = (gfx3d.appliedState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatApplied.enableAlphaTest     = (gfx3d.appliedState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatApplied.enableAlphaBlending = (gfx3d.appliedState.DISP3DCNT.EnableAlphaBlending) ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatApplied.enableAntialiasing  = (gfx3d.appliedState.DISP3DCNT.EnableAntialiasing)  ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatApplied.enableEdgeMarking   = (gfx3d.appliedState.DISP3DCNT.EnableEdgeMarking)   ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatApplied.enableClearImage    = (gfx3d.appliedState.DISP3DCNT.RearPlaneMode)       ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatApplied.enableFog           = (gfx3d.appliedState.DISP3DCNT.EnableFog)           ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatApplied.enableFogAlphaOnly  = (gfx3d.appliedState.DISP3DCNT.FogOnlyAlpha)        ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatApplied.fogShift            = gfx3d.appliedState.fogShift;
-	_legacyGFX3DStateSFormatApplied.toonShadingMode     = gfx3d.appliedState.DISP3DCNT.PolygonShading;
-	_legacyGFX3DStateSFormatApplied.enableWDepth        = (gfx3d.appliedState.SWAP_BUFFERS.DepthMode)        ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatApplied.polygonTransparentSortMode = (gfx3d.appliedState.SWAP_BUFFERS.YSortMode) ? TRUE : FALSE;
-	_legacyGFX3DStateSFormatApplied.alphaTestRef        = gfx3d.appliedState.alphaTestRef;
-	_legacyGFX3DStateSFormatApplied.clearColor          = gfx3d.appliedState.clearColor;
-	_legacyGFX3DStateSFormatApplied.clearDepth          = gfx3d.appliedState.clearDepth;
-	_legacyGFX3DStateSFormatApplied.fogColor[0]         = gfx3d.appliedState.fogColor;
-	_legacyGFX3DStateSFormatApplied.fogColor[1]         = gfx3d.appliedState.fogColor;
-	_legacyGFX3DStateSFormatApplied.fogColor[2]         = gfx3d.appliedState.fogColor;
-	_legacyGFX3DStateSFormatApplied.fogColor[3]         = gfx3d.appliedState.fogColor;
-	_legacyGFX3DStateSFormatApplied.fogOffset           = gfx3d.appliedState.fogOffset;
-	_legacyGFX3DStateSFormatApplied.activeFlushCommand  = gfx3d.appliedState.SWAP_BUFFERS.value;
-	_legacyGFX3DStateSFormatApplied.pendingFlushCommand = gfx3d.pendingState.SWAP_BUFFERS.value;
-	memcpy(_legacyGFX3DStateSFormatApplied.toonTable16, gfx3d.appliedState.toonTable16, sizeof(gfx3d.appliedState.toonTable16));
+	gfx3d.legacySave.stateApplied.enableTexturing     = (gfx3d.appliedState.DISP3DCNT.EnableTexMapping)    ? TRUE : FALSE;
+	gfx3d.legacySave.stateApplied.enableAlphaTest     = (gfx3d.appliedState.DISP3DCNT.EnableAlphaTest)     ? TRUE : FALSE;
+	gfx3d.legacySave.stateApplied.enableAlphaBlending = (gfx3d.appliedState.DISP3DCNT.EnableAlphaBlending) ? TRUE : FALSE;
+	gfx3d.legacySave.stateApplied.enableAntialiasing  = (gfx3d.appliedState.DISP3DCNT.EnableAntialiasing)  ? TRUE : FALSE;
+	gfx3d.legacySave.stateApplied.enableEdgeMarking   = (gfx3d.appliedState.DISP3DCNT.EnableEdgeMarking)   ? TRUE : FALSE;
+	gfx3d.legacySave.stateApplied.enableClearImage    = (gfx3d.appliedState.DISP3DCNT.RearPlaneMode)       ? TRUE : FALSE;
+	gfx3d.legacySave.stateApplied.enableFog           = (gfx3d.appliedState.DISP3DCNT.EnableFog)           ? TRUE : FALSE;
+	gfx3d.legacySave.stateApplied.enableFogAlphaOnly  = (gfx3d.appliedState.DISP3DCNT.FogOnlyAlpha)        ? TRUE : FALSE;
+	gfx3d.legacySave.stateApplied.fogShift            = gfx3d.appliedState.fogShift;
+	gfx3d.legacySave.stateApplied.toonShadingMode     = gfx3d.appliedState.DISP3DCNT.PolygonShading;
+	gfx3d.legacySave.stateApplied.enableWDepth        = (gfx3d.appliedState.SWAP_BUFFERS.DepthMode)        ? TRUE : FALSE;
+	gfx3d.legacySave.stateApplied.polygonTransparentSortMode = (gfx3d.appliedState.SWAP_BUFFERS.YSortMode) ? TRUE : FALSE;
+	gfx3d.legacySave.stateApplied.alphaTestRef        = gfx3d.appliedState.alphaTestRef;
+	gfx3d.legacySave.stateApplied.clearColor          = gfx3d.appliedState.clearColor;
+	gfx3d.legacySave.stateApplied.clearDepth          = gfx3d.appliedState.clearDepth;
+	gfx3d.legacySave.stateApplied.fogColor[0]         = gfx3d.appliedState.fogColor;
+	gfx3d.legacySave.stateApplied.fogColor[1]         = gfx3d.appliedState.fogColor;
+	gfx3d.legacySave.stateApplied.fogColor[2]         = gfx3d.appliedState.fogColor;
+	gfx3d.legacySave.stateApplied.fogColor[3]         = gfx3d.appliedState.fogColor;
+	gfx3d.legacySave.stateApplied.fogOffset           = gfx3d.appliedState.fogOffset;
+	gfx3d.legacySave.stateApplied.activeFlushCommand  = gfx3d.appliedState.SWAP_BUFFERS.value;
+	gfx3d.legacySave.stateApplied.pendingFlushCommand = gfx3d.pendingState.SWAP_BUFFERS.value;
+	memcpy(gfx3d.legacySave.stateApplied.toonTable16, gfx3d.appliedState.toonTable16, sizeof(gfx3d.appliedState.toonTable16));
 }
 
 void gfx3d_savestate(EMUFILE &os)
@@ -3976,42 +3971,43 @@ void gfx3d_FinishLoadStateBufferRead()
 	
 	_gEngine.LoadState_LegacyFormat(gfx3d.gEngineLegacySave);
 	
-	_isDrawPending = (gfx3d.legacySave.isDrawPending) ? true : false;
+	gfx3d.isSwapBuffersPending = (gfx3d.legacySave.isSwapBuffersPending) ? true : false;
+	gfx3d.isDrawPending = (gfx3d.legacySave.isDrawPending) ? true : false;
 	
 	gfx3d.pendingState.DISP3DCNT = GPUREG.DISP3DCNT;
 	gfx3d_parseCurrentDISP3DCNT();
 	
 	gfx3d.pendingState.SWAP_BUFFERS = GFX3DREG.SWAP_BUFFERS;
-	gfx3d.pendingState.clearColor = _legacyGFX3DStateSFormatPending.clearColor;
-	gfx3d.pendingState.clearDepth = _legacyGFX3DStateSFormatPending.clearDepth;
-	gfx3d.pendingState.fogColor = _legacyGFX3DStateSFormatPending.fogColor[0];
-	gfx3d.pendingState.fogOffset = _legacyGFX3DStateSFormatPending.fogOffset;
-	gfx3d.pendingState.alphaTestRef = _legacyGFX3DStateSFormatPending.alphaTestRef;
-	memcpy(gfx3d.pendingState.toonTable16, _legacyGFX3DStateSFormatPending.toonTable16, sizeof(gfx3d.pendingState.toonTable16));
+	gfx3d.pendingState.clearColor = gfx3d.legacySave.statePending.clearColor;
+	gfx3d.pendingState.clearDepth = gfx3d.legacySave.statePending.clearDepth;
+	gfx3d.pendingState.fogColor = gfx3d.legacySave.statePending.fogColor[0];
+	gfx3d.pendingState.fogOffset = gfx3d.legacySave.statePending.fogOffset;
+	gfx3d.pendingState.alphaTestRef = gfx3d.legacySave.statePending.alphaTestRef;
+	memcpy(gfx3d.pendingState.toonTable16, gfx3d.legacySave.statePending.toonTable16, sizeof(gfx3d.pendingState.toonTable16));
 	memcpy(gfx3d.pendingState.edgeMarkColorTable, GFX3DREG.EDGE_COLOR, sizeof(GFX3DREG.EDGE_COLOR));
 	memcpy(gfx3d.pendingState.fogDensityTable, GFX3DREG.FOG_TABLE, sizeof(GFX3DREG.FOG_TABLE));
 	
 	gfx3d.appliedState.DISP3DCNT.value               = 0;
-	gfx3d.appliedState.DISP3DCNT.EnableTexMapping    = (_legacyGFX3DStateSFormatApplied.enableTexturing)     ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.EnableAlphaTest     = (_legacyGFX3DStateSFormatApplied.enableAlphaTest)     ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.EnableAlphaBlending = (_legacyGFX3DStateSFormatApplied.enableAlphaBlending) ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.EnableAntialiasing  = (_legacyGFX3DStateSFormatApplied.enableAntialiasing)  ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.EnableEdgeMarking   = (_legacyGFX3DStateSFormatApplied.enableEdgeMarking)   ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.RearPlaneMode       = (_legacyGFX3DStateSFormatApplied.enableClearImage)    ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.EnableFog           = (_legacyGFX3DStateSFormatApplied.enableFog)           ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.FogOnlyAlpha        = (_legacyGFX3DStateSFormatApplied.enableFogAlphaOnly)  ? 1 : 0;
-	gfx3d.appliedState.DISP3DCNT.PolygonShading      = (_legacyGFX3DStateSFormatApplied.toonShadingMode)     ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableTexMapping    = (gfx3d.legacySave.stateApplied.enableTexturing)     ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableAlphaTest     = (gfx3d.legacySave.stateApplied.enableAlphaTest)     ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableAlphaBlending = (gfx3d.legacySave.stateApplied.enableAlphaBlending) ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableAntialiasing  = (gfx3d.legacySave.stateApplied.enableAntialiasing)  ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableEdgeMarking   = (gfx3d.legacySave.stateApplied.enableEdgeMarking)   ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.RearPlaneMode       = (gfx3d.legacySave.stateApplied.enableClearImage)    ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.EnableFog           = (gfx3d.legacySave.stateApplied.enableFog)           ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.FogOnlyAlpha        = (gfx3d.legacySave.stateApplied.enableFogAlphaOnly)  ? 1 : 0;
+	gfx3d.appliedState.DISP3DCNT.PolygonShading      = (gfx3d.legacySave.stateApplied.toonShadingMode)     ? 1 : 0;
 	gfx3d.appliedState.SWAP_BUFFERS.value            = 0;
-	gfx3d.appliedState.SWAP_BUFFERS.DepthMode        = (_legacyGFX3DStateSFormatApplied.enableWDepth)        ? 1 : 0;
-	gfx3d.appliedState.SWAP_BUFFERS.YSortMode        = (_legacyGFX3DStateSFormatApplied.polygonTransparentSortMode) ? 1 : 0;
-	gfx3d.appliedState.fogShift                      = _legacyGFX3DStateSFormatApplied.fogShift;
-	gfx3d.appliedState.clearColor                    = _legacyGFX3DStateSFormatApplied.clearColor;
-	gfx3d.appliedState.clearDepth                    = _legacyGFX3DStateSFormatApplied.clearDepth;
-	gfx3d.appliedState.fogColor                      = _legacyGFX3DStateSFormatApplied.fogColor[0];
-	gfx3d.appliedState.fogOffset                     = _legacyGFX3DStateSFormatApplied.fogOffset;
-	gfx3d.appliedState.alphaTestRef                  = _legacyGFX3DStateSFormatApplied.alphaTestRef;
-	gfx3d.appliedState.SWAP_BUFFERS.value            = _legacyGFX3DStateSFormatApplied.activeFlushCommand;
-	memcpy(gfx3d.appliedState.toonTable16, _legacyGFX3DStateSFormatApplied.toonTable16, sizeof(gfx3d.appliedState.toonTable16));
+	gfx3d.appliedState.SWAP_BUFFERS.DepthMode        = (gfx3d.legacySave.stateApplied.enableWDepth)        ? 1 : 0;
+	gfx3d.appliedState.SWAP_BUFFERS.YSortMode        = (gfx3d.legacySave.stateApplied.polygonTransparentSortMode) ? 1 : 0;
+	gfx3d.appliedState.fogShift                      = gfx3d.legacySave.stateApplied.fogShift;
+	gfx3d.appliedState.clearColor                    = gfx3d.legacySave.stateApplied.clearColor;
+	gfx3d.appliedState.clearDepth                    = gfx3d.legacySave.stateApplied.clearDepth;
+	gfx3d.appliedState.fogColor                      = gfx3d.legacySave.stateApplied.fogColor[0];
+	gfx3d.appliedState.fogOffset                     = gfx3d.legacySave.stateApplied.fogOffset;
+	gfx3d.appliedState.alphaTestRef                  = gfx3d.legacySave.stateApplied.alphaTestRef;
+	gfx3d.appliedState.SWAP_BUFFERS.value            = gfx3d.legacySave.stateApplied.activeFlushCommand;
+	memcpy(gfx3d.appliedState.toonTable16, gfx3d.legacySave.stateApplied.toonTable16, sizeof(gfx3d.appliedState.toonTable16));
 	memcpy(gfx3d.appliedState.edgeMarkColorTable, GFX3DREG.EDGE_COLOR, sizeof(GFX3DREG.EDGE_COLOR));
 	memcpy(gfx3d.appliedState.fogDensityTable, GFX3DREG.FOG_TABLE, sizeof(GFX3DREG.FOG_TABLE));
 }
@@ -4052,6 +4048,47 @@ u8 GFX3D_GetMatrixStackIndex(const MatrixMode whichMatrix)
 void GFX3D_ResetMatrixStackPointer()
 {
 	_gEngine.ResetMatrixStackPointer();
+}
+
+bool GFX3D_IsSwapBuffersPending()
+{
+	return gfx3d.isSwapBuffersPending;
+}
+
+void GFX3D_HandleGeometryPowerOff()
+{
+	//kill the geometry data when the power goes off
+	//so, so bad. we need to model this with hardware-like operations instead of c++ code
+	
+	// TODO: Test which geometry data should be cleared on power off.
+	// The code below doesn't make any sense. You would think that only the data that
+	// is derived from geometry commands (either via GXFIFO or if writing to registers
+	// 0x04000440 - 0x040006A4) is what should be cleared. And that outside of geometry
+	// command data, other data (even if related to the 3D engine) shouldn't be touched.
+	// This will need further testing, but for now, we'll leave things as they are.
+	//    - 2023/01/22, rogerman
+	gfx3d.pendingState.DISP3DCNT.value = 0;
+	gfx3d.pendingState.DISP3DCNT.EnableTexMapping = 1;
+	gfx3d.pendingState.DISP3DCNT.PolygonShading = PolygonShadingMode_Toon;
+	gfx3d.pendingState.DISP3DCNT.EnableAlphaTest = 1;
+	gfx3d.pendingState.DISP3DCNT.EnableAlphaBlending = 1;
+	gfx3d.pendingState.SWAP_BUFFERS.value = 0;
+	gfx3d.pendingState.alphaTestRef = 0;
+	gfx3d.pendingState.clearDepth = DS_DEPTH15TO24(0x7FFF);
+	gfx3d.pendingState.clearColor = 0;
+	gfx3d.pendingState.fogColor = 0;
+	gfx3d.pendingState.fogOffset = 0;
+	gfx3d.pendingState.fogShift = 0;
+}
+
+u32 GFX3D_GetRender3DFrameCount()
+{
+	return gfx3d.render3DFrameCount;
+}
+
+void GFX3D_ResetRender3DFrameCount()
+{
+	gfx3d.render3DFrameCount = 0;
 }
 
 bool GFX3D_IsPolyWireframe(const POLY &p)

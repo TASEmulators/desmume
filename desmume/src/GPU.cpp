@@ -2,7 +2,7 @@
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
-	Copyright (C) 2008-2021 DeSmuME team
+	Copyright (C) 2008-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -4728,8 +4728,8 @@ void GPUSubsystem::_UpdateFPSRender3D()
 	this->_videoFrameIndex++;
 	if (this->_videoFrameIndex == 60)
 	{
-		this->_render3DFrameCount = gfx3d.render3DFrameCount;
-		gfx3d.render3DFrameCount = 0;
+		this->_render3DFrameCount = GFX3D_GetRender3DFrameCount();
+		GFX3D_ResetRender3DFrameCount();
 		this->_videoFrameIndex = 0;
 	}
 }

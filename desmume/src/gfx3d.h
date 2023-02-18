@@ -787,7 +787,7 @@ struct GFX3D_GeometryList
 };
 typedef struct GFX3D_GeometryList GFX3D_GeometryList;
 
-struct LegacyGFX3DStateSFormat
+struct GFX3D_State_LegacySave
 {
 	u32 enableTexturing;
 	u32 enableAlphaTest;
@@ -816,7 +816,7 @@ struct LegacyGFX3DStateSFormat
 	u32 activeFlushCommand;
 	u32 pendingFlushCommand;
 };
-typedef struct LegacyGFX3D_StateSFormat LegacyGFX3D_StateSFormat;
+typedef struct GFX3D_State_LegacySave GFX3D_State_LegacySave;
 
 struct GeometryEngineLegacySave
 {
@@ -877,9 +877,13 @@ typedef struct GeometryEngineLegacySave GeometryEngineLegacySave;
 
 struct GFX3D_LegacySave
 {
-	u32 clCommand; // Exists purely for save state compatibility, historically went unused.
-	u32 clIndex; // Exists purely for save state compatibility, historically went unused.
-	u32 clIndex2; // Exists purely for save state compatibility, historically went unused.
+	GFX3D_State_LegacySave statePending;
+	GFX3D_State_LegacySave stateApplied;
+	
+	u32 clCommand; // Exists purely for save state compatibility, historically went unused since 09/20/2009.
+	u32 clIndex; // Exists purely for save state compatibility, historically went unused since 09/20/2009.
+	u32 clIndex2; // Exists purely for save state compatibility, historically went unused since 09/20/2009.
+	u32 isSwapBuffersPending;
 	u32 isDrawPending;
 	
 	IOREG_VIEWPORT rawPolyViewport[POLYLIST_SIZE]; // Historically, pending polygons kept a copy of the current viewport as a raw register value.
@@ -904,6 +908,11 @@ struct GFX3D
 	
 	u8 pendingListIndex;
 	u8 appliedListIndex;
+	bool isSwapBuffersPending;
+	bool isDrawPending;
+
+	POLYGON_ATTR regPolyAttrPending;
+	POLYGON_ATTR regPolyAttrApplied;
 	u32 render3DFrameCount; // Increments when gfx3d_doFlush() is called. Resets every 60 video frames.
 	
 	// Working lists for rendering.
@@ -913,13 +922,11 @@ struct GFX3D
 	CACHE_ALIGN float rawPolySortYMax[POLYLIST_SIZE]; // Temp buffer used for processing polygon Y-sorting
 	
 	// Everything below is for save state compatibility.
-	GeometryEngineLegacySave gEngineLegacySave;
 	GFX3D_LegacySave legacySave;
+	GeometryEngineLegacySave gEngineLegacySave;
 	PAGE_ALIGN FragmentColor framebufferNativeSave[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // Rendered 3D framebuffer that is saved in RGBA8888 color format at the native size.
 };
 typedef struct GFX3D GFX3D;
-
-extern GFX3D gfx3d;
 
 class NDSGeometryEngine
 {
@@ -1110,13 +1117,12 @@ public:
 
 extern CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 
-extern u32 isSwapBuffers;
-
 void gfx3d_glFlush(const u32 v);
 // end GE commands
 
 void gfx3d_glFogColor(const u32 v);
 void gfx3d_glFogOffset(const u32 v);
+template<typename T> void gfx3d_glClearColor(const u8 offset, const T v);
 template<typename T, size_t ADDROFFSET> void gfx3d_glClearDepth(const T v);
 template<typename T, size_t ADDROFFSET> void gfx3d_glClearImageOffset(const T v);
 void gfx3d_glSwapScreen(u32 screen);
@@ -1156,6 +1162,13 @@ void ParseReg_DISP3DCNT();
 
 u8 GFX3D_GetMatrixStackIndex(const MatrixMode whichMatrix);
 void GFX3D_ResetMatrixStackPointer();
+
+bool GFX3D_IsSwapBuffersPending();
+
+void GFX3D_HandleGeometryPowerOff();
+
+u32 GFX3D_GetRender3DFrameCount();
+void GFX3D_ResetRender3DFrameCount();
 
 template<ClipperMode CLIPPERMODE> PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const VERT *(&rawVtx)[4], CPoly &outCPoly);
 template<ClipperMode CLIPPERMODE> PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const NDSVertex *(&rawVtx)[4], CPoly &outCPoly);

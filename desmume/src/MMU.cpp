@@ -1829,28 +1829,7 @@ static void writereg_POWCNT1(const int size, const u32 adr, const u32 val)
 	bool isGeomEnabled = !!nds.power1.gfx3d_geometry;
 	if(wasGeomEnabled && !isGeomEnabled)
 	{
-		//kill the geometry data when the power goes off
-		//so, so bad. we need to model this with hardware-like operations instead of c++ code
-		
-		// TODO: Test which geometry data should be cleared on power off.
-		// The code below doesn't make any sense. You would think that only the data that
-		// is derived from geometry commands (either via GXFIFO or if writing to registers
-		// 0x04000440 - 0x040006A4) is what should be cleared. And that outside of geometry
-		// command data, other data (even if related to the 3D engine) shouldn't be touched.
-		// This will need further testing, but for now, we'll leave things as they are.
-		//    - 2023/01/22, rogerman
-		gfx3d.pendingState.DISP3DCNT.value = 0;
-		gfx3d.pendingState.DISP3DCNT.EnableTexMapping = 1;
-		gfx3d.pendingState.DISP3DCNT.PolygonShading = PolygonShadingMode_Toon;
-		gfx3d.pendingState.DISP3DCNT.EnableAlphaTest = 1;
-		gfx3d.pendingState.DISP3DCNT.EnableAlphaBlending = 1;
-		gfx3d.pendingState.SWAP_BUFFERS.value = 0;
-		gfx3d.pendingState.alphaTestRef = 0;
-		gfx3d.pendingState.clearDepth = DS_DEPTH15TO24(0x7FFF);
-		gfx3d.pendingState.clearColor = 0;
-		gfx3d.pendingState.fogColor = 0;
-		gfx3d.pendingState.fogOffset = 0;
-		gfx3d.pendingState.fogShift = 0;
+		GFX3D_HandleGeometryPowerOff();
 	}
 }
 
@@ -1986,7 +1965,7 @@ u32 TGXSTAT::read32()
 	if(gxFIFO.size==0) ret |= BIT(26); //fifo empty
 	//determine busy flag.
 	//if we're waiting for a flush, we're busy
-	if(isSwapBuffers) ret |= BIT(27);
+	if(GFX3D_IsSwapBuffersPending()) ret |= BIT(27);
 	//if fifo is nonempty, we're busy
 	if(gxFIFO.size!=0) ret |= BIT(27);
 
@@ -1995,7 +1974,7 @@ u32 TGXSTAT::read32()
 	
 	ret |= ((gxfifo_irq & 0x3) << 30); //user's irq flags
 
-	//printf("vc=%03d Returning gxstat read: %08X (isSwapBuffers=%d)\n",nds.VCount,ret,isSwapBuffers);
+	//printf("vc=%03d Returning gxstat read: %08X (isSwapBuffers=%d)\n", nds.VCount, ret, (GFX3D_IsSwapBuffersPending()) ? 1 : 0);
 
 	//ret = (2 << 8);
 	//INFO("gxSTAT 0x%08X (proj %i, pos %i)\n", ret, _hack_getMatrixStackLevel(1), _hack_getMatrixStackLevel(2));
@@ -3685,10 +3664,25 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				case REG_IF+2: REG_IF_WriteByte<ARMCPU_ARM9>(2,val); break;
 				case REG_IF+3: REG_IF_WriteByte<ARMCPU_ARM9>(3,val); break;
 					
-				case eng_3D_CLEAR_COLOR+0: case eng_3D_CLEAR_COLOR+1:
-				case eng_3D_CLEAR_COLOR+2: case eng_3D_CLEAR_COLOR+3:
-					T1WriteByte((u8*)&gfx3d.pendingState.clearColor, adr-eng_3D_CLEAR_COLOR, val);
-					break;
+				case eng_3D_CLEAR_COLOR:
+					HostWriteByte(MMU.ARM9_REG, 0x0350, val);
+					gfx3d_glClearColor<u8>(0, val);
+					return;
+					
+				case eng_3D_CLEAR_COLOR+1:
+					HostWriteByte(MMU.ARM9_REG, 0x0351, val);
+					gfx3d_glClearColor<u8>(1, val);
+					return;
+					
+				case eng_3D_CLEAR_COLOR+2:
+					HostWriteByte(MMU.ARM9_REG, 0x0352, val);
+					gfx3d_glClearColor<u8>(2, val);
+					return;
+					
+				case eng_3D_CLEAR_COLOR+3:
+					HostWriteByte(MMU.ARM9_REG, 0x0353, val);
+					gfx3d_glClearColor<u8>(3, val);
+					return;
 					
 				case eng_3D_CLEAR_DEPTH:
 					HostWriteByte(MMU.ARM9_REG, 0x0354, val);
@@ -4323,9 +4317,14 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					return;
 					
 				case eng_3D_CLEAR_COLOR:
+					T1WriteWord(MMU.ARM9_REG, 0x0350, val);
+					gfx3d_glClearColor<u16>(0, val);
+					return;
+					
 				case eng_3D_CLEAR_COLOR+2:
-					T1WriteWord((u8 *)&gfx3d.pendingState.clearColor, adr-eng_3D_CLEAR_COLOR, val);
-					break;
+					T1WriteWord(MMU.ARM9_REG, 0x0352, val);
+					gfx3d_glClearColor<u16>(2, val);
+					return;
 					
 					// Clear background depth setup - Parameters:2
 				case eng_3D_CLEAR_DEPTH:
@@ -4880,8 +4879,9 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					return;
 					
 				case eng_3D_CLEAR_COLOR:
-					T1WriteLong((u8 *)&gfx3d.pendingState.clearColor, 0, val);
-					break;
+					T1WriteLong(MMU.ARM9_REG, 0x0350, val);
+					gfx3d_glClearColor<u32>(0, val);
+					return;
 					
 					// Clear background depth setup - Parameters:2
 				case eng_3D_CLEAR_DEPTH:
