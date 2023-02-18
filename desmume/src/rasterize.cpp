@@ -1733,7 +1733,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	_deviceInfo.maxAnisotropy = 1.0f;
 	_deviceInfo.maxSamples = 0;
 	
-	_clippedPolyList = (CPoly *)malloc_alignedCacheLine(POLYLIST_SIZE * 2 * sizeof(CPoly));
+	_clippedPolyList = (CPoly *)malloc_alignedCacheLine(CLIPPED_POLYLIST_SIZE * sizeof(CPoly));
 	
 	_task = NULL;
 	

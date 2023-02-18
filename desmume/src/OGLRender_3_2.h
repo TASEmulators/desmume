@@ -71,7 +71,7 @@ protected:
 	bool _isConservativeDepthAMDSupported;
 	
 	GLsync _syncBufferSetup;
-	CACHE_ALIGN OGLPolyStates _pendingPolyStates[POLYLIST_SIZE];
+	CACHE_ALIGN OGLPolyStates _pendingPolyStates[CLIPPED_POLYLIST_SIZE];
 	
 	virtual Render3DError InitExtensions();
 	

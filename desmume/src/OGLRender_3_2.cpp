@@ -1176,7 +1176,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 			// Set up poly states TBO
 			glGenBuffers(1, &OGLRef.tboPolyStatesID);
 			glBindBuffer(GL_TEXTURE_BUFFER, OGLRef.tboPolyStatesID);
-			glBufferData(GL_TEXTURE_BUFFER, POLYLIST_SIZE * sizeof(OGLPolyStates), NULL, GL_DYNAMIC_DRAW);
+			glBufferData(GL_TEXTURE_BUFFER, CLIPPED_POLYLIST_SIZE * sizeof(OGLPolyStates), NULL, GL_DYNAMIC_DRAW);
 			
 			glGenTextures(1, &OGLRef.texPolyStatesID);
 			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);

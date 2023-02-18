@@ -183,7 +183,7 @@ protected:
 	SSurface _textureDeposterizeDstSurface;
 	
 	u32 *_textureUpscaleBuffer;
-	Render3DTexture *_textureList[POLYLIST_SIZE];
+	Render3DTexture *_textureList[CLIPPED_POLYLIST_SIZE];
 	
 	size_t _clippedPolyCount;
 	size_t _clippedPolyOpaqueCount;

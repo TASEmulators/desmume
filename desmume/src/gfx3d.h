@@ -535,9 +535,9 @@ bool GFX3D_IsPolyWireframe(const POLY &p);
 bool GFX3D_IsPolyOpaque(const POLY &p);
 bool GFX3D_IsPolyTranslucent(const POLY &p);
 
-#define POLYLIST_SIZE 20000
+#define POLYLIST_SIZE 16383
+#define CLIPPED_POLYLIST_SIZE (POLYLIST_SIZE * 2)
 #define VERTLIST_SIZE (POLYLIST_SIZE * 4)
-#define INDEXLIST_SIZE (POLYLIST_SIZE * 4)
 
 #include "PACKED.h"
 
@@ -778,7 +778,7 @@ struct GFX3D_GeometryList
 {
 	PAGE_ALIGN VERT rawVertList[VERTLIST_SIZE];
 	PAGE_ALIGN POLY rawPolyList[POLYLIST_SIZE];
-	PAGE_ALIGN CPoly clippedPolyList[POLYLIST_SIZE];
+	PAGE_ALIGN CPoly clippedPolyList[CLIPPED_POLYLIST_SIZE];
 	
 	size_t rawVertCount;
 	size_t rawPolyCount;
@@ -907,8 +907,8 @@ struct GFX3D
 	u32 render3DFrameCount; // Increments when gfx3d_doFlush() is called. Resets every 60 video frames.
 	
 	// Working lists for rendering.
-	CACHE_ALIGN CPoly clippedPolyUnsortedList[POLYLIST_SIZE * 2]; // Records clipped polygon info on first pass
-	CACHE_ALIGN u16 indexOfClippedPolyUnsortedList[POLYLIST_SIZE * 2];
+	CACHE_ALIGN CPoly clippedPolyUnsortedList[CLIPPED_POLYLIST_SIZE]; // Records clipped polygon info on first pass
+	CACHE_ALIGN u16 indexOfClippedPolyUnsortedList[CLIPPED_POLYLIST_SIZE];
 	CACHE_ALIGN float rawPolySortYMin[POLYLIST_SIZE]; // Temp buffer used for processing polygon Y-sorting
 	CACHE_ALIGN float rawPolySortYMax[POLYLIST_SIZE]; // Temp buffer used for processing polygon Y-sorting
 	

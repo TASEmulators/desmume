@@ -293,7 +293,7 @@ EXTERNOGLEXT(PFNGLDELETESYNCPROC, glDeleteSync) // Core in v3.2
 #define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR			2
 #define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION		0
 
-#define OGLRENDER_VERT_INDEX_BUFFER_COUNT	(POLYLIST_SIZE * 6)
+#define OGLRENDER_VERT_INDEX_BUFFER_COUNT	(CLIPPED_POLYLIST_SIZE * 6)
 
 // Assign the FBO attachments for the main geometry render
 #ifdef OGLRENDER_3_2_H
@@ -736,7 +736,7 @@ protected:
 	
 	bool _enableMultisampledRendering;
 	int _selectedMultisampleSize;
-	bool _isPolyFrontFacing[POLYLIST_SIZE];
+	bool _isPolyFrontFacing[CLIPPED_POLYLIST_SIZE];
 	size_t _clearImageIndex;
 	
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);

@@ -186,8 +186,8 @@ public:
 	int _debug_drawClippedUserPoly;
 	CACHE_ALIGN FragmentColor toonColor32LUT[32];
 	FragmentAttributesBuffer *_framebufferAttributes;
-	bool isPolyVisible[POLYLIST_SIZE];
-	bool isPolyBackFacing[POLYLIST_SIZE];
+	bool isPolyVisible[CLIPPED_POLYLIST_SIZE];
+	bool isPolyBackFacing[CLIPPED_POLYLIST_SIZE];
 	GFX3D_State *currentRenderState;
 	
 	bool _enableFragmentSamplingHack;

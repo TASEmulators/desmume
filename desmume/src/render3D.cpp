@@ -240,7 +240,7 @@ Render3D::Render3D()
 	_textureDeposterizeSrcSurface.Height = _textureDeposterizeDstSurface.Height = 1;
 	_textureDeposterizeSrcSurface.Pitch = _textureDeposterizeDstSurface.Pitch = 1;
 	
-	for (size_t i = 0; i < POLYLIST_SIZE; i++)
+	for (size_t i = 0; i < CLIPPED_POLYLIST_SIZE; i++)
 	{
 		_textureList[i] = NULL;
 	}
