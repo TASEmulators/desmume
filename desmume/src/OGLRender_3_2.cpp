@@ -656,7 +656,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	glActiveTexture(GL_TEXTURE0);
 	
 	// Load and create shaders. Return on any error, since v3.2 Core Profile makes shaders mandatory.
@@ -819,7 +819,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, this->_framebufferWidth, this->_framebufferHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
@@ -827,7 +827,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGPolyID);
@@ -835,7 +835,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGFogAttrID);
@@ -843,7 +843,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glActiveTexture(GL_TEXTURE0);
 	
@@ -958,7 +958,7 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight, GL_TRUE);
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, GL_TRUE);
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGWorkingID);
@@ -966,7 +966,7 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight, GL_TRUE);
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, GL_TRUE);
 		
 		glActiveTexture(GL_TEXTURE0);
 	}
@@ -976,17 +976,17 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 		glGenRenderbuffers(1, &OGLRef.rboMSGWorkingID);
 		
 		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGColorID);
-		glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
 		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGWorkingID);
-		glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
 	}
 	
 	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGPolyID);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
 	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGFogAttrID);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
 	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGDepthStencilID);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_DEPTH24_STENCIL8, this->_framebufferWidth, this->_framebufferHeight);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_DEPTH24_STENCIL8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
 	
 	// Set up multisampled rendering FBO
 	glGenFramebuffers(1, &OGLRef.fboMSIntermediateRenderID);
@@ -1055,8 +1055,8 @@ void OpenGLRenderer_3_2::DestroyMultisampledFBO()
 void OpenGLRenderer_3_2::ResizeMultisampledFBOs(GLsizei numSamples)
 {
 	OGLRenderRef &OGLRef = *this->ref;
-	GLsizei w = this->_framebufferWidth;
-	GLsizei h = this->_framebufferHeight;
+	GLsizei w = (GLsizei)this->_framebufferWidth;
+	GLsizei h = (GLsizei)this->_framebufferHeight;
 	
 	if ( !this->isMultisampledFBOSupported ||
 		(numSamples == 1) ||
@@ -1708,7 +1708,7 @@ void OpenGLRenderer_3_2::GetExtensionSet(std::set<std::string> *oglExtensionSet)
 	GLint extensionCount = 0;
 	
 	glGetIntegerv(GL_NUM_EXTENSIONS, &extensionCount);
-	for (size_t i = 0; i < extensionCount; i++)
+	for (GLuint i = 0; i < extensionCount; i++)
 	{
 		const char * extensionName = (const char *)glGetStringi(GL_EXTENSIONS, i);
 		if (extensionName == NULL) {
@@ -1777,13 +1777,13 @@ Render3DError OpenGLRenderer_3_2::ZeroDstAlphaPass(const POLY *rawPolyList, cons
 		// This is not perfectly pixel accurate, but it's better than nothing.
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboRenderID);
 		glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
-		glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBlitFramebuffer(0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		glDrawBuffers(4, GeometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
 		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
 	}
 	
 	glUseProgram((isRunningMSAAWithPerSampleShading) ? OGLRef.programMSGeometryZeroDstAlphaID : OGLRef.programGeometryZeroDstAlphaID);
-	glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
+	glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
 	glDisable(GL_BLEND);
 	glEnable(GL_STENCIL_TEST);
 	glDisable(GL_DEPTH_TEST);
@@ -1852,7 +1852,7 @@ void OpenGLRenderer_3_2::_ResolveWorkingBackFacing()
 	
 	glReadBuffer(GL_WORKING_ATTACHMENT_ID);
 	glDrawBuffer(GL_WORKING_ATTACHMENT_ID);
-	glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	
 	// Reset framebuffer targets
 	glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
@@ -1878,20 +1878,20 @@ void OpenGLRenderer_3_2::_ResolveGeometry()
 	{
 		glReadBuffer(GL_POLYID_ATTACHMENT_ID);
 		glDrawBuffer(GL_POLYID_ATTACHMENT_ID);
-		glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBlitFramebuffer(0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
 	
 	if (this->_enableFog)
 	{
 		glReadBuffer(GL_FOGATTRIBUTES_ATTACHMENT_ID);
 		glDrawBuffer(GL_FOGATTRIBUTES_ATTACHMENT_ID);
-		glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBlitFramebuffer(0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
 	
 	// Blit the color and depth buffers
 	glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
 	glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
-	glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 	
 	// Reset framebuffer targets
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
@@ -1921,7 +1921,7 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 			glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
 		}
 		
-		glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
+		glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_STENCIL_TEST);
 		glDisable(GL_BLEND);
@@ -1938,7 +1938,7 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 			this->_mappedFramebuffer = NULL;
 		}
 		
-		glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+		glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 	}
 	else
 	{
@@ -1947,14 +1947,14 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 		{
 			glDrawBuffer(GL_WORKING_ATTACHMENT_ID);
 			glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
-			glBlitFramebuffer(0, this->_framebufferHeight, this->_framebufferWidth, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			glBlitFramebuffer(0, (GLint)this->_framebufferHeight, (GLint)this->_framebufferWidth, 0, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 			glReadBuffer(GL_WORKING_ATTACHMENT_ID);
 		}
 		else
 		{
 			glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
 			glReadBuffer(GL_WORKING_ATTACHMENT_ID);
-			glBlitFramebuffer(0, this->_framebufferHeight, this->_framebufferWidth, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			glBlitFramebuffer(0, (GLint)this->_framebufferHeight, (GLint)this->_framebufferWidth, 0, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 			glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
 		}
 		
@@ -1966,7 +1966,7 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 			this->_mappedFramebuffer = NULL;
 		}
 		
-		glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	}
 	
 	this->_pixelReadNeedsFinish = true;
@@ -2203,7 +2203,7 @@ Render3DError OpenGLRenderer_3_2::PostprocessFramebuffer()
 	if (this->_enableEdgeMark || this->_enableFog)
 	{
 		// Set up the postprocessing states
-		glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
+		glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_CULL_FACE);
 		
@@ -2325,13 +2325,13 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 		// Blit the fog buffer
 		glReadBuffer(GL_FOGATTRIBUTES_ATTACHMENT_ID);
 		glDrawBuffer(GL_FOGATTRIBUTES_ATTACHMENT_ID);
-		glBlitFramebuffer(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBlitFramebuffer(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
 	
 	// Blit the color and depth/stencil buffers. Do this last so that color attachment 0 is set to the read FBO.
 	glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
 	glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
-	glBlitFramebuffer(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
 	glDrawBuffers(4, GeometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
@@ -2359,13 +2359,13 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 		{
 			glReadBuffer(GL_FOGATTRIBUTES_ATTACHMENT_ID);
 			glDrawBuffer(GL_FOGATTRIBUTES_ATTACHMENT_ID);
-			glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			glBlitFramebuffer(0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		}
 		
 		// Blit the color and depth/stencil buffers. Do this last so that color attachment 0 is set to the read FBO.
 		glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
 		glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
-		glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+		glBlitFramebuffer(0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 		
 		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
 		glDrawBuffers(4, GeometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
@@ -2411,7 +2411,7 @@ Render3DError OpenGLRenderer_3_2::ClearUsingValues(const FragmentColor &clearCol
 void OpenGLRenderer_3_2::SetPolygonIndex(const size_t index)
 {
 	this->_currentPolyIndex = index;
-	glUniform1i(this->ref->uniformPolyStateIndex[this->_geometryProgramFlags.value], index);
+	glUniform1i(this->ref->uniformPolyStateIndex[this->_geometryProgramFlags.value], (GLint)index);
 	
 	if (this->_syncBufferSetup != NULL)
 	{
@@ -2575,19 +2575,19 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	}
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_DepthStencil);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, w, h, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, (GLsizei)w, (GLsizei)h, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glActiveTexture(GL_TEXTURE0);
 	
@@ -2663,7 +2663,7 @@ Render3DError OpenGLRenderer_3_2::RenderPowerOff()
 		this->_mappedFramebuffer = NULL;
 	}
 	
-	glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 	
 	ENDGL();
 	
