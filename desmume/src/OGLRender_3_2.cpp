@@ -791,6 +791,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 		INFO("OpenGL: Driver does not support at least 2x multisampled FBOs.\n");
 	}
 	
+	this->_isDepthLEqualPolygonFacingSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
 	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->isMultisampledFBOSupported);
 	
 	this->InitFinalRenderStates(&oglExtensionSet); // This must be done last
