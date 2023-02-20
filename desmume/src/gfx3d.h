@@ -748,6 +748,7 @@ struct CPoly
 {
 	u16 index; // The index number of this polygon in the full polygon list.
 	PolygonType type; //otherwise known as "count" of verts
+	bool isPolyBackFacing;
 	VERT clipVerts[MAX_CLIPPED_VERTS];
 	NDSVertex clipVtxFixed[MAX_CLIPPED_VERTS];
 };

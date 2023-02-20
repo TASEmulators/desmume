@@ -543,7 +543,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 			depthFail = true;
 		}
 	}
-	else if ( (ISFRONTFACING && (dstAttributePolyFacing == PolyFacing_Back)) && (dstColor.a == 0x1F))
+	else if ( (ISFRONTFACING && (dstAttributePolyFacing == PolyFacing_Back)) && (dstColor.a == 0x1F) )
 	{
 		// The LEQUAL test is used in the special case where an incoming front-facing polygon's pixel
 		// is to be drawn on top of a back-facing polygon's opaque pixel.
@@ -1289,8 +1289,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 	for (size_t i = 0; i < clippedPolyCount; i++)
 	{
 		if (!RENDERER) _debug_thisPoly = (i == this->_softRender->_debug_drawClippedUserPoly);
-		if (!this->_softRender->isPolyVisible[i]) continue;
-
+		
 		const CPoly &clippedPoly = this->_softRender->GetClippedPolyByIndex(i);
 		const POLY &rawPoly = rawPolyList[clippedPoly.index];
 		const size_t vertCount = (size_t)clippedPoly.type;
@@ -1311,7 +1310,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 		for (size_t j = vertCount; j < MAX_CLIPPED_VERTS; j++)
 			this->_verts[j] = NULL;
 		
-		if (!this->_softRender->isPolyBackFacing[i])
+		if (!clippedPoly.isPolyBackFacing)
 		{
 			if (polyAttr.Mode == POLYGON_MODE_SHADOW)
 			{
@@ -1380,14 +1379,6 @@ void* SoftRasterizer_RunRasterizerUnit(void *arg)
 	unit->Render<true, USELINEHACK>();
 	
 	return 0;
-}
-
-static void* SoftRasterizer_RunProcessAllVertices(void *arg)
-{
-	SoftRasterizerRenderer *softRender = (SoftRasterizerRenderer *)arg;
-	softRender->ProcessAllVertices();
-	
-	return NULL;
 }
 
 static void* SoftRasterizer_RunGetAndLoadAllTextures(void *arg)
@@ -1875,112 +1866,6 @@ ClipperMode SoftRasterizerRenderer::GetPreferredPolygonClippingMode() const
 	return (this->_enableHighPrecisionColorInterpolation) ? ClipperMode_FullColorInterpolate : ClipperMode_Full;
 }
 
-void SoftRasterizerRenderer::_TransformVertices()
-{
-	const POLY *rawPolyList = this->_rawPolyList;
-	const float wScalar = (float)this->_framebufferWidth  / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	const float hScalar = (float)this->_framebufferHeight / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	
-	//viewport transforms
-	for (size_t i = 0; i < this->_clippedPolyCount; i++)
-	{
-		CPoly &cPoly = this->_clippedPolyList[i];
-		for (size_t j = 0; j < (size_t)cPoly.type; j++)
-		{
-			VERT &vert = cPoly.clipVerts[j];
-			
-			// TODO: Possible divide by zero with the w-coordinate.
-			// Is the vertex being read correctly? Is 0 a valid value for w?
-			// If both of these questions answer to yes, then how does the NDS handle a NaN?
-			// For now, simply prevent w from being zero.
-			//
-			// Test case: Dance scenes in Princess Debut can generate undefined vertices
-			// when the -ffast-math option (relaxed IEEE754 compliance) is used.
-			const float vertw = (vert.coord[3] != 0.0f) ? vert.coord[3] : 0.00000001f;
-			
-			//homogeneous divide
-			vert.coord[0] = (vert.coord[0]+vertw) / (2*vertw);
-			vert.coord[1] = (vert.coord[1]+vertw) / (2*vertw);
-			vert.coord[2] = (vert.coord[2]+vertw) / (2*vertw);
-			vert.texcoord[0] /= vertw;
-			vert.texcoord[1] /= vertw;
-			
-			//CONSIDER: do we need to guarantee that these are in bounds? perhaps not.
-			//vert.coord[0] = max(0.0f,min(1.0f,vert.coord[0]));
-			//vert.coord[1] = max(0.0f,min(1.0f,vert.coord[1]));
-			//vert.coord[2] = max(0.0f,min(1.0f,vert.coord[2]));
-			
-			//perspective-correct the colors
-			vert.fcolor[0] /= vertw;
-			vert.fcolor[1] /= vertw;
-			vert.fcolor[2] /= vertw;
-			
-			//viewport transformation
-			const GFX3D_Viewport theViewport = rawPolyList[cPoly.index].viewport;
-			vert.coord[0] *= theViewport.width;
-			vert.coord[0] += theViewport.x;
-			vert.coord[0] *= wScalar;
-			
-			vert.coord[1] *= theViewport.height;
-			vert.coord[1] += theViewport.y;
-			vert.coord[1] = 192 - vert.coord[1];
-			vert.coord[1] *= hScalar;
-			
-			//here is a hack which needs to be removed.
-			//at some point our shape engine needs these to be converted to "fixed point"
-			//which is currently just a float
-			vert.coord[0] = (float)iround(16.0f * vert.coord[0]);
-			vert.coord[1] = (float)iround(16.0f * vert.coord[1]);
-		}
-	}
-}
-
-void SoftRasterizerRenderer::_GetPolygonStates()
-{
-	static const bool visibleFunction[2][4] = {
-		//always false, backfacing, !backfacing, always true
-		{ false, false, true, true },
-		{ false, true, false, true }
-	};
-	
-	const POLY *rawPolyList = this->_rawPolyList;
-	
-	for (size_t i = 0; i < this->_clippedPolyCount; i++)
-	{
-		const CPoly &clippedPoly = this->_clippedPolyList[i];
-		const POLY &rawPoly = rawPolyList[clippedPoly.index];
-		const PolygonType polyType = clippedPoly.type;
-		const VERT *vert = &clippedPoly.clipVerts[0];
-		const u8 cullingMode = rawPoly.attribute.SurfaceCullingMode;
-		
-		//HACK: backface culling
-		//this should be moved to gfx3d, but first we need to redo the way the lists are built
-		//because it is too convoluted right now.
-		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
-		
-		//an older approach
-		//(not good enough for quads and other shapes)
-		//float ab[2], ac[2]; Vector2Copy(ab, verts[1].coord); Vector2Copy(ac, verts[2].coord); Vector2Subtract(ab, verts[0].coord);
-		//Vector2Subtract(ac, verts[0].coord); float cross = Vector2Cross(ab, ac); polyAttr.backfacing = (cross>0);
-		
-		//a better approach
-		// we have to support somewhat non-convex polygons (see NSMB world map 1st screen).
-		// this version should handle those cases better.
-		const size_t n = polyType - 1;
-		float facing = (vert[0].y + vert[n].y) * (vert[0].x - vert[n].x) +
-		               (vert[1].y + vert[0].y) * (vert[1].x - vert[0].x) +
-		               (vert[2].y + vert[1].y) * (vert[2].x - vert[1].x);
-		
-		for (size_t j = 2; j < n; j++)
-		{
-			facing += (vert[j+1].y + vert[j].y) * (vert[j+1].x - vert[j].x);
-		}
-		
-		this->isPolyBackFacing[i] = (facing < 0);
-		this->isPolyVisible[i] = visibleFunction[this->isPolyBackFacing[i]][cullingMode];
-	}
-}
-
 void SoftRasterizerRenderer::GetAndLoadAllTextures()
 {
 	const POLY *rawPolyList = this->_rawPolyList;
@@ -1996,12 +1881,6 @@ void SoftRasterizerRenderer::GetAndLoadAllTextures()
 		//and then it won't be safe.
 		this->_textureList[i] = this->GetLoadedTextureFromPolygon(rawPoly, this->_enableTextureSampling);
 	}
-}
-
-void SoftRasterizerRenderer::ProcessAllVertices()
-{
-	this->_TransformVertices();
-	this->_GetPolygonStates();
 }
 
 Render3DError SoftRasterizerRenderer::ApplyRenderingSettings(const GFX3D_State &renderState)
@@ -2033,12 +1912,10 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D_State &renderState
 	if (doMultithreadedStateSetup)
 	{
 		this->_task[0].execute(&SoftRasterizer_RunGetAndLoadAllTextures, this);
-		this->_task[1].execute(&SoftRasterizer_RunProcessAllVertices, this);
 	}
 	else
 	{
 		this->GetAndLoadAllTextures();
-		this->ProcessAllVertices();
 	}
 	
 	// Convert the toon table colors

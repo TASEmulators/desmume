@@ -3257,11 +3257,19 @@ static bool gfx3d_ysort_compare(const u16 idx1, const u16 idx2)
 	return (idx1 < idx2);
 }
 
+static FORCEINLINE s32 iround(const float f)
+{
+	return (s32)f; //lol
+}
+
 template <ClipperMode CLIPPERMODE>
 size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUnsortedList)
 {
 	size_t clipCount = 0;
 	PolygonType cpType = POLYGON_TYPE_UNDEFINED;
+	
+	const float wScalar = (float)CurrentRenderer->GetFramebufferWidth()  / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	const float hScalar = (float)CurrentRenderer->GetFramebufferHeight() / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
 	for (size_t polyIndex = 0; polyIndex < gList.rawPolyCount; polyIndex++)
 	{
@@ -3274,11 +3282,106 @@ size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUns
 			(rawPoly.type == POLYGON_TYPE_QUAD) ? &gList.rawVertList[rawPoly.vertIndexes[3]] : NULL
 		};
 		
-		cpType = GFX3D_GenerateClippedPoly<CLIPPERMODE>(polyIndex, rawPoly.type, rawVerts, outCPolyUnsortedList[clipCount]);
-		if (cpType != POLYGON_TYPE_UNDEFINED)
+		CPoly &cPoly = outCPolyUnsortedList[clipCount];
+		
+		cpType = GFX3D_GenerateClippedPoly<CLIPPERMODE>(polyIndex, rawPoly.type, rawVerts, cPoly);
+		if (cpType == POLYGON_TYPE_UNDEFINED)
 		{
-			clipCount++;
+			continue;
 		}
+		
+		for (size_t j = 0; j < (size_t)cPoly.type; j++)
+		{
+			VERT &vtx = cPoly.clipVerts[j];
+			
+			// TODO: Possible divide by zero with the w-coordinate.
+			// Is the vertex being read correctly? Is 0 a valid value for w?
+			// If both of these questions answer to yes, then how does the NDS handle a NaN?
+			// For now, simply prevent w from being zero.
+			//
+			// Test case: Dance scenes in Princess Debut can generate undefined vertices
+			// when the -ffast-math option (relaxed IEEE754 compliance) is used.
+			const float vtxW = (vtx.coord[3] != 0.0f) ? vtx.coord[3] : 0.00000001f;
+			
+			//homogeneous divide
+			vtx.coord[0] = (vtx.coord[0]+vtxW) / (2*vtxW);
+			vtx.coord[1] = (vtx.coord[1]+vtxW) / (2*vtxW);
+			vtx.coord[2] = (vtx.coord[2]+vtxW) / (2*vtxW);
+			
+			//CONSIDER: do we need to guarantee that these are in bounds? perhaps not.
+			//vtx.coord[0] = max( 0.0f, min(1.0f, vtx.coord[0]) );
+			//vtx.coord[1] = max( 0.0f, min(1.0f, vtx.coord[1]) );
+			//vtx.coord[2] = max( 0.0f, min(1.0f, vtx.coord[2]) );
+			
+			//viewport transformation
+			const GFX3D_Viewport theViewport = rawPoly.viewport;
+			vtx.coord[0] *= (float)theViewport.width;
+			vtx.coord[0] += (float)theViewport.x;
+			vtx.coord[0] *= wScalar;
+			
+			vtx.coord[1] *= (float)theViewport.height;
+			vtx.coord[1] += (float)theViewport.y;
+			vtx.coord[1] = 192 - vtx.coord[1];
+			vtx.coord[1] *= hScalar;
+			
+			//here is a hack which needs to be removed.
+			//at some point our shape engine needs these to be converted to "fixed point"
+			//which is currently just a float
+			vtx.coord[0] = (float)iround(16.0f * vtx.coord[0]);
+			vtx.coord[1] = (float)iround(16.0f * vtx.coord[1]);
+			
+			if (CLIPPERMODE != ClipperMode_DetermineClipOnly)
+			{
+				vtx.texcoord[0] /= vtxW;
+				vtx.texcoord[1] /= vtxW;
+				
+				//perspective-correct the colors
+				vtx.fcolor[0] /= vtxW;
+				vtx.fcolor[1] /= vtxW;
+				vtx.fcolor[2] /= vtxW;
+			}
+		}
+		
+		// Perform face culling.
+		
+		//an older approach
+		//(not good enough for quads and other shapes)
+		//float ab[2], ac[2]; Vector2Copy(ab, verts[1].coord); Vector2Copy(ac, verts[2].coord); Vector2Subtract(ab, verts[0].coord);
+		//Vector2Subtract(ac, verts[0].coord); float cross = Vector2Cross(ab, ac); polyAttr.backfacing = (cross>0);
+		
+		//a better approach
+		// we have to support somewhat non-convex polygons (see NSMB world map 1st screen).
+		// this version should handle those cases better.
+		
+		const VERT *vtx = cPoly.clipVerts;
+		const size_t n = cPoly.type - 1;
+		float facing = (vtx[0].y + vtx[n].y) * (vtx[0].x - vtx[n].x) +
+					   (vtx[1].y + vtx[0].y) * (vtx[1].x - vtx[0].x) +
+					   (vtx[2].y + vtx[1].y) * (vtx[2].x - vtx[1].x);
+		
+		for (size_t j = 2; j < n; j++)
+		{
+			facing += (vtx[j+1].y + vtx[j].y) * (vtx[j+1].x - vtx[j].x);
+		}
+		
+		cPoly.isPolyBackFacing = (facing < 0);
+		
+		static const bool visibleFunction[2][4] = {
+			//always false, backfacing, !backfacing, always true
+			{ false, false, true, true },
+			{ false, true, false, true }
+		};
+		
+		const u8 cullingMode = rawPoly.attribute.SurfaceCullingMode;
+		const bool isPolyVisible = visibleFunction[(cPoly.isPolyBackFacing) ? 1 : 0][cullingMode];
+		if (!isPolyVisible)
+		{
+			// If the polygon is to be culled, then don't count it.
+			continue;
+		}
+		
+		// Incrementing the count will keep the polygon in the list.
+		clipCount++;
 	}
 	
 	return clipCount;

@@ -171,8 +171,6 @@ protected:
 	// SoftRasterizer-specific methods
 	void _UpdateEdgeMarkColorTable(const u16 *edgeMarkColorTable);
 	void _UpdateFogTable(const u8 *fogDensityTable);
-	void _TransformVertices();
-	void _GetPolygonStates();
 	
 	// Base rendering methods
 	virtual Render3DError BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);
@@ -186,8 +184,6 @@ public:
 	int _debug_drawClippedUserPoly;
 	CACHE_ALIGN FragmentColor toonColor32LUT[32];
 	FragmentAttributesBuffer *_framebufferAttributes;
-	bool isPolyVisible[CLIPPED_POLYLIST_SIZE];
-	bool isPolyBackFacing[CLIPPED_POLYLIST_SIZE];
 	GFX3D_State *currentRenderState;
 	
 	bool _enableFragmentSamplingHack;
@@ -198,7 +194,6 @@ public:
 	virtual ClipperMode GetPreferredPolygonClippingMode() const;
 	
 	void GetAndLoadAllTextures();
-	void ProcessAllVertices();
 	Render3DError RenderEdgeMarkingAndFog(const SoftRasterizerPostProcessParams &param);
 	
 	SoftRasterizerTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);

@@ -736,7 +736,6 @@ protected:
 	
 	bool _enableMultisampledRendering;
 	int _selectedMultisampleSize;
-	bool _isPolyFrontFacing[CLIPPED_POLYLIST_SIZE];
 	size_t _clearImageIndex;
 	
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);

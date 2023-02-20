@@ -1774,13 +1774,14 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLY *rawPolyList, const 
 	};
 	
 	// Set up the initial polygon
-	const POLY &initialPoly = rawPolyList[clippedPolyList[firstIndex].index];
-	TEXIMAGE_PARAM lastTexParams = initialPoly.texParam;
-	u32 lastTexPalette = initialPoly.texPalette;
-	GFX3D_Viewport lastViewport = initialPoly.viewport;
+	const CPoly &initialClippedPoly = clippedPolyList[firstIndex];
+	const POLY &initialRawPoly = rawPolyList[initialClippedPoly.index];
+	TEXIMAGE_PARAM lastTexParams = initialRawPoly.texParam;
+	u32 lastTexPalette = initialRawPoly.texPalette;
+	GFX3D_Viewport lastViewport = initialRawPoly.viewport;
 	
-	this->SetupTexture(initialPoly, firstIndex);
-	this->SetupViewport(initialPoly.viewport);
+	this->SetupTexture(initialRawPoly, firstIndex);
+	this->SetupViewport(initialRawPoly.viewport);
 	
 	// Enumerate through all polygons and render
 	GLsizei vertIndexCount = 0;
@@ -1788,7 +1789,8 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLY *rawPolyList, const 
 	
 	for (size_t i = firstIndex; i <= lastIndex; i++)
 	{
-		const POLY &rawPoly = rawPolyList[clippedPolyList[i].index];
+		const CPoly &clippedPoly = clippedPolyList[i];
+		const POLY &rawPoly = rawPolyList[clippedPoly.index];
 		
 		// Set up the polygon if it changed
 		if (lastPolyAttr.value != rawPoly.attribute.value)
@@ -1828,18 +1830,19 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLY *rawPolyList, const 
 		// the same and we're not drawing a line loop or line strip.
 		if (i+1 <= lastIndex)
 		{
-			const POLY &nextPoly = rawPolyList[clippedPolyList[i+1].index];
+			const CPoly &nextClippedPoly = clippedPolyList[i+1];
+			const POLY &nextRawPoly = rawPolyList[nextClippedPoly.index];
 			
-			if (lastPolyAttr.value == nextPoly.attribute.value &&
-				lastTexParams.value == nextPoly.texParam.value &&
-				lastTexPalette == nextPoly.texPalette &&
-				lastViewport.value == nextPoly.viewport.value &&
-				polyPrimitive == oglPrimitiveType[nextPoly.vtxFormat] &&
+			if (lastPolyAttr.value == nextRawPoly.attribute.value &&
+				lastTexParams.value == nextRawPoly.texParam.value &&
+				lastTexPalette == nextRawPoly.texPalette &&
+				lastViewport.value == nextRawPoly.viewport.value &&
+				polyPrimitive == oglPrimitiveType[nextRawPoly.vtxFormat] &&
 				polyPrimitive != GL_LINE_LOOP &&
 				polyPrimitive != GL_LINE_STRIP &&
-				oglPrimitiveType[nextPoly.vtxFormat] != GL_LINE_LOOP &&
-				oglPrimitiveType[nextPoly.vtxFormat] != GL_LINE_STRIP &&
-				this->_isPolyFrontFacing[i] == this->_isPolyFrontFacing[i+1])
+				oglPrimitiveType[nextRawPoly.vtxFormat] != GL_LINE_LOOP &&
+				oglPrimitiveType[nextRawPoly.vtxFormat] != GL_LINE_STRIP &&
+				clippedPoly.isPolyBackFacing == nextClippedPoly.isPolyBackFacing)
 			{
 				continue;
 			}
@@ -1869,7 +1872,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLY *rawPolyList, const 
 			                                        rawPoly.attribute.TranslucentDepthWrite_Enable,
 			                                        GFX3D_IsPolyWireframe(rawPoly) || GFX3D_IsPolyOpaque(rawPoly),
 			                                        rawPoly.attribute.PolygonID,
-			                                        this->_isPolyFrontFacing[i]);
+													!clippedPoly.isPolyBackFacing);
 		}
 		else
 		{
@@ -1879,7 +1882,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLY *rawPolyList, const 
 			                                 rawPoly.attribute.DepthEqualTest_Enable,
 			                                 rawPoly.attribute.TranslucentDepthWrite_Enable,
 			                                 rawPoly.attribute.PolygonID,
-			                                 this->_isPolyFrontFacing[i]);
+											 !clippedPoly.isPolyBackFacing);
 		}
 		
 		indexBufferPtr += vertIndexCount;
@@ -3912,7 +3915,6 @@ Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLY *rawPolyList, cons
 	glDisable(GL_BLEND);
 	glEnable(GL_STENCIL_TEST);
 	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
 	
 	glStencilFunc(GL_ALWAYS, 0x40, 0x40);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -4097,7 +4099,6 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_STENCIL_TEST);
 		glDisable(GL_BLEND);
-		glDisable(GL_CULL_FACE);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 		
@@ -4199,15 +4200,9 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 	
 	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{
-		const POLY &rawPoly = this->_rawPolyList[this->_clippedPolyList[i].index];
-		
+		const CPoly &cPoly = this->_clippedPolyList[i];
+		const POLY &rawPoly = this->_rawPolyList[cPoly.index];
 		const size_t polyType = rawPoly.type;
-		const VERT vert[4] = {
-			renderGList.rawVertList[rawPoly.vertIndexes[0]],
-			renderGList.rawVertList[rawPoly.vertIndexes[1]],
-			renderGList.rawVertList[rawPoly.vertIndexes[2]],
-			renderGList.rawVertList[rawPoly.vertIndexes[3]]
-		};
 		
 		if (this->isShaderSupported)
 		{
@@ -4269,19 +4264,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 			}
 		}
 		
-		// Get this polygon's facing.
-		const size_t n = polyType - 1;
-		float facing = (vert[0].y + vert[n].y) * (vert[0].x - vert[n].x) +
-		               (vert[1].y + vert[0].y) * (vert[1].x - vert[0].x) +
-		               (vert[2].y + vert[1].y) * (vert[2].x - vert[1].x);
-		
-		for (size_t j = 2; j < n; j++)
-		{
-			facing += (vert[j+1].y + vert[j].y) * (vert[j+1].x - vert[j].x);
-		}
-		
 		renderNeedsToonTable = (renderNeedsToonTable || (rawPoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT)) && this->isShaderSupported;
-		this->_isPolyFrontFacing[i] = (facing < 0);
 		
 		// Get the texture that is to be attached to this polygon.
 		this->_textureList[i] = this->GetLoadedTextureFromPolygon(rawPoly, this->_enableTextureSampling);
@@ -4394,6 +4377,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 {
 	if (this->_clippedPolyCount > 0)
 	{
+		glDisable(GL_CULL_FACE); // Polygons should already be culled before we get here.
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_STENCIL_TEST);
 		
@@ -4488,7 +4472,6 @@ Render3DError OpenGLRenderer_1_2::PostprocessFramebuffer()
 		// Set up the postprocessing states
 		glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
 		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_CULL_FACE);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 		
@@ -4802,20 +4785,6 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool treatAs
 {
 	// Set up depth test mode
 	glDepthFunc((thePoly.attribute.DepthEqualTest_Enable) ? GL_EQUAL : GL_LESS);
-	
-	// Set up culling mode
-	static const GLenum oglCullingMode[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
-	GLenum cullingMode = oglCullingMode[thePoly.attribute.SurfaceCullingMode];
-	
-	if (cullingMode == 0)
-	{
-		glDisable(GL_CULL_FACE);
-	}
-	else
-	{
-		glEnable(GL_CULL_FACE);
-		glCullFace(cullingMode);
-	}
 	
 	if (willChangeStencilBuffer)
 	{
@@ -5162,7 +5131,6 @@ Render3DError OpenGLRenderer_1_2::Reset()
 	OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)offsetof(VERT, color) : OGLRef.color4fBuffer;
 	
 	memset(&this->_pendingRenderStates, 0, sizeof(this->_pendingRenderStates));
-	memset(this->_isPolyFrontFacing, 0, sizeof(this->_isPolyFrontFacing));
 	
 	texCache.Reset();
 	
@@ -5472,15 +5440,9 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 	
 	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 	{
-		const POLY &rawPoly = this->_rawPolyList[this->_clippedPolyList[i].index];
-		
+		const CPoly &cPoly = this->_clippedPolyList[i];
+		const POLY &rawPoly = this->_rawPolyList[cPoly.index];
 		const size_t polyType = rawPoly.type;
-		const VERT vert[4] = {
-			renderGList.rawVertList[rawPoly.vertIndexes[0]],
-			renderGList.rawVertList[rawPoly.vertIndexes[1]],
-			renderGList.rawVertList[rawPoly.vertIndexes[2]],
-			renderGList.rawVertList[rawPoly.vertIndexes[3]]
-		};
 		
 		for (size_t j = 0; j < polyType; j++)
 		{
@@ -5504,19 +5466,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 			}
 		}
 		
-		// Get this polygon's facing.
-		const size_t n = polyType - 1;
-		float facing = (vert[0].y + vert[n].y) * (vert[0].x - vert[n].x) +
-		               (vert[1].y + vert[0].y) * (vert[1].x - vert[0].x) +
-		               (vert[2].y + vert[1].y) * (vert[2].x - vert[1].x);
-		
-		for (size_t j = 2; j < n; j++)
-		{
-			facing += (vert[j+1].y + vert[j].y) * (vert[j+1].x - vert[j].x);
-		}
-		
 		renderNeedsToonTable = renderNeedsToonTable || (rawPoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT);
-		this->_isPolyFrontFacing[i] = (facing < 0);
 		
 		// Get the texture that is to be attached to this polygon.
 		this->_textureList[i] = this->GetLoadedTextureFromPolygon(rawPoly, this->_enableTextureSampling);
