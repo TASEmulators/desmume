@@ -724,10 +724,75 @@ union Vector32x4
 typedef union Vector32x4 Vector32x4;
 typedef Vector32x4 VertexCoord32x4;
 
+union Vector64x2
+{
+	s64 vec[2];
+	s64 coord[2];
+	
+	struct
+	{
+		s64 s, t;
+	};
+	
+	struct
+	{
+		s64 u, v;
+	};
+	
+	struct
+	{
+		s64 x, y;
+	} XY;
+	
+	struct
+	{
+		s64 y, z;
+	} YZ;
+	
+	struct
+	{
+		s64 x, z;
+	} XZ;
+};
+typedef union Vector64x2 Vector64x2;
+typedef Vector64x2 VertexCoord64x2;
+
+union Vector64x3
+{
+	s64 vec[3];
+	s64 coord[3];
+	
+	struct
+	{
+		s64 x, y, z;
+	};
+};
+typedef union Vector64x3 Vector64x3;
+typedef Vector64x3 VertexCoord64x3;
+
+union Vector64x4
+{
+	s64 vec[4];
+	s64 coord[4];
+	
+	struct
+	{
+		s64 x, y, z, w;
+	};
+	
+	struct
+	{
+		Vector64x3 vec3;
+		s64 :64;
+	};
+};
+typedef union Vector64x4 Vector64x4;
+typedef Vector64x4 VertexCoord64x4;
+
 struct NDSVertex
 {
 	VertexCoord32x4 position;
-	VertexCoord16x2 texCoord;
+	VertexCoord32x2 texCoord;
 	FragmentColor color;
 };
 typedef struct NDSVertex NDSVertex;
@@ -778,6 +843,7 @@ typedef struct GFX3D_State GFX3D_State;
 struct GFX3D_GeometryList
 {
 	PAGE_ALIGN VERT rawVertList[VERTLIST_SIZE];
+	PAGE_ALIGN NDSVertex rawVtxList[VERTLIST_SIZE];
 	PAGE_ALIGN POLY rawPolyList[POLYLIST_SIZE];
 	PAGE_ALIGN CPoly clippedPolyList[CLIPPED_POLYLIST_SIZE];
 	

@@ -1632,8 +1632,12 @@ void NDSGeometryEngine::AddCurrentVertexToList(GFX3D_GeometryList &targetGList)
 		printf("wtf\n");
 	}
 	
-	VERT &vert = targetGList.rawVertList[vertIndex];
+	NDSVertex &vtx = targetGList.rawVtxList[vertIndex];
+	vtx.position = vtxCoordTransformed;
+	vtx.texCoord = this->_texCoordTransformed;
+	vtx.color    = this->_vtxColor666X;
 	
+	VERT &vert = targetGList.rawVertList[vertIndex];
 	vert.coord[0] = (float)vtxCoordTransformed.x / 4096.0f;
 	vert.coord[1] = (float)vtxCoordTransformed.y / 4096.0f;
 	vert.coord[2] = (float)vtxCoordTransformed.z / 4096.0f;
@@ -1650,6 +1654,7 @@ void NDSGeometryEngine::AddCurrentVertexToList(GFX3D_GeometryList &targetGList)
 	vert.color[1] = this->_vtxColor666X.g;
 	vert.color[2] = this->_vtxColor666X.b;
 	vert.color[3] = this->_vtxColor666X.a;
+	
 	this->_vtxIndex[this->_vtxCount] = (u16)(targetGList.rawVertCount + this->_vtxCount - continuation);
 	this->_vtxCount++;
 
@@ -1784,16 +1789,16 @@ void NDSGeometryEngine::GeneratePolygon(POLY &targetPoly, GFX3D_GeometryList &ta
 	// Tested" Castlevania POR - warp stone, trajectory of ricochet, "Eye of Decay"
 	if (this->_texParam.PackedFormat == TEXMODE_NONE)
 	{
-		const VERT &vert0 = targetGList.rawVertList[targetPoly.vertIndexes[0]];
-		const VERT &vert1 = targetGList.rawVertList[targetPoly.vertIndexes[1]];
-		const VERT &vert2 = targetGList.rawVertList[targetPoly.vertIndexes[2]];
+		const NDSVertex &vtx0 = targetGList.rawVtxList[targetPoly.vertIndexes[0]];
+		const NDSVertex &vtx1 = targetGList.rawVtxList[targetPoly.vertIndexes[1]];
+		const NDSVertex &vtx2 = targetGList.rawVtxList[targetPoly.vertIndexes[2]];
 		
-		if ( ((vert0.x == vert1.x) && (vert0.y == vert1.y)) ||
-		     ((vert1.x == vert2.x) && (vert1.y == vert2.y)) ||
-		     ((vert0.y == vert1.y) && (vert1.y == vert2.y)) ||
-		     ((vert0.x == vert1.x) && (vert1.x == vert2.x)) )
+		if ( ((vtx0.position.x == vtx1.position.x) && (vtx0.position.y == vtx1.position.y)) ||
+		     ((vtx1.position.x == vtx2.position.x) && (vtx1.position.y == vtx2.position.y)) ||
+		     ((vtx0.position.y == vtx1.position.y) && (vtx1.position.y == vtx2.position.y)) ||
+		     ((vtx0.position.x == vtx1.position.x) && (vtx1.position.x == vtx2.position.x)) )
 		{
-			//printf("Line Segmet detected (poly type %i, mode %i, texparam %08X)\n", poly.type, poly.vtxFormat, textureFormat);
+			//printf("Line Segment detected (poly type %i, mode %i, texparam %08X)\n", poly.type, poly.vtxFormat, textureFormat);
 			targetPoly.vtxFormat = (PolygonPrimitiveType)(this->_vtxFormat + 4);
 		}
 	}
@@ -3259,7 +3264,7 @@ static bool gfx3d_ysort_compare(const u16 idx1, const u16 idx2)
 
 static FORCEINLINE s32 iround(const float f)
 {
-	return (s32)f; //lol
+	return (s32)( (f < 0.0f) ? f - 0.5f : f + 0.5f ); //lol
 }
 
 template <ClipperMode CLIPPERMODE>
@@ -3268,23 +3273,24 @@ size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUns
 	size_t clipCount = 0;
 	PolygonType cpType = POLYGON_TYPE_UNDEFINED;
 	
-	const float wScalar = (float)CurrentRenderer->GetFramebufferWidth()  / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	const float hScalar = (float)CurrentRenderer->GetFramebufferHeight() / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	const s64 wScalar = (s64)CurrentRenderer->GetFramebufferWidth()  / (s64)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	const s64 hScalar = (s64)CurrentRenderer->GetFramebufferHeight() / (s64)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
 	for (size_t polyIndex = 0; polyIndex < gList.rawPolyCount; polyIndex++)
 	{
 		const POLY &rawPoly = gList.rawPolyList[polyIndex];
+		const GFX3D_Viewport theViewport = rawPoly.viewport;
 		
-		const VERT *rawVerts[4] = {
-			&gList.rawVertList[rawPoly.vertIndexes[0]],
-			&gList.rawVertList[rawPoly.vertIndexes[1]],
-			&gList.rawVertList[rawPoly.vertIndexes[2]],
-			(rawPoly.type == POLYGON_TYPE_QUAD) ? &gList.rawVertList[rawPoly.vertIndexes[3]] : NULL
+		const NDSVertex *rawPolyVtx[4] = {
+			&gList.rawVtxList[rawPoly.vertIndexes[0]],
+			&gList.rawVtxList[rawPoly.vertIndexes[1]],
+			&gList.rawVtxList[rawPoly.vertIndexes[2]],
+			(rawPoly.type == POLYGON_TYPE_QUAD) ? &gList.rawVtxList[rawPoly.vertIndexes[3]] : NULL
 		};
 		
 		CPoly &cPoly = outCPolyUnsortedList[clipCount];
 		
-		cpType = GFX3D_GenerateClippedPoly<CLIPPERMODE>(polyIndex, rawPoly.type, rawVerts, cPoly);
+		cpType = GFX3D_GenerateClippedPoly<CLIPPERMODE>(polyIndex, rawPoly.type, rawPolyVtx, cPoly);
 		if (cpType == POLYGON_TYPE_UNDEFINED)
 		{
 			continue;
@@ -3292,53 +3298,95 @@ size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUns
 		
 		for (size_t j = 0; j < (size_t)cPoly.type; j++)
 		{
-			VERT &vtx = cPoly.clipVerts[j];
+			NDSVertex &vtx = cPoly.clipVtxFixed[j];
+			VERT &vert = cPoly.clipVerts[j];
+			VertexCoord64x4 vtx64 = {
+				(s64)vtx.position.x,
+				(s64)vtx.position.y,
+				(s64)vtx.position.z,
+				(s64)vtx.position.w,
+			};
 			
-			// TODO: Possible divide by zero with the w-coordinate.
-			// Is the vertex being read correctly? Is 0 a valid value for w?
-			// If both of these questions answer to yes, then how does the NDS handle a NaN?
-			// For now, simply prevent w from being zero.
-			//
-			// Test case: Dance scenes in Princess Debut can generate undefined vertices
-			// when the -ffast-math option (relaxed IEEE754 compliance) is used.
-			const float vtxW = (vtx.coord[3] != 0.0f) ? vtx.coord[3] : 0.00000001f;
+			if (vtx64.w != 0)
+			{
+				//homogeneous divide
+				vtx64.x = ((vtx64.x + vtx64.w) * (theViewport.width  << 16)) / (2 * vtx64.w);
+				vtx64.y = ((vtx64.y + vtx64.w) * (theViewport.height << 16)) / (2 * vtx64.w);
+				vtx64.z = ((vtx64.z + vtx64.w) * (               1LL << 12)) / (2 * vtx64.w);
+			}
+			else
+			{
+				// TODO: Possible divide by zero with the w-coordinate.
+				// Is the vertex being read correctly? Is 0 a valid value for w?
+				// If both of these questions answer to yes, then how does the NDS handle this?
+				// For now, simply ignore w if it is zero.
+				//
+				// Test case: Dance scenes in Princess Debut can generate undefined vertices
+				// when the -ffast-math option (relaxed IEEE754 compliance) is used.
+				
+				//homogeneous divide
+				vtx64.x = (vtx64.x * (theViewport.width  << 16));
+				vtx64.y = (vtx64.y * (theViewport.height << 16));
+				vtx64.z = (vtx64.z * (               1LL << 12));
+			}
 			
-			//homogeneous divide
-			vtx.coord[0] = (vtx.coord[0]+vtxW) / (2*vtxW);
-			vtx.coord[1] = (vtx.coord[1]+vtxW) / (2*vtxW);
-			vtx.coord[2] = (vtx.coord[2]+vtxW) / (2*vtxW);
+			// Finish viewport transformation.
+			vtx64.x += ((s64)theViewport.x << 16);
+			vtx64.x *= wScalar;
 			
-			//CONSIDER: do we need to guarantee that these are in bounds? perhaps not.
-			//vtx.coord[0] = max( 0.0f, min(1.0f, vtx.coord[0]) );
-			//vtx.coord[1] = max( 0.0f, min(1.0f, vtx.coord[1]) );
-			//vtx.coord[2] = max( 0.0f, min(1.0f, vtx.coord[2]) );
+			vtx64.y += ((s64)theViewport.y << 16);
+			vtx64.y = (192LL << 16) - vtx64.y;
+			vtx64.y *= hScalar;
 			
-			//viewport transformation
-			const GFX3D_Viewport theViewport = rawPoly.viewport;
-			vtx.coord[0] *= (float)theViewport.width;
-			vtx.coord[0] += (float)theViewport.x;
-			vtx.coord[0] *= wScalar;
+			vtx.position.x = (s32)vtx64.x;
+			vtx.position.y = (s32)vtx64.y;
+			vtx.position.z = (s32)vtx64.z;
+			vtx.position.w = (s32)vtx64.w;
 			
-			vtx.coord[1] *= (float)theViewport.height;
-			vtx.coord[1] += (float)theViewport.y;
-			vtx.coord[1] = 192 - vtx.coord[1];
-			vtx.coord[1] *= hScalar;
-			
+			// TODO: Remove these floating-point conversions.
 			//here is a hack which needs to be removed.
 			//at some point our shape engine needs these to be converted to "fixed point"
 			//which is currently just a float
-			vtx.coord[0] = (float)iround(16.0f * vtx.coord[0]);
-			vtx.coord[1] = (float)iround(16.0f * vtx.coord[1]);
+			vert.x = (float)((double)vtx64.x / 4096.0);
+			vert.y = (float)((double)vtx64.y / 4096.0);
+			vert.z = (float)((double)vtx64.z / 4096.0);
+			vert.w = (float)((double)vtx64.w / 4096.0);
+			vert.x = (float)iround(vert.x);
+			vert.y = (float)iround(vert.y);
 			
 			if (CLIPPERMODE != ClipperMode_DetermineClipOnly)
 			{
-				vtx.texcoord[0] /= vtxW;
-				vtx.texcoord[1] /= vtxW;
+				if (vtx.position.w != 0)
+				{
+					// Texture coordinates
+					vert.u = (float)( (double)(((s64)vtx.texCoord.u << 48) / vtx64.w) / (double)(1LL << 40) );
+					vert.v = (float)( (double)(((s64)vtx.texCoord.v << 48) / vtx64.w) / (double)(1LL << 40) );
+					vtx.texCoord.u = (vtx.texCoord.u << 12) / vtx.position.w;
+					vtx.texCoord.v = (vtx.texCoord.v << 12) / vtx.position.w;
+					
+					// Vertex color
+					s32 r_32 = ((s32)vtx.color.r << 24) / vtx.position.w;
+					s32 g_32 = ((s32)vtx.color.g << 24) / vtx.position.w;
+					s32 b_32 = ((s32)vtx.color.b << 24) / vtx.position.w;
+					
+					r_32 = min<s32>(max<s32>(r_32, 0x00), 0x0003FFFF);
+					g_32 = min<s32>(max<s32>(g_32, 0x00), 0x0003FFFF);
+					b_32 = min<s32>(max<s32>(b_32, 0x00), 0x0003FFFF);
+					
+					vert.rf = (float)r_32 / 4096.0f;
+					vert.gf = (float)g_32 / 4096.0f;
+					vert.bf = (float)b_32 / 4096.0f;
+					vtx.color.r = (u8)vert.rf;
+					vtx.color.g = (u8)vert.gf;
+					vtx.color.b = (u8)vert.bf;
+				}
+				else
+				{
+					vert.u = (float)(vtx.texCoord.u / 16);
+					vert.v = (float)(vtx.texCoord.v / 16);
+				}
 				
-				//perspective-correct the colors
-				vtx.fcolor[0] /= vtxW;
-				vtx.fcolor[1] /= vtxW;
-				vtx.fcolor[2] /= vtxW;
+				vert.color32 = vtx.color.color;
 			}
 		}
 		
@@ -3353,15 +3401,15 @@ size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUns
 		// we have to support somewhat non-convex polygons (see NSMB world map 1st screen).
 		// this version should handle those cases better.
 		
-		const VERT *vtx = cPoly.clipVerts;
+		const NDSVertex *vtx = cPoly.clipVtxFixed;
 		const size_t n = cPoly.type - 1;
-		float facing = (vtx[0].y + vtx[n].y) * (vtx[0].x - vtx[n].x) +
-					   (vtx[1].y + vtx[0].y) * (vtx[1].x - vtx[0].x) +
-					   (vtx[2].y + vtx[1].y) * (vtx[2].x - vtx[1].x);
+		s64 facing = ((s64)vtx[0].position.y + (s64)vtx[n].position.y) * ((s64)vtx[0].position.x - (s64)vtx[n].position.x) +
+		             ((s64)vtx[1].position.y + (s64)vtx[0].position.y) * ((s64)vtx[1].position.x - (s64)vtx[0].position.x) +
+		             ((s64)vtx[2].position.y + (s64)vtx[1].position.y) * ((s64)vtx[2].position.x - (s64)vtx[1].position.x);
 		
 		for (size_t j = 2; j < n; j++)
 		{
-			facing += (vtx[j+1].y + vtx[j].y) * (vtx[j+1].x - vtx[j].x);
+			facing += ((s64)vtx[j+1].position.y + (s64)vtx[j].position.y) * ((s64)vtx[j+1].position.x - (s64)vtx[j].position.x);
 		}
 		
 		cPoly.isPolyBackFacing = (facing < 0);
@@ -4335,16 +4383,16 @@ static FORCEINLINE void GFX3D_ClipPoint(const NDSVertex &insideVtx, const NDSVer
 	switch (CLIPPERMODE)
 	{
 		case ClipperMode_Full:
-			outClippedVtx.texCoord.u = GFX3D_LerpSigned<s16>(t_s64, insideVtx.texCoord.u, outsideVtx.texCoord.u);
-			outClippedVtx.texCoord.v = GFX3D_LerpSigned<s16>(t_s64, insideVtx.texCoord.v, outsideVtx.texCoord.v);
+			outClippedVtx.texCoord.u = GFX3D_LerpSigned<s32>(t_s64, insideVtx.texCoord.s, outsideVtx.texCoord.s);
+			outClippedVtx.texCoord.v = GFX3D_LerpSigned<s32>(t_s64, insideVtx.texCoord.t, outsideVtx.texCoord.t);
 			outClippedVtx.color.r = GFX3D_LerpUnsigned<u8>(t_u64, insideVtx.color.r, outsideVtx.color.r);
 			outClippedVtx.color.g = GFX3D_LerpUnsigned<u8>(t_u64, insideVtx.color.g, outsideVtx.color.g);
 			outClippedVtx.color.b = GFX3D_LerpUnsigned<u8>(t_u64, insideVtx.color.b, outsideVtx.color.b);
 			break;
 			
 		case ClipperMode_FullColorInterpolate:
-			outClippedVtx.texCoord.u = GFX3D_LerpSigned<s16>(t_s64, insideVtx.texCoord.u, outsideVtx.texCoord.u);
-			outClippedVtx.texCoord.v = GFX3D_LerpSigned<s16>(t_s64, insideVtx.texCoord.v, outsideVtx.texCoord.v);
+			outClippedVtx.texCoord.u = GFX3D_LerpSigned<s32>(t_s64, insideVtx.texCoord.s, outsideVtx.texCoord.s);
+			outClippedVtx.texCoord.v = GFX3D_LerpSigned<s32>(t_s64, insideVtx.texCoord.t, outsideVtx.texCoord.t);
 			outClippedVtx.color.r = GFX3D_LerpUnsigned<u8>(t_u64, insideVtx.color.r, outsideVtx.color.r);
 			outClippedVtx.color.g = GFX3D_LerpUnsigned<u8>(t_u64, insideVtx.color.g, outsideVtx.color.g);
 			outClippedVtx.color.b = GFX3D_LerpUnsigned<u8>(t_u64, insideVtx.color.b, outsideVtx.color.b);
