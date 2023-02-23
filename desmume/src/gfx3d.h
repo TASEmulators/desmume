@@ -985,8 +985,8 @@ struct GFX3D
 	// Working lists for rendering.
 	CACHE_ALIGN CPoly clippedPolyUnsortedList[CLIPPED_POLYLIST_SIZE]; // Records clipped polygon info on first pass
 	CACHE_ALIGN u16 indexOfClippedPolyUnsortedList[CLIPPED_POLYLIST_SIZE];
-	CACHE_ALIGN float rawPolySortYMin[POLYLIST_SIZE]; // Temp buffer used for processing polygon Y-sorting
-	CACHE_ALIGN float rawPolySortYMax[POLYLIST_SIZE]; // Temp buffer used for processing polygon Y-sorting
+	CACHE_ALIGN s64 rawPolySortYMin[POLYLIST_SIZE]; // Temp buffer used for processing polygon Y-sorting
+	CACHE_ALIGN s64 rawPolySortYMax[POLYLIST_SIZE]; // Temp buffer used for processing polygon Y-sorting
 	
 	// Everything below is for save state compatibility.
 	GFX3D_LegacySave legacySave;

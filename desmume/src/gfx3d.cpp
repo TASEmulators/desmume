@@ -349,36 +349,52 @@ void GFX3D_LoadStatePOLY(POLY &p, EMUFILE &is)
 	is.read_32LE(p.texPalette);
 }
 
-void GFX3D_SaveStateVERT(const VERT &vtx, EMUFILE &os)
+void GFX3D_SaveStateVertex(const NDSVertex &vtx, EMUFILE &os)
 {
-	os.write_floatLE(vtx.x);
-	os.write_floatLE(vtx.y);
-	os.write_floatLE(vtx.z);
-	os.write_floatLE(vtx.w);
-	os.write_floatLE(vtx.u);
-	os.write_floatLE(vtx.v);
-	os.write_u8(vtx.color[0]);
-	os.write_u8(vtx.color[1]);
-	os.write_u8(vtx.color[2]);
-	os.write_floatLE(vtx.fcolor[0]);
-	os.write_floatLE(vtx.fcolor[1]);
-	os.write_floatLE(vtx.fcolor[2]);
+	// The legacy vertex format uses coordinates in
+	// normalized floating-point.
+	os.write_floatLE((float)vtx.position.x / 4096.0f);
+	os.write_floatLE((float)vtx.position.y / 4096.0f);
+	os.write_floatLE((float)vtx.position.z / 4096.0f);
+	os.write_floatLE((float)vtx.position.w / 4096.0f);
+	os.write_floatLE((float)vtx.texCoord.s / 16.0f);
+	os.write_floatLE((float)vtx.texCoord.t / 16.0f);
+	os.write_u8(vtx.color.r);
+	os.write_u8(vtx.color.g);
+	os.write_u8(vtx.color.b);
+	os.write_floatLE((float)vtx.color.r);
+	os.write_floatLE((float)vtx.color.g);
+	os.write_floatLE((float)vtx.color.b);
 }
 
-void GFX3D_LoadStateVERT(VERT &vtx, EMUFILE &is)
+void GFX3D_LoadStateVertex(NDSVertex &vtx, EMUFILE &is)
 {
-	is.read_floatLE(vtx.x);
-	is.read_floatLE(vtx.y);
-	is.read_floatLE(vtx.z);
-	is.read_floatLE(vtx.w);
-	is.read_floatLE(vtx.u);
-	is.read_floatLE(vtx.v);
-	is.read_u8(vtx.color[0]);
-	is.read_u8(vtx.color[1]);
-	is.read_u8(vtx.color[2]);
-	is.read_floatLE(vtx.fcolor[0]);
-	is.read_floatLE(vtx.fcolor[1]);
-	is.read_floatLE(vtx.fcolor[2]);
+	// Read the legacy vertex format.
+	VERT legacyVtx;
+	is.read_floatLE(legacyVtx.x);
+	is.read_floatLE(legacyVtx.y);
+	is.read_floatLE(legacyVtx.z);
+	is.read_floatLE(legacyVtx.w);
+	is.read_floatLE(legacyVtx.u);
+	is.read_floatLE(legacyVtx.v);
+	is.read_u8(legacyVtx.color[0]);
+	is.read_u8(legacyVtx.color[1]);
+	is.read_u8(legacyVtx.color[2]);
+	is.read_floatLE(legacyVtx.fcolor[0]);
+	is.read_floatLE(legacyVtx.fcolor[1]);
+	is.read_floatLE(legacyVtx.fcolor[2]);
+	
+	// Convert the legacy vertex format to the new one.
+	vtx.position.x = (s32)( (legacyVtx.x * 4096.0f) + 0.5f );
+	vtx.position.y = (s32)( (legacyVtx.y * 4096.0f) + 0.5f );
+	vtx.position.z = (s32)( (legacyVtx.z * 4096.0f) + 0.5f );
+	vtx.position.w = (s32)( (legacyVtx.w * 4096.0f) + 0.5f );
+	vtx.texCoord.s = (s32)( (legacyVtx.u * 16.0f) + 0.5f );
+	vtx.texCoord.t = (s32)( (legacyVtx.v * 16.0f) + 0.5f );
+	vtx.color.r = legacyVtx.r;
+	vtx.color.g = legacyVtx.g;
+	vtx.color.b = legacyVtx.b;
+	vtx.color.a = 0;
 }
 
 void gfx3d_init()
@@ -3238,11 +3254,11 @@ static bool gfx3d_ysort_compare(const u16 idx1, const u16 idx2)
 	const CPoly &cp1 = gfx3d.clippedPolyUnsortedList[idx1];
 	const CPoly &cp2 = gfx3d.clippedPolyUnsortedList[idx2];
 	
-	const float &y1Max = gfx3d.rawPolySortYMax[cp1.index];
-	const float &y2Max = gfx3d.rawPolySortYMax[cp2.index];
+	const s64 &y1Max = gfx3d.rawPolySortYMax[cp1.index];
+	const s64 &y2Max = gfx3d.rawPolySortYMax[cp2.index];
 	
-	const float &y1Min = gfx3d.rawPolySortYMin[cp1.index];
-	const float &y2Min = gfx3d.rawPolySortYMin[cp2.index];
+	const s64 &y1Min = gfx3d.rawPolySortYMin[cp1.index];
+	const s64 &y2Min = gfx3d.rawPolySortYMin[cp2.index];
 	
 	//this may be verified by checking the game create menus in harvest moon island of happiness
 	//also the buttons in the knights in the nightmare frontend depend on this and the perspective division
@@ -3437,8 +3453,6 @@ size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUns
 
 void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State &inState, GFX3D_GeometryList &outGList)
 {
-	const VERT *__restrict appliedVertList = outGList.rawVertList;
-	
 	switch (clippingMode)
 	{
 		case ClipperMode_Full:
@@ -3486,28 +3500,44 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	//we process all polys here instead of just the opaque ones (which have been sorted to the beginning of the index list earlier) because
 	//1. otherwise it is basically two passes through the list and will probably run slower than one pass through the list
 	//2. most geometry is opaque which is always sorted anyway
+	const NDSVertex *__restrict appliedVertList = outGList.rawVtxList;
+	
 	for (size_t i = 0; i < outGList.clippedPolyCount; i++)
 	{
 		const u16 rawPolyIndex = gfx3d.clippedPolyUnsortedList[i].index;
 		const POLY &poly = outGList.rawPolyList[rawPolyIndex];
 		
+		s64 y = (s64)appliedVertList[poly.vertIndexes[0]].position.y;
+		s64 w = (s64)appliedVertList[poly.vertIndexes[0]].position.w;
+		
 		// TODO: Possible divide by zero with the w-coordinate.
 		// Is the vertex being read correctly? Is 0 a valid value for w?
 		// If both of these questions answer to yes, then how does the NDS handle a NaN?
-		// For now, simply prevent w from being zero.
-		float verty = appliedVertList[poly.vertIndexes[0]].y;
-		float vertw = (appliedVertList[poly.vertIndexes[0]].w != 0.0f) ? appliedVertList[poly.vertIndexes[0]].w : 0.00000001f;
-		verty = 1.0f-(verty+vertw)/(2*vertw);
-		gfx3d.rawPolySortYMin[rawPolyIndex] = verty;
-		gfx3d.rawPolySortYMax[rawPolyIndex] = verty;
+		// For now, simply ignore w if it is zero.
+		if (w != 0)
+		{
+			y = ((y * 4096LL) + (w * 4096LL)) / (2LL * w);
+		}
+		
+		y = 4096LL - y;
+		
+		gfx3d.rawPolySortYMin[rawPolyIndex] = y;
+		gfx3d.rawPolySortYMax[rawPolyIndex] = y;
 		
 		for (size_t j = 1; j < (size_t)poly.type; j++)
 		{
-			verty = appliedVertList[poly.vertIndexes[j]].y;
-			vertw = (appliedVertList[poly.vertIndexes[j]].w != 0.0f) ? appliedVertList[poly.vertIndexes[j]].w : 0.00000001f;
-			verty = 1.0f-(verty+vertw)/(2*vertw);
-			gfx3d.rawPolySortYMin[rawPolyIndex] = min(gfx3d.rawPolySortYMin[rawPolyIndex], verty);
-			gfx3d.rawPolySortYMax[rawPolyIndex] = max(gfx3d.rawPolySortYMax[rawPolyIndex], verty);
+			y = (s64)appliedVertList[poly.vertIndexes[j]].position.y;
+			w = (s64)appliedVertList[poly.vertIndexes[j]].position.w;
+			
+			if (w != 0)
+			{
+				y = ((y * 4096LL) + (w * 4096LL)) / (2LL * w);
+			}
+			
+			y = 4096LL - y;
+			
+			gfx3d.rawPolySortYMin[rawPolyIndex] = min<s64>(gfx3d.rawPolySortYMin[rawPolyIndex], y);
+			gfx3d.rawPolySortYMax[rawPolyIndex] = max<s64>(gfx3d.rawPolySortYMax[rawPolyIndex], y);
 		}
 	}
 
@@ -3572,7 +3602,7 @@ static void gfx3d_doFlush()
 		viewer3D.gList.clippedPolyCount = appliedGList.clippedPolyCount;
 		viewer3D.gList.clippedPolyOpaqueCount = appliedGList.clippedPolyOpaqueCount;
 		
-		memcpy(viewer3D.gList.rawVertList, appliedGList.rawVertList, appliedGList.rawVertCount * sizeof(VERT));
+		memcpy(viewer3D.gList.rawVtxList, appliedGList.rawVtxList, appliedGList.rawVertCount * sizeof(NDSVertex));
 		memcpy(viewer3D.gList.rawPolyList, appliedGList.rawPolyList, appliedGList.rawPolyCount * sizeof(POLY));
 		memcpy(viewer3D.gList.clippedPolyList, appliedGList.clippedPolyList, appliedGList.clippedPolyCount * sizeof(CPoly));
 		
@@ -3984,7 +4014,7 @@ void gfx3d_savestate(EMUFILE &os)
 	os.write_32LE((u32)gfx3d.gList[gfx3d.pendingListIndex].rawVertCount);
 	for (size_t i = 0; i < gfx3d.gList[gfx3d.pendingListIndex].rawVertCount; i++)
 	{
-		GFX3D_SaveStateVERT(gfx3d.gList[gfx3d.pendingListIndex].rawVertList[i], os);
+		GFX3D_SaveStateVertex(gfx3d.gList[gfx3d.pendingListIndex].rawVtxList[i], os);
 	}
 	
 	os.write_32LE((u32)gfx3d.gList[gfx3d.pendingListIndex].rawPolyCount);
@@ -3992,8 +4022,8 @@ void gfx3d_savestate(EMUFILE &os)
 	{
 		GFX3D_SaveStatePOLY(gfx3d.gList[gfx3d.pendingListIndex].rawPolyList[i], os);
 		os.write_32LE(gfx3d.legacySave.rawPolyViewport[i].value);
-		os.write_floatLE(gfx3d.rawPolySortYMin[i]);
-		os.write_floatLE(gfx3d.rawPolySortYMax[i]);
+		os.write_floatLE( (float)((double)gfx3d.rawPolySortYMin[i] / 4096.0) );
+		os.write_floatLE( (float)((double)gfx3d.rawPolySortYMax[i] / 4096.0) );
 	}
 	
 	_gEngine.SaveState_v2(os);
@@ -4018,14 +4048,16 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 	{
 		u32 vertListCount32 = 0;
 		u32 polyListCount32 = 0;
+		float loadingSortYMin = 0.0f;
+		float loadingSortYMax = 0.0f;
 		
 		is.read_32LE(vertListCount32);
 		gfx3d.gList[gfx3d.pendingListIndex].rawVertCount = vertListCount32;
 		gfx3d.gList[gfx3d.appliedListIndex].rawVertCount = vertListCount32;
 		for (size_t i = 0; i < gfx3d.gList[gfx3d.appliedListIndex].rawVertCount; i++)
 		{
-			GFX3D_LoadStateVERT(gfx3d.gList[gfx3d.pendingListIndex].rawVertList[i], is);
-			gfx3d.gList[gfx3d.appliedListIndex].rawVertList[i] = gfx3d.gList[gfx3d.pendingListIndex].rawVertList[i];
+			GFX3D_LoadStateVertex(gfx3d.gList[gfx3d.pendingListIndex].rawVtxList[i], is);
+			gfx3d.gList[gfx3d.appliedListIndex].rawVtxList[i] = gfx3d.gList[gfx3d.pendingListIndex].rawVtxList[i];
 		}
 		
 		is.read_32LE(polyListCount32);
@@ -4037,10 +4069,12 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 			
 			GFX3D_LoadStatePOLY(p, is);
 			is.read_32LE(gfx3d.legacySave.rawPolyViewport[i].value);
-			is.read_floatLE(gfx3d.rawPolySortYMin[i]);
-			is.read_floatLE(gfx3d.rawPolySortYMax[i]);
+			is.read_floatLE(loadingSortYMin);
+			is.read_floatLE(loadingSortYMax);
 			
 			p.viewport = GFX3D_ViewportParse(gfx3d.legacySave.rawPolyViewport[i]);
+			gfx3d.rawPolySortYMin[i] = (s64)( (loadingSortYMin * 4096.0f) + 0.5f );
+			gfx3d.rawPolySortYMax[i] = (s64)( (loadingSortYMax * 4096.0f) + 0.5f );
 			
 			gfx3d.gList[gfx3d.appliedListIndex].rawPolyList[i] = p;
 		}
