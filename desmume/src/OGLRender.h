@@ -425,7 +425,8 @@ union OGLPolyStates
 		u8 TexSizeShiftS:3;
 		u8 TexSizeShiftT:3;
 		
-		u8 :8;
+		u8 IsBackFacing:1;
+		u8 :7;
 	};
 };
 
@@ -536,6 +537,7 @@ struct OGLRenderRef
 	
 	GLuint fboClearImageID;
 	GLuint fboRenderID;
+	GLuint fboFramebufferFlipID;
 	GLuint fboMSIntermediateRenderID;
 	GLuint selectedRenderingFBO;
 	
@@ -581,6 +583,7 @@ struct OGLRenderRef
 	GLint uniformTexSingleBitAlpha[256];
 	GLint uniformTexDrawOpaque[256];
 	GLint uniformDrawModeDepthEqualsTest[256];
+	GLint uniformPolyIsBackFacing[256];
 	
 	GLint uniformPolyStateIndex[256];
 	GLfloat uniformPolyDepthOffset[256];
@@ -591,16 +594,13 @@ struct OGLRenderRef
 	GLuint vaoPostprocessStatesID;
 	
 	// Client-side Buffers
+	GLfloat *position4fBuffer;
+	GLfloat *texCoord2fBuffer;
 	GLfloat *color4fBuffer;
 	CACHE_ALIGN GLushort vertIndexBuffer[OGLRENDER_VERT_INDEX_BUFFER_COUNT];
 	CACHE_ALIGN GLushort workingCIColorBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN GLuint workingCIDepthStencilBuffer[2][GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN GLuint workingCIFogAttributesBuffer[2][GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
-	
-	// Vertex Attributes Pointers
-	GLvoid *vtxPtrPosition;
-	GLvoid *vtxPtrTexCoord;
-	GLvoid *vtxPtrColor;
 };
 
 struct GFX3D_State;
@@ -804,7 +804,7 @@ protected:
 	
 	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID) = 0;
 	virtual void SetPolygonIndex(const size_t index) = 0;
-	virtual Render3DError SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer) = 0;
+	virtual Render3DError SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer, bool isBackFacing) = 0;
 	
 public:
 	OpenGLRenderer();
@@ -888,7 +888,7 @@ protected:
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 	virtual void SetPolygonIndex(const size_t index);
-	virtual Render3DError SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer);
+	virtual Render3DError SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer, bool isBackFacing);
 	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 	virtual Render3DError SetupViewport(const GFX3D_Viewport viewport);
 	

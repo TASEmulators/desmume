@@ -142,6 +142,7 @@ flat out int polySetNewDepthForTranslucent;\n\
 flat out int polyMode;\n\
 flat out int polyID;\n\
 flat out int texSingleBitAlpha;\n\
+flat out int polyIsBackFacing;\n\
 flat out int isPolyDrawable;\n\
 \n\
 void main()\n\
@@ -165,15 +166,16 @@ void main()\n\
 	polySetNewDepthForTranslucent = (polyStateBits >> 15) & 0x01;\n\
 	polyEnableTexture             = (polyStateBits >> 16) & 0x01;\n\
 	texSingleBitAlpha             = (polyStateBits >> 17) & 0x01;\n\
+	polyIsBackFacing              = (polyStateBits >> 24) & 0x01;\n\
 	\n\
 	isPolyDrawable                = int((polyMode != 3) || polyDrawShadow);\n\
 	\n\
 	mat2 texScaleMtx	= mat2(	vec2(polyTexScale.x,            0.0), \n\
 								vec2(           0.0, polyTexScale.y)); \n\
 	\n\
-	vtxTexCoord = texScaleMtx * inTexCoord0;\n\
+	vtxTexCoord = (texScaleMtx * inTexCoord0) / 16.0;\n\
 	vtxColor = vec4(inColor / 63.0, polyAlpha);\n\
-	gl_Position = inPosition;\n\
+	gl_Position = inPosition / 4096.0;\n\
 }\n\
 "};
 
@@ -188,6 +190,7 @@ flat in int polySetNewDepthForTranslucent;\n\
 flat in int polyMode;\n\
 flat in int polyID;\n\
 flat in int texSingleBitAlpha;\n\
+flat in int polyIsBackFacing;\n\
 flat in int isPolyDrawable;\n\
 \n\
 layout (std140) uniform RenderStates\n\
@@ -212,9 +215,9 @@ uniform bool polyDrawShadow;\n\
 uniform float polyDepthOffset;\n\
 \n\
 #if DRAW_MODE_OPAQUE\n\
-out vec4 outBackFacing;\n\
+out vec4 outDstBackFacing;\n\
 #elif USE_DEPTH_LEQUAL_POLYGON_FACING\n\
-uniform sampler2D inBackFacing;\n\
+uniform sampler2D inDstBackFacing;\n\
 #endif\n\
 \n\
 out vec4 outFragColor;\n\
@@ -232,8 +235,8 @@ layout (depth_less) out float gl_FragDepth;\n\
 void main()\n\
 {\n\
 #if USE_DEPTH_LEQUAL_POLYGON_FACING && !DRAW_MODE_OPAQUE\n\
-	bool isOpaqueDstBackFacing = bool( texelFetch(inBackFacing, ivec2(gl_FragCoord.xy), 0).r );\n\
-	if ( drawModeDepthEqualsTest && (!gl_FrontFacing || !isOpaqueDstBackFacing) )\n\
+	bool isOpaqueDstBackFacing = bool( texelFetch(inDstBackFacing, ivec2(gl_FragCoord.xy), 0).r );\n\
+	if ( drawModeDepthEqualsTest && (bool(polyIsBackFacing) || !isOpaqueDstBackFacing) )\n\
 	{\n\
 		discard;\n\
 	}\n\
@@ -305,7 +308,7 @@ void main()\n\
 	outFogAttributes = (isPolyDrawable != 0) ? vec4( float(polyEnableFog), 0.0, 0.0, float((outFragColor.a > 0.999) ? 1.0 : 0.5) ) : vec4(0.0, 0.0, 0.0, 0.0);\n\
 #endif\n\
 #if DRAW_MODE_OPAQUE\n\
-	outBackFacing = vec4(float(!gl_FrontFacing), 0.0, 0.0, 1.0);\n\
+	outDstBackFacing = vec4(float(polyIsBackFacing), 0.0, 0.0, 1.0);\n\
 #endif\n\
 	\n\
 #if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
@@ -791,7 +794,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 		INFO("OpenGL: Driver does not support at least 2x multisampled FBOs.\n");
 	}
 	
-	this->_isDepthLEqualPolygonFacingSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
+	this->_isDepthLEqualPolygonFacingSupported = true;
 	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->isMultisampledFBOSupported);
 	
 	this->InitFinalRenderStates(&oglExtensionSet); // This must be done last
@@ -1111,9 +1114,9 @@ Render3DError OpenGLRenderer_3_2::CreateVAOs()
 	glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 	glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
 	glEnableVertexAttribArray(OGLVertexAttributeID_Color);
-	glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
-	glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
-	glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
+	glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, position));
+	glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, texCoord));
+	glVertexAttribPointer(OGLVertexAttributeID_Color, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, color));
 	
 	glBindVertexArray(0);
 	
@@ -1280,7 +1283,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 		
 		if (programFlags.OpaqueDrawMode)
 		{
-			glBindFragDataLocation(OGLRef.programGeometryID[flagsValue], GeometryAttachmentWorkingBuffer[programFlags.DrawBuffersMode], "outBackFacing");
+			glBindFragDataLocation(OGLRef.programGeometryID[flagsValue], GeometryAttachmentWorkingBuffer[programFlags.DrawBuffersMode], "outDstBackFacing");
 		}
 		
 		glLinkProgram(OGLRef.programGeometryID[flagsValue]);
@@ -1319,7 +1322,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 		
 		if (this->_emulateDepthLEqualPolygonFacing && !programFlags.OpaqueDrawMode)
 		{
-			const GLint uniformTexBackfacing			= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "inBackFacing");
+			const GLint uniformTexBackfacing			= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "inDstBackFacing");
 			glUniform1i(uniformTexBackfacing, OGLTextureUnitID_FinalColor);
 		}
 		
@@ -1999,9 +2002,9 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 		glDeleteSync(this->_syncBufferSetup);
 	}
 	
-	const size_t vtxBufferSize = sizeof(VERT) * renderGList.rawVertCount;
-	VERT *vtxPtr = (VERT *)glMapBufferRange(GL_ARRAY_BUFFER, 0, vtxBufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-	memcpy(vtxPtr, renderGList.rawVertList, vtxBufferSize);
+	const size_t vtxBufferSize = sizeof(NDSVertex) * renderGList.rawVertCount;
+	NDSVertex *vtxPtr = (NDSVertex *)glMapBufferRange(GL_ARRAY_BUFFER, 0, vtxBufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+	memcpy(vtxPtr, renderGList.rawVtxList, vtxBufferSize);
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
 	this->_syncBufferSetup = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -2143,6 +2146,8 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 		polyStates[i].TexSingleBitAlpha = (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? 1 : 0;
 		polyStates[i].TexSizeShiftS = rawPoly.texParam.SizeShiftS; // Note that we are using the preshifted size of S
 		polyStates[i].TexSizeShiftT = rawPoly.texParam.SizeShiftT; // Note that we are using the preshifted size of T
+		
+		polyStates[i].IsBackFacing = (this->_clippedPolyList[i].isPolyBackFacing) ? 1 : 0;
 	}
 	
 	if (OGLRef.uboPolyStatesID != 0)
@@ -2401,7 +2406,7 @@ void OpenGLRenderer_3_2::SetPolygonIndex(const size_t index)
 	}
 }
 
-Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer)
+Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer, bool isBackFacing)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	

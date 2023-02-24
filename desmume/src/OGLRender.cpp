@@ -339,11 +339,11 @@ void main() \n\
 	mat2 texScaleMtx	= mat2(	vec2(polyTexScale.x,            0.0), \n\
 								vec2(           0.0, polyTexScale.y)); \n\
 	\n\
-	vtxTexCoord = texScaleMtx * inTexCoord0; \n\
+	vtxTexCoord = (texScaleMtx * inTexCoord0) / 16.0; \n\
 	vtxColor = vec4(inColor / 63.0, polyAlpha); \n\
 	isPolyDrawable = ((polyMode != 3) || polyDrawShadow) ? 1.0 : -1.0;\n\
 	\n\
-	gl_Position = inPosition;\n\
+	gl_Position = inPosition / 4096.0;\n\
 } \n\
 "};
 
@@ -367,20 +367,21 @@ uniform bool polyEnableTexture;\n\
 uniform bool polyEnableFog;\n\
 uniform bool texDrawOpaque;\n\
 uniform bool texSingleBitAlpha;\n\
+uniform bool polyIsBackFacing;\n\
 \n\
 uniform bool drawModeDepthEqualsTest;\n\
 uniform bool polyDrawShadow;\n\
 uniform float polyDepthOffset;\n\
 \n\
 #if USE_DEPTH_LEQUAL_POLYGON_FACING && !DRAW_MODE_OPAQUE\n\
-uniform sampler2D inBackFacing;\n\
+uniform sampler2D inDstBackFacing;\n\
 #endif\n\
 \n\
 void main()\n\
 {\n\
 #if USE_DEPTH_LEQUAL_POLYGON_FACING && !DRAW_MODE_OPAQUE\n\
-	bool isOpaqueDstBackFacing = bool( texture2D(inBackFacing, vec2(gl_FragCoord.x/FRAMEBUFFER_SIZE_X, gl_FragCoord.y/FRAMEBUFFER_SIZE_Y)).r );\n\
-	if (drawModeDepthEqualsTest && (!gl_FrontFacing || !isOpaqueDstBackFacing))\n\
+	bool isOpaqueDstBackFacing = bool( texture2D(inDstBackFacing, vec2(gl_FragCoord.x/FRAMEBUFFER_SIZE_X, gl_FragCoord.y/FRAMEBUFFER_SIZE_Y)).r );\n\
+	if (drawModeDepthEqualsTest && (polyIsBackFacing || !isOpaqueDstBackFacing))\n\
 	{\n\
 		discard;\n\
 	}\n\
@@ -445,7 +446,7 @@ void main()\n\
 	gl_FragData[ATTACHMENT_FOG_ATTRIBUTES] = (isPolyDrawable > 0.0) ? vec4( float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5) ) : vec4(0.0, 0.0, 0.0, 0.0);\n\
 #endif\n\
 #if DRAW_MODE_OPAQUE\n\
-	gl_FragData[ATTACHMENT_WORKING_BUFFER] = vec4(float(!gl_FrontFacing), 0.0, 0.0, 1.0);\n\
+	gl_FragData[ATTACHMENT_WORKING_BUFFER] = vec4(float(polyIsBackFacing), 0.0, 0.0, 1.0);\n\
 #endif\n\
 	\n\
 #if USE_NDS_DEPTH_CALCULATION || ENABLE_FOG\n\
@@ -1796,7 +1797,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLY *rawPolyList, const 
 		if (lastPolyAttr.value != rawPoly.attribute.value)
 		{
 			lastPolyAttr = rawPoly.attribute;
-			this->SetupPolygon(rawPoly, (DRAWMODE != OGLPolyDrawMode_DrawOpaquePolys), (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass));
+			this->SetupPolygon(rawPoly, (DRAWMODE != OGLPolyDrawMode_DrawOpaquePolys), (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass), clippedPoly.isPolyBackFacing);
 		}
 		
 		// Set up the texture if it changed
@@ -2350,7 +2351,13 @@ OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 	
 	_pixelReadNeedsFinish = false;
 	
-	delete[] ref->color4fBuffer;
+	free_aligned(ref->position4fBuffer);
+	ref->position4fBuffer = NULL;
+	
+	free_aligned(ref->texCoord2fBuffer);
+	ref->texCoord2fBuffer = NULL;
+	
+	free_aligned(ref->color4fBuffer);
 	ref->color4fBuffer = NULL;
 	
 	if (this->isShaderSupported)
@@ -2437,14 +2444,6 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		{
 			return error;
 		}
-	}
-	
-	this->isVAOSupported	= this->isVBOSupported &&
-							 (this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_vertex_array_object") ||
-							  this->IsExtensionPresent(&oglExtensionSet, "GL_APPLE_vertex_array_object"));
-	if (this->isVAOSupported)
-	{
-		this->CreateVAOs();
 	}
 	
 	this->isPBOSupported	= this->isVBOSupported &&
@@ -2604,6 +2603,20 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		{
 			return error;
 		}
+		
+		// If shaders aren't available, we need to take care of the vertex data format
+		// conversion on the CPU instead of on the GPU using these client-side buffers.
+		OGLRef.position4fBuffer = (GLfloat *)malloc_alignedPage(VERTLIST_SIZE * sizeof(GLfloat) * 4);
+		OGLRef.texCoord2fBuffer = (GLfloat *)malloc_alignedPage(VERTLIST_SIZE * sizeof(GLfloat) * 2);
+		OGLRef.color4fBuffer    = (GLfloat *)malloc_alignedPage(VERTLIST_SIZE * sizeof(GLfloat) * 4);
+	}
+	
+	this->isVAOSupported = this->isVBOSupported &&
+	                      (this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_vertex_array_object") ||
+	                       this->IsExtensionPresent(&oglExtensionSet, "GL_APPLE_vertex_array_object"));
+	if (this->isVAOSupported)
+	{
+		this->CreateVAOs();
 	}
 	
 	// Set rendering support flags based on driver features.
@@ -2613,8 +2626,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	this->_deviceInfo.isFogSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
 	this->_deviceInfo.isTextureSmoothingSupported = this->isShaderSupported;
 	
-	// We're requiring OpenGL v2.1 for this feature because it relies on gl_FrontFacing, which may not be supported on v2.0 drivers.
-	this->_isDepthLEqualPolygonFacingSupported = this->IsVersionSupported(2, 1, 0) && this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
+	this->_isDepthLEqualPolygonFacingSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
 	
 	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->isMultisampledFBOSupported);
 	
@@ -2632,7 +2644,7 @@ Render3DError OpenGLRenderer_1_2::CreateVBOs()
 	glGenBuffersARB(1, &OGLRef.vboPostprocessVtxID);
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboGeometryVtxID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, VERTLIST_SIZE * sizeof(VERT), NULL, GL_STREAM_DRAW_ARB);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, VERTLIST_SIZE * sizeof(NDSVertex), NULL, GL_STREAM_DRAW_ARB);
 	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, OGLRef.iboGeometryIndexID);
 	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(OGLRef.vertIndexBuffer), NULL, GL_STREAM_DRAW_ARB);
 	
@@ -2703,25 +2715,48 @@ Render3DError OpenGLRenderer_1_2::CreateVAOs()
 	glGenVertexArrays(1, &OGLRef.vaoPostprocessStatesID);
 	
 	glBindVertexArray(OGLRef.vaoGeometryStatesID);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboGeometryVtxID);
 	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, OGLRef.iboGeometryIndexID);
 	
-	glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-	glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-	glEnableVertexAttribArray(OGLVertexAttributeID_Color);
-	glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
-	glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
-	glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
+	if (this->isShaderSupported)
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboGeometryVtxID);
+		
+		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+		glEnableVertexAttribArray(OGLVertexAttributeID_Color);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, position));
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, texCoord));
+		glVertexAttribPointer(OGLVertexAttributeID_Color, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, color));
+	}
+	else
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		glVertexPointer(4, GL_FLOAT, 0, OGLRef.position4fBuffer);
+		glTexCoordPointer(2, GL_FLOAT, 0, OGLRef.texCoord2fBuffer);
+		glColorPointer(4, GL_FLOAT, 0, OGLRef.color4fBuffer);
+	}
 	
 	glBindVertexArray(0);
 	
 	glBindVertexArray(OGLRef.vaoPostprocessStatesID);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboPostprocessVtxID);
 	
-	glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-	glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-	glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
+	if (this->isShaderSupported)
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboPostprocessVtxID);
+		
+		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
+	}
+	else
+	{
+		// Do nothing. Framebuffer post-processing requires shaders.
+	}
 	
 	glBindVertexArray(0);
 	
@@ -2822,6 +2857,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	
 	// Set up FBOs
 	glGenFramebuffersEXT(1, &OGLRef.fboClearImageID);
+	glGenFramebuffersEXT(1, &OGLRef.fboFramebufferFlipID);
 	glGenFramebuffersEXT(1, &OGLRef.fboRenderID);
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboClearImageID);
@@ -2829,6 +2865,18 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_FOGATTRIBUTES_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texCIFogAttrID, 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, OGLRef.texCIDepthStencilID, 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_TEXTURE_2D, OGLRef.texCIDepthStencilID, 0);
+	
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
+	{
+		INFO("OpenGL: Failed to create FBOs!\n");
+		this->DestroyFBOs();
+		
+		return OGLERROR_FBO_CREATE_ERROR;
+	}
+	
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboFramebufferFlipID);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOROUT_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texGColorID, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_WORKING_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texFinalColorID, 0);
 	
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
@@ -2874,6 +2922,7 @@ void OpenGLRenderer_1_2::DestroyFBOs()
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	glDeleteFramebuffersEXT(1, &OGLRef.fboClearImageID);
+	glDeleteFramebuffersEXT(1, &OGLRef.fboFramebufferFlipID);
 	glDeleteFramebuffersEXT(1, &OGLRef.fboRenderID);
 	glDeleteTextures(1, &OGLRef.texCIColorID);
 	glDeleteTextures(1, &OGLRef.texCIFogAttrID);
@@ -2884,6 +2933,7 @@ void OpenGLRenderer_1_2::DestroyFBOs()
 	glDeleteTextures(1, &OGLRef.texGDepthStencilID);
 	
 	OGLRef.fboClearImageID = 0;
+	OGLRef.fboFramebufferFlipID = 0;
 	OGLRef.fboRenderID = 0;
 	
 	this->isFBOSupported = false;
@@ -3049,7 +3099,7 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		std::stringstream shaderFlags;
 		shaderFlags << "#define USE_TEXTURE_SMOOTHING " << ((this->_enableTextureSmoothing) ? 1 : 0) << "\n";
 		shaderFlags << "#define USE_NDS_DEPTH_CALCULATION " << ((this->_emulateNDSDepthCalculation) ? 1 : 0) << "\n";
-		shaderFlags << "#define USE_DEPTH_LEQUAL_POLYGON_FACING " << ((this->_emulateDepthLEqualPolygonFacing && this->IsVersionSupported(2, 1, 0) && this->isVBOSupported && this->isFBOSupported) ? 1 : 0) << "\n";
+		shaderFlags << "#define USE_DEPTH_LEQUAL_POLYGON_FACING " << ((this->_emulateDepthLEqualPolygonFacing && this->isVBOSupported && this->isFBOSupported) ? 1 : 0) << "\n";
 		shaderFlags << "\n";
 		shaderFlags << "#define ENABLE_W_DEPTH " << ((programFlags.EnableWDepth) ? 1 : 0) << "\n";
 		shaderFlags << "#define ENABLE_ALPHA_TEST " << ((programFlags.EnableAlphaTest) ? "true\n" : "false\n");
@@ -3057,7 +3107,7 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		shaderFlags << "#define TOON_SHADING_MODE " << ((programFlags.ToonShadingMode) ? 1 : 0) << "\n";
 		shaderFlags << "#define ENABLE_FOG " << ((programFlags.EnableFog && this->isVBOSupported && this->isFBOSupported) ? 1 : 0) << "\n";
 		shaderFlags << "#define ENABLE_EDGE_MARK " << ((programFlags.EnableEdgeMark && this->isVBOSupported && this->isFBOSupported) ? 1 : 0) << "\n";
-		shaderFlags << "#define DRAW_MODE_OPAQUE " << ((programFlags.OpaqueDrawMode && this->IsVersionSupported(2, 1, 0) && this->isVBOSupported && this->isFBOSupported) ? 1 : 0) << "\n";
+		shaderFlags << "#define DRAW_MODE_OPAQUE " << ((programFlags.OpaqueDrawMode && this->isVBOSupported && this->isFBOSupported) ? 1 : 0) << "\n";
 		shaderFlags << "\n";
 		shaderFlags << "#define ATTACHMENT_WORKING_BUFFER " << GeometryAttachmentWorkingBuffer[programFlags.DrawBuffersMode] << "\n";
 		shaderFlags << "#define ATTACHMENT_POLY_ID " << GeometryAttachmentPolyID[programFlags.DrawBuffersMode] << "\n";
@@ -3103,7 +3153,7 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		
 		if (this->_emulateDepthLEqualPolygonFacing && this->_isDepthLEqualPolygonFacingSupported && !programFlags.OpaqueDrawMode)
 		{
-			const GLint uniformTexBackfacing					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "inBackFacing");
+			const GLint uniformTexBackfacing					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "inDstBackFacing");
 			glUniform1i(uniformTexBackfacing, OGLTextureUnitID_FinalColor);
 		}
 		
@@ -3122,6 +3172,7 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		
 		OGLRef.uniformTexDrawOpaque[flagsValue]					= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "texDrawOpaque");
 		OGLRef.uniformDrawModeDepthEqualsTest[flagsValue]		= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "drawModeDepthEqualsTest");
+		OGLRef.uniformPolyIsBackFacing[flagsValue]              = glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyIsBackFacing");
 		OGLRef.uniformPolyDrawShadow[flagsValue]				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDrawShadow");
 		OGLRef.uniformPolyDepthOffset[flagsValue]				= glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDepthOffset");
 	}
@@ -3658,12 +3709,6 @@ Render3DError OpenGLRenderer_1_2::InitFinalRenderStates(const std::set<std::stri
 	// Mirrored Repeat Mode Support
 	OGLRef.stateTexMirroredRepeat = (isTexMirroredRepeatSupported) ? GL_MIRRORED_REPEAT : GL_REPEAT;
 	
-	// Map the vertex list's colors with 4 floats per color. This is being done
-	// because OpenGL needs 4-colors per vertex to support translucency. (The DS
-	// uses 3-colors per vertex, and adds alpha through the poly, so we can't
-	// simply reference the colors+alpha from just the vertices by themselves.)
-	OGLRef.color4fBuffer = (this->isShaderSupported) ? NULL : new GLfloat[VERTLIST_SIZE * 4];
-	
 	return OGLERROR_NOERR;
 }
 
@@ -3828,29 +3873,18 @@ Render3DError OpenGLRenderer_1_2::EnableVertexAttributes()
 			glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 			glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
 			glEnableVertexAttribArray(OGLVertexAttributeID_Color);
-			glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), OGLRef.vtxPtrPosition);
-			glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), OGLRef.vtxPtrTexCoord);
-			glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(VERT), OGLRef.vtxPtrColor);
+			glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, position));
+			glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, texCoord));
+			glVertexAttribPointer(OGLVertexAttributeID_Color, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, color));
 		}
 		else
 		{
+			glEnableClientState(GL_VERTEX_ARRAY);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 			glEnableClientState(GL_COLOR_ARRAY);
-			glEnableClientState(GL_VERTEX_ARRAY);
-			
-			if (this->isVBOSupported)
-			{
-				glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-				glColorPointer(4, GL_FLOAT, 0, OGLRef.vtxPtrColor);
-				glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboGeometryVtxID);
-			}
-			else
-			{
-				glColorPointer(4, GL_FLOAT, 0, OGLRef.vtxPtrColor);
-			}
-			
-			glVertexPointer(4, GL_FLOAT, sizeof(VERT), OGLRef.vtxPtrPosition);
-			glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), OGLRef.vtxPtrTexCoord);
+			glVertexPointer(4, GL_FLOAT, 0, OGLRef.position4fBuffer);
+			glTexCoordPointer(2, GL_FLOAT, 0, OGLRef.texCoord2fBuffer);
+			glColorPointer(4, GL_FLOAT, 0, OGLRef.color4fBuffer);
 		}
 	}
 	
@@ -3874,8 +3908,8 @@ Render3DError OpenGLRenderer_1_2::DisableVertexAttributes()
 		else
 		{
 			glDisableClientState(GL_VERTEX_ARRAY);
-			glDisableClientState(GL_COLOR_ARRAY);
 			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+			glDisableClientState(GL_COLOR_ARRAY);
 		}
 	}
 	
@@ -4130,20 +4164,16 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 	{
 		// Just flips the framebuffer in Y to match the coordinates of OpenGL and the NDS hardware.
 		// Further colorspace conversion will need to be done in a later step.
-		if (this->_lastTextureDrawTarget == OGLTextureUnitID_GColor)
-		{
-			glDrawBuffer(GL_WORKING_ATTACHMENT_ID);
-			glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
-			glBlitFramebufferEXT(0, (GLint)this->_framebufferHeight, (GLint)this->_framebufferWidth, 0, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			glReadBuffer(GL_WORKING_ATTACHMENT_ID);
-		}
-		else
-		{
-			glDrawBuffer(GL_COLOROUT_ATTACHMENT_ID);
-			glReadBuffer(GL_WORKING_ATTACHMENT_ID);
-			glBlitFramebufferEXT(0, (GLint)this->_framebufferHeight, (GLint)this->_framebufferWidth, 0, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			glReadBuffer(GL_COLOROUT_ATTACHMENT_ID);
-		}
+		
+		const GLenum flipTarget = (this->_lastTextureDrawTarget == OGLTextureUnitID_GColor) ? GL_WORKING_ATTACHMENT_ID : GL_COLOROUT_ATTACHMENT_ID;
+		
+		glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, OGLRef.fboFramebufferFlipID);
+		glDrawBuffer(flipTarget);
+		
+		glBlitFramebufferEXT(0, (GLint)this->_framebufferHeight, (GLint)this->_framebufferWidth, 0, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboFramebufferFlipID);
+		glReadBuffer(flipTarget);
 	}
 	
 	if (this->isPBOSupported)
@@ -4181,18 +4211,18 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 	
 	if (this->isVBOSupported)
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboGeometryVtxID);
 		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, OGLRef.iboGeometryIndexID);
 		
-		// Only copy as much vertex data as we need to, since this can be a potentially large upload size.
-		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * renderGList.rawVertCount, renderGList.rawVertList);
-	}
-	else
-	{
-		// If VBOs aren't supported, we need to use the client-side buffers here.
-		OGLRef.vtxPtrPosition = (GLvoid *)&renderGList.rawVertList[0].coord;
-		OGLRef.vtxPtrTexCoord = (GLvoid *)&renderGList.rawVertList[0].texcoord;
-		OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)&renderGList.rawVertList[0].color : OGLRef.color4fBuffer;
+		if (this->isShaderSupported)
+		{
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboGeometryVtxID);
+			glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(NDSVertex) * renderGList.rawVertCount, renderGList.rawVtxList);
+		}
+		else
+		{
+			// If shaders aren't supported, we need to use the client-side buffers here.
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		}
 	}
 	
 	// Generate the clipped polygon list.
@@ -4234,27 +4264,38 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 			
 			for (size_t j = 0; j < polyType; j++)
 			{
-				const GLushort vertIndex = rawPoly.vertIndexes[j];
-				const size_t colorIndex = vertIndex * 4;
+				const GLushort vtxIndex = rawPoly.vertIndexes[j];
+				const size_t positionIndex = vtxIndex * 4;
+				const size_t texCoordIndex = vtxIndex * 2;
+				const size_t colorIndex = vtxIndex * 4;
+				const NDSVertex &vtx = renderGList.rawVtxList[vtxIndex];
 				
-				// Consolidate the vertex color and the poly alpha to our internal color buffer
-				// so that OpenGL can use it.
-				const VERT *vertForAlpha = &renderGList.rawVertList[vertIndex];
-				OGLRef.color4fBuffer[colorIndex+0] = divide6bitBy63_LUT[vertForAlpha->color[0]];
-				OGLRef.color4fBuffer[colorIndex+1] = divide6bitBy63_LUT[vertForAlpha->color[1]];
-				OGLRef.color4fBuffer[colorIndex+2] = divide6bitBy63_LUT[vertForAlpha->color[2]];
+				// Since we can't use shaders, we can't perform any data format conversions
+				// of the vertex data on the GPU. Therefore, we need to do the conversions
+				// on the CPU instead.
+				OGLRef.position4fBuffer[positionIndex+0] = (float)vtx.position.x / 4096.0f;
+				OGLRef.position4fBuffer[positionIndex+1] = (float)vtx.position.y / 4096.0f;
+				OGLRef.position4fBuffer[positionIndex+2] = (float)vtx.position.z / 4096.0f;
+				OGLRef.position4fBuffer[positionIndex+3] = (float)vtx.position.w / 4096.0f;
+				
+				OGLRef.texCoord2fBuffer[texCoordIndex+0] = (float)vtx.texCoord.s / 16.0f;
+				OGLRef.texCoord2fBuffer[texCoordIndex+1] = (float)vtx.texCoord.t / 16.0f;
+				
+				OGLRef.color4fBuffer[colorIndex+0] = divide6bitBy63_LUT[vtx.color.r];
+				OGLRef.color4fBuffer[colorIndex+1] = divide6bitBy63_LUT[vtx.color.g];
+				OGLRef.color4fBuffer[colorIndex+2] = divide6bitBy63_LUT[vtx.color.b];
 				OGLRef.color4fBuffer[colorIndex+3] = thePolyAlpha;
 				
 				// While we're looping through our vertices, add each vertex index to a
 				// buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 				// vertices here to convert them to GL_TRIANGLES, which are much easier
 				// to work with and won't be deprecated in future OpenGL versions.
-				OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+				OGLRef.vertIndexBuffer[vertIndexCount++] = vtxIndex;
 				if (!GFX3D_IsPolyWireframe(rawPoly) && (rawPoly.vtxFormat == GFX3D_QUADS || rawPoly.vtxFormat == GFX3D_QUAD_STRIP))
 				{
 					if (j == 2)
 					{
-						OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+						OGLRef.vertIndexBuffer[vertIndexCount++] = vtxIndex;
 					}
 					else if (j == 3)
 					{
@@ -4396,13 +4437,14 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 		
 		size_t indexOffset = 0;
 		
+		const CPoly &firstCPoly = this->_clippedPolyList[0];
 		const POLY *rawPolyList = this->_rawPolyList;
-		const POLY &firstPoly = rawPolyList[this->_clippedPolyList[0].index];
+		const POLY &firstPoly = rawPolyList[firstCPoly.index];
 		POLYGON_ATTR lastPolyAttr = firstPoly.attribute;
 		
 		if (this->_clippedPolyOpaqueCount > 0)
 		{
-			this->SetupPolygon(firstPoly, false, true);
+			this->SetupPolygon(firstPoly, false, true, firstCPoly.isPolyBackFacing);
 			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(rawPolyList, this->_clippedPolyList, this->_clippedPolyCount, 0, this->_clippedPolyOpaqueCount - 1, indexOffset, lastPolyAttr);
 		}
 		
@@ -4414,16 +4456,17 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 			{
 				if (this->_clippedPolyOpaqueCount == 0)
 				{
-					this->SetupPolygon(firstPoly, true, false);
+					this->SetupPolygon(firstPoly, true, false, firstCPoly.isPolyBackFacing);
 				}
 				
 				this->ZeroDstAlphaPass(rawPolyList, this->_clippedPolyList, this->_clippedPolyCount, this->_clippedPolyOpaqueCount, this->_enableAlphaBlending, indexOffset, lastPolyAttr);
 				
 				if (this->_clippedPolyOpaqueCount > 0)
 				{
-					const POLY &lastOpaquePoly = rawPolyList[this->_clippedPolyList[this->_clippedPolyOpaqueCount - 1].index];
+					const CPoly &lastOpaqueCPoly = this->_clippedPolyList[this->_clippedPolyOpaqueCount - 1];
+					const POLY &lastOpaquePoly = rawPolyList[lastOpaqueCPoly.index];
 					lastPolyAttr = lastOpaquePoly.attribute;
-					this->SetupPolygon(lastOpaquePoly, false, true);
+					this->SetupPolygon(lastOpaquePoly, false, true, lastOpaqueCPoly.isPolyBackFacing);
 				}
 			}
 			else
@@ -4440,7 +4483,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 			
 			if (this->_clippedPolyOpaqueCount == 0)
 			{
-				this->SetupPolygon(firstPoly, true, true);
+				this->SetupPolygon(firstPoly, true, true, firstCPoly.isPolyBackFacing);
 			}
 			else
 			{
@@ -4781,7 +4824,7 @@ void OpenGLRenderer_1_2::SetPolygonIndex(const size_t index)
 	this->_currentPolyIndex = index;
 }
 
-Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer)
+Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer, bool isBackFacing)
 {
 	// Set up depth test mode
 	glDepthFunc((thePoly.attribute.DepthEqualTest_Enable) ? GL_EQUAL : GL_LESS);
@@ -4860,6 +4903,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool treatAs
 		glUniform1i(OGLRef.uniformPolyIsWireframe[this->_geometryProgramFlags.value], (GFX3D_IsPolyWireframe(thePoly)) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent[this->_geometryProgramFlags.value], (thePoly.attribute.TranslucentDepthWrite_Enable) ? GL_TRUE : GL_FALSE);
 		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
+		glUniform1i(OGLRef.uniformPolyIsBackFacing[this->_geometryProgramFlags.value], (isBackFacing) ? GL_TRUE : GL_FALSE);
 	}
 	else
 	{
@@ -5119,16 +5163,22 @@ Render3DError OpenGLRenderer_1_2::Reset()
 	
 	this->_pixelReadNeedsFinish = false;
 	
+	if (OGLRef.position4fBuffer != NULL)
+	{
+		memset(OGLRef.position4fBuffer, 0, VERTLIST_SIZE * 4 * sizeof(GLfloat));
+	}
+	
+	if (OGLRef.texCoord2fBuffer != NULL)
+	{
+		memset(OGLRef.texCoord2fBuffer, 0, VERTLIST_SIZE * 2 * sizeof(GLfloat));
+	}
+	
 	if (OGLRef.color4fBuffer != NULL)
 	{
 		memset(OGLRef.color4fBuffer, 0, VERTLIST_SIZE * 4 * sizeof(GLfloat));
 	}
 	
 	this->_currentPolyIndex = 0;
-	
-	OGLRef.vtxPtrPosition = (GLvoid *)offsetof(VERT, coord);
-	OGLRef.vtxPtrTexCoord = (GLvoid *)offsetof(VERT, texcoord);
-	OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)offsetof(VERT, color) : OGLRef.color4fBuffer;
 	
 	memset(&this->_pendingRenderStates, 0, sizeof(this->_pendingRenderStates));
 	
@@ -5371,6 +5421,8 @@ Render3DError OpenGLRenderer_2_0::InitFinalRenderStates(const std::set<std::stri
 	OGLRef.stateTexMirroredRepeat = GL_MIRRORED_REPEAT;
 	
 	// Ignore our color buffer since we'll transfer the polygon alpha through a uniform.
+	OGLRef.position4fBuffer = NULL;
+	OGLRef.texCoord2fBuffer = NULL;
 	OGLRef.color4fBuffer = NULL;
 	
 	return OGLERROR_NOERR;
@@ -5389,9 +5441,9 @@ Render3DError OpenGLRenderer_2_0::EnableVertexAttributes()
 		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
 		glEnableVertexAttribArray(OGLVertexAttributeID_Color);
-		glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), OGLRef.vtxPtrPosition);
-		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), OGLRef.vtxPtrTexCoord);
-		glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(VERT), OGLRef.vtxPtrColor);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, position));
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, texCoord));
+		glVertexAttribPointer(OGLVertexAttributeID_Color, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, color));
 	}
 	
 	return OGLERROR_NOERR;
@@ -5433,7 +5485,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 	
 	// Only copy as much vertex data as we need to, since this can be a potentially large upload size.
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * renderGList.rawVertCount, renderGList.rawVertList);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(NDSVertex) * renderGList.rawVertCount, renderGList.rawVtxList);
 	
 	// Generate the clipped polygon list.
 	bool renderNeedsToonTable = false;
