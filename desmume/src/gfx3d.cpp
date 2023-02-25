@@ -3381,20 +3381,16 @@ size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUns
 					vtx.texCoord.v = (vtx.texCoord.v << 12) / vtx.position.w;
 					
 					// Vertex color
-					s32 r_32 = ((s32)vtx.color.r << 24) / vtx.position.w;
-					s32 g_32 = ((s32)vtx.color.g << 24) / vtx.position.w;
-					s32 b_32 = ((s32)vtx.color.b << 24) / vtx.position.w;
+					s32 r_32 = ((s32)vtx.color.r << 23) / vtx.position.w;
+					s32 g_32 = ((s32)vtx.color.g << 23) / vtx.position.w;
+					s32 b_32 = ((s32)vtx.color.b << 23) / vtx.position.w;
 					
-					r_32 = min<s32>(max<s32>(r_32, 0x00), 0x0003FFFF);
-					g_32 = min<s32>(max<s32>(g_32, 0x00), 0x0003FFFF);
-					b_32 = min<s32>(max<s32>(b_32, 0x00), 0x0003FFFF);
-					
-					vert.rf = (float)r_32 / 4096.0f;
-					vert.gf = (float)g_32 / 4096.0f;
-					vert.bf = (float)b_32 / 4096.0f;
-					vtx.color.r = (u8)vert.rf;
-					vtx.color.g = (u8)vert.gf;
-					vtx.color.b = (u8)vert.bf;
+					vert.rf = (float)r_32 / 2048.0f;
+					vert.gf = (float)g_32 / 2048.0f;
+					vert.bf = (float)b_32 / 2048.0f;
+					vtx.color.r = (u8)(vert.rf + 0.5f);
+					vtx.color.g = (u8)(vert.gf + 0.5f);
+					vtx.color.b = (u8)(vert.bf + 0.5f);
 				}
 				else
 				{
