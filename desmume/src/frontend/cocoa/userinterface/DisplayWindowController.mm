@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2022 DeSmuME team
+	Copyright (C) 2013-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -494,13 +494,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[self view] setIsHUDRealTimeClockVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"]];
 	[[self view] setIsHUDInputVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowInput"]];
 	
-	[[self view] setHudColorExecutionSpeed:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32([[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_ExecutionSpeed"])]];
-	[[self view] setHudColorVideoFPS:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32([[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_VideoFPS"])]];
-	[[self view] setHudColorRender3DFPS:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32([[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Render3DFPS"])]];
-	[[self view] setHudColorFrameIndex:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32([[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_FrameIndex"])]];
-	[[self view] setHudColorLagFrameCount:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32([[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_LagFrameCount"])]];
-	[[self view] setHudColorCPULoadAverage:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32([[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_CPULoadAverage"])]];
-	[[self view] setHudColorRTC:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32([[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_RTC"])]];
+	[[self view] setHudColorExecutionSpeed:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_ExecutionSpeed"])]];
+	[[self view] setHudColorVideoFPS:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_VideoFPS"])]];
+	[[self view] setHudColorRender3DFPS:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Render3DFPS"])]];
+	[[self view] setHudColorFrameIndex:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_FrameIndex"])]];
+	[[self view] setHudColorLagFrameCount:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_LagFrameCount"])]];
+	[[self view] setHudColorCPULoadAverage:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_CPULoadAverage"])]];
+	[[self view] setHudColorRTC:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_RTC"])]];
 }
 
 - (BOOL) masterStatusBarState
@@ -1141,7 +1141,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			
 			bool isSupportingCPU = false;
 			bool isSupportingShader = false;
-			OGLFilter::GetSupport([theItem tag], &isSupportingCPU, &isSupportingShader);
+			OGLFilter::GetSupport((int)[theItem tag], &isSupportingCPU, &isSupportingShader);
 			
 			enable = isSupportingCPU || (isSupportingShader && [[self view] canUseShaderBasedFilters]);
 		}

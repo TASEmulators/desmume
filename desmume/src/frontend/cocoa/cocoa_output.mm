@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2022 DeSmuME team
+	Copyright (C) 2011-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -295,7 +295,7 @@
 	
 	if (methodID != SNDCORE_DUMMY)
 	{
-		result = SPU_ChangeSoundCore(methodID, (int)SPU_BUFFER_BYTES);
+		result = SPU_ChangeSoundCore((int)methodID, (int)SPU_BUFFER_BYTES);
 	}
 	
 	if(result == -1)

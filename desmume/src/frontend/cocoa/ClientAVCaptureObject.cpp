@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2018 DeSmuME team
+	Copyright (C) 2018-2023 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -134,7 +134,7 @@ void ClientAVCaptureFileStream::InitBaseProperties(const AVFileTypeID fileTypeID
 	
 	this->_expectedMaxFrameSize = videoFrameSize + audioFrameSize;
 	
-	_semQueue = ssem_new(pendingFrameCount);
+	_semQueue = ssem_new((int)pendingFrameCount);
 }
 
 AVFileTypeVideoCodecID ClientAVCaptureFileStream::GetVideoCodecID()

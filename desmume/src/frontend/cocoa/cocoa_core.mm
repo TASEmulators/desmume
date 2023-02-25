@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2022 DeSmuME team
+	Copyright (C) 2011-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -603,7 +603,7 @@ volatile bool execute = true;
 	execControl->SetExecutionBehavior((ExecutionBehavior)coreState);
 	pthread_rwlock_rdlock(&threadParam.rwlockOutputList);
 	
-	char frameStatusCStr[128] = {0};
+	char frameStatusCStr[64] = {0};
 	
 	switch ((ExecutionBehavior)coreState)
 	{
@@ -614,7 +614,7 @@ volatile bool execute = true;
 				[cdsOutput setIdle:YES];
 			}
 			
-			sprintf(frameStatusCStr, "%llu", (unsigned long long)[self frameNumber]);
+			snprintf(frameStatusCStr, sizeof(frameStatusCStr), "%llu", (unsigned long long)[self frameNumber]);
 			
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
@@ -628,7 +628,7 @@ volatile bool execute = true;
 				[cdsOutput setIdle:NO];
 			}
 			
-			sprintf(frameStatusCStr, "%llu", (unsigned long long)[self frameNumber]);
+			snprintf(frameStatusCStr, sizeof(frameStatusCStr), "%llu", (unsigned long long)[self frameNumber]);
 			
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
@@ -642,7 +642,7 @@ volatile bool execute = true;
 				[cdsOutput setIdle:NO];
 			}
 			
-			sprintf(frameStatusCStr, "%s", "Executing...");
+			snprintf(frameStatusCStr, sizeof(frameStatusCStr), "%s", "Executing...");
 
 			if (_fpsTimer == nil)
 			{
@@ -668,7 +668,7 @@ volatile bool execute = true;
 				}
 			}
 			
-			sprintf(frameStatusCStr, "Jumping to frame %llu.", (unsigned long long)execControl->GetFrameJumpTarget());
+			snprintf(frameStatusCStr, sizeof(frameStatusCStr), "Jumping to frame %llu.", (unsigned long long)execControl->GetFrameJumpTarget());
 			
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;

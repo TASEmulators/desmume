@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2018-2022 DeSmuME team
+	Copyright (C) 2018-2023 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@
 	{
 		[panel beginSheetModalForWindow:[self window]
 					  completionHandler:^(NSInteger result) {
-						  [self chooseDirectoryPathDidEnd:panel returnCode:result contextInfo:nil];
+						  [self chooseDirectoryPathDidEnd:panel returnCode:(int)result contextInfo:nil];
 					  } ];
 	}
 	else

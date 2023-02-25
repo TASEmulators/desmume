@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2022 DeSmuME Team
+	Copyright (C) 2012-2023 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -179,7 +179,7 @@
 {
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
-	oglImage->SetPixelScalerOGL(scalerID);
+	oglImage->SetPixelScalerOGL((int)scalerID);
 	oglImage->ProcessOGL();
 	CGLSetCurrentContext(prevContext);
 }
@@ -193,7 +193,7 @@
 {
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
-	oglImage->SetOutputFilterOGL(outputFilterID);
+	oglImage->SetOutputFilterOGL((int)outputFilterID);
 	CGLSetCurrentContext(prevContext);
 }
 
@@ -235,7 +235,7 @@
 	// Send the NSImage to OpenGL.
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
-	oglImage->LoadFrameOGL(bitmapData, 0, 0, previewWidth, previewHeight);
+	oglImage->LoadFrameOGL(bitmapData, 0, 0, (GLsizei)previewWidth, (GLsizei)previewHeight);
 	oglImage->ProcessOGL();
 	CGLSetCurrentContext(prevContext);
 }
@@ -426,7 +426,7 @@
 		[panel setAllowedFileTypes:fileTypes];
 		[panel beginSheetModalForWindow:window
 					  completionHandler:^(NSInteger result) {
-						  [self chooseRomForAutoloadDidEnd:panel returnCode:result contextInfo:nil];
+						  [self chooseRomForAutoloadDidEnd:panel returnCode:(int)result contextInfo:nil];
 					  } ];
 	}
 	else
@@ -487,7 +487,7 @@
 		[panel setAllowedFileTypes:fileTypes];
 		[panel beginSheetModalForWindow:window
 					  completionHandler:^(NSInteger result) {
-						  [self chooseAdvansceneDatabaseDidEnd:panel returnCode:result contextInfo:nil];
+						  [self chooseAdvansceneDatabaseDidEnd:panel returnCode:(int)result contextInfo:nil];
 					  } ];
 	}
 	else
@@ -542,7 +542,7 @@
 		[panel setAllowedFileTypes:fileTypes];
 		[panel beginSheetModalForWindow:window
 					  completionHandler:^(NSInteger result) {
-						  [self chooseCheatDatabaseDidEnd:panel returnCode:result contextInfo:nil];
+						  [self chooseCheatDatabaseDidEnd:panel returnCode:(int)result contextInfo:nil];
 					  } ];
 	}
 	else
@@ -590,8 +590,8 @@
 		{
 			[cheatDatabaseController setContent:dbList];
 			
-			NSString *titleString = cdsCheats.dbTitle;
-			NSString *dateString = cdsCheats.dbDate;
+			NSString *titleString = [cdsCheats dbTitle];
+			NSString *dateString = [cdsCheats dbDate];
 			
 			[cheatWindowBindings setValue:titleString forKey:@"cheatDBTitle"];
 			[cheatWindowBindings setValue:dateString forKey:@"cheatDBDate"];
@@ -754,7 +754,7 @@
 		[panel setAllowedFileTypes:fileTypes];
 		[panel beginSheetModalForWindow:window
 					  completionHandler:^(NSInteger result) {
-						  [self chooseArm9BiosImageDidEnd:panel returnCode:result contextInfo:nil];
+						  [self chooseArm9BiosImageDidEnd:panel returnCode:(int)result contextInfo:nil];
 					  } ];
 	}
 	else
@@ -786,7 +786,7 @@
 		[panel setAllowedFileTypes:fileTypes];
 		[panel beginSheetModalForWindow:window
 					  completionHandler:^(NSInteger result) {
-						  [self chooseArm7BiosImageDidEnd:panel returnCode:result contextInfo:nil];
+						  [self chooseArm7BiosImageDidEnd:panel returnCode:(int)result contextInfo:nil];
 					  } ];
 	}
 	else
@@ -818,7 +818,7 @@
 		[panel setAllowedFileTypes:fileTypes];
 		[panel beginSheetModalForWindow:window
 					  completionHandler:^(NSInteger result) {
-						  [self chooseFirmwareImageDidEnd:panel returnCode:result contextInfo:nil];
+						  [self chooseFirmwareImageDidEnd:panel returnCode:(int)result contextInfo:nil];
 					  } ];
 	}
 	else

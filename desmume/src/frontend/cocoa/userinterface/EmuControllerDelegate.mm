@@ -1022,7 +1022,7 @@
 	{
 		[panel beginSheetModalForWindow:slot1ManagerWindow
 					  completionHandler:^(NSInteger result) {
-						  [self didEndChooseSlot1R4Directory:panel returnCode:result contextInfo:nil];
+						  [self didEndChooseSlot1R4Directory:panel returnCode:(int)result contextInfo:nil];
 					  } ];
 	}
 	else
@@ -3172,7 +3172,7 @@
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem*)theItem setState:([[cdsCore cdsGPU] gpuStateByBit:[theItem tag]]) ? GUI_STATE_ON : GUI_STATE_OFF];
+			[(NSMenuItem*)theItem setState:([[cdsCore cdsGPU] gpuStateByBit:(UInt32)[theItem tag]]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	
