@@ -1330,7 +1330,7 @@ typedef struct
 	GPUDisplayMode displayOutputMode;
 	u16 backdropColor16;
 	u16 workingBackdropColor16;
-	FragmentColor workingBackdropColor32;
+	Color4u8 workingBackdropColor32;
 	ColorEffect colorEffect;
 	u8 blendEVA;
 	u8 blendEVB;
@@ -1342,11 +1342,11 @@ typedef struct
 	
 	TBlendTable *blendTable555;
 	u16 *brightnessUpTable555;
-	FragmentColor *brightnessUpTable666;
-	FragmentColor *brightnessUpTable888;
+	Color4u8 *brightnessUpTable666;
+	Color4u8 *brightnessUpTable888;
 	u16 *brightnessDownTable555;
-	FragmentColor *brightnessDownTable666;
-	FragmentColor *brightnessDownTable888;
+	Color4u8 *brightnessDownTable666;
+	Color4u8 *brightnessDownTable888;
 	
 	u8 WIN0_enable[6];
 	u8 WIN1_enable[6];
@@ -1387,7 +1387,7 @@ typedef struct
 	size_t xCustom;
 	void **lineColor;
 	u16 *lineColor16;
-	FragmentColor *lineColor32;
+	Color4u8 *lineColor32;
 	u8 *lineLayerID;
 } GPUEngineTargetState;
 
@@ -1503,7 +1503,7 @@ protected:
 	volatile s32 _asyncClearLineCustom;
 	volatile s32 _asyncClearInterrupt;
 	u16 _asyncClearBackdropColor16; // Do not modify this variable directly.
-	FragmentColor _asyncClearBackdropColor32; // Do not modify this variable directly.
+	Color4u8 _asyncClearBackdropColor32; // Do not modify this variable directly.
 	bool _asyncClearUseInternalCustomBuffer; // Do not modify this variable directly.
 	
 	void _ResortBGLayers();
@@ -1523,11 +1523,11 @@ protected:
 	
 	template<bool MOSAIC> void _PrecompositeNativeToCustomLineBG(GPUEngineCompositorInfo &compInfo);
 	
-	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _CompositeNativeLineOBJ(GPUEngineCompositorInfo &compInfo, const u16 *__restrict srcColorNative16, const FragmentColor *__restrict srcColorNative32);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _CompositeNativeLineOBJ(GPUEngineCompositorInfo &compInfo, const u16 *__restrict srcColorNative16, const Color4u8 *__restrict srcColorNative32);
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST> void _CompositeLineDeferred(GPUEngineCompositorInfo &compInfo, const u16 *__restrict srcColorCustom16, const u8 *__restrict srcIndexCustom);
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST> void _CompositeVRAMLineDeferred(GPUEngineCompositorInfo &compInfo, const void *__restrict vramColorPtr);
 	
-	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _CompositeNativeLineOBJ_LoopOp(GPUEngineCompositorInfo &compInfo, const u16 *__restrict srcColorNative16, const FragmentColor *__restrict srcColorNative32);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _CompositeNativeLineOBJ_LoopOp(GPUEngineCompositorInfo &compInfo, const u16 *__restrict srcColorNative16, const Color4u8 *__restrict srcColorNative32);
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST> size_t _CompositeLineDeferred_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const u16 *__restrict srcColorCustom16, const u8 *__restrict srcIndexCustom);
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST> size_t _CompositeVRAMLineDeferred_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const void *__restrict vramColorPtr);
 	
@@ -1620,9 +1620,9 @@ public:
 	void ApplySettings();
 	
 	void RenderLineClearAsync();
-	void RenderLineClearAsyncStart(bool willClearInternalCustomBuffer, s32 startLineIndex, u16 clearColor16, FragmentColor clearColor32);
+	void RenderLineClearAsyncStart(bool willClearInternalCustomBuffer, size_t startLineIndex, u16 clearColor16, Color4u8 clearColor32);
 	void RenderLineClearAsyncFinish();
-	void RenderLineClearAsyncWaitForCustomLine(const s32 l);
+	void RenderLineClearAsyncWaitForCustomLine(const size_t l);
 	
 	void TransitionRenderStatesToDisplayInfo(NDSDisplayInfo &mutableInfo);
 	
@@ -1651,12 +1651,12 @@ private:
 	
 protected:
 	CACHE_ALIGN u16 _fifoLine16[GPU_FRAMEBUFFER_NATIVE_WIDTH];
-	CACHE_ALIGN FragmentColor _fifoLine32[GPU_FRAMEBUFFER_NATIVE_WIDTH];
+	CACHE_ALIGN Color4u8 _fifoLine32[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	
 	CACHE_ALIGN u16 _VRAMNativeBlockCaptureCopy[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4];
 	u16 *_VRAMNativeBlockCaptureCopyPtr[4];
 	
-	FragmentColor *_3DFramebufferMain;
+	Color4u8 *_3DFramebufferMain;
 	u16 *_3DFramebuffer16;
 	
 	u16 *_VRAMNativeBlockPtr[4];
@@ -1668,8 +1668,8 @@ protected:
 	u16 *_captureWorkingDisplay16;
 	u16 *_captureWorkingA16;
 	u16 *_captureWorkingB16;
-	FragmentColor *_captureWorkingA32;
-	FragmentColor *_captureWorkingB32;
+	Color4u8 *_captureWorkingA32;
+	Color4u8 *_captureWorkingB32;
 	
 	DISPCAPCNT_parsed _dispCapCnt;
 	bool _displayCaptureEnable;
@@ -1692,10 +1692,10 @@ protected:
 	void _RenderLine_DispCapture_Copy(const GPUEngineLineInfo &lineInfo, const void *src, void *dst, const size_t captureLengthExt); // Do not use restrict pointers, since src and dst can be the same
 	
 	u16 _RenderLine_DispCapture_BlendFunc(const u16 srcA, const u16 srcB, const u8 blendEVA, const u8 blendEVB);
-	template<NDSColorFormat COLORFORMAT> FragmentColor _RenderLine_DispCapture_BlendFunc(const FragmentColor srcA, const FragmentColor srcB, const u8 blendEVA, const u8 blendEVB);
+	template<NDSColorFormat COLORFORMAT> Color4u8 _RenderLine_DispCapture_BlendFunc(const Color4u8 srcA, const Color4u8 srcB, const u8 blendEVA, const u8 blendEVB);
 	
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
-	size_t _RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const FragmentColor *__restrict srcLinePtr);
+	size_t _RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const Color4u8 *__restrict srcLinePtr);
 	
 	template<NDSColorFormat OUTPUTFORMAT>
 	void _RenderLine_DispCapture_Blend_Buffer(const void *srcA, const void *srcB, void *dst, const u8 blendEVA, const u8 blendEVB, const size_t pixCount); // Do not use restrict pointers, since srcB and dst can be the same
@@ -1716,7 +1716,7 @@ public:
 	void ParseReg_DISPCAPCNT();
 	bool IsLineCaptureNative(const size_t blockID, const size_t blockLine);
 	void* GetCustomVRAMBlockPtr(const size_t blockID);
-	FragmentColor* Get3DFramebufferMain() const;
+	Color4u8* Get3DFramebufferMain() const;
 	u16* Get3DFramebuffer16() const;
 	virtual void AllocateWorkingBuffers(NDSColorFormat requestedColorFormat, size_t w, size_t h);
 	
@@ -1819,8 +1819,8 @@ public:
 	bool IsCustomSizeRequested() const;
 	
 	void* GetRenderedBuffer() const;
- 	size_t GetRenderedWidth() const;
- 	size_t GetRenderedHeight() const;
+	size_t GetRenderedWidth() const;
+	size_t GetRenderedHeight() const;
 	
 	bool IsEnabled() const;
 	void SetIsEnabled(bool stateIsEnabled);

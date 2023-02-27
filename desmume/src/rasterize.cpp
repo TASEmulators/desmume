@@ -313,7 +313,7 @@ FORCEINLINE int edge_fx_fl::Step() {
 
 
 
-static FORCEINLINE void alphaBlend(const bool isAlphaBlendingEnabled, const FragmentColor inSrc, FragmentColor &outDst)
+static FORCEINLINE void alphaBlend(const bool isAlphaBlendingEnabled, const Color4u8 inSrc, Color4u8 &outDst)
 {
 	if (inSrc.a == 0)
 	{
@@ -335,7 +335,7 @@ static FORCEINLINE void alphaBlend(const bool isAlphaBlendingEnabled, const Frag
 	}
 }
 
-static FORCEINLINE void EdgeBlend(FragmentColor &dst, const FragmentColor src)
+static FORCEINLINE void EdgeBlend(Color4u8 &dst, const Color4u8 src)
 {
 	if (src.a == 31 || dst.a == 0)
 	{
@@ -372,7 +372,7 @@ Render3DError RasterizerUnit<RENDERER>::_SetupTexture(const POLY &thePoly, size_
 }
 
 template<bool RENDERER>
-FORCEINLINE FragmentColor RasterizerUnit<RENDERER>::_sample(const float u, const float v)
+FORCEINLINE Color4u8 RasterizerUnit<RENDERER>::_sample(const float u, const float v)
 {
 	//finally, we can use floor here. but, it is slower than we want.
 	//the best solution is probably to wait until the pipeline is full of fixed point
@@ -395,8 +395,8 @@ FORCEINLINE FragmentColor RasterizerUnit<RENDERER>::_sample(const float u, const
 	const u32 *textureData = this->_currentTexture->GetRenderData();
 	this->_currentTexture->GetRenderSamplerCoordinates(this->_textureWrapMode, iu, iv);
 	
-	FragmentColor color;
-	color.color = textureData[( iv << this->_currentTexture->GetRenderWidthShift() ) + iu];
+	Color4u8 color;
+	color.value = textureData[( iv << this->_currentTexture->GetRenderWidthShift() ) + iu];
 	
 	return color;
 }
@@ -416,7 +416,7 @@ FORCEINLINE float RasterizerUnit<RENDERER>::_round_s(double val)
 }
 
 template<bool RENDERER> template<bool ISSHADOWPOLYGON>
-FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode, const FragmentColor src, FragmentColor &dst, const float texCoordU, const float texCoordV)
+FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode, const Color4u8 src, Color4u8 &dst, const float texCoordU, const float texCoordV)
 {
 	if (ISSHADOWPOLYGON)
 	{
@@ -426,8 +426,8 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode,
 	
 	const GFX3D_State &renderState = *this->_softRender->currentRenderState;
 	
-	static const FragmentColor colorWhite = MakeFragmentColor(0x3F, 0x3F, 0x3F, 0x1F);
-	const FragmentColor mainTexColor = (this->_currentTexture->IsSamplingEnabled()) ? this->_sample(texCoordU, texCoordV) : colorWhite;
+	static const Color4u8 colorWhite = { 0x3F, 0x3F, 0x3F, 0x1F };
+	const Color4u8 mainTexColor = (this->_currentTexture->IsSamplingEnabled()) ? this->_sample(texCoordU, texCoordV) : colorWhite;
 	
 	switch (polygonMode)
 	{
@@ -468,7 +468,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode,
 			
 		case POLYGON_MODE_TOONHIGHLIGHT:
 		{
-			const FragmentColor toonColor = this->_softRender->toonColor32LUT[src.r >> 1];
+			const Color4u8 toonColor = this->_softRender->toonColor32LUT[src.r >> 1];
 			
 			if (renderState.DISP3DCNT.PolygonShading == PolygonShadingMode_Highlight)
 			{
@@ -502,11 +502,11 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode,
 }
 
 template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON>
-FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, FragmentColor &dstColor, float r, float g, float b, float invu, float invv, float z, float w)
+FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, float r, float g, float b, float invu, float invv, float z, float w)
 {
 	const GFX3D_State &renderState = *this->_softRender->currentRenderState;
-	FragmentColor newDstColor32;
-	FragmentColor shaderOutput;
+	Color4u8 newDstColor32;
+	Color4u8 shaderOutput;
 	bool isOpaquePixel;
 	
 	u32 &dstAttributeDepth				= this->_softRender->_framebufferAttributes->depth[fragmentIndex];
@@ -609,10 +609,10 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 	//this is a HACK:
 	//we are being very sloppy with our interpolation precision right now
 	//and rather than fix it, i just want to clamp it
-	newDstColor32 = MakeFragmentColor(max<u8>(0x00, min<u32>(0x3F, u32floor(r))),
-									  max<u8>(0x00, min<u32>(0x3F, u32floor(g))),
-									  max<u8>(0x00, min<u32>(0x3F, u32floor(b))),
-									  polyAttr.Alpha);
+	newDstColor32.r = max<u8>(0x00, min<u32>(0x3F, u32floor(r)));
+	newDstColor32.g = max<u8>(0x00, min<u32>(0x3F, u32floor(g)));
+	newDstColor32.b = max<u8>(0x00, min<u32>(0x3F, u32floor(b)));
+	newDstColor32.a = polyAttr.Alpha;
 	
 	//pixel shader
 	this->_shade<ISSHADOWPOLYGON>((PolygonMode)polyAttr.Mode, newDstColor32, shaderOutput, invu * w, invv * w);
@@ -659,7 +659,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 
 //draws a single scanline
 template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK>
-FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight)
+FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight)
 {
 	const int XStart = pLeft->X;
 	int width = pRight->X - XStart;
@@ -780,11 +780,11 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 #ifdef ENABLE_SSE2
 
 template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON>
-FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, FragmentColor &dstColor, const __m128 &srcColorf, float invu, float invv, float z, float w)
+FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, const __m128 &srcColorf, float invu, float invv, float z, float w)
 {
 	const GFX3D_State &renderState = *this->_softRender->currentRenderState;
-	FragmentColor newDstColor32;
-	FragmentColor shaderOutput;
+	Color4u8 newDstColor32;
+	Color4u8 shaderOutput;
 	bool isOpaquePixel;
 	
 	u32 &dstAttributeDepth				= this->_softRender->_framebufferAttributes->depth[fragmentIndex];
@@ -889,7 +889,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAt
 	cvtColor32 = _mm_packus_epi16(cvtColor32, _mm_setzero_si128());
 	cvtColor32 = _mm_packus_epi16(cvtColor32, _mm_setzero_si128());
 	
-	newDstColor32.color = _mm_cvtsi128_si32(cvtColor32);
+	newDstColor32.value = _mm_cvtsi128_si32(cvtColor32);
 	
 	//pixel shader
 	this->_shade<ISSHADOWPOLYGON>((PolygonMode)polyAttr.Mode, newDstColor32, shaderOutput, invu * w, invv * w);
@@ -936,7 +936,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAt
 
 //draws a single scanline
 template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK>
-FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight)
+FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight)
 {
 	const int XStart = pLeft->X;
 	int width = pRight->X - XStart;
@@ -1031,7 +1031,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline_SSE2(const POLYGON_ATTR
 
 //runs several scanlines, until an edge is finished
 template<bool RENDERER> template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK>
-void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const bool isHorizontal, edge_fx_fl *left, edge_fx_fl *right)
+void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const bool isHorizontal, edge_fx_fl *left, edge_fx_fl *right)
 {
 	//oh lord, hack city for edge drawing
 
@@ -1065,9 +1065,9 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 #endif
 		}
 		
-		const int xl = left->X;
-		const int xr = right->X;
-		const int y = left->Y;
+		const size_t xl = left->X;
+		const size_t xr = right->X;
+		const size_t y  = left->Y;
 		left->Step();
 		right->Step();
 
@@ -1080,15 +1080,15 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 			{
 				if (draw)
 				{
-					int nxl = left->X;
-					int nxr = right->X;
+					const size_t nxl = left->X;
+					const size_t nxr = right->X;
 					if (top)
 					{
-						int xs = min(xl,xr);
-						int xe = max(xl,xr);
-						for (int x = xs; x <= xe; x++)
+						const size_t xs = min(xl, xr);
+						const size_t xe = max(xl, xr);
+						for (size_t x = xs; x <= xe; x++)
 						{
-							int adr = (y*framebufferWidth)+x;
+							const size_t adr = (y * framebufferWidth) + x;
 							dstColor[adr].r = 63;
 							dstColor[adr].g = 0;
 							dstColor[adr].b = 0;
@@ -1096,11 +1096,11 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 					}
 					else if (bottom)
 					{
-						int xs = min(xl,xr);
-						int xe = max(xl,xr);
-						for (int x = xs; x <= xe; x++)
+						const size_t xs = min(xl, xr);
+						const size_t xe = max(xl, xr);
+						for (size_t x = xs; x <= xe; x++)
 						{
-							int adr = (y*framebufferWidth)+x;
+							const size_t adr = (y * framebufferWidth) + x;
 							dstColor[adr].r = 63;
 							dstColor[adr].g = 0;
 							dstColor[adr].b = 0;
@@ -1108,20 +1108,21 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 					}
 					else
 					{
-						int xs = min(xl,nxl);
-						int xe = max(xl,nxl);
-						for (int x = xs; x <= xe; x++)
+						size_t xs = min(xl, nxl);
+						size_t xe = max(xl, nxl);
+						for (size_t x = xs; x <= xe; x++)
 						{
-							int adr = (y*framebufferWidth)+x;
+							const size_t adr = (y * framebufferWidth) + x;
 							dstColor[adr].r = 63;
 							dstColor[adr].g = 0;
 							dstColor[adr].b = 0;
 						}
-						xs = min(xr,nxr);
-						xe = max(xr,nxr);
-						for (int x = xs; x <= xe; x++)
+						
+						xs = min(xr, nxr);
+						xe = max(xr, nxr);
+						for (size_t x = xs; x <= xe; x++)
 						{
-							int adr = (y*framebufferWidth)+x;
+							const size_t adr = (y * framebufferWidth) + x;
 							dstColor[adr].r = 63;
 							dstColor[adr].g = 0;
 							dstColor[adr].b = 0;
@@ -1190,7 +1191,7 @@ void RasterizerUnit<RENDERER>::_sort_verts()
 //I didnt reference anything for this algorithm but it seems like I've seen it somewhere before.
 //Maybe it is like crow's algorithm
 template<bool RENDERER> template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK>
-void RasterizerUnit<RENDERER>::_shape_engine(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type)
+void RasterizerUnit<RENDERER>::_shape_engine(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type)
 {
 	bool failure = false;
 
@@ -1272,7 +1273,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 		return;
 	}
 	
-	FragmentColor *dstColor = this->_softRender->GetFramebuffer();
+	Color4u8 *dstColor = this->_softRender->GetFramebuffer();
 	const size_t dstWidth = this->_softRender->GetFramebufferWidth();
 	const size_t dstHeight = this->_softRender->GetFramebufferHeight();
 	
@@ -1737,7 +1738,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	_enableLineHack = CommonSettings.GFX3D_LineHack;
 	_enableFragmentSamplingHack = CommonSettings.GFX3D_TXTHack;
 	
-	_HACK_viewer_rasterizerUnit.SetSLI(0, _framebufferHeight, false);
+	_HACK_viewer_rasterizerUnit.SetSLI(0, (u32)_framebufferHeight, false);
 	
 	const size_t coreCount = CommonSettings.num_cores;
 	_threadCount = coreCount;
@@ -1768,7 +1769,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 		_threadClearParam[0].startPixel = 0;
 		_threadClearParam[0].endPixel = _framebufferPixCount;
 		
-		_rasterizerUnit[0].SetSLI(_threadPostprocessParam[0].startLine, _threadPostprocessParam[0].endLine, false);
+		_rasterizerUnit[0].SetSLI((u32)_threadPostprocessParam[0].startLine, (u32)_threadPostprocessParam[0].endLine, false);
 		_rasterizerUnit[0].SetRenderer(this);
 	}
 	else
@@ -1794,7 +1795,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 			_threadClearParam[i].startPixel = i * _customPixelsPerThread;
 			_threadClearParam[i].endPixel = (i < _threadCount - 1) ? (i + 1) * _customPixelsPerThread : _framebufferPixCount;
 			
-			_rasterizerUnit[i].SetSLI(_threadPostprocessParam[i].startLine, _threadPostprocessParam[i].endLine, false);
+			_rasterizerUnit[i].SetSLI((u32)_threadPostprocessParam[i].startLine, (u32)_threadPostprocessParam[i].endLine, false);
 			_rasterizerUnit[i].SetRenderer(this);
 			
 			char name[16];
@@ -1988,7 +1989,7 @@ void SoftRasterizerRenderer::_UpdateEdgeMarkColorTable(const u16 *edgeMarkColorT
 	//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
 	for (size_t i = 0; i < 8; i++)
 	{
-		this->_edgeMarkTable[i].color = LE_TO_LOCAL_32( COLOR555TO6665(edgeMarkColorTable[i] & 0x7FFF, (this->currentRenderState->DISP3DCNT.EnableAntialiasing) ? 0x10 : 0x1F) );
+		this->_edgeMarkTable[i].value = LE_TO_LOCAL_32( COLOR555TO6665(edgeMarkColorTable[i] & 0x7FFF, (this->currentRenderState->DISP3DCNT.EnableAntialiasing) ? 0x10 : 0x1F) );
 		
 		//zero 20-jun-2013 - this doesnt make any sense. at least, it should be related to the 0x8000 bit. if this is undocumented behaviour, lets write about which scenario proves it here, or which scenario is requiring this code.
 		//// this seems to be the only thing that selectively disables edge marking
@@ -2075,7 +2076,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 	{
 		for (size_t x = 0; x < this->_framebufferWidth; x++, i++)
 		{
-			FragmentColor &dstColor = this->_framebufferColor[i];
+			Color4u8 &dstColor = this->_framebufferColor[i];
 			const u32 depth = this->_framebufferAttributes->depth[i];
 			const u8 polyID = this->_framebufferAttributes->opaquePolyID[i];
 			
@@ -2095,7 +2096,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 					const bool left  = (x < 1)                           ? isEdgeMarkingClearValues : ((polyID != this->_framebufferAttributes->opaquePolyID[i-1])                       && (depth >= this->_framebufferAttributes->depth[i-1]));
 					const bool up    = (y < 1)                           ? isEdgeMarkingClearValues : ((polyID != this->_framebufferAttributes->opaquePolyID[i-this->_framebufferWidth]) && (depth >= this->_framebufferAttributes->depth[i-this->_framebufferWidth]));
 					
-					FragmentColor edgeMarkColor = this->_edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
+					Color4u8 edgeMarkColor = this->_edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i] >> 3];
 					
 					if (right)
 					{
@@ -2135,8 +2136,8 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 			
 			if (param.enableFog)
 			{
-				FragmentColor fogColor;
-				fogColor.color = LE_TO_LOCAL_32( COLOR555TO6665(param.fogColor & 0x7FFF, (param.fogColor>>16) & 0x1F) );
+				Color4u8 fogColor;
+				fogColor.value = LE_TO_LOCAL_32( COLOR555TO6665(param.fogColor & 0x7FFF, (param.fogColor>>16) & 0x1F) );
 				
 				const size_t fogIndex = depth >> 9;
 				assert(fogIndex < 32768);
@@ -2194,7 +2195,7 @@ Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colo
 		{
 			const size_t ir = readLine + ((x * xRatio) >> 16);
 			
-			this->_framebufferColor[iw].color = LE_TO_LOCAL_32( COLOR555TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 0x1F) );
+			this->_framebufferColor[iw].value = LE_TO_LOCAL_32( COLOR555TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 0x1F) );
 			this->_framebufferAttributes->depth[iw] = depthBuffer[ir];
 			this->_framebufferAttributes->isFogged[iw] = fogBuffer[ir];
 			this->_framebufferAttributes->opaquePolyID[iw] = opaquePolyID;
@@ -2217,7 +2218,7 @@ void SoftRasterizerRenderer::ClearUsingValues_Execute(const size_t startPixel, c
 	}
 }
 
-Render3DError SoftRasterizerRenderer::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+Render3DError SoftRasterizerRenderer::ClearUsingValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes)
 {
 	const bool doMultithreadedClear = (this->_threadCount > 0);
 	
@@ -2333,7 +2334,7 @@ Render3DError SoftRasterizerRenderer::RenderFlush(bool willFlushBuffer32, bool w
 		return RENDER3DERROR_NOERR;
 	}
 	
-	FragmentColor *framebufferMain = (willFlushBuffer32 && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
+	Color4u8 *framebufferMain = (willFlushBuffer32 && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
 	u16 *framebuffer16 = (willFlushBuffer16) ? GPU->GetEngineMain()->Get3DFramebuffer16() : NULL;
 	this->FlushFramebuffer(this->_framebufferColor, framebufferMain, framebuffer16);
 	
@@ -2364,7 +2365,7 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 		this->_threadClearParam[0].startPixel = 0;
 		this->_threadClearParam[0].endPixel = pixCount;
 		
-		this->_rasterizerUnit[0].SetSLI(this->_threadPostprocessParam[0].startLine, this->_threadPostprocessParam[0].endLine, false);
+		this->_rasterizerUnit[0].SetSLI((u32)this->_threadPostprocessParam[0].startLine, (u32)this->_threadPostprocessParam[0].endLine, false);
 	}
 	else
 	{
@@ -2379,7 +2380,7 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 			this->_threadClearParam[i].startPixel = i * this->_customPixelsPerThread;
 			this->_threadClearParam[i].endPixel = (i < this->_threadCount - 1) ? (i + 1) * this->_customPixelsPerThread : pixCount;
 			
-			this->_rasterizerUnit[i].SetSLI(this->_threadPostprocessParam[i].startLine, this->_threadPostprocessParam[i].endLine, false);
+			this->_rasterizerUnit[i].SetSLI((u32)this->_threadPostprocessParam[i].startLine, (u32)this->_threadPostprocessParam[i].endLine, false);
 		}
 	}
 	
@@ -2411,7 +2412,7 @@ SoftRasterizer_SIMD<SIMDBYTES>::SoftRasterizer_SIMD()
 }
 
 template <size_t SIMDBYTES>
-Render3DError SoftRasterizer_SIMD<SIMDBYTES>::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+Render3DError SoftRasterizer_SIMD<SIMDBYTES>::ClearUsingValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes)
 {
 	this->LoadClearValues(clearColor6665, clearAttributes);
 	
@@ -2500,9 +2501,9 @@ Render3DError SoftRasterizer_SIMD<SIMDBYTES>::SetFramebufferSize(size_t w, size_
 
 #if defined(ENABLE_AVX2)
 
-void SoftRasterizerRenderer_AVX2::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+void SoftRasterizerRenderer_AVX2::LoadClearValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes)
 {
-	this->_clearColor_v256u32					= _mm256_set1_epi32(clearColor6665.color);
+	this->_clearColor_v256u32					= _mm256_set1_epi32(clearColor6665.value);
 	this->_clearDepth_v256u32					= _mm256_set1_epi32(clearAttributes.depth);
 	this->_clearAttrOpaquePolyID_v256u8			= _mm256_set1_epi8(clearAttributes.opaquePolyID);
 	this->_clearAttrTranslucentPolyID_v256u8	= _mm256_set1_epi8(clearAttributes.translucentPolyID);
@@ -2537,9 +2538,9 @@ void SoftRasterizerRenderer_AVX2::ClearUsingValues_Execute(const size_t startPix
 
 #elif defined(ENABLE_SSE2)
 
-void SoftRasterizerRenderer_SSE2::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+void SoftRasterizerRenderer_SSE2::LoadClearValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes)
 {
-	this->_clearColor_v128u32					= _mm_set1_epi32(clearColor6665.color);
+	this->_clearColor_v128u32					= _mm_set1_epi32(clearColor6665.value);
 	this->_clearDepth_v128u32					= _mm_set1_epi32(clearAttributes.depth);
 	this->_clearAttrOpaquePolyID_v128u8			= _mm_set1_epi8(clearAttributes.opaquePolyID);
 	this->_clearAttrTranslucentPolyID_v128u8	= _mm_set1_epi8(clearAttributes.translucentPolyID);
@@ -2574,9 +2575,9 @@ void SoftRasterizerRenderer_SSE2::ClearUsingValues_Execute(const size_t startPix
 
 #elif defined(ENABLE_NEON_A64)
 
-void SoftRasterizerRenderer_NEON::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+void SoftRasterizerRenderer_NEON::LoadClearValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes)
 {
-	this->_clearColor_v128u32x4.val[0]                = vdupq_n_u32(clearColor6665.color);
+	this->_clearColor_v128u32x4.val[0]                = vdupq_n_u32(clearColor6665.value);
 	this->_clearColor_v128u32x4.val[1]                = this->_clearColor_v128u32x4.val[0];
 	this->_clearColor_v128u32x4.val[2]                = this->_clearColor_v128u32x4.val[0];
 	this->_clearColor_v128u32x4.val[3]                = this->_clearColor_v128u32x4.val[0];
@@ -2642,9 +2643,9 @@ void SoftRasterizerRenderer_NEON::ClearUsingValues_Execute(const size_t startPix
 
 #elif defined(ENABLE_ALTIVEC)
 
-void SoftRasterizerRenderer_AltiVec::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+void SoftRasterizerRenderer_AltiVec::LoadClearValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes)
 {
-	this->_clearColor_v128u32					= (v128u32){clearColor6665.color,clearColor6665.color,clearColor6665.color,clearColor6665.color};
+	this->_clearColor_v128u32					= (v128u32){clearColor6665.value,clearColor6665.value,clearColor6665.value,clearColor6665.value};
 	this->_clearDepth_v128u32					= (v128u32){clearAttributes.depth,clearAttributes.depth,clearAttributes.depth,clearAttributes.depth};
 	
 	this->_clearAttrOpaquePolyID_v128u8			= (v128u8){clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,

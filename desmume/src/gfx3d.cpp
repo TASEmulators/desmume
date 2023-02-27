@@ -513,9 +513,9 @@ NDSGeometryEngine::NDSGeometryEngine()
 
 void NDSGeometryEngine::__Init()
 {
-	static const Vector16x2 zeroVec16x2 = {0, 0};
-	static const Vector16x3 zeroVec16x3 = {0, 0, 0};
-	static const Vector32x4 zeroVec32x4 = {0, 0, 0, 0};
+	static const Vector2s16 zeroVec2s16 = {0, 0};
+	static const Vector3s16 zeroVec3s16 = {0, 0, 0};
+	static const Vector4s32 zeroVec4s32 = {0, 0, 0, 0};
 	
 	_mtxCurrentMode = MATRIXMODE_PROJECTION;
 	
@@ -529,8 +529,8 @@ void NDSGeometryEngine::__Init()
 	for (size_t i = 0; i < NDSMATRIXSTACK_COUNT(MATRIXMODE_POSITION_VECTOR); i++) { MatrixInit(_mtxStackPositionVector[i]); }
 	MatrixInit(_mtxStackTexture[0]);
 	
-	_vecScale = zeroVec32x4;
-	_vecTranslate = zeroVec32x4;
+	_vecScale = zeroVec4s32;
+	_vecTranslate = zeroVec4s32;
 	
 	_mtxStackIndex[MATRIXMODE_PROJECTION] = 0;
 	_mtxStackIndex[MATRIXMODE_POSITION] = 0;
@@ -560,13 +560,8 @@ void NDSGeometryEngine::__Init()
 	_vtxColor666X.b = 63;
 	_vtxColor666X.a = 0;
 	
-	_vtxColorFloat[0] = (float)_vtxColor666X.r;
-	_vtxColorFloat[1] = (float)_vtxColor666X.g;
-	_vtxColorFloat[2] = (float)_vtxColor666X.b;
-	_vtxColorFloat[3] = (float)_vtxColor666X.a;
-	
-	_vtxCoord16 = zeroVec16x3;
-	_vecNormal = zeroVec32x4;
+	_vtxCoord16 = zeroVec3s16;
+	_vecNormal = zeroVec4s32;
 	
 	_regViewport.X1 = 0;
 	_regViewport.Y1 = 0;
@@ -579,11 +574,9 @@ void NDSGeometryEngine::__Init()
 	_currentViewport.height = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
 	_texCoordTransformMode = TextureTransformationMode_None;
-	_texCoord16 = zeroVec16x2;
+	_texCoord16 = zeroVec2s16;
 	_texCoordTransformed.s = (s32)_texCoord16.s;
 	_texCoordTransformed.t = (s32)_texCoord16.t;
-	_texCoordTransformedFloat[0] = (float)_texCoordTransformed.s / 16.0f;
-	_texCoordTransformedFloat[1] = (float)_texCoordTransformed.t / 16.0f;
 	
 	_doesViewportNeedUpdate = true;
 	_doesVertexColorNeedUpdate = true;
@@ -610,15 +603,15 @@ void NDSGeometryEngine::__Init()
 	_regLightDirection[2] = 0;
 	_regLightDirection[3] = 0;
 	
-	_vecLightDirectionTransformed[0] = zeroVec32x4;
-	_vecLightDirectionTransformed[1] = zeroVec32x4;
-	_vecLightDirectionTransformed[2] = zeroVec32x4;
-	_vecLightDirectionTransformed[3] = zeroVec32x4;
+	_vecLightDirectionTransformed[0] = zeroVec4s32;
+	_vecLightDirectionTransformed[1] = zeroVec4s32;
+	_vecLightDirectionTransformed[2] = zeroVec4s32;
+	_vecLightDirectionTransformed[3] = zeroVec4s32;
 	
-	_vecLightDirectionHalfNegative[0] = zeroVec32x4;
-	_vecLightDirectionHalfNegative[1] = zeroVec32x4;
-	_vecLightDirectionHalfNegative[2] = zeroVec32x4;
-	_vecLightDirectionHalfNegative[3] = zeroVec32x4;
+	_vecLightDirectionHalfNegative[0] = zeroVec4s32;
+	_vecLightDirectionHalfNegative[1] = zeroVec4s32;
+	_vecLightDirectionHalfNegative[2] = zeroVec4s32;
+	_vecLightDirectionHalfNegative[3] = zeroVec4s32;
 	
 	_doesLightHalfVectorNeedUpdate[0] = true;
 	_doesLightHalfVectorNeedUpdate[1] = true;
@@ -1239,7 +1232,7 @@ void NDSGeometryEngine::SetNormal(const u32 param)
 		this->_doesTransformedTexCoordsNeedUpdate = true;
 	}
 	
-	CACHE_ALIGN Vector32x4 normalTransformed = this->_vecNormal;
+	CACHE_ALIGN Vector4s32 normalTransformed = this->_vecNormal;
 	MatrixMultVec3x3(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], normalTransformed.vec);
 
 	//apply lighting model
@@ -1331,7 +1324,7 @@ void NDSGeometryEngine::SetNormal(const u32 param)
 		}
 	}
 	
-	const FragmentColor newVtxColor = {
+	const Color4u8 newVtxColor = {
 		(u8)std::min<s32>(31, vertexColor[0]),
 		(u8)std::min<s32>(31, vertexColor[1]),
 		(u8)std::min<s32>(31, vertexColor[2]),
@@ -1379,9 +1372,9 @@ void NDSGeometryEngine::SetVertexColor(const u32 param)
 	}
 }
 
-void NDSGeometryEngine::SetVertexColor(const FragmentColor vtxColor555X)
+void NDSGeometryEngine::SetVertexColor(const Color4u8 vtxColor555X)
 {
-	if (this->_vtxColor555X.color != vtxColor555X.color)
+	if (this->_vtxColor555X.value != vtxColor555X.value)
 	{
 		this->_vtxColor15 = (vtxColor555X.r << 0) | (vtxColor555X.g << 5) | (vtxColor555X.b << 10);
 		this->_vtxColor555X = vtxColor555X;
@@ -1411,15 +1404,18 @@ void NDSGeometryEngine::SetTexturePalette(const u32 texPalette)
 	this->_texPalette = texPalette;
 }
 
-void NDSGeometryEngine::SetTextureCoordinates(const u32 param)
+void NDSGeometryEngine::SetTextureCoordinates2s16(const u32 param)
 {
-	VertexCoord16x2 inTexCoord16x2;
-	inTexCoord16x2.value = param;
-	
-	this->SetTextureCoordinates(inTexCoord16x2);
+	Vector2s16 inTexCoord2s16;
+#ifndef MSB_FIRST
+	inTexCoord2s16.value = param;
+#else
+	inTexCoord2s16.value = (param << 16) | (param >> 16);
+#endif
+	this->SetTextureCoordinates2s16(inTexCoord2s16);
 }
 
-void NDSGeometryEngine::SetTextureCoordinates(const VertexCoord16x2 &texCoord16)
+void NDSGeometryEngine::SetTextureCoordinates2s16(const Vector2s16 &texCoord16)
 {
 	if (this->_texCoord16.value != texCoord16.value)
 	{
@@ -1455,83 +1451,90 @@ void NDSGeometryEngine::VertexListEnd()
 	this->_vtxCount = 0;
 }
 
-bool NDSGeometryEngine::SetCurrentVertex16x2(const u32 param)
+bool NDSGeometryEngine::SetCurrentVertexPosition2s16(const u32 param)
 {
-	VertexCoord16x2 inVtxCoord16x2;
-	inVtxCoord16x2.value = param;
-	
-	return this->SetCurrentVertex16x2(inVtxCoord16x2);
+	Vector2s16 inVtxCoord2s16;
+#ifndef MSB_FIRST
+	inVtxCoord2s16.value = param;
+#else
+	inVtxCoord2s16.value = (param >> 16) | (param << 16);
+#endif
+	return this->SetCurrentVertexPosition2s16(inVtxCoord2s16);
 }
 
-bool NDSGeometryEngine::SetCurrentVertex16x2(const VertexCoord16x2 inVtxCoord16x2)
+bool NDSGeometryEngine::SetCurrentVertexPosition2s16(const Vector2s16 inVtxCoord2s16)
 {
 	if (this->_vtxCoord16CurrentIndex == 0)
 	{
-		this->SetCurrentVertex16x2Immediate<0, 1>(inVtxCoord16x2);
+		this->SetCurrentVertexPosition2s16Immediate<0, 1>(inVtxCoord2s16);
 		this->_vtxCoord16CurrentIndex++;
 		return false;
 	}
 	
-	this->SetCurrentVertex16x2Immediate<2, 3>(inVtxCoord16x2);
+	this->SetCurrentVertexPosition2s16Immediate<2, 3>(inVtxCoord2s16);
 	this->_vtxCoord16CurrentIndex = 0;
 	return true;
 }
 
-void NDSGeometryEngine::SetCurrentVertex10x3(const u32 param)
+void NDSGeometryEngine::SetCurrentVertexPosition3s10(const u32 param)
 {
-	const VertexCoord16x3 inVtxCoord16x3 = {
-		(s16)( (u16)(((param << 22) >> 22) << 6) ),
-		(s16)( (u16)(((param << 12) >> 22) << 6) ),
-		(s16)( (u16)(((param <<  2) >> 22) << 6) )
+	const Vector3s16 inVtxCoord3s16 = {
+		(s16)( ((s32)((param << 22) & 0xFFC00000) / (s32)(1 << 22)) * (s32)(1 << 6) ),
+		(s16)( ((s32)((param << 12) & 0xFFC00000) / (s32)(1 << 22)) * (s32)(1 << 6) ),
+		(s16)( ((s32)((param <<  2) & 0xFFC00000) / (s32)(1 << 22)) * (s32)(1 << 6) )
 	};
 	
-	this->SetCurrentVertex(inVtxCoord16x3);
+	this->SetCurrentVertexPosition(inVtxCoord3s16);
 }
 
-void NDSGeometryEngine::SetCurrentVertex(const VertexCoord16x3 inVtxCoord16x3)
+void NDSGeometryEngine::SetCurrentVertexPosition(const Vector3s16 inVtxCoord3s16)
 {
-	this->_vtxCoord16 = inVtxCoord16x3;
+	this->_vtxCoord16 = inVtxCoord3s16;
 }
 
 template <size_t ONE, size_t TWO>
-void NDSGeometryEngine::SetCurrentVertex16x2Immediate(const u32 param)
+void NDSGeometryEngine::SetCurrentVertexPosition2s16Immediate(const u32 param)
 {
-	VertexCoord16x2 inVtxCoord16x2;
-	inVtxCoord16x2.value = param;
+	Vector2s16 inVtxCoord2s16;
+#ifndef MSB_FIRST
+	inVtxCoord2s16.value = param;
+#else
+	inVtxCoord2s16.value = (param >> 16) | (param << 16);
+#endif
 	
-	this->SetCurrentVertex16x2Immediate<ONE, TWO>(inVtxCoord16x2);
+	this->SetCurrentVertexPosition2s16Immediate<ONE, TWO>(inVtxCoord2s16);
 }
 
 template <size_t ONE, size_t TWO>
-void NDSGeometryEngine::SetCurrentVertex16x2Immediate(const VertexCoord16x2 inVtxCoord16x2)
+void NDSGeometryEngine::SetCurrentVertexPosition2s16Immediate(const Vector2s16 inVtxCoord2s16)
 {
 	if (ONE < 3)
 	{
-		this->_vtxCoord16.coord[ONE] = inVtxCoord16x2.coord[0];
+		this->_vtxCoord16.coord[ONE] = inVtxCoord2s16.coord[0];
 	}
 	
 	if (TWO < 3)
 	{
-		this->_vtxCoord16.coord[TWO] = inVtxCoord16x2.coord[1];
+		this->_vtxCoord16.coord[TWO] = inVtxCoord2s16.coord[1];
 	}
 }
 
-void NDSGeometryEngine::SetCurrentVertex10x3Relative(const u32 param)
+void NDSGeometryEngine::SetCurrentVertexPosition3s10Relative(const u32 param)
 {
-	const VertexCoord16x3 inVtxCoord16x3 = {
+	const Vector3s16 inVtxCoord3s16 = {
 		(s16)( (s32)((param << 22) & 0xFFC00000) / (s32)(1 << 22) ),
 		(s16)( (s32)((param << 12) & 0xFFC00000) / (s32)(1 << 22) ),
 		(s16)( (s32)((param <<  2) & 0xFFC00000) / (s32)(1 << 22) )
 	};
 	
-	this->SetCurrentVertexRelative(inVtxCoord16x3);
+	this->SetCurrentVertexPositionRelative(inVtxCoord3s16);
 }
 
-void NDSGeometryEngine::SetCurrentVertexRelative(const VertexCoord16x3 inVtxCoord16x3)
+void NDSGeometryEngine::SetCurrentVertexPositionRelative(const Vector3s16 inVtxCoord3s16)
 {
-	this->_vtxCoord16.x += inVtxCoord16x3.x;
-	this->_vtxCoord16.y += inVtxCoord16x3.y;
-	this->_vtxCoord16.z += inVtxCoord16x3.z;
+	this->_vtxCoord16.x += inVtxCoord3s16.x;
+	this->_vtxCoord16.y += inVtxCoord3s16.y;
+	this->_vtxCoord16.z += inVtxCoord3s16.z;
 }
 
 //Submit a vertex to the GE
@@ -1548,7 +1551,7 @@ void NDSGeometryEngine::AddCurrentVertexToList(GFX3D_GeometryList &targetGList)
 		return;
 	}
 	
-	CACHE_ALIGN VertexCoord32x4 vtxCoordTransformed = {
+	CACHE_ALIGN Vector4s32 vtxCoordTransformed = {
 		(s32)this->_vtxCoord16.x,
 		(s32)this->_vtxCoord16.y,
 		(s32)this->_vtxCoord16.z,
@@ -1588,10 +1591,6 @@ void NDSGeometryEngine::AddCurrentVertexToList(GFX3D_GeometryList &targetGList)
 		this->_vtxColor666X.g = GFX3D_5TO6_LOOKUP(this->_vtxColor555X.g);
 		this->_vtxColor666X.b = GFX3D_5TO6_LOOKUP(this->_vtxColor555X.b);
 		this->_vtxColor666X.a = 0;
-		this->_vtxColorFloat[0] = (float)this->_vtxColor666X.r;
-		this->_vtxColorFloat[1] = (float)this->_vtxColor666X.g;
-		this->_vtxColorFloat[2] = (float)this->_vtxColor666X.b;
-		this->_vtxColorFloat[3] = (float)this->_vtxColor666X.a;
 		
 		this->_doesVertexColorNeedUpdate = false;
 	}
@@ -1629,8 +1628,6 @@ void NDSGeometryEngine::AddCurrentVertexToList(GFX3D_GeometryList &targetGList)
 				break;
 		}
 		
-		this->_texCoordTransformedFloat[0] = (float)this->_texCoordTransformed.s / 16.0f;
-		this->_texCoordTransformedFloat[1] = (float)this->_texCoordTransformed.t / 16.0f;
 		this->_doesTransformedTexCoordsNeedUpdate = false;
 	}
 	
@@ -1652,24 +1649,6 @@ void NDSGeometryEngine::AddCurrentVertexToList(GFX3D_GeometryList &targetGList)
 	vtx.position = vtxCoordTransformed;
 	vtx.texCoord = this->_texCoordTransformed;
 	vtx.color    = this->_vtxColor666X;
-	
-	VERT &vert = targetGList.rawVertList[vertIndex];
-	vert.coord[0] = (float)vtxCoordTransformed.x / 4096.0f;
-	vert.coord[1] = (float)vtxCoordTransformed.y / 4096.0f;
-	vert.coord[2] = (float)vtxCoordTransformed.z / 4096.0f;
-	vert.coord[3] = (float)vtxCoordTransformed.w / 4096.0f;
-	vert.texcoord[0] = this->_texCoordTransformedFloat[0];
-	vert.texcoord[1] = this->_texCoordTransformedFloat[1];
-	vert.texcoord[2] = 0.0f;
-	vert.texcoord[3] = 0.0f;
-	vert.fcolor[0] = this->_vtxColorFloat[0];
-	vert.fcolor[1] = this->_vtxColorFloat[1];
-	vert.fcolor[2] = this->_vtxColorFloat[2];
-	vert.fcolor[3] = this->_vtxColorFloat[3];
-	vert.color[0] = this->_vtxColor666X.r;
-	vert.color[1] = this->_vtxColor666X.g;
-	vert.color[2] = this->_vtxColor666X.b;
-	vert.color[3] = this->_vtxColor666X.a;
 	
 	this->_vtxIndex[this->_vtxCount] = (u16)(targetGList.rawVertCount + this->_vtxCount - continuation);
 	this->_vtxCount++;
@@ -1876,7 +1855,7 @@ void NDSGeometryEngine::BoxTest()
 	const s32 z_d = (s32)( (s16)((uz+ud) & 0xFFFF) );
 	
 	//eight corners of cube
-	CACHE_ALIGN VertexCoord32x4 vtxPosition[8] = {
+	CACHE_ALIGN Vector4s32 vtxPosition[8] = {
 		{ __x, __y, __z, fixedOne },
 		{ x_w, __y, __z, fixedOne },
 		{ x_w, y_h, __z, fixedOne },
@@ -2029,7 +2008,7 @@ void NDSGeometryEngine::VectorTest(const u32 param)
 	// Bits 30-31: Ignored
 	
 	// Convert the coordinates to 20.12 fixed-point format for our vector-matrix multiplication.
-	CACHE_ALIGN Vector32x4 testVec = {
+	CACHE_ALIGN Vector4s32 testVec = {
 		( (s32)((param << 22) & 0xFFC00000) / (s32)(1 << 19) ) | (s32)((param & 0x000001C0) >>  6),
 		( (s32)((param << 12) & 0xFFC00000) / (s32)(1 << 19) ) | (s32)((param & 0x00007000) >> 16),
 		( (s32)((param <<  2) & 0xFFC00000) / (s32)(1 << 19) ) | (s32)((param & 0x01C00000) >> 26),
@@ -2043,7 +2022,7 @@ void NDSGeometryEngine::VectorTest(const u32 param)
 	// greater than or equal to 1.0f (or 4096 in fixed-point). All of this means that for all
 	// values >= 1.0f or < -1.0f will result in the sign bits becoming 1111b; otherwise, the sign
 	// bits will become 0000b.
-	const Vector16x3 resultVec = {
+	const Vector3s16 resultVec = {
 		(s16)( ((testVec.x > 0) && (testVec.x < 4096)) ? ((s16)testVec.x & 0x0FFF) : ((s16)testVec.x | 0xF000) ),
 		(s16)( ((testVec.y > 0) && (testVec.y < 4096)) ? ((s16)testVec.y & 0x0FFF) : ((s16)testVec.y | 0xF000) ),
 		(s16)( ((testVec.z > 0) && (testVec.z < 4096)) ? ((s16)testVec.z & 0x0FFF) : ((s16)testVec.z | 0xF000) )
@@ -2157,9 +2136,9 @@ void NDSGeometryEngine::MatrixCopyToStack(const MatrixMode whichMatrix, const si
 
 void NDSGeometryEngine::UpdateLightDirectionHalfAngleVector(const size_t index)
 {
-	static const CACHE_ALIGN Vector32x4 lineOfSight = {0, 0, (s32)0xFFFFF000, 0};
+	static const CACHE_ALIGN Vector4s32 lineOfSight = {0, 0, (s32)0xFFFFF000, 0};
 	
-	Vector32x4 half = {
+	Vector4s32 half = {
 		this->_vecLightDirectionTransformed[index].x + lineOfSight.x,
 		this->_vecLightDirectionTransformed[index].y + lineOfSight.y,
 		this->_vecLightDirectionTransformed[index].z + lineOfSight.z,
@@ -2263,9 +2242,9 @@ void NDSGeometryEngine::SaveState_LegacyFormat(GeometryEngineLegacySave &outLega
 	outLegacySave.mtxMultiply4x3TempIndex = this->_mtxMultiply4x3TempIndex;
 	outLegacySave.mtxMultiply3x3TempIndex = this->_mtxMultiply3x3TempIndex;
 	
-	outLegacySave.vtxCoord.vec3 = this->_vtxCoord16;
-	outLegacySave.vtxCoord.coord[3] = 0;
-	outLegacySave.vtxCoord16CurrentIndex = this->_vtxCoord16CurrentIndex;
+	outLegacySave.vtxPosition.vec3 = this->_vtxCoord16;
+	outLegacySave.vtxPosition.coord[3] = 0;
+	outLegacySave.vtxPosition16CurrentIndex = this->_vtxCoord16CurrentIndex;
 	outLegacySave.vtxFormat = (u32)this->_vtxFormat;
 	
 	outLegacySave.vecTranslate = this->_vecTranslate;
@@ -2342,8 +2321,8 @@ void NDSGeometryEngine::LoadState_LegacyFormat(const GeometryEngineLegacySave &i
 	this->_mtxMultiply4x3TempIndex = inLegacySave.mtxMultiply4x3TempIndex;
 	this->_mtxMultiply3x3TempIndex = inLegacySave.mtxMultiply3x3TempIndex;
 	
-	this->_vtxCoord16 = inLegacySave.vtxCoord.vec3;
-	this->_vtxCoord16CurrentIndex = inLegacySave.vtxCoord16CurrentIndex;
+	this->_vtxCoord16 = inLegacySave.vtxPosition.vec3;
+	this->_vtxCoord16CurrentIndex = inLegacySave.vtxPosition16CurrentIndex;
 	this->_vtxFormat = (PolygonPrimitiveType)inLegacySave.vtxFormat;
 	
 	this->_vecTranslate = inLegacySave.vecTranslate;
@@ -2673,13 +2652,13 @@ static void gfx3d_glNormal(const u32 param)
 
 static void gfx3d_glTexCoord(const u32 param)
 {
-	_gEngine.SetTextureCoordinates(param);
+	_gEngine.SetTextureCoordinates2s16(param);
 	GFX_DELAY(1);
 }
 
 static void gfx3d_glVertex16b(const u32 param)
 {
-	const bool isVtxComplete = _gEngine.SetCurrentVertex16x2(param);
+	const bool isVtxComplete = _gEngine.SetCurrentVertexPosition2s16(param);
 	if (isVtxComplete)
 	{
 		_gEngine.AddCurrentVertexToList(gfx3d.gList[gfx3d.pendingListIndex]);
@@ -2689,7 +2668,7 @@ static void gfx3d_glVertex16b(const u32 param)
 
 static void gfx3d_glVertex10b(const u32 param)
 {
-	_gEngine.SetCurrentVertex10x3(param);
+	_gEngine.SetCurrentVertexPosition3s10(param);
 	_gEngine.AddCurrentVertexToList(gfx3d.gList[gfx3d.pendingListIndex]);
 	GFX_DELAY(8);
 }
@@ -2697,14 +2676,14 @@ static void gfx3d_glVertex10b(const u32 param)
 template <size_t ONE, size_t TWO>
 static void gfx3d_glVertex3_cord(const u32 param)
 {
-	_gEngine.SetCurrentVertex16x2Immediate<ONE, TWO>(param);
+	_gEngine.SetCurrentVertexPosition2s16Immediate<ONE, TWO>(param);
 	_gEngine.AddCurrentVertexToList(gfx3d.gList[gfx3d.pendingListIndex]);
 	GFX_DELAY(8);
 }
 
 static void gfx3d_glVertex_rel(const u32 param)
 {
-	_gEngine.SetCurrentVertex10x3Relative(param);
+	_gEngine.SetCurrentVertexPosition3s10Relative(param);
 	_gEngine.AddCurrentVertexToList(gfx3d.gList[gfx3d.pendingListIndex]);
 	GFX_DELAY(8);
 }
@@ -3316,7 +3295,7 @@ size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUns
 		{
 			NDSVertex &vtx = cPoly.clipVtxFixed[j];
 			VERT &vert = cPoly.clipVerts[j];
-			VertexCoord64x4 vtx64 = {
+			Vector4s64 vtx64 = {
 				(s64)vtx.position.x,
 				(s64)vtx.position.y,
 				(s64)vtx.position.z,
@@ -3398,7 +3377,7 @@ size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUns
 					vert.v = (float)(vtx.texCoord.v / 16);
 				}
 				
-				vert.color32 = vtx.color.color;
+				vert.color32 = vtx.color.value;
 			}
 		}
 		
@@ -3812,8 +3791,8 @@ SFORMAT SF_GFX3D[] = {
 	{ "MM4I", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply4x4TempIndex},
 	{ "MM3I", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply4x3TempIndex},
 	{ "MMxI", 1, 1, &gfx3d.gEngineLegacySave.mtxMultiply3x3TempIndex},
-	{ "GSCO", 2, 4, &gfx3d.gEngineLegacySave.vtxCoord},
-	{ "GCOI", 1, 1, &gfx3d.gEngineLegacySave.vtxCoord16CurrentIndex},
+	{ "GSCO", 2, 4, &gfx3d.gEngineLegacySave.vtxPosition},
+	{ "GCOI", 1, 1, &gfx3d.gEngineLegacySave.vtxPosition16CurrentIndex},
 	{ "GVFM", 4, 1, &gfx3d.gEngineLegacySave.vtxFormat},
 	{ "GTRN", 4, 4, &gfx3d.gEngineLegacySave.vecTranslate},
 	{ "GTRI", 1, 1, &gfx3d.gEngineLegacySave.vecTranslateCurrentIndex},
@@ -3929,8 +3908,8 @@ void gfx3d_PrepareSaveStateBufferWrite()
 	}
 	else // Framebuffer is at a custom size
 	{
-		const FragmentColor *__restrict src = CurrentRenderer->GetFramebuffer();
-		FragmentColor *__restrict dst = gfx3d.framebufferNativeSave;
+		const Color4u8 *__restrict src = (Color4u8 *)CurrentRenderer->GetFramebuffer();
+		Color4u8 *__restrict dst = gfx3d.framebufferNativeSave;
 		
 		for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 		{
@@ -4101,7 +4080,7 @@ void gfx3d_FinishLoadStateBufferRead()
 	switch (deviceInfo.renderID)
 	{
 		case RENDERID_NULL:
-			memset(CurrentRenderer->GetFramebuffer(), 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(FragmentColor));
+			memset(CurrentRenderer->GetFramebuffer(), 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(Color4u8));
 			break;
 			
 		case RENDERID_SOFTRASTERIZER:
@@ -4127,8 +4106,8 @@ void gfx3d_FinishLoadStateBufferRead()
 					ColorspaceConvertBuffer8888To6665<false, false>((u32 *)gfx3d.framebufferNativeSave, (u32 *)gfx3d.framebufferNativeSave, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				}
 				
-				const FragmentColor *__restrict src = gfx3d.framebufferNativeSave;
-				FragmentColor *__restrict dst = CurrentRenderer->GetFramebuffer();
+				const Color4u8 *__restrict src = gfx3d.framebufferNativeSave;
+				Color4u8 *__restrict dst = (Color4u8 *)CurrentRenderer->GetFramebuffer();
 				
 				for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 				{

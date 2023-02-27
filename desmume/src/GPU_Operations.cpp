@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2021 DeSmuME team
+	Copyright (C) 2021-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -32,11 +32,11 @@ static CACHE_ALIGN u32 _gpuDstPitchIndex[GPU_FRAMEBUFFER_NATIVE_WIDTH];	// Key: 
 
 u8 PixelOperation::BlendTable555[17][17][32][32];
 u16 PixelOperation::BrightnessUpTable555[17][0x8000];
-FragmentColor PixelOperation::BrightnessUpTable666[17][0x8000];
-FragmentColor PixelOperation::BrightnessUpTable888[17][0x8000];
+Color4u8 PixelOperation::BrightnessUpTable666[17][0x8000];
+Color4u8 PixelOperation::BrightnessUpTable888[17][0x8000];
 u16 PixelOperation::BrightnessDownTable555[17][0x8000];
-FragmentColor PixelOperation::BrightnessDownTable666[17][0x8000];
-FragmentColor PixelOperation::BrightnessDownTable888[17][0x8000];
+Color4u8 PixelOperation::BrightnessDownTable666[17][0x8000];
+Color4u8 PixelOperation::BrightnessDownTable888[17][0x8000];
 
 static CACHE_ALIGN ColorOperation colorop;
 static CACHE_ALIGN PixelOperation pixelop;
@@ -71,9 +71,9 @@ FORCEINLINE u16 ColorOperation::blend(const u16 colA, const u16 colB, const TBle
 }
 
 template <NDSColorFormat COLORFORMAT>
-FORCEINLINE FragmentColor ColorOperation::blend(const FragmentColor colA, const FragmentColor colB, const u16 blendEVA, const u16 blendEVB) const
+FORCEINLINE Color4u8 ColorOperation::blend(const Color4u8 colA, const Color4u8 colB, const u16 blendEVA, const u16 blendEVB) const
 {
-	FragmentColor outColor;
+	Color4u8 outColor;
 	
 	u16 r16 = ( (colA.r * blendEVA) + (colB.r * blendEVB) ) / 16;
 	u16 g16 = ( (colA.g * blendEVA) + (colB.g * blendEVB) ) / 16;
@@ -96,7 +96,7 @@ FORCEINLINE FragmentColor ColorOperation::blend(const FragmentColor colA, const 
 	return outColor;
 }
 
-FORCEINLINE u16 ColorOperation::blend3D(const FragmentColor colA, const u16 colB) const
+FORCEINLINE u16 ColorOperation::blend3D(const Color4u8 colA, const u16 colB) const
 {
 	const u16 alpha = colA.a + 1;
 	COLOR c2;
@@ -113,9 +113,9 @@ FORCEINLINE u16 ColorOperation::blend3D(const FragmentColor colA, const u16 colB
 }
 
 template <NDSColorFormat COLORFORMAT>
-FORCEINLINE FragmentColor ColorOperation::blend3D(const FragmentColor colA, const FragmentColor colB) const
+FORCEINLINE Color4u8 ColorOperation::blend3D(const Color4u8 colA, const Color4u8 colB) const
 {
-	FragmentColor blendedColor;
+	Color4u8 blendedColor;
 	const u16 alpha = colA.a + 1;
 	
 	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
@@ -149,10 +149,10 @@ FORCEINLINE u16 ColorOperation::increase(const u16 col, const u16 blendEVY) cons
 }
 
 template <NDSColorFormat COLORFORMAT>
-FORCEINLINE FragmentColor ColorOperation::increase(const FragmentColor col, const u16 blendEVY) const
+FORCEINLINE Color4u8 ColorOperation::increase(const Color4u8 col, const u16 blendEVY) const
 {
-	FragmentColor newColor;
-	newColor.color = 0;
+	Color4u8 newColor;
+	newColor.value = 0;
 	
 	u32 r = col.r;
 	u32 g = col.g;
@@ -188,10 +188,10 @@ FORCEINLINE u16 ColorOperation::decrease(const u16 col, const u16 blendEVY) cons
 }
 
 template <NDSColorFormat COLORFORMAT>
-FORCEINLINE FragmentColor ColorOperation::decrease(const FragmentColor col, const u16 blendEVY) const
+FORCEINLINE Color4u8 ColorOperation::decrease(const Color4u8 col, const u16 blendEVY) const
 {
-	FragmentColor newColor;
-	newColor.color = 0;
+	Color4u8 newColor;
+	newColor.value = 0;
 	
 	u32 r = col.r;
 	u32 g = col.g;
@@ -242,8 +242,8 @@ void PixelOperation::InitLUTs()
 			cur.bits.blue = (cur.bits.blue + ((31 - cur.bits.blue) * i / 16));
 			cur.bits.alpha = 0;
 			PixelOperation::BrightnessUpTable555[i][j] = cur.val;
-			PixelOperation::BrightnessUpTable666[i][j].color = LOCAL_TO_LE_32( COLOR555TO666(cur.val) );
-			PixelOperation::BrightnessUpTable888[i][j].color = LOCAL_TO_LE_32( COLOR555TO888(cur.val) );
+			PixelOperation::BrightnessUpTable666[i][j].value = LOCAL_TO_LE_32( COLOR555TO666(cur.val) );
+			PixelOperation::BrightnessUpTable888[i][j].value = LOCAL_TO_LE_32( COLOR555TO888(cur.val) );
 			
 			cur.val = j;
 			cur.bits.red = (cur.bits.red - (cur.bits.red * i / 16));
@@ -251,8 +251,8 @@ void PixelOperation::InitLUTs()
 			cur.bits.blue = (cur.bits.blue - (cur.bits.blue * i / 16));
 			cur.bits.alpha = 0;
 			PixelOperation::BrightnessDownTable555[i][j] = cur.val;
-			PixelOperation::BrightnessDownTable666[i][j].color = LOCAL_TO_LE_32( COLOR555TO666(cur.val) );
-			PixelOperation::BrightnessDownTable888[i][j].color = LOCAL_TO_LE_32( COLOR555TO888(cur.val) );
+			PixelOperation::BrightnessDownTable666[i][j].value = LOCAL_TO_LE_32( COLOR555TO666(cur.val) );
+			PixelOperation::BrightnessDownTable888[i][j].value = LOCAL_TO_LE_32( COLOR555TO888(cur.val) );
 		}
 	}
 	
@@ -279,7 +279,7 @@ template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER>
 FORCEINLINE void PixelOperation::_copy16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16) const
 {
 	u16 &dstColor16 = *compInfo.target.lineColor16;
-	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
+	Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
 	switch (OUTPUTFORMAT)
@@ -289,11 +289,11 @@ FORCEINLINE void PixelOperation::_copy16(GPUEngineCompositorInfo &compInfo, cons
 			break;
 			
 		case NDSColorFormat_BGR666_Rev:
-			dstColor32.color = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>(srcColor16) );
+			dstColor32.value = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>(srcColor16) );
 			break;
 			
 		case NDSColorFormat_BGR888_Rev:
-			dstColor32.color = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(srcColor16) );
+			dstColor32.value = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(srcColor16) );
 			break;
 	}
 	
@@ -304,10 +304,10 @@ FORCEINLINE void PixelOperation::_copy16(GPUEngineCompositorInfo &compInfo, cons
 }
 
 template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER>
-FORCEINLINE void PixelOperation::_copy32(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32) const
+FORCEINLINE void PixelOperation::_copy32(GPUEngineCompositorInfo &compInfo, const Color4u8 srcColor32) const
 {
 	u16 &dstColor16 = *compInfo.target.lineColor16;
-	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
+	Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
 	switch (OUTPUTFORMAT)
@@ -341,7 +341,7 @@ template <NDSColorFormat OUTPUTFORMAT>
 FORCEINLINE void PixelOperation::_brightnessUp16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16) const
 {
 	u16 &dstColor16 = *compInfo.target.lineColor16;
-	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
+	Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
 	switch (OUTPUTFORMAT)
@@ -365,10 +365,10 @@ FORCEINLINE void PixelOperation::_brightnessUp16(GPUEngineCompositorInfo &compIn
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
-FORCEINLINE void PixelOperation::_brightnessUp32(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32) const
+FORCEINLINE void PixelOperation::_brightnessUp32(GPUEngineCompositorInfo &compInfo, const Color4u8 srcColor32) const
 {
 	u16 &dstColor16 = *compInfo.target.lineColor16;
-	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
+	Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
@@ -390,7 +390,7 @@ template <NDSColorFormat OUTPUTFORMAT>
 FORCEINLINE void PixelOperation::_brightnessDown16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16) const
 {
 	u16 &dstColor16 = *compInfo.target.lineColor16;
-	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
+	Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
 	switch (OUTPUTFORMAT)
@@ -414,10 +414,10 @@ FORCEINLINE void PixelOperation::_brightnessDown16(GPUEngineCompositorInfo &comp
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
-FORCEINLINE void PixelOperation::_brightnessDown32(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32) const
+FORCEINLINE void PixelOperation::_brightnessDown32(GPUEngineCompositorInfo &compInfo, const Color4u8 srcColor32) const
 {
 	u16 &dstColor16 = *compInfo.target.lineColor16;
-	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
+	Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
@@ -555,14 +555,14 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 	}
 	else
 	{
-		FragmentColor &dstColor32 = *compInfo.target.lineColor32;
+		Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
 			switch (selectedEffect)
 			{
 				case ColorEffect_Disable:
-					dstColor32.color = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>(srcColor16) );
+					dstColor32.value = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>(srcColor16) );
 					break;
 					
 				case ColorEffect_IncreaseBrightness:
@@ -575,8 +575,8 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 					
 				case ColorEffect_Blend:
 				{
-					FragmentColor srcColor32;
-					srcColor32.color = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>(srcColor16) );
+					Color4u8 srcColor32;
+					srcColor32.value = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>(srcColor16) );
 					dstColor32 = (LAYERTYPE == GPULayerType_3D) ? colorop.blend3D<OUTPUTFORMAT>(srcColor32, dstColor32) : colorop.blend<OUTPUTFORMAT>(srcColor32, dstColor32, blendEVA, blendEVB);
 					break;
 				}
@@ -587,7 +587,7 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 			switch (selectedEffect)
 			{
 				case ColorEffect_Disable:
-					dstColor32.color = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(srcColor16) );
+					dstColor32.value = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(srcColor16) );
 					break;
 					
 				case ColorEffect_IncreaseBrightness:
@@ -600,8 +600,8 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 					
 				case ColorEffect_Blend:
 				{
-					FragmentColor srcColor32;
-					srcColor32.color = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(srcColor16) );
+					Color4u8 srcColor32;
+					srcColor32.value = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(srcColor16) );
 					dstColor32 = (LAYERTYPE == GPULayerType_3D) ? colorop.blend3D<OUTPUTFORMAT>(srcColor32, dstColor32) : colorop.blend<OUTPUTFORMAT>(srcColor32, dstColor32, blendEVA, blendEVB);
 					break;
 				}
@@ -613,7 +613,7 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 }
 
 template <NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE>
-FORCEINLINE void PixelOperation::_unknownEffect32(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32, const bool enableColorEffect, const u8 spriteAlpha, const OBJMode spriteMode) const
+FORCEINLINE void PixelOperation::_unknownEffect32(GPUEngineCompositorInfo &compInfo, const Color4u8 srcColor32, const bool enableColorEffect, const u8 spriteAlpha, const OBJMode spriteMode) const
 {
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	TBlendTable *selectedBlendTable = compInfo.renderState.blendTable555;
@@ -663,7 +663,7 @@ FORCEINLINE void PixelOperation::_unknownEffect32(GPUEngineCompositorInfo &compI
 	}
 	else
 	{
-		FragmentColor &dstColor32 = *compInfo.target.lineColor32;
+		Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 		
 		switch (selectedEffect)
 		{
@@ -716,7 +716,7 @@ FORCEINLINE void PixelOperation::Composite16(GPUEngineCompositorInfo &compInfo, 
 }
 
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE>
-FORCEINLINE void PixelOperation::Composite32(GPUEngineCompositorInfo &compInfo, FragmentColor srcColor32, const bool enableColorEffect, const u8 spriteAlpha, const u8 spriteMode) const
+FORCEINLINE void PixelOperation::Composite32(GPUEngineCompositorInfo &compInfo, Color4u8 srcColor32, const bool enableColorEffect, const u8 spriteAlpha, const u8 spriteMode) const
 {
 	switch (COMPOSITORMODE)
 	{
@@ -1013,7 +1013,7 @@ void GPUEngineBase::_MosaicLine(GPUEngineCompositorInfo &compInfo)
 }
 
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
-void GPUEngineBase::_CompositeNativeLineOBJ_LoopOp(GPUEngineCompositorInfo &compInfo, const u16 *__restrict srcColorNative16, const FragmentColor *__restrict srcColorNative32)
+void GPUEngineBase::_CompositeNativeLineOBJ_LoopOp(GPUEngineCompositorInfo &compInfo, const u16 *__restrict srcColorNative16, const Color4u8 *__restrict srcColorNative32)
 {
 	// Do nothing. This is a placeholder for a manually vectorized version of this method.
 }
@@ -1086,7 +1086,7 @@ void GPUEngineBase::_PerformWindowTestingNative(GPUEngineCompositorInfo &compInf
 }
 
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
-size_t GPUEngineA::_RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const FragmentColor *__restrict srcLinePtr)
+size_t GPUEngineA::_RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const Color4u8 *__restrict srcLinePtr)
 {
 	// Do nothing. This is a placeholder for a manually vectorized version of this method.
 	return 0;

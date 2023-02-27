@@ -107,22 +107,22 @@ protected:
 	u8 _textureWrapMode;
 	
 	Render3DError _SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
-	FORCEINLINE FragmentColor _sample(const float u, const float v);
+	FORCEINLINE Color4u8 _sample(const float u, const float v);
 	FORCEINLINE float _round_s(double val);
 	
-	template<bool ISSHADOWPOLYGON> FORCEINLINE void _shade(const PolygonMode polygonMode, const FragmentColor src, FragmentColor &dst, const float texCoordU, const float texCoordV);
-	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON> FORCEINLINE void _pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, FragmentColor &dstColor, float r, float g, float b, float invu, float invv, float z, float w);
-	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> FORCEINLINE void _drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight);
-	template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> void _runscanlines(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const bool isHorizontal, edge_fx_fl *left, edge_fx_fl *right);
+	template<bool ISSHADOWPOLYGON> FORCEINLINE void _shade(const PolygonMode polygonMode, const Color4u8 src, Color4u8 &dst, const float texCoordU, const float texCoordV);
+	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON> FORCEINLINE void _pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, float r, float g, float b, float invu, float invv, float z, float w);
+	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> FORCEINLINE void _drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight);
+	template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> void _runscanlines(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const bool isHorizontal, edge_fx_fl *left, edge_fx_fl *right);
 	
 #ifdef ENABLE_SSE2
-	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON> FORCEINLINE void _pixel_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, FragmentColor &dstColor, const __m128 &srcColorf, float invu, float invv, float z, float w);
-	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> FORCEINLINE void _drawscanline_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight);
+	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON> FORCEINLINE void _pixel_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, const __m128 &srcColorf, float invu, float invv, float z, float w);
+	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> FORCEINLINE void _drawscanline_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight);
 #endif
 	
 	template<int TYPE> FORCEINLINE void _rot_verts();
 	template<bool ISFRONTFACING, int TYPE> void _sort_verts();
-	template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> void _shape_engine(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type);
+	template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> void _shape_engine(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type);
 	
 public:
 	void SetSLI(u32 startLine, u32 endLine, bool debug);
@@ -160,7 +160,7 @@ protected:
 	size_t _customPixelsPerThread;
 	
 	u8 _fogTable[32768];
-	FragmentColor _edgeMarkTable[8];
+	Color4u8 _edgeMarkTable[8];
 	bool _edgeMarkDisabled[8];
 	
 	bool _renderGeometryNeedsFinish;
@@ -178,11 +178,11 @@ protected:
 	virtual Render3DError EndRender();
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID);
-	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	virtual Render3DError ClearUsingValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 public:
 	int _debug_drawClippedUserPoly;
-	CACHE_ALIGN FragmentColor toonColor32LUT[32];
+	CACHE_ALIGN Color4u8 toonColor32LUT[32];
 	FragmentAttributesBuffer *_framebufferAttributes;
 	GFX3D_State *currentRenderState;
 	
@@ -211,8 +211,8 @@ template <size_t SIMDBYTES>
 class SoftRasterizer_SIMD : public SoftRasterizerRenderer
 {
 protected:
-	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) = 0;
-	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	virtual void LoadClearValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes) = 0;
+	virtual Render3DError ClearUsingValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 public:
 	SoftRasterizer_SIMD();
@@ -233,7 +233,7 @@ protected:
 	v256u8 _clearAttrIsTranslucentPoly_v256u8;
 	v256u8 _clearAttrPolyFacing_v256u8;
 	
-	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	virtual void LoadClearValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 public:
 	virtual void ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel);
@@ -252,7 +252,7 @@ protected:
 	v128u8 _clearAttrIsTranslucentPoly_v128u8;
 	v128u8 _clearAttrPolyFacing_v128u8;
 	
-	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	virtual void LoadClearValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 public:
 	virtual void ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel);
@@ -271,7 +271,7 @@ protected:
 	uint8x16x4_t _clearAttrIsTranslucentPoly_v128u8x4;
 	uint8x16x4_t _clearAttrPolyFacing_v128u8x4;
 	
-	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	virtual void LoadClearValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 public:
 	virtual void ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel);
@@ -290,7 +290,7 @@ protected:
 	v128u8 _clearAttrIsTranslucentPoly_v128u8;
 	v128u8 _clearAttrPolyFacing_v128u8;
 	
-	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	virtual void LoadClearValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 public:
 	virtual void ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel);

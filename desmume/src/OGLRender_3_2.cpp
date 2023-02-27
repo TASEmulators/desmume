@@ -2359,7 +2359,7 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_3_2::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+Render3DError OpenGLRenderer_3_2::ClearUsingValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	OGLRef.selectedRenderingFBO = (this->_enableMultisampledRendering) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
@@ -2536,12 +2536,12 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 		glFinish();
 	}
 	
-	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
+	const size_t newFramebufferColorSizeBytes = w * h * sizeof(Color4u8);
 	glBufferData(GL_PIXEL_PACK_BUFFER, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ);
 	
 	if (this->_mappedFramebuffer != NULL)
 	{
-		this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+		this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 		glFinish();
 	}
 	

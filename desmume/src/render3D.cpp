@@ -208,7 +208,7 @@ Render3D::Render3D()
 	_framebufferHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	_framebufferPixCount = _framebufferWidth * _framebufferHeight;
 	_framebufferSIMDPixCount = 0;
-	_framebufferColorSizeBytes = _framebufferWidth * _framebufferHeight * sizeof(FragmentColor);
+	_framebufferColorSizeBytes = _framebufferWidth * _framebufferHeight * sizeof(Color4u8);
 	_framebufferColor = NULL;
 	
 	_internalRenderingFormat = NDSColorFormat_BGR666_Rev;
@@ -282,7 +282,7 @@ std::string Render3D::GetName()
 	return this->_deviceInfo.renderName;
 }
 
-FragmentColor* Render3D::GetFramebuffer()
+Color4u8* Render3D::GetFramebuffer()
 {
 	return this->_framebufferColor;
 }
@@ -312,7 +312,7 @@ Render3DError Render3D::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;
 	this->_framebufferPixCount = w * h;
-	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
+	this->_framebufferColorSizeBytes = w * h * sizeof(Color4u8);
 	this->_framebufferColor = GPU->GetEngineMain()->Get3DFramebufferMain(); // Just use the buffer that is already present on the main GPU engine
 	
 	return RENDER3DERROR_NOERR;
@@ -466,7 +466,7 @@ Render3DError Render3D::EndRender()
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16)
+Render3DError Render3D::FlushFramebuffer(const Color4u8 *__restrict srcFramebuffer, Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16)
 {
 	if ( (dstFramebufferMain == NULL) && (dstFramebuffer16 == NULL) )
 	{
@@ -486,7 +486,7 @@ Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFram
 		else if ( ((this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev)) ||
 		          ((this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) )
 		{
-			memcpy(dstFramebufferMain, srcFramebuffer, this->_framebufferPixCount * sizeof(FragmentColor));
+			memcpy(dstFramebufferMain, srcFramebuffer, this->_framebufferPixCount * sizeof(Color4u8));
 		}
 		
 		this->_renderNeedsFlushMain = false;
@@ -648,7 +648,7 @@ Render3DError Render3D::ClearUsingImage(const u16 *__restrict colorBuffer, const
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+Render3DError Render3D::ClearUsingValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes)
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -670,7 +670,7 @@ Render3DError Render3D::Reset()
 		memset(this->_framebufferColor, 0, this->_framebufferColorSizeBytes);
 	}
 	
-	this->_clearColor6665.color = 0;
+	this->_clearColor6665.value = 0;
 	memset(&this->_clearAttributes, 0, sizeof(FragmentAttributes));
 	
 	this->_renderNeedsFinish = false;
@@ -703,7 +703,7 @@ Render3DError Render3D::Render(const GFX3D_State &renderState, const GFX3D_Geome
 	this->_isPoweredOn = true;
 	
 	const u32 clearColorSwapped = LE_TO_LOCAL_32(renderState.clearColor);
-	this->_clearColor6665.color = LE_TO_LOCAL_32( COLOR555TO6665(clearColorSwapped & 0x7FFF, (clearColorSwapped >> 16) & 0x1F) );
+	this->_clearColor6665.value = LE_TO_LOCAL_32( COLOR555TO6665(clearColorSwapped & 0x7FFF, (clearColorSwapped >> 16) & 0x1F) );
 	
 	this->_clearAttributes.opaquePolyID = (clearColorSwapped >> 24) & 0x3F;
 	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display

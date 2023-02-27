@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2021 DeSmuME team
+	Copyright (C) 2021-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -47,16 +47,16 @@ public:
 	
 	FORCEINLINE u16 blend(const u16 colA, const u16 colB, const u16 blendEVA, const u16 blendEVB) const;
 	FORCEINLINE u16 blend(const u16 colA, const u16 colB, const TBlendTable *blendTable) const;
-	template<NDSColorFormat COLORFORMAT> FORCEINLINE FragmentColor blend(const FragmentColor colA, const FragmentColor colB, const u16 blendEVA, const u16 blendEVB) const;
+	template<NDSColorFormat COLORFORMAT> FORCEINLINE Color4u8 blend(const Color4u8 colA, const Color4u8 colB, const u16 blendEVA, const u16 blendEVB) const;
 	
-	FORCEINLINE u16 blend3D(const FragmentColor colA, const u16 colB) const;
-	template<NDSColorFormat COLORFORMAT> FORCEINLINE FragmentColor blend3D(const FragmentColor colA, const FragmentColor colB) const;
+	FORCEINLINE u16 blend3D(const Color4u8 colA, const u16 colB) const;
+	template<NDSColorFormat COLORFORMAT> FORCEINLINE Color4u8 blend3D(const Color4u8 colA, const Color4u8 colB) const;
 	
 	FORCEINLINE u16 increase(const u16 col, const u16 blendEVY) const;
-	template<NDSColorFormat COLORFORMAT> FORCEINLINE FragmentColor increase(const FragmentColor col, const u16 blendEVY) const;
+	template<NDSColorFormat COLORFORMAT> FORCEINLINE Color4u8 increase(const Color4u8 col, const u16 blendEVY) const;
 	
 	FORCEINLINE u16 decrease(const u16 col, const u16 blendEVY) const;
-	template<NDSColorFormat COLORFORMAT> FORCEINLINE FragmentColor decrease(const FragmentColor col, const u16 blendEVY) const;
+	template<NDSColorFormat COLORFORMAT> FORCEINLINE Color4u8 decrease(const Color4u8 col, const u16 blendEVY) const;
 };
 
 class PixelOperation
@@ -66,31 +66,31 @@ private:
 	
 protected:
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER> FORCEINLINE void _copy16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16) const;
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER> FORCEINLINE void _copy32(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32) const;
+	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER> FORCEINLINE void _copy32(GPUEngineCompositorInfo &compInfo, const Color4u8 srcColor32) const;
 	
 	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _brightnessUp16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16) const;
-	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _brightnessUp32(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32) const;
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _brightnessUp32(GPUEngineCompositorInfo &compInfo, const Color4u8 srcColor32) const;
 	
 	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _brightnessDown16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16) const;
-	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _brightnessDown32(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32) const;
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _brightnessDown32(GPUEngineCompositorInfo &compInfo, const Color4u8 srcColor32) const;
 	
 	template<NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE> FORCEINLINE void _unknownEffect16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const bool enableColorEffect, const u8 spriteAlpha, const OBJMode spriteMode) const;
-	template<NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE> FORCEINLINE void _unknownEffect32(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32, const bool enableColorEffect, const u8 spriteAlpha, const OBJMode spriteMode) const;
+	template<NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE> FORCEINLINE void _unknownEffect32(GPUEngineCompositorInfo &compInfo, const Color4u8 srcColor32, const bool enableColorEffect, const u8 spriteAlpha, const OBJMode spriteMode) const;
 	
 public:
 	static CACHE_ALIGN u8 BlendTable555[17][17][32][32];
 	static CACHE_ALIGN u16 BrightnessUpTable555[17][0x8000];
-	static CACHE_ALIGN FragmentColor BrightnessUpTable666[17][0x8000];
-	static CACHE_ALIGN FragmentColor BrightnessUpTable888[17][0x8000];
+	static CACHE_ALIGN Color4u8 BrightnessUpTable666[17][0x8000];
+	static CACHE_ALIGN Color4u8 BrightnessUpTable888[17][0x8000];
 	static CACHE_ALIGN u16 BrightnessDownTable555[17][0x8000];
-	static CACHE_ALIGN FragmentColor BrightnessDownTable666[17][0x8000];
-	static CACHE_ALIGN FragmentColor BrightnessDownTable888[17][0x8000];
+	static CACHE_ALIGN Color4u8 BrightnessDownTable666[17][0x8000];
+	static CACHE_ALIGN Color4u8 BrightnessDownTable888[17][0x8000];
 	static void InitLUTs();
 	
 	PixelOperation() {};
 	
 	template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE> FORCEINLINE void Composite16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const bool enableColorEffect, const u8 spriteAlpha, const u8 spriteMode) const;
-	template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE> FORCEINLINE void Composite32(GPUEngineCompositorInfo &compInfo, FragmentColor srcColor32, const bool enableColorEffect, const u8 spriteAlpha, const u8 spriteMode) const;
+	template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE> FORCEINLINE void Composite32(GPUEngineCompositorInfo &compInfo, Color4u8 srcColor32, const bool enableColorEffect, const u8 spriteAlpha, const u8 spriteMode) const;
 };
 
 #endif // GPU_OPERATIONS_H

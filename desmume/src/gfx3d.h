@@ -178,14 +178,14 @@ typedef union
 		
 		u32 :24;							//  8-31: Unused bits
 #else
+		u32 :24;							//  8-31: Unused bits
+		
 		u8 :6;								//  2- 7: Unused bits
 		u8 MtxMode:2;						//  0- 1: Set matrix mode;
 											//        0=Projection
 											//        1=Position
 											//        2=Position+Vector
 											//        3=Texture
-
-		u32 :24;							//  8-31: Unused bits
 #endif
 } IOREG_MTX_MODE;							// 0x04000440: MTX_MODE command port
 
@@ -361,11 +361,11 @@ typedef union
 		
 		u32 :24;							//  8-31: Unused bits
 #else
+		u32 :24;							//  8-31: Unused bits
+		
 		u8 :6;								//  2- 7: Unused bits
 		u8 DepthMode:1;						//     1: Depth buffering select; 0=Z 1=W
 		u8 YSortMode:1;						//     0: Translucent polygon Y-sorting mode; 0=Auto-sort, 1=Manual-sort
-		
-		u32 :24;							//  8-31: Unused bits
 #endif
 	};
 } IOREG_SWAP_BUFFERS;						// 0x04000540: SWAP_BUFFERS command port
@@ -378,10 +378,18 @@ typedef union
 	{
 		// Coordinate (0,0) represents the bottom-left of the screen.
 		// Coordinate (255,191) represents the top-right of the screen.
+		
+#ifndef MSB_FIRST
 		u8 X1;								//  0- 7: First X-coordinate; 0...255
 		u8 Y1;								//  8-15: First Y-coordinate; 0...191
 		u8 X2;								// 16-23: Second X-coordinate; 0...255
 		u8 Y2;								// 24-31: Second Y-coordinate; 0...191
+#else
+		u8 Y2;								// 24-31: Second Y-coordinate; 0...191
+		u8 X2;								// 16-23: Second X-coordinate; 0...255
+		u8 Y1;								//  8-15: First Y-coordinate; 0...191
+		u8 X1;								//  0- 7: First X-coordinate; 0...255
+#endif
 	};
 } IOREG_VIEWPORT;							// 0x04000580: VIEWPORT command port
 
@@ -391,6 +399,7 @@ typedef union
 	
 	struct
 	{
+#ifndef MSB_FIRST
 		u8 TestBusy:1;
 		u8 BoxTestResult:1;
 		u8 :6;
@@ -406,6 +415,23 @@ typedef union
 		u8 EngineBusy:1;
 		u8 :2;
 		u8 CommandListIRQ:2;
+#else
+		u8 :6;
+		u8 BoxTestResult:1;
+		u8 TestBusy:1;
+		
+		u8 AckMtxStackError:1;
+		u8 MtxStackBusy:1;
+		u8 ProjMtxStackLevel:1;
+		u8 PosVecMtxStackLevel:5;
+		
+		u8 CommandListIRQ:2;
+		u8 :2;
+		u8 EngineBusy:1;
+		u8 CommandListEmpty:1;
+		u8 CommandListLessThanHalf:1;
+		u16 CommandListCount:9;
+#endif
 	};
 	
 } IOREG_GXSTAT;								// 0x04000600: Geometry engine status
@@ -588,214 +614,21 @@ typedef struct VERT VERT;
 
 #include "PACKED_END.h"
 
-union Vector16x2
-{
-	s16 vec[2];
-	s16 coord[2];
-	
-	struct
-	{
-		s16 s, t;
-	};
-	
-	struct
-	{
-		s16 u, v;
-	};
-	
-	struct
-	{
-		s16 x, y;
-	} XY;
-	
-	struct
-	{
-		s16 y, z;
-	} YZ;
-	
-	struct
-	{
-		s16 x, z;
-	} XZ;
-	
-	u32 value;
-};
-typedef union Vector16x2 Vector16x2;
-typedef Vector16x2 VertexCoord16x2;
-
-union Vector16x3
-{
-	s16 vec[3];
-	s16 coord[3];
-	
-	struct
-	{
-		s16 x, y, z;
-	};
-};
-typedef union Vector16x3 Vector16x3;
-typedef Vector16x3 VertexCoord16x3;
-
-union Vector16x4
-{
-	s16 vec[4];
-	s16 coord[4];
-	
-	struct
-	{
-		s16 x, y, z, w;
-	};
-	
-	struct
-	{
-		Vector16x3 vec3;
-		s16 :16;
-	};
-	
-	u64 value;
-};
-typedef union Vector16x4 Vector16x4;
-typedef Vector16x4 VertexCoord16x4;
-
-union Vector32x2
-{
-	s32 vec[2];
-	s32 coord[2];
-	
-	struct
-	{
-		s32 s, t;
-	};
-	
-	struct
-	{
-		s32 u, v;
-	};
-	
-	struct
-	{
-		s32 x, y;
-	} XY;
-	
-	struct
-	{
-		s32 y, z;
-	} YZ;
-	
-	struct
-	{
-		s32 x, z;
-	} XZ;
-	
-	u64 value;
-};
-typedef union Vector32x2 Vector32x2;
-typedef Vector32x2 VertexCoord32x2;
-
-union Vector32x3
-{
-	s32 vec[3];
-	s32 coord[3];
-	
-	struct
-	{
-		s32 x, y, z;
-	};
-};
-typedef union Vector32x3 Vector32x3;
-typedef Vector32x3 VertexCoord32x3;
-
-union Vector32x4
-{
-	s32 vec[4];
-	s32 coord[4];
-	
-	struct
-	{
-		s32 x, y, z, w;
-	};
-	
-	struct
-	{
-		Vector32x3 vec3;
-		s32 :32;
-	};
-};
-typedef union Vector32x4 Vector32x4;
-typedef Vector32x4 VertexCoord32x4;
-
-union Vector64x2
-{
-	s64 vec[2];
-	s64 coord[2];
-	
-	struct
-	{
-		s64 s, t;
-	};
-	
-	struct
-	{
-		s64 u, v;
-	};
-	
-	struct
-	{
-		s64 x, y;
-	} XY;
-	
-	struct
-	{
-		s64 y, z;
-	} YZ;
-	
-	struct
-	{
-		s64 x, z;
-	} XZ;
-};
-typedef union Vector64x2 Vector64x2;
-typedef Vector64x2 VertexCoord64x2;
-
-union Vector64x3
-{
-	s64 vec[3];
-	s64 coord[3];
-	
-	struct
-	{
-		s64 x, y, z;
-	};
-};
-typedef union Vector64x3 Vector64x3;
-typedef Vector64x3 VertexCoord64x3;
-
-union Vector64x4
-{
-	s64 vec[4];
-	s64 coord[4];
-	
-	struct
-	{
-		s64 x, y, z, w;
-	};
-	
-	struct
-	{
-		Vector64x3 vec3;
-		s64 :64;
-	};
-};
-typedef union Vector64x4 Vector64x4;
-typedef Vector64x4 VertexCoord64x4;
-
 struct NDSVertex
 {
-	VertexCoord32x4 position;
-	VertexCoord32x2 texCoord;
-	FragmentColor color;
+	Vector4s32 position;
+	Vector2s32 texCoord;
+	Color4u8 color;
 };
 typedef struct NDSVertex NDSVertex;
+
+struct NDSVertexf
+{
+	Vector4f32 position;
+	Vector2f32 texCoord;
+	Color4f32 color;
+};
+typedef struct NDSVertexf NDSVertexf;
 
 //ok, imagine the plane that cuts diagonally across a cube such that it clips
 //out to be a hexagon. within that plane, draw a quad such that it cuts off
@@ -842,7 +675,6 @@ typedef struct GFX3D_State GFX3D_State;
 
 struct GFX3D_GeometryList
 {
-	PAGE_ALIGN VERT rawVertList[VERTLIST_SIZE];
 	PAGE_ALIGN NDSVertex rawVtxList[VERTLIST_SIZE];
 	PAGE_ALIGN POLY rawPolyList[POLYLIST_SIZE];
 	PAGE_ALIGN CPoly clippedPolyList[CLIPPED_POLYLIST_SIZE];
@@ -900,13 +732,13 @@ struct GeometryEngineLegacySave
 	u8 mtxMultiply4x3TempIndex;
 	u8 mtxMultiply3x3TempIndex;
 	
-	VertexCoord16x4 vtxCoord;
-	u8 vtxCoord16CurrentIndex;
+	Vector4s16 vtxPosition;
+	u8 vtxPosition16CurrentIndex;
 	u32 vtxFormat;
 	
-	Vector32x4 vecTranslate;
+	Vector4s32 vecTranslate;
 	u8 vecTranslateCurrentIndex;
-	Vector32x4 vecScale;
+	Vector4s32 vecScale;
 	u8 vecScaleCurrentIndex;
 	
 	u32 texCoordT;
@@ -919,7 +751,7 @@ struct GeometryEngineLegacySave
 	float positionTestVtxFloat[4]; // Historically, the position test vertices were stored as floating point values, not as integers.
 	u16 boxTestCoord16[6];
 	
-	FragmentColor vtxColor;
+	Color4u8 vtxColor;
 	
 	u32 regLightColor[4];
 	u32 regLightDirection[4];
@@ -991,7 +823,7 @@ struct GFX3D
 	// Everything below is for save state compatibility.
 	GFX3D_LegacySave legacySave;
 	GeometryEngineLegacySave gEngineLegacySave;
-	PAGE_ALIGN FragmentColor framebufferNativeSave[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // Rendered 3D framebuffer that is saved in RGBA8888 color format at the native size.
+	PAGE_ALIGN Color4u8 framebufferNativeSave[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // Rendered 3D framebuffer that is saved in RGBA8888 color format at the native size.
 };
 typedef struct GFX3D GFX3D;
 
@@ -1007,8 +839,8 @@ protected:
 	CACHE_ALIGN NDSMatrix _tempMtxMultiply4x4;
 	CACHE_ALIGN NDSMatrix _tempMtxMultiply4x3;
 	CACHE_ALIGN NDSMatrix _tempMtxMultiply3x3;
-	CACHE_ALIGN Vector32x4 _vecTranslate;
-	CACHE_ALIGN Vector32x4 _vecScale;
+	CACHE_ALIGN Vector4s32 _vecTranslate;
+	CACHE_ALIGN Vector4s32 _vecScale;
 	
 	// Matrix stack handling
 	CACHE_ALIGN NDSMatrixStack1  _mtxStackProjection;
@@ -1016,10 +848,10 @@ protected:
 	CACHE_ALIGN NDSMatrixStack32 _mtxStackPositionVector;
 	CACHE_ALIGN NDSMatrixStack1  _mtxStackTexture;
 	
-	CACHE_ALIGN Vector32x4 _vecNormal;
-	CACHE_ALIGN VertexCoord16x3 _vtxCoord16;
-	CACHE_ALIGN VertexCoord16x2 _texCoord16;
-	CACHE_ALIGN VertexCoord32x2 _texCoordTransformed;
+	CACHE_ALIGN Vector4s32 _vecNormal;
+	CACHE_ALIGN Vector3s16 _vtxCoord16;
+	CACHE_ALIGN Vector2s16 _texCoord16;
+	CACHE_ALIGN Vector2s32 _texCoordTransformed;
 	
 	CACHE_ALIGN u8 _shininessTablePending[128];
 	CACHE_ALIGN u8 _shininessTableApplied[128];
@@ -1035,10 +867,8 @@ protected:
 	u8 _vecTranslateCurrentIndex;
 	
 	u32 _vtxColor15;
-	FragmentColor _vtxColor555X;
-	FragmentColor _vtxColor666X;
-	float _vtxColorFloat[4];
-	float _texCoordTransformedFloat[2];
+	Color4u8 _vtxColor555X;
+	Color4u8 _vtxColor666X;
 	
 	bool _doesViewportNeedUpdate;
 	bool _doesVertexColorNeedUpdate;
@@ -1062,7 +892,7 @@ protected:
 	u8 _boxTestCoordCurrentIndex;
 	u8 _positionTestCoordCurrentIndex;
 	CACHE_ALIGN u16 _boxTestCoord16[6];
-	CACHE_ALIGN VertexCoord32x4 _positionTestVtx32;
+	CACHE_ALIGN Vector4s32 _positionTestVtx32;
 	
 	u32 _regLightColor[4];
 	u32 _regLightDirection[4];
@@ -1072,8 +902,8 @@ protected:
 	u16 _regEmission;
 	u8 _shininessTablePendingIndex;
 	
-	CACHE_ALIGN Vector32x4 _vecLightDirectionTransformed[4];
-	CACHE_ALIGN Vector32x4 _vecLightDirectionHalfNegative[4];
+	CACHE_ALIGN Vector4s32 _vecLightDirectionTransformed[4];
+	CACHE_ALIGN Vector4s32 _vecLightDirectionHalfNegative[4];
 	bool _doesLightHalfVectorNeedUpdate[4];
 	
 	// This enum serves no real functional purpose except to be used for save state compatibility.
@@ -1131,24 +961,24 @@ public:
 	void SetViewport(const IOREG_VIEWPORT regViewport);
 	void SetViewport(const GFX3D_Viewport viewport);
 	void SetVertexColor(const u32 param);
-	void SetVertexColor(const FragmentColor vtxColor555X);
+	void SetVertexColor(const Color4u8 vtxColor555X);
 	void SetTextureParameters(const u32 param);
 	void SetTextureParameters(const TEXIMAGE_PARAM texParams);
 	void SetTexturePalette(const u32 texPalette);
-	void SetTextureCoordinates(const u32 param);
-	void SetTextureCoordinates(const VertexCoord16x2 &texCoord16);
+	void SetTextureCoordinates2s16(const u32 param);
+	void SetTextureCoordinates2s16(const Vector2s16 &texCoord16);
 	
 	void VertexListBegin(const u32 param, const POLYGON_ATTR polyAttr);
 	void VertexListBegin(const PolygonPrimitiveType vtxFormat, const POLYGON_ATTR polyAttr);
 	void VertexListEnd();
-	bool SetCurrentVertex16x2(const u32 param);
-	bool SetCurrentVertex16x2(const VertexCoord16x2 inVtxCoord16x2);
-	void SetCurrentVertex10x3(const u32 param);
-	void SetCurrentVertex(const VertexCoord16x3 inVtxCoord16x3);
-	template<size_t ONE, size_t TWO> void SetCurrentVertex16x2Immediate(const u32 param);
-	template<size_t ONE, size_t TWO> void SetCurrentVertex16x2Immediate(const VertexCoord16x2 inVtxCoord16x2);
-	void SetCurrentVertex10x3Relative(const u32 param);
-	void SetCurrentVertexRelative(const VertexCoord16x3 inVtxCoord16x3);
+	bool SetCurrentVertexPosition2s16(const u32 param);
+	bool SetCurrentVertexPosition2s16(const Vector2s16 inVtxCoord16x2);
+	void SetCurrentVertexPosition3s10(const u32 param);
+	void SetCurrentVertexPosition(const Vector3s16 inVtxCoord16x3);
+	template<size_t ONE, size_t TWO> void SetCurrentVertexPosition2s16Immediate(const u32 param);
+	template<size_t ONE, size_t TWO> void SetCurrentVertexPosition2s16Immediate(const Vector2s16 inVtxCoord16x2);
+	void SetCurrentVertexPosition3s10Relative(const u32 param);
+	void SetCurrentVertexPositionRelative(const Vector3s16 inVtxCoord16x3);
 	void AddCurrentVertexToList(GFX3D_GeometryList &targetGList);
 	void GeneratePolygon(POLY &targetPoly, GFX3D_GeometryList &targetGList);
 	

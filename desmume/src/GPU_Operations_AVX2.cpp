@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2021-2022 DeSmuME team
+	Copyright (C) 2021-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2505,7 +2505,7 @@ void GPUEngineBase::_MosaicLine(GPUEngineCompositorInfo &compInfo)
 }
 
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
-void GPUEngineBase::_CompositeNativeLineOBJ_LoopOp(GPUEngineCompositorInfo &compInfo, const u16 *__restrict srcColorNative16, const FragmentColor *__restrict srcColorNative32)
+void GPUEngineBase::_CompositeNativeLineOBJ_LoopOp(GPUEngineCompositorInfo &compInfo, const u16 *__restrict srcColorNative16, const Color4u8 *__restrict srcColorNative32)
 {
 	static const size_t step = sizeof(v256u8);
 	
@@ -2749,10 +2749,10 @@ size_t GPUEngineBase::_CompositeVRAMLineDeferred_LoopOp(GPUEngineCompositorInfo 
 			case NDSColorFormat_BGR888_Rev:
 			{
 				const v256u32 src32[4] = {
-					_mm256_load_si256((v256u32 *)((FragmentColor *)vramColorPtr + i) + 0),
-					_mm256_load_si256((v256u32 *)((FragmentColor *)vramColorPtr + i) + 1),
-					_mm256_load_si256((v256u32 *)((FragmentColor *)vramColorPtr + i) + 2),
-					_mm256_load_si256((v256u32 *)((FragmentColor *)vramColorPtr + i) + 3)
+					_mm256_load_si256((v256u32 *)((Color4u8 *)vramColorPtr + i) + 0),
+					_mm256_load_si256((v256u32 *)((Color4u8 *)vramColorPtr + i) + 1),
+					_mm256_load_si256((v256u32 *)((Color4u8 *)vramColorPtr + i) + 2),
+					_mm256_load_si256((v256u32 *)((Color4u8 *)vramColorPtr + i) + 3)
 				};
 				
 				if (LAYERTYPE != GPULayerType_OBJ)
@@ -2906,7 +2906,7 @@ void GPUEngineBase::_PerformWindowTestingNative(GPUEngineCompositorInfo &compInf
 }
 
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
-size_t GPUEngineA::_RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const FragmentColor *__restrict srcLinePtr)
+size_t GPUEngineA::_RenderLine_Layer3D_LoopOp(GPUEngineCompositorInfo &compInfo, const u8 *__restrict windowTestPtr, const u8 *__restrict colorEffectEnablePtr, const Color4u8 *__restrict srcLinePtr)
 {
 	static const size_t step = sizeof(v256u32);
 	

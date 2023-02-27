@@ -1163,7 +1163,7 @@ OpenGLRenderer::OpenGLRenderer()
 	memset(ref, 0, sizeof(OGLRenderRef));
 	
 	_mappedFramebuffer = NULL;
-	_workingTextureUnpackBuffer = (FragmentColor *)malloc_alignedCacheLine(1024 * 1024 * sizeof(FragmentColor));
+	_workingTextureUnpackBuffer = (Color4u8 *)malloc_alignedCacheLine(1024 * 1024 * sizeof(Color4u8));
 	_pixelReadNeedsFinish = false;
 	_needsZeroDstAlphaPass = true;
 	_currentPolyIndex = 0;
@@ -1352,8 +1352,8 @@ bool OpenGLRenderer::IsVersionSupported(unsigned int checkVersionMajor, unsigned
 	return result;
 }
 
-Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const FragmentColor *__restrict srcFramebuffer,
-																   FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16,
+Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Color4u8 *__restrict srcFramebuffer,
+																   Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16,
 																   bool doFramebufferFlip, bool doFramebufferConvert)
 {
 	if ( ((dstFramebufferMain == NULL) && (dstFramebuffer16 == NULL)) || (srcFramebuffer == NULL) )
@@ -1389,7 +1389,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 #endif
 				for (; i < this->_framebufferPixCount; i++)
 				{
-					dstFramebufferMain[i].color = ColorspaceCopy32<false>(srcFramebuffer[i]);
+					dstFramebufferMain[i].value = ColorspaceCopy32<false>(srcFramebuffer[i]);
 					dstFramebuffer16[i]         = ColorspaceConvert8888To5551<false>(srcFramebuffer[i]);
 				}
 				
@@ -1429,7 +1429,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 #endif
 					for (; i < this->_framebufferPixCount; i++)
 					{
-						dstFramebufferMain[i].color = ColorspaceConvert8888To6665<true>(srcFramebuffer[i]);
+						dstFramebufferMain[i].value = ColorspaceConvert8888To6665<true>(srcFramebuffer[i]);
 						dstFramebuffer16[i]         = ColorspaceConvert8888To5551<true>(srcFramebuffer[i]);
 					}
 					
@@ -1467,7 +1467,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 #endif
 					for (; i < this->_framebufferPixCount; i++)
 					{
-						dstFramebufferMain[i].color = ColorspaceCopy32<true>(srcFramebuffer[i]);
+						dstFramebufferMain[i].value = ColorspaceCopy32<true>(srcFramebuffer[i]);
 						dstFramebuffer16[i]         = ColorspaceConvert8888To5551<true>(srcFramebuffer[i]);
 					}
 					
@@ -1514,7 +1514,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 #endif
 					for (; x < pixCount; x++, ir++, iw++)
 					{
-						dstFramebufferMain[iw].color = ColorspaceCopy32<false>(srcFramebuffer[ir]);
+						dstFramebufferMain[iw].value = ColorspaceCopy32<false>(srcFramebuffer[ir]);
 						dstFramebuffer16[iw]         = ColorspaceConvert8888To5551<false>(srcFramebuffer[ir]);
 					}
 				}
@@ -1566,7 +1566,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 #endif
 						for (; x < pixCount; x++, ir++, iw++)
 						{
-							dstFramebufferMain[iw].color = ColorspaceConvert8888To6665<true>(srcFramebuffer[ir]);
+							dstFramebufferMain[iw].value = ColorspaceConvert8888To6665<true>(srcFramebuffer[ir]);
 							dstFramebuffer16[iw]         = ColorspaceConvert8888To5551<true>(srcFramebuffer[ir]);
 						}
 					}
@@ -1616,7 +1616,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 #endif
 						for (; x < pixCount; x++, ir++, iw++)
 						{
-							dstFramebufferMain[iw].color = ColorspaceCopy32<true>(srcFramebuffer[ir]);
+							dstFramebufferMain[iw].value = ColorspaceCopy32<true>(srcFramebuffer[ir]);
 							dstFramebuffer16[iw]         = ColorspaceConvert8888To5551<true>(srcFramebuffer[ir]);
 						}
 					}
@@ -1649,7 +1649,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer::FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16)
+Render3DError OpenGLRenderer::FlushFramebuffer(const Color4u8 *__restrict srcFramebuffer, Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16)
 {
 	if (this->willFlipAndConvertFramebufferOnGPU && this->isPBOSupported)
 	{
@@ -1666,7 +1666,7 @@ Render3DError OpenGLRenderer::FlushFramebuffer(const FragmentColor *__restrict s
 	return RENDER3DERROR_NOERR;
 }
 
-FragmentColor* OpenGLRenderer::GetFramebuffer()
+Color4u8* OpenGLRenderer::GetFramebuffer()
 {
 	return (this->willFlipAndConvertFramebufferOnGPU && this->isPBOSupported) ? this->_mappedFramebuffer : GPU->GetEngineMain()->Get3DFramebufferMain();
 }
@@ -2683,7 +2683,7 @@ Render3DError OpenGLRenderer_1_2::CreatePBOs()
 	glGenBuffersARB(1, &OGLRef.pboRenderDataID);
 	glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, OGLRef.pboRenderDataID);
 	glBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, this->_framebufferColorSizeBytes, NULL, GL_STREAM_READ_ARB);
-	this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
+	this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
 	
 	return OGLERROR_NOERR;
 }
@@ -4352,11 +4352,11 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 	if (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported)
 	{
 		const u8 alpha8 = (renderState.DISP3DCNT.EnableAntialiasing) ? 0x80 : 0xFF;
-		FragmentColor edgeColor32[8];
+		Color4u8 edgeColor32[8];
 		
 		for (size_t i = 0; i < 8; i++)
 		{
-			edgeColor32[i].color = COLOR555TO8888(renderState.edgeMarkColorTable[i] & 0x7FFF, alpha8);
+			edgeColor32[i].value = COLOR555TO8888(renderState.edgeMarkColorTable[i] & 0x7FFF, alpha8);
 		}
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
@@ -4760,7 +4760,7 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
+Render3DError OpenGLRenderer_1_2::ClearUsingValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -5250,7 +5250,7 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 		
 		if (this->isPBOSupported)
 		{
-			this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
+			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
 		}
 		else
 		{
@@ -5273,7 +5273,7 @@ Render3DError OpenGLRenderer_1_2::RenderFlush(bool willFlushBuffer32, bool willF
 		return RENDER3DERROR_NOERR;
 	}
 	
-	FragmentColor *framebufferMain = (willFlushBuffer32) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
+	Color4u8 *framebufferMain = (willFlushBuffer32) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
 	u16 *framebuffer16 = (willFlushBuffer16) ? GPU->GetEngineMain()->Get3DFramebuffer16() : NULL;
 	
 	if (this->isPBOSupported)
@@ -5305,7 +5305,7 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	
 	glFinish();
 	
-	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
+	const size_t newFramebufferColorSizeBytes = w * h * sizeof(Color4u8);
 	
 	if (this->isPBOSupported)
 	{
@@ -5319,7 +5319,7 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		
 		if (this->_mappedFramebuffer != NULL)
 		{
-			this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
+			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
 			glFinish();
 		}
 	}
@@ -5363,8 +5363,8 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	}
 	else
 	{
-		FragmentColor *oldFramebufferColor = this->_framebufferColor;
-		FragmentColor *newFramebufferColor = (FragmentColor *)malloc_alignedCacheLine(newFramebufferColorSizeBytes);
+		Color4u8 *oldFramebufferColor = this->_framebufferColor;
+		Color4u8 *newFramebufferColor = (Color4u8 *)malloc_alignedCacheLine(newFramebufferColorSizeBytes);
 		this->_framebufferColor = newFramebufferColor;
 		free_aligned(oldFramebufferColor);
 	}
@@ -5562,11 +5562,11 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 	if (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported)
 	{
 		const u8 alpha8 = (renderState.DISP3DCNT.EnableAntialiasing) ? 0x80 : 0xFF;
-		FragmentColor edgeColor32[8];
+		Color4u8 edgeColor32[8];
 		
 		for (size_t i = 0; i < 8; i++)
 		{
-			edgeColor32[i].color = COLOR555TO8888(renderState.edgeMarkColorTable[i] & 0x7FFF, alpha8);
+			edgeColor32[i].value = COLOR555TO8888(renderState.edgeMarkColorTable[i] & 0x7FFF, alpha8);
 		}
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
@@ -5661,7 +5661,7 @@ Render3DError OpenGLRenderer_2_1::RenderFinish()
 			return OGLERROR_BEGINGL_FAILED;
 		}
 		
-		this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+		this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 		
 		ENDGL();
 	}
@@ -5679,7 +5679,7 @@ Render3DError OpenGLRenderer_2_1::RenderFlush(bool willFlushBuffer32, bool willF
 		return RENDER3DERROR_NOERR;
 	}
 	
-	FragmentColor *framebufferMain = (willFlushBuffer32) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
+	Color4u8 *framebufferMain = (willFlushBuffer32) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
 	u16 *framebuffer16 = (willFlushBuffer16) ? GPU->GetEngineMain()->Get3DFramebuffer16() : NULL;
 	
 	this->FlushFramebuffer(this->_mappedFramebuffer, framebufferMain, framebuffer16);

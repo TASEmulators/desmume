@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2022 DeSmuME team
+	Copyright (C) 2016-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -753,10 +753,10 @@ void ColorspaceApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensi
 #endif
 			for (; i < pixCount; i++)
 			{
-				FragmentColor dstColor;
-				dstColor.color = dst[i];
+				Color4u8 dstColor;
+				dstColor.value = dst[i];
 				
-				FragmentColor &outColor = (FragmentColor &)dst[i];
+				Color4u8 &outColor = (Color4u8 &)dst[i];
 				outColor.r = dstColor.b;
 				outColor.b = dstColor.r;
 			}
@@ -786,10 +786,10 @@ void ColorspaceApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensi
 #endif
 		for (; i < pixCount; i++)
 		{
-			FragmentColor dstColor;
-			dstColor.color = dst[i];
+			Color4u8 dstColor;
+			dstColor.value = dst[i];
 			
-			FragmentColor &outColor = (FragmentColor &)dst[i];
+			Color4u8 &outColor = (Color4u8 &)dst[i];
 			outColor.r = (u8)( ((u16)dstColor.b * intensity_u16) >> 16 );
 			outColor.g = (u8)( ((u16)dstColor.g * intensity_u16) >> 16 );
 			outColor.b = (u8)( ((u16)dstColor.r * intensity_u16) >> 16 );
@@ -802,7 +802,7 @@ void ColorspaceApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensi
 #endif
 		for (; i < pixCount; i++)
 		{
-			FragmentColor &outColor = (FragmentColor &)dst[i];
+			Color4u8 &outColor = (Color4u8 &)dst[i];
 			outColor.r = (u8)( ((u16)outColor.r * intensity_u16) >> 16 );
 			outColor.g = (u8)( ((u16)outColor.g * intensity_u16) >> 16 );
 			outColor.b = (u8)( ((u16)outColor.b * intensity_u16) >> 16 );
@@ -1333,7 +1333,7 @@ size_t ColorspaceHandler::ApplyIntensityToBuffer32(u32 *dst, size_t pixCount, fl
 	
 	for (; i < pixCount; i++)
 	{
-		FragmentColor &outColor = (FragmentColor &)dst[i];
+		Color4u8 &outColor = (Color4u8 &)dst[i];
 		outColor.r = (u8)( ((u16)outColor.r * intensity_u16) >> 16 );
 		outColor.g = (u8)( ((u16)outColor.g * intensity_u16) >> 16 );
 		outColor.b = (u8)( ((u16)outColor.b * intensity_u16) >> 16 );
@@ -1350,10 +1350,10 @@ size_t ColorspaceHandler::ApplyIntensityToBuffer32_SwapRB(u32 *dst, size_t pixCo
 	{
 		for (; i < pixCount; i++)
 		{
-			FragmentColor dstColor;
-			dstColor.color = dst[i];
+			Color4u8 dstColor;
+			dstColor.value = dst[i];
 			
-			FragmentColor &outColor = (FragmentColor &)dst[i];
+			Color4u8 &outColor = (Color4u8 &)dst[i];
 			outColor.r = dstColor.b;
 			outColor.b = dstColor.r;
 		}
@@ -1374,10 +1374,10 @@ size_t ColorspaceHandler::ApplyIntensityToBuffer32_SwapRB(u32 *dst, size_t pixCo
 	
 	for (; i < pixCount; i++)
 	{
-		FragmentColor dstColor;
-		dstColor.color = dst[i];
+		Color4u8 dstColor;
+		dstColor.value = dst[i];
 		
-		FragmentColor &outColor = (FragmentColor &)dst[i];
+		Color4u8 &outColor = (Color4u8 &)dst[i];
 		outColor.r = (u8)( ((u16)dstColor.b * intensity_u16) >> 16 );
 		outColor.g = (u8)( ((u16)dstColor.g * intensity_u16) >> 16 );
 		outColor.b = (u8)( ((u16)dstColor.r * intensity_u16) >> 16 );

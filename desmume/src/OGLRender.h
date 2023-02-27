@@ -366,23 +366,26 @@ enum OGLPolyDrawMode
 
 union GLvec2
 {
+	GLfloat vec[2];
 	struct { GLfloat x, y; };
-	GLfloat v[2];
 };
+typedef union GLvec2 GLvec2;
 
 union GLvec3
 {
+	GLfloat vec[3];
 	struct { GLfloat r, g, b; };
 	struct { GLfloat x, y, z; };
-	GLfloat v[3];
 };
+typedef union GLvec3 GLvec3;
 
 union GLvec4
 {
+	GLfloat vec[4];
 	struct { GLfloat r, g, b, a; };
 	struct { GLfloat x, y, z, w; };
-	GLfloat v[4];
 };
+typedef union GLvec4 GLvec4;
 
 struct OGLVertex
 {
@@ -390,6 +393,7 @@ struct OGLVertex
 	GLvec2 texCoord;
 	GLvec3 color;
 };
+typedef struct OGLVertex OGLVertex;
 
 struct OGLRenderStates
 {
@@ -405,6 +409,7 @@ struct OGLRenderStates
 	GLvec4 edgeColor[8];
 	GLvec4 toonColor[32];
 };
+typedef struct OGLRenderStates OGLRenderStates;
 
 union OGLPolyStates
 {
@@ -429,6 +434,7 @@ union OGLPolyStates
 		u8 :7;
 	};
 };
+typedef union OGLPolyStates OGLPolyStates;
 
 union OGLGeometryFlags
 {
@@ -602,6 +608,7 @@ struct OGLRenderRef
 	CACHE_ALIGN GLuint workingCIDepthStencilBuffer[2][GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN GLuint workingCIFogAttributesBuffer[2][GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 };
+typedef struct OGLRenderRef OGLRenderRef;
 
 struct GFX3D_State;
 struct POLY;
@@ -696,8 +703,8 @@ private:
 	unsigned int versionRevision;
 	
 private:
-	Render3DError _FlushFramebufferFlipAndConvertOnCPU(const FragmentColor *__restrict srcFramebuffer,
-													   FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16,
+	Render3DError _FlushFramebufferFlipAndConvertOnCPU(const Color4u8 *__restrict srcFramebuffer,
+													   Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16,
 													   bool doFramebufferFlip, bool doFramebufferConvert);
 	
 protected:
@@ -721,8 +728,8 @@ protected:
 	bool _emulateDepthLEqualPolygonFacing;
 	bool _isDepthLEqualPolygonFacingSupported;
 	
-	FragmentColor *_mappedFramebuffer;
-	FragmentColor *_workingTextureUnpackBuffer;
+	Color4u8 *_mappedFramebuffer;
+	Color4u8 *_workingTextureUnpackBuffer;
 	bool _pixelReadNeedsFinish;
 	bool _needsZeroDstAlphaPass;
 	size_t _currentPolyIndex;
@@ -738,7 +745,7 @@ protected:
 	int _selectedMultisampleSize;
 	size_t _clearImageIndex;
 	
-	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
+	Render3DError FlushFramebuffer(const Color4u8 *__restrict srcFramebuffer, Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
 	
 	template<OGLPolyDrawMode DRAWMODE> size_t DrawPolygonsForIndexRange(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
@@ -824,7 +831,7 @@ public:
 	void SetVersion(unsigned int major, unsigned int minor, unsigned int revision);
 	bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision) const;
 	
-	virtual FragmentColor* GetFramebuffer();
+	virtual Color4u8* GetFramebuffer();
 	virtual GLsizei GetLimitedMultisampleSize() const;
 	
 	Render3DError ApplyRenderingSettings(const GFX3D_State &renderState);
@@ -885,7 +892,7 @@ protected:
 	virtual Render3DError EndRender();
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID);
-	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	virtual Render3DError ClearUsingValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 	virtual void SetPolygonIndex(const size_t index);
 	virtual Render3DError SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer, bool isBackFacing);

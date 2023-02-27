@@ -79,18 +79,6 @@ enum NDSColorFormat
 	NDSColorFormat_BGR888_Rev		= 0x20008208
 };
 
-union FragmentColor
-{
-	u8 component[4];
-	
-	struct
-	{
-		u8 r,g,b,a;
-	};
-	
-	u32 color;
-};
-
 extern CACHE_ALIGN const u32 material_5bit_to_31bit[32];
 extern CACHE_ALIGN const u8 material_5bit_to_6bit[64];   // Padded for vector lookup table routines. Only the first 32 indices are valid. Data is mirrored across 256-bit lanes.
 extern CACHE_ALIGN const u8 material_5bit_to_8bit[64];   // Padded for vector lookup table routines. Only the first 32 indices are valid. Data is mirrored across 256-bit lanes.
@@ -139,49 +127,49 @@ FORCEINLINE u32 ColorspaceConvert555To6665Opaque(const u16 src)
 }
 
 template <bool SWAP_RB>
-FORCEINLINE u32 ColorspaceConvert8888To6665(FragmentColor srcColor)
+FORCEINLINE u32 ColorspaceConvert8888To6665(Color4u8 srcColor)
 {
-	FragmentColor outColor;
+	Color4u8 outColor;
 	outColor.r = ((SWAP_RB) ? srcColor.b : srcColor.r) >> 2;
 	outColor.g = srcColor.g >> 2;
 	outColor.b = ((SWAP_RB) ? srcColor.r : srcColor.b) >> 2;
 	outColor.a = srcColor.a >> 3;
 	
-	return outColor.color;
+	return outColor.value;
 }
 
 template <bool SWAP_RB>
 FORCEINLINE u32 ColorspaceConvert8888To6665(u32 srcColor)
 {
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
+	Color4u8 srcColorComponent;
+	srcColorComponent.value = srcColor;
 	
 	return ColorspaceConvert8888To6665<SWAP_RB>(srcColorComponent);
 }
 
 template <bool SWAP_RB>
-FORCEINLINE u32 ColorspaceConvert6665To8888(FragmentColor srcColor)
+FORCEINLINE u32 ColorspaceConvert6665To8888(Color4u8 srcColor)
 {
-	FragmentColor outColor;
+	Color4u8 outColor;
 	outColor.r = material_6bit_to_8bit[((SWAP_RB) ? srcColor.b : srcColor.r)];
 	outColor.g = material_6bit_to_8bit[srcColor.g];
 	outColor.b = material_6bit_to_8bit[((SWAP_RB) ? srcColor.r : srcColor.b)];
 	outColor.a = material_5bit_to_8bit[srcColor.a];
 	
-	return outColor.color;
+	return outColor.value;
 }
 
 template <bool SWAP_RB>
 FORCEINLINE u32 ColorspaceConvert6665To8888(u32 srcColor)
 {
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
+	Color4u8 srcColorComponent;
+	srcColorComponent.value = srcColor;
 	
 	return ColorspaceConvert6665To8888<SWAP_RB>(srcColorComponent);
 }
 
 template <bool SWAP_RB>
-FORCEINLINE u16 ColorspaceConvert8888To5551(FragmentColor srcColor)
+FORCEINLINE u16 ColorspaceConvert8888To5551(Color4u8 srcColor)
 {
 	return R5G5B5TORGB15( ((SWAP_RB) ? srcColor.b : srcColor.r) >> 3, srcColor.g >> 3, ((SWAP_RB) ? srcColor.r : srcColor.b) >> 3) | ((srcColor.a == 0) ? 0x0000 : 0x8000 );
 }
@@ -189,14 +177,14 @@ FORCEINLINE u16 ColorspaceConvert8888To5551(FragmentColor srcColor)
 template <bool SWAP_RB>
 FORCEINLINE u16 ColorspaceConvert8888To5551(u32 srcColor)
 {
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
+	Color4u8 srcColorComponent;
+	srcColorComponent.value = srcColor;
 	
 	return ColorspaceConvert8888To5551<SWAP_RB>(srcColorComponent);
 }
 
 template <bool SWAP_RB>
-FORCEINLINE u16 ColorspaceConvert6665To5551(FragmentColor srcColor)
+FORCEINLINE u16 ColorspaceConvert6665To5551(Color4u8 srcColor)
 {
 	return R6G6B6TORGB15( ((SWAP_RB) ? srcColor.b : srcColor.r), srcColor.g, ((SWAP_RB) ? srcColor.r : srcColor.b)) | ((srcColor.a == 0) ? 0x0000 : 0x8000);
 }
@@ -204,35 +192,35 @@ FORCEINLINE u16 ColorspaceConvert6665To5551(FragmentColor srcColor)
 template <bool SWAP_RB>
 FORCEINLINE u16 ColorspaceConvert6665To5551(u32 srcColor)
 {
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
+	Color4u8 srcColorComponent;
+	srcColorComponent.value = srcColor;
 	
 	return ColorspaceConvert6665To5551<SWAP_RB>(srcColorComponent);
 }
 
 template <bool SWAP_RB>
-FORCEINLINE u32 ColorspaceConvert888XTo8888Opaque(FragmentColor srcColor)
+FORCEINLINE u32 ColorspaceConvert888XTo8888Opaque(Color4u8 srcColor)
 {
-	FragmentColor outColor;
+	Color4u8 outColor;
 	outColor.r = (SWAP_RB) ? srcColor.b : srcColor.r;
 	outColor.g = srcColor.g;
 	outColor.b = (SWAP_RB) ? srcColor.r : srcColor.b;
 	outColor.a = 0xFF;
 	
-	return outColor.color;
+	return outColor.value;
 }
 
 template <bool SWAP_RB>
 FORCEINLINE u32 ColorspaceConvert888XTo8888Opaque(u32 srcColor)
 {
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
+	Color4u8 srcColorComponent;
+	srcColorComponent.value = srcColor;
 	
 	return ColorspaceConvert888XTo8888Opaque<SWAP_RB>(srcColorComponent);
 }
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert888XTo888(FragmentColor srcColor, u8 *dst)
+FORCEINLINE void ColorspaceConvert888XTo888(Color4u8 srcColor, u8 *dst)
 {
 	dst[0] = (SWAP_RB) ? srcColor.b : srcColor.r;
 	dst[1] = srcColor.g;
@@ -242,8 +230,8 @@ FORCEINLINE void ColorspaceConvert888XTo888(FragmentColor srcColor, u8 *dst)
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert888XTo888(u32 srcColor, u8 *dst)
 {
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
+	Color4u8 srcColorComponent;
+	srcColorComponent.value = srcColor;
 	
 	ColorspaceConvert888XTo888<SWAP_RB>(srcColorComponent, dst);
 }
@@ -251,8 +239,8 @@ FORCEINLINE void ColorspaceConvert888XTo888(u32 srcColor, u8 *dst)
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert555XTo888(u16 srcColor, u8 *dst)
 {
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = ColorspaceConvert555To8888Opaque<SWAP_RB>(srcColor);
+	Color4u8 srcColorComponent;
+	srcColorComponent.value = ColorspaceConvert555To8888Opaque<SWAP_RB>(srcColor);
 	
 	ColorspaceConvert888XTo888<false>(srcColorComponent, dst);
 }
@@ -264,22 +252,22 @@ FORCEINLINE u16 ColorspaceCopy16(u16 srcColor)
 }
 
 template <bool SWAP_RB>
-FORCEINLINE u32 ColorspaceCopy32(FragmentColor srcColor)
+FORCEINLINE u32 ColorspaceCopy32(Color4u8 srcColor)
 {
-	FragmentColor outColor;
+	Color4u8 outColor;
 	outColor.r = (SWAP_RB) ? srcColor.b : srcColor.r;
 	outColor.g = srcColor.g;
 	outColor.b = (SWAP_RB) ? srcColor.r : srcColor.b;
 	outColor.a = srcColor.a;
 	
-	return outColor.color;
+	return outColor.value;
 }
 
 template <bool SWAP_RB>
 FORCEINLINE u32 ColorspaceCopy32(u32 srcColor)
 {
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
+	Color4u8 srcColorComponent;
+	srcColorComponent.value = srcColor;
 	
 	return ColorspaceCopy32<SWAP_RB>(srcColorComponent);
 }
@@ -308,9 +296,9 @@ FORCEINLINE u16 ColorspaceApplyIntensity16(u16 srcColor, float intensity)
 }
 
 template <bool SWAP_RB>
-FORCEINLINE u32 ColorspaceApplyIntensity32(FragmentColor srcColor, float intensity)
+FORCEINLINE u32 ColorspaceApplyIntensity32(Color4u8 srcColor, float intensity)
 {
-	FragmentColor outColor;
+	Color4u8 outColor;
 	outColor.r = ((SWAP_RB) ? srcColor.b : srcColor.r);
 	outColor.g = srcColor.g;
 	outColor.b = ((SWAP_RB) ? srcColor.r : srcColor.b);
@@ -318,11 +306,11 @@ FORCEINLINE u32 ColorspaceApplyIntensity32(FragmentColor srcColor, float intensi
 	
 	if (intensity > 0.999f)
 	{
-		return outColor.color;
+		return outColor.value;
 	}
 	else if (intensity < 0.001f)
 	{
-		return (outColor.color & 0xFF000000);
+		return (outColor.value & 0xFF000000);
 	}
 	
 	const u16 intensity_u16 = (u16)(intensity * (float)(0xFFFF));
@@ -331,14 +319,14 @@ FORCEINLINE u32 ColorspaceApplyIntensity32(FragmentColor srcColor, float intensi
 	outColor.b = (u8)( ((u16)outColor.b * intensity_u16) >> 16 );
 	outColor.a = outColor.a;
 	
-	return outColor.color;
+	return outColor.value;
 }
 
 template <bool SWAP_RB>
 FORCEINLINE u32 ColorspaceApplyIntensity32(u32 srcColor, float intensity)
 {
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
+	Color4u8 srcColorComponent;
+	srcColorComponent.value = srcColor;
 	
 	return ColorspaceApplyIntensity32<SWAP_RB>(srcColorComponent);
 }
@@ -426,12 +414,5 @@ public:
 	size_t ApplyIntensityToBuffer32_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const;
 	size_t ApplyIntensityToBuffer32_SwapRB_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const;
 };
-
-FORCEINLINE FragmentColor MakeFragmentColor(const u8 r, const u8 g, const u8 b, const u8 a)
-{
-	FragmentColor ret;
-	ret.r = r; ret.g = g; ret.b = b; ret.a = a;
-	return ret;
-}
 
 #endif /* COLORSPACEHANDLER_H */

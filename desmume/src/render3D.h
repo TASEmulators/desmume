@@ -156,9 +156,9 @@ protected:
 	size_t _framebufferPixCount;
 	size_t _framebufferSIMDPixCount;
 	size_t _framebufferColorSizeBytes;
-	FragmentColor *_framebufferColor;
+	Color4u8 *_framebufferColor;
 	
-	FragmentColor _clearColor6665;
+	Color4u8 _clearColor6665;
 	FragmentAttributes _clearAttributes;
 	
 	NDSColorFormat _internalRenderingFormat;
@@ -203,10 +203,10 @@ protected:
 	virtual Render3DError RenderGeometry();
 	virtual Render3DError PostprocessFramebuffer();
 	virtual Render3DError EndRender();
-	virtual Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
+	virtual Render3DError FlushFramebuffer(const Color4u8 *__restrict srcFramebuffer, Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID);
-	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	virtual Render3DError ClearUsingValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 	virtual Render3DError SetupViewport(const GFX3D_Viewport viewport);
@@ -258,7 +258,7 @@ public:
 	
 	virtual NDSColorFormat GetColorFormat() const;							// The output color format of the 3D renderer.
 	
-	virtual FragmentColor* GetFramebuffer();
+	virtual Color4u8* GetFramebuffer();
 	
 	bool GetRenderNeedsFinish() const;
 	void SetRenderNeedsFinish(const bool renderNeedsFinish);
