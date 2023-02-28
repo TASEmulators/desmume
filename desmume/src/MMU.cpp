@@ -3665,22 +3665,22 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				case REG_IF+3: REG_IF_WriteByte<ARMCPU_ARM9>(3,val); break;
 					
 				case eng_3D_CLEAR_COLOR:
-					HostWriteByte(MMU.ARM9_REG, 0x0350, val);
+					T1WriteByte(MMU.ARM9_REG, 0x0350, val);
 					gfx3d_glClearColor<u8>(0, val);
 					return;
 					
 				case eng_3D_CLEAR_COLOR+1:
-					HostWriteByte(MMU.ARM9_REG, 0x0351, val);
+					T1WriteByte(MMU.ARM9_REG, 0x0351, val);
 					gfx3d_glClearColor<u8>(1, val);
 					return;
 					
 				case eng_3D_CLEAR_COLOR+2:
-					HostWriteByte(MMU.ARM9_REG, 0x0352, val);
+					T1WriteByte(MMU.ARM9_REG, 0x0352, val);
 					gfx3d_glClearColor<u8>(2, val);
 					return;
 					
 				case eng_3D_CLEAR_COLOR+3:
-					HostWriteByte(MMU.ARM9_REG, 0x0353, val);
+					T1WriteByte(MMU.ARM9_REG, 0x0353, val);
 					gfx3d_glClearColor<u8>(3, val);
 					return;
 					

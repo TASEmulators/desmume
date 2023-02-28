@@ -2809,7 +2809,27 @@ void gfx3d_glFogOffset(const u32 v)
 template <typename T>
 void gfx3d_glClearColor(const u8 offset, const T v)
 {
+#ifndef MSB_FIRST
 	((T *)&gfx3d.pendingState.clearColor)[offset >> (sizeof(T) >> 1)] = v;
+#else
+	switch (sizeof(T))
+	{
+		case 1:
+			((T *)&gfx3d.pendingState.clearColor)[offset >> (sizeof(T) >> 1)] = v;
+			break;
+			
+		case 2:
+			((T *)&gfx3d.pendingState.clearColor)[offset >> (sizeof(T) >> 1)] = LE_TO_LOCAL_16(v);
+			break;
+			
+		case 4:
+			((T *)&gfx3d.pendingState.clearColor)[offset >> (sizeof(T) >> 1)] = LE_TO_LOCAL_32(v);
+			break;
+			
+		default:
+			break;
+	}
+#endif
 }
 
 template void gfx3d_glClearColor< u8>(const u8 offset, const  u8 v);
