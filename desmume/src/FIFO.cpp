@@ -1,7 +1,7 @@
 /*
 	Copyright 2006 yopyop
 	Copyright 2007 shash
-	Copyright 2007-2022 DeSmuME team
+	Copyright 2007-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -353,24 +353,24 @@ void DISP_FIFOsend(const T val)
 		case 1:
 		{
 #ifndef MSB_FIRST
-			HostWriteByte((u8 *)disp_fifo.buf, finalWriteAddress, val);
+			HostWriteByte((u8 *)disp_fifo.buf, (u32)finalWriteAddress, val);
 #else
 			switch (ADDROFFSET)
 			{
 				case 0:
-					HostWriteByte((u8 *)disp_fifo.buf, baseWriteAddress + 2, val);
+					HostWriteByte((u8 *)disp_fifo.buf, (u32)baseWriteAddress + 2, val);
 					break;
 					
 				case 1:
-					HostWriteByte((u8 *)disp_fifo.buf, baseWriteAddress + 3, val);
+					HostWriteByte((u8 *)disp_fifo.buf, (u32)baseWriteAddress + 3, val);
 					break;
 					
 				case 2:
-					HostWriteByte((u8 *)disp_fifo.buf, baseWriteAddress + 0, val);
+					HostWriteByte((u8 *)disp_fifo.buf, (u32)baseWriteAddress + 0, val);
 					break;
 					
 				case 3:
-					HostWriteByte((u8 *)disp_fifo.buf, baseWriteAddress + 1, val);
+					HostWriteByte((u8 *)disp_fifo.buf, (u32)baseWriteAddress + 1, val);
 					break;
 					
 				default:
@@ -392,16 +392,16 @@ void DISP_FIFOsend(const T val)
 		case 2:
 		{
 #ifndef MSB_FIRST
-			HostWriteWord((u8 *)disp_fifo.buf, finalWriteAddress, val);
+			HostWriteWord((u8 *)disp_fifo.buf, (u32)finalWriteAddress, val);
 #else
 			switch (ADDROFFSET)
 			{
 				case 0:
-					HostWriteWord((u8 *)disp_fifo.buf, baseWriteAddress + 2, val);
+					HostWriteWord((u8 *)disp_fifo.buf, (u32)baseWriteAddress + 2, val);
 					break;
 					
 				case 2:
-					HostWriteWord((u8 *)disp_fifo.buf, baseWriteAddress + 0, val);
+					HostWriteWord((u8 *)disp_fifo.buf, (u32)baseWriteAddress + 0, val);
 					break;
 					
 				default:
@@ -421,7 +421,7 @@ void DISP_FIFOsend(const T val)
 		}
 			
 		case 4:
-			HostWriteTwoWords((u8 *)disp_fifo.buf, finalWriteAddress, val);
+			HostWriteTwoWords((u8 *)disp_fifo.buf, (u32)finalWriteAddress, val);
 			disp_fifo.tail++;
 			break;
 			

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010 DeSmuME team
+	Copyright (C) 2010-2023 DeSmuME team
 
 	This file is based on System.DateTime.cs and System.TimeSpan.cs from mono-2.6.7
 
@@ -657,7 +657,6 @@ public:
 	DateTime AddMonths (int months) const
 	{
 		int day, month, year,  maxday ;
-		DateTime temp;
 
 		day = get_Day();
 		month = get_Month() + (months % 12);
@@ -677,7 +676,7 @@ public:
 		if (day > maxday)
 			day = maxday;
 
-		temp = (year, month, day);
+		DateTime temp(year, month, day);
 		return  temp.Add (get_TimeOfDay());
 	}
 
@@ -784,7 +783,7 @@ public:
 	std::string ToString() const
 	{
 		char tmp[32];
-		sprintf(tmp,"%04d-%s-%02d %02d:%02d:%02d:%03d",get_Year(),monthnames[get_Month()],get_Day(),get_Hour(),get_Minute(),get_Second(),get_Millisecond());
+		snprintf(tmp, sizeof(tmp), "%04d-%s-%02d %02d:%02d:%02d:%03d",get_Year(),monthnames[get_Month()],get_Day(),get_Hour(),get_Minute(),get_Second(),get_Millisecond());
 		return tmp;
 	}
 

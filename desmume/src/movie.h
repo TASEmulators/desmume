@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2018 DeSmuME team
+	Copyright 2008-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -179,7 +179,7 @@ public:
 	int advancedTiming;
 	int jitBlockSize;
 
-	int getNumRecords() { return records.size(); }
+	int getNumRecords() { return (int)records.size(); }
 
 	class TDictionary : public std::map<std::string,std::string>
 	{

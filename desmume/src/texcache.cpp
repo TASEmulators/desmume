@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2022 DeSmuME team
+	Copyright (C) 2008-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1757,7 +1757,7 @@ void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, co
 template <TextureStoreUnpackFormat TEXCACHEFORMAT>
 void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, const u16 *__restrict srcIndex, const u32 palAddress, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer)
 {
-	const u32 limit = srcSize * sizeof(u32);
+	const size_t limit = srcSize * sizeof(u32);
 	const u32 xTmpSize = sizeX >> 2;
 	const u32 yTmpSize = sizeY >> 2;
 	
