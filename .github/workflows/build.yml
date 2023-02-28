@@ -40,7 +40,7 @@ jobs:
           cd desmume/src/frontend/posix/
           autoreconf -i
           ./configure --prefix=/usr --enable-gdb-stub --enable-wifi
-          make -j
+          make -j8
           make DESTDIR=/tmp/DeSmuME install
 
       - name: Pack artifact
