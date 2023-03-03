@@ -1236,35 +1236,31 @@ void NDSGeometryEngine::SetNormal(const u32 param)
 	MatrixMultVec3x3(_mtxCurrent[MATRIXMODE_POSITION_VECTOR], normalTransformed.vec);
 
 	//apply lighting model
-	const s32 diffuse32[3] = {
+	const Color3s32 diffuse = {
 		(s32)( this->_regDiffuse        & 0x001F),
 		(s32)((this->_regDiffuse >>  5) & 0x001F),
 		(s32)((this->_regDiffuse >> 10) & 0x001F)
 	};
 
-	const s32 ambient32[3] = {
+	const Color3s32 ambient = {
 		(s32)( this->_regAmbient        & 0x001F),
 		(s32)((this->_regAmbient >>  5) & 0x001F),
 		(s32)((this->_regAmbient >> 10) & 0x001F)
 	};
 
-	const s32 emission32[3] = {
+	const Color3s32 emission = {
 		(s32)( this->_regEmission        & 0x001F),
 		(s32)((this->_regEmission >>  5) & 0x001F),
 		(s32)((this->_regEmission >> 10) & 0x001F)
 	};
 
-	const s32 specular32[3] = {
+	const Color3s32 specular = {
 		(s32)( this->_regSpecular        & 0x001F),
 		(s32)((this->_regSpecular >>  5) & 0x001F),
 		(s32)((this->_regSpecular >> 10) & 0x001F)
 	};
 
-	s32 vertexColor[3] = {
-		emission32[0],
-		emission32[1],
-		emission32[2]
-	};
+	Color3s32 vertexColor = emission;
 
 	const u8 lightMask = gfx3d.regPolyAttrApplied.LightMask;
 	
@@ -1275,7 +1271,7 @@ void NDSGeometryEngine::SetNormal(const u32 param)
 			continue;
 		}
 		
-		const s32 lightColor32[3] = {
+		const Color3s32 lightColor = {
 			(s32)( this->_regLightColor[i]        & 0x0000001F),
 			(s32)((this->_regLightColor[i] >>  5) & 0x0000001F),
 			(s32)((this->_regLightColor[i] >> 10) & 0x0000001F)
@@ -1317,17 +1313,17 @@ void NDSGeometryEngine::SetNormal(const u32 param)
 
 		for (size_t c = 0; c < 3; c++)
 		{
-			const s32 specComp = ((specular32[c] * lightColor32[c] * fixedshininess) >> 17); // 5 bits for color*color and 12 bits for shininess
-			const s32 diffComp = (( diffuse32[c] * lightColor32[c] * fixed_diffuse)  >> 17); // 5 bits for color*color and 12 bits for diffuse
-			const s32 ambComp  = (( ambient32[c] * lightColor32[c]) >> 5); // 5 bits for color*color
-			vertexColor[c] += specComp + diffComp + ambComp;
+			const s32 specComp = ((specular.component[c] * lightColor.component[c] * fixedshininess) >> 17); // 5 bits for color*color and 12 bits for shininess
+			const s32 diffComp = (( diffuse.component[c] * lightColor.component[c] * fixed_diffuse)  >> 17); // 5 bits for color*color and 12 bits for diffuse
+			const s32 ambComp  = (( ambient.component[c] * lightColor.component[c]) >> 5); // 5 bits for color*color
+			vertexColor.component[c] += specComp + diffComp + ambComp;
 		}
 	}
 	
 	const Color4u8 newVtxColor = {
-		(u8)std::min<s32>(31, vertexColor[0]),
-		(u8)std::min<s32>(31, vertexColor[1]),
-		(u8)std::min<s32>(31, vertexColor[2]),
+		(u8)std::min<s32>(31, vertexColor.r),
+		(u8)std::min<s32>(31, vertexColor.g),
+		(u8)std::min<s32>(31, vertexColor.b),
 		0
 	};
 	

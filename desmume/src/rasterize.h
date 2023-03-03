@@ -87,7 +87,7 @@ public:
 	s32 GetRenderHeightMask() const;
 	u32 GetRenderWidthShift() const;
 	
-	void GetRenderSamplerCoordinates(const u8 wrapMode, s32 &iu, s32 &iv) const;
+	void GetRenderSamplerCoordinates(const u8 wrapMode, Vector2s32 &sampleCoordInOut) const;
 	
 	void SetUseDeposterize(bool willDeposterize);
 	void SetScalingFactor(size_t scalingFactor);
@@ -107,16 +107,16 @@ protected:
 	u8 _textureWrapMode;
 	
 	Render3DError _SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
-	FORCEINLINE Color4u8 _sample(const float u, const float v);
+	FORCEINLINE Color4u8 _sample(const Vector2f32 &texCoord);
 	FORCEINLINE float _round_s(double val);
 	
-	template<bool ISSHADOWPOLYGON> FORCEINLINE void _shade(const PolygonMode polygonMode, const Color4u8 src, Color4u8 &dst, const float texCoordU, const float texCoordV);
-	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON> FORCEINLINE void _pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, float r, float g, float b, float invu, float invv, float z, float w);
+	template<bool ISSHADOWPOLYGON> FORCEINLINE void _shade(const PolygonMode polygonMode, const Color4u8 vtxColor, const Vector2f32 &texCoord, Color4u8 &outColor);
+	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON> FORCEINLINE void _pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, const Color4f32 &vtxColorFloat, float invu, float invv, float z, float w);
 	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> FORCEINLINE void _drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight);
 	template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> void _runscanlines(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const bool isHorizontal, edge_fx_fl *left, edge_fx_fl *right);
 	
 #ifdef ENABLE_SSE2
-	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON> FORCEINLINE void _pixel_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, const __m128 &srcColorf, float invu, float invv, float z, float w);
+	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON> FORCEINLINE void _pixel_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, const __m128 &vtxColorFloat, float invu, float invv, float z, float w);
 	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> FORCEINLINE void _drawscanline_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight);
 #endif
 	

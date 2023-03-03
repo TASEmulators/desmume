@@ -372,31 +372,34 @@ Render3DError RasterizerUnit<RENDERER>::_SetupTexture(const POLY &thePoly, size_
 }
 
 template<bool RENDERER>
-FORCEINLINE Color4u8 RasterizerUnit<RENDERER>::_sample(const float u, const float v)
+FORCEINLINE Color4u8 RasterizerUnit<RENDERER>::_sample(const Vector2f32 &texCoord)
 {
 	//finally, we can use floor here. but, it is slower than we want.
 	//the best solution is probably to wait until the pipeline is full of fixed point
-	const float fu = u * (float)this->_currentTexture->GetRenderWidth()  / (float)this->_currentTexture->GetWidth();
-	const float fv = v * (float)this->_currentTexture->GetRenderHeight() / (float)this->_currentTexture->GetHeight();
-	s32 iu = 0;
-	s32 iv = 0;
+	const float texScalingFactor = (float)this->_currentTexture->GetScalingFactor();
+	const Vector2f32 texCoordScaled = {
+		texCoord.u * texScalingFactor,
+		texCoord.v * texScalingFactor
+	};
+	
+	Vector2s32 sampleCoord = { 0, 0 };
 	
 	if (!this->_softRender->_enableFragmentSamplingHack)
 	{
-		iu = s32floor(fu);
-		iv = s32floor(fv);
+		sampleCoord.u = s32floor(texCoordScaled.u);
+		sampleCoord.v = s32floor(texCoordScaled.v);
 	}
 	else
 	{
-		iu = this->_round_s(fu);
-		iv = this->_round_s(fv);
+		sampleCoord.u = this->_round_s(texCoordScaled.u);
+		sampleCoord.v = this->_round_s(texCoordScaled.v);
 	}
 	
 	const u32 *textureData = this->_currentTexture->GetRenderData();
-	this->_currentTexture->GetRenderSamplerCoordinates(this->_textureWrapMode, iu, iv);
+	this->_currentTexture->GetRenderSamplerCoordinates(this->_textureWrapMode, sampleCoord);
 	
 	Color4u8 color;
-	color.value = textureData[( iv << this->_currentTexture->GetRenderWidthShift() ) + iu];
+	color.value = textureData[( sampleCoord.v << this->_currentTexture->GetRenderWidthShift() ) + sampleCoord.u];
 	
 	return color;
 }
@@ -416,26 +419,27 @@ FORCEINLINE float RasterizerUnit<RENDERER>::_round_s(double val)
 }
 
 template<bool RENDERER> template<bool ISSHADOWPOLYGON>
-FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode, const Color4u8 src, Color4u8 &dst, const float texCoordU, const float texCoordV)
+FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode, const Color4u8 vtxColor, const Vector2f32 &texCoord, Color4u8 &outColor)
 {
 	if (ISSHADOWPOLYGON)
 	{
-		dst = src;
+		outColor = vtxColor;
 		return;
 	}
 	
 	const GFX3D_State &renderState = *this->_softRender->currentRenderState;
 	
 	static const Color4u8 colorWhite = { 0x3F, 0x3F, 0x3F, 0x1F };
-	const Color4u8 mainTexColor = (this->_currentTexture->IsSamplingEnabled()) ? this->_sample(texCoordU, texCoordV) : colorWhite;
+	const Color4u8 mainTexColor = (this->_currentTexture->IsSamplingEnabled()) ? this->_sample(texCoord) : colorWhite;
 	
 	switch (polygonMode)
 	{
 		case POLYGON_MODE_MODULATE:
-			dst.r = modulate_table[mainTexColor.r][src.r];
-			dst.g = modulate_table[mainTexColor.g][src.g];
-			dst.b = modulate_table[mainTexColor.b][src.b];
-			dst.a = modulate_table[GFX3D_5TO6_LOOKUP(mainTexColor.a)][GFX3D_5TO6_LOOKUP(src.a)]>>1;
+		{
+			outColor.r = modulate_table[mainTexColor.r][vtxColor.r];
+			outColor.g = modulate_table[mainTexColor.g][vtxColor.g];
+			outColor.b = modulate_table[mainTexColor.b][vtxColor.b];
+			outColor.a = modulate_table[GFX3D_5TO6_LOOKUP(mainTexColor.a)][GFX3D_5TO6_LOOKUP(vtxColor.a)] >> 1;
 			//dst.a = 28;
 			//#ifdef _MSC_VER
 			//if(GetAsyncKeyState(VK_SHIFT)) {
@@ -449,65 +453,63 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode,
 			//}
 			//#endif
 			break;
+		}
 			
 		case POLYGON_MODE_DECAL:
 		{
 			if (this->_currentTexture->IsSamplingEnabled())
 			{
-				dst.r = decal_table[mainTexColor.a][mainTexColor.r][src.r];
-				dst.g = decal_table[mainTexColor.a][mainTexColor.g][src.g];
-				dst.b = decal_table[mainTexColor.a][mainTexColor.b][src.b];
-				dst.a = src.a;
+				outColor.r = decal_table[mainTexColor.a][mainTexColor.r][vtxColor.r];
+				outColor.g = decal_table[mainTexColor.a][mainTexColor.g][vtxColor.g];
+				outColor.b = decal_table[mainTexColor.a][mainTexColor.b][vtxColor.b];
+				outColor.a = vtxColor.a;
 			}
 			else
 			{
-				dst = src;
+				outColor = vtxColor;
 			}
-		}
 			break;
+		}
 			
 		case POLYGON_MODE_TOONHIGHLIGHT:
 		{
-			const Color4u8 toonColor = this->_softRender->toonColor32LUT[src.r >> 1];
+			const Color4u8 toonColor = this->_softRender->toonColor32LUT[vtxColor.r >> 1];
 			
 			if (renderState.DISP3DCNT.PolygonShading == PolygonShadingMode_Highlight)
 			{
 				// Tested in the "Shadows of Almia" logo in the Pokemon Ranger: Shadows of Almia title screen.
 				// Also tested in Advance Wars: Dual Strike and Advance Wars: Days of Ruin when tiles highlight
 				// during unit selection.
-				dst.r = modulate_table[mainTexColor.r][src.r];
-				dst.g = modulate_table[mainTexColor.g][src.r];
-				dst.b = modulate_table[mainTexColor.b][src.r];
-				dst.a = modulate_table[GFX3D_5TO6_LOOKUP(mainTexColor.a)][GFX3D_5TO6_LOOKUP(src.a)] >> 1;
+				outColor.r = modulate_table[mainTexColor.r][vtxColor.r];
+				outColor.g = modulate_table[mainTexColor.g][vtxColor.r];
+				outColor.b = modulate_table[mainTexColor.b][vtxColor.r];
+				outColor.a = modulate_table[GFX3D_5TO6_LOOKUP(mainTexColor.a)][GFX3D_5TO6_LOOKUP(vtxColor.a)] >> 1;
 				
-				dst.r = min<u8>(0x3F, (dst.r + toonColor.r));
-				dst.g = min<u8>(0x3F, (dst.g + toonColor.g));
-				dst.b = min<u8>(0x3F, (dst.b + toonColor.b));
+				outColor.r = min<u8>(0x3F, (outColor.r + toonColor.r));
+				outColor.g = min<u8>(0x3F, (outColor.g + toonColor.g));
+				outColor.b = min<u8>(0x3F, (outColor.b + toonColor.b));
 			}
 			else
 			{
-				dst.r = modulate_table[mainTexColor.r][toonColor.r];
-				dst.g = modulate_table[mainTexColor.g][toonColor.g];
-				dst.b = modulate_table[mainTexColor.b][toonColor.b];
-				dst.a = modulate_table[GFX3D_5TO6_LOOKUP(mainTexColor.a)][GFX3D_5TO6_LOOKUP(src.a)] >> 1;
+				outColor.r = modulate_table[mainTexColor.r][toonColor.r];
+				outColor.g = modulate_table[mainTexColor.g][toonColor.g];
+				outColor.b = modulate_table[mainTexColor.b][toonColor.b];
+				outColor.a = modulate_table[GFX3D_5TO6_LOOKUP(mainTexColor.a)][GFX3D_5TO6_LOOKUP(vtxColor.a)] >> 1;
 			}
-		}
 			break;
+		}
 			
 		case POLYGON_MODE_SHADOW:
 			//is this right? only with the material color?
-			dst = src;
+			outColor = vtxColor;
 			break;
 	}
 }
 
 template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON>
-FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, float r, float g, float b, float invu, float invv, float z, float w)
+FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, const Color4f32 &vtxColorFloat, float invu, float invv, float z, float w)
 {
 	const GFX3D_State &renderState = *this->_softRender->currentRenderState;
-	Color4u8 newDstColor32;
-	Color4u8 shaderOutput;
-	bool isOpaquePixel;
 	
 	u32 &dstAttributeDepth				= this->_softRender->_framebufferAttributes->depth[fragmentIndex];
 	u8 &dstAttributeOpaquePolyID		= this->_softRender->_framebufferAttributes->opaquePolyID[fragmentIndex];
@@ -600,22 +602,21 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 			dstAttributeStencil = 0;
 		}
 	}
-
-	//perspective-correct the colors
-	r = (r * w) + 0.5f;
-	g = (g * w) + 0.5f;
-	b = (b * w) + 0.5f;
 	
 	//this is a HACK:
 	//we are being very sloppy with our interpolation precision right now
 	//and rather than fix it, i just want to clamp it
-	newDstColor32.r = max<u8>(0x00, min<u32>(0x3F, u32floor(r)));
-	newDstColor32.g = max<u8>(0x00, min<u32>(0x3F, u32floor(g)));
-	newDstColor32.b = max<u8>(0x00, min<u32>(0x3F, u32floor(b)));
-	newDstColor32.a = polyAttr.Alpha;
+	const Color4u8 vtxColor = {
+		max<u8>( 0x00, min<u32>(0x3F, u32floor( (vtxColorFloat.r * w) + 0.5f )) ),
+		max<u8>( 0x00, min<u32>(0x3F, u32floor( (vtxColorFloat.g * w) + 0.5f )) ),
+		max<u8>( 0x00, min<u32>(0x3F, u32floor( (vtxColorFloat.b * w) + 0.5f )) ),
+		polyAttr.Alpha
+	};
 	
 	//pixel shader
-	this->_shade<ISSHADOWPOLYGON>((PolygonMode)polyAttr.Mode, newDstColor32, shaderOutput, invu * w, invv * w);
+	const Vector2f32 texCoordFloat = { invu * w, invv * w };
+	Color4u8 shaderOutput;
+	this->_shade<ISSHADOWPOLYGON>((PolygonMode)polyAttr.Mode, vtxColor, texCoordFloat, shaderOutput);
 	
 	// handle alpha test
 	if ( shaderOutput.a == 0 ||
@@ -625,7 +626,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 	}
 	
 	// write pixel values to the framebuffer
-	isOpaquePixel = (shaderOutput.a == 0x1F);
+	const bool isOpaquePixel = (shaderOutput.a == 0x1F);
 	if (isOpaquePixel)
 	{
 		dstAttributeOpaquePolyID = polyAttr.PolygonID;
@@ -684,7 +685,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 		pLeft->invw.curr
 	};
 	
-	CACHE_ALIGN float color[4] = {
+	CACHE_ALIGN Color4f32 vtxColorFloat = {
 		pLeft->color[0].curr,
 		pLeft->color[1].curr,
 		pLeft->color[2].curr,
@@ -701,10 +702,10 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 		(pRight->invw.curr - coord[3]) * invWidth
 	};
 	
-	const CACHE_ALIGN float color_dx[4] = {
-		(pRight->color[0].curr - color[0]) * invWidth,
-		(pRight->color[1].curr - color[1]) * invWidth,
-		(pRight->color[2].curr - color[2]) * invWidth,
+	const CACHE_ALIGN Color4f32 vtxColorFloat_dx = {
+		(pRight->color[0].curr - vtxColorFloat.r) * invWidth,
+		(pRight->color[1].curr - vtxColorFloat.g) * invWidth,
+		(pRight->color[2].curr - vtxColorFloat.b) * invWidth,
 		0.0f * invWidth
 	};
 
@@ -712,18 +713,14 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 
 	//CONSIDER: in case some other math is wrong (shouldve been clipped OK), we might go out of bounds here.
 	//better check the Y value.
-	if (RENDERER && (pLeft->Y < 0 || pLeft->Y > (framebufferHeight - 1)))
+	if ( (pLeft->Y < 0) || (pLeft->Y >= framebufferHeight) )
 	{
-		printf("rasterizer rendering at y=%d! oops!\n",pLeft->Y);
-		return;
-	}
-	if (!RENDERER && (pLeft->Y < 0 || pLeft->Y >= framebufferHeight))
-	{
-		printf("rasterizer rendering at y=%d! oops!\n",pLeft->Y);
+		const float gpuScalingFactorHeight = (float)framebufferHeight / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+		printf("rasterizer rendering at y=%d! oops! (x%.1f)\n", pLeft->Y, gpuScalingFactorHeight);
 		return;
 	}
 
-	int x = XStart;
+	s32 x = XStart;
 
 	if (x < 0)
 	{
@@ -740,28 +737,51 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 		coord[2] += coord_dx[2] * negativeX;
 		coord[3] += coord_dx[3] * negativeX;
 		
-		color[0] += color_dx[0] * negativeX;
-		color[1] += color_dx[1] * negativeX;
-		color[2] += color_dx[2] * negativeX;
-		color[3] += color_dx[3] * negativeX;
+		vtxColorFloat.r += vtxColorFloat_dx.r * negativeX;
+		vtxColorFloat.g += vtxColorFloat_dx.g * negativeX;
+		vtxColorFloat.b += vtxColorFloat_dx.b * negativeX;
+		vtxColorFloat.a += vtxColorFloat_dx.a * negativeX;
 		
 		adr += -x;
 		width -= -x;
 		x = 0;
 	}
+	
+	// Normally, if an out-of-bounds write were to occur, this would cause an error to get logged.
+	// However, due to rounding errors associated with floating-point conversions, it is common that
+	// rendering at custom resolutions may cause the rendering width to be off by 1. Therefore, we
+	// will treat this case as an exception and suppress the error through the use of this flag.
+	bool customResolutionOutOfBoundsSuppress = false;
+	
 	if (x+width > framebufferWidth)
 	{
-		if (RENDERER && !USELINEHACK && framebufferWidth == GPU_FRAMEBUFFER_NATIVE_WIDTH)
+		if (RENDERER && !USELINEHACK)
 		{
-			printf("rasterizer rendering at x=%d! oops!\n",x+width-1);
-			return;
+			if ( (framebufferWidth != GPU_FRAMEBUFFER_NATIVE_WIDTH) && (x+width == framebufferWidth+1) )
+			{
+				customResolutionOutOfBoundsSuppress = true;
+			}
+			else
+			{
+				const float gpuScalingFactorWidth = (float)framebufferWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				printf("rasterizer rendering at x=%d! oops! (x%.2f)\n", x+width-1, gpuScalingFactorWidth);
+				return;
+			}
 		}
-		width = framebufferWidth - x;
+		
+		if (customResolutionOutOfBoundsSuppress)
+		{
+			width -= 1;
+		}
+		else
+		{
+			width = (s32)framebufferWidth - x;
+		}
 	}
 	
 	while (width-- > 0)
 	{
-		this->_pixel<ISFRONTFACING, ISSHADOWPOLYGON>(polyAttr, isTranslucent, adr, dstColor[adr], color[0], color[1], color[2], coord[0], coord[1], coord[2], 1.0f/coord[3]);
+		this->_pixel<ISFRONTFACING, ISSHADOWPOLYGON>(polyAttr, isTranslucent, adr, dstColor[adr], vtxColorFloat, coord[0], coord[1], coord[2], 1.0f/coord[3]);
 		adr++;
 		x++;
 
@@ -770,22 +790,19 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 		coord[2] += coord_dx[2];
 		coord[3] += coord_dx[3];
 		
-		color[0] += color_dx[0];
-		color[1] += color_dx[1];
-		color[2] += color_dx[2];
-		color[3] += color_dx[3];
+		vtxColorFloat.r += vtxColorFloat_dx.r;
+		vtxColorFloat.g += vtxColorFloat_dx.g;
+		vtxColorFloat.b += vtxColorFloat_dx.b;
+		vtxColorFloat.a += vtxColorFloat_dx.a;
 	}
 }
 
 #ifdef ENABLE_SSE2
 
 template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON>
-FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, const __m128 &srcColorf, float invu, float invv, float z, float w)
+FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, const __m128 &vtxColorFloat, float invu, float invv, float z, float w)
 {
 	const GFX3D_State &renderState = *this->_softRender->currentRenderState;
-	Color4u8 newDstColor32;
-	Color4u8 shaderOutput;
-	bool isOpaquePixel;
 	
 	u32 &dstAttributeDepth				= this->_softRender->_framebufferAttributes->depth[fragmentIndex];
 	u8 &dstAttributeOpaquePolyID		= this->_softRender->_framebufferAttributes->opaquePolyID[fragmentIndex];
@@ -881,18 +898,21 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAt
 	
 	//perspective-correct the colors
 	const __m128 perspective = _mm_set_ps(31.0f, w, w, w);
-	__m128 newColorf = _mm_add_ps( _mm_mul_ps(srcColorf, perspective), _mm_set1_ps(0.5f) );
-	newColorf = _mm_max_ps(newColorf, _mm_setzero_ps());
+	__m128 newVtxColorf = _mm_add_ps( _mm_mul_ps(vtxColorFloat, perspective), _mm_set1_ps(0.5f) );
+	newVtxColorf = _mm_max_ps(newVtxColorf, _mm_setzero_ps());
 	
-	__m128i cvtColor32 = _mm_cvttps_epi32(newColorf);
-	cvtColor32 = _mm_min_epu8(cvtColor32, _mm_set_epi32(0x1F, 0x3F, 0x3F, 0x3F));
-	cvtColor32 = _mm_packus_epi16(cvtColor32, _mm_setzero_si128());
-	cvtColor32 = _mm_packus_epi16(cvtColor32, _mm_setzero_si128());
+	__m128i newVtxColori = _mm_cvttps_epi32(newVtxColorf);
+	newVtxColori = _mm_min_epu8(newVtxColori, _mm_set_epi32(0x1F, 0x3F, 0x3F, 0x3F));
+	newVtxColori = _mm_packus_epi16(newVtxColori, _mm_setzero_si128());
+	newVtxColori = _mm_packus_epi16(newVtxColori, _mm_setzero_si128());
 	
-	newDstColor32.value = _mm_cvtsi128_si32(cvtColor32);
+	Color4u8 vtxColor;
+	vtxColor.value = _mm_cvtsi128_si32(newVtxColori);
 	
 	//pixel shader
-	this->_shade<ISSHADOWPOLYGON>((PolygonMode)polyAttr.Mode, newDstColor32, shaderOutput, invu * w, invv * w);
+	const Vector2f32 texCoordFloat = { invu * w, invv * w };
+	Color4u8 shaderOutput;
+	this->_shade<ISSHADOWPOLYGON>((PolygonMode)polyAttr.Mode, vtxColor, texCoordFloat, shaderOutput);
 	
 	// handle alpha test
 	if ( shaderOutput.a == 0 ||
@@ -902,7 +922,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAt
 	}
 	
 	// write pixel values to the framebuffer
-	isOpaquePixel = (shaderOutput.a == 0x1F);
+	const bool isOpaquePixel = (shaderOutput.a == 0x1F);
 	if (isOpaquePixel)
 	{
 		dstAttributeOpaquePolyID = polyAttr.PolygonID;
@@ -955,32 +975,28 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline_SSE2(const POLYGON_ATTR
 	
 	//these are the starting values, taken from the left edge
 	__m128 coord = _mm_setr_ps(pLeft->u.curr,
-							   pLeft->v.curr,
-							   pLeft->z.curr,
-							   pLeft->invw.curr);
+	                           pLeft->v.curr,
+	                           pLeft->z.curr,
+	                           pLeft->invw.curr);
 	
-	__m128 color = _mm_setr_ps(pLeft->color[0].curr,
-							   pLeft->color[1].curr,
-							   pLeft->color[2].curr,
-							   (float)polyAttr.Alpha / 31.0f);
+	__m128 vtxColorFloat = _mm_setr_ps(pLeft->color[0].curr,
+	                                   pLeft->color[1].curr,
+	                                   pLeft->color[2].curr,
+	                                   (float)polyAttr.Alpha / 31.0f);
 	
 	//our dx values are taken from the steps up until the right edge
 	const __m128 invWidth = _mm_set1_ps(1.0f / (float)width);
 	const __m128 coord_dx = _mm_mul_ps(_mm_setr_ps(pRight->u.curr - pLeft->u.curr, pRight->v.curr - pLeft->v.curr, pRight->z.curr - pLeft->z.curr, pRight->invw.curr - pLeft->invw.curr), invWidth);
-	const __m128 color_dx = _mm_mul_ps(_mm_setr_ps(pRight->color[0].curr - pLeft->color[0].curr, pRight->color[1].curr - pLeft->color[1].curr, pRight->color[2].curr - pLeft->color[2].curr, 0.0f), invWidth);
+	const __m128 vtxColorFloat_dx = _mm_mul_ps(_mm_setr_ps(pRight->color[0].curr - pLeft->color[0].curr, pRight->color[1].curr - pLeft->color[1].curr, pRight->color[2].curr - pLeft->color[2].curr, 0.0f), invWidth);
 	
 	size_t adr = (pLeft->Y*framebufferWidth)+XStart;
 	
 	//CONSIDER: in case some other math is wrong (shouldve been clipped OK), we might go out of bounds here.
 	//better check the Y value.
-	if (RENDERER && (pLeft->Y < 0 || pLeft->Y > (framebufferHeight - 1)))
+	if ( (pLeft->Y < 0) || (pLeft->Y >= framebufferHeight) )
 	{
-		printf("rasterizer rendering at y=%d! oops!\n",pLeft->Y);
-		return;
-	}
-	if (!RENDERER && (pLeft->Y < 0 || pLeft->Y >= framebufferHeight))
-	{
-		printf("rasterizer rendering at y=%d! oops!\n",pLeft->Y);
+		const float gpuScalingFactorHeight = (float)framebufferHeight / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+		printf("rasterizer rendering at y=%d! oops! (x%.1f)\n", pLeft->Y, gpuScalingFactorHeight);
 		return;
 	}
 	
@@ -996,20 +1012,43 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline_SSE2(const POLYGON_ATTR
 		
 		const __m128 negativeX = _mm_cvtepi32_ps(_mm_set1_epi32(-x));
 		coord = _mm_add_ps(coord, _mm_mul_ps(coord_dx, negativeX));
-		color = _mm_add_ps(color, _mm_mul_ps(color_dx, negativeX));
+		vtxColorFloat = _mm_add_ps(vtxColorFloat, _mm_mul_ps(vtxColorFloat_dx, negativeX));
 		
 		adr += -x;
 		width -= -x;
 		x = 0;
 	}
+	
+	// Normally, if an out-of-bounds write were to occur, this would cause an error to get logged.
+	// However, due to rounding errors associated with floating-point conversions, it is common that
+	// rendering at custom resolutions may cause the rendering width to be off by 1. Therefore, we
+	// will treat this case as an exception and suppress the error through the use of this flag.
+	bool customResolutionOutOfBoundsSuppress = false;
+	
 	if (x+width > framebufferWidth)
 	{
-		if (RENDERER && !USELINEHACK && framebufferWidth == GPU_FRAMEBUFFER_NATIVE_WIDTH)
+		if (RENDERER && !USELINEHACK)
 		{
-			printf("rasterizer rendering at x=%d! oops!\n",x+width-1);
-			return;
+			if ( (framebufferWidth != GPU_FRAMEBUFFER_NATIVE_WIDTH) && (x+width == framebufferWidth+1) )
+			{
+				customResolutionOutOfBoundsSuppress = true;
+			}
+			else
+			{
+				const float gpuScalingFactorWidth = (float)framebufferWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				printf("rasterizer rendering at x=%d! oops! (x%.2f)\n", x+width-1, gpuScalingFactorWidth);
+				return;
+			}
 		}
-		width = framebufferWidth - x;
+		
+		if (customResolutionOutOfBoundsSuppress)
+		{
+			width -= 1;
+		}
+		else
+		{
+			width = (s32)framebufferWidth - x;
+		}
 	}
 	
 	CACHE_ALIGN float coord_s[4];
@@ -1018,12 +1057,12 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline_SSE2(const POLYGON_ATTR
 	{
 		_mm_store_ps(coord_s, coord);
 		
-		this->_pixel_SSE2<ISFRONTFACING, ISSHADOWPOLYGON>(polyAttr, isTranslucent, adr, dstColor[adr], color, coord_s[0], coord_s[1], coord_s[2], 1.0f/coord_s[3]);
+		this->_pixel_SSE2<ISFRONTFACING, ISSHADOWPOLYGON>(polyAttr, isTranslucent, adr, dstColor[adr], vtxColorFloat, coord_s[0], coord_s[1], coord_s[2], 1.0f/coord_s[3]);
 		adr++;
 		x++;
 		
 		coord = _mm_add_ps(coord, coord_dx);
-		color = _mm_add_ps(color, color_dx);
+		vtxColorFloat = _mm_add_ps(vtxColorFloat, vtxColorFloat_dx);
 	}
 }
 
@@ -1601,30 +1640,30 @@ u32 SoftRasterizerTexture::GetRenderWidthShift() const
 	return this->_renderWidthShift;
 }
 
-FORCEINLINE void SoftRasterizerTexture::GetRenderSamplerCoordinates(const u8 wrapMode, s32 &iu, s32 &iv) const
+FORCEINLINE void SoftRasterizerTexture::GetRenderSamplerCoordinates(const u8 wrapMode, Vector2s32 &sampleCoordInOut) const
 {
 	switch (wrapMode)
 	{
 		//flip none
-		case 0x0: _hclamp(iu);  _vclamp(iv);  break;
-		case 0x1: _hrepeat(iu); _vclamp(iv);  break;
-		case 0x2: _hclamp(iu);  _vrepeat(iv); break;
-		case 0x3: _hrepeat(iu); _vrepeat(iv); break;
+		case 0x0: _hclamp(sampleCoordInOut.u);  _vclamp(sampleCoordInOut.v);  break;
+		case 0x1: _hrepeat(sampleCoordInOut.u); _vclamp(sampleCoordInOut.v);  break;
+		case 0x2: _hclamp(sampleCoordInOut.u);  _vrepeat(sampleCoordInOut.v); break;
+		case 0x3: _hrepeat(sampleCoordInOut.u); _vrepeat(sampleCoordInOut.v); break;
 		//flip S
-		case 0x4: _hclamp(iu);  _vclamp(iv);  break;
-		case 0x5: _hflip(iu);   _vclamp(iv);  break;
-		case 0x6: _hclamp(iu);  _vrepeat(iv); break;
-		case 0x7: _hflip(iu);   _vrepeat(iv); break;
+		case 0x4: _hclamp(sampleCoordInOut.u);  _vclamp(sampleCoordInOut.v);  break;
+		case 0x5: _hflip(sampleCoordInOut.u);   _vclamp(sampleCoordInOut.v);  break;
+		case 0x6: _hclamp(sampleCoordInOut.u);  _vrepeat(sampleCoordInOut.v); break;
+		case 0x7: _hflip(sampleCoordInOut.u);   _vrepeat(sampleCoordInOut.v); break;
 		//flip T
-		case 0x8: _hclamp(iu);  _vclamp(iv);  break;
-		case 0x9: _hrepeat(iu); _vclamp(iv);  break;
-		case 0xA: _hclamp(iu);  _vflip(iv);   break;
-		case 0xB: _hrepeat(iu); _vflip(iv);   break;
+		case 0x8: _hclamp(sampleCoordInOut.u);  _vclamp(sampleCoordInOut.v);  break;
+		case 0x9: _hrepeat(sampleCoordInOut.u); _vclamp(sampleCoordInOut.v);  break;
+		case 0xA: _hclamp(sampleCoordInOut.u);  _vflip(sampleCoordInOut.v);   break;
+		case 0xB: _hrepeat(sampleCoordInOut.u); _vflip(sampleCoordInOut.v);   break;
 		//flip both
-		case 0xC: _hclamp(iu);  _vclamp(iv);  break;
-		case 0xD: _hflip(iu);   _vclamp(iv);  break;
-		case 0xE: _hclamp(iu);  _vflip(iv);   break;
-		case 0xF: _hflip(iu);   _vflip(iv);   break;
+		case 0xC: _hclamp(sampleCoordInOut.u);  _vclamp(sampleCoordInOut.v);  break;
+		case 0xD: _hflip(sampleCoordInOut.u);   _vclamp(sampleCoordInOut.v);  break;
+		case 0xE: _hclamp(sampleCoordInOut.u);  _vflip(sampleCoordInOut.v);   break;
+		case 0xF: _hflip(sampleCoordInOut.u);   _vflip(sampleCoordInOut.v);   break;
 	}
 }
 
