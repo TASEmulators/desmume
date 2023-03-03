@@ -1198,16 +1198,8 @@ void NDSGeometryEngine::SetLightColor(const u32 param)
 
 void NDSGeometryEngine::SetShininess(const u32 param)
 {
-#ifdef MSB_FIRST
-	u8 *targetShininess = (u8 *)this->_shininessTablePending;
-	targetShininess[this->_shininessTablePendingIndex+0] =   (u8)(param        & 0x000000FF);
-	targetShininess[this->_shininessTablePendingIndex+1] = (u8)(((param >>  8) & 0x000000FF));
-	targetShininess[this->_shininessTablePendingIndex+2] = (u8)(((param >> 16) & 0x000000FF));
-	targetShininess[this->_shininessTablePendingIndex+3] = (u8)(((param >> 24) & 0x000000FF));
-#else
 	u32 &targetShininess = (u32 &)this->_shininessTablePending[this->_shininessTablePendingIndex];
-	targetShininess = param;
-#endif
+	targetShininess = LE_TO_LOCAL_32(param);
 	
 	this->_shininessTablePendingIndex += 4;
 	
@@ -1403,11 +1395,8 @@ void NDSGeometryEngine::SetTexturePalette(const u32 texPalette)
 void NDSGeometryEngine::SetTextureCoordinates2s16(const u32 param)
 {
 	Vector2s16 inTexCoord2s16;
-#ifndef MSB_FIRST
-	inTexCoord2s16.value = param;
-#else
-	inTexCoord2s16.value = (param << 16) | (param >> 16);
-#endif
+	inTexCoord2s16.value = LE_TO_LOCAL_WORDS_32(param);
+	
 	this->SetTextureCoordinates2s16(inTexCoord2s16);
 }
 
@@ -1450,11 +1439,8 @@ void NDSGeometryEngine::VertexListEnd()
 bool NDSGeometryEngine::SetCurrentVertexPosition2s16(const u32 param)
 {
 	Vector2s16 inVtxCoord2s16;
-#ifndef MSB_FIRST
-	inVtxCoord2s16.value = param;
-#else
-	inVtxCoord2s16.value = (param >> 16) | (param << 16);
-#endif
+	inVtxCoord2s16.value = LE_TO_LOCAL_WORDS_32(param);
+	
 	return this->SetCurrentVertexPosition2s16(inVtxCoord2s16);
 }
 
@@ -1492,11 +1478,7 @@ template <size_t ONE, size_t TWO>
 void NDSGeometryEngine::SetCurrentVertexPosition2s16Immediate(const u32 param)
 {
 	Vector2s16 inVtxCoord2s16;
-#ifndef MSB_FIRST
-	inVtxCoord2s16.value = param;
-#else
-	inVtxCoord2s16.value = (param >> 16) | (param << 16);
-#endif
+	inVtxCoord2s16.value = LE_TO_LOCAL_WORDS_32(param);
 	
 	this->SetCurrentVertexPosition2s16Immediate<ONE, TWO>(inVtxCoord2s16);
 }
@@ -2805,27 +2787,7 @@ void gfx3d_glFogOffset(const u32 v)
 template <typename T>
 void gfx3d_glClearColor(const u8 offset, const T v)
 {
-#ifndef MSB_FIRST
 	((T *)&gfx3d.pendingState.clearColor)[offset >> (sizeof(T) >> 1)] = v;
-#else
-	switch (sizeof(T))
-	{
-		case 1:
-			((T *)&gfx3d.pendingState.clearColor)[offset >> (sizeof(T) >> 1)] = v;
-			break;
-			
-		case 2:
-			((T *)&gfx3d.pendingState.clearColor)[offset >> (sizeof(T) >> 1)] = LE_TO_LOCAL_16(v);
-			break;
-			
-		case 4:
-			((T *)&gfx3d.pendingState.clearColor)[offset >> (sizeof(T) >> 1)] = LE_TO_LOCAL_32(v);
-			break;
-			
-		default:
-			break;
-	}
-#endif
 }
 
 template void gfx3d_glClearColor< u8>(const u8 offset, const  u8 v);

@@ -702,10 +702,9 @@ Render3DError Render3D::Render(const GFX3D_State &renderState, const GFX3D_Geome
 	Render3DError error = RENDER3DERROR_NOERR;
 	this->_isPoweredOn = true;
 	
-	const u32 clearColorSwapped = LE_TO_LOCAL_32(renderState.clearColor);
-	this->_clearColor6665.value = LE_TO_LOCAL_32( COLOR555TO6665(clearColorSwapped & 0x7FFF, (clearColorSwapped >> 16) & 0x1F) );
+	this->_clearColor6665.value = LE_TO_LOCAL_32( COLOR555TO6665(renderState.clearColor & 0x7FFF, (renderState.clearColor >> 16) & 0x1F) );
+	this->_clearAttributes.opaquePolyID = (renderState.clearColor >> 24) & 0x3F;
 	
-	this->_clearAttributes.opaquePolyID = (clearColorSwapped >> 24) & 0x3F;
 	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
 	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
 	//but in spiderman2 some fires with polyid 0 try to render on top of the background
@@ -714,7 +713,7 @@ Render3DError Render3D::Render(const GFX3D_State &renderState, const GFX3D_Geome
 	this->_clearAttributes.stencil = 0;
 	this->_clearAttributes.isTranslucentPoly = 0;
 	this->_clearAttributes.polyFacing = PolyFacing_Unwritten;
-	this->_clearAttributes.isFogged = BIT15(clearColorSwapped);
+	this->_clearAttributes.isFogged = BIT15(renderState.clearColor);
 	
 	error = this->BeginRender(renderState, renderGList);
 	if (error != RENDER3DERROR_NOERR)
