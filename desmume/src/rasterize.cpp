@@ -68,10 +68,17 @@
 #include "filter/filter.h"
 #include "filter/xbrz.h"
 
-//#undef FORCEINLINE
-//#define FORCEINLINE
-//#undef INLINE
-//#define INLINE
+// Enable this macro to allow SoftRasterizer to read in vertex data in
+// the native fixed-point format rather than using our own normalized
+// floating-point format.
+//
+// Due to the way vertex data reads work right now, combined with the
+// fact that SoftRasterizer still functions using floating-point math,
+// reading in the vertex data as fixed-point right now will result in a
+// small performance hit. This performance hit should be negligible for
+// most systems, but this macro will remain disabled by default until
+// the time when SoftRasterizer fixed-point functions are more developed.
+//#define USE_FIXED_POINT_VERTEX_DATA
 
 using std::min;
 using std::max;
@@ -85,61 +92,10 @@ template<typename T> T _max(T a, T b, T c, T d) { return max(_max(a,b,d),c); }
 static u8 modulate_table[64][64];
 static u8 decal_table[32][64][64];
 
-////optimized float floor useful in limited cases
-////from http://www.stereopsis.com/FPU.html#convert
-////(unfortunately, it relies on certain FPU register settings)
-//int Real2Int(double val)
-//{
-//	const double _double2fixmagic = 68719476736.0*1.5;     //2^36 * 1.5,  (52-_shiftamt=36) uses limited precisicion to floor
-//	const int _shiftamt        = 16;                    //16.16 fixed point representation,
-//
-//	#ifdef MSB_FIRST
-//		#define iman_				1
-//	#else
-//		#define iman_				0
-//	#endif
-//
-//	val		= val + _double2fixmagic;
-//	return ((int*)&val)[iman_] >> _shiftamt; 
-//}
-
-//// this probably relies on rounding settings..
-//int Real2Int(float val)
-//{
-//	//val -= 0.5f;
-//	//int temp;
-//	//__asm {
-//	//	fld val;
-//	//	fistp temp;
-//	//}
-//	//return temp;
-//	return 0;
-//}
-
-
-//doesnt work yet
-static FORCEINLINE int fastFloor(float f)
-{
-	float temp = f + 1.f;
-	int ret = (*((u32*)&temp))&0x7FFFFF;
-	return ret;
-}
-
-
-//INLINE static void SubmitVertex(int vert_index, VERT& rawvert)
-//{
-//	verts[vert_index] = &rawvert;
-//}
-
-static FORCEINLINE int iround(float f) {
-	return (int)f; //lol
-}
-
-
-typedef int fixed28_4;
+typedef s32 fixed28_4;
 
 // handle floor divides and mods correctly 
-static FORCEINLINE void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod, bool& failure)
+static FORCEINLINE void FloorDivMod(const s64 inNumerator, const s64 inDenominator, s64 &outFloor, s64 &outMod, bool &outFailure)
 {
 	//These must be caused by invalid or degenerate shapes.. not sure yet.
 	//check it out in the mario face intro of SM64
@@ -148,167 +104,331 @@ static FORCEINLINE void FloorDivMod(long Numerator, long Denominator, long &Floo
 	//since I see them acting poppy in a way that doesnt happen in the HW.. so alas it is also incorrect.
 	//This particular incorrectness is not likely ever to get fixed!
 
-	//assert(Denominator > 0);		
+	//assert(inDenominator > 0);
 
 	//but we have to bail out since our handling for these cases currently steps scanlines 
 	//the wrong way and goes totally nuts (freezes)
-	if(Denominator<=0) 
-		failure = true;
+	if (inDenominator <= 0)
+	{
+		outFailure = true;
+	}
 
-	if(Numerator >= 0) {
+	if (inNumerator >= 0)
+	{
 		// positive case, C is okay
-		Floor = Numerator / Denominator;
-		Mod = Numerator % Denominator;
-	} else {
+		outFloor = inNumerator / inDenominator;
+		outMod = inNumerator % inDenominator;
+	}
+	else
+	{
 		// Numerator is negative, do the right thing
-		Floor = -((-Numerator) / Denominator);
-		Mod = (-Numerator) % Denominator;
-		if(Mod) {
+		outFloor = -((-inNumerator) / inDenominator);
+		outMod = (-inNumerator) % inDenominator;
+		if (outMod)
+		{
 			// there is a remainder
-			Floor--; Mod = Denominator - Mod;
+			outFloor--;
+			outMod = inDenominator - outMod;
 		}
 	}
 }
 
-static FORCEINLINE fixed28_4 FloatToFixed28_4( float Value ) {
-	return (fixed28_4)(Value * 16);
-}
-static FORCEINLINE float Fixed28_4ToFloat( fixed28_4 Value ) {
+static FORCEINLINE float Fixed28_4ToFloat(fixed28_4 Value)
+{
 	return Value / 16.0f;
 }
-//inline fixed16_16 FloatToFixed16_16( float Value ) {
-//	return (fixed16_6)(Value * 65536);
-//}
-//inline float Fixed16_16ToFloat( fixed16_16 Value ) {
-//	return Value / 65536.0;
-//}
-static FORCEINLINE fixed28_4 Fixed28_4Mul( fixed28_4 A, fixed28_4 B ) {
-	// could make this asm to prevent overflow
-	return (A * B) / 16;	// 28.4 * 28.4 = 24.8 / 16 = 28.4
-}
-static FORCEINLINE int Ceil28_4( fixed28_4 Value ) {
-	int ReturnValue;
-	int Numerator = Value - 1 + 16;
-	if(Numerator >= 0) {
-		ReturnValue = Numerator/16;
-	} else {
-		// deal with negative numerators correctly
-		ReturnValue = -((-Numerator)/16);
-		ReturnValue -= ((-Numerator) % 16) ? 1 : 0;
+
+static FORCEINLINE s32 Ceil16_16(s32 fixed_16_16)
+{
+	s32 ReturnValue;
+	s32 Numerator = fixed_16_16 - 1 + 65536;
+	
+	if (Numerator >= 0)
+	{
+		ReturnValue = Numerator / 65536;
 	}
+	else
+	{
+		// deal with negative numerators correctly
+		ReturnValue = -((-Numerator) / 65536);
+		ReturnValue -= ((-Numerator) % 65536) ? 1 : 0;
+	}
+	
 	return ReturnValue;
 }
 
-struct edge_fx_fl {
-	edge_fx_fl() {}
-	edge_fx_fl(int Top, int Bottom, VERT** verts, bool& failure);
-	FORCEINLINE int Step();
-
-	VERT** verts;
-	long X, XStep, Numerator, Denominator;			// DDA info for x
-	long ErrorTerm;
-	int Y, Height;					// current y and vertical count
+static FORCEINLINE s32 Ceil28_4(fixed28_4 Value)
+{
+	s32 ReturnValue;
+	s32 Numerator = Value - 1 + 16;
 	
-	struct Interpolant {
-		float curr, step, stepExtra;
+	if (Numerator >= 0)
+	{
+		ReturnValue = Numerator / 16;
+	}
+	else
+	{
+		// deal with negative numerators correctly
+		ReturnValue = -((-Numerator) / 16);
+		ReturnValue -= ((-Numerator) % 16) ? 1 : 0;
+	}
+	
+	return ReturnValue;
+}
+
+struct edge_fx_fl
+{
+	edge_fx_fl() {}
+	edge_fx_fl(const s32 top, const s32 bottom, VERT **vert, bool &failure);
+	edge_fx_fl(const s32 top, const s32 bottom, NDSVertex **vtx, bool &failure);
+	FORCEINLINE s32 Step();
+
+	VERT **vert;
+	NDSVertex **vtx;
+	
+	s32 x, xStep; // DDA info for x
+	s64 numerator, denominator; // DDA info for x
+	s64 errorTerm;
+	
+	s32 y; // Current Y
+	s32 height; // Vertical count
+	
+	struct Interpolant
+	{
+		float curr;
+		float step;
+		float stepExtra;
+		
 		FORCEINLINE void doStep() { curr += step; }
 		FORCEINLINE void doStepExtra() { curr += stepExtra; }
-		FORCEINLINE void initialize(float value) {
+		
+		FORCEINLINE void initialize(const float value)
+		{
 			curr = value;
-			step = 0;
-			stepExtra = 0;
+			step = 0.0f;
+			stepExtra = 0.0f;
 		}
-		FORCEINLINE void initialize(float top, float bottom, float dx, float dy, long inXStep, float XPrestep, float YPrestep) {
-			dx = 0;
+		
+		FORCEINLINE void initialize(const float top, const float bottom, float dx, float dy, const float inXStep, const float xPrestep, const float yPrestep)
+		{
+			dx = 0.0f;
 			dy *= (bottom-top);
-			curr = top + YPrestep * dy + XPrestep * dx;
-			step = inXStep * dx + dy;
+			
+			curr = top + (yPrestep * dy) + (xPrestep * dx);
+			step = (inXStep * dx) + dy;
 			stepExtra = dx;
 		}
 	};
 	
 	static const int NUM_INTERPOLANTS = 7;
-	union {
-		struct {
-			Interpolant invw,z,u,v,color[3];
+	union
+	{
+		struct
+		{
+			Interpolant invw, z, u, v, color[3];
 		};
 		Interpolant interpolants[NUM_INTERPOLANTS];
 	};
+	
 	void FORCEINLINE doStepInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStep(); }
 	void FORCEINLINE doStepExtraInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStepExtra(); }
 };
 
-FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts, bool& failure) {
-	this->verts = verts;
-	Y = Ceil28_4((fixed28_4)verts[Top]->y);
-	int YEnd = Ceil28_4((fixed28_4)verts[Bottom]->y);
-	Height = YEnd - Y;
-	X = Ceil28_4((fixed28_4)verts[Top]->x);
-	int XEnd = Ceil28_4((fixed28_4)verts[Bottom]->x);
-	int Width = XEnd - X; // can be negative
-
+FORCEINLINE edge_fx_fl::edge_fx_fl(const s32 top, const s32 bottom, VERT **vert, bool &failure)
+{
+	s64 x_64;
+	s64 y_64;
+	s64 xStep_64;
+	
+	this->vert = vert;
+	
+	this->y = Ceil28_4((fixed28_4)vert[top]->y); // "28.4" to 28.0
+	const s32 yEnd = Ceil28_4((fixed28_4)vert[bottom]->y); // "28.4" to 28.0
+	this->height = yEnd - this->y; // 28.0
+	y_64 = (s64)this->y; // 28.0
+	
+	this->x = Ceil28_4((fixed28_4)vert[top]->x); // "28.4" to 28.0
+	const s32 xEnd = Ceil28_4((fixed28_4)vert[bottom]->x); // "28.4" to 28.0
+	const s32 width = xEnd - this->x; // 28.0, can be negative
+	x_64 = (s64)this->x; // 28.0
+	
 	// even if Height == 0, give some info for horizontal line poly
-	if(Height != 0 || Width != 0)
+	if ( (this->height != 0) || (width != 0) )
 	{
-		long dN = long(verts[Bottom]->y - verts[Top]->y);
-		long dM = long(verts[Bottom]->x - verts[Top]->x);
+		s64 dN = (s64)(vert[bottom]->y - vert[top]->y); // "28.4"
+		s64 dM = (s64)(vert[bottom]->x - vert[top]->x); // "28.4"
+		
 		if (dN != 0)
 		{
-			long InitialNumerator = (long)(dM*16*Y - dM*verts[Top]->y + dN*verts[Top]->x - 1 + dN*16);
-			FloorDivMod(InitialNumerator,dN*16,X,ErrorTerm,failure);
-			FloorDivMod(dM*16,dN*16,XStep,Numerator,failure);
-			Denominator = dN*16;
+			const s64 initialNumerator = (s64)(dM*16*y_64 - dM*vert[top]->y + dN*vert[top]->x - 1 + dN*16); // "32.8" - "56.8" + "56.8" - 0.8 + "32.8"
+			FloorDivMod(initialNumerator, dN*16, x_64, this->errorTerm, failure); // "56.8", "32.8"; floor is 52.4, mod is 56.8
+			FloorDivMod(dM*16, dN*16, xStep_64, this->numerator, failure); // "32.8", "32.8"; floor is 28.4, mod is 32.8
+			
+			this->x = (s32)x_64; // 52.4 to 28.4
+			this->xStep = (s32)xStep_64; // 28.4
+			this->denominator = dN*16; // "28.4" to "32.8"
 		}
 		else
 		{
-			XStep = Width;
-			Numerator = 0;
-			ErrorTerm = 0;
-			Denominator = 1;
-			dN = 1;
+			this->errorTerm = 0; // 0.8
+			this->xStep = width; // 28.0
+			this->numerator = 0; // 0.8
+			this->denominator = 1; // 0.8
+			dN = 1; // 0.4
 		}
 	
-		float YPrestep = Fixed28_4ToFloat((fixed28_4)(Y*16 - verts[Top]->y));
-		float XPrestep = Fixed28_4ToFloat((fixed28_4)(X*16 - verts[Top]->x));
-
-		float dy = 1/Fixed28_4ToFloat(dN);
-		float dx = 1/Fixed28_4ToFloat(dM);
+		const float yPrestep = Fixed28_4ToFloat((fixed28_4)(y_64*16 - vert[top]->y)); // 28.4, "28.4"; result is normalized
+		const float xPrestep = Fixed28_4ToFloat((fixed28_4)(x_64*16 - vert[top]->x)); // 28.4, "28.4"; result is normalized
+		const float dy = 1.0f / Fixed28_4ToFloat((s32)dN); // "28.4"; result is normalized
+		const float dx = 1.0f / Fixed28_4ToFloat((s32)dM); // "28.4"; result is normalized
 		
-		invw.initialize(1/verts[Top]->w,1/verts[Bottom]->w,dx,dy,XStep,XPrestep,YPrestep);
-		u.initialize(verts[Top]->u,verts[Bottom]->u,dx,dy,XStep,XPrestep,YPrestep);
-		v.initialize(verts[Top]->v,verts[Bottom]->v,dx,dy,XStep,XPrestep,YPrestep);
-		z.initialize(verts[Top]->z,verts[Bottom]->z,dx,dy,XStep,XPrestep,YPrestep);
-		for(int i=0;i<3;i++)
-			color[i].initialize(verts[Top]->fcolor[i],verts[Bottom]->fcolor[i],dx,dy,XStep,XPrestep,YPrestep);
+		invw.initialize(1.0f / vert[top]->w, 1.0f / vert[bottom]->w, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		u.initialize(vert[top]->u, vert[bottom]->u, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		v.initialize(vert[top]->v, vert[bottom]->v, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		z.initialize(vert[top]->z, vert[bottom]->z, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		
+		for (size_t i = 0; i < 3; i++)
+		{
+			color[i].initialize(vert[top]->fcolor[i], vert[bottom]->fcolor[i], dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		}
 	}
 	else
 	{
 		// even if Width == 0 && Height == 0, give some info for pixel poly
 		// example: Castlevania Portrait of Ruin, warp stone
-		XStep = 1;
-		Numerator = 0;
-		Denominator = 1;
-		ErrorTerm = 0;
-		invw.initialize(1/verts[Top]->w);
-		u.initialize(verts[Top]->u);
-		v.initialize(verts[Top]->v);
-		z.initialize(verts[Top]->z);
-		for(int i=0;i<3;i++)
-			color[i].initialize(verts[Top]->fcolor[i]);
+		this->xStep = 1;
+		this->numerator = 0;
+		this->denominator = 1;
+		this->errorTerm = 0;
+		
+		invw.initialize(1.0f / vert[top]->w);
+		u.initialize(vert[top]->u);
+		v.initialize(vert[top]->v);
+		z.initialize(vert[top]->z);
+		
+		for (size_t i = 0; i < 3; i++)
+		{
+			color[i].initialize(vert[top]->fcolor[i]);
+		}
 	}
 }
 
-FORCEINLINE int edge_fx_fl::Step() {
-	X += XStep; Y++; Height--;
+struct EdgePrecalculation
+{
+	Vector2s64 positionCeil;
+	
+	float zPositionNormalized;
+	float invWPositionNormalized;
+	float invWTexCoordNormalized;
+	Vector2f32 texCoordNormalized;
+	Color4f32 colorNormalized;
+	
+	Vector2f32 preStep;
+};
+typedef struct EdgePrecalculation EdgePrecalculation;
+
+FORCEINLINE edge_fx_fl::edge_fx_fl(const s32 top, const s32 bottom, NDSVertex **vtx, bool &failure)
+{
+	s64 x_64;
+	s64 y_64;
+	s64 xStep_64;
+	
+	this->vtx = vtx;
+	
+	this->y = Ceil16_16(vtx[top]->position.y); // 16.16 to 16.0
+	const s32 yEnd = Ceil16_16(vtx[bottom]->position.y); // 16.16 to 16.0
+	this->height = yEnd - this->y; // 16.0
+	y_64 = (s64)this->y; // 16.0
+	
+	this->x = Ceil16_16(vtx[top]->position.x); // 16.16 to 16.0
+	const s32 xEnd = Ceil16_16(vtx[bottom]->position.x); // 16.16 to 16.0
+	const s32 width = xEnd - this->x; // 16.0, can be negative
+	x_64 = (s64)this->x; // 16.0
+	
+	const float invWTop = 4096.0f / (float)vtx[top]->position.w;
+	const float invWTCTop = 256.0f / (float)vtx[top]->position.w;
+	
+	// even if Height == 0, give some info for horizontal line poly
+	if ( (this->height != 0) || (width != 0) )
+	{
+		s64 dN = (s64)vtx[bottom]->position.y - (s64)vtx[top]->position.y; // 16.16
+		s64 dM = (s64)vtx[bottom]->position.x - (s64)vtx[top]->position.x; // 16.16
+		
+		if (dN != 0)
+		{
+			const s64 InitialNumerator = (s64)(dM*65536*y_64 - dM*vtx[top]->position.y + dN*vtx[top]->position.x - 1 + dN*65536); // 32.32
+			FloorDivMod(InitialNumerator, dN * 65536, x_64, this->errorTerm, failure); // 32.32, 32.32; floor is 16.16, mod is 32.32
+			FloorDivMod(dM * 65536, dN * 65536, xStep_64, this->numerator, failure); // 32.32, 32.32; floor is 16.16, mod is 32.32
+			
+			this->x = (s32)x_64; // 16.16
+			this->xStep = (s32)xStep_64; // 16.16
+			this->denominator = dN * 65536; // 16.16 to 32.32
+		}
+		else
+		{
+			this->errorTerm = 0; // 0.32
+			this->xStep = width; // 16.0
+			this->numerator = 0; // 0.32
+			this->denominator = 1; // 0.32
+			dN = 1; // 0.32
+		}
+		
+		const float yPrestep = (float)( (double)(y_64*65536 - vtx[top]->position.y) / 65536.0 ); // 16.16, 16.16; result is normalized
+		const float xPrestep = (float)( (double)(x_64*65536 - vtx[top]->position.x) / 65536.0 ); // 16.16, 16.16; result is normalized
+		const float dy = 65536.0f / (float)dN; // 16.16; result is normalized
+		const float dx = 65536.0f / (float)dM; // 16.16; result is normalized
+		
+		const float invWBottom = 4096.0f / (float)vtx[bottom]->position.w;
+		const float invWTCBottom = 256.0f / (float)vtx[bottom]->position.w;
+		
+		invw.initialize(invWTop, invWBottom, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		u.initialize((float)vtx[top]->texCoord.u * invWTCTop, (float)vtx[bottom]->texCoord.u * invWTCBottom, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		v.initialize((float)vtx[top]->texCoord.v * invWTCTop, (float)vtx[bottom]->texCoord.v * invWTCBottom, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		z.initialize((float)vtx[top]->position.z / 4096.0f, (float)vtx[bottom]->position.z / 4096.0f, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		
+		for (size_t i = 0; i < 3; i++)
+		{
+			color[i].initialize((float)vtx[top]->color.component[i] * invWTop, (float)vtx[bottom]->color.component[i] * invWBottom, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		}
+	}
+	else
+	{
+		// even if Width == 0 && Height == 0, give some info for pixel poly
+		// example: Castlevania Portrait of Ruin, warp stone
+		this->xStep = 1; // normalized
+		this->numerator = 0;
+		this->denominator = 1;
+		this->errorTerm = 0;
+		
+		invw.initialize(invWTop);
+		u.initialize((float)vtx[top]->texCoord.u * invWTCTop);
+		v.initialize((float)vtx[top]->texCoord.v * invWTCTop);
+		z.initialize((float)vtx[top]->position.z / 4096.0f);
+		
+		for (size_t i = 0; i < 3; i++)
+		{
+			color[i].initialize((float)vtx[top]->color.component[i] * invWTop);
+		}
+	}
+}
+
+FORCEINLINE s32 edge_fx_fl::Step()
+{
+	this->x += this->xStep;
+	this->y++;
+	this->height--;
+	
 	doStepInterpolants();
 
-	ErrorTerm += Numerator;
-	if(ErrorTerm >= Denominator) {
-		X++;
-		ErrorTerm -= Denominator;
+	this->errorTerm += this->numerator;
+	if (this->errorTerm >= this->denominator)
+	{
+		this->x++;
+		this->errorTerm -= this->denominator;
 		doStepExtraInterpolants();
 	}
-	return Height;
+	
+	return this->height;
 }	
 
 
@@ -660,19 +780,19 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 
 //draws a single scanline
 template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK>
-FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight)
+FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const edge_fx_fl *pLeft, const edge_fx_fl *pRight)
 {
-	const int XStart = pLeft->X;
-	int width = pRight->X - XStart;
+	const s32 xStart = pLeft->x;
+	s32 width = pRight->x - xStart;
 
 	// HACK: workaround for vertical/slant line poly
-	if (USELINEHACK && width == 0)
+	if ( USELINEHACK && (width == 0) )
 	{
-		int leftWidth = pLeft->XStep;
-		if (pLeft->ErrorTerm + pLeft->Numerator >= pLeft->Denominator)
+		s32 leftWidth = pLeft->xStep;
+		if (pLeft->errorTerm + pLeft->numerator >= pLeft->denominator)
 			leftWidth++;
-		int rightWidth = pRight->XStep;
-		if (pRight->ErrorTerm + pRight->Numerator >= pRight->Denominator)
+		s32 rightWidth = pRight->xStep;
+		if (pRight->errorTerm + pRight->numerator >= pRight->denominator)
 			rightWidth++;
 		width = max(1, max(abs(leftWidth), abs(rightWidth)));
 	}
@@ -709,18 +829,17 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 		0.0f * invWidth
 	};
 
-	size_t adr = (pLeft->Y*framebufferWidth)+XStart;
-
 	//CONSIDER: in case some other math is wrong (shouldve been clipped OK), we might go out of bounds here.
 	//better check the Y value.
-	if ( (pLeft->Y < 0) || (pLeft->Y >= framebufferHeight) )
+	if ( (pLeft->y < 0) || (pLeft->y >= framebufferHeight) )
 	{
 		const float gpuScalingFactorHeight = (float)framebufferHeight / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-		printf("rasterizer rendering at y=%d! oops! (x%.1f)\n", pLeft->Y, gpuScalingFactorHeight);
+		printf("rasterizer rendering at y=%d! oops! (x%.1f)\n", pLeft->y, gpuScalingFactorHeight);
 		return;
 	}
-
-	s32 x = XStart;
+	
+	size_t adr = (pLeft->y * framebufferWidth) + xStart;
+	s32 x = xStart;
 
 	if (x < 0)
 	{
@@ -956,19 +1075,19 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAt
 
 //draws a single scanline
 template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK>
-FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight)
+FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const edge_fx_fl *pLeft, const edge_fx_fl *pRight)
 {
-	const int XStart = pLeft->X;
-	int width = pRight->X - XStart;
+	const s32 xStart = pLeft->x;
+	s32 width = pRight->x - xStart;
 	
 	// HACK: workaround for vertical/slant line poly
-	if (USELINEHACK && width == 0)
+	if ( USELINEHACK && (width == 0) )
 	{
-		int leftWidth = pLeft->XStep;
-		if (pLeft->ErrorTerm + pLeft->Numerator >= pLeft->Denominator)
+		s32 leftWidth = pLeft->xStep;
+		if (pLeft->errorTerm + pLeft->numerator >= pLeft->denominator)
 			leftWidth++;
-		int rightWidth = pRight->XStep;
-		if (pRight->ErrorTerm + pRight->Numerator >= pRight->Denominator)
+		s32 rightWidth = pRight->xStep;
+		if (pRight->errorTerm + pRight->numerator >= pRight->denominator)
 			rightWidth++;
 		width = max(1, max(abs(leftWidth), abs(rightWidth)));
 	}
@@ -989,18 +1108,18 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline_SSE2(const POLYGON_ATTR
 	const __m128 coord_dx = _mm_mul_ps(_mm_setr_ps(pRight->u.curr - pLeft->u.curr, pRight->v.curr - pLeft->v.curr, pRight->z.curr - pLeft->z.curr, pRight->invw.curr - pLeft->invw.curr), invWidth);
 	const __m128 vtxColorFloat_dx = _mm_mul_ps(_mm_setr_ps(pRight->color[0].curr - pLeft->color[0].curr, pRight->color[1].curr - pLeft->color[1].curr, pRight->color[2].curr - pLeft->color[2].curr, 0.0f), invWidth);
 	
-	size_t adr = (pLeft->Y*framebufferWidth)+XStart;
+	size_t adr = (pLeft->y * framebufferWidth) + xStart;
 	
 	//CONSIDER: in case some other math is wrong (shouldve been clipped OK), we might go out of bounds here.
 	//better check the Y value.
-	if ( (pLeft->Y < 0) || (pLeft->Y >= framebufferHeight) )
+	if ( (pLeft->y < 0) || (pLeft->y >= framebufferHeight) )
 	{
 		const float gpuScalingFactorHeight = (float)framebufferHeight / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-		printf("rasterizer rendering at y=%d! oops! (x%.1f)\n", pLeft->Y, gpuScalingFactorHeight);
+		printf("rasterizer rendering at y=%d! oops! (x%.1f)\n", pLeft->y, gpuScalingFactorHeight);
 		return;
 	}
 	
-	int x = XStart;
+	s32 x = xStart;
 	
 	if (x < 0)
 	{
@@ -1075,13 +1194,13 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 	//oh lord, hack city for edge drawing
 
 	//do not overstep either of the edges
-	int Height = min(left->Height,right->Height);
+	s32 Height = min(left->height, right->height);
 	bool first = true;
 
 	//HACK: special handling for horizontal line poly
-	if ( USELINEHACK && (left->Height == 0) && (right->Height == 0) && (left->Y < framebufferHeight) && (left->Y >= 0) )
+	if ( USELINEHACK && (left->height == 0) && (right->height == 0) && (left->y < framebufferHeight) && (left->y >= 0) )
 	{
-		const bool draw = ( !SLI || ((left->Y >= this->_SLI_startLine) && (left->Y < this->_SLI_endLine)) );
+		const bool draw = ( !SLI || ((left->y >= this->_SLI_startLine) && (left->y < this->_SLI_endLine)) );
 		if (draw)
 		{
 #ifdef ENABLE_SSE2
@@ -1094,7 +1213,7 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 
 	while (Height--)
 	{
-		const bool draw = ( !SLI || ((left->Y >= this->_SLI_startLine) && (left->Y < this->_SLI_endLine)) );
+		const bool draw = ( !SLI || ((left->y >= this->_SLI_startLine) && (left->y < this->_SLI_endLine)) );
 		if (draw)
 		{
 #ifdef ENABLE_SSE2
@@ -1104,9 +1223,9 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 #endif
 		}
 		
-		const size_t xl = left->X;
-		const size_t xr = right->X;
-		const size_t y  = left->Y;
+		const size_t xl = left->x;
+		const size_t xr = right->x;
+		const size_t y  = left->y;
 		left->Step();
 		right->Step();
 
@@ -1119,8 +1238,8 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 			{
 				if (draw)
 				{
-					const size_t nxl = left->X;
-					const size_t nxr = right->X;
+					const size_t nxl = left->x;
+					const size_t nxr = right->x;
 					if (top)
 					{
 						const size_t xs = min(xl, xr);
@@ -1180,9 +1299,15 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 template<bool RENDERER> template<int TYPE>
 FORCEINLINE void RasterizerUnit<RENDERER>::_rot_verts()
 {
-	#define ROTSWAP(X) if(TYPE>X) swap(this->_verts[X-1],this->_verts[X]);
+#define ROTSWAP(X) if(TYPE>X) swap(this->_currentVtx[X-1],this->_currentVtx[X]);
 	ROTSWAP(1); ROTSWAP(2); ROTSWAP(3); ROTSWAP(4);
 	ROTSWAP(5); ROTSWAP(6); ROTSWAP(7); ROTSWAP(8); ROTSWAP(9);
+#undef ROTSWAP
+	
+#define ROTSWAP(X) if(TYPE>X) swap(this->_currentVert[X-1],this->_currentVert[X]);
+	ROTSWAP(1); ROTSWAP(2); ROTSWAP(3); ROTSWAP(4);
+	ROTSWAP(5); ROTSWAP(6); ROTSWAP(7); ROTSWAP(8); ROTSWAP(9);
+#undef ROTSWAP
 }
 
 //rotate verts until vert0.y is minimum, and then vert0.x is minimum in case of ties
@@ -1197,13 +1322,18 @@ void RasterizerUnit<RENDERER>::_sort_verts()
 	// comment should actually read, "if the verts are front-facing, reorder
 	// them first". So what is the real behavior for this? - rogerman, 2018/08/01
 	if (ISFRONTFACING)
+	{
 		for (size_t i = 0; i < TYPE/2; i++)
-			swap(this->_verts[i],this->_verts[TYPE-i-1]);
+		{
+			swap(this->_currentVtx[i], this->_currentVtx[TYPE-i-1]);
+			swap(this->_currentVert[i], this->_currentVert[TYPE-i-1]);
+		}
+	}
 
 	for (;;)
 	{
 		//this was the only way we could get this to unroll
-		#define CHECKY(X) if(TYPE>X) if(this->_verts[0]->y > this->_verts[X]->y) goto doswap;
+		#define CHECKY(X) if(TYPE>X) if(this->_currentVtx[0]->position.y > this->_currentVtx[X]->position.y) goto doswap;
 		CHECKY(1); CHECKY(2); CHECKY(3); CHECKY(4);
 		CHECKY(5); CHECKY(6); CHECKY(7); CHECKY(8); CHECKY(9);
 		break;
@@ -1212,7 +1342,8 @@ void RasterizerUnit<RENDERER>::_sort_verts()
 		this->_rot_verts<TYPE>();
 	}
 	
-	while (this->_verts[0]->y == this->_verts[1]->y && this->_verts[0]->x > this->_verts[1]->x)
+	while ( (this->_currentVtx[0]->position.y == this->_currentVtx[1]->position.y) &&
+	        (this->_currentVtx[0]->position.x  > this->_currentVtx[1]->position.x) )
 	{
 		this->_rot_verts<TYPE>();
 		// hack for VC++ 2010 (bug in compiler optimization?)
@@ -1261,24 +1392,31 @@ void RasterizerUnit<RENDERER>::_shape_engine(const POLYGON_ATTR polyAttr, const 
 		//so that they can be continued on down the shape
 		assert(rv != type);
 		int _lv = (lv == type) ? 0 : lv; //make sure that we ask for vert 0 when the variable contains the starting value
-		if (step_left) left = edge_fx_fl(_lv,lv-1,(VERT**)&this->_verts, failure);
-		if (step_right) right = edge_fx_fl(rv,rv+1,(VERT**)&this->_verts, failure);
+		
+#ifdef USE_FIXED_POINT_VERTEX_DATA
+		if (step_left) left = edge_fx_fl(_lv, lv-1, (NDSVertex **)&this->_currentVtx, failure);
+		if (step_right) right = edge_fx_fl(rv, rv+1, (NDSVertex **)&this->_currentVtx, failure);
+#else
+		if (step_left) left = edge_fx_fl(_lv, lv-1, (VERT **)&this->_currentVert, failure);
+		if (step_right) right = edge_fx_fl(rv, rv+1, (VERT **)&this->_currentVert, failure);
+#endif
+		
 		step_left = step_right = false;
 
 		//handle a failure in the edge setup due to nutty polys
 		if (failure)
 			return;
 
-		const bool isHorizontal = (left.Y == right.Y);
+		const bool isHorizontal = (left.y == right.y);
 		this->_runscanlines<SLI, ISFRONTFACING, ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isTranslucent, dstColor, framebufferWidth, framebufferHeight, isHorizontal, &left, &right);
 		
 		//if we ran out of an edge, step to the next one
-		if (right.Height == 0)
+		if (right.height == 0)
 		{
 			step_right = true;
 			rv++;
 		}
-		if (left.Height == 0)
+		if (left.height == 0)
 		{
 			step_left = true;
 			lv--;
@@ -1346,9 +1484,16 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 		}
 		
 		for (size_t j = 0; j < vertCount; j++)
-			this->_verts[j] = &clippedPoly.clipVerts[j];
+		{
+			this->_currentVtx[j] = &clippedPoly.clipVtxFixed[j];
+			this->_currentVert[j] = &clippedPoly.clipVerts[j];
+		}
+		
 		for (size_t j = vertCount; j < MAX_CLIPPED_VERTS; j++)
-			this->_verts[j] = NULL;
+		{
+			this->_currentVtx[j] = NULL;
+			this->_currentVert[j] = NULL;
+		}
 		
 		if (!clippedPoly.isPolyBackFacing)
 		{
@@ -1768,7 +1913,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	
 	_task = NULL;
 	
-	_debug_drawClippedUserPoly = -1;
+	_debug_drawClippedUserPoly = 0;
 	
 	_renderGeometryNeedsFinish = false;
 	_framebufferAttributes = NULL;

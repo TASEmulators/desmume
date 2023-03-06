@@ -3331,28 +3331,22 @@ size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUns
 			{
 				if (vtx.position.w != 0)
 				{
+					const float invWTC = 256.0f / (float)vtx.position.w;
+					const float invW = 4096.0f / (float)vtx.position.w;
+					
 					// Texture coordinates
-					vert.u = (float)( (double)(((s64)vtx.texCoord.u << 48) / vtx64.w) / (double)(1LL << 40) );
-					vert.v = (float)( (double)(((s64)vtx.texCoord.v << 48) / vtx64.w) / (double)(1LL << 40) );
-					vtx.texCoord.u = (vtx.texCoord.u << 12) / vtx.position.w;
-					vtx.texCoord.v = (vtx.texCoord.v << 12) / vtx.position.w;
+					vert.u = (float)vtx.texCoord.u * invWTC;
+					vert.v = (float)vtx.texCoord.v * invWTC;
 					
 					// Vertex color
-					s32 r_32 = ((s32)vtx.color.r << 23) / vtx.position.w;
-					s32 g_32 = ((s32)vtx.color.g << 23) / vtx.position.w;
-					s32 b_32 = ((s32)vtx.color.b << 23) / vtx.position.w;
-					
-					vert.rf = (float)r_32 / 2048.0f;
-					vert.gf = (float)g_32 / 2048.0f;
-					vert.bf = (float)b_32 / 2048.0f;
-					vtx.color.r = (u8)(vert.rf + 0.5f);
-					vtx.color.g = (u8)(vert.gf + 0.5f);
-					vtx.color.b = (u8)(vert.bf + 0.5f);
+					vert.rf = (float)vtx.color.r * invW;
+					vert.gf = (float)vtx.color.g * invW;
+					vert.bf = (float)vtx.color.b * invW;
 				}
 				else
 				{
-					vert.u = (float)(vtx.texCoord.u / 16);
-					vert.v = (float)(vtx.texCoord.v / 16);
+					vert.u = (float)vtx.texCoord.u / 16.0f;
+					vert.v = (float)vtx.texCoord.v / 16.0f;
 				}
 				
 				vert.color32 = vtx.color.value;
