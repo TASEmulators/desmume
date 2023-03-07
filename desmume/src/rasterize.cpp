@@ -71,14 +71,7 @@
 // Enable this macro to allow SoftRasterizer to read in vertex data in
 // the native fixed-point format rather than using our own normalized
 // floating-point format.
-//
-// Due to the way vertex data reads work right now, combined with the
-// fact that SoftRasterizer still functions using floating-point math,
-// reading in the vertex data as fixed-point right now will result in a
-// small performance hit. This performance hit should be negligible for
-// most systems, but this macro will remain disabled by default until
-// the time when SoftRasterizer fixed-point functions are more developed.
-//#define USE_FIXED_POINT_VERTEX_DATA
+#define USE_FIXED_POINT_VERTEX_DATA
 
 using std::min;
 using std::max;
@@ -180,7 +173,7 @@ struct edge_fx_fl
 {
 	edge_fx_fl() {}
 	edge_fx_fl(const s32 top, const s32 bottom, VERT **vert, bool &failure);
-	edge_fx_fl(const s32 top, const s32 bottom, NDSVertex **vtx, bool &failure);
+	edge_fx_fl(const s32 top, const s32 bottom, NDSVertex **vtx, SoftRasterizerPrecalculation **precalc, bool &failure);
 	FORCEINLINE s32 Step();
 
 	VERT **vert;
@@ -199,14 +192,14 @@ struct edge_fx_fl
 		float step;
 		float stepExtra;
 		
-		FORCEINLINE void doStep() { curr += step; }
-		FORCEINLINE void doStepExtra() { curr += stepExtra; }
+		FORCEINLINE void doStep() { this->curr += this->step; }
+		FORCEINLINE void doStepExtra() { this->curr += this->stepExtra; }
 		
 		FORCEINLINE void initialize(const float value)
 		{
-			curr = value;
-			step = 0.0f;
-			stepExtra = 0.0f;
+			this->curr = value;
+			this->step = 0.0f;
+			this->stepExtra = 0.0f;
 		}
 		
 		FORCEINLINE void initialize(const float top, const float bottom, float dx, float dy, const float inXStep, const float xPrestep, const float yPrestep)
@@ -214,9 +207,9 @@ struct edge_fx_fl
 			dx = 0.0f;
 			dy *= (bottom-top);
 			
-			curr = top + (yPrestep * dy) + (xPrestep * dx);
-			step = (inXStep * dx) + dy;
-			stepExtra = dx;
+			this->curr = top + (yPrestep * dy) + (xPrestep * dx);
+			this->step = (inXStep * dx) + dy;
+			this->stepExtra = dx;
 		}
 	};
 	
@@ -313,40 +306,21 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(const s32 top, const s32 bottom, VERT **vert,
 	}
 }
 
-struct EdgePrecalculation
+FORCEINLINE edge_fx_fl::edge_fx_fl(const s32 top, const s32 bottom, NDSVertex **vtx, SoftRasterizerPrecalculation **precalc, bool &failure)
 {
-	Vector2s64 positionCeil;
-	
-	float zPositionNormalized;
-	float invWPositionNormalized;
-	float invWTexCoordNormalized;
-	Vector2f32 texCoordNormalized;
-	Color4f32 colorNormalized;
-	
-	Vector2f32 preStep;
-};
-typedef struct EdgePrecalculation EdgePrecalculation;
-
-FORCEINLINE edge_fx_fl::edge_fx_fl(const s32 top, const s32 bottom, NDSVertex **vtx, bool &failure)
-{
-	s64 x_64;
-	s64 y_64;
+	s64 x_64 = precalc[top]->positionCeil.x;
+	s64 y_64 = precalc[top]->positionCeil.y;
 	s64 xStep_64;
 	
 	this->vtx = vtx;
 	
-	this->y = Ceil16_16(vtx[top]->position.y); // 16.16 to 16.0
-	const s32 yEnd = Ceil16_16(vtx[bottom]->position.y); // 16.16 to 16.0
+	this->y = (s32)y_64; // 16.16 to 16.0
+	const s32 yEnd = (s32)precalc[bottom]->positionCeil.y; // 16.16 to 16.0
 	this->height = yEnd - this->y; // 16.0
-	y_64 = (s64)this->y; // 16.0
 	
-	this->x = Ceil16_16(vtx[top]->position.x); // 16.16 to 16.0
-	const s32 xEnd = Ceil16_16(vtx[bottom]->position.x); // 16.16 to 16.0
+	this->x = (s32)x_64; // 16.16 to 16.0
+	const s32 xEnd =  (s32)precalc[bottom]->positionCeil.x; // 16.16 to 16.0
 	const s32 width = xEnd - this->x; // 16.0, can be negative
-	x_64 = (s64)this->x; // 16.0
-	
-	const float invWTop = 4096.0f / (float)vtx[top]->position.w;
-	const float invWTCTop = 256.0f / (float)vtx[top]->position.w;
 	
 	// even if Height == 0, give some info for horizontal line poly
 	if ( (this->height != 0) || (width != 0) )
@@ -373,22 +347,20 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(const s32 top, const s32 bottom, NDSVertex **
 			dN = 1; // 0.32
 		}
 		
-		const float yPrestep = (float)( (double)(y_64*65536 - vtx[top]->position.y) / 65536.0 ); // 16.16, 16.16; result is normalized
+		const float yPrestep = precalc[top]->yPrestep; // 16.16, 16.16; result is normalized
 		const float xPrestep = (float)( (double)(x_64*65536 - vtx[top]->position.x) / 65536.0 ); // 16.16, 16.16; result is normalized
+		// Note that we can't precalculate xPrestep because x_64 can be modified by an earlier call to FloorDivMod().
 		const float dy = 65536.0f / (float)dN; // 16.16; result is normalized
 		const float dx = 65536.0f / (float)dM; // 16.16; result is normalized
 		
-		const float invWBottom = 4096.0f / (float)vtx[bottom]->position.w;
-		const float invWTCBottom = 256.0f / (float)vtx[bottom]->position.w;
-		
-		invw.initialize(invWTop, invWBottom, dx, dy, (float)this->xStep, xPrestep, yPrestep);
-		u.initialize((float)vtx[top]->texCoord.u * invWTCTop, (float)vtx[bottom]->texCoord.u * invWTCBottom, dx, dy, (float)this->xStep, xPrestep, yPrestep);
-		v.initialize((float)vtx[top]->texCoord.v * invWTCTop, (float)vtx[bottom]->texCoord.v * invWTCBottom, dx, dy, (float)this->xStep, xPrestep, yPrestep);
-		z.initialize((float)vtx[top]->position.z / 4096.0f, (float)vtx[bottom]->position.z / 4096.0f, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		invw.initialize(precalc[top]->invWPositionNormalized, precalc[bottom]->invWPositionNormalized, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		u.initialize(precalc[top]->texCoordNormalized.u, precalc[bottom]->texCoordNormalized.u, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		v.initialize(precalc[top]->texCoordNormalized.v, precalc[bottom]->texCoordNormalized.v, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		z.initialize(precalc[top]->zPositionNormalized, precalc[bottom]->zPositionNormalized, dx, dy, (float)this->xStep, xPrestep, yPrestep);
 		
 		for (size_t i = 0; i < 3; i++)
 		{
-			color[i].initialize((float)vtx[top]->color.component[i] * invWTop, (float)vtx[bottom]->color.component[i] * invWBottom, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+			color[i].initialize(precalc[top]->colorNormalized.component[i], precalc[bottom]->colorNormalized.component[i], dx, dy, (float)this->xStep, xPrestep, yPrestep);
 		}
 	}
 	else
@@ -400,14 +372,14 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(const s32 top, const s32 bottom, NDSVertex **
 		this->denominator = 1;
 		this->errorTerm = 0;
 		
-		invw.initialize(invWTop);
-		u.initialize((float)vtx[top]->texCoord.u * invWTCTop);
-		v.initialize((float)vtx[top]->texCoord.v * invWTCTop);
-		z.initialize((float)vtx[top]->position.z / 4096.0f);
+		invw.initialize(precalc[top]->invWPositionNormalized);
+		u.initialize(precalc[top]->texCoordNormalized.u);
+		v.initialize(precalc[top]->texCoordNormalized.v);
+		z.initialize(precalc[top]->zPositionNormalized);
 		
 		for (size_t i = 0; i < 3; i++)
 		{
-			color[i].initialize((float)vtx[top]->color.component[i] * invWTop);
+			color[i].initialize(precalc[top]->colorNormalized.component[i]);
 		}
 	}
 }
@@ -418,14 +390,14 @@ FORCEINLINE s32 edge_fx_fl::Step()
 	this->y++;
 	this->height--;
 	
-	doStepInterpolants();
+	this->doStepInterpolants();
 
 	this->errorTerm += this->numerator;
 	if (this->errorTerm >= this->denominator)
 	{
 		this->x++;
 		this->errorTerm -= this->denominator;
-		doStepExtraInterpolants();
+		this->doStepExtraInterpolants();
 	}
 	
 	return this->height;
@@ -1308,6 +1280,11 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_rot_verts()
 	ROTSWAP(1); ROTSWAP(2); ROTSWAP(3); ROTSWAP(4);
 	ROTSWAP(5); ROTSWAP(6); ROTSWAP(7); ROTSWAP(8); ROTSWAP(9);
 #undef ROTSWAP
+	
+#define ROTSWAP(X) if(TYPE>X) swap(this->_currentPrecalc[X-1],this->_currentPrecalc[X]);
+	ROTSWAP(1); ROTSWAP(2); ROTSWAP(3); ROTSWAP(4);
+	ROTSWAP(5); ROTSWAP(6); ROTSWAP(7); ROTSWAP(8); ROTSWAP(9);
+#undef ROTSWAP
 }
 
 //rotate verts until vert0.y is minimum, and then vert0.x is minimum in case of ties
@@ -1327,6 +1304,7 @@ void RasterizerUnit<RENDERER>::_sort_verts()
 		{
 			swap(this->_currentVtx[i], this->_currentVtx[TYPE-i-1]);
 			swap(this->_currentVert[i], this->_currentVert[TYPE-i-1]);
+			swap(this->_currentPrecalc[i], this->_currentPrecalc[TYPE-i-1]);
 		}
 	}
 
@@ -1394,8 +1372,8 @@ void RasterizerUnit<RENDERER>::_shape_engine(const POLYGON_ATTR polyAttr, const 
 		int _lv = (lv == type) ? 0 : lv; //make sure that we ask for vert 0 when the variable contains the starting value
 		
 #ifdef USE_FIXED_POINT_VERTEX_DATA
-		if (step_left) left = edge_fx_fl(_lv, lv-1, (NDSVertex **)&this->_currentVtx, failure);
-		if (step_right) right = edge_fx_fl(rv, rv+1, (NDSVertex **)&this->_currentVtx, failure);
+		if (step_left) left = edge_fx_fl(_lv, lv-1, (NDSVertex **)&this->_currentVtx, (SoftRasterizerPrecalculation **)&this->_currentPrecalc, failure);
+		if (step_right) right = edge_fx_fl(rv, rv+1, (NDSVertex **)&this->_currentVtx, (SoftRasterizerPrecalculation **)&this->_currentPrecalc, failure);
 #else
 		if (step_left) left = edge_fx_fl(_lv, lv-1, (VERT **)&this->_currentVert, failure);
 		if (step_right) right = edge_fx_fl(rv, rv+1, (VERT **)&this->_currentVert, failure);
@@ -1454,6 +1432,8 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 	const size_t dstWidth = this->_softRender->GetFramebufferWidth();
 	const size_t dstHeight = this->_softRender->GetFramebufferHeight();
 	
+	const SoftRasterizerPrecalculation *softRastPrecalc = this->_softRender->GetPrecalculationList();
+	
 	const POLY *rawPolyList = this->_softRender->GetRawPolyList();
 	const CPoly &firstClippedPoly = this->_softRender->GetClippedPolyByIndex(0);
 	const POLY &firstPoly = rawPolyList[firstClippedPoly.index];
@@ -1487,12 +1467,14 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 		{
 			this->_currentVtx[j] = &clippedPoly.clipVtxFixed[j];
 			this->_currentVert[j] = &clippedPoly.clipVerts[j];
+			this->_currentPrecalc[j] = &softRastPrecalc[(i * MAX_CLIPPED_VERTS) + j];
 		}
 		
 		for (size_t j = vertCount; j < MAX_CLIPPED_VERTS; j++)
 		{
 			this->_currentVtx[j] = NULL;
 			this->_currentVert[j] = NULL;
+			this->_currentPrecalc[j] = NULL;
 		}
 		
 		if (!clippedPoly.isPolyBackFacing)
@@ -1570,6 +1552,14 @@ static void* SoftRasterizer_RunGetAndLoadAllTextures(void *arg)
 {
 	SoftRasterizerRenderer *softRender = (SoftRasterizerRenderer *)arg;
 	softRender->GetAndLoadAllTextures();
+	
+	return NULL;
+}
+
+static void* SoftRasterizer_RunRasterizerPrecalculate(void *arg)
+{
+	SoftRasterizerRenderer *softRender = (SoftRasterizerRenderer *)arg;
+	softRender->RasterizerPrecalculate();
 	
 	return NULL;
 }
@@ -1910,6 +1900,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	_deviceInfo.maxSamples = 0;
 	
 	_clippedPolyList = (CPoly *)malloc_alignedCacheLine(CLIPPED_POLYLIST_SIZE * sizeof(CPoly));
+	_precalc = (SoftRasterizerPrecalculation *)malloc_alignedCacheLine(CLIPPED_POLYLIST_SIZE * MAX_CLIPPED_VERTS * sizeof(SoftRasterizerPrecalculation));
 	
 	_task = NULL;
 	
@@ -2022,6 +2013,9 @@ SoftRasterizerRenderer::~SoftRasterizerRenderer()
 	delete this->_framebufferAttributes;
 	this->_framebufferAttributes = NULL;
 	
+	free_aligned(this->_precalc);
+	this->_precalc = NULL;
+	
 	free_aligned(this->_clippedPolyList);
 	this->_clippedPolyList = NULL;
 }
@@ -2068,6 +2062,57 @@ void SoftRasterizerRenderer::GetAndLoadAllTextures()
 	}
 }
 
+void SoftRasterizerRenderer::RasterizerPrecalculate()
+{
+#ifdef USE_FIXED_POINT_VERTEX_DATA
+	for (size_t i = 0, precalcIdx = 0; i < this->_clippedPolyCount; i++)
+	{
+		const CPoly &cPoly = this->_clippedPolyList[i];
+		const size_t polyType = cPoly.type;
+		
+		precalcIdx = i * MAX_CLIPPED_VERTS;
+		
+		for (size_t j = 0; j < polyType; j++)
+		{
+			const NDSVertex &vtx = cPoly.clipVtxFixed[j];
+			SoftRasterizerPrecalculation &precalc = this->_precalc[precalcIdx];
+			
+			const s32 x = Ceil16_16(vtx.position.x);
+			const s32 y = Ceil16_16(vtx.position.y);
+			precalc.positionCeil.x = (s64)x;
+			precalc.positionCeil.y = (s64)y;
+			
+			precalc.zPositionNormalized = (float)vtx.position.z / 4096.0f;
+			precalc.yPrestep = (float)( (double)((s64)y*65536 - (s64)vtx.position.y) / 65536.0 );
+			
+			if (vtx.position.w != 0)
+			{
+				const float invWTC = 256.0f / (float)vtx.position.w;
+				const float invW = 4096.0f / (float)vtx.position.w;
+				
+				precalc.invWPositionNormalized = invW;
+				precalc.texCoordNormalized.u = (float)vtx.texCoord.u * invWTC;
+				precalc.texCoordNormalized.v = (float)vtx.texCoord.v * invWTC;
+				precalc.colorNormalized.r = (float)vtx.color.r * invW;
+				precalc.colorNormalized.g = (float)vtx.color.g * invW;
+				precalc.colorNormalized.b = (float)vtx.color.b * invW;
+			}
+			else
+			{
+				precalc.invWPositionNormalized = 1.0f;
+				precalc.texCoordNormalized.u = (float)vtx.texCoord.u / 16.0f;
+				precalc.texCoordNormalized.v = (float)vtx.texCoord.v / 16.0f;
+				precalc.colorNormalized.r = (float)vtx.color.r;
+				precalc.colorNormalized.g = (float)vtx.color.g;
+				precalc.colorNormalized.b = (float)vtx.color.b;
+			}
+			
+			precalcIdx++;
+		}
+	}
+#endif
+}
+
 Render3DError SoftRasterizerRenderer::ApplyRenderingSettings(const GFX3D_State &renderState)
 {
 	this->_enableHighPrecisionColorInterpolation = CommonSettings.GFX3D_HighResolutionInterpolateColor;
@@ -2097,10 +2142,12 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D_State &renderState
 	if (doMultithreadedStateSetup)
 	{
 		this->_task[0].execute(&SoftRasterizer_RunGetAndLoadAllTextures, this);
+		this->_task[1].execute(&SoftRasterizer_RunRasterizerPrecalculate, this);
 	}
 	else
 	{
 		this->GetAndLoadAllTextures();
+		this->RasterizerPrecalculate();
 	}
 	
 	// Convert the toon table colors
@@ -2366,6 +2413,11 @@ SoftRasterizerTexture* SoftRasterizerRenderer::GetLoadedTextureFromPolygon(const
 	return theTexture;
 }
 
+const SoftRasterizerPrecalculation* SoftRasterizerRenderer::GetPrecalculationList() const
+{
+	return this->_precalc;
+}
+
 Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID)
 {
 	const size_t xRatio = (size_t)((GPU_FRAMEBUFFER_NATIVE_WIDTH << 16) / this->_framebufferWidth) + 1;
@@ -2442,6 +2494,7 @@ Render3DError SoftRasterizerRenderer::Reset()
 	this->_renderGeometryNeedsFinish = false;
 	
 	texCache.Reset();
+	memset(this->_precalc, 0, CLIPPED_POLYLIST_SIZE * MAX_CLIPPED_VERTS * sizeof(SoftRasterizerPrecalculation));
 	
 	return RENDER3DERROR_NOERR;
 }

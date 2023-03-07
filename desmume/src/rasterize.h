@@ -30,6 +30,19 @@ class Task;
 class SoftRasterizerRenderer;
 struct edge_fx_fl;
 
+struct SoftRasterizerPrecalculation
+{
+	Vector2s64 positionCeil;
+	
+	float zPositionNormalized;
+	float invWPositionNormalized;
+	Vector2f32 texCoordNormalized;
+	Color3f32 colorNormalized;
+	
+	float yPrestep;
+};
+typedef struct SoftRasterizerPrecalculation SoftRasterizerPrecalculation;
+
 struct SoftRasterizerClearParam
 {
 	SoftRasterizerRenderer *renderer;
@@ -105,6 +118,7 @@ protected:
 	SoftRasterizerTexture *_currentTexture;
 	const VERT *_currentVert[MAX_CLIPPED_VERTS];
 	const NDSVertex *_currentVtx[MAX_CLIPPED_VERTS];
+	const SoftRasterizerPrecalculation *_currentPrecalc[MAX_CLIPPED_VERTS];
 	u8 _textureWrapMode;
 	
 	Render3DError _SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
@@ -160,6 +174,8 @@ protected:
 	size_t _customLinesPerThread;
 	size_t _customPixelsPerThread;
 	
+	SoftRasterizerPrecalculation *_precalc;
+	
 	u8 _fogTable[32768];
 	Color4u8 _edgeMarkTable[8];
 	bool _edgeMarkDisabled[8];
@@ -195,9 +211,12 @@ public:
 	virtual ClipperMode GetPreferredPolygonClippingMode() const;
 	
 	void GetAndLoadAllTextures();
+	void RasterizerPrecalculate();
 	Render3DError RenderEdgeMarkingAndFog(const SoftRasterizerPostProcessParams &param);
 	
 	SoftRasterizerTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
+	
+	const SoftRasterizerPrecalculation* GetPrecalculationList() const;
 	
 	// Base rendering methods
 	virtual Render3DError Reset();
