@@ -409,9 +409,7 @@ union Vector2s16
 	s16 coord[2];
 	struct { s16 s, t; };
 	struct { s16 u, v; };
-	struct { s16 x, y; } XY;
-	struct { s16 y, z; } YZ;
-	struct { s16 x, z; } XZ;
+	struct { s16 x, y; };
 	
 	u32 value;
 };
@@ -447,9 +445,7 @@ union Vector2s32
 	s32 coord[2];
 	struct { s32 s, t; };
 	struct { s32 u, v; };
-	struct { s32 x, y; } XY;
-	struct { s32 y, z; } YZ;
-	struct { s32 x, z; } XZ;
+	struct { s32 x, y; };
 	
 	u64 value;
 };
@@ -483,9 +479,7 @@ union Vector2s64
 	s64 coord[2];
 	struct { s64 s, t; };
 	struct { s64 u, v; };
-	struct { s64 x, y; } XY;
-	struct { s64 y, z; } YZ;
-	struct { s64 x, z; } XZ;
+	struct { s64 x, y; };
 };
 typedef union Vector2s64 Vector2s64;
 
@@ -517,9 +511,7 @@ union Vector2f32
 	float coord[2];
 	struct { float s, t; };
 	struct { float u, v; };
-	struct { float x, y; } XY;
-	struct { float y, z; } YZ;
-	struct { float x, z; } XZ;
+	struct { float x, y; };
 };
 typedef union Vector2f32 Vector2f32;
 
