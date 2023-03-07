@@ -116,7 +116,6 @@ protected:
 	
 	SoftRasterizerRenderer *_softRender;
 	SoftRasterizerTexture *_currentTexture;
-	const VERT *_currentVert[MAX_CLIPPED_VERTS];
 	const NDSVertex *_currentVtx[MAX_CLIPPED_VERTS];
 	const SoftRasterizerPrecalculation *_currentPrecalc[MAX_CLIPPED_VERTS];
 	u8 _textureWrapMode;

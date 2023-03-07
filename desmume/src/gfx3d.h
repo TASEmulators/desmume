@@ -565,55 +565,6 @@ bool GFX3D_IsPolyTranslucent(const POLY &p);
 #define CLIPPED_POLYLIST_SIZE (POLYLIST_SIZE * 2)
 #define VERTLIST_SIZE (POLYLIST_SIZE * 4)
 
-#include "PACKED.h"
-
-// This struct is padded in such a way so that each component can be accessed with a 16-byte alignment.
-struct VERT
-{
-	union
-	{
-		float coord[4];
-		struct
-		{
-			float x, y, z, w;
-		};
-	};
-	
-	union
-	{
-		float texcoord[4];
-		struct
-		{
-			float u, v, tcPad2, tcPad3;
-		};
-	};
-	
-	union
-	{
-		float fcolor[4];
-		struct
-		{
-			float rf, gf, bf, af; // The alpha value is unused and only exists for padding purposes.
-		};
-	};
-	
-	union
-	{
-		u32 color32;
-		u8 color[4];
-		
-		struct
-		{
-			u8 r, g, b, a; // The alpha value is unused and only exists for padding purposes.
-		};
-	};
-	
-	u8 padFinal[12]; // Final padding to bring the struct to exactly 64 bytes.
-};
-typedef struct VERT VERT;
-
-#include "PACKED_END.h"
-
 struct NDSVertex
 {
 	Vector4s32 position;
@@ -621,14 +572,6 @@ struct NDSVertex
 	Color4u8 color;
 };
 typedef struct NDSVertex NDSVertex;
-
-struct NDSVertexf
-{
-	Vector4f32 position;
-	Vector2f32 texCoord;
-	Color4f32 color;
-};
-typedef struct NDSVertexf NDSVertexf;
 
 //ok, imagine the plane that cuts diagonally across a cube such that it clips
 //out to be a hexagon. within that plane, draw a quad such that it cuts off
@@ -647,8 +590,7 @@ struct CPoly
 	u16 index; // The index number of this polygon in the full polygon list.
 	PolygonType type; //otherwise known as "count" of verts
 	bool isPolyBackFacing;
-	VERT clipVerts[MAX_CLIPPED_VERTS];
-	NDSVertex clipVtxFixed[MAX_CLIPPED_VERTS];
+	NDSVertex vtx[MAX_CLIPPED_VERTS];
 };
 typedef struct CPoly CPoly;
 
@@ -1067,7 +1009,6 @@ void GFX3D_HandleGeometryPowerOff();
 u32 GFX3D_GetRender3DFrameCount();
 void GFX3D_ResetRender3DFrameCount();
 
-template<ClipperMode CLIPPERMODE> PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const VERT *(&rawVtx)[4], CPoly &outCPoly);
 template<ClipperMode CLIPPERMODE> PolygonType GFX3D_GenerateClippedPoly(const u16 rawPolyIndex, const PolygonType rawPolyType, const NDSVertex *(&rawVtx)[4], CPoly &outCPoly);
 
 #endif //_GFX3D_H_

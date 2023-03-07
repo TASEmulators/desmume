@@ -68,10 +68,6 @@
 #include "filter/filter.h"
 #include "filter/xbrz.h"
 
-// Enable this macro to allow SoftRasterizer to read in vertex data in
-// the native fixed-point format rather than using our own normalized
-// floating-point format.
-#define USE_FIXED_POINT_VERTEX_DATA
 
 using std::min;
 using std::max;
@@ -172,11 +168,9 @@ static FORCEINLINE s32 Ceil28_4(fixed28_4 Value)
 struct edge_fx_fl
 {
 	edge_fx_fl() {}
-	edge_fx_fl(const s32 top, const s32 bottom, VERT **vert, bool &failure);
 	edge_fx_fl(const s32 top, const s32 bottom, NDSVertex **vtx, SoftRasterizerPrecalculation **precalc, bool &failure);
 	FORCEINLINE s32 Step();
-
-	VERT **vert;
+	
 	NDSVertex **vtx;
 	
 	s32 x, xStep; // DDA info for x
@@ -226,85 +220,6 @@ struct edge_fx_fl
 	void FORCEINLINE doStepInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStep(); }
 	void FORCEINLINE doStepExtraInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStepExtra(); }
 };
-
-FORCEINLINE edge_fx_fl::edge_fx_fl(const s32 top, const s32 bottom, VERT **vert, bool &failure)
-{
-	s64 x_64;
-	s64 y_64;
-	s64 xStep_64;
-	
-	this->vert = vert;
-	
-	this->y = Ceil28_4((fixed28_4)vert[top]->y); // "28.4" to 28.0
-	const s32 yEnd = Ceil28_4((fixed28_4)vert[bottom]->y); // "28.4" to 28.0
-	this->height = yEnd - this->y; // 28.0
-	y_64 = (s64)this->y; // 28.0
-	
-	this->x = Ceil28_4((fixed28_4)vert[top]->x); // "28.4" to 28.0
-	const s32 xEnd = Ceil28_4((fixed28_4)vert[bottom]->x); // "28.4" to 28.0
-	const s32 width = xEnd - this->x; // 28.0, can be negative
-	x_64 = (s64)this->x; // 28.0
-	
-	// even if Height == 0, give some info for horizontal line poly
-	if ( (this->height != 0) || (width != 0) )
-	{
-		s64 dN = (s64)(vert[bottom]->y - vert[top]->y); // "28.4"
-		s64 dM = (s64)(vert[bottom]->x - vert[top]->x); // "28.4"
-		
-		if (dN != 0)
-		{
-			const s64 initialNumerator = (s64)(dM*16*y_64 - dM*vert[top]->y + dN*vert[top]->x - 1 + dN*16); // "32.8" - "56.8" + "56.8" - 0.8 + "32.8"
-			FloorDivMod(initialNumerator, dN*16, x_64, this->errorTerm, failure); // "56.8", "32.8"; floor is 52.4, mod is 56.8
-			FloorDivMod(dM*16, dN*16, xStep_64, this->numerator, failure); // "32.8", "32.8"; floor is 28.4, mod is 32.8
-			
-			this->x = (s32)x_64; // 52.4 to 28.4
-			this->xStep = (s32)xStep_64; // 28.4
-			this->denominator = dN*16; // "28.4" to "32.8"
-		}
-		else
-		{
-			this->errorTerm = 0; // 0.8
-			this->xStep = width; // 28.0
-			this->numerator = 0; // 0.8
-			this->denominator = 1; // 0.8
-			dN = 1; // 0.4
-		}
-	
-		const float yPrestep = Fixed28_4ToFloat((fixed28_4)(y_64*16 - vert[top]->y)); // 28.4, "28.4"; result is normalized
-		const float xPrestep = Fixed28_4ToFloat((fixed28_4)(x_64*16 - vert[top]->x)); // 28.4, "28.4"; result is normalized
-		const float dy = 1.0f / Fixed28_4ToFloat((s32)dN); // "28.4"; result is normalized
-		const float dx = 1.0f / Fixed28_4ToFloat((s32)dM); // "28.4"; result is normalized
-		
-		invw.initialize(1.0f / vert[top]->w, 1.0f / vert[bottom]->w, dx, dy, (float)this->xStep, xPrestep, yPrestep);
-		u.initialize(vert[top]->u, vert[bottom]->u, dx, dy, (float)this->xStep, xPrestep, yPrestep);
-		v.initialize(vert[top]->v, vert[bottom]->v, dx, dy, (float)this->xStep, xPrestep, yPrestep);
-		z.initialize(vert[top]->z, vert[bottom]->z, dx, dy, (float)this->xStep, xPrestep, yPrestep);
-		
-		for (size_t i = 0; i < 3; i++)
-		{
-			color[i].initialize(vert[top]->fcolor[i], vert[bottom]->fcolor[i], dx, dy, (float)this->xStep, xPrestep, yPrestep);
-		}
-	}
-	else
-	{
-		// even if Width == 0 && Height == 0, give some info for pixel poly
-		// example: Castlevania Portrait of Ruin, warp stone
-		this->xStep = 1;
-		this->numerator = 0;
-		this->denominator = 1;
-		this->errorTerm = 0;
-		
-		invw.initialize(1.0f / vert[top]->w);
-		u.initialize(vert[top]->u);
-		v.initialize(vert[top]->v);
-		z.initialize(vert[top]->z);
-		
-		for (size_t i = 0; i < 3; i++)
-		{
-			color[i].initialize(vert[top]->fcolor[i]);
-		}
-	}
-}
 
 FORCEINLINE edge_fx_fl::edge_fx_fl(const s32 top, const s32 bottom, NDSVertex **vtx, SoftRasterizerPrecalculation **precalc, bool &failure)
 {
@@ -1276,11 +1191,6 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_rot_verts()
 	ROTSWAP(5); ROTSWAP(6); ROTSWAP(7); ROTSWAP(8); ROTSWAP(9);
 #undef ROTSWAP
 	
-#define ROTSWAP(X) if(TYPE>X) swap(this->_currentVert[X-1],this->_currentVert[X]);
-	ROTSWAP(1); ROTSWAP(2); ROTSWAP(3); ROTSWAP(4);
-	ROTSWAP(5); ROTSWAP(6); ROTSWAP(7); ROTSWAP(8); ROTSWAP(9);
-#undef ROTSWAP
-	
 #define ROTSWAP(X) if(TYPE>X) swap(this->_currentPrecalc[X-1],this->_currentPrecalc[X]);
 	ROTSWAP(1); ROTSWAP(2); ROTSWAP(3); ROTSWAP(4);
 	ROTSWAP(5); ROTSWAP(6); ROTSWAP(7); ROTSWAP(8); ROTSWAP(9);
@@ -1303,7 +1213,6 @@ void RasterizerUnit<RENDERER>::_sort_verts()
 		for (size_t i = 0; i < TYPE/2; i++)
 		{
 			swap(this->_currentVtx[i], this->_currentVtx[TYPE-i-1]);
-			swap(this->_currentVert[i], this->_currentVert[TYPE-i-1]);
 			swap(this->_currentPrecalc[i], this->_currentPrecalc[TYPE-i-1]);
 		}
 	}
@@ -1371,13 +1280,8 @@ void RasterizerUnit<RENDERER>::_shape_engine(const POLYGON_ATTR polyAttr, const 
 		assert(rv != type);
 		int _lv = (lv == type) ? 0 : lv; //make sure that we ask for vert 0 when the variable contains the starting value
 		
-#ifdef USE_FIXED_POINT_VERTEX_DATA
 		if (step_left) left = edge_fx_fl(_lv, lv-1, (NDSVertex **)&this->_currentVtx, (SoftRasterizerPrecalculation **)&this->_currentPrecalc, failure);
 		if (step_right) right = edge_fx_fl(rv, rv+1, (NDSVertex **)&this->_currentVtx, (SoftRasterizerPrecalculation **)&this->_currentPrecalc, failure);
-#else
-		if (step_left) left = edge_fx_fl(_lv, lv-1, (VERT **)&this->_currentVert, failure);
-		if (step_right) right = edge_fx_fl(rv, rv+1, (VERT **)&this->_currentVert, failure);
-#endif
 		
 		step_left = step_right = false;
 
@@ -1465,15 +1369,13 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 		
 		for (size_t j = 0; j < vertCount; j++)
 		{
-			this->_currentVtx[j] = &clippedPoly.clipVtxFixed[j];
-			this->_currentVert[j] = &clippedPoly.clipVerts[j];
+			this->_currentVtx[j] = &clippedPoly.vtx[j];
 			this->_currentPrecalc[j] = &softRastPrecalc[(i * MAX_CLIPPED_VERTS) + j];
 		}
 		
 		for (size_t j = vertCount; j < MAX_CLIPPED_VERTS; j++)
 		{
 			this->_currentVtx[j] = NULL;
-			this->_currentVert[j] = NULL;
 			this->_currentPrecalc[j] = NULL;
 		}
 		
@@ -2064,7 +1966,6 @@ void SoftRasterizerRenderer::GetAndLoadAllTextures()
 
 void SoftRasterizerRenderer::RasterizerPrecalculate()
 {
-#ifdef USE_FIXED_POINT_VERTEX_DATA
 	for (size_t i = 0, precalcIdx = 0; i < this->_clippedPolyCount; i++)
 	{
 		const CPoly &cPoly = this->_clippedPolyList[i];
@@ -2074,7 +1975,7 @@ void SoftRasterizerRenderer::RasterizerPrecalculate()
 		
 		for (size_t j = 0; j < polyType; j++)
 		{
-			const NDSVertex &vtx = cPoly.clipVtxFixed[j];
+			const NDSVertex &vtx = cPoly.vtx[j];
 			SoftRasterizerPrecalculation &precalc = this->_precalc[precalcIdx];
 			
 			const s32 x = Ceil16_16(vtx.position.x);
@@ -2110,7 +2011,6 @@ void SoftRasterizerRenderer::RasterizerPrecalculate()
 			precalcIdx++;
 		}
 	}
-#endif
 }
 
 Render3DError SoftRasterizerRenderer::ApplyRenderingSettings(const GFX3D_State &renderState)
