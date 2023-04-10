@@ -93,8 +93,10 @@ const char MSR_FIELD[16][5] = {
                                      Registre[REG_POS(i,0)],\
                                      tmp);
 #define DATAPROC_ROR_IMM(nom, s)      char tmp[10] = "";\
-     if(((i>>7)&0x1F)!=0)\
+     if(((i>>7)&0x1F)==0)\
           sprintf(tmp, ", RRX");\
+     else\
+          sprintf(tmp, ", ROR %d", (int)((i>>7)&0x1F));\
      sprintf(txt, "%s%s%s %s, %s, %s%s",\
                                      #nom,\
                                      Condition[CONDITION(i)],\
@@ -208,8 +210,10 @@ const char MSR_FIELD[16][5] = {
                                      tmp,\
                                      op3);
 #define LDRSTR_ROR_IMM(nom, op, op2, op3)      char tmp[10] = "";\
-     if(((i>>7)&0x1F)!=0)\
+     if(((i>>7)&0x1F)==0)\
           sprintf(tmp, ", RRX");\
+     else\
+          sprintf(tmp, ", ROR %d", (int)((i>>7)&0x1F));\
      sprintf(txt, "%s%s %s, [%s%s, %s%s%s%s",\
                                      #nom,\
                                      Condition[CONDITION(i)],\
