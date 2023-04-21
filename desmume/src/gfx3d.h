@@ -666,8 +666,8 @@ struct GeometryEngineLegacySave
 	u32 texPalette;
 	
 	u32 mtxCurrentMode;
-	NDSMatrix tempMultiplyMatrix;
-	NDSMatrix currentMatrix[4];
+	CACHE_ALIGN NDSMatrix tempMultiplyMatrix;
+	CACHE_ALIGN NDSMatrix currentMatrix[4];
 	u8 mtxLoad4x4PendingIndex;
 	u8 mtxLoad4x3PendingIndex;
 	u8 mtxMultiply4x4TempIndex;
