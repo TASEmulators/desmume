@@ -1,0 +1,8 @@
+Tips:
+* Set hotkeys for "Mic Prev Sample" and "Mic Next Sample" in the "Main" section of hotkey configuration (suggest [ and ])
+* This will rotate through all the provided desmume_N.wav. You can add your own in the series, just pick the next number.
+* Keep the microphone hotkey held down for as long as you want the noise to play! Just tapping it will make a very short sound indeed.
+
+desmume_0.wav was formerly "PERFECT BLOW FOR DS EMULATORS.wav"
+desmume_1.wav was formerly "noise_loud.wav"
+
