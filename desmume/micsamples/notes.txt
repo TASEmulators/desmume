@@ -5,4 +5,4 @@ Tips:
 
 desmume_0.wav was formerly "PERFECT BLOW FOR DS EMULATORS.wav"
 desmume_1.wav was formerly "noise_loud.wav"
-
+desmume_4.wav came to us as "pcm0822m.wav"; these are alleged to work well for Giant Bowser fights in Bowser's Inside Story. 
