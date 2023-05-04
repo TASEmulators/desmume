@@ -566,6 +566,26 @@ union Color4s32
 };
 typedef union Color4s32 Color4s32;
 
+union Color3s64
+{
+	s64 component[3];
+	struct { s64 r, g, b; };
+};
+typedef union Color3s64 Color3s64;
+
+union Color4s64
+{
+	s64 component[4];
+	struct { s64 r, g, b, a; };
+	
+	struct
+	{
+		Color3s64 color3;
+		s64 alpha;
+	};
+};
+typedef union Color4s64 Color4s64;
+
 union Color3f32
 {
 	float component[3];

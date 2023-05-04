@@ -3283,27 +3283,23 @@ size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUns
 				(s64)vtx.position.w,
 			};
 			
+			//homogeneous divide
 			if (vtx64.w != 0)
 			{
-				//homogeneous divide
-				vtx64.x = ((vtx64.x + vtx64.w) * (theViewport.width  << 16)) / (2 * vtx64.w);
-				vtx64.y = ((vtx64.y + vtx64.w) * (theViewport.height << 16)) / (2 * vtx64.w);
-				vtx64.z = ((vtx64.z + vtx64.w) * (               1LL << 12)) / (2 * vtx64.w);
+				vtx64.x = ((vtx64.x + vtx64.w) * ((s64)theViewport.width  << 16)) / (2 * vtx64.w);
+				vtx64.y = ((vtx64.y + vtx64.w) * ((s64)theViewport.height << 16)) / (2 * vtx64.w);
+				vtx64.z = ((vtx64.z + vtx64.w) * (                    1LL << 31)) / (2 * vtx64.w);
+				
+				// Convert Z from 20.12 to 20.43 since we need to preserve as much precision
+				// as possible for Z-depth calculations. Several games need the precision in
+				// order to prevent missing polygons, maintain correct coloring, draw 2D-on-3D
+				// animations, and other types of 3D scenarios.
 			}
 			else
 			{
-				// TODO: Possible divide by zero with the w-coordinate.
-				// Is the vertex being read correctly? Is 0 a valid value for w?
-				// If both of these questions answer to yes, then how does the NDS handle this?
-				// For now, simply ignore w if it is zero.
-				//
-				// Test case: Dance scenes in Princess Debut can generate undefined vertices
-				// when the -ffast-math option (relaxed IEEE754 compliance) is used.
-				
-				//homogeneous divide
-				vtx64.x = (vtx64.x * (theViewport.width  << 16));
-				vtx64.y = (vtx64.y * (theViewport.height << 16));
-				vtx64.z = (vtx64.z * (               1LL << 12));
+				vtx64.x = (vtx64.x * ((s64)theViewport.width  << 16));
+				vtx64.y = (vtx64.y * ((s64)theViewport.height << 16));
+				vtx64.z = (vtx64.z * (                    1LL << 31)); // See comments above for why we need to convert Z to 22.42.
 			}
 			
 			// Finish viewport transformation.
@@ -3314,12 +3310,18 @@ size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUns
 			vtx64.y = (192LL << 16) - vtx64.y;
 			vtx64.y *= hScalar;
 			
+			// We need to fit the 64-bit Z into a 32-bit integer, so we will need to drop some bits.
+			// - Divide by w = 20.43 --> 20.31
+			// - Divide by 2 = 20.31 --> 20.30
+			// - Keep the sign bit = 20.30 --> 20.31
+			vtx64.z = max<s64>(0x0000000000000000LL, min<s64>(0x000000007FFFFFFFLL, vtx64.z));
+			
 			// At the very least, we need to save the transformed position so that
 			// we can use it to calculate the polygon facing later.
-			vtx.position.x = (s32)vtx64.x;
-			vtx.position.y = (s32)vtx64.y;
-			vtx.position.z = (s32)vtx64.z;
-			vtx.position.w = (s32)vtx64.w;
+			vtx.position.x = (s32)vtx64.x; // 16.16
+			vtx.position.y = (s32)vtx64.y; // 16.16
+			vtx.position.z = (s32)vtx64.z; // 0.31
+			vtx.position.w = (s32)vtx64.w; // 20.12
 		}
 		
 		// Determine the polygon facing.

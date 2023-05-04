@@ -34,12 +34,17 @@ struct SoftRasterizerPrecalculation
 {
 	Vector2s64 positionCeil;
 	
+	s64 zPosition;
+	s64 invWPosition;
+	Vector2s64 texCoord;
+	Color3s64 color;
+	s64 yPrestep;
+	
 	float zPositionNormalized;
 	float invWPositionNormalized;
 	Vector2f32 texCoordNormalized;
 	Color3f32 colorNormalized;
-	
-	float yPrestep;
+	float yPrestepNormalized;
 };
 typedef struct SoftRasterizerPrecalculation SoftRasterizerPrecalculation;
 
@@ -121,22 +126,17 @@ protected:
 	u8 _textureWrapMode;
 	
 	Render3DError _SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
-	FORCEINLINE Color4u8 _sample(const Vector2f32 &texCoord);
-	FORCEINLINE float _round_s(double val);
+	FORCEINLINE Color4u8 _sample(const Vector2s32 &texCoord);
+	FORCEINLINE float _round_s(const float val);
 	
-	template<bool ISSHADOWPOLYGON> FORCEINLINE void _shade(const PolygonMode polygonMode, const Color4u8 vtxColor, const Vector2f32 &texCoord, Color4u8 &outColor);
-	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON> FORCEINLINE void _pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, const Color4f32 &vtxColorFloat, float invu, float invv, float z, float w);
-	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> FORCEINLINE void _drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const edge_fx_fl *pLeft, const edge_fx_fl *pRight);
-	template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> void _runscanlines(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const bool isHorizontal, edge_fx_fl *left, edge_fx_fl *right);
-	
-#ifdef ENABLE_SSE2
-	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON> FORCEINLINE void _pixel_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, const __m128 &vtxColorFloat, float invu, float invv, float z, float w);
-	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> FORCEINLINE void _drawscanline_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const edge_fx_fl *pLeft, const edge_fx_fl *pRight);
-#endif
+	template<bool ISSHADOWPOLYGON> FORCEINLINE void _shade(const PolygonMode polygonMode, const Color4u8 vtxColor, const Vector2s32 &texCoord, Color4u8 &outColor);
+	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON> FORCEINLINE void _pixel(const POLYGON_ATTR polyAttr, const bool isPolyTranslucent, const u32 depth, const Color4u8 &vtxColor, const Vector2s32 texCoord, const size_t fragmentIndex, Color4u8 &dstColor);
+	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> FORCEINLINE void _drawscanline(const POLYGON_ATTR polyAttr, const bool isPolyTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const edge_fx_fl &pLeft, const edge_fx_fl &pRight);
+	template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> void _runscanlines(const POLYGON_ATTR polyAttr, const bool isPolyTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const bool isHorizontal, edge_fx_fl &left, edge_fx_fl &right);
 	
 	template<int TYPE> FORCEINLINE void _rot_verts();
 	template<bool ISFRONTFACING, int TYPE> void _sort_verts();
-	template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> void _shape_engine(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type);
+	template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> void _shape_engine(const POLYGON_ATTR polyAttr, const bool isPolyTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type);
 	
 public:
 	void SetSLI(u32 startLine, u32 endLine, bool debug);

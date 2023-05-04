@@ -122,11 +122,6 @@ static FORCEINLINE void FloorDivMod(const s64 inNumerator, const s64 inDenominat
 	}
 }
 
-static FORCEINLINE float Fixed28_4ToFloat(fixed28_4 Value)
-{
-	return Value / 16.0f;
-}
-
 static FORCEINLINE s32 Ceil16_16(s32 fixed_16_16)
 {
 	s32 ReturnValue;
@@ -174,13 +169,12 @@ struct edge_fx_fl
 	NDSVertex **vtx;
 	
 	s32 x, xStep; // DDA info for x
-	s64 numerator, denominator; // DDA info for x
-	s64 errorTerm;
+	s64 errorTerm, numerator, denominator; // DDA info for x
 	
 	s32 y; // Current Y
 	s32 height; // Vertical count
 	
-	struct Interpolant
+	struct InterpolantFloat
 	{
 		float curr;
 		float step;
@@ -189,14 +183,20 @@ struct edge_fx_fl
 		FORCEINLINE void doStep() { this->curr += this->step; }
 		FORCEINLINE void doStepExtra() { this->curr += this->stepExtra; }
 		
-		FORCEINLINE void initialize(const float value)
+		FORCEINLINE void initialize(const float top)
 		{
-			this->curr = value;
+			this->curr = top;
 			this->step = 0.0f;
 			this->stepExtra = 0.0f;
 		}
 		
-		FORCEINLINE void initialize(const float top, const float bottom, float dx, float dy, const float inXStep, const float xPrestep, const float yPrestep)
+		FORCEINLINE void initialize(const float top,
+		                            const float bottom,
+		                            float dx,
+		                            float dy,
+		                            const float inXStep,
+		                            const float xPrestep,
+		                            const float yPrestep)
 		{
 			dx = 0.0f;
 			dy *= (bottom-top);
@@ -207,18 +207,87 @@ struct edge_fx_fl
 		}
 	};
 	
-	static const int NUM_INTERPOLANTS = 7;
+	struct Interpolant
+	{
+		s64 curr;
+		s64 step;
+		s64 stepExtra;
+		
+		FORCEINLINE void doStep() { this->curr += this->step; }
+		FORCEINLINE void doStepExtra() { this->curr += this->stepExtra; }
+		
+		FORCEINLINE void initialize(const s64 top) // fixed
+		{
+			this->curr = top; // fixed
+			this->step = 0; // fixed
+			this->stepExtra = 0; // fixed
+		}
+		
+		FORCEINLINE void initialize(const s64 top, // fixed
+		                            const s64 bottom, // fixed
+		                            const s64 dxN, const s64 dxD, // 16.16
+		                            const s64 dyN, const s64 dyD, // 16.16
+		                            const s64 inXStep, // 32.0
+		                            const s64 xPrestepN, const s64 xPrestepD, // 48.16
+		                            const s64 yPrestepN, const s64 yPrestepD) // 48.16
+		{
+			const s64 dx = 0; // fixed
+			
+			if ( (dyD != 0) && (yPrestepD != 0) )
+			{
+				const s64 dy = dyN * (bottom - top) / dyD; // 16.16 * (fixed - fixed) / 16.16 = fixed
+				
+				this->curr = top + (yPrestepN * dy / yPrestepD) + (xPrestepN * dx / xPrestepD);
+				// fixed + ((48.16 * fixed) / 48.16) + ((48.16 * fixed) / 48.16) = fixed
+				this->step = (inXStep * dx) + dy; // (32.0 * fixed) + fixed = fixed
+				this->stepExtra = dx; // fixed
+			}
+			else
+			{
+				this->curr = top; // fixed
+				this->step = (inXStep * dx); // 32.0 * fixed = fixed
+				this->stepExtra = dx; // fixed
+			}
+		}
+	};
+	
+#define NUM_INTERPOLANTS 7
 	union
 	{
 		struct
 		{
-			Interpolant invw, z, u, v, color[3];
+			InterpolantFloat invWFloat, zFloat, sFloat, tFloat, colorFloat[3];
+		};
+		InterpolantFloat interpolantsFloat[NUM_INTERPOLANTS];
+	};
+	
+	union
+	{
+		struct
+		{
+			Interpolant invW, z, s, t, color[3];
 		};
 		Interpolant interpolants[NUM_INTERPOLANTS];
 	};
 	
-	void FORCEINLINE doStepInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStep(); }
-	void FORCEINLINE doStepExtraInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStepExtra(); }
+	void FORCEINLINE doStepInterpolants()
+	{
+		for (int i = 0; i < NUM_INTERPOLANTS; i++)
+		{
+			interpolants[i].doStep();
+			interpolantsFloat[i].doStep();
+		}
+	}
+	
+	void FORCEINLINE doStepExtraInterpolants()
+	{
+		for (int i = 0; i < NUM_INTERPOLANTS; i++)
+		{
+			interpolants[i].doStepExtra();
+			interpolantsFloat[i].doStepExtra();
+		}
+	}
+#undef NUM_INTERPOLANTS
 };
 
 FORCEINLINE edge_fx_fl::edge_fx_fl(const s32 top, const s32 bottom, NDSVertex **vtx, SoftRasterizerPrecalculation **precalc, bool &failure)
@@ -246,55 +315,149 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(const s32 top, const s32 bottom, NDSVertex **
 		if (dN != 0)
 		{
 			const s64 InitialNumerator = (s64)(dM*65536*y_64 - dM*vtx[top]->position.y + dN*vtx[top]->position.x - 1 + dN*65536); // 32.32
-			FloorDivMod(InitialNumerator, dN * 65536, x_64, this->errorTerm, failure); // 32.32, 32.32; floor is 16.16, mod is 32.32
-			FloorDivMod(dM * 65536, dN * 65536, xStep_64, this->numerator, failure); // 32.32, 32.32; floor is 16.16, mod is 32.32
+			FloorDivMod(InitialNumerator, dN * (1LL << 16), x_64, this->errorTerm, failure); // 32.32, 32.32; floor is 64.0, mod is 32.32
+			FloorDivMod(dM * (1LL << 16), dN * (1LL << 16), xStep_64, this->numerator, failure); // 32.32, 32.32; floor is 64.0, mod is 32.32
 			
-			this->x = (s32)x_64; // 16.16
-			this->xStep = (s32)xStep_64; // 16.16
-			this->denominator = dN * 65536; // 16.16 to 32.32
+			this->x = (s32)x_64; // 32.0
+			this->xStep = (s32)xStep_64; // 32.0
+			this->denominator = dN * (1LL << 16); // 16.16 to 32.32
 		}
 		else
 		{
 			this->errorTerm = 0; // 0.32
-			this->xStep = width; // 16.0
+			this->xStep = width; // 32.0
 			this->numerator = 0; // 0.32
 			this->denominator = 1; // 0.32
 			dN = 1; // 0.32
 		}
 		
-		const float yPrestep = precalc[top]->yPrestep; // 16.16, 16.16; result is normalized
-		const float xPrestep = (float)( (double)(x_64*65536 - vtx[top]->position.x) / 65536.0 ); // 16.16, 16.16; result is normalized
 		// Note that we can't precalculate xPrestep because x_64 can be modified by an earlier call to FloorDivMod().
-		const float dy = 65536.0f / (float)dN; // 16.16; result is normalized
-		const float dx = 65536.0f / (float)dM; // 16.16; result is normalized
+		const s64 xPrestepFixedN = (x_64 * (1LL << 16)) - (s64)vtx[top]->position.x; // 48.16 - 16.16
+		const s64 xPrestepFixedD = (1LL << 16); // 1.16
+		const s64 yPrestepFixedN = precalc[top]->yPrestep; // 48.16 - 16.16
+		const s64 yPrestepFixedD = (1LL << 16); // 1.16
 		
-		invw.initialize(precalc[top]->invWPositionNormalized, precalc[bottom]->invWPositionNormalized, dx, dy, (float)this->xStep, xPrestep, yPrestep);
-		u.initialize(precalc[top]->texCoordNormalized.u, precalc[bottom]->texCoordNormalized.u, dx, dy, (float)this->xStep, xPrestep, yPrestep);
-		v.initialize(precalc[top]->texCoordNormalized.v, precalc[bottom]->texCoordNormalized.v, dx, dy, (float)this->xStep, xPrestep, yPrestep);
-		z.initialize(precalc[top]->zPositionNormalized, precalc[bottom]->zPositionNormalized, dx, dy, (float)this->xStep, xPrestep, yPrestep);
+		const s64 dxFixedN = (1LL << 16); // 1.16
+		const s64 dxFixedD = dM; // 16.16
+		const s64 dyFixedN = (1LL << 16); // 1.16
+		const s64 dyFixedD = dN; // 16.16
+		
+		const float xPrestepFloat = (float)( (double)(x_64*65536 - vtx[top]->position.x) / 65536.0 ); // 16.16, 16.16; result is normalized
+		const float yPrestepFloat = precalc[top]->yPrestepNormalized; // 16.16, 16.16; result is normalized
+		const float dxFloat = 65536.0f / (float)dM; // 16.16; result is normalized
+		const float dyFloat = 65536.0f / (float)dN; // 16.16; result is normalized
+		
+#define W_INTEGERBITS 20 // W coordinates should be coming in as 20.12.
+#define W_PRECISION (64 - W_INTEGERBITS) // We need to calculate the inverse of W, and so we want to maintain as much precision as possible for this.
+#define Z_EXTRAPRECISION 12 // Z is calculated in 64-bit and we have the extra bits, so use them to increase our precision. Mostly used for interpolating Z in higher-than-native resolution rendering.
+#define TC_PRECISION (W_PRECISION - 4) // Texture coordinate precision is based on W_PRECISION, but needs a 16x multiplier to map correctly.
+		
+		invW.initialize(precalc[top]->invWPosition,
+						precalc[bottom]->invWPosition,
+		                dxFixedN, dxFixedD,
+		                dyFixedN, dyFixedD,
+		                this->xStep,
+		                xPrestepFixedN, xPrestepFixedD,
+		                yPrestepFixedN, yPrestepFixedD);
+		
+		z.initialize(precalc[top]->zPosition,
+					 precalc[bottom]->zPosition,
+		             dxFixedN, dxFixedD,
+		             dyFixedN, dyFixedD,
+		             this->xStep,
+		             xPrestepFixedN, xPrestepFixedD,
+		             yPrestepFixedN, yPrestepFixedD);
+		
+		s.initialize(precalc[top]->texCoord.s,
+					 precalc[bottom]->texCoord.s,
+		             dxFixedN, dxFixedD,
+		             dyFixedN, dyFixedD,
+		             this->xStep,
+		             xPrestepFixedN, xPrestepFixedD,
+		             yPrestepFixedN, yPrestepFixedD);
+		
+		t.initialize(precalc[top]->texCoord.t,
+					 precalc[bottom]->texCoord.t,
+		             dxFixedN, dxFixedD,
+		             dyFixedN, dyFixedD,
+		             this->xStep,
+		             xPrestepFixedN, xPrestepFixedD,
+		             yPrestepFixedN, yPrestepFixedD);
+		
+		invWFloat.initialize(precalc[top]->invWPositionNormalized,
+		                     precalc[bottom]->invWPositionNormalized,
+		                     dxFloat,
+		                     dyFloat,
+		                     (float)this->xStep,
+		                     xPrestepFloat,
+		                     yPrestepFloat);
+		
+		zFloat.initialize(precalc[top]->zPositionNormalized,
+		                  precalc[bottom]->zPositionNormalized,
+		                  dxFloat,
+		                  dyFloat,
+		                  (float)this->xStep,
+		                  xPrestepFloat,
+		                  yPrestepFloat);
+		
+		sFloat.initialize(precalc[top]->texCoordNormalized.s,
+		                  precalc[bottom]->texCoordNormalized.s,
+		                  dxFloat,
+		                  dyFloat,
+		                  (float)this->xStep,
+		                  xPrestepFloat,
+		                  yPrestepFloat);
+		
+		tFloat.initialize(precalc[top]->texCoordNormalized.t,
+		                  precalc[bottom]->texCoordNormalized.t,
+		                  dxFloat,
+		                  dyFloat,
+		                  (float)this->xStep,
+		                  xPrestepFloat,
+		                  yPrestepFloat);
 		
 		for (size_t i = 0; i < 3; i++)
 		{
-			color[i].initialize(precalc[top]->colorNormalized.component[i], precalc[bottom]->colorNormalized.component[i], dx, dy, (float)this->xStep, xPrestep, yPrestep);
+			color[i].initialize(precalc[top]->color.component[i],
+								precalc[bottom]->color.component[i],
+					            dxFixedN, dxFixedD,
+					            dyFixedN, dyFixedD,
+					            this->xStep,
+					            xPrestepFixedN, xPrestepFixedD,
+					            yPrestepFixedN, yPrestepFixedD);
+			
+			colorFloat[i].initialize(precalc[top]->colorNormalized.component[i],
+									 precalc[bottom]->colorNormalized.component[i],
+									 dxFloat,
+									 dyFloat,
+									 (float)this->xStep,
+									 xPrestepFloat,
+									 yPrestepFloat);
 		}
 	}
 	else
 	{
 		// even if Width == 0 && Height == 0, give some info for pixel poly
 		// example: Castlevania Portrait of Ruin, warp stone
-		this->xStep = 1; // normalized
+		this->xStep = 1;
 		this->numerator = 0;
 		this->denominator = 1;
 		this->errorTerm = 0;
 		
-		invw.initialize(precalc[top]->invWPositionNormalized);
-		u.initialize(precalc[top]->texCoordNormalized.u);
-		v.initialize(precalc[top]->texCoordNormalized.v);
-		z.initialize(precalc[top]->zPositionNormalized);
+		invW.initialize(precalc[top]->invWPosition);
+		z.initialize(precalc[top]->zPosition);
+		s.initialize(precalc[top]->texCoord.s);
+		t.initialize(precalc[top]->texCoord.t);
+		
+		invWFloat.initialize(precalc[top]->invWPositionNormalized);
+		zFloat.initialize(precalc[top]->zPositionNormalized);
+		sFloat.initialize(precalc[top]->texCoordNormalized.s);
+		tFloat.initialize(precalc[top]->texCoordNormalized.t);
 		
 		for (size_t i = 0; i < 3; i++)
 		{
-			color[i].initialize(precalc[top]->colorNormalized.component[i]);
+			color[i].initialize(precalc[top]->color.component[i]);
+			colorFloat[i].initialize(precalc[top]->colorNormalized.component[i]);
 		}
 	}
 }
@@ -379,29 +542,9 @@ Render3DError RasterizerUnit<RENDERER>::_SetupTexture(const POLY &thePoly, size_
 }
 
 template<bool RENDERER>
-FORCEINLINE Color4u8 RasterizerUnit<RENDERER>::_sample(const Vector2f32 &texCoord)
+FORCEINLINE Color4u8 RasterizerUnit<RENDERER>::_sample(const Vector2s32 &texCoord)
 {
-	//finally, we can use floor here. but, it is slower than we want.
-	//the best solution is probably to wait until the pipeline is full of fixed point
-	const float texScalingFactor = (float)this->_currentTexture->GetScalingFactor();
-	const Vector2f32 texCoordScaled = {
-		texCoord.u * texScalingFactor,
-		texCoord.v * texScalingFactor
-	};
-	
-	Vector2s32 sampleCoord = { 0, 0 };
-	
-	if (!this->_softRender->_enableFragmentSamplingHack)
-	{
-		sampleCoord.u = s32floor(texCoordScaled.u);
-		sampleCoord.v = s32floor(texCoordScaled.v);
-	}
-	else
-	{
-		sampleCoord.u = this->_round_s(texCoordScaled.u);
-		sampleCoord.v = this->_round_s(texCoordScaled.v);
-	}
-	
+	Vector2s32 sampleCoord = texCoord;
 	const u32 *textureData = this->_currentTexture->GetRenderData();
 	this->_currentTexture->GetRenderSamplerCoordinates(this->_textureWrapMode, sampleCoord);
 	
@@ -413,20 +556,20 @@ FORCEINLINE Color4u8 RasterizerUnit<RENDERER>::_sample(const Vector2f32 &texCoor
 
 //round function - tkd3
 template<bool RENDERER>
-FORCEINLINE float RasterizerUnit<RENDERER>::_round_s(double val)
+FORCEINLINE float RasterizerUnit<RENDERER>::_round_s(const float val)
 {
-	if (val > 0.0)
+	if (val > 0.0f)
 	{
 		return floorf(val*256.0f+0.5f)/256.0f; //this value(256.0) is good result.(I think)
 	}
 	else
 	{
-		return -1.0*floorf(fabs(val)*256.0f+0.5f)/256.0f;
+		return -1.0f*floorf(fabsf(val)*256.0f+0.5f)/256.0f;
 	}
 }
 
 template<bool RENDERER> template<bool ISSHADOWPOLYGON>
-FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode, const Color4u8 vtxColor, const Vector2f32 &texCoord, Color4u8 &outColor)
+FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode, const Color4u8 vtxColor, const Vector2s32 &texCoord, Color4u8 &outColor)
 {
 	if (ISSHADOWPOLYGON)
 	{
@@ -514,7 +657,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode,
 }
 
 template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON>
-FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, const Color4f32 &vtxColorFloat, float invu, float invv, float z, float w)
+FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, const bool isPolyTranslucent, const u32 depth, const Color4u8 &vtxColor, const Vector2s32 texCoord, const size_t fragmentIndex, Color4u8 &dstColor)
 {
 	const GFX3D_State &renderState = *this->_softRender->currentRenderState;
 	
@@ -525,16 +668,6 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 	u8 &dstAttributeIsFogged			= this->_softRender->_framebufferAttributes->isFogged[fragmentIndex];
 	u8 &dstAttributeIsTranslucentPoly	= this->_softRender->_framebufferAttributes->isTranslucentPoly[fragmentIndex];
 	u8 &dstAttributePolyFacing			= this->_softRender->_framebufferAttributes->polyFacing[fragmentIndex];
-	
-	// not sure about the w-buffer depth value: this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
-	//
-	// When using z-depth, be sure to test against the following test cases:
-	// - The drawing of the overworld map in Dragon Quest IV
-	// - The drawing of all units on the map in Advance Wars: Days of Ruin
-
-	// Note that an IEEE-754 single-precision float uses a 23-bit significand. Therefore, we will multiply the
-	// Z-depth by a 22-bit significand for safety.
-	const u32 newDepth = (renderState.SWAP_BUFFERS.DepthMode) ? u32floor(w * 4096.0f) : u32floor(z * 4194303.0f) << 2;
 	
 	// run the depth test
 	bool depthFail = false;
@@ -547,7 +680,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 		const u32 minDepth = (u32)max<s32>(0x00000000, (s32)dstAttributeDepth - DEPTH_EQUALS_TEST_TOLERANCE);
 		const u32 maxDepth = min<u32>(0x00FFFFFF, dstAttributeDepth + DEPTH_EQUALS_TEST_TOLERANCE);
 		
-		if (newDepth < minDepth || newDepth > maxDepth)
+		if (depth < minDepth || depth > maxDepth)
 		{
 			depthFail = true;
 		}
@@ -559,7 +692,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 		//
 		// Test case: The Customize status screen in Sands of Destruction requires this type of depth
 		// test in order to correctly show the animating characters.
-		if (newDepth > dstAttributeDepth)
+		if (depth > dstAttributeDepth)
 		{
 			depthFail = true;
 		}
@@ -567,7 +700,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 	else
 	{
 		// The LESS depth test is the default type of depth test for all other conditions.
-		if (newDepth >= dstAttributeDepth)
+		if (depth >= dstAttributeDepth)
 		{
 			depthFail = true;
 		}
@@ -577,7 +710,9 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 	{
 		//shadow mask polygons set stencil bit here
 		if (ISSHADOWPOLYGON && polyAttr.PolygonID == 0)
-			dstAttributeStencil=1;
+		{
+			dstAttributeStencil = 1;
+		}
 		return;
 	}
 	
@@ -610,20 +745,8 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 		}
 	}
 	
-	//this is a HACK:
-	//we are being very sloppy with our interpolation precision right now
-	//and rather than fix it, i just want to clamp it
-	const Color4u8 vtxColor = {
-		max<u8>( 0x00, min<u32>(0x3F, u32floor( (vtxColorFloat.r * w) + 0.5f )) ),
-		max<u8>( 0x00, min<u32>(0x3F, u32floor( (vtxColorFloat.g * w) + 0.5f )) ),
-		max<u8>( 0x00, min<u32>(0x3F, u32floor( (vtxColorFloat.b * w) + 0.5f )) ),
-		polyAttr.Alpha
-	};
-	
-	//pixel shader
-	const Vector2f32 texCoordFloat = { invu * w, invv * w };
 	Color4u8 shaderOutput;
-	this->_shade<ISSHADOWPOLYGON>((PolygonMode)polyAttr.Mode, vtxColor, texCoordFloat, shaderOutput);
+	this->_shade<ISSHADOWPOLYGON>((PolygonMode)polyAttr.Mode, vtxColor, texCoord, shaderOutput);
 	
 	// handle alpha test
 	if ( shaderOutput.a == 0 ||
@@ -637,7 +760,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 	if (isOpaquePixel)
 	{
 		dstAttributeOpaquePolyID = polyAttr.PolygonID;
-		dstAttributeIsTranslucentPoly = isTranslucent;
+		dstAttributeIsTranslucentPoly = isPolyTranslucent;
 		dstAttributeIsFogged = polyAttr.Fog_Enable;
 		dstColor = shaderOutput;
 	}
@@ -645,7 +768,9 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 	{
 		//dont overwrite pixels on translucent polys with the same polyids
 		if (dstAttributeTranslucentPolyID == polyAttr.PolygonID)
+		{
 			return;
+		}
 		
 		//originally we were using a test case of shadows-behind-trees in sm64ds
 		//but, it looks bad in that game. this is actually correct
@@ -662,70 +787,117 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 	
 	//depth writing
 	if (isOpaquePixel || polyAttr.TranslucentDepthWrite_Enable)
-		dstAttributeDepth = newDepth;
+	{
+		dstAttributeDepth = depth;
+	}
 }
 
 //draws a single scanline
 template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK>
-FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const edge_fx_fl *pLeft, const edge_fx_fl *pRight)
+FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR polyAttr, const bool isPolyTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const edge_fx_fl &pLeft, const edge_fx_fl &pRight)
 {
-	const s32 xStart = pLeft->x;
-	s32 width = pRight->x - xStart;
+	const s32 xStart = pLeft.x;
+	s32 rasterWidth = pRight.x - xStart;
 
-	// HACK: workaround for vertical/slant line poly
-	if ( USELINEHACK && (width == 0) )
+	if (rasterWidth == 0)
 	{
-		s32 leftWidth = pLeft->xStep;
-		if (pLeft->errorTerm + pLeft->numerator >= pLeft->denominator)
-			leftWidth++;
-		s32 rightWidth = pRight->xStep;
-		if (pRight->errorTerm + pRight->numerator >= pRight->denominator)
-			rightWidth++;
-		width = max(1, max(abs(leftWidth), abs(rightWidth)));
+		if (USELINEHACK)
+		{
+			// HACK: workaround for vertical/slant line poly
+			s32 leftWidth = pLeft.xStep;
+			if (pLeft.errorTerm + pLeft.numerator >= pLeft.denominator)
+			{
+				leftWidth++;
+			}
+			
+			s32 rightWidth = pRight.xStep;
+			if (pRight.errorTerm + pRight.numerator >= pRight.denominator)
+			{
+				rightWidth++;
+			}
+			
+			rasterWidth = max(1, max(abs(leftWidth), abs(rightWidth)));
+		}
+		else
+		{
+			return;
+		}
 	}
 
 	//these are the starting values, taken from the left edge
-	CACHE_ALIGN float coord[4] = {
-		pLeft->u.curr,
-		pLeft->v.curr,
-		pLeft->z.curr,
-		pLeft->invw.curr
+	s64 invWInterpolated = pLeft.invW.curr;
+	s64 zInterpolated = pLeft.z.curr;
+	
+	CACHE_ALIGN Vector2s64 texCoordInterpolated = {
+		pLeft.s.curr,
+		pLeft.t.curr
 	};
 	
-	CACHE_ALIGN Color4f32 vtxColorFloat = {
-		pLeft->color[0].curr,
-		pLeft->color[1].curr,
-		pLeft->color[2].curr,
+	CACHE_ALIGN Color4s64 vtxColorInterpolated = {
+		pLeft.color[0].curr,
+		pLeft.color[1].curr,
+		pLeft.color[2].curr,
+		polyAttr.Alpha
+	};
+	
+	float invWFloatInterpolated = pLeft.invWFloat.curr;
+	float zFloatInterpolated = pLeft.zFloat.curr;
+	
+	CACHE_ALIGN Vector2f32 texCoordFloatInterpolated = {
+		pLeft.sFloat.curr,
+		pLeft.tFloat.curr
+	};
+	
+	CACHE_ALIGN Color4f32 vtxColorFloatInterpolated = {
+		pLeft.colorFloat[0].curr,
+		pLeft.colorFloat[1].curr,
+		pLeft.colorFloat[2].curr,
 		(float)polyAttr.Alpha / 31.0f
 	};
 	
 	//our dx values are taken from the steps up until the right edge
-	const float invWidth = 1.0f / (float)width;
+	const s64 rasterWidth_dx = rasterWidth;
 	
-	const CACHE_ALIGN float coord_dx[4] = {
-		(pRight->u.curr - coord[0]) * invWidth,
-		(pRight->v.curr - coord[1]) * invWidth,
-		(pRight->z.curr - coord[2]) * invWidth,
-		(pRight->invw.curr - coord[3]) * invWidth
+	const s64 invWInterpolated_dx = (pRight.invW.curr - invWInterpolated) / rasterWidth_dx;
+	const s64 zInterpolated_dx = (pRight.z.curr - zInterpolated) / rasterWidth_dx;
+	
+	const CACHE_ALIGN Vector2s64 texCoordInterpolated_dx = {
+		(pRight.s.curr - texCoordInterpolated.s) / rasterWidth_dx,
+		(pRight.t.curr - texCoordInterpolated.t) / rasterWidth_dx
 	};
 	
-	const CACHE_ALIGN Color4f32 vtxColorFloat_dx = {
-		(pRight->color[0].curr - vtxColorFloat.r) * invWidth,
-		(pRight->color[1].curr - vtxColorFloat.g) * invWidth,
-		(pRight->color[2].curr - vtxColorFloat.b) * invWidth,
-		0.0f * invWidth
+	const CACHE_ALIGN Color4s64 vtxColorInterpolated_dx = {
+		(pRight.color[0].curr - vtxColorInterpolated.r) / rasterWidth_dx,
+		(pRight.color[1].curr - vtxColorInterpolated.g) / rasterWidth_dx,
+		(pRight.color[2].curr - vtxColorInterpolated.b) / rasterWidth_dx,
+		0 / rasterWidth_dx
+	};
+	
+	const float invWFloatInterpolated_dx = (pRight.invWFloat.curr - invWFloatInterpolated) / (float)rasterWidth_dx;
+	const float zFloatInterpolated_dx = (pRight.zFloat.curr - zFloatInterpolated) / (float)rasterWidth_dx;
+	
+	const CACHE_ALIGN Vector2f32 texCoordFloatInterpolated_dx = {
+		(pRight.sFloat.curr - texCoordFloatInterpolated.s) / rasterWidth_dx,
+		(pRight.tFloat.curr - texCoordFloatInterpolated.t) / rasterWidth_dx
+	};
+	
+	const CACHE_ALIGN Color4f32 vtxColorFloatInterpolated_dx = {
+		(pRight.colorFloat[0].curr - vtxColorFloatInterpolated.r) / (float)rasterWidth_dx,
+		(pRight.colorFloat[1].curr - vtxColorFloatInterpolated.g) / (float)rasterWidth_dx,
+		(pRight.colorFloat[2].curr - vtxColorFloatInterpolated.b) / (float)rasterWidth_dx,
+		0.0f / (float)rasterWidth_dx
 	};
 
 	//CONSIDER: in case some other math is wrong (shouldve been clipped OK), we might go out of bounds here.
 	//better check the Y value.
-	if ( (pLeft->y < 0) || (pLeft->y >= framebufferHeight) )
+	if ( (pLeft.y < 0) || (pLeft.y >= framebufferHeight) )
 	{
 		const float gpuScalingFactorHeight = (float)framebufferHeight / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-		printf("rasterizer rendering at y=%d! oops! (x%.1f)\n", pLeft->y, gpuScalingFactorHeight);
+		printf("rasterizer rendering at y=%d! oops! (x%.1f)\n", pLeft.y, gpuScalingFactorHeight);
 		return;
 	}
 	
-	size_t adr = (pLeft->y * framebufferWidth) + xStart;
+	size_t adr = (pLeft.y * framebufferWidth) + xStart;
 	s32 x = xStart;
 
 	if (x < 0)
@@ -736,397 +908,178 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 			return;
 		}
 		
-		const float negativeX = (float)-x;
+		invWInterpolated += invWInterpolated_dx * -x;
+		zInterpolated += zInterpolated_dx * -x;
 		
-		coord[0] += coord_dx[0] * negativeX;
-		coord[1] += coord_dx[1] * negativeX;
-		coord[2] += coord_dx[2] * negativeX;
-		coord[3] += coord_dx[3] * negativeX;
+		texCoordInterpolated.s += texCoordInterpolated_dx.s * -x;
+		texCoordInterpolated.t += texCoordInterpolated_dx.t * -x;
 		
-		vtxColorFloat.r += vtxColorFloat_dx.r * negativeX;
-		vtxColorFloat.g += vtxColorFloat_dx.g * negativeX;
-		vtxColorFloat.b += vtxColorFloat_dx.b * negativeX;
-		vtxColorFloat.a += vtxColorFloat_dx.a * negativeX;
+		vtxColorInterpolated.r += vtxColorInterpolated_dx.r * -x;
+		vtxColorInterpolated.g += vtxColorInterpolated_dx.g * -x;
+		vtxColorInterpolated.b += vtxColorInterpolated_dx.b * -x;
+		vtxColorInterpolated.a += vtxColorInterpolated_dx.a * -x;
+		
+		invWFloatInterpolated += invWFloatInterpolated_dx * (float)-x;
+		zFloatInterpolated += zFloatInterpolated_dx * (float)-x;
+		texCoordFloatInterpolated.s += texCoordFloatInterpolated_dx.s * (float)-x;
+		texCoordFloatInterpolated.t += texCoordFloatInterpolated_dx.t * (float)-x;
+		
+		vtxColorFloatInterpolated.r += vtxColorFloatInterpolated_dx.r * (float)-x;
+		vtxColorFloatInterpolated.g += vtxColorFloatInterpolated_dx.g * (float)-x;
+		vtxColorFloatInterpolated.b += vtxColorFloatInterpolated_dx.b * (float)-x;
+		vtxColorFloatInterpolated.a += vtxColorFloatInterpolated_dx.a * (float)-x;
 		
 		adr += -x;
-		width -= -x;
+		rasterWidth -= -x;
 		x = 0;
 	}
 	
-	// Normally, if an out-of-bounds write were to occur, this would cause an error to get logged.
-	// However, due to rounding errors associated with floating-point conversions, it is common that
-	// rendering at custom resolutions may cause the rendering width to be off by 1. Therefore, we
-	// will treat this case as an exception and suppress the error through the use of this flag.
-	bool customResolutionOutOfBoundsSuppress = false;
-	
-	if (x+width > framebufferWidth)
+	if (x+rasterWidth > framebufferWidth)
 	{
 		if (RENDERER && !USELINEHACK)
 		{
-			if ( (framebufferWidth != GPU_FRAMEBUFFER_NATIVE_WIDTH) && (x+width == framebufferWidth+1) )
+			const float gpuScalingFactorWidth = (float)framebufferWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+			printf("rasterizer rendering at x=%d! oops! (x%.2f)\n", x+rasterWidth-1, gpuScalingFactorWidth);
+			return;
+		}
+		
+		rasterWidth = (s32)framebufferWidth - x;
+	}
+	
+	const s64 texScalingFactor = (s64)this->_currentTexture->GetScalingFactor();
+	
+	u32 depth;
+	Color4u8 vtxColor;
+	Vector2s32 texCoord;
+	
+	while (rasterWidth-- > 0)
+	{
+		if (this->_softRender->currentRenderState->SWAP_BUFFERS.DepthMode)
+		{
+			// not sure about the w-buffer depth value: this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
+			depth = (u32)((1LL << W_PRECISION) / invWInterpolated);
+		}
+		else
+		{
+			// When using Z-depth, be sure to test against the following test cases:
+			// - "Dragon Quest IV: Chapters of the Chosen" - Overworld map
+			// - "Advance Wars: Days of Ruin" - Campaign map / In-game unit drawing on map
+			// - "Etrian Odyssey III: The Drowned City" - Main menu, when the cityscape transitions between day and night
+			// - "Super Monkey Ball: Touch & Roll" - 3D rendered horizon
+			// - "Pokemon Diamond/Pearl" - Main map mode
+			
+			if (this->_softRender->_enableFragmentSamplingHack)
 			{
-				customResolutionOutOfBoundsSuppress = true;
+				depth = (u32)((s32)this->_round_s(zFloatInterpolated * (float)0x00FFFFFF));
 			}
 			else
 			{
-				const float gpuScalingFactorWidth = (float)framebufferWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-				printf("rasterizer rendering at x=%d! oops! (x%.2f)\n", x+width-1, gpuScalingFactorWidth);
-				return;
-			}
-		}
-		
-		if (customResolutionOutOfBoundsSuppress)
-		{
-			width -= 1;
-		}
-		else
-		{
-			width = (s32)framebufferWidth - x;
-		}
-	}
-	
-	while (width-- > 0)
-	{
-		this->_pixel<ISFRONTFACING, ISSHADOWPOLYGON>(polyAttr, isTranslucent, adr, dstColor[adr], vtxColorFloat, coord[0], coord[1], coord[2], 1.0f/coord[3]);
-		adr++;
-		x++;
-
-		coord[0] += coord_dx[0];
-		coord[1] += coord_dx[1];
-		coord[2] += coord_dx[2];
-		coord[3] += coord_dx[3];
-		
-		vtxColorFloat.r += vtxColorFloat_dx.r;
-		vtxColorFloat.g += vtxColorFloat_dx.g;
-		vtxColorFloat.b += vtxColorFloat_dx.b;
-		vtxColorFloat.a += vtxColorFloat_dx.a;
-	}
-}
-
-#ifdef ENABLE_SSE2
-
-template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON>
-FORCEINLINE void RasterizerUnit<RENDERER>::_pixel_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, Color4u8 &dstColor, const __m128 &vtxColorFloat, float invu, float invv, float z, float w)
-{
-	const GFX3D_State &renderState = *this->_softRender->currentRenderState;
-	
-	u32 &dstAttributeDepth				= this->_softRender->_framebufferAttributes->depth[fragmentIndex];
-	u8 &dstAttributeOpaquePolyID		= this->_softRender->_framebufferAttributes->opaquePolyID[fragmentIndex];
-	u8 &dstAttributeTranslucentPolyID	= this->_softRender->_framebufferAttributes->translucentPolyID[fragmentIndex];
-	u8 &dstAttributeStencil				= this->_softRender->_framebufferAttributes->stencil[fragmentIndex];
-	u8 &dstAttributeIsFogged			= this->_softRender->_framebufferAttributes->isFogged[fragmentIndex];
-	u8 &dstAttributeIsTranslucentPoly	= this->_softRender->_framebufferAttributes->isTranslucentPoly[fragmentIndex];
-	u8 &dstAttributePolyFacing			= this->_softRender->_framebufferAttributes->polyFacing[fragmentIndex];
-	
-	// not sure about the w-buffer depth value: this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
-	//
-	// When using z-depth, be sure to test against the following test cases:
-	// - The drawing of the overworld map in Dragon Quest IV
-	// - The drawing of all units on the map in Advance Wars: Days of Ruin
-	
-	// Note that an IEEE-754 single-precision float uses a 23-bit significand. Therefore, we will multiply the
-	// Z-depth by a 22-bit significand for safety.
-	const u32 newDepth = (renderState.SWAP_BUFFERS.DepthMode) ? u32floor(w * 4096.0f) : u32floor(z * 4194303.0f) << 2;
-	
-	// run the depth test
-	bool depthFail = false;
-	
-	if (polyAttr.DepthEqualTest_Enable)
-	{
-		// The EQUAL depth test is used if the polygon requests it. Note that the NDS doesn't perform
-		// a true EQUAL test -- there is a set tolerance to it that makes it easier for pixels to
-		// pass the depth test.
-		const u32 minDepth = (u32)max<s32>(0x00000000, (s32)dstAttributeDepth - DEPTH_EQUALS_TEST_TOLERANCE);
-		const u32 maxDepth = min<u32>(0x00FFFFFF, dstAttributeDepth + DEPTH_EQUALS_TEST_TOLERANCE);
-		
-		if (newDepth < minDepth || newDepth > maxDepth)
-		{
-			depthFail = true;
-		}
-	}
-	else if ( (ISFRONTFACING && (dstAttributePolyFacing == PolyFacing_Back)) && (dstColor.a == 0x1F))
-	{
-		// The LEQUAL test is used in the special case where an incoming front-facing polygon's pixel
-		// is to be drawn on top of a back-facing polygon's opaque pixel.
-		//
-		// Test case: The Customize status screen in Sands of Destruction requires this type of depth
-		// test in order to correctly show the animating characters.
-		if (newDepth > dstAttributeDepth)
-		{
-			depthFail = true;
-		}
-	}
-	else
-	{
-		// The LESS depth test is the default type of depth test for all other conditions.
-		if (newDepth >= dstAttributeDepth)
-		{
-			depthFail = true;
-		}
-	}
-	
-	if (depthFail)
-	{
-		//shadow mask polygons set stencil bit here
-		if (ISSHADOWPOLYGON && polyAttr.PolygonID == 0)
-			dstAttributeStencil=1;
-		return;
-	}
-	
-	//handle shadow polys
-	if (ISSHADOWPOLYGON)
-	{
-		if (polyAttr.PolygonID == 0)
-		{
-			//shadow mask polygons only affect the stencil buffer, and then only when they fail depth test
-			//if we made it here, the shadow mask polygon fragment needs to be trashed
-			return;
-		}
-		else
-		{
-			//shadow color polygon conditions
-			if (dstAttributeStencil == 0)
-			{
-				//draw only where stencil bit is set
-				return;
-			}
-			if (dstAttributeOpaquePolyID == polyAttr.PolygonID)
-			{
-				//draw only when polygon ID differs
-				//TODO: are we using the right dst polyID?
-				return;
+				depth = (u32)(zInterpolated / (1LL << (Z_EXTRAPRECISION + 7)));
 			}
 			
-			//once drawn, stencil bit is always cleared
-			dstAttributeStencil = 0;
-		}
-	}
-	
-	//perspective-correct the colors
-	const __m128 perspective = _mm_set_ps(31.0f, w, w, w);
-	__m128 newVtxColorf = _mm_add_ps( _mm_mul_ps(vtxColorFloat, perspective), _mm_set1_ps(0.5f) );
-	newVtxColorf = _mm_max_ps(newVtxColorf, _mm_setzero_ps());
-	
-	__m128i newVtxColori = _mm_cvttps_epi32(newVtxColorf);
-	newVtxColori = _mm_min_epu8(newVtxColori, _mm_set_epi32(0x1F, 0x3F, 0x3F, 0x3F));
-	newVtxColori = _mm_packus_epi16(newVtxColori, _mm_setzero_si128());
-	newVtxColori = _mm_packus_epi16(newVtxColori, _mm_setzero_si128());
-	
-	Color4u8 vtxColor;
-	vtxColor.value = _mm_cvtsi128_si32(newVtxColori);
-	
-	//pixel shader
-	const Vector2f32 texCoordFloat = { invu * w, invv * w };
-	Color4u8 shaderOutput;
-	this->_shade<ISSHADOWPOLYGON>((PolygonMode)polyAttr.Mode, vtxColor, texCoordFloat, shaderOutput);
-	
-	// handle alpha test
-	if ( shaderOutput.a == 0 ||
-	    (renderState.DISP3DCNT.EnableAlphaTest && (shaderOutput.a < renderState.alphaTestRef)) )
-	{
-		return;
-	}
-	
-	// write pixel values to the framebuffer
-	const bool isOpaquePixel = (shaderOutput.a == 0x1F);
-	if (isOpaquePixel)
-	{
-		dstAttributeOpaquePolyID = polyAttr.PolygonID;
-		dstAttributeIsTranslucentPoly = isTranslucent;
-		dstAttributeIsFogged = polyAttr.Fog_Enable;
-		dstColor = shaderOutput;
-	}
-	else
-	{
-		//dont overwrite pixels on translucent polys with the same polyids
-		if (dstAttributeTranslucentPolyID == polyAttr.PolygonID)
-			return;
-		
-		//originally we were using a test case of shadows-behind-trees in sm64ds
-		//but, it looks bad in that game. this is actually correct
-		//if this isnt correct, then complex shape cart shadows in mario kart don't work right
-		dstAttributeTranslucentPolyID = polyAttr.PolygonID;
-		
-		//alpha blending and write color
-		alphaBlend((renderState.DISP3DCNT.EnableAlphaBlending != 0), shaderOutput, dstColor);
-		
-		dstAttributeIsFogged = (dstAttributeIsFogged && polyAttr.Fog_Enable);
-	}
-	
-	dstAttributePolyFacing = (ISFRONTFACING) ? PolyFacing_Front : PolyFacing_Back;
-	
-	//depth writing
-	if (isOpaquePixel || polyAttr.TranslucentDepthWrite_Enable)
-		dstAttributeDepth = newDepth;
-}
-
-//draws a single scanline
-template<bool RENDERER> template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK>
-FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline_SSE2(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const edge_fx_fl *pLeft, const edge_fx_fl *pRight)
-{
-	const s32 xStart = pLeft->x;
-	s32 width = pRight->x - xStart;
-	
-	// HACK: workaround for vertical/slant line poly
-	if ( USELINEHACK && (width == 0) )
-	{
-		s32 leftWidth = pLeft->xStep;
-		if (pLeft->errorTerm + pLeft->numerator >= pLeft->denominator)
-			leftWidth++;
-		s32 rightWidth = pRight->xStep;
-		if (pRight->errorTerm + pRight->numerator >= pRight->denominator)
-			rightWidth++;
-		width = max(1, max(abs(leftWidth), abs(rightWidth)));
-	}
-	
-	//these are the starting values, taken from the left edge
-	__m128 coord = _mm_setr_ps(pLeft->u.curr,
-	                           pLeft->v.curr,
-	                           pLeft->z.curr,
-	                           pLeft->invw.curr);
-	
-	__m128 vtxColorFloat = _mm_setr_ps(pLeft->color[0].curr,
-	                                   pLeft->color[1].curr,
-	                                   pLeft->color[2].curr,
-	                                   (float)polyAttr.Alpha / 31.0f);
-	
-	//our dx values are taken from the steps up until the right edge
-	const __m128 invWidth = _mm_set1_ps(1.0f / (float)width);
-	const __m128 coord_dx = _mm_mul_ps(_mm_setr_ps(pRight->u.curr - pLeft->u.curr, pRight->v.curr - pLeft->v.curr, pRight->z.curr - pLeft->z.curr, pRight->invw.curr - pLeft->invw.curr), invWidth);
-	const __m128 vtxColorFloat_dx = _mm_mul_ps(_mm_setr_ps(pRight->color[0].curr - pLeft->color[0].curr, pRight->color[1].curr - pLeft->color[1].curr, pRight->color[2].curr - pLeft->color[2].curr, 0.0f), invWidth);
-	
-	size_t adr = (pLeft->y * framebufferWidth) + xStart;
-	
-	//CONSIDER: in case some other math is wrong (shouldve been clipped OK), we might go out of bounds here.
-	//better check the Y value.
-	if ( (pLeft->y < 0) || (pLeft->y >= framebufferHeight) )
-	{
-		const float gpuScalingFactorHeight = (float)framebufferHeight / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-		printf("rasterizer rendering at y=%d! oops! (x%.1f)\n", pLeft->y, gpuScalingFactorHeight);
-		return;
-	}
-	
-	s32 x = xStart;
-	
-	if (x < 0)
-	{
-		if (RENDERER && !USELINEHACK)
-		{
-			printf("rasterizer rendering at x=%d! oops!\n",x);
-			return;
+			// TODO: Hack - Drop the LSB so that the overworld map in Dragon Quest IV shows up correctly.
+			depth &= 0xFFFFFFFE;
 		}
 		
-		const __m128 negativeX = _mm_cvtepi32_ps(_mm_set1_epi32(-x));
-		coord = _mm_add_ps(coord, _mm_mul_ps(coord_dx, negativeX));
-		vtxColorFloat = _mm_add_ps(vtxColorFloat, _mm_mul_ps(vtxColorFloat_dx, negativeX));
-		
-		adr += -x;
-		width -= -x;
-		x = 0;
-	}
-	
-	// Normally, if an out-of-bounds write were to occur, this would cause an error to get logged.
-	// However, due to rounding errors associated with floating-point conversions, it is common that
-	// rendering at custom resolutions may cause the rendering width to be off by 1. Therefore, we
-	// will treat this case as an exception and suppress the error through the use of this flag.
-	bool customResolutionOutOfBoundsSuppress = false;
-	
-	if (x+width > framebufferWidth)
-	{
-		if (RENDERER && !USELINEHACK)
+		if (this->_softRender->_enableFragmentSamplingHack)
 		{
-			if ( (framebufferWidth != GPU_FRAMEBUFFER_NATIVE_WIDTH) && (x+width == framebufferWidth+1) )
-			{
-				customResolutionOutOfBoundsSuppress = true;
-			}
-			else
-			{
-				const float gpuScalingFactorWidth = (float)framebufferWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-				printf("rasterizer rendering at x=%d! oops! (x%.2f)\n", x+width-1, gpuScalingFactorWidth);
-				return;
-			}
-		}
-		
-		if (customResolutionOutOfBoundsSuppress)
-		{
-			width -= 1;
+			vtxColor.r = max<u8>( 0x00, (u8)min<float>(63.0f, vtxColorFloatInterpolated.r / invWFloatInterpolated) );
+			vtxColor.g = max<u8>( 0x00, (u8)min<float>(63.0f, vtxColorFloatInterpolated.g / invWFloatInterpolated) );
+			vtxColor.b = max<u8>( 0x00, (u8)min<float>(63.0f, vtxColorFloatInterpolated.b / invWFloatInterpolated) );
+			vtxColor.a = vtxColorInterpolated.a;
+			
+			texCoord.s = (s32)(texCoordFloatInterpolated.s * (float)texScalingFactor / invWFloatInterpolated);
+			texCoord.t = (s32)(texCoordFloatInterpolated.t * (float)texScalingFactor / invWFloatInterpolated);
 		}
 		else
 		{
-			width = (s32)framebufferWidth - x;
+			vtxColor.r = max<u8>( 0x00, (u8)min<s64>(0x3F, vtxColorInterpolated.r / invWInterpolated) );
+			vtxColor.g = max<u8>( 0x00, (u8)min<s64>(0x3F, vtxColorInterpolated.g / invWInterpolated) );
+			vtxColor.b = max<u8>( 0x00, (u8)min<s64>(0x3F, vtxColorInterpolated.b / invWInterpolated) );
+			vtxColor.a = vtxColorInterpolated.a;
+			
+			texCoord.s = (s32)(texCoordInterpolated.s * texScalingFactor / invWInterpolated);
+			texCoord.t = (s32)(texCoordInterpolated.t * texScalingFactor / invWInterpolated);
 		}
-	}
-	
-	CACHE_ALIGN float coord_s[4];
-	
-	while (width-- > 0)
-	{
-		_mm_store_ps(coord_s, coord);
 		
-		this->_pixel_SSE2<ISFRONTFACING, ISSHADOWPOLYGON>(polyAttr, isTranslucent, adr, dstColor[adr], vtxColorFloat, coord_s[0], coord_s[1], coord_s[2], 1.0f/coord_s[3]);
+		this->_pixel<ISFRONTFACING, ISSHADOWPOLYGON>(polyAttr,
+													 isPolyTranslucent,
+		                                             depth,
+		                                             vtxColor,
+		                                             texCoord,
+		                                             adr,
+		                                             dstColor[adr]);
 		adr++;
 		x++;
 		
-		coord = _mm_add_ps(coord, coord_dx);
-		vtxColorFloat = _mm_add_ps(vtxColorFloat, vtxColorFloat_dx);
+		invWInterpolated += invWInterpolated_dx;
+		zInterpolated += zInterpolated_dx;
+		
+		texCoordInterpolated.s += texCoordInterpolated_dx.s;
+		texCoordInterpolated.t += texCoordInterpolated_dx.t;
+		
+		vtxColorInterpolated.r += vtxColorInterpolated_dx.r;
+		vtxColorInterpolated.g += vtxColorInterpolated_dx.g;
+		vtxColorInterpolated.b += vtxColorInterpolated_dx.b;
+		vtxColorInterpolated.a += vtxColorInterpolated_dx.a;
+		
+		invWFloatInterpolated += invWFloatInterpolated_dx;
+		zFloatInterpolated += zFloatInterpolated_dx;
+		texCoordFloatInterpolated.s += texCoordFloatInterpolated_dx.s;
+		texCoordFloatInterpolated.t += texCoordFloatInterpolated_dx.t;
+		
+		vtxColorFloatInterpolated.r += vtxColorFloatInterpolated_dx.r;
+		vtxColorFloatInterpolated.g += vtxColorFloatInterpolated_dx.g;
+		vtxColorFloatInterpolated.b += vtxColorFloatInterpolated_dx.b;
+		vtxColorFloatInterpolated.a += vtxColorFloatInterpolated_dx.a;
 	}
 }
-
-#endif // ENABLE_SSE2
 
 //runs several scanlines, until an edge is finished
 template<bool RENDERER> template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK>
-void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const bool isHorizontal, edge_fx_fl *left, edge_fx_fl *right)
+void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const bool isPolyTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, const bool isHorizontal, edge_fx_fl &left, edge_fx_fl &right)
 {
 	//oh lord, hack city for edge drawing
 
 	//do not overstep either of the edges
-	s32 Height = min(left->height, right->height);
+	s32 rasterHeight = min(left.height, right.height);
 	bool first = true;
 
 	//HACK: special handling for horizontal line poly
-	if ( USELINEHACK && (left->height == 0) && (right->height == 0) && (left->y < framebufferHeight) && (left->y >= 0) )
+	if ( USELINEHACK && (left.height == 0) && (right.height == 0) && (left.y < framebufferHeight) && (left.y >= 0) )
 	{
-		const bool draw = ( !SLI || ((left->y >= this->_SLI_startLine) && (left->y < this->_SLI_endLine)) );
+		const bool draw = ( !SLI || ((left.y >= this->_SLI_startLine) && (left.y < this->_SLI_endLine)) );
 		if (draw)
 		{
-#ifdef ENABLE_SSE2
-			this->_drawscanline_SSE2<ISFRONTFACING, ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isTranslucent, dstColor, framebufferWidth, framebufferHeight, left, right);
-#else
-			this->_drawscanline<ISFRONTFACING, ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isTranslucent, dstColor, framebufferWidth, framebufferHeight, left, right);
-#endif
+			this->_drawscanline<ISFRONTFACING, ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isPolyTranslucent, dstColor, framebufferWidth, framebufferHeight, left, right);
 		}
 	}
 
-	while (Height--)
+	while (rasterHeight--)
 	{
-		const bool draw = ( !SLI || ((left->y >= this->_SLI_startLine) && (left->y < this->_SLI_endLine)) );
+		const bool draw = ( !SLI || ((left.y >= this->_SLI_startLine) && (left.y < this->_SLI_endLine)) );
 		if (draw)
 		{
-#ifdef ENABLE_SSE2
-			this->_drawscanline_SSE2<ISFRONTFACING, ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isTranslucent, dstColor, framebufferWidth, framebufferHeight, left, right);
-#else
-			this->_drawscanline<ISFRONTFACING, ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isTranslucent, dstColor, framebufferWidth, framebufferHeight, left, right);
-#endif
+			this->_drawscanline<ISFRONTFACING, ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isPolyTranslucent, dstColor, framebufferWidth, framebufferHeight, left, right);
 		}
 		
-		const size_t xl = left->x;
-		const size_t xr = right->x;
-		const size_t y  = left->y;
-		left->Step();
-		right->Step();
+		const size_t xl = left.x;
+		const size_t xr = right.x;
+		const size_t y  = left.y;
+		left.Step();
+		right.Step();
 
 		if (!RENDERER && _debug_thisPoly)
 		{
 			//debug drawing
 			bool top = (isHorizontal && first);
-			bool bottom = (!Height && isHorizontal);
-			if (Height || top || bottom)
+			bool bottom = (!rasterHeight && isHorizontal);
+			if (rasterHeight || top || bottom)
 			{
 				if (draw)
 				{
-					const size_t nxl = left->x;
-					const size_t nxr = right->x;
+					const size_t nxl = left.x;
+					const size_t nxr = right.x;
 					if (top)
 					{
 						const size_t xs = min(xl, xr);
@@ -1248,7 +1201,7 @@ void RasterizerUnit<RENDERER>::_sort_verts()
 //I didnt reference anything for this algorithm but it seems like I've seen it somewhere before.
 //Maybe it is like crow's algorithm
 template<bool RENDERER> template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK>
-void RasterizerUnit<RENDERER>::_shape_engine(const POLYGON_ATTR polyAttr, const bool isTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type)
+void RasterizerUnit<RENDERER>::_shape_engine(const POLYGON_ATTR polyAttr, const bool isPolyTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type)
 {
 	bool failure = false;
 
@@ -1280,17 +1233,26 @@ void RasterizerUnit<RENDERER>::_shape_engine(const POLYGON_ATTR polyAttr, const 
 		assert(rv != type);
 		int _lv = (lv == type) ? 0 : lv; //make sure that we ask for vert 0 when the variable contains the starting value
 		
-		if (step_left) left = edge_fx_fl(_lv, lv-1, (NDSVertex **)&this->_currentVtx, (SoftRasterizerPrecalculation **)&this->_currentPrecalc, failure);
-		if (step_right) right = edge_fx_fl(rv, rv+1, (NDSVertex **)&this->_currentVtx, (SoftRasterizerPrecalculation **)&this->_currentPrecalc, failure);
+		if (step_left)
+		{
+			left = edge_fx_fl(_lv, lv-1, (NDSVertex **)&this->_currentVtx, (SoftRasterizerPrecalculation **)&this->_currentPrecalc, failure);
+		}
+		
+		if (step_right)
+		{
+			right = edge_fx_fl(rv, rv+1, (NDSVertex **)&this->_currentVtx, (SoftRasterizerPrecalculation **)&this->_currentPrecalc, failure);
+		}
 		
 		step_left = step_right = false;
 
 		//handle a failure in the edge setup due to nutty polys
 		if (failure)
+		{
 			return;
+		}
 
 		const bool isHorizontal = (left.y == right.y);
-		this->_runscanlines<SLI, ISFRONTFACING, ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isTranslucent, dstColor, framebufferWidth, framebufferHeight, isHorizontal, &left, &right);
+		this->_runscanlines<SLI, ISFRONTFACING, ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isPolyTranslucent, dstColor, framebufferWidth, framebufferHeight, isHorizontal, left, right);
 		
 		//if we ran out of an edge, step to the next one
 		if (right.height == 0)
@@ -1305,7 +1267,10 @@ void RasterizerUnit<RENDERER>::_shape_engine(const POLYGON_ATTR polyAttr, const 
 		}
 
 		//this is our completion condition: when our stepped edges meet in the middle
-		if (lv <= rv+1) break;
+		if (lv <= rv+1)
+		{
+			break;
+		}
 	}
 }
 
@@ -1358,7 +1323,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 		const bool useLineHack = USELINEHACK && (rawPoly.vtxFormat & 4);
 		
 		polyAttr = rawPoly.attribute;
-		const bool isTranslucent = GFX3D_IsPolyTranslucent(rawPoly);
+		const bool isPolyTranslucent = GFX3D_IsPolyTranslucent(rawPoly);
 		
 		if (lastTexParams.value != rawPoly.texParam.value || lastTexPalette != rawPoly.texPalette)
 		{
@@ -1385,22 +1350,22 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 			{
 				if (useLineHack)
 				{
-					this->_shape_engine<SLI, true, true, true>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, true, true, true>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
 				}
 				else
 				{
-					this->_shape_engine<SLI, true, true, false>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, true, true, false>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
 				}
 			}
 			else
 			{
 				if (useLineHack)
 				{
-					this->_shape_engine<SLI, true, false, true>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, true, false, true>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
 				}
 				else
 				{
-					this->_shape_engine<SLI, true, false, false>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, true, false, false>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
 				}
 			}
 		}
@@ -1410,22 +1375,22 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 			{
 				if (useLineHack)
 				{
-					this->_shape_engine<SLI, false, true, true>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, false, true, true>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
 				}
 				else
 				{
-					this->_shape_engine<SLI, false, true, false>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, false, true, false>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
 				}
 			}
 			else
 			{
 				if (useLineHack)
 				{
-					this->_shape_engine<SLI, false, false, true>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, false, false, true>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
 				}
 				else
 				{
-					this->_shape_engine<SLI, false, false, false>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, false, false, false>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
 				}
 			}
 		}
@@ -1983,23 +1948,39 @@ void SoftRasterizerRenderer::RasterizerPrecalculate()
 			precalc.positionCeil.x = (s64)x;
 			precalc.positionCeil.y = (s64)y;
 			
-			precalc.zPositionNormalized = (float)vtx.position.z / 4096.0f;
-			precalc.yPrestep = (float)( (double)((s64)y*65536 - (s64)vtx.position.y) / 65536.0 );
+			precalc.zPosition = (s64)vtx.position.z * (1LL << Z_EXTRAPRECISION);
+			precalc.yPrestep = ((s64)y * (1LL << 16)) - (s64)vtx.position.y; // 48.16 - 16.16
+			
+			precalc.zPositionNormalized = (float)( (double)vtx.position.z / (double)(0x7FFFFFFF) );
+			precalc.yPrestepNormalized = (float)( (double)precalc.yPrestep / 65536.0 );
 			
 			if (vtx.position.w != 0)
 			{
-				const float invWTC = 256.0f / (float)vtx.position.w;
-				const float invW = 4096.0f / (float)vtx.position.w;
+				precalc.invWPosition = (1LL << W_PRECISION) / (s64)vtx.position.w;
+				precalc.texCoord.s = (s64)vtx.texCoord.s * (1LL << TC_PRECISION) / (s64)vtx.position.w;
+				precalc.texCoord.t = (s64)vtx.texCoord.t * (1LL << TC_PRECISION) / (s64)vtx.position.w;
+				precalc.color.r = (s64)vtx.color.r * (1LL << W_PRECISION) / (s64)vtx.position.w;
+				precalc.color.g = (s64)vtx.color.g * (1LL << W_PRECISION) / (s64)vtx.position.w;
+				precalc.color.b = (s64)vtx.color.b * (1LL << W_PRECISION) / (s64)vtx.position.w;
 				
-				precalc.invWPositionNormalized = invW;
-				precalc.texCoordNormalized.u = (float)vtx.texCoord.u * invWTC;
-				precalc.texCoordNormalized.v = (float)vtx.texCoord.v * invWTC;
-				precalc.colorNormalized.r = (float)vtx.color.r * invW;
-				precalc.colorNormalized.g = (float)vtx.color.g * invW;
-				precalc.colorNormalized.b = (float)vtx.color.b * invW;
+				const float invWTCFloat = 256.0f / (float)vtx.position.w;
+				const float invWFloat = 4096.0f / (float)vtx.position.w;
+				precalc.invWPositionNormalized = invWFloat;
+				precalc.texCoordNormalized.u = (float)vtx.texCoord.u * invWTCFloat;
+				precalc.texCoordNormalized.v = (float)vtx.texCoord.v * invWTCFloat;
+				precalc.colorNormalized.r = (float)vtx.color.r * invWFloat;
+				precalc.colorNormalized.g = (float)vtx.color.g * invWFloat;
+				precalc.colorNormalized.b = (float)vtx.color.b * invWFloat;
 			}
 			else
 			{
+				precalc.invWPosition = (1LL << W_PRECISION) / (1LL << 12);
+				precalc.texCoord.s = (s64)vtx.texCoord.s * (1LL << TC_PRECISION) / (1LL << 12);
+				precalc.texCoord.t = (s64)vtx.texCoord.t * (1LL << TC_PRECISION) / (1LL << 12);
+				precalc.color.r = (s64)vtx.color.r * (1LL << W_PRECISION) / (1LL << 12);
+				precalc.color.g = (s64)vtx.color.g * (1LL << W_PRECISION) / (1LL << 12);
+				precalc.color.b = (s64)vtx.color.b * (1LL << W_PRECISION) / (1LL << 12);
+				
 				precalc.invWPositionNormalized = 1.0f;
 				precalc.texCoordNormalized.u = (float)vtx.texCoord.u / 16.0f;
 				precalc.texCoordNormalized.v = (float)vtx.texCoord.v / 16.0f;
