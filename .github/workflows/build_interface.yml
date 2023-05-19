@@ -10,7 +10,7 @@ jobs:
     name: Build Linux
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install dependencies
         run: sudo apt update && sudo apt install meson libsdl2-dev libpcap-dev
@@ -24,7 +24,7 @@ jobs:
         run: ninja -C desmume/src/frontend/interface/build
 
       - name: Upload artificat
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: linux
           path: desmume/src/frontend/interface/build/libdesmume.so
@@ -34,7 +34,7 @@ jobs:
     name: Build MacOS
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install MacOS build deps
         run: brew install coreutils gcc sdl2 meson glib
@@ -54,7 +54,7 @@ jobs:
           CXX: clang++
 
       - name: Upload artificat
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: macos
           path: desmume/src/frontend/interface/build/libdesmume.dylib
@@ -68,7 +68,7 @@ jobs:
         arch: [ 'x64', 'x86' ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
@@ -79,7 +79,7 @@ jobs:
           MSBuild.exe DeSmuME_Interface.vcxproj /p:configuration="Release Fastbuild" /p:Platform=${{ matrix.arch }}
 
       - name: Upload artificat
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: win-${{ matrix.arch }}
           path: desmume/src/frontend/interface/windows/__bins/*.dll
