@@ -9,7 +9,7 @@ jobs:
     runs-on: windows-2019
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Setup MSBuild.exe
         uses: microsoft/setup-msbuild@v1.1
@@ -24,7 +24,7 @@ jobs:
           cmd /c desmume\src\frontend\windows\ci_postbuild.bat
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: desmume-win-x64
           path: desmume/src/frontend/windows/__bins/*.exe
