@@ -26,6 +26,7 @@
 
 
 char IniName[MAX_PATH];
+wchar_t IniNameW[MAX_PATH];
 
 std::string _hack_alternateModulePathUtf8;
 
@@ -86,6 +87,21 @@ void GetINIPath()
 	}
 
 	FCEUD_MakePathDirs(IniName);
+	wcscpy(IniNameW,mbstowcs(IniName).c_str()); //careful to use locale C-style mbstowcs to get IniName (which is with locale encoding) to unicode
+
+	//write BOM to get unicode
+	FILE* test = fopen(IniName,"rb");
+	if(test)
+		fclose(test);
+	else
+	{
+		test = fopen(IniName,"wb");
+		if(test)
+		{
+			fputs("\xFF\xFE",test);
+			fclose(test);
+		}
+	}
 }
 
 void PreventScreensaver()

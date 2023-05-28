@@ -69,24 +69,25 @@ public:
 
 	#define MAX_FORMAT		20
 	#define SECTION			"PathSettings"
+	#define LSECTION			L"PathSettings"
 
-	#define ROMKEY			"Roms"
-	#define BATTERYKEY		"Battery"
-	#define SRAMIMPORTKEY	"SramImportExport"
-	#define STATEKEY		"States"
-	#define STATESLOTKEY	"StateSlots"
-	#define SCREENSHOTKEY	"Screenshots"
-	#define AVIKEY			"AviFiles"
-	#define CHEATKEY		"Cheats"
+	#define ROMKEY			L"Roms"
+	#define BATTERYKEY		L"Battery"
+	#define SRAMIMPORTKEY	L"SramImportExport"
+	#define STATEKEY		L"States"
+	#define STATESLOTKEY	L"StateSlots"
+	#define SCREENSHOTKEY	L"Screenshots"
+	#define AVIKEY			L"AviFiles"
+	#define CHEATKEY		L"Cheats"
 	#define R4FORMATKEY		"R4format"
-	#define SOUNDKEY		"SoundSamples"
-	#define FIRMWAREKEY		"Firmware"
+	#define SOUNDKEY		L"SoundSamples"
+	#define FIRMWAREKEY		L"Firmware"
 	#define FORMATKEY		"format"
 	#define DEFAULTFORMATKEY "defaultFormat"
 	#define NEEDSSAVINGKEY	"needsSaving"
 	#define LASTVISITKEY	"lastVisit"
-	#define LUAKEY			"Lua"
-	#define SLOT1DKEY		"Slot1D"
+	#define LUAKEY			L"Lua"
+	#define SLOT1DKEY		L"Slot1D"
 	char screenshotFormat[MAX_FORMAT];
 	bool savelastromvisit;
 
@@ -108,19 +109,21 @@ public:
 		MAXKNOWNPATH = MODULE
 	};
 
-	char pathToRoms[MAX_PATH];
-	char pathToBattery[MAX_PATH];
-	char pathToSramImportExport[MAX_PATH];
-	char pathToStates[MAX_PATH];
-	char pathToStateSlots[MAX_PATH];
-	char pathToScreenshots[MAX_PATH];
-	char pathToAviFiles[MAX_PATH];
-	char pathToCheats[MAX_PATH];
-	char pathToSounds[MAX_PATH];
-	char pathToFirmware[MAX_PATH];
-	char pathToModule[MAX_PATH];
-	char pathToLua[MAX_PATH];
-	char pathToSlot1D[MAX_PATH];
+	//ALL UTF8, NOT SYSTEM LOCALE!! BLEGH!
+	//should probably have set locale to utf-8 but it's too late for that
+	char pathToRoms[MAX_PATH*8];
+	char pathToBattery[MAX_PATH*8];
+	char pathToSramImportExport[MAX_PATH*8];
+	char pathToStates[MAX_PATH*8];
+	char pathToStateSlots[MAX_PATH*8];
+	char pathToScreenshots[MAX_PATH*8];
+	char pathToAviFiles[MAX_PATH*8];
+	char pathToCheats[MAX_PATH*8];
+	char pathToSounds[MAX_PATH*8];
+	char pathToFirmware[MAX_PATH*8];
+	char pathToModule[MAX_PATH*8];
+	char pathToLua[MAX_PATH*8];
+	char pathToSlot1D[MAX_PATH*8];
 
 	void init(const char *filename);
 
@@ -135,6 +138,7 @@ public:
 	void GetDefaultPath(char *pathToDefault, const char *key, int maxCount);
 
 	void ReadKey(char *pathToRead, const char *key);
+	void ReadKeyW(char *pathToRead, const wchar_t *key);
 
 	void ReadPathSettings();
 

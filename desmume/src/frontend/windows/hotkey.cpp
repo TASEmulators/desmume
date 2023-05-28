@@ -272,7 +272,7 @@ void HK_PrintScreen(int param, bool justPressed)
 
 		dir = Path::GetFileDirectoryPath(outFilename);
 		path.setpath(path.SCREENSHOTS, dir);
-		WritePrivateProfileString(SECTION, SCREENSHOTKEY, dir.c_str(), IniName);
+		WritePrivateProfileStringW(LSECTION, SCREENSHOTKEY, mbstowcs(dir).c_str(), IniNameW);
 	}
 
 	if(unpause) NDS_UnPause(false);

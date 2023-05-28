@@ -2937,7 +2937,7 @@ void AviRecordTo()
 
 		dir = Path::GetFileDirectoryPath(outFilename);
 		path.setpath(path.AVI_FILES, dir);
-		WritePrivateProfileString(SECTION, AVIKEY, dir.c_str(), IniName);
+		WritePrivateProfileStringW(LSECTION, AVIKEY, mbstowcs(dir).c_str(), IniNameW);
 	}
 
 	NDS_UnPause();
@@ -3063,7 +3063,7 @@ void WavRecordTo(int wavmode)
 
 		dir = Path::GetFileDirectoryPath(outFilename);
 		path.setpath(path.AVI_FILES, dir);
-		WritePrivateProfileString(SECTION, AVIKEY, dir.c_str(), IniName);
+		WritePrivateProfileStringW(LSECTION, AVIKEY, mbstowcs(dir).c_str(), IniNameW);
 	}
 
 	NDS_UnPause();
@@ -3192,7 +3192,7 @@ LRESULT OpenFile()
 		{
 			std::string dir = Path::GetFileDirectoryPath(wcstombs(filename));
 			path.setpath(path.ROMS, dir);
-			WritePrivateProfileString(SECTION, ROMKEY, dir.c_str(), IniName);
+			WritePrivateProfileStringW(LSECTION, ROMKEY, mbstowcs(dir).c_str(), IniNameW);
 		}
 	}
 
@@ -4780,7 +4780,7 @@ DOKEYDOWN:
 
 				std::string utf8dir = Path::GetFileDirectoryPath(wcstombs(SavName));
 				path.setpath(path.STATES, utf8dir);
-				WritePrivateProfileString(SECTION, STATEKEY, utf8dir.c_str(), IniName);
+				WritePrivateProfileStringW(LSECTION, STATEKEY, mbstowcs(utf8dir).c_str(), IniNameW);
 
 				savestate_load(wcstombs(SavName).c_str());
 				UpdateToolWindows();
@@ -4811,7 +4811,7 @@ DOKEYDOWN:
 
 				std::string utf8dir = Path::GetFileDirectoryPath(wcstombs(SavName));
 				path.setpath(path.STATES, utf8dir);
-				WritePrivateProfileString(SECTION, STATEKEY, utf8dir.c_str(), IniName);
+				WritePrivateProfileStringW(LSECTION, STATEKEY, mbstowcs(utf8dir).c_str(), IniNameW);
 
 				if(unpause) NDS_UnPause();
 				return 0;
@@ -6174,7 +6174,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					{
 						std::string dir = Path::GetFileDirectoryPath(fileName);
 						path.setpath(path.FIRMWARE, dir);
-						WritePrivateProfileString(SECTION, FIRMWAREKEY, dir.c_str(), IniName);
+						WritePrivateProfileStringW(LSECTION, FIRMWAREKEY, mbstowcs(dir).c_str(), IniNameW);
 
 						HWND cur;
 
@@ -6294,7 +6294,7 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 					{
 						std::string dir = Path::GetFileDirectoryPath(fileName);
 						path.setpath(path.SOUNDS, dir);
-						WritePrivateProfileString(SECTION, SOUNDKEY, dir.c_str(), IniName);
+						WritePrivateProfileStringW(LSECTION, SOUNDKEY, mbstowcs(dir).c_str(), IniNameW);
 
 						HWND cur;
 
