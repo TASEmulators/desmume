@@ -247,7 +247,7 @@ void PathInfo::ReadKeyW(char *pathToRead, const wchar_t *key)
 	strcpy(pathToRead,wcstombs((std::wstring)wpath).c_str());
 	#else
 	//since the variables are all intialized in this file they all use MAX_PATH
-	GetDefaultPath(pathToRead, key, MAX_PATH);
+	GetDefaultPath(pathToRead, wcstombs((std::wstring)key).c_str(), MAX_PATH);
 	#endif
 }
 
