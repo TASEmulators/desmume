@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2022 DeSmuME team
+	Copyright (C) 2012-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -509,7 +509,7 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	// draw at 1x scaling, which starts looking uglier as the view size is increased.
 	if (!_canRespondToViewResize)
 	{
-		int legacyVersionScale = 1;
+		NSUInteger legacyVersionScale = 1;
 		_OEViewSize.width  = (int)(transformNormalWidth  + 0.0005);
 		_OEViewSize.height = (int)(transformNormalHeight + 0.0005);
 		
@@ -535,8 +535,8 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 		}
 		
 		// Multiply the normal size by our fixed scaling value.
-		_OEViewSize.width  *= legacyVersionScale;
-		_OEViewSize.height *= legacyVersionScale;
+		_OEViewSize.width  *= (int)legacyVersionScale;
+		_OEViewSize.height *= (int)legacyVersionScale;
 	}
 	
 	apple_unfairlock_lock(unfairlockDisplayMode);
