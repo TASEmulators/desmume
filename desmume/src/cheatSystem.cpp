@@ -79,7 +79,6 @@ BOOL CHEATS::update(u8 size, u32 address, u32 val, char *description, BOOL enabl
 BOOL CHEATS::move(u32 srcPos, u32 dstPos)
 {
 	if (srcPos >= list.size() || dstPos > list.size()) return false;
-	if (srcPos < 0 || dstPos < 0) return false;
 
 	// get the item to move
 	CHEATS_LIST srcCheat = list[srcPos];
