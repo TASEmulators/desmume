@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -392,7 +392,7 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				oldEditProcHEX = SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT1), GWLP_WNDPROC, (LONG_PTR)EditValueHEXProc);
 				oldEditProc = SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT2), GWLP_WNDPROC, (LONG_PTR)EditValueProc);
 
-				cheats->get(&tempCheat, cheatEditPos);
+				cheats->copyItemFromIndex(cheatEditPos, tempCheat);
 				
 				memset(buf, 0, 100);
 				memset(buf2, 0, 100);
@@ -832,10 +832,12 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 						{
 							bool checked = (newStateImage == INDEXTOSTATEIMAGEMASK(2));
 							cheatEditPos = pNMListView->iItem;
-							cheats->get(&tempCheat, cheatEditPos);
-							if ((bool)tempCheat.enabled != checked)
+							cheats->copyItemFromIndex(cheatEditPos, tempCheat);
+
+							const bool tempCheatEnabledBool = (tempCheat.enabled != 0);
+							if (tempCheatEnabledBool != checked)
 							{
-								tempCheat.enabled = checked;
+								tempCheat.enabled = (checked) ? 1 : 0;
 								switch (tempCheat.type)
 								{
 									case 0:		// internal
@@ -1035,16 +1037,16 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 				case IDC_BEDIT:
 				{
 					cheatEditPos = ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
-					if (cheatEditPos > cheats->getSize()) return TRUE;
+					if (cheatEditPos > cheats->getListSize()) return TRUE;
 
-					cheats->get(&tempCheat, cheatEditPos);
+					cheats->copyItemFromIndex(cheatEditPos, tempCheat);
 					switch (tempCheat.type)
 					{
 						case 0:				// internal
 							if (DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_ADD), dialog, (DLGPROC) CheatsEditProc))
 							{
 								char buf[256];
-								cheats->get(&tempCheat, cheatEditPos);
+								cheats->copyItemFromIndex(cheatEditPos, tempCheat);
 								ListView_SetCheckState(cheatListView, cheatEditPos, tempCheat.enabled);
 								wsprintf(buf, "0x0%07X", tempCheat.code[0][0]);
 								ListView_SetItemText(cheatListView, cheatEditPos, 1, buf);
@@ -1065,7 +1067,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 
 							if (DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_ADD_XX_CODE), dialog, (DLGPROC) CheatsAdd_XX_Proc))
 							{
-								cheats->get(&tempCheat, cheatEditPos);
+								cheats->copyItemFromIndex(cheatEditPos, tempCheat);
 								ListView_SetCheckState(cheatListView, cheatEditPos, tempCheat.enabled);
 
 								if (cheatXXtype == 0)

@@ -1,6 +1,6 @@
 /* cheats.cpp - this file is part of DeSmuME
  *
- * Copyright (C) 2006-2009 DeSmuME Team
+ * Copyright (C) 2006-2023 DeSmuME Team
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,7 +90,7 @@ enabled_toggled(GtkCellRendererToggle * cell,
     path1 = gtk_tree_model_get_path (model, &iter);
     ii = gtk_tree_path_get_indices (path)[0];
 
-    cheats->get(&cheat, ii);
+    cheats->copyItemFromIndex(ii, cheat);
 
     cheats->update(cheat.size, cheat.code[0][0], cheat.code[0][1], cheat.description,
                  enabled, ii);
@@ -121,7 +121,7 @@ static void cheat_list_modify_cheat(GtkCellRendererText * cell,
         path1 = gtk_tree_model_get_path (model, &iter);
         ii = gtk_tree_path_get_indices (path)[0];
 
-        cheats->get(&cheat, ii);
+		cheats->copyItemFromIndex(ii, cheat);
 
         gtk_tree_path_free (path1);
 
@@ -285,10 +285,10 @@ static GtkListStore *cheat_list_populate()
             G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_STRING);
 
     CHEATS_LIST cheat;
-    u32 chsize = cheats->getSize();
+    u32 chsize = cheats->getListSize();
     for(u32 ii = 0; ii < chsize; ii++){
         GtkTreeIter iter;
-        cheats->get(&cheat, ii);
+		cheats->copyItemFromIndex(ii, cheat);
         gtk_list_store_append(store, &iter);
         gtk_list_store_set(store, &iter,
                 COLUMN_ENABLED, cheat.enabled,

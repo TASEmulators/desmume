@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2022 DeSmuME team
+	Copyright (C) 2009-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -37,59 +37,102 @@ static bool cheatsResetJit;
 
 void CHEATS::clear()
 {
-	list.resize(0);
-	currentGet = 0;
+	this->_list.resize(0);
+	this->_currentGet = 0;
 }
 
-void CHEATS::init(char *path)
+void CHEATS::init(const char *thePath)
 {
-	clear();
-	strcpy((char *)filename, path);
-
-	load();
+	this->clear();
+	this->setFilePath(thePath);
+	this->load();
 }
 
-BOOL CHEATS::add(u8 size, u32 address, u32 val, char *description, BOOL enabled)
+const char* CHEATS::getFilePath() const
 {
-	size_t num = list.size();
-	list.push_back(CHEATS_LIST());
-	list[num].code[0][0] = address & 0x0FFFFFFF;
-	list[num].code[0][1] = val;
-	list[num].num = 1;
-	list[num].type = 0;
-	list[num].size = size;
-	this->setDescription(description, num);
-	list[num].enabled = enabled;
-	return TRUE;
+	return (const char *)this->_filename;
 }
 
-BOOL CHEATS::update(u8 size, u32 address, u32 val, char *description, BOOL enabled, u32 pos)
+void CHEATS::setFilePath(const char *thePath)
 {
-	if (pos >= list.size()) return FALSE;
-	list[pos].code[0][0] = address & 0x0FFFFFFF;
-	list[pos].code[0][1] = val;
-	list[pos].num = 1;
-	list[pos].type = 0;
-	list[pos].size = size;
+	strncpy((char *)this->_filename, thePath, sizeof(this->_filename));
+	this->_filename[ sizeof(this->_filename) - 1 ] = '\0';
+}
+
+size_t CHEATS::addItem(const CHEATS_LIST &srcCheat)
+{
+	this->_list.push_back(srcCheat);
+	return this->_list.size() - 1;
+}
+
+bool CHEATS::add(u8 size, u32 address, u32 val, char *description, bool enabled)
+{
+	bool didValidateItem = false;
+	size_t num = this->_list.size();
+	this->_list.push_back(CHEATS_LIST());
+	
+	didValidateItem = this->update(size, address, val, description, enabled, num);
+	return didValidateItem;
+}
+
+bool CHEATS::add(u8 size, u32 address, u32 val, char *description, u8 enabled)
+{
+	return this->add(size, address, val, description, (enabled != 0));
+}
+
+bool CHEATS::updateItemAtIndex(const CHEATS_LIST &srcCheat, const size_t pos)
+{
+	bool didValidateItem = true; // No error check for memcpy() here!
+	CHEATS_LIST *theItem = &(this->_list[pos]);
+	
+	memcpy(theItem, &srcCheat, sizeof(CHEATS_LIST));
+	
+	return didValidateItem;
+}
+
+bool CHEATS::update(u8 size, u32 address, u32 val, char *description, bool enabled, const size_t pos)
+{
+	bool didValidateItem = false;
+	if (pos >= this->_list.size())
+	{
+		return didValidateItem;
+	}
+
+	this->_list[pos].code[0][0] = address & 0x0FFFFFFF;
+	this->_list[pos].code[0][1] = val;
+	this->_list[pos].num = 1;
+	this->_list[pos].type = 0;
+	this->_list[pos].size = size;
 	this->setDescription(description, pos);
-	list[pos].enabled = enabled;
-	return TRUE;
+	this->_list[pos].enabled = (enabled) ? 1 : 0;
+
+	didValidateItem = true;
+	return didValidateItem;
 }
 
-BOOL CHEATS::move(u32 srcPos, u32 dstPos)
+bool CHEATS::update(u8 size, u32 address, u32 val, char *description, u8 enabled, const size_t pos)
 {
-	if (srcPos >= list.size() || dstPos > list.size()) return false;
-	if (srcPos < 0 || dstPos < 0) return false;
+	return this->update(size, address, val, description, (enabled != 0), pos);
+}
+
+bool CHEATS::move(size_t srcPos, size_t dstPos)
+{
+	bool didValidateItem = false;
+	if (srcPos >= this->_list.size() || dstPos > this->_list.size())
+	{
+		return didValidateItem;
+	}
 
 	// get the item to move
-	CHEATS_LIST srcCheat = list[srcPos];
+	CHEATS_LIST srcCheat = this->_list[srcPos];
 	// insert item in the new position
-	list.insert(list.begin() + dstPos, srcCheat);
+	this->_list.insert(this->_list.begin() + dstPos, srcCheat);
 	// remove the original item
 	if (dstPos < srcPos) srcPos++;
-	list.erase(list.begin() + srcPos);
+	this->_list.erase(this->_list.begin() + srcPos);
 
-	return true;
+	didValidateItem = true;
+	return didValidateItem;
 }
 
 #define CHEATLOG(...) 
@@ -565,7 +608,9 @@ void CHEATS::ARparser(CHEATS_LIST& theList)
 			addr = x + st.offset;
 
 			{
-				u32 j=0,t=0,b=0;
+				u32 t = 0;
+				u32 b = 0;
+				
 				if(y>0) i++; //skip over the current code
 				while(y>=4)
 				{
@@ -631,146 +676,232 @@ void CHEATS::ARparser(CHEATS_LIST& theList)
 
 }
 
-BOOL CHEATS::add_AR_Direct(CHEATS_LIST cheat)
+size_t CHEATS::add_AR_Direct(const CHEATS_LIST &srcCheat)
 {
-	size_t num = list.size();
-	list.push_back(cheat);
-	list[num].type = 1;
-	return TRUE;
+	const size_t itemIndex = this->addItem(srcCheat);
+	this->_list[itemIndex].type = 1;
+	
+	return itemIndex;
 }
 
-BOOL CHEATS::add_AR(char *code, char *description, BOOL enabled)
+bool CHEATS::add_AR(char *code, char *description, bool enabled)
 {
+	bool didValidateItem = false;
+
 	//if (num == MAX_CHEAT_LIST) return FALSE;
-	size_t num = list.size();
+	size_t num = this->_list.size();
 
 	CHEATS_LIST temp;
-	if (!CHEATS::XXCodeFromString(&temp, code)) return FALSE;
 
-	list.push_back(temp);
-	
-	list[num].type = 1;
+	didValidateItem = CHEATS::XXCodeFromString(code, temp);
+	if (!didValidateItem)
+	{
+		return didValidateItem;
+	}
+
+	this->_list.push_back(temp);
+	this->_list[num].type = 1;
 	
 	this->setDescription(description, num);
-	list[num].enabled = enabled;
-	return TRUE;
+	this->_list[num].enabled = (enabled) ? 1 : 0;
+
+	didValidateItem = true;
+	return didValidateItem;
 }
 
-BOOL CHEATS::update_AR(char *code, char *description, BOOL enabled, u32 pos)
+bool CHEATS::add_AR(char *code, char *description, u8 enabled)
 {
-	if (pos >= list.size()) return FALSE;
+	return this->add_AR(code, description, (enabled != 0));
+}
+
+bool CHEATS::update_AR(char *code, char *description, bool enabled, const size_t pos)
+{
+	bool didValidateItem = false;
+	if (pos >= this->_list.size())
+	{
+		return didValidateItem;
+	}
 
 	if (code != NULL)
 	{
-		if (!CHEATS::XXCodeFromString(this->getItemByIndex(pos), code)) return FALSE;
+		CHEATS_LIST *cheatItem = this->getItemPtrAtIndex(pos);
+		if (cheatItem == NULL)
+		{
+			return didValidateItem;
+		}
+
+		didValidateItem = CHEATS::XXCodeFromString(code, *cheatItem);
+		if (!didValidateItem)
+		{
+			return didValidateItem;
+		}
+
 		this->setDescription(description, pos);
-		list[pos].type = 1;
+		this->_list[pos].type = 1;
 	}
 	
-	list[pos].enabled = enabled;
-	return TRUE;
+	this->_list[pos].enabled = (enabled) ? 1 : 0;
+
+	didValidateItem = true;
+	return didValidateItem;
 }
 
-BOOL CHEATS::add_CB(char *code, char *description, BOOL enabled)
+bool CHEATS::update_AR(char *code, char *description, u8 enabled, const size_t pos)
 {
+	return this->update_AR(code, description, (enabled != 0), pos);
+}
+
+bool CHEATS::add_CB(char *code, char *description, bool enabled)
+{
+	bool didValidateItem = false;
+
 	//if (num == MAX_CHEAT_LIST) return FALSE;
-	size_t num = list.size();
+	size_t num = this->_list.size();
 
-	if (!CHEATS::XXCodeFromString(this->getItemByIndex(num), code)) return FALSE;
+	CHEATS_LIST *cheatItem = this->getItemPtrAtIndex(num);
+	if (cheatItem == NULL)
+	{
+		return didValidateItem;
+	}
+
+	didValidateItem = CHEATS::XXCodeFromString(code, *cheatItem);
+	if (!didValidateItem)
+	{
+		return didValidateItem;
+	}
 	
-	list[num].type = 2;
+	this->_list[num].type = 2;
 	
 	this->setDescription(description, num);
-	list[num].enabled = enabled;
-	return TRUE;
+	this->_list[num].enabled = (enabled) ? 1 : 0;
+
+	didValidateItem = true;
+	return didValidateItem;
 }
 
-BOOL CHEATS::update_CB(char *code, char *description, BOOL enabled, u32 pos)
+bool CHEATS::add_CB(char *code, char *description, u8 enabled)
 {
-	if (pos >= list.size()) return FALSE;
+	return this->add_CB(code, description, (enabled != 0));
+}
+
+bool CHEATS::update_CB(char *code, char *description, bool enabled, const size_t pos)
+{
+	bool didValidateItem = false;
+	if (pos >= this->_list.size())
+	{
+		return didValidateItem;
+	}
 
 	if (code != NULL)
 	{
-		if (!CHEATS::XXCodeFromString(this->getItemByIndex(pos), code)) return FALSE;
-		list[pos].type = 2;
+		CHEATS_LIST *cheatItem = this->getItemPtrAtIndex(pos);
+		if (cheatItem == NULL)
+		{
+			return didValidateItem;
+		}
+
+		didValidateItem = CHEATS::XXCodeFromString(code, *cheatItem);
+		if (!didValidateItem)
+		{
+			return didValidateItem;
+		}
+
+		this->_list[pos].type = 2;
 		this->setDescription(description, pos);
 	}
-	list[pos].enabled = enabled;
-	return TRUE;
+	this->_list[pos].enabled = (enabled) ? 1 : 0;
+
+	didValidateItem = true;
+	return didValidateItem;
 }
 
-BOOL CHEATS::remove(u32 pos)
+bool CHEATS::update_CB(char *code, char *description, u8 enabled, const size_t pos)
 {
-	if (pos >= list.size()) return FALSE;
-	if (list.size() == 0) return FALSE;
+	return this->update_CB(code, description, (enabled != 0), pos);
+}
 
-	list.erase(list.begin()+pos);
+bool CHEATS::remove(const size_t pos)
+{
+	bool didRemoveItem = false;
 
-	return TRUE;
+	if (pos >= this->_list.size())
+	{
+		return didRemoveItem;
+	}
+
+	if (this->_list.size() == 0)
+	{
+		return didRemoveItem;
+	}
+
+	this->_list.erase(this->_list.begin()+pos);
+
+	didRemoveItem = true;
+	return didRemoveItem;
 }
 
 void CHEATS::getListReset()
 {
-	currentGet = 0;
+	this->_currentGet = 0;
 	return;
 }
 
-BOOL CHEATS::getList(CHEATS_LIST *cheat)
+bool CHEATS::getList(CHEATS_LIST *cheat)
 {
-	BOOL result = FALSE;
+	bool result = false;
 	
-	if (currentGet >= this->list.size()) 
+	if (this->_currentGet >= this->_list.size()) 
 	{
 		this->getListReset();
 		return result;
 	}
 	
-	result = this->get(cheat, currentGet++);
+	result = this->copyItemFromIndex(this->_currentGet++, *cheat);
 	
 	return result;
 }
 
 CHEATS_LIST* CHEATS::getListPtr()
 {
-	return &this->list[0];
+	return &this->_list[0];
 }
 
-BOOL CHEATS::get(CHEATS_LIST *cheat, u32 pos)
+bool CHEATS::copyItemFromIndex(const size_t pos, CHEATS_LIST &outCheatItem)
 {
-	CHEATS_LIST *item = this->getItemByIndex(pos);
-	if (item == NULL)
+	CHEATS_LIST *itemPtr = this->getItemPtrAtIndex(pos);
+	if (itemPtr == NULL)
 	{
-		return FALSE;
+		return false;
 	}
 	
-	*cheat = *item;
+	outCheatItem = *itemPtr;
 	
-	return TRUE;
+	return true;
 }
 
-CHEATS_LIST* CHEATS::getItemByIndex(const u32 pos)
+CHEATS_LIST* CHEATS::getItemPtrAtIndex(const size_t pos)
 {
-	if (pos >= this->getSize())
+	if (pos >= this->getListSize())
 	{
 		return NULL;
 	}
 	
-	return &this->list[pos];
+	return &this->_list[pos];
 }
 
-u32	CHEATS::getSize()
+size_t CHEATS::getListSize()
 {
-	return list.size();
+	return this->_list.size();
 }
 
 size_t CHEATS::getActiveCount()
 {
 	size_t activeCheatCount = 0;
-	const size_t cheatListCount = this->getSize();
+	const size_t cheatListCount = this->getListSize();
 	
 	for (size_t i = 0; i < cheatListCount; i++)
 	{
-		if (list[i].enabled)
+		if (this->_list[i].enabled != 0)
 		{
 			activeCheatCount++;
 		}
@@ -779,10 +910,10 @@ size_t CHEATS::getActiveCount()
 	return activeCheatCount;
 }
 
-void CHEATS::setDescription(const char *description, u32 pos)
+void CHEATS::setDescription(const char *description, const size_t pos)
 {
-	strncpy(list[pos].description, description, sizeof(list[pos].description));
-	list[pos].description[sizeof(list[pos].description) - 1] = '\0';
+	strncpy(this->_list[pos].description, description, sizeof(this->_list[pos].description));
+	this->_list[pos].description[sizeof(this->_list[pos].description) - 1] = '\0';
 }
 
 
@@ -801,53 +932,58 @@ static char *trim(char *s, int len = -1)
 }
 
 
-BOOL CHEATS::save()
+bool CHEATS::save()
 {
+	bool didSave = false;
 	const char	*types[] = {"DS", "AR", "CB"};
 	std::string	cheatLineStr = "";
 
-	EMUFILE_FILE flist((char *)filename, "w");
-	if(flist.fail())
-		return FALSE;
+	EMUFILE_FILE flist((char *)this->_filename, "w");
+	if (flist.fail())
+	{
+		return didSave;
+	}
 
 	flist.fprintf("; DeSmuME cheats file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
 	flist.fprintf("Name=%s\n", gameInfo.ROMname);
 	flist.fprintf("Serial=%s\n", gameInfo.ROMserial);
 	flist.fprintf("\n; cheats list\n");
-	for (size_t i = 0;  i < list.size(); i++)
+	for (size_t i = 0;  i < this->_list.size(); i++)
 	{
-		if (list[i].num == 0) continue;
+		if (this->_list[i].num == 0) continue;
 			
 		char buf1[8] = {0};
-		sprintf(buf1, "%s %c ", types[list[i].type], list[i].enabled?'1':'0');
+		snprintf(buf1, sizeof(buf1), "%s %c ", types[this->_list[i].type], this->_list[i].enabled ? '1' : '0');
 		cheatLineStr = buf1;
 			
-		for (u32 t = 0; t < list[i].num; t++)
+		for (u32 t = 0; t < this->_list[i].num; t++)
 		{
 			char buf2[10] = { 0 };
 
-			u32 adr = list[i].code[t][0];
-			if (list[i].type == 0)
+			u32 adr = this->_list[i].code[t][0];
+			if (this->_list[i].type == 0)
 			{
 				//size of the cheat is written out as adr highest nybble
 				adr &= 0x0FFFFFFF;
-				adr |= (list[i].size << 28);
+				adr |= (this->_list[i].size << 28);
 			}
-			sprintf(buf2, "%08X", adr);
+			snprintf(buf2, sizeof(buf2), "%08X", adr);
 			cheatLineStr += buf2;
 				
-			sprintf(buf2, "%08X", list[i].code[t][1]);
+			snprintf(buf2, sizeof(buf2), "%08X", this->_list[i].code[t][1]);
 			cheatLineStr += buf2;
-			if (t < (list[i].num - 1))
+			if (t < (this->_list[i].num - 1))
 				cheatLineStr += ",";
 		}
 			
 		cheatLineStr += " ;";
-		cheatLineStr += trim(list[i].description);
+		cheatLineStr += trim(this->_list[i].description);
 		flist.fprintf("%s\n", cheatLineStr.c_str());
 	}
 	flist.fprintf("\n");
-	return TRUE;
+
+	didSave = true;
+	return didSave;
 }
 
 char *CHEATS::clearCode(char *s)
@@ -869,13 +1005,17 @@ char *CHEATS::clearCode(char *s)
 	return s;
 }
 
-BOOL CHEATS::load()
+bool CHEATS::load()
 {
-	EMUFILE_FILE flist((char *)filename, "r");
-	if(flist.fail())
-		return FALSE;
-	
-	size_t readSize = (MAX_XX_CODE * 17) + sizeof(list[0].description) + 7;
+	bool didLoadAllItems = false;
+	int valueReadResult = 0;
+	EMUFILE_FILE flist((char *)this->_filename, "r");
+	if (flist.fail())
+	{
+		return didLoadAllItems;
+	}
+
+	size_t readSize = (MAX_XX_CODE * 17) + sizeof(this->_list[0].description) + 7;
 	if (readSize < CHEAT_FILE_MIN_FGETS_BUFFER)
 	{
 		readSize = CHEAT_FILE_MIN_FGETS_BUFFER;
@@ -889,7 +1029,7 @@ BOOL CHEATS::load()
 	u32				last = 0;
 	u32				line = 0;
 	
-	INFO("Load cheats: %s\n", filename);
+	INFO("Load cheats: %s\n", this->_filename);
 	clear();
 	last = 0; line = 0;
 	while (!flist.eof())
@@ -897,7 +1037,7 @@ BOOL CHEATS::load()
 		CHEATS_LIST		tmp_cht;
 		line++;				// only for debug
 		memset(buf, 0, readSize);
-		if (flist.fgets(buf, readSize) == NULL) {
+		if (flist.fgets(buf, (int)readSize) == NULL) {
 			//INFO("Cheats: Failed to read from flist at line %i\n", line);
 			continue;
 		}
@@ -933,26 +1073,32 @@ BOOL CHEATS::load()
 			continue;
 		}
 
-		tmp_cht.enabled = (buf[3] == '0')?FALSE:TRUE;
-		u32 descr_pos = (u32)(std::max<s32>(strchr((char*)buf, ';') - buf, 0));
+		tmp_cht.enabled = (buf[3] == '0') ? 0 : 1;
+		u32 descr_pos = (u32)std::max<s32>((s32)(strchr((char*)buf, ';') - buf), 0);
 		if (descr_pos != 0)
 		{
 			strncpy(tmp_cht.description, (buf + descr_pos + 1), sizeof(tmp_cht.description));
 			tmp_cht.description[sizeof(tmp_cht.description) - 1] = '\0';
 		}
 
-		tmp_cht.num = codeStr.length() / 16;
+		tmp_cht.num = (u32)codeStr.length() / 16;
 		if ((tmp_cht.type == 0) && (tmp_cht.num > 1))
 		{
 			INFO("Cheats: Too many values for internal cheat\n", line);
 			continue;
 		}
+
 		for (u32 i = 0; i < tmp_cht.num; i++)
 		{
 			char tmp_buf[9] = {0};
 
 			strncpy(tmp_buf, &codeStr[i * 16], 8);
-			sscanf(tmp_buf, "%x", &tmp_cht.code[i][0]);
+			valueReadResult = sscanf(tmp_buf, "%x", &tmp_cht.code[i][0]);
+			if (valueReadResult == 0)
+			{
+				INFO("Cheats: Could not read first value at line %i\n", line);
+				continue;
+			}
 
 			if (tmp_cht.type == 0)
 			{
@@ -961,35 +1107,41 @@ BOOL CHEATS::load()
 			}
 			
 			strncpy(tmp_buf, &codeStr[(i * 16) + 8], 8);
-			sscanf(tmp_buf, "%x", &tmp_cht.code[i][1]);
+			valueReadResult = sscanf(tmp_buf, "%x", &tmp_cht.code[i][1]);
+			if (valueReadResult == 0)
+			{
+				INFO("Cheats: Could not read second value at line %i\n", line);
+				continue;
+			}
 		}
 
-		list.push_back(tmp_cht);
+		this->_list.push_back(tmp_cht);
 		last++;
 	}
 	
 	free(buf);
 	buf = NULL;
 
-	INFO("Added %i cheat codes\n", list.size());
+	INFO("Added %i cheat codes\n", this->_list.size());
 	
-	return TRUE;
+	didLoadAllItems = true;
+	return didLoadAllItems;
 }
 
 void CHEATS::process(int targetType)
 {
 	if (CommonSettings.cheatsDisable) return;
 
-	if (list.size() == 0) return;
+	if (this->_list.size() == 0) return;
 
 	cheatsResetJit = false;
 
-	size_t num = list.size();
+	size_t num = this->_list.size();
 	for (size_t i = 0; i < num; i++)
 	{
-		if (!list[i].enabled) continue;
+		if (this->_list[i].enabled == 0) continue;
 
-		int type = list[i].type;
+		int type = this->_list[i].type;
 		
 		if(type != targetType)
 		continue;
@@ -999,9 +1151,9 @@ void CHEATS::process(int targetType)
 			case 0:		// internal cheat system
 			{
 				//INFO("list at 0x0|%07X value %i (size %i)\n",list[i].code[0], list[i].lo[0], list[i].size);
-				u32 addr = list[i].code[0][0];
-				u32 val = list[i].code[0][1];
-				switch (list[i].size)
+				u32 addr = this->_list[i].code[0][0];
+				u32 val = this->_list[i].code[0][1];
+				switch (this->_list[i].size)
 				{
 				case 0: 
 					_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,val);
@@ -1025,7 +1177,7 @@ void CHEATS::process(int targetType)
 			} //end case 0 internal cheat system
 
 			case 1:		// Action Replay
-				ARparser(list[i]);
+				ARparser(this->_list[i]);
 				break;
 			case 2:		// Codebreaker
 				break;
@@ -1051,33 +1203,42 @@ void CHEATS::getXXcodeString(CHEATS_LIST theList, char *res_buf)
 
 	for (u32 i = 0; i < theList.num; i++)
 	{
-		sprintf(buf, "%08X %08X\n", theList.code[i][0], theList.code[i][1]);
+		snprintf(buf, 19, "%08X %08X\n", theList.code[i][0], theList.code[i][1]);
 		strcat(res_buf, buf);
 	}
 }
 
-BOOL CHEATS::XXCodeFromString(CHEATS_LIST *cheatItem, const std::string codeString)
+bool CHEATS::XXCodeFromString(const std::string codeString, CHEATS_LIST &outCheatItem)
 {
-	return CHEATS::XXCodeFromString(cheatItem, codeString.c_str());
+	return CHEATS::XXCodeFromString(codeString.c_str(), outCheatItem);
 }
 
-BOOL CHEATS::XXCodeFromString(CHEATS_LIST *cheatItem, const char *codeString)
+bool CHEATS::XXCodeFromString(const char *codeString, CHEATS_LIST &outCheatItem)
 {
-	BOOL result = FALSE;
+	bool didValidateCode = true;
+	int valueReadResult = 0;
 	
-	if (cheatItem == NULL || codeString == NULL)
+	if (codeString == NULL)
 	{
-		return result;
+		didValidateCode = false;
+		return didValidateCode;
 	}
 	
-	int		count = 0;
+	size_t	count = 0;
 	u16		t = 0;
-	char	tmp_buf[sizeof(cheatItem->code) * 2 + 1];
-	memset(tmp_buf, 0, sizeof(tmp_buf));
+	
+	const size_t tmpBufferSize = sizeof(outCheatItem.code) * 2 + 1;
+	char *tmp_buf = (char *)malloc(tmpBufferSize);
+	if (tmp_buf == NULL)
+	{
+		didValidateCode = false;
+		return didValidateCode;
+	}
+	memset(tmp_buf, 0, tmpBufferSize);
 	
 	size_t code_len = strlen(codeString);
 	// remove wrong chars
-	for (size_t i=0; i < code_len; i++)
+	for (size_t i = 0; i < code_len; i++)
 	{
 		char c = codeString[i];
 		//apparently 100% of pokemon codes were typed with the letter O in place of zero in some places
@@ -1091,89 +1252,115 @@ BOOL CHEATS::XXCodeFromString(CHEATS_LIST *cheatItem, const char *codeString)
 	}
 	
 	size_t len = strlen(tmp_buf);
-	if ((len % 16) != 0) return result;			// error
-	
+	if ((len % 16) != 0)
+	{
+		free(tmp_buf);
+		didValidateCode = false;
+		return didValidateCode;
+	}
+
 	// TODO: syntax check
 	count = (len / 16);
-	for (int i=0; i < count; i++)
+	for (size_t i = 0; i < count; i++)
 	{
 		char buf[9] = {0};
 		memcpy(buf, tmp_buf+(i*16), 8);
-		sscanf(buf, "%x", &cheatItem->code[i][0]);
+		valueReadResult = sscanf(buf, "%x", &outCheatItem.code[i][0]);
+		if (valueReadResult == 0)
+		{
+			INFO("Cheats: Could not read first value at line %i\n", i);
+			didValidateCode = false;
+			break;
+		}
+
 		memcpy(buf, tmp_buf+(i*16) + 8, 8);
-		sscanf(buf, "%x", &cheatItem->code[i][1]);
+		valueReadResult = sscanf(buf, "%x", &outCheatItem.code[i][1]);
+		if (valueReadResult == 0)
+		{
+			INFO("Cheats: Could not read second value at line %i\n", i);
+			didValidateCode = false;
+			break;
+		}
 	}
 	
-	cheatItem->num = count;
-	cheatItem->size = 0;
+	outCheatItem.num = (u32)count;
+	outCheatItem.size = 0;
+
+	free(tmp_buf);
 	
-	result = TRUE;
-	
-	return result;
+	return didValidateCode;
 }
 
 // ========================================== search
-BOOL CHEATSEARCH::start(u8 type, u8 size, u8 sign)
+bool CHEATSEARCH::start(u8 type, u8 size, u8 sign)
 {
-	if (statMem) return FALSE;
-	if (mem) return FALSE;
+	bool didStartSearch = false;
 
-	statMem = new u8 [ ( 4 * 1024 * 1024 ) / 8 ];
-	memset(statMem, 0xFF, ( 4 * 1024 * 1024 ) / 8);
+	if ( (this->_statMem != NULL) || (this->_mem != NULL) )
+	{
+		// If these buffers exist, then that implies that a search is already
+		// in progress. However, the existing code design is such that a
+		// CHEATSEARCH object may only have one search in progress at a time.
+		return didStartSearch;
+	}
+
+	this->_statMem = new u8 [ ( 4 * 1024 * 1024 ) / 8 ];
+	memset(this->_statMem, 0xFF, ( 4 * 1024 * 1024 ) / 8);
 
 	// comparative search type (need 8Mb RAM !!! (4+4))
-	mem = new u8 [ ( 4 * 1024 * 1024 ) ];
-	memcpy(mem, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
+	this->_mem = new u8 [ ( 4 * 1024 * 1024 ) ];
+	memcpy(this->_mem, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
 
-	_type = type;
-	_size = size;
-	_sign = sign;
-	amount = 0;
-	lastRecord = 0;
+	this->_type = type;
+	this->_size = size;
+	this->_sign = sign;
+	this->_amount = 0;
+	this->_lastRecord = 0;
 	
 	//INFO("Cheat search system is inited (type %s)\n", type?"comparative":"exact");
-	return TRUE;
+	didStartSearch = true;
+	return didStartSearch;
 }
 
-BOOL CHEATSEARCH::close()
+void CHEATSEARCH::close()
 {
-	if (statMem)
+	if (this->_statMem != NULL)
 	{
-		delete [] statMem;
-		statMem = NULL;
+		delete [] this->_statMem;
+		this->_statMem = NULL;
 	}
 
-	if (mem)
+	if (this->_mem != NULL)
 	{
-		delete [] mem;
-		mem = NULL;
+		delete [] this->_mem;
+		this->_mem = NULL;
 	}
-	amount = 0;
-	lastRecord = 0;
+
+	this->_amount = 0;
+	this->_lastRecord = 0;
 	//INFO("Cheat search system is closed\n");
-	return FALSE;
 }
 
 u32 CHEATSEARCH::search(u32 val)
 {
-	amount = 0;
+	this->_amount = 0;
 
-	switch (_size)
+	switch (this->_size)
 	{
 		case 0:		// 1 byte
 			for (u32 i = 0; i < (4 * 1024 * 1024); i++)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (statMem[addr] & (1<<offs))
+				if (this->_statMem[addr] & (1<<offs))
 				{
 					if ( T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == val )
 					{
-						statMem[addr] |= (1<<offs);
-						amount++;
+						this->_statMem[addr] |= (1<<offs);
+						this->_amount++;
 						continue;
 					}
-					statMem[addr] &= ~(1<<offs);
+					this->_statMem[addr] &= ~(1<<offs);
 				}
 			}
 		break;
@@ -1183,15 +1370,15 @@ u32 CHEATSEARCH::search(u32 val)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (statMem[addr] & (3<<offs))
+				if (this->_statMem[addr] & (3<<offs))
 				{
 					if ( T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == val )
 					{
-						statMem[addr] |= (3<<offs);
-						amount++;
+						this->_statMem[addr] |= (3<<offs);
+						this->_amount++;
 						continue;
 					}
-					statMem[addr] &= ~(3<<offs);
+					this->_statMem[addr] &= ~(3<<offs);
 				}
 			}
 		break;
@@ -1201,15 +1388,15 @@ u32 CHEATSEARCH::search(u32 val)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (statMem[addr] & (0x7<<offs))
+				if (this->_statMem[addr] & (0x7<<offs))
 				{
 					if ( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) == val )
 					{
-						statMem[addr] |= (0x7<<offs);
-						amount++;
+						this->_statMem[addr] |= (0x7<<offs);
+						this->_amount++;
 						continue;
 					}
-					statMem[addr] &= ~(0x7<<offs);
+					this->_statMem[addr] &= ~(0x7<<offs);
 				}
 			}
 		break;
@@ -1219,28 +1406,28 @@ u32 CHEATSEARCH::search(u32 val)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (statMem[addr] & (0xF<<offs))
+				if (this->_statMem[addr] & (0xF<<offs))
 				{
 					if ( T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == val )
 					{
-						statMem[addr] |= (0xF<<offs);
-						amount++;
+						this->_statMem[addr] |= (0xF<<offs);
+						this->_amount++;
 						continue;
 					}
-					statMem[addr] &= ~(0xF<<offs);
+					this->_statMem[addr] &= ~(0xF<<offs);
 				}
 			}
 		break;
 	}
 
-	return (amount);
+	return this->_amount;
 }
 
 u32 CHEATSEARCH::search(u8 comp)
 {
-	BOOL	res = FALSE;
+	bool didComparePass = false;
 
-	amount = 0;
+	this->_amount = 0;
 	
 	switch (_size)
 	{
@@ -1249,23 +1436,23 @@ u32 CHEATSEARCH::search(u8 comp)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (statMem[addr] & (1<<offs))
+				if (this->_statMem[addr] & (1<<offs))
 				{
 					switch (comp)
 					{
-						case 0: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadByte(mem, i)); break;
-						case 1: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadByte(mem, i)); break;
-						case 2: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadByte(mem, i)); break;
-						case 3: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadByte(mem, i)); break;
-						default: res = FALSE; break;
+						case 0: didComparePass = (T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadByte(this->_mem, i)); break;
+						case 1: didComparePass = (T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadByte(this->_mem, i)); break;
+						case 2: didComparePass = (T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadByte(this->_mem, i)); break;
+						case 3: didComparePass = (T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadByte(this->_mem, i)); break;
+						default: didComparePass = false; break;
 					}
-					if ( res )
+					if (didComparePass)
 					{
-						statMem[addr] |= (1<<offs);
-						amount++;
+						this->_statMem[addr] |= (1<<offs);
+						this->_amount++;
 						continue;
 					}
-					statMem[addr] &= ~(1<<offs);
+					this->_statMem[addr] &= ~(1<<offs);
 				}
 			}
 		break;
@@ -1275,23 +1462,23 @@ u32 CHEATSEARCH::search(u8 comp)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (statMem[addr] & (3<<offs))
+				if (this->_statMem[addr] & (3<<offs))
 				{
 					switch (comp)
 					{
-						case 0: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadWord(mem, i)); break;
-						case 1: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadWord(mem, i)); break;
-						case 2: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadWord(mem, i)); break;
-						case 3: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadWord(mem, i)); break;
-						default: res = FALSE; break;
+						case 0: didComparePass = (T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadWord(this->_mem, i)); break;
+						case 1: didComparePass = (T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadWord(this->_mem, i)); break;
+						case 2: didComparePass = (T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadWord(this->_mem, i)); break;
+						case 3: didComparePass = (T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadWord(this->_mem, i)); break;
+						default: didComparePass = false; break;
 					}
-					if ( res )
+					if (didComparePass)
 					{
-						statMem[addr] |= (3<<offs);
-						amount++;
+						this->_statMem[addr] |= (3<<offs);
+						this->_amount++;
 						continue;
 					}
-					statMem[addr] &= ~(3<<offs);
+					this->_statMem[addr] &= ~(3<<offs);
 				}
 			}
 		break;
@@ -1301,23 +1488,23 @@ u32 CHEATSEARCH::search(u8 comp)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (statMem[addr] & (7<<offs))
+				if (this->_statMem[addr] & (7<<offs))
 				{
 					switch (comp)
 					{
-						case 0: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) > (T1ReadLong(mem, i) & 0x00FFFFFF) ); break;
-						case 1: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) < (T1ReadLong(mem, i) & 0x00FFFFFF) ); break;
-						case 2: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) == (T1ReadLong(mem, i) & 0x00FFFFFF) ); break;
-						case 3: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) != (T1ReadLong(mem, i) & 0x00FFFFFF) ); break;
-						default: res = FALSE; break;
+						case 0: didComparePass = ((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) > (T1ReadLong(this->_mem, i) & 0x00FFFFFF) ); break;
+						case 1: didComparePass = ((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) < (T1ReadLong(this->_mem, i) & 0x00FFFFFF) ); break;
+						case 2: didComparePass = ((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) == (T1ReadLong(this->_mem, i) & 0x00FFFFFF) ); break;
+						case 3: didComparePass = ((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) != (T1ReadLong(this->_mem, i) & 0x00FFFFFF) ); break;
+						default: didComparePass = false; break;
 					}
-					if ( res )
+					if (didComparePass)
 					{
-						statMem[addr] |= (7<<offs);
-						amount++;
+						this->_statMem[addr] |= (7<<offs);
+						this->_amount++;
 						continue;
 					}
-					statMem[addr] &= ~(7<<offs);
+					this->_statMem[addr] &= ~(7<<offs);
 				}
 			}
 		break;
@@ -1327,42 +1514,44 @@ u32 CHEATSEARCH::search(u8 comp)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (statMem[addr] & (0xF<<offs))
+				if (this->_statMem[addr] & (0xF<<offs))
 				{
 					switch (comp)
 					{
-						case 0: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadLong(mem, i)); break;
-						case 1: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadLong(mem, i)); break;
-						case 2: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadLong(mem, i)); break;
-						case 3: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadLong(mem, i)); break;
-						default: res = FALSE; break;
+						case 0: didComparePass = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadLong(this->_mem, i)); break;
+						case 1: didComparePass = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadLong(this->_mem, i)); break;
+						case 2: didComparePass = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadLong(this->_mem, i)); break;
+						case 3: didComparePass = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadLong(this->_mem, i)); break;
+						default: didComparePass = false; break;
 					}
-					if ( res )
+					if (didComparePass)
 					{
-						statMem[addr] |= (0xF<<offs);
-						amount++;
+						this->_statMem[addr] |= (0xF<<offs);
+						this->_amount++;
 						continue;
 					}
-					statMem[addr] &= ~(0xF<<offs);
+					this->_statMem[addr] &= ~(0xF<<offs);
 				}
 			}
 		break;
 	}
 
-	memcpy(mem, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
+	memcpy(this->_mem, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
 
-	return (amount);
+	return this->_amount;
 }
 
 u32 CHEATSEARCH::getAmount()
 {
-	return (amount);
+	return this->_amount;
 }
 
-BOOL CHEATSEARCH::getList(u32 *address, u32 *curVal)
+bool CHEATSEARCH::getList(u32 *address, u32 *curVal)
 {
-	u8	step = (_size+1);
-	u8	stepMem = 1;
+	bool didGetValue = false;
+	u8 step = (_size+1);
+	u8 stepMem = 1;
+
 	switch (_size)
 	{
 		case 1: stepMem = 0x3; break;
@@ -1370,43 +1559,45 @@ BOOL CHEATSEARCH::getList(u32 *address, u32 *curVal)
 		case 3: stepMem = 0xF; break;
 	}
 
-	for (u32 i = lastRecord; i < (4 * 1024 * 1024); i+=step)
+	for (u32 i = this->_lastRecord; i < (4 * 1024 * 1024); i+=step)
 	{
 		u32	addr = (i >> 3);
 		u32	offs = (i % 8);
-		if (statMem[addr] & (stepMem<<offs))
+		if (this->_statMem[addr] & (stepMem<<offs))
 		{
 			*address = i;
-			lastRecord = i+step;
+			this->_lastRecord = i+step;
 			
 			switch (_size)
 			{
-				case 0: *curVal=(u32)T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); return TRUE;
-				case 1: *curVal=(u32)T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); return TRUE;
-				case 2: *curVal=(u32)T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF; return TRUE;
-				case 3: *curVal=(u32)T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); return TRUE;
-				default: return TRUE;
+				case 0: *curVal = (u32)T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); break;
+				case 1: *curVal = (u32)T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); break;
+				case 2: *curVal = (u32)T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF; break;
+				case 3: *curVal = (u32)T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); break;
+				default: break;
 			}
+
+			didGetValue = true;
+			return didGetValue;
 		}
 	}
-	lastRecord = 0;
-	return FALSE;
+	this->_lastRecord = 0;
+	return didGetValue;
 }
 
 void CHEATSEARCH::getListReset()
 {
-	lastRecord = 0;
+	this->_lastRecord = 0;
 }
 
 // ========================================================================= Export
-void CHEATSEXPORT::R4decrypt(u8 *buf, u32 len, u32 n)
+void CHEATSEXPORT::R4decrypt(u8 *buf, const size_t len, u64 n)
 {
 	size_t r = 0;
 	while (r < len)
 	{
-		size_t i ;
 		u16 key = n ^ 0x484A;
-		for (i = 0 ; i < 512 && i < len - r ; i ++)
+		for (size_t i = 0; (i < 512) && (i < (len - r)); i++)
 		{
 			u8 _xor = 0;
 			if (key & 0x4000) _xor |= 0x80;
@@ -1418,9 +1609,9 @@ void CHEATSEXPORT::R4decrypt(u8 *buf, u32 len, u32 n)
 			if (key & 0x0002) _xor |= 0x02;
 			if (key & 0x0001) _xor |= 0x01;
 
-			u32 k = ((buf[i] << 8) ^ key) << 16;
+			u32 k = (u32)(((u16)buf[i] << 8) ^ key) << 16;
 			u32 x = k;
-			for (u8 j = 1; j < 32; j ++)
+			for (size_t j = 1; j < 32; j++)
 				x ^= k >> j;
 			key = 0x0000;
 			if (BIT_N(x, 23)) key |= 0x8000;
@@ -1516,7 +1707,7 @@ bool CHEATSEXPORT::search()
 
 	CRC = 0;
 	encOffset = 0;
-	u32 t = 0;
+	u64 t = 0;
 	memset(date, 0, sizeof(date));
 	if (encrypted)
 	{
@@ -1533,7 +1724,7 @@ bool CHEATSEXPORT::search()
 		fread(&fat_tmp, sizeof(fat), 1, fp);
 	}
 
-	while (1)
+	do
 	{
 		if (encrypted)
 		{
@@ -1557,7 +1748,7 @@ bool CHEATSEXPORT::search()
 		if (gameInfo.crcForCheatsDb == fat.CRC
 			&& !memcmp(gameInfo.header.gameCode, &fat.serial[0], 4))
 		{
-			dataSize = fat_tmp.addr?(fat_tmp.addr - fat.addr):0;
+			dataSize = fat_tmp.addr ? (fat_tmp.addr - fat.addr) : 0;
 			if (encrypted)
 			{
 				encOffset = fat.addr % 512;
@@ -1567,12 +1758,11 @@ bool CHEATSEXPORT::search()
 			CRC = fat.CRC;
 			char serialBuf[5] = {0};
 			memcpy(&serialBuf, &fat.serial[0], 4);
-			printf("Cheats: found %s CRC %08X at 0x%08llX, size %i byte(s)\n", serialBuf, fat.CRC, fat.addr, dataSize - encOffset);
+			printf("Cheats: found %s CRC %08X at 0x%08llX, size %llu byte(s)\n", serialBuf, fat.CRC, fat.addr, (unsigned long long)(dataSize - encOffset));
 			return true;
 		}
 
-		if (fat.addr == 0) break;
-	}
+	} while (fat.addr > 0);
 
 	memset(&fat, 0, sizeof(FAT_R4));
 	return false;

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2022 DeSmuME team
+	Copyright (C) 2012-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -169,12 +169,12 @@ static NSImage *iconCodeBreaker = nil;
 
 - (BOOL) enabled
 {
-	return data->enabled;
+	return (data->enabled != 0) ? YES : NO;
 }
 
 - (void) setEnabled:(BOOL)theState
 {
-	data->enabled = theState;
+	data->enabled = (theState) ? 1 : 0;
 	
 	if (workingCopy != nil)
 	{
@@ -373,7 +373,7 @@ static NSImage *iconCodeBreaker = nil;
 	char *codeCString = (char *)calloc(codeCStringSize, 1);
 	[theCode getCString:codeCString maxLength:codeCStringSize encoding:NSUTF8StringEncoding];
 	
-	CHEATS::XXCodeFromString(data, codeCString);
+	CHEATS::XXCodeFromString(codeCString, *data);
 	
 	free(codeCString);
 	codeCString = NULL;
@@ -589,7 +589,7 @@ static NSImage *iconCodeBreaker = nil;
 		NSNumber *memAddressNumber = (NSNumber *)[dataDict valueForKey:@"memAddress"];
 		if (memAddressNumber != nil)
 		{
-			self.memAddress = [memAddressNumber unsignedIntegerValue];
+			self.memAddress = (u32)[memAddressNumber unsignedIntegerValue];
 		}
 		
 		NSNumber *valueNumber = (NSNumber *)[dataDict valueForKey:@"value"];
@@ -796,11 +796,12 @@ static NSImage *iconCodeBreaker = nil;
 	CHEATS_LIST *cheatListData = self.listData->getListPtr();
 	
 	pthread_rwlock_wrlock(self.rwlockCoreExecute);
+	const bool cheatItemEnabled = (cheatItem.enabled) ? true : false;
 	
 	switch (cheatItem.cheatType)
 	{
 		case CHEAT_TYPE_INTERNAL:
-			result = self.listData->add(cheatItem.bytes - 1, cheatItem.memAddress, cheatItem.value, [cheatItem descriptionCString], cheatItem.enabled);
+			result = self.listData->add(cheatItem.bytes - 1, cheatItem.memAddress, (u32)cheatItem.value, [cheatItem descriptionCString], cheatItemEnabled);
 			break;
 			
 		case CHEAT_TYPE_ACTION_REPLAY:
@@ -808,7 +809,7 @@ static NSImage *iconCodeBreaker = nil;
 			char *cheatCodes = (char *)[cheatItem.code cStringUsingEncoding:NSUTF8StringEncoding];
 			if (cheatCodes != nil)
 			{
-				result = self.listData->add_AR(cheatCodes, [cheatItem descriptionCString], cheatItem.enabled);
+				result = self.listData->add_AR(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled);
 			}
 			break;
 		}
@@ -818,7 +819,7 @@ static NSImage *iconCodeBreaker = nil;
 			char *cheatCodes = (char *)[cheatItem.code cStringUsingEncoding:NSUTF8StringEncoding];
 			if (cheatCodes != nil)
 			{
-				result = self.listData->add_CB(cheatCodes, [cheatItem descriptionCString], cheatItem.enabled);
+				result = self.listData->add_CB(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled);
 			}
 			break;
 		}
@@ -839,16 +840,16 @@ static NSImage *iconCodeBreaker = nil;
 	// reset the data pointers for each item.
 	if (cheatListData != self.listData->getListPtr())
 	{
-		NSUInteger listCount = self.listData->getSize();
+		NSUInteger listCount = self.listData->getListSize();
 		for (NSUInteger i = 0; i < listCount; i++)
 		{
 			CocoaDSCheatItem *itemInList = (CocoaDSCheatItem *)[self.list objectAtIndex:i];
-			itemInList.data = self.listData->getItemByIndex(i);
+			itemInList.data = self.listData->getItemPtrAtIndex(i);
 		}
 	}
 	else
 	{
-		cheatItem.data = self.listData->getItemByIndex(self.listData->getSize() - 1);
+		cheatItem.data = self.listData->getItemPtrAtIndex(self.listData->getListSize() - 1);
 	}
 	
 	return result;
@@ -873,10 +874,10 @@ static NSImage *iconCodeBreaker = nil;
 	
 	// Removing an item from the raw cheat list data shifts all higher elements
 	// by one, so we need to do the same.
-	NSUInteger listCount = self.listData->getSize();
+	NSUInteger listCount = self.listData->getListSize();
 	for (NSUInteger i = selectionIndex; i < listCount; i++)
 	{
-		[(CocoaDSCheatItem *)[self.list objectAtIndex:(i + 1)] setData:self.listData->getItemByIndex(i)];
+		[(CocoaDSCheatItem *)[self.list objectAtIndex:(i + 1)] setData:self.listData->getItemPtrAtIndex(i)];
 	}
 		
 	cheatItem.data = nil;
@@ -899,11 +900,12 @@ static NSImage *iconCodeBreaker = nil;
 	}
 	
 	pthread_rwlock_wrlock(self.rwlockCoreExecute);
+	const bool cheatItemEnabled = (cheatItem.enabled) ? true : false;
 	
 	switch (cheatItem.cheatType)
 	{
 		case CHEAT_TYPE_INTERNAL:
-			result = self.listData->update(cheatItem.bytes - 1, cheatItem.memAddress, cheatItem.value, [cheatItem descriptionCString], cheatItem.enabled, selectionIndex);
+			result = self.listData->update(cheatItem.bytes - 1, cheatItem.memAddress, (u32)cheatItem.value, [cheatItem descriptionCString], cheatItemEnabled, selectionIndex);
 			break;
 			
 		case CHEAT_TYPE_ACTION_REPLAY:
@@ -911,7 +913,7 @@ static NSImage *iconCodeBreaker = nil;
 			char *cheatCodes = (char *)[cheatItem.code cStringUsingEncoding:NSUTF8StringEncoding];
 			if (cheatCodes != nil)
 			{
-				result = self.listData->update_AR(cheatCodes, [cheatItem descriptionCString], cheatItem.enabled, selectionIndex);
+				result = self.listData->update_AR(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled, selectionIndex);
 			}
 			break;
 		}
@@ -921,7 +923,7 @@ static NSImage *iconCodeBreaker = nil;
 			char *cheatCodes = (char *)[cheatItem.code cStringUsingEncoding:NSUTF8StringEncoding];
 			if (cheatCodes != nil)
 			{
-				result = self.listData->update_CB(cheatCodes, [cheatItem descriptionCString], cheatItem.enabled, selectionIndex);
+				result = self.listData->update_CB(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled, selectionIndex);
 			}
 			break;
 		}
@@ -1014,7 +1016,7 @@ static NSImage *iconCodeBreaker = nil;
 
 + (void) applyInternalCheatWithItem:(CocoaDSCheatItem *)cheatItem
 {
-	[CocoaDSCheatManager applyInternalCheatWithAddress:cheatItem.memAddress value:cheatItem.value bytes:cheatItem.bytes];
+	[CocoaDSCheatManager applyInternalCheatWithAddress:cheatItem.memAddress value:(u32)cheatItem.value bytes:cheatItem.bytes];
 }
 
 + (void) applyInternalCheatWithAddress:(UInt32)address value:(UInt32)value bytes:(NSUInteger)bytes
@@ -1069,10 +1071,10 @@ static NSImage *iconCodeBreaker = nil;
 		return newList;
 	}
 	
-	u32 itemCount = cheatList->getSize();
-	for (u32 i = 0; i < itemCount; i++)
+	size_t itemCount = cheatList->getListSize();
+	for (size_t i = 0; i < itemCount; i++)
 	{
-		CocoaDSCheatItem *newItem = [[CocoaDSCheatItem alloc] initWithCheatData:cheatList->getItemByIndex(i)];
+		CocoaDSCheatItem *newItem = [[CocoaDSCheatItem alloc] initWithCheatData:cheatList->getItemPtrAtIndex(i)];
 		
 		if (newItem != nil)
 		{
