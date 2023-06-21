@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2015 DeSmuME team
+	Copyright (C) 2011-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,6 +23,28 @@ class CHEATS;
 class CHEATS_LIST;
 class CHEATSEARCH;
 
+enum CheatType
+{
+	CheatType_Internal = 0,
+	CheatType_ActionReplay = 1,
+	CheatType_CodeBreaker = 2
+};
+
+enum CheatFreezeType
+{
+	CheatFreezeType_Normal = 0,
+	CheatFreezeType_CanDecrease = 1,
+	CheatFreezeType_CanIncrease = 2
+};
+
+enum CheatSystemError
+{
+	CheatSystemError_NoError = 0,
+	CheatSystemError_FileOpenFailed = 1,
+	CheatSystemError_FileFormatInvalid = 2,
+	CheatSystemError_CheatNotFound = 3,
+	CheatSystemError_ExportError = 4
+};
 
 /********************************************************************************************
 	CocoaDSCheatItem - OBJECTIVE-C CLASS

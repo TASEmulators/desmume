@@ -73,14 +73,14 @@ static NSImage *iconCodeBreaker = nil;
 		
 		data = internalData;
 		
-		self.enabled = NO;
-		self.cheatType = CHEAT_TYPE_INTERNAL;
-		self.freezeType = 0;
-		self.description = @"";
-		self.code = @"";
-		self.memAddress = 0x00000000;
-		self.bytes = 1;
-		self.value = 0;
+		[self setEnabled:NO];
+		[self setCheatType:CHEAT_TYPE_INTERNAL];
+		[self setFreezeType:CheatFreezeType_Normal];
+		[self setDescription:@""];
+		[self setCode:@""];
+		[self setMemAddress:0x00000000];
+		[self setBytes:1];
+		[self setValue:0];
 	}
 	else
 	{
@@ -136,7 +136,7 @@ static NSImage *iconCodeBreaker = nil;
 		pthread_mutex_lock(&mutexData);
 		
 		CHEATS_LIST *thisData = data;
-		CHEATS_LIST *workingData = workingCopy.data;
+		CHEATS_LIST *workingData = [workingCopy data];
 		*workingData = *thisData;
 		
 		pthread_mutex_unlock(&mutexData);
@@ -178,7 +178,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	if (workingCopy != nil)
 	{
-		workingCopy.enabled = theState;
+		[workingCopy setEnabled:theState];
 	}
 }
 
@@ -200,7 +200,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	if (workingCopy != nil)
 	{
-		workingCopy.description = desc;
+		[workingCopy setDescription:desc];
 	}
 }
 
@@ -221,18 +221,18 @@ static NSImage *iconCodeBreaker = nil;
 	switch (theType)
 	{
 		case CHEAT_TYPE_INTERNAL:
-			self.cheatTypeIcon = iconInternalCheat;
-			self.isSupportedCheatType = YES;
+			[self setCheatTypeIcon:iconInternalCheat];
+			[self setIsSupportedCheatType:YES];
 			break;
 			
 		case CHEAT_TYPE_ACTION_REPLAY:
-			self.cheatTypeIcon = iconActionReplay;
-			self.isSupportedCheatType = YES;
+			[self setCheatTypeIcon:iconActionReplay];
+			[self setIsSupportedCheatType:YES];
 			break;
 			
 		case CHEAT_TYPE_CODE_BREAKER:
-			self.cheatTypeIcon = iconCodeBreaker;
-			self.isSupportedCheatType = NO;
+			[self setCheatTypeIcon:iconCodeBreaker];
+			[self setIsSupportedCheatType:NO];
 			break;
 			
 		default:
@@ -241,7 +241,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	if (workingCopy != nil)
 	{
-		workingCopy.cheatType = theType;
+		[workingCopy setCheatType:theType];
 	}
 }
 
@@ -254,7 +254,7 @@ static NSImage *iconCodeBreaker = nil;
 {
 	NSImage *theIcon = nil;
 	
-	switch (self.cheatType)
+	switch ([self cheatType])
 	{
 		case CHEAT_TYPE_INTERNAL:
 			theIcon = iconInternalCheat;
@@ -279,7 +279,7 @@ static NSImage *iconCodeBreaker = nil;
 {
 	BOOL isSupported = YES;
 	
-	switch (self.cheatType)
+	switch ([self cheatType])
 	{
 		case CHEAT_TYPE_INTERNAL:
 		case CHEAT_TYPE_ACTION_REPLAY:
@@ -313,7 +313,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	if (workingCopy != nil)
 	{
-		workingCopy.freezeType = theType;
+		[workingCopy setFreezeType:theType];
 	}
 }
 
@@ -328,7 +328,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	if (workingCopy != nil)
 	{
-		workingCopy.bytes = byteSize;
+		[workingCopy setBytes:byteSize];
 	}
 }
 
@@ -347,7 +347,7 @@ static NSImage *iconCodeBreaker = nil;
 	NSString *codeLine = @"";
 	NSString *cheatCodes = @"";
 	
-	NSUInteger numberCodes = self.codeCount;
+	NSUInteger numberCodes = [self codeCount];
 	if (numberCodes > MAX_XX_CODE)
 	{
 		return nil;
@@ -378,18 +378,18 @@ static NSImage *iconCodeBreaker = nil;
 	free(codeCString);
 	codeCString = NULL;
 	
-	self.codeCount = self.codeCount;
-	self.bytes = self.bytes;
+	[self setCodeCount:[self codeCount]];
+	[self setBytes:[self bytes]];
 	
 	if (workingCopy != nil)
 	{
-		workingCopy.code = theCode;
+		[workingCopy setCode:theCode];
 	}
 }
 
 - (UInt32) memAddress
 {
-	if (self.cheatType != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
+	if ([self cheatType] != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
 	{
 		return 0;
 	}
@@ -399,7 +399,7 @@ static NSImage *iconCodeBreaker = nil;
 
 - (void) setMemAddress:(UInt32)theAddress
 {
-	if (self.cheatType != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
+	if ([self cheatType] != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
 	{
 		return;
 	}
@@ -410,45 +410,45 @@ static NSImage *iconCodeBreaker = nil;
 	
 	if (workingCopy != nil)
 	{
-		workingCopy.memAddress = theAddress;
+		[workingCopy setMemAddress:theAddress];
 	}
 }
 
 - (NSString *) memAddressString
 {
-	return [NSString stringWithFormat:@"0x%08X", (unsigned int)self.memAddress];
+	return [NSString stringWithFormat:@"0x%08X", (unsigned int)[self memAddress]];
 }
 
 - (void) setMemAddressString:(NSString *)addressString
 {
-	if (self.cheatType != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
+	if ([self cheatType] != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
 	{
 		return;
 	}
 	
 	u32 address = 0x00000000;
 	[[NSScanner scannerWithString:addressString] scanHexInt:&address];
-	self.memAddress = address;
+	[self setMemAddress:address];
 	
 	if (workingCopy != nil)
 	{
-		workingCopy.memAddressString = addressString;
+		[workingCopy setMemAddressString:addressString];
 	}
 }
 
 - (NSString *) memAddressSixDigitString
 {
-	return [NSString stringWithFormat:@"%06X", (unsigned int)(self.memAddress & 0x00FFFFFF)];
+	return [NSString stringWithFormat:@"%06X", (unsigned int)([self memAddress] & 0x00FFFFFF)];
 }
 
 - (void) setMemAddressSixDigitString:(NSString *)addressString
 {
-	self.memAddressString = addressString;
+	[self setMemAddressString:addressString];
 }
 
 - (SInt64) value
 {
-	if (self.cheatType != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
+	if ([self cheatType] != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
 	{
 		return 0;
 	}
@@ -458,7 +458,7 @@ static NSImage *iconCodeBreaker = nil;
 
 - (void) setValue:(SInt64)theValue
 {
-	if (self.cheatType != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
+	if ([self cheatType] != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
 	{
 		return;
 	}
@@ -467,26 +467,26 @@ static NSImage *iconCodeBreaker = nil;
 	
 	if (workingCopy != nil)
 	{
-		workingCopy.value = theValue;
+		[workingCopy setValue:theValue];
 	}
 }
 
 - (void) update
 {
-	self.enabled = self.enabled;
-	self.description = self.description;
-	self.cheatType = self.cheatType;
-	self.freezeType = self.freezeType;
+	[self setEnabled:[self enabled]];
+	[self setDescription:[self description]];
+	[self setCheatType:[self cheatType]];
+	[self setFreezeType:[self freezeType]];
 	
-	if (self.cheatType == CHEAT_TYPE_INTERNAL)
+	if ([self cheatType] == CHEAT_TYPE_INTERNAL)
 	{
-		self.bytes = self.bytes;
-		self.memAddress = self.memAddress;
-		self.value = self.value;
+		[self setBytes:[self bytes]];
+		[self setMemAddress:[self memAddress]];
+		[self setValue:[self value]];
 	}
 	else
 	{
-		self.code = self.code;
+		[self setCode:[self code]];
 	}
 }
 
@@ -499,9 +499,9 @@ static NSImage *iconCodeBreaker = nil;
 		[workingCopy release];
 	}
 	
-	newWorkingCopy = [[CocoaDSCheatItem alloc] initWithCheatData:self.data];
+	newWorkingCopy = [[CocoaDSCheatItem alloc] initWithCheatData:[self data]];
 	[newWorkingCopy retainData];
-	newWorkingCopy.parent = self;
+	[newWorkingCopy setParent:self];
 	workingCopy = newWorkingCopy;
 	
 	return newWorkingCopy;
@@ -520,8 +520,8 @@ static NSImage *iconCodeBreaker = nil;
 		return;
 	}
 	
-	CHEATS_LIST *thisData = self.data;
-	CHEATS_LIST *workingData = workingCopy.data;
+	CHEATS_LIST *thisData = [self data];
+	CHEATS_LIST *workingData = [workingCopy data];
 	
 	pthread_mutex_lock(&mutexData);
 	*thisData = *workingData;
@@ -537,8 +537,8 @@ static NSImage *iconCodeBreaker = nil;
 		return;
 	}
 	
-	CHEATS_LIST *thisData = self.data;
-	CHEATS_LIST *parentData = parent.data;
+	CHEATS_LIST *thisData = [self data];
+	CHEATS_LIST *parentData = [parent data];
 	
 	pthread_mutex_lock(&mutexData);
 	*parentData = *thisData;
@@ -557,45 +557,45 @@ static NSImage *iconCodeBreaker = nil;
 	NSNumber *enabledNumber = (NSNumber *)[dataDict valueForKey:@"enabled"];
 	if (enabledNumber != nil)
 	{
-		self.enabled = [enabledNumber boolValue];
+		[self setEnabled:[enabledNumber boolValue]];
 	}
 	
 	NSString *descriptionString = (NSString *)[dataDict valueForKey:@"description"];
 	if (descriptionString != nil)
 	{
-		self.description = descriptionString;
+		[self setDescription:descriptionString];
 	}
 	
 	NSNumber *freezeTypeNumber = (NSNumber *)[dataDict valueForKey:@"freezeType"];
 	if (freezeTypeNumber != nil)
 	{
-		self.freezeType = [freezeTypeNumber integerValue];
+		[self setFreezeType:[freezeTypeNumber integerValue]];
 	}
 	
 	NSNumber *cheatTypeNumber = (NSNumber *)[dataDict valueForKey:@"cheatType"];
 	if (cheatTypeNumber != nil)
 	{
-		self.cheatType = [cheatTypeNumber integerValue];
+		[self setCheatType:[cheatTypeNumber integerValue]];
 	}
 	
-	if (self.cheatType == CHEAT_TYPE_INTERNAL)
+	if ([self cheatType] == CHEAT_TYPE_INTERNAL)
 	{
 		NSNumber *bytesNumber = (NSNumber *)[dataDict valueForKey:@"bytes"];
 		if (bytesNumber != nil)
 		{
-			self.bytes = [bytesNumber unsignedIntegerValue];
+			[self setBytes:[bytesNumber unsignedIntegerValue]];
 		}
 		
 		NSNumber *memAddressNumber = (NSNumber *)[dataDict valueForKey:@"memAddress"];
 		if (memAddressNumber != nil)
 		{
-			self.memAddress = (u32)[memAddressNumber unsignedIntegerValue];
+			[self setMemAddress:(u32)[memAddressNumber unsignedIntegerValue]];
 		}
 		
 		NSNumber *valueNumber = (NSNumber *)[dataDict valueForKey:@"value"];
 		if (valueNumber != nil)
 		{
-			self.value = [valueNumber integerValue];
+			[self setValue:[valueNumber integerValue]];
 		}
 	}
 	else
@@ -603,7 +603,7 @@ static NSImage *iconCodeBreaker = nil;
 		NSString *codeString = (NSString *)[dataDict valueForKey:@"code"];
 		if (codeString != nil)
 		{
-			self.code = codeString;
+			[self setCode:codeString];
 		}
 	}
 }
@@ -611,17 +611,17 @@ static NSImage *iconCodeBreaker = nil;
 - (NSDictionary *) dataDictionary
 {
 	return [NSDictionary dictionaryWithObjectsAndKeys:
-			[NSNumber numberWithBool:self.enabled], @"enabled",
-			[NSNumber numberWithInteger:self.cheatType], @"cheatType",
-			self.description, @"description",
-			[NSNumber numberWithInteger:self.freezeType], @"freezeType",
-			[NSNumber numberWithUnsignedInteger:self.codeCount], @"codeCount",
-			[NSNumber numberWithUnsignedInteger:self.bytes], @"bytes",
-			[NSNumber numberWithUnsignedInt:self.memAddress], @"memAddress",
-			self.memAddressString, @"memAddressString",
-			[NSNumber numberWithInteger:self.value], @"value",
-			self.code, @"code",
-			[NSNumber numberWithBool:self.isSupportedCheatType], @"isSupportedCheatType",
+			[NSNumber numberWithBool:[self enabled]], @"enabled",
+			[NSNumber numberWithInteger:[self cheatType]], @"cheatType",
+			[self description], @"description",
+			[NSNumber numberWithInteger:[self freezeType]], @"freezeType",
+			[NSNumber numberWithUnsignedInteger:[self codeCount]], @"codeCount",
+			[NSNumber numberWithUnsignedInteger:[self bytes]], @"bytes",
+			[NSNumber numberWithUnsignedInt:[self memAddress]], @"memAddress",
+			[self memAddressString], @"memAddressString",
+			[NSNumber numberWithInteger:[self value]], @"value",
+			[self code], @"code",
+			[NSNumber numberWithBool:[self isSupportedCheatType]], @"isSupportedCheatType",
 			nil];
 }
 
@@ -735,10 +735,10 @@ static NSImage *iconCodeBreaker = nil;
 
 - (void)dealloc
 {
-	self.dbTitle = nil;
-	self.dbDate = nil;
+	[self setDbTitle:nil];
+	[self setDbDate:nil];
 	[list release];
-	delete (CHEATS *)self.listData;
+	delete (CHEATS *)[self listData];
 	cheats = NULL;
 	
 	if (isUsingDummyRWlock)
@@ -793,33 +793,33 @@ static NSImage *iconCodeBreaker = nil;
 	
 	// Get the current pointer to the raw cheat list data. We will need it later
 	// to check if the list got reallocated.
-	CHEATS_LIST *cheatListData = self.listData->getListPtr();
+	CHEATS_LIST *cheatListData = [self listData]->getListPtr();
 	
-	pthread_rwlock_wrlock(self.rwlockCoreExecute);
-	const bool cheatItemEnabled = (cheatItem.enabled) ? true : false;
+	pthread_rwlock_wrlock([self rwlockCoreExecute]);
+	const bool cheatItemEnabled = ([cheatItem enabled]) ? true : false;
 	
-	switch (cheatItem.cheatType)
+	switch ([cheatItem cheatType])
 	{
 		case CHEAT_TYPE_INTERNAL:
-			result = self.listData->add(cheatItem.bytes - 1, cheatItem.memAddress, (u32)cheatItem.value, [cheatItem descriptionCString], cheatItemEnabled);
+			result = [self listData]->add([cheatItem bytes] - 1, [cheatItem memAddress], (u32)[cheatItem value], [cheatItem descriptionCString], cheatItemEnabled);
 			break;
 			
 		case CHEAT_TYPE_ACTION_REPLAY:
 		{
-			char *cheatCodes = (char *)[cheatItem.code cStringUsingEncoding:NSUTF8StringEncoding];
+			char *cheatCodes = (char *)[[cheatItem code] cStringUsingEncoding:NSUTF8StringEncoding];
 			if (cheatCodes != nil)
 			{
-				result = self.listData->add_AR(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled);
+				result = [self listData]->add_AR(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled);
 			}
 			break;
 		}
 			
 		case CHEAT_TYPE_CODE_BREAKER:
 		{
-			char *cheatCodes = (char *)[cheatItem.code cStringUsingEncoding:NSUTF8StringEncoding];
+			char *cheatCodes = (char *)[[cheatItem code] cStringUsingEncoding:NSUTF8StringEncoding];
 			if (cheatCodes != nil)
 			{
-				result = self.listData->add_CB(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled);
+				result = [self listData]->add_CB(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled);
 			}
 			break;
 		}
@@ -828,28 +828,28 @@ static NSImage *iconCodeBreaker = nil;
 			break;
 	}
 	
-	pthread_rwlock_unlock(self.rwlockCoreExecute);
+	pthread_rwlock_unlock([self rwlockCoreExecute]);
 	
-	if (![self.list containsObject:cheatItem])
+	if (![[self list] containsObject:cheatItem])
 	{
-		[self.list addObject:cheatItem];
+		[[self list] addObject:cheatItem];
 	}
 	
 	// Adding a new item may cause the raw list data to get reallocated, which
 	// will break the data pointers. So check for reallocation, and if it occurs,
 	// reset the data pointers for each item.
-	if (cheatListData != self.listData->getListPtr())
+	if (cheatListData != [self listData]->getListPtr())
 	{
-		NSUInteger listCount = self.listData->getListSize();
+		NSUInteger listCount = [self listData]->getListSize();
 		for (NSUInteger i = 0; i < listCount; i++)
 		{
-			CocoaDSCheatItem *itemInList = (CocoaDSCheatItem *)[self.list objectAtIndex:i];
-			itemInList.data = self.listData->getItemPtrAtIndex(i);
+			CocoaDSCheatItem *itemInList = (CocoaDSCheatItem *)[[self list] objectAtIndex:i];
+			[itemInList setData:[self listData]->getItemPtrAtIndex(i)];
 		}
 	}
 	else
 	{
-		cheatItem.data = self.listData->getItemPtrAtIndex(self.listData->getListSize() - 1);
+		[cheatItem setData:[self listData]->getItemPtrAtIndex([self listData]->getListSize() - 1)];
 	}
 	
 	return result;
@@ -862,26 +862,26 @@ static NSImage *iconCodeBreaker = nil;
 		return;
 	}
 	
-	NSUInteger selectionIndex = [self.list indexOfObject:cheatItem];
+	NSUInteger selectionIndex = [[self list] indexOfObject:cheatItem];
 	if (selectionIndex == NSNotFound)
 	{
 		return;
 	}
 	
-	pthread_rwlock_wrlock(self.rwlockCoreExecute);
-	self.listData->remove(selectionIndex);
-	pthread_rwlock_unlock(self.rwlockCoreExecute);
+	pthread_rwlock_wrlock([self rwlockCoreExecute]);
+	[self listData]->remove(selectionIndex);
+	pthread_rwlock_unlock([self rwlockCoreExecute]);
 	
 	// Removing an item from the raw cheat list data shifts all higher elements
 	// by one, so we need to do the same.
-	NSUInteger listCount = self.listData->getListSize();
+	NSUInteger listCount = [self listData]->getListSize();
 	for (NSUInteger i = selectionIndex; i < listCount; i++)
 	{
-		[(CocoaDSCheatItem *)[self.list objectAtIndex:(i + 1)] setData:self.listData->getItemPtrAtIndex(i)];
+		[(CocoaDSCheatItem *)[[self list] objectAtIndex:(i + 1)] setData:[self listData]->getItemPtrAtIndex(i)];
 	}
-		
-	cheatItem.data = nil;
-	[self.list removeObject:cheatItem];
+	
+	[cheatItem setData:nil];
+	[[self list] removeObject:cheatItem];
 }
 
 - (BOOL) update:(CocoaDSCheatItem *)cheatItem
@@ -893,37 +893,37 @@ static NSImage *iconCodeBreaker = nil;
 		return result;
 	}
 	
-	NSUInteger selectionIndex = [self.list indexOfObject:cheatItem];
+	NSUInteger selectionIndex = [[self list] indexOfObject:cheatItem];
 	if (selectionIndex == NSNotFound)
 	{
 		return result;
 	}
 	
-	pthread_rwlock_wrlock(self.rwlockCoreExecute);
-	const bool cheatItemEnabled = (cheatItem.enabled) ? true : false;
+	pthread_rwlock_wrlock([self rwlockCoreExecute]);
+	const bool cheatItemEnabled = ([cheatItem enabled]) ? true : false;
 	
-	switch (cheatItem.cheatType)
+	switch ([cheatItem cheatType])
 	{
 		case CHEAT_TYPE_INTERNAL:
-			result = self.listData->update(cheatItem.bytes - 1, cheatItem.memAddress, (u32)cheatItem.value, [cheatItem descriptionCString], cheatItemEnabled, selectionIndex);
+			result = [self listData]->update([cheatItem bytes] - 1, [cheatItem memAddress], (u32)[cheatItem value], [cheatItem descriptionCString], cheatItemEnabled, selectionIndex);
 			break;
 			
 		case CHEAT_TYPE_ACTION_REPLAY:
 		{
-			char *cheatCodes = (char *)[cheatItem.code cStringUsingEncoding:NSUTF8StringEncoding];
+			char *cheatCodes = (char *)[[cheatItem code] cStringUsingEncoding:NSUTF8StringEncoding];
 			if (cheatCodes != nil)
 			{
-				result = self.listData->update_AR(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled, selectionIndex);
+				result = [self listData]->update_AR(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled, selectionIndex);
 			}
 			break;
 		}
 			
 		case CHEAT_TYPE_CODE_BREAKER:
 		{
-			char *cheatCodes = (char *)[cheatItem.code cStringUsingEncoding:NSUTF8StringEncoding];
+			char *cheatCodes = (char *)[[cheatItem code] cStringUsingEncoding:NSUTF8StringEncoding];
 			if (cheatCodes != nil)
 			{
-				result = self.listData->update_CB(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled, selectionIndex);
+				result = [self listData]->update_CB(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled, selectionIndex);
 			}
 			break;
 		}
@@ -932,7 +932,7 @@ static NSImage *iconCodeBreaker = nil;
 			break;
 	}
 		
-	pthread_rwlock_unlock(self.rwlockCoreExecute);
+	pthread_rwlock_unlock([self rwlockCoreExecute]);
 	
 	[cheatItem update];
 		
@@ -941,18 +941,18 @@ static NSImage *iconCodeBreaker = nil;
 
 - (BOOL) save
 {
-	pthread_rwlock_wrlock(self.rwlockCoreExecute);
-	BOOL result = self.listData->save();
-	pthread_rwlock_unlock(self.rwlockCoreExecute);
+	pthread_rwlock_wrlock([self rwlockCoreExecute]);
+	BOOL result = [self listData]->save();
+	pthread_rwlock_unlock([self rwlockCoreExecute]);
 	
 	return result;
 }
 
 - (NSUInteger) activeCount
 {
-	pthread_rwlock_rdlock(self.rwlockCoreExecute);
-	NSUInteger activeCheatsCount = self.listData->getActiveCount();
-	pthread_rwlock_unlock(self.rwlockCoreExecute);
+	pthread_rwlock_rdlock([self rwlockCoreExecute]);
+	NSUInteger activeCheatsCount = [self listData]->getActiveCount();
+	pthread_rwlock_unlock([self rwlockCoreExecute]);
 	
 	return activeCheatsCount;
 }
@@ -978,14 +978,14 @@ static NSImage *iconCodeBreaker = nil;
 	}
 	else
 	{
-		self.dbTitle = [NSString stringWithCString:(const char *)exporter->gametitle encoding:NSUTF8StringEncoding];
-		self.dbDate = [NSString stringWithCString:(const char *)exporter->date encoding:NSUTF8StringEncoding];
+		[self setDbTitle:[NSString stringWithCString:(const char *)exporter->gametitle encoding:NSUTF8StringEncoding]];
+		[self setDbDate:[NSString stringWithCString:(const char *)exporter->date encoding:NSUTF8StringEncoding]];
 		newDBList = [CocoaDSCheatManager cheatListWithItemStructArray:exporter->getCheats() count:exporter->getCheatsNum()];
 		if (newDBList != nil)
 		{
 			for (CocoaDSCheatItem *cheatItem in newDBList)
 			{
-				cheatItem.willAdd = NO;
+				[cheatItem setWillAdd:NO];
 				[cheatItem retainData];
 			}
 		}
@@ -1004,19 +1004,19 @@ static NSImage *iconCodeBreaker = nil;
 		return;
 	}
 	
-	pthread_rwlock_wrlock(self.rwlockCoreExecute);
+	pthread_rwlock_wrlock([self rwlockCoreExecute]);
 	[CocoaDSCheatManager applyInternalCheatWithItem:cheatItem];
-	pthread_rwlock_unlock(self.rwlockCoreExecute);
+	pthread_rwlock_unlock([self rwlockCoreExecute]);
 }
 
 + (void) setMasterCheatList:(CocoaDSCheatManager *)cheatListManager
 {
-	cheats = cheatListManager.listData;
+	cheats = [cheatListManager listData];
 }
 
 + (void) applyInternalCheatWithItem:(CocoaDSCheatItem *)cheatItem
 {
-	[CocoaDSCheatManager applyInternalCheatWithAddress:cheatItem.memAddress value:(u32)cheatItem.value bytes:cheatItem.bytes];
+	[CocoaDSCheatManager applyInternalCheatWithAddress:[cheatItem memAddress] value:(u32)[cheatItem value] bytes:[cheatItem bytes]];
 }
 
 + (void) applyInternalCheatWithAddress:(UInt32)address value:(UInt32)value bytes:(NSUInteger)bytes
@@ -1167,12 +1167,12 @@ static NSImage *iconCodeBreaker = nil;
 
 - (void)dealloc
 {
-	pthread_rwlock_wrlock(self.rwlockCoreExecute);
-	self.listData->close();
-	pthread_rwlock_unlock(self.rwlockCoreExecute);
+	pthread_rwlock_wrlock([self rwlockCoreExecute]);
+	[self listData]->close();
+	pthread_rwlock_unlock([self rwlockCoreExecute]);
 	
 	[addressList release];
-	delete (CHEATSEARCH *)self.listData;
+	delete (CHEATSEARCH *)[self listData];
 	
 	if (isUsingDummyRWlock)
 	{
@@ -1224,17 +1224,17 @@ static NSImage *iconCodeBreaker = nil;
 	{
 		byteSize--;
 		
-		pthread_rwlock_rdlock(self.rwlockCoreExecute);
-		listExists = (NSUInteger)self.listData->start((u8)CHEATSEARCH_SEARCHSTYLE_EXACT_VALUE, (u8)byteSize, (u8)signType);
-		pthread_rwlock_unlock(self.rwlockCoreExecute);
+		pthread_rwlock_rdlock([self rwlockCoreExecute]);
+		listExists = (NSUInteger)[self listData]->start((u8)CHEATSEARCH_SEARCHSTYLE_EXACT_VALUE, (u8)byteSize, (u8)signType);
+		pthread_rwlock_unlock([self rwlockCoreExecute]);
 	}
 	
 	if (listExists)
 	{
-		pthread_rwlock_rdlock(self.rwlockCoreExecute);
-		itemCount = (NSUInteger)self.listData->search((u32)value);
-		NSMutableArray *newAddressList = [[CocoaDSCheatSearch addressListWithListObject:self.listData maxItems:100] retain];
-		pthread_rwlock_unlock(self.rwlockCoreExecute);
+		pthread_rwlock_rdlock([self rwlockCoreExecute]);
+		itemCount = (NSUInteger)[self listData]->search((u32)value);
+		NSMutableArray *newAddressList = [[CocoaDSCheatSearch addressListWithListObject:[self listData] maxItems:100] retain];
+		pthread_rwlock_unlock([self rwlockCoreExecute]);
 		
 		[addressList release];
 		addressList = newAddressList;
@@ -1249,7 +1249,7 @@ static NSImage *iconCodeBreaker = nil;
 - (void) runExactValueSearchOnThread:(id)object
 {
 	CocoaDSCheatSearchParams *searchParams = (CocoaDSCheatSearchParams *)object;
-	[self runExactValueSearch:searchParams.value byteSize:searchParams.byteSize signType:searchParams.signType];
+	[self runExactValueSearch:[searchParams value] byteSize:[searchParams byteSize] signType:[searchParams signType]];
 }
 
 - (NSUInteger) runComparativeSearch:(NSInteger)typeID byteSize:(UInt8)byteSize signType:(NSInteger)signType
@@ -1261,18 +1261,18 @@ static NSImage *iconCodeBreaker = nil;
 	{
 		byteSize--;
 		
-		pthread_rwlock_rdlock(self.rwlockCoreExecute);
-		listExists = (NSUInteger)self.listData->start((u8)CHEATSEARCH_SEARCHSTYLE_COMPARATIVE, (u8)byteSize, (u8)signType);
-		pthread_rwlock_unlock(self.rwlockCoreExecute);
+		pthread_rwlock_rdlock([self rwlockCoreExecute]);
+		listExists = (NSUInteger)[self listData]->start((u8)CHEATSEARCH_SEARCHSTYLE_COMPARATIVE, (u8)byteSize, (u8)signType);
+		pthread_rwlock_unlock([self rwlockCoreExecute]);
 		
 		addressList = nil;
 	}
 	else
 	{
-		pthread_rwlock_rdlock(self.rwlockCoreExecute);
-		itemCount = (NSUInteger)self.listData->search((u8)typeID);
-		NSMutableArray *newAddressList = [[CocoaDSCheatSearch addressListWithListObject:self.listData maxItems:100] retain];
-		pthread_rwlock_unlock(self.rwlockCoreExecute);
+		pthread_rwlock_rdlock([self rwlockCoreExecute]);
+		itemCount = (NSUInteger)[self listData]->search((u8)typeID);
+		NSMutableArray *newAddressList = [[CocoaDSCheatSearch addressListWithListObject:[self listData] maxItems:100] retain];
+		pthread_rwlock_unlock([self rwlockCoreExecute]);
 		
 		[addressList release];
 		addressList = newAddressList;
@@ -1291,14 +1291,14 @@ static NSImage *iconCodeBreaker = nil;
 - (void) runComparativeSearchOnThread:(id)object
 {
 	CocoaDSCheatSearchParams *searchParams = (CocoaDSCheatSearchParams *)object;
-	[self runComparativeSearch:searchParams.comparativeSearchType byteSize:searchParams.byteSize signType:searchParams.signType];
+	[self runComparativeSearch:[searchParams comparativeSearchType] byteSize:[searchParams byteSize] signType:[searchParams signType]];
 }
 
 - (void) reset
 {
-	pthread_rwlock_wrlock(self.rwlockCoreExecute);
-	self.listData->close();
-	pthread_rwlock_unlock(self.rwlockCoreExecute);
+	pthread_rwlock_wrlock([self rwlockCoreExecute]);
+	[self listData]->close();
+	pthread_rwlock_unlock([self rwlockCoreExecute]);
 	
 	searchCount = 0;
 	[addressList release];
