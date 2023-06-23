@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2022 DeSmuME team
+	Copyright (C) 2012-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -51,6 +51,7 @@
 @synthesize cheatDatabaseSheet;
 
 @synthesize untitledCount;
+@synthesize codeEditorFont;
 @synthesize bindings;
 @synthesize cdsCheats;
 @synthesize cdsCheatSearch;
@@ -85,6 +86,7 @@
 	currentView = nil;
 	currentSearchStyleView = nil;
 	untitledCount = 0;
+	codeEditorFont = [NSFont fontWithName:@"Monaco" size:13.0];
 		
 	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"hasSelection"];
 	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"hasItems"];
@@ -242,7 +244,8 @@
 	NSInteger cheatTypeID = [CocoaDSUtil getIBActionSenderTag:sender];
 	CocoaDSCheatItem *cheatItem = [cheatSelectedItemController content];
 	
-	cheatItem.cheatType = cheatTypeID;
+	[window makeFirstResponder:nil]; // Force end of editing of any text fields.
+	[cheatItem setCheatType:cheatTypeID];
 	
 	[self setCheatConfigViewByType:cheatTypeID];
 }
@@ -458,8 +461,7 @@
 	{
 		if (cheatItem.willAdd)
 		{
-			CocoaDSCheatItem *newCheatItem = [[[CocoaDSCheatItem alloc] initWithCheatData:cheatItem.data] autorelease];
-			[newCheatItem retainData];
+			CocoaDSCheatItem *newCheatItem = [[[CocoaDSCheatItem alloc] initWithCheatItem:cheatItem] autorelease];
 			[cheatListController addObject:newCheatItem];
 			[self.cdsCheats add:newCheatItem];
 		}

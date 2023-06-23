@@ -1170,7 +1170,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	
 	ClientCommandAttributes cmdToggleSpeedLimiter				= NewCommandAttributesWithFunction("Enable/Disable Speed Limiter", &ClientCommandToggleSpeedLimiter);
 	ClientCommandAttributes cmdToggleAutoFrameSkip				= NewCommandAttributesWithFunction("Enable/Disable Auto Frame Skip", &ClientCommandToggleAutoFrameSkip);
-	ClientCommandAttributes cmdToggleCheats						= NewCommandAttributesWithFunction("Enable/Disable Cheats", &ClientCommandToggleCheats);
+	ClientCommandAttributes cmdToggleCheats						= NewCommandAttributesWithFunction("Enable/Disable Cheat System", &ClientCommandToggleCheats);
 	ClientCommandAttributes cmdCoreExecute						= NewCommandAttributesWithFunction("Execute", &ClientCommandCoreExecute);
 	ClientCommandAttributes cmdCorePause						= NewCommandAttributesWithFunction("Pause", &ClientCommandCorePause);
 	ClientCommandAttributes cmdToggleExecutePause				= NewCommandAttributesWithFunction("Execute/Pause", &ClientCommandToggleExecutePause);
@@ -1227,7 +1227,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	defaultCommandAttributes["Set Speed"]						= cmdToggleSpeed;
 	defaultCommandAttributes["Enable/Disable Speed Limiter"]	= cmdToggleSpeedLimiter;
 	defaultCommandAttributes["Enable/Disable Auto Frame Skip"]	= cmdToggleAutoFrameSkip;
-	defaultCommandAttributes["Enable/Disable Cheats"]			= cmdToggleCheats;
+	defaultCommandAttributes["Enable/Disable Cheat System"]		= cmdToggleCheats;
 	defaultCommandAttributes["Execute"]							= cmdCoreExecute;
 	defaultCommandAttributes["Pause"]							= cmdCorePause;
 	defaultCommandAttributes["Execute/Pause"]					= cmdToggleExecutePause;

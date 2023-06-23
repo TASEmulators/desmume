@@ -58,6 +58,7 @@
 	NSWindow *cheatDatabaseSheet;
 	
 	NSUInteger untitledCount;
+	NSFont *codeEditorFont;
 	
 	NSMutableDictionary *bindings;
 	CocoaDSCheatItem *workingCheat;
@@ -92,6 +93,7 @@
 @property (readonly) IBOutlet NSWindow *cheatDatabaseSheet;
 
 @property (assign) NSUInteger untitledCount;
+@property (assign) NSFont *codeEditorFont;
 @property (readonly) NSMutableDictionary *bindings;
 @property (retain) CocoaDSCheatItem *workingCheat;
 @property (retain) CocoaDSCheatManager *cdsCheats;

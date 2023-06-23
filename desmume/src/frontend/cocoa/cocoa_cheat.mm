@@ -24,6 +24,572 @@
 #include "../../MMU.h"
 #undef BOOL
 
+
+size_t CheatConvertRawCodeToCleanCode(const char *inRawCodeString, const size_t requestedCodeCount, std::string &outCleanCodeString)
+{
+	size_t cleanCodeLength = 0;
+	if ( (inRawCodeString == NULL) ||
+		 (requestedCodeCount == 0) )
+	{
+		return cleanCodeLength;
+	}
+	
+	char *cleanCodeWorkingBuffer = (char *)malloc((requestedCodeCount * 16) + 1);
+	memset(cleanCodeWorkingBuffer, 0, (requestedCodeCount * 16) + 1);
+	
+	size_t rawCodeLength = strlen(inRawCodeString);
+	// remove wrong chars
+	for (size_t i = 0; (i < rawCodeLength) && (cleanCodeLength < (requestedCodeCount * 16)); i++)
+	{
+		char c = inRawCodeString[i];
+		//apparently 100% of pokemon codes were typed with the letter O in place of zero in some places
+		//so let's try to adjust for that here
+		static const char *AR_Valid = "Oo0123456789ABCDEFabcdef";
+		if (strchr(AR_Valid, c))
+		{
+			if ( (c == 'o') || (c == 'O') )
+			{
+				c = '0';
+			}
+			
+			cleanCodeWorkingBuffer[cleanCodeLength++] = c;
+		}
+	}
+	
+	if ( (cleanCodeLength % 16) != 0)
+	{
+		// Code lines must always come in 8+8, where the first 8 characters
+		// are used for the target address, and the second 8 characters are
+		// used for the 32-bit value written to the target address. Therefore,
+		// if the string length isn't divisible by 16, then it is considered
+		// invalid.
+		cleanCodeLength = 0;
+		free(cleanCodeWorkingBuffer);
+		return cleanCodeLength;
+	}
+	
+	outCleanCodeString = cleanCodeWorkingBuffer;
+	free(cleanCodeWorkingBuffer);
+	
+	return (cleanCodeLength / 16);
+}
+
+size_t CheatConvertCleanCodeToRawCode(const char *inCleanCodeString, std::string &outRawCodeString)
+{
+	if (inCleanCodeString == NULL)
+	{
+		return 0;
+	}
+	
+	// Clean code strings are assumed to be already validated, so we're not
+	// going to bother with any more validation here.
+	
+	const size_t cleanCodeLength = strlen(inCleanCodeString);
+	const size_t codeCount = cleanCodeLength / 16;
+	const size_t rawCodeLength = codeCount * (16 + 1 + 1);
+	
+	char *rawCodeWorkingBuffer = (char *)malloc(rawCodeLength);
+	memset(rawCodeWorkingBuffer, 0, rawCodeLength);
+	
+	for (size_t i = 0; i < codeCount; i++)
+	{
+		const size_t c = i * 16;
+		const size_t r = i * (16 + 1 + 1);
+		
+		rawCodeWorkingBuffer[r + 0] = inCleanCodeString[c + 0];
+		rawCodeWorkingBuffer[r + 1] = inCleanCodeString[c + 1];
+		rawCodeWorkingBuffer[r + 2] = inCleanCodeString[c + 2];
+		rawCodeWorkingBuffer[r + 3] = inCleanCodeString[c + 3];
+		rawCodeWorkingBuffer[r + 4] = inCleanCodeString[c + 4];
+		rawCodeWorkingBuffer[r + 5] = inCleanCodeString[c + 5];
+		rawCodeWorkingBuffer[r + 6] = inCleanCodeString[c + 6];
+		rawCodeWorkingBuffer[r + 7] = inCleanCodeString[c + 7];
+		rawCodeWorkingBuffer[r + 8] = ' ';
+		rawCodeWorkingBuffer[r + 9] = inCleanCodeString[c + 8];
+		rawCodeWorkingBuffer[r +10] = inCleanCodeString[c + 9];
+		rawCodeWorkingBuffer[r +11] = inCleanCodeString[c +10];
+		rawCodeWorkingBuffer[r +12] = inCleanCodeString[c +11];
+		rawCodeWorkingBuffer[r +13] = inCleanCodeString[c +12];
+		rawCodeWorkingBuffer[r +14] = inCleanCodeString[c +13];
+		rawCodeWorkingBuffer[r +15] = inCleanCodeString[c +14];
+		rawCodeWorkingBuffer[r +16] = inCleanCodeString[c +15];
+		rawCodeWorkingBuffer[r +17] = '\n';
+	}
+	
+	rawCodeWorkingBuffer[rawCodeLength - 1] = '\0';
+	outRawCodeString = rawCodeWorkingBuffer;
+	
+	return codeCount;
+}
+
+ClientCheatItem::ClientCheatItem()
+{
+	_engineItemPtr = NULL;
+	
+	_isEnabled = false;
+	_willAddFromDB = false;
+	
+	_cheatType = CheatType_Internal;
+	_descriptionString = "No description.";
+	_clientData = NULL;
+	_freezeType = CheatFreezeType_Normal;
+	_address = 0x02000000;
+	strncpy(_addressString, "0x02000000", sizeof(_addressString));
+	_valueLength = 1;
+	_value = 0;
+	
+	_codeCount = 1;
+	_rawCodeString = "02000000 00000000";
+	_cleanCodeString = "0200000000000000";
+}
+
+ClientCheatItem::~ClientCheatItem()
+{
+	
+}
+
+void ClientCheatItem::Init(const CHEATS_LIST &inCheatItem)
+{
+	char workingCodeBuffer[32];
+	
+	this->_isEnabled = (inCheatItem.enabled) ? true : false;
+	
+	this->_cheatType = (CheatType)inCheatItem.type;
+	this->_descriptionString = inCheatItem.description;
+	
+	this->_freezeType = (CheatFreezeType)inCheatItem.freezeType;
+	this->_valueLength = inCheatItem.size + 1; // CHEATS_LIST.size value range is [1...4], but starts counting from 0.
+	this->_address = inCheatItem.code[0][0];
+	this->_addressString[0] = '0';
+	this->_addressString[1] = 'x';
+	snprintf(this->_addressString + 2, sizeof(this->_addressString) - 2, "%08X", this->_address);
+	this->_value = inCheatItem.code[0][1];
+	
+	snprintf(workingCodeBuffer, 18, "%08X %08X", this->_address, this->_value);
+	this->_rawCodeString = workingCodeBuffer;
+	snprintf(workingCodeBuffer, 17, "%08X%08X", this->_address, this->_value);
+	this->_cleanCodeString = workingCodeBuffer;
+	
+	if (this->_cheatType == CheatType_Internal)
+	{
+		this->_codeCount = 1;
+	}
+	else if (this->_cheatType == CheatType_ActionReplay)
+	{
+		this->_codeCount = inCheatItem.num;
+		
+		for (size_t i = 1; i < this->_codeCount; i++)
+		{
+			snprintf(workingCodeBuffer, 19, "\n%08X %08X", inCheatItem.code[i][0], inCheatItem.code[i][1]);
+			this->_rawCodeString += workingCodeBuffer;
+			snprintf(workingCodeBuffer, 17, "%08X%08X", inCheatItem.code[i][0], inCheatItem.code[i][1]);
+			this->_cleanCodeString += workingCodeBuffer;
+		}
+	}
+}
+
+void ClientCheatItem::Init(const ClientCheatItem &inCheatItem)
+{
+	this->_isEnabled = inCheatItem.IsEnabled();
+	
+	this->_cheatType = inCheatItem.GetType();
+	this->_descriptionString = inCheatItem.GetDescription();
+	
+	this->_freezeType = inCheatItem.GetFreezeType();
+	this->_valueLength = inCheatItem.GetValueLength();
+	this->_address = inCheatItem.GetAddress();
+	strncpy(this->_addressString, inCheatItem.GetAddressString(), sizeof(this->_addressString));
+	this->_value = inCheatItem.GetValue();
+	
+	this->_codeCount = inCheatItem.GetCodeCount();
+	this->_rawCodeString = inCheatItem.GetRawCodeString();
+	this->_cleanCodeString = inCheatItem.GetCleanCodeString();
+}
+
+void ClientCheatItem::SetEngineItemPtr(CHEATS_LIST *cheatItemPtr)
+{
+	this->_engineItemPtr = cheatItemPtr;
+}
+
+CHEATS_LIST* ClientCheatItem::GetEngineItemPtr() const
+{
+	return this->_engineItemPtr;
+}
+
+void ClientCheatItem::SetEnabled(bool theState)
+{
+	this->_isEnabled = theState;
+	
+	if (this->_engineItemPtr != NULL)
+	{
+		this->_engineItemPtr->enabled = (theState) ? 1 : 0;
+	}
+}
+
+bool ClientCheatItem::IsEnabled() const
+{
+	return this->_isEnabled;
+}
+
+void ClientCheatItem::SetWillAddFromDB(bool theState)
+{
+	this->_willAddFromDB = theState;
+}
+
+bool ClientCheatItem::WillAddFromDB() const
+{
+	return this->_willAddFromDB;
+}
+
+CheatType ClientCheatItem::GetType() const
+{
+	return this->_cheatType;
+}
+
+void ClientCheatItem::SetType(CheatType requestedType)
+{
+	switch (requestedType)
+	{
+		case CheatType_Internal:
+		case CheatType_ActionReplay:
+		case CheatType_CodeBreaker:
+			// Do nothing.
+			break;
+			
+		default:
+			// Bail if the cheat type is invalid.
+			return;
+	}
+	
+	this->_cheatType = requestedType;
+	
+	if (this->_engineItemPtr != NULL)
+	{
+		this->_engineItemPtr->type = (u8)requestedType;
+	}
+}
+
+bool ClientCheatItem::IsSupportedType() const
+{
+	return (this->_cheatType != CheatType_CodeBreaker);
+}
+
+const char* ClientCheatItem::GetDescription() const
+{
+	return this->_descriptionString.c_str();
+}
+
+void ClientCheatItem::SetDescription(const char *descriptionString)
+{
+	if (descriptionString == NULL)
+	{
+		this->_descriptionString = "";
+	}
+	else
+	{
+		this->_descriptionString = descriptionString;
+	}
+	
+	if (this->_engineItemPtr != NULL)
+	{
+		strncpy(this->_engineItemPtr->description, this->_descriptionString.c_str(), sizeof(this->_engineItemPtr->description));
+	}
+}
+
+CheatFreezeType ClientCheatItem::GetFreezeType() const
+{
+	return this->_freezeType;
+}
+
+void ClientCheatItem::SetFreezeType(CheatFreezeType theFreezeType)
+{
+	switch (theFreezeType)
+	{
+		case CheatFreezeType_Normal:
+		case CheatFreezeType_CanDecrease:
+		case CheatFreezeType_CanIncrease:
+			// Do nothing.
+			break;
+			
+		default:
+			// Bail if the freeze type is invalid.
+			return;
+	}
+	
+	this->_freezeType = theFreezeType;
+	
+	if (this->_engineItemPtr != NULL)
+	{
+		this->_engineItemPtr->freezeType = (u8)theFreezeType;
+	}
+}
+
+uint32_t ClientCheatItem::GetAddress() const
+{
+	if (this->_cheatType != CheatType_Internal)
+	{
+		return 0;
+	}
+	
+	return this->_address;
+}
+
+void ClientCheatItem::SetAddress(uint32_t theAddress)
+{
+	this->_address = theAddress;
+	
+	this->_addressString[0] = '0';
+	this->_addressString[1] = 'x';
+	snprintf(this->_addressString + 2, 9, "%08X", theAddress);
+	this->_addressString[10] = '\0';
+	
+	if (this->_cheatType == CheatType_Internal)
+	{
+		this->_ConvertInternalToActionReplay();
+	}
+	
+	if ( (this->_engineItemPtr != NULL) && (this->_cheatType == CheatType_Internal) )
+	{
+		this->_engineItemPtr->code[0][0] = theAddress;
+	}
+}
+
+const char* ClientCheatItem::GetAddressString() const
+{
+	return this->_addressString;
+}
+
+const char* ClientCheatItem::GetAddressSixDigitString() const
+{
+	return (this->_addressString + 4);
+}
+
+void ClientCheatItem::SetAddressSixDigitString(const char *sixDigitString)
+{
+	this->_addressString[0] = '0';
+	this->_addressString[1] = 'x';
+	this->_addressString[2] = '0';
+	this->_addressString[3] = '2';
+	
+	if (sixDigitString == NULL)
+	{
+		this->_addressString[4] = '0';
+		this->_addressString[5] = '0';
+		this->_addressString[6] = '0';
+		this->_addressString[7] = '0';
+		this->_addressString[8] = '0';
+		this->_addressString[9] = '0';
+	}
+	else
+	{
+		this->_addressString[4] = sixDigitString[0];
+		this->_addressString[5] = sixDigitString[1];
+		this->_addressString[6] = sixDigitString[2];
+		this->_addressString[7] = sixDigitString[3];
+		this->_addressString[8] = sixDigitString[4];
+		this->_addressString[9] = sixDigitString[5];
+	}
+	
+	this->_addressString[10] = '\0';
+	sscanf(this->_addressString + 2, "%x", &this->_address);
+	
+	if (this->_cheatType == CheatType_Internal)
+	{
+		this->_ConvertInternalToActionReplay();
+	}
+	
+	if ( (this->_engineItemPtr != NULL) && (this->_cheatType == CheatType_Internal) )
+	{
+		this->_engineItemPtr->code[0][0] = this->_address;
+	}
+}
+
+uint32_t ClientCheatItem::GetValue() const
+{
+	return this->_value;
+}
+
+void ClientCheatItem::SetValue(uint32_t theValue)
+{
+	this->_value = theValue;
+	
+	if (this->_cheatType == CheatType_Internal)
+	{
+		this->_ConvertInternalToActionReplay();
+	}
+	
+	if ( (this->_engineItemPtr != NULL) && (this->_cheatType == CheatType_Internal) )
+	{
+		this->_engineItemPtr->code[0][1] = (u32)theValue;
+	}
+}
+
+uint8_t ClientCheatItem::GetValueLength() const
+{
+	return this->_valueLength;
+}
+
+void ClientCheatItem::SetValueLength(uint8_t byteLength)
+{
+	this->_valueLength = byteLength;
+	
+	if (this->_cheatType == CheatType_Internal)
+	{
+		this->_ConvertInternalToActionReplay();
+	}
+	
+	if ( (this->_engineItemPtr != NULL) && (this->_cheatType == CheatType_Internal) )
+	{
+		this->_engineItemPtr->size = (u8)(byteLength - 1); // CHEATS_LIST.size value range is [1...4], but starts counting from 0.
+	}
+}
+
+void ClientCheatItem::SetRawCodeString(const char *rawString, const bool willSaveValidatedRawString)
+{
+	std::string newCleanCodeString;
+	
+	size_t cleanCodeCount = CheatConvertRawCodeToCleanCode(rawString, 1024, this->_cleanCodeString);
+	if (cleanCodeCount == 0)
+	{
+		return;
+	}
+	
+	this->_codeCount = (uint32_t)cleanCodeCount;
+	
+	if (willSaveValidatedRawString)
+	{
+		// Using the validated clean code string, the raw code string will be
+		// rewritten using the following format for each line:
+		// XXXXXXXX XXXXXXXX\n
+		CheatConvertCleanCodeToRawCode(this->_cleanCodeString.c_str(), this->_rawCodeString);
+	}
+	else
+	{
+		// The passed in raw code string will be saved, regardless of any syntax
+		// errors, flaws, or formatting issues that it may contain.
+		this->_rawCodeString = rawString;
+	}
+	
+	if (this->_cheatType == CheatType_ActionReplay)
+	{
+		this->_ConvertActionReplayToInternal();
+	}
+	
+	if (this->_engineItemPtr != NULL)
+	{
+		CHEATS::XXCodeFromString(this->_cleanCodeString.c_str(), *this->_engineItemPtr);
+	}
+}
+
+const char* ClientCheatItem::GetRawCodeString() const
+{
+	return this->_rawCodeString.c_str();
+}
+
+const char* ClientCheatItem::GetCleanCodeString() const
+{
+	return this->_cleanCodeString.c_str();
+}
+
+uint32_t ClientCheatItem::GetCodeCount() const
+{
+	return this->_codeCount;
+}
+
+void ClientCheatItem::_ConvertInternalToActionReplay()
+{
+	char workingCodeBuffer[16+1+1];
+	
+	u32 truncatedValue = this->_value;
+	
+	switch (this->_valueLength)
+	{
+		case 1:
+			truncatedValue &= 0x000000FF;
+			break;
+			
+		case 2:
+			truncatedValue &= 0x0000FFFF;
+			break;
+			
+		case 3:
+			truncatedValue &= 0x00FFFFFF;
+			break;
+			
+		default:
+			break;
+	}
+	
+	memset(workingCodeBuffer, 0, sizeof(workingCodeBuffer));
+	snprintf(workingCodeBuffer, 16+1+1, "%08X %08X", this->_address, truncatedValue);
+	this->_rawCodeString = workingCodeBuffer;
+	
+	memset(workingCodeBuffer, 0, sizeof(workingCodeBuffer));
+	snprintf(workingCodeBuffer, 16+1, "%08X%08X", this->_address, truncatedValue);
+	this->_cleanCodeString = workingCodeBuffer;
+	
+	this->_codeCount = 1;
+}
+
+void ClientCheatItem::_ConvertActionReplayToInternal()
+{
+	this->_addressString[0] = '0';
+	this->_addressString[1] = 'x';
+	strncpy(this->_addressString + 2, this->_cleanCodeString.c_str(), 8);
+	this->_addressString[10] = '\0';
+	sscanf(this->_addressString + 2, "%x", &this->_address);
+	
+	char workingCodeBuffer[9];
+	memset(workingCodeBuffer, 0, sizeof(workingCodeBuffer));
+	strncpy(workingCodeBuffer, this->_cleanCodeString.c_str() + 8, 8);
+	sscanf(workingCodeBuffer, "%x", &this->_value);
+	
+	this->_valueLength = 4;
+}
+
+void ClientCheatItem::ClientToDesmumeCheatItem(CHEATS_LIST *outCheatItem) const
+{
+	if (outCheatItem == NULL)
+	{
+		return;
+	}
+	
+	outCheatItem->type = this->_cheatType;
+	outCheatItem->enabled = (this->_isEnabled) ? 1 : 0;
+	strncpy(outCheatItem->description, this->_descriptionString.c_str(), sizeof(outCheatItem->description));
+	
+	switch (this->_cheatType)
+	{
+		case CheatType_Internal:
+			outCheatItem->num = 1;
+			outCheatItem->size = this->_valueLength - 1; // CHEATS_LIST.size value range is [1...4], but starts counting from 0.
+			outCheatItem->freezeType = (u8)this->_freezeType;
+			outCheatItem->code[0][0] = this->_address;
+			outCheatItem->code[0][1] = this->_value;
+			break;
+			
+		case CheatType_ActionReplay:
+		case CheatType_CodeBreaker:
+		{
+			outCheatItem->num = this->_codeCount;
+			outCheatItem->size = 3;
+			outCheatItem->freezeType = CheatFreezeType_Normal;
+			
+			for (size_t i = 0; i < this->_codeCount; i++)
+			{
+				sscanf(this->_cleanCodeString.c_str() + (i * 16) + 0, "%x", &outCheatItem->code[i][0]);
+				sscanf(this->_cleanCodeString.c_str() + (i * 16) + 8, "%x", &outCheatItem->code[i][1]);
+			}
+			break;
+		}
+			
+		default:
+			break;
+	}
+}
+
+#pragma mark -
+
 @implementation CocoaDSCheatItem
 
 static NSImage *iconInternalCheat = nil;
@@ -53,6 +619,43 @@ static NSImage *iconCodeBreaker = nil;
 	return [self initWithCheatData:nil];
 }
 
+- (id) initWithCheatItem:(CocoaDSCheatItem *)cdsCheatItem
+{
+	self = [super init];
+	if(self == nil)
+	{
+		return self;
+	}
+	
+	_internalData = new ClientCheatItem;
+	
+	willAdd = NO;
+	workingCopy = nil;
+	parent = nil;
+	_isMemAddressAlreadyUpdating = NO;
+	
+	if (cdsCheatItem != nil)
+	{
+		_internalData->SetEnabled(([cdsCheatItem enabled]) ? true : false);
+		_internalData->SetDescription([[cdsCheatItem description] cStringUsingEncoding:NSUTF8StringEncoding]);
+		_internalData->SetType((CheatType)[cdsCheatItem cheatType]);
+		_internalData->SetFreezeType((CheatFreezeType)[cdsCheatItem freezeType]);
+		
+		if (_internalData->GetType() == CheatType_Internal)
+		{
+			_internalData->SetValueLength([cdsCheatItem bytes]);
+			_internalData->SetAddress([cdsCheatItem memAddress]);
+			_internalData->SetValue((u32)[cdsCheatItem value]);
+		}
+		else
+		{
+			_internalData->SetRawCodeString([[cdsCheatItem code] cStringUsingEncoding:NSUTF8StringEncoding], false);
+		}
+	}
+	
+	return self;
+}
+
 - (id) initWithCheatData:(CHEATS_LIST *)cheatData
 {
 	self = [super init];
@@ -61,38 +664,18 @@ static NSImage *iconCodeBreaker = nil;
 		return self;
 	}
 	
-	if (cheatData == NULL)
-	{
-		// Allocate our own cheat item struct since we weren't provided with one.
-		internalData = (CHEATS_LIST *)malloc(sizeof(CHEATS_LIST));
-		if (internalData == NULL)
-		{
-			[self release];
-			return nil;
-		}
-		
-		data = internalData;
-		
-		[self setEnabled:NO];
-		[self setCheatType:CHEAT_TYPE_INTERNAL];
-		[self setFreezeType:CheatFreezeType_Normal];
-		[self setDescription:@""];
-		[self setCode:@""];
-		[self setMemAddress:0x00000000];
-		[self setBytes:1];
-		[self setValue:0];
-	}
-	else
-	{
-		internalData = NULL;
-		data = cheatData;
-	}
+	_internalData = new ClientCheatItem;
 	
-	pthread_mutex_init(&mutexData, NULL);
+	if (cheatData != NULL)
+	{
+		_internalData->SetEngineItemPtr(cheatData);
+		_internalData->Init(*cheatData);
+	}
 	
 	willAdd = NO;
 	workingCopy = nil;
 	parent = nil;
+	_isMemAddressAlreadyUpdating = NO;
 	
 	return self;
 }
@@ -101,80 +684,30 @@ static NSImage *iconCodeBreaker = nil;
 {
 	[self destroyWorkingCopy];
 	
-	free(internalData);
-	internalData = NULL;
-	
-	pthread_mutex_destroy(&mutexData);
+	delete _internalData;
+	_internalData = NULL;
 	
 	[super dealloc];
 }
 
 - (CHEATS_LIST *) data
 {
-	pthread_mutex_lock(&mutexData);
-	CHEATS_LIST *returnData = data;
-	pthread_mutex_unlock(&mutexData);
-	
-	return returnData;
+	return _internalData->GetEngineItemPtr();
 }
 
 - (void) setData:(CHEATS_LIST *)cheatData
 {
-	if (cheatData == NULL)
-	{
-		return;
-	}
-	
-	pthread_mutex_lock(&mutexData);
-	data = cheatData;
-	pthread_mutex_unlock(&mutexData);
-	
-	[self update];
-	
-	if (workingCopy != nil)
-	{
-		pthread_mutex_lock(&mutexData);
-		
-		CHEATS_LIST *thisData = data;
-		CHEATS_LIST *workingData = [workingCopy data];
-		*workingData = *thisData;
-		
-		pthread_mutex_unlock(&mutexData);
-		
-		[workingCopy update];
-	}
-}
-
-- (BOOL) retainData
-{
-	BOOL result = YES;
-	
-	if (internalData == NULL)
-	{
-		internalData = (CHEATS_LIST *)malloc(sizeof(CHEATS_LIST));
-		if (internalData == NULL)
-		{
-			result = NO;
-			return result;
-		}
-	}
-	
-	pthread_mutex_lock(&mutexData);
-	*internalData = *data;
-	data = internalData;
-	pthread_mutex_unlock(&mutexData);
-	
-	return result;
+	_internalData->SetEngineItemPtr(cheatData);
 }
 
 - (BOOL) enabled
 {
-	return (data->enabled != 0) ? YES : NO;
+	return _internalData->IsEnabled() ? YES : NO;
 }
 
 - (void) setEnabled:(BOOL)theState
 {
-	data->enabled = (theState) ? 1 : 0;
+	_internalData->SetEnabled((theState) ? true : false);
 	
 	if (workingCopy != nil)
 	{
@@ -184,18 +717,18 @@ static NSImage *iconCodeBreaker = nil;
 
 - (NSString *) description
 {
-	return [NSString stringWithCString:(const char *)&data->description[0] encoding:NSUTF8StringEncoding];
+	return [NSString stringWithCString:_internalData->GetDescription() encoding:NSUTF8StringEncoding];
 }
 
 - (void) setDescription:(NSString *)desc
 {
 	if (desc == nil)
 	{
-		memset(&data->description[0], 0, sizeof(data->description));
+		_internalData->SetDescription(NULL);
 	}
 	else
 	{
-		[desc getCString:&data->description[0] maxLength:sizeof(data->description) encoding:NSUTF8StringEncoding];
+		_internalData->SetDescription([desc cStringUsingEncoding:NSUTF8StringEncoding]);
 	}
 	
 	if (workingCopy != nil)
@@ -206,33 +739,38 @@ static NSImage *iconCodeBreaker = nil;
 
 - (char *) descriptionCString
 {
-	return &data->description[0];
+	return (char *)_internalData->GetDescription();
 }
 
 - (NSInteger) cheatType
 {
-	return (NSInteger)data->type;
+	return (NSInteger)_internalData->GetType();
 }
 
 - (void) setCheatType:(NSInteger)theType
 {
-	data->type = (u8)theType;
+	_internalData->SetType((CheatType)theType);
 	
 	switch (theType)
 	{
 		case CHEAT_TYPE_INTERNAL:
 			[self setCheatTypeIcon:iconInternalCheat];
 			[self setIsSupportedCheatType:YES];
+			[self setMemAddress:[self memAddress]];
+			[self setValue:[self value]];
+			[self setBytes:[self bytes]];
 			break;
 			
 		case CHEAT_TYPE_ACTION_REPLAY:
 			[self setCheatTypeIcon:iconActionReplay];
 			[self setIsSupportedCheatType:YES];
+			[self setCode:[self code]];
 			break;
 			
 		case CHEAT_TYPE_CODE_BREAKER:
 			[self setCheatTypeIcon:iconCodeBreaker];
 			[self setIsSupportedCheatType:NO];
+			[self setCode:[self code]];
 			break;
 			
 		default:
@@ -277,24 +815,7 @@ static NSImage *iconCodeBreaker = nil;
 
 - (BOOL) isSupportedCheatType
 {
-	BOOL isSupported = YES;
-	
-	switch ([self cheatType])
-	{
-		case CHEAT_TYPE_INTERNAL:
-		case CHEAT_TYPE_ACTION_REPLAY:
-			isSupported = YES;
-			break;
-			
-		case CHEAT_TYPE_CODE_BREAKER:
-			isSupported = NO;
-			break;
-			
-		default:
-			break;
-	}
-	
-	return isSupported;
+	return (_internalData->IsSupportedType()) ? YES : NO;
 }
 
 - (void) setIsSupportedCheatType:(BOOL)isSupported
@@ -304,12 +825,12 @@ static NSImage *iconCodeBreaker = nil;
 
 - (NSInteger) freezeType
 {
-	return (NSInteger)data->freezeType;
+	return (NSInteger)_internalData->GetFreezeType();
 }
 
 - (void) setFreezeType:(NSInteger)theType
 {
-	data->freezeType = (u8)theType;
+	_internalData->SetFreezeType((CheatFreezeType)theType);
 	
 	if (workingCopy != nil)
 	{
@@ -319,12 +840,12 @@ static NSImage *iconCodeBreaker = nil;
 
 - (UInt8) bytes
 {
-	return (UInt8)(data->size + 1);
+	return _internalData->GetValueLength();
 }
 
 - (void) setBytes:(UInt8)byteSize
 {
-	data->size = (u8)(byteSize - 1);
+	_internalData->SetValueLength(byteSize);
 	
 	if (workingCopy != nil)
 	{
@@ -334,7 +855,7 @@ static NSImage *iconCodeBreaker = nil;
 
 - (NSUInteger) codeCount
 {
-	return (NSUInteger)data->num;
+	return (NSUInteger)_internalData->GetCodeCount();
 }
 
 - (void) setCodeCount:(NSUInteger)count
@@ -344,22 +865,7 @@ static NSImage *iconCodeBreaker = nil;
 
 - (NSString *) code
 {
-	NSString *codeLine = @"";
-	NSString *cheatCodes = @"";
-	
-	NSUInteger numberCodes = [self codeCount];
-	if (numberCodes > MAX_XX_CODE)
-	{
-		return nil;
-	}
-	
-	for (NSUInteger i = 0; i < numberCodes; i++)
-	{
-		codeLine = [NSString stringWithFormat:@"%08X %08X\n", data->code[i][0], data->code[i][1]];
-		cheatCodes = [cheatCodes stringByAppendingString:codeLine];
-	}
-	
-	return cheatCodes;
+	return [NSString stringWithCString:_internalData->GetRawCodeString() encoding:NSUTF8StringEncoding];
 }
 
 - (void) setCode:(NSString *)theCode
@@ -369,14 +875,7 @@ static NSImage *iconCodeBreaker = nil;
 		return;
 	}
 	
-	size_t codeCStringSize = MAX_XX_CODE * 10 * 2 * sizeof(char);
-	char *codeCString = (char *)calloc(codeCStringSize, 1);
-	[theCode getCString:codeCString maxLength:codeCStringSize encoding:NSUTF8StringEncoding];
-	
-	CHEATS::XXCodeFromString(codeCString, *data);
-	
-	free(codeCString);
-	codeCString = NULL;
+	_internalData->SetRawCodeString([theCode cStringUsingEncoding:NSUTF8StringEncoding], true);
 	
 	[self setCodeCount:[self codeCount]];
 	[self setBytes:[self bytes]];
@@ -389,24 +888,23 @@ static NSImage *iconCodeBreaker = nil;
 
 - (UInt32) memAddress
 {
-	if ([self cheatType] != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
-	{
-		return 0;
-	}
-	
-	return (data->code[0][0] | 0x02000000);
+	return _internalData->GetAddress();
 }
 
 - (void) setMemAddress:(UInt32)theAddress
 {
-	if ([self cheatType] != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
-	{
-		return;
-	}
-	
 	theAddress &= 0x00FFFFFF;
 	theAddress |= 0x02000000;
-	data->code[0][0] = theAddress;
+	
+	_internalData->SetAddress(theAddress);
+	
+	if (!_isMemAddressAlreadyUpdating)
+	{
+		_isMemAddressAlreadyUpdating = YES;
+		NSString *addrString = [NSString stringWithCString:_internalData->GetAddressSixDigitString() encoding:NSUTF8StringEncoding];
+		[self setMemAddressSixDigitString:addrString];
+		_isMemAddressAlreadyUpdating = NO;
+	}
 	
 	if (workingCopy != nil)
 	{
@@ -416,19 +914,19 @@ static NSImage *iconCodeBreaker = nil;
 
 - (NSString *) memAddressString
 {
-	return [NSString stringWithFormat:@"0x%08X", (unsigned int)[self memAddress]];
+	return [NSString stringWithCString:_internalData->GetAddressString() encoding:NSUTF8StringEncoding];
 }
 
 - (void) setMemAddressString:(NSString *)addressString
 {
-	if ([self cheatType] != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
+	if (!_isMemAddressAlreadyUpdating)
 	{
-		return;
+		_isMemAddressAlreadyUpdating = YES;
+		u32 address = 0x00000000;
+		[[NSScanner scannerWithString:addressString] scanHexInt:&address];
+		[self setMemAddress:address];
+		_isMemAddressAlreadyUpdating = NO;
 	}
-	
-	u32 address = 0x00000000;
-	[[NSScanner scannerWithString:addressString] scanHexInt:&address];
-	[self setMemAddress:address];
 	
 	if (workingCopy != nil)
 	{
@@ -438,7 +936,7 @@ static NSImage *iconCodeBreaker = nil;
 
 - (NSString *) memAddressSixDigitString
 {
-	return [NSString stringWithFormat:@"%06X", (unsigned int)([self memAddress] & 0x00FFFFFF)];
+	return [NSString stringWithCString:_internalData->GetAddressSixDigitString() encoding:NSUTF8StringEncoding];
 }
 
 - (void) setMemAddressSixDigitString:(NSString *)addressString
@@ -448,22 +946,12 @@ static NSImage *iconCodeBreaker = nil;
 
 - (SInt64) value
 {
-	if ([self cheatType] != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
-	{
-		return 0;
-	}
-	
-	return (data->code[0][1]);
+	return _internalData->GetValue();
 }
 
 - (void) setValue:(SInt64)theValue
 {
-	if ([self cheatType] != CHEAT_TYPE_INTERNAL) // Needs to be the Internal Cheat type
-	{
-		return;
-	}
-	
-	data->code[0][1] = (u32)theValue;
+	_internalData->SetValue((u32)theValue);
 	
 	if (workingCopy != nil)
 	{
@@ -480,13 +968,37 @@ static NSImage *iconCodeBreaker = nil;
 	
 	if ([self cheatType] == CHEAT_TYPE_INTERNAL)
 	{
-		[self setBytes:[self bytes]];
-		[self setMemAddress:[self memAddress]];
+		[self setMemAddressSixDigitString:[self memAddressSixDigitString]];
 		[self setValue:[self value]];
+		[self setBytes:[self bytes]];
 	}
 	else
 	{
 		[self setCode:[self code]];
+	}
+}
+
+- (void) copyFrom:(CocoaDSCheatItem *)cdsCheatItem
+{
+	if (cdsCheatItem == nil)
+	{
+		return;
+	}
+	
+	[self setEnabled:[cdsCheatItem enabled]];
+	[self setDescription:[cdsCheatItem description]];
+	[self setCheatType:[cdsCheatItem cheatType]];
+	[self setFreezeType:[cdsCheatItem freezeType]];
+	
+	if ([self cheatType] == CHEAT_TYPE_INTERNAL)
+	{
+		[self setMemAddress:[cdsCheatItem memAddress]];
+		[self setValue:[cdsCheatItem value]];
+		[self setBytes:[cdsCheatItem bytes]];
+	}
+	else
+	{
+		[self setCode:[cdsCheatItem code]];
 	}
 }
 
@@ -499,8 +1011,7 @@ static NSImage *iconCodeBreaker = nil;
 		[workingCopy release];
 	}
 	
-	newWorkingCopy = [[CocoaDSCheatItem alloc] initWithCheatData:[self data]];
-	[newWorkingCopy retainData];
+	newWorkingCopy = [[CocoaDSCheatItem alloc] initWithCheatItem:self];
 	[newWorkingCopy setParent:self];
 	workingCopy = newWorkingCopy;
 	
@@ -513,23 +1024,6 @@ static NSImage *iconCodeBreaker = nil;
 	workingCopy = nil;
 }
 
-- (void) mergeFromWorkingCopy
-{
-	if (workingCopy == nil)
-	{
-		return;
-	}
-	
-	CHEATS_LIST *thisData = [self data];
-	CHEATS_LIST *workingData = [workingCopy data];
-	
-	pthread_mutex_lock(&mutexData);
-	*thisData = *workingData;
-	pthread_mutex_unlock(&mutexData);
-	
-	[self update];
-}
-
 - (void) mergeToParent
 {
 	if (parent == nil)
@@ -537,92 +1031,7 @@ static NSImage *iconCodeBreaker = nil;
 		return;
 	}
 	
-	CHEATS_LIST *thisData = [self data];
-	CHEATS_LIST *parentData = [parent data];
-	
-	pthread_mutex_lock(&mutexData);
-	*parentData = *thisData;
-	pthread_mutex_unlock(&mutexData);
-	
-	[parent update];
-}
-
-- (void) setDataWithDictionary:(NSDictionary *)dataDict
-{
-	if (dataDict == nil)
-	{
-		return;
-	}
-	
-	NSNumber *enabledNumber = (NSNumber *)[dataDict valueForKey:@"enabled"];
-	if (enabledNumber != nil)
-	{
-		[self setEnabled:[enabledNumber boolValue]];
-	}
-	
-	NSString *descriptionString = (NSString *)[dataDict valueForKey:@"description"];
-	if (descriptionString != nil)
-	{
-		[self setDescription:descriptionString];
-	}
-	
-	NSNumber *freezeTypeNumber = (NSNumber *)[dataDict valueForKey:@"freezeType"];
-	if (freezeTypeNumber != nil)
-	{
-		[self setFreezeType:[freezeTypeNumber integerValue]];
-	}
-	
-	NSNumber *cheatTypeNumber = (NSNumber *)[dataDict valueForKey:@"cheatType"];
-	if (cheatTypeNumber != nil)
-	{
-		[self setCheatType:[cheatTypeNumber integerValue]];
-	}
-	
-	if ([self cheatType] == CHEAT_TYPE_INTERNAL)
-	{
-		NSNumber *bytesNumber = (NSNumber *)[dataDict valueForKey:@"bytes"];
-		if (bytesNumber != nil)
-		{
-			[self setBytes:[bytesNumber unsignedIntegerValue]];
-		}
-		
-		NSNumber *memAddressNumber = (NSNumber *)[dataDict valueForKey:@"memAddress"];
-		if (memAddressNumber != nil)
-		{
-			[self setMemAddress:(u32)[memAddressNumber unsignedIntegerValue]];
-		}
-		
-		NSNumber *valueNumber = (NSNumber *)[dataDict valueForKey:@"value"];
-		if (valueNumber != nil)
-		{
-			[self setValue:[valueNumber integerValue]];
-		}
-	}
-	else
-	{
-		NSString *codeString = (NSString *)[dataDict valueForKey:@"code"];
-		if (codeString != nil)
-		{
-			[self setCode:codeString];
-		}
-	}
-}
-
-- (NSDictionary *) dataDictionary
-{
-	return [NSDictionary dictionaryWithObjectsAndKeys:
-			[NSNumber numberWithBool:[self enabled]], @"enabled",
-			[NSNumber numberWithInteger:[self cheatType]], @"cheatType",
-			[self description], @"description",
-			[NSNumber numberWithInteger:[self freezeType]], @"freezeType",
-			[NSNumber numberWithUnsignedInteger:[self codeCount]], @"codeCount",
-			[NSNumber numberWithUnsignedInteger:[self bytes]], @"bytes",
-			[NSNumber numberWithUnsignedInt:[self memAddress]], @"memAddress",
-			[self memAddressString], @"memAddressString",
-			[NSNumber numberWithInteger:[self value]], @"value",
-			[self code], @"code",
-			[NSNumber numberWithBool:[self isSupportedCheatType]], @"isSupportedCheatType",
-			nil];
+	[parent copyFrom:self];
 }
 
 + (void) setIconInternalCheat:(NSImage *)iconImage
@@ -880,7 +1289,6 @@ static NSImage *iconCodeBreaker = nil;
 		[(CocoaDSCheatItem *)[[self list] objectAtIndex:(i + 1)] setData:[self listData]->getItemPtrAtIndex(i)];
 	}
 	
-	[cheatItem setData:nil];
 	[[self list] removeObject:cheatItem];
 }
 
@@ -986,7 +1394,7 @@ static NSImage *iconCodeBreaker = nil;
 			for (CocoaDSCheatItem *cheatItem in newDBList)
 			{
 				[cheatItem setWillAdd:NO];
-				[cheatItem retainData];
+				[cheatItem setData:NULL];
 			}
 		}
 	}
@@ -1104,30 +1512,6 @@ static NSImage *iconCodeBreaker = nil;
 	}
 	
 	return newList;
-}
-
-+ (NSMutableDictionary *) cheatItemWithType:(NSInteger)cheatTypeID description:(NSString *)description
-{
-	BOOL isSupported = YES;
-	
-	if (cheatTypeID == CHEAT_TYPE_CODE_BREAKER)
-	{
-		isSupported = NO;
-	}
-	
-	return [NSMutableDictionary dictionaryWithObjectsAndKeys:
-			[NSNumber numberWithBool:NO], @"enabled",
-			[NSNumber numberWithInteger:cheatTypeID], @"cheatType",
-			description, @"description",
-			[NSNumber numberWithInteger:0], @"freezeType",
-			[NSNumber numberWithUnsignedInteger:0], @"codeCount",
-			[NSNumber numberWithUnsignedInteger:4], @"bytes",
-			[NSNumber numberWithInteger:0], @"memAddress",
-			@"0x00000000", @"memAddressString",
-			[NSNumber numberWithInteger:0], @"value",
-			@"", @"code",
-			[NSNumber numberWithBool:isSupported], @"isSupportedCheatType",
-			nil];
 }
 
 @end

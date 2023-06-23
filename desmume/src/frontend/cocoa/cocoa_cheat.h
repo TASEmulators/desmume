@@ -16,6 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <string>
 #import <Cocoa/Cocoa.h>
 #undef BOOL
 
@@ -46,6 +47,78 @@ enum CheatSystemError
 	CheatSystemError_ExportError = 4
 };
 
+class ClientCheatItem
+{
+protected:
+	CHEATS_LIST *_engineItemPtr;
+	
+	bool _isEnabled;
+	bool _willAddFromDB;
+	
+	CheatType _cheatType;
+	std::string _descriptionString;
+	void *_clientData;
+	
+	// Internal cheat type parameters
+	CheatFreezeType _freezeType;
+	char _addressString[10+1];
+	uint32_t _address;
+	uint32_t _value;
+	uint8_t _valueLength;
+	
+	// Action Replay parameters
+	uint32_t _codeCount;
+	std::string _rawCodeString;
+	std::string _cleanCodeString;
+	
+	void _ConvertInternalToActionReplay();
+	void _ConvertActionReplayToInternal();
+	
+public:
+	ClientCheatItem();
+	~ClientCheatItem();
+	
+	void Init(const CHEATS_LIST &inCheatItem);
+	void Init(const ClientCheatItem &inCheatItem);
+	
+	void SetEngineItemPtr(CHEATS_LIST *cheatItemPtr);
+	CHEATS_LIST* GetEngineItemPtr() const;
+	
+	void SetEnabled(bool theState);
+	bool IsEnabled() const;
+	
+	void SetWillAddFromDB(bool theState);
+	bool WillAddFromDB() const;
+	
+	CheatType GetType() const;
+	void SetType(CheatType requestedType);
+	bool IsSupportedType() const;
+	
+	const char* GetDescription() const;
+	void SetDescription(const char *descriptionString);
+	
+	CheatFreezeType GetFreezeType() const;
+	void SetFreezeType(CheatFreezeType theFreezeType);
+	
+	uint32_t GetAddress() const;
+	void SetAddress(uint32_t theAddress);
+	const char* GetAddressString() const;
+	const char* GetAddressSixDigitString() const;
+	void SetAddressSixDigitString(const char *sixDigitString);
+	
+	uint32_t GetValue() const;
+	void SetValue(uint32_t theValue);
+	uint8_t GetValueLength() const;
+	void SetValueLength(uint8_t byteLength);
+	
+	void SetRawCodeString(const char *rawString, const bool willSaveValidatedRawString);
+	const char* GetRawCodeString() const;
+	const char* GetCleanCodeString() const;
+	uint32_t GetCodeCount() const;
+	
+	void ClientToDesmumeCheatItem(CHEATS_LIST *outCheatItem) const;
+};
+
 /********************************************************************************************
 	CocoaDSCheatItem - OBJECTIVE-C CLASS
 
@@ -59,16 +132,16 @@ enum CheatSystemError
  ********************************************************************************************/
 @interface CocoaDSCheatItem : NSObject
 {
-	CHEATS_LIST *data;
-	CHEATS_LIST *internalData;
+	ClientCheatItem *_internalData;
 	BOOL willAdd;
-	pthread_mutex_t mutexData;
 	
 	CocoaDSCheatItem *workingCopy;
 	CocoaDSCheatItem *parent;
+	
+	BOOL _isMemAddressAlreadyUpdating;
 }
 
-@property (assign) CHEATS_LIST *data;
+@property (assign, nonatomic) CHEATS_LIST *data;
 @property (assign) BOOL willAdd;
 @property (assign, nonatomic) BOOL enabled;
 @property (assign, nonatomic) NSInteger cheatType;
@@ -86,16 +159,13 @@ enum CheatSystemError
 @property (readonly) CocoaDSCheatItem *workingCopy;
 @property (assign) CocoaDSCheatItem *parent;
 
+- (id) initWithCheatItem:(CocoaDSCheatItem *)cdsCheatItem;
 - (id) initWithCheatData:(CHEATS_LIST *)cheatData;
-- (BOOL) retainData;
 - (char *) descriptionCString;
 - (void) update;
 - (CocoaDSCheatItem *) createWorkingCopy;
 - (void) destroyWorkingCopy;
-- (void) mergeFromWorkingCopy;
 - (void) mergeToParent;
-- (void) setDataWithDictionary:(NSDictionary *)dataDict;
-- (NSDictionary *) dataDictionary;
 
 + (void) setIconInternalCheat:(NSImage *)iconImage;
 + (NSImage *) iconInternalCheat;
@@ -151,7 +221,6 @@ enum CheatSystemError
 + (void) applyInternalCheatWithAddress:(UInt32)address value:(UInt32)value bytes:(NSUInteger)bytes;
 + (NSMutableArray *) cheatListWithListObject:(CHEATS *)cheatList;
 + (NSMutableArray *) cheatListWithItemStructArray:(CHEATS_LIST *)cheatItemArray count:(NSUInteger)itemCount;
-+ (NSMutableDictionary *) cheatItemWithType:(NSInteger)cheatTypeID description:(NSString *)description;
 
 @end
 
