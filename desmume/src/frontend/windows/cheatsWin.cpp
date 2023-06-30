@@ -564,7 +564,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 				char buf[sizeof(tempCheat.code)*2] = { 0 };
 				memset(buf, 0, sizeof(buf));
 
-				cheats->getXXcodeString(tempCheat, buf);
+				CHEATS::StringFromXXCode(tempCheat, buf);
 				std::string bufstr = mass_replace(buf,"\n","\r\n");
 				SetWindowText(GetDlgItem(dialog, IDC_EDIT2), bufstr.c_str());
 				SetWindowText(GetDlgItem(dialog, IDC_EDIT3), tempCheat.description);
