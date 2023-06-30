@@ -60,8 +60,6 @@ private:
 	u8					_filename[MAX_PATH];
 	size_t				_currentGet;
 
-	void	clear();
-	void	ARparser(CHEATS_LIST& cheat);
 	char	*clearCode(char *s);
 
 public:
@@ -72,6 +70,7 @@ public:
 	}
 	~CHEATS() {}
 
+	void	clear();
 	void	init(const char *thePath);
 	const char* getFilePath() const;
 	void	setFilePath(const char *thePath);
@@ -105,15 +104,17 @@ public:
 	bool	getList(CHEATS_LIST *cheat);
 	CHEATS_LIST*	getListPtr();
 	bool	copyItemFromIndex(const size_t pos, CHEATS_LIST &outCheatItem);
-	CHEATS_LIST*	getItemPtrAtIndex(const size_t pos);
-	size_t	getListSize();
-	size_t	getActiveCount();
+	CHEATS_LIST* getItemPtrAtIndex(const size_t pos) const;
+	size_t	getListSize() const;
+	size_t	getActiveCount() const;
 	void	setDescription(const char *description, const size_t pos);
 	bool	save();
 	bool	load();
-	void	process(int targetType);
-	void	getXXcodeString(CHEATS_LIST theList, char *res_buf);
+	void	process(int targetType) const;
 	
+	static void ARparser(const CHEATS_LIST &cheat);
+	
+	static void StringFromXXCode(const CHEATS_LIST &srcCheatItem, char *outCStringBuffer);
 	static bool XXCodeFromString(const std::string codeString, CHEATS_LIST &outCheatItem);
 	static bool XXCodeFromString(const char *codeString, CHEATS_LIST &outCheatItem);
 };

@@ -55,8 +55,13 @@ const char* CHEATS::getFilePath() const
 
 void CHEATS::setFilePath(const char *thePath)
 {
-	strncpy((char *)this->_filename, thePath, sizeof(this->_filename));
-	this->_filename[ sizeof(this->_filename) - 1 ] = '\0';
+	memset(this->_filename, '\0', sizeof(this->_filename));
+	
+	if (thePath != NULL)
+	{
+		strncpy((char *)this->_filename, thePath, sizeof(this->_filename));
+		this->_filename[ sizeof(this->_filename) - 1 ] = '\0';
+	}
 }
 
 size_t CHEATS::addItem(const CHEATS_LIST &srcCheat)
@@ -165,7 +170,7 @@ static void CheatWrite(int size, int proc, u32 addr, u32 val)
 }
 
 
-void CHEATS::ARparser(CHEATS_LIST& theList)
+void CHEATS::ARparser(const CHEATS_LIST &theList)
 {
 	//primary organizational source (seems to be referenced by cheaters the most) - http://doc.kodewerx.org/hacking_nds.html
 	//secondary clarification and details (for programmers) - http://problemkaputt.de/gbatek.htm#dscartcheatactionreplayds
@@ -868,7 +873,7 @@ CHEATS_LIST* CHEATS::getListPtr()
 
 bool CHEATS::copyItemFromIndex(const size_t pos, CHEATS_LIST &outCheatItem)
 {
-	CHEATS_LIST *itemPtr = this->getItemPtrAtIndex(pos);
+	const CHEATS_LIST *itemPtr = this->getItemPtrAtIndex(pos);
 	if (itemPtr == NULL)
 	{
 		return false;
@@ -879,22 +884,23 @@ bool CHEATS::copyItemFromIndex(const size_t pos, CHEATS_LIST &outCheatItem)
 	return true;
 }
 
-CHEATS_LIST* CHEATS::getItemPtrAtIndex(const size_t pos)
+CHEATS_LIST* CHEATS::getItemPtrAtIndex(const size_t pos) const
 {
 	if (pos >= this->getListSize())
 	{
 		return NULL;
 	}
 	
-	return &this->_list[pos];
+	const CHEATS_LIST *itemPtr = &this->_list[pos];
+	return (CHEATS_LIST *)itemPtr;
 }
 
-size_t CHEATS::getListSize()
+size_t CHEATS::getListSize() const
 {
 	return this->_list.size();
 }
 
-size_t CHEATS::getActiveCount()
+size_t CHEATS::getActiveCount() const
 {
 	size_t activeCheatCount = 0;
 	const size_t cheatListCount = this->getListSize();
@@ -1009,6 +1015,12 @@ bool CHEATS::load()
 {
 	bool didLoadAllItems = false;
 	int valueReadResult = 0;
+	
+	if (strlen((const char *)this->_filename) == 0)
+	{
+		return didLoadAllItems;
+	}
+	
 	EMUFILE_FILE flist((char *)this->_filename, "r");
 	if (flist.fail())
 	{
@@ -1128,7 +1140,7 @@ bool CHEATS::load()
 	return didLoadAllItems;
 }
 
-void CHEATS::process(int targetType)
+void CHEATS::process(int targetType) const
 {
 	if (CommonSettings.cheatsDisable) return;
 
@@ -1177,7 +1189,7 @@ void CHEATS::process(int targetType)
 			} //end case 0 internal cheat system
 
 			case 1:		// Action Replay
-				ARparser(this->_list[i]);
+				CHEATS::ARparser(this->_list[i]);
 				break;
 			case 2:		// Codebreaker
 				break;
@@ -1197,14 +1209,14 @@ void CHEATS::process(int targetType)
 #endif
 }
 
-void CHEATS::getXXcodeString(CHEATS_LIST theList, char *res_buf)
+void CHEATS::StringFromXXCode(const CHEATS_LIST &srcCheatItem, char *outCStringBuffer)
 {
 	char buf[50] = { 0 };
 
-	for (u32 i = 0; i < theList.num; i++)
+	for (u32 i = 0; i < srcCheatItem.num; i++)
 	{
-		snprintf(buf, 19, "%08X %08X\n", theList.code[i][0], theList.code[i][1]);
-		strcat(res_buf, buf);
+		snprintf(buf, 19, "%08X %08X\n", srcCheatItem.code[i][0], srcCheatItem.code[i][1]);
+		strcat(outCStringBuffer, buf);
 	}
 }
 
