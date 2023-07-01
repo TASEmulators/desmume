@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2022 DeSmuME Team
+	Copyright (C) 2013-2023 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -46,7 +46,6 @@
 @synthesize currentRom;
 @dynamic cdsFirmware;
 @dynamic cdsSpeaker;
-@synthesize cdsCheats;
 
 @synthesize cheatWindowDelegate;
 @synthesize screenshotCaptureToolDelegate;
@@ -134,7 +133,6 @@
 	currentRom = nil;
 	cdsFirmware = nil;
 	cdsSpeaker = nil;
-	dummyCheatList = nil;
 	
 	isSaveStateEdited = NO;
 	isShowingSaveStateDialog = NO;
@@ -231,7 +229,6 @@
 	[[self currentRom] release];
 	[self setCurrentRom:nil];
 	
-	[self setCdsCheats:nil];
 	[self setCdsSpeaker:nil];
 	
 	[self setIsWorking:NO];
@@ -1935,16 +1932,15 @@
 	[romInfoPanelController setContent:[theRom bindings]];
 	
 	// If the ROM has an associated cheat file, load it now.
-	NSString *cheatsPath = [[CocoaDSFile fileURLFromRomURL:[theRom fileURL] toKind:@"Cheat"] path];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	CocoaDSCheatManager *newCheatList = [[[CocoaDSCheatManager alloc] initWithFileURL:[NSURL fileURLWithPath:cheatsPath]] autorelease];
+	CocoaDSCheatManager *newCheatList = [cdsCore cdsCheatManager];
 	if (newCheatList != nil)
 	{
+		[newCheatList loadFromEngine];
+		
 		NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
 		
-		[CocoaDSCheatManager setMasterCheatList:newCheatList];
 		[cheatListController setContent:[newCheatList list]];
-		[self setCdsCheats:newCheatList];
 		[cheatWindowBindings setValue:newCheatList forKey:@"cheatList"];
 		
 		NSString *filePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"R4Cheat_DatabasePath"];
@@ -1952,13 +1948,13 @@
 		{
 			NSURL *fileURL = [NSURL fileURLWithPath:filePath];
 			NSInteger error = 0;
-			NSMutableArray *dbList = [[self cdsCheats] cheatListFromDatabase:fileURL errorCode:&error];
+			NSMutableArray *dbList = [newCheatList cheatListFromDatabase:fileURL errorCode:&error];
 			if (dbList != nil)
 			{
 				[cheatDatabaseController setContent:dbList];
 				
-				NSString *titleString = [[self cdsCheats] dbTitle];
-				NSString *dateString = [[self cdsCheats] dbDate];
+				NSString *titleString = [newCheatList dbTitle];
+				NSString *dateString = [newCheatList dbDate];
 				
 				[cheatWindowBindings setValue:titleString forKey:@"cheatDBTitle"];
 				[cheatWindowBindings setValue:dateString forKey:@"cheatDBDate"];
@@ -2058,7 +2054,7 @@
 	}
 	
 	// Save the ROM's cheat list before unloading.
-	[[self cdsCheats] save];
+	[[cdsCore cdsCheatManager] save];
 	
 	// Update the UI to indicate that the ROM has started the process of unloading.
 	[self setStatusText:NSSTRING_STATUS_ROM_UNLOADING];
@@ -2082,14 +2078,6 @@
 	
 	[[self currentRom] release];
 	[self setCurrentRom:nil];
-	
-	// Release the current cheat list and assign the empty list.
-	[self setCdsCheats:nil];
-	if (dummyCheatList == nil)
-	{
-		dummyCheatList = [[CocoaDSCheatManager alloc] init];
-	}
-	[CocoaDSCheatManager setMasterCheatList:dummyCheatList];
 	
 	// Update the UI to indicate that the ROM has finished unloading.
 	[self updateAllWindowTitles];

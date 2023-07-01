@@ -17,6 +17,7 @@
 */
 
 #include <string>
+#include <vector>
 #import <Cocoa/Cocoa.h>
 #undef BOOL
 
@@ -40,18 +41,17 @@ enum CheatFreezeType
 
 enum CheatSystemError
 {
-	CheatSystemError_NoError = 0,
-	CheatSystemError_FileOpenFailed = 1,
+	CheatSystemError_NoError           = 0,
+	CheatSystemError_FileOpenFailed    = 1,
 	CheatSystemError_FileFormatInvalid = 2,
-	CheatSystemError_CheatNotFound = 3,
-	CheatSystemError_ExportError = 4
+	CheatSystemError_CheatNotFound     = 3,
+	CheatSystemError_ExportError       = 4,
+	CheatSystemError_FileSaveFailed    = 5
 };
 
 class ClientCheatItem
 {
 protected:
-	CHEATS_LIST *_engineItemPtr;
-	
 	bool _isEnabled;
 	bool _willAddFromDB;
 	
@@ -80,9 +80,6 @@ public:
 	
 	void Init(const CHEATS_LIST &inCheatItem);
 	void Init(const ClientCheatItem &inCheatItem);
-	
-	void SetEngineItemPtr(CHEATS_LIST *cheatItemPtr);
-	CHEATS_LIST* GetEngineItemPtr() const;
 	
 	void SetEnabled(bool theState);
 	bool IsEnabled() const;
@@ -119,6 +116,40 @@ public:
 	void ClientToDesmumeCheatItem(CHEATS_LIST *outCheatItem) const;
 };
 
+class ClientCheatList
+{
+protected:
+	std::vector<ClientCheatItem *> *_list;
+	bool _engineNeedsUpdate;
+	
+public:
+	ClientCheatList();
+	~ClientCheatList();
+	
+	CheatSystemError LoadFromFile(const char *filePath);
+	CheatSystemError SaveToFile(const char *filePath);
+	
+	ClientCheatItem* AddNew();
+	ClientCheatItem* Add(ClientCheatItem *srcItem);
+	ClientCheatItem* AddNoDuplicate(ClientCheatItem *srcItem);
+	void Remove(ClientCheatItem *targetItem);
+	void RemoveAtIndex(size_t index);
+	void RemoveAll();
+	void Update(const ClientCheatItem &srcItem, ClientCheatItem *targetItem);
+	ClientCheatItem* UpdateAtIndex(const ClientCheatItem &srcItem, size_t index);
+	
+	size_t GetTotalCheatCount() const;
+	size_t GetActiveCheatCount() const;
+	std::vector<ClientCheatItem *>* GetCheatList() const;
+	ClientCheatItem* GetItemAtIndex(size_t index) const;
+	
+	void ReplaceFromEngine(const CHEATS *engineCheatList);
+	void CopyListToEngine(const bool willApplyOnlyEnabledItems, CHEATS *engineCheatList);
+	void ApplyListToEngine();
+	
+	static CHEATS* GetMasterCheatList();
+};
+
 /********************************************************************************************
 	CocoaDSCheatItem - OBJECTIVE-C CLASS
 
@@ -141,7 +172,7 @@ public:
 	BOOL _isMemAddressAlreadyUpdating;
 }
 
-@property (assign, nonatomic) CHEATS_LIST *data;
+@property (readonly, nonatomic, getter=clientData) ClientCheatItem *_internalData;
 @property (assign) BOOL willAdd;
 @property (assign, nonatomic) BOOL enabled;
 @property (assign, nonatomic) NSInteger cheatType;
@@ -159,8 +190,9 @@ public:
 @property (readonly) CocoaDSCheatItem *workingCopy;
 @property (assign) CocoaDSCheatItem *parent;
 
-- (id) initWithCheatItem:(CocoaDSCheatItem *)cdsCheatItem;
-- (id) initWithCheatData:(CHEATS_LIST *)cheatData;
+- (id) initWithCheatItem:(ClientCheatItem *)cheatItem;
+- (id) initWithCocoaCheatItem:(CocoaDSCheatItem *)cdsCheatItem;
+- (id) initWithCheatData:(const CHEATS_LIST *)cheatData;
 - (char *) descriptionCString;
 - (void) update;
 - (CocoaDSCheatItem *) createWorkingCopy;
@@ -186,27 +218,23 @@ public:
  ********************************************************************************************/
 @interface CocoaDSCheatManager : NSObject
 {
-	CHEATS *listData;
+	ClientCheatList *_clientListData;
 	NSMutableArray *list;
-	
-	pthread_rwlock_t *rwlockCoreExecute;
-	BOOL isUsingDummyRWlock;
 	
 	NSUInteger untitledCount;
 	NSString *dbTitle;
 	NSString *dbDate;
+	NSURL *lastFileURL;
 }
 
-@property (readonly) CHEATS *listData;
+@property (readonly, nonatomic, getter=clientListData) ClientCheatList *_clientListData;
 @property (readonly) NSMutableArray *list;
-@property (assign) pthread_rwlock_t *rwlockCoreExecute;
 @property (assign) NSUInteger untitledCount;
 @property (copy) NSString *dbTitle;
 @property (copy) NSString *dbDate;
+@property (retain) NSURL *lastFileURL;
 
 - (id) initWithFileURL:(NSURL *)fileURL;
-- (id) initWithListData:(CHEATS *)cheatList;
-- (id) initWithFileURL:(NSURL *)fileURL listData:(CHEATS *)cheatList;
 
 - (BOOL) add:(CocoaDSCheatItem *)cheatItem;
 - (void) remove:(CocoaDSCheatItem *)cheatItem;
@@ -215,11 +243,13 @@ public:
 - (NSUInteger) activeCount;
 - (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error;
 - (void) applyInternalCheat:(CocoaDSCheatItem *)cheatItem;
+- (void) loadFromEngine;
+- (void) applyListToEngine;
 
-+ (void) setMasterCheatList:(CocoaDSCheatManager *)cheatListManager;
 + (void) applyInternalCheatWithItem:(CocoaDSCheatItem *)cheatItem;
 + (void) applyInternalCheatWithAddress:(UInt32)address value:(UInt32)value bytes:(NSUInteger)bytes;
 + (NSMutableArray *) cheatListWithListObject:(CHEATS *)cheatList;
++ (NSMutableArray *) cheatListWithClientListObject:(ClientCheatList *)cheatList;
 + (NSMutableArray *) cheatListWithItemStructArray:(CHEATS_LIST *)cheatItemArray count:(NSUInteger)itemCount;
 
 @end

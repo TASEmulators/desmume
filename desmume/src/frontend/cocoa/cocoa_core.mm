@@ -20,6 +20,7 @@
 #import "cocoa_input.h"
 #import "cocoa_firmware.h"
 #import "cocoa_GPU.h"
+#import "cocoa_cheat.h"
 #import "cocoa_globals.h"
 #import "cocoa_output.h"
 #import "cocoa_rom.h"
@@ -48,6 +49,7 @@ volatile bool execute = true;
 @synthesize cdsFirmware;
 @synthesize cdsController;
 @synthesize cdsGPU;
+@synthesize cdsCheatManager;
 @synthesize cdsOutputList;
 
 @dynamic masterExecute;
@@ -122,6 +124,7 @@ volatile bool execute = true;
 	cdsFirmware = nil;
 	cdsController = [[CocoaDSController alloc] init];
 	cdsGPU = [[CocoaDSGPU alloc] init];
+	cdsCheatManager = [[CocoaDSCheatManager alloc] init];
 	cdsOutputList = [[NSMutableArray alloc] initWithCapacity:32];
 	
 	ClientInputHandler *inputHandler = [cdsController inputHandler];
@@ -1225,6 +1228,9 @@ static void* RunCoreThread(void *arg)
 		{
 			avCaptureObject = NULL;
 		}
+		
+		ClientCheatList *cheatList = [[cdsCore cdsCheatManager] clientListData];
+		cheatList->ApplyListToEngine();
 		
 		// Execute the frame and increment the frame counter.
 		pthread_rwlock_wrlock(&param->rwlockCoreExecute);

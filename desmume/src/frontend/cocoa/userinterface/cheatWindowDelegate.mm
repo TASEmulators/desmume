@@ -461,7 +461,7 @@
 	{
 		if (cheatItem.willAdd)
 		{
-			CocoaDSCheatItem *newCheatItem = [[[CocoaDSCheatItem alloc] initWithCheatItem:cheatItem] autorelease];
+			CocoaDSCheatItem *newCheatItem = [[[CocoaDSCheatItem alloc] initWithCocoaCheatItem:cheatItem] autorelease];
 			[cheatListController addObject:newCheatItem];
 			[self.cdsCheats add:newCheatItem];
 		}

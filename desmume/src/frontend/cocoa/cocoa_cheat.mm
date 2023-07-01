@@ -124,8 +124,6 @@ size_t CheatConvertCleanCodeToRawCode(const char *inCleanCodeString, std::string
 
 ClientCheatItem::ClientCheatItem()
 {
-	_engineItemPtr = NULL;
-	
 	_isEnabled = false;
 	_willAddFromDB = false;
 	
@@ -190,40 +188,26 @@ void ClientCheatItem::Init(const CHEATS_LIST &inCheatItem)
 
 void ClientCheatItem::Init(const ClientCheatItem &inCheatItem)
 {
-	this->_isEnabled = inCheatItem.IsEnabled();
+	this->SetEnabled(inCheatItem.IsEnabled());
+	this->SetDescription(inCheatItem.GetDescription());
+	this->SetType(inCheatItem.GetType());
+	this->SetFreezeType(inCheatItem.GetFreezeType());
 	
-	this->_cheatType = inCheatItem.GetType();
-	this->_descriptionString = inCheatItem.GetDescription();
-	
-	this->_freezeType = inCheatItem.GetFreezeType();
-	this->_valueLength = inCheatItem.GetValueLength();
-	this->_address = inCheatItem.GetAddress();
-	strncpy(this->_addressString, inCheatItem.GetAddressString(), sizeof(this->_addressString));
-	this->_value = inCheatItem.GetValue();
-	
-	this->_codeCount = inCheatItem.GetCodeCount();
-	this->_rawCodeString = inCheatItem.GetRawCodeString();
-	this->_cleanCodeString = inCheatItem.GetCleanCodeString();
-}
-
-void ClientCheatItem::SetEngineItemPtr(CHEATS_LIST *cheatItemPtr)
-{
-	this->_engineItemPtr = cheatItemPtr;
-}
-
-CHEATS_LIST* ClientCheatItem::GetEngineItemPtr() const
-{
-	return this->_engineItemPtr;
+	if (this->GetType() == CheatType_Internal)
+	{
+		this->SetValueLength(inCheatItem.GetValueLength());
+		this->SetAddress(inCheatItem.GetAddress());
+		this->SetValue(inCheatItem.GetValue());
+	}
+	else
+	{
+		this->SetRawCodeString(inCheatItem.GetRawCodeString(), false);
+	}
 }
 
 void ClientCheatItem::SetEnabled(bool theState)
 {
 	this->_isEnabled = theState;
-	
-	if (this->_engineItemPtr != NULL)
-	{
-		this->_engineItemPtr->enabled = (theState) ? 1 : 0;
-	}
 }
 
 bool ClientCheatItem::IsEnabled() const
@@ -262,11 +246,6 @@ void ClientCheatItem::SetType(CheatType requestedType)
 	}
 	
 	this->_cheatType = requestedType;
-	
-	if (this->_engineItemPtr != NULL)
-	{
-		this->_engineItemPtr->type = (u8)requestedType;
-	}
 }
 
 bool ClientCheatItem::IsSupportedType() const
@@ -288,11 +267,6 @@ void ClientCheatItem::SetDescription(const char *descriptionString)
 	else
 	{
 		this->_descriptionString = descriptionString;
-	}
-	
-	if (this->_engineItemPtr != NULL)
-	{
-		strncpy(this->_engineItemPtr->description, this->_descriptionString.c_str(), sizeof(this->_engineItemPtr->description));
 	}
 }
 
@@ -317,11 +291,6 @@ void ClientCheatItem::SetFreezeType(CheatFreezeType theFreezeType)
 	}
 	
 	this->_freezeType = theFreezeType;
-	
-	if (this->_engineItemPtr != NULL)
-	{
-		this->_engineItemPtr->freezeType = (u8)theFreezeType;
-	}
 }
 
 uint32_t ClientCheatItem::GetAddress() const
@@ -346,11 +315,6 @@ void ClientCheatItem::SetAddress(uint32_t theAddress)
 	if (this->_cheatType == CheatType_Internal)
 	{
 		this->_ConvertInternalToActionReplay();
-	}
-	
-	if ( (this->_engineItemPtr != NULL) && (this->_cheatType == CheatType_Internal) )
-	{
-		this->_engineItemPtr->code[0][0] = theAddress;
 	}
 }
 
@@ -397,11 +361,6 @@ void ClientCheatItem::SetAddressSixDigitString(const char *sixDigitString)
 	{
 		this->_ConvertInternalToActionReplay();
 	}
-	
-	if ( (this->_engineItemPtr != NULL) && (this->_cheatType == CheatType_Internal) )
-	{
-		this->_engineItemPtr->code[0][0] = this->_address;
-	}
 }
 
 uint32_t ClientCheatItem::GetValue() const
@@ -417,11 +376,6 @@ void ClientCheatItem::SetValue(uint32_t theValue)
 	{
 		this->_ConvertInternalToActionReplay();
 	}
-	
-	if ( (this->_engineItemPtr != NULL) && (this->_cheatType == CheatType_Internal) )
-	{
-		this->_engineItemPtr->code[0][1] = (u32)theValue;
-	}
 }
 
 uint8_t ClientCheatItem::GetValueLength() const
@@ -436,11 +390,6 @@ void ClientCheatItem::SetValueLength(uint8_t byteLength)
 	if (this->_cheatType == CheatType_Internal)
 	{
 		this->_ConvertInternalToActionReplay();
-	}
-	
-	if ( (this->_engineItemPtr != NULL) && (this->_cheatType == CheatType_Internal) )
-	{
-		this->_engineItemPtr->size = (u8)(byteLength - 1); // CHEATS_LIST.size value range is [1...4], but starts counting from 0.
 	}
 }
 
@@ -473,11 +422,6 @@ void ClientCheatItem::SetRawCodeString(const char *rawString, const bool willSav
 	if (this->_cheatType == CheatType_ActionReplay)
 	{
 		this->_ConvertActionReplayToInternal();
-	}
-	
-	if (this->_engineItemPtr != NULL)
-	{
-		CHEATS::XXCodeFromString(this->_cleanCodeString.c_str(), *this->_engineItemPtr);
 	}
 }
 
@@ -575,10 +519,17 @@ void ClientCheatItem::ClientToDesmumeCheatItem(CHEATS_LIST *outCheatItem) const
 			outCheatItem->size = 3;
 			outCheatItem->freezeType = CheatFreezeType_Normal;
 			
+			char valueString[9];
+			valueString[8] = '\0';
+			
+			const char *cleanCodeStr = this->_cleanCodeString.c_str();
 			for (size_t i = 0; i < this->_codeCount; i++)
 			{
-				sscanf(this->_cleanCodeString.c_str() + (i * 16) + 0, "%x", &outCheatItem->code[i][0]);
-				sscanf(this->_cleanCodeString.c_str() + (i * 16) + 8, "%x", &outCheatItem->code[i][1]);
+				strncpy(valueString, cleanCodeStr + (i * 16) + 0, 8);
+				sscanf(valueString, "%x", &outCheatItem->code[i][0]);
+				
+				strncpy(valueString, cleanCodeStr + (i * 16) + 8, 8);
+				sscanf(valueString, "%x", &outCheatItem->code[i][1]);
 			}
 			break;
 		}
@@ -590,13 +541,310 @@ void ClientCheatItem::ClientToDesmumeCheatItem(CHEATS_LIST *outCheatItem) const
 
 #pragma mark -
 
+ClientCheatList::ClientCheatList()
+{
+	_list = new std::vector<ClientCheatItem *>;
+	_engineNeedsUpdate = true;
+}
+
+ClientCheatList::~ClientCheatList()
+{
+	delete this->_list;
+	this->_list = NULL;
+}
+
+CheatSystemError ClientCheatList::LoadFromFile(const char *filePath)
+{
+	CheatSystemError error = CheatSystemError_NoError;
+	
+	if (filePath == NULL)
+	{
+		error = CheatSystemError_FileOpenFailed;
+		return error;
+	}
+	
+	CHEATS *tempEngineList = new CHEATS;
+	tempEngineList->init((char *)filePath);
+	this->ReplaceFromEngine(tempEngineList);
+	delete tempEngineList;
+	
+	return error;
+}
+
+CheatSystemError ClientCheatList::SaveToFile(const char *filePath)
+{
+	CheatSystemError error = CheatSystemError_NoError;
+	
+	if (filePath == NULL)
+	{
+		error = CheatSystemError_FileOpenFailed;
+		return error;
+	}
+	
+	CHEATS *tempEngineList = new CHEATS;
+	tempEngineList->setFilePath(filePath);
+	
+	this->CopyListToEngine(false, tempEngineList);
+	
+	bool isSaveSuccessful = tempEngineList->save();
+	if (!isSaveSuccessful)
+	{
+		error = CheatSystemError_FileSaveFailed;
+	}
+	
+	delete tempEngineList;
+	
+	return error;
+}
+
+ClientCheatItem* ClientCheatList::AddNew()
+{
+	this->_list->push_back(new ClientCheatItem);
+	return this->_list->back();
+}
+
+ClientCheatItem* ClientCheatList::Add(ClientCheatItem *srcItem)
+{
+	if (srcItem == NULL)
+	{
+		return NULL;
+	}
+	
+	ClientCheatItem *newItem = this->AddNew();
+	newItem->Init(*srcItem);
+	
+	if (newItem->IsEnabled())
+	{
+		this->_engineNeedsUpdate = true;
+	}
+	
+	return newItem;
+}
+
+ClientCheatItem* ClientCheatList::AddNoDuplicate(ClientCheatItem *srcItem)
+{
+	bool isDuplicateFound = false;
+	ClientCheatItem *outNewItem = NULL;
+	
+	if (srcItem == NULL)
+	{
+		return outNewItem;
+	}
+	
+	const size_t cheatCount = this->_list->size();
+	for (size_t i = 0; i < cheatCount; i++)
+	{
+		if ( (*this->_list)[i]->GetCleanCodeString() == srcItem->GetCleanCodeString() )
+		{
+			isDuplicateFound = true;
+			break;
+		}
+	}
+	
+	if (!isDuplicateFound)
+	{
+		outNewItem = this->Add(srcItem);
+	}
+	
+	return outNewItem;
+}
+
+void ClientCheatList::Remove(ClientCheatItem *targetItem)
+{
+	if (targetItem == NULL)
+	{
+		return;
+	}
+	
+	const size_t cheatCount = this->_list->size();
+	for (size_t i = 0; i < cheatCount; i++)
+	{
+		if (targetItem == (*this->_list)[i])
+		{
+			this->RemoveAtIndex(i);
+			break;
+		}
+	}
+}
+
+void ClientCheatList::RemoveAtIndex(size_t index)
+{
+	if (index >= this->_list->size())
+	{
+		return;
+	}
+	
+	ClientCheatItem *itemToRemove = (*this->_list)[index];
+	
+	if (itemToRemove->IsEnabled())
+	{
+		this->_engineNeedsUpdate = true;
+	}
+	
+	this->_list->erase( this->_list->begin() + index );
+	delete itemToRemove;
+}
+
+void ClientCheatList::RemoveAll()
+{
+	const size_t cheatCount = this->_list->size();
+	for (size_t i = 0; i < cheatCount; i++)
+	{
+		ClientCheatItem *itemToRemove = (*this->_list)[i];
+		
+		if (itemToRemove->IsEnabled())
+		{
+			this->_engineNeedsUpdate = true;
+		}
+		
+		delete itemToRemove;
+	}
+	
+	this->_list->clear();
+}
+
+void ClientCheatList::Update(const ClientCheatItem &srcItem, ClientCheatItem *targetItem)
+{
+	if (targetItem == NULL)
+	{
+		return;
+	}
+	
+	const size_t cheatCount = this->_list->size();
+	for (size_t i = 0; i < cheatCount; i++)
+	{
+		if (targetItem == (*this->_list)[i])
+		{
+			this->UpdateAtIndex(srcItem, i);
+			break;
+		}
+	}
+}
+
+ClientCheatItem* ClientCheatList::UpdateAtIndex(const ClientCheatItem &srcItem, size_t index)
+{
+	ClientCheatItem *targetItem = this->GetItemAtIndex(index);
+	
+	if (targetItem != NULL)
+	{
+		targetItem->Init(srcItem);
+		if (targetItem->IsEnabled())
+		{
+			this->_engineNeedsUpdate = true;
+		}
+	}
+	
+	return targetItem;
+}
+
+size_t ClientCheatList::GetTotalCheatCount() const
+{
+	return this->_list->size();
+}
+
+size_t ClientCheatList::GetActiveCheatCount() const
+{
+	size_t activeCount = 0;
+	const size_t totalCount = this->_list->size();
+	
+	for (size_t i = 0; i < totalCount; i++)
+	{
+		ClientCheatItem *cheatItem = (*this->_list)[i];
+		if (cheatItem->IsEnabled())
+		{
+			activeCount++;
+		}
+	}
+	
+	return activeCount;
+}
+
+std::vector<ClientCheatItem *>* ClientCheatList::GetCheatList() const
+{
+	return this->_list;
+}
+
+ClientCheatItem* ClientCheatList::GetItemAtIndex(size_t index) const
+{
+	if (index >= this->GetTotalCheatCount())
+	{
+		return NULL;
+	}
+	
+	return (*this->_list)[index];
+}
+
+void ClientCheatList::ReplaceFromEngine(const CHEATS *engineCheatList)
+{
+	if (engineCheatList == NULL)
+	{
+		return;
+	}
+	
+	this->RemoveAll();
+	
+	const size_t totalCount = engineCheatList->getListSize();
+	for (size_t i = 0; i < totalCount; i++)
+	{
+		ClientCheatItem *newItem = this->AddNew();
+		newItem->Init( *engineCheatList->getItemPtrAtIndex(i) );
+		
+		if (newItem->IsEnabled())
+		{
+			this->_engineNeedsUpdate = true;
+		}
+	}
+}
+
+void ClientCheatList::CopyListToEngine(const bool willApplyOnlyEnabledItems, CHEATS *engineCheatList)
+{
+	if (engineCheatList == NULL)
+	{
+		return;
+	}
+	
+	CHEATS_LIST tempEngineItem;
+	
+	engineCheatList->clear();
+	
+	const size_t totalCount = this->_list->size();
+	for (size_t i = 0; i < totalCount; i++)
+	{
+		ClientCheatItem *cheatItem = (*this->_list)[i];
+		if (cheatItem->IsEnabled() || !willApplyOnlyEnabledItems)
+		{
+			cheatItem->ClientToDesmumeCheatItem(&tempEngineItem);
+			engineCheatList->addItem(tempEngineItem);
+		}
+	}
+}
+
+void ClientCheatList::ApplyListToEngine()
+{
+	CHEATS *engineCheatList = ClientCheatList::GetMasterCheatList();
+	if ( (engineCheatList == NULL) || !this->_engineNeedsUpdate )
+	{
+		return;
+	}
+	
+	this->CopyListToEngine(true, engineCheatList);
+	this->_engineNeedsUpdate = false;
+}
+
+CHEATS* ClientCheatList::GetMasterCheatList()
+{
+	return cheats;
+}
+
+#pragma mark -
+
 @implementation CocoaDSCheatItem
 
 static NSImage *iconInternalCheat = nil;
 static NSImage *iconActionReplay = nil;
 static NSImage *iconCodeBreaker = nil;
 
-@dynamic data;
+@synthesize _internalData;
 @synthesize willAdd;
 @dynamic enabled;
 @dynamic cheatType;
@@ -619,7 +867,7 @@ static NSImage *iconCodeBreaker = nil;
 	return [self initWithCheatData:nil];
 }
 
-- (id) initWithCheatItem:(CocoaDSCheatItem *)cdsCheatItem
+- (id) initWithCheatItem:(ClientCheatItem *)cheatItem
 {
 	self = [super init];
 	if(self == nil)
@@ -634,29 +882,25 @@ static NSImage *iconCodeBreaker = nil;
 	parent = nil;
 	_isMemAddressAlreadyUpdating = NO;
 	
-	if (cdsCheatItem != nil)
+	if (cheatItem != NULL)
 	{
-		_internalData->SetEnabled(([cdsCheatItem enabled]) ? true : false);
-		_internalData->SetDescription([[cdsCheatItem description] cStringUsingEncoding:NSUTF8StringEncoding]);
-		_internalData->SetType((CheatType)[cdsCheatItem cheatType]);
-		_internalData->SetFreezeType((CheatFreezeType)[cdsCheatItem freezeType]);
-		
-		if (_internalData->GetType() == CheatType_Internal)
-		{
-			_internalData->SetValueLength([cdsCheatItem bytes]);
-			_internalData->SetAddress([cdsCheatItem memAddress]);
-			_internalData->SetValue((u32)[cdsCheatItem value]);
-		}
-		else
-		{
-			_internalData->SetRawCodeString([[cdsCheatItem code] cStringUsingEncoding:NSUTF8StringEncoding], false);
-		}
+		_internalData->Init(*cheatItem);
 	}
 	
 	return self;
 }
 
-- (id) initWithCheatData:(CHEATS_LIST *)cheatData
+- (id) initWithCocoaCheatItem:(CocoaDSCheatItem *)cdsCheatItem
+{
+	if (cdsCheatItem == nil)
+	{
+		return [self initWithCheatItem:NULL];
+	}
+	
+	return [self initWithCheatItem:[cdsCheatItem clientData]];
+}
+
+- (id) initWithCheatData:(const CHEATS_LIST *)cheatData
 {
 	self = [super init];
 	if(self == nil)
@@ -668,7 +912,6 @@ static NSImage *iconCodeBreaker = nil;
 	
 	if (cheatData != NULL)
 	{
-		_internalData->SetEngineItemPtr(cheatData);
 		_internalData->Init(*cheatData);
 	}
 	
@@ -688,16 +931,6 @@ static NSImage *iconCodeBreaker = nil;
 	_internalData = NULL;
 	
 	[super dealloc];
-}
-
-- (CHEATS_LIST *) data
-{
-	return _internalData->GetEngineItemPtr();
-}
-
-- (void) setData:(CHEATS_LIST *)cheatData
-{
-	_internalData->SetEngineItemPtr(cheatData);
 }
 
 - (BOOL) enabled
@@ -1011,7 +1244,7 @@ static NSImage *iconCodeBreaker = nil;
 		[workingCopy release];
 	}
 	
-	newWorkingCopy = [[CocoaDSCheatItem alloc] initWithCheatItem:self];
+	newWorkingCopy = [[CocoaDSCheatItem alloc] initWithCocoaCheatItem:self];
 	[newWorkingCopy setParent:self];
 	workingCopy = newWorkingCopy;
 	
@@ -1069,29 +1302,19 @@ static NSImage *iconCodeBreaker = nil;
 
 @implementation CocoaDSCheatManager
 
-@synthesize listData;
+@synthesize _clientListData;
 @synthesize list;
-@dynamic rwlockCoreExecute;
 @synthesize untitledCount;
 @synthesize dbTitle;
 @synthesize dbDate;
+@synthesize lastFileURL;
 
 - (id)init
 {
-	return [self initWithFileURL:nil listData:nil];
+	return [self initWithFileURL:nil];
 }
 
 - (id) initWithFileURL:(NSURL *)fileURL
-{
-	return [self initWithFileURL:fileURL listData:nil];
-}
-
-- (id) initWithListData:(CHEATS *)cheatList
-{
-	return [self initWithFileURL:nil listData:cheatList];
-}
-
-- (id) initWithFileURL:(NSURL *)fileURL listData:(CHEATS *)cheatList
 {
 	self = [super init];
 	if(self == nil)
@@ -1099,41 +1322,24 @@ static NSImage *iconCodeBreaker = nil;
 		return self;
 	}
 	
-	if (cheatList == nil)
-	{
-		CHEATS *newListData = new CHEATS();
-		if (newListData == nil)
-		{
-			[self release];
-			return nil;
-		}
-		
-		listData = newListData;
-	}
-	else
-	{
-		listData = cheatList;
-	}
+	_clientListData = new ClientCheatList;
 	
 	if (fileURL != nil)
 	{
-		listData->init((char *)[CocoaDSUtil cPathFromFileURL:fileURL]);
-		list = [[CocoaDSCheatManager cheatListWithListObject:listData] retain];
+		lastFileURL = [fileURL copy];
+		_clientListData->LoadFromFile([CocoaDSUtil cPathFromFileURL:lastFileURL]);
+		list = [[CocoaDSCheatManager cheatListWithClientListObject:_clientListData] retain];
 	}
 	else
 	{
 		list = [[NSMutableArray alloc] initWithCapacity:100];
 		if (list == nil)
 		{
-			delete listData;
+			delete _clientListData;
 			[self release];
 			return nil;
 		}
 	}
-	
-	rwlockCoreExecute = (pthread_rwlock_t *)malloc(sizeof(pthread_rwlock_t));
-	pthread_rwlock_init(rwlockCoreExecute, NULL);
-	isUsingDummyRWlock = YES;
 	
 	untitledCount = 0;
 	dbTitle = nil;
@@ -1146,49 +1352,16 @@ static NSImage *iconCodeBreaker = nil;
 {
 	[self setDbTitle:nil];
 	[self setDbDate:nil];
-	[list release];
-	delete (CHEATS *)[self listData];
-	cheats = NULL;
 	
-	if (isUsingDummyRWlock)
-	{
-		pthread_rwlock_destroy(rwlockCoreExecute);
-		free(rwlockCoreExecute);
-		rwlockCoreExecute = NULL;
-	}
+	[list release];
+	list = nil;
+	
+	[self setLastFileURL:nil];
+	
+	delete _clientListData;
+	_clientListData = NULL;
 	
 	[super dealloc];
-}
-
-- (void) setRwlockCoreExecute:(pthread_rwlock_t *)theRwlock
-{
-	if (theRwlock == NULL && isUsingDummyRWlock)
-	{
-		return;
-	}
-	else if (theRwlock == NULL && !isUsingDummyRWlock)
-	{
-		rwlockCoreExecute = (pthread_rwlock_t *)malloc(sizeof(pthread_rwlock_t));
-		pthread_rwlock_init(rwlockCoreExecute, NULL);
-		isUsingDummyRWlock = YES;
-		return;
-	}
-	else if (theRwlock != NULL && isUsingDummyRWlock)
-	{
-		pthread_rwlock_destroy(rwlockCoreExecute);
-		free(rwlockCoreExecute);
-		isUsingDummyRWlock = NO;
-		rwlockCoreExecute = theRwlock;
-	}
-	else if (theRwlock != NULL && !isUsingDummyRWlock)
-	{
-		rwlockCoreExecute = theRwlock;
-	}
-}
-
-- (pthread_rwlock_t *) rwlockCoreExecute
-{
-	return rwlockCoreExecute;
 }
 
 - (BOOL) add:(CocoaDSCheatItem *)cheatItem
@@ -1200,65 +1373,11 @@ static NSImage *iconCodeBreaker = nil;
 		return result;
 	}
 	
-	// Get the current pointer to the raw cheat list data. We will need it later
-	// to check if the list got reallocated.
-	CHEATS_LIST *cheatListData = [self listData]->getListPtr();
-	
-	pthread_rwlock_wrlock([self rwlockCoreExecute]);
-	const bool cheatItemEnabled = ([cheatItem enabled]) ? true : false;
-	
-	switch ([cheatItem cheatType])
-	{
-		case CHEAT_TYPE_INTERNAL:
-			result = [self listData]->add([cheatItem bytes] - 1, [cheatItem memAddress], (u32)[cheatItem value], [cheatItem descriptionCString], cheatItemEnabled);
-			break;
-			
-		case CHEAT_TYPE_ACTION_REPLAY:
-		{
-			char *cheatCodes = (char *)[[cheatItem code] cStringUsingEncoding:NSUTF8StringEncoding];
-			if (cheatCodes != nil)
-			{
-				result = [self listData]->add_AR(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled);
-			}
-			break;
-		}
-			
-		case CHEAT_TYPE_CODE_BREAKER:
-		{
-			char *cheatCodes = (char *)[[cheatItem code] cStringUsingEncoding:NSUTF8StringEncoding];
-			if (cheatCodes != nil)
-			{
-				result = [self listData]->add_CB(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled);
-			}
-			break;
-		}
-			
-		default:
-			break;
-	}
-	
-	pthread_rwlock_unlock([self rwlockCoreExecute]);
+	_clientListData->Add([cheatItem clientData]);
 	
 	if (![[self list] containsObject:cheatItem])
 	{
 		[[self list] addObject:cheatItem];
-	}
-	
-	// Adding a new item may cause the raw list data to get reallocated, which
-	// will break the data pointers. So check for reallocation, and if it occurs,
-	// reset the data pointers for each item.
-	if (cheatListData != [self listData]->getListPtr())
-	{
-		NSUInteger listCount = [self listData]->getListSize();
-		for (NSUInteger i = 0; i < listCount; i++)
-		{
-			CocoaDSCheatItem *itemInList = (CocoaDSCheatItem *)[[self list] objectAtIndex:i];
-			[itemInList setData:[self listData]->getItemPtrAtIndex(i)];
-		}
-	}
-	else
-	{
-		[cheatItem setData:[self listData]->getItemPtrAtIndex([self listData]->getListSize() - 1)];
 	}
 	
 	return result;
@@ -1277,17 +1396,7 @@ static NSImage *iconCodeBreaker = nil;
 		return;
 	}
 	
-	pthread_rwlock_wrlock([self rwlockCoreExecute]);
-	[self listData]->remove(selectionIndex);
-	pthread_rwlock_unlock([self rwlockCoreExecute]);
-	
-	// Removing an item from the raw cheat list data shifts all higher elements
-	// by one, so we need to do the same.
-	NSUInteger listCount = [self listData]->getListSize();
-	for (NSUInteger i = selectionIndex; i < listCount; i++)
-	{
-		[(CocoaDSCheatItem *)[[self list] objectAtIndex:(i + 1)] setData:[self listData]->getItemPtrAtIndex(i)];
-	}
+	_clientListData->RemoveAtIndex(selectionIndex);
 	
 	[[self list] removeObject:cheatItem];
 }
@@ -1307,62 +1416,22 @@ static NSImage *iconCodeBreaker = nil;
 		return result;
 	}
 	
-	pthread_rwlock_wrlock([self rwlockCoreExecute]);
-	const bool cheatItemEnabled = ([cheatItem enabled]) ? true : false;
-	
-	switch ([cheatItem cheatType])
-	{
-		case CHEAT_TYPE_INTERNAL:
-			result = [self listData]->update([cheatItem bytes] - 1, [cheatItem memAddress], (u32)[cheatItem value], [cheatItem descriptionCString], cheatItemEnabled, selectionIndex);
-			break;
-			
-		case CHEAT_TYPE_ACTION_REPLAY:
-		{
-			char *cheatCodes = (char *)[[cheatItem code] cStringUsingEncoding:NSUTF8StringEncoding];
-			if (cheatCodes != nil)
-			{
-				result = [self listData]->update_AR(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled, selectionIndex);
-			}
-			break;
-		}
-			
-		case CHEAT_TYPE_CODE_BREAKER:
-		{
-			char *cheatCodes = (char *)[[cheatItem code] cStringUsingEncoding:NSUTF8StringEncoding];
-			if (cheatCodes != nil)
-			{
-				result = [self listData]->update_CB(cheatCodes, [cheatItem descriptionCString], cheatItemEnabled, selectionIndex);
-			}
-			break;
-		}
-			
-		default:
-			break;
-	}
-		
-	pthread_rwlock_unlock([self rwlockCoreExecute]);
+	_clientListData->UpdateAtIndex(*[cheatItem clientData], selectionIndex);
 	
 	[cheatItem update];
-		
+	
 	return result;
 }
 
 - (BOOL) save
 {
-	pthread_rwlock_wrlock([self rwlockCoreExecute]);
-	BOOL result = [self listData]->save();
-	pthread_rwlock_unlock([self rwlockCoreExecute]);
-	
-	return result;
+	const CheatSystemError error = _clientListData->SaveToFile([CocoaDSUtil cPathFromFileURL:[self lastFileURL]]);
+	return (error == CheatSystemError_NoError) ? YES : NO;
 }
 
 - (NSUInteger) activeCount
 {
-	pthread_rwlock_rdlock([self rwlockCoreExecute]);
-	NSUInteger activeCheatsCount = [self listData]->getActiveCount();
-	pthread_rwlock_unlock([self rwlockCoreExecute]);
-	
-	return activeCheatsCount;
+	return (NSUInteger)_clientListData->GetActiveCheatCount();
 }
 
 - (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error
@@ -1394,7 +1463,6 @@ static NSImage *iconCodeBreaker = nil;
 			for (CocoaDSCheatItem *cheatItem in newDBList)
 			{
 				[cheatItem setWillAdd:NO];
-				[cheatItem setData:NULL];
 			}
 		}
 	}
@@ -1407,23 +1475,39 @@ static NSImage *iconCodeBreaker = nil;
 
 - (void) applyInternalCheat:(CocoaDSCheatItem *)cheatItem
 {
+	[CocoaDSCheatManager applyInternalCheatWithItem:cheatItem];
+}
+
+- (void) loadFromEngine
+{
+	CHEATS *engineList = ClientCheatList::GetMasterCheatList();
+	if (engineList != NULL)
+	{
+		NSString *cheatsPath = [NSString stringWithCString:engineList->getFilePath() encoding:NSUTF8StringEncoding];
+		[self setLastFileURL:[NSURL fileURLWithPath:cheatsPath]];
+		_clientListData->ReplaceFromEngine(engineList);
+		
+		if (list != nil)
+		{
+			[list release];
+		}
+		
+		list = [[CocoaDSCheatManager cheatListWithClientListObject:_clientListData] retain];
+	}
+}
+
+- (void) applyListToEngine
+{
+	_clientListData->ApplyListToEngine();
+}
+
++ (void) applyInternalCheatWithItem:(CocoaDSCheatItem *)cheatItem
+{
 	if (cheatItem == nil)
 	{
 		return;
 	}
 	
-	pthread_rwlock_wrlock([self rwlockCoreExecute]);
-	[CocoaDSCheatManager applyInternalCheatWithItem:cheatItem];
-	pthread_rwlock_unlock([self rwlockCoreExecute]);
-}
-
-+ (void) setMasterCheatList:(CocoaDSCheatManager *)cheatListManager
-{
-	cheats = [cheatListManager listData];
-}
-
-+ (void) applyInternalCheatWithItem:(CocoaDSCheatItem *)cheatItem
-{
 	[CocoaDSCheatManager applyInternalCheatWithAddress:[cheatItem memAddress] value:(u32)[cheatItem value] bytes:[cheatItem bytes]];
 }
 
@@ -1483,6 +1567,33 @@ static NSImage *iconCodeBreaker = nil;
 	for (size_t i = 0; i < itemCount; i++)
 	{
 		CocoaDSCheatItem *newItem = [[CocoaDSCheatItem alloc] initWithCheatData:cheatList->getItemPtrAtIndex(i)];
+		
+		if (newItem != nil)
+		{
+			[newList addObject:[newItem autorelease]];
+		}
+	}
+	
+	return newList;
+}
+
++ (NSMutableArray *) cheatListWithClientListObject:(ClientCheatList *)cheatList
+{
+	if (cheatList == nil)
+	{
+		return nil;
+	}
+	
+	NSMutableArray *newList = [NSMutableArray arrayWithCapacity:100];
+	if (newList == nil)
+	{
+		return newList;
+	}
+	
+	const size_t itemCount = cheatList->GetTotalCheatCount();
+	for (size_t i = 0; i < itemCount; i++)
+	{
+		CocoaDSCheatItem *newItem = [[CocoaDSCheatItem alloc] initWithCheatItem:cheatList->GetItemAtIndex(i)];
 		
 		if (newItem != nil)
 		{

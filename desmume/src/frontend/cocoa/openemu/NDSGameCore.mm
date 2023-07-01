@@ -195,7 +195,6 @@ volatile bool execute = true;
 	
 	// Set up the cheat system
 	cdsCheats = [[CocoaDSCheatManager alloc] init];
-	[cdsCheats setRwlockCoreExecute:&rwlockCoreExecute];
 	addedCheatsDict = [[NSMutableDictionary alloc] initWithCapacity:128];
 	
 	// Set up the DS firmware using the internal firmware
@@ -718,8 +717,6 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	[fileManager release];
 	
 	isRomLoaded = [CocoaDSFile loadRom:[NSURL fileURLWithPath:path]];
-	
-	[CocoaDSCheatManager setMasterCheatList:cdsCheats];
 	
 	// Set the default options.
 	// Have to do it now because displayModeInfo is only available now -- not at this object's init.
