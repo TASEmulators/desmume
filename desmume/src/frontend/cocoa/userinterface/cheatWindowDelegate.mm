@@ -50,7 +50,6 @@
 
 @synthesize cheatDatabaseSheet;
 
-@synthesize untitledCount;
 @synthesize codeEditorFont;
 @synthesize bindings;
 @synthesize cdsCheats;
@@ -85,7 +84,6 @@
 	workingCheat = nil;
 	currentView = nil;
 	currentSearchStyleView = nil;
-	untitledCount = 0;
 	codeEditorFont = [NSFont fontWithName:@"Monaco" size:13.0];
 		
 	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"hasSelection"];
@@ -107,9 +105,9 @@
 }
 
 - (void)dealloc
-{	
-	self.workingCheat = nil;
-	self.cdsCheats = nil;
+{
+	[self setWorkingCheat:nil];
+	[self setCdsCheats:nil];
 	[cdsCheatSearch release];
 	[bindings release];
 	
@@ -118,38 +116,24 @@
 
 - (IBAction) addToList:(id)sender
 {
-	if (self.cdsCheats == nil)
+	if ([self cdsCheats] == nil)
 	{
 		return;
 	}
 	
-	NSString *untitledString = nil;
-	
-	self.untitledCount++;
-	if (self.untitledCount > 1)
+	CocoaDSCheatItem *newCheatItem = [[[self cdsCheats] newItem] autorelease];
+	if (newCheatItem != nil)
 	{
-		untitledString = [NSString stringWithFormat:@"Untitled %ld", (unsigned long)self.untitledCount];
+		[cheatListController addObject:newCheatItem];
+		[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"hasItems"];
+		[[self cdsCheats] save];
 	}
-	else
-	{
-		untitledString = @"Untitled";
-	}
-	
-	CocoaDSCheatItem *newCheatItem = [[[CocoaDSCheatItem alloc] init] autorelease];
-	newCheatItem.cheatType = CHEAT_TYPE_INTERNAL;
-	newCheatItem.description = untitledString;
-	
-	[cheatListController addObject:newCheatItem];
-	[self.cdsCheats add:newCheatItem];
-	[self.cdsCheats save];
-	
-	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"hasItems"];
 }
 
 - (IBAction) removeFromList:(id)sender
 {
 	NSMutableArray *cheatList = (NSMutableArray *)[cheatListController content];
-	if (cdsCheats == nil || cheatList == nil)
+	if ( ([self cdsCheats] == nil) || (cheatList == nil) )
 	{
 		return;
 	}
@@ -164,10 +148,10 @@
 	
 	NSArray *selectedObjects = [cheatListController selectedObjects];
 	CocoaDSCheatItem *selectedCheat = (CocoaDSCheatItem *)[selectedObjects objectAtIndex:0];
-	[self.cdsCheats remove:selectedCheat];
+	[[self cdsCheats] remove:selectedCheat];
 	[cheatListController removeObject:selectedCheat];
 	
-	[self.cdsCheats save];
+	[[self cdsCheats] save];
 	[cheatListTable deselectAll:sender];
 	
 	NSUInteger cheatCount = [cheatList count];
@@ -213,12 +197,12 @@
 	// Force end of editing of any text fields.
 	[window makeFirstResponder:nil];
 	
-	[self.cdsCheats applyInternalCheat:self.workingCheat];
+	[[self cdsCheats] applyInternalCheat:[self workingCheat]];
 }
 
 - (IBAction) applyConfiguration:(id)sender
 {
-	if (self.workingCheat == nil)
+	if ([self workingCheat] == nil)
 	{
 		return;
 	}
@@ -226,17 +210,8 @@
 	// Force end of editing of any text fields.
 	[window makeFirstResponder:nil];
 	
-	[self.workingCheat mergeToParent];
-	
-	BOOL result = [self.cdsCheats update:self.workingCheat.parent];
-	if (result)
-	{
-		[self.cdsCheats save];
-	}
-	else
-	{
-		// TODO: Display an error sheet saying that the cheat applying failed.
-	}
+	[[self workingCheat] mergeToParent];
+	[[self cdsCheats] save];
 }
 
 - (IBAction) selectCheatType:(id)sender
@@ -253,13 +228,13 @@
 - (IBAction) selectCheatSearchStyle:(id)sender
 {
 	NSInteger searchStyle = [CocoaDSUtil getIBActionSenderTag:sender];
-	[self.bindings setValue:[NSNumber numberWithInteger:searchStyle] forKey:@"cheatSearchStyle"];
+	[bindings setValue:[NSNumber numberWithInteger:searchStyle] forKey:@"cheatSearchStyle"];
 	[self setCheatSearchViewByStyle:searchStyle];
 }
 
 - (IBAction) runExactValueSearch:(id)sender
 {
-	if (self.workingCheat == nil)
+	if ([self workingCheat] == nil)
 	{
 		return;
 	}
@@ -268,19 +243,18 @@
 	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"isRunningSearch"];
 	
 	NSInteger value = [searchField integerValue];
-	UInt8 byteSize = self.workingCheat.bytes;
-	NSInteger signType = [(NSNumber *)[self.bindings valueForKey:@"cheatSearchSignType"] integerValue];
+	UInt8 byteSize = [[self workingCheat] bytes];
+	NSInteger signType = [(NSNumber *)[bindings valueForKey:@"cheatSearchSignType"] integerValue];
 	NSUInteger addressCount = [cdsCheatSearch runExactValueSearch:value byteSize:byteSize signType:signType];
 	[bindings setValue:[NSNumber numberWithUnsignedInteger:addressCount] forKey:@"cheatSearchAddressCount"];
-	[cheatSearchListController setContent:cdsCheatSearch.addressList];
+	[cheatSearchListController setContent:[cdsCheatSearch addressList]];
 	
 	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isRunningSearch"];
-	 
 }
 
 - (IBAction) runComparativeSearch:(id)sender
 {
-	if (self.workingCheat == nil)
+	if ([self workingCheat] == nil)
 	{
 		return;
 	}
@@ -288,28 +262,27 @@
 	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"isSearchStarted"];
 	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"isRunningSearch"];
 	
-	if (cdsCheatSearch.searchCount == 0)
+	if ([cdsCheatSearch searchCount] == 0)
 	{
 		[bindings setValue:@"Running initial search..." forKey:@"cheatSearchAddressCount"];
 		[window displayIfNeeded];
 	}
 	
 	NSInteger compSearchTypeID = [CocoaDSUtil getIBActionSenderTag:sender];
-	UInt8 byteSize = self.workingCheat.bytes;
-	NSInteger signType = [(NSNumber *)[self.bindings valueForKey:@"cheatSearchSignType"] integerValue];
+	UInt8 byteSize = [[self workingCheat] bytes];
+	NSInteger signType = [(NSNumber *)[bindings valueForKey:@"cheatSearchSignType"] integerValue];
 	NSUInteger addressCount = [cdsCheatSearch runComparativeSearch:compSearchTypeID byteSize:byteSize signType:signType];
 	[bindings setValue:[NSNumber numberWithUnsignedInteger:addressCount] forKey:@"cheatSearchAddressCount"];
-	[cheatSearchListController setContent:cdsCheatSearch.addressList];
+	[cheatSearchListController setContent:[cdsCheatSearch addressList]];
 	
-	NSInteger searchStyle = [(NSNumber *)[self.bindings valueForKey:@"cheatSearchStyle"] integerValue];
-	if (searchStyle == CHEATSEARCH_SEARCHSTYLE_COMPARATIVE && cdsCheatSearch.searchCount == 1)
+	NSInteger searchStyle = [(NSNumber *)[bindings valueForKey:@"cheatSearchStyle"] integerValue];
+	if (searchStyle == CHEATSEARCH_SEARCHSTYLE_COMPARATIVE && [cdsCheatSearch searchCount] == 1)
 	{
 		[self setCheatSearchViewByStyle:CHEATSEARCH_SEARCHSTYLE_COMPARATIVE];
 		[bindings setValue:@"Search started!" forKey:@"cheatSearchAddressCount"];
 	}
 	
 	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isRunningSearch"];
-	 
 }
 
 - (void) searchDidFinish:(NSNotification *)aNotification
@@ -319,12 +292,12 @@
 	
 	if (searcher != nil)
 	{
-		addressCount = searcher.addressList.count;
+		addressCount = [[searcher addressList] count];
 		[bindings setValue:[NSNumber numberWithUnsignedInteger:addressCount] forKey:@"cheatSearchAddressCount"];
-		[cheatSearchListController setContent:searcher.addressList];
+		[cheatSearchListController setContent:[searcher addressList]];
 		
-		NSInteger searchStyle = [(NSNumber *)[self.bindings valueForKey:@"cheatSearchStyle"] integerValue];
-		if (searchStyle == CHEATSEARCH_SEARCHSTYLE_COMPARATIVE && searcher.searchCount == 1)
+		NSInteger searchStyle = [(NSNumber *)[bindings valueForKey:@"cheatSearchStyle"] integerValue];
+		if (searchStyle == CHEATSEARCH_SEARCHSTYLE_COMPARATIVE && [searcher searchCount] == 1)
 		{
 			[self setCheatSearchViewByStyle:CHEATSEARCH_SEARCHSTYLE_COMPARATIVE];
 			[bindings setValue:@"Search started!" forKey:@"cheatSearchAddressCount"];
@@ -338,9 +311,9 @@
 {
 	[cheatSearchListController setContent:nil];
 	[cdsCheatSearch reset];
-	[self.bindings setValue:nil forKey:@"cheatSearchSearchValue"];
-	[self.bindings setValue:@"Search not started." forKey:@"cheatSearchAddressCount"];
-	[self setCheatSearchViewByStyle:[(NSNumber *)[self.bindings valueForKey:@"cheatSearchStyle"] integerValue]];
+	[bindings setValue:nil forKey:@"cheatSearchSearchValue"];
+	[bindings setValue:@"Search not started." forKey:@"cheatSearchAddressCount"];
+	[self setCheatSearchViewByStyle:[(NSNumber *)[bindings valueForKey:@"cheatSearchStyle"] integerValue]];
 	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isSearchStarted"];
 }
 
@@ -397,7 +370,7 @@
 			break;
 			
 		case CHEATSEARCH_SEARCHSTYLE_COMPARATIVE:
-			if (cdsCheatSearch.searchCount == 0)
+			if ([cdsCheatSearch searchCount] == 0)
 			{
 				newView = viewSearchComparativeStart;
 			}
@@ -431,7 +404,7 @@
 	
 	for (CocoaDSCheatItem *cheatItem in dbList)
 	{
-		cheatItem.willAdd = YES;
+		[cheatItem setWillAdd:YES];
 	}
 }
 
@@ -445,7 +418,7 @@
 	
 	for (CocoaDSCheatItem *cheatItem in dbList)
 	{
-		cheatItem.willAdd = NO;
+		[cheatItem setWillAdd:NO];
 	}
 }
 
@@ -457,19 +430,29 @@
 		return;
 	}
 	
-	for (CocoaDSCheatItem *cheatItem in dbList)
+	size_t addedItemCount = 0;
+	BOOL didAddItem = NO;
+	
+	for (CocoaDSCheatItem *dbItem in dbList)
 	{
-		if (cheatItem.willAdd)
+		if ([dbItem willAdd])
 		{
-			CocoaDSCheatItem *newCheatItem = [[[CocoaDSCheatItem alloc] initWithCocoaCheatItem:cheatItem] autorelease];
-			[cheatListController addObject:newCheatItem];
-			[self.cdsCheats add:newCheatItem];
+			CocoaDSCheatItem *newCocoaCheatItem = [[[CocoaDSCheatItem alloc] init] autorelease];
+			ClientCheatItem *newCheatItem = [newCocoaCheatItem clientData];
+			newCheatItem->Init(*[dbItem clientData]);
+			
+			didAddItem = [[self cdsCheats] addExistingItem:newCocoaCheatItem];
+			if (didAddItem)
+			{
+				[cheatListController addObject:newCocoaCheatItem];
+				addedItemCount++;
+			}
 		}
 	}
 	
-	if ([dbList count] > 0)
+	if (addedItemCount > 0)
 	{
-		[self.cdsCheats save];
+		[[self cdsCheats] save];
 		[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"hasItems"];
 	}
 }
@@ -490,7 +473,6 @@
 	{
 		case GUI_RESPONSE_CANCEL:
 			return;
-			break;
 			
 		case GUI_RESPONSE_OK:
 			[self addSelectedFromCheatDatabase];
@@ -503,7 +485,7 @@
 
 - (void)windowDidBecomeKey:(NSNotification *)notification
 {
-	[cheatWindowController setContent:self.bindings];
+	[cheatWindowController setContent:bindings];
 }
 
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification
@@ -511,27 +493,27 @@
 	NSTableView *table = (NSTableView *)[aNotification object];
 	NSInteger rowIndex = [table selectedRow];
 	
-	if (table == self.cheatListTable)
+	if (table == [self cheatListTable])
 	{
 		if (rowIndex >= 0)
 		{
 			NSArray *selectedObjects = [cheatListController selectedObjects];
 			CocoaDSCheatItem *selectedCheat = [selectedObjects objectAtIndex:0];
-			self.workingCheat = [selectedCheat createWorkingCopy];
-			[cheatSelectedItemController setContent:self.workingCheat];
+			[self setWorkingCheat:[selectedCheat createWorkingCopy]];
+			[cheatSelectedItemController setContent:[self workingCheat]];
 			
-			[self setCheatConfigViewByType:selectedCheat.cheatType];
+			[self setCheatConfigViewByType:[selectedCheat cheatType]];
 			[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"hasSelection"];
 		}
 		else
 		{
-			if (self.workingCheat != nil)
+			if ([self workingCheat] != nil)
 			{
-				[self.workingCheat.parent destroyWorkingCopy];
+				[[[self workingCheat] parent] destroyWorkingCopy];
 			}
 			
 			[cheatSelectedItemController setContent:nil];
-			self.workingCheat = nil;
+			[self setWorkingCheat:nil];
 			
 			NSRect frameRect = [currentView frame];
 			[currentView retain];
@@ -542,7 +524,7 @@
 			[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"hasSelection"];
 		}
 	}
-	else if (table == self.cheatSearchListTable)
+	else if (table == [self cheatSearchListTable])
 	{
 		if (rowIndex >= 0)
 		{
@@ -550,9 +532,9 @@
 			NSMutableDictionary *selectedAddress = [selectedObjects objectAtIndex:0];
 			NSString *addressString = [(NSString *)[selectedAddress valueForKey:@"addressString"] substringFromIndex:4];
 			
-			if (self.workingCheat != nil)
+			if ([self workingCheat] != nil)
 			{
-				self.workingCheat.memAddressSixDigitString = addressString;
+				[[self workingCheat] setMemAddressSixDigitString:addressString];
 			}
 		}
 	}

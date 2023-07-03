@@ -24,6 +24,7 @@
 class CHEATS;
 class CHEATS_LIST;
 class CHEATSEARCH;
+class ClientCheatManager;
 
 enum CheatType
 {
@@ -52,12 +53,13 @@ enum CheatSystemError
 class ClientCheatItem
 {
 protected:
+	ClientCheatManager *_cheatManager;
+	
 	bool _isEnabled;
 	bool _willAddFromDB;
 	
 	CheatType _cheatType;
 	std::string _descriptionString;
-	void *_clientData;
 	
 	// Internal cheat type parameters
 	CheatFreezeType _freezeType;
@@ -80,6 +82,9 @@ public:
 	
 	void Init(const CHEATS_LIST &inCheatItem);
 	void Init(const ClientCheatItem &inCheatItem);
+	
+	void SetCheatManager(ClientCheatManager *cheatManager);
+	ClientCheatManager* GetCheatManager() const;
 	
 	void SetEnabled(bool theState);
 	bool IsEnabled() const;
@@ -111,6 +116,7 @@ public:
 	void SetRawCodeString(const char *rawString, const bool willSaveValidatedRawString);
 	const char* GetRawCodeString() const;
 	const char* GetCleanCodeString() const;
+	const std::string& GetCleanCodeCppString() const;
 	uint32_t GetCodeCount() const;
 	
 	void ClientToDesmumeCheatItem(CHEATS_LIST *outCheatItem) const;
@@ -118,9 +124,11 @@ public:
 
 class ClientCheatList
 {
+private:
+	ClientCheatItem* __AddItem(const ClientCheatItem *srcItem, const bool willCopy, const bool allowDuplicates);
+	
 protected:
 	std::vector<ClientCheatItem *> *_list;
-	bool _engineNeedsUpdate;
 	
 public:
 	ClientCheatList();
@@ -129,41 +137,97 @@ public:
 	CheatSystemError LoadFromFile(const char *filePath);
 	CheatSystemError SaveToFile(const char *filePath);
 	
+	bool IsItemDuplicate(const ClientCheatItem *srcItem);
+	
 	ClientCheatItem* AddNew();
-	ClientCheatItem* Add(ClientCheatItem *srcItem);
-	ClientCheatItem* AddNoDuplicate(ClientCheatItem *srcItem);
-	void Remove(ClientCheatItem *targetItem);
-	void RemoveAtIndex(size_t index);
+	ClientCheatItem* AddNewItemCopy(const ClientCheatItem *srcItem);
+	ClientCheatItem* AddNewItemCopyNoDuplicate(const ClientCheatItem *srcItem);
+	ClientCheatItem* AddExistingItemNoDuplicate(const ClientCheatItem *srcItem);
+	
+	bool Remove(ClientCheatItem *targetItem);
+	bool RemoveAtIndex(size_t index);
 	void RemoveAll();
-	void Update(const ClientCheatItem &srcItem, ClientCheatItem *targetItem);
-	ClientCheatItem* UpdateAtIndex(const ClientCheatItem &srcItem, size_t index);
+	
+	bool Update(const ClientCheatItem &srcItem, ClientCheatItem *targetItem);
+	bool UpdateAtIndex(const ClientCheatItem &srcItem, size_t index);
 	
 	size_t GetTotalCheatCount() const;
 	size_t GetActiveCheatCount() const;
 	std::vector<ClientCheatItem *>* GetCheatList() const;
+	size_t GetIndexOfItem(const ClientCheatItem *cheatItem) const;
 	ClientCheatItem* GetItemAtIndex(size_t index) const;
 	
 	void ReplaceFromEngine(const CHEATS *engineCheatList);
 	void CopyListToEngine(const bool willApplyOnlyEnabledItems, CHEATS *engineCheatList);
-	void ApplyListToEngine();
-	
-	static CHEATS* GetMasterCheatList();
 };
 
-/********************************************************************************************
-	CocoaDSCheatItem - OBJECTIVE-C CLASS
+class ClientCheatManager
+{
+protected:
+	ClientCheatList *_workingList;
+	ClientCheatList *_databaseList;
+	ClientCheatItem *_selectedItem;
+	size_t _selectedItemIndex;
+	uint32_t _untitledCount;
+	
+	std::string _databaseTitle;
+	std::string _databaseDate;
+	std::string _lastFilePath;
+	
+	bool _masterNeedsUpdate;
+	
+public:
+	ClientCheatManager();
+	~ClientCheatManager();
+	
+	static CHEATS* GetMaster();
+	static void SetMaster(const CHEATS *masterCheats);
+	
+	ClientCheatList* GetWorkingList() const;
+	ClientCheatList* GetDatabaseList() const;
+	
+	const char* GetDatabaseTitle() const;
+	void SetDatabaseTitle(const char *dbTitle);
+	
+	const char* GetDatabaseDate() const;
+	void SetDatabaseDate(const char *dbDate);
+	
+	const char* GetLastFilePath() const;
+	
+	virtual CheatSystemError LoadFromFile(const char *filePath);
+	virtual CheatSystemError SaveToFile(const char *filePath);
+	
+	ClientCheatItem* SetSelectedItemByIndex(size_t index);
+	
+	ClientCheatItem* NewItem();
+	ClientCheatItem* AddExistingItemNoDuplicate(const ClientCheatItem *theItem);
+	
+	void RemoveItem(ClientCheatItem *theItem);
+	void RemoveItemAtIndex(size_t index);
+	void RemoveSelectedItem();
+	
+	void ModifyItem(const ClientCheatItem *srcItem, ClientCheatItem *targetItem);
+	void ModifyItemAtIndex(const ClientCheatItem *srcItem, size_t index);
+	
+	size_t GetTotalCheatCount() const;
+	size_t GetActiveCheatCount() const;
+	
+	ClientCheatList* LoadFromDatabase(const char *dbFilePath);
+	
+	void LoadFromMaster();
+	void ApplyToMaster();
+	void MasterNeedsUpdate();
+	
+	void ApplyInternalCheatAtIndex(size_t index);
+	static void ApplyInternalCheatWithItem(const ClientCheatItem *cheatItem);
+	static void ApplyInternalCheatWithParams(uint32_t targetAddress, uint32_t newValue, size_t newValueLength);
+};
 
-	This is an Objective-C wrapper class for DeSmuME's cheat item struct.
- 
-	The cheat item data is not freed upon release of this object. This is by design.
-
-	Thread Safety:
-		Assume that all methods are not thread-safe. This was done for performance
-		reasons. The caller of this class' methods is expected to handle thread safety.
- ********************************************************************************************/
 @interface CocoaDSCheatItem : NSObject
 {
 	ClientCheatItem *_internalData;
+	BOOL _didAllocateInternalData;
+	BOOL _disableWorkingCopyUpdate;
 	BOOL willAdd;
 	
 	CocoaDSCheatItem *workingCopy;
@@ -190,8 +254,8 @@ public:
 @property (readonly) CocoaDSCheatItem *workingCopy;
 @property (assign) CocoaDSCheatItem *parent;
 
-- (id) initWithCheatItem:(ClientCheatItem *)cheatItem;
 - (id) initWithCocoaCheatItem:(CocoaDSCheatItem *)cdsCheatItem;
+- (id) initWithCheatItem:(ClientCheatItem *)cheatItem;
 - (id) initWithCheatData:(const CHEATS_LIST *)cheatData;
 - (char *) descriptionCString;
 - (void) update;
@@ -208,49 +272,31 @@ public:
 
 @end
 
-/********************************************************************************************
-	CocoaDSCheatManager - OBJECTIVE-C CLASS
-
-	This is an Objective-C wrapper class for DeSmuME's cheat list class.
-
-	Thread Safety:
-		All methods are thread-safe.
- ********************************************************************************************/
 @interface CocoaDSCheatManager : NSObject
 {
-	ClientCheatList *_clientListData;
+	ClientCheatManager *_internalCheatManager;
 	NSMutableArray *list;
-	
-	NSUInteger untitledCount;
-	NSString *dbTitle;
-	NSString *dbDate;
-	NSURL *lastFileURL;
 }
 
-@property (readonly, nonatomic, getter=clientListData) ClientCheatList *_clientListData;
+@property (readonly, nonatomic, getter=internalManager) ClientCheatManager *_internalCheatManager;
 @property (readonly) NSMutableArray *list;
-@property (assign) NSUInteger untitledCount;
-@property (copy) NSString *dbTitle;
-@property (copy) NSString *dbDate;
-@property (retain) NSURL *lastFileURL;
+@property (assign, nonatomic) NSString *dbTitle;
+@property (assign, nonatomic) NSString *dbDate;
 
 - (id) initWithFileURL:(NSURL *)fileURL;
 
-- (BOOL) add:(CocoaDSCheatItem *)cheatItem;
+- (CocoaDSCheatItem *) newItem;
+- (BOOL) addExistingItem:(CocoaDSCheatItem *)cheatItem;
 - (void) remove:(CocoaDSCheatItem *)cheatItem;
 - (BOOL) update:(CocoaDSCheatItem *)cheatItem;
 - (BOOL) save;
 - (NSUInteger) activeCount;
 - (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error;
 - (void) applyInternalCheat:(CocoaDSCheatItem *)cheatItem;
-- (void) loadFromEngine;
-- (void) applyListToEngine;
+- (void) loadFromMaster;
+- (void) applyToMaster;
 
-+ (void) applyInternalCheatWithItem:(CocoaDSCheatItem *)cheatItem;
-+ (void) applyInternalCheatWithAddress:(UInt32)address value:(UInt32)value bytes:(NSUInteger)bytes;
-+ (NSMutableArray *) cheatListWithListObject:(CHEATS *)cheatList;
 + (NSMutableArray *) cheatListWithClientListObject:(ClientCheatList *)cheatList;
-+ (NSMutableArray *) cheatListWithItemStructArray:(CHEATS_LIST *)cheatItemArray count:(NSUInteger)itemCount;
 
 @end
 

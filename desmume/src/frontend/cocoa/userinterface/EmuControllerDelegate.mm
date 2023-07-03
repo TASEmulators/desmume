@@ -1936,7 +1936,7 @@
 	CocoaDSCheatManager *newCheatList = [cdsCore cdsCheatManager];
 	if (newCheatList != nil)
 	{
-		[newCheatList loadFromEngine];
+		[newCheatList loadFromMaster];
 		
 		NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
 		

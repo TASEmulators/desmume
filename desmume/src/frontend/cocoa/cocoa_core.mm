@@ -170,7 +170,7 @@ volatile bool execute = true;
 	
 	macOS_driver *newDriver = new macOS_driver;
 	newDriver->SetCoreThreadMutexLock(&threadParam.mutexThreadExecute);
-	newDriver->SetCoreExecuteRWLock(self.rwlockCoreExecute);
+	newDriver->SetCoreExecuteRWLock(&threadParam.rwlockCoreExecute);
 	newDriver->SetExecutionControl(execControl);
 	driver = newDriver;
 	
@@ -1151,6 +1151,7 @@ static void* RunCoreThread(void *arg)
 	CoreThreadParam *param = (CoreThreadParam *)arg;
 	CocoaDSCore *cdsCore = (CocoaDSCore *)param->cdsCore;
 	CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
+	ClientCheatManager *cheatManager = [[cdsCore cdsCheatManager] internalManager];
 	ClientExecutionControl *execControl = [cdsCore execControl];
 	ClientInputHandler *inputHandler = execControl->GetClientInputHandler();
 	NSMutableArray *cdsOutputList = [cdsCore cdsOutputList];
@@ -1229,11 +1230,9 @@ static void* RunCoreThread(void *arg)
 			avCaptureObject = NULL;
 		}
 		
-		ClientCheatList *cheatList = [[cdsCore cdsCheatManager] clientListData];
-		cheatList->ApplyListToEngine();
-		
 		// Execute the frame and increment the frame counter.
 		pthread_rwlock_wrlock(&param->rwlockCoreExecute);
+		cheatManager->ApplyToMaster();
 		NDS_exec<false>();
 		SPU_Emulate_user();
 		execControl->FetchOutputPostNDSExec();

@@ -1206,7 +1206,7 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 		[cheatItem setValue:0]; // UNUSED
 		
 		[cheatItem setEnabled:enabled];
-		[[self cdsCheats] add:cheatItem];
+		[[self cdsCheats] addExistingItem:cheatItem];
 		
 		// OpenEmu doesn't currently save cheats per game, so assume that the
 		// cheat list is short and that code strings are unique. This allows

@@ -122,14 +122,63 @@ size_t CheatConvertCleanCodeToRawCode(const char *inCleanCodeString, std::string
 	return codeCount;
 }
 
+bool IsCheatItemDuplicate(const ClientCheatItem *first, const ClientCheatItem *second)
+{
+	bool isDuplicate = false;
+	
+	if ( (first == NULL) || (second == NULL) )
+	{
+		return isDuplicate;
+	}
+	
+	if (first == second)
+	{
+		isDuplicate = true;
+		return isDuplicate;
+	}
+	
+	const CheatType compareType = first->GetType();
+	
+	switch (compareType)
+	{
+		case CheatType_Internal:
+		{
+			if ( (first->GetAddress()     == second->GetAddress()) &&
+				 (first->GetValueLength() == second->GetValueLength()) &&
+				 (first->GetValue()       == second->GetValue()) )
+			{
+				isDuplicate = true;
+			}
+			break;
+		}
+			
+		case CheatType_ActionReplay:
+		{
+			if ( (first->GetCodeCount()          == second->GetCodeCount()) &&
+				 (first->GetCleanCodeCppString() == second->GetCleanCodeCppString()) )
+			{
+				isDuplicate = true;
+			}
+			break;
+		}
+			
+		case CheatType_CodeBreaker:
+		default:
+			break;
+	}
+	
+	return isDuplicate;
+}
+
 ClientCheatItem::ClientCheatItem()
 {
+	_cheatManager = NULL;
+	
 	_isEnabled = false;
 	_willAddFromDB = false;
 	
 	_cheatType = CheatType_Internal;
 	_descriptionString = "No description.";
-	_clientData = NULL;
 	_freezeType = CheatFreezeType_Normal;
 	_address = 0x02000000;
 	strncpy(_addressString, "0x02000000", sizeof(_addressString));
@@ -205,8 +254,23 @@ void ClientCheatItem::Init(const ClientCheatItem &inCheatItem)
 	}
 }
 
+void ClientCheatItem::SetCheatManager(ClientCheatManager *cheatManager)
+{
+	this->_cheatManager = cheatManager;
+}
+
+ClientCheatManager* ClientCheatItem::GetCheatManager() const
+{
+	return this->_cheatManager;
+}
+
 void ClientCheatItem::SetEnabled(bool theState)
 {
+	if ( (this->_isEnabled != theState) && (this->_cheatManager != NULL) )
+	{
+		this->_cheatManager->MasterNeedsUpdate();
+	}
+	
 	this->_isEnabled = theState;
 }
 
@@ -243,6 +307,11 @@ void ClientCheatItem::SetType(CheatType requestedType)
 		default:
 			// Bail if the cheat type is invalid.
 			return;
+	}
+	
+	if ( (this->_cheatType != requestedType) && (this->_cheatManager != NULL) && this->_isEnabled )
+	{
+		this->_cheatManager->MasterNeedsUpdate();
 	}
 	
 	this->_cheatType = requestedType;
@@ -290,6 +359,11 @@ void ClientCheatItem::SetFreezeType(CheatFreezeType theFreezeType)
 			return;
 	}
 	
+	if ( (this->_freezeType != theFreezeType) && (this->_cheatManager != NULL) && this->_isEnabled )
+	{
+		this->_cheatManager->MasterNeedsUpdate();
+	}
+	
 	this->_freezeType = theFreezeType;
 }
 
@@ -305,6 +379,11 @@ uint32_t ClientCheatItem::GetAddress() const
 
 void ClientCheatItem::SetAddress(uint32_t theAddress)
 {
+	if ( (this->_address != theAddress) && (this->_cheatType == CheatType_Internal) && (this->_cheatManager != NULL) && this->_isEnabled )
+	{
+		this->_cheatManager->MasterNeedsUpdate();
+	}
+	
 	this->_address = theAddress;
 	
 	this->_addressString[0] = '0';
@@ -355,7 +434,16 @@ void ClientCheatItem::SetAddressSixDigitString(const char *sixDigitString)
 	}
 	
 	this->_addressString[10] = '\0';
-	sscanf(this->_addressString + 2, "%x", &this->_address);
+	
+	u32 theAddress = 0;
+	sscanf(this->_addressString + 2, "%x", &theAddress);
+	
+	if ( (this->_address != theAddress) && (this->_cheatType == CheatType_Internal) && (this->_cheatManager != NULL) && this->_isEnabled )
+	{
+		this->_cheatManager->MasterNeedsUpdate();
+	}
+	
+	this->_address = theAddress;
 	
 	if (this->_cheatType == CheatType_Internal)
 	{
@@ -370,6 +458,11 @@ uint32_t ClientCheatItem::GetValue() const
 
 void ClientCheatItem::SetValue(uint32_t theValue)
 {
+	if ( (this->_value != theValue) && (this->_cheatType == CheatType_Internal) && (this->_cheatManager != NULL) && this->_isEnabled )
+	{
+		this->_cheatManager->MasterNeedsUpdate();
+	}
+	
 	this->_value = theValue;
 	
 	if (this->_cheatType == CheatType_Internal)
@@ -385,6 +478,11 @@ uint8_t ClientCheatItem::GetValueLength() const
 
 void ClientCheatItem::SetValueLength(uint8_t byteLength)
 {
+	if ( (this->_valueLength != byteLength) && (this->_cheatType == CheatType_Internal) && (this->_cheatManager != NULL) && this->_isEnabled )
+	{
+		this->_cheatManager->MasterNeedsUpdate();
+	}
+	
 	this->_valueLength = byteLength;
 	
 	if (this->_cheatType == CheatType_Internal)
@@ -419,6 +517,11 @@ void ClientCheatItem::SetRawCodeString(const char *rawString, const bool willSav
 		this->_rawCodeString = rawString;
 	}
 	
+	if ( (this->_cheatType == CheatType_ActionReplay) && (this->_cheatManager != NULL) && this->_isEnabled )
+	{
+		this->_cheatManager->MasterNeedsUpdate();
+	}
+	
 	if (this->_cheatType == CheatType_ActionReplay)
 	{
 		this->_ConvertActionReplayToInternal();
@@ -433,6 +536,11 @@ const char* ClientCheatItem::GetRawCodeString() const
 const char* ClientCheatItem::GetCleanCodeString() const
 {
 	return this->_cleanCodeString.c_str();
+}
+
+const std::string& ClientCheatItem::GetCleanCodeCppString() const
+{
+	return this->_cleanCodeString;
 }
 
 uint32_t ClientCheatItem::GetCodeCount() const
@@ -544,7 +652,6 @@ void ClientCheatItem::ClientToDesmumeCheatItem(CHEATS_LIST *outCheatItem) const
 ClientCheatList::ClientCheatList()
 {
 	_list = new std::vector<ClientCheatItem *>;
-	_engineNeedsUpdate = true;
 }
 
 ClientCheatList::~ClientCheatList()
@@ -597,92 +704,123 @@ CheatSystemError ClientCheatList::SaveToFile(const char *filePath)
 	return error;
 }
 
-ClientCheatItem* ClientCheatList::AddNew()
+bool ClientCheatList::IsItemDuplicate(const ClientCheatItem *srcItem)
 {
-	this->_list->push_back(new ClientCheatItem);
-	return this->_list->back();
-}
-
-ClientCheatItem* ClientCheatList::Add(ClientCheatItem *srcItem)
-{
+	bool isDuplicateFound = false;
 	if (srcItem == NULL)
 	{
-		return NULL;
+		return isDuplicateFound;
 	}
 	
-	ClientCheatItem *newItem = this->AddNew();
-	newItem->Init(*srcItem);
+	const CheatType compareType = srcItem->GetType();
 	
-	if (newItem->IsEnabled())
+	const size_t totalCheatCount = this->_list->size();
+	for (size_t i = 0; i < totalCheatCount; i++)
 	{
-		this->_engineNeedsUpdate = true;
+		const ClientCheatItem *itemToCheck = (*this->_list)[i];
+		if (itemToCheck == NULL)
+		{
+			continue;
+		}
+		
+		if (srcItem == itemToCheck)
+		{
+			isDuplicateFound = true;
+			break;
+		}
+		
+		switch (compareType)
+		{
+			case CheatType_Internal:
+				isDuplicateFound = ( (srcItem->GetAddress()     == itemToCheck->GetAddress()) &&
+				                     (srcItem->GetValue()       == itemToCheck->GetValue()) &&
+				                     (srcItem->GetValueLength() == itemToCheck->GetValueLength()) );
+				break;
+				
+			case CheatType_ActionReplay:
+				isDuplicateFound = ( (srcItem->GetCodeCount()          == itemToCheck->GetCodeCount()) &&
+				                     (srcItem->GetCleanCodeCppString() == itemToCheck->GetCleanCodeCppString()) );
+				break;
+				
+			case CheatType_CodeBreaker:
+			default:
+				break;
+		}
+		
+		if (isDuplicateFound)
+		{
+			break;
+		}
+	}
+	
+	return isDuplicateFound;
+}
+
+ClientCheatItem* ClientCheatList::__AddItem(const ClientCheatItem *srcItem, const bool willCopy, const bool allowDuplicates)
+{
+	ClientCheatItem *newItem = NULL;
+	if (srcItem == NULL)
+	{
+		return newItem;
+	}
+	
+	if (allowDuplicates || !this->IsItemDuplicate(srcItem))
+	{
+		if (willCopy)
+		{
+			this->_list->push_back(new ClientCheatItem);
+			newItem->Init(*srcItem);
+		}
+		else
+		{
+			this->_list->push_back((ClientCheatItem *)srcItem);
+		}
+		
+		newItem = this->_list->back();
 	}
 	
 	return newItem;
 }
 
-ClientCheatItem* ClientCheatList::AddNoDuplicate(ClientCheatItem *srcItem)
+ClientCheatItem* ClientCheatList::AddNew()
 {
-	bool isDuplicateFound = false;
-	ClientCheatItem *outNewItem = NULL;
-	
-	if (srcItem == NULL)
-	{
-		return outNewItem;
-	}
-	
-	const size_t cheatCount = this->_list->size();
-	for (size_t i = 0; i < cheatCount; i++)
-	{
-		if ( (*this->_list)[i]->GetCleanCodeString() == srcItem->GetCleanCodeString() )
-		{
-			isDuplicateFound = true;
-			break;
-		}
-	}
-	
-	if (!isDuplicateFound)
-	{
-		outNewItem = this->Add(srcItem);
-	}
-	
-	return outNewItem;
+	ClientCheatItem *newItem = new ClientCheatItem;
+	return this->__AddItem(newItem, false, true);
 }
 
-void ClientCheatList::Remove(ClientCheatItem *targetItem)
+ClientCheatItem* ClientCheatList::AddNewItemCopy(const ClientCheatItem *srcItem)
 {
-	if (targetItem == NULL)
-	{
-		return;
-	}
-	
-	const size_t cheatCount = this->_list->size();
-	for (size_t i = 0; i < cheatCount; i++)
-	{
-		if (targetItem == (*this->_list)[i])
-		{
-			this->RemoveAtIndex(i);
-			break;
-		}
-	}
+	return this->__AddItem(srcItem, true, true);
 }
 
-void ClientCheatList::RemoveAtIndex(size_t index)
+ClientCheatItem* ClientCheatList::AddNewItemCopyNoDuplicate(const ClientCheatItem *srcItem)
 {
-	if (index >= this->_list->size())
+	return this->__AddItem(srcItem, true, false);
+}
+
+ClientCheatItem* ClientCheatList::AddExistingItemNoDuplicate(const ClientCheatItem *srcItem)
+{
+	return this->__AddItem(srcItem, false, false);
+}
+
+bool ClientCheatList::Remove(ClientCheatItem *targetItem)
+{
+	return this->RemoveAtIndex( this->GetIndexOfItem(targetItem) );
+}
+
+bool ClientCheatList::RemoveAtIndex(size_t index)
+{
+	bool didRemoveItem = false;
+	ClientCheatItem *targetItem = this->GetItemAtIndex(index);
+	
+	if (targetItem != NULL)
 	{
-		return;
+		this->_list->erase( this->_list->begin() + index );
+		delete targetItem;
+		didRemoveItem = true;
 	}
 	
-	ClientCheatItem *itemToRemove = (*this->_list)[index];
-	
-	if (itemToRemove->IsEnabled())
-	{
-		this->_engineNeedsUpdate = true;
-	}
-	
-	this->_list->erase( this->_list->begin() + index );
-	delete itemToRemove;
+	return didRemoveItem;
 }
 
 void ClientCheatList::RemoveAll()
@@ -691,50 +829,29 @@ void ClientCheatList::RemoveAll()
 	for (size_t i = 0; i < cheatCount; i++)
 	{
 		ClientCheatItem *itemToRemove = (*this->_list)[i];
-		
-		if (itemToRemove->IsEnabled())
-		{
-			this->_engineNeedsUpdate = true;
-		}
-		
 		delete itemToRemove;
 	}
 	
 	this->_list->clear();
 }
 
-void ClientCheatList::Update(const ClientCheatItem &srcItem, ClientCheatItem *targetItem)
+bool ClientCheatList::Update(const ClientCheatItem &srcItem, ClientCheatItem *targetItem)
 {
-	if (targetItem == NULL)
-	{
-		return;
-	}
-	
-	const size_t cheatCount = this->_list->size();
-	for (size_t i = 0; i < cheatCount; i++)
-	{
-		if (targetItem == (*this->_list)[i])
-		{
-			this->UpdateAtIndex(srcItem, i);
-			break;
-		}
-	}
+	return this->UpdateAtIndex(srcItem, this->GetIndexOfItem(targetItem));
 }
 
-ClientCheatItem* ClientCheatList::UpdateAtIndex(const ClientCheatItem &srcItem, size_t index)
+bool ClientCheatList::UpdateAtIndex(const ClientCheatItem &srcItem, size_t index)
 {
+	bool didUpdateItem = false;
 	ClientCheatItem *targetItem = this->GetItemAtIndex(index);
 	
 	if (targetItem != NULL)
 	{
 		targetItem->Init(srcItem);
-		if (targetItem->IsEnabled())
-		{
-			this->_engineNeedsUpdate = true;
-		}
+		didUpdateItem = true;
 	}
 	
-	return targetItem;
+	return didUpdateItem;
 }
 
 size_t ClientCheatList::GetTotalCheatCount() const
@@ -764,6 +881,26 @@ std::vector<ClientCheatItem *>* ClientCheatList::GetCheatList() const
 	return this->_list;
 }
 
+size_t ClientCheatList::GetIndexOfItem(const ClientCheatItem *cheatItem) const
+{
+	size_t outIndex = ~0;
+	if (cheatItem == NULL)
+	{
+		return outIndex;
+	}
+	
+	const size_t cheatCount = this->_list->size();
+	for (size_t i = 0; i < cheatCount; i++)
+	{
+		if (cheatItem == (*this->_list)[i])
+		{
+			return outIndex;
+		}
+	}
+	
+	return outIndex;
+}
+
 ClientCheatItem* ClientCheatList::GetItemAtIndex(size_t index) const
 {
 	if (index >= this->GetTotalCheatCount())
@@ -788,11 +925,6 @@ void ClientCheatList::ReplaceFromEngine(const CHEATS *engineCheatList)
 	{
 		ClientCheatItem *newItem = this->AddNew();
 		newItem->Init( *engineCheatList->getItemPtrAtIndex(i) );
-		
-		if (newItem->IsEnabled())
-		{
-			this->_engineNeedsUpdate = true;
-		}
 	}
 }
 
@@ -819,21 +951,394 @@ void ClientCheatList::CopyListToEngine(const bool willApplyOnlyEnabledItems, CHE
 	}
 }
 
-void ClientCheatList::ApplyListToEngine()
+#pragma mark -
+
+ClientCheatManager::ClientCheatManager()
 {
-	CHEATS *engineCheatList = ClientCheatList::GetMasterCheatList();
-	if ( (engineCheatList == NULL) || !this->_engineNeedsUpdate )
+	_workingList = new ClientCheatList;
+	_databaseList = new ClientCheatList;
+	
+	_selectedItem = NULL;
+	_selectedItemIndex = 0;
+	
+	_untitledCount = 0;
+	
+	_databaseTitle.resize(0);
+	_databaseDate.resize(0);
+	_lastFilePath.resize(0);
+	
+	_masterNeedsUpdate = true;
+}
+
+ClientCheatManager::~ClientCheatManager()
+{
+	delete this->_databaseList;
+	delete this->_workingList;
+}
+
+CHEATS* ClientCheatManager::GetMaster()
+{
+	return cheats;
+}
+
+void ClientCheatManager::SetMaster(const CHEATS *masterCheats)
+{
+	cheats = (CHEATS *)masterCheats;
+}
+
+ClientCheatList* ClientCheatManager::GetWorkingList() const
+{
+	return this->_workingList;
+}
+
+ClientCheatList* ClientCheatManager::GetDatabaseList() const
+{
+	return this->_databaseList;
+}
+
+const char* ClientCheatManager::GetDatabaseTitle() const
+{
+	return this->_databaseTitle.c_str();
+}
+
+void ClientCheatManager::SetDatabaseTitle(const char *dbTitle)
+{
+	if (dbTitle != NULL)
+	{
+		this->_databaseTitle = dbTitle;
+	}
+}
+
+const char* ClientCheatManager::GetDatabaseDate() const
+{
+	return this->_databaseDate.c_str();
+}
+
+void ClientCheatManager::SetDatabaseDate(const char *dbDate)
+{
+	if (dbDate != NULL)
+	{
+		this->_databaseDate = dbDate;
+	}
+}
+
+const char* ClientCheatManager::GetLastFilePath() const
+{
+	return this->_lastFilePath.c_str();
+}
+
+CheatSystemError ClientCheatManager::LoadFromFile(const char *filePath)
+{
+	CheatSystemError error = CheatSystemError_NoError;
+	
+	if (filePath == NULL)
+	{
+		error = CheatSystemError_FileOpenFailed;
+		return error;
+	}
+	
+	error = this->_workingList->LoadFromFile(filePath);
+	if (error == CheatSystemError_NoError)
+	{
+		this->_lastFilePath = filePath;
+		
+		const size_t totalCount = this->_workingList->GetTotalCheatCount();
+		for (size_t i = 0; i < totalCount; i++)
+		{
+			ClientCheatItem *cheatItem = this->_workingList->GetItemAtIndex(i);
+			cheatItem->SetCheatManager(this);
+		}
+	}
+	
+	return error;
+}
+
+CheatSystemError ClientCheatManager::SaveToFile(const char *filePath)
+{
+	CheatSystemError error = CheatSystemError_NoError;
+	
+	if (filePath == NULL)
+	{
+		error = CheatSystemError_FileSaveFailed;
+		return error;
+	}
+	
+	error = this->_workingList->SaveToFile(filePath);
+	if (error == CheatSystemError_NoError)
+	{
+		this->_lastFilePath = filePath;
+	}
+	
+	return error;
+}
+
+ClientCheatItem* ClientCheatManager::SetSelectedItemByIndex(size_t index)
+{
+	this->_selectedItemIndex = index;
+	this->_selectedItem = this->_workingList->GetItemAtIndex(index);
+	
+	return this->_selectedItem;
+}
+
+ClientCheatItem* ClientCheatManager::NewItem()
+{
+	ClientCheatItem *newItem = this->_workingList->AddNew();
+	newItem->SetCheatManager(this);
+	
+	this->_untitledCount++;
+	if (this->_untitledCount > 1)
+	{
+		char newDesc[16];
+		snprintf(newDesc, sizeof(newDesc), "Untitled %ld", (unsigned long)this->_untitledCount);
+		
+		newItem->SetDescription(newDesc);
+	}
+	else
+	{
+		newItem->SetDescription("Untitled");
+	}
+	
+	if (newItem->IsEnabled())
+	{
+		this->_masterNeedsUpdate = true;
+	}
+	
+	return newItem;
+}
+
+ClientCheatItem* ClientCheatManager::AddExistingItemNoDuplicate(const ClientCheatItem *theItem)
+{
+	ClientCheatItem *addedItem = this->_workingList->AddExistingItemNoDuplicate(theItem);
+	if (addedItem != NULL)
+	{
+		addedItem->SetCheatManager(this);
+		
+		if (addedItem->IsEnabled())
+		{
+			this->_masterNeedsUpdate = true;
+		}
+	}
+	
+	return addedItem;
+}
+
+void ClientCheatManager::RemoveItem(ClientCheatItem *targetItem)
+{
+	this->RemoveItemAtIndex( this->_workingList->GetIndexOfItem(targetItem) );
+}
+
+void ClientCheatManager::RemoveItemAtIndex(size_t index)
+{
+	const ClientCheatItem *targetItem = this->_workingList->GetItemAtIndex(index);
+	if (targetItem == NULL)
 	{
 		return;
 	}
 	
-	this->CopyListToEngine(true, engineCheatList);
-	this->_engineNeedsUpdate = false;
+	const bool willChangeMasterUpdateFlag = targetItem->IsEnabled();
+	const bool didRemoveItem = this->_workingList->RemoveAtIndex(index);
+	
+	if (didRemoveItem && willChangeMasterUpdateFlag)
+	{
+		this->_masterNeedsUpdate = true;
+	}
 }
 
-CHEATS* ClientCheatList::GetMasterCheatList()
+void ClientCheatManager::RemoveSelectedItem()
 {
-	return cheats;
+	this->RemoveItemAtIndex(this->_selectedItemIndex);
+}
+
+void ClientCheatManager::ModifyItem(const ClientCheatItem *srcItem, ClientCheatItem *targetItem)
+{
+	if ( (srcItem != NULL) && (srcItem == targetItem) )
+	{
+		if (targetItem->IsEnabled())
+		{
+			this->_masterNeedsUpdate = true;
+		}
+		return;
+	}
+	
+	this->ModifyItemAtIndex(srcItem, this->_workingList->GetIndexOfItem(targetItem));
+}
+
+void ClientCheatManager::ModifyItemAtIndex(const ClientCheatItem *srcItem, size_t index)
+{
+	const ClientCheatItem *targetItem = this->_workingList->GetItemAtIndex(index);
+	if ( (srcItem == NULL) || (targetItem == NULL) )
+	{
+		return;
+	}
+	
+	const bool willChangeMasterUpdateFlag = targetItem->IsEnabled();
+	const bool didModifyItem = this->_workingList->UpdateAtIndex(*srcItem, index);
+	
+	if (didModifyItem && willChangeMasterUpdateFlag)
+	{
+		this->_masterNeedsUpdate = true;
+	}
+}
+
+size_t ClientCheatManager::GetTotalCheatCount() const
+{
+	return this->_workingList->GetTotalCheatCount();
+}
+
+size_t ClientCheatManager::GetActiveCheatCount() const
+{
+	return this->_workingList->GetActiveCheatCount();
+}
+
+ClientCheatList* ClientCheatManager::LoadFromDatabase(const char *dbFilePath)
+{
+	if (dbFilePath == NULL)
+	{
+		return NULL;
+	}
+	
+	CHEATSEXPORT *exporter = new CHEATSEXPORT();
+	CheatSystemError dbError = CheatSystemError_NoError;
+	
+	bool didFileLoad = exporter->load((char *)dbFilePath);
+	if (didFileLoad)
+	{
+		this->_databaseList->RemoveAll();
+		
+		this->SetDatabaseTitle((const char *)exporter->gametitle);
+		this->SetDatabaseDate((const char *)exporter->date);
+		
+		const size_t itemCount = exporter->getCheatsNum();
+		const CHEATS_LIST *dbItem = exporter->getCheats();
+		
+		for (size_t i = 0; i < itemCount; i++)
+		{
+			ClientCheatItem *newItem = this->_databaseList->AddNew();
+			if (newItem != NULL)
+			{
+				newItem->Init(dbItem[i]);
+			}
+		}
+	}
+	else
+	{
+		dbError = (CheatSystemError)exporter->getErrorCode();
+	}
+
+	delete exporter;
+	exporter = nil;
+	
+	if (dbError != CheatSystemError_NoError)
+	{
+		return NULL;
+	}
+	
+	return this->_databaseList;
+}
+
+void ClientCheatManager::LoadFromMaster()
+{
+	size_t activeCount = 0;
+	const CHEATS *masterCheats = ClientCheatManager::GetMaster();
+	
+	if (masterCheats == NULL)
+	{
+		return;
+	}
+	
+	this->_lastFilePath = masterCheats->getFilePath();
+	
+	activeCount = this->_workingList->GetActiveCheatCount();
+	if (activeCount > 0)
+	{
+		this->_masterNeedsUpdate = true;
+	}
+	
+	this->_workingList->ReplaceFromEngine(masterCheats);
+	
+	const size_t totalCount = this->_workingList->GetTotalCheatCount();
+	for (size_t i = 0; i < totalCount; i++)
+	{
+		ClientCheatItem *cheatItem = this->_workingList->GetItemAtIndex(i);
+		cheatItem->SetCheatManager(this);
+	}
+	
+	activeCount = this->_workingList->GetActiveCheatCount();
+	if (activeCount > 0)
+	{
+		this->_masterNeedsUpdate = true;
+	}
+}
+
+void ClientCheatManager::ApplyToMaster()
+{
+	CHEATS *masterCheats = ClientCheatManager::GetMaster();
+	if ( (masterCheats == NULL) || !this->_masterNeedsUpdate )
+	{
+		return;
+	}
+	
+	this->_workingList->CopyListToEngine(true, masterCheats);
+	this->_masterNeedsUpdate = false;
+}
+
+void ClientCheatManager::MasterNeedsUpdate()
+{
+	this->_masterNeedsUpdate = true;
+}
+
+void ClientCheatManager::ApplyInternalCheatAtIndex(size_t index)
+{
+	ClientCheatManager::ApplyInternalCheatWithItem( this->_workingList->GetItemAtIndex(index) );
+}
+
+void ClientCheatManager::ApplyInternalCheatWithItem(const ClientCheatItem *cheatItem)
+{
+	if ( (cheatItem == NULL) || (cheatItem->GetType() != CheatType_Internal) )
+	{
+		return;
+	}
+	
+	ClientCheatManager::ApplyInternalCheatWithParams( cheatItem->GetAddress(), cheatItem->GetValue(), cheatItem->GetValueLength() );
+}
+
+void ClientCheatManager::ApplyInternalCheatWithParams(uint32_t targetAddress, uint32_t newValue, size_t newValueLength)
+{
+	targetAddress &= 0x00FFFFFF;
+	targetAddress |= 0x02000000;
+	
+	switch (newValueLength)
+	{
+		case 1:
+		{
+			u8 oneByteValue = (u8)(newValue & 0x000000FF);
+			_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(targetAddress, oneByteValue);
+			break;
+		}
+			
+		case 2:
+		{
+			u16 twoByteValue = (u16)(newValue & 0x0000FFFF);
+			_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(targetAddress, twoByteValue);
+			break;
+		}
+			
+		case 3:
+		{
+			u32 threeByteWithExtraValue = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(targetAddress);
+			threeByteWithExtraValue &= 0xFF000000;
+			threeByteWithExtraValue |= (newValue & 0x00FFFFFF);
+			_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(targetAddress, threeByteWithExtraValue);
+			break;
+		}
+			
+		case 4:
+			_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(targetAddress, newValue);
+			break;
+			
+		default:
+			break;
+	}
 }
 
 #pragma mark -
@@ -864,7 +1369,12 @@ static NSImage *iconCodeBreaker = nil;
 
 - (id)init
 {
-	return [self initWithCheatData:nil];
+	return [self initWithCheatItem:NULL];
+}
+
+- (id) initWithCocoaCheatItem:(CocoaDSCheatItem *)cdsCheatItem
+{
+	return [self initWithCheatItem:[cdsCheatItem clientData]];
 }
 
 - (id) initWithCheatItem:(ClientCheatItem *)cheatItem
@@ -875,29 +1385,24 @@ static NSImage *iconCodeBreaker = nil;
 		return self;
 	}
 	
-	_internalData = new ClientCheatItem;
+	if (cheatItem == NULL)
+	{
+		_internalData = new ClientCheatItem;
+		_didAllocateInternalData = YES;
+	}
+	else
+	{
+		_internalData = cheatItem;
+		_didAllocateInternalData = NO;
+	}
 	
+	_disableWorkingCopyUpdate = NO;
 	willAdd = NO;
 	workingCopy = nil;
 	parent = nil;
 	_isMemAddressAlreadyUpdating = NO;
 	
-	if (cheatItem != NULL)
-	{
-		_internalData->Init(*cheatItem);
-	}
-	
 	return self;
-}
-
-- (id) initWithCocoaCheatItem:(CocoaDSCheatItem *)cdsCheatItem
-{
-	if (cdsCheatItem == nil)
-	{
-		return [self initWithCheatItem:NULL];
-	}
-	
-	return [self initWithCheatItem:[cdsCheatItem clientData]];
 }
 
 - (id) initWithCheatData:(const CHEATS_LIST *)cheatData
@@ -909,6 +1414,7 @@ static NSImage *iconCodeBreaker = nil;
 	}
 	
 	_internalData = new ClientCheatItem;
+	_didAllocateInternalData = YES;
 	
 	if (cheatData != NULL)
 	{
@@ -927,8 +1433,11 @@ static NSImage *iconCodeBreaker = nil;
 {
 	[self destroyWorkingCopy];
 	
-	delete _internalData;
-	_internalData = NULL;
+	if (_didAllocateInternalData)
+	{
+		delete _internalData;
+		_internalData = NULL;
+	}
 	
 	[super dealloc];
 }
@@ -942,7 +1451,7 @@ static NSImage *iconCodeBreaker = nil;
 {
 	_internalData->SetEnabled((theState) ? true : false);
 	
-	if (workingCopy != nil)
+	if ((workingCopy != nil) && !_disableWorkingCopyUpdate)
 	{
 		[workingCopy setEnabled:theState];
 	}
@@ -964,7 +1473,7 @@ static NSImage *iconCodeBreaker = nil;
 		_internalData->SetDescription([desc cStringUsingEncoding:NSUTF8StringEncoding]);
 	}
 	
-	if (workingCopy != nil)
+	if ((workingCopy != nil) && !_disableWorkingCopyUpdate)
 	{
 		[workingCopy setDescription:desc];
 	}
@@ -1010,7 +1519,7 @@ static NSImage *iconCodeBreaker = nil;
 			break;
 	}
 	
-	if (workingCopy != nil)
+	if ((workingCopy != nil) && !_disableWorkingCopyUpdate)
 	{
 		[workingCopy setCheatType:theType];
 	}
@@ -1065,7 +1574,7 @@ static NSImage *iconCodeBreaker = nil;
 {
 	_internalData->SetFreezeType((CheatFreezeType)theType);
 	
-	if (workingCopy != nil)
+	if ((workingCopy != nil) && !_disableWorkingCopyUpdate)
 	{
 		[workingCopy setFreezeType:theType];
 	}
@@ -1080,7 +1589,7 @@ static NSImage *iconCodeBreaker = nil;
 {
 	_internalData->SetValueLength(byteSize);
 	
-	if (workingCopy != nil)
+	if ((workingCopy != nil) && !_disableWorkingCopyUpdate)
 	{
 		[workingCopy setBytes:byteSize];
 	}
@@ -1113,7 +1622,7 @@ static NSImage *iconCodeBreaker = nil;
 	[self setCodeCount:[self codeCount]];
 	[self setBytes:[self bytes]];
 	
-	if (workingCopy != nil)
+	if ((workingCopy != nil) && !_disableWorkingCopyUpdate)
 	{
 		[workingCopy setCode:theCode];
 	}
@@ -1139,7 +1648,7 @@ static NSImage *iconCodeBreaker = nil;
 		_isMemAddressAlreadyUpdating = NO;
 	}
 	
-	if (workingCopy != nil)
+	if ((workingCopy != nil) && !_disableWorkingCopyUpdate)
 	{
 		[workingCopy setMemAddress:theAddress];
 	}
@@ -1161,7 +1670,7 @@ static NSImage *iconCodeBreaker = nil;
 		_isMemAddressAlreadyUpdating = NO;
 	}
 	
-	if (workingCopy != nil)
+	if ((workingCopy != nil) && !_disableWorkingCopyUpdate)
 	{
 		[workingCopy setMemAddressString:addressString];
 	}
@@ -1186,7 +1695,7 @@ static NSImage *iconCodeBreaker = nil;
 {
 	_internalData->SetValue((u32)theValue);
 	
-	if (workingCopy != nil)
+	if ((workingCopy != nil) && !_disableWorkingCopyUpdate)
 	{
 		[workingCopy setValue:theValue];
 	}
@@ -1218,6 +1727,11 @@ static NSImage *iconCodeBreaker = nil;
 		return;
 	}
 	
+	if (cdsCheatItem == workingCopy)
+	{
+		_disableWorkingCopyUpdate = YES;
+	}
+	
 	[self setEnabled:[cdsCheatItem enabled]];
 	[self setDescription:[cdsCheatItem description]];
 	[self setCheatType:[cdsCheatItem cheatType]];
@@ -1233,6 +1747,8 @@ static NSImage *iconCodeBreaker = nil;
 	{
 		[self setCode:[cdsCheatItem code]];
 	}
+	
+	_disableWorkingCopyUpdate = NO;
 }
 
 - (CocoaDSCheatItem *) createWorkingCopy
@@ -1244,7 +1760,10 @@ static NSImage *iconCodeBreaker = nil;
 		[workingCopy release];
 	}
 	
-	newWorkingCopy = [[CocoaDSCheatItem alloc] initWithCocoaCheatItem:self];
+	newWorkingCopy = [[CocoaDSCheatItem alloc] init];
+	ClientCheatItem *workingCheat = [newWorkingCopy clientData];
+	workingCheat->Init(*[self clientData]);
+	
 	[newWorkingCopy setParent:self];
 	workingCopy = newWorkingCopy;
 	
@@ -1302,12 +1821,10 @@ static NSImage *iconCodeBreaker = nil;
 
 @implementation CocoaDSCheatManager
 
-@synthesize _clientListData;
+@synthesize _internalCheatManager;
 @synthesize list;
-@synthesize untitledCount;
-@synthesize dbTitle;
-@synthesize dbDate;
-@synthesize lastFileURL;
+@dynamic dbTitle;
+@dynamic dbDate;
 
 - (id)init
 {
@@ -1322,64 +1839,96 @@ static NSImage *iconCodeBreaker = nil;
 		return self;
 	}
 	
-	_clientListData = new ClientCheatList;
+	_internalCheatManager = new ClientCheatManager;
 	
 	if (fileURL != nil)
 	{
-		lastFileURL = [fileURL copy];
-		_clientListData->LoadFromFile([CocoaDSUtil cPathFromFileURL:lastFileURL]);
-		list = [[CocoaDSCheatManager cheatListWithClientListObject:_clientListData] retain];
+		_internalCheatManager->LoadFromFile([CocoaDSUtil cPathFromFileURL:fileURL]);
+		
+		ClientCheatList *clientList = _internalCheatManager->GetWorkingList();
+		list = [[CocoaDSCheatManager cheatListWithClientListObject:clientList] retain];
 	}
 	else
 	{
 		list = [[NSMutableArray alloc] initWithCapacity:100];
 		if (list == nil)
 		{
-			delete _clientListData;
+			delete _internalCheatManager;
 			[self release];
 			return nil;
 		}
 	}
-	
-	untitledCount = 0;
-	dbTitle = nil;
-	dbDate = nil;
 	
 	return self;
 }
 
 - (void)dealloc
 {
-	[self setDbTitle:nil];
-	[self setDbDate:nil];
-	
 	[list release];
 	list = nil;
 	
-	[self setLastFileURL:nil];
-	
-	delete _clientListData;
-	_clientListData = NULL;
+	delete _internalCheatManager;
+	_internalCheatManager = NULL;
 	
 	[super dealloc];
 }
 
-- (BOOL) add:(CocoaDSCheatItem *)cheatItem
+- (NSString *) dbTitle
+{
+	return [NSString stringWithCString:_internalCheatManager->GetDatabaseTitle() encoding:NSUTF8StringEncoding];
+}
+
+- (void) setDbTitle:(NSString *)theString
+{
+	// Do nothing. This method exists for KVO compliance only.
+}
+
+- (NSString *) dbDate
+{
+	return [NSString stringWithCString:_internalCheatManager->GetDatabaseDate() encoding:NSUTF8StringEncoding];
+}
+
+- (void) setDbDate:(NSString *)theString
+{
+	// Do nothing. This method exists for KVO compliance only.
+}
+
+- (CocoaDSCheatItem *) newItem
+{
+	CocoaDSCheatItem *newCocoaItem = nil;
+	
+	ClientCheatItem *newItem = _internalCheatManager->NewItem();
+	if (newItem == NULL)
+	{
+		return newCocoaItem;
+	}
+	
+	newCocoaItem = [[CocoaDSCheatItem alloc] initWithCheatItem:newItem];
+	if (newCocoaItem == nil)
+	{
+		delete newItem;
+		newItem = NULL;
+	}
+	
+	return newCocoaItem;
+}
+
+- (BOOL) addExistingItem:(CocoaDSCheatItem *)cheatItem
 {
 	BOOL result = NO;
 	
-	if (cheatItem == nil)
+	if ( (cheatItem == nil) || [[self list] containsObject:cheatItem] )
 	{
 		return result;
 	}
 	
-	_clientListData->Add([cheatItem clientData]);
-	
-	if (![[self list] containsObject:cheatItem])
+	ClientCheatItem *addedItem = _internalCheatManager->AddExistingItemNoDuplicate([cheatItem clientData]);
+	if (addedItem == NULL)
 	{
-		[[self list] addObject:cheatItem];
+		return result;
 	}
 	
+	result = YES;
 	return result;
 }
 
@@ -1396,9 +1945,7 @@ static NSImage *iconCodeBreaker = nil;
 		return;
 	}
 	
-	_clientListData->RemoveAtIndex(selectionIndex);
-	
-	[[self list] removeObject:cheatItem];
+	_internalCheatManager->RemoveItemAtIndex(selectionIndex);
 }
 
 - (BOOL) update:(CocoaDSCheatItem *)cheatItem
@@ -1410,176 +1957,79 @@ static NSImage *iconCodeBreaker = nil;
 		return result;
 	}
 	
-	NSUInteger selectionIndex = [[self list] indexOfObject:cheatItem];
-	if (selectionIndex == NSNotFound)
-	{
-		return result;
-	}
-	
-	_clientListData->UpdateAtIndex(*[cheatItem clientData], selectionIndex);
-	
+	_internalCheatManager->ModifyItem([cheatItem clientData], [cheatItem clientData]);
 	[cheatItem update];
 	
+	result = YES;
 	return result;
 }
 
 - (BOOL) save
 {
-	const CheatSystemError error = _clientListData->SaveToFile([CocoaDSUtil cPathFromFileURL:[self lastFileURL]]);
+	const char *lastFilePath = _internalCheatManager->GetLastFilePath();
+	const CheatSystemError error = _internalCheatManager->SaveToFile(lastFilePath);
+	
 	return (error == CheatSystemError_NoError) ? YES : NO;
 }
 
 - (NSUInteger) activeCount
 {
-	return (NSUInteger)_clientListData->GetActiveCheatCount();
+	return (NSUInteger)_internalCheatManager->GetActiveCheatCount();
 }
 
 - (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error
 {
-	NSMutableArray *newDBList = nil;
+	NSMutableArray *newCocoaDBList = nil;
 	
 	if (fileURL == nil)
 	{
-		return newDBList;
+		return newCocoaDBList;
 	}
 	
-	CHEATSEXPORT *exporter = new CHEATSEXPORT();
-	
-	BOOL result = exporter->load((char *)[CocoaDSUtil cPathFromFileURL:fileURL]);
-	if (!result)
+	ClientCheatList *dbList = _internalCheatManager->LoadFromDatabase([CocoaDSUtil cPathFromFileURL:fileURL]);
+	if (dbList != NULL)
 	{
-		if (error != nil)
-		{
-			*error = exporter->getErrorCode();
-		}
+		newCocoaDBList = [CocoaDSCheatManager cheatListWithClientListObject:dbList];
 	}
-	else
-	{
-		[self setDbTitle:[NSString stringWithCString:(const char *)exporter->gametitle encoding:NSUTF8StringEncoding]];
-		[self setDbDate:[NSString stringWithCString:(const char *)exporter->date encoding:NSUTF8StringEncoding]];
-		newDBList = [CocoaDSCheatManager cheatListWithItemStructArray:exporter->getCheats() count:exporter->getCheatsNum()];
-		if (newDBList != nil)
-		{
-			for (CocoaDSCheatItem *cheatItem in newDBList)
-			{
-				[cheatItem setWillAdd:NO];
-			}
-		}
-	}
-
-	delete exporter;
-	exporter = nil;
 	
-	return newDBList;
+	return newCocoaDBList;
 }
 
 - (void) applyInternalCheat:(CocoaDSCheatItem *)cheatItem
-{
-	[CocoaDSCheatManager applyInternalCheatWithItem:cheatItem];
-}
-
-- (void) loadFromEngine
-{
-	CHEATS *engineList = ClientCheatList::GetMasterCheatList();
-	if (engineList != NULL)
-	{
-		NSString *cheatsPath = [NSString stringWithCString:engineList->getFilePath() encoding:NSUTF8StringEncoding];
-		[self setLastFileURL:[NSURL fileURLWithPath:cheatsPath]];
-		_clientListData->ReplaceFromEngine(engineList);
-		
-		if (list != nil)
-		{
-			[list release];
-		}
-		
-		list = [[CocoaDSCheatManager cheatListWithClientListObject:_clientListData] retain];
-	}
-}
-
-- (void) applyListToEngine
-{
-	_clientListData->ApplyListToEngine();
-}
-
-+ (void) applyInternalCheatWithItem:(CocoaDSCheatItem *)cheatItem
 {
 	if (cheatItem == nil)
 	{
 		return;
 	}
 	
-	[CocoaDSCheatManager applyInternalCheatWithAddress:[cheatItem memAddress] value:(u32)[cheatItem value] bytes:[cheatItem bytes]];
+	ClientCheatManager::ApplyInternalCheatWithItem([cheatItem clientData]);
 }
 
-+ (void) applyInternalCheatWithAddress:(UInt32)address value:(UInt32)value bytes:(NSUInteger)bytes
+- (void) loadFromMaster
 {
-	address &= 0x00FFFFFF;
-	address |= 0x02000000;
-	
-	switch (bytes)
+	CHEATS *masterCheats = ClientCheatManager::GetMaster();
+	if (masterCheats != NULL)
 	{
-		case 1:
-		{
-			u8 oneByteValue = (u8)(value & 0x000000FF);
-			_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(address, oneByteValue);
-			break;
-		}
-			
-		case 2:
-		{
-			u16 twoByteValue = (u16)(value & 0x0000FFFF);
-			_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(address, twoByteValue);
-			break;
-		}
-			
-		case 3:
-		{
-			u32 threeByteWithExtraValue = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(address);
-			threeByteWithExtraValue &= 0xFF000000;
-			threeByteWithExtraValue |= (value & 0x00FFFFFF);
-			_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(address, threeByteWithExtraValue);
-			break;
-		}
-			
-		case 4:
-			_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(address, value);
-			break;
-			
-		default:
-			break;
-	}
-}
-
-+ (NSMutableArray *) cheatListWithListObject:(CHEATS *)cheatList
-{
-	if (cheatList == nil)
-	{
-		return nil;
-	}
-	
-	NSMutableArray *newList = [NSMutableArray arrayWithCapacity:100];
-	if (newList == nil)
-	{
-		return newList;
-	}
-	
-	size_t itemCount = cheatList->getListSize();
-	for (size_t i = 0; i < itemCount; i++)
-	{
-		CocoaDSCheatItem *newItem = [[CocoaDSCheatItem alloc] initWithCheatData:cheatList->getItemPtrAtIndex(i)];
+		_internalCheatManager->LoadFromMaster();
 		
-		if (newItem != nil)
+		if (list != nil)
 		{
-			[newList addObject:[newItem autorelease]];
+			[list release];
 		}
+		
+		ClientCheatList *clientList = _internalCheatManager->GetWorkingList();
+		list = [[CocoaDSCheatManager cheatListWithClientListObject:clientList] retain];
 	}
-	
-	return newList;
+}
+
+- (void) applyToMaster
+{
+	_internalCheatManager->ApplyToMaster();
 }
 
 + (NSMutableArray *) cheatListWithClientListObject:(ClientCheatList *)cheatList
 {
-	if (cheatList == nil)
+	if (cheatList == NULL)
 	{
 		return nil;
 	}
@@ -1593,33 +2043,11 @@ static NSImage *iconCodeBreaker = nil;
 	const size_t itemCount = cheatList->GetTotalCheatCount();
 	for (size_t i = 0; i < itemCount; i++)
 	{
-		CocoaDSCheatItem *newItem = [[CocoaDSCheatItem alloc] initWithCheatItem:cheatList->GetItemAtIndex(i)];
-		
-		if (newItem != nil)
+		CocoaDSCheatItem *cheatItem = [[CocoaDSCheatItem alloc] initWithCheatItem:cheatList->GetItemAtIndex(i)];
+		if (cheatItem != nil)
 		{
-			[newList addObject:[newItem autorelease]];
+			[newList addObject:[cheatItem autorelease]];
 		}
-	}
-	
-	return newList;
-}
-
-+ (NSMutableArray *) cheatListWithItemStructArray:(CHEATS_LIST *)cheatItemArray count:(NSUInteger)itemCount
-{
-	if (cheatItemArray == nil)
-	{
-		return nil;
-	}
-	
-	NSMutableArray *newList = [NSMutableArray arrayWithCapacity:100];
-	if (newList == nil)
-	{
-		return newList;
-	}
-	
-	for (NSUInteger i = 0; i < itemCount; i++)
-	{
-		[newList addObject:[[[CocoaDSCheatItem alloc] initWithCheatData:cheatItemArray + i] autorelease]];
 	}
 	
 	return newList;

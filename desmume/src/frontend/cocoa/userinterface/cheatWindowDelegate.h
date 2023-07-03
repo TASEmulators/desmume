@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -57,7 +57,6 @@
 	
 	NSWindow *cheatDatabaseSheet;
 	
-	NSUInteger untitledCount;
 	NSFont *codeEditorFont;
 	
 	NSMutableDictionary *bindings;
@@ -92,7 +91,6 @@
 
 @property (readonly) IBOutlet NSWindow *cheatDatabaseSheet;
 
-@property (assign) NSUInteger untitledCount;
 @property (assign) NSFont *codeEditorFont;
 @property (readonly) NSMutableDictionary *bindings;
 @property (retain) CocoaDSCheatItem *workingCheat;
