@@ -1191,34 +1191,31 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	// state on an existing cheat, so be sure to account for both cases.
 	
 	// First check if the cheat exists.
-	CocoaDSCheatItem *cheatItem = (CocoaDSCheatItem *)[addedCheatsDict objectForKey:code];
+	CocoaDSCheatItem *cocoaCheatItem = (CocoaDSCheatItem *)[addedCheatsDict objectForKey:code];
 	
-	if (cheatItem == nil)
+	if (cocoaCheatItem == nil)
 	{
 		// If the cheat doesn't already exist, then create a new one and add it.
-		cheatItem = [[[CocoaDSCheatItem alloc] init] autorelease];
-		[cheatItem setCheatType:CHEAT_TYPE_ACTION_REPLAY]; // Default to Action Replay for now
-		[cheatItem setFreezeType:0];
-		[cheatItem setDescription:@""]; // OpenEmu takes care of this
-		[cheatItem setCode:code];
-		[cheatItem setMemAddress:0x00000000]; // UNUSED
-		[cheatItem setBytes:1]; // UNUSED
-		[cheatItem setValue:0]; // UNUSED
+		ClientCheatItem *newCheatItem = new ClientCheatItem;
+		newCheatItem->SetType(CheatType_ActionReplay); // Default to Action Replay for now
+		newCheatItem->SetFreezeType(CheatFreezeType_Normal);
+		newCheatItem->SetDescription(NULL); // OpenEmu takes care of this
+		newCheatItem->SetRawCodeString([code cStringUsingEncoding:NSUTF8StringEncoding], true);
+		newCheatItem->SetEnabled((enabled) ? true : false);
 		
-		[cheatItem setEnabled:enabled];
-		[[self cdsCheats] addExistingItem:cheatItem];
+		cocoaCheatItem = [[self cdsCheats] addExistingItem:newCheatItem];
 		
 		// OpenEmu doesn't currently save cheats per game, so assume that the
 		// cheat list is short and that code strings are unique. This allows
 		// us to get away with simply saving the cheat code string and hashing
 		// for it later.
-		[addedCheatsDict setObject:cheatItem forKey:code];
+		[addedCheatsDict setObject:cocoaCheatItem forKey:code];
 	}
 	else
 	{
 		// If the cheat does exist, then just set its enable state.
-		[cheatItem setEnabled:enabled];
-		[[self cdsCheats] update:cheatItem];
+		[cocoaCheatItem setEnabled:enabled];
+		[[self cdsCheats] update:cocoaCheatItem];
 	}
 }
 

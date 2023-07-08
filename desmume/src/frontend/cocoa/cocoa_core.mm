@@ -167,6 +167,7 @@ volatile bool execute = true;
 	pthread_attr_destroy(&threadAttr);
 	
 	[cdsGPU setOutputList:cdsOutputList rwlock:&threadParam.rwlockOutputList];
+	[cdsCheatManager setRwlockCoreExecute:&threadParam.rwlockCoreExecute];
 	
 	macOS_driver *newDriver = new macOS_driver;
 	newDriver->SetCoreThreadMutexLock(&threadParam.mutexThreadExecute);

@@ -28,16 +28,30 @@ class ClientCheatManager;
 
 enum CheatType
 {
-	CheatType_Internal = 0,
+	CheatType_Internal     = 0,
 	CheatType_ActionReplay = 1,
-	CheatType_CodeBreaker = 2
+	CheatType_CodeBreaker  = 2
 };
 
 enum CheatFreezeType
 {
-	CheatFreezeType_Normal = 0,
+	CheatFreezeType_Normal      = 0,
 	CheatFreezeType_CanDecrease = 1,
 	CheatFreezeType_CanIncrease = 2
+};
+
+enum CheatSearchStyle
+{
+	CheatSearchStyle_ExactValue  = 0,
+	CheatSearchStyle_Comparative = 1
+};
+
+enum CheatSearchCompareStyle
+{
+	CheatSearchCompareStyle_GreaterThan = 0,
+	CheatSearchCompareStyle_LesserThan  = 1,
+	CheatSearchCompareStyle_Equals      = 2,
+	CheatSearchCompareStyle_NotEquals   = 3
 };
 
 enum CheatSystemError
@@ -49,6 +63,20 @@ enum CheatSystemError
 	CheatSystemError_ExportError       = 4,
 	CheatSystemError_FileSaveFailed    = 5
 };
+
+union DesmumeCheatSearchItem
+{
+	uint64_t data;
+	
+	struct
+	{
+		uint32_t address;
+		uint32_t value;
+	};
+};
+typedef union DesmumeCheatSearchItem DesmumeCheatSearchItem;
+
+typedef std::vector<DesmumeCheatSearchItem> DesmumeCheatSearchResultsList;
 
 class ClientCheatItem
 {
@@ -161,18 +189,58 @@ public:
 	void CopyListToEngine(const bool willApplyOnlyEnabledItems, CHEATS *engineCheatList);
 };
 
+class ClientCheatSearcher
+{
+protected:
+	CHEATSEARCH *_desmumeSearcher;
+	uint8_t _searchValueLength;
+	size_t _resultsCount;
+	bool _didSearchStart;
+	DesmumeCheatSearchResultsList _resultsList;
+	
+public:
+	ClientCheatSearcher();
+	~ClientCheatSearcher();
+	
+	bool DidStart() const;
+	void Reset();
+	size_t SearchExactValue(uint32_t value, uint8_t valueLength, bool performSignedSearch);
+	size_t SearchComparative(CheatSearchCompareStyle compareStyle, uint8_t valueLength, bool performSignedSearch);
+	const DesmumeCheatSearchResultsList& RefreshResults();
+	const DesmumeCheatSearchResultsList& GetResults();
+	size_t GetResultCount() const;
+};
+
+class ClientCheatDatabase
+{
+protected:
+	ClientCheatList *_list;
+	std::string _title;
+	std::string _date;
+	std::string _lastFilePath;
+	
+public:
+	ClientCheatDatabase();
+	~ClientCheatDatabase();
+	
+	ClientCheatList* GetList() const;
+	ClientCheatList* LoadFromFile(const char *dbFilePath);
+	
+	const char* GetTitle() const;
+	const char* GetDate() const;
+};
+
 class ClientCheatManager
 {
 protected:
-	ClientCheatList *_workingList;
-	ClientCheatList *_databaseList;
+	ClientCheatList *_currentSessionList;
+	ClientCheatDatabase *_currentDatabase;
+	ClientCheatSearcher *_currentSearcher;
+	
 	ClientCheatItem *_selectedItem;
 	size_t _selectedItemIndex;
 	uint32_t _untitledCount;
-	
-	std::string _databaseTitle;
-	std::string _databaseDate;
-	std::string _lastFilePath;
+	std::string _currentSessionLastFilePath;
 	
 	bool _masterNeedsUpdate;
 	
@@ -183,19 +251,11 @@ public:
 	static CHEATS* GetMaster();
 	static void SetMaster(const CHEATS *masterCheats);
 	
-	ClientCheatList* GetWorkingList() const;
-	ClientCheatList* GetDatabaseList() const;
+	ClientCheatList* GetSessionList() const;
+	const char* GetSessionListLastFilePath() const;
 	
-	const char* GetDatabaseTitle() const;
-	void SetDatabaseTitle(const char *dbTitle);
-	
-	const char* GetDatabaseDate() const;
-	void SetDatabaseDate(const char *dbDate);
-	
-	const char* GetLastFilePath() const;
-	
-	virtual CheatSystemError LoadFromFile(const char *filePath);
-	virtual CheatSystemError SaveToFile(const char *filePath);
+	virtual CheatSystemError SessionListLoadFromFile(const char *filePath);
+	virtual CheatSystemError SessionListSaveToFile(const char *filePath);
 	
 	ClientCheatItem* SetSelectedItemByIndex(size_t index);
 	
@@ -212,11 +272,22 @@ public:
 	size_t GetTotalCheatCount() const;
 	size_t GetActiveCheatCount() const;
 	
-	ClientCheatList* LoadFromDatabase(const char *dbFilePath);
-	
 	void LoadFromMaster();
 	void ApplyToMaster();
 	void MasterNeedsUpdate();
+	
+	ClientCheatList* GetDatabaseList() const;
+	ClientCheatList* DatabaseListLoadFromFile(const char *dbFilePath);
+	const char* GetDatabaseTitle() const;
+	const char* GetDatabaseDate() const;
+	
+	bool SearchDidStart() const;
+	void SearchReset();
+	size_t SearchExactValue(uint32_t value, uint8_t valueLength, bool performSignedSearch);
+	size_t SearchComparative(CheatSearchCompareStyle compareStyle, uint8_t valueLength, bool performSignedSearch);
+	const DesmumeCheatSearchResultsList& SearchResultsRefresh();
+	const DesmumeCheatSearchResultsList& GetSearchResults();
+	size_t GetSearchResultCount() const;
 	
 	void ApplyInternalCheatAtIndex(size_t index);
 	static void ApplyInternalCheatWithItem(const ClientCheatItem *cheatItem);
@@ -275,68 +346,43 @@ public:
 @interface CocoaDSCheatManager : NSObject
 {
 	ClientCheatManager *_internalCheatManager;
-	NSMutableArray *list;
+	NSMutableArray *sessionList;
+	NSMutableArray *databaseList;
+	NSMutableArray *searchResultsList;
+	
+	pthread_rwlock_t *rwlockCoreExecute;
 }
 
 @property (readonly, nonatomic, getter=internalManager) ClientCheatManager *_internalCheatManager;
-@property (readonly) NSMutableArray *list;
-@property (assign, nonatomic) NSString *dbTitle;
-@property (assign, nonatomic) NSString *dbDate;
+@property (readonly) NSMutableArray *sessionList;
+@property (readonly, nonatomic) NSUInteger itemTotalCount;
+@property (readonly, nonatomic) NSUInteger itemActiveCount;
+@property (readonly) NSMutableArray *databaseList;
+@property (readonly, nonatomic) NSString *databaseTitle;
+@property (readonly, nonatomic) NSString *databaseDate;
+@property (readonly) NSMutableArray *searchResultsList;
+@property (readonly, nonatomic) BOOL searchDidStart;
+@property (readonly, nonatomic) NSUInteger searchCount;
+@property (assign, nonatomic) pthread_rwlock_t *rwlockCoreExecute;
 
 - (id) initWithFileURL:(NSURL *)fileURL;
 
 - (CocoaDSCheatItem *) newItem;
-- (BOOL) addExistingItem:(CocoaDSCheatItem *)cheatItem;
-- (void) remove:(CocoaDSCheatItem *)cheatItem;
-- (BOOL) update:(CocoaDSCheatItem *)cheatItem;
+- (CocoaDSCheatItem *) addExistingItem:(ClientCheatItem *)cheatItem;
+- (CocoaDSCheatItem *) addExistingCocoaItem:(CocoaDSCheatItem *)cocoaCheatItem;
+- (void) remove:(CocoaDSCheatItem *)cocoaCheatItem;
+- (void) removeAtIndex:(NSUInteger)itemIndex;
+- (BOOL) update:(CocoaDSCheatItem *)cocoaCheatItem;
 - (BOOL) save;
-- (NSUInteger) activeCount;
-- (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error;
-- (void) applyInternalCheat:(CocoaDSCheatItem *)cheatItem;
+- (void) applyInternalCheat:(CocoaDSCheatItem *)cocoaCheatItem;
 - (void) loadFromMaster;
 - (void) applyToMaster;
 
-+ (NSMutableArray *) cheatListWithClientListObject:(ClientCheatList *)cheatList;
-
-@end
-
-@interface CocoaDSCheatSearch : NSObject
-{
-	CHEATSEARCH *listData;
-	NSMutableArray *addressList;
-	
-	pthread_rwlock_t *rwlockCoreExecute;
-	BOOL isUsingDummyRWlock;
-	
-	NSUInteger searchCount;
-}
-
-@property (readonly) CHEATSEARCH *listData;
-@property (readonly) NSMutableArray *addressList;
-@property (assign) pthread_rwlock_t *rwlockCoreExecute;
-@property (readonly) NSUInteger searchCount;
+- (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error;
+- (NSUInteger) databaseAddSelected;
 
 - (NSUInteger) runExactValueSearch:(NSInteger)value byteSize:(UInt8)byteSize signType:(NSInteger)signType;
-- (void) runExactValueSearchOnThread:(id)object;
 - (NSUInteger) runComparativeSearch:(NSInteger)typeID byteSize:(UInt8)byteSize signType:(NSInteger)signType;
-- (void) runComparativeSearchOnThread:(id)object;
-- (void) reset;
-
-+ (NSMutableArray *) addressListWithListObject:(CHEATSEARCH *)addressList maxItems:(NSUInteger)maxItemCount;
-
-@end
-
-@interface CocoaDSCheatSearchParams : NSObject
-{
-	NSInteger comparativeSearchType;
-	NSInteger value;
-	UInt8 byteSize;
-	NSInteger signType;
-}
-
-@property (assign) NSInteger comparativeSearchType;
-@property (assign) NSInteger value;
-@property (assign) UInt8 byteSize;
-@property (assign) NSInteger signType;
+- (void) searchReset;
 
 @end

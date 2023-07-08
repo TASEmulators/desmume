@@ -147,7 +147,7 @@
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Interpolation Method: "] stringByAppendingString:[[emuControl cdsSpeaker] spuInterpolationModeString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Synchronization Method: "] stringByAppendingString:[[emuControl cdsSpeaker] spuSyncMethodString]];
 	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n"];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCheats: "] stringByAppendingString:(([cdsCore isCheatingEnabled] && ([[cdsCore cdsCheatManager] activeCount] > 0)) ? [NSString stringWithFormat:@"YES (ActiveCheatCount=%ld)", (unsigned long)[[cdsCore cdsCheatManager] activeCount]] : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCheats: "] stringByAppendingString:(([cdsCore isCheatingEnabled] && ([[cdsCore cdsCheatManager] itemActiveCount] > 0)) ? [NSString stringWithFormat:@"YES (ActiveCheatCount=%ld)", (unsigned long)[[cdsCore cdsCheatManager] itemActiveCount]] : @"NO")];
 	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n"];
 	
 	if ([window contentView] == viewSupportRequest)

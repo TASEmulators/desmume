@@ -953,27 +953,208 @@ void ClientCheatList::CopyListToEngine(const bool willApplyOnlyEnabledItems, CHE
 
 #pragma mark -
 
+ClientCheatSearcher::ClientCheatSearcher()
+{
+	_desmumeSearcher = new CHEATSEARCH;
+	_searchValueLength = 4;
+	_resultsCount = 0;
+	_didSearchStart = false;
+	_resultsList.resize(0);
+}
+
+ClientCheatSearcher::~ClientCheatSearcher()
+{
+	delete this->_desmumeSearcher;
+}
+
+bool ClientCheatSearcher::DidStart() const
+{
+	return this->_didSearchStart;
+}
+
+void ClientCheatSearcher::Reset()
+{
+	this->_desmumeSearcher->close();
+	this->_didSearchStart = false;
+	this->_resultsCount = 0;
+	
+	this->_desmumeSearcher->getListReset();
+	this->_resultsList.resize(0);
+}
+
+size_t ClientCheatSearcher::SearchExactValue(uint32_t value, uint8_t valueLength, bool performSignedSearch)
+{
+	if (!this->_didSearchStart)
+	{
+		this->_searchValueLength = valueLength;
+		this->_didSearchStart = this->_desmumeSearcher->start((u8)CheatSearchStyle_ExactValue, this->_searchValueLength - 1, 0);
+		this->_resultsCount = 0;
+		this->_resultsList.resize(0);
+	}
+	
+	if (this->_didSearchStart)
+	{
+		this->_resultsCount = (size_t)this->_desmumeSearcher->search(value);
+		this->RefreshResults();
+	}
+	
+	return this->_resultsCount;
+}
+
+size_t ClientCheatSearcher::SearchComparative(CheatSearchCompareStyle compareStyle, uint8_t valueLength, bool performSignedSearch)
+{
+	if (!this->_didSearchStart)
+	{
+		this->_searchValueLength = valueLength;
+		this->_didSearchStart = this->_desmumeSearcher->start((u8)CheatSearchStyle_Comparative, this->_searchValueLength - 1, 0);
+		this->_resultsCount = 0;
+		this->_resultsList.resize(0);
+	}
+	else
+	{
+		this->_resultsCount = (size_t)this->_desmumeSearcher->search((u8)compareStyle);
+		this->RefreshResults();
+	}
+	
+	return this->_resultsCount;
+}
+
+const DesmumeCheatSearchResultsList& ClientCheatSearcher::RefreshResults()
+{
+	bool didReadResult = false;
+	u32 readAddress = 0;
+	u32 readValue = 0;
+	size_t readResultIndex = 0;
+	
+	this->_desmumeSearcher->getListReset();
+	this->_resultsList.clear();
+	
+	for (size_t i = 0; i < this->_resultsCount; i++)
+	{
+		didReadResult = this->_desmumeSearcher->getList(&readAddress, &readValue);
+		if (didReadResult)
+		{
+			DesmumeCheatSearchItem searchResult;
+			searchResult.address = readAddress;
+			searchResult.value = readValue;
+			
+			this->_resultsList.push_back(searchResult);
+			readResultIndex++;
+		}
+	}
+	
+	return this->_resultsList;
+}
+
+const DesmumeCheatSearchResultsList& ClientCheatSearcher::GetResults()
+{
+	return this->_resultsList;
+}
+
+size_t ClientCheatSearcher::GetResultCount() const
+{
+	return this->_resultsCount;
+}
+
+#pragma mark -
+
+ClientCheatDatabase::ClientCheatDatabase()
+{
+	_list = new ClientCheatList;
+	_title.resize(0);
+	_date.resize(0);
+	_lastFilePath.resize(0);
+}
+
+ClientCheatDatabase::~ClientCheatDatabase()
+{
+	delete this->_list;
+}
+
+ClientCheatList* ClientCheatDatabase::GetList() const
+{
+	return this->_list;
+}
+
+ClientCheatList* ClientCheatDatabase::LoadFromFile(const char *dbFilePath)
+{
+	if (dbFilePath == NULL)
+	{
+		return NULL;
+	}
+	
+	CHEATSEXPORT *exporter = new CHEATSEXPORT();
+	CheatSystemError dbError = CheatSystemError_NoError;
+	
+	bool didFileLoad = exporter->load((char *)dbFilePath);
+	if (didFileLoad)
+	{
+		this->_list->RemoveAll();
+		this->_title = (const char *)exporter->gametitle;
+		this->_date = (const char *)exporter->date;
+		this->_lastFilePath = dbFilePath;
+		
+		const size_t itemCount = exporter->getCheatsNum();
+		const CHEATS_LIST *dbItem = exporter->getCheats();
+		
+		for (size_t i = 0; i < itemCount; i++)
+		{
+			ClientCheatItem *newItem = this->_list->AddNew();
+			if (newItem != NULL)
+			{
+				newItem->Init(dbItem[i]);
+			}
+		}
+	}
+	else
+	{
+		dbError = (CheatSystemError)exporter->getErrorCode();
+	}
+
+	delete exporter;
+	exporter = nil;
+	
+	if (dbError != CheatSystemError_NoError)
+	{
+		return NULL;
+	}
+	
+	return this->_list;
+}
+
+const char* ClientCheatDatabase::GetTitle() const
+{
+	return this->_title.c_str();
+}
+
+const char* ClientCheatDatabase::GetDate() const
+{
+	return this->_date.c_str();
+}
+
+#pragma mark -
+
 ClientCheatManager::ClientCheatManager()
 {
-	_workingList = new ClientCheatList;
-	_databaseList = new ClientCheatList;
+	_currentSessionList = new ClientCheatList;
+	_currentDatabase = new ClientCheatDatabase;
+	_currentSearcher = new ClientCheatSearcher;
 	
 	_selectedItem = NULL;
 	_selectedItemIndex = 0;
 	
 	_untitledCount = 0;
 	
-	_databaseTitle.resize(0);
-	_databaseDate.resize(0);
-	_lastFilePath.resize(0);
+	_currentSessionLastFilePath.resize(0);
 	
 	_masterNeedsUpdate = true;
 }
 
 ClientCheatManager::~ClientCheatManager()
 {
-	delete this->_databaseList;
-	delete this->_workingList;
+	delete this->_currentSearcher;
+	delete this->_currentDatabase;
+	delete this->_currentSessionList;
 }
 
 CHEATS* ClientCheatManager::GetMaster()
@@ -986,48 +1167,17 @@ void ClientCheatManager::SetMaster(const CHEATS *masterCheats)
 	cheats = (CHEATS *)masterCheats;
 }
 
-ClientCheatList* ClientCheatManager::GetWorkingList() const
+ClientCheatList* ClientCheatManager::GetSessionList() const
 {
-	return this->_workingList;
+	return this->_currentSessionList;
 }
 
-ClientCheatList* ClientCheatManager::GetDatabaseList() const
+const char* ClientCheatManager::GetSessionListLastFilePath() const
 {
-	return this->_databaseList;
+	return this->_currentSessionLastFilePath.c_str();
 }
 
-const char* ClientCheatManager::GetDatabaseTitle() const
-{
-	return this->_databaseTitle.c_str();
-}
-
-void ClientCheatManager::SetDatabaseTitle(const char *dbTitle)
-{
-	if (dbTitle != NULL)
-	{
-		this->_databaseTitle = dbTitle;
-	}
-}
-
-const char* ClientCheatManager::GetDatabaseDate() const
-{
-	return this->_databaseDate.c_str();
-}
-
-void ClientCheatManager::SetDatabaseDate(const char *dbDate)
-{
-	if (dbDate != NULL)
-	{
-		this->_databaseDate = dbDate;
-	}
-}
-
-const char* ClientCheatManager::GetLastFilePath() const
-{
-	return this->_lastFilePath.c_str();
-}
-
-CheatSystemError ClientCheatManager::LoadFromFile(const char *filePath)
+CheatSystemError ClientCheatManager::SessionListLoadFromFile(const char *filePath)
 {
 	CheatSystemError error = CheatSystemError_NoError;
 	
@@ -1037,15 +1187,15 @@ CheatSystemError ClientCheatManager::LoadFromFile(const char *filePath)
 		return error;
 	}
 	
-	error = this->_workingList->LoadFromFile(filePath);
+	error = this->_currentSessionList->LoadFromFile(filePath);
 	if (error == CheatSystemError_NoError)
 	{
-		this->_lastFilePath = filePath;
+		this->_currentSessionLastFilePath = filePath;
 		
-		const size_t totalCount = this->_workingList->GetTotalCheatCount();
+		const size_t totalCount = this->_currentSessionList->GetTotalCheatCount();
 		for (size_t i = 0; i < totalCount; i++)
 		{
-			ClientCheatItem *cheatItem = this->_workingList->GetItemAtIndex(i);
+			ClientCheatItem *cheatItem = this->_currentSessionList->GetItemAtIndex(i);
 			cheatItem->SetCheatManager(this);
 		}
 	}
@@ -1053,7 +1203,7 @@ CheatSystemError ClientCheatManager::LoadFromFile(const char *filePath)
 	return error;
 }
 
-CheatSystemError ClientCheatManager::SaveToFile(const char *filePath)
+CheatSystemError ClientCheatManager::SessionListSaveToFile(const char *filePath)
 {
 	CheatSystemError error = CheatSystemError_NoError;
 	
@@ -1063,10 +1213,10 @@ CheatSystemError ClientCheatManager::SaveToFile(const char *filePath)
 		return error;
 	}
 	
-	error = this->_workingList->SaveToFile(filePath);
+	error = this->_currentSessionList->SaveToFile(filePath);
 	if (error == CheatSystemError_NoError)
 	{
-		this->_lastFilePath = filePath;
+		this->_currentSessionLastFilePath = filePath;
 	}
 	
 	return error;
@@ -1075,14 +1225,14 @@ CheatSystemError ClientCheatManager::SaveToFile(const char *filePath)
 ClientCheatItem* ClientCheatManager::SetSelectedItemByIndex(size_t index)
 {
 	this->_selectedItemIndex = index;
-	this->_selectedItem = this->_workingList->GetItemAtIndex(index);
+	this->_selectedItem = this->_currentSessionList->GetItemAtIndex(index);
 	
 	return this->_selectedItem;
 }
 
 ClientCheatItem* ClientCheatManager::NewItem()
 {
-	ClientCheatItem *newItem = this->_workingList->AddNew();
+	ClientCheatItem *newItem = this->_currentSessionList->AddNew();
 	newItem->SetCheatManager(this);
 	
 	this->_untitledCount++;
@@ -1108,7 +1258,7 @@ ClientCheatItem* ClientCheatManager::NewItem()
 
 ClientCheatItem* ClientCheatManager::AddExistingItemNoDuplicate(const ClientCheatItem *theItem)
 {
-	ClientCheatItem *addedItem = this->_workingList->AddExistingItemNoDuplicate(theItem);
+	ClientCheatItem *addedItem = this->_currentSessionList->AddExistingItemNoDuplicate(theItem);
 	if (addedItem != NULL)
 	{
 		addedItem->SetCheatManager(this);
@@ -1124,19 +1274,19 @@ ClientCheatItem* ClientCheatManager::AddExistingItemNoDuplicate(const ClientChea
 
 void ClientCheatManager::RemoveItem(ClientCheatItem *targetItem)
 {
-	this->RemoveItemAtIndex( this->_workingList->GetIndexOfItem(targetItem) );
+	this->RemoveItemAtIndex( this->_currentSessionList->GetIndexOfItem(targetItem) );
 }
 
 void ClientCheatManager::RemoveItemAtIndex(size_t index)
 {
-	const ClientCheatItem *targetItem = this->_workingList->GetItemAtIndex(index);
+	const ClientCheatItem *targetItem = this->_currentSessionList->GetItemAtIndex(index);
 	if (targetItem == NULL)
 	{
 		return;
 	}
 	
 	const bool willChangeMasterUpdateFlag = targetItem->IsEnabled();
-	const bool didRemoveItem = this->_workingList->RemoveAtIndex(index);
+	const bool didRemoveItem = this->_currentSessionList->RemoveAtIndex(index);
 	
 	if (didRemoveItem && willChangeMasterUpdateFlag)
 	{
@@ -1160,19 +1310,19 @@ void ClientCheatManager::ModifyItem(const ClientCheatItem *srcItem, ClientCheatI
 		return;
 	}
 	
-	this->ModifyItemAtIndex(srcItem, this->_workingList->GetIndexOfItem(targetItem));
+	this->ModifyItemAtIndex(srcItem, this->_currentSessionList->GetIndexOfItem(targetItem));
 }
 
 void ClientCheatManager::ModifyItemAtIndex(const ClientCheatItem *srcItem, size_t index)
 {
-	const ClientCheatItem *targetItem = this->_workingList->GetItemAtIndex(index);
+	const ClientCheatItem *targetItem = this->_currentSessionList->GetItemAtIndex(index);
 	if ( (srcItem == NULL) || (targetItem == NULL) )
 	{
 		return;
 	}
 	
 	const bool willChangeMasterUpdateFlag = targetItem->IsEnabled();
-	const bool didModifyItem = this->_workingList->UpdateAtIndex(*srcItem, index);
+	const bool didModifyItem = this->_currentSessionList->UpdateAtIndex(*srcItem, index);
 	
 	if (didModifyItem && willChangeMasterUpdateFlag)
 	{
@@ -1182,58 +1332,12 @@ void ClientCheatManager::ModifyItemAtIndex(const ClientCheatItem *srcItem, size_
 
 size_t ClientCheatManager::GetTotalCheatCount() const
 {
-	return this->_workingList->GetTotalCheatCount();
+	return this->_currentSessionList->GetTotalCheatCount();
 }
 
 size_t ClientCheatManager::GetActiveCheatCount() const
 {
-	return this->_workingList->GetActiveCheatCount();
-}
-
-ClientCheatList* ClientCheatManager::LoadFromDatabase(const char *dbFilePath)
-{
-	if (dbFilePath == NULL)
-	{
-		return NULL;
-	}
-	
-	CHEATSEXPORT *exporter = new CHEATSEXPORT();
-	CheatSystemError dbError = CheatSystemError_NoError;
-	
-	bool didFileLoad = exporter->load((char *)dbFilePath);
-	if (didFileLoad)
-	{
-		this->_databaseList->RemoveAll();
-		
-		this->SetDatabaseTitle((const char *)exporter->gametitle);
-		this->SetDatabaseDate((const char *)exporter->date);
-		
-		const size_t itemCount = exporter->getCheatsNum();
-		const CHEATS_LIST *dbItem = exporter->getCheats();
-		
-		for (size_t i = 0; i < itemCount; i++)
-		{
-			ClientCheatItem *newItem = this->_databaseList->AddNew();
-			if (newItem != NULL)
-			{
-				newItem->Init(dbItem[i]);
-			}
-		}
-	}
-	else
-	{
-		dbError = (CheatSystemError)exporter->getErrorCode();
-	}
-
-	delete exporter;
-	exporter = nil;
-	
-	if (dbError != CheatSystemError_NoError)
-	{
-		return NULL;
-	}
-	
-	return this->_databaseList;
+	return this->_currentSessionList->GetActiveCheatCount();
 }
 
 void ClientCheatManager::LoadFromMaster()
@@ -1246,24 +1350,24 @@ void ClientCheatManager::LoadFromMaster()
 		return;
 	}
 	
-	this->_lastFilePath = masterCheats->getFilePath();
+	this->_currentSessionLastFilePath = masterCheats->getFilePath();
 	
-	activeCount = this->_workingList->GetActiveCheatCount();
+	activeCount = this->_currentSessionList->GetActiveCheatCount();
 	if (activeCount > 0)
 	{
 		this->_masterNeedsUpdate = true;
 	}
 	
-	this->_workingList->ReplaceFromEngine(masterCheats);
+	this->_currentSessionList->ReplaceFromEngine(masterCheats);
 	
-	const size_t totalCount = this->_workingList->GetTotalCheatCount();
+	const size_t totalCount = this->_currentSessionList->GetTotalCheatCount();
 	for (size_t i = 0; i < totalCount; i++)
 	{
-		ClientCheatItem *cheatItem = this->_workingList->GetItemAtIndex(i);
+		ClientCheatItem *cheatItem = this->_currentSessionList->GetItemAtIndex(i);
 		cheatItem->SetCheatManager(this);
 	}
 	
-	activeCount = this->_workingList->GetActiveCheatCount();
+	activeCount = this->_currentSessionList->GetActiveCheatCount();
 	if (activeCount > 0)
 	{
 		this->_masterNeedsUpdate = true;
@@ -1278,7 +1382,7 @@ void ClientCheatManager::ApplyToMaster()
 		return;
 	}
 	
-	this->_workingList->CopyListToEngine(true, masterCheats);
+	this->_currentSessionList->CopyListToEngine(true, masterCheats);
 	this->_masterNeedsUpdate = false;
 }
 
@@ -1287,9 +1391,64 @@ void ClientCheatManager::MasterNeedsUpdate()
 	this->_masterNeedsUpdate = true;
 }
 
+ClientCheatList* ClientCheatManager::GetDatabaseList() const
+{
+	return this->_currentDatabase->GetList();
+}
+
+ClientCheatList* ClientCheatManager::DatabaseListLoadFromFile(const char *dbFilePath)
+{
+	return this->_currentDatabase->LoadFromFile(dbFilePath);
+}
+
+const char* ClientCheatManager::GetDatabaseTitle() const
+{
+	return this->_currentDatabase->GetTitle();
+}
+
+const char* ClientCheatManager::GetDatabaseDate() const
+{
+	return this->_currentDatabase->GetDate();
+}
+
+bool ClientCheatManager::SearchDidStart() const
+{
+	return this->_currentSearcher->DidStart();
+}
+
+void ClientCheatManager::SearchReset()
+{
+	this->_currentSearcher->Reset();
+}
+
+size_t ClientCheatManager::SearchExactValue(uint32_t value, uint8_t valueLength, bool performSignedSearch)
+{
+	return this->_currentSearcher->SearchExactValue(value, valueLength, performSignedSearch);
+}
+
+size_t ClientCheatManager::SearchComparative(CheatSearchCompareStyle compareStyle, uint8_t valueLength, bool performSignedSearch)
+{
+	return this->_currentSearcher->SearchComparative(compareStyle, valueLength, performSignedSearch);
+}
+
+const DesmumeCheatSearchResultsList& ClientCheatManager::SearchResultsRefresh()
+{
+	return this->_currentSearcher->RefreshResults();
+}
+
+const DesmumeCheatSearchResultsList& ClientCheatManager::GetSearchResults()
+{
+	return this->_currentSearcher->GetResults();
+}
+
+size_t ClientCheatManager::GetSearchResultCount() const
+{
+	return this->_currentSearcher->GetResultCount();
+}
+
 void ClientCheatManager::ApplyInternalCheatAtIndex(size_t index)
 {
-	ClientCheatManager::ApplyInternalCheatWithItem( this->_workingList->GetItemAtIndex(index) );
+	ClientCheatManager::ApplyInternalCheatWithItem( this->_currentSessionList->GetItemAtIndex(index) );
 }
 
 void ClientCheatManager::ApplyInternalCheatWithItem(const ClientCheatItem *cheatItem)
@@ -1822,9 +1981,16 @@ static NSImage *iconCodeBreaker = nil;
 @implementation CocoaDSCheatManager
 
 @synthesize _internalCheatManager;
-@synthesize list;
-@dynamic dbTitle;
-@dynamic dbDate;
+@synthesize sessionList;
+@dynamic itemTotalCount;
+@dynamic itemActiveCount;
+@synthesize databaseList;
+@dynamic databaseTitle;
+@dynamic databaseDate;
+@synthesize searchResultsList;
+@dynamic searchCount;
+@dynamic searchDidStart;
+@synthesize rwlockCoreExecute;
 
 - (id)init
 {
@@ -1839,24 +2005,39 @@ static NSImage *iconCodeBreaker = nil;
 		return self;
 	}
 	
+	rwlockCoreExecute = NULL;
 	_internalCheatManager = new ClientCheatManager;
+	
+	sessionList = [[NSMutableArray alloc] initWithCapacity:100];
+	if (sessionList == nil)
+	{
+		[self release];
+		self = nil;
+		return self;
+	}
+	
+	databaseList = [[NSMutableArray alloc] initWithCapacity:100];
+	if (databaseList == nil)
+	{
+		[sessionList release];
+		[self release];
+		self = nil;
+		return self;
+	}
+	
+	searchResultsList = [[NSMutableArray alloc] initWithCapacity:100];
+	if (searchResultsList == nil)
+	{
+		[sessionList release];
+		[databaseList release];
+		[self release];
+		self = nil;
+		return self;
+	}
 	
 	if (fileURL != nil)
 	{
-		_internalCheatManager->LoadFromFile([CocoaDSUtil cPathFromFileURL:fileURL]);
-		
-		ClientCheatList *clientList = _internalCheatManager->GetWorkingList();
-		list = [[CocoaDSCheatManager cheatListWithClientListObject:clientList] retain];
-	}
-	else
-	{
-		list = [[NSMutableArray alloc] initWithCapacity:100];
-		if (list == nil)
-		{
-			delete _internalCheatManager;
-			[self release];
-			return nil;
-		}
+		_internalCheatManager->SessionListLoadFromFile([CocoaDSUtil cPathFromFileURL:fileURL]);
 	}
 	
 	return self;
@@ -1864,8 +2045,14 @@ static NSImage *iconCodeBreaker = nil;
 
 - (void)dealloc
 {
-	[list release];
-	list = nil;
+	[sessionList release];
+	sessionList = nil;
+	
+	[databaseList release];
+	databaseList = nil;
+	
+	[searchResultsList release];
+	searchResultsList = nil;
 	
 	delete _internalCheatManager;
 	_internalCheatManager = NULL;
@@ -1873,92 +2060,134 @@ static NSImage *iconCodeBreaker = nil;
 	[super dealloc];
 }
 
-- (NSString *) dbTitle
+- (NSString *) databaseTitle
 {
 	return [NSString stringWithCString:_internalCheatManager->GetDatabaseTitle() encoding:NSUTF8StringEncoding];
 }
 
-- (void) setDbTitle:(NSString *)theString
-{
-	// Do nothing. This method exists for KVO compliance only.
-}
-
-- (NSString *) dbDate
+- (NSString *) databaseDate
 {
 	return [NSString stringWithCString:_internalCheatManager->GetDatabaseDate() encoding:NSUTF8StringEncoding];
 }
 
-- (void) setDbDate:(NSString *)theString
+- (NSUInteger) itemTotalCount
 {
-	// Do nothing. This method exists for KVO compliance only.
+	return (NSUInteger)_internalCheatManager->GetTotalCheatCount();
+}
+
+- (NSUInteger) itemActiveCount
+{
+	return (NSUInteger)_internalCheatManager->GetActiveCheatCount();
 }
 
 - (CocoaDSCheatItem *) newItem
 {
 	CocoaDSCheatItem *newCocoaItem = nil;
 	
+	[self willChangeValueForKey:@"itemTotalCount"];
+	[self willChangeValueForKey:@"itemActiveCount"];
+	
 	ClientCheatItem *newItem = _internalCheatManager->NewItem();
+	
+	[self didChangeValueForKey:@"itemTotalCount"];
+	[self didChangeValueForKey:@"itemActiveCount"];
+	
 	if (newItem == NULL)
 	{
 		return newCocoaItem;
 	}
 	
-	newCocoaItem = [[CocoaDSCheatItem alloc] initWithCheatItem:newItem];
+	newCocoaItem = [[[CocoaDSCheatItem alloc] initWithCheatItem:newItem] autorelease];
 	if (newCocoaItem == nil)
 	{
-		delete newItem;
-		newItem = NULL;
+		_internalCheatManager->RemoveItem(newItem);
+		return newCocoaItem;
 	}
+	
+	[sessionList addObject:newCocoaItem];
 	
 	return newCocoaItem;
 }
 
-- (BOOL) addExistingItem:(CocoaDSCheatItem *)cheatItem
+- (CocoaDSCheatItem *) addExistingItem:(ClientCheatItem *)cheatItem
 {
-	BOOL result = NO;
-	
-	if ( (cheatItem == nil) || [[self list] containsObject:cheatItem] )
+	CocoaDSCheatItem *addedCocoaItem = nil;
+	if (cheatItem == nil)
 	{
-		return result;
+		return addedCocoaItem;
 	}
 	
-	ClientCheatItem *addedItem = _internalCheatManager->AddExistingItemNoDuplicate([cheatItem clientData]);
-	if (addedItem == NULL)
-	{
-		return result;
-	}
-	
-	result = YES;
-	return result;
+	addedCocoaItem = [[[CocoaDSCheatItem alloc] initWithCheatItem:cheatItem] autorelease];
+	return [self addExistingCocoaItem:addedCocoaItem];
 }
 
-- (void) remove:(CocoaDSCheatItem *)cheatItem
+- (CocoaDSCheatItem *) addExistingCocoaItem:(CocoaDSCheatItem *)cocoaCheatItem
 {
-	if (cheatItem == nil)
+	CocoaDSCheatItem *addedCocoaItem = nil;
+	if ( (cocoaCheatItem == nil) || ([cocoaCheatItem clientData] == NULL) )
+	{
+		return addedCocoaItem;
+	}
+	
+	[self willChangeValueForKey:@"itemTotalCount"];
+	[self willChangeValueForKey:@"itemActiveCount"];
+	
+	ClientCheatItem *addedItem = _internalCheatManager->AddExistingItemNoDuplicate([cocoaCheatItem clientData]);
+	
+	[self didChangeValueForKey:@"itemTotalCount"];
+	[self didChangeValueForKey:@"itemActiveCount"];
+	
+	if (addedItem == NULL)
+	{
+		return addedCocoaItem;
+	}
+	
+	addedCocoaItem = cocoaCheatItem;
+	[sessionList addObject:addedCocoaItem];
+	
+	return addedCocoaItem;
+}
+
+- (void) remove:(CocoaDSCheatItem *)cocoaCheatItem
+{
+	if ((cocoaCheatItem == NULL) || ![sessionList containsObject:cocoaCheatItem])
 	{
 		return;
 	}
 	
-	NSUInteger selectionIndex = [[self list] indexOfObject:cheatItem];
+	NSUInteger selectionIndex = [sessionList indexOfObject:cocoaCheatItem];
 	if (selectionIndex == NSNotFound)
 	{
 		return;
 	}
 	
-	_internalCheatManager->RemoveItemAtIndex(selectionIndex);
+	[self removeAtIndex:selectionIndex];
 }
 
-- (BOOL) update:(CocoaDSCheatItem *)cheatItem
+- (void) removeAtIndex:(NSUInteger)itemIndex
+{
+	[self willChangeValueForKey:@"itemTotalCount"];
+	[self willChangeValueForKey:@"itemActiveCount"];
+	
+	_internalCheatManager->RemoveItemAtIndex((size_t)itemIndex);
+	
+	[self didChangeValueForKey:@"itemTotalCount"];
+	[self didChangeValueForKey:@"itemActiveCount"];
+	
+	[sessionList removeObjectAtIndex:itemIndex];
+}
+
+- (BOOL) update:(CocoaDSCheatItem *)cocoaCheatItem
 {
 	BOOL result = NO;
 	
-	if (cheatItem == nil)
+	if (cocoaCheatItem == nil)
 	{
 		return result;
 	}
 	
-	_internalCheatManager->ModifyItem([cheatItem clientData], [cheatItem clientData]);
-	[cheatItem update];
+	_internalCheatManager->ModifyItem([cocoaCheatItem clientData], [cocoaCheatItem clientData]);
+	[cocoaCheatItem update];
 	
 	result = YES;
 	return result;
@@ -1966,43 +2195,20 @@ static NSImage *iconCodeBreaker = nil;
 
 - (BOOL) save
 {
-	const char *lastFilePath = _internalCheatManager->GetLastFilePath();
-	const CheatSystemError error = _internalCheatManager->SaveToFile(lastFilePath);
+	const char *lastFilePath = _internalCheatManager->GetSessionListLastFilePath();
+	const CheatSystemError error = _internalCheatManager->SessionListSaveToFile(lastFilePath);
 	
 	return (error == CheatSystemError_NoError) ? YES : NO;
 }
 
-- (NSUInteger) activeCount
+- (void) applyInternalCheat:(CocoaDSCheatItem *)cocoaCheatItem
 {
-	return (NSUInteger)_internalCheatManager->GetActiveCheatCount();
-}
-
-- (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error
-{
-	NSMutableArray *newCocoaDBList = nil;
-	
-	if (fileURL == nil)
-	{
-		return newCocoaDBList;
-	}
-	
-	ClientCheatList *dbList = _internalCheatManager->LoadFromDatabase([CocoaDSUtil cPathFromFileURL:fileURL]);
-	if (dbList != NULL)
-	{
-		newCocoaDBList = [CocoaDSCheatManager cheatListWithClientListObject:dbList];
-	}
-	
-	return newCocoaDBList;
-}
-
-- (void) applyInternalCheat:(CocoaDSCheatItem *)cheatItem
-{
-	if (cheatItem == nil)
+	if (cocoaCheatItem == nil)
 	{
 		return;
 	}
 	
-	ClientCheatManager::ApplyInternalCheatWithItem([cheatItem clientData]);
+	ClientCheatManager::ApplyInternalCheatWithItem([cocoaCheatItem clientData]);
 }
 
 - (void) loadFromMaster
@@ -2010,15 +2216,26 @@ static NSImage *iconCodeBreaker = nil;
 	CHEATS *masterCheats = ClientCheatManager::GetMaster();
 	if (masterCheats != NULL)
 	{
+		[self willChangeValueForKey:@"itemTotalCount"];
+		[self willChangeValueForKey:@"itemActiveCount"];
+		
 		_internalCheatManager->LoadFromMaster();
 		
-		if (list != nil)
-		{
-			[list release];
-		}
+		[self didChangeValueForKey:@"itemTotalCount"];
+		[self didChangeValueForKey:@"itemActiveCount"];
 		
-		ClientCheatList *clientList = _internalCheatManager->GetWorkingList();
-		list = [[CocoaDSCheatManager cheatListWithClientListObject:clientList] retain];
+		[sessionList removeAllObjects];
+		
+		ClientCheatList *itemList = _internalCheatManager->GetSessionList();
+		const size_t itemCount = _internalCheatManager->GetTotalCheatCount();
+		for (size_t i = 0; i < itemCount; i++)
+		{
+			CocoaDSCheatItem *cheatItem = [[CocoaDSCheatItem alloc] initWithCheatItem:itemList->GetItemAtIndex(i)];
+			if (cheatItem != nil)
+			{
+				[sessionList addObject:[cheatItem autorelease]];
+			}
+		}
 	}
 }
 
@@ -2027,268 +2244,159 @@ static NSImage *iconCodeBreaker = nil;
 	_internalCheatManager->ApplyToMaster();
 }
 
-+ (NSMutableArray *) cheatListWithClientListObject:(ClientCheatList *)cheatList
+- (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error
 {
-	if (cheatList == NULL)
+	if (fileURL == nil)
 	{
 		return nil;
 	}
 	
-	NSMutableArray *newList = [NSMutableArray arrayWithCapacity:100];
-	if (newList == nil)
-	{
-		return newList;
-	}
+	[self willChangeValueForKey:@"databaseTitle"];
+	[self willChangeValueForKey:@"databaseDate"];
 	
-	const size_t itemCount = cheatList->GetTotalCheatCount();
-	for (size_t i = 0; i < itemCount; i++)
+	ClientCheatList *dbList = _internalCheatManager->DatabaseListLoadFromFile([CocoaDSUtil cPathFromFileURL:fileURL]);
+	
+	[self didChangeValueForKey:@"databaseTitle"];
+	[self didChangeValueForKey:@"databaseDate"];
+	
+	if (dbList != NULL)
 	{
-		CocoaDSCheatItem *cheatItem = [[CocoaDSCheatItem alloc] initWithCheatItem:cheatList->GetItemAtIndex(i)];
-		if (cheatItem != nil)
+		[databaseList removeAllObjects];
+		
+		const size_t itemCount = dbList->GetTotalCheatCount();
+		for (size_t i = 0; i < itemCount; i++)
 		{
-			[newList addObject:[cheatItem autorelease]];
+			CocoaDSCheatItem *cheatItem = [[CocoaDSCheatItem alloc] initWithCheatItem:dbList->GetItemAtIndex(i)];
+			if (cheatItem != nil)
+			{
+				[databaseList addObject:[cheatItem autorelease]];
+			}
 		}
 	}
 	
-	return newList;
+	return databaseList;
 }
 
-@end
-
-@implementation CocoaDSCheatSearch
-
-@synthesize listData;
-@synthesize addressList;
-@dynamic rwlockCoreExecute;
-@synthesize searchCount;
-
-- (id)init
+- (NSUInteger) databaseAddSelected
 {
-	self = [super init];
-	if(self == nil)
+	NSUInteger addedItemCount = 0;
+	
+	for (CocoaDSCheatItem *dbItem in databaseList)
 	{
-		return self;
+		if ([dbItem willAdd])
+		{
+			ClientCheatItem *newCheatItem = new ClientCheatItem;
+			newCheatItem->Init(*[dbItem clientData]);
+			
+			CocoaDSCheatItem *newCocoaCheatItem = [self addExistingItem:newCheatItem];
+			if (newCocoaCheatItem != nil)
+			{
+				addedItemCount++;
+			}
+		}
 	}
 	
-	CHEATSEARCH *newListData = new CHEATSEARCH();
-	if (newListData == nil)
-	{
-		[self release];
-		return nil;
-	}
-	
-	rwlockCoreExecute = (pthread_rwlock_t *)malloc(sizeof(pthread_rwlock_t));
-	pthread_rwlock_init(rwlockCoreExecute, NULL);
-	isUsingDummyRWlock = YES;
-	
-	listData = newListData;
-	addressList = nil;
-	searchCount = 0;
-	
-	return self;
-}
-
-- (void)dealloc
-{
-	pthread_rwlock_wrlock([self rwlockCoreExecute]);
-	[self listData]->close();
-	pthread_rwlock_unlock([self rwlockCoreExecute]);
-	
-	[addressList release];
-	delete (CHEATSEARCH *)[self listData];
-	
-	if (isUsingDummyRWlock)
-	{
-		pthread_rwlock_destroy(rwlockCoreExecute);
-		free(rwlockCoreExecute);
-		rwlockCoreExecute = NULL;
-	}
-	
-	[super dealloc];
-}
-
-- (void) setRwlockCoreExecute:(pthread_rwlock_t *)theRwlock
-{
-	if (theRwlock == NULL && isUsingDummyRWlock)
-	{
-		return;
-	}
-	else if (theRwlock == NULL && !isUsingDummyRWlock)
-	{
-		rwlockCoreExecute = (pthread_rwlock_t *)malloc(sizeof(pthread_rwlock_t));
-		pthread_rwlock_init(rwlockCoreExecute, NULL);
-		isUsingDummyRWlock = YES;
-		return;
-	}
-	else if (theRwlock != NULL && isUsingDummyRWlock)
-	{
-		pthread_rwlock_destroy(rwlockCoreExecute);
-		free(rwlockCoreExecute);
-		isUsingDummyRWlock = NO;
-		rwlockCoreExecute = theRwlock;
-	}
-	else if (theRwlock != NULL && !isUsingDummyRWlock)
-	{
-		rwlockCoreExecute = theRwlock;
-	}
-}
-
-- (pthread_rwlock_t *) rwlockCoreExecute
-{
-	return rwlockCoreExecute;
+	return addedItemCount;
 }
 
 - (NSUInteger) runExactValueSearch:(NSInteger)value byteSize:(UInt8)byteSize signType:(NSInteger)signType
 {
-	NSUInteger itemCount = 0;
-	BOOL listExists = YES;
+	[self willChangeValueForKey:@"searchDidStart"];
+	[self willChangeValueForKey:@"searchCount"];
 	
-	if (searchCount == 0)
+	pthread_rwlock_rdlock(rwlockCoreExecute);
+	size_t itemCount = _internalCheatManager->SearchExactValue((u32)value, (u8)byteSize, false);
+	pthread_rwlock_unlock(rwlockCoreExecute);
+	
+	[self didChangeValueForKey:@"searchDidStart"];
+	[self didChangeValueForKey:@"searchCount"];
+	
+	[searchResultsList removeAllObjects];
+	
+	if (itemCount > 0)
 	{
-		byteSize--;
+		const DesmumeCheatSearchResultsList &dsSearchResults = _internalCheatManager->GetSearchResults();
+		const size_t resultCount = dsSearchResults.size();
 		
-		pthread_rwlock_rdlock([self rwlockCoreExecute]);
-		listExists = (NSUInteger)[self listData]->start((u8)CHEATSEARCH_SEARCHSTYLE_EXACT_VALUE, (u8)byteSize, (u8)signType);
-		pthread_rwlock_unlock([self rwlockCoreExecute]);
-	}
-	
-	if (listExists)
-	{
-		pthread_rwlock_rdlock([self rwlockCoreExecute]);
-		itemCount = (NSUInteger)[self listData]->search((u32)value);
-		NSMutableArray *newAddressList = [[CocoaDSCheatSearch addressListWithListObject:[self listData] maxItems:100] retain];
-		pthread_rwlock_unlock([self rwlockCoreExecute]);
+		NSMutableDictionary *newItem = nil;
 		
-		[addressList release];
-		addressList = newAddressList;
-		searchCount++;
+		for (size_t i = 0; (i < resultCount) && (i < 100); i++)
+		{
+			newItem = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+					   [NSString stringWithFormat:@"0x02%06X", dsSearchResults[i].address], @"addressString",
+					   [NSNumber numberWithUnsignedInteger:dsSearchResults[i].value], @"value",
+					   nil];
+			
+			[searchResultsList addObject:newItem];
+		}
 	}
-	
-	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.searchDidFinish" object:self userInfo:nil];
 	
 	return itemCount;
-}
-
-- (void) runExactValueSearchOnThread:(id)object
-{
-	CocoaDSCheatSearchParams *searchParams = (CocoaDSCheatSearchParams *)object;
-	[self runExactValueSearch:[searchParams value] byteSize:[searchParams byteSize] signType:[searchParams signType]];
 }
 
 - (NSUInteger) runComparativeSearch:(NSInteger)typeID byteSize:(UInt8)byteSize signType:(NSInteger)signType
 {
-	NSUInteger itemCount = 0;
-	BOOL listExists = YES;
+	const bool wasSearchAlreadyStarted = _internalCheatManager->SearchDidStart();
 	
-	if (searchCount == 0)
-	{
-		byteSize--;
-		
-		pthread_rwlock_rdlock([self rwlockCoreExecute]);
-		listExists = (NSUInteger)[self listData]->start((u8)CHEATSEARCH_SEARCHSTYLE_COMPARATIVE, (u8)byteSize, (u8)signType);
-		pthread_rwlock_unlock([self rwlockCoreExecute]);
-		
-		addressList = nil;
-	}
-	else
-	{
-		pthread_rwlock_rdlock([self rwlockCoreExecute]);
-		itemCount = (NSUInteger)[self listData]->search((u8)typeID);
-		NSMutableArray *newAddressList = [[CocoaDSCheatSearch addressListWithListObject:[self listData] maxItems:100] retain];
-		pthread_rwlock_unlock([self rwlockCoreExecute]);
-		
-		[addressList release];
-		addressList = newAddressList;
-	}
-
-	if (listExists)
-	{
-		searchCount++;
-	}
+	[self willChangeValueForKey:@"searchDidStart"];
+	[self willChangeValueForKey:@"searchCount"];
 	
-	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.searchDidFinish" object:self userInfo:nil];
+	pthread_rwlock_rdlock(rwlockCoreExecute);
+	size_t itemCount = _internalCheatManager->SearchComparative((CheatSearchCompareStyle)typeID, (u8)byteSize, false);
+	pthread_rwlock_unlock(rwlockCoreExecute);
+	
+	[self didChangeValueForKey:@"searchDidStart"];
+	[self didChangeValueForKey:@"searchCount"];
+	
+	[searchResultsList removeAllObjects];
+	
+	if (!wasSearchAlreadyStarted && _internalCheatManager->SearchDidStart())
+	{
+		// Do nothing.
+	}
+	else if (itemCount > 0)
+	{
+		const DesmumeCheatSearchResultsList &dsSearchResults = _internalCheatManager->GetSearchResults();
+		const size_t resultCount = dsSearchResults.size();
+		
+		NSMutableDictionary *newItem = nil;
+		
+		for (size_t i = 0; (i < resultCount) && (i < 100); i++)
+		{
+			newItem = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+					   [NSString stringWithFormat:@"0x02%06X", dsSearchResults[i].address], @"addressString",
+					   [NSNumber numberWithUnsignedInteger:dsSearchResults[i].value], @"value",
+					   nil];
+			
+			[searchResultsList addObject:newItem];
+		}
+	}
 	
 	return itemCount;
 }
 
-- (void) runComparativeSearchOnThread:(id)object
+- (NSUInteger) searchCount
 {
-	CocoaDSCheatSearchParams *searchParams = (CocoaDSCheatSearchParams *)object;
-	[self runComparativeSearch:[searchParams comparativeSearchType] byteSize:[searchParams byteSize] signType:[searchParams signType]];
+	return (NSUInteger)_internalCheatManager->GetSearchResultCount();;
 }
 
-- (void) reset
+- (BOOL) searchDidStart
 {
-	pthread_rwlock_wrlock([self rwlockCoreExecute]);
-	[self listData]->close();
-	pthread_rwlock_unlock([self rwlockCoreExecute]);
-	
-	searchCount = 0;
-	[addressList release];
-	addressList = nil;
+	return (_internalCheatManager->SearchDidStart()) ? YES : NO;
 }
 
-+ (NSMutableArray *) addressListWithListObject:(CHEATSEARCH *)addressList maxItems:(NSUInteger)maxItemCount
+- (void) searchReset
 {
-	if (addressList == nil)
-	{
-		return nil;
-	}
+	[searchResultsList removeAllObjects];
 	
-	if (maxItemCount == 0)
-	{
-		maxItemCount = 1024 * 1024 * 4;
-	}
+	[self willChangeValueForKey:@"searchDidStart"];
+	[self willChangeValueForKey:@"searchCount"];
 	
-	NSMutableArray *newList = [NSMutableArray arrayWithCapacity:maxItemCount];
-	if (newList == nil)
-	{
-		return newList;
-	}
+	_internalCheatManager->SearchReset();
 	
-	NSMutableDictionary *newItem = nil;
-	NSUInteger listCount = 0;
-	u32 address;
-	u32 value;
+	[self didChangeValueForKey:@"searchDidStart"];
+	[self didChangeValueForKey:@"searchCount"];
 	
-	addressList->getListReset();
-	while (addressList->getList(&address, &value) && listCount < maxItemCount)
-	{
-		newItem = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-				   [NSString stringWithFormat:@"0x02%06X", address], @"addressString",
-				   [NSNumber numberWithUnsignedInteger:value], @"value",
-				   nil];
-		
-		[newList addObject:newItem];
-		listCount++;
-	}
-	
-	return newList;
-}
-
-@end
-
-@implementation CocoaDSCheatSearchParams
-
-@synthesize comparativeSearchType;
-@synthesize value;
-@synthesize byteSize;
-@synthesize signType;
-
-- (id)init
-{
-	self = [super init];
-	if(self == nil)
-	{
-		return self;
-	}
-	
-	comparativeSearchType = CHEATSEARCH_COMPARETYPE_EQUALS_TO;
-	value = 1;
-	byteSize = 4;
-	signType = CHEATSEARCH_UNSIGNED;
-	
-	return self;
 }
 
 @end
