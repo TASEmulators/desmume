@@ -3216,6 +3216,99 @@ bool validateIORegsRead(u32 addr, u8 size)
 #define VALIDATE_IO_REGS_READ(PROC, SIZE) ;
 #endif
 
+template <typename T, size_t LENGTH>
+bool MMU_WriteFromExternal(const int targetProc, const u32 targetAddress, T newValue)
+{
+	u32 oldValue32;
+	
+	switch (LENGTH)
+	{
+		case 1:
+			if (sizeof(T) > LENGTH)
+				newValue &= 0x000000FF;
+			break;
+			
+		case 2:
+			if (sizeof(T) > LENGTH)
+				newValue &= 0x0000FFFF;
+			break;
+			
+		case 3:
+			oldValue32 = _MMU_read32(targetProc, MMU_AT_DEBUG, targetAddress);
+			if (sizeof(T) > LENGTH)
+				newValue = (oldValue32 & 0xFF000000) | (newValue & 0x00FFFFFF);
+			break;
+			
+		case 4:
+			oldValue32 = _MMU_read32(targetProc, MMU_AT_DEBUG, targetAddress);
+			if (sizeof(T) > LENGTH)
+				newValue &= 0xFFFFFFFF;
+			break;
+			
+		default:
+			break;
+	}
+	
+	bool needsJitReset = ( (targetAddress >= 0x02000000) && (targetAddress < 0x02400000) );
+	if (needsJitReset)
+	{
+		bool willValueChange = false;
+		
+		switch (LENGTH)
+		{
+			case 1:
+				willValueChange = (_MMU_read08(targetProc, MMU_AT_DEBUG, targetAddress) != (u8)newValue);
+				break;
+				
+			case 2:
+				willValueChange = (_MMU_read16(targetProc, MMU_AT_DEBUG, targetAddress) != (u16)newValue);
+				break;
+				
+			case 3:
+			case 4:
+				willValueChange = (oldValue32 != (u32)newValue);
+				break;
+				
+			default:
+				break;
+		}
+		
+		if (!willValueChange)
+		{
+			needsJitReset = false;
+			return needsJitReset;
+		}
+	}
+	
+	switch (LENGTH)
+	{
+		case 1:
+			_MMU_write08(targetProc, MMU_AT_DEBUG, targetAddress, (u8)newValue);
+			break;
+			
+		case 2:
+			_MMU_write16(targetProc, MMU_AT_DEBUG, targetAddress, (u16)newValue);
+			break;
+			
+		case 3:
+		case 4:
+			_MMU_write32(targetProc, MMU_AT_DEBUG, targetAddress, (u32)newValue);
+			break;
+			
+		default:
+			break;
+	}
+	
+	return needsJitReset;
+}
+
+template bool MMU_WriteFromExternal< u8, 1>(const int targetProc, const u32 targetAddress,  u8 newValue);
+template bool MMU_WriteFromExternal<u16, 2>(const int targetProc, const u32 targetAddress, u16 newValue);
+template bool MMU_WriteFromExternal<u32, 1>(const int targetProc, const u32 targetAddress, u32 newValue);
+template bool MMU_WriteFromExternal<u32, 2>(const int targetProc, const u32 targetAddress, u32 newValue);
+template bool MMU_WriteFromExternal<u32, 3>(const int targetProc, const u32 targetAddress, u32 newValue);
+template bool MMU_WriteFromExternal<u32, 4>(const int targetProc, const u32 targetAddress, u32 newValue);
+
 //================================================================================================== ARM9 *
 //=========================================================================================================
 //=========================================================================================================

@@ -33,7 +33,7 @@ static const char hexValid[23] = {"0123456789ABCDEFabcdef"};
 CHEATS *cheats = NULL;
 CHEATSEARCH *cheatSearch = NULL;
 
-static bool cheatsResetJit;
+static bool cheatsResetJit = false;
 
 void CHEATS::clear()
 {
@@ -143,34 +143,34 @@ bool CHEATS::move(size_t srcPos, size_t dstPos)
 #define CHEATLOG(...) 
 //#define CHEATLOG(...) printf(__VA_ARGS__)
 
-static void CheatWrite(int size, int proc, u32 addr, u32 val)
+template <size_t LENGTH>
+bool CHEATS::DirectWrite(const int targetProc, const u32 targetAddress, u32 newValue)
 {
-	bool dirty = true;
-
-	bool isDangerous = false;
-	if(addr >= 0x02000000 && addr < 0x02400000)
-		isDangerous = true;
-
-	if(isDangerous)
-	{
-		//test dirtiness
-		if(size == 8) dirty = _MMU_read08(proc, MMU_AT_DEBUG, addr) != val;
-		if(size == 16) dirty = _MMU_read16(proc, MMU_AT_DEBUG, addr) != val;
-		if(size == 32) dirty = _MMU_read32(proc, MMU_AT_DEBUG, addr) != val;
-	}
-
-	if(!dirty) return;
-
-	if(size == 8) _MMU_write08(proc, MMU_AT_DEBUG, addr, val);
-	if(size == 16) _MMU_write16(proc, MMU_AT_DEBUG, addr, val);
-	if(size == 32) _MMU_write32(proc, MMU_AT_DEBUG, addr, val);
-
-	if(isDangerous)
-		cheatsResetJit = true;
+	return MMU_WriteFromExternal<u32, LENGTH>(targetProc, targetAddress, newValue);
 }
 
+template bool CHEATS::DirectWrite<1>(const int targetProc, const u32 targetAddress, u32 newValue);
+template bool CHEATS::DirectWrite<2>(const int targetProc, const u32 targetAddress, u32 newValue);
+template bool CHEATS::DirectWrite<3>(const int targetProc, const u32 targetAddress, u32 newValue);
+template bool CHEATS::DirectWrite<4>(const int targetProc, const u32 targetAddress, u32 newValue);
 
-void CHEATS::ARparser(const CHEATS_LIST &theList)
+bool CHEATS::DirectWrite(const size_t newValueLength, const int targetProc, const u32 targetAddress, u32 newValue)
+{
+	switch (newValueLength)
+	{
+		case 1: return CHEATS::DirectWrite<1>(targetProc, targetAddress, newValue);
+		case 2: return CHEATS::DirectWrite<2>(targetProc, targetAddress, newValue);
+		case 3: return CHEATS::DirectWrite<3>(targetProc, targetAddress, newValue);
+		case 4: return CHEATS::DirectWrite<4>(targetProc, targetAddress, newValue);
+			
+		default:
+			break;
+	}
+	
+	return false;
+}
+
+bool CHEATS::ARparser(const CHEATS_LIST &theList)
 {
 	//primary organizational source (seems to be referenced by cheaters the most) - http://doc.kodewerx.org/hacking_nds.html
 	//secondary clarification and details (for programmers) - http://problemkaputt.de/gbatek.htm#dscartcheatactionreplayds
@@ -184,6 +184,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 
 	bool v154 = true; //on advice of power users, v154 is so old, we can assume all cheats use it
 	bool vEmulator = true;
+	bool needsJitReset = false;
 
 	struct {
 		//LSB is 
@@ -218,6 +219,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 
 	for (u32 i = 0; i < theList.num; i++)
 	{
+		bool shouldResetJit = false;
 		const u32 hi = theList.code[i][0];
 		const u32 lo = theList.code[i][1];
 
@@ -273,7 +275,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 			x = hi & 0x0FFFFFFF;
 			y = lo;
 			addr = x + st.offset;
-			CheatWrite(32,st.proc,addr, y);
+			shouldResetJit = CHEATS::DirectWrite<4>(st.proc, addr, y);
 			break;
 		
 		case 0x01:
@@ -283,7 +285,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 			x = hi & 0x0FFFFFFF;
 			y = lo & 0xFFFF;
 			addr = x + st.offset;
-			CheatWrite(16,st.proc,addr, y);
+			shouldResetJit = CHEATS::DirectWrite<2>(st.proc, addr, y);
 			break;
 
 		case 0x02:
@@ -293,7 +295,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 			x = hi & 0x0FFFFFFF;
 			y = lo & 0xFF;
 			addr = x + st.offset;
-			CheatWrite(8,st.proc,addr, y);
+			shouldResetJit = CHEATS::DirectWrite<1>(st.proc, addr, y);
 			break;
 
 		case 0x03:
@@ -443,7 +445,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 			//<gbatek> C6000000 XXXXXXXX   [XXXXXXXX]=offset  
 			if(!v154) break;
 			x = lo;
-			CheatWrite(32,st.proc,x, st.offset);
+			shouldResetJit = CHEATS::DirectWrite<4>(st.proc, x, st.offset);
 			break;
 
 		case 0xD0:
@@ -524,7 +526,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 			//<gbatek> word[XXXXXXXX+offset]=datareg, offset=offset+4
 			x = lo;
 			addr = x + st.offset;
-			CheatWrite(32,st.proc,addr, st.data);
+			shouldResetJit = CHEATS::DirectWrite<4>(st.proc, addr, st.data);
 			st.offset += 4;
 			break;
 
@@ -535,7 +537,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 			//<gbatek> half[XXXXXXXX+offset]=datareg, offset=offset+2
 			x = lo;
 			addr = x + st.offset;
-			CheatWrite(16,st.proc,addr, st.data);
+			shouldResetJit = CHEATS::DirectWrite<2>(st.proc, addr, st.data);
 			st.offset += 2;
 			break;
 
@@ -546,7 +548,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 			//<gbatek> byte[XXXXXXXX+offset]=datareg, offset=offset+1
 			x = lo;
 			addr = x + st.offset;
-			CheatWrite(8,st.proc,addr, st.data);
+			shouldResetJit = CHEATS::DirectWrite<1>(st.proc, addr, st.data);
 			st.offset += 1;
 			break;
 
@@ -623,7 +625,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 					u32 tmp = theList.code[i][t];
 					if (t == 1) i++;
 					t ^= 1;
-					CheatWrite(32,st.proc,addr,tmp);
+					shouldResetJit = CHEATS::DirectWrite<4>(st.proc, addr, tmp);
 					addr += 4;
 					y -= 4;
 				}
@@ -631,7 +633,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 				{
 					if (i == theList.num) break; //if we erroneously went off the end, bail
 					u32 tmp = theList.code[i][t]>>b;
-					CheatWrite(8,st.proc,addr,tmp);
+					shouldResetJit = CHEATS::DirectWrite<1>(st.proc, addr, tmp);
 					addr += 1;
 					y -= 1;
 					b += 4;
@@ -657,7 +659,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 			{
 				if (i == theList.num) break; //if we erroneously went off the end, bail
 				u32 tmp = _MMU_read32(st.proc,MMU_AT_DEBUG,addr);
-				CheatWrite(32, st.proc,operand,tmp);
+				shouldResetJit = CHEATS::DirectWrite<4>(st.proc, operand, tmp);
 				addr += 4;
 				operand += 4;
 				y -= 4;
@@ -666,7 +668,7 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 			{
 				if (i == theList.num) break; //if we erroneously went off the end, bail
 				u8 tmp = _MMU_read08(st.proc,MMU_AT_DEBUG,addr);
-				CheatWrite(8,st.proc,operand,tmp);
+				shouldResetJit = CHEATS::DirectWrite<1>(st.proc, operand, tmp);
 				addr += 1;
 				operand += 1;
 				y -= 1;
@@ -677,8 +679,14 @@ void CHEATS::ARparser(const CHEATS_LIST &theList)
 			printf("AR: ERROR unknown command %08X %08X\n", hi, lo);
 			break;
 		}
+		
+		if (shouldResetJit)
+		{
+			needsJitReset = true;
+		}
 	}
-
+	
+	return needsJitReset;
 }
 
 size_t CHEATS::add_AR_Direct(const CHEATS_LIST &srcCheat)
@@ -1140,73 +1148,82 @@ bool CHEATS::load()
 	return didLoadAllItems;
 }
 
-void CHEATS::process(int targetType) const
+bool CHEATS::process(int targetType) const
 {
-	if (CommonSettings.cheatsDisable) return;
-
-	if (this->_list.size() == 0) return;
-
-	cheatsResetJit = false;
-
+	bool needsJitReset = false;
+	
+	if (CommonSettings.cheatsDisable || (this->_list.size() == 0))
+		return needsJitReset;
+	
 	size_t num = this->_list.size();
 	for (size_t i = 0; i < num; i++)
 	{
-		if (this->_list[i].enabled == 0) continue;
+		bool shouldResetJit = false;
+		
+		if (this->_list[i].enabled == 0)
+			continue;
 
 		int type = this->_list[i].type;
 		
-		if(type != targetType)
-		continue;
+		if (type != targetType)
+			continue;
 
-		switch(type)
+		switch (type)
 		{
-			case 0:		// internal cheat system
-			{
+			case CHEAT_TYPE_INTERNAL:
 				//INFO("list at 0x0|%07X value %i (size %i)\n",list[i].code[0], list[i].lo[0], list[i].size);
-				u32 addr = this->_list[i].code[0][0];
-				u32 val = this->_list[i].code[0][1];
-				switch (this->_list[i].size)
-				{
-				case 0: 
-					_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,val);
-					break;
-				case 1: 
-					_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,val);
-					break;
-				case 2:
-					{
-						u32 tmp = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
-						tmp &= 0xFF000000;
-						tmp |= (val & 0x00FFFFFF);
-						_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,tmp);
-						break;
-					}
-				case 3: 
-					_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,val);
-					break;
-				}
+				shouldResetJit = CHEATS::DirectWrite(this->_list[i].size + 1, ARMCPU_ARM9, this->_list[i].code[0][0], this->_list[i].code[0][1]);
 				break;
-			} //end case 0 internal cheat system
-
-			case 1:		// Action Replay
-				CHEATS::ARparser(this->_list[i]);
+				
+			case CHEAT_TYPE_AR:
+				shouldResetJit = CHEATS::ARparser(this->_list[i]);
 				break;
-			case 2:		// Codebreaker
+				
+			case CHEAT_TYPE_CODEBREAKER:
 				break;
-			default: continue;
+				
+			default:
+				continue;
+		}
+		
+		if (shouldResetJit)
+		{
+			needsJitReset = true;
 		}
 	}
 	
-#ifdef HAVE_JIT
-	if(cheatsResetJit)
+	if (needsJitReset)
 	{
-		if(CommonSettings.use_jit)
+		CHEATS::JitNeedsReset();
+	}
+	
+	return needsJitReset;
+}
+
+void CHEATS::JitNeedsReset()
+{
+	cheatsResetJit = true;
+}
+
+bool CHEATS::ResetJitIfNeeded()
+{
+	bool didJitReset = false;
+	
+#ifdef HAVE_JIT
+	if (cheatsResetJit)
+	{
+		if (CommonSettings.use_jit)
 		{
 			printf("Cheat code operation potentially not compatible with JIT operations. Resetting JIT...\n");
 			arm_jit_reset(true, true);
 		}
+		
+		cheatsResetJit = false;
+		didJitReset = true;
 	}
 #endif
+	
+	return didJitReset;
 }
 
 void CHEATS::StringFromXXCode(const CHEATS_LIST &srcCheatItem, char *outCStringBuffer)
@@ -1441,7 +1458,7 @@ u32 CHEATSEARCH::search(u8 comp)
 
 	this->_amount = 0;
 	
-	switch (_size)
+	switch (this->_size)
 	{
 		case 0:		// 1 byte
 			for (u32 i = 0; i < (4 * 1024 * 1024); i++)
@@ -1561,10 +1578,10 @@ u32 CHEATSEARCH::getAmount()
 bool CHEATSEARCH::getList(u32 *address, u32 *curVal)
 {
 	bool didGetValue = false;
-	u8 step = (_size+1);
+	u8 step = this->_size + 1;
 	u8 stepMem = 1;
 
-	switch (_size)
+	switch (this->_size)
 	{
 		case 1: stepMem = 0x3; break;
 		case 2: stepMem = 0x7; break;
@@ -1580,7 +1597,7 @@ bool CHEATSEARCH::getList(u32 *address, u32 *curVal)
 			*address = i;
 			this->_lastRecord = i+step;
 			
-			switch (_size)
+			switch (this->_size)
 			{
 				case 0: *curVal = (u32)T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); break;
 				case 1: *curVal = (u32)T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); break;

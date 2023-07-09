@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2017 DeSmuME team
+	Copyright (C) 2007-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -626,6 +626,10 @@ FORCEINLINE void* MMU_gpu_map(const u32 vram_addr)
 	return MMU.ARM9_LCD + (vram_page << 14) + ofs;
 }
 
+// Call MMU_WriteFromExternal() when modifying memory outside of the normal execution process, such
+// as when using cheats or when the client wants to write to memory directly. This function returns
+// true if memory is modified in such a way that requires the JIT execution be reset.
+template<typename T, size_t LENGTH> bool MMU_WriteFromExternal(const int targetProc, const u32 targetAddress, T newValue);
 
 template<int PROCNUM, MMU_ACCESS_TYPE AT> u8 _MMU_read08(u32 addr);
 template<int PROCNUM, MMU_ACCESS_TYPE AT> u16 _MMU_read16(u32 addr);

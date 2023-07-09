@@ -110,9 +110,15 @@ public:
 	void	setDescription(const char *description, const size_t pos);
 	bool	save();
 	bool	load();
-	void	process(int targetType) const;
+	bool	process(int targetType) const;
 	
-	static void ARparser(const CHEATS_LIST &cheat);
+	static void JitNeedsReset();
+	static bool ResetJitIfNeeded();
+	
+	template<size_t LENGTH> static bool DirectWrite(const int targetProc, const u32 targetAddress, u32 newValue);
+	static bool DirectWrite(const size_t newValueLength, const int targetProc, const u32 targetAddress, u32 newValue);
+	
+	static bool ARparser(const CHEATS_LIST &cheat);
 	
 	static void StringFromXXCode(const CHEATS_LIST &srcCheatItem, char *outCStringBuffer);
 	static bool XXCodeFromString(const std::string codeString, CHEATS_LIST &outCheatItem);
@@ -213,5 +219,3 @@ public:
 
 extern CHEATS *cheats;
 extern CHEATSEARCH *cheatSearch;
-
-
