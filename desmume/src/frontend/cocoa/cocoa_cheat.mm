@@ -1139,6 +1139,7 @@ ClientCheatManager::ClientCheatManager()
 	_currentSessionList = new ClientCheatList;
 	_currentDatabase = new ClientCheatDatabase;
 	_currentSearcher = new ClientCheatSearcher;
+	_pendingInternalCheatWriteList.resize(0);
 	
 	_selectedItem = NULL;
 	_selectedItemIndex = 0;
@@ -1446,57 +1447,61 @@ size_t ClientCheatManager::GetSearchResultCount() const
 	return this->_currentSearcher->GetResultCount();
 }
 
-void ClientCheatManager::ApplyInternalCheatAtIndex(size_t index)
+void ClientCheatManager::DirectWriteInternalCheatAtIndex(size_t index)
 {
-	ClientCheatManager::ApplyInternalCheatWithItem( this->_currentSessionList->GetItemAtIndex(index) );
+	this->DirectWriteInternalCheatItem( this->_currentSessionList->GetItemAtIndex(index) );
 }
 
-void ClientCheatManager::ApplyInternalCheatWithItem(const ClientCheatItem *cheatItem)
+void ClientCheatManager::DirectWriteInternalCheatItem(const ClientCheatItem *cheatItem)
 {
 	if ( (cheatItem == NULL) || (cheatItem->GetType() != CheatType_Internal) )
 	{
 		return;
 	}
 	
-	ClientCheatManager::ApplyInternalCheatWithParams( cheatItem->GetAddress(), cheatItem->GetValue(), cheatItem->GetValueLength() );
+	this->DirectWriteInternalCheat( cheatItem->GetAddress(), cheatItem->GetValue(), cheatItem->GetValueLength() );
 }
 
-void ClientCheatManager::ApplyInternalCheatWithParams(uint32_t targetAddress, uint32_t newValue, size_t newValueLength)
+void ClientCheatManager::DirectWriteInternalCheat(uint32_t targetAddress, uint32_t newValue32, size_t newValueLength)
 {
 	targetAddress &= 0x00FFFFFF;
 	targetAddress |= 0x02000000;
 	
-	switch (newValueLength)
+	InternalCheatParam cheatWrite;
+	cheatWrite.address = targetAddress;
+	cheatWrite.value = newValue32;
+	cheatWrite.valueLength = newValueLength;
+	
+	this->_pendingInternalCheatWriteList.push_back(cheatWrite);
+}
+
+void ClientCheatManager::ApplyPendingInternalCheatWrites()
+{
+	bool needsJitReset = false;
+	
+	const size_t writeListSize = this->_pendingInternalCheatWriteList.size();
+	if (writeListSize == 0)
 	{
-		case 1:
+		return;
+	}
+	
+	for (size_t i = 0; i < writeListSize; i++)
+	{
+		const InternalCheatParam cheatWrite = this->_pendingInternalCheatWriteList[i];
+		
+		const bool shouldResetJit = CHEATS::DirectWrite(cheatWrite.valueLength, ARMCPU_ARM9, cheatWrite.address, cheatWrite.value);
+		if (shouldResetJit)
 		{
-			u8 oneByteValue = (u8)(newValue & 0x000000FF);
-			_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(targetAddress, oneByteValue);
-			break;
+			needsJitReset = true;
 		}
-			
-		case 2:
-		{
-			u16 twoByteValue = (u16)(newValue & 0x0000FFFF);
-			_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(targetAddress, twoByteValue);
-			break;
-		}
-			
-		case 3:
-		{
-			u32 threeByteWithExtraValue = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(targetAddress);
-			threeByteWithExtraValue &= 0xFF000000;
-			threeByteWithExtraValue |= (newValue & 0x00FFFFFF);
-			_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(targetAddress, threeByteWithExtraValue);
-			break;
-		}
-			
-		case 4:
-			_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(targetAddress, newValue);
-			break;
-			
-		default:
-			break;
+	}
+	
+	this->_pendingInternalCheatWriteList.clear();
+	
+	if (needsJitReset)
+	{
+		CHEATS::JitNeedsReset();
+		CHEATS::ResetJitIfNeeded();
 	}
 }
 
@@ -2201,14 +2206,14 @@ static NSImage *iconCodeBreaker = nil;
 	return (error == CheatSystemError_NoError) ? YES : NO;
 }
 
-- (void) applyInternalCheat:(CocoaDSCheatItem *)cocoaCheatItem
+- (void) directWriteInternalCheat:(CocoaDSCheatItem *)cocoaCheatItem
 {
 	if (cocoaCheatItem == nil)
 	{
 		return;
 	}
 	
-	ClientCheatManager::ApplyInternalCheatWithItem([cocoaCheatItem clientData]);
+	_internalCheatManager->DirectWriteInternalCheatItem([cocoaCheatItem clientData]);
 }
 
 - (void) loadFromMaster
@@ -2244,7 +2249,7 @@ static NSImage *iconCodeBreaker = nil;
 	_internalCheatManager->ApplyToMaster();
 }
 
-- (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error
+- (NSMutableArray *) databaseListLoadFromFile:(NSURL *)fileURL errorCode:(NSInteger *)error
 {
 	if (fileURL == nil)
 	{

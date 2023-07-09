@@ -1234,6 +1234,7 @@ static void* RunCoreThread(void *arg)
 		// Execute the frame and increment the frame counter.
 		pthread_rwlock_wrlock(&param->rwlockCoreExecute);
 		cheatManager->ApplyToMaster();
+		cheatManager->ApplyPendingInternalCheatWrites();
 		NDS_exec<false>();
 		SPU_Emulate_user();
 		execControl->FetchOutputPostNDSExec();

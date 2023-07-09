@@ -78,6 +78,14 @@ typedef union DesmumeCheatSearchItem DesmumeCheatSearchItem;
 
 typedef std::vector<DesmumeCheatSearchItem> DesmumeCheatSearchResultsList;
 
+struct InternalCheatParam
+{
+	uint32_t address;
+	uint32_t value;
+	uint8_t valueLength;
+};
+typedef struct InternalCheatParam InternalCheatParam;
+
 class ClientCheatItem
 {
 protected:
@@ -242,6 +250,8 @@ protected:
 	uint32_t _untitledCount;
 	std::string _currentSessionLastFilePath;
 	
+	std::vector<InternalCheatParam> _pendingInternalCheatWriteList;
+	
 	bool _masterNeedsUpdate;
 	
 public:
@@ -289,9 +299,10 @@ public:
 	const DesmumeCheatSearchResultsList& GetSearchResults();
 	size_t GetSearchResultCount() const;
 	
-	void ApplyInternalCheatAtIndex(size_t index);
-	static void ApplyInternalCheatWithItem(const ClientCheatItem *cheatItem);
-	static void ApplyInternalCheatWithParams(uint32_t targetAddress, uint32_t newValue, size_t newValueLength);
+	void DirectWriteInternalCheatAtIndex(size_t index);
+	void DirectWriteInternalCheatItem(const ClientCheatItem *cheatItem);
+	void DirectWriteInternalCheat(uint32_t targetAddress, uint32_t newValue32, size_t newValueLength);
+	void ApplyPendingInternalCheatWrites();
 };
 
 @interface CocoaDSCheatItem : NSObject
@@ -374,11 +385,11 @@ public:
 - (void) removeAtIndex:(NSUInteger)itemIndex;
 - (BOOL) update:(CocoaDSCheatItem *)cocoaCheatItem;
 - (BOOL) save;
-- (void) applyInternalCheat:(CocoaDSCheatItem *)cocoaCheatItem;
+- (void) directWriteInternalCheat:(CocoaDSCheatItem *)cocoaCheatItem;
 - (void) loadFromMaster;
 - (void) applyToMaster;
 
-- (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error;
+- (NSMutableArray *) databaseListLoadFromFile:(NSURL *)fileURL errorCode:(NSInteger *)error;
 - (NSUInteger) databaseAddSelected;
 
 - (NSUInteger) runExactValueSearch:(NSInteger)value byteSize:(UInt8)byteSize signType:(NSInteger)signType;

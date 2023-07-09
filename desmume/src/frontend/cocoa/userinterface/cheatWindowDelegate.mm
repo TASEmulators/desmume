@@ -234,7 +234,7 @@
 	// Force end of editing of any text fields.
 	[window makeFirstResponder:nil];
 	
-	[[self cdsCheats] applyInternalCheat:[self workingCheat]];
+	[[self cdsCheats] directWriteInternalCheat:[self workingCheat]];
 }
 
 - (IBAction) applyConfiguration:(id)sender
@@ -431,7 +431,7 @@
 	}
 	
 	NSInteger error = 0;
-	NSMutableArray *dbList = [cheatManager cheatListFromDatabase:fileURL errorCode:&error];
+	NSMutableArray *dbList = [cheatManager databaseListLoadFromFile:fileURL errorCode:&error];
 	if (dbList != nil)
 	{
 		[cheatDatabaseController setContent:dbList];
