@@ -31,6 +31,7 @@ class ClientExecutionControl;
 @class CocoaDSFirmware;
 @class CocoaDSGPU;
 @class CocoaDSOutput;
+@class CocoaDSCheatManager;
 
 typedef struct
 {
@@ -48,6 +49,7 @@ typedef struct
 	CocoaDSController *cdsController;
 	CocoaDSFirmware *cdsFirmware;
 	CocoaDSGPU *cdsGPU;
+	CocoaDSCheatManager *cdsCheatManager;
 	NSMutableArray *cdsOutputList;
 	
 	pthread_t coreThread;
@@ -72,6 +74,7 @@ typedef struct
 @property (retain) CocoaDSFirmware *cdsFirmware;
 @property (readonly) CocoaDSController *cdsController;
 @property (readonly) CocoaDSGPU *cdsGPU;
+@property (readonly) CocoaDSCheatManager *cdsCheatManager;
 @property (readonly) NSMutableArray *cdsOutputList;
 
 @property (assign) BOOL masterExecute;

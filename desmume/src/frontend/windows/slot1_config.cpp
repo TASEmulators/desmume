@@ -25,6 +25,7 @@
 #include "debug.h"
 #include "NDSSystem.h"
 #include "path.h"
+#include "utils/xstring.h"
 
 #include "resource.h"
 #include "main.h"
@@ -346,7 +347,7 @@ void slot1Dialog(HWND hwnd)
 				if (strlen(tmp_fs_path))
 				{
 					path.setpath(path.SLOT1D, tmp_fs_path);
-					WritePrivateProfileString(SECTION, SLOT1DKEY, path.pathToSlot1D, IniName);
+					WritePrivateProfileStringW(LSECTION, SLOT1DKEY, mbstowcs((std::string)path.pathToSlot1D).c_str(), IniNameW);
 				}
 				break;
 			default:

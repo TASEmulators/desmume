@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2022 DeSmuME team
+	Copyright (C) 2012-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -147,7 +147,7 @@
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Interpolation Method: "] stringByAppendingString:[[emuControl cdsSpeaker] spuInterpolationModeString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Synchronization Method: "] stringByAppendingString:[[emuControl cdsSpeaker] spuSyncMethodString]];
 	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n"];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCheats: "] stringByAppendingString:(([cdsCore isCheatingEnabled] && ([[emuControl cdsCheats] activeCount] > 0)) ? [NSString stringWithFormat:@"YES (ActiveCheatCount=%ld)", (unsigned long)[[emuControl cdsCheats] activeCount]] : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCheats: "] stringByAppendingString:(([cdsCore isCheatingEnabled] && ([[cdsCore cdsCheatManager] itemActiveCount] > 0)) ? [NSString stringWithFormat:@"YES (ActiveCheatCount=%ld)", (unsigned long)[[cdsCore cdsCheatManager] itemActiveCount]] : @"NO")];
 	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n"];
 	
 	if ([window contentView] == viewSupportRequest)

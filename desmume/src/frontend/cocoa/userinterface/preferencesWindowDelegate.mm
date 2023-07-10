@@ -18,6 +18,7 @@
 
 #import "preferencesWindowDelegate.h"
 #import "EmuControllerDelegate.h"
+#import "cheatWindowDelegate.h"
 
 #import "cocoa_core.h"
 #import "cocoa_GPU.h"
@@ -580,58 +581,11 @@
 	
 	const BOOL isRomLoaded = [(EmuControllerDelegate *)[emuController content] currentRom] != nil;
 	NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
-	CocoaDSCheatManager *cdsCheats = (CocoaDSCheatManager *)[cheatWindowBindings valueForKey:@"cheatList"];
+	CheatWindowDelegate *cheatWindowDelegate = (CheatWindowDelegate *)[cheatWindowBindings valueForKey:@"cheatWindowDelegateKey"];
 	
-	if (isRomLoaded == YES && cdsCheats != nil)
+	if ( (isRomLoaded == YES) && (cheatWindowDelegate != nil) )
 	{
-		NSInteger error = 0;
-		NSMutableArray *dbList = [cdsCheats cheatListFromDatabase:selectedFileURL errorCode:&error];
-		if (dbList != nil)
-		{
-			[cheatDatabaseController setContent:dbList];
-			
-			NSString *titleString = [cdsCheats dbTitle];
-			NSString *dateString = [cdsCheats dbDate];
-			
-			[cheatWindowBindings setValue:titleString forKey:@"cheatDBTitle"];
-			[cheatWindowBindings setValue:dateString forKey:@"cheatDBDate"];
-			[cheatWindowBindings setValue:[NSString stringWithFormat:@"%ld", (unsigned long)[dbList count]] forKey:@"cheatDBItemCount"];
-		}
-		else
-		{
-			// TODO: Display an error message here.
-			[cheatWindowBindings setValue:@"---" forKey:@"cheatDBItemCount"];
-			
-			switch (error)
-			{
-				case CHEATEXPORT_ERROR_FILE_NOT_FOUND:
-					NSLog(@"R4 Cheat Database read failed! Could not load the database file!");
-					[cheatWindowBindings setValue:@"Database not loaded." forKey:@"cheatDBTitle"];
-					[cheatWindowBindings setValue:@"CANNOT LOAD FILE" forKey:@"cheatDBDate"];
-					break;
-					
-				case CHEATEXPORT_ERROR_WRONG_FILE_FORMAT:
-					NSLog(@"R4 Cheat Database read failed! Wrong file format!");
-					[cheatWindowBindings setValue:@"Database load error." forKey:@"cheatDBTitle"];
-					[cheatWindowBindings setValue:@"FAILED TO LOAD FILE" forKey:@"cheatDBDate"];
-					break;
-					
-				case CHEATEXPORT_ERROR_SERIAL_NOT_FOUND:
-					NSLog(@"R4 Cheat Database read failed! Could not find the serial number for this game in the database!");
-					[cheatWindowBindings setValue:@"ROM not found in database." forKey:@"cheatDBTitle"];
-					[cheatWindowBindings setValue:@"ROM not found." forKey:@"cheatDBDate"];
-					break;
-					
-				case CHEATEXPORT_ERROR_EXPORT_FAILED:
-					NSLog(@"R4 Cheat Database read failed! Could not read the database file!");
-					[cheatWindowBindings setValue:@"Database read error." forKey:@"cheatDBTitle"];
-					[cheatWindowBindings setValue:@"CANNOT READ FILE" forKey:@"cheatDBDate"];
-					break;
-					
-				default:
-					break;
-			}
-		}
+		[cheatWindowDelegate databaseLoadFromFile:selectedFileURL];
 	}
 }
 

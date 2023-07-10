@@ -1454,8 +1454,11 @@ static void execHardware_hstart_vblankStart()
 
 			//for ARM7, cheats process when a vblank IRQ fires. necessary for AR compatibility and to stop cheats from breaking game boot-ups.
 			//note that how we process raw cheats is up to us. so we'll do it the same way we used to, elsewhere
-			if (i==1 && cheats)
+			if ( (i == 1) && (cheats != NULL) )
+			{
 				cheats->process(CHEAT_TYPE_AR);
+				CHEATS::ResetJitIfNeeded();
+			}
 		}
 	}
 
@@ -2197,7 +2200,11 @@ void NDS_exec(s32 nb)
 	}
 	currFrameCounter++;
 	DEBUG_Notify.NextFrame();
-	if(cheats) cheats->process(CHEAT_TYPE_INTERNAL);
+	if (cheats != NULL)
+	{
+		cheats->process(CHEAT_TYPE_INTERNAL);
+		CHEATS::ResetJitIfNeeded();
+	}
 
 	GDBSTUB_MUTEX_UNLOCK();
 }

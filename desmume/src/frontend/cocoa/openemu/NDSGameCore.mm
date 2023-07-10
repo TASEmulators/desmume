@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2022 DeSmuME team
+	Copyright (C) 2012-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -195,7 +195,6 @@ volatile bool execute = true;
 	
 	// Set up the cheat system
 	cdsCheats = [[CocoaDSCheatManager alloc] init];
-	[cdsCheats setRwlockCoreExecute:&rwlockCoreExecute];
 	addedCheatsDict = [[NSMutableDictionary alloc] initWithCapacity:128];
 	
 	// Set up the DS firmware using the internal firmware
@@ -509,7 +508,7 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	// draw at 1x scaling, which starts looking uglier as the view size is increased.
 	if (!_canRespondToViewResize)
 	{
-		int legacyVersionScale = 1;
+		NSUInteger legacyVersionScale = 1;
 		_OEViewSize.width  = (int)(transformNormalWidth  + 0.0005);
 		_OEViewSize.height = (int)(transformNormalHeight + 0.0005);
 		
@@ -535,8 +534,8 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 		}
 		
 		// Multiply the normal size by our fixed scaling value.
-		_OEViewSize.width  *= legacyVersionScale;
-		_OEViewSize.height *= legacyVersionScale;
+		_OEViewSize.width  *= (int)legacyVersionScale;
+		_OEViewSize.height *= (int)legacyVersionScale;
 	}
 	
 	apple_unfairlock_lock(unfairlockDisplayMode);
@@ -718,8 +717,6 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	[fileManager release];
 	
 	isRomLoaded = [CocoaDSFile loadRom:[NSURL fileURLWithPath:path]];
-	
-	[CocoaDSCheatManager setMasterCheatList:cdsCheats];
 	
 	// Set the default options.
 	// Have to do it now because displayModeInfo is only available now -- not at this object's init.
@@ -1194,34 +1191,31 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	// state on an existing cheat, so be sure to account for both cases.
 	
 	// First check if the cheat exists.
-	CocoaDSCheatItem *cheatItem = (CocoaDSCheatItem *)[addedCheatsDict objectForKey:code];
+	CocoaDSCheatItem *cocoaCheatItem = (CocoaDSCheatItem *)[addedCheatsDict objectForKey:code];
 	
-	if (cheatItem == nil)
+	if (cocoaCheatItem == nil)
 	{
 		// If the cheat doesn't already exist, then create a new one and add it.
-		cheatItem = [[[CocoaDSCheatItem alloc] init] autorelease];
-		[cheatItem setCheatType:CHEAT_TYPE_ACTION_REPLAY]; // Default to Action Replay for now
-		[cheatItem setFreezeType:0];
-		[cheatItem setDescription:@""]; // OpenEmu takes care of this
-		[cheatItem setCode:code];
-		[cheatItem setMemAddress:0x00000000]; // UNUSED
-		[cheatItem setBytes:1]; // UNUSED
-		[cheatItem setValue:0]; // UNUSED
+		ClientCheatItem *newCheatItem = new ClientCheatItem;
+		newCheatItem->SetType(CheatType_ActionReplay); // Default to Action Replay for now
+		newCheatItem->SetFreezeType(CheatFreezeType_Normal);
+		newCheatItem->SetDescription(NULL); // OpenEmu takes care of this
+		newCheatItem->SetRawCodeString([code cStringUsingEncoding:NSUTF8StringEncoding], true);
+		newCheatItem->SetEnabled((enabled) ? true : false);
 		
-		[cheatItem setEnabled:enabled];
-		[[self cdsCheats] add:cheatItem];
+		cocoaCheatItem = [[self cdsCheats] addExistingItem:newCheatItem];
 		
 		// OpenEmu doesn't currently save cheats per game, so assume that the
 		// cheat list is short and that code strings are unique. This allows
 		// us to get away with simply saving the cheat code string and hashing
 		// for it later.
-		[addedCheatsDict setObject:cheatItem forKey:code];
+		[addedCheatsDict setObject:cocoaCheatItem forKey:code];
 	}
 	else
 	{
 		// If the cheat does exist, then just set its enable state.
-		[cheatItem setEnabled:enabled];
-		[[self cdsCheats] update:cheatItem];
+		[cocoaCheatItem setEnabled:enabled];
+		[[self cdsCheats] update:cocoaCheatItem];
 	}
 }
 

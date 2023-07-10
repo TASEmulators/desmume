@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2022 DeSmuME Team
+	Copyright (C) 2013-2023 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -42,8 +42,6 @@ class AudioSampleBlockGenerator;
 	CocoaDSRom *currentRom;
 	CocoaDSFirmware *cdsFirmware;
 	CocoaDSSpeaker *cdsSpeaker;
-	CocoaDSCheatManager *cdsCheats;
-	CocoaDSCheatManager *dummyCheatList;
 	
 	CheatWindowDelegate *cheatWindowDelegate;
 	MacScreenshotCaptureToolDelegate *screenshotCaptureToolDelegate;
@@ -138,7 +136,6 @@ class AudioSampleBlockGenerator;
 @property (assign) CocoaDSRom *currentRom; // Don't rely on autorelease since the emulator doesn't support concurrent unloading
 @property (retain) CocoaDSFirmware *cdsFirmware;
 @property (retain) CocoaDSSpeaker *cdsSpeaker;
-@property (retain) CocoaDSCheatManager *cdsCheats;
 
 @property (readonly) IBOutlet CheatWindowDelegate *cheatWindowDelegate;
 @property (readonly) IBOutlet MacScreenshotCaptureToolDelegate *screenshotCaptureToolDelegate;

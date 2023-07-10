@@ -1661,20 +1661,30 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 
 /////////////////////////////// SET AUDIO VOLUME //////////////////////////////////////
 
+static int ConvertSDLVolumeToSPU(int sdl_volume)
+{
+	int tmp = sdl_volume * 100;
+	if (tmp % SDL_MIX_MAXVOLUME == 0)
+	{
+		return tmp/SDL_MIX_MAXVOLUME;
+	}
+	return (tmp/SDL_MIX_MAXVOLUME)+1;
+}
+
 static void CallbackSetAudioVolume(GtkWidget *scale, gpointer data)
 {
-	SNDSDLSetAudioVolume(gtk_range_get_value(GTK_RANGE(scale)));
-	config.audio_volume = SNDSDLGetAudioVolume();
+	SPU_SetVolume(gtk_range_get_value(GTK_RANGE(scale)));
+	config.audio_volume = ConvertSDLVolumeToSPU(SNDSDLGetAudioVolume());
 }
 
 static void SetAudioVolume(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
 	GtkWidget *dialog = NULL;
 	GtkWidget *scale = NULL;
-	int audio_volume = SNDSDLGetAudioVolume();
+	int audio_volume = ConvertSDLVolumeToSPU(SNDSDLGetAudioVolume());
 	dialog = gtk_dialog_new_with_buttons("Set audio volume", GTK_WINDOW(pWindow), GTK_DIALOG_MODAL, "_OK", GTK_RESPONSE_OK, "_Cancel", GTK_RESPONSE_CANCEL, NULL);
-	scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, SDL_MIX_MAXVOLUME, 1);
-	gtk_range_set_value(GTK_RANGE(scale), SNDSDLGetAudioVolume());
+	scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 100, 1);
+	gtk_range_set_value(GTK_RANGE(scale), audio_volume);
 	g_signal_connect(G_OBJECT(scale), "value-changed", G_CALLBACK(CallbackSetAudioVolume), NULL);
 	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), scale, TRUE, FALSE, 0);
 	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(dialog)));
@@ -1683,9 +1693,10 @@ static void SetAudioVolume(GSimpleAction *action, GVariant *parameter, gpointer 
 		case GTK_RESPONSE_OK:
 			break;
 		case GTK_RESPONSE_CANCEL:
+		case GTK_RESPONSE_DELETE_EVENT:
 		case GTK_RESPONSE_NONE:
-			SNDSDLSetAudioVolume(audio_volume);
-			config.audio_volume = SNDSDLGetAudioVolume();
+			SPU_SetVolume(audio_volume);
+			config.audio_volume = audio_volume;
 			break;
 	}
 	gtk_widget_destroy(dialog);
@@ -3538,7 +3549,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
         g_timeout_add_seconds(my_config->timeout, timeout_exit_cb, GINT_TO_POINTER(my_config->timeout));
     }
 
-    SNDSDLSetAudioVolume(config.audio_volume);
+    SPU_SetVolume(config.audio_volume);
 
     /* Video filter parameters */
     video->SetFilterParameteri(VF_PARAM_SCANLINE_A, _scanline_filter_a);

@@ -469,6 +469,10 @@
 			theString = @"Cosine";
 			break;
 			
+		case SPUInterpolation_CatmullRom:
+			theString = @"Catmull-Rom";
+			break;
+			
 		default:
 			break;
 	}

@@ -26,6 +26,7 @@
 #include "main.h"
 #include "path.h"
 #include "pathsettings.h"
+#include "utils/xstring.h"
 
 extern bool autoLoadLua;
 
@@ -105,18 +106,18 @@ void DoAssociations()
 
 void WritePathSettings()
 {
-	WritePrivateProfileString(SECTION, ROMKEY, path.pathToRoms, IniName);
-	WritePrivateProfileString(SECTION, BATTERYKEY, path.pathToBattery, IniName);
-	WritePrivateProfileString(SECTION, SRAMIMPORTKEY, path.pathToSramImportExport, IniName);
-	WritePrivateProfileString(SECTION, STATEKEY, path.pathToStates, IniName);
-	WritePrivateProfileString(SECTION, STATESLOTKEY, path.pathToStateSlots, IniName);
-	WritePrivateProfileString(SECTION, SCREENSHOTKEY, path.pathToScreenshots, IniName);
-	WritePrivateProfileString(SECTION, AVIKEY, path.pathToAviFiles, IniName);
-	WritePrivateProfileString(SECTION, CHEATKEY, path.pathToCheats, IniName);
+	WritePrivateProfileStringW(LSECTION, ROMKEY, mbstowcs((std::string)path.pathToRoms).c_str(), IniNameW);
+	WritePrivateProfileStringW(LSECTION, BATTERYKEY, mbstowcs((std::string)path.pathToBattery).c_str(), IniNameW);
+	WritePrivateProfileStringW(LSECTION, SRAMIMPORTKEY, mbstowcs((std::string)path.pathToSramImportExport).c_str(), IniNameW);
+	WritePrivateProfileStringW(LSECTION, STATEKEY, mbstowcs((std::string)path.pathToStates).c_str(), IniNameW);
+	WritePrivateProfileStringW(LSECTION, STATESLOTKEY, mbstowcs((std::string)path.pathToStateSlots).c_str(), IniNameW);
+	WritePrivateProfileStringW(LSECTION, SCREENSHOTKEY, mbstowcs((std::string)path.pathToScreenshots).c_str(), IniNameW);
+	WritePrivateProfileStringW(LSECTION, AVIKEY, mbstowcs((std::string)path.pathToAviFiles).c_str(), IniNameW);
+	WritePrivateProfileStringW(LSECTION, CHEATKEY, mbstowcs((std::string)path.pathToCheats).c_str(), IniNameW);
 	WritePrivateProfileInt(SECTION, R4FORMATKEY, path.r4Format, IniName);
-	WritePrivateProfileString(SECTION, SOUNDKEY, path.pathToSounds, IniName);
-	WritePrivateProfileString(SECTION, FIRMWAREKEY, path.pathToFirmware, IniName);
-	WritePrivateProfileString(SECTION, LUAKEY, path.pathToLua, IniName);
+	WritePrivateProfileStringW(LSECTION, SOUNDKEY, mbstowcs((std::string)path.pathToSounds).c_str(), IniNameW);
+	WritePrivateProfileStringW(LSECTION, FIRMWAREKEY, mbstowcs((std::string)path.pathToFirmware).c_str(), IniNameW);
+	WritePrivateProfileStringW(LSECTION, LUAKEY, mbstowcs((std::string)path.pathToLua).c_str(), IniNameW);
 
 	WritePrivateProfileInt(SECTION, DEFAULTFORMATKEY, path.currentimageformat, IniName);
 	WritePrivateProfileString(SECTION, FORMATKEY, path.screenshotFormat, IniName);
@@ -171,15 +172,15 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 
 	SetWindowPos(toolTip, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
-	SetDlgItemText(hDlg, IDC_ROMPATHEDIT, path.pathToRoms);
-	SetDlgItemText(hDlg, IDC_SAVERAMPATHEDIT, path.pathToBattery);
-	SetDlgItemText(hDlg, IDC_SRAMIMPORTPATHEDIT, path.pathToSramImportExport);
-	SetDlgItemText(hDlg, IDC_STATEPATHEDIT, path.pathToStates);
-	SetDlgItemText(hDlg, IDC_STATESLOTPATHEDIT, path.pathToStateSlots);
-	SetDlgItemText(hDlg, IDC_SCREENSHOTPATHEDIT, path.pathToScreenshots);
-	SetDlgItemText(hDlg, IDC_AVIPATHEDIT, path.pathToAviFiles);
-	SetDlgItemText(hDlg, IDC_CHEATPATHEDIT, path.pathToCheats);
-	SetDlgItemText(hDlg, IDC_LUAPATHEDIT, path.pathToLua);
+	SetDlgItemTextW(hDlg, IDC_ROMPATHEDIT, mbstowcs(path.pathToRoms).c_str());
+	SetDlgItemTextW(hDlg, IDC_SAVERAMPATHEDIT, mbstowcs(path.pathToBattery).c_str());
+	SetDlgItemTextW(hDlg, IDC_SRAMIMPORTPATHEDIT, mbstowcs(path.pathToSramImportExport).c_str());
+	SetDlgItemTextW(hDlg, IDC_STATEPATHEDIT, mbstowcs(path.pathToStates).c_str());
+	SetDlgItemTextW(hDlg, IDC_STATESLOTPATHEDIT, mbstowcs(path.pathToStateSlots).c_str());
+	SetDlgItemTextW(hDlg, IDC_SCREENSHOTPATHEDIT, mbstowcs(path.pathToScreenshots).c_str());
+	SetDlgItemTextW(hDlg, IDC_AVIPATHEDIT, mbstowcs(path.pathToAviFiles).c_str());
+	SetDlgItemTextW(hDlg, IDC_CHEATPATHEDIT, mbstowcs(path.pathToCheats).c_str());
+	SetDlgItemTextW(hDlg, IDC_LUAPATHEDIT, mbstowcs(path.pathToLua).c_str());
 
 	TOOLINFO ti;
 	ZeroMemory(&ti, sizeof(ti));
@@ -213,7 +214,7 @@ BOOL BrowseForPath(char *pathToBrowse)
 	LPMALLOC shMalloc;
 	BOOL changed = false;
 	LPITEMIDLIST idList;
-	BROWSEINFO bi;
+	BROWSEINFOW bi;
 
 	//stupid shell
 	if(SHGetMalloc( &shMalloc) != S_OK)
@@ -226,7 +227,7 @@ BOOL BrowseForPath(char *pathToBrowse)
 	strncpy(tmp, pathToBrowse, MAX_PATH);
 
 	bi.hwndOwner = MainWindow->getHWnd();
-	bi.lpszTitle = "Choose a Folder";
+	bi.lpszTitle = L"Choose a Folder";
 	bi.ulFlags = BIF_NONEWFOLDERBUTTON | BIF_USENEWUI;
 
 	/*wanted to add a callback function for the folder initialization but it crashes everytime i do
@@ -234,10 +235,12 @@ BOOL BrowseForPath(char *pathToBrowse)
 	bi.lParam = (LPARAM)pathToBrowse;
 	*/
 
-	if( (idList = SHBrowseForFolder(&bi)) )
+	if( (idList = SHBrowseForFolderW(&bi)) )
 	{
 		changed = true;
-		SHGetPathFromIDList(idList, pathToBrowse);
+		wchar_t wPathToBrowse[MAX_PATH];
+		SHGetPathFromIDListW(idList, wPathToBrowse);
+		strcpy(pathToBrowse,wcstombs((std::wstring)wPathToBrowse).c_str());
 //		shMalloc->Free(&idList);
 	}
 
@@ -252,49 +255,49 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 		case IDC_BROWSEROMS:
 			{
 				if(BrowseForPath(path.pathToRoms))
-					SetDlgItemText(hDlg, IDC_ROMPATHEDIT, path.pathToRoms);
+					SetDlgItemTextW(hDlg, IDC_ROMPATHEDIT, mbstowcs((std::string)path.pathToRoms).c_str());
 			}
 			break;
 		case IDC_BROWSESRAM:
 			{
 				if(BrowseForPath(path.pathToBattery))
-					SetDlgItemText(hDlg, IDC_SAVERAMPATHEDIT, path.pathToBattery);
+					SetDlgItemTextW(hDlg, IDC_SAVERAMPATHEDIT, mbstowcs((std::string)path.pathToBattery).c_str());
 			}
 			break;
 		case IDC_BROWSESRAMIMPORT:
 			{
 				if(BrowseForPath(path.pathToSramImportExport))
-					SetDlgItemText(hDlg, IDC_SRAMIMPORTPATHEDIT, path.pathToSramImportExport);
+					SetDlgItemTextW(hDlg, IDC_SRAMIMPORTPATHEDIT, mbstowcs((std::string)path.pathToSramImportExport).c_str());
 			}
 			break;
 		case IDC_BROWSESTATES:
 			{
 				if(BrowseForPath(path.pathToStates))
-					SetDlgItemText(hDlg, IDC_STATEPATHEDIT, path.pathToStates);
+					SetDlgItemTextW(hDlg, IDC_STATEPATHEDIT, mbstowcs((std::string)path.pathToStates).c_str());
 			}
 			break;
 		case IDC_BROWSESTATESLOTS:
 			{
 				if(BrowseForPath(path.pathToStateSlots))
-					SetDlgItemText(hDlg, IDC_STATESLOTPATHEDIT, path.pathToStateSlots);
+					SetDlgItemTextW(hDlg, IDC_STATESLOTPATHEDIT, mbstowcs((std::string)path.pathToStateSlots).c_str());
 			}
 			break;
 		case IDC_BROWSESCREENSHOTS:
 			{
 				if(BrowseForPath(path.pathToScreenshots))
-					SetDlgItemText(hDlg, IDC_SCREENSHOTPATHEDIT, path.pathToScreenshots);
+					SetDlgItemTextW(hDlg, IDC_SCREENSHOTPATHEDIT, mbstowcs((std::string)path.pathToScreenshots).c_str());
 			}
 			break;
 		case IDC_BROWSEAVI:
 			{
 				if(BrowseForPath(path.pathToAviFiles))
-					SetDlgItemText(hDlg, IDC_AVIPATHEDIT, path.pathToAviFiles);
+					SetDlgItemTextW(hDlg, IDC_AVIPATHEDIT, mbstowcs((std::string)path.pathToAviFiles).c_str());
 			}
 			break;
 		case IDC_BROWSECHEATS:
 			{
 				if(BrowseForPath(path.pathToCheats))
-					SetDlgItemText(hDlg, IDC_CHEATPATHEDIT, path.pathToCheats);
+					SetDlgItemTextW(hDlg, IDC_CHEATPATHEDIT, mbstowcs((std::string)path.pathToCheats).c_str());
 			}
 			break;
 		case IDC_R4TYPE1:
@@ -356,15 +359,16 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 			break;
 		case IDOK:
 
-			GetDlgItemText(hDlg, IDC_ROMPATHEDIT, path.pathToRoms, MAX_PATH);
-			GetDlgItemText(hDlg, IDC_SAVERAMPATHEDIT, path.pathToBattery, MAX_PATH);
-			GetDlgItemText(hDlg, IDC_SRAMIMPORTPATHEDIT, path.pathToSramImportExport, MAX_PATH);
-			GetDlgItemText(hDlg, IDC_STATEPATHEDIT, path.pathToStates, MAX_PATH);
-			GetDlgItemText(hDlg, IDC_STATESLOTPATHEDIT, path.pathToStateSlots, MAX_PATH);
-			GetDlgItemText(hDlg, IDC_SCREENSHOTPATHEDIT, path.pathToScreenshots, MAX_PATH);
-			GetDlgItemText(hDlg, IDC_AVIPATHEDIT, path.pathToAviFiles, MAX_PATH);
-			GetDlgItemText(hDlg, IDC_CHEATPATHEDIT, path.pathToCheats, MAX_PATH);
-			GetDlgItemText(hDlg, IDC_LUAPATHEDIT, path.pathToLua, MAX_PATH);
+			wchar_t wtmp[MAX_PATH];
+			GetDlgItemTextW(hDlg, IDC_ROMPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToRoms,wcstombs((std::wstring)wtmp).c_str()); 
+			GetDlgItemTextW(hDlg, IDC_SAVERAMPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToBattery,wcstombs((std::wstring)wtmp).c_str()); 
+			GetDlgItemTextW(hDlg, IDC_SRAMIMPORTPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToSramImportExport,wcstombs((std::wstring)wtmp).c_str()); 
+			GetDlgItemTextW(hDlg, IDC_STATEPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToStates,wcstombs((std::wstring)wtmp).c_str()); 
+			GetDlgItemTextW(hDlg, IDC_STATESLOTPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToStateSlots,wcstombs((std::wstring)wtmp).c_str()); 
+			GetDlgItemTextW(hDlg, IDC_SCREENSHOTPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToScreenshots,wcstombs((std::wstring)wtmp).c_str()); 
+			GetDlgItemTextW(hDlg, IDC_AVIPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToAviFiles,wcstombs((std::wstring)wtmp).c_str()); 
+			GetDlgItemTextW(hDlg, IDC_CHEATPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToCheats,wcstombs((std::wstring)wtmp).c_str()); 
+			GetDlgItemTextW(hDlg, IDC_LUAPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToLua,wcstombs((std::wstring)wtmp).c_str()); 
 			DoAssociations();
 			WritePathSettings();
 			EndDialog(hDlg, 0);

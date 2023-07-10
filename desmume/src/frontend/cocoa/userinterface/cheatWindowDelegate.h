@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 @class CocoaDSCheatItem;
 @class CocoaDSCheatManager;
 @class CocoaDSCheatSearch;
-@class CocoaDSCheatSearchParams;
 
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
@@ -57,12 +56,11 @@
 	
 	NSWindow *cheatDatabaseSheet;
 	
-	NSUInteger untitledCount;
+	NSFont *codeEditorFont;
 	
 	NSMutableDictionary *bindings;
 	CocoaDSCheatItem *workingCheat;
 	CocoaDSCheatManager *cdsCheats;
-	CocoaDSCheatSearch *cdsCheatSearch;
 }
 
 @property (assign) IBOutlet NSObject *dummyObject;
@@ -91,11 +89,13 @@
 
 @property (readonly) IBOutlet NSWindow *cheatDatabaseSheet;
 
-@property (assign) NSUInteger untitledCount;
+@property (assign) NSFont *codeEditorFont;
 @property (readonly) NSMutableDictionary *bindings;
 @property (retain) CocoaDSCheatItem *workingCheat;
 @property (retain) CocoaDSCheatManager *cdsCheats;
-@property (readonly) CocoaDSCheatSearch *cdsCheatSearch;
+
+- (BOOL) cheatSystemStart:(CocoaDSCheatManager *)theManager;
+- (void) cheatSystemEnd;
 
 - (IBAction) addToList:(id)sender;
 - (IBAction) removeFromList:(id)sender;
@@ -107,15 +107,15 @@
 - (IBAction) selectCheatSearchStyle:(id)sender;
 - (IBAction) runExactValueSearch:(id)sender;
 - (IBAction) runComparativeSearch:(id)sender;
-- (void) searchDidFinish:(NSNotification *)aNotification;
 - (IBAction) resetSearch:(id)sender;
 
 - (void) setCheatConfigViewByType:(NSInteger)cheatTypeID;
 - (void) setCheatSearchViewByStyle:(NSInteger)searchStyleID;
 
+- (void) databaseLoadFromFile:(NSURL *)fileURL;
+- (void) addSelectedFromCheatDatabase;
 - (IBAction) selectAllCheatsInDatabase:(id)sender;
 - (IBAction) selectNoneCheatsInDatabase:(id)sender;
-- (void) addSelectedFromCheatDatabase;
 - (IBAction) closeCheatDatabaseSheet:(id)sender;
 - (void) didEndCheatDatabaseSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 

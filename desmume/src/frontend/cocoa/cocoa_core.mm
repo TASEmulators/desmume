@@ -20,6 +20,7 @@
 #import "cocoa_input.h"
 #import "cocoa_firmware.h"
 #import "cocoa_GPU.h"
+#import "cocoa_cheat.h"
 #import "cocoa_globals.h"
 #import "cocoa_output.h"
 #import "cocoa_rom.h"
@@ -48,6 +49,7 @@ volatile bool execute = true;
 @synthesize cdsFirmware;
 @synthesize cdsController;
 @synthesize cdsGPU;
+@synthesize cdsCheatManager;
 @synthesize cdsOutputList;
 
 @dynamic masterExecute;
@@ -122,6 +124,7 @@ volatile bool execute = true;
 	cdsFirmware = nil;
 	cdsController = [[CocoaDSController alloc] init];
 	cdsGPU = [[CocoaDSGPU alloc] init];
+	cdsCheatManager = [[CocoaDSCheatManager alloc] init];
 	cdsOutputList = [[NSMutableArray alloc] initWithCapacity:32];
 	
 	ClientInputHandler *inputHandler = [cdsController inputHandler];
@@ -164,10 +167,11 @@ volatile bool execute = true;
 	pthread_attr_destroy(&threadAttr);
 	
 	[cdsGPU setOutputList:cdsOutputList rwlock:&threadParam.rwlockOutputList];
+	[cdsCheatManager setRwlockCoreExecute:&threadParam.rwlockCoreExecute];
 	
 	macOS_driver *newDriver = new macOS_driver;
 	newDriver->SetCoreThreadMutexLock(&threadParam.mutexThreadExecute);
-	newDriver->SetCoreExecuteRWLock(self.rwlockCoreExecute);
+	newDriver->SetCoreExecuteRWLock(&threadParam.rwlockCoreExecute);
 	newDriver->SetExecutionControl(execControl);
 	driver = newDriver;
 	
@@ -1148,6 +1152,7 @@ static void* RunCoreThread(void *arg)
 	CoreThreadParam *param = (CoreThreadParam *)arg;
 	CocoaDSCore *cdsCore = (CocoaDSCore *)param->cdsCore;
 	CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
+	ClientCheatManager *cheatManager = [[cdsCore cdsCheatManager] internalManager];
 	ClientExecutionControl *execControl = [cdsCore execControl];
 	ClientInputHandler *inputHandler = execControl->GetClientInputHandler();
 	NSMutableArray *cdsOutputList = [cdsCore cdsOutputList];
@@ -1228,6 +1233,8 @@ static void* RunCoreThread(void *arg)
 		
 		// Execute the frame and increment the frame counter.
 		pthread_rwlock_wrlock(&param->rwlockCoreExecute);
+		cheatManager->ApplyToMaster();
+		cheatManager->ApplyPendingInternalCheatWrites();
 		NDS_exec<false>();
 		SPU_Emulate_user();
 		execControl->FetchOutputPostNDSExec();

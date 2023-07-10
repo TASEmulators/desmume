@@ -54,7 +54,7 @@
 		<string>Set Speed</string>
 		<string>Enable/Disable Speed Limiter</string>
 		<string>Enable/Disable Auto Frame Skip</string>
-		<string>Enable/Disable Cheats</string>
+		<string>Enable/Disable Cheat System</string>
 		<string>Enable/Disable GPU State</string>
 	</array>
 	<key>DefaultInputProfiles</key>
@@ -805,7 +805,7 @@
 				<array/>
 				<key>Enable/Disable Auto Frame Skip</key>
 				<array/>
-				<key>Enable/Disable Cheats</key>
+				<key>Enable/Disable Cheat System</key>
 				<array/>
 				<key>Enable/Disable GPU State</key>
 				<array/>

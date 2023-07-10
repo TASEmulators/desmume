@@ -23,6 +23,7 @@
 #include <string>
 
 extern char IniName[MAX_PATH];
+extern wchar_t IniNameW[MAX_PATH];
 
 void GetINIPath();
 void PreventScreensaver();

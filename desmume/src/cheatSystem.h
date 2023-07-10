@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2021 DeSmuME team
+	Copyright (C) 2009-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ struct CHEATS_LIST
 		type = 0xFF;
 	}
 	u8 type;
-	BOOL	enabled;
+	u8 enabled;
 	// TODO
 	u8		freezeType;			// 0 - normal freeze
 								// 1 - can decrease
@@ -56,56 +56,82 @@ struct CHEATS_LIST
 class CHEATS
 {
 private:
-	std::vector<CHEATS_LIST> list;
-	u8					filename[MAX_PATH];
-	u32					currentGet;
+	std::vector<CHEATS_LIST> _list;
+	u8					_filename[MAX_PATH];
+	size_t				_currentGet;
 
-	void	clear();
-	void	ARparser(CHEATS_LIST& cheat);
 	char	*clearCode(char *s);
 
 public:
 	CHEATS()
-		: currentGet(0)
+		: _currentGet(0)
 	{
-		memset(filename, 0, sizeof(filename));
+		memset(_filename, 0, sizeof(_filename));
 	}
 	~CHEATS() {}
 
-	void	init(char *path);
-	BOOL	add(u8 size, u32 address, u32 val, char *description, BOOL enabled);
-	BOOL	update(u8 size, u32 address, u32 val, char *description, BOOL enabled, u32 pos);
-	BOOL	move(u32 srcPos, u32 dstPos);
-	BOOL	add_AR(char *code, char *description, BOOL enabled);
-	BOOL	update_AR(char *code, char *description, BOOL enabled, u32 pos);
-	BOOL	add_AR_Direct(CHEATS_LIST cheat);
-	BOOL	add_CB(char *code, char *description, BOOL enabled);
-	BOOL	update_CB(char *code, char *description, BOOL enabled, u32 pos);
-	BOOL	remove(u32 pos);
-	void	getListReset();
-	BOOL	getList(CHEATS_LIST *cheat);
-	CHEATS_LIST*	getListPtr();
-	BOOL	get(CHEATS_LIST *cheat, u32 pos);
-	CHEATS_LIST*	getItemByIndex(const u32 pos);
-	u32		getSize();
-	size_t	getActiveCount();
-	void	setDescription(const char *description, u32 pos);
-	BOOL	save();
-	BOOL	load();
-	void	process(int targetType);
-	void	getXXcodeString(CHEATS_LIST theList, char *res_buf);
+	void	clear();
+	void	init(const char *thePath);
+	const char* getFilePath() const;
+	void	setFilePath(const char *thePath);
 	
-	static BOOL XXCodeFromString(CHEATS_LIST *cheatItem, const std::string codeString);
-	static BOOL XXCodeFromString(CHEATS_LIST *cheatItem, const char *codeString);
+	size_t	addItem(const CHEATS_LIST &srcCheat);
+	bool	add(u8 size, u32 address, u32 val, char *description, bool enabled);
+	bool	add(u8 size, u32 address, u32 val, char *description, u8 enabled);
+	
+	bool	updateItemAtIndex(const CHEATS_LIST &srcCheat, const size_t pos);
+	bool	update(u8 size, u32 address, u32 val, char *description, bool enabled, const size_t pos);
+	bool	update(u8 size, u32 address, u32 val, char *description, u8 enabled, const size_t pos);
+	
+	bool	move(size_t srcPos, size_t dstPos);
+	
+	size_t	add_AR_Direct(const CHEATS_LIST &srcCheat);
+	bool	add_AR(char *code, char *description, bool enabled);
+	bool	add_AR(char *code, char *description, u8 enabled);
+	
+	bool	update_AR(char *code, char *description, bool enabled, const size_t pos);
+	bool	update_AR(char *code, char *description, u8 enabled, const size_t pos);
+	
+	bool	add_CB(char *code, char *description, bool enabled);
+	bool	add_CB(char *code, char *description, u8 enabled);
+	
+	bool	update_CB(char *code, char *description, bool enabled, const size_t pos);
+	bool	update_CB(char *code, char *description, u8 enabled, const size_t pos);
+	
+	bool	remove(const size_t pos);
+	
+	void	getListReset();
+	bool	getList(CHEATS_LIST *cheat);
+	CHEATS_LIST*	getListPtr();
+	bool	copyItemFromIndex(const size_t pos, CHEATS_LIST &outCheatItem);
+	CHEATS_LIST* getItemPtrAtIndex(const size_t pos) const;
+	size_t	getListSize() const;
+	size_t	getActiveCount() const;
+	void	setDescription(const char *description, const size_t pos);
+	bool	save();
+	bool	load();
+	bool	process(int targetType) const;
+	
+	static void JitNeedsReset();
+	static bool ResetJitIfNeeded();
+	
+	template<size_t LENGTH> static bool DirectWrite(const int targetProc, const u32 targetAddress, u32 newValue);
+	static bool DirectWrite(const size_t newValueLength, const int targetProc, const u32 targetAddress, u32 newValue);
+	
+	static bool ARparser(const CHEATS_LIST &cheat);
+	
+	static void StringFromXXCode(const CHEATS_LIST &srcCheatItem, char *outCStringBuffer);
+	static bool XXCodeFromString(const std::string codeString, CHEATS_LIST &outCheatItem);
+	static bool XXCodeFromString(const char *codeString, CHEATS_LIST &outCheatItem);
 };
 
 class CHEATSEARCH
 {
 private:
-	u8	*statMem;
-	u8	*mem;
-	u32	amount;
-	u32	lastRecord;
+	u8	*_statMem;
+	u8	*_mem;
+	u32	_amount;
+	u32	_lastRecord;
 
 	u32	_type;
 	u32	_size;
@@ -113,15 +139,15 @@ private:
 
 public:
 	CHEATSEARCH()
-			: statMem(0), mem(0), amount(0), lastRecord(0), _type(0), _size(0), _sign(0) 
+			: _statMem(0), _mem(0), _amount(0), _lastRecord(0), _type(0), _size(0), _sign(0) 
 	{}
-	~CHEATSEARCH() { close(); }
-	BOOL start(u8 type, u8 size, u8 sign);
-	BOOL close();
+	~CHEATSEARCH() { this->close(); }
+	bool start(u8 type, u8 size, u8 sign);
+	void close();
 	u32 search(u32 val);
 	u32 search(u8 comp);
 	u32 getAmount();
-	BOOL getList(u32 *address, u32 *curVal);
+	bool getList(u32 *address, u32 *curVal);
 	void getListReset();
 };
 
@@ -146,13 +172,13 @@ private:
 	CHEATS_DB_TYPE		type;
 	bool				encrypted;
 	FILE				*fp;
-	u32					fsize;
-	u32					dataSize;
-	u32					encOffset;
+	size_t				fsize;
+	u64					dataSize;
+	u64					encOffset;
 	FAT_R4				fat;
 	bool				search();
 	bool				getCodes();
-	void				R4decrypt(u8 *buf, u32 len, u32 n);
+	void				R4decrypt(u8 *buf, const size_t len, u64 n);
 
 	u32					numCheats;
 	CHEATS_LIST			*cheats;
@@ -176,17 +202,12 @@ public:
 			CRC(0),
 			error(0)
 	{
+		memset(&fat, 0, sizeof(fat));
+		memset(gametitle, 0, sizeof(gametitle));
 		memset(date, 0, sizeof(date));
-		gametitle = (u8 *)malloc(CHEAT_DB_GAME_TITLE_SIZE);
-		memset(gametitle, 0, CHEAT_DB_GAME_TITLE_SIZE);
-	}
-	~CHEATSEXPORT()
-	{
-		free(gametitle);
-		gametitle = NULL;
 	}
 
-	u8				*gametitle;
+	u8				gametitle[CHEAT_DB_GAME_TITLE_SIZE];
 	u8				date[17];
 	u32				CRC;
 	bool			load(char *path);
@@ -198,5 +219,3 @@ public:
 
 extern CHEATS *cheats;
 extern CHEATSEARCH *cheatSearch;
-
-

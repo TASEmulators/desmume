@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2022 DeSmuME team
+	Copyright (C) 2012-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -990,7 +990,7 @@ FirmwareConfigInterface::FirmwareConfigInterface()
 	_internalData = (FirmwareConfig *)malloc(sizeof(FirmwareConfig));
 	NDS_GetDefaultFirmwareConfig(*_internalData);
 	
-	srand(time(NULL));
+	srand((uint32_t)time(NULL));
 	
 	// Generate a random firmware MAC address and its associated string.
 	const uint32_t defaultFirmwareMACAddressValue = (uint32_t)_internalData->MACAddress[2] | ((uint32_t)_internalData->MACAddress[3] << 8) | ((uint32_t)_internalData->MACAddress[4] << 16) | ((uint32_t)_internalData->MACAddress[5] << 24);

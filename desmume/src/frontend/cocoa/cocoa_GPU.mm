@@ -372,14 +372,6 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 		rendererID = CORE3DLIST_SWRASTERIZE;
 	}
 	
-#if defined(__ppc__) || defined(__ppc64__)
-	if ( (rendererID != CORE3DLIST_NULL) && (rendererID != CORE3DLIST_SWRASTERIZE) )
-	{
-		puts("DeSmuME: PowerPC Macs only support SoftRasterizer; falling back to SoftRasterizer.");
-		rendererID = CORE3DLIST_SWRASTERIZE;
-	}
-#endif
-	
 	gpuEvent->ApplyRender3DSettingsLock();
 	GPU->Set3DRendererByID((int)rendererID);
 	gpuEvent->ApplyRender3DSettingsUnlock();
