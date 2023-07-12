@@ -23,7 +23,7 @@ jobs:
       - name: Build - ninja
         run: ninja -C desmume/src/frontend/interface/build
 
-      - name: Upload artificat
+      - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: linux
@@ -53,7 +53,7 @@ jobs:
           CC: clang
           CXX: clang++
 
-      - name: Upload artificat
+      - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: macos
@@ -78,7 +78,7 @@ jobs:
           cd desmume\src\frontend\interface\windows
           MSBuild.exe DeSmuME_Interface.vcxproj /p:configuration="Release Fastbuild" /p:Platform=${{ matrix.arch }}
 
-      - name: Upload artificat
+      - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: win-${{ matrix.arch }}
