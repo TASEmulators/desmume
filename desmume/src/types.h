@@ -309,7 +309,6 @@ typedef float32x4_t v128f32;
 #endif
 
 #ifdef ENABLE_SSE
-#include <immintrin.h>
 #include <xmmintrin.h>
 typedef __m128 v128f32;
 #define AVAILABLE_TYPE_v128f32
