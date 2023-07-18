@@ -1534,13 +1534,13 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 	{
 		case WM_INITDIALOG:
 		{
-			SetWindowText(GetDlgItem(dialog, IDC_CDATE), (LPCSTR)cheatsExport->date);
-			if (cheatsExport->gametitle && strlen((char*)cheatsExport->gametitle) > 0)
+			SetWindowText(GetDlgItem(dialog, IDC_CDATE), (LPCSTR)cheatsExport->getDescription());
+			if ( strlen(cheatsExport->getGameTitle()) > 0 )
 			{
 				char buf[512] = {0};
 				GetWindowText(dialog, &buf[0], sizeof(buf));
 				strcat(buf, ": ");
-				strcat(buf, (char*)cheatsExport->gametitle);
+				strcat(buf, cheatsExport->getGameTitle());
 				SetWindowText(dialog, (LPCSTR)buf);
 			}
 			LV_COLUMN lvColumn;

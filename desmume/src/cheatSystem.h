@@ -24,10 +24,8 @@
 
 #define CHEAT_VERSION_MAJOR			2
 #define CHEAT_VERSION_MINOR			0
-#define MAX_CHEAT_LIST				100
 #define	MAX_XX_CODE					1024
 #define CHEAT_FILE_MIN_FGETS_BUFFER	32768
-#define CHEAT_DB_GAME_TITLE_SIZE	256
 
 #define CHEAT_TYPE_EMPTY 0xFF
 #define CHEAT_TYPE_INTERNAL 0
@@ -39,7 +37,7 @@ struct CHEATS_LIST
 	CHEATS_LIST()
 	{
 		memset(this,0,sizeof(*this));
-		type = 0xFF;
+		type = CHEAT_TYPE_EMPTY;
 	}
 	u8 type;
 	u8 enabled;
@@ -48,7 +46,18 @@ struct CHEATS_LIST
 								// 1 - can decrease
 								// 2 - can increase
 	u32		code[MAX_XX_CODE][2];
-	char	description[1024];
+	
+	union
+	{
+		char description[1024];
+		
+		struct
+		{
+			char descriptionMajor[512];
+			char descriptionMinor[512];
+		};
+	};
+	
 	u32		num;
 	u8		size;
 };
@@ -151,71 +160,153 @@ public:
 	void getListReset();
 };
 
+#define CHEATDB_OFFSET_FILE_DESCRIPTION    0x00000010
+#define CHEATDB_FILEOFFSET_FIRST_FAT_ENTRY 0x00000100
+
 enum CHEATS_DB_TYPE
 {
 	CHEATS_DB_R4 = 0
 };
 
+// This struct maps to the FAT entries in the R4 cheat database file.
 #pragma pack(push)
 #pragma pack(1)
 typedef struct FAT_R4
 {
-	u8	serial[4];
-	u32	CRC;
+	u8  serial[4];
+	u32 CRC;
 	u64 addr;
 } FAT_R4;
 #pragma pack(pop)
 
+// Wrapper for a single entry in a memory block that contains data read from a cheat database file.
+// This struct also maintains the hierarchical relationships between entries.
+struct CheatDBEntry
+{
+	u8   *base;       // Pointer to the entry's base location in memory.
+	char *name;       // Pointer to the entry's name string.
+	char *note;       // Pointer to the entry's note string.
+	u32  *codeLength; // Pointer to the entry's 32-bit code length in bytes. This value is NULL if the entry is a directory.
+	u32  *codeData;   // Pointer to the entry's code data, provided in pairs of 32-bit values. This value is NULL if the entry is a directory.
+	
+	CheatDBEntry *parent;
+	std::vector<CheatDBEntry> child;
+};
+typedef struct CheatDBEntry CheatDBEntry;
+
+class CheatDBGame
+{
+protected:
+	u32 _baseOffset; // This offset is relative to the file head.
+	u32 _firstEntryOffset; // This offset is relative to the file head.
+	u32 _encryptOffset; // This offset is relative to the memory address of this->_entryDataRawPtr.
+	
+	u32 _dataSize;
+	u32 _crc;
+	u32 _entryCount;
+	
+	std::string _title;
+	char _serial[4 + 1];
+	
+	u8 *_entryDataRawPtr;
+	u8 *_entryData;
+	CheatDBEntry _entryRoot;
+	u32 _cheatItemCount;
+	
+	void _UpdateDirectoryParents(CheatDBEntry &directory);
+	bool _CreateCheatItemFromCheatEntry(const CheatDBEntry &inEntry, const bool isHierarchical, CHEATS_LIST &outCheatItem);
+	size_t _DirectoryAddCheatsFlat(const CheatDBEntry &directory, const bool isHierarchical, size_t cheatIndex, CHEATS_LIST *outCheatsList);
+	
+public:
+	CheatDBGame();
+	CheatDBGame(const u32 encryptOffset, const FAT_R4 &fat, const u32 dataSize);
+	CheatDBGame(FILE *fp, const bool isEncrypted, const u32 encryptOffset, const FAT_R4 &fat, const u32 dataSize, u8 (&workingBuffer)[1024]);
+	~CheatDBGame();
+	
+	void SetInitialProperties(const u32 dataSize, const u32 encryptOffset, const FAT_R4 &fat);
+	void LoadPropertiesFromFile(FILE *fp, const bool isEncrypted, u8 (&workingBuffer)[1024]);
+	
+	u32 GetBaseOffset() const;
+	u32 GetFirstEntryOffset() const;
+	u32 GetEncryptOffset() const;
+	u32 GetDataSize() const;
+	u32 GetCRC() const;
+	u32 GetEntryCount() const;
+	u32 GetCheatItemCount() const;
+	const char* GetTitle() const;
+	const char* GetSerial() const;
+	
+	const CheatDBEntry& GetEntryRoot() const;
+	const u8* GetEntryRawData() const;
+	bool IsEntryDataLoaded() const;
+	
+	u8* LoadEntryData(FILE *fp, const bool isEncrypted);
+	size_t ParseEntriesToCheatsListFlat(CHEATS_LIST *outCheatsList);
+};
+
+typedef std::vector<CheatDBGame> CheatDBGameList;
+
+class CheatDBFile
+{
+protected:
+	std::string _path;
+	std::string _description;
+	
+	CHEATS_DB_TYPE _type;
+	bool _isEncrypted;
+	size_t _size;
+	
+	FILE *_fp;
+	
+	CheatDBGame _ReadGame(const u32 encryptOffset, const FAT_R4 &fat, const u32 gameDataSize, u8 (&workingBuffer)[1024]);
+	
+public:
+	CheatDBFile();
+	~CheatDBFile();
+	
+	static void R4Decrypt(u8 *buf, const size_t len, u64 n);
+	static bool ReadToBuffer(FILE *fp, const size_t fileOffset, const bool isEncrypted, const size_t encryptOffset, const size_t requestedSize, u8 *outBuffer);
+	
+	FILE* GetFilePtr() const;
+	bool IsEncrypted() const;
+	const char* GetDescription() const;
+	
+	int OpenFile(const char *filePath);
+	void CloseFile();
+	
+	u32 LoadGameList(const char *gameCode, const u32 gameDatabaseCRC, CheatDBGameList &outList);
+};
+
 class CHEATSEXPORT
 {
 private:
-	CHEATS_DB_TYPE		type;
-	bool				encrypted;
-	FILE				*fp;
-	size_t				fsize;
-	u64					dataSize;
-	u64					encOffset;
-	FAT_R4				fat;
-	bool				search();
-	bool				getCodes();
-	void				R4decrypt(u8 *buf, const size_t len, u64 n);
+	CheatDBFile _dbFile;
+	CheatDBGame *_selectedDbGame;
+	CHEATS_LIST *_cheats;
 
-	u32					numCheats;
-	CHEATS_LIST			*cheats;
-
-	u8					error;		//	0 - no errors
-									//	1 - open failed/file not found
-									//	2 - file format is wrong (no valid header ID)
-									//	3 - cheat not found in database
-									//	4 - export error from database
+	u8 _error; //	0 - no errors
+	           //	1 - open failed/file not found
+	           //	2 - file format is wrong (no valid header ID)
+	           //	3 - cheat not found in database
+	           //	4 - export error from database
 
 public:
-	CHEATSEXPORT() :
-			fp(NULL),
-			fsize(0),
-			dataSize(0),
-			encOffset(0),
-			type(CHEATS_DB_R4),
-			encrypted(false),
-			numCheats(0),
-			cheats(0),
-			CRC(0),
-			error(0)
-	{
-		memset(&fat, 0, sizeof(fat));
-		memset(gametitle, 0, sizeof(gametitle));
-		memset(date, 0, sizeof(date));
-	}
-
-	u8				gametitle[CHEAT_DB_GAME_TITLE_SIZE];
-	u8				date[17];
-	u32				CRC;
-	bool			load(char *path);
-	void			close();
-	CHEATS_LIST		*getCheats();
-	u32				getCheatsNum();
-	u8				getErrorCode() { return error; }
+	CHEATSEXPORT();
+	~CHEATSEXPORT();
+	
+	bool load(const char *path);
+	void close();
+	
+	CHEATS_LIST *getCheats() const;
+	size_t getCheatsNum() const;
+	const char* getGameTitle() const;
+	const char* getDescription() const;
+	u8 getErrorCode() const;
 };
+
+CheatDBGame* GetCheatDBGameEntryFromList(const CheatDBGameList &gameList, const char *gameCode, const u32 gameDatabaseCRC);
+void CheatItemGenerateDescriptionHierarchical(const char *itemName, const char *itemNote, CHEATS_LIST &outCheatItem);
+void CheatItemGenerateDescriptionFlat(const char *folderName, const char *folderNote, const char *itemName, const char *itemNote, CHEATS_LIST &outCheatItem);
 
 extern CHEATS *cheats;
 extern CHEATSEARCH *cheatSearch;

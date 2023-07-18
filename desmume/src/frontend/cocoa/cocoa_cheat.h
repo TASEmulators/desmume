@@ -95,7 +95,8 @@ protected:
 	bool _willAddFromDB;
 	
 	CheatType _cheatType;
-	std::string _descriptionString;
+	std::string _descriptionMajorString;
+	std::string _descriptionMinorString;
 	
 	// Internal cheat type parameters
 	CheatFreezeType _freezeType;
@@ -132,8 +133,8 @@ public:
 	void SetType(CheatType requestedType);
 	bool IsSupportedType() const;
 	
-	const char* GetDescription() const;
-	void SetDescription(const char *descriptionString);
+	const char* GetMajorDescription() const;
+	void SetMajorDescription(const char *descriptionString);
 	
 	CheatFreezeType GetFreezeType() const;
 	void SetFreezeType(CheatFreezeType theFreezeType);
@@ -224,7 +225,7 @@ class ClientCheatDatabase
 protected:
 	ClientCheatList *_list;
 	std::string _title;
-	std::string _date;
+	std::string _description;
 	std::string _lastFilePath;
 	
 public:
@@ -235,7 +236,7 @@ public:
 	ClientCheatList* LoadFromFile(const char *dbFilePath);
 	
 	const char* GetTitle() const;
-	const char* GetDate() const;
+	const char* GetDescription() const;
 };
 
 class ClientCheatManager
@@ -289,7 +290,7 @@ public:
 	ClientCheatList* GetDatabaseList() const;
 	ClientCheatList* DatabaseListLoadFromFile(const char *dbFilePath);
 	const char* GetDatabaseTitle() const;
-	const char* GetDatabaseDate() const;
+	const char* GetDatabaseDescription() const;
 	
 	bool SearchDidStart() const;
 	void SearchReset();

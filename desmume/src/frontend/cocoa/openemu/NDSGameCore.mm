@@ -1199,7 +1199,7 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 		ClientCheatItem *newCheatItem = new ClientCheatItem;
 		newCheatItem->SetType(CheatType_ActionReplay); // Default to Action Replay for now
 		newCheatItem->SetFreezeType(CheatFreezeType_Normal);
-		newCheatItem->SetDescription(NULL); // OpenEmu takes care of this
+		newCheatItem->SetMajorDescription(NULL); // OpenEmu takes care of this
 		newCheatItem->SetRawCodeString([code cStringUsingEncoding:NSUTF8StringEncoding], true);
 		newCheatItem->SetEnabled((enabled) ? true : false);
 		

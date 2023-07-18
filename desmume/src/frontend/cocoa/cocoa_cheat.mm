@@ -178,7 +178,8 @@ ClientCheatItem::ClientCheatItem()
 	_willAddFromDB = false;
 	
 	_cheatType = CheatType_Internal;
-	_descriptionString = "No description.";
+	_descriptionMajorString = "No description.";
+	_descriptionMinorString = "";
 	_freezeType = CheatFreezeType_Normal;
 	_address = 0x02000000;
 	strncpy(_addressString, "0x02000000", sizeof(_addressString));
@@ -202,7 +203,8 @@ void ClientCheatItem::Init(const CHEATS_LIST &inCheatItem)
 	this->_isEnabled = (inCheatItem.enabled) ? true : false;
 	
 	this->_cheatType = (CheatType)inCheatItem.type;
-	this->_descriptionString = inCheatItem.description;
+	this->_descriptionMajorString = inCheatItem.description;
+	this->_descriptionMinorString = "";
 	
 	this->_freezeType = (CheatFreezeType)inCheatItem.freezeType;
 	this->_valueLength = inCheatItem.size + 1; // CHEATS_LIST.size value range is [1...4], but starts counting from 0.
@@ -238,7 +240,7 @@ void ClientCheatItem::Init(const CHEATS_LIST &inCheatItem)
 void ClientCheatItem::Init(const ClientCheatItem &inCheatItem)
 {
 	this->SetEnabled(inCheatItem.IsEnabled());
-	this->SetDescription(inCheatItem.GetDescription());
+	this->SetMajorDescription(inCheatItem.GetMajorDescription());
 	this->SetType(inCheatItem.GetType());
 	this->SetFreezeType(inCheatItem.GetFreezeType());
 	
@@ -322,20 +324,20 @@ bool ClientCheatItem::IsSupportedType() const
 	return (this->_cheatType != CheatType_CodeBreaker);
 }
 
-const char* ClientCheatItem::GetDescription() const
+const char* ClientCheatItem::GetMajorDescription() const
 {
-	return this->_descriptionString.c_str();
+	return this->_descriptionMajorString.c_str();
 }
 
-void ClientCheatItem::SetDescription(const char *descriptionString)
+void ClientCheatItem::SetMajorDescription(const char *descriptionString)
 {
 	if (descriptionString == NULL)
 	{
-		this->_descriptionString = "";
+		this->_descriptionMajorString = "";
 	}
 	else
 	{
-		this->_descriptionString = descriptionString;
+		this->_descriptionMajorString = descriptionString;
 	}
 }
 
@@ -608,7 +610,7 @@ void ClientCheatItem::ClientToDesmumeCheatItem(CHEATS_LIST *outCheatItem) const
 	
 	outCheatItem->type = this->_cheatType;
 	outCheatItem->enabled = (this->_isEnabled) ? 1 : 0;
-	strncpy(outCheatItem->description, this->_descriptionString.c_str(), sizeof(outCheatItem->description));
+	strncpy(outCheatItem->description, this->_descriptionMajorString.c_str(), sizeof(outCheatItem->description));
 	
 	switch (this->_cheatType)
 	{
@@ -1062,7 +1064,7 @@ ClientCheatDatabase::ClientCheatDatabase()
 {
 	_list = new ClientCheatList;
 	_title.resize(0);
-	_date.resize(0);
+	_description.resize(0);
 	_lastFilePath.resize(0);
 }
 
@@ -1090,8 +1092,8 @@ ClientCheatList* ClientCheatDatabase::LoadFromFile(const char *dbFilePath)
 	if (didFileLoad)
 	{
 		this->_list->RemoveAll();
-		this->_title = (const char *)exporter->gametitle;
-		this->_date = (const char *)exporter->date;
+		this->_title = exporter->getGameTitle();
+		this->_description = exporter->getDescription();
 		this->_lastFilePath = dbFilePath;
 		
 		const size_t itemCount = exporter->getCheatsNum();
@@ -1127,9 +1129,9 @@ const char* ClientCheatDatabase::GetTitle() const
 	return this->_title.c_str();
 }
 
-const char* ClientCheatDatabase::GetDate() const
+const char* ClientCheatDatabase::GetDescription() const
 {
-	return this->_date.c_str();
+	return this->_description.c_str();
 }
 
 #pragma mark -
@@ -1242,11 +1244,11 @@ ClientCheatItem* ClientCheatManager::NewItem()
 		char newDesc[16];
 		snprintf(newDesc, sizeof(newDesc), "Untitled %ld", (unsigned long)this->_untitledCount);
 		
-		newItem->SetDescription(newDesc);
+		newItem->SetMajorDescription(newDesc);
 	}
 	else
 	{
-		newItem->SetDescription("Untitled");
+		newItem->SetMajorDescription("Untitled");
 	}
 	
 	if (newItem->IsEnabled())
@@ -1407,9 +1409,9 @@ const char* ClientCheatManager::GetDatabaseTitle() const
 	return this->_currentDatabase->GetTitle();
 }
 
-const char* ClientCheatManager::GetDatabaseDate() const
+const char* ClientCheatManager::GetDatabaseDescription() const
 {
-	return this->_currentDatabase->GetDate();
+	return this->_currentDatabase->GetDescription();
 }
 
 bool ClientCheatManager::SearchDidStart() const
@@ -1623,18 +1625,18 @@ static NSImage *iconCodeBreaker = nil;
 
 - (NSString *) description
 {
-	return [NSString stringWithCString:_internalData->GetDescription() encoding:NSUTF8StringEncoding];
+	return [NSString stringWithCString:_internalData->GetMajorDescription() encoding:NSUTF8StringEncoding];
 }
 
 - (void) setDescription:(NSString *)desc
 {
 	if (desc == nil)
 	{
-		_internalData->SetDescription(NULL);
+		_internalData->SetMajorDescription(NULL);
 	}
 	else
 	{
-		_internalData->SetDescription([desc cStringUsingEncoding:NSUTF8StringEncoding]);
+		_internalData->SetMajorDescription([desc cStringUsingEncoding:NSUTF8StringEncoding]);
 	}
 	
 	if ((workingCopy != nil) && !_disableWorkingCopyUpdate)
@@ -1645,7 +1647,7 @@ static NSImage *iconCodeBreaker = nil;
 
 - (char *) descriptionCString
 {
-	return (char *)_internalData->GetDescription();
+	return (char *)_internalData->GetMajorDescription();
 }
 
 - (NSInteger) cheatType
@@ -2072,7 +2074,7 @@ static NSImage *iconCodeBreaker = nil;
 
 - (NSString *) databaseDate
 {
-	return [NSString stringWithCString:_internalCheatManager->GetDatabaseDate() encoding:NSUTF8StringEncoding];
+	return [NSString stringWithCString:_internalCheatManager->GetDatabaseDescription() encoding:NSUTF8StringEncoding];
 }
 
 - (NSUInteger) itemTotalCount
