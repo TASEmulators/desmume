@@ -4022,6 +4022,7 @@
 		AB796CA215CDCB6B00C59155 /* instruction_attributes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = instruction_attributes.h; sourceTree = "<group>"; };
 		AB796CA315CDCB6B00C59155 /* instructions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = instructions.h; sourceTree = "<group>"; };
 		AB796D7015CDCBA200C59155 /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB7DA2432833EEBA001E9A9E /* DeSmuME_arm64.profdata */ = {isa = PBXFileReference; lastKnownFileType = file; path = DeSmuME_arm64.profdata; sourceTree = "<group>"; };
 		AB7EC7F2189B2B92009D198A /* Icon_AutoholdClear_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_AutoholdClear_420x420.png; path = images/Icon_AutoholdClear_420x420.png; sourceTree = "<group>"; };
 		AB7EC7F3189B2B92009D198A /* Icon_AutoholdSet_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_AutoholdSet_420x420.png; path = images/Icon_AutoholdSet_420x420.png; sourceTree = "<group>"; };
 		AB80E04C142BC4A800A52038 /* cocoa_util.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_util.mm; sourceTree = "<group>"; };
@@ -4107,6 +4108,7 @@
 		AB9971CE134EDA0800531BA7 /* cocoa_globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_globals.h; sourceTree = "<group>"; };
 		ABA48DF527F95C2E00D961FB /* colorspacehandler_NEON.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_NEON.h; sourceTree = "<group>"; };
 		ABA48DF627F95C2E00D961FB /* colorspacehandler_NEON.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_NEON.cpp; sourceTree = "<group>"; };
+		ABA5AB11282E63E20005F25D /* DeSmuME_x86_64.profdata */ = {isa = PBXFileReference; lastKnownFileType = file; path = DeSmuME_x86_64.profdata; sourceTree = "<group>"; };
 		ABA6574914511EC90077E5E9 /* cocoa_cheat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_cheat.h; sourceTree = "<group>"; };
 		ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_cheat.mm; sourceTree = "<group>"; };
 		ABA67CA52808B8D000B5208D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -4212,6 +4214,7 @@
 		ABC570D4134431DA00E7B0B1 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = DefaultKeyMappings.plist; sourceTree = "<group>"; };
 		ABC8599028273FEE00A03EA9 /* DeSmuME (x86_64).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (x86_64).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABCC191C2831F3E100B795C4 /* DeSmuME_x86_64h.profdata */ = {isa = PBXFileReference; lastKnownFileType = file; path = DeSmuME_x86_64h.profdata; sourceTree = "<group>"; };
 		ABCC19332287879000DFA471 /* colorspacehandler_AVX512.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_AVX512.cpp; sourceTree = "<group>"; };
 		ABCC19342287879000DFA471 /* colorspacehandler_AVX512.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_AVX512.h; sourceTree = "<group>"; };
 		ABCFA9F2178BDE920030C8BA /* encrypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = encrypt.h; sourceTree = "<group>"; };
@@ -4380,7 +4383,6 @@
 		ABDDF7C41898F024007583C1 /* Icon_DisplayToggle_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DisplayToggle_420x420.png; path = images/Icon_DisplayToggle_420x420.png; sourceTree = "<group>"; };
 		ABDDF7C71898F032007583C1 /* Icon_FrameAdvance_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameAdvance_420x420.png; path = images/Icon_FrameAdvance_420x420.png; sourceTree = "<group>"; };
 		ABDDF7C81898F032007583C1 /* Icon_FrameJump_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameJump_420x420.png; path = images/Icon_FrameJump_420x420.png; sourceTree = "<group>"; };
-		ABE187E928274F0100B68164 /* DeSmuME_i386.profdata */ = {isa = PBXFileReference; lastKnownFileType = file; path = DeSmuME_i386.profdata; sourceTree = "<group>"; };
 		ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_videofilter.h; sourceTree = "<group>"; };
 		ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_videofilter.mm; sourceTree = "<group>"; };
 		ABE670251415DE6C00E8E4C9 /* tinystr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinystr.cpp; sourceTree = "<group>"; };
@@ -4393,6 +4395,7 @@
 		ABE6840E189E33D5007FD69C /* OGLDisplayOutput.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OGLDisplayOutput.h; sourceTree = "<group>"; };
 		ABE7F53C13EE1C7900FD3A71 /* cocoa_firmware.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_firmware.h; sourceTree = "<group>"; };
 		ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_firmware.mm; sourceTree = "<group>"; };
+		ABECD444282DF23100AA6C0C /* DeSmuME_i386.profdata */ = {isa = PBXFileReference; lastKnownFileType = file; path = DeSmuME_i386.profdata; sourceTree = "<group>"; };
 		ABEFCF5D141AB82A000CC0CD /* AppIcon_ROMSave.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMSave.icns; sourceTree = "<group>"; };
 		ABEFCF5E141AB82A000CC0CD /* AppIcon_DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_DeSmuME.icns; sourceTree = "<group>"; };
 		ABEFCF5F141AB82A000CC0CD /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
@@ -5346,7 +5349,10 @@
 		AB407F381A620D6E00313213 /* OptimizationProfiles */ = {
 			isa = PBXGroup;
 			children = (
-				ABE187E928274F0100B68164 /* DeSmuME_i386.profdata */,
+				ABECD444282DF23100AA6C0C /* DeSmuME_i386.profdata */,
+				ABA5AB11282E63E20005F25D /* DeSmuME_x86_64.profdata */,
+				ABCC191C2831F3E100B795C4 /* DeSmuME_x86_64h.profdata */,
+				AB7DA2432833EEBA001E9A9E /* DeSmuME_arm64.profdata */,
 			);
 			path = OptimizationProfiles;
 			sourceTree = "<group>";
@@ -10333,7 +10339,6 @@
 			buildSettings = {
 				ARCHS = arm64;
 				CLANG_OPTIMIZATION_PROFILE_FILE = "$(SRCROOT)/OptimizationProfiles/DeSmuME_arm64.profdata";
-				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				GCC_FAST_OBJC_DISPATCH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_OPTIMIZATION_LEVEL = fast;
@@ -10666,7 +10671,6 @@
 				ARCHS = x86_64;
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_OPTIMIZATION_PROFILE_FILE = "$(SRCROOT)/OptimizationProfiles/DeSmuME_x86_64.profdata";
-				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				GCC_FAST_OBJC_DISPATCH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_OPTIMIZATION_LEVEL = fast;
@@ -10715,7 +10719,6 @@
 			buildSettings = {
 				ARCHS = x86_64h;
 				CLANG_OPTIMIZATION_PROFILE_FILE = "$(SRCROOT)/OptimizationProfiles/DeSmuME_x86_64h.profdata";
-				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				GCC_FAST_OBJC_DISPATCH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_OPTIMIZATION_LEVEL = fast;
