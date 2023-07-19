@@ -201,7 +201,8 @@ protected:
 	u32 _firstEntryOffset; // This offset is relative to the file head.
 	u32 _encryptOffset; // This offset is relative to the memory address of this->_entryDataRawPtr.
 	
-	u32 _dataSize;
+	u32 _rawDataSize;
+	u32 _workingDataSize;
 	u32 _crc;
 	u32 _entryCount;
 	
@@ -219,17 +220,18 @@ protected:
 	
 public:
 	CheatDBGame();
-	CheatDBGame(const u32 encryptOffset, const FAT_R4 &fat, const u32 dataSize);
-	CheatDBGame(FILE *fp, const bool isEncrypted, const u32 encryptOffset, const FAT_R4 &fat, const u32 dataSize, u8 (&workingBuffer)[1024]);
+	CheatDBGame(const u32 encryptOffset, const FAT_R4 &fat, const u32 rawDataSize);
+	CheatDBGame(FILE *fp, const bool isEncrypted, const u32 encryptOffset, const FAT_R4 &fat, const u32 rawDataSize, u8 (&workingBuffer)[1024]);
 	~CheatDBGame();
 	
-	void SetInitialProperties(const u32 dataSize, const u32 encryptOffset, const FAT_R4 &fat);
+	void SetInitialProperties(const u32 rawDataSize, const u32 encryptOffset, const FAT_R4 &fat);
 	void LoadPropertiesFromFile(FILE *fp, const bool isEncrypted, u8 (&workingBuffer)[1024]);
 	
 	u32 GetBaseOffset() const;
 	u32 GetFirstEntryOffset() const;
 	u32 GetEncryptOffset() const;
-	u32 GetDataSize() const;
+	u32 GetRawDataSize() const;
+	u32 GetWorkingDataSize() const;
 	u32 GetCRC() const;
 	u32 GetEntryCount() const;
 	u32 GetCheatItemCount() const;
@@ -281,6 +283,7 @@ class CHEATSEXPORT
 {
 private:
 	CheatDBFile _dbFile;
+	CheatDBGameList _tempGameList;
 	CheatDBGame *_selectedDbGame;
 	CHEATS_LIST *_cheats;
 

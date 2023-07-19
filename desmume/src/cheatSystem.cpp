@@ -1702,7 +1702,8 @@ CheatDBGame::CheatDBGame()
 	_firstEntryOffset = 0;
 	_encryptOffset = 0;
 	
-	_dataSize = 0;
+	_rawDataSize = 0;
+	_workingDataSize = 0;
 	_crc = 0;
 	_entryCount = 0;
 	
@@ -1723,9 +1724,9 @@ CheatDBGame::CheatDBGame()
 	_cheatItemCount = 0;
 }
 
-CheatDBGame::CheatDBGame(const u32 encryptOffset, const FAT_R4 &fat, const u32 dataSize)
+CheatDBGame::CheatDBGame(const u32 encryptOffset, const FAT_R4 &fat, const u32 rawDataSize)
 {
-	CheatDBGame::SetInitialProperties(dataSize, encryptOffset, fat);
+	CheatDBGame::SetInitialProperties(rawDataSize, encryptOffset, fat);
 	
 	_firstEntryOffset = 0;
 	_entryCount = 0;
@@ -1745,9 +1746,9 @@ CheatDBGame::CheatDBGame(const u32 encryptOffset, const FAT_R4 &fat, const u32 d
 	_cheatItemCount = 0;
 }
 
-CheatDBGame::CheatDBGame(FILE *fp, const bool isEncrypted, const u32 encryptOffset, const FAT_R4 &fat, const u32 dataSize, u8 (&workingBuffer)[1024])
+CheatDBGame::CheatDBGame(FILE *fp, const bool isEncrypted, const u32 encryptOffset, const FAT_R4 &fat, const u32 rawDataSize, u8 (&workingBuffer)[1024])
 {
-	CheatDBGame::SetInitialProperties(dataSize, encryptOffset, fat);
+	CheatDBGame::SetInitialProperties(rawDataSize, encryptOffset, fat);
 	CheatDBGame::LoadPropertiesFromFile(fp, isEncrypted, workingBuffer);
 	
 	_entryDataRawPtr = NULL;
@@ -1774,9 +1775,10 @@ CheatDBGame::~CheatDBGame()
 	}
 }
 
-void CheatDBGame::SetInitialProperties(const u32 dataSize, const u32 encryptOffset, const FAT_R4 &fat)
+void CheatDBGame::SetInitialProperties(const u32 rawDataSize, const u32 encryptOffset, const FAT_R4 &fat)
 {
-	_dataSize = dataSize;
+	_rawDataSize = rawDataSize;
+	_workingDataSize = rawDataSize + encryptOffset;
 	_encryptOffset = encryptOffset;
 	_baseOffset = (u32)fat.addr;
 	_crc = fat.CRC;
@@ -1789,7 +1791,7 @@ void CheatDBGame::SetInitialProperties(const u32 dataSize, const u32 encryptOffs
 
 void CheatDBGame::LoadPropertiesFromFile(FILE *fp, const bool isEncrypted, u8 (&workingBuffer)[1024])
 {
-	const size_t gameDataBufferSize = (_dataSize < sizeof(workingBuffer)) ? _dataSize : sizeof(workingBuffer);
+	const size_t gameDataBufferSize = (_workingDataSize < sizeof(workingBuffer)) ? _workingDataSize : sizeof(workingBuffer);
 	CheatDBFile::ReadToBuffer(fp, _baseOffset, isEncrypted, _encryptOffset, gameDataBufferSize, workingBuffer);
 	
 	const u8 *gameDataBuffer = workingBuffer + _encryptOffset;
@@ -1817,9 +1819,14 @@ u32 CheatDBGame::GetEncryptOffset() const
 	return this->_encryptOffset;
 }
 
-u32 CheatDBGame::GetDataSize() const
+u32 CheatDBGame::GetRawDataSize() const
 {
-	return this->_dataSize;
+	return this->_rawDataSize;
+}
+
+u32 CheatDBGame::GetWorkingDataSize() const
+{
+	return this->_workingDataSize;
 }
 
 u32 CheatDBGame::GetCRC() const
@@ -1900,10 +1907,10 @@ u8* CheatDBGame::LoadEntryData(FILE *fp, const bool isEncrypted)
 		this->_entryData = NULL;
 	}
 	
-	this->_entryDataRawPtr = (u8 *)malloc(this->_dataSize + 8);
-	memset(this->_entryDataRawPtr, 0, this->_dataSize + 8);
+	this->_entryDataRawPtr = (u8 *)malloc(this->_workingDataSize + 8);
+	memset(this->_entryDataRawPtr, 0, this->_workingDataSize + 8);
 	
-	bool didReadSuccessfully = CheatDBFile::ReadToBuffer(fp, this->_baseOffset, isEncrypted, this->_encryptOffset, this->_dataSize, this->_entryDataRawPtr);
+	bool didReadSuccessfully = CheatDBFile::ReadToBuffer(fp, this->_baseOffset, isEncrypted, this->_encryptOffset, this->_workingDataSize, this->_entryDataRawPtr);
 	if (!didReadSuccessfully)
 	{
 		free(this->_entryDataRawPtr);
@@ -2381,7 +2388,6 @@ u32 CheatDBFile::LoadGameList(const char *gameCode, const u32 gameDatabaseCRC, C
 		if (this->_isEncrypted)
 		{
 			encryptOffset = (u32)(fatEntryCurrent.addr % 512);
-			dataSize += encryptOffset;
 		}
 		
 		if (dataSize == 0)
@@ -2444,9 +2450,8 @@ bool CHEATSEXPORT::load(const char *path)
 		return didLoadSucceed;
 	}
 	
-	CheatDBGameList gameList;
-	this->_dbFile.LoadGameList(gameInfo.header.gameCode, gameInfo.crcForCheatsDb, gameList);
-	CheatDBGame *dbGamePtr = GetCheatDBGameEntryFromList(gameList, gameInfo.header.gameCode, gameInfo.crcForCheatsDb);
+	this->_dbFile.LoadGameList(gameInfo.header.gameCode, gameInfo.crcForCheatsDb, this->_tempGameList);
+	CheatDBGame *dbGamePtr = GetCheatDBGameEntryFromList(this->_tempGameList, gameInfo.header.gameCode, gameInfo.crcForCheatsDb);
 	
 	if (dbGamePtr == NULL)
 	{
