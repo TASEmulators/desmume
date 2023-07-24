@@ -2352,6 +2352,12 @@ u32 CheatDBFile::LoadGameList(const char *gameCode, const u32 gameDatabaseCRC, C
 			if ((pos >> 9) > t)
 			{
 				t++;
+				if ( (t << 9) > this->_size)
+				{
+					break;
+				}
+				
+				fseek(this->_fp, t << 9, SEEK_SET);
 				fread(fatBuffer, 1, 512, this->_fp);
 				CheatDBFile::R4Decrypt(fatBuffer, 512, t);
 			}
@@ -2421,6 +2427,7 @@ u32 CheatDBFile::LoadGameList(const char *gameCode, const u32 gameDatabaseCRC, C
 		else
 		{
 			outList.push_back( this->_ReadGame(encryptOffset, fatEntryCurrent, dataSize, gameEntryBuffer) );
+			entryCount++;
 		}
 		
 	} while (fatEntryNext.addr > 0);
