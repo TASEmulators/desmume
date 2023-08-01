@@ -747,7 +747,7 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 	
 	if ( (cellString != nil) && (row == currentGameTableRowIndex) )
 	{
-		[cell setFont:[NSFont boldSystemFontOfSize:[NSFont smallSystemFontSize]]];
+		[cell setFont:[NSFont boldSystemFontOfSize:[NSFont smallSystemFontSize] + 1.0f]];
 	}
 	else
 	{
