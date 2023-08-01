@@ -571,15 +571,18 @@ void ClientCheatItem::_ConvertInternalToActionReplay()
 {
 	char workingCodeBuffer[16+1+1];
 	
+	u32 function = this->_address & 0x0FFFFFFF;
 	u32 truncatedValue = this->_value;
 	
 	switch (this->_valueLength)
 	{
 		case 1:
+			function |= 0x20000000;
 			truncatedValue &= 0x000000FF;
 			break;
 			
 		case 2:
+			function |= 0x10000000;
 			truncatedValue &= 0x0000FFFF;
 			break;
 			
@@ -592,11 +595,11 @@ void ClientCheatItem::_ConvertInternalToActionReplay()
 	}
 	
 	memset(workingCodeBuffer, 0, sizeof(workingCodeBuffer));
-	snprintf(workingCodeBuffer, 16+1+1, "%08X %08X", this->_address, truncatedValue);
+	snprintf(workingCodeBuffer, 16+1+1, "%08X %08X", function, truncatedValue);
 	this->_rawCodeString = workingCodeBuffer;
 	
 	memset(workingCodeBuffer, 0, sizeof(workingCodeBuffer));
-	snprintf(workingCodeBuffer, 16+1, "%08X%08X", this->_address, truncatedValue);
+	snprintf(workingCodeBuffer, 16+1, "%08X%08X", function, truncatedValue);
 	this->_cleanCodeString = workingCodeBuffer;
 	
 	this->_codeCount = 1;
@@ -604,18 +607,68 @@ void ClientCheatItem::_ConvertInternalToActionReplay()
 
 void ClientCheatItem::_ConvertActionReplayToInternal()
 {
-	this->_addressString[0] = '0';
-	this->_addressString[1] = 'x';
-	strncpy(this->_addressString + 2, this->_cleanCodeString.c_str(), 8);
-	this->_addressString[10] = '\0';
-	sscanf(this->_addressString + 2, "%x", &this->_address);
+	char workingCodeBuffer[11] = {0};
+	size_t cleanCodeLength = this->_cleanCodeString.length();
+	size_t i = 0;
 	
-	char workingCodeBuffer[9];
+	// Note that we're only searching for the first valid command for
+	// a constant RAM write, since internal cheats can only support a
+	// single constant RAM write.
+	for (; i < cleanCodeLength; i+=16)
+	{
+		workingCodeBuffer[0] = '0';
+		workingCodeBuffer[1] = 'x';
+		strncpy(workingCodeBuffer + 2, this->_cleanCodeString.c_str() + i, 8);
+		workingCodeBuffer[10] = '\0';
+		
+		if (workingCodeBuffer[2] == '2')
+		{
+			this->_valueLength = 1;
+			workingCodeBuffer[2] = '0';
+			break;
+		}
+		else if (workingCodeBuffer[2] == '1')
+		{
+			this->_valueLength = 2;
+			workingCodeBuffer[2] = '0';
+			break;
+		}
+		else if (workingCodeBuffer[2] == '0')
+		{
+			this->_valueLength = 4;
+			break;
+		}
+		else
+		{
+			continue;
+		}
+	}
+	
+	if (i >= cleanCodeLength)
+	{
+		return;
+	}
+	
+	strncpy(this->_addressString, workingCodeBuffer, sizeof(this->_addressString));
+	sscanf(workingCodeBuffer + 2, "%x", &this->_address);
+	
 	memset(workingCodeBuffer, 0, sizeof(workingCodeBuffer));
-	strncpy(workingCodeBuffer, this->_cleanCodeString.c_str() + 8, 8);
+	strncpy(workingCodeBuffer, this->_cleanCodeString.c_str() + i + 8, 8);
 	sscanf(workingCodeBuffer, "%x", &this->_value);
 	
-	this->_valueLength = 4;
+	switch (this->_valueLength)
+	{
+		case 1:
+			this->_value &= 0x000000FF;
+			break;
+			
+		case 2:
+			this->_value &= 0x0000FFFF;
+			break;
+			
+		default:
+			break;
+	}
 }
 
 void ClientCheatItem::ClientToDesmumeCheatItem(CHEATS_LIST *outCheatItem) const
