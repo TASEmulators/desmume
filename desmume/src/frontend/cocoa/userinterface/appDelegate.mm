@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2022 DeSmuME Team
+	Copyright (C) 2011-2023 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #import "inputPrefsView.h"
 
 #import "cocoa_core.h"
+#import "cocoa_cheat.h"
 #import "cocoa_GPU.h"
 #import "cocoa_file.h"
 #import "cocoa_firmware.h"
@@ -50,6 +51,8 @@
 @synthesize emuControlController;
 @synthesize prefWindowController;
 @synthesize cdsCoreController;
+@synthesize databaseFileController;
+@synthesize gameListController;
 @synthesize avCaptureToolDelegate;
 @synthesize wifiSettingsPanelDelegate;
 @synthesize migrationDelegate;
@@ -312,6 +315,7 @@
 	// Bring the application to the front
 	[NSApp activateIgnoringOtherApps:YES];
 	[emuControl restoreDisplayWindowStates];
+	[emuControl updateCheatDatabaseRecentsMenu:nil];
 	
 	// Load a new ROM on launch per user preferences.
 	if ([[NSUserDefaults standardUserDefaults] objectForKey:@"General_AutoloadROMOnLaunch"] != nil)

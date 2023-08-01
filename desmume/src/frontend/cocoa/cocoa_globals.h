@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2022 DeSmuME Team
+	Copyright (C) 2012-2023 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #define NSSTRING_TITLE_EXPORT_ROM_SAVE_PANEL		NSLocalizedString(@"Export ROM Save File", nil)
 #define NSSTRING_TITLE_SELECT_ROM_PANEL				NSLocalizedString(@"Select ROM", nil)
 #define NSSTRING_TITLE_SELECT_ADVANSCENE_DB_PANEL	NSLocalizedString(@"Select ADVANsCEne Database", nil)
-#define NSSTRING_TITLE_SELECT_R4_CHEAT_DB_PANEL		NSLocalizedString(@"Select R4 Cheat Database", nil)
+#define NSSTRING_TITLE_OPEN_CHEAT_DB_PANEL			NSLocalizedString(@"Open Cheat Database", nil)
 #define NSSTRING_TITLE_SELECT_ARM7_IMAGE_PANEL		NSLocalizedString(@"Select ARM7 BIOS Image", nil)
 #define NSSTRING_TITLE_SELECT_ARM9_IMAGE_PANEL		NSLocalizedString(@"Select ARM9 BIOS Image", nil)
 #define NSSTRING_TITLE_SELECT_FIRMWARE_IMAGE_PANEL	NSLocalizedString(@"Select Firmware Image", nil)
@@ -305,37 +305,8 @@ enum
 
 enum
 {
-	CHEAT_TYPE_INTERNAL								= 0,
-	CHEAT_TYPE_ACTION_REPLAY						= 1,
-	CHEAT_TYPE_CODE_BREAKER							= 2
-};
-
-enum
-{
-	CHEATSEARCH_SEARCHSTYLE_EXACT_VALUE				= 0,
-	CHEATSEARCH_SEARCHSTYLE_COMPARATIVE				= 1
-};
-
-enum
-{
-	CHEATSEARCH_COMPARETYPE_GREATER_THAN			= 0,
-	CHEATSEARCH_COMPARETYPE_LESSER_THAN				= 1,
-	CHEATSEARCH_COMPARETYPE_EQUALS_TO				= 2,
-	CHEATSEARCH_COMPARETYPE_NOT_EQUALS_TO			= 3
-};
-
-enum
-{
 	CHEATSEARCH_UNSIGNED							= 0,
 	CHEATSEARCH_SIGNED								= 1
-};
-
-enum
-{
-	CHEATEXPORT_ERROR_FILE_NOT_FOUND				= 1,
-	CHEATEXPORT_ERROR_WRONG_FILE_FORMAT				= 2,
-	CHEATEXPORT_ERROR_SERIAL_NOT_FOUND				= 3,
-	CHEATEXPORT_ERROR_EXPORT_FAILED					= 4
 };
 
 /*

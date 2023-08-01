@@ -36,6 +36,8 @@
 	NSObjectController *emuControlController;
 	NSObjectController *prefWindowController;
 	NSObjectController *cdsCoreController;
+	NSObjectController *databaseFileController;
+	NSArrayController *gameListController;
 	FileMigrationDelegate *migrationDelegate;
 	MacAVCaptureToolDelegate *avCaptureToolDelegate;
 	WifiSettingsPanelDelegate *wifiSettingsPanelDelegate;
@@ -63,6 +65,8 @@
 @property (readonly) IBOutlet NSObjectController *emuControlController;
 @property (readonly) IBOutlet NSObjectController *prefWindowController;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
+@property (readonly) IBOutlet NSObjectController *databaseFileController;
+@property (readonly) IBOutlet NSArrayController *gameListController;
 @property (readonly) IBOutlet FileMigrationDelegate *migrationDelegate;
 @property (readonly) IBOutlet MacAVCaptureToolDelegate *avCaptureToolDelegate;
 @property (readonly) IBOutlet WifiSettingsPanelDelegate *wifiSettingsPanelDelegate;

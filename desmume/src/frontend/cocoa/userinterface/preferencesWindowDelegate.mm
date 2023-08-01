@@ -36,7 +36,6 @@
 #endif
 
 
-#pragma mark -
 @implementation DisplayPreviewView
 
 @dynamic filtersPreferGPU;
@@ -294,7 +293,6 @@
 @synthesize emuController;
 @synthesize prefWindowController;
 @synthesize cheatWindowController;
-@synthesize cheatDatabaseController;
 
 @synthesize toolbarItemGeneral;
 @synthesize toolbarItemInput;
@@ -523,70 +521,6 @@
 	
 	[[NSUserDefaults standardUserDefaults] setObject:selectedFile forKey:@"Advanscene_DatabasePath"];
 	[bindings setValue:[selectedFile lastPathComponent] forKey:@"AdvansceneDatabaseName"];
-}
-
-- (IBAction) chooseCheatDatabase:(id)sender
-{
-	NSOpenPanel *panel = [NSOpenPanel openPanel];
-	[panel setCanChooseDirectories:NO];
-	[panel setCanChooseFiles:YES];
-	[panel setResolvesAliases:YES];
-	[panel setAllowsMultipleSelection:NO];
-	[panel setTitle:NSSTRING_TITLE_SELECT_R4_CHEAT_DB_PANEL];
-	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_R4_CHEAT_DB, nil];
-	
-	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
-	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	if (IsOSXVersionSupported(10, 6, 0))
-	{
-		[panel setAllowedFileTypes:fileTypes];
-		[panel beginSheetModalForWindow:window
-					  completionHandler:^(NSInteger result) {
-						  [self chooseCheatDatabaseDidEnd:panel returnCode:(int)result contextInfo:nil];
-					  } ];
-	}
-	else
-#endif
-	{
-		SILENCE_DEPRECATION_MACOS_10_6( [panel beginSheetForDirectory:nil
-																 file:nil
-																types:fileTypes
-													   modalForWindow:window
-														modalDelegate:self
-													   didEndSelector:@selector(chooseCheatDatabaseDidEnd:returnCode:contextInfo:)
-														  contextInfo:nil] );
-	}
-}
-
-- (void) chooseCheatDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
-{
-	[sheet orderOut:self];
-	
-	if (returnCode == GUI_RESPONSE_CANCEL)
-	{
-		return;
-	}
-	
-	NSURL *selectedFileURL = [[sheet URLs] lastObject]; //hopefully also the first object
-	if(selectedFileURL == nil)
-	{
-		return;
-	}
-	
-	NSString *selectedFile = [selectedFileURL path];
-	
-	[[NSUserDefaults standardUserDefaults] setObject:selectedFile forKey:@"R4Cheat_DatabasePath"];
-	[bindings setValue:[selectedFile lastPathComponent] forKey:@"R4CheatDatabaseName"];
-	
-	const BOOL isRomLoaded = [(EmuControllerDelegate *)[emuController content] currentRom] != nil;
-	NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
-	CheatWindowDelegate *cheatWindowDelegate = (CheatWindowDelegate *)[cheatWindowBindings valueForKey:@"cheatWindowDelegateKey"];
-	
-	if ( (isRomLoaded == YES) && (cheatWindowDelegate != nil) )
-	{
-		[cheatWindowDelegate databaseLoadFromFile:selectedFileURL];
-	}
 }
 
 - (IBAction) selectDisplayRotation:(id)sender
@@ -1076,12 +1010,6 @@
 	if (advansceneDatabasePath != nil)
 	{
 		[bindings setValue:[advansceneDatabasePath lastPathComponent] forKey:@"AdvansceneDatabaseName"];
-	}
-	
-	NSString *cheatDatabasePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"R4Cheat_DatabasePath"];
-	if (cheatDatabasePath != nil)
-	{
-		[bindings setValue:[cheatDatabasePath lastPathComponent] forKey:@"R4CheatDatabaseName"];
 	}
 	
 	NSString *autoloadRomPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"General_AutoloadROMSelectedPath"];

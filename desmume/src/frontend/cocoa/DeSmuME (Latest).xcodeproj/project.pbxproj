@@ -1543,6 +1543,27 @@
 		AB681025187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681018187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png */; };
 		AB681027187D4AEF0049F2C2 /* Icon_Piano_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681019187D4AEF0049F2C2 /* Icon_Piano_256x256.png */; };
 		AB68A0DD16B139BC00DE0546 /* OGLRender_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB68A0DA16B139BC00DE0546 /* OGLRender_3_2.cpp */; };
+		AB6E17F52A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */; };
+		AB6E17F62A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */; };
+		AB6E17F72A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */; };
+		AB6E17F82A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */; };
+		AB6E17F92A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */; };
+		AB6E17FA2A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */; };
+		AB6E17FB2A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */; };
+		AB6E17FC2A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */; };
+		AB6E17FD2A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */; };
+		AB6E17FE2A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */; };
+		AB6E18012A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */; };
+		AB6E18022A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */; };
+		AB6E18032A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */; };
+		AB6E18042A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */; };
+		AB6E18052A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */; };
+		AB6E18062A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */; };
+		AB6E18072A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */; };
+		AB6E18082A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */; };
+		AB6E18092A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */; };
+		AB6E180A2A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */; };
+		AB6E180B2A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */; };
 		AB74EC8A1738499C0026C41E /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB74EC891738499C0026C41E /* Carbon.framework */; };
 		AB78B5C11E384F2100297FED /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4401E262943003E2B24 /* Metal.framework */; settings = {ATTRIBUTES = (Required, ); }; };
 		AB78B5C21E384F2200297FED /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4401E262943003E2B24 /* Metal.framework */; settings = {ATTRIBUTES = (Required, ); }; };
@@ -4012,6 +4033,9 @@
 		AB681018187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_PaddleKnob_256x256.png; path = images/Icon_PaddleKnob_256x256.png; sourceTree = "<group>"; };
 		AB681019187D4AEF0049F2C2 /* Icon_Piano_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Piano_256x256.png; path = images/Icon_Piano_256x256.png; sourceTree = "<group>"; };
 		AB68A0DA16B139BC00DE0546 /* OGLRender_3_2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OGLRender_3_2.cpp; sourceTree = "<group>"; };
+		AB6E17F32A675BF1003A564D /* CheatDatabaseWindowController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CheatDatabaseWindowController.h; sourceTree = "<group>"; };
+		AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CheatDatabaseWindowController.mm; sourceTree = "<group>"; };
+		AB6E18002A6B218D003A564D /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/CheatDatabaseViewer.xib; sourceTree = "<group>"; };
 		AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_nand.cpp; sourceTree = "<group>"; };
 		AB74EC891738499C0026C41E /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		AB75226D14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_FirmwareConfig.icns; sourceTree = "<group>"; };
@@ -4935,6 +4959,7 @@
 				ABC2ECD613B1C87000FAAA2A /* Images */,
 				AB00E87C14205EBC00DE561F /* MainMenu.xib */,
 				AB8967DB16D2ED2700F826F1 /* DisplayWindow.xib */,
+				AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */,
 				AB350D3A147A1D93007165AC /* HID_usage_strings.plist */,
 				8D1107310486CEB800E47090 /* Info.plist */,
 				AB02791814415E4C0075E58C /* Info (Debug).plist */,
@@ -5227,6 +5252,7 @@
 			children = (
 				AB3ACB6614C2361100D7D192 /* appDelegate.h */,
 				AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */,
+				AB6E17F32A675BF1003A564D /* CheatDatabaseWindowController.h */,
 				AB3BF4361E25D6B4003E2B24 /* DisplayViewCALayer.h */,
 				AB8967D716D2ED0700F826F1 /* DisplayWindowController.h */,
 				AB3A655C16CC5416001F5D4A /* EmuControllerDelegate.h */,
@@ -5246,6 +5272,7 @@
 				AB3FBD7E2176DE95005722D0 /* WifiSettingsPanel.h */,
 				AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
+				AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
 				AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */,
 				AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */,
@@ -6451,6 +6478,7 @@
 				8C43E79727E3CD0100A35F65 /* Icon_Input_420x420.png in Resources */,
 				8C43E79827E3CD0100A35F65 /* Icon_AutoholdSet_420x420.png in Resources */,
 				8C43E79927E3CD0100A35F65 /* Icon_MicrophoneBlack_256x256.png in Resources */,
+				AB6E18032A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */,
 				8C43E79A27E3CD0100A35F65 /* Icon_OpenROM_420x420.png in Resources */,
 				8C43E79B27E3CD0100A35F65 /* Icon_Reset_420x420.png in Resources */,
 				8C43E79C27E3CD0100A35F65 /* Icon_RotateCCW_420x420.png in Resources */,
@@ -6570,6 +6598,7 @@
 				8C43E8F527E3CD4C00A35F65 /* Icon_Input_420x420.png in Resources */,
 				8C43E8F627E3CD4C00A35F65 /* Icon_AutoholdSet_420x420.png in Resources */,
 				8C43E8F727E3CD4C00A35F65 /* Icon_MicrophoneBlack_256x256.png in Resources */,
+				AB6E18042A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */,
 				8C43E8F827E3CD4C00A35F65 /* Icon_OpenROM_420x420.png in Resources */,
 				8C43E8F927E3CD4C00A35F65 /* Icon_Reset_420x420.png in Resources */,
 				8C43E8FA27E3CD4C00A35F65 /* Icon_RotateCCW_420x420.png in Resources */,
@@ -6689,6 +6718,7 @@
 				8CCD840827E40B730024BDD5 /* Icon_Input_420x420.png in Resources */,
 				8CCD840927E40B730024BDD5 /* Icon_AutoholdSet_420x420.png in Resources */,
 				8CCD840A27E40B730024BDD5 /* Icon_MicrophoneBlack_256x256.png in Resources */,
+				AB6E180B2A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */,
 				8CCD840B27E40B730024BDD5 /* Icon_OpenROM_420x420.png in Resources */,
 				8CCD840C27E40B730024BDD5 /* Icon_Reset_420x420.png in Resources */,
 				8CCD840D27E40B730024BDD5 /* Icon_RotateCCW_420x420.png in Resources */,
@@ -6808,6 +6838,7 @@
 				AB36C78827F2C8AE00C763C8 /* Icon_Input_420x420.png in Resources */,
 				AB36C78927F2C8AE00C763C8 /* Icon_AutoholdSet_420x420.png in Resources */,
 				AB36C78A27F2C8AE00C763C8 /* Icon_MicrophoneBlack_256x256.png in Resources */,
+				AB6E18082A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */,
 				AB36C78B27F2C8AE00C763C8 /* Icon_OpenROM_420x420.png in Resources */,
 				AB36C78C27F2C8AE00C763C8 /* Icon_Reset_420x420.png in Resources */,
 				AB36C78D27F2C8AE00C763C8 /* Icon_RotateCCW_420x420.png in Resources */,
@@ -6927,6 +6958,7 @@
 				AB497A0E27F2E97A00E8A244 /* Icon_Input_420x420.png in Resources */,
 				AB497A0F27F2E97A00E8A244 /* Icon_AutoholdSet_420x420.png in Resources */,
 				AB497A1027F2E97A00E8A244 /* Icon_MicrophoneBlack_256x256.png in Resources */,
+				AB6E18072A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */,
 				AB497A1127F2E97A00E8A244 /* Icon_OpenROM_420x420.png in Resources */,
 				AB497A1227F2E97A00E8A244 /* Icon_Reset_420x420.png in Resources */,
 				AB497A1327F2E97A00E8A244 /* Icon_RotateCCW_420x420.png in Resources */,
@@ -7046,6 +7078,7 @@
 				AB790193215B84F20082AE82 /* Icon_Input_420x420.png in Resources */,
 				AB790194215B84F20082AE82 /* Icon_AutoholdSet_420x420.png in Resources */,
 				AB790195215B84F20082AE82 /* Icon_MicrophoneBlack_256x256.png in Resources */,
+				AB6E18062A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */,
 				AB790196215B84F20082AE82 /* Icon_OpenROM_420x420.png in Resources */,
 				AB790197215B84F20082AE82 /* Icon_Reset_420x420.png in Resources */,
 				AB790198215B84F20082AE82 /* Icon_RotateCCW_420x420.png in Resources */,
@@ -7165,6 +7198,7 @@
 				AB796CE015CDCBA200C59155 /* Icon_Input_420x420.png in Resources */,
 				AB7EC7F6189B2B92009D198A /* Icon_AutoholdSet_420x420.png in Resources */,
 				ABB0FBCC1A9EED350060C55A /* Icon_MicrophoneBlack_256x256.png in Resources */,
+				AB6E18012A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */,
 				AB796CE215CDCBA200C59155 /* Icon_OpenROM_420x420.png in Resources */,
 				AB796CE315CDCBA200C59155 /* Icon_Reset_420x420.png in Resources */,
 				AB796CE415CDCBA200C59155 /* Icon_RotateCCW_420x420.png in Resources */,
@@ -7284,6 +7318,7 @@
 				AB790036215B84E50082AE82 /* Icon_Input_420x420.png in Resources */,
 				AB790037215B84E50082AE82 /* Icon_AutoholdSet_420x420.png in Resources */,
 				AB790038215B84E50082AE82 /* Icon_MicrophoneBlack_256x256.png in Resources */,
+				AB6E18052A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */,
 				AB790039215B84E50082AE82 /* Icon_OpenROM_420x420.png in Resources */,
 				AB79003A215B84E50082AE82 /* Icon_Reset_420x420.png in Resources */,
 				AB79003B215B84E50082AE82 /* Icon_RotateCCW_420x420.png in Resources */,
@@ -7403,6 +7438,7 @@
 				AB8F3C5F1A53AC2600A80BF6 /* Icon_Input_420x420.png in Resources */,
 				AB8F3C601A53AC2600A80BF6 /* Icon_AutoholdSet_420x420.png in Resources */,
 				ABB0FBCE1A9EED350060C55A /* Icon_MicrophoneBlack_256x256.png in Resources */,
+				AB6E18022A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */,
 				AB8F3C621A53AC2600A80BF6 /* Icon_OpenROM_420x420.png in Resources */,
 				AB8F3C631A53AC2600A80BF6 /* Icon_Reset_420x420.png in Resources */,
 				AB8F3C641A53AC2600A80BF6 /* Icon_RotateCCW_420x420.png in Resources */,
@@ -7532,6 +7568,7 @@
 				ABC8588628273FEE00A03EA9 /* Icon_Input_420x420.png in Resources */,
 				ABC8588728273FEE00A03EA9 /* Icon_AutoholdSet_420x420.png in Resources */,
 				ABC8588828273FEE00A03EA9 /* Icon_MicrophoneBlack_256x256.png in Resources */,
+				AB6E18092A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */,
 				ABC8588928273FEE00A03EA9 /* Icon_OpenROM_420x420.png in Resources */,
 				ABC8588A28273FEE00A03EA9 /* Icon_Reset_420x420.png in Resources */,
 				ABC8588B28273FEE00A03EA9 /* Icon_RotateCCW_420x420.png in Resources */,
@@ -7651,6 +7688,7 @@
 				ABD2CD3C26E05CB000FB15F7 /* Icon_Input_420x420.png in Resources */,
 				ABD2CD3D26E05CB000FB15F7 /* Icon_AutoholdSet_420x420.png in Resources */,
 				ABD2CD3E26E05CB000FB15F7 /* Icon_MicrophoneBlack_256x256.png in Resources */,
+				AB6E180A2A6B218D003A564D /* CheatDatabaseViewer.xib in Resources */,
 				ABD2CD3F26E05CB000FB15F7 /* Icon_OpenROM_420x420.png in Resources */,
 				ABD2CD4026E05CB000FB15F7 /* Icon_Reset_420x420.png in Resources */,
 				ABD2CD4126E05CB000FB15F7 /* Icon_RotateCCW_420x420.png in Resources */,
@@ -7920,6 +7958,7 @@
 				8C43E7F027E3CD0100A35F65 /* ClientExecutionControl.cpp in Sources */,
 				8C43E7F127E3CD0100A35F65 /* rsemaphore.c in Sources */,
 				8C43E7F227E3CD0100A35F65 /* movie.cpp in Sources */,
+				AB6E17F72A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
 				8C43E7F327E3CD0100A35F65 /* slot1comp_rom.cpp in Sources */,
 				8C43E7F427E3CD0100A35F65 /* NDSSystem.cpp in Sources */,
 				8C43E7F527E3CD0100A35F65 /* MacBaseCaptureTool.mm in Sources */,
@@ -8162,6 +8201,7 @@
 				8C43E97827E3CD4C00A35F65 /* slot2_rumblepak.cpp in Sources */,
 				8C43E97927E3CD4C00A35F65 /* sndOSX.cpp in Sources */,
 				8C43E97A27E3CD4C00A35F65 /* SndOut.cpp in Sources */,
+				AB6E17F82A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
 				8C43E97B27E3CD4C00A35F65 /* psnames.c in Sources */,
 				8C43E97C27E3CD4C00A35F65 /* Slot2WindowDelegate.mm in Sources */,
 				8C43E97D27E3CD4C00A35F65 /* truetype.c in Sources */,
@@ -8319,6 +8359,7 @@
 				8CCD846127E40B730024BDD5 /* ClientExecutionControl.cpp in Sources */,
 				8CCD846227E40B730024BDD5 /* slot1.cpp in Sources */,
 				8CCD846327E40B730024BDD5 /* slot1_none.cpp in Sources */,
+				AB6E17FE2A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
 				8CCD846427E40B730024BDD5 /* slot1_r4.cpp in Sources */,
 				8CCD846527E40B730024BDD5 /* cff.c in Sources */,
 				8CCD846627E40B730024BDD5 /* MacBaseCaptureTool.mm in Sources */,
@@ -8653,6 +8694,7 @@
 				AB36C86B27F2C8AE00C763C8 /* macosx_10_5_compat.cpp in Sources */,
 				AB36C86C27F2C8AE00C763C8 /* OGLRender_3_2.cpp in Sources */,
 				AB36C86D27F2C8AE00C763C8 /* ftfntfmt.c in Sources */,
+				AB6E17FB2A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
 				AB36C86E27F2C8AE00C763C8 /* EmuControllerDelegate.mm in Sources */,
 				AB36C86F27F2C8AE00C763C8 /* ClientAVCaptureObject.cpp in Sources */,
 				AB36C87027F2C8AE00C763C8 /* cocoa_GPU.mm in Sources */,
@@ -8710,6 +8752,7 @@
 				AB79006E215B84E50082AE82 /* emufile.cpp in Sources */,
 				AB79006F215B84E50082AE82 /* fatdir.cpp in Sources */,
 				AB790070215B84E50082AE82 /* ftbase.c in Sources */,
+				AB6E17F92A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
 				AB790071215B84E50082AE82 /* fatfile.cpp in Sources */,
 				AB790072215B84E50082AE82 /* FIFO.cpp in Sources */,
 				AB790073215B84E50082AE82 /* sfnt.c in Sources */,
@@ -9010,6 +9053,7 @@
 				AB790211215B84F20082AE82 /* type1.c in Sources */,
 				AB790212215B84F20082AE82 /* slot2_paddle.cpp in Sources */,
 				AB790213215B84F20082AE82 /* slot2_piano.cpp in Sources */,
+				AB6E17FA2A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
 				AB790214215B84F20082AE82 /* slot2_rumblepak.cpp in Sources */,
 				AB790215215B84F20082AE82 /* sndOSX.cpp in Sources */,
 				AB790216215B84F20082AE82 /* SndOut.cpp in Sources */,
@@ -9167,6 +9211,7 @@
 				AB796D0415CDCBA200C59155 /* emufile.cpp in Sources */,
 				AB796D0515CDCBA200C59155 /* fatdir.cpp in Sources */,
 				ABFEA8011BB4EC1000B08C25 /* ftbase.c in Sources */,
+				AB6E17F52A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
 				AB796D0615CDCBA200C59155 /* fatfile.cpp in Sources */,
 				AB796D0715CDCBA200C59155 /* FIFO.cpp in Sources */,
 				ABFEA8A31BB4EC1100B08C25 /* sfnt.c in Sources */,
@@ -9467,6 +9512,7 @@
 				ABA731701BB51FDC00B26147 /* type1.c in Sources */,
 				AB8F3CBA1A53AC2600A80BF6 /* slot2_paddle.cpp in Sources */,
 				AB8F3CBB1A53AC2600A80BF6 /* slot2_piano.cpp in Sources */,
+				AB6E17F62A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
 				AB8F3CBC1A53AC2600A80BF6 /* slot2_rumblepak.cpp in Sources */,
 				AB8F3CBD1A53AC2600A80BF6 /* sndOSX.cpp in Sources */,
 				AB8F3CBE1A53AC2600A80BF6 /* SndOut.cpp in Sources */,
@@ -9796,6 +9842,7 @@
 				ABC858BF28273FEE00A03EA9 /* filetime.cpp in Sources */,
 				ABC858C028273FEE00A03EA9 /* FIRFilter.cpp in Sources */,
 				ABC858C128273FEE00A03EA9 /* firmware.cpp in Sources */,
+				AB6E17FC2A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
 				ABC858C228273FEE00A03EA9 /* async_job.c in Sources */,
 				ABC858C328273FEE00A03EA9 /* gfx3d.cpp in Sources */,
 				ABC858C428273FEE00A03EA9 /* DisplayViewCALayer.mm in Sources */,
@@ -10024,6 +10071,7 @@
 				ABD2CD7326E05CB000FB15F7 /* filetime.cpp in Sources */,
 				ABD2CD7426E05CB000FB15F7 /* FIRFilter.cpp in Sources */,
 				ABD2CD7526E05CB000FB15F7 /* firmware.cpp in Sources */,
+				AB6E17FD2A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
 				ABD2CD7626E05CB000FB15F7 /* async_job.c in Sources */,
 				ABD2CD7726E05CB000FB15F7 /* gfx3d.cpp in Sources */,
 				ABD2CD7826E05CB000FB15F7 /* DisplayViewCALayer.mm in Sources */,
@@ -10237,6 +10285,14 @@
 				AB350D38147A1D8D007165AC /* English */,
 			);
 			name = HID_usage_strings.plist;
+			sourceTree = "<group>";
+		};
+		AB6E17FF2A6B218D003A564D /* CheatDatabaseViewer.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				AB6E18002A6B218D003A564D /* English */,
+			);
+			name = CheatDatabaseViewer.xib;
 			sourceTree = "<group>";
 		};
 		AB8967DB16D2ED2700F826F1 /* DisplayWindow.xib */ = {

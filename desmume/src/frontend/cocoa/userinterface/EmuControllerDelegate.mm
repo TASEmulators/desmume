@@ -19,6 +19,7 @@
 #import "DisplayWindowController.h"
 #import "InputManager.h"
 #import "cheatWindowDelegate.h"
+#import "CheatDatabaseWindowController.h"
 #import "Slot2WindowDelegate.h"
 #import "MacAVCaptureTool.h"
 #import "MacScreenshotCaptureTool.h"
@@ -56,10 +57,10 @@
 @synthesize cdsCoreController;
 @synthesize cdsSoundController;
 @synthesize cheatWindowController;
-@synthesize cheatListController;
-@synthesize cheatDatabaseController;
 @synthesize slot2WindowController;
 @synthesize inputDeviceListController;
+
+@synthesize cheatDatabaseRecentsMenu;
 
 @synthesize romInfoPanel;
 
@@ -194,6 +195,11 @@
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(handleEmulatorExecutionState:)
 												 name:@"org.desmume.DeSmuME.handleEmulatorExecutionState"
+											   object:nil];
+	
+	[[NSNotificationCenter defaultCenter] addObserver:self
+											 selector:@selector(updateCheatDatabaseRecentsMenu:)
+												 name:@"org.desmume.DeSmuME.updateCheatDatabaseRecentsMenu"
 											   object:nil];
 	
 	return self;
@@ -802,6 +808,96 @@
 	}
 	
 	[self restoreCoreState];
+}
+
+- (IBAction) openCheatDatabaseFile:(id)sender
+{
+	CheatDatabaseWindowController *newWindowController = [[CheatDatabaseWindowController alloc] initWithWindowNibName:@"CheatDatabaseViewer" delegate:cheatWindowDelegate];
+	[newWindowController window]; // Just reference the window to force the NSWindow object to load.
+	
+	[[newWindowController window] makeKeyAndOrderFront:sender];
+	[[newWindowController window] makeMainWindow];
+	[newWindowController openFile:sender];
+}
+
+- (IBAction) clearCheatDatabaseRecents:(id)sender
+{
+	NSArray *menuItemList = [cheatDatabaseRecentsMenu itemArray];
+	
+	for (NSMenuItem *menuItem in menuItemList)
+	{
+		if ( ([menuItem action] == @selector(openRecentCheatDatabase:)) || [menuItem isSeparatorItem] )
+		{
+			[cheatDatabaseRecentsMenu removeItem:menuItem];
+		}
+	}
+	
+	NSArray *emptyArray = [[[NSArray alloc] init] autorelease];
+	[[NSUserDefaults standardUserDefaults] setObject:emptyArray forKey:@"CheatDatabase_RecentFilePath"];
+	
+	// Also remove the legacy setting.
+	[[NSUserDefaults standardUserDefaults] removeObjectForKey:@"R4Cheat_DatabasePath"];
+}
+
+- (IBAction) openRecentCheatDatabase:(id)sender
+{
+	CheatDatabaseWindowController *newWindowController = [[CheatDatabaseWindowController alloc] initWithWindowNibName:@"CheatDatabaseViewer" delegate:cheatWindowDelegate];
+	[newWindowController window]; // Just reference the window to force the NSWindow object to load.
+	
+	[[newWindowController window] makeKeyAndOrderFront:self];
+	[[newWindowController window] makeMainWindow];
+	
+	NSArray *recentDBFilePathsList = [[NSUserDefaults standardUserDefaults] arrayForKey:@"CheatDatabase_RecentFilePath"];
+	NSInteger index = [CocoaDSUtil getIBActionSenderTag:sender];
+	NSDictionary *recentItem = (NSDictionary *)[recentDBFilePathsList objectAtIndex:index];
+	NSString *recentItemFilePath = nil;
+	
+	if (recentItem != nil)
+	{
+		// Set up the window properties.
+		NSString *windowFrameString = (NSString *)[recentItem objectForKey:@"WindowFrame"];
+		if (windowFrameString != nil)
+		{
+			[[newWindowController window] setFrameFromString:windowFrameString];
+		}
+		
+		NSNumber *windowSplitViewDividerPositionNumber = (NSNumber *)[recentItem objectForKey:@"WindowSplitViewDividerPosition"];
+		if (windowSplitViewDividerPositionNumber != nil)
+		{
+			CGFloat dividerPosition = [windowSplitViewDividerPositionNumber floatValue];
+			[[newWindowController splitView] setPosition:dividerPosition ofDividerAtIndex:0];
+		}
+		
+		// Check for the file's existence at its path, and then handle appropriately.
+		recentItemFilePath = (NSString *)[recentItem objectForKey:@"FilePath"];
+		NSFileManager *fileManager = [[NSFileManager alloc] init];
+		BOOL doesFileExist = [fileManager fileExistsAtPath:recentItemFilePath];
+		[fileManager release];
+		
+		if (!doesFileExist)
+		{
+			// If the file does not exist, then report the error to the user, and the remove the
+			// nonexistent file from the recents menu.
+			[newWindowController showErrorSheet:CheatSystemError_FileDoesNotExist];
+			
+			NSMutableArray *newRecentsList = [NSMutableArray arrayWithCapacity:[recentDBFilePathsList count]];
+			
+			for (NSDictionary *theItem in recentDBFilePathsList)
+			{
+				if (theItem != recentItem)
+				{
+					[newRecentsList addObject:theItem];
+				}
+			}
+			
+			[[NSUserDefaults standardUserDefaults] setObject:newRecentsList forKey:@"CheatDatabase_RecentFilePath"];
+			[self updateCheatDatabaseRecentsMenu:nil];
+			return;
+		}
+	}
+	
+	NSURL *dbFileURL = [NSURL fileURLWithPath:recentItemFilePath];
+	[newWindowController loadFileStart:dbFileURL];
 }
 
 - (IBAction) toggleExecutePause:(id)sender
@@ -2029,6 +2125,93 @@
 	return result;
 }
 
+- (void) updateCheatDatabaseRecentsMenu:(NSNotification *)aNotification
+{
+	NSArray *dbRecentsList = (NSArray *)[aNotification object];
+	BOOL needReleaseObject = (dbRecentsList != nil);
+	
+	if ( (dbRecentsList == nil) || ([dbRecentsList count] == 0) )
+	{
+		dbRecentsList = [[NSUserDefaults standardUserDefaults] arrayForKey:@"CheatDatabase_RecentFilePath"];
+	}
+	
+	NSMutableArray *newRecentsList = [NSMutableArray arrayWithArray:dbRecentsList];
+	
+	// Note that we're relying on the notification object to retain this prior to
+	// sending the notification.
+	if (needReleaseObject)
+	{
+		[dbRecentsList release];
+	}
+	
+	NSString *legacyFilePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"R4Cheat_DatabasePath"];
+	BOOL useLegacyFilePath = ( (legacyFilePath != nil) && ([legacyFilePath length] > 0) );
+	
+	if (useLegacyFilePath)
+	{
+		// We need to check if the legacy file path also exists in the recents list.
+		// If it does, then the recents list version takes priority.
+		for (NSDictionary *dbRecentItem in dbRecentsList)
+		{
+			NSString *dbRecentItemFilePath = (NSString *)[dbRecentItem valueForKey:@"FilePath"];
+			if ([dbRecentItemFilePath isEqualToString:legacyFilePath])
+			{
+				useLegacyFilePath = NO;
+				break;
+			}
+		}
+	}
+	
+	if (useLegacyFilePath)
+	{
+		// The legacy file path must always be the first entry of the recents list.
+		NSDictionary *legacyRecentItem = [NSDictionary dictionaryWithObjectsAndKeys:legacyFilePath, @"FilePath",
+										  [legacyFilePath lastPathComponent], @"FileName",
+										  nil];
+		[newRecentsList insertObject:legacyRecentItem atIndex:0];
+		
+		if ([newRecentsList count] == 1)
+		{
+			// If the legacy file path is the only item in the recents list, then we can write it
+			// back to user defaults right now.
+			[[NSUserDefaults standardUserDefaults] setObject:newRecentsList forKey:@"CheatDatabase_RecentFilePath"];
+		}
+	}
+	
+	NSArray *recentsMenuItems = [cheatDatabaseRecentsMenu itemArray];
+	for (NSMenuItem *menuItem in recentsMenuItems)
+	{
+		if ( [menuItem action] == @selector(openRecentCheatDatabase:) )
+		{
+			[cheatDatabaseRecentsMenu removeItem:menuItem];
+		}
+	}
+	
+	if ([newRecentsList count] > 0)
+	{
+		if ( ![[cheatDatabaseRecentsMenu itemAtIndex:0] isSeparatorItem] )
+		{
+			[cheatDatabaseRecentsMenu insertItem:[NSMenuItem separatorItem] atIndex:0];
+		}
+	}
+	
+	// Recent files are added in reverse order, in which least recent files appear below
+	// more recent files in the menu. The most recent file should be at the top of the menu.
+	for (NSDictionary *recentItem in newRecentsList)
+	{
+		NSString *menuNameString = [recentItem objectForKey:@"FileName"];
+		if ( (menuNameString == nil) || ([menuNameString length] == 0) )
+		{
+			menuNameString = [recentItem objectForKey:@"FilePath"];
+		}
+		
+		NSMenuItem *newMenuItem = [[[NSMenuItem alloc] initWithTitle:menuNameString action:@selector(openRecentCheatDatabase:) keyEquivalent:@""] autorelease];
+		[newMenuItem setTag:[newRecentsList indexOfObject:recentItem]];
+		[newMenuItem setTarget:self];
+		[cheatDatabaseRecentsMenu insertItem:newMenuItem atIndex:0];
+	}
+}
+
 - (void) handleNDSError:(NSNotification *)aNotification
 {
 	[self setIsUserInterfaceBlockingExecution:YES];
@@ -2976,6 +3159,13 @@
 	else if (theAction == @selector(stopReplay:))
 	{
 		if ([self currentRom] == nil || [self isRomLoading] || [self isShowingSaveStateDialog])
+		{
+			enable = NO;
+		}
+	}
+	else if (theAction == @selector(clearCheatDatabaseRecents:))
+	{
+		if ([cheatDatabaseRecentsMenu numberOfItems] < 2)
 		{
 			enable = NO;
 		}

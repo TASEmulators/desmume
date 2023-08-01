@@ -2123,8 +2123,9 @@ CheatDBFile::CheatDBFile()
 {
 	_path = "";
 	_description = "";
+	_formatString = "---";
 	
-	_type = CHEATS_DB_R4;
+	_format = CheatDBFileFormat_Undefined;
 	_isEncrypted = false;
 	_size = 0;
 	_fp = NULL;
@@ -2150,15 +2151,25 @@ const char* CheatDBFile::GetDescription() const
 	return this->_description.c_str();
 }
 
-int CheatDBFile::OpenFile(const char *filePath)
+CheatDBFileFormat CheatDBFile::GetFormat() const
 {
-	int error = 0;
+	return this->_format;
+}
+
+const char* CheatDBFile::GetFormatString() const
+{
+	return this->_formatString.c_str();
+}
+
+CheatSystemError CheatDBFile::OpenFile(const char *filePath)
+{
+	CheatSystemError error = CheatSystemError_NoError;
 	
 	this->_fp = fopen(filePath, "rb");
 	if (this->_fp == NULL)
 	{
 		printf("ERROR: Failed to open the cheat database.\n");
-		error = 1;
+		error = CheatSystemError_FileOpenFailed;
 		return error;
 	}
 	
@@ -2172,14 +2183,14 @@ int CheatDBFile::OpenFile(const char *filePath)
 	if (this->_size < strlen(headerID))
 	{
 		printf("ERROR: Failed to validate the file header.\n");
-		error = 2;
+		error = CheatSystemError_FileFormatInvalid;
 		return error;
 	}
 	
 	if (this->_size < CHEATDB_FILEOFFSET_FIRST_FAT_ENTRY)
 	{
 		printf("ERROR: No FAT entries found.\n");
-		error = 2;
+		error = CheatSystemError_FileFormatInvalid;
 		return error;
 	}
 	
@@ -2203,7 +2214,7 @@ int CheatDBFile::OpenFile(const char *filePath)
 			this->_fp = NULL;
 			
 			printf("ERROR: Failed to validate the file header.\n");
-			error = 2;
+			error = CheatSystemError_FileFormatInvalid;
 			return error;
 		}
 		
@@ -2213,6 +2224,8 @@ int CheatDBFile::OpenFile(const char *filePath)
 		this->_isEncrypted = true;
 	}
 	
+	this->_format = CheatDBFileFormat_R4;
+	this->_formatString = "R4";
 	this->_description = (const char *)(workingBuffer + CHEATDB_OFFSET_FILE_DESCRIPTION);
 	this->_path = filePath;
 	
@@ -2439,7 +2452,7 @@ CHEATSEXPORT::CHEATSEXPORT()
 {
 	_selectedDbGame = NULL;
 	_cheats = NULL;
-	_error = 0;
+	_lastError = CheatSystemError_NoError;
 }
 
 CHEATSEXPORT::~CHEATSEXPORT()
@@ -2451,8 +2464,8 @@ bool CHEATSEXPORT::load(const char *path)
 {
 	bool didLoadSucceed = false;
 	
-	this->_error = this->_dbFile.OpenFile(path);
-	if (this->_error != 0)
+	this->_lastError = this->_dbFile.OpenFile(path);
+	if (this->_lastError != CheatSystemError_NoError)
 	{
 		return didLoadSucceed;
 	}
@@ -2471,7 +2484,7 @@ bool CHEATSEXPORT::load(const char *path)
 		};
 		
 		printf("ERROR: Cheat for game code '%s' not found in database.\n", gameCodeString);
-		this->_error = 3;
+		this->_lastError = CheatSystemError_GameNotFound;
 		return didLoadSucceed;
 	}
 	
@@ -2479,7 +2492,7 @@ bool CHEATSEXPORT::load(const char *path)
 	if (dbGameBuffer == NULL)
 	{
 		printf("ERROR: Failed to read game entries from file.\n");
-		this->_error = 1;
+		this->_lastError = CheatSystemError_LoadEntryError;
 		return didLoadSucceed;
 	}
 	
@@ -2495,7 +2508,7 @@ bool CHEATSEXPORT::load(const char *path)
 	if (parsedCheatCount == 0)
 	{
 		printf("ERROR: export cheats failed\n");
-		this->_error = 4;
+		this->_lastError = CheatSystemError_LoadEntryError;
 		return didLoadSucceed;
 	}
 	
@@ -2546,7 +2559,7 @@ const char* CHEATSEXPORT::getDescription() const
 	return (const char *)this->_dbFile.GetDescription();
 }
 
-u8 CHEATSEXPORT::getErrorCode() const
+CheatSystemError CHEATSEXPORT::getErrorCode() const
 {
-	return this->_error;
+	return this->_lastError;
 }

@@ -1639,19 +1639,31 @@ bool CheatsExportDialog(HWND hwnd)
 	else
 	{
 		char buf2[512] = {0};
-		if (cheatsExport->getErrorCode() == 1)
-			sprintf(buf2, "Error loading cheats database. File not found\n\"%s\"\nCheck your path (Menu->Config->Path Settings->\"Cheats\")\n\nYou can download it from http://www.codemasters-project.net/vb/forumdisplay.php?44-Nintendo-DS", buf);
-		else
-			if (cheatsExport->getErrorCode() == 2)
+		CheatSystemError theError = cheatsExport->getErrorCode();
+		
+		switch (theError)
+		{
+			case CheatSystemError_FileOpenFailed:
+				sprintf(buf2, "Error loading cheats database. File not found\n\"%s\"\nCheck your path (Menu->Config->Path Settings->\"Cheats\")\n\nYou can download it from http://www.codemasters-project.net/vb/forumdisplay.php?44-Nintendo-DS", buf);
+				break;
+				
+			case CheatSystemError_FileFormatInvalid:
 				sprintf(buf2, "File \"%s\" is not R4 cheats database.\nWrong file format!", buf);
-			else
-				if (cheatsExport->getErrorCode() == 3)
-					sprintf(buf2, "CRC %8X not found in database.", gameInfo.crcForCheatsDb);
-				else
-					if (cheatsExport->getErrorCode() == 4)
-						sprintf(buf2, "Error export from database");
-					else
-						sprintf(buf2, "Unknown error!!!");
+				break;
+				
+			case CheatSystemError_GameNotFound:
+				sprintf(buf2, "CRC %8X not found in database.", gameInfo.crcForCheatsDb);
+				break;
+				
+			case CheatSystemError_LoadEntryError:
+				sprintf(buf2, "Error export from database");
+				break;
+				
+			default:
+				sprintf(buf2, "Unknown error!!!");
+				break;
+		}
+		
 		MessageBox(hwnd, buf2, "DeSmuME", MB_OK | MB_ICONERROR);				
 	}
 

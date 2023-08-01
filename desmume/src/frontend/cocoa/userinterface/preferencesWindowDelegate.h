@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2022 DeSmuME Team
+	Copyright (C) 2012-2023 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -55,7 +55,6 @@ class OGLImage;
 	NSObjectController *emuController;
 	NSObjectController *prefWindowController;
 	NSObjectController *cheatWindowController;
-	NSArrayController *cheatDatabaseController;
 	
 	NSToolbarItem *toolbarItemGeneral;
 	NSToolbarItem *toolbarItemInput;
@@ -105,7 +104,6 @@ class OGLImage;
 @property (readonly) IBOutlet NSObjectController *emuController;
 @property (readonly) IBOutlet NSObjectController *prefWindowController;
 @property (readonly) IBOutlet NSObjectController *cheatWindowController;
-@property (readonly) IBOutlet NSArrayController *cheatDatabaseController;
 @property (readonly) IBOutlet NSToolbarItem *toolbarItemGeneral;
 @property (readonly) IBOutlet NSToolbarItem *toolbarItemInput;
 @property (readonly) IBOutlet NSToolbarItem *toolbarItemDisplay;
@@ -139,8 +137,6 @@ class OGLImage;
 - (void) chooseAdvansceneDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 - (IBAction) chooseRomForAutoload:(id)sender;
 - (void) chooseRomForAutoloadDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
-- (IBAction) chooseCheatDatabase:(id)sender;
-- (void) chooseCheatDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 
 - (IBAction) selectDisplayRotation:(id)sender;
 - (void) updateDisplayRotationMenu:(double)displayRotation;

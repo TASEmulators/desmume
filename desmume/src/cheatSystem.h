@@ -32,6 +32,17 @@
 #define CHEAT_TYPE_AR 1
 #define CHEAT_TYPE_CODEBREAKER 2
 
+enum CheatSystemError
+{
+	CheatSystemError_NoError           = 0,
+	CheatSystemError_FileOpenFailed    = 1,
+	CheatSystemError_FileFormatInvalid = 2,
+	CheatSystemError_GameNotFound      = 3,
+	CheatSystemError_LoadEntryError    = 4,
+	CheatSystemError_FileSaveFailed    = 5,
+	CheatSystemError_FileDoesNotExist  = 6
+};
+
 struct CHEATS_LIST
 {
 	CHEATS_LIST()
@@ -163,9 +174,11 @@ public:
 #define CHEATDB_OFFSET_FILE_DESCRIPTION    0x00000010
 #define CHEATDB_FILEOFFSET_FIRST_FAT_ENTRY 0x00000100
 
-enum CHEATS_DB_TYPE
+enum CheatDBFileFormat
 {
-	CHEATS_DB_R4 = 0
+	CheatDBFileFormat_Undefined = 0,
+	CheatDBFileFormat_R4        = 1,
+	CheatDBFileFormat_Unknown   = 65535
 };
 
 // This struct maps to the FAT entries in the R4 cheat database file.
@@ -253,8 +266,9 @@ class CheatDBFile
 protected:
 	std::string _path;
 	std::string _description;
+	std::string _formatString;
 	
-	CHEATS_DB_TYPE _type;
+	CheatDBFileFormat _format;
 	bool _isEncrypted;
 	size_t _size;
 	
@@ -272,8 +286,10 @@ public:
 	FILE* GetFilePtr() const;
 	bool IsEncrypted() const;
 	const char* GetDescription() const;
+	CheatDBFileFormat GetFormat() const;
+	const char* GetFormatString() const;
 	
-	int OpenFile(const char *filePath);
+	CheatSystemError OpenFile(const char *filePath);
 	void CloseFile();
 	
 	u32 LoadGameList(const char *gameCode, const u32 gameDatabaseCRC, CheatDBGameList &outList);
@@ -286,12 +302,7 @@ private:
 	CheatDBGameList _tempGameList;
 	CheatDBGame *_selectedDbGame;
 	CHEATS_LIST *_cheats;
-
-	u8 _error; //	0 - no errors
-	           //	1 - open failed/file not found
-	           //	2 - file format is wrong (no valid header ID)
-	           //	3 - cheat not found in database
-	           //	4 - export error from database
+	CheatSystemError _lastError;
 
 public:
 	CHEATSEXPORT();
@@ -304,7 +315,7 @@ public:
 	size_t getCheatsNum() const;
 	const char* getGameTitle() const;
 	const char* getDescription() const;
-	u8 getErrorCode() const;
+	CheatSystemError getErrorCode() const;
 };
 
 CheatDBGame* GetCheatDBGameEntryFromList(const CheatDBGameList &gameList, const char *gameCode, const u32 gameDatabaseCRC);
