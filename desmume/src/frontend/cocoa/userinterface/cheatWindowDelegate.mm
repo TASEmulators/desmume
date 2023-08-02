@@ -197,6 +197,38 @@
 	}
 }
 
+- (IBAction) enableAllInList:(id)sender
+{
+	NSArray *cheatListArray = [cheatListController content];
+	if (cheatListArray == nil)
+	{
+		return;
+	}
+	
+	for (CocoaDSCheatItem *cheatItem in cheatListArray)
+	{
+		[cheatItem setEnabled:YES];
+	}
+	
+	[[self cdsCheats] save];
+}
+
+- (IBAction) disableAllInList:(id)sender
+{
+	NSArray *cheatListArray = [cheatListController content];
+	if (cheatListArray == nil)
+	{
+		return;
+	}
+	
+	for (CocoaDSCheatItem *cheatItem in cheatListArray)
+	{
+		[cheatItem setEnabled:NO];
+	}
+	
+	[[self cdsCheats] save];
+}
+
 - (IBAction) removeAllFromList:(id)sender
 {
 	CocoaDSCheatManager *cheatManager = [self cdsCheats];

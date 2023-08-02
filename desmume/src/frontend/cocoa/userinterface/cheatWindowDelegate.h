@@ -98,7 +98,11 @@
 
 - (IBAction) addToList:(id)sender;
 - (IBAction) removeFromList:(id)sender;
+
+- (IBAction) enableAllInList:(id)sender;
+- (IBAction) disableAllInList:(id)sender;
 - (IBAction) removeAllFromList:(id)sender;
+
 - (IBAction) setInternalCheatValue:(id)sender;
 - (IBAction) applyConfiguration:(id)sender;
 - (IBAction) selectCheatType:(id)sender;
