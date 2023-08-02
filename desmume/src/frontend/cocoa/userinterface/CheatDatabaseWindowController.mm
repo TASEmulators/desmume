@@ -46,6 +46,8 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 @dynamic currentGameSerial;
 @synthesize currentGameCRC;
 @dynamic currentGameCRCString;
+@dynamic isCompatibilityCheckIgnored;
+@synthesize isOptionWarningSilenced;
 
 @synthesize errorMajorString;
 @synthesize errorMinorString;
@@ -71,6 +73,8 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 	currentGameTableRowIndex = NSNotFound;
 	currentGameSerial = nil;
 	currentGameCRC = 0;
+	isCompatibilityCheckIgnored = NO;
+	isOptionWarningSilenced = NO;
 	errorMajorString = @"No error has occurred!";
 	errorMinorString = @"This is just a placeholder message for initialization purposes.";
 	
@@ -237,6 +241,7 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 								   [NSDate date], @"AddedDate",
 								   [[self window] stringWithSavedFrame], @"WindowFrame",
 								   [NSNumber numberWithFloat:[[[splitView subviews] objectAtIndex:0] frame].size.height], @"WindowSplitViewDividerPosition",
+								   [NSNumber numberWithBool:[self isCompatibilityCheckIgnored]], @"OptionIgnoreCompatibilityCheck",
 								   nil];
 	
 	// ...and then add the newest recent item, ensuring that it is always last in the list.
@@ -337,7 +342,7 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 	
 	if ( (delegate != nil) && (cheatManager != nil) && ([selectedGame serial] != nil) )
 	{
-		showWillAddColumn = ([[selectedGame serial] isEqualToString:currentGameSerial]) && ([selectedGame crc] == currentGameCRC);
+		showWillAddColumn = ( [self isCompatibilityCheckIgnored] || (([[selectedGame serial] isEqualToString:currentGameSerial]) && ([selectedGame crc] == currentGameCRC)) );
 	}
 	
 	NSTableColumn *willAddColumn = [entryOutline tableColumnWithIdentifier:@"willAdd"];
@@ -524,6 +529,30 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 	return @"---";
 }
 
+- (BOOL) isCompatibilityCheckIgnored
+{
+	return isCompatibilityCheckIgnored;
+}
+
+- (void) setIsCompatibilityCheckIgnored:(BOOL)theState
+{
+	isCompatibilityCheckIgnored = theState;
+	
+	if (![self isOptionWarningSilenced] && theState)
+	{
+		NSAlert *criticalErrorAlert = [[[NSAlert alloc] init] autorelease];
+		[criticalErrorAlert setAlertStyle:ALERTSTYLE_CRITICAL];
+		[criticalErrorAlert setMessageText:@"Using an incompatible cheat may ruin your game."];
+		[criticalErrorAlert setInformativeText:@"Cheats are normally restricted to the current game \
+for compatibility reasons. By choosing to ignore the compatibility check, you can add any cheat to \
+any game that you want, but you must also assume the risk of an incompatible cheat ruining your game \
+session or corrupting your game's save data."];
+		[criticalErrorAlert runModal];
+	}
+	
+	[self validateWillAddColumn];
+}
+
 #pragma mark -
 #pragma mark IBActions
 
@@ -620,11 +649,6 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 		return;
 	}
 	
-	if ( ([self currentGameSerial] == nil) || ([self currentGameCRC] == 0) )
-	{
-		return;
-	}
-	
 	NSMutableArray *entryTree = [entryListController content];
 	if (entryTree == nil)
 	{
@@ -634,7 +658,7 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 	NSInteger selectedIndex = [gameTable selectedRow];
 	CocoaDSCheatDBGame *selectedGame = (CocoaDSCheatDBGame *)[[gameListController arrangedObjects] objectAtIndex:selectedIndex];
 	
-	if ( (![[selectedGame serial] isEqualToString:[self currentGameSerial]]) || ([selectedGame crc] != [self currentGameCRC]) )
+	if ( ![self isCompatibilityCheckIgnored] && ((![[selectedGame serial] isEqualToString:[self currentGameSerial]]) || ([selectedGame crc] != [self currentGameCRC])) )
 	{
 		return;
 	}
@@ -725,6 +749,7 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 				NSMutableDictionary *newRecentItem = [NSMutableDictionary dictionaryWithDictionary:recentItem];
 				[newRecentItem setObject:[[self window] stringWithSavedFrame] forKey:@"WindowFrame"];
 				[newRecentItem setObject:[NSNumber numberWithFloat:[[[splitView subviews] objectAtIndex:0] frame].size.height] forKey:@"WindowSplitViewDividerPosition"];
+				[newRecentItem setObject:[NSNumber numberWithBool:[self isCompatibilityCheckIgnored]] forKey:@"OptionIgnoreCompatibilityCheck"];
 				
 				[dbRecentsList addObject:newRecentItem];
 			}

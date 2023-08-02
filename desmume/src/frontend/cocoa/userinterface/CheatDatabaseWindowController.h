@@ -48,6 +48,8 @@
 	NSString *currentGameIndexString;
 	NSString *currentGameSerial;
 	NSUInteger currentGameCRC;
+	BOOL isCompatibilityCheckIgnored;
+	BOOL isOptionWarningSilenced;
 	
 	NSString *errorMajorString;
 	NSString *errorMinorString;
@@ -76,6 +78,8 @@
 @property (retain, nonatomic) NSString *currentGameSerial;
 @property (assign, nonatomic) NSUInteger currentGameCRC;
 @property (readonly, nonatomic) NSString *currentGameCRCString;
+@property (assign, nonatomic) BOOL isCompatibilityCheckIgnored;
+@property (assign) BOOL isOptionWarningSilenced;
 
 @property (assign) NSString *errorMajorString;
 @property (assign) NSString *errorMinorString;

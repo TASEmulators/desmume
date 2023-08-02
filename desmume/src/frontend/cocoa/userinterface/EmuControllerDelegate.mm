@@ -854,6 +854,14 @@
 	
 	if (recentItem != nil)
 	{
+		NSNumber *compatibilityCheckNumber = (NSNumber *)[recentItem objectForKey:@"OptionIgnoreCompatibilityCheck"];
+		if (compatibilityCheckNumber != nil)
+		{
+			[newWindowController setIsOptionWarningSilenced:YES];
+			[newWindowController setIsCompatibilityCheckIgnored:[compatibilityCheckNumber boolValue]];
+			[newWindowController setIsOptionWarningSilenced:NO];
+		}
+		
 		// Set up the window properties.
 		NSString *windowFrameString = (NSString *)[recentItem objectForKey:@"WindowFrame"];
 		if (windowFrameString != nil)
