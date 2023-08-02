@@ -43,6 +43,9 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 @synthesize isFileLoading;
 @synthesize isCurrentGameFound;
 @synthesize isSelectedGameTheCurrentGame;
+@dynamic currentGameSerial;
+@synthesize currentGameCRC;
+@dynamic currentGameCRCString;
 
 @synthesize errorMajorString;
 @synthesize errorMinorString;
@@ -66,6 +69,8 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 	isSelectedGameTheCurrentGame = NO;
 	currentGameIndexString = [[NSString alloc] initWithString:@"NSNotFound"];
 	currentGameTableRowIndex = NSNotFound;
+	currentGameSerial = nil;
+	currentGameCRC = 0;
 	errorMajorString = @"No error has occurred!";
 	errorMinorString = @"This is just a placeholder message for initialization purposes.";
 	
@@ -261,8 +266,32 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 	[gameTable deselectAll:nil];
 	[gameTable selectRowIndexes:selectedRows byExtendingSelection:NO];
 	
+	CheatWindowDelegate *delegate = [self cheatManagerDelegate];
+	CocoaDSCheatManager *cheatManager = [delegate cdsCheats];
+	[self setCurrentGameSerial:[cheatManager currentGameCode]];
+	[self setCurrentGameCRC:[cheatManager currentGameCRC]];
+	
 	[self validateGameTableFonts];
 	[self selectCurrentGame:nil];
+}
+
++ (void) setCurrentGameForAllWindowsSerial:(NSString *)serialString crc:(NSUInteger)crc
+{
+	if (cheatDatabaseWindowList == nil)
+	{
+		return;
+	}
+	
+	for (CheatDatabaseWindowController *windowController in cheatDatabaseWindowList)
+	{
+		[windowController setCurrentGameSerial:serialString];
+		[windowController setCurrentGameCRC:crc];
+		
+		[windowController validateGameTableFonts];
+		[[windowController gameTable] setNeedsDisplay];
+		
+		[windowController validateWillAddColumn];
+	}
 }
 
 - (void) validateGameTableFonts
@@ -279,32 +308,15 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 		return;
 	}
 	
-	NSString *currentGameCode = [cheatManager currentGameCode];
-	const NSUInteger currentGameCRC = [cheatManager currentGameCRC];
-	
 	for (CocoaDSCheatDBGame *game in [gameListController content])
 	{
-		if ( ([game crc] == currentGameCRC) && ([[game serial] isEqualToString:currentGameCode]) )
+		if ( ([game crc] == [self currentGameCRC]) && ([[game serial] isEqualToString:[self currentGameSerial]]) )
 		{
 			[currentGameIndexString release];
 			currentGameIndexString = [[NSString alloc] initWithFormat:@"%llu", (unsigned long long)[game index]];
 			[self setIsCurrentGameFound:YES];
 			break;
 		}
-	}
-}
-
-+ (void) validateGameTableFontsForAllWindows
-{
-	if (cheatDatabaseWindowList == nil)
-	{
-		return;
-	}
-	
-	for (CheatDatabaseWindowController *windowController in cheatDatabaseWindowList)
-	{
-		[windowController validateGameTableFonts];
-		[[windowController gameTable] setNeedsDisplay];
 	}
 }
 
@@ -325,7 +337,7 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 	
 	if ( (delegate != nil) && (cheatManager != nil) && ([selectedGame serial] != nil) )
 	{
-		showWillAddColumn = ([[selectedGame serial] isEqualToString:[cheatManager currentGameCode]]) && ([selectedGame crc] == [cheatManager currentGameCRC]);
+		showWillAddColumn = ([[selectedGame serial] isEqualToString:currentGameSerial]) && ([selectedGame crc] == currentGameCRC);
 	}
 	
 	NSTableColumn *willAddColumn = [entryOutline tableColumnWithIdentifier:@"willAdd"];
@@ -334,19 +346,6 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 	[self setIsSelectedGameTheCurrentGame:showWillAddColumn];
 	
 	return showWillAddColumn;
-}
-
-+ (void) validateWillAddColumnForAllWindows
-{
-	if (cheatDatabaseWindowList == nil)
-	{
-		return;
-	}
-	
-	for (CheatDatabaseWindowController *windowController in cheatDatabaseWindowList)
-	{
-		[windowController validateWillAddColumn];
-	}
 }
 
 - (void) showErrorSheet:(NSInteger)errorCode
@@ -486,6 +485,45 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 	return @"---";
 }
 
+- (void) setCurrentGameSerial:(NSString *)newString
+{
+	NSString *oldString = currentGameSerial;
+	currentGameSerial = [newString retain];
+	[oldString release];
+}
+
+- (NSString *) currentGameSerial
+{
+	if ( (currentGameSerial != nil) && ([currentGameSerial length] > 0) )
+	{
+		return currentGameSerial;
+	}
+	
+	return @"---";
+}
+
+- (void) setCurrentGameCRC:(NSUInteger)crc
+{
+	[self willChangeValueForKey:@"currentGameCRCString"];
+	currentGameCRC = crc;
+	[self didChangeValueForKey:@"currentGameCRCString"];
+}
+
+- (NSUInteger) currentGameCRC
+{
+	return currentGameCRC;
+}
+
+- (NSString *) currentGameCRCString
+{
+	if (currentGameCRC != 0)
+	{
+		return [NSString stringWithFormat:@"%08lX", (unsigned long)currentGameCRC];
+	}
+	
+	return @"---";
+}
+
 #pragma mark -
 #pragma mark IBActions
 
@@ -582,9 +620,7 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 		return;
 	}
 	
-	NSString *currentGameCode = [cheatManager currentGameCode];
-	NSUInteger currentGameCRC = [cheatManager currentGameCRC];
-	if ( (currentGameCode == nil) || (currentGameCRC == 0) )
+	if ( ([self currentGameSerial] == nil) || ([self currentGameCRC] == 0) )
 	{
 		return;
 	}
@@ -598,7 +634,7 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 	NSInteger selectedIndex = [gameTable selectedRow];
 	CocoaDSCheatDBGame *selectedGame = (CocoaDSCheatDBGame *)[[gameListController arrangedObjects] objectAtIndex:selectedIndex];
 	
-	if ( (![[selectedGame serial] isEqualToString:currentGameCode]) || ([selectedGame crc] != currentGameCRC) )
+	if ( (![[selectedGame serial] isEqualToString:[self currentGameSerial]]) || ([selectedGame crc] != [self currentGameCRC]) )
 	{
 		return;
 	}
@@ -631,9 +667,7 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 		return;
 	}
 	
-	NSString *currentGameCode = [cheatManager currentGameCode];
-	NSUInteger currentGameCRC = [cheatManager currentGameCRC];
-	if ( (currentGameCode == nil) || (currentGameCRC == 0) )
+	if ( ([self currentGameSerial] == nil) || ([self currentGameCRC] == 0) )
 	{
 		return;
 	}
@@ -643,7 +677,7 @@ NSMutableArray *cheatDatabaseWindowList = nil;
 	NSArray *arrangedObjects = (NSArray *)[gameListController arrangedObjects];
 	for (CocoaDSCheatDBGame *game in arrangedObjects)
 	{
-		if ( ([game crc] == currentGameCRC) && ([[game serial] isEqualToString:currentGameCode]) )
+		if ( ([game crc] == [self currentGameCRC]) && ([[game serial] isEqualToString:[self currentGameSerial]]) )
 		{
 			selectionIndex = [arrangedObjects indexOfObject:game];
 			NSIndexSet *indexSet = [NSIndexSet indexSetWithIndex:selectionIndex];

@@ -46,6 +46,8 @@
 	BOOL isSelectedGameTheCurrentGame;
 	NSInteger currentGameTableRowIndex;
 	NSString *currentGameIndexString;
+	NSString *currentGameSerial;
+	NSUInteger currentGameCRC;
 	
 	NSString *errorMajorString;
 	NSString *errorMinorString;
@@ -71,6 +73,9 @@
 @property (assign) BOOL isFileLoading;
 @property (assign) BOOL isCurrentGameFound;
 @property (assign) BOOL isSelectedGameTheCurrentGame;
+@property (retain, nonatomic) NSString *currentGameSerial;
+@property (assign, nonatomic) NSUInteger currentGameCRC;
+@property (readonly, nonatomic) NSString *currentGameCRCString;
 
 @property (assign) NSString *errorMajorString;
 @property (assign) NSString *errorMinorString;
@@ -80,10 +85,9 @@
 - (void) loadFileOnThread:(id)object;
 - (void) loadFileDidFinish:(NSNotification *)aNotification;
 - (void) updateWindow;
++ (void) setCurrentGameForAllWindowsSerial:(NSString *)serialString crc:(NSUInteger)crc;
 - (void) validateGameTableFonts;
-+ (void) validateGameTableFontsForAllWindows;
 - (BOOL) validateWillAddColumn;
-+ (void) validateWillAddColumnForAllWindows;
 - (void) showErrorSheet:(NSInteger)errorCode;
 - (void) didEndErrorSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 

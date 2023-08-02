@@ -122,8 +122,7 @@
 	[cheatListController setContent:[cheatManager sessionList]];
 	
 	[self setCheatSearchViewByStyle:CheatSearchStyle_ExactValue];
-	[CheatDatabaseWindowController validateWillAddColumnForAllWindows];
-	[CheatDatabaseWindowController validateGameTableFontsForAllWindows];
+	[CheatDatabaseWindowController setCurrentGameForAllWindowsSerial:[cheatManager currentGameCode] crc:[cheatManager currentGameCRC]];
 	
 	didStartSuccessfully = YES;
 	return didStartSuccessfully;
@@ -143,8 +142,7 @@
 	[self setCurrentGameCRC:0];
 	[self setCdsCheats:nil];
 	
-	[CheatDatabaseWindowController validateWillAddColumnForAllWindows];
-	[CheatDatabaseWindowController validateGameTableFontsForAllWindows];
+	[CheatDatabaseWindowController setCurrentGameForAllWindowsSerial:nil crc:0];
 }
 
 - (IBAction) addToList:(id)sender
