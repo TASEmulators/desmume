@@ -163,7 +163,7 @@ bool slot2_Change(NDS_SLOT2_TYPE changeToType)
 
 void slot2_setDeviceByType(NDS_SLOT2_TYPE theType)
 {
-	if (theType > NDS_SLOT2_COUNT || theType < 0)
+	if (theType >= NDS_SLOT2_COUNT || theType < 0)
 	{
 		return;
 	}
