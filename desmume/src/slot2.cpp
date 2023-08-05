@@ -106,7 +106,7 @@ void slot2_Reset()
 
 bool slot2_Change(NDS_SLOT2_TYPE changeToType)
 {
-	if (changeToType > NDS_SLOT2_COUNT || changeToType < 0)
+	if (changeToType >= NDS_SLOT2_COUNT || changeToType < 0)
 		return false;
 	
 	if (slot2_device_type == changeToType)
