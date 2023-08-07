@@ -2036,7 +2036,6 @@ int _main()
 	ScreenGapColor = GetPrivateProfileInt("Display", "ScreenGapColor", 0xFFFFFF, IniName);
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
-	CommonSettings.spu_advanced = GetPrivateProfileBool("Sound", "SpuAdvanced", true, IniName);
 	CommonSettings.advanced_timing = GetPrivateProfileBool("Emulation", "AdvancedTiming", true, IniName);
 	CommonSettings.gamehacks.en = GetPrivateProfileBool("Emulation", "GameHacks", true, IniName);
 	CommonSettings.GFX3D_Renderer_TextureDeposterize =  GetPrivateProfileBool("3D", "TextureDeposterize", 0, IniName);
@@ -6504,9 +6503,6 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 			SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_SETPOS, TRUE, sndvolume);
 			SoundSettings_updateVolumeReadout(hDlg);
 
-			// Set spu advanced
-			CheckDlgItem(hDlg,IDC_SPU_ADVANCED,CommonSettings.spu_advanced);
-
 			timerid = SetTimer(hDlg, 1, 500, NULL);
 			return TRUE;
 		}
@@ -6582,10 +6578,6 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 					//write interpolation type
 					CommonSettings.spuInterpolationMode = (SPUInterpolationMode)SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_GETCURSEL, 0, 0);
 					WritePrivateProfileInt("Sound","SPUInterpolation",(int)CommonSettings.spuInterpolationMode, IniName);
-
-					//write spu advanced
-					CommonSettings.spu_advanced = IsDlgCheckboxChecked(hDlg,IDC_SPU_ADVANCED);
-					WritePrivateProfileBool("Sound","SpuAdvanced",CommonSettings.spu_advanced,IniName);
 
 					return TRUE;
 				}

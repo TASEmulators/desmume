@@ -202,7 +202,6 @@ volatile bool execute = true;
 	[cdsFirmware applySettings];
 	
 	// Set up the sound core
-	CommonSettings.spu_advanced = true;
 	CommonSettings.spuInterpolationMode = SPUInterpolation_Cosine;
 	CommonSettings.SPU_sync_mode = SPU_SYNC_MODE_SYNCHRONOUS;
 	CommonSettings.SPU_sync_method = SPU_SYNC_METHOD_N;

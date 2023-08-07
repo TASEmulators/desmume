@@ -530,8 +530,8 @@ extern struct TCommonSettings
 		, spuInterpolationMode(2)
 		, manualBackupType(0)
 		, autodetectBackupMethod(0)
+		, spu_muteChannels(0)
 		, spu_captureMuted(false)
-		, spu_advanced(true)
 		, StylusPressure(50)
 		, ConsoleType(NDS_CONSOLE_TYPE_FAT)
 		, backupSave(false)
@@ -542,9 +542,6 @@ extern struct TCommonSettings
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
 		strcpy(ExtFirmwarePath, "firmware.bin");
-
-		for(int i=0;i<16;i++)
-			spu_muteChannels[i] = false;
 
 		for(int g=0;g<2;g++)
 			for(int x=0;x<5;x++)
@@ -652,9 +649,8 @@ extern struct TCommonSettings
 	int SPU_sync_mode;
 	int SPU_sync_method;
 
-	bool spu_muteChannels[16];
+	u16  spu_muteChannels;
 	bool spu_captureMuted;
-	bool spu_advanced;
 
 	struct _ShowGpu {
 		_ShowGpu() : main(true), sub(true) {}
