@@ -32,7 +32,20 @@ jobs:
           
           cd desmume/src/frontend/posix/build
           ls -la
-
+          
+      - name: Find Executable
+        run: |
+          # Buscar el archivo ejecutable de manera recursiva en el directorio de construcción
+          executable_path=$(find desmume/src/frontend -name "desmume" -type f -executable)
+          
+          # Verificar si se encontró el archivo ejecutable
+          if [[ -n "$executable_path" ]]; then
+            echo "Archivo ejecutable encontrado en la ruta: $executable_path"
+          else
+            echo "Archivo ejecutable no encontrado."
+            exit 1
+          fi
+          
       - name: Install AppImage tool
         run: |
           wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
