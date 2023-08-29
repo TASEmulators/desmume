@@ -23,12 +23,19 @@ jobs:
           cd build
           cmake ..
           make -j`nproc`
-      - name: Create AppImage
-        uses: AppImageCrafters/appimage-builder-action@main
-        with:
-          appimage-name: desmume
-          appimage-dir: "build/src/frontend/desmume"
-      - uses: actions/upload-artifact@v2
+      - name: Install linuxdeployqt
+        run: |
+          wget -O linuxdeployqt "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
+          chmod +x linuxdeployqt
+      - name: Create AppDir
+        run: |
+          mkdir -p AppDir/usr/bin
+          cp build/src/frontend/desmume/AppImageAssistant.AppDir/usr/bin/desmume
+      - name: Build AppImage
+        run: |
+          ./linuxdeployqt AppDir/usr/bin/desmume -appimage
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v2
         with:
           name: Desmume-AppImage
-          path: desmume*.AppImage
+          path: Desmume*.AppImage
