@@ -29,6 +29,9 @@ jobs:
         run: |
           cd desmume/src/frontend/posix/build
           ls -la
+          
+          cd desmume/src/frontend/posix/build
+          ls -la
 
       - name: Install AppImage tool
         run: |
