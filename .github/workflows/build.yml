@@ -81,39 +81,39 @@ jobs:
 
           
   build_appimage:
-    name: Build DeSmuME (AppImage)
-    runs-on: ubuntu-20.04
+    name: Build DeSmuME AppImage
+    runs-on: ubuntu-latest
 
     steps:
-      - name: checkout
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: install dependencies
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install meson libsdl2-dev libpcap-dev libgtk-3-dev libgtk2.0-dev autoconf libglu1-mesa-dev
+
+      - name: Build DeSmuME
         run: |
-          sudo apt update && sudo apt install desktop-file-utils
+          cd desmume/src/frontend/posix/
+          meson build
+          ninja -C build
 
-      - name: download appimagetool
+          # Agregar mensaje de salida para mostrar el archivo ejecutable y su ubicación
+          echo "Nombre del archivo ejecutable: desmume"
+          echo "Ubicación del archivo ejecutable: $(realpath build/desmume)"
+
+      - name: Install AppImage tool
         run: |
-          wget "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
-          chmod +x appimagetool-x86_64.AppImage
+          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          chmod +x appimagetool
 
-      - name: create AppDir
+      - name: Create AppDir
         run: |
-          mkdir -p appdir/usr/bin
-          cp desmume/src/frontend/posix/build/desmume appdir/usr/bin/
-          cp desmume/data/desmume.desktop appdir/
-          cp desmume/src/frontend/posix/data/desmume_icon.png appdir/
+          mkdir -p AppDir/usr/bin
+          cp /home/runner/work/desmume/desmume/desmume/src/frontend/posix/build/desmume AppDir/usr/bin/
+          cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/
+          cp desmume/src/frontend/windows/DeSmuME.ico AppDir/
+          chmod +x AppDir/AppRun
 
-      - name: prepare AppDir
+      - name: Build AppImage
         run: |
-          ./appimagetool-x86_64.AppImage --appimage-extract
-
-      - name: create AppImage
-        run: |
-          ARCH=x86_64 ./squashfs-root/AppRun appdir/ -u "gh-releases-zsync|username|repository|latest|DeSmuME*.AppImage.zsync"
-
-      - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: desmume-appimage
-          path: DeSmuME*.AppImage*
+          ./appimagetool AppDir
