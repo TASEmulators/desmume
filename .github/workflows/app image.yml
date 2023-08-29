@@ -27,10 +27,10 @@ jobs:
           
       - name: List Build Folder Contents
         run: |
-          cd desmume/src/frontend/posix/build
+          cd desmume/src/frontend/posix
           ls -la
           
-          cd desmume/src/frontend/posix/build
+          cd ./build
           ls -la
           
       - name: Find Executable
