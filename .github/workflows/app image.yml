@@ -57,7 +57,7 @@ jobs:
           cp $(find desmume/src/frontend/posix/build/gtk -name "desmume" -type f -executable) AppDir/usr/bin/
           cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/
           cp desmume/src/frontend/windows/DeSmuME.ico AppDir/
-          chmod +x AppDir/desmume
+          chmod +x AppDir/usr/bin/desmume
 
       - name: Build AppImage
         run: |
