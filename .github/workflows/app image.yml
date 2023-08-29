@@ -24,9 +24,11 @@ jobs:
           meson build
           ninja -C build
 
-          # Agregar mensaje de salida para mostrar el archivo ejecutable y su ubicación
-          echo "Nombre del archivo ejecutable: desmume"
-          echo "Ubicación del archivo ejecutable: $(realpath build/desmume)"
+          
+      - name: List Build Folder Contents
+        run: |
+          cd desmume/src/frontend/posix/build
+          ls -la
 
       - name: Install AppImage tool
         run: |
