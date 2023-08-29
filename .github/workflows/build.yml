@@ -78,3 +78,42 @@ jobs:
           name: macos
           path: desmume/src/frontend/cocoa/desmume.xcarchive/Products/Applications/DeSmuME.app.zip
           if-no-files-found: error 
+
+          
+  build_appimage:
+    name: Build DeSmuME (AppImage)
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: install dependencies
+        run: |
+          sudo apt update && sudo apt install desktop-file-utils
+
+      - name: download appimagetool
+        run: |
+          wget "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x appimagetool-x86_64.AppImage
+
+      - name: create AppDir
+        run: |
+          mkdir -p appdir/usr/bin
+          cp desmume/src/frontend/posix/build/desmume appdir/usr/bin/
+          cp desmume/data/desmume.desktop appdir/
+          cp desmume/src/frontend/posix/data/desmume_icon.png appdir/
+
+      - name: prepare AppDir
+        run: |
+          ./appimagetool-x86_64.AppImage --appimage-extract
+
+      - name: create AppImage
+        run: |
+          ARCH=x86_64 ./squashfs-root/AppRun appdir/ -u "gh-releases-zsync|username|repository|latest|DeSmuME*.AppImage.zsync"
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: desmume-appimage
+          path: DeSmuME*.AppImage*
