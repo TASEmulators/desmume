@@ -57,7 +57,7 @@ jobs:
         run: |
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
           mkdir dist
-          mv DeSmuME*.AppImage dist/
+          mv ./AppDir/*.AppImage dist/
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v2
