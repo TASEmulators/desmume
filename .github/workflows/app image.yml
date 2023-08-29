@@ -46,19 +46,21 @@ jobs:
             exit 1
           fi
           
-      - name: Install AppImage tool
+      - name: Install linuxdeploy and plugins
         run: |
-          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
-          chmod +x appimagetool
-
-      - name: Create AppDir
-        run: |
-          mkdir -p AppDir/usr/bin
-          cp $(find desmume/src/frontend/posix/build/gtk -name "desmume" -type f -executable) AppDir/usr/bin/
-          cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/
-          cp desmume/src/frontend/windows/DeSmuME.ico AppDir/
-          chmod +x AppDir/usr/bin/desmume
+          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod a+x linuxdeploy-x86_64.AppImage
+          chmod a+x linuxdeploy-plugin-qt-x86_64.AppImage
 
       - name: Build AppImage
         run: |
-          ./appimagetool AppDir
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
+          mkdir dist
+          mv DeSmuME*.AppImage dist/
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: desmume-appimage
+          path: ./dist/
