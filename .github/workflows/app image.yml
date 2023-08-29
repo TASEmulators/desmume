@@ -36,7 +36,7 @@ jobs:
       - name: Create AppDir
         run: |
           mkdir -p AppDir/usr/bin
-          cp desmume/src/frontend/posix/build/desmume AppDir/usr/bin/
+          cp $(realpath build/desmume) AppDir/usr/bin/
           cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/
           cp desmume/src/frontend/windows/DeSmuME.ico AppDir/
           chmod +x AppDir/AppRun
