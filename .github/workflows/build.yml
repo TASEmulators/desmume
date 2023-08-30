@@ -132,7 +132,7 @@ jobs:
       - name: Find AppImage File Recursively
         run: |
           # Buscar el archivo AppImage recursivamente desde el directorio de trabajos
-          appimage_path=$(find /home/runner/work -name "*.AppImage" -type f)
+          appimage_path=$(find /home/runner/work -name "DeSmuME_*.AppImage" -type f)
           
           # Verificar si se encontró el archivo AppImage
           if [[ -n "$appimage_path" ]]; then
