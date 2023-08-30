@@ -15,10 +15,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install libfuse2 and dependencies
+      - name: Install libfuse2 and Qt dependencies
         run: |
           sudo apt-get update
-          sudo apt-get -y install libfuse2
+          sudo apt-get -y install libfuse2 qtbase5-dev qtchooser
 
       - name: Install dependencies
         run: sudo apt update && sudo apt install meson libsdl2-dev libpcap-dev libgtk-3-dev libgtk2.0-dev autoconf libglu1-mesa-dev
@@ -31,28 +31,37 @@ jobs:
 
       - name: Create AppDir directory
         run: mkdir -p AppDir
-      
+
       - name: Copy Desktop File to AppDir
         run: cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/
 
-      - name: Copy Icon Images to AppDir
-        run: |
-          cp desmume/src/frontend/cocoa/images/Icon_DeSmuME_32x32.png AppDir/
-          cp desmume/src/frontend/posix/gtk/org.desmume.DeSmuME.svg AppDir/
-          cp desmume/src/frontend/posix/gtk2/DeSmuME.xpm AppDir/
-
-      - name: Install linuxdeploy
+      - name: Install linuxdeploy and plugins
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod a+x linuxdeploy-x86_64.AppImage
+          chmod a+x linuxdeploy-plugin-qt-x86_64.AppImage
 
       - name: Build AppImage
         run: |
-          export ARCH=x86_64
-          ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
           mkdir dist
-          mv ./desmume*.AppImage dist/
+          mv ./AppDir/*.AppImage dist/
+
+      - name: Find AppImage File
+        run: |
+          # Buscar el archivo AppImage generado en la carpeta dist
+          appimage_path=$(find dist -name "*.AppImage" -type f)
           
+          # Verificar si se encontró el archivo AppImage
+          if [[ -n "$appimage_path" ]]; then
+            echo "Archivo AppImage encontrado en la ruta: $appimage_path"
+            # Puedes usar la variable $appimage_path para referencia futura
+          else
+            echo "Archivo AppImage no encontrado."
+            exit 1
+          fi
+
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v2
         with:
