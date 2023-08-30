@@ -55,22 +55,12 @@ jobs:
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
           mkdir dist
           ls -R /home/runner/work/desmume/desmume/AppDir  # Listar el contenido de AppDir de forma recursiva
-          expected_appimage_path="/home/runner/work/desmume/desmume/AppDir/DeSmuME_(Gtk)-x86_64.AppImage"
+          expected_appimage_path="/home/runner/work/desmume/desmume/DeSmuME_(Gtk)-x86_64.AppImage"
 
 
       - name: Find AppImage File Recursively
         run: |
-          # Buscar el archivo AppImage recursivamente desde la raíz del proyecto
-          appimage_path=$(find /home/runner/work/desmume -name "*.AppImage" -type f)
-          
-          # Verificar si se encontró el archivo AppImage
-          if [[ -n "$appimage_path" ]]; then
-            echo "Archivo AppImage encontrado en la ruta: $appimage_path"
-            mv "$appimage_path" dist/  # Mover el archivo a la carpeta "dist"
-          else
-            echo "Archivo AppImage no encontrado."
-            exit 1
-          fi
+          mv "$expected_appimage_path" dist/  # Mover el archivo a la carpeta "dist"
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v2
