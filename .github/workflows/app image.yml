@@ -54,12 +54,11 @@ jobs:
           export ARCH=x86_64  # Definir la variable de entorno ARCH
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
           mkdir dist
-          mv ./AppDir/*.AppImage dist/
-
+          
       - name: Find AppImage File
         run: |
           # Buscar el archivo AppImage generado en la carpeta dist
-          appimage_path=$(find dist -name "*.AppImage" -type f)
+          appimage_path=$(find AppDir -name "*.AppImage" -type f)
           
           # Verificar si se encontró el archivo AppImage
           if [[ -n "$appimage_path" ]]; then
@@ -69,6 +68,10 @@ jobs:
             echo "Archivo AppImage no encontrado."
             exit 1
           fi
+
+      - name: Move AppImage to dist folder
+        run: mv $appimage_path dist/
+
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v2
