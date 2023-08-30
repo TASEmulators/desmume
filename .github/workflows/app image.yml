@@ -35,10 +35,6 @@ jobs:
       - name: Copy Desktop File to AppDir
         run: cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/
 
-      - name: Set Qt environment variable
-        run: export QTDIR=/usr/lib/qt5
-
-
       - name: Install linuxdeploy and plugins
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
@@ -48,7 +44,7 @@ jobs:
 
       - name: Build AppImage
         run: |
-          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
           mkdir dist
           mv ./AppDir/*.AppImage dist/
 
