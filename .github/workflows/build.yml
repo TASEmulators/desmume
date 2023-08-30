@@ -106,7 +106,8 @@ jobs:
 
       - name: Copy files to AppDir
         run: |
-          cp /tmp/DeSmuME/usr/local/bin/desmume AppDir/
+          cp /tmp/DeSmuME/usr/bin/desmume AppDir/
+          cp /tmp/DeSmuME/usr/bin/desmume-cli AppDir/
           # Copy other necessary files to AppDir if needed
 
       - name: Set Qt environment variable
