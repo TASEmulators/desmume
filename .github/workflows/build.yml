@@ -88,6 +88,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Install libfuse2 and Qt dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install libfuse2 qtbase5-dev qtchooser
+
       - name: Install dependencies
         run: sudo apt update && sudo apt install meson libsdl2-dev libpcap-dev libgtk-3-dev libgtk2.0-dev autoconf libglu1-mesa-dev
 
@@ -97,23 +102,38 @@ jobs:
           meson build
           ninja -C build
 
-          # Agregar mensaje de salida para mostrar el archivo ejecutable y su ubicación
-          echo "Nombre del archivo ejecutable: desmume"
-          echo "Ubicación del archivo ejecutable: $(realpath build/desmume)"
+      - name: Create AppDir directory
+        run: mkdir -p AppDir
 
-      - name: Install AppImage tool
+      - name: Copy files to AppDir
         run: |
-          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
-          chmod +x appimagetool
-
-      - name: Create AppDir
-        run: |
-          mkdir -p AppDir/usr/bin
-          cp /home/runner/work/desmume/desmume/desmume/src/frontend/posix/build/desmume AppDir/usr/bin/
           cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/
-          cp desmume/src/frontend/windows/DeSmuME.ico AppDir/
-          chmod +x AppDir/AppRun
+          cp desmume/src/frontend/cocoa/images/Icon_DeSmuME_32x32.png AppDir/DeSmuME.png
+          cp desmume/src/frontend/posix/gtk/org.desmume.DeSmuME.svg AppDir/
+          cp desmume/src/frontend/posix/gtk2/DeSmuME.xpm AppDir/
+
+      - name: Set Qt environment variable
+        run: export QTDIR=/usr/lib/qt5
+
+      - name: Install linuxdeploy and plugins
+        run: |
+          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod a+x linuxdeploy-x86_64.AppImage
+          chmod a+x linuxdeploy-plugin-qt-x86_64.AppImage
 
       - name: Build AppImage
         run: |
-          ./appimagetool AppDir
+          export ARCH=x86_64  # Definir la variable de entorno ARCH
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
+          mkdir dist
+
+
+      - name: Find AppImage File Recursively
+        run: mv "/home/runner/work/desmume/desmume/DeSmuME_(Gtk)-x86_64.AppImage" dist/
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: desmume-appimage
+          path: ./dist/
