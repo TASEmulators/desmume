@@ -35,6 +35,12 @@ jobs:
       - name: Copy Desktop File to AppDir
         run: cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/
 
+      - name: Copy Icon Images to AppDir
+        run: |
+          cp desmume/src/frontend/cocoa/images/Icon_DeSmuME_32x32.png AppDir/
+          cp desmume/src/frontend/posix/gtk/org.desmume.DeSmuME.svg AppDir/
+          cp desmume/src/frontend/posix/gtk2/DeSmuME.xpm AppDir/
+
       - name: Install linuxdeploy
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
