@@ -54,7 +54,7 @@ jobs:
           export ARCH=x86_64  # Definir la variable de entorno ARCH
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
           mkdir dist
-          ls -l AppDir  # Listar el contenido de AppDir
+          ls -R AppDir  # Listar el contenido de AppDir de forma recursiva
           expected_appimage_path="/home/runner/work/desmume/desmume/AppDir/DeSmuME_(Gtk)-x86_64.AppImage"
 
 
