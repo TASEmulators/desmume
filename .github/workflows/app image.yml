@@ -58,9 +58,19 @@ jobs:
           expected_appimage_path="/home/runner/work/desmume/desmume/AppDir/DeSmuME_(Gtk)-x86_64.AppImage"
 
 
-      - name: Move AppImage to dist folder
-        run: mv $expected_appimage_path dist/
-
+      - name: Find AppImage File Recursively
+        run: |
+          # Buscar el archivo AppImage recursivamente desde la raíz del proyecto
+          appimage_path=$(find /home/runner/work/desmume -name "*.AppImage" -type f)
+          
+          # Verificar si se encontró el archivo AppImage
+          if [[ -n "$appimage_path" ]]; then
+            echo "Archivo AppImage encontrado en la ruta: $appimage_path"
+            mv "$appimage_path" dist/  # Mover el archivo a la carpeta "dist"
+          else
+            echo "Archivo AppImage no encontrado."
+            exit 1
+          fi
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v2
