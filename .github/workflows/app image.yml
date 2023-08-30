@@ -30,8 +30,8 @@ jobs:
           ninja -C build
 
       - name: Copy Desktop File to AppDir
-        run: |
-          cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/
+        run: cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/desmume.desktop
+
 
       - name: Install linuxdeploy and plugins
         run: |
