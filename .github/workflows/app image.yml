@@ -54,24 +54,12 @@ jobs:
           export ARCH=x86_64  # Definir la variable de entorno ARCH
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
           mkdir dist
-          
-      - name: Find AppImage File
-        run: |
-          # Ruta esperada del archivo AppImage
+          ls -l AppDir  # Listar el contenido de AppDir
           expected_appimage_path="/home/runner/work/desmume/desmume/AppDir/DeSmuME_(Gtk)-x86_64.AppImage"
-          
-          # Verificar si el archivo AppImage existe en la ruta esperada
-          if [[ -f "$expected_appimage_path" ]]; then
-            echo "Archivo AppImage encontrado en la ruta: $expected_appimage_path"
-            # Puedes usar la variable $expected_appimage_path para referencia futura
-          else
-            echo "Archivo AppImage no encontrado en la ruta esperada."
-            exit 1
-          fi
 
 
       - name: Move AppImage to dist folder
-        run: mv $appimage_path dist/
+        run: mv $expected_appimage_path dist/
 
 
       - name: Upload AppImage artifact
