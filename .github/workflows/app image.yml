@@ -54,13 +54,10 @@ jobs:
           export ARCH=x86_64  # Definir la variable de entorno ARCH
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
           mkdir dist
-          ls -R /home/runner/work/desmume/desmume/AppDir  # Listar el contenido de AppDir de forma recursiva
-          expected_appimage_path="/home/runner/work/desmume/desmume/DeSmuME_(Gtk)-x86_64.AppImage"
 
 
       - name: Find AppImage File Recursively
-        run: |
-          mv "$expected_appimage_path" dist/  # Mover el archivo a la carpeta "dist"
+        run: mv /home/runner/work/desmume/desmume/DeSmuME_(Gtk)-x86_64.AppImage dist/
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v2
