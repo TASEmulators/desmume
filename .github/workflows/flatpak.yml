@@ -1,0 +1,36 @@
+on:
+  push:
+    branches: [main]
+  pull_request:
+name: CI
+jobs:
+  flatpak:
+    name: "Flatpak"
+    runs-on: ubuntu-latest
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:gnome-44
+      options: --privileged
+    strategy:
+      matrix:
+        arch: [x86_64, aarch64]
+      # Don't fail the whole workflow if one architecture fails
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v3
+    # Docker is required by the docker/setup-qemu-action which enables emulation
+    - name: Install deps
+      if: ${{ matrix.arch != 'x86_64' }}
+      run: |
+        dnf -y install docker
+    - name: Set up QEMU
+      if: ${{ matrix.arch != 'x86_64' }}
+      id: qemu
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: arm64
+    - uses: flatpak/flatpak-github-actions/flatpak-builder@v6.1
+      with:
+        bundle: palette.flatpak
+        manifest-path: org.gnome.zbrown.Palette.yml
+        cache-key: flatpak-builder-${{ github.sha }}
+        arch: ${{ matrix.arch }}
