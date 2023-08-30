@@ -15,10 +15,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install libfuse2 and dependencies
+      - name: Install libfuse2 and Qt dependencies
         run: |
           sudo apt-get update
-          sudo apt-get -y install libfuse2
+          sudo apt-get -y install libfuse2 qtbase5-dev qtchooser
 
       - name: Install dependencies
         run: sudo apt update && sudo apt install meson libsdl2-dev libpcap-dev libgtk-3-dev libgtk2.0-dev autoconf libglu1-mesa-dev
@@ -29,35 +29,20 @@ jobs:
           meson build
           ninja -C build
 
-      - name: List Build Folder Contents
+      - name: Copy Desktop File to AppDir
         run: |
-          cd desmume/src/frontend/posix
-          ls -la
-          
-          cd ./build
-          ls -la
-          
-      - name: Find Executable
-        run: |
-          # Buscar el archivo ejecutable de manera recursiva en el directorio de construcción
-          executable_path=$(find desmume/src/frontend -name "desmume" -type f -executable)
-          
-          # Verificar si se encontró el archivo ejecutable
-          if [[ -n "$executable_path" ]]; then
-            echo "Archivo ejecutable encontrado en la ruta: $executable_path"
-          else
-            echo "Archivo ejecutable no encontrado."
-            exit 1
-          fi
+          cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/
 
-      - name: Install linuxdeploy
+      - name: Install linuxdeploy and plugins
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod a+x linuxdeploy-x86_64.AppImage
+          chmod a+x linuxdeploy-plugin-qt-x86_64.AppImage
 
       - name: Build AppImage
         run: |
-          ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
           mkdir dist
           mv ./AppDir/*.AppImage dist/
 
@@ -66,4 +51,3 @@ jobs:
         with:
           name: desmume-appimage
           path: ./dist/
-
