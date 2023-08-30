@@ -57,17 +57,18 @@ jobs:
           
       - name: Find AppImage File
         run: |
-          # Buscar el archivo AppImage generado en la carpeta dist
-          appimage_path=$(find AppDir -name "*.AppImage" -type f)
+          # Ruta esperada del archivo AppImage
+          expected_appimage_path="/home/runner/work/desmume/desmume/AppDir/DeSmuME_(Gtk)-x86_64.AppImage"
           
-          # Verificar si se encontró el archivo AppImage
-          if [[ -n "$appimage_path" ]]; then
-            echo "Archivo AppImage encontrado en la ruta: $appimage_path"
-            # Puedes usar la variable $appimage_path para referencia futura
+          # Verificar si el archivo AppImage existe en la ruta esperada
+          if [[ -f "$expected_appimage_path" ]]; then
+            echo "Archivo AppImage encontrado en la ruta: $expected_appimage_path"
+            # Puedes usar la variable $expected_appimage_path para referencia futura
           else
-            echo "Archivo AppImage no encontrado."
+            echo "Archivo AppImage no encontrado en la ruta esperada."
             exit 1
           fi
+
 
       - name: Move AppImage to dist folder
         run: mv $appimage_path dist/
