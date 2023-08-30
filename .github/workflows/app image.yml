@@ -57,7 +57,7 @@ jobs:
 
 
       - name: Find AppImage File Recursively
-        run: mv /home/runner/work/desmume/desmume/DeSmuME_(Gtk)-x86_64.AppImage dist/
+        run: mv "/home/runner/work/desmume/desmume/DeSmuME_(Gtk)-x86_64.AppImage" dist/
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v2
