@@ -29,8 +29,12 @@ jobs:
           meson build
           ninja -C build
 
+      - name: Create AppDir directory
+        run: mkdir -p AppDir
+      
       - name: Copy Desktop File to AppDir
-        run: cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/desmume.desktop
+        run: cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/
+
 
 
       - name: Install linuxdeploy and plugins
