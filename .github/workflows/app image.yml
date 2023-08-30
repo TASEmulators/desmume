@@ -34,6 +34,9 @@ jobs:
 
       - name: Copy Desktop File to AppDir
         run: cp desmume/src/frontend/posix/gtk2/desmume.desktop AppDir/
+             cp desmume/src/frontend/cocoa/images/Icon_DeSmuME_32x32.png AppDir/DeSmuME.png
+             cp desmume/src/frontend/posix/gtk/org.desmume.DeSmuME.svg AppDir/
+             cp desmume/src/frontend/posix/gtk2/DeSmuME.xpm AppDir/
 
       - name: Set Qt environment variable
         run: export QTDIR=/usr/lib/qt5
