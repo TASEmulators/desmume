@@ -1179,7 +1179,6 @@ template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channe
 	if(chan->repeat != 1)
 	{
 		SPU->KeyOff(chan->num);
-		SPU->bufpos = SPU->buflength;
 		return;
 	}
 
@@ -1235,13 +1234,16 @@ template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS>
 		{
 			s16 data = 0;
 			s32 pos = chan->sampcntInt;
-			switch(FORMAT)
+			if(chan->status != CHANSTAT_STOPPED)
 			{
-				case 0: data = Fetch8BitData (chan, pos); break;
-				case 1: data = Fetch16BitData(chan, pos); break;
-				case 2: data = FetchADPCMData(chan, pos); break;
-				case 3: data = FetchPSGData  (chan, pos); break;
-				default: break;
+				switch(FORMAT)
+				{
+					case 0: data = Fetch8BitData (chan, pos); break;
+					case 1: data = Fetch16BitData(chan, pos); break;
+					case 2: data = FetchADPCMData(chan, pos); break;
+					case 3: data = FetchPSGData  (chan, pos); break;
+					default: break;
+				}
 			}
 			chan->pcm16bOffs++;
 			chan->pcm16b[SPUCHAN_PCM16B_AT(chan->pcm16bOffs)] = data;
