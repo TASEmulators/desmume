@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -58,6 +58,7 @@ void slot2_Init()
 	extern TISlot2InterfaceConstructor construct_Slot2_EasyPiano;
 	extern TISlot2InterfaceConstructor construct_Slot2_Paddle;
 	extern TISlot2InterfaceConstructor construct_Slot2_PassME;
+	extern TISlot2InterfaceConstructor construct_Slot2_HCV1000;
 
 	slot2_List[NDS_SLOT2_NONE]			= construct_Slot2_None();
 	slot2_List[NDS_SLOT2_AUTO]			= construct_Slot2_Auto();
@@ -69,6 +70,7 @@ void slot2_Init()
 	slot2_List[NDS_SLOT2_EASYPIANO]		= construct_Slot2_EasyPiano();
 	slot2_List[NDS_SLOT2_PADDLE]		= construct_Slot2_Paddle();
 	slot2_List[NDS_SLOT2_PASSME]		= construct_Slot2_PassME();
+	slot2_List[NDS_SLOT2_HCV1000]		= construct_Slot2_HCV1000();
 
 }
 
@@ -252,6 +254,9 @@ NDS_SLOT2_TYPE slot2_DetermineTypeByGameCode(const char *theGameCode)
 		{"CV8", NDS_SLOT2_PADDLE},			// Space Invaders Extreme 2
 		{"AMH", NDS_SLOT2_RUMBLEPAK},		// Metroid Prime Hunters
 		{"AP2", NDS_SLOT2_RUMBLEPAK},		// Metroid Prime Pinball
+		{"C4A", NDS_SLOT2_HCV1000},			// Card de Asobu! Hajimete no DS
+		{"A6I", NDS_SLOT2_HCV1000},			// Kouchuu Ouja: Mushi King Super Collection
+		{"ALB", NDS_SLOT2_HCV1000},			// Oshare Majo Berry and Love
 	};
 	
 	for(size_t i = 0; i < ARRAY_SIZE(gameCodeDeviceTypes); i++)

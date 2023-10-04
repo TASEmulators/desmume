@@ -3,7 +3,7 @@
 	licensed under the terms supplied at the end of this file (for the terms are very long!)
 	Differences from that baseline version are:
 
-	Copyright (C) 2008-2010 DeSmuME team
+	Copyright (C) 2008-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -153,9 +153,15 @@ struct SPaddle {
     WORD INC;
 };
 
+struct SHCV1000 {
+	BOOL Enabled;
+	WORD SCANKEY;
+};
+
 extern SGuitar Guitar;
 extern SPiano Piano;
 extern SPaddle Paddle;
+extern SHCV1000 HCV1000;
 
 #endif
 
