@@ -79,3 +79,9 @@ void HCV1000_setReady()
 {
 	hcv1000_cnt &= ~0x80;
 }
+
+void HCV1000_setBarcode(std::string barcode)
+{
+	barcode.resize(16, '_');
+	memcpy(hcv1000_data, barcode.c_str(), barcode.length());
+}

@@ -36,7 +36,7 @@ u8			last_type = 0;
 char		tmp_cflash_filename[MAX_PATH] = { 0 };
 char		tmp_cflash_path[MAX_PATH] = { 0 };
 char		tmp_gbagame_filename[MAX_PATH] = { 0 };
-TCHAR		tmp_hcv1000_barcode[17] = { 0 };
+char		tmp_hcv1000_barcode[17] = { 0 };
 ADDON_CFLASH_MODE	tmp_CFlashMode = ADDON_CFLASH_MODE_RomPath;
 HWND		OKbutton = NULL;
 bool		_OKbutton = false;
@@ -50,7 +50,8 @@ SHCV1000	tmp_HCV1000;
 std::string win32_CFlash_cfgDirectory, win32_CFlash_cfgFileName;
 UINT win32_CFlash_cfgMode;
 std::string win32_GBA_cfgRomPath;
-std::string win32_HCV1000_barcode;
+
+std::string slot2_HCV1000_barcode;
 
 INT_PTR CALLBACK GbaSlotNone(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
@@ -305,7 +306,7 @@ INT_PTR CALLBACK GbaSlotHCV1000(HWND dialog, UINT msg, WPARAM wparam, LPARAM lpa
 				switch (LOWORD(wparam))
 				{
 					case IDC_HCVBARCODE:
-						GetWindowText(GetDlgItem(dialog, IDC_HCVBARCODE), tmp_hcv1000_barcode, 16);
+						GetWindowText(GetDlgItem(dialog, IDC_HCVBARCODE), tmp_hcv1000_barcode, 17);
 					
 						return FALSE;
 				}
@@ -619,7 +620,7 @@ void GBAslotDialog(HWND hwnd)
 	strcpy(tmp_cflash_filename, win32_CFlash_cfgFileName.c_str());
 	strcpy(tmp_cflash_path, win32_CFlash_cfgDirectory.c_str());
 	strcpy(tmp_gbagame_filename, win32_GBA_cfgRomPath.c_str());
-	strcpy(tmp_hcv1000_barcode, win32_HCV1000_barcode.c_str());
+	strcpy(tmp_hcv1000_barcode, slot2_HCV1000_barcode.c_str());
 	memcpy(&tmp_Guitar, &Guitar, sizeof(Guitar));
 	memcpy(&tmp_Piano, &Piano, sizeof(Piano));
 	memcpy(&tmp_Paddle, &Paddle, sizeof(Paddle));
@@ -689,10 +690,9 @@ void GBAslotDialog(HWND hwnd)
 			case NDS_SLOT2_PASSME:
 				break;
 			case NDS_SLOT2_HCV1000:
-				win32_HCV1000_barcode = tmp_hcv1000_barcode;
+				slot2_HCV1000_barcode = tmp_hcv1000_barcode;
 				memcpy(&HCV1000, &tmp_HCV1000, sizeof(tmp_HCV1000));
-				memset(hcv1000_data, 0x5F, 16);
-				memcpy(hcv1000_data, win32_HCV1000_barcode.c_str(), (win32_HCV1000_barcode.length() <= 16) ? win32_HCV1000_barcode.length() : 16);
+				HCV1000_setBarcode(slot2_HCV1000_barcode);
 				WritePrivateProfileString("Slot2.HCV1000", "barcode", tmp_hcv1000_barcode, IniName);
 				WritePrivateProfileInt("Slot2.HCV1000", "scankey", HCV1000.SCANKEY, IniName);
 				break;
