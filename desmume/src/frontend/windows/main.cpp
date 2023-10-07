@@ -2198,8 +2198,9 @@ int _main()
 	win32_CFlash_cfgDirectory = GetPrivateProfileStdString("Slot2.CFlash", "path", "");
 	win32_CFlash_cfgFileName = GetPrivateProfileStdString("Slot2.CFlash", "filename", "");
 	win32_GBA_cfgRomPath = GetPrivateProfileStdString("Slot2.GBAgame", "filename", "");
-	win32_HCV1000_barcode = GetPrivateProfileStdString("Slot2.HCV1000", "barcode", "");
-	memcpy(hcv1000_data, win32_HCV1000_barcode.c_str(), (win32_HCV1000_barcode.length() <= 16) ? win32_HCV1000_barcode.length() : 16);
+
+	slot2_HCV1000_barcode = GetPrivateProfileStdString("Slot2.HCV1000", "barcode", "").substr(0, 16);
+	HCV1000_setBarcode(slot2_HCV1000_barcode);
 
 	cmdline.process_addonCommands();
 	WIN_InstallCFlash();

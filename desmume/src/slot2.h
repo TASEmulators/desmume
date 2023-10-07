@@ -143,7 +143,6 @@ bool slot2_read(u32 addr, T &val);
 extern std::string GBACartridge_RomPath;
 extern std::string GBACartridge_SRAMPath;
 extern void (*FeedbackON)(bool enable);				// feedback on/off
-extern char hcv1000_data[16];
 
 enum ADDON_CFLASH_MODE
 {
@@ -160,4 +159,5 @@ void Paddle_SetValue(u16 theValue);
 extern void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue); // Guitar grip keys
 extern void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, bool g, bool gs, bool a, bool as, bool b, bool hic); //piano keys
 extern void HCV1000_setReady();
+extern void HCV1000_setBarcode(std::string barcode);
 #endif //__SLOT_H__
