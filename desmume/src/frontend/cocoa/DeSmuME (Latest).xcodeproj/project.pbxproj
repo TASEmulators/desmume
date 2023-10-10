@@ -2446,6 +2446,17 @@
 		AB8493C01B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AD1B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png */; };
 		AB8493C11B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AE1B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png */; };
 		AB8493C31B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AE1B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png */; };
+		AB8800542AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */; };
+		AB8800552AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */; };
+		AB8800562AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */; };
+		AB8800572AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */; };
+		AB8800582AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */; };
+		AB8800592AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */; };
+		AB88005A2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */; };
+		AB88005B2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */; };
+		AB88005C2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */; };
+		AB88005D2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */; };
+		AB88005E2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */; };
 		AB8967D916D2ED0700F826F1 /* DisplayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */; };
 		AB8967DD16D2ED2700F826F1 /* DisplayWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB8967DB16D2ED2700F826F1 /* DisplayWindow.xib */; };
 		AB8B7AAC17CE8C440051CEBF /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8B7AAB17CE8C440051CEBF /* slot1comp_protocol.cpp */; };
@@ -4062,6 +4073,7 @@
 		AB8493AC1B4E614D00CD1C73 /* Icon_VolumeMute_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeMute_16x16@2x.png"; path = "images/Icon_VolumeMute_16x16@2x.png"; sourceTree = "<group>"; };
 		AB8493AD1B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeOneThird_16x16@2x.png"; path = "images/Icon_VolumeOneThird_16x16@2x.png"; sourceTree = "<group>"; };
 		AB8493AE1B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeTwoThird_16x16@2x.png"; path = "images/Icon_VolumeTwoThird_16x16@2x.png"; sourceTree = "<group>"; };
+		AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_hcv1000.cpp; sourceTree = "<group>"; };
 		AB8967D716D2ED0700F826F1 /* DisplayWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DisplayWindowController.h; sourceTree = "<group>"; };
 		AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = DisplayWindowController.mm; sourceTree = "<group>"; };
 		AB8967DC16D2ED2700F826F1 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/DisplayWindow.xib; sourceTree = "<group>"; };
@@ -5765,6 +5777,7 @@
 				ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */,
 				ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */,
 				ABD1FF051345AC9B00AF11D1 /* slot2_guitarGrip.cpp */,
+				AB8800532AD5EC4F0090D47F /* slot2_hcv1000.cpp */,
 				ABD1FF061345AC9B00AF11D1 /* slot2_mpcf.cpp */,
 				ABD1FF071345AC9C00AF11D1 /* slot2_none.cpp */,
 				ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */,
@@ -8064,6 +8077,7 @@
 				8C43E86627E3CD0100A35F65 /* ftfstype.c in Sources */,
 				8C43E86B27E3CD0100A35F65 /* macosx_10_5_compat.cpp in Sources */,
 				8C43E86C27E3CD0100A35F65 /* retro_dirent.c in Sources */,
+				AB8800562AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				8C43E87427E3CD0100A35F65 /* slot2_passme.cpp in Sources */,
 				8C43E87727E3CD0100A35F65 /* psnames.c in Sources */,
 				8C43E87827E3CD0100A35F65 /* ftotval.c in Sources */,
@@ -8128,6 +8142,7 @@
 				8C43E92F27E3CD4C00A35F65 /* common.cpp in Sources */,
 				8C43E93027E3CD4C00A35F65 /* cp15.cpp in Sources */,
 				8C43E93127E3CD4C00A35F65 /* psaux.c in Sources */,
+				AB8800572AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				8C43E93227E3CD4C00A35F65 /* cpu_detect_x86_gcc.cpp in Sources */,
 				8C43E93327E3CD4C00A35F65 /* crc.cpp in Sources */,
 				8C43E93427E3CD4C00A35F65 /* MacOGLDisplayView.mm in Sources */,
@@ -8465,6 +8480,7 @@
 				8CCD84DF27E40B730024BDD5 /* type1cid.c in Sources */,
 				8CCD84E427E40B730024BDD5 /* cocoa_slot2.mm in Sources */,
 				8CCD84E627E40B730024BDD5 /* ftbase.c in Sources */,
+				AB88005D2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				8CCD84EA27E40B730024BDD5 /* fsnitro.cpp in Sources */,
 				8CCD84EB27E40B730024BDD5 /* macosx_10_5_compat.cpp in Sources */,
 				8CCD84EC27E40B730024BDD5 /* OGLRender_3_2.cpp in Sources */,
@@ -8509,6 +8525,7 @@
 				AB36C7AF27F2C8AE00C763C8 /* decrypt.cpp in Sources */,
 				AB36C7B027F2C8AE00C763C8 /* directory.cpp in Sources */,
 				AB36C7B127F2C8AE00C763C8 /* Disassembler.cpp in Sources */,
+				AB88005A2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				AB36C7B227F2C8AE00C763C8 /* disc.cpp in Sources */,
 				AB36C7B327F2C8AE00C763C8 /* dlditool.cpp in Sources */,
 				AB36C7B427F2C8AE00C763C8 /* driver.cpp in Sources */,
@@ -8884,6 +8901,7 @@
 				AB7900EF215B84E50082AE82 /* coreaudiosound.cpp in Sources */,
 				AB7900F0215B84E50082AE82 /* ringbuffer.cpp in Sources */,
 				AB7900F1215B84E50082AE82 /* arm_jit.cpp in Sources */,
+				AB8800582AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				AB7900F2215B84E50082AE82 /* smooth.c in Sources */,
 				AB7900F3215B84E50082AE82 /* troubleshootingWindowDelegate.mm in Sources */,
 				AB7900F4215B84E50082AE82 /* macOS_driver.cpp in Sources */,
@@ -9000,6 +9018,7 @@
 				AB7901DD215B84F20082AE82 /* driver.cpp in Sources */,
 				AB7901DE215B84F20082AE82 /* emufat.cpp in Sources */,
 				AB7901DF215B84F20082AE82 /* type1cid.c in Sources */,
+				AB8800592AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				AB7901E0215B84F20082AE82 /* emufile.cpp in Sources */,
 				AB7901E1215B84F20082AE82 /* fatdir.cpp in Sources */,
 				AB7901E2215B84F20082AE82 /* fatfile.cpp in Sources */,
@@ -9343,6 +9362,7 @@
 				AB796D6215CDCBA200C59155 /* coreaudiosound.cpp in Sources */,
 				AB796D6315CDCBA200C59155 /* ringbuffer.cpp in Sources */,
 				AB796D6415CDCBA200C59155 /* arm_jit.cpp in Sources */,
+				AB8800542AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				ABFEA8CA1BB4EC1100B08C25 /* smooth.c in Sources */,
 				ABF2B9FB16904133000FF7C0 /* troubleshootingWindowDelegate.mm in Sources */,
 				AB28625920AE3E9F00EAED43 /* macOS_driver.cpp in Sources */,
@@ -9459,6 +9479,7 @@
 				AB8F3C871A53AC2600A80BF6 /* driver.cpp in Sources */,
 				AB8F3C881A53AC2600A80BF6 /* emufat.cpp in Sources */,
 				ABA7316A1BB51FDC00B26147 /* type1cid.c in Sources */,
+				AB8800552AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				AB8F3C891A53AC2600A80BF6 /* emufile.cpp in Sources */,
 				AB8F3C8A1A53AC2600A80BF6 /* fatdir.cpp in Sources */,
 				AB8F3C8B1A53AC2600A80BF6 /* fatfile.cpp in Sources */,
@@ -9763,6 +9784,7 @@
 				AB2ABA461C9F9CFA00173B15 /* rthreads.c in Sources */,
 				ABB3C6CB1501C04F00E0C22E /* rasterize.cpp in Sources */,
 				ABB3C6CC1501C04F00E0C22E /* readwrite.cpp in Sources */,
+				AB88005E2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				AB49B553281687B90069F1D7 /* truetype.c in Sources */,
 				ABB3C6CD1501C04F00E0C22E /* render3D.cpp in Sources */,
 				ABB3C6CE1501C04F00E0C22E /* ROMReader.cpp in Sources */,
@@ -9974,6 +9996,7 @@
 				ABC8594228273FEE00A03EA9 /* buffer.cpp in Sources */,
 				ABC8594328273FEE00A03EA9 /* ftotval.c in Sources */,
 				ABC8594428273FEE00A03EA9 /* compiler.cpp in Sources */,
+				AB88005B2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				ABC8594528273FEE00A03EA9 /* compilercontext.cpp in Sources */,
 				ABC8594628273FEE00A03EA9 /* rthreads.c in Sources */,
 				ABC8594728273FEE00A03EA9 /* macOS_driver.cpp in Sources */,
@@ -10203,6 +10226,7 @@
 				ABD2CDF626E05CB000FB15F7 /* buffer.cpp in Sources */,
 				ABD2CDF726E05CB000FB15F7 /* ftotval.c in Sources */,
 				ABD2CDF826E05CB000FB15F7 /* compiler.cpp in Sources */,
+				AB88005C2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				ABD2CDF926E05CB000FB15F7 /* compilercontext.cpp in Sources */,
 				ABD2CDFA26E05CB000FB15F7 /* rthreads.c in Sources */,
 				ABD2CDFB26E05CB000FB15F7 /* macOS_driver.cpp in Sources */,
