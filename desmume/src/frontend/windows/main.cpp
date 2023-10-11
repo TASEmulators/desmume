@@ -1581,6 +1581,7 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 		Piano.Enabled	= (selectedSlot2Type == NDS_SLOT2_EASYPIANO)?true:false;
 		Paddle.Enabled	= (selectedSlot2Type == NDS_SLOT2_PADDLE)?true:false;
 		HCV1000.Enabled = (selectedSlot2Type == NDS_SLOT2_HCV1000)?true:false;
+		SlideController.Enabled = (selectedSlot2Type == NDS_SLOT2_SLIDECONTROLLER)?true:false;
 		
 		LoadSaveStateInfo();
 		lagframecounter=0;
@@ -2132,6 +2133,13 @@ int _main()
 		exit(-1);
 	}
 
+	RAWINPUTDEVICE rid = {};
+	rid.usUsagePage = 0x01;
+	rid.usUsage = 0x02;
+	rid.dwFlags = 0;
+	rid.hwndTarget = MainWindow->getHWnd();
+	RegisterRawInputDevices(&rid, 1, sizeof(rid));
+
 	//disable wacky stylus stuff
 	//TODO - we are obliged to call GlobalDeleteAtom
 	GlobalAddAtom(MICROSOFT_TABLETPENSERVICE_PROPERTY);
@@ -2264,6 +2272,8 @@ int _main()
 			break;
 		case NDS_SLOT2_HCV1000:
 			break;
+		case NDS_SLOT2_SLIDECONTROLLER:
+			break;
 		default:
 			slot2_device_type = NDS_SLOT2_NONE;
 			break;
@@ -2275,6 +2285,7 @@ int _main()
 	Piano.Enabled	= (slot2_device_type == NDS_SLOT2_EASYPIANO)?true:false;
 	Paddle.Enabled	= (slot2_device_type == NDS_SLOT2_PADDLE)?true:false;
 	HCV1000.Enabled = (slot2_device_type == NDS_SLOT2_HCV1000)?true:false;
+	SlideController.Enabled = (slot2_device_type == NDS_SLOT2_SLIDECONTROLLER)?true:false;
 
 	CommonSettings.WifiBridgeDeviceID = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 
@@ -4513,6 +4524,29 @@ DOKEYDOWN:
 		break;
 	}
 #endif
+
+	case WM_INPUT:
+		{
+			if (SlideController.Enabled)
+			{
+				UINT dataSize;
+				GetRawInputData((HRAWINPUT)lParam, RID_INPUT, NULL, &dataSize, sizeof(RAWINPUTHEADER));
+				LPBYTE rawdata = new BYTE[dataSize];
+				if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, rawdata, &dataSize, sizeof(RAWINPUTHEADER)) == dataSize)
+				{
+					RAWINPUT* raw = (RAWINPUT*)rawdata;
+					if (raw->header.dwType == RIM_TYPEMOUSE)
+					{
+						LONG xMotion = raw->data.mouse.lLastX;
+						LONG yMotion = raw->data.mouse.lLastY;
+						xMotion = max((LONG)-127, min(xMotion, (LONG)127));
+						yMotion = max((LONG)-127, min(yMotion, (LONG)127));
+						slideController_updateMotion(xMotion, -yMotion);
+					}
+				}
+			}
+		}
+		return 0;
 
 	case WM_COMMAND:
 		if(HIWORD(wParam) == 0 || HIWORD(wParam) == 1)

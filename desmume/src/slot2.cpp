@@ -59,18 +59,20 @@ void slot2_Init()
 	extern TISlot2InterfaceConstructor construct_Slot2_Paddle;
 	extern TISlot2InterfaceConstructor construct_Slot2_PassME;
 	extern TISlot2InterfaceConstructor construct_Slot2_HCV1000;
+	extern TISlot2InterfaceConstructor construct_Slot2_SlideController;
 
-	slot2_List[NDS_SLOT2_NONE]			= construct_Slot2_None();
-	slot2_List[NDS_SLOT2_AUTO]			= construct_Slot2_Auto();
-	slot2_List[NDS_SLOT2_CFLASH]		= construct_Slot2_CFlash();
-	slot2_List[NDS_SLOT2_RUMBLEPAK]		= construct_Slot2_RumblePak();
-	slot2_List[NDS_SLOT2_GBACART]		= construct_Slot2_GbaCart();
-	slot2_List[NDS_SLOT2_GUITARGRIP]	= construct_Slot2_GuitarGrip();
-	slot2_List[NDS_SLOT2_EXPMEMORY]		= construct_Slot2_ExpansionPak();
-	slot2_List[NDS_SLOT2_EASYPIANO]		= construct_Slot2_EasyPiano();
-	slot2_List[NDS_SLOT2_PADDLE]		= construct_Slot2_Paddle();
-	slot2_List[NDS_SLOT2_PASSME]		= construct_Slot2_PassME();
-	slot2_List[NDS_SLOT2_HCV1000]		= construct_Slot2_HCV1000();
+	slot2_List[NDS_SLOT2_NONE]				= construct_Slot2_None();
+	slot2_List[NDS_SLOT2_AUTO]				= construct_Slot2_Auto();
+	slot2_List[NDS_SLOT2_CFLASH]			= construct_Slot2_CFlash();
+	slot2_List[NDS_SLOT2_RUMBLEPAK]			= construct_Slot2_RumblePak();
+	slot2_List[NDS_SLOT2_GBACART]			= construct_Slot2_GbaCart();
+	slot2_List[NDS_SLOT2_GUITARGRIP]		= construct_Slot2_GuitarGrip();
+	slot2_List[NDS_SLOT2_EXPMEMORY]			= construct_Slot2_ExpansionPak();
+	slot2_List[NDS_SLOT2_EASYPIANO]			= construct_Slot2_EasyPiano();
+	slot2_List[NDS_SLOT2_PADDLE]			= construct_Slot2_Paddle();
+	slot2_List[NDS_SLOT2_PASSME]			= construct_Slot2_PassME();
+	slot2_List[NDS_SLOT2_HCV1000]			= construct_Slot2_HCV1000();
+	slot2_List[NDS_SLOT2_SLIDECONTROLLER]	= construct_Slot2_SlideController();
 
 }
 
@@ -257,6 +259,7 @@ NDS_SLOT2_TYPE slot2_DetermineTypeByGameCode(const char *theGameCode)
 		{"C4A", NDS_SLOT2_HCV1000},			// Card de Asobu! Hajimete no DS
 		{"A6I", NDS_SLOT2_HCV1000},			// Kouchuu Ouja: Mushi King Super Collection
 		{"ALB", NDS_SLOT2_HCV1000},			// Oshare Majo Berry and Love
+		{"AGU", NDS_SLOT2_SLIDECONTROLLER}, // Slide Adventure MAGKID
 	};
 	
 	for(size_t i = 0; i < ARRAY_SIZE(gameCodeDeviceTypes); i++)

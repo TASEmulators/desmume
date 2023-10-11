@@ -269,6 +269,7 @@
     <ClCompile Include="..\..\..\addons\slot2_gbagame.cpp" />
     <ClCompile Include="..\..\..\addons\slot2_guitarGrip.cpp" />
     <ClCompile Include="..\..\..\addons\slot2_hcv1000.cpp" />
+    <ClCompile Include="..\..\..\addons\slot2_slideController.cpp" />
     <ClCompile Include="..\..\..\addons\slot2_none.cpp" />
     <ClCompile Include="..\..\..\addons\slot2_rumblepak.cpp" />
     <ClCompile Include="..\..\..\utils\guid.cpp" />

@@ -87,18 +87,19 @@ typedef ISlot2Interface* TISlot2InterfaceConstructor();
 
 enum NDS_SLOT2_TYPE
 {
-	NDS_SLOT2_NONE,			// 0xFF
-	NDS_SLOT2_AUTO,			// 0xFE - Auto-select
-	NDS_SLOT2_CFLASH,		// 0x01 - Compact flash
-	NDS_SLOT2_RUMBLEPAK,	// 0x02 - RumblePak
-	NDS_SLOT2_GBACART,		// 0x03 - GBA cartrindge in slot
-	NDS_SLOT2_GUITARGRIP,	// 0x04 - Guitar Grip
-	NDS_SLOT2_EXPMEMORY,	// 0x05 - Memory Expansion Pak 
-	NDS_SLOT2_EASYPIANO,	// 0x06 - Easy Piano
-	NDS_SLOT2_PADDLE,		// 0x07 - Arkanoids DS paddle
-	NDS_SLOT2_PASSME,		// 0x08 - PassME/Homebrew
-	NDS_SLOT2_HCV1000,      // 0x09 - HCV-1000 Sega Card Reader
-	NDS_SLOT2_COUNT			// use for counter addons - MUST TO BE LAST!!!
+	NDS_SLOT2_NONE,			   // 0xFF
+	NDS_SLOT2_AUTO,			   // 0xFE - Auto-select
+	NDS_SLOT2_CFLASH,		   // 0x01 - Compact flash
+	NDS_SLOT2_RUMBLEPAK,	   // 0x02 - RumblePak
+	NDS_SLOT2_GBACART,		   // 0x03 - GBA cartrindge in slot
+	NDS_SLOT2_GUITARGRIP,	   // 0x04 - Guitar Grip
+	NDS_SLOT2_EXPMEMORY,	   // 0x05 - Memory Expansion Pak 
+	NDS_SLOT2_EASYPIANO,	   // 0x06 - Easy Piano
+	NDS_SLOT2_PADDLE,		   // 0x07 - Arkanoids DS paddle
+	NDS_SLOT2_PASSME,		   // 0x08 - PassME/Homebrew
+	NDS_SLOT2_HCV1000,         // 0x09 - HCV-1000 Sega Card Reader
+	NDS_SLOT2_SLIDECONTROLLER, // 0x0A - Slide Controller
+	NDS_SLOT2_COUNT			   // use for counter addons - MUST TO BE LAST!!!
 };
 
 extern ISlot2Interface* slot2_device;						//the current slot2 device instance
@@ -160,4 +161,5 @@ extern void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue); // 
 extern void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, bool g, bool gs, bool a, bool as, bool b, bool hic); //piano keys
 extern void HCV1000_setReady();
 extern void HCV1000_setBarcode(std::string barcode);
+extern void slideController_updateMotion(s8 x, s8 y);
 #endif //__SLOT_H__

@@ -933,6 +933,9 @@
     <ClCompile Include="..\..\addons\slot2_hcv1000.cpp">
       <Filter>addons</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\addons\slot2_slideController.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\utils\guid.h">
