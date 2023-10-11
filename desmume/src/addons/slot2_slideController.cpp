@@ -226,8 +226,10 @@ ISlot2Interface* construct_Slot2_SlideController() { return new Slot2_SlideContr
 
 void slideController_updateMotion(s8 x, s8 y)
 {
-	scRegs[0x03] = (u8)x;
-	scRegs[0x04] = (u8)y;
-	if (scRegs[0x03] || scRegs[0x04])
-		scRegs[0x02] |= 0x80;
+	if (x || y)
+	{
+		scRegs[0x03] = (u8)x;
+		scRegs[0x04] = (u8)y;
+		scRegs[0x02] |= 0x80; //Set motion flag in the motion status register
+	}
 }

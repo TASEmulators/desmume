@@ -2133,12 +2133,13 @@ int _main()
 		exit(-1);
 	}
 
-	RAWINPUTDEVICE rid = {};
-	rid.usUsagePage = 0x01;
-	rid.usUsage = 0x02;
-	rid.dwFlags = 0;
-	rid.hwndTarget = MainWindow->getHWnd();
-	RegisterRawInputDevices(&rid, 1, sizeof(rid));
+	//Raw input for the Slide Controller add-on
+	RAWINPUTDEVICE Rid[1];
+	Rid[0].usUsagePage = 0x01;
+	Rid[0].usUsage = 0x02;
+	Rid[0].dwFlags = 0x00;
+	Rid[0].hwndTarget = MainWindow->getHWnd();
+	RegisterRawInputDevices(Rid, 1, sizeof(Rid[0]));
 
 	//disable wacky stylus stuff
 	//TODO - we are obliged to call GlobalDeleteAtom
@@ -4529,24 +4530,24 @@ DOKEYDOWN:
 		{
 			if (SlideController.Enabled)
 			{
-				UINT dataSize;
-				GetRawInputData((HRAWINPUT)lParam, RID_INPUT, NULL, &dataSize, sizeof(RAWINPUTHEADER));
-				LPBYTE rawdata = new BYTE[dataSize];
-				if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, rawdata, &dataSize, sizeof(RAWINPUTHEADER)) == dataSize)
+				UINT dwSize = sizeof(RAWINPUT);
+				static BYTE lpb[sizeof(RAWINPUT)];
+
+				GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER));
+
+				RAWINPUT* raw = (RAWINPUT*)lpb;
+
+				if (raw->header.dwType == RIM_TYPEMOUSE)
 				{
-					RAWINPUT* raw = (RAWINPUT*)rawdata;
-					if (raw->header.dwType == RIM_TYPEMOUSE)
-					{
-						LONG xMotion = raw->data.mouse.lLastX;
-						LONG yMotion = raw->data.mouse.lLastY;
-						xMotion = max((LONG)-127, min(xMotion, (LONG)127));
-						yMotion = max((LONG)-127, min(yMotion, (LONG)127));
-						slideController_updateMotion(xMotion, -yMotion);
-					}
+					int xMotion = raw->data.mouse.lLastX;
+					int yMotion = raw->data.mouse.lLastY;
+					xMotion = max(-127, min(xMotion, 127));
+					yMotion = max(-127, min(yMotion, 127));
+					slideController_updateMotion(xMotion, -yMotion);
 				}
+				return 0;
 			}
 		}
-		return 0;
 
 	case WM_COMMAND:
 		if(HIWORD(wParam) == 0 || HIWORD(wParam) == 1)
