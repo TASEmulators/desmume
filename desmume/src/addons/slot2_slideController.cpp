@@ -24,11 +24,16 @@
 #include "../slot2.h"
 #include "../emufile.h"
 
+static u8 xDelta;
+static u8 yDelta;
 //Product ID, Revision ID, Motion status, X delta, Y delta, Surface quality
 //Average pixel, Maximum pixel, Reserved, Reserved, Configuration, Reserved
 //Data out lower, Data out upper, Shutter lower, Shutter upper, Frame period lower, Frame period upper
-static u8 scRegs[18] = { 0x03, 0x20, 0x00, 0x00, 0x00, 0x80, 0x20, 0x3F, 0x00,
-						0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x00, 0x20, 0xD1 };
+static u8 scRegs[18] =
+{ 0x03, 0x20, 0x00, 0x00, 0x00, 0x80,
+  0x20, 0x3F, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x64, 0x00, 0x20, 0xD1
+};
 
 class Slot2_SlideController : public ISlot2Interface
 {
@@ -46,6 +51,9 @@ private:
 
 	void slideCon_reset()
 	{
+		xDelta = 0;
+		yDelta = 0;
+
 		slideCon.in_data = 0;
 		slideCon.out_data = 0;
 		slideCon.counter = 0;
@@ -90,11 +98,20 @@ private:
 					else
 					{
 						slideCon.state = 2;
+
+						if (slideCon.reg_sel == 0x02)
+						{
+							//set motion flag if there has been movement
+							if (xDelta || yDelta)
+								scRegs[0x02] |= 0x80;
+							//freeze motion deltas
+							scRegs[0x03] = xDelta;
+							scRegs[0x04] = yDelta;
+							xDelta = yDelta = 0;
+						}
 					}
 					slideCon.counter = 0;
 				}
-
-
 				break;
 			case 1: //write reg
 				if ((slideCon.sck == 0) && (new_sck == 1) && (slideCon.counter < 8))
@@ -192,6 +209,8 @@ public:
 		s32 version = 0;
 		os.write_32LE(version);
 
+		os.write_u8(xDelta);
+		os.write_u8(yDelta);
 		for (int i = 0; i < 18; i++)
 			os.write_u8(scRegs[i]);
 		os.write_16LE(slideCon.in_data);
@@ -209,6 +228,8 @@ public:
 
 		if (version == 0)
 		{
+			is.read_u8(xDelta);
+			is.read_u8(yDelta);
 			for (int i = 0; i < 18; i++)
 				scRegs[i] = is.read_u8();
 			is.read_16LE(slideCon.in_data);
@@ -228,8 +249,7 @@ void slideController_updateMotion(s8 x, s8 y)
 {
 	if (x || y)
 	{
-		scRegs[0x03] = (u8)x;
-		scRegs[0x04] = (u8)y;
-		scRegs[0x02] |= 0x80; //Set motion flag in the motion status register
+		xDelta = (u8)x;
+		yDelta = (u8)y;
 	}
 }
