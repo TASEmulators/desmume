@@ -1,3 +1,6 @@
+//Serial handling code heavily inspired by the Magic Reader code in GBE+
+//https://github.com/shonumi/gbe-plus/blob/7986317958a672d72ff54ea33f31bcca13cf8330/src/nds/slot2.cpp#L155
+
 /*
 	Copyright (C) 2023 DeSmuME team
 
@@ -21,34 +24,127 @@
 #include "../slot2.h"
 #include "../emufile.h"
 
-#define SC_BITIN(X, Y)		\
-do {						\
-	X = (X << 1) | (Y & 1); \
-	bitsWritten++;			\
-} while (0)
-
-#define SC_BITOUT(X, Y)				\
-do {								\
-	X = ((Y >> 7 - bitsRead) & 1);	\
-	bitsRead++;						\
-} while(0)
-
-u8 motionStatus;
-u8 xMotion;
-u8 yMotion;
+//Product ID, Revision ID, Motion status, X delta, Y delta, Surface quality
+//Average pixel, Maximum pixel, Reserved, Reserved, Configuration, Reserved
+//Data out lower, Data out upper, Shutter lower, Shutter upper, Frame period lower, Frame period upper
+static u8 scRegs[18] = { 0x03, 0x20, 0x00, 0x00, 0x00, 0x80, 0x20, 0x3F, 0x00,
+						0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x00, 0x20, 0xD1 };
 
 class Slot2_SlideController : public ISlot2Interface
 {
 private:
-	u8 prevClock;
-	u8 bitsWritten;
-	u8 bitsRead;
-	u8 inByte;
-	u16 regSel;
+	struct slideControllerSerial
+	{
+		u16 in_data;
+		u16 out_data;
+		u8 counter;
+		u8 state;
+		u8 sck;
+		u8 reg_sel;
+		u8 tmp;
+	} slideCon = {};
 
-	u8 configBits;
-	u8 framePeriodLower;
-	u8 framePeriodUpper;
+	void slideCon_reset()
+	{
+		slideCon.in_data = 0;
+		slideCon.out_data = 0;
+		slideCon.counter = 0;
+		slideCon.state = 0;
+		slideCon.sck = 0;
+		slideCon.reg_sel = 0;
+		slideCon.tmp = 0;
+
+		scRegs[0x02] = 0x00; //Motion status
+		scRegs[0x03] = 0x00; //X delta
+		scRegs[0x04] = 0x00; //Y delta
+		scRegs[0x0A] = 0x00; //Config bits
+		scRegs[0x10] = 0x20; //Frame period lower
+		scRegs[0x11] = 0xD1; //Frame period upper
+	}
+
+	void slideCon_process()
+	{
+		//Serial clock in bit 1
+		u8 new_sck = (slideCon.in_data & 0x2) >> 1;
+		//Serial data in bit 0
+		u8 sd = slideCon.in_data & 0x1;
+
+		switch (slideCon.state)
+		{
+			case 0: //reg select
+				//build reg select byte
+				if ((slideCon.sck == 0) && (new_sck == 1) && (slideCon.counter < 8))
+				{
+					slideCon.reg_sel = (slideCon.reg_sel << 1) | sd;
+					slideCon.counter++;
+				}
+				else if (slideCon.counter == 8)
+				{
+					//check if it's a read or a write by MSB
+					if (slideCon.reg_sel & 0x80)
+					{
+						slideCon.state = 1;
+						slideCon.reg_sel &= 0x7F;
+						slideCon.tmp = 0;
+					}
+					else
+					{
+						slideCon.state = 2;
+					}
+					slideCon.counter = 0;
+				}
+
+
+				break;
+			case 1: //write reg
+				if ((slideCon.sck == 0) && (new_sck == 1) && (slideCon.counter < 8))
+				{
+					slideCon.tmp = (slideCon.tmp << 1) | sd;
+					slideCon.counter++;
+				}
+				else if ((slideCon.sck == 0) && (new_sck == 0) && (slideCon.counter == 8))
+				{
+					//printf("WRITE REG: %02X = %02X\n", slideCon.reg_sel, slideCon.tmp);
+					slideCon.state = 0;
+					slideCon.counter = 0;
+
+					if (slideCon.reg_sel <= 0x11)
+						scRegs[slideCon.reg_sel] = slideCon.tmp;
+				}
+				break;
+			case 2: //read reg
+				if ((slideCon.sck == 0) && (new_sck == 1) && (slideCon.counter < 8))
+				{
+					if (slideCon.reg_sel <= 0x11)
+						slideCon.out_data = (scRegs[slideCon.reg_sel] >> (7 - slideCon.counter)) & 1;
+					else
+						slideCon.out_data = 0;
+					slideCon.counter++;
+				}
+				else if ((slideCon.sck == 0) && (new_sck == 0) && (slideCon.counter == 8))
+				{
+					//printf("READ REG: %02X = %02X\n", slideCon.reg_sel, scRegs[slideCon.reg_sel]);
+					slideCon.state = 0;
+					slideCon.counter = 0;
+
+					//Reset motion flag if reg was motion status
+					if (slideCon.reg_sel == 0x02)
+						scRegs[0x02] &= 0x7F;
+					//Reset motion deltas if they were read
+					if ((slideCon.reg_sel == 0x03) || (slideCon.reg_sel == 0x04))
+						scRegs[slideCon.reg_sel] = 0x00;
+				}
+				break;
+		}
+
+		slideCon.sck = new_sck;
+
+		if (scRegs[0x0A] & 0x80) //Reset
+		{
+			slideCon_reset();
+		}
+	}
+
 public:
 
 	virtual Slot2Info const* info()
@@ -59,152 +155,34 @@ public:
 
 	virtual void connect()
 	{
-		prevClock = 0;
-		bitsWritten = 0;
-		bitsRead = 0;
-		inByte = 0;
-		regSel = 0xFFFF;
-
-		motionStatus = 0;
-		xMotion = 0;
-		yMotion = 0;
-		configBits = 0;
-		framePeriodLower = 0x20;
-		framePeriodUpper = 0xD1;
+		slideCon_reset();
 	}
 
 	virtual void writeWord(u8 PROCNUM, u32 addr, u16 val)
 	{
 		if (addr == 0x081E0000)
 		{
-			if ((prevClock == 0) && (val & 0x2) && (val & 0x8))
-			{
-				SC_BITIN(inByte, val);
-				if (bitsWritten == 8)
-				{
-					bitsWritten = 0;
-					if (regSel == 0xFFFF) //First byte written
-					{
-						regSel = inByte;
-					}
-					else //Second byte written
-					{
-						//printf("WRITE TO REG: %02X = %02X\n", regSel & 0x7F , inByte);
-						switch (regSel & 0x7F)
-						{
-							case 0x0A: //Config bits
-								configBits = inByte;
-								break;
-							case 0x10: //Frame period (lower)
-								framePeriodLower = inByte;
-								break;
-							case 0x11: //Frame period(upper)
-								framePeriodUpper = inByte;
-								break;
-						}
-						regSel = 0xFFFF;
-					}
-				}
-			}
-			prevClock = (val & 0x2) >> 1;
-		}
-
-		if (configBits & 0x80) //Reset
-		{
-			motionStatus = 0;
-			xMotion = 0;
-			yMotion = 0;
-			configBits = 0;
-			framePeriodLower = 0x20;
-			framePeriodUpper = 0xD1;
-
-			prevClock = 0;
-			bitsWritten = 0;
-			bitsRead = 0;
-			inByte = 0;
-			regSel = 0xFFFF;
+			slideCon.in_data = val;
+			slideCon_process();
 		}
 	}
 
 	virtual u8	readByte(u8 PROCNUM, u32 addr)
 	{
 		if (addr == 0x080000B2)
-		{
 			return 0x96;
-		}
-		return 0xFF;
+		else
+			return 0xFF;
 	}
 
 	virtual u16	readWord(u8 PROCNUM, u32 addr)
 	{
-		u16 outWord = 0;
+		u16 outWord = 0xFFFF;
 
 		if (addr < 0x08000100)
-		{
 			outWord = 0xFEF0;
-		}
-
-		if (addr == 0x081E0000)
-		{
-			switch (regSel)
-			{
-				case 0x00: //Product ID
-					SC_BITOUT(outWord, 0x3);
-					break;
-				case 0x01: //Revision ID
-					SC_BITOUT(outWord, 0x20); //Is this correct?
-					break;
-				case 0x02: //Motion status
-					SC_BITOUT(outWord, motionStatus);
-					if (bitsRead == 8) motionStatus = 0;
-					break;
-				case 0x03: //X motion delta
-					SC_BITOUT(outWord, xMotion);
-					if (bitsRead == 8) xMotion = 0;
-					break;
-				case 0x04: //Y motion delta
-					SC_BITOUT(outWord, yMotion);
-					if (bitsRead == 8) yMotion = 0;
-					break;
-				case 0x05: //Surface quality
-					SC_BITOUT(outWord, 128);
-					break;
-				case 0x06: //Average pixel
-					SC_BITOUT(outWord, 32);
-					break;
-				case 0x07: //Maximum pixel
-					SC_BITOUT(outWord, 63);
-					break;
-				case 0x0A: //Configuration bits
-					SC_BITOUT(outWord, configBits);
-					break;
-				case 0x0C: //Data out (lower)
-					SC_BITOUT(outWord, 0);
-					break;
-				case 0x0D: //Data out (upper)
-					SC_BITOUT(outWord, 0);
-					break;
-				case 0x0E: //Shutter value (lower)
-					SC_BITOUT(outWord, 64);
-					break;
-				case 0x0F: //Shutter value (upper)
-					SC_BITOUT(outWord, 0);
-					break;
-				case 0x10: //Frame period (lower)
-					SC_BITOUT(outWord, framePeriodLower);
-					break;
-				case 0x11: //Frame period (upper)
-					SC_BITOUT(outWord, framePeriodUpper);
-					break;
-			}
-
-			if (bitsRead == 8)
-			{
-				bitsRead = 0;
-				//printf("READ FROM REG: %02X\n", regSel);
-				regSel = 0xFFFF;
-			}
-		}
+		else if (addr == 0x081E0000)
+			outWord = slideCon.out_data;
 
 		return outWord;
 	}
@@ -214,18 +192,15 @@ public:
 		s32 version = 0;
 		os.write_32LE(version);
 
-		os.write_u8(prevClock);
-		os.write_u8(bitsWritten);
-		os.write_u8(bitsRead);
-		os.write_u8(inByte);
-		os.write_16LE(regSel);
-
-		os.write_u8(configBits);
-		os.write_u8(framePeriodLower);
-		os.write_u8(framePeriodUpper);
-		os.write_u8(motionStatus);
-		os.write_u8(xMotion);
-		os.write_u8(yMotion);
+		for (int i = 0; i < 18; i++)
+			os.write_u8(scRegs[i]);
+		os.write_16LE(slideCon.in_data);
+		os.write_16LE(slideCon.out_data);
+		os.write_u8(slideCon.counter);
+		os.write_u8(slideCon.state);
+		os.write_u8(slideCon.sck);
+		os.write_u8(slideCon.reg_sel);
+		os.write_u8(slideCon.tmp);
 	}
 
 	virtual void loadstate(EMUFILE& is)
@@ -234,18 +209,15 @@ public:
 
 		if (version == 0)
 		{
-			is.read_u8(prevClock);
-			is.read_u8(bitsWritten);
-			is.read_u8(bitsRead);
-			is.read_u8(inByte);
-			is.read_16LE(regSel);
-
-			is.read_u8(configBits);
-			is.read_u8(framePeriodLower);
-			is.read_u8(framePeriodUpper);
-			is.read_u8(motionStatus);
-			is.read_u8(xMotion);
-			is.read_u8(yMotion);
+			for (int i = 0; i < 18; i++)
+				scRegs[i] = is.read_u8();
+			is.read_16LE(slideCon.in_data);
+			is.read_16LE(slideCon.out_data);
+			is.read_u8(slideCon.counter);
+			is.read_u8(slideCon.state);
+			is.read_u8(slideCon.sck);
+			is.read_u8(slideCon.reg_sel);
+			is.read_u8(slideCon.tmp);
 		}
 	}
 };
@@ -254,11 +226,8 @@ ISlot2Interface* construct_Slot2_SlideController() { return new Slot2_SlideContr
 
 void slideController_updateMotion(s8 x, s8 y)
 {
-	xMotion = (u8)x;
-	yMotion = (u8)y;
-	if (xMotion || yMotion)
-		motionStatus = 0x80;
+	scRegs[0x03] = (u8)x;
+	scRegs[0x04] = (u8)y;
+	if (scRegs[0x03] || scRegs[0x04])
+		scRegs[0x02] |= 0x80;
 }
-
-#undef SC_BITIN
-#undef SC_BITOUT
