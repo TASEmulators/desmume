@@ -18,11 +18,13 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-//Absolute barebones implementation of the Slide Controller add-on. Rumble is not implemented.
+//Absolute barebones implementation of the Slide Controller add-on.
 //The game does a bunch of mystery reads of various sizes which have not been investigated at all.
 
 #include "../slot2.h"
 #include "../emufile.h"
+
+static bool rumbleEnable = false;
 
 static u8 xDelta;
 static u8 yDelta;
@@ -38,6 +40,8 @@ static u8 scRegs[18] =
 class Slot2_SlideController : public ISlot2Interface
 {
 private:
+	u8 old_rumble;
+
 	struct slideControllerSerial
 	{
 		u16 in_data;
@@ -51,6 +55,10 @@ private:
 
 	void slideCon_reset()
 	{
+		old_rumble = 0;
+		if (FeedbackON)
+			FeedbackON(false);
+
 		xDelta = 0;
 		yDelta = 0;
 
@@ -76,6 +84,14 @@ private:
 		u8 new_sck = (slideCon.in_data & 0x2) >> 1;
 		//Serial data in bit 0
 		u8 sd = slideCon.in_data & 0x1;
+		//Rumble in bit 8
+		u8 rumble = (slideCon.in_data & 0x100) >> 8;
+
+		if (FeedbackON && rumbleEnable && (old_rumble != rumble))
+		{
+			old_rumble = rumble;
+			FeedbackON(rumble);
+		}
 
 		switch (slideCon.state)
 		{
@@ -175,6 +191,12 @@ public:
 		slideCon_reset();
 	}
 
+	virtual void disconnect()
+	{
+		if (FeedbackON)
+			FeedbackON(false);
+	}
+
 	virtual void writeWord(u8 PROCNUM, u32 addr, u16 val)
 	{
 		if (addr == 0x081E0000)
@@ -240,6 +262,10 @@ public:
 			is.read_u8(slideCon.reg_sel);
 			is.read_u8(slideCon.tmp);
 		}
+
+		old_rumble = 0;
+		if (FeedbackON)
+			FeedbackON(false);
 	}
 };
 
@@ -252,4 +278,11 @@ void slideController_updateMotion(s8 x, s8 y)
 		xDelta = (u8)x;
 		yDelta = (u8)y;
 	}
+}
+
+void slideController_rumbleEnable(bool enable)
+{
+	rumbleEnable = enable;
+	if (FeedbackON && (enable == false))
+		FeedbackON(false);
 }

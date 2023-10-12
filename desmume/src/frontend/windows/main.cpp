@@ -2211,6 +2211,8 @@ int _main()
 	slot2_HCV1000_barcode = GetPrivateProfileStdString("Slot2.HCV1000", "barcode", "").substr(0, 16);
 	HCV1000_setBarcode(slot2_HCV1000_barcode);
 
+	slideController_rumbleEnable(GetPrivateProfileBool("Slot2.SlideController", "rumble", false, IniName));
+
 	cmdline.process_addonCommands();
 	WIN_InstallCFlash();
 	WIN_InstallGBACartridge();

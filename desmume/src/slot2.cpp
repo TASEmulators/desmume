@@ -33,6 +33,8 @@ std::string CFlash_Path;
 std::string GBACartridge_RomPath;
 std::string GBACartridge_SRAMPath;
 
+void (*FeedbackON)(bool enable) = NULL;
+
 ISlot2Interface* slot2_List[NDS_SLOT2_COUNT] = {0};
 
 ISlot2Interface* slot2_device = NULL;
