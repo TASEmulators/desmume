@@ -4548,6 +4548,7 @@ DOKEYDOWN:
 				return 0;
 			}
 		}
+		break;
 
 	case WM_COMMAND:
 		if(HIWORD(wParam) == 0 || HIWORD(wParam) == 1)
