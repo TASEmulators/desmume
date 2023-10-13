@@ -162,5 +162,4 @@ extern void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool 
 extern void HCV1000_setReady();
 extern void HCV1000_setBarcode(std::string barcode);
 extern void slideController_updateMotion(s8 x, s8 y);
-extern void slideController_rumbleEnable(bool enable);
 #endif //__SLOT_H__

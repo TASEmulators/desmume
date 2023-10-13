@@ -19,19 +19,16 @@
 */
 
 //Absolute barebones implementation of the Slide Controller add-on.
-//The game does a bunch of mystery reads of various sizes which have not been investigated at all.
 
 #include "../slot2.h"
 #include "../emufile.h"
 
-static bool rumbleEnable = false;
-
-static u8 xDelta;
-static u8 yDelta;
+static u8 delta_x;
+static u8 delta_y;
 //Product ID, Revision ID, Motion status, X delta, Y delta, Surface quality
 //Average pixel, Maximum pixel, Reserved, Reserved, Configuration, Reserved
 //Data out lower, Data out upper, Shutter lower, Shutter upper, Frame period lower, Frame period upper
-static u8 scRegs[18] =
+static u8 sc_regs[18] =
 { 0x03, 0x20, 0x00, 0x00, 0x00, 0x80,
   0x20, 0x3F, 0x00, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x64, 0x00, 0x20, 0xD1
@@ -42,7 +39,7 @@ class Slot2_SlideController : public ISlot2Interface
 private:
 	u8 old_rumble;
 
-	struct slideControllerSerial
+	struct
 	{
 		u16 in_data;
 		u16 out_data;
@@ -55,12 +52,12 @@ private:
 
 	void slideCon_reset()
 	{
+		delta_x = 0;
+		delta_y = 0;
+
 		old_rumble = 0;
 		if (FeedbackON)
 			FeedbackON(false);
-
-		xDelta = 0;
-		yDelta = 0;
 
 		slideCon.in_data = 0;
 		slideCon.out_data = 0;
@@ -70,12 +67,12 @@ private:
 		slideCon.reg_sel = 0;
 		slideCon.tmp = 0;
 
-		scRegs[0x02] = 0x00; //Motion status
-		scRegs[0x03] = 0x00; //X delta
-		scRegs[0x04] = 0x00; //Y delta
-		scRegs[0x0A] = 0x00; //Config bits
-		scRegs[0x10] = 0x20; //Frame period lower
-		scRegs[0x11] = 0xD1; //Frame period upper
+		sc_regs[0x02] = 0x00; //Motion status
+		sc_regs[0x03] = 0x00; //X delta
+		sc_regs[0x04] = 0x00; //Y delta
+		sc_regs[0x0A] = 0x00; //Config bits
+		sc_regs[0x10] = 0x20; //Frame period lower
+		sc_regs[0x11] = 0xD1; //Frame period upper
 	}
 
 	void slideCon_process()
@@ -87,7 +84,7 @@ private:
 		//Rumble in bit 8
 		u8 rumble = (slideCon.in_data & 0x100) >> 8;
 
-		if (FeedbackON && rumbleEnable && (old_rumble != rumble))
+		if (FeedbackON && (old_rumble != rumble))
 		{
 			old_rumble = rumble;
 			FeedbackON(rumble);
@@ -95,8 +92,8 @@ private:
 
 		switch (slideCon.state)
 		{
-			case 0: //reg select
-				//build reg select byte
+			case 0: //Reg select
+				//Build reg select byte
 				if ((slideCon.sck == 0) && (new_sck == 1) && (slideCon.counter < 8))
 				{
 					slideCon.reg_sel = (slideCon.reg_sel << 1) | sd;
@@ -104,7 +101,7 @@ private:
 				}
 				else if (slideCon.counter == 8)
 				{
-					//check if it's a read or a write by MSB
+					//Check if it's a read or a write by MSB
 					if (slideCon.reg_sel & 0x80)
 					{
 						slideCon.state = 1;
@@ -117,19 +114,19 @@ private:
 
 						if (slideCon.reg_sel == 0x02)
 						{
-							//set motion flag if there has been movement
-							if (xDelta || yDelta)
-								scRegs[0x02] |= 0x80;
-							//freeze motion deltas
-							scRegs[0x03] = xDelta;
-							scRegs[0x04] = yDelta;
-							xDelta = yDelta = 0;
+							//Set motion flag if there has been movement
+							if (delta_x || delta_y)
+								sc_regs[0x02] |= 0x80;
+							//Freeze motion deltas
+							sc_regs[0x03] = delta_x;
+							sc_regs[0x04] = delta_y;
+							delta_x = delta_y = 0;
 						}
 					}
 					slideCon.counter = 0;
 				}
 				break;
-			case 1: //write reg
+			case 1: //Write reg
 				if ((slideCon.sck == 0) && (new_sck == 1) && (slideCon.counter < 8))
 				{
 					slideCon.tmp = (slideCon.tmp << 1) | sd;
@@ -137,42 +134,42 @@ private:
 				}
 				else if ((slideCon.sck == 0) && (new_sck == 0) && (slideCon.counter == 8))
 				{
-					//printf("WRITE REG: %02X = %02X\n", slideCon.reg_sel, slideCon.tmp);
+					//printf("SLIDECON WRITE REG: %02X = %02X\n", slideCon.reg_sel, slideCon.tmp);
 					slideCon.state = 0;
 					slideCon.counter = 0;
 
 					if (slideCon.reg_sel <= 0x11)
-						scRegs[slideCon.reg_sel] = slideCon.tmp;
+						sc_regs[slideCon.reg_sel] = slideCon.tmp;
 				}
 				break;
-			case 2: //read reg
+			case 2: //Read reg
 				if ((slideCon.sck == 0) && (new_sck == 1) && (slideCon.counter < 8))
 				{
 					if (slideCon.reg_sel <= 0x11)
-						slideCon.out_data = (scRegs[slideCon.reg_sel] >> (7 - slideCon.counter)) & 1;
+						slideCon.out_data = (sc_regs[slideCon.reg_sel] >> (7 - slideCon.counter)) & 1;
 					else
 						slideCon.out_data = 0;
 					slideCon.counter++;
 				}
 				else if ((slideCon.sck == 0) && (new_sck == 0) && (slideCon.counter == 8))
 				{
-					//printf("READ REG: %02X = %02X\n", slideCon.reg_sel, scRegs[slideCon.reg_sel]);
+					//printf("SLIDECON READ REG: %02X = %02X\n", slideCon.reg_sel, sc_regs[slideCon.reg_sel]);
 					slideCon.state = 0;
 					slideCon.counter = 0;
 
 					//Reset motion flag if reg was motion status
 					if (slideCon.reg_sel == 0x02)
-						scRegs[0x02] &= 0x7F;
+						sc_regs[0x02] &= 0x7F;
 					//Reset motion deltas if they were read
 					if ((slideCon.reg_sel == 0x03) || (slideCon.reg_sel == 0x04))
-						scRegs[slideCon.reg_sel] = 0x00;
+						sc_regs[slideCon.reg_sel] = 0x00;
 				}
 				break;
 		}
 
 		slideCon.sck = new_sck;
 
-		if (scRegs[0x0A] & 0x80) //Reset
+		if (sc_regs[0x0A] & 0x80) //Reset
 		{
 			slideCon_reset();
 		}
@@ -226,15 +223,17 @@ public:
 		return outWord;
 	}
 
+	virtual u32 readLong(u8 PROCNUM, u32 addr) { return 0xFEF0FEF0; }
+
 	virtual void savestate(EMUFILE& os)
 	{
 		s32 version = 0;
 		os.write_32LE(version);
 
-		os.write_u8(xDelta);
-		os.write_u8(yDelta);
+		os.write_u8(delta_x);
+		os.write_u8(delta_y);
 		for (int i = 0; i < 18; i++)
-			os.write_u8(scRegs[i]);
+			os.write_u8(sc_regs[i]);
 		os.write_16LE(slideCon.in_data);
 		os.write_16LE(slideCon.out_data);
 		os.write_u8(slideCon.counter);
@@ -250,10 +249,10 @@ public:
 
 		if (version == 0)
 		{
-			is.read_u8(xDelta);
-			is.read_u8(yDelta);
+			is.read_u8(delta_x);
+			is.read_u8(delta_y);
 			for (int i = 0; i < 18; i++)
-				scRegs[i] = is.read_u8();
+				sc_regs[i] = is.read_u8();
 			is.read_16LE(slideCon.in_data);
 			is.read_16LE(slideCon.out_data);
 			is.read_u8(slideCon.counter);
@@ -273,16 +272,6 @@ ISlot2Interface* construct_Slot2_SlideController() { return new Slot2_SlideContr
 
 void slideController_updateMotion(s8 x, s8 y)
 {
-	if (x || y)
-	{
-		xDelta = (u8)x;
-		yDelta = (u8)y;
-	}
-}
-
-void slideController_rumbleEnable(bool enable)
-{
-	rumbleEnable = enable;
-	if (FeedbackON && (enable == false))
-		FeedbackON(false);
+	delta_x = (u8)x;
+	delta_y = (u8)y;
 }
