@@ -95,13 +95,48 @@
               </packing>
             </child>
             <child>
+              <object class="GtkLabel">
+                <property name="label" translatable="yes">GPU scale factor:</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBoxText" id="gpuscale">
+                <items>
+                  <item translatable="yes">×1</item>
+                  <item translatable="yes">×2</item>
+                  <item translatable="yes">×3</item>
+                  <item translatable="yes">×4</item>
+                  <item translatable="yes">×5</item>
+                  <item translatable="yes">×6</item>
+                  <item translatable="yes">×7</item>
+                  <item translatable="yes">×8</item>
+                  <item translatable="yes">×9</item>
+                  <item translatable="yes">×10</item>
+                  <item translatable="yes">×11</item>
+                  <item translatable="yes">×12</item>
+                  <item translatable="yes">×13</item>
+                  <item translatable="yes">×14</item>
+                  <item translatable="yes">×15</item>
+                  <item translatable="yes">×16</item>
+                </items>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">2</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkCheckButton" id="posterize">
                 <property name="label" translatable="yes">3D Texture Deposterization</property>
                 <property name="draw-indicator">True</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">2</property>
+                <property name="top_attach">3</property>
               </packing>
             </child>
             <child>
@@ -111,7 +146,7 @@
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">3</property>
+                <property name="top_attach">4</property>
               </packing>
             </child>
             <child>
@@ -121,7 +156,7 @@
               </object>
               <packing>
                 <property name="left_attach">1</property>
-                <property name="top_attach">3</property>
+                <property name="top_attach">4</property>
               </packing>
             </child>
             <child>
@@ -130,7 +165,7 @@
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">4</property>
+                <property name="top_attach">5</property>
               </packing>
             </child>
             <child>
@@ -146,7 +181,7 @@
               </object>
               <packing>
                 <property name="left_attach">1</property>
-                <property name="top_attach">4</property>
+                <property name="top_attach">5</property>
               </packing>
             </child>
           </object>
