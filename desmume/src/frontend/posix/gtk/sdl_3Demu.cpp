@@ -28,7 +28,8 @@ static bool sdl_init(void) { return is_sdl_initialized(); }
 static SDL_Window *win = NULL;
 static SDL_GLContext ctx = NULL;
 
-extern int gpu_scale_factor;
+extern int real_framebuffer_width;
+extern int real_framebuffer_height;
 
 bool deinit_sdl_3Demu(void)
 {
@@ -62,8 +63,8 @@ bool init_sdl_3Demu(void)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
-    win = SDL_CreateWindow(NULL, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor,
-						GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+    win = SDL_CreateWindow(NULL, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, real_framebuffer_width,
+						real_framebuffer_height, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
     if (!win) {
         fprintf(stderr, "SDL: Failed to create a window: %s\n", SDL_GetError());
         return false;

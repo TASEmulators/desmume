@@ -104,25 +104,9 @@
               </packing>
             </child>
             <child>
-              <object class="GtkComboBoxText" id="gpuscale">
-                <items>
-                  <item translatable="yes">×1</item>
-                  <item translatable="yes">×2</item>
-                  <item translatable="yes">×3</item>
-                  <item translatable="yes">×4</item>
-                  <item translatable="yes">×5</item>
-                  <item translatable="yes">×6</item>
-                  <item translatable="yes">×7</item>
-                  <item translatable="yes">×8</item>
-                  <item translatable="yes">×9</item>
-                  <item translatable="yes">×10</item>
-                  <item translatable="yes">×11</item>
-                  <item translatable="yes">×12</item>
-                  <item translatable="yes">×13</item>
-                  <item translatable="yes">×14</item>
-                  <item translatable="yes">×15</item>
-                  <item translatable="yes">×16</item>
-                </items>
+              <object class="GtkSpinButton" id="gpuscale">
+               <property name="numeric">true</property>
+               <property name="digits">1</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>

@@ -98,7 +98,14 @@
 static int draw_count;
 extern int _scanline_filter_a, _scanline_filter_b, _scanline_filter_c, _scanline_filter_d;
 VideoFilter* video;
-int gpu_scale_factor = 1;
+
+#define GPU_SCALE_FACTOR_MIN 1.0f
+#define GPU_SCALE_FACTOR_MAX 10.0f
+
+float gpu_scale_factor = 1.0f;
+int real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+int real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+
 
 desmume::config::Config config;
 
@@ -1312,7 +1319,7 @@ static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpo
 static inline void gpu_screen_to_rgb(u32* dst)
 {
     ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, dst,
-																	GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * gpu_scale_factor * gpu_scale_factor);
+																	real_framebuffer_width * real_framebuffer_height * 2);
 }
 
 static inline void drawScreen(cairo_t* cr, u32* buf, gint w, gint h) {
@@ -1439,9 +1446,9 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 
 static void RedrawScreen() {
 	ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, (uint32_t *)video->GetSrcBufferPtr(),
-																GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * gpu_scale_factor * gpu_scale_factor);
+																real_framebuffer_width * real_framebuffer_height * 2);
 #ifdef HAVE_LIBAGG
-	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * gpu_scale_factor, 1024);
+	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), real_framebuffer_width, real_framebuffer_height * 2, 1024);
 	osd->update();
 	DrawHUD();
 	osd->clear();
@@ -1990,15 +1997,18 @@ static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, g
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
 	GtkDialog *dialog;
 	GtkGrid *wGrid;
-	GtkComboBox *coreCombo, *wScale, *wGPUScale, *wMultisample;
+	GtkComboBox *coreCombo, *wScale, *wMultisample;
 	GtkToggleButton *wPosterize, *wSmoothing, *wHCInterpolate;
+	GtkSpinButton *wGPUScale;
 
 	GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/graphics.ui");
 	dialog = GTK_DIALOG(gtk_builder_get_object(builder, "dialog"));
 	wGrid = GTK_GRID(gtk_builder_get_object(builder, "graphics_grid"));
 	coreCombo = GTK_COMBO_BOX(gtk_builder_get_object(builder, "core_combo"));
 	wScale = GTK_COMBO_BOX(gtk_builder_get_object(builder, "scale"));
-	wGPUScale = GTK_COMBO_BOX(gtk_builder_get_object(builder, "gpuscale"));
+	wGPUScale = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "gpuscale"));
+	gtk_spin_button_set_range(wGPUScale, GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX);
+	gtk_spin_button_set_increments(wGPUScale, 0.1, 1.0);
 	wMultisample = GTK_COMBO_BOX(gtk_builder_get_object(builder, "multisample"));
 	wPosterize = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "posterize"));
 	wSmoothing = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "smoothing"));
@@ -2015,7 +2025,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	gtk_combo_box_set_active(wScale, CommonSettings.GFX3D_Renderer_TextureScalingFactor >> 1);
 
 	//GPU scaling factor
-	gtk_combo_box_set_active(wGPUScale, gpu_scale_factor-1);
+	gtk_spin_button_set_value(wGPUScale, gpu_scale_factor);
 
 	// 3D Texture Deposterization
 	gtk_toggle_button_set_active(wPosterize, CommonSettings.GFX3D_Renderer_TextureDeposterize);
@@ -2087,10 +2097,16 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		default:
 			break;
 		}
-		gpu_scale_factor = gtk_combo_box_get_active(wGPUScale)+1;
+		gpu_scale_factor = gtk_spin_button_get_value(wGPUScale);
+		if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
+			gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
+		if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
+			gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
 		config.gpuScaleFactor = gpu_scale_factor;
-		GPU->SetCustomFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor, GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor);
-		video->SetSourceSize(GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * gpu_scale_factor);
+		real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor;
+		real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
+		GPU->SetCustomFramebufferSize(real_framebuffer_width, real_framebuffer_height);
+		video->SetSourceSize(real_framebuffer_width, real_framebuffer_height * 2);
 		CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize = gtk_toggle_button_get_active(wPosterize);
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(wSmoothing);
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
@@ -2151,7 +2167,7 @@ static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer use
     const gchar *dir;
     gchar *filename = NULL, *filen = NULL;
     GError *error = NULL;
-    u8 rgb[256 * 384 * 4];
+    u8 *rgb = (u8*)malloc(real_framebuffer_width * real_framebuffer_height * 2 * 4);
     static int seq = 0;
     gint H, W;
 
@@ -2160,11 +2176,11 @@ static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer use
     //    return;
 
     if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
-        W = screen_size[nds_screen.orientation].width;
-        H = screen_size[nds_screen.orientation].height;
+        W = real_framebuffer_width;
+        H = real_framebuffer_height * 2;
     } else {
-        W = screen_size[nds_screen.orientation].height;
-        H = screen_size[nds_screen.orientation].width;
+        W = real_framebuffer_height * 2;
+        H = real_framebuffer_width;
     }
 
     gpu_screen_to_rgb((u32*)rgb);
@@ -2201,7 +2217,7 @@ static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer use
         seq--;
     }
 
-    //free(rgb);
+    free(rgb);
     g_object_unref(screenshot);
     g_free(filename);
     g_free(filen);
@@ -3038,10 +3054,16 @@ common_gtk_main(GApplication *app, gpointer user_data)
     nds_screen.orientation = ORIENT_VERTICAL;
 
     gpu_scale_factor = config.gpuScaleFactor;
+    if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
+        gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
+    if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
+        gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
+    real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor;
+    real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
 
     g_printerr("Using %d threads for video filter.\n", CommonSettings.num_cores);
-	GPU->SetCustomFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor, GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor);
-    video = new VideoFilter(GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * gpu_scale_factor, VideoFilterTypeID_None, CommonSettings.num_cores);
+    GPU->SetCustomFramebufferSize(real_framebuffer_width, real_framebuffer_height);
+    video = new VideoFilter(real_framebuffer_width, real_framebuffer_height * 2, VideoFilterTypeID_None, CommonSettings.num_cores);
 
     /* Fetch the main elements from the window */
     GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/main.ui");
