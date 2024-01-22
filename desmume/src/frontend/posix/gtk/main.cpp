@@ -1318,8 +1318,8 @@ static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpo
 
 static inline void gpu_screen_to_rgb(u32* dst)
 {
-    ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, dst,
-																	real_framebuffer_width * real_framebuffer_height * 2);
+    ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().isCustomSizeRequested ? (u16*)(GPU->GetDisplayInfo().masterCustomBuffer) : GPU->GetDisplayInfo().masterNativeBuffer16,
+		dst, real_framebuffer_width * real_framebuffer_height * 2);
 }
 
 static inline void drawScreen(cairo_t* cr, u32* buf, gint w, gint h) {
@@ -1445,8 +1445,9 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 }
 
 static void RedrawScreen() {
-	ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, (uint32_t *)video->GetSrcBufferPtr(),
-																real_framebuffer_width * real_framebuffer_height * 2);
+	ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapDst>(
+		GPU->GetDisplayInfo().isCustomSizeRequested ? (u16*)(GPU->GetDisplayInfo().masterCustomBuffer) : GPU->GetDisplayInfo().masterNativeBuffer16,
+		(uint32_t *)video->GetSrcBufferPtr(), real_framebuffer_width * real_framebuffer_height * 2);
 #ifdef HAVE_LIBAGG
 	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), real_framebuffer_width, real_framebuffer_height * 2, 1024);
 	osd->update();
@@ -2008,7 +2009,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	wScale = GTK_COMBO_BOX(gtk_builder_get_object(builder, "scale"));
 	wGPUScale = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "gpuscale"));
 	gtk_spin_button_set_range(wGPUScale, GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX);
-	gtk_spin_button_set_increments(wGPUScale, 0.1, 1.0);
+	gtk_spin_button_set_increments(wGPUScale, 1.0, 1.0);
 	wMultisample = GTK_COMBO_BOX(gtk_builder_get_object(builder, "multisample"));
 	wPosterize = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "posterize"));
 	wSmoothing = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "smoothing"));
@@ -2102,6 +2103,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 			gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
 		if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
 			gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
+		gtk_spin_button_set_value(wGPUScale, gpu_scale_factor);
 		config.gpuScaleFactor = gpu_scale_factor;
 		real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor;
 		real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
@@ -3058,6 +3060,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
         gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
     if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
         gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
+    config.gpuScaleFactor = gpu_scale_factor;
     real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor;
     real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
 

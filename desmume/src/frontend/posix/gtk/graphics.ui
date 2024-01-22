@@ -106,7 +106,7 @@
             <child>
               <object class="GtkSpinButton" id="gpuscale">
                <property name="numeric">true</property>
-               <property name="digits">1</property>
+               <property name="digits">0</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
