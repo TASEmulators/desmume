@@ -63,6 +63,24 @@ void value<int>::save() {
 	g_key_file_set_integer(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData);
 }
 
+/*class value<float> */
+
+template<>
+void value<float>::load() {
+	GError* err = NULL;
+	float val = g_key_file_get_double(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), &err);
+	if (err != NULL) {
+		g_error_free(err);
+	} else {
+		this->mData = val;
+	}
+}
+
+template<>
+void value<float>::save() {
+	g_key_file_set_double(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData);
+}
+
 /* class value<string> */
 
 template<>
