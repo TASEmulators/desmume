@@ -1,0 +1,2 @@
+This package uses quilt for patch management, for more information see
+the file /usr/share/doc/quilt/README.source in the quilt package.
