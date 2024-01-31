@@ -8,7 +8,7 @@ LDFLAGS+=-Wl,-z,defs -Wl,--as-needed
 
 override_dh_auto_configure:
 	chmod +x $(CURDIR)/debian/configure.sh
-	$(CURDIR)/debian/configure.sh $(CURDIR)
+	$(CURDIR)/debian/configure.sh $(CURDIR) /usr
 
 override_dh_auto_build:
 	chmod +x $(CURDIR)/debian/build.sh
