@@ -1,0 +1,15 @@
+DeSmuME from CVS
+----------------
+If you downloaded DeSmuME from the CVS, you may build the package by:
+1) Making sure you are in DeSmuME toplevel directory (the one that contains
+   the configure.ac files).
+2) Generating the autotools files: ./autogen.sh
+3) Generating the build files: ./configure
+4) Building the package: debuild -B
+
+If you get an error about a version mismatch:
+1) Find out the current version reading the first lines of configure.ac .
+2) Update the first line of debian/changelog .
+3) Redo the procedure above.
+
+ -- Pascal Giard <evilynux@gmail.com>  Fri, 29 Jun 2007 05:20:22 -0400
