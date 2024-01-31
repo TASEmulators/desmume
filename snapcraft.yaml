@@ -4,6 +4,20 @@ summary: DeSmuME is a Nintendo DS Emulator
 description: |
   An open-source Nintendo DS Emulators.
 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: snapcore/action-build@v1
+      id: build
+    - uses: snapcore/action-publish@v1
+      env:
+        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
+      with:
+        snap: ${{ steps.build.outputs.snap }}
+        release: stable
+
 adopt-info: ddesmume-emulator
 grade: stable
 confinement: strict
