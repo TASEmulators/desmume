@@ -16,6 +16,11 @@ parts:
     plugin: dump
     source-type: deb
     override-build: |
+      echo "CRAFT_PROJECT_DIR=$CRAFT_PROJECT_DIR"
+      STABLE_TAG_CONFIG="$CRAFT_PROJECT_DIR/.stable_tag"
+      TAG_REF=$(cat "${STABLE_TAG_CONFIG}")
+      echo "TAG_REF=$TAG_REF"
+      snapcraftctl set version="$TAG_REF"
       snapcraftctl build
     #  snapcraftctl pull
     #  last_commit="$(git describe | sed 's/^v//; s/-.*-/-/')"
