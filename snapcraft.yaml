@@ -3,10 +3,13 @@ version: 0.9.11
 summary: DeSmuME is a Nintendo DS Emulator
 description: |
   An open-source Nintendo DS Emulators.
-adopt-info: ddesmume-emulator
+adopt-info: desmume-emulator
 grade: stable
 confinement: strict
 base: core22
+compression: lzo
+architectures:
+  - build-on: amd64
 parts:
   desmume-emulator:
     source: http://fr.archive.ubuntu.com/ubuntu/pool/universe/d/desmume/desmume_0.9.11-3build2_amd64.deb
