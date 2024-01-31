@@ -1,0 +1,74 @@
+name: desmume-emu
+version: 0.9.11
+summary: DeSmuME is a Nintendo DS Emulator
+description: |
+  An open-source Nintendo DS Emulators.
+
+adopt-info: desmume
+grade: stable
+confinement: strict
+base: core22
+parts:
+  desmume:
+    source: http://fr.archive.ubuntu.com/ubuntu/pool/universe/d/desmume/desmume_0.9.11-3build2_amd64.deb
+    plugin: dump
+    source-type: deb
+    override-build: |
+      snapcraftctl build
+    #  snapcraftctl pull
+    #  last_commit="$(git describe | sed 's/^v//; s/-.*-/-/')"
+    #  snapcraftctl set-version "${last_commit}"
+    #  #sed -i.bak -e 's|Icon=desmume|Icon=/usr/share/icons/hicolor/scalable/apps/desmume.svg|g' src/wx/desmume.desktop
+    stage-packages:
+      - libasound2 
+      - libc6 
+      - libcairo2 
+      - libgcc-s1
+      - libgcc-s1      
+      - libgdk-pixbuf-2.0-0 
+      - libgl1
+      - libglade2-0 
+      - libglib2.0-0 
+      - libglu1-mesa
+      - libgtk2.0-0 
+      - libgtkglext1
+      - libosmesa6 
+      - libpango-1.0-0 
+      - libsdl1.2debian 
+      - libsoundtouch1 
+      - libstdc++6 
+      - libtinyxml2.6.2v5
+      - zlib1g
+    build-packages:
+      - g++
+      - gcc
+      - gettext
+      - make
+      - cmake
+      - nasm
+      - pkg-config
+      - git
+      - zip
+      - build-essential
+      - intltool
+
+apps:
+  desmume:
+    plugs:
+      - desktop
+      - desktop-legacy
+      - audio-playback
+      - opengl
+      - joystick
+      - raw-usb
+      - screen-inhibit-control
+      - home
+      - removable-media
+      - network
+      - wayland
+      - x11
+    command: usr/games/desmume
+    desktop: usr/share/applications/desmume.desktop
+    extensions: [gnome]
+    environment:
+      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/pulseaudio
