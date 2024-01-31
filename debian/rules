@@ -1,0 +1,22 @@
+#!/usr/bin/make -f
+
+LDFLAGS+=-Wl,-z,defs -Wl,--as-needed
+#export LDFLAGS
+
+%:
+	dh $@ --with quilt,autoreconf
+
+override_dh_auto_configure:
+	chmod +x $(CURDIR)/debian/configure.sh
+	$(CURDIR)/debian/configure.sh $(CURDIR)
+
+override_dh_auto_build:
+	chmod +x $(CURDIR)/debian/build.sh
+	$(CURDIR)/debian/build.sh $(CURDIR)
+
+override_dh_auto_install:
+	chmod +x $(CURDIR)/debian/install.sh
+	$(CURDIR)/debian/install.sh $(CURDIR)
+
+override_dh_installdocs:
+	echo "no doc"
