@@ -31,6 +31,7 @@
 #include <SDL.h>
 #include <X11/Xlib.h>
 #include <vector>
+#include <fontconfig/fontconfig.h>
 
 #include "types.h"
 #include "firmware.h"
@@ -126,6 +127,15 @@ enum {
     SUB_BG_3,
     SUB_OBJ
 };
+
+#ifdef AGG2D_USE_VECTORFONTS
+#define VECTOR_FONT_BASE_SIZE 6
+#endif
+
+static FcConfig* fontConfig;
+static std::string vectorFontFile;
+
+static std::string FindFontFile(const char* fontName, bool bold);
 
 gboolean EmuLoop(gpointer data);
 
@@ -1449,7 +1459,7 @@ static void RedrawScreen() {
 		GPU->GetDisplayInfo().isCustomSizeRequested ? (u16*)(GPU->GetDisplayInfo().masterCustomBuffer) : GPU->GetDisplayInfo().masterNativeBuffer16,
 		(uint32_t *)video->GetSrcBufferPtr(), real_framebuffer_width * real_framebuffer_height * 2);
 #ifdef HAVE_LIBAGG
-	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), real_framebuffer_width, real_framebuffer_height * 2, 1024 * gpu_scale_factor);
+	aggDraw.hud->setDrawTargetDims((u8*)video->GetSrcBufferPtr(), real_framebuffer_width, real_framebuffer_height * 2, real_framebuffer_width * 4);
 	osd->update();
 	DrawHUD();
 	osd->clear();
@@ -1471,33 +1481,33 @@ static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 		devX = x;
 		devY = y;
 		cairo_matrix_transform_point(&nds_screen.topscreen_matrix, &devX, &devY);
-		topX = devX;
-		topY = devY;
+		topX = devX * gpu_scale_factor;
+		topY = devY * gpu_scale_factor;
 	}
 
 	if (nds_screen.orientation != ORIENT_SINGLE || nds_screen.swap) {
 		devX = x;
 		devY = y;
 		cairo_matrix_transform_point(&nds_screen.touch_matrix, &devX, &devY);
-		botX = devX;
-		botY = devY;
+		botX = devX * gpu_scale_factor;
+		botY = devY * gpu_scale_factor;
 	}
 
-	if (topX >= 0 && topY >= 0 && topX < 256 && topY < 192) {
+	if (topX >= 0 && topY >= 0 && topX < real_framebuffer_width && topY < real_framebuffer_height) {
 		X = topX;
-		Y = topY + (nds_screen.swap ? 192 : 0);
+		Y = topY + (nds_screen.swap ? real_framebuffer_height : 0);
 		startScreen = 0;
-	} else if (botX >= 0 && botY >= 0 && botX < 256 && botY < 192) {
+	} else if (botX >= 0 && botY >= 0 && botX < real_framebuffer_width && botY < real_framebuffer_height) {
 		X = botX;
-		Y = botY + (nds_screen.swap ? 0 : 192);
+		Y = botY + (nds_screen.swap ? 0 : real_framebuffer_height);
 		startScreen = 1;
 	} else if (!start) {
 		if (startScreen == 0) {
-			X = CLAMP(topX, 0, 255);
-			Y = CLAMP(topY, 0, 191) + (nds_screen.swap ? 192 : 0);
+			X = CLAMP(topX, 0, real_framebuffer_width-1);
+			Y = CLAMP(topY, 0, real_framebuffer_height-1) + (nds_screen.swap ? real_framebuffer_height : 0);
 		} else {
-			X = CLAMP(botX, 0, 255);
-			Y = CLAMP(botY, 0, 191) + (nds_screen.swap ? 0 : 192);
+			X = CLAMP(botX, 0, real_framebuffer_width-1);
+			Y = CLAMP(botY, 0, real_framebuffer_height-1) + (nds_screen.swap ? 0 : real_framebuffer_height);
 		}
 	} else {
 		LOG("TopX=%d, TopY=%d, BotX=%d, BotY=%d\n", topX, topY, botX, botY);
@@ -2098,6 +2108,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		default:
 			break;
 		}
+		double old_scale_factor = gpu_scale_factor;
 		gpu_scale_factor = gtk_spin_button_get_value(wGPUScale);
 		if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
 			gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
@@ -2109,6 +2120,20 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
 		GPU->SetCustomFramebufferSize(real_framebuffer_width, real_framebuffer_height);
 		video->SetSourceSize(real_framebuffer_width, real_framebuffer_height * 2);
+#ifdef HAVE_LIBAGG
+#ifdef AGG2D_USE_VECTORFONTS
+		if(vectorFontFile.size() > 0)
+		{
+			aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * gpu_scale_factor, true);
+			osd->useVectorFonts=true;
+		}
+		else
+			osd->useVectorFonts=false;
+#endif
+		Agg_setCustomSize(real_framebuffer_width, real_framebuffer_height*2);
+		osd->scale=gpu_scale_factor;
+		Hud.rescale(old_scale_factor, gpu_scale_factor);
+#endif
 		CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize = gtk_toggle_button_get_active(wPosterize);
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(wSmoothing);
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
@@ -3067,6 +3092,20 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_printerr("Using %d threads for video filter.\n", CommonSettings.num_cores);
     GPU->SetCustomFramebufferSize(real_framebuffer_width, real_framebuffer_height);
     video = new VideoFilter(real_framebuffer_width, real_framebuffer_height * 2, VideoFilterTypeID_None, CommonSettings.num_cores);
+#ifdef HAVE_LIBAGG
+#ifdef AGG2D_USE_VECTORFONTS
+	if(vectorFontFile.size() > 0)
+	{
+		aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * gpu_scale_factor, true);
+		osd->useVectorFonts=true;
+	}
+	else
+		osd->useVectorFonts=false;
+#endif
+	Agg_setCustomSize(real_framebuffer_width, real_framebuffer_height*2);
+	osd->scale=gpu_scale_factor;
+	Hud.reset();
+#endif
 
     /* Fetch the main elements from the window */
     GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/main.ui");
@@ -3644,9 +3683,38 @@ handle_open(GApplication *application,
     common_gtk_main(application, user_data);
 }
 
+static std::string FindFontFile(const char* fontName, bool bold)
+{
+	std::string fontFile;
+	FcPattern* pat = FcNameParse((const FcChar8*)fontName);
+	if(bold)
+		FcPatternAddInteger(pat, FC_WEIGHT, FC_WEIGHT_BOLD);
+	FcConfigSubstitute(fontConfig, pat, FcMatchPattern);
+	FcDefaultSubstitute(pat);
+	
+	// find the font
+	FcResult res;
+	FcPattern* font = FcFontMatch(fontConfig, pat, &res);
+	if (font)
+	{
+		FcChar8* file = NULL;
+		if (FcPatternGetString(font, FC_FILE, 0, &file) == FcResultMatch)
+		{
+			// save the file to another std::string
+			fontFile = (char*)file;
+		}
+		FcPatternDestroy(font);
+	}
+	FcPatternDestroy(pat);
+	return fontFile;
+}
+
 int main (int argc, char *argv[])
 {
   configured_features my_config;
+  
+  fontConfig = FcInitLoadConfigAndFonts();
+  vectorFontFile = FindFontFile("mono", true);
 
   // The global menu screws up the window size...
   unsetenv("UBUNTU_MENUPROXY");

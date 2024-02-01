@@ -10,6 +10,8 @@ project('desmume',
   license: 'GPL2+',
 )
 
+add_global_arguments('-DHOST_LINUX', language: ['c', 'cpp'])
+
 dep_glib2 = dependency('glib-2.0')
 dep_sdl = dependency('sdl2')
 dep_pcap = dependency('pcap')
@@ -203,6 +205,10 @@ endif
 if dep_agg.found()
   dependencies += dep_agg
   add_global_arguments('-DHAVE_LIBAGG', language: ['c', 'cpp'])
+  if get_option('frontend-gtk')
+    add_global_arguments('-DAGG2D_USE_VECTORFONTS', language: ['c', 'cpp'])
+    add_global_link_arguments('-laggfontfreetype', language: ['c', 'cpp'])
+  endif
   libdesmume_src += [
     '../modules/osd/agg/aggdraw.cpp',
     '../modules/osd/agg/agg_osd.cpp',

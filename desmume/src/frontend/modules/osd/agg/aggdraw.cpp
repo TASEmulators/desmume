@@ -119,16 +119,16 @@ static void Agg_init_fonts()
 AggDraw_Desmume aggDraw;
 
 #if defined(WIN32) || defined(HOST_LINUX)
-T_AGG_RGBA agg_targetScreen(0, 256, 384, 1024);
+T_AGG_RGBA agg_targetScreen(0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, 1024);
 #else
-T_AGG_RGB555 agg_targetScreen(0, 256, 384, 1512);
+T_AGG_RGB555 agg_targetScreen(0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, 512);
 #endif
 
-static u32 luaBuffer[256*192*2];
-T_AGG_RGBA agg_targetLua((u8*)luaBuffer, 256, 384, 1024);
+static std::vector<u32> luaBuffer(GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT*2);
+T_AGG_RGBA agg_targetLua((u8*)luaBuffer.data(), GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, 1024);
 
-static u32 hudBuffer[256*192*2];
-T_AGG_RGBA agg_targetHud((u8*)hudBuffer, 256, 384, 1024);
+static std::vector<u32> hudBuffer(GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT*2);
+T_AGG_RGBA agg_targetHud((u8*)hudBuffer.data(), GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, 1024);
 
 static AggDrawTarget* targets[] = {
 	&agg_targetScreen,
@@ -162,6 +162,23 @@ void AggDraw_Desmume::setTarget(AggTarget newTarget)
 	target = targets[newTarget];
 }
 
+void Agg_setCustomSize(int w, int h)
+{
+	hudBuffer.resize(w*h);
+	luaBuffer.resize(w*h);
+	if(aggDraw.screen)
+	{
+#if defined(WIN32) || defined(HOST_LINUX)
+		aggDraw.screen->setDrawTargetDims(0, w, h, w*4);
+#else
+		aggDraw.screen->setDrawTargetDims(0, w, h, w*2);
+#endif
+	}
+	if(aggDraw.hud)
+		aggDraw.hud->setDrawTargetDims((u8*)hudBuffer.data(), w, h, w*4);
+	if(aggDraw.lua)
+		aggDraw.lua->setDrawTargetDims((u8*)luaBuffer.data(), w, h, w*4);
+}
 
 
 ////temporary, just for testing the lib
