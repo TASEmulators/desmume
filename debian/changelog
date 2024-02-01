@@ -1,4 +1,4 @@
-desmume (0.9.13-3build2) jammy; urgency=medium
+desmume (0.9.13-4build2) jammy; urgency=medium
 
   * No-change rebuild against latest gdk-pixbuf
 
