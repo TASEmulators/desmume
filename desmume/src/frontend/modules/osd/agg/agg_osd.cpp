@@ -561,24 +561,24 @@ static void DrawStateSlots(){
 
 	if(alpha!=0)
 	{
-		aggDraw.hud->lineWidth(1.0);
+		aggDraw.hud->lineWidth(osd->scale);
 		aggDraw.hud->lineColor(0, 0, 0, alpha);
 		aggDraw.hud->fillColor(255, 255, 255, alpha);
 
-		for ( int i = 0, xpos=0; i < 10; xpos=xpos+24) {
+		for ( int i = 0, xpos=0; i < 10; xpos=xpos+24*osd->scale) {
 
 			int yheight=0;
 
-			aggDraw.hud->fillLinearGradient(xloc + xpos, yloc - yheight, xloc + 22 + xpos, yloc + 20 + yheight+20, agg::rgba8(100,200,255,alpha), agg::rgba8(255,255,255,0));
+			aggDraw.hud->fillLinearGradient(xloc + xpos, yloc - yheight, xloc + 22*osd->scale + xpos, yloc + 20*osd->scale + yheight+20*osd->scale, agg::rgba8(100,200,255,alpha), agg::rgba8(255,255,255,0));
 
 			if(lastSaveState == i) {
-				yheight = 5;
-				aggDraw.hud->fillLinearGradient(xloc + xpos, yloc - yheight, 22 + xloc + xpos, yloc + 20 + yheight+20, agg::rgba8(100,255,255,alpha), agg::rgba8(255,255,255,0));
+				yheight = 5*osd->scale;
+				aggDraw.hud->fillLinearGradient(xloc + xpos, yloc - yheight, 22*osd->scale + xloc + xpos, yloc + 20*osd->scale + yheight+20*osd->scale, agg::rgba8(100,255,255,alpha), agg::rgba8(255,255,255,0));
 			}
 
-			aggDraw.hud->rectangle(xloc + xpos , yloc - yheight, xloc + 22 + xpos , yloc + 20 + yheight);
+			aggDraw.hud->rectangle(xloc + xpos , yloc - yheight, xloc + 22*osd->scale + xpos , yloc + 20*osd->scale + yheight);
 			snprintf(number, 10, "%d", i);
-			RenderTextAutoVector(xloc + 1 + xpos + 4, yloc+4, std::string(number), true, osd ? osd->scale : 1);
+			RenderTextAutoVector(xloc + osd->scale + xpos + 4*osd->scale, yloc+4*osd->scale, std::string(number), true, osd->scale);
 			i++;
 		}
 	}

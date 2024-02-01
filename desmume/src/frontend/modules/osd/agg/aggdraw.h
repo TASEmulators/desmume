@@ -434,8 +434,9 @@ public:
 	}
 #ifdef AGG2D_USE_VECTORFONTS
 	virtual void renderVectorFontText(double dstX, double dstY, const std::string& str) = 0;
-	virtual void renderVectorFontTextDropshadowed(double dstX, double dstY, const std::string& str, int shadowOffset = 1)
+	virtual void renderVectorFontTextDropshadowed(double dstX, double dstY, const std::string& str, double shadowOffset = 1.0)
 	{
+		shadowOffset*=0.5;
 		AggColor lineColorOld = lineColor();
 		if(lineColorOld.r+lineColorOld.g+lineColorOld.b<192)
 			lineColor(255-lineColorOld.r,255-lineColorOld.g,255-lineColorOld.b);

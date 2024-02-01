@@ -2124,7 +2124,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 #ifdef AGG2D_USE_VECTORFONTS
 		if(vectorFontFile.size() > 0)
 		{
-			aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * gpu_scale_factor, true);
+			aggDraw.hud->setVectorFont(vectorFontFile, std::max(10.0f, VECTOR_FONT_BASE_SIZE * gpu_scale_factor), true);
 			osd->useVectorFonts=true;
 		}
 		else
@@ -3096,7 +3096,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 #ifdef AGG2D_USE_VECTORFONTS
 	if(vectorFontFile.size() > 0)
 	{
-		aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * gpu_scale_factor, true);
+		aggDraw.hud->setVectorFont(vectorFontFile, std::max(10.0f, VECTOR_FONT_BASE_SIZE * gpu_scale_factor), true);
 		osd->useVectorFonts=true;
 	}
 	else
