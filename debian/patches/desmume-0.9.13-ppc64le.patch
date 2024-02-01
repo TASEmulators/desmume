@@ -1,0 +1,26 @@
+From a95e4c57c61b791fdcb17922735f8681af201b03 Mon Sep 17 00:00:00 2001
+From: rogerman <rogerman@users.noreply.github.com>
+Date: Sun, 19 Jun 2022 20:36:50 -0700
+Subject: [PATCH] Remove AltiVec compiling for ppcle and ppc64le architectures,
+ since our AltiVec code only works on big-endian systems anyways. Fixes #550.
+
+---
+ desmume/src/types.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/desmume/src/types.h b/desmume/src/types.h
+index 0fe31b347..5d5ac50af 100644
+--- a/desmume/src/types.h
++++ b/desmume/src/types.h
+@@ -53,7 +53,10 @@
+ #endif
+ 
+ #ifdef __GNUC__
+-	#ifdef __ALTIVEC__
++// Our AltiVec code assumes that its being run on a big-endian system. While
++// the ppcle and ppc64le architectures do exist, our AltiVec code does not
++// support little-endian right now.
++	#if defined(__ALTIVEC__) && defined(MSB_FIRST) && (MSB_FIRST > 0)
+ 		#define ENABLE_ALTIVEC
+ 	#endif
+ 
