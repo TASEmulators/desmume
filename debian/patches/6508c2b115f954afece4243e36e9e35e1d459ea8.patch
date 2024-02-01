@@ -1,0 +1,31 @@
+From 6508c2b115f954afece4243e36e9e35e1d459ea8 Mon Sep 17 00:00:00 2001
+From: zeromus <zeromus@users.noreply.github.com>
+Date: Thu, 1 Feb 2024 04:26:27 -0500
+Subject: [PATCH] placate -Werror=format-security (probably) (re: #768)
+
+---
+ desmume/src/commandline.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/desmume/src/commandline.cpp b/desmume/src/commandline.cpp
+index cb6c23ac4..4c7bcc4a0 100644
+--- a/desmume/src/commandline.cpp
++++ b/desmume/src/commandline.cpp
+@@ -397,7 +397,7 @@ bool CommandLine::parse(int argc,char **argv)
+ 
+ 	if(opt_help)
+ 	{
+-		printf(help_string);
++		printf("%s",help_string);
+ 		exit(1);
+ 	}
+ 
+@@ -571,7 +571,7 @@ bool CommandLine::validate()
+ 
+ void CommandLine::errorHelp(const char* binName)
+ {
+-	printerror(help_string);
++	printerror("%s",help_string);
+ }
+ 
+ void CommandLine::process_movieCommands()
