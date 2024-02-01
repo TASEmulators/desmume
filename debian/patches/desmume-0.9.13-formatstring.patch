@@ -1,0 +1,21 @@
+diff -durN desmume-release_0_9_13.orig/desmume/src/commandline.cpp desmume-release_0_9_13/desmume/src/commandline.cpp
+--- desmume-release_0_9_13.orig/desmume/src/commandline.cpp	2022-05-23 06:37:41.000000000 +0200
++++ desmume-release_0_9_13/desmume/src/commandline.cpp	2022-06-18 18:40:49.218922840 +0200
+@@ -31,7 +31,7 @@
+ #include <compat/getopt.h>
+ //#include "frontend/modules/mGetOpt.h" //to test with this, make sure global `optind` is initialized to 1
+ 
+-#define printerror(...) fprintf(stderr, __VA_ARGS__)
++#define printerror(...) fprintf(stderr, "%s", __VA_ARGS__)
+ 
+ int _scanline_filter_a = 0, _scanline_filter_b = 2, _scanline_filter_c = 2, _scanline_filter_d = 4;
+ int _commandline_linux_nojoy = 0;
+@@ -397,7 +397,7 @@
+ 
+ 	if(opt_help)
+ 	{
+-		printf(help_string);
++		printf("%s", help_string);
+ 		exit(1);
+ 	}
+ 
