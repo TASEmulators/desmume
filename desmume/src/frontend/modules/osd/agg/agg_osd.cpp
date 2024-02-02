@@ -89,7 +89,7 @@ static T calcY(T y) // alters a GUI element y coordinate as necessary to obey sw
 	return y;
 }
 
-static void RenderTextAutoVector(double x, double y, const std::string& str, bool shadow = true, int shadowOffset = 1)
+static void RenderTextAutoVector(double x, double y, const std::string& str, bool shadow = true, double shadowOffset = 1.0)
 {
 #ifdef AGG2D_USE_VECTORFONTS
 	bool render_vect = false;
@@ -174,7 +174,7 @@ void HudClickRelease(HudStruct *hudstruct) {
 
 void HudStruct::reset()
 {
-	int sc=(osd ? osd->scale : 1);
+	double sc=(osd ? osd->scale : 1.0);
 	
 	FpsDisplay.x=0;
 	FpsDisplay.y=5*sc;
@@ -505,8 +505,8 @@ static void OSD_HandleTouchDisplay() {
 	// note: calcY should not be used in this function.
 	aggDraw.hud->lineWidth(osd->scale);
 
-	temptouch.X = NDS_getRawUserInput().touch.touchX >> 4 * osd->scale;
-	temptouch.Y = NDS_getRawUserInput().touch.touchY >> 4 * osd->scale;
+	temptouch.X = (NDS_getRawUserInput().touch.touchX >> 4) * osd->scale;
+	temptouch.Y = (NDS_getRawUserInput().touch.touchY >> 4) * osd->scale;
 
 	if(touchshadow) {
 
@@ -709,7 +709,7 @@ OSDCLASS::OSDCLASS(u8 core)
 
 	singleScreen = false;
 	swapScreens = false;
-	scale=1;
+	scale = 1.0;
 	needUpdate = false;
 #ifdef AGG2D_USE_VECTORFONTS
 	useVectorFonts = false;
@@ -794,7 +794,7 @@ void OSDCLASS::update()
 			for (int i=0; i < lastLineText; i++)
 			{
 				aggDraw.hud->lineColor(lineColor[i]);
-				RenderTextAutoVector(lineText_x, lineText_y+(i*16), lineText[i], true, osd ? osd->scale : 1);
+				RenderTextAutoVector(lineText_x, lineText_y+(i*16), lineText[i], true, osd->scale);
 			}
 		}
 		else
@@ -876,7 +876,7 @@ void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
 	va_end(list);
 
 	aggDraw.hud->lineColor(255,255,255);
-	RenderTextAutoVector(x, calcY(y), msg, true, osd ? osd->scale : 1);
+	RenderTextAutoVector(x, calcY(y), msg, true, osd->scale);
 
 	needUpdate = true;
 }

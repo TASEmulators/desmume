@@ -49,6 +49,7 @@ OPT(hud_input, bool, false, HudDisplay, Input)
 OPT(hud_graphicalInput, bool, false, HudDisplay, GraphicalInput)
 OPT(hud_rtc, bool, false, HudDisplay, RTC)
 OPT(hud_mic, bool, false, HudDisplay, Mic)
+OPT(hud_layout, std::vector<int>, std::vector<int>(), HudDisplay, Layout)
 
 /* Config */
 OPT(fpslimiter, bool, true, Config, FpsLimiter)

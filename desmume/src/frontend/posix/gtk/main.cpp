@@ -129,7 +129,7 @@ enum {
 };
 
 #ifdef AGG2D_USE_VECTORFONTS
-#define VECTOR_FONT_BASE_SIZE 6
+#define VECTOR_FONT_BASE_SIZE 16
 #endif
 
 static FcConfig* fontConfig;
@@ -200,6 +200,8 @@ static void HudLagCounter(GSimpleAction *action, GVariant *parameter, gpointer u
 static void HudRtc(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HudMic(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HudEditor(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HudSaveLayout();
+static void HudLoadLayout();
 #endif
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -2124,8 +2126,8 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 #ifdef AGG2D_USE_VECTORFONTS
 		if(vectorFontFile.size() > 0)
 		{
-			aggDraw.hud->setVectorFont(vectorFontFile, std::max(10.0f, VECTOR_FONT_BASE_SIZE * gpu_scale_factor), true);
-			osd->useVectorFonts=true;
+			aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * gpu_scale_factor, true);
+			osd->useVectorFonts=(gpu_scale_factor >= 1.1);
 		}
 		else
 			osd->useVectorFonts=false;
@@ -2133,6 +2135,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		Agg_setCustomSize(real_framebuffer_width, real_framebuffer_height*2);
 		osd->scale=gpu_scale_factor;
 		Hud.rescale(old_scale_factor, gpu_scale_factor);
+		HudSaveLayout();
 #endif
 		CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize = gtk_toggle_button_get_active(wPosterize);
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(wSmoothing);
@@ -2798,6 +2801,8 @@ static void ToggleHudDisplay(hud_display_enum hudId, gboolean active)
         break;
     case HUD_DISPLAY_EDITOR:
         HudEditorMode = active;
+        if(!active)
+			HudSaveLayout();
         break;
     default:
         g_printerr("Unknown HUD toggle %u!", hudId);
@@ -2823,6 +2828,54 @@ HudMacro(HudLagCounter, HUD_DISPLAY_LCOUNTER)
 HudMacro(HudRtc, HUD_DISPLAY_RTC)
 HudMacro(HudMic, HUD_DISPLAY_MIC)
 HudMacro(HudEditor, HUD_DISPLAY_EDITOR)
+
+static void HudSaveCoordsToVector(HudCoordinates* pCoords, int* pDest)
+{
+	pDest[0]=pCoords->x;
+	pDest[1]=pCoords->y;
+	pDest[2]=pCoords->xsize;
+	pDest[3]=pCoords->ysize;
+}
+
+static void HudLoadCoordsFromVector(HudCoordinates* pCoords, int* pSrc)
+{
+	pCoords->x=pSrc[0];
+	pCoords->y=pSrc[1];
+	pCoords->xsize=pSrc[2];
+	pCoords->ysize=pSrc[3];
+}
+
+static void HudSaveLayout()
+{
+	std::vector<int> vec(8*4); //8 HudCoordinates
+	HudSaveCoordsToVector(&Hud.SavestateSlots, vec.data());
+	HudSaveCoordsToVector(&Hud.FpsDisplay, vec.data()+4);
+	HudSaveCoordsToVector(&Hud.FrameCounter, vec.data()+8);
+	HudSaveCoordsToVector(&Hud.InputDisplay, vec.data()+12);
+	HudSaveCoordsToVector(&Hud.GraphicalInputDisplay, vec.data()+16);
+	HudSaveCoordsToVector(&Hud.LagFrameCounter, vec.data()+20);
+	HudSaveCoordsToVector(&Hud.Microphone, vec.data()+24);
+	HudSaveCoordsToVector(&Hud.RTCDisplay, vec.data()+28);
+	config.hud_layout=vec;
+}
+
+static void HudLoadLayout()
+{
+	std::vector<int> vec=config.hud_layout;
+	if(vec.size()==8*4)
+	{
+		HudLoadCoordsFromVector(&Hud.SavestateSlots, vec.data());
+		HudLoadCoordsFromVector(&Hud.FpsDisplay, vec.data()+4);
+		HudLoadCoordsFromVector(&Hud.FrameCounter, vec.data()+8);
+		HudLoadCoordsFromVector(&Hud.InputDisplay, vec.data()+12);
+		HudLoadCoordsFromVector(&Hud.GraphicalInputDisplay, vec.data()+16);
+		HudLoadCoordsFromVector(&Hud.LagFrameCounter, vec.data()+20);
+		HudLoadCoordsFromVector(&Hud.Microphone, vec.data()+24);
+		HudLoadCoordsFromVector(&Hud.RTCDisplay, vec.data()+28);
+	}
+	else
+		Hud.reset();
+}
 
 static void desmume_gtk_menu_view_hud(GtkApplication *app)
 {
@@ -3096,15 +3149,15 @@ common_gtk_main(GApplication *app, gpointer user_data)
 #ifdef AGG2D_USE_VECTORFONTS
 	if(vectorFontFile.size() > 0)
 	{
-		aggDraw.hud->setVectorFont(vectorFontFile, std::max(10.0f, VECTOR_FONT_BASE_SIZE * gpu_scale_factor), true);
-		osd->useVectorFonts=true;
+		aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * gpu_scale_factor, true);
+		osd->useVectorFonts=(gpu_scale_factor >= 1.1);
 	}
 	else
 		osd->useVectorFonts=false;
 #endif
 	Agg_setCustomSize(real_framebuffer_width, real_framebuffer_height*2);
 	osd->scale=gpu_scale_factor;
-	Hud.reset();
+	HudLoadLayout();
 #endif
 
     /* Fetch the main elements from the window */
@@ -3640,7 +3693,8 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 static void Teardown() {
     delete video;
-
+	
+	HudSaveLayout();
 	config.save();
 	avout_x264.end();
 	avout_flac.end();

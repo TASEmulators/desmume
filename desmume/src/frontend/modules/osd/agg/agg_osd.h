@@ -112,7 +112,7 @@ public:
 	char	name[7];		// for debuging
 	bool    singleScreen;
 	bool    swapScreens;
-	int		scale;
+	double	scale;
 #ifdef AGG2D_USE_VECTORFONTS
 	bool	useVectorFonts;
 #endif
