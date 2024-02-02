@@ -7,7 +7,7 @@ adopt-info: desmume-emulator
 grade: stable
 confinement: strict
 base: core22
-#compression: lzo
+compression: lzo
 parts:
   desmume-emulator:
     source: https://github.com/TASEmulators/desmume/archive/refs/tags/release_0_9_13.tar.gz
