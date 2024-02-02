@@ -13,7 +13,7 @@ parts:
     source: https://github.com/TASEmulators/desmume/archive/refs/tags/release_0_9_13.tar.gz
     plugin: nil
     override-build: |
-      sed -i 's|Icon=org.desmume.DeSmuME|Icon=/snap/desmume-emulator/current/usr/share/icons/hicolor/scalable/apps/org.desmume.DeSmuME.svg|g' desmume/src/frontend/posix/gtk/org.desmume.DeSmuME.desktop
+      sed -i 's|Icon=org.desmume.DeSmuME|Icon=/usr/share/icons/hicolor/scalable/apps/org.desmume.DeSmuME.svg|g' desmume/src/frontend/posix/gtk/org.desmume.DeSmuME.desktop
       LDFLAGS="" CFLAGS="-O3" CXXFLAGS="-O3" FFLAGS="" FCFLAGS="" DEB_CFLAGS_SET="-O3" DEB_CXXFLAGS_SET="-O3" DEB_FFLAGS_SET="" DEB_FCFLAGS_SET="" DEB_LDFLAGS_SET="" meson setup --prefix=${CRAFT_PART_INSTALL}/usr desmume/src/frontend/posix/build desmume/src/frontend/posix
       LDFLAGS="" CFLAGS="-O3" CXXFLAGS="-O3" FFLAGS="" FCFLAGS="" DEB_CFLAGS_SET="-O3" DEB_CXXFLAGS_SET="-O3" DEB_FFLAGS_SET="" DEB_FCFLAGS_SET="" DEB_LDFLAGS_SET="" ninja -C desmume/src/frontend/posix/build
       LDFLAGS="" CFLAGS="-O3" CXXFLAGS="-O3" FFLAGS="" FCFLAGS="" DEB_CFLAGS_SET="-O3" DEB_CXXFLAGS_SET="-O3" DEB_FFLAGS_SET="" DEB_FCFLAGS_SET="" DEB_LDFLAGS_SET="" ninja install -C desmume/src/frontend/posix/build
