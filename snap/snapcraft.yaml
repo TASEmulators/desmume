@@ -13,56 +13,42 @@ parts:
     source: https://github.com/TASEmulators/desmume/archive/refs/tags/release_0_9_13.tar.gz
     plugin: nil
     override-build: |
-      LDFLAGS="" CFLAGS="" FFLAGS="" FCFLAGS="" DEB_CFLAGS_SET="" DEB_CXXFLAGS_SET="" DEB_FFLAGS_SET="" DEB_FCFLAGS_SET="" DEB_LDFLAGS_SET="" meson setup --prefix=${CRAFT_PART_INSTALL}/usr desmume/src/frontend/posix/build desmume/src/frontend/posix
-      LDFLAGS="" CFLAGS="" FFLAGS="" FCFLAGS="" DEB_CFLAGS_SET="" DEB_CXXFLAGS_SET="" DEB_FFLAGS_SET="" DEB_FCFLAGS_SET="" DEB_LDFLAGS_SET="" ninja -C desmume/src/frontend/posix/build
-      LDFLAGS="" CFLAGS="" FFLAGS="" FCFLAGS="" DEB_CFLAGS_SET="" DEB_CXXFLAGS_SET="" DEB_FFLAGS_SET="" DEB_FCFLAGS_SET="" DEB_LDFLAGS_SET="" ninja install -C desmume/src/frontend/posix/build
+      sed -i 's|Icon=org.desmume.DeSmuME|Icon=/usr/share/icons/hicolor/scalable/apps/org.desmume.DeSmuME.svg|g' desmume/src/frontend/posix/gtk/org.desmume.DeSmuME.desktop
+      LDFLAGS="" CFLAGS="-O3" CXXFLAGS="-O3" FFLAGS="" FCFLAGS="" DEB_CFLAGS_SET="-O3" DEB_CXXFLAGS_SET="-O3" DEB_FFLAGS_SET="" DEB_FCFLAGS_SET="" DEB_LDFLAGS_SET="" meson setup --prefix=${CRAFT_PART_INSTALL}/usr desmume/src/frontend/posix/build desmume/src/frontend/posix
+      LDFLAGS="" CFLAGS="-O3" CXXFLAGS="-O3" FFLAGS="" FCFLAGS="" DEB_CFLAGS_SET="-O3" DEB_CXXFLAGS_SET="-O3" DEB_FFLAGS_SET="" DEB_FCFLAGS_SET="" DEB_LDFLAGS_SET="" ninja -C desmume/src/frontend/posix/build
+      LDFLAGS="" CFLAGS="-O3" CXXFLAGS="-O3" FFLAGS="" FCFLAGS="" DEB_CFLAGS_SET="-O3" DEB_CXXFLAGS_SET="-O3" DEB_FFLAGS_SET="" DEB_FCFLAGS_SET="" DEB_LDFLAGS_SET="" ninja install -C desmume/src/frontend/posix/build
 
     stage-packages:
-      - libasound2 
-      - libc6 
-      - libcairo2 
+      - libasound2
+      - libc6
+      - libcairo2
       - libgcc-s1
-      - libgcc-s1      
-      - libgdk-pixbuf-2.0-0 
+      - libgdk-pixbuf-2.0-0
       - libgl1
-      - libglade2-0 
-      - libglib2.0-0 
+      - libglib2.0-0
       - libglu1-mesa
-      - libgtk2.0-0 
       - libgtkglext1
-      - libosmesa6 
-      - libpango-1.0-0 
-      - libsdl1.2debian 
-      - libsoundtouch1 
-      - libstdc++6 
+      - libosmesa6
+      - libpango-1.0-0
+      - libsdl2-2.0-0
+      - libsoundtouch1
+      - libstdc++6
       - libtinyxml2.6.2v5
       - zlib1g
-      - g++
-      - gcc
       - gettext
-      - make
-      - cmake
-      - nasm
       - pkg-config
       - git
       - zip
-      - build-essential
-      - intltool
-      - libglade2-dev
-      - libgtk2.0-dev
-      - libsdl1.2-dev
-      - libosmesa6-dev
-      - libagg-dev
-      - intltool
-      - quilt
-      - libgtkglext1-dev
-      - libtinyxml-dev
-      - libsoundtouch-dev
-      - dh-autoreconf
-      - meson
-      - libsdl2-dev
-      - libpcap-dev
-      - libgtk-3-dev
+      - libosmesa6
+      - libagg2
+      - libgtkglext1
+      - libsoundtouch1
+      - libsdl2-2.0-0
+      - libpcap0.8
+      - libgtk-3-0
+      - libgtk-3-0-udeb
+      - libgtk-3-bin
+      - libgtk-3-common
     build-packages:
       - g++
       - gcc
@@ -75,11 +61,8 @@ parts:
       - zip
       - build-essential
       - intltool
-      - libglade2-dev
-      - libgtk2.0-dev
-      - libsdl1.2-dev
       - libosmesa6-dev
-      - libagg-dev
+      - libagg2-dev
       - intltool
       - quilt
       - libgtkglext1-dev
