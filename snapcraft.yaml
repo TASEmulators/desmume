@@ -46,7 +46,6 @@ parts:
       - libsdl2-2.0-0
       - libpcap0.8
       - libgtk-3-0
-      - libgtk-3-0-udeb
       - libgtk-3-bin
       - libgtk-3-common
     build-packages:
