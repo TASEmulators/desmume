@@ -3693,8 +3693,9 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 static void Teardown() {
     delete video;
-	
+#ifdef HAVE_LIBAGG
 	HudSaveLayout();
+#endif
 	config.save();
 	avout_x264.end();
 	avout_flac.end();
