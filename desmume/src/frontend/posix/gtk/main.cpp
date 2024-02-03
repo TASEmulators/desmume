@@ -31,7 +31,9 @@
 #include <SDL.h>
 #include <X11/Xlib.h>
 #include <vector>
+#ifdef HAVE_LIBAGG
 #include <fontconfig/fontconfig.h>
+#endif
 
 #include "types.h"
 #include "firmware.h"
@@ -128,6 +130,7 @@ enum {
     SUB_OBJ
 };
 
+#ifdef HAVE_LIBAGG
 #ifdef AGG2D_USE_VECTORFONTS
 #define VECTOR_FONT_BASE_SIZE 16
 #endif
@@ -136,6 +139,7 @@ static FcConfig* fontConfig;
 static std::string vectorFontFile;
 
 static std::string FindFontFile(const char* fontName, bool bold);
+#endif
 
 gboolean EmuLoop(gpointer data);
 
@@ -200,6 +204,7 @@ static void HudLagCounter(GSimpleAction *action, GVariant *parameter, gpointer u
 static void HudRtc(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HudMic(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HudEditor(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HudResetLayout(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HudSaveLayout();
 static void HudLoadLayout();
 #endif
@@ -259,6 +264,7 @@ static const GActionEntry app_entries[] = {
     { "hud_rtc",        HudRtc,                 NULL, "false" },
     { "hud_mic",        HudMic,                 NULL, "false" },
     { "hud_editor",     HudEditor,              NULL, "false" },
+    { "hud_reset_layout", HudResetLayout},
 #endif
 
     // Config
@@ -2829,6 +2835,12 @@ HudMacro(HudRtc, HUD_DISPLAY_RTC)
 HudMacro(HudMic, HUD_DISPLAY_MIC)
 HudMacro(HudEditor, HUD_DISPLAY_EDITOR)
 
+static void HudResetLayout(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	Hud.reset();
+	HudSaveLayout();
+}
+
 static void HudSaveCoordsToVector(HudCoordinates* pCoords, int* pDest)
 {
 	pDest[0]=pCoords->x;
@@ -3738,6 +3750,8 @@ handle_open(GApplication *application,
     common_gtk_main(application, user_data);
 }
 
+#ifdef HAVE_LIBAGG
+
 static std::string FindFontFile(const char* fontName, bool bold)
 {
 	std::string fontFile;
@@ -3764,13 +3778,16 @@ static std::string FindFontFile(const char* fontName, bool bold)
 	return fontFile;
 }
 
+#endif
+
 int main (int argc, char *argv[])
 {
   configured_features my_config;
-  
+
+#ifdef HAVE_LIBAGG
   fontConfig = FcInitLoadConfigAndFonts();
   vectorFontFile = FindFontFile("mono", true);
-
+#endif
   // The global menu screws up the window size...
   unsetenv("UBUNTU_MENUPROXY");
 

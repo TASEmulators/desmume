@@ -1,8 +1,12 @@
 dep_gtk3 = dependency('gtk+-3.0', version: '>=3.24')
 dep_x11 = dependency('x11')
-dep_fontconfig = dependency('fontconfig')
 
-gtk_dependencies = dependencies + [dep_gtk3, dep_x11, dep_fontconfig]
+gtk_dependencies = dependencies + [dep_gtk3, dep_x11]
+
+if dep_agg.found()
+  dep_fontconfig = dependency('fontconfig')
+  gtk_dependencies = gtk_dependencies + [dep_fontconfig]
+endif
 
 gnome = import('gnome')
 
