@@ -3787,6 +3787,8 @@ int main (int argc, char *argv[])
 #ifdef HAVE_LIBAGG
   fontConfig = FcInitLoadConfigAndFonts();
   vectorFontFile = FindFontFile("mono", true);
+  if(!vectorFontFile.size())
+    vectorFontFile = FindFontFile("sans", true);
 #endif
   // The global menu screws up the window size...
   unsetenv("UBUNTU_MENUPROXY");
