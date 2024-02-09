@@ -13,11 +13,25 @@ parts:
     source: https://github.com/TASEmulators/desmume/archive/refs/tags/release_0_9_13.tar.gz
     plugin: nil
     override-build: |
-      sed -i 's|Icon=org.desmume.DeSmuME|Icon=/usr/share/icons/hicolor/scalable/apps/org.desmume.DeSmuME.svg|g' desmume/src/frontend/posix/gtk/org.desmume.DeSmuME.desktop
+      wget https://github.com/rpmfusion/desmume/raw/f39/desmume-0.9.13-aarch64.patch -O ./desmume-0.9.13-aarch64.patch
+      patch -p1 < ./desmume-0.9.13-aarch64.patch
+      rm -f ./desmume-0.9.13-aarch64.patch
+      wget https://github.com/rpmfusion/desmume/raw/f39/ -O ./desmume-0.9.13-arm.patch
+      patch -p1 < ./desmume-0.9.13-arm.patch
+      rm -f ./desmume-0.9.13-arm.patch
+      wget https://github.com/rpmfusion/desmume/raw/f39/ -O ./desmume-0.9.13-formatstring.patch
+      patch -p1 < ./desmume-0.9.13-formatstring.patch
+      rm -f ./desmume-0.9.13-formatstring.patch
+      wget https://github.com/rpmfusion/desmume/raw/f39/ -O ./desmume-0.9.13-ppc64le.patch
+      patch -p1 < ./desmume-0.9.13-ppc64le.patch
+      rm -f ./desmume-0.9.13-ppc64le.patch
+      wget https://github.com/rpmfusion/desmume/raw/f39/ -O ./desmume-0.9.13-tinyxml.patch
+      patch -p1 < ./desmume-0.9.13-tinyxml.patch
+      rm -f ./desmume-0.9.13-tinyxml.patch
+      sed -i 's|Icon=org.desmume.DeSmuME|Icon=${SNAP}/usr/share/icons/hicolor/scalable/apps/org.desmume.DeSmuME.svg|g' desmume/src/frontend/posix/gtk/org.desmume.DeSmuME.desktop
       LDFLAGS="" CFLAGS="-O3" CXXFLAGS="-O3" FFLAGS="" FCFLAGS="" DEB_CFLAGS_SET="-O3" DEB_CXXFLAGS_SET="-O3" DEB_FFLAGS_SET="" DEB_FCFLAGS_SET="" DEB_LDFLAGS_SET="" meson setup --prefix=${CRAFT_PART_INSTALL}/usr desmume/src/frontend/posix/build desmume/src/frontend/posix
       LDFLAGS="" CFLAGS="-O3" CXXFLAGS="-O3" FFLAGS="" FCFLAGS="" DEB_CFLAGS_SET="-O3" DEB_CXXFLAGS_SET="-O3" DEB_FFLAGS_SET="" DEB_FCFLAGS_SET="" DEB_LDFLAGS_SET="" ninja -C desmume/src/frontend/posix/build
       LDFLAGS="" CFLAGS="-O3" CXXFLAGS="-O3" FFLAGS="" FCFLAGS="" DEB_CFLAGS_SET="-O3" DEB_CXXFLAGS_SET="-O3" DEB_FFLAGS_SET="" DEB_FCFLAGS_SET="" DEB_LDFLAGS_SET="" ninja install -C desmume/src/frontend/posix/build
-
     stage-packages:
       - libasound2
       - libc6
@@ -72,6 +86,8 @@ parts:
       - libsdl2-dev
       - libpcap-dev
       - libgtk-3-dev
+      - patch
+      - wget
 
 apps:
   desmume-emulator:
