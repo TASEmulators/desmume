@@ -16,16 +16,16 @@ parts:
       wget https://github.com/rpmfusion/desmume/raw/f39/desmume-0.9.13-aarch64.patch -O ./desmume-0.9.13-aarch64.patch
       patch -p1 < ./desmume-0.9.13-aarch64.patch
       rm -f ./desmume-0.9.13-aarch64.patch
-      wget https://github.com/rpmfusion/desmume/raw/f39/ -O ./desmume-0.9.13-arm.patch
+      wget https://github.com/rpmfusion/desmume/raw/f39/desmume-0.9.13-arm.patch -O ./desmume-0.9.13-arm.patch
       patch -p1 < ./desmume-0.9.13-arm.patch
       rm -f ./desmume-0.9.13-arm.patch
-      wget https://github.com/rpmfusion/desmume/raw/f39/ -O ./desmume-0.9.13-formatstring.patch
+      wget https://github.com/rpmfusion/desmume/raw/f39/desmume-0.9.13-formatstring.patch -O ./desmume-0.9.13-formatstring.patch
       patch -p1 < ./desmume-0.9.13-formatstring.patch
       rm -f ./desmume-0.9.13-formatstring.patch
-      wget https://github.com/rpmfusion/desmume/raw/f39/ -O ./desmume-0.9.13-ppc64le.patch
+      wget https://github.com/rpmfusion/desmume/raw/f39/desmume-0.9.13-ppc64le.patch -O ./desmume-0.9.13-ppc64le.patch
       patch -p1 < ./desmume-0.9.13-ppc64le.patch
       rm -f ./desmume-0.9.13-ppc64le.patch
-      wget https://github.com/rpmfusion/desmume/raw/f39/ -O ./desmume-0.9.13-tinyxml.patch
+      wget https://github.com/rpmfusion/desmume/raw/f39/desmume-0.9.13-tinyxml.patch -O ./desmume-0.9.13-tinyxml.patch
       patch -p1 < ./desmume-0.9.13-tinyxml.patch
       rm -f ./desmume-0.9.13-tinyxml.patch
       sed -i 's|Icon=org.desmume.DeSmuME|Icon=${SNAP}/usr/share/icons/hicolor/scalable/apps/org.desmume.DeSmuME.svg|g' desmume/src/frontend/posix/gtk/org.desmume.DeSmuME.desktop
