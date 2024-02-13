@@ -31,7 +31,7 @@
 #include <SDL.h>
 #include <X11/Xlib.h>
 #include <vector>
-#ifdef HAVE_LIBAGG
+#ifdef AGG2D_USE_VECTORFONTS
 #include <fontconfig/fontconfig.h>
 #endif
 
@@ -130,10 +130,8 @@ enum {
     SUB_OBJ
 };
 
-#ifdef HAVE_LIBAGG
 #ifdef AGG2D_USE_VECTORFONTS
 #define VECTOR_FONT_BASE_SIZE 16
-#endif
 
 static FcConfig* fontConfig;
 static std::string vectorFontFile;
@@ -3167,6 +3165,9 @@ common_gtk_main(GApplication *app, gpointer user_data)
 	else
 		osd->useVectorFonts=false;
 #endif
+	SDL_DisplayMode cur_mode;
+	if(!SDL_GetCurrentDisplayMode(0, &cur_mode))
+		aggDraw.screenBytesPerPixel = SDL_BYTESPERPIXEL(cur_mode.format);
 	Agg_setCustomSize(real_framebuffer_width, real_framebuffer_height*2);
 	osd->scale=gpu_scale_factor;
 	HudLoadLayout();
@@ -3750,7 +3751,7 @@ handle_open(GApplication *application,
     common_gtk_main(application, user_data);
 }
 
-#ifdef HAVE_LIBAGG
+#ifdef AGG2D_USE_VECTORFONTS
 
 static std::string FindFontFile(const char* fontName, bool bold)
 {
@@ -3784,7 +3785,7 @@ int main (int argc, char *argv[])
 {
   configured_features my_config;
 
-#ifdef HAVE_LIBAGG
+#ifdef AGG2D_USE_VECTORFONTS
   fontConfig = FcInitLoadConfigAndFonts();
   vectorFontFile = FindFontFile("mono", true);
   if(!vectorFontFile.size())

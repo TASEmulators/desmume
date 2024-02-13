@@ -3,11 +3,6 @@ dep_x11 = dependency('x11')
 
 gtk_dependencies = dependencies + [dep_gtk3, dep_x11]
 
-if dep_agg.found()
-  dep_fontconfig = dependency('fontconfig')
-  gtk_dependencies = gtk_dependencies + [dep_fontconfig]
-endif
-
 gnome = import('gnome')
 
 gresource = gnome.compile_resources(

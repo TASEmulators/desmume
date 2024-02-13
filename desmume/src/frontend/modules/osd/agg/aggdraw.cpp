@@ -118,11 +118,7 @@ static void Agg_init_fonts()
 
 AggDraw_Desmume aggDraw;
 
-#if defined(WIN32) || defined(HOST_LINUX)
 T_AGG_RGBA agg_targetScreen(0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, 1024);
-#else
-T_AGG_RGB555 agg_targetScreen(0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, 512);
-#endif
 
 static std::vector<u32> luaBuffer(GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT*2);
 T_AGG_RGBA agg_targetLua((u8*)luaBuffer.data(), GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, 1024);
@@ -139,6 +135,7 @@ static AggDrawTarget* targets[] = {
 void Agg_init()
 {
 	Agg_init_fonts();
+	aggDraw.screenBytesPerPixel = 4;
 	aggDraw.screen = targets[0];
 	aggDraw.hud = targets[1];
 	aggDraw.lua = targets[2];
@@ -167,13 +164,7 @@ void Agg_setCustomSize(int w, int h)
 	hudBuffer.resize(w*h);
 	luaBuffer.resize(w*h);
 	if(aggDraw.screen)
-	{
-#if defined(WIN32) || defined(HOST_LINUX)
-		aggDraw.screen->setDrawTargetDims(0, w, h, w*4);
-#else
-		aggDraw.screen->setDrawTargetDims(0, w, h, w*2);
-#endif
-	}
+		aggDraw.screen->setDrawTargetDims(0, w, h, w*aggDraw.screenBytesPerPixel);
 	if(aggDraw.hud)
 		aggDraw.hud->setDrawTargetDims((u8*)hudBuffer.data(), w, h, w*4);
 	if(aggDraw.lua)

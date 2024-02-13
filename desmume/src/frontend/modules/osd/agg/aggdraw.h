@@ -709,6 +709,7 @@ public:
 	//void composite(void* dest);
 
 	AggDrawTarget *screen, *hud, *lua;
+	int screenBytesPerPixel;
 };
 
 extern AggDraw_Desmume aggDraw;

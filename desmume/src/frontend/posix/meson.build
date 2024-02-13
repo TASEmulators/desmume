@@ -10,8 +10,6 @@ project('desmume',
   license: 'GPL2+',
 )
 
-add_global_arguments('-DHOST_LINUX', language: ['c', 'cpp'])
-
 dep_glib2 = dependency('glib-2.0')
 dep_sdl = dependency('sdl2')
 dep_pcap = dependency('pcap')
@@ -22,6 +20,7 @@ dep_openal = dependency('openal', required: get_option('openal'))
 dep_alsa = dependency('alsa', required: false)
 dep_soundtouch = dependency('soundtouch', required: false)
 dep_agg = dependency('libagg', required: false)
+dep_fontconfig = dependency('fontconfig', required: false)
 
 # XXX: something wrong with this one.
 #dep_lua = dependency('lua-5.1', required: false)
@@ -205,7 +204,8 @@ endif
 if dep_agg.found()
   dependencies += dep_agg
   add_global_arguments('-DHAVE_LIBAGG', language: ['c', 'cpp'])
-  if get_option('frontend-gtk')
+  if dep_fontconfig.found()
+    dependencies += dep_fontconfig
     add_global_arguments('-DAGG2D_USE_VECTORFONTS', language: ['c', 'cpp'])
     add_global_link_arguments('-laggfontfreetype', language: ['c', 'cpp'])
   endif
