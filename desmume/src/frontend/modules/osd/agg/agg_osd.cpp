@@ -50,13 +50,23 @@ static s64 hudTimer;
 
 static void SetHudDummy (HudCoordinates *hud)
 {
-	hud->x=666;
-	hud->y=666;
+	hud->x=-666;
+	hud->y=-666;
 }
 
 static bool IsHudDummy (HudCoordinates *hud)
 {
-	return (hud->x == 666 && hud->y == 666);
+	return (hud->x == -666 && hud->y == -666);
+}
+
+static int ScreenWidth()
+{
+	return 256*osd->scale;
+}
+
+static int ScreenHeight()
+{
+	return 192*osd->scale;
 }
 
 template<typename T>
@@ -64,19 +74,45 @@ static T calcY(T y) // alters a GUI element y coordinate as necessary to obey sw
 {
 	if(osd->singleScreen)
 	{
-		if(y >= 192)
-			y -= 192;
+		if(y >= ScreenHeight())
+			y -= ScreenHeight();
 		if(osd->swapScreens)
-			y += 192;
+			y += ScreenHeight();
 	}
 	else if(osd->swapScreens)
 	{
-		if(y >= 192)
-			y -= 192;
+		if(y >= ScreenHeight())
+			y -= ScreenHeight();
 		else
-			y += 192;
+			y += ScreenHeight();
 	}
 	return y;
+}
+
+static void RenderTextAutoVector(double x, double y, const std::string& str, bool shadow = true, double shadowOffset = 1.0)
+{
+#ifdef AGG2D_USE_VECTORFONTS
+	bool render_vect = false;
+	if(osd)
+		if(osd->useVectorFonts)
+			render_vect = true;
+	if(render_vect)
+	{
+		if(shadow)
+			aggDraw.hud->renderVectorFontTextDropshadowed(x, y, str, shadowOffset);
+		else
+			aggDraw.hud->renderVectorFontText(x, y, str);
+	}
+	else
+	{
+#endif
+	if(shadow)
+		aggDraw.hud->renderTextDropshadowed(x, y, str);
+	else
+		aggDraw.hud->renderText(x, y, str);
+#ifdef AGG2D_USE_VECTORFONTS
+	}
+#endif
 }
 
 void EditHud(s32 x, s32 y, HudStruct *hudstruct) {
@@ -108,8 +144,10 @@ void EditHud(s32 x, s32 y, HudStruct *hudstruct) {
 		//sanity checks
 		if(hud.x < 0)  hud.x = 0;
 		if(hud.y < 0)  hud.y = 0;
-		if(hud.x > 245)hud.x = 245; //margins
-		if(hud.y > 384-16)hud.y = 384-16;
+		if(hud.x > ScreenWidth()-11*osd->scale)
+			hud.x = ScreenWidth()-11*osd->scale; //margins
+		if(hud.y > ScreenHeight()*2-16*osd->scale)
+			hud.y = ScreenHeight()*2-16*osd->scale;
 
 		if(hud.clicked)
 		{
@@ -136,45 +174,47 @@ void HudClickRelease(HudStruct *hudstruct) {
 
 void HudStruct::reset()
 {
+	double sc=(osd ? osd->scale : 1.0);
+	
 	FpsDisplay.x=0;
-	FpsDisplay.y=5;
-	FpsDisplay.xsize=166;
-	FpsDisplay.ysize=10;
+	FpsDisplay.y=5*sc;
+	FpsDisplay.xsize=166*sc;
+	FpsDisplay.ysize=10*sc;
 
 	FrameCounter.x=0;
-	FrameCounter.y=25;
-	FrameCounter.xsize=60;
-	FrameCounter.ysize=10;
+	FrameCounter.y=25*sc;
+	FrameCounter.xsize=60*sc;
+	FrameCounter.ysize=10*sc;
 
 	InputDisplay.x=0;
-	InputDisplay.y=45;
-	InputDisplay.xsize=220;
-	InputDisplay.ysize=10;
+	InputDisplay.y=45*sc;
+	InputDisplay.xsize=220*sc;
+	InputDisplay.ysize=10*sc;
 
-	GraphicalInputDisplay.x=8;
-	GraphicalInputDisplay.y=328;
-	GraphicalInputDisplay.xsize=102;
-	GraphicalInputDisplay.ysize=50;
+	GraphicalInputDisplay.x=8*sc;
+	GraphicalInputDisplay.y=328*sc;
+	GraphicalInputDisplay.xsize=102*sc;
+	GraphicalInputDisplay.ysize=50*sc;
 
 	LagFrameCounter.x=0;
-	LagFrameCounter.y=65;
-	LagFrameCounter.xsize=30;
-	LagFrameCounter.ysize=10;
+	LagFrameCounter.y=65*sc;
+	LagFrameCounter.xsize=30*sc;
+	LagFrameCounter.ysize=10*sc;
 	
 	Microphone.x=0;
-	Microphone.y=85;
-	Microphone.xsize=20;
-	Microphone.ysize=10;
+	Microphone.y=85*sc;
+	Microphone.xsize=20*sc;
+	Microphone.ysize=10*sc;
 
 	RTCDisplay.x=0;
-	RTCDisplay.y=105;
-	RTCDisplay.xsize=220;
-	RTCDisplay.ysize=10;
+	RTCDisplay.y=105*sc;
+	RTCDisplay.xsize=220*sc;
+	RTCDisplay.ysize=10*sc;
 
-	SavestateSlots.x = 8;
-	SavestateSlots.y = 160;
-	SavestateSlots.xsize = 240;
-	SavestateSlots.ysize = 24;
+	SavestateSlots.x = 8*sc;
+	SavestateSlots.y = 160*sc;
+	SavestateSlots.xsize = 240*sc;
+	SavestateSlots.ysize = 24*sc;
 
 	#ifdef _MSC_VER
 	#define AGG_OSD_SETTING(which,comp) which.comp = GetPrivateProfileInt("HudEdit", #which "." #comp, which.comp, IniName);
@@ -184,6 +224,51 @@ void HudStruct::reset()
 
 	SetHudDummy(&Dummy);
 	clicked = false;
+}
+
+void HudStruct::rescale(double oldScale, double newScale)
+{
+	double sc=newScale/oldScale;
+	
+	FpsDisplay.x*=sc;
+	FpsDisplay.y*=sc;
+	FpsDisplay.xsize*=sc;
+	FpsDisplay.ysize*=sc;
+
+	FrameCounter.x*=sc;
+	FrameCounter.y*=sc;
+	FrameCounter.xsize*=sc;
+	FrameCounter.ysize*=sc;
+
+	InputDisplay.x*=sc;
+	InputDisplay.y*=sc;
+	InputDisplay.xsize*=sc;
+	InputDisplay.ysize*=sc;
+
+	GraphicalInputDisplay.x*=sc;
+	GraphicalInputDisplay.y*=sc;
+	GraphicalInputDisplay.xsize*=sc;
+	GraphicalInputDisplay.ysize*=sc;
+
+	LagFrameCounter.x*=sc;
+	LagFrameCounter.y*=sc;
+	LagFrameCounter.xsize*=sc;
+	LagFrameCounter.ysize*=sc;
+	
+	Microphone.x*=sc;
+	Microphone.y*=sc;
+	Microphone.xsize*=sc;
+	Microphone.ysize*=sc;
+
+	RTCDisplay.x*=sc;
+	RTCDisplay.y*=sc;
+	RTCDisplay.xsize*=sc;
+	RTCDisplay.ysize*=sc;
+
+	SavestateSlots.x*=sc;
+	SavestateSlots.y*=sc;
+	SavestateSlots.xsize*=sc;
+	SavestateSlots.ysize*=sc;
 }
 
 static void joyFill(int n) {
@@ -235,8 +320,8 @@ static void drawPad(double x, double y, double ratio) {
 	// aligning to odd half-pixel boundaries prevents agg2d from blurring thin straight lines
 	x = floor(x) + 0.5;
 	y = floor(calcY(y)) + 0.5;
-	double xc = 41 - 0.5;
-	double yc = 20 - 0.5;
+	double xc = 41*osd->scale - 0.5;
+	double yc = 20*osd->scale - 0.5;
 
 	aggDraw.hud->lineColor(128,128,128,255);
 
@@ -252,12 +337,12 @@ static void drawPad(double x, double y, double ratio) {
 	aggDraw.hud->roundedRect (screenLeft, screenTop, screenRight, screenBottom, 1);
 
 
-	joyEllipse(.89,.45,xc,yc,x,y,ratio,1,6);//B
-	joyEllipse(.89,.22,xc,yc,x,y,ratio,1,3);//X
-	joyEllipse(.83,.34,xc,yc,x,y,ratio,1,4);//Y
-	joyEllipse(.95,.34,xc,yc,x,y,ratio,1,5);//A
-	joyEllipse(.82,.716,xc,yc,x,y,ratio,.5,7);//Start
-	joyEllipse(.82,.842,xc,yc,x,y,ratio,.5,8);//Select
+	joyEllipse(.89,.45,xc,yc,x,y,ratio,osd->scale,6);//B
+	joyEllipse(.89,.22,xc,yc,x,y,ratio,osd->scale,3);//X
+	joyEllipse(.83,.34,xc,yc,x,y,ratio,osd->scale,4);//Y
+	joyEllipse(.95,.34,xc,yc,x,y,ratio,osd->scale,5);//A
+	joyEllipse(.82,.716,xc,yc,x,y,ratio,osd->scale * .5,7);//Start
+	joyEllipse(.82,.842,xc,yc,x,y,ratio,osd->scale * .5,8);//Select
 
 
 	double dpadPoints [][2] = {
@@ -311,29 +396,29 @@ static void drawPad(double x, double y, double ratio) {
 	// touch pad
 	{
 		BOOL gameTouchOn = nds.isTouch;
-		double gameTouchX = screenLeft+1 + (nds.scr_touchX * 0.0625) * (screenRight - screenLeft - 2) / 256.0;
-		double gameTouchY = screenTop+1 + (nds.scr_touchY * 0.0625) * (screenBottom - screenTop - 2) / 192.0;
+		double gameTouchX = screenLeft+1 + (nds.scr_touchX * osd->scale * 0.0625) * (screenRight - screenLeft - 2) / (double)ScreenWidth();
+		double gameTouchY = screenTop+1 + (nds.scr_touchY * osd->scale * 0.0625) * (screenBottom - screenTop - 2) / (double)ScreenHeight();
 		bool physicalTouchOn = NDS_getRawUserInput().touch.isTouch;
-		double physicalTouchX = screenLeft+1 + (NDS_getRawUserInput().touch.touchX * 0.0625) * (screenRight - screenLeft - 2) / 256.0;
-		double physicalTouchY = screenTop+1 + (NDS_getRawUserInput().touch.touchY * 0.0625) * (screenBottom - screenTop - 2) / 192.0;
+		double physicalTouchX = screenLeft+1 + (NDS_getRawUserInput().touch.touchX * osd->scale * 0.0625) * (screenRight - screenLeft - 2) / (double)ScreenWidth();
+		double physicalTouchY = screenTop+1 + (NDS_getRawUserInput().touch.touchY * osd->scale * 0.0625) * (screenBottom - screenTop - 2) / (double)ScreenHeight();
 		if(gameTouchOn && physicalTouchOn && gameTouchX == physicalTouchX && gameTouchY == physicalTouchY)
 		{
 			aggDraw.hud->fillColor(0,0,0,255);
-			aggDraw.hud->ellipse(gameTouchX, gameTouchY, ratio*0.37, ratio*0.37);
+			aggDraw.hud->ellipse(gameTouchX, gameTouchY, osd->scale*ratio*0.37, osd->scale*ratio*0.37);
 		}
 		else
 		{
 			if(physicalTouchOn)
 			{
 				aggDraw.hud->fillColor(0,0,0,128);
-				aggDraw.hud->ellipse(physicalTouchX, physicalTouchY, ratio*0.5, ratio*0.5);
+				aggDraw.hud->ellipse(physicalTouchX, physicalTouchY, osd->scale*ratio*0.5, osd->scale*ratio*0.5);
 				aggDraw.hud->fillColor(0,255,0,255);
-				aggDraw.hud->ellipse(physicalTouchX, physicalTouchY, ratio*0.37, ratio*0.37);
+				aggDraw.hud->ellipse(physicalTouchX, physicalTouchY, osd->scale*ratio*0.37, osd->scale*ratio*0.37);
 			}
 			if(gameTouchOn)
 			{
 				aggDraw.hud->fillColor(255,0,0,255);
-				aggDraw.hud->ellipse(gameTouchX, gameTouchY, ratio*0.37, ratio*0.37);
+				aggDraw.hud->ellipse(gameTouchX, gameTouchY, osd->scale*ratio*0.37, osd->scale*ratio*0.37);
 			}
 		}
 	}
@@ -379,8 +464,8 @@ static void TextualInputDisplay() {
 		// cast from char to std::string is a bit awkward
 		std::string str(buttonChars+i, 2);
 		str[1] = '\0';
-
-		aggDraw.hud->renderTextDropshadowed(x, calcY(Hud.InputDisplay.y), str);
+		
+		RenderTextAutoVector(x, calcY(Hud.InputDisplay.y), str, true, osd ? osd->scale : 1);
 	}
 
 	// touch pad
@@ -396,7 +481,7 @@ static void TextualInputDisplay() {
 		{
 			sprintf(str, "%d,%d", gameTouchX, gameTouchY);
 			aggDraw.hud->lineColor(255,255,255,255);
-			aggDraw.hud->renderTextDropshadowed(x, calcY(Hud.InputDisplay.y), str);
+			RenderTextAutoVector(x, calcY(Hud.InputDisplay.y), str, true, osd ? osd->scale : 1);
 		}
 		else
 		{
@@ -404,13 +489,13 @@ static void TextualInputDisplay() {
 			{
 				sprintf(str, "%d,%d", gameTouchX, gameTouchY);
 				aggDraw.hud->lineColor(255,48,48,255);
-				aggDraw.hud->renderTextDropshadowed(x, calcY(Hud.InputDisplay.y)-(physicalTouchOn?8:0), str);
+				RenderTextAutoVector(x, calcY(Hud.InputDisplay.y)-(physicalTouchOn?8:0), str, true, osd ? osd->scale : 1);
 			}
 			if(physicalTouchOn)
 			{
 				sprintf(str, "%d,%d", physicalTouchX, physicalTouchY);
 				aggDraw.hud->lineColor(0,192,0,255);
-				aggDraw.hud->renderTextDropshadowed(x, calcY(Hud.InputDisplay.y)+(gameTouchOn?8:0), str);
+				RenderTextAutoVector(x, calcY(Hud.InputDisplay.y)+(gameTouchOn?8:0), str, true, osd ? osd->scale : 1);
 			}
 		}
 	}
@@ -418,10 +503,10 @@ static void TextualInputDisplay() {
 
 static void OSD_HandleTouchDisplay() {
 	// note: calcY should not be used in this function.
-	aggDraw.hud->lineWidth(1.0);
+	aggDraw.hud->lineWidth(osd->scale);
 
-	temptouch.X = NDS_getRawUserInput().touch.touchX >> 4;
-	temptouch.Y = NDS_getRawUserInput().touch.touchY >> 4;
+	temptouch.X = (NDS_getRawUserInput().touch.touchX >> 4) * osd->scale;
+	temptouch.Y = (NDS_getRawUserInput().touch.touchY >> 4) * osd->scale;
 
 	if(touchshadow) {
 
@@ -432,27 +517,27 @@ static void OSD_HandleTouchDisplay() {
 			temptouch = touch[i];
 			if(temptouch.X != 0 || temptouch.Y != 0) {
 				aggDraw.hud->lineColor(0, 255, 0, touchalpha[i]);
-				aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
-				aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
+				aggDraw.hud->line(temptouch.X - ScreenWidth(), temptouch.Y + ScreenHeight(), temptouch.X + ScreenWidth(), temptouch.Y + ScreenHeight()); //horiz
+				aggDraw.hud->line(temptouch.X, temptouch.Y - ScreenWidth(), temptouch.X, temptouch.Y + ScreenHeight()*2); //vert
 				aggDraw.hud->fillColor(0, 0, 0, touchalpha[i]);
-				aggDraw.hud->rectangle(temptouch.X-1, temptouch.Y + 192-1, temptouch.X+1, temptouch.Y + 192+1);
+				aggDraw.hud->rectangle(temptouch.X-1, temptouch.Y + ScreenHeight()-1, temptouch.X+1, temptouch.Y + ScreenHeight()+1);
 			}
 		}
 	}
 	else
 		if(NDS_getRawUserInput().touch.isTouch) {
 			aggDraw.hud->lineColor(0, 255, 0, 128);
-			aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
-			aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
+			aggDraw.hud->line(temptouch.X - ScreenWidth(), temptouch.Y + ScreenHeight(), temptouch.X + ScreenWidth(), temptouch.Y + ScreenHeight()); //horiz
+			aggDraw.hud->line(temptouch.X, temptouch.Y - ScreenWidth(), temptouch.X, temptouch.Y + ScreenHeight()*2); //vert
 		}
 
 	if(nds.isTouch)
 	{
-		temptouch.X = nds.scr_touchX / 16;
-		temptouch.Y = nds.scr_touchY / 16;
+		temptouch.X = nds.scr_touchX / 16 * osd->scale;
+		temptouch.Y = nds.scr_touchY / 16 * osd->scale;
 		aggDraw.hud->lineColor(255, 0, 0, 128);
-		aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
-		aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
+		aggDraw.hud->line(temptouch.X - ScreenWidth(), temptouch.Y + ScreenHeight(), temptouch.X + ScreenWidth(), temptouch.Y + ScreenHeight()); //horiz
+		aggDraw.hud->line(temptouch.X, temptouch.Y - ScreenWidth(), temptouch.X, temptouch.Y + ScreenHeight()*2); //vert
 	}
 
 }
@@ -476,24 +561,24 @@ static void DrawStateSlots(){
 
 	if(alpha!=0)
 	{
-		aggDraw.hud->lineWidth(1.0);
+		aggDraw.hud->lineWidth(osd->scale);
 		aggDraw.hud->lineColor(0, 0, 0, alpha);
 		aggDraw.hud->fillColor(255, 255, 255, alpha);
 
-		for ( int i = 0, xpos=0; i < 10; xpos=xpos+24) {
+		for ( int i = 0, xpos=0; i < 10; xpos=xpos+24*osd->scale) {
 
 			int yheight=0;
 
-			aggDraw.hud->fillLinearGradient(xloc + xpos, yloc - yheight, xloc + 22 + xpos, yloc + 20 + yheight+20, agg::rgba8(100,200,255,alpha), agg::rgba8(255,255,255,0));
+			aggDraw.hud->fillLinearGradient(xloc + xpos, yloc - yheight, xloc + 22*osd->scale + xpos, yloc + 20*osd->scale + yheight+20*osd->scale, agg::rgba8(100,200,255,alpha), agg::rgba8(255,255,255,0));
 
 			if(lastSaveState == i) {
-				yheight = 5;
-				aggDraw.hud->fillLinearGradient(xloc + xpos, yloc - yheight, 22 + xloc + xpos, yloc + 20 + yheight+20, agg::rgba8(100,255,255,alpha), agg::rgba8(255,255,255,0));
+				yheight = 5*osd->scale;
+				aggDraw.hud->fillLinearGradient(xloc + xpos, yloc - yheight, 22*osd->scale + xloc + xpos, yloc + 20*osd->scale + yheight+20*osd->scale, agg::rgba8(100,255,255,alpha), agg::rgba8(255,255,255,0));
 			}
 
-			aggDraw.hud->rectangle(xloc + xpos , yloc - yheight, xloc + 22 + xpos , yloc + 20 + yheight);
+			aggDraw.hud->rectangle(xloc + xpos , yloc - yheight, xloc + 22*osd->scale + xpos , yloc + 20*osd->scale + yheight);
 			snprintf(number, 10, "%d", i);
-			aggDraw.hud->renderText(xloc + 1 + xpos + 4, yloc+4, std::string(number));
+			RenderTextAutoVector(xloc + osd->scale + xpos + 4*osd->scale, yloc+4*osd->scale, std::string(number), true, osd->scale);
 			i++;
 		}
 	}
@@ -511,10 +596,10 @@ static void DrawEditableElementIndicators()
 		HudCoordinates &hud = Hud.hud(i);
 		aggDraw.hud->fillColor(0,0,0,0);
 		aggDraw.hud->lineColor(0,0,0,64);
-		aggDraw.hud->lineWidth(2.0);
+		aggDraw.hud->lineWidth(2.0*osd->scale);
 		aggDraw.hud->rectangle(hud.x,calcY(hud.y),hud.x+hud.xsize+1.0,calcY(hud.y)+hud.ysize+1.0);
 		aggDraw.hud->lineColor(255,hud.clicked?127:255,0,255);
-		aggDraw.hud->lineWidth(1.0);
+		aggDraw.hud->lineWidth(osd->scale);
 		aggDraw.hud->rectangle(hud.x-0.5,calcY(hud.y)-0.5,hud.x+hud.xsize+0.5,calcY(hud.y)+hud.ysize+0.5);
 		i++;
 	}
@@ -624,9 +709,11 @@ OSDCLASS::OSDCLASS(u8 core)
 
 	singleScreen = false;
 	swapScreens = false;
-
+	scale = 1.0;
 	needUpdate = false;
-
+#ifdef AGG2D_USE_VECTORFONTS
+	useVectorFonts = false;
+#endif
 	if (core==0) 
 		strcpy(name,"Core A");
 	else
@@ -707,7 +794,7 @@ void OSDCLASS::update()
 			for (int i=0; i < lastLineText; i++)
 			{
 				aggDraw.hud->lineColor(lineColor[i]);
-				aggDraw.hud->renderTextDropshadowed(lineText_x,lineText_y+(i*16),lineText[i]);
+				RenderTextAutoVector(lineText_x, lineText_y+(i*16), lineText[i], true, osd->scale);
 			}
 		}
 		else
@@ -789,7 +876,7 @@ void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
 	va_end(list);
 
 	aggDraw.hud->lineColor(255,255,255);
-	aggDraw.hud->renderTextDropshadowed(x,calcY(y),msg);
+	RenderTextAutoVector(x, calcY(y), msg, true, osd->scale);
 
 	needUpdate = true;
 }

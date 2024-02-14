@@ -1370,6 +1370,17 @@ AGG2D_TEMPLATE void TAGG2D::text(double x, double y, const wchar_t* str, unsigne
     }
 
 }
+
+AGG2D_TEMPLATE double TAGG2D::textWidth(const char* str)
+{
+	return textWidth(str, (unsigned int)strlen(str));
+}
+
+AGG2D_TEMPLATE void TAGG2D::text(double x, double y, const char* str, bool roundOff, double dx, double dy)
+{
+	text(x, y, str, (unsigned int)strlen(str), roundOff, dx, dy);
+}
+
 #endif
 
 //------------------------------------------------------------------------
@@ -1945,11 +1956,11 @@ AGG2D_TEMPLATE void TAGG2D::render(FontRasterizer& ras, FontScanline& sl)
 {
     if(m_blendMode == BlendAlpha)
     {
-        Agg2DRenderer::render(*this, m_renBase, m_renSolid, ras, sl);
+        Agg2DRenderer<PixFormatSet, PixFormatSet>::render(*this, m_renBase, m_renSolid, ras, sl);
     }
     else
     {
-        Agg2DRenderer::render(*this, m_renBaseComp, m_renSolidComp, ras, sl);
+        Agg2DRenderer<PixFormatSet, PixFormatSet>::render(*this, m_renBaseComp, m_renSolidComp, ras, sl);
     }
 }
 

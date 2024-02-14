@@ -97,6 +97,25 @@ void value<string>::save() {
 	g_key_file_set_string(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData.c_str());
 }
 
+/* class value<vector<int> > */
+
+template<>
+void value<vector<int> >::load() {
+	gsize l;
+	int* val = g_key_file_get_integer_list(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), &l, NULL);
+	if(val)
+	{
+		this->mData.resize(l);
+		std::copy(val, val+l, this->mData.begin());
+		g_free(val);
+	}
+}
+
+template<>
+void value<vector<int> >::save() {
+	g_key_file_set_integer_list(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData.data(), this->mData.size());
+}
+
 /* class Config */
 
 Config::Config()

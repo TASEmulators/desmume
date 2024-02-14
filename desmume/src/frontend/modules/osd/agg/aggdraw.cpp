@@ -118,20 +118,17 @@ static void Agg_init_fonts()
 
 AggDraw_Desmume aggDraw;
 
-#if defined(WIN32) || defined(HOST_LINUX)
-T_AGG_RGBA agg_targetScreen(0, 256, 384, 1024);
-#else
-T_AGG_RGB555 agg_targetScreen(0, 256, 384, 1512);
-#endif
+T_AGG_RGBA agg_targetScreen_32bit(0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, GPU_FRAMEBUFFER_NATIVE_WIDTH*4);
+T_AGG_RGB555 agg_targetScreen_16bit(0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, GPU_FRAMEBUFFER_NATIVE_WIDTH*2);
 
-static u32 luaBuffer[256*192*2];
-T_AGG_RGBA agg_targetLua((u8*)luaBuffer, 256, 384, 1024);
+static std::vector<u32> luaBuffer(GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT*2);
+T_AGG_RGBA agg_targetLua((u8*)luaBuffer.data(), GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, GPU_FRAMEBUFFER_NATIVE_WIDTH*4);
 
-static u32 hudBuffer[256*192*2];
-T_AGG_RGBA agg_targetHud((u8*)hudBuffer, 256, 384, 1024);
+static std::vector<u32> hudBuffer(GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT*2);
+T_AGG_RGBA agg_targetHud((u8*)hudBuffer.data(), GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, GPU_FRAMEBUFFER_NATIVE_WIDTH*4);
 
 static AggDrawTarget* targets[] = {
-	&agg_targetScreen,
+	&agg_targetScreen_32bit,
 	&agg_targetHud,
 	&agg_targetLua,
 };
@@ -139,6 +136,16 @@ static AggDrawTarget* targets[] = {
 void Agg_init()
 {
 	Agg_init_fonts();
+	switch(aggDraw.screenBytesPerPixel)
+	{
+		case 2:
+			targets[0]=&agg_targetScreen_16bit;
+			break;
+		case 4:
+			targets[0]=&agg_targetScreen_32bit;
+			break;
+	}
+
 	aggDraw.screen = targets[0];
 	aggDraw.hud = targets[1];
 	aggDraw.lua = targets[2];
@@ -149,12 +156,17 @@ void Agg_init()
 	//and the more clever compositing isnt supported in non-windows
 	#ifdef WIN32
 	if(CommonSettings.single_core())
-		aggDraw.hud = &agg_targetScreen;
+		aggDraw.hud = aggDraw.screen;
 	#else
-	aggDraw.hud = &agg_targetScreen;
+	aggDraw.hud = aggDraw.screen;
 	#endif
 
 	aggDraw.hud->setFont("verdana18_bold");
+}
+
+AggDraw_Desmume::AggDraw_Desmume()
+{
+	screenBytesPerPixel = 4;
 }
 
 void AggDraw_Desmume::setTarget(AggTarget newTarget)
@@ -162,6 +174,17 @@ void AggDraw_Desmume::setTarget(AggTarget newTarget)
 	target = targets[newTarget];
 }
 
+void Agg_setCustomSize(int w, int h)
+{
+	hudBuffer.resize(w*h);
+	luaBuffer.resize(w*h);
+	if(aggDraw.screen)
+		aggDraw.screen->setDrawTargetDims(0, w, h, w*aggDraw.screenBytesPerPixel);
+	if(aggDraw.hud)
+		aggDraw.hud->setDrawTargetDims((u8*)hudBuffer.data(), w, h, w*4);
+	if(aggDraw.lua)
+		aggDraw.lua->setDrawTargetDims((u8*)luaBuffer.data(), w, h, w*4);
+}
 
 
 ////temporary, just for testing the lib

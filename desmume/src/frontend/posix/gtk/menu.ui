@@ -834,6 +834,10 @@
         <attribute name='label' translatable='yes'>_Editor mode</attribute>
         <attribute name='action'>app.hud_editor</attribute>
       </item>
+      <item>
+        <attribute name='label' translatable='yes'>Reset layout</attribute>
+        <attribute name='action'>app.hud_reset_layout</attribute>
+      </item>
     </section>
   </menu>
   <menu id='hud_unsupported'>
