@@ -705,6 +705,7 @@ enum AggTarget
 class AggDraw_Desmume : public AggDraw
 {
 public:
+	AggDraw_Desmume();
 	void setTarget(AggTarget newTarget);
 	//void composite(void* dest);
 

@@ -3086,6 +3086,10 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     /* Init the hud / osd stuff */
 #ifdef HAVE_LIBAGG
+	SDL_DisplayMode cur_mode;
+	if(!SDL_GetCurrentDisplayMode(0, &cur_mode))
+		aggDraw.screenBytesPerPixel = SDL_BYTESPERPIXEL(cur_mode.format);
+	
     Desmume_InitOnce();
     Hud.reset();
     osd = new OSDCLASS(-1);
@@ -3165,9 +3169,6 @@ common_gtk_main(GApplication *app, gpointer user_data)
 	else
 		osd->useVectorFonts=false;
 #endif
-	SDL_DisplayMode cur_mode;
-	if(!SDL_GetCurrentDisplayMode(0, &cur_mode))
-		aggDraw.screenBytesPerPixel = SDL_BYTESPERPIXEL(cur_mode.format);
 	Agg_setCustomSize(real_framebuffer_width, real_framebuffer_height*2);
 	osd->scale=gpu_scale_factor;
 	HudLoadLayout();
