@@ -255,6 +255,18 @@
               <attribute name='target'>single</attribute>
               <attribute name='accel'>&lt;Control&gt;0</attribute>
             </item>
+			<item>
+              <attribute name='label' translatable='yes'>Hybrid (_equal height)</attribute>
+              <attribute name='action'>app.orient</attribute>
+              <attribute name='target'>hybrid_equal</attribute>
+              <attribute name='accel'>&lt;Control&gt;3</attribute>
+            </item>
+			<item>
+              <attribute name='label' translatable='yes'>Hybrid (e_mphasize vertical)</attribute>
+              <attribute name='action'>app.orient</attribute>
+              <attribute name='target'>hybrid_vertical</attribute>
+              <attribute name='accel'>&lt;Control&gt;4</attribute>
+            </item>
           </section>
           <section>
             <item>
