@@ -1353,6 +1353,8 @@ static void SetOrientation(GSimpleAction *action, GVariant *parameter, gpointer 
     nds_screen.orientation = orient;
 #ifdef HAVE_LIBAGG
     osd->singleScreen = nds_screen.orientation == ORIENT_SINGLE;
+	bool hybrid = (nds_screen.orientation == ORIENT_HYBRID_EQUAL) || (nds_screen.orientation == ORIENT_HYBRID_VERTICAL);
+    osd->swapScreens = nds_screen.swap && !hybrid;
 #endif
     config.view_orient = nds_screen.orientation;
     UpdateDrawingAreaAspect();
@@ -1364,7 +1366,8 @@ static void ToggleSwapScreens(GSimpleAction *action, GVariant *parameter, gpoint
     gboolean value = !g_variant_get_boolean(variant);
     nds_screen.swap = value;
 #ifdef HAVE_LIBAGG
-    osd->swapScreens = nds_screen.swap;
+	bool hybrid = (nds_screen.orientation == ORIENT_HYBRID_EQUAL) || (nds_screen.orientation == ORIENT_HYBRID_VERTICAL);
+    osd->swapScreens = nds_screen.swap && !hybrid;
 #endif
     config.view_swap = nds_screen.swap;
     RedrawScreen();
@@ -1493,15 +1496,15 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	gint dstH = video->GetDstHeight();
 	
 	if(draw_params.valid)
-		if(draw_params.daW != daW || draw_params.daH != daH || draw_params.dstW != dstW || draw_params.dstH != dstH) {
+		if(draw_params.daW != daW || draw_params.daH != daH || draw_params.dstW != dstW || draw_params.dstH != dstH)
 			draw_params.valid = false;
-			draw_params.daW = daW;
-			draw_params.daH = daH;
-			draw_params.dstW = dstW;
-			draw_params.dstH = dstH;
-		}
 	
 	if(!draw_params.valid) {
+		draw_params.daW = daW;
+		draw_params.daH = daH;
+		draw_params.dstW = dstW;
+		draw_params.dstH = dstH;
+		
 		draw_params.dstScale = dstW * 2 / GPU_FRAMEBUFFER_NATIVE_WIDTH; // Actual scale * 2 to handle 1.5x filters
 		
 		draw_params.gap = ((nds_screen.orientation == ORIENT_VERTICAL) || (nds_screen.orientation == ORIENT_HYBRID_EQUAL)
@@ -1623,7 +1626,7 @@ static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 		topX = devX * gpu_scale_factor;
 		topY = devY * gpu_scale_factor;
 		
-		if(hybrid) {
+		if(hybrid && !nds_screen.swap) {
 			devX = x;
 			devY = y;
 			cairo_matrix_transform_point(&nds_screen.topscreen_matrix_hybrid, &devX, &devY);
@@ -1639,7 +1642,7 @@ static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 		botX = devX * gpu_scale_factor;
 		botY = devY * gpu_scale_factor;
 		
-		if(hybrid) {
+		if(hybrid && nds_screen.swap) {
 			devX = x;
 			devY = y;
 			cairo_matrix_transform_point(&nds_screen.touch_matrix_hybrid, &devX, &devY);
@@ -1650,7 +1653,7 @@ static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 
 	if (topX >= 0 && topY >= 0 && topX < real_framebuffer_width && topY < real_framebuffer_height) {
 		X = topX;
-		Y = topY + (nds_screen.swap ? real_framebuffer_height : 0);
+		Y = topY + ((nds_screen.swap && !hybrid) ? real_framebuffer_height : 0);
 		startScreen = 0;
 		if(start)
 			hud_move_started_in_big_screen = false;
@@ -1662,32 +1665,32 @@ static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 			hud_move_started_in_big_screen = true;
 	} else if (botX >= 0 && botY >= 0 && botX < real_framebuffer_width && botY < real_framebuffer_height) {
 		X = botX;
-		Y = botY + (nds_screen.swap ? 0 : real_framebuffer_height);
+		Y = botY + ((nds_screen.swap && !hybrid) ? 0 : real_framebuffer_height);
 		startScreen = 1;
 		if(start)
 			hud_move_started_in_big_screen = false;
 	} else if (hybBotX >= 0 && hybBotY >= 0 && hybBotX < real_framebuffer_width && hybBotY < real_framebuffer_height) {
 		X = hybBotX;
-		Y = hybBotY + (nds_screen.swap ? 0 : real_framebuffer_height);
+		Y = hybBotY + (!nds_screen.swap ? 0 : real_framebuffer_height);
 		startScreen = 1;
 		if(start)
 			hud_move_started_in_big_screen = true;
 	} else if (!start) {
 		if (startScreen == 0) {
-			if(!hud_move_started_in_big_screen) {
+			if(!hud_move_started_in_big_screen || !hybrid) {
 				X = CLAMP(topX, 0, real_framebuffer_width-1);
-				Y = CLAMP(topY, 0, real_framebuffer_height-1) + (nds_screen.swap ? real_framebuffer_height : 0);
+				Y = CLAMP(topY, 0, real_framebuffer_height-1) + ((nds_screen.swap && !hybrid) ? real_framebuffer_height : 0);
 			} else {
 				X = CLAMP(hybTopX, 0, real_framebuffer_width-1);
 				Y = CLAMP(hybTopY, 0, real_framebuffer_height-1) + (nds_screen.swap ? real_framebuffer_height : 0);
 			}
 		} else {
-			if(!hud_move_started_in_big_screen) {
+			if(!hud_move_started_in_big_screen || !hybrid) {
 				X = CLAMP(botX, 0, real_framebuffer_width-1);
-				Y = CLAMP(botY, 0, real_framebuffer_height-1) + (nds_screen.swap ? 0 : real_framebuffer_height);
+				Y = CLAMP(botY, 0, real_framebuffer_height-1) + ((nds_screen.swap && !hybrid) ? 0 : real_framebuffer_height);
 			} else {
 				X = CLAMP(hybBotX, 0, real_framebuffer_width-1);
-				Y = CLAMP(hybBotY, 0, real_framebuffer_height-1) + (nds_screen.swap ? 0 : real_framebuffer_height);
+				Y = CLAMP(hybBotY, 0, real_framebuffer_height-1) + (!nds_screen.swap ? 0 : real_framebuffer_height);
 			}
 		}
 	} else {
@@ -3685,6 +3688,10 @@ common_gtk_main(GApplication *app, gpointer user_data)
     nds_screen.gap_size = config.view_gap ? GAP_SIZE : 0;
 
     nds_screen.swap = config.view_swap;
+    #ifdef HAVE_LIBAGG
+		bool hybrid = (nds_screen.orientation == ORIENT_HYBRID_EQUAL) || (nds_screen.orientation == ORIENT_HYBRID_VERTICAL);
+		osd->swapScreens = nds_screen.swap && !hybrid;
+	#endif
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "swapscreens")), g_variant_new_boolean(config.view_swap));
 
     builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/menu.ui");
