@@ -1653,25 +1653,25 @@ static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 
 	if (topX >= 0 && topY >= 0 && topX < real_framebuffer_width && topY < real_framebuffer_height) {
 		X = topX;
-		Y = topY + ((nds_screen.swap && !hybrid) ? real_framebuffer_height : 0);
+		Y = topY + (osd->swapScreens ? real_framebuffer_height : 0);
 		startScreen = 0;
 		if(start)
 			hud_move_started_in_big_screen = false;
 	} else if (hybTopX >= 0 && hybTopY >= 0 && hybTopX < real_framebuffer_width && hybTopY < real_framebuffer_height) {
 		X = hybTopX;
-		Y = hybTopY + (nds_screen.swap ? real_framebuffer_height : 0);
+		Y = hybTopY;
 		startScreen = 0;
 		if(start)
 			hud_move_started_in_big_screen = true;
 	} else if (botX >= 0 && botY >= 0 && botX < real_framebuffer_width && botY < real_framebuffer_height) {
 		X = botX;
-		Y = botY + ((nds_screen.swap && !hybrid) ? 0 : real_framebuffer_height);
+		Y = botY + (osd->swapScreens ? 0 : real_framebuffer_height);
 		startScreen = 1;
 		if(start)
 			hud_move_started_in_big_screen = false;
 	} else if (hybBotX >= 0 && hybBotY >= 0 && hybBotX < real_framebuffer_width && hybBotY < real_framebuffer_height) {
 		X = hybBotX;
-		Y = hybBotY + (!nds_screen.swap ? 0 : real_framebuffer_height);
+		Y = hybBotY + real_framebuffer_height;
 		startScreen = 1;
 		if(start)
 			hud_move_started_in_big_screen = true;
@@ -1679,18 +1679,18 @@ static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 		if (startScreen == 0) {
 			if(!hud_move_started_in_big_screen || !hybrid) {
 				X = CLAMP(topX, 0, real_framebuffer_width-1);
-				Y = CLAMP(topY, 0, real_framebuffer_height-1) + ((nds_screen.swap && !hybrid) ? real_framebuffer_height : 0);
+				Y = CLAMP(topY, 0, real_framebuffer_height-1) + (osd->swapScreens ? real_framebuffer_height : 0);
 			} else {
 				X = CLAMP(hybTopX, 0, real_framebuffer_width-1);
-				Y = CLAMP(hybTopY, 0, real_framebuffer_height-1) + (nds_screen.swap ? real_framebuffer_height : 0);
+				Y = CLAMP(hybTopY, 0, real_framebuffer_height-1);
 			}
 		} else {
 			if(!hud_move_started_in_big_screen || !hybrid) {
 				X = CLAMP(botX, 0, real_framebuffer_width-1);
-				Y = CLAMP(botY, 0, real_framebuffer_height-1) + ((nds_screen.swap && !hybrid) ? 0 : real_framebuffer_height);
+				Y = CLAMP(botY, 0, real_framebuffer_height-1) + (osd->swapScreens ? 0 : real_framebuffer_height);
 			} else {
 				X = CLAMP(hybBotX, 0, real_framebuffer_width-1);
-				Y = CLAMP(hybBotY, 0, real_framebuffer_height-1) + (!nds_screen.swap ? 0 : real_framebuffer_height);
+				Y = CLAMP(hybBotY, 0, real_framebuffer_height-1) + real_framebuffer_height;
 			}
 		}
 	} else {
