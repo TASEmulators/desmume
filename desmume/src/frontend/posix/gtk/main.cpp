@@ -3663,11 +3663,11 @@ common_gtk_main(GApplication *app, gpointer user_data)
             string = "single";
             break;
         case ORIENT_HYBRID_EQUAL:
-			string = "hybrid_equal";
-			break;
-		case ORIENT_HYBRID_VERTICAL:
-			string = "hybrid_vertical";
-			break;
+            string = "hybrid_equal";
+            break;
+        case ORIENT_HYBRID_VERTICAL:
+            string = "hybrid_vertical";
+            break;
     }
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "orient")), g_variant_new_string(string.c_str()));
 
@@ -3689,9 +3689,9 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     nds_screen.swap = config.view_swap;
     #ifdef HAVE_LIBAGG
-		bool hybrid = (nds_screen.orientation == ORIENT_HYBRID_EQUAL) || (nds_screen.orientation == ORIENT_HYBRID_VERTICAL);
-		osd->swapScreens = nds_screen.swap && !hybrid;
-	#endif
+        bool hybrid = (nds_screen.orientation == ORIENT_HYBRID_EQUAL) || (nds_screen.orientation == ORIENT_HYBRID_VERTICAL);
+        osd->swapScreens = nds_screen.swap && !hybrid;
+    #endif
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "swapscreens")), g_variant_new_boolean(config.view_swap));
 
     builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/menu.ui");
