@@ -924,6 +924,11 @@ const GPU_IOREG& GPUEngineBase::GetIORegisterMap() const
 	return *this->_IORegisterMap;
 }
 
+bool GPUEngineBase::IsForceBlankSet() const
+{
+	return (this->_IORegisterMap->DISPCNT.ForceBlank != 0);
+}
+
 bool GPUEngineBase::IsMasterBrightMaxOrMin() const
 {
 	return this->_currentRenderState.masterBrightnessIsMaxOrMin;
@@ -2940,11 +2945,18 @@ void GPUEngineBase::RenderLayerBG(const GPULayerID layerID, u16 *dstColorBuffer)
 	}
 }
 
+void GPUEngineBase::_RenderLineBlank(const size_t l)
+{
+	// Native rendering only.
+	// Just clear the line using white pixels.
+	memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(this->_targetDisplay->GetNativeBuffer16() + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0xFFFF);
+}
+
 void GPUEngineBase::_HandleDisplayModeOff(const size_t l)
 {
 	// Native rendering only.
-	// In this display mode, the display is cleared to white.
-	memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(this->_targetDisplay->GetNativeBuffer16() + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0xFFFF);
+	// In this display mode, the line is cleared to white.
+	this->_RenderLineBlank(l);
 }
 
 void GPUEngineBase::_HandleDisplayModeNormal(const size_t l)
@@ -3536,23 +3548,30 @@ void GPUEngineA::RenderLine(const size_t l)
 	}
 	
 	// Fill the display output
-	switch (compInfo.renderState.displayOutputMode)
+	if ( this->IsForceBlankSet() )
 	{
-		case GPUDisplayMode_Off: // Display Off (Display white)
-			this->_HandleDisplayModeOff(l);
-			break;
-			
-		case GPUDisplayMode_Normal: // Display BG and OBJ layers
-			this->_HandleDisplayModeNormal(l);
-			break;
-			
-		case GPUDisplayMode_VRAM: // Display VRAM framebuffer
-			this->_HandleDisplayModeVRAM<OUTPUTFORMAT>(compInfo.line);
-			break;
-			
-		case GPUDisplayMode_MainMemory: // Display Memory FIFO
-			this->_HandleDisplayModeMainMemory(compInfo.line);
-			break;
+		this->_RenderLineBlank(l);
+	}
+	else
+	{
+		switch (compInfo.renderState.displayOutputMode)
+		{
+			case GPUDisplayMode_Off: // Display Off (clear line to white)
+				this->_HandleDisplayModeOff(l);
+				break;
+				
+			case GPUDisplayMode_Normal: // Display BG and OBJ layers
+				this->_HandleDisplayModeNormal(l);
+				break;
+				
+			case GPUDisplayMode_VRAM: // Display VRAM framebuffer
+				this->_HandleDisplayModeVRAM<OUTPUTFORMAT>(compInfo.line);
+				break;
+				
+			case GPUDisplayMode_MainMemory: // Display Memory FIFO
+				this->_HandleDisplayModeMainMemory(compInfo.line);
+				break;
+		}
 	}
 	
 	//capture after displaying so that we can safely display vram before overwriting it here
@@ -4533,29 +4552,36 @@ void GPUEngineB::RenderLine(const size_t l)
 {
 	GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[l];
 	
-	switch (compInfo.renderState.displayOutputMode)
+	if ( this->IsForceBlankSet() )
 	{
-		case GPUDisplayMode_Off: // Display Off(Display white)
-			this->_HandleDisplayModeOff(l);
-			break;
-		
-		case GPUDisplayMode_Normal: // Display BG and OBJ layers
+		this->_RenderLineBlank(l);
+	}
+	else
+	{
+		switch (compInfo.renderState.displayOutputMode)
 		{
-			if (compInfo.renderState.isAnyWindowEnabled)
-			{
-				this->_RenderLine_Layers<OUTPUTFORMAT, true>(compInfo);
-			}
-			else
-			{
-				this->_RenderLine_Layers<OUTPUTFORMAT, false>(compInfo);
-			}
+			case GPUDisplayMode_Off: // Display Off (clear line to white)
+				this->_HandleDisplayModeOff(l);
+				break;
 			
-			this->_HandleDisplayModeNormal(l);
-			break;
+			case GPUDisplayMode_Normal: // Display BG and OBJ layers
+			{
+				if (compInfo.renderState.isAnyWindowEnabled)
+				{
+					this->_RenderLine_Layers<OUTPUTFORMAT, true>(compInfo);
+				}
+				else
+				{
+					this->_RenderLine_Layers<OUTPUTFORMAT, false>(compInfo);
+				}
+				
+				this->_HandleDisplayModeNormal(l);
+				break;
+			}
+				
+			default:
+				break;
 		}
-			
-		default:
-			break;
 	}
 	
 	if (compInfo.line.indexNative >= 191)
@@ -5454,7 +5480,7 @@ void GPUSubsystem::RenderLine(const size_t l)
 		this->_engineSub->UpdateRenderStates(l);
 	}
 	
-	if ( (isFramebufferRenderNeeded[GPUEngineID_Main] || isDisplayCaptureNeeded) && !this->_willFrameSkip )
+	if ( (isFramebufferRenderNeeded[GPUEngineID_Main] || this->_engineMain->IsForceBlankSet() || isDisplayCaptureNeeded) && !this->_willFrameSkip )
 	{
 		// GPUEngineA:WillRender3DLayer() and GPUEngineA:WillCapture3DLayerDirect() both rely on register
 		// states that might change on a per-line basis. Therefore, we need to check these states on a
@@ -5502,7 +5528,7 @@ void GPUSubsystem::RenderLine(const size_t l)
 		this->_engineMain->UpdatePropertiesWithoutRender(l);
 	}
 	
-	if (isFramebufferRenderNeeded[GPUEngineID_Sub] && !this->_willFrameSkip)
+	if ( (isFramebufferRenderNeeded[GPUEngineID_Sub] || this->_engineSub->IsForceBlankSet()) && !this->_willFrameSkip)
 	{
 		switch (this->_engineSub->GetTargetDisplay()->GetColorFormat())
 		{
