@@ -1152,8 +1152,8 @@ struct ColorDistanceARGB
 {
     static double dist(uint32_t pix1, uint32_t pix2, double luminanceWeight)
     {
-        const double a1 = getAlpha(pix1) / 255.0 ;
-        const double a2 = getAlpha(pix2) / 255.0 ;
+        const int a1 = getAlpha(pix1);
+        const int a2 = getAlpha(pix2);
         /*
         Requirements for a color distance handling alpha channel: with a1, a2 in [0, 1]
 
@@ -1162,13 +1162,22 @@ struct ColorDistanceARGB
         	3. if a1 = 1,  ??? maybe: 255 * (1 - a2) + a2 * distYCbCr()
         */
 
+        if (a1 == 0)
+		return a2;
+        if (a2 == 0)
+		return a1;
+
         //return std::min(a1, a2) * DistYCbCrBuffer::dist(pix1, pix2) + 255 * abs(a1 - a2);
         //=> following code is 15% faster:
         const double d = DistYCbCrBuffer::dist(pix1, pix2);
+        if (a1 == 255 && a2 == 255)
+            return d;
+        if (a1 == a2)
+            return a1 * d / 255.0;
         if (a1 < a2)
-            return a1 * d + 255 * (a2 - a1);
+            return a1 * d / 255.0 + (a2 - a1);
         else
-            return a2 * d + 255 * (a1 - a2);
+            return a2 * d / 255.0 + (a1 - a2);
 
         //alternative? return std::sqrt(a1 * a2 * square(DistYCbCrBuffer::dist(pix1, pix2)) + square(255 * (a1 - a2)));
     }
