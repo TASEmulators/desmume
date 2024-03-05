@@ -96,6 +96,7 @@ libdesmume_a_SOURCES = \
 	addons/slot2_rumblepak.cpp \
 	addons/slot2_guitarGrip.cpp \
 	addons/slot2_hcv1000.cpp \
+	addons/slot2_slideController.cpp \
 	addons/slot2_expMemory.cpp \
 	addons/slot2_piano.cpp \
 	addons/slot2_passme.cpp \

@@ -261,6 +261,8 @@ SPaddle DefaultPaddle = { false, 'K', 'L' };
 SHCV1000 HCV1000;
 SHCV1000 DefaultHCV1000 = { false, 'L'};
 
+SSLIDECONTROLLER SlideController;
+
 bool killStylusTopScreen = false;
 bool killStylusOffScreen = false;
 bool allowUpAndDown = false;

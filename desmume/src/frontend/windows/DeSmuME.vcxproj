@@ -73,6 +73,7 @@
     <ClCompile Include="..\..\addons\slot1_retail_nand.cpp" />
     <ClCompile Include="..\..\addons\slot2_mpcf.cpp" />
     <ClCompile Include="..\..\addons\slot2_paddle.cpp" />
+    <ClCompile Include="..\..\addons\slot2_slideController.cpp" />
     <ClCompile Include="..\..\arm_instructions.cpp" />
     <ClCompile Include="..\..\armcpu.cpp" />
     <ClCompile Include="..\..\arm_jit.cpp" />

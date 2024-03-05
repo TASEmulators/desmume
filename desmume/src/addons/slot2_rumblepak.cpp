@@ -18,8 +18,6 @@
 
 #include "../slot2.h"
 
-void (*FeedbackON)(bool enable) = NULL;
-
 class Slot2_RumblePak : public ISlot2Interface
 {
 private:
