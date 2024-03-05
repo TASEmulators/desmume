@@ -406,6 +406,25 @@ struct MMU_struct
 	//32KB of shared WRAM - can be switched between ARM7 & ARM9 in two blocks
 	u8 SWIRAM[0x8000];
 
+#ifdef DSI_NEWWRAM
+	// new shared WRAM, 3 banks, each of 256k
+	// smallest chunk to blend in is 32k
+	u8 NWRAM[3][8][32 * 1024];
+
+	// Control register for each bank (named MBK?.? in gbatek)
+	u8 regNRWAM_BankControl[20];
+	// Window control registers. One set of 3 for each core
+	u32 regNWRAM_Windows[2][3];
+	// Bank control write protection register
+	u32 regNWRAM_Protect;
+
+	// Pointer for each block of the region from 0x03000000 to 0x03ffffff
+	// for each core. This way the memory lookup must not calculate the effective
+	// WRAM address on each access but prepares these pointers only when the
+	// window or bank registers changed.
+	u8* NWRAMBLOCKPTRS[2][512] ;
+#endif
+
 	//Unused ram
 	u8 UNUSED_RAM[4];
 
