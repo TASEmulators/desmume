@@ -20,7 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef __MACH__
+#define _DARWIN_C_SOURCE    /* As below, plus strl* functions */
+#else
 #define _XOPEN_SOURCE 500   /* For strdup, realpath */
+#endif
 
 #include <stdlib.h>
 #include <boolean.h>
