@@ -87,7 +87,7 @@ void GetINIPath()
 	}
 
 	FCEUD_MakePathDirs(IniName);
-	wcscpy(IniNameW,mbstowcs(IniName).c_str()); //careful to use locale C-style mbstowcs to get IniName (which is with locale encoding) to unicode
+	wcscpy(IniNameW,mbstowcs_locale(IniName).c_str()); 
 
 	//write BOM to get unicode
 	FILE* test = fopen(IniName,"rb");

@@ -107,5 +107,7 @@ std::string mass_replace(const std::string &source, const std::string &victim, c
 std::wstring mbstowcs(std::string str);
 std::string wcstombs(std::wstring str);
 
+std::wstring mbstowcs_locale(std::string str);
+
 
 #endif

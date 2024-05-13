@@ -284,6 +284,19 @@ std::string mass_replace(const std::string &source, const std::string &victim, c
 	return answer;
 }
 
+std::wstring mbstowcs_locale(std::string str)
+{
+	#ifdef HOST_WINDOWS
+	int plenty = str.size()*4+1;
+	wchar_t *wgarbage = new wchar_t[plenty];
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str.data(), -1, wgarbage, plenty);
+	std::wstring ret = wgarbage;
+	delete[] wgarbage;
+	return ret;
+	#endif
+	return mbstowcs(str);
+}
+
 //convert a std::string to std::wstring
 std::wstring mbstowcs(std::string str)
 {
