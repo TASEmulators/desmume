@@ -51,6 +51,13 @@
 #include "main.h"
 #include "winutil.h"
 
+	//60 is a poor choice for a threshold; the theoretical maximum you can get even at an exact 45 degree angle is 70
+	//Sloshy sticks or slightly-off angles make it impossible to reach 60, as it's far too close to 70.
+	//Too-small values feel bad, too
+	//50 is a more normal choice
+	//#define S9X_JOY_NEUTRAL 60
+int S9X_JOY_NEUTRAL = 50;
+
 // Gamepad Dialog Strings
 // Support Unicode display
 //#define INPUTCONFIG_TITLE "Input Configuration"
@@ -520,6 +527,9 @@ BOOL di_init()
 {
 	HWND hParentWnd = MainWindow->getHWnd();
 
+	S9X_JOY_NEUTRAL = GetPrivateProfileInt("Controls", "DigitalizationThreshold", S9X_JOY_NEUTRAL, IniName);
+	
+
 	pDI = NULL;
 	memset(cDIBuf, 0, sizeof(cDIBuf));
 
@@ -668,14 +678,6 @@ int FunkyNormalize(int cur, int min, int max)
 
     return Result;
 }
-
-
-//60 is a poor choice for a threshold; the theoretical maximum you can get even at an exact 45 degree angle is 70
-//Sloshy sticks or slightly-off angles make it impossible to reach 60, as it's far too close to 70.
-//Too-small values feel bad, too
-//50 is a more normal choice
-//#define S9X_JOY_NEUTRAL 60
-#define S9X_JOY_NEUTRAL 50
 
 void CheckAxis (short joy, short control, int val,
                                        int min, int max,
