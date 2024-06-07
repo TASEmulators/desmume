@@ -20,8 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#define _XOPEN_SOURCE 500   /* For strdup, realpath */
-
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
@@ -33,6 +31,7 @@
 #include <file/file_path.h>
 
 #ifndef __MACH__
+#define _XOPEN_SOURCE 500   /* For strdup, realpath */
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #endif
