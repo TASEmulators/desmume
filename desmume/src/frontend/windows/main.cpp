@@ -1,6 +1,6 @@
-﻿/*
+/*
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2006-2023 DeSmuME team
+	Copyright (C) 2006-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -52,7 +52,6 @@
 #include "slot2.h"
 #include "GPU.h"
 #include "SPU.h"
-#include "OGLRender.h"
 #include "OGLRender_3_2.h"
 #include "rasterize.h"
 #include "gfx3d.h"

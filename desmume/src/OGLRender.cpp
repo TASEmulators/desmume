@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2023 DeSmuME team
+	Copyright (C) 2008-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -130,14 +130,14 @@ const GLint GeometryAttachmentFogAttributes[8] = {
 
 bool BEGINGL()
 {
-	if(oglrender_beginOpenGL) 
+	if (oglrender_beginOpenGL)
 		return oglrender_beginOpenGL();
 	else return true;
 }
 
 void ENDGL()
 {
-	if(oglrender_endOpenGL) 
+	if (oglrender_endOpenGL)
 		oglrender_endOpenGL();
 }
 
@@ -154,7 +154,6 @@ void (*OGLCreateRenderer_3_2_Func)(OpenGLRenderer **rendererPtr) = NULL;
 // Textures
 #if !defined(GLX_H)
 OGLEXT(PFNGLACTIVETEXTUREPROC, glActiveTexture) // Core in v1.3
-OGLEXT(PFNGLACTIVETEXTUREARBPROC, glActiveTextureARB)
 #endif
 
 // Blending
@@ -163,9 +162,6 @@ OGLEXT(PFNGLBLENDEQUATIONPROC, glBlendEquation) // Core in v1.2
 #endif
 OGLEXT(PFNGLBLENDFUNCSEPARATEPROC, glBlendFuncSeparate) // Core in v1.4
 OGLEXT(PFNGLBLENDEQUATIONSEPARATEPROC, glBlendEquationSeparate) // Core in v2.0
-
-OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC, glBlendFuncSeparateEXT)
-OGLEXT(PFNGLBLENDEQUATIONSEPARATEEXTPROC, glBlendEquationSeparateEXT)
 
 // Shaders
 OGLEXT(PFNGLCREATESHADERPROC, glCreateShader) // Core in v2.0
@@ -192,24 +188,17 @@ OGLEXT(PFNGLUNIFORM2FPROC, glUniform2f) // Core in v2.0
 OGLEXT(PFNGLUNIFORM4FPROC, glUniform4f) // Core in v2.0
 OGLEXT(PFNGLUNIFORM4FVPROC, glUniform4fv) // Core in v2.0
 OGLEXT(PFNGLDRAWBUFFERSPROC, glDrawBuffers) // Core in v2.0
+
+// Generic vertex attributes
 OGLEXT(PFNGLBINDATTRIBLOCATIONPROC, glBindAttribLocation) // Core in v2.0
 OGLEXT(PFNGLENABLEVERTEXATTRIBARRAYPROC, glEnableVertexAttribArray) // Core in v2.0
 OGLEXT(PFNGLDISABLEVERTEXATTRIBARRAYPROC, glDisableVertexAttribArray) // Core in v2.0
 OGLEXT(PFNGLVERTEXATTRIBPOINTERPROC, glVertexAttribPointer) // Core in v2.0
 
-// VAO
-OGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays)
-OGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays)
-OGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray)
-
-// Buffer Objects
-OGLEXT(PFNGLGENBUFFERSARBPROC, glGenBuffersARB)
-OGLEXT(PFNGLDELETEBUFFERSARBPROC, glDeleteBuffersARB)
-OGLEXT(PFNGLBINDBUFFERARBPROC, glBindBufferARB)
-OGLEXT(PFNGLBUFFERDATAARBPROC, glBufferDataARB)
-OGLEXT(PFNGLBUFFERSUBDATAARBPROC, glBufferSubDataARB)
-OGLEXT(PFNGLMAPBUFFERARBPROC, glMapBufferARB)
-OGLEXT(PFNGLUNMAPBUFFERARBPROC, glUnmapBufferARB)
+// VAO (always available in Apple's implementation of OpenGL, including old versions)
+OGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays) // Core in v3.0 and ES v3.0
+OGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays) // Core in v3.0 and ES v3.0
+OGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray) // Core in v3.0 and ES v3.0
 
 OGLEXT(PFNGLGENBUFFERSPROC, glGenBuffers) // Core in v1.5
 OGLEXT(PFNGLDELETEBUFFERSPROC, glDeleteBuffers) // Core in v1.5
@@ -219,6 +208,7 @@ OGLEXT(PFNGLBUFFERSUBDATAPROC, glBufferSubData) // Core in v1.5
 OGLEXT(PFNGLMAPBUFFERPROC, glMapBuffer) // Core in v1.5
 OGLEXT(PFNGLUNMAPBUFFERPROC, glUnmapBuffer) // Core in v1.5
 
+#ifdef GL_EXT_framebuffer_object
 // FBO
 OGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC, glGenFramebuffersEXT)
 OGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC, glBindFramebufferEXT)
@@ -227,18 +217,20 @@ OGLEXT(PFNGLFRAMEBUFFERTEXTURE2DEXTPROC, glFramebufferTexture2DEXT)
 OGLEXT(PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC, glCheckFramebufferStatusEXT)
 OGLEXT(PFNGLDELETEFRAMEBUFFERSEXTPROC, glDeleteFramebuffersEXT)
 OGLEXT(PFNGLBLITFRAMEBUFFEREXTPROC, glBlitFramebufferEXT)
+
+// Multisampled FBO
 OGLEXT(PFNGLGENRENDERBUFFERSEXTPROC, glGenRenderbuffersEXT)
 OGLEXT(PFNGLBINDRENDERBUFFEREXTPROC, glBindRenderbufferEXT)
 OGLEXT(PFNGLRENDERBUFFERSTORAGEEXTPROC, glRenderbufferStorageEXT)
 OGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC, glRenderbufferStorageMultisampleEXT)
 OGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
+#endif // GL_EXT_framebuffer_object
 
 static void OGLLoadEntryPoints_Legacy()
 {
 	// Textures
 #if !defined(GLX_H)
 	INITOGLEXT(PFNGLACTIVETEXTUREPROC, glActiveTexture) // Core in v1.3
-	INITOGLEXT(PFNGLACTIVETEXTUREARBPROC, glActiveTextureARB)
 #endif
 
 	// Blending
@@ -247,9 +239,6 @@ static void OGLLoadEntryPoints_Legacy()
 #endif
 	INITOGLEXT(PFNGLBLENDFUNCSEPARATEPROC, glBlendFuncSeparate) // Core in v1.4
 	INITOGLEXT(PFNGLBLENDEQUATIONSEPARATEPROC, glBlendEquationSeparate) // Core in v2.0
-
-	INITOGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC, glBlendFuncSeparateEXT)
-	INITOGLEXT(PFNGLBLENDEQUATIONSEPARATEEXTPROC, glBlendEquationSeparateEXT)
 
 	// Shaders
 	INITOGLEXT(PFNGLCREATESHADERPROC, glCreateShader) // Core in v2.0
@@ -276,25 +265,14 @@ static void OGLLoadEntryPoints_Legacy()
 	INITOGLEXT(PFNGLUNIFORM4FPROC, glUniform4f) // Core in v2.0
 	INITOGLEXT(PFNGLUNIFORM4FVPROC, glUniform4fv) // Core in v2.0
 	INITOGLEXT(PFNGLDRAWBUFFERSPROC, glDrawBuffers) // Core in v2.0
+	
+	// Generic vertex attributes
 	INITOGLEXT(PFNGLBINDATTRIBLOCATIONPROC, glBindAttribLocation) // Core in v2.0
 	INITOGLEXT(PFNGLENABLEVERTEXATTRIBARRAYPROC, glEnableVertexAttribArray) // Core in v2.0
 	INITOGLEXT(PFNGLDISABLEVERTEXATTRIBARRAYPROC, glDisableVertexAttribArray) // Core in v2.0
 	INITOGLEXT(PFNGLVERTEXATTRIBPOINTERPROC, glVertexAttribPointer) // Core in v2.0
 
-	// VAO
-	INITOGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays)
-	INITOGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays)
-	INITOGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray)
-
 	// Buffer Objects
-	INITOGLEXT(PFNGLGENBUFFERSARBPROC, glGenBuffersARB)
-	INITOGLEXT(PFNGLDELETEBUFFERSARBPROC, glDeleteBuffersARB)
-	INITOGLEXT(PFNGLBINDBUFFERARBPROC, glBindBufferARB)
-	INITOGLEXT(PFNGLBUFFERDATAARBPROC, glBufferDataARB)
-	INITOGLEXT(PFNGLBUFFERSUBDATAARBPROC, glBufferSubDataARB)
-	INITOGLEXT(PFNGLMAPBUFFERARBPROC, glMapBufferARB)
-	INITOGLEXT(PFNGLUNMAPBUFFERARBPROC, glUnmapBufferARB)
-
 	INITOGLEXT(PFNGLGENBUFFERSPROC, glGenBuffers) // Core in v1.5
 	INITOGLEXT(PFNGLDELETEBUFFERSPROC, glDeleteBuffers) // Core in v1.5
 	INITOGLEXT(PFNGLBINDBUFFERPROC, glBindBuffer) // Core in v1.5
@@ -302,7 +280,13 @@ static void OGLLoadEntryPoints_Legacy()
 	INITOGLEXT(PFNGLBUFFERSUBDATAPROC, glBufferSubData) // Core in v1.5
 	INITOGLEXT(PFNGLMAPBUFFERPROC, glMapBuffer) // Core in v1.5
 	INITOGLEXT(PFNGLUNMAPBUFFERPROC, glUnmapBuffer) // Core in v1.5
+	
+	// VAO (always available in Apple's implementation of OpenGL, including old versions)
+	INITOGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays) // Core in v3.0 and ES v3.0
+	INITOGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays) // Core in v3.0 and ES v3.0
+	INITOGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray) // Core in v3.0 and ES v3.0
 
+#ifdef GL_EXT_framebuffer_object
 	// FBO
 	INITOGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC, glGenFramebuffersEXT)
 	INITOGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC, glBindFramebufferEXT)
@@ -311,11 +295,14 @@ static void OGLLoadEntryPoints_Legacy()
 	INITOGLEXT(PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC, glCheckFramebufferStatusEXT)
 	INITOGLEXT(PFNGLDELETEFRAMEBUFFERSEXTPROC, glDeleteFramebuffersEXT)
 	INITOGLEXT(PFNGLBLITFRAMEBUFFEREXTPROC, glBlitFramebufferEXT)
+	
+	// Multisampled FBO
 	INITOGLEXT(PFNGLGENRENDERBUFFERSEXTPROC, glGenRenderbuffersEXT)
 	INITOGLEXT(PFNGLBINDRENDERBUFFEREXTPROC, glBindRenderbufferEXT)
 	INITOGLEXT(PFNGLRENDERBUFFERSTORAGEEXTPROC, glRenderbufferStorageEXT)
 	INITOGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC, glRenderbufferStorageMultisampleEXT)
 	INITOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
+#endif // GL_EXT_framebuffer_object
 }
 
 // Vertex Shader GLSL 1.00
@@ -958,10 +945,10 @@ static Render3D* OpenGLRendererCreate()
 	const char *oglVendorString = (const char *)glGetString(GL_VENDOR);
 	const char *oglRendererString = (const char *)glGetString(GL_RENDERER);
 
-	// Writing to gl_FragDepth causes the driver to fail miserably on systems equipped 
+	// Writing to gl_FragDepth causes the driver to fail miserably on systems equipped
 	// with a Intel G965 graphic card. Warn the user and fail gracefully.
 	// http://forums.desmume.org/viewtopic.php?id=9286
-	if(!strcmp(oglVendorString,"Intel") && strstr(oglRendererString,"965")) 
+	if(!strcmp(oglVendorString,"Intel") && strstr(oglRendererString,"965"))
 	{
 		INFO("OpenGL: Incompatible graphic card detected. Disabling OpenGL support.\n");
 		
@@ -1127,6 +1114,8 @@ GPU3DInterface gpu3Dgl_3_2 = {
 
 OpenGLRenderer::OpenGLRenderer()
 {
+	_variantID = OpenGLVariantID_Legacy;
+	
 	_deviceInfo.renderID = RENDERID_OPENGL_AUTO;
 	_deviceInfo.renderName = "OpenGL";
 	_deviceInfo.isTexturingSupported = true;
@@ -1873,7 +1862,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLY *rawPolyList, const 
 			                                        rawPoly.attribute.TranslucentDepthWrite_Enable,
 			                                        GFX3D_IsPolyWireframe(rawPoly) || GFX3D_IsPolyOpaque(rawPoly),
 			                                        rawPoly.attribute.PolygonID,
-													!clippedPoly.isPolyBackFacing);
+			                                        !clippedPoly.isPolyBackFacing);
 		}
 		else
 		{
@@ -1883,7 +1872,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLY *rawPolyList, const 
 			                                 rawPoly.attribute.DepthEqualTest_Enable,
 			                                 rawPoly.attribute.TranslucentDepthWrite_Enable,
 			                                 rawPoly.attribute.PolygonID,
-											 !clippedPoly.isPolyBackFacing);
+			                                 !clippedPoly.isPolyBackFacing);
 		}
 		
 		indexBufferPtr += vertIndexCount;
@@ -2372,7 +2361,6 @@ OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 		this->DestroyFramebufferOutput8888Programs();
 	}
 	
-	
 	isShaderSupported = false;
 	
 	DestroyVAOs();
@@ -2423,27 +2411,24 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	// This texture is only required by shaders, and so if shader creation
 	// fails, then we can immediately delete this texture if an error occurs.
 	glGenTextures(1, &OGLRef.texFinalColorID);
-	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_FinalColor);
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texFinalColorID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	glActiveTextureARB(GL_TEXTURE0_ARB);
+	glActiveTexture(GL_TEXTURE0);
 	
 	this->isVBOSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_vertex_buffer_object");
 	if (this->isVBOSupported)
 	{
 		this->CreateVBOs();
 	}
-	else
+	else if (this->IsVersionSupported(1, 5, 0))
 	{
 		error = OGLERROR_VBO_UNSUPPORTED;
-		if (this->IsVersionSupported(1, 5, 0))
-		{
-			return error;
-		}
+		return error;
 	}
 	
 	this->isPBOSupported	= this->isVBOSupported &&
@@ -2453,13 +2438,10 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	{
 		this->CreatePBOs();
 	}
-	else
+	else if (this->IsVersionSupported(2, 1, 0))
 	{
 		error = OGLERROR_PBO_UNSUPPORTED;
-		if (this->IsVersionSupported(2, 1, 0))
-		{
-			return error;
-		}
+		return error;
 	}
 	
 	// Don't use ARB versions since we're using the EXT versions for backwards compatibility.
@@ -2550,8 +2532,8 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		GLint maxDrawBuffersOGL = 0;
 		GLint maxShaderTexUnitsOGL = 0;
 		glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS_EXT, &maxColorAttachmentsOGL);
-		glGetIntegerv(GL_MAX_DRAW_BUFFERS_ARB, &maxDrawBuffersOGL);
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &maxShaderTexUnitsOGL);
+		glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffersOGL);
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxShaderTexUnitsOGL);
 		
 		if ( (maxColorAttachmentsOGL >= 4) && (maxDrawBuffersOGL >= 4) && (maxShaderTexUnitsOGL >= 8) )
 		{
@@ -2639,20 +2621,20 @@ Render3DError OpenGLRenderer_1_2::CreateVBOs()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	glGenBuffersARB(1, &OGLRef.vboGeometryVtxID);
-	glGenBuffersARB(1, &OGLRef.iboGeometryIndexID);
-	glGenBuffersARB(1, &OGLRef.vboPostprocessVtxID);
+	glGenBuffers(1, &OGLRef.vboGeometryVtxID);
+	glGenBuffers(1, &OGLRef.iboGeometryIndexID);
+	glGenBuffers(1, &OGLRef.vboPostprocessVtxID);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboGeometryVtxID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, VERTLIST_SIZE * sizeof(NDSVertex), NULL, GL_STREAM_DRAW_ARB);
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, OGLRef.iboGeometryIndexID);
-	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(OGLRef.vertIndexBuffer), NULL, GL_STREAM_DRAW_ARB);
+	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
+	glBufferData(GL_ARRAY_BUFFER, VERTLIST_SIZE * sizeof(NDSVertex), NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(OGLRef.vertIndexBuffer), NULL, GL_STREAM_DRAW);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboPostprocessVtxID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(PostprocessVtxBuffer), PostprocessVtxBuffer, GL_STATIC_DRAW_ARB);
+	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(PostprocessVtxBuffer), PostprocessVtxBuffer, GL_STATIC_DRAW);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	
 	return OGLERROR_NOERR;
 }
@@ -2666,12 +2648,12 @@ void OpenGLRenderer_1_2::DestroyVBOs()
 	
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	
-	glDeleteBuffersARB(1, &OGLRef.vboGeometryVtxID);
-	glDeleteBuffersARB(1, &OGLRef.iboGeometryIndexID);
-	glDeleteBuffersARB(1, &OGLRef.vboPostprocessVtxID);
+	glDeleteBuffers(1, &OGLRef.vboGeometryVtxID);
+	glDeleteBuffers(1, &OGLRef.iboGeometryIndexID);
+	glDeleteBuffers(1, &OGLRef.vboPostprocessVtxID);
 	
 	this->isVBOSupported = false;
 }
@@ -2680,10 +2662,10 @@ Render3DError OpenGLRenderer_1_2::CreatePBOs()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	glGenBuffersARB(1, &OGLRef.pboRenderDataID);
-	glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, OGLRef.pboRenderDataID);
-	glBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, this->_framebufferColorSizeBytes, NULL, GL_STREAM_READ_ARB);
-	this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
+	glGenBuffers(1, &OGLRef.pboRenderDataID);
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, OGLRef.pboRenderDataID);
+	glBufferData(GL_PIXEL_PACK_BUFFER, this->_framebufferColorSizeBytes, NULL, GL_STREAM_READ);
+	this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 	
 	return OGLERROR_NOERR;
 }
@@ -2697,12 +2679,12 @@ void OpenGLRenderer_1_2::DestroyPBOs()
 	
 	if (this->_mappedFramebuffer != NULL)
 	{
-		glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
+		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 		this->_mappedFramebuffer = NULL;
 	}
 	
-	glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
-	glDeleteBuffersARB(1, &this->ref->pboRenderDataID);
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+	glDeleteBuffers(1, &this->ref->pboRenderDataID);
 	
 	this->isPBOSupported = false;
 }
@@ -2715,11 +2697,11 @@ Render3DError OpenGLRenderer_1_2::CreateVAOs()
 	glGenVertexArrays(1, &OGLRef.vaoPostprocessStatesID);
 	
 	glBindVertexArray(OGLRef.vaoGeometryStatesID);
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, OGLRef.iboGeometryIndexID);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 	
 	if (this->isShaderSupported)
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboGeometryVtxID);
+		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
 		
 		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
@@ -2730,7 +2712,7 @@ Render3DError OpenGLRenderer_1_2::CreateVAOs()
 	}
 	else
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -2746,7 +2728,7 @@ Render3DError OpenGLRenderer_1_2::CreateVAOs()
 	
 	if (this->isShaderSupported)
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboPostprocessVtxID);
+		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 		
 		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
@@ -2793,7 +2775,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glGenTextures(1, &OGLRef.texGPolyID);
 	glGenTextures(1, &OGLRef.texGDepthStencilID);
 	
-	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_DepthStencil);
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_DepthStencil);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthStencilID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -2802,7 +2784,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
 	
-	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GColor);
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -2810,7 +2792,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
-	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GPolyID);
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGPolyID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -2818,7 +2800,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
-	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_FogAttr);
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGFogAttrID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -2826,7 +2808,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
-	glActiveTextureARB(GL_TEXTURE0_ARB);
+	glActiveTexture(GL_TEXTURE0);
 	
 	CACHE_ALIGN GLint tempClearImageBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	memset(tempClearImageBuffer, 0, sizeof(tempClearImageBuffer));
@@ -3693,12 +3675,12 @@ Render3DError OpenGLRenderer_1_2::InitFinalRenderStates(const std::set<std::stri
 		{
 			// we want to use alpha destination blending so we can track the last-rendered alpha value
 			// test: new super mario brothers renders the stormclouds at the beginning
-			glBlendFuncSeparateEXT(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
-			glBlendEquationSeparateEXT(GL_FUNC_ADD, GL_MAX);
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+			glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
 		}
 		else
 		{
-			glBlendFuncSeparateEXT(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
 		}
 	}
 	else
@@ -3785,7 +3767,7 @@ Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBu
 	const bool didDepthStencilChange = (memcmp(OGLRef.workingCIDepthStencilBuffer[this->_clearImageIndex], OGLRef.workingCIDepthStencilBuffer[this->_clearImageIndex ^ 0x01], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(GLuint)) != 0);
 	const bool didFogAttributesChange = this->_enableFog && this->_deviceInfo.isFogSupported && (memcmp(OGLRef.workingCIFogAttributesBuffer[this->_clearImageIndex], OGLRef.workingCIFogAttributesBuffer[this->_clearImageIndex ^ 0x01], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(GLuint)) != 0);
 	
-	glActiveTextureARB(GL_TEXTURE0_ARB);
+	glActiveTexture(GL_TEXTURE0);
 	
 	if (didColorChange)
 	{
@@ -4124,9 +4106,9 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 			const GLuint convertProgramID = (this->_outputFormat == NDSColorFormat_BGR666_Rev) ? OGLRef.programFramebufferRGBA6665OutputID[0] : OGLRef.programFramebufferRGBA8888OutputID[0];
 			glUseProgram(convertProgramID);
 			
-			glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_FinalColor);
+			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
 			glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
-			glActiveTextureARB(GL_TEXTURE0_ARB);
+			glActiveTexture(GL_TEXTURE0);
 		}
 		
 		glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
@@ -4182,7 +4164,7 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 		// penalty if the readback is in any other format.
 		if (this->_mappedFramebuffer != NULL)
 		{
-			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
+			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 			this->_mappedFramebuffer = NULL;
 		}
 		
@@ -4211,17 +4193,17 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 	
 	if (this->isVBOSupported)
 	{
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, OGLRef.iboGeometryIndexID);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 		
 		if (this->isShaderSupported)
 		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, OGLRef.vboGeometryVtxID);
-			glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(NDSVertex) * renderGList.rawVertCount, renderGList.rawVtxList);
+			glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(NDSVertex) * renderGList.rawVertCount, renderGList.rawVtxList);
 		}
 		else
 		{
 			// If shaders aren't supported, we need to use the client-side buffers here.
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		}
 	}
 	
@@ -4315,7 +4297,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 	{
 		// Replace the entire index buffer as a hint to the driver that we can orphan the index buffer and
 		// avoid a synchronization cost.
-		glBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
 	}
 	
 	// Set up rendering states that will remain constant for the entire frame.
@@ -4431,7 +4413,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 			glDisable(GL_BLEND);
 		}
 		
-		glActiveTextureARB(GL_TEXTURE0_ARB);
+		glActiveTexture(GL_TEXTURE0);
 		
 		this->EnableVertexAttributes();
 		
@@ -5219,7 +5201,7 @@ Render3DError OpenGLRenderer_1_2::RenderPowerOff()
 	{
 		if (this->_mappedFramebuffer != NULL)
 		{
-			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
+			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 			this->_mappedFramebuffer = NULL;
 		}
 		
@@ -5250,7 +5232,7 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 		
 		if (this->isPBOSupported)
 		{
-			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
+			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 		}
 		else
 		{
@@ -5311,41 +5293,41 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	{
 		if (this->_mappedFramebuffer != NULL)
 		{
-			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
+			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 			glFinish();
 		}
 		
-		glBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ_ARB);
+		glBufferData(GL_PIXEL_PACK_BUFFER, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ);
 		
 		if (this->_mappedFramebuffer != NULL)
 		{
-			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
+			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 			glFinish();
 		}
 	}
 	
 	if (this->isShaderSupported || this->isFBOSupported)
 	{
-		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_FinalColor);
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	}
 	
 	if (this->isFBOSupported)
 	{
-		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_DepthStencil);
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_DepthStencil);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, (GLsizei)w, (GLsizei)h, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
 		
-		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GColor);
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 		
-		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GPolyID);
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 		
-		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_FogAttr);
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	}
 	
-	glActiveTextureARB(GL_TEXTURE0_ARB);
+	glActiveTexture(GL_TEXTURE0);
 	
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2009 Guillaume Duhamel
-	Copyright (C) 2009-2017 DeSmuME team
+	Copyright (C) 2009-2024 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 
 #include <stdlib.h>
 #include <GL/osmesa.h>
-#include "../OGLRender.h"
 #include "../OGLRender_3_2.h"
 
 #include "osmesa_3Demu.h"
