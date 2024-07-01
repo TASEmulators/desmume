@@ -53,12 +53,11 @@
 	#define OPENGL_VARIANT_STANDARD
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
+	#include <GL/gl.h>
+	#include <GL/glext.h>
 
 	#ifdef OGLRENDER_3_2_H
 		#include <GL/glcorearb.h>
-	#else
-		#include <GL/gl.h>
-		#include <GL/glext.h>
 	#endif
 
 	#define OGLEXT(procPtr, func)       procPtr func = NULL;
@@ -96,14 +95,13 @@
 	#define EXTERNOGLEXT(procPtr, func)
 #else
 	#define OPENGL_VARIANT_STANDARD
+	#include <GL/gl.h>
+	#include <GL/glext.h>
+	#include <GL/glx.h>
 
 	#ifdef OGLRENDER_3_2_H
 		#include "utils/glcorearb.h"
 	#else
-		#include <GL/gl.h>
-		#include <GL/glext.h>
-		#include <GL/glx.h>
-		
 		/* This is a workaround needed to compile against nvidia GL headers */
 		#ifndef GL_ALPHA_BLEND_EQUATION_ATI
 			#undef GL_VERSION_1_3
