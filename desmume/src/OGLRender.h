@@ -305,31 +305,43 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 #endif // GL_EXT_framebuffer_object
 
 // Define the minimum required OpenGL version for the driver to support
-#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR    1
-#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR    2
-#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION 0
+#if defined(OPENGL_VARIANT_STANDARD)
+	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR    1
+	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR    2
+	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION 0
+#elif defined(OPENGL_VARIANT_ES)
+	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR    3
+	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR    0
+	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION 0
+#else
+	#error Unknown OpenGL variant.
+#endif
 
 #define OGLRENDER_VERT_INDEX_BUFFER_COUNT	(CLIPPED_POLYLIST_SIZE * 6)
 
 // Assign the FBO attachments for the main geometry render
 #if defined(GL_VERSION_3_0) || defined(GL_ES_VERSION_3_0)
-	#define GL_COLOROUT_ATTACHMENT_ID      GL_COLOR_ATTACHMENT0
-	#define GL_WORKING_ATTACHMENT_ID       GL_COLOR_ATTACHMENT3
-	#define GL_POLYID_ATTACHMENT_ID        GL_COLOR_ATTACHMENT1
-	#define GL_FOGATTRIBUTES_ATTACHMENT_ID GL_COLOR_ATTACHMENT2
+	#define OGL_COLOROUT_ATTACHMENT_ID      GL_COLOR_ATTACHMENT0
+	#define OGL_WORKING_ATTACHMENT_ID       GL_COLOR_ATTACHMENT3
+	#define OGL_POLYID_ATTACHMENT_ID        GL_COLOR_ATTACHMENT1
+	#define OGL_FOGATTRIBUTES_ATTACHMENT_ID GL_COLOR_ATTACHMENT2
 #else
-	#define GL_COLOROUT_ATTACHMENT_ID      GL_COLOR_ATTACHMENT0_EXT
-	#define GL_WORKING_ATTACHMENT_ID       GL_COLOR_ATTACHMENT3_EXT
-	#define GL_POLYID_ATTACHMENT_ID        GL_COLOR_ATTACHMENT1_EXT
-	#define GL_FOGATTRIBUTES_ATTACHMENT_ID GL_COLOR_ATTACHMENT2_EXT
+	#define OGL_COLOROUT_ATTACHMENT_ID      GL_COLOR_ATTACHMENT0_EXT
+	#define OGL_WORKING_ATTACHMENT_ID       GL_COLOR_ATTACHMENT3_EXT
+	#define OGL_POLYID_ATTACHMENT_ID        GL_COLOR_ATTACHMENT1_EXT
+	#define OGL_FOGATTRIBUTES_ATTACHMENT_ID GL_COLOR_ATTACHMENT2_EXT
 #endif
 
 enum OpenGLVariantID
 {
 	OpenGLVariantID_Unknown         = 0,
-	OpenGLVariantID_Legacy          = 1,
-	OpenGLVariantID_CoreProfile_3_2 = 2,
-	OpenGLVariantID_ES_3_0          = 3
+	OpenGLVariantID_LegacyAuto      = 0x1000,
+	OpenGLVariantID_Legacy_1_2      = 0x1012,
+	OpenGLVariantID_Legacy_2_0      = 0x1020,
+	OpenGLVariantID_Legacy_2_1      = 0x1021,
+	OpenGLVariantID_CoreProfile_3_2 = 0x2032,
+	OpenGLVariantID_StandardAuto    = 0x3000,
+	OpenGLVariantID_ES_3_0          = 0x4030
 };
 
 enum OGLVertexAttributeID
@@ -528,6 +540,8 @@ struct OGLRenderRef
 {
 	// OpenGL Feature Support
 	GLint stateTexMirroredRepeat;
+	GLint readPixelsBestDataType;
+	GLint readPixelsBestFormat;
 	
 	// VBO
 	GLuint vboGeometryVtxID;
@@ -680,6 +694,15 @@ void ENDGL();
 // renderers will be used instead.
 extern void (*OGLLoadEntryPoints_3_2_Func)();
 extern void (*OGLCreateRenderer_3_2_Func)(OpenGLRenderer **rendererPtr);
+
+// These functions need to be assigned by ports that support using an
+// OpenGL ES 3.0 context. The OGLRender_ES3.cpp file includes the corresponding
+// functions to assign to each function pointer.
+//
+// If any of these functions are unassigned, then the renderer object
+// creation will fail.
+extern void (*OGLLoadEntryPoints_ES_3_0_Func)();
+extern void (*OGLCreateRenderer_ES_3_0_Func)(OpenGLRenderer **rendererPtr);
 
 bool IsOpenGLDriverVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision);
 
