@@ -178,7 +178,9 @@ EXTERNOGLEXT(PFNGLDELETEBUFFERSPROC, glDeleteBuffers) // Core in v1.5
 EXTERNOGLEXT(PFNGLBINDBUFFERPROC, glBindBuffer) // Core in v1.5
 EXTERNOGLEXT(PFNGLBUFFERDATAPROC, glBufferData) // Core in v1.5
 EXTERNOGLEXT(PFNGLBUFFERSUBDATAPROC, glBufferSubData) // Core in v1.5
+#if !defined(GL_ES_VERSION_3_0)
 EXTERNOGLEXT(PFNGLMAPBUFFERPROC, glMapBuffer) // Core in v1.5
+#endif
 EXTERNOGLEXT(PFNGLUNMAPBUFFERPROC, glUnmapBuffer) // Core in v1.5
 
 // VAO (always available in Apple's implementation of OpenGL, including old versions)

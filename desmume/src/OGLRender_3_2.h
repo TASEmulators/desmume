@@ -39,8 +39,6 @@ protected:
 	GLsync _syncBufferSetup;
 	CACHE_ALIGN OGLPolyStates _pendingPolyStates[CLIPPED_POLYLIST_SIZE];
 	
-	virtual Render3DError InitExtensions();
-	
 	virtual Render3DError CreateFBOs();
 	virtual void DestroyFBOs();
 	virtual Render3DError CreateMultisampledFBO(GLsizei numSamples);
@@ -83,6 +81,7 @@ public:
 	OpenGLRenderer_3_2();
 	~OpenGLRenderer_3_2();
 	
+	virtual Render3DError InitExtensions();
 	virtual Render3DError RenderPowerOff();
 };
 
