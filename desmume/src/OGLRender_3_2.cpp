@@ -136,8 +136,10 @@ layout (std140) uniform PolyStates\n\
 {\n\
 	ivec4 value[4096];\n\
 } polyState;\n\
-#else\n\
+#elif IS_USING_TBO_POLY_STATES\n\
 uniform isamplerBuffer PolyStates;\n\
+#else\n\
+uniform isampler2D PolyStates;\n\
 #endif\n\
 uniform int polyIndex;\n\
 uniform bool polyDrawShadow;\n\
@@ -159,8 +161,10 @@ void main()\n\
 #if IS_USING_UBO_POLY_STATES\n\
 	ivec4 polyStateVec = polyState.value[polyIndex >> 2];\n\
 	int polyStateBits = polyStateVec[polyIndex & 0x03];\n\
-#else\n\
+#elif IS_USING_TBO_POLY_STATES\n\
 	int polyStateBits = texelFetch(PolyStates, polyIndex).r;\n\
+#else\n\
+	int polyStateBits = texelFetch(PolyStates, ivec2(polyIndex & 0x00FF, (polyIndex >> 8) & 0x007F), 0).r;\n\
 #endif\n\
 	int texSizeShiftS = (polyStateBits >> 18) & 0x07;\n\
 	int texSizeShiftT = (polyStateBits >> 21) & 0x07;\n\
@@ -620,6 +624,7 @@ OpenGLRenderer_3_2::OpenGLRenderer_3_2()
 {
 	_variantID = OpenGLVariantID_CoreProfile_3_2;
 	_is64kUBOSupported = false;
+	_isTBOSupported = false;
 	_isDualSourceBlendingSupported = false;
 	_isSampleShadingSupported = false;
 	_isConservativeDepthSupported = false;
@@ -652,6 +657,9 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	GLint maxUBOSize = 0;
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUBOSize);
 	this->_is64kUBOSupported = (maxUBOSize >= 65536);
+	
+	// TBOs should always be supported in 3.2 Core Profile.
+	this->_isTBOSupported = true;
 	
 	GLfloat maxAnisotropyOGL = 1.0f;
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropyOGL);
@@ -815,6 +823,18 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->isMultisampledFBOSupported);
 	
 	this->InitFinalRenderStates(&oglExtensionSet); // This must be done last
+	
+	return OGLERROR_NOERR;
+}
+
+Render3DError OpenGLRenderer_3_2::CreatePBOs()
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	
+	glGenBuffers(1, &OGLRef.pboRenderDataID);
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, OGLRef.pboRenderDataID);
+	glBufferData(GL_PIXEL_PACK_BUFFER, this->_framebufferColorSizeBytes, NULL, GL_STREAM_READ);
+	this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, this->_framebufferColorSizeBytes, GL_MAP_READ_BIT);
 	
 	return OGLERROR_NOERR;
 }
@@ -1182,6 +1202,9 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	
 	if (this->_is64kUBOSupported)
 	{
+		// Try transferring the polygon states through a UBO first. This is the fastest method,
+		// but requires a GPU that supports 64k UBO transfers. Most modern GPUs should support
+		// this.
 		if (OGLRef.uboPolyStatesID == 0)
 		{
 			glGenBuffers(1, &OGLRef.uboPolyStatesID);
@@ -1190,8 +1213,11 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 			glBindBufferBase(GL_UNIFORM_BUFFER, OGLBindingPointID_PolyStates, OGLRef.uboPolyStatesID);
 		}
 	}
-	else
+	else if (this->_isTBOSupported)
 	{
+		// Older GPUs that support 3.2 Core Profile but not 64k UBOs can transfer the polygon
+		// states through a TBO instead. While not as fast as using a UBO, TBOs are always
+		// available on any GPU that supports 3.2 Core Profile.
 		if (OGLRef.tboPolyStatesID == 0)
 		{
 			// Set up poly states TBO
@@ -1205,6 +1231,21 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 			glTexBuffer(GL_TEXTURE_BUFFER, GL_R32I, OGLRef.tboPolyStatesID);
 			glActiveTexture(GL_TEXTURE0);
 		}
+	}
+	else
+	{
+		// For compatibility reasons, we can transfer the polygon states through a plain old
+		// integer texture. This can be useful for inheritors of this class that may not support
+		// 64k UBOs or TBOs.
+		glGenTextures(1, &OGLRef.texPolyStatesID);
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
+		glBindTexture(GL_TEXTURE_2D, OGLRef.texPolyStatesID);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, 256, 128, 0, GL_RED_INTEGER, GL_INT, NULL);
+		glActiveTexture(GL_TEXTURE0);
 	}
 	
 	glGenTextures(1, &OGLRef.texFogDensityTableID);
@@ -1231,6 +1272,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	}
 	vtxShaderHeader << "\n";
 	vtxShaderHeader << "#define IS_USING_UBO_POLY_STATES " << ((OGLRef.uboPolyStatesID != 0) ? 1 : 0) << "\n";
+	vtxShaderHeader << "#define IS_USING_TBO_POLY_STATES " << ((OGLRef.tboPolyStatesID != 0) ? 1 : 0) << "\n";
 	vtxShaderHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0\n";
 	vtxShaderHeader << "\n";
 	
@@ -2138,7 +2180,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 	
 	OGLPolyStates *polyStates = this->_pendingPolyStates;
 	
-	if (OGLRef.uboPolyStatesID == 0)
+	if (OGLRef.tboPolyStatesID != 0)
 	{
 		// Some drivers seem to have problems with GL_TEXTURE_BUFFER used as the target for
 		// glMapBufferRange() or glBufferSubData(), causing certain polygons to intermittently
@@ -2177,9 +2219,16 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 		glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboPolyStatesID);
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, MAX_CLIPPED_POLY_COUNT_FOR_UBO * sizeof(OGLPolyStates), this->_pendingPolyStates);
 	}
-	else
+	else if (OGLRef.tboPolyStatesID != 0)
 	{
 		glUnmapBuffer(GL_TEXTURE_BUFFER);
+	}
+	else
+	{
+		const GLsizei texH = (GLsizei)((this->_clippedPolyCount >> 8) & 0x007F) + 1;
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
+		glBindTexture(GL_TEXTURE_2D, OGLRef.texPolyStatesID); // Why is this bind necessary? Theoretically, it shouldn't be necessary, but real-world testing has proven otherwise...
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, texH, GL_RED_INTEGER, GL_INT, this->_pendingPolyStates);
 	}
 	
 	// Set up the default draw call states.
@@ -2564,7 +2613,7 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	
 	if (this->_mappedFramebuffer != NULL)
 	{
-		this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+		this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, newFramebufferColorSizeBytes, GL_MAP_READ_BIT);
 		glFinish();
 	}
 	
@@ -2625,6 +2674,31 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	ENDGL();
 	
 	return error;
+}
+
+Render3DError OpenGLRenderer_3_2::RenderFinish()
+{
+	if (!this->_renderNeedsFinish)
+	{
+		return OGLERROR_NOERR;
+	}
+	
+	if (this->_pixelReadNeedsFinish)
+	{
+		this->_pixelReadNeedsFinish = false;
+		
+		if(!BEGINGL())
+		{
+			return OGLERROR_BEGINGL_FAILED;
+		}
+		this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, this->_framebufferColorSizeBytes, GL_MAP_READ_BIT);
+		ENDGL();
+	}
+	
+	this->_renderNeedsFlushMain = true;
+	this->_renderNeedsFlush16 = true;
+	
+	return OGLERROR_NOERR;
 }
 
 Render3DError OpenGLRenderer_3_2::RenderPowerOff()

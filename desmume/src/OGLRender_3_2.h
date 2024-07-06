@@ -31,6 +31,7 @@ class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 {
 protected:
 	bool _is64kUBOSupported;
+	bool _isTBOSupported;
 	bool _isDualSourceBlendingSupported;
 	bool _isSampleShadingSupported;
 	bool _isConservativeDepthSupported;
@@ -39,6 +40,7 @@ protected:
 	GLsync _syncBufferSetup;
 	CACHE_ALIGN OGLPolyStates _pendingPolyStates[CLIPPED_POLYLIST_SIZE];
 	
+	virtual Render3DError CreatePBOs();
 	virtual Render3DError CreateFBOs();
 	virtual void DestroyFBOs();
 	virtual Render3DError CreateMultisampledFBO(GLsizei numSamples);
@@ -82,6 +84,7 @@ public:
 	~OpenGLRenderer_3_2();
 	
 	virtual Render3DError InitExtensions();
+	virtual Render3DError RenderFinish();
 	virtual Render3DError RenderPowerOff();
 };
 
