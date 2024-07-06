@@ -55,11 +55,6 @@
 	#define OGL_TEXTURE_SRC_CI_FOG     GL_UNSIGNED_BYTE
 	#define OGL_TEXTURE_SRC_EDGE_COLOR GL_UNSIGNED_BYTE
 	#define OGL_TEXTURE_SRC_TOON_TABLE GL_UNSIGNED_SHORT_5_5_5_1
-	
-	#define GL_TEXTURE_1D GL_TEXTURE_2D
-	#define glTexSubImage1D(target, level, xoffset, width, format, type, pixels)
-	
-	#define glClearDepth(depth) glClearDepthf(depth)
 #else
 	#error Unknown OpenGL variant.
 #endif
@@ -229,7 +224,7 @@ OGLEXT(PFNGLDELETEBUFFERSPROC, glDeleteBuffers) // Core in v1.5
 OGLEXT(PFNGLBINDBUFFERPROC, glBindBuffer) // Core in v1.5
 OGLEXT(PFNGLBUFFERDATAPROC, glBufferData) // Core in v1.5
 OGLEXT(PFNGLBUFFERSUBDATAPROC, glBufferSubData) // Core in v1.5
-#if !defined(GL_ES_VERSION_3_0)
+#if defined(GL_VERSION_1_5)
 OGLEXT(PFNGLMAPBUFFERPROC, glMapBuffer) // Core in v1.5
 #endif
 OGLEXT(PFNGLUNMAPBUFFERPROC, glUnmapBuffer) // Core in v1.5
@@ -304,7 +299,7 @@ static void OGLLoadEntryPoints_Legacy()
 	INITOGLEXT(PFNGLBINDBUFFERPROC, glBindBuffer) // Core in v1.5
 	INITOGLEXT(PFNGLBUFFERDATAPROC, glBufferData) // Core in v1.5
 	INITOGLEXT(PFNGLBUFFERSUBDATAPROC, glBufferSubData) // Core in v1.5
-#if !defined(GL_ES_VERSION_3_0)
+#if defined(GL_VERSION_1_5)
 	INITOGLEXT(PFNGLMAPBUFFERPROC, glMapBuffer) // Core in v1.5
 #endif
 	INITOGLEXT(PFNGLUNMAPBUFFERPROC, glUnmapBuffer) // Core in v1.5
@@ -2795,9 +2790,7 @@ Render3DError OpenGLRenderer_1_2::CreatePBOs()
 	glGenBuffers(1, &OGLRef.pboRenderDataID);
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, OGLRef.pboRenderDataID);
 	glBufferData(GL_PIXEL_PACK_BUFFER, this->_framebufferColorSizeBytes, NULL, GL_STREAM_READ);
-#if !defined(GL_ES_VERSION_3_0)
 	this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-#endif
 	
 	return OGLERROR_NOERR;
 }
@@ -5381,9 +5374,7 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 		
 		if (this->isPBOSupported)
 		{
-#if !defined(GL_ES_VERSION_3_0)
 			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-#endif
 		}
 		else
 		{
@@ -5452,9 +5443,7 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		
 		if (this->_mappedFramebuffer != NULL)
 		{
-#if !defined(GL_ES_VERSION_3_0)
 			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-#endif
 			glFinish();
 		}
 	}
@@ -5795,9 +5784,7 @@ Render3DError OpenGLRenderer_2_1::RenderFinish()
 		{
 			return OGLERROR_BEGINGL_FAILED;
 		}
-#if !defined(GL_ES_VERSION_3_0)
 		this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-#endif
 		ENDGL();
 	}
 	

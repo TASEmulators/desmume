@@ -178,7 +178,7 @@ EXTERNOGLEXT(PFNGLDELETEBUFFERSPROC, glDeleteBuffers) // Core in v1.5
 EXTERNOGLEXT(PFNGLBINDBUFFERPROC, glBindBuffer) // Core in v1.5
 EXTERNOGLEXT(PFNGLBUFFERDATAPROC, glBufferData) // Core in v1.5
 EXTERNOGLEXT(PFNGLBUFFERSUBDATAPROC, glBufferSubData) // Core in v1.5
-#if !defined(GL_ES_VERSION_3_0)
+#if defined(GL_VERSION_1_5)
 EXTERNOGLEXT(PFNGLMAPBUFFERPROC, glMapBuffer) // Core in v1.5
 #endif
 EXTERNOGLEXT(PFNGLUNMAPBUFFERPROC, glUnmapBuffer) // Core in v1.5
@@ -199,8 +199,10 @@ EXTERNOGLEXT(PFNGLCLEARBUFFERFVPROC, glClearBufferfv) // Core in v3.0 and ES v3.
 EXTERNOGLEXT(PFNGLCLEARBUFFERFIPROC, glClearBufferfi) // Core in v3.0 and ES v3.0
 
 // Shaders
-#if !defined(GL_ES_VERSION_3_0)
+#if defined(GL_VERSION_3_0)
 EXTERNOGLEXT(PFNGLBINDFRAGDATALOCATIONPROC, glBindFragDataLocation) // Core in v3.0, not available in ES
+#endif
+#if defined(GL_VERSION_3_3) || defined(GL_ARB_blend_func_extended)
 EXTERNOGLEXT(PFNGLBINDFRAGDATALOCATIONINDEXEDPROC, glBindFragDataLocationIndexed) // Core in v3.3, not available in ES
 #endif
 
@@ -222,7 +224,7 @@ EXTERNOGLEXT(PFNGLBINDRENDERBUFFERPROC, glBindRenderbuffer) // Core in v3.0 and 
 EXTERNOGLEXT(PFNGLRENDERBUFFERSTORAGEPROC, glRenderbufferStorage) // Core in v3.0 and ES v2.0
 EXTERNOGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC, glRenderbufferStorageMultisample) // Core in v3.0 and ES v3.0
 EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSPROC, glDeleteRenderbuffers) // Core in v3.0 and ES v2.0
-#if !defined(GL_ES_VERSION_3_0)
+#if defined(GL_VERSION_3_2) || defined(GL_ARB_texture_multisample)
 EXTERNOGLEXT(PFNGLTEXIMAGE2DMULTISAMPLEPROC, glTexImage2DMultisample) // Core in v3.2, not available in ES
 #endif
 
@@ -303,6 +305,38 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 #define glDeleteRenderbuffersEXT(n, renderbuffers) glDeleteRenderbuffers(n, renderbuffers)
 
 #endif // GL_EXT_framebuffer_object
+
+// OPENGL CORE EQUIVALENTS FOR LEGACY FUNCTIONS
+// Some OpenGL variants, such as OpenGL ES, do not include certain legacy functions in their
+// API. The loss of these functions will cause compile time errors when referenced, and so
+// we will redeclare them to something that is supported for the sake of compiling.
+//
+// Do note that a redeclared function will most likely not work in exactly the same way as
+// a native legacy version, and so implmentations are responsible for overriding any methods
+// that use these legacy functions to whatever is available in the specific OpenGL variant.
+
+#ifndef GL_VERSION_1_2
+	// These legacy functions can be promoted to later core equivalents without any further
+	// modification. In other words, these are one-to-one drop-in replacements.
+	#define glClearDepth(depth) glClearDepthf(depth)
+	#define glDrawBuffer(x) glDrawBuffers(1, ((GLenum[]){x}))
+
+	// 1D textures may not exist for a particular OpenGL variant, so they will be promoted to
+	// 2D textures instead. Implementations need to modify their GLSL shaders accordingly to
+	// treat any 1D textures as 2D textures instead.
+	#define GL_TEXTURE_1D GL_TEXTURE_2D
+	#define glTexImage1D(target, level, internalformat, width, border, format, type, pixels) glTexImage2D(target, level, internalformat, width, 1, border, format, type, pixels)
+	#define glTexSubImage1D(target, level, xoffset, width, format, type, pixels) glTexSubImage2D(target, level, xoffset, 0, width, 1, format, type, pixels)
+#endif
+
+#ifndef GL_VERSION_1_5
+	// Calling glMapBuffer with an OpenGL variant that forgoes legacy functions will cause a
+	// GL_INVALID_OPERATION error if used in practice. Implementations need to override any
+	// methods that would call glMapBuffer with glMapBufferRange.
+	#define GL_READ_ONLY  GL_MAP_READ_BIT
+	#define GL_WRITE_ONLY GL_MAP_WRITE_BIT
+	#define glMapBuffer(target, access) glMapBufferRange(target, 0, 0, access)
+#endif
 
 // Define the minimum required OpenGL version for the driver to support
 #if defined(OPENGL_VARIANT_STANDARD)

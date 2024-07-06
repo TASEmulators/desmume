@@ -39,7 +39,9 @@ OGLEXT(PFNGLCLEARBUFFERFIPROC, glClearBufferfi) // Core in v3.0 and ES v3.0
 
 // Shaders
 OGLEXT(PFNGLBINDFRAGDATALOCATIONPROC, glBindFragDataLocation) // Core in v3.0, not available in ES
+#if defined(GL_VERSION_3_3) || defined(GL_ARB_blend_func_extended)
 OGLEXT(PFNGLBINDFRAGDATALOCATIONINDEXEDPROC, glBindFragDataLocationIndexed) // Core in v3.3, not available in ES
+#endif
 
 // Buffer Objects
 OGLEXT(PFNGLMAPBUFFERRANGEPROC, glMapBufferRange) // Core in v3.0 and ES v3.0
@@ -84,6 +86,9 @@ void OGLLoadEntryPoints_3_2()
 	
 	// Shaders
 	INITOGLEXT(PFNGLBINDFRAGDATALOCATIONPROC, glBindFragDataLocation) // Core in v3.0, not available in ES
+#if defined(GL_VERSION_3_3) || defined(GL_ARB_blend_func_extended)
+	INITOGLEXT(PFNGLBINDFRAGDATALOCATIONINDEXEDPROC, glBindFragDataLocationIndexed) // Core in v3.3, not available in ES
+#endif
 	
 	// Buffer Objects
 	INITOGLEXT(PFNGLMAPBUFFERRANGEPROC, glMapBufferRange) // Core in v3.0 and ES v3.0
