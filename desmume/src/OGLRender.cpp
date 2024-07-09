@@ -3044,6 +3044,13 @@ void OpenGLRenderer_1_2::DestroyFBOs()
 	OGLRef.fboClearImageID = 0;
 	OGLRef.fboFramebufferFlipID = 0;
 	OGLRef.fboRenderID = 0;
+	OGLRef.texCIColorID = 0;
+	OGLRef.texCIFogAttrID = 0;
+	OGLRef.texCIDepthStencilID = 0;
+	OGLRef.texGColorID = 0;
+	OGLRef.texGPolyID = 0;
+	OGLRef.texGFogAttrID = 0;
+	OGLRef.texGDepthStencilID = 0;
 	
 	this->isFBOSupported = false;
 }

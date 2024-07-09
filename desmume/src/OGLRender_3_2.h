@@ -32,6 +32,7 @@ class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 protected:
 	bool _is64kUBOSupported;
 	bool _isTBOSupported;
+	bool _isShaderFixedLocationSupported;
 	bool _isDualSourceBlendingSupported;
 	bool _isSampleShadingSupported;
 	bool _isConservativeDepthSupported;
@@ -60,7 +61,6 @@ protected:
 	virtual Render3DError CreateFramebufferOutput8888Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString);
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
-	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
 	virtual void _SetupGeometryShaders(const OGLGeometryFlags flags);
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
@@ -77,7 +77,6 @@ protected:
 	virtual void SetPolygonIndex(const size_t index);
 	virtual Render3DError SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer, bool isBackFacing);
 	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
-	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 	
 public:
 	OpenGLRenderer_3_2();
@@ -86,6 +85,7 @@ public:
 	virtual Render3DError InitExtensions();
 	virtual Render3DError RenderFinish();
 	virtual Render3DError RenderPowerOff();
+	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
 #endif
