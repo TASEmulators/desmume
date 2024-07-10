@@ -266,7 +266,7 @@ EXTERNOGLEXT(PFNGLRENDERBUFFERSTORAGEEXTPROC, glRenderbufferStorageEXT)
 EXTERNOGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC, glRenderbufferStorageMultisampleEXT)
 EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 
-#elif defined(GL_ARB_framebuffer_object)
+#elif defined(GL_ARB_framebuffer_object) || defined(GL_ES_VERSION_3_0)
 // Most OpenGL variants don't have GL_EXT_framebuffer_object, so redeclare all the ARB versions
 // to their EXT versions to avoid compile time errors in OGLRender.cpp.
 //
@@ -318,6 +318,7 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 #ifndef GL_VERSION_1_2
 	// These legacy functions can be promoted to later core equivalents without any further
 	// modification. In other words, these are one-to-one drop-in replacements.
+	typedef GLclampf GLclampd;
 	#define glClearDepth(depth) glClearDepthf(depth)
 	#define glDrawBuffer(x) glDrawBuffers(1, ((GLenum[]){x}))
 
@@ -689,6 +690,7 @@ class OpenGLRenderer;
 extern GPU3DInterface gpu3Dgl;
 extern GPU3DInterface gpu3DglOld;
 extern GPU3DInterface gpu3Dgl_3_2;
+extern GPU3DInterface gpu3Dgl_ES_3_0;
 
 extern const GLenum GeometryDrawBuffersEnum[8][4];
 extern const GLint GeometryAttachmentWorkingBuffer[8];

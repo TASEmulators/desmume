@@ -139,7 +139,7 @@ void OGLLoadEntryPoints_3_2()
 }
 
 // Vertex shader for geometry, GLSL 1.50
-static const char *GeometryVtxShader_150 = {"\
+const char *GeometryVtxShader_150 = {"\
 IN_VTX_POSITION  vec4 inPosition;\n\
 IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
 IN_VTX_COLOR     vec3 inColor; \n\
@@ -206,7 +206,7 @@ void main()\n\
 "};
 
 // Fragment shader for geometry, GLSL 1.50
-static const char *GeometryFragShader_150 = {"\
+const char *GeometryFragShader_150 = {"\
 in vec2 vtxTexCoord;\n\
 in vec4 vtxColor;\n\
 flat in int polyEnableTexture;\n\
@@ -354,7 +354,7 @@ void main()\n\
 "};
 
 // Vertex shader for determining which pixels have a zero alpha, GLSL 1.50
-static const char *GeometryZeroDstAlphaPixelMaskVtxShader_150 = {"\
+const char *GeometryZeroDstAlphaPixelMaskVtxShader_150 = {"\
 IN_VTX_POSITION vec2 inPosition;\n\
 \n\
 void main()\n\
@@ -364,7 +364,7 @@ void main()\n\
 "};
 
 // Fragment shader for determining which pixels have a zero alpha, GLSL 1.50
-static const char *GeometryZeroDstAlphaPixelMaskFragShader_150 = {"\
+const char *GeometryZeroDstAlphaPixelMaskFragShader_150 = {"\
 uniform sampler2D texInFragColor;\n\
 \n\
 void main()\n\
@@ -379,7 +379,7 @@ void main()\n\
 "};
 
 // Fragment shader for determining which pixels have a zero alpha, GLSL 1.50
-static const char *MSGeometryZeroDstAlphaPixelMaskFragShader_150 = {"\
+const char *MSGeometryZeroDstAlphaPixelMaskFragShader_150 = {"\
 uniform sampler2DMS texInFragColor;\n\
 \n\
 void main()\n\
@@ -394,7 +394,7 @@ void main()\n\
 "};
 
 // Vertex shader for applying edge marking, GLSL 1.50
-static const char *EdgeMarkVtxShader_150 = {"\
+const char *EdgeMarkVtxShader_150 = {"\
 IN_VTX_POSITION  vec2 inPosition;\n\
 IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
 \n\
@@ -415,7 +415,7 @@ void main()\n\
 "};
 
 // Fragment shader for applying edge marking, GLSL 1.50
-static const char *EdgeMarkFragShader_150 = {"\
+const char *EdgeMarkFragShader_150 = {"\
 in vec2 texCoord[5];\n\
 \n\
 layout (std140) uniform RenderStates\n\
@@ -524,7 +524,7 @@ void main()\n\
 "};
 
 // Vertex shader for applying fog, GLSL 1.50
-static const char *FogVtxShader_150 = {"\
+const char *FogVtxShader_150 = {"\
 IN_VTX_POSITION vec2 inPosition;\n\
 \n\
 void main()\n\
@@ -534,7 +534,7 @@ void main()\n\
 "};
 
 // Fragment shader for applying fog, GLSL 1.50
-static const char *FogFragShader_150 = {"\
+const char *FogFragShader_150 = {"\
 layout (std140) uniform RenderStates\n\
 {\n\
 	bool enableAntialiasing;\n\
@@ -598,7 +598,7 @@ void main()\n\
 "};
 
 // Vertex shader for the final framebuffer, GLSL 1.50
-static const char *FramebufferOutputVtxShader_150 = {"\
+const char *FramebufferOutputVtxShader_150 = {"\
 IN_VTX_POSITION vec2 inPosition;\n\
 \n\
 void main()\n\
@@ -608,7 +608,7 @@ void main()\n\
 "};
 
 // Fragment shader for the final RGBA6665 formatted framebuffer, GLSL 1.50
-static const char *FramebufferOutput6665FragShader_150 = {"\
+const char *FramebufferOutput6665FragShader_150 = {"\
 uniform sampler2D texInFragColor;\n\
 \n\
 OUT_COLOR vec4 outFragColor6665;\n\
@@ -1012,6 +1012,7 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 	glGenRenderbuffers(1, &OGLRef.rboMSGFogAttrID);
 	glGenRenderbuffers(1, &OGLRef.rboMSGDepthStencilID);
 	
+#ifdef GL_VERSION_3_2
 	if (this->willUsePerSampleZeroDstPass)
 	{
 		glGenTextures(1, &OGLRef.texMSGColorID);
@@ -1036,6 +1037,7 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 		glActiveTexture(GL_TEXTURE0);
 	}
 	else
+#endif
 	{
 		glGenRenderbuffers(1, &OGLRef.rboMSGColorID);
 		glGenRenderbuffers(1, &OGLRef.rboMSGWorkingID);
@@ -1057,12 +1059,14 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 	glGenFramebuffers(1, &OGLRef.fboMSIntermediateRenderID);
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboMSIntermediateRenderID);
 	
+#ifdef GL_VERSION_3_2
 	if (this->willUsePerSampleZeroDstPass)
 	{
 		glFramebufferTexture2D(GL_FRAMEBUFFER, OGL_COLOROUT_ATTACHMENT_ID, GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGColorID, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, OGL_WORKING_ATTACHMENT_ID, GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGWorkingID, 0);
 	}
 	else
+#endif
 	{
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, OGL_COLOROUT_ATTACHMENT_ID, GL_RENDERBUFFER, OGLRef.rboMSGColorID);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, OGL_WORKING_ATTACHMENT_ID, GL_RENDERBUFFER, OGLRef.rboMSGWorkingID);
@@ -1239,6 +1243,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 			glBindBufferBase(GL_UNIFORM_BUFFER, OGLBindingPointID_PolyStates, OGLRef.uboPolyStatesID);
 		}
 	}
+#if defined(GL_VERSION_3_1) || defined(GL_ES_VERSION_3_2)
 	else if (this->_isTBOSupported)
 	{
 		// Older GPUs that support 3.2 Core Profile but not 64k UBOs can transfer the polygon
@@ -1258,6 +1263,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 			glActiveTexture(GL_TEXTURE0);
 		}
 	}
+#endif
 	else
 	{
 		// For compatibility reasons, we can transfer the polygon states through a plain old
@@ -1287,60 +1293,49 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	OGLGeometryFlags programFlags;
 	programFlags.value = 0;
 	
-	std::stringstream vtxShaderHeader;
+	std::stringstream shaderHeader;
 	if (this->_isConservativeDepthSupported || this->_isConservativeDepthAMDSupported)
 	{
-		vtxShaderHeader << "#version 400\n";
-	}
-	else if (this->_isShaderFixedLocationSupported)
-	{
-		vtxShaderHeader << "#version 330\n";
-	}
-	else
-	{
-		vtxShaderHeader << "#version 150\n";
-	}
-	
-	vtxShaderHeader << "\n";
-	if (this->_isShaderFixedLocationSupported)
-	{
-		vtxShaderHeader << "#define IN_VTX_POSITION layout (location = "  << OGLVertexAttributeID_Position  << ") in\n";
-		vtxShaderHeader << "#define IN_VTX_TEXCOORD0 layout (location = " << OGLVertexAttributeID_TexCoord0 << ") in\n";
-		vtxShaderHeader << "#define IN_VTX_COLOR layout (location = "     << OGLVertexAttributeID_Color     << ") in\n";
-	}
-	else
-	{
-		vtxShaderHeader << "#define IN_VTX_POSITION in\n";
-		vtxShaderHeader << "#define IN_VTX_TEXCOORD0 in\n";
-		vtxShaderHeader << "#define IN_VTX_COLOR in\n";
-	}
-	vtxShaderHeader << "\n";
-	vtxShaderHeader << "#define IS_USING_UBO_POLY_STATES " << ((OGLRef.uboPolyStatesID != 0) ? 1 : 0) << "\n";
-	vtxShaderHeader << "#define IS_USING_TBO_POLY_STATES " << ((OGLRef.tboPolyStatesID != 0) ? 1 : 0) << "\n";
-	vtxShaderHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0\n";
-	vtxShaderHeader << "\n";
-	
-	std::string vtxShaderCode  = vtxShaderHeader.str() + std::string(GeometryVtxShader_150);
-	
-	std::stringstream fragShaderHeader;
-	if (this->_isConservativeDepthSupported || this->_isConservativeDepthAMDSupported)
-	{
-		fragShaderHeader << "#version 400\n";
+		shaderHeader << "#version 400\n";
 		
 		// Prioritize using GL_AMD_conservative_depth over GL_ARB_conservative_depth, since AMD drivers
 		// seem to have problems with GL_ARB_conservative_depth.
-		fragShaderHeader << ((this->_isConservativeDepthAMDSupported) ? "#extension GL_AMD_conservative_depth : require\n" : "#extension GL_ARB_conservative_depth : require\n");
+		shaderHeader << ((this->_isConservativeDepthAMDSupported) ? "#extension GL_AMD_conservative_depth : require\n" : "#extension GL_ARB_conservative_depth : require\n");
 	}
 	else if (this->_isShaderFixedLocationSupported)
 	{
-		fragShaderHeader << "#version 330\n";
+		shaderHeader << "#version 330\n";
 	}
 	else
 	{
-		fragShaderHeader << "#version 150\n";
+		shaderHeader << "#version 150\n";
 	}
-	fragShaderHeader << "#define IS_CONSERVATIVE_DEPTH_SUPPORTED " << ((this->_isConservativeDepthSupported || this->_isConservativeDepthAMDSupported) ? 1 : 0) << "\n";
-	fragShaderHeader << "\n";
+	shaderHeader << "\n";
+	
+	std::stringstream vsHeader;
+	if (this->_isShaderFixedLocationSupported)
+	{
+		vsHeader << "#define IN_VTX_POSITION layout (location = "  << OGLVertexAttributeID_Position  << ") in\n";
+		vsHeader << "#define IN_VTX_TEXCOORD0 layout (location = " << OGLVertexAttributeID_TexCoord0 << ") in\n";
+		vsHeader << "#define IN_VTX_COLOR layout (location = "     << OGLVertexAttributeID_Color     << ") in\n";
+	}
+	else
+	{
+		vsHeader << "#define IN_VTX_POSITION in\n";
+		vsHeader << "#define IN_VTX_TEXCOORD0 in\n";
+		vsHeader << "#define IN_VTX_COLOR in\n";
+	}
+	vsHeader << "\n";
+	vsHeader << "#define IS_USING_UBO_POLY_STATES " << ((OGLRef.uboPolyStatesID != 0) ? 1 : 0) << "\n";
+	vsHeader << "#define IS_USING_TBO_POLY_STATES " << ((OGLRef.tboPolyStatesID != 0) ? 1 : 0) << "\n";
+	vsHeader << "#define DEPTH_EQUALS_TEST_TOLERANCE " << DEPTH_EQUALS_TEST_TOLERANCE << ".0\n";
+	vsHeader << "\n";
+	
+	std::string vtxShaderCode  = shaderHeader.str() + vsHeader.str() + std::string(GeometryVtxShader_150);
+	
+	std::stringstream fsHeader;
+	fsHeader << "#define IS_CONSERVATIVE_DEPTH_SUPPORTED " << ((this->_isConservativeDepthSupported || this->_isConservativeDepthAMDSupported) ? 1 : 0) << "\n";
+	fsHeader << "\n";
 	
 	for (size_t flagsValue = 0; flagsValue < 128; flagsValue++, programFlags.value++)
 	{
@@ -1373,7 +1368,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 		shaderFlags << "#define DRAW_MODE_OPAQUE " << ((programFlags.OpaqueDrawMode) ? 1 : 0) << "\n";
 		shaderFlags << "\n";
 		
-		std::string fragShaderCode = fragShaderHeader.str() + shaderFlags.str() + std::string(GeometryFragShader_150);
+		std::string fragShaderCode = shaderHeader.str() + fsHeader.str() + shaderFlags.str() + std::string(GeometryFragShader_150);
 		
 		error = this->ShaderProgramCreate(OGLRef.vertexGeometryShaderID,
 										  OGLRef.fragmentGeometryShaderID[flagsValue],
@@ -1473,7 +1468,9 @@ void OpenGLRenderer_3_2::DestroyGeometryPrograms()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+#if defined(GL_VERSION_3_1) || defined(GL_ES_VERSION_3_2)
 	glBindBuffer(GL_TEXTURE_BUFFER, 0);
+#endif
 	glDeleteBuffers(1, &OGLRef.uboRenderStatesID);
 	glDeleteBuffers(1, &OGLRef.uboPolyStatesID);
 	glDeleteBuffers(1, &OGLRef.tboPolyStatesID);
@@ -2398,6 +2395,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 	
 	OGLPolyStates *polyStates = this->_pendingPolyStates;
 	
+#if defined(GL_VERSION_3_1) || defined(GL_ES_VERSION_3_2)
 	if (OGLRef.tboPolyStatesID != 0)
 	{
 		// Some drivers seem to have problems with GL_TEXTURE_BUFFER used as the target for
@@ -2406,6 +2404,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 		// to prevent these glitches from happening.
 		polyStates = (OGLPolyStates *)glMapBuffer(GL_TEXTURE_BUFFER, GL_WRITE_ONLY);
 	}
+#endif
 	
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
@@ -2437,10 +2436,12 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 		glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboPolyStatesID);
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, MAX_CLIPPED_POLY_COUNT_FOR_UBO * sizeof(OGLPolyStates), this->_pendingPolyStates);
 	}
+#if defined(GL_VERSION_3_1) || defined(GL_ES_VERSION_3_2)
 	else if (OGLRef.tboPolyStatesID != 0)
 	{
 		glUnmapBuffer(GL_TEXTURE_BUFFER);
 	}
+#endif
 	else
 	{
 		const GLsizei texH = (GLsizei)((this->_clippedPolyCount >> 8) & 0x007F) + 1;

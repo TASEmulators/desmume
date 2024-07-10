@@ -24,6 +24,18 @@
 
 #define MAX_CLIPPED_POLY_COUNT_FOR_UBO 16384
 
+extern const char *GeometryVtxShader_150;
+extern const char *GeometryFragShader_150;
+extern const char *GeometryZeroDstAlphaPixelMaskVtxShader_150;
+extern const char *GeometryZeroDstAlphaPixelMaskFragShader_150;
+extern const char *MSGeometryZeroDstAlphaPixelMaskFragShader_150;
+extern const char *EdgeMarkVtxShader_150;
+extern const char *EdgeMarkFragShader_150;
+extern const char *FogVtxShader_150;
+extern const char *FogFragShader_150;
+extern const char *FramebufferOutputVtxShader_150;
+extern const char *FramebufferOutput6665FragShader_150;
+
 void OGLLoadEntryPoints_3_2();
 void OGLCreateRenderer_3_2(OpenGLRenderer **rendererPtr);
 
