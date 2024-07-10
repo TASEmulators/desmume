@@ -526,9 +526,12 @@ void main()\n\
 // Vertex shader for applying fog, GLSL 1.50
 const char *FogVtxShader_150 = {"\
 IN_VTX_POSITION vec2 inPosition;\n\
+IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
+out vec2 texCoord;\n\
 \n\
 void main()\n\
 {\n\
+	texCoord = inTexCoord0;\n\
 	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 }\n\
 "};
@@ -550,6 +553,8 @@ layout (std140) uniform RenderStates\n\
 	vec4 toonColor[32];\n\
 } state;\n\
 \n\
+in vec2 texCoord;\n\
+\n\
 uniform sampler2D texInFragDepth;\n\
 uniform sampler2D texInFogAttributes;\n\
 uniform sampler2D texFogDensityTable;\n\
@@ -568,11 +573,11 @@ void main()\n\
 	outFogColor = state.fogColor;\n\
 	outFogWeight = vec4(0.0);\n\
 #else\n\
-	outFragColor = texelFetch(texInFragColor, ivec2(gl_FragCoord.xy), 0);\n\
+	outFragColor = texture(texInFragColor, texCoord);\n\
 #endif\n\
 	\n\
-	float inFragDepth = texelFetch(texInFragDepth, ivec2(gl_FragCoord.xy), 0).r;\n\
-	vec4 inFogAttributes = texelFetch(texInFogAttributes, ivec2(gl_FragCoord.xy), 0);\n\
+	float inFragDepth = texture(texInFragDepth, texCoord).r;\n\
+	vec4 inFogAttributes = texture(texInFogAttributes, texCoord);\n\
 	bool polyEnableFog = (inFogAttributes.r > 0.999);\n\
 	\n\
 	float fogMixWeight = 0.0;\n\
@@ -600,22 +605,27 @@ void main()\n\
 // Vertex shader for the final framebuffer, GLSL 1.50
 const char *FramebufferOutputVtxShader_150 = {"\
 IN_VTX_POSITION vec2 inPosition;\n\
+IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
+out vec2 texCoord;\n\
 \n\
 void main()\n\
 {\n\
+	texCoord = vec2(inTexCoord0.x, 1.0 - inTexCoord0.y);\n\
 	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 }\n\
 "};
 
 // Fragment shader for the final RGBA6665 formatted framebuffer, GLSL 1.50
 const char *FramebufferOutput6665FragShader_150 = {"\
+in vec2 texCoord;\n\
+\n\
 uniform sampler2D texInFragColor;\n\
 \n\
 OUT_COLOR vec4 outFragColor6665;\n\
 \n\
 void main()\n\
 {\n\
-	outFragColor6665     = texelFetch(texInFragColor, ivec2(gl_FragCoord.x, FRAMEBUFFER_SIZE_Y - gl_FragCoord.y), 0);\n\
+	outFragColor6665     = texture(texInFragColor, texCoord);\n\
 	outFragColor6665     = floor((outFragColor6665 * 255.0) + 0.5);\n\
 	outFragColor6665.rgb = floor(outFragColor6665.rgb / 4.0);\n\
 	outFragColor6665.a   = floor(outFragColor6665.a   / 8.0);\n\
@@ -1856,6 +1866,7 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	if (!this->_isShaderFixedLocationSupported)
 	{
 		glBindAttribLocation(shaderID.program, OGLVertexAttributeID_Position, "inPosition");
+		glBindAttribLocation(shaderID.program, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
 	
 #ifdef GL_VERSION_3_3
 		if (this->_isDualSourceBlendingSupported)
@@ -1970,6 +1981,7 @@ Render3DError OpenGLRenderer_3_2::CreateFramebufferOutput6665Program(const size_
 	if (!this->_isShaderFixedLocationSupported)
 	{
 		glBindAttribLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], OGLVertexAttributeID_Position, "inPosition");
+		glBindAttribLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], OGLVertexAttributeID_TexCoord0, "inTexCoord0");
 		glBindFragDataLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], 0, "outFragColor6665");
 	}
 #endif
