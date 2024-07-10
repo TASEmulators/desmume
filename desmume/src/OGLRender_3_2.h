@@ -36,6 +36,25 @@ extern const char *FogFragShader_150;
 extern const char *FramebufferOutputVtxShader_150;
 extern const char *FramebufferOutput6665FragShader_150;
 
+// A port that wants to use the OpenGL 3.2 renderer must assign the two following functions
+// to OGLLoadEntryPoints_3_2_Func and OGLCreateRenderer_3_2_Func, respectively.
+//
+// In addition, the port must add the following GPU3DInterface objects to core3DList:
+// - gpu3Dgl: Automatically selects the most fully featured version of standard OpenGL that
+//            is available on the host system, prefering OpenGL 3.2 Core Profile.
+// - gpu3Dgl_3_2: Selects the OpenGL 3.2 Core Profile renderer, and returns an error if it
+//                is not available on the host system.
+//
+// Finally, the port must call GPU->Set3DRendererByID() and pass in the index where
+// gpu3Dgl_3_2 exists in core3DList so that the emulator can create the appropriate
+// OpenGLRenderer object.
+//
+// Example code:
+//    OGLLoadEntryPoints_3_2_Func = &OGLLoadEntryPoints_3_2;
+//    OGLCreateRenderer_3_2_Func = &OGLCreateRenderer_3_2;
+//    GPU3DInterface *core3DList[] = { &gpu3DNull, &gpu3DRasterize, &gpu3Dgl_3_2, NULL };
+//    GPU->Set3DRendererByID(2);
+
 void OGLLoadEntryPoints_3_2();
 void OGLCreateRenderer_3_2(OpenGLRenderer **rendererPtr);
 
