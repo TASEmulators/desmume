@@ -754,30 +754,46 @@ static void OGLGetDriverVersion(const char *oglVersionString,
 	
 	// First, check for the dot in the revision string. There should be at
 	// least one present.
-	const char *versionStrEnd = strstr(oglVersionString, ".");
-	if (versionStrEnd == NULL)
+	const char *versionStrDot = strstr(oglVersionString, ".");
+	if (versionStrDot == NULL)
 	{
 		return;
 	}
 	
-	// Next, check for the space before the vendor-specific info (if present).
-	versionStrEnd = strstr(oglVersionString, " ");
-	if (versionStrEnd == NULL)
+	// Next, check for a space that is after the dot, but before the vendor-specific info (if present).
+	versionStringLength = strlen(oglVersionString); // Set our default string length here
+	const size_t endCheckLength = versionStringLength - (versionStrDot - oglVersionString); // Maximum possible length to check
+	const char *checkStringLimit = (endCheckLength < 10) ? versionStrDot + endCheckLength : versionStrDot + 10; // But we're going to limit ourselves to checking only the first 10 characters
+	
+	char *versionStrEnd = (char *)versionStrDot;
+	while (versionStrEnd < checkStringLimit)
 	{
-		// If a space was not found, then the vendor-specific info is not present,
-		// and therefore the entire string must be the version number.
-		versionStringLength = strlen(oglVersionString);
+		versionStrEnd++;
+		if (*versionStrEnd == ' ')
+		{
+			versionStringLength = versionStrEnd - oglVersionString;
+			break;
+		}
 	}
-	else
+	
+	// Check for any spaces before the dot. There shouldn't be any text before the version number, so
+	// this step shouldn't be necessary. However, some drivers can defy the OpenGL spec and include
+	// text before the version number, and so we need to handle such non-compliant drivers just in case.
+	char *versionStrStart = (char *)versionStrDot;
+	while (versionStrStart > oglVersionString)
 	{
-		// If a space was found, then the vendor-specific info is present,
-		// and therefore the version number is everything before the space.
-		versionStringLength = versionStrEnd - oglVersionString;
+		versionStrStart--;
+		if (*versionStrStart == ' ')
+		{
+			versionStrStart++; // Don't include the space we just checked.
+			versionStringLength -= versionStrStart - oglVersionString;
+			break;
+		}
 	}
 	
 	// Copy the version substring and parse it.
 	char *versionSubstring = (char *)malloc(versionStringLength * sizeof(char));
-	strncpy(versionSubstring, oglVersionString, versionStringLength);
+	strncpy(versionSubstring, versionStrStart, versionStringLength);
 	
 	unsigned int major = 0;
 	unsigned int minor = 0;
@@ -977,28 +993,28 @@ static Render3D* OpenGLRendererCreate()
 		switch (VARIANTID)
 		{
 			case OpenGLVariantID_Legacy_1_2:
-				strncpy(variantString, "Open GL 1.2 (forced)", sizeof(variantString));
+				strncpy(variantString, "OpenGL 1.2 (forced)", sizeof(variantString));
 				break;
 				
 			case OpenGLVariantID_Legacy_2_0:
-				strncpy(variantString, "Open GL 2.0 (forced)", sizeof(variantString));
+				strncpy(variantString, "OpenGL 2.0 (forced)", sizeof(variantString));
 				break;
 				
 			case OpenGLVariantID_Legacy_2_1:
-				strncpy(variantString, "Open GL 2.1 (forced)", sizeof(variantString));
+				strncpy(variantString, "OpenGL 2.1 (forced)", sizeof(variantString));
 				break;
 				
 			case OpenGLVariantID_CoreProfile_3_2:
-				strncpy(variantString, "Open GL 3.2 (forced)", sizeof(variantString));
+				strncpy(variantString, "OpenGL 3.2 (forced)", sizeof(variantString));
 				break;
 				
 			case OpenGLVariantID_LegacyAuto:
 			case OpenGLVariantID_StandardAuto:
-				strncpy(variantString, "Open GL (auto)", sizeof(variantString));
+				strncpy(variantString, "OpenGL (auto)", sizeof(variantString));
 				break;
 				
 			case OpenGLVariantID_ES_3_0:
-				strncpy(variantString, "Open GL ES 3.0", sizeof(variantString));
+				strncpy(variantString, "OpenGL ES 3.0", sizeof(variantString));
 				break;
 				
 			default:
@@ -2983,6 +2999,10 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
 	
+	// Assign the default read/draw buffers.
+	glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboFramebufferFlipID);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, OGL_COLOROUT_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texGColorID, 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, OGL_WORKING_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texFinalColorID, 0);
@@ -2994,6 +3014,10 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 		
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
+	
+	// Assign the default read/draw buffers.
+	glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, OGL_COLOROUT_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texGColorID, 0);
@@ -3011,6 +3035,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
 	
+	// Assign the default read/draw buffers.
 	glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
 	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
 	

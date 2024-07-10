@@ -278,6 +278,9 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	// TBOs are only supported in ES 3.2.
 	this->_isTBOSupported = IsOpenGLDriverVersionSupported(3, 2, 0);
 	
+	// Fixed locations in shaders are supported in ES 3.0 by default.
+	this->_isShaderFixedLocationSupported = true;
+	
 	GLfloat maxAnisotropyOGL = 1.0f;
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropyOGL);
 	this->_deviceInfo.maxAnisotropy = (float)maxAnisotropyOGL;

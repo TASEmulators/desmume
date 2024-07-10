@@ -306,6 +306,12 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 
 #endif // GL_EXT_framebuffer_object
 
+// Some headers, such as the OpenGL ES headers, may not include this macro.
+// Add it manually to avoid compiling issues.
+#ifndef GL_BGRA
+#define GL_BGRA 0x80E1
+#endif
+
 // OPENGL CORE EQUIVALENTS FOR LEGACY FUNCTIONS
 // Some OpenGL variants, such as OpenGL ES, do not include certain legacy functions in their
 // API. The loss of these functions will cause compile time errors when referenced, and so

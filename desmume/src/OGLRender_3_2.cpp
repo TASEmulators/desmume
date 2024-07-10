@@ -949,6 +949,10 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
 	
+	// Assign the default read/draw buffers.
+	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+	glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, OGL_COLOROUT_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texGColorID, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, OGL_POLYID_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texGPolyID, 0);
@@ -963,6 +967,10 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 		
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
+	
+	// Assign the default read/draw buffers.
+	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+	glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
 	
 	OGLRef.selectedRenderingFBO = OGLRef.fboRenderID;
 	INFO("OpenGL: Successfully created FBOs.\n");
