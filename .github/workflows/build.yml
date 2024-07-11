@@ -7,11 +7,11 @@ on:
 jobs:
   build:
     name: Build DeSmuME (Linux)
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: install dependencies
         run: sudo apt update && sudo apt install meson libsdl2-dev libpcap-dev libgtk-3-dev
@@ -26,11 +26,11 @@ jobs:
 
   build_gtk2:
     name: Build DeSmuME (Linux/GTK+2)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: install dependencies
         run: sudo apt update && sudo apt install autoconf libglu1-mesa-dev libsdl2-dev libpcap-dev libgtk2.0-dev
@@ -49,18 +49,18 @@ jobs:
           tar cJf DeSmuME.tar.xz DeSmuME/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: desmume-linux-gtk2-cli-x86_64
           path: /tmp/DeSmuME.tar.xz
 
   build_macos:
     name: Build DeSmuME (macOS)
-    runs-on: macOS-11
+    runs-on: macos-14
 
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: xcodebuild
         run: |
@@ -73,7 +73,7 @@ jobs:
           7z a DeSmuME.app.zip DeSmuME.app
 
       - name: Upload artifict
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos
           path: desmume/src/frontend/cocoa/desmume.xcarchive/Products/Applications/DeSmuME.app.zip

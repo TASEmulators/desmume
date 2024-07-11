@@ -6,11 +6,11 @@ on:
 
 jobs:
   build_linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     name: Build Linux
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: sudo apt update && sudo apt install meson libsdl2-dev libpcap-dev
@@ -24,20 +24,20 @@ jobs:
         run: ninja -C desmume/src/frontend/interface/build
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux
           path: desmume/src/frontend/interface/build/libdesmume.so
 
   build_macos:
-    runs-on: macos-12
+    runs-on: macos-14
     name: Build MacOS
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install MacOS build deps
-        run: brew install coreutils gcc sdl2 meson glib
+        run: brew install coreutils sdl2 meson
 
       - name: Build - Meson
         run: |
@@ -54,13 +54,13 @@ jobs:
           CXX: clang++
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos
           path: desmume/src/frontend/interface/build/libdesmume.dylib
 
   build_windows:
-    runs-on: windows-2019
+    runs-on: windows-2022
     name: Build Windows
     strategy:
       fail-fast: false
@@ -68,10 +68,12 @@ jobs:
         arch: [ 'x64', 'x86' ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: ${{ matrix.arch }}
 
       - name: Build
         run: |
@@ -79,7 +81,7 @@ jobs:
           MSBuild.exe DeSmuME_Interface.vcxproj /p:configuration="Release Fastbuild" /p:Platform=${{ matrix.arch }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: win-${{ matrix.arch }}
           path: desmume/src/frontend/interface/windows/__bins/*.dll

@@ -6,16 +6,15 @@ on:
 
 jobs:
   build-sln:
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup MSBuild.exe
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
         with:
           msbuild-architecture: x64
-          vs-version: 16.1
 
       - name: Build solution
         run: |
@@ -24,7 +23,7 @@ jobs:
           cmd /c desmume\src\frontend\windows\ci_postbuild.bat
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: desmume-win-x64
           path: desmume/src/frontend/windows/__bins/*.exe
