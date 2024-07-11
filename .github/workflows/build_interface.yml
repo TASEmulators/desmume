@@ -6,7 +6,7 @@ on:
 
 jobs:
   build_linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     name: Build Linux
     steps:
       - name: Checkout
@@ -30,7 +30,7 @@ jobs:
           path: desmume/src/frontend/interface/build/libdesmume.so
 
   build_macos:
-    runs-on: macos-12
+    runs-on: macos-14
     name: Build MacOS
     steps:
       - name: Checkout
@@ -60,7 +60,7 @@ jobs:
           path: desmume/src/frontend/interface/build/libdesmume.dylib
 
   build_windows:
-    runs-on: windows-2019
+    runs-on: windows-2022
     name: Build Windows
     strategy:
       fail-fast: false
