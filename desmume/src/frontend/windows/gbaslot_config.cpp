@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -36,18 +36,22 @@ u8			last_type = 0;
 char		tmp_cflash_filename[MAX_PATH] = { 0 };
 char		tmp_cflash_path[MAX_PATH] = { 0 };
 char		tmp_gbagame_filename[MAX_PATH] = { 0 };
+char		tmp_hcv1000_barcode[17] = { 0 };
 ADDON_CFLASH_MODE	tmp_CFlashMode = ADDON_CFLASH_MODE_RomPath;
 HWND		OKbutton = NULL;
 bool		_OKbutton = false;
 SGuitar		tmp_Guitar;
 SPiano		tmp_Piano;
 SPaddle		tmp_Paddle;
+SHCV1000	tmp_HCV1000;
 
 //these are the remembered preset values for directory and filename
 //they are named very verbosely to distinguish them from the currently-configured values in addons.cpp
 std::string win32_CFlash_cfgDirectory, win32_CFlash_cfgFileName;
 UINT win32_CFlash_cfgMode;
 std::string win32_GBA_cfgRomPath;
+
+std::string slot2_HCV1000_barcode;
 
 INT_PTR CALLBACK GbaSlotNone(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
@@ -259,6 +263,54 @@ INT_PTR CALLBACK GbaSlotPaddle(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 			SendDlgItemMessage(dialog,IDC_PDEC,WM_USER+44,tmp_Paddle.DEC,0);
 			PostMessage(dialog,WM_NEXTDLGCTL,0,0);
 		return true;
+	}
+	return FALSE;
+}
+
+INT_PTR CALLBACK GbaSlotHCV1000(HWND dialog, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+	int which = 0;
+
+	switch (msg)
+	{
+		case WM_INITDIALOG:
+			_OKbutton = TRUE;
+			SendDlgItemMessage(dialog, IDC_HCVSCAN, WM_USER + 44, tmp_HCV1000.SCANKEY, 0);
+			SendDlgItemMessage(dialog, IDC_HCVBARCODE, EM_SETLIMITTEXT, 16, 0);
+			SendDlgItemMessage(dialog, IDC_HCVBARCODE, EM_SETSEL, 0, 16);
+			SetWindowText(GetDlgItem(dialog, IDC_HCVBARCODE), tmp_hcv1000_barcode);
+
+			return TRUE;
+
+		case WM_USER + 46:
+			SendDlgItemMessage(dialog, IDC_HCVSCAN, WM_USER + 44, tmp_HCV1000.SCANKEY, 0);
+			return TRUE;
+
+		case WM_USER + 43:
+			//MessageBox(hDlg,"USER+43 CAUGHT","moo",MB_OK);
+			which = GetDlgCtrlID((HWND)lparam);
+			switch (which)
+			{
+				case IDC_HCVSCAN:
+					tmp_HCV1000.SCANKEY = wparam;
+
+					break;
+			}
+
+			SendDlgItemMessage(dialog, IDC_HCVSCAN, WM_USER + 44, tmp_HCV1000.SCANKEY, 0);
+			PostMessage(dialog, WM_NEXTDLGCTL, 0, 0);
+			return true;
+
+		case WM_COMMAND:
+			case EN_UPDATE:
+				switch (LOWORD(wparam))
+				{
+					case IDC_HCVBARCODE:
+						GetWindowText(GetDlgItem(dialog, IDC_HCVBARCODE), tmp_hcv1000_barcode, 17);
+					
+						return FALSE;
+				}
+				break;
 	}
 	return FALSE;
 }
@@ -478,6 +530,7 @@ u32		GBAslot_IDDs[NDS_SLOT2_COUNT] = {
 	IDD_GBASLOT_PIANO,
 	IDD_GBASLOT_PADDLE, //paddle
 	IDD_GBASLOT_NONE, //PassME
+	IDD_GBASLOT_HCV1000,		//HCV-1000
 };
 
 DLGPROC GBAslot_Procs[NDS_SLOT2_COUNT] = {
@@ -490,7 +543,8 @@ DLGPROC GBAslot_Procs[NDS_SLOT2_COUNT] = {
 	GbaSlotNone,  //expmem
 	GbaSlotPiano,
 	GbaSlotPaddle,
-	GbaSlotNone			// PassME
+	GbaSlotNone,			// PassME
+	GbaSlotHCV1000,		//HCV-1000
 };
 
 
@@ -566,9 +620,11 @@ void GBAslotDialog(HWND hwnd)
 	strcpy(tmp_cflash_filename, win32_CFlash_cfgFileName.c_str());
 	strcpy(tmp_cflash_path, win32_CFlash_cfgDirectory.c_str());
 	strcpy(tmp_gbagame_filename, win32_GBA_cfgRomPath.c_str());
+	strcpy(tmp_hcv1000_barcode, slot2_HCV1000_barcode.c_str());
 	memcpy(&tmp_Guitar, &Guitar, sizeof(Guitar));
 	memcpy(&tmp_Piano, &Piano, sizeof(Piano));
 	memcpy(&tmp_Paddle, &Paddle, sizeof(Paddle));
+	memcpy(&tmp_HCV1000, &HCV1000, sizeof(HCV1000));
 	tmp_CFlashMode = CFlash_Mode;
 	_OKbutton = false;
 	
@@ -633,6 +689,13 @@ void GBAslotDialog(HWND hwnd)
 				break;
 			case NDS_SLOT2_PASSME:
 				break;
+			case NDS_SLOT2_HCV1000:
+				slot2_HCV1000_barcode = tmp_hcv1000_barcode;
+				memcpy(&HCV1000, &tmp_HCV1000, sizeof(tmp_HCV1000));
+				HCV1000_setBarcode(slot2_HCV1000_barcode);
+				WritePrivateProfileString("Slot2.HCV1000", "barcode", tmp_hcv1000_barcode, IniName);
+				WritePrivateProfileInt("Slot2.HCV1000", "scankey", HCV1000.SCANKEY, IniName);
+				break;
 			default:
 				return;
 		}
@@ -644,6 +707,7 @@ void GBAslotDialog(HWND hwnd)
 		Guitar.Enabled	= (slot2_GetCurrentType() == NDS_SLOT2_GUITARGRIP)?true:false;
 		Piano.Enabled	= (slot2_GetCurrentType() == NDS_SLOT2_EASYPIANO)?true:false;
 		Paddle.Enabled	= (slot2_GetCurrentType() == NDS_SLOT2_PADDLE)?true:false;
+		HCV1000.Enabled = (slot2_GetCurrentType() == NDS_SLOT2_HCV1000)?true:false;
 	}
 }
 

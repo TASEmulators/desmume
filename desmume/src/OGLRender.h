@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2023 DeSmuME team
+	Copyright (C) 2008-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -27,81 +27,110 @@
 #include "render3D.h"
 #include "types.h"
 
-#ifndef OGLRENDER_3_2_H
+// OPENGL PLATFORM-SPECIFIC INCLUDES
+#if defined(__ANGLE__) || defined(__ANDROID__)
+	#define OPENGL_VARIANT_ES
+	#define _NO_SDL_TYPES
+	#include <GLES3/gl3.h>
+	#define __gles2_gl2_h_ // Guard against including the gl2.h file.
+	#include <GLES2/gl2ext.h> // "gl3ext.h" is just a stub file. The real extension header is "gl2ext.h".
+	#include <EGL/egl.h>
 
-#if defined(_WIN32)
+	// Ignore dynamic linking
+	#define OGLEXT(procPtr, func)
+	#define INITOGLEXT(procPtr, func)
+	#define EXTERNOGLEXT(procPtr, func)
+#elif defined(__EMSCRIPTEN__)
+	#define OPENGL_VARIANT_ES
+	#include <SDL_opengl.h>
+	#include <emscripten/emscripten.h>
+
+	// Ignore dynamic linking
+	#define OGLEXT(procPtr, func)
+	#define INITOGLEXT(procPtr, func)
+	#define EXTERNOGLEXT(procPtr, func)
+#elif defined(_WIN32)
+	#define OPENGL_VARIANT_STANDARD
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <GL/gl.h>
 	#include <GL/glext.h>
 
-	#define OGLEXT(procPtr, func)		procPtr func = NULL;
-	#define INITOGLEXT(procPtr, func)	func = (procPtr)wglGetProcAddress(#func);
-	#define EXTERNOGLEXT(procPtr, func)	extern procPtr func;
-#elif defined(__APPLE__)
-	#include <OpenGL/gl.h>
-	#include <OpenGL/glext.h>
+	#ifdef OGLRENDER_3_2_H
+		#include <GL/glcorearb.h>
+	#endif
 
-	// Ignore dynamic linking on Apple OS
+	#define OGLEXT(procPtr, func)       procPtr func = NULL;
+	#define INITOGLEXT(procPtr, func)   func = (procPtr)wglGetProcAddress(#func);
+	#define EXTERNOGLEXT(procPtr, func) extern procPtr func;
+#elif defined(__APPLE__)
+	#include <TargetConditionals.h>
+	
+	#if TARGET_OS_IPHONE
+		#define OPENGL_VARIANT_ES
+		#include <OpenGLES/ES3/gl.h>
+		#include <OpenGLES/ES3/glext.h>
+	#else
+		#define OPENGL_VARIANT_STANDARD
+		
+		#ifdef OGLRENDER_3_2_H
+			#include <OpenGL/gl3.h>
+			#include <OpenGL/gl3ext.h>
+		#else
+			#include <OpenGL/gl.h>
+			#include <OpenGL/glext.h>
+		#endif
+		
+		// Use Apple's extension function if the core function is not available
+		#if defined(GL_APPLE_vertex_array_object) && !defined(GL_ARB_vertex_array_object)
+			#define glGenVertexArrays(n, ids)    glGenVertexArraysAPPLE(n, ids)
+			#define glBindVertexArray(id)        glBindVertexArrayAPPLE(id)
+			#define glDeleteVertexArrays(n, ids) glDeleteVertexArraysAPPLE(n, ids)
+		#endif
+	#endif
+	
+	// Ignore dynamic linking
 	#define OGLEXT(procPtr, func)
 	#define INITOGLEXT(procPtr, func)
 	#define EXTERNOGLEXT(procPtr, func)
-
-	// We're not exactly committing to OpenGL 3.2 Core Profile just yet, so redefine APPLE
-	// extensions as a temporary measure.
-	#if defined(GL_APPLE_vertex_array_object) && !defined(GL_ARB_vertex_array_object)
-		#define glGenVertexArrays(n, ids)		glGenVertexArraysAPPLE(n, ids)
-		#define glBindVertexArray(id)			glBindVertexArrayAPPLE(id)
-		#define glDeleteVertexArrays(n, ids)	glDeleteVertexArraysAPPLE(n, ids)
-	#endif
 #else
+	#define OPENGL_VARIANT_STANDARD
 	#include <GL/gl.h>
 	#include <GL/glext.h>
 	#include <GL/glx.h>
 
-	/* This is a workaround needed to compile against nvidia GL headers */
-	#ifndef GL_ALPHA_BLEND_EQUATION_ATI
-		#undef GL_VERSION_1_3
+	#ifdef OGLRENDER_3_2_H
+		#include "utils/glcorearb.h"
+	#else
+		/* This is a workaround needed to compile against nvidia GL headers */
+		#ifndef GL_ALPHA_BLEND_EQUATION_ATI
+			#undef GL_VERSION_1_3
+		#endif
 	#endif
 
-	#define OGLEXT(procPtr, func)		procPtr func = NULL;
-	#define INITOGLEXT(procPtr, func)	func = (procPtr)glXGetProcAddress((const GLubyte *) #func);
-	#define EXTERNOGLEXT(procPtr, func)	extern procPtr func;
+	#define OGLEXT(procPtr, func)       procPtr func = NULL;
+	#define INITOGLEXT(procPtr, func)   func = (procPtr)glXGetProcAddress((const GLubyte *) #func);
+	#define EXTERNOGLEXT(procPtr, func) extern procPtr func;
 #endif
 
 // Check minimum OpenGL header version
-#if !defined(GL_VERSION_2_1)
-	#if defined(GL_VERSION_2_0)
-		#warning Using OpenGL v2.0 headers with v2.1 overrides. Some features will be disabled.
-
-		#if !defined(GL_ARB_framebuffer_object)
-			// Overrides for GL_EXT_framebuffer_blit
-			#if !defined(GL_EXT_framebuffer_blit)
-				#define GL_READ_FRAMEBUFFER_EXT		GL_FRAMEBUFFER_EXT
-				#define GL_DRAW_FRAMEBUFFER_EXT		GL_FRAMEBUFFER_EXT
-				#define glBlitFramebufferEXT(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter)
-			#endif
-
-			// Overrides for GL_EXT_framebuffer_multisample
-			#if !defined(GL_EXT_framebuffer_multisample)
-				#define GL_MAX_SAMPLES_EXT 0
-				#define glRenderbufferStorageMultisampleEXT(target, samples, internalformat, width, height)
-			#endif
-
-			// Overrides for GL_ARB_pixel_buffer_object
-			#if !defined(GL_PIXEL_PACK_BUFFER) && defined(GL_PIXEL_PACK_BUFFER_ARB)
-				#define GL_PIXEL_PACK_BUFFER GL_PIXEL_PACK_BUFFER_ARB
-			#endif
-		#endif
-	#else
+#if defined(OPENGL_VARIANT_STANDARD)
+	#if !defined(GL_VERSION_2_1)
 		#error OpenGL requires v2.1 headers or later.
 	#endif
+#elif defined(OPENGL_VARIANT_ES)
+	#if !defined(GL_ES_VERSION_3_0)
+		#error OpenGL ES requires v3.0 headers or later.
+	#endif
+#else
+	#error Unknown OpenGL variant.
 #endif
+
+// OPENGL LEGACY CORE FUNCTIONS
 
 // Textures
 #if !defined(GLX_H)
 EXTERNOGLEXT(PFNGLACTIVETEXTUREPROC, glActiveTexture) // Core in v1.3
-EXTERNOGLEXT(PFNGLACTIVETEXTUREARBPROC, glActiveTextureARB)
 #endif
 
 // Blending
@@ -110,9 +139,6 @@ EXTERNOGLEXT(PFNGLBLENDEQUATIONPROC, glBlendEquation) // Core in v1.2
 #endif
 EXTERNOGLEXT(PFNGLBLENDFUNCSEPARATEPROC, glBlendFuncSeparate) // Core in v1.4
 EXTERNOGLEXT(PFNGLBLENDEQUATIONSEPARATEPROC, glBlendEquationSeparate) // Core in v2.0
-
-EXTERNOGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC, glBlendFuncSeparateEXT)
-EXTERNOGLEXT(PFNGLBLENDEQUATIONSEPARATEEXTPROC, glBlendEquationSeparateEXT)
 
 // Shaders
 EXTERNOGLEXT(PFNGLCREATESHADERPROC, glCreateShader) // Core in v2.0
@@ -146,28 +172,84 @@ EXTERNOGLEXT(PFNGLENABLEVERTEXATTRIBARRAYPROC, glEnableVertexAttribArray) // Cor
 EXTERNOGLEXT(PFNGLDISABLEVERTEXATTRIBARRAYPROC, glDisableVertexAttribArray) // Core in v2.0
 EXTERNOGLEXT(PFNGLVERTEXATTRIBPOINTERPROC, glVertexAttribPointer) // Core in v2.0
 
-// VAO
-EXTERNOGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays)
-EXTERNOGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays)
-EXTERNOGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray)
-
-// VBO and PBO
-EXTERNOGLEXT(PFNGLGENBUFFERSARBPROC, glGenBuffersARB)
-EXTERNOGLEXT(PFNGLDELETEBUFFERSARBPROC, glDeleteBuffersARB)
-EXTERNOGLEXT(PFNGLBINDBUFFERARBPROC, glBindBufferARB)
-EXTERNOGLEXT(PFNGLBUFFERDATAARBPROC, glBufferDataARB)
-EXTERNOGLEXT(PFNGLBUFFERSUBDATAARBPROC, glBufferSubDataARB)
-EXTERNOGLEXT(PFNGLMAPBUFFERARBPROC, glMapBufferARB)
-EXTERNOGLEXT(PFNGLUNMAPBUFFERARBPROC, glUnmapBufferARB)
-
+// Buffer Objects
 EXTERNOGLEXT(PFNGLGENBUFFERSPROC, glGenBuffers) // Core in v1.5
 EXTERNOGLEXT(PFNGLDELETEBUFFERSPROC, glDeleteBuffers) // Core in v1.5
 EXTERNOGLEXT(PFNGLBINDBUFFERPROC, glBindBuffer) // Core in v1.5
 EXTERNOGLEXT(PFNGLBUFFERDATAPROC, glBufferData) // Core in v1.5
 EXTERNOGLEXT(PFNGLBUFFERSUBDATAPROC, glBufferSubData) // Core in v1.5
+#if defined(GL_VERSION_1_5)
 EXTERNOGLEXT(PFNGLMAPBUFFERPROC, glMapBuffer) // Core in v1.5
+#endif
 EXTERNOGLEXT(PFNGLUNMAPBUFFERPROC, glUnmapBuffer) // Core in v1.5
 
+// VAO (always available in Apple's implementation of OpenGL, including old versions)
+#if defined(__APPLE__) || defined(GL_VERSION_3_0) || defined(GL_ES_VERSION_3_0)
+EXTERNOGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays) // Core in v3.0 and ES v3.0
+EXTERNOGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays) // Core in v3.0 and ES v3.0
+EXTERNOGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray) // Core in v3.0 and ES v3.0
+#endif
+
+// OPENGL CORE FUNCTIONS ADDED IN 3.2 CORE PROFILE AND VARIANTS
+#if defined(GL_VERSION_3_0) || defined(GL_ES_VERSION_3_0)
+
+// Basic Functions
+EXTERNOGLEXT(PFNGLGETSTRINGIPROC, glGetStringi) // Core in v3.0 and ES v3.0
+EXTERNOGLEXT(PFNGLCLEARBUFFERFVPROC, glClearBufferfv) // Core in v3.0 and ES v3.0
+EXTERNOGLEXT(PFNGLCLEARBUFFERFIPROC, glClearBufferfi) // Core in v3.0 and ES v3.0
+
+// Shaders
+#if defined(GL_VERSION_3_0)
+EXTERNOGLEXT(PFNGLBINDFRAGDATALOCATIONPROC, glBindFragDataLocation) // Core in v3.0, not available in ES
+#endif
+#if defined(GL_VERSION_3_3) || defined(GL_ARB_blend_func_extended)
+EXTERNOGLEXT(PFNGLBINDFRAGDATALOCATIONINDEXEDPROC, glBindFragDataLocationIndexed) // Core in v3.3, not available in ES
+#endif
+
+// Buffer Objects
+EXTERNOGLEXT(PFNGLMAPBUFFERRANGEPROC, glMapBufferRange) // Core in v3.0 and ES v3.0
+
+// FBO
+EXTERNOGLEXT(PFNGLGENFRAMEBUFFERSPROC, glGenFramebuffers) // Core in v3.0 and ES v2.0
+EXTERNOGLEXT(PFNGLBINDFRAMEBUFFERPROC, glBindFramebuffer) // Core in v3.0 and ES v2.0
+EXTERNOGLEXT(PFNGLFRAMEBUFFERRENDERBUFFERPROC, glFramebufferRenderbuffer) // Core in v3.0 and ES v2.0
+EXTERNOGLEXT(PFNGLFRAMEBUFFERTEXTURE2DPROC, glFramebufferTexture2D) // Core in v3.0 and ES v2.0
+EXTERNOGLEXT(PFNGLCHECKFRAMEBUFFERSTATUSPROC, glCheckFramebufferStatus) // Core in v3.0 and ES v2.0
+EXTERNOGLEXT(PFNGLDELETEFRAMEBUFFERSPROC, glDeleteFramebuffers) // Core in v3.0 and ES v2.0
+EXTERNOGLEXT(PFNGLBLITFRAMEBUFFERPROC, glBlitFramebuffer) // Core in v3.0 and ES v3.0
+
+// Multisampled FBO
+EXTERNOGLEXT(PFNGLGENRENDERBUFFERSPROC, glGenRenderbuffers) // Core in v3.0 and ES v2.0
+EXTERNOGLEXT(PFNGLBINDRENDERBUFFERPROC, glBindRenderbuffer) // Core in v3.0 and ES v2.0
+EXTERNOGLEXT(PFNGLRENDERBUFFERSTORAGEPROC, glRenderbufferStorage) // Core in v3.0 and ES v2.0
+EXTERNOGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC, glRenderbufferStorageMultisample) // Core in v3.0 and ES v3.0
+EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSPROC, glDeleteRenderbuffers) // Core in v3.0 and ES v2.0
+#if defined(GL_VERSION_3_2) || defined(GL_ARB_texture_multisample)
+EXTERNOGLEXT(PFNGLTEXIMAGE2DMULTISAMPLEPROC, glTexImage2DMultisample) // Core in v3.2, not available in ES
+#endif
+
+// UBO
+EXTERNOGLEXT(PFNGLGETUNIFORMBLOCKINDEXPROC, glGetUniformBlockIndex) // Core in v3.1 and ES v3.0
+EXTERNOGLEXT(PFNGLUNIFORMBLOCKBINDINGPROC, glUniformBlockBinding) // Core in v3.1 and ES v3.0
+EXTERNOGLEXT(PFNGLBINDBUFFERBASEPROC, glBindBufferBase) // Core in v3.0 and ES v3.0
+EXTERNOGLEXT(PFNGLGETACTIVEUNIFORMBLOCKIVPROC, glGetActiveUniformBlockiv) // Core in v3.1 and ES v3.0
+
+// TBO
+#if defined(GL_VERSION_3_1) || defined(GL_ES_VERSION_3_2)
+EXTERNOGLEXT(PFNGLTEXBUFFERPROC, glTexBuffer) // Core in v3.1 and ES v3.2
+#endif
+
+// Sync Objects
+EXTERNOGLEXT(PFNGLFENCESYNCPROC, glFenceSync) // Core in v3.2 and ES v3.0
+EXTERNOGLEXT(PFNGLWAITSYNCPROC, glWaitSync) // Core in v3.2 and ES v3.0
+EXTERNOGLEXT(PFNGLDELETESYNCPROC, glDeleteSync) // Core in v3.2 and ES v3.0
+
+#endif // GL_VERSION_3_0 || GL_ES_VERSION_3_0
+
+// OPENGL FBO EXTENSIONS
+// We need to include these explicitly for OpenGL legacy mode since the EXT versions of FBOs
+// may work differently than their ARB counterparts when running on older drivers.
+#if defined(GL_EXT_framebuffer_object)
 // FBO
 EXTERNOGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC, glGenFramebuffersEXT)
 EXTERNOGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC, glBindFramebufferEXT)
@@ -184,129 +266,130 @@ EXTERNOGLEXT(PFNGLRENDERBUFFERSTORAGEEXTPROC, glRenderbufferStorageEXT)
 EXTERNOGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC, glRenderbufferStorageMultisampleEXT)
 EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 
-#else // OGLRENDER_3_2_H
+#elif defined(GL_ARB_framebuffer_object) || defined(GL_ES_VERSION_3_0)
+// Most OpenGL variants don't have GL_EXT_framebuffer_object, so redeclare all the ARB versions
+// to their EXT versions to avoid compile time errors in OGLRender.cpp.
+//
+// In practice, class objects for more modern variants like 3.2 Core Profile and ES 3.0 should
+// override all the methods that would use FBOs so that only the ARB versions are actually used.
 
-// Basic Functions
-EXTERNOGLEXT(PFNGLGETSTRINGIPROC, glGetStringi) // Core in v3.0
-EXTERNOGLEXT(PFNGLCLEARBUFFERFVPROC, glClearBufferfv) // Core in v3.0
-EXTERNOGLEXT(PFNGLCLEARBUFFERFIPROC, glClearBufferfi) // Core in v3.0
-
-// Textures
-#if !defined(GLX_H)
-EXTERNOGLEXT(PFNGLACTIVETEXTUREPROC, glActiveTexture) // Core in v1.3
+#ifndef GL_EXT_draw_buffers
+#define GL_MAX_COLOR_ATTACHMENTS_EXT GL_MAX_COLOR_ATTACHMENTS
+#define GL_COLOR_ATTACHMENT0_EXT     GL_COLOR_ATTACHMENT0
+#define GL_COLOR_ATTACHMENT1_EXT     GL_COLOR_ATTACHMENT1
+#define GL_COLOR_ATTACHMENT2_EXT     GL_COLOR_ATTACHMENT2
+#define GL_COLOR_ATTACHMENT3_EXT     GL_COLOR_ATTACHMENT3
 #endif
 
-// Blending
-#if !defined(GLX_H)
-EXTERNOGLEXT(PFNGLBLENDEQUATIONPROC, glBlendEquation) // Core in v1.2
+#ifndef GL_EXT_multisampled_render_to_texture
+#define GL_MAX_SAMPLES_EXT           GL_MAX_SAMPLES
 #endif
-EXTERNOGLEXT(PFNGLBLENDFUNCSEPARATEPROC, glBlendFuncSeparate) // Core in v1.4
-EXTERNOGLEXT(PFNGLBLENDEQUATIONSEPARATEPROC, glBlendEquationSeparate) // Core in v2.0
 
-// Shaders
-EXTERNOGLEXT(PFNGLCREATESHADERPROC, glCreateShader) // Core in v2.0
-EXTERNOGLEXT(PFNGLSHADERSOURCEPROC, glShaderSource) // Core in v2.0
-EXTERNOGLEXT(PFNGLCOMPILESHADERPROC, glCompileShader) // Core in v2.0
-EXTERNOGLEXT(PFNGLCREATEPROGRAMPROC, glCreateProgram) // Core in v2.0
-EXTERNOGLEXT(PFNGLATTACHSHADERPROC, glAttachShader) // Core in v2.0
-EXTERNOGLEXT(PFNGLDETACHSHADERPROC, glDetachShader) // Core in v2.0
-EXTERNOGLEXT(PFNGLLINKPROGRAMPROC, glLinkProgram) // Core in v2.0
-EXTERNOGLEXT(PFNGLUSEPROGRAMPROC, glUseProgram) // Core in v2.0
-EXTERNOGLEXT(PFNGLGETSHADERIVPROC, glGetShaderiv) // Core in v2.0
-EXTERNOGLEXT(PFNGLGETSHADERINFOLOGPROC, glGetShaderInfoLog) // Core in v2.0
-EXTERNOGLEXT(PFNGLDELETESHADERPROC, glDeleteShader) // Core in v2.0
-EXTERNOGLEXT(PFNGLDELETEPROGRAMPROC, glDeleteProgram) // Core in v2.0
-EXTERNOGLEXT(PFNGLGETPROGRAMIVPROC, glGetProgramiv) // Core in v2.0
-EXTERNOGLEXT(PFNGLGETPROGRAMINFOLOGPROC, glGetProgramInfoLog) // Core in v2.0
-EXTERNOGLEXT(PFNGLVALIDATEPROGRAMPROC, glValidateProgram) // Core in v2.0
-EXTERNOGLEXT(PFNGLGETUNIFORMLOCATIONPROC, glGetUniformLocation) // Core in v2.0
-EXTERNOGLEXT(PFNGLUNIFORM1IPROC, glUniform1i) // Core in v2.0
-EXTERNOGLEXT(PFNGLUNIFORM1IVPROC, glUniform1iv) // Core in v2.0
-EXTERNOGLEXT(PFNGLUNIFORM1FPROC, glUniform1f) // Core in v2.0
-EXTERNOGLEXT(PFNGLUNIFORM1FVPROC, glUniform1fv) // Core in v2.0
-EXTERNOGLEXT(PFNGLUNIFORM2FPROC, glUniform2f) // Core in v2.0
-EXTERNOGLEXT(PFNGLUNIFORM4FPROC, glUniform4f) // Core in v2.0
-EXTERNOGLEXT(PFNGLUNIFORM4FVPROC, glUniform4fv) // Core in v2.0
-EXTERNOGLEXT(PFNGLDRAWBUFFERSPROC, glDrawBuffers) // Core in v2.0
+#define GL_DEPTH24_STENCIL8_EXT      GL_DEPTH24_STENCIL8
+#define GL_DEPTH_STENCIL_EXT         GL_DEPTH_STENCIL
+#define GL_UNSIGNED_INT_24_8_EXT     GL_UNSIGNED_INT_24_8
+#define GL_FRAMEBUFFER_EXT           GL_FRAMEBUFFER
+#define GL_FRAMEBUFFER_COMPLETE_EXT  GL_FRAMEBUFFER_COMPLETE
+#define GL_DEPTH_ATTACHMENT_EXT      GL_DEPTH_ATTACHMENT
+#define GL_STENCIL_ATTACHMENT_EXT    GL_STENCIL_ATTACHMENT
+#define GL_RENDERBUFFER_EXT          GL_RENDERBUFFER
+#define GL_DRAW_FRAMEBUFFER_EXT      GL_DRAW_FRAMEBUFFER
+#define GL_READ_FRAMEBUFFER_EXT      GL_READ_FRAMEBUFFER
 
-// Generic vertex attributes
-EXTERNOGLEXT(PFNGLBINDATTRIBLOCATIONPROC, glBindAttribLocation) // Core in v2.0
-EXTERNOGLEXT(PFNGLBINDFRAGDATALOCATIONPROC, glBindFragDataLocation) // Core in v3.0
-EXTERNOGLEXT(PFNGLBINDFRAGDATALOCATIONINDEXEDPROC, glBindFragDataLocationIndexed) // Core in v3.3
-EXTERNOGLEXT(PFNGLENABLEVERTEXATTRIBARRAYPROC, glEnableVertexAttribArray) // Core in v2.0
-EXTERNOGLEXT(PFNGLDISABLEVERTEXATTRIBARRAYPROC, glDisableVertexAttribArray) // Core in v2.0
-EXTERNOGLEXT(PFNGLVERTEXATTRIBPOINTERPROC, glVertexAttribPointer) // Core in v2.0
+#define glGenFramebuffersEXT(n, framebuffers) glGenFramebuffers(n, framebuffers)
+#define glBindFramebufferEXT(target, framebuffer) glBindFramebuffer(target, framebuffer)
+#define glFramebufferRenderbufferEXT(target, attachment, renderbuffertarget, renderbuffer) glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer)
+#define glFramebufferTexture2DEXT(target, attachment, textarget, texture, level) glFramebufferTexture2D(target, attachment, textarget, texture, level)
+#define glCheckFramebufferStatusEXT(target) glCheckFramebufferStatus(target)
+#define glDeleteFramebuffersEXT(n, framebuffers) glDeleteFramebuffers(n, framebuffers)
+#define glBlitFramebufferEXT(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter) glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter)
 
-// VAO
-EXTERNOGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays) // Core in v3.0
-EXTERNOGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays) // Core in v3.0
-EXTERNOGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray) // Core in v3.0
+#define glGenRenderbuffersEXT(n, renderbuffers) glGenRenderbuffers(n, renderbuffers)
+#define glBindRenderbufferEXT(target, renderbuffer) glBindRenderbuffer(target, renderbuffer)
+#define glRenderbufferStorageEXT(target, internalformat, width, height) glRenderbufferStorage(target, internalformat, width, height)
+#define glRenderbufferStorageMultisampleEXT(target, samples, internalformat, width, height) glRenderbufferStorageMultisample(target, samples, internalformat, width, height)
+#define glDeleteRenderbuffersEXT(n, renderbuffers) glDeleteRenderbuffers(n, renderbuffers)
 
-// VBO and PBO
-EXTERNOGLEXT(PFNGLGENBUFFERSPROC, glGenBuffers) // Core in v1.5
-EXTERNOGLEXT(PFNGLDELETEBUFFERSPROC, glDeleteBuffers) // Core in v1.5
-EXTERNOGLEXT(PFNGLBINDBUFFERPROC, glBindBuffer) // Core in v1.5
-EXTERNOGLEXT(PFNGLBUFFERDATAPROC, glBufferData) // Core in v1.5
-EXTERNOGLEXT(PFNGLBUFFERSUBDATAPROC, glBufferSubData) // Core in v1.5
-EXTERNOGLEXT(PFNGLMAPBUFFERPROC, glMapBuffer) // Core in v1.5
-EXTERNOGLEXT(PFNGLUNMAPBUFFERPROC, glUnmapBuffer) // Core in v1.5
+#endif // GL_EXT_framebuffer_object
 
-// Buffer Objects
-EXTERNOGLEXT(PFNGLMAPBUFFERRANGEPROC, glMapBufferRange) // Core in v3.0
+// Some headers, such as the OpenGL ES headers, may not include this macro.
+// Add it manually to avoid compiling issues.
+#ifndef GL_BGRA
+#define GL_BGRA GL_BGRA_EXT
+#endif
 
-// FBO
-EXTERNOGLEXT(PFNGLGENFRAMEBUFFERSPROC, glGenFramebuffers) // Core in v3.0
-EXTERNOGLEXT(PFNGLBINDFRAMEBUFFERPROC, glBindFramebuffer) // Core in v3.0
-EXTERNOGLEXT(PFNGLFRAMEBUFFERRENDERBUFFERPROC, glFramebufferRenderbuffer) // Core in v3.0
-EXTERNOGLEXT(PFNGLFRAMEBUFFERTEXTURE2DPROC, glFramebufferTexture2D) // Core in v3.0
-EXTERNOGLEXT(PFNGLCHECKFRAMEBUFFERSTATUSPROC, glCheckFramebufferStatus) // Core in v3.0
-EXTERNOGLEXT(PFNGLDELETEFRAMEBUFFERSPROC, glDeleteFramebuffers) // Core in v3.0
-EXTERNOGLEXT(PFNGLBLITFRAMEBUFFERPROC, glBlitFramebuffer) // Core in v3.0
-EXTERNOGLEXT(PFNGLDRAWBUFFERSPROC, glDrawBuffers) // Core in v2.0
+// OPENGL CORE EQUIVALENTS FOR LEGACY FUNCTIONS
+// Some OpenGL variants, such as OpenGL ES, do not include certain legacy functions in their
+// API. The loss of these functions will cause compile time errors when referenced, and so
+// we will redeclare them to something that is supported for the sake of compiling.
+//
+// Do note that a redeclared function will most likely not work in exactly the same way as
+// a native legacy version, and so implmentations are responsible for overriding any methods
+// that use these legacy functions to whatever is available in the specific OpenGL variant.
 
-// Multisampled FBO
-EXTERNOGLEXT(PFNGLGENRENDERBUFFERSPROC, glGenRenderbuffers) // Core in v3.0
-EXTERNOGLEXT(PFNGLBINDRENDERBUFFERPROC, glBindRenderbuffer) // Core in v3.0
-EXTERNOGLEXT(PFNGLRENDERBUFFERSTORAGEPROC, glRenderbufferStorage) // Core in v3.0
-EXTERNOGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC, glRenderbufferStorageMultisample) // Core in v3.0
-EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSPROC, glDeleteRenderbuffers) // Core in v3.0
-EXTERNOGLEXT(PFNGLTEXIMAGE2DMULTISAMPLEPROC, glTexImage2DMultisample) // Core in v3.2
+#ifndef GL_VERSION_1_2
+	// These legacy functions can be promoted to later core equivalents without any further
+	// modification. In other words, these are one-to-one drop-in replacements.
+	typedef GLclampf GLclampd;
+	#define glClearDepth(depth) glClearDepthf(depth)
+	#define glDrawBuffer(x) glDrawBuffers(1, ((GLenum[]){x}))
 
-// UBO
-EXTERNOGLEXT(PFNGLGETUNIFORMBLOCKINDEXPROC, glGetUniformBlockIndex) // Core in v3.1
-EXTERNOGLEXT(PFNGLUNIFORMBLOCKBINDINGPROC, glUniformBlockBinding) // Core in v3.1
-EXTERNOGLEXT(PFNGLBINDBUFFERBASEPROC, glBindBufferBase) // Core in v3.0
-EXTERNOGLEXT(PFNGLGETACTIVEUNIFORMBLOCKIVPROC, glGetActiveUniformBlockiv) // Core in v3.1
+	// 1D textures may not exist for a particular OpenGL variant, so they will be promoted to
+	// 2D textures instead. Implementations need to modify their GLSL shaders accordingly to
+	// treat any 1D textures as 2D textures instead.
+	#define GL_TEXTURE_1D GL_TEXTURE_2D
+	#define glTexImage1D(target, level, internalformat, width, border, format, type, pixels) glTexImage2D(target, level, internalformat, width, 1, border, format, type, pixels)
+	#define glTexSubImage1D(target, level, xoffset, width, format, type, pixels) glTexSubImage2D(target, level, xoffset, 0, width, 1, format, type, pixels)
+#endif
 
-// TBO
-EXTERNOGLEXT(PFNGLTEXBUFFERPROC, glTexBuffer) // Core in v3.1
-
-// Sync Objects
-EXTERNOGLEXT(PFNGLFENCESYNCPROC, glFenceSync) // Core in v3.2
-EXTERNOGLEXT(PFNGLWAITSYNCPROC, glWaitSync) // Core in v3.2
-EXTERNOGLEXT(PFNGLDELETESYNCPROC, glDeleteSync) // Core in v3.2
-
-#endif // OGLRENDER_3_2_H
+#ifndef GL_VERSION_1_5
+	// Calling glMapBuffer with an OpenGL variant that forgoes legacy functions will cause a
+	// GL_INVALID_OPERATION error if used in practice. Implementations need to override any
+	// methods that would call glMapBuffer with glMapBufferRange.
+	#define GL_READ_ONLY  GL_MAP_READ_BIT
+	#define GL_WRITE_ONLY GL_MAP_WRITE_BIT
+	#define glMapBuffer(target, access) glMapBufferRange(target, 0, 0, access)
+#endif
 
 // Define the minimum required OpenGL version for the driver to support
-#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR			1
-#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR			2
-#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION		0
+#if defined(OPENGL_VARIANT_STANDARD)
+	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR    1
+	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR    2
+	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION 0
+#elif defined(OPENGL_VARIANT_ES)
+	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR    3
+	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR    0
+	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION 0
+#else
+	#error Unknown OpenGL variant.
+#endif
 
 #define OGLRENDER_VERT_INDEX_BUFFER_COUNT	(CLIPPED_POLYLIST_SIZE * 6)
 
 // Assign the FBO attachments for the main geometry render
-#ifdef OGLRENDER_3_2_H
-	#define GL_COLOROUT_ATTACHMENT_ID			GL_COLOR_ATTACHMENT0
-	#define GL_WORKING_ATTACHMENT_ID			GL_COLOR_ATTACHMENT3
-	#define GL_POLYID_ATTACHMENT_ID				GL_COLOR_ATTACHMENT1
-	#define GL_FOGATTRIBUTES_ATTACHMENT_ID		GL_COLOR_ATTACHMENT2
+#if defined(GL_VERSION_3_0) || defined(GL_ES_VERSION_3_0)
+	#define OGL_COLOROUT_ATTACHMENT_ID      GL_COLOR_ATTACHMENT0
+	#define OGL_WORKING_ATTACHMENT_ID       GL_COLOR_ATTACHMENT3
+	#define OGL_POLYID_ATTACHMENT_ID        GL_COLOR_ATTACHMENT1
+	#define OGL_FOGATTRIBUTES_ATTACHMENT_ID GL_COLOR_ATTACHMENT2
 #else
-	#define GL_COLOROUT_ATTACHMENT_ID			GL_COLOR_ATTACHMENT0_EXT
-	#define GL_WORKING_ATTACHMENT_ID			GL_COLOR_ATTACHMENT3_EXT
-	#define GL_POLYID_ATTACHMENT_ID				GL_COLOR_ATTACHMENT1_EXT
-	#define GL_FOGATTRIBUTES_ATTACHMENT_ID		GL_COLOR_ATTACHMENT2_EXT
+	#define OGL_COLOROUT_ATTACHMENT_ID      GL_COLOR_ATTACHMENT0_EXT
+	#define OGL_WORKING_ATTACHMENT_ID       GL_COLOR_ATTACHMENT3_EXT
+	#define OGL_POLYID_ATTACHMENT_ID        GL_COLOR_ATTACHMENT1_EXT
+	#define OGL_FOGATTRIBUTES_ATTACHMENT_ID GL_COLOR_ATTACHMENT2_EXT
 #endif
+
+enum OpenGLVariantID
+{
+	OpenGLVariantID_Unknown         = 0,
+	OpenGLVariantID_LegacyAuto      = 0x1000,
+	OpenGLVariantID_Legacy_1_2      = 0x1012,
+	OpenGLVariantID_Legacy_2_0      = 0x1020,
+	OpenGLVariantID_Legacy_2_1      = 0x1021,
+	OpenGLVariantID_CoreProfile_3_2 = 0x2032,
+	OpenGLVariantID_StandardAuto    = 0x3000,
+	OpenGLVariantID_ES_3_0          = 0x4030
+};
 
 enum OGLVertexAttributeID
 {
@@ -324,7 +407,7 @@ enum OGLTextureUnitID
 	OGLTextureUnitID_GPolyID,
 	OGLTextureUnitID_FogAttr,
 	OGLTextureUnitID_PolyStates,
-	OGLTextureUnitID_LookupTable,
+	OGLTextureUnitID_LookupTable
 };
 
 enum OGLBindingPointID
@@ -501,9 +584,11 @@ struct OGLFogShaderID
 typedef OGLFogShaderID OGLFogShaderID;
 
 struct OGLRenderRef
-{	
+{
 	// OpenGL Feature Support
 	GLint stateTexMirroredRepeat;
+	GLint readPixelsBestDataType;
+	GLint readPixelsBestFormat;
 	
 	// VBO
 	GLuint vboGeometryVtxID;
@@ -617,6 +702,7 @@ class OpenGLRenderer;
 extern GPU3DInterface gpu3Dgl;
 extern GPU3DInterface gpu3DglOld;
 extern GPU3DInterface gpu3Dgl_3_2;
+extern GPU3DInterface gpu3Dgl_ES_3_0;
 
 extern const GLenum GeometryDrawBuffersEnum[8][4];
 extern const GLint GeometryAttachmentWorkingBuffer[8];
@@ -656,6 +742,15 @@ void ENDGL();
 // renderers will be used instead.
 extern void (*OGLLoadEntryPoints_3_2_Func)();
 extern void (*OGLCreateRenderer_3_2_Func)(OpenGLRenderer **rendererPtr);
+
+// These functions need to be assigned by ports that support using an
+// OpenGL ES 3.0 context. The OGLRender_ES3.cpp file includes the corresponding
+// functions to assign to each function pointer.
+//
+// If any of these functions are unassigned, then the renderer object
+// creation will fail.
+extern void (*OGLLoadEntryPoints_ES_3_0_Func)();
+extern void (*OGLCreateRenderer_ES_3_0_Func)(OpenGLRenderer **rendererPtr);
 
 bool IsOpenGLDriverVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision);
 
@@ -712,6 +807,7 @@ protected:
 	OGLRenderRef *ref;
 	
 	// OpenGL Feature Support
+	OpenGLVariantID _variantID;
 	bool isVBOSupported;
 	bool isPBOSupported;
 	bool isFBOSupported;
@@ -926,10 +1022,10 @@ protected:
 };
 
 class OpenGLRenderer_2_1 : public OpenGLRenderer_2_0
-{	
+{
 public:
 	virtual Render3DError RenderFinish();
 	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);
 };
 
-#endif
+#endif // OGLRENDER_H

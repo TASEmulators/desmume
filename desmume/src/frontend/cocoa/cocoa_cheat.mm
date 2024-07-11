@@ -20,7 +20,6 @@
 #import "cocoa_globals.h"
 #import "cocoa_util.h"
 
-#include "../../cheatSystem.h"
 #include "../../MMU.h"
 #undef BOOL
 
@@ -178,7 +177,8 @@ ClientCheatItem::ClientCheatItem()
 	_willAddFromDB = false;
 	
 	_cheatType = CheatType_Internal;
-	_descriptionString = "No description.";
+	_nameString = "No description.";
+	_commentString = "";
 	_freezeType = CheatFreezeType_Normal;
 	_address = 0x02000000;
 	strncpy(_addressString, "0x02000000", sizeof(_addressString));
@@ -202,7 +202,8 @@ void ClientCheatItem::Init(const CHEATS_LIST &inCheatItem)
 	this->_isEnabled = (inCheatItem.enabled) ? true : false;
 	
 	this->_cheatType = (CheatType)inCheatItem.type;
-	this->_descriptionString = inCheatItem.description;
+	this->_nameString = inCheatItem.description;
+	this->_commentString = "";
 	
 	this->_freezeType = (CheatFreezeType)inCheatItem.freezeType;
 	this->_valueLength = inCheatItem.size + 1; // CHEATS_LIST.size value range is [1...4], but starts counting from 0.
@@ -238,7 +239,8 @@ void ClientCheatItem::Init(const CHEATS_LIST &inCheatItem)
 void ClientCheatItem::Init(const ClientCheatItem &inCheatItem)
 {
 	this->SetEnabled(inCheatItem.IsEnabled());
-	this->SetDescription(inCheatItem.GetDescription());
+	this->SetName(inCheatItem.GetName());
+	this->SetComments(inCheatItem.GetComments());
 	this->SetType(inCheatItem.GetType());
 	this->SetFreezeType(inCheatItem.GetFreezeType());
 	
@@ -322,20 +324,37 @@ bool ClientCheatItem::IsSupportedType() const
 	return (this->_cheatType != CheatType_CodeBreaker);
 }
 
-const char* ClientCheatItem::GetDescription() const
+const char* ClientCheatItem::GetName() const
 {
-	return this->_descriptionString.c_str();
+	return this->_nameString.c_str();
 }
 
-void ClientCheatItem::SetDescription(const char *descriptionString)
+void ClientCheatItem::SetName(const char *nameString)
 {
-	if (descriptionString == NULL)
+	if (nameString == NULL)
 	{
-		this->_descriptionString = "";
+		this->_nameString = "";
 	}
 	else
 	{
-		this->_descriptionString = descriptionString;
+		this->_nameString = nameString;
+	}
+}
+
+const char* ClientCheatItem::GetComments() const
+{
+	return this->_commentString.c_str();
+}
+
+void ClientCheatItem::SetComments(const char *commentString)
+{
+	if (commentString == NULL)
+	{
+		this->_commentString = "";
+	}
+	else
+	{
+		this->_commentString = commentString;
 	}
 }
 
@@ -552,15 +571,18 @@ void ClientCheatItem::_ConvertInternalToActionReplay()
 {
 	char workingCodeBuffer[16+1+1];
 	
+	u32 function = this->_address & 0x0FFFFFFF;
 	u32 truncatedValue = this->_value;
 	
 	switch (this->_valueLength)
 	{
 		case 1:
+			function |= 0x20000000;
 			truncatedValue &= 0x000000FF;
 			break;
 			
 		case 2:
+			function |= 0x10000000;
 			truncatedValue &= 0x0000FFFF;
 			break;
 			
@@ -573,11 +595,11 @@ void ClientCheatItem::_ConvertInternalToActionReplay()
 	}
 	
 	memset(workingCodeBuffer, 0, sizeof(workingCodeBuffer));
-	snprintf(workingCodeBuffer, 16+1+1, "%08X %08X", this->_address, truncatedValue);
+	snprintf(workingCodeBuffer, 16+1+1, "%08X %08X", function, truncatedValue);
 	this->_rawCodeString = workingCodeBuffer;
 	
 	memset(workingCodeBuffer, 0, sizeof(workingCodeBuffer));
-	snprintf(workingCodeBuffer, 16+1, "%08X%08X", this->_address, truncatedValue);
+	snprintf(workingCodeBuffer, 16+1, "%08X%08X", function, truncatedValue);
 	this->_cleanCodeString = workingCodeBuffer;
 	
 	this->_codeCount = 1;
@@ -585,18 +607,68 @@ void ClientCheatItem::_ConvertInternalToActionReplay()
 
 void ClientCheatItem::_ConvertActionReplayToInternal()
 {
-	this->_addressString[0] = '0';
-	this->_addressString[1] = 'x';
-	strncpy(this->_addressString + 2, this->_cleanCodeString.c_str(), 8);
-	this->_addressString[10] = '\0';
-	sscanf(this->_addressString + 2, "%x", &this->_address);
+	char workingCodeBuffer[11] = {0};
+	size_t cleanCodeLength = this->_cleanCodeString.length();
+	size_t i = 0;
 	
-	char workingCodeBuffer[9];
+	// Note that we're only searching for the first valid command for
+	// a constant RAM write, since internal cheats can only support a
+	// single constant RAM write.
+	for (; i < cleanCodeLength; i+=16)
+	{
+		workingCodeBuffer[0] = '0';
+		workingCodeBuffer[1] = 'x';
+		strncpy(workingCodeBuffer + 2, this->_cleanCodeString.c_str() + i, 8);
+		workingCodeBuffer[10] = '\0';
+		
+		if (workingCodeBuffer[2] == '2')
+		{
+			this->_valueLength = 1;
+			workingCodeBuffer[2] = '0';
+			break;
+		}
+		else if (workingCodeBuffer[2] == '1')
+		{
+			this->_valueLength = 2;
+			workingCodeBuffer[2] = '0';
+			break;
+		}
+		else if (workingCodeBuffer[2] == '0')
+		{
+			this->_valueLength = 4;
+			break;
+		}
+		else
+		{
+			continue;
+		}
+	}
+	
+	if (i >= cleanCodeLength)
+	{
+		return;
+	}
+	
+	strncpy(this->_addressString, workingCodeBuffer, sizeof(this->_addressString));
+	sscanf(workingCodeBuffer + 2, "%x", &this->_address);
+	
 	memset(workingCodeBuffer, 0, sizeof(workingCodeBuffer));
-	strncpy(workingCodeBuffer, this->_cleanCodeString.c_str() + 8, 8);
+	strncpy(workingCodeBuffer, this->_cleanCodeString.c_str() + i + 8, 8);
 	sscanf(workingCodeBuffer, "%x", &this->_value);
 	
-	this->_valueLength = 4;
+	switch (this->_valueLength)
+	{
+		case 1:
+			this->_value &= 0x000000FF;
+			break;
+			
+		case 2:
+			this->_value &= 0x0000FFFF;
+			break;
+			
+		default:
+			break;
+	}
 }
 
 void ClientCheatItem::ClientToDesmumeCheatItem(CHEATS_LIST *outCheatItem) const
@@ -608,7 +680,7 @@ void ClientCheatItem::ClientToDesmumeCheatItem(CHEATS_LIST *outCheatItem) const
 	
 	outCheatItem->type = this->_cheatType;
 	outCheatItem->enabled = (this->_isEnabled) ? 1 : 0;
-	strncpy(outCheatItem->description, this->_descriptionString.c_str(), sizeof(outCheatItem->description));
+	strncpy(outCheatItem->description, this->_nameString.c_str(), sizeof(outCheatItem->description));
 	
 	switch (this->_cheatType)
 	{
@@ -1062,7 +1134,7 @@ ClientCheatDatabase::ClientCheatDatabase()
 {
 	_list = new ClientCheatList;
 	_title.resize(0);
-	_date.resize(0);
+	_description.resize(0);
 	_lastFilePath.resize(0);
 }
 
@@ -1090,8 +1162,8 @@ ClientCheatList* ClientCheatDatabase::LoadFromFile(const char *dbFilePath)
 	if (didFileLoad)
 	{
 		this->_list->RemoveAll();
-		this->_title = (const char *)exporter->gametitle;
-		this->_date = (const char *)exporter->date;
+		this->_title = exporter->getGameTitle();
+		this->_description = exporter->getDescription();
 		this->_lastFilePath = dbFilePath;
 		
 		const size_t itemCount = exporter->getCheatsNum();
@@ -1108,7 +1180,7 @@ ClientCheatList* ClientCheatDatabase::LoadFromFile(const char *dbFilePath)
 	}
 	else
 	{
-		dbError = (CheatSystemError)exporter->getErrorCode();
+		dbError = exporter->getErrorCode();
 	}
 
 	delete exporter;
@@ -1127,9 +1199,9 @@ const char* ClientCheatDatabase::GetTitle() const
 	return this->_title.c_str();
 }
 
-const char* ClientCheatDatabase::GetDate() const
+const char* ClientCheatDatabase::GetDescription() const
 {
-	return this->_date.c_str();
+	return this->_description.c_str();
 }
 
 #pragma mark -
@@ -1242,11 +1314,11 @@ ClientCheatItem* ClientCheatManager::NewItem()
 		char newDesc[16];
 		snprintf(newDesc, sizeof(newDesc), "Untitled %ld", (unsigned long)this->_untitledCount);
 		
-		newItem->SetDescription(newDesc);
+		newItem->SetName(newDesc);
 	}
 	else
 	{
-		newItem->SetDescription("Untitled");
+		newItem->SetName("Untitled");
 	}
 	
 	if (newItem->IsEnabled())
@@ -1407,9 +1479,9 @@ const char* ClientCheatManager::GetDatabaseTitle() const
 	return this->_currentDatabase->GetTitle();
 }
 
-const char* ClientCheatManager::GetDatabaseDate() const
+const char* ClientCheatManager::GetDatabaseDescription() const
 {
-	return this->_currentDatabase->GetDate();
+	return this->_currentDatabase->GetDescription();
 }
 
 bool ClientCheatManager::SearchDidStart() const
@@ -1509,6 +1581,7 @@ void ClientCheatManager::ApplyPendingInternalCheatWrites()
 
 @implementation CocoaDSCheatItem
 
+static NSImage *iconDirectory = nil;
 static NSImage *iconInternalCheat = nil;
 static NSImage *iconActionReplay = nil;
 static NSImage *iconCodeBreaker = nil;
@@ -1623,18 +1696,18 @@ static NSImage *iconCodeBreaker = nil;
 
 - (NSString *) description
 {
-	return [NSString stringWithCString:_internalData->GetDescription() encoding:NSUTF8StringEncoding];
+	return [NSString stringWithCString:_internalData->GetName() encoding:NSUTF8StringEncoding];
 }
 
 - (void) setDescription:(NSString *)desc
 {
 	if (desc == nil)
 	{
-		_internalData->SetDescription(NULL);
+		_internalData->SetName(NULL);
 	}
 	else
 	{
-		_internalData->SetDescription([desc cStringUsingEncoding:NSUTF8StringEncoding]);
+		_internalData->SetName([desc cStringUsingEncoding:NSUTF8StringEncoding]);
 	}
 	
 	if ((workingCopy != nil) && !_disableWorkingCopyUpdate)
@@ -1645,7 +1718,7 @@ static NSImage *iconCodeBreaker = nil;
 
 - (char *) descriptionCString
 {
-	return (char *)_internalData->GetDescription();
+	return (char *)_internalData->GetName();
 }
 
 - (NSInteger) cheatType
@@ -1659,7 +1732,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	switch (theType)
 	{
-		case CHEAT_TYPE_INTERNAL:
+		case CheatType_Internal:
 			[self setCheatTypeIcon:iconInternalCheat];
 			[self setIsSupportedCheatType:YES];
 			[self setMemAddress:[self memAddress]];
@@ -1667,13 +1740,13 @@ static NSImage *iconCodeBreaker = nil;
 			[self setBytes:[self bytes]];
 			break;
 			
-		case CHEAT_TYPE_ACTION_REPLAY:
+		case CheatType_ActionReplay:
 			[self setCheatTypeIcon:iconActionReplay];
 			[self setIsSupportedCheatType:YES];
 			[self setCode:[self code]];
 			break;
 			
-		case CHEAT_TYPE_CODE_BREAKER:
+		case CheatType_CodeBreaker:
 			[self setCheatTypeIcon:iconCodeBreaker];
 			[self setIsSupportedCheatType:NO];
 			[self setCode:[self code]];
@@ -1700,15 +1773,15 @@ static NSImage *iconCodeBreaker = nil;
 	
 	switch ([self cheatType])
 	{
-		case CHEAT_TYPE_INTERNAL:
+		case CheatType_Internal:
 			theIcon = iconInternalCheat;
 			break;
 			
-		case CHEAT_TYPE_ACTION_REPLAY:
+		case CheatType_ActionReplay:
 			theIcon = iconActionReplay;
 			break;
 			
-		case CHEAT_TYPE_CODE_BREAKER:
+		case CheatType_CodeBreaker:
 			theIcon = iconCodeBreaker;
 			break;
 			
@@ -1872,7 +1945,7 @@ static NSImage *iconCodeBreaker = nil;
 	[self setCheatType:[self cheatType]];
 	[self setFreezeType:[self freezeType]];
 	
-	if ([self cheatType] == CHEAT_TYPE_INTERNAL)
+	if ([self cheatType] == CheatType_Internal)
 	{
 		[self setMemAddressSixDigitString:[self memAddressSixDigitString]];
 		[self setValue:[self value]];
@@ -1901,7 +1974,7 @@ static NSImage *iconCodeBreaker = nil;
 	[self setCheatType:[cdsCheatItem cheatType]];
 	[self setFreezeType:[cdsCheatItem freezeType]];
 	
-	if ([self cheatType] == CHEAT_TYPE_INTERNAL)
+	if ([self cheatType] == CheatType_Internal)
 	{
 		[self setMemAddress:[cdsCheatItem memAddress]];
 		[self setValue:[cdsCheatItem value]];
@@ -1950,6 +2023,16 @@ static NSImage *iconCodeBreaker = nil;
 	[parent copyFrom:self];
 }
 
++ (void) setIconDirectory:(NSImage *)iconImage
+{
+	iconDirectory = iconImage;
+}
+
++ (NSImage *) iconDirectory
+{
+	return iconDirectory;
+}
+
 + (void) setIconInternalCheat:(NSImage *)iconImage
 {
 	iconInternalCheat = iconImage;
@@ -1982,16 +2065,615 @@ static NSImage *iconCodeBreaker = nil;
 
 @end
 
+@implementation CocoaDSCheatDBEntry
+
+@dynamic name;
+@dynamic comment;
+@dynamic icon;
+@dynamic entryCount;
+@dynamic codeString;
+@dynamic isDirectory;
+@dynamic isCheatItem;
+@dynamic willAdd;
+@synthesize needSetMixedState;
+@synthesize parent;
+@synthesize child;
+
+- (id)init
+{
+	return [self initWithDBEntry:NULL];
+}
+
+- (id) initWithDBEntry:(const CheatDBEntry *)dbEntry
+{
+	self = [super init];
+	if (self == nil)
+	{
+		return self;
+	}
+	
+	if (dbEntry == NULL)
+	{
+		[self release];
+		self = nil;
+		return self;
+	}
+	
+	if (dbEntry->codeLength == NULL)
+	{
+		const NSUInteger entryCount = dbEntry->child.size();
+		child = [[NSMutableArray alloc] initWithCapacity:entryCount];
+		if (child == nil)
+		{
+			[self release];
+			self = nil;
+			return self;
+		}
+		
+		for (NSUInteger i = 0; i < entryCount; i++)
+		{
+			const CheatDBEntry &childEntry = dbEntry->child[i];
+			
+			CocoaDSCheatDBEntry *newCocoaEntry = [[CocoaDSCheatDBEntry alloc] initWithDBEntry:&childEntry];
+			[newCocoaEntry setParent:self];
+			[child addObject:newCocoaEntry];
+		}
+	}
+	else
+	{
+		child = nil;
+	}
+	
+	_dbEntry = (CheatDBEntry *)dbEntry;
+	codeString = nil;
+	willAdd = NO;
+	needSetMixedState = NO;
+	parent = nil;
+	
+	return self;
+}
+
+- (void)dealloc
+{
+	[child release];
+	child = nil;
+	
+	[codeString release];
+	codeString = nil;
+	
+	[super dealloc];
+}
+
+- (NSString *) name
+{
+	if (_dbEntry->name != NULL)
+	{
+		return [NSString stringWithCString:_dbEntry->name encoding:NSUTF8StringEncoding];
+	}
+	
+	return @"";
+}
+
+- (NSString *) comment
+{
+	if (_dbEntry->note != NULL)
+	{
+		return [NSString stringWithCString:_dbEntry->note encoding:NSUTF8StringEncoding];
+	}
+	
+	return @"";
+}
+
+- (NSImage *) icon
+{
+	if (_dbEntry->codeLength == NULL)
+	{
+		return [CocoaDSCheatItem iconDirectory];
+	}
+	
+	return [CocoaDSCheatItem iconActionReplay];
+}
+
+- (NSInteger) entryCount
+{
+	return (NSInteger)_dbEntry->child.size();
+}
+
+- (NSString *) codeString
+{
+	if ( (codeString == nil) && [self isCheatItem] )
+	{
+		char codeStr[8+8+1+1+1] = {0};
+		const size_t codeCount = *_dbEntry->codeLength / 2;
+		
+		u32 code0 = _dbEntry->codeData[0];
+		u32 code1 = _dbEntry->codeData[1];
+		snprintf(codeStr, sizeof(codeStr), "%08X %08X", code0, code1);
+		std::string code = codeStr;
+		
+		for (size_t i = 1; i < codeCount; i++)
+		{
+			code0 = _dbEntry->codeData[(i * 2) + 0];
+			code1 = _dbEntry->codeData[(i * 2) + 1];
+			snprintf(codeStr, sizeof(codeStr), "\n%08X %08X", code0, code1);
+			code += codeStr;
+		}
+		
+		codeString = [[NSString alloc] initWithCString:code.c_str() encoding:NSUTF8StringEncoding];
+	}
+	
+	return codeString;
+}
+
+- (BOOL) isDirectory
+{
+	return (_dbEntry->codeLength == NULL) ? YES : NO;
+}
+
+- (BOOL) isCheatItem
+{
+	return (_dbEntry->codeLength != NULL) ? YES : NO;
+}
+
+- (void) setWillAdd:(NSInteger)theState
+{
+	if ((theState == GUI_STATE_MIXED) && ![self needSetMixedState])
+	{
+		theState = GUI_STATE_ON;
+	}
+	
+	if (willAdd == theState)
+	{
+		return;
+	}
+	else
+	{
+		willAdd = theState;
+	}
+	
+	if (theState == GUI_STATE_MIXED)
+	{
+		if (parent != nil)
+		{
+			[parent willChangeValueForKey:@"willAdd"];
+			[parent setNeedSetMixedState:YES];
+			[parent setWillAdd:GUI_STATE_MIXED];
+			[parent setNeedSetMixedState:NO];
+			[parent didChangeValueForKey:@"willAdd"];
+		}
+		
+		return;
+	}
+	
+	if (_dbEntry->codeLength == NULL)
+	{
+		for (CocoaDSCheatDBEntry *childEntry in child)
+		{
+			[childEntry willChangeValueForKey:@"willAdd"];
+			[childEntry setWillAdd:theState];
+			[childEntry didChangeValueForKey:@"willAdd"];
+		}
+	}
+	
+	if (parent != nil)
+	{
+		NSInteger firstEntryState = [(CocoaDSCheatDBEntry *)[[parent child] objectAtIndex:0] willAdd];
+		BOOL isMixedStateFound = (firstEntryState == GUI_STATE_MIXED);
+		
+		if (!isMixedStateFound)
+		{
+			for (CocoaDSCheatDBEntry *childEntry in [parent child])
+			{
+				const NSInteger childEntryState = [childEntry willAdd];
+				
+				isMixedStateFound = (firstEntryState != childEntryState) || (childEntryState == GUI_STATE_MIXED);
+				if (isMixedStateFound)
+				{
+					[parent willChangeValueForKey:@"willAdd"];
+					[parent setNeedSetMixedState:YES];
+					[parent setWillAdd:GUI_STATE_MIXED];
+					[parent setNeedSetMixedState:NO];
+					[parent didChangeValueForKey:@"willAdd"];
+					break;
+				}
+			}
+		}
+		
+		if (!isMixedStateFound)
+		{
+			[parent willChangeValueForKey:@"willAdd"];
+			[parent setWillAdd:firstEntryState];
+			[parent didChangeValueForKey:@"willAdd"];
+		}
+	}
+}
+
+- (NSInteger) willAdd
+{
+	return willAdd;
+}
+
+- (ClientCheatItem *) newClientItem
+{
+	ClientCheatItem *newItem = NULL;
+	if (![self isCheatItem])
+	{
+		return newItem;
+	}
+	
+	newItem = new ClientCheatItem;
+	newItem->SetType(CheatType_ActionReplay); // Default to Action Replay for now
+	newItem->SetFreezeType(CheatFreezeType_Normal);
+	newItem->SetEnabled(false);
+	newItem->SetComments(_dbEntry->note);
+	
+	CheatDBEntry *entryParent = _dbEntry->parent;
+	
+	// TODO: Replace this flattening out of names/comments with separated names/comments and tags.
+	std::string descString = "";
+	std::string itemString = "";
+	
+	if ( ((_dbEntry->name != NULL) && (*_dbEntry->name != '\0')) ||
+	     ((_dbEntry->note != NULL) && (*_dbEntry->note != '\0')) )
+	{
+		if ( (_dbEntry->name != NULL) && (*_dbEntry->name != '\0') )
+		{
+			itemString += _dbEntry->name;
+		}
+		
+		if ( (_dbEntry->note != NULL) && (*_dbEntry->note != '\0') )
+		{
+			if ( (_dbEntry->name != NULL) && (*_dbEntry->name != '\0') )
+			{
+				itemString += " | ";
+			}
+			
+			itemString += _dbEntry->note;
+		}
+	}
+	else
+	{
+		itemString = "No description.";
+	}
+	
+	// If this entry is root or child of root, then don't add the directory
+	// name or comments to the new cheat item's description.
+	if ( (entryParent == NULL) || (entryParent->parent == NULL) )
+	{
+		descString = itemString;
+	}
+	else
+	{
+		if ( (entryParent->name != NULL) && (*entryParent->name != '\0') )
+		{
+			descString += entryParent->name;
+		}
+		
+		if ( (entryParent->note != NULL) && (*entryParent->note != '\0') )
+		{
+			if ( (entryParent->name != NULL) && (*entryParent->name != '\0') )
+			{
+				descString += " ";
+			}
+			
+			descString += "[";
+			descString += entryParent->note;
+			descString += "]";
+		}
+		
+		descString += ": ";
+		descString += itemString;
+	}
+	
+	newItem->SetName(descString.c_str());
+	newItem->SetRawCodeString([[self codeString] cStringUsingEncoding:NSUTF8StringEncoding], true);
+	
+	return newItem;
+}
+
+@end
+
+@implementation CocoaDSCheatDBGame
+
+@synthesize index;
+@dynamic title;
+@dynamic serial;
+@dynamic crc;
+@dynamic crcString;
+@dynamic dataSize;
+@dynamic isDataLoaded;
+@dynamic cheatItemCount;
+@synthesize entryRoot;
+
+- (id)init
+{
+	return [self initWithGameEntry:NULL];
+}
+
+- (id) initWithGameEntry:(const CheatDBGame *)gameEntry
+{
+	self = [super init];
+	if (self == nil)
+	{
+		return self;
+	}
+	
+	_dbGame = (CheatDBGame *)gameEntry;
+	entryRoot = nil;
+	index = 0;
+	
+	return self;
+}
+
+- (void)dealloc
+{
+	[entryRoot release];
+	entryRoot = nil;
+	
+	[super dealloc];
+}
+
+- (NSString *) title
+{
+	return [NSString stringWithCString:_dbGame->GetTitle() encoding:NSUTF8StringEncoding];
+}
+
+- (NSString *) serial
+{
+	return [NSString stringWithCString:_dbGame->GetSerial() encoding:NSUTF8StringEncoding];
+}
+
+- (NSUInteger) crc
+{
+	return (NSUInteger)_dbGame->GetCRC();
+}
+
+- (NSString *) crcString
+{
+	const u32 crc = _dbGame->GetCRC();
+	return [NSString stringWithFormat:@"%08lX", (unsigned long)crc];
+}
+
+- (NSInteger) dataSize
+{
+	return (NSInteger)_dbGame->GetRawDataSize();
+}
+
+- (NSString *) dataSizeString
+{
+	const u32 dataSize = _dbGame->GetRawDataSize();
+	const float dataSizeKB = (float)dataSize / 1024.0f;
+	
+	if (dataSize > ((1024 * 100) - 1))
+	{
+		return [NSString stringWithFormat:@"%1.1f KB", dataSizeKB];
+	}
+	else if (dataSize > ((1024 * 10) - 1))
+	{
+		return [NSString stringWithFormat:@"%1.2f KB", dataSizeKB];
+	}
+	
+	return [NSString stringWithFormat:@"%lu bytes", (unsigned long)dataSize];
+}
+
+- (BOOL) isDataLoaded
+{
+	return (_dbGame->IsEntryDataLoaded()) ? YES : NO;
+}
+
+- (NSInteger) cheatItemCount
+{
+	return (NSInteger)_dbGame->GetCheatItemCount();
+}
+
+- (CocoaDSCheatDBEntry *) loadEntryDataFromFilePtr:(FILE *)fp isEncrypted:(BOOL)isEncrypted
+{
+	[entryRoot release];
+	entryRoot = nil;
+	
+	u8 *entryData = _dbGame->LoadEntryData(fp, (isEncrypted) ? true : false);
+	if (entryData == NULL)
+	{
+		return entryRoot;
+	}
+	
+	entryRoot = [[CocoaDSCheatDBEntry alloc] initWithDBEntry:&_dbGame->GetEntryRoot()];
+	return entryRoot;
+}
+
+@end
+
+@implementation CocoaDSCheatDatabase
+
+@synthesize lastFileURL;
+@dynamic description;
+@dynamic formatString;
+@dynamic isEncrypted;
+@synthesize gameList;
+
+- (id)init
+{
+	return [self initWithFileURL:nil error:NULL];
+}
+
+- (id) initWithFileURL:(NSURL *)fileURL error:(CheatSystemError *)errorCode
+{
+	self = [super init];
+	if (self == nil)
+	{
+		return self;
+	}
+	
+	if (fileURL == nil)
+	{
+		[self release];
+		self = nil;
+		return self;
+	}
+	
+	lastFileURL = [fileURL copy];
+	
+	CheatDBFile *newDBFile = new CheatDBFile();
+	if (newDBFile == NULL)
+	{
+		[lastFileURL release];
+		[self release];
+		self = nil;
+		return self;
+	}
+	
+	CheatSystemError error = newDBFile->OpenFile([CocoaDSUtil cPathFromFileURL:fileURL]);
+	if (error != CheatSystemError_NoError)
+	{
+		delete newDBFile;
+		
+		if (errorCode != nil)
+		{
+			*errorCode = error;
+		}
+		
+		[lastFileURL release];
+		[self release];
+		self = nil;
+		return self;
+	}
+	
+	_dbGameList = new CheatDBGameList;
+	if (_dbGameList == NULL)
+	{
+		delete newDBFile;
+		
+		if (errorCode == nil)
+		{
+			*errorCode = error;
+		}
+		
+		[lastFileURL release];
+		[self release];
+		self = nil;
+		return self;
+	}
+	
+	newDBFile->LoadGameList(NULL, 0, *_dbGameList);
+	const size_t gameCount = _dbGameList->size();
+	
+	gameList = [[NSMutableArray alloc] initWithCapacity:gameCount];
+	if (gameList == nil)
+	{
+		delete newDBFile;
+		
+		if (errorCode == nil)
+		{
+			*errorCode = error;
+		}
+		
+		[lastFileURL release];
+		[self release];
+		self = nil;
+		return self;
+	}
+	
+	for (size_t i = 0; i < gameCount; i++)
+	{
+		const CheatDBGame &dbGame = (*_dbGameList)[i];
+		CocoaDSCheatDBGame *newCocoaDBGame = [[[CocoaDSCheatDBGame alloc] initWithGameEntry:&dbGame] autorelease];
+		
+		[gameList addObject:newCocoaDBGame];
+		[newCocoaDBGame setIndex:[gameList indexOfObject:newCocoaDBGame]];
+	}
+	
+	_dbFile = newDBFile;
+	
+	return self;
+}
+
+- (void)dealloc
+{
+	[gameList release];
+	[lastFileURL release];
+	
+	delete _dbGameList;
+	_dbGameList = NULL;
+	
+	delete _dbFile;
+	_dbFile = NULL;
+	
+	[super dealloc];
+}
+
+- (NSString *) description
+{
+	return [NSString stringWithCString:_dbFile->GetDescription() encoding:NSUTF8StringEncoding];
+}
+
+- (NSString *) formatString
+{
+	return [NSString stringWithCString:_dbFile->GetFormatString() encoding:NSUTF8StringEncoding];
+}
+
+- (BOOL) isEncrypted
+{
+	return (_dbFile->IsEncrypted()) ? YES : NO;
+}
+
+- (CocoaDSCheatDBGame *) getGameEntryUsingCode:(const char *)gameCode crc:(NSUInteger)crc
+{
+	if (gameCode == nil)
+	{
+		return nil;
+	}
+	
+	const char gameCodeTerminated[5] = {
+		gameCode[0],
+		gameCode[1],
+		gameCode[2],
+		gameCode[3],
+		'\0'
+	};
+	
+	NSString *gameCodeString = [NSString stringWithCString:gameCodeTerminated encoding:NSUTF8StringEncoding];
+	
+	for (CocoaDSCheatDBGame *dbGame in gameList)
+	{
+		if ( ([dbGame crc] == crc) && [[dbGame serial] isEqualToString:gameCodeString] )
+		{
+			return dbGame;
+		}
+	}
+	
+	return nil;
+}
+
+- (CocoaDSCheatDBEntry *) loadGameEntry:(CocoaDSCheatDBGame *)dbGame
+{
+	CocoaDSCheatDBEntry *entryRoot = nil;
+	
+	if (dbGame == nil)
+	{
+		return entryRoot;
+	}
+	else if ([dbGame isDataLoaded])
+	{
+		entryRoot = [dbGame entryRoot];
+	}
+	else
+	{
+		entryRoot = [dbGame loadEntryDataFromFilePtr:_dbFile->GetFilePtr() isEncrypted:_dbFile->IsEncrypted()];
+	}
+	
+	return entryRoot;
+}
+
+@end
 
 @implementation CocoaDSCheatManager
 
 @synthesize _internalCheatManager;
 @synthesize sessionList;
+@dynamic currentGameCode;
+@dynamic currentGameCRC;
 @dynamic itemTotalCount;
 @dynamic itemActiveCount;
-@synthesize databaseList;
-@dynamic databaseTitle;
-@dynamic databaseDate;
 @synthesize searchResultsList;
 @dynamic searchCount;
 @dynamic searchDidStart;
@@ -2021,20 +2703,10 @@ static NSImage *iconCodeBreaker = nil;
 		return self;
 	}
 	
-	databaseList = [[NSMutableArray alloc] initWithCapacity:100];
-	if (databaseList == nil)
-	{
-		[sessionList release];
-		[self release];
-		self = nil;
-		return self;
-	}
-	
 	searchResultsList = [[NSMutableArray alloc] initWithCapacity:100];
 	if (searchResultsList == nil)
 	{
 		[sessionList release];
-		[databaseList release];
 		[self release];
 		self = nil;
 		return self;
@@ -2053,9 +2725,6 @@ static NSImage *iconCodeBreaker = nil;
 	[sessionList release];
 	sessionList = nil;
 	
-	[databaseList release];
-	databaseList = nil;
-	
 	[searchResultsList release];
 	searchResultsList = nil;
 	
@@ -2065,14 +2734,22 @@ static NSImage *iconCodeBreaker = nil;
 	[super dealloc];
 }
 
-- (NSString *) databaseTitle
+- (NSString *) currentGameCode
 {
-	return [NSString stringWithCString:_internalCheatManager->GetDatabaseTitle() encoding:NSUTF8StringEncoding];
+	const char gameCodeTerminated[5] = {
+		gameInfo.header.gameCode[0],
+		gameInfo.header.gameCode[1],
+		gameInfo.header.gameCode[2],
+		gameInfo.header.gameCode[3],
+		'\0'
+	};
+	
+	return [NSString stringWithCString:gameCodeTerminated encoding:NSUTF8StringEncoding];
 }
 
-- (NSString *) databaseDate
+- (NSUInteger) currentGameCRC
 {
-	return [NSString stringWithCString:_internalCheatManager->GetDatabaseDate() encoding:NSUTF8StringEncoding];
+	return (NSUInteger)gameInfo.crcForCheatsDb;
 }
 
 - (NSUInteger) itemTotalCount
@@ -2249,59 +2926,38 @@ static NSImage *iconCodeBreaker = nil;
 	_internalCheatManager->ApplyToMaster();
 }
 
-- (NSMutableArray *) databaseListLoadFromFile:(NSURL *)fileURL errorCode:(NSInteger *)error
+- (NSUInteger) databaseAddSelectedInEntry:(CocoaDSCheatDBEntry *)theEntry
 {
-	if (fileURL == nil)
+	NSUInteger willAddCount = 0;
+	if (theEntry == nil)
 	{
-		return nil;
+		return willAddCount;
 	}
 	
-	[self willChangeValueForKey:@"databaseTitle"];
-	[self willChangeValueForKey:@"databaseDate"];
-	
-	ClientCheatList *dbList = _internalCheatManager->DatabaseListLoadFromFile([CocoaDSUtil cPathFromFileURL:fileURL]);
-	
-	[self didChangeValueForKey:@"databaseTitle"];
-	[self didChangeValueForKey:@"databaseDate"];
-	
-	if (dbList != NULL)
+	NSMutableArray *entryChildren = [theEntry child];
+	if (entryChildren == nil)
 	{
-		[databaseList removeAllObjects];
-		
-		const size_t itemCount = dbList->GetTotalCheatCount();
-		for (size_t i = 0; i < itemCount; i++)
+		return willAddCount;
+	}
+	
+	for (CocoaDSCheatDBEntry *entry in entryChildren)
+	{
+		if ([entry isDirectory])
 		{
-			CocoaDSCheatItem *cheatItem = [[CocoaDSCheatItem alloc] initWithCheatItem:dbList->GetItemAtIndex(i)];
-			if (cheatItem != nil)
-			{
-				[databaseList addObject:[cheatItem autorelease]];
-			}
+			willAddCount += [self databaseAddSelectedInEntry:entry];
 		}
-	}
-	
-	return databaseList;
-}
-
-- (NSUInteger) databaseAddSelected
-{
-	NSUInteger addedItemCount = 0;
-	
-	for (CocoaDSCheatItem *dbItem in databaseList)
-	{
-		if ([dbItem willAdd])
+		else if ([entry willAdd])
 		{
-			ClientCheatItem *newCheatItem = new ClientCheatItem;
-			newCheatItem->Init(*[dbItem clientData]);
-			
+			ClientCheatItem *newCheatItem = [entry newClientItem];
 			CocoaDSCheatItem *newCocoaCheatItem = [self addExistingItem:newCheatItem];
 			if (newCocoaCheatItem != nil)
 			{
-				addedItemCount++;
+				willAddCount++;
 			}
 		}
 	}
 	
-	return addedItemCount;
+	return willAddCount;
 }
 
 - (NSUInteger) runExactValueSearch:(NSInteger)value byteSize:(UInt8)byteSize signType:(NSInteger)signType

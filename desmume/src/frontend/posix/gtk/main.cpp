@@ -1,6 +1,6 @@
  /*
 	Copyright (C) 2007 Pascal Giard (evilynux)
-	Copyright (C) 2006-2021 DeSmuME team
+	Copyright (C) 2006-2024 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -31,6 +31,9 @@
 #include <SDL.h>
 #include <X11/Xlib.h>
 #include <vector>
+#ifdef AGG2D_USE_VECTORFONTS
+#include <fontconfig/fontconfig.h>
+#endif
 
 #include "types.h"
 #include "firmware.h"
@@ -73,7 +76,6 @@
 
 #ifdef HAVE_OPENGL
 	#include <GL/gl.h>
-	#include "OGLRender.h"
 	#include "OGLRender_3_2.h"
 #endif
 
@@ -99,6 +101,14 @@ static int draw_count;
 extern int _scanline_filter_a, _scanline_filter_b, _scanline_filter_c, _scanline_filter_d;
 VideoFilter* video;
 
+#define GPU_SCALE_FACTOR_MIN 1.0f
+#define GPU_SCALE_FACTOR_MAX 10.0f
+
+float gpu_scale_factor = 1.0f;
+int real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+int real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+
+
 desmume::config::Config config;
 
 #ifdef GDB_STUB
@@ -118,6 +128,15 @@ enum {
     SUB_BG_3,
     SUB_OBJ
 };
+
+#ifdef AGG2D_USE_VECTORFONTS
+#define VECTOR_FONT_BASE_SIZE 16
+
+static FcConfig* fontConfig;
+static std::string vectorFontFile;
+
+static std::string FindFontFile(const char* fontName, bool bold);
+#endif
 
 gboolean EmuLoop(gpointer data);
 
@@ -182,6 +201,9 @@ static void HudLagCounter(GSimpleAction *action, GVariant *parameter, gpointer u
 static void HudRtc(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HudMic(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HudEditor(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HudResetLayout(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HudSaveLayout();
+static void HudLoadLayout();
 #endif
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -239,6 +261,7 @@ static const GActionEntry app_entries[] = {
     { "hud_rtc",        HudRtc,                 NULL, "false" },
     { "hud_mic",        HudMic,                 NULL, "false" },
     { "hud_editor",     HudEditor,              NULL, "false" },
+    { "hud_reset_layout", HudResetLayout},
 #endif
 
     // Config
@@ -289,6 +312,8 @@ enum orientation_enum {
     ORIENT_VERTICAL = 0,
     ORIENT_HORIZONTAL = 1,
     ORIENT_SINGLE = 2,
+    ORIENT_HYBRID_EQUAL = 3,
+    ORIENT_HYBRID_VERTICAL = 4,
     ORIENT_N
 };
 
@@ -298,9 +323,11 @@ struct screen_size_t {
 };
 
 const struct screen_size_t screen_size[ORIENT_N] = {
-    {256, 384},
-    {512, 192},
-    {256, 192}
+    {GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2},
+    {GPU_FRAMEBUFFER_NATIVE_WIDTH*2, GPU_FRAMEBUFFER_NATIVE_HEIGHT},
+    {GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT},
+    {GPU_FRAMEBUFFER_NATIVE_WIDTH*3, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2},
+    {GPU_FRAMEBUFFER_NATIVE_WIDTH*3, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2}
 };
 
 enum spumode_enum {
@@ -515,7 +542,9 @@ struct nds_screen_t {
     gint rotation_angle;
     orientation_enum orientation;
     cairo_matrix_t touch_matrix;
+    cairo_matrix_t touch_matrix_hybrid;
     cairo_matrix_t topscreen_matrix;
+    cairo_matrix_t topscreen_matrix_hybrid;
     gboolean swap;
 };
 
@@ -1189,6 +1218,33 @@ static void Reset(GSimpleAction *action, GVariant *parameter, gpointer user_data
 
 
 /////////////////////////////// DRAWING SCREEN //////////////////////////////////
+
+struct DrawParams {
+	bool valid;
+	
+	//Drawing area size
+	gint daW;
+	gint daH;
+	
+	//Image size
+	gint imgW;
+	gint imgH;
+	
+	//Buffer size
+	gint dstW;
+	gint dstH;
+	gint dstScale;
+	
+	gint gap;
+	gint gapOffset;
+	
+	gfloat ratio;
+	
+	gdouble hybridBigScreenScale;
+};
+
+static DrawParams draw_params = {false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0.0};
+
 static void UpdateDrawingAreaAspect()
 {
     gint H, W;
@@ -1202,11 +1258,16 @@ static void UpdateDrawingAreaAspect()
     }
 
     if (nds_screen.orientation != ORIENT_SINGLE) {
-        if (nds_screen.orientation == ORIENT_VERTICAL) {
+        if ((nds_screen.orientation == ORIENT_VERTICAL) || (nds_screen.orientation == ORIENT_HYBRID_EQUAL) ||
+			(nds_screen.orientation == ORIENT_HYBRID_VERTICAL)) {
             if ((nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180)) {
-                H += nds_screen.gap_size;
+                if((nds_screen.orientation == ORIENT_HYBRID_EQUAL) || (nds_screen.orientation == ORIENT_HYBRID_VERTICAL))
+					W = (W * 2.0/3.0) * (double)(H + nds_screen.gap_size) / (double)H + W / 3.0;
+				H += nds_screen.gap_size;
             } else {
-                W += nds_screen.gap_size;
+                if((nds_screen.orientation == ORIENT_HYBRID_EQUAL) || (nds_screen.orientation == ORIENT_HYBRID_VERTICAL))
+					H = (H * 2.0/3.0) * (double)(W + nds_screen.gap_size) / (double)W + H / 3.0;
+				W += nds_screen.gap_size;
             }
         }
     }
@@ -1219,6 +1280,8 @@ static void UpdateDrawingAreaAspect()
 		gtk_window_set_resizable(GTK_WINDOW(pWindow), FALSE);
 		gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W * winsize_current / 2, H * winsize_current / 2);
 	}
+	
+	draw_params.valid = false;
 }
 
 static void ToggleGap(GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -1282,9 +1345,15 @@ static void SetOrientation(GSimpleAction *action, GVariant *parameter, gpointer 
 		orient = ORIENT_HORIZONTAL;
 	else if(strcmp(string, "single") == 0)
 		orient = ORIENT_SINGLE;
+	else if(strcmp(string, "hybrid_equal") == 0)
+		orient = ORIENT_HYBRID_EQUAL;
+	else if(strcmp(string, "hybrid_vertical") == 0)
+		orient = ORIENT_HYBRID_VERTICAL;
     nds_screen.orientation = orient;
 #ifdef HAVE_LIBAGG
     osd->singleScreen = nds_screen.orientation == ORIENT_SINGLE;
+	bool hybrid = (nds_screen.orientation == ORIENT_HYBRID_EQUAL) || (nds_screen.orientation == ORIENT_HYBRID_VERTICAL);
+    osd->swapScreens = nds_screen.swap && !hybrid;
 #endif
     config.view_orient = nds_screen.orientation;
     UpdateDrawingAreaAspect();
@@ -1296,7 +1365,8 @@ static void ToggleSwapScreens(GSimpleAction *action, GVariant *parameter, gpoint
     gboolean value = !g_variant_get_boolean(variant);
     nds_screen.swap = value;
 #ifdef HAVE_LIBAGG
-    osd->swapScreens = nds_screen.swap;
+	bool hybrid = (nds_screen.orientation == ORIENT_HYBRID_EQUAL) || (nds_screen.orientation == ORIENT_HYBRID_VERTICAL);
+    osd->swapScreens = nds_screen.swap && !hybrid;
 #endif
     config.view_swap = nds_screen.swap;
     RedrawScreen();
@@ -1310,7 +1380,8 @@ static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpo
 
 static inline void gpu_screen_to_rgb(u32* dst)
 {
-    ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+    ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().isCustomSizeRequested ? (u16*)(GPU->GetDisplayInfo().masterCustomBuffer) : GPU->GetDisplayInfo().masterNativeBuffer16,
+		dst, real_framebuffer_width * real_framebuffer_height * 2);
 }
 
 static inline void drawScreen(cairo_t* cr, u32* buf, gint w, gint h) {
@@ -1339,6 +1410,17 @@ static inline void drawTopScreen(cairo_t* cr, u32* buf, gint w, gint h, gint gap
 			cairo_translate(cr, w, 0);
 		}
 		break;
+	case ORIENT_HYBRID_EQUAL:
+	case ORIENT_HYBRID_VERTICAL:
+		if (!swap && (draw_params.hybridBigScreenScale > 0.0)) {
+			cairo_save(cr);
+			cairo_scale(cr, draw_params.hybridBigScreenScale, draw_params.hybridBigScreenScale);
+			cairo_get_matrix(cr, &nds_screen.topscreen_matrix_hybrid);
+			drawScreen(cr, buf, w, h);
+			cairo_restore(cr);
+		}
+		cairo_translate(cr, w * draw_params.hybridBigScreenScale, 0);
+		break;
 	}
 	// Used for HUD editor mode
 	cairo_get_matrix(cr, &nds_screen.topscreen_matrix);
@@ -1362,11 +1444,39 @@ static inline void drawBottomScreen(cairo_t* cr, u32* buf, gint w, gint h, gint 
 			cairo_translate(cr, w, 0);
 		}
 		break;
+	case ORIENT_HYBRID_EQUAL:
+	case ORIENT_HYBRID_VERTICAL:
+		if (swap && (draw_params.hybridBigScreenScale > 0.0)) {
+			cairo_save(cr);
+			if(orientation == ORIENT_HYBRID_VERTICAL)
+				cairo_translate(cr, 0, h * (2.0 - draw_params.hybridBigScreenScale) + gap);
+			cairo_scale(cr, draw_params.hybridBigScreenScale, draw_params.hybridBigScreenScale);
+			cairo_get_matrix(cr, &nds_screen.touch_matrix_hybrid);
+			drawScreen(cr, buf, w, h);
+			cairo_restore(cr);
+		}
+		cairo_translate(cr, w * draw_params.hybridBigScreenScale, h + gap);
+		break;
 	}
 	// Store the matrix for converting touchscreen coordinates
 	cairo_get_matrix(cr, &nds_screen.touch_matrix);
 	drawScreen(cr, buf, w, h);
 	cairo_restore(cr);
+}
+
+static void calc_hybrid_vertical_params(gint daW, gint daH, gint gap, gint dstScale, gint & imgW, gint & imgH)
+{
+	gdouble hyb_hratio1, hyb_hratio2, hyb_vratio1, hyb_vratio2, hyb_ratio1, hyb_ratio2;
+	hyb_hratio1 = (gdouble)daW / (gdouble)(GPU_FRAMEBUFFER_NATIVE_WIDTH * dstScale / 2);
+	hyb_vratio1 = (gdouble)daH / (gdouble)(GPU_FRAMEBUFFER_NATIVE_HEIGHT * dstScale + gap);
+	hyb_ratio1 = MIN(hyb_hratio1, hyb_vratio1);
+	gint w_rem = daW - GPU_FRAMEBUFFER_NATIVE_WIDTH * dstScale / 2.0 * hyb_ratio1;
+	hyb_hratio2 = (gdouble)w_rem / (gdouble)(GPU_FRAMEBUFFER_NATIVE_WIDTH * dstScale / 2);
+	hyb_vratio2 = (gdouble)daH / (gdouble)(GPU_FRAMEBUFFER_NATIVE_HEIGHT * dstScale / 2);
+	hyb_ratio2 = MIN(hyb_hratio2, hyb_vratio2);
+	imgW = GPU_FRAMEBUFFER_NATIVE_WIDTH * dstScale / 2 * (1.0 + hyb_ratio2 / hyb_ratio1);
+	imgH = GPU_FRAMEBUFFER_NATIVE_HEIGHT * dstScale + gap;
+	draw_params.hybridBigScreenScale = hyb_ratio2 / hyb_ratio1;
 }
 
 /* Drawing callback */
@@ -1383,51 +1493,96 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	u32* fbuf = video->GetDstBufferPtr();
 	gint dstW = video->GetDstWidth();
 	gint dstH = video->GetDstHeight();
-
-	gint dstScale = dstW * 2 / 256; // Actual scale * 2 to handle 1.5x filters
 	
-	gint gap = nds_screen.orientation == ORIENT_VERTICAL ? nds_screen.gap_size * dstScale / 2 : 0;
-	gint imgW, imgH;
-	if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
-		imgW = screen_size[nds_screen.orientation].width * dstScale / 2;
-		imgH = screen_size[nds_screen.orientation].height * dstScale / 2 + gap;
-	} else {
-		imgH = screen_size[nds_screen.orientation].width * dstScale / 2;
-		imgW = screen_size[nds_screen.orientation].height * dstScale / 2 + gap;
+	if(draw_params.valid)
+		if(draw_params.daW != daW || draw_params.daH != daH || draw_params.dstW != dstW || draw_params.dstH != dstH)
+			draw_params.valid = false;
+	
+	if(!draw_params.valid) {
+		draw_params.daW = daW;
+		draw_params.daH = daH;
+		draw_params.dstW = dstW;
+		draw_params.dstH = dstH;
+		
+		draw_params.dstScale = dstW * 2 / GPU_FRAMEBUFFER_NATIVE_WIDTH; // Actual scale * 2 to handle 1.5x filters
+		
+		draw_params.gap = ((nds_screen.orientation == ORIENT_VERTICAL) || (nds_screen.orientation == ORIENT_HYBRID_EQUAL)
+				|| (nds_screen.orientation == ORIENT_HYBRID_VERTICAL)) ? nds_screen.gap_size * draw_params.dstScale / 2 : 0;
+		if(nds_screen.orientation == ORIENT_HYBRID_VERTICAL) {
+			if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180)
+				calc_hybrid_vertical_params(daW, daH, draw_params.gap, draw_params.dstScale, draw_params.imgW, draw_params.imgH);
+			else
+				calc_hybrid_vertical_params(daH, daW, draw_params.gap, draw_params.dstScale, draw_params.imgH, draw_params.imgW);
+		}
+		else {
+			if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
+				draw_params.imgW = screen_size[nds_screen.orientation].width * draw_params.dstScale / 2;
+				draw_params.imgH = screen_size[nds_screen.orientation].height * draw_params.dstScale / 2 + draw_params.gap;
+				if(nds_screen.orientation == ORIENT_HYBRID_EQUAL)
+					draw_params.imgW = (draw_params.imgW * 2.0/3.0) * (double)draw_params.imgH /
+						(double)(draw_params.imgH - draw_params.gap) + draw_params.imgW / 3.0;
+			} else {
+				draw_params.imgH = screen_size[nds_screen.orientation].width * draw_params.dstScale / 2;
+				draw_params.imgW = screen_size[nds_screen.orientation].height * draw_params.dstScale / 2 + draw_params.gap;
+				if(nds_screen.orientation == ORIENT_HYBRID_EQUAL)
+					draw_params.imgH = (draw_params.imgH * 2.0/3.0) * (double)draw_params.imgW /
+						(double)(draw_params.imgW - draw_params.gap) + draw_params.imgH / 3.0;
+			}
+			if(nds_screen.orientation == ORIENT_HYBRID_EQUAL)
+				draw_params.hybridBigScreenScale = (double)(dstH + draw_params.gap) / (double)(dstH / 2);
+		}
+	
+		// Calculate scale to fit display area to window
+		gfloat hratio = (gfloat)daW / (gfloat)draw_params.imgW;
+		gfloat vratio = (gfloat)daH / (gfloat)draw_params.imgH;
+		draw_params.ratio = MIN(hratio, vratio);
+		
+		draw_params.gapOffset = 0;
+		switch(nds_screen.orientation) {
+			case ORIENT_HYBRID_EQUAL:
+				draw_params.gapOffset = dstW * ((gdouble)(dstH + draw_params.gap) / (dstH / 2.0));
+				break;
+			case ORIENT_HYBRID_VERTICAL:
+				draw_params.gapOffset = dstW * draw_params.hybridBigScreenScale;
+				break;
+		}
+		
+		draw_params.valid = true;
 	}
-
-	// Calculate scale to fit display area to window
-	gfloat hratio = (gfloat)daW / (gfloat)imgW;
-	gfloat vratio = (gfloat)daH / (gfloat)imgH;
-	hratio = MIN(hratio, vratio);
-	vratio = hratio;
 
 	GdkDrawingContext *context = gdk_window_begin_draw_frame(window, gdk_window_get_clip_region(window));
 	cairo_t* cr = gdk_drawing_context_get_cairo_context(context);
 
 	// Scale to window size at center of area
 	cairo_translate(cr, daW / 2, daH / 2);
-	cairo_scale(cr, hratio, vratio);
+	cairo_scale(cr, draw_params.ratio, draw_params.ratio);
 	// Rotate area
 	cairo_rotate(cr, M_PI / 180 * nds_screen.rotation_angle);
 	// Translate area to top-left corner
 	if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
-		cairo_translate(cr, -imgW / 2, -imgH / 2);
+		cairo_translate(cr, -draw_params.imgW / 2, -draw_params.imgH / 2);
 	} else {
-		cairo_translate(cr, -imgH / 2, -imgW / 2);
+		cairo_translate(cr, -draw_params.imgH / 2, -draw_params.imgW / 2);
 	}
 	// Draw both screens
-	drawTopScreen(cr, fbuf, dstW, dstH / 2, gap, nds_screen.rotation_angle, nds_screen.swap, nds_screen.orientation);
-	drawBottomScreen(cr, fbuf + dstW * dstH / 2, dstW, dstH / 2, gap, nds_screen.rotation_angle, nds_screen.swap, nds_screen.orientation);
+	drawTopScreen(cr, fbuf, dstW, dstH / 2, draw_params.gap, nds_screen.rotation_angle, nds_screen.swap, nds_screen.orientation);
+	drawBottomScreen(cr, fbuf + dstW * dstH / 2, dstW, dstH / 2, draw_params.gap, nds_screen.rotation_angle, nds_screen.swap, nds_screen.orientation);
 	// Draw gap
+	
 	cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
-	cairo_rectangle(cr, 0, dstH / 2, dstW, gap);
+	cairo_rectangle(cr, draw_params.gapOffset, dstH / 2, dstW, draw_params.gap);
 	cairo_fill(cr);
 	// Complete the touch transformation matrix
-	cairo_matrix_scale(&nds_screen.topscreen_matrix, (double)dstScale / 2, (double)dstScale / 2);
+	cairo_matrix_scale(&nds_screen.topscreen_matrix, (double)draw_params.dstScale / 2, (double)draw_params.dstScale / 2);
 	cairo_matrix_invert(&nds_screen.topscreen_matrix);
-	cairo_matrix_scale(&nds_screen.touch_matrix, (double)dstScale / 2, (double)dstScale / 2);
+	cairo_matrix_scale(&nds_screen.touch_matrix, (double)draw_params.dstScale / 2, (double)draw_params.dstScale / 2);
 	cairo_matrix_invert(&nds_screen.touch_matrix);
+	if((nds_screen.orientation == ORIENT_HYBRID_EQUAL) || (nds_screen.orientation == ORIENT_HYBRID_VERTICAL)) {
+		cairo_matrix_scale(&nds_screen.topscreen_matrix_hybrid, (double)draw_params.dstScale / 2, (double)draw_params.dstScale / 2);
+		cairo_matrix_invert(&nds_screen.topscreen_matrix_hybrid);
+		cairo_matrix_scale(&nds_screen.touch_matrix_hybrid, (double)draw_params.dstScale / 2, (double)draw_params.dstScale / 2);
+		cairo_matrix_invert(&nds_screen.touch_matrix_hybrid);
+	}
 
 	gdk_window_end_draw_frame(window, context);
 	draw_count++;
@@ -1436,9 +1591,11 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 }
 
 static void RedrawScreen() {
-	ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, (uint32_t *)video->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+	ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapDst>(
+		GPU->GetDisplayInfo().isCustomSizeRequested ? (u16*)(GPU->GetDisplayInfo().masterCustomBuffer) : GPU->GetDisplayInfo().masterNativeBuffer16,
+		(uint32_t *)video->GetSrcBufferPtr(), real_framebuffer_width * real_framebuffer_height * 2);
 #ifdef HAVE_LIBAGG
-	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), 256, 384, 1024);
+	aggDraw.hud->setDrawTargetDims((u8*)video->GetSrcBufferPtr(), real_framebuffer_width, real_framebuffer_height * 2, real_framebuffer_width * 4);
 	osd->update();
 	DrawHUD();
 	osd->clear();
@@ -1449,44 +1606,91 @@ static void RedrawScreen() {
 
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
 
+static bool move_started_in_big_screen = false;
+static bool hud_move_started_in_big_screen = false;
+
 #ifdef HAVE_LIBAGG
 static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 {
 	double devX, devY;
-	gint X, Y, topX = -1, topY = -1, botX = -1, botY = -1;
+	gint X, Y, topX = -1, topY = -1, botX = -1, botY = -1, hybTopX = -1, hybTopY = -1, hybBotX = -1, hybBotY = -1;
 	static gint startScreen = 0;
+	bool hybrid = ((nds_screen.orientation == ORIENT_HYBRID_EQUAL) || (nds_screen.orientation == ORIENT_HYBRID_VERTICAL)) &&
+				  (draw_params.hybridBigScreenScale > 0.0);
 
 	if (nds_screen.orientation != ORIENT_SINGLE || !nds_screen.swap) {
 		devX = x;
 		devY = y;
 		cairo_matrix_transform_point(&nds_screen.topscreen_matrix, &devX, &devY);
-		topX = devX;
-		topY = devY;
+		topX = devX * gpu_scale_factor;
+		topY = devY * gpu_scale_factor;
+		
+		if(hybrid && !nds_screen.swap) {
+			devX = x;
+			devY = y;
+			cairo_matrix_transform_point(&nds_screen.topscreen_matrix_hybrid, &devX, &devY);
+			hybTopX = devX * gpu_scale_factor;
+			hybTopY = devY * gpu_scale_factor;
+		}
 	}
 
 	if (nds_screen.orientation != ORIENT_SINGLE || nds_screen.swap) {
 		devX = x;
 		devY = y;
 		cairo_matrix_transform_point(&nds_screen.touch_matrix, &devX, &devY);
-		botX = devX;
-		botY = devY;
+		botX = devX * gpu_scale_factor;
+		botY = devY * gpu_scale_factor;
+		
+		if(hybrid && nds_screen.swap) {
+			devX = x;
+			devY = y;
+			cairo_matrix_transform_point(&nds_screen.touch_matrix_hybrid, &devX, &devY);
+			hybBotX = devX * gpu_scale_factor;
+			hybBotY = devY * gpu_scale_factor;
+		}
 	}
 
-	if (topX >= 0 && topY >= 0 && topX < 256 && topY < 192) {
+	if (topX >= 0 && topY >= 0 && topX < real_framebuffer_width && topY < real_framebuffer_height) {
 		X = topX;
-		Y = topY + (nds_screen.swap ? 192 : 0);
+		Y = topY + (osd->swapScreens ? real_framebuffer_height : 0);
 		startScreen = 0;
-	} else if (botX >= 0 && botY >= 0 && botX < 256 && botY < 192) {
+		if(start)
+			hud_move_started_in_big_screen = false;
+	} else if (hybTopX >= 0 && hybTopY >= 0 && hybTopX < real_framebuffer_width && hybTopY < real_framebuffer_height) {
+		X = hybTopX;
+		Y = hybTopY;
+		startScreen = 0;
+		if(start)
+			hud_move_started_in_big_screen = true;
+	} else if (botX >= 0 && botY >= 0 && botX < real_framebuffer_width && botY < real_framebuffer_height) {
 		X = botX;
-		Y = botY + (nds_screen.swap ? 0 : 192);
+		Y = botY + (osd->swapScreens ? 0 : real_framebuffer_height);
 		startScreen = 1;
+		if(start)
+			hud_move_started_in_big_screen = false;
+	} else if (hybBotX >= 0 && hybBotY >= 0 && hybBotX < real_framebuffer_width && hybBotY < real_framebuffer_height) {
+		X = hybBotX;
+		Y = hybBotY + real_framebuffer_height;
+		startScreen = 1;
+		if(start)
+			hud_move_started_in_big_screen = true;
 	} else if (!start) {
 		if (startScreen == 0) {
-			X = CLAMP(topX, 0, 255);
-			Y = CLAMP(topY, 0, 191) + (nds_screen.swap ? 192 : 0);
+			if(!hud_move_started_in_big_screen || !hybrid) {
+				X = CLAMP(topX, 0, real_framebuffer_width-1);
+				Y = CLAMP(topY, 0, real_framebuffer_height-1) + (osd->swapScreens ? real_framebuffer_height : 0);
+			} else {
+				X = CLAMP(hybTopX, 0, real_framebuffer_width-1);
+				Y = CLAMP(hybTopY, 0, real_framebuffer_height-1);
+			}
 		} else {
-			X = CLAMP(botX, 0, 255);
-			Y = CLAMP(botY, 0, 191) + (nds_screen.swap ? 0 : 192);
+			if(!hud_move_started_in_big_screen || !hybrid) {
+				X = CLAMP(botX, 0, real_framebuffer_width-1);
+				Y = CLAMP(botY, 0, real_framebuffer_height-1) + (osd->swapScreens ? 0 : real_framebuffer_height);
+			} else {
+				X = CLAMP(hybBotX, 0, real_framebuffer_width-1);
+				Y = CLAMP(hybBotY, 0, real_framebuffer_height-1) + real_framebuffer_height;
+			}
 		}
 	} else {
 		LOG("TopX=%d, TopY=%d, BotX=%d, BotY=%d\n", topX, topY, botX, botY);
@@ -1518,13 +1722,33 @@ static gboolean rotoscaled_touchpos(gint x, gint y, gboolean start)
 
     LOG("X=%d, Y=%d\n", X, Y);
 
-    if (!start || (X >= 0 && Y >= 0 && X < 256 && Y < 192)) {
+    if ((!start && !move_started_in_big_screen) || (X >= 0 && Y >= 0 && X < 256 && Y < 192)) {
+        if(start)
+			move_started_in_big_screen = false;
         EmuX = CLAMP(X, 0, 255);
         EmuY = CLAMP(Y, 0, 191);
         NDS_setTouchPos(EmuX, EmuY);
         return TRUE;
     }
-
+	
+	if((((nds_screen.orientation == ORIENT_HYBRID_EQUAL) ||
+		 (nds_screen.orientation == ORIENT_HYBRID_VERTICAL)) && (draw_params.hybridBigScreenScale > 0.0)) && (nds_screen.swap)) {
+		devX = x;
+		devY = y;
+		cairo_matrix_transform_point(&nds_screen.touch_matrix_hybrid, &devX, &devY);
+		X = devX;
+		Y = devY;
+		
+		if ((!start && move_started_in_big_screen) || (X >= 0 && Y >= 0 && X < 256 && Y < 192)) {
+			if(start)
+				move_started_in_big_screen = true;
+			EmuX = CLAMP(X, 0, 255);
+			EmuY = CLAMP(Y, 0, 191);
+			NDS_setTouchPos(EmuX, EmuY);
+			return TRUE;
+		}
+	}
+	
     return FALSE;
 }
 
@@ -1989,12 +2213,16 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	GtkGrid *wGrid;
 	GtkComboBox *coreCombo, *wScale, *wMultisample;
 	GtkToggleButton *wPosterize, *wSmoothing, *wHCInterpolate;
+	GtkSpinButton *wGPUScale;
 
 	GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/graphics.ui");
 	dialog = GTK_DIALOG(gtk_builder_get_object(builder, "dialog"));
 	wGrid = GTK_GRID(gtk_builder_get_object(builder, "graphics_grid"));
 	coreCombo = GTK_COMBO_BOX(gtk_builder_get_object(builder, "core_combo"));
 	wScale = GTK_COMBO_BOX(gtk_builder_get_object(builder, "scale"));
+	wGPUScale = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "gpuscale"));
+	gtk_spin_button_set_range(wGPUScale, GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX);
+	gtk_spin_button_set_increments(wGPUScale, 1.0, 1.0);
 	wMultisample = GTK_COMBO_BOX(gtk_builder_get_object(builder, "multisample"));
 	wPosterize = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "posterize"));
 	wSmoothing = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "smoothing"));
@@ -2009,6 +2237,9 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 
 	// The shift it work for scale up to 4. For scaling more than 4, a mapping function is required
 	gtk_combo_box_set_active(wScale, CommonSettings.GFX3D_Renderer_TextureScalingFactor >> 1);
+
+	//GPU scaling factor
+	gtk_spin_button_set_value(wGPUScale, gpu_scale_factor);
 
 	// 3D Texture Deposterization
 	gtk_toggle_button_set_active(wPosterize, CommonSettings.GFX3D_Renderer_TextureDeposterize);
@@ -2080,6 +2311,33 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		default:
 			break;
 		}
+		double old_scale_factor = gpu_scale_factor;
+		gpu_scale_factor = gtk_spin_button_get_value(wGPUScale);
+		if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
+			gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
+		if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
+			gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
+		gtk_spin_button_set_value(wGPUScale, gpu_scale_factor);
+		config.gpuScaleFactor = gpu_scale_factor;
+		real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor;
+		real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
+		GPU->SetCustomFramebufferSize(real_framebuffer_width, real_framebuffer_height);
+		video->SetSourceSize(real_framebuffer_width, real_framebuffer_height * 2);
+#ifdef HAVE_LIBAGG
+#ifdef AGG2D_USE_VECTORFONTS
+		if(vectorFontFile.size() > 0)
+		{
+			aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * gpu_scale_factor, true);
+			osd->useVectorFonts=(gpu_scale_factor >= 1.1);
+		}
+		else
+			osd->useVectorFonts=false;
+#endif
+		Agg_setCustomSize(real_framebuffer_width, real_framebuffer_height*2);
+		osd->scale=gpu_scale_factor;
+		Hud.rescale(old_scale_factor, gpu_scale_factor);
+		HudSaveLayout();
+#endif
 		CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize = gtk_toggle_button_get_active(wPosterize);
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(wSmoothing);
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
@@ -2140,7 +2398,7 @@ static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer use
     const gchar *dir;
     gchar *filename = NULL, *filen = NULL;
     GError *error = NULL;
-    u8 rgb[256 * 384 * 4];
+    u8 *rgb = (u8*)malloc(real_framebuffer_width * real_framebuffer_height * 2 * 4);
     static int seq = 0;
     gint H, W;
 
@@ -2149,11 +2407,11 @@ static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer use
     //    return;
 
     if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
-        W = screen_size[nds_screen.orientation].width;
-        H = screen_size[nds_screen.orientation].height;
+        W = real_framebuffer_width;
+        H = real_framebuffer_height * 2;
     } else {
-        W = screen_size[nds_screen.orientation].height;
-        H = screen_size[nds_screen.orientation].width;
+        W = real_framebuffer_height * 2;
+        H = real_framebuffer_width;
     }
 
     gpu_screen_to_rgb((u32*)rgb);
@@ -2190,7 +2448,7 @@ static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer use
         seq--;
     }
 
-    //free(rgb);
+    free(rgb);
     g_object_unref(screenshot);
     g_free(filename);
     g_free(filen);
@@ -2744,6 +3002,8 @@ static void ToggleHudDisplay(hud_display_enum hudId, gboolean active)
         break;
     case HUD_DISPLAY_EDITOR:
         HudEditorMode = active;
+        if(!active)
+			HudSaveLayout();
         break;
     default:
         g_printerr("Unknown HUD toggle %u!", hudId);
@@ -2769,6 +3029,60 @@ HudMacro(HudLagCounter, HUD_DISPLAY_LCOUNTER)
 HudMacro(HudRtc, HUD_DISPLAY_RTC)
 HudMacro(HudMic, HUD_DISPLAY_MIC)
 HudMacro(HudEditor, HUD_DISPLAY_EDITOR)
+
+static void HudResetLayout(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	Hud.reset();
+	HudSaveLayout();
+}
+
+static void HudSaveCoordsToVector(HudCoordinates* pCoords, int* pDest)
+{
+	pDest[0]=pCoords->x;
+	pDest[1]=pCoords->y;
+	pDest[2]=pCoords->xsize;
+	pDest[3]=pCoords->ysize;
+}
+
+static void HudLoadCoordsFromVector(HudCoordinates* pCoords, int* pSrc)
+{
+	pCoords->x=pSrc[0];
+	pCoords->y=pSrc[1];
+	pCoords->xsize=pSrc[2];
+	pCoords->ysize=pSrc[3];
+}
+
+static void HudSaveLayout()
+{
+	std::vector<int> vec(8*4); //8 HudCoordinates
+	HudSaveCoordsToVector(&Hud.SavestateSlots, vec.data());
+	HudSaveCoordsToVector(&Hud.FpsDisplay, vec.data()+4);
+	HudSaveCoordsToVector(&Hud.FrameCounter, vec.data()+8);
+	HudSaveCoordsToVector(&Hud.InputDisplay, vec.data()+12);
+	HudSaveCoordsToVector(&Hud.GraphicalInputDisplay, vec.data()+16);
+	HudSaveCoordsToVector(&Hud.LagFrameCounter, vec.data()+20);
+	HudSaveCoordsToVector(&Hud.Microphone, vec.data()+24);
+	HudSaveCoordsToVector(&Hud.RTCDisplay, vec.data()+28);
+	config.hud_layout=vec;
+}
+
+static void HudLoadLayout()
+{
+	std::vector<int> vec=config.hud_layout;
+	if(vec.size()==8*4)
+	{
+		HudLoadCoordsFromVector(&Hud.SavestateSlots, vec.data());
+		HudLoadCoordsFromVector(&Hud.FpsDisplay, vec.data()+4);
+		HudLoadCoordsFromVector(&Hud.FrameCounter, vec.data()+8);
+		HudLoadCoordsFromVector(&Hud.InputDisplay, vec.data()+12);
+		HudLoadCoordsFromVector(&Hud.GraphicalInputDisplay, vec.data()+16);
+		HudLoadCoordsFromVector(&Hud.LagFrameCounter, vec.data()+20);
+		HudLoadCoordsFromVector(&Hud.Microphone, vec.data()+24);
+		HudLoadCoordsFromVector(&Hud.RTCDisplay, vec.data()+28);
+	}
+	else
+		Hud.reset();
+}
 
 static void desmume_gtk_menu_view_hud(GtkApplication *app)
 {
@@ -2969,6 +3283,10 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     /* Init the hud / osd stuff */
 #ifdef HAVE_LIBAGG
+	SDL_DisplayMode cur_mode;
+	if(!SDL_GetCurrentDisplayMode(0, &cur_mode))
+		aggDraw.screenBytesPerPixel = SDL_BYTESPERPIXEL(cur_mode.format);
+	
     Desmume_InitOnce();
     Hud.reset();
     osd = new OSDCLASS(-1);
@@ -3026,8 +3344,32 @@ common_gtk_main(GApplication *app, gpointer user_data)
     memset(&nds_screen, 0, sizeof(nds_screen));
     nds_screen.orientation = ORIENT_VERTICAL;
 
+    gpu_scale_factor = config.gpuScaleFactor;
+    if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
+        gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
+    if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
+        gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
+    config.gpuScaleFactor = gpu_scale_factor;
+    real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor;
+    real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
+
     g_printerr("Using %d threads for video filter.\n", CommonSettings.num_cores);
-    video = new VideoFilter(256, 384, VideoFilterTypeID_None, CommonSettings.num_cores);
+    GPU->SetCustomFramebufferSize(real_framebuffer_width, real_framebuffer_height);
+    video = new VideoFilter(real_framebuffer_width, real_framebuffer_height * 2, VideoFilterTypeID_None, CommonSettings.num_cores);
+#ifdef HAVE_LIBAGG
+#ifdef AGG2D_USE_VECTORFONTS
+	if(vectorFontFile.size() > 0)
+	{
+		aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * gpu_scale_factor, true);
+		osd->useVectorFonts=(gpu_scale_factor >= 1.1);
+	}
+	else
+		osd->useVectorFonts=false;
+#endif
+	Agg_setCustomSize(real_framebuffer_width, real_framebuffer_height*2);
+	osd->scale=gpu_scale_factor;
+	HudLoadLayout();
+#endif
 
     /* Fetch the main elements from the window */
     GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/main.ui");
@@ -3305,7 +3647,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
     }
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "winsize")), g_variant_new_string(string.c_str()));
 
-    if (config.view_orient < ORIENT_VERTICAL || config.view_orient > ORIENT_SINGLE) {
+    if (config.view_orient < ORIENT_VERTICAL || config.view_orient > ORIENT_HYBRID_VERTICAL) {
         config.view_orient = ORIENT_VERTICAL;
     }
     nds_screen.orientation = (orientation_enum)config.view_orient.get();
@@ -3318,6 +3660,12 @@ common_gtk_main(GApplication *app, gpointer user_data)
             break;
         case ORIENT_SINGLE:
             string = "single";
+            break;
+        case ORIENT_HYBRID_EQUAL:
+            string = "hybrid_equal";
+            break;
+        case ORIENT_HYBRID_VERTICAL:
+            string = "hybrid_vertical";
             break;
     }
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "orient")), g_variant_new_string(string.c_str()));
@@ -3339,6 +3687,10 @@ common_gtk_main(GApplication *app, gpointer user_data)
     nds_screen.gap_size = config.view_gap ? GAP_SIZE : 0;
 
     nds_screen.swap = config.view_swap;
+    #ifdef HAVE_LIBAGG
+        bool hybrid = (nds_screen.orientation == ORIENT_HYBRID_EQUAL) || (nds_screen.orientation == ORIENT_HYBRID_VERTICAL);
+        osd->swapScreens = nds_screen.swap && !hybrid;
+    #endif
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "swapscreens")), g_variant_new_boolean(config.view_swap));
 
     builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/menu.ui");
@@ -3562,7 +3914,9 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 static void Teardown() {
     delete video;
-
+#ifdef HAVE_LIBAGG
+	HudSaveLayout();
+#endif
 	config.save();
 	avout_x264.end();
 	avout_flac.end();
@@ -3605,10 +3959,46 @@ handle_open(GApplication *application,
     common_gtk_main(application, user_data);
 }
 
+#ifdef AGG2D_USE_VECTORFONTS
+
+static std::string FindFontFile(const char* fontName, bool bold)
+{
+	std::string fontFile;
+	FcPattern* pat = FcNameParse((const FcChar8*)fontName);
+	if(bold)
+		FcPatternAddInteger(pat, FC_WEIGHT, FC_WEIGHT_BOLD);
+	FcConfigSubstitute(fontConfig, pat, FcMatchPattern);
+	FcDefaultSubstitute(pat);
+	
+	// find the font
+	FcResult res;
+	FcPattern* font = FcFontMatch(fontConfig, pat, &res);
+	if (font)
+	{
+		FcChar8* file = NULL;
+		if (FcPatternGetString(font, FC_FILE, 0, &file) == FcResultMatch)
+		{
+			// save the file to another std::string
+			fontFile = (char*)file;
+		}
+		FcPatternDestroy(font);
+	}
+	FcPatternDestroy(pat);
+	return fontFile;
+}
+
+#endif
+
 int main (int argc, char *argv[])
 {
   configured_features my_config;
 
+#ifdef AGG2D_USE_VECTORFONTS
+  fontConfig = FcInitLoadConfigAndFonts();
+  vectorFontFile = FindFontFile("mono", true);
+  if(!vectorFontFile.size())
+    vectorFontFile = FindFontFile("sans", true);
+#endif
   // The global menu screws up the window size...
   unsetenv("UBUNTU_MENUPROXY");
 

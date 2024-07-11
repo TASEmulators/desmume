@@ -106,7 +106,7 @@ bool CHEATS::update(u8 size, u32 address, u32 val, char *description, bool enabl
 	this->_list[pos].code[0][0] = address & 0x0FFFFFFF;
 	this->_list[pos].code[0][1] = val;
 	this->_list[pos].num = 1;
-	this->_list[pos].type = 0;
+	this->_list[pos].type = CHEAT_TYPE_INTERNAL;
 	this->_list[pos].size = size;
 	this->setDescription(description, pos);
 	this->_list[pos].enabled = (enabled) ? 1 : 0;
@@ -692,7 +692,7 @@ bool CHEATS::ARparser(const CHEATS_LIST &theList)
 size_t CHEATS::add_AR_Direct(const CHEATS_LIST &srcCheat)
 {
 	const size_t itemIndex = this->addItem(srcCheat);
-	this->_list[itemIndex].type = 1;
+	this->_list[itemIndex].type = CHEAT_TYPE_AR;
 	
 	return itemIndex;
 }
@@ -700,8 +700,6 @@ size_t CHEATS::add_AR_Direct(const CHEATS_LIST &srcCheat)
 bool CHEATS::add_AR(char *code, char *description, bool enabled)
 {
 	bool didValidateItem = false;
-
-	//if (num == MAX_CHEAT_LIST) return FALSE;
 	size_t num = this->_list.size();
 
 	CHEATS_LIST temp;
@@ -713,7 +711,7 @@ bool CHEATS::add_AR(char *code, char *description, bool enabled)
 	}
 
 	this->_list.push_back(temp);
-	this->_list[num].type = 1;
+	this->_list[num].type = CHEAT_TYPE_AR;
 	
 	this->setDescription(description, num);
 	this->_list[num].enabled = (enabled) ? 1 : 0;
@@ -750,7 +748,7 @@ bool CHEATS::update_AR(char *code, char *description, bool enabled, const size_t
 		}
 
 		this->setDescription(description, pos);
-		this->_list[pos].type = 1;
+		this->_list[pos].type = CHEAT_TYPE_AR;
 	}
 	
 	this->_list[pos].enabled = (enabled) ? 1 : 0;
@@ -767,8 +765,6 @@ bool CHEATS::update_AR(char *code, char *description, u8 enabled, const size_t p
 bool CHEATS::add_CB(char *code, char *description, bool enabled)
 {
 	bool didValidateItem = false;
-
-	//if (num == MAX_CHEAT_LIST) return FALSE;
 	size_t num = this->_list.size();
 
 	CHEATS_LIST *cheatItem = this->getItemPtrAtIndex(num);
@@ -783,7 +779,7 @@ bool CHEATS::add_CB(char *code, char *description, bool enabled)
 		return didValidateItem;
 	}
 	
-	this->_list[num].type = 2;
+	this->_list[num].type = CHEAT_TYPE_CODEBREAKER;
 	
 	this->setDescription(description, num);
 	this->_list[num].enabled = (enabled) ? 1 : 0;
@@ -819,7 +815,7 @@ bool CHEATS::update_CB(char *code, char *description, bool enabled, const size_t
 			return didValidateItem;
 		}
 
-		this->_list[pos].type = 2;
+		this->_list[pos].type = CHEAT_TYPE_CODEBREAKER;
 		this->setDescription(description, pos);
 	}
 	this->_list[pos].enabled = (enabled) ? 1 : 0;
@@ -975,7 +971,7 @@ bool CHEATS::save()
 			char buf2[10] = { 0 };
 
 			u32 adr = this->_list[i].code[t][0];
-			if (this->_list[i].type == 0)
+			if (this->_list[i].type == CHEAT_TYPE_INTERNAL)
 			{
 				//size of the cheat is written out as adr highest nybble
 				adr &= 0x0FFFFFFF;
@@ -1068,17 +1064,17 @@ bool CHEATS::load()
 
 		memset(&tmp_cht, 0, sizeof(tmp_cht));
 		if ((buf[0] == 'D') && (buf[1] == 'S'))		// internal
-			tmp_cht.type = 0;
+			tmp_cht.type = CHEAT_TYPE_INTERNAL;
 		else
 			if ((buf[0] == 'A') && (buf[1] == 'R'))	// Action Replay
-				tmp_cht.type = 1;
+				tmp_cht.type = CHEAT_TYPE_AR;
 			else
 				if ((buf[0] == 'B') && (buf[1] == 'S'))	// Codebreaker
-					tmp_cht.type = 2;
+					tmp_cht.type = CHEAT_TYPE_CODEBREAKER;
 				else
 					continue;
 		// TODO: CB not supported
-		if (tmp_cht.type == 3)
+		if (tmp_cht.type == CHEAT_TYPE_CODEBREAKER)
 		{
 			INFO("Cheats: Codebreaker code no supported at line %i\n", line);
 			continue;
@@ -1102,7 +1098,7 @@ bool CHEATS::load()
 		}
 
 		tmp_cht.num = (u32)codeStr.length() / 16;
-		if ((tmp_cht.type == 0) && (tmp_cht.num > 1))
+		if ((tmp_cht.type == CHEAT_TYPE_INTERNAL) && (tmp_cht.num > 1))
 		{
 			INFO("Cheats: Too many values for internal cheat\n", line);
 			continue;
@@ -1120,7 +1116,7 @@ bool CHEATS::load()
 				continue;
 			}
 
-			if (tmp_cht.type == 0)
+			if (tmp_cht.type == CHEAT_TYPE_INTERNAL)
 			{
 				tmp_cht.size = std::min<u32>(3, ((tmp_cht.code[i][0] & 0xF0000000) >> 28));
 				tmp_cht.code[i][0] &= 0x0FFFFFFF;
@@ -1620,7 +1616,632 @@ void CHEATSEARCH::getListReset()
 }
 
 // ========================================================================= Export
-void CHEATSEXPORT::R4decrypt(u8 *buf, const size_t len, u64 n)
+
+CheatDBGame* GetCheatDBGameEntryFromList(const CheatDBGameList &gameList, const char *gameCode, const u32 gameDatabaseCRC)
+{
+	CheatDBGame *outGameEntry = NULL;
+	
+	for (size_t i = 0; i < gameList.size(); i++)
+	{
+		const CheatDBGame &gameEntry = gameList[i];
+		
+		if ( (gameDatabaseCRC == gameEntry.GetCRC()) && !memcmp(gameCode, gameEntry.GetSerial(), 4) )
+		{
+			outGameEntry = (CheatDBGame *)&gameEntry;
+			break;
+		}
+	}
+	
+	return outGameEntry;
+}
+
+void CheatItemGenerateDescriptionHierarchical(const char *itemName, const char *itemNote, CHEATS_LIST &outCheatItem)
+{
+	if (itemName != NULL)
+	{
+		strncpy(outCheatItem.descriptionMajor, itemName, sizeof(outCheatItem.descriptionMajor));
+		outCheatItem.descriptionMajor[sizeof(outCheatItem.descriptionMajor) - 1] = '\0';
+	}
+	
+	if (itemNote != NULL)
+	{
+		strncpy(outCheatItem.descriptionMinor, itemNote, sizeof(outCheatItem.descriptionMinor));
+		outCheatItem.descriptionMinor[sizeof(outCheatItem.descriptionMinor) - 1] = '\0';
+	}
+}
+
+void CheatItemGenerateDescriptionFlat(const char *folderName, const char *folderNote, const char *itemName, const char *itemNote, CHEATS_LIST &outCheatItem)
+{
+	std::string descriptionStr = "";
+	
+	if ( (folderName != NULL) && (*folderName != '\0') )
+	{
+		descriptionStr += folderName;
+	}
+	
+	if ( (folderNote != NULL) && (*folderNote != '\0') )
+	{
+		if ( (folderName != NULL) && (*folderName != '\0') )
+		{
+			descriptionStr += " ";
+		}
+		
+		descriptionStr += "[";
+		descriptionStr += folderNote;
+		descriptionStr += "]";
+	}
+	
+	if ( ((folderName != NULL) && (*folderName != '\0')) ||
+		 ((folderNote != NULL) && (*folderNote != '\0')) )
+	{
+		descriptionStr += ": ";
+	}
+	
+	if ( (itemName != NULL) && (*itemName != '\0') )
+	{
+		descriptionStr += itemName;
+	}
+	
+	if ( (itemNote != NULL) && (*itemNote != '\0') )
+	{
+		if ( (itemName != NULL) && (*itemName != '\0') )
+		{
+			descriptionStr += " | ";
+		}
+		
+		descriptionStr += itemNote;
+	}
+	
+	strncpy(outCheatItem.description, descriptionStr.c_str(), sizeof(outCheatItem.description));
+	outCheatItem.description[sizeof(outCheatItem.description) - 1] = '\0';
+}
+
+CheatDBGame::CheatDBGame()
+{
+	_baseOffset = 0;
+	_firstEntryOffset = 0;
+	_encryptOffset = 0;
+	
+	_rawDataSize = 0;
+	_workingDataSize = 0;
+	_crc = 0;
+	_entryCount = 0;
+	
+	_title = "";
+	memset(_serial, 0, sizeof(_serial));
+	
+	_entryDataRawPtr = NULL;
+	_entryData = NULL;
+	
+	_entryRoot.base = NULL;
+	_entryRoot.name = NULL;
+	_entryRoot.note = NULL;
+	_entryRoot.codeLength = NULL;
+	_entryRoot.codeData = NULL;
+	_entryRoot.child.resize(0);
+	_entryRoot.parent = NULL;
+	
+	_cheatItemCount = 0;
+}
+
+CheatDBGame::CheatDBGame(const u32 encryptOffset, const FAT_R4 &fat, const u32 rawDataSize)
+{
+	CheatDBGame::SetInitialProperties(rawDataSize, encryptOffset, fat);
+	
+	_firstEntryOffset = 0;
+	_entryCount = 0;
+	_title = "";
+	
+	_entryDataRawPtr = NULL;
+	_entryData = NULL;
+	
+	_entryRoot.base = NULL;
+	_entryRoot.name = NULL;
+	_entryRoot.note = NULL;
+	_entryRoot.codeLength = NULL;
+	_entryRoot.codeData = NULL;
+	_entryRoot.child.resize(0);
+	_entryRoot.parent = NULL;
+	
+	_cheatItemCount = 0;
+}
+
+CheatDBGame::CheatDBGame(FILE *fp, const bool isEncrypted, const u32 encryptOffset, const FAT_R4 &fat, const u32 rawDataSize, u8 (&workingBuffer)[1024])
+{
+	CheatDBGame::SetInitialProperties(rawDataSize, encryptOffset, fat);
+	CheatDBGame::LoadPropertiesFromFile(fp, isEncrypted, workingBuffer);
+	
+	_entryDataRawPtr = NULL;
+	_entryData = NULL;
+	
+	_entryRoot.base = NULL;
+	_entryRoot.name = NULL;
+	_entryRoot.note = NULL;
+	_entryRoot.codeLength = NULL;
+	_entryRoot.codeData = NULL;
+	_entryRoot.child.resize(0);
+	_entryRoot.parent = NULL;
+	
+	_cheatItemCount = 0;
+}
+
+CheatDBGame::~CheatDBGame()
+{
+	if (this->_entryDataRawPtr != NULL)
+	{
+		free(this->_entryDataRawPtr);
+		this->_entryDataRawPtr = NULL;
+		this->_entryData = NULL;
+	}
+}
+
+void CheatDBGame::SetInitialProperties(const u32 rawDataSize, const u32 encryptOffset, const FAT_R4 &fat)
+{
+	_rawDataSize = rawDataSize;
+	_workingDataSize = rawDataSize + encryptOffset;
+	_encryptOffset = encryptOffset;
+	_baseOffset = (u32)fat.addr;
+	_crc = fat.CRC;
+	_serial[0] = fat.serial[0];
+	_serial[1] = fat.serial[1];
+	_serial[2] = fat.serial[2];
+	_serial[3] = fat.serial[3];
+	_serial[4] = '\0';
+}
+
+void CheatDBGame::LoadPropertiesFromFile(FILE *fp, const bool isEncrypted, u8 (&workingBuffer)[1024])
+{
+	const size_t gameDataBufferSize = (_workingDataSize < sizeof(workingBuffer)) ? _workingDataSize : sizeof(workingBuffer);
+	CheatDBFile::ReadToBuffer(fp, _baseOffset, isEncrypted, _encryptOffset, gameDataBufferSize, workingBuffer);
+	
+	const u8 *gameDataBuffer = workingBuffer + _encryptOffset;
+	const char *gameTitlePtrInBuffer = (const char *)gameDataBuffer;
+	_title = gameTitlePtrInBuffer;
+	
+	const u32 offsetMask = ~(u32)0x00000003;
+	const u32 entryCountOffset = (_baseOffset + (u32)strlen(gameTitlePtrInBuffer) + 4) & offsetMask;
+	_entryCount = *(u32 *)(gameDataBuffer + entryCountOffset - _baseOffset);
+	_firstEntryOffset = entryCountOffset + 36;
+}
+
+u32 CheatDBGame::GetBaseOffset() const
+{
+	return this->_baseOffset;
+}
+
+u32 CheatDBGame::GetFirstEntryOffset() const
+{
+	return this->_firstEntryOffset;
+}
+
+u32 CheatDBGame::GetEncryptOffset() const
+{
+	return this->_encryptOffset;
+}
+
+u32 CheatDBGame::GetRawDataSize() const
+{
+	return this->_rawDataSize;
+}
+
+u32 CheatDBGame::GetWorkingDataSize() const
+{
+	return this->_workingDataSize;
+}
+
+u32 CheatDBGame::GetCRC() const
+{
+	return this->_crc;
+}
+
+u32 CheatDBGame::GetEntryCount() const
+{
+	return this->_entryCount;
+}
+
+u32 CheatDBGame::GetCheatItemCount() const
+{
+	return this->_cheatItemCount;
+}
+
+const char* CheatDBGame::GetTitle() const
+{
+	return this->_title.c_str();
+}
+
+const char* CheatDBGame::GetSerial() const
+{
+	return this->_serial;
+}
+
+const CheatDBEntry& CheatDBGame::GetEntryRoot() const
+{
+	return this->_entryRoot;
+}
+
+const u8* CheatDBGame::GetEntryRawData() const
+{
+	return this->_entryData;
+}
+
+bool CheatDBGame::IsEntryDataLoaded() const
+{
+	return (this->_entryData != NULL);
+}
+
+void CheatDBGame::_UpdateDirectoryParents(CheatDBEntry &directory)
+{
+	const size_t directoryItemCount = directory.child.size();
+	
+	for (size_t i = 0; i < directoryItemCount; i++)
+	{
+		CheatDBEntry &entry = directory.child[i];
+		entry.parent = &directory;
+		
+		const u32 entryValue = *(u32 *)entry.base;
+		const bool isFolder = ((entryValue & 0xF0000000) == 0x10000000);
+		
+		if (isFolder)
+		{
+			this->_UpdateDirectoryParents(entry);
+		}
+	}
+}
+
+u8* CheatDBGame::LoadEntryData(FILE *fp, const bool isEncrypted)
+{
+	this->_cheatItemCount = 0;
+	
+	this->_entryRoot.base = NULL;
+	this->_entryRoot.name = NULL;
+	this->_entryRoot.note = NULL;
+	this->_entryRoot.codeLength = NULL;
+	this->_entryRoot.codeData = NULL;
+	this->_entryRoot.child.resize(0);
+	this->_entryRoot.parent = NULL;
+	
+	if (this->_entryDataRawPtr != NULL)
+	{
+		free(this->_entryDataRawPtr);
+		this->_entryDataRawPtr = NULL;
+		this->_entryData = NULL;
+	}
+	
+	this->_entryDataRawPtr = (u8 *)malloc(this->_workingDataSize + 8);
+	memset(this->_entryDataRawPtr, 0, this->_workingDataSize + 8);
+	
+	bool didReadSuccessfully = CheatDBFile::ReadToBuffer(fp, this->_baseOffset, isEncrypted, this->_encryptOffset, this->_workingDataSize, this->_entryDataRawPtr);
+	if (!didReadSuccessfully)
+	{
+		free(this->_entryDataRawPtr);
+		this->_entryDataRawPtr = NULL;
+		this->_entryData = NULL;
+		
+		return this->_entryData;
+	}
+	
+	this->_entryData = this->_entryDataRawPtr + this->_encryptOffset;
+	this->_entryRoot.base = this->_entryData;
+	this->_entryRoot.name = (char *)this->_entryRoot.base;
+	
+	CheatDBEntry *currentDirectory = &this->_entryRoot;
+	u32 currentDirectoryItemCount = 0;
+	std::vector<u32> directoryItemCountList;
+	
+	CheatDBEntry tempEntry;
+	tempEntry.name = NULL;
+	tempEntry.note = NULL;
+	tempEntry.base = NULL;
+	tempEntry.codeLength = NULL;
+	tempEntry.codeData = NULL;
+	tempEntry.parent = NULL;
+	tempEntry.child.resize(0);
+	
+	const uintptr_t ptrMask = ~(uintptr_t)0x00000003;
+	u32 *cmd = (u32 *)(this->_entryData + this->_firstEntryOffset - this->_baseOffset);
+	
+	for (size_t i = 0; i < this->_entryCount; i++)
+	{
+		const u32 entryValue = *cmd;
+		const bool isFolder = ((entryValue & 0xF0000000) == 0x10000000);
+		
+		currentDirectory->child.push_back(tempEntry);
+		CheatDBEntry &newEntry = currentDirectory->child.back();
+		newEntry.parent = currentDirectory;
+		
+		const u32 baseOffset = (u32)((uintptr_t)cmd - (uintptr_t)this->_entryData);
+		newEntry.base = this->_entryData + baseOffset;
+		
+		const u32 nameOffset = baseOffset + 4;
+		newEntry.name = (char *)(this->_entryData + nameOffset);
+		
+		const u32 noteOffset = nameOffset + (u32)strlen(newEntry.name) + 1;
+		newEntry.note = (char *)(this->_entryData + noteOffset);
+		
+		if (isFolder)
+		{
+			newEntry.codeLength = NULL;
+			newEntry.codeData = NULL;
+			cmd = (u32 *)( ((uintptr_t)newEntry.note + strlen(newEntry.note) + 1 + 3) & ptrMask );
+			
+			const u32 entryCount = entryValue & 0x00FFFFFF;
+			
+			if (entryCount > 0)
+			{
+				// Reserve the memory now to avoid std::vector from doing any memory
+				// reallocations that would mess up the parent pointers.
+				newEntry.child.reserve(entryCount);
+				
+				if (currentDirectoryItemCount > 1)
+				{
+					currentDirectoryItemCount--;
+					directoryItemCountList.push_back(currentDirectoryItemCount);
+				}
+			}
+			
+			currentDirectoryItemCount = entryCount;
+			currentDirectory = &newEntry;
+		}
+		else
+		{
+			const u32 codeLengthOffset = (noteOffset + (u32)strlen(newEntry.note) + 1 + 3) & 0xFFFFFFFC;
+			newEntry.codeLength = (u32 *)(this->_entryData + codeLengthOffset);
+			
+			const u32 codeDataOffset = codeLengthOffset + 4;
+			newEntry.codeData = (u32 *)(this->_entryData + codeDataOffset);
+			
+			const u32 entrySize = (entryValue & 0x00FFFFFF) + 1; // Note that this does not represent bytes, but the number of 32-bit chunks.
+			cmd += entrySize;
+			
+			if (currentDirectory == &this->_entryRoot)
+			{
+				// If a cheat item exists at the base level of the tree, then we need to
+				// add each cheat item individually.
+				currentDirectoryItemCount = 1;
+			}
+			
+			currentDirectoryItemCount--;
+			this->_cheatItemCount++;
+		}
+		
+		if (currentDirectoryItemCount == 0)
+		{
+			currentDirectory = currentDirectory->parent;
+			if (currentDirectory == NULL)
+			{
+				currentDirectory = &this->_entryRoot;
+			}
+			
+			if (directoryItemCountList.size() > 0)
+			{
+				currentDirectoryItemCount = directoryItemCountList.back();
+				directoryItemCountList.pop_back();
+			}
+		}
+	}
+	
+	// Child items of directories are implemented as std::vectors, which can move their
+	// elements around in memory as items are added to the vector. This means that parent
+	// pointers are undoubtedly broken at this point. Therefore, we need to update the
+	// parent pointers now so that all relationships are properly set.
+	//
+	// Note that any additions or removals to elements in this->_entryRoot will result in
+	// broken parent pointers, and so we must assume that this->_entryRoot is immutable
+	// at this point. Considering that the purpose of this->_entryRoot is supposed to be
+	// a glorified wrapper to this->_entryData, which itself is immutable, the
+	// immutability of this->_entryRoot is deemed acceptable.
+	this->_UpdateDirectoryParents(this->_entryRoot);
+	
+	return this->_entryData;
+}
+
+bool CheatDBGame::_CreateCheatItemFromCheatEntry(const CheatDBEntry &inEntry, const bool isHierarchical, CHEATS_LIST &outCheatItem)
+{
+	bool didParseCheatEntry = false;
+	
+	if (inEntry.codeLength == NULL)
+	{
+		return didParseCheatEntry;
+	}
+	
+	u32 codeCount = *inEntry.codeLength / 2;
+	if (codeCount > MAX_XX_CODE)
+	{
+		return didParseCheatEntry;
+	}
+	
+	if (isHierarchical)
+	{
+		CheatItemGenerateDescriptionHierarchical(inEntry.name, inEntry.note, outCheatItem);
+	}
+	else
+	{
+		const char *folderName = ( (inEntry.parent != NULL) && (inEntry.parent != &this->_entryRoot) ) ? inEntry.parent->name : NULL;
+		const char *folderNote = ( (inEntry.parent != NULL) && (inEntry.parent != &this->_entryRoot) ) ? inEntry.parent->note : NULL;
+		
+		CheatItemGenerateDescriptionFlat(folderName, folderNote, inEntry.name, inEntry.note, outCheatItem);
+	}
+	
+	outCheatItem.num = codeCount;
+	outCheatItem.type = CHEAT_TYPE_AR;
+	
+	for (size_t j = 0, t = 0; j < codeCount; j++, t+=2)
+	{
+		outCheatItem.code[j][0] = *(inEntry.codeData + t + 0);
+		outCheatItem.code[j][1] = *(inEntry.codeData + t + 1);
+	}
+	
+	didParseCheatEntry = true;
+	return didParseCheatEntry;
+}
+
+size_t CheatDBGame::_DirectoryAddCheatsFlat(const CheatDBEntry &directory, const bool isHierarchical, size_t cheatIndex, CHEATS_LIST *outCheatsList)
+{
+	size_t cheatCount = 0;
+	if (outCheatsList == NULL)
+	{
+		return cheatCount;
+	}
+	
+	const size_t directoryItemCount = directory.child.size();
+	for (size_t i = 0; i < directoryItemCount; i++)
+	{
+		const CheatDBEntry &entry = directory.child[i];
+		const u32 entryValue = *(u32 *)entry.base;
+		const bool isFolder = ((entryValue & 0xF0000000) == 0x10000000);
+		
+		if (isFolder)
+		{
+			const size_t addedCount = this->_DirectoryAddCheatsFlat(entry, isHierarchical, cheatIndex, outCheatsList);
+			cheatCount += addedCount;
+			cheatIndex += addedCount;
+		}
+		else
+		{
+			CHEATS_LIST &outCheat = outCheatsList[cheatIndex];
+			
+			const bool didParseCheatEntry = this->_CreateCheatItemFromCheatEntry(entry, isHierarchical, outCheat);
+			if (!didParseCheatEntry)
+			{
+				continue;
+			}
+			
+			cheatIndex++;
+			cheatCount++;
+		}
+	}
+	
+	return cheatCount;
+}
+
+size_t CheatDBGame::ParseEntriesToCheatsListFlat(CHEATS_LIST *outCheatsList)
+{
+	return this->_DirectoryAddCheatsFlat(this->_entryRoot, false, 0, outCheatsList);
+}
+
+CheatDBFile::CheatDBFile()
+{
+	_path = "";
+	_description = "";
+	_formatString = "---";
+	
+	_format = CheatDBFileFormat_Undefined;
+	_isEncrypted = false;
+	_size = 0;
+	_fp = NULL;
+}
+
+CheatDBFile::~CheatDBFile()
+{
+	this->CloseFile();
+}
+
+FILE* CheatDBFile::GetFilePtr() const
+{
+	return this->_fp;
+}
+
+bool CheatDBFile::IsEncrypted() const
+{
+	return this->_isEncrypted;
+}
+
+const char* CheatDBFile::GetDescription() const
+{
+	return this->_description.c_str();
+}
+
+CheatDBFileFormat CheatDBFile::GetFormat() const
+{
+	return this->_format;
+}
+
+const char* CheatDBFile::GetFormatString() const
+{
+	return this->_formatString.c_str();
+}
+
+CheatSystemError CheatDBFile::OpenFile(const char *filePath)
+{
+	CheatSystemError error = CheatSystemError_NoError;
+	
+	this->_fp = fopen(filePath, "rb");
+	if (this->_fp == NULL)
+	{
+		printf("ERROR: Failed to open the cheat database.\n");
+		error = CheatSystemError_FileOpenFailed;
+		return error;
+	}
+	
+	// Determine the file's total size.
+	fseek(this->_fp, 0, SEEK_END);
+	this->_size = ftell(this->_fp);
+	
+	// Validate the file header before doing anything else. At this time,
+	// we will also be determining the file's encryption status.
+	const char *headerID = "R4 CheatCode";
+	if (this->_size < strlen(headerID))
+	{
+		printf("ERROR: Failed to validate the file header.\n");
+		error = CheatSystemError_FileFormatInvalid;
+		return error;
+	}
+	
+	if (this->_size < CHEATDB_FILEOFFSET_FIRST_FAT_ENTRY)
+	{
+		printf("ERROR: No FAT entries found.\n");
+		error = CheatSystemError_FileFormatInvalid;
+		return error;
+	}
+	
+	// Read the file header.
+	u8 workingBuffer[512] = {0};
+	fseek(this->_fp, 0, SEEK_SET);
+	const size_t headerReadSize = (this->_size < 512) ? this->_size : 512;
+	fread(workingBuffer, 1, headerReadSize, this->_fp);
+	
+	if (strncmp((char *)workingBuffer, headerID, strlen(headerID)) != 0)
+	{
+		// Try checking the file header again, assuming that the file is
+		// encrypted this time.
+		CheatDBFile::R4Decrypt(workingBuffer, headerReadSize, 0);
+		if (strncmp((char *)workingBuffer, headerID, strlen(headerID)) != 0)
+		{
+			// Whether the file is encrypted or unencrypted, the file
+			// header failed validation. Therefore, the file will be
+			// closed and we will bail out now.
+			fclose(this->_fp);
+			this->_fp = NULL;
+			
+			printf("ERROR: Failed to validate the file header.\n");
+			error = CheatSystemError_FileFormatInvalid;
+			return error;
+		}
+		
+		// File header validation passed, but did so only because we
+		// decrypted the header first, so mark the file as encrypted
+		// for future operations.
+		this->_isEncrypted = true;
+	}
+	
+	this->_format = CheatDBFileFormat_R4;
+	this->_formatString = "R4";
+	this->_description = (const char *)(workingBuffer + CHEATDB_OFFSET_FILE_DESCRIPTION);
+	this->_path = filePath;
+	
+	return error;
+}
+
+void CheatDBFile::CloseFile()
+{
+	if (this->_fp != NULL)
+	{
+		fclose(this->_fp);
+		this->_fp = NULL;
+	}
+}
+
+void CheatDBFile::R4Decrypt(u8 *buf, const size_t len, u64 n)
 {
 	size_t r = 0;
 	while (r < len)
@@ -1668,247 +2289,277 @@ void CHEATSEXPORT::R4decrypt(u8 *buf, const size_t len, u64 n)
 	}
 }
 
-bool CHEATSEXPORT::load(char *path)
+bool CheatDBFile::ReadToBuffer(FILE *fp, const size_t fileOffset,
+                               const bool isEncrypted, const size_t encryptOffset,
+                               const size_t requestedSize, u8 *outBuffer)
 {
-	error = 0;
-
-	fp = fopen(path, "rb");
-	if (!fp)
+	bool didReadSuccessfully = false;
+	
+	if ( (fp == NULL) || (outBuffer == NULL) )
 	{
-		printf("Error open database\n");
-		error = 1;
-		return false;
-	}
-
-	const char *headerID = "R4 CheatCode";
-	char buf[255] = {0};
-	fread(buf, 1, strlen(headerID), fp);
-	if (strncmp(buf, headerID, strlen(headerID)) != 0)
-	{
-		// check encrypted
-		R4decrypt((u8 *)buf, strlen(headerID), 0);
-		if (strcmp(buf, headerID) != 0)
-		{
-			error = 2;
-			return false;
-		}
-		encrypted = true;
-	}
-
-	fseek(fp, 0, SEEK_END);
-	fsize = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-
-	if (!search())
-	{
-		printf("ERROR: cheat in database not found\n");
-		error = 3;
-		return false;
+		return didReadSuccessfully;
 	}
 	
-	if (!getCodes())
+	fseek(fp, fileOffset - encryptOffset, SEEK_SET);
+	
+	const size_t readSize = fread(outBuffer, 1, requestedSize, fp);
+	if (readSize != requestedSize)
 	{
-		printf("ERROR: export cheats failed\n");
-		error = 4;
-		return false;
+		return didReadSuccessfully;
 	}
 
-	return true;
-}
-void CHEATSEXPORT::close()
-{
-	if (fp)
-		fclose(fp);
-	if (cheats)
+	if (isEncrypted)
 	{
-		delete [] cheats;
-		cheats = NULL;
+		CheatDBFile::R4Decrypt(outBuffer, requestedSize, fileOffset >> 9);
 	}
+	
+	didReadSuccessfully = true;
+	return didReadSuccessfully;
 }
 
-bool CHEATSEXPORT::search()
+CheatDBGame CheatDBFile::_ReadGame(const u32 encryptOffset, const FAT_R4 &fat, const u32 gameDataSize, u8 (&workingBuffer)[1024])
 {
-	if (!fp) return false;
+	return CheatDBGame(this->_fp, this->_isEncrypted, encryptOffset, fat, gameDataSize, workingBuffer);
+}
 
-	u32		pos = 0x0100;
-	FAT_R4	fat_tmp = {0};
-	u8		buf[512] = {0};
-
-	CRC = 0;
-	encOffset = 0;
+u32 CheatDBFile::LoadGameList(const char *gameCode, const u32 gameDatabaseCRC, CheatDBGameList &outList)
+{
+	u32 entryCount = 0;
+	if (this->_fp == NULL)
+	{
+		return entryCount;
+	}
+	
+	// If gameCode is NULL, then we're going to assume that the entire
+	// game list will be rebuilt from scratch.
+	if (gameCode == NULL)
+	{
+		outList.resize(0);
+	}
+	
+	u8 fatBuffer[512] = {0};
+	u8 gameEntryBuffer[1024] = {0};
+	u32 pos = CHEATDB_FILEOFFSET_FIRST_FAT_ENTRY;
 	u64 t = 0;
-	memset(date, 0, sizeof(date));
-	if (encrypted)
+	FAT_R4 fatEntryCurrent = {0};
+	FAT_R4 fatEntryNext = {0};
+	
+	if (this->_isEncrypted)
 	{
-		fseek(fp, 0, SEEK_SET);
-		fread(&buf[0], 1, 512, fp);
-		R4decrypt((u8 *)&buf[0], 512, 0);
-		memcpy(&date[0], &buf[0x10], 16);
+		fseek(this->_fp, 0, SEEK_SET);
+		fread(fatBuffer, 1, 512, this->_fp);
+		CheatDBFile::R4Decrypt(fatBuffer, 512, 0);
 	}
 	else
 	{
-		fseek(fp, 0x10, SEEK_SET);
-		fread(&date, 16, 1, fp);
-		fseek(fp, pos, SEEK_SET);
-		fread(&fat_tmp, sizeof(fat), 1, fp);
+		fseek(this->_fp, pos, SEEK_SET);
+		fread(&fatEntryNext, sizeof(fatEntryNext), 1, this->_fp);
 	}
-
+	
 	do
 	{
-		if (encrypted)
+		if (this->_isEncrypted)
 		{
-			memcpy(&fat, &buf[pos % 512], sizeof(fat));
-			pos += sizeof(fat);
-			if ((pos>>9) > t)
+			memcpy(&fatEntryCurrent, &fatBuffer[pos % 512], sizeof(fatEntryCurrent));
+			pos += sizeof(fatEntryCurrent);
+			if ((pos >> 9) > t)
 			{
 				t++;
-				fread(&buf[0], 1, 512, fp);
-				R4decrypt((u8 *)&buf[0], 512, t);
+				if ( (t << 9) > this->_size)
+				{
+					break;
+				}
+				
+				fseek(this->_fp, t << 9, SEEK_SET);
+				fread(fatBuffer, 1, 512, this->_fp);
+				CheatDBFile::R4Decrypt(fatBuffer, 512, t);
 			}
-			memcpy(&fat_tmp, &buf[pos % 512], sizeof(fat_tmp));	// next
+			memcpy(&fatEntryNext, &fatBuffer[pos % 512], sizeof(fatEntryNext));
 		}
 		else
 		{
-			memcpy(&fat, &fat_tmp, sizeof(fat));
-			fread(&fat_tmp, sizeof(fat_tmp), 1, fp);
-			
-		}
-		//printf("serial: %s, offset %08X\n", fat.serial, fat.addr);
-		if (gameInfo.crcForCheatsDb == fat.CRC
-			&& !memcmp(gameInfo.header.gameCode, &fat.serial[0], 4))
-		{
-			dataSize = fat_tmp.addr ? (fat_tmp.addr - fat.addr) : 0;
-			if (encrypted)
-			{
-				encOffset = fat.addr % 512;
-				dataSize += encOffset;
-			}
-			if (!dataSize) return false;
-			CRC = fat.CRC;
-			char serialBuf[5] = {0};
-			memcpy(&serialBuf, &fat.serial[0], 4);
-			printf("Cheats: found %s CRC %08X at 0x%08llX, size %llu byte(s)\n", serialBuf, fat.CRC, fat.addr, (unsigned long long)(dataSize - encOffset));
-			return true;
-		}
-
-	} while (fat.addr > 0);
-
-	memset(&fat, 0, sizeof(FAT_R4));
-	return false;
-}
-
-bool CHEATSEXPORT::getCodes()
-{
-	if (!fp) return false;
-
-	u32	pos = 0;
-	u32	pos_cht = 0;
-
-	u8 *data = new u8 [dataSize+8];
-	if (!data) return false;
-	memset(data, 0, dataSize+8);
-	
-	fseek(fp, fat.addr - encOffset, SEEK_SET);
-
-	if (fread(data, 1, dataSize, fp) != dataSize)
-	{
-		delete [] data;
-		data = NULL;
-		return false;
-	}
-
-	if (encrypted)
-		R4decrypt(data, dataSize, fat.addr >> 9);
-	
-	uintptr_t ptrMask = ~(uintptr_t)0 << 2;
-	u8 *gameTitlePtr = (u8 *)data + encOffset;
-	
-	memset(gametitle, 0, CHEAT_DB_GAME_TITLE_SIZE);
-	memcpy(gametitle, gameTitlePtr, strlen((const char *)gameTitlePtr));
-	
-	u32 *cmd = (u32 *)(((uintptr_t)gameTitlePtr + strlen((const char *)gameTitlePtr) + 4) & ptrMask);
-	numCheats = cmd[0] & 0x0FFFFFFF;
-	cmd += 9;
-	cheats = new CHEATS_LIST[numCheats];
-	memset(cheats, 0, sizeof(CHEATS_LIST) * numCheats);
-
-	while (pos < numCheats)
-	{
-		u32 folderNum = 1;
-		u8	*folderName = NULL;
-		u8	*folderNote = NULL;
-		if ((*cmd & 0xF0000000) == 0x10000000)	// Folder
-		{
-			folderNum = (*cmd  & 0x00FFFFFF);
-			folderName = (u8*)((uintptr_t)cmd + 4);
-			folderNote = (u8*)((uintptr_t)folderName + strlen((char*)folderName) + 1);
-			pos++;
-			cmd = (u32 *)(((uintptr_t)folderName + strlen((char*)folderName) + 1 + strlen((char*)folderNote) + 1 + 3) & ptrMask);
-		}
-
-		for (u32 i = 0; i < folderNum; i++)		// in folder
-		{
-			u8 *cheatName = (u8 *)((uintptr_t)cmd + 4);
-			u8 *cheatNote = (u8 *)((uintptr_t)cheatName + strlen((char*)cheatName) + 1);
-			u32 *cheatData = (u32 *)(((uintptr_t)cheatNote + strlen((char*)cheatNote) + 1 + 3) & ptrMask);
-			u32 cheatDataLen = *cheatData++;
-			u32 numberCodes = cheatDataLen / 2;
-
-			if (numberCodes <= MAX_XX_CODE)
-			{
-				std::string descriptionStr = "";
-				
-				if ( folderName && *folderName )
-				{
-					descriptionStr += (char *)folderName;
-					descriptionStr += ": ";
-				}
-				
-				descriptionStr += (char *)cheatName;
-				
-				if ( cheatNote && *cheatNote )
-				{
-					descriptionStr += " | ";
-					descriptionStr += (char *)cheatNote;
-				}
-				
-				strncpy(cheats[pos_cht].description, descriptionStr.c_str(), sizeof(cheats[pos_cht].description));
-				cheats[pos_cht].description[sizeof(cheats[pos_cht].description) - 1] = '\0';
-				
-				cheats[pos_cht].num = numberCodes;
-				cheats[pos_cht].type = 1;
-
-				for(u32 j = 0, t = 0; j < numberCodes; j++, t+=2 )
-				{
-					cheats[pos_cht].code[j][0] = (u32)*(cheatData+t);
-					//printf("%i: %08X ", j, cheats[pos_cht].code[j][0]);
-					cheats[pos_cht].code[j][1] = (u32)*(cheatData+t+1);
-					//printf("%08X\n", cheats[pos_cht].code[j][1]);
-					
-				}
-				pos_cht++;
-			}
-
-			pos++;
-			cmd = (u32 *)((uintptr_t)cmd + ((*cmd + 1)*4));
+			memcpy(&fatEntryCurrent, &fatEntryNext, sizeof(fatEntryNext));
+			pos += sizeof(fatEntryNext);
+			fseek(this->_fp, pos, SEEK_SET);
+			fread(&fatEntryNext, sizeof(fatEntryNext), 1, this->_fp);
 		}
 		
-	};
-
-	delete [] data;
-
-	numCheats = pos_cht;
-	//for (int i = 0; i < numCheats; i++)
-	//	printf("%i: %s\n", i, cheats[i].description);
+		u32 encryptOffset = 0;
+		u32 dataSize = 0;
+		
+		if (fatEntryNext.addr > 0)
+		{
+			dataSize = (u32)(fatEntryNext.addr - fatEntryCurrent.addr);
+		}
+		else
+		{
+			// For the last game entry, use whatever remaining data there is in the
+			// file for the data size. However, we don't know how much extraneous
+			// data may exist, so limit the data size to 1 MB, which should be more
+			// than enough to account for all of the game entry data.
+			dataSize = (u32)(this->_size - fatEntryCurrent.addr);
+			if (dataSize > (1024 * 1024))
+			{
+				dataSize = 1024 * 1024;
+			}
+		}
+		
+		if (this->_isEncrypted)
+		{
+			encryptOffset = (u32)(fatEntryCurrent.addr % 512);
+		}
+		
+		if (dataSize == 0)
+		{
+			continue;
+		}
+		
+		// If gameCode is provided, then this method will search the file for the first matching
+		// serial and CRC, and then stop searching, adding only a single entry to the game list.
+		// If all you need is a limited number of games (or just one game), then using this
+		// method is a CPU and memory efficient means to get an entry from game list.
+		//
+		// If gameCode is NULL, then this method will add all game entries from the database file
+		// to the game list. This will consume more CPU cycles and memory, but having the entire
+		// game list in memory can be useful for clients that allow for database browsing.
+		if (gameCode != NULL)
+		{
+			if ( (gameDatabaseCRC == fatEntryCurrent.CRC) && !memcmp(gameCode, fatEntryCurrent.serial, 4) )
+			{
+				CheatDBGame *foundGameEntry = GetCheatDBGameEntryFromList(outList, gameCode, gameDatabaseCRC);
+				if (foundGameEntry == NULL)
+				{
+					// Only add to the game list if the entry has not been added yet.
+					outList.push_back( this->_ReadGame(encryptOffset, fatEntryCurrent, dataSize, gameEntryBuffer) );
+				}
+				
+				entryCount = 1;
+				return entryCount;
+			}
+		}
+		else
+		{
+			outList.push_back( this->_ReadGame(encryptOffset, fatEntryCurrent, dataSize, gameEntryBuffer) );
+			entryCount++;
+		}
+		
+	} while (fatEntryNext.addr > 0);
 	
-	return true;
+	return entryCount;
 }
 
-CHEATS_LIST *CHEATSEXPORT::getCheats()
+CHEATSEXPORT::CHEATSEXPORT()
 {
-	return cheats;
+	_selectedDbGame = NULL;
+	_cheats = NULL;
+	_lastError = CheatSystemError_NoError;
 }
-u32 CHEATSEXPORT::getCheatsNum()
+
+CHEATSEXPORT::~CHEATSEXPORT()
 {
-	return numCheats;
+	this->close();
+}
+
+bool CHEATSEXPORT::load(const char *path)
+{
+	bool didLoadSucceed = false;
+	
+	this->_lastError = this->_dbFile.OpenFile(path);
+	if (this->_lastError != CheatSystemError_NoError)
+	{
+		return didLoadSucceed;
+	}
+	
+	this->_dbFile.LoadGameList(gameInfo.header.gameCode, gameInfo.crcForCheatsDb, this->_tempGameList);
+	CheatDBGame *dbGamePtr = GetCheatDBGameEntryFromList(this->_tempGameList, gameInfo.header.gameCode, gameInfo.crcForCheatsDb);
+	
+	if (dbGamePtr == NULL)
+	{
+		const char gameCodeString[5] = {
+			gameInfo.header.gameCode[0],
+			gameInfo.header.gameCode[1],
+			gameInfo.header.gameCode[2],
+			gameInfo.header.gameCode[3],
+			'\0'
+		};
+		
+		printf("ERROR: Cheat for game code '%s' not found in database.\n", gameCodeString);
+		this->_lastError = CheatSystemError_GameNotFound;
+		return didLoadSucceed;
+	}
+	
+	u8 *dbGameBuffer = dbGamePtr->LoadEntryData(this->_dbFile.GetFilePtr(), this->_dbFile.IsEncrypted());
+	if (dbGameBuffer == NULL)
+	{
+		printf("ERROR: Failed to read game entries from file.\n");
+		this->_lastError = CheatSystemError_LoadEntryError;
+		return didLoadSucceed;
+	}
+	
+	if (this->_cheats != NULL)
+	{
+		free(this->_cheats);
+	}
+	
+	this->_cheats = (CHEATS_LIST *)malloc( sizeof(CHEATS_LIST) * dbGamePtr->GetEntryCount() );
+	memset(this->_cheats, 0, sizeof(CHEATS_LIST) * dbGamePtr->GetEntryCount());
+	
+	const size_t parsedCheatCount = dbGamePtr->ParseEntriesToCheatsListFlat(this->_cheats);
+	if (parsedCheatCount == 0)
+	{
+		printf("ERROR: export cheats failed\n");
+		this->_lastError = CheatSystemError_LoadEntryError;
+		return didLoadSucceed;
+	}
+	
+	this->_selectedDbGame = dbGamePtr;
+	
+	didLoadSucceed = true;
+	return didLoadSucceed;
+}
+
+void CHEATSEXPORT::close()
+{
+	this->_dbFile.CloseFile();
+	
+	if (this->_cheats != NULL)
+	{
+		free(this->_cheats);
+		this->_cheats = NULL;
+	}
+}
+
+CHEATS_LIST *CHEATSEXPORT::getCheats() const
+{
+	return this->_cheats;
+}
+
+size_t CHEATSEXPORT::getCheatsNum() const
+{
+	if (this->_selectedDbGame == NULL)
+	{
+		return 0;
+	}
+	
+	return (size_t)this->_selectedDbGame->GetCheatItemCount();
+}
+
+const char* CHEATSEXPORT::getGameTitle() const
+{
+	if (this->_selectedDbGame == NULL)
+	{
+		return "";
+	}
+	
+	return this->_selectedDbGame->GetTitle();
+}
+
+const char* CHEATSEXPORT::getDescription() const
+{
+	return (const char *)this->_dbFile.GetDescription();
+}
+
+CheatSystemError CHEATSEXPORT::getErrorCode() const
+{
+	return this->_lastError;
 }

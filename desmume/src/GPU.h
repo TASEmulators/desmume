@@ -117,7 +117,7 @@ typedef union
 		u8 OBJ_Tile_mapping:1;				//     4: A+B; 0=2D (32KB),  1=1D (32..256KB)
 		u8 OBJ_BMP_2D_dim:1;				//     5: A+B; 0=128x512,    1=256x256 pixels
 		u8 OBJ_BMP_mapping:1;				//     6: A+B; 0=2D (128KB), 1=1D (128..256KB)
-		u8 ForceBlank:1;					//     7: A+B;
+		u8 ForceBlank:1;					//     7: A+B; 0=Disable, 1=Enable (causes the line to render all white)
 		
 		u8 BG0_Enable:1;					//     8: A+B; 0=Disable, 1=Enable
 		u8 BG1_Enable:1;					//     9: A+B; 0=Disable, 1=Enable
@@ -143,7 +143,7 @@ typedef union
 		u8 ExBGxPalette_Enable:1;			//    30: A+B; 0=Disable, 1=Enable BG extended Palette
 		u8 ExOBJPalette_Enable:1;			//    31: A+B; 0=Disable, 1=Enable OBJ extended Palette
 #else
-		u8 ForceBlank:1;					//     7: A+B;
+		u8 ForceBlank:1;					//     7: A+B; 0=Disable, 1=Enable (causes the line to render all white)
 		u8 OBJ_BMP_mapping:1;				//     6: A+B; 0=2D (128KB), 1=1D (128..256KB)
 		u8 OBJ_BMP_2D_dim:1;				//     5: A+B; 0=128x512,    1=256x256 pixels
 		u8 OBJ_Tile_mapping:1;				//     4: A+B; 0=2D (32KB),  1=1D (32..256KB)
@@ -1543,6 +1543,8 @@ protected:
 	void _RenderLine_SetupSprites(GPUEngineCompositorInfo &compInfo);
 	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _RenderLine_Layers(GPUEngineCompositorInfo &compInfo);
 	
+	void _RenderLineBlank(const size_t l);
+	
 	void _HandleDisplayModeOff(const size_t l);
 	void _HandleDisplayModeNormal(const size_t l);
 	
@@ -1609,6 +1611,7 @@ public:
 	
 	const GPU_IOREG& GetIORegisterMap() const;
 	
+	bool IsForceBlankSet() const;
 	bool IsMasterBrightMaxOrMin() const;
 	
 	bool GetEnableState();

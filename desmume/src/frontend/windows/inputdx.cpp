@@ -3,7 +3,7 @@
 	licensed under the terms supplied at the end of this file (for the terms are very long!)
 	Differences from that baseline version are:
 
-	Copyright (C) 2009-2019 DeSmuME team
+	Copyright (C) 2009-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -50,6 +50,13 @@
 #include "hotkey.h"
 #include "main.h"
 #include "winutil.h"
+
+	//60 is a poor choice for a threshold; the theoretical maximum you can get even at an exact 45 degree angle is 70
+	//Sloshy sticks or slightly-off angles make it impossible to reach 60, as it's far too close to 70.
+	//Too-small values feel bad, too
+	//50 is a more normal choice
+	//#define S9X_JOY_NEUTRAL 60
+int S9X_JOY_NEUTRAL = 50;
 
 // Gamepad Dialog Strings
 // Support Unicode display
@@ -258,6 +265,9 @@ SPiano DefaultPiano = { false, 'Z', 'S', 'X', 'D', 'C', 'V', 'G', 'B', 'H', 'N',
 SPaddle Paddle;
 SPaddle DefaultPaddle = { false, 'K', 'L' };
 
+SHCV1000 HCV1000;
+SHCV1000 DefaultHCV1000 = { false, 'L'};
+
 bool killStylusTopScreen = false;
 bool killStylusOffScreen = false;
 bool allowUpAndDown = false;
@@ -390,6 +400,15 @@ static void ReadPaddleControl(const char* name, WORD& output)
 	}
 }
 
+static void ReadHCV1000Control(const char* name, WORD& output)
+{
+	UINT temp;
+	temp = GetPrivateProfileInt("Slot2.HCV1000", name, -1, IniName);
+	if (temp != -1) {
+		output = temp;
+	}
+}
+
 void LoadHotkeyConfig()
 {
 	SCustomKey *key = &CustomKeys.key(0);
@@ -452,6 +471,15 @@ static void LoadPaddleConfig()
 	ReadPaddleControl("INC", Paddle.INC);
 }
 
+static void LoadHCV1000Config()
+{
+	memcpy(&HCV1000, &DefaultHCV1000, sizeof(HCV1000));
+
+#define DO(X) ReadHCV1000Control(#X,HCV1000.X);
+	DO(SCANKEY);
+#undef DO
+}
+
 
 static void LoadInputConfig()
 {
@@ -498,6 +526,9 @@ static void SaveInputConfig()
 BOOL di_init()
 {
 	HWND hParentWnd = MainWindow->getHWnd();
+
+	S9X_JOY_NEUTRAL = GetPrivateProfileInt("Controls", "DigitalizationThreshold", S9X_JOY_NEUTRAL, IniName);
+	
 
 	pDI = NULL;
 	memset(cDIBuf, 0, sizeof(cDIBuf));
@@ -647,10 +678,6 @@ int FunkyNormalize(int cur, int min, int max)
 
     return Result;
 }
-
-
-
-#define S9X_JOY_NEUTRAL 60
 
 void CheckAxis (short joy, short control, int val,
                                        int min, int max,
@@ -2690,6 +2717,7 @@ void input_init()
 	LoadGuitarConfig();
 	LoadPianoConfig();
 	LoadPaddleConfig();
+	LoadHCV1000Config();
 
 	di_init();
 	FeedbackON = input_feedback;
@@ -2815,6 +2843,12 @@ void input_acquire()
 			bool inc = !S9xGetState(Paddle.INC);
 			if (inc) nds.paddle += 5;
 			if (dec) nds.paddle -= 5;
+		}
+
+		if (HCV1000.Enabled)
+		{
+			bool scan = !S9xGetState(HCV1000.SCANKEY);
+			if (scan) HCV1000_setReady();
 		}
 	}
 	else

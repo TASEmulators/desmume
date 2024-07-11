@@ -242,6 +242,8 @@ public:
 	bool empty;
 
 	virtual void clear() = 0;
+	
+	virtual void setDrawTargetDims(agg::int8u* buf, int width, int height, int stride) = 0;
 
 	virtual agg::rendering_buffer & buf() = 0;
 
@@ -408,6 +410,9 @@ public:
     virtual Agg2DBase::ImageResample imageResample() = 0;
 	static const agg::int8u* lookupFont(const std::string& name);
 	virtual void setFont(const std::string& name) = 0;
+#ifdef AGG2D_USE_VECTORFONTS
+	virtual void setVectorFont(const std::string& fileName, int size, bool bold) = 0;
+#endif
 	virtual void renderText(double dstX, double dstY, const std::string& str) = 0;
 	virtual void renderTextDropshadowed(double dstX, double dstY, const std::string& str)
 	{
@@ -427,6 +432,30 @@ public:
 		lineColor(lineColorOld);
 		renderText(dstX,dstY,str);
 	}
+#ifdef AGG2D_USE_VECTORFONTS
+	virtual void renderVectorFontText(double dstX, double dstY, const std::string& str) = 0;
+	virtual void renderVectorFontTextDropshadowed(double dstX, double dstY, const std::string& str, double shadowOffset = 1.0)
+	{
+		shadowOffset*=0.5;
+		AggColor lineColorOld = lineColor();
+		if(lineColorOld.r+lineColorOld.g+lineColorOld.b<192)
+			lineColor(255-lineColorOld.r,255-lineColorOld.g,255-lineColorOld.b);
+		else
+			lineColor(0,0,0);
+		fillColor(lineColor());
+		renderVectorFontText(dstX-shadowOffset,dstY-shadowOffset,str);
+		renderVectorFontText(dstX,dstY-shadowOffset,str);
+		renderVectorFontText(dstX+shadowOffset,dstY-shadowOffset,str);
+		renderVectorFontText(dstX-shadowOffset,dstY,str);
+		renderVectorFontText(dstX+shadowOffset,dstY,str);
+		renderVectorFontText(dstX-shadowOffset,dstY+shadowOffset,str);
+		renderVectorFontText(dstX,dstY+shadowOffset,str);
+		renderVectorFontText(dstX+shadowOffset,dstY+shadowOffset,str);
+		lineColor(lineColorOld);
+		fillColor(lineColor());
+		renderVectorFontText(dstX,dstY,str);
+	}
+#endif
 
 
 	// Auxiliary
@@ -457,6 +486,13 @@ public:
 			BASE::clearAll(0,0,0,0);
 			undirty();
 		}
+	}
+	
+	virtual void setDrawTargetDims(agg::int8u* buf, int width, int height, int stride)
+	{
+		BASE::attach(buf,width,height,stride);
+
+		BASE::viewport(0, 0, width-1, height-1, 0, 0, width-1, height-1, TAGG2D::Anisotropic);
 	}
 
 	virtual agg::rendering_buffer & buf() { dirty(); return BASE::buf(); } // buf() might not always require calling dirty()
@@ -578,6 +614,9 @@ public:
 	virtual void polyline(double* xy, int numPoints) {dirty(); BASE::polyline(xy, numPoints);};
 
 	virtual void setFont(const std::string& name) { BASE::font(lookupFont(name)); }
+#ifdef AGG2D_USE_VECTORFONTS
+	virtual void setVectorFont(const std::string& fileName, int size, bool bold) {BASE::font(fileName.c_str(), size, bold); }
+#endif
 	virtual void renderText(double dstX, double dstY, const std::string& str) { 
 		dirty(); 
 		int height = BASE::font()[0];
@@ -585,6 +624,13 @@ public:
 		int offset = height-base*2;
 		BASE::renderText(dstX, dstY + offset, str);
 	}
+#ifdef AGG2D_USE_VECTORFONTS
+	virtual void renderVectorFontText(double dstX, double dstY, const std::string& str) {
+		dirty();
+		BASE::flipText(true);
+		BASE::text(dstX, dstY + BASE::fontHeight(), str.c_str());
+	}
+#endif
 
     // Path commands
     virtual void resetPath() {BASE::resetPath();};
@@ -659,15 +705,18 @@ enum AggTarget
 class AggDraw_Desmume : public AggDraw
 {
 public:
+	AggDraw_Desmume();
 	void setTarget(AggTarget newTarget);
 	//void composite(void* dest);
 
 	AggDrawTarget *screen, *hud, *lua;
+	int screenBytesPerPixel;
 };
 
 extern AggDraw_Desmume aggDraw;
 
 void Agg_init();
+void Agg_setCustomSize(int w, int h);
 
 struct font_type
 {

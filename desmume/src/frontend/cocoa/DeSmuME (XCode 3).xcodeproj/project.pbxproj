@@ -266,6 +266,11 @@
 		AB142028186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = AB142025186E2CD80015D52F /* Image_MemoryExpansionPak.png */; };
 		AB142029186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = AB142025186E2CD80015D52F /* Image_MemoryExpansionPak.png */; };
 		AB14202A186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = AB142025186E2CD80015D52F /* Image_MemoryExpansionPak.png */; };
+		AB1B20AC2AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B20AB2AD5ED59007CA7EB /* slot2_hcv1000.cpp */; };
+		AB1B20AD2AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B20AB2AD5ED59007CA7EB /* slot2_hcv1000.cpp */; };
+		AB1B20AE2AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B20AB2AD5ED59007CA7EB /* slot2_hcv1000.cpp */; };
+		AB1B20AF2AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B20AB2AD5ED59007CA7EB /* slot2_hcv1000.cpp */; };
+		AB1B20B02AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B20AB2AD5ED59007CA7EB /* slot2_hcv1000.cpp */; };
 		AB1CC8001AA509C2008B0A16 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB1CC7FF1AA509C2008B0A16 /* CoreAudio.framework */; };
 		AB1CC80A1AA509DF008B0A16 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB1CC7FF1AA509C2008B0A16 /* CoreAudio.framework */; };
 		AB1CC80B1AA509E0008B0A16 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB1CC7FF1AA509C2008B0A16 /* CoreAudio.framework */; };
@@ -1558,6 +1563,11 @@
 		ABD59849187D4A6C00069403 /* Icon_PaddleKnob_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABD59846187D4A6C00069403 /* Icon_PaddleKnob_256x256.png */; };
 		ABD5984A187D4A6C00069403 /* Icon_PaddleKnob_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABD59846187D4A6C00069403 /* Icon_PaddleKnob_256x256.png */; };
 		ABD5984B187D4A6C00069403 /* Icon_PaddleKnob_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABD59846187D4A6C00069403 /* Icon_PaddleKnob_256x256.png */; };
+		ABEBCE372A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABEBCE362A703E260028CE8A /* CheatDatabaseWindowController.mm */; };
+		ABEBCE382A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABEBCE362A703E260028CE8A /* CheatDatabaseWindowController.mm */; };
+		ABEBCE392A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABEBCE362A703E260028CE8A /* CheatDatabaseWindowController.mm */; };
+		ABEBCE3A2A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABEBCE362A703E260028CE8A /* CheatDatabaseWindowController.mm */; };
+		ABEBCE3B2A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABEBCE362A703E260028CE8A /* CheatDatabaseWindowController.mm */; };
 		ABECB50918A460710052D52A /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB50818A460710052D52A /* xbrz.cpp */; };
 		ABECB50A18A460710052D52A /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB50818A460710052D52A /* xbrz.cpp */; };
 		ABECB50B18A460710052D52A /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB50818A460710052D52A /* xbrz.cpp */; };
@@ -1572,6 +1582,11 @@
 		ABEF84831873578F00E99ADC /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */; };
 		ABEF84841873579400E99ADC /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */; };
 		ABEF84851873579700E99ADC /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */; };
+		ABEFFDDE2A78CB67009C3A2D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = ABEFFDDC2A78CB67009C3A2D /* CheatDatabaseViewer.xib */; };
+		ABEFFDDF2A78CB67009C3A2D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = ABEFFDDC2A78CB67009C3A2D /* CheatDatabaseViewer.xib */; };
+		ABEFFDE02A78CB67009C3A2D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = ABEFFDDC2A78CB67009C3A2D /* CheatDatabaseViewer.xib */; };
+		ABEFFDE12A78CB67009C3A2D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = ABEFFDDC2A78CB67009C3A2D /* CheatDatabaseViewer.xib */; };
+		ABEFFDE22A78CB67009C3A2D /* CheatDatabaseViewer.xib in Resources */ = {isa = PBXBuildFile; fileRef = ABEFFDDC2A78CB67009C3A2D /* CheatDatabaseViewer.xib */; };
 		ABF50ABA169F5FDA0018C08D /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7B169F5FDA0018C08D /* assembler.cpp */; };
 		ABF50ABB169F5FDA0018C08D /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7D169F5FDA0018C08D /* assert.cpp */; };
 		ABF50ABC169F5FDA0018C08D /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7F169F5FDA0018C08D /* buffer.cpp */; };
@@ -1905,6 +1920,7 @@
 		AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speaker_420x420.png; path = images/Icon_Speaker_420x420.png; sourceTree = "<group>"; };
 		AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_passme.cpp; sourceTree = "<group>"; };
 		AB142025186E2CD80015D52F /* Image_MemoryExpansionPak.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_MemoryExpansionPak.png; path = images/Image_MemoryExpansionPak.png; sourceTree = "<group>"; };
+		AB1B20AB2AD5ED59007CA7EB /* slot2_hcv1000.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_hcv1000.cpp; sourceTree = "<group>"; };
 		AB1CC7FF1AA509C2008B0A16 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		AB1CC8161AA50C8D008B0A16 /* Icon_MicrophoneBlack_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneBlack_256x256.png; path = images/Icon_MicrophoneBlack_256x256.png; sourceTree = "<group>"; };
 		AB1CC8171AA50C8D008B0A16 /* Icon_MicrophoneBlueGlow_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneBlueGlow_256x256.png; path = images/Icon_MicrophoneBlueGlow_256x256.png; sourceTree = "<group>"; };
@@ -2326,6 +2342,8 @@
 		ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxmlparser.cpp; sourceTree = "<group>"; };
 		ABE7F53C13EE1C7900FD3A71 /* cocoa_firmware.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_firmware.h; sourceTree = "<group>"; };
 		ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_firmware.mm; sourceTree = "<group>"; };
+		ABEBCE352A703E260028CE8A /* CheatDatabaseWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CheatDatabaseWindowController.h; sourceTree = "<group>"; };
+		ABEBCE362A703E260028CE8A /* CheatDatabaseWindowController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CheatDatabaseWindowController.mm; sourceTree = "<group>"; };
 		ABECB50718A460710052D52A /* xbrz.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xbrz.h; sourceTree = "<group>"; };
 		ABECB50818A460710052D52A /* xbrz.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = xbrz.cpp; sourceTree = "<group>"; };
 		ABECB51218A460910052D52A /* OGLDisplayOutput.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OGLDisplayOutput.h; sourceTree = "<group>"; };
@@ -2334,6 +2352,7 @@
 		ABEFCF5E141AB82A000CC0CD /* AppIcon_DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_DeSmuME.icns; sourceTree = "<group>"; };
 		ABEFCF5F141AB82A000CC0CD /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
 		ABEFCF60141AB82A000CC0CD /* AppIcon_SaveState.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_SaveState.icns; sourceTree = "<group>"; };
+		ABEFFDDD2A78CB67009C3A2D /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/CheatDatabaseViewer.xib; sourceTree = "<group>"; };
 		ABF50A74169F5FDA0018C08D /* AsmJit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AsmJit.h; sourceTree = "<group>"; };
 		ABF50A75169F5FDA0018C08D /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Config.h; sourceTree = "<group>"; };
 		ABF50A76169F5FDA0018C08D /* core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = core.h; sourceTree = "<group>"; };
@@ -2657,6 +2676,7 @@
 				AB05E8201BBFD41200065D18 /* source-sans-pro */,
 				ABC2ECD613B1C87000FAAA2A /* Images */,
 				AB00E87C14205EBC00DE561F /* MainMenu.xib */,
+				ABEFFDDC2A78CB67009C3A2D /* CheatDatabaseViewer.xib */,
 				AB700DB816CDDBC400FBD336 /* DisplayWindow.xib */,
 				AB350D3A147A1D93007165AC /* HID_usage_strings.plist */,
 				8D1107310486CEB800E47090 /* Info.plist */,
@@ -3199,6 +3219,7 @@
 			isa = PBXGroup;
 			children = (
 				AB3ACB6614C2361100D7D192 /* appDelegate.h */,
+				ABEBCE352A703E260028CE8A /* CheatDatabaseWindowController.h */,
 				AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */,
 				AB3E69811E25FBBF00D4CC75 /* DisplayViewCALayer.h */,
 				AB700DDC16CDE4C300FBD336 /* DisplayWindowController.h */,
@@ -3217,6 +3238,7 @@
 				ABA0356E169127BB00817C69 /* troubleshootingWindowDelegate.h */,
 				AB4B5A1F217E47E400381363 /* WifiSettingsPanel.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
+				ABEBCE362A703E260028CE8A /* CheatDatabaseWindowController.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
 				AB3E69821E25FBBF00D4CC75 /* DisplayViewCALayer.mm */,
 				AB700DDD16CDE4C300FBD336 /* DisplayWindowController.mm */,
@@ -3495,6 +3517,7 @@
 				ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */,
 				ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */,
 				ABD1FF051345AC9B00AF11D1 /* slot2_guitarGrip.cpp */,
+				AB1B20AB2AD5ED59007CA7EB /* slot2_hcv1000.cpp */,
 				ABD1FF061345AC9B00AF11D1 /* slot2_mpcf.cpp */,
 				ABD1FF071345AC9C00AF11D1 /* slot2_none.cpp */,
 				ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */,
@@ -3870,7 +3893,7 @@
 			attributes = {
 				ORGANIZATIONNAME = "DeSmuME Team";
 			};
-			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 3)" */;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (Xcode 3)" */;
 			compatibilityVersion = "Xcode 3.1";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
@@ -4014,6 +4037,7 @@
 				ABA1659B2808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */,
 				ABA1659C2808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */,
 				AB6D78942809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
+				ABEFFDDF2A78CB67009C3A2D /* CheatDatabaseViewer.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4133,6 +4157,7 @@
 				ABA165A92808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */,
 				ABA165AA2808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */,
 				AB6D78952809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
+				ABEFFDE02A78CB67009C3A2D /* CheatDatabaseViewer.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4252,6 +4277,7 @@
 				ABA165D32808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */,
 				ABA165D42808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */,
 				AB6D78982809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
+				ABEFFDDE2A78CB67009C3A2D /* CheatDatabaseViewer.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4371,6 +4397,7 @@
 				ABA165C52808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */,
 				ABA165C62808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */,
 				AB6D78972809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
+				ABEFFDE22A78CB67009C3A2D /* CheatDatabaseViewer.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4490,6 +4517,7 @@
 				ABA165B72808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16.png in Resources */,
 				ABA165B82808BD6A00C8CFF5 /* Icon_VolumeTwoThird_DarkMode_16x16@2x.png in Resources */,
 				AB6D78962809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */,
+				ABEFFDE12A78CB67009C3A2D /* CheatDatabaseViewer.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4835,6 +4863,8 @@
 				ABD1267720AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267820AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
 				AB4B5A22217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
+				ABEBCE382A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */,
+				AB1B20AD2AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5029,6 +5059,8 @@
 				ABD1267920AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267A20AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
 				AB4B5A23217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
+				ABEBCE392A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */,
+				AB1B20AE2AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5253,6 +5285,8 @@
 				ABD1267520AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267620AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
 				AB4B5A21217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
+				ABEBCE372A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */,
+				AB1B20AC2AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5477,6 +5511,8 @@
 				ABD1267D20AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267E20AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
 				AB4B5A25217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
+				ABEBCE3B2A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */,
+				AB1B20B02AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5671,6 +5707,8 @@
 				ABD1267B20AE812900EFE1B2 /* ClientAVCaptureObject.cpp in Sources */,
 				ABD1267C20AE812900EFE1B2 /* macOS_driver.cpp in Sources */,
 				AB4B5A24217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
+				ABEBCE3A2A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */,
+				AB1B20AF2AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5715,6 +5753,14 @@
 				AB00E89114205ECC00DE561F /* English */,
 			);
 			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		ABEFFDDC2A78CB67009C3A2D /* CheatDatabaseViewer.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				ABEFFDDD2A78CB67009C3A2D /* English */,
+			);
+			name = CheatDatabaseViewer.xib;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
@@ -6007,7 +6053,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 3)" */ = {
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (Xcode 3)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C01FCF4F08A954540054247B /* Debug */,

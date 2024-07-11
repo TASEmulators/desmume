@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2023 DeSmuME team
+	Copyright (C) 2008-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -561,7 +561,7 @@ bool GFX3D_IsPolyWireframe(const POLY &p);
 bool GFX3D_IsPolyOpaque(const POLY &p);
 bool GFX3D_IsPolyTranslucent(const POLY &p);
 
-#define POLYLIST_SIZE 16383
+#define POLYLIST_SIZE 16384
 #define CLIPPED_POLYLIST_SIZE (POLYLIST_SIZE * 2)
 #define VERTLIST_SIZE (POLYLIST_SIZE * 4)
 

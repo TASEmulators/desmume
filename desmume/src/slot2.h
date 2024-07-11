@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -97,6 +97,7 @@ enum NDS_SLOT2_TYPE
 	NDS_SLOT2_EASYPIANO,	// 0x06 - Easy Piano
 	NDS_SLOT2_PADDLE,		// 0x07 - Arkanoids DS paddle
 	NDS_SLOT2_PASSME,		// 0x08 - PassME/Homebrew
+	NDS_SLOT2_HCV1000,      // 0x09 - HCV-1000 Sega Card Reader
 	NDS_SLOT2_COUNT			// use for counter addons - MUST TO BE LAST!!!
 };
 
@@ -157,4 +158,6 @@ void Paddle_SetValue(u16 theValue);
 
 extern void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue); // Guitar grip keys
 extern void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, bool g, bool gs, bool a, bool as, bool b, bool hic); //piano keys
+extern void HCV1000_setReady();
+extern void HCV1000_setBarcode(std::string barcode);
 #endif //__SLOT_H__

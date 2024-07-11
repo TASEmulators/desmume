@@ -1,6 +1,6 @@
-﻿/*
+/*
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2006-2019 DeSmuME team
+	Copyright (C) 2006-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -52,7 +52,6 @@
 #include "slot2.h"
 #include "GPU.h"
 #include "SPU.h"
-#include "OGLRender.h"
 #include "OGLRender_3_2.h"
 #include "rasterize.h"
 #include "gfx3d.h"
@@ -1580,6 +1579,7 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 		Guitar.Enabled	= (selectedSlot2Type == NDS_SLOT2_GUITARGRIP)?true:false;
 		Piano.Enabled	= (selectedSlot2Type == NDS_SLOT2_EASYPIANO)?true:false;
 		Paddle.Enabled	= (selectedSlot2Type == NDS_SLOT2_PADDLE)?true:false;
+		HCV1000.Enabled = (selectedSlot2Type == NDS_SLOT2_HCV1000)?true:false;
 		
 		LoadSaveStateInfo();
 		lagframecounter=0;
@@ -2198,6 +2198,9 @@ int _main()
 	win32_CFlash_cfgFileName = GetPrivateProfileStdString("Slot2.CFlash", "filename", "");
 	win32_GBA_cfgRomPath = GetPrivateProfileStdString("Slot2.GBAgame", "filename", "");
 
+	slot2_HCV1000_barcode = GetPrivateProfileStdString("Slot2.HCV1000", "barcode", "").substr(0, 16);
+	HCV1000_setBarcode(slot2_HCV1000_barcode);
+
 	cmdline.process_addonCommands();
 	WIN_InstallCFlash();
 	WIN_InstallGBACartridge();
@@ -2258,6 +2261,8 @@ int _main()
 			break;
 		case NDS_SLOT2_PASSME:
 			break;
+		case NDS_SLOT2_HCV1000:
+			break;
 		default:
 			slot2_device_type = NDS_SLOT2_NONE;
 			break;
@@ -2268,6 +2273,7 @@ int _main()
 	Guitar.Enabled	= (slot2_device_type == NDS_SLOT2_GUITARGRIP)?true:false;
 	Piano.Enabled	= (slot2_device_type == NDS_SLOT2_EASYPIANO)?true:false;
 	Paddle.Enabled	= (slot2_device_type == NDS_SLOT2_PADDLE)?true:false;
+	HCV1000.Enabled = (slot2_device_type == NDS_SLOT2_HCV1000)?true:false;
 
 	CommonSettings.WifiBridgeDeviceID = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 

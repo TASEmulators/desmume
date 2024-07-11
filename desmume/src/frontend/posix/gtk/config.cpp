@@ -63,6 +63,24 @@ void value<int>::save() {
 	g_key_file_set_integer(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData);
 }
 
+/*class value<float> */
+
+template<>
+void value<float>::load() {
+	GError* err = NULL;
+	float val = g_key_file_get_double(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), &err);
+	if (err != NULL) {
+		g_error_free(err);
+	} else {
+		this->mData = val;
+	}
+}
+
+template<>
+void value<float>::save() {
+	g_key_file_set_double(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData);
+}
+
 /* class value<string> */
 
 template<>
@@ -77,6 +95,25 @@ void value<string>::load() {
 template<>
 void value<string>::save() {
 	g_key_file_set_string(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData.c_str());
+}
+
+/* class value<vector<int> > */
+
+template<>
+void value<vector<int> >::load() {
+	gsize l;
+	int* val = g_key_file_get_integer_list(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), &l, NULL);
+	if(val)
+	{
+		this->mData.resize(l);
+		std::copy(val, val+l, this->mData.begin());
+		g_free(val);
+	}
+}
+
+template<>
+void value<vector<int> >::save() {
+	g_key_file_set_integer_list(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData.data(), this->mData.size());
 }
 
 /* class Config */

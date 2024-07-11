@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2023 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
 extern std::string win32_CFlash_cfgDirectory, win32_CFlash_cfgFileName;
 extern UINT win32_CFlash_cfgMode;
 extern std::string win32_GBA_cfgRomPath;
+
+extern std::string slot2_HCV1000_barcode;
 
 extern void GBAslotDialog(HWND hwnd);
 

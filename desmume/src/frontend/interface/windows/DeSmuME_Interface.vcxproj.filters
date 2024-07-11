@@ -132,6 +132,9 @@
     <ClCompile Include="..\..\..\addons\slot2_guitarGrip.cpp">
       <Filter>addons</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\addons\slot2_hcv1000.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\addons\slot2_none.cpp">
       <Filter>addons</Filter>
     </ClCompile>

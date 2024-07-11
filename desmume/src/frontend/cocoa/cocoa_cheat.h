@@ -18,8 +18,10 @@
 
 #include <string>
 #include <vector>
-#import <Cocoa/Cocoa.h>
+#include "../../cheatSystem.h"
 #undef BOOL
+
+#import <Cocoa/Cocoa.h>
 
 class CHEATS;
 class CHEATS_LIST;
@@ -54,16 +56,6 @@ enum CheatSearchCompareStyle
 	CheatSearchCompareStyle_NotEquals   = 3
 };
 
-enum CheatSystemError
-{
-	CheatSystemError_NoError           = 0,
-	CheatSystemError_FileOpenFailed    = 1,
-	CheatSystemError_FileFormatInvalid = 2,
-	CheatSystemError_CheatNotFound     = 3,
-	CheatSystemError_ExportError       = 4,
-	CheatSystemError_FileSaveFailed    = 5
-};
-
 union DesmumeCheatSearchItem
 {
 	uint64_t data;
@@ -95,7 +87,8 @@ protected:
 	bool _willAddFromDB;
 	
 	CheatType _cheatType;
-	std::string _descriptionString;
+	std::string _nameString;
+	std::string _commentString;
 	
 	// Internal cheat type parameters
 	CheatFreezeType _freezeType;
@@ -132,8 +125,11 @@ public:
 	void SetType(CheatType requestedType);
 	bool IsSupportedType() const;
 	
-	const char* GetDescription() const;
-	void SetDescription(const char *descriptionString);
+	const char* GetName() const;
+	void SetName(const char *nameString);
+	
+	const char* GetComments() const;
+	void SetComments(const char *commentString);
 	
 	CheatFreezeType GetFreezeType() const;
 	void SetFreezeType(CheatFreezeType theFreezeType);
@@ -224,7 +220,7 @@ class ClientCheatDatabase
 protected:
 	ClientCheatList *_list;
 	std::string _title;
-	std::string _date;
+	std::string _description;
 	std::string _lastFilePath;
 	
 public:
@@ -235,7 +231,7 @@ public:
 	ClientCheatList* LoadFromFile(const char *dbFilePath);
 	
 	const char* GetTitle() const;
-	const char* GetDate() const;
+	const char* GetDescription() const;
 };
 
 class ClientCheatManager
@@ -289,7 +285,7 @@ public:
 	ClientCheatList* GetDatabaseList() const;
 	ClientCheatList* DatabaseListLoadFromFile(const char *dbFilePath);
 	const char* GetDatabaseTitle() const;
-	const char* GetDatabaseDate() const;
+	const char* GetDatabaseDescription() const;
 	
 	bool SearchDidStart() const;
 	void SearchReset();
@@ -345,6 +341,8 @@ public:
 - (void) destroyWorkingCopy;
 - (void) mergeToParent;
 
++ (void) setIconDirectory:(NSImage *)iconImage;
++ (NSImage *) iconDirectory;
 + (void) setIconInternalCheat:(NSImage *)iconImage;
 + (NSImage *) iconInternalCheat;
 + (void) setIconActionReplay:(NSImage *)iconImage;
@@ -354,11 +352,83 @@ public:
 
 @end
 
+@interface CocoaDSCheatDBEntry : NSObject
+{
+	CheatDBEntry *_dbEntry;
+	
+	CocoaDSCheatDBEntry *parent;
+	NSMutableArray *child;
+	NSInteger willAdd;
+	NSString *codeString;
+	
+	BOOL needSetMixedState;
+}
+
+@property (readonly, nonatomic) NSString *name;
+@property (readonly, nonatomic) NSString *comment;
+@property (readonly, nonatomic) NSImage *icon;
+@property (readonly, nonatomic) NSInteger entryCount;
+@property (readonly, nonatomic) NSString *codeString;
+@property (readonly, nonatomic) BOOL isDirectory;
+@property (readonly, nonatomic) BOOL isCheatItem;
+@property (assign) NSInteger willAdd;
+@property (assign) BOOL needSetMixedState;
+@property (assign) CocoaDSCheatDBEntry *parent;
+@property (readonly, nonatomic) NSMutableArray *child;
+
+- (id) initWithDBEntry:(const CheatDBEntry *)dbEntry;
+- (ClientCheatItem *) newClientItem;
+
+@end
+
+@interface CocoaDSCheatDBGame : NSObject
+{
+	CheatDBGame *_dbGame;
+	CocoaDSCheatDBEntry *entryRoot;
+	NSUInteger index;
+}
+
+@property (assign) NSUInteger index;
+@property (readonly, nonatomic) NSString *title;
+@property (readonly, nonatomic) NSString *serial;
+@property (readonly, nonatomic) NSUInteger crc;
+@property (readonly, nonatomic) NSString *crcString;
+@property (readonly, nonatomic) NSInteger dataSize;
+@property (readonly, nonatomic) NSString *dataSizeString;
+@property (readonly, nonatomic) BOOL isDataLoaded;
+@property (readonly, nonatomic) NSInteger cheatItemCount;
+@property (readonly, nonatomic) CocoaDSCheatDBEntry *entryRoot;
+
+- (id) initWithGameEntry:(const CheatDBGame *)gameEntry;
+- (CocoaDSCheatDBEntry *) loadEntryDataFromFilePtr:(FILE *)fp isEncrypted:(BOOL)isEncrypted;
+
+@end
+
+@interface CocoaDSCheatDatabase : NSObject
+{
+	CheatDBFile *_dbFile;
+	CheatDBGameList *_dbGameList;
+	NSMutableArray *gameList;
+	
+	NSURL *lastFileURL;
+}
+
+@property (readonly) NSURL *lastFileURL;
+@property (readonly, nonatomic) NSString *description;
+@property (readonly, nonatomic) NSString *formatString;
+@property (readonly, nonatomic) BOOL isEncrypted;
+@property (readonly) NSMutableArray *gameList;
+
+- (id) initWithFileURL:(NSURL *)fileURL error:(CheatSystemError *)errorCode;
+- (CocoaDSCheatDBGame *) getGameEntryUsingCode:(const char *)gameCode crc:(NSUInteger)crc;
+- (CocoaDSCheatDBEntry *) loadGameEntry:(CocoaDSCheatDBGame *)dbGame;
+
+@end
+
 @interface CocoaDSCheatManager : NSObject
 {
 	ClientCheatManager *_internalCheatManager;
 	NSMutableArray *sessionList;
-	NSMutableArray *databaseList;
 	NSMutableArray *searchResultsList;
 	
 	pthread_rwlock_t *rwlockCoreExecute;
@@ -366,11 +436,10 @@ public:
 
 @property (readonly, nonatomic, getter=internalManager) ClientCheatManager *_internalCheatManager;
 @property (readonly) NSMutableArray *sessionList;
+@property (readonly, nonatomic) NSString *currentGameCode;
+@property (readonly, nonatomic) NSUInteger currentGameCRC;
 @property (readonly, nonatomic) NSUInteger itemTotalCount;
 @property (readonly, nonatomic) NSUInteger itemActiveCount;
-@property (readonly) NSMutableArray *databaseList;
-@property (readonly, nonatomic) NSString *databaseTitle;
-@property (readonly, nonatomic) NSString *databaseDate;
 @property (readonly) NSMutableArray *searchResultsList;
 @property (readonly, nonatomic) BOOL searchDidStart;
 @property (readonly, nonatomic) NSUInteger searchCount;
@@ -389,8 +458,7 @@ public:
 - (void) loadFromMaster;
 - (void) applyToMaster;
 
-- (NSMutableArray *) databaseListLoadFromFile:(NSURL *)fileURL errorCode:(NSInteger *)error;
-- (NSUInteger) databaseAddSelected;
+- (NSUInteger) databaseAddSelectedInEntry:(CocoaDSCheatDBEntry *)theEntry;
 
 - (NSUInteger) runExactValueSearch:(NSInteger)value byteSize:(UInt8)byteSize signType:(NSInteger)signType;
 - (NSUInteger) runComparativeSearch:(NSInteger)typeID byteSize:(UInt8)byteSize signType:(NSInteger)signType;

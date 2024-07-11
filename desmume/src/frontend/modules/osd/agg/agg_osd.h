@@ -73,6 +73,7 @@ public:
 
 	HudCoordinates &hud(int i) { return ((HudCoordinates*)this)[i]; }
 	void reset();
+	void rescale(double oldScale, double newScale);
 
 	int fps, fps3d, cpuload[2], cpuloopIterationCount;
 	char rtcString[25];
@@ -92,7 +93,7 @@ class OSDCLASS
 private:
 	u64		offset;
 	u8		mode;
-
+	
 	u16		rotAngle;
 
 	u16		lineText_x;
@@ -111,6 +112,10 @@ public:
 	char	name[7];		// for debuging
 	bool    singleScreen;
 	bool    swapScreens;
+	double	scale;
+#ifdef AGG2D_USE_VECTORFONTS
+	bool	useVectorFonts;
+#endif
 
 	OSDCLASS(u8 core);
 	~OSDCLASS();
@@ -125,7 +130,7 @@ public:
 	void	addLine(const char* fmt, va_list args);
 	void	addFixed(u16 x, u16 y, const char *fmt, ...);
 	void	border(bool enabled);
-
+	
 	void SaveHudEditor();
 };
 

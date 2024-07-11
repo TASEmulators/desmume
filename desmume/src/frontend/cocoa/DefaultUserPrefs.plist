@@ -4,6 +4,8 @@
 <dict>
 	<key>Advanscene_AutoDetectRomSaveType</key>
 	<true/>
+	<key>CheatDatabase_RecentFilePath</key>
+	<array/>
 	<key>CoreControl_EnableAutoFrameSkip</key>
 	<true/>
 	<key>CoreControl_FramesToSkipSetting</key>

@@ -1,6 +1,6 @@
  /*
 	Copyright (C) 2007 Pascal Giard (evilynux)
-	Copyright (C) 2006-2021 DeSmuME team
+	Copyright (C) 2006-2024 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -72,7 +72,6 @@
 
 #ifdef HAVE_OPENGL
 	#include <GL/gl.h>
-	#include "OGLRender.h"
 	#include "OGLRender_3_2.h"
 #endif
 
