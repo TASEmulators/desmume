@@ -32,9 +32,9 @@
 	#define OPENGL_VARIANT_ES
 	#define _NO_SDL_TYPES
 	#include <GLES3/gl3.h>
-	#include <GLES3/gl3ext.h>
+	#define __gles2_gl2_h_ // Guard against including the gl2.h file.
+	#include <GLES2/gl2ext.h> // "gl3ext.h" is just a stub file. The real extension header is "gl2ext.h".
 	#include <EGL/egl.h>
-	//#include "opengl.h"
 
 	// Ignore dynamic linking
 	#define OGLEXT(procPtr, func)
@@ -273,7 +273,18 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 // In practice, class objects for more modern variants like 3.2 Core Profile and ES 3.0 should
 // override all the methods that would use FBOs so that only the ARB versions are actually used.
 
+#ifndef GL_EXT_draw_buffers
 #define GL_MAX_COLOR_ATTACHMENTS_EXT GL_MAX_COLOR_ATTACHMENTS
+#define GL_COLOR_ATTACHMENT0_EXT     GL_COLOR_ATTACHMENT0
+#define GL_COLOR_ATTACHMENT1_EXT     GL_COLOR_ATTACHMENT1
+#define GL_COLOR_ATTACHMENT2_EXT     GL_COLOR_ATTACHMENT2
+#define GL_COLOR_ATTACHMENT3_EXT     GL_COLOR_ATTACHMENT3
+#endif
+
+#ifndef GL_EXT_multisampled_render_to_texture
+#define GL_MAX_SAMPLES_EXT           GL_MAX_SAMPLES
+#endif
+
 #define GL_DEPTH24_STENCIL8_EXT      GL_DEPTH24_STENCIL8
 #define GL_DEPTH_STENCIL_EXT         GL_DEPTH_STENCIL
 #define GL_UNSIGNED_INT_24_8_EXT     GL_UNSIGNED_INT_24_8
@@ -284,11 +295,6 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 #define GL_RENDERBUFFER_EXT          GL_RENDERBUFFER
 #define GL_DRAW_FRAMEBUFFER_EXT      GL_DRAW_FRAMEBUFFER
 #define GL_READ_FRAMEBUFFER_EXT      GL_READ_FRAMEBUFFER
-#define GL_COLOR_ATTACHMENT0_EXT     GL_COLOR_ATTACHMENT0
-#define GL_COLOR_ATTACHMENT1_EXT     GL_COLOR_ATTACHMENT1
-#define GL_COLOR_ATTACHMENT2_EXT     GL_COLOR_ATTACHMENT2
-#define GL_COLOR_ATTACHMENT3_EXT     GL_COLOR_ATTACHMENT3
-#define GL_MAX_SAMPLES_EXT           GL_MAX_SAMPLES
 
 #define glGenFramebuffersEXT(n, framebuffers) glGenFramebuffers(n, framebuffers)
 #define glBindFramebufferEXT(target, framebuffer) glBindFramebuffer(target, framebuffer)
@@ -309,7 +315,7 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 // Some headers, such as the OpenGL ES headers, may not include this macro.
 // Add it manually to avoid compiling issues.
 #ifndef GL_BGRA
-#define GL_BGRA 0x80E1
+#define GL_BGRA GL_BGRA_EXT
 #endif
 
 // OPENGL CORE EQUIVALENTS FOR LEGACY FUNCTIONS
