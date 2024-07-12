@@ -4763,6 +4763,13 @@ void GPUSubsystem::_UpdateFPSRender3D()
 
 void GPUSubsystem::SetEventHandler(GPUEventHandler *eventHandler)
 {
+	if ( (eventHandler == NULL) && (this->_event != this->_defaultEventHandler) )
+	{
+		this->ForceFrameStop();
+		this->_event = this->_defaultEventHandler;
+		return;
+	}
+	
 	this->_event = eventHandler;
 }
 
