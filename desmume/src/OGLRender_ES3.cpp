@@ -270,6 +270,21 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	std::set<std::string> oglExtensionSet;
 	this->GetExtensionSet(&oglExtensionSet);
 	
+	// OpenGL ES 3.0 should fully support FBOs, so we don't need the default framebuffer.
+	// However, OpenGL ES has traditionally required some kind of surface buffer attached
+	// to the context before using it. We don't want it, nor would we ever use it here.
+	// Therefore, check if our context supports being surfaceless before doing anything else,
+	// as this works as a kind of compatibility check.
+	if (!this->IsExtensionPresent(&oglExtensionSet, "GL_OES_surfaceless_context"))
+	{
+		INFO("OpenGL ES: Client contexts are not expected to have any surfaces attached\n");
+		INFO("           to the default framebuffer. The fact that the context does not\n");
+		INFO("           work surfaceless may indicate an error in the context creation,\n");
+		INFO("           or that your platform's context creation is too old.\n");
+		error = OGLERROR_FEATURE_UNSUPPORTED;
+		return error;
+	}
+	
 	// Get host GPU device properties
 	GLint maxUBOSize = 0;
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUBOSize);
@@ -286,8 +301,8 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	this->_deviceInfo.maxAnisotropy = (float)maxAnisotropyOGL;
 	
 	// OpenGL ES 3.0 needs to look up the best format and data type for glReadPixels.
-	glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &OGLRef.readPixelsBestFormat);
-	glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &OGLRef.readPixelsBestDataType);
+	OGLRef.readPixelsBestFormat = GL_RGBA;
+	OGLRef.readPixelsBestDataType = GL_UNSIGNED_BYTE;
 	
 	this->_deviceInfo.isEdgeMarkSupported = true;
 	this->_deviceInfo.isFogSupported = true;
@@ -302,7 +317,7 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glActiveTexture(GL_TEXTURE0);
 	
 	// OpenGL ES v3.0 should have all the necessary features to be able to flip and convert the framebuffer.
@@ -338,7 +353,7 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 		return error;
 	}
 	
-	INFO("OpenGL: Successfully created geometry shaders.\n");
+	INFO("OpenGL ES: Successfully created geometry shaders.\n");
 	error = this->InitPostprocessingPrograms(EdgeMarkVtxShader_150,
 	                                         EdgeMarkFragShader_150,
 	                                         FramebufferOutputVtxShader_150,
@@ -408,7 +423,7 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	else
 	{
 		this->isMultisampledFBOSupported = false;
-		INFO("OpenGL: Driver does not support at least 2x multisampled FBOs.\n");
+		INFO("OpenGL ES: Driver does not support at least 2x multisampled FBOs.\n");
 	}
 	
 	this->_isDepthLEqualPolygonFacingSupported = true;
@@ -551,7 +566,7 @@ Render3DError OpenGLESRenderer_3_0::CreateGeometryPrograms()
 										  fragShaderCode.c_str());
 		if (error != OGLERROR_NOERR)
 		{
-			INFO("OpenGL: Failed to create the GEOMETRY shader program.\n");
+			INFO("OpenGL ES: Failed to create the GEOMETRY shader program.\n");
 			glUseProgram(0);
 			this->DestroyGeometryPrograms();
 			return error;
@@ -560,7 +575,7 @@ Render3DError OpenGLESRenderer_3_0::CreateGeometryPrograms()
 		glLinkProgram(OGLRef.programGeometryID[flagsValue]);
 		if (!this->ValidateShaderProgramLink(OGLRef.programGeometryID[flagsValue]))
 		{
-			INFO("OpenGL: Failed to link the GEOMETRY shader program.\n");
+			INFO("OpenGL ES: Failed to link the GEOMETRY shader program.\n");
 			glUseProgram(0);
 			this->DestroyGeometryPrograms();
 			return OGLERROR_SHADER_CREATE_ERROR;
@@ -638,7 +653,7 @@ Render3DError OpenGLESRenderer_3_0::CreateGeometryZeroDstAlphaProgram(const char
 									  fragShaderCode.c_str());
 	if (error != OGLERROR_NOERR)
 	{
-		INFO("OpenGL: Failed to create the GEOMETRY ZERO DST ALPHA shader program.\n");
+		INFO("OpenGL ES: Failed to create the GEOMETRY ZERO DST ALPHA shader program.\n");
 		glUseProgram(0);
 		this->DestroyGeometryZeroDstAlphaProgram();
 		return error;
@@ -647,7 +662,7 @@ Render3DError OpenGLESRenderer_3_0::CreateGeometryZeroDstAlphaProgram(const char
 	glLinkProgram(OGLRef.programGeometryZeroDstAlphaID);
 	if (!this->ValidateShaderProgramLink(OGLRef.programGeometryZeroDstAlphaID))
 	{
-		INFO("OpenGL: Failed to link the GEOMETRY ZERO DST ALPHA shader program.\n");
+		INFO("OpenGL ES: Failed to link the GEOMETRY ZERO DST ALPHA shader program.\n");
 		glUseProgram(0);
 		this->DestroyGeometryZeroDstAlphaProgram();
 		return OGLERROR_SHADER_CREATE_ERROR;
@@ -699,7 +714,7 @@ Render3DError OpenGLESRenderer_3_0::CreateEdgeMarkProgram(const char *vtxShaderC
 									  fragShaderCode.c_str());
 	if (error != OGLERROR_NOERR)
 	{
-		INFO("OpenGL: Failed to create the EDGE MARK shader program.\n");
+		INFO("OpenGL ES: Failed to create the EDGE MARK shader program.\n");
 		glUseProgram(0);
 		this->DestroyEdgeMarkProgram();
 		return error;
@@ -708,7 +723,7 @@ Render3DError OpenGLESRenderer_3_0::CreateEdgeMarkProgram(const char *vtxShaderC
 	glLinkProgram(OGLRef.programEdgeMarkID);
 	if (!this->ValidateShaderProgramLink(OGLRef.programEdgeMarkID))
 	{
-		INFO("OpenGL: Failed to link the EDGE MARK shader program.\n");
+		INFO("OpenGL ES: Failed to link the EDGE MARK shader program.\n");
 		glUseProgram(0);
 		this->DestroyEdgeMarkProgram();
 		return OGLERROR_SHADER_CREATE_ERROR;
@@ -735,13 +750,13 @@ Render3DError OpenGLESRenderer_3_0::CreateFogProgram(const OGLFogProgramKey fogP
 	
 	if (vtxShaderCString == NULL)
 	{
-		INFO("OpenGL: The FOG vertex shader is unavailable.\n");
+		INFO("OpenGL ES: The FOG vertex shader is unavailable.\n");
 		error = OGLERROR_VERTEX_SHADER_PROGRAM_LOAD_ERROR;
 		return error;
 	}
 	else if (fragShaderCString == NULL)
 	{
-		INFO("OpenGL: The FOG fragment shader is unavailable.\n");
+		INFO("OpenGL ES: The FOG fragment shader is unavailable.\n");
 		error = OGLERROR_FRAGMENT_SHADER_PROGRAM_LOAD_ERROR;
 		return error;
 	}
@@ -789,7 +804,7 @@ Render3DError OpenGLESRenderer_3_0::CreateFogProgram(const OGLFogProgramKey fogP
 	
 	if (error != OGLERROR_NOERR)
 	{
-		INFO("OpenGL: Failed to create the FOG shader program.\n");
+		INFO("OpenGL ES: Failed to create the FOG shader program.\n");
 		glUseProgram(0);
 		this->DestroyFogProgram(fogProgramKey);
 		return error;
@@ -798,7 +813,7 @@ Render3DError OpenGLESRenderer_3_0::CreateFogProgram(const OGLFogProgramKey fogP
 	glLinkProgram(shaderID.program);
 	if (!this->ValidateShaderProgramLink(shaderID.program))
 	{
-		INFO("OpenGL: Failed to link the FOG shader program.\n");
+		INFO("OpenGL ES: Failed to link the FOG shader program.\n");
 		glUseProgram(0);
 		this->DestroyFogProgram(fogProgramKey);
 		return OGLERROR_SHADER_CREATE_ERROR;
@@ -860,7 +875,7 @@ Render3DError OpenGLESRenderer_3_0::CreateFramebufferOutput6665Program(const siz
 									  fragShaderCode.c_str());
 	if (error != OGLERROR_NOERR)
 	{
-		INFO("OpenGL: Failed to create the FRAMEBUFFER OUTPUT RGBA6665 shader program.\n");
+		INFO("OpenGL ES: Failed to create the FRAMEBUFFER OUTPUT RGBA6665 shader program.\n");
 		glUseProgram(0);
 		this->DestroyFramebufferOutput6665Programs();
 		return error;
@@ -869,7 +884,7 @@ Render3DError OpenGLESRenderer_3_0::CreateFramebufferOutput6665Program(const siz
 	glLinkProgram(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex]);
 	if (!this->ValidateShaderProgramLink(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex]))
 	{
-		INFO("OpenGL: Failed to link the FRAMEBUFFER OUTPUT RGBA6665 shader program.\n");
+		INFO("OpenGL ES: Failed to link the FRAMEBUFFER OUTPUT RGBA6665 shader program.\n");
 		glUseProgram(0);
 		this->DestroyFramebufferOutput6665Programs();
 		return OGLERROR_SHADER_CREATE_ERROR;
