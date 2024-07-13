@@ -4354,205 +4354,207 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 	
 	this->_enableAlphaBlending = (renderState.DISP3DCNT.EnableAlphaBlending) ? true : false;
 	
-	if (this->isVBOSupported)
+	if (this->_clippedPolyCount > 0)
 	{
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
-		
-		if (this->isShaderSupported)
+		if (this->isVBOSupported)
 		{
-			glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(NDSVertex) * renderGList.rawVertCount, renderGList.rawVtxList);
-		}
-		else
-		{
-			// If shaders aren't supported, we need to use the client-side buffers here.
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-		}
-	}
-	
-	// Generate the clipped polygon list.
-	bool renderNeedsToonTable = false;
-	
-	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
-	{
-		const CPoly &cPoly = this->_clippedPolyList[i];
-		const POLY &rawPoly = this->_rawPolyList[cPoly.index];
-		const size_t polyType = rawPoly.type;
-		
-		if (this->isShaderSupported)
-		{
-			for (size_t j = 0; j < polyType; j++)
-			{
-				const GLushort vertIndex = rawPoly.vertIndexes[j];
-				
-				// While we're looping through our vertices, add each vertex index to
-				// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
-				// vertices here to convert them to GL_TRIANGLES, which are much easier
-				// to work with and won't be deprecated in future OpenGL versions.
-				OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
-				if (!GFX3D_IsPolyWireframe(rawPoly) && (rawPoly.vtxFormat == GFX3D_QUADS || rawPoly.vtxFormat == GFX3D_QUAD_STRIP))
-				{
-					if (j == 2)
-					{
-						OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
-					}
-					else if (j == 3)
-					{
-						OGLRef.vertIndexBuffer[vertIndexCount++] = rawPoly.vertIndexes[0];
-					}
-				}
-			}
-		}
-		else
-		{
-			const GLfloat thePolyAlpha = (GFX3D_IsPolyWireframe(rawPoly)) ? 1.0f : divide5bitBy31_LUT[rawPoly.attribute.Alpha];
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 			
-			for (size_t j = 0; j < polyType; j++)
+			if (this->isShaderSupported)
 			{
-				const GLushort vtxIndex = rawPoly.vertIndexes[j];
-				const size_t positionIndex = vtxIndex * 4;
-				const size_t texCoordIndex = vtxIndex * 2;
-				const size_t colorIndex = vtxIndex * 4;
-				const NDSVertex &vtx = renderGList.rawVtxList[vtxIndex];
-				
-				// Since we can't use shaders, we can't perform any data format conversions
-				// of the vertex data on the GPU. Therefore, we need to do the conversions
-				// on the CPU instead.
-				OGLRef.position4fBuffer[positionIndex+0] = (float)vtx.position.x / 4096.0f;
-				OGLRef.position4fBuffer[positionIndex+1] = (float)vtx.position.y / 4096.0f;
-				OGLRef.position4fBuffer[positionIndex+2] = (float)vtx.position.z / 4096.0f;
-				OGLRef.position4fBuffer[positionIndex+3] = (float)vtx.position.w / 4096.0f;
-				
-				OGLRef.texCoord2fBuffer[texCoordIndex+0] = (float)vtx.texCoord.s / 16.0f;
-				OGLRef.texCoord2fBuffer[texCoordIndex+1] = (float)vtx.texCoord.t / 16.0f;
-				
-				OGLRef.color4fBuffer[colorIndex+0] = divide6bitBy63_LUT[vtx.color.r];
-				OGLRef.color4fBuffer[colorIndex+1] = divide6bitBy63_LUT[vtx.color.g];
-				OGLRef.color4fBuffer[colorIndex+2] = divide6bitBy63_LUT[vtx.color.b];
-				OGLRef.color4fBuffer[colorIndex+3] = thePolyAlpha;
-				
-				// While we're looping through our vertices, add each vertex index to a
-				// buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
-				// vertices here to convert them to GL_TRIANGLES, which are much easier
-				// to work with and won't be deprecated in future OpenGL versions.
-				OGLRef.vertIndexBuffer[vertIndexCount++] = vtxIndex;
-				if (!GFX3D_IsPolyWireframe(rawPoly) && (rawPoly.vtxFormat == GFX3D_QUADS || rawPoly.vtxFormat == GFX3D_QUAD_STRIP))
-				{
-					if (j == 2)
-					{
-						OGLRef.vertIndexBuffer[vertIndexCount++] = vtxIndex;
-					}
-					else if (j == 3)
-					{
-						OGLRef.vertIndexBuffer[vertIndexCount++] = rawPoly.vertIndexes[0];
-					}
-				}
+				glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(NDSVertex) * renderGList.rawVertCount, renderGList.rawVtxList);
+			}
+			else
+			{
+				// If shaders aren't supported, we need to use the client-side buffers here.
+				glBindBuffer(GL_ARRAY_BUFFER, 0);
 			}
 		}
 		
-		renderNeedsToonTable = (renderNeedsToonTable || (rawPoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT)) && this->isShaderSupported;
+		// Generate the clipped polygon list.
+		bool renderNeedsToonTable = false;
 		
-		// Get the texture that is to be attached to this polygon.
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(rawPoly, this->_enableTextureSampling);
-	}
-	
-	if (this->isVBOSupported)
-	{
-		// Replace the entire index buffer as a hint to the driver that we can orphan the index buffer and
-		// avoid a synchronization cost.
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
-	}
-	
-	// Set up rendering states that will remain constant for the entire frame.
-	this->_pendingRenderStates.enableAntialiasing = (renderState.DISP3DCNT.EnableAntialiasing) ? GL_TRUE : GL_FALSE;
-	this->_pendingRenderStates.enableFogAlphaOnly = (renderState.DISP3DCNT.FogOnlyAlpha) ? GL_TRUE : GL_FALSE;
-	this->_pendingRenderStates.clearPolyID = this->_clearAttributes.opaquePolyID;
-	this->_pendingRenderStates.clearDepth = (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF;
-	this->_pendingRenderStates.alphaTestRef = divide5bitBy31_LUT[renderState.alphaTestRef];
-	
-	if (this->_enableFog && this->_deviceInfo.isFogSupported)
-	{
-		this->_fogProgramKey.key = 0;
-		this->_fogProgramKey.offset = renderState.fogOffset & 0x7FFF;
-		this->_fogProgramKey.shift = renderState.fogShift;
-		
-		this->_pendingRenderStates.fogColor.r = divide5bitBy31_LUT[(renderState.fogColor      ) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.g = divide5bitBy31_LUT[(renderState.fogColor >>  5) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.b = divide5bitBy31_LUT[(renderState.fogColor >> 10) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.a = divide5bitBy31_LUT[(renderState.fogColor >> 16) & 0x0000001F];
-		this->_pendingRenderStates.fogOffset = (GLfloat)(renderState.fogOffset & 0x7FFF) / 32767.0f;
-		this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> renderState.fogShift) / 32767.0f;
-		
-		u8 fogDensityTable[32];
-		for (size_t i = 0; i < 32; i++)
+		for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 		{
-			fogDensityTable[i] = (renderState.fogDensityTable[i] == 127) ? 255 : renderState.fogDensityTable[i] << 1;
+			const CPoly &cPoly = this->_clippedPolyList[i];
+			const POLY &rawPoly = this->_rawPolyList[cPoly.index];
+			const size_t polyType = rawPoly.type;
+			
+			if (this->isShaderSupported)
+			{
+				for (size_t j = 0; j < polyType; j++)
+				{
+					const GLushort vertIndex = rawPoly.vertIndexes[j];
+					
+					// While we're looping through our vertices, add each vertex index to
+					// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
+					// vertices here to convert them to GL_TRIANGLES, which are much easier
+					// to work with and won't be deprecated in future OpenGL versions.
+					OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+					if (!GFX3D_IsPolyWireframe(rawPoly) && (rawPoly.vtxFormat == GFX3D_QUADS || rawPoly.vtxFormat == GFX3D_QUAD_STRIP))
+					{
+						if (j == 2)
+						{
+							OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+						}
+						else if (j == 3)
+						{
+							OGLRef.vertIndexBuffer[vertIndexCount++] = rawPoly.vertIndexes[0];
+						}
+					}
+				}
+			}
+			else
+			{
+				const GLfloat thePolyAlpha = (GFX3D_IsPolyWireframe(rawPoly)) ? 1.0f : divide5bitBy31_LUT[rawPoly.attribute.Alpha];
+				
+				for (size_t j = 0; j < polyType; j++)
+				{
+					const GLushort vtxIndex = rawPoly.vertIndexes[j];
+					const size_t positionIndex = vtxIndex * 4;
+					const size_t texCoordIndex = vtxIndex * 2;
+					const size_t colorIndex = vtxIndex * 4;
+					const NDSVertex &vtx = renderGList.rawVtxList[vtxIndex];
+					
+					// Since we can't use shaders, we can't perform any data format conversions
+					// of the vertex data on the GPU. Therefore, we need to do the conversions
+					// on the CPU instead.
+					OGLRef.position4fBuffer[positionIndex+0] = (float)vtx.position.x / 4096.0f;
+					OGLRef.position4fBuffer[positionIndex+1] = (float)vtx.position.y / 4096.0f;
+					OGLRef.position4fBuffer[positionIndex+2] = (float)vtx.position.z / 4096.0f;
+					OGLRef.position4fBuffer[positionIndex+3] = (float)vtx.position.w / 4096.0f;
+					
+					OGLRef.texCoord2fBuffer[texCoordIndex+0] = (float)vtx.texCoord.s / 16.0f;
+					OGLRef.texCoord2fBuffer[texCoordIndex+1] = (float)vtx.texCoord.t / 16.0f;
+					
+					OGLRef.color4fBuffer[colorIndex+0] = divide6bitBy63_LUT[vtx.color.r];
+					OGLRef.color4fBuffer[colorIndex+1] = divide6bitBy63_LUT[vtx.color.g];
+					OGLRef.color4fBuffer[colorIndex+2] = divide6bitBy63_LUT[vtx.color.b];
+					OGLRef.color4fBuffer[colorIndex+3] = thePolyAlpha;
+					
+					// While we're looping through our vertices, add each vertex index to a
+					// buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
+					// vertices here to convert them to GL_TRIANGLES, which are much easier
+					// to work with and won't be deprecated in future OpenGL versions.
+					OGLRef.vertIndexBuffer[vertIndexCount++] = vtxIndex;
+					if (!GFX3D_IsPolyWireframe(rawPoly) && (rawPoly.vtxFormat == GFX3D_QUADS || rawPoly.vtxFormat == GFX3D_QUAD_STRIP))
+					{
+						if (j == 2)
+						{
+							OGLRef.vertIndexBuffer[vertIndexCount++] = vtxIndex;
+						}
+						else if (j == 3)
+						{
+							OGLRef.vertIndexBuffer[vertIndexCount++] = rawPoly.vertIndexes[0];
+						}
+					}
+				}
+			}
+			
+			renderNeedsToonTable = (renderNeedsToonTable || (rawPoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT)) && this->isShaderSupported;
+			
+			// Get the texture that is to be attached to this polygon.
+			this->_textureList[i] = this->GetLoadedTextureFromPolygon(rawPoly, this->_enableTextureSampling);
 		}
 		
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
-		glBindTexture(GL_TEXTURE_1D, OGLRef.texFogDensityTableID);
-		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RED, GL_UNSIGNED_BYTE, fogDensityTable);
-	}
-	
-	if (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported)
-	{
-		const u8 alpha8 = (renderState.DISP3DCNT.EnableAntialiasing) ? 0x80 : 0xFF;
-		Color4u8 edgeColor32[8];
-		
-		for (size_t i = 0; i < 8; i++)
+		if (this->isVBOSupported)
 		{
-			edgeColor32[i].value = COLOR555TO8888(renderState.edgeMarkColorTable[i] & 0x7FFF, alpha8);
+			// Replace the entire index buffer as a hint to the driver that we can orphan the index buffer and
+			// avoid a synchronization cost.
+			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
 		}
 		
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
-		glBindTexture(GL_TEXTURE_1D, OGLRef.texEdgeColorTableID);
-		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 8, GL_RGBA, OGL_TEXTURE_SRC_EDGE_COLOR, edgeColor32);
-	}
-	
-	if (this->isShaderSupported)
-	{
-		this->_geometryProgramFlags.value = 0;
-		this->_geometryProgramFlags.EnableWDepth = renderState.SWAP_BUFFERS.DepthMode;
-		this->_geometryProgramFlags.EnableAlphaTest = renderState.DISP3DCNT.EnableAlphaTest;
-		this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
-		this->_geometryProgramFlags.ToonShadingMode = renderState.DISP3DCNT.PolygonShading;
-		this->_geometryProgramFlags.EnableFog = (this->_enableFog && this->_deviceInfo.isFogSupported) ? 1 : 0;
-		this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) ? 1 : 0;
-		this->_geometryProgramFlags.OpaqueDrawMode = (this->_isDepthLEqualPolygonFacingSupported) ? 1 : 0;
+		// Set up rendering states that will remain constant for the entire frame.
+		this->_pendingRenderStates.enableAntialiasing = (renderState.DISP3DCNT.EnableAntialiasing) ? GL_TRUE : GL_FALSE;
+		this->_pendingRenderStates.enableFogAlphaOnly = (renderState.DISP3DCNT.FogOnlyAlpha) ? GL_TRUE : GL_FALSE;
+		this->_pendingRenderStates.clearPolyID = this->_clearAttributes.opaquePolyID;
+		this->_pendingRenderStates.clearDepth = (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF;
+		this->_pendingRenderStates.alphaTestRef = divide5bitBy31_LUT[renderState.alphaTestRef];
 		
-		this->_SetupGeometryShaders(this->_geometryProgramFlags);
-		
-		if (renderNeedsToonTable)
+		if (this->_enableFog && this->_deviceInfo.isFogSupported)
 		{
+			this->_fogProgramKey.key = 0;
+			this->_fogProgramKey.offset = renderState.fogOffset & 0x7FFF;
+			this->_fogProgramKey.shift = renderState.fogShift;
+			
+			this->_pendingRenderStates.fogColor.r = divide5bitBy31_LUT[(renderState.fogColor      ) & 0x0000001F];
+			this->_pendingRenderStates.fogColor.g = divide5bitBy31_LUT[(renderState.fogColor >>  5) & 0x0000001F];
+			this->_pendingRenderStates.fogColor.b = divide5bitBy31_LUT[(renderState.fogColor >> 10) & 0x0000001F];
+			this->_pendingRenderStates.fogColor.a = divide5bitBy31_LUT[(renderState.fogColor >> 16) & 0x0000001F];
+			this->_pendingRenderStates.fogOffset = (GLfloat)(renderState.fogOffset & 0x7FFF) / 32767.0f;
+			this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> renderState.fogShift) / 32767.0f;
+			
+			u8 fogDensityTable[32];
+			for (size_t i = 0; i < 32; i++)
+			{
+				fogDensityTable[i] = (renderState.fogDensityTable[i] == 127) ? 255 : renderState.fogDensityTable[i] << 1;
+			}
+			
 			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
-			glBindTexture(GL_TEXTURE_1D, OGLRef.texToonTableID);
-			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, renderState.toonTable16);
+			glBindTexture(GL_TEXTURE_1D, OGLRef.texFogDensityTableID);
+			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RED, GL_UNSIGNED_BYTE, fogDensityTable);
 		}
-	}
-#if !defined(GL_ES_VERSION_3_0)
-	else
-	{
-		if (renderState.DISP3DCNT.EnableAlphaTest && (renderState.alphaTestRef > 0))
+		
+		if (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported)
 		{
-			glAlphaFunc(GL_GEQUAL, divide5bitBy31_LUT[renderState.alphaTestRef]);
+			const u8 alpha8 = (renderState.DISP3DCNT.EnableAntialiasing) ? 0x80 : 0xFF;
+			Color4u8 edgeColor32[8];
+			
+			for (size_t i = 0; i < 8; i++)
+			{
+				edgeColor32[i].value = COLOR555TO8888(renderState.edgeMarkColorTable[i] & 0x7FFF, alpha8);
+			}
+			
+			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
+			glBindTexture(GL_TEXTURE_1D, OGLRef.texEdgeColorTableID);
+			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 8, GL_RGBA, OGL_TEXTURE_SRC_EDGE_COLOR, edgeColor32);
 		}
+		
+		if (this->isShaderSupported)
+		{
+			this->_geometryProgramFlags.value = 0;
+			this->_geometryProgramFlags.EnableWDepth = renderState.SWAP_BUFFERS.DepthMode;
+			this->_geometryProgramFlags.EnableAlphaTest = renderState.DISP3DCNT.EnableAlphaTest;
+			this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
+			this->_geometryProgramFlags.ToonShadingMode = renderState.DISP3DCNT.PolygonShading;
+			this->_geometryProgramFlags.EnableFog = (this->_enableFog && this->_deviceInfo.isFogSupported) ? 1 : 0;
+			this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) ? 1 : 0;
+			this->_geometryProgramFlags.OpaqueDrawMode = (this->_isDepthLEqualPolygonFacingSupported) ? 1 : 0;
+			
+			this->_SetupGeometryShaders(this->_geometryProgramFlags);
+			
+			if (renderNeedsToonTable)
+			{
+				glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
+				glBindTexture(GL_TEXTURE_1D, OGLRef.texToonTableID);
+				glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, renderState.toonTable16);
+			}
+		}
+#if !defined(GL_ES_VERSION_3_0)
 		else
 		{
-			glAlphaFunc(GL_GREATER, 0);
+			if (renderState.DISP3DCNT.EnableAlphaTest && (renderState.alphaTestRef > 0))
+			{
+				glAlphaFunc(GL_GEQUAL, divide5bitBy31_LUT[renderState.alphaTestRef]);
+			}
+			else
+			{
+				glAlphaFunc(GL_GREATER, 0);
+			}
+			
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			
+			if (this->isFBOSupported)
+			{
+				glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+			}
 		}
-		
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		
-		if (this->isFBOSupported)
-		{
-			glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-		}
-	}
 #endif
+	}
 	
 	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-	
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);
 	
@@ -4654,6 +4656,11 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 
 Render3DError OpenGLRenderer_1_2::PostprocessFramebuffer()
 {
+	if (this->_clippedPolyCount < 1)
+	{
+		return OGLERROR_NOERR;
+	}
+	
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	if ( (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) ||

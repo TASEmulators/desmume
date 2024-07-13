@@ -1038,18 +1038,10 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGColorID);
-		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, GL_TRUE);
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGWorkingID);
-		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, GL_TRUE);
 		
 		glActiveTexture(GL_TEXTURE0);
@@ -2289,200 +2281,203 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 	
 	this->_enableAlphaBlending = (renderState.DISP3DCNT.EnableAlphaBlending) ? true : false;
 	
-	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
-	
-	// Copy the vertex data to the GPU asynchronously due to the potentially large upload size.
-	// This buffer write will need to be synchronized before we start drawing.
-	if (this->_syncBufferSetup != NULL)
+	if (this->_clippedPolyCount > 0)
 	{
-		glWaitSync(this->_syncBufferSetup, 0, GL_TIMEOUT_IGNORED);
-		glDeleteSync(this->_syncBufferSetup);
-	}
-	
-	const size_t vtxBufferSize = sizeof(NDSVertex) * renderGList.rawVertCount;
-	NDSVertex *vtxPtr = (NDSVertex *)glMapBufferRange(GL_ARRAY_BUFFER, 0, vtxBufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-	memcpy(vtxPtr, renderGList.rawVtxList, vtxBufferSize);
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	
-	this->_syncBufferSetup = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-	
-	// Generate the clipped polygon list.
-	if ( (OGLRef.uboPolyStatesID != 0) && (this->_clippedPolyCount > MAX_CLIPPED_POLY_COUNT_FOR_UBO) )
-	{
-		// In practice, there shouldn't be any game scene with a clipped polygon count that
-		// would exceed MAX_CLIPPED_POLY_COUNT_FOR_UBO. But if for some reason there is, then
-		// we need to limit the polygon count here. Please report if this happens!
-		printf("OpenGL: Clipped poly count of %d exceeds %d. Please report!!!\n", (int)this->_clippedPolyCount, MAX_CLIPPED_POLY_COUNT_FOR_UBO);
-		this->_clippedPolyCount = MAX_CLIPPED_POLY_COUNT_FOR_UBO;
-	}
-	
-	// Set up the polygon states.
-	bool renderNeedsToonTable = false;
-	
-	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
-	{
-		const CPoly &cPoly = this->_clippedPolyList[i];
-		const POLY &rawPoly = this->_rawPolyList[cPoly.index];
-		const size_t polyType = rawPoly.type;
+		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 		
-		for (size_t j = 0; j < polyType; j++)
+		// Copy the vertex data to the GPU asynchronously due to the potentially large upload size.
+		// This buffer write will need to be synchronized before we start drawing.
+		if (this->_syncBufferSetup != NULL)
 		{
-			const GLushort vertIndex = rawPoly.vertIndexes[j];
+			glWaitSync(this->_syncBufferSetup, 0, GL_TIMEOUT_IGNORED);
+			glDeleteSync(this->_syncBufferSetup);
+		}
+		
+		const size_t vtxBufferSize = sizeof(NDSVertex) * renderGList.rawVertCount;
+		NDSVertex *vtxPtr = (NDSVertex *)glMapBufferRange(GL_ARRAY_BUFFER, 0, vtxBufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+		memcpy(vtxPtr, renderGList.rawVtxList, vtxBufferSize);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+		
+		this->_syncBufferSetup = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+		
+		// Generate the clipped polygon list.
+		if ( (OGLRef.uboPolyStatesID != 0) && (this->_clippedPolyCount > MAX_CLIPPED_POLY_COUNT_FOR_UBO) )
+		{
+			// In practice, there shouldn't be any game scene with a clipped polygon count that
+			// would exceed MAX_CLIPPED_POLY_COUNT_FOR_UBO. But if for some reason there is, then
+			// we need to limit the polygon count here. Please report if this happens!
+			printf("OpenGL: Clipped poly count of %d exceeds %d. Please report!!!\n", (int)this->_clippedPolyCount, MAX_CLIPPED_POLY_COUNT_FOR_UBO);
+			this->_clippedPolyCount = MAX_CLIPPED_POLY_COUNT_FOR_UBO;
+		}
+		
+		// Set up the polygon states.
+		bool renderNeedsToonTable = false;
+		
+		for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
+		{
+			const CPoly &cPoly = this->_clippedPolyList[i];
+			const POLY &rawPoly = this->_rawPolyList[cPoly.index];
+			const size_t polyType = rawPoly.type;
 			
-			// While we're looping through our vertices, add each vertex index to
-			// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
-			// vertices here to convert them to GL_TRIANGLES, which are much easier
-			// to work with and won't be deprecated in future OpenGL versions.
-			OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
-			if (!GFX3D_IsPolyWireframe(rawPoly) && (rawPoly.vtxFormat == GFX3D_QUADS || rawPoly.vtxFormat == GFX3D_QUAD_STRIP))
+			for (size_t j = 0; j < polyType; j++)
 			{
-				if (j == 2)
+				const GLushort vertIndex = rawPoly.vertIndexes[j];
+				
+				// While we're looping through our vertices, add each vertex index to
+				// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
+				// vertices here to convert them to GL_TRIANGLES, which are much easier
+				// to work with and won't be deprecated in future OpenGL versions.
+				OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+				if (!GFX3D_IsPolyWireframe(rawPoly) && (rawPoly.vtxFormat == GFX3D_QUADS || rawPoly.vtxFormat == GFX3D_QUAD_STRIP))
 				{
-					OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+					if (j == 2)
+					{
+						OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+					}
+					else if (j == 3)
+					{
+						OGLRef.vertIndexBuffer[vertIndexCount++] = rawPoly.vertIndexes[0];
+					}
 				}
-				else if (j == 3)
-				{
-					OGLRef.vertIndexBuffer[vertIndexCount++] = rawPoly.vertIndexes[0];
-				}
+			}
+			
+			renderNeedsToonTable = renderNeedsToonTable || (rawPoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT);
+			
+			// Get the texture that is to be attached to this polygon.
+			this->_textureList[i] = this->GetLoadedTextureFromPolygon(rawPoly, this->_enableTextureSampling);
+		}
+		
+		// Replace the entire buffer as a hint to the driver to orphan the buffer and avoid a synchronization cost.
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
+		
+		// Set up rendering states that will remain constant for the entire frame.
+		this->_pendingRenderStates.enableAntialiasing = (renderState.DISP3DCNT.EnableAntialiasing) ? GL_TRUE : GL_FALSE;
+		this->_pendingRenderStates.enableFogAlphaOnly = (renderState.DISP3DCNT.FogOnlyAlpha) ? GL_TRUE : GL_FALSE;
+		this->_pendingRenderStates.clearPolyID = this->_clearAttributes.opaquePolyID;
+		this->_pendingRenderStates.clearDepth = (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF;
+		this->_pendingRenderStates.alphaTestRef = divide5bitBy31_LUT[renderState.alphaTestRef];
+		
+		if (renderNeedsToonTable)
+		{
+			for (size_t i = 0; i < 32; i++)
+			{
+				this->_pendingRenderStates.toonColor[i].r = divide5bitBy31_LUT[(renderState.toonTable16[i]      ) & 0x001F];
+				this->_pendingRenderStates.toonColor[i].g = divide5bitBy31_LUT[(renderState.toonTable16[i] >>  5) & 0x001F];
+				this->_pendingRenderStates.toonColor[i].b = divide5bitBy31_LUT[(renderState.toonTable16[i] >> 10) & 0x001F];
+				this->_pendingRenderStates.toonColor[i].a = 1.0f;
 			}
 		}
 		
-		renderNeedsToonTable = renderNeedsToonTable || (rawPoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT);
-		
-		// Get the texture that is to be attached to this polygon.
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(rawPoly, this->_enableTextureSampling);
-	}
-	
-	// Replace the entire buffer as a hint to the driver to orphan the buffer and avoid a synchronization cost.
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
-	
-	// Set up rendering states that will remain constant for the entire frame.
-	this->_pendingRenderStates.enableAntialiasing = (renderState.DISP3DCNT.EnableAntialiasing) ? GL_TRUE : GL_FALSE;
-	this->_pendingRenderStates.enableFogAlphaOnly = (renderState.DISP3DCNT.FogOnlyAlpha) ? GL_TRUE : GL_FALSE;
-	this->_pendingRenderStates.clearPolyID = this->_clearAttributes.opaquePolyID;
-	this->_pendingRenderStates.clearDepth = (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF;
-	this->_pendingRenderStates.alphaTestRef = divide5bitBy31_LUT[renderState.alphaTestRef];
-	
-	if (renderNeedsToonTable)
-	{
-		for (size_t i = 0; i < 32; i++)
+		if (this->_enableFog)
 		{
-			this->_pendingRenderStates.toonColor[i].r = divide5bitBy31_LUT[(renderState.toonTable16[i]      ) & 0x001F];
-			this->_pendingRenderStates.toonColor[i].g = divide5bitBy31_LUT[(renderState.toonTable16[i] >>  5) & 0x001F];
-			this->_pendingRenderStates.toonColor[i].b = divide5bitBy31_LUT[(renderState.toonTable16[i] >> 10) & 0x001F];
-			this->_pendingRenderStates.toonColor[i].a = 1.0f;
-		}
-	}
-	
-	if (this->_enableFog)
-	{
-		this->_fogProgramKey.key = 0;
-		this->_fogProgramKey.offset = renderState.fogOffset & 0x7FFF;
-		this->_fogProgramKey.shift = renderState.fogShift;
-		
-		this->_pendingRenderStates.fogColor.r = divide5bitBy31_LUT[(renderState.fogColor      ) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.g = divide5bitBy31_LUT[(renderState.fogColor >>  5) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.b = divide5bitBy31_LUT[(renderState.fogColor >> 10) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.a = divide5bitBy31_LUT[(renderState.fogColor >> 16) & 0x0000001F];
-		this->_pendingRenderStates.fogOffset = (GLfloat)(renderState.fogOffset & 0x7FFF) / 32767.0f;
-		this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> renderState.fogShift) / 32767.0f;
-		
-		u8 fogDensityTable[32];
-		for (size_t i = 0; i < 32; i++)
-		{
-			fogDensityTable[i] = (renderState.fogDensityTable[i] == 127) ? 255 : renderState.fogDensityTable[i] << 1;
+			this->_fogProgramKey.key = 0;
+			this->_fogProgramKey.offset = renderState.fogOffset & 0x7FFF;
+			this->_fogProgramKey.shift = renderState.fogShift;
+			
+			this->_pendingRenderStates.fogColor.r = divide5bitBy31_LUT[(renderState.fogColor      ) & 0x0000001F];
+			this->_pendingRenderStates.fogColor.g = divide5bitBy31_LUT[(renderState.fogColor >>  5) & 0x0000001F];
+			this->_pendingRenderStates.fogColor.b = divide5bitBy31_LUT[(renderState.fogColor >> 10) & 0x0000001F];
+			this->_pendingRenderStates.fogColor.a = divide5bitBy31_LUT[(renderState.fogColor >> 16) & 0x0000001F];
+			this->_pendingRenderStates.fogOffset = (GLfloat)(renderState.fogOffset & 0x7FFF) / 32767.0f;
+			this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> renderState.fogShift) / 32767.0f;
+			
+			u8 fogDensityTable[32];
+			for (size_t i = 0; i < 32; i++)
+			{
+				fogDensityTable[i] = (renderState.fogDensityTable[i] == 127) ? 255 : renderState.fogDensityTable[i] << 1;
+			}
+			
+			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 32, 1, GL_RED, GL_UNSIGNED_BYTE, fogDensityTable);
 		}
 		
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 32, 1, GL_RED, GL_UNSIGNED_BYTE, fogDensityTable);
-	}
-	
-	if (this->_enableEdgeMark)
-	{
-		const GLfloat edgeColorAlpha = (renderState.DISP3DCNT.EnableAntialiasing) ? (16.0f/31.0f) : 1.0f;
-		for (size_t i = 0; i < 8; i++)
+		if (this->_enableEdgeMark)
 		{
-			this->_pendingRenderStates.edgeColor[i].r = divide5bitBy31_LUT[(renderState.edgeMarkColorTable[i]      ) & 0x001F];
-			this->_pendingRenderStates.edgeColor[i].g = divide5bitBy31_LUT[(renderState.edgeMarkColorTable[i] >>  5) & 0x001F];
-			this->_pendingRenderStates.edgeColor[i].b = divide5bitBy31_LUT[(renderState.edgeMarkColorTable[i] >> 10) & 0x001F];
-			this->_pendingRenderStates.edgeColor[i].a = edgeColorAlpha;
+			const GLfloat edgeColorAlpha = (renderState.DISP3DCNT.EnableAntialiasing) ? (16.0f/31.0f) : 1.0f;
+			for (size_t i = 0; i < 8; i++)
+			{
+				this->_pendingRenderStates.edgeColor[i].r = divide5bitBy31_LUT[(renderState.edgeMarkColorTable[i]      ) & 0x001F];
+				this->_pendingRenderStates.edgeColor[i].g = divide5bitBy31_LUT[(renderState.edgeMarkColorTable[i] >>  5) & 0x001F];
+				this->_pendingRenderStates.edgeColor[i].b = divide5bitBy31_LUT[(renderState.edgeMarkColorTable[i] >> 10) & 0x001F];
+				this->_pendingRenderStates.edgeColor[i].a = edgeColorAlpha;
+			}
 		}
-	}
-	
-	glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboRenderStatesID);
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(this->_pendingRenderStates), &this->_pendingRenderStates);
-	
-	OGLPolyStates *polyStates = this->_pendingPolyStates;
-	
+		
+		glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboRenderStatesID);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(this->_pendingRenderStates), &this->_pendingRenderStates);
+		
+		OGLPolyStates *polyStates = this->_pendingPolyStates;
+		
 #if defined(GL_VERSION_3_1) || defined(GL_ES_VERSION_3_2)
-	if (OGLRef.tboPolyStatesID != 0)
-	{
-		// Some drivers seem to have problems with GL_TEXTURE_BUFFER used as the target for
-		// glMapBufferRange() or glBufferSubData(), causing certain polygons to intermittently
-		// flicker in certain games. Therefore, we'll use glMapBuffer() in this case in order
-		// to prevent these glitches from happening.
-		polyStates = (OGLPolyStates *)glMapBuffer(GL_TEXTURE_BUFFER, GL_WRITE_ONLY);
-	}
+		if (OGLRef.tboPolyStatesID != 0)
+		{
+			// Some drivers seem to have problems with GL_TEXTURE_BUFFER used as the target for
+			// glMapBufferRange() or glBufferSubData(), causing certain polygons to intermittently
+			// flicker in certain games. Therefore, we'll use glMapBuffer() in this case in order
+			// to prevent these glitches from happening.
+			polyStates = (OGLPolyStates *)glMapBuffer(GL_TEXTURE_BUFFER, GL_WRITE_ONLY);
+		}
 #endif
-	
-	for (size_t i = 0; i < this->_clippedPolyCount; i++)
-	{
-		const POLY &rawPoly = this->_rawPolyList[this->_clippedPolyList[i].index];
 		
-		// Get all of the polygon states that can be handled within the shader.
-		const NDSTextureFormat packFormat = this->_textureList[i]->GetPackFormat();
+		for (size_t i = 0; i < this->_clippedPolyCount; i++)
+		{
+			const POLY &rawPoly = this->_rawPolyList[this->_clippedPolyList[i].index];
+			
+			// Get all of the polygon states that can be handled within the shader.
+			const NDSTextureFormat packFormat = this->_textureList[i]->GetPackFormat();
+			
+			polyStates[i].packedState = 0;
+			polyStates[i].PolygonID = rawPoly.attribute.PolygonID;
+			polyStates[i].PolygonMode = rawPoly.attribute.Mode;
+			
+			polyStates[i].PolygonAlpha = (GFX3D_IsPolyWireframe(rawPoly)) ? 0x1F : rawPoly.attribute.Alpha;
+			polyStates[i].IsWireframe = (GFX3D_IsPolyWireframe(rawPoly)) ? 1 : 0;
+			polyStates[i].EnableFog = (rawPoly.attribute.Fog_Enable) ? 1 : 0;
+			polyStates[i].SetNewDepthForTranslucent = (rawPoly.attribute.TranslucentDepthWrite_Enable) ? 1 : 0;
+			
+			polyStates[i].EnableTexture = (this->_textureList[i]->IsSamplingEnabled()) ? 1 : 0;
+			polyStates[i].TexSingleBitAlpha = (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? 1 : 0;
+			polyStates[i].TexSizeShiftS = rawPoly.texParam.SizeShiftS; // Note that we are using the preshifted size of S
+			polyStates[i].TexSizeShiftT = rawPoly.texParam.SizeShiftT; // Note that we are using the preshifted size of T
+			
+			polyStates[i].IsBackFacing = (this->_clippedPolyList[i].isPolyBackFacing) ? 1 : 0;
+		}
 		
-		polyStates[i].packedState = 0;
-		polyStates[i].PolygonID = rawPoly.attribute.PolygonID;
-		polyStates[i].PolygonMode = rawPoly.attribute.Mode;
-		
-		polyStates[i].PolygonAlpha = (GFX3D_IsPolyWireframe(rawPoly)) ? 0x1F : rawPoly.attribute.Alpha;
-		polyStates[i].IsWireframe = (GFX3D_IsPolyWireframe(rawPoly)) ? 1 : 0;
-		polyStates[i].EnableFog = (rawPoly.attribute.Fog_Enable) ? 1 : 0;
-		polyStates[i].SetNewDepthForTranslucent = (rawPoly.attribute.TranslucentDepthWrite_Enable) ? 1 : 0;
-		
-		polyStates[i].EnableTexture = (this->_textureList[i]->IsSamplingEnabled()) ? 1 : 0;
-		polyStates[i].TexSingleBitAlpha = (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? 1 : 0;
-		polyStates[i].TexSizeShiftS = rawPoly.texParam.SizeShiftS; // Note that we are using the preshifted size of S
-		polyStates[i].TexSizeShiftT = rawPoly.texParam.SizeShiftT; // Note that we are using the preshifted size of T
-		
-		polyStates[i].IsBackFacing = (this->_clippedPolyList[i].isPolyBackFacing) ? 1 : 0;
-	}
-	
-	if (OGLRef.uboPolyStatesID != 0)
-	{
-		// Replace the entire buffer as a hint to the driver to orphan the buffer and avoid a synchronization cost.
-		glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboPolyStatesID);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, MAX_CLIPPED_POLY_COUNT_FOR_UBO * sizeof(OGLPolyStates), this->_pendingPolyStates);
-	}
+		if (OGLRef.uboPolyStatesID != 0)
+		{
+			// Replace the entire buffer as a hint to the driver to orphan the buffer and avoid a synchronization cost.
+			glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboPolyStatesID);
+			glBufferSubData(GL_UNIFORM_BUFFER, 0, MAX_CLIPPED_POLY_COUNT_FOR_UBO * sizeof(OGLPolyStates), this->_pendingPolyStates);
+		}
 #if defined(GL_VERSION_3_1) || defined(GL_ES_VERSION_3_2)
-	else if (OGLRef.tboPolyStatesID != 0)
-	{
-		glUnmapBuffer(GL_TEXTURE_BUFFER);
-	}
+		else if (OGLRef.tboPolyStatesID != 0)
+		{
+			glUnmapBuffer(GL_TEXTURE_BUFFER);
+		}
 #endif
-	else
-	{
-		const GLsizei texH = (GLsizei)((this->_clippedPolyCount >> 8) & 0x007F) + 1;
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
-		glBindTexture(GL_TEXTURE_2D, OGLRef.texPolyStatesID); // Why is this bind necessary? Theoretically, it shouldn't be necessary, but real-world testing has proven otherwise...
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, texH, GL_RED_INTEGER, GL_INT, this->_pendingPolyStates);
+		else
+		{
+			const GLsizei texH = (GLsizei)((this->_clippedPolyCount >> 8) & 0x007F) + 1;
+			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
+			glBindTexture(GL_TEXTURE_2D, OGLRef.texPolyStatesID); // Why is this bind necessary? Theoretically, it shouldn't be necessary, but real-world testing has proven otherwise...
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, texH, GL_RED_INTEGER, GL_INT, this->_pendingPolyStates);
+		}
+		
+		// Set up the default draw call states.
+		this->_geometryProgramFlags.value = 0;
+		this->_geometryProgramFlags.EnableWDepth = renderState.SWAP_BUFFERS.DepthMode;
+		this->_geometryProgramFlags.EnableAlphaTest = renderState.DISP3DCNT.EnableAlphaTest;
+		this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
+		this->_geometryProgramFlags.ToonShadingMode = renderState.DISP3DCNT.PolygonShading;
+		this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
+		this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
+		this->_geometryProgramFlags.OpaqueDrawMode = 1;
+		
+		this->_SetupGeometryShaders(this->_geometryProgramFlags);
 	}
 	
-	// Set up the default draw call states.
-    this->_geometryProgramFlags.value = 0;
-	this->_geometryProgramFlags.EnableWDepth = renderState.SWAP_BUFFERS.DepthMode;
-	this->_geometryProgramFlags.EnableAlphaTest = renderState.DISP3DCNT.EnableAlphaTest;
-	this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
-	this->_geometryProgramFlags.ToonShadingMode = renderState.DISP3DCNT.PolygonShading;
-	this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
-	this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
-	this->_geometryProgramFlags.OpaqueDrawMode = 1;
-	
-	this->_SetupGeometryShaders(this->_geometryProgramFlags);
 	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-	
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);
 	
@@ -2493,6 +2488,11 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 
 Render3DError OpenGLRenderer_3_2::PostprocessFramebuffer()
 {
+	if (this->_clippedPolyCount < 1)
+	{
+		return OGLERROR_NOERR;
+	}
+	
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	if (this->_enableEdgeMark || this->_enableFog)
