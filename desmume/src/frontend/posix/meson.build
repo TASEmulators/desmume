@@ -16,6 +16,7 @@ dep_pcap = dependency('pcap')
 dep_zlib = dependency('zlib')
 dep_threads = dependency('threads')
 dep_gl = dependency('gl', required: false)
+dep_gles3 = dependency('glesv2', required: false)
 dep_openal = dependency('openal', required: get_option('openal'))
 dep_alsa = dependency('alsa', required: false)
 dep_soundtouch = dependency('soundtouch', required: false)
@@ -173,6 +174,14 @@ if dep_gl.found()
   libdesmume_src += [
     '../../OGLRender.cpp',
     '../../OGLRender_3_2.cpp',
+  ]
+endif
+
+if dep_gles3.found()
+  dependencies += dep_gles3
+  add_global_arguments('-DHAVE_GLES3', language: ['c', 'cpp'])
+  libdesmume_src += [
+    '../../OGLRender_ES3.cpp',
   ]
 endif
 

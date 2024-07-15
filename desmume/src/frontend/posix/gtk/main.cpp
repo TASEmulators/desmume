@@ -79,6 +79,10 @@
 	#include "OGLRender_3_2.h"
 #endif
 
+#ifdef HAVE_GLES3
+	#include "OGLRender_ES3.h"
+#endif
+
 #if defined(HAVE_LIBOSMESA)
 	#include "osmesa_3Demu.h"
 #else
@@ -348,6 +352,9 @@ GPU3DInterface *core3DList[] = {
   &gpu3DRasterize,
 #ifdef HAVE_OPENGL
   &gpu3Dgl,
+#endif
+#ifdef HAVE_GLES3
+  &gpu3Dgl_ES_3_0,
 #endif
 };
 
@@ -2229,9 +2236,11 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	wHCInterpolate = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "hc_interpolate"));
 	g_object_unref(builder);
 
+#ifndef HAVE_GLES3
+	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 3);
+#endif
 #ifndef HAVE_OPENGL
 	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 2);
-	gtk_grid_remove_row(wGrid, 4);
 #endif
 	gtk_combo_box_set_active(coreCombo, cur3DCore);
 
@@ -2270,7 +2279,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
     	// Change only if needed
 		if (sel3DCore != cur3DCore)
 		{
-			if (sel3DCore == 2)
+			if (sel3DCore >= 2)
 			{
 #if !defined(HAVE_OPENGL)
 				sel3DCore = RENDERID_SOFTRASTERIZER;
@@ -3819,6 +3828,11 @@ common_gtk_main(GApplication *app, gpointer user_data)
     OGLCreateRenderer_3_2_Func = OGLCreateRenderer_3_2;
 #endif
 
+#if defined(HAVE_GLES3) && defined(OGLRENDER_ES3_H)
+	OGLLoadEntryPoints_ES_3_0_Func = OGLLoadEntryPoints_ES_3_0;
+	OGLCreateRenderer_ES_3_0_Func = OGLCreateRenderer_ES_3_0;
+#endif
+
     //Set the 3D emulation to use
     int core = my_config->engine_3d;
     // setup the gdk 3D emulation;
@@ -3829,7 +3843,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
     	core = config.core3D;
 
     	// Check if it is valid
-    	if (!(core >= 0 && core <= 2)) {
+    	if (!(core >= 0 && core <= 3)) {
     		// If it is invalid, reset it to SoftRasterizer
     		core = 1;
     	}
@@ -3837,7 +3851,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
         my_config->engine_3d = core;
     }
 
-	if (core == 2)
+	if (core >= 2)
 	{
 #if !defined(HAVE_OPENGL)
 		core = RENDERID_SOFTRASTERIZER;

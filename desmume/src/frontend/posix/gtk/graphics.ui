@@ -65,6 +65,7 @@
                   <item translatable="yes">Null</item>
                   <item translatable="yes">SoftRasterizer</item>
                   <item translatable="yes">OpenGL</item>
+				  <item translatable="yes">OpenGL ES</item>
                 </items>
               </object>
               <packing>
