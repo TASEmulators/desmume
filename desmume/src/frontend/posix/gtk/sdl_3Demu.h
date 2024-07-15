@@ -18,7 +18,7 @@
 #ifndef SDL_3DEMU_H
 #define SDL_3DEMU_H
 
-bool init_sdl_3Demu(void);
+bool init_sdl_3Demu(bool useES);
 bool deinit_sdl_3Demu(void);
 bool is_sdl_initialized(void);
 

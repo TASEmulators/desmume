@@ -2291,7 +2291,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 #else
 				if (!is_sdl_initialized())
 				{
-					init_sdl_3Demu();
+					init_sdl_3Demu(sel3DCore==3);
 				}
 #endif
 			}
@@ -3863,7 +3863,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 #else
 		if (!is_sdl_initialized())
 		{
-			init_sdl_3Demu();
+			init_sdl_3Demu(core==3);
 		}
 #endif
 	}
