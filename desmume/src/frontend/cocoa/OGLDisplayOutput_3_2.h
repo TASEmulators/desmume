@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2015 DeSmuME team
+	Copyright (C) 2015-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,12 +17,6 @@
 
 #ifndef _OGLDISPLAYOUTPUT_3_2_H_
 #define _OGLDISPLAYOUTPUT_3_2_H_
-
-#if defined(__APPLE__)
-	#include <OpenGL/gl3.h>
-	#include <OpenGL/gl3ext.h>
-	#include <OpenGL/OpenGL.h>
-#endif
 
 #include "OGLDisplayOutput.h"
 
