@@ -34,7 +34,6 @@
 	#include <GLES3/gl3.h>
 	#define __gles2_gl2_h_ // Guard against including the gl2.h file.
 	#include <GLES2/gl2ext.h> // "gl3ext.h" is just a stub file. The real extension header is "gl2ext.h".
-	#include <EGL/egl.h>
 
 	// Ignore dynamic linking
 	#define OGLEXT(procPtr, func)
@@ -689,7 +688,9 @@ struct OGLRenderRef
 	GLfloat *texCoord2fBuffer;
 	GLfloat *color4fBuffer;
 	CACHE_ALIGN GLushort vertIndexBuffer[OGLRENDER_VERT_INDEX_BUFFER_COUNT];
-	CACHE_ALIGN GLushort workingCIColorBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	CACHE_ALIGN GLuint toonTable32[32];
+	CACHE_ALIGN GLushort workingCIColorBuffer16[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	CACHE_ALIGN GLuint workingCIColorBuffer32[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN GLuint workingCIDepthStencilBuffer[2][GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN GLuint workingCIFogAttributesBuffer[2][GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 };
