@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2023 DeSmuME team
+	Copyright (C) 2009-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2032,7 +2032,7 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D_State &renderState
 	}
 	
 	// Convert the toon table colors
-	ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>(renderState.toonTable16, (u32 *)this->toonColor32LUT, 32);
+	ColorspaceConvertBuffer555xTo6665Opaque<false, false, BESwapDst>(renderState.toonTable16, (u32 *)this->toonColor32LUT, 32);
 	
 	if (this->_enableEdgeMark)
 	{

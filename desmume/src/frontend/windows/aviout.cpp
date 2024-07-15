@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2006-2018 DeSmuME team
+	Copyright (C) 2006-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -736,7 +736,7 @@ void NDSCaptureObject::ConvertVideoSlice555Xto888(const VideoConvertParam &param
 
 	for (size_t y = param.firstLineIndex; y <= param.lastLineIndex; y++)
 	{
-		ColorspaceConvertBuffer555XTo888<true, false>(src, dst, param.frameWidth);
+		ColorspaceConvertBuffer555xTo888<true, false>(src, dst, param.frameWidth);
 		src += param.frameWidth;
 		dst -= param.frameWidth * 3;
 	}
@@ -750,7 +750,7 @@ void NDSCaptureObject::ConvertVideoSlice888Xto888(const VideoConvertParam &param
 
 	for (size_t y = param.firstLineIndex; y <= param.lastLineIndex; y++)
 	{
-		ColorspaceConvertBuffer888XTo888<true, false>(src, dst, param.frameWidth);
+		ColorspaceConvertBuffer888xTo888<true, false>(src, dst, param.frameWidth);
 		src += param.frameWidth;
 		dst -= param.frameWidth * 3;
 	}

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2023 DeSmuME team
+	Copyright (C) 2014-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -4719,7 +4719,7 @@ void OGLClientSharedData::FetchNativeDisplayToSrcClone(const NDSDisplayInfo *dis
 		return;
 	}
 	
-	ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapNone>(displayInfoList[bufferIndex].nativeBuffer16[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapNone>(displayInfoList[bufferIndex].nativeBuffer16[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 	this->_srcCloneNeedsUpdate[displayID][bufferIndex] = false;
 	
 	if (needsLock)
@@ -4744,7 +4744,7 @@ void OGLClientSharedData::FetchCustomDisplayToSrcClone(const NDSDisplayInfo *dis
 		return;
 	}
 	
-	ColorspaceConvertBuffer888XTo8888Opaque<false, false>((u32 *)displayInfoList[bufferIndex].customBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	ColorspaceConvertBuffer888xTo8888Opaque<false, false>((u32 *)displayInfoList[bufferIndex].customBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 	this->_srcCloneNeedsUpdate[displayID][bufferIndex] = false;
 	
 	if (needsLock)

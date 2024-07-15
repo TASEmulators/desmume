@@ -2,7 +2,7 @@
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
-	Copyright (C) 2008-2023 DeSmuME team
+	Copyright (C) 2008-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1032,12 +1032,12 @@ void GPUEngineBase::_TransitionLineNativeToCustom(GPUEngineCompositorInfo &compI
 				{
 					if ( (compInfo.line.widthCustom == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (compInfo.line.renderCount == 1) )
 					{
-						ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>((u16 *)compInfo.target.lineColorHeadNative, (u32 *)compInfo.target.lineColorHeadCustom, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+						ColorspaceConvertBuffer555xTo6665Opaque<false, false, BESwapDst>((u16 *)compInfo.target.lineColorHeadNative, (u32 *)compInfo.target.lineColorHeadCustom, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 					}
 					else
 					{
 						u32 *workingNativeBuffer32 = this->_targetDisplay->GetWorkingNativeBuffer32();
-						ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>((u16 *)compInfo.target.lineColorHeadNative, workingNativeBuffer32 + compInfo.line.blockOffsetNative, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+						ColorspaceConvertBuffer555xTo6665Opaque<false, false, BESwapDst>((u16 *)compInfo.target.lineColorHeadNative, workingNativeBuffer32 + compInfo.line.blockOffsetNative, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 						CopyLineExpandHinted<0x3FFF, true, false, false, 4>(compInfo.line, workingNativeBuffer32 + compInfo.line.blockOffsetNative, compInfo.target.lineColorHeadCustom);
 					}
 					break;
@@ -1047,12 +1047,12 @@ void GPUEngineBase::_TransitionLineNativeToCustom(GPUEngineCompositorInfo &compI
 				{
 					if ( (compInfo.line.widthCustom == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (compInfo.line.renderCount == 1) )
 					{
-						ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>((u16 *)compInfo.target.lineColorHeadNative, (u32 *)compInfo.target.lineColorHeadCustom, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+						ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>((u16 *)compInfo.target.lineColorHeadNative, (u32 *)compInfo.target.lineColorHeadCustom, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 					}
 					else
 					{
 						u32 *workingNativeBuffer32 = this->_targetDisplay->GetWorkingNativeBuffer32();
-						ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>((u16 *)compInfo.target.lineColorHeadNative, workingNativeBuffer32 + compInfo.line.blockOffsetNative, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+						ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>((u16 *)compInfo.target.lineColorHeadNative, workingNativeBuffer32 + compInfo.line.blockOffsetNative, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 						CopyLineExpandHinted<0x3FFF, true, false, false, 4>(compInfo.line, workingNativeBuffer32 + compInfo.line.blockOffsetNative, compInfo.target.lineColorHeadCustom);
 					}
 					break;
@@ -3729,7 +3729,7 @@ void GPUEngineA::_RenderLine_DisplayCaptureCustom(const IOREG_DISPCAPCNT &DISPCA
 		{
 			if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 			{
-				ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(this->_fifoLine16, (u32 *)srcBPtr, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+				ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(this->_fifoLine16, (u32 *)srcBPtr, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 			}
 			
 			this->_RenderLine_DispCapture_Copy<OUTPUTFORMAT, 1, CAPTURELENGTH, true, false>(lineInfo, srcBPtr, dstCustomPtr, captureLengthExt);
@@ -3755,7 +3755,7 @@ void GPUEngineA::_RenderLine_DisplayCaptureCustom(const IOREG_DISPCAPCNT &DISPCA
 				else
 				{
 					u32 *workingNativeBuffer32 = this->_targetDisplay->GetWorkingNativeBuffer32();
-					ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapNone>((u16 *)srcAPtr, workingNativeBuffer32 + lineInfo.blockOffsetNative, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+					ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapNone>((u16 *)srcAPtr, workingNativeBuffer32 + lineInfo.blockOffsetNative, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 					CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, workingNativeBuffer32 + lineInfo.blockOffsetNative, this->_captureWorkingA32);
 					srcAPtr = this->_captureWorkingA32;
 				}
@@ -3772,7 +3772,7 @@ void GPUEngineA::_RenderLine_DisplayCaptureCustom(const IOREG_DISPCAPCNT &DISPCA
 				{
 					if ((OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) && (DISPCAPCNT.SrcB != 0))
 					{
-						ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(this->_fifoLine16, (u32 *)srcBPtr, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+						ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(this->_fifoLine16, (u32 *)srcBPtr, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 					}
 					
 					CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, srcBPtr, this->_captureWorkingB32);
@@ -3919,7 +3919,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 			{
 				if (willReadNativeVRAM)
 				{
-					ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(vramNative16, (u32 *)vramCustom32, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+					ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(vramNative16, (u32 *)vramCustom32, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				}
 			}
 			
@@ -4435,7 +4435,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(const GPUEngineLineInfo &lineInfo)
 			{
 				const u16 *src = (u16 *)this->_VRAMCustomBlockPtr[DISPCNT.VRAM_Block] + lineInfo.blockOffsetCustom;
 				u32 *dst = (u32 *)customBuffer + lineInfo.blockOffsetCustom;
-				ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapSrcDst>(src, dst, lineInfo.pixelCount);
+				ColorspaceConvertBuffer555xTo6665Opaque<false, false, BESwapSrcDst>(src, dst, lineInfo.pixelCount);
 				break;
 			}
 				
@@ -5780,11 +5780,11 @@ void GPUSubsystem::_ConvertAndUpscaleForLoadstate(const NDSDisplayID displayID, 
 		switch (this->_display[displayID]->GetColorFormat())
 		{
 			case NDSColorFormat_BGR666_Rev:
-				ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				ColorspaceConvertBuffer555xTo6665Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				break;
 
 			case NDSColorFormat_BGR888_Rev:
-				ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				break;
 				
 			default:
@@ -6212,11 +6212,11 @@ void NDSDisplay::ResolveLinesDisplayedNative()
 			{
 				if (this->_customColorFormat == NDSColorFormat_BGR888_Rev)
 				{
-					ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+					ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				}
 				else
 				{
-					ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+					ColorspaceConvertBuffer555xTo6665Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				}
 				
 				CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, working, dst);
@@ -6256,7 +6256,7 @@ void NDSDisplay::ResolveFramebufferToCustom(NDSDisplayInfo &mutableInfo)
 		{
 			case NDSColorFormat_BGR666_Rev:
 			case NDSColorFormat_BGR888_Rev:
-				ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(src, working, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				break;
 				
 			default:
@@ -6298,7 +6298,7 @@ void NDSDisplay::ResolveFramebufferToCustom(NDSDisplayInfo &mutableInfo)
 				
 			case NDSColorFormat_BGR666_Rev:
 			case NDSColorFormat_BGR888_Rev:
-				ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(this->_nativeBuffer16, (u32 *)this->_customBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(this->_nativeBuffer16, (u32 *)this->_customBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				break;
 		}
 	}

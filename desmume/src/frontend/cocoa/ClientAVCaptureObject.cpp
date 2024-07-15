@@ -484,7 +484,7 @@ void ClientAVCaptureObject::ConvertVideoSlice555Xto888(const VideoConvertParam &
 	const u16 *__restrict src = (const u16 *__restrict)param.src;
 	u8 *__restrict dst = param.dst;
 	
-	ColorspaceConvertBuffer555XTo888<false, false>(src, dst, param.frameWidth * lineCount);
+	ColorspaceConvertBuffer555xTo888<false, false>(src, dst, param.frameWidth * lineCount);
 }
 
 //converts 32bpp to 24bpp and flips
@@ -494,7 +494,7 @@ void ClientAVCaptureObject::ConvertVideoSlice888Xto888(const VideoConvertParam &
 	const u32 *__restrict src = (const u32 *__restrict)param.src;
 	u8 *__restrict dst = param.dst;
 	
-	ColorspaceConvertBuffer888XTo888<false, false>(src, dst, param.frameWidth * lineCount);
+	ColorspaceConvertBuffer888xTo888<false, false>(src, dst, param.frameWidth * lineCount);
 }
 
 void ClientAVCaptureObject::CaptureVideoFrame(const void *srcVideoFrame, const size_t inFrameWidth, const size_t inFrameHeight, const NDSColorFormat colorFormat)

@@ -1666,7 +1666,7 @@ static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpo
 
 static inline void gpu_screen_to_rgb(u32* dst)
 {
-    ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+    ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
 }
 
 static inline void drawScreen(cairo_t* cr, u32* buf, gint w, gint h) {
@@ -1791,7 +1791,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 }
 
 static void RedrawScreen() {
-	ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, (uint32_t *)video->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+	ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, (uint32_t *)video->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
 #ifdef HAVE_LIBAGG
 	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), 256, 384, 1024);
 	osd->update();

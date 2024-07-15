@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 DeSmuME team
+Copyright (C) 2018-2024 DeSmuME team
 
 This file is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -683,9 +683,9 @@ void DoDisplay()
 
 	//we have to do a copy here because we're about to draw the OSD onto it. bummer.
 	if (gpu_bpp == 15)
-		ColorspaceConvertBuffer555To8888Opaque<true, false, BESwapNone>((u16 *)video.srcBuffer, video.buffer, video.srcBufferSize / 2);
+		ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapNone>((u16 *)video.srcBuffer, video.buffer, video.srcBufferSize / 2);
 	else
-		ColorspaceConvertBuffer888XTo8888Opaque<true, false>((u32*)video.srcBuffer, video.buffer, video.srcBufferSize / 4);
+		ColorspaceConvertBuffer888xTo8888Opaque<true, false>((u32*)video.srcBuffer, video.buffer, video.srcBufferSize / 4);
 
 	//some games use the backlight for fading effects
 	const size_t pixCount = video.prefilterWidth * video.prefilterHeight / 2;

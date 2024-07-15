@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2023 DeSmuME team
+	Copyright (C) 2017-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2556,7 +2556,7 @@ void MacMetalFetchObject::_FetchNativeDisplayByID(const NDSDisplayID displayID, 
 		GPU->PostprocessDisplay(displayID, this->_fetchDisplayInfo[bufferIndex]);
 		
 		pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
-		ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>(this->_fetchDisplayInfo[bufferIndex].nativeBuffer16[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+		ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(this->_fetchDisplayInfo[bufferIndex].nativeBuffer16[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 	}
 	
@@ -2570,7 +2570,7 @@ void MacMetalFetchObject::_FetchCustomDisplayByID(const NDSDisplayID displayID, 
 		GPU->PostprocessDisplay(displayID, this->_fetchDisplayInfo[bufferIndex]);
 		
 		pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
-		ColorspaceConvertBuffer888XTo8888Opaque<false, false>((u32 *)this->_fetchDisplayInfo[bufferIndex].customBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+		ColorspaceConvertBuffer888xTo8888Opaque<false, false>((u32 *)this->_fetchDisplayInfo[bufferIndex].customBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 	}
 	
