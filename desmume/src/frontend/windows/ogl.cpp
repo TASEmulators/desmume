@@ -110,7 +110,7 @@ static bool wgl_beginOpenGL()
 	return true;
 }
 
-static bool wgl_endOpenGL()
+static void wgl_endOpenGL()
 {
 	// Do nothing.
 }
