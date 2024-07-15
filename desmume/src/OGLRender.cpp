@@ -1269,6 +1269,7 @@ OpenGLRenderer::OpenGLRenderer()
 	isVBOSupported = false;
 	isPBOSupported = false;
 	isFBOSupported = false;
+	_isFBOBlitSupported = false;
 	isMultisampledFBOSupported = false;
 	isShaderSupported = false;
 	isVAOSupported = false;
@@ -2586,9 +2587,8 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	}
 	
 	// Don't use ARB versions since we're using the EXT versions for backwards compatibility.
-	this->isFBOSupported	= this->IsExtensionPresent(&oglExtensionSet, "GL_EXT_framebuffer_object") &&
-							  this->IsExtensionPresent(&oglExtensionSet, "GL_EXT_framebuffer_blit") &&
-							  this->IsExtensionPresent(&oglExtensionSet, "GL_EXT_packed_depth_stencil");
+	this->isFBOSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_EXT_framebuffer_object") &&
+	                       this->IsExtensionPresent(&oglExtensionSet, "GL_EXT_packed_depth_stencil");
 	if (this->isFBOSupported)
 	{
 		GLint maxColorAttachments = 0;
@@ -2614,11 +2614,18 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		INFO("OpenGL: FBOs are unsupported. Some emulation features will be disabled.\n");
 	}
 	
+	this->_isFBOBlitSupported = this->isFBOSupported &&
+	                            this->IsExtensionPresent(&oglExtensionSet, "GL_EXT_framebuffer_blit");
+	if (!this->_isFBOBlitSupported)
+	{
+		INFO("OpenGL: FBO blitting is unsupported. Some emulation features will be disabled.\n");
+	}
+	
 	this->_selectedMultisampleSize = CommonSettings.GFX3D_Renderer_MultisampleSize;
 	
 	// Don't use ARB versions since we're using the EXT versions for backwards compatibility.
-	this->isMultisampledFBOSupported	= this->isFBOSupported &&
-										  this->IsExtensionPresent(&oglExtensionSet, "GL_EXT_framebuffer_multisample");
+	this->isMultisampledFBOSupported = this->_isFBOBlitSupported &&
+	                                   this->IsExtensionPresent(&oglExtensionSet, "GL_EXT_framebuffer_multisample");
 	if (this->isMultisampledFBOSupported)
 	{
 		GLint maxSamplesOGL = 0;
@@ -2744,7 +2751,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	
 	// Set rendering support flags based on driver features.
 	this->willFlipAndConvertFramebufferOnGPU = this->isShaderSupported && this->isVBOSupported;
-	this->willFlipOnlyFramebufferOnGPU = this->willFlipAndConvertFramebufferOnGPU || this->isFBOSupported;
+	this->willFlipOnlyFramebufferOnGPU = this->willFlipAndConvertFramebufferOnGPU || this->_isFBOBlitSupported;
 	this->_deviceInfo.isEdgeMarkSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
 	this->_deviceInfo.isFogSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
 	this->_deviceInfo.isTextureSmoothingSupported = this->isShaderSupported;
@@ -4797,7 +4804,7 @@ Render3DError OpenGLRenderer_1_2::EndRender()
 
 Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID)
 {
-	if (!this->isFBOSupported)
+	if (!this->isFBOSupported || !this->_isFBOBlitSupported)
 	{
 		return OGLERROR_FEATURE_UNSUPPORTED;
 	}
@@ -5490,7 +5497,7 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	if (this->isShaderSupported || this->isFBOSupported)
 	{
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	}
 	
 	if (this->isFBOSupported)
@@ -5499,13 +5506,13 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, (GLsizei)w, (GLsizei)h, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	}
 	
 	glActiveTexture(GL_TEXTURE0);

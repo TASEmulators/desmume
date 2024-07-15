@@ -807,6 +807,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 		return error;
 	}
 	
+	this->_isFBOBlitSupported = true;
 	this->isMultisampledFBOSupported = true;
 	this->_selectedMultisampleSize = CommonSettings.GFX3D_Renderer_MultisampleSize;
 	

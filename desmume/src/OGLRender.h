@@ -811,6 +811,7 @@ protected:
 	bool isVBOSupported;
 	bool isPBOSupported;
 	bool isFBOSupported;
+	bool _isFBOBlitSupported;
 	bool isMultisampledFBOSupported;
 	bool isShaderSupported;
 	bool isVAOSupported;
