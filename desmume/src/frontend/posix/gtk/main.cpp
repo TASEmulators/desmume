@@ -433,6 +433,9 @@ fill_configured_features( class configured_features *config,
 #ifdef HAVE_OPENGL
         "\t\t\t\t  2 = opengl\n"
 #endif
+#ifdef HAVE_GLES3
+        "\t\t\t\t  3 = gles\n"
+#endif
         ,"ENGINE"},
     { "save-type", 0, 0, G_OPTION_ARG_INT, &config->savetype, "Select savetype from the following:\n"
     "\t\t\t\t  0 = Autodetect (default)\n"
@@ -477,10 +480,16 @@ fill_configured_features( class configured_features *config,
 #ifdef HAVE_OPENGL
 				&& config->engine_3d != 2
 #endif
+#ifdef HAVE_GLES3
+				&& config->engine_3d != 3
+#endif
 						) {
 			g_printerr("Currently available ENGINES: 0, 1"
 #ifdef HAVE_OPENGL
 							", 2"
+#endif
+#ifdef HAVE_GLES3
+							", 3"
 #endif
 					"\n");
 			goto error;
@@ -2256,7 +2265,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	// 3D Texture Smoothing
 	gtk_toggle_button_set_active(wSmoothing, CommonSettings.GFX3D_Renderer_TextureSmoothing);
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_GLES3)
 	// OpenGL Multisample
 	int currentMultisample = CommonSettings.GFX3D_Renderer_MultisampleSize;
 	int currentActive = 0;
@@ -2351,7 +2360,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(wSmoothing);
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
 		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(wHCInterpolate);
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_GLES3)
 		int selectedMultisample = gtk_combo_box_get_active(wMultisample);
 		config.multisamplingSize = multisampleSizes[selectedMultisample];
 		config.multisampling = selectedMultisample != 0;
