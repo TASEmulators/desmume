@@ -3942,7 +3942,7 @@ Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBu
 		
 		if (OGL_TEXTURE_SRC_CI_COLOR == GL_UNSIGNED_BYTE)
 		{
-			ColorspaceConvertBuffer5551To8888<false, false, BESwapNone>(OGLRef.workingCIColorBuffer16, OGLRef.workingCIColorBuffer32, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			ColorspaceConvertBuffer5551To8888<false, false, BESwapDst>(OGLRef.workingCIColorBuffer16, OGLRef.workingCIColorBuffer32, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, OGL_TEXTURE_SRC_CI_COLOR, OGLRef.workingCIColorBuffer32);
 		}
 		else
@@ -4547,7 +4547,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 				
 				if (OGL_TEXTURE_SRC_TOON_TABLE == GL_UNSIGNED_BYTE)
 				{
-					ColorspaceConvertBuffer5551To8888<false, false, BESwapNone>(renderState.toonTable16, OGLRef.toonTable32, 32);
+					ColorspaceConvertBuffer5551To8888<false, false, BESwapDst>(renderState.toonTable16, OGLRef.toonTable32, 32);
 					glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, OGLRef.toonTable32);
 				}
 				else
@@ -5781,7 +5781,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 		
 		if (OGL_TEXTURE_SRC_TOON_TABLE == GL_UNSIGNED_BYTE)
 		{
-			ColorspaceConvertBuffer5551To8888<false, false, BESwapNone>(renderState.toonTable16, OGLRef.toonTable32, 32);
+			ColorspaceConvertBuffer5551To8888<false, false, BESwapDst>(renderState.toonTable16, OGLRef.toonTable32, 32);
 			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, OGLRef.toonTable32);
 		}
 		else
