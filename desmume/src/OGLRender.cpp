@@ -4578,6 +4578,18 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 		}
 #endif
 	}
+	else
+	{
+		if (this->isShaderSupported && this->isFBOSupported)
+		{
+			// Even with no polygons to draw, we always need to set these 3 flags so that
+			// glDrawBuffers() can reference the correct set of FBO attachments using
+			// OGLGeometryFlags.DrawBuffersMode.
+			this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
+			this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
+			this->_geometryProgramFlags.OpaqueDrawMode = 1;
+		}
+	}
 	
 	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -5669,129 +5681,143 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 	
 	this->_enableAlphaBlending = (renderState.DISP3DCNT.EnableAlphaBlending) ? true : false;
 	
-	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
-	
-	// Only copy as much vertex data as we need to, since this can be a potentially large upload size.
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(NDSVertex) * renderGList.rawVertCount, renderGList.rawVtxList);
-	
-	// Generate the clipped polygon list.
-	bool renderNeedsToonTable = false;
-	
-	for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
+	if (this->_clippedPolyCount > 0)
 	{
-		const CPoly &cPoly = this->_clippedPolyList[i];
-		const POLY &rawPoly = this->_rawPolyList[cPoly.index];
-		const size_t polyType = rawPoly.type;
+		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 		
-		for (size_t j = 0; j < polyType; j++)
+		// Only copy as much vertex data as we need to, since this can be a potentially large upload size.
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(NDSVertex) * renderGList.rawVertCount, renderGList.rawVtxList);
+		
+		// Generate the clipped polygon list.
+		bool renderNeedsToonTable = false;
+		
+		for (size_t i = 0, vertIndexCount = 0; i < this->_clippedPolyCount; i++)
 		{
-			const GLushort vertIndex = rawPoly.vertIndexes[j];
+			const CPoly &cPoly = this->_clippedPolyList[i];
+			const POLY &rawPoly = this->_rawPolyList[cPoly.index];
+			const size_t polyType = rawPoly.type;
 			
-			// While we're looping through our vertices, add each vertex index to
-			// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
-			// vertices here to convert them to GL_TRIANGLES, which are much easier
-			// to work with and won't be deprecated in future OpenGL versions.
-			OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
-			if (!GFX3D_IsPolyWireframe(rawPoly) && (rawPoly.vtxFormat == GFX3D_QUADS || rawPoly.vtxFormat == GFX3D_QUAD_STRIP))
+			for (size_t j = 0; j < polyType; j++)
 			{
-				if (j == 2)
+				const GLushort vertIndex = rawPoly.vertIndexes[j];
+				
+				// While we're looping through our vertices, add each vertex index to
+				// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
+				// vertices here to convert them to GL_TRIANGLES, which are much easier
+				// to work with and won't be deprecated in future OpenGL versions.
+				OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+				if (!GFX3D_IsPolyWireframe(rawPoly) && (rawPoly.vtxFormat == GFX3D_QUADS || rawPoly.vtxFormat == GFX3D_QUAD_STRIP))
 				{
-					OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
-				}
-				else if (j == 3)
-				{
-					OGLRef.vertIndexBuffer[vertIndexCount++] = rawPoly.vertIndexes[0];
+					if (j == 2)
+					{
+						OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+					}
+					else if (j == 3)
+					{
+						OGLRef.vertIndexBuffer[vertIndexCount++] = rawPoly.vertIndexes[0];
+					}
 				}
 			}
+			
+			renderNeedsToonTable = renderNeedsToonTable || (rawPoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT);
+			
+			// Get the texture that is to be attached to this polygon.
+			this->_textureList[i] = this->GetLoadedTextureFromPolygon(rawPoly, this->_enableTextureSampling);
 		}
 		
-		renderNeedsToonTable = renderNeedsToonTable || (rawPoly.attribute.Mode == POLYGON_MODE_TOONHIGHLIGHT);
+		// Replace the entire index buffer as a hint to the driver that we can orphan the index buffer and
+		// avoid a synchronization cost.
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
 		
-		// Get the texture that is to be attached to this polygon.
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(rawPoly, this->_enableTextureSampling);
+		// Set up rendering states that will remain constant for the entire frame.
+		this->_pendingRenderStates.enableAntialiasing = (renderState.DISP3DCNT.EnableAntialiasing) ? GL_TRUE : GL_FALSE;
+		this->_pendingRenderStates.enableFogAlphaOnly = (renderState.DISP3DCNT.FogOnlyAlpha) ? GL_TRUE : GL_FALSE;
+		this->_pendingRenderStates.clearPolyID = this->_clearAttributes.opaquePolyID;
+		this->_pendingRenderStates.clearDepth = (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF;
+		this->_pendingRenderStates.alphaTestRef = divide5bitBy31_LUT[renderState.alphaTestRef];
+		
+		if (this->_enableFog && this->_deviceInfo.isFogSupported)
+		{
+			this->_fogProgramKey.key = 0;
+			this->_fogProgramKey.offset = renderState.fogOffset & 0x7FFF;
+			this->_fogProgramKey.shift = renderState.fogShift;
+			
+			this->_pendingRenderStates.fogColor.r = divide5bitBy31_LUT[(renderState.fogColor      ) & 0x0000001F];
+			this->_pendingRenderStates.fogColor.g = divide5bitBy31_LUT[(renderState.fogColor >>  5) & 0x0000001F];
+			this->_pendingRenderStates.fogColor.b = divide5bitBy31_LUT[(renderState.fogColor >> 10) & 0x0000001F];
+			this->_pendingRenderStates.fogColor.a = divide5bitBy31_LUT[(renderState.fogColor >> 16) & 0x0000001F];
+			this->_pendingRenderStates.fogOffset = (GLfloat)(renderState.fogOffset & 0x7FFF) / 32767.0f;
+			this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> renderState.fogShift) / 32767.0f;
+			
+			u8 fogDensityTable[32];
+			for (size_t i = 0; i < 32; i++)
+			{
+				fogDensityTable[i] = (renderState.fogDensityTable[i] == 127) ? 255 : renderState.fogDensityTable[i] << 1;
+			}
+			
+			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
+			glBindTexture(GL_TEXTURE_1D, OGLRef.texFogDensityTableID);
+			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RED, GL_UNSIGNED_BYTE, fogDensityTable);
+		}
+		
+		if (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported)
+		{
+			const u8 alpha8 = (renderState.DISP3DCNT.EnableAntialiasing) ? 0x80 : 0xFF;
+			Color4u8 edgeColor32[8];
+			
+			for (size_t i = 0; i < 8; i++)
+			{
+				edgeColor32[i].value = COLOR555TO8888(renderState.edgeMarkColorTable[i] & 0x7FFF, alpha8);
+			}
+			
+			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
+			glBindTexture(GL_TEXTURE_1D, OGLRef.texEdgeColorTableID);
+			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 8, GL_RGBA, OGL_TEXTURE_SRC_EDGE_COLOR, edgeColor32);
+		}
+		
+		// Setup render states
+		this->_geometryProgramFlags.value = 0;
+		this->_geometryProgramFlags.EnableWDepth = renderState.SWAP_BUFFERS.DepthMode;
+		this->_geometryProgramFlags.EnableAlphaTest = renderState.DISP3DCNT.EnableAlphaTest;
+		this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
+		this->_geometryProgramFlags.ToonShadingMode = renderState.DISP3DCNT.PolygonShading;
+		this->_geometryProgramFlags.EnableFog = (this->_enableFog && this->_deviceInfo.isFogSupported) ? 1 : 0;
+		this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) ? 1 : 0;
+		this->_geometryProgramFlags.OpaqueDrawMode = (this->_isDepthLEqualPolygonFacingSupported) ? 1 : 0;
+		
+		this->_SetupGeometryShaders(this->_geometryProgramFlags);
+		
+		if (renderNeedsToonTable)
+		{
+			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
+			glBindTexture(GL_TEXTURE_1D, OGLRef.texToonTableID);
+			
+			if (OGL_TEXTURE_SRC_TOON_TABLE == GL_UNSIGNED_BYTE)
+			{
+				ColorspaceConvertBuffer5551To8888<false, false, BESwapDst>(renderState.toonTable16, OGLRef.toonTable32, 32);
+				glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, OGLRef.toonTable32);
+			}
+			else
+			{
+				glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, renderState.toonTable16);
+			}
+		}
 	}
-	
-	// Replace the entire index buffer as a hint to the driver that we can orphan the index buffer and
-	// avoid a synchronization cost.
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(OGLRef.vertIndexBuffer), OGLRef.vertIndexBuffer);
-	
-	// Set up rendering states that will remain constant for the entire frame.
-	this->_pendingRenderStates.enableAntialiasing = (renderState.DISP3DCNT.EnableAntialiasing) ? GL_TRUE : GL_FALSE;
-	this->_pendingRenderStates.enableFogAlphaOnly = (renderState.DISP3DCNT.FogOnlyAlpha) ? GL_TRUE : GL_FALSE;
-	this->_pendingRenderStates.clearPolyID = this->_clearAttributes.opaquePolyID;
-	this->_pendingRenderStates.clearDepth = (GLfloat)this->_clearAttributes.depth / (GLfloat)0x00FFFFFF;
-	this->_pendingRenderStates.alphaTestRef = divide5bitBy31_LUT[renderState.alphaTestRef];
-	
-	if (this->_enableFog && this->_deviceInfo.isFogSupported)
+	else
 	{
-		this->_fogProgramKey.key = 0;
-		this->_fogProgramKey.offset = renderState.fogOffset & 0x7FFF;
-		this->_fogProgramKey.shift = renderState.fogShift;
-		
-		this->_pendingRenderStates.fogColor.r = divide5bitBy31_LUT[(renderState.fogColor      ) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.g = divide5bitBy31_LUT[(renderState.fogColor >>  5) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.b = divide5bitBy31_LUT[(renderState.fogColor >> 10) & 0x0000001F];
-		this->_pendingRenderStates.fogColor.a = divide5bitBy31_LUT[(renderState.fogColor >> 16) & 0x0000001F];
-		this->_pendingRenderStates.fogOffset = (GLfloat)(renderState.fogOffset & 0x7FFF) / 32767.0f;
-		this->_pendingRenderStates.fogStep = (GLfloat)(0x0400 >> renderState.fogShift) / 32767.0f;
-		
-		u8 fogDensityTable[32];
-		for (size_t i = 0; i < 32; i++)
+		if (this->isFBOSupported)
 		{
-			fogDensityTable[i] = (renderState.fogDensityTable[i] == 127) ? 255 : renderState.fogDensityTable[i] << 1;
-		}
-		
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
-		glBindTexture(GL_TEXTURE_1D, OGLRef.texFogDensityTableID);
-		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RED, GL_UNSIGNED_BYTE, fogDensityTable);
-	}
-	
-	if (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported)
-	{
-		const u8 alpha8 = (renderState.DISP3DCNT.EnableAntialiasing) ? 0x80 : 0xFF;
-		Color4u8 edgeColor32[8];
-		
-		for (size_t i = 0; i < 8; i++)
-		{
-			edgeColor32[i].value = COLOR555TO8888(renderState.edgeMarkColorTable[i] & 0x7FFF, alpha8);
-		}
-		
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
-		glBindTexture(GL_TEXTURE_1D, OGLRef.texEdgeColorTableID);
-		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 8, GL_RGBA, OGL_TEXTURE_SRC_EDGE_COLOR, edgeColor32);
-	}
-	
-	// Setup render states
-	this->_geometryProgramFlags.value = 0;
-	this->_geometryProgramFlags.EnableWDepth = renderState.SWAP_BUFFERS.DepthMode;
-	this->_geometryProgramFlags.EnableAlphaTest = renderState.DISP3DCNT.EnableAlphaTest;
-	this->_geometryProgramFlags.EnableTextureSampling = (this->_enableTextureSampling) ? 1 : 0;
-	this->_geometryProgramFlags.ToonShadingMode = renderState.DISP3DCNT.PolygonShading;
-	this->_geometryProgramFlags.EnableFog = (this->_enableFog && this->_deviceInfo.isFogSupported) ? 1 : 0;
-	this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) ? 1 : 0;
-	this->_geometryProgramFlags.OpaqueDrawMode = (this->_isDepthLEqualPolygonFacingSupported) ? 1 : 0;
-	
-	this->_SetupGeometryShaders(this->_geometryProgramFlags);
-	
-	if (renderNeedsToonTable)
-	{
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
-		glBindTexture(GL_TEXTURE_1D, OGLRef.texToonTableID);
-		
-		if (OGL_TEXTURE_SRC_TOON_TABLE == GL_UNSIGNED_BYTE)
-		{
-			ColorspaceConvertBuffer5551To8888<false, false, BESwapDst>(renderState.toonTable16, OGLRef.toonTable32, 32);
-			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, OGLRef.toonTable32);
-		}
-		else
-		{
-			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, renderState.toonTable16);
+			// Even with no polygons to draw, we always need to set these 3 flags so that
+			// glDrawBuffers() can reference the correct set of FBO attachments using
+			// OGLGeometryFlags.DrawBuffersMode.
+			this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
+			this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
+			this->_geometryProgramFlags.OpaqueDrawMode = 1;
 		}
 	}
 	
 	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-	
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);
 	

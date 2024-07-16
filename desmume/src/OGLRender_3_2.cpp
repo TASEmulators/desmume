@@ -2477,6 +2477,15 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 		
 		this->_SetupGeometryShaders(this->_geometryProgramFlags);
 	}
+	else
+	{
+		// Even with no polygons to draw, we always need to set these 3 flags so that
+		// glDrawBuffers() can reference the correct set of FBO attachments using
+		// OGLGeometryFlags.DrawBuffersMode.
+		this->_geometryProgramFlags.EnableFog = (this->_enableFog) ? 1 : 0;
+		this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark) ? 1 : 0;
+		this->_geometryProgramFlags.OpaqueDrawMode = 1;
+	}
 	
 	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
