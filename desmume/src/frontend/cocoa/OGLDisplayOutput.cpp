@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2023 DeSmuME team
+	Copyright (C) 2014-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -4719,7 +4719,7 @@ void OGLClientSharedData::FetchNativeDisplayToSrcClone(const NDSDisplayInfo *dis
 		return;
 	}
 	
-	ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapNone>(displayInfoList[bufferIndex].nativeBuffer16[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapNone>(displayInfoList[bufferIndex].nativeBuffer16[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 	this->_srcCloneNeedsUpdate[displayID][bufferIndex] = false;
 	
 	if (needsLock)
@@ -4744,7 +4744,7 @@ void OGLClientSharedData::FetchCustomDisplayToSrcClone(const NDSDisplayInfo *dis
 		return;
 	}
 	
-	ColorspaceConvertBuffer888XTo8888Opaque<false, false>((u32 *)displayInfoList[bufferIndex].customBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	ColorspaceConvertBuffer888xTo8888Opaque<false, false>((u32 *)displayInfoList[bufferIndex].customBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 	this->_srcCloneNeedsUpdate[displayID][bufferIndex] = false;
 	
 	if (needsLock)
@@ -5628,14 +5628,14 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	};
 	
 	// Set up VBOs
-	glGenBuffersARB(1, &_vboVertexID);
-	glGenBuffersARB(1, &_vboTexCoordID);
+	glGenBuffers(1, &_vboVertexID);
+	glGenBuffers(1, &_vboTexCoordID);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(vtxBuffer), vtxBuffer, GL_STATIC_DRAW_ARB);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(_texCoordBuffer), _texCoordBuffer, GL_STATIC_DRAW_ARB);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, _vboVertexID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vtxBuffer), vtxBuffer, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, _vboTexCoordID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(_texCoordBuffer), _texCoordBuffer, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
 	// Set up VAO
 	glGenVertexArraysDESMUME(1, &_vaoMainStatesID);
@@ -5643,9 +5643,9 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	
 	if (contextInfo->IsShaderSupported())
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboVertexID);
 		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboTexCoordID);
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 		
 		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
@@ -5653,9 +5653,9 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	}
 	else
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboVertexID);
 		glVertexPointer(2, GL_INT, 0, 0);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboTexCoordID);
 		glTexCoordPointer(2, GL_FLOAT, 0, 0);
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -5721,8 +5721,8 @@ OGLImage::~OGLImage()
 		_isVAOPresent = false;
 	}
 	
-	glDeleteBuffersARB(1, &this->_vboVertexID);
-	glDeleteBuffersARB(1, &this->_vboTexCoordID);
+	glDeleteBuffers(1, &this->_vboVertexID);
+	glDeleteBuffers(1, &this->_vboTexCoordID);
 	glDeleteTextures(1, &this->_texCPUFilterDstID);
 	glDeleteTextures(1, &this->_texVideoInputDataID);
 	
@@ -6223,8 +6223,8 @@ void OGLImage::ProcessOGL()
 	// Output
 	this->_texVideoOutputID = this->_texVideoPixelScalerID;
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
-	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(this->_texCoordBuffer), this->_texCoordBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, this->_vboTexCoordID);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(this->_texCoordBuffer), this->_texCoordBuffer);
 }
 
 void OGLImage::RenderOGL()
@@ -6330,22 +6330,22 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	_workingCharBufferList->reserve(16);
 	
 	// Set up VBOs
-	glGenBuffersARB(1, &_vboPositionVertexID);
-	glGenBuffersARB(1, &_vboColorVertexID);
-	glGenBuffersARB(1, &_vboTexCoordID);
-	glGenBuffersARB(1, &_vboElementID);
+	glGenBuffers(1, &_vboPositionVertexID);
+	glGenBuffers(1, &_vboColorVertexID);
+	glGenBuffers(1, &_vboTexCoordID);
+	glGenBuffers(1, &_vboElementID);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboPositionVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboColorVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, _vboPositionVertexID);
+	glBufferData(GL_ARRAY_BUFFER, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, _vboColorVertexID);
+	glBufferData(GL_ARRAY_BUFFER, HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, _vboTexCoordID);
+	glBufferData(GL_ARRAY_BUFFER, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
-	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLshort) * HUD_TOTAL_ELEMENTS * 6, NULL, GL_STATIC_DRAW_ARB);
-	GLshort *idxBufferPtr = (GLshort *)glMapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _vboElementID);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLshort) * HUD_TOTAL_ELEMENTS * 6, NULL, GL_STATIC_DRAW);
+	GLshort *idxBufferPtr = (GLshort *)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY_ARB);
 		
 	for (size_t i = 0, j = 0, k = 0; i < HUD_TOTAL_ELEMENTS; i++, j+=6, k+=4)
 	{
@@ -6357,8 +6357,8 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 		idxBufferPtr[j+5] = k+0;
 	}
 	
-	glUnmapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB);
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	
 	// Set up VAO
 	glGenVertexArraysDESMUME(1, &_vaoMainStatesID);
@@ -6366,13 +6366,13 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	
 	if (oglVO->GetContextInfo()->IsShaderSupported())
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboPositionVertexID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboPositionVertexID);
 		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboColorVertexID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboColorVertexID);
 		glVertexAttribPointer(OGLVertexAttributeID_Color, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, NULL);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboTexCoordID);
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _vboElementID);
 		
 		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 		glEnableVertexAttribArray(OGLVertexAttributeID_Color);
@@ -6380,13 +6380,13 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	}
 	else
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboPositionVertexID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboPositionVertexID);
 		glVertexPointer(2, GL_FLOAT, 0, NULL);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboColorVertexID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboColorVertexID);
 		glColorPointer(4, GL_UNSIGNED_BYTE, 0, NULL);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboTexCoordID);
 		glTexCoordPointer(2, GL_FLOAT, 0, NULL);
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _vboElementID);
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_COLOR_ARRAY);
@@ -6405,10 +6405,10 @@ OGLHUDLayer::~OGLHUDLayer()
 	}
 	
 	glDeleteVertexArraysDESMUME(1, &this->_vaoMainStatesID);
-	glDeleteBuffersARB(1, &this->_vboPositionVertexID);
-	glDeleteBuffersARB(1, &this->_vboColorVertexID);
-	glDeleteBuffersARB(1, &this->_vboTexCoordID);
-	glDeleteBuffersARB(1, &this->_vboElementID);
+	glDeleteBuffers(1, &this->_vboPositionVertexID);
+	glDeleteBuffers(1, &this->_vboColorVertexID);
+	glDeleteBuffers(1, &this->_vboTexCoordID);
+	glDeleteBuffers(1, &this->_vboElementID);
 	
 	glDeleteTextures(1, &this->_texCharMap);
 	
@@ -6517,25 +6517,25 @@ void OGLHUDLayer::_UpdateVerticesOGL()
 		return;
 	}
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboPositionVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
-	float *vtxPositionBufferPtr = (float *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+	glBindBuffer(GL_ARRAY_BUFFER, this->_vboPositionVertexID);
+	glBufferData(GL_ARRAY_BUFFER, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW);
+	float *vtxPositionBufferPtr = (float *)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY_ARB);
 	this->_output->SetHUDPositionVertices((float)this->_output->GetViewportWidth(), (float)this->_output->GetViewportHeight(), vtxPositionBufferPtr);
-	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
+	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboColorVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
-	uint32_t *vtxColorBufferPtr = (uint32_t *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+	glBindBuffer(GL_ARRAY_BUFFER, this->_vboColorVertexID);
+	glBufferData(GL_ARRAY_BUFFER, HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW);
+	uint32_t *vtxColorBufferPtr = (uint32_t *)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY_ARB);
 	this->_output->SetHUDColorVertices(vtxColorBufferPtr);
-	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
+	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
-	float *texCoordBufferPtr = (float *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+	glBindBuffer(GL_ARRAY_BUFFER, this->_vboTexCoordID);
+	glBufferData(GL_ARRAY_BUFFER, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW);
+	float *texCoordBufferPtr = (float *)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY_ARB);
 	this->_output->SetHUDTextureCoordinates(texCoordBufferPtr);
-	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
+	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
 	this->_output->ClearHUDNeedsUpdate();
 }
@@ -6725,14 +6725,14 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	pthread_rwlock_init(&_cpuFilterRWLock[NDSDisplayID_Touch][1], NULL);
 	
 	// Set up VBOs
-	glGenBuffersARB(1, &_vboVertexID);
-	glGenBuffersARB(1, &_vboTexCoordID);
+	glGenBuffers(1, &_vboVertexID);
+	glGenBuffers(1, &_vboTexCoordID);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * (4 * 8), NULL, GL_STATIC_DRAW_ARB);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * (4 * 8), NULL, GL_STREAM_DRAW_ARB);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, _vboVertexID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * (4 * 8), NULL, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, _vboTexCoordID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * (4 * 8), NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
 	// Set up VAO
 	glGenVertexArraysDESMUME(1, &_vaoMainStatesID);
@@ -6740,9 +6740,9 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	
 	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboVertexID);
 		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboTexCoordID);
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 		
 		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
@@ -6750,9 +6750,9 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	}
 	else
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboVertexID);
 		glVertexPointer(2, GL_FLOAT, 0, NULL);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+		glBindBuffer(GL_ARRAY_BUFFER, _vboTexCoordID);
 		glTexCoordPointer(2, GL_FLOAT, 0, NULL);
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -6816,8 +6816,8 @@ OGLDisplayLayer::~OGLDisplayLayer()
 		glDeleteVertexArraysDESMUME(1, &this->_vaoMainStatesID);
 	}
 	
-	glDeleteBuffersARB(1, &this->_vboVertexID);
-	glDeleteBuffersARB(1, &this->_vboTexCoordID);
+	glDeleteBuffers(1, &this->_vboVertexID);
+	glDeleteBuffers(1, &this->_vboTexCoordID);
 	
 	if (_output->GetContextInfo()->IsShaderSupported())
 	{
@@ -6863,10 +6863,10 @@ void OGLDisplayLayer::_UpdateRotationScaleOGL()
 
 void OGLDisplayLayer::_UpdateVerticesOGL()
 {
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
-	float *vtxBufferPtr = (float *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+	glBindBuffer(GL_ARRAY_BUFFER, this->_vboVertexID);
+	float *vtxBufferPtr = (float *)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY_ARB);
 	this->_output->SetScreenVertices(vtxBufferPtr);
-	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
+	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
 	this->_needUpdateVertices = false;
 }
@@ -7480,15 +7480,15 @@ void OGLDisplayLayer::ProcessOGL()
 	}
 	
 	// Update the texture coordinates
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, (4 * 8) * sizeof(GLfloat), NULL, GL_STREAM_DRAW_ARB);
-	float *texCoordPtr = (float *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+	glBindBuffer(GL_ARRAY_BUFFER, this->_vboTexCoordID);
+	glBufferData(GL_ARRAY_BUFFER, (4 * 8) * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	float *texCoordPtr = (float *)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY_ARB);
 	
 	this->_output->SetScreenTextureCoordinates((float)width[NDSDisplayID_Main],  (float)height[NDSDisplayID_Main],
 											   (float)width[NDSDisplayID_Touch], (float)height[NDSDisplayID_Touch],
 											   texCoordPtr);
 	
-	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
+	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
 	// OpenGL shader-based filters can modify the viewport, so it needs to be reset here.
 	glViewport(0, 0, this->_output->GetViewportWidth(), this->_output->GetViewportHeight());

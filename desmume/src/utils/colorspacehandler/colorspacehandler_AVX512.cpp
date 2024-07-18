@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2021 DeSmuME team
+	Copyright (C) 2016-2024 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 #include <immintrin.h>
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555To8888_AVX512(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555aTo8888_AVX512(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi)
 {
 	// Conversion algorithm:
 	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB5 << 3) | ((srcRGB5 >> 2) & 0x07)
@@ -44,7 +44,7 @@ FORCEINLINE void ColorspaceConvert555To8888_AVX512(const v512u16 &srcColor, cons
 }
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555XTo888X_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555xTo888x_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi)
 {
 	// Conversion algorithm:
 	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB5 << 3) | ((srcRGB5 >> 2) & 0x07)
@@ -62,7 +62,7 @@ FORCEINLINE void ColorspaceConvert555XTo888X_AVX512(const v512u16 &srcColor, v51
 }
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555To6665_AVX512(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555aTo6665_AVX512(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi)
 {
 	// Conversion algorithm:
 	//    RGB   5-bit to 6-bit formula: dstRGB6 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
@@ -81,7 +81,7 @@ FORCEINLINE void ColorspaceConvert555To6665_AVX512(const v512u16 &srcColor, cons
 }
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555XTo666X_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555xTo666x_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi)
 {
 	// Conversion algorithm:
 	//    RGB   5-bit to 6-bit formula: dstRGB6 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
@@ -99,17 +99,31 @@ FORCEINLINE void ColorspaceConvert555XTo666X_AVX512(const v512u16 &srcColor, v51
 }
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555To8888Opaque_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555xTo8888Opaque_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi)
 {
 	const v512u16 srcAlphaBits16 = _mm512_set1_epi16(0xFF00);
-	ColorspaceConvert555To8888_AVX512<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
+	ColorspaceConvert555aTo8888_AVX512<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555To6665Opaque_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555xTo6665Opaque_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi)
 {
 	const v512u16 srcAlphaBits16 = _mm512_set1_epi16(0x1F00);
-	ColorspaceConvert555To6665_AVX512<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
+	ColorspaceConvert555aTo6665_AVX512<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
+}
+
+template <bool SWAP_RB>
+FORCEINLINE void ColorspaceConvert5551To8888_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi)
+{
+	const v512u16 srcAlphaBits16 = _mm512_and_si512( _mm512_cmpgt_epi16(srcColor, _mm512_set1_epi16(0xFFFF)), _mm512_set1_epi16(0xFF00) );
+	ColorspaceConvert555aTo8888_AVX512<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
+}
+
+template <bool SWAP_RB>
+FORCEINLINE void ColorspaceConvert5551To6665_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi)
+{
+	const v512u16 srcAlphaBits16 = _mm512_and_si512( _mm512_cmpgt_epi16(srcColor, _mm512_set1_epi16(0xFFFF)), _mm512_set1_epi16(0x1F00) );
+	ColorspaceConvert555aTo6665_AVX512<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
 template <bool SWAP_RB>
@@ -239,7 +253,7 @@ FORCEINLINE v512u16 ColorspaceConvert6665To5551_AVX512(const v512u32 &srcLo, con
 }
 
 template <bool SWAP_RB>
-FORCEINLINE v512u32 ColorspaceConvert888XTo8888Opaque_AVX512(const v512u32 &src)
+FORCEINLINE v512u32 ColorspaceConvert888xTo8888Opaque_AVX512(const v512u32 &src)
 {
 	if (SWAP_RB)
 	{
@@ -326,7 +340,7 @@ FORCEINLINE v512u32 ColorspaceApplyIntensity32_AVX512(const v512u32 &src, float 
 }
 
 template <bool SWAP_RB, bool IS_UNALIGNED>
-static size_t ColorspaceConvertBuffer555To8888Opaque_AVX512(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec512)
+static size_t ColorspaceConvertBuffer555xTo8888Opaque_AVX512(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec512)
 {
 	size_t i = 0;
 	
@@ -334,7 +348,7 @@ static size_t ColorspaceConvertBuffer555To8888Opaque_AVX512(const u16 *__restric
 	{
 		v512u16 src_vec512 = (IS_UNALIGNED) ? _mm512_loadu_si512((v512u16 *)(src+i)) : _mm512_load_si512((v512u16 *)(src+i));
 		v512u32 dstConvertedLo, dstConvertedHi;
-		ColorspaceConvert555To8888Opaque_AVX512<SWAP_RB>(src_vec512, dstConvertedLo, dstConvertedHi);
+		ColorspaceConvert555xTo8888Opaque_AVX512<SWAP_RB>(src_vec512, dstConvertedLo, dstConvertedHi);
 		
 		if (IS_UNALIGNED)
 		{
@@ -352,7 +366,7 @@ static size_t ColorspaceConvertBuffer555To8888Opaque_AVX512(const u16 *__restric
 }
 
 template <bool SWAP_RB, bool IS_UNALIGNED>
-size_t ColorspaceConvertBuffer555To6665Opaque_AVX512(const u16 *__restrict src, u32 *__restrict dst, size_t pixCountVec512)
+size_t ColorspaceConvertBuffer555xTo6665Opaque_AVX512(const u16 *__restrict src, u32 *__restrict dst, size_t pixCountVec512)
 {
 	size_t i = 0;
 	
@@ -360,7 +374,59 @@ size_t ColorspaceConvertBuffer555To6665Opaque_AVX512(const u16 *__restrict src, 
 	{
 		v512u16 src_vec512 = (IS_UNALIGNED) ? _mm512_loadu_si512((v512u16 *)(src+i)) : _mm512_load_si512((v512u16 *)(src+i));
 		v512u32 dstConvertedLo, dstConvertedHi;
-		ColorspaceConvert555To6665Opaque_AVX512<SWAP_RB>(src_vec512, dstConvertedLo, dstConvertedHi);
+		ColorspaceConvert555xTo6665Opaque_AVX512<SWAP_RB>(src_vec512, dstConvertedLo, dstConvertedHi);
+		
+		if (IS_UNALIGNED)
+		{
+			_mm512_storeu_si512((v512u32 *)(dst+i+(sizeof(v512u32)/sizeof(u32) * 0)), dstConvertedLo);
+			_mm512_storeu_si512((v512u32 *)(dst+i+(sizeof(v512u32)/sizeof(u32) * 1)), dstConvertedHi);
+		}
+		else
+		{
+			_mm512_store_si512((v512u32 *)(dst+i+(sizeof(v512u32)/sizeof(u32) * 0)), dstConvertedLo);
+			_mm512_store_si512((v512u32 *)(dst+i+(sizeof(v512u32)/sizeof(u32) * 1)), dstConvertedHi);
+		}
+	}
+	
+	return i;
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
+static size_t ColorspaceConvertBuffer5551To8888_AVX512(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec512)
+{
+	size_t i = 0;
+	
+	for (; i < pixCountVec512; i+=(sizeof(v512u16)/sizeof(u16)))
+	{
+		v512u16 src_vec512 = (IS_UNALIGNED) ? _mm512_loadu_si512((v512u16 *)(src+i)) : _mm512_load_si512((v512u16 *)(src+i));
+		v512u32 dstConvertedLo, dstConvertedHi;
+		ColorspaceConvert5551To8888_AVX512<SWAP_RB>(src_vec512, dstConvertedLo, dstConvertedHi);
+		
+		if (IS_UNALIGNED)
+		{
+			_mm512_storeu_si512((v512u32 *)(dst+i+(sizeof(v512u32)/sizeof(u32) * 0)), dstConvertedLo);
+			_mm512_storeu_si512((v512u32 *)(dst+i+(sizeof(v512u32)/sizeof(u32) * 1)), dstConvertedHi);
+		}
+		else
+		{
+			_mm512_store_si512((v512u32 *)(dst+i+(sizeof(v512u32)/sizeof(u32) * 0)), dstConvertedLo);
+			_mm512_store_si512((v512u32 *)(dst+i+(sizeof(v512u32)/sizeof(u32) * 1)), dstConvertedHi);
+		}
+	}
+	
+	return i;
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
+size_t ColorspaceConvertBuffer5551To6665_AVX512(const u16 *__restrict src, u32 *__restrict dst, size_t pixCountVec512)
+{
+	size_t i = 0;
+	
+	for (; i < pixCountVec512; i+=(sizeof(v512u16)/sizeof(u16)))
+	{
+		v512u16 src_vec512 = (IS_UNALIGNED) ? _mm512_loadu_si512((v512u16 *)(src+i)) : _mm512_load_si512((v512u16 *)(src+i));
+		v512u32 dstConvertedLo, dstConvertedHi;
+		ColorspaceConvert5551To6665_AVX512<SWAP_RB>(src_vec512, dstConvertedLo, dstConvertedHi);
 		
 		if (IS_UNALIGNED)
 		{
@@ -458,7 +524,7 @@ size_t ColorspaceConvertBuffer6665To5551_AVX512(const u32 *__restrict src, u16 *
 }
 
 template <bool SWAP_RB, bool IS_UNALIGNED>
-size_t ColorspaceConvertBuffer888XTo8888Opaque_AVX512(const u32 *src, u32 *dst, size_t pixCountVec512)
+size_t ColorspaceConvertBuffer888xTo8888Opaque_AVX512(const u32 *src, u32 *dst, size_t pixCountVec512)
 {
 	size_t i = 0;
 	
@@ -466,11 +532,11 @@ size_t ColorspaceConvertBuffer888XTo8888Opaque_AVX512(const u32 *src, u32 *dst, 
 	{
 		if (IS_UNALIGNED)
 		{
-			_mm512_storeu_si512( (v512u32 *)(dst+i), ColorspaceConvert888XTo8888Opaque_AVX512<SWAP_RB>(_mm512_loadu_si512((v512u32 *)(src+i))) );
+			_mm512_storeu_si512( (v512u32 *)(dst+i), ColorspaceConvert888xTo8888Opaque_AVX512<SWAP_RB>(_mm512_loadu_si512((v512u32 *)(src+i))) );
 		}
 		else
 		{
-			_mm512_store_si512( (v512u32 *)(dst+i), ColorspaceConvert888XTo8888Opaque_AVX512<SWAP_RB>(_mm512_load_si512((v512u32 *)(src+i))) );
+			_mm512_store_si512( (v512u32 *)(dst+i), ColorspaceConvert888xTo8888Opaque_AVX512<SWAP_RB>(_mm512_load_si512((v512u32 *)(src+i))) );
 		}
 	}
 	
@@ -478,7 +544,7 @@ size_t ColorspaceConvertBuffer888XTo8888Opaque_AVX512(const u32 *src, u32 *dst, 
 }
 
 template <bool SWAP_RB, bool IS_UNALIGNED>
-size_t ColorspaceConvertBuffer555XTo888_AVX512(const u16 *__restrict src, u8 *__restrict dst, size_t pixCountVec512)
+size_t ColorspaceConvertBuffer555xTo888_AVX512(const u16 *__restrict src, u8 *__restrict dst, size_t pixCountVec512)
 {
 	size_t i = 0;
 	v512u16 src_v512u16[2];
@@ -572,7 +638,7 @@ size_t ColorspaceConvertBuffer555XTo888_AVX512(const u16 *__restrict src, u8 *__
 }
 
 template <bool SWAP_RB, bool IS_UNALIGNED>
-size_t ColorspaceConvertBuffer888XTo888_AVX512(const u32 *__restrict src, u8 *__restrict dst, size_t pixCountVec512)
+size_t ColorspaceConvertBuffer888xTo888_AVX512(const u32 *__restrict src, u8 *__restrict dst, size_t pixCountVec512)
 {
 	size_t i = 0;
 	v512u32 src_v512u32[4];
@@ -858,51 +924,99 @@ size_t ColorspaceApplyIntensityToBuffer32_AVX512(u32 *dst, size_t pixCountVec512
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_AVX512::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer555xTo8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To8888Opaque_AVX512<false, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo8888Opaque_AVX512<false, false>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_AVX512::ConvertBuffer555To8888Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer555xTo8888Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To8888Opaque_AVX512<true, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo8888Opaque_AVX512<true, false>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_AVX512::ConvertBuffer555To8888Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer555xTo8888Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To8888Opaque_AVX512<false, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo8888Opaque_AVX512<false, true>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_AVX512::ConvertBuffer555To8888Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer555xTo8888Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To8888Opaque_AVX512<true, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo8888Opaque_AVX512<true, true>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_AVX512::ConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer555xTo6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To6665Opaque_AVX512<false, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo6665Opaque_AVX512<false, false>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_AVX512::ConvertBuffer555To6665Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer555xTo6665Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To6665Opaque_AVX512<true, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo6665Opaque_AVX512<true, false>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_AVX512::ConvertBuffer555To6665Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer555xTo6665Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To6665Opaque_AVX512<false, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo6665Opaque_AVX512<false, true>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_AVX512::ConvertBuffer555To6665Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer555xTo6665Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To6665Opaque_AVX512<true, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo6665Opaque_AVX512<true, true>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_AVX512::ConvertBuffer5551To8888(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To8888_AVX512<false, false>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_AVX512::ConvertBuffer5551To8888_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To8888_AVX512<true, false>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_AVX512::ConvertBuffer5551To8888_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To8888_AVX512<false, true>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_AVX512::ConvertBuffer5551To8888_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To8888_AVX512<true, true>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_AVX512::ConvertBuffer5551To6665(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To6665_AVX512<false, false>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_AVX512::ConvertBuffer5551To6665_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To6665_AVX512<true, false>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_AVX512::ConvertBuffer5551To6665_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To6665_AVX512<false, true>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_AVX512::ConvertBuffer5551To6665_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To6665_AVX512<true, true>(src, dst, pixCount);
 }
 
 size_t ColorspaceHandler_AVX512::ConvertBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount) const
@@ -985,64 +1099,64 @@ size_t ColorspaceHandler_AVX512::ConvertBuffer6665To5551_SwapRB_IsUnaligned(cons
 	return ColorspaceConvertBuffer6665To5551_AVX512<true, true>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_AVX512::ConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer888xTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo8888Opaque_AVX512<false, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo8888Opaque_AVX512<false, false>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_AVX512::ConvertBuffer888XTo8888Opaque_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer888xTo8888Opaque_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo8888Opaque_AVX512<true, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo8888Opaque_AVX512<true, false>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_AVX512::ConvertBuffer888XTo8888Opaque_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer888xTo8888Opaque_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo8888Opaque_AVX512<false, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo8888Opaque_AVX512<false, true>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_AVX512::ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer888xTo8888Opaque_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo8888Opaque_AVX512<true, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo8888Opaque_AVX512<true, true>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_AVX512::ConvertBuffer555XTo888(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer555xTo888(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555XTo888_AVX512<false, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo888_AVX512<false, false>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_AVX512::ConvertBuffer555XTo888_SwapRB(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer555xTo888_SwapRB(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555XTo888_AVX512<true, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo888_AVX512<true, false>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_AVX512::ConvertBuffer555XTo888_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer555xTo888_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555XTo888_AVX512<false, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo888_AVX512<false, true>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_AVX512::ConvertBuffer555XTo888_SwapRB_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer555xTo888_SwapRB_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555XTo888_AVX512<true, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo888_AVX512<true, true>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_AVX512::ConvertBuffer888XTo888(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer888xTo888(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo888_AVX512<false, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo888_AVX512<false, false>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_AVX512::ConvertBuffer888XTo888_SwapRB(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer888xTo888_SwapRB(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo888_AVX512<true, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo888_AVX512<true, false>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_AVX512::ConvertBuffer888XTo888_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer888xTo888_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo888_AVX512<false, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo888_AVX512<false, true>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_AVX512::ConvertBuffer888XTo888_SwapRB_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_AVX512::ConvertBuffer888xTo888_SwapRB_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo888_AVX512<true, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo888_AVX512<true, true>(src, dst, pixCount);
 }
 
 size_t ColorspaceHandler_AVX512::CopyBuffer16_SwapRB(const u16 *src, u16 *dst, size_t pixCount) const
@@ -1105,23 +1219,29 @@ size_t ColorspaceHandler_AVX512::ApplyIntensityToBuffer32_SwapRB_IsUnaligned(u32
 	return ColorspaceApplyIntensityToBuffer32_AVX512<true, true>(dst, pixCount, intensity);
 }
 
-template void ColorspaceConvert555To8888_AVX512<true>(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi);
-template void ColorspaceConvert555To8888_AVX512<false>(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert555aTo8888_AVX512<true>(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert555aTo8888_AVX512<false>(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi);
 
-template void ColorspaceConvert555XTo888X_AVX512<true>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
-template void ColorspaceConvert555XTo888X_AVX512<false>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert555xTo888x_AVX512<true>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert555xTo888x_AVX512<false>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
 
-template void ColorspaceConvert555To6665_AVX512<true>(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi);
-template void ColorspaceConvert555To6665_AVX512<false>(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert555aTo6665_AVX512<true>(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert555aTo6665_AVX512<false>(const v512u16 &srcColor, const v512u16 &srcAlphaBits, v512u32 &dstLo, v512u32 &dstHi);
 
-template void ColorspaceConvert555XTo666X_AVX512<true>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
-template void ColorspaceConvert555XTo666X_AVX512<false>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert555xTo666x_AVX512<true>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert555xTo666x_AVX512<false>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
 
-template void ColorspaceConvert555To8888Opaque_AVX512<true>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
-template void ColorspaceConvert555To8888Opaque_AVX512<false>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert555xTo8888Opaque_AVX512<true>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert555xTo8888Opaque_AVX512<false>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
 
-template void ColorspaceConvert555To6665Opaque_AVX512<true>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
-template void ColorspaceConvert555To6665Opaque_AVX512<false>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert555xTo6665Opaque_AVX512<true>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert555xTo6665Opaque_AVX512<false>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+
+template void ColorspaceConvert5551To8888_AVX512<true>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert5551To8888_AVX512<false>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+
+template void ColorspaceConvert5551To6665_AVX512<true>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
+template void ColorspaceConvert5551To6665_AVX512<false>(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi);
 
 template v512u32 ColorspaceConvert8888To6665_AVX512<true>(const v512u32 &src);
 template v512u32 ColorspaceConvert8888To6665_AVX512<false>(const v512u32 &src);
@@ -1135,8 +1255,8 @@ template v512u16 ColorspaceConvert8888To5551_AVX512<false>(const v512u32 &srcLo,
 template v512u16 ColorspaceConvert6665To5551_AVX512<true>(const v512u32 &srcLo, const v512u32 &srcHi);
 template v512u16 ColorspaceConvert6665To5551_AVX512<false>(const v512u32 &srcLo, const v512u32 &srcHi);
 
-template v512u32 ColorspaceConvert888XTo8888Opaque_AVX512<true>(const v512u32 &src);
-template v512u32 ColorspaceConvert888XTo8888Opaque_AVX512<false>(const v512u32 &src);
+template v512u32 ColorspaceConvert888xTo8888Opaque_AVX512<true>(const v512u32 &src);
+template v512u32 ColorspaceConvert888xTo8888Opaque_AVX512<false>(const v512u32 &src);
 
 template v512u16 ColorspaceCopy16_AVX512<true>(const v512u16 &src);
 template v512u16 ColorspaceCopy16_AVX512<false>(const v512u16 &src);

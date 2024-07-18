@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -139,7 +139,7 @@
 	}
 	
 	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
-	ColorspaceConvertBuffer888XTo8888Opaque<false, true>((const uint32_t *)[self runFilter], bitmapData, w * h);
+	ColorspaceConvertBuffer888xTo8888Opaque<false, true>((const uint32_t *)[self runFilter], bitmapData, w * h);
 	
 #ifdef MSB_FIRST
 	for (size_t i = 0; i < w * h; i++)

@@ -3441,7 +3441,7 @@ void ScreenshotToClipboard(bool extraInfo)
 	else
 	{
 		u32* swapbuf = (u32*)malloc_alignedPage(width*height * 4);
-		ColorspaceConvertBuffer888XTo8888Opaque<true, false>((const u32*)dispInfo.masterCustomBuffer, swapbuf, width * height);
+		ColorspaceConvertBuffer888xTo8888Opaque<true, false>((const u32*)dispInfo.masterCustomBuffer, swapbuf, width * height);
 
 		SetDIBitsToDevice(hMemDC, 0, 0, width, height, 0, 0, 0, height, swapbuf, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
 

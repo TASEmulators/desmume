@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2022 DeSmuME team
+	Copyright (C) 2014-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,15 +18,17 @@
 #ifndef _OGLDISPLAYOUTPUT_H_
 #define _OGLDISPLAYOUTPUT_H_
 
-#ifndef _OGLDISPLAYOUTPUT_3_2_H_
-
 #if defined(__APPLE__)
-	#include <OpenGL/gl.h>
-	#include <OpenGL/glext.h>
+	#ifdef _OGLDISPLAYOUTPUT_3_2_H_
+		#include <OpenGL/gl3.h>
+		#include <OpenGL/gl3ext.h>
+	#else
+		#include <OpenGL/gl.h>
+		#include <OpenGL/glext.h>
+	#endif
+	
 	#include <OpenGL/OpenGL.h>
 #endif
-
-#endif // _OGLDISPLAYOUTPUT_3_2_H_
 
 #include <set>
 #include <string>
@@ -47,7 +49,7 @@ enum ShaderSupportTier
 	ShaderSupport_MidTier		= 3,
 	ShaderSupport_HighTier		= 4,
 	ShaderSupport_TopTier		= 5,
-	ShaderSupport_FutureTier	= 6,
+	ShaderSupport_FutureTier	= 6
 };
 
 struct OGLProcessedFrameInfo

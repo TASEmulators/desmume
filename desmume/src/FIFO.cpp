@@ -1,7 +1,7 @@
 /*
 	Copyright 2006 yopyop
 	Copyright 2007 shash
-	Copyright 2007-2023 DeSmuME team
+	Copyright 2007-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -489,11 +489,11 @@ void DISP_FIFOrecv_LineOpaque(u32 *__restrict dst)
 		}
 		else if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvertBuffer555To6665Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+			ColorspaceConvertBuffer555xTo6665Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 		}
 		else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 		{
-			ColorspaceConvertBuffer555To8888Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+			ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>((u16 *)(disp_fifo.buf + disp_fifo.head), dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 		}
 		
 		_DISP_FIFOrecv_LineAdvance();

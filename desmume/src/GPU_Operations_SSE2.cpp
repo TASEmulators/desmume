@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2021-2023 DeSmuME team
+	Copyright (C) 2021-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -922,13 +922,13 @@ FORCEINLINE void PixelOperation_SSE2::_copy16(GPUEngineCompositorInfo &compInfo,
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555To6665Opaque_SSE2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555To6665Opaque_SSE2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo6665Opaque_SSE2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo6665Opaque_SSE2<false>(src1, src32[2], src32[3]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_SSE2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555To8888Opaque_SSE2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo8888Opaque_SSE2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo8888Opaque_SSE2<false>(src1, src32[2], src32[3]);
 		}
 		
 		_mm_store_si128( (v128u32 *)compInfo.target.lineColor32 + 0, src32[0] );
@@ -999,13 +999,13 @@ FORCEINLINE void PixelOperation_SSE2::_copyMask16(GPUEngineCompositorInfo &compI
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555To6665Opaque_SSE2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555To6665Opaque_SSE2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo6665Opaque_SSE2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo6665Opaque_SSE2<false>(src1, src32[2], src32[3]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_SSE2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555To8888Opaque_SSE2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo8888Opaque_SSE2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo8888Opaque_SSE2<false>(src1, src32[2], src32[3]);
 		}
 		
 		const v128u32 dst32[4] = {
@@ -1104,13 +1104,13 @@ FORCEINLINE void PixelOperation_SSE2::_brightnessUp16(GPUEngineCompositorInfo &c
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555XTo666X_SSE2<false>(src0, dst[0], dst[1]);
-			ColorspaceConvert555XTo666X_SSE2<false>(src1, dst[2], dst[3]);
+			ColorspaceConvert555xTo666x_SSE2<false>(src0, dst[0], dst[1]);
+			ColorspaceConvert555xTo666x_SSE2<false>(src1, dst[2], dst[3]);
 		}
 		else
 		{
-			ColorspaceConvert555XTo888X_SSE2<false>(src0, dst[0], dst[1]);
-			ColorspaceConvert555XTo888X_SSE2<false>(src1, dst[2], dst[3]);
+			ColorspaceConvert555xTo888x_SSE2<false>(src0, dst[0], dst[1]);
+			ColorspaceConvert555xTo888x_SSE2<false>(src1, dst[2], dst[3]);
 		}
 		
 		const v128u32 alphaBits = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? _mm_set1_epi32(0x1F000000) : _mm_set1_epi32(0xFF000000);
@@ -1182,13 +1182,13 @@ FORCEINLINE void PixelOperation_SSE2::_brightnessUpMask16(GPUEngineCompositorInf
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555XTo666X_SSE2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555XTo666X_SSE2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo666x_SSE2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo666x_SSE2<false>(src1, src32[2], src32[3]);
 		}
 		else
 		{
-			ColorspaceConvert555XTo888X_SSE2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555XTo888X_SSE2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo888x_SSE2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo888x_SSE2<false>(src1, src32[2], src32[3]);
 		}
 		
 		const v128u32 dst32[4] = {
@@ -1275,13 +1275,13 @@ FORCEINLINE void PixelOperation_SSE2::_brightnessDown16(GPUEngineCompositorInfo 
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555XTo666X_SSE2<false>(src0, dst[0], dst[1]);
-			ColorspaceConvert555XTo666X_SSE2<false>(src1, dst[2], dst[3]);
+			ColorspaceConvert555xTo666x_SSE2<false>(src0, dst[0], dst[1]);
+			ColorspaceConvert555xTo666x_SSE2<false>(src1, dst[2], dst[3]);
 		}
 		else
 		{
-			ColorspaceConvert555XTo888X_SSE2<false>(src0, dst[0], dst[1]);
-			ColorspaceConvert555XTo888X_SSE2<false>(src1, dst[2], dst[3]);
+			ColorspaceConvert555xTo888x_SSE2<false>(src0, dst[0], dst[1]);
+			ColorspaceConvert555xTo888x_SSE2<false>(src1, dst[2], dst[3]);
 		}
 		
 		const v128u32 alphaBits = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? _mm_set1_epi32(0x1F000000) : _mm_set1_epi32(0xFF000000);
@@ -1353,13 +1353,13 @@ FORCEINLINE void PixelOperation_SSE2::_brightnessDownMask16(GPUEngineCompositorI
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555XTo666X_SSE2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555XTo666X_SSE2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo666x_SSE2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo666x_SSE2<false>(src1, src32[2], src32[3]);
 		}
 		else
 		{
-			ColorspaceConvert555XTo888X_SSE2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555XTo888X_SSE2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo888x_SSE2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo888x_SSE2<false>(src1, src32[2], src32[3]);
 		}
 		
 		const v128u32 dst32[4] = {
@@ -1494,13 +1494,13 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask16(GPUEngineCompositorIn
 	}
 	else if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 	{
-		ColorspaceConvert555XTo666X_SSE2<false>(src0, tmpSrc[0], tmpSrc[1]);
-		ColorspaceConvert555XTo666X_SSE2<false>(src1, tmpSrc[2], tmpSrc[3]);
+		ColorspaceConvert555xTo666x_SSE2<false>(src0, tmpSrc[0], tmpSrc[1]);
+		ColorspaceConvert555xTo666x_SSE2<false>(src1, tmpSrc[2], tmpSrc[3]);
 	}
 	else
 	{
-		ColorspaceConvert555XTo888X_SSE2<false>(src0, tmpSrc[0], tmpSrc[1]);
-		ColorspaceConvert555XTo888X_SSE2<false>(src1, tmpSrc[2], tmpSrc[3]);
+		ColorspaceConvert555xTo888x_SSE2<false>(src0, tmpSrc[0], tmpSrc[1]);
+		ColorspaceConvert555xTo888x_SSE2<false>(src1, tmpSrc[2], tmpSrc[3]);
 	}
 	
 	switch (compInfo.renderState.colorEffect)

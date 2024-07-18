@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2022 DeSmuME team
+	Copyright (C) 2011-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -674,7 +674,7 @@ void RomIconToRGBA8888(uint32_t *bitmapData)
 	// The first entry always represents the alpha, so just set it to 0.
 	const uint16_t *clut4 = (uint16_t *)ndsRomBanner.palette;
 	CACHE_ALIGN uint32_t clut32[16];
-	ColorspaceConvertBuffer555To8888Opaque<false, true, BESwapNone>(clut4, clut32, 16);
+	ColorspaceConvertBuffer555xTo8888Opaque<false, true, BESwapNone>(clut4, clut32, 16);
 	clut32[0] = 0x00000000;
 	
 	// Load the image from the icon pixel data.

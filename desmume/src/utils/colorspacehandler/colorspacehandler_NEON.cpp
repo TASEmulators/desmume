@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2022 DeSmuME team
+	Copyright (C) 2016-2024 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 #define COLOR32_SWAPRB_NEON(src) vreinterpretq_u32_u8( vqtbl1q_u8(vreinterpretq_u8_u32(src), ((v128u8){2,1,0,3,  6,5,4,7,  10,9,8,11,  14,13,12,15})) )
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555To8888_NEON(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555aTo8888_NEON(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi)
 {
 	// Conversion algorithm:
 	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB5 << 3) | ((srcRGB5 >> 2) & 0x07)
@@ -60,7 +60,7 @@ FORCEINLINE void ColorspaceConvert555To8888_NEON(const v128u16 &srcColor, const 
 }
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555XTo888X_NEON(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555xTo888x_NEON(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
 	// Conversion algorithm:
 	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB5 << 3) | ((srcRGB5 >> 2) & 0x07)
@@ -90,7 +90,7 @@ FORCEINLINE void ColorspaceConvert555XTo888X_NEON(const v128u16 &srcColor, v128u
 }
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555To6665_NEON(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555aTo6665_NEON(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi)
 {
 	// Conversion algorithm:
 	//    RGB   5-bit to 6-bit formula: dstRGB6 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
@@ -122,7 +122,7 @@ FORCEINLINE void ColorspaceConvert555To6665_NEON(const v128u16 &srcColor, const 
 }
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555XTo666X_NEON(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555xTo666x_NEON(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
 	// Conversion algorithm:
 	//    RGB   5-bit to 6-bit formula: dstRGB6 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
@@ -152,17 +152,31 @@ FORCEINLINE void ColorspaceConvert555XTo666X_NEON(const v128u16 &srcColor, v128u
 }
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555To8888Opaque_NEON(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555xTo8888Opaque_NEON(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
 	const v128u16 srcAlphaBits16 = vdupq_n_u16(0xFF00);
-	ColorspaceConvert555To8888_NEON<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
+	ColorspaceConvert555aTo8888_NEON<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555To6665Opaque_NEON(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555xTo6665Opaque_NEON(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
 	const v128u16 srcAlphaBits16 = vdupq_n_u16(0x1F00);
-	ColorspaceConvert555To6665_NEON<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
+	ColorspaceConvert555aTo6665_NEON<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
+}
+
+template <bool SWAP_RB>
+FORCEINLINE void ColorspaceConvert5551To8888_NEON(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
+{
+	const v128s16 srcAlphaBits16 = vandq_s16( vcgtq_s16(vreinterpretq_u16_s16(srcColor), vdupq_n_s16(0xFFFF)), vdupq_n_s16(0xFF00) );
+	ColorspaceConvert555aTo8888_NEON<SWAP_RB>(srcColor, vreinterpretq_s16_u16(srcAlphaBits16), dstLo, dstHi);
+}
+
+template <bool SWAP_RB>
+FORCEINLINE void ColorspaceConvert5551To6665_NEON(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
+{
+	const v128s16 srcAlphaBits16 = vandq_s16( vcgtq_s16(vreinterpretq_u16_s16(srcColor), vdupq_n_s16(0xFFFF)), vdupq_n_s16(0x1F00) );
+	ColorspaceConvert555aTo6665_NEON<SWAP_RB>(srcColor, vreinterpretq_s16_u16(srcAlphaBits16), dstLo, dstHi);
 }
 
 template <bool SWAP_RB>
@@ -290,7 +304,7 @@ FORCEINLINE v128u16 ColorspaceConvert6665To5551_NEON(const v128u32 &srcLo, const
 }
 
 template <bool SWAP_RB>
-FORCEINLINE v128u32 ColorspaceConvert888XTo8888Opaque_NEON(const v128u32 &src)
+FORCEINLINE v128u32 ColorspaceConvert888xTo8888Opaque_NEON(const v128u32 &src)
 {
 	if (SWAP_RB)
 	{
@@ -377,7 +391,7 @@ FORCEINLINE v128u32 ColorspaceApplyIntensity32_NEON(const v128u32 &src, float in
 }
 
 template <bool SWAP_RB, bool IS_UNALIGNED>
-static size_t ColorspaceConvertBuffer555To8888Opaque_NEON(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec128)
+static size_t ColorspaceConvertBuffer555xTo8888Opaque_NEON(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec128)
 {
 	size_t i = 0;
 	v128u16 srcVec;
@@ -386,7 +400,7 @@ static size_t ColorspaceConvertBuffer555To8888Opaque_NEON(const u16 *__restrict 
 	for (; i < pixCountVec128; i+=(sizeof(v128u16)/sizeof(u16)))
 	{
 		srcVec = vld1q_u16(src+i);
-		ColorspaceConvert555To8888Opaque_NEON<SWAP_RB>(srcVec, dstVec.val[0], dstVec.val[1]);
+		ColorspaceConvert555xTo8888Opaque_NEON<SWAP_RB>(srcVec, dstVec.val[0], dstVec.val[1]);
 		vst1q_u32_x2(dst+i, dstVec);
 	}
 	
@@ -394,7 +408,7 @@ static size_t ColorspaceConvertBuffer555To8888Opaque_NEON(const u16 *__restrict 
 }
 
 template <bool SWAP_RB, bool IS_UNALIGNED>
-size_t ColorspaceConvertBuffer555To6665Opaque_NEON(const u16 *__restrict src, u32 *__restrict dst, size_t pixCountVec128)
+size_t ColorspaceConvertBuffer555xTo6665Opaque_NEON(const u16 *__restrict src, u32 *__restrict dst, size_t pixCountVec128)
 {
 	size_t i = 0;
 	v128u16 srcVec;
@@ -403,7 +417,41 @@ size_t ColorspaceConvertBuffer555To6665Opaque_NEON(const u16 *__restrict src, u3
 	for (; i < pixCountVec128; i+=(sizeof(v128u16)/sizeof(u16)))
 	{
 		srcVec = vld1q_u16(src+i);
-		ColorspaceConvert555To6665Opaque_NEON<SWAP_RB>(srcVec, dstVec.val[0], dstVec.val[1]);
+		ColorspaceConvert555xTo6665Opaque_NEON<SWAP_RB>(srcVec, dstVec.val[0], dstVec.val[1]);
+		vst1q_u32_x2(dst+i, dstVec);
+	}
+	
+	return i;
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
+static size_t ColorspaceConvertBuffer5551To8888_NEON(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec128)
+{
+	size_t i = 0;
+	v128u16 srcVec;
+	uint32x4x2_t dstVec;
+	
+	for (; i < pixCountVec128; i+=(sizeof(v128u16)/sizeof(u16)))
+	{
+		srcVec = vld1q_u16(src+i);
+		ColorspaceConvert5551To8888_NEON<SWAP_RB>(srcVec, dstVec.val[0], dstVec.val[1]);
+		vst1q_u32_x2(dst+i, dstVec);
+	}
+	
+	return i;
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
+size_t ColorspaceConvertBuffer5551To6665_NEON(const u16 *__restrict src, u32 *__restrict dst, size_t pixCountVec128)
+{
+	size_t i = 0;
+	v128u16 srcVec;
+	uint32x4x2_t dstVec;
+	
+	for (; i < pixCountVec128; i+=(sizeof(v128u16)/sizeof(u16)))
+	{
+		srcVec = vld1q_u16(src+i);
+		ColorspaceConvert5551To6665_NEON<SWAP_RB>(srcVec, dstVec.val[0], dstVec.val[1]);
 		vst1q_u32_x2(dst+i, dstVec);
 	}
 	
@@ -467,7 +515,7 @@ size_t ColorspaceConvertBuffer6665To5551_NEON(const u32 *__restrict src, u16 *__
 }
 
 template <bool SWAP_RB, bool IS_UNALIGNED>
-size_t ColorspaceConvertBuffer888XTo8888Opaque_NEON(const u32 *src, u32 *dst, size_t pixCountVec128)
+size_t ColorspaceConvertBuffer888xTo8888Opaque_NEON(const u32 *src, u32 *dst, size_t pixCountVec128)
 {
 	size_t i = 0;
 	uint8x16x4_t srcVec_x4;
@@ -491,7 +539,7 @@ size_t ColorspaceConvertBuffer888XTo8888Opaque_NEON(const u32 *src, u32 *dst, si
 }
 
 template <bool SWAP_RB, bool IS_UNALIGNED>
-size_t ColorspaceConvertBuffer555XTo888_NEON(const u16 *__restrict src, u8 *__restrict dst, size_t pixCountVec128)
+size_t ColorspaceConvertBuffer555xTo888_NEON(const u16 *__restrict src, u8 *__restrict dst, size_t pixCountVec128)
 {
 	size_t i = 0;
 	uint16x8x2_t srcVec;
@@ -529,7 +577,7 @@ size_t ColorspaceConvertBuffer555XTo888_NEON(const u16 *__restrict src, u8 *__re
 }
 
 template <bool SWAP_RB, bool IS_UNALIGNED>
-size_t ColorspaceConvertBuffer888XTo888_NEON(const u32 *__restrict src, u8 *__restrict dst, size_t pixCountVec128)
+size_t ColorspaceConvertBuffer888xTo888_NEON(const u32 *__restrict src, u8 *__restrict dst, size_t pixCountVec128)
 {
 	size_t i = 0;
 	uint8x16x4_t srcVec_x4;
@@ -723,51 +771,99 @@ size_t ColorspaceApplyIntensityToBuffer32_NEON(u32 *dst, size_t pixCountVec128, 
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_NEON::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer555xTo8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To8888Opaque_NEON<false, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo8888Opaque_NEON<false, false>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_NEON::ConvertBuffer555To8888Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer555xTo8888Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To8888Opaque_NEON<true, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo8888Opaque_NEON<true, false>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_NEON::ConvertBuffer555To8888Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer555xTo8888Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To8888Opaque_NEON<false, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo8888Opaque_NEON<false, true>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_NEON::ConvertBuffer555To8888Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer555xTo8888Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To8888Opaque_NEON<true, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo8888Opaque_NEON<true, true>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_NEON::ConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer555xTo6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To6665Opaque_NEON<false, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo6665Opaque_NEON<false, false>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_NEON::ConvertBuffer555To6665Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer555xTo6665Opaque_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To6665Opaque_NEON<true, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo6665Opaque_NEON<true, false>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_NEON::ConvertBuffer555To6665Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer555xTo6665Opaque_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To6665Opaque_NEON<false, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo6665Opaque_NEON<false, true>(src, dst, pixCount);
 }
 
 template <BESwapFlags BE_BYTESWAP>
-size_t ColorspaceHandler_NEON::ConvertBuffer555To6665Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer555xTo6665Opaque_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555To6665Opaque_NEON<true, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo6665Opaque_NEON<true, true>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_NEON::ConvertBuffer5551To8888(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To8888_NEON<false, false>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_NEON::ConvertBuffer5551To8888_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To8888_NEON<true, false>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_NEON::ConvertBuffer5551To8888_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To8888_NEON<false, true>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_NEON::ConvertBuffer5551To8888_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To8888_NEON<true, true>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_NEON::ConvertBuffer5551To6665(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To6665_NEON<false, false>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_NEON::ConvertBuffer5551To6665_SwapRB(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To6665_NEON<true, false>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_NEON::ConvertBuffer5551To6665_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To6665_NEON<false, true>(src, dst, pixCount);
+}
+
+template <BESwapFlags BE_BYTESWAP>
+size_t ColorspaceHandler_NEON::ConvertBuffer5551To6665_SwapRB_IsUnaligned(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer5551To6665_NEON<true, true>(src, dst, pixCount);
 }
 
 size_t ColorspaceHandler_NEON::ConvertBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount) const
@@ -850,64 +946,64 @@ size_t ColorspaceHandler_NEON::ConvertBuffer6665To5551_SwapRB_IsUnaligned(const 
 	return ColorspaceConvertBuffer6665To5551_NEON<true, true>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_NEON::ConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer888xTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo8888Opaque_NEON<false, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo8888Opaque_NEON<false, false>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_NEON::ConvertBuffer888XTo8888Opaque_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer888xTo8888Opaque_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo8888Opaque_NEON<true, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo8888Opaque_NEON<true, false>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_NEON::ConvertBuffer888XTo8888Opaque_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer888xTo8888Opaque_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo8888Opaque_NEON<false, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo8888Opaque_NEON<false, true>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_NEON::ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer888xTo8888Opaque_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo8888Opaque_NEON<true, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo8888Opaque_NEON<true, true>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_NEON::ConvertBuffer555XTo888(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer555xTo888(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555XTo888_NEON<false, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo888_NEON<false, false>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_NEON::ConvertBuffer555XTo888_SwapRB(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer555xTo888_SwapRB(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555XTo888_NEON<true, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo888_NEON<true, false>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_NEON::ConvertBuffer555XTo888_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer555xTo888_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555XTo888_NEON<false, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo888_NEON<false, true>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_NEON::ConvertBuffer555XTo888_SwapRB_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer555xTo888_SwapRB_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer555XTo888_NEON<true, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer555xTo888_NEON<true, true>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_NEON::ConvertBuffer888XTo888(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer888xTo888(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo888_NEON<false, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo888_NEON<false, false>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_NEON::ConvertBuffer888XTo888_SwapRB(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer888xTo888_SwapRB(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo888_NEON<true, false>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo888_NEON<true, false>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_NEON::ConvertBuffer888XTo888_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer888xTo888_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo888_NEON<false, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo888_NEON<false, true>(src, dst, pixCount);
 }
 
-size_t ColorspaceHandler_NEON::ConvertBuffer888XTo888_SwapRB_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+size_t ColorspaceHandler_NEON::ConvertBuffer888xTo888_SwapRB_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
 {
-	return ColorspaceConvertBuffer888XTo888_NEON<true, true>(src, dst, pixCount);
+	return ColorspaceConvertBuffer888xTo888_NEON<true, true>(src, dst, pixCount);
 }
 
 size_t ColorspaceHandler_NEON::CopyBuffer16_SwapRB(const u16 *src, u16 *dst, size_t pixCount) const
@@ -970,23 +1066,29 @@ size_t ColorspaceHandler_NEON::ApplyIntensityToBuffer32_SwapRB_IsUnaligned(u32 *
 	return ColorspaceApplyIntensityToBuffer32_NEON<true, true>(dst, pixCount, intensity);
 }
 
-template void ColorspaceConvert555To8888_NEON<true>(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi);
-template void ColorspaceConvert555To8888_NEON<false>(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert555aTo8888_NEON<true>(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert555aTo8888_NEON<false>(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi);
 
-template void ColorspaceConvert555XTo888X_NEON<true>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
-template void ColorspaceConvert555XTo888X_NEON<false>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert555xTo888x_NEON<true>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert555xTo888x_NEON<false>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
 
-template void ColorspaceConvert555To6665_NEON<true>(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi);
-template void ColorspaceConvert555To6665_NEON<false>(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert555aTo6665_NEON<true>(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert555aTo6665_NEON<false>(const v128u16 &srcColor, const v128u16 &srcAlphaBits, v128u32 &dstLo, v128u32 &dstHi);
 
-template void ColorspaceConvert555XTo666X_NEON<true>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
-template void ColorspaceConvert555XTo666X_NEON<false>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert555xTo666x_NEON<true>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert555xTo666x_NEON<false>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
 
-template void ColorspaceConvert555To8888Opaque_NEON<true>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
-template void ColorspaceConvert555To8888Opaque_NEON<false>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert555xTo8888Opaque_NEON<true>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert555xTo8888Opaque_NEON<false>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
 
-template void ColorspaceConvert555To6665Opaque_NEON<true>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
-template void ColorspaceConvert555To6665Opaque_NEON<false>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert555xTo6665Opaque_NEON<true>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert555xTo6665Opaque_NEON<false>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
+
+template void ColorspaceConvert5551To8888_NEON<true>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert5551To8888_NEON<false>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
+
+template void ColorspaceConvert5551To6665_NEON<true>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
+template void ColorspaceConvert5551To6665_NEON<false>(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi);
 
 template v128u32 ColorspaceConvert8888To6665_NEON<true>(const v128u32 &src);
 template v128u32 ColorspaceConvert8888To6665_NEON<false>(const v128u32 &src);
@@ -1000,8 +1102,8 @@ template v128u16 ColorspaceConvert8888To5551_NEON<false>(const v128u32 &srcLo, c
 template v128u16 ColorspaceConvert6665To5551_NEON<true>(const v128u32 &srcLo, const v128u32 &srcHi);
 template v128u16 ColorspaceConvert6665To5551_NEON<false>(const v128u32 &srcLo, const v128u32 &srcHi);
 
-template v128u32 ColorspaceConvert888XTo8888Opaque_NEON<true>(const v128u32 &src);
-template v128u32 ColorspaceConvert888XTo8888Opaque_NEON<false>(const v128u32 &src);
+template v128u32 ColorspaceConvert888xTo8888Opaque_NEON<true>(const v128u32 &src);
+template v128u32 ColorspaceConvert888xTo8888Opaque_NEON<false>(const v128u32 &src);
 
 template v128u16 ColorspaceCopy16_NEON<true>(const v128u16 &src);
 template v128u16 ColorspaceCopy16_NEON<false>(const v128u16 &src);

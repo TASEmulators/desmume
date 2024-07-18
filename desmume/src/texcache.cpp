@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2023 DeSmuME team
+	Copyright (C) 2008-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -867,13 +867,13 @@ void __NDSTextureUnpackI2_AVX2(const size_t texelCount, const u8 *__restrict src
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665Opaque_AVX2<false>(palColor0, convertedColor[0], convertedColor[1]);
-			ColorspaceConvert555To6665Opaque_AVX2<false>(palColor1, convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555xTo6665Opaque_AVX2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555xTo6665Opaque_AVX2<false>(palColor1, convertedColor[2], convertedColor[3]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_AVX2<false>(palColor0, convertedColor[0], convertedColor[1]);
-			ColorspaceConvert555To8888Opaque_AVX2<false>(palColor1, convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555xTo8888Opaque_AVX2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555xTo8888Opaque_AVX2<false>(palColor1, convertedColor[2], convertedColor[3]);
 		}
 		
 		// Set converted colors to 0 if the palette index is 0.
@@ -923,13 +923,13 @@ void __NDSTextureUnpackI2_SSSE3(const size_t texelCount, const u8 *__restrict sr
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-			ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555xTo6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555xTo6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-			ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555xTo8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555xTo8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
 		}
 		
 		// Set converted colors to 0 if the palette index is 0.
@@ -977,13 +977,13 @@ void __NDSTextureUnpackI2_NEON(const size_t texelCount, const u8 *__restrict src
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665Opaque_NEON<false>(palColor0, convertedColor.val[0], convertedColor.val[1]);
-			ColorspaceConvert555To6665Opaque_NEON<false>(palColor1, convertedColor.val[2], convertedColor.val[3]);
+			ColorspaceConvert555xTo6665Opaque_NEON<false>(palColor0, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555xTo6665Opaque_NEON<false>(palColor1, convertedColor.val[2], convertedColor.val[3]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_NEON<false>(palColor0, convertedColor.val[0], convertedColor.val[1]);
-			ColorspaceConvert555To8888Opaque_NEON<false>(palColor1, convertedColor.val[2], convertedColor.val[3]);
+			ColorspaceConvert555xTo8888Opaque_NEON<false>(palColor0, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555xTo8888Opaque_NEON<false>(palColor1, convertedColor.val[2], convertedColor.val[3]);
 		}
 		
 		// Set converted colors to 0 if the palette index is 0.
@@ -1028,13 +1028,13 @@ void __NDSTextureUnpackI2_AltiVec(const size_t texelCount, const u8 *__restrict 
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665Opaque_AltiVec<false, BESwapDst>(palColor0, convertedColor[1], convertedColor[0]);
-			ColorspaceConvert555To6665Opaque_AltiVec<false, BESwapDst>(palColor1, convertedColor[3], convertedColor[2]);
+			ColorspaceConvert555xTo6665Opaque_AltiVec<false, BESwapDst>(palColor0, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555xTo6665Opaque_AltiVec<false, BESwapDst>(palColor1, convertedColor[3], convertedColor[2]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_AltiVec<false, BESwapDst>(palColor0, convertedColor[1], convertedColor[0]);
-			ColorspaceConvert555To8888Opaque_AltiVec<false, BESwapDst>(palColor1, convertedColor[3], convertedColor[2]);
+			ColorspaceConvert555xTo8888Opaque_AltiVec<false, BESwapDst>(palColor0, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555xTo8888Opaque_AltiVec<false, BESwapDst>(palColor1, convertedColor[3], convertedColor[2]);
 		}
 		
 		// Set converted colors to 0 if the palette index is 0.
@@ -1146,13 +1146,13 @@ void __NDSTextureUnpackI4_AVX2(const size_t texelCount, const u8 *__restrict src
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665Opaque_AVX2<false>(palColor0, convertedColor[0], convertedColor[1]);
-			ColorspaceConvert555To6665Opaque_AVX2<false>(palColor1, convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555xTo6665Opaque_AVX2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555xTo6665Opaque_AVX2<false>(palColor1, convertedColor[2], convertedColor[3]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_AVX2<false>(palColor0, convertedColor[0], convertedColor[1]);
-			ColorspaceConvert555To8888Opaque_AVX2<false>(palColor1, convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555xTo8888Opaque_AVX2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555xTo8888Opaque_AVX2<false>(palColor1, convertedColor[2], convertedColor[3]);
 		}
 		
 		// Set converted colors to 0 if the palette index is 0.
@@ -1208,13 +1208,13 @@ void __NDSTextureUnpackI4_SSSE3(const size_t texelCount, const u8 *__restrict sr
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-			ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555xTo6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555xTo6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-			ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555xTo8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555xTo8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
 		}
 		
 		// Set converted colors to 0 if the palette index is 0.
@@ -1261,13 +1261,13 @@ void __NDSTextureUnpackI4_NEON(const size_t texelCount, const u8 *__restrict src
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665Opaque_NEON<false>(palColor0, convertedColor.val[0], convertedColor.val[1]);
-			ColorspaceConvert555To6665Opaque_NEON<false>(palColor1, convertedColor.val[2], convertedColor.val[3]);
+			ColorspaceConvert555xTo6665Opaque_NEON<false>(palColor0, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555xTo6665Opaque_NEON<false>(palColor1, convertedColor.val[2], convertedColor.val[3]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_NEON<false>(palColor0, convertedColor.val[0], convertedColor.val[1]);
-			ColorspaceConvert555To8888Opaque_NEON<false>(palColor1, convertedColor.val[2], convertedColor.val[3]);
+			ColorspaceConvert555xTo8888Opaque_NEON<false>(palColor0, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555xTo8888Opaque_NEON<false>(palColor1, convertedColor.val[2], convertedColor.val[3]);
 		}
 		
 		// Set converted colors to 0 if the palette index is 0.
@@ -1312,13 +1312,13 @@ void __NDSTextureUnpackI4_AltiVec(const size_t texelCount, const u8 *__restrict 
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665Opaque_AltiVec<false, BESwapDst>(palColor0, convertedColor[1], convertedColor[0]);
-			ColorspaceConvert555To6665Opaque_AltiVec<false, BESwapDst>(palColor1, convertedColor[3], convertedColor[2]);
+			ColorspaceConvert555xTo6665Opaque_AltiVec<false, BESwapDst>(palColor0, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555xTo6665Opaque_AltiVec<false, BESwapDst>(palColor1, convertedColor[3], convertedColor[2]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_AltiVec<false, BESwapDst>(palColor0, convertedColor[1], convertedColor[0]);
-			ColorspaceConvert555To8888Opaque_AltiVec<false, BESwapDst>(palColor1, convertedColor[3], convertedColor[2]);
+			ColorspaceConvert555xTo8888Opaque_AltiVec<false, BESwapDst>(palColor0, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555xTo8888Opaque_AltiVec<false, BESwapDst>(palColor1, convertedColor[3], convertedColor[2]);
 		}
 		
 		// Set converted colors to 0 if the palette index is 0.
@@ -1434,13 +1434,13 @@ void __NDSTextureUnpackA3I5_NEON(const size_t texelCount, const u8 *__restrict s
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
-			ColorspaceConvert555To6665_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
+			ColorspaceConvert555aTo6665_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555aTo6665_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
-			ColorspaceConvert555To8888_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
+			ColorspaceConvert555aTo8888_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555aTo8888_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
 		}
 		
 		vst1q_u32_x4(dstBuffer + i, convertedColor);
@@ -1486,13 +1486,13 @@ void __NDSTextureUnpackA3I5_AltiVec(const size_t texelCount, const u8 *__restric
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
-			ColorspaceConvert555To6665_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
+			ColorspaceConvert555aTo6665_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555aTo6665_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
-			ColorspaceConvert555To8888_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
+			ColorspaceConvert555aTo8888_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555aTo8888_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
 		}
 		
 		vec_st(convertedColor[0],  0, dstBuffer);
@@ -1566,8 +1566,8 @@ void __NDSTextureUnpackA5I3_AVX2(const size_t texelCount, const u8 *__restrict s
 			const v256u16 alphaLo = _mm256_unpacklo_epi8(_mm256_setzero_si256(), alpha);
 			const v256u16 alphaHi = _mm256_unpackhi_epi8(_mm256_setzero_si256(), alpha);
 			
-			ColorspaceConvert555To6665_AVX2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
-			ColorspaceConvert555To6665_AVX2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555aTo6665_AVX2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555aTo6665_AVX2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
 		}
 		else
 		{
@@ -1577,8 +1577,8 @@ void __NDSTextureUnpackA5I3_AVX2(const size_t texelCount, const u8 *__restrict s
 			const v256u16 alphaLo = _mm256_unpacklo_epi8(_mm256_setzero_si256(), alpha);
 			const v256u16 alphaHi = _mm256_unpackhi_epi8(_mm256_setzero_si256(), alpha);
 			
-			ColorspaceConvert555To8888_AVX2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
-			ColorspaceConvert555To8888_AVX2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555aTo8888_AVX2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555aTo8888_AVX2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
 		}
 		
 		_mm256_store_si256((v256u32 *)dstBuffer + 0, convertedColor[0]);
@@ -1615,8 +1615,8 @@ void __NDSTextureUnpackA5I3_SSSE3(const size_t texelCount, const u8 *__restrict 
 			const v128u16 alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
 			const v128u16 alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
 			
-			ColorspaceConvert555To6665_SSE2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
-			ColorspaceConvert555To6665_SSE2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555aTo6665_SSE2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555aTo6665_SSE2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
 		}
 		else
 		{
@@ -1624,8 +1624,8 @@ void __NDSTextureUnpackA5I3_SSSE3(const size_t texelCount, const u8 *__restrict 
 			const v128u16 alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
 			const v128u16 alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
 			
-			ColorspaceConvert555To8888_SSE2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
-			ColorspaceConvert555To8888_SSE2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555aTo8888_SSE2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555aTo8888_SSE2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
 		}
 		
 		_mm_store_si128((v128u32 *)(dstBuffer + i) + 0, convertedColor[0]);
@@ -1661,8 +1661,8 @@ void __NDSTextureUnpackA5I3_NEON(const size_t texelCount, const u8 *__restrict s
 			const v128u16 alphaLo = vreinterpretq_u16_u8( vzip1q_u8(vdupq_n_u8(0), alpha) );
 			const v128u16 alphaHi = vreinterpretq_u16_u8( vzip2q_u8(vdupq_n_u8(0), alpha) );
 			
-			ColorspaceConvert555To6665_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
-			ColorspaceConvert555To6665_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
+			ColorspaceConvert555aTo6665_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555aTo6665_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
 		}
 		else
 		{
@@ -1670,8 +1670,8 @@ void __NDSTextureUnpackA5I3_NEON(const size_t texelCount, const u8 *__restrict s
 			const v128u16 alphaLo = vreinterpretq_u16_u8( vzip1q_u8(vdupq_n_u8(0), alpha) );
 			const v128u16 alphaHi = vreinterpretq_u16_u8( vzip2q_u8(vdupq_n_u8(0), alpha) );
 			
-			ColorspaceConvert555To8888_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
-			ColorspaceConvert555To8888_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
+			ColorspaceConvert555aTo8888_NEON<false>(palColor0, alphaLo, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555aTo8888_NEON<false>(palColor1, alphaHi, convertedColor.val[2], convertedColor.val[3]);
 		}
 		
 		vst1q_u32_x4(dstBuffer + i, convertedColor);
@@ -1707,8 +1707,8 @@ void __NDSTextureUnpackA5I3_AltiVec(const size_t texelCount, const u8 *__restric
 			const v128u16 alphaLo = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07, 0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03}) );
 			const v128u16 alphaHi = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F, 0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B}) );
 			
-			ColorspaceConvert555To6665_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
-			ColorspaceConvert555To6665_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
+			ColorspaceConvert555aTo6665_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555aTo6665_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
 		}
 		else
 		{
@@ -1716,8 +1716,8 @@ void __NDSTextureUnpackA5I3_AltiVec(const size_t texelCount, const u8 *__restric
 			const v128u16 alphaLo = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07, 0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03}) );
 			const v128u16 alphaHi = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F, 0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B}) );
 			
-			ColorspaceConvert555To8888_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
-			ColorspaceConvert555To8888_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
+			ColorspaceConvert555aTo8888_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555aTo8888_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
 		}
 		
 		vec_st(convertedColor[0],  0, dstBuffer);
@@ -1900,11 +1900,11 @@ void __NDSTextureUnpackDirect16Bit_AVX2(const size_t texelCount, const u16 *__re
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665Opaque_AVX2<false>(c, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555xTo6665Opaque_AVX2<false>(c, convertedColor[0], convertedColor[1]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_AVX2<false>(c, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555xTo8888Opaque_AVX2<false>(c, convertedColor[0], convertedColor[1]);
 		}
 		
 		v256u16 alpha = _mm256_cmpeq_epi16(_mm256_srli_epi16(c, 15), _mm256_set1_epi16(1));
@@ -1930,11 +1930,11 @@ void __NDSTextureUnpackDirect16Bit_SSE2(const size_t texelCount, const u16 *__re
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665Opaque_SSE2<false>(c, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555xTo6665Opaque_SSE2<false>(c, convertedColor[0], convertedColor[1]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_SSE2<false>(c, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555xTo8888Opaque_SSE2<false>(c, convertedColor[0], convertedColor[1]);
 		}
 		
 		const v128u16 alpha = _mm_cmpeq_epi16(_mm_srli_epi16(c, 15), _mm_set1_epi16(1));
@@ -1959,11 +1959,11 @@ void __NDSTextureUnpackDirect16Bit_NEON(const size_t texelCount, const u16 *__re
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665Opaque_NEON<false>(c, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555xTo6665Opaque_NEON<false>(c, convertedColor.val[0], convertedColor.val[1]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_NEON<false>(c, convertedColor.val[0], convertedColor.val[1]);
+			ColorspaceConvert555xTo8888Opaque_NEON<false>(c, convertedColor.val[0], convertedColor.val[1]);
 		}
 		
 		const v128u16 alpha = vceqq_u16(vshrq_n_u16(c,15), vdupq_n_u16(1));
@@ -1987,11 +1987,11 @@ void __NDSTextureUnpackDirect16Bit_AltiVec(const size_t texelCount, const u16 *_
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			ColorspaceConvert555To6665Opaque_AltiVec<false, BESwapSrcDst>(c, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555xTo6665Opaque_AltiVec<false, BESwapSrcDst>(c, convertedColor[1], convertedColor[0]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_AltiVec<false, BESwapSrcDst>(c, convertedColor[1], convertedColor[0]);
+			ColorspaceConvert555xTo8888Opaque_AltiVec<false, BESwapSrcDst>(c, convertedColor[1], convertedColor[0]);
 		}
 		
 		const v128u16 alpha = vec_and(c, ((v128u16){0x0080,0x0080,0x0080,0x0080,0x0080,0x0080,0x0080,0x0080}));

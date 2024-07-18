@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2021-2023 DeSmuME team
+	Copyright (C) 2021-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1128,13 +1128,13 @@ FORCEINLINE void PixelOperation_AVX2::_copy16(GPUEngineCompositorInfo &compInfo,
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555To6665Opaque_AVX2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555To6665Opaque_AVX2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo6665Opaque_AVX2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo6665Opaque_AVX2<false>(src1, src32[2], src32[3]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_AVX2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555To8888Opaque_AVX2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo8888Opaque_AVX2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo8888Opaque_AVX2<false>(src1, src32[2], src32[3]);
 		}
 		
 		_mm256_store_si256( (v256u32 *)compInfo.target.lineColor32 + 0, src32[0] );
@@ -1205,13 +1205,13 @@ FORCEINLINE void PixelOperation_AVX2::_copyMask16(GPUEngineCompositorInfo &compI
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555To6665Opaque_AVX2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555To6665Opaque_AVX2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo6665Opaque_AVX2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo6665Opaque_AVX2<false>(src1, src32[2], src32[3]);
 		}
 		else
 		{
-			ColorspaceConvert555To8888Opaque_AVX2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555To8888Opaque_AVX2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo8888Opaque_AVX2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo8888Opaque_AVX2<false>(src1, src32[2], src32[3]);
 		}
 		
 		passMask16[0] = _mm256_permute4x64_epi64(passMask16[0], 0xD8);
@@ -1304,13 +1304,13 @@ FORCEINLINE void PixelOperation_AVX2::_brightnessUp16(GPUEngineCompositorInfo &c
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555XTo666X_AVX2<false>(src0, dst[0], dst[1]);
-			ColorspaceConvert555XTo666X_AVX2<false>(src1, dst[2], dst[3]);
+			ColorspaceConvert555xTo666x_AVX2<false>(src0, dst[0], dst[1]);
+			ColorspaceConvert555xTo666x_AVX2<false>(src1, dst[2], dst[3]);
 		}
 		else
 		{
-			ColorspaceConvert555XTo888X_AVX2<false>(src0, dst[0], dst[1]);
-			ColorspaceConvert555XTo888X_AVX2<false>(src1, dst[2], dst[3]);
+			ColorspaceConvert555xTo888x_AVX2<false>(src0, dst[0], dst[1]);
+			ColorspaceConvert555xTo888x_AVX2<false>(src1, dst[2], dst[3]);
 		}
 		
 		const v256u32 alphaBits = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? _mm256_set1_epi32(0x1F000000) : _mm256_set1_epi32(0xFF000000);
@@ -1377,13 +1377,13 @@ FORCEINLINE void PixelOperation_AVX2::_brightnessUpMask16(GPUEngineCompositorInf
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555XTo666X_AVX2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555XTo666X_AVX2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo666x_AVX2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo666x_AVX2<false>(src1, src32[2], src32[3]);
 		}
 		else
 		{
-			ColorspaceConvert555XTo888X_AVX2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555XTo888X_AVX2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo888x_AVX2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo888x_AVX2<false>(src1, src32[2], src32[3]);
 		}
 		
 		passMask16[0] = _mm256_permute4x64_epi64(passMask16[0], 0xD8);
@@ -1471,13 +1471,13 @@ FORCEINLINE void PixelOperation_AVX2::_brightnessDown16(GPUEngineCompositorInfo 
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555XTo666X_AVX2<false>(src0, dst[0], dst[1]);
-			ColorspaceConvert555XTo666X_AVX2<false>(src1, dst[2], dst[3]);
+			ColorspaceConvert555xTo666x_AVX2<false>(src0, dst[0], dst[1]);
+			ColorspaceConvert555xTo666x_AVX2<false>(src1, dst[2], dst[3]);
 		}
 		else
 		{
-			ColorspaceConvert555XTo888X_AVX2<false>(src0, dst[0], dst[1]);
-			ColorspaceConvert555XTo888X_AVX2<false>(src1, dst[2], dst[3]);
+			ColorspaceConvert555xTo888x_AVX2<false>(src0, dst[0], dst[1]);
+			ColorspaceConvert555xTo888x_AVX2<false>(src1, dst[2], dst[3]);
 		}
 		
 		const v256u32 alphaBits = _mm256_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
@@ -1544,13 +1544,13 @@ FORCEINLINE void PixelOperation_AVX2::_brightnessDownMask16(GPUEngineCompositorI
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvert555XTo666X_AVX2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555XTo666X_AVX2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo666x_AVX2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo666x_AVX2<false>(src1, src32[2], src32[3]);
 		}
 		else
 		{
-			ColorspaceConvert555XTo888X_AVX2<false>(src0, src32[0], src32[1]);
-			ColorspaceConvert555XTo888X_AVX2<false>(src1, src32[2], src32[3]);
+			ColorspaceConvert555xTo888x_AVX2<false>(src0, src32[0], src32[1]);
+			ColorspaceConvert555xTo888x_AVX2<false>(src1, src32[2], src32[3]);
 		}
 		
 		passMask16[0] = _mm256_permute4x64_epi64(passMask16[0], 0xD8);
@@ -1674,13 +1674,13 @@ FORCEINLINE void PixelOperation_AVX2::_unknownEffectMask16(GPUEngineCompositorIn
 	}
 	else if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 	{
-		ColorspaceConvert555XTo666X_AVX2<false>(src0, tmpSrc[0], tmpSrc[1]);
-		ColorspaceConvert555XTo666X_AVX2<false>(src1, tmpSrc[2], tmpSrc[3]);
+		ColorspaceConvert555xTo666x_AVX2<false>(src0, tmpSrc[0], tmpSrc[1]);
+		ColorspaceConvert555xTo666x_AVX2<false>(src1, tmpSrc[2], tmpSrc[3]);
 	}
 	else
 	{
-		ColorspaceConvert555XTo888X_AVX2<false>(src0, tmpSrc[0], tmpSrc[1]);
-		ColorspaceConvert555XTo888X_AVX2<false>(src1, tmpSrc[2], tmpSrc[3]);
+		ColorspaceConvert555xTo888x_AVX2<false>(src0, tmpSrc[0], tmpSrc[1]);
+		ColorspaceConvert555xTo888x_AVX2<false>(src1, tmpSrc[2], tmpSrc[3]);
 	}
 	
 	switch (compInfo.renderState.colorEffect)

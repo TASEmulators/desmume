@@ -3,7 +3,7 @@
 	licensed under the terms supplied at the end of this file (for the terms are very long!)
 	Differences from that baseline version are:
 
-	Copyright (C) 2009-2019 DeSmuME team
+	Copyright (C) 2009-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -174,7 +174,7 @@ static void DoScreenshot(const char* fname)
 			else
 			{
 				u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
-				ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
+				ColorspaceConvertBuffer888xTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
 				NDS_WritePNG_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight*2, swapbuf, fname);
 				free_aligned(swapbuf);
 			}
@@ -189,7 +189,7 @@ static void DoScreenshot(const char* fname)
 			else
 			{
 				u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
-				ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
+				ColorspaceConvertBuffer888xTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
 				NDS_WriteBMP_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight *2, swapbuf, fname);
 				free_aligned(swapbuf);
 			}
