@@ -4834,11 +4834,6 @@ Render3DError OpenGLRenderer_1_2::EndRender()
 	texCache.Evict();
 	
 	this->ReadBackPixels();
-	GLenum oglerror = glGetError();
-	if (oglerror != GL_NO_ERROR)
-	{
-		INFO("OpenGL: error = %i\n", (int)oglerror);
-	}
 	
 	ENDGL();
 	
