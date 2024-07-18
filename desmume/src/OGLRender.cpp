@@ -646,20 +646,17 @@ void main() \n\
 static const char *FogFragShader_100 = {"\
 varying vec2 texCoord;\n\
 \n\
-uniform sampler2D texInFragColor;\n\
 uniform sampler2D texInFragDepth;\n\
 uniform sampler2D texInFogAttributes;\n\
 uniform sampler1D texFogDensityTable;\n\
 uniform bool stateEnableFogAlphaOnly;\n\
-uniform vec4 stateFogColor;\n\
 \n\
 void main()\n\
 {\n\
-	vec4 inFragColor = texture2D(texInFragColor, texCoord);\n\
 	float inFragDepth = texture2D(texInFragDepth, texCoord).r;\n\
 	vec4 inFogAttributes = texture2D(texInFogAttributes, texCoord);\n\
 	bool polyEnableFog = (inFogAttributes.r > 0.999);\n\
-	vec4 newFoggedColor = inFragColor;\n\
+	vec4 outFogWeight = vec4(0.0);\n\
 	\n\
 	float fogMixWeight = 0.0;\n\
 	if (FOG_STEP == 0)\n\
@@ -673,10 +670,10 @@ void main()\n\
 	\n\
 	if (polyEnableFog)\n\
 	{\n\
-		newFoggedColor = mix(inFragColor, (stateEnableFogAlphaOnly) ? vec4(inFragColor.rgb, stateFogColor.a) : stateFogColor, fogMixWeight);\n\
+		outFogWeight = (stateEnableFogAlphaOnly) ? vec4(vec3(0.0), fogMixWeight) : vec4(fogMixWeight);\n\
 	}\n\
 	\n\
-	gl_FragColor = newFoggedColor;\n\
+	gl_FragColor = outFogWeight;\n\
 }\n\
 "};
 
@@ -2753,7 +2750,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	this->willFlipAndConvertFramebufferOnGPU = this->isShaderSupported && this->isVBOSupported;
 	this->willFlipOnlyFramebufferOnGPU = this->willFlipAndConvertFramebufferOnGPU || this->_isFBOBlitSupported;
 	this->_deviceInfo.isEdgeMarkSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
-	this->_deviceInfo.isFogSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
+	this->_deviceInfo.isFogSupported = this->isShaderSupported && this->isVBOSupported;
 	this->_deviceInfo.isTextureSmoothingSupported = this->isShaderSupported;
 	
 	this->_isDepthLEqualPolygonFacingSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
@@ -3584,7 +3581,6 @@ Render3DError OpenGLRenderer_1_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	glUniform1i(uniformTexFogDensityTable, OGLTextureUnitID_LookupTable);
 	
 	OGLRef.uniformStateEnableFogAlphaOnly = glGetUniformLocation(shaderID.program, "stateEnableFogAlphaOnly");
-	OGLRef.uniformStateFogColor           = glGetUniformLocation(shaderID.program, "stateFogColor");
 	
 	return OGLERROR_NOERR;
 }
@@ -4698,32 +4694,30 @@ Render3DError OpenGLRenderer_1_2::PostprocessFramebuffer()
 		return OGLERROR_NOERR;
 	}
 	
+	if ( !(this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) &&
+		 !(this->_enableFog && this->_deviceInfo.isFogSupported) )
+	{
+		return OGLERROR_NOERR;
+	}
+	
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if ( (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) ||
-		 (this->_enableFog && this->_deviceInfo.isFogSupported) )
+	// Set up the postprocessing states
+	glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
+	glDisable(GL_DEPTH_TEST);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
+	
+	if (this->isVAOSupported)
 	{
-		// Set up the postprocessing states
-		glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
-		glDisable(GL_DEPTH_TEST);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
-		
-		if (this->isVAOSupported)
-		{
-			glBindVertexArray(OGLRef.vaoPostprocessStatesID);
-		}
-		else
-		{
-			glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-			glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-			glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
-			glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
-		}
+		glBindVertexArray(OGLRef.vaoPostprocessStatesID);
 	}
 	else
 	{
-		return OGLERROR_NOERR;
+		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
 	}
 	
 	if (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported)
@@ -4795,16 +4789,28 @@ Render3DError OpenGLRenderer_1_2::PostprocessFramebuffer()
 		
 		OGLFogShaderID shaderID = this->_fogProgramMap[this->_fogProgramKey.key];
 		
-		glDrawBuffer(OGL_WORKING_ATTACHMENT_ID);
+		if (this->isFBOSupported)
+		{
+			glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+		}
+		
 		glUseProgram(shaderID.program);
 		glUniform1i(OGLRef.uniformStateEnableFogAlphaOnly, this->_pendingRenderStates.enableFogAlphaOnly);
-		glUniform4fv(OGLRef.uniformStateFogColor, 1, (const GLfloat *)&this->_pendingRenderStates.fogColor);
 		
+		glBlendFuncSeparate(GL_CONSTANT_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_CONSTANT_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+		glBlendColor( this->_pendingRenderStates.fogColor.r,
+		              this->_pendingRenderStates.fogColor.g,
+		              this->_pendingRenderStates.fogColor.b,
+		              this->_pendingRenderStates.fogColor.a );
+		
+		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_STENCIL_TEST);
-		glDisable(GL_BLEND);
+		glEnable(GL_BLEND);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		
-		this->_lastTextureDrawTarget = OGLTextureUnitID_FinalColor;
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
 	}
 	
 	if (this->isVAOSupported)
@@ -4826,6 +4832,11 @@ Render3DError OpenGLRenderer_1_2::EndRender()
 	texCache.Evict();
 	
 	this->ReadBackPixels();
+	GLenum oglerror = glGetError();
+	if (oglerror != GL_NO_ERROR)
+	{
+		INFO("OpenGL: error = %i\n", (int)oglerror);
+	}
 	
 	ENDGL();
 	

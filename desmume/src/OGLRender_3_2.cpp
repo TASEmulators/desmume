@@ -559,45 +559,28 @@ uniform sampler2D texInFragDepth;\n\
 uniform sampler2D texInFogAttributes;\n\
 uniform sampler2D texFogDensityTable;\n\
 \n\
-#if USE_DUAL_SOURCE_BLENDING\n\
-OUT_FOG_COLOR vec4 outFogColor;\n\
-OUT_FOG_WEIGHT vec4 outFogWeight;\n\
-#else\n\
-uniform sampler2D texInFragColor;\n\
-OUT_COLOR vec4 outFragColor;\n\
-#endif\n\
+OUT_COLOR vec4 outFogWeight;\n\
 \n\
 void main()\n\
 {\n\
-#if USE_DUAL_SOURCE_BLENDING\n\
-	outFogColor = state.fogColor;\n\
-	outFogWeight = vec4(0.0);\n\
-#else\n\
-	outFragColor = texture(texInFragColor, texCoord);\n\
-#endif\n\
-	\n\
 	float inFragDepth = texture(texInFragDepth, texCoord).r;\n\
 	vec4 inFogAttributes = texture(texInFogAttributes, texCoord);\n\
 	bool polyEnableFog = (inFogAttributes.r > 0.999);\n\
-	\n\
-	float fogMixWeight = 0.0;\n\
-	if (FOG_STEP == 0)\n\
-	{\n\
-		fogMixWeight = texture( texFogDensityTable, vec2( (inFragDepth <= FOG_OFFSETF) ? 0.0 : 1.0, 0.0 ) ).r;\n\
-	}\n\
-	else\n\
-	{\n\
-		fogMixWeight = texture( texFogDensityTable, vec2( (inFragDepth * (1024.0/float(FOG_STEP))) + (((-float(FOG_OFFSET)/float(FOG_STEP)) - 0.5) / 32.0), 0.0 ) ).r;\n\
-	}\n\
+	outFogWeight = vec4(0.0);\n\
 	\n\
 	if (polyEnableFog)\n\
 	{\n\
+		float fogMixWeight = 0.0;\n\
+		if (FOG_STEP == 0)\n\
+		{\n\
+			fogMixWeight = texture( texFogDensityTable, vec2( (inFragDepth <= FOG_OFFSETF) ? 0.0 : 1.0, 0.0 ) ).r;\n\
+		}\n\
+		else\n\
+		{\n\
+			fogMixWeight = texture( texFogDensityTable, vec2( (inFragDepth * (1024.0/float(FOG_STEP))) + (((-float(FOG_OFFSET)/float(FOG_STEP)) - 0.5) / 32.0), 0.0 ) ).r;\n\
+		}\n\
 		\n\
-#if USE_DUAL_SOURCE_BLENDING\n\
 		outFogWeight = (state.enableFogAlphaOnly) ? vec4(vec3(0.0), fogMixWeight) : vec4(fogMixWeight);\n\
-#else\n\
-		outFragColor = mix(outFragColor, (state.enableFogAlphaOnly) ? vec4(outFragColor.rgb, state.fogColor.a) : state.fogColor, fogMixWeight);\n\
-#endif\n\
 	}\n\
 }\n\
 "};
@@ -649,7 +632,6 @@ OpenGLRenderer_3_2::OpenGLRenderer_3_2()
 	_is64kUBOSupported = false;
 	_isTBOSupported = false;
 	_isShaderFixedLocationSupported = false;
-	_isDualSourceBlendingSupported = false;
 	_isSampleShadingSupported = false;
 	_isConservativeDepthSupported = false;
 	_isConservativeDepthAMDSupported = false;
@@ -716,9 +698,6 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	this->willFlipOnlyFramebufferOnGPU = true;
 	this->willFlipAndConvertFramebufferOnGPU = true;
 	
-#ifdef GL_VERSION_3_3
-	this->_isDualSourceBlendingSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_blend_func_extended");
-#endif
 	this->_isSampleShadingSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_sample_shading");
 	this->_isConservativeDepthSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0);
 	this->_isConservativeDepthAMDSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_AMD_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0);
@@ -1812,8 +1791,6 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	}
 	
 	std::stringstream fsHeader;
-	fsHeader << "#define USE_DUAL_SOURCE_BLENDING " << ((this->_isDualSourceBlendingSupported) ? 1 : 0) << "\n";
-	fsHeader << "\n";
 	fsHeader << "#define FOG_OFFSET " << fogOffset << "\n";
 	fsHeader << "#define FOG_OFFSETF " << fogOffsetf << (((fogOffsetf == 0.0f) || (fogOffsetf == 1.0f)) ? ".0" : "") << "\n";
 	fsHeader << "#define FOG_STEP " << fogStep << "\n";
@@ -1821,14 +1798,10 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	
 	if (this->_isShaderFixedLocationSupported)
 	{
-		fsHeader << "#define OUT_FOG_COLOR layout (location = 0, index = 0) out\n";
-		fsHeader << "#define OUT_FOG_WEIGHT layout (location = 0, index = 1) out\n";
 		fsHeader << "#define OUT_COLOR layout (location = 0) out\n";
 	}
 	else
 	{
-		fsHeader << "#define OUT_FOG_COLOR out\n";
-		fsHeader << "#define OUT_FOG_WEIGHT out\n";
 		fsHeader << "#define OUT_COLOR out\n";
 	}
 	
@@ -1860,18 +1833,7 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	{
 		glBindAttribLocation(shaderID.program, OGLVertexAttributeID_Position, "inPosition");
 		glBindAttribLocation(shaderID.program, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
-	
-#ifdef GL_VERSION_3_3
-		if (this->_isDualSourceBlendingSupported)
-		{
-			glBindFragDataLocationIndexed(shaderID.program, 0, 0, "outFogColor");
-			glBindFragDataLocationIndexed(shaderID.program, 0, 1, "outFogWeight");
-		}
-		else
-#endif
-		{
-			glBindFragDataLocation(shaderID.program, 0, "outFragColor");
-		}
+		glBindFragDataLocation(shaderID.program, 0, "outFogWeight");
 	}
 #endif
 	
@@ -1896,12 +1858,6 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGFog, OGLTextureUnitID_FogAttr);
 	glUniform1i(uniformTexFogDensityTable, OGLTextureUnitID_LookupTable);
-	
-	if (!this->_isDualSourceBlendingSupported)
-	{
-		const GLint uniformTexGColor = glGetUniformLocation(shaderID.program, "texInFragColor");
-		glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
-	}
 	
 	return OGLERROR_NOERR;
 }
@@ -2498,26 +2454,20 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 
 Render3DError OpenGLRenderer_3_2::PostprocessFramebuffer()
 {
-	if (this->_clippedPolyCount < 1)
+	if ( (this->_clippedPolyCount < 1) ||
+		(!this->_enableEdgeMark && !this->_enableFog) )
 	{
 		return OGLERROR_NOERR;
 	}
 	
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if (this->_enableEdgeMark || this->_enableFog)
-	{
-		// Set up the postprocessing states
-		glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
-		glDisable(GL_DEPTH_TEST);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
-		glBindVertexArray(OGLRef.vaoPostprocessStatesID);
-	}
-	else
-	{
-		return OGLERROR_NOERR;
-	}
+	// Set up the postprocessing states
+	glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
+	glDisable(GL_DEPTH_TEST);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
+	glBindVertexArray(OGLRef.vaoPostprocessStatesID);
 	
 	if (this->_enableEdgeMark)
 	{
@@ -2571,31 +2521,23 @@ Render3DError OpenGLRenderer_3_2::PostprocessFramebuffer()
 		}
 		
 		OGLFogShaderID shaderID = this->_fogProgramMap[this->_fogProgramKey.key];
+		glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
 		glUseProgram(shaderID.program);
-		glDisable(GL_STENCIL_TEST);
 		
-#ifdef GL_VERSION_3_3
-		if (this->_isDualSourceBlendingSupported)
-		{
-			glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC1_COLOR, GL_ONE_MINUS_SRC1_COLOR);
-			glBlendEquation(GL_FUNC_ADD);
-			
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-			
-			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
-			glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
-		}
-		else
-#endif
-		{
-			glDrawBuffer(OGL_WORKING_ATTACHMENT_ID);
-			glDisable(GL_BLEND);
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-			
-			this->_lastTextureDrawTarget = OGLTextureUnitID_FinalColor;
-		}
+		glBlendFuncSeparate(GL_CONSTANT_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_CONSTANT_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+		glBlendColor( this->_pendingRenderStates.fogColor.r,
+		              this->_pendingRenderStates.fogColor.g,
+		              this->_pendingRenderStates.fogColor.b,
+		              this->_pendingRenderStates.fogColor.a );
+		
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_STENCIL_TEST);
+		glEnable(GL_BLEND);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
 	}
 	
 	glBindVertexArray(0);

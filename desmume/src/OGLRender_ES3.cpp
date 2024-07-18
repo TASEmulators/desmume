@@ -778,14 +778,10 @@ Render3DError OpenGLESRenderer_3_0::CreateFogProgram(const OGLFogProgramKey fogP
 	vsHeader << "#define IN_VTX_COLOR layout (location = "     << OGLVertexAttributeID_Color     << ") in\n";
 	
 	std::stringstream fsHeader;
-	fsHeader << "#define USE_DUAL_SOURCE_BLENDING " << ((this->_isDualSourceBlendingSupported) ? 1 : 0) << "\n";
-	fsHeader << "\n";
 	fsHeader << "#define FOG_OFFSET " << fogOffset << "\n";
 	fsHeader << "#define FOG_OFFSETF " << fogOffsetf << (((fogOffsetf == 0.0f) || (fogOffsetf == 1.0f)) ? ".0" : "") << "\n";
 	fsHeader << "#define FOG_STEP " << fogStep << "\n";
 	fsHeader << "\n";
-	fsHeader << "#define OUT_FOG_COLOR layout (location = 0, index = 0) out\n";
-	fsHeader << "#define OUT_FOG_WEIGHT layout (location = 0, index = 1) out\n";
 	fsHeader << "#define OUT_COLOR layout (location = 0) out\n";
 	
 	std::string vtxShaderCode  = shaderHeader.str() + vsHeader.str() + std::string(vtxShaderCString);
@@ -832,9 +828,6 @@ Render3DError OpenGLESRenderer_3_0::CreateFogProgram(const OGLFogProgramKey fogP
 	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGFog, OGLTextureUnitID_FogAttr);
 	glUniform1i(uniformTexFogDensityTable, OGLTextureUnitID_LookupTable);
-	
-	const GLint uniformTexGColor = glGetUniformLocation(shaderID.program, "texInFragColor");
-	glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
 	
 	return OGLERROR_NOERR;
 }

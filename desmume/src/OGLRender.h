@@ -28,7 +28,7 @@
 #include "types.h"
 
 // OPENGL PLATFORM-SPECIFIC INCLUDES
-#if defined(__ANGLE__) || defined(__ANDROID__)
+#if defined(__ANGLE__) || defined(__ANDROID__) || defined(__linux__)
 	#define OPENGL_VARIANT_ES
 	#define _NO_SDL_TYPES
 	#include <GLES3/gl3.h>
@@ -331,7 +331,10 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 	// modification. In other words, these are one-to-one drop-in replacements.
 	typedef GLclampf GLclampd;
 	#define glClearDepth(depth) glClearDepthf(depth)
+
+#ifndef OPENGL_VARIANT_ES
 	#define glDrawBuffer(x) glDrawBuffers(1, ((GLenum[]){x}))
+#endif
 
 	// 1D textures may not exist for a particular OpenGL variant, so they will be promoted to
 	// 2D textures instead. Implementations need to modify their GLSL shaders accordingly to
@@ -627,8 +630,16 @@ struct OGLRenderRef
 	
 	GLuint fboClearImageID;
 	GLuint fboRenderID;
+	GLuint fboRenderColor0ID[8];
+	GLuint fboRenderWorking0ID[8];
+	GLuint fboPolyID;
+	GLuint fboFogAttrID;
 	GLuint fboFramebufferFlipID;
+	GLuint fboColorOutMainID;
+	GLuint fboColorOutWorkingID;
 	GLuint fboMSIntermediateRenderID;
+	GLuint fboMSIntermediateRenderColor0ID[8];
+	GLuint fboMSFogAttrID;
 	GLuint selectedRenderingFBO;
 	
 	// Shader states
@@ -658,7 +669,6 @@ struct OGLRenderRef
 	GLint uniformStateEnableFogAlphaOnly;
 	GLint uniformStateClearPolyID;
 	GLint uniformStateClearDepth;
-	GLint uniformStateFogColor;
 	
 	GLint uniformStateAlphaTestRef[256];
 	GLint uniformPolyTexScale[256];
@@ -1029,5 +1039,48 @@ public:
 	virtual Render3DError RenderFinish();
 	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);
 };
+
+#ifdef OPENGL_VARIANT_ES
+
+#define glDrawBuffer my_glDrawBuffer
+/*
+static inline void my_glDrawBuffer(GLenum attach) {
+    switch(attach) {
+        case GL_NONE: {
+            GLenum bufs[1] = {GL_NONE };
+            glDrawBuffers(1, bufs);
+            break;
+        }
+        case GL_COLOR_ATTACHMENT0: {
+            GLenum bufs[1] = { attach };
+            glDrawBuffers(1, bufs);
+            break;
+        }
+        case GL_COLOR_ATTACHMENT1: {
+            GLenum bufs[2] = {GL_NONE, attach };
+            glDrawBuffers(2, bufs);
+            break;
+        }
+        case GL_COLOR_ATTACHMENT2: {
+            GLenum bufs[3] = {GL_NONE, GL_NONE, attach };
+            glDrawBuffers(3, bufs);
+            break;
+        }
+        case GL_COLOR_ATTACHMENT3: {
+            GLenum bufs[4] = {GL_NONE, GL_NONE, GL_NONE, attach };
+            glDrawBuffers(4, bufs);
+            break;
+        }
+    }
+}
+*/
+
+static inline void my_glDrawBuffer(GLenum attach)
+{
+	GLenum bufs[] = {attach};
+	glDrawBuffers(1, bufs);
+}
+
+#endif
 
 #endif // OGLRENDER_H
