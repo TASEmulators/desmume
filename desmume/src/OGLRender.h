@@ -134,6 +134,7 @@ EXTERNOGLEXT(PFNGLACTIVETEXTUREPROC, glActiveTexture) // Core in v1.3
 
 // Blending
 #if !defined(GLX_H)
+EXTERNOGLEXT(PFNGLBLENDCOLORPROC, glBlendColor) // Core in v1.2
 EXTERNOGLEXT(PFNGLBLENDEQUATIONPROC, glBlendEquation) // Core in v1.2
 #endif
 EXTERNOGLEXT(PFNGLBLENDFUNCSEPARATEPROC, glBlendFuncSeparate) // Core in v1.4

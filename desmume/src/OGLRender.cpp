@@ -177,6 +177,7 @@ OGLEXT(PFNGLACTIVETEXTUREPROC, glActiveTexture) // Core in v1.3
 
 // Blending
 #if !defined(GLX_H)
+OGLEXT(PFNGLBLENDCOLORPROC, glBlendColor) // Core in v1.2
 OGLEXT(PFNGLBLENDEQUATIONPROC, glBlendEquation) // Core in v1.2
 #endif
 OGLEXT(PFNGLBLENDFUNCSEPARATEPROC, glBlendFuncSeparate) // Core in v1.4
@@ -256,6 +257,7 @@ static void OGLLoadEntryPoints_Legacy()
 
 	// Blending
 #if !defined(GLX_H)
+	INITOGLEXT(PFNGLBLENDCOLORPROC, glBlendColor) // Core in v1.2
 	INITOGLEXT(PFNGLBLENDEQUATIONPROC, glBlendEquation) // Core in v1.2
 #endif
 	INITOGLEXT(PFNGLBLENDFUNCSEPARATEPROC, glBlendFuncSeparate) // Core in v1.4
