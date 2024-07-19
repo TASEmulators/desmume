@@ -628,7 +628,8 @@ struct OGLRenderRef
 	
 	GLuint fboClearImageID;
 	GLuint fboRenderID;
-	GLuint fboFramebufferFlipID;
+	GLuint fboColorOutMainID;
+	GLuint fboColorOutWorkingID;
 	GLuint fboMSIntermediateRenderID;
 	GLuint selectedRenderingFBO;
 	
@@ -799,9 +800,9 @@ private:
 	unsigned int versionRevision;
 	
 private:
-	Render3DError _FlushFramebufferFlipAndConvertOnCPU(const Color4u8 *__restrict srcFramebuffer,
-													   Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16,
-													   bool doFramebufferFlip, bool doFramebufferConvert);
+	template<bool SWAP_RB> Render3DError _FlushFramebufferConvertOnCPU(const Color4u8 *__restrict srcFramebuffer,
+	                                                                   Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16,
+	                                                                   bool doFramebufferConvert);
 	
 protected:
 	// OpenGL-specific References
@@ -816,7 +817,6 @@ protected:
 	bool isMultisampledFBOSupported;
 	bool isShaderSupported;
 	bool isVAOSupported;
-	bool willFlipOnlyFramebufferOnGPU;
 	bool willFlipAndConvertFramebufferOnGPU;
 	bool willUsePerSampleZeroDstPass;
 	

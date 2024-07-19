@@ -321,7 +321,6 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	glActiveTexture(GL_TEXTURE0);
 	
 	// OpenGL ES v3.0 should have all the necessary features to be able to flip and convert the framebuffer.
-	this->willFlipOnlyFramebufferOnGPU = true;
 	this->willFlipAndConvertFramebufferOnGPU = true;
 	
 	this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
