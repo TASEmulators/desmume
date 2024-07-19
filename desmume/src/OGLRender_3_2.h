@@ -64,7 +64,6 @@ protected:
 	bool _is64kUBOSupported;
 	bool _isTBOSupported;
 	bool _isShaderFixedLocationSupported;
-	bool _isDualSourceBlendingSupported;
 	bool _isSampleShadingSupported;
 	bool _isConservativeDepthSupported;
 	bool _isConservativeDepthAMDSupported;

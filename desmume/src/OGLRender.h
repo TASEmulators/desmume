@@ -134,6 +134,7 @@ EXTERNOGLEXT(PFNGLACTIVETEXTUREPROC, glActiveTexture) // Core in v1.3
 
 // Blending
 #if !defined(GLX_H)
+EXTERNOGLEXT(PFNGLBLENDCOLORPROC, glBlendColor) // Core in v1.2
 EXTERNOGLEXT(PFNGLBLENDEQUATIONPROC, glBlendEquation) // Core in v1.2
 #endif
 EXTERNOGLEXT(PFNGLBLENDFUNCSEPARATEPROC, glBlendFuncSeparate) // Core in v1.4
@@ -332,7 +333,7 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 	typedef GLclampf GLclampd;
 	#define glClearDepth(depth) glClearDepthf(depth)
 	#define glDrawBuffer(x) glDrawBuffers(1, ((GLenum[]){x}))
-
+	
 	// 1D textures may not exist for a particular OpenGL variant, so they will be promoted to
 	// 2D textures instead. Implementations need to modify their GLSL shaders accordingly to
 	// treat any 1D textures as 2D textures instead.
@@ -627,7 +628,8 @@ struct OGLRenderRef
 	
 	GLuint fboClearImageID;
 	GLuint fboRenderID;
-	GLuint fboFramebufferFlipID;
+	GLuint fboColorOutMainID;
+	GLuint fboColorOutWorkingID;
 	GLuint fboMSIntermediateRenderID;
 	GLuint selectedRenderingFBO;
 	
@@ -658,7 +660,6 @@ struct OGLRenderRef
 	GLint uniformStateEnableFogAlphaOnly;
 	GLint uniformStateClearPolyID;
 	GLint uniformStateClearDepth;
-	GLint uniformStateFogColor;
 	
 	GLint uniformStateAlphaTestRef[256];
 	GLint uniformPolyTexScale[256];
@@ -799,9 +800,9 @@ private:
 	unsigned int versionRevision;
 	
 private:
-	Render3DError _FlushFramebufferFlipAndConvertOnCPU(const Color4u8 *__restrict srcFramebuffer,
-													   Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16,
-													   bool doFramebufferFlip, bool doFramebufferConvert);
+	template<bool SWAP_RB> Render3DError _FlushFramebufferConvertOnCPU(const Color4u8 *__restrict srcFramebuffer,
+	                                                                   Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16,
+	                                                                   bool doFramebufferConvert);
 	
 protected:
 	// OpenGL-specific References
@@ -816,7 +817,6 @@ protected:
 	bool isMultisampledFBOSupported;
 	bool isShaderSupported;
 	bool isVAOSupported;
-	bool willFlipOnlyFramebufferOnGPU;
 	bool willFlipAndConvertFramebufferOnGPU;
 	bool willUsePerSampleZeroDstPass;
 	
