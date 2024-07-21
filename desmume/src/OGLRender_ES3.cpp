@@ -677,7 +677,7 @@ Render3DError OpenGLESRenderer_3_0::CreateGeometryZeroDstAlphaProgram(const char
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLESRenderer_3_0::CreateEdgeMarkProgram(const char *vtxShaderCString, const char *fragShaderCString)
+Render3DError OpenGLESRenderer_3_0::CreateEdgeMarkProgram(const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString)
 {
 	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
@@ -743,7 +743,7 @@ Render3DError OpenGLESRenderer_3_0::CreateEdgeMarkProgram(const char *vtxShaderC
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLESRenderer_3_0::CreateFogProgram(const OGLFogProgramKey fogProgramKey, const char *vtxShaderCString, const char *fragShaderCString)
+Render3DError OpenGLESRenderer_3_0::CreateFogProgram(const OGLFogProgramKey fogProgramKey, const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString)
 {
 	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;

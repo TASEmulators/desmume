@@ -625,6 +625,9 @@ struct OGLRenderRef
 	GLuint texEdgeColorTableID;
 	GLuint texMSGColorID;
 	GLuint texMSGWorkingID;
+	GLuint texMSGDepthStencilID;
+	GLuint texMSGPolyID;
+	GLuint texMSGFogAttrID;
 	
 	GLuint rboMSGColorID;
 	GLuint rboMSGWorkingID;
@@ -637,6 +640,7 @@ struct OGLRenderRef
 	GLuint fboRenderMutableID;
 	GLuint fboColorOutMainID;
 	GLuint fboColorOutWorkingID;
+	GLuint fboMSIntermediateColorOutMainID;
 	GLuint fboMSIntermediateRenderID;
 	GLuint fboMSIntermediateRenderMutableID;
 	GLuint selectedRenderingFBO;
@@ -654,6 +658,10 @@ struct OGLRenderRef
 	GLuint vtxShaderMSGeometryZeroDstAlphaID;
 	GLuint fragShaderMSGeometryZeroDstAlphaID;
 	GLuint programMSGeometryZeroDstAlphaID;
+	
+	GLuint vertexMSEdgeMarkShaderID;
+	GLuint fragmentMSEdgeMarkShaderID;
+	GLuint programMSEdgeMarkID;
 	
 	GLuint vertexEdgeMarkShaderID;
 	GLuint vertexFogShaderID;
@@ -825,9 +833,10 @@ protected:
 	bool _isFBOBlitSupported;
 	bool isMultisampledFBOSupported;
 	bool isShaderSupported;
+	bool _isSampleShadingSupported;
 	bool isVAOSupported;
 	bool willFlipAndConvertFramebufferOnGPU;
-	bool willUsePerSampleZeroDstPass;
+	bool _willUseMultisampleShaders;
 	
 	bool _emulateShadowPolygon;
 	bool _emulateSpecialZeroAlphaBlending;
@@ -889,9 +898,9 @@ protected:
 	virtual void DestroyGeometryPrograms() = 0;
 	virtual Render3DError CreateGeometryZeroDstAlphaProgram(const char *vtxShaderCString, const char *fragShaderCString) = 0;
 	virtual void DestroyGeometryZeroDstAlphaProgram() = 0;
-	virtual Render3DError CreateEdgeMarkProgram(const char *vtxShaderCString, const char *fragShaderCString) = 0;
+	virtual Render3DError CreateEdgeMarkProgram(const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString) = 0;
 	virtual void DestroyEdgeMarkProgram() = 0;
-	virtual Render3DError CreateFogProgram(const OGLFogProgramKey fogProgramKey, const char *vtxShaderCString, const char *fragShaderCString) = 0;
+	virtual Render3DError CreateFogProgram(const OGLFogProgramKey fogProgramKey, const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString) = 0;
 	virtual void DestroyFogProgram(const OGLFogProgramKey fogProgramKey) = 0;
 	virtual void DestroyFogPrograms() = 0;
 	virtual Render3DError CreateFramebufferOutput6665Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString) = 0;
@@ -914,6 +923,7 @@ protected:
 	virtual Render3DError DisableVertexAttributes() = 0;
 	virtual void _ResolveWorkingBackFacing() = 0;
 	virtual void _ResolveGeometry() = 0;
+	virtual void _ResolveFinalFramebuffer() = 0;
 	virtual Render3DError ReadBackPixels() = 0;
 	
 	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID) = 0;
@@ -964,9 +974,9 @@ protected:
 	virtual void DestroyGeometryPrograms();
 	virtual Render3DError CreateGeometryZeroDstAlphaProgram(const char *vtxShaderCString, const char *fragShaderCString);
 	virtual void DestroyGeometryZeroDstAlphaProgram();
-	virtual Render3DError CreateEdgeMarkProgram(const char *vtxShaderCString, const char *fragShaderCString);
+	virtual Render3DError CreateEdgeMarkProgram(const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString);
 	virtual void DestroyEdgeMarkProgram();
-	virtual Render3DError CreateFogProgram(const OGLFogProgramKey fogProgramKey, const char *vtxShaderCString, const char *fragShaderCString);
+	virtual Render3DError CreateFogProgram(const OGLFogProgramKey fogProgramKey, const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString);
 	virtual void DestroyFogProgram(const OGLFogProgramKey fogProgramKey);
 	virtual void DestroyFogPrograms();
 	virtual Render3DError CreateFramebufferOutput6665Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString);
@@ -990,6 +1000,7 @@ protected:
 	virtual Render3DError ZeroDstAlphaPass(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, const size_t clippedPolyOpaqueCount, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr);
 	virtual void _ResolveWorkingBackFacing();
 	virtual void _ResolveGeometry();
+	virtual void _ResolveFinalFramebuffer();
 	virtual Render3DError ReadBackPixels();
 	
 	// Base rendering methods

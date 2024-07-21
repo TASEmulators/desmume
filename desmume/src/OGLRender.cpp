@@ -553,15 +553,15 @@ void main()\n\
 	edgeColor[3] = texture1D(texEdgeColor, polyIDInfo[3].r);\n\
 	edgeColor[4] = texture1D(texEdgeColor, polyIDInfo[4].r);\n\
 	\n\
-	bool isWireframe[5];\n\
-	isWireframe[0] = bool(polyIDInfo[0].g);\n\
-	\n\
 	float depth[5];\n\
 	depth[0] = texture2D(texInFragDepth, texCoord[0]).r;\n\
 	depth[1] = texture2D(texInFragDepth, texCoord[1]).r;\n\
 	depth[2] = texture2D(texInFragDepth, texCoord[2]).r;\n\
 	depth[3] = texture2D(texInFragDepth, texCoord[3]).r;\n\
 	depth[4] = texture2D(texInFragDepth, texCoord[4]).r;\n\
+	\n\
+	bool isWireframe[5];\n\
+	isWireframe[0] = bool(polyIDInfo[0].g);\n\
 	\n\
 	vec4 newEdgeColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
 	\n\
@@ -583,47 +583,19 @@ void main()\n\
 		\n\
 		if ( ((gl_FragCoord.x >= FRAMEBUFFER_SIZE_X-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[1]) && (depth[0] >= depth[1]) && !isWireframe[1])) )\n\
 		{\n\
-			if (gl_FragCoord.x >= FRAMEBUFFER_SIZE_X-1.0)\n\
-			{\n\
-				newEdgeColor = edgeColor[0];\n\
-			}\n\
-			else\n\
-			{\n\
-				newEdgeColor = edgeColor[1];\n\
-			}\n\
+			newEdgeColor = (gl_FragCoord.x >= FRAMEBUFFER_SIZE_X-1.0) ? edgeColor[0] : edgeColor[1];\n\
 		}\n\
 		else if ( ((gl_FragCoord.y >= FRAMEBUFFER_SIZE_Y-1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[2]) && (depth[0] >= depth[2]) && !isWireframe[2])) )\n\
 		{\n\
-			if (gl_FragCoord.y >= FRAMEBUFFER_SIZE_Y-1.0)\n\
-			{\n\
-				newEdgeColor = edgeColor[0];\n\
-			}\n\
-			else\n\
-			{\n\
-				newEdgeColor = edgeColor[2];\n\
-			}\n\
+			newEdgeColor = (gl_FragCoord.y >= FRAMEBUFFER_SIZE_Y-1.0) ? edgeColor[0] : edgeColor[2];\n\
 		}\n\
 		else if ( ((gl_FragCoord.x < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[3]) && (depth[0] >= depth[3]) && !isWireframe[3])) )\n\
 		{\n\
-			if (gl_FragCoord.x < 1.0)\n\
-			{\n\
-				newEdgeColor = edgeColor[0];\n\
-			}\n\
-			else\n\
-			{\n\
-				newEdgeColor = edgeColor[3];\n\
-			}\n\
+			newEdgeColor = (gl_FragCoord.x < 1.0) ? edgeColor[0] : edgeColor[3];\n\
 		}\n\
 		else if ( ((gl_FragCoord.y < 1.0) ? isEdgeMarkingClearValues : ((polyID[0] != polyID[4]) && (depth[0] >= depth[4]) && !isWireframe[4])) )\n\
 		{\n\
-			if (gl_FragCoord.y < 1.0)\n\
-			{\n\
-				newEdgeColor = edgeColor[0];\n\
-			}\n\
-			else\n\
-			{\n\
-				newEdgeColor = edgeColor[4];\n\
-			}\n\
+			newEdgeColor = (gl_FragCoord.y < 1.0) ? edgeColor[0] : edgeColor[4];\n\
 		}\n\
 	}\n\
 	\n\
@@ -658,24 +630,10 @@ void main()\n\
 	float inFragDepth = texture2D(texInFragDepth, texCoord).r;\n\
 	vec4 inFogAttributes = texture2D(texInFogAttributes, texCoord);\n\
 	bool polyEnableFog = (inFogAttributes.r > 0.999);\n\
-	vec4 outFogWeight = vec4(0.0);\n\
+	float densitySelect = (FOG_STEP == 0) ? ((inFragDepth <= FOG_OFFSETF) ? 0.0 : 1.0) : (inFragDepth * (1024.0/float(FOG_STEP))) + (((-float(FOG_OFFSET)/float(FOG_STEP)) - 0.5) / 32.0);\n\
+	float fogMixWeight = texture1D(texFogDensityTable, densitySelect).r;\n\
 	\n\
-	float fogMixWeight = 0.0;\n\
-	if (FOG_STEP == 0)\n\
-	{\n\
-		fogMixWeight = texture1D( texFogDensityTable, (inFragDepth <= FOG_OFFSETF) ? 0.0 : 1.0 ).r;\n\
-	}\n\
-	else\n\
-	{\n\
-		fogMixWeight = texture1D( texFogDensityTable, (inFragDepth * (1024.0/float(FOG_STEP))) + (((-float(FOG_OFFSET)/float(FOG_STEP)) - 0.5) / 32.0) ).r;\n\
-	}\n\
-	\n\
-	if (polyEnableFog)\n\
-	{\n\
-		outFogWeight = (stateEnableFogAlphaOnly) ? vec4(vec3(0.0), fogMixWeight) : vec4(fogMixWeight);\n\
-	}\n\
-	\n\
-	gl_FragColor = outFogWeight;\n\
+	gl_FragColor = (polyEnableFog) ? ((stateEnableFogAlphaOnly) ? vec4(vec3(0.0), fogMixWeight) : vec4(fogMixWeight)) : vec4(0.0);\n\
 }\n\
 "};
 
@@ -1300,10 +1258,11 @@ OpenGLRenderer::OpenGLRenderer()
 	_isFBOBlitSupported = false;
 	isMultisampledFBOSupported = false;
 	isShaderSupported = false;
+	_isSampleShadingSupported = false;
 	isVAOSupported = false;
 	_isDepthLEqualPolygonFacingSupported = false;
 	willFlipAndConvertFramebufferOnGPU = false;
-	willUsePerSampleZeroDstPass = false;
+	_willUseMultisampleShaders = false;
 	
 	_emulateShadowPolygon = true;
 	_emulateSpecialZeroAlphaBlending = true;
@@ -2253,7 +2212,16 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 	this->_emulateDepthLEqualPolygonFacing = CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing && this->_isDepthLEqualPolygonFacingSupported;
 	
 	this->_selectedMultisampleSize = CommonSettings.GFX3D_Renderer_MultisampleSize;
+	
+	const bool oldMultisampleShadingFlag = this->_willUseMultisampleShaders;
 	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->isMultisampledFBOSupported);
+	this->_willUseMultisampleShaders = this->_isSampleShadingSupported && this->_enableMultisampledRendering;
+	if (this->_willUseMultisampleShaders != oldMultisampleShadingFlag)
+	{
+		// Fog program IDs don't have their own multisampled versions of the IDs, and so we
+		// need to reset all of the existing IDs so that the fog programs can be regenerated
+		this->DestroyFogPrograms();
+	}
 	
 	error = Render3D::ApplyRenderingSettings(renderState);
 	if (error != RENDER3DERROR_NOERR)
@@ -2842,8 +2810,8 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboColorOutMainID);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, OGLRef.texGColorID, 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, OGLRef.texFinalColorID, 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, OGLRef.texCIDepthStencilID, 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_TEXTURE_2D, OGLRef.texCIDepthStencilID, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, OGLRef.texGDepthStencilID, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_TEXTURE_2D, OGLRef.texGDepthStencilID, 0);
 	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE)
 	{
@@ -3341,7 +3309,7 @@ void OpenGLRenderer_1_2::DestroyGeometryZeroDstAlphaProgram()
 	OGLRef.fragShaderGeometryZeroDstAlphaID = 0;
 }
 
-Render3DError OpenGLRenderer_1_2::CreateEdgeMarkProgram(const char *vtxShaderCString, const char *fragShaderCString)
+Render3DError OpenGLRenderer_1_2::CreateEdgeMarkProgram(const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString)
 {
 	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
@@ -3360,10 +3328,10 @@ Render3DError OpenGLRenderer_1_2::CreateEdgeMarkProgram(const char *vtxShaderCSt
 	std::string fragShaderCode = shaderHeader.str() + std::string(fragShaderCString);
 	
 	error = this->ShaderProgramCreate(OGLRef.vertexEdgeMarkShaderID,
-									  OGLRef.fragmentEdgeMarkShaderID,
-									  OGLRef.programEdgeMarkID,
-									  vtxShaderCode.c_str(),
-									  fragShaderCode.c_str());
+	                                  OGLRef.fragmentEdgeMarkShaderID,
+	                                  OGLRef.programEdgeMarkID,
+	                                  vtxShaderCode.c_str(),
+	                                  fragShaderCode.c_str());
 	if (error != OGLERROR_NOERR)
 	{
 		INFO("OpenGL: Failed to create the EDGE MARK shader program.\n");
@@ -3387,15 +3355,15 @@ Render3DError OpenGLRenderer_1_2::CreateEdgeMarkProgram(const char *vtxShaderCSt
 	glValidateProgram(OGLRef.programEdgeMarkID);
 	glUseProgram(OGLRef.programEdgeMarkID);
 	
-	const GLint uniformTexGDepth			= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInFragDepth");
-	const GLint uniformTexGPolyID			= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInPolyID");
-	const GLint uniformTexEdgeColorTable	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texEdgeColor");
+	const GLint uniformTexGDepth         = glGetUniformLocation(OGLRef.programEdgeMarkID, "texInFragDepth");
+	const GLint uniformTexGPolyID        = glGetUniformLocation(OGLRef.programEdgeMarkID, "texInPolyID");
+	const GLint uniformTexEdgeColorTable = glGetUniformLocation(OGLRef.programEdgeMarkID, "texEdgeColor");
 	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGPolyID, OGLTextureUnitID_GPolyID);
 	glUniform1i(uniformTexEdgeColorTable, OGLTextureUnitID_LookupTable);
 	
-	OGLRef.uniformStateClearPolyID			= glGetUniformLocation(OGLRef.programEdgeMarkID, "clearPolyID");
-	OGLRef.uniformStateClearDepth			= glGetUniformLocation(OGLRef.programEdgeMarkID, "clearDepth");
+	OGLRef.uniformStateClearPolyID       = glGetUniformLocation(OGLRef.programEdgeMarkID, "clearPolyID");
+	OGLRef.uniformStateClearDepth        = glGetUniformLocation(OGLRef.programEdgeMarkID, "clearDepth");
 	
 	return OGLERROR_NOERR;
 }
@@ -3404,23 +3372,39 @@ void OpenGLRenderer_1_2::DestroyEdgeMarkProgram()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if (!this->isShaderSupported || (OGLRef.programEdgeMarkID == 0))
+	if (!this->isShaderSupported)
 	{
 		return;
 	}
 	
-	glDetachShader(OGLRef.programEdgeMarkID, OGLRef.vertexEdgeMarkShaderID);
-	glDetachShader(OGLRef.programEdgeMarkID, OGLRef.fragmentEdgeMarkShaderID);
-	glDeleteProgram(OGLRef.programEdgeMarkID);
-	glDeleteShader(OGLRef.vertexEdgeMarkShaderID);
-	glDeleteShader(OGLRef.fragmentEdgeMarkShaderID);
+	if (OGLRef.programEdgeMarkID != 0)
+	{
+		glDetachShader(OGLRef.programEdgeMarkID, OGLRef.vertexEdgeMarkShaderID);
+		glDetachShader(OGLRef.programEdgeMarkID, OGLRef.fragmentEdgeMarkShaderID);
+		glDeleteProgram(OGLRef.programEdgeMarkID);
+		glDeleteShader(OGLRef.vertexEdgeMarkShaderID);
+		glDeleteShader(OGLRef.fragmentEdgeMarkShaderID);
+		
+		OGLRef.programEdgeMarkID = 0;
+		OGLRef.vertexEdgeMarkShaderID = 0;
+		OGLRef.fragmentEdgeMarkShaderID = 0;
+	}
 	
-	OGLRef.programEdgeMarkID = 0;
-	OGLRef.vertexEdgeMarkShaderID = 0;
-	OGLRef.fragmentEdgeMarkShaderID = 0;
+	if (OGLRef.programMSEdgeMarkID != 0)
+	{
+		glDetachShader(OGLRef.programMSEdgeMarkID, OGLRef.vertexMSEdgeMarkShaderID);
+		glDetachShader(OGLRef.programMSEdgeMarkID, OGLRef.fragmentMSEdgeMarkShaderID);
+		glDeleteProgram(OGLRef.programMSEdgeMarkID);
+		glDeleteShader(OGLRef.vertexMSEdgeMarkShaderID);
+		glDeleteShader(OGLRef.fragmentMSEdgeMarkShaderID);
+		
+		OGLRef.programMSEdgeMarkID = 0;
+		OGLRef.vertexMSEdgeMarkShaderID = 0;
+		OGLRef.fragmentMSEdgeMarkShaderID = 0;
+	}
 }
 
-Render3DError OpenGLRenderer_1_2::CreateFogProgram(const OGLFogProgramKey fogProgramKey, const char *vtxShaderCString, const char *fragShaderCString)
+Render3DError OpenGLRenderer_1_2::CreateFogProgram(const OGLFogProgramKey fogProgramKey, const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString)
 {
 	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
@@ -3455,10 +3439,10 @@ Render3DError OpenGLRenderer_1_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	shaderID.fragShader = 0;
 	
 	error = this->ShaderProgramCreate(OGLRef.vertexFogShaderID,
-									  shaderID.fragShader,
-									  shaderID.program,
-									  vtxShaderCString,
-									  fragShaderCode.c_str());
+	                                  shaderID.fragShader,
+	                                  shaderID.program,
+	                                  vtxShaderCString,
+	                                  fragShaderCode.c_str());
 	
 	this->_fogProgramMap[fogProgramKey.key] = shaderID;
 	
@@ -3485,11 +3469,9 @@ Render3DError OpenGLRenderer_1_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	glValidateProgram(shaderID.program);
 	glUseProgram(shaderID.program);
 	
-	const GLint uniformTexGColor          = glGetUniformLocation(shaderID.program, "texInFragColor");
 	const GLint uniformTexGDepth          = glGetUniformLocation(shaderID.program, "texInFragDepth");
 	const GLint uniformTexGFog            = glGetUniformLocation(shaderID.program, "texInFogAttributes");
 	const GLint uniformTexFogDensityTable = glGetUniformLocation(shaderID.program, "texFogDensityTable");
-	glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
 	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGFog, OGLTextureUnitID_FogAttr);
 	glUniform1i(uniformTexFogDensityTable, OGLTextureUnitID_LookupTable);
@@ -3781,7 +3763,7 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *edgeMar
 	
 	if (this->isVBOSupported && this->isFBOSupported)
 	{
-		error = this->CreateEdgeMarkProgram(edgeMarkVtxShaderCString, edgeMarkFragShaderCString);
+		error = this->CreateEdgeMarkProgram(false, edgeMarkVtxShaderCString, edgeMarkFragShaderCString);
 		if (error != OGLERROR_NOERR)
 		{
 			return error;
@@ -4143,6 +4125,21 @@ void OpenGLRenderer_1_2::_ResolveGeometry()
 	
 	// Reset framebuffer targets
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
+}
+
+void OpenGLRenderer_1_2::_ResolveFinalFramebuffer()
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	
+	if (!this->_enableMultisampledRendering || (OGLRef.selectedRenderingFBO != OGLRef.fboMSIntermediateRenderID))
+	{
+		return;
+	}
+	
+	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, OGLRef.fboMSIntermediateColorOutMainID);
+	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, OGLRef.fboColorOutMainID);
+	glBlitFramebufferEXT(0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboColorOutMainID);
 }
 
 Render3DError OpenGLRenderer_1_2::ReadBackPixels()
@@ -4585,9 +4582,11 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 		this->DisableVertexAttributes();
 	}
 	
-	this->_ResolveGeometry();
-	
-	this->_lastTextureDrawTarget = OGLTextureUnitID_GColor;
+	if (!this->_willUseMultisampleShaders)
+	{
+		this->_ResolveGeometry();
+		this->_lastTextureDrawTarget = OGLTextureUnitID_GColor;
+	}
 	
 	return OGLERROR_NOERR;
 }
@@ -4689,7 +4688,7 @@ Render3DError OpenGLRenderer_1_2::PostprocessFramebuffer()
 		std::map<u32, OGLFogShaderID>::iterator it = this->_fogProgramMap.find(this->_fogProgramKey.key);
 		if (it == this->_fogProgramMap.end())
 		{
-			Render3DError error = this->CreateFogProgram(this->_fogProgramKey, FogVtxShader_100, FogFragShader_100);
+			Render3DError error = this->CreateFogProgram(this->_fogProgramKey, false, FogVtxShader_100, FogFragShader_100);
 			if (error != OGLERROR_NOERR)
 			{
 				return error;
@@ -4733,6 +4732,12 @@ Render3DError OpenGLRenderer_1_2::EndRender()
 {
 	//needs to happen before endgl because it could free some textureids for expired cache items
 	texCache.Evict();
+	
+	if (this->_willUseMultisampleShaders)
+	{
+		this->_ResolveFinalFramebuffer();
+		this->_lastTextureDrawTarget = OGLTextureUnitID_GColor;
+	}
 	
 	this->ReadBackPixels();
 	
@@ -5465,7 +5470,7 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		
 		if (this->isVBOSupported && this->isFBOSupported)
 		{
-			this->CreateEdgeMarkProgram(EdgeMarkVtxShader_100, EdgeMarkFragShader_100);
+			this->CreateEdgeMarkProgram(false, EdgeMarkVtxShader_100, EdgeMarkFragShader_100);
 		}
 		
 		if (OGLRef.readPixelsBestFormat == GL_BGRA)
