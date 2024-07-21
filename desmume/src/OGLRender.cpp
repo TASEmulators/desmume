@@ -2856,8 +2856,8 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	}
 	
 	// Assign the default read/draw buffers.
-	glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+	glReadBuffer(OGL_CI_COLOROUT_ATTACHMENT_ID);
+	glDrawBuffer(GL_NONE);
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderMutableID);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, OGL_COLOROUT_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texGColorID, 0);
@@ -4804,7 +4804,7 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 	
 	if (this->_enableMultisampledRendering)
 	{
-		glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
+		glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, OGLRef.fboRenderMutableID);
 		glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, OGLRef.fboMSIntermediateRenderMutableID);
 		
 		// See above comment for why we need to get clear the stencil buffer separately.

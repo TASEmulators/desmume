@@ -1068,8 +1068,8 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	}
 	
 	// Assign the default read/draw buffers.
-	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-	glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+	glReadBuffer(OGL_CI_COLOROUT_ATTACHMENT_ID);
+	glDrawBuffer(GL_NONE);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderMutableID);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, OGL_COLOROUT_ATTACHMENT_ID, GL_TEXTURE_2D, OGLRef.texGColorID, 0);
@@ -2890,7 +2890,7 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 	
 	if (this->_enableMultisampledRendering)
 	{
-		glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.fboRenderID);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.fboRenderMutableID);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboMSIntermediateRenderMutableID);
 		
 		if (this->_emulateDepthLEqualPolygonFacing)
