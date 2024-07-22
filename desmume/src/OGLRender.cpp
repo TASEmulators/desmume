@@ -954,6 +954,12 @@ static Render3D* OpenGLRendererCreate()
 		INFO("OpenGL: oglrender_init is unassigned. Clients must assign this function pointer and have a working context before running OpenGL.\n");
 		return newRenderer;
 	}
+
+	if (!oglrender_init())
+	{
+		INFO("OpenGL: oglrender_init failed.\n");
+		return newRenderer;
+	}
 	
 	if (oglrender_beginOpenGL == NULL)
 	{
@@ -964,11 +970,6 @@ static Render3D* OpenGLRendererCreate()
 	if (oglrender_endOpenGL == NULL)
 	{
 		INFO("OpenGL: oglrender_endOpenGL is unassigned. Clients must assign this function pointer before running OpenGL.\n");
-		return newRenderer;
-	}
-	
-	if (!oglrender_init())
-	{
 		return newRenderer;
 	}
 	
