@@ -194,14 +194,14 @@ FORCEINLINE void ColorspaceConvert555xTo6665Opaque_AVX2(const v256u16 &srcColor,
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert5551To8888_AVX2(const v256u16 &srcColor, v256u32 &dstLo, v256u32 &dstHi)
 {
-	const v256u16 srcAlphaBits16 = _mm256_and_si256( _mm256_cmpgt_epi16(srcColor, _mm256_set1_epi16(0xFFFF)), _mm256_set1_epi16(0xFF00) );
+	const v256u16 srcAlphaBits16 = _mm256_and_si256( _mm256_cmpgt_epi16(_mm256_setzero_si256(), srcColor), _mm256_set1_epi16(0xFF00) );
 	ColorspaceConvert555aTo8888_AVX2<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert5551To6665_AVX2(const v256u16 &srcColor, v256u32 &dstLo, v256u32 &dstHi)
 {
-	const v256u16 srcAlphaBits16 = _mm256_and_si256( _mm256_cmpgt_epi16(srcColor, _mm256_set1_epi16(0xFFFF)), _mm256_set1_epi16(0x1F00) );
+	const v256u16 srcAlphaBits16 = _mm256_and_si256( _mm256_cmpgt_epi16(_mm256_setzero_si256(), srcColor), _mm256_set1_epi16(0x1F00) );
 	ColorspaceConvert555aTo6665_AVX2<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 

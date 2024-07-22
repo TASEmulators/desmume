@@ -178,14 +178,14 @@ FORCEINLINE void ColorspaceConvert555xTo6665Opaque_SSE2(const v128u16 &srcColor,
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert5551To8888_SSE2(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
-	const v128u16 srcAlphaBits16 = _mm_and_si128( _mm_cmpgt_epi16(srcColor, _mm_set1_epi16(0xFFFF)), _mm_set1_epi16(0xFF00) );
+	const v128u16 srcAlphaBits16 = _mm_and_si128( _mm_cmpgt_epi16(_mm_setzero_si128(), srcColor), _mm_set1_epi16(0xFF00) );
 	ColorspaceConvert555aTo8888_SSE2<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert5551To6665_SSE2(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
-	const v128u16 srcAlphaBits16 = _mm_and_si128( _mm_cmpgt_epi16(srcColor, _mm_set1_epi16(0xFFFF)), _mm_set1_epi16(0x1F00) );
+	const v128u16 srcAlphaBits16 = _mm_and_si128( _mm_cmpgt_epi16(_mm_setzero_si128(), srcColor), _mm_set1_epi16(0x1F00) );
 	ColorspaceConvert555aTo6665_SSE2<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
