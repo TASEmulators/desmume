@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,3 +19,5 @@
 
 bool windows_opengl_init();
 bool initContext(HWND hwnd, HGLRC *hRC);
+bool wgl_beginOpenGL();
+void wgl_endOpenGL();

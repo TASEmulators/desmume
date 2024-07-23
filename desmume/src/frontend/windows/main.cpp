@@ -1955,8 +1955,9 @@ int _main()
 
 //	struct configured_features my_config;
 
-	oglrender_init = windows_opengl_init;
-
+	oglrender_init = &windows_opengl_init;
+	oglrender_beginOpenGL = &wgl_beginOpenGL;
+	oglrender_endOpenGL = &wgl_endOpenGL;
 
 	//try and detect this for users who don't specify it on the commandline
 	//(can't say I really blame them)
