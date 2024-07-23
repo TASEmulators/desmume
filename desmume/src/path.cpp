@@ -240,7 +240,7 @@ void PathInfo::ReadKeyW(char *pathToRead, const wchar_t *key)
 	if (wcscmp(wpath, key) == 0) {
 		//since the variables are all intialized in this file they all use MAX_PATH
 		char temppath[MAX_PATH];
-		temppath[0] = 0;
+		strcpy(temppath, wcstombs((std::wstring)wpath).c_str());
 		GetDefaultPath(temppath, wcstombs((std::wstring)key).c_str(), MAX_PATH);
 		wcscpy(wpath,mbstowcs((std::string)temppath).c_str());
 	}
