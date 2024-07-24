@@ -29,6 +29,8 @@ extern const char *GeometryFragShader_150;
 extern const char *GeometryZeroDstAlphaPixelMaskVtxShader_150;
 extern const char *GeometryZeroDstAlphaPixelMaskFragShader_150;
 extern const char *MSGeometryZeroDstAlphaPixelMaskFragShader_150;
+extern const char *ClearImageVtxShader_150;
+extern const char *ClearImageFragShader_150;
 extern const char *EdgeMarkVtxShader_150;
 extern const char *EdgeMarkFragShader_150;
 extern const char *FogVtxShader_150;
@@ -81,6 +83,8 @@ protected:
 	
 	virtual Render3DError CreateGeometryPrograms();
 	virtual void DestroyGeometryPrograms();
+	virtual Render3DError CreateClearImageProgram(const char *vsCString, const char *fsCString);
+	virtual void DestroyClearImageProgram();
 	virtual Render3DError CreateGeometryZeroDstAlphaProgram(const char *vtxShaderCString, const char *fragShaderCString);
 	virtual Render3DError CreateMSGeometryZeroDstAlphaProgram(const char *vtxShaderCString, const char *fragShaderCString);
 	virtual void DestroyMSGeometryZeroDstAlphaProgram();

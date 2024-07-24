@@ -385,6 +385,27 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 	#define OGL_CI_FOGATTRIBUTES_ATTACHMENT_ID GL_COLOR_ATTACHMENT1_EXT
 #endif
 
+#if defined(OPENGL_VARIANT_STANDARD)
+	#if MSB_FIRST
+		#define OGL_TEXTURE_SRC_CI_COLOR   GL_UNSIGNED_SHORT_1_5_5_5_REV
+		#define OGL_TEXTURE_SRC_CI_FOG     GL_UNSIGNED_INT_8_8_8_8_REV
+		#define OGL_TEXTURE_SRC_EDGE_COLOR GL_UNSIGNED_INT_8_8_8_8
+		#define OGL_TEXTURE_SRC_TOON_TABLE GL_UNSIGNED_SHORT_1_5_5_5_REV
+	#else
+		#define OGL_TEXTURE_SRC_CI_COLOR   GL_UNSIGNED_SHORT_1_5_5_5_REV
+		#define OGL_TEXTURE_SRC_CI_FOG     GL_UNSIGNED_INT_8_8_8_8_REV
+		#define OGL_TEXTURE_SRC_EDGE_COLOR GL_UNSIGNED_INT_8_8_8_8_REV
+		#define OGL_TEXTURE_SRC_TOON_TABLE GL_UNSIGNED_SHORT_1_5_5_5_REV
+	#endif
+#elif defined(OPENGL_VARIANT_ES)
+	#define OGL_TEXTURE_SRC_CI_COLOR   GL_UNSIGNED_BYTE
+	#define OGL_TEXTURE_SRC_CI_FOG     GL_UNSIGNED_BYTE
+	#define OGL_TEXTURE_SRC_EDGE_COLOR GL_UNSIGNED_BYTE
+	#define OGL_TEXTURE_SRC_TOON_TABLE GL_UNSIGNED_BYTE
+#else
+	#error Unknown OpenGL variant.
+#endif
+
 enum OpenGLVariantID
 {
 	OpenGLVariantID_Unknown         = 0,
@@ -394,7 +415,18 @@ enum OpenGLVariantID
 	OpenGLVariantID_Legacy_2_1      = 0x1021,
 	OpenGLVariantID_CoreProfile_3_2 = 0x2032,
 	OpenGLVariantID_StandardAuto    = 0x3000,
-	OpenGLVariantID_ES_3_0          = 0x4030
+	OpenGLVariantID_ES3_Auto        = 0x4000,
+	OpenGLVariantID_ES3_3_0         = 0x4030,
+	OpenGLVariantID_ES_Auto         = 0x6000
+};
+
+enum OpenGLVariantFamily
+{
+	OpenGLVariantFamily_Standard    = (3 << 12),
+	OpenGLVariantFamily_Legacy      = (1 << 12),
+	OpenGLVariantFamily_CoreProfile = (1 << 13),
+	OpenGLVariantFamily_ES          = (3 << 14),
+	OpenGLVariantFamily_ES3         = (1 << 14)
 };
 
 enum OGLVertexAttributeID
@@ -413,7 +445,10 @@ enum OGLTextureUnitID
 	OGLTextureUnitID_GPolyID,
 	OGLTextureUnitID_FogAttr,
 	OGLTextureUnitID_PolyStates,
-	OGLTextureUnitID_LookupTable
+	OGLTextureUnitID_LookupTable,
+	OGLTextureUnitID_CIColor,
+	OGLTextureUnitID_CIDepth,
+	OGLTextureUnitID_CIFogAttr
 };
 
 enum OGLBindingPointID
@@ -640,6 +675,7 @@ struct OGLRenderRef
 	GLuint fboRenderMutableID;
 	GLuint fboColorOutMainID;
 	GLuint fboColorOutWorkingID;
+	GLuint fboMSClearImageID;
 	GLuint fboMSIntermediateColorOutMainID;
 	GLuint fboMSIntermediateRenderID;
 	GLuint fboMSIntermediateRenderMutableID;
@@ -654,6 +690,10 @@ struct OGLRenderRef
 	GLuint vtxShaderGeometryZeroDstAlphaID;
 	GLuint fragShaderGeometryZeroDstAlphaID;
 	GLuint programGeometryZeroDstAlphaID;
+	
+	GLuint vsClearImageID;
+	GLuint fsClearImageID;
+	GLuint pgClearImageID;
 	
 	GLuint vtxShaderMSGeometryZeroDstAlphaID;
 	GLuint fragShaderMSGeometryZeroDstAlphaID;
@@ -896,6 +936,8 @@ protected:
 	
 	virtual Render3DError CreateGeometryPrograms() = 0;
 	virtual void DestroyGeometryPrograms() = 0;
+	virtual Render3DError CreateClearImageProgram(const char *vsCString, const char *fsCString) = 0;
+	virtual void DestroyClearImageProgram() = 0;
 	virtual Render3DError CreateGeometryZeroDstAlphaProgram(const char *vtxShaderCString, const char *fragShaderCString) = 0;
 	virtual void DestroyGeometryZeroDstAlphaProgram() = 0;
 	virtual Render3DError CreateEdgeMarkProgram(const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString) = 0;
@@ -972,6 +1014,8 @@ protected:
 	
 	virtual Render3DError CreateGeometryPrograms();
 	virtual void DestroyGeometryPrograms();
+	virtual Render3DError CreateClearImageProgram(const char *vsCString, const char *fsCString);
+	virtual void DestroyClearImageProgram();
 	virtual Render3DError CreateGeometryZeroDstAlphaProgram(const char *vtxShaderCString, const char *fragShaderCString);
 	virtual void DestroyGeometryZeroDstAlphaProgram();
 	virtual Render3DError CreateEdgeMarkProgram(const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString);

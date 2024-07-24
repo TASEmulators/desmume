@@ -258,7 +258,7 @@ void OGLCreateRenderer_ES_3_0(OpenGLRenderer **rendererPtr)
 
 OpenGLESRenderer_3_0::OpenGLESRenderer_3_0()
 {
-	_variantID = OpenGLVariantID_ES_3_0;
+	_variantID = OpenGLVariantID_ES3_3_0;
 }
 
 Render3DError OpenGLESRenderer_3_0::InitExtensions()
@@ -342,11 +342,22 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 		return error;
 	}
 	
+	error = this->CreateClearImageProgram(ClearImageVtxShader_150, ClearImageFragShader_150);
+	if (error != OGLERROR_NOERR)
+	{
+		glUseProgram(0);
+		this->DestroyGeometryPrograms();
+		this->isShaderSupported = false;
+
+		return error;
+	}
+	
 	error = this->CreateGeometryZeroDstAlphaProgram(GeometryZeroDstAlphaPixelMaskVtxShader_150, GeometryZeroDstAlphaPixelMaskFragShader_150);
 	if (error != OGLERROR_NOERR)
 	{
 		glUseProgram(0);
 		this->DestroyGeometryPrograms();
+		this->DestroyClearImageProgram();
 		this->isShaderSupported = false;
 		
 		return error;
@@ -362,6 +373,7 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	{
 		glUseProgram(0);
 		this->DestroyGeometryPrograms();
+		this->DestroyClearImageProgram();
 		this->DestroyGeometryZeroDstAlphaProgram();
 		this->isShaderSupported = false;
 		
@@ -619,6 +631,80 @@ Render3DError OpenGLESRenderer_3_0::CreateGeometryPrograms()
 		OGLRef.uniformPolyDepthOffset[flagsValue]         = glGetUniformLocation(OGLRef.programGeometryID[flagsValue], "polyDepthOffset");
 	}
 	
+	return error;
+}
+
+Render3DError OpenGLESRenderer_3_0::CreateClearImageProgram(const char *vsCString, const char *fsCString)
+{
+	Render3DError error = OGLERROR_NOERR;
+	OGLRenderRef &OGLRef = *this->ref;
+
+	std::stringstream shaderHeader;
+	shaderHeader << "#version 300 es\n";
+	shaderHeader << "precision highp float;\n";
+	shaderHeader << "precision highp int;\n";
+	shaderHeader << "\n";
+
+	std::stringstream vsHeader;
+	if (this->_isShaderFixedLocationSupported)
+	{
+		vsHeader << "#define IN_VTX_POSITION layout (location = "  << OGLVertexAttributeID_Position  << ") in\n";
+		vsHeader << "#define IN_VTX_TEXCOORD0 layout (location = " << OGLVertexAttributeID_TexCoord0 << ") in\n";
+	}
+	else
+	{
+		vsHeader << "#define IN_VTX_POSITION in\n";
+		vsHeader << "#define IN_VTX_TEXCOORD0 in\n";
+	}
+	vsHeader << "\n";
+
+	std::string vtxShaderCode  = shaderHeader.str() + vsHeader.str() + std::string(vsCString);
+	std::stringstream fsHeader;
+	if (this->_isShaderFixedLocationSupported)
+	{
+		fsHeader << "#define OUT_COLOR layout (location = 0) out\n";
+		fsHeader << "#define OUT_FOGATTR layout (location = 1) out\n";
+	}
+	else
+	{
+		fsHeader << "#define OUT_COLOR out\n";
+		fsHeader << "#define OUT_FOG_ATTRIBUTES out\n";
+	}
+	fsHeader << "\n";
+
+	std::string fragShaderCodeFogColor = shaderHeader.str() + fsHeader.str() + std::string(fsCString);
+	error = this->ShaderProgramCreate(OGLRef.vsClearImageID,
+									  OGLRef.fsClearImageID,
+									  OGLRef.pgClearImageID,
+									  vtxShaderCode.c_str(),
+									  fragShaderCodeFogColor.c_str());
+	if (error != OGLERROR_NOERR)
+	{
+		INFO("OpenGL ES: Failed to create the CLEAR_IMAGE shader program.\n");
+		glUseProgram(0);
+		this->DestroyClearImageProgram();
+		return error;
+	}
+
+	glLinkProgram(OGLRef.pgClearImageID);
+	if (!this->ValidateShaderProgramLink(OGLRef.pgClearImageID))
+	{
+		INFO("OpenGL ES: Failed to link the CLEAR_IMAGE shader color/fog program.\n");
+		glUseProgram(0);
+		this->DestroyClearImageProgram();
+		return OGLERROR_SHADER_CREATE_ERROR;
+	}
+
+	glValidateProgram(OGLRef.pgClearImageID);
+	glUseProgram(OGLRef.pgClearImageID);
+
+	const GLint uniformTexCIColor   = glGetUniformLocation(OGLRef.pgClearImageID, "texCIColor");
+	const GLint uniformTexCIFogAttr = glGetUniformLocation(OGLRef.pgClearImageID, "texCIFogAttr");
+	const GLint uniformTexCIDepthCF   = glGetUniformLocation(OGLRef.pgClearImageID, "texCIDepth");
+	glUniform1i(uniformTexCIColor, OGLTextureUnitID_CIColor);
+	glUniform1i(uniformTexCIFogAttr, OGLTextureUnitID_CIFogAttr);
+	glUniform1i(uniformTexCIDepthCF, OGLTextureUnitID_CIDepth);
+
 	return error;
 }
 

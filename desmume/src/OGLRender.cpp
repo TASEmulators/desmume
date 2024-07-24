@@ -38,27 +38,6 @@
 #include "./utils/colorspacehandler/colorspacehandler_SSE2.h"
 #endif
 
-#if defined(OPENGL_VARIANT_STANDARD)
-	#if MSB_FIRST
-		#define OGL_TEXTURE_SRC_CI_COLOR   GL_UNSIGNED_SHORT_1_5_5_5_REV
-		#define OGL_TEXTURE_SRC_CI_FOG     GL_UNSIGNED_INT_8_8_8_8_REV
-		#define OGL_TEXTURE_SRC_EDGE_COLOR GL_UNSIGNED_INT_8_8_8_8
-		#define OGL_TEXTURE_SRC_TOON_TABLE GL_UNSIGNED_SHORT_1_5_5_5_REV
-	#else
-		#define OGL_TEXTURE_SRC_CI_COLOR   GL_UNSIGNED_SHORT_1_5_5_5_REV
-		#define OGL_TEXTURE_SRC_CI_FOG     GL_UNSIGNED_INT_8_8_8_8_REV
-		#define OGL_TEXTURE_SRC_EDGE_COLOR GL_UNSIGNED_INT_8_8_8_8_REV
-		#define OGL_TEXTURE_SRC_TOON_TABLE GL_UNSIGNED_SHORT_1_5_5_5_REV
-	#endif
-#elif defined(OPENGL_VARIANT_ES)
-	#define OGL_TEXTURE_SRC_CI_COLOR   GL_UNSIGNED_BYTE
-	#define OGL_TEXTURE_SRC_CI_FOG     GL_UNSIGNED_BYTE
-	#define OGL_TEXTURE_SRC_EDGE_COLOR GL_UNSIGNED_BYTE
-	#define OGL_TEXTURE_SRC_TOON_TABLE GL_UNSIGNED_BYTE
-#else
-	#error Unknown OpenGL variant.
-#endif
-
 typedef struct
 {
 	unsigned int major;
@@ -1229,7 +1208,7 @@ GPU3DInterface gpu3Dgl_3_2 = {
 // OpenGL ES 3.0 (this is the only version of ES that is supported right now)
 GPU3DInterface gpu3Dgl_ES_3_0 = {
 	"OpenGL ES 3.0",
-	OpenGLRendererCreate<OpenGLVariantID_ES_3_0>,
+	OpenGLRendererCreate<OpenGLVariantID_ES3_3_0>,
 	OpenGLRendererDestroy
 };
 
@@ -1270,7 +1249,7 @@ OpenGLRenderer::OpenGLRenderer()
 	_emulateDepthLEqualPolygonFacing = false;
 	
 	// Init OpenGL rendering states
-	ref = (OGLRenderRef *)malloc(sizeof(OGLRenderRef));
+	ref = (OGLRenderRef *)malloc_alignedPage(sizeof(OGLRenderRef));
 	memset(ref, 0, sizeof(OGLRenderRef));
 	
 	_mappedFramebuffer = NULL;
@@ -1294,7 +1273,7 @@ OpenGLRenderer::~OpenGLRenderer()
 	free_aligned(this->_workingTextureUnpackBuffer);
 	
 	// Destroy OpenGL rendering states
-	free(this->ref);
+	free_aligned(this->ref);
 	this->ref = NULL;
 }
 
@@ -2771,11 +2750,10 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	
-	glActiveTexture(GL_TEXTURE0);
-	
 	CACHE_ALIGN GLint tempClearImageBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	memset(tempClearImageBuffer, 0, sizeof(tempClearImageBuffer));
 	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_CIColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIColorID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -2783,6 +2761,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, OGL_TEXTURE_SRC_CI_COLOR, tempClearImageBuffer);
 	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_CIDepth);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthStencilID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -2791,6 +2770,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, tempClearImageBuffer);
 	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_CIFogAttr);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIFogAttrID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -2813,7 +2793,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, OGLRef.texGDepthStencilID, 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_TEXTURE_2D, OGLRef.texGDepthStencilID, 0);
 	
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
 		INFO("OpenGL: Failed to create FBOs!\n");
 		this->DestroyFBOs();
@@ -2931,6 +2911,7 @@ void OpenGLRenderer_1_2::DestroyFBOs()
 	
 	OGLRef.fboClearImageID = 0;
 	OGLRef.fboRenderID = 0;
+	OGLRef.fboRenderMutableID = 0;
 	OGLRef.fboColorOutMainID = 0;
 	OGLRef.fboColorOutWorkingID = 0;
 	OGLRef.texCIColorID = 0;
@@ -3307,6 +3288,18 @@ void OpenGLRenderer_1_2::DestroyGeometryZeroDstAlphaProgram()
 	OGLRef.programGeometryZeroDstAlphaID = 0;
 	OGLRef.vtxShaderGeometryZeroDstAlphaID = 0;
 	OGLRef.fragShaderGeometryZeroDstAlphaID = 0;
+}
+
+Render3DError OpenGLRenderer_1_2::CreateClearImageProgram(const char *vsCString, const char *fsCString)
+{
+	Render3DError error = OGLERROR_NOERR;
+	// TODO: Add support for ancient GPUs that support shaders but not GL_EXT_framebuffer_blit.
+	return error;
+}
+
+void OpenGLRenderer_1_2::DestroyClearImageProgram()
+{
+	// Do nothing for now.
 }
 
 Render3DError OpenGLRenderer_1_2::CreateEdgeMarkProgram(const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString)
@@ -3825,11 +3818,10 @@ Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBu
 	const bool didDepthStencilChange = (memcmp(OGLRef.workingCIDepthStencilBuffer[this->_clearImageIndex], OGLRef.workingCIDepthStencilBuffer[this->_clearImageIndex ^ 0x01], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(GLuint)) != 0);
 	const bool didFogAttributesChange = this->_enableFog && this->_deviceInfo.isFogSupported && (memcmp(OGLRef.workingCIFogAttributesBuffer[this->_clearImageIndex], OGLRef.workingCIFogAttributesBuffer[this->_clearImageIndex ^ 0x01], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(GLuint)) != 0);
 	
-	glActiveTexture(GL_TEXTURE0);
-	
 	if (didColorChange)
 	{
 		memcpy(OGLRef.workingCIColorBuffer16, colorBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_CIColor);
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIColorID);
 		
 		if (OGL_TEXTURE_SRC_CI_COLOR == GL_UNSIGNED_BYTE)
@@ -3845,16 +3837,19 @@ Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBu
 	
 	if (didDepthStencilChange)
 	{
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_CIDepth);
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthStencilID);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, OGLRef.workingCIDepthStencilBuffer[this->_clearImageIndex]);
 	}
 	
 	if (didFogAttributesChange)
 	{
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_CIFogAttr);
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIFogAttrID);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, OGL_TEXTURE_SRC_CI_FOG, OGLRef.workingCIFogAttributesBuffer[this->_clearImageIndex]);
 	}
 	
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
 	return OGLERROR_NOERR;
@@ -4419,7 +4414,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 				
 				if (OGL_TEXTURE_SRC_TOON_TABLE == GL_UNSIGNED_BYTE)
 				{
-					ColorspaceConvertBuffer5551To8888<false, false, BESwapDst>(renderState.toonTable16, OGLRef.toonTable32, 32);
+					ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(renderState.toonTable16, OGLRef.toonTable32, 32);
 					glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, OGLRef.toonTable32);
 				}
 				else
@@ -5693,7 +5688,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 			
 			if (OGL_TEXTURE_SRC_TOON_TABLE == GL_UNSIGNED_BYTE)
 			{
-				ColorspaceConvertBuffer5551To8888<false, false, BESwapDst>(renderState.toonTable16, OGLRef.toonTable32, 32);
+				ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(renderState.toonTable16, OGLRef.toonTable32, 32);
 				glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, OGLRef.toonTable32);
 			}
 			else

@@ -44,6 +44,7 @@ class OpenGLESRenderer_3_0 : public OpenGLRenderer_3_2
 {
 protected:
 	virtual Render3DError CreateGeometryPrograms();
+	virtual Render3DError CreateClearImageProgram(const char *vsCString, const char *fsCString);
 	virtual Render3DError CreateGeometryZeroDstAlphaProgram(const char *vtxShaderCString, const char *fragShaderCString);
 	virtual Render3DError CreateEdgeMarkProgram(const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString);
 	virtual Render3DError CreateFogProgram(const OGLFogProgramKey fogProgramKey, const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString);
