@@ -978,7 +978,7 @@ static Render3D* OpenGLRendererCreate()
 				strncpy(variantString, "OpenGL (auto)", sizeof(variantString));
 				break;
 				
-			case OpenGLVariantID_ES_3_0:
+			case OpenGLVariantID_ES3_3_0:
 				strncpy(variantString, "OpenGL ES 3.0", sizeof(variantString));
 				break;
 				
@@ -1020,7 +1020,7 @@ static Render3D* OpenGLRendererCreate()
 	}
 	
 	// Create new OpenGL rendering object
-	if (VARIANTID == OpenGLVariantID_ES_3_0)
+	if (VARIANTID == OpenGLVariantID_ES3_3_0)
 	{
 		if ( (OGLLoadEntryPoints_ES_3_0_Func != NULL) && (OGLCreateRenderer_ES_3_0_Func != NULL) )
 		{
