@@ -2819,7 +2819,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 		OGLPolyStates *polyStates = this->_pendingPolyStates;
 		
 #if defined(GL_VERSION_3_1) || defined(GL_ES_VERSION_3_2)
-		if (OGLRef.tboPolyStatesID != 0)
+		if ( (OGLRef.tboPolyStatesID != 0) && (this->_variantID & OpenGLVariantFamily_Standard) )
 		{
 			// Some drivers seem to have problems with GL_TEXTURE_BUFFER used as the target for
 			// glMapBufferRange() or glBufferSubData(), causing certain polygons to intermittently
@@ -2862,7 +2862,15 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 #if defined(GL_VERSION_3_1) || defined(GL_ES_VERSION_3_2)
 		else if (OGLRef.tboPolyStatesID != 0)
 		{
-			glUnmapBuffer(GL_TEXTURE_BUFFER);
+			if (this->_variantID & OpenGLVariantFamily_Standard)
+			{
+				glUnmapBuffer(GL_TEXTURE_BUFFER);
+			}
+			else
+			{
+				glBindBuffer(GL_TEXTURE_BUFFER, OGLRef.tboPolyStatesID);
+				glBufferSubData(GL_TEXTURE_BUFFER, 0, CLIPPED_POLYLIST_SIZE * sizeof(OGLPolyStates), this->_pendingPolyStates);
+			}
 		}
 #endif
 		else
