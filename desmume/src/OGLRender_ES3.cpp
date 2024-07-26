@@ -30,6 +30,21 @@
 #include "NDSSystem.h"
 
 
+static const GLenum GeometryDrawBuffersEnumES[8][4] = {
+	{ OGL_COLOROUT_ATTACHMENT_ID,                   GL_NONE,                  GL_NONE,                         GL_NONE },
+	{ OGL_COLOROUT_ATTACHMENT_ID,                   GL_NONE,                  GL_NONE, OGL_FOGATTRIBUTES_ATTACHMENT_ID },
+	{ OGL_COLOROUT_ATTACHMENT_ID,                   GL_NONE, OGL_POLYID_ATTACHMENT_ID,                         GL_NONE },
+	{ OGL_COLOROUT_ATTACHMENT_ID,                   GL_NONE, OGL_POLYID_ATTACHMENT_ID, OGL_FOGATTRIBUTES_ATTACHMENT_ID },
+	{ OGL_COLOROUT_ATTACHMENT_ID, OGL_WORKING_ATTACHMENT_ID,                  GL_NONE,                         GL_NONE },
+	{ OGL_COLOROUT_ATTACHMENT_ID, OGL_WORKING_ATTACHMENT_ID,                  GL_NONE, OGL_FOGATTRIBUTES_ATTACHMENT_ID },
+	{ OGL_COLOROUT_ATTACHMENT_ID, OGL_WORKING_ATTACHMENT_ID, OGL_POLYID_ATTACHMENT_ID,                         GL_NONE },
+	{ OGL_COLOROUT_ATTACHMENT_ID, OGL_WORKING_ATTACHMENT_ID, OGL_POLYID_ATTACHMENT_ID, OGL_FOGATTRIBUTES_ATTACHMENT_ID }
+};
+
+static const GLint GeometryAttachmentWorkingBufferES[8] = { 1,1,1,1,1,1,1,1 };
+static const GLint GeometryAttachmentPolyIDES[8]        = { 2,2,2,2,2,2,2,2 };
+static const GLint GeometryAttachmentFogAttributesES[8] = { 3,3,3,3,3,3,3,3 };
+
 // Vertex shader for geometry, GLSL ES 3.00
 static const char *GeometryVtxShader_ES300 = {"\
 IN_VTX_POSITION  vec4 inPosition;\n\
@@ -259,6 +274,16 @@ void OGLCreateRenderer_ES_3_0(OpenGLRenderer **rendererPtr)
 OpenGLESRenderer_3_0::OpenGLESRenderer_3_0()
 {
 	_variantID = OpenGLVariantID_ES3_3_0;
+	
+	_geometryDrawBuffersEnum         = GeometryDrawBuffersEnumES;
+	_geometryAttachmentWorkingBuffer = GeometryAttachmentWorkingBufferES;
+	_geometryAttachmentPolyID        = GeometryAttachmentPolyIDES;
+	_geometryAttachmentFogAttributes = GeometryAttachmentFogAttributesES;
+	
+	ref->textureSrcTypeCIColor   = GL_UNSIGNED_BYTE;
+	ref->textureSrcTypeCIFog     = GL_UNSIGNED_BYTE;
+	ref->textureSrcTypeEdgeColor = GL_UNSIGNED_BYTE;
+	ref->textureSrcTypeToonTable = GL_UNSIGNED_BYTE;
 }
 
 Render3DError OpenGLESRenderer_3_0::InitExtensions()
@@ -541,20 +566,10 @@ Render3DError OpenGLESRenderer_3_0::CreateGeometryPrograms()
 	for (size_t flagsValue = 0; flagsValue < 128; flagsValue++, programFlags.value++)
 	{
 		std::stringstream shaderFlags;
-		if (this->_isShaderFixedLocationSupported)
-		{
-			shaderFlags << "#define OUT_COLOR layout (location = 0) out\n";
-			shaderFlags << "#define OUT_WORKING_BUFFER layout (location = " << GeometryAttachmentWorkingBuffer[programFlags.DrawBuffersMode] << ") out\n";
-			shaderFlags << "#define OUT_POLY_ID layout (location = "        << GeometryAttachmentPolyID[programFlags.DrawBuffersMode]        << ") out\n";
-			shaderFlags << "#define OUT_FOG_ATTRIBUTES layout (location = " << GeometryAttachmentFogAttributes[programFlags.DrawBuffersMode] << ") out\n";
-		}
-		else
-		{
-			shaderFlags << "#define OUT_COLOR out\n";
-			shaderFlags << "#define OUT_WORKING_BUFFER out\n";
-			shaderFlags << "#define OUT_POLY_ID out\n";
-			shaderFlags << "#define OUT_FOG_ATTRIBUTES out\n";
-		}
+		shaderFlags << "#define OUT_COLOR layout (location = 0) out\n";
+		shaderFlags << "#define OUT_WORKING_BUFFER layout (location = " << (OGL_WORKING_ATTACHMENT_ID - GL_COLOR_ATTACHMENT0)       << ") out\n";
+		shaderFlags << "#define OUT_POLY_ID layout (location = "        << (OGL_POLYID_ATTACHMENT_ID - GL_COLOR_ATTACHMENT0)        << ") out\n";
+		shaderFlags << "#define OUT_FOG_ATTRIBUTES layout (location = " << (OGL_FOGATTRIBUTES_ATTACHMENT_ID - GL_COLOR_ATTACHMENT0) << ") out\n";
 		shaderFlags << "\n";
 		shaderFlags << "#define USE_TEXTURE_SMOOTHING " << ((this->_enableTextureSmoothing) ? 1 : 0) << "\n";
 		shaderFlags << "#define USE_NDS_DEPTH_CALCULATION " << ((this->_emulateNDSDepthCalculation) ? 1 : 0) << "\n";

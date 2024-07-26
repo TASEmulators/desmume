@@ -332,7 +332,41 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 	// modification. In other words, these are one-to-one drop-in replacements.
 	typedef GLclampf GLclampd;
 	#define glClearDepth(depth) glClearDepthf(depth)
-	#define glDrawBuffer(x) glDrawBuffers(1, ((GLenum[]){x}))
+	
+	#ifdef OPENGL_VARIANT_ES
+	#define glDrawBuffer glDrawBufferES
+	static inline void glDrawBufferES(GLenum theAttachment)
+	{
+		GLenum bufs[4] = { GL_NONE, GL_NONE, GL_NONE, GL_NONE };
+		switch (theAttachment)
+		{
+			case GL_NONE:
+				glDrawBuffers(1, bufs);
+				return;
+
+			case GL_COLOR_ATTACHMENT0:
+			case GL_COLOR_ATTACHMENT1:
+			case GL_COLOR_ATTACHMENT2:
+			case GL_COLOR_ATTACHMENT3:
+			{
+				const GLsizei i = theAttachment - GL_COLOR_ATTACHMENT0;
+				bufs[i] = theAttachment;
+				glDrawBuffers(i+1, bufs);
+				return;
+			}
+
+			default:
+				return;
+		}
+	}
+	#else
+	#define glDrawBuffer glDrawBufferDESMUME
+	static inline void glDrawBufferDESMUME(GLenum theAttachment)
+	{
+		GLenum bufs[] = { theAttachment };
+		glDrawBuffers(1, bufs);
+	}
+	#endif
 	
 	// 1D textures may not exist for a particular OpenGL variant, so they will be promoted to
 	// 2D textures instead. Implementations need to modify their GLSL shaders accordingly to
@@ -351,18 +385,13 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 	#define glMapBuffer(target, access) glMapBufferRange(target, 0, 0, access)
 #endif
 
-// Define the minimum required OpenGL version for the driver to support
-#if defined(OPENGL_VARIANT_STANDARD)
-	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR    1
-	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR    2
-	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION 0
-#elif defined(OPENGL_VARIANT_ES)
-	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR    3
-	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR    0
-	#define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION 0
-#else
-	#error Unknown OpenGL variant.
-#endif
+// Define the minimum required OpenGL version for the context to support
+#define OGLRENDER_STANDARD_MINIMUM_CONTEXT_VERSION_REQUIRED_MAJOR    1
+#define OGLRENDER_STANDARD_MINIMUM_CONTEXT_VERSION_REQUIRED_MINOR    2
+#define OGLRENDER_STANDARD_MINIMUM_CONTEXT_VERSION_REQUIRED_REVISION 0
+#define OGLRENDER_ES_MINIMUM_CONTEXT_VERSION_REQUIRED_MAJOR    3
+#define OGLRENDER_ES_MINIMUM_CONTEXT_VERSION_REQUIRED_MINOR    0
+#define OGLRENDER_ES_MINIMUM_CONTEXT_VERSION_REQUIRED_REVISION 0
 
 #define OGLRENDER_VERT_INDEX_BUFFER_COUNT	(CLIPPED_POLYLIST_SIZE * 6)
 
@@ -383,27 +412,6 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 
 	#define OGL_CI_COLOROUT_ATTACHMENT_ID      GL_COLOR_ATTACHMENT0_EXT
 	#define OGL_CI_FOGATTRIBUTES_ATTACHMENT_ID GL_COLOR_ATTACHMENT1_EXT
-#endif
-
-#if defined(OPENGL_VARIANT_STANDARD)
-	#if MSB_FIRST
-		#define OGL_TEXTURE_SRC_CI_COLOR   GL_UNSIGNED_SHORT_1_5_5_5_REV
-		#define OGL_TEXTURE_SRC_CI_FOG     GL_UNSIGNED_INT_8_8_8_8_REV
-		#define OGL_TEXTURE_SRC_EDGE_COLOR GL_UNSIGNED_INT_8_8_8_8
-		#define OGL_TEXTURE_SRC_TOON_TABLE GL_UNSIGNED_SHORT_1_5_5_5_REV
-	#else
-		#define OGL_TEXTURE_SRC_CI_COLOR   GL_UNSIGNED_SHORT_1_5_5_5_REV
-		#define OGL_TEXTURE_SRC_CI_FOG     GL_UNSIGNED_INT_8_8_8_8_REV
-		#define OGL_TEXTURE_SRC_EDGE_COLOR GL_UNSIGNED_INT_8_8_8_8_REV
-		#define OGL_TEXTURE_SRC_TOON_TABLE GL_UNSIGNED_SHORT_1_5_5_5_REV
-	#endif
-#elif defined(OPENGL_VARIANT_ES)
-	#define OGL_TEXTURE_SRC_CI_COLOR   GL_UNSIGNED_BYTE
-	#define OGL_TEXTURE_SRC_CI_FOG     GL_UNSIGNED_BYTE
-	#define OGL_TEXTURE_SRC_EDGE_COLOR GL_UNSIGNED_BYTE
-	#define OGL_TEXTURE_SRC_TOON_TABLE GL_UNSIGNED_BYTE
-#else
-	#error Unknown OpenGL variant.
 #endif
 
 enum OpenGLVariantID
@@ -630,6 +638,10 @@ struct OGLRenderRef
 	GLint stateTexMirroredRepeat;
 	GLint readPixelsBestDataType;
 	GLint readPixelsBestFormat;
+	GLenum textureSrcTypeCIColor;
+	GLenum textureSrcTypeCIFog;
+	GLenum textureSrcTypeEdgeColor;
+	GLenum textureSrcTypeToonTable;
 	
 	// VBO
 	GLuint vboGeometryVtxID;
@@ -763,11 +775,6 @@ extern GPU3DInterface gpu3DglOld;
 extern GPU3DInterface gpu3Dgl_3_2;
 extern GPU3DInterface gpu3Dgl_ES_3_0;
 
-extern const GLenum GeometryDrawBuffersEnum[8][4];
-extern const GLint GeometryAttachmentWorkingBuffer[8];
-extern const GLint GeometryAttachmentPolyID[8];
-extern const GLint GeometryAttachmentFogAttributes[8];
-
 extern CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32];
 extern CACHE_ALIGN const GLfloat divide6bitBy63_LUT[64];
 extern const GLfloat PostprocessVtxBuffer[16];
@@ -777,6 +784,10 @@ extern const GLubyte PostprocessElementBuffer[6];
 //Platforms, please be sure to set this up.
 //return true if you successfully init.
 extern bool (*oglrender_init)();
+
+// This is called by OGLRender whenever the renderer is switched
+// away from this one, or if the renderer is shut down.
+extern void (*oglrender_deinit)();
 
 //This is called by OGLRender before it uses opengl.
 //return true if youre OK with using opengl
@@ -883,6 +894,11 @@ protected:
 	bool _emulateNDSDepthCalculation;
 	bool _emulateDepthLEqualPolygonFacing;
 	bool _isDepthLEqualPolygonFacingSupported;
+	
+	const GLenum (*_geometryDrawBuffersEnum)[4];
+	const GLint *_geometryAttachmentWorkingBuffer;
+	const GLint *_geometryAttachmentPolyID;
+	const GLint *_geometryAttachmentFogAttributes;
 	
 	Color4u8 *_mappedFramebuffer;
 	Color4u8 *_workingTextureUnpackBuffer;
@@ -1064,6 +1080,7 @@ protected:
 	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID);
 	
 public:
+	OpenGLRenderer_1_2();
 	~OpenGLRenderer_1_2();
 	
 	virtual Render3DError InitExtensions();

@@ -78,74 +78,50 @@ CACHE_ALIGN const GLfloat divide6bitBy63_LUT[64]	= {0.0,             0.015873015
 const GLfloat PostprocessVtxBuffer[16]	= {-1.0f, -1.0f,  1.0f, -1.0f, -1.0f,  1.0f,  1.0f,  1.0f,
                                             0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f};
 
-const GLenum GeometryDrawBuffersEnum[8][4] = {
-	{ OGL_COLOROUT_ATTACHMENT_ID, GL_NONE, GL_NONE, GL_NONE },
-	{ OGL_COLOROUT_ATTACHMENT_ID, OGL_FOGATTRIBUTES_ATTACHMENT_ID, GL_NONE, GL_NONE },
-	{ OGL_COLOROUT_ATTACHMENT_ID, OGL_POLYID_ATTACHMENT_ID, GL_NONE, GL_NONE },
-	{ OGL_COLOROUT_ATTACHMENT_ID, OGL_POLYID_ATTACHMENT_ID, OGL_FOGATTRIBUTES_ATTACHMENT_ID, GL_NONE },
-	{ OGL_COLOROUT_ATTACHMENT_ID, OGL_WORKING_ATTACHMENT_ID, GL_NONE, GL_NONE },
-	{ OGL_COLOROUT_ATTACHMENT_ID, OGL_WORKING_ATTACHMENT_ID, OGL_FOGATTRIBUTES_ATTACHMENT_ID, GL_NONE },
-	{ OGL_COLOROUT_ATTACHMENT_ID, OGL_WORKING_ATTACHMENT_ID, OGL_POLYID_ATTACHMENT_ID, GL_NONE },
-	{ OGL_COLOROUT_ATTACHMENT_ID, OGL_WORKING_ATTACHMENT_ID, OGL_POLYID_ATTACHMENT_ID, OGL_FOGATTRIBUTES_ATTACHMENT_ID }
+static const GLenum GeometryDrawBuffersEnumStandard[8][4] = {
+	{ OGL_COLOROUT_ATTACHMENT_ID,                         GL_NONE,                         GL_NONE,                         GL_NONE },
+	{ OGL_COLOROUT_ATTACHMENT_ID, OGL_FOGATTRIBUTES_ATTACHMENT_ID,                         GL_NONE,                         GL_NONE },
+	{ OGL_COLOROUT_ATTACHMENT_ID,        OGL_POLYID_ATTACHMENT_ID,                         GL_NONE,                         GL_NONE },
+	{ OGL_COLOROUT_ATTACHMENT_ID,        OGL_POLYID_ATTACHMENT_ID, OGL_FOGATTRIBUTES_ATTACHMENT_ID,                         GL_NONE },
+	{ OGL_COLOROUT_ATTACHMENT_ID,       OGL_WORKING_ATTACHMENT_ID,                         GL_NONE,                         GL_NONE },
+	{ OGL_COLOROUT_ATTACHMENT_ID,       OGL_WORKING_ATTACHMENT_ID, OGL_FOGATTRIBUTES_ATTACHMENT_ID,                         GL_NONE },
+	{ OGL_COLOROUT_ATTACHMENT_ID,       OGL_WORKING_ATTACHMENT_ID,        OGL_POLYID_ATTACHMENT_ID,                         GL_NONE },
+	{ OGL_COLOROUT_ATTACHMENT_ID,       OGL_WORKING_ATTACHMENT_ID,        OGL_POLYID_ATTACHMENT_ID, OGL_FOGATTRIBUTES_ATTACHMENT_ID }
 };
 
-const GLint GeometryAttachmentWorkingBuffer[8] = {
-	0,
-	0,
-	0,
-	0,
-	1,
-	1,
-	1,
-	1
-};
-
-const GLint GeometryAttachmentPolyID[8] = {
-	0,
-	0,
-	1,
-	1,
-	0,
-	0,
-	2,
-	2
-};
-
-const GLint GeometryAttachmentFogAttributes[8] = {
-	0,
-	1,
-	0,
-	2,
-	0,
-	2,
-	0,
-	3
-};
-
-bool BEGINGL()
-{
-	if (oglrender_beginOpenGL)
-		return oglrender_beginOpenGL();
-	else return true;
-}
-
-void ENDGL()
-{
-	if (oglrender_endOpenGL)
-		oglrender_endOpenGL();
-}
-
-// OPENGL CLIENT CONTEXT FUNCTION POINTERS
-bool (*oglrender_init)() = NULL;
-bool (*oglrender_beginOpenGL)() = NULL;
-void (*oglrender_endOpenGL)() = NULL;
-bool (*oglrender_framebufferDidResizeCallback)(const bool isFBOSupported, size_t w, size_t h) = NULL;
+static const GLint GeometryAttachmentWorkingBufferStandard[8] = { 0,0,0,0,1,1,1,1 };
+static const GLint GeometryAttachmentPolyIDStandard[8]        = { 0,0,1,1,0,0,2,2 };
+static const GLint GeometryAttachmentFogAttributesStandard[8] = { 0,1,0,2,0,2,0,3 };
 
 // OPENGL RENDERER OBJECT CREATION FUNCTION POINTERS
 void (*OGLLoadEntryPoints_3_2_Func)() = NULL;
 void (*OGLCreateRenderer_3_2_Func)(OpenGLRenderer **rendererPtr) = NULL;
 void (*OGLLoadEntryPoints_ES_3_0_Func)() = NULL;
 void (*OGLCreateRenderer_ES_3_0_Func)(OpenGLRenderer **rendererPtr) = NULL;
+
+// OPENGL CLIENT CONTEXT FUNCTION POINTERS
+bool (*oglrender_init)() = NULL;
+void (*oglrender_deinit)() = NULL;
+bool (*oglrender_beginOpenGL)() = NULL;
+void (*oglrender_endOpenGL)() = NULL;
+bool (*oglrender_framebufferDidResizeCallback)(const bool isFBOSupported, size_t w, size_t h) = NULL;
+
+bool (*__BeginOpenGL)() = NULL;
+void (*__EndOpenGL)() = NULL;
+
+bool BEGINGL()
+{
+	if (__BeginOpenGL != NULL)
+		return __BeginOpenGL();
+	else
+		return true;
+}
+
+void ENDGL()
+{
+	if (__EndOpenGL != NULL)
+		__EndOpenGL();
+}
 
 //------------------------------------------------------------
 
@@ -927,22 +903,66 @@ static Render3D* OpenGLRendererCreate()
 {
 	OpenGLRenderer *newRenderer = NULL;
 	Render3DError error = OGLERROR_NOERR;
+	CACHE_ALIGN char variantStringFull[32] = {0};
+	CACHE_ALIGN char variantFamilyString[32] = {0};
+	
+	switch (VARIANTID)
+	{
+		case OpenGLVariantID_Legacy_1_2:
+			strncpy(variantStringFull, "OpenGL 1.2 (forced)", sizeof(variantStringFull));
+			strncpy(variantFamilyString, "OpenGL", sizeof(variantFamilyString));
+			break;
+
+		case OpenGLVariantID_Legacy_2_0:
+			strncpy(variantStringFull, "OpenGL 2.0 (forced)", sizeof(variantStringFull));
+			strncpy(variantFamilyString, "OpenGL", sizeof(variantFamilyString));
+			break;
+
+		case OpenGLVariantID_Legacy_2_1:
+			strncpy(variantStringFull, "OpenGL 2.1 (forced)", sizeof(variantStringFull));
+			strncpy(variantFamilyString, "OpenGL", sizeof(variantFamilyString));
+			break;
+
+		case OpenGLVariantID_CoreProfile_3_2:
+			strncpy(variantStringFull, "OpenGL 3.2 (forced)", sizeof(variantStringFull));
+			strncpy(variantFamilyString, "OpenGL", sizeof(variantFamilyString));
+			break;
+
+		case OpenGLVariantID_LegacyAuto:
+		case OpenGLVariantID_StandardAuto:
+			strncpy(variantStringFull, "OpenGL (auto)", sizeof(variantStringFull));
+			strncpy(variantFamilyString, "OpenGL", sizeof(variantFamilyString));
+			break;
+
+		case OpenGLVariantID_ES3_3_0:
+			strncpy(variantStringFull, "OpenGL ES 3.0", sizeof(variantStringFull));
+			strncpy(variantFamilyString, "OpenGL ES", sizeof(variantFamilyString));
+			break;
+
+		default:
+			strncpy(variantStringFull, "OpenGL UNKNOWN", sizeof(variantStringFull));
+			strncpy(variantFamilyString, "OpenGL UNKNOWN", sizeof(variantFamilyString));
+			break;
+	}
 	
 	if (oglrender_init == NULL)
 	{
-		INFO("OpenGL: oglrender_init is unassigned. Clients must assign this function pointer and have a working context before running OpenGL.\n");
+		INFO("%s: oglrender_init is unassigned. Clients must assign this function pointer and have a working context before running OpenGL.\n",
+		     variantStringFull);
 		return newRenderer;
 	}
 	
 	if (oglrender_beginOpenGL == NULL)
 	{
-		INFO("OpenGL: oglrender_beginOpenGL is unassigned. Clients must assign this function pointer before running OpenGL.\n");
+		INFO("%s: oglrender_beginOpenGL is unassigned. Clients must assign this function pointer before running OpenGL.\n",
+		     variantStringFull);
 		return newRenderer;
 	}
 	
 	if (oglrender_endOpenGL == NULL)
 	{
-		INFO("OpenGL: oglrender_endOpenGL is unassigned. Clients must assign this function pointer before running OpenGL.\n");
+		INFO("%s: oglrender_endOpenGL is unassigned. Clients must assign this function pointer before running OpenGL.\n",
+		     variantStringFull);
 		return newRenderer;
 	}
 	
@@ -951,42 +971,12 @@ static Render3D* OpenGLRendererCreate()
 		return newRenderer;
 	}
 	
+	__BeginOpenGL = oglrender_beginOpenGL;
+	__EndOpenGL   = oglrender_endOpenGL;
+	
 	if (!BEGINGL())
 	{
-		char variantString[32] = {0};
-		
-		switch (VARIANTID)
-		{
-			case OpenGLVariantID_Legacy_1_2:
-				strncpy(variantString, "OpenGL 1.2 (forced)", sizeof(variantString));
-				break;
-				
-			case OpenGLVariantID_Legacy_2_0:
-				strncpy(variantString, "OpenGL 2.0 (forced)", sizeof(variantString));
-				break;
-				
-			case OpenGLVariantID_Legacy_2_1:
-				strncpy(variantString, "OpenGL 2.1 (forced)", sizeof(variantString));
-				break;
-				
-			case OpenGLVariantID_CoreProfile_3_2:
-				strncpy(variantString, "OpenGL 3.2 (forced)", sizeof(variantString));
-				break;
-				
-			case OpenGLVariantID_LegacyAuto:
-			case OpenGLVariantID_StandardAuto:
-				strncpy(variantString, "OpenGL (auto)", sizeof(variantString));
-				break;
-				
-			case OpenGLVariantID_ES3_3_0:
-				strncpy(variantString, "OpenGL ES 3.0", sizeof(variantString));
-				break;
-				
-			default:
-				break;
-		}
-		
-		INFO("%s: Could not initialize -- BEGINGL() failed.\n", variantString);
+		INFO("%s: Could not initialize -- BEGINGL() failed.\n", variantStringFull);
 		return newRenderer;
 	}
 	
@@ -1000,7 +990,8 @@ static Render3D* OpenGLRendererCreate()
 	// http://forums.desmume.org/viewtopic.php?id=9286
 	if(!strcmp(oglVendorString,"Intel") && strstr(oglRendererString,"965"))
 	{
-		INFO("OpenGL: Incompatible graphic card detected. Disabling OpenGL support.\n");
+		INFO("%s: Incompatible graphic card detected. Disabling OpenGL support.\n",
+			 variantStringFull);
 		
 		ENDGL();
 		return newRenderer;
@@ -1009,12 +1000,43 @@ static Render3D* OpenGLRendererCreate()
 	// Check the driver's OpenGL version
 	OGLGetDriverVersion(oglVersionString, &_OGLDriverVersion.major, &_OGLDriverVersion.minor, &_OGLDriverVersion.revision);
 	
-	if (!IsOpenGLDriverVersionSupported(OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION))
+	if (VARIANTID & OpenGLVariantFamily_Standard)
 	{
-		INFO("OpenGL: Driver does not support OpenGL v%u.%u.%u or later. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
-		     OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION,
+		if (!IsOpenGLDriverVersionSupported(OGLRENDER_STANDARD_MINIMUM_CONTEXT_VERSION_REQUIRED_MAJOR,
+		                                    OGLRENDER_STANDARD_MINIMUM_CONTEXT_VERSION_REQUIRED_MINOR,
+		                                    OGLRENDER_STANDARD_MINIMUM_CONTEXT_VERSION_REQUIRED_REVISION))
+		{
+			INFO("%s: This context does not support OpenGL v%u.%u.%u or later. Disabling 3D renderer.\n[ Context Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+			     variantStringFull,
+			     OGLRENDER_STANDARD_MINIMUM_CONTEXT_VERSION_REQUIRED_MAJOR,
+			     OGLRENDER_STANDARD_MINIMUM_CONTEXT_VERSION_REQUIRED_MINOR,
+			     OGLRENDER_STANDARD_MINIMUM_CONTEXT_VERSION_REQUIRED_REVISION,
+			     oglVersionString, oglVendorString, oglRendererString);
+			ENDGL();
+			return newRenderer;
+		}
+	}
+	else if (VARIANTID & OpenGLVariantFamily_ES)
+	{
+		if (!IsOpenGLDriverVersionSupported(OGLRENDER_ES_MINIMUM_CONTEXT_VERSION_REQUIRED_MAJOR,
+		                                    OGLRENDER_ES_MINIMUM_CONTEXT_VERSION_REQUIRED_MINOR,
+		                                    OGLRENDER_ES_MINIMUM_CONTEXT_VERSION_REQUIRED_REVISION))
+		{
+			INFO("%s: This context does not support OpenGL ES v%u.%u.%u or later. Disabling 3D renderer.\n[ Context Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+			     variantStringFull,
+			     OGLRENDER_ES_MINIMUM_CONTEXT_VERSION_REQUIRED_MAJOR,
+			     OGLRENDER_ES_MINIMUM_CONTEXT_VERSION_REQUIRED_MINOR,
+			     OGLRENDER_ES_MINIMUM_CONTEXT_VERSION_REQUIRED_REVISION,
+			     oglVersionString, oglVendorString, oglRendererString);
+			ENDGL();
+			return newRenderer;
+		}
+	}
+	else
+	{
+		INFO("%s: This renderer does not support the OpenGL variant requested by this context. Disabling 3D renderer.\n[ Context Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+		     variantStringFull,
 		     oglVersionString, oglVendorString, oglRendererString);
-		
 		ENDGL();
 		return newRenderer;
 	}
@@ -1106,7 +1128,8 @@ static Render3D* OpenGLRendererCreate()
 	
 	if (newRenderer == NULL)
 	{
-		INFO("OpenGL: Renderer did not initialize. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+		INFO("%s: Renderer did not initialize. Disabling 3D renderer.\n[ Context Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+		     variantStringFull,
 		     oglVersionString, oglVendorString, oglRendererString);
 		
 		ENDGL();
@@ -1119,12 +1142,14 @@ static Render3D* OpenGLRendererCreate()
 	{
 		if (error == OGLERROR_DRIVER_VERSION_TOO_OLD)
 		{
-			INFO("OpenGL: This driver does not support the minimum feature set required to run this renderer. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+			INFO("%s: This driver does not support the minimum feature set required to run this renderer. Disabling 3D renderer.\n[ Context Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+			     variantFamilyString,
 			     oglVersionString, oglVendorString, oglRendererString);
 		}
 		else if (newRenderer->IsVersionSupported(1, 5, 0) && (error == OGLERROR_VBO_UNSUPPORTED))
 		{
-			INFO("OpenGL: VBOs are not available, even though this version of OpenGL requires them. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+			INFO("%s: VBOs are not available, even though this version of OpenGL requires them. Disabling 3D renderer.\n[ Context Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+			     variantFamilyString,
 			     oglVersionString, oglVendorString, oglRendererString);
 		}
 		else if ( newRenderer->IsVersionSupported(2, 0, 0) &&
@@ -1132,17 +1157,21 @@ static Render3D* OpenGLRendererCreate()
 		          error == OGLERROR_VERTEX_SHADER_PROGRAM_LOAD_ERROR ||
 		          error == OGLERROR_FRAGMENT_SHADER_PROGRAM_LOAD_ERROR) )
 		{
-			INFO("OpenGL: Shaders are not working, even though they should be on this version of OpenGL. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+			INFO("%s: Shaders are not working, even though they should be on this version of OpenGL. Disabling 3D renderer.\n[ Context Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+			     variantFamilyString,
 			     oglVersionString, oglVendorString, oglRendererString);
 		}
 		else if (newRenderer->IsVersionSupported(2, 1, 0) && (error == OGLERROR_PBO_UNSUPPORTED))
 		{
-			INFO("OpenGL: PBOs are not available, even though this version of OpenGL requires them. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+			INFO("%s: PBOs are not available, even though this version of OpenGL requires them. Disabling 3D renderer.\n[ Context Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+			     variantFamilyString,
 			     oglVersionString, oglVendorString, oglRendererString);
 		}
-		else if (newRenderer->IsVersionSupported(3, 0, 0) && (error == OGLERROR_FBO_CREATE_ERROR) && (OGLLoadEntryPoints_3_2_Func != NULL))
+		else if ( newRenderer->IsVersionSupported(3, 0, 0) && (error == OGLERROR_FBO_CREATE_ERROR) &&
+		         ((OGLLoadEntryPoints_3_2_Func != NULL) || (OGLLoadEntryPoints_ES_3_0_Func != NULL)) )
 		{
-			INFO("OpenGL: FBOs are not available, even though this version of OpenGL requires them. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+			INFO("%s: FBOs are not available, even though this version of OpenGL requires them. Disabling 3D renderer.\n[ Context Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+			     variantFamilyString,
 			     oglVersionString, oglVendorString, oglRendererString);
 		}
 		
@@ -1163,15 +1192,15 @@ static Render3D* OpenGLRendererCreate()
 	unsigned int revision = 0;
 	newRenderer->GetVersion(&major, &minor, &revision);
 	
-	INFO("OpenGL: Renderer initialized successfully (v%u.%u.%u).\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
-	     major, minor, revision, oglVersionString, oglVendorString, oglRendererString);
+	INFO("%s: Renderer initialized successfully (v%u.%u.%u).\n[ Context Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+	     variantFamilyString, major, minor, revision, oglVersionString, oglVendorString, oglRendererString);
 	
 	return newRenderer;
 }
 
 static void OpenGLRendererDestroy()
 {
-	if(!BEGINGL())
+	if (!BEGINGL())
 		return;
 	
 	if (CurrentRenderer != BaseRenderer)
@@ -1182,6 +1211,14 @@ static void OpenGLRendererDestroy()
 	}
 	
 	ENDGL();
+	
+	__BeginOpenGL = NULL;
+	__EndOpenGL   = NULL;
+	
+	if (oglrender_deinit != NULL)
+	{
+		oglrender_deinit();
+	}
 }
 
 //automatically select 3.2 or old profile depending on whether 3.2 is available
@@ -1263,6 +1300,10 @@ OpenGLRenderer::OpenGLRenderer()
 	_fogProgramKey.key = 0;
 	_fogProgramMap.clear();
 	_clearImageIndex = 0;
+	
+	_geometryAttachmentWorkingBuffer = NULL;
+	_geometryAttachmentPolyID = NULL;
+	_geometryAttachmentFogAttributes = NULL;
 	
 	memset(&_pendingRenderStates, 0, sizeof(_pendingRenderStates));
 }
@@ -2250,6 +2291,26 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 	return error;
 }
 
+OpenGLRenderer_1_2::OpenGLRenderer_1_2()
+{
+	_geometryDrawBuffersEnum         = GeometryDrawBuffersEnumStandard;
+	_geometryAttachmentWorkingBuffer = GeometryAttachmentWorkingBufferStandard;
+	_geometryAttachmentPolyID        = GeometryAttachmentPolyIDStandard;
+	_geometryAttachmentFogAttributes = GeometryAttachmentFogAttributesStandard;
+	
+#if MSB_FIRST
+	ref->textureSrcTypeCIColor   = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+	ref->textureSrcTypeCIFog     = GL_UNSIGNED_INT_8_8_8_8_REV;
+	ref->textureSrcTypeEdgeColor = GL_UNSIGNED_INT_8_8_8_8;
+	ref->textureSrcTypeToonTable = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+#else
+	ref->textureSrcTypeCIColor   = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+	ref->textureSrcTypeCIFog     = GL_UNSIGNED_INT_8_8_8_8_REV;
+	ref->textureSrcTypeEdgeColor = GL_UNSIGNED_INT_8_8_8_8_REV;
+	ref->textureSrcTypeToonTable = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+#endif
+}
+
 OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 {
 	glFinish();
@@ -2759,7 +2820,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, OGL_TEXTURE_SRC_CI_COLOR, tempClearImageBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, OGLRef.textureSrcTypeCIColor, tempClearImageBuffer);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_CIDepth);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthStencilID);
@@ -2776,7 +2837,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, OGL_TEXTURE_SRC_CI_FOG, tempClearImageBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, OGLRef.textureSrcTypeCIFog, tempClearImageBuffer);
 	
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
@@ -3067,7 +3128,7 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 32, 0, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, NULL);
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 32, 0, GL_RGBA, OGLRef.textureSrcTypeToonTable, NULL);
 	
 	glGenTextures(1, &OGLRef.texEdgeColorTableID);
 	glBindTexture(GL_TEXTURE_1D, OGLRef.texEdgeColorTableID);
@@ -3075,7 +3136,7 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 8, 0, GL_RGBA, OGL_TEXTURE_SRC_EDGE_COLOR, NULL);
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 8, 0, GL_RGBA, OGLRef.textureSrcTypeEdgeColor, NULL);
 	
 	glGenTextures(1, &OGLRef.texFogDensityTableID);
 	glBindTexture(GL_TEXTURE_1D, OGLRef.texFogDensityTableID);
@@ -3117,9 +3178,9 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		shaderFlags << "#define ENABLE_EDGE_MARK " << ((programFlags.EnableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) ? 1 : 0) << "\n";
 		shaderFlags << "#define DRAW_MODE_OPAQUE " << ((programFlags.OpaqueDrawMode && this->isVBOSupported && this->isFBOSupported) ? 1 : 0) << "\n";
 		shaderFlags << "\n";
-		shaderFlags << "#define ATTACHMENT_WORKING_BUFFER " << GeometryAttachmentWorkingBuffer[programFlags.DrawBuffersMode] << "\n";
-		shaderFlags << "#define ATTACHMENT_POLY_ID " << GeometryAttachmentPolyID[programFlags.DrawBuffersMode] << "\n";
-		shaderFlags << "#define ATTACHMENT_FOG_ATTRIBUTES " << GeometryAttachmentFogAttributes[programFlags.DrawBuffersMode] << "\n";
+		shaderFlags << "#define ATTACHMENT_WORKING_BUFFER " << this->_geometryAttachmentWorkingBuffer[programFlags.DrawBuffersMode] << "\n";
+		shaderFlags << "#define ATTACHMENT_POLY_ID "        << this->_geometryAttachmentPolyID[programFlags.DrawBuffersMode]        << "\n";
+		shaderFlags << "#define ATTACHMENT_FOG_ATTRIBUTES " << this->_geometryAttachmentFogAttributes[programFlags.DrawBuffersMode] << "\n";
 		shaderFlags << "\n";
 		
 		std::string fragShaderCode = fragShaderHeader.str() + shaderFlags.str() + std::string(GeometryFragShader_100);
@@ -3824,14 +3885,14 @@ Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBu
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_CIColor);
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIColorID);
 		
-		if (OGL_TEXTURE_SRC_CI_COLOR == GL_UNSIGNED_BYTE)
+		if (OGLRef.textureSrcTypeCIColor == GL_UNSIGNED_BYTE)
 		{
 			ColorspaceConvertBuffer5551To8888<false, false, BESwapDst>(OGLRef.workingCIColorBuffer16, OGLRef.workingCIColorBuffer32, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, OGL_TEXTURE_SRC_CI_COLOR, OGLRef.workingCIColorBuffer32);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, OGLRef.textureSrcTypeCIColor, OGLRef.workingCIColorBuffer32);
 		}
 		else
 		{
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, OGL_TEXTURE_SRC_CI_COLOR, OGLRef.workingCIColorBuffer16);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, OGLRef.textureSrcTypeCIColor, OGLRef.workingCIColorBuffer16);
 		}
 	}
 	
@@ -3846,7 +3907,7 @@ Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBu
 	{
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_CIFogAttr);
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIFogAttrID);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, OGL_TEXTURE_SRC_CI_FOG, OGLRef.workingCIFogAttributesBuffer[this->_clearImageIndex]);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, OGLRef.textureSrcTypeCIFog, OGLRef.workingCIFogAttributesBuffer[this->_clearImageIndex]);
 	}
 	
 	glActiveTexture(GL_TEXTURE0);
@@ -3857,7 +3918,8 @@ Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBu
 
 void OpenGLRenderer_1_2::GetExtensionSet(std::set<std::string> *oglExtensionSet)
 {
-	std::string oglExtensionString = std::string((const char *)glGetString(GL_EXTENSIONS));
+	const char *oglExtensionCStr = (const char *)glGetString(GL_EXTENSIONS);
+	std::string oglExtensionString = std::string(oglExtensionCStr);
 	
 	size_t extStringStartLoc = 0;
 	size_t delimiterLoc = oglExtensionString.find_first_of(' ', extStringStartLoc);
@@ -4391,7 +4453,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 			
 			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
 			glBindTexture(GL_TEXTURE_1D, OGLRef.texEdgeColorTableID);
-			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 8, GL_RGBA, OGL_TEXTURE_SRC_EDGE_COLOR, edgeColor32);
+			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 8, GL_RGBA, OGLRef.textureSrcTypeEdgeColor, edgeColor32);
 		}
 		
 		if (this->isShaderSupported)
@@ -4412,14 +4474,14 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 				glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
 				glBindTexture(GL_TEXTURE_1D, OGLRef.texToonTableID);
 				
-				if (OGL_TEXTURE_SRC_TOON_TABLE == GL_UNSIGNED_BYTE)
+				if (OGLRef.textureSrcTypeToonTable == GL_UNSIGNED_BYTE)
 				{
 					ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(renderState.toonTable16, OGLRef.toonTable32, 32);
-					glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, OGLRef.toonTable32);
+					glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGLRef.textureSrcTypeToonTable, OGLRef.toonTable32);
 				}
 				else
 				{
-					glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, renderState.toonTable16);
+					glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGLRef.textureSrcTypeToonTable, renderState.toonTable16);
 				}
 			}
 		}
@@ -4468,7 +4530,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 		
 		if (this->isShaderSupported)
 		{
-			glDrawBuffers(4, GeometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
+			glDrawBuffers(4, this->_geometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
 		}
 		else
 		{
@@ -4530,7 +4592,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 			this->_SetupGeometryShaders(this->_geometryProgramFlags);
 			if (this->isFBOSupported && this->isShaderSupported)
 			{
-				glDrawBuffers(4, GeometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
+				glDrawBuffers(4, this->_geometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
 			}
 			
 			if (this->_needsZeroDstAlphaPass && this->_emulateSpecialZeroAlphaBlending)
@@ -5666,7 +5728,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 			
 			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
 			glBindTexture(GL_TEXTURE_1D, OGLRef.texEdgeColorTableID);
-			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 8, GL_RGBA, OGL_TEXTURE_SRC_EDGE_COLOR, edgeColor32);
+			glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 8, GL_RGBA, OGLRef.textureSrcTypeEdgeColor, edgeColor32);
 		}
 		
 		// Setup render states
@@ -5686,14 +5748,14 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 			glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_LookupTable);
 			glBindTexture(GL_TEXTURE_1D, OGLRef.texToonTableID);
 			
-			if (OGL_TEXTURE_SRC_TOON_TABLE == GL_UNSIGNED_BYTE)
+			if (OGLRef.textureSrcTypeToonTable == GL_UNSIGNED_BYTE)
 			{
 				ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(renderState.toonTable16, OGLRef.toonTable32, 32);
-				glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, OGLRef.toonTable32);
+				glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGLRef.textureSrcTypeToonTable, OGLRef.toonTable32);
 			}
 			else
 			{
-				glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGL_TEXTURE_SRC_TOON_TABLE, renderState.toonTable16);
+				glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, OGLRef.textureSrcTypeToonTable, renderState.toonTable16);
 			}
 		}
 	}
@@ -5721,7 +5783,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 		}
 		
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.selectedRenderingFBO);
-		glDrawBuffers(4, GeometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
+		glDrawBuffers(4, this->_geometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
 		glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	}
 	
