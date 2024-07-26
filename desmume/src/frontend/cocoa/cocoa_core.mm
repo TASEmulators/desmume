@@ -226,10 +226,6 @@ volatile bool execute = true;
 	delete execControl;
 	NDS_DeInit();
 	
-	// We must call DestroyOpenGLRenderer() after NDS_Init() because we need to wait for
-	// the OpenGL renderer to finish before we destroy its associated context.
-	DestroyOpenGLRenderer();
-	
 	[super dealloc];
 }
 

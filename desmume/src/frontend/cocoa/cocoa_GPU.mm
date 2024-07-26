@@ -118,11 +118,17 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 	
 	isCPUCoreCountAuto = NO;
 	_needRestoreRender3DLock = NO;
-		
-	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
-							   &OSXOpenGLRendererBegin,
-							   &OSXOpenGLRendererEnd,
-							   &OSXOpenGLRendererFramebufferDidResize);
+	
+	oglrender_init        = &cgl_initOpenGL_StandardAuto;
+	oglrender_deinit      = &cgl_deinitOpenGL;
+	oglrender_beginOpenGL = &cgl_beginOpenGL;
+	oglrender_endOpenGL   = &cgl_endOpenGL;
+	oglrender_framebufferDidResizeCallback = &cgl_framebufferDidResizeCallback;
+	
+#ifdef OGLRENDER_3_2_H
+	OGLLoadEntryPoints_3_2_Func = &OGLLoadEntryPoints_3_2;
+	OGLCreateRenderer_3_2_Func = &OGLCreateRenderer_3_2;
+#endif
 	
 #ifdef PORT_VERSION_OS_X_APP
 	gpuEvent = new GPUEventHandlerAsync;
@@ -169,10 +175,10 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 	openglDeviceMaxMultisamples = 0;
 	render3DMultisampleSizeString = @"Off";
 	
-	bool isTempContextCreated = OSXOpenGLRendererInit();
+	bool isTempContextCreated = cgl_initOpenGL_StandardAuto();
 	if (isTempContextCreated)
 	{
-		OSXOpenGLRendererBegin();
+		cgl_beginOpenGL();
 		
 		GLint maxSamplesOGL = 0;
 		
@@ -184,8 +190,8 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 		
 		openglDeviceMaxMultisamples = maxSamplesOGL;
 		
-		OSXOpenGLRendererEnd();
-		DestroyOpenGLRenderer();
+		cgl_endOpenGL();
+		cgl_deinitOpenGL();
 	}
 	
 	return self;
@@ -370,6 +376,10 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 	{
 		puts("DeSmuME: Invalid 3D renderer chosen; falling back to SoftRasterizer.");
 		rendererID = CORE3DLIST_SWRASTERIZE;
+	}
+	else if (rendererID == CORE3DLIST_OPENGL)
+	{
+		oglrender_init = &cgl_initOpenGL_StandardAuto;
 	}
 	
 	gpuEvent->ApplyRender3DSettingsLock();
@@ -1811,22 +1821,183 @@ bool GPUEventHandlerAsync::GetRender3DNeedsFinish()
 
 #pragma mark -
 
+#if !defined(MAC_OS_X_VERSION_10_7)
+	#define kCGLOGLPVersion_Legacy   0x1000
+	#define kCGLOGLPVersion_3_2_Core 0x3200
+	#define kCGLOGLPVersion_GL3_Core 0x3200
+#endif
+
+#if !defined(MAC_OS_X_VERSION_10_9)
+	#define kCGLOGLPVersion_GL4_Core 0x4100
+#endif
+
 CGLContextObj OSXOpenGLRendererContext = NULL;
 CGLContextObj OSXOpenGLRendererContextPrev = NULL;
 SILENCE_DEPRECATION_MACOS_10_7( CGLPBufferObj OSXOpenGLRendererPBuffer = NULL );
 
-bool OSXOpenGLRendererInit()
+static bool __cgl_initOpenGL(const int requestedProfile)
 {
-	bool isContextCreated = (OSXOpenGLRendererContext != NULL);
+	bool result = false;
+	CACHE_ALIGN char ctxString[16] = {0};
+	
+	if (requestedProfile == kCGLOGLPVersion_GL4_Core)
+	{
+		strncpy(ctxString, "CGL 4.1", sizeof(ctxString));
+	}
+	else if (requestedProfile == kCGLOGLPVersion_3_2_Core)
+	{
+		strncpy(ctxString, "CGL 3.2", sizeof(ctxString));
+	}
+	else
+	{
+		strncpy(ctxString, "CGL Legacy", sizeof(ctxString));
+	}
+	
+	if (OSXOpenGLRendererContext != NULL)
+	{
+		result = true;
+		return result;
+	}
+	
+	CGLPixelFormatAttribute attrs[] = {
+		kCGLPFAColorSize, (CGLPixelFormatAttribute)24,
+		kCGLPFAAlphaSize, (CGLPixelFormatAttribute)8,
+		kCGLPFADepthSize, (CGLPixelFormatAttribute)0,
+		kCGLPFAStencilSize, (CGLPixelFormatAttribute)0,
+		kCGLPFAOpenGLProfile, (CGLPixelFormatAttribute)0,
+		kCGLPFAAccelerated,
+		(CGLPixelFormatAttribute)0
+	};
+	
+	if (requestedProfile == kCGLOGLPVersion_GL4_Core)
+	{
+		if (IsOSXVersionSupported(10, 9, 0))
+		{
+			attrs[9] = (CGLPixelFormatAttribute)requestedProfile;
+		}
+		else
+		{
+			fprintf(stderr, "%s: Your version of OS X is too old to support this profile.\n", ctxString);
+			return result;
+		}
+	}
+	else if (requestedProfile == kCGLOGLPVersion_3_2_Core)
+	{
+		// As of 2021/09/03, testing has shown that macOS v10.7's OpenGL 3.2 shader
+		// compiler isn't very reliable, and so we're going to require macOS v10.8
+		// instead, which at least has a working shader compiler for OpenGL 3.2.
+		if (IsOSXVersionSupported(10, 8, 0))
+		{
+			attrs[9] = (CGLPixelFormatAttribute)requestedProfile;
+		}
+		else
+		{
+			fprintf(stderr, "%s: Your version of OS X is too old to support this profile.\n", ctxString);
+			return result;
+		}
+	}
+	else
+	{
+		if (IsOSXVersionSupported(10, 7, 0))
+		{
+			attrs[9] = (CGLPixelFormatAttribute)kCGLOGLPVersion_Legacy;
+		}
+		else
+		{
+			attrs[5] = (CGLPixelFormatAttribute)24; // Since the default framebuffer may be needed, depth bits are also needed.
+			attrs[7] = (CGLPixelFormatAttribute)8; // Since the default framebuffer may be needed, stencil bits are also needed.
+			attrs[8] = (CGLPixelFormatAttribute)kCGLPFAAccelerated;
+			attrs[10] = (CGLPixelFormatAttribute)0;
+		}
+	}
+	
+	CGLError error = kCGLNoError;
+	CGLPixelFormatObj cglPixFormat = NULL;
+	CGLContextObj newContext = NULL;
+	GLint virtualScreenCount = 0;
+	
+	CGLChoosePixelFormat(attrs, &cglPixFormat, &virtualScreenCount);
+	if (cglPixFormat == NULL)
+	{
+		// Remove the HW rendering requirement and try again. Note that this will
+		// result in SW rendering, which will cause a substantial speed hit.
+		if (attrs[8] == kCGLPFAAccelerated)
+		{
+			attrs[8] = (CGLPixelFormatAttribute)0;
+		}
+		else
+		{
+			attrs[10] = (CGLPixelFormatAttribute)0;
+		}
+		
+		error = CGLChoosePixelFormat(attrs, &cglPixFormat, &virtualScreenCount);
+		if (error != kCGLNoError)
+		{
+			fprintf(stderr, "%s: Failed to create the pixel format structure: %i\n", ctxString, (int)error);
+			return result;
+		}
+	}
+	
+	error = CGLCreateContext(cglPixFormat, NULL, &newContext);
+	if (error != kCGLNoError)
+	{
+		CGLReleasePixelFormat(cglPixFormat);
+		fprintf(stderr, "%s: Failed to create an OpenGL context: %i\n", ctxString, (int)error);
+		return result;
+	}
+	
+	CGLReleasePixelFormat(cglPixFormat);
+	OSXOpenGLRendererContext = newContext;
+	
+	printf("%s: OpenGL context creation successful.\n", ctxString);
+	result = true;
+	return result;
+}
+
+bool cgl_initOpenGL_StandardAuto()
+{
+	bool isContextCreated = __cgl_initOpenGL(kCGLOGLPVersion_GL4_Core);
+	
 	if (!isContextCreated)
 	{
-		isContextCreated = CreateOpenGLRenderer();
+		isContextCreated = __cgl_initOpenGL(kCGLOGLPVersion_3_2_Core);
+	}
+	
+	if (!isContextCreated)
+	{
+		isContextCreated = __cgl_initOpenGL(kCGLOGLPVersion_Legacy);
 	}
 	
 	return isContextCreated;
 }
 
-bool OSXOpenGLRendererBegin()
+bool cgl_initOpenGL_LegacyAuto()
+{
+	return __cgl_initOpenGL(kCGLOGLPVersion_Legacy);
+}
+
+bool cgl_initOpenGL_3_2_CoreProfile()
+{
+	return __cgl_initOpenGL(kCGLOGLPVersion_3_2_Core);
+}
+
+void cgl_deinitOpenGL()
+{
+	if (OSXOpenGLRendererContext == NULL)
+	{
+		return;
+	}
+	
+	CGLSetCurrentContext(NULL);
+	SILENCE_DEPRECATION_MACOS_10_7( CGLReleasePBuffer(OSXOpenGLRendererPBuffer) );
+	OSXOpenGLRendererPBuffer = NULL;
+	
+	CGLReleaseContext(OSXOpenGLRendererContext);
+	OSXOpenGLRendererContext = NULL;
+	OSXOpenGLRendererContextPrev = NULL;
+}
+
+bool cgl_beginOpenGL()
 {
 	OSXOpenGLRendererContextPrev = CGLGetCurrentContext();
 	CGLSetCurrentContext(OSXOpenGLRendererContext);
@@ -1834,7 +2005,7 @@ bool OSXOpenGLRendererBegin()
 	return true;
 }
 
-void OSXOpenGLRendererEnd()
+void cgl_endOpenGL()
 {
 #ifndef PORT_VERSION_OS_X_APP
 	// The OpenEmu plug-in needs the context reset after 3D rendering since OpenEmu's context
@@ -1845,7 +2016,7 @@ void OSXOpenGLRendererEnd()
 #endif
 }
 
-bool OSXOpenGLRendererFramebufferDidResize(const bool isFBOSupported, size_t w, size_t h)
+bool cgl_framebufferDidResizeCallback(const bool isFBOSupported, size_t w, size_t h)
 {
 	bool result = false;
 	
@@ -1883,101 +2054,4 @@ bool OSXOpenGLRendererFramebufferDidResize(const bool isFBOSupported, size_t w, 
 	
 	result = true;
 	return result;
-}
-
-bool CreateOpenGLRenderer()
-{
-	bool result = false;
-	bool useContext_3_2 = false;
-	CGLPixelFormatObj cglPixFormat = NULL;
-	CGLContextObj newContext = NULL;
-	GLint virtualScreenCount = 0;
-	
-	CGLPixelFormatAttribute attrs[] = {
-		kCGLPFAColorSize, (CGLPixelFormatAttribute)24,
-		kCGLPFAAlphaSize, (CGLPixelFormatAttribute)8,
-		kCGLPFADepthSize, (CGLPixelFormatAttribute)24,
-		kCGLPFAStencilSize, (CGLPixelFormatAttribute)8,
-		kCGLPFAAccelerated,
-		(CGLPixelFormatAttribute)0, (CGLPixelFormatAttribute)0,
-		(CGLPixelFormatAttribute)0
-	};
-	
-	// If we can support a 3.2 Core Profile context, then request that in our
-	// pixel format attributes.
-#ifdef MAC_OS_X_VERSION_10_7
-	// As of 2021/09/03, testing has shown that macOS v10.7's OpenGL 3.2 shader
-	// compiler isn't very reliable, and so we're going to require macOS v10.8
-	// instead, which at least has a working shader compiler for OpenGL 3.2.
-	useContext_3_2 = IsOSXVersionSupported(10, 8, 0);
-	if (useContext_3_2)
-	{
-		attrs[9] = kCGLPFAOpenGLProfile;
-		attrs[10] = (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core;
-	}
-#endif
-	
-	CGLChoosePixelFormat(attrs, &cglPixFormat, &virtualScreenCount);
-	if (cglPixFormat == NULL)
-	{
-		// Remove the HW rendering requirement and try again. Note that this will
-		// result in SW rendering, which will cause a substantial speed hit.
-		attrs[8] = (CGLPixelFormatAttribute)0;
-		CGLChoosePixelFormat(attrs, &cglPixFormat, &virtualScreenCount);
-		if (cglPixFormat == NULL)
-		{
-			return result;
-		}
-	}
-	
-	CGLCreateContext(cglPixFormat, NULL, &newContext);
-	CGLReleasePixelFormat(cglPixFormat);
-	
-	RequestOpenGLRenderer_3_2(useContext_3_2);
-	OSXOpenGLRendererContext = newContext;
-	
-	result = true;
-	return result;
-}
-
-void DestroyOpenGLRenderer()
-{
-	if (OSXOpenGLRendererContext == NULL)
-	{
-		return;
-	}
-	
-	OSXOpenGLRendererEnd();
-	
-	SILENCE_DEPRECATION_MACOS_10_7( CGLReleasePBuffer(OSXOpenGLRendererPBuffer) );
-	OSXOpenGLRendererPBuffer = NULL;
-	
-	CGLReleaseContext(OSXOpenGLRendererContext);
-	OSXOpenGLRendererContext = NULL;
-	OSXOpenGLRendererContextPrev = NULL;
-}
-
-void RequestOpenGLRenderer_3_2(bool request_3_2)
-{
-#ifdef OGLRENDER_3_2_H
-	if (request_3_2)
-	{
-		OGLLoadEntryPoints_3_2_Func = &OGLLoadEntryPoints_3_2;
-		OGLCreateRenderer_3_2_Func = &OGLCreateRenderer_3_2;
-		return;
-	}
-#endif
-	OGLLoadEntryPoints_3_2_Func = NULL;
-	OGLCreateRenderer_3_2_Func = NULL;
-}
-
-void SetOpenGLRendererFunctions(bool (*initFunction)(),
-								bool (*beginOGLFunction)(),
-								void (*endOGLFunction)(),
-								bool (*resizeOGLFunction)(const bool isFBOSupported, size_t w, size_t h))
-{
-	oglrender_init = initFunction;
-	oglrender_beginOpenGL = beginOGLFunction;
-	oglrender_endOpenGL = endOGLFunction;
-	oglrender_framebufferDidResizeCallback = resizeOGLFunction;
 }

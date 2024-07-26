@@ -272,18 +272,14 @@ extern "C"
 {
 #endif
 
-bool OSXOpenGLRendererInit();
-bool OSXOpenGLRendererBegin();
-void OSXOpenGLRendererEnd();
-bool OSXOpenGLRendererFramebufferDidResize(const bool isFBOSupported, size_t w, size_t h);
+bool cgl_initOpenGL_StandardAuto();
+bool cgl_initOpenGL_LegacyAuto();
+bool cgl_initOpenGL_3_2_CoreProfile();
 
-bool CreateOpenGLRenderer();
-void DestroyOpenGLRenderer();
-void RequestOpenGLRenderer_3_2(bool request_3_2);
-void SetOpenGLRendererFunctions(bool (*initFunction)(),
-								bool (*beginOGLFunction)(),
-								void (*endOGLFunction)(),
-								bool (*resizeOGLFunction)(const bool isFBOSupported, size_t w, size_t h));
+void cgl_deinitOpenGL();
+bool cgl_beginOpenGL();
+void cgl_endOpenGL();
+bool cgl_framebufferDidResizeCallback(const bool isFBOSupported, size_t w, size_t h);
 
 #ifdef __cplusplus
 }
