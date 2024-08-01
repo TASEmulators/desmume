@@ -2298,16 +2298,18 @@ OpenGLRenderer_1_2::OpenGLRenderer_1_2()
 	_geometryAttachmentPolyID        = GeometryAttachmentPolyIDStandard;
 	_geometryAttachmentFogAttributes = GeometryAttachmentFogAttributesStandard;
 	
-#if MSB_FIRST
+#if defined(GL_VERSION_1_2)
+	#if MSB_FIRST
 	ref->textureSrcTypeCIColor   = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	ref->textureSrcTypeCIFog     = GL_UNSIGNED_INT_8_8_8_8_REV;
 	ref->textureSrcTypeEdgeColor = GL_UNSIGNED_INT_8_8_8_8;
 	ref->textureSrcTypeToonTable = GL_UNSIGNED_SHORT_1_5_5_5_REV;
-#else
+	#else
 	ref->textureSrcTypeCIColor   = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	ref->textureSrcTypeCIFog     = GL_UNSIGNED_INT_8_8_8_8_REV;
 	ref->textureSrcTypeEdgeColor = GL_UNSIGNED_INT_8_8_8_8_REV;
 	ref->textureSrcTypeToonTable = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+	#endif
 #endif
 }
 
@@ -2606,7 +2608,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	// Set rendering support flags based on driver features.
 	this->willFlipAndConvertFramebufferOnGPU = this->isShaderSupported && this->isVBOSupported;
 	this->_deviceInfo.isEdgeMarkSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
-	this->_deviceInfo.isFogSupported = this->isShaderSupported && this->isVBOSupported;
+	this->_deviceInfo.isFogSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
 	this->_deviceInfo.isTextureSmoothingSupported = this->isShaderSupported;
 	
 	this->_isDepthLEqualPolygonFacingSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
@@ -3174,8 +3176,8 @@ Render3DError OpenGLRenderer_1_2::CreateGeometryPrograms()
 		shaderFlags << "#define ENABLE_ALPHA_TEST " << ((programFlags.EnableAlphaTest) ? "true\n" : "false\n");
 		shaderFlags << "#define ENABLE_TEXTURE_SAMPLING " << ((programFlags.EnableTextureSampling) ? "true\n" : "false\n");
 		shaderFlags << "#define TOON_SHADING_MODE " << ((programFlags.ToonShadingMode) ? 1 : 0) << "\n";
-		shaderFlags << "#define ENABLE_FOG " << ((programFlags.EnableFog && this->_deviceInfo.isFogSupported) ? 1 : 0) << "\n";
-		shaderFlags << "#define ENABLE_EDGE_MARK " << ((programFlags.EnableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) ? 1 : 0) << "\n";
+		shaderFlags << "#define ENABLE_FOG " << ((programFlags.EnableFog && this->isVBOSupported && this->isFBOSupported) ? 1 : 0) << "\n"; // Do not rely on this->_deviceInfo.isFogSupported because it hasn't been set yet.
+		shaderFlags << "#define ENABLE_EDGE_MARK " << ((programFlags.EnableEdgeMark && this->isVBOSupported && this->isFBOSupported) ? 1 : 0) << "\n"; // Do not rely on this->_deviceInfo.isEdgeMarkSupported because it hasn't been set yet.
 		shaderFlags << "#define DRAW_MODE_OPAQUE " << ((programFlags.OpaqueDrawMode && this->isVBOSupported && this->isFBOSupported) ? 1 : 0) << "\n";
 		shaderFlags << "\n";
 		shaderFlags << "#define ATTACHMENT_WORKING_BUFFER " << this->_geometryAttachmentWorkingBuffer[programFlags.DrawBuffersMode] << "\n";

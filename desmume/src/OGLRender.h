@@ -332,42 +332,7 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 	// modification. In other words, these are one-to-one drop-in replacements.
 	typedef GLclampf GLclampd;
 	#define glClearDepth(depth) glClearDepthf(depth)
-	
-	#ifdef OPENGL_VARIANT_ES
-	#define glDrawBuffer glDrawBufferES
-	static inline void glDrawBufferES(GLenum theAttachment)
-	{
-		GLenum bufs[4] = { GL_NONE, GL_NONE, GL_NONE, GL_NONE };
-		switch (theAttachment)
-		{
-			case GL_NONE:
-				glDrawBuffers(1, bufs);
-				return;
 
-			case GL_COLOR_ATTACHMENT0:
-			case GL_COLOR_ATTACHMENT1:
-			case GL_COLOR_ATTACHMENT2:
-			case GL_COLOR_ATTACHMENT3:
-			{
-				const GLsizei i = theAttachment - GL_COLOR_ATTACHMENT0;
-				bufs[i] = theAttachment;
-				glDrawBuffers(i+1, bufs);
-				return;
-			}
-
-			default:
-				return;
-		}
-	}
-	#else
-	#define glDrawBuffer glDrawBufferDESMUME
-	static inline void glDrawBufferDESMUME(GLenum theAttachment)
-	{
-		GLenum bufs[] = { theAttachment };
-		glDrawBuffers(1, bufs);
-	}
-	#endif
-	
 	// 1D textures may not exist for a particular OpenGL variant, so they will be promoted to
 	// 2D textures instead. Implementations need to modify their GLSL shaders accordingly to
 	// treat any 1D textures as 2D textures instead.
@@ -823,6 +788,41 @@ extern void (*OGLLoadEntryPoints_ES_3_0_Func)();
 extern void (*OGLCreateRenderer_ES_3_0_Func)(OpenGLRenderer **rendererPtr);
 
 bool IsOpenGLDriverVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision);
+
+#define glDrawBuffer(theAttachment) glDrawBufferDESMUME((theAttachment), this->_variantID)
+static inline void glDrawBufferDESMUME(GLenum theAttachment, const OpenGLVariantID variantID)
+{
+	GLenum bufs[4] = { GL_NONE, GL_NONE, GL_NONE, GL_NONE };
+
+	if (variantID & OpenGLVariantFamily_ES)
+	{
+		switch (theAttachment)
+		{
+			case GL_NONE:
+				glDrawBuffers(1, bufs);
+				return;
+
+			case GL_COLOR_ATTACHMENT0:
+			case GL_COLOR_ATTACHMENT1:
+			case GL_COLOR_ATTACHMENT2:
+			case GL_COLOR_ATTACHMENT3:
+			{
+				const GLsizei i = theAttachment - GL_COLOR_ATTACHMENT0;
+				bufs[i] = theAttachment;
+				glDrawBuffers(i+1, bufs);
+				return;
+			}
+
+			default:
+				return;
+		}
+	}
+	else
+	{
+		bufs[0] = theAttachment;
+		glDrawBuffers(1, bufs);
+	}
+}
 
 class OpenGLTexture : public Render3DTexture
 {
