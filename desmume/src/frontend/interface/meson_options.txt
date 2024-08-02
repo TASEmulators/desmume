@@ -1,3 +1,13 @@
+option('opengl',
+  type: 'boolean',
+  value: false,
+  description: 'Build for OpenGL',
+)
+option('opengles',
+  type: 'boolean',
+  value: false,
+  description: 'Build for OpenGL ES',
+)
 option('openal',
   type: 'boolean',
   value: false,

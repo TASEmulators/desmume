@@ -15,10 +15,17 @@ dep_sdl = dependency('sdl2')
 dep_pcap = dependency('pcap')
 dep_zlib = dependency('zlib')
 dep_threads = dependency('threads')
-dep_gl = dependency('gl', required: false)
 dep_openal = dependency('openal', required: get_option('openal'))
 dep_alsa = dependency('alsa', required: false)
 dep_soundtouch = dependency('soundtouch', required: false)
+
+if host_machine.system() == 'darwin'
+  dep_gl = dependency('appleframeworks', modules: 'OpenGL')
+  dep_gles = dependency('appleframeworks', modules: 'OpenGLES')
+else
+  dep_gl = dependency('gl', required: false)
+  dep_gles = dependency('glesv2', required: false)
+endif
 
 if get_option('wifi')
   add_global_arguments('-DEXPERIMENTAL_WIFI_COMM', language: ['c', 'cpp'])
@@ -173,14 +180,29 @@ if have_jit
   ]
 endif
 
-if host_machine.system() == 'darwin'
-  dependencies += dependency('appleframeworks', modules: 'OpenGL')
-elif dep_gl.found()
-  dependencies += dep_gl
-  libdesmume_src += [
-    '../../OGLRender.cpp',
-    '../../OGLRender_3_2.cpp',
-  ]
+if get_option('opengles')
+  if dep_gles.found()
+    add_global_arguments('-DENABLE_OPENGL_ES', language: ['c', 'cpp'])
+    dependencies += dep_gles
+    libdesmume_src += [
+      '../../OGLRender.cpp',
+      '../../OGLRender_3_2.cpp',
+      '../../OGLRender_ES3.cpp',
+    ]
+  else
+    message('Cannot build with OpenGL ES -- library not found.')
+  endif
+elif get_option('opengl')
+  if dep_gl.found()
+    add_global_arguments('-DENABLE_OPENGL_STANDARD', language: ['c', 'cpp'])
+    dependencies += dep_gl
+    libdesmume_src += [
+      '../../OGLRender.cpp',
+      '../../OGLRender_3_2.cpp',
+    ]
+  else
+    message('Cannot build with OpenGL -- library not found.')
+  endif
 endif
 
 if dep_openal.found()

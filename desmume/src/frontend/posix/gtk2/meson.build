@@ -18,20 +18,14 @@ desmume_src = [
 ]
 
 if get_option('glx') and dep_glx.found()
-  add_global_arguments('-DENABLE_GLX', language: ['c', 'cpp'])
-  dependencies += dep_glx
   desmume_src += [
     '../shared/glx_3Demu.cpp',
   ]
 elif get_option('osmesa') and dep_osmesa.found()
-  add_global_arguments('-DENABLE_OSMESA', language: ['c', 'cpp'])
-  dependencies += dep_osmesa
   desmume_src += [
     '../shared/osmesa_3Demu.cpp',
   ]
 elif get_option('egl') and dep_egl.found()
-  add_global_arguments('-DENABLE_EGL', language: ['c', 'cpp'])
-  dependencies += dep_egl
   desmume_src += [
     '../shared/egl_3Demu.cpp',
   ]
