@@ -4416,6 +4416,8 @@
 		ABD2CE4426E05CB000FB15F7 /* DeSmuME (x86_64h).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (x86_64h).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABD42045172319D1006A9B46 /* FileMigrationDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileMigrationDelegate.h; sourceTree = "<group>"; };
 		ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileMigrationDelegate.mm; sourceTree = "<group>"; };
+		ABDD89EF2C30BE97003482B7 /* OGLRender_ES3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OGLRender_ES3.h; sourceTree = "<group>"; };
+		ABDD89F02C30BE97003482B7 /* OGLRender_ES3.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = OGLRender_ES3.cpp; sourceTree = "<group>"; };
 		ABDDF7C41898F024007583C1 /* Icon_DisplayToggle_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DisplayToggle_420x420.png; path = images/Icon_DisplayToggle_420x420.png; sourceTree = "<group>"; };
 		ABDDF7C71898F032007583C1 /* Icon_FrameAdvance_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameAdvance_420x420.png; path = images/Icon_FrameAdvance_420x420.png; sourceTree = "<group>"; };
 		ABDDF7C81898F032007583C1 /* Icon_FrameJump_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameJump_420x420.png; path = images/Icon_FrameJump_420x420.png; sourceTree = "<group>"; };
@@ -5692,6 +5694,7 @@
 				ABD1FEC01345AC8400AF11D1 /* NDSSystem.cpp */,
 				ABD1FEC11345AC8400AF11D1 /* OGLRender.cpp */,
 				AB68A0DA16B139BC00DE0546 /* OGLRender_3_2.cpp */,
+				ABDD89F02C30BE97003482B7 /* OGLRender_ES3.cpp */,
 				ABD1FEC21345AC8400AF11D1 /* path.cpp */,
 				ABD1FEC31345AC8400AF11D1 /* rasterize.cpp */,
 				ABD1FEC41345AC8400AF11D1 /* readwrite.cpp */,
@@ -5739,6 +5742,7 @@
 				ABD1FE8C1345AC8400AF11D1 /* NDSSystem.h */,
 				ABD1FE8D1345AC8400AF11D1 /* OGLRender.h */,
 				ABBB421516B4A5F30012E5AB /* OGLRender_3_2.h */,
+				ABDD89EF2C30BE97003482B7 /* OGLRender_ES3.h */,
 				ABD1FE8F1345AC8400AF11D1 /* PACKED.h */,
 				ABD1FE8E1345AC8400AF11D1 /* PACKED_END.h */,
 				ABD1FE901345AC8400AF11D1 /* path.h */,

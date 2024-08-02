@@ -27,29 +27,15 @@
 #include "render3D.h"
 #include "types.h"
 
+// The macros ENABLE_OPENGL_STANDARD and ENABLE_OPENGL_ES are used in client build configs.
+// If a client wants to use OpenGL, they must declare one of these two macros somewhere in
+// their build config or declare it in some precompiled header.
+
 // OPENGL PLATFORM-SPECIFIC INCLUDES
-#if defined(__ANGLE__) || defined(__ANDROID__)
-	#define OPENGL_VARIANT_ES
-	#define _NO_SDL_TYPES
-	#include <GLES3/gl3.h>
-	#define __gles2_gl2_h_ // Guard against including the gl2.h file.
-	#include <GLES2/gl2ext.h> // "gl3ext.h" is just a stub file. The real extension header is "gl2ext.h".
-
-	// Ignore dynamic linking
-	#define OGLEXT(procPtr, func)
-	#define INITOGLEXT(procPtr, func)
-	#define EXTERNOGLEXT(procPtr, func)
-#elif defined(__EMSCRIPTEN__)
-	#define OPENGL_VARIANT_ES
-	#include <SDL_opengl.h>
-	#include <emscripten/emscripten.h>
-
-	// Ignore dynamic linking
-	#define OGLEXT(procPtr, func)
-	#define INITOGLEXT(procPtr, func)
-	#define EXTERNOGLEXT(procPtr, func)
-#elif defined(_WIN32)
-	#define OPENGL_VARIANT_STANDARD
+#if defined(_WIN32)
+	#ifndef ENABLE_OPENGL_STANDARD
+		#define ENABLE_OPENGL_STANDARD // TODO: Declare this in the Visual Studio project file.
+	#endif
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <GL/gl.h>
@@ -63,15 +49,10 @@
 	#define INITOGLEXT(procPtr, func)   func = (procPtr)wglGetProcAddress(#func);
 	#define EXTERNOGLEXT(procPtr, func) extern procPtr func;
 #elif defined(__APPLE__)
-	#include <TargetConditionals.h>
-	
-	#if TARGET_OS_IPHONE
-		#define OPENGL_VARIANT_ES
+	#if defined(ENABLE_OPENGL_ES)
 		#include <OpenGLES/ES3/gl.h>
 		#include <OpenGLES/ES3/glext.h>
-	#else
-		#define OPENGL_VARIANT_STANDARD
-		
+	#elif defined(ENABLE_OPENGL_STANDARD)
 		#ifdef OGLRENDER_3_2_H
 			#include <OpenGL/gl3.h>
 			#include <OpenGL/gl3ext.h>
@@ -93,36 +74,46 @@
 	#define INITOGLEXT(procPtr, func)
 	#define EXTERNOGLEXT(procPtr, func)
 #else
-	#define OPENGL_VARIANT_STANDARD
-	#include <GL/gl.h>
-	#include <GL/glext.h>
-	#include <GL/glx.h>
+	#if defined(ENABLE_OPENGL_ES)
+		#include <GLES3/gl3.h>
+		#define __gles2_gl2_h_ // Guard against including the gl2.h file.
+		#include <GLES2/gl2ext.h> // "gl3ext.h" is just a stub file. The real extension header is "gl2ext.h".
 
-	#ifdef OGLRENDER_3_2_H
-		#include "utils/glcorearb.h"
-	#else
-		/* This is a workaround needed to compile against nvidia GL headers */
-		#ifndef GL_ALPHA_BLEND_EQUATION_ATI
-			#undef GL_VERSION_1_3
+		// Ignore dynamic linking
+		#define OGLEXT(procPtr, func)
+		#define INITOGLEXT(procPtr, func)
+		#define EXTERNOGLEXT(procPtr, func)
+	#elif defined(ENABLE_OPENGL_STANDARD)
+		#include <GL/gl.h>
+		#include <GL/glext.h>
+		#include <GL/glx.h>
+
+		#ifdef OGLRENDER_3_2_H
+			#include "utils/glcorearb.h"
+		#else
+			// This is a workaround needed to compile against nvidia GL headers
+			#ifndef GL_ALPHA_BLEND_EQUATION_ATI
+				#undef GL_VERSION_1_3
+			#endif
 		#endif
-	#endif
 
-	#define OGLEXT(procPtr, func)       procPtr func = NULL;
-	#define INITOGLEXT(procPtr, func)   func = (procPtr)glXGetProcAddress((const GLubyte *) #func);
-	#define EXTERNOGLEXT(procPtr, func) extern procPtr func;
+		#define OGLEXT(procPtr, func)       procPtr func = NULL;
+		#define INITOGLEXT(procPtr, func)   func = (procPtr)glXGetProcAddress((const GLubyte *) #func);
+		#define EXTERNOGLEXT(procPtr, func) extern procPtr func;
+	#endif
 #endif
 
 // Check minimum OpenGL header version
-#if defined(OPENGL_VARIANT_STANDARD)
-	#if !defined(GL_VERSION_2_1)
-		#error OpenGL requires v2.1 headers or later.
-	#endif
-#elif defined(OPENGL_VARIANT_ES)
+#if defined(ENABLE_OPENGL_ES)
 	#if !defined(GL_ES_VERSION_3_0)
 		#error OpenGL ES requires v3.0 headers or later.
 	#endif
+#elif defined(ENABLE_OPENGL_STANDARD)
+	#if !defined(GL_VERSION_2_1)
+		#error Standard OpenGL requires v2.1 headers or later.
+	#endif
 #else
-	#error Unknown OpenGL variant.
+	#error No OpenGL variant selected. You must declare ENABLE_OPENGL_STANDARD or ENABLE_OPENGL_ES in your build configuration.
 #endif
 
 // OPENGL LEGACY CORE FUNCTIONS

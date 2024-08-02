@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
   <object class="GtkDialog" id="dialog">
@@ -49,40 +50,49 @@
           </packing>
         </child>
         <child>
+          <!-- n-columns=3 n-rows=6 -->
           <object class="GtkGrid" id="graphics_grid">
+            <property name="can-focus">False</property>
             <child>
               <object class="GtkLabel">
+                <property name="can-focus">False</property>
                 <property name="label" translatable="yes">3D Core:</property>
               </object>
               <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
+                <property name="left-attach">0</property>
+                <property name="top-attach">0</property>
               </packing>
             </child>
             <child>
               <object class="GtkComboBoxText" id="core_combo">
+                <property name="can-focus">False</property>
                 <items>
                   <item translatable="yes">Null</item>
                   <item translatable="yes">SoftRasterizer</item>
-                  <item translatable="yes">OpenGL</item>
+                  <item translatable="yes">OpenGL (Auto)</item>
+                  <item translatable="yes">OpenGL (Legacy)</item>
+                  <item translatable="yes">OpenGL 3.2</item>
+                  <item translatable="yes">OpenGL ES 3.0</item>
                 </items>
               </object>
               <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">0</property>
+                <property name="left-attach">1</property>
+                <property name="top-attach">0</property>
               </packing>
             </child>
             <child>
               <object class="GtkLabel">
+                <property name="can-focus">False</property>
                 <property name="label" translatable="yes">3D Texture Upscaling:</property>
               </object>
               <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
+                <property name="left-attach">0</property>
+                <property name="top-attach">1</property>
               </packing>
             </child>
             <child>
               <object class="GtkComboBoxText" id="scale">
+                <property name="can-focus">False</property>
                 <items>
                   <item translatable="yes">×1</item>
                   <item translatable="yes">×2</item>
@@ -90,70 +100,79 @@
                 </items>
               </object>
               <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">1</property>
+                <property name="left-attach">1</property>
+                <property name="top-attach">1</property>
               </packing>
             </child>
             <child>
               <object class="GtkLabel">
+                <property name="can-focus">False</property>
                 <property name="label" translatable="yes">GPU scale factor:</property>
               </object>
               <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">2</property>
+                <property name="left-attach">0</property>
+                <property name="top-attach">2</property>
               </packing>
             </child>
             <child>
               <object class="GtkSpinButton" id="gpuscale">
-               <property name="numeric">true</property>
-               <property name="digits">0</property>
+                <property name="can-focus">False</property>
+                <property name="numeric">True</property>
               </object>
               <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">2</property>
+                <property name="left-attach">1</property>
+                <property name="top-attach">2</property>
               </packing>
             </child>
             <child>
               <object class="GtkCheckButton" id="posterize">
                 <property name="label" translatable="yes">3D Texture Deposterization</property>
+                <property name="can-focus">False</property>
+                <property name="receives-default">False</property>
                 <property name="draw-indicator">True</property>
               </object>
               <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">3</property>
+                <property name="left-attach">0</property>
+                <property name="top-attach">3</property>
               </packing>
             </child>
             <child>
               <object class="GtkCheckButton" id="smoothing">
                 <property name="label" translatable="yes">3D Texture Smoothing</property>
+                <property name="can-focus">False</property>
+                <property name="receives-default">False</property>
                 <property name="draw-indicator">True</property>
               </object>
               <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">4</property>
+                <property name="left-attach">0</property>
+                <property name="top-attach">4</property>
               </packing>
             </child>
             <child>
               <object class="GtkCheckButton" id="hc_interpolate">
                 <property name="label" translatable="yes">High Resolution Color Interpolation (SoftRasterizer)</property>
+                <property name="can-focus">False</property>
+                <property name="receives-default">False</property>
                 <property name="draw-indicator">True</property>
               </object>
               <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">4</property>
+                <property name="left-attach">1</property>
+                <property name="top-attach">4</property>
               </packing>
             </child>
             <child>
               <object class="GtkLabel">
+                <property name="can-focus">False</property>
                 <property name="label" translatable="yes">Multisample Antialiasing (OpenGL):</property>
               </object>
               <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">5</property>
+                <property name="left-attach">0</property>
+                <property name="top-attach">5</property>
               </packing>
             </child>
             <child>
               <object class="GtkComboBoxText" id="multisample">
+                <property name="can-focus">False</property>
                 <items>
                   <item translatable="yes">None</item>
                   <item translatable="yes">2</item>
@@ -164,11 +183,37 @@
                 </items>
               </object>
               <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">5</property>
+                <property name="left-attach">1</property>
+                <property name="top-attach">5</property>
               </packing>
             </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
           </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
         </child>
       </object>
     </child>

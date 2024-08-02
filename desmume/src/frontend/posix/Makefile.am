@@ -38,7 +38,6 @@ libdesmume_a_SOURCES = \
 	../../wifi.cpp ../../wifi.h \
 	../../mic.h \
 	../../MMU.cpp ../../MMU.h ../../MMU_timing.h ../../NDSSystem.cpp ../../NDSSystem.h ../../registers.h \
-	../../OGLRender.h ../../OGLRender_3_2.h \
 	../../ROMReader.cpp ../../ROMReader.h \
 	../../render3D.cpp ../../render3D.h \
 	../../rtc.cpp ../../rtc.h \
@@ -211,8 +210,17 @@ endif
 
 libdesmume_a_SOURCES += shared/desmume_config.cpp shared/desmume_config.h
 
-if HAVE_GL
-libdesmume_a_SOURCES += ../../OGLRender.cpp ../../OGLRender_3_2.cpp
+if ENABLE_OPENGL_ES
+libdesmume_a_SOURCES += \
+	../../OGLRender.h ../../OGLRender_3_2.h \
+	../../OGLRender.cpp ../../OGLRender_3_2.cpp \
+	../../OGLRender_ES3.h ../../OGLRender_ES3.cpp
+else
+if ENABLE_OPENGL_STANDARD
+libdesmume_a_SOURCES += \
+	../../OGLRender.h ../../OGLRender_3_2.h \
+	../../OGLRender.cpp ../../OGLRender_3_2.cpp
+endif
 endif
 
 if HAVE_OPENAL

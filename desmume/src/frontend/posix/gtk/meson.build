@@ -10,21 +10,43 @@ gresource = gnome.compile_resources(
 )
 
 desmume_src = [
-  'avout_pipe_base.cpp',
-  'avout_x264.cpp',
-  'avout_flac.cpp',
+  '../shared/avout_flac.cpp',
+  '../shared/avout_pipe_base.cpp',
+  '../shared/avout_x264.cpp',
+  '../shared/ctrlssdl.cpp',
+  '../shared/sndsdl.cpp',
   'config.cpp',
   'desmume.cpp',
   'dToolsList.cpp',
   'tools/ioregsView.cpp',
-  '../shared/sndsdl.cpp',
-  '../shared/ctrlssdl.cpp',
-  'osmesa_3Demu.cpp',
-  'sdl_3Demu.cpp',
   'cheatsGTK.cpp',
   'main.cpp',
   gresource,
 ]
+
+if get_option('glx') and dep_glx.found()
+  add_global_arguments('-DENABLE_GLX', language: ['c', 'cpp'])
+  dependencies += dep_glx
+  desmume_src += [
+    '../shared/glx_3Demu.cpp',
+  ]
+elif get_option('osmesa') and dep_osmesa.found()
+  add_global_arguments('-DENABLE_OSMESA', language: ['c', 'cpp'])
+  dependencies += dep_osmesa
+  desmume_src += [
+    '../shared/osmesa_3Demu.cpp',
+  ]
+elif get_option('egl') and dep_egl.found()
+  add_global_arguments('-DENABLE_EGL', language: ['c', 'cpp'])
+  dependencies += dep_egl
+  desmume_src += [
+    '../shared/egl_3Demu.cpp',
+  ]
+else
+  desmume_src += [
+    '../shared/sdl_3Demu.cpp',
+  ]
+endif
 
 # TODO: why do we have to redeclare it here with one more fs level?
 includes = include_directories(

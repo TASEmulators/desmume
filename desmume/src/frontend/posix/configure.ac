@@ -70,32 +70,139 @@ else
   AC_MSG_ERROR([sdl is required to build desmume])
 fi
 
-dnl - Check for the OpenGL includes
-AC_CHECK_HEADERS([GL/gl.h],
-		 [AC_CHECK_HEADERS([GL/glu.h], [have_gl_h=yes LIBS="$LIBS -lGL -lGLU"], [have_gl_h=no])],
-		 [have_gl_h=no])
-if test "have_gl_h" = "no" ; then
-	AC_MSG_WARN([Building without GL support because of missing headers.])
+dnl - if --enable-opengl is used, check for it
+AC_ARG_ENABLE([opengl],
+               [AC_HELP_STRING([--enable-opengl], [Build for standard OpenGL])],
+               [opengl=$enableval],
+               [opengl=no])
+
+if test "x$opengl" = "xyes" ; then
+    AC_CHECK_HEADERS([GL/gl.h],
+            [AC_CHECK_HEADERS([GL/glcorearb.h], [have_opengl=yes], [have_opengl=no])],
+            [have_opengl=no])
+    if test "have_opengl" = "no" ; then
+	    AC_MSG_WARN([Cannot build with OpenGL -- headers not found.])
+    else
+        AC_CHECK_LIB(dl, main)
+	    AC_CHECK_LIB(GL, main,[
+		    AC_DEFINE([ENABLE_OPENGL_STANDARD])
+            OPENGL_LIBS="-lGL"
+		    AC_SUBST(OPENGL_LIBS)
+	    ])
+    fi
 fi
-AM_CONDITIONAL([HAVE_GL], [test "${have_gl_h}" = "yes"])
+AM_CONDITIONAL([ENABLE_OPENGL_STANDARD], [test "${have_opengl}" = "yes"])
+
+dnl - if --enable-opengles is used, check for it
+AC_ARG_ENABLE([opengles],
+               [AC_HELP_STRING([--enable-opengles], [Build for OpenGL ES, overrides --enable-opengl])],
+               [opengles=$enableval],
+               [opengles=no])
+
+if test "x$opengles" = "xyes" ; then
+    AC_CHECK_HEADERS([GLES3/gl3.h],
+            [AC_CHECK_HEADERS([GLES3/gl3ext.h], [have_opengles=yes], [have_opengles=no])],
+            [have_opengles=no])
+    if test "have_opengles" = "no" ; then
+	    AC_MSG_WARN([Cannot build with OpenGL ES -- headers not found.])
+    else
+        AC_CHECK_LIB(dl, main)
+	    AC_CHECK_LIB(GLESv2, main,[
+		    AC_DEFINE([ENABLE_OPENGL_ES])
+            OPENGLES_LIBS="-lGLESv2"
+		    AC_SUBST(OPENGLES_LIBS)
+	    ])
+    fi
+fi
+AM_CONDITIONAL([ENABLE_OPENGL_ES], [test "${have_opengles}" = "yes"])
+
+dnl - if --enable-glx is used, check for it
+AC_ARG_ENABLE([glx],
+               [AC_HELP_STRING([--enable-glx], [Use a GLX context, overrides --enable-osmesa and --enable-egl])],
+               [glx=$enableval],
+               [glx=no])
+
+if test "x$glx" = "xyes" ; then
+    AC_CHECK_HEADERS([GL/glx.h], [have_glx=yes], [have_glx=no])
+    if test "have_glx" = "no" ; then
+	    AC_MSG_WARN([Cannot use GLX -- headers not found.])
+    else
+        AC_CHECK_LIB(dl, main)
+        AC_CHECK_LIB(GL, main)
+	    AC_CHECK_LIB(GLX, main)
+    fi
+fi
+
+if test "$have_glx" = "yes" ; then
+    if test "$have_opengl" = "yes" ; then
+		AC_DEFINE(ENABLE_GLX)
+        GLX_LIBS="-lGLX"
+		AC_SUBST(GLX_LIBS)
+	else
+        have_glx=no
+	    if test "$have_opengles" = "yes" ; then
+	        AC_MSG_WARN([GLX contexts are incompatible with OpenGL ES -- cancelling the use of GLX.])
+	    else
+	        AC_MSG_WARN([GLX contexts are only compatible with standard OpenGL -- cancelling the use of GLX.])
+	    fi
+    fi
+fi
+AM_CONDITIONAL([ENABLE_GLX], [test "${have_glx}" = "yes"])
 
 dnl - if --enable-osmesa is used, check for it
 AC_ARG_ENABLE([osmesa],
-               [AC_HELP_STRING([--enable-osmesa], [use off-screen mesa])],
+               [AC_HELP_STRING([--enable-osmesa], [Use an OSMesa context, overrides --enable-egl])],
                [osmesa=$enableval],
                [osmesa=no])
 
 if test "x$osmesa" = "xyes" ; then
-	AC_CHECK_LIB(dl, main)
-	AC_CHECK_LIB([GL], main)
-	AC_CHECK_LIB(OSMesa, main,[
-		useosmesa=yes
-		AC_DEFINE(HAVE_LIBOSMESA)
-		OSMESA_LIBS="-lOSMesa"
-		AC_SUBST(OSMESA_LIBS)
-	])
+    AC_CHECK_HEADERS([GL/osmesa.h], [have_osmesa=yes], [have_osmesa=no])
+    if test "have_osmesa" = "no" ; then
+	    AC_MSG_WARN([Cannot use OSMesa -- headers not found.])
+    else
+	    AC_MSG_WARN([OSMesa contexts are deprecated.])
+        AC_CHECK_LIB(dl, main)
+        AC_CHECK_LIB(GL, main)
+	    AC_CHECK_LIB(OSMesa, main)
+    fi
 fi
-AM_CONDITIONAL([HAVE_LIBOSMESA],  [test "${useosmesa}" = "yes"])
+
+if test "$have_osmesa" = "yes" ; then
+    if test "$have_opengl" = "yes" ; then
+		AC_DEFINE(ENABLE_OSMESA)
+        OSMESA_LIBS="-lOSMesa"
+		AC_SUBST(OSMESA_LIBS)
+	else
+        have_osmesa=no
+	    if test "$have_opengles" = "yes" ; then
+	        AC_MSG_WARN([OSMesa contexts are incompatible with OpenGL ES -- cancelling the use of OSMesa.])
+	    else
+	        AC_MSG_WARN([OSMesa contexts are only compatible with standard OpenGL -- cancelling the use of OSMesa.])
+	    fi
+    fi
+fi
+AM_CONDITIONAL([ENABLE_OSMESA], [test "${have_osmesa}" = "yes"])
+
+dnl - if --enable-egl is used, check for it
+AC_ARG_ENABLE([egl],
+               [AC_HELP_STRING([--enable-egl], [Use an EGL context])],
+               [egl=$enableval],
+               [egl=no])
+
+if test "x$egl" = "xyes" ; then
+    AC_CHECK_HEADERS([EGL/egl.h], [have_egl=yes], [have_egl=no])
+    if test "have_egl" = "no" ; then
+	    AC_MSG_WARN([Cannot use EGL -- headers not found.])
+    else
+        AC_CHECK_LIB(dl, main)
+	    AC_CHECK_LIB(EGL, main,[
+		    AC_DEFINE(ENABLE_EGL)
+            EGL_LIBS="-lEGL"
+		    AC_SUBST(EGL_LIBS)
+	    ])
+    fi
+fi
+AM_CONDITIONAL([ENABLE_EGL], [test "${have_egl}" = "yes"])
 
 dnl - make the usage of libagg for HUD rendering configurable
 AC_ARG_ENABLE([hud],

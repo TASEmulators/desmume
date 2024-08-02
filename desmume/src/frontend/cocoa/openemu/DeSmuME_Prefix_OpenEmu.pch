@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2022 DeSmuME team
+	Copyright (C) 2012-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 
 #define HOST_DARWIN
 #define DESMUME_COCOA
-#define HAVE_OPENGL
+#define ENABLE_OPENGL_STANDARD
 #define HAVE_LIBZ
 #define FT2_BUILD_LIBRARY
 

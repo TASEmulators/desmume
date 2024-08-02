@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014 DeSmuME team
+	Copyright (C) 2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,33 +15,16 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <cstdlib>
-#include <cstring>
+#ifndef __GLX_3DEMU_H__
+#define __GLX_3DEMU_H__
 
-#include "avout_x264.h"
+bool glx_initOpenGL_StandardAuto();
+bool glx_initOpenGL_LegacyAuto();
+bool glx_initOpenGL_3_2_CoreProfile();
 
-AVOutX264::AVOutX264() {
-	const char* const args[] = {
-		"x264",
-		"--qp", "0",
-		"--demuxer", "raw",
-		"--input-csp", "rgb",
-		"--input-depth", "8",
-		"--input-res", "256x384",
-		"--fps", "60",
-		"--output-csp", "i444",
-		"-o", this->filename,
-		"-",
-		NULL
-	};
-	memcpy(this->args, args, sizeof(args));
-}
+void glx_deinitOpenGL();
+bool glx_beginOpenGL();
+void glx_endOpenGL();
+bool glx_framebufferDidResizeCallback(bool isFBOSupported, size_t w, size_t h);
 
-const char* const* AVOutX264::getArgv(const char* fname) {
-	if (strlen(fname) >= sizeof(this->filename)) {
-		return NULL;
-	}
-	strncpy(this->filename, fname, sizeof(this->filename));
-	return this->args;
-}
-
+#endif // __GLX_3DEMU_H__

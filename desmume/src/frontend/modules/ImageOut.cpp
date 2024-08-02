@@ -23,7 +23,7 @@
 #include "formats/rbmp.h"
 #include "GPU.h"
 
-static u8* Convert15To24(const u16* src, int width, int height)
+u8* Convert15To24(const u16* src, int width, int height)
 {
 	u8 *tmp_buffer;
 	u8 *tmp_inc;

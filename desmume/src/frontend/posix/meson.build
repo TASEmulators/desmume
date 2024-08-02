@@ -16,11 +16,15 @@ dep_pcap = dependency('pcap')
 dep_zlib = dependency('zlib')
 dep_threads = dependency('threads')
 dep_gl = dependency('gl', required: false)
+dep_gles = dependency('glesv2', required: false)
 dep_openal = dependency('openal', required: get_option('openal'))
 dep_alsa = dependency('alsa', required: false)
 dep_soundtouch = dependency('soundtouch', required: false)
 dep_agg = dependency('libagg', required: false)
 dep_fontconfig = dependency('fontconfig', required: false)
+dep_glx = dependency('glx', required: false)
+dep_osmesa = dependency('osmesa', required: false)
+dep_egl = dependency('egl', required: false)
 
 # XXX: something wrong with this one.
 #dep_lua = dependency('lua-5.1', required: false)
@@ -168,12 +172,65 @@ libdesmume_src += [
   'shared/desmume_config.cpp',
 ]
 
-if dep_gl.found()
-  dependencies += dep_gl
-  libdesmume_src += [
-    '../../OGLRender.cpp',
-    '../../OGLRender_3_2.cpp',
-  ]
+if get_option('opengles')
+  if dep_gles.found()
+    add_global_arguments('-DENABLE_OPENGL_ES', language: ['c', 'cpp'])
+    dependencies += dep_gles
+    libdesmume_src += [
+      '../../OGLRender.cpp',
+      '../../OGLRender_3_2.cpp',
+      '../../OGLRender_ES3.cpp',
+    ]
+  else
+    message('Cannot build with OpenGL ES -- glesv2 library not found.')
+  endif
+elif get_option('opengl')
+  if dep_gl.found()
+    add_global_arguments('-DENABLE_OPENGL_STANDARD', language: ['c', 'cpp'])
+    dependencies += dep_gl
+    libdesmume_src += [
+      '../../OGLRender.cpp',
+      '../../OGLRender_3_2.cpp',
+    ]
+  else
+    message('Cannot build with OpenGL -- gl library not found.')
+  endif
+endif
+
+if get_option('glx')
+  if dep_glx.found()
+    if get_option('opengl') and dep_gl.found()
+      add_global_arguments('-DENABLE_GLX', language: ['c', 'cpp'])
+      dependencies += dep_glx
+    elif get_option('opengles')
+      message('GLX contexts are incompatible with OpenGL ES -- cancelling the use of GLX.')
+    else
+      message('GLX contexts are only compatible with standard OpenGL -- cancelling the use of GLX.')
+    endif
+  else
+    message('Cannot use GLX -- glx library not found.')
+  endif
+elif get_option('osmesa')
+  if dep_osmesa.found()
+    if get_option('opengl') and dep_gl.found()
+      message('OSMesa contexts are deprecated.')
+      add_global_arguments('-DENABLE_OSMESA', language: ['c', 'cpp'])
+      dependencies += dep_osmesa
+    elif get_option('opengles')
+      message('OSMesa contexts are incompatible with OpenGL ES -- cancelling the use of OSMesa.')
+    else
+      message('OSMesa contexts are only compatible with standard OpenGL -- cancelling the use of OSMesa.')
+    endif
+  else
+    message('Cannot use OSMesa -- osmesa library not found.')
+  endif
+elif get_option('egl')
+  if dep_egl.found()
+    add_global_arguments('-DENABLE_EGL', language: ['c', 'cpp'])
+    dependencies += dep_egl
+  else
+    message('Cannot use EGL -- egl library not found.')
+  endif
 endif
 
 if dep_openal.found()

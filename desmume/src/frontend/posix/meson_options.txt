@@ -1,3 +1,28 @@
+option('opengl',
+  type: 'boolean',
+  value: false,
+  description: 'Build for OpenGL',
+)
+option('opengles',
+  type: 'boolean',
+  value: false,
+  description: 'Build for OpenGL ES',
+)
+option('glx',
+  type: 'boolean',
+  value: false,
+  description: 'Use a GLX context',
+)
+option('osmesa',
+  type: 'boolean',
+  value: false,
+  description: 'Use a OSMesa context',
+)
+option('egl',
+  type: 'boolean',
+  value: false,
+  description: 'Use a EGL context',
+)
 option('openal',
   type: 'boolean',
   value: false,

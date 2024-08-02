@@ -1,17 +1,17 @@
  /*
 	Copyright (C) 2007 Pascal Giard (evilynux)
 	Copyright (C) 2006-2024 DeSmuME team
- 
+
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 2 of the License, or
 	(at your option) any later version.
- 
+
 	This file is distributed in the hope that it will be useful,
 	but WITHOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU General Public License for more details.
- 
+
 	You should have received a copy of the GNU General Public License
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -52,8 +52,8 @@
 #include "cheatsGTK.h"
 #include "frontend/modules/osd/agg/agg_osd.h"
 
-#include "avout_x264.h"
-#include "avout_flac.h"
+#include "../shared/avout_x264.h"
+#include "../shared/avout_flac.h"
 
 #include "commandline.h"
 
@@ -68,17 +68,22 @@
 	#include "gdbstub.h"
 #endif
 
-#define HAVE_OPENGL
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
+	#if defined(ENABLE_OPENGL_ES)
+		#include "OGLRender_ES3.h"
+	#else
+		#include "OGLRender_3_2.h"
+	#endif
 
-#ifdef HAVE_OPENGL
-	#include <GL/gl.h>
-	#include "OGLRender_3_2.h"
-#endif
-
-#if defined(HAVE_LIBOSMESA)
-	#include "osmesa_3Demu.h"
-#else
-	#include "sdl_3Demu.h"
+	#if defined(ENABLE_GLX)
+		#include "../shared/glx_3Demu.h"
+	#elif defined(ENABLE_OSMESA)
+		#include "../shared/osmesa_3Demu.h"
+	#elif defined(ENABLE_EGL)
+		#include "../shared/egl_3Demu.h"
+	#else
+		#include "../shared/sdl_3Demu.h"
+	#endif
 #endif
 
 #include "config.h"
@@ -396,7 +401,7 @@ static const char *ui_description =
 "    <toolitem action='quit'/>"
 "  </toolbar>"
 "</ui>";
-  
+
 static const GtkActionEntry action_entries[] = {
     { "FileMenu", NULL, "_File" },
       { "open",          "gtk-open",    "_Open",         "<Ctrl>o",  NULL,   OpenNdsDialog },
@@ -632,11 +637,16 @@ NULL
 };
 
 GPU3DInterface *core3DList[] = {
-  &gpu3DNull,
-  &gpu3DRasterize,
-#ifdef HAVE_OPENGL
-  &gpu3Dgl,
+	&gpu3DNull,
+	&gpu3DRasterize,
+#if defined(ENABLE_OPENGL_ES)
+	&gpu3Dgl_ES_3_0,
+#elif defined(ENABLE_OPENGL_STANDARD)
+	&gpu3Dgl,
+	&gpu3DglOld,
+	&gpu3Dgl_3_2,
 #endif
+	NULL
 };
 
 int multisampleSizes[] = {0, 2, 4, 8, 16, 32};
@@ -698,7 +708,7 @@ init_configured_features( class configured_features *config	)
   config->timeout = 0;
 
   /* use the default language */
-  config->firmware_language = -1; 
+  config->firmware_language = -1;
 
   /* If specified by --lang option the lang will change to choosed one */
   config->firmware_language = config->language;
@@ -712,7 +722,7 @@ fill_configured_features( class configured_features *config,
     { "3d-render", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3D rendering engine. Available engines:\n"
         "\t\t\t\t  0 = 3d disabled\n"
         "\t\t\t\t  1 = internal rasterizer (default)\n"
-#ifdef HAVE_OPENGL
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
         "\t\t\t\t  2 = opengl\n"
 #endif
         ,"ENGINE"},
@@ -756,12 +766,12 @@ fill_configured_features( class configured_features *config,
   // Check if the commandLine argument was actually passed
 	if (config->engine_3d != -1) {
 		if (config->engine_3d != 0 && config->engine_3d != 1
-#ifdef HAVE_OPENGL
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
 				&& config->engine_3d != 2
 #endif
 						) {
 			g_printerr("Currently available ENGINES: 0, 1"
-#ifdef HAVE_OPENGL
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
 							", 2"
 #endif
 					"\n");
@@ -1954,7 +1964,7 @@ static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 
 static void loadgame(int num){
    if (desmume_running())
-   {   
+   {
        Pause();
        loadstate_slot(num);
        Launch();
@@ -1966,7 +1976,7 @@ static void loadgame(int num){
 
 static void savegame(int num){
    if (desmume_running())
-   {   
+   {
        Pause();
        savestate_slot(num);
        Launch();
@@ -2247,7 +2257,7 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
     gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(mkDialog)));
 
     g_signal_connect(G_OBJECT(mkDialog), "focus_in_event", G_CALLBACK(AcceptNewJoyKey), &ctx);
-   
+	
     switch(gtk_dialog_run(GTK_DIALOG(mkDialog))) {
     case GTK_RESPONSE_OK:
         Keypad_Temp[Key] = ctx.mk_key_chosen;
@@ -2403,8 +2413,12 @@ static void GraphicsSettingsDialog() {
 	coreCombo = gtk_combo_box_text_new();
 	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 0, "Null");
 	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 1, "SoftRasterizer");
-#ifdef HAVE_OPENGL
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 2, "OpenGL");
+#if defined(ENABLE_OPENGL_ES)
+	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 2, "OpenGL ES 3.0");
+#elif defined(ENABLE_OPENGL_STANDARD)
+	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 2, "OpenGL (Auto)");
+	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 3, "OpenGL (Legacy)");
+	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 4, "OpenGL 3.2");
 #endif
 	gtk_combo_box_set_active(GTK_COMBO_BOX(coreCombo), cur3DCore);
 	gtk_table_attach(GTK_TABLE(wTable), coreCombo, 1, 2, 0, 1,
@@ -2447,7 +2461,7 @@ static void GraphicsSettingsDialog() {
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 0, 0);
 
 
-#ifdef HAVE_OPENGL
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
 	// OpenGL Multisample
 	gsKey = gtk_label_new("Multisample Antialiasing (OpenGL):");
 	gtk_misc_set_alignment(GTK_MISC(gsKey), 0.0, 0.5);
@@ -2492,21 +2506,65 @@ static void GraphicsSettingsDialog() {
     	// Change only if needed
 		if (sel3DCore != cur3DCore)
 		{
-			if (sel3DCore == 2)
+			switch (sel3DCore)
 			{
-#if !defined(HAVE_OPENGL)
-				sel3DCore = RENDERID_SOFTRASTERIZER;
-#elif defined(HAVE_LIBOSMESA)
-				if (!is_osmesa_initialized())
-				{
-					init_osmesa_3Demu();
-				}
-#else
-				if (!is_sdl_initialized())
-				{
-					init_sdl_3Demu();
-				}
+#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_OSMESA) && !defined(ENABLE_GLX)
+				case 2:
+	#if defined(ENABLE_EGL)
+					oglrender_init = &egl_initOpenGL_ES_3_0;
+	#else
+					oglrender_init = &sdl_initOpenGL_ES_3_0;
+	#endif
+					break;
+#elif defined(ENABLE_OPENGL_STANDARD)
+				case 2:
+	#if defined(ENABLE_GLX)
+					oglrender_init = &glx_initOpenGL_StandardAuto;
+	#elif defined(ENABLE_OSMESA)
+					oglrender_init = &osmesa_initOpenGL_StandardAuto;
+	#elif defined(ENABLE_EGL)
+					oglrender_init = &egl_initOpenGL_StandardAuto;
+	#else
+					oglrender_init = &sdl_initOpenGL_StandardAuto;
+	#endif
+					break;
+
+				case 3:
+	#if defined(ENABLE_GLX)
+					oglrender_init = &glx_initOpenGL_LegacyAuto;
+	#elif defined(ENABLE_OSMESA)
+					oglrender_init = &osmesa_initOpenGL_LegacyAuto;
+	#elif defined(ENABLE_EGL)
+					oglrender_init = &egl_initOpenGL_LegacyAuto;
+	#else
+					oglrender_init = &sdl_initOpenGL_LegacyAuto;
+	#endif
+					break;
+
+				case 4:
+	#if defined(ENABLE_GLX)
+					oglrender_init = &glx_initOpenGL_3_2_CoreProfile;
+	#elif defined(ENABLE_OSMESA)
+					oglrender_init = &osmesa_initOpenGL_3_2_CoreProfile;
+	#elif defined(ENABLE_EGL)
+					oglrender_init = &egl_initOpenGL_3_2_CoreProfile;
+	#else
+					oglrender_init = &sdl_initOpenGL_3_2_CoreProfile;
+	#endif
+					break;
 #endif
+				default:
+				{
+					if (sel3DCore > 0)
+					{
+						sel3DCore = RENDERID_SOFTRASTERIZER;
+					}
+					else
+					{
+						sel3DCore = RENDERID_NULL;
+					}
+					break;
+				}
 			}
 			
 			if (GPU->Change3DRendererByID(sel3DCore))
@@ -2537,7 +2595,7 @@ static void GraphicsSettingsDialog() {
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wSmoothing));
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
 		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wHCInterpolate));
-#ifdef HAVE_OPENGL
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
 		int selectedMultisample = gtk_combo_box_get_active(GTK_COMBO_BOX(wMultisample));
 		config.multisamplingSize = multisampleSizes[selectedMultisample];
 		config.multisampling = selectedMultisample != 0;
@@ -2812,7 +2870,7 @@ public:
 		return avout_x264.isRecording() || avout_flac.isRecording();
 	}
 
-	virtual void AVI_SoundUpdate(void* soundData, int soundLen) { 
+	virtual void AVI_SoundUpdate(void* soundData, int soundLen) {
 		avout_flac.updateAudio(soundData, soundLen);
 	}
 };
@@ -2876,7 +2934,7 @@ gboolean EmuLoop(gpointer data)
 #ifdef HAVE_LIBAGG
 	Hud.fps3d = GPU->GetFPSRender3D();
 	
-	if(nds.idleFrameCounter==0 || oneSecond) 
+	if (nds.idleFrameCounter==0 || oneSecond)
 	{
 		u32 loadAvgARM9;
 		u32 loadAvgARM7;
@@ -3310,7 +3368,7 @@ common_gtk_main( class configured_features *my_config)
 			slot2_device_type = NDS_SLOT2_NONE;
 			break;
 	}
-    
+	
     slot2_Init();
     slot2_Change((NDS_SLOT2_TYPE)slot2_device_type);
 
@@ -3338,15 +3396,15 @@ common_gtk_main( class configured_features *my_config)
      */
 #ifdef GDB_STUB
     gdbstub_mutex_init();
-    
+	
     gdbstub_handle_t arm9_gdb_stub = NULL;
     gdbstub_handle_t arm7_gdb_stub = NULL;
-    
+	
     if ( my_config->arm9_gdb_port > 0) {
         arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
                                          &NDS_ARM9,
                                          &arm9_direct_memory_iface);
-        
+		
         if ( arm9_gdb_stub == NULL) {
             g_printerr("Failed to create ARM9 gdbstub on port %d\n",
                        my_config->arm9_gdb_port);
@@ -3360,7 +3418,7 @@ common_gtk_main( class configured_features *my_config)
         arm7_gdb_stub = createStub_gdb( my_config->arm7_gdb_port,
                                          &NDS_ARM7,
                                          &arm7_base_memory_iface);
-        
+		
         if ( arm7_gdb_stub == NULL) {
             g_printerr("Failed to create ARM7 gdbstub on port %d\n",
                        my_config->arm7_gdb_port);
@@ -3376,8 +3434,8 @@ common_gtk_main( class configured_features *my_config)
     if(!init_joy()) return 1;
 
     dTools_running = (BOOL*)malloc(sizeof(BOOL) * dTools_list_size);
-    if (dTools_running != NULL) 
-      memset(dTools_running, FALSE, sizeof(BOOL) * dTools_list_size); 
+    if (dTools_running != NULL)
+      memset(dTools_running, FALSE, sizeof(BOOL) * dTools_list_size);
 
     keyfile = desmume_config_read_file(gtk_kb_cfg);
 
@@ -3421,21 +3479,21 @@ common_gtk_main( class configured_features *my_config)
 #endif
     desmume_gtk_menu_file_saveload_slot(action_group);
     desmume_gtk_menu_tools(action_group);
-    gtk_action_group_add_radio_actions(action_group, savet_entries, G_N_ELEMENTS(savet_entries), 
+    gtk_action_group_add_radio_actions(action_group, savet_entries, G_N_ELEMENTS(savet_entries),
             my_config->savetype, G_CALLBACK(changesavetype), NULL);
 
     if (config.view_cairoFilter < CAIRO_FILTER_FAST || config.view_cairoFilter > CAIRO_FILTER_BILINEAR) {
     	config.view_cairoFilter = CAIRO_FILTER_NEAREST;
     }
     Interpolation = (cairo_filter_t)config.view_cairoFilter.get();
-    gtk_action_group_add_radio_actions(action_group, interpolation_entries, G_N_ELEMENTS(interpolation_entries), 
+    gtk_action_group_add_radio_actions(action_group, interpolation_entries, G_N_ELEMENTS(interpolation_entries),
             Interpolation, G_CALLBACK(Modify_Interpolation), NULL);
 
     if (config.view_filter < VideoFilterTypeID_None || config.view_filter >= VideoFilterTypeIDCount) {
         config.view_filter = VideoFilterTypeID_None;
     }
     video->ChangeFilterByID((VideoFilterTypeID)config.view_filter.get());
-    gtk_action_group_add_radio_actions(action_group, pri_interpolation_entries, G_N_ELEMENTS(pri_interpolation_entries), 
+    gtk_action_group_add_radio_actions(action_group, pri_interpolation_entries, G_N_ELEMENTS(pri_interpolation_entries),
             config.view_filter, G_CALLBACK(Modify_PriInterpolation), NULL);
 
     switch (config.audio_sync) {
@@ -3462,7 +3520,7 @@ common_gtk_main( class configured_features *my_config)
     gtk_action_group_add_radio_actions(action_group, spuinterpolation_entries, G_N_ELEMENTS(spuinterpolation_entries),
             CommonSettings.spuInterpolationMode, G_CALLBACK(Modify_SPUInterpolation), NULL);
 
-    gtk_action_group_add_radio_actions(action_group, frameskip_entries, G_N_ELEMENTS(frameskip_entries), 
+    gtk_action_group_add_radio_actions(action_group, frameskip_entries, G_N_ELEMENTS(frameskip_entries),
             config.frameskip, G_CALLBACK(Modify_Frameskip), NULL);
     autoFrameskipMax = config.frameskip;
     gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "frameskipA"), config.autoframeskip);
@@ -3485,7 +3543,7 @@ common_gtk_main( class configured_features *my_config)
             break;
     }
     nds_screen.rotation_angle = config.view_rot;
-    gtk_action_group_add_radio_actions(action_group, rotation_entries, G_N_ELEMENTS(rotation_entries), 
+    gtk_action_group_add_radio_actions(action_group, rotation_entries, G_N_ELEMENTS(rotation_entries),
             nds_screen.rotation_angle, G_CALLBACK(SetRotation), NULL);
 
 
@@ -3493,14 +3551,14 @@ common_gtk_main( class configured_features *my_config)
     	config.window_scale = WINSIZE_SCALE;
     }
     winsize_current = (winsize_enum)config.window_scale.get();
-    gtk_action_group_add_radio_actions(action_group, winsize_entries, G_N_ELEMENTS(winsize_entries), 
+    gtk_action_group_add_radio_actions(action_group, winsize_entries, G_N_ELEMENTS(winsize_entries),
             winsize_current, G_CALLBACK(SetWinsize), NULL);
 
     if (config.view_orient < ORIENT_VERTICAL || config.view_orient > ORIENT_SINGLE) {
         config.view_orient = ORIENT_VERTICAL;
     }
     nds_screen.orientation = (orientation_enum)config.view_orient.get();
-    gtk_action_group_add_radio_actions(action_group, orientation_entries, G_N_ELEMENTS(orientation_entries), 
+    gtk_action_group_add_radio_actions(action_group, orientation_entries, G_N_ELEMENTS(orientation_entries),
             nds_screen.orientation, G_CALLBACK(SetOrientation), NULL);
 
     {
@@ -3521,7 +3579,7 @@ common_gtk_main( class configured_features *my_config)
     gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "orient_swapscreens"), config.view_swap);
 
     gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
-    
+	
     accel_group = gtk_ui_manager_get_accel_group (ui_manager);
     gtk_window_add_accel_group (GTK_WINDOW (pWindow), accel_group);
 
@@ -3608,22 +3666,60 @@ common_gtk_main( class configured_features *my_config)
             gtk_toggle_action_set_active((GtkToggleAction *)action, FALSE);
     }
 
-#if defined(HAVE_OPENGL) && defined(OGLRENDER_3_2_H)
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
+	#if defined(OGLRENDER_3_2_H)
     OGLLoadEntryPoints_3_2_Func = OGLLoadEntryPoints_3_2;
     OGLCreateRenderer_3_2_Func = OGLCreateRenderer_3_2;
-#endif
+	#endif
+	#if defined(OGLRENDER_ES3_H)
+	OGLLoadEntryPoints_ES_3_0_Func = &OGLLoadEntryPoints_ES_3_0;
+	OGLCreateRenderer_ES_3_0_Func = &OGLCreateRenderer_ES_3_0;
+	#endif
+
+	#if defined(ENABLE_GLX)
+	oglrender_init = &glx_initOpenGL_StandardAuto;
+	oglrender_deinit = &glx_deinitOpenGL;
+	oglrender_beginOpenGL = &glx_beginOpenGL;
+	oglrender_endOpenGL = &glx_endOpenGL;
+	oglrender_framebufferDidResizeCallback = &glx_framebufferDidResizeCallback;
+	#elif defined(ENABLE_OSMESA)
+	oglrender_init = &osmesa_initOpenGL_StandardAuto;
+	oglrender_deinit = &osmesa_deinitOpenGL;
+	oglrender_beginOpenGL = &osmesa_beginOpenGL;
+	oglrender_endOpenGL = &osmesa_endOpenGL;
+	oglrender_framebufferDidResizeCallback = &osmesa_framebufferDidResizeCallback;
+	#elif defined(ENABLE_EGL)
+	oglrender_init = &egl_initOpenGL_StandardAuto;
+	oglrender_deinit = &egl_deinitOpenGL;
+	oglrender_beginOpenGL = &egl_beginOpenGL;
+	oglrender_endOpenGL = &egl_endOpenGL;
+	oglrender_framebufferDidResizeCallback = &egl_framebufferDidResizeCallback;
+	#else
+	oglrender_init = &sdl_initOpenGL_StandardAuto;
+	oglrender_deinit = &sdl_deinitOpenGL;
+	oglrender_beginOpenGL = &sdl_beginOpenGL;
+	oglrender_endOpenGL = &sdl_endOpenGL;
+	oglrender_framebufferDidResizeCallback = &sdl_framebufferDidResizeCallback;
+	#endif
+#endif // ENABLE_OPENGL_STANDARD || ENABLE_OPENGL_ES
 
     //Set the 3D emulation to use
     int core = my_config->engine_3d;
     // setup the gdk 3D emulation;
 
     // Check if commandLine argument was passed or not
-    if (core == -1) {
+    if (core == -1)
+	{
     	// If it was not passed, then get the Renderer config from the file
     	core = config.core3D;
 
     	// Check if it is valid
-    	if (!(core >= 0 && core <= 2)) {
+#if defined(ENABLE_OPENGL_ES)
+    	if (!(core >= 0 && core <= 2))
+#elif defined(ENABLE_OPENGL_STANDARD)
+		if (!(core >= 0 && core <= 4))
+#endif
+		{
     		// If it is invalid, reset it to SoftRasterizer
     		core = 1;
     	}
@@ -3631,21 +3727,65 @@ common_gtk_main( class configured_features *my_config)
         my_config->engine_3d = core;
     }
 
-	if (core == 2)
+    switch (core)
 	{
-#if !defined(HAVE_OPENGL)
-		core = RENDERID_SOFTRASTERIZER;
-#elif defined(HAVE_LIBOSMESA)
-		if (!is_osmesa_initialized())
-		{
-			init_osmesa_3Demu();
-		}
-#else
-		if (!is_sdl_initialized())
-		{
-			init_sdl_3Demu();
-		}
+#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_OSMESA) && !defined(ENABLE_GLX)
+		case 2:
+	#if defined(ENABLE_EGL)
+			oglrender_init = &egl_initOpenGL_ES_3_0;
+	#else
+			oglrender_init = &sdl_initOpenGL_ES_3_0;
+	#endif
+			break;
+#elif defined(ENABLE_OPENGL_STANDARD)
+		case 2:
+	#if defined(ENABLE_GLX)
+			oglrender_init = &glx_initOpenGL_StandardAuto;
+	#elif defined(ENABLE_OSMESA)
+			oglrender_init = &osmesa_initOpenGL_StandardAuto;
+	#elif defined(ENABLE_EGL)
+			oglrender_init = &egl_initOpenGL_StandardAuto;
+	#else
+			oglrender_init = &sdl_initOpenGL_StandardAuto;
+	#endif
+			break;
+
+		case 3:
+	#if defined(ENABLE_GLX)
+			oglrender_init = &glx_initOpenGL_LegacyAuto;
+	#elif defined(ENABLE_OSMESA)
+			oglrender_init = &osmesa_initOpenGL_LegacyAuto;
+	#elif defined(ENABLE_EGL)
+			oglrender_init = &egl_initOpenGL_LegacyAuto;
+	#else
+			oglrender_init = &sdl_initOpenGL_LegacyAuto;
+	#endif
+			break;
+
+		case 4:
+	#if defined(ENABLE_GLX)
+			oglrender_init = &glx_initOpenGL_3_2_CoreProfile;
+	#elif defined(ENABLE_OSMESA)
+			oglrender_init = &osmesa_initOpenGL_3_2_CoreProfile;
+	#elif defined(ENABLE_EGL)
+			oglrender_init = &egl_initOpenGL_3_2_CoreProfile;
+	#else
+			oglrender_init = &sdl_initOpenGL_3_2_CoreProfile;
+	#endif
+			break;
 #endif
+		default:
+		{
+			if (core > 0)
+			{
+				core = RENDERID_SOFTRASTERIZER;
+			}
+			else
+			{
+				core = RENDERID_NULL;
+			}
+			break;
+		}
 	}
 
 	if (!GPU->Change3DRendererByID(core)) {
@@ -3667,7 +3807,7 @@ common_gtk_main( class configured_features *my_config)
 
     backup_setManualBackupType(my_config->savetype);
 
-    // Command line arg 
+    // Command line arg
     if( my_config->nds_file != "") {
         if(Open( my_config->nds_file.c_str()) >= 0) {
             my_config->process_movieCommands();
@@ -3715,11 +3855,17 @@ common_gtk_main( class configured_features *my_config)
 
     desmume_free();
 
-#if defined(HAVE_LIBOSMESA)
-	deinit_osmesa_3Demu();
-#else
-	deinit_sdl_3Demu();
-#endif
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
+    #if defined(ENABLE_GLX)
+	glx_deinitOpenGL();
+    #elif defined(ENABLE_OSMESA)
+	osmesa_deinitOpenGL();
+    #elif defined(ENABLE_EGL)
+	egl_deinitOpenGL();
+    #else
+	sdl_deinitOpenGL();
+    #endif
+#endif // ENABLE_OPENGL_STANDARD || ENABLE_OPENGL_ES
 
     /* Unload joystick */
     uninit_joy();

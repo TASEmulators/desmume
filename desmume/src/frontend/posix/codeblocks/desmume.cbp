@@ -1,0 +1,1348 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="DeSmuME" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="GTK2_x64_Debug">
+				<Option platforms="Unix;" />
+				<Option output="bin/GTK2_Debug/DeSmuME" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/GTK2_Debug/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-m64" />
+					<Add option="-g" />
+					<Add option="`pkg-config --cflags gtk+-2.0`" />
+					<Add option="-DHOST_64" />
+					<Add option="-DENABLE_OPENGL_STANDARD" />
+				</Compiler>
+				<Linker>
+					<Add option="-m64" />
+					<Add option="`pkg-config --libs gtk+-2.0`" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libGL.so" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libGLESv2.so" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libGLX.so" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libOSMesa.so" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libEGL.so" />
+				</Linker>
+			</Target>
+			<Target title="GTK2_x64_Release">
+				<Option platforms="Unix;" />
+				<Option output="bin/GTK2_Release/DeSmuME" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/GTK2_Release/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-fno-strict-aliasing" />
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-flto" />
+					<Add option="-O3" />
+					<Add option="-m64" />
+					<Add option="`pkg-config --cflags gtk+-2.0`" />
+					<Add option="-DHOST_64" />
+					<Add option="-DENABLE_OPENGL_STANDARD" />
+				</Compiler>
+				<Linker>
+					<Add option="-flto" />
+					<Add option="-s" />
+					<Add option="-m64" />
+					<Add option="`pkg-config --libs gtk+-2.0`" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libGL.so" />
+				</Linker>
+			</Target>
+			<Target title="GTK3_x64_Debug">
+				<Option platforms="Unix;" />
+				<Option output="bin/GTK3_Debug/DeSmuME" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/GTK3_Debug/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-m64" />
+					<Add option="-g" />
+					<Add option="`pkg-config --cflags gtk+-3.0`" />
+					<Add option="-DHOST_64" />
+					<Add option="-DENABLE_OPENGL_STANDARD" />
+				</Compiler>
+				<Linker>
+					<Add option="-m64" />
+					<Add option="`pkg-config --libs gtk+-3.0`" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libGL.so" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libGLESv2.so" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libGLX.so" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libOSMesa.so" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libEGL.so" />
+				</Linker>
+				<ExtraCommands>
+					<Add before='rm -f &quot;../gtk/gresource.c&quot;' />
+					<Add before='rm -f &quot;../gtk/gresource.h&quot;' />
+					<Add before='glib-compile-resources --internal --generate-source  --sourcedir=&quot;../gtk/&quot; --target=&quot;../gtk/gresource.c&quot; &quot;../gtk/desmume.gresource.xml&quot;' />
+					<Add before='glib-compile-resources --internal --generate-header  --sourcedir=&quot;../gtk/&quot; --target=&quot;../gtk/gresource.h&quot; &quot;../gtk/desmume.gresource.xml&quot;' />
+					<Add after='rm -f &quot;../gtk/gresource.c&quot;' />
+					<Add after='rm -f &quot;../gtk/gresource.h&quot;' />
+					<Mode after="always" />
+				</ExtraCommands>
+			</Target>
+			<Target title="GTK3_x64_Release">
+				<Option platforms="Unix;" />
+				<Option output="bin/GTK3_Release/DeSmuME" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/GTK3_Release/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-fno-strict-aliasing" />
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-flto" />
+					<Add option="-O3" />
+					<Add option="-m64" />
+					<Add option="`pkg-config --cflags gtk+-3.0`" />
+					<Add option="-DHOST_64" />
+					<Add option="-DENABLE_OPENGL_STANDARD" />
+				</Compiler>
+				<Linker>
+					<Add option="-flto" />
+					<Add option="-s" />
+					<Add option="-m64" />
+					<Add option="`pkg-config --libs gtk+-3.0`" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libGL.so" />
+				</Linker>
+				<ExtraCommands>
+					<Add before='rm -f &quot;../gtk/gresource.c&quot;' />
+					<Add before='rm -f &quot;../gtk/gresource.h&quot;' />
+					<Add before='glib-compile-resources --internal --generate-source  --sourcedir=&quot;../gtk/&quot; --target=&quot;../gtk/gresource.c&quot; &quot;../gtk/desmume.gresource.xml&quot;' />
+					<Add before='glib-compile-resources --internal --generate-header  --sourcedir=&quot;../gtk/&quot; --target=&quot;../gtk/gresource.h&quot; &quot;../gtk/desmume.gresource.xml&quot;' />
+					<Add after='rm -f &quot;../gtk/gresource.c&quot;' />
+					<Add after='rm -f &quot;../gtk/gresource.h&quot;' />
+					<Mode after="always" />
+				</ExtraCommands>
+			</Target>
+			<Target title="CLI_x64_Release">
+				<Option platforms="Unix;" />
+				<Option output="bin/CLI_Release/DeSmuME-CLI" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/CLI_Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Compiler>
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-fno-strict-aliasing" />
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-flto" />
+					<Add option="-O3" />
+					<Add option="-m64" />
+					<Add option="`pkg-config --cflags glib-2.0`" />
+					<Add option="-DHOST_64" />
+				</Compiler>
+				<Linker>
+					<Add option="-flto" />
+					<Add option="-s" />
+					<Add option="-m64" />
+					<Add option="`pkg-config --libs glib-2.0`" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-march=native" />
+			<Add option="-Wall" />
+			<Add option="-DHOST_LINUX" />
+			<Add option="-DHAVE_JIT" />
+			<Add option="-DHAVE_LIBAGG" />
+			<Add option="-DHAVE_LIBSOUNDTOUCH" />
+			<Add option="-DHAVE_OPENAL" />
+			<Add directory="/usr/include" />
+			<Add directory="/usr/include/agg2" />
+			<Add directory="/usr/include/SDL2" />
+			<Add directory="../../../libretro-common/include" />
+			<Add directory="../../../metaspu/SoundTouch" />
+			<Add directory="../../../frontend" />
+			<Add directory="../../../../src" />
+			<Add directory="../shared" />
+		</Compiler>
+		<Linker>
+			<Add library="/usr/lib/x86_64-linux-gnu/libX11.so" />
+			<Add library="/usr/lib/x86_64-linux-gnu/libz.so" />
+			<Add library="/usr/lib/x86_64-linux-gnu/libpcap.so" />
+			<Add library="/usr/lib/x86_64-linux-gnu/libagg.a" />
+			<Add library="/usr/lib/x86_64-linux-gnu/libSDL2.so" />
+			<Add library="/usr/lib/x86_64-linux-gnu/libopenal.so" />
+		</Linker>
+		<Unit filename="../../../Database.cpp" />
+		<Unit filename="../../../Database.h" />
+		<Unit filename="../../../FIFO.cpp" />
+		<Unit filename="../../../FIFO.h" />
+		<Unit filename="../../../GPU.cpp" />
+		<Unit filename="../../../GPU.h" />
+		<Unit filename="../../../GPU_Operations.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../GPU_Operations.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../GPU_Operations_AVX2.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../GPU_Operations_AVX2.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../GPU_Operations_SSE2.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../GPU_Operations_SSE2.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../MMU.cpp" />
+		<Unit filename="../../../MMU.h" />
+		<Unit filename="../../../MMU_timing.h" />
+		<Unit filename="../../../NDSSystem.cpp" />
+		<Unit filename="../../../NDSSystem.h" />
+		<Unit filename="../../../OGLRender.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../../../OGLRender.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../../../OGLRender_3_2.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../../../OGLRender_3_2.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../../../OGLRender_ES3.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../../../OGLRender_ES3.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../../../PACKED.h" />
+		<Unit filename="../../../PACKED_END.h" />
+		<Unit filename="../../../ROMReader.cpp" />
+		<Unit filename="../../../ROMReader.h" />
+		<Unit filename="../../../SPU.cpp" />
+		<Unit filename="../../../SPU.h" />
+		<Unit filename="../../../addons/slot1_none.cpp" />
+		<Unit filename="../../../addons/slot1_r4.cpp" />
+		<Unit filename="../../../addons/slot1_retail_auto.cpp" />
+		<Unit filename="../../../addons/slot1_retail_mcrom.cpp" />
+		<Unit filename="../../../addons/slot1_retail_mcrom_debug.cpp" />
+		<Unit filename="../../../addons/slot1_retail_nand.cpp" />
+		<Unit filename="../../../addons/slot1comp_mc.cpp" />
+		<Unit filename="../../../addons/slot1comp_mc.h" />
+		<Unit filename="../../../addons/slot1comp_protocol.cpp" />
+		<Unit filename="../../../addons/slot1comp_protocol.h" />
+		<Unit filename="../../../addons/slot1comp_rom.cpp" />
+		<Unit filename="../../../addons/slot1comp_rom.h" />
+		<Unit filename="../../../addons/slot2_auto.cpp" />
+		<Unit filename="../../../addons/slot2_expMemory.cpp" />
+		<Unit filename="../../../addons/slot2_gbagame.cpp" />
+		<Unit filename="../../../addons/slot2_guitarGrip.cpp" />
+		<Unit filename="../../../addons/slot2_hcv1000.cpp" />
+		<Unit filename="../../../addons/slot2_mpcf.cpp" />
+		<Unit filename="../../../addons/slot2_none.cpp" />
+		<Unit filename="../../../addons/slot2_paddle.cpp" />
+		<Unit filename="../../../addons/slot2_passme.cpp" />
+		<Unit filename="../../../addons/slot2_piano.cpp" />
+		<Unit filename="../../../addons/slot2_rumblepak.cpp" />
+		<Unit filename="../../../arm_instructions.cpp" />
+		<Unit filename="../../../arm_jit.cpp" />
+		<Unit filename="../../../arm_jit.h" />
+		<Unit filename="../../../armcpu.cpp" />
+		<Unit filename="../../../armcpu.h" />
+		<Unit filename="../../../bios.cpp" />
+		<Unit filename="../../../bios.h" />
+		<Unit filename="../../../cheatSystem.cpp" />
+		<Unit filename="../../../cheatSystem.h" />
+		<Unit filename="../../../commandline.cpp" />
+		<Unit filename="../../../commandline.h" />
+		<Unit filename="../../../common.cpp" />
+		<Unit filename="../../../common.h" />
+		<Unit filename="../../../cp15.cpp" />
+		<Unit filename="../../../cp15.h" />
+		<Unit filename="../../../debug.cpp" />
+		<Unit filename="../../../debug.h" />
+		<Unit filename="../../../driver.cpp" />
+		<Unit filename="../../../driver.h" />
+		<Unit filename="../../../emufile.cpp" />
+		<Unit filename="../../../emufile.h" />
+		<Unit filename="../../../encrypt.cpp" />
+		<Unit filename="../../../encrypt.h" />
+		<Unit filename="../../../filter/2xsai.cpp" />
+		<Unit filename="../../../filter/bilinear.cpp" />
+		<Unit filename="../../../filter/deposterize.cpp" />
+		<Unit filename="../../../filter/epx.cpp" />
+		<Unit filename="../../../filter/filter.h" />
+		<Unit filename="../../../filter/hq2x.cpp" />
+		<Unit filename="../../../filter/hq2x.h" />
+		<Unit filename="../../../filter/hq3x.cpp" />
+		<Unit filename="../../../filter/hq4x.cpp" />
+		<Unit filename="../../../filter/interp.h" />
+		<Unit filename="../../../filter/lq2x.cpp" />
+		<Unit filename="../../../filter/lq2x.h" />
+		<Unit filename="../../../filter/scanline.cpp" />
+		<Unit filename="../../../filter/videofilter.cpp" />
+		<Unit filename="../../../filter/videofilter.h" />
+		<Unit filename="../../../filter/xbrz.cpp" />
+		<Unit filename="../../../filter/xbrz.h" />
+		<Unit filename="../../../firmware.cpp" />
+		<Unit filename="../../../firmware.h" />
+		<Unit filename="../../../gdbstub.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../gdbstub/gdbstub.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../gdbstub/gdbstub_internal.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../gfx3d.cpp" />
+		<Unit filename="../../../gfx3d.h" />
+		<Unit filename="../../../instruction_attributes.h" />
+		<Unit filename="../../../instructions.h" />
+		<Unit filename="../../../libretro-common/algorithms/mismatch.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/compat/compat_fnmatch.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/compat/compat_getopt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/compat/compat_ifaddrs.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/compat/compat_posix_string.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/compat/compat_snprintf.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/compat/compat_strcasestr.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/compat/compat_strl.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/conversion/float_to_s16.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/conversion/float_to_s16_neon.S">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/conversion/s16_to_float.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/conversion/s16_to_float_neon.S">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/crt/include/string.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/crt/string.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/dynamic/dylib.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/encodings/encoding_utf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/features/features_cpu.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/file/archive_file.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/file/archive_file_zlib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/file/config_file.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/file/file_path.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/file/nbio/nbio_stdio.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/file/nbio/test/nbio_test.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/file/retro_dirent.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/file/retro_stat.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/formats/bmp/rbmp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/formats/bmp/rbmp_encode.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/formats/image_texture.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/formats/image_transfer.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/formats/jpeg/rjpeg.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/formats/json/jsonsax.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/formats/png/rpng.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/formats/png/rpng_encode.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/formats/png/rpng_internal.h" />
+		<Unit filename="../../../libretro-common/formats/png/test/rpng_test.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/formats/tga/rtga.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/formats/xml/rxml.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/formats/xml/test/rxml_test.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/gfx/math/matrix_3x3.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/gfx/math/matrix_4x4.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/gfx/math/vector_2.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/gfx/math/vector_3.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/gfx/scaler/pixconv.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/gfx/scaler/scaler.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/gfx/scaler/scaler_filter.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/gfx/scaler/scaler_int.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/glsm/glsm.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/glsym/glsym_es2.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/glsym/glsym_es3.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/glsym/glsym_gl.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/glsym/rglgen.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/hash/rhash.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/algorithms/mismatch.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/boolean.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/clamping.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/compat/apple_compat.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/compat/fnmatch.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/compat/getopt.h" />
+		<Unit filename="../../../libretro-common/include/compat/ifaddrs.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/compat/intrinsics.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/compat/msvc.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/compat/msvc/stdint.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/compat/posix_string.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/compat/strcasestr.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/compat/strl.h" />
+		<Unit filename="../../../libretro-common/include/compat/zconf.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/compat/zlib.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/compat/zutil.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/conversion/float_to_s16.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/conversion/s16_to_float.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/dynamic/dylib.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/encodings/utf.h" />
+		<Unit filename="../../../libretro-common/include/features/features_cpu.h" />
+		<Unit filename="../../../libretro-common/include/file/archive_file.h" />
+		<Unit filename="../../../libretro-common/include/file/config_file.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/file/file_path.h" />
+		<Unit filename="../../../libretro-common/include/file/nbio.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/filters.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/formats/image.h" />
+		<Unit filename="../../../libretro-common/include/formats/jsonsax.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/formats/rbmp.h" />
+		<Unit filename="../../../libretro-common/include/formats/rjpeg.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/formats/rpng.h" />
+		<Unit filename="../../../libretro-common/include/formats/rtga.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/formats/rxml.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/formats/tga.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/gfx/math/matrix_3x3.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/gfx/math/matrix_4x4.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/gfx/math/vector_2.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/gfx/math/vector_3.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/gfx/scaler/filter.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/gfx/scaler/pixconv.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/gfx/scaler/scaler.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/gfx/scaler/scaler_int.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/glsm/glsm.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/glsm/glsmsym.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/glsym/glsym.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/glsym/glsym_es2.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/glsym/glsym_es3.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/glsym/glsym_gl.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/glsym/rglgen.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/glsym/rglgen_headers.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/hash/rhash.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/libco.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/libretro.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/libretro_vulkan.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/lists/dir_list.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/lists/file_list.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/lists/string_list.h" />
+		<Unit filename="../../../libretro-common/include/math/complex.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/math/fxp.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/memalign.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/memmap.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/net/net_compat.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/net/net_http.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/net/net_ifinfo.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/net/net_socket.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/queues/fifo_queue.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/queues/message_queue.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/queues/task_queue.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/retro_assert.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/retro_common.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/retro_common_api.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/retro_dirent.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/retro_endianness.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/retro_environment.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/retro_inline.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/retro_miscellaneous.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/retro_stat.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/rhash.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/rthreads/async_job.h" />
+		<Unit filename="../../../libretro-common/include/rthreads/rsemaphore.h" />
+		<Unit filename="../../../libretro-common/include/rthreads/rthreads.h" />
+		<Unit filename="../../../libretro-common/include/streams/file_stream.h" />
+		<Unit filename="../../../libretro-common/include/streams/interface_stream.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/streams/memory_stream.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/string/stdstring.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/utils/md5.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/include/vulkan/vulkan_symbol_wrapper.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/libco/amd64.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/libco/armeabi.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/libco/fiber.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/libco/libco.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/libco/ppc.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/libco/psp2.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/libco/sjlj.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/libco/ucontext.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/libco/x86.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/lists/dir_list.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/lists/file_list.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/lists/string_list.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/memmap/memalign.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/memmap/memmap.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/net/net_compat.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/net/net_http.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/net/net_ifinfo.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/net/net_socket.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/net/test/net_http_test.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/net/test/net_ifinfo_test.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/queues/fifo_queue.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/queues/message_queue.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/queues/task_queue.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/rthreads/async_job.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/rthreads/gx_pthread.h" />
+		<Unit filename="../../../libretro-common/rthreads/psp_pthread.h" />
+		<Unit filename="../../../libretro-common/rthreads/rsemaphore.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/rthreads/rthreads.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/rthreads/xenon_sdl_threads.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/streams/file_stream.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../libretro-common/streams/interface_stream.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/streams/memory_stream.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/string/stdstring.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/utils/crc32.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/utils/djb2.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/utils/md5.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/utils/sha1.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/utils/udp-test.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../libretro-common/vulkan/vulkan_symbol_wrapper.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../lua-engine.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../lua-engine.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../matrix.cpp" />
+		<Unit filename="../../../matrix.h" />
+		<Unit filename="../../../mc.cpp" />
+		<Unit filename="../../../mc.h" />
+		<Unit filename="../../../mem.h" />
+		<Unit filename="../../../metaspu/SndOut.cpp" />
+		<Unit filename="../../../metaspu/SndOut.h" />
+		<Unit filename="../../../metaspu/SoundTouch/AAFilter.cpp" />
+		<Unit filename="../../../metaspu/SoundTouch/AAFilter.h" />
+		<Unit filename="../../../metaspu/SoundTouch/BPMDetect.h" />
+		<Unit filename="../../../metaspu/SoundTouch/FIFOSampleBuffer.cpp" />
+		<Unit filename="../../../metaspu/SoundTouch/FIFOSampleBuffer.h" />
+		<Unit filename="../../../metaspu/SoundTouch/FIFOSamplePipe.h" />
+		<Unit filename="../../../metaspu/SoundTouch/FIRFilter.cpp" />
+		<Unit filename="../../../metaspu/SoundTouch/FIRFilter.h" />
+		<Unit filename="../../../metaspu/SoundTouch/RateTransposer.cpp" />
+		<Unit filename="../../../metaspu/SoundTouch/RateTransposer.h" />
+		<Unit filename="../../../metaspu/SoundTouch/STTypes.h" />
+		<Unit filename="../../../metaspu/SoundTouch/SoundTouch.cpp" />
+		<Unit filename="../../../metaspu/SoundTouch/SoundTouch.h" />
+		<Unit filename="../../../metaspu/SoundTouch/TDStretch.cpp" />
+		<Unit filename="../../../metaspu/SoundTouch/TDStretch.h" />
+		<Unit filename="../../../metaspu/SoundTouch/WavFile.cpp" />
+		<Unit filename="../../../metaspu/SoundTouch/WavFile.h" />
+		<Unit filename="../../../metaspu/SoundTouch/cpu_detect.h" />
+		<Unit filename="../../../metaspu/SoundTouch/cpu_detect_x86_gcc.cpp" />
+		<Unit filename="../../../metaspu/SoundTouch/mmx_optimized.cpp" />
+		<Unit filename="../../../metaspu/SoundTouch/sse_optimized.cpp" />
+		<Unit filename="../../../metaspu/Timestretcher.cpp" />
+		<Unit filename="../../../metaspu/metaspu.cpp" />
+		<Unit filename="../../../metaspu/metaspu.h" />
+		<Unit filename="../../../mic.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../mic.h" />
+		<Unit filename="../../../movie.cpp" />
+		<Unit filename="../../../movie.h" />
+		<Unit filename="../../../path.cpp" />
+		<Unit filename="../../../path.h" />
+		<Unit filename="../../../rasterize.cpp" />
+		<Unit filename="../../../rasterize.h" />
+		<Unit filename="../../../readwrite.cpp" />
+		<Unit filename="../../../readwrite.h" />
+		<Unit filename="../../../registers.h" />
+		<Unit filename="../../../render3D.cpp" />
+		<Unit filename="../../../render3D.h" />
+		<Unit filename="../../../rtc.cpp" />
+		<Unit filename="../../../rtc.h" />
+		<Unit filename="../../../saves.cpp" />
+		<Unit filename="../../../saves.h" />
+		<Unit filename="../../../slot1.cpp" />
+		<Unit filename="../../../slot1.h" />
+		<Unit filename="../../../slot2.cpp" />
+		<Unit filename="../../../slot2.h" />
+		<Unit filename="../../../texcache.cpp" />
+		<Unit filename="../../../texcache.h" />
+		<Unit filename="../../../thumb_instructions.cpp" />
+		<Unit filename="../../../types.h" />
+		<Unit filename="../../../utils/AsmJit/AsmJit.h" />
+		<Unit filename="../../../utils/AsmJit/Config.h" />
+		<Unit filename="../../../utils/AsmJit/core.h" />
+		<Unit filename="../../../utils/AsmJit/core/apibegin.h" />
+		<Unit filename="../../../utils/AsmJit/core/apiend.h" />
+		<Unit filename="../../../utils/AsmJit/core/assembler.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/assembler.h" />
+		<Unit filename="../../../utils/AsmJit/core/assert.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/assert.h" />
+		<Unit filename="../../../utils/AsmJit/core/buffer.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/buffer.h" />
+		<Unit filename="../../../utils/AsmJit/core/build.h" />
+		<Unit filename="../../../utils/AsmJit/core/compiler.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/compiler.h" />
+		<Unit filename="../../../utils/AsmJit/core/compilercontext.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/compilercontext.h" />
+		<Unit filename="../../../utils/AsmJit/core/compilerfunc.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/compilerfunc.h" />
+		<Unit filename="../../../utils/AsmJit/core/compileritem.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/compileritem.h" />
+		<Unit filename="../../../utils/AsmJit/core/context.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/context.h" />
+		<Unit filename="../../../utils/AsmJit/core/cpuinfo.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/cpuinfo.h" />
+		<Unit filename="../../../utils/AsmJit/core/defs.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/defs.h" />
+		<Unit filename="../../../utils/AsmJit/core/func.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/func.h" />
+		<Unit filename="../../../utils/AsmJit/core/intutil.h" />
+		<Unit filename="../../../utils/AsmJit/core/lock.h" />
+		<Unit filename="../../../utils/AsmJit/core/logger.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/logger.h" />
+		<Unit filename="../../../utils/AsmJit/core/memorymanager.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/memorymanager.h" />
+		<Unit filename="../../../utils/AsmJit/core/memorymarker.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/memorymarker.h" />
+		<Unit filename="../../../utils/AsmJit/core/operand.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/operand.h" />
+		<Unit filename="../../../utils/AsmJit/core/podvector.h" />
+		<Unit filename="../../../utils/AsmJit/core/stringbuilder.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/stringbuilder.h" />
+		<Unit filename="../../../utils/AsmJit/core/stringutil.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/stringutil.h" />
+		<Unit filename="../../../utils/AsmJit/core/virtualmemory.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/virtualmemory.h" />
+		<Unit filename="../../../utils/AsmJit/core/zonememory.cpp" />
+		<Unit filename="../../../utils/AsmJit/core/zonememory.h" />
+		<Unit filename="../../../utils/AsmJit/x86.h" />
+		<Unit filename="../../../utils/AsmJit/x86/x86assembler.cpp" />
+		<Unit filename="../../../utils/AsmJit/x86/x86assembler.h" />
+		<Unit filename="../../../utils/AsmJit/x86/x86compiler.cpp" />
+		<Unit filename="../../../utils/AsmJit/x86/x86compiler.h" />
+		<Unit filename="../../../utils/AsmJit/x86/x86compilercontext.cpp" />
+		<Unit filename="../../../utils/AsmJit/x86/x86compilercontext.h" />
+		<Unit filename="../../../utils/AsmJit/x86/x86compilerfunc.cpp" />
+		<Unit filename="../../../utils/AsmJit/x86/x86compilerfunc.h" />
+		<Unit filename="../../../utils/AsmJit/x86/x86compileritem.cpp" />
+		<Unit filename="../../../utils/AsmJit/x86/x86compileritem.h" />
+		<Unit filename="../../../utils/AsmJit/x86/x86cpuinfo.cpp" />
+		<Unit filename="../../../utils/AsmJit/x86/x86cpuinfo.h" />
+		<Unit filename="../../../utils/AsmJit/x86/x86defs.cpp" />
+		<Unit filename="../../../utils/AsmJit/x86/x86defs.h" />
+		<Unit filename="../../../utils/AsmJit/x86/x86func.cpp" />
+		<Unit filename="../../../utils/AsmJit/x86/x86func.h" />
+		<Unit filename="../../../utils/AsmJit/x86/x86operand.cpp" />
+		<Unit filename="../../../utils/AsmJit/x86/x86operand.h" />
+		<Unit filename="../../../utils/AsmJit/x86/x86util.cpp" />
+		<Unit filename="../../../utils/AsmJit/x86/x86util.h" />
+		<Unit filename="../../../utils/advanscene.cpp" />
+		<Unit filename="../../../utils/advanscene.h" />
+		<Unit filename="../../../utils/arm_jit/arm64_emit.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/arm_jit/arm_emit.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/arm_jit/arm_jit_arm.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/arm_jit/emit_core.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/bits.h" />
+		<Unit filename="../../../utils/colorspacehandler/colorspacehandler.cpp" />
+		<Unit filename="../../../utils/colorspacehandler/colorspacehandler.h" />
+		<Unit filename="../../../utils/colorspacehandler/colorspacehandler_AVX2.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/colorspacehandler/colorspacehandler_AVX2.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/colorspacehandler/colorspacehandler_AVX512.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/colorspacehandler/colorspacehandler_AVX512.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/colorspacehandler/colorspacehandler_AltiVec.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/colorspacehandler/colorspacehandler_AltiVec.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/colorspacehandler/colorspacehandler_NEON.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/colorspacehandler/colorspacehandler_NEON.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/colorspacehandler/colorspacehandler_SSE2.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/colorspacehandler/colorspacehandler_SSE2.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../utils/datetime.cpp" />
+		<Unit filename="../../../utils/datetime.h" />
+		<Unit filename="../../../utils/decrypt/crc.cpp" />
+		<Unit filename="../../../utils/decrypt/crc.h" />
+		<Unit filename="../../../utils/decrypt/decrypt.cpp" />
+		<Unit filename="../../../utils/decrypt/decrypt.h" />
+		<Unit filename="../../../utils/decrypt/header.cpp" />
+		<Unit filename="../../../utils/decrypt/header.h" />
+		<Unit filename="../../../utils/dlditool.cpp" />
+		<Unit filename="../../../utils/emufat.cpp" />
+		<Unit filename="../../../utils/emufat.h" />
+		<Unit filename="../../../utils/emufat_types.h" />
+		<Unit filename="../../../utils/fsnitro.cpp" />
+		<Unit filename="../../../utils/fsnitro.h" />
+		<Unit filename="../../../utils/glcorearb.h" />
+		<Unit filename="../../../utils/guid.cpp" />
+		<Unit filename="../../../utils/guid.h" />
+		<Unit filename="../../../utils/libfat/bit_ops.h" />
+		<Unit filename="../../../utils/libfat/cache.cpp" />
+		<Unit filename="../../../utils/libfat/cache.h" />
+		<Unit filename="../../../utils/libfat/common.h" />
+		<Unit filename="../../../utils/libfat/directory.cpp" />
+		<Unit filename="../../../utils/libfat/directory.h" />
+		<Unit filename="../../../utils/libfat/disc.cpp" />
+		<Unit filename="../../../utils/libfat/disc.h" />
+		<Unit filename="../../../utils/libfat/disc_io.h" />
+		<Unit filename="../../../utils/libfat/fat.h" />
+		<Unit filename="../../../utils/libfat/fatdir.cpp" />
+		<Unit filename="../../../utils/libfat/fatdir.h" />
+		<Unit filename="../../../utils/libfat/fatfile.cpp" />
+		<Unit filename="../../../utils/libfat/fatfile.h" />
+		<Unit filename="../../../utils/libfat/file_allocation_table.cpp" />
+		<Unit filename="../../../utils/libfat/file_allocation_table.h" />
+		<Unit filename="../../../utils/libfat/filetime.cpp" />
+		<Unit filename="../../../utils/libfat/filetime.h" />
+		<Unit filename="../../../utils/libfat/libfat.cpp" />
+		<Unit filename="../../../utils/libfat/libfat_pc.h" />
+		<Unit filename="../../../utils/libfat/libfat_public_api.cpp" />
+		<Unit filename="../../../utils/libfat/libfat_public_api.h" />
+		<Unit filename="../../../utils/libfat/lock.cpp" />
+		<Unit filename="../../../utils/libfat/lock.h" />
+		<Unit filename="../../../utils/libfat/mem_allocate.h" />
+		<Unit filename="../../../utils/libfat/partition.cpp" />
+		<Unit filename="../../../utils/libfat/partition.h" />
+		<Unit filename="../../../utils/task.cpp" />
+		<Unit filename="../../../utils/task.h" />
+		<Unit filename="../../../utils/tinyxml/tinystr.cpp" />
+		<Unit filename="../../../utils/tinyxml/tinystr.h" />
+		<Unit filename="../../../utils/tinyxml/tinyxml.cpp" />
+		<Unit filename="../../../utils/tinyxml/tinyxml.h" />
+		<Unit filename="../../../utils/tinyxml/tinyxmlerror.cpp" />
+		<Unit filename="../../../utils/tinyxml/tinyxmlparser.cpp" />
+		<Unit filename="../../../utils/vfat.cpp" />
+		<Unit filename="../../../utils/vfat.h" />
+		<Unit filename="../../../utils/xstring.cpp" />
+		<Unit filename="../../../utils/xstring.h" />
+		<Unit filename="../../../version.cpp" />
+		<Unit filename="../../../version.h" />
+		<Unit filename="../../../wifi.cpp" />
+		<Unit filename="../../../wifi.h" />
+		<Unit filename="../../modules/Disassembler.cpp" />
+		<Unit filename="../../modules/Disassembler.h" />
+		<Unit filename="../../modules/ImageOut.cpp" />
+		<Unit filename="../../modules/ImageOut.h" />
+		<Unit filename="../../modules/osd/agg/agg2d.h" />
+		<Unit filename="../../modules/osd/agg/agg_osd.cpp" />
+		<Unit filename="../../modules/osd/agg/agg_osd.h" />
+		<Unit filename="../../modules/osd/agg/aggdraw.cpp" />
+		<Unit filename="../../modules/osd/agg/aggdraw.h" />
+		<Unit filename="../cli/main.cpp">
+			<Option target="CLI_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/cheatsGTK.cpp">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/cheatsGTK.h">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/config.cpp">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/config.h">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/config_opts.h">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/dTool.h">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/dToolsList.cpp">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/desmume.cpp">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/desmume.gresource.xml">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/desmume.h">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/emulation_settings.ui">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/graphics.ui">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/gresource.c">
+			<Option compilerVar="CC" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/gresource.h">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/main.cpp">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/main.h">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/main.ui">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/menu.ui">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/org.desmume.DeSmuME.svg">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/tools/ioregsView.cpp">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk/tools/ioregsView.h">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/cheatsGTK.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/cheatsGTK.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/config.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/config.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/config_opts.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/dTool.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/dToolsList.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/desmume.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/desmume.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/main.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/main.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/tools/ioregsView.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/tools/ioregsView.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+		</Unit>
+		<Unit filename="../shared/avout.h" />
+		<Unit filename="../shared/avout_flac.cpp" />
+		<Unit filename="../shared/avout_flac.h" />
+		<Unit filename="../shared/avout_pipe_base.cpp" />
+		<Unit filename="../shared/avout_pipe_base.h" />
+		<Unit filename="../shared/avout_x264.cpp" />
+		<Unit filename="../shared/avout_x264.h" />
+		<Unit filename="../shared/ctrlssdl.cpp" />
+		<Unit filename="../shared/ctrlssdl.h" />
+		<Unit filename="../shared/desmume_config.cpp" />
+		<Unit filename="../shared/desmume_config.h" />
+		<Unit filename="../shared/egl_3Demu.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../shared/egl_3Demu.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../shared/glx_3Demu.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../shared/glx_3Demu.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../shared/mic_alsa.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../shared/mic_openal.cpp" />
+		<Unit filename="../shared/osmesa_3Demu.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../shared/osmesa_3Demu.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../shared/sdl_3Demu.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../shared/sdl_3Demu.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+		</Unit>
+		<Unit filename="../shared/sndsdl.cpp" />
+		<Unit filename="../shared/sndsdl.h" />
+		<Extensions>
+			<editor_config active="1" use_tabs="1" tab_indents="1" tab_width="4" indent="4" eol_mode="2" />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
