@@ -20,8 +20,8 @@ dep_alsa = dependency('alsa', required: false)
 dep_soundtouch = dependency('soundtouch', required: false)
 
 if host_machine.system() == 'darwin'
-  dep_gl = dependency('appleframeworks', modules: 'OpenGL')
-  dep_gles = dependency('appleframeworks', modules: 'OpenGLES')
+  dep_gl = dependency('appleframeworks', modules: 'OpenGL', required: false)
+  dep_gles = dependency('appleframeworks', modules: 'OpenGLES', required: false)
 else
   dep_gl = dependency('gl', required: false)
   dep_gles = dependency('glesv2', required: false)
