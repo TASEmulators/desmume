@@ -36,7 +36,6 @@ endif
 endif
 
 if ENABLE_GLX
-desmume_LDADD += $(GLX_LIBS)
 desmume_SOURCES += ../shared/glx_3Demu.h ../shared/glx_3Demu.cpp
 else
 if ENABLE_OSMESA

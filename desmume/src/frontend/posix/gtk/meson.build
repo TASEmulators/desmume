@@ -24,7 +24,7 @@ desmume_src = [
   gresource,
 ]
 
-if get_option('glx') and dep_glx.found()
+if get_option('glx') and dep_gl.found()
   desmume_src += [
     '../shared/glx_3Demu.cpp',
   ]

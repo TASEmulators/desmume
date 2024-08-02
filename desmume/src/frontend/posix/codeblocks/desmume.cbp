@@ -24,7 +24,6 @@
 					<Add option="`pkg-config --libs gtk+-2.0`" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libGL.so" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libGLESv2.so" />
-					<Add library="/usr/lib/x86_64-linux-gnu/libGLX.so" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libOSMesa.so" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libEGL.so" />
 				</Linker>
@@ -72,7 +71,6 @@
 					<Add option="`pkg-config --libs gtk+-3.0`" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libGL.so" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libGLESv2.so" />
-					<Add library="/usr/lib/x86_64-linux-gnu/libGLX.so" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libOSMesa.so" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libEGL.so" />
 				</Linker>

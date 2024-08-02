@@ -86,7 +86,7 @@ static bool __glx_initOpenGL(const int requestedProfile, const int requestedVers
 		const char *extensionSet = glXQueryExtensionsString(currDisplay, currScreen);
 
 		const char *foundString = strstr(extensionSet, "GLX_ARB_create_context_profile");
-		glXCreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddressARB( (const GLubyte *) "glXCreateContextAttribsARB");
+		glXCreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddress( (const GLubyte *) "glXCreateContextAttribsARB");
 
 		if ( (foundString == NULL) || (glXCreateContextAttribsARB == NULL) )
 		{
@@ -273,7 +273,7 @@ bool glx_beginOpenGL()
 	prevReadDrawable = glXGetCurrentReadDrawable();
     prevContext      = glXGetCurrentContext();
 
-	if (pendingDrawable != NULL)
+	if (pendingDrawable != 0)
 	{
 		bool previousIsCurrent = (prevDrawDrawable == currDrawable);
 

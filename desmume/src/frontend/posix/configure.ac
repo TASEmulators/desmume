@@ -126,18 +126,12 @@ if test "x$glx" = "xyes" ; then
     AC_CHECK_HEADERS([GL/glx.h], [have_glx=yes], [have_glx=no])
     if test "have_glx" = "no" ; then
 	    AC_MSG_WARN([Cannot use GLX -- headers not found.])
-    else
-        AC_CHECK_LIB(dl, main)
-        AC_CHECK_LIB(GL, main)
-	    AC_CHECK_LIB(GLX, main)
     fi
 fi
 
 if test "$have_glx" = "yes" ; then
     if test "$have_opengl" = "yes" ; then
 		AC_DEFINE(ENABLE_GLX)
-        GLX_LIBS="-lGLX"
-		AC_SUBST(GLX_LIBS)
 	else
         have_glx=no
 	    if test "$have_opengles" = "yes" ; then

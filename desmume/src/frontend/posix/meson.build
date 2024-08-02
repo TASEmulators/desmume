@@ -22,7 +22,6 @@ dep_alsa = dependency('alsa', required: false)
 dep_soundtouch = dependency('soundtouch', required: false)
 dep_agg = dependency('libagg', required: false)
 dep_fontconfig = dependency('fontconfig', required: false)
-dep_glx = dependency('glx', required: false)
 dep_osmesa = dependency('osmesa', required: false)
 dep_egl = dependency('egl', required: false)
 
@@ -198,17 +197,16 @@ elif get_option('opengl')
 endif
 
 if get_option('glx')
-  if dep_glx.found()
-    if get_option('opengl') and dep_gl.found()
+  if dep_gl.found()
+    if get_option('opengl')
       add_global_arguments('-DENABLE_GLX', language: ['c', 'cpp'])
-      dependencies += dep_glx
     elif get_option('opengles')
       message('GLX contexts are incompatible with OpenGL ES -- cancelling the use of GLX.')
     else
       message('GLX contexts are only compatible with standard OpenGL -- cancelling the use of GLX.')
     endif
   else
-    message('Cannot use GLX -- glx library not found.')
+    message('Cannot use GLX -- gl library not found.')
   endif
 elif get_option('osmesa')
   if dep_osmesa.found()
