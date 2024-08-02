@@ -13,12 +13,15 @@
 // * do so, delete this exception statement from your version.                *
 // ****************************************************************************
 
+// 2024-08-01 (rogerman):   Small performance optimization to
+//                          ColorDistanceARGB::dist(). (Special thanks to m42a
+//                          for this.)
 // 2016-03-04 (rogerman):   Update to XBRZ 1.4.
 //
-// 2014-11-18 (rogerman):	Update to XBRZ 1.1.
+// 2014-11-18 (rogerman):   Update to XBRZ 1.1.
 //
-// 2014-02-06 (rogerman):	Modified for use in DeSmuME by removing C++11 code.
-//							Also integrate xbrz's config.h file into this one.
+// 2014-02-06 (rogerman):   Modified for use in DeSmuME by removing C++11 code.
+//                          Also integrate xbrz's config.h file into this one.
 
 #ifndef XBRZ_HEADER_3847894708239054
 #define XBRZ_HEADER_3847894708239054

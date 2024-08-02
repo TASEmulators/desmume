@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2017 DeSmuME team
+	Copyright (C) 2016-2024 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,83 +21,125 @@
 #define DEPOSTERIZE_THRESHOLD 23	// Possible values are [0-255], where lower a value prevents blending and a higher value allows for more blending
 
 
-static u32 Deposterize_InterpLTE(const u32 pixA, const u32 pixB)
+namespace
 {
-	const u32 aB = (pixB & 0xFF000000) >> 24;
-	if (aB == 0)
+	template <u32 DEN>
+	struct UnpackedPixel
 	{
-		return pixA;
-	}
-	
-	const u32 rA = (pixA & 0x000000FF);
-	const u32 gA = (pixA & 0x0000FF00) >> 8;
-	const u32 bA = (pixA & 0x00FF0000) >> 16;
-	const u32 aA = (pixA & 0xFF000000) >> 24;
-	
-	const u32 rB = (pixB & 0x000000FF);
-	const u32 gB = (pixB & 0x0000FF00) >> 8;
-	const u32 bB = (pixB & 0x00FF0000) >> 16;
-	
-	const u32 rC = ( (rB - rA <= DEPOSTERIZE_THRESHOLD) || (rA - rB <= DEPOSTERIZE_THRESHOLD) ) ? ((rA+rB)>>1) : rA;
-	const u32 gC = ( (gB - gA <= DEPOSTERIZE_THRESHOLD) || (gA - gB <= DEPOSTERIZE_THRESHOLD) ) ? ((gA+gB)>>1) : gA;
-	const u32 bC = ( (bB - bA <= DEPOSTERIZE_THRESHOLD) || (bA - bB <= DEPOSTERIZE_THRESHOLD) ) ? ((bA+bB)>>1) : bA;
-	const u32 aC = ( (aB - aA <= DEPOSTERIZE_THRESHOLD) || (aA - aB <= DEPOSTERIZE_THRESHOLD) ) ? ((aA+aB)>>1) : aA;
+		u32 r;
+		u32 g;
+		u32 b;
+		u32 a;
 		
-	return (rC | (gC << 8) | (bC << 16) | (aC << 24));
-}
-
-static u32 Deposterize_Blend(const u32 pixA, const u32 pixB, const u32 weightA, const u32 weightB)
-{
-	const u32  aB = (pixB & 0xFF000000) >> 24;
-	if (aB == 0)
-	{
-		return pixA;
-	}
-	
-	const u32 rbA =  pixA & 0x00FF00FF;
-	const u32  gA =  pixA & 0x0000FF00;
-	const u32  aA = (pixA & 0xFF000000) >> 24;
-	
-	const u32 rbB =  pixB & 0x00FF00FF;
-	const u32  gB =  pixB & 0x0000FF00;
-	
-	// Note: The sum of weightA and weightB must equal 16.
-	const u32 rbC = ( ((rbA * weightA) + (rbB * weightB)) / 16 ) & 0x00FF00FF;
-	const u32  gC = ( (( gA * weightA) + ( gB * weightB)) / 16 ) & 0x0000FF00;
-	const u32  aC = ( (( aA * weightA) + ( aB * weightB)) / 16 ) << 24;
-	
-	return (rbC | gC | aC);
-}
-
-static u32 Deposterize_BlendPixel(const u32 color[9])
-{
-	const u32 blend[9] = {
-		color[0],
-		Deposterize_InterpLTE(color[0], color[1]),
-		Deposterize_InterpLTE(color[0], color[2]),
-		Deposterize_InterpLTE(color[0], color[3]),
-		Deposterize_InterpLTE(color[0], color[4]),
-		Deposterize_InterpLTE(color[0], color[5]),
-		Deposterize_InterpLTE(color[0], color[6]),
-		Deposterize_InterpLTE(color[0], color[7]),
-		Deposterize_InterpLTE(color[0], color[8])
+		u32 pack() const
+		{
+			return ( ((r/DEN) <<  0) |
+			         ((g/DEN) <<  8) |
+			         ((b/DEN) << 16) |
+			         ((a/DEN) << 24) );
+		}
 	};
 	
-	return Deposterize_Blend(Deposterize_Blend(Deposterize_Blend(Deposterize_Blend(blend[0], blend[5], 2, 14),
-																 Deposterize_Blend(blend[0], blend[1], 2, 14),
-																 8, 8),
-											   Deposterize_Blend(Deposterize_Blend(blend[0], blend[7], 2, 14),
-																 Deposterize_Blend(blend[0], blend[3], 2, 14),
-																 8, 8),
-											   8, 8),
-							 Deposterize_Blend(Deposterize_Blend(Deposterize_Blend(blend[0], blend[6], 7, 9),
-																 Deposterize_Blend(blend[0], blend[2], 7, 9),
-																 8, 8),
-											   Deposterize_Blend(Deposterize_Blend(blend[0], blend[8], 7, 9),
-																 Deposterize_Blend(blend[0], blend[4], 7, 9),
-																 8, 8),
-											   8, 8),
-							 12, 4);
+	static FORCEINLINE UnpackedPixel<2> Deposterize_InterpLTE(const UnpackedPixel<1> &pixA, const UnpackedPixel<1> &pixB)
+	{
+		UnpackedPixel<2> pixOut = {
+			pixA.r,
+			pixA.g,
+			pixA.b,
+			pixA.a
+		};
+		
+		if (pixB.a == 0)
+		{
+			pixOut.r = pixOut.r << 1;
+			pixOut.g = pixOut.g << 1;
+			pixOut.b = pixOut.b << 1;
+			pixOut.a = pixOut.a << 1;
+			return pixOut;
+		}
+		
+		const s32 rDiff = pixA.r - pixB.r;
+		const s32 gDiff = pixA.g - pixB.g;
+		const s32 bDiff = pixA.b - pixB.b;
+		const s32 aDiff = pixA.a - pixB.a;
+		
+		pixOut.r = ( (-DEPOSTERIZE_THRESHOLD <= rDiff) && (rDiff <= DEPOSTERIZE_THRESHOLD) ) ? (pixOut.r + pixB.r) : (pixOut.r << 1);
+		pixOut.g = ( (-DEPOSTERIZE_THRESHOLD <= gDiff) && (gDiff <= DEPOSTERIZE_THRESHOLD) ) ? (pixOut.g + pixB.g) : (pixOut.g << 1);
+		pixOut.b = ( (-DEPOSTERIZE_THRESHOLD <= bDiff) && (bDiff <= DEPOSTERIZE_THRESHOLD) ) ? (pixOut.b + pixB.b) : (pixOut.b << 1);
+		pixOut.a = ( (-DEPOSTERIZE_THRESHOLD <= aDiff) && (aDiff <= DEPOSTERIZE_THRESHOLD) ) ? (pixOut.a + pixB.a) : (pixOut.a << 1);
+		
+		return pixOut;
+	}
+	
+	static FORCEINLINE UnpackedPixel<2> Deposterize_InterpLTE(const UnpackedPixel<1> &pixA, const u32 color32B)
+	{
+		const UnpackedPixel<1> pixB = {
+			(color32B >>  0) & 0x000000FF,
+			(color32B >>  8) & 0x000000FF,
+			(color32B >> 16) & 0x000000FF,
+			(color32B >> 24) & 0x000000FF
+		};
+		
+		return Deposterize_InterpLTE(pixA, pixB);
+	}
+	
+	template <u32 WEIGHTA, u32 WEIGHTB, u32 DEN>
+	static FORCEINLINE UnpackedPixel<DEN*(WEIGHTA+WEIGHTB)> Deposterize_Blend(const UnpackedPixel<DEN> &pixA, const UnpackedPixel<DEN> &pixB)
+	{
+		UnpackedPixel<DEN*(WEIGHTA+WEIGHTB)> ret;
+		ret.r = (pixA.r * WEIGHTA) + (pixB.r * WEIGHTB);
+		ret.g = (pixA.g * WEIGHTA) + (pixB.g * WEIGHTB);
+		ret.b = (pixA.b * WEIGHTA) + (pixB.b * WEIGHTB);
+		ret.a = (pixA.a * WEIGHTA) + (pixB.a * WEIGHTB);
+		
+		return ret;
+	}
+	
+	static u32 Deposterize_BlendPixel(const u32 color32[9])
+	{
+		const UnpackedPixel<1> center = {
+			(color32[0] >>  0) & 0x000000FF,
+			(color32[0] >>  8) & 0x000000FF,
+			(color32[0] >> 16) & 0x000000FF,
+			(color32[0] >> 24) & 0x000000FF
+		};
+		
+		const UnpackedPixel<2> center2 = {
+			center.r << 1,
+			center.g << 1,
+			center.b << 1,
+			center.a << 1
+		};
+		
+#define DF_INTERP(i) Deposterize_InterpLTE(center, color32[i])
+		
+		UnpackedPixel<512> pixOut = Deposterize_Blend<3, 1>(
+			Deposterize_Blend<1, 1>(
+				Deposterize_Blend<1, 1>(
+					Deposterize_Blend<2, 14>(center2, DF_INTERP(5)),
+					Deposterize_Blend<2, 14>(center2, DF_INTERP(1))
+				),
+				Deposterize_Blend<1, 1>(
+					Deposterize_Blend<2, 14>(center2, DF_INTERP(7)),
+					Deposterize_Blend<2, 14>(center2, DF_INTERP(3))
+				)
+			),
+			Deposterize_Blend<1, 1>(
+				Deposterize_Blend<1, 1>(
+					Deposterize_Blend<7, 9>(center2, DF_INTERP(6)),
+					Deposterize_Blend<7, 9>(center2, DF_INTERP(2))
+				),
+				Deposterize_Blend<1, 1>(
+					Deposterize_Blend<7, 9>(center2, DF_INTERP(8)),
+					Deposterize_Blend<7, 9>(center2, DF_INTERP(4))
+				)
+			)
+		);
+		
+#undef DF_INTERP
+		
+		return pixOut.pack();
+	}
 }
 
 void RenderDeposterize(SSurface Src, SSurface Dst)
@@ -127,15 +169,15 @@ void RenderDeposterize(SSurface Src, SSurface Dst)
 			continue;
 		}
 		
-		color[0] =				               src[i];
-		color[1] = (x < w-1)	? src[i+1]   : src[i];
-		color[2] = (x < w-1)	? src[i+w+1] : src[i];
-		color[3] =				               src[i];
-		color[4] = (x > 0)		? src[i+w-1] : src[i];
-		color[5] = (x > 0)		? src[i-1]   : src[i];
-		color[6] =				               src[i];
-		color[7] =				               src[i];
-		color[8] =				               src[i];
+		color[0] =                             src[i];
+		color[1] = (x < w-1)    ? src[i+1]   : src[i];
+		color[2] = (x < w-1)    ? src[i+w+1] : src[i];
+		color[3] =                             src[i];
+		color[4] = (x > 0)      ? src[i+w-1] : src[i];
+		color[5] = (x > 0)      ? src[i-1]   : src[i];
+		color[6] =                             src[i];
+		color[7] =                             src[i];
+		color[8] =                             src[i];
 		
 		workingDst[i] = Deposterize_BlendPixel(color);
 	}
@@ -150,15 +192,15 @@ void RenderDeposterize(SSurface Src, SSurface Dst)
 				continue;
 			}
 			
-			color[0] =				               src[i];
-			color[1] = (x < w-1)	? src[i+1]   : src[i];
-			color[2] = (x < w-1)	? src[i+w+1] : src[i];
-			color[3] =				  src[i+w];
-			color[4] = (x > 0)		? src[i+w-1] : src[i];
-			color[5] = (x > 0)		? src[i-1]   : src[i];
-			color[6] = (x > 0)		? src[i-w-1] : src[i];
-			color[7] =				  src[i-w];
-			color[8] = (x < w-1)	? src[i-w+1] : src[i];
+			color[0] =                             src[i];
+			color[1] = (x < w-1)    ? src[i+1]   : src[i];
+			color[2] = (x < w-1)    ? src[i+w+1] : src[i];
+			color[3] =                src[i+w];
+			color[4] = (x > 0)      ? src[i+w-1] : src[i];
+			color[5] = (x > 0)      ? src[i-1]   : src[i];
+			color[6] = (x > 0)      ? src[i-w-1] : src[i];
+			color[7] =                src[i-w];
+			color[8] = (x < w-1)    ? src[i-w+1] : src[i];
 			
 			workingDst[i] = Deposterize_BlendPixel(color);
 		}
@@ -172,15 +214,15 @@ void RenderDeposterize(SSurface Src, SSurface Dst)
 			continue;
 		}
 		
-		color[0] =				               src[i];
-		color[1] = (x < w-1)	? src[i+1]   : src[i];
-		color[2] =				               src[i];
-		color[3] =				               src[i];
-		color[4] =				               src[i];
-		color[5] = (x > 0)		? src[i-1]   : src[i];
-		color[6] = (x > 0)		? src[i-w-1] : src[i];
-		color[7] =				               src[i];
-		color[8] = (x < w-1)	? src[i-w+1] : src[i];
+		color[0] =                             src[i];
+		color[1] = (x < w-1)    ? src[i+1]   : src[i];
+		color[2] =                             src[i];
+		color[3] =                             src[i];
+		color[4] =                             src[i];
+		color[5] = (x > 0)      ? src[i-1]   : src[i];
+		color[6] = (x > 0)      ? src[i-w-1] : src[i];
+		color[7] =                             src[i];
+		color[8] = (x < w-1)    ? src[i-w+1] : src[i];
 		
 		workingDst[i] = Deposterize_BlendPixel(color);
 	}
@@ -195,15 +237,15 @@ void RenderDeposterize(SSurface Src, SSurface Dst)
 			continue;
 		}
 		
-		color[0] =				                      workingDst[i];
-		color[1] = (x < w-1)	? workingDst[i+1]   : workingDst[i];
-		color[2] = (x < w-1)	? workingDst[i+w+1] : workingDst[i];
-		color[3] =				                      workingDst[i];
-		color[4] = (x > 0)		? workingDst[i+w-1] : workingDst[i];
-		color[5] = (x > 0)		? workingDst[i-1]   : workingDst[i];
-		color[6] =				                      workingDst[i];
-		color[7] =				                      workingDst[i];
-		color[8] =				                      workingDst[i];
+		color[0] =                                    workingDst[i];
+		color[1] = (x < w-1)    ? workingDst[i+1]   : workingDst[i];
+		color[2] = (x < w-1)    ? workingDst[i+w+1] : workingDst[i];
+		color[3] =                                    workingDst[i];
+		color[4] = (x > 0)      ? workingDst[i+w-1] : workingDst[i];
+		color[5] = (x > 0)      ? workingDst[i-1]   : workingDst[i];
+		color[6] =                                    workingDst[i];
+		color[7] =                                    workingDst[i];
+		color[8] =                                    workingDst[i];
 		
 		finalDst[i] = Deposterize_BlendPixel(color);
 	}
@@ -218,15 +260,15 @@ void RenderDeposterize(SSurface Src, SSurface Dst)
 				continue;
 			}
 			
-			color[0] =				                      workingDst[i];
-			color[1] = (x < w-1)	? workingDst[i+1]   : workingDst[i];
-			color[2] = (x < w-1)	? workingDst[i+w+1] : workingDst[i];
-			color[3] =				  workingDst[i+w];
-			color[4] = (x > 0)		? workingDst[i+w-1] : workingDst[i];
-			color[5] = (x > 0)		? workingDst[i-1]   : workingDst[i];
-			color[6] = (x > 0)		? workingDst[i-w-1] : workingDst[i];
-			color[7] =				  workingDst[i-w];
-			color[8] = (x < w-1)	? workingDst[i-w+1] : workingDst[i];
+			color[0] =                                    workingDst[i];
+			color[1] = (x < w-1)    ? workingDst[i+1]   : workingDst[i];
+			color[2] = (x < w-1)    ? workingDst[i+w+1] : workingDst[i];
+			color[3] =                workingDst[i+w];
+			color[4] = (x > 0)      ? workingDst[i+w-1] : workingDst[i];
+			color[5] = (x > 0)      ? workingDst[i-1]   : workingDst[i];
+			color[6] = (x > 0)      ? workingDst[i-w-1] : workingDst[i];
+			color[7] =                workingDst[i-w];
+			color[8] = (x < w-1)    ? workingDst[i-w+1] : workingDst[i];
 			
 			finalDst[i] = Deposterize_BlendPixel(color);
 		}
@@ -240,15 +282,15 @@ void RenderDeposterize(SSurface Src, SSurface Dst)
 			continue;
 		}
 		
-		color[0] =				                      workingDst[i];
-		color[1] = (x < w-1)	? workingDst[i+1]   : workingDst[i];
-		color[2] =				                      workingDst[i];
-		color[3] =				                      workingDst[i];
-		color[4] =				                      workingDst[i];
-		color[5] = (x > 0)		? workingDst[i-1]   : workingDst[i];
-		color[6] = (x > 0)		? workingDst[i-w-1] : workingDst[i];
-		color[7] =				                      workingDst[i];
-		color[8] = (x < w-1)	? workingDst[i-w+1] : workingDst[i];
+		color[0] =                                    workingDst[i];
+		color[1] = (x < w-1)    ? workingDst[i+1]   : workingDst[i];
+		color[2] =                                    workingDst[i];
+		color[3] =                                    workingDst[i];
+		color[4] =                                    workingDst[i];
+		color[5] = (x > 0)      ? workingDst[i-1]   : workingDst[i];
+		color[6] = (x > 0)      ? workingDst[i-w-1] : workingDst[i];
+		color[7] =                                    workingDst[i];
+		color[8] = (x < w-1)    ? workingDst[i-w+1] : workingDst[i];
 		
 		finalDst[i] = Deposterize_BlendPixel(color);
 	}
