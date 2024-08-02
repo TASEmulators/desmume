@@ -330,7 +330,7 @@ bool egl_framebufferDidResizeCallback(bool isFBOSupported, size_t w, size_t h)
 	if (pendingSurface != EGL_NO_SURFACE)
 	{
 		// Destroy any existing pending surface now since we need it to
-		// always have the lastest framebuffer size.
+		// always have the latest framebuffer size.
 		eglDestroySurface(currDisplay, pendingSurface);
 	}
 

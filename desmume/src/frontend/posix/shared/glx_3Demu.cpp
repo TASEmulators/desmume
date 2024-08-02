@@ -120,14 +120,14 @@ static bool __glx_initOpenGL(const int requestedProfile, const int requestedVers
 	{
 		// 3.2 Core Profile always uses FBOs, and so no P-Buffers, depth
 		// buffers, or stencil buffers are needed for this kind of context.
-		confAttr[10] = 0;
-		confAttr[11] = 0;
+		fbConfigAttr[10] = 0;
+		fbConfigAttr[11] = 0;
 
-		confAttr[12] = 0;
-		confAttr[13] = 0;
+		fbConfigAttr[12] = 0;
+		fbConfigAttr[13] = 0;
 
-		confAttr[14] = 0;
-		confAttr[15] = 0;
+		fbConfigAttr[14] = 0;
+		fbConfigAttr[15] = 0;
 	}
 
 	int fbConfigCount = 0;
