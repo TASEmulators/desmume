@@ -75,12 +75,16 @@ static bool __egl_initOpenGL(const int requestedAPI, const int requestedProfile,
 			return false;
 		}
 
-		foundString = strstr(extensionSet, "EGL_KHR_surfaceless_context");
-		if (foundString == NULL)
+		if ( ((requestedAPI == EGL_OPENGL_API) && (requestedProfile == EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR)) ||
+		      (requestedAPI == EGL_OPENGL_ES_API) )
 		{
-			eglTerminate(currDisplay);
-			puts("EGL: EGL_KHR_surfaceless_context is a required extension.");
-			return false;
+			foundString = strstr(extensionSet, "EGL_KHR_surfaceless_context");
+			if (foundString == NULL)
+			{
+				eglTerminate(currDisplay);
+				puts("EGL: EGL_KHR_surfaceless_context is a required extension for 3.2 Core Profile and OpenGL ES.");
+				return false;
+			}
 		}
 	}
 
