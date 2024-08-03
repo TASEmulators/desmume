@@ -2051,20 +2051,30 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 
 /////////////////////////////// SET AUDIO VOLUME //////////////////////////////////////
 
+static int ConvertSDLVolumeToSPU(int sdl_volume)
+{
+	int tmp = sdl_volume * 100;
+	if (tmp % SDL_MIX_MAXVOLUME == 0)
+	{
+		return tmp/SDL_MIX_MAXVOLUME;
+	}
+	return (tmp/SDL_MIX_MAXVOLUME)+1;
+}
+
 static void CallbackSetAudioVolume(GtkWidget *hscale, gpointer data)
 {
-	SNDSDLSetAudioVolume(gtk_range_get_value(GTK_RANGE(hscale)));
-	config.audio_volume = SNDSDLGetAudioVolume();
+	SPU_SetVolume(gtk_range_get_value(GTK_RANGE(hscale)));
+	config.audio_volume = ConvertSDLVolumeToSPU(SNDSDLGetAudioVolume());
 }
 
 static void SetAudioVolume()
 {
 	GtkWidget *dialog = NULL;
 	GtkWidget *hscale = NULL;
-	int audio_volume = SNDSDLGetAudioVolume();
+	int audio_volume = ConvertSDLVolumeToSPU(SNDSDLGetAudioVolume());
 	dialog = gtk_dialog_new_with_buttons("Set audio volume", GTK_WINDOW(pWindow), GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
-	hscale = gtk_hscale_new_with_range(0, SDL_MIX_MAXVOLUME, 1);
-	gtk_range_set_value(GTK_RANGE(hscale), SNDSDLGetAudioVolume());
+	hscale = gtk_hscale_new_with_range(0, 100, 1);
+	gtk_range_set_value(GTK_RANGE(hscale), audio_volume);
 	g_signal_connect(G_OBJECT(hscale), "value-changed", G_CALLBACK(CallbackSetAudioVolume), NULL);
 	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), hscale, TRUE, FALSE, 0);
 	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(dialog)));
@@ -2073,8 +2083,9 @@ static void SetAudioVolume()
 		case GTK_RESPONSE_OK:
 			break;
 		case GTK_RESPONSE_CANCEL:
+		case GTK_RESPONSE_DELETE_EVENT:
 		case GTK_RESPONSE_NONE:
-			SNDSDLSetAudioVolume(audio_volume);
+			SPU_SetVolume(audio_volume);
 			config.audio_volume = SNDSDLGetAudioVolume();
 			break;
 	}
