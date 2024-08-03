@@ -793,12 +793,12 @@ static inline void glDrawBufferDESMUME(GLenum theAttachment, const OpenGLVariant
 				glDrawBuffers(1, bufs);
 				return;
 
-			case GL_COLOR_ATTACHMENT0:
-			case GL_COLOR_ATTACHMENT1:
-			case GL_COLOR_ATTACHMENT2:
-			case GL_COLOR_ATTACHMENT3:
+			case GL_COLOR_ATTACHMENT0_EXT:
+			case GL_COLOR_ATTACHMENT1_EXT:
+			case GL_COLOR_ATTACHMENT2_EXT:
+			case GL_COLOR_ATTACHMENT3_EXT:
 			{
-				const GLsizei i = theAttachment - GL_COLOR_ATTACHMENT0;
+				const GLsizei i = theAttachment - GL_COLOR_ATTACHMENT0_EXT;
 				bufs[i] = theAttachment;
 				glDrawBuffers(i+1, bufs);
 				return;

@@ -1822,6 +1822,7 @@ bool GPUEventHandlerAsync::GetRender3DNeedsFinish()
 #pragma mark -
 
 #if !defined(MAC_OS_X_VERSION_10_7)
+	#define kCGLPFAOpenGLProfile     (CGLPixelFormatAttribute)99
 	#define kCGLOGLPVersion_Legacy   0x1000
 	#define kCGLOGLPVersion_3_2_Core 0x3200
 	#define kCGLOGLPVersion_GL3_Core 0x3200
@@ -1862,8 +1863,8 @@ static bool __cgl_initOpenGL(const int requestedProfile)
 	CGLPixelFormatAttribute attrs[] = {
 		kCGLPFAColorSize, (CGLPixelFormatAttribute)24,
 		kCGLPFAAlphaSize, (CGLPixelFormatAttribute)8,
-		kCGLPFADepthSize, (CGLPixelFormatAttribute)0,
-		kCGLPFAStencilSize, (CGLPixelFormatAttribute)0,
+		kCGLPFADepthSize, (CGLPixelFormatAttribute)24,
+		kCGLPFAStencilSize, (CGLPixelFormatAttribute)8,
 		kCGLPFAOpenGLProfile, (CGLPixelFormatAttribute)0,
 		kCGLPFAAccelerated,
 		(CGLPixelFormatAttribute)0
@@ -1873,11 +1874,13 @@ static bool __cgl_initOpenGL(const int requestedProfile)
 	{
 		if (IsOSXVersionSupported(10, 9, 0))
 		{
+			attrs[5] = (CGLPixelFormatAttribute)0; // We'll be using FBOs instead of the default framebuffer.
+			attrs[7] = (CGLPixelFormatAttribute)0; // We'll be using FBOs instead of the default framebuffer.
 			attrs[9] = (CGLPixelFormatAttribute)requestedProfile;
 		}
 		else
 		{
-			fprintf(stderr, "%s: Your version of OS X is too old to support this profile.\n", ctxString);
+			fprintf(stderr, "%s: Your version of OS X is too old to support 4.1 Core Profile.\n", ctxString);
 			return result;
 		}
 	}
@@ -1888,27 +1891,24 @@ static bool __cgl_initOpenGL(const int requestedProfile)
 		// instead, which at least has a working shader compiler for OpenGL 3.2.
 		if (IsOSXVersionSupported(10, 8, 0))
 		{
+			attrs[5] = (CGLPixelFormatAttribute)0; // We'll be using FBOs instead of the default framebuffer.
+			attrs[7] = (CGLPixelFormatAttribute)0; // We'll be using FBOs instead of the default framebuffer.
 			attrs[9] = (CGLPixelFormatAttribute)requestedProfile;
 		}
 		else
 		{
-			fprintf(stderr, "%s: Your version of OS X is too old to support this profile.\n", ctxString);
+			fprintf(stderr, "%s: Your version of OS X is too old to support 3.2 Core Profile.\n", ctxString);
 			return result;
 		}
 	}
+	else if (IsOSXVersionSupported(10, 7, 0))
+	{
+		attrs[9] = (CGLPixelFormatAttribute)kCGLOGLPVersion_Legacy;
+	}
 	else
 	{
-		if (IsOSXVersionSupported(10, 7, 0))
-		{
-			attrs[9] = (CGLPixelFormatAttribute)kCGLOGLPVersion_Legacy;
-		}
-		else
-		{
-			attrs[5] = (CGLPixelFormatAttribute)24; // Since the default framebuffer may be needed, depth bits are also needed.
-			attrs[7] = (CGLPixelFormatAttribute)8; // Since the default framebuffer may be needed, stencil bits are also needed.
-			attrs[8] = (CGLPixelFormatAttribute)kCGLPFAAccelerated;
-			attrs[10] = (CGLPixelFormatAttribute)0;
-		}
+		attrs[8] = (CGLPixelFormatAttribute)kCGLPFAAccelerated;
+		attrs[10] = (CGLPixelFormatAttribute)0;
 	}
 	
 	CGLError error = kCGLNoError;
