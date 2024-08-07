@@ -315,7 +315,7 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUBOSize);
 	this->_is64kUBOSupported = (maxUBOSize >= 65536);
 	
-	// TBOs are only supported in ES 3.2.
+	// TBOs are only supported in OpenGL ES 3.2.
 	this->_isTBOSupported = IsOpenGLDriverVersionSupported(3, 2, 0);
 	
 	// Fixed locations in shaders are supported in ES 3.0 by default.
@@ -325,7 +325,7 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropyOGL);
 	this->_deviceInfo.maxAnisotropy = (float)maxAnisotropyOGL;
 	
-	// OpenGL ES 3.0 needs to look up the best format and data type for glReadPixels.
+	// OpenGL ES 3.0 should be able to handle the GL_RGBA format in glReadPixels without any performance penalty.
 	OGLRef.readPixelsBestFormat = GL_RGBA;
 	OGLRef.readPixelsBestDataType = GL_UNSIGNED_BYTE;
 	
@@ -345,7 +345,7 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glActiveTexture(GL_TEXTURE0);
 	
-	// OpenGL ES v3.0 should have all the necessary features to be able to flip and convert the framebuffer.
+	// OpenGL ES 3.0 should have all the necessary features to be able to flip and convert the framebuffer.
 	this->willFlipAndConvertFramebufferOnGPU = true;
 	
 	this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
@@ -414,7 +414,7 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	this->isVAOSupported = true;
 	this->CreateVAOs();
 	
-	// Load and create FBOs. Return on any error, since v3.2 Core Profile makes FBOs mandatory.
+	// Load and create FBOs. Return on any error, since OpenGL ES 3.0 includes FBOs as core functionality.
 	this->isFBOSupported = true;
 	error = this->CreateFBOs();
 	if (error != OGLERROR_NOERR)
@@ -957,7 +957,7 @@ Render3DError OpenGLESRenderer_3_0::CreateFramebufferOutput6665Program(const siz
 	vsHeader << "#define IN_VTX_COLOR layout (location = "     << OGLVertexAttributeID_Color     << ") in\n";
 	
 	std::stringstream fsHeader;
-	fsHeader << "#define OUT_COLOR layout (location = 0) out\n";
+	fsHeader << "#define OUT_COLOR layout (location = " << (OGL_WORKING_ATTACHMENT_ID - GL_COLOR_ATTACHMENT0) << ") out\n";
 	
 	std::string vtxShaderCode  = shaderHeader.str() + vsHeader.str() + std::string(vtxShaderCString);
 	std::string fragShaderCode = shaderHeader.str() + fsHeader.str() + std::string(fragShaderCString);
