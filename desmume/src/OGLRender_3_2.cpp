@@ -2201,7 +2201,7 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_3_2::CreateFramebufferOutput6665Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString)
+Render3DError OpenGLRenderer_3_2::CreateFramebufferOutput6665Program(const char *vtxShaderCString, const char *fragShaderCString)
 {
 	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
@@ -2254,7 +2254,7 @@ Render3DError OpenGLRenderer_3_2::CreateFramebufferOutput6665Program(const size_
 	
 	error = this->ShaderProgramCreate(OGLRef.vertexFramebufferOutput6665ShaderID,
 									  OGLRef.fragmentFramebufferRGBA6665OutputShaderID,
-									  OGLRef.programFramebufferRGBA6665OutputID[outColorIndex],
+									  OGLRef.programFramebufferRGBA6665OutputID,
 									  vtxShaderCode.c_str(),
 									  fragShaderCode.c_str());
 	if (error != OGLERROR_NOERR)
@@ -2268,14 +2268,14 @@ Render3DError OpenGLRenderer_3_2::CreateFramebufferOutput6665Program(const size_
 #if defined(GL_VERSION_3_0)
 	if (!this->_isShaderFixedLocationSupported)
 	{
-		glBindAttribLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], OGLVertexAttributeID_Position, "inPosition");
-		glBindAttribLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], OGLVertexAttributeID_TexCoord0, "inTexCoord0");
-		glBindFragDataLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], 0, "outFragColor6665");
+		glBindAttribLocation(OGLRef.programFramebufferRGBA6665OutputID, OGLVertexAttributeID_Position, "inPosition");
+		glBindAttribLocation(OGLRef.programFramebufferRGBA6665OutputID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
+		glBindFragDataLocation(OGLRef.programFramebufferRGBA6665OutputID, 0, "outFragColor6665");
 	}
 #endif
 	
-	glLinkProgram(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex]);
-	if (!this->ValidateShaderProgramLink(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex]))
+	glLinkProgram(OGLRef.programFramebufferRGBA6665OutputID);
+	if (!this->ValidateShaderProgramLink(OGLRef.programFramebufferRGBA6665OutputID))
 	{
 		INFO("OpenGL: Failed to link the FRAMEBUFFER OUTPUT RGBA6665 shader program.\n");
 		glUseProgram(0);
@@ -2283,26 +2283,19 @@ Render3DError OpenGLRenderer_3_2::CreateFramebufferOutput6665Program(const size_
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	glValidateProgram(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex]);
-	glUseProgram(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex]);
+	glValidateProgram(OGLRef.programFramebufferRGBA6665OutputID);
+	glUseProgram(OGLRef.programFramebufferRGBA6665OutputID);
 	
-	const GLint uniformTexGColor = glGetUniformLocation(OGLRef.programFramebufferRGBA6665OutputID[outColorIndex], "texInFragColor");
-	if (outColorIndex == 0)
-	{
-		glUniform1i(uniformTexGColor, OGLTextureUnitID_FinalColor);
-	}
-	else
-	{
-		glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
-	}
+	const GLint uniformTexGColor = glGetUniformLocation(OGLRef.programFramebufferRGBA6665OutputID, "texInFragColor");
+	glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
 	
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_3_2::CreateFramebufferOutput8888Program(const size_t outColorIndex, const char *vtxShaderCString, const char *fragShaderCString)
+Render3DError OpenGLRenderer_3_2::CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString)
 {
 	OGLRenderRef &OGLRef = *this->ref;
-	OGLRef.programFramebufferRGBA8888OutputID[outColorIndex] = 0;
+	OGLRef.programFramebufferRGBA8888OutputID = 0;
 	OGLRef.vertexFramebufferOutput8888ShaderID = 0;
 	OGLRef.fragmentFramebufferRGBA8888OutputShaderID = 0;
 	
@@ -2507,24 +2500,10 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 	{
 		// Both flips and converts the framebuffer on the GPU. No additional postprocessing
 		// should be necessary at this point.
-		if (this->_lastTextureDrawTarget == OGLTextureUnitID_GColor)
-		{
-			// Use the alternate program where the output color is not at index 0.
-			glUseProgram(OGLRef.programFramebufferRGBA6665OutputID[1]);
-			glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
-			glReadBuffer(OGL_WORKING_ATTACHMENT_ID);
-			glDrawBuffer(OGL_WORKING_ATTACHMENT_ID);
-			this->_lastTextureDrawTarget = OGLTextureUnitID_FinalColor;
-		}
-		else
-		{
-			// Use the program where the output color is from index 0.
-			glUseProgram(OGLRef.programFramebufferRGBA6665OutputID[0]);
-			glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
-			glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-			glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-			this->_lastTextureDrawTarget = OGLTextureUnitID_GColor;
-		}
+		glUseProgram(OGLRef.programFramebufferRGBA6665OutputID);
+		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
+		glReadBuffer(OGL_WORKING_ATTACHMENT_ID);
+		glDrawBuffer(OGL_WORKING_ATTACHMENT_ID);
 		
 		glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
 		glDisable(GL_DEPTH_TEST);
@@ -2540,25 +2519,10 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 	{
 		// Just flips the framebuffer in Y to match the coordinates of OpenGL and the NDS hardware.
 		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
-		if (this->_lastTextureDrawTarget == OGLTextureUnitID_GColor)
-		{
-			glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-			glDrawBuffer(OGL_WORKING_ATTACHMENT_ID);
-			glBlitFramebuffer(0, (GLint)this->_framebufferHeight, (GLint)this->_framebufferWidth, 0, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			glReadBuffer(OGL_WORKING_ATTACHMENT_ID);
-			
-			this->_lastTextureDrawTarget = OGLTextureUnitID_FinalColor;
-		}
-		else
-		{
-			glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
-			glReadBuffer(OGL_WORKING_ATTACHMENT_ID);
-			glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-			glBlitFramebuffer(0, (GLint)this->_framebufferHeight, (GLint)this->_framebufferWidth, 0, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-			
-			this->_lastTextureDrawTarget = OGLTextureUnitID_GColor;
-		}
+		glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+		glDrawBuffer(OGL_WORKING_ATTACHMENT_ID);
+		glBlitFramebuffer(0, (GLint)this->_framebufferHeight, (GLint)this->_framebufferWidth, 0, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glReadBuffer(OGL_WORKING_ATTACHMENT_ID);
 	}
 	
 	// Read back the pixels in RGBA format, since an OpenGL 3.2 device should be able to read back this
@@ -3273,8 +3237,7 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 		this->DestroyFogPrograms();
 	}
 	
-	this->CreateFramebufferOutput6665Program(0, FramebufferOutputVtxShader_150, FramebufferOutput6665FragShader_150);
-	this->CreateFramebufferOutput6665Program(1, FramebufferOutputVtxShader_150, FramebufferOutput6665FragShader_150);
+	this->CreateFramebufferOutput6665Program(FramebufferOutputVtxShader_150, FramebufferOutput6665FragShader_150);
 	
 	// Call ResizeMultisampledFBOs() after _framebufferWidth and _framebufferHeight are set
 	// since this method depends on them.
