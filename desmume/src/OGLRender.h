@@ -640,15 +640,9 @@ struct OGLRenderRef
 	
 	GLuint fboClearImageID;
 	GLuint fboRenderID;
-	GLuint fboRenderMutableID;
-	GLuint fboColorOutMainID;
-	GLuint fboColorOutWorkingID;
 	GLuint fboMSClearImageID;
-	GLuint fboMSIntermediateColorOutMainID;
 	GLuint fboMSIntermediateRenderID;
-	GLuint fboMSIntermediateRenderMutableID;
 	GLuint selectedRenderingFBO;
-	GLuint selectedRenderingMutableFBO;
 	
 	// Shader states
 	GLuint vertexGeometryShaderID;
