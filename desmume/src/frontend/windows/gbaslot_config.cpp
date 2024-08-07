@@ -526,11 +526,12 @@ u32		GBAslot_IDDs[NDS_SLOT2_COUNT] = {
 	IDD_GBASLOT_RUMBLEPAK,
 	IDD_GBASLOT_GBAGAME,
 	IDD_GBASLOT_GUITARGRIP,
-	IDD_GBASLOT_NONE, //expmem
+	IDD_GBASLOT_NONE,		//expmem
 	IDD_GBASLOT_PIANO,
-	IDD_GBASLOT_PADDLE, //paddle
-	IDD_GBASLOT_NONE, //PassME
-	IDD_GBASLOT_HCV1000,		//HCV-1000
+	IDD_GBASLOT_PADDLE,		//paddle
+	IDD_GBASLOT_NONE,		//PassME
+	IDD_GBASLOT_HCV1000,	//HCV-1000
+	IDD_GBASLOT_NONE,		//Slide Controller
 };
 
 DLGPROC GBAslot_Procs[NDS_SLOT2_COUNT] = {
@@ -540,11 +541,12 @@ DLGPROC GBAslot_Procs[NDS_SLOT2_COUNT] = {
 	GbaSlotRumblePak,
 	GbaSlotGBAgame,
 	GbaSlotGuitarGrip,
-	GbaSlotNone,  //expmem
+	GbaSlotNone,		//expmem
 	GbaSlotPiano,
 	GbaSlotPaddle,
-	GbaSlotNone,			// PassME
+	GbaSlotNone,		// PassME
 	GbaSlotHCV1000,		//HCV-1000
+	GbaSlotNone,		//Slide Controller
 };
 
 
@@ -696,6 +698,8 @@ void GBAslotDialog(HWND hwnd)
 				WritePrivateProfileString("Slot2.HCV1000", "barcode", tmp_hcv1000_barcode, IniName);
 				WritePrivateProfileInt("Slot2.HCV1000", "scankey", HCV1000.SCANKEY, IniName);
 				break;
+			case NDS_SLOT2_SLIDECONTROLLER:
+				break;
 			default:
 				return;
 		}
@@ -708,6 +712,7 @@ void GBAslotDialog(HWND hwnd)
 		Piano.Enabled	= (slot2_GetCurrentType() == NDS_SLOT2_EASYPIANO)?true:false;
 		Paddle.Enabled	= (slot2_GetCurrentType() == NDS_SLOT2_PADDLE)?true:false;
 		HCV1000.Enabled = (slot2_GetCurrentType() == NDS_SLOT2_HCV1000)?true:false;
+		SlideController.Enabled = (slot2_GetCurrentType() == NDS_SLOT2_SLIDECONTROLLER)?true:false;
 	}
 }
 

@@ -158,10 +158,15 @@ struct SHCV1000 {
 	WORD SCANKEY;
 };
 
+struct SSLIDECONTROLLER {
+	BOOL Enabled;
+};
+
 extern SGuitar Guitar;
 extern SPiano Piano;
 extern SPaddle Paddle;
 extern SHCV1000 HCV1000;
+extern SSLIDECONTROLLER SlideController;
 
 #endif
 
