@@ -168,15 +168,15 @@ FORCEINLINE void ColorspaceConvert555xTo6665Opaque_NEON(const v128u16 &srcColor,
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert5551To8888_NEON(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
-	const v128s16 srcAlphaBits16 = vandq_s16( vcgtq_s16(vdupq_n_s16(0), vreinterpretq_u16_s16(srcColor)), vdupq_n_s16(0xFF00) );
-	ColorspaceConvert555aTo8888_NEON<SWAP_RB>(srcColor, vreinterpretq_s16_u16(srcAlphaBits16), dstLo, dstHi);
+	const v128u16 srcAlphaBits16 = vandq_u16( vcgtq_s16(vdupq_n_s16(0), vreinterpretq_s16_u16(srcColor)), vdupq_n_u16(0xFF00) );
+	ColorspaceConvert555aTo8888_NEON<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert5551To6665_NEON(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
-	const v128s16 srcAlphaBits16 = vandq_s16( vcgtq_s16(vdupq_n_s16(0), vreinterpretq_u16_s16(srcColor)), vdupq_n_s16(0x1F00) );
-	ColorspaceConvert555aTo6665_NEON<SWAP_RB>(srcColor, vreinterpretq_s16_u16(srcAlphaBits16), dstLo, dstHi);
+	const v128u16 srcAlphaBits16 = vandq_u16( vcgtq_s16(vdupq_n_s16(0), vreinterpretq_s16_u16(srcColor)), vdupq_n_u16(0x1F00) );
+	ColorspaceConvert555aTo6665_NEON<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
 template <bool SWAP_RB>
