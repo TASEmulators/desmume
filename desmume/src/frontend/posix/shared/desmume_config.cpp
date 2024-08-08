@@ -128,20 +128,24 @@ gboolean desmume_config_read_keys(GKeyFile *keyfile)
     return TRUE;
 }
 
-gboolean desmume_config_read_joykeys(GKeyFile *keyfile)
+void desmume_config_read_joykeys(GKeyFile *keyfile)
 {
     GError *error = NULL;
+    int result;
 
     if (!g_key_file_has_group(keyfile, "JOYKEYS"))
-        return TRUE;
+        return;
 
     for (int i = 0; i < NB_KEYS; i++) {
-        joypad_cfg[i] = g_key_file_get_integer(keyfile, "JOYKEYS", key_names[i], &error);
+        result = g_key_file_get_integer(keyfile, "JOYKEYS", key_names[i], &error);
+
+	/* Allow to continue assigning keys even when an error is found */
         if (error != NULL) {
             g_error_free(error);
-            return FALSE;
+            error = NULL;
+            continue;
         }
-    }
 
-    return TRUE;
+        joypad_cfg[i] = result;
+    }
 }

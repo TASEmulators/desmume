@@ -361,7 +361,9 @@ u16 get_keypad( void)
 }
 
 /*
- * The internal joystick events processing function
+ * The internal joystick events processing function.
+ * A cheap way to allow boost from the joystick is returning 2 when the key
+ * assigned to boost is pressed.
  */
 static int
 do_process_joystick_events( u16 *keypad, SDL_Event *event) {
@@ -430,10 +432,13 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
       break;
 
       /* Joystick button pressed */
-      /* FIXME: Add support for BOOST */
     case SDL_JOYBUTTONDOWN:
       key_code = ((event->jbutton.which & 15) << 12) | JOY_BUTTON << 8 | (event->jbutton.button & 255);
       key = lookup_joy_key( key_code );
+      /* 0x2000 represents (1 << 13), which is value returned by lookup_joy_key
+         when the button mapped to BOOST is pressed */
+      if (key == 0x2000)
+          return 2;
       if (key != 0)
         ADD_KEY( *keypad, key );
       break;
@@ -442,6 +447,8 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
     case SDL_JOYBUTTONUP:
       key_code = ((event->jbutton.which & 15) << 12) | JOY_BUTTON << 8 | (event->jbutton.button & 255);
       key = lookup_joy_key( key_code );
+      if (key == 0x2000)
+          return 2;
       if (key != 0)
         RM_KEY( *keypad, key );
       break;
@@ -479,7 +486,8 @@ process_ctrls_event( SDL_Event& event,
                       struct ctrls_event_config *cfg)
 {
   u16 key;
-  if ( !do_process_joystick_events( &cfg->keypad, &event)) {
+  int result = do_process_joystick_events( &cfg->keypad, &event);
+  if (!result) {
     switch (event.type)
     {
       case SDL_WINDOWEVENT:
@@ -618,5 +626,13 @@ process_ctrls_event( SDL_Event& event,
         break;
     }
   }
-}
 
+  /* Activate boost  */
+  if (result == 2) {
+      cfg->boost = !cfg->boost;
+      if (cfg->boost)
+          driver->AddLine("Boost mode enabled");
+      else
+          driver->AddLine("Boost mode disabled");
+  }
+}
