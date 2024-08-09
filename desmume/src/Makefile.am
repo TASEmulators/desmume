@@ -141,24 +141,13 @@ libdesmume_a_SOURCES = \
 	libretro-common/rthreads/rsemaphore.c \
 	libretro-common/rthreads/rthreads.c
 
-if SUPPORT_SSE2
-libdesmume_a_SOURCES += \
-	utils/colorspacehandler/colorspacehandler_SSE2.cpp
-endif
-
-if SUPPORT_AVX2
-libdesmume_a_SOURCES += \
-	utils/colorspacehandler/colorspacehandler_AVX2.cpp
-endif
-
-if SUPPORT_ALTIVEC
-libdesmume_a_SOURCES += \
-	utils/colorspacehandler/colorspacehandler_AltiVec.cpp
-endif
-
 if HAVE_JIT
 libdesmume_a_SOURCES += \
-	arm_jit.cpp arm_jit.h instruction_attributes.h \
+	arm_jit.h instruction_attributes.h
+
+if HOST_CPU_KIND_X86
+libdesmume_a_SOURCES += \
+	arm_jit.cpp \
 	utils/AsmJit/AsmJit.h \
 	utils/AsmJit/Config.h \
 	utils/AsmJit/core.h \
@@ -227,6 +216,13 @@ libdesmume_a_SOURCES += \
 	utils/AsmJit/x86/x86operand.h \
 	utils/AsmJit/x86/x86util.cpp \
 	utils/AsmJit/x86/x86util.h
+else
+if HOST_CPU_KIND_ARM
+libdesmume_a_SOURCES += \
+	utils/arm_jit/arm_jit_arm.cpp
+endif
+endif
+
 endif
 
 if ENABLE_OPENGL_ES

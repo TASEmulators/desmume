@@ -34,14 +34,48 @@ endif
 
 dependencies = [dep_glib2, dep_sdl, dep_pcap, dep_zlib, dep_threads]
 
-if target_machine.cpu() == 'x86_64'
-  add_global_arguments('-DHAVE_JIT', language: ['c', 'cpp'])
+# Determine the CPU architecture of the target.
+target_cpu_64bit = false
+target_cpu_kind_x86 = false
+target_cpu_kind_arm = false
+target_cpu_kind_powerpc = false
+target_cpu_kind_unknown = false
+
+if target_machine.cpu() == 'x86_64' or \
+   target_machine.cpu() == 'amd64'
+  target_cpu_kind_x86 = true
+  target_cpu_64bit = true
+elif target_machine.cpu() == 'x86' or \
+     target_machine.cpu() == 'i686' or \
+     target_machine.cpu() == 'i586' or \
+     target_machine.cpu() == 'i486' or \
+     target_machine.cpu() == 'i386'
+  target_cpu_kind_x86 = true
+elif target_machine.cpu() == 'aarch64' or \
+     target_machine.cpu() == 'arm64'
+  target_cpu_kind_arm = true
+  target_cpu_64bit = true
+elif target_machine.cpu() == 'arm'
+  target_cpu_kind_arm = true
+elif target_machine.cpu() == 'ppc64'
+  target_cpu_kind_powerpc = true
+  target_cpu_64bit = true
+elif target_machine.cpu() == 'powerpc'
+  target_cpu_kind_powerpc = true
+else
+  target_cpu_kind_unknown = true
+endif
+
+if target_cpu_64bit
   add_global_arguments('-DHOST_64', language: ['c', 'cpp'])
-  have_jit = true
-elif target_machine.cpu() == 'i686'
-  add_global_arguments('-DHAVE_JIT', language: ['c', 'cpp'])
+else
   add_global_arguments('-DHOST_32', language: ['c', 'cpp'])
+endif
+
+# Enable JIT for supported architectures.
+if target_cpu_kind_x86 or target_cpu_kind_arm
   have_jit = true
+  add_global_arguments('-DHAVE_JIT', language: ['c', 'cpp'])
 else
   have_jit = false
 endif
@@ -133,38 +167,44 @@ libdesmume_src = [
 ]
 
 if have_jit
-  libdesmume_src += [
-    '../../arm_jit.cpp',
-    '../../utils/AsmJit/core/assembler.cpp',
-    '../../utils/AsmJit/core/assert.cpp',
-    '../../utils/AsmJit/core/buffer.cpp',
-    '../../utils/AsmJit/core/compiler.cpp',
-    '../../utils/AsmJit/core/compilercontext.cpp',
-    '../../utils/AsmJit/core/compilerfunc.cpp',
-    '../../utils/AsmJit/core/compileritem.cpp',
-    '../../utils/AsmJit/core/context.cpp',
-    '../../utils/AsmJit/core/cpuinfo.cpp',
-    '../../utils/AsmJit/core/defs.cpp',
-    '../../utils/AsmJit/core/func.cpp',
-    '../../utils/AsmJit/core/logger.cpp',
-    '../../utils/AsmJit/core/memorymanager.cpp',
-    '../../utils/AsmJit/core/memorymarker.cpp',
-    '../../utils/AsmJit/core/operand.cpp',
-    '../../utils/AsmJit/core/stringbuilder.cpp',
-    '../../utils/AsmJit/core/stringutil.cpp',
-    '../../utils/AsmJit/core/virtualmemory.cpp',
-    '../../utils/AsmJit/core/zonememory.cpp',
-    '../../utils/AsmJit/x86/x86assembler.cpp',
-    '../../utils/AsmJit/x86/x86compiler.cpp',
-    '../../utils/AsmJit/x86/x86compilercontext.cpp',
-    '../../utils/AsmJit/x86/x86compilerfunc.cpp',
-    '../../utils/AsmJit/x86/x86compileritem.cpp',
-    '../../utils/AsmJit/x86/x86cpuinfo.cpp',
-    '../../utils/AsmJit/x86/x86defs.cpp',
-    '../../utils/AsmJit/x86/x86func.cpp',
-    '../../utils/AsmJit/x86/x86operand.cpp',
-    '../../utils/AsmJit/x86/x86util.cpp',
-  ]
+  if target_cpu_kind_x86
+    libdesmume_src += [
+      '../../arm_jit.cpp',
+      '../../utils/AsmJit/core/assembler.cpp',
+      '../../utils/AsmJit/core/assert.cpp',
+      '../../utils/AsmJit/core/buffer.cpp',
+      '../../utils/AsmJit/core/compiler.cpp',
+      '../../utils/AsmJit/core/compilercontext.cpp',
+      '../../utils/AsmJit/core/compilerfunc.cpp',
+      '../../utils/AsmJit/core/compileritem.cpp',
+      '../../utils/AsmJit/core/context.cpp',
+      '../../utils/AsmJit/core/cpuinfo.cpp',
+      '../../utils/AsmJit/core/defs.cpp',
+      '../../utils/AsmJit/core/func.cpp',
+      '../../utils/AsmJit/core/logger.cpp',
+      '../../utils/AsmJit/core/memorymanager.cpp',
+      '../../utils/AsmJit/core/memorymarker.cpp',
+      '../../utils/AsmJit/core/operand.cpp',
+      '../../utils/AsmJit/core/stringbuilder.cpp',
+      '../../utils/AsmJit/core/stringutil.cpp',
+      '../../utils/AsmJit/core/virtualmemory.cpp',
+      '../../utils/AsmJit/core/zonememory.cpp',
+      '../../utils/AsmJit/x86/x86assembler.cpp',
+      '../../utils/AsmJit/x86/x86compiler.cpp',
+      '../../utils/AsmJit/x86/x86compilercontext.cpp',
+      '../../utils/AsmJit/x86/x86compilerfunc.cpp',
+      '../../utils/AsmJit/x86/x86compileritem.cpp',
+      '../../utils/AsmJit/x86/x86cpuinfo.cpp',
+      '../../utils/AsmJit/x86/x86defs.cpp',
+      '../../utils/AsmJit/x86/x86func.cpp',
+      '../../utils/AsmJit/x86/x86operand.cpp',
+      '../../utils/AsmJit/x86/x86util.cpp',
+    ]
+  elif target_cpu_kind_arm
+    libdesmume_src += [
+      '../../utils/arm_jit/arm_jit_arm.cpp',
+    ]
+  endif
 endif
 
 libdesmume_src += [
@@ -285,25 +325,10 @@ if get_option('gdb-stub')
   ]
 endif
 
-simd = import('unstable-simd')
-cxx = meson.get_compiler('cpp')
-rval = simd.check('colorspacehandler',
-  sse2: '../../utils/colorspacehandler/colorspacehandler_SSE2.cpp',
-  # TODO: add these two even in generic builds.
-  #avx2: '../../utils/colorspacehandler/colorspacehandler_AVX2.cpp',
-  #avx512: '../../utils/colorspacehandler/colorspacehandler_AVX512.cpp',
-  # TODO: add support for this in meson.
-  #altivec: '../../utils/colorspacehandler/colorspacehandler_AltiVec.cpp',
-  compiler: cxx,
-  include_directories: includes,
-)
-colorspacehandler_simd = rval[0]
-
 libdesmume = static_library('desmume',
   libdesmume_src,
   dependencies: dependencies,
   include_directories: includes,
-  link_with: colorspacehandler_simd,
 )
 
 if get_option('frontend-cli')

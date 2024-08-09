@@ -338,7 +338,7 @@ fi
 
 dnl - jit support
 case $host_cpu in
-  x86|x86_64|i386|i486|i586|i686)
+  x86|x86_64|i386|i486|i586|i686|arm|arm64|aarch64)
     HAVE_JIT=yes
     AC_DEFINE(HAVE_JIT)
     ;;
@@ -382,19 +382,37 @@ AS_CASE([$host],
 )
 
 AS_CASE([$host_cpu],
-		[x86_64], [AC_DEFINE(HOST_64)],
-		[amd64],  [AC_DEFINE(HOST_64)],
+		[x86_64],  [AC_DEFINE(HOST_64)],
+		[amd64],   [AC_DEFINE(HOST_64)],
+		[aarch64], [AC_DEFINE(HOST_64)],
+		[arm64],   [AC_DEFINE(HOST_64)],
+		[ppc64],   [AC_DEFINE(HOST_64)],
 		[AC_DEFINE(HOST_32)]
 )
 
-AC_CHECK_DECL([__SSE2__])
-AM_CONDITIONAL([SUPPORT_SSE2], [test "x$ac_cv_have_decl___SSE2__" = xyes])
+host_cpu_kind_x86=no
+host_cpu_kind_arm=no
+host_cpu_kind_powerpc=no
+host_cpu_kind_unknown=no
+AS_CASE([$host_cpu],
+		[x86_64],  [host_cpu_kind_x86=yes],
+		[amd64],   [host_cpu_kind_x86=yes],
+		[x86],     [host_cpu_kind_x86=yes],
+		[i686],    [host_cpu_kind_x86=yes],
+		[i586],    [host_cpu_kind_x86=yes],
+		[i486],    [host_cpu_kind_x86=yes],
+		[i386],    [host_cpu_kind_x86=yes],
+		[aarch64], [host_cpu_kind_arm=yes],
+		[arm64],   [host_cpu_kind_arm=yes],
+		[arm],     [host_cpu_kind_arm=yes],
+		[ppc64],   [host_cpu_kind_powerpc=yes],
+		[powerpc], [host_cpu_kind_powerpc=yes],
+		[host_cpu_kind_unknown=yes]
+)
 
-AC_CHECK_DECL([__AVX2__])
-AM_CONDITIONAL([SUPPORT_AVX2], [test "x$ac_cv_have_decl___AVX2__" = xyes])
-
-AC_CHECK_DECL([__ALTIVEC__])
-AM_CONDITIONAL([SUPPORT_ALTIVEC], [test "x$ac_cv_have_decl___ALTIVEC__" = xyes])
+AM_CONDITIONAL([HOST_CPU_KIND_X86], [test x$host_cpu_kind_x86 = xyes])
+AM_CONDITIONAL([HOST_CPU_KIND_ARM], [test x$host_cpu_kind_arm = xyes])
+AM_CONDITIONAL([HOST_CPU_KIND_PPC], [test x$host_cpu_kind_powerpc = xyes])
 
 AC_SUBST(UI_DIR)
 AC_SUBST(PO_DIR)
