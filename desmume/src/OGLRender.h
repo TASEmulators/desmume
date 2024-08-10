@@ -1077,6 +1077,9 @@ public:
 
 class OpenGLRenderer_2_0 : public OpenGLRenderer_1_2
 {
+public:
+	OpenGLRenderer_2_0();
+	
 protected:
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
 	
@@ -1084,15 +1087,12 @@ protected:
 	virtual Render3DError DisableVertexAttributes();
 	
 	virtual Render3DError BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);
-	
-	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 };
 
 class OpenGLRenderer_2_1 : public OpenGLRenderer_2_0
 {
 public:
-	virtual Render3DError RenderFinish();
-	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);
+	OpenGLRenderer_2_1();
 };
 
 #endif // OGLRENDER_H

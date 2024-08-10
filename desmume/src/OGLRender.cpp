@@ -1290,7 +1290,7 @@ OpenGLRenderer::OpenGLRenderer()
 	memset(ref, 0, sizeof(OGLRenderRef));
 	
 	_mappedFramebuffer = NULL;
-	_workingTextureUnpackBuffer = (Color4u8 *)malloc_alignedCacheLine(1024 * 1024 * sizeof(Color4u8));
+	_workingTextureUnpackBuffer = (Color4u8 *)malloc_alignedPage(1024 * 1024 * sizeof(Color4u8));
 	_pixelReadNeedsFinish = false;
 	_needsZeroDstAlphaPass = true;
 	_currentPolyIndex = 0;
@@ -2292,6 +2292,8 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 
 OpenGLRenderer_1_2::OpenGLRenderer_1_2()
 {
+	_variantID = OpenGLVariantID_Legacy_1_2;
+	
 	_geometryDrawBuffersEnum         = GeometryDrawBuffersEnumStandard;
 	_geometryAttachmentWorkingBuffer = GeometryAttachmentWorkingBufferStandard;
 	_geometryAttachmentPolyID        = GeometryAttachmentPolyIDStandard;
@@ -5167,7 +5169,7 @@ Render3DError OpenGLRenderer_1_2::Reset()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if(!BEGINGL())
+	if (!BEGINGL())
 	{
 		return OGLERROR_BEGINGL_FAILED;
 	}
@@ -5227,7 +5229,7 @@ Render3DError OpenGLRenderer_1_2::RenderPowerOff()
 	memset(GPU->GetEngineMain()->Get3DFramebufferMain(), 0, this->_framebufferColorSizeBytes);
 	memset(GPU->GetEngineMain()->Get3DFramebuffer16(), 0, this->_framebufferPixCount * sizeof(u16));
 	
-	if(!BEGINGL())
+	if (!BEGINGL())
 	{
 		return OGLERROR_BEGINGL_FAILED;
 	}
@@ -5272,7 +5274,7 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 	{
 		this->_pixelReadNeedsFinish = false;
 		
-		if(!BEGINGL())
+		if (!BEGINGL())
 		{
 			return OGLERROR_BEGINGL_FAILED;
 		}
@@ -5394,7 +5396,7 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	else
 	{
 		Color4u8 *oldFramebufferColor = this->_framebufferColor;
-		Color4u8 *newFramebufferColor = (Color4u8 *)malloc_alignedCacheLine(newFramebufferColorSizeBytes);
+		Color4u8 *newFramebufferColor = (Color4u8 *)malloc_alignedPage(newFramebufferColorSizeBytes);
 		this->_framebufferColor = newFramebufferColor;
 		free_aligned(oldFramebufferColor);
 	}
@@ -5440,6 +5442,11 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	ENDGL();
 	
 	return error;
+}
+
+OpenGLRenderer_2_0::OpenGLRenderer_2_0()
+{
+	_variantID = OpenGLVariantID_Legacy_2_0;
 }
 
 Render3DError OpenGLRenderer_2_0::InitFinalRenderStates(const std::set<std::string> *oglExtensionSet)
@@ -5674,86 +5681,9 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, size_t polyRenderIndex)
+OpenGLRenderer_2_1::OpenGLRenderer_2_1()
 {
-	OpenGLTexture *theTexture = (OpenGLTexture *)this->_textureList[polyRenderIndex];
-	const NDSTextureFormat packFormat = theTexture->GetPackFormat();
-	const OGLRenderRef &OGLRef = *this->ref;
-	
-	glUniform2f(OGLRef.uniformPolyTexScale[this->_geometryProgramFlags.value], theTexture->GetInvWidth(), theTexture->GetInvHeight());
-	
-	// Check if we need to use textures
-	if (!theTexture->IsSamplingEnabled())
-	{
-		glUniform1i(OGLRef.uniformPolyEnableTexture[this->_geometryProgramFlags.value], GL_FALSE);
-		glUniform1i(OGLRef.uniformTexSingleBitAlpha[this->_geometryProgramFlags.value], GL_FALSE);
-		return OGLERROR_NOERR;
-	}
-	
-	glUniform1i(OGLRef.uniformPolyEnableTexture[this->_geometryProgramFlags.value], GL_TRUE);
-	glUniform1i(OGLRef.uniformTexSingleBitAlpha[this->_geometryProgramFlags.value], (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
-	
-	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ((thePoly.texParam.RepeatS_Enable) ? ((thePoly.texParam.MirroredRepeatS_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ((thePoly.texParam.RepeatT_Enable) ? ((thePoly.texParam.MirroredRepeatT_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-	
-	if (this->_enableTextureSmoothing)
-	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (this->_textureScalingFactor > 1) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, this->_deviceInfo.maxAnisotropy);
-	}
-	else
-	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
-	}
-	
-	theTexture->ResetCacheAge();
-	theTexture->IncreaseCacheUsageCount(1);
-	
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_2_1::RenderFinish()
-{
-	if (!this->_renderNeedsFinish)
-	{
-		return OGLERROR_NOERR;
-	}
-	
-	if (this->_pixelReadNeedsFinish)
-	{
-		this->_pixelReadNeedsFinish = false;
-		
-		if(!BEGINGL())
-		{
-			return OGLERROR_BEGINGL_FAILED;
-		}
-		this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-		ENDGL();
-	}
-	
-	this->_renderNeedsFlushMain = true;
-	this->_renderNeedsFlush16 = true;
-	
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_2_1::RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16)
-{
-	if (!this->_isPoweredOn)
-	{
-		return RENDER3DERROR_NOERR;
-	}
-	
-	Color4u8 *framebufferMain = (willFlushBuffer32) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
-	u16 *framebuffer16 = (willFlushBuffer16) ? GPU->GetEngineMain()->Get3DFramebuffer16() : NULL;
-	
-	this->FlushFramebuffer(this->_mappedFramebuffer, framebufferMain, framebuffer16);
-	
-	return RENDER3DERROR_NOERR;
+	_variantID = OpenGLVariantID_Legacy_2_1;
 }
 
 template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
