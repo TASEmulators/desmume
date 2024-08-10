@@ -2525,15 +2525,18 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 		glReadBuffer(OGL_WORKING_ATTACHMENT_ID);
 	}
 	
-	// Read back the pixels in RGBA format, since an OpenGL 3.2 device should be able to read back this
-	// format without a performance penalty.
-	if (this->_mappedFramebuffer != NULL)
+	if (this->isPBOSupported)
 	{
-	   glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-	   this->_mappedFramebuffer = NULL;
+		// Read back the pixels in RGBA format, since an OpenGL 3.2 device should be able to read back this
+		// format without a performance penalty.
+		if (this->_mappedFramebuffer != NULL)
+		{
+		   glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+		   this->_mappedFramebuffer = NULL;
+		}
+		
+		glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, OGLRef.readPixelsBestFormat, OGLRef.readPixelsBestDataType, 0);
 	}
-
-	glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, OGLRef.readPixelsBestFormat, OGLRef.readPixelsBestDataType, 0);
 	
 	this->_pixelReadNeedsFinish = true;
 	return OGLERROR_NOERR;
@@ -3172,19 +3175,23 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	
 	glFinish();
 	
-	if (this->_mappedFramebuffer != NULL)
-	{
-		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-		glFinish();
-	}
-	
 	const size_t newFramebufferColorSizeBytes = w * h * sizeof(Color4u8);
-	glBufferData(GL_PIXEL_PACK_BUFFER, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ);
 	
-	if (this->_mappedFramebuffer != NULL)
+	if (this->isPBOSupported)
 	{
-		this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, newFramebufferColorSizeBytes, GL_MAP_READ_BIT);
-		glFinish();
+		if (this->_mappedFramebuffer != NULL)
+		{
+			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+			glFinish();
+		}
+		
+		glBufferData(GL_PIXEL_PACK_BUFFER, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ);
+		
+		if (this->_mappedFramebuffer != NULL)
+		{
+			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, newFramebufferColorSizeBytes, GL_MAP_READ_BIT);
+			glFinish();
+		}
 	}
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
@@ -3208,7 +3215,18 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferHeight = h;
 	this->_framebufferPixCount = w * h;
 	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
-	this->_framebufferColor = NULL; // Don't need to make a client-side buffer since we will be reading directly from the PBO.
+	
+	if (this->isPBOSupported)
+	{
+		this->_framebufferColor = NULL;
+	}
+	else
+	{
+		Color4u8 *oldFramebufferColor = this->_framebufferColor;
+		Color4u8 *newFramebufferColor = (Color4u8 *)malloc_alignedPage(newFramebufferColorSizeBytes);
+		this->_framebufferColor = newFramebufferColor;
+		free_aligned(oldFramebufferColor);
+	}
 	
 	// Recreate shaders that use the framebuffer size.
 	glUseProgram(0);
@@ -3261,6 +3279,8 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 
 Render3DError OpenGLRenderer_3_2::RenderFinish()
 {
+	OGLRenderRef &OGLRef = *this->ref;
+	
 	if (!this->_renderNeedsFinish)
 	{
 		return OGLERROR_NOERR;
@@ -3270,11 +3290,20 @@ Render3DError OpenGLRenderer_3_2::RenderFinish()
 	{
 		this->_pixelReadNeedsFinish = false;
 		
-		if(!BEGINGL())
+		if (!BEGINGL())
 		{
 			return OGLERROR_BEGINGL_FAILED;
 		}
-		this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, this->_framebufferColorSizeBytes, GL_MAP_READ_BIT);
+		
+		if (this->isPBOSupported)
+		{
+			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, this->_framebufferColorSizeBytes, GL_MAP_READ_BIT);
+		}
+		else
+		{
+			glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, OGLRef.readPixelsBestFormat, OGLRef.readPixelsBestDataType, this->_framebufferColor);
+		}
+		
 		ENDGL();
 	}
 	
@@ -3298,7 +3327,7 @@ Render3DError OpenGLRenderer_3_2::RenderPowerOff()
 	memset(GPU->GetEngineMain()->Get3DFramebufferMain(), 0, this->_framebufferColorSizeBytes);
 	memset(GPU->GetEngineMain()->Get3DFramebuffer16(), 0, this->_framebufferPixCount * sizeof(u16));
 	
-	if(!BEGINGL())
+	if (!BEGINGL())
 	{
 		return OGLERROR_BEGINGL_FAILED;
 	}
@@ -3308,13 +3337,16 @@ Render3DError OpenGLRenderer_3_2::RenderPowerOff()
 	glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
 	glClearBufferfv(GL_COLOR, 0, oglColor);
 	
-	if (this->_mappedFramebuffer != NULL)
+	if (this->isPBOSupported)
 	{
-		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-		this->_mappedFramebuffer = NULL;
+		if (this->_mappedFramebuffer != NULL)
+		{
+			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+			this->_mappedFramebuffer = NULL;
+		}
+		
+		glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, OGLRef.readPixelsBestFormat, OGLRef.readPixelsBestDataType, 0);
 	}
-	
-	glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, OGLRef.readPixelsBestFormat, OGLRef.readPixelsBestDataType, 0);
 	
 	ENDGL();
 	

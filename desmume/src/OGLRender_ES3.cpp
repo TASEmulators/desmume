@@ -408,8 +408,20 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	this->isVBOSupported = true;
 	this->CreateVBOs();
 	
-	this->isPBOSupported = true;
-	this->CreatePBOs();
+	// PBOs are only used when reading back the rendered framebuffer for the emulated
+	// BG0 layer. For desktop-class GPUs, doing an asynchronous glReadPixels() call
+	// is always advantageous since such devices are expected to have their GPUs
+	// connected to a data bus.
+	//
+	// However, many ARM-based mobile devices use integrated GPUs of varying degrees
+	// of memory latency and implementation quality. This means that the performance
+	// of an asynchronous glReadPixels() call is NOT guaranteed on such devices.
+	//
+	// In fact, many ARM-based devices suffer devastating performance drops when trying
+	// to do asynchronous framebuffer reads. Therefore, since most OpenGL ES users will
+	// be running an ARM-based iGPU, we will disable PBOs for OpenGL ES and stick with
+	// a traditional synchronous glReadPixels() call instead.
+	this->isPBOSupported = false;
 	
 	this->isVAOSupported = true;
 	this->CreateVAOs();
