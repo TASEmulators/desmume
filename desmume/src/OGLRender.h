@@ -871,7 +871,7 @@ protected:
 	bool isShaderSupported;
 	bool _isSampleShadingSupported;
 	bool isVAOSupported;
-	bool willFlipAndConvertFramebufferOnGPU;
+	bool _willConvertFramebufferOnGPU;
 	bool _willUseMultisampleShaders;
 	
 	bool _emulateShadowPolygon;
@@ -961,12 +961,16 @@ protected:
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet) = 0;
 	virtual void _SetupGeometryShaders(const OGLGeometryFlags flags) = 0;
-	virtual Render3DError EnableVertexAttributes() = 0;
-	virtual Render3DError DisableVertexAttributes() = 0;
+	virtual void _RenderGeometryVertexAttribEnable() = 0;
+	virtual void _RenderGeometryVertexAttribDisable() = 0;
+	virtual void _RenderGeometryLoopBegin() = 0;
+	virtual void _RenderGeometryLoopEnd() = 0;
 	virtual void _ResolveWorkingBackFacing() = 0;
 	virtual void _ResolveGeometry() = 0;
 	virtual void _ResolveFinalFramebuffer() = 0;
-	virtual Render3DError ReadBackPixels() = 0;
+	virtual void _FramebufferProcessVertexAttribEnable() = 0;
+	virtual void _FramebufferProcessVertexAttribDisable() = 0;
+	virtual Render3DError _FramebufferConvertColorFormat() = 0;
 	
 	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID) = 0;
 	virtual void SetPolygonIndex(const size_t index) = 0;
@@ -1039,13 +1043,17 @@ protected:
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual void _SetupGeometryShaders(const OGLGeometryFlags flags);
-	virtual Render3DError EnableVertexAttributes();
-	virtual Render3DError DisableVertexAttributes();
+	virtual void _RenderGeometryVertexAttribEnable();
+	virtual void _RenderGeometryVertexAttribDisable();
 	virtual Render3DError ZeroDstAlphaPass(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, const size_t clippedPolyOpaqueCount, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr);
+	virtual void _RenderGeometryLoopBegin();
+	virtual void _RenderGeometryLoopEnd();
 	virtual void _ResolveWorkingBackFacing();
 	virtual void _ResolveGeometry();
 	virtual void _ResolveFinalFramebuffer();
-	virtual Render3DError ReadBackPixels();
+	virtual void _FramebufferProcessVertexAttribEnable();
+	virtual void _FramebufferProcessVertexAttribDisable();
+	virtual Render3DError _FramebufferConvertColorFormat();
 	
 	// Base rendering methods
 	virtual Render3DError BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);
@@ -1082,10 +1090,6 @@ public:
 	
 protected:
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
-	
-	virtual Render3DError EnableVertexAttributes();
-	virtual Render3DError DisableVertexAttributes();
-	
 	virtual Render3DError BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);
 };
 

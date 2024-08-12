@@ -95,13 +95,18 @@ protected:
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual void _SetupGeometryShaders(const OGLGeometryFlags flags);
-	virtual Render3DError EnableVertexAttributes();
-	virtual Render3DError DisableVertexAttributes();
+	virtual void _RenderGeometryVertexAttribEnable();
+	virtual void _RenderGeometryVertexAttribDisable();
 	virtual Render3DError ZeroDstAlphaPass(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, const size_t clippedPolyOpaqueCount, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr);
+	virtual void _RenderGeometryLoopBegin();
+	virtual void _RenderGeometryLoopEnd();
 	virtual void _ResolveWorkingBackFacing();
 	virtual void _ResolveGeometry();
 	virtual void _ResolveFinalFramebuffer();
-	virtual Render3DError ReadBackPixels();
+	virtual void _FramebufferProcessVertexAttribEnable();
+	virtual void _FramebufferProcessVertexAttribDisable();
+	virtual Render3DError _FramebufferConvertColorFormat();
+	
 	virtual Render3DError BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);
 	virtual Render3DError PostprocessFramebuffer();
 	

@@ -310,7 +310,7 @@ void main() \n\
 	vtxColor = vec4(inColor / 63.0, polyAlpha); \n\
 	isPolyDrawable = ((polyMode != 3) || polyDrawShadow) ? 1.0 : -1.0;\n\
 	\n\
-	gl_Position = inPosition / 4096.0;\n\
+	gl_Position = vec4(inPosition.x, -inPosition.y, inPosition.z, inPosition.w) / 4096.0;\n\
 } \n\
 "};
 
@@ -600,7 +600,7 @@ varying vec2 texCoord;\n\
 \n\
 void main()\n\
 {\n\
-	texCoord = vec2(inTexCoord0.x, 1.0 - inTexCoord0.y);\n\
+	texCoord = inTexCoord0;\n\
 	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 }\n\
 "};
@@ -1277,7 +1277,7 @@ OpenGLRenderer::OpenGLRenderer()
 	_isSampleShadingSupported = false;
 	isVAOSupported = false;
 	_isDepthLEqualPolygonFacingSupported = false;
-	willFlipAndConvertFramebufferOnGPU = false;
+	_willConvertFramebufferOnGPU = false;
 	_willUseMultisampleShaders = false;
 	
 	_emulateShadowPolygon = true;
@@ -1578,7 +1578,7 @@ Render3DError OpenGLRenderer::FlushFramebuffer(const Color4u8 *__restrict srcFra
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if (this->willFlipAndConvertFramebufferOnGPU && this->isPBOSupported)
+	if (this->_willConvertFramebufferOnGPU && this->isPBOSupported)
 	{
 		this->_renderNeedsFlushMain = false;
 		return Render3D::FlushFramebuffer(srcFramebuffer, NULL, dstFramebuffer16);
@@ -1589,13 +1589,13 @@ Render3DError OpenGLRenderer::FlushFramebuffer(const Color4u8 *__restrict srcFra
 		{
 			return this->_FlushFramebufferConvertOnCPU<true>(srcFramebuffer,
 			                                                 dstFramebufferMain, dstFramebuffer16,
-			                                                 !this->willFlipAndConvertFramebufferOnGPU);
+			                                                 !this->_willConvertFramebufferOnGPU);
 		}
 		else
 		{
 			return this->_FlushFramebufferConvertOnCPU<false>(srcFramebuffer,
 			                                                  dstFramebufferMain, dstFramebuffer16,
-			                                                  !this->willFlipAndConvertFramebufferOnGPU);
+			                                                  !this->_willConvertFramebufferOnGPU);
 		}
 	}
 	
@@ -1604,7 +1604,7 @@ Render3DError OpenGLRenderer::FlushFramebuffer(const Color4u8 *__restrict srcFra
 
 Color4u8* OpenGLRenderer::GetFramebuffer()
 {
-	return (this->willFlipAndConvertFramebufferOnGPU && this->isPBOSupported) ? this->_mappedFramebuffer : GPU->GetEngineMain()->Get3DFramebufferMain();
+	return (this->_willConvertFramebufferOnGPU && this->isPBOSupported) ? this->_mappedFramebuffer : GPU->GetEngineMain()->Get3DFramebufferMain();
 }
 
 GLsizei OpenGLRenderer::GetLimitedMultisampleSize() const
@@ -2367,7 +2367,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	std::set<std::string> oglExtensionSet;
 	this->GetExtensionSet(&oglExtensionSet);
 	
-#if !defined(GL_ES_VERSION_3_0)
+#if defined(GL_VERSION_1_2)
 	if (!this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_multitexture"))
 	{
 		return OGLERROR_DRIVER_VERSION_TOO_OLD;
@@ -2607,7 +2607,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	}
 	
 	// Set rendering support flags based on driver features.
-	this->willFlipAndConvertFramebufferOnGPU = this->isShaderSupported && this->isVBOSupported;
+	this->_willConvertFramebufferOnGPU = this->isShaderSupported && this->isVBOSupported;
 	this->_deviceInfo.isEdgeMarkSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
 	this->_deviceInfo.isFogSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
 	this->_deviceInfo.isTextureSmoothingSupported = this->isShaderSupported;
@@ -2714,7 +2714,7 @@ Render3DError OpenGLRenderer_1_2::CreateVAOs()
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, texCoord));
 		glVertexAttribPointer(OGLVertexAttributeID_Color, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, color));
 	}
-#if !defined(GL_ES_VERSION_3_0)
+#if defined(GL_VERSION_1_2)
 	else
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -3847,7 +3847,7 @@ void OpenGLRenderer_1_2::_SetupGeometryShaders(const OGLGeometryFlags flags)
 	glUniform1i(OGLRef.uniformPolyDrawShadow[flags.value], GL_FALSE);
 }
 
-Render3DError OpenGLRenderer_1_2::EnableVertexAttributes()
+void OpenGLRenderer_1_2::_RenderGeometryVertexAttribEnable()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -3855,58 +3855,48 @@ Render3DError OpenGLRenderer_1_2::EnableVertexAttributes()
 	{
 		glBindVertexArray(OGLRef.vaoGeometryStatesID);
 	}
+	else if (this->isShaderSupported)
+	{
+		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+		glEnableVertexAttribArray(OGLVertexAttributeID_Color);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, position));
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, texCoord));
+		glVertexAttribPointer(OGLVertexAttributeID_Color, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, color));
+	}
+#if defined(GL_VERSION_1_2)
 	else
 	{
-		if (this->isShaderSupported)
-		{
-			glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-			glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-			glEnableVertexAttribArray(OGLVertexAttributeID_Color);
-			glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, position));
-			glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, texCoord));
-			glVertexAttribPointer(OGLVertexAttributeID_Color, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, color));
-		}
-#if !defined(GL_ES_VERSION_3_0)
-		else
-		{
-			glEnableClientState(GL_VERTEX_ARRAY);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glEnableClientState(GL_COLOR_ARRAY);
-			glVertexPointer(4, GL_FLOAT, 0, OGLRef.position4fBuffer);
-			glTexCoordPointer(2, GL_FLOAT, 0, OGLRef.texCoord2fBuffer);
-			glColorPointer(4, GL_FLOAT, 0, OGLRef.color4fBuffer);
-		}
-#endif
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		glVertexPointer(4, GL_FLOAT, 0, OGLRef.position4fBuffer);
+		glTexCoordPointer(2, GL_FLOAT, 0, OGLRef.texCoord2fBuffer);
+		glColorPointer(4, GL_FLOAT, 0, OGLRef.color4fBuffer);
 	}
-	
-	return OGLERROR_NOERR;
+#endif
 }
 
-Render3DError OpenGLRenderer_1_2::DisableVertexAttributes()
+void OpenGLRenderer_1_2::_RenderGeometryVertexAttribDisable()
 {
 	if (this->isVAOSupported)
 	{
 		glBindVertexArray(0);
 	}
+	else if (this->isShaderSupported)
+	{
+		glDisableVertexAttribArray(OGLVertexAttributeID_Position);
+		glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+		glDisableVertexAttribArray(OGLVertexAttributeID_Color);
+	}
+#if defined(GL_VERSION_1_2)
 	else
 	{
-		if (this->isShaderSupported)
-		{
-			glDisableVertexAttribArray(OGLVertexAttributeID_Position);
-			glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-			glDisableVertexAttribArray(OGLVertexAttributeID_Color);
-		}
-#if !defined(GL_ES_VERSION_3_0)
-		else
-		{
-			glDisableClientState(GL_VERTEX_ARRAY);
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-			glDisableClientState(GL_COLOR_ARRAY);
-		}
-#endif
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
 	}
-	
-	return OGLERROR_NOERR;
+#endif
 }
 
 Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, const size_t clippedPolyOpaqueCount, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr)
@@ -3921,8 +3911,6 @@ Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLY *rawPolyList, cons
 	// Pre Pass: Fill in the stencil buffer based on the alpha of the current framebuffer color.
 	// Fully transparent pixels (alpha == 0) -- Set stencil buffer to 0
 	// All other pixels (alpha != 0) -- Set stencil buffer to 1
-	
-	this->DisableVertexAttributes();
 	
 	const bool isRunningMSAA = this->isMultisampledFBOSupported && (OGLRef.selectedRenderingFBO == OGLRef.fboMSIntermediateRenderID);
 	
@@ -3950,30 +3938,8 @@ Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLY *rawPolyList, cons
 	glDrawBuffer(GL_NONE);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
-	
-	if (this->isVAOSupported)
-	{
-		glBindVertexArray(OGLRef.vaoPostprocessStatesID);
-	}
-	else
-	{
-		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
-	}
-	
+	this->_FramebufferProcessVertexAttribEnable();
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	
-	if (this->isVAOSupported)
-	{
-		glBindVertexArray(0);
-	}
-	else
-	{
-		glDisableVertexAttribArray(OGLVertexAttributeID_Position);
-		glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-	}
 	
 	// Setup for multiple pass alpha poly drawing
 	OGLGeometryFlags oldGProgramFlags = this->_geometryProgramFlags;
@@ -3985,7 +3951,7 @@ Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLY *rawPolyList, cons
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
-	this->EnableVertexAttributes();
+	this->_RenderGeometryVertexAttribEnable();
 	
 	// Draw the alpha polys, touching fully transparent pixels only once.
 	glEnable(GL_DEPTH_TEST);
@@ -4095,13 +4061,56 @@ void OpenGLRenderer_1_2::_ResolveFinalFramebuffer()
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
 }
 
-Render3DError OpenGLRenderer_1_2::ReadBackPixels()
+void OpenGLRenderer_1_2::_FramebufferProcessVertexAttribEnable()
+{
+	if (!this->isShaderSupported)
+	{
+		// Framebuffer processing requires shaders, so there is no legacy code path
+		// for this method.
+		return;
+	}
+	
+	if (this->isVAOSupported)
+	{
+		glBindVertexArray(this->ref->vaoPostprocessStatesID);
+	}
+	else
+	{
+		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+		glDisableVertexAttribArray(OGLVertexAttributeID_Color); // Framebuffer processing doesn't use vertex colors.
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
+	}
+}
+
+void OpenGLRenderer_1_2::_FramebufferProcessVertexAttribDisable()
+{
+	if (!this->isShaderSupported)
+	{
+		// Framebuffer processing requires shaders, so there is no legacy code path
+		// for this method.
+		return;
+	}
+	
+	if (this->isVAOSupported)
+	{
+		glBindVertexArray(0);
+	}
+	else
+	{
+		glDisableVertexAttribArray(OGLVertexAttributeID_Position);
+		glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+		glDisableVertexAttribArray(OGLVertexAttributeID_Color);
+	}
+}
+
+Render3DError OpenGLRenderer_1_2::_FramebufferConvertColorFormat()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	// Both flips and converts the framebuffer on the GPU. No additional postprocessing
-	// should be necessary at this point.
-	if (this->willFlipAndConvertFramebufferOnGPU)
+	if (  this->_willConvertFramebufferOnGPU &&
+		((this->_outputFormat == NDSColorFormat_BGR666_Rev) || (OGLRef.readPixelsBestFormat == GL_BGRA)) )
 	{
 		const GLuint convertProgramID = (this->_outputFormat == NDSColorFormat_BGR666_Rev) ? OGLRef.programFramebufferRGBA6665OutputID : OGLRef.programFramebufferRGBA8888OutputID;
 		glUseProgram(convertProgramID);
@@ -4125,46 +4134,11 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 		glDisable(GL_BLEND);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
-		
-		if (this->isVAOSupported)
-		{
-			glBindVertexArray(OGLRef.vaoPostprocessStatesID);
-		}
-		else
-		{
-			glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-			glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-			glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
-			glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
-		}
-		
+		this->_FramebufferProcessVertexAttribEnable();
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-		
-		if (this->isVAOSupported)
-		{
-			glBindVertexArray(0);
-		}
-		else
-		{
-			glDisableVertexAttribArray(OGLVertexAttributeID_Position);
-			glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-		}
+		this->_FramebufferProcessVertexAttribDisable();
 	}
 	
-	if (this->isPBOSupported)
-	{
-		// Read back the pixels in BGRA format, since legacy OpenGL devices may experience a performance
-		// penalty if the readback is in any other format.
-		if (this->_mappedFramebuffer != NULL)
-		{
-			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-			this->_mappedFramebuffer = NULL;
-		}
-		
-		glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, OGLRef.readPixelsBestFormat, OGLRef.readPixelsBestDataType, 0);
-	}
-	
-	this->_pixelReadNeedsFinish = true;
 	return OGLERROR_NOERR;
 }
 
@@ -4370,7 +4344,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 				}
 			}
 		}
-#if !defined(GL_ES_VERSION_3_0)
+#if defined(GL_VERSION_1_2)
 		else
 		{
 			if (renderState.DISP3DCNT.EnableAlphaTest && (renderState.alphaTestRef > 0))
@@ -4381,10 +4355,6 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 			{
 				glAlphaFunc(GL_GREATER, 0);
 			}
-			
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-			glScalef(1.0f, -1.0f, 1.0f);
 		}
 #endif
 	}
@@ -4397,6 +4367,42 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 		this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) ? 1 : 0;
 		this->_geometryProgramFlags.OpaqueDrawMode = 1;
 	}
+	
+	this->_needsZeroDstAlphaPass = true;
+	
+	return OGLERROR_NOERR;
+}
+
+void OpenGLRenderer_1_2::_RenderGeometryLoopBegin()
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	
+	glDisable(GL_CULL_FACE); // Polygons should already be culled before we get here.
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_STENCIL_TEST);
+	
+	if (this->_enableAlphaBlending)
+	{
+		glEnable(GL_BLEND);
+	}
+	else
+	{
+		glDisable(GL_BLEND);
+	}
+	
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glDepthMask(GL_TRUE);
+	
+#if defined(GL_VERSION_1_2)
+	if (!this->isShaderSupported)
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glScalef(1.0f, -1.0f, 1.0f);
+	}
+#endif
+	
+	glActiveTexture(GL_TEXTURE0);
 	
 	if (this->isFBOSupported)
 	{
@@ -4423,34 +4429,31 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State &renderState, co
 		glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	}
 	
+	this->_RenderGeometryVertexAttribEnable();
+}
+
+void OpenGLRenderer_1_2::_RenderGeometryLoopEnd()
+{
+	this->_RenderGeometryVertexAttribDisable();
+	
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);
 	
-	this->_needsZeroDstAlphaPass = true;
-	
-	return OGLERROR_NOERR;
+#if defined(GL_VERSION_1_2)
+	if (!this->isShaderSupported)
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glScalef(1.0f, 1.0f, 1.0f);
+	}
+#endif
 }
 
 Render3DError OpenGLRenderer_1_2::RenderGeometry()
 {
 	if (this->_clippedPolyCount > 0)
 	{
-		glDisable(GL_CULL_FACE); // Polygons should already be culled before we get here.
-		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_STENCIL_TEST);
-		
-		if (this->_enableAlphaBlending)
-		{
-			glEnable(GL_BLEND);
-		}
-		else
-		{
-			glDisable(GL_BLEND);
-		}
-		
-		glActiveTexture(GL_TEXTURE0);
-		
-		this->EnableVertexAttributes();
+		this->_RenderGeometryLoopBegin();
 		
 		size_t indexOffset = 0;
 		
@@ -4517,9 +4520,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry()
 			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(rawPolyList, this->_clippedPolyList, this->_clippedPolyCount, this->_clippedPolyOpaqueCount, this->_clippedPolyCount - 1, indexOffset, lastPolyAttr);
 		}
 		
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glDepthMask(GL_TRUE);
-		this->DisableVertexAttributes();
+		this->_RenderGeometryLoopEnd();
 	}
 	
 	if (!this->_willUseMultisampleShaders)
@@ -4557,18 +4558,7 @@ Render3DError OpenGLRenderer_1_2::PostprocessFramebuffer()
 	glDisable(GL_DEPTH_TEST);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
-	
-	if (this->isVAOSupported)
-	{
-		glBindVertexArray(OGLRef.vaoPostprocessStatesID);
-	}
-	else
-	{
-		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
-	}
+	this->_FramebufferProcessVertexAttribEnable();
 	
 	if (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported)
 	{
@@ -4656,30 +4646,40 @@ Render3DError OpenGLRenderer_1_2::PostprocessFramebuffer()
 		glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
 	}
 	
-	if (this->isVAOSupported)
-	{
-		glBindVertexArray(0);
-	}
-	else
-	{
-		glDisableVertexAttribArray(OGLVertexAttributeID_Position);
-		glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-	}
+	this->_FramebufferProcessVertexAttribDisable();
 	
 	return OGLERROR_NOERR;
 }
 
 Render3DError OpenGLRenderer_1_2::EndRender()
 {
-	//needs to happen before endgl because it could free some textureids for expired cache items
-	texCache.Evict();
+	OGLRenderRef &OGLRef = *this->ref;
 	
 	if (this->_willUseMultisampleShaders)
 	{
 		this->_ResolveFinalFramebuffer();
 	}
 	
-	this->ReadBackPixels();
+	this->_FramebufferConvertColorFormat();
+	
+	if (this->isPBOSupported)
+	{
+		// If PBOs are supported, then begin the asynchronous pixel read.
+		// The asynchronous pixel read ends when RenderFinish() is called,
+		// which is always called before RenderFlush().
+		if (this->_mappedFramebuffer != NULL)
+		{
+		   glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+		   this->_mappedFramebuffer = NULL;
+		}
+		
+		glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, OGLRef.readPixelsBestFormat, OGLRef.readPixelsBestDataType, 0);
+	}
+	
+	this->_pixelReadNeedsFinish = true;
+	
+	//needs to happen before endgl because it could free some textureids for expired cache items
+	texCache.Evict();
 	
 	ENDGL();
 	
@@ -4928,7 +4928,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool treatAs
 		glUniform1f(OGLRef.uniformPolyDepthOffset[this->_geometryProgramFlags.value], 0.0f);
 		glUniform1i(OGLRef.uniformPolyIsBackFacing[this->_geometryProgramFlags.value], (isBackFacing) ? GL_TRUE : GL_FALSE);
 	}
-#if !defined(GL_ES_VERSION_3_0)
+#if defined(GL_VERSION_1_2)
 	else
 	{
 		// Set the texture blending mode
@@ -4970,7 +4970,7 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, size_t polyR
 		glUniform1i(OGLRef.uniformTexSingleBitAlpha[this->_geometryProgramFlags.value], (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
 		glUniform2f(OGLRef.uniformPolyTexScale[this->_geometryProgramFlags.value], theTexture->GetInvWidth(), theTexture->GetInvHeight());
 	}
-#if !defined(GL_ES_VERSION_3_0)
+#if defined(GL_VERSION_1_2)
 	else
 	{
 		glEnable(GL_TEXTURE_2D);
@@ -5176,7 +5176,7 @@ Render3DError OpenGLRenderer_1_2::Reset()
 	
 	glFinish();
 	
-#if !defined(GL_ES_VERSION_3_0)
+#if defined(GL_VERSION_1_2)
 	if (!this->isShaderSupported)
 	{
 		glEnable(GL_NORMALIZE);
@@ -5471,43 +5471,6 @@ Render3DError OpenGLRenderer_2_0::InitFinalRenderStates(const std::set<std::stri
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_2_0::EnableVertexAttributes()
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	
-	if (this->isVAOSupported)
-	{
-		glBindVertexArray(OGLRef.vaoGeometryStatesID);
-	}
-	else
-	{
-		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-		glEnableVertexAttribArray(OGLVertexAttributeID_Color);
-		glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, position));
-		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_INT, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, texCoord));
-		glVertexAttribPointer(OGLVertexAttributeID_Color, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(NDSVertex), (const GLvoid *)offsetof(NDSVertex, color));
-	}
-	
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_2_0::DisableVertexAttributes()
-{
-	if (this->isVAOSupported)
-	{
-		glBindVertexArray(0);
-	}
-	else
-	{
-		glDisableVertexAttribArray(OGLVertexAttributeID_Position);
-		glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-		glDisableVertexAttribArray(OGLVertexAttributeID_Color);
-	}
-	
-	return OGLERROR_NOERR;
-}
-
 Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList)
 {
 	OGLRenderRef &OGLRef = *this->ref;
@@ -5656,25 +5619,6 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, co
 		this->_geometryProgramFlags.EnableEdgeMark = (this->_enableEdgeMark && this->_deviceInfo.isEdgeMarkSupported) ? 1 : 0;
 		this->_geometryProgramFlags.OpaqueDrawMode = 1;
 	}
-	
-	if (this->isFBOSupported)
-	{
-		if (this->_enableMultisampledRendering)
-		{
-			OGLRef.selectedRenderingFBO = OGLRef.fboMSIntermediateRenderID;
-		}
-		else
-		{
-			OGLRef.selectedRenderingFBO = OGLRef.fboRenderID;
-		}
-		
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.selectedRenderingFBO);
-		glDrawBuffers(4, this->_geometryDrawBuffersEnum[this->_geometryProgramFlags.DrawBuffersMode]);
-		glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	}
-	
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glDepthMask(GL_TRUE);
 	
 	this->_needsZeroDstAlphaPass = true;
 	
