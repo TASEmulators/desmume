@@ -401,7 +401,7 @@ out vec2 texCoord;\n\
 \n\
 void main()\n\
 {\n\
-	texCoord = vec2(inTexCoord0.x, 1.0 - inTexCoord0.y);\n\
+	texCoord = inTexCoord0;\n\
 	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 }\n\
 "};
@@ -2966,13 +2966,13 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 		// Blit the fog buffer
 		glReadBuffer(OGL_CI_FOGATTRIBUTES_ATTACHMENT_ID);
 		glDrawBuffer(OGL_FOGATTRIBUTES_ATTACHMENT_ID);
-		glBlitFramebuffer(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBlitFramebuffer(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
 	
 	// Blit the color and depth/stencil buffers. Do this last so that color attachment 0 is set to the read FBO.
 	glReadBuffer(OGL_CI_COLOROUT_ATTACHMENT_ID);
 	glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-	glBlitFramebuffer(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 	
 	if (this->_enableMultisampledRendering)
 	{
