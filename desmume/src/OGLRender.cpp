@@ -2384,6 +2384,14 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	}
 #endif
 	
+	// Mirrored Repeat Mode Support
+	const bool isTexMirroredRepeatSupported = this->IsVersionSupported(1, 4, 0) || this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_texture_mirrored_repeat");
+	OGLRef.stateTexMirroredRepeat = (isTexMirroredRepeatSupported) ? GL_MIRRORED_REPEAT : GL_REPEAT;
+	
+	// Blending Support
+	this->_isBlendFuncSeparateSupported     = this->IsVersionSupported(1, 4, 0) || this->IsExtensionPresent(&oglExtensionSet, "GL_EXT_blend_func_separate");
+	this->_isBlendEquationSeparateSupported = this->IsVersionSupported(2, 0, 0) || this->IsExtensionPresent(&oglExtensionSet, "GL_EXT_blend_equation_separate");
+	
 	// Get host GPU device properties
 	GLfloat maxAnisotropyOGL = 1.0f;
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropyOGL);
@@ -2615,8 +2623,6 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	this->_isDepthLEqualPolygonFacingSupported = this->isShaderSupported && this->isVBOSupported && this->isFBOSupported;
 	
 	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->isMultisampledFBOSupported);
-	
-	this->InitFinalRenderStates(&oglExtensionSet); // This must be done last
 	
 	return OGLERROR_NOERR;
 }
@@ -3676,40 +3682,6 @@ void OpenGLRenderer_1_2::DestroyFramebufferOutput8888Programs()
 	OGLRef.fragmentFramebufferRGBA8888OutputShaderID = 0;
 }
 
-Render3DError OpenGLRenderer_1_2::InitFinalRenderStates(const std::set<std::string> *oglExtensionSet)
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	
-	bool isTexMirroredRepeatSupported = this->IsExtensionPresent(oglExtensionSet, "GL_ARB_texture_mirrored_repeat");
-	bool isBlendFuncSeparateSupported = this->IsExtensionPresent(oglExtensionSet, "GL_EXT_blend_func_separate");
-	bool isBlendEquationSeparateSupported = this->IsExtensionPresent(oglExtensionSet, "GL_EXT_blend_equation_separate");
-	
-	// Blending Support
-	if (isBlendFuncSeparateSupported)
-	{
-		if (isBlendEquationSeparateSupported)
-		{
-			// we want to use alpha destination blending so we can track the last-rendered alpha value
-			// test: new super mario brothers renders the stormclouds at the beginning
-			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
-			glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
-		}
-		else
-		{
-			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
-		}
-	}
-	else
-	{
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	}
-	
-	// Mirrored Repeat Mode Support
-	OGLRef.stateTexMirroredRepeat = (isTexMirroredRepeatSupported) ? GL_MIRRORED_REPEAT : GL_REPEAT;
-	
-	return OGLERROR_NOERR;
-}
-
 Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *edgeMarkVtxShaderCString,
 															 const char *edgeMarkFragShaderCString,
 															 const char *framebufferOutputVtxShaderCString,
@@ -4384,6 +4356,25 @@ void OpenGLRenderer_1_2::_RenderGeometryLoopBegin()
 	if (this->_enableAlphaBlending)
 	{
 		glEnable(GL_BLEND);
+		
+		if (this->_isBlendFuncSeparateSupported)
+		{
+			if (this->_isBlendEquationSeparateSupported)
+			{
+				// we want to use alpha destination blending so we can track the last-rendered alpha value
+				// test: new super mario brothers renders the stormclouds at the beginning
+				glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+				glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
+			}
+			else
+			{
+				glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
+			}
+		}
+		else
+		{
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		}
 	}
 	else
 	{
@@ -4641,9 +4632,6 @@ Render3DError OpenGLRenderer_1_2::PostprocessFramebuffer()
 		glDisable(GL_STENCIL_TEST);
 		glEnable(GL_BLEND);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-		
-		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
-		glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
 	}
 	
 	this->_FramebufferProcessVertexAttribDisable();
@@ -5447,28 +5435,6 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 OpenGLRenderer_2_0::OpenGLRenderer_2_0()
 {
 	_variantID = OpenGLVariantID_Legacy_2_0;
-}
-
-Render3DError OpenGLRenderer_2_0::InitFinalRenderStates(const std::set<std::string> *oglExtensionSet)
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	
-	// we want to use alpha destination blending so we can track the last-rendered alpha value
-	// test: new super mario brothers renders the stormclouds at the beginning
-	
-	// Blending Support
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
-	glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
-	
-	// Mirrored Repeat Mode Support
-	OGLRef.stateTexMirroredRepeat = GL_MIRRORED_REPEAT;
-	
-	// Ignore our color buffer since we'll transfer the polygon alpha through a uniform.
-	OGLRef.position4fBuffer = NULL;
-	OGLRef.texCoord2fBuffer = NULL;
-	OGLRef.color4fBuffer = NULL;
-	
-	return OGLERROR_NOERR;
 }
 
 Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList)

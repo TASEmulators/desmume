@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2023 DeSmuME team
+	Copyright (C) 2008-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -110,6 +110,115 @@ void FragmentAttributesBuffer::SetAtIndex(const size_t index, const FragmentAttr
 	this->isFogged[index]			= attr.isFogged;
 	this->isTranslucentPoly[index]	= attr.isTranslucentPoly;
 	this->polyFacing[index]			= attr.polyFacing;
+}
+
+Render3DResource::Render3DResource()
+{
+	_state[0] = AsyncWriteState_Disabled;
+	_state[1] = AsyncWriteState_Disabled;
+	_state[2] = AsyncWriteState_Disabled;
+	
+	_currentReadyIdx = RENDER3D_RESOURCE_INDEX_NONE;
+	_currentUsingIdx = RENDER3D_RESOURCE_INDEX_NONE;
+}
+
+size_t Render3DResource::BindWrite()
+{
+	size_t idxFree = RENDER3D_RESOURCE_INDEX_NONE;
+	
+	if (this->_state[0] == AsyncWriteState_Free)
+	{
+		idxFree = 0;
+	}
+	else if (this->_state[1] == AsyncWriteState_Free)
+	{
+		idxFree = 1;
+	}
+	else if (this->_state[2] == AsyncWriteState_Free)
+	{
+		idxFree = 2;
+	}
+	
+	if (idxFree != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		this->_state[idxFree] = AsyncWriteState_Writing;
+	}
+	
+	return idxFree;
+}
+
+void Render3DResource::UnbindWrite(const size_t idxWrite)
+{
+	if (idxWrite > 2)
+	{
+		return;
+	}
+	
+	if (this->_currentReadyIdx != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		this->_state[this->_currentReadyIdx] = AsyncWriteState_Free;
+	}
+	
+	this->_state[idxWrite] = AsyncWriteState_Ready;
+	this->_currentReadyIdx = idxWrite;
+}
+
+size_t Render3DResource::BindUsage()
+{
+	if (this->_currentReadyIdx == RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		return RENDER3D_RESOURCE_INDEX_NONE;
+	}
+	
+	this->_state[this->_currentReadyIdx] = AsyncWriteState_Using;
+	this->_currentUsingIdx = this->_currentReadyIdx;
+	this->_currentReadyIdx = RENDER3D_RESOURCE_INDEX_NONE;
+	
+	return this->_currentUsingIdx;
+}
+
+size_t Render3DResource::UnbindUsage()
+{
+	size_t newFreeIdx = this->_currentUsingIdx;
+	
+	if (newFreeIdx == RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		return RENDER3D_RESOURCE_INDEX_NONE;
+	}
+	
+	this->_state[newFreeIdx] = AsyncWriteState_Free;
+	this->_currentUsingIdx = RENDER3D_RESOURCE_INDEX_NONE;
+	
+	return newFreeIdx;
+}
+
+Render3DResourceGeometry::Render3DResourceGeometry()
+{
+	_vertexBuffer[0] = NULL;
+	_vertexBuffer[1] = NULL;
+	_vertexBuffer[2] = NULL;
+	
+	_rawVertexCount[0] = 0;
+	_rawVertexCount[1] = 0;
+	_rawVertexCount[2] = 0;
+	
+	_clippedPolyCount[0] = 0;
+	_clippedPolyCount[1] = 0;
+	_clippedPolyCount[2] = 0;
+}
+
+size_t Render3DResourceGeometry::BindWrite(const size_t rawVtxCount, const size_t clippedPolyCount)
+{
+	const size_t idxWrite = Render3DResource::BindWrite();
+	this->_rawVertexCount[idxWrite]   = rawVtxCount;
+	this->_clippedPolyCount[idxWrite] = clippedPolyCount;
+	
+	return idxWrite;
+}
+
+NDSVertex* Render3DResourceGeometry::GetVertexBuffer(const size_t index)
+{
+	return this->_vertexBuffer[index];
 }
 
 Render3DTexture::Render3DTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes) : TextureStore(texAttributes, palAttributes)

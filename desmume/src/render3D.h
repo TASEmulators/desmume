@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2023 DeSmuME team
+	Copyright (C) 2007-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -120,6 +120,57 @@ struct Render3DDeviceInfo
 	
 	float maxAnisotropy;
 	u8 maxSamples;
+};
+
+enum AsyncWriteState
+{
+	AsyncWriteState_Disabled = 0, // The resources at this index are not available for use.
+	AsyncWriteState_Free     = 1, // The resources at this index have no owner, but are made available to the emulation.
+	AsyncWriteState_Writing  = 2, // The emulation has taken ownership of the resources at this index for writing new data.
+	AsyncWriteState_Ready    = 3, // The emulation has finished writing to the resources at this index. The renderer is allowed to take ownership at any time.
+	AsyncWriteState_Using    = 4  // The renderer has taken ownership of the resources at this index for reading the data.
+};
+
+enum AsyncReadState
+{
+	AsyncReadState_Disabled = 0, // The resources at this index are not available for use.
+	AsyncReadState_Free     = 1, // The resources at this index have no owner, but are made available to the renderer.
+	AsyncReadState_Using    = 4, // The renderer has taken ownership of the resources at this index for writing new data.
+	AsyncReadState_Ready    = 3, // The renderer has finished writing to the resources at this index. The emulation is allowed to take ownership at any time.
+	AsyncReadState_Reading  = 2  // The emulation has taken ownership of the resources at this index for reading the data.
+};
+
+#define RENDER3D_RESOURCE_INDEX_NONE 0xFFFF
+
+class Render3DResource
+{
+protected:
+	AsyncWriteState _state[3];
+	size_t _currentReadyIdx;
+	size_t _currentUsingIdx;
+	
+public:
+	Render3DResource();
+	
+	size_t BindWrite();
+	void UnbindWrite(const size_t idxWrite);
+	
+	size_t BindUsage();
+	size_t UnbindUsage();
+};
+
+class Render3DResourceGeometry : public Render3DResource
+{
+protected:
+	NDSVertex *_vertexBuffer[3];
+	size_t _rawVertexCount[3];
+	size_t _clippedPolyCount[3];
+	
+public:
+	Render3DResourceGeometry();
+	
+	size_t BindWrite(const size_t rawVtxCount, const size_t clippedPolyCount);
+	NDSVertex* GetVertexBuffer(const size_t index);
 };
 
 class Render3DTexture : public TextureStore

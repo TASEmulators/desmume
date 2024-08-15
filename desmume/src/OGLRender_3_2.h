@@ -60,18 +60,65 @@ extern const char *FramebufferOutput6665FragShader_150;
 void OGLLoadEntryPoints_3_2();
 void OGLCreateRenderer_3_2(OpenGLRenderer **rendererPtr);
 
+class OpenGLGeometryResource : public Render3DResourceGeometry
+{
+protected:
+	GLuint _vboID[3];
+	GLuint _eboID[3];
+	GLuint _vaoID[3];
+	GLuint _uboPolyStatesID[3];
+	GLuint _tboPolyStatesID[3];
+	GLuint _texPolyStatesID[3];
+	GLsync _syncGeometryRender[3];
+	
+	u16 *_indexBuffer[3];
+	OGLPolyStates *_polyStatesBuffer[3];
+	
+public:
+	OpenGLGeometryResource(const OpenGLVariantID variantID);
+	~OpenGLGeometryResource();
+	
+	size_t BindWrite(const size_t rawVtxCount, const size_t clippedPolyCount);
+	
+	size_t BindUsage();
+	size_t UnbindUsage();
+	size_t RebindUsage();
+	
+	u16* GetIndexBuffer(const size_t index);
+	OGLPolyStates* GetPolyStatesBuffer(const size_t index);
+	bool IsPolyStatesBufferUBO();
+	bool IsPolyStatesBufferTBO();
+};
+
+class OpenGLRenderStatesResource : public Render3DResource
+{
+protected:
+	GLsync _sync[3];
+	GLuint _uboRenderStatesID[3];
+	OGLRenderStates *_buffer[3];
+	
+public:
+	OpenGLRenderStatesResource();
+	~OpenGLRenderStatesResource();
+	
+	size_t BindWrite();
+	size_t BindUsage();
+	size_t UnbindUsage();
+	
+	OGLRenderStates* GetRenderStatesBuffer(const size_t index);
+};
+
 class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 {
 protected:
-	bool _is64kUBOSupported;
-	bool _isTBOSupported;
 	bool _isShaderFixedLocationSupported;
 	bool _isConservativeDepthSupported;
 	bool _isConservativeDepthAMDSupported;
 	
-	GLsync _syncBufferSetup;
-	CACHE_ALIGN OGLPolyStates _pendingPolyStates[CLIPPED_POLYLIST_SIZE];
+	OpenGLGeometryResource *_gResource;
+	OpenGLRenderStatesResource *_rsResource;
 	
+	virtual Render3DError CreateVBOs();
 	virtual Render3DError CreatePBOs();
 	virtual Render3DError CreateFBOs();
 	virtual void DestroyFBOs();
@@ -82,7 +129,6 @@ protected:
 	virtual void DestroyVAOs();
 	
 	virtual Render3DError CreateGeometryPrograms();
-	virtual void DestroyGeometryPrograms();
 	virtual Render3DError CreateClearImageProgram(const char *vsCString, const char *fsCString);
 	virtual void DestroyClearImageProgram();
 	virtual Render3DError CreateGeometryZeroDstAlphaProgram(const char *vtxShaderCString, const char *fragShaderCString);

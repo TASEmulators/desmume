@@ -303,10 +303,15 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 
 #endif // GL_EXT_framebuffer_object
 
-// Some headers, such as the OpenGL ES headers, may not include this macro.
+// Some headers, such as the OpenGL ES headers, may not include this token.
 // Add it manually to avoid compiling issues.
 #ifndef GL_BGRA
-#define GL_BGRA GL_BGRA_EXT
+	#define GL_BGRA GL_BGRA_EXT
+#endif
+
+// OpenGL ES headers before 3.2 don't have this token, so manually define it here.
+#ifndef GL_TEXTURE_BUFFER
+	#define GL_TEXTURE_BUFFER 0x8C2A
 #endif
 
 // OPENGL CORE EQUIVALENTS FOR LEGACY FUNCTIONS
@@ -375,12 +380,25 @@ enum OpenGLVariantID
 	OpenGLVariantID_Unknown         = 0,
 	OpenGLVariantID_LegacyAuto      = 0x1000,
 	OpenGLVariantID_Legacy_1_2      = 0x1012,
+	OpenGLVariantID_Legacy_1_3      = 0x1013,
+	OpenGLVariantID_Legacy_1_4      = 0x1014,
+	OpenGLVariantID_Legacy_1_5      = 0x1015,
 	OpenGLVariantID_Legacy_2_0      = 0x1020,
 	OpenGLVariantID_Legacy_2_1      = 0x1021,
 	OpenGLVariantID_CoreProfile_3_2 = 0x2032,
+	OpenGLVariantID_CoreProfile_3_3 = 0x2033,
+	OpenGLVariantID_CoreProfile_4_0 = 0x2040,
+	OpenGLVariantID_CoreProfile_4_1 = 0x2041,
+	OpenGLVariantID_CoreProfile_4_2 = 0x2042,
+	OpenGLVariantID_CoreProfile_4_3 = 0x2043,
+	OpenGLVariantID_CoreProfile_4_4 = 0x2044,
+	OpenGLVariantID_CoreProfile_4_5 = 0x2045,
+	OpenGLVariantID_CoreProfile_4_6 = 0x2046,
 	OpenGLVariantID_StandardAuto    = 0x3000,
 	OpenGLVariantID_ES3_Auto        = 0x4000,
 	OpenGLVariantID_ES3_3_0         = 0x4030,
+	OpenGLVariantID_ES3_3_1         = 0x4031,
+	OpenGLVariantID_ES3_3_2         = 0x4032,
 	OpenGLVariantID_ES_Auto         = 0x6000
 };
 
@@ -606,12 +624,6 @@ struct OGLRenderRef
 	
 	// PBO
 	GLuint pboRenderDataID;
-	
-	// UBO / TBO
-	GLuint uboRenderStatesID;
-	GLuint uboPolyStatesID;
-	GLuint tboPolyStatesID;
-	GLuint texPolyStatesID;
 	
 	// FBO
 	GLuint texCIColorID;
@@ -863,6 +875,8 @@ protected:
 	
 	// OpenGL Feature Support
 	OpenGLVariantID _variantID;
+	bool _isBlendFuncSeparateSupported;
+	bool _isBlendEquationSeparateSupported;
 	bool isVBOSupported;
 	bool isPBOSupported;
 	bool isFBOSupported;
@@ -950,7 +964,6 @@ protected:
 	virtual Render3DError CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString) = 0;
 	virtual void DestroyFramebufferOutput8888Programs() = 0;
 	
-	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader,
 													 const char *edgeMarkFragShader,
 													 const char *framebufferOutputVtxShader,
@@ -1032,7 +1045,6 @@ protected:
 	virtual Render3DError CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString);
 	virtual void DestroyFramebufferOutput8888Programs();
 	
-	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
 	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader,
 													 const char *edgeMarkFragShader,
 													 const char *framebufferOutputVtxShader,
@@ -1089,7 +1101,6 @@ public:
 	OpenGLRenderer_2_0();
 	
 protected:
-	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
 	virtual Render3DError BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);
 };
 
