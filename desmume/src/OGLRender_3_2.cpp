@@ -82,6 +82,7 @@ OGLEXT(PFNGLTEXBUFFERPROC, glTexBuffer) // Core in v3.1 and ES v3.2
 // Sync Objects
 OGLEXT(PFNGLFENCESYNCPROC, glFenceSync) // Core in v3.2 and ES v3.0
 OGLEXT(PFNGLWAITSYNCPROC, glWaitSync) // Core in v3.2 and ES v3.0
+OGLEXT(PFNGLCLIENTWAITSYNCPROC, glClientWaitSync) // Core in v3.2 and ES v3.0
 OGLEXT(PFNGLDELETESYNCPROC, glDeleteSync) // Core in v3.2 and ES v3.0
 
 void OGLLoadEntryPoints_3_2()
@@ -135,6 +136,7 @@ void OGLLoadEntryPoints_3_2()
 	// Sync Objects
 	INITOGLEXT(PFNGLFENCESYNCPROC, glFenceSync) // Core in v3.2 and ES v3.0
 	INITOGLEXT(PFNGLWAITSYNCPROC, glWaitSync) // Core in v3.2 and ES v3.0
+	INITOGLEXT(PFNGLCLIENTWAITSYNCPROC, glClientWaitSync) // Core in v3.2 and ES v3.0
 	INITOGLEXT(PFNGLDELETESYNCPROC, glDeleteSync) // Core in v3.2 and ES v3.0
 }
 
