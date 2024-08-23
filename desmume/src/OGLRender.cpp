@@ -4581,6 +4581,8 @@ Render3DError OpenGLRenderer_1_2::PostprocessFramebuffer()
 			
 			// Pass 3: Blended edge mark
 			glEnable(GL_BLEND);
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+			glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
 			glDisable(GL_STENCIL_TEST);
 			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -4595,6 +4597,8 @@ Render3DError OpenGLRenderer_1_2::PostprocessFramebuffer()
 			glUniform1i(OGLRef.uniformStateClearPolyID, this->_pendingRenderStates.clearPolyID);
 			glUniform1f(OGLRef.uniformStateClearDepth, this->_pendingRenderStates.clearDepth);
 			glEnable(GL_BLEND);
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+			glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
 			glDisable(GL_STENCIL_TEST);
 			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
