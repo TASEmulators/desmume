@@ -2468,7 +2468,16 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 {
 	if (PROCNUM == ARMCPU_ARM9)
 	{
-		switch (addr & 0x0FFFFFFC)
+		u32 addrMasked = addr & 0x0FFFFFFC;
+
+		if(nds.ensataEmulation)
+		{
+			if(addrMasked == eng_3D_CLIPMTX_RESULT) return true;
+			if(addrMasked == 0x04FFF000) return true;
+			if(addrMasked == 0x04FFF010) return true;
+		}
+
+		switch (addrMasked)
 		{
 			// Display Engine A
 			case REG_DISPA_DISPCNT:
