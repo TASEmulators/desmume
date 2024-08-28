@@ -652,7 +652,7 @@ Render3DError OpenGLESRenderer_3_0::CreateClearImageProgram(const char *vsCStrin
 	else
 	{
 		fsHeader << "#define OUT_COLOR out\n";
-		fsHeader << "#define OUT_FOG_ATTRIBUTES out\n";
+		fsHeader << "#define OUT_FOGATTR out\n";
 	}
 	fsHeader << "\n";
 

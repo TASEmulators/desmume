@@ -2290,7 +2290,7 @@ Render3DError OpenGLRenderer_3_2::CreateClearImageProgram(const char *vsCString,
 	else
 	{
 		fsHeader << "#define OUT_COLOR out\n";
-		fsHeader << "#define OUT_FOG_ATTRIBUTES out\n";
+		fsHeader << "#define OUT_FOGATTR out\n";
 	}
 	fsHeader << "\n";
 
