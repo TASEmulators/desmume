@@ -104,10 +104,17 @@ template<typename T, int DIGITS, bool PAD> void putdec(EMUFILE &os, T dec)
 
 std::string mass_replace(const std::string &source, const std::string &victim, const std::string &replacement);
 
+//converts utf-8 to utf16
 std::wstring mbstowcs(std::string str);
+
+//converts utf16 to utf-8
 std::string wcstombs(std::wstring str);
 
+//converts char* in current system locale to utf16
 std::wstring mbstowcs_locale(std::string str);
+
+//converts utf16 to char* in current system locale
+std::string wcstombs_locale(std::wstring str);
 
 
 #endif

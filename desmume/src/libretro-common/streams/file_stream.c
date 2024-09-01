@@ -64,6 +64,17 @@
 #include <streams/file_stream.h>
 #include <memmap.h>
 
+#if defined(_WIN32)
+wchar_t *utf8_to_wide(const char *utf8) {
+   int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+   wchar_t *wstr = (wchar_t *)malloc(wlen * sizeof(wchar_t));
+   if (wstr) {
+      MultiByteToWideChar(CP_UTF8, 0, utf8, -1, wstr, wlen);
+}
+   return wstr;
+}
+#endif
+
 struct RFILE
 {
    unsigned hints;
@@ -192,7 +203,15 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
+      #if defined(_WIN32)
+      wchar_t* w = utf8_to_wide(path);
+      wchar_t* wmode = utf8_to_wide(mode_str);
+      stream->fp = _wfopen(w, wmode);
+      free(w);
+      free(wmode);
+      #else
       stream->fp = fopen(path, mode_str);
+      #endif
       if (!stream->fp)
          goto error;
    }

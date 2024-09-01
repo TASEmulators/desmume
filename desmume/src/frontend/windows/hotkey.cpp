@@ -159,7 +159,7 @@ void HK_ToggleCheats(int, bool justPressed)
 	WritePrivateProfileBool("General", "cheatsDisable", CommonSettings.cheatsDisable, IniName);
 }
 
-static void DoScreenshot(const char* fname)
+static void DoScreenshot(const wchar_t* fname)
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 
@@ -169,13 +169,13 @@ static void DoScreenshot(const char* fname)
 		{
 			if(gpu_bpp == 15)
 			{
-				NDS_WritePNG_15bpp(dispInfo.customWidth, dispInfo.customHeight * 2, (const u16*)dispInfo.masterCustomBuffer, fname);
+				NDS_WritePNG_15bpp(dispInfo.customWidth, dispInfo.customHeight * 2, (const u16*)dispInfo.masterCustomBuffer, wcstombs(fname).c_str());
 			}
 			else
 			{
 				u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
 				ColorspaceConvertBuffer888xTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
-				NDS_WritePNG_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight*2, swapbuf, fname);
+				NDS_WritePNG_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight*2, swapbuf, wcstombs(fname).c_str());
 				free_aligned(swapbuf);
 			}
 		}
@@ -184,13 +184,13 @@ static void DoScreenshot(const char* fname)
 		{
 			if(gpu_bpp == 15)
 			{
-				NDS_WriteBMP_15bpp(dispInfo.customWidth, dispInfo.customHeight * 2, (const u16*)dispInfo.masterCustomBuffer, fname);
+				NDS_WriteBMP_15bpp(dispInfo.customWidth, dispInfo.customHeight * 2, (const u16*)dispInfo.masterCustomBuffer, wcstombs(fname).c_str());
 			}
 			else
 			{
 				u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
 				ColorspaceConvertBuffer888xTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
-				NDS_WriteBMP_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight *2, swapbuf, fname);
+				NDS_WriteBMP_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight *2, swapbuf, wcstombs(fname).c_str());
 				free_aligned(swapbuf);
 			}
 		}
@@ -226,7 +226,7 @@ void HK_QuickScreenShot(int param, bool justPressed)
 			break;
 	}
 
-	DoScreenshot(fname);
+	DoScreenshot(mbstowcs_locale(fname).c_str());
 }
 
 void HK_PrintScreen(int param, bool justPressed)
@@ -237,42 +237,45 @@ void HK_PrintScreen(int param, bool justPressed)
 	bool unpause = NDS_Pause(false);
 
 	char outFilename[MAX_PATH] = "";
+	wchar_t woutFilename[MAX_PATH] = L"";
 	
-	OPENFILENAME ofn;
+	OPENFILENAMEW ofn;
 	ZeroMemory(&ofn,sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = MainWindow->getHWnd();
-	ofn.lpstrFilter = "png file (*.png)\0*.png\0Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
-	ofn.lpstrTitle = "Print Screen Save As";
+	ofn.lpstrFilter = L"png file (*.png)\0*.png\0Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
+	ofn.lpstrTitle = L"Print Screen Save As";
 	ofn.nMaxFile = MAX_PATH;
-	ofn.lpstrFile = outFilename;
-	ofn.lpstrDefExt = "png";
+	ofn.lpstrFile = woutFilename;
+	ofn.lpstrDefExt = L"png";
 	ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
-	std::string dir = path.getpath(path.SCREENSHOTS);
+	std::wstring dir = mbstowcs(path.getpath(path.SCREENSHOTS));
 	ofn.lpstrInitialDir = dir.c_str();
 
 	path.formatname(outFilename);
 	if(path.imageformat() == PathInfo::PNG)
 	{
 		strcat(outFilename, ".png");
-		ofn.lpstrDefExt = "png";
+		ofn.lpstrDefExt = L"png";
 		ofn.nFilterIndex = 1;
 	}
 	else if(path.imageformat() == PathInfo::BMP)
 	{
 		strcat(outFilename, ".bmp");
-		ofn.lpstrDefExt = "bmp";
+		ofn.lpstrDefExt = L"bmp";
 		ofn.nFilterIndex = 2;
 	}
 
-	if(GetSaveFileName(&ofn))
-	{
-		DoScreenshot(outFilename);
+	wcscpy(woutFilename,mbstowcs(outFilename).c_str());
 
-		dir = Path::GetFileDirectoryPath(outFilename);
-		path.setpath(path.SCREENSHOTS, dir);
-		WritePrivateProfileStringW(LSECTION, SCREENSHOTKEY, mbstowcs(dir).c_str(), IniNameW);
+	if(GetSaveFileNameW(&ofn))
+	{
+		DoScreenshot(woutFilename);
+
+		dir = mbstowcs(Path::GetFileDirectoryPath(wcstombs(woutFilename)));
+		path.setpath(path.SCREENSHOTS, wcstombs(dir));
+		WritePrivateProfileStringW(LSECTION, SCREENSHOTKEY, dir.c_str(), IniNameW);
 	}
 
 	if(unpause) NDS_UnPause(false);
