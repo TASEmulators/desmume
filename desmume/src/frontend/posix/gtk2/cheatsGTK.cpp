@@ -129,11 +129,15 @@ static void cheat_list_modify_cheat(GtkCellRendererText * cell,
         if (column == COLUMN_LO || column == COLUMN_HI
             || column == COLUMN_SIZE) {
             u32 v = 0;
+            u32 data;
             switch (column) {
             case COLUMN_SIZE:
                 v = atoi(new_text);
-                cheats->update(v-1, cheat.code[0][0], cheat.code[0][1],
+                data = std::min(0xFFFFFFFF >> (24 - ((v-1) << 3)),
+                                    cheat.code[0][1]);
+                cheats->update(v-1, cheat.code[0][0], data,
                              cheat.description, cheat.enabled, ii);
+                gtk_list_store_set(GTK_LIST_STORE(model), &iter, COLUMN_LO, data, -1);
                 break;
             case COLUMN_HI:
 								sscanf(new_text, "%x", &v);
@@ -143,6 +147,7 @@ static void cheat_list_modify_cheat(GtkCellRendererText * cell,
                 break;
             case COLUMN_LO:
 								v = atoi(new_text);
+                v = std::min(0xFFFFFFFF >> (24 - (cheat.size << 3)), v);
                 cheats->update(cheat.size, cheat.code[0][0], v, cheat.description,
                              cheat.enabled, ii);
                 break;
@@ -303,7 +308,7 @@ static void cheatListEnd()
 static GtkListStore *cheat_list_populate()
 {
     GtkListStore *store = gtk_list_store_new (5, G_TYPE_BOOLEAN, 
-            G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_STRING);
+            G_TYPE_INT, G_TYPE_INT, G_TYPE_UINT, G_TYPE_STRING);
 
     CHEATS_LIST cheat;
     u32 chsize = cheats->getListSize();
