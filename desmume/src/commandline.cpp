@@ -612,23 +612,23 @@ void CommandLine::process_addonCommands()
 		slot1_Change(NDS_SLOT1_R4);
 	else if(slot1 == "RETAILNAND")
 		slot1_Change(NDS_SLOT1_RETAIL_NAND);
-		else if(slot1 == "RETAILMCROM")
-			slot1_Change(NDS_SLOT1_RETAIL_MCROM);
-			else if(slot1 == "RETAILDEBUG")
-				slot1_Change(NDS_SLOT1_RETAIL_DEBUG);
+	else if(slot1 == "RETAILMCROM")
+		slot1_Change(NDS_SLOT1_RETAIL_MCROM);
+	else if(slot1 == "RETAILDEBUG")
+		slot1_Change(NDS_SLOT1_RETAIL_DEBUG);
 
-        if (_rtc_day != -1 || _rtc_hour != -1) {
-                DateTime now = DateTime::get_Now();
-                int cur_day = now.get_DayOfWeek();
-                int cur_hour = now.get_Hour();
-                int cur_total = cur_day * 24 + cur_hour;
-                int day = (_rtc_day != -1 ? _rtc_day : cur_day);
-                int hour = (_rtc_hour != -1 ? _rtc_hour : cur_hour);
-                int total = day * 24 + hour;
-                int diff = total - cur_total;
-                if (diff < 0)
-                        diff += 24 * 7;
-                rtcHourOverride = diff;
-        }
+    if (_rtc_day != -1 || _rtc_hour != -1) {
+        DateTime now = DateTime::get_Now();
+        int cur_day = now.get_DayOfWeek();
+        int cur_hour = now.get_Hour();
+        int cur_total = cur_day * 24 + cur_hour;
+        int day = (_rtc_day != -1 ? _rtc_day : cur_day);
+        int hour = (_rtc_hour != -1 ? _rtc_hour : cur_hour);
+        int total = day * 24 + hour;
+        int diff = total - cur_total;
+        if (diff < 0)
+                diff += 24 * 7;
+        rtcHourOverride = diff;
+    }
 }
 
