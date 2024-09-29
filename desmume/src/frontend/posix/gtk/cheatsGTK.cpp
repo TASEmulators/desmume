@@ -31,6 +31,8 @@
 #define GPOINTER_TO_INT(p) ((gint)  (glong) (p))
 
 enum {
+    COLUMN_INDEX,
+    COLUMN_TYPE,
     COLUMN_ENABLED,
     COLUMN_SIZE,
     COLUMN_HI,
@@ -56,6 +58,8 @@ static struct {
     gint type;
     gint column;
 } columnTable[]={
+    { "Index", TYPE_STRING, COLUMN_INDEX},
+    { "Type", TYPE_STRING, COLUMN_TYPE},
     { "Enabled", TYPE_TOGGLE, COLUMN_ENABLED},
     { "Size", TYPE_COMBO, COLUMN_SIZE},
     { "Address", TYPE_STRING, COLUMN_HI},
@@ -89,7 +93,7 @@ enabled_toggled(GtkCellRendererToggle * cell,
     GtkTreePath *path1;
 
     path1 = gtk_tree_model_get_path (model, &iter);
-    ii = gtk_tree_path_get_indices (path)[0];
+    gtk_tree_model_get(model, &iter, COLUMN_INDEX, &ii, -1);
 
     cheats->copyItemFromIndex(ii, tempCheatItem);
 
@@ -120,7 +124,7 @@ static void cheat_list_modify_cheat(GtkCellRendererText * cell,
         CHEATS_LIST cheat;
 
         path1 = gtk_tree_model_get_path (model, &iter);
-        ii = gtk_tree_path_get_indices (path)[0];
+        gtk_tree_model_get(model, &iter, COLUMN_INDEX, &ii, -1);
 
 		cheats->copyItemFromIndex(ii, cheat);
 
@@ -172,13 +176,19 @@ static void cheat_list_remove_cheat(GtkWidget * widget, gpointer data)
 
     if (gtk_tree_selection_get_selected (selection, NULL, &iter)){
         u32 ii;
+        gboolean valid;
         GtkTreePath *path;
 
         path = gtk_tree_model_get_path (model, &iter);
-        ii = gtk_tree_path_get_indices (path)[0];
+        gtk_tree_model_get(model, &iter, COLUMN_INDEX, &ii, -1);
 
-        gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+        valid = gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
         cheats->remove(ii);
+        while (valid) {
+            gtk_list_store_set(GTK_LIST_STORE(model), &iter, COLUMN_INDEX, ii, -1);
+            ii++;
+            valid = gtk_tree_model_iter_next(model, &iter);
+        }
 
         gtk_tree_path_free (path);
     }
@@ -192,6 +202,8 @@ static void cheat_list_add_cheat(GtkWidget * widget, gpointer data)
     cheats->add(1, 0, 0, g_strdup(NEW_DESC), false);
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
+                       COLUMN_INDEX, cheats->getListSize() - 1,
+                       COLUMN_TYPE, 0,
                        COLUMN_ENABLED, FALSE,
                        COLUMN_SIZE, 1,
                        COLUMN_HI, 0,
@@ -307,8 +319,8 @@ static void cheatListEnd()
 
 static GtkListStore *cheat_list_populate()
 {
-    GtkListStore *store = gtk_list_store_new (5, G_TYPE_BOOLEAN, 
-            G_TYPE_INT, G_TYPE_INT, G_TYPE_UINT, G_TYPE_STRING);
+    GtkListStore *store = gtk_list_store_new (7, G_TYPE_INT, G_TYPE_INT,
+        G_TYPE_BOOLEAN, G_TYPE_INT, G_TYPE_INT, G_TYPE_UINT, G_TYPE_STRING);
 
     CHEATS_LIST cheat;
     u32 chsize = cheats->getListSize();
@@ -317,6 +329,8 @@ static GtkListStore *cheat_list_populate()
 		cheats->copyItemFromIndex(ii, cheat);
         gtk_list_store_append(store, &iter);
         gtk_list_store_set(store, &iter,
+                COLUMN_INDEX, ii,
+                COLUMN_TYPE, cheat.type,
                 COLUMN_ENABLED, cheat.enabled,
                 COLUMN_SIZE, cheat.size+1,
                 COLUMN_HI, cheat.code[0][0],
