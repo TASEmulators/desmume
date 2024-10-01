@@ -35,6 +35,7 @@ enum {
     COLUMN_TYPE,
     COLUMN_ENABLED,
     COLUMN_SIZE,
+    COLUMN_AR,
     COLUMN_HI,
     COLUMN_LO,
     COLUMN_DESC,
@@ -62,6 +63,7 @@ static struct {
     { "Type", TYPE_STRING, COLUMN_TYPE},
     { "Enabled", TYPE_TOGGLE, COLUMN_ENABLED},
     { "Size", TYPE_COMBO, COLUMN_SIZE},
+    { "AR Code", TYPE_STRING, COLUMN_AR},
     { "Address", TYPE_STRING, COLUMN_HI},
     { "Value", TYPE_STRING, COLUMN_LO},
     { "Description", TYPE_STRING, COLUMN_DESC}
@@ -79,28 +81,29 @@ enabled_toggled(GtkCellRendererToggle * cell,
                 gchar * path_str, gpointer data)
 {
     GtkTreeModel *model = (GtkTreeModel *) data;
-    GtkTreeIter iter;
+    GtkTreeIter iter, f_iter;
     GtkTreePath *path = gtk_tree_path_new_from_string(path_str);
     gboolean guiEnabled;
 
-    gtk_tree_model_get_iter(model, &iter, path);
-    gtk_tree_model_get(model, &iter, COLUMN_ENABLED, &guiEnabled, -1);
+    gtk_tree_model_get_iter(model, &f_iter, path);
+    gtk_tree_model_filter_convert_iter_to_child_iter(GTK_TREE_MODEL_FILTER(model), &iter, &f_iter);
+    GtkTreeModel *store = gtk_tree_model_filter_get_model(GTK_TREE_MODEL_FILTER(model));
+
+    gtk_tree_model_get(store, &iter, COLUMN_ENABLED, &guiEnabled, -1);
 
     guiEnabled ^= 1;
     const bool cheatEnabled = (guiEnabled) ? true : false;
     CHEATS_LIST tempCheatItem;
     u32 ii;
-    GtkTreePath *path1;
 
-    path1 = gtk_tree_model_get_path (model, &iter);
-    gtk_tree_model_get(model, &iter, COLUMN_INDEX, &ii, -1);
+    gtk_tree_model_get(store, &iter, COLUMN_INDEX, &ii, -1);
 
     cheats->copyItemFromIndex(ii, tempCheatItem);
 
     cheats->update(tempCheatItem.size, tempCheatItem.code[0][0], tempCheatItem.code[0][1], tempCheatItem.description,
                  cheatEnabled, ii);
 
-    gtk_list_store_set(GTK_LIST_STORE(model), &iter, COLUMN_ENABLED, guiEnabled, -1);
+    gtk_list_store_set(GTK_LIST_STORE(store), &iter, COLUMN_ENABLED, guiEnabled, -1);
 
     gtk_tree_path_free(path);
 }
@@ -111,24 +114,22 @@ static void cheat_list_modify_cheat(GtkCellRendererText * cell,
 {
     GtkTreeModel *model = (GtkTreeModel *) data;
     GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
-    GtkTreeIter iter;
+    GtkTreeIter iter, f_iter;
 
     gint column =
         GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), "column"));
 
-    gtk_tree_model_get_iter(model, &iter, path);
+    gtk_tree_model_get_iter(model, &f_iter, path);
+    gtk_tree_model_filter_convert_iter_to_child_iter(GTK_TREE_MODEL_FILTER(model), &iter, &f_iter);
+    GtkTreeModel *store = gtk_tree_model_filter_get_model(GTK_TREE_MODEL_FILTER(model));
 
     {
         u32 ii;
-        GtkTreePath *path1;
         CHEATS_LIST cheat;
 
-        path1 = gtk_tree_model_get_path (model, &iter);
-        gtk_tree_model_get(model, &iter, COLUMN_INDEX, &ii, -1);
+        gtk_tree_model_get(store, &iter, COLUMN_INDEX, &ii, -1);
 
 		cheats->copyItemFromIndex(ii, cheat);
-
-        gtk_tree_path_free (path1);
 
         if (column == COLUMN_LO || column == COLUMN_HI
             || column == COLUMN_SIZE) {
@@ -141,7 +142,7 @@ static void cheat_list_modify_cheat(GtkCellRendererText * cell,
                                     cheat.code[0][1]);
                 cheats->update(v-1, cheat.code[0][0], data,
                              cheat.description, cheat.enabled, ii);
-                gtk_list_store_set(GTK_LIST_STORE(model), &iter, COLUMN_LO, data, -1);
+                gtk_list_store_set(GTK_LIST_STORE(store), &iter, COLUMN_LO, data, -1);
                 break;
             case COLUMN_HI:
 								sscanf(new_text, "%x", &v);
@@ -156,11 +157,11 @@ static void cheat_list_modify_cheat(GtkCellRendererText * cell,
                              cheat.enabled, ii);
                 break;
             }
-            gtk_list_store_set(GTK_LIST_STORE(model), &iter, column, v, -1);
+            gtk_list_store_set(GTK_LIST_STORE(store), &iter, column, v, -1);
         } else if (column == COLUMN_DESC){
             cheats->update(cheat.size, cheat.code[0][0], cheat.code[0][1],
                          g_strdup(new_text), cheat.enabled, ii);
-            gtk_list_store_set(GTK_LIST_STORE(model), &iter, column,
+            gtk_list_store_set(GTK_LIST_STORE(store), &iter, column,
                                g_strdup(new_text), -1);
         }
 
@@ -172,22 +173,25 @@ static void cheat_list_remove_cheat(GtkWidget * widget, gpointer data)
     GtkTreeView *tree = (GtkTreeView *) data;
     GtkTreeSelection *selection = gtk_tree_view_get_selection (tree);
     GtkTreeModel *model = gtk_tree_view_get_model (tree);
-    GtkTreeIter iter;
+    GtkTreeIter iter, f_iter;
 
-    if (gtk_tree_selection_get_selected (selection, NULL, &iter)){
+    if (gtk_tree_selection_get_selected (selection, NULL, &f_iter)){
         u32 ii;
         gboolean valid;
         GtkTreePath *path;
 
-        path = gtk_tree_model_get_path (model, &iter);
-        gtk_tree_model_get(model, &iter, COLUMN_INDEX, &ii, -1);
+        path = gtk_tree_model_get_path (model, &f_iter);
+        gtk_tree_model_filter_convert_iter_to_child_iter(GTK_TREE_MODEL_FILTER(model), &iter, &f_iter);
+        GtkTreeModel *store = gtk_tree_model_filter_get_model(GTK_TREE_MODEL_FILTER(model));
 
-        valid = gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+        gtk_tree_model_get(store, &iter, COLUMN_INDEX, &ii, -1);
+
+        valid = gtk_list_store_remove(GTK_LIST_STORE(store), &iter);
         cheats->remove(ii);
         while (valid) {
-            gtk_list_store_set(GTK_LIST_STORE(model), &iter, COLUMN_INDEX, ii, -1);
+            gtk_list_store_set(GTK_LIST_STORE(store), &iter, COLUMN_INDEX, ii, -1);
             ii++;
-            valid = gtk_tree_model_iter_next(model, &iter);
+            valid = gtk_tree_model_iter_next(store, &iter);
         }
 
         gtk_tree_path_free (path);
@@ -197,6 +201,7 @@ static void cheat_list_remove_cheat(GtkWidget * widget, gpointer data)
 static void cheat_list_add_cheat(GtkWidget * widget, gpointer data)
 {
 #define NEW_DESC "New cheat"
+#define NEW_AR "00000000 00000000"
     GtkListStore *store = (GtkListStore *) data;
     GtkTreeIter iter;
     cheats->add(1, 0, 0, g_strdup(NEW_DESC), false);
@@ -206,10 +211,33 @@ static void cheat_list_add_cheat(GtkWidget * widget, gpointer data)
                        COLUMN_TYPE, 0,
                        COLUMN_ENABLED, FALSE,
                        COLUMN_SIZE, 1,
+                       COLUMN_AR, NEW_AR,
                        COLUMN_HI, 0,
                        COLUMN_LO, 0, COLUMN_DESC, NEW_DESC, -1);
 
 #undef NEW_DESC
+#undef NEW_AR
+}
+
+static void cheat_list_add_cheat_AR(GtkWidget * widget, gpointer data)
+{
+#define NEW_DESC "New cheat"
+#define NEW_AR "00000000 00000000"
+    GtkListStore *store = (GtkListStore *) data;
+    GtkTreeIter iter;
+    cheats->add_AR("00000000 00000000", g_strdup(NEW_DESC), false);
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter,
+                       COLUMN_INDEX, cheats->getListSize() - 1,
+                       COLUMN_TYPE, 1,
+                       COLUMN_ENABLED, FALSE,
+                       COLUMN_SIZE, 1,
+                       COLUMN_AR, NEW_AR,
+                       COLUMN_HI, 0,
+                       COLUMN_LO, 0, COLUMN_DESC, NEW_DESC, -1);
+
+#undef NEW_DESC
+#undef NEW_AR
 }
 
 static GtkTreeModel * create_numbers_model (void)
@@ -275,7 +303,7 @@ static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore * store)
             renderer = gtk_cell_renderer_text_new();
             g_object_set(renderer, "editable", TRUE, NULL);
             g_signal_connect(renderer, "edited",
-                             G_CALLBACK(cheat_list_modify_cheat), store);
+                             G_CALLBACK(cheat_list_modify_cheat), model);
             attrib = "text";
             break;
         case TYPE_COMBO:
@@ -289,7 +317,7 @@ static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore * store)
                          NULL);
             g_object_unref(size_model);
             g_signal_connect(renderer, "edited",
-                             G_CALLBACK(cheat_list_modify_cheat), store);
+                             G_CALLBACK(cheat_list_modify_cheat), model);
             attrib = "text";
             break;
         }
@@ -319,8 +347,8 @@ static void cheatListEnd()
 
 static GtkListStore *cheat_list_populate()
 {
-    GtkListStore *store = gtk_list_store_new (7, G_TYPE_INT, G_TYPE_INT,
-        G_TYPE_BOOLEAN, G_TYPE_INT, G_TYPE_INT, G_TYPE_UINT, G_TYPE_STRING);
+    GtkListStore *store = gtk_list_store_new (8, G_TYPE_INT, G_TYPE_INT,
+        G_TYPE_BOOLEAN, G_TYPE_INT, G_TYPE_STRING, G_TYPE_INT, G_TYPE_UINT, G_TYPE_STRING);
 
     CHEATS_LIST cheat;
     u32 chsize = cheats->getListSize();
@@ -333,6 +361,7 @@ static GtkListStore *cheat_list_populate()
                 COLUMN_TYPE, cheat.type,
                 COLUMN_ENABLED, cheat.enabled,
                 COLUMN_SIZE, cheat.size+1,
+                COLUMN_AR, g_strdup("00000000 00000000"),
                 COLUMN_HI, cheat.code[0][0],
                 COLUMN_LO, cheat.code[0][1],
                 COLUMN_DESC, cheat.description,
@@ -341,34 +370,70 @@ static GtkListStore *cheat_list_populate()
     return store;
 }
 
-static GtkWidget *cheat_list_create_ui()
+static gboolean cheat_list_is_raw(GtkTreeModel * model, GtkTreeIter * iter, gpointer data)
+{
+    gint type = CHEAT_TYPE_EMPTY;
+    gtk_tree_model_get(model, iter, COLUMN_TYPE, &type, -1);
+    return type == CHEAT_TYPE_INTERNAL;
+}
+
+static gboolean cheat_list_is_ar(GtkTreeModel * model, GtkTreeIter * iter, gpointer data)
+{
+    gint type = CHEAT_TYPE_EMPTY;
+    gtk_tree_model_get(model, iter, COLUMN_TYPE, &type, -1);
+    return type == CHEAT_TYPE_AR;
+}
+
+static void cheat_list_create_ui()
 {
     GtkListStore *store = cheat_list_populate();
-    GtkWidget *tree = gtk_tree_view_new_with_model (GTK_TREE_MODEL (store));
+    GtkTreeModel *filter_raw = gtk_tree_model_filter_new(GTK_TREE_MODEL (store), NULL);
+    gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(filter_raw),
+                                            cheat_list_is_raw, NULL, NULL);
+    GtkWidget *tree_raw = gtk_tree_view_new_with_model (filter_raw);
+
     GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
     GtkWidget *hbbox = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
     GtkWidget *button;
   
-    gtk_container_add(GTK_CONTAINER(box), GTK_WIDGET(tree));
+    gtk_container_add(GTK_CONTAINER(box), GTK_WIDGET(tree_raw));
     gtk_container_add(GTK_CONTAINER(box), GTK_WIDGET(hbbox));
     gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(box));
 
-    button = gtk_button_new_with_label("add cheat");
+    button = gtk_button_new_with_label("Add internal cheat");
     g_signal_connect (button, "clicked", G_CALLBACK (cheat_list_add_cheat), store);
     gtk_container_add(GTK_CONTAINER(hbbox),button);
 
-    button = gtk_button_new_with_label("Remove cheat");
-    g_signal_connect (button, "clicked", G_CALLBACK (cheat_list_remove_cheat), tree);
+    button = gtk_button_new_with_label("Remove internal cheat");
+    g_signal_connect (button, "clicked", G_CALLBACK (cheat_list_remove_cheat), GTK_TREE_VIEW(tree_raw));
     gtk_container_add(GTK_CONTAINER(hbbox),button);
 
-    cheat_list_add_columns(GTK_TREE_VIEW(tree), store);
-    
+    GtkTreeModel *filter_ar = gtk_tree_model_filter_new(GTK_TREE_MODEL (store), NULL);
+    gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(filter_ar),
+                                            cheat_list_is_ar, NULL, NULL);
+    GtkWidget *tree_ar = gtk_tree_view_new_with_model (filter_ar);
+
+    hbbox = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_container_add(GTK_CONTAINER(box), GTK_WIDGET(tree_ar));
+    gtk_container_add(GTK_CONTAINER(box), GTK_WIDGET(hbbox));
+
+    button = gtk_button_new_with_label("Add Action Replay cheat");
+    gtk_container_add(GTK_CONTAINER(hbbox),button);
+    g_signal_connect (button, "clicked", G_CALLBACK (cheat_list_add_cheat_ar), store);
+
+    button = gtk_button_new_with_label("Remove Action Replay cheat");
+    g_signal_connect (button, "clicked", G_CALLBACK (cheat_list_remove_cheat), GTK_TREE_VIEW(tree_ar));
+    gtk_container_add(GTK_CONTAINER(hbbox),button);
+
+    cheat_list_add_columns(GTK_TREE_VIEW(tree_raw), store);
+    cheat_list_add_columns(GTK_TREE_VIEW(tree_ar), store);
+
     /* Setup the selection handler */
     GtkTreeSelection *select;
-    select = gtk_tree_view_get_selection (GTK_TREE_VIEW (tree));
+    select = gtk_tree_view_get_selection (GTK_TREE_VIEW (tree_raw));
     gtk_tree_selection_set_mode (select, GTK_SELECTION_SINGLE);
-
-    return tree;
+    select = gtk_tree_view_get_selection (GTK_TREE_VIEW (tree_ar));
+    gtk_tree_selection_set_mode (select, GTK_SELECTION_SINGLE);
 }
 
 void CheatList(GSimpleAction *action, GVariant *parameter, gpointer user_data)
