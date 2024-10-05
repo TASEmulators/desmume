@@ -24,6 +24,6 @@ void desmume_config_dispose(GKeyFile *);
 gboolean desmume_config_update_keys(GKeyFile*);
 gboolean desmume_config_update_joykeys(GKeyFile*);
 gboolean desmume_config_read_keys(GKeyFile*);
-gboolean desmume_config_read_joykeys(GKeyFile*);
+void desmume_config_read_joykeys(GKeyFile*);
 
 #endif
