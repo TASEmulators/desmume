@@ -24,6 +24,7 @@
 #include <gtk/gtk.h>
 #include "cheatsGTK.h"
 #include "cheatSystem.h"
+#include "utilsGTK.h"
 #include "main.h"
 #include "desmume.h"
 
@@ -98,10 +99,7 @@ enabled_toggled(GtkCellRendererToggle * cell,
 
     gtk_tree_model_get(store, &iter, COLUMN_INDEX, &ii, -1);
 
-    cheats->copyItemFromIndex(ii, tempCheatItem);
-
-    cheats->update(tempCheatItem.size, tempCheatItem.code[0][0], tempCheatItem.code[0][1], tempCheatItem.description,
-                 cheatEnabled, ii);
+    cheats->toggle(cheatEnabled, ii);
 
     gtk_list_store_set(GTK_LIST_STORE(store), &iter, COLUMN_ENABLED, guiEnabled, -1);
 
@@ -159,10 +157,14 @@ static void cheat_list_modify_cheat(GtkCellRendererText * cell,
             }
             gtk_list_store_set(GTK_LIST_STORE(store), &iter, column, v, -1);
         } else if (column == COLUMN_DESC){
-            cheats->update(cheat.size, cheat.code[0][0], cheat.code[0][1],
-                         g_strdup(new_text), cheat.enabled, ii);
+            cheats->setDescription(g_strdup(new_text), ii);
             gtk_list_store_set(GTK_LIST_STORE(store), &iter, column,
                                g_strdup(new_text), -1);
+        } else if (column == COLUMN_AR) {
+            bool isValid = cheats->update_AR(g_strdup(new_text), cheat.description, cheat.enabled, ii);
+            if (isValid) {
+                gtk_list_store_set(GTK_LIST_STORE(store), &iter, column, g_strdup(new_text), -1);
+            }
         }
 
     }
@@ -225,7 +227,7 @@ static void cheat_list_add_cheat_AR(GtkWidget * widget, gpointer data)
 #define NEW_AR "00000000 00000000"
     GtkListStore *store = (GtkListStore *) data;
     GtkTreeIter iter;
-    cheats->add_AR("00000000 00000000", g_strdup(NEW_DESC), false);
+    cheats->add_AR(g_strdup(NEW_AR), g_strdup(NEW_DESC), false);
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
                        COLUMN_INDEX, cheats->getListSize() - 1,
@@ -282,7 +284,7 @@ static void cheat_list_address_to_hex(GtkTreeViewColumn * column,
 		g_object_set(renderer, "text", hex_addr, NULL);
 }
 
-static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore * store)
+static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore * store, u8 cheat_type)
 {
 
     GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
@@ -300,7 +302,10 @@ static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore * store)
             attrib = "active";
             break;
         case TYPE_STRING:
-            renderer = gtk_cell_renderer_text_new();
+            if (cheat_type == CHEAT_TYPE_INTERNAL)
+                renderer = gtk_cell_renderer_text_new();
+            else if (cheat_type == CHEAT_TYPE_AR)
+                renderer = desmume_cell_renderer_ndtext_new();
             g_object_set(renderer, "editable", TRUE, NULL);
             g_signal_connect(renderer, "edited",
                              G_CALLBACK(cheat_list_modify_cheat), model);
@@ -321,19 +326,25 @@ static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore * store)
             attrib = "text";
             break;
         }
+        gint c = columnTable[ii].column;
         column =
             gtk_tree_view_column_new_with_attributes(columnTable[ii].
                                                      caption, renderer,
-                                                     attrib, columnTable[ii].column,
+                                                     attrib, c,
                                                      NULL);
-        if (columnTable[ii].column == COLUMN_HI) {
-						gtk_tree_view_column_set_cell_data_func(column, renderer,
-																										cheat_list_address_to_hex,
-																										NULL, NULL);
-				}
-        g_object_set_data(G_OBJECT(renderer), "column",
-                          GINT_TO_POINTER(columnTable[ii].column));
-        gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column);
+        if (c == COLUMN_HI && cheat_type == CHEAT_TYPE_INTERNAL) {
+            gtk_tree_view_column_set_cell_data_func(column, renderer,
+                cheat_list_address_to_hex,
+                NULL, NULL);
+        }
+        if (c == COLUMN_ENABLED || c == COLUMN_DESC ||
+            ((c == COLUMN_SIZE || c == COLUMN_HI || c == COLUMN_LO) &&
+                cheat_type == CHEAT_TYPE_INTERNAL) ||
+            (c == COLUMN_AR && cheat_type == CHEAT_TYPE_AR)) {
+            g_object_set_data(G_OBJECT(renderer), "column",
+                              GINT_TO_POINTER(columnTable[ii].column));
+            gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column);
+        }
     }
 
 }
@@ -356,16 +367,35 @@ static GtkListStore *cheat_list_populate()
         GtkTreeIter iter;
 		cheats->copyItemFromIndex(ii, cheat);
         gtk_list_store_append(store, &iter);
-        gtk_list_store_set(store, &iter,
-                COLUMN_INDEX, ii,
-                COLUMN_TYPE, cheat.type,
-                COLUMN_ENABLED, cheat.enabled,
-                COLUMN_SIZE, cheat.size+1,
-                COLUMN_AR, g_strdup("00000000 00000000"),
-                COLUMN_HI, cheat.code[0][0],
-                COLUMN_LO, cheat.code[0][1],
-                COLUMN_DESC, cheat.description,
-                -1);
+        if (cheat.type == CHEAT_TYPE_INTERNAL) {
+            gtk_list_store_set(store, &iter,
+                    COLUMN_INDEX, ii,
+                    COLUMN_TYPE, cheat.type,
+                    COLUMN_ENABLED, cheat.enabled,
+                    COLUMN_SIZE, cheat.size+1,
+                    COLUMN_HI, cheat.code[0][0],
+                    COLUMN_LO, cheat.code[0][1],
+                    COLUMN_DESC, cheat.description,
+                    -1);
+        } else if (cheat.type == CHEAT_TYPE_AR) {
+            u32 cheat_len = cheat.num;
+            char *cheat_str = (char *) malloc (18*cheat_len);
+            cheat_str[0] = '\0';
+
+            for (u32 jj = 0; jj < cheat_len; jj++) {
+                gchar *tmp = g_strdup_printf("%08X %08X\n", cheat.code[jj][0], cheat.code[jj][1]);
+                g_strlcat(cheat_str, tmp, 18*cheat_len);
+            }
+            cheat_str[18*cheat_len - 1] = '\0'; // Remove the trailing '\n'
+
+            gtk_list_store_set(store, &iter,
+                    COLUMN_INDEX, ii,
+                    COLUMN_TYPE, cheat.type,
+                    COLUMN_ENABLED, cheat.enabled,
+                    COLUMN_AR, g_strdup(cheat_str),
+                    COLUMN_DESC, cheat.description,
+                    -1);
+        }
     }
     return store;
 }
@@ -419,14 +449,14 @@ static void cheat_list_create_ui()
 
     button = gtk_button_new_with_label("Add Action Replay cheat");
     gtk_container_add(GTK_CONTAINER(hbbox),button);
-    g_signal_connect (button, "clicked", G_CALLBACK (cheat_list_add_cheat_ar), store);
+    g_signal_connect (button, "clicked", G_CALLBACK (cheat_list_add_cheat_AR), store);
 
     button = gtk_button_new_with_label("Remove Action Replay cheat");
     g_signal_connect (button, "clicked", G_CALLBACK (cheat_list_remove_cheat), GTK_TREE_VIEW(tree_ar));
     gtk_container_add(GTK_CONTAINER(hbbox),button);
 
-    cheat_list_add_columns(GTK_TREE_VIEW(tree_raw), store);
-    cheat_list_add_columns(GTK_TREE_VIEW(tree_ar), store);
+    cheat_list_add_columns(GTK_TREE_VIEW(tree_raw), store, CHEAT_TYPE_INTERNAL);
+    cheat_list_add_columns(GTK_TREE_VIEW(tree_ar), store, CHEAT_TYPE_AR);
 
     /* Setup the selection handler */
     GtkTreeSelection *select;

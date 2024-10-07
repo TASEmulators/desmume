@@ -21,6 +21,7 @@ desmume_src = [
   'tools/ioregsView.cpp',
   'cheatsGTK.cpp',
   'main.cpp',
+  'utilsGTK.cpp',
   gresource,
 ]
 
