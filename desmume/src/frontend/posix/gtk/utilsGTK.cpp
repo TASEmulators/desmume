@@ -1,19 +1,22 @@
-/*
-	Copyright (C) 2009-2024 DeSmuME team
-
-	This file is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 2 of the License, or
-	(at your option) any later version.
-
-	This file is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
-*/
+/* utilsGTK.cpp - this file is part of DeSmuME
+ *
+ * Copyright (C) 2024 DeSmuME Team
+ *
+ * This file is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ */
 
 #include "utilsGTK.h"
 
@@ -30,34 +33,42 @@
     inserted by holding Shift, Ctrl, or Alt along with pressing Enter.
 */
 
-typedef struct {
+typedef struct
+{
     GtkWidget *scroll;
     GtkWidget *editor;
     gboolean editing_canceled;
 } DesmumeEntryNdPrivate;
 
-typedef enum {
+typedef enum
+{
     PROP_EDITING_CANCELED = 1,
     ENTRY_ND_NUM_PROP,
 } DesmumeEntryNdProperty;
 
-static GParamSpec *entry_nd_properties[ENTRY_ND_NUM_PROP] = { NULL, };
+static GParamSpec *entry_nd_properties[ENTRY_ND_NUM_PROP] = {
+    NULL,
+};
 
 // Declared here to statisfy the type creation macro, but defined further down.
 static void desmume_entry_nd_editable_init(GtkEditableInterface *iface);
 static void desmume_entry_nd_cell_editable_init(GtkCellEditableIface *iface);
 
-G_DEFINE_TYPE_WITH_CODE (DesmumeEntryNd, desmume_entry_nd, GTK_TYPE_EVENT_BOX,
-    G_ADD_PRIVATE (DesmumeEntryNd)
-    G_IMPLEMENT_INTERFACE (GTK_TYPE_EDITABLE, desmume_entry_nd_editable_init)
-    G_IMPLEMENT_INTERFACE (GTK_TYPE_CELL_EDITABLE, desmume_entry_nd_cell_editable_init))
+G_DEFINE_TYPE_WITH_CODE(
+    DesmumeEntryNd, desmume_entry_nd, GTK_TYPE_EVENT_BOX,
+    G_ADD_PRIVATE(DesmumeEntryNd)
+        G_IMPLEMENT_INTERFACE(GTK_TYPE_EDITABLE, desmume_entry_nd_editable_init)
+            G_IMPLEMENT_INTERFACE(GTK_TYPE_CELL_EDITABLE,
+                                  desmume_entry_nd_cell_editable_init))
 
 static void desmume_entry_nd_set_property(GObject *object, guint property_id,
-                                            const GValue *value, GParamSpec *pspec)
+                                          const GValue *value,
+                                          GParamSpec *pspec)
 {
-    DesmumeEntryNd *entry_nd = DESMUME_ENTRY_ND (object);
-    DesmumeEntryNdPrivate *priv;
-    priv = (DesmumeEntryNdPrivate *)desmume_entry_nd_get_instance_private(entry_nd);
+    DesmumeEntryNd *entry_nd = DESMUME_ENTRY_ND(object);
+    DesmumeEntryNdPrivate *priv =
+        (DesmumeEntryNdPrivate *) desmume_entry_nd_get_instance_private(
+            entry_nd);
 
     switch ((DesmumeEntryNdProperty) property_id) {
     case PROP_EDITING_CANCELED:
@@ -73,11 +84,12 @@ static void desmume_entry_nd_set_property(GObject *object, guint property_id,
 }
 
 static void desmume_entry_nd_get_property(GObject *object, guint property_id,
-                                            GValue *value, GParamSpec *pspec)
+                                          GValue *value, GParamSpec *pspec)
 {
-    DesmumeEntryNd *entry_nd = DESMUME_ENTRY_ND (object);
-    DesmumeEntryNdPrivate *priv;
-    priv = (DesmumeEntryNdPrivate *)desmume_entry_nd_get_instance_private(entry_nd);
+    DesmumeEntryNd *entry_nd = DESMUME_ENTRY_ND(object);
+    DesmumeEntryNdPrivate *priv =
+        (DesmumeEntryNdPrivate *) desmume_entry_nd_get_instance_private(
+            entry_nd);
 
     switch ((DesmumeEntryNdProperty) property_id) {
     case PROP_EDITING_CANCELED:
@@ -89,11 +101,13 @@ static void desmume_entry_nd_get_property(GObject *object, guint property_id,
     }
 }
 
-static gboolean desmume_entry_nd_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
+static gboolean desmume_entry_nd_key_press(GtkWidget *widget,
+                                           GdkEventKey *event, gpointer data)
 {
     DesmumeEntryNd *entry_nd = (DesmumeEntryNd *) data;
-    DesmumeEntryNdPrivate *priv;
-    priv = (DesmumeEntryNdPrivate *)desmume_entry_nd_get_instance_private(entry_nd);
+    DesmumeEntryNdPrivate *priv =
+        (DesmumeEntryNdPrivate *) desmume_entry_nd_get_instance_private(
+            entry_nd);
 
     // Allow the editor to decide how to handle the key event, except key events
     // which its parent TextView needs to handle itself
@@ -101,100 +115,107 @@ static gboolean desmume_entry_nd_key_press(GtkWidget *widget, GdkEventKey *event
     guint kv = event->keyval;
     guint mod = event->state;
 
-    if ((kv == GDK_KEY_Return || kv == GDK_KEY_KP_Enter || kv == GDK_KEY_ISO_Enter) &&
+    if ((kv == GDK_KEY_Return || kv == GDK_KEY_KP_Enter ||
+         kv == GDK_KEY_ISO_Enter) &&
         !(mod & (GDK_CONTROL_MASK | GDK_SHIFT_MASK | GDK_MOD1_MASK))) {
         // Enter + Ctrl, Shift, or Mod1 (commonly Alt), enter a newline in the
         // editor, but otherwise act as confirm for the TextView
         priv->editing_canceled = FALSE;
         doPropagate = GDK_EVENT_STOP;
         gtk_cell_editable_editing_done(GTK_CELL_EDITABLE(entry_nd));
-        // TODO: Why does GTK have to be so annoying with a critical error on valid data here? :(
-        //gtk_cell_editable_remove_widget(GTK_CELL_EDITABLE(entry_nd));
     } else if (kv == GDK_KEY_Escape) {
         priv->editing_canceled = TRUE;
         doPropagate = GDK_EVENT_STOP;
-        // gtk_cell_editable_editing_done(GTK_CELL_EDITABLE(entry_nd));
-        // gtk_cell_editable_remove_widget(GTK_CELL_EDITABLE(entry_nd));
     }
     return doPropagate;
 }
 
-static gboolean desmume_entry_nd_button_press(GtkWidget *widget, GdkEventButton *event, gpointer data)
+static gboolean desmume_entry_nd_button_press(GtkWidget *widget,
+                                              GdkEventButton *event,
+                                              gpointer data)
 {
     GtkTextView *editor = (GtkTextView *) widget;
     GtkWidgetClass *klass = GTK_WIDGET_GET_CLASS(editor);
     klass->button_press_event(widget, event);
-    // We have explicitly how to handle mouse button events, so do not propagate.
+    // We have explicitly described how to handle mouse button events, so do not
+	// propagate.
     return GDK_EVENT_STOP;
 }
 
 static void desmume_entry_nd_class_init(DesmumeEntryNdClass *klass)
 {
-    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+    GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->set_property = desmume_entry_nd_set_property;
     object_class->get_property = desmume_entry_nd_get_property;
 
     entry_nd_properties[PROP_EDITING_CANCELED] =
         g_param_spec_boolean("editing-canceled", "Editing Canceled",
-                "The edit was canceled", FALSE, G_PARAM_READWRITE);
-    g_object_class_install_properties (object_class, ENTRY_ND_NUM_PROP, entry_nd_properties);
+                             "The edit was canceled", FALSE, G_PARAM_READWRITE);
+    g_object_class_install_properties(object_class, ENTRY_ND_NUM_PROP,
+                                      entry_nd_properties);
 }
 
 static void desmume_entry_nd_init(DesmumeEntryNd *entry_nd)
 {
-    DesmumeEntryNdPrivate *priv;
-    priv = (DesmumeEntryNdPrivate *)desmume_entry_nd_get_instance_private(entry_nd);
+    DesmumeEntryNdPrivate *priv =
+        (DesmumeEntryNdPrivate *) desmume_entry_nd_get_instance_private(
+            entry_nd);
 
     priv->scroll = gtk_scrolled_window_new(NULL, NULL);
     priv->editor = gtk_text_view_new();
     gtk_text_view_set_editable(GTK_TEXT_VIEW(priv->editor), TRUE);
     gtk_text_view_set_accepts_tab(GTK_TEXT_VIEW(priv->editor), FALSE);
 
-    g_signal_connect (priv->editor, "key-press-event",
-                        G_CALLBACK (desmume_entry_nd_key_press), entry_nd);
-    g_signal_connect (priv->editor, "button-press-event",
-                        G_CALLBACK (desmume_entry_nd_button_press), NULL);
+    g_signal_connect(priv->editor, "key-press-event",
+                     G_CALLBACK(desmume_entry_nd_key_press), entry_nd);
+    g_signal_connect(priv->editor, "button-press-event",
+                     G_CALLBACK(desmume_entry_nd_button_press), NULL);
 
     gtk_container_add(GTK_CONTAINER(priv->scroll), priv->editor);
     gtk_container_add(GTK_CONTAINER(entry_nd), priv->scroll);
 }
 
-static void desmume_entry_nd_start_editing(GtkCellEditable *cell_editable, GdkEvent *event)
+static void desmume_entry_nd_start_editing(GtkCellEditable *cell_editable,
+                                           GdkEvent *event)
 {
     DesmumeEntryNd *entry_nd = DESMUME_ENTRY_ND(cell_editable);
-    DesmumeEntryNdPrivate *priv;
-    priv = (DesmumeEntryNdPrivate *)desmume_entry_nd_get_instance_private(entry_nd);
+    DesmumeEntryNdPrivate *priv =
+        (DesmumeEntryNdPrivate *) desmume_entry_nd_get_instance_private(
+            entry_nd);
 
     gtk_widget_show_all(GTK_WIDGET(entry_nd));
     gtk_widget_grab_focus(GTK_WIDGET(priv->editor));
 
     // Highlight the entirety of the editor's text
-    GtkTextBuffer *buf = gtk_text_view_get_buffer (GTK_TEXT_VIEW(priv->editor));
+    GtkTextBuffer *buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(priv->editor));
     GtkTextIter start, end;
     gtk_text_buffer_get_bounds(buf, &start, &end);
     gtk_text_buffer_select_range(buf, &start, &end);
 }
 
-static gchar* desmume_entry_nd_get_text(DesmumeEntryNd *entry_nd)
+static gchar *desmume_entry_nd_get_text(DesmumeEntryNd *entry_nd)
 {
-    DesmumeEntryNdPrivate *priv;
-    priv = (DesmumeEntryNdPrivate *)desmume_entry_nd_get_instance_private(entry_nd);
-    GtkTextBuffer *buf = gtk_text_view_get_buffer (GTK_TEXT_VIEW(priv->editor));
+    DesmumeEntryNdPrivate *priv =
+        (DesmumeEntryNdPrivate *) desmume_entry_nd_get_instance_private(
+            entry_nd);
+    GtkTextBuffer *buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(priv->editor));
     GtkTextIter start, end;
     gtk_text_buffer_get_bounds(buf, &start, &end);
 
-    return gtk_text_buffer_get_text (buf, &start, &end, TRUE);
+    return gtk_text_buffer_get_text(buf, &start, &end, TRUE);
 }
 
-static void desmume_entry_nd_set_text(DesmumeEntryNd *entry_nd, const gchar* text)
+static void desmume_entry_nd_set_text(DesmumeEntryNd *entry_nd,
+                                      const gchar *text)
 {
     DesmumeEntryNdPrivate *priv;
-    priv = (DesmumeEntryNdPrivate *)desmume_entry_nd_get_instance_private(entry_nd);
-    GtkTextBuffer *buf = gtk_text_view_get_buffer (GTK_TEXT_VIEW(priv->editor));
+    priv = (DesmumeEntryNdPrivate *) desmume_entry_nd_get_instance_private(
+        entry_nd);
+    GtkTextBuffer *buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(priv->editor));
     gtk_text_buffer_set_text(buf, text, strlen(text));
 }
 
-static void desmume_entry_nd_editable_init(GtkEditableInterface *iface) {}
+static void desmume_entry_nd_editable_init(GtkEditableInterface *iface) { }
 
 static void desmume_entry_nd_cell_editable_init(GtkCellEditableIface *iface)
 {
@@ -212,32 +233,35 @@ GtkWidget *desmume_entry_nd_new()
     of a GtkEntry, which allows a cell in a TreeView to accepts newlines.
 */
 
-G_DEFINE_TYPE (DesmumeCellRendererNdtext, desmume_cell_renderer_ndtext, GTK_TYPE_CELL_RENDERER_TEXT)
+G_DEFINE_TYPE(DesmumeCellRendererNdtext, desmume_cell_renderer_ndtext,
+              GTK_TYPE_CELL_RENDERER_TEXT)
 
-static void desmume_cell_renderer_ndtext_editing_done(GtkCellEditable *entry_nd, gpointer data)
+static void desmume_cell_renderer_ndtext_editing_done(GtkCellEditable *entry_nd,
+                                                      gpointer data)
 {
     gboolean canceled;
     g_object_get(entry_nd, "editing-canceled", &canceled, NULL);
     if (!canceled) {
-        const gchar *path = (gchar *) g_object_get_data (G_OBJECT (entry_nd), "full-text");
-        const gchar *new_text = desmume_entry_nd_get_text (DESMUME_ENTRY_ND(entry_nd));
+        const gchar *path =
+            (gchar *) g_object_get_data(G_OBJECT(entry_nd), "full-text");
+        const gchar *new_text =
+            desmume_entry_nd_get_text(DESMUME_ENTRY_ND(entry_nd));
 
-        guint signal_id = g_signal_lookup("edited", DESMUME_TYPE_CELL_RENDERER_NDTEXT);
+        guint signal_id =
+            g_signal_lookup("edited", DESMUME_TYPE_CELL_RENDERER_NDTEXT);
         g_signal_emit(data, signal_id, 0, path, new_text);
     }
     gtk_cell_editable_remove_widget(GTK_CELL_EDITABLE(entry_nd));
 }
 
 static GtkCellEditable *desmume_cell_renderer_ndtext_start_editing(
-                                                GtkCellRenderer* cell, GdkEvent *event,
-                                                GtkWidget *widget, const gchar *path,
-                                                const GdkRectangle *background_area,
-                                                const GdkRectangle *cell_area,
-                                                GtkCellRendererState flags)
+    GtkCellRenderer *cell, GdkEvent *event, GtkWidget *widget,
+    const gchar *path, const GdkRectangle *background_area,
+    const GdkRectangle *cell_area, GtkCellRendererState flags)
 {
-    DesmumeCellRendererNdtext *ndtext = DESMUME_CELL_RENDERER_NDTEXT (cell);
+    DesmumeCellRendererNdtext *ndtext = DESMUME_CELL_RENDERER_NDTEXT(cell);
     gboolean editable;
-    g_object_get(G_OBJECT(ndtext), "editable" , &editable, NULL);
+    g_object_get(G_OBJECT(ndtext), "editable", &editable, NULL);
     if (!editable)
         return NULL;
 
@@ -246,21 +270,28 @@ static GtkCellEditable *desmume_cell_renderer_ndtext_start_editing(
 
     GtkWidget *entry_nd = desmume_entry_nd_new();
     if (text != NULL)
-        desmume_entry_nd_set_text(DESMUME_ENTRY_ND (entry_nd), text);
-    g_object_set_data_full(G_OBJECT (entry_nd), "full-text", g_strdup(path), g_free);
+        desmume_entry_nd_set_text(DESMUME_ENTRY_ND(entry_nd), text);
+    g_object_set_data_full(G_OBJECT(entry_nd), "full-text", g_strdup(path),
+                           g_free);
 
     g_signal_connect(entry_nd, "editing-done",
-            G_CALLBACK(desmume_cell_renderer_ndtext_editing_done), ndtext);
+                     G_CALLBACK(desmume_cell_renderer_ndtext_editing_done),
+                     ndtext);
     return GTK_CELL_EDITABLE(entry_nd);
 }
 
-static void desmume_cell_renderer_ndtext_class_init(DesmumeCellRendererNdtextClass *klass) {
-    GtkCellRendererClass *cell_class = GTK_CELL_RENDERER_CLASS (klass);
+static void
+desmume_cell_renderer_ndtext_class_init(DesmumeCellRendererNdtextClass *klass)
+{
+    GtkCellRendererClass *cell_class = GTK_CELL_RENDERER_CLASS(klass);
     cell_class->start_editing = desmume_cell_renderer_ndtext_start_editing;
 }
-static void desmume_cell_renderer_ndtext_init(DesmumeCellRendererNdtext* ndtext) {}
+static void desmume_cell_renderer_ndtext_init(DesmumeCellRendererNdtext *ndtext)
+{
+}
 
 GtkCellRenderer *desmume_cell_renderer_ndtext_new()
 {
-    return GTK_CELL_RENDERER(g_object_new(DESMUME_TYPE_CELL_RENDERER_NDTEXT, NULL));
+    return GTK_CELL_RENDERER(
+        g_object_new(DESMUME_TYPE_CELL_RENDERER_NDTEXT, NULL));
 }
