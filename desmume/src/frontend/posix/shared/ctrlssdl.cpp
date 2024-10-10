@@ -66,21 +66,21 @@ const char *key_names[NB_KEYS] =
  
 /* Default joypad configuration */
 const u32 default_joypad_cfg[NB_KEYS] =
-  { 0x0201,  // A
-    0x0200,  // B
-    0x0205,  // select
-    0x0208,  // start
-    0x0001, // Right
-    0x0000, // Left
-    0x0002, // Up
-    0x0003, // Down
-    0x0207,  // R
-    0x0206,  // L
-    0x0204,  // X
-    0x0203,  // Y
+  { 0xFFFF,  // A
+    0xFFFF,  // B
+    0xFFFF,  // select
+    0xFFFF,  // start
+    0xFFFF, // Right
+    0xFFFF, // Left
+    0xFFFF, // Up
+    0xFFFF, // Down
+    0xFFFF,  // R
+    0xFFFF,  // L
+    0xFFFF,  // X
+    0xFFFF,  // Y
     0xFFFF, // DEBUG
     0xFFFF, // BOOST
-    0x0202, // Lid
+    0xFFFF, // Lid
   };
 
 /* Load default joystick and keyboard configurations */
