@@ -1465,6 +1465,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void)windowDidChangeScreen:(NSNotification *)notification
 {
 	[self updateDisplayID];
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+	NSScreen *screen = [[self window] screen];
+	// Set up the scaling factor if this is a Retina window
+	if ([screen respondsToSelector:@selector(backingScaleFactor)])
+	{
+		float scaleFactor = [screen backingScaleFactor];
+		[[[self view] cdsVideoOutput] clientDisplay3DView]->Get3DPresenter()->SetScaleFactor(scaleFactor);
+	}
+#endif
 }
 
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
