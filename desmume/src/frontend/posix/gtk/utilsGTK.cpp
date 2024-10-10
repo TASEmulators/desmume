@@ -126,6 +126,7 @@ static gboolean desmume_entry_nd_key_press(GtkWidget *widget,
     } else if (kv == GDK_KEY_Escape) {
         priv->editing_canceled = TRUE;
         doPropagate = GDK_EVENT_STOP;
+        gtk_cell_editable_editing_done(GTK_CELL_EDITABLE(entry_nd));
     }
     return doPropagate;
 }
@@ -138,8 +139,26 @@ static gboolean desmume_entry_nd_button_press(GtkWidget *widget,
     GtkWidgetClass *klass = GTK_WIDGET_GET_CLASS(editor);
     klass->button_press_event(widget, event);
     // We have explicitly described how to handle mouse button events, so do not
-	// propagate.
+    // propagate.
     return GDK_EVENT_STOP;
+}
+
+static void desmume_entry_nd_dispose(GObject *object)
+{
+    DesmumeEntryNd *entry_nd = DESMUME_ENTRY_ND(object);
+    DesmumeEntryNdPrivate *priv =
+        (DesmumeEntryNdPrivate *) desmume_entry_nd_get_instance_private(
+            entry_nd);
+
+    // Recursively destroys contained objects, so destroys the editor as well
+    gtk_widget_destroy(priv->scroll);
+
+    G_OBJECT_CLASS(desmume_entry_nd_parent_class)->dispose(object);
+}
+
+static void desmume_entry_nd_finalize(GObject *object)
+{
+    G_OBJECT_CLASS(desmume_entry_nd_parent_class)->finalize(object);
 }
 
 static void desmume_entry_nd_class_init(DesmumeEntryNdClass *klass)
@@ -147,6 +166,9 @@ static void desmume_entry_nd_class_init(DesmumeEntryNdClass *klass)
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->set_property = desmume_entry_nd_set_property;
     object_class->get_property = desmume_entry_nd_get_property;
+
+    object_class->dispose = desmume_entry_nd_dispose;
+    object_class->finalize = desmume_entry_nd_finalize;
 
     entry_nd_properties[PROP_EDITING_CANCELED] =
         g_param_spec_boolean("editing-canceled", "Editing Canceled",
@@ -244,12 +266,12 @@ static void desmume_cell_renderer_ndtext_editing_done(GtkCellEditable *entry_nd,
     if (!canceled) {
         const gchar *path =
             (gchar *) g_object_get_data(G_OBJECT(entry_nd), "full-text");
-        const gchar *new_text =
-            desmume_entry_nd_get_text(DESMUME_ENTRY_ND(entry_nd));
+        gchar *new_text = desmume_entry_nd_get_text(DESMUME_ENTRY_ND(entry_nd));
 
         guint signal_id =
             g_signal_lookup("edited", DESMUME_TYPE_CELL_RENDERER_NDTEXT);
         g_signal_emit(data, signal_id, 0, path, new_text);
+        g_free(new_text);
     }
     gtk_cell_editable_remove_widget(GTK_CELL_EDITABLE(entry_nd));
 }
@@ -269,8 +291,10 @@ static GtkCellEditable *desmume_cell_renderer_ndtext_start_editing(
     g_object_get(G_OBJECT(ndtext), "text", &text, NULL);
 
     GtkWidget *entry_nd = desmume_entry_nd_new();
-    if (text != NULL)
+    if (text != NULL) {
         desmume_entry_nd_set_text(DESMUME_ENTRY_ND(entry_nd), text);
+        g_free(text);
+    }
     g_object_set_data_full(G_OBJECT(entry_nd), "full-text", g_strdup(path),
                            g_free);
 
@@ -286,6 +310,7 @@ desmume_cell_renderer_ndtext_class_init(DesmumeCellRendererNdtextClass *klass)
     GtkCellRendererClass *cell_class = GTK_CELL_RENDERER_CLASS(klass);
     cell_class->start_editing = desmume_cell_renderer_ndtext_start_editing;
 }
+
 static void desmume_cell_renderer_ndtext_init(DesmumeCellRendererNdtext *ndtext)
 {
 }

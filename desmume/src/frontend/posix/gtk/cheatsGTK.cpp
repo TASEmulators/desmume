@@ -119,6 +119,8 @@ static void cheat_list_modify_cheat(GtkCellRendererText *cell,
     gint column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), "column"));
 
     gtk_tree_model_get_iter(model, &f_iter, path);
+    gtk_tree_path_free(path);
+
     gtk_tree_model_filter_convert_iter_to_child_iter(
         GTK_TREE_MODEL_FILTER(model), &iter, &f_iter);
     GtkTreeModel *store =
@@ -163,15 +165,20 @@ static void cheat_list_modify_cheat(GtkCellRendererText *cell,
             }
             gtk_list_store_set(GTK_LIST_STORE(store), &iter, column, v, -1);
         } else if (column == COLUMN_DESC) {
-            cheats->setDescription(g_strdup(new_text), ii);
-            gtk_list_store_set(GTK_LIST_STORE(store), &iter, column,
-                               g_strdup(new_text), -1);
+            cheats->setDescription(new_text, ii);
+            gtk_list_store_set(GTK_LIST_STORE(store), &iter, column, new_text,
+                               -1);
         } else if (column == COLUMN_AR) {
-            bool isValid = cheats->update_AR(
-                g_strdup(new_text), cheat.description, cheat.enabled, ii);
+            // Safety: CHEATS::update_AR, though it takes `code` as not const,
+            // only performs a non-null check and passes `code` to
+            // CHEATS::XXCodeFromString as const, therefore new_text (should)
+            // never be modified
+            bool isValid =
+                cheats->update_AR(const_cast<char *>(new_text),
+                                  cheat.description, cheat.enabled, ii);
             if (isValid) {
                 gtk_list_store_set(GTK_LIST_STORE(store), &iter, column,
-                                   g_strdup(new_text), -1);
+                                   new_text, -1);
             }
         }
     }
@@ -215,12 +222,14 @@ static void cheat_list_add_cheat(GtkWidget *widget, gpointer data)
 #define NEW_DESC "New cheat"
     GtkListStore *store = (GtkListStore *) data;
     GtkTreeIter iter;
-    cheats->add(1, 0, 0, g_strdup(NEW_DESC), false);
+    // Safety: CHEATS::add only uses `description` to call CHEATS::update, which
+    // only uses it to call CHEATS::setDescription, which takes `description` as
+    // const.
+    cheats->add(0, 0, 0, const_cast<char *>(NEW_DESC), false);
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter, COLUMN_INDEX, cheats->getListSize() - 1,
                        COLUMN_TYPE, 0, COLUMN_ENABLED, FALSE, COLUMN_SIZE, 1,
                        COLUMN_HI, 0, COLUMN_LO, 0, COLUMN_DESC, NEW_DESC, -1);
-
 #undef NEW_DESC
 }
 
@@ -230,12 +239,14 @@ static void cheat_list_add_cheat_AR(GtkWidget *widget, gpointer data)
 #define NEW_AR "00000000 00000000"
     GtkListStore *store = (GtkListStore *) data;
     GtkTreeIter iter;
-    cheats->add_AR(g_strdup(NEW_AR), g_strdup(NEW_DESC), false);
+    // Safety: CHEATS::add_AR only uses `code` to call , `description` to call
+    // CHEATS::setDescription, which takes the variable as const.
+    cheats->add_AR(const_cast<char *>(NEW_AR), const_cast<char *>(NEW_DESC),
+                   false);
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter, COLUMN_INDEX, cheats->getListSize() - 1,
                        COLUMN_TYPE, 1, COLUMN_ENABLED, FALSE, COLUMN_AR, NEW_AR,
                        COLUMN_DESC, NEW_DESC, -1);
-
 #undef NEW_DESC
 #undef NEW_AR
 }
@@ -279,6 +290,7 @@ static void cheat_list_address_to_hex(GtkTreeViewColumn *column,
     gtk_tree_model_get(model, iter, COLUMN_HI, &addr, -1);
     gchar *hex_addr = g_strdup_printf("0x0%07X", addr);
     g_object_set(renderer, "text", hex_addr, NULL);
+    g_free(hex_addr);
 }
 
 static void cheat_list_add_columns(GtkTreeView *tree, GtkListStore *store,
@@ -372,18 +384,24 @@ static GtkListStore *cheat_list_populate()
             char *cheat_str = (char *) malloc(18 * cheat_len);
             cheat_str[0] = '\0';
 
+            // Safety: "%08X" is 8 bytes (x2), " " and "\n" are 1 each for 18
+            // bytes each strdup_printf called cheat_len times for the size of
+            // the malloc. g_strlcat emulates BSD's strlcat, so on the last
+            // iteration, a NUL-terminator is writted instead of the last
+            // trailing newline.
             for (u32 jj = 0; jj < cheat_len; jj++) {
                 gchar *tmp = g_strdup_printf("%08X %08X\n", cheat.code[jj][0],
                                              cheat.code[jj][1]);
                 g_strlcat(cheat_str, tmp, 18 * cheat_len);
+                g_free(tmp);
             }
-            cheat_str[18 * cheat_len - 1] = '\0'; // Remove the trailing '\n'
 
             gtk_list_store_set(store, &iter, COLUMN_INDEX, ii,
                                COLUMN_TYPE, cheat.type,
                                COLUMN_ENABLED, cheat.enabled,
-                               COLUMN_AR, g_strdup(cheat_str),
+                               COLUMN_AR, cheat_str,
                                COLUMN_DESC, cheat.description, -1);
+            free(cheat_str);
         }
     }
     return store;
