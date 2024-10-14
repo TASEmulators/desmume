@@ -19,9 +19,9 @@ desmume_src = [
   'desmume.cpp',
   'dToolsList.cpp',
   'tools/ioregsView.cpp',
+  'utilsGTK.cpp',
   'cheatsGTK.cpp',
   'main.cpp',
-  'utilsGTK.cpp',
   gresource,
 ]
 

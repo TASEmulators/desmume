@@ -36,7 +36,7 @@ struct _DesmumeEntryNd
 
 struct _DesmumeEntryNdClass
 {
-    GtkEventBoxClass *parent_class;
+    GtkEventBoxClass parent_class;
 };
 
 GType desmume_entry_nd_get_type(void) G_GNUC_CONST;
@@ -54,7 +54,7 @@ struct _DesmumeCellRendererNdtext
 
 struct _DesmumeCellRendererNdtextClass
 {
-    GtkCellRendererTextClass *parent_class;
+    GtkCellRendererTextClass parent_class;
 };
 
 GType desmume_cell_renderer_ndtext_get_type(void) G_GNUC_CONST;

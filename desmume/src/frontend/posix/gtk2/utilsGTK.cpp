@@ -19,6 +19,7 @@
  */
 
 #include "utilsGTK.h"
+#include <gdk/gdkkeysyms.h>
 
 /*
     A C++ implementation of a GtkCellRendererText subclass which handles
@@ -33,12 +34,12 @@
     inserted by holding Shift, Ctrl, or Alt along with pressing Enter.
 */
 
-typedef struct
+struct _DesmumeEntryNdPrivate
 {
     GtkWidget *scroll;
     GtkWidget *editor;
     gboolean editing_canceled;
-} DesmumeEntryNdPrivate;
+};
 
 typedef enum
 {
@@ -51,15 +52,20 @@ static GParamSpec *entry_nd_properties[ENTRY_ND_NUM_PROP] = {
 };
 
 // Declared here to statisfy the type creation macro, but defined further down.
-static void desmume_entry_nd_editable_init(GtkEditableInterface *iface);
 static void desmume_entry_nd_cell_editable_init(GtkCellEditableIface *iface);
 
-G_DEFINE_TYPE_WITH_CODE(
-    DesmumeEntryNd, desmume_entry_nd, GTK_TYPE_EVENT_BOX,
-    G_ADD_PRIVATE(DesmumeEntryNd)
-        G_IMPLEMENT_INTERFACE(GTK_TYPE_EDITABLE, desmume_entry_nd_editable_init)
-            G_IMPLEMENT_INTERFACE(GTK_TYPE_CELL_EDITABLE,
-                                  desmume_entry_nd_cell_editable_init))
+// As defined in GObject 2.38, which is past the last release of GTK2.
+// https://gitlab.gnome.org/GNOME/glib/-/blob/main/gobject/gtype.h#L2188
+#define G_ADD_PRIVATE(TypeName)                                                \
+    {                                                                          \
+        TypeName##_private_offset = g_type_add_instance_private(               \
+            g_define_type_id, sizeof(TypeName##Private));                      \
+    }
+
+G_DEFINE_TYPE_WITH_CODE(DesmumeEntryNd, desmume_entry_nd, GTK_TYPE_EVENT_BOX,
+                        G_ADD_PRIVATE(DesmumeEntryNd) G_IMPLEMENT_INTERFACE(
+                            GTK_TYPE_CELL_EDITABLE,
+                            desmume_entry_nd_cell_editable_init))
 
 static void desmume_entry_nd_set_property(GObject *object, guint property_id,
                                           const GValue *value,
@@ -101,6 +107,8 @@ static void desmume_entry_nd_get_property(GObject *object, guint property_id,
     }
 }
 
+#define GDK_EVENT_PROPAGATE FALSE
+#define GDK_EVENT_STOP TRUE
 static gboolean desmume_entry_nd_key_press(GtkWidget *widget,
                                            GdkEventKey *event, gpointer data)
 {
@@ -115,15 +123,14 @@ static gboolean desmume_entry_nd_key_press(GtkWidget *widget,
     guint kv = event->keyval;
     guint mod = event->state;
 
-    if ((kv == GDK_KEY_Return || kv == GDK_KEY_KP_Enter ||
-         kv == GDK_KEY_ISO_Enter) &&
+    if ((kv == GDK_Return || kv == GDK_KP_Enter || kv == GDK_ISO_Enter) &&
         !(mod & (GDK_CONTROL_MASK | GDK_SHIFT_MASK | GDK_MOD1_MASK))) {
         // Enter + Ctrl, Shift, or Mod1 (commonly Alt), enter a newline in the
         // editor, but otherwise act as confirm for the TextView
         priv->editing_canceled = FALSE;
         doPropagate = GDK_EVENT_STOP;
         gtk_cell_editable_editing_done(GTK_CELL_EDITABLE(entry_nd));
-    } else if (kv == GDK_KEY_Escape) {
+    } else if (kv == GDK_Escape) {
         priv->editing_canceled = TRUE;
         doPropagate = GDK_EVENT_STOP;
         gtk_cell_editable_editing_done(GTK_CELL_EDITABLE(entry_nd));
@@ -142,6 +149,8 @@ static gboolean desmume_entry_nd_button_press(GtkWidget *widget,
     // propagate.
     return GDK_EVENT_STOP;
 }
+#undef GDK_EVENT_PROPAGATE
+#undef GDK_EVENT_STOP
 
 static void desmume_entry_nd_dispose(GObject *object)
 {
@@ -161,14 +170,32 @@ static void desmume_entry_nd_finalize(GObject *object)
     G_OBJECT_CLASS(desmume_entry_nd_parent_class)->finalize(object);
 }
 
+static void desmume_entry_nd_size_request(GtkWidget *widget,
+                                          GtkRequisition *req)
+{
+    DesmumeEntryNd *entry_nd = DESMUME_ENTRY_ND(widget);
+    DesmumeEntryNdPrivate *priv =
+        (DesmumeEntryNdPrivate *) desmume_entry_nd_get_instance_private(
+            entry_nd);
+
+    gtk_widget_size_request(GTK_WIDGET(priv->scroll), req);
+    GtkRequisition *temp_req = gtk_requisition_copy(req);
+    gtk_widget_size_request(GTK_WIDGET(priv->editor), req);
+    req->width += temp_req->width;
+    req->height += temp_req->height;
+    gtk_requisition_free(temp_req);
+}
+
 static void desmume_entry_nd_class_init(DesmumeEntryNdClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->set_property = desmume_entry_nd_set_property;
     object_class->get_property = desmume_entry_nd_get_property;
-
     object_class->dispose = desmume_entry_nd_dispose;
     object_class->finalize = desmume_entry_nd_finalize;
+
+    GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
+    widget_class->size_request = desmume_entry_nd_size_request;
 
     entry_nd_properties[PROP_EDITING_CANCELED] =
         g_param_spec_boolean("editing-canceled", "Editing Canceled",
@@ -185,7 +212,7 @@ static void desmume_entry_nd_init(DesmumeEntryNd *entry_nd)
 
     priv->scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(priv->scroll),
-                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+                                   GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 
     priv->editor = gtk_text_view_new();
     gtk_text_view_set_editable(GTK_TEXT_VIEW(priv->editor), TRUE);
@@ -236,11 +263,10 @@ static void desmume_entry_nd_set_text(DesmumeEntryNd *entry_nd,
     DesmumeEntryNdPrivate *priv;
     priv = (DesmumeEntryNdPrivate *) desmume_entry_nd_get_instance_private(
         entry_nd);
+
     GtkTextBuffer *buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(priv->editor));
     gtk_text_buffer_set_text(buf, text, strlen(text));
 }
-
-static void desmume_entry_nd_editable_init(GtkEditableInterface *iface) { }
 
 static void desmume_entry_nd_cell_editable_init(GtkCellEditableIface *iface)
 {
@@ -281,8 +307,8 @@ static void desmume_cell_renderer_ndtext_editing_done(GtkCellEditable *entry_nd,
 
 static GtkCellEditable *desmume_cell_renderer_ndtext_start_editing(
     GtkCellRenderer *cell, GdkEvent *event, GtkWidget *widget,
-    const gchar *path, const GdkRectangle *background_area,
-    const GdkRectangle *cell_area, GtkCellRendererState flags)
+    const gchar *path, GdkRectangle *background_area, GdkRectangle *cell_area,
+    GtkCellRendererState flags)
 {
     DesmumeCellRendererNdtext *ndtext = DESMUME_CELL_RENDERER_NDTEXT(cell);
     gboolean editable;
@@ -294,6 +320,7 @@ static GtkCellEditable *desmume_cell_renderer_ndtext_start_editing(
     g_object_get(G_OBJECT(ndtext), "text", &text, NULL);
 
     GtkWidget *entry_nd = desmume_entry_nd_new();
+
     if (text != NULL) {
         desmume_entry_nd_set_text(DESMUME_ENTRY_ND(entry_nd), text);
         g_free(text);
