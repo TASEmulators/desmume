@@ -21,6 +21,7 @@ desmume_SOURCES = \
 	desmume.h desmume.cpp \
 	dTool.h dToolsList.cpp \
 	tools/ioregsView.cpp tools/ioregsView.h \
+	utilsGTK.h utilsGTK.cpp \
 	cheatsGTK.h cheatsGTK.cpp \
 	main.cpp main.h
 
