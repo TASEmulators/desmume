@@ -2475,6 +2475,7 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 			if(addrMasked == eng_3D_CLIPMTX_RESULT) return true;
 			if(addrMasked == 0x04FFF000) return true;
 			if(addrMasked == 0x04FFF010) return true;
+			if(addrMasked == 0x04FFF200) return true;
 		}
 
 		switch (addrMasked)
@@ -3817,6 +3818,11 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				case REG_VRAMCNTH:
 				case REG_VRAMCNTI:
 					MMU_VRAMmapControl(adr-REG_VRAMCNTA, val);
+					break;
+
+					
+				// ensata sound register
+				case 0x04FFF200:
 					break;
 					
 #ifdef LOG_CARD
@@ -5482,6 +5488,10 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case REG_KEYINPUT:
 				LagFrameFlag=0;
 				break;
+
+			// Ensata sound register
+			case 0x04FFF200:
+				return 1;
 		}
 		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]);
 	}
