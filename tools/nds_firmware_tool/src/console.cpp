@@ -30,7 +30,7 @@
 #include <io.h>
 
 #define BUFFER_SIZE 100
-HANDLE hConsole;
+HANDLE hConsole = NULL;
 void OpenConsole() 
 {
 	COORD csize;
@@ -41,27 +41,33 @@ void OpenConsole()
 	//dont do anything if we're already attached
 	if (hConsole) return;
 
+#if 0
 	//attach to an existing console (if we can; this is circuitous because AttachConsole wasnt added until XP)
 	//remember to abstract this late bound function notion if we end up having to do this anywhere else
 	bool attached = false;
-	HMODULE lib = LoadLibrary("kernel32.dll");
-	if(lib)
+
+	// kernel32.dll is always loaded on windows.
+	HMODULE lib = GetModuleHandleA("kernel32.dll"); // LoadLibrary("kernel32.dll");
+	if (lib)
 	{
 		typedef BOOL (WINAPI *_TAttachConsole)(DWORD dwProcessId);
 		_TAttachConsole _AttachConsole  = (_TAttachConsole)GetProcAddress(lib,"AttachConsole");
-		if(_AttachConsole)
+		if (_AttachConsole)
 		{
-			if(_AttachConsole(-1))
-				attached = true;
+			attached = (bool)_AttachConsole(-1);
 		}
-		FreeLibrary(lib);
+		// You cannot free kernel32.dll
+		// FreeLibrary(lib);
 	}
 
 	//if we failed to attach, then alloc a new console
-	if(!attached)
+	if (!attached)
 	{
 		AllocConsole();
 	}
+#else 
+	if (!AttachConsole(-1)) { AllocConsole(); }
+#endif
 
 	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -91,9 +97,12 @@ void OpenConsole()
 	srect.Right = srect.Left + 99;
 	srect.Bottom = srect.Top + 64;
 	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE), TRUE, &srect);
-	SetConsoleCP(GetACP());
-	SetConsoleOutputCP(GetACP());
-	if(attached) printf("\n");
+	
+	// Use default code page.
+	// SetConsoleCP(GetACP());
+	// SetConsoleOutputCP(GetACP());
+
+	if (attached) printf("\n");
 	printf("%s\n",_TITLE);
 	printf("- compiled: %s %s\n\n",__DATE__,__TIME__);
 }

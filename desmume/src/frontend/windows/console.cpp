@@ -119,6 +119,8 @@ void OpenConsole()
 	//stdout is already connected to something. keep using it and dont let the console interfere
 	bool shouldRedirectStdout = fileType == FILE_TYPE_UNKNOWN;
 	bool attached = false;
+
+#if 0
 	if (!AllocConsole())
 	{
 		HMODULE lib = LoadLibrary("kernel32.dll");
@@ -143,6 +145,9 @@ void OpenConsole()
 		SetConsoleCP(GetACP());
 		SetConsoleOutputCP(GetACP());
 	}
+#else
+	attached = AttachConsole(-1) || AllocConsole();
+#endif
 
 	//newer and improved console title:
 	SetConsoleTitleW(SkipEverythingButProgramInCommandLine(GetCommandLineW()).c_str());
