@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2023 DeSmuME team
+	Copyright (C) 2009-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -119,6 +119,9 @@ public:
 	bool	update_CB(char *code, char *description, u8 enabled, const size_t pos);
 	
 	bool	remove(const size_t pos);
+	
+	void	toggle(bool enabled, const size_t pos);
+	void	toggle(u8 enablbed, const size_t pos);
 	
 	void	getListReset();
 	bool	getList(CHEATS_LIST *cheat);

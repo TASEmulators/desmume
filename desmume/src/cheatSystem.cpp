@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2023 DeSmuME team
+	Copyright (C) 2009-2024 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -847,6 +847,16 @@ bool CHEATS::remove(const size_t pos)
 
 	didRemoveItem = true;
 	return didRemoveItem;
+}
+
+void CHEATS::toggle(bool enabled, const size_t pos)
+{
+	this->_list[pos].enabled = (enabled) ? 1 : 0;
+}
+
+void CHEATS::toggle(u8 enabled, const size_t pos)
+{
+	this->toggle((enabled != 0), pos);
 }
 
 void CHEATS::getListReset()
