@@ -19,6 +19,7 @@
  */
 
 #include "utilsGTK.h"
+#include <string.h>
 
 /*
     A C++ implementation of a GtkCellRendererText subclass which handles

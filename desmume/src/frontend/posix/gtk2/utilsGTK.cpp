@@ -19,6 +19,7 @@
  */
 
 #include "utilsGTK.h"
+#include <string.h>
 #include <gdk/gdkkeysyms.h>
 
 /*
@@ -56,11 +57,13 @@ static void desmume_entry_nd_cell_editable_init(GtkCellEditableIface *iface);
 
 // As defined in GObject 2.38, which is past the last release of GTK2.
 // https://gitlab.gnome.org/GNOME/glib/-/blob/main/gobject/gtype.h#L2188
+#ifndef G_ADD_PRIVATE
 #define G_ADD_PRIVATE(TypeName)                                                \
     {                                                                          \
         TypeName##_private_offset = g_type_add_instance_private(               \
             g_define_type_id, sizeof(TypeName##Private));                      \
     }
+#endif
 
 G_DEFINE_TYPE_WITH_CODE(DesmumeEntryNd, desmume_entry_nd, GTK_TYPE_EVENT_BOX,
                         G_ADD_PRIVATE(DesmumeEntryNd) G_IMPLEMENT_INTERFACE(
