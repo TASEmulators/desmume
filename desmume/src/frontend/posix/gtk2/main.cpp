@@ -106,6 +106,8 @@ VideoFilter* video;
 
 desmume::config::Config config;
 
+bool in_joy_config_mode = false;
+
 enum {
     MAIN_BG_0 = 0,
     MAIN_BG_1,
@@ -2231,6 +2233,63 @@ static void Edit_Controls()
 
 }
 
+static gboolean JoyKeyAcceptTimerFunc(gpointer data)
+{
+    if(!in_joy_config_mode)
+        return FALSE;
+    SDL_Event event;
+    u16 key;
+    bool done = FALSE;
+    while(SDL_PollEvent(&event) && !done)
+    {
+        switch(event.type)
+        {
+        case SDL_JOYBUTTONDOWN:
+            key = ((event.jbutton.which & 15) << 12) | JOY_BUTTON << 8 | (event.jbutton.button & 255);
+            done = TRUE;
+            break;
+        case SDL_JOYAXISMOTION:
+            if( ((u32)abs(event.jaxis.value) >> 14) != 0 )
+            {
+                key = ((event.jaxis.which & 15) << 12) | JOY_AXIS << 8 | ((event.jaxis.axis & 127) << 1);
+                if (event.jaxis.value > 0)
+                    key |= 1;
+                done = TRUE;
+            }
+            break;
+        case SDL_JOYHATMOTION:
+            if (event.jhat.value != SDL_HAT_CENTERED) {
+                key = ((event.jhat.which & 15) << 12) | JOY_HAT << 8 | ((event.jhat.hat & 63) << 2);
+                if ((event.jhat.value & SDL_HAT_UP) != 0)
+                    key |= JOY_HAT_UP;
+                else if ((event.jhat.value & SDL_HAT_RIGHT) != 0)
+                    key |= JOY_HAT_RIGHT;
+                else if ((event.jhat.value & SDL_HAT_DOWN) != 0)
+                    key |= JOY_HAT_DOWN;
+                else if ((event.jhat.value & SDL_HAT_LEFT) != 0)
+                    key |= JOY_HAT_LEFT;
+                done = TRUE;
+            }
+            break;
+        }
+    }
+
+    if(done) {
+        struct modify_key_ctx *ctx = (struct modify_key_ctx*)data;
+        ctx->mk_key_chosen = key;
+        gchar* YouPressed = g_strdup_printf("You pressed : %d\nClick OK to keep this key.", ctx->mk_key_chosen);
+        gtk_label_set_text(GTK_LABEL(ctx->label), YouPressed);
+        g_free(YouPressed);
+        return FALSE;
+    }
+    return in_joy_config_mode;
+}
+
+static void JoyKeyAcceptTimerStart(GtkWidget *w, GdkEventFocus *e, struct modify_key_ctx *ctx)
+{
+    g_timeout_add(200, JoyKeyAcceptTimerFunc, ctx);
+}
+
 static void AcceptNewJoyKey(GtkWidget *w, GdkEventFocus *e, struct modify_key_ctx *ctx)
 {
     gchar *YouPressed;
@@ -2253,7 +2312,7 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
     Key = GPOINTER_TO_INT(data);
     /* Joypad keys start at 1 */
     ctx.key_id = Key+1;
-    ctx.mk_key_chosen = 0;
+    ctx.mk_key_chosen = Keypad_Temp[Key];
     Title = g_strdup_printf("Press \"%s\" key ...\n", key_names[Key]);
     mkDialog = gtk_dialog_new_with_buttons(Title,
         GTK_WINDOW(pWindow),
@@ -2266,9 +2325,11 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
     g_free(Title);
     gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(mkDialog))), ctx.label, TRUE, FALSE, 0);
     gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(mkDialog)));
+    
+    in_joy_config_mode = true;
+    g_signal_connect(G_OBJECT(mkDialog), "focus_in_event", G_CALLBACK(JoyKeyAcceptTimerStart), &ctx);
+    JoyKeyAcceptTimerFunc(&ctx);
 
-    g_signal_connect(G_OBJECT(mkDialog), "focus_in_event", G_CALLBACK(AcceptNewJoyKey), &ctx);
-	
     switch(gtk_dialog_run(GTK_DIALOG(mkDialog))) {
     case GTK_RESPONSE_OK:
         Keypad_Temp[Key] = ctx.mk_key_chosen;
@@ -2281,6 +2342,7 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
         ctx.mk_key_chosen = 0;
         break;
     }
+    in_joy_config_mode = false;
 
     gtk_widget_destroy(mkDialog);
 
@@ -2959,7 +3021,8 @@ gboolean EmuLoop(gpointer data)
 #endif
 
     /* Merge the joystick keys with the keyboard ones */
-    process_joystick_events(&keys_latch);
+    if(!in_joy_config_mode)
+        process_joystick_events(&keys_latch);
     /* Update! */
     update_keypad(keys_latch);
 
