@@ -25,7 +25,7 @@ static const gchar *desmume_old_config_file = ".desmume.ini";
 static const gchar *desmume_config_dir = "desmume";
 static const gchar *desmume_config_file = "config";
 
-GKeyFile *desmume_config_read_file(const u32 *kb_cfg)
+GKeyFile *desmume_config_read_file(const u32 *kb_cfg, const char* keysection)
 {
     gchar *config_file, *config_dir, *old_config_file;
     GKeyFile *keyfile;
@@ -56,7 +56,7 @@ GKeyFile *desmume_config_read_file(const u32 *kb_cfg)
     g_free(old_config_file);
 
     load_default_config(kb_cfg);
-    desmume_config_read_keys(keyfile);
+    desmume_config_read_keys(keyfile, keysection);
     desmume_config_read_joykeys(keyfile);
 
     return keyfile;
@@ -92,10 +92,10 @@ static gboolean desmume_config_write_file(GKeyFile *keyfile)
     return ret;
 }
 
-gboolean desmume_config_update_keys(GKeyFile *keyfile)
+gboolean desmume_config_update_keys(GKeyFile *keyfile, const char *section)
 {
     for(int i = 0; i < NB_KEYS; i++) {
-        g_key_file_set_integer(keyfile, "KEYS", key_names[i], keyboard_cfg[i]);
+        g_key_file_set_integer(keyfile, section, key_names[i], keyboard_cfg[i]);
     }
 
     return desmume_config_write_file(keyfile);
@@ -110,15 +110,15 @@ gboolean desmume_config_update_joykeys(GKeyFile *keyfile)
     return desmume_config_write_file(keyfile);
 }
 
-gboolean desmume_config_read_keys(GKeyFile *keyfile)
+gboolean desmume_config_read_keys(GKeyFile *keyfile, const char *section)
 {
     GError *error = NULL;
 
-    if (!g_key_file_has_group(keyfile, "KEYS"))
+    if (!g_key_file_has_group(keyfile, section))
         return TRUE;
 
     for (int i = 0; i < NB_KEYS; i++) {
-        keyboard_cfg[i] = g_key_file_get_integer(keyfile, "KEYS", key_names[i], &error);
+        keyboard_cfg[i] = g_key_file_get_integer(keyfile, section, key_names[i], &error);
         if (error != NULL) {
             g_error_free(error);
             return FALSE;

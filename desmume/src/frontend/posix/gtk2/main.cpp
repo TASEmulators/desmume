@@ -2194,12 +2194,18 @@ static void Modify_Key(GtkWidget* widget, gpointer data)
 
 }
 
+#include "../shared/gdksdl.cpp"
+
 static void Edit_Controls()
 {
     GtkWidget *ecDialog;
     GtkWidget *ecKey;
     gchar *Key_Label;
+    u32 keyboard_cfg_sdl[NB_KEYS];
     int i;
+
+    g_assert(sizeof(Keypad_Temp) == sizeof(keyboard_cfg) &&
+        sizeof(keyboard_cfg) == sizeof(keyboard_cfg_sdl));
 
     memcpy(&Keypad_Temp, &keyboard_cfg, sizeof(keyboard_cfg));
 
@@ -2222,8 +2228,17 @@ static void Edit_Controls()
 
     switch (gtk_dialog_run(GTK_DIALOG(ecDialog))) {
     case GTK_RESPONSE_OK:
-        memcpy(&keyboard_cfg, &Keypad_Temp, sizeof(keyboard_cfg));
-        desmume_config_update_keys(keyfile);
+        /* convert keycodes to SDL for the cli frontend, since it has no config menu */
+        for (i = 0; i < NB_KEYS; ++i) {
+            int sk = gdk_to_sdl_keycode(Keypad_Temp[i]);
+            /* if we don't know the keycode, chances are that SDL knows it anyways */
+            if (sk == -1) sk = (u32) Keypad_Temp[i];
+            keyboard_cfg_sdl[i] = sk;
+        }
+        memcpy(keyboard_cfg, keyboard_cfg_sdl, sizeof(keyboard_cfg));
+        desmume_config_update_keys(keyfile, "SDLKEYS");
+        memcpy(keyboard_cfg, Keypad_Temp, sizeof(keyboard_cfg));
+        desmume_config_update_keys(keyfile, "KEYS");
         break;
     case GTK_RESPONSE_CANCEL:
     case GTK_RESPONSE_NONE:
