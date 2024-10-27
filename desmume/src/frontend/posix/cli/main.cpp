@@ -546,7 +546,6 @@ int main(int argc, char ** argv) {
   osd = new OSDCLASS(-1);
 #endif
 
-  ctrls_cfg.boost = 0;
   ctrls_cfg.sdl_quit = 0;
   ctrls_cfg.auto_pause = my_config.auto_pause;
   ctrls_cfg.focused = 1;
@@ -577,7 +576,7 @@ int main(int argc, char ** argv) {
 #ifdef DISPLAY_FPS
     now = SDL_GetTicks();
 #endif
-    if ( !my_config.disable_limiter && !ctrls_cfg.boost) {
+    if ( !my_config.disable_limiter && !(ctrls_cfg.keypad & KEYMASK_(KEY_BOOST - 1))) {
 #ifndef DISPLAY_FPS
       now = SDL_GetTicks();
 #endif
