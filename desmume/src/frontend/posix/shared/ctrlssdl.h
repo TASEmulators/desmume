@@ -89,7 +89,6 @@ struct ctrls_event_config {
   int auto_pause;
   int focused;
   int sdl_quit;
-  int boost;
   int fake_mic;
   void *screen_texture;
   void (*resize_cb)(u16 width, u16 height, void *screen_texture);

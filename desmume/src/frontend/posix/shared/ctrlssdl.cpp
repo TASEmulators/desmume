@@ -430,7 +430,6 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
       break;
 
       /* Joystick button pressed */
-      /* FIXME: Add support for BOOST */
     case SDL_JOYBUTTONDOWN:
       key_code = ((event->jbutton.which & 15) << 12) | JOY_BUTTON << 8 | (event->jbutton.button & 255);
       key = lookup_joy_key( key_code );
@@ -536,15 +535,6 @@ process_ctrls_event( SDL_Event& event,
                   driver->AddLine("Fake mic disabled");
                 break;
 #endif
-
-            case SDLK_o:
-                cfg->boost = !cfg->boost;
-                if (cfg->boost)
-                  driver->AddLine("Boost mode enabled");
-                else
-                  driver->AddLine("Boost mode disabled");
-                break;
-
             case SDLK_LSHIFT:
                 shift_pressed &= ~1;
                 break;

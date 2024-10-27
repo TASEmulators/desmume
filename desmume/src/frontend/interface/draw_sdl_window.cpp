@@ -255,7 +255,6 @@ EXPORTED int desmume_draw_window_init(BOOL auto_pause, BOOL use_opengl_if_possib
     // TODO: Make configurable instead.
     load_default_config(cli_kb_cfg);
 
-    ctrls_cfg.boost = 0;
     ctrls_cfg.sdl_quit = 0;
     ctrls_cfg.auto_pause = auto_pause;
     ctrls_cfg.focused = 1;
