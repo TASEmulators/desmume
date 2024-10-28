@@ -265,7 +265,9 @@ static const char *ui_description =
 "        <menuitem action='winsize_2'/>"
 "        <menuitem action='winsize_2half'/>"
 "        <menuitem action='winsize_3'/>"
+"        <menuitem action='winsize_3half'/>"
 "        <menuitem action='winsize_4'/>"
+"        <menuitem action='winsize_4half'/>"
 "        <menuitem action='winsize_5'/>"
 "        <menuitem action='winsize_scale'/>"
 "        <separator/>"
@@ -539,7 +541,9 @@ enum winsize_enum {
 	WINSIZE_2 = 4,
 	WINSIZE_2HALF = 5,
 	WINSIZE_3 = 6,
+	WINSIZE_3HALF = 7,
 	WINSIZE_4 = 8,
+	WINSIZE_4HALF = 9,
 	WINSIZE_5 = 10,
 };
 
@@ -552,7 +556,9 @@ static const GtkRadioActionEntry winsize_entries[] = {
 	{ "winsize_2", NULL, "_2x", NULL, NULL, WINSIZE_2 },
 	{ "winsize_2half", NULL, "2.5x", NULL, NULL, WINSIZE_2HALF },
 	{ "winsize_3", NULL, "_3x", NULL, NULL, WINSIZE_3 },
+	{ "winsize_3half", NULL, "3.5x", NULL, NULL, WINSIZE_3HALF },
 	{ "winsize_4", NULL, "_4x", NULL, NULL, WINSIZE_4 },
+	{ "winsize_4half", NULL, "4.5x", NULL, NULL, WINSIZE_4HALF },
 	{ "winsize_5", NULL, "_5x", NULL, NULL, WINSIZE_5 },
 	{ "winsize_scale", NULL, "_Scale to window", NULL, NULL, WINSIZE_SCALE },
 };
