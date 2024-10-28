@@ -177,6 +177,7 @@
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
+					<Add option="-fno-strict-aliasing" />
 					<Add option="-fexpensive-optimizations" />
 					<Add option="-flto" />
 					<Add option="-Ofast" />
@@ -242,12 +243,18 @@
 				<Option compiler="gcc" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-fno-strict-aliasing" />
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-flto" />
+					<Add option="-Ofast" />
 					<Add option="`pkg-config --cflags gtk+-3.0`" />
 					<Add option="-DHOST_64" />
 					<Add option="-DENABLE_OPENGL_ES" />
 					<Add option="-DENABLE_EGL" />
 				</Compiler>
 				<Linker>
+					<Add option="-flto" />
 					<Add option="`pkg-config --libs gtk+-3.0`" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libX11.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libz.so" />
@@ -277,8 +284,8 @@
 				<Option use_console_runner="0" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
-					<Add option="-fno-strict-aliasing" />
 					<Add option="-fomit-frame-pointer" />
+					<Add option="-fno-strict-aliasing" />
 					<Add option="-fexpensive-optimizations" />
 					<Add option="-flto" />
 					<Add option="-Ofast" />
@@ -1860,6 +1867,18 @@
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 		</Unit>
+		<Unit filename="../gtk/utilsGTK.cpp">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+			<Option target="GTK3_AArch64_Debug" />
+			<Option target="GTK3_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk/utilsGTK.h">
+			<Option target="GTK3_x64_Debug" />
+			<Option target="GTK3_x64_Release" />
+			<Option target="GTK3_AArch64_Debug" />
+			<Option target="GTK3_AArch64_Release" />
+		</Unit>
 		<Unit filename="../gtk2/cheatsGTK.cpp">
 			<Option target="GTK2_x64_Debug" />
 			<Option target="GTK2_x64_Release" />
@@ -1933,6 +1952,18 @@
 			<Option target="GTK2_AArch64_Release" />
 		</Unit>
 		<Unit filename="../gtk2/tools/ioregsView.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/utilsGTK.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/utilsGTK.h">
 			<Option target="GTK2_x64_Debug" />
 			<Option target="GTK2_x64_Release" />
 			<Option target="GTK2_AArch64_Debug" />
