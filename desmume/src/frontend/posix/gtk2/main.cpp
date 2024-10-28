@@ -2566,9 +2566,7 @@ static void GraphicsSettingsDialog() {
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
 
 	tcol = 1;
-	wGPUScale = gtk_spin_button_new_with_range(GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX, 1.0); //GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "gpuscale"));
-	//gtk_spin_button_set_range(wGPUScale, GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX);
-	//gtk_spin_button_set_increments(wGPUScale, 1.0, 1.0);
+	wGPUScale = gtk_spin_button_new_with_range(GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX, 0.5);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(wGPUScale), gpu_scale_factor);
 	gtk_table_attach(GTK_TABLE(wTable), wGPUScale, tcol, tcol+1, trow, trow+1,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
