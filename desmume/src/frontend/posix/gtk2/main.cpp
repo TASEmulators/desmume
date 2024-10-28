@@ -104,6 +104,14 @@ static int draw_count;
 extern int _scanline_filter_a, _scanline_filter_b, _scanline_filter_c, _scanline_filter_d;
 VideoFilter* video;
 
+#define GPU_SCALE_FACTOR_MIN 1.0f
+#define GPU_SCALE_FACTOR_MAX 10.0f
+
+float gpu_scale_factor = 1.0f;
+int real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+int real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+
+
 desmume::config::Config config;
 
 bool in_joy_config_mode = false;
@@ -1678,7 +1686,8 @@ static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpo
 
 static inline void gpu_screen_to_rgb(u32* dst)
 {
-    ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, dst, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+    ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().isCustomSizeRequested ? (u16*)(GPU->GetDisplayInfo().masterCustomBuffer) : GPU->GetDisplayInfo().masterNativeBuffer16,
+		dst, real_framebuffer_width * real_framebuffer_height * 2);
 }
 
 static inline void drawScreen(cairo_t* cr, u32* buf, gint w, gint h) {
@@ -1752,7 +1761,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	gint dstW = video->GetDstWidth();
 	gint dstH = video->GetDstHeight();
 
-	gint dstScale = dstW * 2 / 256; // Actual scale * 2 to handle 1.5x filters
+	gint dstScale = dstW * 2 / GPU_FRAMEBUFFER_NATIVE_WIDTH; // Actual scale * 2 to handle 1.5x filters
 	
 	gint gap = nds_screen.orientation == ORIENT_VERTICAL ? nds_screen.gap_size * dstScale / 2 : 0;
 	gint imgW, imgH;
@@ -1803,9 +1812,11 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 }
 
 static void RedrawScreen() {
-	ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapDst>(GPU->GetDisplayInfo().masterNativeBuffer16, (uint32_t *)video->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+	ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapDst>(
+		GPU->GetDisplayInfo().isCustomSizeRequested ? (u16*)(GPU->GetDisplayInfo().masterCustomBuffer) : GPU->GetDisplayInfo().masterNativeBuffer16,
+		(uint32_t *)video->GetSrcBufferPtr(), real_framebuffer_width * real_framebuffer_height * 2);
 #ifdef HAVE_LIBAGG
-	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), 256, 384, 1024);
+	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), real_framebuffer_width, real_framebuffer_height * 2, 1024 * gpu_scale_factor);
 	osd->update();
 	DrawHUD();
 	osd->clear();
@@ -2475,8 +2486,16 @@ static void Edit_Joystick_Controls()
 
 
 static void GraphicsSettingsDialog() {
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
+	#define ANY_GL_ENABLED 1
+#else
+	#define ANY_GL_ENABLED 0
+#endif
 	GtkWidget *gsDialog;
 	GtkWidget *gsKey, *coreCombo, *wTable, *wPosterize, *wScale, *wSmoothing, *wMultisample, *wHCInterpolate;
+	GtkWidget *wGPUScale;
+	int trow, tcol;
+	const int nrows = 6 + ANY_GL_ENABLED;
 
 	gsDialog = gtk_dialog_new_with_buttons("Graphics Settings",
 			GTK_WINDOW(pWindow),
@@ -2488,16 +2507,18 @@ static void GraphicsSettingsDialog() {
 			NULL);
 
 
-	wTable = gtk_table_new(2 ,2, TRUE);
+	wTable = gtk_table_new(nrows, 2 /* cols */, TRUE);
 	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(gsDialog))), wTable, TRUE, FALSE, 0);
 
 	// 3D Core
+	trow = tcol = 0;
 	gsKey = gtk_label_new("3D Core:");
 	gtk_misc_set_alignment(GTK_MISC(gsKey), 0.0, 0.5);
-	gtk_table_attach(GTK_TABLE(wTable), gsKey, 0, 1, 0, 1,
+	gtk_table_attach(GTK_TABLE(wTable), gsKey, tcol, tcol+1, trow, trow+1,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
 
+	tcol = 1;
 	coreCombo = gtk_combo_box_text_new();
 	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 0, "Null");
 	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 1, "SoftRasterizer");
@@ -2509,18 +2530,21 @@ static void GraphicsSettingsDialog() {
 	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 4, "OpenGL 3.2");
 #endif
 	gtk_combo_box_set_active(GTK_COMBO_BOX(coreCombo), cur3DCore);
-	gtk_table_attach(GTK_TABLE(wTable), coreCombo, 1, 2, 0, 1,
+
+	gtk_table_attach(GTK_TABLE(wTable), coreCombo, tcol, tcol+1, trow, trow+1,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
 
 
 	// 3D Texture Upscaling
+	++trow, tcol = 0;
 	gsKey = gtk_label_new("3D Texture Upscaling:");
 	gtk_misc_set_alignment(GTK_MISC(gsKey), 0.0, 0.5);
-	gtk_table_attach(GTK_TABLE(wTable), gsKey, 0, 1, 1, 2,
+	gtk_table_attach(GTK_TABLE(wTable), gsKey, tcol, tcol+1, trow, trow+1,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
 
+	tcol = 1;
 	wScale = gtk_combo_box_text_new();
 	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wScale), 0, "x1");
 	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wScale), 1, "x2");
@@ -2528,35 +2552,57 @@ static void GraphicsSettingsDialog() {
 
 	// The shift it work for scale up to 4. For scaling more than 4, a mapping function is required
 	gtk_combo_box_set_active(GTK_COMBO_BOX(wScale), CommonSettings.GFX3D_Renderer_TextureScalingFactor >> 1);
-	gtk_table_attach(GTK_TABLE(wTable), wScale, 1, 2, 1, 2,
+	gtk_table_attach(GTK_TABLE(wTable), wScale, tcol, tcol+1, trow, trow+1,
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
+
+
+	//GPU scaling factor
+	++trow, tcol = 0;
+	gsKey = gtk_label_new("GPU scale factor:");
+	gtk_misc_set_alignment(GTK_MISC(gsKey), 0.0, 0.5);
+	gtk_table_attach(GTK_TABLE(wTable), gsKey, tcol, tcol+1, trow, trow+1,
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
+
+	tcol = 1;
+	wGPUScale = gtk_spin_button_new_with_range(GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX, 1.0); //GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "gpuscale"));
+	//gtk_spin_button_set_range(wGPUScale, GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX);
+	//gtk_spin_button_set_increments(wGPUScale, 1.0, 1.0);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(wGPUScale), gpu_scale_factor);
+	gtk_table_attach(GTK_TABLE(wTable), wGPUScale, tcol, tcol+1, trow, trow+1,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
 
 
 	// 3D Texture Deposterization
+	++trow, tcol = 0;
 	wPosterize = gtk_check_button_new_with_label("3D Texture Deposterization");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wPosterize), CommonSettings.GFX3D_Renderer_TextureDeposterize);
-	gtk_table_attach(GTK_TABLE(wTable), wPosterize, 0, 1, 2, 3,
+	gtk_table_attach(GTK_TABLE(wTable), wPosterize, tcol, tcol+1, trow, trow+1,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 0, 0);
 
 
 	// 3D Texture Smoothing
+	++trow, tcol = 0;
 	wSmoothing = gtk_check_button_new_with_label("3D Texture Smoothing");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wSmoothing), CommonSettings.GFX3D_Renderer_TextureSmoothing);
-	gtk_table_attach(GTK_TABLE(wTable), wSmoothing, 0, 1, 3, 4,
+	gtk_table_attach(GTK_TABLE(wTable), wSmoothing, tcol, tcol+1, trow, trow+1,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 0, 0);
 
 
-#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
+#if ANY_GL_ENABLED
 	// OpenGL Multisample
+	++trow, tcol = 0;
 	gsKey = gtk_label_new("Multisample Antialiasing (OpenGL):");
 	gtk_misc_set_alignment(GTK_MISC(gsKey), 0.0, 0.5);
-	gtk_table_attach(GTK_TABLE(wTable), gsKey, 0, 1, 4, 5,
+	gtk_table_attach(GTK_TABLE(wTable), gsKey, tcol, tcol+1, trow, trow+1,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
 
+	tcol = 1;
 	wMultisample = gtk_combo_box_text_new();
 	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wMultisample), 0, "None");
 	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wMultisample), 1, "2");
@@ -2570,15 +2616,16 @@ static void GraphicsSettingsDialog() {
 	// find smallest option that is larger than current value, i.e. round up to power of 2
 	while (multisampleSizes[currentActive] < currentMultisample && currentActive < 5) { currentActive++; }
 	gtk_combo_box_set_active(GTK_COMBO_BOX(wMultisample), currentActive);
-	gtk_table_attach(GTK_TABLE(wTable), wMultisample, 1, 2, 4, 5,
+	gtk_table_attach(GTK_TABLE(wTable), wMultisample, tcol, tcol+1, trow, trow+1,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
 #endif
 
 	// SoftRasterizer High Color Interpolation
+	++trow, tcol = 0;
 	wHCInterpolate = gtk_check_button_new_with_label("High Resolution Color Interpolation (SoftRasterizer)");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wHCInterpolate), CommonSettings.GFX3D_HighResolutionInterpolateColor);
-	gtk_table_attach(GTK_TABLE(wTable), wHCInterpolate, 1, 2, 3, 4,
+	gtk_table_attach(GTK_TABLE(wTable), wHCInterpolate, tcol, tcol+1, trow, trow+1,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 10, 0);
 
@@ -2679,16 +2726,29 @@ static void GraphicsSettingsDialog() {
 		default:
 			break;
 		}
+		gpu_scale_factor = gtk_spin_button_get_value(GTK_SPIN_BUTTON(wGPUScale));
+		if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
+			gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
+		if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
+			gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(wGPUScale), gpu_scale_factor);
+		config.gpuScaleFactor = gpu_scale_factor;
+		real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor;
+		real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
+		GPU->SetCustomFramebufferSize(real_framebuffer_width, real_framebuffer_height);
+		video->SetSourceSize(real_framebuffer_width, real_framebuffer_height * 2);
+
 		CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wPosterize));
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wSmoothing));
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
 		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wHCInterpolate));
-#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
+#if ANY_GL_ENABLED
 		int selectedMultisample = gtk_combo_box_get_active(GTK_COMBO_BOX(wMultisample));
 		config.multisamplingSize = multisampleSizes[selectedMultisample];
 		config.multisampling = selectedMultisample != 0;
 		CommonSettings.GFX3D_Renderer_MultisampleSize = multisampleSizes[selectedMultisample];
 #endif
+
     }
     // End: OK Response Block
         break;
@@ -2738,7 +2798,7 @@ static void Printscreen()
     const gchar *dir;
     gchar *filename = NULL, *filen = NULL;
     GError *error = NULL;
-    u8 rgb[256 * 384 * 4];
+    u8 *rgb = (u8*)malloc(real_framebuffer_width * real_framebuffer_height * 2 * 4);
     static int seq = 0;
     gint H, W;
 
@@ -2747,11 +2807,11 @@ static void Printscreen()
     //    return;
 
     if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
-        W = screen_size[nds_screen.orientation].width;
-        H = screen_size[nds_screen.orientation].height;
+        W = real_framebuffer_width;
+        H = real_framebuffer_height * 2;
     } else {
-        W = screen_size[nds_screen.orientation].height;
-        H = screen_size[nds_screen.orientation].width;
+        W = real_framebuffer_height * 2;
+        H = real_framebuffer_width;
     }
 
     gpu_screen_to_rgb((u32*)rgb);
@@ -2788,7 +2848,7 @@ static void Printscreen()
         seq--;
     }
 
-    //free(rgb);
+    free(rgb);
     g_object_unref(screenshot);
     g_free(filename);
     g_free(filen);
@@ -3531,8 +3591,18 @@ common_gtk_main( class configured_features *my_config)
     memset(&nds_screen, 0, sizeof(nds_screen));
     nds_screen.orientation = ORIENT_VERTICAL;
 
+    gpu_scale_factor = config.gpuScaleFactor;
+    if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
+        gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
+    if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
+        gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
+    config.gpuScaleFactor = gpu_scale_factor;
+    real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor;
+    real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
+
     g_printerr("Using %d threads for video filter.\n", CommonSettings.num_cores);
-    video = new VideoFilter(256, 384, VideoFilterTypeID_None, CommonSettings.num_cores);
+    GPU->SetCustomFramebufferSize(real_framebuffer_width, real_framebuffer_height);
+    video = new VideoFilter(real_framebuffer_width, real_framebuffer_height * 2, VideoFilterTypeID_None, CommonSettings.num_cores);
 
     /* Create the window */
     pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
