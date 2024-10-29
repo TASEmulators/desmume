@@ -30,6 +30,8 @@
 
 #include "types.h"
 
+#define MAX_JOYSTICKS 16
+
 #define ADD_KEY(keypad,key) ( (keypad) |= (key) )
 #define RM_KEY(keypad,key) ( (keypad) &= ~(key) )
 #define KEYMASK_(k)	(1 << (k))

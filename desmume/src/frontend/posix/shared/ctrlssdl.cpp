@@ -23,8 +23,6 @@
 #include "NDSSystem.h"
 #include "frontend/modules/osd/agg/agg_osd.h"
 #include "driver.h"
-#include <list>
-#include <unordered_map>
 
 #ifdef FAKE_MIC
 #include "mic.h"
@@ -42,7 +40,7 @@ mouse_status mouse;
 static int fullscreen;
 
 //List of currently connected joysticks (key - instance id, value - SDL_Joystick structure, joystick number)
-static std::unordered_map<SDL_JoystickID, std::pair<SDL_Joystick *, SDL_JoystickID> > open_joysticks;
+static std::pair<SDL_Joystick *, SDL_JoystickID> open_joysticks[MAX_JOYSTICKS];
 
 /* Keypad key names */
 const char *key_names[NB_KEYS] =
@@ -118,8 +116,11 @@ BOOL init_joy( void) {
               SDL_GetError());
       return FALSE;
     }
+  
+  for(i=0; i<MAX_JOYSTICKS; ++i)
+    open_joysticks[i]=std::make_pair((SDL_Joystick*)NULL, 0);
 
-  nbr_joy = SDL_NumJoysticks();
+  nbr_joy = std::min(SDL_NumJoysticks(), MAX_JOYSTICKS);
 
   if ( nbr_joy > 0) {
     printf("Found %d joysticks\n", nbr_joy);
@@ -132,14 +133,13 @@ BOOL init_joy( void) {
          printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
          printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
          printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
-         open_joysticks.insert(std::make_pair(SDL_JoystickInstanceID(joy), std::make_pair(joy, i)));
+         open_joysticks[i]=std::make_pair(joy, SDL_JoystickInstanceID(joy));
        }
        else {
          fprintf(stderr, "Failed to open joystick %d: %s\n", i, SDL_GetError());
          joy_init_good = FALSE;
        }
     }
-    nbr_joy = open_joysticks.size();
   }
 
   return joy_init_good;
@@ -148,12 +148,14 @@ BOOL init_joy( void) {
 /* Unload joysticks */
 void uninit_joy( void)
 {
-  for (auto & it: open_joysticks) {
-    if(it.second.first)
-      SDL_JoystickClose(it.second.first);
+  int i;
+  for (i=0; i<MAX_JOYSTICKS; ++i) {
+    if(open_joysticks[i].first) {
+      SDL_JoystickClose(open_joysticks[i].first);
+      open_joysticks[i]=std::make_pair((SDL_Joystick*)NULL, 0);
+    }
   }
   
-  open_joysticks.clear();
   nbr_joy = 0;
   SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 }
@@ -459,25 +461,23 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
  */
 int
 do_process_joystick_device_events(SDL_Event* event) {
-  int processed = 1;
+  int processed = 1, n;
   switch(event->type) {
     /* Joystick disconnected */
     case SDL_JOYDEVICEREMOVED:
-      {
-        auto it = open_joysticks.find(event->jdevice.which);
-        if(it != open_joysticks.cend()) {
-          printf("Joystick with instance %d disconnected\n", event->jdevice.which);
-          SDL_JoystickClose(it->second.first);
-          open_joysticks.erase(it);
-        }
-        nbr_joy = open_joysticks.size();
+      n=get_joystick_number_by_id(event->jdevice.which);
+      if(n != -1) {
+        printf("Joystick %d disconnected\n", n);
+        SDL_JoystickClose(open_joysticks[n].first);
+        open_joysticks[n]=std::make_pair((SDL_Joystick*)NULL, 0);
       }
       break;
     
     /* Joystick connected */
     case SDL_JOYDEVICEADDED:
-      {
-        if(get_joystick_number_by_id(SDL_JoystickGetDeviceInstanceID(event->jdevice.which))==-1) {
+      if(event->jdevice.which<MAX_JOYSTICKS) {
+        //Filter connect events for joysticks already initialized in init_joy
+        if(!open_joysticks[event->jdevice.which].first) {
           SDL_Joystick* joy = SDL_JoystickOpen(event->jdevice.which);
           if(joy) {
             printf("Joystick %d %s\n", event->jdevice.which, SDL_JoystickNameForIndex(event->jdevice.which));
@@ -485,13 +485,15 @@ do_process_joystick_device_events(SDL_Event* event) {
             printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
             printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
             printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
-            open_joysticks.insert(std::make_pair(SDL_JoystickInstanceID(joy), std::make_pair(joy, event->jdevice.which)));
-            nbr_joy = open_joysticks.size();
+            open_joysticks[event->jdevice.which]=std::make_pair(joy, SDL_JoystickInstanceID(joy));
           }
           else
             fprintf(stderr, "Failed to open joystick %d: %s\n", event->jdevice.which, SDL_GetError());
         }
       }
+      else
+        printf("Joystick %d connected to the system, but maximum supported joystick index is %d, ignoring\n",
+          event->jdevice.which, MAX_JOYSTICKS-1);
       break;
     
     default:
@@ -537,9 +539,11 @@ void process_joystick_device_events() {
 
 int get_joystick_number_by_id(SDL_JoystickID id)
 {
-  auto it = open_joysticks.find(id);
-  if(it != open_joysticks.cend())
-    return it->second.second;
+  int i;
+  for(i=0; i<MAX_JOYSTICKS; ++i)
+    if(open_joysticks[i].first)
+      if(open_joysticks[i].second==id)
+        return i;
   return -1;
 }
 
