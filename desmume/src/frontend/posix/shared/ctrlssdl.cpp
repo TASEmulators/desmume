@@ -24,7 +24,7 @@
 #include "frontend/modules/osd/agg/agg_osd.h"
 #include "driver.h"
 #include <list>
-#include <tuple>
+#include <unordered_map>
 
 #ifdef FAKE_MIC
 #include "mic.h"
@@ -41,8 +41,8 @@ u16 nbr_joy;
 mouse_status mouse;
 static int fullscreen;
 
-//List of currently connected joysticks (SDL_Joystick structure, joystick instance ID, joystick number)
-static std::list<std::tuple<SDL_Joystick *, SDL_JoystickID, int> > open_joysticks;
+//List of currently connected joysticks (key - instance id, value - SDL_Joystick structure, joystick number)
+static std::unordered_map<SDL_JoystickID, std::pair<SDL_Joystick *, SDL_JoystickID> > open_joysticks;
 
 /* Keypad key names */
 const char *key_names[NB_KEYS] =
@@ -132,13 +132,14 @@ BOOL init_joy( void) {
          printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
          printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
          printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
-         open_joysticks.push_back(std::make_tuple(joy, SDL_JoystickInstanceID(joy), i));
+         open_joysticks.insert(std::make_pair(SDL_JoystickInstanceID(joy), std::make_pair(joy, i)));
        }
        else {
          fprintf(stderr, "Failed to open joystick %d: %s\n", i, SDL_GetError());
          joy_init_good = FALSE;
        }
     }
+    nbr_joy = open_joysticks.size();
   }
 
   return joy_init_good;
@@ -148,8 +149,8 @@ BOOL init_joy( void) {
 void uninit_joy( void)
 {
   for (auto & it: open_joysticks) {
-    if(std::get<0>(it))
-      SDL_JoystickClose(std::get<0>(it));
+    if(it.second.first)
+      SDL_JoystickClose(it.second.first);
   }
   
   open_joysticks.clear();
@@ -463,11 +464,10 @@ do_process_joystick_device_events(SDL_Event* event) {
     /* Joystick disconnected */
     case SDL_JOYDEVICEREMOVED:
       {
-        auto it = std::find_if(open_joysticks.begin(), open_joysticks.end(),
-          [event] (const decltype(open_joysticks)::value_type & a) {return std::get<1>(a)==event->jdevice.which;});
-        if(it != open_joysticks.end()) {
+        auto it = open_joysticks.find(event->jdevice.which);
+        if(it != open_joysticks.cend()) {
           printf("Joystick with instance %d disconnected\n", event->jdevice.which);
-          SDL_JoystickClose(std::get<0>(*it));
+          SDL_JoystickClose(it->second.first);
           open_joysticks.erase(it);
         }
         nbr_joy = open_joysticks.size();
@@ -485,7 +485,7 @@ do_process_joystick_device_events(SDL_Event* event) {
             printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
             printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
             printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
-            open_joysticks.push_back(std::make_tuple(joy, SDL_JoystickInstanceID(joy), event->jdevice.which));
+            open_joysticks.insert(std::make_pair(SDL_JoystickInstanceID(joy), std::make_pair(joy, event->jdevice.which)));
             nbr_joy = open_joysticks.size();
           }
           else
@@ -537,10 +537,9 @@ void process_joystick_device_events() {
 
 int get_joystick_number_by_id(SDL_JoystickID id)
 {
-  auto it = std::find_if(open_joysticks.cbegin(), open_joysticks.cend(),
-    [id] (const decltype(open_joysticks)::value_type & a) {return std::get<1>(a)==id;});
+  auto it = open_joysticks.find(id);
   if(it != open_joysticks.cend())
-    return std::get<2>(*it);
+    return it->second.second;
   return -1;
 }
 
