@@ -111,5 +111,11 @@ process_ctrls_event( SDL_Event& event,
 
 void
 process_joystick_events( u16 *keypad);
+int
+do_process_joystick_device_events(SDL_Event* event);
+void
+process_joystick_device_events();
+
+int get_joystick_number_by_id(SDL_JoystickID id);
 
 #endif /* CTRLSSDL_H */
