@@ -35,7 +35,6 @@ u32 joypad_cfg[NB_KEYS];
 
 static_assert(sizeof(keyboard_cfg) == sizeof(joypad_cfg), "");
 
-u16 nbr_joy;
 mouse_status mouse;
 static int fullscreen;
 
@@ -120,7 +119,7 @@ BOOL init_joy( void) {
   for(i=0; i<MAX_JOYSTICKS; ++i)
     open_joysticks[i]=std::make_pair((SDL_Joystick*)NULL, 0);
 
-  nbr_joy = std::min(SDL_NumJoysticks(), MAX_JOYSTICKS);
+  int nbr_joy = std::min(SDL_NumJoysticks(), MAX_JOYSTICKS);
 
   if ( nbr_joy > 0) {
     printf("Found %d joysticks\n", nbr_joy);
@@ -156,7 +155,6 @@ void uninit_joy( void)
     }
   }
   
-  nbr_joy = 0;
   SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 }
 
