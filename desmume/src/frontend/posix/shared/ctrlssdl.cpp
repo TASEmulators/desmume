@@ -547,6 +547,15 @@ int get_joystick_number_by_id(SDL_JoystickID id)
   return -1;
 }
 
+int get_number_of_joysticks()
+{
+  int i, n=0;
+  for(i=0; i<MAX_JOYSTICKS; ++i)
+    if(open_joysticks[i].first)
+      ++n;
+  return n;
+}
+
 static u16 shift_pressed;
 
 void

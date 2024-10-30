@@ -119,5 +119,6 @@ void
 process_joystick_device_events();
 
 int get_joystick_number_by_id(SDL_JoystickID id);
+int get_number_of_joysticks();
 
 #endif /* CTRLSSDL_H */
