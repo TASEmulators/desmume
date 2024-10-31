@@ -2245,13 +2245,13 @@ static gboolean JoyKeyAcceptTimerFunc(gpointer data)
         switch(event.type)
         {
         case SDL_JOYBUTTONDOWN:
-            key = ((event.jbutton.which & 15) << 12) | JOY_BUTTON << 8 | (event.jbutton.button & 255);
+            key = ((get_joystick_number_by_id(event.jbutton.which) & 15) << 12) | JOY_BUTTON << 8 | (event.jbutton.button & 255);
             done = TRUE;
             break;
         case SDL_JOYAXISMOTION:
             if( ((u32)abs(event.jaxis.value) >> 14) != 0 )
             {
-                key = ((event.jaxis.which & 15) << 12) | JOY_AXIS << 8 | ((event.jaxis.axis & 127) << 1);
+                key = ((get_joystick_number_by_id(event.jaxis.which) & 15) << 12) | JOY_AXIS << 8 | ((event.jaxis.axis & 127) << 1);
                 if (event.jaxis.value > 0)
                     key |= 1;
                 done = TRUE;
@@ -2259,7 +2259,7 @@ static gboolean JoyKeyAcceptTimerFunc(gpointer data)
             break;
         case SDL_JOYHATMOTION:
             if (event.jhat.value != SDL_HAT_CENTERED) {
-                key = ((event.jhat.which & 15) << 12) | JOY_HAT << 8 | ((event.jhat.hat & 63) << 2);
+                key = ((get_joystick_number_by_id(event.jhat.which) & 15) << 12) | JOY_HAT << 8 | ((event.jhat.hat & 63) << 2);
                 if ((event.jhat.value & SDL_HAT_UP) != 0)
                     key |= JOY_HAT_UP;
                 else if ((event.jhat.value & SDL_HAT_RIGHT) != 0)
@@ -2270,6 +2270,9 @@ static gboolean JoyKeyAcceptTimerFunc(gpointer data)
                     key |= JOY_HAT_LEFT;
                 done = TRUE;
             }
+            break;
+        default:
+            do_process_joystick_device_events(&event);
             break;
         }
     }
@@ -3367,6 +3370,13 @@ static gboolean timeout_exit_cb(gpointer data)
     return FALSE;
 }
 
+static gboolean OutOfLoopJoyDeviceCheckTimerFunc(gpointer data)
+{
+    if(!regMainLoop && !in_joy_config_mode)
+        process_joystick_device_events();
+    return !regMainLoop;
+}
+
 static int
 common_gtk_main( class configured_features *my_config)
 {
@@ -3918,6 +3928,7 @@ common_gtk_main( class configured_features *my_config)
     video->SetFilterParameteri(VF_PARAM_SCANLINE_D, _scanline_filter_d);
 
 	RedrawScreen();
+	g_timeout_add(200, OutOfLoopJoyDeviceCheckTimerFunc, 0);
     /* Main loop */
     gtk_main();
 
