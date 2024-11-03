@@ -733,7 +733,8 @@ static void OGLGetDriverVersion(const char *oglVersionString,
 	}
 	
 	// Copy the version substring and parse it.
-	char *versionSubstring = (char *)malloc(versionStringLength * sizeof(char));
+	char *versionSubstring = (char *)malloc((versionStringLength + 1) * sizeof(char));
+	versionSubstring[versionStringLength] = '\0';
 	strncpy(versionSubstring, versionStrStart, versionStringLength);
 	
 	unsigned int major = 0;
