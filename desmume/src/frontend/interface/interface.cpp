@@ -546,7 +546,7 @@ EXPORTED void desmume_input_joy_uninit(void)
 
 EXPORTED u16 desmume_input_joy_number_connected(void)
 {
-    return nbr_joy;
+    return get_number_of_joysticks();
 }
 
 EXPORTED u16 desmume_input_joy_get_key(int index)

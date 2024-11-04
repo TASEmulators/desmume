@@ -30,6 +30,8 @@
 
 #include "types.h"
 
+#define MAX_JOYSTICKS 16
+
 #define ADD_KEY(keypad,key) ( (keypad) |= (key) )
 #define RM_KEY(keypad,key) ( (keypad) &= ~(key) )
 #define KEYMASK_(k)	(1 << (k))
@@ -67,8 +69,6 @@ extern const char *key_names[NB_KEYS];
 extern u32 keyboard_cfg[NB_KEYS];
 /* Current joypad configuration */
 extern u32 joypad_cfg[NB_KEYS];
-/* Number of detected joypads */
-extern u16 nbr_joy;
 
 #ifndef GTK_UI
 struct mouse_status
@@ -110,5 +110,12 @@ process_ctrls_event( SDL_Event& event,
 
 void
 process_joystick_events( u16 *keypad);
+int
+do_process_joystick_device_events(SDL_Event* event);
+void
+process_joystick_device_events();
+
+int get_joystick_number_by_id(SDL_JoystickID id);
+int get_number_of_joysticks();
 
 #endif /* CTRLSSDL_H */
