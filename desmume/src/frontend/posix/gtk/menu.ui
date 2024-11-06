@@ -335,9 +335,19 @@
               <attribute name='target'>3</attribute>
             </item>
             <item>
+              <attribute name='label' translatable='yes'>3.5×</attribute>
+              <attribute name='action'>app.winsize</attribute>
+              <attribute name='target'>3.5</attribute>
+            </item>
+            <item>
               <attribute name='label' translatable='yes'>_4×</attribute>
               <attribute name='action'>app.winsize</attribute>
               <attribute name='target'>4</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>4.5×</attribute>
+              <attribute name='action'>app.winsize</attribute>
+              <attribute name='target'>4.5</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_5×</attribute>

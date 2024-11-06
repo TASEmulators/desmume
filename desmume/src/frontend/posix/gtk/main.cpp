@@ -307,7 +307,9 @@ enum winsize_enum {
 	WINSIZE_2 = 4,
 	WINSIZE_2HALF = 5,
 	WINSIZE_3 = 6,
+	WINSIZE_3HALF = 7,
 	WINSIZE_4 = 8,
+	WINSIZE_4HALF = 9,
 	WINSIZE_5 = 10,
 };
 
@@ -1332,8 +1334,12 @@ static void SetWinsize(GSimpleAction *action, GVariant *parameter, gpointer user
         winsize = WINSIZE_2HALF;
     else if (strcmp(string, "3") == 0)
         winsize = WINSIZE_3;
+    else if (strcmp(string, "3.5") == 0)
+        winsize = WINSIZE_3HALF;
     else if (strcmp(string, "4") == 0)
         winsize = WINSIZE_4;
+    else if (strcmp(string, "4.5") == 0)
+        winsize = WINSIZE_4HALF;
     else if (strcmp(string, "5") == 0)
         winsize = WINSIZE_5;
     winsize_current = winsize;
@@ -2296,7 +2302,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	wScale = GTK_COMBO_BOX(gtk_builder_get_object(builder, "scale"));
 	wGPUScale = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "gpuscale"));
 	gtk_spin_button_set_range(wGPUScale, GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX);
-	gtk_spin_button_set_increments(wGPUScale, 1.0, 1.0);
+	gtk_spin_button_set_increments(wGPUScale, 0.5, 1.0);
 	wMultisample = GTK_COMBO_BOX(gtk_builder_get_object(builder, "multisample"));
 	wPosterize = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "posterize"));
 	wSmoothing = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "smoothing"));
@@ -3774,8 +3780,14 @@ common_gtk_main(GApplication *app, gpointer user_data)
         case WINSIZE_3:
             string = "3";
             break;
+        case WINSIZE_3HALF:
+            string = "3.5";
+            break;
         case WINSIZE_4:
             string = "4";
+            break;
+        case WINSIZE_4HALF:
+            string = "4.5";
             break;
         case WINSIZE_5:
             string = "5";
