@@ -118,6 +118,7 @@
               <object class="GtkSpinButton" id="gpuscale">
                 <property name="can-focus">False</property>
                 <property name="numeric">True</property>
+                <property name="digits">1</property>
               </object>
               <packing>
                 <property name="left-attach">1</property>
