@@ -45,8 +45,20 @@ static bool __egl_initOpenGL(const int requestedAPI, const int requestedProfile,
 
 	EGLint eglMajorVersion;
 	EGLint eglMinorVersion;
-
+	
+#ifdef EGL_VERSION_1_5
+	EGLAttrib attr[] = {EGL_NONE};
+	currDisplay = eglGetPlatformDisplay(EGL_PLATFORM_WAYLAND_EXT, EGL_DEFAULT_DISPLAY, attr);
+	if(currDisplay == EGL_NO_DISPLAY)
+		currDisplay = eglGetPlatformDisplay(EGL_PLATFORM_XCB_EXT, EGL_DEFAULT_DISPLAY, attr);
+#else
 	currDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+#endif
+	if(currDisplay == EGL_NO_DISPLAY)
+	{
+		puts("EGL: failed to obtain display handle");
+		return false;
+	}
 	if (eglInitialize(currDisplay, &eglMajorVersion, &eglMinorVersion) == EGL_FALSE)
 	{
 		puts("EGL: eglInitialize failed");
