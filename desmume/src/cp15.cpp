@@ -366,6 +366,13 @@ BOOL armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1,
 			}
 		}
 		return FALSE;
+	case 13:
+		if(opcode1 == 0 && opcode2 == 1)
+		{
+			*R = armcp15->processID;
+			return TRUE;
+		}
+		return FALSE;
 	default:
 		LOG("Unsupported CP15 operation : MRC\n");
 		return FALSE;
@@ -486,6 +493,13 @@ BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1,
 					return FALSE;
 				}
 			}
+		}
+		return FALSE;
+	case 13:
+		if(opcode1 == 0 && opcode2 == 1)
+		{
+			armcp15->processID = val;
+			return TRUE;
 		}
 		return FALSE;
 	default:
