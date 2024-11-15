@@ -3754,7 +3754,21 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				case eng_3D_GXSTAT:
 					MMU_new.gxstat.write(8,adr,val);
 					break;
-					
+
+				case REG_IPCSYNC:
+				{
+					u16 ipcsync = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x180);
+					ipcsync &= 0xFF00;
+					ipcsync |= (val & 0xFF);
+					MMU_IPCSync(ARMCPU_ARM9, ipcsync);
+				}
+				case REG_IPCSYNC+1:
+				{
+					u16 ipcsync = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x180);
+					ipcsync &= 0x00FF;
+					ipcsync |= ((val & 0xFF) << 8);
+					MMU_IPCSync(ARMCPU_ARM9, ipcsync);
+				}
 				case REG_AUXSPICNT:
 				case REG_AUXSPICNT+1:
 					write_auxspicnt(ARMCPU_ARM9, 8, adr & 1, val);
@@ -5595,6 +5609,21 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 			case REG_TM3CNTL+0: case REG_TM3CNTL+1: case REG_TM3CNTL+2: case REG_TM3CNTL+3:
 				printf("Unsupported 8bit write to timer registers");
 				return;
+
+			case REG_IPCSYNC:
+			{
+				u16 ipcsync = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x180);
+				ipcsync &= 0xFF00;
+				ipcsync |= (val & 0xFF);
+				MMU_IPCSync(ARMCPU_ARM7, ipcsync);
+			}
+			case REG_IPCSYNC+1:
+			{
+				u16 ipcsync = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x180);
+				ipcsync &= 0x00FF;
+				ipcsync |= ((val & 0xFF) << 8);
+				MMU_IPCSync(ARMCPU_ARM7, ipcsync);
+			}
 
 			case REG_AUXSPIDATA:
 			{
