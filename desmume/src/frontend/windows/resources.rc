@@ -2172,21 +2172,21 @@ END
 // Bitmap
 //
 
-IDB_FRAMEADVANCE        BITMAP                  "bitmaps\\IDB_FRAMEADVANCE.bmp"
+IDB_FRAMEADVANCE        BITMAP                  "bitmaps/IDB_FRAMEADVANCE.bmp"
 
-IDB_OPEN                BITMAP                  "bitmaps\\IDB_OPEN.bmp"
+IDB_OPEN                BITMAP                  "bitmaps/IDB_OPEN.bmp"
 
-IDB_PAUSE               BITMAP                  "bitmaps\\IDB_PAUSE.bmp"
+IDB_PAUSE               BITMAP                  "bitmaps/IDB_PAUSE.bmp"
 
-IDB_PLAY                BITMAP                  "bitmaps\\IDB_PLAY.bmp"
+IDB_PLAY                BITMAP                  "bitmaps/IDB_PLAY.bmp"
 
-IDB_RESET               BITMAP                  "bitmaps\\IDB_RESET.bmp"
+IDB_RESET               BITMAP                  "bitmaps/IDB_RESET.bmp"
 
-IDB_STOP                BITMAP                  "bitmaps\\IDB_STOP.bmp"
+IDB_STOP                BITMAP                  "bitmaps/IDB_STOP.bmp"
 
-IDB_ROTATECCW           BITMAP                  "bitmaps\\IDB_ROTATECCW.bmp"
+IDB_ROTATECCW           BITMAP                  "bitmaps/IDB_ROTATECCW.bmp"
 
-IDB_ROTATECW            BITMAP                  "bitmaps\\IDB_ROTATECW.bmp"
+IDB_ROTATECW            BITMAP                  "bitmaps/IDB_ROTATECW.bmp"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2198,11 +2198,11 @@ IDB_ROTATECW            BITMAP                  "bitmaps\\IDB_ROTATECW.bmp"
 // remains consistent on all systems.
 ICONDESMUME             ICON                    "DeSmuME.ico"
 
-IDI_FOLDER_OPEN         ICON                    "bitmaps\\FolderClosed.ico"
+IDI_FOLDER_OPEN         ICON                    "bitmaps/FolderClosed.ico"
 
-IDI_FOLDER_CLOSED       ICON                    "bitmaps\\FolderOpen.ico"
+IDI_FOLDER_CLOSED       ICON                    "bitmaps/FolderOpen.ico"
 
-IDI_FILE_BINARY         ICON                    "bitmaps\\FileBinary.ico"
+IDI_FILE_BINARY         ICON                    "bitmaps/FileBinary.ico"
 
 
 /////////////////////////////////////////////////////////////////////////////
