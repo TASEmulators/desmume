@@ -460,23 +460,23 @@ FORCEINLINE static u32 armcpu_prefetch()
 }
 
 #if 0 /* not used */
-static BOOL FASTCALL test_EQ(Status_Reg CPSR) { return ( CPSR.bits.Z); }
-static BOOL FASTCALL test_NE(Status_Reg CPSR) { return (!CPSR.bits.Z); }
-static BOOL FASTCALL test_CS(Status_Reg CPSR) { return ( CPSR.bits.C); }
-static BOOL FASTCALL test_CC(Status_Reg CPSR) { return (!CPSR.bits.C); }
-static BOOL FASTCALL test_MI(Status_Reg CPSR) { return ( CPSR.bits.N); }
-static BOOL FASTCALL test_PL(Status_Reg CPSR) { return (!CPSR.bits.N); }
-static BOOL FASTCALL test_VS(Status_Reg CPSR) { return ( CPSR.bits.V); }
-static BOOL FASTCALL test_VC(Status_Reg CPSR) { return (!CPSR.bits.V); }
-static BOOL FASTCALL test_HI(Status_Reg CPSR) { return (CPSR.bits.C) && (!CPSR.bits.Z); }
-static BOOL FASTCALL test_LS(Status_Reg CPSR) { return (CPSR.bits.Z) || (!CPSR.bits.C); }
-static BOOL FASTCALL test_GE(Status_Reg CPSR) { return (CPSR.bits.N==CPSR.bits.V); }
-static BOOL FASTCALL test_LT(Status_Reg CPSR) { return (CPSR.bits.N!=CPSR.bits.V); }
-static BOOL FASTCALL test_GT(Status_Reg CPSR) { return (!CPSR.bits.Z) && (CPSR.bits.N==CPSR.bits.V); }
-static BOOL FASTCALL test_LE(Status_Reg CPSR) { return ( CPSR.bits.Z) || (CPSR.bits.N!=CPSR.bits.V); }
-static BOOL FASTCALL test_AL(Status_Reg CPSR) { return 1; }
+static BOOL DESMUME_FASTCALL test_EQ(Status_Reg CPSR) { return ( CPSR.bits.Z); }
+static BOOL DESMUME_FASTCALL test_NE(Status_Reg CPSR) { return (!CPSR.bits.Z); }
+static BOOL DESMUME_FASTCALL test_CS(Status_Reg CPSR) { return ( CPSR.bits.C); }
+static BOOL DESMUME_FASTCALL test_CC(Status_Reg CPSR) { return (!CPSR.bits.C); }
+static BOOL DESMUME_FASTCALL test_MI(Status_Reg CPSR) { return ( CPSR.bits.N); }
+static BOOL DESMUME_FASTCALL test_PL(Status_Reg CPSR) { return (!CPSR.bits.N); }
+static BOOL DESMUME_FASTCALL test_VS(Status_Reg CPSR) { return ( CPSR.bits.V); }
+static BOOL DESMUME_FASTCALL test_VC(Status_Reg CPSR) { return (!CPSR.bits.V); }
+static BOOL DESMUME_FASTCALL test_HI(Status_Reg CPSR) { return (CPSR.bits.C) && (!CPSR.bits.Z); }
+static BOOL DESMUME_FASTCALL test_LS(Status_Reg CPSR) { return (CPSR.bits.Z) || (!CPSR.bits.C); }
+static BOOL DESMUME_FASTCALL test_GE(Status_Reg CPSR) { return (CPSR.bits.N==CPSR.bits.V); }
+static BOOL DESMUME_FASTCALL test_LT(Status_Reg CPSR) { return (CPSR.bits.N!=CPSR.bits.V); }
+static BOOL DESMUME_FASTCALL test_GT(Status_Reg CPSR) { return (!CPSR.bits.Z) && (CPSR.bits.N==CPSR.bits.V); }
+static BOOL DESMUME_FASTCALL test_LE(Status_Reg CPSR) { return ( CPSR.bits.Z) || (CPSR.bits.N!=CPSR.bits.V); }
+static BOOL DESMUME_FASTCALL test_AL(Status_Reg CPSR) { return 1; }
 
-static BOOL (FASTCALL* test_conditions[])(Status_Reg CPSR)= {
+static BOOL (DESMUME_FASTCALL* test_conditions[])(Status_Reg CPSR)= {
 	test_EQ , test_NE ,
 	test_CS , test_CC ,
 	test_MI , test_PL ,
