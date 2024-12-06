@@ -27,6 +27,11 @@
 
 		#include "frontend/windows/winutil.h"
 		#include "frontend/windows/resource.h"
+
+#if defined(__MINGW32__)
+#define mkdir(A, B) mkdir(A)
+#endif
+
 #elif !defined(DESMUME_COCOA)
 	#include <glib.h>
 #endif /* HOST_WINDOWS */
