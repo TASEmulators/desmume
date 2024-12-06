@@ -60,6 +60,7 @@
 using namespace AsmJit;
 
 #if (LOG_JIT_LEVEL > 0)
+#include "../modules/Disassembler.h"
 #define LOG_JIT 1
 #define JIT_COMMENT(...) c.comment(__VA_ARGS__)
 #define printJIT(buf, val) { \
