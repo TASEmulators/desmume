@@ -280,19 +280,19 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 			DateTime_SetSystemtime(GetDlgItem(hwndDlg, IDC_DTP_TIME), GDT_VALID, &systime);
 
 			union {
-				struct { SYSTEMTIME rtcMin, rtcMax; };
+				struct { SYSTEMTIME rtcMin, rtcMax; } mm;
 				SYSTEMTIME rtcMinMax[2];
 			};
-			ZeroMemory(&rtcMin, sizeof(SYSTEMTIME));
-			ZeroMemory(&rtcMax, sizeof(SYSTEMTIME));
-			rtcMin.wYear = 2000;
-			rtcMin.wMonth = 1;
-			rtcMin.wDay = 1;
-			rtcMin.wDayOfWeek = 6;
-			rtcMax.wYear = 2099;
-			rtcMax.wMonth = 12;
-			rtcMax.wDay = 31;
-			rtcMax.wDayOfWeek = 4;
+			ZeroMemory(&mm.rtcMin, sizeof(SYSTEMTIME));
+			ZeroMemory(&mm.rtcMax, sizeof(SYSTEMTIME));
+			mm.rtcMin.wYear = 2000;
+			mm.rtcMin.wMonth = 1;
+			mm.rtcMin.wDay = 1;
+			mm.rtcMin.wDayOfWeek = 6;
+			mm.rtcMax.wYear = 2099;
+			mm.rtcMax.wMonth = 12;
+			mm.rtcMax.wDay = 31;
+			mm.rtcMax.wDayOfWeek = 4;
 			DateTime_SetRange(GetDlgItem(hwndDlg, IDC_DTP_DATE), GDTR_MIN, &rtcMinMax);
 			DateTime_SetRange(GetDlgItem(hwndDlg, IDC_DTP_DATE), GDTR_MAX, &rtcMinMax);
 			return false;
