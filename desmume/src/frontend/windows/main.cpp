@@ -26,8 +26,8 @@
 #include <string>
 #include <vector>
 
-#include <Winuser.h>
-#include <Winnls.h>
+#include <winuser.h>
+#include <winnls.h>
 #include <windowsx.h>
 #include <mmsystem.h>
 #include <shellapi.h>
@@ -100,9 +100,9 @@
 #include "palView.h"
 #include "tileView.h"
 #include "oamView.h"
-#include "mapview.h"
-#include "matrixview.h"
-#include "lightview.h"
+#include "mapView.h"
+#include "matrixView.h"
+#include "lightView.h"
 #include "slot1_config.h"
 #include "gbaslot_config.h"
 #include "cheatsWin.h"

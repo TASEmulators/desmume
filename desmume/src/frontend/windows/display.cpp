@@ -17,8 +17,8 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "display.h"
 
-#include <MMSystem.h>
-#include <WindowsX.h>
+#include <mmsystem.h>
+#include <windowsx.h>
 
 #include "main.h"
 #include "windriver.h"

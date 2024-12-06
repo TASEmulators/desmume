@@ -63,7 +63,7 @@
 #include "cheatsWin.h"
 
 #ifdef _WIN32
-   #include "BaseTsd.h"
+   #include "basetsd.h"
    typedef INT_PTR intptr_t;
 #else
    #include "stdint.h"

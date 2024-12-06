@@ -19,7 +19,7 @@
 #include "snddx.h"
 
 #include <stdio.h>
-#include <Windows.h>
+#include <windows.h>
 #include <mmsystem.h>
 #include "directx/dsound.h"
 
