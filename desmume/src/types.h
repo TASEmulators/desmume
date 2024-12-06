@@ -124,7 +124,7 @@
 	#endif
 #endif
 
-#ifdef _MSC_VER 
+#if defined(_MSC_VER) || defined(__MINGW32__)
 	#include <compat/msvc.h>
 
 #else
