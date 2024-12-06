@@ -560,9 +560,8 @@ NDSCaptureObject::NDSCaptureObject()
 }
 
 NDSCaptureObject::NDSCaptureObject(size_t frameWidth, size_t frameHeight, const WAVEFORMATEX *wfex)
+	: NDSCaptureObject()
 {
-	this->NDSCaptureObject::NDSCaptureObject();
-
 	_bmpFormat.biWidth = frameWidth;
 	_bmpFormat.biHeight = frameHeight * 2;
 	_bmpFormat.biSizeImage = _bmpFormat.biWidth * _bmpFormat.biHeight * 3;
