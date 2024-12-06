@@ -25,7 +25,7 @@
 #ifndef _GDBSTUB_INTERNAL_H_
 #define _GDBSTUB_INTERNAL_H_ 1
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
 	#include <stdint.h>
 
 	#include <winsock2.h>
