@@ -79,7 +79,7 @@ struct STDROMReaderData
 
 void* STDROMReaderInit(const char* filename)
 {
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(__MINGW32__)
 	struct stat sb;
 	if (stat(filename, &sb) == -1)
 		return 0;
