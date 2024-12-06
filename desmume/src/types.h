@@ -177,10 +177,7 @@
 #define FAST_ALIGN DS_ALIGN(4)
 //---------------------------------------------
 
-#ifdef __MINGW32__
-	#define DESMUME_FASTCALL __attribute__((fastcall))
-	#define ASMJIT_CALL_CONV kX86FuncConvGccFastCall
-#elif defined (__i386__) && !defined(__clang__)
+#if defined (__i386__) && !defined(__clang__)
 	#define DESMUME_FASTCALL __attribute__((regparm(3)))
 	#define ASMJIT_CALL_CONV kX86FuncConvGccRegParm3
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
