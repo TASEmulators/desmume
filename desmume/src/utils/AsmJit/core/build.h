@@ -282,7 +282,7 @@ static inline T asmjit_cast(Z* p) { return (T)p; }
 // ============================================================================
 
 #if defined(ASMJIT_WINDOWS)
-#include <Windows.h>
+#include <windows.h>
 #endif // ASMJIT_WINDOWS
 
 #if defined(__APPLE__)

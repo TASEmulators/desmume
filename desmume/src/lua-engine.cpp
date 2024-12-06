@@ -21,7 +21,7 @@
 	#include <windows.h>
     #if defined(WIN32_FRONTEND)
         #include <direct.h>
-        #include <MMSystem.h>
+        #include <mmsystem.h>
 
         typedef HMENU PlatformMenu;    // hMenu
         #define MAX_MENU_COUNT (IDC_LUAMENU_RESERVE_END - IDC_LUAMENU_RESERVE_START + 1)

@@ -21,8 +21,8 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <Commdlg.h>
-#include <Shellapi.h>
+#include <commdlg.h>
+#include <shellapi.h>
 
 #include "hotkey.h"
 
@@ -39,7 +39,7 @@
 #include "frontend/modules/ImageOut.h"
 
 #include "main.h"
-#include "CheatsWin.h"
+#include "cheatsWin.h"
 #include "inputdx.h"
 #include "throttle.h"
 #include "ramwatch.h"		//In order to call UpdateRamWatch (for loadstate functions)

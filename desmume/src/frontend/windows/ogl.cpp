@@ -26,8 +26,8 @@
 
 #include "OGLRender.h"
 
-#include <gl/gl.h>
-#include <gl/glext.h>
+#include <GL/gl.h>
+#include <GL/glext.h>
 #include <GL/wglext.h>
 #include "console.h"
 #include "CWindow.h"

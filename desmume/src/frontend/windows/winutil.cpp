@@ -22,7 +22,7 @@
 #include <string.h>
 #include <windows.h>
 #include <windef.h>
-#include <ShlObj.h>
+#include <shlobj.h>
 
 
 char IniName[MAX_PATH];
