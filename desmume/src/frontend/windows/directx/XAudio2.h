@@ -68,6 +68,14 @@ GARBONZOBEAN(IXAudio2, 8bcf1f58-9fe7-4583-8ac6-e2adc465c8bb);
 // All structures defined in this file use tight field packing
 #pragma pack(push, 1)
 
+#ifdef __MINGW32__ /* hack to provide some magic MSVC keywords */
+#define __out
+#define __in
+#define __deref_out
+#define __reserved
+#endif
+
+
 
 /**************************************************************************
  *
@@ -1272,6 +1280,13 @@ __inline HRESULT XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2
 }
 
 #endif // #ifdef _XBOX
+
+#ifdef __MINGW32__
+#undef __out
+#undef __in
+#undef __deref_out
+#undef __reserved
+#endif
 
 
 // Undo the #pragma pack(push, 1) directive at the top of this file
