@@ -32,7 +32,7 @@
 #include <errno.h>
 #include <ctype.h>
 
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(__MINGW32__)
 #include <unistd.h>
 #include <sys/dir.h>
 #endif
