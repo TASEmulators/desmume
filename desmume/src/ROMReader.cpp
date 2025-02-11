@@ -348,7 +348,7 @@ int MemROMReaderWrite(void * file, void * buffer, u32 size)
 	if(remain<todo)
 		todo = remain;
 
-	if(todo==1) *(u8*)buffer = ((u8*)mem.buf)[mem.pos];
+	if (todo == 1) ((u8*)mem.buf)[mem.pos] = *(u8*)buffer;
 	else memcpy((u8*)mem.buf + mem.pos,buffer, todo);
 	mem.pos += todo;
 	return todo;
