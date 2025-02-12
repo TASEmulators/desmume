@@ -10,6 +10,11 @@
 #ifndef __XMA2DEFS_INCLUDED__
 #define __XMA2DEFS_INCLUDED__
 
+#ifdef __MINGW32__
+#define __out
+#define __in
+#endif
+
 #include <sal.h>        // Markers for documenting API semantics
 #include <winerror.h>   // For S_OK, E_FAIL
 #include <audiodefs.h>  // Basic data types and constants for audio work
@@ -713,6 +718,11 @@ __inline HRESULT LocalizeXma2Format(__inout XMA2WAVEFORMATEX* pXma2Format)
     #undef XMASWAP2BYTES
     #undef XMASWAP4BYTES
 }
+
+#ifdef __MINGW32__
+#undef __out
+#undef __in
+#endif
 
 
 #endif // #ifndef __XMA2DEFS_INCLUDED__

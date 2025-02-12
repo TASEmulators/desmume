@@ -20,7 +20,7 @@
 
 #include "types.h"
 
-typedef u32 (FASTCALL* OpFunc)(const u32 i);
+typedef u32 (DESMUME_FASTCALL* OpFunc)(const u32 i);
 extern const OpFunc arm_instructions_set[2][4096];
 extern const char* arm_instruction_names[4096];
 extern const OpFunc thumb_instructions_set[2][1024];

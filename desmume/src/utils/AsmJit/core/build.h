@@ -109,29 +109,6 @@
 # define ASMJIT_FREE ::free
 #endif // ASMJIT_FREE
 
-// ============================================================================
-// [AsmJit - Calling Conventions]
-// ============================================================================
-
-#if defined(ASMJIT_X86)
-# if defined(__GNUC__)
-#  define ASMJIT_REGPARM_1 __attribute__((regparm(1)))
-#  define ASMJIT_REGPARM_2 __attribute__((regparm(2)))
-#  define ASMJIT_REGPARM_3 __attribute__((regparm(3)))
-#  define ASMJIT_FASTCALL  __attribute__((fastcall))
-#  define ASMJIT_STDCALL   __attribute__((stdcall))
-#  define ASMJIT_CDECL     __attribute__((cdecl))
-# else
-#  define ASMJIT_FASTCALL   __fastcall
-#  define ASMJIT_STDCALL    __stdcall
-#  define ASMJIT_CDECL      __cdecl
-# endif
-#else
-# define ASMJIT_FASTCALL
-# define ASMJIT_STDCALL
-# define ASMJIT_CDECL
-#endif // ASMJIT_X86
-
 #if !defined(ASMJIT_UNUSED)
 # define ASMJIT_UNUSED(var) ((void)var)
 #endif // ASMJIT_UNUSED
