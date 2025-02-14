@@ -1429,11 +1429,11 @@ void DesmumeInputToReplayRec(const UserInput &inInput, MovieRecord &outRecord)
 	                ((inInput.buttons.E) ? (1 <<  1) : 0);
 	
 	if (inInput.buttons.F)
-		outRecord.commands = MOVIECMD_LID;
+		outRecord.commands |= MOVIECMD_LID;
 	
 	if (movie_reset_command)
 	{
-		outRecord.commands = MOVIECMD_RESET;
+		outRecord.commands |= MOVIECMD_RESET;
 		movie_reset_command = false;
 	}
 	
@@ -1443,5 +1443,5 @@ void DesmumeInputToReplayRec(const UserInput &inInput, MovieRecord &outRecord)
 	outRecord.touch.micsample = MicSampleSelection;
 	
 	if (inInput.mic.micButtonPressed != 0)
-		outRecord.commands = MOVIECMD_MIC;
+		outRecord.commands |= MOVIECMD_MIC;
 }
