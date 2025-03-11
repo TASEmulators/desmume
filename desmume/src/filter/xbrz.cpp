@@ -478,7 +478,7 @@ const bool sPixDoLineBlend(const Kernel_3x3& ker, const char blend, const xbrz::
 		return true;
 	
 	//make sure there is no second blending in an adjacent rotation for this pixel: handles insular pixels, mario eyes
-	if (getTopR(blend) != BLEND_NONE && !sPixEQ<ColorDistance>(e, g, cfg)) //but support double-blending for 90¡ corners
+	if (getTopR(blend) != BLEND_NONE && !sPixEQ<ColorDistance>(e, g, cfg)) //but support double-blending for 90ï¿½ corners
 		return false;
 	if (getBottomL(blend) != BLEND_NONE && !sPixEQ<ColorDistance>(e, c, cfg))
 		return false;
@@ -550,7 +550,7 @@ void blendPixel(const Kernel_3x3& ker,
                 return true;
 
             //make sure there is no second blending in an adjacent rotation for this pixel: handles insular pixels, mario eyes
-            if (getTopR(blend) != BLEND_NONE && !eq(e, g)) //but support double-blending for 90° corners
+            if (getTopR(blend) != BLEND_NONE && !eq(e, g)) //but support double-blending for 90ï¿½ corners
                 return false;
             if (getBottomL(blend) != BLEND_NONE && !eq(e, c))
                 return false;
@@ -781,45 +781,56 @@ void scaleImage(const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight,
 template <class ColorGradient>
 struct Scaler2x : public ColorGradient
 {
-    static const int scale = 2;
-
-    template <unsigned int M, unsigned int N> //bring template function into scope for GCC
-    static void alphaGrad(uint32_t& pixBack, uint32_t pixFront) { ColorGradient::template alphaGrad<M, N>(pixBack, pixFront); }
-
-
+    static constexpr int scale = 2;
+    
+    template <unsigned int M, unsigned int N> // bring template function into scope for GCC
+    static inline void alphaGrad(uint32_t& pixBack, uint32_t pixFront) { 
+        ColorGradient::template alphaGrad<M, N>(pixBack, pixFront); 
+    }
+    
     template <class OutputMatrix>
     static void blendLineShallow(uint32_t col, OutputMatrix& out)
     {
-        alphaGrad<1, 4>(out.template ref<scale - 1, 0>(), col);
-        alphaGrad<3, 4>(out.template ref<scale - 1, 1>(), col);
+        uint32_t& pixel1 = out.template ref<scale - 1, 0>();
+        uint32_t& pixel2 = out.template ref<scale - 1, 1>();
+        
+        alphaGrad<1, 4>(pixel1, col);
+        alphaGrad<3, 4>(pixel2, col);
     }
-
+    
     template <class OutputMatrix>
     static void blendLineSteep(uint32_t col, OutputMatrix& out)
     {
-        alphaGrad<1, 4>(out.template ref<0, scale - 1>(), col);
-        alphaGrad<3, 4>(out.template ref<1, scale - 1>(), col);
+        uint32_t& pixel1 = out.template ref<0, scale - 1>();
+        uint32_t& pixel2 = out.template ref<1, scale - 1>();
+        
+        alphaGrad<1, 4>(pixel1, col);
+        alphaGrad<3, 4>(pixel2, col);
     }
-
+    
     template <class OutputMatrix>
     static void blendLineSteepAndShallow(uint32_t col, OutputMatrix& out)
     {
-        alphaGrad<1, 4>(out.template ref<1, 0>(), col);
-        alphaGrad<1, 4>(out.template ref<0, 1>(), col);
-        alphaGrad<5, 6>(out.template ref<1, 1>(), col); //[!] fixes 7/8 used in xBR
+        uint32_t& pixel1 = out.template ref<1, 0>();
+        uint32_t& pixel2 = out.template ref<0, 1>();
+        uint32_t& pixel3 = out.template ref<1, 1>();
+        
+        alphaGrad<1, 4>(pixel1, col);
+        alphaGrad<1, 4>(pixel2, col);
+        alphaGrad<5, 6>(pixel3, col); // [!] fixes 7/8 used in xBR
     }
-
+    
     template <class OutputMatrix>
     static void blendLineDiagonal(uint32_t col, OutputMatrix& out)
     {
         alphaGrad<1, 2>(out.template ref<1, 1>(), col);
     }
-
+    
     template <class OutputMatrix>
     static void blendCorner(uint32_t col, OutputMatrix& out)
     {
-        //model a round corner
-        alphaGrad<21, 100>(out.template ref<1, 1>(), col); //exact: 1 - pi/4 = 0.2146018366
+        // model a round corner
+        alphaGrad<21, 100>(out.template ref<1, 1>(), col); // exact: 1 - pi/4 = 0.2146018366
     }
 };
 
@@ -827,57 +838,74 @@ struct Scaler2x : public ColorGradient
 template <class ColorGradient>
 struct Scaler3x : public ColorGradient
 {
-    static const int scale = 3;
-
-    template <unsigned int M, unsigned int N> //bring template function into scope for GCC
-    static void alphaGrad(uint32_t& pixBack, uint32_t pixFront) { ColorGradient::template alphaGrad<M, N>(pixBack, pixFront); }
-
-
+    static constexpr int scale = 3;
+    
+    template <unsigned int M, unsigned int N>
+    static void alphaGrad(uint32_t& pixBack, uint32_t pixFront) { 
+        ColorGradient::template alphaGrad<M, N>(pixBack, pixFront); 
+    }
+    
     template <class OutputMatrix>
     static void blendLineShallow(uint32_t col, OutputMatrix& out)
     {
-        alphaGrad<1, 4>(out.template ref<scale - 1, 0>(), col);
-        alphaGrad<1, 4>(out.template ref<scale - 2, 2>(), col);
-
-        alphaGrad<3, 4>(out.template ref<scale - 1, 1>(), col);
-        out.template ref<scale - 1, 2>() = col;
+        uint32_t& pixel1 = out.template ref<scale - 1, 0>();
+        uint32_t& pixel2 = out.template ref<scale - 2, 2>();
+        uint32_t& pixel3 = out.template ref<scale - 1, 1>();
+        uint32_t& pixel4 = out.template ref<scale - 1, 2>();
+        
+        alphaGrad<1, 4>(pixel1, col);
+        alphaGrad<1, 4>(pixel2, col);
+        alphaGrad<3, 4>(pixel3, col);
+        pixel4 = col;
     }
-
+    
     template <class OutputMatrix>
     static void blendLineSteep(uint32_t col, OutputMatrix& out)
     {
-        alphaGrad<1, 4>(out.template ref<0, scale - 1>(), col);
-        alphaGrad<1, 4>(out.template ref<2, scale - 2>(), col);
-
-        alphaGrad<3, 4>(out.template ref<1, scale - 1>(), col);
-        out.template ref<2, scale - 1>() = col;
+        uint32_t& pixel1 = out.template ref<0, scale - 1>();
+        uint32_t& pixel2 = out.template ref<2, scale - 2>();
+        uint32_t& pixel3 = out.template ref<1, scale - 1>();
+        uint32_t& pixel4 = out.template ref<2, scale - 1>();
+        
+        alphaGrad<1, 4>(pixel1, col);
+        alphaGrad<1, 4>(pixel2, col);
+        alphaGrad<3, 4>(pixel3, col);
+        pixel4 = col;
     }
-
+    
     template <class OutputMatrix>
     static void blendLineSteepAndShallow(uint32_t col, OutputMatrix& out)
     {
-        alphaGrad<1, 4>(out.template ref<2, 0>(), col);
-        alphaGrad<1, 4>(out.template ref<0, 2>(), col);
-        alphaGrad<3, 4>(out.template ref<2, 1>(), col);
-        alphaGrad<3, 4>(out.template ref<1, 2>(), col);
-        out.template ref<2, 2>() = col;
+        uint32_t& pixel1 = out.template ref<2, 0>();
+        uint32_t& pixel2 = out.template ref<0, 2>();
+        uint32_t& pixel3 = out.template ref<2, 1>();
+        uint32_t& pixel4 = out.template ref<1, 2>();
+        uint32_t& pixel5 = out.template ref<2, 2>();
+        
+        alphaGrad<1, 4>(pixel1, col);
+        alphaGrad<1, 4>(pixel2, col);
+        alphaGrad<3, 4>(pixel3, col);
+        alphaGrad<3, 4>(pixel4, col);
+        pixel5 = col;
     }
-
+    
     template <class OutputMatrix>
     static void blendLineDiagonal(uint32_t col, OutputMatrix& out)
     {
-        alphaGrad<1, 8>(out.template ref<1, 2>(), col); //conflict with other rotations for this odd scale
-        alphaGrad<1, 8>(out.template ref<2, 1>(), col);
-        alphaGrad<7, 8>(out.template ref<2, 2>(), col); //
+        uint32_t& pixel1 = out.template ref<1, 2>();
+        uint32_t& pixel2 = out.template ref<2, 1>();
+        uint32_t& pixel3 = out.template ref<2, 2>();
+        
+        alphaGrad<1, 8>(pixel1, col);
+        alphaGrad<1, 8>(pixel2, col);
+        alphaGrad<7, 8>(pixel3, col);
     }
-
+    
     template <class OutputMatrix>
     static void blendCorner(uint32_t col, OutputMatrix& out)
     {
-        //model a round corner
-        alphaGrad<45, 100>(out.template ref<2, 2>(), col); //exact: 0.4545939598
-        //alphaGrad<7, 256>(out.template ref<2, 1>(), col); //0.02826017254 -> negligible + avoid conflicts with other rotations for this odd scale
-        //alphaGrad<7, 256>(out.template ref<1, 2>(), col); //0.02826017254
+        uint32_t& pixel = out.template ref<2, 2>();
+        alphaGrad<45, 100>(pixel, col);
     }
 };
 
@@ -885,38 +913,44 @@ struct Scaler3x : public ColorGradient
 template <class ColorGradient>
 struct Scaler4x : public ColorGradient
 {
-    static const int scale = 4;
-
-    template <unsigned int M, unsigned int N> //bring template function into scope for GCC
-    static void alphaGrad(uint32_t& pixBack, uint32_t pixFront) { ColorGradient::template alphaGrad<M, N>(pixBack, pixFront); }
-
-
+    static constexpr int scale = 4;
+    
+    template <unsigned int M, unsigned int N>
+    static inline void alphaGrad(uint32_t& pixBack, uint32_t pixFront) 
+    { 
+        ColorGradient::template alphaGrad<M, N>(pixBack, pixFront); 
+    }
+    
     template <class OutputMatrix>
     static void blendLineShallow(uint32_t col, OutputMatrix& out)
     {
-        alphaGrad<1, 4>(out.template ref<scale - 1, 0>(), col);
-        alphaGrad<1, 4>(out.template ref<scale - 2, 2>(), col);
-
-        alphaGrad<3, 4>(out.template ref<scale - 1, 1>(), col);
-        alphaGrad<3, 4>(out.template ref<scale - 2, 3>(), col);
-
-        out.template ref<scale - 1, 2>() = col;
-        out.template ref<scale - 1, 3>() = col;
+        constexpr int sm1 = scale - 1;
+        constexpr int sm2 = scale - 2;
+        
+        alphaGrad<1, 4>(out.template ref<sm1, 0>(), col);
+        alphaGrad<1, 4>(out.template ref<sm2, 2>(), col);
+        alphaGrad<3, 4>(out.template ref<sm1, 1>(), col);
+        alphaGrad<3, 4>(out.template ref<sm2, 3>(), col);
+        
+        out.template ref<sm1, 2>() = col;
+        out.template ref<sm1, 3>() = col;
     }
-
+    
     template <class OutputMatrix>
     static void blendLineSteep(uint32_t col, OutputMatrix& out)
     {
-        alphaGrad<1, 4>(out.template ref<0, scale - 1>(), col);
-        alphaGrad<1, 4>(out.template ref<2, scale - 2>(), col);
-
-        alphaGrad<3, 4>(out.template ref<1, scale - 1>(), col);
-        alphaGrad<3, 4>(out.template ref<3, scale - 2>(), col);
-
-        out.template ref<2, scale - 1>() = col;
-        out.template ref<3, scale - 1>() = col;
+        constexpr int sm1 = scale - 1;
+        constexpr int sm2 = scale - 2;
+        
+        alphaGrad<1, 4>(out.template ref<0, sm1>(), col);
+        alphaGrad<1, 4>(out.template ref<2, sm2>(), col);
+        alphaGrad<3, 4>(out.template ref<1, sm1>(), col);
+        alphaGrad<3, 4>(out.template ref<3, sm2>(), col);
+        
+        out.template ref<2, sm1>() = col;
+        out.template ref<3, sm1>() = col;
     }
-
+    
     template <class OutputMatrix>
     static void blendLineSteepAndShallow(uint32_t col, OutputMatrix& out)
     {
@@ -924,29 +958,32 @@ struct Scaler4x : public ColorGradient
         alphaGrad<3, 4>(out.template ref<1, 3>(), col);
         alphaGrad<1, 4>(out.template ref<3, 0>(), col);
         alphaGrad<1, 4>(out.template ref<0, 3>(), col);
-
-        alphaGrad<1, 3>(out.template ref<2, 2>(), col); //[!] fixes 1/4 used in xBR
-
+        alphaGrad<1, 3>(out.template ref<2, 2>(), col); // [!] fixes 1/4 used in xBR
+        
         out.template ref<3, 3>() = col;
         out.template ref<3, 2>() = col;
         out.template ref<2, 3>() = col;
     }
-
+    
     template <class OutputMatrix>
     static void blendLineDiagonal(uint32_t col, OutputMatrix& out)
     {
-        alphaGrad<1, 2>(out.template ref<scale - 1, scale / 2    >(), col);
-        alphaGrad<1, 2>(out.template ref<scale - 2, scale / 2 + 1>(), col);
-        out.template ref<scale - 1, scale - 1>() = col;
+        constexpr int sm1 = scale - 1;
+        constexpr int sm2 = scale - 2;
+        constexpr int half = scale / 2;
+        
+        alphaGrad<1, 2>(out.template ref<sm1, half>(), col);
+        alphaGrad<1, 2>(out.template ref<sm2, half + 1>(), col);
+        
+        out.template ref<sm1, sm1>() = col;
     }
-
+    
     template <class OutputMatrix>
     static void blendCorner(uint32_t col, OutputMatrix& out)
     {
-        //model a round corner
-        alphaGrad<68, 100>(out.template ref<3, 3>(), col); //exact: 0.6848532563
-        alphaGrad< 9, 100>(out.template ref<3, 2>(), col); //0.08677704501
-        alphaGrad< 9, 100>(out.template ref<2, 3>(), col); //0.08677704501
+        alphaGrad<68, 100>(out.template ref<3, 3>(), col); // exact: 0.6848532563
+        alphaGrad<9, 100>(out.template ref<3, 2>(), col);  // 0.08677704501
+        alphaGrad<9, 100>(out.template ref<2, 3>(), col);  // 0.08677704501
     }
 };
 
@@ -954,87 +991,84 @@ struct Scaler4x : public ColorGradient
 template <class ColorGradient>
 struct Scaler5x : public ColorGradient
 {
-    static const int scale = 5;
-
-    template <unsigned int M, unsigned int N> //bring template function into scope for GCC
-    static void alphaGrad(uint32_t& pixBack, uint32_t pixFront) { ColorGradient::template alphaGrad<M, N>(pixBack, pixFront); }
-
-
+    static constexpr int scale = 5;
+    
+    template <unsigned int M, unsigned int N>
+    static inline void alphaGrad(uint32_t& pixBack, uint32_t pixFront) 
+    { 
+        ColorGradient::template alphaGrad<M, N>(pixBack, pixFront); 
+    }
+    
     template <class OutputMatrix>
     static void blendLineShallow(uint32_t col, OutputMatrix& out)
     {
         alphaGrad<1, 4>(out.template ref<scale - 1, 0>(), col);
         alphaGrad<1, 4>(out.template ref<scale - 2, 2>(), col);
         alphaGrad<1, 4>(out.template ref<scale - 3, 4>(), col);
-
         alphaGrad<3, 4>(out.template ref<scale - 1, 1>(), col);
         alphaGrad<3, 4>(out.template ref<scale - 2, 3>(), col);
-
+        
         out.template ref<scale - 1, 2>() = col;
         out.template ref<scale - 1, 3>() = col;
         out.template ref<scale - 1, 4>() = col;
         out.template ref<scale - 2, 4>() = col;
     }
-
+    
     template <class OutputMatrix>
     static void blendLineSteep(uint32_t col, OutputMatrix& out)
     {
         alphaGrad<1, 4>(out.template ref<0, scale - 1>(), col);
         alphaGrad<1, 4>(out.template ref<2, scale - 2>(), col);
         alphaGrad<1, 4>(out.template ref<4, scale - 3>(), col);
-
         alphaGrad<3, 4>(out.template ref<1, scale - 1>(), col);
         alphaGrad<3, 4>(out.template ref<3, scale - 2>(), col);
-
+        
         out.template ref<2, scale - 1>() = col;
         out.template ref<3, scale - 1>() = col;
         out.template ref<4, scale - 1>() = col;
         out.template ref<4, scale - 2>() = col;
     }
-
+    
     template <class OutputMatrix>
     static void blendLineSteepAndShallow(uint32_t col, OutputMatrix& out)
     {
         alphaGrad<1, 4>(out.template ref<0, scale - 1>(), col);
         alphaGrad<1, 4>(out.template ref<2, scale - 2>(), col);
         alphaGrad<3, 4>(out.template ref<1, scale - 1>(), col);
-
         alphaGrad<1, 4>(out.template ref<scale - 1, 0>(), col);
         alphaGrad<1, 4>(out.template ref<scale - 2, 2>(), col);
         alphaGrad<3, 4>(out.template ref<scale - 1, 1>(), col);
-
         alphaGrad<2, 3>(out.template ref<3, 3>(), col);
-
+        
         out.template ref<2, scale - 1>() = col;
         out.template ref<3, scale - 1>() = col;
         out.template ref<4, scale - 1>() = col;
-
         out.template ref<scale - 1, 2>() = col;
         out.template ref<scale - 1, 3>() = col;
     }
-
+    
     template <class OutputMatrix>
     static void blendLineDiagonal(uint32_t col, OutputMatrix& out)
     {
-        alphaGrad<1, 8>(out.template ref<scale - 1, scale / 2    >(), col); //conflict with other rotations for this odd scale
-        alphaGrad<1, 8>(out.template ref<scale - 2, scale / 2 + 1>(), col);
-        alphaGrad<1, 8>(out.template ref<scale - 3, scale / 2 + 2>(), col); //
-
+        constexpr int halfScale = scale / 2;
+        
+        alphaGrad<1, 8>(out.template ref<scale - 1, halfScale>(), col);
+        alphaGrad<1, 8>(out.template ref<scale - 2, halfScale + 1>(), col);
+        alphaGrad<1, 8>(out.template ref<scale - 3, halfScale + 2>(), col);
         alphaGrad<7, 8>(out.template ref<4, 3>(), col);
         alphaGrad<7, 8>(out.template ref<3, 4>(), col);
-
+        
         out.template ref<4, 4>() = col;
     }
-
+    
     template <class OutputMatrix>
     static void blendCorner(uint32_t col, OutputMatrix& out)
     {
-        //model a round corner
-        alphaGrad<86, 100>(out.template ref<4, 4>(), col); //exact: 0.8631434088
-        alphaGrad<23, 100>(out.template ref<4, 3>(), col); //0.2306749731
-        alphaGrad<23, 100>(out.template ref<3, 4>(), col); //0.2306749731
-        //alphaGrad<1, 64>(out.template ref<4, 2>(), col); //0.01676812367 -> negligible + avoid conflicts with other rotations for this odd scale
-        //alphaGrad<1, 64>(out.template ref<2, 4>(), col); //0.01676812367
+        alphaGrad<86, 100>(out.template ref<4, 4>(), col); // exact: 0.8631434088
+        alphaGrad<23, 100>(out.template ref<4, 3>(), col); // 0.2306749731
+        alphaGrad<23, 100>(out.template ref<3, 4>(), col); // 0.2306749731
+        // alphaGrad<1, 64>(out.template ref<4, 2>(), col); // 0.01676812367 -> negligible + avoid conflicts with other rotations for this odd scale
+        // alphaGrad<1, 64>(out.template ref<2, 4>(), col); // 0.01676812367
     }
 };
 
