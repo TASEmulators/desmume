@@ -347,6 +347,12 @@
 		<Unit filename="../../../GPU_Operations_AVX2.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="../../../GPU_Operations_NEON.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="../../../GPU_Operations_NEON.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="../../../GPU_Operations_SSE2.cpp">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>

@@ -4416,6 +4416,8 @@
 		ABD2CE4426E05CB000FB15F7 /* DeSmuME (x86_64h).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (x86_64h).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABD42045172319D1006A9B46 /* FileMigrationDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileMigrationDelegate.h; sourceTree = "<group>"; };
 		ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileMigrationDelegate.mm; sourceTree = "<group>"; };
+		ABD86C832D83E20500505422 /* GPU_Operations_NEON.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GPU_Operations_NEON.h; sourceTree = "<group>"; };
+		ABD86C842D83E20500505422 /* GPU_Operations_NEON.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations_NEON.cpp; sourceTree = "<group>"; };
 		ABDD89EF2C30BE97003482B7 /* OGLRender_ES3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OGLRender_ES3.h; sourceTree = "<group>"; };
 		ABDD89F02C30BE97003482B7 /* OGLRender_ES3.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = OGLRender_ES3.cpp; sourceTree = "<group>"; };
 		ABDDF7C41898F024007583C1 /* Icon_DisplayToggle_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DisplayToggle_420x420.png; path = images/Icon_DisplayToggle_420x420.png; sourceTree = "<group>"; };
@@ -5685,6 +5687,7 @@
 				AB1D4BB126E6F8D700A9AE42 /* GPU_Operations.cpp */,
 				AB1D4BB426E6F8D700A9AE42 /* GPU_Operations_SSE2.cpp */,
 				AB1D4BAF26E6F8D700A9AE42 /* GPU_Operations_AVX2.cpp */,
+				ABD86C842D83E20500505422 /* GPU_Operations_NEON.cpp */,
 				ABD1FEB81345AC8400AF11D1 /* lua-engine.cpp */,
 				ABD1FEB91345AC8400AF11D1 /* matrix.cpp */,
 				ABD1FEBA1345AC8400AF11D1 /* mc.cpp */,
@@ -5729,6 +5732,7 @@
 				AB1D4BB326E6F8D700A9AE42 /* GPU_Operations.h */,
 				AB1D4BB226E6F8D700A9AE42 /* GPU_Operations_SSE2.h */,
 				AB1D4BB026E6F8D700A9AE42 /* GPU_Operations_AVX2.h */,
+				ABD86C832D83E20500505422 /* GPU_Operations_NEON.h */,
 				AB796CA215CDCB6B00C59155 /* instruction_attributes.h */,
 				AB796CA315CDCB6B00C59155 /* instructions.h */,
 				ABD1FE841345AC8400AF11D1 /* lua-engine.h */,

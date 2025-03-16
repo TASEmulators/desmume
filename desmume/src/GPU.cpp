@@ -2,7 +2,7 @@
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
-	Copyright (C) 2008-2024 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -54,6 +54,9 @@
 	#define USEVECTORSIZE_256
 	#define VECTORSIZE 32
 #elif defined(ENABLE_SSE2)
+	#define USEVECTORSIZE_128
+	#define VECTORSIZE 16
+#elif defined(ENABLE_NEON_A64)
 	#define USEVECTORSIZE_128
 	#define VECTORSIZE 16
 #endif

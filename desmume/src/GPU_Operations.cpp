@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2021-2023 DeSmuME team
+	Copyright (C) 2021-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -758,6 +758,8 @@ static FORCEINLINE void CopyLinesForVerticalCount(void *__restrict dstLineHead, 
 	#include "GPU_Operations_AVX2.cpp"
 #elif defined(ENABLE_SSE2)
 	#include "GPU_Operations_SSE2.cpp"
+#elif defined(ENABLE_NEON_A64)
+	#include "GPU_Operations_NEON.cpp"
 #else
 
 template <s32 INTEGERSCALEHINT, bool SCALEVERTICAL, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
