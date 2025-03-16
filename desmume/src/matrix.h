@@ -185,13 +185,13 @@ static void memset_u32_fast(void *dst, const u32 val)
 }
 
 template <size_t LENGTH>
-static void stream_copy_fast(void *__restrict dst, void *__restrict src)
+static void stream_copy_fast(void *__restrict dst, const void *__restrict src)
 {
 	MACRODO_N( LENGTH / sizeof(v512s8), _mm512_stream_si512((v512s8 *)dst + (X), _mm512_stream_load_si512((v512s8 *)src + (X))) );
 }
 
 template <size_t LENGTH>
-static void buffer_copy_fast(void *__restrict dst, void *__restrict src)
+static void buffer_copy_fast(void *__restrict dst, const void *__restrict src)
 {
 	MACRODO_N( LENGTH / sizeof(v512s8), _mm512_store_si512((v512s8 *)dst + (X), _mm512_load_si512((v512s8 *)src + (X))) );
 }
@@ -479,7 +479,7 @@ static void memset_u32_fast(void *dst, const u32 val)
 }
 
 template <size_t VECLENGTH>
-static void stream_copy_fast(void *__restrict dst, void *__restrict src)
+static void stream_copy_fast(void *__restrict dst, const void *__restrict src)
 {
 #ifdef ENABLE_SSE4_1
 	MACRODO_N( VECLENGTH / sizeof(v128s8), _mm_stream_si128((v128s8 *)dst + (X), _mm_stream_load_si128((v128s8 *)src + (X))) );
@@ -489,7 +489,7 @@ static void stream_copy_fast(void *__restrict dst, void *__restrict src)
 }
 
 template <size_t VECLENGTH>
-static void buffer_copy_fast(void *__restrict dst, void *__restrict src)
+static void buffer_copy_fast(void *__restrict dst, const void *__restrict src)
 {
 	MACRODO_N( VECLENGTH / sizeof(v128s8), _mm_store_si128((v128s8 *)dst + (X), _mm_load_si128((v128s8 *)src + (X))) );
 }
@@ -606,13 +606,13 @@ static void memset_u32_fast(void *dst, const u32 val)
 }
 
 template <size_t VECLENGTH>
-static void buffer_copy_fast(void *__restrict dst, void *__restrict src)
+static void buffer_copy_fast(void *__restrict dst, const void *__restrict src)
 {
 	MACRODO_N( VECLENGTH / sizeof(uint8x16x4_t), vst1q_u8_x4((u8 *)dst + ((X) * sizeof(uint8x16x4_t)), vld1q_u8_x4((u8 *)src + ((X) * sizeof(uint8x16x4_t)))) );
 }
 
 template <size_t VECLENGTH>
-static void stream_copy_fast(void *__restrict dst, void *__restrict src)
+static void stream_copy_fast(void *__restrict dst, const void *__restrict src)
 {
 	// NEON doesn't have the same temporal/caching distinctions that SSE and AVX do,
 	// so just use buffer_copy_fast() for this function too.
@@ -656,10 +656,10 @@ static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restr
 }
 
 template <size_t VECLENGTH>
-static void buffer_copy_or_constant_s8_fast(void *__restrict dst, void *__restrict src, const s8 c)
+static void buffer_copy_or_constant_s8_fast(void *__restrict dst, const void *__restrict src, const s8 c)
 {
 	const v128u8 c_vec = vreinterpretq_u8_s8( vdupq_n_s8(c) );
-	__buffer_copy_or_constant_fast<VECLENGTH, false>(dst, src, c_vec);
+	__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
 }
 
 template <bool NEEDENDIANSWAP>
@@ -670,7 +670,7 @@ static void buffer_copy_or_constant_s16(void *__restrict dst, const void *__rest
 }
 
 template <size_t VECLENGTH, bool NEEDENDIANSWAP>
-static void buffer_copy_or_constant_s16_fast(void *__restrict dst, void *__restrict src, const s16 c)
+static void buffer_copy_or_constant_s16_fast(void *__restrict dst, const void *__restrict src, const s16 c)
 {
 	const v128u8 c_vec = vreinterpretq_u8_s16( vdupq_n_s16(c) );
 	__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
@@ -684,7 +684,7 @@ static void buffer_copy_or_constant_s32(void *__restrict dst, const void *__rest
 }
 
 template <size_t VECLENGTH, bool NEEDENDIANSWAP>
-static void buffer_copy_or_constant_s32_fast(void *__restrict dst, void *__restrict src, const s32 c)
+static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *__restrict src, const s32 c)
 {
 	const v128u8 c_vec = vreinterpretq_u8_s32( vdupq_n_s32(c) );
 	__buffer_copy_or_constant_fast<VECLENGTH>(dst, src, c_vec);
@@ -731,13 +731,13 @@ static void memset_u32_fast(void *dst, const u32 val)
 }
 
 template <size_t VECLENGTH>
-static void buffer_copy_fast(void *__restrict dst, void *__restrict src)
+static void buffer_copy_fast(void *__restrict dst, const void *__restrict src)
 {
 	MACRODO_N( VECLENGTH / sizeof(v128s8), vec_st(vec_ld((X)*sizeof(v128s8),(u8 *__restrict)src), (X)*sizeof(v128s8), (u8 *__restrict)dst) );
 }
 
 template <size_t VECLENGTH>
-static void stream_copy_fast(void *__restrict dst, void *__restrict src)
+static void stream_copy_fast(void *__restrict dst, const void *__restrict src)
 {
 	// AltiVec doesn't have the same temporal/caching distinctions that SSE and AVX do,
 	// so just use buffer_copy_fast() for this function too.
@@ -782,7 +782,7 @@ static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restr
 }
 
 template <size_t VECLENGTH>
-static void buffer_copy_or_constant_s8_fast(void *__restrict dst, void *__restrict src, const s8 c)
+static void buffer_copy_or_constant_s8_fast(void *__restrict dst, const void *__restrict src, const s8 c)
 {
 	const v128s8 c_vec = {c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c};
 	__buffer_copy_or_constant_fast<v128s8, VECLENGTH>(dst, src, c_vec);
@@ -797,7 +797,7 @@ static void buffer_copy_or_constant_s16(void *__restrict dst, const void *__rest
 }
 
 template <size_t VECLENGTH, bool NEEDENDIANSWAP>
-static void buffer_copy_or_constant_s16_fast(void *__restrict dst, void *__restrict src, const s16 c)
+static void buffer_copy_or_constant_s16_fast(void *__restrict dst, const void *__restrict src, const s16 c)
 {
 	const s16 c_16 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16(c) : c;
 	const v128s16 c_vec = {c_16, c_16, c_16, c_16, c_16, c_16, c_16, c_16};
@@ -813,7 +813,7 @@ static void buffer_copy_or_constant_s32(void *__restrict dst, const void *__rest
 }
 
 template <size_t VECLENGTH, bool NEEDENDIANSWAP>
-static void buffer_copy_or_constant_s32_fast(void *__restrict dst, void *__restrict src, const s32 c)
+static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *__restrict src, const s32 c)
 {
 	const s32 c_32 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32(c) : c;
 	const v128s32 c_vec = {c_32, c_32, c_32, c_32};
@@ -889,13 +889,13 @@ static void memset_u32_fast(void *dst, const u32 val)
 // vector intrinsics to control the temporal/caching behavior.
 
 template <size_t VECLENGTH>
-static void stream_copy_fast(void *__restrict dst, void *__restrict src)
+static void stream_copy_fast(void *__restrict dst, const void *__restrict src)
 {
 	memcpy(dst, src, VECLENGTH);
 }
 
 template <size_t VECLENGTH>
-static void buffer_copy_fast(void *__restrict dst, void *__restrict src)
+static void buffer_copy_fast(void *__restrict dst, const void *__restrict src)
 {
 	memcpy(dst, src, VECLENGTH);
 }
@@ -920,7 +920,7 @@ static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restr
 }
 
 template <size_t VECLENGTH>
-static void buffer_copy_or_constant_s8_fast(void *__restrict dst, void *__restrict src, const s8 c)
+static void buffer_copy_or_constant_s8_fast(void *__restrict dst, const void *__restrict src, const s8 c)
 {
 #ifdef HOST_64
 	s64 *src_64 = (s64 *)src;
@@ -980,7 +980,7 @@ static void buffer_copy_or_constant_s16(void *__restrict dst, const void *__rest
 }
 
 template <size_t VECLENGTH, bool NEEDENDIANSWAP>
-static void buffer_copy_or_constant_s16_fast(void *__restrict dst, void *__restrict src, const s16 c)
+static void buffer_copy_or_constant_s16_fast(void *__restrict dst, const void *__restrict src, const s16 c)
 {
 #ifdef HOST_64
 	s64 *src_64 = (s64 *)src;
@@ -1049,7 +1049,7 @@ static void buffer_copy_or_constant_s32(void *__restrict dst, const void *__rest
 }
 
 template <size_t VECLENGTH, bool NEEDENDIANSWAP>
-static void buffer_copy_or_constant_s32_fast(void *__restrict dst, void *__restrict src, const s32 c)
+static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *__restrict src, const s32 c)
 {
 #ifdef HOST_64
 	s64 *src_64 = (s64 *)src;
