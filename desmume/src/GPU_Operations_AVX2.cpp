@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2021-2024 DeSmuME team
+	Copyright (C) 2021-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -950,15 +950,17 @@ FORCEINLINE v256u16 ColorOperation_AVX2::blend3D(const v256u32 &colA_Lo, const v
 {
 	// If the color format of B is 555, then the colA_Hi parameter is required.
 	// The color format of A is assumed to be RGB666.
-	v256u32 ra_lo = _mm256_and_si256(                   colA_Lo,      _mm256_set1_epi32(0x000000FF) );
-	v256u32 ga_lo = _mm256_and_si256( _mm256_srli_epi32(colA_Lo,  8), _mm256_set1_epi32(0x000000FF) );
-	v256u32 ba_lo = _mm256_and_si256( _mm256_srli_epi32(colA_Lo, 16), _mm256_set1_epi32(0x000000FF) );
-	v256u32 aa_lo =                   _mm256_srli_epi32(colA_Lo, 24);
+	static const u8 X = 0x80;
 	
-	v256u32 ra_hi = _mm256_and_si256(                   colA_Hi,      _mm256_set1_epi32(0x000000FF) );
-	v256u32 ga_hi = _mm256_and_si256( _mm256_srli_epi32(colA_Hi,  8), _mm256_set1_epi32(0x000000FF) );
-	v256u32 ba_hi = _mm256_and_si256( _mm256_srli_epi32(colA_Hi, 16), _mm256_set1_epi32(0x000000FF) );
-	v256u32 aa_hi =                   _mm256_srli_epi32(colA_Hi, 24);
+	const v256u32 ra_lo = _mm256_shuffle_epi8( colA_Lo, _mm256_set_epi8( X, X, X,12, X, X, X, 8, X, X, X, 4, X, X, X, 0, X, X, X,12, X, X, X, 8, X, X, X, 4, X, X, X, 0) );
+	const v256u32 ga_lo = _mm256_shuffle_epi8( colA_Lo, _mm256_set_epi8( X, X, X,13, X, X, X, 9, X, X, X, 5, X, X, X, 1, X, X, X,13, X, X, X, 9, X, X, X, 5, X, X, X, 1) );
+	const v256u32 ba_lo = _mm256_shuffle_epi8( colA_Lo, _mm256_set_epi8( X, X, X,14, X, X, X,10, X, X, X, 6, X, X, X, 2, X, X, X,14, X, X, X,10, X, X, X, 6, X, X, X, 2) );
+	const v256u32 aa_lo = _mm256_shuffle_epi8( colA_Lo, _mm256_set_epi8( X, X, X,15, X, X, X,11, X, X, X, 7, X, X, X, 3, X, X, X,15, X, X, X,11, X, X, X, 7, X, X, X, 3) );
+	
+	const v256u32 ra_hi = _mm256_shuffle_epi8( colA_Hi, _mm256_set_epi8( X, X, X,12, X, X, X, 8, X, X, X, 4, X, X, X, 0, X, X, X,12, X, X, X, 8, X, X, X, 4, X, X, X, 0) );
+	const v256u32 ga_hi = _mm256_shuffle_epi8( colA_Hi, _mm256_set_epi8( X, X, X,13, X, X, X, 9, X, X, X, 5, X, X, X, 1, X, X, X,13, X, X, X, 9, X, X, X, 5, X, X, X, 1) );
+	const v256u32 ba_hi = _mm256_shuffle_epi8( colA_Hi, _mm256_set_epi8( X, X, X,14, X, X, X,10, X, X, X, 6, X, X, X, 2, X, X, X,14, X, X, X,10, X, X, X, 6, X, X, X, 2) );
+	const v256u32 aa_hi = _mm256_shuffle_epi8( colA_Hi, _mm256_set_epi8( X, X, X,15, X, X, X,11, X, X, X, 7, X, X, X, 3, X, X, X,15, X, X, X,11, X, X, X, 7, X, X, X, 3) );
 	
 	v256u16 ra = _mm256_packus_epi32(ra_lo, ra_hi);
 	v256u16 ga = _mm256_packus_epi32(ga_lo, ga_hi);
@@ -991,9 +993,11 @@ FORCEINLINE v256u16 ColorOperation_AVX2::blend3D(const v256u32 &colA_Lo, const v
 template <NDSColorFormat COLORFORMAT>
 FORCEINLINE v256u32 ColorOperation_AVX2::blend3D(const v256u32 &colA, const v256u32 &colB) const
 {
+	static const u8 X = 0x80;
+	
 	// If the color format of B is 666 or 888, then the colA_Hi parameter is ignored.
 	// The color format of A is assumed to match the color format of B.
-	v256u32 alpha;
+	v256u8 alpha;
 	v256u16 alphaLo;
 	v256u16 alphaHi;
 	
@@ -1015,8 +1019,7 @@ FORCEINLINE v256u32 ColorOperation_AVX2::blend3D(const v256u32 &colA, const v256
 		v256u16 tempColorLo = _mm256_unpacklo_epi8(tempColor[0], tempColor[1]);
 		v256u16 tempColorHi = _mm256_unpackhi_epi8(tempColor[0], tempColor[1]);
 		
-		alpha = _mm256_and_si256( _mm256_srli_epi32(colA, 24), _mm256_set1_epi32(0x0000001F) );
-		alpha = _mm256_or_si256( alpha, _mm256_or_si256(_mm256_slli_epi32(alpha, 8), _mm256_slli_epi32(alpha, 16)) );
+		alpha = _mm256_shuffle_epi8( colA, _mm256_set_epi8( X,15,15,15, X,11,11,11, X, 7, 7, 7, X, 3, 3, 3, X,15,15,15, X,11,11,11, X, 7, 7, 7, X, 3, 3, 3) );
 		alpha = _mm256_adds_epu8(alpha, _mm256_set1_epi8(1));
 		
 		v256u32 invAlpha = _mm256_subs_epu8(_mm256_set1_epi8(32), alpha);
@@ -1039,8 +1042,7 @@ FORCEINLINE v256u32 ColorOperation_AVX2::blend3D(const v256u32 &colA, const v256
 		v256u16 rgbBLo = _mm256_unpacklo_epi8(tempColor[1], _mm256_setzero_si256());
 		v256u16 rgbBHi = _mm256_unpackhi_epi8(tempColor[1], _mm256_setzero_si256());
 		
-		alpha = _mm256_and_si256( _mm256_srli_epi32(colA, 24), _mm256_set1_epi32(0x000000FF) );
-		alpha = _mm256_or_si256( alpha, _mm256_or_si256(_mm256_slli_epi32(alpha, 8), _mm256_slli_epi32(alpha, 16)) );
+		alpha = _mm256_shuffle_epi8( colA, _mm256_set_epi8( X,15,15,15, X,11,11,11, X, 7, 7, 7, X, 3, 3, 3, X,15,15,15, X,11,11,11, X, 7, 7, 7, X, 3, 3, 3) );
 		alpha = _mm256_permute4x64_epi64(alpha, 0xD8);
 		
 		alphaLo = _mm256_unpacklo_epi8(alpha, _mm256_setzero_si256());
@@ -2179,7 +2181,7 @@ FORCEINLINE void PixelOperation_AVX2::_unknownEffectMask32(GPUEngineCompositorIn
 				_mm256_load_si256((v256u32 *)compInfo.target.lineColor32 + 0),
 				_mm256_load_si256((v256u32 *)compInfo.target.lineColor32 + 1),
 				_mm256_load_si256((v256u32 *)compInfo.target.lineColor32 + 2),
-				_mm256_load_si256((v256u32 *)compInfo.target.lineColor32 + 3),
+				_mm256_load_si256((v256u32 *)compInfo.target.lineColor32 + 3)
 			};
 			
 			v256u32 blendSrc32[4];

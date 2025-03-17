@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2021-2024 DeSmuME team
+	Copyright (C) 2021-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -737,6 +737,36 @@ FORCEINLINE v128u16 ColorOperation_SSE2::blend3D(const v128u32 &colA_Lo, const v
 {
 	// If the color format of B is 555, then the colA_Hi parameter is required.
 	// The color format of A is assumed to be RGB666.
+	
+#ifdef ENABLE_SSSE3
+	static const u8 X = 0x80;
+	
+	const v128u32 ra_lo = _mm_shuffle_epi8( colA_Lo, _mm_set_epi8( X, X, X,12, X, X, X, 8, X, X, X, 4, X, X, X, 0) );
+	const v128u32 ga_lo = _mm_shuffle_epi8( colA_Lo, _mm_set_epi8( X, X, X,13, X, X, X, 9, X, X, X, 5, X, X, X, 1) );
+	const v128u32 ba_lo = _mm_shuffle_epi8( colA_Lo, _mm_set_epi8( X, X, X,14, X, X, X,10, X, X, X, 6, X, X, X, 2) );
+	const v128u32 aa_lo = _mm_shuffle_epi8( colA_Lo, _mm_set_epi8( X, X, X,15, X, X, X,11, X, X, X, 7, X, X, X, 3) );
+	
+	const v128u32 ra_hi = _mm_shuffle_epi8( colA_Hi, _mm_set_epi8( X, X, X,12, X, X, X, 8, X, X, X, 4, X, X, X, 0) );
+	const v128u32 ga_hi = _mm_shuffle_epi8( colA_Hi, _mm_set_epi8( X, X, X,13, X, X, X, 9, X, X, X, 5, X, X, X, 1) );
+	const v128u32 ba_hi = _mm_shuffle_epi8( colA_Hi, _mm_set_epi8( X, X, X,14, X, X, X,10, X, X, X, 6, X, X, X, 2) );
+	const v128u32 aa_hi = _mm_shuffle_epi8( colA_Hi, _mm_set_epi8( X, X, X,15, X, X, X,11, X, X, X, 7, X, X, X, 3) );
+	
+	v128u16 ra = _mm_packs_epi32(ra_lo, ra_hi);
+	v128u16 ga = _mm_packs_epi32(ga_lo, ga_hi);
+	v128u16 ba = _mm_packs_epi32(ba_lo, ba_hi);
+	v128u16 aa = _mm_packs_epi32(aa_lo, aa_hi);
+	
+	ra = _mm_or_si128( ra, _mm_and_si128(_mm_slli_epi16(colB, 9), _mm_set1_epi16(0x3E00)) );
+	ga = _mm_or_si128( ga, _mm_and_si128(_mm_slli_epi16(colB, 4), _mm_set1_epi16(0x3E00)) );
+	ba = _mm_or_si128( ba, _mm_and_si128(_mm_srli_epi16(colB, 1), _mm_set1_epi16(0x3E00)) );
+	
+	aa = _mm_adds_epu8(aa, _mm_set1_epi16(1));
+	aa = _mm_or_si128( aa, _mm_slli_epi16(_mm_subs_epu16(_mm_set1_epi8(32), aa), 8) );
+	
+	ra = _mm_maddubs_epi16(ra, aa);
+	ga = _mm_maddubs_epi16(ga, aa);
+	ba = _mm_maddubs_epi16(ba, aa);
+#else
 	v128u32 ra_lo = _mm_and_si128(                colA_Lo,      _mm_set1_epi32(0x000000FF) );
 	v128u32 ga_lo = _mm_and_si128( _mm_srli_epi32(colA_Lo,  8), _mm_set1_epi32(0x000000FF) );
 	v128u32 ba_lo = _mm_and_si128( _mm_srli_epi32(colA_Lo, 16), _mm_set1_epi32(0x000000FF) );
@@ -752,18 +782,6 @@ FORCEINLINE v128u16 ColorOperation_SSE2::blend3D(const v128u32 &colA_Lo, const v
 	v128u16 ba = _mm_packs_epi32(ba_lo, ba_hi);
 	v128u16 aa = _mm_packs_epi32(aa_lo, aa_hi);
 	
-#ifdef ENABLE_SSSE3
-	ra = _mm_or_si128( ra, _mm_and_si128(_mm_slli_epi16(colB, 9), _mm_set1_epi16(0x3E00)) );
-	ga = _mm_or_si128( ga, _mm_and_si128(_mm_slli_epi16(colB, 4), _mm_set1_epi16(0x3E00)) );
-	ba = _mm_or_si128( ba, _mm_and_si128(_mm_srli_epi16(colB, 1), _mm_set1_epi16(0x3E00)) );
-	
-	aa = _mm_adds_epu8(aa, _mm_set1_epi16(1));
-	aa = _mm_or_si128( aa, _mm_slli_epi16(_mm_subs_epu16(_mm_set1_epi8(32), aa), 8) );
-	
-	ra = _mm_maddubs_epi16(ra, aa);
-	ga = _mm_maddubs_epi16(ga, aa);
-	ba = _mm_maddubs_epi16(ba, aa);
-#else
 	aa = _mm_adds_epu16(aa, _mm_set1_epi16(1));
 	v128u16 rb = _mm_and_si128( _mm_slli_epi16(colB, 1), _mm_set1_epi16(0x003E) );
 	v128u16 gb = _mm_and_si128( _mm_srli_epi16(colB, 4), _mm_set1_epi16(0x003E) );
@@ -785,6 +803,9 @@ FORCEINLINE v128u16 ColorOperation_SSE2::blend3D(const v128u32 &colA_Lo, const v
 template <NDSColorFormat COLORFORMAT>
 FORCEINLINE v128u32 ColorOperation_SSE2::blend3D(const v128u32 &colA, const v128u32 &colB) const
 {
+#ifdef ENABLE_SSSE3
+	static const u8 X = 0x80;
+#endif
 	// If the color format of B is 666 or 888, then the colA_Hi parameter is ignored.
 	// The color format of A is assumed to match the color format of B.
 	v128u16 rgbALo;
@@ -804,13 +825,12 @@ FORCEINLINE v128u32 ColorOperation_SSE2::blend3D(const v128u32 &colA, const v128
 		rgbALo = _mm_unpacklo_epi8(colA, colB);
 		rgbAHi = _mm_unpackhi_epi8(colA, colB);
 		
-		v128u32 alpha = _mm_and_si128( _mm_srli_epi32(colA, 24), _mm_set1_epi32(0x0000001F) );
-		alpha = _mm_or_si128( alpha, _mm_or_si128(_mm_slli_epi32(alpha, 8), _mm_slli_epi32(alpha, 16)) );
+		v128u8 alpha = _mm_shuffle_epi8( colA, _mm_set_epi8( X,15,15,15, X,11,11,11, X, 7, 7, 7, X, 3, 3, 3) );
 		alpha = _mm_adds_epu8(alpha, _mm_set1_epi8(1));
 		
-		v128u32 invAlpha = _mm_subs_epu8(_mm_set1_epi8(32), alpha);
-		v128u16 alphaLo = _mm_unpacklo_epi8(alpha, invAlpha);
-		v128u16 alphaHi = _mm_unpackhi_epi8(alpha, invAlpha);
+		const v128u8 invAlpha = _mm_subs_epu8(_mm_set1_epi8(32), alpha);
+		const v128u16 alphaLo = _mm_unpacklo_epi8(alpha, invAlpha);
+		const v128u16 alphaHi = _mm_unpackhi_epi8(alpha, invAlpha);
 		
 		rgbALo = _mm_maddubs_epi16(rgbALo, alphaLo);
 		rgbAHi = _mm_maddubs_epi16(rgbAHi, alphaHi);
@@ -823,9 +843,12 @@ FORCEINLINE v128u32 ColorOperation_SSE2::blend3D(const v128u32 &colA, const v128
 		v128u16 rgbBLo = _mm_unpacklo_epi8(colB, _mm_setzero_si128());
 		v128u16 rgbBHi = _mm_unpackhi_epi8(colB, _mm_setzero_si128());
 		
-		v128u32 alpha = _mm_and_si128( _mm_srli_epi32(colA, 24), _mm_set1_epi32(0x000000FF) );
+#ifdef ENABLE_SSSE3
+		v128u8 alpha = _mm_shuffle_epi8( colA, _mm_set_epi8( X,15,15,15, X,11,11,11, X, 7, 7, 7, X, 3, 3, 3) );
+#else
+		v128u8 alpha = _mm_and_si128( _mm_srli_epi32(colA, 24), _mm_set1_epi32(0x000000FF) );
 		alpha = _mm_or_si128( alpha, _mm_or_si128(_mm_slli_epi32(alpha, 8), _mm_slli_epi32(alpha, 16)) );
-		
+#endif
 		v128u16 alphaLo = _mm_unpacklo_epi8(alpha, _mm_setzero_si128());
 		v128u16 alphaHi = _mm_unpackhi_epi8(alpha, _mm_setzero_si128());
 		alphaLo = _mm_add_epi16(alphaLo, _mm_set1_epi16(1));
@@ -1012,7 +1035,7 @@ FORCEINLINE void PixelOperation_SSE2::_copyMask16(GPUEngineCompositorInfo &compI
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 0),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 1),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 2),
-			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3),
+			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3)
 		};
 		
 		const v128u32 passMask32[4]	= {
@@ -1072,7 +1095,7 @@ FORCEINLINE void PixelOperation_SSE2::_copyMask32(GPUEngineCompositorInfo &compI
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 0),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 1),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 2),
-			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3),
+			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3)
 		};
 		
 		const v128u32 alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
@@ -1195,7 +1218,7 @@ FORCEINLINE void PixelOperation_SSE2::_brightnessUpMask16(GPUEngineCompositorInf
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 0),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 1),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 2),
-			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3),
+			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3)
 		};
 		
 		const v128u32 alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
@@ -1246,7 +1269,7 @@ FORCEINLINE void PixelOperation_SSE2::_brightnessUpMask32(GPUEngineCompositorInf
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 0),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 1),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 2),
-			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3),
+			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3)
 		};
 		
 		const v128u32 alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
@@ -1366,7 +1389,7 @@ FORCEINLINE void PixelOperation_SSE2::_brightnessDownMask16(GPUEngineCompositorI
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 0),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 1),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 2),
-			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3),
+			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3)
 		};
 		
 		const v128u32 alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
@@ -1417,7 +1440,7 @@ FORCEINLINE void PixelOperation_SSE2::_brightnessDownMask32(GPUEngineCompositorI
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 0),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 1),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 2),
-			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3),
+			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3)
 		};
 		
 		const v128u32 alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
@@ -1656,7 +1679,7 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask16(GPUEngineCompositorIn
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 0),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 1),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 2),
-			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3),
+			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3)
 		};
 		
 		if (blendMaskValue != 0x00000000)
@@ -1965,7 +1988,7 @@ FORCEINLINE void PixelOperation_SSE2::_unknownEffectMask32(GPUEngineCompositorIn
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 0),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 1),
 			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 2),
-			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3),
+			_mm_load_si128((v128u32 *)compInfo.target.lineColor32 + 3)
 		};
 		
 		if (blendMaskValue != 0x00000000)
