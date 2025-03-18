@@ -2038,11 +2038,11 @@ static bool __cgl_initOpenGL(const int requestedProfile)
 		GLint r;
 		CGLGetParameter(newContext, kCGLCPCurrentRendererID, &r);
 
-		for (GLint j = 0; j < rendererCount; j++)
+		for (int j = 0; j < rendererCount; j++)
 		{
 			GLRendererInfo &info = rendererInfo[j];
 			
-			if (info.rendererID == r)
+			if (r == info.rendererID)
 			{
 				info.virtualScreen = i;
 				info.vendorStr = glGetString(GL_VENDOR);
@@ -2062,7 +2062,7 @@ static bool __cgl_initOpenGL(const int requestedProfile)
 	printf("No. renderers: %i\n", rendererCount);
 	printf(" No. virtual screens: %i\n\n", virtualScreenCount);
 	
-	for (GLint i = 0; i < rendererCount; i++)
+	for (int i = 0; i < rendererCount; i++)
 	{
 		const GLRendererInfo &info = rendererInfo[i];
 		
@@ -2111,9 +2111,14 @@ static bool __cgl_initOpenGL(const int requestedProfile)
 	// any offline renderer would require a lot more code to handle dynamically changing
 	// display<-->renderer associations. - rogerman 2025/03/17
 	bool wasBetterVirtualScreenFound = false;
-	for (GLint i = 0; i < rendererCount; i++)
+	for (int i = 0; i < rendererCount; i++)
 	{
 		const GLRendererInfo &info = rendererInfo[i];
+		
+		if ( (info.vendorStr == NULL) || (info.rendererStr == NULL) )
+		{
+			continue;
+		}
 		
 		if ( (info.accelerated == 1) &&
 			 (info.online == 0) &&
@@ -2123,6 +2128,7 @@ static bool __cgl_initOpenGL(const int requestedProfile)
 		     (strstr((const char *)info.rendererStr, "FirePro D700") != NULL)) )
 		{
 			CGLSetVirtualScreen(newContext, info.virtualScreen);
+			printf("Selected Renderer: %i | %s\n", info.rendererID, info.rendererStr);
 			wasBetterVirtualScreenFound = true;
 			break;
 		}
@@ -2132,6 +2138,16 @@ static bool __cgl_initOpenGL(const int requestedProfile)
 	if (!wasBetterVirtualScreenFound)
 	{
 		CGLSetVirtualScreen(newContext, defaultVirtualScreen);
+		
+		for (int i = 0; i < rendererCount; i++)
+		{
+			GLRendererInfo &info = rendererInfo[i];
+			
+			if ( (defaultVirtualScreen == info.virtualScreen) && (info.accelerated == 1) )
+			{
+				printf("Selected Renderer: %i | %s\n", info.rendererID, info.rendererStr);
+			}
+		}
 	}
 	
 	// We're done! Report success and return.
