@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2023 DeSmuME team
+	Copyright (C) 2013-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1822,10 +1822,12 @@ bool GPUEventHandlerAsync::GetRender3DNeedsFinish()
 #pragma mark -
 
 #if !defined(MAC_OS_X_VERSION_10_7)
-	#define kCGLPFAOpenGLProfile     (CGLPixelFormatAttribute)99
-	#define kCGLOGLPVersion_Legacy   0x1000
-	#define kCGLOGLPVersion_3_2_Core 0x3200
-	#define kCGLOGLPVersion_GL3_Core 0x3200
+	#define kCGLPFAOpenGLProfile         (CGLPixelFormatAttribute)99
+	#define kCGLOGLPVersion_Legacy       0x1000
+	#define kCGLOGLPVersion_3_2_Core     0x3200
+	#define kCGLOGLPVersion_GL3_Core     0x3200
+	#define kCGLRPVideoMemoryMegabytes   (CGLRendererProperty)131
+	#define kCGLRPTextureMemoryMegabytes (CGLRendererProperty)132
 #endif
 
 #if !defined(MAC_OS_X_VERSION_10_9)
@@ -1835,6 +1837,21 @@ bool GPUEventHandlerAsync::GetRender3DNeedsFinish()
 CGLContextObj OSXOpenGLRendererContext = NULL;
 CGLContextObj OSXOpenGLRendererContextPrev = NULL;
 SILENCE_DEPRECATION_MACOS_10_7( CGLPBufferObj OSXOpenGLRendererPBuffer = NULL );
+
+// Struct to hold renderer info
+struct GLRendererInfo
+{
+	GLint rendererID;           // Renderer ID, used to associate a renderer with a display device or virtual screen
+	GLint accelerated;          // Hardware acceleration flag, 0 = Software only, 1 = Has hardware acceleration
+	GLint displayID;            // Display ID, used to associate a display device with a renderer
+	GLint online;               // Online flag, 0 = No display device associated, 1 = Display device associated
+	GLint virtualScreen;        // Virtual screen index, used to associate a virtual screen with a renderer
+	GLint videoMemoryMB;        // The total amount of VRAM available to this renderer
+	GLint textureMemoryMB;      // The amount of VRAM available to this renderer for texture usage
+	const GLubyte *vendorStr;   // The OpenGL GL_VENDOR string
+	const GLubyte *rendererStr; // The OpenGL GL_RENDERER string
+};
+typedef struct GLRendererInfo GLRendererInfo;
 
 static bool __cgl_initOpenGL(const int requestedProfile)
 {
@@ -1866,7 +1883,9 @@ static bool __cgl_initOpenGL(const int requestedProfile)
 		kCGLPFADepthSize, (CGLPixelFormatAttribute)24,
 		kCGLPFAStencilSize, (CGLPixelFormatAttribute)8,
 		kCGLPFAOpenGLProfile, (CGLPixelFormatAttribute)0,
+		kCGLPFAAllowOfflineRenderers,
 		kCGLPFAAccelerated,
+		kCGLPFANoRecovery,
 		(CGLPixelFormatAttribute)0
 	};
 	
@@ -1907,8 +1926,10 @@ static bool __cgl_initOpenGL(const int requestedProfile)
 	}
 	else
 	{
-		attrs[8] = (CGLPixelFormatAttribute)kCGLPFAAccelerated;
-		attrs[10] = (CGLPixelFormatAttribute)0;
+		attrs[8]  = (CGLPixelFormatAttribute)kCGLPFAAccelerated;
+		attrs[9]  = (CGLPixelFormatAttribute)kCGLPFANoRecovery;
+		attrs[11] = (CGLPixelFormatAttribute)0;
+		attrs[12] = (CGLPixelFormatAttribute)0;
 	}
 	
 	CGLError error = kCGLNoError;
@@ -1923,11 +1944,15 @@ static bool __cgl_initOpenGL(const int requestedProfile)
 		// result in SW rendering, which will cause a substantial speed hit.
 		if (attrs[8] == kCGLPFAAccelerated)
 		{
-			attrs[8] = (CGLPixelFormatAttribute)0;
+			attrs[8]  = (CGLPixelFormatAttribute)0;
+			attrs[9]  = (CGLPixelFormatAttribute)0;
+			attrs[10] = (CGLPixelFormatAttribute)0;
 		}
 		else
 		{
 			attrs[10] = (CGLPixelFormatAttribute)0;
+			attrs[11] = (CGLPixelFormatAttribute)0;
+			attrs[12] = (CGLPixelFormatAttribute)0;
 		}
 		
 		error = CGLChoosePixelFormat(attrs, &cglPixFormat, &virtualScreenCount);
@@ -1938,18 +1963,181 @@ static bool __cgl_initOpenGL(const int requestedProfile)
 		}
 	}
 	
+	// Create the OpenGL context using our pixel format, and then save the default assigned virtual screen.
 	error = CGLCreateContext(cglPixFormat, NULL, &newContext);
+	CGLReleasePixelFormat(cglPixFormat);
+	cglPixFormat = NULL;
+	
 	if (error != kCGLNoError)
 	{
-		CGLReleasePixelFormat(cglPixFormat);
 		fprintf(stderr, "%s: Failed to create an OpenGL context: %i\n", ctxString, (int)error);
 		return result;
 	}
 	
-	CGLReleasePixelFormat(cglPixFormat);
 	OSXOpenGLRendererContext = newContext;
+	GLint defaultVirtualScreen = 0;
+	CGLGetVirtualScreen(newContext, &defaultVirtualScreen);
 	
+	// Retrieve the properties of every renderer available on the system.
+	CGLRendererInfoObj cglRendererInfo = NULL;
+	GLint rendererCount = 0;
+	CGLQueryRendererInfo(0xFFFFFFFF, &cglRendererInfo, &rendererCount);
+	
+	GLRendererInfo *rendererInfo = (GLRendererInfo *)malloc(sizeof(GLRendererInfo) * rendererCount);
+	memset(rendererInfo, 0, sizeof(GLRendererInfo) * rendererCount);
+	
+	if (IsOSXVersionSupported(10, 7, 0))
+	{
+		for (GLint i = 0; i < rendererCount; i++)
+		{
+			GLRendererInfo &info = rendererInfo[i];
+			
+			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPOnline, &(info.online));
+			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPDisplayMask, &(info.displayID));
+			rendererInfo[i].displayID = (GLint)CGOpenGLDisplayMaskToDisplayID(info.displayID);
+			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPAccelerated, &(info.accelerated));
+			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPRendererID,  &(info.rendererID));
+			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPVideoMemoryMegabytes, &(info.videoMemoryMB));
+			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPTextureMemoryMegabytes, &(info.textureMemoryMB));
+		}
+	}
+	else if (IsOSXVersionSupported(10, 5, 0))
+	{
+		for (GLint i = 0; i < rendererCount; i++)
+		{
+			GLRendererInfo &info = rendererInfo[i];
+			
+			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPOnline, &(info.online));
+			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPDisplayMask, &(info.displayID));
+			info.displayID = (GLint)CGOpenGLDisplayMaskToDisplayID(info.displayID);
+			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPAccelerated, &(info.accelerated));
+			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPRendererID,  &(info.rendererID));
+			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPVideoMemory, &(info.videoMemoryMB));
+			info.videoMemoryMB = (GLint)(((uint32_t)info.videoMemoryMB + 1) >> 20);
+			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPTextureMemory, &(info.textureMemoryMB));
+			info.textureMemoryMB = (GLint)(((uint32_t)info.textureMemoryMB + 1) >> 20);
+		}
+	}
+	else
+	{
+		CGLDestroyRendererInfo(cglRendererInfo);
+		free(rendererInfo);
+		fprintf(stderr, "%s: Failed to retrieve renderer info - requires Mac OS X v10.5 or later.\n", ctxString);
+		return result;
+	}
+	
+	CGLDestroyRendererInfo(cglRendererInfo);
+	cglRendererInfo = NULL;
+	
+	// Retrieve the vendor and renderer info from OpenGL.
+	cgl_beginOpenGL();
+	
+	for (GLint i = 0; i < virtualScreenCount; i++)
+	{
+		CGLSetVirtualScreen(newContext, i);
+		GLint r;
+		CGLGetParameter(newContext, kCGLCPCurrentRendererID, &r);
+
+		for (GLint j = 0; j < rendererCount; j++)
+		{
+			GLRendererInfo &info = rendererInfo[j];
+			
+			if (info.rendererID == r)
+			{
+				info.virtualScreen = i;
+				info.vendorStr = glGetString(GL_VENDOR);
+				info.rendererStr = glGetString(GL_RENDERER);
+			}
+		}
+	}
+	
+	cgl_endOpenGL();
+	
+#if defined(DEBUG) && (DEBUG == 1)
+	// Report information on every renderer.
+	if (!IsOSXVersionSupported(10, 7, 0))
+	{
+		printf("WARNING: You are running a macOS version earlier than v10.7.\n         Video Memory and Texture Memory reporting is capped\n         at 2048 MB on older macOS.\n");
+	}
+	printf("No. renderers: %i\n", rendererCount);
+	printf(" No. virtual screens: %i\n\n", virtualScreenCount);
+	
+	for (GLint i = 0; i < rendererCount; i++)
+	{
+		const GLRendererInfo &info = rendererInfo[i];
+		
+		printf("Renderer Index: %i\n", i);
+		printf("Virtual Screen: %i\n", info.virtualScreen);
+		
+		if (info.vendorStr != NULL)
+		{
+			printf("Vendor: %s\n", info.vendorStr);
+		}
+		else if (info.accelerated == 0)
+		{
+			printf("Vendor: Apple\n");
+		}
+		else
+		{
+			printf("Vendor: UNKNOWN\n");
+		}
+		
+		if (info.rendererStr != NULL)
+		{
+			printf("Renderer: %s\n", info.rendererStr);
+		}
+		else if (info.accelerated == 0)
+		{
+			printf("Renderer: Apple Software Renderer\n");
+		}
+		else
+		{
+			printf("Renderer: UNKNOWN\n");
+		}
+		
+		printf("Renderer ID: %i\n", info.rendererID);
+		printf("Accelerated: %s\n", (info.accelerated == 1) ? "YES" : "NO");
+		printf("Online: %s\n", (info.online == 1) ? "YES" : "NO");
+		printf("Display ID: %i\n", info.displayID);
+		printf("Video Memory: %i MB\n", info.videoMemoryMB);
+		printf("Texture Memory: %i MB\n\n", info.textureMemoryMB);
+	}
+#endif
+	
+	// Search for a better virtual screen that will suit our offscreen rendering better.
+	//
+	// At the moment, we're only supporting the second GPU on the 2013 Mac Pro since it
+	// is guaranteed to never have a display associated with it. Attempting to support
+	// any offline renderer would require a lot more code to handle dynamically changing
+	// display<-->renderer associations. - rogerman 2025/03/17
+	bool wasBetterVirtualScreenFound = false;
+	for (GLint i = 0; i < rendererCount; i++)
+	{
+		const GLRendererInfo &info = rendererInfo[i];
+		
+		if ( (info.accelerated == 1) &&
+			 (info.online == 0) &&
+		     (strstr((const char *)info.vendorStr, "ATI Technologies Inc.") != NULL) &&
+		    ((strstr((const char *)info.rendererStr, "FirePro D300") != NULL) ||
+		     (strstr((const char *)info.rendererStr, "FirePro D500") != NULL) ||
+		     (strstr((const char *)info.rendererStr, "FirePro D700") != NULL)) )
+		{
+			CGLSetVirtualScreen(newContext, info.virtualScreen);
+			wasBetterVirtualScreenFound = true;
+			break;
+		}
+	}
+	
+	// If we couldn't find a better virtual screen for our rendering, then just revert to the default one.
+	if (!wasBetterVirtualScreenFound)
+	{
+		CGLSetVirtualScreen(newContext, defaultVirtualScreen);
+	}
+	
+	// We're done! Report success and return.
 	printf("%s: OpenGL context creation successful.\n", ctxString);
+	free(rendererInfo);
+	
 	result = true;
 	return result;
 }
