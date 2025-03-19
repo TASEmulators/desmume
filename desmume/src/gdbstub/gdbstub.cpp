@@ -1386,7 +1386,7 @@ WINAPI listenerThread_gdb( void *data) {
  * The memory interface
  *
  */
-static uint32_t FASTCALL gdb_prefetch32( void *data, uint32_t adr) {
+static uint32_t DESMUME_FASTCALL gdb_prefetch32( void *data, uint32_t adr) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
   int breakpoint;
 
@@ -1397,7 +1397,7 @@ static uint32_t FASTCALL gdb_prefetch32( void *data, uint32_t adr) {
   return 0;
 }
 
-static uint16_t FASTCALL gdb_prefetch16( void *data, uint32_t adr) {
+static uint16_t DESMUME_FASTCALL gdb_prefetch16( void *data, uint32_t adr) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
   int breakpoint;
 
@@ -1409,7 +1409,7 @@ static uint16_t FASTCALL gdb_prefetch16( void *data, uint32_t adr) {
 }
 
 /** read 8 bit data value */
-static uint8_t FASTCALL
+static uint8_t DESMUME_FASTCALL
 gdb_read8( void *data, uint32_t adr) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
   uint8_t value = 0;
@@ -1428,7 +1428,7 @@ gdb_read8( void *data, uint32_t adr) {
 }
 
 /** read 16 bit data value */
-static uint16_t FASTCALL
+static uint16_t DESMUME_FASTCALL
 gdb_read16( void *data, uint32_t adr) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
   uint16_t value;
@@ -1446,7 +1446,7 @@ gdb_read16( void *data, uint32_t adr) {
   return value;
 }
 /** read 32 bit data value */
-static uint32_t FASTCALL
+static uint32_t DESMUME_FASTCALL
 gdb_read32( void *data, uint32_t adr) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
   uint32_t value;
@@ -1465,7 +1465,7 @@ gdb_read32( void *data, uint32_t adr) {
 }
 
 /** write 8 bit data value */
-static void FASTCALL
+static void DESMUME_FASTCALL
 gdb_write8( void *data, uint32_t adr, uint8_t val) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
   int breakpoint;
@@ -1481,7 +1481,7 @@ gdb_write8( void *data, uint32_t adr, uint8_t val) {
 }
 
 /** write 16 bit data value */
-static void FASTCALL
+static void DESMUME_FASTCALL
 gdb_write16( void *data, uint32_t adr, uint16_t val) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
   int breakpoint;
@@ -1497,7 +1497,7 @@ gdb_write16( void *data, uint32_t adr, uint16_t val) {
 }
 
 /** write 32 bit data value */
-static void FASTCALL
+static void DESMUME_FASTCALL
 gdb_write32( void *data, uint32_t adr, uint32_t val) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
   int breakpoint;
