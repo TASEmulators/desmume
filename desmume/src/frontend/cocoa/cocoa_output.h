@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2022 DeSmuME team
+	Copyright (C) 2011-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -186,9 +186,9 @@ class ClientAVCaptureObject;
 @property (assign) NSInteger outputFilter;
 @property (assign) NSInteger pixelScaler;
 
-- (void) commitPresenterProperties:(const ClientDisplayPresenterProperties &)viewProps;
+- (void) commitPresenterProperties:(const ClientDisplayPresenterProperties &)viewProps needFlush:(BOOL)needFlush;
 
-- (void) handleChangeViewProperties;
+- (void) handleChangeViewPropertiesAndFlush:(BOOL)willFlush;
 - (void) handleReceiveGPUFrame;
 - (void) handleReloadReprocessRedraw;
 - (void) handleReprocessRedraw;

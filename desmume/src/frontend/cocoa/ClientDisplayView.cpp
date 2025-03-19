@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2018 DeSmuME team
+	Copyright (C) 2017-2025 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -256,15 +256,18 @@ double ClientDisplayPresenter::GetScaleFactor() const
 void ClientDisplayPresenter::SetScaleFactor(const double scaleFactor)
 {
 	const bool willChangeScaleFactor = (this->_scaleFactor != scaleFactor);
-	this->_scaleFactor = scaleFactor;
 	
-	if (willChangeScaleFactor)
+	if (!willChangeScaleFactor)
 	{
-		this->_glyphTileSize = (double)HUD_TEXTBOX_BASEGLYPHSIZE * scaleFactor;
-		this->_glyphSize = (double)this->_glyphTileSize * 0.75;
-		
-		this->LoadHUDFont();
+		return;
 	}
+	
+	this->_scaleFactor = scaleFactor;
+	this->_glyphTileSize = (double)HUD_TEXTBOX_BASEGLYPHSIZE * scaleFactor;
+	this->_glyphSize = (double)this->_glyphTileSize * 0.75;
+	
+	this->LoadHUDFont();
+	this->_UpdateViewScale();
 }
 
 void ClientDisplayPresenter::_UpdateClientSize()
@@ -292,6 +295,10 @@ void ClientDisplayPresenter::_UpdateViewScale()
 	}
 	
 	this->_hudObjectScale *= this->_scaleFactor;
+	
+	pthread_mutex_lock(&this->_mutexHUDString);
+	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
 }
 
 // NDS screen layout

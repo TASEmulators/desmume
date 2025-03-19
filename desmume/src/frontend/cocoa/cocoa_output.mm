@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2023 DeSmuME team
+	Copyright (C) 2011-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -721,13 +721,13 @@
 	[super dealloc];
 }
 
-- (void) commitPresenterProperties:(const ClientDisplayPresenterProperties &)viewProps
+- (void) commitPresenterProperties:(const ClientDisplayPresenterProperties &)viewProps needFlush:(BOOL)needFlush
 {
 	apple_unfairlock_lock(_unfairlockViewProperties);
 	_intermediateViewProps = viewProps;
 	apple_unfairlock_unlock(_unfairlockViewProperties);
 	
-	[self handleChangeViewProperties];
+	[self handleChangeViewPropertiesAndFlush:needFlush];
 }
 
 - (BOOL) canFilterOnGPU
@@ -1215,7 +1215,7 @@
 	switch (messageID)
 	{
 		case MESSAGE_CHANGE_VIEW_PROPERTIES:
-			[self handleChangeViewProperties];
+			[self handleChangeViewPropertiesAndFlush:YES];
 			break;
 			
 		case MESSAGE_RELOAD_REPROCESS_REDRAW:
@@ -1247,14 +1247,18 @@
 	_cdv->SetViewNeedsFlush();
 }
 
-- (void) handleChangeViewProperties
+- (void) handleChangeViewPropertiesAndFlush:(BOOL)willFlush
 {
 	apple_unfairlock_lock(_unfairlockViewProperties);
 	_cdv->Get3DPresenter()->CommitPresenterProperties(_intermediateViewProps);
 	apple_unfairlock_unlock(_unfairlockViewProperties);
 	
 	_cdv->Get3DPresenter()->SetupPresenterProperties();
-	_cdv->SetViewNeedsFlush();
+	
+	if (willFlush)
+	{
+		_cdv->SetViewNeedsFlush();
+	}
 }
 
 - (void) handleReceiveGPUFrame

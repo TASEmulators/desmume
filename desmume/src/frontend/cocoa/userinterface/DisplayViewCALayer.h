@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -72,6 +72,7 @@ class MacDisplayLayeredView;
 @property (assign) NSInteger pixelScaler;
 
 - (void) setupLayer;
+- (void) updateLayerPresenterProperties:(ClientDisplayPresenterProperties &)props scaleFactor:(const double)scaleFactor needFlush:(BOOL)needFlush;
 
 @end
 

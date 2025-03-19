@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2023 DeSmuME team
+	Copyright (C) 2013-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -184,7 +184,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	if ([self isFullScreen])
 	{
-		[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
+		[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
 	}
 	else
 	{
@@ -199,7 +199,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		// display view to update itself.
 		if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
 		{
-			[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
+			[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
 		}
 	}
 }
@@ -224,7 +224,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	else
 	{
-		[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
+		[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
 	}
 }
 
@@ -244,7 +244,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([self isFullScreen])
 		{
-			[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
+			[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
 		}
 		else
 		{
@@ -261,7 +261,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setDisplayOrder:(NSInteger)theOrder
 {
 	_localViewProps.order = (ClientDisplayOrder)theOrder;
-	[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
+	[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
 }
 
 - (NSInteger) displayOrder
@@ -288,7 +288,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 				case ClientDisplayLayout_Hybrid_16_9:
 				case ClientDisplayLayout_Hybrid_16_10:
 				default:
-					[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
+					[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
 					break;
 			}
 		}
@@ -298,7 +298,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			{
 				case ClientDisplayLayout_Hybrid_16_9:
 				case ClientDisplayLayout_Hybrid_16_10:
-					[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
+					[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
 					break;
 					
 				case ClientDisplayLayout_Horizontal:
@@ -450,7 +450,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// window size changed or not.
 	if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
 	{
-		[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
+		[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
 	}
 }
 
@@ -1465,13 +1465,38 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void)windowDidChangeScreen:(NSNotification *)notification
 {
 	[self updateDisplayID];
+	
+	// We also need to check if the window's backing scale factor changes, which can
+	// occur when moving the window from a normal display to a HiDPI display (in
+	// other words, from a non-Retina display to a Retina display), or vice versa.
+	// We must update the display presenter properties now so that HUD element
+	// locations and NDS touch points remain consistent for both Retina and non-Retina
+	// displays. This feature requires Mac OS X v10.7 Lion or later.
+	
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	NSScreen *screen = [[self window] screen];
-	// Set up the scaling factor if this is a Retina window
-	if ([screen respondsToSelector:@selector(backingScaleFactor)])
+	MacDisplayLayeredView *cdv = [[self view] clientDisplayView];
+	CALayer<DisplayViewCALayer> *localLayer = cdv->GetCALayer();
+	
+	if ([[self window] respondsToSelector:@selector(backingScaleFactor)])
 	{
-		float scaleFactor = [screen backingScaleFactor];
-		[[[self view] cdsVideoOutput] clientDisplay3DView]->Get3DPresenter()->SetScaleFactor(scaleFactor);
+		const double oldScaleFactor = cdv->Get3DPresenter()->GetScaleFactor();
+		const double newScaleFactor = [[self window] backingScaleFactor];
+		
+		if (newScaleFactor != oldScaleFactor)
+		{
+			ClientDisplayPresenterProperties &props = [self localViewProperties];
+			props.clientWidth  *= newScaleFactor / oldScaleFactor;
+			props.clientHeight *= newScaleFactor / oldScaleFactor;
+			[[self view] updateLayerPresenterProperties:props scaleFactor:newScaleFactor needFlush:NO];
+			
+			if ([localLayer isKindOfClass:[CAOpenGLLayer class]] && [localLayer respondsToSelector:@selector(setContentsScale:)])
+			{
+				[localLayer setContentsScale:newScaleFactor];
+			}
+			
+			cdv->Get3DPresenter()->SetScaleFactor(newScaleFactor);
+			cdv->SetViewNeedsFlush();
+		}
 	}
 #endif
 }
@@ -2168,6 +2193,31 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 }
 
+- (void) updateLayerPresenterProperties:(ClientDisplayPresenterProperties &)props scaleFactor:(const double)scaleFactor needFlush:(BOOL)needFlush
+{
+	double checkWidth = props.normalWidth;
+	double checkHeight = props.normalHeight;
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, props.rotation, checkWidth, checkHeight);
+	props.viewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(checkWidth, checkHeight, props.clientWidth, props.clientHeight);
+	
+	if (localOGLContext != nil)
+	{
+		[localOGLContext update];
+	}
+	else if ([localLayer isKindOfClass:[CAOpenGLLayer class]])
+	{
+		[localLayer setBounds:CGRectMake(0.0f, 0.0f, props.clientWidth / scaleFactor, props.clientHeight / scaleFactor)];
+	}
+#ifdef ENABLE_APPLE_METAL
+	else if ([localLayer isKindOfClass:[CAMetalLayer class]])
+	{
+		[(CAMetalLayer *)localLayer setDrawableSize:CGSizeMake(props.clientWidth, props.clientHeight)];
+	}
+#endif
+	
+	[[self cdsVideoOutput] commitPresenterProperties:props needFlush:needFlush];
+}
+
 #pragma mark InputHIDManagerTarget Protocol
 - (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue hidManager:(InputHIDManager *)hidManager
 {
@@ -2258,7 +2308,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	if (rect.size.width != oldFrame.size.width || rect.size.height != oldFrame.size.height)
 	{
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-		ClientDisplayPresenterProperties &props = [windowController localViewProperties];
 		NSRect newViewportRect = rect;
 		
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
@@ -2269,31 +2318,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 #endif
 		
 		// Calculate the view scale for the given client size.
-		double checkWidth = props.normalWidth;
-		double checkHeight = props.normalHeight;
-		ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, props.rotation, checkWidth, checkHeight);
-		
+		ClientDisplayPresenterProperties &props = [windowController localViewProperties];
 		props.clientWidth = newViewportRect.size.width;
 		props.clientHeight = newViewportRect.size.height;
-		props.viewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(checkWidth, checkHeight, props.clientWidth, props.clientHeight);
 		
-		if (localOGLContext != nil)
-		{
-			[localOGLContext update];
-		}
-		else if ([localLayer isKindOfClass:[CAOpenGLLayer class]])
-		{
-			const double scaleFactor = [[self cdsVideoOutput] clientDisplay3DView]->Get3DPresenter()->GetScaleFactor();
-			[localLayer setBounds:CGRectMake(0.0f, 0.0f, props.clientWidth / scaleFactor, props.clientHeight / scaleFactor)];
-		}
-#ifdef ENABLE_APPLE_METAL
-		else if ([localLayer isKindOfClass:[CAMetalLayer class]])
-		{
-			[(CAMetalLayer *)localLayer setDrawableSize:CGSizeMake(props.clientWidth, props.clientHeight)];
-		}
-#endif
-		
-		[[self cdsVideoOutput] commitPresenterProperties:props];
+		const double scaleFactor = [[self cdsVideoOutput] clientDisplay3DView]->Get3DPresenter()->GetScaleFactor();
+		[self updateLayerPresenterProperties:props scaleFactor:scaleFactor needFlush:YES];
 	}
 }
 
