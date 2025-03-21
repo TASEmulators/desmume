@@ -2011,6 +2011,14 @@
 		AB3ACC3A14C24D5400D7D192 /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../../../COPYING; sourceTree = SOURCE_ROOT; };
 		AB3ACC3B14C24D5400D7D192 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README; path = ../../../README; sourceTree = SOURCE_ROOT; };
 		AB3ACC3D14C24D5400D7D192 /* README.MAC */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.MAC; path = ../../../README.MAC; sourceTree = SOURCE_ROOT; };
+		AB3B8DC62D8A35A000C9CBFD /* GPU_Operations_NEON.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations_NEON.cpp; sourceTree = "<group>"; };
+		AB3B8DC72D8A35A000C9CBFD /* GPU_Operations_NEON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GPU_Operations_NEON.h; sourceTree = "<group>"; };
+		AB3B8DC82D8A35A000C9CBFD /* OGLRender_ES3.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OGLRender_ES3.cpp; sourceTree = "<group>"; };
+		AB3B8DC92D8A35A000C9CBFD /* OGLRender_ES3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OGLRender_ES3.h; sourceTree = "<group>"; };
+		AB3B8DCA2D8A35D900C9CBFD /* OGLDisplayOutput_3_2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OGLDisplayOutput_3_2.cpp; sourceTree = "<group>"; };
+		AB3B8DCB2D8A35D900C9CBFD /* OGLDisplayOutput_3_2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OGLDisplayOutput_3_2.h; sourceTree = "<group>"; };
+		AB3B8DCC2D8A35FE00C9CBFD /* colorspacehandler_NEON.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_NEON.cpp; sourceTree = "<group>"; };
+		AB3B8DCD2D8A35FE00C9CBFD /* colorspacehandler_NEON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_NEON.h; sourceTree = "<group>"; };
 		AB3E34C7134AF4500056477A /* cocoa_output.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_output.h; sourceTree = "<group>"; };
 		AB3E34C8134AF4500056477A /* cocoa_output.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_output.mm; sourceTree = "<group>"; };
 		AB3E690E1E231E9900D4CC75 /* MacOGLDisplayView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacOGLDisplayView.h; sourceTree = "<group>"; };
@@ -2563,6 +2571,7 @@
 				ABC04DC91F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp */,
 				ABD9A46413DB99B300777194 /* mic_ext.cpp */,
 				ABECB51318A460910052D52A /* OGLDisplayOutput.cpp */,
+				AB3B8DCA2D8A35D900C9CBFD /* OGLDisplayOutput_3_2.cpp */,
 				ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */,
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				AB2145211714DFF4006DDB0F /* audiosamplegenerator.h */,
@@ -2586,6 +2595,7 @@
 				ABD1267420AE812900EFE1B2 /* macOS_driver.h */,
 				ABD9A46313DB99B300777194 /* mic_ext.h */,
 				ABECB51218A460910052D52A /* OGLDisplayOutput.h */,
+				AB3B8DCB2D8A35D900C9CBFD /* OGLDisplayOutput_3_2.h */,
 				ABD0A5371501AA5A0074A094 /* ringbuffer.h */,
 				ABD104011346652500AF11D1 /* sndOSX.h */,
 				AB2F56EE1704C86900E28885 /* utilities.h */,
@@ -3205,11 +3215,13 @@
 				AB37E3721D6188BC004A2C0D /* colorspacehandler_SSE2.cpp */,
 				AB6FE67226E6F815002B2106 /* colorspacehandler_AVX2.cpp */,
 				AB6FE67426E6F815002B2106 /* colorspacehandler_AVX512.cpp */,
+				AB3B8DCC2D8A35FE00C9CBFD /* colorspacehandler_NEON.cpp */,
 				AB37E36E1D6188BC004A2C0D /* colorspacehandler_AltiVec.cpp */,
 				AB37E36D1D6188BC004A2C0D /* colorspacehandler.h */,
 				AB37E3731D6188BC004A2C0D /* colorspacehandler_SSE2.h */,
 				AB6FE67326E6F815002B2106 /* colorspacehandler_AVX2.h */,
 				AB6FE67526E6F815002B2106 /* colorspacehandler_AVX512.h */,
+				AB3B8DCD2D8A35FE00C9CBFD /* colorspacehandler_NEON.h */,
 				AB37E36F1D6188BC004A2C0D /* colorspacehandler_AltiVec.h */,
 			);
 			path = colorspacehandler;
@@ -3423,6 +3435,7 @@
 				AB6FE66E26E6F7C2002B2106 /* GPU_Operations.cpp */,
 				AB6FE66C26E6F7C2002B2106 /* GPU_Operations_SSE2.cpp */,
 				AB6FE66A26E6F7C2002B2106 /* GPU_Operations_AVX2.cpp */,
+				AB3B8DC62D8A35A000C9CBFD /* GPU_Operations_NEON.cpp */,
 				ABD1FEB81345AC8400AF11D1 /* lua-engine.cpp */,
 				ABD1FEB91345AC8400AF11D1 /* matrix.cpp */,
 				ABD1FEBA1345AC8400AF11D1 /* mc.cpp */,
@@ -3432,6 +3445,7 @@
 				ABD1FEC01345AC8400AF11D1 /* NDSSystem.cpp */,
 				ABD1FEC11345AC8400AF11D1 /* OGLRender.cpp */,
 				AB6FE67026E6F7C2002B2106 /* OGLRender_3_2.cpp */,
+				AB3B8DC82D8A35A000C9CBFD /* OGLRender_ES3.cpp */,
 				ABD1FEC21345AC8400AF11D1 /* path.cpp */,
 				ABD1FEC31345AC8400AF11D1 /* rasterize.cpp */,
 				ABD1FEC41345AC8400AF11D1 /* readwrite.cpp */,
@@ -3466,6 +3480,7 @@
 				AB6FE66F26E6F7C2002B2106 /* GPU_Operations.h */,
 				AB6FE66D26E6F7C2002B2106 /* GPU_Operations_SSE2.h */,
 				AB6FE66B26E6F7C2002B2106 /* GPU_Operations_AVX2.h */,
+				AB3B8DC72D8A35A000C9CBFD /* GPU_Operations_NEON.h */,
 				ABBCE29D15ACB26100A2C965 /* instruction_attributes.h */,
 				ABBCE29E15ACB26100A2C965 /* instructions.h */,
 				ABD1FE841345AC8400AF11D1 /* lua-engine.h */,
@@ -3479,6 +3494,7 @@
 				ABD1FE8C1345AC8400AF11D1 /* NDSSystem.h */,
 				ABD1FE8D1345AC8400AF11D1 /* OGLRender.h */,
 				AB6FE67126E6F7C2002B2106 /* OGLRender_3_2.h */,
+				AB3B8DC92D8A35A000C9CBFD /* OGLRender_ES3.h */,
 				ABD1FE8F1345AC8400AF11D1 /* PACKED.h */,
 				ABD1FE8E1345AC8400AF11D1 /* PACKED_END.h */,
 				ABD1FE901345AC8400AF11D1 /* path.h */,
