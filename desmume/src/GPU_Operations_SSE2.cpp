@@ -279,6 +279,378 @@ static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restr
 		}
 	}
 #ifdef ENABLE_SSSE3
+	else if (INTEGERSCALEHINT == 5)
+	{
+		__m128i srcPixOut[5];
+		
+		for (size_t srcX = 0, dstX = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE); srcX++, dstX+=INTEGERSCALEHINT)
+		{
+			const __m128i srcVec = _mm_load_si128((__m128i *)src + srcX);
+			
+			if (ELEMENTSIZE == 1)
+			{
+				srcPixOut[0] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3));
+				srcPixOut[1] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6));
+				srcPixOut[2] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 6, 6, 6, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 9, 9, 9));
+				srcPixOut[3] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 9, 9,10,10,10,10,10,11,11,11,11,11,12,12,12,12));
+				srcPixOut[4] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(12,13,13,13,13,13,14,14,14,14,14,15,15,15,15,15));
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				srcPixOut[0] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 3, 2, 3, 2, 3));
+				srcPixOut[1] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 2, 3, 2, 3, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 6, 7));
+				srcPixOut[2] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 6, 7, 6, 7, 6, 7, 6, 7, 8, 9, 8, 9, 8, 9, 8, 9));
+				srcPixOut[3] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 8, 9,10,11,10,11,10,11,10,11,10,11,12,13,12,13));
+				srcPixOut[4] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(12,13,12,13,12,13,14,15,14,15,14,15,14,15,14,15));
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				srcPixOut[0] = _mm_shuffle_epi32(srcVec, 0x00);
+				srcPixOut[1] = _mm_shuffle_epi32(srcVec, 0x54);
+				srcPixOut[2] = _mm_shuffle_epi32(srcVec, 0xA5);
+				srcPixOut[3] = _mm_shuffle_epi32(srcVec, 0xEA);
+				srcPixOut[4] = _mm_shuffle_epi32(srcVec, 0xFF);
+			}
+			
+			for (size_t lx = 0; lx < (size_t)INTEGERSCALEHINT; lx++)
+			{
+				_mm_store_si128((__m128i *)dst + dstX + lx, srcPixOut[lx]);
+			}
+			
+			if (SCALEVERTICAL)
+			{
+				for (size_t ly = 1; ly < (size_t)INTEGERSCALEHINT; ly++)
+				{
+					for (size_t lx = 0; lx < (size_t)INTEGERSCALEHINT; lx++)
+					{
+						_mm_store_si128((__m128i *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE) * INTEGERSCALEHINT) * ly) + lx, srcPixOut[lx]);
+					}
+				}
+			}
+		}
+	}
+	else if (INTEGERSCALEHINT == 6)
+	{
+		__m128i srcPixOut[6];
+		
+		for (size_t srcX = 0, dstX = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE); srcX++, dstX+=INTEGERSCALEHINT)
+		{
+			const __m128i srcVec = _mm_load_si128((__m128i *)src + srcX);
+			
+			if (ELEMENTSIZE == 1)
+			{
+				srcPixOut[0] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2));
+				srcPixOut[1] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5));
+				srcPixOut[2] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7));
+				srcPixOut[3] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9,10,10,10,10));
+				srcPixOut[4] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(10,10,11,11,11,11,11,11,12,12,12,12,12,12,13,13));
+				srcPixOut[5] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(13,13,13,13,14,14,14,14,14,14,15,15,15,15,15,15));
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				srcPixOut[0] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 3, 2, 3));
+				srcPixOut[1] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 2, 3, 2, 3, 2, 3, 2, 3, 4, 5, 4, 5, 4, 5, 4, 5));
+				srcPixOut[2] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 4, 5, 4, 5, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7));
+				srcPixOut[3] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9,10,11,10,11));
+				srcPixOut[4] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(10,11,10,11,10,11,10,11,12,13,12,13,12,13,12,13));
+				srcPixOut[5] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(12,13,12,13,14,15,14,15,14,15,14,15,14,15,14,15));
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				srcPixOut[0] = _mm_shuffle_epi32(srcVec, 0x00);
+				srcPixOut[1] = _mm_shuffle_epi32(srcVec, 0x50);
+				srcPixOut[2] = _mm_shuffle_epi32(srcVec, 0x55);
+				srcPixOut[3] = _mm_shuffle_epi32(srcVec, 0xAA);
+				srcPixOut[4] = _mm_shuffle_epi32(srcVec, 0xFA);
+				srcPixOut[5] = _mm_shuffle_epi32(srcVec, 0xFF);
+			}
+			
+			for (size_t lx = 0; lx < (size_t)INTEGERSCALEHINT; lx++)
+			{
+				_mm_store_si128((__m128i *)dst + dstX + lx, srcPixOut[lx]);
+			}
+			
+			if (SCALEVERTICAL)
+			{
+				for (size_t ly = 1; ly < (size_t)INTEGERSCALEHINT; ly++)
+				{
+					for (size_t lx = 0; lx < (size_t)INTEGERSCALEHINT; lx++)
+					{
+						_mm_store_si128((__m128i *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE) * INTEGERSCALEHINT) * ly) + lx, srcPixOut[lx]);
+					}
+				}
+			}
+		}
+	}
+	else if (INTEGERSCALEHINT == 7)
+	{
+		__m128i srcPixOut[7];
+		
+		for (size_t srcX = 0, dstX = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE); srcX++, dstX+=INTEGERSCALEHINT)
+		{
+			const __m128i srcVec = _mm_load_si128((__m128i *)src + srcX);
+			
+			if (ELEMENTSIZE == 1)
+			{
+				srcPixOut[0] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2));
+				srcPixOut[1] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4));
+				srcPixOut[2] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6));
+				srcPixOut[3] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 6, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 9));
+				srcPixOut[4] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 9, 9, 9, 9, 9, 9,10,10,10,10,10,10,10,11,11,11));
+				srcPixOut[5] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(11,11,11,11,12,12,12,12,12,12,12,13,13,13,13,13));
+				srcPixOut[6] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(13,13,14,14,14,14,14,14,14,15,15,15,15,15,15,15));
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				srcPixOut[0] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 3));
+				srcPixOut[1] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 4, 5, 4, 5));
+				srcPixOut[2] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 6, 7, 6, 7, 6, 7));
+				srcPixOut[3] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 6, 7, 6, 7, 6, 7, 6, 7, 8, 9, 8, 9, 8, 9, 8, 9));
+				srcPixOut[4] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 8, 9, 8, 9, 8, 9,10,11,10,11,10,11,10,11,10,11));
+				srcPixOut[5] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(10,11,10,11,12,13,12,13,12,13,12,13,12,13,12,13));
+				srcPixOut[6] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(12,13,14,15,14,15,14,15,14,15,14,15,14,15,14,15));
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				srcPixOut[0] = _mm_shuffle_epi32(srcVec, 0x00);
+				srcPixOut[1] = _mm_shuffle_epi32(srcVec, 0x40);
+				srcPixOut[2] = _mm_shuffle_epi32(srcVec, 0x55);
+				srcPixOut[3] = _mm_shuffle_epi32(srcVec, 0xA5);
+				srcPixOut[4] = _mm_shuffle_epi32(srcVec, 0xAA);
+				srcPixOut[5] = _mm_shuffle_epi32(srcVec, 0xFE);
+				srcPixOut[6] = _mm_shuffle_epi32(srcVec, 0xFF);
+			}
+			
+			for (size_t lx = 0; lx < (size_t)INTEGERSCALEHINT; lx++)
+			{
+				_mm_store_si128((__m128i *)dst + dstX + lx, srcPixOut[lx]);
+			}
+			
+			if (SCALEVERTICAL)
+			{
+				for (size_t ly = 1; ly < (size_t)INTEGERSCALEHINT; ly++)
+				{
+					for (size_t lx = 0; lx < (size_t)INTEGERSCALEHINT; lx++)
+					{
+						_mm_store_si128((__m128i *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE) * INTEGERSCALEHINT) * ly) + lx, srcPixOut[lx]);
+					}
+				}
+			}
+		}
+	}
+	else if (INTEGERSCALEHINT == 8)
+	{
+		__m128i srcPixOut[8];
+		
+		for (size_t srcX = 0, dstX = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE); srcX++, dstX+=INTEGERSCALEHINT)
+		{
+			const __m128i srcVec = _mm_load_si128((__m128i *)src + srcX);
+			
+			if (ELEMENTSIZE == 1)
+			{
+				srcPixOut[0] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1));
+				srcPixOut[1] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3));
+				srcPixOut[2] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5));
+				srcPixOut[3] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7));
+				srcPixOut[4] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9));
+				srcPixOut[5] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11));
+				srcPixOut[6] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(12,12,12,12,12,12,12,12,13,13,13,13,13,13,13,13));
+				srcPixOut[7] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(14,14,14,14,14,14,14,14,15,15,15,15,15,15,15,15));
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				srcPixOut[0] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1));
+				srcPixOut[1] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3));
+				srcPixOut[2] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5));
+				srcPixOut[3] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7));
+				srcPixOut[4] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9));
+				srcPixOut[5] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(10,11,10,11,10,11,10,11,10,11,10,11,10,11,10,11));
+				srcPixOut[6] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(12,13,12,13,12,13,12,13,12,13,12,13,12,13,12,13));
+				srcPixOut[7] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(14,15,14,15,14,15,14,15,14,15,14,15,14,15,14,15));
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				srcPixOut[0] = _mm_shuffle_epi32(srcVec, 0x00);
+				srcPixOut[1] = _mm_shuffle_epi32(srcVec, 0x00);
+				srcPixOut[2] = _mm_shuffle_epi32(srcVec, 0x55);
+				srcPixOut[3] = _mm_shuffle_epi32(srcVec, 0x55);
+				srcPixOut[4] = _mm_shuffle_epi32(srcVec, 0xAA);
+				srcPixOut[5] = _mm_shuffle_epi32(srcVec, 0xAA);
+				srcPixOut[6] = _mm_shuffle_epi32(srcVec, 0xFF);
+				srcPixOut[7] = _mm_shuffle_epi32(srcVec, 0xFF);
+			}
+			
+			for (size_t lx = 0; lx < (size_t)INTEGERSCALEHINT; lx++)
+			{
+				_mm_store_si128((__m128i *)dst + dstX + lx, srcPixOut[lx]);
+			}
+			
+			if (SCALEVERTICAL)
+			{
+				for (size_t ly = 1; ly < (size_t)INTEGERSCALEHINT; ly++)
+				{
+					for (size_t lx = 0; lx < (size_t)INTEGERSCALEHINT; lx++)
+					{
+						_mm_store_si128((__m128i *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE) * INTEGERSCALEHINT) * ly) + lx, srcPixOut[lx]);
+					}
+				}
+			}
+		}
+	}
+	else if (INTEGERSCALEHINT == 12)
+	{
+		__m128i srcPixOut[12];
+		
+		for (size_t srcX = 0, dstX = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE); srcX++, dstX+=INTEGERSCALEHINT)
+		{
+			const __m128i srcVec = _mm_load_si128((__m128i *)src + srcX);
+			
+			if (ELEMENTSIZE == 1)
+			{
+				srcPixOut[ 0] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1));
+				srcPixOut[ 1] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2));
+				srcPixOut[ 2] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3));
+				srcPixOut[ 3] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5));
+				srcPixOut[ 4] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6));
+				srcPixOut[ 5] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7));
+				srcPixOut[ 6] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9));
+				srcPixOut[ 7] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 9, 9, 9, 9, 9, 9, 9, 9,10,10,10,10,10,10,10,10));
+				srcPixOut[ 8] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(10,10,10,10,11,11,11,11,11,11,11,11,11,11,11,11));
+				srcPixOut[ 9] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(12,12,12,12,12,12,12,12,12,12,12,12,13,13,13,13));
+				srcPixOut[10] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(13,13,13,13,13,13,13,13,14,14,14,14,14,14,14,14));
+				srcPixOut[11] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(14,14,14,14,15,15,15,15,15,15,15,15,15,15,15,15));
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				srcPixOut[ 0] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1));
+				srcPixOut[ 1] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 1, 0, 1, 0, 1, 0, 1, 2, 3, 2, 3, 2, 3, 2, 3));
+				srcPixOut[ 2] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3));
+				srcPixOut[ 3] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5));
+				srcPixOut[ 4] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 4, 5, 4, 5, 4, 5, 4, 5, 6, 7, 6, 7, 6, 7, 6, 7));
+				srcPixOut[ 5] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7));
+				srcPixOut[ 6] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9));
+				srcPixOut[ 7] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 8, 9, 8, 9, 8, 9, 8, 9,10,11,10,11,10,11,10,11));
+				srcPixOut[ 8] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(10,11,10,11,10,11,10,11,10,11,10,11,10,11,10,11));
+				srcPixOut[ 9] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(12,13,12,13,12,13,12,13,12,13,12,13,12,13,12,13));
+				srcPixOut[10] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(12,13,12,13,12,13,12,13,14,15,14,15,14,15,14,15));
+				srcPixOut[11] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(14,15,14,15,14,15,14,15,14,15,14,15,14,15,14,15));
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				srcPixOut[ 0] = _mm_shuffle_epi32(srcVec, 0x00);
+				srcPixOut[ 1] = _mm_shuffle_epi32(srcVec, 0x00);
+				srcPixOut[ 2] = _mm_shuffle_epi32(srcVec, 0x00);
+				srcPixOut[ 3] = _mm_shuffle_epi32(srcVec, 0x55);
+				srcPixOut[ 4] = _mm_shuffle_epi32(srcVec, 0x55);
+				srcPixOut[ 5] = _mm_shuffle_epi32(srcVec, 0x55);
+				srcPixOut[ 6] = _mm_shuffle_epi32(srcVec, 0xAA);
+				srcPixOut[ 7] = _mm_shuffle_epi32(srcVec, 0xAA);
+				srcPixOut[ 8] = _mm_shuffle_epi32(srcVec, 0xAA);
+				srcPixOut[ 9] = _mm_shuffle_epi32(srcVec, 0xFF);
+				srcPixOut[10] = _mm_shuffle_epi32(srcVec, 0xFF);
+				srcPixOut[11] = _mm_shuffle_epi32(srcVec, 0xFF);
+			}
+			
+			for (size_t lx = 0; lx < (size_t)INTEGERSCALEHINT; lx++)
+			{
+				_mm_store_si128((__m128i *)dst + dstX + lx, srcPixOut[lx]);
+			}
+			
+			if (SCALEVERTICAL)
+			{
+				for (size_t ly = 1; ly < (size_t)INTEGERSCALEHINT; ly++)
+				{
+					for (size_t lx = 0; lx < (size_t)INTEGERSCALEHINT; lx++)
+					{
+						_mm_store_si128((__m128i *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE) * INTEGERSCALEHINT) * ly) + lx, srcPixOut[lx]);
+					}
+				}
+			}
+		}
+	}
+	else if (INTEGERSCALEHINT == 16)
+	{
+		__m128i srcPixOut[16];
+		
+		for (size_t srcX = 0, dstX = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE); srcX++, dstX+=INTEGERSCALEHINT)
+		{
+			const __m128i srcVec = _mm_load_si128((__m128i *)src + srcX);
+			
+			if (ELEMENTSIZE == 1)
+			{
+				srcPixOut[ 0] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+				srcPixOut[ 1] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1));
+				srcPixOut[ 2] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2));
+				srcPixOut[ 3] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3));
+				srcPixOut[ 4] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4));
+				srcPixOut[ 5] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5));
+				srcPixOut[ 6] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6));
+				srcPixOut[ 7] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7));
+				srcPixOut[ 8] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8));
+				srcPixOut[ 9] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9));
+				srcPixOut[10] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10));
+				srcPixOut[11] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11));
+				srcPixOut[12] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12));
+				srcPixOut[13] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13));
+				srcPixOut[14] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14));
+				srcPixOut[15] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15));
+			}
+			else if (ELEMENTSIZE == 2)
+			{
+				srcPixOut[ 0] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1));
+				srcPixOut[ 1] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1));
+				srcPixOut[ 2] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3));
+				srcPixOut[ 3] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3));
+				srcPixOut[ 4] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5));
+				srcPixOut[ 5] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5));
+				srcPixOut[ 6] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7));
+				srcPixOut[ 7] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7, 6, 7));
+				srcPixOut[ 8] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9));
+				srcPixOut[ 9] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8( 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9, 8, 9));
+				srcPixOut[10] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(10,11,10,11,10,11,10,11,10,11,10,11,10,11,10,11));
+				srcPixOut[11] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(10,11,10,11,10,11,10,11,10,11,10,11,10,11,10,11));
+				srcPixOut[12] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(12,13,12,13,12,13,12,13,12,13,12,13,12,13,12,13));
+				srcPixOut[13] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(12,13,12,13,12,13,12,13,12,13,12,13,12,13,12,13));
+				srcPixOut[14] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(14,15,14,15,14,15,14,15,14,15,14,15,14,15,14,15));
+				srcPixOut[15] = _mm_shuffle_epi8(srcVec, _mm_setr_epi8(14,15,14,15,14,15,14,15,14,15,14,15,14,15,14,15));
+			}
+			else if (ELEMENTSIZE == 4)
+			{
+				srcPixOut[ 0] = _mm_shuffle_epi32(srcVec, 0x00);
+				srcPixOut[ 1] = _mm_shuffle_epi32(srcVec, 0x00);
+				srcPixOut[ 2] = _mm_shuffle_epi32(srcVec, 0x00);
+				srcPixOut[ 3] = _mm_shuffle_epi32(srcVec, 0x00);
+				srcPixOut[ 4] = _mm_shuffle_epi32(srcVec, 0x55);
+				srcPixOut[ 5] = _mm_shuffle_epi32(srcVec, 0x55);
+				srcPixOut[ 6] = _mm_shuffle_epi32(srcVec, 0x55);
+				srcPixOut[ 7] = _mm_shuffle_epi32(srcVec, 0x55);
+				srcPixOut[ 8] = _mm_shuffle_epi32(srcVec, 0xAA);
+				srcPixOut[ 9] = _mm_shuffle_epi32(srcVec, 0xAA);
+				srcPixOut[10] = _mm_shuffle_epi32(srcVec, 0xAA);
+				srcPixOut[11] = _mm_shuffle_epi32(srcVec, 0xAA);
+				srcPixOut[12] = _mm_shuffle_epi32(srcVec, 0xFF);
+				srcPixOut[13] = _mm_shuffle_epi32(srcVec, 0xFF);
+				srcPixOut[14] = _mm_shuffle_epi32(srcVec, 0xFF);
+				srcPixOut[15] = _mm_shuffle_epi32(srcVec, 0xFF);
+			}
+			
+			for (size_t lx = 0; lx < (size_t)INTEGERSCALEHINT; lx++)
+			{
+				_mm_store_si128((__m128i *)dst + dstX + lx, srcPixOut[lx]);
+			}
+			
+			if (SCALEVERTICAL)
+			{
+				for (size_t ly = 1; ly < (size_t)INTEGERSCALEHINT; ly++)
+				{
+					for (size_t lx = 0; lx < (size_t)INTEGERSCALEHINT; lx++)
+					{
+						_mm_store_si128((__m128i *)dst + dstX + ((GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / ELEMENTSIZE) * INTEGERSCALEHINT) * ly) + lx, srcPixOut[lx]);
+					}
+				}
+			}
+		}
+	}
 	else if (INTEGERSCALEHINT > 1)
 	{
 		const size_t scale = dstWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH;
