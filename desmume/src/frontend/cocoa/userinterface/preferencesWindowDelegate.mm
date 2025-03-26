@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2023 DeSmuME Team
+	Copyright (C) 2012-2025 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -68,6 +68,7 @@
 		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)0,
 		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)0,
 		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
+		(NSOpenGLPixelFormatAttribute)NSOpenGLPFAAllowOfflineRenderers,
 		(NSOpenGLPixelFormatAttribute)0 };
 	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_

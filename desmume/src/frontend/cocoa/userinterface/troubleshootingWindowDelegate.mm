@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2023 DeSmuME team
+	Copyright (C) 2012-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 
 #import "troubleshootingWindowDelegate.h"
 #import "EmuControllerDelegate.h"
+
+#include "../../../render3D.h"
 
 #import "cocoa_util.h"
 #import "cocoa_globals.h"
@@ -109,24 +111,31 @@
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nGPU - Scaling Factor: "] stringByAppendingString:[NSString stringWithFormat:@"%ldx", (unsigned long)[[cdsCore cdsGPU] gpuScale]]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nGPU - Color Depth: "] stringByAppendingString:[NSString stringWithFormat:@"%@", ([[cdsCore cdsGPU] gpuColorFormat] == NDSColorFormat_BGR555_Rev) ? @"15-bit" : (([[cdsCore cdsGPU] gpuColorFormat] == NDSColorFormat_BGR666_Rev) ? @"18-bit" : @"24-bit")]];
 	
-	NSString *render3DEngineDetails = [[cdsCore cdsGPU] render3DRenderingEngineString];
-	switch ([[cdsCore cdsGPU] render3DRenderingEngine])
+	NSString *render3DEngineDetails = [[cdsCore cdsGPU] render3DRenderingEngineAppliedHostRendererName];
+	switch ([[cdsCore cdsGPU] render3DRenderingEngineApplied])
 	{
-		case CORE3DLIST_NULL:
+		case RENDERID_NULL:
 			break;
 			
-		case CORE3DLIST_SWRASTERIZE:
+		case RENDERID_SOFTRASTERIZER:
 			render3DEngineDetails = [NSString stringWithFormat:@"%@ (HighResColor=%@, LineHack=%@, FragmentSamplingHack=%@, ThreadCount=%@)",
-									 [[cdsCore cdsGPU] render3DRenderingEngineString],
+									 [[cdsCore cdsGPU] render3DRenderingEngineAppliedHostRendererName],
 									 ([[cdsCore cdsGPU] render3DHighPrecisionColorInterpolation] ? @"YES" : @"NO"),
 									 ([[cdsCore cdsGPU] render3DLineHack] ? @"YES" : @"NO"),
 									 ([[cdsCore cdsGPU] render3DFragmentSamplingHack] ? @"YES" : @"NO"),
 									 ([[cdsCore cdsGPU] render3DThreads] == 0 ? @"Automatic" : [NSString stringWithFormat:@"%ld", (unsigned long)[[cdsCore cdsGPU] render3DThreads]])];
 			break;
 			
-		case CORE3DLIST_OPENGL:
-			render3DEngineDetails = [NSString stringWithFormat:@"%@ (MSAA=%@, SmoothTextures=%@)",
-									 [[cdsCore cdsGPU] render3DRenderingEngineString],
+		case RENDERID_OPENGL_AUTO:
+		case RENDERID_OPENGL_LEGACY:
+		case RENDERID_OPENGL_3_2:
+			render3DEngineDetails = [NSString stringWithFormat:@"%@ [0x%08lX] (EnableShadowPolygons=%@, EnableZeroAlphaBlending=%@, EnableNDSDepthCalculation=%@, EnableDepthLEqualPolygonFacing=%@, MSAA=%@, SmoothTextures=%@)",
+									 [[cdsCore cdsGPU] render3DRenderingEngineAppliedHostRendererName],
+									 [[cdsCore cdsGPU] render3DRenderingEngineAppliedHostRendererID],
+									 [[cdsCore cdsGPU] openGLEmulateShadowPolygon] ? @"YES" : @"NO",
+									 [[cdsCore cdsGPU] openGLEmulateSpecialZeroAlphaBlending] ? @"YES" : @"NO",
+									 [[cdsCore cdsGPU] openGLEmulateNDSDepthCalculation] ? @"YES" : @"NO",
+									 [[cdsCore cdsGPU] openGLEmulateDepthLEqualPolygonFacing] ? @"YES" : @"NO",
 									 ([[cdsCore cdsGPU] render3DMultisampleSize] == 0) ? @"Off" : [NSString stringWithFormat:@"%ld", (unsigned long)[[cdsCore cdsGPU] render3DMultisampleSize]],
 									 [[cdsCore cdsGPU] render3DTextureSmoothing] ? @"YES" : @"NO"];
 			break;

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2024 DeSmuME team
+	Copyright (C) 2017-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,6 +20,11 @@
 #endif
 
 #include "MacMetalDisplayView.h"
+
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <IOKit/graphics/IOGraphicsLib.h>
+
 #include "../cocoa_globals.h"
 
 #include "../../../common.h"
@@ -54,13 +59,118 @@
 
 - (id)init
 {
+	device = nil;
+	
 	self = [super init];
 	if (self == nil)
 	{
 		return nil;
 	}
 	
-	device = MTLCreateSystemDefaultDevice();
+#if defined(DEBUG) && (DEBUG == 1)
+	// Report information on every renderer.
+	NSArray< id<MTLDevice> > *mtlDeviceList = MTLCopyAllDevices();
+	int rendererCount = (int)[mtlDeviceList count];
+	printf("Metal Renderer Count: %i\n\n", rendererCount);
+	
+	for (int i = 0; i < rendererCount; i++)
+	{
+		id<MTLDevice> mtlDevice = [mtlDeviceList objectAtIndex:i];
+		
+		printf("Renderer Index: %i\n", i);
+		printf("Renderer: %s\n", [[mtlDevice name] cStringUsingEncoding:NSUTF8StringEncoding]);
+		
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+		if (@available(macOS 10.13, *))
+		{
+			printf("Renderer ID: 0x%08llX\n", [mtlDevice registryID]);
+			printf("Removable: %s\n", [mtlDevice isRemovable] ? "YES" : "NO");
+		}
+		else
+#endif
+		{
+			printf("Renderer ID: UNSUPPORTED, Requires High Sierra\n");
+			printf("Removable: UNSUPPORTED, Requires High Sierra\n");
+		}
+		
+		printf("Online: %s\n\n", [mtlDevice isHeadless] ? "NO" : "YES");
+	}
+#endif
+	
+	// Check if we're running on a MacBook Pro. If we are, then set our rendering device
+	// to whatever the built-in display is using in order to respect the user setting for
+	// Automatic Graphics Switching.
+	char *modelCString = NULL;
+	size_t modelStringLen = 0;
+	
+	sysctlbyname("hw.model", NULL, &modelStringLen, NULL, 0);
+	if (modelStringLen > 0)
+	{
+		modelCString = (char *)malloc(modelStringLen * sizeof(char));
+		sysctlbyname("hw.model", modelCString, &modelStringLen, NULL, 0);
+	}
+	
+	if (strstr(modelCString, "MacBookPro") != NULL)
+	{
+		bool isBuiltInDisplayFound = false;
+		NSArray<NSScreen *> *screenList = [NSScreen screens];
+		for (NSScreen *theScreen in screenList)
+		{
+			NSNumber *screenNumber = (NSNumber *)[[theScreen deviceDescription] objectForKey:@"NSScreenNumber"];
+			CGDirectDisplayID displayID  = [screenNumber unsignedIntValue];
+			
+			isBuiltInDisplayFound = CGDisplayIsBuiltin(displayID);
+			if (isBuiltInDisplayFound)
+			{
+				// If we're running on a MacBook Pro with dual GPUs, we need to set our rendering device to
+				// whatever the built-in display is running. This has a chance of choosing the integrated GPU,
+				// but only under the following conditions:
+				//    - The user has Automatic Graphics Switching enabled in System Preferences
+				//    - The MacBook Pro's built-in display is online and available (in other words, the
+				//      MacBook Pro's lid is open, not closed)
+				//    - There are no additional displays connected to the MacBook Pro
+				//    - The app has "Prefer External GPU" unchecked in Finder Get Info
+				device = CGDirectDisplayCopyCurrentMetalDevice(displayID);
+				NSString *screenName = NULL;
+				
+				// For debugging purposes, let's also report the name of the display that the rendering device
+				// is associated to.
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_15) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_15)
+				if (@available(macOS 10.15, *))
+				{
+					screenName = [theScreen localizedName];
+				}
+				else
+#endif
+				{
+					io_connect_t displayPort = SILENCE_DEPRECATION_MACOS_10_9( CGDisplayIOServicePort(displayID) );
+					NSDictionary *screenInfo = CFBridgingRelease( IODisplayCreateInfoDictionary(displayPort, kIODisplayOnlyPreferredName) );
+					NSDictionary *localizedNames = (NSDictionary *)[screenInfo objectForKey:[NSString stringWithUTF8String:kDisplayProductName]];
+					if ([localizedNames count] > 0)
+					{
+						screenName = (NSString *)[localizedNames objectForKey:[[localizedNames allKeys] objectAtIndex:0]];
+					}
+				}
+				
+				printf("MacBook Pro Built-in Display: %s\n", [screenName cStringUsingEncoding:NSUTF8StringEncoding]);
+				break;
+			}
+		}
+	}
+	
+	if (modelStringLen > 0)
+	{
+		free(modelCString);
+		modelCString = NULL;
+	}
+	
+	// If no rendering device was set from beforehand, then just use the system default renderer.
+	// For MacBook Pro with dual GPUs, this will NEVER choose the integrated GPU.
+	if (device == nil)
+	{
+		device = MTLCreateSystemDefaultDevice();
+	}
+	
 	if (device == nil)
 	{
 		NSLog(@"Metal: A Metal device could not be found.");
@@ -77,6 +187,7 @@
 	}
 	
 	[device retain];
+	printf("Selected Metal Renderer: %s\n\n\n", [[device name] cStringUsingEncoding:NSUTF8StringEncoding]);
 	
 	NSString *tempVersionStr = @"Metal - Unknown GPU Family";
 	const BOOL isRWTexSupported = [device supportsFeatureSet:(MTLFeatureSet)10002]; // MTLFeatureSet_macOS_ReadWriteTextureTier2

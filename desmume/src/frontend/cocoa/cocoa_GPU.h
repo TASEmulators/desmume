@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2022 DeSmuME team
+	Copyright (C) 2013-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -238,6 +238,9 @@ public:
 @property (assign) BOOL layerSubOBJ;
 
 @property (assign) NSInteger render3DRenderingEngine;
+@property (readonly) NSInteger render3DRenderingEngineApplied;
+@property (readonly) NSInteger render3DRenderingEngineAppliedHostRendererID;
+@property (readonly) NSString *render3DRenderingEngineAppliedHostRendererName;
 @property (assign) BOOL render3DHighPrecisionColorInterpolation;
 @property (assign) BOOL render3DEdgeMarking;
 @property (assign) BOOL render3DFog;
@@ -261,7 +264,6 @@ public:
 #endif
 
 - (BOOL) gpuStateByBit:(const UInt32)stateBit;
-- (NSString *) render3DRenderingEngineString;
 - (void) clearWithColor:(const uint16_t)colorBGRA5551;
 - (void) respondToPauseState:(BOOL)isPaused;
 

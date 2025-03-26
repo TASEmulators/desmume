@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2022 DeSmuME team
+	Copyright (C) 2017-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -141,6 +141,14 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
 		(NSOpenGLPixelFormatAttribute)0
 	};
+	
+	// Normally, supporting Automatic Graphics Switching and allowing the context
+	// to use the integrated GPU requires NSOpenGLPFAAllowOfflineRenderers in the
+	// pixel format attributes. However, GPUs that can't support Metal are also
+	// too slow to run most of the video filters on OpenGL, and also show poor
+	// performance when running multiple display windows with high GPU scaling
+	// factors. Therefore, we will NOT  allow OpenGL to run contexts on the
+	// integrated GPU for performance reasons. -rogerman (2025/03/26)
 	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	// If we can support a 3.2 Core Profile context, then request that in our
@@ -334,6 +342,14 @@ void MacOGLDisplayPresenter::__InstanceInit(MacOGLClientFetchObject *fetchObject
 		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
 		(NSOpenGLPixelFormatAttribute)0
 	};
+	
+	// Normally, supporting Automatic Graphics Switching and allowing the context
+	// to use the integrated GPU requires NSOpenGLPFAAllowOfflineRenderers in the
+	// pixel format attributes. However, GPUs that can't support Metal are also
+	// too slow to run most of the video filters on OpenGL, and also show poor
+	// performance when running multiple display windows with high GPU scaling
+	// factors. Therefore, we will NOT  allow OpenGL to run contexts on the
+	// integrated GPU for performance reasons. -rogerman (2025/03/26)
 	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	// If we can support a 3.2 Core Profile context, then request that in our

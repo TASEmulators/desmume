@@ -4,6 +4,8 @@
 <dict>
 	<key>NSRequiresAquaSystemAppearance</key>
 	<false/>
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>DeSmuME requires your host microphone to emulate the NDS microphone.</string>
 	<key>CFBundleDevelopmentRegion</key>
