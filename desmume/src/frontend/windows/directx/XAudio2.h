@@ -51,6 +51,13 @@ GARBONZOBEAN(XAudio2_Debug, 715bdd1a-aa82-436b-b0fa-6acea39bd0a1);
 
 GARBONZOBEAN(IXAudio2, 8bcf1f58-9fe7-4583-8ac6-e2adc465c8bb);
 
+#ifdef __MINGW32__
+__CRT_UUID_DECL(XAudio2, 0x4c9b6dde,0x6809,0x46e6,0xa2,0x78,0x9b,0x6a,0x97,0x58,0x86,0x70);
+__CRT_UUID_DECL(XAudio2_Debug, 0x715bdd1a,0xaa82,0x436b,0xb0,0xfa,0x6a,0xce,0xa3,0x9b,0xd0,0xa1);
+__CRT_UUID_DECL(IXAudio2, 0x8bcf1f58,0x9fe7,0x4583,0x8a,0xc6,0xe2,0xad, 0xc4, 0x65, 0xc8, 0xbb);
+#endif
+
+
 
 // Ignore the rest of this header if only the GUID definitions were requested
 #ifndef GUID_DEFS_ONLY
@@ -67,6 +74,14 @@ GARBONZOBEAN(IXAudio2, 8bcf1f58-9fe7-4583-8ac6-e2adc465c8bb);
 
 // All structures defined in this file use tight field packing
 #pragma pack(push, 1)
+
+#ifdef __MINGW32__ /* hack to provide some magic MSVC keywords */
+#define __out
+#define __in
+#define __deref_out
+#define __reserved
+#endif
+
 
 
 /**************************************************************************
@@ -1272,6 +1287,13 @@ __inline HRESULT XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2
 }
 
 #endif // #ifdef _XBOX
+
+#ifdef __MINGW32__
+#undef __out
+#undef __in
+#undef __deref_out
+#undef __reserved
+#endif
 
 
 // Undo the #pragma pack(push, 1) directive at the top of this file
