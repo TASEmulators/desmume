@@ -519,7 +519,11 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
       {
         if(event->ctouchpad.finger==0)
           if(!touchpad.down)
+          {
             touchpad.down=1;
+            touchpad.x=event->ctouchpad.x;
+            touchpad.y=event->ctouchpad.y;
+          }
       }
       break;
 
@@ -542,6 +546,8 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
           {
              touchpad.click = 1;
              if(touchpad.down > 1) touchpad.down = 0;
+             touchpad.x=event->ctouchpad.x;
+             touchpad.y=event->ctouchpad.y;
           }
       }
       break;
