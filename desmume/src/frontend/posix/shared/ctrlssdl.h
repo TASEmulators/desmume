@@ -92,6 +92,8 @@ struct touchpad_status
 
 extern touchpad_status touchpad;
 
+enum joystick_input_type {Joy_InvalidInput=-1, Joy_AxisMotion=0, Joy_HatMotion, Joy_ButtonDown, Joy_ButtonUp};
+
 struct ctrls_event_config {
   unsigned short keypad;
   float nds_screen_size_ratio;

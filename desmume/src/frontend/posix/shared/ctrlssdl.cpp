@@ -228,7 +228,8 @@ u16 get_joy_key(int index, bool *modified) {
     SDL_Event event;
     u16 key=joypad_cfg[index];
     bool done = FALSE;
-    int etype=-1, jn;
+    int jn;
+    joystick_input_type etype=Joy_InvalidInput;
     Uint8 bnum, bval;
     Sint16 aval;
     
@@ -239,13 +240,14 @@ u16 get_joy_key(int index, bool *modified) {
     
     while(!done && SDL_PollEvent(&event))
     {
+        etype=Joy_InvalidInput;
         switch(event.type)
         {
         case SDL_JOYBUTTONDOWN:
             jn=get_joystick_number_by_id(event.jbutton.which);
             if(!open_joysticks[jn].isController)
             {
-                etype=0;
+                etype=Joy_ButtonDown;
                 bnum=event.jbutton.button;
             }
             break;
@@ -253,7 +255,7 @@ u16 get_joy_key(int index, bool *modified) {
             jn=get_joystick_number_by_id(event.cbutton.which);
             if(open_joysticks[jn].isController)
             {
-                etype=0;
+                etype=Joy_ButtonDown;
                 bnum=event.cbutton.button;
             }
             break;
@@ -261,7 +263,7 @@ u16 get_joy_key(int index, bool *modified) {
             jn=get_joystick_number_by_id(event.jaxis.which);
             if(!open_joysticks[jn].isController)
             {
-                etype=1;
+                etype=Joy_AxisMotion;
                 bnum=event.jaxis.axis;
                 aval=event.jaxis.value;
             }
@@ -270,7 +272,7 @@ u16 get_joy_key(int index, bool *modified) {
             jn=get_joystick_number_by_id(event.caxis.which);
             if(open_joysticks[jn].isController)
             {
-                etype=1;
+                etype=Joy_AxisMotion;
                 bnum=event.caxis.axis;
                 aval=event.caxis.value;
             }
@@ -279,7 +281,7 @@ u16 get_joy_key(int index, bool *modified) {
             jn=get_joystick_number_by_id(event.jhat.which);
             if(!open_joysticks[jn].isController)
             {
-                etype=2;
+                etype=Joy_HatMotion;
                 bnum=event.jhat.hat;
                 bval=event.jhat.value;
             }
@@ -291,11 +293,11 @@ u16 get_joy_key(int index, bool *modified) {
         
         switch(etype)
         {
-            case 0:
+            case Joy_ButtonDown:
                 key = ((jn & 15) << 12) | JOY_BUTTON << 8 | (bnum & 255);
                 done = TRUE;
                 break;
-            case 1:
+            case Joy_AxisMotion:
                 if( ((u32)abs(aval) >> 14) != 0 )
                 {
                     key = ((jn & 15) << 12) | JOY_AXIS << 8 | ((bnum & 127) << 1);
@@ -304,7 +306,7 @@ u16 get_joy_key(int index, bool *modified) {
                     done = TRUE;
                 }
                 break;
-            case 2:
+            case Joy_HatMotion:
                 if (bval != SDL_HAT_CENTERED) {
                     key = ((jn & 15) << 12) | JOY_HAT << 8 | ((bnum & 63) << 2);
                     if ((bval & SDL_HAT_UP) != 0)
@@ -317,6 +319,8 @@ u16 get_joy_key(int index, bool *modified) {
                         key |= JOY_HAT_LEFT;
                     done = TRUE;
                 }
+                break;
+            default:
                 break;
         }
     }
@@ -445,7 +449,8 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
   u16 key_d;
   u16 key_l;
   
-  int jn, etype=-1;
+  int jn;
+  joystick_input_type etype=Joy_InvalidInput;
   Sint16 aval;
   Uint8 bnum, bval;
 
@@ -455,7 +460,7 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
       jn=get_joystick_number_by_id(event->jaxis.which);
       if(!open_joysticks[jn].isController)
       {
-        etype=0;
+        etype=Joy_AxisMotion;
         bnum=event->jaxis.axis;
         aval=event->jaxis.value;
       }
@@ -465,7 +470,7 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
       jn=get_joystick_number_by_id(event->jhat.which);
       if(!open_joysticks[jn].isController)
       {
-        etype=1;
+        etype=Joy_HatMotion;
         bnum=event->jhat.hat;
         bval=event->jhat.value;
       }
@@ -475,7 +480,7 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
       jn=get_joystick_number_by_id(event->jbutton.which);
       if(!open_joysticks[jn].isController)
       {
-        etype=2;
+        etype=Joy_ButtonDown;
         bnum=event->jbutton.button;
       }
       break;
@@ -484,7 +489,7 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
       jn=get_joystick_number_by_id(event->jbutton.which);
       if(!open_joysticks[jn].isController)
       {
-        etype=3;
+        etype=Joy_ButtonUp;
         bnum=event->jbutton.button;
       }
       break;
@@ -493,7 +498,7 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
       jn=get_joystick_number_by_id(event->caxis.which);
       if(open_joysticks[jn].isController)
       {
-        etype=0;
+        etype=Joy_AxisMotion;
         bnum=event->caxis.axis;
         aval=event->caxis.value;
       }
@@ -503,7 +508,7 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
       jn=get_joystick_number_by_id(event->cbutton.which);
       if(open_joysticks[jn].isController)
       {
-        etype=2;
+        etype=Joy_ButtonDown;
         bnum=event->cbutton.button;
       }
       break;
@@ -512,7 +517,7 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
       jn=get_joystick_number_by_id(event->cbutton.which);
       if(open_joysticks[jn].isController)
       {
-        etype=3;
+        etype=Joy_ButtonUp;
         bnum=event->cbutton.button;
       }
       break;
@@ -565,7 +570,7 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
   {
     /* Joystick axis motion 
        Note: button constants have a 1bit offset. */
-    case 0:
+    case Joy_AxisMotion:
       key_code = ((jn & 15) << 12) | JOY_AXIS << 8 | ((bnum & 127) << 1);
       if( ((u32)abs(aval) >> 14) != 0 )
         {
@@ -592,7 +597,7 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
     
     /* Diagonal positions will be treated as two separate keys being activated, rather than a single diagonal key. */
     /* JOY_HAT_* are sequential integers, rather than a bitmask */
-    case 1:
+    case Joy_HatMotion:
       key_code = ((jn & 15) << 12) | JOY_HAT << 8 | ((bnum & 63) << 2);
       key_u = lookup_joy_key( key_code | JOY_HAT_UP );
       key_r = lookup_joy_key( key_code | JOY_HAT_RIGHT );
@@ -617,7 +622,7 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
       break;
     
     /* Joystick button pressed */
-    case 2:
+    case Joy_ButtonDown:
       key_code = ((jn & 15) << 12) | JOY_BUTTON << 8 | (bnum & 255);
       key = lookup_joy_key( key_code );
       if (key != 0)
@@ -625,11 +630,14 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
       break;
     
     /* Joystick button released */
-    case 3:
+    case Joy_ButtonUp:
       key_code = ((jn & 15) << 12) | JOY_BUTTON << 8 | (bnum & 255);
       key = lookup_joy_key( key_code );
       if (key != 0)
         RM_KEY( *keypad, key );
+      break;
+    
+    default:
       break;
   }
 
