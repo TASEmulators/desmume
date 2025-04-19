@@ -36,10 +36,20 @@ u32 joypad_cfg[NB_KEYS];
 static_assert(sizeof(keyboard_cfg) == sizeof(joypad_cfg), "");
 
 mouse_status mouse;
+touchpad_status touchpad = {0.0, 0.0, 0, 0};
 static int fullscreen;
 
-//List of currently connected joysticks (key - instance id, value - SDL_Joystick structure, joystick number)
-static std::pair<SDL_Joystick *, SDL_JoystickID> open_joysticks[MAX_JOYSTICKS];
+struct JoystickInfo
+{
+  bool             isController;
+  union {
+    SDL_Joystick*            joy;
+    SDL_GameController*      gcont;
+  }                handle;
+  SDL_JoystickID   id;
+};
+
+static JoystickInfo open_joysticks[MAX_JOYSTICKS];
 
 /* Keypad key names */
 const char *key_names[NB_KEYS] =
@@ -117,26 +127,44 @@ BOOL init_joy( void) {
     }
   
   for(i=0; i<MAX_JOYSTICKS; ++i)
-    open_joysticks[i]=std::make_pair((SDL_Joystick*)NULL, 0);
+    open_joysticks[i]={FALSE, {NULL}, -1};
 
   int nbr_joy = std::min(SDL_NumJoysticks(), MAX_JOYSTICKS);
-
+  
   if ( nbr_joy > 0) {
     printf("Found %d joysticks\n", nbr_joy);
     
     for (i = 0; i < nbr_joy; i++) {
-       SDL_Joystick * joy = SDL_JoystickOpen(i);
-       if(joy) {
-         printf("Joystick %d %s\n", i, SDL_JoystickNameForIndex(i));
-         printf("Axes: %d\n", SDL_JoystickNumAxes(joy));
-         printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
-         printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
-         printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
-         open_joysticks[i]=std::make_pair(joy, SDL_JoystickInstanceID(joy));
+       if(SDL_IsGameController(i)) {
+         SDL_GameController * gcont = SDL_GameControllerOpen(i);
+         if(gcont) {
+           printf("Game controller %d %s\n", i, SDL_GameControllerNameForIndex(i));
+           printf("Axes: %d\n", SDL_JoystickNumAxes(SDL_GameControllerGetJoystick(gcont)));
+           printf("Buttons: %d\n", SDL_JoystickNumButtons(SDL_GameControllerGetJoystick(gcont)));
+           printf("Touchpads: %d\n", SDL_GameControllerGetNumTouchpads(gcont));
+           printf("%s\n", SDL_GameControllerHasSensor(gcont, SDL_SENSOR_ACCEL) ? "Accelerometer present" : "Accelerometer not present");
+           printf("%s\n", SDL_GameControllerHasSensor(gcont, SDL_SENSOR_GYRO) ? "Gyroscope present" : "Gyroscope not present");
+           open_joysticks[i]={TRUE, {.gcont=gcont}, SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gcont))};
+         }
+         else {
+           fprintf(stderr, "Failed to open game controller %d: %s\n", i, SDL_GetError());
+           joy_init_good = FALSE;
+         }
        }
        else {
-         fprintf(stderr, "Failed to open joystick %d: %s\n", i, SDL_GetError());
-         joy_init_good = FALSE;
+         SDL_Joystick * joy = SDL_JoystickOpen(i);
+         if(joy) {
+           printf("Joystick %d %s\n", i, SDL_JoystickNameForIndex(i));
+           printf("Axes: %d\n", SDL_JoystickNumAxes(joy));
+           printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
+           printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
+           printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
+           open_joysticks[i]={FALSE, {joy}, SDL_JoystickInstanceID(joy)};
+         }
+         else {
+           fprintf(stderr, "Failed to open joystick %d: %s\n", i, SDL_GetError());
+           joy_init_good = FALSE;
+         }
        }
     }
   }
@@ -149,10 +177,15 @@ void uninit_joy( void)
 {
   int i;
   for (i=0; i<MAX_JOYSTICKS; ++i) {
-    if(open_joysticks[i].first) {
-      SDL_JoystickClose(open_joysticks[i].first);
-      open_joysticks[i]=std::make_pair((SDL_Joystick*)NULL, 0);
+    if(open_joysticks[i].isController) {
+      if(open_joysticks[i].handle.gcont)
+        SDL_GameControllerClose(open_joysticks[i].handle.gcont);
     }
+    else {
+      if(open_joysticks[i].handle.joy)
+        SDL_JoystickClose(open_joysticks[i].handle.joy);
+    }
+    open_joysticks[i]={FALSE, {NULL}, -1};
   }
   
   SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
@@ -187,70 +220,105 @@ u32 lookup_key (u32 keyval) {
 }
 
 /* Get pressed joystick key */
-u16 get_joy_key(int index) {
-  BOOL done = FALSE;
-  SDL_Event event;
-  u16 key = joypad_cfg[index];
-
-  /* Enable joystick events if needed */
-  if( SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE )
-    SDL_JoystickEventState(SDL_ENABLE);
-
-  while(SDL_WaitEvent(&event) && !done)
+u16 get_joy_key(int index, bool *modified) {
+    SDL_Event event;
+    u16 key=joypad_cfg[index];
+    bool done = FALSE;
+    int etype=-1, jn;
+    Uint8 bnum, bval;
+    Sint16 aval;
+    
+    if(SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE)
+        SDL_JoystickEventState(SDL_ENABLE);
+    if(SDL_GameControllerEventState(SDL_QUERY) == SDL_IGNORE)
+        SDL_GameControllerEventState(SDL_ENABLE);
+    
+    while(!done && SDL_PollEvent(&event))
     {
-      switch(event.type)
+        switch(event.type)
         {
         case SDL_JOYBUTTONDOWN:
-          printf( "Device: %d; Button: %d\n", event.jbutton.which, event.jbutton.button );
-          key = ((get_joystick_number_by_id(event.jbutton.which) & 15) << 12) | JOY_BUTTON << 8 | (event.jbutton.button & 255);
-          done = TRUE;
-          break;
-        case SDL_JOYAXISMOTION:
-          /* Dead zone of 50% */
-          if( ((u32)abs(event.jaxis.value) >> 14) != 0 )
+            jn=get_joystick_number_by_id(event.jbutton.which);
+            if(!open_joysticks[jn].isController)
             {
-              key = ((get_joystick_number_by_id(event.jaxis.which) & 15) << 12) | JOY_AXIS << 8 | ((event.jaxis.axis & 127) << 1);
-              if (event.jaxis.value > 0) {
-                printf( "Device: %d; Axis: %d (+)\n", event.jaxis.which, event.jaxis.axis );
-                key |= 1;
-              }
-              else
-                printf( "Device: %d; Axis: %d (-)\n", event.jaxis.which, event.jaxis.axis );
-              done = TRUE;
+                etype=0;
+                bnum=event.jbutton.button;
             }
-          break;
+            break;
+        case SDL_CONTROLLERBUTTONDOWN:
+            jn=get_joystick_number_by_id(event.cbutton.which);
+            if(open_joysticks[jn].isController)
+            {
+                etype=0;
+                bnum=event.cbutton.button;
+            }
+            break;
+        case SDL_JOYAXISMOTION:
+            jn=get_joystick_number_by_id(event.jaxis.which);
+            if(!open_joysticks[jn].isController)
+            {
+                etype=1;
+                bnum=event.jaxis.axis;
+                aval=event.jaxis.value;
+            }
+            break;
+        case SDL_CONTROLLERAXISMOTION:
+            jn=get_joystick_number_by_id(event.caxis.which);
+            if(open_joysticks[jn].isController)
+            {
+                etype=1;
+                bnum=event.caxis.axis;
+                aval=event.caxis.value;
+            }
+            break;
         case SDL_JOYHATMOTION:
-          /* Diagonal positions will be treated as two separate keys being activated, rather than a single diagonal key. */
-          /* JOY_HAT_* are sequential integers, rather than a bitmask */
-          if (event.jhat.value != SDL_HAT_CENTERED) {
-            key = ((get_joystick_number_by_id(event.jhat.which) & 15) << 12) | JOY_HAT << 8 | ((event.jhat.hat & 63) << 2);
-            /* Can't just use a switch here because SDL_HAT_* make up a bitmask. We only want one of these when assigning keys. */
-            if ((event.jhat.value & SDL_HAT_UP) != 0) {
-              key |= JOY_HAT_UP;
-              printf( "Device: %d; Hat: %d (Up)\n", event.jhat.which, event.jhat.hat );
+            jn=get_joystick_number_by_id(event.jhat.which);
+            if(!open_joysticks[jn].isController)
+            {
+                etype=2;
+                bnum=event.jhat.hat;
+                bval=event.jhat.value;
             }
-            else if ((event.jhat.value & SDL_HAT_RIGHT) != 0) {
-              key |= JOY_HAT_RIGHT;
-              printf( "Device: %d; Hat: %d (Right)\n", event.jhat.which, event.jhat.hat );
-            }
-            else if ((event.jhat.value & SDL_HAT_DOWN) != 0) {
-              key |= JOY_HAT_DOWN;
-              printf( "Device: %d; Hat: %d (Down)\n", event.jhat.which, event.jhat.hat );
-            }
-            else if ((event.jhat.value & SDL_HAT_LEFT) != 0) {
-              key |= JOY_HAT_LEFT;
-              printf( "Device: %d; Hat: %d (Left)\n", event.jhat.which, event.jhat.hat );
-            }
-            done = TRUE;
-          }
-          break;
+            break;
+        default:
+            do_process_joystick_device_events(&event);
+            break;
+        }
+        
+        switch(etype)
+        {
+            case 0:
+                key = ((jn & 15) << 12) | JOY_BUTTON << 8 | (bnum & 255);
+                done = TRUE;
+                break;
+            case 1:
+                if( ((u32)abs(aval) >> 14) != 0 )
+                {
+                    key = ((jn & 15) << 12) | JOY_AXIS << 8 | ((bnum & 127) << 1);
+                    if (aval > 0)
+                        key |= 1;
+                    done = TRUE;
+                }
+                break;
+            case 2:
+                if (bval != SDL_HAT_CENTERED) {
+                    key = ((jn & 15) << 12) | JOY_HAT << 8 | ((bnum & 63) << 2);
+                    if ((bval & SDL_HAT_UP) != 0)
+                        key |= JOY_HAT_UP;
+                    else if ((bval & SDL_HAT_RIGHT) != 0)
+                        key |= JOY_HAT_RIGHT;
+                    else if ((bval & SDL_HAT_DOWN) != 0)
+                        key |= JOY_HAT_DOWN;
+                    else if ((bval & SDL_HAT_LEFT) != 0)
+                        key |= JOY_HAT_LEFT;
+                    done = TRUE;
+                }
+                break;
         }
     }
-
-  if( SDL_JoystickEventState(SDL_QUERY) == SDL_ENABLE )
-    SDL_JoystickEventState(SDL_IGNORE);
-
-  return key;
+    if(modified)
+      (*modified)=done;
+    return key;
 }
 
 /* Get and set a new joystick key */
@@ -372,16 +440,126 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
   u16 key_r;
   u16 key_d;
   u16 key_l;
+  
+  int jn, etype=-1;
+  Sint16 aval;
+  Uint8 bnum, bval;
 
   switch ( event->type)
     {
-      /* Joystick axis motion 
-         Note: button constants have a 1bit offset. */
     case SDL_JOYAXISMOTION:
-      key_code = ((get_joystick_number_by_id(event->jaxis.which) & 15) << 12) | JOY_AXIS << 8 | ((event->jaxis.axis & 127) << 1);
-      if( ((u32)abs(event->jaxis.value) >> 14) != 0 )
+      jn=get_joystick_number_by_id(event->jaxis.which);
+      if(!open_joysticks[jn].isController)
+      {
+        etype=0;
+        bnum=event->jaxis.axis;
+        aval=event->jaxis.value;
+      }
+      break;
+
+    case SDL_JOYHATMOTION:
+      jn=get_joystick_number_by_id(event->jhat.which);
+      if(!open_joysticks[jn].isController)
+      {
+        etype=1;
+        bnum=event->jhat.hat;
+        bval=event->jhat.value;
+      }
+      break;
+
+    case SDL_JOYBUTTONDOWN:
+      jn=get_joystick_number_by_id(event->jbutton.which);
+      if(!open_joysticks[jn].isController)
+      {
+        etype=2;
+        bnum=event->jbutton.button;
+      }
+      break;
+
+    case SDL_JOYBUTTONUP:
+      jn=get_joystick_number_by_id(event->jbutton.which);
+      if(!open_joysticks[jn].isController)
+      {
+        etype=3;
+        bnum=event->jbutton.button;
+      }
+      break;
+
+    case SDL_CONTROLLERAXISMOTION:
+      jn=get_joystick_number_by_id(event->caxis.which);
+      if(open_joysticks[jn].isController)
+      {
+        etype=0;
+        bnum=event->caxis.axis;
+        aval=event->caxis.value;
+      }
+      break;
+
+    case SDL_CONTROLLERBUTTONDOWN:
+      jn=get_joystick_number_by_id(event->cbutton.which);
+      if(open_joysticks[jn].isController)
+      {
+        etype=2;
+        bnum=event->cbutton.button;
+      }
+      break;
+
+    case SDL_CONTROLLERBUTTONUP:
+      jn=get_joystick_number_by_id(event->cbutton.which);
+      if(open_joysticks[jn].isController)
+      {
+        etype=3;
+        bnum=event->cbutton.button;
+      }
+      break;
+
+    case SDL_CONTROLLERTOUCHPADDOWN:
+      jn=get_joystick_number_by_id(event->ctouchpad.which);
+      if(open_joysticks[jn].isController)
+      {
+        if(event->ctouchpad.finger==0)
+          if(!touchpad.down)
+            touchpad.down=1;
+      }
+      break;
+
+    case SDL_CONTROLLERTOUCHPADMOTION:
+      jn=get_joystick_number_by_id(event->ctouchpad.which);
+      if(open_joysticks[jn].isController)
+        if(event->ctouchpad.finger==0)
         {
-          if (event->jaxis.value > 0)
+          touchpad.x=event->ctouchpad.x;
+          touchpad.y=event->ctouchpad.y;
+        }
+      break;
+
+    case SDL_CONTROLLERTOUCHPADUP:
+      jn=get_joystick_number_by_id(event->ctouchpad.which);
+      if(open_joysticks[jn].isController)
+      {
+        if(event->ctouchpad.finger==0)
+          if(touchpad.down)
+          {
+             touchpad.click = 1;
+             if(touchpad.down > 1) touchpad.down = 0;
+          }
+      }
+      break;
+
+    default:
+      processed = 0;
+      break;
+    }
+  
+  switch(etype)
+  {
+    /* Joystick axis motion 
+       Note: button constants have a 1bit offset. */
+    case 0:
+      key_code = ((jn & 15) << 12) | JOY_AXIS << 8 | ((bnum & 127) << 1);
+      if( ((u32)abs(aval) >> 14) != 0 )
+        {
+          if (aval > 0)
             key_code |= 1;
           key = lookup_joy_key( key_code );
           key_o = lookup_joy_key( key_code ^ 1 );
@@ -401,53 +579,49 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
             RM_KEY( *keypad, key_o );
         }
       break;
-
-    case SDL_JOYHATMOTION:
-      /* Diagonal positions will be treated as two separate keys being activated, rather than a single diagonal key. */
-      /* JOY_HAT_* are sequential integers, rather than a bitmask */
-      key_code = ((get_joystick_number_by_id(event->jhat.which) & 15) << 12) | JOY_HAT << 8 | ((event->jhat.hat & 63) << 2);
+    
+    /* Diagonal positions will be treated as two separate keys being activated, rather than a single diagonal key. */
+    /* JOY_HAT_* are sequential integers, rather than a bitmask */
+    case 1:
+      key_code = ((jn & 15) << 12) | JOY_HAT << 8 | ((bnum & 63) << 2);
       key_u = lookup_joy_key( key_code | JOY_HAT_UP );
       key_r = lookup_joy_key( key_code | JOY_HAT_RIGHT );
       key_d = lookup_joy_key( key_code | JOY_HAT_DOWN );
       key_l = lookup_joy_key( key_code | JOY_HAT_LEFT );
-      if ((key_u != 0) && ((event->jhat.value & SDL_HAT_UP) != 0))
+      if ((key_u != 0) && ((bval & SDL_HAT_UP) != 0))
         ADD_KEY( *keypad, key_u );
       else if (key_u != 0)
         RM_KEY( *keypad, key_u );
-      if ((key_r != 0) && ((event->jhat.value & SDL_HAT_RIGHT) != 0))
+      if ((key_r != 0) && ((bval & SDL_HAT_RIGHT) != 0))
         ADD_KEY( *keypad, key_r );
       else if (key_r != 0)
         RM_KEY( *keypad, key_r );
-      if ((key_d != 0) && ((event->jhat.value & SDL_HAT_DOWN) != 0))
+      if ((key_d != 0) && ((bval & SDL_HAT_DOWN) != 0))
         ADD_KEY( *keypad, key_d );
       else if (key_d != 0)
         RM_KEY( *keypad, key_d );
-      if ((key_l != 0) && ((event->jhat.value & SDL_HAT_LEFT) != 0))
+      if ((key_l != 0) && ((bval & SDL_HAT_LEFT) != 0))
         ADD_KEY( *keypad, key_l );
       else if (key_l != 0)
         RM_KEY( *keypad, key_l );
       break;
-
-      /* Joystick button pressed */
-    case SDL_JOYBUTTONDOWN:
-      key_code = ((get_joystick_number_by_id(event->jbutton.which) & 15) << 12) | JOY_BUTTON << 8 | (event->jbutton.button & 255);
+    
+    /* Joystick button pressed */
+    case 2:
+      key_code = ((jn & 15) << 12) | JOY_BUTTON << 8 | (bnum & 255);
       key = lookup_joy_key( key_code );
       if (key != 0)
         ADD_KEY( *keypad, key );
       break;
-
-      /* Joystick button released */
-    case SDL_JOYBUTTONUP:
-      key_code = ((get_joystick_number_by_id(event->jbutton.which) & 15) << 12) | JOY_BUTTON << 8 | (event->jbutton.button & 255);
+    
+    /* Joystick button released */
+    case 3:
+      key_code = ((jn & 15) << 12) | JOY_BUTTON << 8 | (bnum & 255);
       key = lookup_joy_key( key_code );
       if (key != 0)
         RM_KEY( *keypad, key );
       break;
-
-    default:
-      processed = 0;
-      break;
-    }
+  }
 
   return processed;
 }
@@ -464,33 +638,75 @@ do_process_joystick_device_events(SDL_Event* event) {
     case SDL_JOYDEVICEREMOVED:
       n=get_joystick_number_by_id(event->jdevice.which);
       if(n != -1) {
-        printf("Joystick %d disconnected\n", n);
-        SDL_JoystickClose(open_joysticks[n].first);
-        open_joysticks[n]=std::make_pair((SDL_Joystick*)NULL, 0);
+        if(!open_joysticks[n].isController) {
+          printf("Joystick %d disconnected\n", n);
+          SDL_JoystickClose(open_joysticks[n].handle.joy);
+          open_joysticks[n]={FALSE, {NULL}, -1};
+        }
       }
       break;
     
     /* Joystick connected */
     case SDL_JOYDEVICEADDED:
       if(event->jdevice.which<MAX_JOYSTICKS) {
-        //Filter connect events for joysticks already initialized in init_joy
-        if(!open_joysticks[event->jdevice.which].first) {
-          SDL_Joystick* joy = SDL_JoystickOpen(event->jdevice.which);
-          if(joy) {
-            printf("Joystick %d %s\n", event->jdevice.which, SDL_JoystickNameForIndex(event->jdevice.which));
-            printf("Axes: %d\n", SDL_JoystickNumAxes(joy));
-            printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
-            printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
-            printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
-            open_joysticks[event->jdevice.which]=std::make_pair(joy, SDL_JoystickInstanceID(joy));
+        if(!SDL_IsGameController(event->jdevice.which)) {
+          //Filter connect events for joysticks already initialized in init_joy
+          if(!open_joysticks[event->jdevice.which].handle.joy) {
+            SDL_Joystick* joy = SDL_JoystickOpen(event->jdevice.which);
+            if(joy) {
+              printf("Joystick %d %s\n", event->jdevice.which, SDL_JoystickNameForIndex(event->jdevice.which));
+              printf("Axes: %d\n", SDL_JoystickNumAxes(joy));
+              printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
+              printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
+              printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
+              open_joysticks[event->jdevice.which]={FALSE, {joy}, SDL_JoystickInstanceID(joy)};
+            }
+            else
+              fprintf(stderr, "Failed to open joystick %d: %s\n", event->jdevice.which, SDL_GetError());
           }
-          else
-            fprintf(stderr, "Failed to open joystick %d: %s\n", event->jdevice.which, SDL_GetError());
         }
       }
       else
         printf("Joystick %d connected to the system, but maximum supported joystick index is %d, ignoring\n",
           event->jdevice.which, MAX_JOYSTICKS-1);
+      break;
+    
+    /* Game controller disconnected */
+    case SDL_CONTROLLERDEVICEREMOVED:
+      n=get_joystick_number_by_id(event->cdevice.which);
+      if(n != -1) {
+        if(open_joysticks[n].isController) {
+          printf("Game controller %d disconnected\n", n);
+          SDL_GameControllerClose(open_joysticks[n].handle.gcont);
+          open_joysticks[n]={FALSE, {NULL}, -1};
+        }
+      }
+      break;
+    
+    /* Game controller connected */
+    case SDL_CONTROLLERDEVICEADDED:
+      if(event->cdevice.which<MAX_JOYSTICKS) {
+        if(SDL_IsGameController(event->cdevice.which)) {
+          //Filter connect events for joysticks already initialized in init_joy
+          if(!open_joysticks[event->cdevice.which].handle.gcont) {
+            SDL_GameController* gcont = SDL_GameControllerOpen(event->cdevice.which);
+            if(gcont) {
+              printf("Game controller %d %s\n", event->cdevice.which, SDL_GameControllerNameForIndex(event->cdevice.which));
+              printf("Axes: %d\n", SDL_JoystickNumAxes(SDL_GameControllerGetJoystick(gcont)));
+              printf("Buttons: %d\n", SDL_JoystickNumButtons(SDL_GameControllerGetJoystick(gcont)));
+              printf("Touchpads: %d\n", SDL_GameControllerGetNumTouchpads(gcont));
+              printf("%s\n", SDL_GameControllerHasSensor(gcont, SDL_SENSOR_ACCEL) ? "Accelerometer present" : "Accelerometer not present");
+              printf("%s\n", SDL_GameControllerHasSensor(gcont, SDL_SENSOR_GYRO) ? "Gyroscope present" : "Gyroscope not present");
+              open_joysticks[event->cdevice.which]={TRUE, {.gcont=gcont}, SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gcont))};
+            }
+            else
+              fprintf(stderr, "Failed to open game controller %d: %s\n", event->cdevice.which, SDL_GetError());
+          }
+        }
+      }
+      else
+        printf("Game controller %d connected to the system, but maximum supported joystick index is %d, ignoring\n",
+          event->cdevice.which, MAX_JOYSTICKS-1);
       break;
     
     default:
@@ -510,7 +726,9 @@ process_joystick_events( u16 *keypad) {
   /* IMPORTANT: Reenable joystick events if needed. */
   if(SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE)
     SDL_JoystickEventState(SDL_ENABLE);
-
+  if(SDL_GameControllerEventState(SDL_QUERY) == SDL_IGNORE)
+    SDL_GameControllerEventState(SDL_ENABLE);
+  
   /* There's an event waiting to be processed? */
   while (SDL_PollEvent(&event))
     {
@@ -528,6 +746,8 @@ void process_joystick_device_events() {
   /* IMPORTANT: Reenable joystick events if needed. */
   if(SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE)
     SDL_JoystickEventState(SDL_ENABLE);
+  if(SDL_GameControllerEventState(SDL_QUERY) == SDL_IGNORE)
+    SDL_GameControllerEventState(SDL_ENABLE);
 
   /* There's an event waiting to be processed? */
   while (SDL_PollEvent(&event))
@@ -538,8 +758,7 @@ int get_joystick_number_by_id(SDL_JoystickID id)
 {
   int i;
   for(i=0; i<MAX_JOYSTICKS; ++i)
-    if(open_joysticks[i].first)
-      if(open_joysticks[i].second==id)
+      if(open_joysticks[i].id==id)
         return i;
   return -1;
 }
@@ -548,7 +767,7 @@ int get_number_of_joysticks()
 {
   int i, n=0;
   for(i=0; i<MAX_JOYSTICKS; ++i)
-    if(open_joysticks[i].first)
+    if(open_joysticks[i].id>=0)
       ++n;
   return n;
 }

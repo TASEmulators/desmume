@@ -2269,48 +2269,11 @@ static gboolean JoyKeyAcceptTimerFunc(gpointer data)
 {
     if(!in_joy_config_mode)
         return FALSE;
-    SDL_Event event;
-    u16 key;
-    bool done = FALSE;
-    while(SDL_PollEvent(&event) && !done)
-    {
-        switch(event.type)
-        {
-        case SDL_JOYBUTTONDOWN:
-            key = ((get_joystick_number_by_id(event.jbutton.which) & 15) << 12) | JOY_BUTTON << 8 | (event.jbutton.button & 255);
-            done = TRUE;
-            break;
-        case SDL_JOYAXISMOTION:
-            if( ((u32)abs(event.jaxis.value) >> 14) != 0 )
-            {
-                key = ((get_joystick_number_by_id(event.jaxis.which) & 15) << 12) | JOY_AXIS << 8 | ((event.jaxis.axis & 127) << 1);
-                if (event.jaxis.value > 0)
-                    key |= 1;
-                done = TRUE;
-            }
-            break;
-        case SDL_JOYHATMOTION:
-            if (event.jhat.value != SDL_HAT_CENTERED) {
-                key = ((get_joystick_number_by_id(event.jhat.which) & 15) << 12) | JOY_HAT << 8 | ((event.jhat.hat & 63) << 2);
-                if ((event.jhat.value & SDL_HAT_UP) != 0)
-                    key |= JOY_HAT_UP;
-                else if ((event.jhat.value & SDL_HAT_RIGHT) != 0)
-                    key |= JOY_HAT_RIGHT;
-                else if ((event.jhat.value & SDL_HAT_DOWN) != 0)
-                    key |= JOY_HAT_DOWN;
-                else if ((event.jhat.value & SDL_HAT_LEFT) != 0)
-                    key |= JOY_HAT_LEFT;
-                done = TRUE;
-            }
-            break;
-        default:
-            do_process_joystick_device_events(&event);
-            break;
-        }
-    }
-
-    if(done) {
-        struct modify_key_ctx *ctx = (struct modify_key_ctx*)data;
+    struct modify_key_ctx *ctx = (struct modify_key_ctx*)data;
+    bool modified = FALSE;
+    u16 key=get_joy_key(ctx->key_id, &modified);
+    if(modified) {
+        
         ctx->mk_key_chosen = key;
         gchar* YouPressed = g_strdup_printf("You pressed : %d\nClick OK to keep this key.", ctx->mk_key_chosen);
         gtk_label_set_text(GTK_LABEL(ctx->label), YouPressed);
@@ -3107,6 +3070,16 @@ gboolean EmuLoop(gpointer data)
         process_joystick_events(&keys_latch);
     /* Update! */
     update_keypad(keys_latch);
+    /* Update mouse position and click (source - game controller touchpad)*/
+    if(touchpad.down) {
+        NDS_setTouchPos(touchpad.x * 256, touchpad.y * 192);
+        touchpad.down = 2;
+    }
+    if(touchpad.click)
+    {
+        NDS_releaseTouch();
+        touchpad.click = 0;
+    }
 
     desmume_cycle();    /* Emule ! */
 
@@ -3538,7 +3511,7 @@ common_gtk_main( class configured_features *my_config)
     /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
      * Perhaps it needs a "window" to catch events...? */
     SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS,"1");
-    if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO) == -1) {
+    if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO|SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER) == -1) {
         g_printerr("Error trying to initialize SDL: %s\n",
                     SDL_GetError());
         return 1;
