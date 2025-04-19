@@ -144,7 +144,9 @@ BOOL init_joy( void) {
            printf("Touchpads: %d\n", SDL_GameControllerGetNumTouchpads(gcont));
            printf("%s\n", SDL_GameControllerHasSensor(gcont, SDL_SENSOR_ACCEL) ? "Accelerometer present" : "Accelerometer not present");
            printf("%s\n", SDL_GameControllerHasSensor(gcont, SDL_SENSOR_GYRO) ? "Gyroscope present" : "Gyroscope not present");
-           open_joysticks[i]={TRUE, {.gcont=gcont}, SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gcont))};
+           open_joysticks[i].isController=TRUE;
+           open_joysticks[i].handle.gcont=gcont;
+           open_joysticks[i].id=SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gcont));
          }
          else {
            fprintf(stderr, "Failed to open game controller %d: %s\n", i, SDL_GetError());
@@ -159,7 +161,9 @@ BOOL init_joy( void) {
            printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
            printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
            printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
-           open_joysticks[i]={FALSE, {joy}, SDL_JoystickInstanceID(joy)};
+           open_joysticks[i].isController=FALSE;
+           open_joysticks[i].handle.joy=joy;
+           open_joysticks[i].id=SDL_JoystickInstanceID(joy);
          }
          else {
            fprintf(stderr, "Failed to open joystick %d: %s\n", i, SDL_GetError());
@@ -665,7 +669,9 @@ do_process_joystick_device_events(SDL_Event* event) {
               printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
               printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
               printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
-              open_joysticks[event->jdevice.which]={FALSE, {joy}, SDL_JoystickInstanceID(joy)};
+              open_joysticks[event->cdevice.which].isController=FALSE;
+              open_joysticks[event->cdevice.which].handle.joy=joy;
+              open_joysticks[event->cdevice.which].id=SDL_JoystickInstanceID(joy);
             }
             else
               fprintf(stderr, "Failed to open joystick %d: %s\n", event->jdevice.which, SDL_GetError());
@@ -703,7 +709,9 @@ do_process_joystick_device_events(SDL_Event* event) {
               printf("Touchpads: %d\n", SDL_GameControllerGetNumTouchpads(gcont));
               printf("%s\n", SDL_GameControllerHasSensor(gcont, SDL_SENSOR_ACCEL) ? "Accelerometer present" : "Accelerometer not present");
               printf("%s\n", SDL_GameControllerHasSensor(gcont, SDL_SENSOR_GYRO) ? "Gyroscope present" : "Gyroscope not present");
-              open_joysticks[event->cdevice.which]={TRUE, {.gcont=gcont}, SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gcont))};
+              open_joysticks[event->cdevice.which].isController=TRUE;
+              open_joysticks[event->cdevice.which].handle.gcont=gcont;
+              open_joysticks[event->cdevice.which].id=SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gcont));
             }
             else
               fprintf(stderr, "Failed to open game controller %d: %s\n", event->cdevice.which, SDL_GetError());
