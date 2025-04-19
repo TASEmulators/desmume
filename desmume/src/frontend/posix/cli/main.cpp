@@ -493,7 +493,7 @@ int main(int argc, char ** argv) {
       fprintf(stderr, "Warning: X11 not thread-safe\n");
     }
 
-  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == -1)
+  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK| SDL_INIT_GAMECONTROLLER) == -1)
     {
       fprintf(stderr, "Error trying to initialize SDL: %s\n",
               SDL_GetError());

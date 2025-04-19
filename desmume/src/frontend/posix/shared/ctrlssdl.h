@@ -82,6 +82,16 @@ struct mouse_status
 extern mouse_status mouse;
 #endif // !GTK_UI
 
+struct touchpad_status
+{
+  float x;
+  float y;
+  int down;
+  int click;
+};
+
+extern touchpad_status touchpad;
+
 struct ctrls_event_config {
   unsigned short keypad;
   float nds_screen_size_ratio;
@@ -98,7 +108,7 @@ struct ctrls_event_config {
 void load_default_config(const u32 kbCfg[]);
 BOOL init_joy( void);
 void uninit_joy( void);
-u16 get_joy_key(int index);
+u16 get_joy_key(int index, bool* modified=NULL);
 u16 get_set_joy_key(int index);
 void update_keypad(u16 keys);
 u16 get_keypad( void);
