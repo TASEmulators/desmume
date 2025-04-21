@@ -285,7 +285,7 @@ public:
 
 protected:
 	DWORD		threadID;
-	virtual DWORD ThreadFunc()=NULL;
+	virtual DWORD ThreadFunc()=0;
 };
 
 class TOOLSCLASS : public THREADCLASS

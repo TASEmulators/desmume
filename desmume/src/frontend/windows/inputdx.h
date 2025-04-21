@@ -26,8 +26,15 @@
 #include <windows.h>
 #include <mmsystem.h>
 #define DIRECTINPUT_VERSION 0x0800
+#ifndef __MINGW32__
 #include "directx/dinput.h"
 #include "directx/XInput.h"
+#else
+/* use the directx headers mingw ships, microsoft's dont work with gcc */
+#define CINTERFACE
+#include <xinput.h>
+#include <dinput.h>
+#endif
 
 typedef struct
 {
