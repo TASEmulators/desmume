@@ -118,7 +118,7 @@ AM_CONDITIONAL([ENABLE_OPENGL_ES], [test "${have_opengles}" = "yes"])
 
 dnl - if --enable-glx is used, check for it
 AC_ARG_ENABLE([glx],
-               [AC_HELP_STRING([--enable-glx], [Use a GLX context, overrides --enable-osmesa and --enable-egl])],
+               [AC_HELP_STRING([--enable-glx], [Use a GLX context, overrides --enable-egl])],
                [glx=$enableval],
                [glx=no])
 
@@ -142,40 +142,6 @@ if test "$have_glx" = "yes" ; then
     fi
 fi
 AM_CONDITIONAL([ENABLE_GLX], [test "${have_glx}" = "yes"])
-
-dnl - if --enable-osmesa is used, check for it
-AC_ARG_ENABLE([osmesa],
-               [AC_HELP_STRING([--enable-osmesa], [Use an OSMesa context, overrides --enable-egl])],
-               [osmesa=$enableval],
-               [osmesa=no])
-
-if test "x$osmesa" = "xyes" ; then
-    AC_CHECK_HEADERS([GL/osmesa.h], [have_osmesa=yes], [have_osmesa=no])
-    if test "have_osmesa" = "no" ; then
-	    AC_MSG_WARN([Cannot use OSMesa -- headers not found.])
-    else
-	    AC_MSG_WARN([OSMesa contexts are deprecated.])
-        AC_CHECK_LIB(dl, main)
-        AC_CHECK_LIB(GL, main)
-	    AC_CHECK_LIB(OSMesa, main)
-    fi
-fi
-
-if test "$have_osmesa" = "yes" ; then
-    if test "$have_opengl" = "yes" ; then
-		AC_DEFINE(ENABLE_OSMESA)
-        OSMESA_LIBS="-lOSMesa"
-		AC_SUBST(OSMESA_LIBS)
-	else
-        have_osmesa=no
-	    if test "$have_opengles" = "yes" ; then
-	        AC_MSG_WARN([OSMesa contexts are incompatible with OpenGL ES -- cancelling the use of OSMesa.])
-	    else
-	        AC_MSG_WARN([OSMesa contexts are only compatible with standard OpenGL -- cancelling the use of OSMesa.])
-	    fi
-    fi
-fi
-AM_CONDITIONAL([ENABLE_OSMESA], [test "${have_osmesa}" = "yes"])
 
 dnl - if --enable-egl is used, check for it
 AC_ARG_ENABLE([egl],
