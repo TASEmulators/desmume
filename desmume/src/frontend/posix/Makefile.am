@@ -15,7 +15,7 @@ SUBDIRS = . $(UI_DIR)
 else
 SUBDIRS = . $(UI_DIR)
 endif
-#DIST_SUBDIRS = . cli gtk gtk-glade
+#DIST_SUBDIRS = . cli gtk
 SUBDIRS += $(PO_DIR)
 noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \

@@ -18,11 +18,6 @@ autoreconf -i (or alternatively: ./autogen.sh)
 make -jN (where N is the number of CPU cores to use).
 
 
-DeSmuME provides another interface based on libglade, to use
-, you'll need glade:
-
-* http://glade.gnome.org/
-
 To build, first cd to src/frontend/posix and run
 `meson build --buildtype=release`
 
@@ -31,11 +26,6 @@ Then build the program by running `ninja -C build`
 It will generate three programs:
 1) "desmume" in the "build/gtk" directory;
 2) "desmume-cli" in the "build/cli" directory.
-
-If glade is installed on your system, you'll get a third
-binary:
-
-3) "desmume-glade" in the "build/gtk-glade" directory.
 
 You can even type "ninja -C build install" to install those programs on
 your system (in /usr/local/ by default); then uninstalling is

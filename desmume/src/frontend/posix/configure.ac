@@ -217,7 +217,7 @@ if test "x$openal" = "xyes" ; then
 fi
 AM_CONDITIONAL([HAVE_OPENAL], [test "${HAVE_OPENAL}" = "yes"])
 
-dnl - Check for GTK and/or libglade
+dnl - Check for GTK
 FOUND_GLIB=no
 HAVE_ALSA=no
 GLIB_VER=2.8
@@ -242,31 +242,6 @@ PKG_CHECK_MODULES(GTHREAD,
                   HAVE_GTHREAD=no)
 AC_SUBST(GTHREAD_CFLAGS)
 AC_SUBST(GTHREAD_LIBS)
-
-AC_ARG_ENABLE([glade],
-               [AC_HELP_STRING([--enable-glade], [enable glade frontend])],
-               [glade=$enableval],
-               [glade=no])
-
-if test "x$glade" = "xyes" ; then
-    PKG_CHECK_MODULES(LIBGLADE,
-                      "libglade-2.0",
-                      HAVE_LIBGLADE=yes,
-                      HAVE_LIBGLADE=no)
-    AC_SUBST(LIBGLADE_CFLAGS)
-    AC_SUBST(LIBGLADE_LIBS)
-
-    dnl uninstalled glade ui dir
-    AC_DEFINE_UNQUOTED(GLADEUI_UNINSTALLED_DIR,"`pwd`/gtk-glade/glade/",[path to glade ui dir])
-    AC_SUBST(GLADEUI_UNINSTALLED_DIR)
-
-    PKG_CHECK_MODULES(GTKGLEXT,
-                      "gtkglext-1.0",
-                      AC_DEFINE([GTKGLEXT_AVAILABLE], [1])
-                      [])
-    AC_SUBST(GTKGLEXT_CFLAGS)
-    AC_SUBST(GTKGLEXT_LIBS)
-fi
 
 AC_PATH_PROG(UPDATEDESKTOP, [update-desktop-database])
 
@@ -323,17 +298,6 @@ dnl - Determine which UIs to build
 UI_DIR="cli $UI_DIR"
 if test "x$HAVE_GTK" = "xyes"; then
   UI_DIR="gtk2 $UI_DIR"
-fi
-
-if test "x$HAVE_LIBGLADE" = "xyes"; then
-    UI_DIR="gtk-glade $UI_DIR"
-
-    dnl -- localization for gtk-glade UI
-    GETTEXT_PACKAGE=desmume
-    AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Define to the gettext package name])
-    AC_SUBST(GETTEXT_PACKAGE)
-    ALL_LINGUAS="fr nb pt_BR sv zh_CN zh_TW"
-    AM_GLIB_GNU_GETTEXT
 fi
 
 dnl - jit support
@@ -485,8 +449,6 @@ AC_CONFIG_FILES([Makefile
                  cli/doc/Makefile
                  gtk2/Makefile
                  gtk2/doc/Makefile
-                 gtk-glade/Makefile
-                 gtk-glade/doc/Makefile
 ])
 AC_OUTPUT
 
