@@ -388,7 +388,10 @@ void IdeasLog(armcpu_t* cpu)
 		if(!c) break;
 		printf("%c",c);
 	}
+	
 	//don't emit a newline. that is a pain in the butt.
+	
+	fflush(stdout);
 }
 
 void NocashMessage(armcpu_t* cpu, int offset)
@@ -437,6 +440,7 @@ void NocashMessage(armcpu_t* cpu, int offset)
 	sprintf(tmp,"%lld",nds_timer); todo = mass_replace(todo,"%totalclks%",tmp);
 
 	printf("%s",todo.c_str());
+	fflush(stdout);
 }
 
 //-------
