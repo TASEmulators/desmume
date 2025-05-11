@@ -118,6 +118,8 @@ void OpenConsole()
 
 	//stdout is already connected to something. keep using it and dont let the console interfere
 	bool shouldRedirectStdout = fileType == FILE_TYPE_UNKNOWN;
+	bool shouldLineBufferStdOut = fileType == FILE_TYPE_CHAR;
+	bool shouldLineBufferStdIn = GetFileType(hConsoleIn) == FILE_TYPE_CHAR;
 	bool attached = false;
 
 #if 0
@@ -156,6 +158,18 @@ void OpenConsole()
 		freopen("CONOUT$", "w", stdout);
 		freopen("CONOUT$", "w", stderr);
 		freopen("CONIN$", "r", stdin);
+		
+		//not sure how this would happen.. but in case it's specifically sent to CON somehow...
+		//otherwise it's full buffered by default
+		if(shouldLineBufferStdOut)
+			setvbuf(stdout, nullptr, _IOLBF, 0);
+
+		//Same for stdin, I guess
+		if(shouldLineBufferStdIn)
+			setvbuf(stdout, nullptr, _IOLBF, 0);
+
+		//stderr is always unbuffered
+		setvbuf(stderr, nullptr, _IONBF, 0);
 	}
 
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
