@@ -81,8 +81,6 @@
 
 	#if defined(ENABLE_GLX)
 		#include "../shared/glx_3Demu.h"
-	#elif defined(ENABLE_OSMESA)
-		#include "../shared/osmesa_3Demu.h"
 	#elif defined(ENABLE_EGL)
 		#include "../shared/egl_3Demu.h"
 	#else
@@ -2325,7 +2323,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		{
 			switch (sel3DCore)
 			{
-#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_OSMESA) && !defined(ENABLE_GLX)
+#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_GLX)
 				case 2:
 	#if defined(ENABLE_EGL)
 					oglrender_init = &egl_initOpenGL_ES_3_0;
@@ -2337,8 +2335,6 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 				case 2:
 	#if defined(ENABLE_GLX)
 					oglrender_init = &glx_initOpenGL_StandardAuto;
-	#elif defined(ENABLE_OSMESA)
-					oglrender_init = &osmesa_initOpenGL_StandardAuto;
 	#elif defined(ENABLE_EGL)
 					oglrender_init = &egl_initOpenGL_StandardAuto;
 	#else
@@ -2349,8 +2345,6 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 				case 3:
 	#if defined(ENABLE_GLX)
 					oglrender_init = &glx_initOpenGL_LegacyAuto;
-	#elif defined(ENABLE_OSMESA)
-					oglrender_init = &osmesa_initOpenGL_LegacyAuto;
 	#elif defined(ENABLE_EGL)
 					oglrender_init = &egl_initOpenGL_LegacyAuto;
 	#else
@@ -2361,8 +2355,6 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 				case 4:
 	#if defined(ENABLE_GLX)
 					oglrender_init = &glx_initOpenGL_3_2_CoreProfile;
-	#elif defined(ENABLE_OSMESA)
-					oglrender_init = &osmesa_initOpenGL_3_2_CoreProfile;
 	#elif defined(ENABLE_EGL)
 					oglrender_init = &egl_initOpenGL_3_2_CoreProfile;
 	#else
@@ -3951,12 +3943,6 @@ common_gtk_main(GApplication *app, gpointer user_data)
 	oglrender_beginOpenGL = &glx_beginOpenGL;
 	oglrender_endOpenGL = &glx_endOpenGL;
 	oglrender_framebufferDidResizeCallback = &glx_framebufferDidResizeCallback;
-	#elif defined(ENABLE_OSMESA)
-	oglrender_init = &osmesa_initOpenGL_StandardAuto;
-	oglrender_deinit = &osmesa_deinitOpenGL;
-	oglrender_beginOpenGL = &osmesa_beginOpenGL;
-	oglrender_endOpenGL = &osmesa_endOpenGL;
-	oglrender_framebufferDidResizeCallback = &osmesa_framebufferDidResizeCallback;
 	#elif defined(ENABLE_EGL)
 	oglrender_init = &egl_initOpenGL_StandardAuto;
 	oglrender_deinit = &egl_deinitOpenGL;
@@ -3998,7 +3984,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 	switch (core)
 	{
-#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_OSMESA) && !defined(ENABLE_GLX)
+#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_GLX)
 		case 2:
 	#if defined(ENABLE_EGL)
 			oglrender_init = &egl_initOpenGL_ES_3_0;
@@ -4010,8 +3996,6 @@ common_gtk_main(GApplication *app, gpointer user_data)
 		case 2:
 	#if defined(ENABLE_GLX)
 			oglrender_init = &glx_initOpenGL_StandardAuto;
-	#elif defined(ENABLE_OSMESA)
-			oglrender_init = &osmesa_initOpenGL_StandardAuto;
 	#elif defined(ENABLE_EGL)
 			oglrender_init = &egl_initOpenGL_StandardAuto;
 	#else
@@ -4022,8 +4006,6 @@ common_gtk_main(GApplication *app, gpointer user_data)
 		case 3:
 	#if defined(ENABLE_GLX)
 			oglrender_init = &glx_initOpenGL_LegacyAuto;
-	#elif defined(ENABLE_OSMESA)
-			oglrender_init = &osmesa_initOpenGL_LegacyAuto;
 	#elif defined(ENABLE_EGL)
 			oglrender_init = &egl_initOpenGL_LegacyAuto;
 	#else
@@ -4034,8 +4016,6 @@ common_gtk_main(GApplication *app, gpointer user_data)
 		case 4:
 	#if defined(ENABLE_GLX)
 			oglrender_init = &glx_initOpenGL_3_2_CoreProfile;
-	#elif defined(ENABLE_OSMESA)
-			oglrender_init = &osmesa_initOpenGL_3_2_CoreProfile;
 	#elif defined(ENABLE_EGL)
 			oglrender_init = &egl_initOpenGL_3_2_CoreProfile;
 	#else
@@ -4130,8 +4110,6 @@ static void Teardown() {
 #if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
     #if defined(ENABLE_GLX)
 	glx_deinitOpenGL();
-    #elif defined(ENABLE_OSMESA)
-	osmesa_deinitOpenGL();
     #elif defined(ENABLE_EGL)
 	egl_deinitOpenGL();
     #else
