@@ -188,7 +188,7 @@ static std::map<lua_CFunction, const char*> s_cFuncInfoMap;
 	static const char* name##_args = s_cFuncInfoMap[name] = argstring; \
 	static int name(lua_State* L)
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
 	#ifndef snprintf
 		#define snprintf _snprintf
 	#endif
