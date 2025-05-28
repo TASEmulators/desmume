@@ -170,7 +170,7 @@ void createDirectoryRecursively(std::wstring path)
 
 void FCEUD_MakePathDirs(const char *fname)
 {
-	createDirectoryRecursively(mbstowcs_locale(fname));
+	createDirectoryRecursively(mbstowcs(fname));
 }
 #endif
 //------------------------------

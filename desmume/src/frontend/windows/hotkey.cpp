@@ -226,7 +226,7 @@ void HK_QuickScreenShot(int param, bool justPressed)
 			break;
 	}
 
-	DoScreenshot(mbstowcs_locale(fname).c_str());
+	DoScreenshot(mbstowcs(fname).c_str());
 }
 
 void HK_PrintScreen(int param, bool justPressed)
