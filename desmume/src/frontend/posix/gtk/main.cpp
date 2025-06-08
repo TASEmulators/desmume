@@ -4157,16 +4157,13 @@ static void Teardown() {
 #endif
 }
 
-static void
-handle_open(GApplication *application,
-            GFile **files,
-            gint n_files,
-            const gchar *hint,
+static gint
+ignore_command_line(GApplication *application,
+            GApplicationCommandLine *command_line,
             gpointer user_data)
 {
-    configured_features *my_config = static_cast<configured_features*>(user_data);
-    my_config->nds_file = g_file_get_path(files[0]);
     common_gtk_main(application, user_data);
+    return 0;
 }
 
 #ifdef AGG2D_USE_VECTORFONTS
@@ -4224,10 +4221,9 @@ int main (int argc, char *argv[])
       fprintf(stderr, "Warning: X11 not thread-safe\n");
     }
 
-  // TODO: pass G_APPLICATION_HANDLES_COMMAND_LINE instead.
-  GtkApplication *app = gtk_application_new("org.desmume.DeSmuME", G_APPLICATION_HANDLES_OPEN);
+  GtkApplication *app = gtk_application_new("org.desmume.DeSmuME", G_APPLICATION_HANDLES_COMMAND_LINE);
   g_signal_connect (app, "activate", G_CALLBACK(common_gtk_main), &my_config);
-  g_signal_connect (app, "open", G_CALLBACK(handle_open), &my_config);
+  g_signal_connect (app, "command-line", G_CALLBACK(ignore_command_line), &my_config);
   g_action_map_add_action_entries(G_ACTION_MAP(app),
                                   app_entries, G_N_ELEMENTS(app_entries),
                                   app);
