@@ -124,7 +124,7 @@
 	#endif
 #endif
 
-#ifdef _MSC_VER 
+#if defined(_MSC_VER) || defined(__MINGW32__)
 	#include <compat/msvc.h>
 
 #else
@@ -177,17 +177,14 @@
 #define FAST_ALIGN DS_ALIGN(4)
 //---------------------------------------------
 
-#ifdef __MINGW32__
-	#define FASTCALL __attribute__((fastcall))
-	#define ASMJIT_CALL_CONV kX86FuncConvGccFastCall
-#elif defined (__i386__) && !defined(__clang__)
-	#define FASTCALL __attribute__((regparm(3)))
+#if defined (__i386__) && !defined(__clang__)
+	#define DESMUME_FASTCALL __attribute__((regparm(3)))
 	#define ASMJIT_CALL_CONV kX86FuncConvGccRegParm3
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
-	#define FASTCALL
+	#define DESMUME_FASTCALL
 	#define ASMJIT_CALL_CONV kX86FuncConvDefault
 #else
-	#define FASTCALL
+	#define DESMUME_FASTCALL
 	#define ASMJIT_CALL_CONV kX86FuncConvDefault
 #endif
 
