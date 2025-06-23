@@ -23,9 +23,6 @@
 #include "../x86/x86operand.h"
 #include "../x86/x86util.h"
 
-// [Dependencies - C++]
-#include <algorithm>
-
 // [Api-Begin]
 #include "../core/apibegin.h"
 
@@ -1012,14 +1009,14 @@ void X86Assembler::_emitInstruction(uint32_t code, const Operand* o0, const Oper
             _emitByte(0x48); // REX.W.
 
           _emitByte((opReg << 3) | (0x04 + (o0->getSize() != 1)));
-          _FINISHED_IMMEDIATE(o1, std::min<uint32_t>(o0->getSize(), 4));
+          _FINISHED_IMMEDIATE(o1, IntUtil::_min<uint32_t>(o0->getSize(), 4));
         }
       }
 
       if (o0->isRegMem() && o1->isImm())
       {
         const Imm& imm = reinterpret_cast<const Imm&>(*o1);
-        immSize = IntUtil::isInt8(imm.getValue()) ? 1 : std::min<uint32_t>(o0->getSize(), 4);
+        immSize = IntUtil::isInt8(imm.getValue()) ? 1 : IntUtil::_min<uint32_t>(o0->getSize(), 4);
 
         _emitX86RM(id->_opCode[1] + (o0->getSize() != 1 ? (immSize != 1 ? 1 : 3) : 0),
           o0->getSize() == 2,
@@ -1596,7 +1593,7 @@ _Emit_Mov_Sreg_RM:
         // Mem <- Imm
         case (kOperandMem << 4) | kOperandImm:
         {
-          immSize = std::min<uint32_t>(dst.getSize(), 4);
+          immSize = IntUtil::_min<uint32_t>(dst.getSize(), 4);
 
           _emitX86RM(0xC6 + (dst.getSize() != 1),
             dst.getSize() == 2,
@@ -1947,7 +1944,7 @@ _Emit_Mov_Sreg_RM:
       // Alternate Form - AL, AX, EAX, RAX.
       if (o0->isRegIndex(0) && o1->isImm())
       {
-        immSize = std::min<uint32_t>(o0->getSize(), 4);
+        immSize = IntUtil::_min<uint32_t>(o0->getSize(), 4);
 
         if (o0->getSize() == 2) _emitByte(0x66); // 16-bit.
 #if defined(ASMJIT_X64)
@@ -1959,7 +1956,7 @@ _Emit_Mov_Sreg_RM:
 
       if (o0->isRegMem() && o1->isImm())
       {
-        immSize = std::min<uint32_t>(o0->getSize(), 4);
+        immSize = IntUtil::_min<uint32_t>(o0->getSize(), 4);
 
         if (o0->getSize() == 2) _emitByte(0x66); // 16-bit.
         _emitSegmentPrefix(reinterpret_cast<const Operand&>(*o0)); // Segment prefix.

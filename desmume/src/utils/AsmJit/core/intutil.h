@@ -20,11 +20,60 @@ namespace AsmJit {
 //! @{
 
 // ============================================================================
+// [AsmJit::I32FPUnion]
+// ============================================================================
+
+//! @internal
+//!
+//! @brief used to cast from float to 32-bit integer and vica versa.
+union I32FPUnion
+{
+  //! @brief 32-bit signed integer value.
+  int32_t i;
+  //! @brief 32-bit SP-FP value.
+  float f;
+};
+
+// ============================================================================
+// [AsmJit::I64FPUnion]
+// ============================================================================
+
+//! @internal
+//!
+//! @brief used to cast from double to 64-bit integer and vica versa.
+union I64FPUnion
+{
+  //! @brief 64-bit signed integer value.
+  int64_t i;
+  //! @brief 64-bit DP-FP value.
+  double f;
+};
+
+// ============================================================================
 // [AsmJit::IntUtil]
 // ============================================================================
 
 namespace IntUtil
 {
+  // --------------------------------------------------------------------------
+  // [Min/Max]
+  // --------------------------------------------------------------------------
+
+  // NOTE: Because some environments declare min() and max() as macros, we
+  // decided to use different name so we never collide.
+
+  template<typename T>
+  static inline T _min(const T& a, const T& b) { return a < b ? a : b; }
+  template<typename T>
+  static inline T _max(const T& a, const T& b) { return a > b ? a : b; }
+
+  // --------------------------------------------------------------------------
+  // [Limits]
+  // --------------------------------------------------------------------------
+
+  template<typename T>
+  static inline T maxValue() { return ~T(0); }
+
   // --------------------------------------------------------------------------
   // [IsInt / IsUInt]
   // --------------------------------------------------------------------------
@@ -163,6 +212,42 @@ namespace IntUtil
 #endif // _MSC_VER
 
     return base + 1;
+  }
+
+  // --------------------------------------------------------------------------
+  // [Cast]
+  // --------------------------------------------------------------------------
+
+  //! @brief Binary cast from 32-bit integer to SP-FP value (@c float).
+  static inline float int32AsFloat(int32_t i)
+  {
+    I32FPUnion u;
+    u.i = i;
+    return u.f;
+  }
+
+  //! @brief Binary cast SP-FP value (@c float) to 32-bit integer.
+  static inline int32_t floatAsInt32(float f)
+  {
+    I32FPUnion u;
+    u.f = f;
+    return u.i;
+  }
+
+  //! @brief Binary cast from 64-bit integer to DP-FP value (@c double).
+  static inline double int64AsDouble(int64_t i)
+  {
+    I64FPUnion u;
+    u.i = i;
+    return u.f;
+  }
+
+  //! @brief Binary cast from DP-FP value (@c double) to 64-bit integer.
+  static inline int64_t doubleAsInt64(double f)
+  {
+    I64FPUnion u;
+    u.f = f;
+    return u.i;
   }
 };
 
