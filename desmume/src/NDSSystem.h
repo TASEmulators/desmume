@@ -329,41 +329,25 @@ struct RomBanner
 
 struct GameInfo
 {
-	void *fROM;
+	void *fROM = nullptr;
 	ROMReader_struct *reader;
-	u8 *romdataForReader;
-	u32 romsize;
-	u32 cardSize;
-	u32 mask;
-	u32 crc;
+	u8 *romdataForReader = nullptr;
+	u32 romsize = 0;
+	u32 cardSize = 0;
+	u32 mask = 0;
+	u32 crc = 0;
 	u32 crcForCheatsDb;
-	u32 chipID;
-	u32	romType;
-	u32 headerOffset;
-	char ROMserial[20];
-	char ROMname[13];
-	bool _isDSiEnhanced;
-	NDS_header header;
+	u32 chipID = 0x00000FC2;
+	u32	romType = ROM_NDS;
+	u32 headerOffset = 0;
+	char ROMserial[20] = {};
+	char ROMname[13] = {};
+	bool _isDSiEnhanced = false;
+	NDS_header header = {};
 	//a copy of the pristine secure area from the rom
 	u8	secureArea[0x4000];
 	RomBanner	banner;
 	const RomBanner& getRomBanner();
-
-	GameInfo() :	fROM(NULL),
-					romdataForReader(NULL),
-					crc(0),
-					chipID(0x00000FC2),
-					romsize(0),
-					cardSize(0),
-					mask(0),
-					romType(ROM_NDS),
-					headerOffset(0),
-					_isDSiEnhanced(false)
-	{
-		memset(&header, 0, sizeof(header));
-		memset(&ROMserial[0], 0, sizeof(ROMserial));
-		memset(&ROMname[0], 0, sizeof(ROMname));
-	}
 
 	~GameInfo() { closeROM(); }
 
@@ -497,48 +481,7 @@ extern int lagframecounter;
 
 extern struct TCommonSettings
 {
-	TCommonSettings() 
-		: GFX3D_HighResolutionInterpolateColor(true)
-		, GFX3D_EdgeMark(true)
-		, GFX3D_Fog(true)
-		, GFX3D_Texture(true)
-		, GFX3D_LineHack(true)
-		, GFX3D_Renderer_MultisampleSize(0)
-		, GFX3D_Renderer_TextureScalingFactor(1) // Possible values: 1, 2, 4
-		, GFX3D_Renderer_TextureDeposterize(false)
-		, GFX3D_Renderer_TextureSmoothing(false)
-		, GFX3D_TXTHack(false)
-		, OpenGL_Emulation_ShadowPolygon(true)
-		, OpenGL_Emulation_SpecialZeroAlphaBlending(true)
-		, OpenGL_Emulation_NDSDepthCalculation(true)
-		, OpenGL_Emulation_DepthLEqualPolygonFacing(false)
-		, jit_max_block_size(12)
-		, loadToMemory(false)
-		, UseExtBIOS(false)
-		, SWIFromBIOS(false)
-		, PatchSWI3(false)
-		, UseExtFirmware(false)
-		, UseExtFirmwareSettings(false)
-		, RetailCardProtection8000(true)
-		, BootFromFirmware(false)
-		, DebugConsole(false)
-		, EnsataEmulation(false)
-		, cheatsDisable(false)
-		, rigorous_timing(false)
-		, advanced_timing(true)
-		, micMode(InternalNoise)
-		, spuInterpolationMode(2)
-		, manualBackupType(0)
-		, autodetectBackupMethod(0)
-		, spu_captureMuted(false)
-		, spu_advanced(true)
-		, StylusPressure(50)
-		, ConsoleType(NDS_CONSOLE_TYPE_FAT)
-		, backupSave(false)
-		, SPU_sync_mode(1)
-		, SPU_sync_method(0)
-		, WifiBridgeDeviceID(0)
-	{
+	TCommonSettings() {
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
 		strcpy(ExtFirmwarePath, "firmware.bin");
@@ -560,55 +503,53 @@ extern struct TCommonSettings
 		num_cores = NDS_GetCPUCoreCount();
 		NDS_SetupDefaultFirmware();
 	}
-	bool GFX3D_HighResolutionInterpolateColor;
-	bool GFX3D_EdgeMark;
-	bool GFX3D_Fog;
-	bool GFX3D_Texture;
-	bool GFX3D_LineHack;
-	int GFX3D_Renderer_MultisampleSize;
-	int GFX3D_Renderer_TextureScalingFactor; //must be one of {1,2,4}
-	bool GFX3D_Renderer_TextureDeposterize;
-	bool GFX3D_Renderer_TextureSmoothing;
-	bool GFX3D_TXTHack;
+	bool GFX3D_HighResolutionInterpolateColor = true;
+	bool GFX3D_EdgeMark = true;
+	bool GFX3D_Fog = true;
+	bool GFX3D_Texture = true;
+	bool GFX3D_LineHack = true;
+	int GFX3D_Renderer_MultisampleSize = 0;
+	int GFX3D_Renderer_TextureScalingFactor = 1; //must be one of {1,2,4}
+	bool GFX3D_Renderer_TextureDeposterize = false;
+	bool GFX3D_Renderer_TextureSmoothing = false;
+	bool GFX3D_TXTHack = false;
 	
-	bool OpenGL_Emulation_ShadowPolygon;
-	bool OpenGL_Emulation_SpecialZeroAlphaBlending;
-	bool OpenGL_Emulation_NDSDepthCalculation;
-	bool OpenGL_Emulation_DepthLEqualPolygonFacing;
+	bool OpenGL_Emulation_ShadowPolygon = true;
+	bool OpenGL_Emulation_SpecialZeroAlphaBlending = true;
+	bool OpenGL_Emulation_NDSDepthCalculation = true;
+	bool OpenGL_Emulation_DepthLEqualPolygonFacing = false;
 
-	bool loadToMemory;
+	bool loadToMemory = false;
 
-	bool UseExtBIOS;
+	bool UseExtBIOS = false;
 	char ARM9BIOS[MAX_PATH];
 	char ARM7BIOS[MAX_PATH];
-	bool SWIFromBIOS;
-	bool PatchSWI3;
+	bool SWIFromBIOS = false;
+	bool PatchSWI3 = false;
 
-	bool RetailCardProtection8000;
-	bool UseExtFirmware;
-	bool UseExtFirmwareSettings;
+	bool RetailCardProtection8000 = true;
+	bool UseExtFirmware = false;
+	bool UseExtFirmwareSettings = false;
 	char ExtFirmwarePath[MAX_PATH];
 	char ExtFirmwareUserSettingsPath[MAX_PATH];
-	bool BootFromFirmware;
+	bool BootFromFirmware = false;
 	FirmwareConfig fwConfig;
 
-	NDS_CONSOLE_TYPE ConsoleType;
-	bool DebugConsole;
-	bool EnsataEmulation;
+	NDS_CONSOLE_TYPE ConsoleType = NDS_CONSOLE_TYPE_FAT;
+	bool DebugConsole = false;
+	bool EnsataEmulation = false;
 	
-	bool cheatsDisable;
+	bool cheatsDisable = false;
 
 	int num_cores;
 	bool single_core() { return num_cores==1; }
-	bool rigorous_timing;
+	bool rigorous_timing = false;
 
 	struct GameHacks {
-		GameHacks()
-			: en(true)
-		{
+		GameHacks() {
 			clear();
 		}
-		bool en;
+		bool en = true;
 
 		struct {
 			bool overclock;
@@ -619,16 +560,16 @@ extern struct TCommonSettings
 		void clear();
 	} gamehacks;
 
-	int StylusPressure;
+	int StylusPressure = 50;
 
 	bool dispLayers[2][5];
 	
-	FAST_ALIGN bool advanced_timing;
+	FAST_ALIGN bool advanced_timing = true;
 
 	bool use_jit;
-	u32	jit_max_block_size;
+	u32	jit_max_block_size = 12;
 	
-	int WifiBridgeDeviceID;
+	int WifiBridgeDeviceID = 0;
 
 	enum MicMode
 	{
@@ -636,45 +577,44 @@ extern struct TCommonSettings
 		Sample        = 1,
 		Random        = 2,
 		Physical      = 3
-	} micMode;
+	} micMode = InternalNoise;
 
 
-	int spuInterpolationMode;
+	int spuInterpolationMode = 2;
 
 	//this is a temporary hack until we straighten out the flushing logic and/or gxfifo
 	//int gfx3d_flushMode;
 
-	int autodetectBackupMethod;
+	int autodetectBackupMethod = 0;
 	//this is the user's choice of manual backup type, for cases when the autodetection can't be trusted
-	int manualBackupType;
-	bool backupSave;
+	int manualBackupType = 0;
+	bool backupSave = false;
 
-	int SPU_sync_mode;
-	int SPU_sync_method;
+	int SPU_sync_mode = 1;
+	int SPU_sync_method = 0;
 
 	bool spu_muteChannels[16];
-	bool spu_captureMuted;
-	bool spu_advanced;
+	bool spu_captureMuted = false;
+	bool spu_advanced = true;
 
 	struct _ShowGpu {
-		_ShowGpu() : main(true), sub(true) {}
 		union {
-			struct { bool main,sub; };
+			struct {
+				bool main = true;
+				bool sub = true;
+			};
 			bool screens[2];
 		};
 	} showGpu;
 
 	struct _Hud {
-		_Hud() 
-			: ShowInputDisplay(false)
-			, ShowGraphicalInputDisplay(false)
-			, FpsDisplay(false)
-			, FrameCounterDisplay(false)
-			, ShowLagFrameCounter(false)
-			, ShowMicrophone(false)
-			, ShowRTC(false)
-		{}
-		bool ShowInputDisplay, ShowGraphicalInputDisplay, FpsDisplay, FrameCounterDisplay, ShowLagFrameCounter, ShowMicrophone, ShowRTC;
+		bool ShowInputDisplay = false;
+        bool ShowGraphicalInputDisplay = false;
+        bool FpsDisplay = false;
+        bool FrameCounterDisplay = false;
+        bool ShowLagFrameCounter = false;
+        bool ShowMicrophone = false;
+        bool ShowRTC = false;
 	} hud;
 
 	std::string run_advanscene_import;

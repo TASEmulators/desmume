@@ -36,62 +36,6 @@
 int _scanline_filter_a = 0, _scanline_filter_b = 2, _scanline_filter_c = 2, _scanline_filter_d = 4;
 int _commandline_linux_nojoy = 0;
 
-CommandLine::CommandLine()
-: is_cflash_configured(false)
-, _load_to_memory(-1)
-, _play_movie_file(0)
-, _record_movie_file(0)
-, _cflash_image(0)
-, _cflash_path(0)
-, _gbaslot_rom(0)
-, _bios_arm9(NULL)
-, _bios_arm7(NULL)
-, _bios_swi(0)
-, _fw_path(NULL)
-, _fw_boot(0)
-, _spu_sync_mode(-1)
-, _spu_sync_method(-1)
-, _spu_advanced(0)
-, _num_cores(-1)
-, _rigorous_timing(0)
-, _advanced_timing(-1)
-, _gamehacks(-1)
-, _texture_deposterize(-1)
-, _texture_smooth(-1)
-, _slot1(NULL)
-, _slot1_fat_dir(NULL)
-, _slot1_fat_dir_type(false)
-, _slot1_no8000prot(0)
-#ifdef HAVE_JIT
-, _cpu_mode(-1)
-, _jit_size(-1)
-#endif
-, _console_type(NULL)
-, _advanscene_import(NULL)
-, load_slot(-1)
-, arm9_gdb_port(0)
-, arm7_gdb_port(0)
-, start_paused(FALSE)
-, autodetect_method(-1)
-, render3d(COMMANDLINE_RENDER3D_DEFAULT)
-, texture_upscale(-1)
-, gpu_resolution_multiplier(-1)
-, language(1) //english by default
-, disable_sound(0)
-, disable_limiter(0)
-, windowed_fullscreen(0)
-, frameskip(0)
-, horizontal(0)
-, scale(1.0)
-, _rtc_day(-1)
-, _rtc_hour(-1)
-{
-}
-
-CommandLine::~CommandLine()
-{
-}
-
 static char mytoupper(char c) { return ::toupper(c); }
 
 static std::string strtoupper(const std::string& str)

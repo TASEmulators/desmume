@@ -425,16 +425,14 @@ class CFIRMWARE
 private:
 	FWHeader _header;
 	std::string _fwFilePath;
-	bool _isLoaded;
-	u32 _userDataAddr;
+	bool _isLoaded = false;
+	u32 _userDataAddr = 0x3FE00;
 	
 	u16		_getBootCodeCRC16(const u8 *arm9Data, const u32 arm9Size, const u8 *arm7Data, const u32 arm7Size);
 	u32		_decrypt(const u8 *in, u8* &out);
 	u32		_decompress(const u8 *in, u8* &out);
 
 public:
-	CFIRMWARE(): _userDataAddr(0x3FE00), _isLoaded(false) {};
-	
 	bool load(const char *firmwareFilePath);
 	bool unpack();
 	bool loadSettings(const char *firmwareUserSettingsFilePath);

@@ -25,13 +25,13 @@ class ADVANsCEne
 private:
 	std::string database_path;
 	time_t			createTime;
-	u32				crc32;
-	char			serial[6];
-	char			version[4];
-	u8				versionBase[2];
-	u8				saveType;
+	u32				crc32 = 0;
+	char			serial[6] = {};
+	char			version[4] = {};
+	u8				versionBase[2] = {};
+	u8				saveType = 0xFF;
 
-	bool			loaded;
+	bool			loaded = false;
 	bool foundAsCrc, foundAsSerial;
 
 	// XML
@@ -42,15 +42,6 @@ private:
 	bool getXMLConfig(const char *in_filename);
 
 public:
-	ADVANsCEne()
-		: saveType(0xFF),
-		crc32(0),
-		loaded(false)
-	{
-		memset(versionBase, 0, sizeof(versionBase));
-		memset(version, 0, sizeof(version));
-		memset(serial, 0, sizeof(serial));
-	}
 	void setDatabase(const char *path);
 	std::string getDatabase() const { return database_path; }
 	u32 convertDB(const char *in_filename, EMUFILE &output);
