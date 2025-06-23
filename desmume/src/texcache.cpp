@@ -40,9 +40,6 @@
 #include "./utils/colorspacehandler/colorspacehandler_AltiVec.h"
 #endif
 
-using std::min;
-using std::max;
-
 //only dump this from ogl renderer. for now, softrasterizer creates things in an incompatible pixel format
 //#define DEBUG_DUMP_TEXTURE
 
@@ -78,11 +75,11 @@ public:
 	int memcmp(void* buf2, int cmpSize=-1)
 	{
 		if(cmpSize==-1) cmpSize = this->size;
-		cmpSize = min(this->size,cmpSize);
+		cmpSize = std::min(this->size,cmpSize);
 		for(int i=0;i<numItems;i++)
 		{
 			Item &item = items[i];
-			int todo = min((int)item.len,cmpSize);
+			int todo = std::min((int)item.len,cmpSize);
 			cmpSize -= todo;
 			int temp = ::memcmp(item.ptr,((u8*)buf2)+item.ofs,todo);
 			if(temp) return temp;
@@ -98,13 +95,13 @@ public:
 	int dump(void* buf, int dumpSize=-1) const
 	{
 		if(dumpSize==-1) dumpSize = this->size;
-		dumpSize = min(this->size,dumpSize);
+		dumpSize = std::min(this->size,dumpSize);
 		u8* bufptr = (u8*)buf;
 		int done = 0;
 		for(int i=0;i<numItems;i++)
 		{
 			Item item = items[i];
-			int todo = min((int)item.len,dumpSize);
+			int todo = std::min((int)item.len,dumpSize);
 			dumpSize -= todo;
 			done += todo;
 			memcpy(bufptr,item.ptr,todo);
@@ -120,14 +117,14 @@ public:
 	int dump16(void* buf, int dumpSize=-1) const
 	{
 		if(dumpSize==-1) dumpSize = this->size;
-		dumpSize = min(this->size,dumpSize);
+		dumpSize = std::min(this->size,dumpSize);
 		u16* bufptr = (u16*)buf;
 		int done = 0;
 		for(int i=0;i<numItems;i++)
 		{
 			Item item = items[i];
 			u8 * src = (u8 *) item.ptr;
-			int todo = min((int)item.len,dumpSize);
+			int todo = std::min((int)item.len,dumpSize);
 			dumpSize -= todo;
 			done += todo;
 			for(int j = 0;j < todo / 2;j++)
@@ -153,7 +150,7 @@ static MemSpan MemSpan_TexMem(u32 ofs, u32 len)
 		MemSpan::Item &curr = ret.items[ret.numItems++];
 		curr.start = ofs&0x1FFFF;
 		u32 slot = (ofs>>17)&3; //slots will wrap around
-		curr.len = min(len,0x20000-curr.start);
+		curr.len = std::min(len,0x20000-curr.start);
 		curr.ofs = currofs;
 		len -= curr.len;
 		ofs += curr.len;
@@ -182,7 +179,7 @@ static MemSpan MemSpan_TexPalette(u32 ofs, u32 len, bool silent)
 			PROGINFO("Texture palette overruns texture memory. Wrapping at palette slot 0.\n");
 			slot -= 5;
 		}
-		curr.len = min(len,0x4000-curr.start);
+		curr.len = std::min(len,0x4000-curr.start);
 		curr.ofs = currofs;
 		len -= curr.len;
 		ofs += curr.len;

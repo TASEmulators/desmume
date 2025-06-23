@@ -68,16 +68,6 @@
 #include "filter/filter.h"
 #include "filter/xbrz.h"
 
-
-using std::min;
-using std::max;
-using std::swap;
-
-template<typename T> T _min(T a, T b, T c) { return min(min(a,b),c); }
-template<typename T> T _max(T a, T b, T c) { return max(max(a,b),c); }
-template<typename T> T _min(T a, T b, T c, T d) { return min(_min(a,b,d),c); }
-template<typename T> T _max(T a, T b, T c, T d) { return max(_max(a,b,d),c); }
-
 static u8 modulate_table[64][64];
 static u8 decal_table[32][64][64];
 
@@ -501,7 +491,7 @@ static FORCEINLINE void alphaBlend(const bool isAlphaBlendingEnabled, const Colo
 		outDst.r = (alpha*inSrc.r + invAlpha*outDst.r) >> 5;
 		outDst.g = (alpha*inSrc.g + invAlpha*outDst.g) >> 5;
 		outDst.b = (alpha*inSrc.b + invAlpha*outDst.b) >> 5;
-		outDst.a = max(inSrc.a, outDst.a);
+		outDst.a = std::max(inSrc.a, outDst.a);
 	}
 }
 
@@ -518,7 +508,7 @@ static FORCEINLINE void EdgeBlend(Color4u8 &dst, const Color4u8 src)
 		dst.r = (alpha*src.r + invAlpha*dst.r) >> 5;
 		dst.g = (alpha*src.g + invAlpha*dst.g) >> 5;
 		dst.b = (alpha*src.b + invAlpha*dst.b) >> 5;
-		dst.a = max(src.a, dst.a);
+		dst.a = std::max(src.a, dst.a);
 	}
 }
 
@@ -635,9 +625,9 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_shade(const PolygonMode polygonMode,
 				outColor.b = modulate_table[mainTexColor.b][vtxColor.r];
 				outColor.a = modulate_table[GFX3D_5TO6_LOOKUP(mainTexColor.a)][GFX3D_5TO6_LOOKUP(vtxColor.a)] >> 1;
 				
-				outColor.r = min<u8>(0x3F, (outColor.r + toonColor.r));
-				outColor.g = min<u8>(0x3F, (outColor.g + toonColor.g));
-				outColor.b = min<u8>(0x3F, (outColor.b + toonColor.b));
+				outColor.r = std::min<u8>(0x3F, (outColor.r + toonColor.r));
+				outColor.g = std::min<u8>(0x3F, (outColor.g + toonColor.g));
+				outColor.b = std::min<u8>(0x3F, (outColor.b + toonColor.b));
 			}
 			else
 			{
@@ -677,8 +667,8 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_pixel(const POLYGON_ATTR polyAttr, c
 		// The EQUAL depth test is used if the polygon requests it. Note that the NDS doesn't perform
 		// a true EQUAL test -- there is a set tolerance to it that makes it easier for pixels to
 		// pass the depth test.
-		const u32 minDepth = (u32)max<s32>(0x00000000, (s32)dstAttributeDepth - DEPTH_EQUALS_TEST_TOLERANCE);
-		const u32 maxDepth = min<u32>(0x00FFFFFF, dstAttributeDepth + DEPTH_EQUALS_TEST_TOLERANCE);
+		const u32 minDepth = (u32)std::max<s32>(0x00000000, (s32)dstAttributeDepth - DEPTH_EQUALS_TEST_TOLERANCE);
+		const u32 maxDepth = std::min<u32>(0x00FFFFFF, dstAttributeDepth + DEPTH_EQUALS_TEST_TOLERANCE);
 		
 		if (depth < minDepth || depth > maxDepth)
 		{
@@ -816,7 +806,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 				rightWidth++;
 			}
 			
-			rasterWidth = max(1, max(abs(leftWidth), abs(rightWidth)));
+			rasterWidth = std::max({1, abs(leftWidth), abs(rightWidth)});
 		}
 		else
 		{
@@ -983,9 +973,9 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 		
 		if (this->_softRender->_enableFragmentSamplingHack)
 		{
-			vtxColor.r = max<u8>( 0x00, (u8)min<float>(63.0f, vtxColorFloatInterpolated.r / invWFloatInterpolated) );
-			vtxColor.g = max<u8>( 0x00, (u8)min<float>(63.0f, vtxColorFloatInterpolated.g / invWFloatInterpolated) );
-			vtxColor.b = max<u8>( 0x00, (u8)min<float>(63.0f, vtxColorFloatInterpolated.b / invWFloatInterpolated) );
+			vtxColor.r = std::max<u8>( 0x00, (u8)std::min<float>(63.0f, vtxColorFloatInterpolated.r / invWFloatInterpolated) );
+			vtxColor.g = std::max<u8>( 0x00, (u8)std::min<float>(63.0f, vtxColorFloatInterpolated.g / invWFloatInterpolated) );
+			vtxColor.b = std::max<u8>( 0x00, (u8)std::min<float>(63.0f, vtxColorFloatInterpolated.b / invWFloatInterpolated) );
 			vtxColor.a = vtxColorInterpolated.a;
 			
 			texCoord.s = (s32)(texCoordFloatInterpolated.s * (float)texScalingFactor / invWFloatInterpolated);
@@ -993,9 +983,9 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 		}
 		else
 		{
-			vtxColor.r = max<u8>( 0x00, (u8)min<s64>(0x3F, vtxColorInterpolated.r / invWInterpolated) );
-			vtxColor.g = max<u8>( 0x00, (u8)min<s64>(0x3F, vtxColorInterpolated.g / invWInterpolated) );
-			vtxColor.b = max<u8>( 0x00, (u8)min<s64>(0x3F, vtxColorInterpolated.b / invWInterpolated) );
+			vtxColor.r = std::max<u8>( 0x00, (u8)std::min<s64>(0x3F, vtxColorInterpolated.r / invWInterpolated) );
+			vtxColor.g = std::max<u8>( 0x00, (u8)std::min<s64>(0x3F, vtxColorInterpolated.g / invWInterpolated) );
+			vtxColor.b = std::max<u8>( 0x00, (u8)std::min<s64>(0x3F, vtxColorInterpolated.b / invWInterpolated) );
 			vtxColor.a = vtxColorInterpolated.a;
 			
 			texCoord.s = (s32)(texCoordInterpolated.s * texScalingFactor / invWInterpolated);
@@ -1042,7 +1032,7 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 	//oh lord, hack city for edge drawing
 
 	//do not overstep either of the edges
-	s32 rasterHeight = min(left.height, right.height);
+	s32 rasterHeight = std::min(left.height, right.height);
 	bool first = true;
 
 	//HACK: special handling for horizontal line poly
@@ -1082,8 +1072,8 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 					const size_t nxr = right.x;
 					if (top)
 					{
-						const size_t xs = min(xl, xr);
-						const size_t xe = max(xl, xr);
+						const size_t xs = std::min(xl, xr);
+						const size_t xe = std::max(xl, xr);
 						for (size_t x = xs; x <= xe; x++)
 						{
 							const size_t adr = (y * framebufferWidth) + x;
@@ -1094,8 +1084,8 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 					}
 					else if (bottom)
 					{
-						const size_t xs = min(xl, xr);
-						const size_t xe = max(xl, xr);
+						const size_t xs = std::min(xl, xr);
+						const size_t xe = std::max(xl, xr);
 						for (size_t x = xs; x <= xe; x++)
 						{
 							const size_t adr = (y * framebufferWidth) + x;
@@ -1106,8 +1096,8 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 					}
 					else
 					{
-						size_t xs = min(xl, nxl);
-						size_t xe = max(xl, nxl);
+						size_t xs = std::min(xl, nxl);
+						size_t xe = std::max(xl, nxl);
 						for (size_t x = xs; x <= xe; x++)
 						{
 							const size_t adr = (y * framebufferWidth) + x;
@@ -1116,8 +1106,8 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 							dstColor[adr].b = 0;
 						}
 						
-						xs = min(xr, nxr);
-						xe = max(xr, nxr);
+						xs = std::min(xr, nxr);
+						xe = std::max(xr, nxr);
 						for (size_t x = xs; x <= xe; x++)
 						{
 							const size_t adr = (y * framebufferWidth) + x;
@@ -1139,12 +1129,12 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 template<bool RENDERER> template<int TYPE>
 FORCEINLINE void RasterizerUnit<RENDERER>::_rot_verts()
 {
-#define ROTSWAP(X) if(TYPE>X) swap(this->_currentVtx[X-1],this->_currentVtx[X]);
+#define ROTSWAP(X) if(TYPE>X) std::swap(this->_currentVtx[X-1],this->_currentVtx[X]);
 	ROTSWAP(1); ROTSWAP(2); ROTSWAP(3); ROTSWAP(4);
 	ROTSWAP(5); ROTSWAP(6); ROTSWAP(7); ROTSWAP(8); ROTSWAP(9);
 #undef ROTSWAP
 	
-#define ROTSWAP(X) if(TYPE>X) swap(this->_currentPrecalc[X-1],this->_currentPrecalc[X]);
+#define ROTSWAP(X) if(TYPE>X) std::swap(this->_currentPrecalc[X-1],this->_currentPrecalc[X]);
 	ROTSWAP(1); ROTSWAP(2); ROTSWAP(3); ROTSWAP(4);
 	ROTSWAP(5); ROTSWAP(6); ROTSWAP(7); ROTSWAP(8); ROTSWAP(9);
 #undef ROTSWAP
@@ -1165,8 +1155,8 @@ void RasterizerUnit<RENDERER>::_sort_verts()
 	{
 		for (size_t i = 0; i < TYPE/2; i++)
 		{
-			swap(this->_currentVtx[i], this->_currentVtx[TYPE-i-1]);
-			swap(this->_currentPrecalc[i], this->_currentPrecalc[TYPE-i-1]);
+			std::swap(this->_currentVtx[i], this->_currentVtx[TYPE-i-1]);
+			std::swap(this->_currentPrecalc[i], this->_currentPrecalc[TYPE-i-1]);
 		}
 	}
 
@@ -2112,13 +2102,13 @@ void SoftRasterizerRenderer::_UpdateEdgeMarkColorTable(const u16 *edgeMarkColorT
 
 void SoftRasterizerRenderer::_UpdateFogTable(const u8 *fogDensityTable)
 {
-	const s32 fogOffset = min<s32>( max<s32>((s32)this->currentRenderState->fogOffset, 0), 32768 );
+	const s32 fogOffset = std::min<s32>( std::max<s32>((s32)this->currentRenderState->fogOffset, 0), 32768 );
 	const s32 fogStep = 0x400 >> this->currentRenderState->fogShift;
 	
 	if (fogStep <= 0)
 	{
-		const s32 iMin = min<s32>( max<s32>(fogOffset, 0), 32768);
-		const s32 iMax = min<s32>( max<s32>(fogOffset + 1, 0), 32768);
+		const s32 iMin = std::min<s32>( std::max<s32>(fogOffset, 0), 32768);
+		const s32 iMax = std::min<s32>( std::max<s32>(fogOffset + 1, 0), 32768);
 		
 		// If the fog factor is 127, then treat it as 128.
 		u8 fogWeight = (fogDensityTable[0] >= 127) ? 128 : fogDensityTable[0];
@@ -2131,8 +2121,8 @@ void SoftRasterizerRenderer::_UpdateFogTable(const u8 *fogDensityTable)
 	}
 	
 	const s32 fogShiftInv = 10 - this->currentRenderState->fogShift;
-	const s32 iMin = min<s32>( max<s32>((( 1 + 1) << fogShiftInv) + fogOffset + 1 - fogStep, 0), 32768);
-	const s32 iMax = min<s32>( max<s32>(((32 + 1) << fogShiftInv) + fogOffset + 1 - fogStep, 0), 32768);
+	const s32 iMin = std::min<s32>( std::max<s32>((( 1 + 1) << fogShiftInv) + fogOffset + 1 - fogStep, 0), 32768);
+	const s32 iMax = std::min<s32>( std::max<s32>(((32 + 1) << fogShiftInv) + fogOffset + 1 - fogStep, 0), 32768);
 	assert(iMin <= iMax);
 	
 	// If the fog factor is 127, then treat it as 128.

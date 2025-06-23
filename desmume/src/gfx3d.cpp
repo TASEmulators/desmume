@@ -256,9 +256,6 @@ public:
 #define GFX_DELAY(x) NDS_RescheduleGXFIFO(1);
 #define GFX_DELAY_M2(x) NDS_RescheduleGXFIFO(1);
 
-using std::max;
-using std::min;
-
 Viewer3D_State viewer3D;
 
 static GFX3D_IOREG *_GFX3D_IORegisterMap = NULL;
@@ -3314,7 +3311,7 @@ size_t gfx3d_PerformClipping(const GFX3D_GeometryList &gList, CPoly *outCPolyUns
 			// - Divide by w = 20.43 --> 20.31
 			// - Divide by 2 = 20.31 --> 20.30
 			// - Keep the sign bit = 20.30 --> 20.31
-			vtx64.z = max<s64>(0x0000000000000000LL, min<s64>(0x000000007FFFFFFFLL, vtx64.z));
+			vtx64.z = std::max<s64>(0x0000000000000000LL, std::min<s64>(0x000000007FFFFFFFLL, vtx64.z));
 			
 			// At the very least, we need to save the transformed position so that
 			// we can use it to calculate the polygon facing later.
@@ -3388,8 +3385,8 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 	}
 
 #ifdef _SHOW_VTX_COUNTERS
-	max_polys = max((u32)outGList.rawPolyCount, max_polys);
-	max_verts = max((u32)outGList.rawVertCount, max_verts);
+	max_polys = std::max((u32)outGList.rawPolyCount, max_polys);
+	max_verts = std::max((u32)outGList.rawVertCount, max_verts);
 	osd->addFixed(180, 20, "%i/%i", outGList.rawPolyCount, outGList.rawVertCount);		// current
 	osd->addFixed(180, 35, "%i/%i", max_polys, max_verts);		// max
 #endif
@@ -3455,8 +3452,8 @@ void GFX3D_GenerateRenderLists(const ClipperMode clippingMode, const GFX3D_State
 			
 			y = 4096LL - y;
 			
-			gfx3d.rawPolySortYMin[rawPolyIndex] = min<s64>(gfx3d.rawPolySortYMin[rawPolyIndex], y);
-			gfx3d.rawPolySortYMax[rawPolyIndex] = max<s64>(gfx3d.rawPolySortYMax[rawPolyIndex], y);
+			gfx3d.rawPolySortYMin[rawPolyIndex] = std::min<s64>(gfx3d.rawPolySortYMin[rawPolyIndex], y);
+			gfx3d.rawPolySortYMax[rawPolyIndex] = std::max<s64>(gfx3d.rawPolySortYMax[rawPolyIndex], y);
 		}
 	}
 

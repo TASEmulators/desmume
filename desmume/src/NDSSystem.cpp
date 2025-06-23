@@ -104,9 +104,6 @@ CFIRMWARE *extFirmwareObj = NULL;
 std::vector<u32> memReadBreakPoints;
 std::vector<u32> memWriteBreakPoints;
 
-using std::min;
-using std::max;
-
 bool singleStep;
 bool nds_debug_continuing[2];
 int lagframecounter;
@@ -1657,7 +1654,7 @@ FORCEINLINE u64 _fast_min(u64 a, u64 b)
 	//you might find that this is faster on a 64bit system; someone should try it
 	//http://aggregate.org/MAGIC/#Integer%20Selection
 	//u64 ret = (((((s64)(a-b)) >> (64-1)) & (a^b)) ^ b);
-	//assert(ret==min(a,b));
+	//assert(ret==std::min(a,b));
 	//return ret;	
 	
 	//but this ends up being the fastest on 32bits
@@ -1899,7 +1896,7 @@ static FORCEINLINE s32 minarmtime(s32 arm9, s32 arm7)
 {
 	if(doarm9)
 		if(doarm7)
-			return min(arm9,arm7);
+			return std::min(arm9,arm7);
 		else
 			return arm9;
 	else
@@ -1963,7 +1960,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			else
 			{
 				s32 temp = arm9;
-				arm9 = min(s32next, arm9 + kIrqWait);
+				arm9 = std::min(s32next, arm9 + kIrqWait);
 				nds.idleCycles[0] += arm9-temp;
 				if (gxFIFO.size < 255) nds.freezeBus &= ~1;
 			}
@@ -2004,7 +2001,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			else
 			{
 				s32 temp = arm7;
-				arm7 = min(s32next, arm7 + kIrqWait);
+				arm7 = std::min(s32next, arm7 + kIrqWait);
 				nds.idleCycles[1] += arm7-temp;
 				if(arm7 == s32next)
 				{
@@ -2124,7 +2121,7 @@ void NDS_exec(s32 nb)
 
 			//find next work unit:
 			u64 next = sequencer.findNext();
-			next = min(next,nds_timer+kMaxWork); //lets set an upper limit for now
+			next = std::min(next,nds_timer+kMaxWork); //lets set an upper limit for now
 
 			//printf("%d\n",(next-nds_timer));
 
@@ -2853,14 +2850,14 @@ u16 NDS_getADCTouchPosX(int scrX_lsl4)
 {
 	scrX_lsl4 >>= 4;
 	int rv = ((scrX_lsl4 - TSCal.scr.x1 + 1) * TSCal.adc.width) / TSCal.scr.width + TSCal.adc.x1;
-	rv = min(0xFFF, max(0, rv));
+	rv = std::min(0xFFF, std::max(0, rv));
 	return (u16)(rv);
 }
 u16 NDS_getADCTouchPosY(int scrY_lsl4)
 {
 	scrY_lsl4 >>= 4;
 	int rv = ((scrY_lsl4 - TSCal.scr.y1 + 1) * TSCal.adc.height) / TSCal.scr.height + TSCal.adc.y1;
-	rv = min(0xFFF, max(0, rv));
+	rv = std::min(0xFFF, std::max(0, rv));
 	return (u16)(rv);
 }
 
