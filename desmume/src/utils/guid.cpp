@@ -68,7 +68,7 @@ Desmume_Guid Desmume_Guid::fromString(std::string str)
 	return ret;
 }
 
-uint8 Desmume_Guid::hexToByte(char** ptrptr)
+u8 Desmume_Guid::hexToByte(char** ptrptr)
 {
 	char a = toupper(**ptrptr);
 	(*ptrptr)++;

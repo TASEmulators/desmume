@@ -19,6 +19,7 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
+#include <cstdint>
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
 #include <math/fxp.h>
@@ -229,44 +230,15 @@
 	#endif
 #endif
 
-#if defined(__LP64__)
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
-typedef unsigned long long u64;
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
 
-typedef signed char s8;
-typedef signed short s16;
-typedef signed int s32;
-typedef signed long long s64;
-#else
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-typedef unsigned __int64 u64;
-#else
-typedef unsigned long long u64;
-#endif
-
-typedef signed char s8;
-typedef signed short s16;
-typedef signed int s32;
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-typedef __int64 s64;
-#else
-typedef signed long long s64;
-#endif
-#endif
-
-typedef u8  uint8;
-typedef u16 uint16;
-
-#ifndef OBJ_C
-typedef u32 uint32;
-#else
-#define uint32 u32 //uint32 is defined in Leopard somewhere, avoid conflicts
-#endif
+typedef int8_t s8;
+typedef int16_t s16;
+typedef int32_t s32;
+typedef int64_t s64;
 
 #ifdef ENABLE_ALTIVEC
 	#ifndef __APPLE_ALTIVEC__
@@ -378,7 +350,7 @@ typedef __m512  v512f32;
 typedef s32 f32;
 #define inttof32(n)          ((n) << 12)
 #define f32toint(n)          ((n) >> 12)
-#define floattof32(n)        ((int32)((n) * (1 << 12)))
+#define floattof32(n)        ((s32)((n) * (1 << 12)))
 #define f32tofloat(n)        (((float)(n)) / (float)(1<<12))
 
 typedef s16 t16;

@@ -181,7 +181,7 @@ void MovieRecord::dump(EMUFILE &fp)
 	//dump the misc commands
 	//*os << '|' << setw(1) << (int)commands;
 	fp.fputc('|');
-	putdec<uint8,1,true>(fp,commands);
+	putdec<u8,1,true>(fp,commands);
 
 	fp.fputc('|');
 	dumpPad(fp, pad);
@@ -944,7 +944,7 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 //		 osd->addFixed(180, 176, "%s", "Recording");
 	 }
 
-	 /*extern uint8 joy[4];
+	 /*extern u8 joy[4];
 	 memcpy(&cur_input_display,joy,4);*/
  }
 

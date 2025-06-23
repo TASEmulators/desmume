@@ -1344,7 +1344,7 @@ bool savestate_load(EMUFILE &is)
 
 #ifdef HAVE_LIBZ
 		uLongf uncomprlen = len;
-		int error = uncompress((uint8*)&buf[0],&uncomprlen,(uint8*)&cbuf[0],comprlen);
+		int error = uncompress((u8*)&buf[0],&uncomprlen,(u8*)&cbuf[0],comprlen);
 		if (error != Z_OK || uncomprlen != len)
 			return false;
 #endif
