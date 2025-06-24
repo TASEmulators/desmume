@@ -54,6 +54,36 @@ jobs:
           name: desmume-linux-gtk2-cli-x86_64
           path: /tmp/DeSmuME.tar.xz
 
+  build_mingw:
+    name: Build DeSmuME (mingw/i686)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install dependencies
+        run: sudo apt update && sudo apt install mingw-w64 mingw-w64-i686-dev
+
+      - name: buildit
+        run: |
+          cd desmume/src/frontend/windows/
+          echo "OPT=-fstrength-reduce -fthread-jumps -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -fexpensive-optimizations -fforce-addr -fomit-frame-pointer -ffast-math -march=pentium4 -mtune=pentium4 -mmmx -msse2" > config.mak
+          make -j8
+          mkdir /tmp/DeSmuME
+          cp desmume.exe /tmp/DeSmuME
+
+      - name: Pack artifact
+        run: |
+          cd /tmp
+          tar cJf DeSmuME.tar.xz DeSmuME/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desmume-mingw-win32
+          path: /tmp/DeSmuME.tar.xz
+
   build_macos:
     name: Build DeSmuME (macOS)
     runs-on: macos-14
