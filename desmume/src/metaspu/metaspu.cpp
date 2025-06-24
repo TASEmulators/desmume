@@ -105,23 +105,18 @@ private:
 	{
 	public:
 		Adjustobuf(int _minLatency, int _maxLatency)
-			: size(0)
-			, minLatency(_minLatency)
+			: minLatency(_minLatency)
 			, maxLatency(_maxLatency)
+			, targetLatency((maxLatency + minLatency)/2)
 		{
-			rollingTotalSize = 0;
-			targetLatency = (maxLatency + minLatency)/2;
-			rate = 1.0f;
-			cursor = 0.0f;
-			curr[0] = curr[1] = 0;
-			kAverageSize = 80000;
 		}
 
-		float rate, cursor;
-		int minLatency, targetLatency, maxLatency;
+		float rate = 1.0f;
+		float cursor = 0.0f;
+		int minLatency, maxLatency, targetLatency;
 		std::queue<s16> buffer;
-		int size;
-		s16 curr[2];
+		int size = 0;
+		s16 curr[2] = {0, 0};
 
 		std::queue<int> statsHistory;
 
@@ -132,9 +127,9 @@ private:
 			size++;
 		}
 
-		s64 rollingTotalSize;
+		s64 rollingTotalSize = 0;
 
-		u32 kAverageSize;
+		u32 kAverageSize = 80000;
 
 		void addStatistic()
 		{
