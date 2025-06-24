@@ -481,10 +481,10 @@ extern int lagframecounter;
 
 enum MicMode
 {
-	InternalNoise = 0,
-	Sample        = 1,
-	Random        = 2,
-	Physical      = 3
+	MicMode_InternalNoise = 0,
+	MicMode_Sample        = 1,
+	MicMode_Random        = 2,
+	MicMode_Physical      = 3
 };
 
 extern struct TCommonSettings

@@ -3397,7 +3397,7 @@ TCommonSettings::TCommonSettings()
 	
 	WifiBridgeDeviceID = 0;
 	
-	micMode = InternalNoise;
+	micMode = MicMode_InternalNoise;
 	spuInterpolationMode = SPUInterpolation_Cosine;
 	
 	autodetectBackupMethod = BackupDeviceAutodetectMethod_Desmume;
