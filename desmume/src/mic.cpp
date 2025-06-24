@@ -121,7 +121,7 @@ u8 Mic_ReadSample(void)
 {
 	// All mic modes other than Physical must have the mic hotkey pressed in order
 	// to work.
-	if (CommonSettings.micMode != TCommonSettings::Physical && !Mic_GetActivate()) {
+	if (CommonSettings.micMode != MicMode_Physical && !Mic_GetActivate()) {
 		return MIC_NULL_SAMPLE_VALUE;
 	}
 
@@ -180,9 +180,9 @@ void Mic_DoNoise(BOOL noise)
 
 	if (!noise) {
 		generator = &Mic_GenerateNullSample;
-	} else if (CommonSettings.micMode == TCommonSettings::InternalNoise) {
+	} else if (CommonSettings.micMode == MicMode_InternalNoise) {
 		generator = &Mic_GenerateInternalNoiseSample;
-	} else if (CommonSettings.micMode == TCommonSettings::Random) {
+	} else if (CommonSettings.micMode == MicMode_Random) {
 		generator = &Mic_GenerateWhiteNoiseSample;
 	}
 

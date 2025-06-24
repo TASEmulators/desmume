@@ -1864,7 +1864,7 @@ class WinDriver : public BaseDriver
 static void RefreshMicSettings()
 {
 	Mic_DeInit_Physical();
-	if(CommonSettings.micMode == TCommonSettings::Sample)
+	if(CommonSettings.micMode == MicMode_Sample)
 	{
 		if(!LoadSamples(MicSampleName))
 		{
@@ -1878,7 +1878,7 @@ static void RefreshMicSettings()
 	else
 	{
 		LoadSamples(nullptr);
-		if(CommonSettings.micMode == TCommonSettings::Physical)
+		if(CommonSettings.micMode == MicMode_Physical)
 		{
 			Mic_Init_Physical();
 		}
@@ -2024,7 +2024,7 @@ int _main()
 	CommonSettings.hud.ShowMicrophone = GetPrivateProfileBool("Display","Display Microphone", false, IniName);
 	CommonSettings.hud.ShowRTC = GetPrivateProfileBool("Display","Display RTC", false, IniName);
 
-	CommonSettings.micMode = (TCommonSettings::MicMode)GetPrivateProfileInt("MicSettings", "MicMode", (int)TCommonSettings::InternalNoise, IniName);
+	CommonSettings.micMode = (MicMode)GetPrivateProfileInt("MicSettings", "MicMode", (int)MicMode_InternalNoise, IniName);
 	GetPrivateProfileString("MicSettings", "MicSampleFile", "micsample.raw", MicSampleName, MAX_PATH, IniName);
 	RefreshMicSettings();
 	
@@ -6216,15 +6216,15 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 		{
 			HWND cur;
 
-			CommonSettings.micMode = (TCommonSettings::MicMode)GetPrivateProfileInt("MicSettings", "MicMode", (int)TCommonSettings::InternalNoise, IniName);
-			CheckDlgButton(hDlg, IDC_USEMICSAMPLE, ((CommonSettings.micMode == TCommonSettings::Sample) ? BST_CHECKED : BST_UNCHECKED));
-			CheckDlgButton(hDlg, IDC_USEMICRAND, ((CommonSettings.micMode == TCommonSettings::Random) ? BST_CHECKED : BST_UNCHECKED));
-			CheckDlgButton(hDlg, IDC_USENOISE, ((CommonSettings.micMode == TCommonSettings::InternalNoise) ? BST_CHECKED : BST_UNCHECKED));
-			CheckDlgButton(hDlg, IDC_USEPHYSICAL, ((CommonSettings.micMode == TCommonSettings::Physical) ? BST_CHECKED : BST_UNCHECKED));
+			CommonSettings.micMode = (MicMode)GetPrivateProfileInt("MicSettings", "MicMode", (int)MicMode_InternalNoise, IniName);
+			CheckDlgButton(hDlg, IDC_USEMICSAMPLE, ((CommonSettings.micMode == MicMode_Sample) ? BST_CHECKED : BST_UNCHECKED));
+			CheckDlgButton(hDlg, IDC_USEMICRAND, ((CommonSettings.micMode == MicMode_Random) ? BST_CHECKED : BST_UNCHECKED));
+			CheckDlgButton(hDlg, IDC_USENOISE, ((CommonSettings.micMode == MicMode_InternalNoise) ? BST_CHECKED : BST_UNCHECKED));
+			CheckDlgButton(hDlg, IDC_USEPHYSICAL, ((CommonSettings.micMode == MicMode_Physical) ? BST_CHECKED : BST_UNCHECKED));
 			GetPrivateProfileString("MicSettings", "MicSampleFile", "micsample.raw", MicSampleName, MAX_PATH, IniName);
 			SetDlgItemText(hDlg, IDC_MICSAMPLE, MicSampleName);
 
-			if(CommonSettings.micMode != TCommonSettings::Sample)
+			if(CommonSettings.micMode != MicMode_Sample)
 			{
 				cur = GetDlgItem(hDlg, IDC_MICSAMPLE);
 				EnableWindow(cur, FALSE);
@@ -6245,13 +6245,13 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 					HWND cur;
 
 					if(IsDlgCheckboxChecked(hDlg, IDC_USEMICSAMPLE))
-						CommonSettings.micMode = TCommonSettings::Sample;
+						CommonSettings.micMode = MicMode_Sample;
 					else if(IsDlgCheckboxChecked(hDlg, IDC_USEMICRAND))
-						CommonSettings.micMode = TCommonSettings::Random;
+						CommonSettings.micMode = MicMode_Random;
 					else if(IsDlgCheckboxChecked(hDlg, IDC_USENOISE))
-						CommonSettings.micMode = TCommonSettings::InternalNoise;
+						CommonSettings.micMode = MicMode_InternalNoise;
 					else if(IsDlgCheckboxChecked(hDlg, IDC_USEPHYSICAL))
-						CommonSettings.micMode = TCommonSettings::Physical;
+						CommonSettings.micMode = MicMode_Physical;
 
 					cur = GetDlgItem(hDlg, IDC_MICSAMPLE);
 					GetWindowText(cur, MicSampleName, 256);
