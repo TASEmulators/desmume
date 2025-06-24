@@ -806,7 +806,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 				rightWidth++;
 			}
 			
-			rasterWidth = std::max({1, abs(leftWidth), abs(rightWidth)});
+			rasterWidth = std::max( 1, std::max(std::abs(leftWidth), std::abs(rightWidth)) );
 		}
 		else
 		{
