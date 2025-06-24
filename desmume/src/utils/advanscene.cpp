@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2011-2017 DeSmuME team
+	Copyright (C) 2011-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -32,6 +32,39 @@ ADVANsCEne advsc;
 #define _ADVANsCEne_BASE_VERSION_MAJOR 1
 #define _ADVANsCEne_BASE_VERSION_MINOR 0
 #define _ADVANsCEne_BASE_NAME "ADVANsCEne Nintendo DS Collection"
+
+
+ADVANsCEne::ADVANsCEne()
+{
+	database_path = "";
+	createTime = 0;
+	crc32 = 0;
+	memset(serial, 0, sizeof(serial));
+	memset(version, 0, sizeof(version));
+	memset(versionBase, 0, sizeof(versionBase));
+	saveType = 0xFF;
+	loaded = false;
+	foundAsCrc = false;
+	foundAsSerial = false;
+	
+	datName = "";
+	datVersion = "";
+	urlVersion = "";
+	urlDat = "";
+}
+
+void ADVANsCEne::setDatabase(const char *path)
+{
+	database_path = path;
+	
+	//i guess this means it needs (re)loading on account of the path having changed
+	loaded = false;
+}
+
+std::string ADVANsCEne::getDatabase() const
+{
+	return database_path;
+}
 
 u8 ADVANsCEne::checkDB(const char *ROMserial, u32 crc)
 {
@@ -87,15 +120,6 @@ u8 ADVANsCEne::checkDB(const char *ROMserial, u32 crc)
 	return false;
 }
 
- 
-void ADVANsCEne::setDatabase(const char *path)
-{
-	database_path = path;
-	
-	//i guess this means it needs (re)loading on account of the path having changed
-	loaded = false;
-}
-
 bool ADVANsCEne::getXMLConfig(const char *in_filename)
 {
 	TiXmlDocument	*xml = NULL;
@@ -148,7 +172,7 @@ u32 ADVANsCEne::convertDB(const char *in_filename, EMUFILE &output)
 	TiXmlElement	*el_games = NULL;
 	TiXmlElement	*el_crc32 = NULL;
 	TiXmlElement	*el_saveType = NULL;
-	u32				crc32 = 0;
+	u32				db_crc32 = 0;
 	u32				reserved = 0;
 
 	lastImportErrorMessage = "";
@@ -205,8 +229,8 @@ u32 ADVANsCEne::convertDB(const char *in_filename, EMUFILE &output)
 
 		// CRC32
 		el_crc32 = el->FirstChildElement("files"); 
-		sscanf(el_crc32->FirstChildElement("romCRC")->GetText(), "%x", &crc32);
-		output.write_32LE(crc32);
+		sscanf(el_crc32->FirstChildElement("romCRC")->GetText(), "%x", &db_crc32);
+		output.write_32LE(db_crc32);
 		
 		// Save type
 		el_saveType = el->FirstChildElement("saveType"); 
@@ -251,4 +275,33 @@ u32 ADVANsCEne::convertDB(const char *in_filename, EMUFILE &output)
 	
 	printf("ADVANsCEne converter: %i found\n", count);
 	return count;
+}
+
+u32 ADVANsCEne::getSaveType()
+{
+	return saveType;
+}
+
+u32 ADVANsCEne::getCRC32()
+{
+	return crc32;
+}
+
+char* ADVANsCEne::getSerial()
+{
+	return serial;
+}
+
+bool ADVANsCEne::isLoaded()
+{
+	return loaded;
+}
+
+const char* ADVANsCEne::getIdMethod()
+{
+	if (foundAsSerial && foundAsCrc) return "Serial/CRC";
+	if (foundAsSerial) return "Serial";
+	if (foundAsCrc) return "CRC";
+	
+	return "";
 }

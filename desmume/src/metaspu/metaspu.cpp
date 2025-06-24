@@ -1,20 +1,18 @@
-/*  Copyright 2009-2021 DeSmuME team
+/*
+	Copyright (C) 2009-2025 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "metaspu.h"
@@ -104,21 +102,34 @@ private:
 	class Adjustobuf
 	{
 	public:
-		Adjustobuf(int _minLatency, int _maxLatency)
-			: minLatency(_minLatency)
-			, maxLatency(_maxLatency)
-			, targetLatency((maxLatency + minLatency)/2)
-		{
-		}
-
-		float rate = 1.0f;
-		float cursor = 0.0f;
+		float rate, cursor;
 		int minLatency, maxLatency, targetLatency;
+		
 		std::queue<s16> buffer;
-		int size = 0;
-		s16 curr[2] = {0, 0};
+		int size;
+		s16 curr[2];
 
 		std::queue<int> statsHistory;
+		
+		s64 rollingTotalSize;
+		u32 kAverageSize;
+		
+		Adjustobuf(int _minLatency, int _maxLatency)
+		{
+			rate = 1.0f;
+			cursor = 0.0f;
+			
+			minLatency = _minLatency;
+			maxLatency = _maxLatency;
+			targetLatency = (maxLatency + minLatency) / 2;
+			
+			size = 0;
+			curr[0] = 0;
+			curr[1] = 0;
+			
+			rollingTotalSize = 0;
+			kAverageSize = 80000;
+		}
 
 		void enqueue(s16 left, s16 right) 
 		{
@@ -126,10 +137,6 @@ private:
 			buffer.push(right);
 			size++;
 		}
-
-		s64 rollingTotalSize = 0;
-
-		u32 kAverageSize = 80000;
 
 		void addStatistic()
 		{
@@ -257,7 +264,7 @@ public:
 	virtual int output_samples(s16* buf, int samples_requested)
 	{
 		int audiosize = samples_requested;
-		int queued = sampleQueue.size();
+		int queued = (int)sampleQueue.size();
 
 		// I am too lazy to deal with odd numbers
 		audiosize &= ~1;

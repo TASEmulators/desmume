@@ -1,5 +1,5 @@
 /*	
-	Copyright (C) 2009-2022 DeSmuME Team
+	Copyright (C) 2009-2025 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -35,6 +35,15 @@ static _KEY1	enc(&MMU.ARM7_BIOS[0x0030]);
 const char *defaultNickname = DESMUME_NAME;
 const char *defaultMessage = DESMUME_NAME " makes you happy!";
 const char *defaultMacAddressStr = "0009BF123456";
+
+
+CFIRMWARE::CFIRMWARE()
+{
+	memset(&_header, 0, sizeof(_header));
+	_fwFilePath = "";
+	_isLoaded = false;
+	_userDataAddr = 0x0003FE00;
+}
 
 u16 CFIRMWARE::_getBootCodeCRC16(const u8 *arm9Data, const u32 arm9Size, const u8 *arm7Data, const u32 arm7Size)
 {
@@ -262,7 +271,7 @@ bool CFIRMWARE::load(const char *firmwareFilePath)
 	this->_header = newFirmwareData->header;
 
 	if (MMU.fw.size != fileSize)	// reallocate
-		mc_alloc(&MMU.fw, fileSize);
+		mc_alloc(&MMU.fw, (u32)fileSize);
 	
 	this->_userDataAddr = LE_TO_LOCAL_16(newFirmwareData->header.userSettingsOffset) * 8;
 	

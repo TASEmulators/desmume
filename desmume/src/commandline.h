@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2017 DeSmuME team
+	Copyright (C) 2009-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -41,34 +41,69 @@ extern int _commandline_linux_nojoy;
 
 class CommandLine
 {
+private:
+	char *_play_movie_file;
+	char *_record_movie_file;
+	char *_cflash_image;
+	char *_cflash_path;
+	char *_gbaslot_rom;
+	char *_bios_arm9;
+	char *_bios_arm7;
+	char *_fw_path;
+	int _fw_boot;
+	int _load_to_memory;
+	int _bios_swi;
+	int _spu_advanced;
+	int _num_cores;
+	int _rigorous_timing;
+	int _advanced_timing;
+	int _gamehacks;
+	int _texture_deposterize;
+	int _texture_smooth;
+#ifdef HAVE_JIT
+	int _cpu_mode;
+	int _jit_size;
+#endif
+	char *_slot1;
+	char *_slot1_fat_dir;
+	char *_console_type;
+	char *_advanscene_import;
+	int _rtc_day;
+	int _rtc_hour;
+	
 public:
 	//actual options: these may move to another struct
-	int load_slot = -1;
-	int autodetect_method = -1;
-	int render3d = COMMANDLINE_RENDER3D_DEFAULT;
-	int texture_upscale = -1;
-	int gpu_resolution_multiplier = -1;
-	int language = 1; // English by default
-	float scale = 1.0;
+	int load_slot;
+	int autodetect_method;
+	int render3d;
+	int texture_upscale;
+	int gpu_resolution_multiplier;
+	int language;
+	float scale;
 	std::string nds_file;
 	std::string play_movie_file;
 	std::string record_movie_file;
-	int arm9_gdb_port = 0;
-	int arm7_gdb_port = 0;
-	int start_paused = FALSE;
+	int arm9_gdb_port;
+	int arm7_gdb_port;
+	int start_paused;
 	std::string cflash_image;
 	std::string cflash_path;
 	std::string gbaslot_rom;
 	std::string slot1;
 	std::string console_type;
 	std::string slot1_fat_dir;
-	bool _slot1_fat_dir_type = false;
-	int _slot1_no8000prot = 0;
-	int disable_sound = 0;
-	int disable_limiter = 0;
-	int windowed_fullscreen = 0;
-	int frameskip = 0;
-	int horizontal = 0;
+	bool _slot1_fat_dir_type;
+	int _slot1_no8000prot;
+	int disable_sound;
+	int disable_limiter;
+	int windowed_fullscreen;
+	int frameskip;
+	int horizontal;
+	bool is_cflash_configured;
+	int _spu_sync_mode;
+	int _spu_sync_method;
+	
+	CommandLine();
 
 	bool parse(int argc,char **argv);
 
@@ -79,42 +114,9 @@ public:
 	void process_movieCommands();
 	//etc.
 	void process_addonCommands();
-	bool is_cflash_configured = false;
 	
 	//print a little help message for cases when erroneous commandlines are entered
 	void errorHelp(const char* binName);
-
-	int _spu_sync_mode = -1;
-	int _spu_sync_method = -1;
-private:
-	char* _play_movie_file = 0;
-	char* _record_movie_file = 0;
-	char* _cflash_image = 0;
-	char* _cflash_path = 0;
-	char* _gbaslot_rom = 0;
-	char* _bios_arm9 = nullptr;
-	char* _bios_arm7 = nullptr;
-	char* _fw_path = nullptr;
-	int _fw_boot = 0;
-	int _load_to_memory = -1;
-	int _bios_swi = 0;
-	int _spu_advanced = 0;
-	int _num_cores = -1;
-	int _rigorous_timing = 0;
-	int _advanced_timing = -1;
-	int _gamehacks = -1;
-	int _texture_deposterize = -1;
-	int _texture_smooth = -1;
-#ifdef HAVE_JIT
-	int _cpu_mode = -1;
-	int _jit_size = -1;
-#endif
-	char* _slot1 = nullptr;
-	char* _slot1_fat_dir = nullptr;
-	char* _console_type = nullptr;
-	char* _advanscene_import = nullptr;
-	int _rtc_day = -1;
-	int _rtc_hour = -1;
 };
 
 #endif

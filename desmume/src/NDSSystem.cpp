@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2021 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -312,6 +312,36 @@ RomBanner::RomBanner(bool defaultInit)
 	memset(palette,0,sizeof(palette));
 	memset(titles,0,sizeof(titles));
 	memset(end0xFF,0,sizeof(end0xFF));
+}
+
+GameInfo::GameInfo()
+{
+	fROM = NULL;
+	reader = NULL;
+	romdataForReader = NULL;
+	
+	romsize = 0;
+	cardSize = 0;
+	mask = 0;
+	crc = 0;
+	crcForCheatsDb = 0;
+	chipID = 0x00000FC2;
+	romType = ROM_NDS;
+	headerOffset = 0;
+	
+	memset(&ROMserial[0], 0, sizeof(ROMserial));
+	memset(&ROMname[0], 0, sizeof(ROMname));
+	
+	_isDSiEnhanced = false;
+	
+	memset(&header, 0, sizeof(header));
+	memset(secureArea, 0, sizeof(secureArea));
+	memset(&banner, 0, sizeof(banner));
+}
+
+GameInfo::~GameInfo()
+{
+	closeROM();
 }
 
 bool GameInfo::hasRomBanner()
@@ -776,7 +806,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 			else
 			{
 				printf("%s", save_types[sv + 1].descr);
-				if (CommonSettings.autodetectBackupMethod == 1)
+				if (CommonSettings.autodetectBackupMethod == BackupDeviceAutodetectMethod_Advanscene)
 					backup_setManualBackupType(sv + 1);
 			}
 		printf("\n\t* ROM crc:\t\t%08X\n", advsc.getCRC32());
@@ -3294,6 +3324,129 @@ void NDS_GetCPULoadAverage(u32 &outLoadAvgARM9, u32 &outLoadAvgARM7)
 //these templates needed to be instantiated manually
 template void NDS_exec<FALSE>(s32 nb);
 template void NDS_exec<TRUE>(s32 nb);
+
+TCommonSettings::TCommonSettings()
+{
+	GFX3D_HighResolutionInterpolateColor = true;
+	GFX3D_EdgeMark = true;
+	GFX3D_Fog = true;
+	GFX3D_Texture = true;
+	GFX3D_LineHack = true;
+	GFX3D_Renderer_MultisampleSize = 0;
+	GFX3D_Renderer_TextureScalingFactor = 1;
+	GFX3D_Renderer_TextureDeposterize = false;
+	GFX3D_Renderer_TextureSmoothing = false;
+	GFX3D_TXTHack = false;
+	
+	OpenGL_Emulation_ShadowPolygon = true;
+	OpenGL_Emulation_SpecialZeroAlphaBlending = true;
+	OpenGL_Emulation_NDSDepthCalculation = true;
+	OpenGL_Emulation_DepthLEqualPolygonFacing = false;
+	
+	loadToMemory = false;
+	
+	UseExtBIOS = false;
+	strncpy(ARM9BIOS, "biosnds9.bin", MAX_PATH);
+	strncpy(ARM7BIOS, "biosnds7.bin", MAX_PATH);
+	SWIFromBIOS = false;
+	PatchSWI3 = false;
+	
+	RetailCardProtection8000 = true;
+	UseExtFirmware = false;
+	UseExtFirmwareSettings = false;
+	strncpy(ExtFirmwarePath, "firmware.bin", MAX_PATH);
+	memset(ExtFirmwareUserSettingsPath, 0, sizeof(ExtFirmwareUserSettingsPath));
+	BootFromFirmware = false;
+	
+	ConsoleType = NDS_CONSOLE_TYPE_FAT;
+	DebugConsole = false;
+	EnsataEmulation = false;
+	
+	cheatsDisable = false;
+	
+	num_cores = NDS_GetCPUCoreCount();
+	rigorous_timing = false;
+	
+	gamehacks.en = true;
+	gamehacks.clear();
+	
+	StylusPressure = 50;
+	
+	dispLayers[0][0] = true;
+	dispLayers[0][1] = true;
+	dispLayers[0][2] = true;
+	dispLayers[0][3] = true;
+	dispLayers[0][4] = true;
+	
+	dispLayers[1][0] = true;
+	dispLayers[1][1] = true;
+	dispLayers[1][2] = true;
+	dispLayers[1][3] = true;
+	dispLayers[1][4] = true;
+	
+	advanced_timing = true;
+	
+#ifdef HAVE_JIT
+	//zero 06-sep-2012 - shouldnt be defaulting this to true for now, since the jit is buggy.
+	//id rather have people discover a bonus speedhack than discover new bugs in a new version
+	use_jit = false;
+#else
+	use_jit = false;
+#endif
+	jit_max_block_size = 12;
+	
+	WifiBridgeDeviceID = 0;
+	
+	micMode = InternalNoise;
+	spuInterpolationMode = SPUInterpolation_Cosine;
+	
+	autodetectBackupMethod = BackupDeviceAutodetectMethod_Desmume;
+	manualBackupType = MC_TYPE_AUTODETECT;
+	backupSave = false;
+	
+	SPU_sync_mode = ESynchMode_Synchronous;
+	SPU_sync_method = ESynchMethod_N;
+	
+	spu_muteChannels[ 0] = false;
+	spu_muteChannels[ 1] = false;
+	spu_muteChannels[ 2] = false;
+	spu_muteChannels[ 3] = false;
+	spu_muteChannels[ 4] = false;
+	spu_muteChannels[ 5] = false;
+	spu_muteChannels[ 6] = false;
+	spu_muteChannels[ 7] = false;
+	spu_muteChannels[ 8] = false;
+	spu_muteChannels[ 9] = false;
+	spu_muteChannels[10] = false;
+	spu_muteChannels[11] = false;
+	spu_muteChannels[12] = false;
+	spu_muteChannels[13] = false;
+	spu_muteChannels[14] = false;
+	spu_muteChannels[15] = false;
+	
+	spu_captureMuted = false;
+	spu_advanced = true;
+	
+	showGpu.main = true;
+	showGpu.sub = true;
+	
+	hud.ShowInputDisplay = false;
+	hud.ShowGraphicalInputDisplay = false;
+	hud.FpsDisplay = false;
+	hud.FrameCounterDisplay = false;
+	hud.ShowLagFrameCounter = false;
+	hud.ShowMicrophone = false;
+	hud.ShowRTC = false;
+	
+	run_advanscene_import = "";
+	
+	NDS_SetupDefaultFirmware();
+}
+
+bool TCommonSettings::single_core()
+{
+	return (num_cores == 1);
+}
 
 void TCommonSettings::GameHacks::apply()
 {

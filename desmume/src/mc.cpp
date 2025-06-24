@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 thoduv
 	Copyright (C) 2006-2007 Theo Berkau
-	Copyright (C) 2008-2021 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -352,7 +352,7 @@ BackupDevice::BackupDevice()
 		_fpMC->fseek(0, SEEK_SET);
 
 		u32 left = 0;
-		if (CommonSettings.autodetectBackupMethod == 1)
+		if (CommonSettings.autodetectBackupMethod == BackupDeviceAutodetectMethod_Advanscene)
 		{
 			if (advsc.isLoaded())
 			{
@@ -384,7 +384,7 @@ BackupDevice::BackupDevice()
 		_info.padSize = _fsize;
 		//none of the other fields are used right now
 
-		if (CommonSettings.autodetectBackupMethod != 1 && _info.type == 0)
+		if ( (CommonSettings.autodetectBackupMethod != BackupDeviceAutodetectMethod_Advanscene) && (_info.type == 0) )
 		{
 			_info.type = searchFileSaveType(_info.size);
 			if (_info.type == 0xFF) _info.type = 0;

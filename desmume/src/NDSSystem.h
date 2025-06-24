@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2022 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -112,7 +112,7 @@ enum NDSErrorTag
 	NDSErrorTag_None		= 0,
 	NDSErrorTag_ARM9		= 1,
 	NDSErrorTag_ARM7		= 2,
-	NDSErrorTag_BothCPUs	= 3,
+	NDSErrorTag_BothCPUs	= 3
 };
 
 struct NDSError
@@ -329,27 +329,28 @@ struct RomBanner
 
 struct GameInfo
 {
-	void *fROM = nullptr;
+	void *fROM;
 	ROMReader_struct *reader;
-	u8 *romdataForReader = nullptr;
-	u32 romsize = 0;
-	u32 cardSize = 0;
-	u32 mask = 0;
-	u32 crc = 0;
+	u8 *romdataForReader;
+	u32 romsize;
+	u32 cardSize;
+	u32 mask;
+	u32 crc;
 	u32 crcForCheatsDb;
-	u32 chipID = 0x00000FC2;
-	u32	romType = ROM_NDS;
-	u32 headerOffset = 0;
-	char ROMserial[20] = {};
-	char ROMname[13] = {};
-	bool _isDSiEnhanced = false;
-	NDS_header header = {};
+	u32 chipID;
+	u32	romType;
+	u32 headerOffset;
+	char ROMserial[20];
+	char ROMname[13];
+	bool _isDSiEnhanced;
+	NDS_header header;
 	//a copy of the pristine secure area from the rom
 	u8	secureArea[0x4000];
-	RomBanner	banner;
+	RomBanner banner;
 	const RomBanner& getRomBanner();
 
-	~GameInfo() { closeROM(); }
+	GameInfo();
+	~GameInfo();
 
 	bool IsCode(const char* code) const;
 
@@ -361,7 +362,6 @@ struct GameInfo
 	bool isDSiEnhanced();
 	bool isHomebrew();
 	bool hasRomBanner();
-	
 };
 
 typedef struct TSCalInfo
@@ -479,79 +479,63 @@ template<bool FORCE> void NDS_exec(s32 nb = 560190<<1);
 
 extern int lagframecounter;
 
+enum MicMode
+{
+	InternalNoise = 0,
+	Sample        = 1,
+	Random        = 2,
+	Physical      = 3
+};
+
 extern struct TCommonSettings
 {
-	TCommonSettings() {
-		strcpy(ARM9BIOS, "biosnds9.bin");
-		strcpy(ARM7BIOS, "biosnds7.bin");
-		strcpy(ExtFirmwarePath, "firmware.bin");
-
-		for(int i=0;i<16;i++)
-			spu_muteChannels[i] = false;
-
-		for(int g=0;g<2;g++)
-			for(int x=0;x<5;x++)
-				dispLayers[g][x]=true;
-#ifdef HAVE_JIT
-		//zero 06-sep-2012 - shouldnt be defaulting this to true for now, since the jit is buggy. 
-		//id rather have people discover a bonus speedhack than discover new bugs in a new version
-		use_jit = false;
-#else
-		use_jit = false;
-#endif
-
-		num_cores = NDS_GetCPUCoreCount();
-		NDS_SetupDefaultFirmware();
-	}
-	bool GFX3D_HighResolutionInterpolateColor = true;
-	bool GFX3D_EdgeMark = true;
-	bool GFX3D_Fog = true;
-	bool GFX3D_Texture = true;
-	bool GFX3D_LineHack = true;
-	int GFX3D_Renderer_MultisampleSize = 0;
-	int GFX3D_Renderer_TextureScalingFactor = 1; //must be one of {1,2,4}
-	bool GFX3D_Renderer_TextureDeposterize = false;
-	bool GFX3D_Renderer_TextureSmoothing = false;
-	bool GFX3D_TXTHack = false;
+	bool GFX3D_HighResolutionInterpolateColor;
+	bool GFX3D_EdgeMark;
+	bool GFX3D_Fog;
+	bool GFX3D_Texture;
+	bool GFX3D_LineHack;
+	int GFX3D_Renderer_MultisampleSize;
+	int GFX3D_Renderer_TextureScalingFactor; //must be one of {1,2,4}
+	bool GFX3D_Renderer_TextureDeposterize;
+	bool GFX3D_Renderer_TextureSmoothing;
+	bool GFX3D_TXTHack;
 	
-	bool OpenGL_Emulation_ShadowPolygon = true;
-	bool OpenGL_Emulation_SpecialZeroAlphaBlending = true;
-	bool OpenGL_Emulation_NDSDepthCalculation = true;
-	bool OpenGL_Emulation_DepthLEqualPolygonFacing = false;
+	bool OpenGL_Emulation_ShadowPolygon;
+	bool OpenGL_Emulation_SpecialZeroAlphaBlending;
+	bool OpenGL_Emulation_NDSDepthCalculation;
+	bool OpenGL_Emulation_DepthLEqualPolygonFacing;
 
-	bool loadToMemory = false;
+	bool loadToMemory;
 
-	bool UseExtBIOS = false;
+	bool UseExtBIOS;
 	char ARM9BIOS[MAX_PATH];
 	char ARM7BIOS[MAX_PATH];
-	bool SWIFromBIOS = false;
-	bool PatchSWI3 = false;
+	bool SWIFromBIOS;
+	bool PatchSWI3;
 
-	bool RetailCardProtection8000 = true;
-	bool UseExtFirmware = false;
-	bool UseExtFirmwareSettings = false;
+	bool RetailCardProtection8000;
+	bool UseExtFirmware;
+	bool UseExtFirmwareSettings;
 	char ExtFirmwarePath[MAX_PATH];
 	char ExtFirmwareUserSettingsPath[MAX_PATH];
-	bool BootFromFirmware = false;
+	bool BootFromFirmware;
 	FirmwareConfig fwConfig;
 
-	NDS_CONSOLE_TYPE ConsoleType = NDS_CONSOLE_TYPE_FAT;
-	bool DebugConsole = false;
-	bool EnsataEmulation = false;
+	NDS_CONSOLE_TYPE ConsoleType;
+	bool DebugConsole;
+	bool EnsataEmulation;
 	
-	bool cheatsDisable = false;
+	bool cheatsDisable;
 
 	int num_cores;
-	bool single_core() { return num_cores==1; }
-	bool rigorous_timing = false;
+	bool rigorous_timing;
 
-	struct GameHacks {
-		GameHacks() {
-			clear();
-		}
-		bool en = true;
+	struct GameHacks
+	{
+		bool en;
 
-		struct {
+		struct
+		{
 			bool overclock;
 			bool stylusjitter;
 		} flags;
@@ -560,63 +544,56 @@ extern struct TCommonSettings
 		void clear();
 	} gamehacks;
 
-	int StylusPressure = 50;
+	int StylusPressure;
 
 	bool dispLayers[2][5];
 	
-	FAST_ALIGN bool advanced_timing = true;
+	FAST_ALIGN bool advanced_timing;
 
 	bool use_jit;
-	u32	jit_max_block_size = 12;
+	u32	jit_max_block_size;
 	
-	int WifiBridgeDeviceID = 0;
+	int WifiBridgeDeviceID;
 
-	enum MicMode
-	{
-		InternalNoise = 0,
-		Sample        = 1,
-		Random        = 2,
-		Physical      = 3
-	} micMode = InternalNoise;
-
-
-	int spuInterpolationMode = 2;
+	MicMode micMode;
+	int spuInterpolationMode;
 
 	//this is a temporary hack until we straighten out the flushing logic and/or gxfifo
 	//int gfx3d_flushMode;
 
-	int autodetectBackupMethod = 0;
+	int autodetectBackupMethod;
 	//this is the user's choice of manual backup type, for cases when the autodetection can't be trusted
-	int manualBackupType = 0;
-	bool backupSave = false;
+	int manualBackupType;
+	bool backupSave;
 
-	int SPU_sync_mode = 1;
-	int SPU_sync_method = 0;
+	int SPU_sync_mode;
+	int SPU_sync_method;
 
 	bool spu_muteChannels[16];
-	bool spu_captureMuted = false;
-	bool spu_advanced = true;
+	bool spu_captureMuted;
+	bool spu_advanced;
 
-	struct _ShowGpu {
-		_ShowGpu() : main(true), sub(true) {}
-		union {
-			struct { bool main, sub; };
-			bool screens[2];
-		};
+	union
+	{
+		struct { bool main, sub; };
+		bool screens[2];
 	} showGpu;
 
-	struct _Hud {
-		bool ShowInputDisplay = false;
-        bool ShowGraphicalInputDisplay = false;
-        bool FpsDisplay = false;
-        bool FrameCounterDisplay = false;
-        bool ShowLagFrameCounter = false;
-        bool ShowMicrophone = false;
-        bool ShowRTC = false;
+	struct _Hud
+	{
+		bool ShowInputDisplay;
+		bool ShowGraphicalInputDisplay;
+		bool FpsDisplay;
+		bool FrameCounterDisplay;
+		bool ShowLagFrameCounter;
+		bool ShowMicrophone;
+		bool ShowRTC;
 	} hud;
 
 	std::string run_advanscene_import;
-
+	
+	TCommonSettings();
+	bool single_core();
 } CommonSettings;
 
 void NDS_RunAdvansceneAutoImport();

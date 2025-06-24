@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2022 DeSmuME Team
+	Copyright (C) 2009-2025 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -425,14 +425,16 @@ class CFIRMWARE
 private:
 	FWHeader _header;
 	std::string _fwFilePath;
-	bool _isLoaded = false;
-	u32 _userDataAddr = 0x3FE00;
+	bool _isLoaded;
+	u32 _userDataAddr;
 	
-	u16		_getBootCodeCRC16(const u8 *arm9Data, const u32 arm9Size, const u8 *arm7Data, const u32 arm7Size);
-	u32		_decrypt(const u8 *in, u8* &out);
-	u32		_decompress(const u8 *in, u8* &out);
+	u16 _getBootCodeCRC16(const u8 *arm9Data, const u32 arm9Size, const u8 *arm7Data, const u32 arm7Size);
+	u32 _decrypt(const u8 *in, u8* &out);
+	u32 _decompress(const u8 *in, u8* &out);
 
 public:
+	CFIRMWARE();
+	
 	bool load(const char *firmwareFilePath);
 	bool unpack();
 	bool loadSettings(const char *firmwareUserSettingsFilePath);

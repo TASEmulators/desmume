@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2017 DeSmuME team
+	Copyright (C) 2009-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -179,6 +179,71 @@ ENDL
 #define OPT_RTC_HOUR 801
 
 #define OPT_ADVANSCENE 900
+
+
+CommandLine::CommandLine()
+{
+	// private
+	*_play_movie_file         = NULL;
+	*_record_movie_file       = NULL;
+	*_cflash_image            = NULL;
+	*_cflash_path             = NULL;
+	*_gbaslot_rom             = NULL;
+	*_bios_arm9               = NULL;
+	*_bios_arm7               = NULL;
+	*_fw_path                 = NULL;
+	_fw_boot                  = 0;
+	_load_to_memory           = -1;
+	_bios_swi                 = 0;
+	_spu_advanced             = 0;
+	_num_cores                = -1;
+	_rigorous_timing          = 0;
+	_advanced_timing          = -1;
+	_gamehacks                = -1;
+	_texture_deposterize      = -1;
+	_texture_smooth           = -1;
+#ifdef HAVE_JIT
+	_cpu_mode                 = -1;
+	_jit_size                 = -1;
+#endif
+	*_slot1                   = NULL;
+	*_slot1_fat_dir           = NULL;
+	*_console_type            = NULL;
+	*_advanscene_import       = NULL;
+	_rtc_day                  = -1;
+	_rtc_hour                 = -1;
+	
+	// public
+	load_slot                 = -1;
+	autodetect_method         = -1;
+	render3d                  = COMMANDLINE_RENDER3D_DEFAULT;
+	texture_upscale           = -1;
+	gpu_resolution_multiplier = -1;
+	language                  = 1; //english by default
+	scale                     = 1.0;
+	nds_file                  = "";
+	play_movie_file           = "";
+	record_movie_file         = "";
+	arm9_gdb_port             = 0;
+	arm7_gdb_port             = 0;
+	start_paused              = 0;
+	cflash_image              = "";
+	cflash_path               = "";
+	gbaslot_rom               = "";
+	slot1                     = "";
+	console_type              = "";
+	slot1_fat_dir             = "";
+	_slot1_fat_dir_type       = false;
+	_slot1_no8000prot         = 0;
+	disable_sound             = 0;
+	disable_limiter           = 0;
+	windowed_fullscreen       = 0;
+	frameskip                 = 0;
+	horizontal                = 0;
+	is_cflash_configured      = false;
+	_spu_sync_mode            = -1;
+	_spu_sync_method          = -1;
+}
 
 bool CommandLine::parse(int argc,char **argv)
 {
