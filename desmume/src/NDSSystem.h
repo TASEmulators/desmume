@@ -598,11 +598,9 @@ extern struct TCommonSettings
 	bool spu_advanced = true;
 
 	struct _ShowGpu {
+		_ShowGpu() : main(true), sub(true) {}
 		union {
-			struct {
-				bool main = true;
-				bool sub = true;
-			};
+			struct { bool main, sub; };
 			bool screens[2];
 		};
 	} showGpu;
