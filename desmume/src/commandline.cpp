@@ -184,14 +184,14 @@ ENDL
 CommandLine::CommandLine()
 {
 	// private
-	*_play_movie_file         = NULL;
-	*_record_movie_file       = NULL;
-	*_cflash_image            = NULL;
-	*_cflash_path             = NULL;
-	*_gbaslot_rom             = NULL;
-	*_bios_arm9               = NULL;
-	*_bios_arm7               = NULL;
-	*_fw_path                 = NULL;
+	_play_movie_file         = NULL;
+	_record_movie_file       = NULL;
+	_cflash_image            = NULL;
+	_cflash_path             = NULL;
+	_gbaslot_rom             = NULL;
+	_bios_arm9               = NULL;
+	_bios_arm7               = NULL;
+	_fw_path                 = NULL;
 	_fw_boot                  = 0;
 	_load_to_memory           = -1;
 	_bios_swi                 = 0;
@@ -206,10 +206,10 @@ CommandLine::CommandLine()
 	_cpu_mode                 = -1;
 	_jit_size                 = -1;
 #endif
-	*_slot1                   = NULL;
-	*_slot1_fat_dir           = NULL;
-	*_console_type            = NULL;
-	*_advanscene_import       = NULL;
+	_slot1                   = NULL;
+	_slot1_fat_dir           = NULL;
+	_console_type            = NULL;
+	_advanscene_import       = NULL;
 	_rtc_day                  = -1;
 	_rtc_hour                 = -1;
 	
