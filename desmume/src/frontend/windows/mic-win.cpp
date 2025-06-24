@@ -388,7 +388,7 @@ u8 Mic_ReadSample()
 {
 	u8 ret;
 	u8 tmp;
-	if (CommonSettings.micMode == MicMode_Physical)
+	if (CommonSettings.micMode == MicMode::Physical)
 	{
 		if (movieMode == MOVIEMODE_INACTIVE)
 		{
@@ -433,7 +433,7 @@ u8 Mic_ReadSample()
 			else
 			{
 				//use the "random" values
-				if (CommonSettings.micMode == MicMode_InternalNoise)
+				if (CommonSettings.micMode == MicMode::InternalNoise)
 					tmp = random[micReadSamplePos >> 1];
 				else tmp = rand();
 				micReadSamplePos++;
