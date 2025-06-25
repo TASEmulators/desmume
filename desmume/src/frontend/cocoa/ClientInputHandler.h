@@ -331,6 +331,7 @@ typedef std::vector<ClientInputDeviceProperties> ClientInputDevicePropertiesList
 class ClientInputDevicePropertiesEncoder
 {
 public:
+	virtual ~ClientInputDevicePropertiesEncoder() {}
 	virtual ClientInputDeviceProperties EncodeKeyboardInput(const int32_t keyCode, bool keyPressed);
 	virtual ClientInputDeviceProperties EncodeMouseInput(const int32_t buttonNumber, float touchLocX, float touchLocY, bool buttonPressed);
 };
@@ -389,7 +390,7 @@ protected:
 	
 public:
 	ClientInputHandler();
-	~ClientInputHandler();
+	virtual ~ClientInputHandler();
 	
 	ClientExecutionControl* GetClientExecutionController();
 	void SetClientExecutionController(ClientExecutionControl *execControl);

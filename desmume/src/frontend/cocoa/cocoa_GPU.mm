@@ -1912,7 +1912,7 @@ bool GPUEventHandlerAsync::GetRender3DNeedsFinish()
 
 CGLContextObj OSXOpenGLRendererContext = NULL;
 CGLContextObj OSXOpenGLRendererContextPrev = NULL;
-SILENCE_DEPRECATION_MACOS_10_7( CGLPBufferObj OSXOpenGLRendererPBuffer = NULL );
+SILENCE_DEPRECATION_MACOS_10_7( CGLPBufferObj OSXOpenGLRendererPBuffer = NULL )
 
 // Struct to hold renderer info
 struct HostRendererInfo

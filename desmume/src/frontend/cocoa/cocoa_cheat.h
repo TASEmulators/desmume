@@ -252,7 +252,7 @@ protected:
 	
 public:
 	ClientCheatManager();
-	~ClientCheatManager();
+	virtual ~ClientCheatManager();
 	
 	static CHEATS* GetMaster();
 	static void SetMaster(const CHEATS *masterCheats);

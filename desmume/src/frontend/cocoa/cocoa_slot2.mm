@@ -143,7 +143,7 @@
 		NSString *filePath = [fileURL path];
 		
 		NSFileManager *fileManager = [[NSFileManager alloc] init];
-		[fileManager fileExistsAtPath:[fileURL path] isDirectory:&isDirectory];
+		[fileManager fileExistsAtPath:filePath isDirectory:&isDirectory];
 		
 		CFlash_Mode = (isDirectory) ? ADDON_CFLASH_MODE_Path : ADDON_CFLASH_MODE_File;
 		CFlash_Path = [CocoaDSUtil cPathFromFileURL:fileURL];

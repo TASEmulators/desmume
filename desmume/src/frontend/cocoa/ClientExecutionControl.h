@@ -245,7 +245,7 @@ protected:
 	
 public:
 	ClientExecutionControl();
-	~ClientExecutionControl();
+	virtual ~ClientExecutionControl();
 	
 	ClientAVCaptureObject* GetClientAVCaptureObject();
 	ClientAVCaptureObject* GetClientAVCaptureObjectApplied();

@@ -371,7 +371,7 @@
 		[panel setAllowedFileTypes:fileTypes];
 		[panel beginSheetModalForWindow:window
 					  completionHandler:^(NSInteger result) {
-						  [self chooseMPCFPathDidEnd:panel returnCode:result contextInfo:mpcfOptionNumber];
+						  [self chooseMPCFPathDidEnd:panel returnCode:(int)result contextInfo:mpcfOptionNumber];
 					  } ];
 	}
 	else
@@ -518,7 +518,7 @@
 		[panel setAllowedFileTypes:fileTypes];
 		[panel beginSheetModalForWindow:window
 					  completionHandler:^(NSInteger result) {
-						  [self chooseGbaCartridgePathDidEnd:panel returnCode:result contextInfo:nil];
+						  [self chooseGbaCartridgePathDidEnd:panel returnCode:(int)result contextInfo:nil];
 					  } ];
 	}
 	else
@@ -580,7 +580,7 @@
 		[panel setAllowedFileTypes:fileTypes];
 		[panel beginSheetModalForWindow:window
 					  completionHandler:^(NSInteger result) {
-						  [self chooseGbaSRamPathDidEnd:panel returnCode:result contextInfo:nil];
+						  [self chooseGbaSRamPathDidEnd:panel returnCode:(int)result contextInfo:nil];
 					  } ];
 	}
 	else

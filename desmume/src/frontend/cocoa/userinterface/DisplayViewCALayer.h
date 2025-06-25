@@ -84,6 +84,7 @@ protected:
 public:
 	MacDisplayPresenterInterface();
 	MacDisplayPresenterInterface(MacClientSharedObject *sharedObject);
+	virtual ~MacDisplayPresenterInterface() {}
 	
 	MacClientSharedObject* GetSharedData();
 	virtual void SetSharedData(MacClientSharedObject *sharedObject);

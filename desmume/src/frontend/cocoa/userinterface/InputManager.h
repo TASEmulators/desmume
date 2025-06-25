@@ -242,6 +242,7 @@ private:
 	
 public:
 	MacInputDevicePropertiesEncoder();
+	virtual ~MacInputDevicePropertiesEncoder() {}
 	
 	virtual ClientInputDeviceProperties EncodeKeyboardInput(const int32_t keyCode, bool keyPressed);
 	virtual ClientInputDeviceProperties EncodeMouseInput(const int32_t buttonNumber, float touchLocX, float touchLocY, bool buttonPressed);

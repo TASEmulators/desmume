@@ -97,7 +97,7 @@ private:
 	
 public:
 	MacInputHandler();
-	~MacInputHandler();
+	virtual ~MacInputHandler();
 	
 	CocoaDSController* GetCocoaController();
 	void SetCocoaController(CocoaDSController *theController);

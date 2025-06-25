@@ -88,7 +88,7 @@ enum AVFileTypeID
 	AVFileTypeID_m4a_ALAC					= (AVFileTypeContainerID_m4a | AVFileTypeVideoCodecID_None | AVFileTypeAudioCodecID_ALAC), // dec = 8453936
 	AVFileTypeID_aiff_PCMs16BE				= (AVFileTypeContainerID_aiff | AVFileTypeVideoCodecID_None | AVFileTypeAudioCodecID_PCMs16BE), // dec = 8519456
 	AVFileTypeID_flac_FLAC					= (AVFileTypeContainerID_flac | AVFileTypeVideoCodecID_None | AVFileTypeAudioCodecID_FLAC), // dec = 8585024
-	AVFileTypeID_wav_PCMs16LE				= (AVFileTypeContainerID_wav | AVFileTypeVideoCodecID_None | AVFileTypeAudioCodecID_PCMs16LE), // dec = 8650512
+	AVFileTypeID_wav_PCMs16LE				= (AVFileTypeContainerID_wav | AVFileTypeVideoCodecID_None | AVFileTypeAudioCodecID_PCMs16LE) // dec = 8650512
 };
 
 enum

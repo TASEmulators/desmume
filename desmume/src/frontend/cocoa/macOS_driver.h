@@ -32,6 +32,8 @@ private:
 	ClientExecutionControl *__execControl;
 	
 public:
+	virtual ~macOS_driver() {}
+	
 	pthread_mutex_t* GetCoreThreadMutexLock();
 	void SetCoreThreadMutexLock(pthread_mutex_t *theMutex);
 	pthread_rwlock_t* GetCoreExecuteRWLock();

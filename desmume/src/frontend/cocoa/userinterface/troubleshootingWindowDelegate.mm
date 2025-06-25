@@ -20,7 +20,7 @@
 
 #include "../../../render3D.h"
 
-#import "cocoa_util.h"
+#import "../cocoa_util.h"
 #import "cocoa_globals.h"
 #import "cocoa_cheat.h"
 #import "cocoa_core.h"
@@ -131,7 +131,7 @@
 		case RENDERID_OPENGL_3_2:
 			render3DEngineDetails = [NSString stringWithFormat:@"%@ [0x%08lX] (EnableShadowPolygons=%@, EnableZeroAlphaBlending=%@, EnableNDSDepthCalculation=%@, EnableDepthLEqualPolygonFacing=%@, MSAA=%@, SmoothTextures=%@)",
 									 [[cdsCore cdsGPU] render3DRenderingEngineAppliedHostRendererName],
-									 [[cdsCore cdsGPU] render3DRenderingEngineAppliedHostRendererID],
+									 (long)[[cdsCore cdsGPU] render3DRenderingEngineAppliedHostRendererID],
 									 [[cdsCore cdsGPU] openGLEmulateShadowPolygon] ? @"YES" : @"NO",
 									 [[cdsCore cdsGPU] openGLEmulateSpecialZeroAlphaBlending] ? @"YES" : @"NO",
 									 [[cdsCore cdsGPU] openGLEmulateNDSDepthCalculation] ? @"YES" : @"NO",

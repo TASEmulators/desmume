@@ -157,7 +157,7 @@ SineWaveGenerator::SineWaveGenerator()
 	_frequency = 250.0;
 	_sampleRate = MIC_SAMPLE_RATE;
 	_cyclePosition = 0.0;
-};
+}
 
 SineWaveGenerator::SineWaveGenerator(const double freq, const double sampleRate)
 {
