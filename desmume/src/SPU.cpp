@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2008-2021 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	Ideas borrowed from Stephane Dallongeville's SCSP core
 
@@ -176,7 +176,7 @@ int SPU_ChangeSoundCore(int coreid, int newBufferSizeBytes)
 		return -1;
 
 	// Since it failed, instead of it being fatal, disable the user spu
-	if (_currentSNDCore->Init(_currentBufferSize * 2) == -1)
+	if (_currentSNDCore->Init((int)(_currentBufferSize * 2)) == -1)
 	{
 		_currentSNDCore = 0;
 		return -1;
@@ -196,7 +196,7 @@ SoundInterface_struct *SPU_SoundCore()
 
 void SPU_ReInit(bool fakeBoot)
 {
-	SPU_Init(_currentSNDCoreId, _currentBufferSize);
+	SPU_Init(_currentSNDCoreId, (int)_currentBufferSize);
 
 	// Firmware set BIAS to 0x200
 	if (fakeBoot)
@@ -285,7 +285,7 @@ void SPU_SetSynchMode(int mode, int method)
 		
 	if (_currentSynchMode == ESynchMode_DualSynchAsynch)
 	{
-		SPU_user = new SPU_struct(_currentBufferSize);
+		SPU_user = new SPU_struct((int)_currentBufferSize);
 		SPU_CloneUser();
 	}
 }
@@ -1702,15 +1702,15 @@ void SPU_Emulate_user(bool mix)
 		processedSampleCount = SPU_DefaultPostProcessSamples(postProcessBuffer, freeSampleCount, _currentSynchMode, _currentSynchronizer);
 	}
 	
-	soundProcessor->UpdateAudio(postProcessBuffer, processedSampleCount);
-	WAV_WavSoundUpdate(postProcessBuffer, processedSampleCount, WAVMODE_USER);
+	soundProcessor->UpdateAudio(postProcessBuffer, (u32)processedSampleCount);
+	WAV_WavSoundUpdate(postProcessBuffer, (int)processedSampleCount, WAVMODE_USER);
 }
 
 void SPU_DefaultFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)
 {
 	if (synchMode == ESynchMode_Synchronous)
 	{
-		theSynchronizer->enqueue_samples(sampleBuffer, sampleCount);
+		theSynchronizer->enqueue_samples(sampleBuffer, (int)sampleCount);
 	}
 }
 
@@ -1723,14 +1723,14 @@ size_t SPU_DefaultPostProcessSamples(s16 *postProcessBuffer, size_t requestedSam
 		case ESynchMode_DualSynchAsynch:
 			if(SPU_user != NULL)
 			{
-				SPU_MixAudio(true, SPU_user, requestedSampleCount);
+				SPU_MixAudio(true, SPU_user, (int)requestedSampleCount);
 				memcpy(postProcessBuffer, SPU_user->outbuf, requestedSampleCount * 2 * sizeof(s16));
 				processedSampleCount = requestedSampleCount;
 			}
 			break;
 			
 		case ESynchMode_Synchronous:
-			processedSampleCount = theSynchronizer->output_samples(postProcessBuffer, requestedSampleCount);
+			processedSampleCount = theSynchronizer->output_samples(postProcessBuffer, (int)requestedSampleCount);
 			break;
 			
 		default:
@@ -1864,14 +1864,13 @@ void WavWriter::update(void* soundData, int numSamples)
 {
 	if(!spufp) return;
 	//TODO - big endian for the s16 samples??
-	size_t elems_written = fwrite(soundData, numSamples*2, 2, spufp);
+	fwrite(soundData, (size_t)(numSamples*2), 2, spufp);
 }
 
 bool WavWriter::isRecording() const
 {
 	return spufp != NULL;
 }
-
 
 static WavWriter wavWriter;
 

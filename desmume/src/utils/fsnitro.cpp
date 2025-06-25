@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2017 DeSmuME team
+	Copyright (C) 2013-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -165,9 +165,8 @@ bool FS_NITRO::loadFileTables()
 		for (u32 i = 0 ; i < numOverlay9; i++)
 		{
 			char buf[129] = {0};
-			memset(&buf[0], 0, sizeof(buf));
 			fat[ovr9[i].fileID].isOverlay = true;
-			sprintf(buf, "overlay_%04u.bin", ovr9[i].id);
+			snprintf(buf, sizeof(buf), "overlay_%04u.bin", ovr9[i].id);
 			fat[ovr9[i].fileID].filename = buf;
 		}
 	}
@@ -181,9 +180,8 @@ bool FS_NITRO::loadFileTables()
 		for (u32 i = 0 ; i < numOverlay7; i++)
 		{
 			char buf[129] = {0};
-			memset(&buf[0], 0, sizeof(buf));
 			fat[ovr7[i].fileID].isOverlay = true;
-			sprintf(buf, "overlay_%04u.bin", ovr7[i].id);
+			snprintf(buf, sizeof(buf), "overlay_%04u.bin", ovr7[i].id);
 			fat[ovr7[i].fileID].filename = buf;
 		}
 	}
@@ -300,15 +298,15 @@ bool FS_NITRO::rebuildFAT(u32 addr, u32 size, std::string pathData)
 		FILE *fp = fopen(path.c_str(), "rb");
 		if (!fp) continue;
 		fseek(fp, 0, SEEK_END);
-		u32 size = ftell(fp);
+		u32 fileSize = (u32)ftell(fp);
 		fclose(fp);
 
 		fat[i].file = true;
 
-		if (fat[i].size != size)
+		if (fat[i].size != fileSize)
 		{
-			//printf("Different size: %s (ROM: %d, file %d)\n", path.c_str(), fat[i].size, size);
-			fat[i].sizeFile = size;
+			//printf("Different size: %s (ROM: %d, file %d)\n", path.c_str(), fat[i].size, fileSize);
+			fat[i].sizeFile = fileSize;
 		}
 		else
 			fat[i].sizeFile = fat[i].size;

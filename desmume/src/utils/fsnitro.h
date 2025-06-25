@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2017 DeSmuME team
+	Copyright (C) 2013-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ enum FNT_TYPES
 	FS_FILE_ENTRY = 0,
 	FS_SUBDIR_ENTRY = 1,
 	FS_END_SUBTABLE = 2,
-	FS_RESERVED = 3,
+	FS_RESERVED = 3
 };
 
 #include "../PACKED.h"

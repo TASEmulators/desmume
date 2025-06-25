@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2021 DeSmuME team
+	Copyright (C) 2006-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -175,7 +175,7 @@ void armcp15_setSingleRegionAccess(armcp15_t *armcp15, u8 num, u32 mask, u32 set
 			armcp15->regionExecuteSet_SYS[num] = set ;
 			break ;
 	}
-} ;
+}
 
 /* precalculate region masks/sets from cp15 register */
 void armcp15_maskPrecalc(armcp15_t *armcp15)

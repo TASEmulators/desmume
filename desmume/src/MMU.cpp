@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2023 DeSmuME team
+	Copyright (C) 2007-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1457,11 +1457,11 @@ void DESMUME_FASTCALL MMU_writeToSPIData(u16 val)
 
 	enum PM_Bits //from libnds
 	{
-		PM_SOUND_AMP		= BIT(0) ,   /*!< \brief Power the sound hardware (needed to hear stuff in GBA mode too) */
-		PM_SOUND_MUTE		= BIT(1),    /*!< \brief   Mute the main speakers, headphone output will still work. */
-		PM_BACKLIGHT_BOTTOM	= BIT(2),    /*!< \brief   Enable the top backlight if set */
-		PM_BACKLIGHT_TOP	= BIT(3)  ,  /*!< \brief   Enable the bottom backlight if set */
-		PM_SYSTEM_PWR		= BIT(6) ,   /*!< \brief  Turn the power *off* if set */
+		PM_SOUND_AMP		= BIT(0), /*!< \brief Power the sound hardware (needed to hear stuff in GBA mode too) */
+		PM_SOUND_MUTE		= BIT(1), /*!< \brief Mute the main speakers, headphone output will still work. */
+		PM_BACKLIGHT_BOTTOM	= BIT(2), /*!< \brief Enable the top backlight if set */
+		PM_BACKLIGHT_TOP	= BIT(3), /*!< \brief Enable the bottom backlight if set */
+		PM_SYSTEM_PWR		= BIT(6)  /*!< \brief Turn the power *off* if set */
 	};
 
 	if (val !=0)

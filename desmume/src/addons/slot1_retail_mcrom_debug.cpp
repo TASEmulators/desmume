@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2021 DeSmuME team
+	Copyright (C) 2013-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -193,7 +193,7 @@ private:
 				if (fpROM)
 				{
 					u32 data = 0;
-					u32 readed = fread(&data, 1, 4, fpROM);
+					u32 readed = (u32)fread(&data, 1, 4, fpROM);
 					if (readed)
 					{
 						rom.incAddress();

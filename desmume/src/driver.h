@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2018 DeSmuME team
+	Copyright (C) 2009-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@
 class VIEW3D_Driver
 {
 public:
+	virtual ~VIEW3D_Driver() {}
+	
 	virtual void Launch() {}
 	virtual void NewFrame() {}
 	virtual bool IsRunning() { return false; }
@@ -35,7 +37,7 @@ public:
 class BaseDriver {
 public:
 	BaseDriver();
-	~BaseDriver();
+	virtual ~BaseDriver();
 	
 	virtual void AVI_SoundUpdate(void* soundData, int soundLen) {}
 	virtual bool AVI_IsRecording() { return FALSE; }

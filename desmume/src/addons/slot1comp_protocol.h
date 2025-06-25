@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2021 DeSmuME team
+	Copyright (C) 2013-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -59,6 +59,8 @@ enum eSlot1Operation
 class ISlot1Comp_Protocol_Client
 {
 public:
+	virtual ~ISlot1Comp_Protocol_Client() {}
+	
 	virtual void slot1client_startOperation(eSlot1Operation theOperation) {}
 	virtual u32 slot1client_read_GCDATAIN(eSlot1Operation theOperation) = 0;
 	virtual void slot1client_write_GCDATAIN(eSlot1Operation theOperation, u32 val) {}

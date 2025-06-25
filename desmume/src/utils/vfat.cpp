@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006 Mic
-	Copyright (C) 2010-2016 DeSmuME team
+	Copyright (C) 2010-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -65,13 +65,13 @@ static void list_files(const char *filepath, ListCallback list_callback)
 		if(!retro_readdir(rdir))
 			break;
 
-		const char* fname = retro_dirent_get_name(rdir);
+		const char* fname2 = retro_dirent_get_name(rdir);
 		list_callback(rdir,EListCallbackArg_Item);
-		printf("cflash added %s\n",fname);
+		printf("cflash added %s\n", fname2);
 
-		if (retro_dirent_is_dir(rdir, fname) && (strcmp(fname, ".")) && strcmp(fname, ".."))
+		if (retro_dirent_is_dir(rdir, fname2) && (strcmp(fname2, ".")) && strcmp(fname2, ".."))
 		{
-			std::string subdir = (std::string)filepath + path_default_slash() + fname;
+			std::string subdir = (std::string)filepath + path_default_slash() + fname2;
 			list_files(subdir.c_str(), list_callback);
 			list_callback(rdir, EListCallbackArg_Pop);
 		}
@@ -145,16 +145,16 @@ static void DirectoryListCallback(RDIR* rdir, EListCallbackArg arg)
 			if(inf)
 			{
 				fseek(inf,0,SEEK_END);
-				long len = ftell(inf);
+				size_t len = ftell(inf);
 				fseek(inf,0,SEEK_SET);
 				u8 *buf = new u8[len];
 				fread(buf,1,len,inf);
 				fclose(inf);
 
-				std::string path = currVirtPath + "/" + fname;
-				printf("FAT + (%10.2f KB) %s \n",len/1024.f,path.c_str());
-				bool ok = LIBFAT::WriteFile(path.c_str(),buf,len);
-				if(!ok) 
+				std::string path2 = currVirtPath + "/" + fname;
+				printf( "FAT + (%10.2f KB) %s \n", (float)len/1024.f, path2.c_str() );
+				bool ok = LIBFAT::WriteFile(path2. c_str(), buf, (int)len);
+				if (!ok)
 					printf("ERROR adding file to fat\n");
 				delete[] buf;
 			} else printf("ERROR opening file for fat\n");
@@ -206,7 +206,7 @@ bool VFAT::build(const char* path, int extra_MB)
 	delete file;
 	try 
 	{
-		file = new EMUFILE_MEMORY(dataSectors*512);
+		file = new EMUFILE_MEMORY((u32)dataSectors*512);
 	}
 	catch(std::bad_alloc)
 	{
@@ -223,7 +223,7 @@ bool VFAT::build(const char* path, int extra_MB)
 		EmuFat fat(file);
 		EmuFatVolume vol;
 		u8 ok = vol.init(&fat);
-		vol.formatNew(dataSectors);
+		vol.formatNew((u32)dataSectors);
 
 		//ensure we are working in memory, just in case we were testing with a disk file.
 		//libfat will need to go straight to memory (for now; we could easily change it to work with the disk)

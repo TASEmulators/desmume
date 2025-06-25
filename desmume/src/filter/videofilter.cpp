@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011-2012 Roger Manuel
-	Copyright (C) 2013-2022 DeSmuME team
+	Copyright (C) 2013-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -144,10 +144,10 @@ VideoFilter::~VideoFilter()
 void VideoFilter::__InstanceInit(size_t srcWidth, size_t srcHeight, VideoFilterTypeID typeID, size_t threadCount)
 {
 	SSurface newSurface;
-	newSurface.Surface = NULL;
-	newSurface.Pitch = srcWidth*2;
-	newSurface.Width = srcWidth;
-	newSurface.Height = srcHeight;
+	newSurface.Surface  = NULL;
+	newSurface.Pitch    = (int)(srcWidth * 2);
+	newSurface.Width    = (int)srcWidth;
+	newSurface.Height   = (int)srcHeight;
 	newSurface.userData = NULL;
 	
 	for (size_t i = 0; i < FILTER_MAX_WORKING_SURFACE_COUNT; i++)
@@ -228,9 +228,9 @@ bool VideoFilter::__AllocateDstBuffer(const size_t dstWidth, const size_t dstHei
 	}
 	
 	// Set up SSurface structure.
-	this->__vfDstSurface.Width = dstWidth;
-	this->__vfDstSurface.Height = dstHeight;
-	this->__vfDstSurface.Pitch = dstWidth * 2;
+	this->__vfDstSurface.Width  = (int)dstWidth;
+	this->__vfDstSurface.Height = (int)dstHeight;
+	this->__vfDstSurface.Pitch  = (int)(dstWidth * 2);
 	
 	if (_useInternalDstBuffer)
 	{
@@ -241,8 +241,8 @@ bool VideoFilter::__AllocateDstBuffer(const size_t dstWidth, const size_t dstHei
 	
 	// Update the surfaces on threads.
 	const size_t threadCount = this->__vfThread.size();
-	const unsigned int linesPerThread = (threadCount > 1) ? dstHeight/threadCount : dstHeight;
-	unsigned int remainingLines = dstHeight;
+	const int linesPerThread = (threadCount > 1) ? (int)(dstHeight/threadCount) : (int)dstHeight;
+	int remainingLines = (int)dstHeight;
 	
 	for (size_t i = 0; i < threadCount; i++)
 	{
@@ -311,9 +311,9 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 		sizeChanged = true;
 	}
 	
-	this->__vfSrcSurface.Width = width;
-	this->__vfSrcSurface.Height = height;
-	this->__vfSrcSurface.Pitch = width * 2;
+	this->__vfSrcSurface.Width  = (int)width;
+	this->__vfSrcSurface.Height = (int)height;
+	this->__vfSrcSurface.Pitch  = (int)(width * 2);
 	// Set the working source buffer pointer so that the working memory block is padded
 	// with 4 pixel rows worth of memory on both sides.
 	this->__vfSrcSurface.Surface = (unsigned char *)(newPixBuffer + (width * 4));
@@ -323,8 +323,8 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 	
 	// Update the surfaces on threads.
 	size_t threadCount = this->__vfThread.size();
-	const unsigned int linesPerThread = (threadCount > 1) ? this->__vfSrcSurface.Height/threadCount : this->__vfSrcSurface.Height;
-	unsigned int remainingLines = this->__vfSrcSurface.Height;
+	const int linesPerThread = (threadCount > 1) ? this->__vfSrcSurface.Height/(int)threadCount : this->__vfSrcSurface.Height;
+	int remainingLines = this->__vfSrcSurface.Height;
 	
 	for (size_t i = 0; i < threadCount; i++)
 	{
@@ -351,7 +351,7 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 	if (sizeChanged)
 	{
 		const VideoFilterAttributes vfAttr = this->GetAttributes();
-		const size_t dstWidth = width * vfAttr.scaleMultiply / vfAttr.scaleDivide;
+		const size_t dstWidth  = width  * vfAttr.scaleMultiply / vfAttr.scaleDivide;
 		const size_t dstHeight = height * vfAttr.scaleMultiply / vfAttr.scaleDivide;
 		
 		this->_pixelScale = (float)vfAttr.scaleMultiply / (float)vfAttr.scaleDivide;
@@ -625,16 +625,16 @@ void VideoFilter::RunFilterCustomByAttributes(const uint32_t *__restrict srcBuff
 	SSurface srcSurface;
 	memset(&srcSurface, 0, sizeof(srcSurface));
 	srcSurface.Surface = (unsigned char *)srcBuffer;
-	srcSurface.Pitch = srcWidth*2;
-	srcSurface.Width = srcWidth;
-	srcSurface.Height = srcHeight;
+	srcSurface.Pitch   = (int)(srcWidth * 2);
+	srcSurface.Width   = (int)srcWidth;
+	srcSurface.Height  = (int)srcHeight;
 	
 	SSurface dstSurface;
 	memset(&dstSurface, 0, sizeof(dstSurface));
 	dstSurface.Surface = (unsigned char *)dstBuffer;
-	dstSurface.Pitch = dstWidth*2;
-	dstSurface.Width = dstWidth;
-	dstSurface.Height = dstHeight;
+	dstSurface.Pitch   = (int)(dstWidth * 2);
+	dstSurface.Width   = (int)dstWidth;
+	dstSurface.Height  = (int)dstHeight;
 	
 	if (filterFunction == NULL)
 	{

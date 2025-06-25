@@ -192,12 +192,12 @@ bool BackupDevice::load_state(EMUFILE &is)
 		is.read_u8(this->_write_protect);
 	}
 
-	this->_fsize = data.size();
+	this->_fsize = (u32)data.size();
 #ifndef _DONT_SAVE_BACKUP
 	this->_fpMC->fseek(0, SEEK_SET);
 	if (data.size() != 0)
 		this->_fpMC->fwrite((char *)&data[0], this->_fsize);
-	ensure(data.size(), this->_fpMC);
+	ensure((u32)data.size(), this->_fpMC);
 #endif
 
 	if (version >= 5)
@@ -657,9 +657,9 @@ void BackupDevice::detect()
 	if ( (this->_state == DETECTING) && (this->_data_autodetect.size() > 0) )
 	{
 		//we can now safely detect the save address size
-		u32 autodetect_size = this->_data_autodetect.size();
+		u32 autodetect_size = (u32)this->_data_autodetect.size();
 
-		printf("Autodetecting with autodetect_size=%d\n",autodetect_size);
+		printf("Autodetecting with autodetect_size=%u\n", autodetect_size);
 
 		//detect based on rules
 		switch(autodetect_size)
@@ -1132,7 +1132,7 @@ u32 BackupDevice::get_save_nogba_size(const char* fname)
 	if (fsrc)
 	{
 		char src[0x50] = {0};
-		u32 fsize = 0;
+		size_t fsize = 0;
 		fseek(fsrc, 0, SEEK_END);
 		fsize = ftell(fsrc);
 		fseek(fsrc, 0, SEEK_SET);
@@ -1174,7 +1174,7 @@ u32 BackupDevice::get_save_nogba_size(u8 *data)
 	return 0xFFFFFFFF;
 }
 
-static int no_gba_unpackSAV(void *in_buf, u32 fsize, void *out_buf, u32 &size)
+static int no_gba_unpackSAV(void *in_buf, size_t fsize, void *out_buf, u32 &size)
 {
 	u8	*src = (u8 *)in_buf;
 	u8	*dst = (u8 *)out_buf;
@@ -1295,7 +1295,7 @@ bool BackupDevice::import_no_gba(const char *fname, u32 force_size)
 
 	if (fsrc)
 	{
-		u32 fsize = 0;
+		size_t fsize = 0;
 		fseek(fsrc, 0, SEEK_END);
 		fsize = ftell(fsrc);
 		fseek(fsrc, 0, SEEK_SET);
@@ -1366,19 +1366,19 @@ bool BackupDevice::export_no_gba(const char* fname)
 	this->_fpMC->fread((char *)&data[0], this->_fsize);
 	this->_fpMC->fseek(pos, SEEK_SET);
 
-	FILE* outf = fopen(fname,"wb");
-	if(!outf) return false;
-	u32 size = data.size();
-	u32 padSize = pad_up_size(size);
-	if(data.size()>0)
-		fwrite(&data[0],1,size,outf);
-	for(u32 i=size;i<padSize;i++)
-		fputc(0xFF,outf);
+	FILE *outf = fopen(fname, "wb");
+	if (!outf) return false;
+	size_t size = data.size();
+	size_t padSize = pad_up_size((u32)size);
+	if (data.size() > 0)
+		fwrite(&data[0], 1, size, outf);
+	for (size_t i = size; i < padSize; i++)
+		fputc(0xFF, outf);
 
-	if (padSize < 512 * 1024)
+	if (padSize < (512 * 1024))
 	{
-		for(u32 i=padSize; i<512 * 1024; i++)
-			fputc(0xFF,outf);
+		for (size_t i = padSize; i < (512 * 1024); i++)
+			fputc(0xFF, outf);
 	}
 	fclose(outf);
 
@@ -1395,14 +1395,14 @@ bool BackupDevice::export_raw(const char* filename)
 	this->_fpMC->fread((char *)&data[0], this->_fsize);
 	this->_fpMC->fseek(pos, SEEK_SET);
 
-	FILE* outf = fopen(filename,"wb");
-	if(!outf) return false;
-	u32 size = data.size();
-	u32 padSize = pad_up_size(size);
-	if(data.size()>0)
-		fwrite(&data[0],1,size,outf);
-	for(u32 i=size;i<padSize;i++)
-		fputc(uninitializedValue,outf);
+	FILE *outf = fopen(filename, "wb");
+	if (!outf) return false;
+	size_t size = data.size();
+	size_t padSize = pad_up_size((u32)size);
+	if (data.size() > 0)
+		fwrite(&data[0], 1, size, outf);
+	for (size_t i = size; i < padSize; i++)
+		fputc(uninitializedValue, outf);
 	fclose(outf);
 
 	return true;
@@ -1649,8 +1649,8 @@ bool BackupDevice::import_dsv(const char *filename)
 	
 	// Truncate the file if necessary.
 	// * Also see TODO note above, since that applies to this step as well.
-	const size_t newFileSize = this->_info.padSize + BackupDevice::GetDSVFooterSize();
-	this->_fpMC->truncate(newFileSize);
+	const size_t newFileSize = (size_t)this->_info.padSize + BackupDevice::GetDSVFooterSize();
+	this->_fpMC->truncate((s32)newFileSize);
 	
 	result = true;
 	

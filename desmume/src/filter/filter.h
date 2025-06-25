@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2025 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,15 +20,18 @@
 
 #define FILTER_MAX_WORKING_SURFACE_COUNT	8
 
-typedef struct {
+struct SSurface
+{
 	unsigned char *Surface;
 
-	unsigned int Pitch;
-	unsigned int Width, Height;
+	int Pitch;
+	int Width;
+	int Height;
 	
 	unsigned char *workingSurface[FILTER_MAX_WORKING_SURFACE_COUNT];
 	void *userData;
-} SSurface;
+};
+typedef struct SSurface SSurface;
 
 void RenderDeposterize(SSurface Src, SSurface Dst);
 

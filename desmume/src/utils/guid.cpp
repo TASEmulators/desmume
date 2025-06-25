@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ void Desmume_Guid::newGuid()
 std::string Desmume_Guid::toString()
 {
 	char buf[37];
-	sprintf(buf,"%08X-%04X-%04X-%04X-%02X%02X%02X%02X%02X%02X",
+	snprintf(buf, sizeof(buf), "%08X-%04X-%04X-%04X-%02X%02X%02X%02X%02X%02X",
 		de32lsb(data),de16lsb(data+4),de16lsb(data+6),de16lsb(data+8),data[10],data[11],data[12],data[13],data[14],data[15]);
 	return std::string(buf);
 }
@@ -84,7 +84,7 @@ u8 Desmume_Guid::hexToByte(char** ptrptr)
 void Desmume_Guid::scan(std::string& str)
 {
 	char* endptr = (char*)str.c_str();
-	en32lsb(data,strtoul(endptr,&endptr,16));
+	en32lsb(data+0,(u32)strtoul(endptr+0,&endptr,16));
 	en16lsb(data+4,(u16)strtoul(endptr+1,&endptr,16));
 	en16lsb(data+6,(u16)strtoul(endptr+1,&endptr,16));
 	en16lsb(data+8,(u16)strtoul(endptr+1,&endptr,16));

@@ -1,5 +1,5 @@
 /*
-	Copyright 2009-2021 DeSmuME team
+	Copyright 2009-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -234,8 +234,8 @@ do {
 
 			/* The factor 2 below avoids cut-off errors for nr_fats == 1.
 			* The "nr_fats*3" is for the reserved first two FAT entries */
-			clust12 = 2*((u64) fatdata *sector_size + bs.fatCount*3) /
-				(2*(int) bs.sectorsPerCluster * sector_size + bs.fatCount*3);
+			clust12 = (u32)( ( (2ULL * (u64)fatdata * (u64)sector_size) + ((u64)bs.fatCount * 3ULL) ) /
+			    ( (2ULL * (u64)bs.sectorsPerCluster * (u64)sector_size) + ((u64)bs.fatCount * 3ULL) ) );
 			fatlength12 = cdiv (((clust12+2) * 3 + 1) >> 1, sector_size);
 			/* Need to recalculate number of clusters, since the unused parts of the
 			* FATS and data area together could make up space for an additional,
@@ -251,8 +251,8 @@ do {
 					printf( "FAT12: too much clusters\n" );
 			}
 
-			clust16 = ((u64) fatdata *sector_size + bs.fatCount*4) /
-				((int) bs.sectorsPerCluster * sector_size + bs.fatCount*2);
+			clust16 = (u32)( ( ((u64)fatdata * (u64)sector_size) + ((u64)bs.fatCount * 4ULL) ) /
+			    ( ((u64)bs.sectorsPerCluster * (u64)sector_size) + ((u64)bs.fatCount * 2ULL) ) );
 			fatlength16 = cdiv ((clust16+2) * 2, sector_size);
 			/* Need to recalculate number of clusters, since the unused parts of the
 			* FATS and data area together could make up space for an additional,
@@ -276,8 +276,8 @@ do {
 				clust16 = 0;
 			}
 
-			clust32 = ((u64) fatdata *sector_size + bs.fatCount*8) /
-				((int) bs.sectorsPerCluster * sector_size + bs.fatCount*4);
+			clust32 = (u32)( ( ((u64)fatdata * (u64)sector_size) + ((u64)bs.fatCount * 8ULL) ) /
+			    ( ((u64)bs.sectorsPerCluster * (u64)sector_size) + ((u64)bs.fatCount * 4ULL) ) );
 			fatlength32 = cdiv ((clust32+2) * 4, sector_size);
 			/* Need to recalculate number of clusters, since the unused parts of the
 			* FATS and data area together could make up space for an additional,
@@ -397,7 +397,6 @@ case 32:
 //but we onnly targeted fat32 our first time through
 bool EmuFatVolume::formatNew(u32 sectors)
 {
-	u32 volumeStartBlock = 0;
 	TFat32BootSector bsrec;
 	memset(&bsrec,0,sizeof(TFat32BootSector));
 	TFat32BootSector *bs = &bsrec;

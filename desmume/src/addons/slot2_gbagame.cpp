@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2009 CrazyMax
-	Copyright (C) 2009-2021 DeSmuME team
+	Copyright (C) 2009-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ private:
 		fROM->fseek(pos, SEEK_SET);
 	
 		u32 data = 0xFFFFFFFF;
-		u32 readed = fROM->fread(&data, size);
+		u32 readed = (u32)fROM->fread(&data, size);
 		return data;
 	}
 
@@ -77,7 +77,7 @@ private:
 		fSRAM->fseek(pos, SEEK_SET);
 
 		u32 data = 0xFFFFFFFF;
-		u32 readed = fSRAM->fread(&data, size);
+		u32 readed = (u32)fSRAM->fread(&data, size);
 		return data;
 	}
 
@@ -107,7 +107,7 @@ private:
 		for(;;)
 		{
 			u32 romType = 0;
-			u32 readed = fROM->fread(&romType, 4);
+			u32 readed = (u32)fROM->fread(&romType, 4);
 
 			int pos = fROM->ftell();
 			int currPct = pos*100/(size-1);

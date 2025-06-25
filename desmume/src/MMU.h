@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2023 DeSmuME team
+	Copyright (C) 2007-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -88,6 +88,8 @@ enum EDMADestinationUpdate
 class TRegister_32
 {
 public:
+	virtual ~TRegister_32() {}
+	
 	virtual u32 read32() = 0;
 	virtual void write32(const u32 val) = 0;
 	void write(const int size, const u32 adr, const u32 val) { 
@@ -124,6 +126,9 @@ struct TGXSTAT : public TRegister_32
 		fifo_empty = true;
 		fifo_low = false;
 	}
+	
+	virtual ~TGXSTAT() {}
+	
 	u8 tb; //test busy
 	u8 tr; //test result
 	u8 se; //stack error
@@ -246,7 +251,10 @@ public:
 		AddressRegister(u32* _ptr)
 			: ptr(_ptr)
 		{}
-		virtual u32 read32() { 
+		
+		virtual ~AddressRegister() {}
+		
+		virtual u32 read32() {
 			return *ptr;
 		}
 		virtual void write32(const u32 val) {
@@ -259,7 +267,9 @@ public:
 		//we pass in a pointer to the controller here so we can alert it if anything changes
 		DmaController* controller;
 		ControlRegister() {}
-		virtual u32 read32() { 
+		virtual ~ControlRegister() {}
+		
+		virtual u32 read32() {
 			return controller->read32();
 		}
 		virtual void write32(const u32 val) {

@@ -748,9 +748,9 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 		int read = gameInfo.reader->Read(gameInfo.fROM,fROMBuffer,4096);
 		if(read == 0) break;
 		if(first && read >= 512)
-			gameInfo.crcForCheatsDb = ~crc32(0, fROMBuffer, 512);
+			gameInfo.crcForCheatsDb = (u32)~crc32(0, fROMBuffer, 512);
 		first = false;
-		gameInfo.crc = crc32(gameInfo.crc, fROMBuffer, read);
+		gameInfo.crc = (u32)crc32(gameInfo.crc, fROMBuffer, read);
 	}
 
 	gameInfo.chipID  = 0xC2;														// The Manufacturer ID is defined by JEDEC (C2h = Macronix)
@@ -2642,12 +2642,12 @@ bool NDS_FakeBoot()
 	//perhaps we could automatically boot homebrew to an R4-like device.
 	_MMU_write32<ARMCPU_ARM9>(0x02FFFE70, 0x5f617267);
 	_MMU_write32<ARMCPU_ARM9>(0x02FFFE74, kCommandline); //(commandline starts here)
-	_MMU_write32<ARMCPU_ARM9>(0x02FFFE78, rompath.size()+1);
+	_MMU_write32<ARMCPU_ARM9>(0x02FFFE78, (u32)(rompath.size()+1));
 	//0x027FFF7C (argc)
 	//0x027FFF80 (argv)
-	for(size_t i=0;i<rompath.size();i++)
-		_MMU_write08<ARMCPU_ARM9>(kCommandline+i, rompath[i]);
-	_MMU_write08<ARMCPU_ARM9>(kCommandline+rompath.size(), 0);
+	for (size_t i = 0; i < rompath.size(); i++)
+		_MMU_write08<ARMCPU_ARM9>((u32)(kCommandline+i), rompath[i]);
+	_MMU_write08<ARMCPU_ARM9>((u32)(kCommandline+rompath.size()), 0);
 	//--------------------------------
 
 	//Call the card post_fakeboot hook to perform additional initialization

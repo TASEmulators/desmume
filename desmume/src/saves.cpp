@@ -2,7 +2,7 @@
 	Copyright (C) 2006 Normmatt
 	Copyright (C) 2006 Theo Berkau
 	Copyright (C) 2007 Pascal Giard
-	Copyright (C) 2008-2021 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load
 
 u32 _DESMUME_version = EMU_DESMUME_VERSION_NUMERIC();
 u32 svn_rev = 0; //EMU_DESMUME_VERSION_NUMERIC(); //sorry, not using this now
-s64 save_time = 0;
+s64 save_time_data = 0;
 NDS_SLOT1_TYPE slot1Type = NDS_SLOT1_RETAIL_AUTO;
 NDS_SLOT2_TYPE slot2Type = NDS_SLOT2_AUTO;
 
@@ -87,7 +87,7 @@ SFORMAT SF_NDS_INFO[]={
 	{ "DVMI", 1, 1, (void*)&DESMUME_VERSION_MINOR},
 	{ "DSBD", 1, 1, (void*)&DESMUME_VERSION_BUILD},
 	{ "GREV", 1, 4, &svn_rev},
-	{ "GTIM", 1, 8, &save_time},
+	{ "GTIM", 1, 8, &save_time_data},
 	{ 0 }
 };
 
@@ -670,7 +670,7 @@ void scan_savestates()
 		path.getpathnoext(path.STATE_SLOTS, filename);
 
 		if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for i */ > MAX_PATH) return;
-		sprintf(filename + strlen(filename), ".ds%d", i);
+		snprintf(filename + strlen(filename), sizeof(filename), ".ds%d", i);
 
 		#ifdef _MSC_VER
 		wchar_t wgarbage[1024] = {0};
@@ -697,7 +697,7 @@ void savestate_slot(int num)
 	path.getpathnoext(path.STATE_SLOTS, filename);
 
 	if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ > MAX_PATH) return;
-	sprintf(filename + strlen(filename), ".ds%d", num);
+	snprintf(filename + strlen(filename), sizeof(filename), ".ds%d", num);
 
 	if (savestate_save(filename))
 	{
@@ -775,7 +775,7 @@ void loadstate_slot(int num)
 
 				std::string fname = dirname + PSS;
 				char mini[100];
-				sprintf(mini, "%u", cur_index);
+				snprintf(mini, sizeof(mini), "%u", cur_index);
 				fname += mini + (std::string)".dst";
 
 				savestate_save(fname.c_str());
@@ -789,7 +789,7 @@ void loadstate_slot(int num)
 	}
 
 	if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ > MAX_PATH) return;
-	sprintf(filename + strlen(filename), ".ds%d", num);
+	snprintf(filename + strlen(filename), sizeof(filename), ".ds%d", num);
 
 	if (savestate_load(filename))
 	{
@@ -1125,7 +1125,7 @@ static void writechunks(EMUFILE &os)
 	DateTime tm = DateTime::get_Now();
 	svn_rev = 0;
 
-	save_time = tm.get_Ticks();
+	save_time_data = tm.get_Ticks();
 	
 	gfx3d_PrepareSaveStateBufferWrite();
 
@@ -1253,7 +1253,7 @@ static bool ReadStateChunks(EMUFILE &is, s32 totalsize)
 		{
 			char buf[32] = {0};
 			if (svn_rev != 0xFFFFFFFF)
-				sprintf(buf, " svn %u", svn_rev);
+				snprintf(buf, sizeof(buf), " svn %u", svn_rev);
 			printf("\tDeSmuME version: %u.%u.%u%s\n", version_major, version_minor, version_build, buf);
 		}
 

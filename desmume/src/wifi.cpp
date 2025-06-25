@@ -1,6 +1,6 @@
 /*
 		Copyright (C) 2007 Tim Seidel
-		Copyright (C) 2008-2022 DeSmuME team
+		Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -3475,7 +3475,7 @@ int AdhocCommInterface::_RXPacketGetFromSocket(RXRawPacketData& rawPacket)
 
 		u8* targetPacket = &rawPacket.buffer[rawPacket.writeLocation];
 
-		rxPacketSizeInt = recvfrom(thisSocket, (char*)targetPacket, WIFI_WORKING_PACKET_BUFFER_SIZE, 0, &fromAddr, &fromLen);
+		rxPacketSizeInt = (int)recvfrom(thisSocket, (char*)targetPacket, WIFI_WORKING_PACKET_BUFFER_SIZE, 0, &fromAddr, &fromLen);
 		if(rxPacketSizeInt <= 0)
 		{
 			return rxPacketSizeInt; // No packet data was received.
@@ -3720,7 +3720,7 @@ size_t SoftAPCommInterface::TXPacketSend(u8* txTargetBuffer, size_t txLength)
 		return txPacketSize;
 	}
 
-	int result = this->_pcap->sendpacket(this->_bridgeDevice, txTargetBuffer, txLength);
+	int result = this->_pcap->sendpacket(this->_bridgeDevice, txTargetBuffer, (int)txLength);
 	if(result == 0)
 	{
 		txPacketSize = txLength;
@@ -4025,9 +4025,10 @@ void WifiHandler::_PacketCaptureFileOpen()
 	tm* t = localtime(&ti);
 
 	char* gamecd = gameInfo.header.gameCode;
-	char file_name[50];
-	sprintf(
+	char file_name[64];
+	snprintf(
 		file_name,
+		sizeof(file_name),
 		"%c%c%c%c [%02d-%02d-%02d-%02d].pcap",
 		gamecd[0], gamecd[1], gamecd[2], gamecd[3],
 		t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec
@@ -4081,8 +4082,8 @@ void WifiHandler::_PacketCaptureFileWrite(const u8* packet, u32 len, bool isRece
 		return;
 	}
 
-	const u32 seconds = timeStamp / 1000000;
-	const u32 millis = timeStamp % 1000000;
+	const u32 seconds = (u32)(timeStamp / 1000000ULL);
+	const u32 millis = (u32)(timeStamp % 1000000ULL);
 
 	// Add the packet
 	// more info: http://www.kroosec.com/2012/10/a-look-at-pcap-file-format.html
@@ -4503,7 +4504,7 @@ int WifiHandler::GetBridgeDeviceList(std::vector<std::string>* deviceStringList)
 		}
 	}
 
-	return deviceStringList->size();
+	return (int)deviceStringList->size();
 }
 
 int WifiHandler::GetSelectedBridgeDeviceIndex()

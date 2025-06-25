@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2015 DeSmuME team
+	Copyright (C) 2010-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@ class EMUFILE;
 class Slot1Info
 {
 public:
+	virtual ~Slot1Info() {}
+	
 	virtual const char* name() const = 0;
 	virtual const char* descr()const  = 0;
 	virtual const u8 id() const  = 0;
@@ -42,6 +44,9 @@ public:
 		, mID(_id)
 	{
 	}
+	
+	virtual ~Slot1InfoSimple() {}
+	
 	virtual const char* name() const { return mName; }
 	virtual const char* descr() const { return mDescr; }
 	virtual const u8 id() const { return mID; }

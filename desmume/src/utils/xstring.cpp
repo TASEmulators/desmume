@@ -2,7 +2,7 @@
 //subsequently modified for desmume
 
 /*
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 
 //a vc-style substring operation (very kind and lenient)
 std::string strsub(const std::string& str, int pos, int len) {
-	int strlen = str.size();
+	int strlen = (int)str.size();
 	
 	if(strlen==0) return str; //empty strings always return empty strings
 	if(pos>=strlen) return str; //if you start past the end of the string, return the entire string. this is unusual, but there you have it
@@ -44,7 +44,7 @@ std::string strsub(const std::string& str, int pos, int len) {
 
 std::string strmid(const std::string& str, int pos, int len) { return strsub(str,pos,len); }
 std::string strleft(const std::string& str, int len) { return strsub(str,0,len); }
-std::string strright(const std::string& str, int len) { return len ? strsub(str,str.size()-len,len) : ""; }
+std::string strright(const std::string& str, int len) { return len ? strsub(str,(int)str.size()-len,len) : ""; }
 std::string toupper(const std::string& str)
 {
 	std::string ret = str;
@@ -80,7 +80,7 @@ private:
 std::string u32ToHexString(u32 val)
 {
 	char temp[16];
-	sprintf(temp,"%08X",val);
+	snprintf(temp, sizeof(temp), "%08X", val);
 	return temp;
 }
 
@@ -89,14 +89,14 @@ std::string BytesToString(const void* data, int len)
 {
 	char temp[16];
 	if(len==1) {
-		sprintf(temp,"%d",*(const unsigned char*)data);
+		snprintf(temp, sizeof(temp), "%d",*(const unsigned char*)data);
 		return temp;
 	} else if(len==2) {
-		sprintf(temp,"%d",*(const unsigned short*)data);
+		snprintf(temp, sizeof(temp), "%d",*(const unsigned short*)data);
 		return temp;
 	} else if(len==4) {
-		sprintf(temp,"%d",*(const unsigned int*)data);
-		return temp;		
+		snprintf(temp, sizeof(temp), "%d",*(const unsigned int*)data);
+		return temp;
 	}
 	
 	std::string ret;
@@ -143,7 +143,7 @@ std::string BytesToString(const void* data, int len)
 int HexStringToBytesLength(const std::string& str)
 {
 	if(str.size()>2 && str[0] == '0' && toupper(str[1]) == 'X')
-		return str.size()/2-1;
+		return (int)(str.size() / 2) - 1;
 	else return -1;
 }
 
@@ -154,7 +154,7 @@ int Base64StringToBytesLength(const std::string& str)
 	size_t c = ((str.size() - 7) / 4) * 3;
 	if(str[str.size()-1] == '=') { --c;
 	if(str[str.size()-2] == '=') --c; }
-	return c;
+	return (int)c;
 }
 
 ///parses a string in the same format as BytesToString
@@ -194,7 +194,7 @@ bool StringToBytes(const std::string& str, void* data, int len)
 	{
 		// hex
 		int amt = len;
-		int bytesAvailable = str.size()/2;
+		int bytesAvailable = (int)(str.size() / 2);
 		if(bytesAvailable < amt)
 			amt = bytesAvailable;
 		const char* cstr = str.c_str()+2;
@@ -266,7 +266,7 @@ std::vector<std::string> tokenize_str(const std::string & str,
 std::string stditoa(int n)
 {
 	char tempbuf[16];
-	sprintf(tempbuf, "%d", n);
+	snprintf(tempbuf, sizeof(tempbuf), "%d", n);
 	return tempbuf;
 }
 

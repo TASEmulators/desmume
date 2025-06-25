@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2007 Tim Seidel
     Copyright (C) 2014 pleonex
-    Copyright (C) 2008-2022 DeSmuME team
+    Copyright (C) 2008-2025 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -3230,6 +3230,8 @@ typedef struct _FW_WFCProfile
 class ClientPCapInterface
 {
 public:
+	virtual ~ClientPCapInterface() {}
+	
 	virtual int findalldevs(void **alldevs, char *errbuf) = 0;
 	virtual void freealldevs(void *alldevs) = 0;
 	virtual void* open(const char *source, int snaplen, int flags, int readtimeout, char *errbuf) = 0;
@@ -3246,6 +3248,8 @@ private:
 	void __CopyErrorString(char *errbuf);
 	
 public:
+	virtual ~DummyPCapInterface() {}
+	
 	virtual int findalldevs(void **alldevs, char *errbuf);
 	virtual void freealldevs(void *alldevs);
 	virtual void* open(const char *source, int snaplen, int flags, int readtimeout, char *errbuf);
@@ -3261,6 +3265,8 @@ public:
 class POSIXPCapInterface : public ClientPCapInterface
 {
 public:
+	virtual ~POSIXPCapInterface() {}
+	
 	virtual int findalldevs(void **alldevs, char *errbuf);
 	virtual void freealldevs(void *alldevs);
 	virtual void* open(const char *source, int snaplen, int flags, int readtimeout, char *errbuf);
@@ -3286,7 +3292,7 @@ protected:
 	
 public:
 	WifiCommInterface();
-	~WifiCommInterface();
+	virtual ~WifiCommInterface();
 	
 	virtual bool Start(WifiHandler *currentWifiHandler) = 0;
 	virtual void Stop() = 0;
@@ -3302,7 +3308,7 @@ protected:
 	
 public:
 	AdhocCommInterface();
-	~AdhocCommInterface();
+	virtual ~AdhocCommInterface();
 	
 	int _RXPacketGetFromSocket(RXRawPacketData &rawPacket);
 	

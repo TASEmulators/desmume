@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2021 DeSmuME team
+	Copyright 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ void MovieData::insertEmpty(int at, int frames)
 {
 	if(at == -1) 
 	{
-		int currcount = records.size();
+		int currcount = (int)records.size();
 		records.resize(records.size()+frames);
 		clearRecordRange(currcount,frames);
 	}
@@ -258,7 +258,7 @@ MovieData::MovieData(bool fromCurrentSettings)
 	for(int i=0;i<256;i++)
 	{
 		char tmp[256];
-		sprintf(tmp,"micsample%d",i);
+		snprintf(tmp, sizeof(tmp), "micsample%d", i);
 		installValueMap[tmp] = &MovieData::installMicSample;
 	}
 
@@ -403,7 +403,7 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 
 	fp.fprintf("savestate %d\n", savestate?1:0);
 	if (sram.size() != 0)
-		fp.fprintf("sram %s\n", BytesToString(&sram[0],sram.size()).c_str());
+		fp.fprintf( "sram %s\n", BytesToString(&sram[0], (int)sram.size()).c_str() );
 
 	for (size_t i = 0; i < 256; i++)
 	{
@@ -411,8 +411,8 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 		if(micSamples.size() > i)
 		{
 			char tmp[32];
-			sprintf(tmp,"micsample%d", (int)i);
-			fp.fprintf("%s %s\n",tmp, BytesToString(&micSamples[i][0],micSamples[i].size()).c_str());
+			snprintf(tmp, sizeof(tmp), "micsample%d", (int)i);
+			fp.fprintf( "%s %s\n", tmp, BytesToString(&micSamples[i][0], (int)micSamples[i].size()).c_str() );
 		}
 	}
 
@@ -527,7 +527,7 @@ bool LoadFM2(MovieData &movieData, EMUFILE &fp, int size, bool stopAfterHeader)
 			}
 			else
 			{
-				int currcount = movieData.records.size();
+				size_t currcount = movieData.records.size();
 				movieData.records.resize(currcount + 1);
 				movieData.records[currcount].parse(fp);
 			}
@@ -1310,16 +1310,17 @@ void FCEUI_MakeBackupMovie(bool dispMessage)
 	string backupFn;					//Target backup filename
 	string tempFn;						//temp used in back filename creation
 	stringstream stream;
-	int x;								//Temp variable for string manip
+	size_t x;							//Temp variable for string manip
 	bool exist = false;					//Used to test if filename exists
 	bool overflow = false;				//Used for special situation when backup numbering exceeds limit
 
 	currentFn = curMovieFilename;		//Get current moviefilename
 	backupFn = curMovieFilename;		//Make backup filename the same as current moviefilename
-	x = backupFn.find_last_of(".");		 //Find file extension
+	x = backupFn.find_last_of(".");		//Find file extension
 	backupFn = backupFn.substr(0,x);	//Remove extension
 	tempFn = backupFn;					//Store the filename at this point
-	for (unsigned int backNum=0;backNum<999;backNum++) //999 = arbituary limit to backup files
+	
+	for (size_t backNum = 0; backNum < 999; backNum++) //999 = arbituary limit to backup files
 	{
 		stream.str("");					 //Clear stream
 		if (backNum > 99)
