@@ -20,6 +20,9 @@
 #include "../utilities.h"
 #import "../cocoa_globals.h"
 
+#if !defined(MAC_OS_X_VERSION_10_9)
+	#define NSOpenGLProfileVersion4_1Core 0x4100
+#endif
 
 @implementation DisplayViewOpenGLLayer
 
@@ -126,18 +129,26 @@ void MacOGLClientFetchObject::operator delete(void *ptr)
 
 MacOGLClientFetchObject::MacOGLClientFetchObject()
 {
+	const bool isMavericksSupported    = IsOSXVersionSupported(10, 9, 0);
+	const bool isMountainLionSupported = (isMavericksSupported    || IsOSXVersionSupported(10, 8, 0));
+	const bool isLionSupported         = (isMountainLionSupported || IsOSXVersionSupported(10, 7, 0));
+	
+	NSOpenGLPixelFormat *nsPixelFormat = nil;
+	bool useContext_3_2 = false;
+	
 	// Initialize the OpenGL context.
 	//
 	// We create an NSOpenGLContext and extract the CGLContextObj from it because
 	// [NSOpenGLContext CGLContextObj] is available on macOS 10.5 Leopard, but
 	// [NSOpenGLContext initWithCGLContextObj:] is only available on macOS 10.6
 	// Snow Leopard.
-	bool useContext_3_2 = false;
 	NSOpenGLPixelFormatAttribute attributes[] = {
 		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
 		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
 		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)0,
 		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)0,
+		NSOpenGLPFAAccelerated,
+		NSOpenGLPFANoRecovery,
 		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
 		(NSOpenGLPixelFormatAttribute)0
 	};
@@ -147,29 +158,55 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 	// pixel format attributes. However, GPUs that can't support Metal are also
 	// too slow to run most of the video filters on OpenGL, and also show poor
 	// performance when running multiple display windows with high GPU scaling
-	// factors. Therefore, we will NOT  allow OpenGL to run contexts on the
+	// factors. Therefore, we will NOT allow OpenGL to run contexts on the
 	// integrated GPU for performance reasons. -rogerman (2025/03/26)
 	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
-	// If we can support a 3.2 Core Profile context, then request that in our
-	// pixel format attributes.
-	useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
-	if (useContext_3_2)
+	// Request the latest context profile that is available on the system.
+	if (isLionSupported)
 	{
-		attributes[8] = NSOpenGLPFAOpenGLProfile;
-		attributes[9] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core;
+		attributes[10] = NSOpenGLPFAOpenGLProfile;
+		if ( (nsPixelFormat == nil) && isMavericksSupported )
+		{
+			attributes[11] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion4_1Core;
+			nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+			useContext_3_2 = true;
+		}
+		
+		if ( (nsPixelFormat == nil) && isMountainLionSupported )
+		{
+			attributes[11] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core;
+			nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+			useContext_3_2 = true;
+		}
+		
+		if ( (nsPixelFormat == nil) && isLionSupported )
+		{
+			attributes[11] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersionLegacy;
+			nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+			useContext_3_2 = false;
+		}
 	}
 #endif
 	
-	NSOpenGLPixelFormat *nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	if (nsPixelFormat == nil)
 	{
-		// If we can't get a 3.2 Core Profile context, then switch to using a
-		// legacy context instead.
-		useContext_3_2 = false;
-		attributes[9] = (NSOpenGLPixelFormatAttribute)0;
+		// Don't request any specific context version, which defaults to requesting a
+		// legacy context.
 		attributes[10] = (NSOpenGLPixelFormatAttribute)0;
+		attributes[11] = (NSOpenGLPixelFormatAttribute)0;
 		nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+		useContext_3_2 = false;
+	}
+	
+	if (nsPixelFormat == nil)
+	{
+		// Something is seriously wrong if we haven't gotten a context yet.
+		// Fall back to the software renderer.
+		attributes[8] = (NSOpenGLPixelFormatAttribute)0;
+		attributes[9] = (NSOpenGLPixelFormatAttribute)0;
+		nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+		useContext_3_2 = false;
 	}
 	
 	_nsContext = [[NSOpenGLContext alloc] initWithFormat:nsPixelFormat shareContext:nil];
@@ -327,6 +364,12 @@ MacOGLDisplayPresenter::MacOGLDisplayPresenter(MacOGLClientFetchObject *fetchObj
 
 void MacOGLDisplayPresenter::__InstanceInit(MacOGLClientFetchObject *fetchObject)
 {
+	const bool isMavericksSupported    = IsOSXVersionSupported(10, 9, 0);
+	const bool isMountainLionSupported = (isMavericksSupported    || IsOSXVersionSupported(10, 8, 0));
+	const bool isLionSupported         = (isMountainLionSupported || IsOSXVersionSupported(10, 7, 0));
+	
+	_nsPixelFormat = nil;
+	
 	// Initialize the OpenGL context.
 	//
 	// We create an NSOpenGLContext and extract the CGLContextObj from it because
@@ -339,6 +382,8 @@ void MacOGLDisplayPresenter::__InstanceInit(MacOGLClientFetchObject *fetchObject
 		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)0,
 		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)0,
 		NSOpenGLPFADoubleBuffer,
+		NSOpenGLPFAAccelerated,
+		NSOpenGLPFANoRecovery,
 		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
 		(NSOpenGLPixelFormatAttribute)0
 	};
@@ -348,25 +393,48 @@ void MacOGLDisplayPresenter::__InstanceInit(MacOGLClientFetchObject *fetchObject
 	// pixel format attributes. However, GPUs that can't support Metal are also
 	// too slow to run most of the video filters on OpenGL, and also show poor
 	// performance when running multiple display windows with high GPU scaling
-	// factors. Therefore, we will NOT  allow OpenGL to run contexts on the
+	// factors. Therefore, we will NOT allow OpenGL to run contexts on the
 	// integrated GPU for performance reasons. -rogerman (2025/03/26)
 	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
-	// If we can support a 3.2 Core Profile context, then request that in our
-	// pixel format attributes.
-	bool useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
-	if (useContext_3_2)
+	// Request the latest context profile that is available on the system.
+	if (isLionSupported)
 	{
-		attributes[9] = NSOpenGLPFAOpenGLProfile;
-		attributes[10] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core;
+		attributes[11] = NSOpenGLPFAOpenGLProfile;
+		if ( (_nsPixelFormat == nil) && isMavericksSupported )
+		{
+			attributes[12] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion4_1Core;
+			_nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+		}
+		
+		if ( (_nsPixelFormat == nil) && isMountainLionSupported )
+		{
+			attributes[12] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core;
+			_nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+		}
+		
+		if ( (_nsPixelFormat == nil) && isLionSupported )
+		{
+			attributes[12] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersionLegacy;
+			_nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+		}
 	}
 #endif
 	
 	_nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	if (_nsPixelFormat == nil)
 	{
-		// If we can't get a 3.2 Core Profile context, then switch to using a
-		// legacy context instead.
+		// Don't request any specific context version, which defaults to requesting a
+		// legacy context.
+		attributes[11] = (NSOpenGLPixelFormatAttribute)0;
+		attributes[12] = (NSOpenGLPixelFormatAttribute)0;
+		_nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+	}
+	
+	if (_nsPixelFormat == nil)
+	{
+		// Something is seriously wrong if we haven't gotten a context yet.
+		// Fall back to the software renderer.
 		attributes[9] = (NSOpenGLPixelFormatAttribute)0;
 		attributes[10] = (NSOpenGLPixelFormatAttribute)0;
 		_nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
