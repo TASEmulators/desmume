@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2024 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -5002,7 +5002,7 @@ Render3DError OpenGLRenderer_1_2::SetupViewport(const GFX3D_Viewport viewport)
 	const GLfloat hScalar = this->_framebufferHeight / (GLfloat)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
 	glViewport(viewport.x * wScalar,
-	           viewport.y * hScalar,
+	           (-viewport.y + (192 - viewport.height)) * hScalar, // All vertex Y-coordinates will be flipped, so the viewport Y positioning needs to be flipped as well.
 	           viewport.width * wScalar,
 	           viewport.height * hScalar);
 	
