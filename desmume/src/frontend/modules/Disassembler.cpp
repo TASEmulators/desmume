@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2016 DeSmuME team
+	Copyright (C) 2006-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -83,7 +83,7 @@ const char MSR_FIELD[16][5] = {
      
 #define DATAPROC_LSL_IMM(nom, s)      char tmp[10] = "";\
      if(((i>>7)&0x1F)!=0)\
-          sprintf(tmp, ", LSL #%X", (int)((i>>7)&0x1F));\
+          snprintf(tmp, sizeof(tmp), ", LSL #%X", (int)((i>>7)&0x1F));\
      sprintf(txt, "%s%s%s %s, %s, %s%s",\
                                      #nom,\
                                      Condition[CONDITION(i)],\
@@ -94,9 +94,9 @@ const char MSR_FIELD[16][5] = {
                                      tmp);
 #define DATAPROC_ROR_IMM(nom, s)      char tmp[10] = "";\
      if(((i>>7)&0x1F)==0)\
-          sprintf(tmp, ", RRX");\
+          snprintf(tmp, sizeof(tmp), ", RRX");\
      else\
-          sprintf(tmp, ", ROR %d", (int)((i>>7)&0x1F));\
+          snprintf(tmp, sizeof(tmp), ", ROR %d", (int)((i>>7)&0x1F));\
      sprintf(txt, "%s%s%s %s, %s, %s%s",\
                                      #nom,\
                                      Condition[CONDITION(i)],\
@@ -141,7 +141,7 @@ const char MSR_FIELD[16][5] = {
                                         
 #define DATAPROC_ONE_OP_LSL_IMM(nom, s, v) char tmp[10] = "";\
      if(((i>>7)&0x1F)!=0)\
-          sprintf(tmp, ", LSL #%X", (int)((i>>7)&0x1F));\
+          snprintf(tmp, sizeof(tmp), ", LSL #%X", (int)((i>>7)&0x1F));\
      sprintf(txt, "%s%s%s %s, %s%s",\
                                      #nom,\
                                      Condition[CONDITION(i)],\
@@ -152,9 +152,9 @@ const char MSR_FIELD[16][5] = {
                                       
 #define DATAPROC_ONE_OP_ROR_IMM(nom, s, v)      char tmp[10] = "";\
      if(((i>>7)&0x1F)==0)\
-          sprintf(tmp, ", RRX");\
+          snprintf(tmp, sizeof(tmp), ", RRX");\
      else\
-          sprintf(tmp, ", ROR %d", (int)((i>>7)&0x1F));\
+          snprintf(tmp, sizeof(tmp), ", ROR %d", (int)((i>>7)&0x1F));\
      sprintf(txt, "%s%s%s %s, %s%s",\
                                      #nom,\
                                      Condition[CONDITION(i)],\
@@ -198,7 +198,7 @@ const char MSR_FIELD[16][5] = {
 
 #define LDRSTR_LSL_IMM(nom, op, op2, op3)      char tmp[10] = "";\
      if(((i>>7)&0x1F)!=0)\
-          sprintf(tmp, ", LSL #%X", (int)((i>>7)&0x1F));\
+          snprintf(tmp, sizeof(tmp), ", LSL #%X", (int)((i>>7)&0x1F));\
      sprintf(txt, "%s%s %s, [%s%s, %s%s%s%s",\
                                      #nom,\
                                      Condition[CONDITION(i)],\
@@ -211,9 +211,9 @@ const char MSR_FIELD[16][5] = {
                                      op3);
 #define LDRSTR_ROR_IMM(nom, op, op2, op3)      char tmp[10] = "";\
      if(((i>>7)&0x1F)==0)\
-          sprintf(tmp, ", RRX");\
+          snprintf(tmp, sizeof(tmp), ", RRX");\
      else\
-          sprintf(tmp, ", ROR %d", (int)((i>>7)&0x1F));\
+          snprintf(tmp, sizeof(tmp), ", ROR %d", (int)((i>>7)&0x1F));\
      sprintf(txt, "%s%s %s, [%s%s, %s%s%s%s",\
                                      #nom,\
                                      Condition[CONDITION(i)],\

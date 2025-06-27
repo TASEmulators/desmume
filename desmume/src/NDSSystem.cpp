@@ -967,6 +967,8 @@ static const u64 kNever = 0xFFFFFFFFFFFFFFFFULL;
 
 struct TSequenceItem
 {
+	virtual ~TSequenceItem() {}
+	
 	u64 timestamp;
 	u32 param;
 	bool enabled;
@@ -999,6 +1001,8 @@ struct TSequenceItem
 
 struct TSequenceItem_GXFIFO : public TSequenceItem
 {
+	virtual ~TSequenceItem_GXFIFO() {}
+	
 	FORCEINLINE bool isTriggered()
 	{
 		return enabled && nds_timer >= MMU.gfx3dCycles;
@@ -1022,6 +1026,8 @@ struct TSequenceItem_GXFIFO : public TSequenceItem
 
 template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 {
+	virtual ~TSequenceItem_Timer() {}
+	
 	FORCEINLINE bool isTriggered()
 	{
 		return enabled && nds_timer >= nds.timerCycle[procnum][num];
@@ -1090,6 +1096,8 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 template<int procnum, int chan> struct TSequenceItem_DMA : public TSequenceItem
 {
 	DmaController* controller;
+	
+	virtual ~TSequenceItem_DMA() {}
 
 	FORCEINLINE bool isTriggered()
 	{
@@ -1149,6 +1157,8 @@ template<int procnum, int chan> struct TSequenceItem_DMA : public TSequenceItem
 
 struct TSequenceItem_ReadSlot1 : public TSequenceItem
 {
+	virtual ~TSequenceItem_ReadSlot1() {}
+	
 	FORCEINLINE bool isTriggered()
 	{
 		return enabled && nds_timer >= timestamp;
@@ -1175,6 +1185,8 @@ struct TSequenceItem_ReadSlot1 : public TSequenceItem
 
 struct TSequenceItem_divider : public TSequenceItem
 {
+	virtual ~TSequenceItem_divider() {}
+	
 	FORCEINLINE bool isTriggered()
 	{
 		return MMU.divRunning && nds_timer >= MMU.divCycles;
@@ -1207,6 +1219,8 @@ struct TSequenceItem_divider : public TSequenceItem
 
 struct TSequenceItem_sqrtunit : public TSequenceItem
 {
+	virtual ~TSequenceItem_sqrtunit() {}
+	
 	FORCEINLINE bool isTriggered()
 	{
 		return MMU.sqrtRunning && nds_timer >= MMU.sqrtCycles;
