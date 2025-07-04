@@ -468,7 +468,7 @@ void MacOGLDisplayPresenter::Init()
 	GLint profileVersion = 0;
 	CGLDescribePixelFormat(this->_pixelFormat, 0, kCGLPFAOpenGLProfile, &profileVersion);
 	
-	if (profileVersion == kCGLOGLPVersion_3_2_Core)
+	if ( (profileVersion == kCGLOGLPVersion_3_2_Core) || (profileVersion == 0x4100) )
 	{
 		this->_contextInfo = new OGLContextInfo_3_2;
 	}
