@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2024 DeSmuME team
+	Copyright (C) 2009-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -880,7 +880,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 
 	//CONSIDER: in case some other math is wrong (shouldve been clipped OK), we might go out of bounds here.
 	//better check the Y value.
-	if ( (pLeft.y < 0) || (pLeft.y >= framebufferHeight) )
+	if ( (pLeft.y < 0) || (pLeft.y >= (s32)framebufferHeight) )
 	{
 		const float gpuScalingFactorHeight = (float)framebufferHeight / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 		printf("rasterizer rendering at y=%d! oops! (x%.1f)\n", pLeft.y, gpuScalingFactorHeight);
@@ -924,7 +924,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::_drawscanline(const POLYGON_ATTR poly
 		x = 0;
 	}
 	
-	if (x+rasterWidth > framebufferWidth)
+	if (x+rasterWidth > (s32)framebufferWidth)
 	{
 		if (RENDERER && !USELINEHACK)
 		{
@@ -1036,7 +1036,7 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 	bool first = true;
 
 	//HACK: special handling for horizontal line poly
-	if ( USELINEHACK && (left.height == 0) && (right.height == 0) && (left.y < framebufferHeight) && (left.y >= 0) )
+	if ( USELINEHACK && (left.height == 0) && (right.height == 0) && (left.y < (s32)framebufferHeight) && (left.y >= 0) )
 	{
 		const bool draw = ( !SLI || ((left.y >= this->_SLI_startLine) && (left.y < this->_SLI_endLine)) );
 		if (draw)
@@ -1265,11 +1265,11 @@ void RasterizerUnit<RENDERER>::_shape_engine(const POLYGON_ATTR polyAttr, const 
 }
 
 template<bool RENDERER>
-void RasterizerUnit<RENDERER>::SetSLI(u32 startLine, u32 endLine, bool debug)
+void RasterizerUnit<RENDERER>::SetSLI(const size_t startLine, const size_t endLine, bool debug)
 {
 	this->_debug_thisPoly = debug;
-	this->_SLI_startLine = startLine;
-	this->_SLI_endLine = endLine;
+	this->_SLI_startLine = (s32)startLine;
+	this->_SLI_endLine = (s32)endLine;
 }
 
 template<bool RENDERER>
@@ -1340,22 +1340,22 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 			{
 				if (useLineHack)
 				{
-					this->_shape_engine<SLI, true, true, true>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, true, true, true>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, (int)vertCount);
 				}
 				else
 				{
-					this->_shape_engine<SLI, true, true, false>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, true, true, false>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, (int)vertCount);
 				}
 			}
 			else
 			{
 				if (useLineHack)
 				{
-					this->_shape_engine<SLI, true, false, true>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, true, false, true>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, (int)vertCount);
 				}
 				else
 				{
-					this->_shape_engine<SLI, true, false, false>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, true, false, false>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, (int)vertCount);
 				}
 			}
 		}
@@ -1365,22 +1365,22 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 			{
 				if (useLineHack)
 				{
-					this->_shape_engine<SLI, false, true, true>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, false, true, true>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, (int)vertCount);
 				}
 				else
 				{
-					this->_shape_engine<SLI, false, true, false>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, false, true, false>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, (int)vertCount);
 				}
 			}
 			else
 			{
 				if (useLineHack)
 				{
-					this->_shape_engine<SLI, false, false, true>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, false, false, true>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, (int)vertCount);
 				}
 				else
 				{
-					this->_shape_engine<SLI, false, false, false>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					this->_shape_engine<SLI, false, false, false>(polyAttr, isPolyTranslucent, dstColor, dstWidth, dstHeight, (int)vertCount);
 				}
 			}
 		}
@@ -1770,7 +1770,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	_enableLineHack = CommonSettings.GFX3D_LineHack;
 	_enableFragmentSamplingHack = CommonSettings.GFX3D_TXTHack;
 	
-	_HACK_viewer_rasterizerUnit.SetSLI(0, (u32)_framebufferHeight, false);
+	_HACK_viewer_rasterizerUnit.SetSLI(0, _framebufferHeight, false);
 	
 	const size_t coreCount = CommonSettings.num_cores;
 	_threadCount = coreCount;
@@ -1801,7 +1801,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 		_threadClearParam[0].startPixel = 0;
 		_threadClearParam[0].endPixel = _framebufferPixCount;
 		
-		_rasterizerUnit[0].SetSLI((u32)_threadPostprocessParam[0].startLine, (u32)_threadPostprocessParam[0].endLine, false);
+		_rasterizerUnit[0].SetSLI(_threadPostprocessParam[0].startLine, _threadPostprocessParam[0].endLine, false);
 		_rasterizerUnit[0].SetRenderer(this);
 	}
 	else
@@ -1827,7 +1827,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 			_threadClearParam[i].startPixel = i * _customPixelsPerThread;
 			_threadClearParam[i].endPixel = (i < _threadCount - 1) ? (i + 1) * _customPixelsPerThread : _framebufferPixCount;
 			
-			_rasterizerUnit[i].SetSLI((u32)_threadPostprocessParam[i].startLine, (u32)_threadPostprocessParam[i].endLine, false);
+			_rasterizerUnit[i].SetSLI(_threadPostprocessParam[i].startLine, _threadPostprocessParam[i].endLine, false);
 			_rasterizerUnit[i].SetRenderer(this);
 			
 			char name[16];
@@ -2473,7 +2473,7 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 		this->_threadClearParam[0].startPixel = 0;
 		this->_threadClearParam[0].endPixel = pixCount;
 		
-		this->_rasterizerUnit[0].SetSLI((u32)this->_threadPostprocessParam[0].startLine, (u32)this->_threadPostprocessParam[0].endLine, false);
+		this->_rasterizerUnit[0].SetSLI(this->_threadPostprocessParam[0].startLine, this->_threadPostprocessParam[0].endLine, false);
 	}
 	else
 	{
@@ -2488,7 +2488,7 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 			this->_threadClearParam[i].startPixel = i * this->_customPixelsPerThread;
 			this->_threadClearParam[i].endPixel = (i < this->_threadCount - 1) ? (i + 1) * this->_customPixelsPerThread : pixCount;
 			
-			this->_rasterizerUnit[i].SetSLI((u32)this->_threadPostprocessParam[i].startLine, (u32)this->_threadPostprocessParam[i].endLine, false);
+			this->_rasterizerUnit[i].SetSLI(this->_threadPostprocessParam[i].startLine, this->_threadPostprocessParam[i].endLine, false);
 		}
 	}
 	

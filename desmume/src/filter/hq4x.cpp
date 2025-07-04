@@ -41,9 +41,9 @@
 
 void hq4x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst2, u32 *__restrict dst3,
 				 const u32 *src0, const u32 *src1, const u32 *src2,
-				 unsigned count, unsigned flag)
+				 size_t count, unsigned flag)
 {
-	for (unsigned i = 0; i < count; ++i)
+	for (size_t i = 0; i < count; ++i)
 	{
 		u8 mask = 0;
 		u32 c[9];
@@ -130,9 +130,9 @@ void hq4x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst
 
 void hq4xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst2, u32 *__restrict dst3,
 				  const u32 *src0, const u32 *src1, const u32 *src2,
-				  unsigned count, unsigned flag)
+				  size_t count, unsigned flag)
 {
-	for (unsigned i = 0; i < count; ++i)
+	for (size_t i = 0; i < count; ++i)
 	{
 		u8 mask = 0;
 		u32 c[9];
@@ -183,7 +183,7 @@ void hq4xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict ds
 			
 			brightArray[j] = bright;
 		}
-		unsigned int diffBright = ((maxBright - minBright) * 7) >> 4;
+		u32 diffBright = ((u32)(maxBright - minBright) * 7) >> 4;
 		if(diffBright > 7)
 		{
 			const int centerBright = brightArray[4];

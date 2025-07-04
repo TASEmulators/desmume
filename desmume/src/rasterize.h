@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2023 DeSmuME team
+	Copyright (C) 2009-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -116,8 +116,8 @@ class RasterizerUnit
 {
 protected:
 	bool _debug_thisPoly;
-	u32 _SLI_startLine;
-	u32 _SLI_endLine;
+	s32 _SLI_startLine;
+	s32 _SLI_endLine;
 	
 	SoftRasterizerRenderer *_softRender;
 	SoftRasterizerTexture *_currentTexture;
@@ -139,7 +139,7 @@ protected:
 	template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> void _shape_engine(const POLYGON_ATTR polyAttr, const bool isPolyTranslucent, Color4u8 *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type);
 	
 public:
-	void SetSLI(u32 startLine, u32 endLine, bool debug);
+	void SetSLI(const size_t startLine, const size_t endLine, bool debug);
 	void SetRenderer(SoftRasterizerRenderer *theRenderer);
 	template<bool SLI, bool USELINEHACK> FORCEINLINE void Render();
 };

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2024 DeSmuME team
+	Copyright (C) 2007-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -266,7 +266,7 @@ public:
 	static void* operator new(size_t size);
 	static void operator delete(void *p);
 	Render3D();
-	~Render3D();
+	virtual ~Render3D();
 	
 	const Render3DDeviceInfo& GetDeviceInfo();
 	RendererID GetRenderID();
@@ -332,6 +332,7 @@ class Render3D_SIMD : public Render3D
 {
 public:
 	Render3D_SIMD();
+	virtual ~Render3D_SIMD() {}
 	
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
@@ -341,6 +342,7 @@ public:
 class Render3D_AVX2 : public Render3D_SIMD<32>
 {
 public:
+	virtual ~Render3D_AVX2() {}
 	virtual void _ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
 };
 
@@ -349,6 +351,7 @@ public:
 class Render3D_SSE2 : public Render3D_SIMD<16>
 {
 public:
+	virtual ~Render3D_SSE2() {}
 	virtual void _ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
 };
 
@@ -357,6 +360,7 @@ public:
 class Render3D_NEON : public Render3D_SIMD<16>
 {
 public:
+	virtual ~Render3D_NEON() {}
 	virtual void _ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
 };
 
@@ -365,6 +369,7 @@ public:
 class Render3D_AltiVec : public Render3D_SIMD<16>
 {
 public:
+	virtual ~Render3D_AltiVec() {}
 	virtual void _ClearImageBaseLoop(const u16 *__restrict inColor16, const u16 *__restrict inDepth16, u16 *__restrict outColor16, u32 *__restrict outDepth24, u8 *__restrict outFog);
 };
 

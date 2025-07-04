@@ -270,13 +270,11 @@
 //   }
 //}
 
-static void lq2x_32_def(u32* dst0, u32* dst1, const u32* src0, const u32* src1, const u32* src2, unsigned count)
+static void lq2x_32_def(u32* dst0, u32* dst1, const u32* src0, const u32* src1, const u32* src2, size_t count)
 {
-	unsigned i;
-
-	for(i=0;i<count;++i) {
-		unsigned char mask;
-
+	for (size_t i = 0; i < count; ++i)
+	{
+		u8 mask = 0;
 		u32 c[9];
 
 		c[1] = src0[0];
@@ -302,8 +300,6 @@ static void lq2x_32_def(u32* dst0, u32* dst1, const u32* src0, const u32* src1, 
 			c[5] = c[4];
 			c[8] = c[7];
 		}
-
-		mask = 0;
 
 		if (c[0] != c[4])
 			mask |= 1 << 0;
@@ -380,14 +376,12 @@ static void lq2x_32_def(u32* dst0, u32* dst1, const u32* src0, const u32* src1, 
 	}
 }
 
-static void lq2xS_32_def(u32* dst0, u32* dst1, const u32* src0, const u32* src1, const u32* src2, unsigned count)
+static void lq2xS_32_def(u32* dst0, u32* dst1, const u32* src0, const u32* src1, const u32* src2, size_t count)
 {
-   unsigned i;
-
-   for(i=0;i<count;++i) {
-      unsigned char mask = 0;
-
-      u32 c[9];
+	for (size_t i = 0; i < count; ++i)
+	{
+		u8 mask = 0;
+		u32 c[9];
 
       c[1] = src0[0];
       c[4] = src1[0];
@@ -429,7 +423,7 @@ static void lq2xS_32_def(u32* dst0, u32* dst1, const u32* src0, const u32* src1,
 
 		brightArray[j] = bright;
 	}
-	int diffBright = (maxBright - minBright) >> 4;
+	u32 diffBright = (u32)(maxBright - minBright) >> 4;
 	if(diffBright > 1)
 	{
 		const int centerBright = brightArray[4];

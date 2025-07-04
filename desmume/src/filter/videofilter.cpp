@@ -306,7 +306,7 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 	}
 	memset(newPixBuffer, 0, width * (height + 8) * sizeof(uint32_t));
 	
-	if (this->__vfSrcSurface.Surface == NULL || this->__vfSrcSurface.Width != width || this->__vfSrcSurface.Height != height)
+	if ( (this->__vfSrcSurface.Surface == NULL) || ((size_t)this->__vfSrcSurface.Width != width) || ((size_t)this->__vfSrcSurface.Height != height) )
 	{
 		sizeChanged = true;
 	}

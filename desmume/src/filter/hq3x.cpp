@@ -39,9 +39,9 @@
  * This effect is a rewritten implementation of the hq3x effect made by Maxim Stepin
  */
 
-void hq3x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst2, const u32 *src0, const u32 *src1, const u32 *src2, int count)
+void hq3x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst2, const u32 *src0, const u32 *src1, const u32 *src2, size_t count)
 {
-	for (int i = 0; i < count; ++i)
+	for (size_t i = 0; i < count; ++i)
 	{
 		u8 mask = 0;
 		u32 c[9];
@@ -125,9 +125,9 @@ void hq3x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst
 	}
 }
 
-void hq3xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst2, const u32 *src0, const u32 *src1, const u32 *src2, int count)
+void hq3xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst2, const u32 *src0, const u32 *src1, const u32 *src2, size_t count)
 {
-	for (int i = 0; i < count; ++i)
+	for (size_t i = 0; i < count; ++i)
 	{
 		u8 mask = 0;
 		u32 c[9];
@@ -178,7 +178,7 @@ void hq3xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict ds
 			
 			brightArray[j] = bright;
 		}
-		unsigned int diffBright = ((maxBright - minBright) * 7) >> 4;
+		u32 diffBright = ((u32)(maxBright - minBright) * 7) >> 4;
 		if(diffBright > 7)
 		{
 			const int centerBright = brightArray[4];

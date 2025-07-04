@@ -149,9 +149,9 @@
 //  }
 //}
 
-static void hq2x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, const u32 *src0, const u32 *src1, const u32 *src2, unsigned count)
+static void hq2x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, const u32 *src0, const u32 *src1, const u32 *src2, size_t count)
 {
-	for (unsigned i = 0; i < count; ++i)
+	for (size_t i = 0; i < count; ++i)
 	{
 		u8 mask = 0;
 		u32 c[9];
@@ -407,9 +407,9 @@ static void hq2x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, const u32 *s
 //  }
 //}
 
-static void hq2xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, const u32 *src0, const u32 *src1, const u32 *src2, unsigned count)
+static void hq2xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, const u32 *src0, const u32 *src1, const u32 *src2, size_t count)
 {
-	for (unsigned i = 0; i < count; ++i)
+	for (size_t i = 0; i < count; ++i)
 	{
 		u8 mask = 0;
 		u32 c[9];
@@ -460,7 +460,7 @@ static void hq2xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, const u32 *
 			
 			brightArray[j] = bright;
 		}
-		int diffBright = ((maxBright - minBright) * 7) >> 4;
+		u32 diffBright = ((u32)(maxBright - minBright) * 7) >> 4;
 		if(diffBright > 7)
 		{
 			const int centerBright = brightArray[4];

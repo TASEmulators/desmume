@@ -2,7 +2,7 @@
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
-	Copyright (C) 2009-2023 DeSmuME team
+	Copyright (C) 2009-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -102,7 +102,7 @@ enum DisplayCaptureSize
 	DisplayCaptureSize_128x128	= 0,
 	DisplayCaptureSize_256x64	= 1,
 	DisplayCaptureSize_256x128	= 2,
-	DisplayCaptureSize_256x192	= 3,
+	DisplayCaptureSize_256x192	= 3
 };
 
 typedef union
@@ -1843,6 +1843,8 @@ public:
 class GPUEventHandler
 {
 public:
+	virtual ~GPUEventHandler() {};
+	
 	virtual void DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut) = 0;
 	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo) = 0;
 	virtual void DidRender3DBegin() = 0;
@@ -1859,6 +1861,8 @@ public:
 class GPUEventHandlerDefault : public GPUEventHandler
 {
 public:
+	virtual ~GPUEventHandlerDefault() {};
+	
 	virtual void DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut);
 	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo) {};
 	virtual void DidRender3DBegin() {};

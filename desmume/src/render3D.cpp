@@ -886,7 +886,7 @@ Render3DError Render3D_SIMD<SIMDBYTES>::SetFramebufferSize(size_t w, size_t h)
 		return RENDER3DERROR_NOERR;
 	}
 	
-	this->_framebufferSIMDPixCount = (SIMDBYTES > 0) ? this->_framebufferPixCount - (this->_framebufferPixCount % SIMDBYTES) : _framebufferPixCount;
+	this->_framebufferSIMDPixCount = (SIMDBYTES > 0) ? this->_framebufferPixCount - (this->_framebufferPixCount % SIMDBYTES) : this->_framebufferPixCount;
 	
 	return error;
 }
