@@ -1464,7 +1464,7 @@ protected:
 	itemsForPriority_t _itemsForPriority[NB_PRIORITIES];
 	
 	struct MosaicColor {
-		CACHE_ALIGN u16 bg[4][GPU_FRAMEBUFFER_NATIVE_WIDTH + sizeof(u32)]; // Pad this buffer a little bit to avoid buffer overruns with vectorized gather instructions.
+		CACHE_ALIGN u16 bg[4][GPU_FRAMEBUFFER_NATIVE_WIDTH + 64]; // Pad this buffer a little bit to avoid buffer overruns with vectorized gather instructions.
 		struct Obj {
 			u16 color;
 			u8 alpha;

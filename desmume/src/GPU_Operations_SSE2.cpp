@@ -2641,14 +2641,14 @@ void GPUEngineBase::_MosaicLine(GPUEngineCompositorInfo &compInfo)
 				_mm_blendv_epi8(_mm_and_si128(dstColor16[1], _mm_set1_epi16(0x7FFF)), _mm_set1_epi16(0xFFFF), idxMask16[1])
 			};
 			
-			const v128u16 mosaicSetColorMask8 = _mm_cmpeq_epi16( _mm_loadu_si128((v128u8 *)(compInfo.renderState.mosaicWidthBG->begin + x)), _mm_setzero_si128() );
+			const v128u16 mosaicSetColorMask8 = _mm_cmpeq_epi16( _mm_load_si128((v128u8 *)(compInfo.renderState.mosaicWidthBG->begin + x)), _mm_setzero_si128() );
 			const v128u16 mosaicSetColorMask16[2] = {
 				_mm_unpacklo_epi8(mosaicSetColorMask8, mosaicSetColorMask8),
 				_mm_unpackhi_epi8(mosaicSetColorMask8, mosaicSetColorMask8)
 			};
 			
-			_mm_storeu_si128( (v128u16 *)(mosaicColorBG + x) + 0, _mm_blendv_epi8(mosaicColor16[0], _mm_loadu_si128((v128u16 *)(mosaicColorBG + x) + 0), mosaicSetColorMask16[0]) );
-			_mm_storeu_si128( (v128u16 *)(mosaicColorBG + x) + 1, _mm_blendv_epi8(mosaicColor16[1], _mm_loadu_si128((v128u16 *)(mosaicColorBG + x) + 1), mosaicSetColorMask16[1]) );
+			_mm_store_si128( (v128u16 *)(mosaicColorBG + x) + 0, _mm_blendv_epi8(mosaicColor16[0], _mm_load_si128((v128u16 *)(mosaicColorBG + x) + 0), mosaicSetColorMask16[0]) );
+			_mm_store_si128( (v128u16 *)(mosaicColorBG + x) + 1, _mm_blendv_epi8(mosaicColor16[1], _mm_load_si128((v128u16 *)(mosaicColorBG + x) + 1), mosaicSetColorMask16[1]) );
 		}
 		
 		const v128u16 outColor16[2] = {

@@ -2462,25 +2462,25 @@ void GPUEngineBase::_MosaicLine(GPUEngineCompositorInfo &compInfo)
 				_mm256_blendv_epi8(_mm256_and_si256(dstColor16[1], _mm256_set1_epi16(0x7FFF)), _mm256_set1_epi16(0xFFFF), idxMask16[1])
 			};
 			
-			const v256u16 mosaicSetColorMask8 = _mm256_permute4x64_epi64( _mm256_cmpeq_epi16(_mm256_loadu_si256((v256u8 *)(compInfo.renderState.mosaicWidthBG->begin + x)), _mm256_setzero_si256()), 0xD8 );
+			const v256u16 mosaicSetColorMask8 = _mm256_permute4x64_epi64( _mm256_cmpeq_epi16(_mm256_load_si256((v256u8 *)(compInfo.renderState.mosaicWidthBG->begin + x)), _mm256_setzero_si256()), 0xD8 );
 			const v256u16 mosaicSetColorMask16[2] = {
 				_mm256_unpacklo_epi8(mosaicSetColorMask8, mosaicSetColorMask8),
 				_mm256_unpackhi_epi8(mosaicSetColorMask8, mosaicSetColorMask8)
 			};
 			
 			__m256i mosaicColorOut[2];
-			mosaicColorOut[0] = _mm256_blendv_epi8(mosaicColor16[0], _mm256_loadu_si256((v256u16 *)(mosaicColorBG + x) + 0), mosaicSetColorMask16[0]);
-			mosaicColorOut[1] = _mm256_blendv_epi8(mosaicColor16[1], _mm256_loadu_si256((v256u16 *)(mosaicColorBG + x) + 1), mosaicSetColorMask16[1]);
+			mosaicColorOut[0] = _mm256_blendv_epi8(mosaicColor16[0], _mm256_load_si256((v256u16 *)(mosaicColorBG + x) + 0), mosaicSetColorMask16[0]);
+			mosaicColorOut[1] = _mm256_blendv_epi8(mosaicColor16[1], _mm256_load_si256((v256u16 *)(mosaicColorBG + x) + 1), mosaicSetColorMask16[1]);
 			
-			_mm256_storeu_si256((v256u16 *)(mosaicColorBG + x) + 0, mosaicColorOut[0]);
-			_mm256_storeu_si256((v256u16 *)(mosaicColorBG + x) + 1, mosaicColorOut[1]);
+			_mm256_store_si256((v256u16 *)(mosaicColorBG + x) + 0, mosaicColorOut[0]);
+			_mm256_store_si256((v256u16 *)(mosaicColorBG + x) + 1, mosaicColorOut[1]);
 		}
 		
 		const v256u32 outColor32idx[4] = {
-			_mm256_loadu_si256((v256u32 *)(compInfo.renderState.mosaicWidthBG->trunc32 + x) + 0),
-			_mm256_loadu_si256((v256u32 *)(compInfo.renderState.mosaicWidthBG->trunc32 + x) + 1),
-			_mm256_loadu_si256((v256u32 *)(compInfo.renderState.mosaicWidthBG->trunc32 + x) + 2),
-			_mm256_loadu_si256((v256u32 *)(compInfo.renderState.mosaicWidthBG->trunc32 + x) + 3)
+			_mm256_load_si256((v256u32 *)(compInfo.renderState.mosaicWidthBG->trunc32 + x) + 0),
+			_mm256_load_si256((v256u32 *)(compInfo.renderState.mosaicWidthBG->trunc32 + x) + 1),
+			_mm256_load_si256((v256u32 *)(compInfo.renderState.mosaicWidthBG->trunc32 + x) + 2),
+			_mm256_load_si256((v256u32 *)(compInfo.renderState.mosaicWidthBG->trunc32 + x) + 3)
 		};
 		
 		const v256u16 outColor32[4] = {
