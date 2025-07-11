@@ -3827,7 +3827,6 @@
 			buildPhases = (
 				AB2F3B7B15CF9C6000858373 /* ShellScript */,
 				AB2F3B7C15CF9C6000858373 /* Resources */,
-				ABE76A8015E0904E00F458AE /* ShellScript */,
 				AB2F3BC415CF9C6000858373 /* Sources */,
 				AB2F3C3A15CF9C6000858373 /* Frameworks */,
 			);
@@ -4658,20 +4657,6 @@
 			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"";
 		};
 		ABE76A7E15E0903E00F458AE /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/../svnrev.h",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}\"\nsh \"git-scmrev.sh\"";
-		};
-		ABE76A8015E0904E00F458AE /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
