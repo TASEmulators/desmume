@@ -22,6 +22,7 @@
 
 #if !defined(MAC_OS_X_VERSION_10_9)
 	#define NSOpenGLProfileVersion4_1Core 0x4100
+	#define kCGLOGLPVersion_GL4_Core      0x4100
 #endif
 
 @implementation DisplayViewOpenGLLayer
@@ -129,10 +130,6 @@ void MacOGLClientFetchObject::operator delete(void *ptr)
 
 MacOGLClientFetchObject::MacOGLClientFetchObject()
 {
-	const bool isMavericksSupported    = IsOSXVersionSupported(10, 9, 0);
-	const bool isMountainLionSupported = (isMavericksSupported    || IsOSXVersionSupported(10, 8, 0));
-	const bool isLionSupported         = (isMountainLionSupported || IsOSXVersionSupported(10, 7, 0));
-	
 	NSOpenGLPixelFormat *nsPixelFormat = nil;
 	bool useContext_3_2 = false;
 	
@@ -163,6 +160,10 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	// Request the latest context profile that is available on the system.
+	const bool isMavericksSupported    = IsOSXVersionSupported(10, 9, 0);
+	const bool isMountainLionSupported = (isMavericksSupported    || IsOSXVersionSupported(10, 8, 0));
+	const bool isLionSupported         = (isMountainLionSupported || IsOSXVersionSupported(10, 7, 0));
+	
 	if (isLionSupported)
 	{
 		attributes[10] = NSOpenGLPFAOpenGLProfile;
@@ -364,10 +365,6 @@ MacOGLDisplayPresenter::MacOGLDisplayPresenter(MacOGLClientFetchObject *fetchObj
 
 void MacOGLDisplayPresenter::__InstanceInit(MacOGLClientFetchObject *fetchObject)
 {
-	const bool isMavericksSupported    = IsOSXVersionSupported(10, 9, 0);
-	const bool isMountainLionSupported = (isMavericksSupported    || IsOSXVersionSupported(10, 8, 0));
-	const bool isLionSupported         = (isMountainLionSupported || IsOSXVersionSupported(10, 7, 0));
-	
 	_nsPixelFormat = nil;
 	
 	// Initialize the OpenGL context.
@@ -398,6 +395,10 @@ void MacOGLDisplayPresenter::__InstanceInit(MacOGLClientFetchObject *fetchObject
 	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	// Request the latest context profile that is available on the system.
+	const bool isMavericksSupported    = IsOSXVersionSupported(10, 9, 0);
+	const bool isMountainLionSupported = (isMavericksSupported    || IsOSXVersionSupported(10, 8, 0));
+	const bool isLionSupported         = (isMountainLionSupported || IsOSXVersionSupported(10, 7, 0));
+	
 	if (isLionSupported)
 	{
 		attributes[11] = NSOpenGLPFAOpenGLProfile;
@@ -468,7 +469,7 @@ void MacOGLDisplayPresenter::Init()
 	GLint profileVersion = 0;
 	CGLDescribePixelFormat(this->_pixelFormat, 0, kCGLPFAOpenGLProfile, &profileVersion);
 	
-	if ( (profileVersion == kCGLOGLPVersion_3_2_Core) || (profileVersion == 0x4100) )
+	if ( (profileVersion == kCGLOGLPVersion_3_2_Core) || (profileVersion == kCGLOGLPVersion_GL4_Core) )
 	{
 		this->_contextInfo = new OGLContextInfo_3_2;
 	}
