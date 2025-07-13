@@ -16,6 +16,7 @@
 // * do so, delete this exception statement from your version.                *
 // ****************************************************************************
 
+// 2025-07-12 (rogerman):   Add support for big-endian byte order.
 // 2024-08-01 (rogerman):   Small performance optimization to
 //                          ColorDistanceARGB::dist(). (Special thanks to m42a
 //                          for this.)
@@ -41,16 +42,32 @@
 	#define FORCE_INLINE inline
 #endif
 
-#define COLOR_MASK_A	0xFF000000
-#define COLOR_MASK_R	0x00FF0000
-#define COLOR_MASK_G	0x0000FF00
-#define COLOR_MASK_B	0x000000FF
+#if defined(MSB_FIRST)
+	#define COLOR_MASK_A	0x000000FF
+	#define COLOR_MASK_R	0x0000FF00
+	#define COLOR_MASK_G	0x00FF0000
+	#define COLOR_MASK_B	0xFF000000
+#else
+	#define COLOR_MASK_A	0xFF000000
+	#define COLOR_MASK_R	0x00FF0000
+	#define COLOR_MASK_G	0x0000FF00
+	#define COLOR_MASK_B	0x000000FF
+#endif
 
 namespace
 {
 template <uint32_t N> inline
 unsigned char getByte(uint32_t val) { return static_cast<unsigned char>((val >> (8 * N)) & 0xff); }
 
+#if defined(MSB_FIRST)
+inline unsigned char getAlpha(uint32_t pix) { return getByte<0>(pix); }
+inline unsigned char getRed  (uint32_t pix) { return getByte<1>(pix); }
+inline unsigned char getGreen(uint32_t pix) { return getByte<2>(pix); }
+inline unsigned char getBlue (uint32_t pix) { return getByte<3>(pix); }
+
+inline uint32_t makePixel(                 unsigned char r, unsigned char g, unsigned char b) { return (b << 24) | (g << 16) | (r << 8)    ; }
+inline uint32_t makePixel(unsigned char a, unsigned char r, unsigned char g, unsigned char b) { return (b << 24) | (g << 16) | (r << 8) | a; }
+#else
 inline unsigned char getAlpha(uint32_t pix) { return getByte<3>(pix); }
 inline unsigned char getRed  (uint32_t pix) { return getByte<2>(pix); }
 inline unsigned char getGreen(uint32_t pix) { return getByte<1>(pix); }
@@ -58,6 +75,7 @@ inline unsigned char getBlue (uint32_t pix) { return getByte<0>(pix); }
 
 inline uint32_t makePixel(                 unsigned char r, unsigned char g, unsigned char b) { return             (r << 16) | (g << 8) | b; }
 inline uint32_t makePixel(unsigned char a, unsigned char r, unsigned char g, unsigned char b) { return (a << 24) | (r << 16) | (g << 8) | b; }
+#endif
 
 template <unsigned int M, unsigned int N> FORCE_INLINE
 unsigned char gradientRGB_calcColor(unsigned char colFront, unsigned char colBack)
@@ -116,7 +134,11 @@ uint32_t gradientARGB_1bitAlpha(uint32_t pixFront, uint32_t pixBack) //special b
 	
 	if (weightSum == 0)
 	{
+#if defined(MSB_FIRST)
+		return (pixFront & 0xFFFFFF00);
+#else
 		return (pixFront & 0x00FFFFFF);
+#endif
 	}
 	else if (weightFront == 0)
 	{
