@@ -39,16 +39,11 @@ endif
 if ENABLE_GLX
 desmume_SOURCES += ../shared/glx_3Demu.h ../shared/glx_3Demu.cpp
 else
-if ENABLE_OSMESA
-desmume_LDADD += $(OSMESA_LIBS)
-desmume_SOURCES += ../shared/osmesa_3Demu.h ../shared/osmesa_3Demu.cpp
-else
 if ENABLE_EGL
 desmume_LDADD += $(EGL_LIBS)
 desmume_SOURCES += ../shared/egl_3Demu.h ../shared/egl_3Demu.cpp
 else
 desmume_SOURCES += ../shared/sdl_3Demu.h ../shared/sdl_3Demu.cpp
-endif
 endif
 endif
 
