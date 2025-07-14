@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2022 DeSmuME team
+	Copyright (C) 2012-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -94,46 +94,49 @@
 
 + (NSColor *) NSColorFromRGBA8888:(uint32_t)theColor
 {
-#ifdef MSB_FIRST
-	const CGFloat a = (CGFloat)((theColor >>  0) & 0xFF) / 255.0f;
-	const CGFloat b = (CGFloat)((theColor >>  8) & 0xFF) / 255.0f;
-	const CGFloat g = (CGFloat)((theColor >> 16) & 0xFF) / 255.0f;
-	const CGFloat r = (CGFloat)((theColor >> 24) & 0xFF) / 255.0f;
-#else
 	const CGFloat r = (CGFloat)((theColor >>  0) & 0xFF) / 255.0f;
 	const CGFloat g = (CGFloat)((theColor >>  8) & 0xFF) / 255.0f;
 	const CGFloat b = (CGFloat)((theColor >> 16) & 0xFF) / 255.0f;
 	const CGFloat a = (CGFloat)((theColor >> 24) & 0xFF) / 255.0f;
-#endif
 	
 	return [NSColor colorWithDeviceRed:r green:g blue:b alpha:a];
 }
 
 + (uint32_t) RGBA8888FromNSColor:(NSColor *)theColor
 {
-	if ([theColor colorSpace] != [NSColorSpace deviceRGBColorSpace])
+	NSInteger numberOfComponents = [theColor numberOfComponents];
+	if ( ([theColor colorSpace] != [NSColorSpace deviceRGBColorSpace]) || (numberOfComponents != 4) )
 	{
 		theColor = [theColor colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
-		if (theColor == nil)
+		numberOfComponents = [theColor numberOfComponents];
+		
+		if ( (theColor == nil) || (numberOfComponents != 4) )
 		{
 			return 0x00000000;
 		}
 	}
 	
-	CGFloat r, g, b, a;
-	[theColor getRed:&r green:&g blue:&b alpha:&a];
+	// Incoming NSColor objects should be under the deviceRGBColorSpace.
+	// This is typically the case for macOS v10.7 Lion and later. However,
+	// Leopard and Snow Leopard may use an NSCustomColorSpace that just so
+	// happens to be compatible with deviceRGBColorSpace.
+	//
+	// Unfortunately, calling [NSColor getRed:green:blue:alpha] in Leopard
+	// or Snow Leopard strictly wants the NSColor to be under
+	// deviceRGBColorSpace and no other, lest an exception is raised with
+	// the method call.
+	//
+	// Therefore, for compatibility purposes, we'll use the method call
+	// [NSColor getComponents:], which has looser requirements and works
+	// with all NSColor objects that are compatible with deviceRGBColorSpace.
 	
-#ifdef MSB_FIRST
-	return (((uint32_t)(a * 255.0f)) <<  0) |
-	       (((uint32_t)(b * 255.0f)) <<  8) |
-	       (((uint32_t)(g * 255.0f)) << 16) |
-	       (((uint32_t)(r * 255.0f)) << 24);
-#else
-	return (((uint32_t)(r * 255.0f)) <<  0) |
-	       (((uint32_t)(g * 255.0f)) <<  8) |
-	       (((uint32_t)(b * 255.0f)) << 16) |
-	       (((uint32_t)(a * 255.0f)) << 24);
-#endif
+	CGFloat colorComponent[4];
+	[theColor getComponents:colorComponent];
+	
+	return (((uint32_t)(colorComponent[0] * 255.0f)) <<  0) |
+	       (((uint32_t)(colorComponent[1] * 255.0f)) <<  8) |
+	       (((uint32_t)(colorComponent[2] * 255.0f)) << 16) |
+	       (((uint32_t)(colorComponent[3] * 255.0f)) << 24);
 }
 
 + (NSString *) filePathFromCPath:(const char *)cPath
@@ -464,7 +467,6 @@
 		[NSException raise:NSInternalInconsistencyException format:@"Value (%@) does not respond to -unsignedIntegerValue, -unsignedIntValue, -integerValue or -intValue.", [value class]];
 	}
 	
-	color32 = LE_TO_LOCAL_32(color32);
 	return [CocoaDSUtil NSColorFromRGBA8888:color32];
 }
 
@@ -483,7 +485,6 @@
 	}
 	
 	color32 = [CocoaDSUtil RGBA8888FromNSColor:(NSColor *)value];
-	color32 = LE_TO_LOCAL_32(color32);
 	return [NSNumber numberWithUnsignedInteger:color32];
 }
 

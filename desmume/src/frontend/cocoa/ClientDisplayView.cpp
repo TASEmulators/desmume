@@ -101,16 +101,16 @@ void ClientDisplayPresenter::__InstanceInit(const ClientDisplayPresenterProperti
 	_showRTC = false;
 	_showInputs = false;
 	
-	_hudColorExecutionSpeed = LE_TO_LOCAL_32(0xFFFFFFFF);
-	_hudColorVideoFPS = LE_TO_LOCAL_32(0xFFFFFFFF);
-	_hudColorRender3DFPS = LE_TO_LOCAL_32(0xFFFFFFFF);
-	_hudColorFrameIndex = LE_TO_LOCAL_32(0xFFFFFFFF);
-	_hudColorLagFrameCount = LE_TO_LOCAL_32(0xFFFFFFFF);
-	_hudColorCPULoadAverage = LE_TO_LOCAL_32(0xFFFFFFFF);
-	_hudColorRTC = LE_TO_LOCAL_32(0xFFFFFFFF);
-	_hudColorInputAppliedAndPending = LE_TO_LOCAL_32(0xFFFFFFFF);
-	_hudColorInputAppliedOnly = LE_TO_LOCAL_32(0xFF3030FF);
-	_hudColorInputPendingOnly = LE_TO_LOCAL_32(0xFF00C000);
+	_hudColorExecutionSpeed         = 0xFFFFFFFF;
+	_hudColorVideoFPS               = 0xFFFFFFFF;
+	_hudColorRender3DFPS            = 0xFFFFFFFF;
+	_hudColorFrameIndex             = 0xFFFFFFFF;
+	_hudColorLagFrameCount          = 0xFFFFFFFF;
+	_hudColorCPULoadAverage         = 0xFFFFFFFF;
+	_hudColorRTC                    = 0xFFFFFFFF;
+	_hudColorInputAppliedAndPending = 0xFFFFFFFF;
+	_hudColorInputAppliedOnly       = 0xFF3030FF;
+	_hudColorInputPendingOnly       = 0xFF00C000;
 	
 	_clientFrameInfo.videoFPS = 0;
 	_ndsFrameInfo.clear();
@@ -2013,10 +2013,10 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 			continue;
 		}
 		
-		vtxColorBufferPtr[j+0] = currentColor;		// Top Left
-		vtxColorBufferPtr[j+1] = currentColor;		// Top Right
-		vtxColorBufferPtr[j+2] = currentColor;		// Bottom Right
-		vtxColorBufferPtr[j+3] = currentColor;		// Bottom Left
+		vtxColorBufferPtr[j+0] = LE_TO_LOCAL_32(currentColor); // Top Left
+		vtxColorBufferPtr[j+1] = LE_TO_LOCAL_32(currentColor); // Top Right
+		vtxColorBufferPtr[j+2] = LE_TO_LOCAL_32(currentColor); // Bottom Right
+		vtxColorBufferPtr[j+3] = LE_TO_LOCAL_32(currentColor); // Bottom Left
 	}
 	
 	// Fill in the vertices for the inputs.
@@ -2039,7 +2039,7 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 	inputColors[13] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Lid == 0),    (this->_ndsFrameInfo.inputStatesApplied.Lid == 0) );
 	inputColors[14] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Touch == 0),  (this->_ndsFrameInfo.inputStatesApplied.Touch == 0) );
 	
-	uint32_t touchColor = inputColors[14];
+	uint32_t touchColor = LE_TO_LOCAL_32(inputColors[14]);
 	
 	for (size_t k = 15; k < HUD_INPUT_ELEMENT_LENGTH; k++)
 	{
@@ -2048,20 +2048,20 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 	
 	for (size_t k = 0; k < HUD_INPUT_ELEMENT_LENGTH; i++, j+=4, k++)
 	{
-		vtxColorBufferPtr[j+0] = inputColors[k];		// Top Left
-		vtxColorBufferPtr[j+1] = inputColors[k];		// Top Right
-		vtxColorBufferPtr[j+2] = inputColors[k];		// Bottom Right
-		vtxColorBufferPtr[j+3] = inputColors[k];		// Bottom Left
+		vtxColorBufferPtr[j+0] = LE_TO_LOCAL_32(inputColors[k]); // Top Left
+		vtxColorBufferPtr[j+1] = LE_TO_LOCAL_32(inputColors[k]); // Top Right
+		vtxColorBufferPtr[j+2] = LE_TO_LOCAL_32(inputColors[k]); // Bottom Right
+		vtxColorBufferPtr[j+3] = LE_TO_LOCAL_32(inputColors[k]); // Bottom Left
 	}
 	
 	touchColor = ((this->_ndsFrameInfo.inputStatesPending.Touch != 0) && (this->_ndsFrameInfo.inputStatesApplied.Touch != 0)) ? 0x00000000 : (touchColor & LE_TO_LOCAL_32(0x00FFFFFF)) | LE_TO_LOCAL_32(0x60000000);
 	
 	for (size_t k = 0; k < HUD_INPUT_TOUCH_LINE_ELEMENTS; i++, j+=4, k++)
 	{
-		vtxColorBufferPtr[j+0] = touchColor;			// Top Left
-		vtxColorBufferPtr[j+1] = touchColor;			// Top Right
-		vtxColorBufferPtr[j+2] = touchColor;			// Bottom Right
-		vtxColorBufferPtr[j+3] = touchColor;			// Bottom Left
+		vtxColorBufferPtr[j+0] = touchColor; // Top Left
+		vtxColorBufferPtr[j+1] = touchColor; // Top Right
+		vtxColorBufferPtr[j+2] = touchColor; // Bottom Right
+		vtxColorBufferPtr[j+3] = touchColor; // Bottom Left
 	}
 }
 

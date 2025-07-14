@@ -494,13 +494,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[self view] setIsHUDRealTimeClockVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"]];
 	[[self view] setIsHUDInputVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowInput"]];
 	
-	[[self view] setHudColorExecutionSpeed:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_ExecutionSpeed"])]];
-	[[self view] setHudColorVideoFPS:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_VideoFPS"])]];
-	[[self view] setHudColorRender3DFPS:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Render3DFPS"])]];
-	[[self view] setHudColorFrameIndex:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_FrameIndex"])]];
-	[[self view] setHudColorLagFrameCount:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_LagFrameCount"])]];
-	[[self view] setHudColorCPULoadAverage:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_CPULoadAverage"])]];
-	[[self view] setHudColorRTC:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32((uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_RTC"])]];
+	[[self view] setHudColorExecutionSpeed:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_ExecutionSpeed"]]];
+	[[self view] setHudColorVideoFPS:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_VideoFPS"]]];
+	[[self view] setHudColorRender3DFPS:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Render3DFPS"]]];
+	[[self view] setHudColorFrameIndex:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_FrameIndex"]]];
+	[[self view] setHudColorLagFrameCount:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_LagFrameCount"]]];
+	[[self view] setHudColorCPULoadAverage:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_CPULoadAverage"]]];
+	[[self view] setHudColorRTC:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_RTC"]]];
 }
 
 - (BOOL) masterStatusBarState
