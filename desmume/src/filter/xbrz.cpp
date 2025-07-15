@@ -16,7 +16,7 @@
 // * do so, delete this exception statement from your version.                *
 // ****************************************************************************
 
-// 2025-07-12 (rogerman):   Add support for big-endian byte order.
+// 2025-07-15 (rogerman):   Add support for big-endian byte order.
 // 2024-08-01 (rogerman):   Small performance optimization to
 //                          ColorDistanceARGB::dist(). (Special thanks to m42a
 //                          for this.)
@@ -59,15 +59,6 @@ namespace
 template <uint32_t N> inline
 unsigned char getByte(uint32_t val) { return static_cast<unsigned char>((val >> (8 * N)) & 0xff); }
 
-#if defined(MSB_FIRST)
-inline unsigned char getAlpha(uint32_t pix) { return getByte<0>(pix); }
-inline unsigned char getRed  (uint32_t pix) { return getByte<1>(pix); }
-inline unsigned char getGreen(uint32_t pix) { return getByte<2>(pix); }
-inline unsigned char getBlue (uint32_t pix) { return getByte<3>(pix); }
-
-inline uint32_t makePixel(                 unsigned char r, unsigned char g, unsigned char b) { return (b << 24) | (g << 16) | (r << 8)    ; }
-inline uint32_t makePixel(unsigned char a, unsigned char r, unsigned char g, unsigned char b) { return (b << 24) | (g << 16) | (r << 8) | a; }
-#else
 inline unsigned char getAlpha(uint32_t pix) { return getByte<3>(pix); }
 inline unsigned char getRed  (uint32_t pix) { return getByte<2>(pix); }
 inline unsigned char getGreen(uint32_t pix) { return getByte<1>(pix); }
@@ -75,6 +66,23 @@ inline unsigned char getBlue (uint32_t pix) { return getByte<0>(pix); }
 
 inline uint32_t makePixel(                 unsigned char r, unsigned char g, unsigned char b) { return             (r << 16) | (g << 8) | b; }
 inline uint32_t makePixel(unsigned char a, unsigned char r, unsigned char g, unsigned char b) { return (a << 24) | (r << 16) | (g << 8) | b; }
+
+#if defined(MSB_FIRST)
+inline unsigned char getAlpha_DesmumeTexture(uint32_t pix) { return getByte<0>(pix); }
+inline unsigned char getRed_DesmumeTexture  (uint32_t pix) { return getByte<1>(pix); }
+inline unsigned char getGreen_DesmumeTexture(uint32_t pix) { return getByte<2>(pix); }
+inline unsigned char getBlue_DesmumeTexture (uint32_t pix) { return getByte<3>(pix); }
+	
+inline uint32_t makePixel_DesmumeTexture(                 unsigned char r, unsigned char g, unsigned char b) { return (b << 24) | (g << 16) | (r << 8)    ; }
+inline uint32_t makePixel_DesmumeTexture(unsigned char a, unsigned char r, unsigned char g, unsigned char b) { return (b << 24) | (g << 16) | (r << 8) | a; }
+#else
+inline unsigned char getAlpha_DesmumeTexture(uint32_t pix) { return getAlpha(pix); }
+inline unsigned char getRed_DesmumeTexture  (uint32_t pix) { return getRed  (pix); }
+inline unsigned char getGreen_DesmumeTexture(uint32_t pix) { return getGreen(pix); }
+inline unsigned char getBlue_DesmumeTexture (uint32_t pix) { return getBlue (pix); }
+	
+inline uint32_t makePixel_DesmumeTexture(                 unsigned char r, unsigned char g, unsigned char b) { return makePixel(  r,g,b); }
+inline uint32_t makePixel_DesmumeTexture(unsigned char a, unsigned char r, unsigned char g, unsigned char b) { return makePixel(a,r,g,b); }
 #endif
 
 template <unsigned int M, unsigned int N> FORCE_INLINE
@@ -128,8 +136,8 @@ uint32_t gradientARGB(uint32_t pixFront, uint32_t pixBack) //find intermediate c
 template <unsigned int M, unsigned int N> inline
 uint32_t gradientARGB_1bitAlpha(uint32_t pixFront, uint32_t pixBack) //special blending mode for NDS textures -- assumes that the alpha component value is either 0x00 or 0xFF
 {
-	const unsigned int weightFront = getAlpha(pixFront) * M;
-	const unsigned int weightBack  = getAlpha(pixBack) * (N - M);
+	const unsigned int weightFront = getAlpha_DesmumeTexture(pixFront) * M;
+	const unsigned int weightBack  = getAlpha_DesmumeTexture(pixBack) * (N - M);
 	const unsigned int weightSum   = weightFront + weightBack;
 	
 	if (weightSum == 0)
@@ -150,10 +158,10 @@ uint32_t gradientARGB_1bitAlpha(uint32_t pixFront, uint32_t pixBack) //special b
 	}
 	
 	// At this point, we know that both pixels must be opaque, so treat them as such.
-	return makePixel(0xFF,
-					 gradientRGB_calcColor<M, N>(getRed  (pixFront), getRed  (pixBack)),
-					 gradientRGB_calcColor<M, N>(getGreen(pixFront), getGreen(pixBack)),
-					 gradientRGB_calcColor<M, N>(getBlue (pixFront), getBlue (pixBack)));
+	return makePixel_DesmumeTexture(0xFF,
+	                                gradientRGB_calcColor<M, N>(getRed_DesmumeTexture  (pixFront), getRed_DesmumeTexture  (pixBack)),
+	                                gradientRGB_calcColor<M, N>(getGreen_DesmumeTexture(pixFront), getGreen_DesmumeTexture(pixBack)),
+	                                gradientRGB_calcColor<M, N>(getBlue_DesmumeTexture (pixFront), getBlue_DesmumeTexture (pixBack)));
 }
 
 //inline
@@ -1207,6 +1215,35 @@ struct ColorDistanceARGB
     }
 };
 
+struct ColorDistanceARGB_DesmumeTexture
+{
+    static double dist(uint32_t pix1, uint32_t pix2, double luminanceWeight)
+    {
+        const int a1 = getAlpha_DesmumeTexture(pix1);
+        const int a2 = getAlpha_DesmumeTexture(pix2);
+		
+        if (a1 == 0)
+            return a2;
+        if (a2 == 0)
+            return a1;
+		
+#if defined(MSB_FIRST)
+		const uint32_t pix1Swapped = ((pix1 & 0x000000FF) << 24) | ((pix1 & 0x0000FF00) << 8) | ((pix1 >> 8) & 0x0000FF00) | ((pix1 >> 24) & 0x000000FF);
+		const uint32_t pix2Swapped = ((pix2 & 0x000000FF) << 24) | ((pix2 & 0x0000FF00) << 8) | ((pix2 >> 8) & 0x0000FF00) | ((pix2 >> 24) & 0x000000FF);
+		const double d = DistYCbCrBuffer::dist(pix1Swapped, pix2Swapped);
+#else
+		const double d = DistYCbCrBuffer::dist(pix1, pix2);
+#endif
+        if (a1 == 255 && a2 == 255)
+            return d;
+        if (a1 == a2)
+            return a1 * d / 255.0;
+        if (a1 < a2)
+            return a1 * d / 255.0 + (a2 - a1);
+        else
+            return a2 * d / 255.0 + (a1 - a2);
+    }
+};
 
 struct ColorGradientRGB
 {
@@ -1245,15 +1282,15 @@ void xbrz::scale(const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight
             switch (SCALEFACTOR)
             {
                 case 2:
-                    return scaleImage<Scaler2x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                    return scaleImage<Scaler2x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB_DesmumeTexture>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
                 case 3:
-                    return scaleImage<Scaler3x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                    return scaleImage<Scaler3x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB_DesmumeTexture>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
                 case 4:
-                    return scaleImage<Scaler4x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                    return scaleImage<Scaler4x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB_DesmumeTexture>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
                 case 5:
-                    return scaleImage<Scaler5x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                    return scaleImage<Scaler5x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB_DesmumeTexture>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
                 case 6:
-                    return scaleImage<Scaler6x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                    return scaleImage<Scaler6x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB_DesmumeTexture>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
             }
             break;
 
