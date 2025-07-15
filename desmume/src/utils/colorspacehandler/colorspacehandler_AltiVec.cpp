@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2024 DeSmuME team
+	Copyright (C) 2016-2025 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -67,7 +67,7 @@ FORCEINLINE void ColorspaceConvert555aTo8888_AltiVec(const v128u16 &srcColor, co
 template <bool SWAP_RB, BESwapFlags BE_BYTESWAP>
 FORCEINLINE void ColorspaceConvert555xTo888x_AltiVec(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
-	const v128u16 srcAlphaBits16 = {0, 0, 0, 0, 0, 0, 0, 0};
+	const v128u16 srcAlphaBits16 = vec_splat_u16(0);
 	ColorspaceConvert555aTo8888_AltiVec<SWAP_RB, BE_BYTESWAP>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
@@ -115,14 +115,14 @@ FORCEINLINE void ColorspaceConvert555aTo6665_AltiVec(const v128u16 &srcColor, co
 template <bool SWAP_RB, BESwapFlags BE_BYTESWAP>
 FORCEINLINE void ColorspaceConvert555xTo666x_AltiVec(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
-	const v128u16 srcAlphaBits16 = {0, 0, 0, 0, 0, 0, 0, 0};
+	const v128u16 srcAlphaBits16 = vec_splat_u16(0);
 	ColorspaceConvert555aTo6665_AltiVec<SWAP_RB, BE_BYTESWAP>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
 template <bool SWAP_RB, BESwapFlags BE_BYTESWAP>
 FORCEINLINE void ColorspaceConvert555xTo8888Opaque_AltiVec(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
-	const v128u16 srcAlphaBits16 = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
+	const v128u16 srcAlphaBits16 = vec_splat_u16((s16)0xFFFF);
 	ColorspaceConvert555aTo8888_AltiVec<SWAP_RB, BE_BYTESWAP>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
@@ -136,14 +136,14 @@ FORCEINLINE void ColorspaceConvert555xTo6665Opaque_AltiVec(const v128u16 &srcCol
 template <bool SWAP_RB, BESwapFlags BE_BYTESWAP>
 FORCEINLINE void ColorspaceConvert5551To8888_AltiVec(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
-	const v128u16 srcAlphaBits16 = (v128u16)vec_cmpgt( ((v128s16){0,0,  0,0,  0,0,  0,0}), (v128s16)srcColor );
+	const v128u16 srcAlphaBits16 = (v128u16)vec_cmpgt( vec_splat_s16(0), (v128s16)srcColor );
 	ColorspaceConvert555aTo8888_AltiVec<SWAP_RB, BE_BYTESWAP>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
 template <bool SWAP_RB, BESwapFlags BE_BYTESWAP>
 FORCEINLINE void ColorspaceConvert5551To6665_AltiVec(const v128u16 &srcColor, v128u32 &dstLo, v128u32 &dstHi)
 {
-	const v128u16 srcAlphaBits16 = vec_and( (v128u16)vec_cmpgt( ((v128s16){0,0,  0,0,  0,0,  0,0}), (v128s16)srcColor ), ((v128u16){0x1F1F,0x1F1F,  0x1F1F,0x1F1F,  0x1F1F,0x1F1F,  0x1F1F,0x1F1F}) );
+	const v128u16 srcAlphaBits16 = vec_and( (v128u16)vec_cmpgt( vec_splat_s16(0), (v128s16)srcColor ), ((v128u16){0x1F1F,0x1F1F,  0x1F1F,0x1F1F,  0x1F1F,0x1F1F,  0x1F1F,0x1F1F}) );
 	ColorspaceConvert555aTo6665_AltiVec<SWAP_RB, BE_BYTESWAP>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
@@ -195,8 +195,8 @@ FORCEINLINE v128u16 _ConvertColorBaseTo5551_AltiVec(const v128u32 &srcLo, const 
 	
 	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
 	{
-		rgbLo = vec_sl( srcLo, ((v128u32){2,2,2,2}) );
-		rgbHi = vec_sl( srcHi, ((v128u32){2,2,2,2}) );
+		rgbLo = (v128u32)vec_or( vec_sl((v128u8)srcLo, ((v128u8){2,2,2,3,  2,2,2,3,  2,2,2,3,  2,2,2,3})), vec_sr((v128u8)srcLo, ((v128u8){4,4,4,2,  4,4,4,2,  4,4,4,2,  4,4,4,2})) );
+		rgbHi = (v128u32)vec_or( vec_sl((v128u8)srcHi, ((v128u8){2,2,2,3,  2,2,2,3,  2,2,2,3,  2,2,2,3})), vec_sr((v128u8)srcLo, ((v128u8){4,4,4,2,  4,4,4,2,  4,4,4,2,  4,4,4,2})) );
 		
 		// Convert alpha
 		dstAlpha = vec_packsu( vec_and(vec_sr(srcLo, ((v128u32){24,24,24,24})), ((v128u32){0x0000001F,0x0000001F,0x0000001F,0x0000001F})), vec_and(vec_sr(srcHi, ((v128u32){24,24,24,24})), ((v128u32){0x0000001F,0x0000001F,0x0000001F,0x0000001F})) );
@@ -210,7 +210,7 @@ FORCEINLINE v128u16 _ConvertColorBaseTo5551_AltiVec(const v128u32 &srcLo, const 
 		dstAlpha = vec_packsu( vec_sr(srcLo, ((v128u32){24,24,24,24})), vec_sr(srcHi, ((v128u32){24,24,24,24})) );
 	}
 	
-	dstAlpha = vec_cmpgt(dstAlpha, ((v128u16){0,0,0,0,0,0,0,0}));
+	dstAlpha = vec_cmpgt(dstAlpha, vec_splat_u16(0));
 	dstAlpha = vec_and(dstAlpha, ((v128u16){0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000}));
 	
 	// Convert RGB
@@ -228,7 +228,7 @@ FORCEINLINE v128u16 _ConvertColorBaseTo5551_AltiVec(const v128u32 &srcLo, const 
 	dstColor = (v128u16)vec_packpx(rgbLo, rgbHi);
 	dstColor = vec_and(dstColor, ((v128u16){0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF}));
 	
-	return vec_or(dstColor, dstAlpha);
+	return (v128u16)vec_or((v128u8)dstColor, (v128u8)dstAlpha);
 }
 
 template <bool SWAP_RB>
@@ -280,14 +280,13 @@ template <bool SWAP_RB, BESwapFlags BE_BYTESWAP>
 static size_t ColorspaceConvertBuffer555xTo8888Opaque_AltiVec(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec128)
 {
 	size_t i = 0;
+	v128u32 dst32[2];
 	
 	for (; i < pixCountVec128; i+=sizeof(v128u16)/sizeof(u16))
 	{
-		v128u32 dstConvertedLo, dstConvertedHi;
-		
-		ColorspaceConvert555xTo8888Opaque_AltiVec<SWAP_RB, BE_BYTESWAP>( vec_ld(0, src+i), dstConvertedLo, dstConvertedHi );
-		vec_st(dstConvertedHi,  0, dst+i);
-		vec_st(dstConvertedLo, 16, dst+i);
+		ColorspaceConvert555xTo8888Opaque_AltiVec<SWAP_RB, BE_BYTESWAP>( vec_ld(0, src+i), dst32[1], dst32[0] );
+		vec_st(dst32[0],  0, dst+i);
+		vec_st(dst32[1], 16, dst+i);
 	}
 	
 	return i;
@@ -297,14 +296,13 @@ template <bool SWAP_RB, BESwapFlags BE_BYTESWAP>
 size_t ColorspaceConvertBuffer555xTo6665Opaque_AltiVec(const u16 *__restrict src, u32 *__restrict dst, size_t pixCountVec128)
 {
 	size_t i = 0;
+	v128u32 dst32[2];
 	
 	for (; i < pixCountVec128; i+=sizeof(v128u16)/sizeof(u16))
 	{
-		v128u32 dstConvertedLo, dstConvertedHi;
-		
-		ColorspaceConvert555xTo6665Opaque_AltiVec<SWAP_RB, BE_BYTESWAP>( vec_ld(0, src+i), dstConvertedLo, dstConvertedHi );
-		vec_st(dstConvertedHi,  0, dst+i);
-		vec_st(dstConvertedLo, 16, dst+i);
+		ColorspaceConvert555xTo6665Opaque_AltiVec<SWAP_RB, BE_BYTESWAP>( vec_ld(0, src+i), dst32[1], dst32[0] );
+		vec_st(dst32[0],  0, dst+i);
+		vec_st(dst32[1], 16, dst+i);
 	}
 	
 	return i;
@@ -314,14 +312,13 @@ template <bool SWAP_RB, BESwapFlags BE_BYTESWAP>
 static size_t ColorspaceConvertBuffer5551To8888_AltiVec(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec128)
 {
 	size_t i = 0;
+	v128u32 dst32[2];
 	
 	for (; i < pixCountVec128; i+=sizeof(v128u16)/sizeof(u16))
 	{
-		v128u32 dstConvertedLo, dstConvertedHi;
-		
-		ColorspaceConvert5551To8888_AltiVec<SWAP_RB, BE_BYTESWAP>( vec_ld(0, src+i), dstConvertedLo, dstConvertedHi );
-		vec_st(dstConvertedHi,  0, dst+i);
-		vec_st(dstConvertedLo, 16, dst+i);
+		ColorspaceConvert5551To8888_AltiVec<SWAP_RB, BE_BYTESWAP>( vec_ld(0, src+i), dst32[1], dst32[0] );
+		vec_st(dst32[0],  0, dst+i);
+		vec_st(dst32[1], 16, dst+i);
 	}
 	
 	return i;
@@ -331,14 +328,13 @@ template <bool SWAP_RB, BESwapFlags BE_BYTESWAP>
 size_t ColorspaceConvertBuffer5551To6665_AltiVec(const u16 *__restrict src, u32 *__restrict dst, size_t pixCountVec128)
 {
 	size_t i = 0;
+	v128u32 dst32[2];
 	
 	for (; i < pixCountVec128; i+=sizeof(v128u16)/sizeof(u16))
 	{
-		v128u32 dstConvertedLo, dstConvertedHi;
-		
-		ColorspaceConvert5551To6665_AltiVec<SWAP_RB, BE_BYTESWAP>( vec_ld(0, src+i), dstConvertedLo, dstConvertedHi );
-		vec_st(dstConvertedHi,  0, dst+i);
-		vec_st(dstConvertedLo, 16, dst+i);
+		ColorspaceConvert5551To6665_AltiVec<SWAP_RB, BE_BYTESWAP>( vec_ld(0, src+i), dst32[1], dst32[0] );
+		vec_st(dst32[0],  0, dst+i);
+		vec_st(dst32[1], 16, dst+i);
 	}
 	
 	return i;
@@ -349,7 +345,7 @@ size_t ColorspaceConvertBuffer8888To6665_AltiVec(const u32 *src, u32 *dst, size_
 {
 	size_t i = 0;
 	
-	for (; i < pixCountVec128; i+=4)
+	for (; i < pixCountVec128; i+=sizeof(v128u32)/sizeof(u32))
 	{
 		vec_st( ColorspaceConvert8888To6665_AltiVec<SWAP_RB>(vec_ld(0, src+i)), 0, dst+i );
 	}
@@ -362,7 +358,7 @@ size_t ColorspaceConvertBuffer6665To8888_AltiVec(const u32 *src, u32 *dst, size_
 {
 	size_t i = 0;
 	
-	for (; i < pixCountVec128; i+=4)
+	for (; i < pixCountVec128; i+=sizeof(v128u32)/sizeof(u32))
 	{
 		vec_st( ColorspaceConvert6665To8888_AltiVec<SWAP_RB>(vec_ld(0, src+i)), 0, dst+i );
 	}
@@ -375,7 +371,7 @@ size_t ColorspaceConvertBuffer8888To5551_AltiVec(const u32 *__restrict src, u16 
 {
 	size_t i = 0;
 	
-	for (; i < pixCountVec128; i+=8)
+	for (; i < pixCountVec128; i+=sizeof(v128u32)/sizeof(u16))
 	{
 		vec_st( ColorspaceConvert8888To5551_AltiVec<SWAP_RB>(vec_ld(0, src+i), vec_ld(16, src+i)), 0, dst+i );
 	}
@@ -388,7 +384,7 @@ size_t ColorspaceConvertBuffer6665To5551_AltiVec(const u32 *__restrict src, u16 
 {
 	size_t i = 0;
 	
-	for (; i < pixCountVec128; i+=8)
+	for (; i < pixCountVec128; i+=sizeof(v128u32)/sizeof(u16))
 	{
 		vec_st( ColorspaceConvert6665To5551_AltiVec<SWAP_RB>(vec_ld(0, src+i), vec_ld(16, src+i)), 0, dst+i );
 	}
@@ -401,7 +397,7 @@ size_t ColorspaceConvertBuffer888xTo8888Opaque_AltiVec(const u32 *src, u32 *dst,
 {
 	size_t i = 0;
 	
-	for (; i < pixCountVec128; i+=4)
+	for (; i < pixCountVec128; i+=sizeof(v128u32)/sizeof(u32))
 	{
 		vec_st( ColorspaceConvert888xTo8888Opaque_AltiVec<SWAP_RB>(vec_ld(0, src+i)), 0, dst+i );
 	}
@@ -416,7 +412,7 @@ size_t ColorspaceConvertBuffer555xTo888_AltiVec(const u16 *src, u8 *dst, size_t 
 	v128u16 src_v128u16[2];
 	v128u32 src_v128u32[4];
 	
-	for (; i < pixCountVec128; i+=16)
+	for (; i < pixCountVec128; i+=sizeof(v128u16))
 	{
 		src_v128u16[0] = vec_ld( 0, src+i);
 		src_v128u16[1] = vec_ld(16, src+i);
