@@ -195,23 +195,19 @@ FORCEINLINE v128u16 _ConvertColorBaseTo5551_AltiVec(const v128u32 &srcLo, const 
 	
 	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
 	{
-		rgbLo = (v128u32)vec_or( vec_sl((v128u8)srcLo, ((v128u8){2,2,2,3,  2,2,2,3,  2,2,2,3,  2,2,2,3})), vec_sr((v128u8)srcLo, ((v128u8){4,4,4,2,  4,4,4,2,  4,4,4,2,  4,4,4,2})) );
-		rgbHi = (v128u32)vec_or( vec_sl((v128u8)srcHi, ((v128u8){2,2,2,3,  2,2,2,3,  2,2,2,3,  2,2,2,3})), vec_sr((v128u8)srcLo, ((v128u8){4,4,4,2,  4,4,4,2,  4,4,4,2,  4,4,4,2})) );
-		
-		// Convert alpha
-		dstAlpha = vec_packsu( vec_and(vec_sr(srcLo, ((v128u32){24,24,24,24})), ((v128u32){0x0000001F,0x0000001F,0x0000001F,0x0000001F})), vec_and(vec_sr(srcHi, ((v128u32){24,24,24,24})), ((v128u32){0x0000001F,0x0000001F,0x0000001F,0x0000001F})) );
+		rgbLo = (v128u32)vec_sl( (v128u8)srcLo, vec_splat_u8(2) );
+		rgbHi = (v128u32)vec_sl( (v128u8)srcHi, vec_splat_u8(2) );
 	}
 	else if (COLORFORMAT == NDSColorFormat_BGR888_Rev)
 	{
 		rgbLo = srcLo;
 		rgbHi = srcHi;
-		
-		// Convert alpha
-		dstAlpha = vec_packsu( vec_sr(srcLo, ((v128u32){24,24,24,24})), vec_sr(srcHi, ((v128u32){24,24,24,24})) );
 	}
 	
-	dstAlpha = vec_cmpgt(dstAlpha, vec_splat_u16(0));
-	dstAlpha = vec_and(dstAlpha, ((v128u16){0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000}));
+	// Convert alpha
+	dstAlpha = vec_packsu( vec_and(srcLo, ((v128u32){0x000000FF,0x000000FF,0x000000FF,0x000000FF})), vec_and(srcHi, ((v128u32){0x000000FF,0x000000FF,0x000000FF,0x000000FF})) );
+	dstAlpha = vec_cmpgt( dstAlpha, vec_splat_u16(0) );
+	dstAlpha = vec_and( dstAlpha, ((v128u16){0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000}) );
 	
 	// Convert RGB
 	if (SWAP_RB)
@@ -226,9 +222,9 @@ FORCEINLINE v128u16 _ConvertColorBaseTo5551_AltiVec(const v128u32 &srcLo, const 
 	}
 	
 	dstColor = (v128u16)vec_packpx(rgbLo, rgbHi);
-	dstColor = vec_and(dstColor, ((v128u16){0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF}));
+	dstColor = vec_and( dstColor, ((v128u16){0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF}) );
 	
-	return (v128u16)vec_or((v128u8)dstColor, (v128u8)dstAlpha);
+	return (v128u16)vec_or( (v128u8)dstColor, (v128u8)dstAlpha );
 }
 
 template <bool SWAP_RB>
