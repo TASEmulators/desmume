@@ -694,10 +694,11 @@ static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *_
 
 static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 {
+	CACHE_ALIGN const u16 val_u16 = val;
 	v128u16 *dst_vec128 = (v128u16 *)dst;
 	const size_t length_vec128 = elementCount / (sizeof(v128u16) / sizeof(u16));
 	
-	v128u16 val_vec128 = (v128u16){val,val,val,val,val,val,val,val}; // Don't set as const, since vec_st() cannot store a const vector.
+	v128u16 val_vec128 = (v128u16)vec_splat( vec_lde(0, &val_u16), 0 ); // Don't set as const, since vec_st() cannot store a const vector.
 	for (size_t i = 0; i < length_vec128; i++)
 		vec_st(val_vec128, i*sizeof(v128u16), dst_vec128);
 }
@@ -705,18 +706,20 @@ static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 template <size_t ELEMENTCOUNT>
 static void memset_u16_fast(void *dst, const u16 val)
 {
+	CACHE_ALIGN const u16 val_u16 = val;
 	v128u16 *dst_vec128 = (v128u16 *)dst;
 	
-	v128u16 val_vec128 = (v128u16){val,val,val,val,val,val,val,val}; // Don't set as const, since vec_st() cannot store a const vector.
+	v128u16 val_vec128 = (v128u16)vec_splat( vec_lde(0, &val_u16), 0 ); // Don't set as const, since vec_st() cannot store a const vector.
 	MACRODO_N(ELEMENTCOUNT / (sizeof(v128u16) / sizeof(u16)), vec_st(val_vec128, (X)*sizeof(v128u16), dst_vec128));
 }
 
 static void memset_u32(void *dst, const u32 val, const size_t elementCount)
 {
+	CACHE_ALIGN const u32 val_u32 = val;
 	v128u32 *dst_vec128 = (v128u32 *)dst;
 	const size_t length_vec128 = elementCount / (sizeof(v128u32) / sizeof(u32));
 	
-	v128u32 val_vec128 = (v128u32){val,val,val,val}; // Don't set as const, since vec_st() cannot store a const vector.
+	v128u32 val_vec128 = (v128u32)vec_splat( vec_lde(0, &val_u32), 0 ); // Don't set as const, since vec_st() cannot store a const vector.
 	for (size_t i = 0; i < length_vec128; i++)
 		vec_st(val_vec128, i*sizeof(v128u32), dst_vec128);
 }
@@ -724,9 +727,10 @@ static void memset_u32(void *dst, const u32 val, const size_t elementCount)
 template <size_t ELEMENTCOUNT>
 static void memset_u32_fast(void *dst, const u32 val)
 {
+	CACHE_ALIGN const u32 val_u32 = val;
 	v128u32 *dst_vec128 = (v128u32 *)dst;
 	
-	v128u32 val_vec128 = (v128u32){val,val,val,val}; // Don't set as const, since vec_st() cannot store a const vector.
+	v128u32 val_vec128 = (v128u32)vec_splat( vec_lde(0, &val_u32), 0 ); // Don't set as const, since vec_st() cannot store a const vector.
 	MACRODO_N(ELEMENTCOUNT / (sizeof(v128u32) / sizeof(u32)), vec_st(val_vec128, (X)*sizeof(v128u32), dst_vec128));
 }
 
@@ -744,31 +748,55 @@ static void stream_copy_fast(void *__restrict dst, const void *__restrict src)
 	buffer_copy_fast<VECLENGTH>(dst, src);
 }
 
-template <class T, size_t VECLENGTH, bool NEEDENDIANSWAP>
+template <class T, size_t VECLENGTH, size_t ENDIANSWAPBYTES>
 static void __buffer_copy_or_constant_fast(void *__restrict dst, const void *__restrict src, const T &c_vec)
 {
-	MACRODO_N( VECLENGTH / sizeof(v128s8), vec_st(vec_or(vec_ld((X)*sizeof(v128s8),(T*)src),c_vec), (X)*sizeof(v128s8), dst) );
+	if (ENDIANSWAPBYTES == 4)
+	{
+		static const v128u8 permuteVec = ((v128u8){3,2,1,0,  7,6,5,4,  11,10,9,8,  15,14,13,12});
+		MACRODO_N( VECLENGTH / sizeof(v128s8), vec_st( (T)vec_or(vec_perm(vec_ld((X)*sizeof(T),(v128s8 *__restrict)src), vec_splat_s8(0), permuteVec),(v128s8)c_vec), (X)*sizeof(T), (T *__restrict)dst ) );
+	}
+	else if (ENDIANSWAPBYTES == 2)
+	{
+		static const v128u8 permuteVec = ((v128u8){1,0,  3,2,  5,4,  7,6,  9,8,  11,10,  13,12,  15,14});
+		MACRODO_N( VECLENGTH / sizeof(v128s8), vec_st( (T)vec_or(vec_perm(vec_ld((X)*sizeof(T),(v128s8 *__restrict)src), vec_splat_s8(0), permuteVec),(v128s8)c_vec), (X)*sizeof(T), (T *__restrict)dst ) );
+	}
+	else
+	{
+		MACRODO_N( VECLENGTH / sizeof(v128s8), vec_st( (T)vec_or(vec_ld((X)*sizeof(T),(v128s8 *__restrict)src),(v128s8)c_vec), (X)*sizeof(T), (T *__restrict)dst ) );
+	}
 }
 
-template <class T, bool NEEDENDIANSWAP>
+template <class T, size_t ENDIANSWAPBYTES>
 static void __buffer_copy_or_constant(void *__restrict dst, const void *__restrict src, const size_t vecLength, const T &c_vec)
 {
 	switch (vecLength)
 	{
-		case 128: __buffer_copy_or_constant_fast<T, 128, NEEDENDIANSWAP>(dst, src, c_vec); break;
-		case 256: __buffer_copy_or_constant_fast<T, 256, NEEDENDIANSWAP>(dst, src, c_vec); break;
-		case 512: __buffer_copy_or_constant_fast<T, 512, NEEDENDIANSWAP>(dst, src, c_vec); break;
-		case 768: __buffer_copy_or_constant_fast<T, 768, NEEDENDIANSWAP>(dst, src, c_vec); break;
-		case 1024: __buffer_copy_or_constant_fast<T, 1024, NEEDENDIANSWAP>(dst, src, c_vec); break;
-		case 2048: __buffer_copy_or_constant_fast<T, 2048, NEEDENDIANSWAP>(dst, src, c_vec); break;
-		case 2304: __buffer_copy_or_constant_fast<T, 2304, NEEDENDIANSWAP>(dst, src, c_vec); break;
-		case 4096: __buffer_copy_or_constant_fast<T, 4096, NEEDENDIANSWAP>(dst, src, c_vec); break;
+		case 128: __buffer_copy_or_constant_fast<T, 128, ENDIANSWAPBYTES>(dst, src, c_vec); break;
+		case 256: __buffer_copy_or_constant_fast<T, 256, ENDIANSWAPBYTES>(dst, src, c_vec); break;
+		case 512: __buffer_copy_or_constant_fast<T, 512, ENDIANSWAPBYTES>(dst, src, c_vec); break;
+		case 768: __buffer_copy_or_constant_fast<T, 768, ENDIANSWAPBYTES>(dst, src, c_vec); break;
+		case 1024: __buffer_copy_or_constant_fast<T, 1024, ENDIANSWAPBYTES>(dst, src, c_vec); break;
+		case 2048: __buffer_copy_or_constant_fast<T, 2048, ENDIANSWAPBYTES>(dst, src, c_vec); break;
+		case 2304: __buffer_copy_or_constant_fast<T, 2304, ENDIANSWAPBYTES>(dst, src, c_vec); break;
+		case 4096: __buffer_copy_or_constant_fast<T, 4096, ENDIANSWAPBYTES>(dst, src, c_vec); break;
 			
 		default:
 		{
 			for (size_t i = 0; i < vecLength; i+=sizeof(T))
 			{
-				vec_st(vec_or(vec_ld(i,(T*)src),c_vec), i, dst);
+				if (ENDIANSWAPBYTES == 4)
+				{
+					vec_st( (T)vec_or(vec_perm(vec_ld(i,(v128s8 *__restrict)src), vec_splat_s8(0), ((v128u8){3,2,1,0,  7,6,5,4,  11,10,9,8,  15,14,13,12})),(v128s8)c_vec), i, (T *__restrict)dst );
+				}
+				else if (ENDIANSWAPBYTES == 2)
+				{
+					vec_st( (T)vec_or(vec_perm(vec_ld(i,(v128s8 *__restrict)src), vec_splat_s8(0), ((v128u8){1,0,  3,2,  5,4,  7,6,  9,8,  11,10,  13,12,  15,14})),(v128s8)c_vec), i, (T *__restrict)dst );
+				}
+				else
+				{
+					vec_st( (T)vec_or(vec_ld(i,(v128s8 *__restrict)src),(v128s8)c_vec), i, (T *__restrict)dst );
+				}
 			}
 			break;
 		}
@@ -777,47 +805,81 @@ static void __buffer_copy_or_constant(void *__restrict dst, const void *__restri
 
 static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
 {
-	const v128s8 c_vec = {c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c};
-	__buffer_copy_or_constant<v128s8, false>(dst, src, vecLength, c_vec);
+	CACHE_ALIGN const s8 c_8 = c;
+	const v128s8 c_vec = (v128s8)vec_splat( vec_lde(0, &c_8), 0 );
+	__buffer_copy_or_constant<v128s8, 0>(dst, src, vecLength, c_vec);
 }
 
 template <size_t VECLENGTH>
 static void buffer_copy_or_constant_s8_fast(void *__restrict dst, const void *__restrict src, const s8 c)
 {
-	const v128s8 c_vec = {c,c,c,c,c,c,c,c,c,c,c,c,c,c,c,c};
-	__buffer_copy_or_constant_fast<v128s8, VECLENGTH>(dst, src, c_vec);
+	CACHE_ALIGN const s8 c_8 = c;
+	const v128s8 c_vec = (v128s8)vec_splat( vec_lde(0, &c_8), 0 );
+	__buffer_copy_or_constant_fast<v128s8, VECLENGTH, 0>(dst, src, c_vec);
 }
 
 template <bool NEEDENDIANSWAP>
 static void buffer_copy_or_constant_s16(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s16 c)
 {
-	const s16 c_16 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16(c) : c;
-	const v128s16 c_vec = {c_16, c_16, c_16, c_16, c_16, c_16, c_16, c_16};
-	__buffer_copy_or_constant<v128s16, NEEDENDIANSWAP>(dst, src, vecLength, c_vec);
+	CACHE_ALIGN const s16 c_16 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16(c) : c;
+	const v128s16 c_vec = (v128s16)vec_splat( vec_lde(0, &c_16), 0 );
+	
+	if (NEEDENDIANSWAP)
+	{
+		__buffer_copy_or_constant<v128s16, 2>(dst, src, vecLength, c_vec);
+	}
+	else
+	{
+		__buffer_copy_or_constant<v128s16, 0>(dst, src, vecLength, c_vec);
+	}
 }
 
 template <size_t VECLENGTH, bool NEEDENDIANSWAP>
 static void buffer_copy_or_constant_s16_fast(void *__restrict dst, const void *__restrict src, const s16 c)
 {
-	const s16 c_16 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16(c) : c;
-	const v128s16 c_vec = {c_16, c_16, c_16, c_16, c_16, c_16, c_16, c_16};
-	__buffer_copy_or_constant_fast<v128s16, VECLENGTH, NEEDENDIANSWAP>(dst, src, c_vec);
+	CACHE_ALIGN const s16 c_16 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16(c) : c;
+	const v128s16 c_vec = (v128s16)vec_splat( vec_lde(0, &c_16), 0 );
+	
+	if (NEEDENDIANSWAP)
+	{
+		__buffer_copy_or_constant_fast<v128s16, VECLENGTH, 2>(dst, src, c_vec);
+	}
+	else
+	{
+		__buffer_copy_or_constant_fast<v128s16, VECLENGTH, 0>(dst, src, c_vec);
+	}
 }
 
 template <bool NEEDENDIANSWAP>
 static void buffer_copy_or_constant_s32(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s32 c)
 {
-	const s32 c_32 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32(c) : c;
-	const v128s32 c_vec = {c_32, c_32, c_32, c_32};
-	__buffer_copy_or_constant<v128s32, NEEDENDIANSWAP>(dst, src, vecLength, c_vec);
+	CACHE_ALIGN const s32 c_32 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32(c) : c;
+	const v128s32 c_vec = (v128s32)vec_splat( vec_lde(0, &c_32), 0 );
+	
+	if (NEEDENDIANSWAP)
+	{
+		__buffer_copy_or_constant<v128s32, 4>(dst, src, vecLength, c_vec);
+	}
+	else
+	{
+		__buffer_copy_or_constant<v128s32, 0>(dst, src, vecLength, c_vec);
+	}
 }
 
 template <size_t VECLENGTH, bool NEEDENDIANSWAP>
 static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *__restrict src, const s32 c)
 {
-	const s32 c_32 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32(c) : c;
-	const v128s32 c_vec = {c_32, c_32, c_32, c_32};
-	__buffer_copy_or_constant_fast<v128s32, VECLENGTH, NEEDENDIANSWAP>(dst, src, c_vec);
+	CACHE_ALIGN const s32 c_32 = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32(c) : c;
+	const v128s32 c_vec = (v128s32)vec_splat( vec_lde(0, &c_32), 0 );
+	
+	if (NEEDENDIANSWAP)
+	{
+		__buffer_copy_or_constant_fast<v128s32, VECLENGTH, 4>(dst, src, c_vec);
+	}
+	else
+	{
+		__buffer_copy_or_constant_fast<v128s32, VECLENGTH, 0>(dst, src, c_vec);
+	}
 }
 
 #else // No SIMD
