@@ -2039,7 +2039,7 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 	inputColors[13] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Lid == 0),    (this->_ndsFrameInfo.inputStatesApplied.Lid == 0) );
 	inputColors[14] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Touch == 0),  (this->_ndsFrameInfo.inputStatesApplied.Touch == 0) );
 	
-	uint32_t touchColor = LE_TO_LOCAL_32(inputColors[14]);
+	uint32_t touchColor = inputColors[14];
 	
 	for (size_t k = 15; k < HUD_INPUT_ELEMENT_LENGTH; k++)
 	{
@@ -2054,7 +2054,7 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 		vtxColorBufferPtr[j+3] = LE_TO_LOCAL_32(inputColors[k]); // Bottom Left
 	}
 	
-	touchColor = ((this->_ndsFrameInfo.inputStatesPending.Touch != 0) && (this->_ndsFrameInfo.inputStatesApplied.Touch != 0)) ? 0x00000000 : (touchColor & LE_TO_LOCAL_32(0x00FFFFFF)) | LE_TO_LOCAL_32(0x60000000);
+	touchColor = ((this->_ndsFrameInfo.inputStatesPending.Touch != 0) && (this->_ndsFrameInfo.inputStatesApplied.Touch != 0)) ? 0x00000000 : LE_TO_LOCAL_32((touchColor & 0x00FFFFFF) | 0x60000000);
 	
 	for (size_t k = 0; k < HUD_INPUT_TOUCH_LINE_ELEMENTS; i++, j+=4, k++)
 	{
