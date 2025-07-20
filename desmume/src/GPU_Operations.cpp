@@ -242,8 +242,8 @@ void PixelOperation::InitLUTs()
 			cur.bits.blue = (cur.bits.blue + ((31 - cur.bits.blue) * i / 16));
 			cur.bits.alpha = 0;
 			PixelOperation::BrightnessUpTable555[i][j] = cur.val;
-			PixelOperation::BrightnessUpTable666[i][j].value = LOCAL_TO_LE_32( COLOR555TO666(cur.val) );
-			PixelOperation::BrightnessUpTable888[i][j].value = LOCAL_TO_LE_32( COLOR555TO888(cur.val) );
+			PixelOperation::BrightnessUpTable666[i][j].value = COLOR555TO666(cur.val);
+			PixelOperation::BrightnessUpTable888[i][j].value = COLOR555TO888(cur.val);
 			
 			cur.val = j;
 			cur.bits.red = (cur.bits.red - (cur.bits.red * i / 16));
@@ -251,8 +251,8 @@ void PixelOperation::InitLUTs()
 			cur.bits.blue = (cur.bits.blue - (cur.bits.blue * i / 16));
 			cur.bits.alpha = 0;
 			PixelOperation::BrightnessDownTable555[i][j] = cur.val;
-			PixelOperation::BrightnessDownTable666[i][j].value = LOCAL_TO_LE_32( COLOR555TO666(cur.val) );
-			PixelOperation::BrightnessDownTable888[i][j].value = LOCAL_TO_LE_32( COLOR555TO888(cur.val) );
+			PixelOperation::BrightnessDownTable666[i][j].value = COLOR555TO666(cur.val);
+			PixelOperation::BrightnessDownTable888[i][j].value = COLOR555TO888(cur.val);
 		}
 	}
 	
@@ -289,11 +289,11 @@ FORCEINLINE void PixelOperation::_copy16(GPUEngineCompositorInfo &compInfo, cons
 			break;
 			
 		case NDSColorFormat_BGR666_Rev:
-			dstColor32.value = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>(srcColor16) );
+			dstColor32.value = ColorspaceConvert555To6665Opaque<false>(srcColor16);
 			break;
 			
 		case NDSColorFormat_BGR888_Rev:
-			dstColor32.value = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(srcColor16) );
+			dstColor32.value = ColorspaceConvert555To8888Opaque<false>(srcColor16);
 			break;
 	}
 	
@@ -562,7 +562,7 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 			switch (selectedEffect)
 			{
 				case ColorEffect_Disable:
-					dstColor32.value = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>(srcColor16) );
+					dstColor32.value = ColorspaceConvert555To6665Opaque<false>(srcColor16);
 					break;
 					
 				case ColorEffect_IncreaseBrightness:
@@ -576,7 +576,7 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 				case ColorEffect_Blend:
 				{
 					Color4u8 srcColor32;
-					srcColor32.value = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>(srcColor16) );
+					srcColor32.value = ColorspaceConvert555To6665Opaque<false>(srcColor16);
 					dstColor32 = (LAYERTYPE == GPULayerType_3D) ? colorop.blend3D<OUTPUTFORMAT>(srcColor32, dstColor32) : colorop.blend<OUTPUTFORMAT>(srcColor32, dstColor32, blendEVA, blendEVB);
 					break;
 				}
@@ -587,7 +587,7 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 			switch (selectedEffect)
 			{
 				case ColorEffect_Disable:
-					dstColor32.value = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(srcColor16) );
+					dstColor32.value = ColorspaceConvert555To8888Opaque<false>(srcColor16);
 					break;
 					
 				case ColorEffect_IncreaseBrightness:
@@ -601,7 +601,7 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 				case ColorEffect_Blend:
 				{
 					Color4u8 srcColor32;
-					srcColor32.value = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(srcColor16) );
+					srcColor32.value = ColorspaceConvert555To8888Opaque<false>(srcColor16);
 					dstColor32 = (LAYERTYPE == GPULayerType_3D) ? colorop.blend3D<OUTPUTFORMAT>(srcColor32, dstColor32) : colorop.blend<OUTPUTFORMAT>(srcColor32, dstColor32, blendEVA, blendEVB);
 					break;
 				}
@@ -793,7 +793,7 @@ static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restr
 				}
 				else if (ELEMENTSIZE == 4)
 				{
-					((u32 *)dst)[i] = LE_TO_LOCAL_32( ((u32 *)src)[i] );
+					((u32 *)dst)[i] = ((u32 *)src)[i];
 				}
 			}
 		}
@@ -816,7 +816,7 @@ static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restr
 				}
 				else if (ELEMENTSIZE == 4)
 				{
-					((u32 *)dst)[i] = LE_TO_LOCAL_32( ((u32 *)src)[i] );
+					((u32 *)dst)[i] = ((u32 *)src)[i];
 				}
 			}
 		}
@@ -844,7 +844,7 @@ static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restr
 				}
 				else if (ELEMENTSIZE == 4)
 				{
-					((u32 *)dst)[(srcX * scale) + lx] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[srcX] ) : ((u32 *)src)[srcX];
+					((u32 *)dst)[(srcX * scale) + lx] = (NEEDENDIANSWAP) ? ((u32 *)src)[srcX] : ((u32 *)src)[srcX];
 				}
 			}
 		}
@@ -870,7 +870,7 @@ static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restr
 				}
 				else if (ELEMENTSIZE == 4)
 				{
-					((u32 *)dst)[_gpuDstPitchIndex[x] + p] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[x] ) : ((u32 *)src)[x];
+					((u32 *)dst)[_gpuDstPitchIndex[x] + p] = (NEEDENDIANSWAP) ? ((u32 *)src)[x] : ((u32 *)src)[x];
 				}
 			}
 		}
@@ -913,7 +913,7 @@ static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restr
 				}
 				else if (ELEMENTSIZE == 4)
 				{
-					((u32 *)dst)[i] = LE_TO_LOCAL_32( ((u32 *)src)[i] );
+					((u32 *)dst)[i] = ((u32 *)src)[i];
 				}
 			}
 		}
@@ -936,7 +936,7 @@ static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restr
 				}
 				else if (ELEMENTSIZE == 4)
 				{
-					((u32 *)dst)[i] = LE_TO_LOCAL_32( ((u32 *)src)[i] );
+					((u32 *)dst)[i] = ((u32 *)src)[i];
 				}
 			}
 		}
@@ -980,7 +980,7 @@ static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restr
 			}
 			else if (ELEMENTSIZE == 4)
 			{
-				((u32 *)dst)[i] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[_gpuDstPitchIndex[i]] ) : ((u32 *)src)[_gpuDstPitchIndex[i]];
+				((u32 *)dst)[i] = (NEEDENDIANSWAP) ? ((u32 *)src)[_gpuDstPitchIndex[i]] : ((u32 *)src)[_gpuDstPitchIndex[i]];
 			}
 		}
 	}
@@ -1004,9 +1004,9 @@ void GPUEngineBase::_MosaicLine(GPUEngineCompositorInfo &compInfo)
 		else
 		{
 			outColor16 = mosaicColorBG[compInfo.renderState.mosaicWidthBG->trunc[x]];
+			isOpaque = (outColor16 != 0xFFFF);
 		}
 		
-		isOpaque = (outColor16 != 0xFFFF);
 		if (isOpaque)
 		{
 			this->_deferredColorNative[x] = outColor16;

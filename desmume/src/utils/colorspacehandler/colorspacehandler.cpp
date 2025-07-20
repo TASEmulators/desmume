@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2024 DeSmuME team
+	Copyright (C) 2016-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -161,13 +161,28 @@ void ColorspaceHandlerInit()
 	
 	if (needInitTables)
 	{
-#define RGB15TO18_BITLOGIC(col)         ( (material_5bit_to_6bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) |  material_5bit_to_6bit[(col)&0x1F] )
-#define RGB15TO18_SWAP_RB_BITLOGIC(col) (  material_5bit_to_6bit[((col)>>10)&0x1F]      | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) | (material_5bit_to_6bit[(col)&0x1F]<<16) )
-#define RGB15TO24_BITLOGIC(col)         ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) |  material_5bit_to_8bit[(col)&0x1F] )
-#define RGB15TO24_SWAP_RB_BITLOGIC(col) (  material_5bit_to_8bit[((col)>>10)&0x1F]      | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | (material_5bit_to_8bit[(col)&0x1F]<<16) )
-		
+#if defined(MSB_FIRST)
+	#define RGB15TO18_BITLOGIC(col)         ( (material_5bit_to_6bit[((col)>>10)&0x1F]<<8)  | (material_5bit_to_6bit[((col)>>5)&0x1F]<<16) | (material_5bit_to_6bit[(col)&0x1F]<<24) )
+	#define RGB15TO18_SWAP_RB_BITLOGIC(col) ( (material_5bit_to_6bit[((col)>>10)&0x1F]<<24) | (material_5bit_to_6bit[((col)>>5)&0x1F]<<16) | (material_5bit_to_6bit[(col)&0x1F]<<8)  )
+	#define RGB15TO24_BITLOGIC(col)         ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<8)  | (material_5bit_to_8bit[((col)>>5)&0x1F]<<16) | (material_5bit_to_8bit[(col)&0x1F]<<24) )
+	#define RGB15TO24_SWAP_RB_BITLOGIC(col) ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<24) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<16) | (material_5bit_to_8bit[(col)&0x1F]<<8)  )
+#else
+	#define RGB15TO18_BITLOGIC(col)         ( (material_5bit_to_6bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) |  material_5bit_to_6bit[(col)&0x1F] )
+	#define RGB15TO18_SWAP_RB_BITLOGIC(col) (  material_5bit_to_6bit[((col)>>10)&0x1F]      | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) | (material_5bit_to_6bit[(col)&0x1F]<<16) )
+	#define RGB15TO24_BITLOGIC(col)         ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) |  material_5bit_to_8bit[(col)&0x1F] )
+	#define RGB15TO24_SWAP_RB_BITLOGIC(col) (  material_5bit_to_8bit[((col)>>10)&0x1F]      | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | (material_5bit_to_8bit[(col)&0x1F]<<16) )
+#endif
 		for (size_t i = 0; i < 32768; i++)
 		{
+#if defined(MSB_FIRST)
+			color_555_to_666[i]					= RGB15TO18_BITLOGIC(i);
+			color_555_to_6665_opaque[i]			= RGB15TO18_BITLOGIC(i) | 0x0000001F;
+			color_555_to_6665_opaque_swap_rb[i]	= RGB15TO18_SWAP_RB_BITLOGIC(i) | 0x0000001F;
+			
+			color_555_to_888[i]					= RGB15TO24_BITLOGIC(i);
+			color_555_to_8888_opaque[i]			= RGB15TO24_BITLOGIC(i) | 0x000000FF;
+			color_555_to_8888_opaque_swap_rb[i]	= RGB15TO24_SWAP_RB_BITLOGIC(i) | 0x000000FF;
+#else
 			color_555_to_666[i]					= RGB15TO18_BITLOGIC(i);
 			color_555_to_6665_opaque[i]			= RGB15TO18_BITLOGIC(i) | 0x1F000000;
 			color_555_to_6665_opaque_swap_rb[i]	= RGB15TO18_SWAP_RB_BITLOGIC(i) | 0x1F000000;
@@ -175,6 +190,7 @@ void ColorspaceHandlerInit()
 			color_555_to_888[i]					= RGB15TO24_BITLOGIC(i);
 			color_555_to_8888_opaque[i]			= RGB15TO24_BITLOGIC(i) | 0xFF000000;
 			color_555_to_8888_opaque_swap_rb[i]	= RGB15TO24_SWAP_RB_BITLOGIC(i) | 0xFF000000;
+#endif
 		}
 		
 #define RGB16_SWAP_RB_BITLOGIC(col)     ( (((col)&0x001F)<<10) | ((col)&0x03E0) | (((col)&0x7C00)>>10) | ((col)&0x8000) )

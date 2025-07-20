@@ -433,13 +433,6 @@ static NSMutableDictionary *saveTypeValues = nil;
 	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
 	RomIconToRGBA8888(bitmapData);
 	
-#ifdef MSB_FIRST
-	for (size_t i = 0; i < ROM_ICON_WIDTH * ROM_ICON_HEIGHT; i++)
-	{
-		bitmapData[i] = LE_TO_LOCAL_32(bitmapData[i]);
-	}
-#endif
-	
 	[imageRep autorelease];
 	[newImage addRepresentation:imageRep];
 	

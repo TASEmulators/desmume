@@ -811,7 +811,7 @@ Render3DError Render3D::Render(const GFX3D_State &renderState, const GFX3D_Geome
 	Render3DError error = RENDER3DERROR_NOERR;
 	this->_isPoweredOn = true;
 	
-	this->_clearColor6665.value = LE_TO_LOCAL_32( COLOR555TO6665(renderState.clearColor & 0x7FFF, (renderState.clearColor >> 16) & 0x1F) );
+	this->_clearColor6665.value = COLOR555TO6665(renderState.clearColor & 0x7FFF, (renderState.clearColor >> 16) & 0x1F);
 	this->_clearAttributes.opaquePolyID = (renderState.clearColor >> 24) & 0x3F;
 	
 	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
@@ -1054,10 +1054,10 @@ void Render3D_AltiVec::_ClearImageBaseLoop(const u16 *__restrict inColor16, cons
 		const v128u16 clearDepthValueLo = vec_and(clearDepthLo, ((v128u16){0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF}));
 		const v128u16 clearDepthValueHi = vec_and(clearDepthHi, ((v128u16){0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF}));
 		
-		const v128u16 calcDepth0 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), (v128u8)clearDepthValueLo, ((v128u8){0x10,0x11,0,0,  0x12,0x13,0,0,  0x14,0x15,0,0,  0x16,0x17,0,0}));
-		const v128u16 calcDepth1 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), (v128u8)clearDepthValueLo, ((v128u8){0x18,0x19,0,0,  0x1A,0x1B,0,0,  0x1C,0x1D,0,0,  0x1E,0x1F,0,0}));
-		const v128u16 calcDepth2 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), (v128u8)clearDepthValueHi, ((v128u8){0x10,0x11,0,0,  0x12,0x13,0,0,  0x14,0x15,0,0,  0x16,0x17,0,0}));
-		const v128u16 calcDepth3 = vec_perm(((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), (v128u8)clearDepthValueHi, ((v128u8){0x18,0x19,0,0,  0x1A,0x1B,0,0,  0x1C,0x1D,0,0,  0x1E,0x1F,0,0}));
+		const v128u16 calcDepth0 = vec_perm( vec_splat_u8(0), (v128u8)clearDepthValueLo, ((v128u8){0x10,0x11,0,0,  0x12,0x13,0,0,  0x14,0x15,0,0,  0x16,0x17,0,0}) );
+		const v128u16 calcDepth1 = vec_perm( vec_splat_u8(0), (v128u8)clearDepthValueLo, ((v128u8){0x18,0x19,0,0,  0x1A,0x1B,0,0,  0x1C,0x1D,0,0,  0x1E,0x1F,0,0}) );
+		const v128u16 calcDepth2 = vec_perm( vec_splat_u8(0), (v128u8)clearDepthValueHi, ((v128u8){0x10,0x11,0,0,  0x12,0x13,0,0,  0x14,0x15,0,0,  0x16,0x17,0,0}) );
+		const v128u16 calcDepth3 = vec_perm( vec_splat_u8(0), (v128u8)clearDepthValueHi, ((v128u8){0x18,0x19,0,0,  0x1A,0x1B,0,0,  0x1C,0x1D,0,0,  0x1E,0x1F,0,0}) );
 		
 		vec_st( vec_msum(calcDepth0, calcDepthMul, calcDepthAdd),  0, outDepth24 + i);
 		vec_st( vec_msum(calcDepth1, calcDepthMul, calcDepthAdd), 16, outDepth24 + i);

@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2024 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1014,8 +1014,8 @@ void __NDSTextureUnpackI2_AltiVec(const size_t texelCount, const u8 *__restrict 
 		idx = vec_perm(idx, idx, ((v128u8){0,0,0,0,  1,1,1,1,  2,2,2,2,  3,3,3,3}));
 		
 		idx = vec_sr(idx, ((v128u8){0,2,4,6,  0,2,4,6,  0,2,4,6,  0,2,4,6}));
-		idx = vec_and(idx, ((v128u8){0x03,0x03,0x03,0x03,  0x03,0x03,0x03,0x03,  0x03,0x03,0x03,0x03,  0x03,0x03,0x03,0x03}));
-		idx = vec_sl(idx, ((v128u8){1,1,1,1,  1,1,1,1,  1,1,1,1,  1,1,1,1}));
+		idx = vec_and(idx, vec_splat_u8(0x03));
+		idx = vec_sl(idx, vec_splat_u8(1));
 		
 		v128u8 idx0 = vec_add( vec_perm(idx,idx,((v128u8){ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7})), ((v128u8){0,1,0,1,  0,1,0,1,  0,1,0,1,  0,1,0,1}) );
 		v128u8 idx1 = vec_add( vec_perm(idx,idx,((v128u8){ 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15})), ((v128u8){0,1,0,1,  0,1,0,1,  0,1,0,1,  0,1,0,1}) );
@@ -1037,7 +1037,7 @@ void __NDSTextureUnpackI2_AltiVec(const size_t texelCount, const u8 *__restrict 
 		// Set converted colors to 0 if the palette index is 0.
 		if (ISPALZEROTRANSPARENT)
 		{
-			const v128u8 idxMask = vec_cmpgt(idx, ((v128u8){0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0}));
+			const v128u8 idxMask = vec_cmpgt(idx, vec_splat_u8(0));
 			convertedColor[0] = vec_and( convertedColor[0], vec_perm(idxMask, idxMask, ((v128u8){ 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3})) );
 			convertedColor[1] = vec_and( convertedColor[1], vec_perm(idxMask, idxMask, ((v128u8){ 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7})) );
 			convertedColor[2] = vec_and( convertedColor[2], vec_perm(idxMask, idxMask, ((v128u8){ 8, 8, 8, 8, 9, 9, 9, 9,10,10,10,10,11,11,11,11})) );
@@ -1074,16 +1074,16 @@ void NDSTextureUnpackI2(const size_t srcSize, const u8 *__restrict srcData, cons
 			u8 idx;
 			
 			idx =  *srcData       & 0x03;
-			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
+			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx]);
 			
 			idx = (*srcData >> 2) & 0x03;
-			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
+			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx]);
 			
 			idx = (*srcData >> 4) & 0x03;
-			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
+			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx]);
 			
 			idx = (*srcData >> 6) & 0x03;
-			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
+			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx]);
 		}
 #endif
 	}
@@ -1100,10 +1100,10 @@ void NDSTextureUnpackI2(const size_t srcSize, const u8 *__restrict srcData, cons
 #else
 		for (size_t i = 0; i < srcSize; i++, srcData++)
 		{
-			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[ *srcData       & 0x03] & 0x7FFF) );
-			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[(*srcData >> 2) & 0x03] & 0x7FFF) );
-			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[(*srcData >> 4) & 0x03] & 0x7FFF) );
-			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[(*srcData >> 6) & 0x03] & 0x7FFF) );
+			*dstBuffer++ = CONVERT(srcPal[ *srcData       & 0x03]);
+			*dstBuffer++ = CONVERT(srcPal[(*srcData >> 2) & 0x03]);
+			*dstBuffer++ = CONVERT(srcPal[(*srcData >> 4) & 0x03]);
+			*dstBuffer++ = CONVERT(srcPal[(*srcData >> 6) & 0x03]);
 		}
 #endif
 	}
@@ -1298,8 +1298,8 @@ void __NDSTextureUnpackI4_AltiVec(const size_t texelCount, const u8 *__restrict 
 		idx = vec_perm(idx, idx, ((v128u8){0,0,1,1,  2,2,3,3,  4,4,5,5,  6,6,7,7}));
 		
 		idx = vec_sr(idx, ((v128u8){0,4,0,4,  0,4,0,4,  0,4,0,4,  0,4,0,4}));
-		idx = vec_and(idx, ((v128u8){0x0F,0x0F,0x0F,0x0F,  0x0F,0x0F,0x0F,0x0F,  0x0F,0x0F,0x0F,0x0F,  0x0F,0x0F,0x0F,0x0F}));
-		idx = vec_sl(idx, ((v128u8){1,1,1,1,  1,1,1,1,  1,1,1,1,  1,1,1,1}));
+		idx = vec_and(idx, vec_splat_u8(0x0F));
+		idx = vec_sl(idx, vec_splat_u8(1));
 		
 		v128u8 idx0 = vec_add( vec_perm(idx,idx,((v128u8){ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7})), ((v128u8){0,1,0,1,  0,1,0,1,  0,1,0,1,  0,1,0,1}) );
 		v128u8 idx1 = vec_add( vec_perm(idx,idx,((v128u8){ 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15})), ((v128u8){0,1,0,1,  0,1,0,1,  0,1,0,1,  0,1,0,1}) );
@@ -1321,7 +1321,7 @@ void __NDSTextureUnpackI4_AltiVec(const size_t texelCount, const u8 *__restrict 
 		// Set converted colors to 0 if the palette index is 0.
 		if (ISPALZEROTRANSPARENT)
 		{
-			const v128u8 idxMask = vec_cmpgt(idx, ((v128u8){0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,0,0}));
+			const v128u8 idxMask = vec_cmpgt(idx, vec_splat_u8(0));
 			convertedColor[0] = vec_and( convertedColor[0], vec_perm(idxMask, idxMask, ((v128u8){ 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3})) );
 			convertedColor[1] = vec_and( convertedColor[1], vec_perm(idxMask, idxMask, ((v128u8){ 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7})) );
 			convertedColor[2] = vec_and( convertedColor[2], vec_perm(idxMask, idxMask, ((v128u8){ 8, 8, 8, 8, 9, 9, 9, 9,10,10,10,10,11,11,11,11})) );
@@ -1358,10 +1358,10 @@ void NDSTextureUnpackI4(const size_t srcSize, const u8 *__restrict srcData, cons
 			u8 idx;
 			
 			idx = *srcData & 0x0F;
-			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
+			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx]);
 			
 			idx = *srcData >> 4;
-			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
+			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx]);
 		}
 #endif
 	}
@@ -1378,8 +1378,8 @@ void NDSTextureUnpackI4(const size_t srcSize, const u8 *__restrict srcData, cons
 #else
 		for (size_t i = 0; i < srcSize; i++, srcData++)
 		{
-			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[*srcData & 0x0F] & 0x7FFF) );
-			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[*srcData >> 4] & 0x7FFF) );
+			*dstBuffer++ = CONVERT(srcPal[*srcData & 0x0F]);
+			*dstBuffer++ = CONVERT(srcPal[*srcData >> 4]);
 		}
 #endif
 	}
@@ -1393,14 +1393,14 @@ void NDSTextureUnpackI8(const size_t srcSize, const u8 *__restrict srcData, cons
 		for (size_t i = 0; i < srcSize; i++, srcData++)
 		{
 			const u8 idx = *srcData;
-			*dstBuffer++ = (idx == 0) ? 0 : LE_TO_LOCAL_32( CONVERT(srcPal[idx] & 0x7FFF) );
+			*dstBuffer++ = (idx == 0) ? 0 : CONVERT(srcPal[idx]);
 		}
 	}
 	else
 	{
 		for (size_t i = 0; i < srcSize; i++, srcData++)
 		{
-			*dstBuffer++ = LE_TO_LOCAL_32( CONVERT(srcPal[*srcData] & 0x7FFF) );
+			*dstBuffer++ = CONVERT(srcPal[*srcData]);
 		}
 	}
 }
@@ -1460,7 +1460,7 @@ void __NDSTextureUnpackA3I5_AltiVec(const size_t texelCount, const u8 *__restric
 		const v128u8 bits = vec_perm( vec_ld(0, srcData), vec_ld(16, srcData), unalignedShift );
 		
 		v128u8 idx = vec_and(bits, ((v128u8){0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F}));
-		idx = vec_sl(idx, ((v128u8){1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}));
+		idx = vec_sl(idx, vec_splat_u8(1));
 		
 		v128u8 idx0 = vec_add( vec_perm(idx, idx, ((v128u8){ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
 		idx0 = vec_and(idx0, ((v128u8){0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F}));
@@ -1477,9 +1477,9 @@ void __NDSTextureUnpackA3I5_AltiVec(const size_t texelCount, const u8 *__restric
 		const v128u16 palColor0 = vec_sel( palColor0A, palColor0B, vec_perm(palMask, palMask, ((v128u8){ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7})) );
 		const v128u16 palColor1 = vec_sel( palColor1A, palColor1B, vec_perm(palMask, palMask, ((v128u8){ 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15})) );
 		
-		const v128u8 alpha = vec_perm( alpha_LUT, alpha_LUT, vec_sr(bits, ((v128u8){5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5})) );
-		const v128u16 alphaLo = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07, 0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03}) );
-		const v128u16 alphaHi = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F, 0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B}) );
+		const v128u8 alpha = vec_perm( alpha_LUT, alpha_LUT, vec_sr(bits, vec_splat_u8(5)) );
+		const v128u16 alphaLo = vec_perm( (v128u8)alpha, vec_splat_u8(0), ((v128u8){0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07, 0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03}) );
+		const v128u16 alphaHi = vec_perm( (v128u8)alpha, vec_splat_u8(0), ((v128u8){0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F, 0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B}) );
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
@@ -1523,7 +1523,7 @@ void NDSTextureUnpackA3I5(const size_t srcSize, const u8 *__restrict srcData, co
 	{
 		const u16 c = srcPal[*srcData & 0x1F] & 0x7FFF;
 		const u8 alpha = *srcData >> 5;
-		*dstBuffer++ = LE_TO_LOCAL_32( (TEXCACHEFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, material_3bit_to_5bit[alpha]) : COLOR555TO8888(c, material_3bit_to_8bit[alpha]) );
+		*dstBuffer++ = (TEXCACHEFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, material_3bit_to_5bit[alpha]) : COLOR555TO8888(c, material_3bit_to_8bit[alpha]);
 	}
 #endif
 }
@@ -1689,8 +1689,8 @@ void __NDSTextureUnpackA5I3_AltiVec(const size_t texelCount, const u8 *__restric
 		// Must be unaligned since srcData could sit outside of a 16-byte boundary.
 		const v128u8 bits = vec_perm( vec_ld(0, srcData), vec_ld(16, srcData), unalignedShift );
 		
-		v128u8 idx = vec_and(bits, ((v128u8){0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07,0x07}));
-		idx = vec_sl(idx, ((v128u8){1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}));
+		v128u8 idx = vec_and(bits, vec_splat_u8(0x07));
+		idx = vec_sl(idx, vec_splat_u8(1));
 		
 		const v128u8 idx0 = vec_add( vec_perm(idx, idx, ((v128u8){ 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
 		const v128u8 idx1 = vec_add( vec_perm(idx, idx, ((v128u8){ 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15})), ((v128u8){0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1, 0,1}) );
@@ -1700,18 +1700,18 @@ void __NDSTextureUnpackA5I3_AltiVec(const size_t texelCount, const u8 *__restric
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
 		{
-			const v128u8 alpha = vec_sr(bits, ((v128u8){3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3}));
-			const v128u16 alphaLo = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07, 0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03}) );
-			const v128u16 alphaHi = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F, 0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B}) );
+			const v128u8 alpha = vec_sr(bits, vec_splat_u8(3));
+			const v128u16 alphaLo = vec_perm( (v128u8)alpha, vec_splat_u8(0), ((v128u8){0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07, 0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03}) );
+			const v128u16 alphaHi = vec_perm( (v128u8)alpha, vec_splat_u8(0), ((v128u8){0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F, 0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B}) );
 			
 			ColorspaceConvert555aTo6665_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
 			ColorspaceConvert555aTo6665_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
 		}
 		else
 		{
-			const v128u8 alpha = vec_or( vec_and(bits, ((v128u8){0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8})), vec_sr(bits, ((v128u8){5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5})) );
-			const v128u16 alphaLo = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07, 0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03}) );
-			const v128u16 alphaHi = vec_perm( (v128u8)alpha, ((v128u8){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}), ((v128u8){0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F, 0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B}) );
+			const v128u8 alpha = vec_or( vec_and(bits, vec_splat_u8((s8)0xF8)), vec_sr(bits, vec_splat_u8(5)) );
+			const v128u16 alphaLo = vec_perm( (v128u8)alpha, vec_splat_u8(0), ((v128u8){0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07, 0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03}) );
+			const v128u16 alphaHi = vec_perm( (v128u8)alpha, vec_splat_u8(0), ((v128u8){0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F, 0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B}) );
 			
 			ColorspaceConvert555aTo8888_AltiVec<false, BESwapDst>(palColor0, alphaLo, convertedColor[1], convertedColor[0]);
 			ColorspaceConvert555aTo8888_AltiVec<false, BESwapDst>(palColor1, alphaHi, convertedColor[3], convertedColor[2]);
@@ -1744,7 +1744,7 @@ void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, co
 	{
 		const u16 c = srcPal[*srcData & 0x07] & 0x7FFF;
 		const u8 alpha = (*srcData >> 3);
-		*dstBuffer++ = LE_TO_LOCAL_32( (TEXCACHEFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, alpha) : COLOR555TO8888(c, material_5bit_to_8bit[alpha]) );
+		*dstBuffer++ = (TEXCACHEFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, alpha) : COLOR555TO8888(c, material_5bit_to_8bit[alpha]);
 	}
 #endif
 }
@@ -1792,13 +1792,13 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 			const u8  mode			= pal1>>14;
 			CACHE_ALIGN u32 tmp_col[4];
 			
-			tmp_col[0] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(PAL4X4(pal1offset+0)) );
-			tmp_col[1] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(PAL4X4(pal1offset+1)) );
+			tmp_col[0] = ColorspaceConvert555To8888Opaque<false>( PAL4X4(pal1offset+0) );
+			tmp_col[1] = ColorspaceConvert555To8888Opaque<false>( PAL4X4(pal1offset+1) );
 			
 			switch (mode)
 			{
 				case 0:
-					tmp_col[2] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(PAL4X4(pal1offset+2)) );
+					tmp_col[2] = ColorspaceConvert555To8888Opaque<false>( PAL4X4(pal1offset+2) );
 					tmp_col[3] = 0x00000000;
 					break;
 					
@@ -1818,8 +1818,8 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 					break;
 					
 				case 2:
-					tmp_col[2] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(PAL4X4(pal1offset+2)) );
-					tmp_col[3] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(PAL4X4(pal1offset+3)) );
+					tmp_col[2] = ColorspaceConvert555To8888Opaque<false>( PAL4X4(pal1offset+2) );
+					tmp_col[3] = ColorspaceConvert555To8888Opaque<false>( PAL4X4(pal1offset+3) );
 					break;
 					
 				case 3:
@@ -1847,8 +1847,8 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 					                  ( ((g0*3 + g1*5)>>6) <<  5 ) |
 					                  ( ((b0*3 + b1*5)>>6) << 10 );
 					
-					tmp_col[2] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(tmp1) );
-					tmp_col[3] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(tmp2) );
+					tmp_col[2] = ColorspaceConvert555To8888Opaque<false>(tmp1);
+					tmp_col[3] = ColorspaceConvert555To8888Opaque<false>(tmp2);
 					break;
 				}
 					
@@ -2020,7 +2020,7 @@ void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u16 *__restrict src
 	for (size_t i = 0; i < texelCount; i++, srcData++)
 	{
 		const u16 c = LOCAL_TO_LE_16(*srcData);
-		*dstBuffer++ = (c & 0x8000) ? LE_TO_LOCAL_32( CONVERT(c & 0x7FFF) ) : 0;
+		*dstBuffer++ = (c & 0x8000) ? CONVERT(c) : 0;
 	}
 #endif
 }

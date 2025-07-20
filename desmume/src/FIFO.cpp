@@ -517,13 +517,13 @@ void DISP_FIFOrecv_LineOpaque(u32 *__restrict dst)
 				
 				if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 				{
-					dst[i+0] = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>((src >>  0) & 0x7FFF) );
-					dst[i+1] = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>((src >> 16) & 0x7FFF) );
+					dst[i+0] = ColorspaceConvert555To6665Opaque<false>(src >>  0);
+					dst[i+1] = ColorspaceConvert555To6665Opaque<false>(src >> 16);
 				}
 				else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 				{
-					dst[i+0] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>((src >>  0) & 0x7FFF) );
-					dst[i+1] = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>((src >> 16) & 0x7FFF) );
+					dst[i+0] = ColorspaceConvert555To8888Opaque<false>(src >>  0);
+					dst[i+1] = ColorspaceConvert555To8888Opaque<false>(src >> 16);
 				}
 			}
 		}

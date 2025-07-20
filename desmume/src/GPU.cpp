@@ -378,7 +378,7 @@ void GPUEngineBase::Reset()
 	renderState.selectedBGLayer = &this->_BGLayer[GPULayerID_BG0];
 	renderState.backdropColor16 = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
 	renderState.workingBackdropColor16 = renderState.backdropColor16;
-	renderState.workingBackdropColor32.value = LOCAL_TO_LE_32( (this->_targetDisplay->GetColorFormat() == NDSColorFormat_BGR666_Rev) ? COLOR555TO666(LOCAL_TO_LE_16(renderState.workingBackdropColor16)) : COLOR555TO888(LOCAL_TO_LE_16(renderState.workingBackdropColor16)) );
+	renderState.workingBackdropColor32.value = (this->_targetDisplay->GetColorFormat() == NDSColorFormat_BGR666_Rev) ? COLOR555TO666(LOCAL_TO_LE_16(renderState.workingBackdropColor16)) : COLOR555TO888(LOCAL_TO_LE_16(renderState.workingBackdropColor16));
 	renderState.colorEffect = (ColorEffect)this->_IORegisterMap->BLDCNT.ColorEffect;
 	renderState.blendEVA = 0;
 	renderState.blendEVB = 0;
@@ -851,7 +851,7 @@ void GPUEngineBase::UpdateRenderStates(const size_t l)
 	{
 		currRenderState.workingBackdropColor16 = currRenderState.backdropColor16;
 	}
-	currRenderState.workingBackdropColor32.value = LOCAL_TO_LE_32( (this->_targetDisplay->GetColorFormat() == NDSColorFormat_BGR666_Rev) ? COLOR555TO666(currRenderState.workingBackdropColor16) : COLOR555TO888(currRenderState.workingBackdropColor16) );
+	currRenderState.workingBackdropColor32.value = (this->_targetDisplay->GetColorFormat() == NDSColorFormat_BGR666_Rev) ? COLOR555TO666(currRenderState.workingBackdropColor16) : COLOR555TO888(currRenderState.workingBackdropColor16);
 	
 	// Save the current render states to this line's compositor info.
 	compInfo.renderState = currRenderState;
@@ -1398,23 +1398,25 @@ void GPUEngineBase::_CompositeVRAMLineDeferred(GPUEngineCompositorInfo &compInfo
 		
 		if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 		{
-			if ( (LAYERTYPE != GPULayerType_OBJ) && ((((u32 *)vramColorPtr)[i] & 0xFF000000) == 0) )
+			Color4u8 srcColor32 = ((Color4u8 *)vramColorPtr)[i];
+			if ( (LAYERTYPE != GPULayerType_OBJ) && (srcColor32.a == 0) )
 			{
 				continue;
 			}
 			
 			const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (colorEffectEnable[compInfo.target.xCustom] != 0) : true;
-			pixelop.Composite32<COMPOSITORMODE, OUTPUTFORMAT, LAYERTYPE>(compInfo, ((Color4u8 *)vramColorPtr)[i], enableColorEffect, this->_sprAlphaCustom[compInfo.target.xCustom], this->_sprTypeCustom[compInfo.target.xCustom]);
+			pixelop.Composite32<COMPOSITORMODE, OUTPUTFORMAT, LAYERTYPE>(compInfo, srcColor32, enableColorEffect, this->_sprAlphaCustom[compInfo.target.xCustom], this->_sprTypeCustom[compInfo.target.xCustom]);
 		}
 		else
 		{
-			if ( (LAYERTYPE != GPULayerType_OBJ) && ((((u16 *)vramColorPtr)[i] & 0x8000) == 0) )
+			const u16 srcColor16 = LE_TO_LOCAL_16(((u16 *)vramColorPtr)[i]);
+			if ( (LAYERTYPE != GPULayerType_OBJ) && ((srcColor16 & 0x8000) == 0) )
 			{
 				continue;
 			}
 			
 			const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (colorEffectEnable[compInfo.target.xCustom] != 0) : true;
-			pixelop.Composite16<COMPOSITORMODE, OUTPUTFORMAT, LAYERTYPE>(compInfo, ((u16 *)vramColorPtr)[i], enableColorEffect, this->_sprAlphaCustom[compInfo.target.xCustom], this->_sprTypeCustom[compInfo.target.xCustom]);
+			pixelop.Composite16<COMPOSITORMODE, OUTPUTFORMAT, LAYERTYPE>(compInfo, srcColor16, enableColorEffect, this->_sprAlphaCustom[compInfo.target.xCustom], this->_sprTypeCustom[compInfo.target.xCustom]);
 		}
 	}
 }
@@ -3758,7 +3760,7 @@ void GPUEngineA::_RenderLine_DisplayCaptureCustom(const IOREG_DISPCAPCNT &DISPCA
 				else
 				{
 					u32 *workingNativeBuffer32 = this->_targetDisplay->GetWorkingNativeBuffer32();
-					ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapNone>((u16 *)srcAPtr, workingNativeBuffer32 + lineInfo.blockOffsetNative, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+					ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>((u16 *)srcAPtr, workingNativeBuffer32 + lineInfo.blockOffsetNative, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 					CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, workingNativeBuffer32 + lineInfo.blockOffsetNative, this->_captureWorkingA32);
 					srcAPtr = this->_captureWorkingA32;
 				}
@@ -4092,7 +4094,11 @@ template<NDSColorFormat COLORFORMAT, int SOURCESWITCH, size_t CAPTURELENGTH, boo
 void GPUEngineA::_RenderLine_DispCapture_Copy(const GPUEngineLineInfo &lineInfo, const void *src, void *dst, const size_t captureLengthExt)
 {
 	const u16 alphaBit16 = (SOURCESWITCH == 0) ? 0x8000 : 0x0000;
+#if defined(MSB_FIRST)
+	const u32 alphaBit32 = (SOURCESWITCH == 0) ? ((COLORFORMAT == NDSColorFormat_BGR888_Rev) ? 0x000000FF : 0x0000001F) : 0x00000000;
+#else
 	const u32 alphaBit32 = (SOURCESWITCH == 0) ? ((COLORFORMAT == NDSColorFormat_BGR888_Rev) ? 0xFF000000 : 0x1F000000) : 0x00000000;
+#endif
 	
 	if (CAPTURETONATIVEDST)
 	{
@@ -4119,7 +4125,7 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const GPUEngineLineInfo &lineInfo,
 						
 					case NDSColorFormat_BGR666_Rev:
 					case NDSColorFormat_BGR888_Rev:
-						((u32 *)dst)[i] = LE_TO_LOCAL_32(((u32 *)src)[_gpuDstPitchIndex[i]] | alphaBit32);
+						((u32 *)dst)[i] = ((u32 *)src)[_gpuDstPitchIndex[i]] | alphaBit32;
 						break;
 				}
 			}
@@ -4141,7 +4147,7 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const GPUEngineLineInfo &lineInfo,
 							
 						case NDSColorFormat_BGR666_Rev:
 						case NDSColorFormat_BGR888_Rev:
-							((u32 *)dst)[_gpuDstPitchIndex[i] + p] = LE_TO_LOCAL_32(((u32 *)src)[i] | alphaBit32);
+							((u32 *)dst)[_gpuDstPitchIndex[i] + p] = ((u32 *)src)[i] | alphaBit32;
 							break;
 					}
 				}
@@ -4184,7 +4190,7 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const GPUEngineLineInfo &lineInfo,
 					case NDSColorFormat_BGR888_Rev:
 					{
 						const size_t vecLength = (pixCountExt * sizeof(u32)) - ((pixCountExt * sizeof(u32)) % VECTORSIZE);
-						buffer_copy_or_constant_s32<true>(dst, src, vecLength, alphaBit32);
+						buffer_copy_or_constant_s32<false>(dst, src, vecLength, alphaBit32);
 						i += vecLength / sizeof(u32);
 						break;
 					}
@@ -4201,7 +4207,7 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const GPUEngineLineInfo &lineInfo,
 							
 						case NDSColorFormat_BGR666_Rev:
 						case NDSColorFormat_BGR888_Rev:
-							((u32 *)dst)[i] = LE_TO_LOCAL_32(((u32 *)src)[i] | alphaBit32);
+							((u32 *)dst)[i] = ((u32 *)src)[i] | alphaBit32;
 							break;
 					}
 				}
@@ -4237,13 +4243,13 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const GPUEngineLineInfo &lineInfo,
 						{
 #ifdef USEMANUALVECTORIZATION
 							const size_t vecLength = (captureLengthExt * sizeof(u32)) - ((captureLengthExt * sizeof(u32)) % VECTORSIZE);
-							buffer_copy_or_constant_s32<true>(dst, src, vecLength, alphaBit32);
+							buffer_copy_or_constant_s32<false>(dst, src, vecLength, alphaBit32);
 							i += vecLength / sizeof(u32);
 #pragma LOOPVECTORIZE_DISABLE
 #endif
 							for (; i < captureLengthExt; i++)
 							{
-								((u32 *)dst)[i] = LE_TO_LOCAL_32(((u32 *)src)[i] | alphaBit32);
+								((u32 *)dst)[i] = ((u32 *)src)[i] | alphaBit32;
 							}
 							
 							src = (u32 *)src + lineInfo.widthCustom;
@@ -5680,11 +5686,11 @@ void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
 		switch (this->_displayInfo.colorFormat)
 		{
 			case NDSColorFormat_BGR666_Rev:
-				color32.value = LE_TO_LOCAL_32( ColorspaceConvert555To6665Opaque<false>(colorBGRA5551 & 0x7FFF) );
+				color32.value = ColorspaceConvert555To6665Opaque<false>(colorBGRA5551);
 				break;
 				
 			case NDSColorFormat_BGR888_Rev:
-				color32.value = LE_TO_LOCAL_32( ColorspaceConvert555To8888Opaque<false>(colorBGRA5551 & 0x7FFF) );
+				color32.value = ColorspaceConvert555To8888Opaque<false>(colorBGRA5551);
 				break;
 				
 			default:
@@ -6493,7 +6499,11 @@ void NDSDisplay::ApplyMasterBrightness(void *dst, const size_t pixCount, const G
 						break;
 						
 					case NDSColorFormat_BGR666_Rev:
+#if defined(MSB_FIRST)
+						memset_u32(dst, 0x3F3F3F1F, pixCount);
+#else
 						memset_u32(dst, 0x1F3F3F3F, pixCount);
+#endif
 						break;
 						
 					case NDSColorFormat_BGR888_Rev:
@@ -6540,11 +6550,19 @@ void NDSDisplay::ApplyMasterBrightness(void *dst, const size_t pixCount, const G
 						break;
 						
 					case NDSColorFormat_BGR666_Rev:
+#if defined(MSB_FIRST)
+						memset_u32(dst, 0x0000001F, pixCount);
+#else
 						memset_u32(dst, 0x1F000000, pixCount);
+#endif
 						break;
 						
 					case NDSColorFormat_BGR888_Rev:
+#if defined(MSB_FIRST)
+						memset_u32(dst, 0x000000FF, pixCount);
+#else
 						memset_u32(dst, 0xFF000000, pixCount);
+#endif
 						break;
 						
 					default:
