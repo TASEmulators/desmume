@@ -836,11 +836,11 @@ void GPUEngineBase::UpdateRenderStates(const size_t l)
 	{
 		if (currRenderState.colorEffect == ColorEffect_IncreaseBrightness)
 		{
-			currRenderState.workingBackdropColor16 = currRenderState.brightnessUpTable555[currRenderState.backdropColor16];
+			currRenderState.workingBackdropColor16 = currRenderState.brightnessUpTable555[currRenderState.backdropColor16].value;
 		}
 		else if (currRenderState.colorEffect == ColorEffect_DecreaseBrightness)
 		{
-			currRenderState.workingBackdropColor16 = currRenderState.brightnessDownTable555[currRenderState.backdropColor16];
+			currRenderState.workingBackdropColor16 = currRenderState.brightnessDownTable555[currRenderState.backdropColor16].value;
 		}
 		else
 		{
@@ -1259,7 +1259,7 @@ FORCEINLINE void GPUEngineBase::_CompositePixelImmediate(GPUEngineCompositorInfo
 	compInfo.target.xNative = srcX;
 	compInfo.target.xCustom = _gpuDstPitchIndex[srcX];
 	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHeadNative + srcX;
-	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHeadNative + srcX;
+	compInfo.target.lineColor16 = (Color5551 *)compInfo.target.lineColorHeadNative + srcX;
 	compInfo.target.lineColor32 = (Color4u8 *)compInfo.target.lineColorHeadNative + srcX;
 	
 	const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
@@ -1290,7 +1290,7 @@ void GPUEngineBase::_CompositeNativeLineOBJ(GPUEngineCompositorInfo &compInfo, c
 {
 	compInfo.target.xNative = 0;
 	compInfo.target.xCustom = 0;
-	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHead;
+	compInfo.target.lineColor16 = (Color5551 *)compInfo.target.lineColorHead;
 	compInfo.target.lineColor32 = (Color4u8 *)compInfo.target.lineColorHead;
 	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead;
 	
@@ -1334,7 +1334,7 @@ void GPUEngineBase::_CompositeLineDeferred(GPUEngineCompositorInfo &compInfo, co
 	
 	compInfo.target.xNative = 0;
 	compInfo.target.xCustom = 0;
-	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHead;
+	compInfo.target.lineColor16 = (Color5551 *)compInfo.target.lineColorHead;
 	compInfo.target.lineColor32 = (Color4u8 *)compInfo.target.lineColorHead;
 	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead;
 	
@@ -1374,7 +1374,7 @@ void GPUEngineBase::_CompositeVRAMLineDeferred(GPUEngineCompositorInfo &compInfo
 	
 	compInfo.target.xNative = 0;
 	compInfo.target.xCustom = 0;
-	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHead;
+	compInfo.target.lineColor16 = (Color5551 *)compInfo.target.lineColorHead;
 	compInfo.target.lineColor32 = (Color4u8 *)compInfo.target.lineColorHead;
 	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead;
 	
@@ -1978,7 +1978,7 @@ void GPUEngineBase::SpriteRenderDebug(const u16 lineIndex, u16 *dst)
 	compInfo.target.xNative = 0;
 	compInfo.target.xCustom = 0;
 	compInfo.target.lineColor = (void **)&compInfo.target.lineColor16;
-	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHeadNative;
+	compInfo.target.lineColor16 = (Color5551 *)compInfo.target.lineColorHeadNative;
 	compInfo.target.lineColor32 = (Color4u8 *)compInfo.target.lineColorHeadNative;
 	compInfo.target.lineLayerID = NULL;
 	
@@ -2272,7 +2272,7 @@ void GPUEngineBase::_RenderLine_Layers(GPUEngineCompositorInfo &compInfo)
 	
 	compInfo.target.xNative = 0;
 	compInfo.target.xCustom = 0;
-	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHeadNative;
+	compInfo.target.lineColor16 = (Color5551 *)compInfo.target.lineColorHeadNative;
 	compInfo.target.lineColor32 = (Color4u8 *)compInfo.target.lineColorHeadNative;
 	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead;
 	
@@ -2513,7 +2513,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 				
 				compInfo.target.xNative = srcX;
 				compInfo.target.xCustom = _gpuDstPitchIndex[srcX];
-				compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHead + srcX;
+				compInfo.target.lineColor16 = (Color5551 *)compInfo.target.lineColorHead + srcX;
 				compInfo.target.lineColor32 = (Color4u8 *)compInfo.target.lineColorHead + srcX;
 				compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead + srcX;
 				
@@ -2532,7 +2532,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 				
 				for (size_t line = 0; line < compInfo.line.renderCount; line++)
 				{
-					compInfo.target.lineColor16 = (u16 *)dstColorPtr;
+					compInfo.target.lineColor16 = (Color5551 *)dstColorPtr;
 					compInfo.target.lineColor32 = (Color4u8 *)dstColorPtr;
 					compInfo.target.lineLayerID = dstLayerIDPtr;
 					
@@ -2552,7 +2552,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 						{
 							const size_t dstX = compInfo.target.xCustom + p;
 							
-							compInfo.target.lineColor16 = (u16 *)dstColorPtr + dstX;
+							compInfo.target.lineColor16 = (Color5551 *)dstColorPtr + dstX;
 							compInfo.target.lineColor32 = (Color4u8 *)dstColorPtr + dstX;
 							compInfo.target.lineLayerID = dstLayerIDPtr + dstX;
 							
@@ -2578,7 +2578,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 			{
 				for (size_t line = 0; line < compInfo.line.renderCount; line++)
 				{
-					compInfo.target.lineColor16 = (u16 *)dstColorPtr;
+					compInfo.target.lineColor16 = (Color5551 *)dstColorPtr;
 					compInfo.target.lineColor32 = (Color4u8 *)dstColorPtr;
 					compInfo.target.lineLayerID = dstLayerIDPtr;
 					
@@ -2598,7 +2598,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 						{
 							const size_t dstX = compInfo.target.xCustom + p;
 							
-							compInfo.target.lineColor16 = (u16 *)dstColorPtr + dstX;
+							compInfo.target.lineColor16 = (Color5551 *)dstColorPtr + dstX;
 							compInfo.target.lineColor32 = (Color4u8 *)dstColorPtr + dstX;
 							compInfo.target.lineLayerID = dstLayerIDPtr + dstX;
 							
@@ -2930,7 +2930,7 @@ void GPUEngineBase::RenderLayerBG(const GPULayerID layerID, u16 *dstColorBuffer)
 	compInfo.target.xNative = 0;
 	compInfo.target.xCustom = compInfo.target.xNative;
 	compInfo.target.lineColor = (void **)&compInfo.target.lineColor16;
-	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHeadNative;
+	compInfo.target.lineColor16 = (Color5551 *)compInfo.target.lineColorHeadNative;
 	compInfo.target.lineColor32 = (Color4u8 *)compInfo.target.lineColorHeadNative;
 	compInfo.target.lineLayerID = NULL;
 	
@@ -3619,7 +3619,7 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 	
 	compInfo.target.xNative = 0;
 	compInfo.target.xCustom = 0;
-	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHead;
+	compInfo.target.lineColor16 = (Color5551 *)compInfo.target.lineColorHead;
 	compInfo.target.lineColor32 = (Color4u8 *)compInfo.target.lineColorHead;
 	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead;
 	
@@ -4355,38 +4355,41 @@ void GPUEngineA::_RenderLine_DispCapture_Blend_Buffer(const void *srcA, const vo
 #ifdef USEMANUALVECTORIZATION
 	i = this->_RenderLine_DispCapture_Blend_VecLoop<OUTPUTFORMAT>(srcA, srcB, dst, blendEVA, blendEVB, length);
 #endif
-	if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
+	if (i < length)
 	{
-		const Color4u8 *srcA_32 = (const Color4u8 *)srcA;
-		const Color4u8 *srcB_32 = (const Color4u8 *)srcB;
-		Color4u8 *dst32 = (Color4u8 *)dst;
-		
+		if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
+		{
+			const Color4u8 *srcA_32 = (const Color4u8 *)srcA;
+			const Color4u8 *srcB_32 = (const Color4u8 *)srcB;
+			Color4u8 *dst32 = (Color4u8 *)dst;
+			
 #ifdef USEMANUALVECTORIZATION
 #pragma LOOPVECTORIZE_DISABLE
 #endif
-		for (; i < length; i++)
-		{
-			const Color4u8 colorA = srcA_32[i];
-			const Color4u8 colorB = srcB_32[i];
-			
-			dst32[i] = this->_RenderLine_DispCapture_BlendFunc<OUTPUTFORMAT>(colorA, colorB, blendEVA, blendEVB);
+			for (; i < length; i++)
+			{
+				const Color4u8 colorA = srcA_32[i];
+				const Color4u8 colorB = srcB_32[i];
+				
+				dst32[i] = this->_RenderLine_DispCapture_BlendFunc<OUTPUTFORMAT>(colorA, colorB, blendEVA, blendEVB);
+			}
 		}
-	}
-	else
-	{
-		const u16 *srcA_16 = (const u16 *)srcA;
-		const u16 *srcB_16 = (const u16 *)srcB;
-		u16 *dst16 = (u16 *)dst;
-		
+		else
+		{
+			const u16 *srcA_16 = (const u16 *)srcA;
+			const u16 *srcB_16 = (const u16 *)srcB;
+			u16 *dst16 = (u16 *)dst;
+			
 #ifdef USEMANUALVECTORIZATION
 #pragma LOOPVECTORIZE_DISABLE
 #endif
-		for (; i < length; i++)
-		{
-			const u16 colorA = srcA_16[i];
-			const u16 colorB = srcB_16[i];
-			
-			dst16[i] = this->_RenderLine_DispCapture_BlendFunc(colorA, colorB, blendEVA, blendEVB);
+			for (; i < length; i++)
+			{
+				const u16 colorA = srcA_16[i];
+				const u16 colorB = srcB_16[i];
+				
+				dst16[i] = this->_RenderLine_DispCapture_BlendFunc(colorA, colorB, blendEVA, blendEVB);
+			}
 		}
 	}
 }
@@ -6480,7 +6483,8 @@ void NDSDisplay::ApplyMasterBrightness(void *dst, const size_t pixCount, const G
 				{
 					if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 					{
-						((u16 *)dst)[i] = PixelOperation::BrightnessUpTable555[intensityClamped][ ((u16 *)dst)[i] & 0x7FFF ] | 0x8000;
+						((Color5551 *)dst)[i] = PixelOperation::BrightnessUpTable555[intensityClamped][ ((u16 *)dst)[i] & 0x7FFF ];
+						((Color5551 *)dst)[i].a = 1;
 					}
 					else
 					{
@@ -6531,7 +6535,8 @@ void NDSDisplay::ApplyMasterBrightness(void *dst, const size_t pixCount, const G
 				{
 					if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 					{
-						((u16 *)dst)[i] = PixelOperation::BrightnessDownTable555[intensityClamped][ ((u16 *)dst)[i] & 0x7FFF ] | 0x8000;
+						((Color5551 *)dst)[i] = PixelOperation::BrightnessDownTable555[intensityClamped][ ((u16 *)dst)[i] & 0x7FFF ];
+						((Color5551 *)dst)[i].a = 1;
 					}
 					else
 					{

@@ -31,179 +31,160 @@ static CACHE_ALIGN u32 _gpuDstPitchCount[GPU_FRAMEBUFFER_NATIVE_WIDTH];	// Key: 
 static CACHE_ALIGN u32 _gpuDstPitchIndex[GPU_FRAMEBUFFER_NATIVE_WIDTH];	// Key: Source pixel index in x-dimension / Value: First destination pixel that maps to the source pixel
 
 u8 PixelOperation::BlendTable555[17][17][32][32];
-u16 PixelOperation::BrightnessUpTable555[17][0x8000];
+Color5551 PixelOperation::BrightnessUpTable555[17][0x8000];
 Color4u8 PixelOperation::BrightnessUpTable666[17][0x8000];
 Color4u8 PixelOperation::BrightnessUpTable888[17][0x8000];
-u16 PixelOperation::BrightnessDownTable555[17][0x8000];
+Color5551 PixelOperation::BrightnessDownTable555[17][0x8000];
 Color4u8 PixelOperation::BrightnessDownTable666[17][0x8000];
 Color4u8 PixelOperation::BrightnessDownTable888[17][0x8000];
 
 static CACHE_ALIGN ColorOperation colorop;
 static CACHE_ALIGN PixelOperation pixelop;
 
-FORCEINLINE u16 ColorOperation::blend(const u16 colA, const u16 colB, const u16 blendEVA, const u16 blendEVB) const
+FORCEINLINE Color5551 ColorOperation::blend(const Color5551 colA, const Color5551 colB, const u16 blendEVA, const u16 blendEVB) const
 {
-	u16 ra =  colA        & 0x001F;
-	u16 ga = (colA >>  5) & 0x001F;
-	u16 ba = (colA >> 10) & 0x001F;
-	u16 rb =  colB        & 0x001F;
-	u16 gb = (colB >>  5) & 0x001F;
-	u16 bb = (colB >> 10) & 0x001F;
+	const u16 r = ( (colA.r * blendEVA) + (colB.r * blendEVB) ) / 16;
+	const u16 g = ( (colA.g * blendEVA) + (colB.g * blendEVB) ) / 16;
+	const u16 b = ( (colA.b * blendEVA) + (colB.b * blendEVB) ) / 16;
 	
-	ra = ( (ra * blendEVA) + (rb * blendEVB) ) / 16;
-	ga = ( (ga * blendEVA) + (gb * blendEVB) ) / 16;
-	ba = ( (ba * blendEVA) + (bb * blendEVB) ) / 16;
+	Color5551 outColor;
+	outColor.r = (r > 31) ? 31 : r;
+	outColor.g = (g > 31) ? 31 : g;
+	outColor.b = (b > 31) ? 31 : b;
+	outColor.a = 0;
 	
-	ra = (ra > 31) ? 31 : ra;
-	ga = (ga > 31) ? 31 : ga;
-	ba = (ba > 31) ? 31 : ba;
-	
-	return ra | (ga << 5) | (ba << 10);
+	return outColor;
 }
 
-FORCEINLINE u16 ColorOperation::blend(const u16 colA, const u16 colB, const TBlendTable *blendTable) const
+FORCEINLINE Color5551 ColorOperation::blend(const Color5551 colA, const Color5551 colB, const TBlendTable *blendTable) const
 {
-	const u8 r = (*blendTable)[ colA        & 0x1F][ colB        & 0x1F];
-	const u8 g = (*blendTable)[(colA >>  5) & 0x1F][(colB >>  5) & 0x1F];
-	const u8 b = (*blendTable)[(colA >> 10) & 0x1F][(colB >> 10) & 0x1F];
+	Color5551 outColor;
+	outColor.r = (*blendTable)[colA.r][colB.r];
+	outColor.g = (*blendTable)[colA.g][colB.g];
+	outColor.b = (*blendTable)[colA.b][colB.b];
+	outColor.a = 0;
 	
-	return r | (g << 5) | (b << 10);
+	return outColor;
 }
 
 template <NDSColorFormat COLORFORMAT>
 FORCEINLINE Color4u8 ColorOperation::blend(const Color4u8 colA, const Color4u8 colB, const u16 blendEVA, const u16 blendEVB) const
 {
 	Color4u8 outColor;
-	
-	u16 r16 = ( (colA.r * blendEVA) + (colB.r * blendEVB) ) / 16;
-	u16 g16 = ( (colA.g * blendEVA) + (colB.g * blendEVB) ) / 16;
-	u16 b16 = ( (colA.b * blendEVA) + (colB.b * blendEVB) ) / 16;
+	const u16 r = ( ((u16)colA.r * blendEVA) + ((u16)colB.r * blendEVB) ) / 16;
+	const u16 g = ( ((u16)colA.g * blendEVA) + ((u16)colB.g * blendEVB) ) / 16;
+	const u16 b = ( ((u16)colA.b * blendEVA) + ((u16)colB.b * blendEVB) ) / 16;
 	
 	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
 	{
-		outColor.r = (r16 > 63) ? 63 : r16;
-		outColor.g = (g16 > 63) ? 63 : g16;
-		outColor.b = (b16 > 63) ? 63 : b16;
+		outColor.r = (u8)( (r > 63) ? 63 : r );
+		outColor.g = (u8)( (g > 63) ? 63 : g );
+		outColor.b = (u8)( (b > 63) ? 63 : b );
 	}
 	else if (COLORFORMAT == NDSColorFormat_BGR888_Rev)
 	{
-		outColor.r = (r16 > 255) ? 255 : r16;
-		outColor.g = (g16 > 255) ? 255 : g16;
-		outColor.b = (b16 > 255) ? 255 : b16;
+		outColor.r = (u8)( (r > 255) ? 255 : r );
+		outColor.g = (u8)( (g > 255) ? 255 : g );
+		outColor.b = (u8)( (b > 255) ? 255 : b );
 	}
 	
 	outColor.a = 0;
 	return outColor;
 }
 
-FORCEINLINE u16 ColorOperation::blend3D(const Color4u8 colA, const u16 colB) const
+FORCEINLINE Color5551 ColorOperation::blend3D(const Color4u8 colA, const Color5551 colB) const
 {
 	const u16 alpha = colA.a + 1;
 	const u16 minusAlpha = 32 - alpha;
 	
-	Color5551 c2;
-	Color5551 blendedColor;
+	Color5551 outColor;
+	outColor.r = (u8)( (((u16)colA.r * alpha) + ((colB.r << 1) * minusAlpha)) >> 6 );
+	outColor.g = (u8)( (((u16)colA.g * alpha) + ((colB.g << 1) * minusAlpha)) >> 6 );
+	outColor.b = (u8)( (((u16)colA.b * alpha) + ((colB.b << 1) * minusAlpha)) >> 6 );
+	outColor.a = 0;
 	
-	c2.value = colB;
-	
-	blendedColor.r = ( ((u16)colA.r * alpha) + ((c2.r << 1) * minusAlpha) ) >> 6;
-	blendedColor.g = ( ((u16)colA.g * alpha) + ((c2.g << 1) * minusAlpha) ) >> 6;
-	blendedColor.b = ( ((u16)colA.b * alpha) + ((c2.b << 1) * minusAlpha) ) >> 6;
-	blendedColor.a = 0;
-	
-	return blendedColor.value;
+	return outColor;
 }
 
 template <NDSColorFormat COLORFORMAT>
 FORCEINLINE Color4u8 ColorOperation::blend3D(const Color4u8 colA, const Color4u8 colB) const
 {
-	Color4u8 blendedColor;
+	Color4u8 outColor;
 	const u16 alpha = colA.a + 1;
 	
 	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
 	{
-		blendedColor.r = ((colA.r * alpha) + (colB.r * (32 - alpha))) >> 5;
-		blendedColor.g = ((colA.g * alpha) + (colB.g * (32 - alpha))) >> 5;
-		blendedColor.b = ((colA.b * alpha) + (colB.b * (32 - alpha))) >> 5;
+		const u16 minusAlpha = 32 - alpha;
+		outColor.r = (u8)( (((u16)colA.r * alpha) + ((u16)colB.r * minusAlpha)) >> 5 );
+		outColor.g = (u8)( (((u16)colA.g * alpha) + ((u16)colB.g * minusAlpha)) >> 5 );
+		outColor.b = (u8)( (((u16)colA.b * alpha) + ((u16)colB.b * minusAlpha)) >> 5 );
 	}
 	else if (COLORFORMAT == NDSColorFormat_BGR888_Rev)
 	{
-		blendedColor.r = ((colA.r * alpha) + (colB.r * (256 - alpha))) >> 8;
-		blendedColor.g = ((colA.g * alpha) + (colB.g * (256 - alpha))) >> 8;
-		blendedColor.b = ((colA.b * alpha) + (colB.b * (256 - alpha))) >> 8;
+		const u16 minusAlpha = 256 - alpha;
+		outColor.r = (u8)( (((u16)colA.r * alpha) + ((u16)colB.r * minusAlpha)) >> 8 );
+		outColor.g = (u8)( (((u16)colA.g * alpha) + ((u16)colB.g * minusAlpha)) >> 8 );
+		outColor.b = (u8)( (((u16)colA.b * alpha) + ((u16)colB.b * minusAlpha)) >> 8 );
 	}
 	
-	blendedColor.a = 0;
-	return blendedColor;
+	outColor.a = 0;
+	return outColor;
 }
 
-FORCEINLINE u16 ColorOperation::increase(const u16 col, const u16 blendEVY) const
+FORCEINLINE Color5551 ColorOperation::increase(const Color5551 col, const u16 blendEVY) const
 {
-	u16 r =  col        & 0x001F;
-	u16 g = (col >>  5) & 0x001F;
-	u16 b = (col >> 10) & 0x001F;
+	Color5551 outColor;
+	outColor.r = (col.r + ((31 - col.r) * blendEVY / 16));
+	outColor.g = (col.g + ((31 - col.g) * blendEVY / 16));
+	outColor.b = (col.b + ((31 - col.b) * blendEVY / 16));
+	outColor.a = 0;
 	
-	r = (r + ((31 - r) * blendEVY / 16));
-	g = (g + ((31 - g) * blendEVY / 16));
-	b = (b + ((31 - b) * blendEVY / 16));
-	
-	return r | (g << 5) | (b << 10);
+	return outColor;
 }
 
 template <NDSColorFormat COLORFORMAT>
 FORCEINLINE Color4u8 ColorOperation::increase(const Color4u8 col, const u16 blendEVY) const
 {
-	Color4u8 newColor;
-	newColor.value = 0;
-	
-	u32 r = col.r;
-	u32 g = col.g;
-	u32 b = col.b;
+	Color4u8 outColor;
 	
 	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
 	{
-		newColor.r = (r + ((63 - r) * blendEVY / 16));
-		newColor.g = (g + ((63 - g) * blendEVY / 16));
-		newColor.b = (b + ((63 - b) * blendEVY / 16));
+		outColor.r = (u8)( (u16)col.r + ((63 - (u16)col.r) * blendEVY / 16) );
+		outColor.g = (u8)( (u16)col.g + ((63 - (u16)col.g) * blendEVY / 16) );
+		outColor.b = (u8)( (u16)col.b + ((63 - (u16)col.b) * blendEVY / 16) );
 	}
 	else if (COLORFORMAT == NDSColorFormat_BGR888_Rev)
 	{
-		newColor.r = (r + ((255 - r) * blendEVY / 16));
-		newColor.g = (g + ((255 - g) * blendEVY / 16));
-		newColor.b = (b + ((255 - b) * blendEVY / 16));
+		outColor.r = (u8)( (u16)col.r + ((255 - (u16)col.r) * blendEVY / 16) );
+		outColor.g = (u8)( (u16)col.g + ((255 - (u16)col.g) * blendEVY / 16) );
+		outColor.b = (u8)( (u16)col.b + ((255 - (u16)col.b) * blendEVY / 16) );
 	}
 	
-	return newColor;
+	outColor.a = 0;
+	return outColor;
 }
 
-FORCEINLINE u16 ColorOperation::decrease(const u16 col, const u16 blendEVY) const
+FORCEINLINE Color5551 ColorOperation::decrease(const Color5551 col, const u16 blendEVY) const
 {
-	u16 r =  col        & 0x001F;
-	u16 g = (col >>  5) & 0x001F;
-	u16 b = (col >> 10) & 0x001F;
+	Color5551 outColor;
+	outColor.r = (col.r - (col.r * blendEVY / 16));
+	outColor.g = (col.g - (col.g * blendEVY / 16));
+	outColor.b = (col.b - (col.b * blendEVY / 16));
+	outColor.a = 0;
 	
-	r = (r - (r * blendEVY / 16));
-	g = (g - (g * blendEVY / 16));
-	b = (b - (b * blendEVY / 16));
-	
-	return r | (g << 5) | (b << 10);
+	return outColor;
 }
 
 template <NDSColorFormat COLORFORMAT>
 FORCEINLINE Color4u8 ColorOperation::decrease(const Color4u8 col, const u16 blendEVY) const
 {
-	Color4u8 newColor;
-	newColor.value = 0;
+	Color4u8 outColor;
+	outColor.r = (u8)( (u16)col.r - ((u16)col.r * blendEVY / 16) );
+	outColor.g = (u8)( (u16)col.g - ((u16)col.g * blendEVY / 16) );
+	outColor.b = (u8)( (u16)col.b - ((u16)col.b * blendEVY / 16) );
+	outColor.a = 0;
 	
-	u32 r = col.r;
-	u32 g = col.g;
-	u32 b = col.b;
-	
-	newColor.r = (r - (r * blendEVY / 16));
-	newColor.g = (g - (g * blendEVY / 16));
-	newColor.b = (b - (b * blendEVY / 16));
-	
-	return newColor;
+	return outColor;
 }
 
 void PixelOperation::InitLUTs()
@@ -243,7 +224,7 @@ void PixelOperation::InitLUTs()
 			cur.g = ( cur.g + ((31 - cur.g) * i / 16) );
 			cur.b = ( cur.b + ((31 - cur.b) * i / 16) );
 			cur.a = 0;
-			PixelOperation::BrightnessUpTable555[i][j]       = cur.value;
+			PixelOperation::BrightnessUpTable555[i][j]       = cur;
 			PixelOperation::BrightnessUpTable666[i][j].value = COLOR555TO666(cur.value);
 			PixelOperation::BrightnessUpTable888[i][j].value = COLOR555TO888(cur.value);
 			
@@ -252,7 +233,7 @@ void PixelOperation::InitLUTs()
 			cur.g = ( cur.g - (cur.g * i / 16) );
 			cur.b = ( cur.b - (cur.b * i / 16) );
 			cur.a = 0;
-			PixelOperation::BrightnessDownTable555[i][j]       = cur.value;
+			PixelOperation::BrightnessDownTable555[i][j]       = cur;
 			PixelOperation::BrightnessDownTable666[i][j].value = COLOR555TO666(cur.value);
 			PixelOperation::BrightnessDownTable888[i][j].value = COLOR555TO888(cur.value);
 		}
@@ -278,24 +259,25 @@ void PixelOperation::InitLUTs()
 }
 
 template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER>
-FORCEINLINE void PixelOperation::_copy16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16) const
+FORCEINLINE void PixelOperation::_copy16(GPUEngineCompositorInfo &compInfo, const Color5551 srcColor16) const
 {
-	u16 &dstColor16 = *compInfo.target.lineColor16;
+	Color5551 &dstColor16 = *compInfo.target.lineColor16;
 	Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
 	switch (OUTPUTFORMAT)
 	{
 		case NDSColorFormat_BGR555_Rev:
-			dstColor16 = srcColor16 | 0x8000;
+			dstColor16 = srcColor16;
+			dstColor16.a = 1;
 			break;
 			
 		case NDSColorFormat_BGR666_Rev:
-			dstColor32.value = ColorspaceConvert555To6665Opaque<false>(srcColor16);
+			dstColor32.value = ColorspaceConvert555To6665Opaque<false>(srcColor16.value);
 			break;
 			
 		case NDSColorFormat_BGR888_Rev:
-			dstColor32.value = ColorspaceConvert555To8888Opaque<false>(srcColor16);
+			dstColor32.value = ColorspaceConvert555To8888Opaque<false>(srcColor16.value);
 			break;
 	}
 	
@@ -308,15 +290,15 @@ FORCEINLINE void PixelOperation::_copy16(GPUEngineCompositorInfo &compInfo, cons
 template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER>
 FORCEINLINE void PixelOperation::_copy32(GPUEngineCompositorInfo &compInfo, const Color4u8 srcColor32) const
 {
-	u16 &dstColor16 = *compInfo.target.lineColor16;
+	Color5551 &dstColor16 = *compInfo.target.lineColor16;
 	Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
 	switch (OUTPUTFORMAT)
 	{
 		case NDSColorFormat_BGR555_Rev:
-			dstColor16 = ColorspaceConvert6665To5551<false>(srcColor32);
-			dstColor16 = dstColor16 | 0x8000;
+			dstColor16.value = ColorspaceConvert6665To5551<false>(srcColor32);
+			dstColor16.a = 1;
 			break;
 			
 		case NDSColorFormat_BGR666_Rev:
@@ -340,25 +322,26 @@ FORCEINLINE void PixelOperation::_copy32(GPUEngineCompositorInfo &compInfo, cons
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
-FORCEINLINE void PixelOperation::_brightnessUp16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16) const
+FORCEINLINE void PixelOperation::_brightnessUp16(GPUEngineCompositorInfo &compInfo, const Color5551 srcColor16) const
 {
-	u16 &dstColor16 = *compInfo.target.lineColor16;
+	Color5551 &dstColor16 = *compInfo.target.lineColor16;
 	Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
 	switch (OUTPUTFORMAT)
 	{
 		case NDSColorFormat_BGR555_Rev:
-			dstColor16 = compInfo.renderState.brightnessUpTable555[srcColor16 & 0x7FFF] | 0x8000;
+			dstColor16 = compInfo.renderState.brightnessUpTable555[srcColor16.value & 0x7FFF];
+			dstColor16.a = 1;
 			break;
 			
 		case NDSColorFormat_BGR666_Rev:
-			dstColor32 = compInfo.renderState.brightnessUpTable666[srcColor16 & 0x7FFF];
+			dstColor32 = compInfo.renderState.brightnessUpTable666[srcColor16.value & 0x7FFF];
 			dstColor32.a = 0x1F;
 			break;
 			
 		case NDSColorFormat_BGR888_Rev:
-			dstColor32 = compInfo.renderState.brightnessUpTable888[srcColor16 & 0x7FFF];
+			dstColor32 = compInfo.renderState.brightnessUpTable888[srcColor16.value & 0x7FFF];
 			dstColor32.a = 0xFF;
 			break;
 	}
@@ -369,7 +352,7 @@ FORCEINLINE void PixelOperation::_brightnessUp16(GPUEngineCompositorInfo &compIn
 template <NDSColorFormat OUTPUTFORMAT>
 FORCEINLINE void PixelOperation::_brightnessUp32(GPUEngineCompositorInfo &compInfo, const Color4u8 srcColor32) const
 {
-	u16 &dstColor16 = *compInfo.target.lineColor16;
+	Color5551 &dstColor16 = *compInfo.target.lineColor16;
 	Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
@@ -377,7 +360,7 @@ FORCEINLINE void PixelOperation::_brightnessUp32(GPUEngineCompositorInfo &compIn
 	{
 		const u16 srcColor16 = ColorspaceConvert6665To5551<false>(srcColor32);
 		dstColor16 = compInfo.renderState.brightnessUpTable555[srcColor16 & 0x7FFF];
-		dstColor16 = dstColor16 | 0x8000;
+		dstColor16.a = 1;
 	}
 	else
 	{
@@ -389,25 +372,26 @@ FORCEINLINE void PixelOperation::_brightnessUp32(GPUEngineCompositorInfo &compIn
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
-FORCEINLINE void PixelOperation::_brightnessDown16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16) const
+FORCEINLINE void PixelOperation::_brightnessDown16(GPUEngineCompositorInfo &compInfo, const Color5551 srcColor16) const
 {
-	u16 &dstColor16 = *compInfo.target.lineColor16;
+	Color5551 &dstColor16 = *compInfo.target.lineColor16;
 	Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
 	switch (OUTPUTFORMAT)
 	{
 		case NDSColorFormat_BGR555_Rev:
-			dstColor16 = compInfo.renderState.brightnessDownTable555[srcColor16 & 0x7FFF] | 0x8000;
+			dstColor16 = compInfo.renderState.brightnessDownTable555[srcColor16.value & 0x7FFF];
+			dstColor16.a = 1;
 			break;
 			
 		case NDSColorFormat_BGR666_Rev:
-			dstColor32 = compInfo.renderState.brightnessDownTable666[srcColor16 & 0x7FFF];
+			dstColor32 = compInfo.renderState.brightnessDownTable666[srcColor16.value & 0x7FFF];
 			dstColor32.a = 0x1F;
 			break;
 			
 		case NDSColorFormat_BGR888_Rev:
-			dstColor32 = compInfo.renderState.brightnessDownTable888[srcColor16 & 0x7FFF];
+			dstColor32 = compInfo.renderState.brightnessDownTable888[srcColor16.value & 0x7FFF];
 			dstColor32.a = 0xFF;
 			break;
 	}
@@ -418,7 +402,7 @@ FORCEINLINE void PixelOperation::_brightnessDown16(GPUEngineCompositorInfo &comp
 template <NDSColorFormat OUTPUTFORMAT>
 FORCEINLINE void PixelOperation::_brightnessDown32(GPUEngineCompositorInfo &compInfo, const Color4u8 srcColor32) const
 {
-	u16 &dstColor16 = *compInfo.target.lineColor16;
+	Color5551 &dstColor16 = *compInfo.target.lineColor16;
 	Color4u8 &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
@@ -426,7 +410,7 @@ FORCEINLINE void PixelOperation::_brightnessDown32(GPUEngineCompositorInfo &comp
 	{
 		const u16 srcColor16 = ColorspaceConvert6665To5551<false>(srcColor32);
 		dstColor16 = compInfo.renderState.brightnessDownTable555[srcColor16 & 0x7FFF];
-		dstColor16 = dstColor16 | 0x8000;
+		dstColor16.a = 1;
 	}
 	else
 	{
@@ -506,7 +490,7 @@ FORCEINLINE void PixelOperation::__selectedEffect(const GPUEngineCompositorInfo 
 }
 
 template <NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE>
-FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const bool enableColorEffect, const u8 spriteAlpha, const OBJMode spriteMode) const
+FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compInfo, const Color5551 srcColor16, const bool enableColorEffect, const u8 spriteAlpha, const OBJMode spriteMode) const
 {
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	TBlendTable *selectedBlendTable = compInfo.renderState.blendTable555;
@@ -521,7 +505,7 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
-		u16 &dstColor16 = *compInfo.target.lineColor16;
+		Color5551 &dstColor16 = *compInfo.target.lineColor16;
 		
 		switch (selectedEffect)
 		{
@@ -530,11 +514,11 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 				break;
 				
 			case ColorEffect_IncreaseBrightness:
-				dstColor16 = compInfo.renderState.brightnessUpTable555[srcColor16 & 0x7FFF];
+				dstColor16 = compInfo.renderState.brightnessUpTable555[srcColor16.value & 0x7FFF];
 				break;
 				
 			case ColorEffect_DecreaseBrightness:
-				dstColor16 = compInfo.renderState.brightnessDownTable555[srcColor16 & 0x7FFF];
+				dstColor16 = compInfo.renderState.brightnessDownTable555[srcColor16.value & 0x7FFF];
 				break;
 				
 			case ColorEffect_Blend:
@@ -553,7 +537,7 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 			}
 		}
 		
-		dstColor16 |= 0x8000;
+		dstColor16.a = 1;
 	}
 	else
 	{
@@ -564,21 +548,21 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 			switch (selectedEffect)
 			{
 				case ColorEffect_Disable:
-					dstColor32.value = ColorspaceConvert555To6665Opaque<false>(srcColor16);
+					dstColor32.value = ColorspaceConvert555To6665Opaque<false>(srcColor16.value);
 					break;
 					
 				case ColorEffect_IncreaseBrightness:
-					dstColor32 = compInfo.renderState.brightnessUpTable666[srcColor16 & 0x7FFF];
+					dstColor32 = compInfo.renderState.brightnessUpTable666[srcColor16.value & 0x7FFF];
 					break;
 					
 				case ColorEffect_DecreaseBrightness:
-					dstColor32 = compInfo.renderState.brightnessDownTable666[srcColor16 & 0x7FFF];
+					dstColor32 = compInfo.renderState.brightnessDownTable666[srcColor16.value & 0x7FFF];
 					break;
 					
 				case ColorEffect_Blend:
 				{
 					Color4u8 srcColor32;
-					srcColor32.value = ColorspaceConvert555To6665Opaque<false>(srcColor16);
+					srcColor32.value = ColorspaceConvert555To6665Opaque<false>(srcColor16.value);
 					dstColor32 = (LAYERTYPE == GPULayerType_3D) ? colorop.blend3D<OUTPUTFORMAT>(srcColor32, dstColor32) : colorop.blend<OUTPUTFORMAT>(srcColor32, dstColor32, blendEVA, blendEVB);
 					break;
 				}
@@ -589,21 +573,21 @@ FORCEINLINE void PixelOperation::_unknownEffect16(GPUEngineCompositorInfo &compI
 			switch (selectedEffect)
 			{
 				case ColorEffect_Disable:
-					dstColor32.value = ColorspaceConvert555To8888Opaque<false>(srcColor16);
+					dstColor32.value = ColorspaceConvert555To8888Opaque<false>(srcColor16.value);
 					break;
 					
 				case ColorEffect_IncreaseBrightness:
-					dstColor32 = compInfo.renderState.brightnessUpTable888[srcColor16 & 0x7FFF];
+					dstColor32 = compInfo.renderState.brightnessUpTable888[srcColor16.value & 0x7FFF];
 					break;
 					
 				case ColorEffect_DecreaseBrightness:
-					dstColor32 = compInfo.renderState.brightnessDownTable888[srcColor16 & 0x7FFF];
+					dstColor32 = compInfo.renderState.brightnessDownTable888[srcColor16.value & 0x7FFF];
 					break;
 					
 				case ColorEffect_Blend:
 				{
 					Color4u8 srcColor32;
-					srcColor32.value = ColorspaceConvert555To8888Opaque<false>(srcColor16);
+					srcColor32.value = ColorspaceConvert555To8888Opaque<false>(srcColor16.value);
 					dstColor32 = (LAYERTYPE == GPULayerType_3D) ? colorop.blend3D<OUTPUTFORMAT>(srcColor32, dstColor32) : colorop.blend<OUTPUTFORMAT>(srcColor32, dstColor32, blendEVA, blendEVB);
 					break;
 				}
@@ -630,8 +614,10 @@ FORCEINLINE void PixelOperation::_unknownEffect32(GPUEngineCompositorInfo &compI
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
-		const u16 srcColor16 = ColorspaceConvert6665To5551<false>(srcColor32);
-		u16 &dstColor16 = *compInfo.target.lineColor16;
+		Color5551 srcColor16;
+		srcColor16.value = ColorspaceConvert6665To5551<false>(srcColor32);
+		
+		Color5551 &dstColor16 = *compInfo.target.lineColor16;
 		
 		switch (selectedEffect)
 		{
@@ -640,11 +626,11 @@ FORCEINLINE void PixelOperation::_unknownEffect32(GPUEngineCompositorInfo &compI
 				break;
 				
 			case ColorEffect_IncreaseBrightness:
-				dstColor16 = compInfo.renderState.brightnessUpTable555[srcColor16 & 0x7FFF];
+				dstColor16 = compInfo.renderState.brightnessUpTable555[srcColor16.value & 0x7FFF];
 				break;
 				
 			case ColorEffect_DecreaseBrightness:
-				dstColor16 = compInfo.renderState.brightnessDownTable555[srcColor16 & 0x7FFF];
+				dstColor16 = compInfo.renderState.brightnessDownTable555[srcColor16.value & 0x7FFF];
 				break;
 				
 			case ColorEffect_Blend:
@@ -661,7 +647,7 @@ FORCEINLINE void PixelOperation::_unknownEffect32(GPUEngineCompositorInfo &compI
 			}
 		}
 		
-		dstColor16 |= 0x8000;
+		dstColor16.a = 1;
 	}
 	else
 	{
@@ -693,26 +679,29 @@ FORCEINLINE void PixelOperation::_unknownEffect32(GPUEngineCompositorInfo &compI
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE>
 FORCEINLINE void PixelOperation::Composite16(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const bool enableColorEffect, const u8 spriteAlpha, const u8 spriteMode) const
 {
+	Color5551 srcColor5551;
+	srcColor5551.value = srcColor16;
+	
 	switch (COMPOSITORMODE)
 	{
 		case GPUCompositorMode_Debug:
-			this->_copy16<OUTPUTFORMAT, true>(compInfo, srcColor16);
+			this->_copy16<OUTPUTFORMAT, true>(compInfo, srcColor5551);
 			break;
 			
 		case GPUCompositorMode_Copy:
-			this->_copy16<OUTPUTFORMAT, false>(compInfo, srcColor16);
+			this->_copy16<OUTPUTFORMAT, false>(compInfo, srcColor5551);
 			break;
 			
 		case GPUCompositorMode_BrightUp:
-			this->_brightnessUp16<OUTPUTFORMAT>(compInfo, srcColor16);
+			this->_brightnessUp16<OUTPUTFORMAT>(compInfo, srcColor5551);
 			break;
 			
 		case GPUCompositorMode_BrightDown:
-			this->_brightnessDown16<OUTPUTFORMAT>(compInfo, srcColor16);
+			this->_brightnessDown16<OUTPUTFORMAT>(compInfo, srcColor5551);
 			break;
 			
 		default:
-			this->_unknownEffect16<OUTPUTFORMAT, LAYERTYPE>(compInfo, srcColor16, enableColorEffect, spriteAlpha, (OBJMode)spriteMode);
+			this->_unknownEffect16<OUTPUTFORMAT, LAYERTYPE>(compInfo, srcColor5551, enableColorEffect, spriteAlpha, (OBJMode)spriteMode);
 			break;
 	}
 }

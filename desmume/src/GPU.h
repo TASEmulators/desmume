@@ -1302,10 +1302,10 @@ typedef struct
 	bool masterBrightnessIsMaxOrMin;
 	
 	TBlendTable *blendTable555;
-	u16 *brightnessUpTable555;
+	Color5551 *brightnessUpTable555;
 	Color4u8 *brightnessUpTable666;
 	Color4u8 *brightnessUpTable888;
-	u16 *brightnessDownTable555;
+	Color5551 *brightnessDownTable555;
 	Color4u8 *brightnessDownTable666;
 	Color4u8 *brightnessDownTable888;
 	
@@ -1347,7 +1347,7 @@ typedef struct
 	size_t xNative;
 	size_t xCustom;
 	void **lineColor;
-	u16 *lineColor16;
+	Color5551 *lineColor16;
 	Color4u8 *lineColor32;
 	u8 *lineLayerID;
 } GPUEngineTargetState;
