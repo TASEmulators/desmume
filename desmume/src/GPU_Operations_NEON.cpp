@@ -949,7 +949,7 @@ FORCEINLINE void PixelOperation_NEON::_copy16(GPUEngineCompositorInfo &compInfo,
 			vorrq_u16(src0, alphaBits),
 			vorrq_u16(src1, alphaBits)
 		};
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
@@ -1016,12 +1016,12 @@ FORCEINLINE void PixelOperation_NEON::_copyMask16(GPUEngineCompositorInfo &compI
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
 		const v128u16 alphaBits = vdupq_n_u16(0x8000);
-		const uint16x8x2_t oldColor16 = vld1q_u16_x2(compInfo.target.lineColor16);
+		const uint16x8x2_t oldColor16 = vld1q_u16_x2((u16 *)compInfo.target.lineColor16);
 		const uint16x8x2_t dst16 = {
 			vbslq_u16(passMask16.val[0], vorrq_u16(src0, alphaBits), oldColor16.val[0]),
 			vbslq_u16(passMask16.val[1], vorrq_u16(src1, alphaBits), oldColor16.val[1])
 		};
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
@@ -1078,12 +1078,12 @@ FORCEINLINE void PixelOperation_NEON::_copyMask32(GPUEngineCompositorInfo &compI
 		};
 		
 		const v128u16 alphaBits = vdupq_n_u16(0x8000);
-		const uint16x8x2_t oldColor16 = vld1q_u16_x2(compInfo.target.lineColor16);
+		const uint16x8x2_t oldColor16 = vld1q_u16_x2((u16 *)compInfo.target.lineColor16);
 		const uint16x8x2_t dst16 = {
 			vbslq_u16(passMask16.val[0], vorrq_u16(src16.val[0], alphaBits), oldColor16.val[0]),
 			vbslq_u16(passMask16.val[1], vorrq_u16(src16.val[1], alphaBits), oldColor16.val[1])
 		};
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
@@ -1123,7 +1123,7 @@ FORCEINLINE void PixelOperation_NEON::_brightnessUp16(GPUEngineCompositorInfo &c
 			vorrq_u16(colorop_vec.increase(src0, evy16), alphaBits),
 			vorrq_u16(colorop_vec.increase(src1, evy16), alphaBits)
 		};
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
@@ -1168,7 +1168,7 @@ FORCEINLINE void PixelOperation_NEON::_brightnessUp32(GPUEngineCompositorInfo &c
 			vorrq_u16( colorop_vec.increase(src16.val[1], evy16), alphaBits )
 		};
 		
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
@@ -1197,12 +1197,12 @@ FORCEINLINE void PixelOperation_NEON::_brightnessUpMask16(GPUEngineCompositorInf
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
 		const v128u16 alphaBits = vdupq_n_u16(0x8000);
-		const uint16x8x2_t oldColor16 =  vld1q_u16_x2(compInfo.target.lineColor16);
+		const uint16x8x2_t oldColor16 =  vld1q_u16_x2((u16 *)compInfo.target.lineColor16);
 		const uint16x8x2_t dst16 = {
 			vbslq_u16(passMask16.val[0], vorrq_u16(colorop_vec.increase(src0, evy16), alphaBits), oldColor16.val[0]),
 			vbslq_u16(passMask16.val[1], vorrq_u16(colorop_vec.increase(src1, evy16), alphaBits), oldColor16.val[1])
 		};
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
@@ -1257,12 +1257,12 @@ FORCEINLINE void PixelOperation_NEON::_brightnessUpMask32(GPUEngineCompositorInf
 		};
 		
 		const v128u16 alphaBits = vdupq_n_u16(0x8000);
-		const uint16x8x2_t oldColor16 =  vld1q_u16_x2(compInfo.target.lineColor16);
+		const uint16x8x2_t oldColor16 =  vld1q_u16_x2((u16 *)compInfo.target.lineColor16);
 		const uint16x8x2_t dst16 = {
 			vbslq_u16(passMask16.val[0], vorrq_u16(colorop_vec.increase(src16.val[0], evy16), alphaBits), oldColor16.val[0]),
 			vbslq_u16(passMask16.val[1], vorrq_u16(colorop_vec.increase(src16.val[1], evy16), alphaBits), oldColor16.val[1])
 		};
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
@@ -1299,7 +1299,7 @@ FORCEINLINE void PixelOperation_NEON::_brightnessDown16(GPUEngineCompositorInfo 
 			vorrq_u16(colorop_vec.decrease(src0, evy16), alphaBits),
 			vorrq_u16(colorop_vec.decrease(src1, evy16), alphaBits)
 		};
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
@@ -1344,7 +1344,7 @@ FORCEINLINE void PixelOperation_NEON::_brightnessDown32(GPUEngineCompositorInfo 
 			vorrq_u16( colorop_vec.decrease(src16.val[1], evy16), alphaBits )
 		};
 		
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
@@ -1373,12 +1373,12 @@ FORCEINLINE void PixelOperation_NEON::_brightnessDownMask16(GPUEngineCompositorI
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
 		const v128u16 alphaBits = vdupq_n_u16(0x8000);
-		const uint16x8x2_t oldColor16 =  vld1q_u16_x2(compInfo.target.lineColor16);
+		const uint16x8x2_t oldColor16 =  vld1q_u16_x2((u16 *)compInfo.target.lineColor16);
 		const uint16x8x2_t dst16 = {
 			vbslq_u16(passMask16.val[0], vorrq_u16(colorop_vec.decrease(src0, evy16), alphaBits), oldColor16.val[0]),
 			vbslq_u16(passMask16.val[1], vorrq_u16(colorop_vec.decrease(src1, evy16), alphaBits), oldColor16.val[1])
 		};
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
@@ -1434,12 +1434,12 @@ FORCEINLINE void PixelOperation_NEON::_brightnessDownMask32(GPUEngineCompositorI
 		};
 		
 		const v128u16 alphaBits = vdupq_n_u16(0x8000);
-		const uint16x8x2_t oldColor16 =  vld1q_u16_x2(compInfo.target.lineColor16);
+		const uint16x8x2_t oldColor16 =  vld1q_u16_x2((u16 *)compInfo.target.lineColor16);
 		const uint16x8x2_t dst16 = {
 			vbslq_u16(passMask16.val[0], vorrq_u16(colorop_vec.decrease(src16.val[0], evy16), alphaBits), oldColor16.val[0]),
 			vbslq_u16(passMask16.val[1], vorrq_u16(colorop_vec.decrease(src16.val[1], evy16), alphaBits), oldColor16.val[1])
 		};
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
@@ -1609,7 +1609,7 @@ FORCEINLINE void PixelOperation_NEON::_unknownEffectMask16(GPUEngineCompositorIn
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
-		const uint16x8x2_t oldColor16 = vld1q_u16_x2(compInfo.target.lineColor16);
+		const uint16x8x2_t oldColor16 = vld1q_u16_x2((u16 *)compInfo.target.lineColor16);
 		
 		if (blendMaskValue != 0)
 		{
@@ -1667,7 +1667,7 @@ FORCEINLINE void PixelOperation_NEON::_unknownEffectMask16(GPUEngineCompositorIn
 			vbslq_u16(passMask16.val[0], vorrq_u16(tmpSrc16.val[0], alphaBits), oldColor16.val[0]),
 			vbslq_u16(passMask16.val[1], vorrq_u16(tmpSrc16.val[1], alphaBits), oldColor16.val[1])
 		};
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
@@ -1909,7 +1909,7 @@ FORCEINLINE void PixelOperation_NEON::_unknownEffectMask32(GPUEngineCompositorIn
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
-		const uint16x8x2_t oldColor16 = vld1q_u16_x2(compInfo.target.lineColor16);
+		const uint16x8x2_t oldColor16 = vld1q_u16_x2((u16 *)compInfo.target.lineColor16);
 		
 		if (blendMaskValue != 0)
 		{
@@ -1965,7 +1965,7 @@ FORCEINLINE void PixelOperation_NEON::_unknownEffectMask32(GPUEngineCompositorIn
 			vbslq_u16(passMask16.val[0], vorrq_u16(tmpSrc16.val[0], alphaBits), oldColor16.val[0]),
 			vbslq_u16(passMask16.val[1], vorrq_u16(tmpSrc16.val[1], alphaBits), oldColor16.val[1])
 		};
-		vst1q_u16_x2(compInfo.target.lineColor16, dst16);
+		vst1q_u16_x2((u16 *)compInfo.target.lineColor16, dst16);
 	}
 	else
 	{
