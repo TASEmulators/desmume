@@ -533,6 +533,27 @@ union Vector4f32
 };
 typedef union Vector4f32 Vector4f32;
 
+union Color5551
+{
+	struct
+	{
+#ifdef MSB_FIRST
+		u16 a:1;
+		u16 b:5;
+		u16 g:5;
+		u16 r:5;
+#else
+		u16 r:5;
+		u16 g:5;
+		u16 b:5;
+		u16 a:1;
+#endif
+	};
+	
+	u16 value;
+};
+typedef union Color5551 Color5551;
+
 union Color4u8
 {
 	u8 component[4];

@@ -99,17 +99,19 @@ FORCEINLINE Color4u8 ColorOperation::blend(const Color4u8 colA, const Color4u8 c
 FORCEINLINE u16 ColorOperation::blend3D(const Color4u8 colA, const u16 colB) const
 {
 	const u16 alpha = colA.a + 1;
-	COLOR c2;
-	COLOR cfinal;
+	const u16 minusAlpha = 32 - alpha;
 	
-	c2.val = colB;
+	Color5551 c2;
+	Color5551 blendedColor;
 	
-	cfinal.bits.red   = ((colA.r * alpha) + ((c2.bits.red   << 1) * (32 - alpha))) >> 6;
-	cfinal.bits.green = ((colA.g * alpha) + ((c2.bits.green << 1) * (32 - alpha))) >> 6;
-	cfinal.bits.blue  = ((colA.b * alpha) + ((c2.bits.blue  << 1) * (32 - alpha))) >> 6;
-	cfinal.bits.alpha = 0;
+	c2.value = colB;
 	
-	return cfinal.val;
+	blendedColor.r = ( ((u16)colA.r * alpha) + ((c2.r << 1) * minusAlpha) ) >> 6;
+	blendedColor.g = ( ((u16)colA.g * alpha) + ((c2.g << 1) * minusAlpha) ) >> 6;
+	blendedColor.b = ( ((u16)colA.b * alpha) + ((c2.b << 1) * minusAlpha) ) >> 6;
+	blendedColor.a = 0;
+	
+	return blendedColor.value;
 }
 
 template <NDSColorFormat COLORFORMAT>
@@ -234,25 +236,25 @@ void PixelOperation::InitLUTs()
 	{
 		for (u16 j = 0x0000; j < 0x8000; j++)
 		{
-			COLOR cur;
+			Color5551 cur;
 
-			cur.val = j;
-			cur.bits.red = (cur.bits.red + ((31 - cur.bits.red) * i / 16));
-			cur.bits.green = (cur.bits.green + ((31 - cur.bits.green) * i / 16));
-			cur.bits.blue = (cur.bits.blue + ((31 - cur.bits.blue) * i / 16));
-			cur.bits.alpha = 0;
-			PixelOperation::BrightnessUpTable555[i][j] = cur.val;
-			PixelOperation::BrightnessUpTable666[i][j].value = COLOR555TO666(cur.val);
-			PixelOperation::BrightnessUpTable888[i][j].value = COLOR555TO888(cur.val);
+			cur.value = j;
+			cur.r = ( cur.r + ((31 - cur.r) * i / 16) );
+			cur.g = ( cur.g + ((31 - cur.g) * i / 16) );
+			cur.b = ( cur.b + ((31 - cur.b) * i / 16) );
+			cur.a = 0;
+			PixelOperation::BrightnessUpTable555[i][j]       = cur.value;
+			PixelOperation::BrightnessUpTable666[i][j].value = COLOR555TO666(cur.value);
+			PixelOperation::BrightnessUpTable888[i][j].value = COLOR555TO888(cur.value);
 			
-			cur.val = j;
-			cur.bits.red = (cur.bits.red - (cur.bits.red * i / 16));
-			cur.bits.green = (cur.bits.green - (cur.bits.green * i / 16));
-			cur.bits.blue = (cur.bits.blue - (cur.bits.blue * i / 16));
-			cur.bits.alpha = 0;
-			PixelOperation::BrightnessDownTable555[i][j] = cur.val;
-			PixelOperation::BrightnessDownTable666[i][j].value = COLOR555TO666(cur.val);
-			PixelOperation::BrightnessDownTable888[i][j].value = COLOR555TO888(cur.val);
+			cur.value = j;
+			cur.r = ( cur.r - (cur.r * i / 16) );
+			cur.g = ( cur.g - (cur.g * i / 16) );
+			cur.b = ( cur.b - (cur.b * i / 16) );
+			cur.a = 0;
+			PixelOperation::BrightnessDownTable555[i][j]       = cur.value;
+			PixelOperation::BrightnessDownTable666[i][j].value = COLOR555TO666(cur.value);
+			PixelOperation::BrightnessDownTable888[i][j].value = COLOR555TO888(cur.value);
 		}
 	}
 	

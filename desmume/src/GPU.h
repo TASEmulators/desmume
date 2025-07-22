@@ -929,45 +929,6 @@ typedef union
 	u16 val;
 } TILEENTRY;
 
-/*
-	this structure is for color representation,
-	it holds 5 meaningful bits per color channel (red,green,blue)
-	and	  1 meaningful bit for alpha representation
-	this bit can be unused or used for special FX
-*/
-
-struct _COLOR { // abgr x555
-#ifdef MSB_FIRST
-	unsigned alpha:1;    // sometimes it is unused (pad)
-	unsigned blue:5;
-	unsigned green:5;
-	unsigned red:5;
-#else
-     unsigned red:5;
-     unsigned green:5;
-     unsigned blue:5;
-     unsigned alpha:1;    // sometimes it is unused (pad)
-#endif
-};
-struct _COLORx { // abgr x555
-	unsigned bgr:15;
-	unsigned alpha:1;	// sometimes it is unused (pad)
-};
-
-typedef union
-{
-	struct _COLOR bits;
-	struct _COLORx bitx;
-	u16 val;
-} COLOR;
-
-#define COLOR_16_32(w,i)	\
-	/* doesnt matter who's 16bit who's 32bit */ \
-	i.bits.red   = w.bits.red; \
-	i.bits.green = w.bits.green; \
-	i.bits.blue  = w.bits.blue; \
-	i.bits.alpha = w.bits.alpha;
-
 typedef union
 {
 	u16 attr[4];
