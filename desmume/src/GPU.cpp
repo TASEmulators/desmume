@@ -3986,6 +3986,13 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 				}
 				
 				ColorspaceConvertBuffer8888To5551<false, false>(dstNative32, dstNative16, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+				
+#if defined(MSB_FIRST)
+				for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+				{
+					dstNative16[i] = LE_TO_LOCAL_16(dstNative16[i]);
+				}
+#endif
 				needCaptureNative = false;
 			}
 		}

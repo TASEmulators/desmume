@@ -207,19 +207,7 @@ FORCEINLINE v128u16 _ConvertColorBaseTo5551_AltiVec(const v128u32 &srcLo, const 
 	// Convert alpha
 	dstAlpha = vec_packsu( vec_and(srcLo, ((v128u32){0x000000FF,0x000000FF,0x000000FF,0x000000FF})), vec_and(srcHi, ((v128u32){0x000000FF,0x000000FF,0x000000FF,0x000000FF})) );
 	dstAlpha = vec_cmpgt( dstAlpha, vec_splat_u16(0) );
-	
-	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
-	{
-		dstAlpha = vec_and( dstAlpha, ((v128u16){0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000}) );
-	}
-	else if (COLORFORMAT == NDSColorFormat_BGR888_Rev)
-	{
-		// TODO: Don't know why RGBA8888 colors need to swap bytes for the final 16-bit color
-		// when RGBA6665 colors don't need to, but real-world testing shows that RGBA8888 colors
-		// need to do this. Further testing is needed to find out why this byte swap is necessary.
-		// - rogerman, 2025/07/19
-		dstAlpha = vec_and( dstAlpha, ((v128u16){0x0080,0x0080,0x0080,0x0080,0x0080,0x0080,0x0080,0x0080}) );
-	}
+	dstAlpha = vec_and( dstAlpha, ((v128u16){0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000}) );
 	
 	// Convert RGB
 	if (SWAP_RB)
@@ -233,17 +221,8 @@ FORCEINLINE v128u16 _ConvertColorBaseTo5551_AltiVec(const v128u32 &srcLo, const 
 		rgbHi = vec_perm( (v128u8)rgbHi, (v128u8)rgbHi, ((v128u8){3,2,1,0,  7,6,5,4,  11,10,9,8,  15,14,13,12}) );
 	}
 	
-	// Convert from 32-bit color to 16-bit color using the built-in AltiVec instruction vpkpx.
-	dstColor = (v128u16)vec_packpx(rgbLo, rgbHi);
-	
-	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
-	{
-		dstColor = vec_and( dstColor, ((v128u16){0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF}) );
-	}
-	else if (COLORFORMAT == NDSColorFormat_BGR888_Rev)
-	{
-		dstColor = vec_and( dstColor, ((v128u16){0xFF7F,0xFF7F,0xFF7F,0xFF7F,0xFF7F,0xFF7F,0xFF7F,0xFF7F}) );
-	}
+	dstColor = (v128u16)vec_packpx(rgbLo, rgbHi); // Convert from 32-bit color to 16-bit color using the built-in AltiVec instruction vpkpx.
+	dstColor = vec_and( dstColor, ((v128u16){0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF}) );
 	
 	return (v128u16)vec_or( (v128u8)dstColor, (v128u8)dstAlpha );
 }
