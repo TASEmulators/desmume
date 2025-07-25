@@ -1993,8 +1993,8 @@ void __NDSTextureUnpackDirect16Bit_AltiVec(const size_t texelCount, const u16 *_
 		
 		const v128u16 alpha = vec_and(c, ((v128u16){0x0080,0x0080,0x0080,0x0080,0x0080,0x0080,0x0080,0x0080}));
 		const v128u16 alphaMask = vec_cmpeq( alpha, ((v128u16){0x0080,0x0080,0x0080,0x0080,0x0080,0x0080,0x0080,0x0080}) );
-		convertedColor[0] = vec_and( convertedColor[0], vec_perm((v128u8)alphaMask, (v128u8)alphaMask, ((v128u8){ 8, 9,  8, 9,  10,11, 10,11,  12,13, 12,13,  14,15, 14,15})) );
-		convertedColor[1] = vec_and( convertedColor[1], vec_perm((v128u8)alphaMask, (v128u8)alphaMask, ((v128u8){ 0, 1,  0, 1,   2, 3,  2, 3,   4, 5,  4, 5,   6, 7,  6, 7})) );
+		convertedColor[0] = vec_and( convertedColor[0], (v128u32)vec_mergeh(alphaMask, alphaMask) );
+		convertedColor[1] = vec_and( convertedColor[1], (v128u32)vec_mergel(alphaMask, alphaMask) );
 		
 		vec_st(convertedColor[0],  0, dstBuffer);
 		vec_st(convertedColor[1], 16, dstBuffer);
