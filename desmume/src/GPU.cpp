@@ -4459,7 +4459,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(const GPUEngineLineInfo &lineInfo)
 			}
 				
 			case NDSColorFormat_BGR888_Rev:
-				CopyLineExpandHinted<0, true, true, true, 4>(lineInfo, this->_VRAMCustomBlockPtr[DISPCNT.VRAM_Block], customBuffer);
+				CopyLineExpandHinted<0, true, true, false, 4>(lineInfo, this->_VRAMCustomBlockPtr[DISPCNT.VRAM_Block], customBuffer);
 				break;
 		}
 		
@@ -5746,7 +5746,7 @@ void GPUSubsystem::_DownscaleAndConvertForSavestate(const NDSDisplayID displayID
 		
 		for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 		{
-			CopyLineReduceHinted<0x3FFF, false, true, 4>(this->_lineInfo[l], src, working);
+			CopyLineReduceHinted<0x3FFF, false, false, 4>(this->_lineInfo[l], src, working);
 			src += this->_lineInfo[l].pixelCount;
 			working += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 		}
@@ -5814,7 +5814,7 @@ void GPUSubsystem::_ConvertAndUpscaleForLoadstate(const NDSDisplayID displayID, 
 		{
 			for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 			{
-				CopyLineExpandHinted<0x3FFF, true, false, true, 4>(this->_lineInfo[l], working, dst);
+				CopyLineExpandHinted<0x3FFF, true, false, false, 4>(this->_lineInfo[l], working, dst);
 				working += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 				dst += this->_lineInfo[l].pixelCount;
 			}

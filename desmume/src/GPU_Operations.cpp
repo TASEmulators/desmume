@@ -753,6 +753,74 @@ static FORCEINLINE void CopyLinesForVerticalCount(void *__restrict dstLineHead, 
 	#include "GPU_Operations_NEON.cpp"
 #else
 
+template <bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
+static FORCEINLINE void __CopyLineSingleUnlimited(void *__restrict dst, const void *__restrict src, size_t pixCount)
+{
+#if defined(MSB_FIRST)
+	if (NEEDENDIANSWAP && (ELEMENTSIZE > 1))
+	{
+		if (ELEMENTSIZE == 2)
+		{
+			const u16 *__restrict srcPtr16 = (const u16 *__restrict)src;
+			u16 *__restrict dstPtr16       = (u16 *__restrict)dst;
+			
+			for (size_t i = 0; i < pixCount; i++)
+			{
+				dstPtr16[i] = LE_TO_LOCAL_16(srcPtr16[i]);
+			}
+		}
+		else if (ELEMENTSIZE == 4)
+		{
+			const u32 *__restrict srcPtr32 = (const u32 *__restrict)src;
+			u32 *__restrict dstPtr32       = (u32 *__restrict)dst;
+			
+			for (size_t i = 0; i < pixCount; i++)
+			{
+				dstPtr32[i] = LE_TO_LOCAL_32(srcPtr32[i]);
+			}
+		}
+	}
+	else
+#endif
+	{
+		memcpy(dst, src, pixCount * ELEMENTSIZE);
+	}
+}
+
+template <bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
+static FORCEINLINE void __CopyLineSingle(void *__restrict dst, const void *__restrict src)
+{
+#if defined(MSB_FIRST)
+	if (NEEDENDIANSWAP && (ELEMENTSIZE > 1))
+	{
+		if (ELEMENTSIZE == 2)
+		{
+			const u16 *__restrict srcPtr16 = (const u16 *__restrict)src;
+			u16 *__restrict dstPtr16       = (u16 *__restrict)dst;
+			
+			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+			{
+				dstPtr16[i] = LE_TO_LOCAL_16(srcPtr16[i]);
+			}
+		}
+		else if (ELEMENTSIZE == 4)
+		{
+			const u32 *__restrict srcPtr32 = (const u32 *__restrict)src;
+			u32 *__restrict dstPtr32       = (u32 *__restrict)dst;
+			
+			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+			{
+				dstPtr32[i] = LE_TO_LOCAL_32(srcPtr32[i]);
+			}
+		}
+	}
+	else
+#endif
+	{
+		memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * ELEMENTSIZE);
+	}
+}
+
 template <s32 INTEGERSCALEHINT, bool SCALEVERTICAL, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
 static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restrict src, size_t dstWidth, size_t dstLineCount)
 {
@@ -773,49 +841,11 @@ static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restr
 	
 	if (INTEGERSCALEHINT == 0)
 	{
-#if defined(MSB_FIRST)
-		if (NEEDENDIANSWAP && (ELEMENTSIZE != 1))
-		{
-			for (size_t i = 0; i < dstWidth; i++)
-			{
-				if (ELEMENTSIZE == 2)
-				{
-					((u16 *)dst)[i] = LE_TO_LOCAL_16( ((u16 *)src)[i] );
-				}
-				else if (ELEMENTSIZE == 4)
-				{
-					((u32 *)dst)[i] = ((u32 *)src)[i];
-				}
-			}
-		}
-		else
-#endif
-		{
-			memcpy(dst, src, dstWidth * ELEMENTSIZE);
-		}
+		__CopyLineSingleUnlimited<NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, dstWidth);
 	}
 	else if (INTEGERSCALEHINT == 1)
 	{
-#if defined(MSB_FIRST)
-		if (NEEDENDIANSWAP && (ELEMENTSIZE != 1))
-		{
-			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
-			{
-				if (ELEMENTSIZE == 2)
-				{
-					((u16 *)dst)[i] = LE_TO_LOCAL_16( ((u16 *)src)[i] );
-				}
-				else if (ELEMENTSIZE == 4)
-				{
-					((u32 *)dst)[i] = ((u32 *)src)[i];
-				}
-			}
-		}
-		else
-#endif
-		{
-			memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * ELEMENTSIZE);
-		}
+		__CopyLineSingle<NEEDENDIANSWAP, ELEMENTSIZE>(dst, src);
 	}
 	else if (INTEGERSCALEHINT > 1)
 	{
@@ -835,7 +865,7 @@ static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restr
 				}
 				else if (ELEMENTSIZE == 4)
 				{
-					((u32 *)dst)[(srcX * scale) + lx] = (NEEDENDIANSWAP) ? ((u32 *)src)[srcX] : ((u32 *)src)[srcX];
+					((u32 *)dst)[(srcX * scale) + lx] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[srcX] ) : ((u32 *)src)[srcX];
 				}
 			}
 		}
@@ -861,7 +891,7 @@ static FORCEINLINE void CopyLineExpand(void *__restrict dst, const void *__restr
 				}
 				else if (ELEMENTSIZE == 4)
 				{
-					((u32 *)dst)[_gpuDstPitchIndex[x] + p] = (NEEDENDIANSWAP) ? ((u32 *)src)[x] : ((u32 *)src)[x];
+					((u32 *)dst)[_gpuDstPitchIndex[x] + p] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[x] ) : ((u32 *)src)[x];
 				}
 			}
 		}
@@ -893,49 +923,11 @@ static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restr
 	
 	if (INTEGERSCALEHINT == 0)
 	{
-#if defined(MSB_FIRST)
-		if (NEEDENDIANSWAP && (ELEMENTSIZE != 1))
-		{
-			for (size_t i = 0; i < srcWidth; i++)
-			{
-				if (ELEMENTSIZE == 2)
-				{
-					((u16 *)dst)[i] = LE_TO_LOCAL_16( ((u16 *)src)[i] );
-				}
-				else if (ELEMENTSIZE == 4)
-				{
-					((u32 *)dst)[i] = ((u32 *)src)[i];
-				}
-			}
-		}
-		else
-#endif
-		{
-			memcpy(dst, src, srcWidth * ELEMENTSIZE);
-		}
+		__CopyLineSingleUnlimited<NEEDENDIANSWAP, ELEMENTSIZE>(dst, src, srcWidth);
 	}
 	else if (INTEGERSCALEHINT == 1)
 	{
-#if defined(MSB_FIRST)
-		if (NEEDENDIANSWAP && (ELEMENTSIZE != 1))
-		{
-			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
-			{
-				if (ELEMENTSIZE == 2)
-				{
-					((u16 *)dst)[i] = LE_TO_LOCAL_16( ((u16 *)src)[i] );
-				}
-				else if (ELEMENTSIZE == 4)
-				{
-					((u32 *)dst)[i] = ((u32 *)src)[i];
-				}
-			}
-		}
-		else
-#endif
-		{
-			memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * ELEMENTSIZE);
-		}
+		__CopyLineSingle<NEEDENDIANSWAP, ELEMENTSIZE>(dst, src);
 	}
 	else if (INTEGERSCALEHINT > 1)
 	{
@@ -949,11 +941,11 @@ static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restr
 			}
 			else if (ELEMENTSIZE == 2)
 			{
-				((u16 *)dst)[x] = ((u16 *)src)[x * scale];
+				((u16 *)dst)[x] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16( ((u16 *)src)[x * scale] ) : ((u16 *)src)[x * scale];
 			}
 			else if (ELEMENTSIZE == 4)
 			{
-				((u32 *)dst)[x] = ((u32 *)src)[x * scale];
+				((u32 *)dst)[x] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[x * scale] ) : ((u32 *)src)[x * scale];
 			}
 		}
 	}
@@ -971,7 +963,7 @@ static FORCEINLINE void CopyLineReduce(void *__restrict dst, const void *__restr
 			}
 			else if (ELEMENTSIZE == 4)
 			{
-				((u32 *)dst)[i] = (NEEDENDIANSWAP) ? ((u32 *)src)[_gpuDstPitchIndex[i]] : ((u32 *)src)[_gpuDstPitchIndex[i]];
+				((u32 *)dst)[i] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[_gpuDstPitchIndex[i]] ) : ((u32 *)src)[_gpuDstPitchIndex[i]];
 			}
 		}
 	}
@@ -1308,5 +1300,5 @@ void CopyLineReduceHinted(const GPUEngineLineInfo &lineInfo, const void *__restr
 }
 
 // These functions are used in gfx3d.cpp
-template void CopyLineExpandHinted<0x3FFF, true, false, true, 4>(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer);
-template void CopyLineReduceHinted<0x3FFF, false, true, 4>(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer);
+template void CopyLineExpandHinted<0x3FFF, true, false, false, 4>(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer);
+template void CopyLineReduceHinted<0x3FFF, false, false, 4>(const GPUEngineLineInfo &lineInfo, const void *__restrict srcBuffer, void *__restrict dstBuffer);

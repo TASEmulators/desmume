@@ -3855,7 +3855,7 @@ void gfx3d_PrepareSaveStateBufferWrite()
 		for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 		{
 			const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(l);
-			CopyLineReduceHinted<0x3FFF, false, true, 4>(lineInfo, src, dst);
+			CopyLineReduceHinted<0x3FFF, false, false, 4>(lineInfo, src, dst);
 			src += lineInfo.pixelCount;
 			dst += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 		}
@@ -4053,7 +4053,7 @@ void gfx3d_FinishLoadStateBufferRead()
 				for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
 				{
 					const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(l);
-					CopyLineExpandHinted<0x3FFF, true, false, true, 4>(lineInfo, src, dst);
+					CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, src, dst);
 					src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
 					dst += lineInfo.pixelCount;
 				}
