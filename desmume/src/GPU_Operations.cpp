@@ -751,6 +751,8 @@ static FORCEINLINE void CopyLinesForVerticalCount(void *__restrict dstLineHead, 
 	#include "GPU_Operations_SSE2.cpp"
 #elif defined(ENABLE_NEON_A64)
 	#include "GPU_Operations_NEON.cpp"
+#elif defined(ENABLE_ALTIVEC)
+	#include "GPU_Operations_AltiVec.cpp"
 #else
 
 template <bool NEEDENDIANSWAP, size_t ELEMENTSIZE>

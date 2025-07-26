@@ -1918,6 +1918,8 @@
 		AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_RotateCW_420x420.png; path = images/Icon_RotateCW_420x420.png; sourceTree = "<group>"; };
 		AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ShowHUD_420x420.png; path = images/Icon_ShowHUD_420x420.png; sourceTree = "<group>"; };
 		AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speaker_420x420.png; path = images/Icon_Speaker_420x420.png; sourceTree = "<group>"; };
+		AB11AE8E2E210BB400E8A516 /* GPU_Operations_AltiVec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations_AltiVec.cpp; sourceTree = "<group>"; };
+		AB11AE8F2E210BB400E8A516 /* GPU_Operations_AltiVec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GPU_Operations_AltiVec.h; sourceTree = "<group>"; };
 		AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_passme.cpp; sourceTree = "<group>"; };
 		AB142025186E2CD80015D52F /* Image_MemoryExpansionPak.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_MemoryExpansionPak.png; path = images/Image_MemoryExpansionPak.png; sourceTree = "<group>"; };
 		AB1B20AB2AD5ED59007CA7EB /* slot2_hcv1000.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_hcv1000.cpp; sourceTree = "<group>"; };
@@ -3436,6 +3438,7 @@
 				AB6FE66C26E6F7C2002B2106 /* GPU_Operations_SSE2.cpp */,
 				AB6FE66A26E6F7C2002B2106 /* GPU_Operations_AVX2.cpp */,
 				AB3B8DC62D8A35A000C9CBFD /* GPU_Operations_NEON.cpp */,
+				AB11AE8E2E210BB400E8A516 /* GPU_Operations_AltiVec.cpp */,
 				ABD1FEB81345AC8400AF11D1 /* lua-engine.cpp */,
 				ABD1FEB91345AC8400AF11D1 /* matrix.cpp */,
 				ABD1FEBA1345AC8400AF11D1 /* mc.cpp */,
@@ -3481,6 +3484,7 @@
 				AB6FE66D26E6F7C2002B2106 /* GPU_Operations_SSE2.h */,
 				AB6FE66B26E6F7C2002B2106 /* GPU_Operations_AVX2.h */,
 				AB3B8DC72D8A35A000C9CBFD /* GPU_Operations_NEON.h */,
+				AB11AE8F2E210BB400E8A516 /* GPU_Operations_AltiVec.h */,
 				ABBCE29D15ACB26100A2C965 /* instruction_attributes.h */,
 				ABBCE29E15ACB26100A2C965 /* instructions.h */,
 				ABD1FE841345AC8400AF11D1 /* lua-engine.h */,

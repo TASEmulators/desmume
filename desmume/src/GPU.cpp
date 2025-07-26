@@ -59,6 +59,9 @@
 #elif defined(ENABLE_NEON_A64)
 	#define USEVECTORSIZE_128
 	#define VECTORSIZE 16
+#elif defined(ENABLE_ALTIVEC)
+	#define USEVECTORSIZE_128
+	#define VECTORSIZE 16
 #endif
 
 #if defined(USEVECTORSIZE_512) || defined(USEVECTORSIZE_256) || defined(USEVECTORSIZE_128)

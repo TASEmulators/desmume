@@ -4423,6 +4423,8 @@
 		ABDDF7C41898F024007583C1 /* Icon_DisplayToggle_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DisplayToggle_420x420.png; path = images/Icon_DisplayToggle_420x420.png; sourceTree = "<group>"; };
 		ABDDF7C71898F032007583C1 /* Icon_FrameAdvance_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameAdvance_420x420.png; path = images/Icon_FrameAdvance_420x420.png; sourceTree = "<group>"; };
 		ABDDF7C81898F032007583C1 /* Icon_FrameJump_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameJump_420x420.png; path = images/Icon_FrameJump_420x420.png; sourceTree = "<group>"; };
+		ABDE648E2E21068500C03E0B /* GPU_Operations_AltiVec.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GPU_Operations_AltiVec.h; sourceTree = "<group>"; };
+		ABDE648F2E21068500C03E0B /* GPU_Operations_AltiVec.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations_AltiVec.cpp; sourceTree = "<group>"; };
 		ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_videofilter.h; sourceTree = "<group>"; };
 		ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_videofilter.mm; sourceTree = "<group>"; };
 		ABE670251415DE6C00E8E4C9 /* tinystr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinystr.cpp; sourceTree = "<group>"; };
@@ -5688,6 +5690,7 @@
 				AB1D4BB426E6F8D700A9AE42 /* GPU_Operations_SSE2.cpp */,
 				AB1D4BAF26E6F8D700A9AE42 /* GPU_Operations_AVX2.cpp */,
 				ABD86C842D83E20500505422 /* GPU_Operations_NEON.cpp */,
+				ABDE648F2E21068500C03E0B /* GPU_Operations_AltiVec.cpp */,
 				ABD1FEB81345AC8400AF11D1 /* lua-engine.cpp */,
 				ABD1FEB91345AC8400AF11D1 /* matrix.cpp */,
 				ABD1FEBA1345AC8400AF11D1 /* mc.cpp */,
@@ -5733,6 +5736,7 @@
 				AB1D4BB226E6F8D700A9AE42 /* GPU_Operations_SSE2.h */,
 				AB1D4BB026E6F8D700A9AE42 /* GPU_Operations_AVX2.h */,
 				ABD86C832D83E20500505422 /* GPU_Operations_NEON.h */,
+				ABDE648E2E21068500C03E0B /* GPU_Operations_AltiVec.h */,
 				AB796CA215CDCB6B00C59155 /* instruction_attributes.h */,
 				AB796CA315CDCB6B00C59155 /* instructions.h */,
 				ABD1FE841345AC8400AF11D1 /* lua-engine.h */,
