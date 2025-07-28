@@ -107,7 +107,7 @@ Select available 3d emulation:
 
     0 = 3d disabled 
     1 = internal desmume software rasterizer (default) 
-    2 = osmesa or gtkglext opengl (if available, depending on compilation options, see desmume --help) 
+    2 = gtkglext opengl (if available, depending on compilation options, see desmume --help) 
 
 [edit] --disable-sound [gtk]
 
