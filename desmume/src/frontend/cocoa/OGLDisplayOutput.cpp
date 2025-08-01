@@ -4858,6 +4858,7 @@ void OGLClientSharedData::SetFetchBuffersOGL(const NDSDisplayInfo *displayInfoLi
 		pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][i]);
 	}
 	
+	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	glFinish();
@@ -5047,6 +5048,7 @@ void OGLVideoOutput::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[NDSDisplayID_Touch]);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, (GLsizei)(this->_vf[NDSDisplayID_Touch]->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide), (GLsizei)(this->_vf[NDSDisplayID_Touch]->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Touch]->GetDstBufferPtr());
 	
+	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	glFinish();
@@ -5083,6 +5085,7 @@ void OGLVideoOutput::Init()
 	
 	// Set up textures
 	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, (GLsizei)this->_vfMasterDstBufferSize, this->_vfMasterDstBuffer);
+	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 	
 	glGenTextures(2, this->_texCPUFilterDstID);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[NDSDisplayID_Main]);
@@ -5101,6 +5104,7 @@ void OGLVideoOutput::Init()
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, (GLsizei)this->_vf[NDSDisplayID_Touch]->GetDstWidth(), (GLsizei)this->_vf[NDSDisplayID_Touch]->GetDstHeight(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Touch]->GetDstBufferPtr());
 	
+	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	if (this->_contextInfo->IsFBOSupported())
@@ -5239,7 +5243,7 @@ void OGLVideoOutput::PrerenderStateSetupOGL()
 		glDisable(GL_FOG);
 		
 		// Note that in fixed-function mode, you can only enable GL_TEXTURE_2D or
-		// GL_TEXTURE_RECTANGLE_ARB at any one time, but you cannot ahve both enabled
+		// GL_TEXTURE_RECTANGLE_ARB at any one time, but you cannot have both enabled
 		// at the same time. The display layer requires GL_TEXTURE_RECTANGLE_ARB
 		// enabled, while the HUD layer requires GL_TEXTURE_2D enabled.
 		glDisable(GL_TEXTURE_2D);
@@ -5574,8 +5578,10 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	
 	_vf = new VideoFilter(_normalWidth, _normalHeight, VideoFilterTypeID_None, 0);
 	
-	_vfMasterDstBuffer = (uint32_t *)malloc_alignedPage(_vf->GetDstWidth() * _vf->GetDstHeight() * sizeof(uint32_t));
+	const GLsizei dstBufferSize = (GLsizei)(_vf->GetDstWidth() * _vf->GetDstHeight() * sizeof(uint32_t));
+	_vfMasterDstBuffer = (uint32_t *)malloc_alignedPage(dstBufferSize);
 	_vf->SetDstBufferPtr(_vfMasterDstBuffer);
+	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, dstBufferSize, _vfMasterDstBuffer);
 	
 	_displayTexFilter = GL_NEAREST;
 	glViewport(0, 0, _viewportWidth, _viewportHeight);
@@ -5611,6 +5617,7 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texVideoInputDataID);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -6152,12 +6159,17 @@ void OGLImage::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 	
 	if (needResizeTexture)
 	{
+		const GLsizei dstBufferSize = newDstBufferWidth * newDstBufferHeight * sizeof(uint32_t);
 		uint32_t *oldMasterBuffer = _vfMasterDstBuffer;
 		uint32_t *newMasterBuffer = (uint32_t *)malloc_alignedPage(newDstBufferWidth * newDstBufferHeight * sizeof(uint32_t));
 		this->_vf->SetDstBufferPtr(newMasterBuffer);
 		
+		glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, dstBufferSize, newMasterBuffer);
+		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID);
 		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, newDstBufferWidth, newDstBufferHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, newMasterBuffer);
+		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 		
 		_vfMasterDstBuffer = newMasterBuffer;
 		free_aligned(oldMasterBuffer);
@@ -6805,8 +6817,6 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 		_shaderFilter[0] = NULL;
 		_shaderFilter[1] = NULL;
 	}
-	
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 }
 
 OGLDisplayLayer::~OGLDisplayLayer()
@@ -7204,10 +7214,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			const VideoFilterAttributes vfAttr = VideoFilter::GetAttributesByID((VideoFilterTypeID)filterID);
 			const GLfloat vfScale = (GLfloat)vfAttr.scaleMultiply / (GLfloat)vfAttr.scaleDivide;
-			
-			glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 			this->_shaderFilter[i]->SetScaleOGL(vfScale, this->_output->GetPixelScalerObject((NDSDisplayID)i)->GetDstBufferPtr());
-			glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 		}
 	}
 	
@@ -7300,12 +7307,7 @@ void OGLDisplayLayer::ProcessOGL()
 					sharedData->FetchTextureReadLock(NDSDisplayID_Main);
 				}
 				
-				// For all shader-based filters, we need to temporarily disable GL_UNPACK_CLIENT_STORAGE_APPLE.
-				// Filtered images are supposed to remain on the GPU for immediate use for further GPU processing,
-				// so using client-backed buffers for filtered images would simply waste memory here.
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 				texMain = this->_filterDeposterize[NDSDisplayID_Main]->RunFilterOGL(texMain);
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 				
 				if (texFetchMainNeedsLock)
 				{
@@ -7329,9 +7331,7 @@ void OGLDisplayLayer::ProcessOGL()
 					sharedData->FetchTextureReadLock(NDSDisplayID_Touch);
 				}
 				
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 				texTouch = this->_filterDeposterize[NDSDisplayID_Touch]->RunFilterOGL(texTouch);
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 				
 				if (texFetchTouchNeedsLock)
 				{
@@ -7360,9 +7360,7 @@ void OGLDisplayLayer::ProcessOGL()
 					sharedData->FetchTextureReadLock(NDSDisplayID_Main);
 				}
 				
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 				texMain = this->_shaderFilter[NDSDisplayID_Main]->RunFilterOGL(texMain);
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 				
 				if (texFetchMainNeedsLock)
 				{
@@ -7388,9 +7386,7 @@ void OGLDisplayLayer::ProcessOGL()
 					sharedData->FetchTextureReadLock(NDSDisplayID_Touch);
 				}
 				
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 				texTouch = this->_shaderFilter[NDSDisplayID_Touch]->RunFilterOGL(texTouch);
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 				
 				if (texFetchTouchNeedsLock)
 				{
