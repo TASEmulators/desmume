@@ -992,7 +992,7 @@
 					puts("DeSmuME: User has just granted access to the microphone.");
 				}
 				
-				[self updateHostMicrophonePermissionStatus];
+				[self performSelectorOnMainThread:@selector(updateHostMicrophonePermissionStatus) withObject:nil waitUntilDone:NO];
 			}];
 		}
 	}
@@ -2368,10 +2368,10 @@
 	
 	if (micIcon != [self currentMicStatusIcon])
 	{
-		[self performSelectorOnMainThread:@selector(setCurrentMicStatusIcon:) withObject:micIcon waitUntilDone:NO];
+		[self setCurrentMicStatusIcon:micIcon];
 	}
 	
-	[ndsMicLevelIndicator performSelectorOnMainThread:@selector(setNeedsDisplay) withObject:nil waitUntilDone:NO];
+	[ndsMicLevelIndicator setNeedsDisplay];
 }
 
 - (AudioSampleBlockGenerator *) selectedAudioFileGenerator
@@ -3292,7 +3292,7 @@
 
 - (void) doMicLevelUpdateFromController:(CocoaDSController *)cdsController
 {
-	[self updateMicStatusIcon];
+	[self performSelectorOnMainThread:@selector(updateMicStatusIcon) withObject:nil waitUntilDone:NO];
 }
 
 - (void) doMicHardwareStateChangedFromController:(CocoaDSController *)cdsController
@@ -3302,7 +3302,7 @@
 {
 	const BOOL hwMicAvailable = (isHardwareEnabled && !isHardwareLocked && isAuthorized);
 	[self setIsHardwareMicAvailable:hwMicAvailable];
-	[self updateMicStatusIcon];
+	[self performSelectorOnMainThread:@selector(updateMicStatusIcon) withObject:nil waitUntilDone:NO];
 }
 
 - (void) doMicHardwareGainChangedFromController:(CocoaDSController *)cdsController gain:(float)gainValue
