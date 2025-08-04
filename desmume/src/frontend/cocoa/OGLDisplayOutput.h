@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2024 DeSmuME team
+	Copyright (C) 2014-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@
 
 #include "ClientDisplayView.h"
 
-#define OPENGL_FETCH_BUFFER_COUNT	2
+#define OPENGL_FETCH_BUFFER_COUNT	3
 
 class OGLVideoOutput;
 
@@ -391,9 +391,6 @@ public:
 	void CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex);
 	void FetchNativeDisplayToSrcClone(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
 	void FetchCustomDisplayToSrcClone(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
-	void FetchTextureWriteLock(const NDSDisplayID displayID);
-	void FetchTextureReadLock(const NDSDisplayID displayID);
-	void FetchTextureUnlock(const NDSDisplayID displayID);
 	
 	// OpenGL-specific functions that must be called in response to their
 	// corresponding GPUClientFetchObject methods.
