@@ -66,7 +66,7 @@ static bool __glx_initOpenGL(const int requestedProfile, const int requestedVers
 
 	currDisplay = XOpenDisplay(NULL);
 	if (currDisplay == NULL) {
-	puts("GLX: Failed to connect to the X display.");
+	puts("GLX: Failed to connect to the X display. (GLX requires a compatible X Server.");
 		return false;
 	}
 
