@@ -1832,13 +1832,19 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 			
 			char name[16];
 			snprintf(name, 16, "rasterizer %d", (int)i);
+			
 #ifdef DESMUME_COCOA
-			// The Cocoa port takes advantage of hand-optimized thread priorities
-			// to help stabilize performance when running SoftRasterizer.
-			_task[i].start(false, 43, name);
-#else
-			_task[i].start(false, 0, name);
+			if (coreCount > 1)
+			{
+				// The Cocoa port takes advantage of hand-optimized thread priorities
+				// to help stabilize performance when running SoftRasterizer.
+				_task[i].start(false, 43, name);
+			}
+			else
 #endif
+			{
+				_task[i].start(false, 0, name);
+			}
 		}
 	}
 	

@@ -3395,12 +3395,18 @@ bool AdhocCommInterface::Start(WifiHandler* currentWifiHandler)
 	// Start the RX packet thread.
 	this->_wifiHandler = currentWifiHandler;
 	this->_rawPacket = (RXRawPacketData*)calloc(1, sizeof(RXRawPacketData));
-
-	#ifdef DESMUME_COCOA
-	this->_rxTask->start(false, 43, "wifi ad-hoc");
-	#else
-	this->_rxTask->start(false, 0, "wifi ad-hoc");
-	#endif
+	
+#ifdef DESMUME_COCOA
+	if (CommonSettings.num_cores > 1)
+	{
+		this->_rxTask->start(false, 43, "wifi ad-hoc");
+	}
+	else
+#endif
+	{
+		this->_rxTask->start(false, 0, "wifi ad-hoc");
+	}
+	
 	this->_isRXThreadRunning = true;
 	this->_rxTask->execute(&Adhoc_RXPacketGetOnThread, this);
 
@@ -3669,12 +3675,18 @@ bool SoftAPCommInterface::Start(WifiHandler* currentWifiHandler)
 		// Start the RX packet thread.
 		this->_wifiHandler = currentWifiHandler;
 		this->_rawPacket = (RXRawPacketData*)calloc(1, sizeof(RXRawPacketData));
-
-		#ifdef DESMUME_COCOA
-		this->_rxTask->start(false, 43, "wifi ap");
-		#else
-		this->_rxTask->start(false, 0, "wifi ap");
-		#endif
+		
+#ifdef DESMUME_COCOA
+		if (CommonSettings.num_cores > 1)
+		{
+			this->_rxTask->start(false, 43, "wifi ap");
+		}
+		else
+#endif
+		{
+			this->_rxTask->start(false, 0, "wifi ap");
+		}
+		
 		this->_isRXThreadRunning = true;
 		this->_rxTask->execute(&Infrastructure_RXPacketGetOnThread, this);
 	}

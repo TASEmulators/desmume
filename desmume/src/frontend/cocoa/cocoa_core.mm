@@ -141,30 +141,37 @@ volatile bool execute = true;
 	pthread_cond_init(&threadParam.condThreadExecute, NULL);
 	pthread_rwlock_init(&threadParam.rwlockCoreExecute, NULL);
 	
-	// The core emulation thread needs max priority since it is the sole
-	// producer thread for all output threads. Note that this is not being
-	// done for performance -- this is being done for timing accuracy. The
-	// core emulation thread is responsible for determining the emulator's
-	// timing. If one output thread interferes with timing, then it ends up
-	// affecting the whole emulator.
-	//
-	// Though it may be tempting to make this a real-time thread, it's best
-	// to keep this a normal thread. The core emulation thread can use up a
-	// lot of CPU time under certain conditions, which may interfere with
-	// other threads. (Example: Video tearing on display windows, even with
-	// V-sync enabled.)
-	
-	pthread_attr_t threadAttr;
-	pthread_attr_init(&threadAttr);
-	pthread_attr_setschedpolicy(&threadAttr, SCHED_RR);
-	
-	struct sched_param sp;
-	memset(&sp, 0, sizeof(struct sched_param));
-	sp.sched_priority = 42;
-	pthread_attr_setschedparam(&threadAttr, &sp);
-	
-	pthread_create(&coreThread, &threadAttr, &RunCoreThread, &threadParam);
-	pthread_attr_destroy(&threadAttr);
+	if (CommonSettings.num_cores > 1)
+	{
+		// The core emulation thread needs max priority since it is the sole
+		// producer thread for all output threads. Note that this is not being
+		// done for performance -- this is being done for timing accuracy. The
+		// core emulation thread is responsible for determining the emulator's
+		// timing. If one output thread interferes with timing, then it ends up
+		// affecting the whole emulator.
+		//
+		// Though it may be tempting to make this a real-time thread, it's best
+		// to keep this a normal thread. The core emulation thread can use up a
+		// lot of CPU time under certain conditions, which may interfere with
+		// other threads. (Example: Video tearing on display windows, even with
+		// V-sync enabled.)
+		
+		pthread_attr_t threadAttr;
+		pthread_attr_init(&threadAttr);
+		pthread_attr_setschedpolicy(&threadAttr, SCHED_RR);
+		
+		struct sched_param sp;
+		memset(&sp, 0, sizeof(struct sched_param));
+		sp.sched_priority = 42;
+		pthread_attr_setschedparam(&threadAttr, &sp);
+		
+		pthread_create(&coreThread, &threadAttr, &RunCoreThread, &threadParam);
+		pthread_attr_destroy(&threadAttr);
+	}
+	else
+	{
+		pthread_create(&coreThread, NULL, &RunCoreThread, &threadParam);
+	}
 	
 	[cdsGPU setOutputList:cdsOutputList rwlock:&threadParam.rwlockOutputList];
 	[cdsCheatManager setRwlockCoreExecute:&threadParam.rwlockCoreExecute];

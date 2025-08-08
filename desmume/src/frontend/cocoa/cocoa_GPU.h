@@ -162,6 +162,7 @@ private:
 	pthread_mutex_t _mutexApplyGPUSettings;
 	pthread_mutex_t _mutexApplyRender3DSettings;
 	bool _render3DNeedsFinish;
+	int _cpuCoreCountRestoreValue;
 	
 public:
 	GPUEventHandlerAsync();
@@ -180,6 +181,8 @@ public:
 	void ApplyRender3DSettingsUnlock();
 	
 	bool GetRender3DNeedsFinish();
+	
+	void SetTempThreadCount(int threadCount);
 	
 #ifdef ENABLE_ASYNC_FETCH
 	virtual void DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut);
@@ -209,6 +212,8 @@ public:
 	NSUInteger openglDeviceMaxMultisamples;
 	NSString *render3DMultisampleSizeString;
 	BOOL isCPUCoreCountAuto;
+	int _render3DThreadsRequested;
+	int _render3DThreadCount;
 	BOOL _needRestoreRender3DLock;
 	
 	apple_unfairlock_t _unfairlockGpuState;

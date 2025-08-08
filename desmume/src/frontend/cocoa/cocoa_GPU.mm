@@ -127,6 +127,8 @@ char __hostRendererString[256] = {0};
 					  GPUSTATE_SUB_OBJ_MASK;
 	
 	isCPUCoreCountAuto = NO;
+	_render3DThreadsRequested = 0;
+	_render3DThreadCount = 0;
 	_needRestoreRender3DLock = NO;
 	
 	oglrender_init        = &cgl_initOpenGL_StandardAuto;
@@ -394,6 +396,13 @@ char __hostRendererString[256] = {0};
 	
 	gpuEvent->ApplyRender3DSettingsLock();
 	GPU->Set3DRendererByID((int)rendererID);
+	
+	if (rendererID == CORE3DLIST_SWRASTERIZE)
+	{
+		gpuEvent->SetTempThreadCount(_render3DThreadCount);
+		GPU->Set3DRendererByID(CORE3DLIST_SWRASTERIZE);
+	}
+	
 	gpuEvent->ApplyRender3DSettingsUnlock();
 }
 
@@ -554,34 +563,38 @@ char __hostRendererString[256] = {0};
 
 - (void) setRender3DThreads:(NSUInteger)numberThreads
 {
-	NSUInteger numberCores = [[NSProcessInfo processInfo] activeProcessorCount];
+	_render3DThreadsRequested = (int)numberThreads;
+	
+	const int numberCores = CommonSettings.num_cores;
+	int newThreadCount = numberCores;
+	
 	if (numberThreads == 0)
 	{
 		isCPUCoreCountAuto = YES;
 		if (numberCores < 2)
 		{
-			numberCores = 1;
+			newThreadCount = 1;
 		}
 		else
 		{
-			const NSUInteger reserveCoreCount = numberCores / 12; // For every 12 cores, reserve 1 core for the rest of the system.
-			numberCores -= reserveCoreCount;
+			const int reserveCoreCount = numberCores / 12; // For every 12 cores, reserve 1 core for the rest of the system.
+			newThreadCount -= reserveCoreCount;
 		}
 	}
 	else
 	{
 		isCPUCoreCountAuto = NO;
-		numberCores = numberThreads;
+		newThreadCount = (int)numberThreads;
 	}
 	
 	const RendererID renderingEngineID = (RendererID)[self render3DRenderingEngine];
+	_render3DThreadCount = newThreadCount;
 	
 	gpuEvent->ApplyRender3DSettingsLock();
 	
-	CommonSettings.num_cores = (int)numberCores;
-	
 	if (renderingEngineID == RENDERID_SOFTRASTERIZER)
 	{
+		gpuEvent->SetTempThreadCount(newThreadCount);
 		GPU->Set3DRendererByID(renderingEngineID);
 	}
 	
@@ -590,11 +603,7 @@ char __hostRendererString[256] = {0};
 
 - (NSUInteger) render3DThreads
 {
-	gpuEvent->ApplyRender3DSettingsLock();
-	const NSUInteger numberThreads = isCPUCoreCountAuto ? 0 : (NSUInteger)CommonSettings.num_cores;
-	gpuEvent->ApplyRender3DSettingsUnlock();
-	
-	return numberThreads;
+	return (isCPUCoreCountAuto) ? 0 : (NSUInteger)_render3DThreadsRequested;
 }
 
 - (void) setRender3DLineHack:(BOOL)state
@@ -1240,17 +1249,24 @@ MacGPUFetchObjectAsync::~MacGPUFetchObjectAsync()
 
 void MacGPUFetchObjectAsync::Init()
 {
-	pthread_attr_t threadAttr;
-	pthread_attr_init(&threadAttr);
-	pthread_attr_setschedpolicy(&threadAttr, SCHED_RR);
-	
-	struct sched_param sp;
-	memset(&sp, 0, sizeof(struct sched_param));
-	sp.sched_priority = 44;
-	pthread_attr_setschedparam(&threadAttr, &sp);
-	
-	pthread_create(&_threadFetch, &threadAttr, &RunFetchThread, this);
-	pthread_attr_destroy(&threadAttr);
+	if (CommonSettings.num_cores > 1)
+	{
+		pthread_attr_t threadAttr;
+		pthread_attr_init(&threadAttr);
+		pthread_attr_setschedpolicy(&threadAttr, SCHED_RR);
+		
+		struct sched_param sp;
+		memset(&sp, 0, sizeof(struct sched_param));
+		sp.sched_priority = 44;
+		pthread_attr_setschedparam(&threadAttr, &sp);
+		
+		pthread_create(&_threadFetch, &threadAttr, &RunFetchThread, this);
+		pthread_attr_destroy(&threadAttr);
+	}
+	else
+	{
+		pthread_create(&_threadFetch, NULL, &RunFetchThread, this);
+	}
 }
 
 void MacGPUFetchObjectAsync::SemaphoreFramebufferCreate()
@@ -1744,6 +1760,8 @@ GPUEventHandlerAsync::GPUEventHandlerAsync()
 {
 	_fetchObject = nil;
 	_render3DNeedsFinish = false;
+	_cpuCoreCountRestoreValue = 0;
+	
 	pthread_mutex_init(&_mutexFrame, NULL);
 	pthread_mutex_init(&_mutex3DRender, NULL);
 	pthread_mutex_init(&_mutexApplyGPUSettings, NULL);
@@ -1843,6 +1861,12 @@ void GPUEventHandlerAsync::DidApplyRender3DSettingsBegin()
 
 void GPUEventHandlerAsync::DidApplyRender3DSettingsEnd()
 {
+	if (this->_cpuCoreCountRestoreValue > 0)
+	{
+		CommonSettings.num_cores = this->_cpuCoreCountRestoreValue;
+	}
+	
+	this->_cpuCoreCountRestoreValue = 0;
 	this->ApplyRender3DSettingsUnlock();
 }
 
@@ -1889,6 +1913,19 @@ void GPUEventHandlerAsync::ApplyRender3DSettingsUnlock()
 bool GPUEventHandlerAsync::GetRender3DNeedsFinish()
 {
 	return this->_render3DNeedsFinish;
+}
+
+void GPUEventHandlerAsync::SetTempThreadCount(int threadCount)
+{
+	if (threadCount < 1)
+	{
+		this->_cpuCoreCountRestoreValue = 0;
+	}
+	else
+	{
+		this->_cpuCoreCountRestoreValue = CommonSettings.num_cores;
+		CommonSettings.num_cores = threadCount;
+	}
 }
 
 #pragma mark -
