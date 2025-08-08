@@ -65,6 +65,10 @@ static bool __glx_initOpenGL(const int requestedProfile, const int requestedVers
 	}
 
 	currDisplay = XOpenDisplay(NULL);
+	if (currDisplay == NULL) {
+	puts("GLX: Failed to connect to the X display.");
+		return false;
+	}
 
 	int currScreen = DefaultScreen(currDisplay);
 	int glxMajorVersion = 0;
