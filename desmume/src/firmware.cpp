@@ -324,7 +324,8 @@ bool CFIRMWARE::unpack()
 	u32 ARM9bootAddr = part1ram;
 	u32 ARM7bootAddr = part2ram;
 
-	enc.init(this->_header.identifierValue, 1, 0xC);
+	u32 identifierValue = *((u32 *)(&this->_header.identifier[0]));
+	enc.init(identifierValue, 1, 0xC);
 
 #if 0
 	enc.applyKeycode((u32*)&data[0x18]);
@@ -335,7 +336,7 @@ bool CFIRMWARE::unpack()
 	workingFirmwareData->header.key.unused = 0xFFFF;
 #endif
 
-	enc.init(this->_header.identifierValue, 2, 0xC);
+	enc.init(identifierValue, 2, 0xC);
 	
 	u8 *tmp_data9 = NULL;
 	u8 *tmp_data7 = NULL;
@@ -1274,7 +1275,7 @@ bool NDS_ReadFirmwareDataFromFile(const char *fileName, NDSFirmwareData *outFirm
 	size_t readBytes = 0;
 	u32 identifierValue = 0;
 	
-	fseek(fp, offsetof(FWHeader, identifierValue), SEEK_SET);
+	fseek(fp, offsetof(FWHeader, identifier[0]), SEEK_SET);
 	readBytes = fread(&identifierValue, 1, sizeof(u32), fp);
 	
 	if ( (readBytes != sizeof(u32)) || ((identifierValue & 0x00FFFFFF) != 0x0043414D) )

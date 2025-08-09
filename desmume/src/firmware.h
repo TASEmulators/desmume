@@ -147,11 +147,8 @@ typedef struct __PACKED
 	u16 part34_gui_wifi_crc16;			// 0x0004
 	u16 part12_boot_crc16;				// 0x0006
 	
-	union
-	{
-		u32 identifierValue;			// 0x0008
-		u8 identifier[4];				// 0x0008
-	};
+	 // Is a 32-bit value, but needs to be represented as 8-bit for MSVC alignment.
+	u8 identifier[4];					// 0x0008
 	
 	u16 part1_rom_boot9_addr;			// 0x000C
 	u16 part1_ram_boot9_addr;			// 0x000E
@@ -225,7 +222,7 @@ typedef struct __PACKED
 	u8 unused5[156];					// 0x0164
 } FWWifiInfo;
 
-typedef struct
+typedef struct __PACKED
 {
 	u8 UNKNOWN1[64];
 	u8 SSID[32];
@@ -253,7 +250,7 @@ typedef struct
 	u16 crc16;
 } FWAccessPointSettings;
 
-typedef struct
+typedef struct __PACKED
 {
 	u8 proxyAuthenticationUsername[32];
 	u8 proxyAuthenticationPassword[32];
@@ -274,11 +271,11 @@ typedef struct
 	u8 configureMode;
 	u8 ssidLength;
 	u8 UNKNOWN3;
-	u16 mtuSize;
+	u8 mtuSize[2]; // Is a 16-bit value, but needs to be represented as 8-bit for MSVC alignment.
 	u8 UNKNOWN4[3];
 	u8 connectStatus;
 	u8 unused1[14];
-	u16 crc16_1;
+	u8 crc16_1[2]; // Is a 16-bit value, but needs to be represented as 8-bit for MSVC alignment.
 	u8 UNKNOWN5[32];
 	u8 wpaKey[16];
 	u8 unused2[82];
@@ -287,12 +284,12 @@ typedef struct
 	u8 proxyAuthentication;
 	u8 proxyName[32];
 	u8 unused3[65];
-	u16 proxyPort;
+	u8 proxyPort[2]; // Is a 16-bit value, but needs to be represented as 8-bit for MSVC alignment.
 	u8 unused4[21];
-	u16 crc16_2;
+	u8 crc16_2[2]; // Is a 16-bit value, but needs to be represented as 8-bit for MSVC alignment.
 } FWExtAccessPointSettings;
 
-typedef struct
+typedef struct __PACKED
 {
 	u16 version;
 	u8 favoriteColor;
@@ -344,7 +341,7 @@ typedef struct
 	
 } FWUserSettings;
 
-typedef struct
+typedef struct __PACKED
 {
 	union
 	{
@@ -378,7 +375,7 @@ typedef struct
 	u8 daylightSavingsTimeFlags;
 } FWExtUserSettings;
 
-typedef union
+typedef union __PACKED
 {
 	u8 _raw[262144];
 	

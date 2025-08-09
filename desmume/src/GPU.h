@@ -698,7 +698,7 @@ typedef union
 } IOREG_MASTER_BRIGHT;						// 0x400x06C: Master brightness effect (Engine A+B)
 
 #include "PACKED.h"
-typedef struct
+typedef struct __PACKED
 {
 	IOREG_DISPCNT			DISPCNT;				// 0x0400x000
 	IOREG_DISPSTAT			DISPSTAT;				// 0x04000004

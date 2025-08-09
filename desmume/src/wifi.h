@@ -455,23 +455,23 @@ typedef union
 	struct
 	{
 #ifndef MSB_FIRST
-		u8 KV_DEF1:4;
-		u8 CT_DEF1:4;
+		u32 KV_DEF1:4;
+		u32 CT_DEF1:4;
 		
-		u16 DN1:9;
-		u16 reserved:1;
-		u16 :6;
+		u32 DN1:9;
+		u32 reserved:1;
+		u32 :6;
 		
-		u8 :8;
+		u32 :8;
 #else
-		u8 CT_DEF1:4;
-		u8 KV_DEF1:4;
+		u32 CT_DEF1:4;
+		u32 KV_DEF1:4;
 		
-		u16 :6;
-		u16 reserved:1;
-		u16 DN1:9;
+		u32 :6;
+		u32 reserved:1;
+		u32 DN1:9;
 		
-		u8 :8;
+		u32 :8;
 #endif
 	};
 } RFREG_IFPLL3;
@@ -529,17 +529,17 @@ typedef union
 	struct
 	{
 #ifndef MSB_FIRST
-		u16 NUM2:6;
-		u16 N2:12;
-		u16 :6;
+		u32 NUM2:6;
+		u32 N2:12;
+		u32 :6;
 		
-		u8 :8;
+		u32 :8;
 #else
-		u16 :6;
-		u16 N2:12;
-		u16 NUM2:6;
+		u32 :6;
+		u32 N2:12;
+		u32 NUM2:6;
 		
-		u8 :8;
+		u32 :8;
 #endif
 	};
 } RFREG_RFPLL2;
@@ -554,12 +554,12 @@ typedef union
 		u32 NUM2:18;
 		u32 :6;
 		
-		u8 :8;
+		u32 :8;
 #else
 		u32 :6;
 		u32 NUM2:18;
 		
-		u8 :8;
+		u32 :8;
 #endif
 	};
 } RFREG_RFPLL3;
@@ -571,23 +571,23 @@ typedef union
 	struct
 	{
 #ifndef MSB_FIRST
-		u8 KV_DEF:4;
-		u8 CT_DEF:4;
+		u32 KV_DEF:4;
+		u32 CT_DEF:4;
 		
-		u16 DN:9;
-		u16 reserved:1;
-		u16 :6;
+		u32 DN:9;
+		u32 reserved:1;
+		u32 :6;
 		
-		u8 :8;
+		u32 :8;
 #else
-		u8 CT_DEF:4;
-		u8 KV_DEF:4;
+		u32 CT_DEF:4;
+		u32 KV_DEF:4;
 		
-		u16 :6;
-		u16 reserved:1;
-		u16 DN:9;
+		u32 :6;
+		u32 reserved:1;
+		u32 DN:9;
 		
-		u8 :8;
+		u32 :8;
 #endif
 	};
 } RFREG_RFPLL4;
@@ -599,23 +599,23 @@ typedef union
 	struct
 	{
 #ifndef MSB_FIRST
-		u8 LD_WINDOW:3;
-		u8 M_CT_VALUE:5;
+		u32 LD_WINDOW:3;
+		u32 M_CT_VALUE:5;
 		
-		u16 TLOCK:5;
-		u16 TVCO:5;
-		u16 :6;
+		u32 TLOCK:5;
+		u32 TVCO:5;
+		u32 :6;
 		
-		u8 :8;
+		u32 :8;
 #else
-		u8 M_CT_VALUE:5;
-		u8 LD_WINDOW:3;
+		u32 M_CT_VALUE:5;
+		u32 LD_WINDOW:3;
 		
-		u16 :6;
-		u16 TVCO:5;
-		u16 TLOCK:5;
+		u32 :6;
+		u32 TVCO:5;
+		u32 TLOCK:5;
 		
-		u8 :8;
+		u32 :8;
 #endif
 	};
 } RFREG_CAL1;
@@ -637,7 +637,7 @@ typedef union
 		u32 RXDCFBBYPS:1;
 		u32 :6;
 		
-		u8 :8;
+		u32 :8;
 	};
 } RFREG_TXRX1;
 
@@ -653,7 +653,7 @@ typedef union
 		u32 MID_BIAS:3;
 		u32 :6;
 		
-		u8 :8;
+		u32 :8;
 	};
 } RFREG_PCNT1;
 
@@ -668,7 +668,7 @@ typedef union
 		u32 MAX_POWER:6;
 		u32 :6;
 		
-		u8 :8;
+		u32 :8;
 	};
 } RFREG_PCNT2;
 
@@ -703,10 +703,10 @@ typedef union
 // https://pdf1.alldatasheet.com/datasheet-pdf/view/116332/RFMD/RF2958/+0154WWVOELEbTptEC.+/datasheet.pdf
 //
 // Note that all the registers are 18 bits in length. However, for the sake of compatibility,
-// we pad out each registers to 32 bits.
+// we pad out each register to 32 bits.
 
 #include "PACKED.h"
-typedef union
+typedef union __PACKED
 {
 	RFREG_RF2958 reg[32];
 	
@@ -2344,7 +2344,7 @@ typedef u16 IOREG_W_POWERACK;						// 0x48082D0
 // WIFI_IOREG_MAP: the buildin mac (arm7 addressrange: 0x04800000-0x04FFFFFF )
 // http://www.akkit.org/info/dswifi.htm#WifiIOMap
 #include "PACKED.h"
-typedef struct
+typedef struct __PACKED
 {
 	IOREG_W_ID					ID;					// 0x4808000
 	IOREG_W_PADDING				pad_002;			// 0x4808002

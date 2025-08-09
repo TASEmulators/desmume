@@ -1,6 +1,6 @@
 /*	
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2023 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -259,8 +259,8 @@ public:
 Viewer3D_State viewer3D;
 
 static GFX3D_IOREG *_GFX3D_IORegisterMap = NULL;
-static NDSGeometryEngine _gEngine;
-static GFX3D gfx3d;
+static CACHE_ALIGN NDSGeometryEngine _gEngine;
+static CACHE_ALIGN GFX3D gfx3d;
 
 //tables that are provided to anyone
 CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];

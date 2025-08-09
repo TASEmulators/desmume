@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2024 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -168,25 +168,34 @@ typedef union
 
 typedef union
 {
+	u32 value;
+
+	struct
+	{
 #ifndef MSB_FIRST
-		u8 MtxMode:2;						//  0- 1: Set matrix mode;
-											//        0=Projection
-											//        1=Position
-											//        2=Position+Vector
-											//        3=Texture
-		u8 :6;								//  2- 7: Unused bits
-		
-		u32 :24;							//  8-31: Unused bits
+		u8 MtxMode:2;                       //  0- 1: Set matrix mode;
+		                                    //        0=Projection
+		                                    //        1=Position
+		                                    //        2=Position+Vector
+		                                    //        3=Texture
+		u8 :6;                              //  2- 7: Unused bits
+
+		u8 :8;                              //  8-15: Unused bits
+		u8 :8;                              // 16-23: Unused bits
+		u8 :8;                              // 24-31: Unused bits
 #else
-		u32 :24;							//  8-31: Unused bits
-		
-		u8 :6;								//  2- 7: Unused bits
-		u8 MtxMode:2;						//  0- 1: Set matrix mode;
-											//        0=Projection
-											//        1=Position
-											//        2=Position+Vector
-											//        3=Texture
+		u8 :8;                              // 24-31: Unused bits
+		u8 :8;                              // 16-23: Unused bits
+		u8 :8;                              //  8-15: Unused bits
+
+		u8 :6;                              //  2- 7: Unused bits
+		u8 MtxMode:2;                       //  0- 1: Set matrix mode;
+		                                    //        0=Projection
+		                                    //        1=Position
+		                                    //        2=Position+Vector
+		                                    //        3=Texture
 #endif
+	};
 } IOREG_MTX_MODE;							// 0x04000440: MTX_MODE command port
 
 typedef union
@@ -355,17 +364,21 @@ typedef union
 	struct
 	{
 #ifndef MSB_FIRST
-		u8 YSortMode:1;						//     0: Translucent polygon Y-sorting mode; 0=Auto-sort, 1=Manual-sort
-		u8 DepthMode:1;						//     1: Depth buffering select; 0=Z 1=W
-		u8 :6;								//  2- 7: Unused bits
+		u8 YSortMode:1;                     //     0: Translucent polygon Y-sorting mode; 0=Auto-sort, 1=Manual-sort
+		u8 DepthMode:1;                     //     1: Depth buffering select; 0=Z 1=W
+		u8 :6;                              //  2- 7: Unused bits
 		
-		u32 :24;							//  8-31: Unused bits
+		u8 :8;                              //  8-15: Unused bits
+		u8 :8;                              // 16-23: Unused bits
+		u8 :8;                              // 24-31: Unused bits
 #else
-		u32 :24;							//  8-31: Unused bits
+		u8 :8;                              // 24-31: Unused bits
+		u8 :8;                              // 16-23: Unused bits
+		u8 :8;                              //  8-15: Unused bits
 		
-		u8 :6;								//  2- 7: Unused bits
-		u8 DepthMode:1;						//     1: Depth buffering select; 0=Z 1=W
-		u8 YSortMode:1;						//     0: Translucent polygon Y-sorting mode; 0=Auto-sort, 1=Manual-sort
+		u8 :6;                              //  2- 7: Unused bits
+		u8 DepthMode:1;                     //     1: Depth buffering select; 0=Z 1=W
+		u8 YSortMode:1;                     //     0: Translucent polygon Y-sorting mode; 0=Auto-sort, 1=Manual-sort
 #endif
 	};
 } IOREG_SWAP_BUFFERS;						// 0x04000540: SWAP_BUFFERS command port
@@ -410,11 +423,11 @@ typedef union
 		u8 AckMtxStackError:1;
 		
 		u16 CommandListCount:9;
-		u8 CommandListLessThanHalf:1;
-		u8 CommandListEmpty:1;
-		u8 EngineBusy:1;
-		u8 :2;
-		u8 CommandListIRQ:2;
+		u16 CommandListLessThanHalf:1;
+		u16 CommandListEmpty:1;
+		u16 EngineBusy:1;
+		u16 :2;
+		u16 CommandListIRQ:2;
 #else
 		u8 :6;
 		u8 BoxTestResult:1;
@@ -570,6 +583,7 @@ struct NDSVertex
 	Vector4s32 position;
 	Vector2s32 texCoord;
 	Color4u8 color;
+	u32 _pad_0; // Pad to 32 bytes
 };
 typedef struct NDSVertex NDSVertex;
 
@@ -594,24 +608,34 @@ struct CPoly
 };
 typedef struct CPoly CPoly;
 
-//used to communicate state to the renderer
+// Used to communicate state to the renderer.
+// This struct should be at least 16-bit aligned for GLSL.
+// Tables within the struct should be at least 32-bit aligned for SIMD.
 struct GFX3D_State
 {
+	// First 16-byte chunk
 	IOREG_DISP3DCNT DISP3DCNT;
-	u8 fogShift;
-	
-	u8 alphaTestRef;
+	IOREG_CLRIMAGE_OFFSET clearImageOffset;
+	u8 _pad_0;
+	u8 _pad_1;
 	u32 clearColor; // Not an RGBA8888 color. This uses its own packed format.
 	u32 clearDepth;
-	IOREG_CLRIMAGE_OFFSET clearImageOffset;
+	
+	// Second 16-byte chunk
 	u32 fogColor; // Not an RGBA8888 color. This uses its own packed format.
 	u16 fogOffset;
-	
+	u8 fogShift;
+	u8 alphaTestRef;
 	IOREG_SWAP_BUFFERS SWAP_BUFFERS;
+	u8 _pad_2;
+	u8 _pad_3;
+	u8 _pad_4;
+	u8 _pad_5;
 	
-	CACHE_ALIGN u16 edgeMarkColorTable[8];
-	CACHE_ALIGN u8 fogDensityTable[32];
-	CACHE_ALIGN u16 toonTable16[32];
+	// Each table is 32-byte aligned for AVX2.
+	u8 fogDensityTable[32];
+	u16 toonTable16[32];
+	u16 edgeMarkColorTable[8+8];
 };
 typedef struct GFX3D_State GFX3D_State;
 
@@ -743,8 +767,8 @@ extern Viewer3D_State viewer3D;
 
 struct GFX3D
 {
-	GFX3D_State pendingState;
-	GFX3D_State appliedState;
+	CACHE_ALIGN GFX3D_State pendingState;
+	CACHE_ALIGN GFX3D_State appliedState;
 	GFX3D_GeometryList gList[2];
 	
 	u8 pendingListIndex;
