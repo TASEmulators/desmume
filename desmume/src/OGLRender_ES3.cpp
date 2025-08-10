@@ -354,7 +354,7 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	
 	// Texture Buffer Object support. OpenGL v3.2 Core Profile natively supports this, but OpenGL ES requires v3.2.
 	this->_feature.supportTBO = ( (this->_feature.variantID & OpenGLVariantFamily_CoreProfile) != 0) ||
-								(((this->_feature.variantID & OpenGLVariantFamily_ES3) != 0) && ((this->_feature.variantID & 0x000F) >= 0x0002) );
+	                            (((this->_feature.variantID & OpenGLVariantFamily_ES3) != 0) && ((this->_feature.variantID & 0x000F) >= 0x0002) );
 
 	// Apple-specific extensions
 	this->_feature.supportTextureRange_APPLE    = this->IsExtensionPresent(&oglExtensionSet, "GL_APPLE_texture_range");
@@ -408,6 +408,7 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 		this->_gResource = new OpenGLGeometryResource(OpenGLVariantID_ES3_3_0);
 	}
 	
+	// Load and create shaders. Return on any error, since ES 3.0 makes shaders mandatory.
 	error = this->CreateGeometryPrograms();
 	if (error != OGLERROR_NOERR)
 	{

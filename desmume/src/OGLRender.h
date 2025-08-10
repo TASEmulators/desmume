@@ -1006,15 +1006,6 @@ public:
 	virtual Render3DError InitExtensions() = 0;
 	
 	bool IsExtensionPresent(const std::set<std::string> *oglExtensionSet, const std::string extensionName) const;
-	Render3DError ShaderProgramCreate(GLuint &vtxShaderID,
-									  GLuint &fragShaderID,
-									  GLuint &programID,
-									  const char *vtxShaderCString,
-									  const char *fragShaderCString);
-	bool ValidateShaderCompile(GLenum shaderType, GLuint theShader) const;
-	bool ValidateShaderProgramLink(GLuint theProgram) const;
-	void GetVersion(unsigned int *major, unsigned int *minor, unsigned int *revision) const;
-	void SetVersion(unsigned int major, unsigned int minor, unsigned int revision);
 	bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision) const;
 	
 	virtual const Color4u8* GetFramebuffer32() const;

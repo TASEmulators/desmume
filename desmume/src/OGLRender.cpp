@@ -670,9 +670,9 @@ bool IsOpenGLDriverVersionSupported(unsigned int checkVersionMajor, unsigned int
 }
 
 static void OGLGetDriverVersion(const char *oglVersionString,
-								unsigned int *versionMajor,
-								unsigned int *versionMinor,
-								unsigned int *versionRevision)
+                                unsigned int *versionMajor,
+                                unsigned int *versionMinor,
+                                unsigned int *versionRevision)
 {
 	size_t versionStringLength = 0;
 	
@@ -791,10 +791,10 @@ static bool ValidateShaderCompileOGL(GLenum shaderType, GLuint theShader)
 }
 
 Render3DError ShaderProgramCreateOGL(GLuint &vtxShaderID,
-									 GLuint &fragShaderID,
-									 GLuint &programID,
-									 const char *vtxShaderCString,
-									 const char *fragShaderCString)
+                                     GLuint &fragShaderID,
+                                     GLuint &programID,
+                                     const char *vtxShaderCString,
+                                     const char *fragShaderCString)
 {
 	Render3DError error = OGLERROR_NOERR;
 	
@@ -2222,6 +2222,13 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
+	if (!BEGINGL())
+	{
+		return OGLERROR_BEGINGL_FAILED;
+	}
+	
+	glFinish();
+	
 	const bool didSelectedMultisampleSizeChange = (this->_selectedMultisampleSize != CommonSettings.GFX3D_Renderer_MultisampleSize);
 	const bool didEmulateNDSDepthCalculationChange = (this->_emulateNDSDepthCalculation != CommonSettings.OpenGL_Emulation_NDSDepthCalculation);
 	const bool didEnableTextureSmoothingChange = (this->_enableTextureSmoothing != CommonSettings.GFX3D_Renderer_TextureSmoothing);
@@ -2247,6 +2254,8 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 	error = Render3D::ApplyRenderingSettings(renderState);
 	if (error != RENDER3DERROR_NOERR)
 	{
+		glFinish();
+		ENDGL();
 		return error;
 	}
 	
@@ -2255,11 +2264,6 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 		didEnableTextureSmoothingChange ||
 		didEmulateDepthLEqualPolygonFacingChange)
 	{
-		if (!BEGINGL())
-		{
-			return OGLERROR_BEGINGL_FAILED;
-		}
-		
 		if (didSelectedMultisampleSizeChange)
 		{
 			GLsizei sampleSize = this->GetLimitedMultisampleSize();
@@ -2281,14 +2285,15 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 				this->DestroyGeometryPrograms();
 				this->_feature.supportShaders = false;
 				
+				glFinish();
 				ENDGL();
 				return error;
 			}
 		}
-		
-		ENDGL();
 	}
 	
+	glFinish();
+	ENDGL();
 	return error;
 }
 
@@ -2342,9 +2347,9 @@ OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 		this->DestroyFogPrograms();
 		this->DestroyFramebufferOutput6665Programs();
 		this->DestroyFramebufferOutput8888Programs();
+		
+		this->_feature.supportShaders = false;
 	}
-	
-	this->_feature.supportShaders = false;
 	
 	DestroyVAOs();
 	DestroyVBOs();
@@ -2797,7 +2802,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGPolyID);
@@ -2805,7 +2810,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGFogAttrID);
@@ -2813,7 +2818,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, NULL);
 	
 	GLint *tempClearImageBuffer = (GLint *)calloc(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT, sizeof(GLint));
 	
@@ -5473,13 +5478,13 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, (GLsizei)w, (GLsizei)h, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)w, (GLsizei)h, 0, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, NULL);
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)w, (GLsizei)h, 0, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, NULL);
 		
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)w, (GLsizei)h, 0, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, NULL);
 	}
 	
 	glActiveTexture(GL_TEXTURE0);

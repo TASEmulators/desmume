@@ -1451,7 +1451,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	
 	// Texture Buffer Object support. OpenGL v3.2 Core Profile natively supports this, but OpenGL ES requires v3.2.
 	this->_feature.supportTBO = ( (this->_feature.variantID & OpenGLVariantFamily_CoreProfile) != 0) ||
-								(((this->_feature.variantID & OpenGLVariantFamily_ES3) != 0) && ((this->_feature.variantID & 0x000F) >= 0x0002) );
+	                            (((this->_feature.variantID & OpenGLVariantFamily_ES3) != 0) && ((this->_feature.variantID & 0x000F) >= 0x0002) );
 	
 	this->_feature.supportSampleShading         = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_sample_shading"); // Supported in OpenGL v3.2 Core Profile. Unsupported in OpenGL ES.
 	this->_feature.supportShaderFixedLocation   = IsOpenGLDriverVersionSupported(3, 3, 0); // Requires OpenGL v3.3 or later. Supported in OpenGL ES v3.0.
@@ -1498,6 +1498,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	this->_rsResource = new OpenGLRenderStatesResource();
 	this->_gResource = new OpenGLGeometryResource(OpenGLVariantID_CoreProfile_3_2);
 	
+	// Load and create shaders. Return on any error, since v3.2 Core Profile makes shaders mandatory.
 	error = this->CreateGeometryPrograms();
 	if (error != OGLERROR_NOERR)
 	{
@@ -2809,7 +2810,6 @@ Render3DError OpenGLRenderer_3_2::ZeroDstAlphaPass(const POLY *rawPolyList, cons
 	glDepthMask(GL_FALSE);
 	glDrawBuffer(GL_NONE);
 	
-	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	glBindVertexArray(OGLRef.vaoPostprocessStatesID);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	
@@ -2939,7 +2939,6 @@ Render3DError OpenGLRenderer_3_2::_FramebufferConvertColorFormat()
 		glDisable(GL_STENCIL_TEST);
 		glDisable(GL_BLEND);
 		
-		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 		glBindVertexArray(OGLRef.vaoPostprocessStatesID);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glBindVertexArray(0);
@@ -3231,7 +3230,6 @@ Render3DError OpenGLRenderer_3_2::PostprocessFramebuffer()
 	glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
 	glDisable(GL_DEPTH_TEST);
 	
-	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	glBindVertexArray(OGLRef.vaoPostprocessStatesID);
 	
 	if (this->_enableEdgeMark)
@@ -3418,7 +3416,6 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 			glDisable(GL_STENCIL_TEST);
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_ALWAYS);
-			glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 			glBindVertexArray(OGLRef.vaoPostprocessStatesID);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 			glBindVertexArray(0);

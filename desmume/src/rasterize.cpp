@@ -1764,7 +1764,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	_debug_drawClippedUserPoly = 0;
 	
 	_renderGeometryNeedsFinish = false;
-	_framebufferAttributes = NULL;
+	_framebufferAttributes = new FragmentAttributesBuffer(_framebufferWidth * _framebufferHeight);
 	
 	_enableHighPrecisionColorInterpolation = CommonSettings.GFX3D_HighResolutionInterpolateColor;
 	_enableLineHack = CommonSettings.GFX3D_LineHack;

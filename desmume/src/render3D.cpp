@@ -1185,8 +1185,8 @@ void Render3D_AltiVec::_ClearImageBaseLoop(const u16 *__restrict inColor16, cons
 		vec_st( vec_msum(calcDepth3, calcDepthMul, calcDepthAdd), 48, outDepth24 + i);
 		
 		// Write the fog flags to the fog flag buffer.
-		const v128u16 clearFogLo = vec_sr(clearDepthLo, ((v128u16){15,15,15,15,15,15,15,15}));
-		const v128u16 clearFogHi = vec_sr(clearDepthHi, ((v128u16){15,15,15,15,15,15,15,15}));
+		const v128u16 clearFogLo = vec_sr(clearDepthLo, vec_splat_u16(15));
+		const v128u16 clearFogHi = vec_sr(clearDepthHi, vec_splat_u16(15));
 		vec_st( vec_pack(clearFogLo, clearFogHi), 0, outFog + i );
 	}
 }
