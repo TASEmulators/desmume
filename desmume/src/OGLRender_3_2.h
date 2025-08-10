@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2024 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -35,8 +35,6 @@ extern const char *EdgeMarkVtxShader_150;
 extern const char *EdgeMarkFragShader_150;
 extern const char *FogVtxShader_150;
 extern const char *FogFragShader_150;
-extern const char *FramebufferOutputVtxShader_150;
-extern const char *FramebufferOutput6665FragShader_150;
 
 // A port that wants to use the OpenGL 3.2 renderer must assign the two following functions
 // to OGLLoadEntryPoints_3_2_Func and OGLCreateRenderer_3_2_Func, respectively.
@@ -111,10 +109,6 @@ public:
 class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 {
 protected:
-	bool _isShaderFixedLocationSupported;
-	bool _isConservativeDepthSupported;
-	bool _isConservativeDepthAMDSupported;
-	
 	OpenGLGeometryResource *_gResource;
 	OpenGLRenderStatesResource *_rsResource;
 	
@@ -136,21 +130,15 @@ protected:
 	virtual void DestroyMSGeometryZeroDstAlphaProgram();
 	virtual Render3DError CreateEdgeMarkProgram(const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString);
 	virtual Render3DError CreateFogProgram(const OGLFogProgramKey fogProgramKey, const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString);
-	virtual Render3DError CreateFramebufferOutput6665Program(const char *vtxShaderCString, const char *fragShaderCString);
-	virtual Render3DError CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString);
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual void _SetupGeometryShaders(const OGLGeometryFlags flags);
-	virtual void _RenderGeometryVertexAttribEnable();
-	virtual void _RenderGeometryVertexAttribDisable();
 	virtual Render3DError ZeroDstAlphaPass(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, const size_t clippedPolyOpaqueCount, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr);
 	virtual void _RenderGeometryLoopBegin();
 	virtual void _RenderGeometryLoopEnd();
 	virtual void _ResolveWorkingBackFacing();
 	virtual void _ResolveGeometry();
 	virtual void _ResolveFinalFramebuffer();
-	virtual void _FramebufferProcessVertexAttribEnable();
-	virtual void _FramebufferProcessVertexAttribDisable();
 	virtual Render3DError _FramebufferConvertColorFormat();
 	
 	virtual Render3DError BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);

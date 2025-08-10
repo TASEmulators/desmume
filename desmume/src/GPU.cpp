@@ -3598,7 +3598,7 @@ void GPUEngineA::RenderLine(const size_t l)
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
 void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 {
-	const Color4u8 *__restrict framebuffer3D = CurrentRenderer->GetFramebuffer();
+	const Color4u8 *__restrict framebuffer3D = CurrentRenderer->GetFramebuffer32();
 	if (framebuffer3D == NULL)
 	{
 		return;
@@ -3926,7 +3926,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 				}
 			}
 			
-			srcAPtr = (DISPCAPCNT.SrcA == 0) ? (Color4u8 *)compInfo.target.lineColorHead : (Color4u8 *)CurrentRenderer->GetFramebuffer() + compInfo.line.blockOffsetCustom;
+			srcAPtr = (DISPCAPCNT.SrcA == 0) ? (const Color4u8 *)compInfo.target.lineColorHead : CurrentRenderer->GetFramebuffer32() + compInfo.line.blockOffsetCustom;
 			srcBPtr = (DISPCAPCNT.SrcB == 0) ? vramCustom32 : this->_fifoLine32;
 			dstCustomPtr = (Color4u8 *)this->_VRAMCustomBlockPtr[DISPCAPCNT.VRAMWriteBlock] + dstCustomOffset;
 		}
@@ -3934,7 +3934,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 		{
 			const u16 *vramPtr16 = (willReadNativeVRAM) ? vramNative16 : vramCustom16;
 			
-			srcAPtr = (DISPCAPCNT.SrcA == 0) ? (u16 *)compInfo.target.lineColorHead : this->_3DFramebuffer16 + compInfo.line.blockOffsetCustom;
+			srcAPtr = (DISPCAPCNT.SrcA == 0) ? (const Color5551 *)compInfo.target.lineColorHead : CurrentRenderer->GetFramebuffer16() + compInfo.line.blockOffsetCustom;
 			srcBPtr = (DISPCAPCNT.SrcB == 0) ? vramPtr16 : this->_fifoLine16;
 			dstCustomPtr = (u16 *)this->_VRAMCustomBlockPtr[DISPCAPCNT.VRAMWriteBlock] + dstCustomOffset;
 		}
@@ -3998,7 +3998,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const GPUEngineCompositorInfo &compI
 	
 	if (needCaptureNative)
 	{
-		srcAPtr = (DISPCAPCNT.SrcA == 0) ? (u16 *)compInfo.target.lineColorHead : this->_3DFramebuffer16 + compInfo.line.blockOffsetCustom;
+		srcAPtr = (DISPCAPCNT.SrcA == 0) ? (const Color5551 *)compInfo.target.lineColorHead : CurrentRenderer->GetFramebuffer16() + compInfo.line.blockOffsetCustom;
 		srcBPtr = (DISPCAPCNT.SrcB == 0) ? vramNative16 : this->_fifoLine16;
 		
 		// Convert 18-bit and 24-bit framebuffers to 15-bit for native screen capture.

@@ -3840,16 +3840,16 @@ void gfx3d_PrepareSaveStateBufferWrite()
 	{
 		if (CurrentRenderer->GetColorFormat() == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)CurrentRenderer->GetFramebuffer(), (u32 *)gfx3d.framebufferNativeSave, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			ColorspaceConvertBuffer6665To8888<false, false>((const u32 *)CurrentRenderer->GetFramebuffer32(), (u32 *)gfx3d.framebufferNativeSave, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		}
 		else
 		{
-			ColorspaceCopyBuffer32<false, false>((u32 *)CurrentRenderer->GetFramebuffer(), (u32 *)gfx3d.framebufferNativeSave, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			ColorspaceCopyBuffer32<false, false>((const u32 *)CurrentRenderer->GetFramebuffer32(), (u32 *)gfx3d.framebufferNativeSave, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		}
 	}
 	else // Framebuffer is at a custom size
 	{
-		const Color4u8 *__restrict src = (Color4u8 *)CurrentRenderer->GetFramebuffer();
+		const Color4u8 *__restrict src = CurrentRenderer->GetFramebuffer32();
 		Color4u8 *__restrict dst = gfx3d.framebufferNativeSave;
 		
 		for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
@@ -4021,45 +4021,12 @@ void gfx3d_FinishLoadStateBufferRead()
 	switch (deviceInfo.renderID)
 	{
 		case RENDERID_NULL:
-			memset(CurrentRenderer->GetFramebuffer(), 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(Color4u8));
+			CurrentRenderer->FillZero();
 			break;
 			
 		case RENDERID_SOFTRASTERIZER:
-		{
-			const size_t w = CurrentRenderer->GetFramebufferWidth();
-			const size_t h = CurrentRenderer->GetFramebufferHeight();
-			
-			if ( (w == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (h == GPU_FRAMEBUFFER_NATIVE_HEIGHT) ) // Framebuffer is at the native size
-			{
-				if (CurrentRenderer->GetColorFormat() == NDSColorFormat_BGR666_Rev)
-				{
-					ColorspaceConvertBuffer8888To6665<false, false>((u32 *)gfx3d.framebufferNativeSave, (u32 *)CurrentRenderer->GetFramebuffer(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-				}
-				else
-				{
-					ColorspaceCopyBuffer32<false, false>((u32 *)gfx3d.framebufferNativeSave, (u32 *)CurrentRenderer->GetFramebuffer(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-				}
-			}
-			else // Framebuffer is at a custom size
-			{
-				if (CurrentRenderer->GetColorFormat() == NDSColorFormat_BGR666_Rev)
-				{
-					ColorspaceConvertBuffer8888To6665<false, false>((u32 *)gfx3d.framebufferNativeSave, (u32 *)gfx3d.framebufferNativeSave, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-				}
-				
-				const Color4u8 *__restrict src = gfx3d.framebufferNativeSave;
-				Color4u8 *__restrict dst = (Color4u8 *)CurrentRenderer->GetFramebuffer();
-				
-				for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
-				{
-					const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(l);
-					CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, src, dst);
-					src += GPU_FRAMEBUFFER_NATIVE_WIDTH;
-					dst += lineInfo.pixelCount;
-				}
-			}
+			CurrentRenderer->FillColor32(gfx3d.framebufferNativeSave, true);
 			break;
-		}
 			
 		default:
 			// Do nothing. Loading the 3D framebuffer is unsupported on this 3D renderer.

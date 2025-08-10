@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2024 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -174,13 +174,6 @@ EXTERNOGLEXT(PFNGLMAPBUFFERPROC, glMapBuffer) // Core in v1.5
 #endif
 EXTERNOGLEXT(PFNGLUNMAPBUFFERPROC, glUnmapBuffer) // Core in v1.5
 
-// VAO (always available in Apple's implementation of OpenGL, including old versions)
-#if defined(__APPLE__) || defined(GL_VERSION_3_0) || defined(GL_ES_VERSION_3_0)
-EXTERNOGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays) // Core in v3.0 and ES v3.0
-EXTERNOGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays) // Core in v3.0 and ES v3.0
-EXTERNOGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray) // Core in v3.0 and ES v3.0
-#endif
-
 // OPENGL CORE FUNCTIONS ADDED IN 3.2 CORE PROFILE AND VARIANTS
 #if defined(GL_VERSION_3_0) || defined(GL_ES_VERSION_3_0)
 
@@ -199,6 +192,11 @@ EXTERNOGLEXT(PFNGLBINDFRAGDATALOCATIONINDEXEDPROC, glBindFragDataLocationIndexed
 
 // Buffer Objects
 EXTERNOGLEXT(PFNGLMAPBUFFERRANGEPROC, glMapBufferRange) // Core in v3.0 and ES v3.0
+
+// Vertex Array Objects
+EXTERNOGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays) // Core in v3.0 and ES v3.0
+EXTERNOGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays) // Core in v3.0 and ES v3.0
+EXTERNOGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray) // Core in v3.0 and ES v3.0
 
 // FBO
 EXTERNOGLEXT(PFNGLGENFRAMEBUFFERSPROC, glGenFramebuffers) // Core in v3.0 and ES v2.0
@@ -241,6 +239,7 @@ EXTERNOGLEXT(PFNGLDELETESYNCPROC, glDeleteSync) // Core in v3.2 and ES v3.0
 // OPENGL FBO EXTENSIONS
 // We need to include these explicitly for OpenGL legacy mode since the EXT versions of FBOs
 // may work differently than their ARB counterparts when running on older drivers.
+
 #if defined(GL_EXT_framebuffer_object)
 // FBO
 EXTERNOGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC, glGenFramebuffersEXT)
@@ -303,6 +302,21 @@ EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 #define glDeleteRenderbuffersEXT(n, renderbuffers) glDeleteRenderbuffers(n, renderbuffers)
 
 #endif // GL_EXT_framebuffer_object
+
+// OPENGL APPLE EXTENSIONS
+// There are some useful Apple extensions that can provide performance improvements
+// or functionality in legacy OpenGL that is similar to their v3.2 Core Profile
+// counterparts.
+
+#if defined(GL_APPLE_vertex_array_object)
+EXTERNOGLEXT(PFNGLBINDVERTEXARRAYAPPLEPROC, glBindVertexArrayAPPLE)
+EXTERNOGLEXT(PFNGLDELETEVERTEXARRAYSAPPLEPROC, glDeleteVertexArraysAPPLE)
+EXTERNOGLEXT(PFNGLGENVERTEXARRAYSAPPLEPROC, glGenVertexArraysAPPLE)
+#endif
+
+#if defined(GL_APPLE_texture_range)
+EXTERNOGLEXT(PFNGLTEXTURERANGEAPPLEPROC, glTextureRangeAPPLE)
+#endif
 
 // Some headers, such as the OpenGL ES headers, may not include this token.
 // Add it manually to avoid compiling issues.
@@ -444,7 +458,7 @@ enum OGLErrorCode
 {
 	OGLERROR_NOERR = RENDER3DERROR_NOERR,
 	
-	OGLERROR_DRIVER_VERSION_TOO_OLD,
+	OGLERROR_DRIVER_VERSION_TOO_OLD = 20000,
 	
 	OGLERROR_BEGINGL_FAILED,
 	OGLERROR_CLIENT_RESIZE_ERROR,
@@ -471,21 +485,6 @@ enum OGLPolyDrawMode
 	OGLPolyDrawMode_ZeroAlphaPass			= 2
 };
 
-union GLvec2
-{
-	GLfloat vec[2];
-	struct { GLfloat x, y; };
-};
-typedef union GLvec2 GLvec2;
-
-union GLvec3
-{
-	GLfloat vec[3];
-	struct { GLfloat r, g, b; };
-	struct { GLfloat x, y, z; };
-};
-typedef union GLvec3 GLvec3;
-
 union GLvec4
 {
 	GLfloat vec[4];
@@ -493,14 +492,6 @@ union GLvec4
 	struct { GLfloat x, y, z, w; };
 };
 typedef union GLvec4 GLvec4;
-
-struct OGLVertex
-{
-	GLvec4 position;
-	GLvec2 texCoord;
-	GLvec3 color;
-};
-typedef struct OGLVertex OGLVertex;
 
 struct OGLRenderStates
 {
@@ -607,12 +598,42 @@ struct OGLFogShaderID
 };
 typedef OGLFogShaderID OGLFogShaderID;
 
+struct OGLFeatureInfo
+{
+	OpenGLVariantID variantID;
+	
+	bool supportTextureMirroredRepeat; // Core in v1.4
+	bool supportBlendFuncSeparate;     // Core in v1.4
+	bool supportBlendEquationSeparate; // Core in v2.0
+	bool supportMapBufferRange;        // Core in v3.0 and ES v3.0
+	bool supportVBO;                   // Core in v1.5
+	bool supportPBO;                   // Core in v2.1
+	bool supportFBO;                   // Core in v3.0 and ES v2.0
+	bool supportFBOBlit;               // Core in v3.0 and ES v3.0
+	bool supportMultisampledFBO;       // Core in v3.0 and ES v2.0
+	bool supportVAO;                   // Core in v3.0 and ES v3.0
+	bool supportVAO_APPLE;             // GL_APPLE_vertex_array_object
+	bool supportUBO;                   // Core in v3.1 and ES v3.0
+	bool supportUBO64K;                // Core in v3.1 and ES v3.0
+	bool supportTBO;                   // Core in v3.1 and ES v3.2
+	bool supportShaders;               // Core in v2.0
+	bool supportSampleShading;         // Core in v3.2, not available in ES
+	bool supportShaderFixedLocation;   // Core in v3.3, not available in ES
+	bool supportConservativeDepth;     // Core in v4.0, not available in ES
+	bool supportConservativeDepth_AMD; // GL_AMD_conservative_depth
+	
+	bool supportTextureRange_APPLE;    // GL_APPLE_texture_range
+	bool supportClientStorage_APPLE;   // GL_APPLE_client_storage
+	
+	GLint stateTexMirroredRepeat;
+	GLint readPixelsBestFormat;
+	GLint readPixelsBestDataType;
+};
+typedef OGLFeatureInfo OGLFeatureInfo;
+
 struct OGLRenderRef
 {
 	// OpenGL Feature Support
-	GLint stateTexMirroredRepeat;
-	GLint readPixelsBestDataType;
-	GLint readPixelsBestFormat;
 	GLenum textureSrcTypeCIColor;
 	GLenum textureSrcTypeCIFog;
 	GLenum textureSrcTypeEdgeColor;
@@ -743,6 +764,11 @@ extern CACHE_ALIGN const GLfloat divide6bitBy63_LUT[64];
 extern const GLfloat PostprocessVtxBuffer[16];
 extern const GLubyte PostprocessElementBuffer[6];
 
+extern const char *FramebufferOutputVtxShader;
+extern const char *FramebufferOutputBGRA6665FragShader;
+extern const char *FramebufferOutputBGRA8888FragShader;
+extern const char *FramebufferOutputRGBA6665FragShader;
+
 //This is called by OGLRender whenever it initializes.
 //Platforms, please be sure to set this up.
 //return true if you successfully init.
@@ -785,9 +811,7 @@ extern void (*OGLCreateRenderer_3_2_Func)(OpenGLRenderer **rendererPtr);
 extern void (*OGLLoadEntryPoints_ES_3_0_Func)();
 extern void (*OGLCreateRenderer_ES_3_0_Func)(OpenGLRenderer **rendererPtr);
 
-bool IsOpenGLDriverVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision);
-
-#define glDrawBuffer(theAttachment) glDrawBufferDESMUME((theAttachment), this->_variantID)
+#define glDrawBuffer(theAttachment) glDrawBufferDESMUME((theAttachment), this->_feature.variantID)
 static inline void glDrawBufferDESMUME(GLenum theAttachment, const OpenGLVariantID variantID)
 {
 	GLenum bufs[4] = { GL_NONE, GL_NONE, GL_NONE, GL_NONE };
@@ -821,6 +845,11 @@ static inline void glDrawBufferDESMUME(GLenum theAttachment, const OpenGLVariant
 		glDrawBuffers(1, bufs);
 	}
 }
+
+bool IsOpenGLDriverVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision);
+
+Render3DError ShaderProgramCreateOGL(GLuint &vtxShaderID, GLuint &fragShaderID, GLuint &programID, const char *vtxShaderCString, const char *fragShaderCString);
+bool ValidateShaderProgramLinkOGL(GLuint theProgram);
 
 class OpenGLTexture : public Render3DTexture
 {
@@ -860,12 +889,6 @@ class OpenGLRenderer : public Render3D
 #endif
 {
 private:
-	// Driver's OpenGL Version
-	unsigned int versionMajor;
-	unsigned int versionMinor;
-	unsigned int versionRevision;
-	
-private:
 	template<bool SWAP_RB> Render3DError _FlushFramebufferConvertOnCPU(const Color4u8 *__restrict srcFramebuffer,
 	                                                                   Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16,
 	                                                                   bool doFramebufferConvert);
@@ -875,17 +898,7 @@ protected:
 	OGLRenderRef *ref;
 	
 	// OpenGL Feature Support
-	OpenGLVariantID _variantID;
-	bool _isBlendFuncSeparateSupported;
-	bool _isBlendEquationSeparateSupported;
-	bool isVBOSupported;
-	bool isPBOSupported;
-	bool isFBOSupported;
-	bool _isFBOBlitSupported;
-	bool isMultisampledFBOSupported;
-	bool isShaderSupported;
-	bool _isSampleShadingSupported;
-	bool isVAOSupported;
+	OGLFeatureInfo _feature;
 	bool _willConvertFramebufferOnGPU;
 	bool _willUseMultisampleShaders;
 	
@@ -965,11 +978,7 @@ protected:
 	virtual Render3DError CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString) = 0;
 	virtual void DestroyFramebufferOutput8888Programs() = 0;
 	
-	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader,
-													 const char *edgeMarkFragShader,
-													 const char *framebufferOutputVtxShader,
-													 const char *framebufferOutputRGBA6665FragShader,
-													 const char *framebufferOutputRGBA8888FragShader) = 0;
+	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader, const char *edgeMarkFragShader) = 0;
 	
 	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID) = 0;
 	
@@ -982,8 +991,6 @@ protected:
 	virtual void _ResolveWorkingBackFacing() = 0;
 	virtual void _ResolveGeometry() = 0;
 	virtual void _ResolveFinalFramebuffer() = 0;
-	virtual void _FramebufferProcessVertexAttribEnable() = 0;
-	virtual void _FramebufferProcessVertexAttribDisable() = 0;
 	virtual Render3DError _FramebufferConvertColorFormat() = 0;
 	
 	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID) = 0;
@@ -993,6 +1000,8 @@ protected:
 public:
 	OpenGLRenderer();
 	virtual ~OpenGLRenderer();
+	
+	const OGLFeatureInfo& GetFeatureInfo() const;
 	
 	virtual Render3DError InitExtensions() = 0;
 	
@@ -1008,7 +1017,7 @@ public:
 	void SetVersion(unsigned int major, unsigned int minor, unsigned int revision);
 	bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision) const;
 	
-	virtual Color4u8* GetFramebuffer();
+	virtual const Color4u8* GetFramebuffer32() const;
 	virtual GLsizei GetLimitedMultisampleSize() const;
 	
 	Render3DError ApplyRenderingSettings(const GFX3D_State &renderState);
@@ -1046,11 +1055,7 @@ protected:
 	virtual Render3DError CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString);
 	virtual void DestroyFramebufferOutput8888Programs();
 	
-	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader,
-													 const char *edgeMarkFragShader,
-													 const char *framebufferOutputVtxShader,
-													 const char *framebufferOutputRGBA6665FragShader,
-													 const char *framebufferOutputRGBA8888FragShader);
+	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader, const char *edgeMarkFragShader);
 	
 	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID);
 	
@@ -1064,8 +1069,6 @@ protected:
 	virtual void _ResolveWorkingBackFacing();
 	virtual void _ResolveGeometry();
 	virtual void _ResolveFinalFramebuffer();
-	virtual void _FramebufferProcessVertexAttribEnable();
-	virtual void _FramebufferProcessVertexAttribDisable();
 	virtual Render3DError _FramebufferConvertColorFormat();
 	
 	// Base rendering methods

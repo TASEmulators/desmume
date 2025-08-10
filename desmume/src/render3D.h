@@ -58,18 +58,22 @@ void Render3D_DeInit();
 
 enum RendererID
 {
-	RENDERID_NULL				= 0,
-	RENDERID_SOFTRASTERIZER		= 1,
-	RENDERID_OPENGL_AUTO		= 1000,
-	RENDERID_OPENGL_LEGACY		= 1001,
-	RENDERID_OPENGL_3_2			= 1002,
-	RENDERID_METAL				= 2000
+	RENDERID_NULL           = 0,
+	RENDERID_SOFTRASTERIZER = 1,
+	RENDERID_OPENGL_AUTO    = 1000,
+	RENDERID_OPENGL_LEGACY  = 1001,
+	RENDERID_OPENGL_3_2     = 1002,
+	RENDERID_OPENG_ES       = 1003,
+	RENDERID_METAL          = 2000
 };
 
 enum Render3DErrorCode
 {
-	RENDER3DERROR_NOERR = 0
+	RENDER3DERROR_NOERR          = 0,
+	RENDER3DERROR_INVALID_VALUE  = 1,
+	RENDER3DERROR_INVALID_BUFFER = 2
 };
+typedef int Render3DError;
 
 enum PolyFacing
 {
@@ -77,8 +81,6 @@ enum PolyFacing
 	PolyFacing_Front     = 1,
 	PolyFacing_Back      = 2
 };
-
-typedef int Render3DError;
 
 struct FragmentAttributes
 {
@@ -208,6 +210,7 @@ protected:
 	size_t _framebufferSIMDPixCount;
 	size_t _framebufferColorSizeBytes;
 	Color4u8 *_framebufferColor;
+	Color5551 *_framebufferColor16;
 	
 	Color4u8 _clearColor6665;
 	FragmentAttributes _clearAttributes;
@@ -309,7 +312,12 @@ public:
 	
 	virtual NDSColorFormat GetColorFormat() const;							// The output color format of the 3D renderer.
 	
-	virtual Color4u8* GetFramebuffer();
+	virtual Render3DError FillZero();
+	virtual Render3DError FillColor32(const Color4u8 *__restrict src, const bool isSrcNativeSize);
+	
+	const Color5551* GetFramebuffer16() const;
+	virtual const Color4u8* GetFramebuffer32() const;
+	Color4u8* GetInUseFramebuffer32() const;
 	
 	bool GetRenderNeedsFinish() const;
 	void SetRenderNeedsFinish(const bool renderNeedsFinish);

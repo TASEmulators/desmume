@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2021 DeSmuME team
+	Copyright (C) 2009-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@
 #include "movie.h"
 #include "MMU.h"
 #include "GPU.h"
+#include "render3D.h"
 #include "SPU.h"
 #include "saves.h"
 #include "emufile.h"
@@ -2279,7 +2280,7 @@ public:
 						char temp [256];
 						sprintf(temp, " " /*"mismatch at "*/ "byte %d(0x%X at %p): %d(0x%X) != %d(0x%X)\n", i, i, dst, *src,*src, *dst,*dst);
 
-						if(ptr == dispInfo.masterNativeBuffer16 || ptr == dispInfo.masterCustomBuffer || ptr == GPU->GetEngineMain()->Get3DFramebufferMain()) // ignore screen-only differences since frame skipping can cause them and it's probably ok
+						if(ptr == dispInfo.masterNativeBuffer16 || ptr == dispInfo.masterCustomBuffer || ptr == CurrentRenderer->GetFramebuffer32()) // ignore screen-only differences since frame skipping can cause them and it's probably ok
 							break;
 
 						differences.push_back(temp); // <-- probably the best place for a breakpoint
@@ -2994,7 +2995,7 @@ static void PutTextInternal (const char *str, int len, short x, short y, int col
 						{
 							for(int x3 = max(0,x2-1); x3 <= min(4,x2+1); x3++)
 							{
-								on |= y3 >= 0 && y3 < 8 && (Cur_Glyph[y3*8] & (1 << x3));
+								on |= (y3 >= 0) && (y3 < 8) && ((Cur_Glyph[y3*8] & (1 << x3)) != 0);
 								if (on)
 									goto draw_outline; // speedup?
 							}

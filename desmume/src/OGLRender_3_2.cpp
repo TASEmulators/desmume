@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2024 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -723,44 +723,11 @@ void main()\n\
 }\n\
 "};
 
-// Vertex shader for the final framebuffer, GLSL 1.50
-const char *FramebufferOutputVtxShader_150 = {"\
-IN_VTX_POSITION vec2 inPosition;\n\
-IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
-out vec2 texCoord;\n\
-\n\
-void main()\n\
-{\n\
-	texCoord = inTexCoord0;\n\
-	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
-}\n\
-"};
-
-// Fragment shader for the final RGBA6665 formatted framebuffer, GLSL 1.50
-const char *FramebufferOutput6665FragShader_150 = {"\
-in vec2 texCoord;\n\
-\n\
-uniform sampler2D texInFragColor;\n\
-\n\
-OUT_COLOR vec4 outFragColor6665;\n\
-\n\
-void main()\n\
-{\n\
-	outFragColor6665     = texture(texInFragColor, texCoord);\n\
-	outFragColor6665     = floor((outFragColor6665 * 255.0) + 0.5);\n\
-	outFragColor6665.rgb = floor(outFragColor6665.rgb / 4.0);\n\
-	outFragColor6665.a   = floor(outFragColor6665.a   / 8.0);\n\
-	\n\
-	outFragColor6665 /= 255.0;\n\
-}\n\
-"};
-
 void OGLCreateRenderer_3_2(OpenGLRenderer **rendererPtr)
 {
 	if (IsOpenGLDriverVersionSupported(3, 2, 0))
 	{
 		*rendererPtr = new OpenGLRenderer_3_2;
-		(*rendererPtr)->SetVersion(3, 2, 0);
 	}
 }
 
@@ -771,7 +738,7 @@ OpenGLGeometryResource::OpenGLGeometryResource(const OpenGLVariantID variantID)
 	bool is64kUBOSupported = (maxUBOSize >= 65536);
 	
 	bool isTBOSupported = ( (variantID & OpenGLVariantFamily_CoreProfile) != 0) ||
-	                      (((variantID & OpenGLVariantFamily_ES3) != 0) && ((variantID & 0x000F) >= 2) );
+	                      (((variantID & OpenGLVariantFamily_ES3) != 0) && ((variantID & 0x000F) >= 0x0002) );
 	
 	_syncGeometryRender[0] = NULL;
 	_syncGeometryRender[1] = NULL;
@@ -1428,11 +1395,8 @@ OGLRenderStates* OpenGLRenderStatesResource::GetRenderStatesBuffer(const size_t 
 
 OpenGLRenderer_3_2::OpenGLRenderer_3_2()
 {
-	_variantID = OpenGLVariantID_CoreProfile_3_2;
-	_isShaderFixedLocationSupported = false;
-	_isConservativeDepthSupported = false;
-	_isConservativeDepthAMDSupported = false;
-	
+	_deviceInfo.renderID = RENDERID_OPENGL_3_2;
+	_feature.variantID = OpenGLVariantID_CoreProfile_3_2;
 	_gResource = NULL;
 	_rsResource = NULL;
 }
@@ -1464,23 +1428,47 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	std::set<std::string> oglExtensionSet;
 	this->GetExtensionSet(&oglExtensionSet);
 	
-	// Mirrored Repeat Mode Support
-	OGLRef.stateTexMirroredRepeat = GL_MIRRORED_REPEAT;
+	// All features below are assumed supported in both OpenGL v3.2 Core Profile and OpenGL ES v3.0.
+	this->_feature.supportTextureMirroredRepeat = true;
+	this->_feature.stateTexMirroredRepeat       = GL_MIRRORED_REPEAT;
+	this->_feature.supportBlendFuncSeparate     = true;
+	this->_feature.supportBlendEquationSeparate = true;
+	this->_feature.supportMapBufferRange        = true;
+	this->_feature.supportVBO                   = true;
+	this->_feature.supportPBO                   = true;
+	this->_feature.supportFBO                   = true;
+	this->_feature.supportFBOBlit               = true;
+	this->_feature.supportMultisampledFBO       = true;
+	this->_feature.supportVAO                   = true;
+	this->_feature.supportVAO_APPLE             = false; // VAOs are natively supported in OpenGL v3.2 Core Profile, so no need for the APPLE extension.
+	this->_feature.supportUBO                   = true;
+	this->_feature.supportShaders               = true;
 	
-	// Blending Support
-	this->_isBlendFuncSeparateSupported     = true;
-	this->_isBlendEquationSeparateSupported = true;
+	// Uniform Buffer Object support
+	GLint maxUBOSize = 0;
+	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUBOSize);
+	this->_feature.supportUBO64K = (maxUBOSize >= 65536); // Hardware-dependent feature. The vast majority of modern GPUs should support this.
 	
-	// Fixed locations in shaders are only supported in v3.3 and later.
-	this->_isShaderFixedLocationSupported = IsOpenGLDriverVersionSupported(3, 3, 0);
+	// Texture Buffer Object support. OpenGL v3.2 Core Profile natively supports this, but OpenGL ES requires v3.2.
+	this->_feature.supportTBO = ( (this->_feature.variantID & OpenGLVariantFamily_CoreProfile) != 0) ||
+								(((this->_feature.variantID & OpenGLVariantFamily_ES3) != 0) && ((this->_feature.variantID & 0x000F) >= 0x0002) );
+	
+	this->_feature.supportSampleShading         = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_sample_shading"); // Supported in OpenGL v3.2 Core Profile. Unsupported in OpenGL ES.
+	this->_feature.supportShaderFixedLocation   = IsOpenGLDriverVersionSupported(3, 3, 0); // Requires OpenGL v3.3 or later. Supported in OpenGL ES v3.0.
+	this->_feature.supportConservativeDepth     = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0); // Requires OpenGL v4.0 or later. Unsupported in OpenGL ES.
+	this->_feature.supportConservativeDepth_AMD = this->IsExtensionPresent(&oglExtensionSet, "GL_AMD_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0); // Requires OpenGL v4.0 or later. Unsupported in OpenGL ES.
+
+	// Apple-specific extensions
+	this->_feature.supportTextureRange_APPLE    = this->IsExtensionPresent(&oglExtensionSet, "GL_APPLE_texture_range");
+	this->_feature.supportClientStorage_APPLE   = this->IsExtensionPresent(&oglExtensionSet, "GL_APPLE_client_storage");
+	
+	// OpenGL 3.2 should be able to handle the GL_RGBA format in glReadPixels without any performance penalty.
+	this->_feature.readPixelsBestFormat = GL_RGBA;
+	this->_feature.readPixelsBestDataType = GL_UNSIGNED_BYTE;
 	
 	GLfloat maxAnisotropyOGL = 1.0f;
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropyOGL);
 	this->_deviceInfo.maxAnisotropy = (float)maxAnisotropyOGL;
-	
-	// OpenGL 3.2 should be able to handle the GL_RGBA format in glReadPixels without any performance penalty.
-	OGLRef.readPixelsBestFormat = GL_RGBA;
-	OGLRef.readPixelsBestDataType = GL_UNSIGNED_BYTE;
 	
 	this->_deviceInfo.isEdgeMarkSupported = true;
 	this->_deviceInfo.isFogSupported = true;
@@ -1495,24 +1483,17 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, NULL);
 	glActiveTexture(GL_TEXTURE0);
 	
 	// OpenGL v3.2 Core Profile should have all the necessary features to be able to flip and convert the framebuffer.
 	this->_willConvertFramebufferOnGPU = true;
-	
-	this->_isSampleShadingSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_sample_shading");
-	this->_isConservativeDepthSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0);
-	this->_isConservativeDepthAMDSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_AMD_conservative_depth") && IsOpenGLDriverVersionSupported(4, 0, 0);
 	
 	this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
 	this->_emulateShadowPolygon = CommonSettings.OpenGL_Emulation_ShadowPolygon;
 	this->_emulateSpecialZeroAlphaBlending = CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending;
 	this->_emulateNDSDepthCalculation = CommonSettings.OpenGL_Emulation_NDSDepthCalculation;
 	this->_emulateDepthLEqualPolygonFacing = CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing;
-	
-	// Load and create shaders. Return on any error, since v3.2 Core Profile makes shaders mandatory.
-	this->isShaderSupported	= true;
 	
 	this->_rsResource = new OpenGLRenderStatesResource();
 	this->_gResource = new OpenGLGeometryResource(OpenGLVariantID_CoreProfile_3_2);
@@ -1522,7 +1503,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	{
 		glUseProgram(0);
 		this->DestroyGeometryPrograms();
-		this->isShaderSupported = false;
+		this->_feature.supportShaders = false;
 		
 		return error;
 	}
@@ -1532,7 +1513,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	{
 		glUseProgram(0);
 		this->DestroyGeometryPrograms();
-		this->isShaderSupported = false;
+		this->_feature.supportShaders = false;
 		
 		return error;
 	}
@@ -1543,26 +1524,22 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 		glUseProgram(0);
 		this->DestroyGeometryPrograms();
 		this->DestroyClearImageProgram();
-		this->isShaderSupported = false;
+		this->_feature.supportShaders = false;
 		
 		return error;
 	}
 	
-	if (this->_isSampleShadingSupported)
+	if (this->_feature.supportSampleShading)
 	{
 		error = this->CreateMSGeometryZeroDstAlphaProgram(GeometryZeroDstAlphaPixelMaskVtxShader_150, MSGeometryZeroDstAlphaPixelMaskFragShader_150);
-		this->_isSampleShadingSupported = (error == OGLERROR_NOERR);
+		this->_feature.supportSampleShading = (error == OGLERROR_NOERR);
 		
 		error = this->CreateEdgeMarkProgram(true, MSEdgeMarkVtxShader_150, MSEdgeMarkFragShader_150);
-		this->_isSampleShadingSupported = this->_isSampleShadingSupported && (error == OGLERROR_NOERR);
+		this->_feature.supportSampleShading = this->_feature.supportSampleShading && (error == OGLERROR_NOERR);
 	}
 	
 	INFO("OpenGL: Successfully created geometry shaders.\n");
-	error = this->InitPostprocessingPrograms(EdgeMarkVtxShader_150,
-	                                         EdgeMarkFragShader_150,
-	                                         FramebufferOutputVtxShader_150,
-	                                         FramebufferOutput6665FragShader_150,
-	                                         NULL);
+	error = this->InitPostprocessingPrograms(EdgeMarkVtxShader_150, EdgeMarkFragShader_150);
 	if (error != OGLERROR_NOERR)
 	{
 		glUseProgram(0);
@@ -1570,31 +1547,23 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 		this->DestroyClearImageProgram();
 		this->DestroyGeometryZeroDstAlphaProgram();
 		this->DestroyMSGeometryZeroDstAlphaProgram();
-		this->isShaderSupported = false;
+		this->_feature.supportShaders = false;
 		
 		return error;
 	}
 	
-	this->isVBOSupported = true;
 	this->CreateVBOs();
-	
-	this->isPBOSupported = true;
 	this->CreatePBOs();
-	
-	this->isVAOSupported = true;
 	this->CreateVAOs();
 	
 	// Load and create FBOs. Return on any error, since v3.2 Core Profile makes FBOs mandatory.
-	this->isFBOSupported = true;
 	error = this->CreateFBOs();
 	if (error != OGLERROR_NOERR)
 	{
-		this->isFBOSupported = false;
+		this->_feature.supportFBO = false;
 		return error;
 	}
 	
-	this->_isFBOBlitSupported = true;
-	this->isMultisampledFBOSupported = true;
 	this->_selectedMultisampleSize = CommonSettings.GFX3D_Renderer_MultisampleSize;
 	
 	GLint maxSamplesOGL = 0;
@@ -1617,7 +1586,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 		error = this->CreateMultisampledFBO(sampleSize);
 		if (error != OGLERROR_NOERR)
 		{
-			this->isMultisampledFBOSupported = false;
+			this->_feature.supportMultisampledFBO = false;
 		}
 		
 		// If GFX3D_Renderer_MultisampleSize is 0, then we can deallocate the buffers now
@@ -1629,13 +1598,13 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	}
 	else
 	{
-		this->isMultisampledFBOSupported = false;
+		this->_feature.supportMultisampledFBO = false;
 		INFO("OpenGL: Driver does not support at least 2x multisampled FBOs.\n");
 	}
 	
 	this->_isDepthLEqualPolygonFacingSupported = true;
-	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->isMultisampledFBOSupported);
-	this->_willUseMultisampleShaders = this->_isSampleShadingSupported && this->_enableMultisampledRendering;
+	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->_feature.supportMultisampledFBO);
+	this->_willUseMultisampleShaders = this->_feature.supportSampleShading && this->_enableMultisampledRendering;
 	
 	return OGLERROR_NOERR;
 }
@@ -1693,7 +1662,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGPolyID);
@@ -1701,7 +1670,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, NULL);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGFogAttrID);
@@ -1709,7 +1678,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, NULL);
 	
 	GLint *tempClearImageBuffer = (GLint *)calloc(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT, sizeof(GLint));
 	
@@ -1789,7 +1758,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 
 void OpenGLRenderer_3_2::DestroyFBOs()
 {
-	if (!this->isFBOSupported)
+	if (!this->_feature.supportFBO)
 	{
 		return;
 	}
@@ -1817,7 +1786,7 @@ void OpenGLRenderer_3_2::DestroyFBOs()
 	OGLRef.texGFogAttrID = 0;
 	OGLRef.texGDepthStencilID = 0;
 	
-	this->isFBOSupported = false;
+	this->_feature.supportFBO = false;
 }
 
 Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
@@ -1825,7 +1794,7 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 	OGLRenderRef &OGLRef = *this->ref;
 	
 #ifdef GL_VERSION_3_2
-	if (this->_isSampleShadingSupported)
+	if (this->_feature.supportSampleShading)
 	{
 		glGenTextures(1, &OGLRef.texMSGColorID);
 		glGenTextures(1, &OGLRef.texMSGWorkingID);
@@ -1882,7 +1851,7 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboMSClearImageID);
 #ifdef GL_VERSION_3_2
-	if (this->_isSampleShadingSupported)
+	if (this->_feature.supportSampleShading)
 	{
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGColorID, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGFogAttrID, 0);
@@ -1909,7 +1878,7 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboMSIntermediateRenderID);
 #ifdef GL_VERSION_3_2
-	if (this->_isSampleShadingSupported)
+	if (this->_feature.supportSampleShading)
 	{
 		glFramebufferTexture2D(GL_FRAMEBUFFER, OGL_COLOROUT_ATTACHMENT_ID, GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGColorID, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, OGL_WORKING_ATTACHMENT_ID, GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGWorkingID, 0);
@@ -1945,7 +1914,7 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 
 void OpenGLRenderer_3_2::DestroyMultisampledFBO()
 {
-	if (!this->isMultisampledFBOSupported)
+	if (!this->_feature.supportMultisampledFBO)
 	{
 		return;
 	}
@@ -1979,7 +1948,7 @@ void OpenGLRenderer_3_2::DestroyMultisampledFBO()
 	OGLRef.rboMSGFogAttrID = 0;
 	OGLRef.rboMSGDepthStencilID = 0;
 	
-	this->isMultisampledFBOSupported = false;
+	this->_feature.supportMultisampledFBO = false;
 }
 
 void OpenGLRenderer_3_2::ResizeMultisampledFBOs(GLsizei numSamples)
@@ -1988,7 +1957,7 @@ void OpenGLRenderer_3_2::ResizeMultisampledFBOs(GLsizei numSamples)
 	GLsizei w = (GLsizei)this->_framebufferWidth;
 	GLsizei h = (GLsizei)this->_framebufferHeight;
 	
-	if (!this->isMultisampledFBOSupported ||
+	if (!this->_feature.supportMultisampledFBO ||
 	    (numSamples == 1) ||
 	    (w < GPU_FRAMEBUFFER_NATIVE_WIDTH) || (h < GPU_FRAMEBUFFER_NATIVE_HEIGHT) )
 	{
@@ -2003,7 +1972,7 @@ void OpenGLRenderer_3_2::ResizeMultisampledFBOs(GLsizei numSamples)
 	}
 	
 #ifdef GL_VERSION_3_2
-	if (this->_isSampleShadingSupported)
+	if (this->_feature.supportSampleShading)
 	{
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA8, w, h, GL_TRUE);
@@ -2039,8 +2008,8 @@ Render3DError OpenGLRenderer_3_2::CreateVAOs()
 	
 	glGenVertexArrays(1, &OGLRef.vaoPostprocessStatesID);
 	glBindVertexArray(OGLRef.vaoPostprocessStatesID);
-	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	
+	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 	glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
 	glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
@@ -2053,7 +2022,7 @@ Render3DError OpenGLRenderer_3_2::CreateVAOs()
 
 void OpenGLRenderer_3_2::DestroyVAOs()
 {
-	if (!this->isVAOSupported)
+	if (!this->_feature.supportVAO)
 	{
 		return;
 	}
@@ -2061,10 +2030,9 @@ void OpenGLRenderer_3_2::DestroyVAOs()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	glBindVertexArray(0);
-	glDeleteVertexArrays(1, &OGLRef.vaoGeometryStatesID);
 	glDeleteVertexArrays(1, &OGLRef.vaoPostprocessStatesID);
 	
-	this->isVAOSupported = false;
+	this->_feature.supportVAO = false;
 }
 
 Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
@@ -2087,15 +2055,15 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	programFlags.value = 0;
 	
 	std::stringstream shaderHeader;
-	if (this->_isConservativeDepthSupported || this->_isConservativeDepthAMDSupported)
+	if (this->_feature.supportConservativeDepth || this->_feature.supportConservativeDepth_AMD)
 	{
 		shaderHeader << "#version 400\n";
 		
 		// Prioritize using GL_AMD_conservative_depth over GL_ARB_conservative_depth, since AMD drivers
 		// seem to have problems with GL_ARB_conservative_depth.
-		shaderHeader << ((this->_isConservativeDepthAMDSupported) ? "#extension GL_AMD_conservative_depth : require\n" : "#extension GL_ARB_conservative_depth : require\n");
+		shaderHeader << ((this->_feature.supportConservativeDepth_AMD) ? "#extension GL_AMD_conservative_depth : require\n" : "#extension GL_ARB_conservative_depth : require\n");
 	}
-	else if (this->_isShaderFixedLocationSupported)
+	else if (this->_feature.supportShaderFixedLocation)
 	{
 		shaderHeader << "#version 330\n";
 	}
@@ -2106,7 +2074,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	shaderHeader << "\n";
 	
 	std::stringstream vsHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		vsHeader << "#define IN_VTX_POSITION layout (location = "  << OGLVertexAttributeID_Position  << ") in\n";
 		vsHeader << "#define IN_VTX_TEXCOORD0 layout (location = " << OGLVertexAttributeID_TexCoord0 << ") in\n";
@@ -2127,13 +2095,13 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 	std::string vtxShaderCode  = shaderHeader.str() + vsHeader.str() + std::string(GeometryVtxShader_150);
 	
 	std::stringstream fsHeader;
-	fsHeader << "#define IS_CONSERVATIVE_DEPTH_SUPPORTED " << ((this->_isConservativeDepthSupported || this->_isConservativeDepthAMDSupported) ? 1 : 0) << "\n";
+	fsHeader << "#define IS_CONSERVATIVE_DEPTH_SUPPORTED " << ((this->_feature.supportConservativeDepth || this->_feature.supportConservativeDepth_AMD) ? 1 : 0) << "\n";
 	fsHeader << "\n";
 	
 	for (size_t flagsValue = 0; flagsValue < 128; flagsValue++, programFlags.value++)
 	{
 		std::stringstream shaderFlags;
-		if (this->_isShaderFixedLocationSupported)
+		if (this->_feature.supportShaderFixedLocation)
 		{
 			shaderFlags << "#define OUT_COLOR layout (location = 0) out\n";
 			shaderFlags << "#define OUT_WORKING_BUFFER layout (location = " << this->_geometryAttachmentWorkingBuffer[programFlags.DrawBuffersMode] << ") out\n";
@@ -2163,11 +2131,11 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 		
 		std::string fragShaderCode = shaderHeader.str() + fsHeader.str() + shaderFlags.str() + std::string(GeometryFragShader_150);
 		
-		error = this->ShaderProgramCreate(OGLRef.vertexGeometryShaderID,
-										  OGLRef.fragmentGeometryShaderID[flagsValue],
-										  OGLRef.programGeometryID[flagsValue],
-										  vtxShaderCode.c_str(),
-										  fragShaderCode.c_str());
+		error = ShaderProgramCreateOGL(OGLRef.vertexGeometryShaderID,
+		                               OGLRef.fragmentGeometryShaderID[flagsValue],
+		                               OGLRef.programGeometryID[flagsValue],
+		                               vtxShaderCode.c_str(),
+		                               fragShaderCode.c_str());
 		if (error != OGLERROR_NOERR)
 		{
 			INFO("OpenGL: Failed to create the GEOMETRY shader program.\n");
@@ -2177,7 +2145,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 		}
 		
 #if defined(GL_VERSION_3_0)
-		if (!this->_isShaderFixedLocationSupported)
+		if (!this->_feature.supportShaderFixedLocation)
 		{
 			glBindAttribLocation(OGLRef.programGeometryID[flagsValue], OGLVertexAttributeID_Position, "inPosition");
 			glBindAttribLocation(OGLRef.programGeometryID[flagsValue], OGLVertexAttributeID_TexCoord0, "inTexCoord0");
@@ -2202,7 +2170,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryPrograms()
 #endif
 		
 		glLinkProgram(OGLRef.programGeometryID[flagsValue]);
-		if (!this->ValidateShaderProgramLink(OGLRef.programGeometryID[flagsValue]))
+		if (!ValidateShaderProgramLinkOGL(OGLRef.programGeometryID[flagsValue]))
 		{
 			INFO("OpenGL: Failed to link the GEOMETRY shader program.\n");
 			glUseProgram(0);
@@ -2257,7 +2225,7 @@ Render3DError OpenGLRenderer_3_2::CreateClearImageProgram(const char *vsCString,
 	OGLRenderRef &OGLRef = *this->ref;
 
 	std::stringstream shaderHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		shaderHeader << "#version 330\n";
 	}
@@ -2268,7 +2236,7 @@ Render3DError OpenGLRenderer_3_2::CreateClearImageProgram(const char *vsCString,
 	shaderHeader << "\n";
 
 	std::stringstream vsHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		vsHeader << "#define IN_VTX_POSITION layout (location = "  << OGLVertexAttributeID_Position  << ") in\n";
 		vsHeader << "#define IN_VTX_TEXCOORD0 layout (location = " << OGLVertexAttributeID_TexCoord0 << ") in\n";
@@ -2282,7 +2250,7 @@ Render3DError OpenGLRenderer_3_2::CreateClearImageProgram(const char *vsCString,
 
 	std::string vtxShaderCode  = shaderHeader.str() + vsHeader.str() + std::string(vsCString);
 	std::stringstream fsHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		fsHeader << "#define OUT_COLOR layout (location = 0) out\n";
 		fsHeader << "#define OUT_FOGATTR layout (location = 1) out\n";
@@ -2295,11 +2263,11 @@ Render3DError OpenGLRenderer_3_2::CreateClearImageProgram(const char *vsCString,
 	fsHeader << "\n";
 
 	std::string fragShaderCodeFogColor = shaderHeader.str() + fsHeader.str() + std::string(fsCString);
-	error = this->ShaderProgramCreate(OGLRef.vsClearImageID,
-									  OGLRef.fsClearImageID,
-									  OGLRef.pgClearImageID,
-									  vtxShaderCode.c_str(),
-									  fragShaderCodeFogColor.c_str());
+	error = ShaderProgramCreateOGL(OGLRef.vsClearImageID,
+	                               OGLRef.fsClearImageID,
+	                               OGLRef.pgClearImageID,
+	                               vtxShaderCode.c_str(),
+	                               fragShaderCodeFogColor.c_str());
 	if (error != OGLERROR_NOERR)
 	{
 		INFO("OpenGL: Failed to create the CLEAR_IMAGE shader program.\n");
@@ -2309,7 +2277,7 @@ Render3DError OpenGLRenderer_3_2::CreateClearImageProgram(const char *vsCString,
 	}
 
 #if defined(GL_VERSION_3_0)
-	if (!this->_isShaderFixedLocationSupported)
+	if (!this->_feature.supportShaderFixedLocation)
 	{
 		glBindAttribLocation(OGLRef.pgClearImageID, OGLVertexAttributeID_Position, "inPosition");
 		glBindAttribLocation(OGLRef.pgClearImageID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
@@ -2319,7 +2287,7 @@ Render3DError OpenGLRenderer_3_2::CreateClearImageProgram(const char *vsCString,
 #endif
 
 	glLinkProgram(OGLRef.pgClearImageID);
-	if (!this->ValidateShaderProgramLink(OGLRef.pgClearImageID))
+	if (!ValidateShaderProgramLinkOGL(OGLRef.pgClearImageID))
 	{
 		INFO("OpenGL: Failed to link the CLEAR_IMAGE shader color/fog program.\n");
 		glUseProgram(0);
@@ -2342,7 +2310,7 @@ Render3DError OpenGLRenderer_3_2::CreateClearImageProgram(const char *vsCString,
 
 void OpenGLRenderer_3_2::DestroyClearImageProgram()
 {
-	if (!this->isShaderSupported)
+	if (!this->_feature.supportShaders)
 	{
 		return;
 	}
@@ -2376,7 +2344,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryZeroDstAlphaProgram(const char *
 	}
 	
 	std::stringstream shaderHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		shaderHeader << "#version 330\n";
 	}
@@ -2387,7 +2355,7 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryZeroDstAlphaProgram(const char *
 	shaderHeader << "\n";
 	
 	std::stringstream vsHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		vsHeader << "#define IN_VTX_POSITION layout (location = "  << OGLVertexAttributeID_Position  << ") in\n";
 		vsHeader << "#define IN_VTX_TEXCOORD0 layout (location = " << OGLVertexAttributeID_TexCoord0 << ") in\n";
@@ -2403,11 +2371,11 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryZeroDstAlphaProgram(const char *
 	std::string vtxShaderCode  = shaderHeader.str() + vsHeader.str() + std::string(vtxShaderCString);
 	std::string fragShaderCode = shaderHeader.str() + std::string(fragShaderCString);
 	
-	error = this->ShaderProgramCreate(OGLRef.vtxShaderGeometryZeroDstAlphaID,
-									  OGLRef.fragShaderGeometryZeroDstAlphaID,
-									  OGLRef.programGeometryZeroDstAlphaID,
-									  vtxShaderCode.c_str(),
-									  fragShaderCode.c_str());
+	error = ShaderProgramCreateOGL(OGLRef.vtxShaderGeometryZeroDstAlphaID,
+	                               OGLRef.fragShaderGeometryZeroDstAlphaID,
+	                               OGLRef.programGeometryZeroDstAlphaID,
+	                               vtxShaderCode.c_str(),
+	                               fragShaderCode.c_str());
 	if (error != OGLERROR_NOERR)
 	{
 		INFO("OpenGL: Failed to create the GEOMETRY ZERO DST ALPHA shader program.\n");
@@ -2417,14 +2385,14 @@ Render3DError OpenGLRenderer_3_2::CreateGeometryZeroDstAlphaProgram(const char *
 	}
 	
 #if defined(GL_VERSION_3_0)
-	if (!this->_isShaderFixedLocationSupported)
+	if (!this->_feature.supportShaderFixedLocation)
 	{
 		glBindAttribLocation(OGLRef.programGeometryZeroDstAlphaID, OGLVertexAttributeID_Position, "inPosition");
 	}
 #endif
 	
 	glLinkProgram(OGLRef.programGeometryZeroDstAlphaID);
-	if (!this->ValidateShaderProgramLink(OGLRef.programGeometryZeroDstAlphaID))
+	if (!ValidateShaderProgramLinkOGL(OGLRef.programGeometryZeroDstAlphaID))
 	{
 		INFO("OpenGL: Failed to link the GEOMETRY ZERO DST ALPHA shader program.\n");
 		glUseProgram(0);
@@ -2452,7 +2420,7 @@ Render3DError OpenGLRenderer_3_2::CreateMSGeometryZeroDstAlphaProgram(const char
 	}
 	
 	std::stringstream shaderHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		shaderHeader << "#version 330\n";
 	}
@@ -2464,7 +2432,7 @@ Render3DError OpenGLRenderer_3_2::CreateMSGeometryZeroDstAlphaProgram(const char
 	shaderHeader << "\n";
 	
 	std::stringstream vsHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		vsHeader << "#define IN_VTX_POSITION layout (location = "  << OGLVertexAttributeID_Position  << ") in\n";
 		vsHeader << "#define IN_VTX_TEXCOORD0 layout (location = " << OGLVertexAttributeID_TexCoord0 << ") in\n";
@@ -2480,11 +2448,11 @@ Render3DError OpenGLRenderer_3_2::CreateMSGeometryZeroDstAlphaProgram(const char
 	std::string vtxShaderCode  = shaderHeader.str() + vsHeader.str() + std::string(vtxShaderCString);
 	std::string fragShaderCode = shaderHeader.str() + std::string(fragShaderCString);
 	
-	error = this->ShaderProgramCreate(OGLRef.vtxShaderMSGeometryZeroDstAlphaID,
-									  OGLRef.fragShaderMSGeometryZeroDstAlphaID,
-									  OGLRef.programMSGeometryZeroDstAlphaID,
-									  vtxShaderCode.c_str(),
-									  fragShaderCode.c_str());
+	error = ShaderProgramCreateOGL(OGLRef.vtxShaderMSGeometryZeroDstAlphaID,
+	                               OGLRef.fragShaderMSGeometryZeroDstAlphaID,
+	                               OGLRef.programMSGeometryZeroDstAlphaID,
+	                               vtxShaderCode.c_str(),
+	                               fragShaderCode.c_str());
 	if (error != OGLERROR_NOERR)
 	{
 		INFO("OpenGL: Failed to create the MULTISAMPLED GEOMETRY ZERO DST ALPHA shader program.\n");
@@ -2494,14 +2462,14 @@ Render3DError OpenGLRenderer_3_2::CreateMSGeometryZeroDstAlphaProgram(const char
 	}
 	
 #if defined(GL_VERSION_3_0)
-	if (!this->_isShaderFixedLocationSupported)
+	if (!this->_feature.supportShaderFixedLocation)
 	{
 		glBindAttribLocation(OGLRef.programMSGeometryZeroDstAlphaID, OGLVertexAttributeID_Position, "inPosition");
 	}
 #endif
 	
 	glLinkProgram(OGLRef.programMSGeometryZeroDstAlphaID);
-	if (!this->ValidateShaderProgramLink(OGLRef.programMSGeometryZeroDstAlphaID))
+	if (!ValidateShaderProgramLinkOGL(OGLRef.programMSGeometryZeroDstAlphaID))
 	{
 		INFO("OpenGL: Failed to link the MULTISAMPLED GEOMETRY ZERO DST ALPHA shader program.\n");
 		glUseProgram(0);
@@ -2522,7 +2490,7 @@ void OpenGLRenderer_3_2::DestroyMSGeometryZeroDstAlphaProgram()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if (!this->isShaderSupported || (OGLRef.programMSGeometryZeroDstAlphaID == 0))
+	if (!this->_feature.supportShaders || (OGLRef.programMSGeometryZeroDstAlphaID == 0))
 	{
 		return;
 	}
@@ -2549,7 +2517,7 @@ Render3DError OpenGLRenderer_3_2::CreateEdgeMarkProgram(const bool isMultisample
 	}
 	
 	std::stringstream shaderHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		shaderHeader << "#version 330\n";
 	}
@@ -2569,7 +2537,7 @@ Render3DError OpenGLRenderer_3_2::CreateEdgeMarkProgram(const bool isMultisample
 	shaderHeader << "\n";
 	
 	std::stringstream vsHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		vsHeader << "#define IN_VTX_POSITION layout (location = "  << OGLVertexAttributeID_Position  << ") in\n";
 		vsHeader << "#define IN_VTX_TEXCOORD0 layout (location = " << OGLVertexAttributeID_TexCoord0 << ") in\n";
@@ -2583,7 +2551,7 @@ Render3DError OpenGLRenderer_3_2::CreateEdgeMarkProgram(const bool isMultisample
 	}
 	
 	std::stringstream fsHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		fsHeader << "#define OUT_COLOR layout (location = 0) out\n";
 	}
@@ -2598,21 +2566,21 @@ Render3DError OpenGLRenderer_3_2::CreateEdgeMarkProgram(const bool isMultisample
 	
 	if (isMultisample)
 	{
-		error = this->ShaderProgramCreate(OGLRef.vertexMSEdgeMarkShaderID,
-		                                  OGLRef.fragmentMSEdgeMarkShaderID,
-		                                  OGLRef.programMSEdgeMarkID,
-		                                  vtxShaderCode.c_str(),
-		                                  fragShaderCode.c_str());
+		error = ShaderProgramCreateOGL(OGLRef.vertexMSEdgeMarkShaderID,
+		                               OGLRef.fragmentMSEdgeMarkShaderID,
+		                               OGLRef.programMSEdgeMarkID,
+		                               vtxShaderCode.c_str(),
+		                               fragShaderCode.c_str());
 		
 		programID = OGLRef.programMSEdgeMarkID;
 	}
 	else
 	{
-		error = this->ShaderProgramCreate(OGLRef.vertexEdgeMarkShaderID,
-		                                  OGLRef.fragmentEdgeMarkShaderID,
-		                                  OGLRef.programEdgeMarkID,
-		                                  vtxShaderCode.c_str(),
-		                                  fragShaderCode.c_str());
+		error = ShaderProgramCreateOGL(OGLRef.vertexEdgeMarkShaderID,
+		                               OGLRef.fragmentEdgeMarkShaderID,
+		                               OGLRef.programEdgeMarkID,
+		                               vtxShaderCode.c_str(),
+		                               fragShaderCode.c_str());
 		
 		programID = OGLRef.programEdgeMarkID;
 	}
@@ -2626,7 +2594,7 @@ Render3DError OpenGLRenderer_3_2::CreateEdgeMarkProgram(const bool isMultisample
 	}
 	
 #if defined(GL_VERSION_3_0)
-	if (!this->_isShaderFixedLocationSupported)
+	if (!this->_feature.supportShaderFixedLocation)
 	{
 		glBindAttribLocation(programID, OGLVertexAttributeID_Position, "inPosition");
 		glBindAttribLocation(programID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
@@ -2635,7 +2603,7 @@ Render3DError OpenGLRenderer_3_2::CreateEdgeMarkProgram(const bool isMultisample
 #endif
 	
 	glLinkProgram(programID);
-	if (!this->ValidateShaderProgramLink(programID))
+	if (!ValidateShaderProgramLinkOGL(programID))
 	{
 		INFO("OpenGL: Failed to link the EDGE MARK shader program.\n");
 		glUseProgram(0);
@@ -2680,7 +2648,7 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	const s32 fogStep = 0x0400 >> fogProgramKey.shift;
 	
 	std::stringstream shaderHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		shaderHeader << "#version 330\n";
 	}
@@ -2697,7 +2665,7 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	shaderHeader << "\n";
 	
 	std::stringstream vsHeader;
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		vsHeader << "#define IN_VTX_POSITION layout (location = "  << OGLVertexAttributeID_Position  << ") in\n";
 		vsHeader << "#define IN_VTX_TEXCOORD0 layout (location = " << OGLVertexAttributeID_TexCoord0 << ") in\n";
@@ -2716,7 +2684,7 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	fsHeader << "#define FOG_STEP " << fogStep << "\n";
 	fsHeader << "\n";
 	
-	if (this->_isShaderFixedLocationSupported)
+	if (this->_feature.supportShaderFixedLocation)
 	{
 		fsHeader << "#define OUT_COLOR layout (location = 0) out\n";
 	}
@@ -2732,11 +2700,11 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	shaderID.program = 0;
 	shaderID.fragShader = 0;
 	
-	error = this->ShaderProgramCreate(OGLRef.vertexFogShaderID,
-	                                  shaderID.fragShader,
-	                                  shaderID.program,
-	                                  vtxShaderCode.c_str(),
-	                                  fragShaderCode.c_str());
+	error = ShaderProgramCreateOGL(OGLRef.vertexFogShaderID,
+	                               shaderID.fragShader,
+	                               shaderID.program,
+	                               vtxShaderCode.c_str(),
+	                               fragShaderCode.c_str());
 	
 	this->_fogProgramMap[fogProgramKey.key] = shaderID;
 	
@@ -2749,7 +2717,7 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	}
 	
 #if defined(GL_VERSION_3_0)
-	if (!this->_isShaderFixedLocationSupported)
+	if (!this->_feature.supportShaderFixedLocation)
 	{
 		glBindAttribLocation(shaderID.program, OGLVertexAttributeID_Position, "inPosition");
 		glBindAttribLocation(shaderID.program, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
@@ -2758,7 +2726,7 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 #endif
 	
 	glLinkProgram(shaderID.program);
-	if (!this->ValidateShaderProgramLink(shaderID.program))
+	if (!ValidateShaderProgramLinkOGL(shaderID.program))
 	{
 		INFO("OpenGL: Failed to link the FOG shader program.\n");
 		glUseProgram(0);
@@ -2778,107 +2746,6 @@ Render3DError OpenGLRenderer_3_2::CreateFogProgram(const OGLFogProgramKey fogPro
 	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGFog, OGLTextureUnitID_FogAttr);
 	glUniform1i(uniformTexFogDensityTable, OGLTextureUnitID_LookupTable);
-	
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_3_2::CreateFramebufferOutput6665Program(const char *vtxShaderCString, const char *fragShaderCString)
-{
-	Render3DError error = OGLERROR_NOERR;
-	OGLRenderRef &OGLRef = *this->ref;
-	
-	if ( (vtxShaderCString == NULL) || (fragShaderCString == NULL) )
-	{
-		return error;
-	}
-	
-	std::stringstream shaderHeader;
-	if (this->_isShaderFixedLocationSupported)
-	{
-		shaderHeader << "#version 330\n";
-	}
-	else
-	{
-		shaderHeader << "#version 150\n";
-	}
-	shaderHeader << "\n";
-	shaderHeader << "#define FRAMEBUFFER_SIZE_X " << this->_framebufferWidth  << ".0 \n";
-	shaderHeader << "#define FRAMEBUFFER_SIZE_Y " << this->_framebufferHeight << ".0 \n";
-	shaderHeader << "\n";
-	
-	std::stringstream vsHeader;
-	if (this->_isShaderFixedLocationSupported)
-	{
-		vsHeader << "#define IN_VTX_POSITION layout (location = "  << OGLVertexAttributeID_Position  << ") in\n";
-		vsHeader << "#define IN_VTX_TEXCOORD0 layout (location = " << OGLVertexAttributeID_TexCoord0 << ") in\n";
-		vsHeader << "#define IN_VTX_COLOR layout (location = "     << OGLVertexAttributeID_Color     << ") in\n";
-	}
-	else
-	{
-		vsHeader << "#define IN_VTX_POSITION in\n";
-		vsHeader << "#define IN_VTX_TEXCOORD0 in\n";
-		vsHeader << "#define IN_VTX_COLOR in\n";
-	}
-	
-	std::stringstream fsHeader;
-	if (this->_isShaderFixedLocationSupported)
-	{
-		fsHeader << "#define OUT_COLOR layout (location = 0) out\n";
-	}
-	else
-	{
-		fsHeader << "#define OUT_COLOR out\n";
-	}
-	
-	std::string vtxShaderCode  = shaderHeader.str() + vsHeader.str() + std::string(vtxShaderCString);
-	std::string fragShaderCode = shaderHeader.str() + fsHeader.str() + std::string(fragShaderCString);
-	
-	error = this->ShaderProgramCreate(OGLRef.vertexFramebufferOutput6665ShaderID,
-									  OGLRef.fragmentFramebufferRGBA6665OutputShaderID,
-									  OGLRef.programFramebufferRGBA6665OutputID,
-									  vtxShaderCode.c_str(),
-									  fragShaderCode.c_str());
-	if (error != OGLERROR_NOERR)
-	{
-		INFO("OpenGL: Failed to create the FRAMEBUFFER OUTPUT RGBA6665 shader program.\n");
-		glUseProgram(0);
-		this->DestroyFramebufferOutput6665Programs();
-		return error;
-	}
-	
-#if defined(GL_VERSION_3_0)
-	if (!this->_isShaderFixedLocationSupported)
-	{
-		glBindAttribLocation(OGLRef.programFramebufferRGBA6665OutputID, OGLVertexAttributeID_Position, "inPosition");
-		glBindAttribLocation(OGLRef.programFramebufferRGBA6665OutputID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
-		glBindFragDataLocation(OGLRef.programFramebufferRGBA6665OutputID, 0, "outFragColor6665");
-	}
-#endif
-	
-	glLinkProgram(OGLRef.programFramebufferRGBA6665OutputID);
-	if (!this->ValidateShaderProgramLink(OGLRef.programFramebufferRGBA6665OutputID))
-	{
-		INFO("OpenGL: Failed to link the FRAMEBUFFER OUTPUT RGBA6665 shader program.\n");
-		glUseProgram(0);
-		this->DestroyFramebufferOutput6665Programs();
-		return OGLERROR_SHADER_CREATE_ERROR;
-	}
-	
-	glValidateProgram(OGLRef.programFramebufferRGBA6665OutputID);
-	glUseProgram(OGLRef.programFramebufferRGBA6665OutputID);
-	
-	const GLint uniformTexGColor = glGetUniformLocation(OGLRef.programFramebufferRGBA6665OutputID, "texInFragColor");
-	glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
-	
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_3_2::CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString)
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	OGLRef.programFramebufferRGBA8888OutputID = 0;
-	OGLRef.vertexFramebufferOutput8888ShaderID = 0;
-	OGLRef.fragmentFramebufferRGBA8888OutputShaderID = 0;
 	
 	return OGLERROR_NOERR;
 }
@@ -2906,16 +2773,6 @@ void OpenGLRenderer_3_2::_SetupGeometryShaders(const OGLGeometryFlags flags)
 	glUniform1i(OGLRef.uniformTexDrawOpaque[flags.value], GL_FALSE);
 	glUniform1i(OGLRef.uniformDrawModeDepthEqualsTest[flags.value], GL_FALSE);
 	glUniform1i(OGLRef.uniformPolyDrawShadow[flags.value], GL_FALSE);
-}
-
-void OpenGLRenderer_3_2::_RenderGeometryVertexAttribEnable()
-{
-	glBindVertexArray(this->ref->vaoGeometryStatesID);
-}
-
-void OpenGLRenderer_3_2::_RenderGeometryVertexAttribDisable()
-{
-	glBindVertexArray(0);
 }
 
 Render3DError OpenGLRenderer_3_2::ZeroDstAlphaPass(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, const size_t clippedPolyOpaqueCount, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr)
@@ -3064,16 +2921,6 @@ void OpenGLRenderer_3_2::_ResolveFinalFramebuffer()
 	glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
 	glBlitFramebuffer(0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, 0, 0, (GLint)this->_framebufferWidth, (GLint)this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
-}
-
-void OpenGLRenderer_3_2::_FramebufferProcessVertexAttribEnable()
-{
-	glBindVertexArray(this->ref->vaoPostprocessStatesID);
-}
-
-void OpenGLRenderer_3_2::_FramebufferProcessVertexAttribDisable()
-{
-	glBindVertexArray(0);
 }
 
 Render3DError OpenGLRenderer_3_2::_FramebufferConvertColorFormat()
@@ -3540,7 +3387,7 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 			glClearBufferfv(GL_COLOR, this->_geometryAttachmentPolyID[this->_geometryProgramFlags.DrawBuffersMode], oglPolyID);
 		}
 		
-		if (this->_variantID & OpenGLVariantFamily_Standard)
+		if (this->_feature.variantID & OpenGLVariantFamily_Standard)
 		{
 			// Standard OpenGL supports blitting from non-multisampled to multisampled
 			// framebuffers, so do that for best performance.
@@ -3748,7 +3595,7 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	
 	const size_t newFramebufferColorSizeBytes = w * h * sizeof(Color4u8);
 	
-	if (this->isPBOSupported)
+	if (this->_feature.supportPBO)
 	{
 		if (this->_mappedFramebuffer != NULL)
 		{
@@ -3787,7 +3634,7 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferPixCount = w * h;
 	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
 	
-	if (this->isPBOSupported)
+	if (this->_feature.supportPBO)
 	{
 		this->_framebufferColor = NULL;
 	}
@@ -3808,15 +3655,15 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	this->CreateEdgeMarkProgram(false, EdgeMarkVtxShader_150, EdgeMarkFragShader_150);
 	
 	const bool oldMultisampleShadingFlag = this->_willUseMultisampleShaders;
-	if (this->_isSampleShadingSupported)
+	if (this->_feature.supportSampleShading)
 	{
 		Render3DError shaderError = this->CreateMSGeometryZeroDstAlphaProgram(GeometryZeroDstAlphaPixelMaskVtxShader_150, MSGeometryZeroDstAlphaPixelMaskFragShader_150);
-		this->_isSampleShadingSupported = (shaderError == OGLERROR_NOERR);
+		this->_feature.supportSampleShading = (shaderError == OGLERROR_NOERR);
 		
 		shaderError = this->CreateEdgeMarkProgram(true, MSEdgeMarkVtxShader_150, MSEdgeMarkFragShader_150);
-		this->_isSampleShadingSupported = this->_isSampleShadingSupported && (shaderError == OGLERROR_NOERR);
+		this->_feature.supportSampleShading = this->_feature.supportSampleShading && (shaderError == OGLERROR_NOERR);
 		
-		this->_willUseMultisampleShaders = this->_isSampleShadingSupported && this->_enableMultisampledRendering;
+		this->_willUseMultisampleShaders = this->_feature.supportSampleShading && this->_enableMultisampledRendering;
 	}
 	
 	if (this->_willUseMultisampleShaders != oldMultisampleShadingFlag)
@@ -3826,7 +3673,16 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 		this->DestroyFogPrograms();
 	}
 	
-	this->CreateFramebufferOutput6665Program(FramebufferOutputVtxShader_150, FramebufferOutput6665FragShader_150);
+	if (this->_feature.readPixelsBestFormat == GL_BGRA)
+	{
+		this->CreateFramebufferOutput6665Program(FramebufferOutputVtxShader, FramebufferOutputBGRA6665FragShader);
+		this->CreateFramebufferOutput8888Program(FramebufferOutputVtxShader, FramebufferOutputBGRA8888FragShader);
+	}
+	else
+	{
+		this->CreateFramebufferOutput6665Program(FramebufferOutputVtxShader, FramebufferOutputRGBA6665FragShader);
+		// No need to create a shader program for RGBA8888 since no conversion is necessary in this case.
+	}
 	
 	// Call ResizeMultisampledFBOs() after _framebufferWidth and _framebufferHeight are set
 	// since this method depends on them.
@@ -3835,7 +3691,7 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	
 	if (oglrender_framebufferDidResizeCallback != NULL)
 	{
-		bool clientResizeSuccess = oglrender_framebufferDidResizeCallback(this->isFBOSupported, w, h);
+		bool clientResizeSuccess = oglrender_framebufferDidResizeCallback(this->_feature.supportFBO, w, h);
 		if (!clientResizeSuccess)
 		{
 			error = OGLERROR_CLIENT_RESIZE_ERROR;
@@ -3850,8 +3706,6 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 
 Render3DError OpenGLRenderer_3_2::RenderFinish()
 {
-	OGLRenderRef &OGLRef = *this->ref;
-	
 	if (!this->_renderNeedsFinish)
 	{
 		return OGLERROR_NOERR;
@@ -3866,13 +3720,13 @@ Render3DError OpenGLRenderer_3_2::RenderFinish()
 			return OGLERROR_BEGINGL_FAILED;
 		}
 		
-		if (this->isPBOSupported)
+		if (this->_feature.supportPBO)
 		{
 			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, this->_framebufferColorSizeBytes, GL_MAP_READ_BIT);
 		}
 		else
 		{
-			glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, OGLRef.readPixelsBestFormat, OGLRef.readPixelsBestDataType, this->_framebufferColor);
+			glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, this->_framebufferColor);
 		}
 		
 		ENDGL();
@@ -3908,7 +3762,7 @@ Render3DError OpenGLRenderer_3_2::RenderPowerOff()
 	glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
 	glClearBufferfv(GL_COLOR, 0, oglColor);
 	
-	if (this->isPBOSupported)
+	if (this->_feature.supportPBO)
 	{
 		if (this->_mappedFramebuffer != NULL)
 		{
@@ -3916,7 +3770,7 @@ Render3DError OpenGLRenderer_3_2::RenderPowerOff()
 			this->_mappedFramebuffer = NULL;
 		}
 		
-		glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, OGLRef.readPixelsBestFormat, OGLRef.readPixelsBestDataType, 0);
+		glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, 0);
 	}
 	
 	ENDGL();

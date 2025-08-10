@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2024 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "utils/bits.h"
+#include "GPU_Operations.h"
 #include "MMU.h"
 #include "NDSSystem.h"
 #include "./filter/filter.h"
@@ -319,6 +320,7 @@ Render3D::Render3D()
 	_framebufferSIMDPixCount = 0;
 	_framebufferColorSizeBytes = _framebufferWidth * _framebufferHeight * sizeof(Color4u8);
 	_framebufferColor = NULL;
+	_framebufferColor16 = NULL;
 	
 	_internalRenderingFormat = NDSColorFormat_BGR666_Rev;
 	_outputFormat = NDSColorFormat_BGR666_Rev;
@@ -391,7 +393,17 @@ std::string Render3D::GetName()
 	return this->_deviceInfo.renderName;
 }
 
-Color4u8* Render3D::GetFramebuffer()
+const Color5551* Render3D::GetFramebuffer16() const
+{
+	return this->_framebufferColor16;
+}
+
+const Color4u8* Render3D::GetFramebuffer32() const
+{
+	return this->_framebufferColor;
+}
+
+Color4u8* Render3D::GetInUseFramebuffer32() const
 {
 	return this->_framebufferColor;
 }
@@ -423,6 +435,7 @@ Render3DError Render3D::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferPixCount = w * h;
 	this->_framebufferColorSizeBytes = w * h * sizeof(Color4u8);
 	this->_framebufferColor = GPU->GetEngineMain()->Get3DFramebufferMain(); // Just use the buffer that is already present on the main GPU engine
+	this->_framebufferColor16 = (Color5551 *)GPU->GetEngineMain()->Get3DFramebuffer16(); // Just use the buffer that is already present on the main GPU engine
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -779,6 +792,11 @@ Render3DError Render3D::Reset()
 		memset(this->_framebufferColor, 0, this->_framebufferColorSizeBytes);
 	}
 	
+	if (this->_framebufferColor16 != NULL)
+	{
+		memset(this->_framebufferColor16, 0, this->_framebufferPixCount * sizeof(Color5551));
+	}
+	
 	this->_clearColor6665.value = 0;
 	memset(&this->_clearAttributes, 0, sizeof(FragmentAttributes));
 	
@@ -857,11 +875,30 @@ Render3DError Render3D::Render(const GFX3D_State &renderState, const GFX3D_Geome
 
 Render3DError Render3D::RenderFinish()
 {
+	this->_renderNeedsFlushMain = true;
+	this->_renderNeedsFlush16 = true;
+	
 	return RENDER3DERROR_NOERR;
 }
 
 Render3DError Render3D::RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16)
 {
+	if ( !this->_isPoweredOn ||
+	    (!this->_renderNeedsFlushMain && !this->_renderNeedsFlush16) )
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
+	if (this->_renderNeedsFlushMain && willFlushBuffer32)
+	{
+		this->_renderNeedsFlushMain = false;
+	}
+	
+	if (this->_renderNeedsFlush16 && willFlushBuffer16)
+	{
+		this->_renderNeedsFlush16 = false;
+	}
+	
 	return RENDER3DERROR_NOERR;
 }
 
@@ -869,6 +906,89 @@ Render3DError Render3D::VramReconfigureSignal()
 {
 	texCache.Invalidate();
 	return RENDER3DERROR_NOERR;
+}
+
+Render3DError Render3D::FillZero()
+{
+	Render3DError error = RENDER3DERROR_NOERR;
+	
+	if (this->_framebufferColor != NULL)
+	{
+		memset(this->_framebufferColor, 0, this->_framebufferColorSizeBytes);
+	}
+	else
+	{
+		error = RENDER3DERROR_INVALID_BUFFER;
+	}
+	
+	if (this->_framebufferColor16 != NULL)
+	{
+		memset(this->_framebufferColor16, 0, this->_framebufferPixCount * sizeof(Color5551));
+	}
+	else
+	{
+		error = RENDER3DERROR_INVALID_BUFFER;
+	}
+	
+	return RENDER3DERROR_NOERR;
+}
+
+Render3DError Render3D::FillColor32(const Color4u8 *__restrict src, const bool isSrcNativeSize)
+{
+	Render3DError error = RENDER3DERROR_NOERR;
+	
+	const u32 *__restrict src32 = (const u32 *__restrict)src;
+	u32 *__restrict mutableFramebuffer32 = (u32 *__restrict)this->GetInUseFramebuffer32();
+	
+	if ( (src32 == NULL) || (mutableFramebuffer32 == NULL) )
+	{
+		error = RENDER3DERROR_INVALID_BUFFER;
+		return error;
+	}
+	
+	this->RenderFinish();
+	this->RenderFlush(false, false);
+	this->SetRenderNeedsFinish(false);
+	
+	const size_t w = this->_framebufferWidth;
+	const size_t h = this->_framebufferHeight;
+	const bool isDstNativeSize = ( (w == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (h == GPU_FRAMEBUFFER_NATIVE_HEIGHT) );
+	
+	if (isSrcNativeSize)
+	{
+		if (isDstNativeSize) // Framebuffer is at the native size
+		{
+			if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
+			{
+				ColorspaceConvertBuffer8888To6665<false, false>(src32, mutableFramebuffer32, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			}
+			else
+			{
+				ColorspaceCopyBuffer32<false, false>(src32, mutableFramebuffer32, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			}
+		}
+		else // Framebuffer is at a custom size
+		{
+			if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
+			{
+				ColorspaceConvertBuffer8888To6665<false, false>(src32, (u32 *)src32, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			}
+			
+			for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
+			{
+				const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(l);
+				CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, src32, mutableFramebuffer32);
+				src32 += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				mutableFramebuffer32 += lineInfo.pixelCount;
+			}
+		}
+	}
+	else
+	{
+		memcpy(mutableFramebuffer32, src32, this->_framebufferColorSizeBytes);
+	}
+	
+	return error;
 }
 
 template <size_t SIMDBYTES>

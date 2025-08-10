@@ -1287,7 +1287,7 @@ FORCEINLINE void RasterizerUnit<RENDERER>::Render()
 		return;
 	}
 	
-	Color4u8 *dstColor = this->_softRender->GetFramebuffer();
+	Color4u8 *dstColor = this->_softRender->GetInUseFramebuffer32();
 	const size_t dstWidth = this->_softRender->GetFramebufferWidth();
 	const size_t dstHeight = this->_softRender->GetFramebufferHeight();
 	
@@ -2180,11 +2180,13 @@ void SoftRasterizerRenderer::_UpdateFogTable(const u8 *fogDensityTable)
 
 Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasterizerPostProcessParams &param)
 {
+	Color4u8 *framebufferColor = this->GetInUseFramebuffer32();
+	
 	for (size_t i = param.startLine * this->_framebufferWidth, y = param.startLine; y < param.endLine; y++)
 	{
 		for (size_t x = 0; x < this->_framebufferWidth; x++, i++)
 		{
-			Color4u8 &dstColor = this->_framebufferColor[i];
+			Color4u8 &dstColor = framebufferColor[i];
 			const u32 depth = this->_framebufferAttributes->depth[i];
 			const u8 polyID = this->_framebufferAttributes->opaquePolyID[i];
 			
@@ -2297,6 +2299,8 @@ const SoftRasterizerPrecalculation* SoftRasterizerRenderer::GetPrecalculationLis
 
 Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID)
 {
+	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
+	
 	const size_t xRatio = (size_t)((GPU_FRAMEBUFFER_NATIVE_WIDTH << 16) / this->_framebufferWidth) + 1;
 	const size_t yRatio = (size_t)((GPU_FRAMEBUFFER_NATIVE_HEIGHT << 16) / this->_framebufferHeight) + 1;
 	
@@ -2308,7 +2312,7 @@ Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colo
 		{
 			const size_t ir = readLine + ((x * xRatio) >> 16);
 			
-			this->_framebufferColor[iw].value = COLOR555TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 0x1F);
+			framebufferColor[iw].value = COLOR555TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 0x1F);
 			this->_framebufferAttributes->depth[iw] = depthBuffer[ir];
 			this->_framebufferAttributes->isFogged[iw] = fogBuffer[ir];
 			this->_framebufferAttributes->opaquePolyID[iw] = opaquePolyID;
@@ -2324,9 +2328,11 @@ Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colo
 
 void SoftRasterizerRenderer::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
+	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
+	
 	for (size_t i = startPixel; i < endPixel; i++)
 	{
-		this->_framebufferColor[i] = this->_clearColor6665;
+		framebufferColor[i] = this->_clearColor6665;
 		this->_framebufferAttributes->SetAtIndex(i, this->_clearAttributes);
 	}
 }
@@ -2544,10 +2550,11 @@ Render3DError SoftRasterizer_SIMD<SIMDBYTES>::ClearUsingValues(const Color4u8 &c
 		this->ClearUsingValues_Execute(0, this->_framebufferSIMDPixCount);
 	}
 	
+	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
 #pragma LOOPVECTORIZE_DISABLE
 	for (size_t i = this->_framebufferSIMDPixCount; i < this->_framebufferPixCount; i++)
 	{
-		this->_framebufferColor[i] = clearColor6665;
+		framebufferColor[i] = clearColor6665;
 		this->_framebufferAttributes->SetAtIndex(i, clearAttributes);
 	}
 	
@@ -2629,12 +2636,14 @@ void SoftRasterizerRenderer_AVX2::LoadClearValues(const Color4u8 &clearColor6665
 
 void SoftRasterizerRenderer_AVX2::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
+	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
+	
 	for (size_t i = startPixel; i < endPixel; i+=sizeof(v256u8))
 	{
-		_mm256_stream_si256((v256u32 *)(this->_framebufferColor + i) + 0, this->_clearColor_v256u32);
-		_mm256_stream_si256((v256u32 *)(this->_framebufferColor + i) + 1, this->_clearColor_v256u32);
-		_mm256_stream_si256((v256u32 *)(this->_framebufferColor + i) + 2, this->_clearColor_v256u32);
-		_mm256_stream_si256((v256u32 *)(this->_framebufferColor + i) + 3, this->_clearColor_v256u32);
+		_mm256_stream_si256((v256u32 *)(framebufferColor + i) + 0, this->_clearColor_v256u32);
+		_mm256_stream_si256((v256u32 *)(framebufferColor + i) + 1, this->_clearColor_v256u32);
+		_mm256_stream_si256((v256u32 *)(framebufferColor + i) + 2, this->_clearColor_v256u32);
+		_mm256_stream_si256((v256u32 *)(framebufferColor + i) + 3, this->_clearColor_v256u32);
 		
 		_mm256_stream_si256((v256u32 *)(this->_framebufferAttributes->depth + i) + 0, this->_clearDepth_v256u32);
 		_mm256_stream_si256((v256u32 *)(this->_framebufferAttributes->depth + i) + 1, this->_clearDepth_v256u32);
@@ -2666,12 +2675,14 @@ void SoftRasterizerRenderer_SSE2::LoadClearValues(const Color4u8 &clearColor6665
 
 void SoftRasterizerRenderer_SSE2::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
+	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
+	
 	for (size_t i = startPixel; i < endPixel; i+=sizeof(v128u8))
 	{
-		_mm_stream_si128((v128u32 *)(this->_framebufferColor + i) + 0, this->_clearColor_v128u32);
-		_mm_stream_si128((v128u32 *)(this->_framebufferColor + i) + 1, this->_clearColor_v128u32);
-		_mm_stream_si128((v128u32 *)(this->_framebufferColor + i) + 2, this->_clearColor_v128u32);
-		_mm_stream_si128((v128u32 *)(this->_framebufferColor + i) + 3, this->_clearColor_v128u32);
+		_mm_stream_si128((v128u32 *)(framebufferColor + i) + 0, this->_clearColor_v128u32);
+		_mm_stream_si128((v128u32 *)(framebufferColor + i) + 1, this->_clearColor_v128u32);
+		_mm_stream_si128((v128u32 *)(framebufferColor + i) + 2, this->_clearColor_v128u32);
+		_mm_stream_si128((v128u32 *)(framebufferColor + i) + 3, this->_clearColor_v128u32);
 		
 		_mm_stream_si128((v128u32 *)(this->_framebufferAttributes->depth + i) + 0, this->_clearDepth_v128u32);
 		_mm_stream_si128((v128u32 *)(this->_framebufferAttributes->depth + i) + 1, this->_clearDepth_v128u32);
@@ -2734,12 +2745,14 @@ void SoftRasterizerRenderer_NEON::LoadClearValues(const Color4u8 &clearColor6665
 
 void SoftRasterizerRenderer_NEON::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
+	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
+	
 	for (size_t i = startPixel; i < endPixel; i+=(sizeof(v128u8)*4))
 	{
-		vst1q_u32_x4((u32 *)(this->_framebufferColor + i) +  0, this->_clearColor_v128u32x4);
-		vst1q_u32_x4((u32 *)(this->_framebufferColor + i) + 16, this->_clearColor_v128u32x4);
-		vst1q_u32_x4((u32 *)(this->_framebufferColor + i) + 32, this->_clearColor_v128u32x4);
-		vst1q_u32_x4((u32 *)(this->_framebufferColor + i) + 48, this->_clearColor_v128u32x4);
+		vst1q_u32_x4((u32 *)(framebufferColor + i) +  0, this->_clearColor_v128u32x4);
+		vst1q_u32_x4((u32 *)(framebufferColor + i) + 16, this->_clearColor_v128u32x4);
+		vst1q_u32_x4((u32 *)(framebufferColor + i) + 32, this->_clearColor_v128u32x4);
+		vst1q_u32_x4((u32 *)(framebufferColor + i) + 48, this->_clearColor_v128u32x4);
 		
 		vst1q_u32_x4((this->_framebufferAttributes->depth + i) +  0, this->_clearDepth_v128u32x4);
 		vst1q_u32_x4((this->_framebufferAttributes->depth + i) + 16, this->_clearDepth_v128u32x4);
@@ -2759,48 +2772,41 @@ void SoftRasterizerRenderer_NEON::ClearUsingValues_Execute(const size_t startPix
 
 void SoftRasterizerRenderer_AltiVec::LoadClearValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes)
 {
-	this->_clearColor_v128u32					= (v128u32){clearColor6665.value,clearColor6665.value,clearColor6665.value,clearColor6665.value};
-	this->_clearDepth_v128u32					= (v128u32){clearAttributes.depth,clearAttributes.depth,clearAttributes.depth,clearAttributes.depth};
+	CACHE_ALIGN const u32 cc  = clearColor6665.value;
+	this->_clearColor_v128u32 = vec_splat( vec_lde(0, &cc), 0 );
 	
-	this->_clearAttrOpaquePolyID_v128u8			= (v128u8){clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,
-												           clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,
-												           clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,
-												           clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID};
+	CACHE_ALIGN const u32 d   = clearAttributes.depth;
+	this->_clearDepth_v128u32 = vec_splat( vec_lde(0, &d), 0 );
 	
-	this->_clearAttrTranslucentPolyID_v128u8	= (v128u8){clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,
-												           clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,
-												           clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,
-												           clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID};
+	CACHE_ALIGN const u8 opaquePolyID   = clearAttributes.opaquePolyID;
+	this->_clearAttrOpaquePolyID_v128u8 = vec_splat( vec_lde(0, &opaquePolyID), 0 );
 	
-	this->_clearAttrStencil_v128u8	= (v128u8){clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,
-									           clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,
-									           clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,
-									           clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil};
+	CACHE_ALIGN const u8 translucentPolyID   = clearAttributes.translucentPolyID;
+	this->_clearAttrTranslucentPolyID_v128u8 = vec_splat( vec_lde(0, &translucentPolyID), 0 );
 	
-	this->_clearAttrIsFogged_v128u8	= (v128u8){clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,
-									           clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,
-									           clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,
-									           clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged};
+	CACHE_ALIGN const u8 stencil   = clearAttributes.stencil;
+	this->_clearAttrStencil_v128u8 = vec_splat( vec_lde(0, &stencil), 0 );
 	
-	this->_clearAttrIsTranslucentPoly_v128u8	= (v128u8){clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,
-												           clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,
-												           clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,
-												           clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly};
+	CACHE_ALIGN const u8 fogFlag    = clearAttributes.isFogged;
+	this->_clearAttrIsFogged_v128u8 = vec_splat( vec_lde(0, &fogFlag), 0 );
 	
-	this->_clearAttrPolyFacing_v128u8	= (v128u8){clearAttributes.polyFacing,clearAttributes.polyFacing,clearAttributes.polyFacing,clearAttributes.polyFacing,
-										           clearAttributes.polyFacing,clearAttributes.polyFacing,clearAttributes.polyFacing,clearAttributes.polyFacing,
-										           clearAttributes.polyFacing,clearAttributes.polyFacing,clearAttributes.polyFacing,clearAttributes.polyFacing,
-										           clearAttributes.polyFacing,clearAttributes.polyFacing,clearAttributes.polyFacing,clearAttributes.polyFacing};
+	CACHE_ALIGN const u8 translucentPolyFlag = clearAttributes.isTranslucentPoly;
+	this->_clearAttrIsTranslucentPoly_v128u8 = vec_splat( vec_lde(0, &translucentPolyFlag), 0 );
+	
+	CACHE_ALIGN const u8 facing       = clearAttributes.polyFacing;
+	this->_clearAttrPolyFacing_v128u8 = vec_splat( vec_lde(0, &facing), 0 );
 }
 
 void SoftRasterizerRenderer_AltiVec::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
+	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
+	
 	for (size_t i = startPixel; i < endPixel; i+=sizeof(v128u8))
 	{
-		vec_st(this->_clearColor_v128u32, (i * 4) +  0, this->_framebufferColor);
-		vec_st(this->_clearColor_v128u32, (i * 4) + 16, this->_framebufferColor);
-		vec_st(this->_clearColor_v128u32, (i * 4) + 32, this->_framebufferColor);
-		vec_st(this->_clearColor_v128u32, (i * 4) + 48, this->_framebufferColor);
+		vec_st(this->_clearColor_v128u32, (i * 4) +  0, framebufferColor);
+		vec_st(this->_clearColor_v128u32, (i * 4) + 16, framebufferColor);
+		vec_st(this->_clearColor_v128u32, (i * 4) + 32, framebufferColor);
+		vec_st(this->_clearColor_v128u32, (i * 4) + 48, framebufferColor);
 		
 		vec_st(this->_clearDepth_v128u32, (i * 4) +  0, this->_framebufferAttributes->depth);
 		vec_st(this->_clearDepth_v128u32, (i * 4) + 16, this->_framebufferAttributes->depth);
