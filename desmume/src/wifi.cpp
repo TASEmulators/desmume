@@ -562,7 +562,9 @@ static void WIFI_triggerIRQ(const WifiIRQ irq)
 						io.TXBUSY.Beacon = 1;
 						io.RF_PINS.value = RFPinsLUT[WifiRFStatus3_TXEnabled];
 
-						WIFI_TXStart(WifiTXLocIndex_BEACON, io.TXBUF_BEACON);
+						IOREG_W_TXBUF_LOCATION txBufBeacon = io.TXBUF_BEACON;
+						WIFI_TXStart(WifiTXLocIndex_BEACON, txBufBeacon);
+						io.TXBUF_BEACON = txBufBeacon;
 					}
 
 					if(io.LISTENCOUNT.Count == 0)
@@ -1477,25 +1479,33 @@ void WIFI_write16(u32 address, u16 val)
 				if(TXREQ_SET.Loc1 != 0)
 				{
 					io.TXREQ_READ.Loc1 = 1;
-					WIFI_TXStart(WifiTXLocIndex_LOC1, io.TXBUF_LOC1);
+					IOREG_W_TXBUF_LOCATION txBufLoc1 = io.TXBUF_LOC1;
+					WIFI_TXStart(WifiTXLocIndex_LOC1, txBufLoc1);
+					io.TXBUF_LOC1 = txBufLoc1;
 				}
 
 				if(TXREQ_SET.Cmd != 0)
 				{
 					io.TXREQ_READ.Cmd = 1;
-					WIFI_TXStart(WifiTXLocIndex_CMD, io.TXBUF_CMD);
+					IOREG_W_TXBUF_LOCATION txBufCmd = io.TXBUF_CMD;
+					WIFI_TXStart(WifiTXLocIndex_CMD, txBufCmd);
+					io.TXBUF_CMD = txBufCmd;
 				}
 
 				if(TXREQ_SET.Loc2 != 0)
 				{
 					io.TXREQ_READ.Loc2 = 1;
-					WIFI_TXStart(WifiTXLocIndex_LOC2, io.TXBUF_LOC2);
+					IOREG_W_TXBUF_LOCATION txBufLoc2 = io.TXBUF_LOC2;
+					WIFI_TXStart(WifiTXLocIndex_LOC2, txBufLoc2);
+					io.TXBUF_LOC2 = txBufLoc2;
 				}
 
 				if(TXREQ_SET.Loc3 != 0)
 				{
 					io.TXREQ_READ.Loc3 = 1;
-					WIFI_TXStart(WifiTXLocIndex_LOC3, io.TXBUF_LOC3);
+					IOREG_W_TXBUF_LOCATION txBufLoc3 = io.TXBUF_LOC3;
+					WIFI_TXStart(WifiTXLocIndex_LOC3, txBufLoc3);
+					io.TXBUF_LOC3 = txBufLoc3;
 				}
 
 				if(TXREQ_SET.UNKNOWN1 != 0)
@@ -4650,7 +4660,9 @@ void WifiHandler::CommTrigger()
 
 			if(wifi.cmdCount_u32 == 0)
 			{
-				WIFI_TXStart(WifiTXLocIndex_CMD, io.TXBUF_CMD);
+				IOREG_W_TXBUF_LOCATION txBufCmd = io.TXBUF_CMD;
+				WIFI_TXStart(WifiTXLocIndex_CMD, txBufCmd);
+				io.TXBUF_CMD = txBufCmd;
 			}
 		}
 	}

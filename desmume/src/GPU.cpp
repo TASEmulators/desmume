@@ -904,19 +904,15 @@ void GPUEngineBase::UpdatePropertiesWithoutRender(const u16 l)
 	if (  this->_isBGLayerShown[GPULayerID_BG2] &&
 		((this->_BGLayer[GPULayerID_BG2].baseType == BGType_Affine) || (this->_BGLayer[GPULayerID_BG2].baseType == BGType_AffineExt)) )
 	{
-		IOREG_BG2Parameter &BG2Param = this->_IORegisterMap->BG2Param;
-		
-		BG2Param.BG2X.value += BG2Param.BG2PB.value;
-		BG2Param.BG2Y.value += BG2Param.BG2PD.value;
+		this->_IORegisterMap->BG2Param.BG2X.value += this->_IORegisterMap->BG2Param.BG2PB.value;
+		this->_IORegisterMap->BG2Param.BG2Y.value += this->_IORegisterMap->BG2Param.BG2PD.value;
 	}
 	
 	if (  this->_isBGLayerShown[GPULayerID_BG3] &&
 		((this->_BGLayer[GPULayerID_BG3].baseType == BGType_Affine) || (this->_BGLayer[GPULayerID_BG3].baseType == BGType_AffineExt)) )
 	{
-		IOREG_BG3Parameter &BG3Param = this->_IORegisterMap->BG3Param;
-		
-		BG3Param.BG3X.value += BG3Param.BG3PB.value;
-		BG3Param.BG3Y.value += BG3Param.BG3PD.value;
+		this->_IORegisterMap->BG3Param.BG3X.value += this->_IORegisterMap->BG3Param.BG3PB.value;
+		this->_IORegisterMap->BG3Param.BG3Y.value += this->_IORegisterMap->BG3Param.BG3PD.value;
 	}
 }
 
@@ -3495,10 +3491,9 @@ void GPUEngineA::SetDisplayCaptureEnable()
 
 void GPUEngineA::ResetDisplayCaptureEnable()
 {
-	IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
 	if (this->_displayCaptureEnable)
 	{
-		DISPCAPCNT.CaptureEnable = 0;
+		this->_IORegisterMap->DISPCAPCNT.CaptureEnable = 0;
 		this->_displayCaptureEnable = false;
 	}
 }
