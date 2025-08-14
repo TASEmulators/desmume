@@ -66,6 +66,22 @@ struct SoftRasterizerPostProcessParams
 	bool fogAlphaOnly;
 };
 
+class SoftRasterizerColorOut : public Render3DColorOut
+{
+protected:
+	void *_masterBuffer;
+	
+public:
+	SoftRasterizerColorOut(size_t w, size_t h);
+	virtual ~SoftRasterizerColorOut();
+	
+	virtual size_t BindRead32();
+	virtual Render3DError SetSize(size_t w, size_t h);
+	
+	virtual Render3DError FillZero();
+	virtual Render3DError FillColor32(const Color4u8 *src, const bool isSrcNativeSize);
+};
+
 class SoftRasterizerTexture : public Render3DTexture
 {
 private:
@@ -221,7 +237,6 @@ public:
 	virtual Render3DError Reset();
 	virtual Render3DError ApplyRenderingSettings(const GFX3D_State &renderState);
 	virtual Render3DError RenderFinish();
-	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);
 	virtual void ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel);
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };

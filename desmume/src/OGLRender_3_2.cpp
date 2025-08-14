@@ -1393,6 +1393,56 @@ OGLRenderStates* OpenGLRenderStatesResource::GetRenderStatesBuffer(const size_t 
 	return this->_buffer[index];
 }
 
+OpenGLRenderColorOut_3_2::OpenGLRenderColorOut_3_2(const OGLFeatureInfo &feature, size_t w, size_t h) : OpenGLRenderColorOut(feature, w, h)
+{
+	if (_vaoPostprocessStatesID == 0)
+	{
+		glGenVertexArrays(1, &_vaoPostprocessStatesID);
+		glBindVertexArray(_vaoPostprocessStatesID);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, _vboPostprocessVtxID);
+		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
+		
+		glBindVertexArray(0);
+	}
+}
+
+Color4u8* OpenGLRenderColorOut_3_2::_MapBuffer32OGL() const
+{
+	return (Color4u8 *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, this->_framebufferSize32, GL_MAP_READ_BIT);
+}
+
+Render3DError OpenGLRenderColorOut_3_2::_FramebufferConvertColorFormat()
+{
+	if (this->_willConvertColorOnGPU && (this->_format == NDSColorFormat_BGR666_Rev))
+	{
+		glUseProgram(this->_pgFramebufferRGBA6665OutputID);
+		glBindFramebuffer(GL_FRAMEBUFFER, this->_fboRenderID);
+		glReadBuffer(OGL_WORKING_ATTACHMENT_ID);
+		glDrawBuffer(OGL_WORKING_ATTACHMENT_ID);
+		
+		glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_STENCIL_TEST);
+		glDisable(GL_BLEND);
+		
+		glBindVertexArray(this->_vaoPostprocessStatesID);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glBindVertexArray(0);
+	}
+	else
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, this->_fboRenderID);
+		glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+		glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
+	}
+	
+	return OGLERROR_NOERR;
+}
+
 OpenGLRenderer_3_2::OpenGLRenderer_3_2()
 {
 	_deviceInfo.renderID = RENDERID_OPENGL_3_2;
@@ -1486,9 +1536,6 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, NULL);
 	glActiveTexture(GL_TEXTURE0);
 	
-	// OpenGL v3.2 Core Profile should have all the necessary features to be able to flip and convert the framebuffer.
-	this->_willConvertFramebufferOnGPU = true;
-	
 	this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
 	this->_emulateShadowPolygon = CommonSettings.OpenGL_Emulation_ShadowPolygon;
 	this->_emulateSpecialZeroAlphaBlending = CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending;
@@ -1554,7 +1601,6 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	}
 	
 	this->CreateVBOs();
-	this->CreatePBOs();
 	this->CreateVAOs();
 	
 	// Load and create FBOs. Return on any error, since v3.2 Core Profile makes FBOs mandatory.
@@ -1607,6 +1653,10 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->_feature.supportMultisampledFBO);
 	this->_willUseMultisampleShaders = this->_feature.supportSampleShading && this->_enableMultisampledRendering;
 	
+	this->_colorOut = new OpenGLRenderColorOut_3_2(this->_feature, this->_framebufferWidth, this->_framebufferHeight);
+	this->_colorOut->SetRenderer(this);
+	((OpenGLRenderColorOut *)this->_colorOut)->SetFBORenderID(OGLRef.fboRenderID);
+	
 	return OGLERROR_NOERR;
 }
 
@@ -1618,18 +1668,6 @@ Render3DError OpenGLRenderer_3_2::CreateVBOs()
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(PostprocessVtxBuffer), PostprocessVtxBuffer, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_3_2::CreatePBOs()
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	
-	glGenBuffers(1, &OGLRef.pboRenderDataID);
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, OGLRef.pboRenderDataID);
-	glBufferData(GL_PIXEL_PACK_BUFFER, this->_framebufferColorSizeBytes, NULL, GL_STREAM_READ);
-	this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, this->_framebufferColorSizeBytes, GL_MAP_READ_BIT);
 	
 	return OGLERROR_NOERR;
 }
@@ -2923,36 +2961,6 @@ void OpenGLRenderer_3_2::_ResolveFinalFramebuffer()
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
 }
 
-Render3DError OpenGLRenderer_3_2::_FramebufferConvertColorFormat()
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	
-	if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
-	{
-		glUseProgram(OGLRef.programFramebufferRGBA6665OutputID);
-		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
-		glReadBuffer(OGL_WORKING_ATTACHMENT_ID);
-		glDrawBuffer(OGL_WORKING_ATTACHMENT_ID);
-		
-		glViewport(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight);
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_STENCIL_TEST);
-		glDisable(GL_BLEND);
-		
-		glBindVertexArray(OGLRef.vaoPostprocessStatesID);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-		glBindVertexArray(0);
-	}
-	else
-	{
-		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
-		glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-		glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-	}
-	
-	return OGLERROR_NOERR;
-}
-
 Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList)
 {
 	OGLRenderRef &OGLRef = *this->ref;
@@ -3157,6 +3165,8 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State &renderState, co
 	
 	this->_needsZeroDstAlphaPass = true;
 	this->_rsResource->BindUsage();
+	
+	this->_lastBoundColorOut = this->_colorOut->BindRenderer();
 	
 	return OGLERROR_NOERR;
 }
@@ -3591,23 +3601,7 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	glFinish();
 	
 	const size_t newFramebufferColorSizeBytes = w * h * sizeof(Color4u8);
-	
-	if (this->_feature.supportPBO)
-	{
-		if (this->_mappedFramebuffer != NULL)
-		{
-			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-			glFinish();
-		}
-		
-		glBufferData(GL_PIXEL_PACK_BUFFER, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ);
-		
-		if (this->_mappedFramebuffer != NULL)
-		{
-			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, newFramebufferColorSizeBytes, GL_MAP_READ_BIT);
-			glFinish();
-		}
-	}
+	this->_colorOut->SetSize(w, h);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -3631,22 +3625,9 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferPixCount = w * h;
 	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
 	
-	if (this->_feature.supportPBO)
-	{
-		this->_framebufferColor = NULL;
-	}
-	else
-	{
-		Color4u8 *oldFramebufferColor = this->_framebufferColor;
-		Color4u8 *newFramebufferColor = (Color4u8 *)malloc_alignedPage(newFramebufferColorSizeBytes);
-		this->_framebufferColor = newFramebufferColor;
-		free_aligned(oldFramebufferColor);
-	}
-	
 	// Recreate shaders that use the framebuffer size.
 	glUseProgram(0);
 	this->DestroyEdgeMarkProgram();
-	this->DestroyFramebufferOutput6665Programs();
 	this->DestroyMSGeometryZeroDstAlphaProgram();
 	
 	this->CreateEdgeMarkProgram(false, EdgeMarkVtxShader_150, EdgeMarkFragShader_150);
@@ -3670,17 +3651,6 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 		this->DestroyFogPrograms();
 	}
 	
-	if (this->_feature.readPixelsBestFormat == GL_BGRA)
-	{
-		this->CreateFramebufferOutput6665Program(FramebufferOutputVtxShader, FramebufferOutputBGRA6665FragShader);
-		this->CreateFramebufferOutput8888Program(FramebufferOutputVtxShader, FramebufferOutputBGRA8888FragShader);
-	}
-	else
-	{
-		this->CreateFramebufferOutput6665Program(FramebufferOutputVtxShader, FramebufferOutputRGBA6665FragShader);
-		// No need to create a shader program for RGBA8888 since no conversion is necessary in this case.
-	}
-	
 	// Call ResizeMultisampledFBOs() after _framebufferWidth and _framebufferHeight are set
 	// since this method depends on them.
 	GLsizei sampleSize = this->GetLimitedMultisampleSize();
@@ -3699,79 +3669,4 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	ENDGL();
 	
 	return error;
-}
-
-Render3DError OpenGLRenderer_3_2::RenderFinish()
-{
-	if (!this->_renderNeedsFinish)
-	{
-		return OGLERROR_NOERR;
-	}
-	
-	if (this->_pixelReadNeedsFinish)
-	{
-		this->_pixelReadNeedsFinish = false;
-		
-		if (!BEGINGL())
-		{
-			return OGLERROR_BEGINGL_FAILED;
-		}
-		
-		if (this->_feature.supportPBO)
-		{
-			this->_mappedFramebuffer = (Color4u8 *__restrict)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, this->_framebufferColorSizeBytes, GL_MAP_READ_BIT);
-		}
-		else
-		{
-			glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, this->_framebufferColor);
-		}
-		
-		ENDGL();
-	}
-	
-	this->_renderNeedsFlushMain = true;
-	this->_renderNeedsFlush16 = true;
-	
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_3_2::RenderPowerOff()
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	static const GLfloat oglColor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-	
-	if (!this->_isPoweredOn)
-	{
-		return OGLERROR_NOERR;
-	}
-	
-	this->_isPoweredOn = false;
-	memset(GPU->GetEngineMain()->Get3DFramebufferMain(), 0, this->_framebufferColorSizeBytes);
-	memset(GPU->GetEngineMain()->Get3DFramebuffer16(), 0, this->_framebufferPixCount * sizeof(u16));
-	
-	if (!BEGINGL())
-	{
-		return OGLERROR_BEGINGL_FAILED;
-	}
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
-	glReadBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-	glDrawBuffer(OGL_COLOROUT_ATTACHMENT_ID);
-	glClearBufferfv(GL_COLOR, 0, oglColor);
-	
-	if (this->_feature.supportPBO)
-	{
-		if (this->_mappedFramebuffer != NULL)
-		{
-			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-			this->_mappedFramebuffer = NULL;
-		}
-		
-		glReadPixels(0, 0, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, 0);
-	}
-	
-	ENDGL();
-	
-	this->_pixelReadNeedsFinish = true;
-	return OGLERROR_NOERR;
 }

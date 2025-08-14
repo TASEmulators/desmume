@@ -3268,8 +3268,6 @@ GPUEngineA::GPUEngineA()
 		_isLineCaptureNative[3][l] = true;
 	}
 	
-	_3DFramebufferMain = (Color4u8 *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(Color4u8));
-	_3DFramebuffer16 = (u16 *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
 	_captureWorkingDisplay16 = (u16 *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
 	_captureWorkingA16 = (u16 *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
 	_captureWorkingB16 = (u16 *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
@@ -3279,8 +3277,6 @@ GPUEngineA::GPUEngineA()
 
 GPUEngineA::~GPUEngineA()
 {
-	free_aligned(this->_3DFramebufferMain);
-	free_aligned(this->_3DFramebuffer16);
 	free_aligned(this->_captureWorkingDisplay16);
 	free_aligned(this->_captureWorkingA16);
 	free_aligned(this->_captureWorkingB16);
@@ -3305,10 +3301,6 @@ void GPUEngineA::Reset()
 	this->GPUEngineBase::Reset();
 	
 	const size_t customWidth  = this->_targetDisplay->GetWidth();
-	const size_t customHeight = this->_targetDisplay->GetHeight();
-	
-	memset(this->_3DFramebufferMain, 0, customWidth * customHeight * sizeof(Color4u8));
-	memset(this->_3DFramebuffer16, 0, customWidth * customHeight * sizeof(u16));
 	memset(this->_captureWorkingDisplay16, 0, customWidth * _gpuLargestDstLineCount * sizeof(u16));
 	memset(this->_captureWorkingA16, 0, customWidth * _gpuLargestDstLineCount * sizeof(u16));
 	memset(this->_captureWorkingB16, 0, customWidth * _gpuLargestDstLineCount * sizeof(u16));
@@ -3399,16 +3391,6 @@ void GPUEngineA::ParseReg_DISPCAPCNT()
 	 this->_dispCapCnt.srcA, this->_dispCapCnt.srcB);*/
 }
 
-Color4u8* GPUEngineA::Get3DFramebufferMain() const
-{
-	return this->_3DFramebufferMain;
-}
-
-u16* GPUEngineA::Get3DFramebuffer16() const
-{
-	return this->_3DFramebuffer16;
-}
-
 bool GPUEngineA::IsLineCaptureNative(const size_t blockID, const size_t blockLine)
 {
 	return this->_isLineCaptureNative[blockID][blockLine];
@@ -3423,16 +3405,12 @@ void GPUEngineA::AllocateWorkingBuffers(NDSColorFormat requestedColorFormat, siz
 {
 	this->GPUEngineBase::AllocateWorkingBuffers(requestedColorFormat, w, h);
 	
-	Color4u8 *old3DFramebufferMain = this->_3DFramebufferMain;
-	u16 *old3DFramebuffer16 = this->_3DFramebuffer16;
 	u16 *oldCaptureWorkingDisplay16 = this->_captureWorkingDisplay16;
 	u16 *oldCaptureWorkingA16 = this->_captureWorkingA16;
 	u16 *oldCaptureWorkingB16 = this->_captureWorkingB16;
 	Color4u8 *oldCaptureWorkingA32 = this->_captureWorkingA32;
 	Color4u8 *oldCaptureWorkingB32 = this->_captureWorkingB32;
 	
-	this->_3DFramebufferMain = (Color4u8 *)malloc_alignedPage(w * h * sizeof(Color4u8));
-	this->_3DFramebuffer16 = (u16 *)malloc_alignedPage(w * h * sizeof(u16));
 	this->_captureWorkingDisplay16 = (u16 *)malloc_alignedPage(w * _gpuLargestDstLineCount * sizeof(u16));
 	this->_captureWorkingA16 = (u16 *)malloc_alignedPage(w * _gpuLargestDstLineCount * sizeof(u16));
 	this->_captureWorkingB16 = (u16 *)malloc_alignedPage(w * _gpuLargestDstLineCount * sizeof(u16));
@@ -3456,8 +3434,6 @@ void GPUEngineA::AllocateWorkingBuffers(NDSColorFormat requestedColorFormat, siz
 		this->_VRAMCustomBlockPtr[3] = (u16 *)this->_VRAMCustomBlockPtr[0] + (3 * lineInfo.indexCustom * w);
 	}
 	
-	free_aligned(old3DFramebufferMain);
-	free_aligned(old3DFramebuffer16);
 	free_aligned(oldCaptureWorkingDisplay16);
 	free_aligned(oldCaptureWorkingA16);
 	free_aligned(oldCaptureWorkingB16);
@@ -5274,7 +5250,6 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 	this->_engineMain->AllocateWorkingBuffers(outputFormat, w, h);
 	this->_engineSub->AllocateWorkingBuffers(outputFormat, w, h);
 	
-	BaseRenderer->SetFramebufferSize(w, h); // Since BaseRenderer is persistent, we need to update this manually.
 	if (CurrentRenderer != BaseRenderer)
 	{
 		CurrentRenderer->RequestColorFormat(outputFormat);

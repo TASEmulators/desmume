@@ -59,6 +59,7 @@
 #endif
 
 #include "matrix.h"
+#include "GPU_Operations.h"
 #include "render3D.h"
 #include "MMU.h"
 #include "NDSSystem.h"
@@ -1481,6 +1482,178 @@ static void SoftRasterizerRendererDestroy()
 	}
 }
 
+SoftRasterizerColorOut::SoftRasterizerColorOut(size_t w, size_t h)
+{
+	_format = NDSColorFormat_BGR666_Rev;
+	
+	_framebufferWidth      = w;
+	_framebufferHeight     = h;
+	_framebufferPixelCount = w * h;
+	_framebufferSize16     = w * h * sizeof(Color5551);
+	_framebufferSize32     = w * h * sizeof(Color4u8);
+	
+	_masterBuffer = malloc_alignedPage( (_framebufferSize32 * 2) + (_framebufferSize16 * 2) );
+	memset( _masterBuffer, 0, (_framebufferSize32 * 2) + (_framebufferSize16 * 2) );
+	
+	_buffer32[0] = (Color4u8 *)_masterBuffer;
+	_buffer16[0] = (Color5551 *)((Color4u8 *)_masterBuffer + (_framebufferPixelCount * 2));
+	_state[0] = AsyncReadState_Free;
+	
+	_buffer32[1] = (Color4u8 *)_masterBuffer + _framebufferPixelCount;
+	_buffer16[1] = (Color5551 *)((Color4u8 *)_masterBuffer + (_framebufferPixelCount * 2)) + _framebufferPixelCount;
+	_state[1] = AsyncReadState_Free;
+}
+
+SoftRasterizerColorOut::~SoftRasterizerColorOut()
+{
+	this->_buffer16[0] = NULL;
+	this->_buffer32[0] = NULL;
+	this->_state[0] = AsyncReadState_Disabled;
+	
+	this->_buffer16[1] = NULL;
+	this->_buffer32[1] = NULL;
+	this->_state[1] = AsyncReadState_Disabled;
+	
+	free_aligned(this->_masterBuffer);
+	this->_masterBuffer = NULL;
+}
+
+size_t SoftRasterizerColorOut::BindRead32()
+{
+	const size_t oldReadingIdx32 = this->_currentReadingIdx32;
+	const size_t newReadingIdx32 = this->Render3DColorOut::BindRead32();
+	
+	if ( (this->_format == NDSColorFormat_BGR888_Rev) && (newReadingIdx32 != oldReadingIdx32) )
+	{
+		ColorspaceConvertBuffer6665To8888<false, false>((u32 *)this->_buffer32[newReadingIdx32], (u32 *)this->_buffer32[newReadingIdx32], this->_framebufferPixelCount);
+	}
+	
+	return this->_currentReadingIdx32;
+}
+
+Render3DError SoftRasterizerColorOut::SetSize(size_t w, size_t h)
+{
+	if ( (w == 0) || (h == 0) )
+	{
+		return RENDER3DERROR_INVALID_VALUE;
+	}
+	
+	if ( (w == this->_framebufferWidth) && (h == this->_framebufferHeight) )
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
+	this->_framebufferWidth      = w;
+	this->_framebufferHeight     = h;
+	this->_framebufferPixelCount = w * h;
+	this->_framebufferSize16     = w * h * sizeof(Color5551);
+	this->_framebufferSize32     = w * h * sizeof(Color4u8);
+	
+	void *oldBuffer = this->_masterBuffer;
+	this->_masterBuffer = malloc_alignedPage( (this->_framebufferSize32 * 2) + (this->_framebufferSize16 * 2) );
+	memset( this->_masterBuffer, 0, (this->_framebufferSize32 * 2) + (this->_framebufferSize16 * 2) );
+	
+	this->_buffer32[0] = (Color4u8 *)this->_masterBuffer;
+	this->_buffer16[0] = (Color5551 *)((Color4u8 *)this->_masterBuffer + (this->_framebufferPixelCount * 2));
+	
+	this->_buffer32[1] = (Color4u8 *)this->_masterBuffer + this->_framebufferPixelCount;
+	this->_buffer16[1] = (Color5551 *)((Color4u8 *)this->_masterBuffer + (this->_framebufferPixelCount * 2)) + this->_framebufferPixelCount;
+	
+	free_aligned(oldBuffer);
+	
+	return RENDER3DERROR_NOERR;
+}
+
+Render3DError SoftRasterizerColorOut::FillZero()
+{
+	Render3DError error = RENDER3DERROR_NOERR;
+	size_t bufferIdx = RENDER3D_RESOURCE_INDEX_NONE;
+	
+	if (this->_currentReadingIdx32 != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		bufferIdx = this->_currentReadingIdx32;
+		this->_currentReadingIdx16 = this->_currentReadingIdx32;
+		
+		if (this->_buffer16[this->_currentReadingIdx16] != NULL)
+		{
+			memset(this->_buffer16[this->_currentReadingIdx16], 0, this->_framebufferSize16);
+		}
+	}
+	else if (this->_currentReadyIdx != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		bufferIdx = this->_currentReadyIdx;
+	}
+	else if (this->_currentUsageIdx == RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		bufferIdx = this->_currentUsageIdx;
+	}
+	
+	if ( (bufferIdx != RENDER3D_RESOURCE_INDEX_NONE) && (this->_buffer32[bufferIdx] != NULL) )
+	{
+		memset(this->_buffer32[bufferIdx], 0, this->_framebufferSize32);
+	}
+	
+	return error;
+}
+
+Render3DError SoftRasterizerColorOut::FillColor32(const Color4u8 *src, const bool isSrcNativeSize)
+{
+	Render3DError error = RENDER3DERROR_NOERR;
+	
+	const u32 *__restrict src32 = (const u32 *__restrict)src;
+	u32 *__restrict mutableFramebuffer32 = (u32 *__restrict)this->GetInUseFramebuffer32();
+	
+	if ( (src32 == NULL) || (mutableFramebuffer32 == NULL) )
+	{
+		error = RENDER3DERROR_INVALID_BUFFER;
+		return error;
+	}
+	
+	this->_renderer->RenderFinish();
+	this->_renderer->RenderFlush(false, false);
+	this->_renderer->SetRenderNeedsFinish(false);
+	
+	const size_t w = this->_framebufferWidth;
+	const size_t h = this->_framebufferHeight;
+	const bool isDstNativeSize = ( (w == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (h == GPU_FRAMEBUFFER_NATIVE_HEIGHT) );
+	
+	if (isSrcNativeSize)
+	{
+		if (isDstNativeSize) // Framebuffer is at the native size
+		{
+			if (this->_format == NDSColorFormat_BGR666_Rev)
+			{
+				ColorspaceConvertBuffer8888To6665<false, false>(src32, mutableFramebuffer32, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			}
+			else
+			{
+				ColorspaceCopyBuffer32<false, false>(src32, mutableFramebuffer32, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			}
+		}
+		else // Framebuffer is at a custom size
+		{
+			if (this->_format == NDSColorFormat_BGR666_Rev)
+			{
+				ColorspaceConvertBuffer8888To6665<false, false>(src32, (u32 *)src32, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			}
+			
+			for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
+			{
+				const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(l);
+				CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, src32, mutableFramebuffer32);
+				src32 += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				mutableFramebuffer32 += lineInfo.pixelCount;
+			}
+		}
+	}
+	else
+	{
+		memcpy(mutableFramebuffer32, src32, this->_framebufferSize32);
+	}
+	
+	return error;
+}
+
 SoftRasterizerTexture::SoftRasterizerTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes) : Render3DTexture(texAttributes, palAttributes)
 {
 	_cacheSize = GetUnpackSizeUsingFormat(TexFormat_15bpp);
@@ -1849,6 +2022,8 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	}
 	
 	__InitTables();
+	_colorOut = new SoftRasterizerColorOut(_framebufferWidth, _framebufferHeight);
+	_colorOut->SetRenderer(this);
 	Reset();
 	
 	if (_threadCount == 0)
@@ -1875,6 +2050,9 @@ SoftRasterizerRenderer::~SoftRasterizerRenderer()
 	
 	delete this->_framebufferAttributes;
 	this->_framebufferAttributes = NULL;
+	
+	delete this->_colorOut;
+	this->_colorOut = NULL;
 	
 	free_aligned(this->_precalc);
 	this->_precalc = NULL;
@@ -2046,6 +2224,8 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D_State &renderState
 		this->_task[0].finish();
 	}
 	
+	this->_lastBoundColorOut = this->_colorOut->BindRenderer();
+	
 	return RENDER3DERROR_NOERR;
 }
 
@@ -2180,7 +2360,7 @@ void SoftRasterizerRenderer::_UpdateFogTable(const u8 *fogDensityTable)
 
 Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasterizerPostProcessParams &param)
 {
-	Color4u8 *framebufferColor = this->GetInUseFramebuffer32();
+	Color4u8 *framebufferColor = this->_colorOut->GetInUseFramebuffer32();
 	
 	for (size_t i = param.startLine * this->_framebufferWidth, y = param.startLine; y < param.endLine; y++)
 	{
@@ -2299,8 +2479,7 @@ const SoftRasterizerPrecalculation* SoftRasterizerRenderer::GetPrecalculationLis
 
 Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID)
 {
-	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
-	
+	Color4u8 *__restrict framebufferColor = this->_colorOut->GetInUseFramebuffer32();
 	const size_t xRatio = (size_t)((GPU_FRAMEBUFFER_NATIVE_WIDTH << 16) / this->_framebufferWidth) + 1;
 	const size_t yRatio = (size_t)((GPU_FRAMEBUFFER_NATIVE_HEIGHT << 16) / this->_framebufferHeight) + 1;
 	
@@ -2328,7 +2507,7 @@ Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colo
 
 void SoftRasterizerRenderer::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
-	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
+	Color4u8 *__restrict framebufferColor = this->_colorOut->GetInUseFramebuffer32();
 	
 	for (size_t i = startPixel; i < endPixel; i++)
 	{
@@ -2376,6 +2555,7 @@ Render3DError SoftRasterizerRenderer::Reset()
 	
 	this->_renderGeometryNeedsFinish = false;
 	
+	this->_colorOut->Reset();
 	texCache.Reset();
 	memset(this->_precalc, 0, CLIPPED_POLYLIST_SIZE * MAX_CLIPPED_VERTS * sizeof(SoftRasterizerPrecalculation));
 	
@@ -2396,6 +2576,9 @@ Render3DError SoftRasterizerRenderer::EndRender()
 			
 			this->RenderEdgeMarkingAndFog(this->_threadPostprocessParam[0]);
 		}
+		
+		this->_colorOut->UnbindRenderer(this->_lastBoundColorOut);
+		this->_lastBoundColorOut = RENDER3D_RESOURCE_INDEX_NONE;
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -2439,24 +2622,13 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 				this->_task[i].finish();
 			}
 		}
+		
+		this->_colorOut->UnbindRenderer(this->_lastBoundColorOut);
+		this->_lastBoundColorOut = RENDER3D_RESOURCE_INDEX_NONE;
 	}
 	
 	this->_renderNeedsFlushMain = true;
 	this->_renderNeedsFlush16 = true;
-	
-	return RENDER3DERROR_NOERR;
-}
-
-Render3DError SoftRasterizerRenderer::RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16)
-{
-	if (!this->_isPoweredOn)
-	{
-		return RENDER3DERROR_NOERR;
-	}
-	
-	Color4u8 *framebufferMain = (willFlushBuffer32 && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
-	u16 *framebuffer16 = (willFlushBuffer16) ? GPU->GetEngineMain()->Get3DFramebuffer16() : NULL;
-	this->FlushFramebuffer(this->_framebufferColor, framebufferMain, framebuffer16);
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -2550,7 +2722,7 @@ Render3DError SoftRasterizer_SIMD<SIMDBYTES>::ClearUsingValues(const Color4u8 &c
 		this->ClearUsingValues_Execute(0, this->_framebufferSIMDPixCount);
 	}
 	
-	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
+	Color4u8 *__restrict framebufferColor = this->_colorOut->GetInUseFramebuffer32();
 #pragma LOOPVECTORIZE_DISABLE
 	for (size_t i = this->_framebufferSIMDPixCount; i < this->_framebufferPixCount; i++)
 	{
@@ -2636,7 +2808,7 @@ void SoftRasterizerRenderer_AVX2::LoadClearValues(const Color4u8 &clearColor6665
 
 void SoftRasterizerRenderer_AVX2::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
-	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
+	Color4u8 *__restrict framebufferColor = this->_colorOut->GetInUseFramebuffer32();
 	
 	for (size_t i = startPixel; i < endPixel; i+=sizeof(v256u8))
 	{
@@ -2675,7 +2847,7 @@ void SoftRasterizerRenderer_SSE2::LoadClearValues(const Color4u8 &clearColor6665
 
 void SoftRasterizerRenderer_SSE2::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
-	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
+	Color4u8 *__restrict framebufferColor = this->_colorOut->GetInUseFramebuffer32();
 	
 	for (size_t i = startPixel; i < endPixel; i+=sizeof(v128u8))
 	{
@@ -2745,7 +2917,7 @@ void SoftRasterizerRenderer_NEON::LoadClearValues(const Color4u8 &clearColor6665
 
 void SoftRasterizerRenderer_NEON::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
-	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
+	Color4u8 *__restrict framebufferColor = this->_colorOut->GetInUseFramebuffer32();
 	
 	for (size_t i = startPixel; i < endPixel; i+=(sizeof(v128u8)*4))
 	{
@@ -2799,7 +2971,7 @@ void SoftRasterizerRenderer_AltiVec::LoadClearValues(const Color4u8 &clearColor6
 
 void SoftRasterizerRenderer_AltiVec::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
 {
-	Color4u8 *__restrict framebufferColor = this->GetInUseFramebuffer32();
+	Color4u8 *__restrict framebufferColor = this->_colorOut->GetInUseFramebuffer32();
 	
 	for (size_t i = startPixel; i < endPixel; i+=sizeof(v128u8))
 	{

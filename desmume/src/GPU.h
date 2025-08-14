@@ -1620,9 +1620,6 @@ protected:
 	CACHE_ALIGN u16 _VRAMNativeBlockCaptureCopy[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4];
 	u16 *_VRAMNativeBlockCaptureCopyPtr[4];
 	
-	Color4u8 *_3DFramebufferMain;
-	u16 *_3DFramebuffer16;
-	
 	u16 *_VRAMNativeBlockPtr[4];
 	void *_VRAMCustomBlockPtr[4];
 	
@@ -1680,8 +1677,6 @@ public:
 	void ParseReg_DISPCAPCNT();
 	bool IsLineCaptureNative(const size_t blockID, const size_t blockLine);
 	void* GetCustomVRAMBlockPtr(const size_t blockID);
-	Color4u8* Get3DFramebufferMain() const;
-	u16* Get3DFramebuffer16() const;
 	virtual void AllocateWorkingBuffers(NDSColorFormat requestedColorFormat, size_t w, size_t h);
 	
 	bool WillRender3DLayer();

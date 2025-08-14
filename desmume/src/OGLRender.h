@@ -644,9 +644,6 @@ struct OGLRenderRef
 	GLuint iboGeometryIndexID;
 	GLuint vboPostprocessVtxID;
 	
-	// PBO
-	GLuint pboRenderDataID;
-	
 	// FBO
 	GLuint texCIColorID;
 	GLuint texCIFogAttrID;
@@ -701,14 +698,8 @@ struct OGLRenderRef
 	
 	GLuint vertexEdgeMarkShaderID;
 	GLuint vertexFogShaderID;
-	GLuint vertexFramebufferOutput6665ShaderID;
-	GLuint vertexFramebufferOutput8888ShaderID;
 	GLuint fragmentEdgeMarkShaderID;
-	GLuint fragmentFramebufferRGBA6665OutputShaderID;
-	GLuint fragmentFramebufferRGBA8888OutputShaderID;
 	GLuint programEdgeMarkID;
-	GLuint programFramebufferRGBA6665OutputID;
-	GLuint programFramebufferRGBA8888OutputID;
 	
 	GLint uniformStateEnableFogAlphaOnly;
 	GLint uniformStateClearPolyID;
@@ -763,11 +754,6 @@ extern CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32];
 extern CACHE_ALIGN const GLfloat divide6bitBy63_LUT[64];
 extern const GLfloat PostprocessVtxBuffer[16];
 extern const GLubyte PostprocessElementBuffer[6];
-
-extern const char *FramebufferOutputVtxShader;
-extern const char *FramebufferOutputBGRA6665FragShader;
-extern const char *FramebufferOutputBGRA8888FragShader;
-extern const char *FramebufferOutputRGBA6665FragShader;
 
 //This is called by OGLRender whenever it initializes.
 //Platforms, please be sure to set this up.
@@ -851,6 +837,61 @@ bool IsOpenGLDriverVersionSupported(unsigned int checkVersionMajor, unsigned int
 Render3DError ShaderProgramCreateOGL(GLuint &vtxShaderID, GLuint &fragShaderID, GLuint &programID, const char *vtxShaderCString, const char *fragShaderCString);
 bool ValidateShaderProgramLinkOGL(GLuint theProgram);
 
+class OpenGLRenderColorOut : public Render3DColorOut
+{
+protected:
+	OGLFeatureInfo _feature;
+	
+	GLuint _vsFramebufferOutput6665ShaderID;
+	GLuint _vsFramebufferOutput8888ShaderID;
+	GLuint _fsFramebufferRGBA6665OutputShaderID;
+	GLuint _fsFramebufferRGBA8888OutputShaderID;
+	GLuint _pgFramebufferRGBA6665OutputID;
+	GLuint _pgFramebufferRGBA8888OutputID;
+	
+	GLuint _vaoPostprocessStatesID;
+	GLuint _vboPostprocessVtxID;
+	GLuint _fboRenderID;
+	
+	bool _willConvertColorOnGPU;
+	
+	GLuint _pbo[2];
+	GLuint _texColorOut[2];
+	Color4u8 *_masterBufferCPU32;
+	Color4u8 *_bufferCPU32[2];
+	
+	virtual Color4u8* _MapBuffer32OGL() const;
+	virtual Render3DError _FramebufferConvertColorFormat();
+	
+	virtual Render3DError _CreateFramebufferOutput6665Program(const char *vtxShaderCString, const char *fragShaderCString);
+	virtual void _DestroyFramebufferOutput6665Programs();
+	virtual Render3DError _CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString);
+	virtual void _DestroyFramebufferOutput8888Programs();
+	
+public:
+	OpenGLRenderColorOut(const OGLFeatureInfo &feature, size_t w, size_t h);
+	virtual ~OpenGLRenderColorOut();
+	
+	virtual void Reset();
+	
+	virtual size_t BindRead32();
+	virtual size_t UnbindRead32();
+	
+	virtual size_t BindRenderer();
+	virtual void UnbindRenderer(const size_t idxRead);
+	
+	virtual Render3DError SetSize(size_t w, size_t h);
+	virtual const Color4u8* GetFramebuffer32() const;
+	
+	virtual Render3DError FillZero();
+	virtual Render3DError FillColor32(const Color4u8 *src, const bool isSrcNativeSize);
+	
+	const OGLFeatureInfo& GetFeatureInfo() const;
+	
+	GLuint GetFBORenderID() const;
+	void SetFBORenderID(GLuint i);
+};
+
 class OpenGLTexture : public Render3DTexture
 {
 protected:
@@ -888,18 +929,12 @@ class OpenGLRenderer : public Render3D_AltiVec
 class OpenGLRenderer : public Render3D
 #endif
 {
-private:
-	template<bool SWAP_RB> Render3DError _FlushFramebufferConvertOnCPU(const Color4u8 *__restrict srcFramebuffer,
-	                                                                   Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16,
-	                                                                   bool doFramebufferConvert);
-	
 protected:
 	// OpenGL-specific References
 	OGLRenderRef *ref;
 	
 	// OpenGL Feature Support
 	OGLFeatureInfo _feature;
-	bool _willConvertFramebufferOnGPU;
 	bool _willUseMultisampleShaders;
 	
 	bool _emulateShadowPolygon;
@@ -913,9 +948,7 @@ protected:
 	const GLint *_geometryAttachmentPolyID;
 	const GLint *_geometryAttachmentFogAttributes;
 	
-	Color4u8 *_mappedFramebuffer;
 	Color4u8 *_workingTextureUnpackBuffer;
-	bool _pixelReadNeedsFinish;
 	bool _needsZeroDstAlphaPass;
 	size_t _currentPolyIndex;
 	bool _enableAlphaBlending;
@@ -929,7 +962,6 @@ protected:
 	int _selectedMultisampleSize;
 	size_t _clearImageIndex;
 	
-	Render3DError FlushFramebuffer(const Color4u8 *__restrict srcFramebuffer, Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
 	
 	template<OGLPolyDrawMode DRAWMODE> size_t DrawPolygonsForIndexRange(const POLY *rawPolyList, const CPoly *clippedPolyList, const size_t clippedPolyCount, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
@@ -952,8 +984,6 @@ protected:
 	// OpenGL-specific methods
 	virtual Render3DError CreateVBOs() = 0;
 	virtual void DestroyVBOs() = 0;
-	virtual Render3DError CreatePBOs() = 0;
-	virtual void DestroyPBOs() = 0;
 	virtual Render3DError CreateFBOs() = 0;
 	virtual void DestroyFBOs() = 0;
 	virtual Render3DError CreateMultisampledFBO(GLsizei numSamples) = 0;
@@ -973,10 +1003,6 @@ protected:
 	virtual Render3DError CreateFogProgram(const OGLFogProgramKey fogProgramKey, const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString) = 0;
 	virtual void DestroyFogProgram(const OGLFogProgramKey fogProgramKey) = 0;
 	virtual void DestroyFogPrograms() = 0;
-	virtual Render3DError CreateFramebufferOutput6665Program(const char *vtxShaderCString, const char *fragShaderCString) = 0;
-	virtual void DestroyFramebufferOutput6665Programs() = 0;
-	virtual Render3DError CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString) = 0;
-	virtual void DestroyFramebufferOutput8888Programs() = 0;
 	
 	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader, const char *edgeMarkFragShader) = 0;
 	
@@ -991,7 +1017,6 @@ protected:
 	virtual void _ResolveWorkingBackFacing() = 0;
 	virtual void _ResolveGeometry() = 0;
 	virtual void _ResolveFinalFramebuffer() = 0;
-	virtual Render3DError _FramebufferConvertColorFormat() = 0;
 	
 	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID) = 0;
 	virtual void SetPolygonIndex(const size_t index) = 0;
@@ -1008,7 +1033,6 @@ public:
 	bool IsExtensionPresent(const std::set<std::string> *oglExtensionSet, const std::string extensionName) const;
 	bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision) const;
 	
-	virtual const Color4u8* GetFramebuffer32() const;
 	virtual GLsizei GetLimitedMultisampleSize() const;
 	
 	Render3DError ApplyRenderingSettings(const GFX3D_State &renderState);
@@ -1020,8 +1044,6 @@ protected:
 	// OpenGL-specific methods
 	virtual Render3DError CreateVBOs();
 	virtual void DestroyVBOs();
-	virtual Render3DError CreatePBOs();
-	virtual void DestroyPBOs();
 	virtual Render3DError CreateFBOs();
 	virtual void DestroyFBOs();
 	virtual Render3DError CreateMultisampledFBO(GLsizei numSamples);
@@ -1041,10 +1063,6 @@ protected:
 	virtual Render3DError CreateFogProgram(const OGLFogProgramKey fogProgramKey, const bool isMultisample, const char *vtxShaderCString, const char *fragShaderCString);
 	virtual void DestroyFogProgram(const OGLFogProgramKey fogProgramKey);
 	virtual void DestroyFogPrograms();
-	virtual Render3DError CreateFramebufferOutput6665Program(const char *vtxShaderCString, const char *fragShaderCString);
-	virtual void DestroyFramebufferOutput6665Programs();
-	virtual Render3DError CreateFramebufferOutput8888Program(const char *vtxShaderCString, const char *fragShaderCString);
-	virtual void DestroyFramebufferOutput8888Programs();
 	
 	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader, const char *edgeMarkFragShader);
 	
@@ -1060,7 +1078,6 @@ protected:
 	virtual void _ResolveWorkingBackFacing();
 	virtual void _ResolveGeometry();
 	virtual void _ResolveFinalFramebuffer();
-	virtual Render3DError _FramebufferConvertColorFormat();
 	
 	// Base rendering methods
 	virtual Render3DError BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);
@@ -1084,8 +1101,6 @@ public:
 	
 	virtual Render3DError InitExtensions();
 	virtual Render3DError Reset();
-	virtual Render3DError RenderPowerOff();
-	virtual Render3DError RenderFinish();
 	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };

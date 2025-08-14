@@ -106,6 +106,17 @@ public:
 	OGLRenderStates* GetRenderStatesBuffer(const size_t index);
 };
 
+class OpenGLRenderColorOut_3_2 : public OpenGLRenderColorOut
+{
+protected:
+	virtual Color4u8* _MapBuffer32OGL() const;
+	virtual Render3DError _FramebufferConvertColorFormat();
+	
+public:
+	OpenGLRenderColorOut_3_2(const OGLFeatureInfo &feature, size_t w, size_t h);
+	virtual ~OpenGLRenderColorOut_3_2() {};
+};
+
 class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 {
 protected:
@@ -113,7 +124,6 @@ protected:
 	OpenGLRenderStatesResource *_rsResource;
 	
 	virtual Render3DError CreateVBOs();
-	virtual Render3DError CreatePBOs();
 	virtual Render3DError CreateFBOs();
 	virtual void DestroyFBOs();
 	virtual Render3DError CreateMultisampledFBO(GLsizei numSamples);
@@ -139,7 +149,6 @@ protected:
 	virtual void _ResolveWorkingBackFacing();
 	virtual void _ResolveGeometry();
 	virtual void _ResolveFinalFramebuffer();
-	virtual Render3DError _FramebufferConvertColorFormat();
 	
 	virtual Render3DError BeginRender(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);
 	virtual Render3DError PostprocessFramebuffer();
@@ -156,8 +165,6 @@ public:
 	~OpenGLRenderer_3_2();
 	
 	virtual Render3DError InitExtensions();
-	virtual Render3DError RenderFinish();
-	virtual Render3DError RenderPowerOff();
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 

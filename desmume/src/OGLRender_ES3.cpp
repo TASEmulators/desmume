@@ -302,22 +302,7 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	this->_feature.supportBlendEquationSeparate = true;
 	this->_feature.supportMapBufferRange        = true;
 	this->_feature.supportVBO                   = true;
-	
-	// PBOs are only used when reading back the rendered framebuffer for the emulated
-	// BG0 layer. For desktop-class GPUs, doing an asynchronous glReadPixels() call
-	// is always advantageous since such devices are expected to have their GPUs
-	// connected to a data bus.
-	//
-	// However, many ARM-based mobile devices use integrated GPUs of varying degrees
-	// of memory latency and implementation quality. This means that the performance
-	// of an asynchronous glReadPixels() call is NOT guaranteed on such devices.
-	//
-	// In fact, many ARM-based devices suffer devastating performance drops when trying
-	// to do asynchronous framebuffer reads. Therefore, since most OpenGL ES users will
-	// be running an ARM-based iGPU, we will disable PBOs for OpenGL ES and stick with
-	// a traditional synchronous glReadPixels() call instead.
-	this->_feature.supportPBO                   = false;
-	
+	this->_feature.supportPBO                   = true;
 	this->_feature.supportFBO                   = true;
 	this->_feature.supportFBOBlit               = true;
 	this->_feature.supportMultisampledFBO       = true;
@@ -383,9 +368,6 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)this->_framebufferWidth, (GLsizei)this->_framebufferHeight, 0, this->_feature.readPixelsBestFormat, this->_feature.readPixelsBestDataType, NULL);
 	glActiveTexture(GL_TEXTURE0);
-	
-	// OpenGL ES 3.0 should have all the necessary features to be able to flip and convert the framebuffer.
-	this->_willConvertFramebufferOnGPU = true;
 	
 	this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
 	this->_emulateShadowPolygon = CommonSettings.OpenGL_Emulation_ShadowPolygon;
@@ -504,6 +486,10 @@ Render3DError OpenGLESRenderer_3_0::InitExtensions()
 	
 	this->_isDepthLEqualPolygonFacingSupported = true;
 	this->_enableMultisampledRendering = ((this->_selectedMultisampleSize >= 2) && this->_feature.supportMultisampledFBO);
+	
+	this->_colorOut = new OpenGLRenderColorOut_3_2(this->_feature, this->_framebufferWidth, this->_framebufferHeight);
+	this->_colorOut->SetRenderer(this);
+	((OpenGLRenderColorOut *)this->_colorOut)->SetFBORenderID(OGLRef.fboRenderID);
 	
 	return OGLERROR_NOERR;
 }

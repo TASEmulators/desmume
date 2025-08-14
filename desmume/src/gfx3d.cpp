@@ -4016,22 +4016,7 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 
 void gfx3d_FinishLoadStateBufferRead()
 {
-	const Render3DDeviceInfo &deviceInfo = CurrentRenderer->GetDeviceInfo();
-	
-	switch (deviceInfo.renderID)
-	{
-		case RENDERID_NULL:
-			CurrentRenderer->FillZero();
-			break;
-			
-		case RENDERID_SOFTRASTERIZER:
-			CurrentRenderer->FillColor32(gfx3d.framebufferNativeSave, true);
-			break;
-			
-		default:
-			// Do nothing. Loading the 3D framebuffer is unsupported on this 3D renderer.
-			break;
-	}
+	CurrentRenderer->FillColor32(gfx3d.framebufferNativeSave, true);
 	
 	// For save state compatibility
 	const GPU_IOREG &GPUREG = GPU->GetEngineMain()->GetIORegisterMap();

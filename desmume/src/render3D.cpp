@@ -21,7 +21,6 @@
 #include <string.h>
 
 #include "utils/bits.h"
-#include "GPU_Operations.h"
 #include "MMU.h"
 #include "NDSSystem.h"
 #include "./filter/filter.h"
@@ -39,9 +38,15 @@ GPU3DInterface gpu3DNull = {
 GPU3DInterface *gpu3D = &gpu3DNull;
 Render3D *BaseRenderer = NULL;
 Render3D *CurrentRenderer = NULL;
+Null3DColorOut *BaseColorOut = NULL;
 
 void Render3D_Init()
 {
+	if (BaseColorOut == NULL)
+	{
+		BaseColorOut = new Null3DColorOut;
+	}
+	
 	if (BaseRenderer == NULL)
 	{
 		BaseRenderer = new Render3D;
@@ -58,8 +63,12 @@ void Render3D_Init()
 void Render3D_DeInit()
 {
 	gpu3D->NDS_3D_Close();
+	
 	delete BaseRenderer;
 	BaseRenderer = NULL;
+	
+	delete BaseColorOut;
+	BaseColorOut = NULL;
 }
 
 Render3D* Render3DBaseCreate()
@@ -222,6 +231,460 @@ NDSVertex* Render3DResourceGeometry::GetVertexBuffer(const size_t index)
 	return this->_vertexBuffer[index];
 }
 
+Render3DColorOut::Render3DColorOut()
+{
+	_renderer = NULL;
+	_format = NDSColorFormat_BGR888_Rev;
+	
+	_state[0] = AsyncReadState_Disabled;
+	_state[1] = AsyncReadState_Disabled;
+	
+	_currentUsageIdx     = RENDER3D_RESOURCE_INDEX_NONE;
+	_currentReadyIdx     = RENDER3D_RESOURCE_INDEX_NONE;
+	_currentReadingIdx16 = RENDER3D_RESOURCE_INDEX_NONE;
+	_currentReadingIdx32 = RENDER3D_RESOURCE_INDEX_NONE;
+	
+	_framebufferWidth      = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_framebufferHeight     = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	_framebufferPixelCount = _framebufferWidth * _framebufferHeight;
+	_framebufferSize16     = _framebufferWidth * _framebufferHeight * sizeof(Color5551);
+	_framebufferSize32     = _framebufferWidth * _framebufferHeight * sizeof(Color4u8);
+	
+	_buffer16[0] = NULL;
+	_buffer16[1] = NULL;
+	
+	_buffer32[0] = NULL;
+	_buffer32[1] = NULL;
+}
+
+Render3D* Render3DColorOut::GetRenderer() const
+{
+	return this->_renderer;
+}
+
+void Render3DColorOut::SetRenderer(Render3D *theRenderer)
+{
+	this->_renderer = theRenderer;
+}
+
+NDSColorFormat Render3DColorOut::GetColorFormat() const
+{
+	return this->_format;
+}
+
+void Render3DColorOut::SetColorFormat(NDSColorFormat theFormat)
+{
+	this->_format = theFormat;
+}
+
+void Render3DColorOut::Reset()
+{
+	if (this->_currentReadingIdx32 != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		if (this->_buffer32[this->_currentReadingIdx32] != NULL)
+		{
+			memset(this->_buffer32[this->_currentReadingIdx32], 0, this->_framebufferSize32);
+		}
+	}
+	else if (this->_currentReadyIdx != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		if (this->_buffer32[this->_currentReadyIdx] != NULL)
+		{
+			memset(this->_buffer32[this->_currentReadyIdx], 0, this->_framebufferSize32);
+			this->_state[this->_currentReadyIdx] = AsyncReadState_Reading;
+			this->_currentReadingIdx32 = this->_currentReadyIdx;
+			this->_currentReadyIdx = RENDER3D_RESOURCE_INDEX_NONE;
+		}
+	}
+	else if (this->_currentUsageIdx == RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		if (this->_buffer32[0] != NULL)
+		{
+			memset(this->_buffer32[0], 0, this->_framebufferSize32);
+			this->_state[0] = AsyncReadState_Reading;
+			this->_currentReadingIdx32 = 0;
+		}
+	}
+	
+	this->_currentReadingIdx16 = this->_currentReadingIdx32;
+	
+	if ( (this->_currentReadingIdx16 != RENDER3D_RESOURCE_INDEX_NONE) &&
+	     (this->_buffer16[this->_currentReadingIdx16] != NULL) )
+	{
+		memset(this->_buffer16[this->_currentReadingIdx16], 0, this->_framebufferSize16);
+	}
+}
+
+size_t Render3DColorOut::BindRead16()
+{
+	if ( (this->_currentUsageIdx != RENDER3D_RESOURCE_INDEX_NONE) || (this->_currentReadingIdx32 == RENDER3D_RESOURCE_INDEX_NONE) )
+	{
+		this->_currentReadingIdx16 = this->BindRead32();
+	}
+	else
+	{
+		this->_currentReadingIdx16 = this->_currentReadingIdx32;
+	}
+	
+	if ( (this->_buffer32[this->_currentReadingIdx32] != NULL) && (this->_buffer16[this->_currentReadingIdx16] != NULL) )
+	{
+		if (this->_format == NDSColorFormat_BGR666_Rev)
+		{
+			ColorspaceConvertBuffer6665To5551<false, false>((u32 *)this->_buffer32[this->_currentReadingIdx32], (u16 *)this->_buffer16[this->_currentReadingIdx16], this->_framebufferPixelCount);
+		}
+		else if (this->_format == NDSColorFormat_BGR888_Rev)
+		{
+			ColorspaceConvertBuffer8888To5551<false, false>((u32 *)this->_buffer32[this->_currentReadingIdx32], (u16 *)this->_buffer16[this->_currentReadingIdx16], this->_framebufferPixelCount);
+		}
+	}
+	
+	return this->_currentReadingIdx16;
+}
+
+size_t Render3DColorOut::UnbindRead16()
+{
+	size_t newFreeIdx = this->_currentReadingIdx16;
+	
+	if ( (newFreeIdx == RENDER3D_RESOURCE_INDEX_NONE) || (this->_state[newFreeIdx] == AsyncReadState_Disabled) )
+	{
+		return RENDER3D_RESOURCE_INDEX_NONE;
+	}
+	
+	this->_currentReadingIdx16 = RENDER3D_RESOURCE_INDEX_NONE;
+	if (this->_currentReadingIdx32 == RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		this->_state[newFreeIdx] = AsyncReadState_Free;
+	}
+	
+	return newFreeIdx;
+}
+
+size_t Render3DColorOut::BindRead32()
+{
+	const size_t oldReadingIdx32 = this->_currentReadingIdx32;
+	
+	if (this->_currentUsageIdx != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		// If the rendering is running slow and we are currently in
+		// the process of rendering, then wait for the rendering to
+		// finish and use that. We always want to have the latest
+		// rendering results.
+		this->_renderer->RenderFinish();
+		this->_renderer->SetRenderNeedsFinish(false);
+		
+		this->_state[this->_currentUsageIdx] = AsyncReadState_Reading;
+		this->_currentReadingIdx32 = this->_currentUsageIdx;
+		this->_currentUsageIdx = RENDER3D_RESOURCE_INDEX_NONE;
+	}
+	else if (this->_currentReadyIdx != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		// If the rendering is running fast and we already have a buffer
+		// ready, then just use that.
+		this->_state[this->_currentReadyIdx] = AsyncReadState_Reading;
+		this->_currentReadingIdx32 = this->_currentReadyIdx;
+		this->_currentReadyIdx = RENDER3D_RESOURCE_INDEX_NONE;
+	}
+	
+	if ( (this->_currentReadingIdx32 != oldReadingIdx32) && (oldReadingIdx32 != RENDER3D_RESOURCE_INDEX_NONE) )
+	{
+		this->_state[oldReadingIdx32] = AsyncReadState_Free;
+	}
+	
+	return this->_currentReadingIdx32;
+}
+
+size_t Render3DColorOut::UnbindRead32()
+{
+	size_t newFreeIdx = this->_currentReadingIdx32;
+	if ( (newFreeIdx == RENDER3D_RESOURCE_INDEX_NONE) || (this->_state[newFreeIdx] == AsyncReadState_Disabled) )
+	{
+		return RENDER3D_RESOURCE_INDEX_NONE;
+	}
+	
+	this->_currentReadingIdx32 = RENDER3D_RESOURCE_INDEX_NONE;
+	if (this->_currentReadingIdx16 == RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		this->_state[newFreeIdx] = AsyncReadState_Free;
+	}
+	
+	return newFreeIdx;
+}
+
+size_t Render3DColorOut::BindRenderer()
+{
+	size_t idxFree = RENDER3D_RESOURCE_INDEX_NONE;
+	
+	if (this->_state[0] == AsyncReadState_Free)
+	{
+		idxFree = 0;
+	}
+	else if (this->_state[1] == AsyncReadState_Free)
+	{
+		idxFree = 1;
+	}
+	else if (this->_state[0] == AsyncReadState_Ready)
+	{
+		idxFree = 0;
+		this->_currentReadyIdx = RENDER3D_RESOURCE_INDEX_NONE;
+	}
+	else if (this->_state[1] == AsyncReadState_Ready)
+	{
+		idxFree = 1;
+		this->_currentReadyIdx = RENDER3D_RESOURCE_INDEX_NONE;
+	}
+	
+	if (idxFree != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		if (this->_currentUsageIdx != RENDER3D_RESOURCE_INDEX_NONE)
+		{
+			this->_state[this->_currentUsageIdx] = AsyncReadState_Free;
+		}
+		
+		this->_state[idxFree] = AsyncReadState_Using;
+		this->_currentUsageIdx = idxFree;
+	}
+	
+	return idxFree;
+}
+
+void Render3DColorOut::UnbindRenderer(const size_t idxRead)
+{
+	if ( (idxRead > 1) || (this->_state[idxRead] == AsyncReadState_Disabled) )
+	{
+		return;
+	}
+	
+	if (this->_currentReadyIdx != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		this->_state[this->_currentReadyIdx] = AsyncReadState_Free;
+	}
+	
+	this->_state[idxRead] = AsyncReadState_Ready;
+	this->_currentReadyIdx = idxRead;
+	
+	if (this->_currentUsageIdx == idxRead)
+	{
+		this->_currentUsageIdx = RENDER3D_RESOURCE_INDEX_NONE;
+	}
+}
+
+Render3DError Render3DColorOut::SetSize(size_t w, size_t h)
+{
+	if ( (w == 0) || (h == 0) )
+	{
+		return RENDER3DERROR_INVALID_VALUE;
+	}
+	
+	if ( (w == this->_framebufferWidth) && (h == this->_framebufferHeight) )
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
+	this->_framebufferWidth      = w;
+	this->_framebufferHeight     = h;
+	this->_framebufferPixelCount = w * h;
+	this->_framebufferSize16     = w * h * sizeof(u16);
+	this->_framebufferSize32     = w * h * sizeof(Color4u8);
+	
+	return RENDER3DERROR_NOERR;
+}
+
+const Color5551* Render3DColorOut::GetFramebuffer16() const
+{
+	if (this->_currentReadingIdx16 != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		if (this->_state[this->_currentReadingIdx16] == AsyncReadState_Reading)
+		{
+			return this->_buffer16[this->_currentReadingIdx16];
+		}
+	}
+	else if (this->_currentUsageIdx != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		if (this->_state[this->_currentUsageIdx] == AsyncReadState_Using)
+		{
+			return this->_buffer16[this->_currentUsageIdx];
+		}
+	}
+	
+	return NULL;
+}
+
+const Color4u8* Render3DColorOut::GetFramebuffer32() const
+{
+	if (this->_currentReadingIdx32 != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		if (this->_state[this->_currentReadingIdx32] == AsyncReadState_Reading)
+		{
+			return this->_buffer32[this->_currentReadingIdx32];
+		}
+	}
+	else if (this->_currentUsageIdx != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		if (this->_state[this->_currentUsageIdx] == AsyncReadState_Using)
+		{
+			return this->_buffer32[this->_currentUsageIdx];
+		}
+	}
+	
+	return NULL;
+}
+
+Color5551* Render3DColorOut::GetInUseFramebuffer16() const
+{
+	if (this->_currentUsageIdx > 1)
+	{
+		return NULL;
+	}
+	
+	return this->_buffer16[this->_currentUsageIdx];
+}
+
+Color4u8* Render3DColorOut::GetInUseFramebuffer32() const
+{
+	if (this->_currentUsageIdx > 1)
+	{
+		return NULL;
+	}
+	
+	return this->_buffer32[this->_currentUsageIdx];
+}
+
+Render3DError Render3DColorOut::FillZero()
+{
+	// Do nothing. This is method is implementation dependent.
+	return RENDER3DERROR_NOERR;
+}
+
+Render3DError Render3DColorOut::FillColor32(const Color4u8 *src, const bool isSrcNativeSize)
+{
+	// Do nothing. This is method is implementation dependent.
+	return RENDER3DERROR_NOERR;
+}
+
+Null3DColorOut::Null3DColorOut()
+{
+	_buffer32[0] = (Color4u8 *)malloc_alignedPage(_framebufferSize32);
+	_buffer16[0] = (Color5551 *)_buffer32[0];
+	memset(_buffer32[0], 0, _framebufferSize32);
+	
+	_state[0] = AsyncReadState_Ready;
+	_state[1] = AsyncReadState_Disabled;
+	
+	_currentReadyIdx = 0;
+}
+
+Null3DColorOut::~Null3DColorOut()
+{
+	free_aligned(this->_buffer32[0]);
+	this->_buffer32[0] = NULL;
+	this->_buffer16[0] = NULL;
+}
+
+size_t Null3DColorOut::BindRead16()
+{
+	if ( (this->_currentUsageIdx != RENDER3D_RESOURCE_INDEX_NONE) || (this->_currentReadingIdx32 == RENDER3D_RESOURCE_INDEX_NONE) )
+	{
+		this->_currentReadingIdx16 = this->BindRead32();
+	}
+	else
+	{
+		this->_currentReadingIdx16 = this->_currentReadingIdx32;
+	}
+	
+	return this->_currentReadingIdx16;
+}
+
+size_t Null3DColorOut::UnbindRead16()
+{
+	this->_currentReadingIdx16 = RENDER3D_RESOURCE_INDEX_NONE;
+	if (this->_currentReadingIdx32 == RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		this->_state[0] = AsyncReadState_Ready;
+	}
+	
+	return 0;
+}
+
+size_t Null3DColorOut::BindRead32()
+{
+	if (this->_currentUsageIdx != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		this->_state[this->_currentUsageIdx] = AsyncReadState_Reading;
+		this->_currentReadingIdx32 = this->_currentUsageIdx;
+		this->_currentUsageIdx = RENDER3D_RESOURCE_INDEX_NONE;
+	}
+	else if (this->_currentReadyIdx != RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		this->_state[this->_currentReadyIdx] = AsyncReadState_Reading;
+		this->_currentReadingIdx32 = this->_currentReadyIdx;
+		this->_currentReadyIdx = RENDER3D_RESOURCE_INDEX_NONE;
+	}
+	
+	return this->_currentReadingIdx32;
+}
+
+size_t Null3DColorOut::UnbindRead32()
+{
+	this->_currentReadingIdx32 = RENDER3D_RESOURCE_INDEX_NONE;
+	if (this->_currentReadingIdx16 == RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		this->_state[0] = AsyncReadState_Ready;
+	}
+	
+	return 0;
+}
+
+size_t Null3DColorOut::BindRenderer()
+{
+	this->_state[0] = AsyncReadState_Using;
+	this->_currentUsageIdx = 0;
+	this->_currentReadyIdx = RENDER3D_RESOURCE_INDEX_NONE;
+	
+	return 0;
+}
+
+Render3DError Null3DColorOut::SetSize(size_t w, size_t h)
+{
+	Render3DError error = Render3DColorOut::SetSize(w, h);
+	if (error != RENDER3DERROR_NOERR)
+	{
+		return error;
+	}
+	
+	if ( (w == this->_framebufferWidth) && (h == this->_framebufferHeight) )
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
+	Color4u8 *oldColor32 = this->_buffer32[0];
+	this->_buffer32[0] = (Color4u8 *)malloc_alignedPage(this->_framebufferSize32);
+	this->_buffer16[0] = (Color5551 *)this->_buffer32[0];
+	memset(this->_buffer32[0], 0, this->_framebufferSize32);
+	free_aligned(oldColor32);
+	
+	return RENDER3DERROR_NOERR;
+}
+
+const Color5551* Null3DColorOut::GetFramebuffer16() const
+{
+	return this->_buffer16[0];
+}
+
+const Color4u8* Null3DColorOut::GetFramebuffer32() const
+{
+	return this->_buffer32[0];
+}
+
+Color5551* Null3DColorOut::GetInUseFramebuffer16() const
+{
+	return this->_buffer16[0];
+}
+
+Color4u8* Null3DColorOut::GetInUseFramebuffer32() const
+{
+	return this->_buffer32[0];
+}
+
 Render3DTexture::Render3DTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes) : TextureStore(texAttributes, palAttributes)
 {
 	_isSamplingEnabled = true;
@@ -319,8 +782,10 @@ Render3D::Render3D()
 	_framebufferPixCount = _framebufferWidth * _framebufferHeight;
 	_framebufferSIMDPixCount = 0;
 	_framebufferColorSizeBytes = _framebufferWidth * _framebufferHeight * sizeof(Color4u8);
-	_framebufferColor = NULL;
-	_framebufferColor16 = NULL;
+	
+	_colorOut = BaseColorOut;
+	_colorOut->SetRenderer(this);
+	_lastBoundColorOut = RENDER3D_RESOURCE_INDEX_NONE;
 	
 	_internalRenderingFormat = NDSColorFormat_BGR666_Rev;
 	_outputFormat = NDSColorFormat_BGR666_Rev;
@@ -395,17 +860,17 @@ std::string Render3D::GetName()
 
 const Color5551* Render3D::GetFramebuffer16() const
 {
-	return this->_framebufferColor16;
+	return this->_colorOut->GetFramebuffer16();
 }
 
 const Color4u8* Render3D::GetFramebuffer32() const
 {
-	return this->_framebufferColor;
+	return this->_colorOut->GetFramebuffer32();
 }
 
 Color4u8* Render3D::GetInUseFramebuffer32() const
 {
-	return this->_framebufferColor;
+	return this->_colorOut->GetInUseFramebuffer32();
 }
 
 size_t Render3D::GetFramebufferWidth()
@@ -434,8 +899,7 @@ Render3DError Render3D::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferHeight = h;
 	this->_framebufferPixCount = w * h;
 	this->_framebufferColorSizeBytes = w * h * sizeof(Color4u8);
-	this->_framebufferColor = GPU->GetEngineMain()->Get3DFramebufferMain(); // Just use the buffer that is already present on the main GPU engine
-	this->_framebufferColor16 = (Color5551 *)GPU->GetEngineMain()->Get3DFramebuffer16(); // Just use the buffer that is already present on the main GPU engine
+	this->_colorOut->SetSize(w, h);
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -544,6 +1008,8 @@ const POLY* Render3D::GetRawPolyList() const
 
 Render3DError Render3D::ApplyRenderingSettings(const GFX3D_State &renderState)
 {
+	this->_colorOut->SetColorFormat(this->_outputFormat);
+	
 	this->_enableEdgeMark = (CommonSettings.GFX3D_EdgeMark) ? (renderState.DISP3DCNT.EnableEdgeMarking != 0) : false;
 	this->_enableFog = (CommonSettings.GFX3D_Fog) ? (renderState.DISP3DCNT.EnableFog != 0) : false;
 	this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
@@ -585,49 +1051,6 @@ Render3DError Render3D::PostprocessFramebuffer()
 
 Render3DError Render3D::EndRender()
 {
-	return RENDER3DERROR_NOERR;
-}
-
-Render3DError Render3D::FlushFramebuffer(const Color4u8 *__restrict srcFramebuffer, Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16)
-{
-	if ( (dstFramebufferMain == NULL) && (dstFramebuffer16 == NULL) )
-	{
-		return RENDER3DERROR_NOERR;
-	}
-	
-	if (dstFramebufferMain != NULL)
-	{
-		if ( (this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev) )
-		{
-			ColorspaceConvertBuffer8888To6665<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, this->_framebufferPixCount);
-		}
-		else if ( (this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev) )
-		{
-			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, this->_framebufferPixCount);
-		}
-		else if ( ((this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev)) ||
-		          ((this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) )
-		{
-			memcpy(dstFramebufferMain, srcFramebuffer, this->_framebufferPixCount * sizeof(Color4u8));
-		}
-		
-		this->_renderNeedsFlushMain = false;
-	}
-	
-	if (dstFramebuffer16 != NULL)
-	{
-		if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
-		{
-			ColorspaceConvertBuffer6665To5551<false, false>((u32 *)srcFramebuffer, dstFramebuffer16, this->_framebufferPixCount);
-		}
-		else if (this ->_outputFormat == NDSColorFormat_BGR888_Rev)
-		{
-			ColorspaceConvertBuffer8888To5551<false, false>((u32 *)srcFramebuffer, dstFramebuffer16, this->_framebufferPixCount);
-		}
-		
-		this->_renderNeedsFlush16 = false;
-	}
-	
 	return RENDER3DERROR_NOERR;
 }
 
@@ -787,15 +1210,7 @@ Render3DError Render3D::SetupViewport(const GFX3D_Viewport viewport)
 
 Render3DError Render3D::Reset()
 {
-	if (this->_framebufferColor != NULL)
-	{
-		memset(this->_framebufferColor, 0, this->_framebufferColorSizeBytes);
-	}
-	
-	if (this->_framebufferColor16 != NULL)
-	{
-		memset(this->_framebufferColor16, 0, this->_framebufferPixCount * sizeof(Color5551));
-	}
+	this->_colorOut->Reset();
 	
 	this->_clearColor6665.value = 0;
 	memset(&this->_clearAttributes, 0, sizeof(FragmentAttributes));
@@ -818,8 +1233,7 @@ Render3DError Render3D::RenderPowerOff()
 	}
 	
 	this->_isPoweredOn = false;
-	memset(GPU->GetEngineMain()->Get3DFramebufferMain(), 0, this->_framebufferColorSizeBytes);
-	memset(GPU->GetEngineMain()->Get3DFramebuffer16(), 0, this->_framebufferPixCount * sizeof(u16));
+	this->_colorOut->FillZero();
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -875,6 +1289,11 @@ Render3DError Render3D::Render(const GFX3D_State &renderState, const GFX3D_Geome
 
 Render3DError Render3D::RenderFinish()
 {
+	if (!this->_renderNeedsFinish)
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
 	this->_renderNeedsFlushMain = true;
 	this->_renderNeedsFlush16 = true;
 	
@@ -892,11 +1311,19 @@ Render3DError Render3D::RenderFlush(bool willFlushBuffer32, bool willFlushBuffer
 	if (this->_renderNeedsFlushMain && willFlushBuffer32)
 	{
 		this->_renderNeedsFlushMain = false;
+		this->_colorOut->BindRead32();
 	}
 	
 	if (this->_renderNeedsFlush16 && willFlushBuffer16)
 	{
+		if (this->_renderNeedsFlushMain)
+		{
+			this->_renderNeedsFlushMain = false;
+			this->_colorOut->BindRead32();
+		}
+		
 		this->_renderNeedsFlush16 = false;
+		this->_colorOut->BindRead16();
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -910,85 +1337,12 @@ Render3DError Render3D::VramReconfigureSignal()
 
 Render3DError Render3D::FillZero()
 {
-	Render3DError error = RENDER3DERROR_NOERR;
-	
-	if (this->_framebufferColor != NULL)
-	{
-		memset(this->_framebufferColor, 0, this->_framebufferColorSizeBytes);
-	}
-	else
-	{
-		error = RENDER3DERROR_INVALID_BUFFER;
-	}
-	
-	if (this->_framebufferColor16 != NULL)
-	{
-		memset(this->_framebufferColor16, 0, this->_framebufferPixCount * sizeof(Color5551));
-	}
-	else
-	{
-		error = RENDER3DERROR_INVALID_BUFFER;
-	}
-	
-	return RENDER3DERROR_NOERR;
+	return this->_colorOut->FillZero();
 }
 
 Render3DError Render3D::FillColor32(const Color4u8 *__restrict src, const bool isSrcNativeSize)
 {
-	Render3DError error = RENDER3DERROR_NOERR;
-	
-	const u32 *__restrict src32 = (const u32 *__restrict)src;
-	u32 *__restrict mutableFramebuffer32 = (u32 *__restrict)this->GetInUseFramebuffer32();
-	
-	if ( (src32 == NULL) || (mutableFramebuffer32 == NULL) )
-	{
-		error = RENDER3DERROR_INVALID_BUFFER;
-		return error;
-	}
-	
-	this->RenderFinish();
-	this->RenderFlush(false, false);
-	this->SetRenderNeedsFinish(false);
-	
-	const size_t w = this->_framebufferWidth;
-	const size_t h = this->_framebufferHeight;
-	const bool isDstNativeSize = ( (w == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (h == GPU_FRAMEBUFFER_NATIVE_HEIGHT) );
-	
-	if (isSrcNativeSize)
-	{
-		if (isDstNativeSize) // Framebuffer is at the native size
-		{
-			if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
-			{
-				ColorspaceConvertBuffer8888To6665<false, false>(src32, mutableFramebuffer32, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-			}
-			else
-			{
-				ColorspaceCopyBuffer32<false, false>(src32, mutableFramebuffer32, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-			}
-		}
-		else // Framebuffer is at a custom size
-		{
-			if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
-			{
-				ColorspaceConvertBuffer8888To6665<false, false>(src32, (u32 *)src32, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-			}
-			
-			for (size_t l = 0; l < GPU_FRAMEBUFFER_NATIVE_HEIGHT; l++)
-			{
-				const GPUEngineLineInfo &lineInfo = GPU->GetLineInfoAtIndex(l);
-				CopyLineExpandHinted<0x3FFF, true, false, false, 4>(lineInfo, src32, mutableFramebuffer32);
-				src32 += GPU_FRAMEBUFFER_NATIVE_WIDTH;
-				mutableFramebuffer32 += lineInfo.pixelCount;
-			}
-		}
-	}
-	else
-	{
-		memcpy(mutableFramebuffer32, src32, this->_framebufferColorSizeBytes);
-	}
-	
-	return error;
+	return this->_colorOut->FillColor32(src, isSrcNativeSize);
 }
 
 template <size_t SIMDBYTES>

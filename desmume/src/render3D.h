@@ -63,15 +63,16 @@ enum RendererID
 	RENDERID_OPENGL_AUTO    = 1000,
 	RENDERID_OPENGL_LEGACY  = 1001,
 	RENDERID_OPENGL_3_2     = 1002,
-	RENDERID_OPENG_ES       = 1003,
+	RENDERID_OPENGL_ES      = 1003,
 	RENDERID_METAL          = 2000
 };
 
 enum Render3DErrorCode
 {
-	RENDER3DERROR_NOERR          = 0,
-	RENDER3DERROR_INVALID_VALUE  = 1,
-	RENDER3DERROR_INVALID_BUFFER = 2
+	RENDER3DERROR_NOERR           = 0,
+	RENDER3DERROR_INVALID_VALUE   = 1,
+	RENDER3DERROR_INVALID_BUFFER  = 2,
+	RENDER3DERROR_INVALID_BINDING = 3
 };
 typedef int Render3DError;
 
@@ -175,6 +176,79 @@ public:
 	NDSVertex* GetVertexBuffer(const size_t index);
 };
 
+class Render3DColorOut
+{
+protected:
+	Render3D *_renderer;
+	NDSColorFormat _format;
+	
+	AsyncReadState _state[2];
+	Color5551 *_buffer16[2];
+	Color4u8 *_buffer32[2];
+	
+	size_t _currentUsageIdx;
+	size_t _currentReadyIdx;
+	size_t _currentReadingIdx16;
+	size_t _currentReadingIdx32;
+	
+	size_t _framebufferWidth;
+	size_t _framebufferHeight;
+	size_t _framebufferPixelCount;
+	size_t _framebufferSize16;
+	size_t _framebufferSize32;
+	
+public:
+	Render3DColorOut();
+	virtual ~Render3DColorOut() {};
+	
+	Render3D* GetRenderer() const;
+	void SetRenderer(Render3D *theRenderer);
+	
+	NDSColorFormat GetColorFormat() const;
+	void SetColorFormat(NDSColorFormat theFormat);
+	
+	virtual void Reset();
+	
+	virtual size_t BindRead16();
+	virtual size_t UnbindRead16();
+	
+	virtual size_t BindRead32();
+	virtual size_t UnbindRead32();
+	
+	virtual size_t BindRenderer();
+	virtual void UnbindRenderer(const size_t idxRead);
+	
+	virtual Render3DError SetSize(size_t w, size_t h);
+	virtual const Color5551* GetFramebuffer16() const;
+	virtual const Color4u8* GetFramebuffer32() const;
+	virtual Color5551* GetInUseFramebuffer16() const;
+	virtual Color4u8* GetInUseFramebuffer32() const;
+	
+	virtual Render3DError FillZero();
+	virtual Render3DError FillColor32(const Color4u8 *src, const bool isSrcNativeSize);
+};
+
+class Null3DColorOut : public Render3DColorOut
+{
+public:
+	Null3DColorOut();
+	virtual ~Null3DColorOut();
+	
+	virtual size_t BindRead16();
+	virtual size_t UnbindRead16();
+	
+	virtual size_t BindRead32();
+	virtual size_t UnbindRead32();
+	
+	virtual size_t BindRenderer();
+	
+	virtual Render3DError SetSize(size_t w, size_t h);
+	virtual const Color5551* GetFramebuffer16() const;
+	virtual const Color4u8* GetFramebuffer32() const;
+	virtual Color5551* GetInUseFramebuffer16() const;
+	virtual Color4u8* GetInUseFramebuffer32() const;
+};
+
 class Render3DTexture : public TextureStore
 {
 protected:
@@ -209,8 +283,9 @@ protected:
 	size_t _framebufferPixCount;
 	size_t _framebufferSIMDPixCount;
 	size_t _framebufferColorSizeBytes;
-	Color4u8 *_framebufferColor;
-	Color5551 *_framebufferColor16;
+	
+	Render3DColorOut *_colorOut;
+	size_t _lastBoundColorOut;
 	
 	Color4u8 _clearColor6665;
 	FragmentAttributes _clearAttributes;
@@ -257,7 +332,6 @@ protected:
 	virtual Render3DError RenderGeometry();
 	virtual Render3DError PostprocessFramebuffer();
 	virtual Render3DError EndRender();
-	virtual Render3DError FlushFramebuffer(const Color4u8 *__restrict srcFramebuffer, Color4u8 *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 opaquePolyID);
 	virtual Render3DError ClearUsingValues(const Color4u8 &clearColor6665, const FragmentAttributes &clearAttributes);
@@ -316,7 +390,7 @@ public:
 	virtual Render3DError FillColor32(const Color4u8 *__restrict src, const bool isSrcNativeSize);
 	
 	const Color5551* GetFramebuffer16() const;
-	virtual const Color4u8* GetFramebuffer32() const;
+	const Color4u8* GetFramebuffer32() const;
 	Color4u8* GetInUseFramebuffer32() const;
 	
 	bool GetRenderNeedsFinish() const;
