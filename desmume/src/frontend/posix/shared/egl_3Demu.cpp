@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2024 DeSmuME team
+	Copyright (C) 2024-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -45,21 +45,73 @@ static bool __egl_initOpenGL(const int requestedAPI, const int requestedProfile,
 
 	EGLint eglMajorVersion;
 	EGLint eglMinorVersion;
-	
+	EGLBoolean didDisplayInitialize = EGL_FALSE;
 	EGLAttrib displayAttr[] = {EGL_NONE};
+
+	// Try to initialize EGL on a Wayland display first, which should be available on most
+	// modern platforms.
 	currDisplay = eglGetPlatformDisplay(EGL_PLATFORM_WAYLAND_EXT, EGL_DEFAULT_DISPLAY, displayAttr);
-	if(currDisplay == EGL_NO_DISPLAY)
-		currDisplay = eglGetPlatformDisplay(EGL_PLATFORM_XCB_EXT, EGL_DEFAULT_DISPLAY, displayAttr);
-	if(currDisplay == EGL_NO_DISPLAY)
-		currDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-	if(currDisplay == EGL_NO_DISPLAY)
+	if (currDisplay != EGL_NO_DISPLAY)
 	{
-		puts("EGL: failed to obtain display handle");
+		didDisplayInitialize = eglInitialize(currDisplay, &eglMajorVersion, &eglMinorVersion);
+		if (didDisplayInitialize == GL_TRUE)
+		{
+			puts("EGL: Successfully initialized with Wayland.");
+		}
+	}
+
+	// Try to initialize EGL for XCB next, which should be available for modern X11 platforms.
+	if (didDisplayInitialize == GL_FALSE)
+	{
+		currDisplay = eglGetPlatformDisplay(EGL_PLATFORM_XCB_EXT, EGL_DEFAULT_DISPLAY, displayAttr);
+		if (currDisplay != EGL_NO_DISPLAY)
+		{
+			didDisplayInitialize = eglInitialize(currDisplay, &eglMajorVersion, &eglMinorVersion);
+			if (didDisplayInitialize == GL_TRUE)
+			{
+				puts("EGL: Successfully initialized with XCB.");
+			}
+		}
+	}
+
+	// If for some reason XCB didn't work, try to initialize EGL on whatever X11 is available.
+	if (didDisplayInitialize == GL_FALSE)
+	{
+		currDisplay = eglGetPlatformDisplay(EGL_PLATFORM_X11_EXT, EGL_DEFAULT_DISPLAY, displayAttr);
+		if (currDisplay != EGL_NO_DISPLAY)
+		{
+			didDisplayInitialize = eglInitialize(currDisplay, &eglMajorVersion, &eglMinorVersion);
+			if (didDisplayInitialize == GL_TRUE)
+			{
+				puts("EGL: Successfully initialized with generic X11.");
+			}
+		}
+	}
+
+	// For ancient platforms that don't support eglGetPlatformDisplay(), an EGL v1.5 function,
+	// try calling the generic eglGetDisplay() function as a last resort since it is compatible
+	// with older versions of EGL.
+	if (didDisplayInitialize == GL_FALSE)
+	{
+		currDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+		if (currDisplay != EGL_NO_DISPLAY)
+		{
+			didDisplayInitialize = eglInitialize(currDisplay, &eglMajorVersion, &eglMinorVersion);
+			if (didDisplayInitialize == GL_TRUE)
+			{
+				puts("EGL: Successfully initialized with a generic display.");
+			}
+		}
+	}
+
+	if (currDisplay == EGL_NO_DISPLAY)
+	{
+		puts("EGL: Could not acquire a display handle to initialize EGL.");
 		return false;
 	}
-	if (eglInitialize(currDisplay, &eglMajorVersion, &eglMinorVersion) == EGL_FALSE)
+	else if (didDisplayInitialize == GL_FALSE)
 	{
-		puts("EGL: eglInitialize failed");
+		puts("EGL: Could not initialize EGL with the acquired display handle.");
 		return false;
 	}
 
