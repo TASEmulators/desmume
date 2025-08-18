@@ -25,7 +25,6 @@
 					<Add option="`pkg-config --libs gtk+-2.0`" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libGL.so" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libGLESv2.so" />
-					<Add library="/usr/lib/x86_64-linux-gnu/libOSMesa.so" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libEGL.so" />
 				</Linker>
 			</Target>
@@ -72,7 +71,6 @@
 					<Add option="`pkg-config --libs gtk+-3.0`" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libGL.so" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libGLESv2.so" />
-					<Add library="/usr/lib/x86_64-linux-gnu/libOSMesa.so" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libEGL.so" />
 				</Linker>
 				<ExtraCommands>
@@ -2024,20 +2022,6 @@
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="../shared/mic_openal.cpp" />
-		<Unit filename="../shared/osmesa_3Demu.cpp">
-			<Option target="GTK2_x64_Debug" />
-			<Option target="GTK2_x64_Release" />
-			<Option target="GTK3_x64_Debug" />
-			<Option target="GTK3_x64_Release" />
-		</Unit>
-		<Unit filename="../shared/osmesa_3Demu.h">
-			<Option target="GTK2_x64_Debug" />
-			<Option target="GTK2_x64_Release" />
-			<Option target="GTK3_x64_Debug" />
-			<Option target="GTK3_x64_Release" />
-			<Option target="GTK3_AArch64_Debug" />
-			<Option target="GTK3_AArch64_Release" />
-		</Unit>
 		<Unit filename="../shared/sdl_3Demu.cpp">
 			<Option target="GTK2_x64_Debug" />
 			<Option target="GTK2_x64_Release" />

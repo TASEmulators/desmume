@@ -22,7 +22,6 @@ dep_alsa = dependency('alsa', required: false)
 dep_soundtouch = dependency('soundtouch', required: false)
 dep_agg = dependency('libagg', required: false)
 dep_fontconfig = dependency('fontconfig', required: false)
-dep_osmesa = dependency('osmesa', required: false)
 dep_egl = dependency('egl', required: false)
 
 # XXX: something wrong with this one.
@@ -247,20 +246,6 @@ if get_option('glx')
     endif
   else
     message('Cannot use GLX -- gl library not found.')
-  endif
-elif get_option('osmesa')
-  if dep_osmesa.found()
-    if get_option('opengl') and dep_gl.found()
-      message('OSMesa contexts are deprecated.')
-      add_global_arguments('-DENABLE_OSMESA', language: ['c', 'cpp'])
-      dependencies += dep_osmesa
-    elif get_option('opengles')
-      message('OSMesa contexts are incompatible with OpenGL ES -- cancelling the use of OSMesa.')
-    else
-      message('OSMesa contexts are only compatible with standard OpenGL -- cancelling the use of OSMesa.')
-    endif
-  else
-    message('Cannot use OSMesa -- osmesa library not found.')
   endif
 elif get_option('egl')
   if dep_egl.found()
