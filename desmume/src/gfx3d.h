@@ -609,8 +609,8 @@ struct CPoly
 typedef struct CPoly CPoly;
 
 // Used to communicate state to the renderer.
-// This struct should be at least 16-bit aligned for GLSL.
-// Tables within the struct should be at least 32-bit aligned for SIMD.
+// This struct should be at least 16-byte aligned for GLSL.
+// Tables within the struct should be at least 32-byte aligned for SIMD.
 struct GFX3D_State
 {
 	// First 16-byte chunk
