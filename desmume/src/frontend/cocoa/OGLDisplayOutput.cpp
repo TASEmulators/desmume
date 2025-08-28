@@ -5092,6 +5092,12 @@ void OGLClientSharedData::InitOGL(const NDSDisplayInfo *displayInfoList, const N
 	
 	if (this->_canProcessFetchOnGPU)
 	{
+		// Set up rendering states
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_STENCIL_TEST);
+		glDisable(GL_BLEND);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		
 		// Set up VBOs
 		glGenBuffers(1, &this->_vboVideoProcVtxID);
 		glGenBuffers(1, &this->_vboVideoProcTexCoordNativeID);
@@ -5427,9 +5433,7 @@ GLuint OGLClientSharedData::_FetchFromDisplayID_OGL(const NDSDisplayInfo &curren
 	glUseProgram(programID);
 	
 	glViewport(0, 0, (GLsizei)currentDisplayInfo.renderedWidth[displayID], (GLsizei)currentDisplayInfo.renderedHeight[displayID]);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_STENCIL_TEST);
-	glDisable(GL_BLEND);
+	glClear(GL_COLOR_BUFFER_BIT);
 	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texVideoID);
