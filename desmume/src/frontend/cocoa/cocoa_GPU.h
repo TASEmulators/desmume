@@ -114,6 +114,7 @@ protected:
 	pthread_rwlock_t *_rwlockOutputList;
 	pthread_mutex_t _mutexDisplayLinkLists;
 	NSMutableArray *_cdsOutputList;
+	volatile int32_t _numberViewsPreferringCPUVideoProcessing;
 	volatile int32_t _numberViewsUsingDirectToCPUFiltering;
 	
 	DisplayLinksActiveMap _displayLinksActiveList;
@@ -123,11 +124,17 @@ public:
 	MacGPUFetchObjectDisplayLink();
 	~MacGPUFetchObjectDisplayLink();
 	
+	volatile int32_t GetNumberViewsPreferringCPUVideoProcessing() const;
 	volatile int32_t GetNumberViewsUsingDirectToCPUFiltering() const;
 	
 	void SetOutputList(NSMutableArray *theOutputList, pthread_rwlock_t *theRWLock);
+	
+	void IncrementViewsPreferringCPUVideoProcessing();
+	void DecrementViewsPreferringCPUVideoProcessing();
+	
 	void IncrementViewsUsingDirectToCPUFiltering();
 	void DecrementViewsUsingDirectToCPUFiltering();
+	
 	void PushVideoDataToAllDisplayViews();
 	
 	void DisplayLinkStartUsingID(CGDirectDisplayID displayID);

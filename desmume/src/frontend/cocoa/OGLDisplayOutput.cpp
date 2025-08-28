@@ -24,20 +24,28 @@
 
 #include <sstream>
 
+#ifndef GL_R8
+	#define GL_R8 0x8229
+#endif
+
+#ifndef GL_R16UI
+	#define GL_R16UI 0x8234
+#endif
+
 
 // VERTEX SHADER FOR HUD OUTPUT
 static const char *HUDOutputVertShader_100 = {"\
-	ATTRIBUTE vec2 inPosition; \n\
-	ATTRIBUTE vec4 inColor; \n\
-	ATTRIBUTE vec2 inTexCoord0; \n\
+	IN_VTX_POSITION vec2 inPosition; \n\
+	IN_VTX_COLOR vec4 inColor; \n\
+	IN_VTX_TEXCOORD0 vec2 inTexCoord0; \n\
 	\n\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
 	uniform bool renderFlipped; \n\
 	\n\
-	VARYING vec4 vtxColor; \n\
-	VARYING vec2 texCoord; \n\
+	OUT_VARYING vec4 vtxColor; \n\
+	OUT_VARYING vec2 texCoord; \n\
 	\n\
 	void main() \n\
 	{ \n\
@@ -65,27 +73,27 @@ static const char *HUDOutputVertShader_100 = {"\
 
 // FRAGMENT SHADER FOR HUD OUTPUT
 static const char *HUDOutputFragShader_110 = {"\
-	VARYING vec4 vtxColor;\n\
-	VARYING vec2 texCoord;\n\
+	IN_VARYING vec4 vtxColor;\n\
+	IN_VARYING vec2 texCoord;\n\
 	uniform sampler2D tex;\n\
 	\n\
 	void main()\n\
 	{\n\
-		OUT_FRAG_COLOR = SAMPLE4_TEX_2D(tex, texCoord) * vtxColor;\n\
+		FRAG_COLOR_VAR = SAMPLE4_TEX_2D(tex, texCoord) * vtxColor;\n\
 	}\n\
 "};
 
 // VERTEX SHADER FOR DISPLAY OUTPUT
 static const char *Sample1x1OutputVertShader_100 = {"\
-	ATTRIBUTE vec2 inPosition; \n\
-	ATTRIBUTE vec2 inTexCoord0; \n\
+	IN_VTX_POSITION vec2 inPosition; \n\
+	IN_VTX_TEXCOORD0 vec2 inTexCoord0; \n\
 	\n\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
 	uniform bool renderFlipped; \n\
 	\n\
-	VARYING vec2 texCoord[1]; \n\
+	OUT_VARYING vec2 texCoord[1]; \n\
 	\n\
 	void main() \n\
 	{ \n\
@@ -117,15 +125,15 @@ static const char *BicubicSample4x4Output_VertShader_110 = {"\
 	//                       04|03|02|11\n\
 	//                       15|14|13|12\n\
 	\n\
-	ATTRIBUTE vec2 inPosition;\n\
-	ATTRIBUTE vec2 inTexCoord0;\n\
+	IN_VTX_POSITION vec2 inPosition;\n\
+	IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
 	\n\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
 	uniform bool renderFlipped; \n\
 	\n\
-	VARYING vec2 texCoord[16];\n\
+	OUT_VARYING vec2 texCoord[16];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -179,15 +187,15 @@ static const char *BicubicSample5x5Output_VertShader_110 = {"\
 	//                       17|04|03|02|11\n\
 	//                       16|15|14|13|12\n\
 	\n\
-	ATTRIBUTE vec2 inPosition;\n\
-	ATTRIBUTE vec2 inTexCoord0;\n\
+	IN_VTX_POSITION vec2 inPosition;\n\
+	IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
 	\n\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
 	uniform bool renderFlipped; \n\
 	\n\
-	VARYING vec2 texCoord[25];\n\
+	OUT_VARYING vec2 texCoord[25];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -252,15 +260,15 @@ static const char *BicubicSample6x6Output_VertShader_110 = {"\
 	//                      16|15|14|13|12|29\n\
 	//                      35|34|33|32|31|30\n\
 	\n\
-	ATTRIBUTE vec2 inPosition;\n\
-	ATTRIBUTE vec2 inTexCoord0;\n\
+	IN_VTX_POSITION vec2 inPosition;\n\
+	IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
 	\n\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
 	uniform bool renderFlipped; \n\
 	\n\
-	VARYING vec2 texCoord[36];\n\
+	OUT_VARYING vec2 texCoord[36];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -330,14 +338,14 @@ static const char *BicubicSample6x6Output_VertShader_110 = {"\
 
 // FRAGMENT SHADER FOR DISPLAY OUTPUT
 static const char *PassthroughOutputFragShader_110 = {"\
-	VARYING vec2 texCoord[1];\n\
+	IN_VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
 	uniform float backlightIntensity;\n\
 	\n\
 	void main()\n\
 	{\n\
-		OUT_FRAG_COLOR.rgb = SAMPLE3_TEX_RECT(tex, texCoord[0]) * backlightIntensity;\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = SAMPLE3_TEX_RECT(tex, texCoord[0]) * backlightIntensity;\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
@@ -353,9 +361,9 @@ static const char *Sample1x1_VertShader_110 = {"\
 	//                       17|04|03|02|11\n\
 	//                       16|15|14|13|12\n\
 	\n\
-	ATTRIBUTE vec2 inPosition;\n\
-	ATTRIBUTE vec2 inTexCoord0;\n\
-	VARYING vec2 texCoord[1];\n\
+	IN_VTX_POSITION vec2 inPosition;\n\
+	IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
+	OUT_VARYING vec2 texCoord[1];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -373,9 +381,9 @@ static const char *Sample2x2_VertShader_110 = {"\
 	// Input Pixel Mapping:  00|01\n\
 	//                       03|02\n\
 	\n\
-	ATTRIBUTE vec2 inPosition;\n\
-	ATTRIBUTE vec2 inTexCoord0;\n\
-	VARYING vec2 texCoord[4];\n\
+	IN_VTX_POSITION vec2 inPosition;\n\
+	IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
+	OUT_VARYING vec2 texCoord[4];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -395,9 +403,9 @@ static const char *Sample3x3_VertShader_110 = {"\
 	//                       05|00|01\n\
 	//                       04|03|02\n\
 	\n\
-	ATTRIBUTE vec2 inPosition;\n\
-	ATTRIBUTE vec2 inTexCoord0;\n\
-	VARYING vec2 texCoord[9];\n\
+	IN_VTX_POSITION vec2 inPosition;\n\
+	IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
+	OUT_VARYING vec2 texCoord[9];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -424,9 +432,9 @@ static const char *Sample4x4_VertShader_110 = {"\
 	//                       04|03|02|11\n\
 	//                       15|14|13|12\n\
 	\n\
-	ATTRIBUTE vec2 inPosition;\n\
-	ATTRIBUTE vec2 inTexCoord0;\n\
-	VARYING vec2 texCoord[16];\n\
+	IN_VTX_POSITION vec2 inPosition;\n\
+	IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
+	OUT_VARYING vec2 texCoord[16];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -462,9 +470,9 @@ static const char *Sample5x5_VertShader_110 = {"\
 	//                       17|04|03|02|11\n\
 	//                       16|15|14|13|12\n\
 	\n\
-	ATTRIBUTE vec2 inPosition;\n\
-	ATTRIBUTE vec2 inTexCoord0;\n\
-	VARYING vec2 texCoord[25];\n\
+	IN_VTX_POSITION vec2 inPosition;\n\
+	IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
+	OUT_VARYING vec2 texCoord[25];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -504,19 +512,108 @@ static const char *Sample5x5_VertShader_110 = {"\
 
 // FRAGMENT SHADER PASSTHROUGH FOR FILTERS
 static const char *PassthroughFragShader_110 = {"\
-	VARYING vec2 texCoord[1];\n\
+	IN_VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	void main()\n\
 	{\n\
-		OUT_FRAG_COLOR.rgb = SAMPLE3_TEX_RECT(tex, texCoord[0]);\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = SAMPLE3_TEX_RECT(tex, texCoord[0]);\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
+"};
+
+// Vertex shader for framebuffer fetch
+static const char *FramebufferFetch_VS = {"\
+IN_VTX_POSITION vec2 inPosition;\n\
+IN_VTX_TEXCOORD0 vec2 inTexCoord0;\n\
+OUT_VARYING vec2 texCoord;\n\
+OUT_VARYING vec2 mbLookup;\n\
+\n\
+void main()\n\
+{\n\
+	texCoord = inTexCoord0;\n\
+	mbLookup = vec2(inTexCoord0.y, 0.5);\n\
+	gl_Position = vec4(inPosition, 0.0, 1.0);\n\
+}\n\
+"};
+
+// Fragment shader for framebuffer fetch
+static const char *FramebufferFetch555_FS = {"\
+IN_VARYING vec2 texCoord;\n\
+IN_VARYING vec2 mbLookup;\n\
+\n\
+uniform usampler2DRect texVideo;\n\
+\n\
+#ifdef APPLY_MASTER_BRIGHTNESS\n\
+uniform sampler2DRect texMasterBrightnessMode;\n\
+uniform sampler2DRect texMasterBrightnessIntensity;\n\
+#endif\n\
+\n\
+void main()\n\
+{\n\
+#ifdef APPLY_MASTER_BRIGHTNESS\n\
+	int mbMode        = int( (SAMPLE4_TEX_RECT(texMasterBrightnessMode, mbLookup).r * 255.0) + 0.5 );\n\
+	float mbIntensity = SAMPLE4_TEX_RECT(texMasterBrightnessIntensity, mbLookup).r * 255.0 / 16.0;\n\
+#endif\n\
+	uint color555 = SAMPLE4_TEX_RECT(texVideo, texCoord).r;\n\
+	vec4 videoColorOut = vec4( float(color555 & 31u) / 31.0, float((color555 >> 5u) & 31u) / 31.0, float((color555 >> 10u) & 31u) / 31.0, 1.0 );\n\
+	\n\
+#ifdef APPLY_MASTER_BRIGHTNESS\n\
+	if (mbMode == 1)\n\
+	{\n\
+		videoColorOut.rgb = videoColorOut.rgb + ((1.0 - videoColorOut.rgb) * mbIntensity);\n\
+	}\n\
+	else if (mbMode == 2)\n\
+	{\n\
+		videoColorOut.rgb = videoColorOut.rgb - (videoColorOut.rgb * mbIntensity);\n\
+	}\n\
+#endif\n\
+	\n\
+	FRAG_COLOR_VAR = videoColorOut;\n\
+}\n\
+"};
+
+static const char *FramebufferFetch_FS = {"\
+IN_VARYING vec2 texCoord;\n\
+IN_VARYING vec2 mbLookup;\n\
+\n\
+uniform sampler2DRect texVideo;\n\
+\n\
+#ifdef APPLY_MASTER_BRIGHTNESS\n\
+uniform sampler2DRect texMasterBrightnessMode;\n\
+uniform sampler2DRect texMasterBrightnessIntensity;\n\
+#endif\n\
+\n\
+void main()\n\
+{\n\
+#ifdef APPLY_MASTER_BRIGHTNESS\n\
+	int mbMode        = int( (SAMPLE4_TEX_RECT(texMasterBrightnessMode, mbLookup).r * 255.0) + 0.5 );\n\
+	float mbIntensity = SAMPLE4_TEX_RECT(texMasterBrightnessIntensity, mbLookup).r * 255.0 / 16.0;\n\
+#endif\n\
+	vec4 videoColorOut = SAMPLE4_TEX_RECT(texVideo, texCoord);\n\
+	videoColorOut.a = 1.0;\n\
+#ifdef CONVERT_COLOR_RGB666\n\
+	videoColorOut.rgb  = floor((videoColorOut.rgb * 255.0) + 0.5) / 63.0;\n\
+#endif\n\
+	\n\
+#ifdef APPLY_MASTER_BRIGHTNESS\n\
+	if (mbMode == 1)\n\
+	{\n\
+		videoColorOut.rgb = videoColorOut.rgb + ((1.0 - videoColorOut.rgb) * mbIntensity);\n\
+	}\n\
+	else if (mbMode == 2)\n\
+	{\n\
+		videoColorOut.rgb = videoColorOut.rgb - (videoColorOut.rgb * mbIntensity);\n\
+	}\n\
+#endif\n\
+	\n\
+	FRAG_COLOR_VAR = videoColorOut;\n\
+}\n\
 "};
 
 // FRAGMENT SHADER FOR DEPOSTERIZATION
 static const char *FilterDeposterizeFragShader_110 = {"\
-	VARYING vec2 texCoord[9];\n\
+	IN_VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	vec3 InterpLTE(vec3 pixA, vec3 pixB, vec3 threshold)\n\
@@ -564,7 +661,7 @@ static const char *FilterDeposterizeFragShader_110 = {"\
 		blend[7] = InterpLTE(src[0], src[7], threshold);\n\
 		blend[8] = InterpLTE(src[0], src[8], threshold);\n\
 		\n\
-		OUT_FRAG_COLOR.rgb =	mix(\n\
+		FRAG_COLOR_VAR.rgb =	mix(\n\
 									mix(\n\
 										mix(\n\
 											mix(blend[0], blend[5], weight[0]), mix(blend[0], blend[1], weight[0]),\n\
@@ -582,12 +679,12 @@ static const char *FilterDeposterizeFragShader_110 = {"\
 										0.50),\n\
 									0.50),\n\
 								0.25);\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *FilterBicubicBSplineFragShader_110 = {"\
-	VARYING vec2 texCoord[16];\n\
+	IN_VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
 	uniform float backlightIntensity;\n\
 	\n\
@@ -615,7 +712,7 @@ static const char *FilterBicubicBSplineFragShader_110 = {"\
 		wx /= dot(wx, vec4(1.0));\n\
 		wy /= dot(wy, vec4(1.0));\n\
 		\n\
-		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[ 6]) * wx.r\n\
+		FRAG_COLOR_VAR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[ 6]) * wx.r\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 7]) * wx.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 8]) * wx.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 9]) * wx.a) * wy.r\n\
@@ -631,13 +728,13 @@ static const char *FilterBicubicBSplineFragShader_110 = {"\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx.a) * wy.a;\n\
-		OUT_FRAG_COLOR.rgb *= backlightIntensity;\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb *= backlightIntensity;\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *FilterBicubicBSplineFastFragShader_110 = {"\
-	VARYING vec2 texCoord[1];\n\
+	IN_VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
 	uniform float backlightIntensity;\n\
 	\n\
@@ -657,17 +754,17 @@ static const char *FilterBicubicBSplineFastFragShader_110 = {"\
 		vec2 t0 = texCenterPosition - 1.0 + (w1 / s0);\n\
 		vec2 t1 = texCenterPosition + 1.0 + (w3 / s1);\n\
 		\n\
-		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t0.y)) * s0.x +\n\
+		FRAG_COLOR_VAR.rgb	= (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t0.y)) * s0.x +\n\
 							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t0.y)) * s1.x) * s0.y +\n\
 							  (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t1.y)) * s0.x +\n\
 							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t1.y)) * s1.x) * s1.y;\n\
-		OUT_FRAG_COLOR.rgb *= backlightIntensity;\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb *= backlightIntensity;\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *FilterBicubicMitchellNetravaliFragShader_110 = {"\
-	VARYING vec2 texCoord[16];\n\
+	IN_VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
 	uniform float backlightIntensity;\n\
 	\n\
@@ -695,7 +792,7 @@ static const char *FilterBicubicMitchellNetravaliFragShader_110 = {"\
 		wx /= dot(wx, vec4(1.0));\n\
 		wy /= dot(wy, vec4(1.0));\n\
 		\n\
-		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[ 6]) * wx.r\n\
+		FRAG_COLOR_VAR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[ 6]) * wx.r\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 7]) * wx.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 8]) * wx.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 9]) * wx.a) * wy.r\n\
@@ -711,13 +808,13 @@ static const char *FilterBicubicMitchellNetravaliFragShader_110 = {"\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx.a) * wy.a;\n\
-		OUT_FRAG_COLOR.rgb *= backlightIntensity;\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb *= backlightIntensity;\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *FilterBicubicMitchellNetravaliFastFragShader_110 = {"\
-	VARYING vec2 texCoord[1];\n\
+	IN_VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
 	uniform float backlightIntensity;\n\
 	\n\
@@ -737,12 +834,12 @@ static const char *FilterBicubicMitchellNetravaliFastFragShader_110 = {"\
 		vec2 t0 = texCenterPosition - 1.0 + (w1 / s0);\n\
 		vec2 t1 = texCenterPosition + 1.0 + (w3 / s1);\n\
 		\n\
-		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t0.y)) * s0.x +\n\
+		FRAG_COLOR_VAR.rgb	= (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t0.y)) * s0.x +\n\
 							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t0.y)) * s1.x) * s0.y +\n\
 							  (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t1.y)) * s0.x +\n\
 							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t1.y)) * s1.x) * s1.y;\n\
-		OUT_FRAG_COLOR.rgb *= backlightIntensity;\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb *= backlightIntensity;\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
@@ -751,7 +848,7 @@ static const char *FilterLanczos2FragShader_110 = {"\
 	#define RADIUS 2.0\n\
 	#define FIX(c) max(abs(c), 1e-5)\n\
 	\n\
-	VARYING vec2 texCoord[16];\n\
+	IN_VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
 	uniform float backlightIntensity;\n\
 	\n\
@@ -777,7 +874,7 @@ static const char *FilterLanczos2FragShader_110 = {"\
 		wx /= dot(wx, vec4(1.0));\n\
 		wy /= dot(wy, vec4(1.0));\n\
 		\n\
-		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[ 6]) * wx.r\n\
+		FRAG_COLOR_VAR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[ 6]) * wx.r\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 7]) * wx.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 8]) * wx.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 9]) * wx.a) * wy.r\n\
@@ -793,8 +890,8 @@ static const char *FilterLanczos2FragShader_110 = {"\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx.a) * wy.a;\n\
-		OUT_FRAG_COLOR.rgb *= backlightIntensity;\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb *= backlightIntensity;\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
@@ -804,11 +901,11 @@ static const char *FilterLanczos3FragShader_110 = {"\
 	#define FIX(c) max(abs(c), 1e-5)\n\
 	\n\
 #if GPU_TIER >= SHADERSUPPORT_HIGH_TIER\n\
-	VARYING vec2 texCoord[36];\n\
+	IN_VARYING vec2 texCoord[36];\n\
 #elif GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-	VARYING vec2 texCoord[25];\n\
+	IN_VARYING vec2 texCoord[25];\n\
 #else\n\
-	VARYING vec2 texCoord[16];\n\
+	IN_VARYING vec2 texCoord[16];\n\
 #endif\n\
 	uniform sampler2DRect tex;\n\
 	uniform float backlightIntensity;\n\
@@ -844,7 +941,7 @@ static const char *FilterLanczos3FragShader_110 = {"\
 		wy2 /= sumY;\n\
 		\n\
 #if GPU_TIER >= SHADERSUPPORT_HIGH_TIER\n\
-		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[20]) * wx1.r\n\
+		FRAG_COLOR_VAR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[20]) * wx1.r\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[21]) * wx2.r\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[22]) * wx1.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[23]) * wx2.g\n\
@@ -881,7 +978,7 @@ static const char *FilterLanczos3FragShader_110 = {"\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[31]) * wx1.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[30]) * wx2.b) * wy2.b;\n\
 #elif GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[20]) * wx1.r\n\
+		FRAG_COLOR_VAR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[20]) * wx1.r\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[21]) * wx2.r\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[22]) * wx1.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[23]) * wx2.g\n\
@@ -918,7 +1015,7 @@ static const char *FilterLanczos3FragShader_110 = {"\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 2.0, 3.0)) * wx1.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0, 3.0)) * wx2.b) * wy2.b;\n\
 #else\n\
-		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-2.0,-2.0)) * wx1.r\n\
+		FRAG_COLOR_VAR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-2.0,-2.0)) * wx1.r\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-1.0,-2.0)) * wx2.r\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 0.0,-2.0)) * wx1.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 1.0,-2.0)) * wx2.g\n\
@@ -955,13 +1052,13 @@ static const char *FilterLanczos3FragShader_110 = {"\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 2.0, 3.0)) * wx1.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0, 3.0)) * wx2.b) * wy2.b;\n\
 #endif\n\
-		OUT_FRAG_COLOR.rgb *= backlightIntensity;\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb *= backlightIntensity;\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *Scalar2xScanlineFragShader_110 = {"\
-	VARYING vec2 texCoord[1];\n\
+	IN_VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	//---------------------------------------\n\
@@ -975,12 +1072,12 @@ static const char *Scalar2xScanlineFragShader_110 = {"\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
 		float w = mix( mix(1.000, 0.875, f.x), mix(0.875, 0.750, f.x), f.y );\n\
 		\n\
-		OUT_FRAG_COLOR = vec4(SAMPLE3_TEX_RECT(tex, texCoord[0]) * w, 1.0);\n\
+		FRAG_COLOR_VAR = vec4(SAMPLE3_TEX_RECT(tex, texCoord[0]) * w, 1.0);\n\
 	}\n\
 "};
 
 static const char *Scalar2xEPXFragShader_110 = {"\
-	VARYING vec2 texCoord[9];\n\
+	IN_VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float reduce(vec3 color)\n\
@@ -1018,13 +1115,13 @@ static const char *Scalar2xEPXFragShader_110 = {"\
 		newFragColor[3] = (pixCompare && (v3 == v1)) ? src3 : src0;\n\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		OUT_FRAG_COLOR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *Scalar2xEPXPlusFragShader_110 = {"\
-	VARYING vec2 texCoord[9];\n\
+	IN_VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float dist(vec3 pixA, vec3 pixB)\n\
@@ -1055,13 +1152,13 @@ static const char *Scalar2xEPXPlusFragShader_110 = {"\
 		newFragColor[3] = ( dist(src1, src3) < min(dist(src5, src3), dist(src1, src7)) ) ? mix(src1, src3, 0.5) : src0;\n\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		OUT_FRAG_COLOR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *Scalar2xSaIFragShader_110 = {"\
-	VARYING vec2 texCoord[16];\n\
+	IN_VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	const vec3 dt = vec3(65536.0, 256.0, 1.0);\n\
@@ -1148,13 +1245,13 @@ static const char *Scalar2xSaIFragShader_110 = {"\
 		}\n\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		OUT_FRAG_COLOR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalarSuper2xSaIFragShader_110 = {"\
-	VARYING vec2 texCoord[16];\n\
+	IN_VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	const vec3 dt = vec3(65536.0, 256.0, 1.0);\n\
@@ -1235,13 +1332,13 @@ static const char *ScalarSuper2xSaIFragShader_110 = {"\
 		}\n\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		OUT_FRAG_COLOR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalarSuperEagle2xFragShader_110 = {"\
-	VARYING vec2 texCoord[16];\n\
+	IN_VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	const vec3 dt = vec3(65536.0, 256.0, 1.0);\n\
@@ -1346,13 +1443,13 @@ static const char *ScalarSuperEagle2xFragShader_110 = {"\
 		}\n\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		OUT_FRAG_COLOR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerLQ2xFragShader_110 = {"\
-	VARYING vec2 texCoord[9];\n\
+	IN_VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1427,13 +1524,13 @@ static const char *ScalerLQ2xFragShader_110 = {"\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerLQ2xSFragShader_110 = {"\
-	VARYING vec2 texCoord[9];\n\
+	IN_VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1499,13 +1596,13 @@ static const char *ScalerLQ2xSFragShader_110 = {"\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerHQ2xFragShader_110 = {"\
-	VARYING vec2 texCoord[9];\n\
+	IN_VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1575,13 +1672,13 @@ static const char *ScalerHQ2xFragShader_110 = {"\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerHQ2xSFragShader_110 = {"\
-	VARYING vec2 texCoord[9];\n\
+	IN_VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1647,13 +1744,13 @@ static const char *ScalerHQ2xSFragShader_110 = {"\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerHQ3xFragShader_110 = {"\
-	VARYING vec2 texCoord[9];\n\
+	IN_VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1724,13 +1821,13 @@ static const char *ScalerHQ3xFragShader_110 = {"\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerHQ3xSFragShader_110 = {"\
-	VARYING vec2 texCoord[9];\n\
+	IN_VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1798,13 +1895,13 @@ static const char *ScalerHQ3xSFragShader_110 = {"\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerHQ4xFragShader_110 = {"\
-	VARYING vec2 texCoord[9];\n\
+	IN_VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1876,13 +1973,13 @@ static const char *ScalerHQ4xFragShader_110 = {"\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerHQ4xSFragShader_110 = {"\
-	VARYING vec2 texCoord[9];\n\
+	IN_VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1950,8 +2047,8 @@ static const char *ScalerHQ4xSFragShader_110 = {"\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		FRAG_COLOR_VAR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		FRAG_COLOR_VAR.a = 1.0;\n\
 	}\n\
 "};
 
@@ -1965,7 +2062,7 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 	#define DOMINANT_DIRECTION_THRESHOLD 3.6\n\
 	#define M_PI 3.1415926535897932384626433832795\n\
 	\n\
-	VARYING vec2 texCoord[25];\n\
+	IN_VARYING vec2 texCoord[25];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float reduce(const vec3 color)\n\
@@ -2266,7 +2363,7 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 			}\n\
 		}\n\
 		\n\
-		OUT_FRAG_COLOR = vec4(newFragColor, 1.0);\n\
+		FRAG_COLOR_VAR = vec4(newFragColor, 1.0);\n\
 	}\n\
 "};
 
@@ -2280,7 +2377,7 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 	#define DOMINANT_DIRECTION_THRESHOLD 3.6\n\
 	#define M_PI 3.1415926535897932384626433832795\n\
 	\n\
-	VARYING vec2 texCoord[25];\n\
+	IN_VARYING vec2 texCoord[25];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float reduce(const vec3 color)\n\
@@ -2614,7 +2711,7 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 			}\n\
 		}\n\
 		\n\
-		OUT_FRAG_COLOR = vec4(newFragColor, 1.0);\n\
+		FRAG_COLOR_VAR = vec4(newFragColor, 1.0);\n\
 	}\n\
 "};
 
@@ -2634,7 +2731,7 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 	// heftiest of all of them. Trust me -- older GPUs just can't\n\
 	// handle this one.\n\
 	\n\
-	VARYING vec2 texCoord[25];\n\
+	IN_VARYING vec2 texCoord[25];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float reduce(const vec3 color)\n\
@@ -3015,7 +3112,7 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 			}\n\
 		}\n\
 		\n\
-		OUT_FRAG_COLOR = vec4(newFragColor, 1.0);\n\
+		FRAG_COLOR_VAR = vec4(newFragColor, 1.0);\n\
 	}\n\
 "};
 
@@ -3035,7 +3132,7 @@ static const char *Scaler5xBRZFragShader_110 = {"\
 	// heftiest of all of them. Trust me -- older GPUs just can't\n\
 	// handle this one.\n\
 	\n\
-	VARYING vec2 texCoord[25];\n\
+	IN_VARYING vec2 texCoord[25];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float reduce(const vec3 color)\n\
@@ -3443,7 +3540,7 @@ static const char *Scaler5xBRZFragShader_110 = {"\
 			}\n\
 		}\n\
 		\n\
-		OUT_FRAG_COLOR = vec4(newFragColor, 1.0);\n\
+		FRAG_COLOR_VAR = vec4(newFragColor, 1.0);\n\
 	}\n\
 "};
 
@@ -3463,7 +3560,7 @@ static const char *Scaler6xBRZFragShader_110 = {"\
 	// heftiest of all of them. Trust me -- older GPUs just can't\n\
 	// handle this one.\n\
 	\n\
-	VARYING vec2 texCoord[25];\n\
+	IN_VARYING vec2 texCoord[25];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float reduce(const vec3 color)\n\
@@ -3924,7 +4021,7 @@ static const char *Scaler6xBRZFragShader_110 = {"\
 			}\n\
 		}\n\
 		\n\
-		OUT_FRAG_COLOR = vec4(newFragColor, 1.0);\n\
+		FRAG_COLOR_VAR = vec4(newFragColor, 1.0);\n\
 	}\n\
 "};
 
@@ -4083,11 +4180,13 @@ OGLContextInfo::OGLContextInfo()
 	
 	_shaderSupport = ShaderSupport_Unsupported;
 	_useShader150 = false;
+	_isIntegerTextureSupported = false;
 	
 	_isVBOSupported = false;
 	_isVAOSupported = false;
 	_isPBOSupported = false;
 	_isFBOSupported = false;
+	_isTBOSupported = false;
 }
 
 ShaderSupportTier OGLContextInfo::GetShaderSupport()
@@ -4120,6 +4219,11 @@ bool OGLContextInfo::IsUsingShader150()
 	return this->_useShader150;
 }
 
+bool OGLContextInfo::IsIntegerTextureSupported() const
+{
+	return this->_isIntegerTextureSupported;
+}
+
 bool OGLContextInfo::IsVBOSupported()
 {
 	return this->_isVBOSupported;
@@ -4145,10 +4249,17 @@ bool OGLContextInfo::IsFBOSupported()
 	return this->_isFBOSupported;
 }
 
+bool OGLContextInfo::IsTBOSupported() const
+{
+	return this->_isTBOSupported;
+}
+
 OGLContextInfo_Legacy::OGLContextInfo_Legacy()
 {
 	_shaderSupport = ShaderSupport_Unsupported;
 	_useShader150 = false;
+	_isIntegerTextureSupported = false;
+	_isTBOSupported = false;
 	
 	// Check the OpenGL capabilities for this renderer
 	std::set<std::string> oglExtensionSet;
@@ -4209,11 +4320,16 @@ OGLContextInfo_Legacy::OGLContextInfo_Legacy()
 					}
 				}
 			}
+			
+			_isIntegerTextureSupported = this->IsExtensionPresent(oglExtensionSet, "GL_EXT_texture_integer") &&
+			                             this->IsExtensionPresent(oglExtensionSet, "GL_EXT_gpu_shader4");
 		}
 		else
 		{
 			_useShader150 = true;
 			_shaderSupport = ShaderSupport_MidTier;
+			_isIntegerTextureSupported = true;
+			_isTBOSupported = true;
 			
 			if (_versionMajor == 4)
 			{
@@ -4299,7 +4415,7 @@ OGLShaderProgram::~OGLShaderProgram()
 	glDeleteShader(this->_fragmentID);
 }
 
-GLuint OGLShaderProgram::LoadShaderOGL(GLenum shaderType, const char *shaderProgram, bool useShader150)
+GLuint OGLShaderProgram::_LoadShaderOGL(GLenum shaderType, const char *shaderProgram, bool useShader150, bool useIntegerTextures)
 {
 	GLint shaderStatus = GL_TRUE;
 	
@@ -4351,21 +4467,25 @@ GLuint OGLShaderProgram::LoadShaderOGL(GLenum shaderType, const char *shaderProg
 		
 		if (shaderType == GL_VERTEX_SHADER)
 		{
-			programSource += "#define ATTRIBUTE in\n";
-			programSource += "#define VARYING out\n";
+			programSource += "#define IN_VTX_POSITION in\n";
+			programSource += "#define IN_VTX_TEXCOORD0 in\n";
+			programSource += "#define IN_VTX_COLOR in\n";
+			programSource += "#define OUT_VARYING out\n";
 		}
 		else if (shaderType == GL_FRAGMENT_SHADER)
 		{
-			programSource += "#define VARYING in\n";
+			programSource += "#define IN_VARYING in\n";
 			programSource += "#define SAMPLE3_TEX_RECT(t,c) texture(t,c).rgb\n";
+			programSource += "#define SAMPLE4_TEX_RECT(t,c) texture(t,c)\n";
 			programSource += "#define SAMPLE3_TEX_1D(t,c)   texture(t,c).rgb\n";
 			programSource += "#define SAMPLE3_TEX_2D(t,c)   texture(t,c).rgb\n";
 			programSource += "#define SAMPLE3_TEX_3D(t,c)   texture(t,c).rgb\n";
 			programSource += "#define SAMPLE4_TEX_1D(t,c)   texture(t,c)\n";
 			programSource += "#define SAMPLE4_TEX_2D(t,c)   texture(t,c)\n";
 			programSource += "#define SAMPLE4_TEX_3D(t,c)   texture(t,c)\n";
-			programSource += "#define OUT_FRAG_COLOR outFragColor\n\n\n";
-			programSource += "out vec4 outFragColor;\n\n";
+			programSource += "#define OUT_COLOR out\n";
+			programSource += "#define FRAG_COLOR_VAR outFragColor\n\n";
+			programSource += "OUT_COLOR vec4 FRAG_COLOR_VAR;\n\n";
 		}
 	}
 	else
@@ -4374,21 +4494,30 @@ GLuint OGLShaderProgram::LoadShaderOGL(GLenum shaderType, const char *shaderProg
 		
 		if (shaderType == GL_VERTEX_SHADER)
 		{
-			programSource += "#define ATTRIBUTE attribute\n";
-			programSource += "#define VARYING varying\n\n";
+			programSource += "#define IN_VTX_POSITION attribute\n";
+			programSource += "#define IN_VTX_TEXCOORD0 attribute\n";
+			programSource += "#define IN_VTX_COLOR attribute\n";
+			programSource += "#define OUT_VARYING varying\n\n";
 		}
 		else if (shaderType == GL_FRAGMENT_SHADER)
 		{
+			if (useIntegerTextures)
+			{
+				programSource += "#extension GL_EXT_gpu_shader4 : require\n";
+				programSource += "#extension GL_EXT_texture_integer : require\n";
+			}
+			
 			programSource += "#extension GL_ARB_texture_rectangle : require\n";
-			programSource += "#define VARYING varying\n";
+			programSource += "#define IN_VARYING varying\n";
 			programSource += "#define SAMPLE3_TEX_RECT(t,c) texture2DRect(t,c).rgb\n";
+			programSource += "#define SAMPLE4_TEX_RECT(t,c) texture2DRect(t,c)\n";
 			programSource += "#define SAMPLE3_TEX_1D(t,c)   texture1D(t,c).rgb\n";
 			programSource += "#define SAMPLE3_TEX_2D(t,c)   texture2D(t,c).rgb\n";
 			programSource += "#define SAMPLE3_TEX_3D(t,c)   texture3D(t,c).rgb\n";
 			programSource += "#define SAMPLE4_TEX_1D(t,c)   texture1D(t,c)\n";
 			programSource += "#define SAMPLE4_TEX_2D(t,c)   texture2D(t,c)\n";
 			programSource += "#define SAMPLE4_TEX_3D(t,c)   texture3D(t,c)\n";
-			programSource += "#define OUT_FRAG_COLOR gl_FragColor\n\n";
+			programSource += "#define FRAG_COLOR_VAR gl_FragColor\n\n";
 		}
 	}
 	
@@ -4453,7 +4582,7 @@ void OGLShaderProgram::SetVertexShaderOGL(const char *shaderProgram, bool useVtx
 		glDeleteShader(this->_vertexID);
 	}
 	
-	this->_vertexID = this->LoadShaderOGL(GL_VERTEX_SHADER, shaderProgram, useShader150);
+	this->_vertexID = this->_LoadShaderOGL(GL_VERTEX_SHADER, shaderProgram, useShader150, false);
 	
 	if (this->_vertexID != 0)
 	{
@@ -4469,7 +4598,7 @@ void OGLShaderProgram::SetVertexShaderOGL(const char *shaderProgram, bool useVtx
 	
 	if (this->_vertexID != 0 && this->_fragmentID != 0)
 	{
-		this->LinkOGL();
+		this->_LinkOGL();
 	}
 }
 
@@ -4478,7 +4607,7 @@ GLuint OGLShaderProgram::GetFragmentShaderID()
 	return this->_fragmentID;
 }
 
-void OGLShaderProgram::SetFragmentShaderOGL(const char *shaderProgram, bool useShader150)
+void OGLShaderProgram::SetFragmentShaderOGL(const char *shaderProgram, bool useShader150, bool useIntegerTextures)
 {
 	if (this->_fragmentID != 0)
 	{
@@ -4486,7 +4615,7 @@ void OGLShaderProgram::SetFragmentShaderOGL(const char *shaderProgram, bool useS
 		glDeleteShader(this->_fragmentID);
 	}
 	
-	this->_fragmentID = this->LoadShaderOGL(GL_FRAGMENT_SHADER, shaderProgram, useShader150);
+	this->_fragmentID = this->_LoadShaderOGL(GL_FRAGMENT_SHADER, shaderProgram, useShader150, useIntegerTextures);
 	
 	if (this->_fragmentID != 0)
 	{
@@ -4499,11 +4628,11 @@ void OGLShaderProgram::SetFragmentShaderOGL(const char *shaderProgram, bool useS
 	
 	if (this->_vertexID != 0 && this->_fragmentID != 0)
 	{
-		this->LinkOGL();
+		this->_LinkOGL();
 	}
 }
 
-void OGLShaderProgram::SetVertexAndFragmentShaderOGL(const char *vertShaderProgram, const char *fragShaderProgram, bool useVtxColors, bool useShader150)
+void OGLShaderProgram::SetVertexAndFragmentShaderOGL(const char *vertShaderProgram, const char *fragShaderProgram, bool useVtxColors, bool useShader150, bool useIntegerTextures)
 {
 	if (this->_vertexID != 0)
 	{
@@ -4517,8 +4646,8 @@ void OGLShaderProgram::SetVertexAndFragmentShaderOGL(const char *vertShaderProgr
 		glDeleteShader(this->_fragmentID);
 	}
 	
-	this->_vertexID = this->LoadShaderOGL(GL_VERTEX_SHADER, vertShaderProgram, useShader150);
-	this->_fragmentID = this->LoadShaderOGL(GL_FRAGMENT_SHADER, fragShaderProgram, useShader150);
+	this->_vertexID = this->_LoadShaderOGL(GL_VERTEX_SHADER, vertShaderProgram, useShader150, false);
+	this->_fragmentID = this->_LoadShaderOGL(GL_FRAGMENT_SHADER, fragShaderProgram, useShader150, useIntegerTextures);
 	
 	if (this->_vertexID != 0)
 	{
@@ -4543,7 +4672,7 @@ void OGLShaderProgram::SetVertexAndFragmentShaderOGL(const char *vertShaderProgr
 	
 	if (this->_vertexID != 0 && this->_fragmentID != 0)
 	{
-		this->LinkOGL();
+		this->_LinkOGL();
 	}
 }
 
@@ -4552,7 +4681,7 @@ GLuint OGLShaderProgram::GetProgramID()
 	return this->_programID;
 }
 
-bool OGLShaderProgram::LinkOGL()
+bool OGLShaderProgram::_LinkOGL()
 {
 	bool result = false;
 	GLint shaderStatus = GL_FALSE;
@@ -4576,11 +4705,53 @@ bool OGLShaderProgram::LinkOGL()
 OGLClientSharedData::OGLClientSharedData()
 {
 	_contextInfo = NULL;
+	
+	_vboVideoProcVtxID = 0;
+	_vboVideoProcTexCoordNativeID = 0;
+	_vboVideoProcTexCoordCustomID = 0;
+	_vaoVideoProcNativeID = 0;
+	_vaoVideoProcCustomID = 0;
+	_fboDisplayNativeID[0] = 0;
+	_fboDisplayNativeID[1] = 0;
+	_fboDisplayCustomID[0] = 0;
+	_fboDisplayCustomID[1] = 0;
+	
+	_texDisplayPostprocessNative[0] = 0;
+	_texDisplayPostprocessNative[1] = 0;
+	_texDisplayPostprocessCustom[0] = 0;
+	_texDisplayPostprocessCustom[1] = 0;
+	
+	_texDisplayAllWhite = 0;
+	_texDisplayAllBlack = 0;
+	
+	_programFetch666ConvertOnly = NULL;
+	_programFetch666WithMB = NULL;
+	_programFetch888WithMB = NULL;
+	
+	_canProcessFetchOnGPU = false;
+	_preferCPUVideoProcessing = true;
 	_useDirectToCPUFilterPipeline = true;
 	_fetchColorFormatOGL = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	
-	pthread_rwlock_init(&_texFetchRWLock[NDSDisplayID_Main],  NULL);
-	pthread_rwlock_init(&_texFetchRWLock[NDSDisplayID_Touch], NULL);
+	_vtxTexCoordBufferNative[0] = 0;
+	_vtxTexCoordBufferNative[1] = 0;
+	_vtxTexCoordBufferNative[2] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_vtxTexCoordBufferNative[3] = 0;
+	_vtxTexCoordBufferNative[4] = 0;
+	_vtxTexCoordBufferNative[5] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	_vtxTexCoordBufferNative[6] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_vtxTexCoordBufferNative[7] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	
+	_vtxTexCoordBufferCustom[0] = 0;
+	_vtxTexCoordBufferCustom[1] = 0;
+	_vtxTexCoordBufferCustom[2] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_vtxTexCoordBufferCustom[3] = 0;
+	_vtxTexCoordBufferCustom[4] = 0;
+	_vtxTexCoordBufferCustom[5] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	_vtxTexCoordBufferCustom[6] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_vtxTexCoordBufferCustom[7] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	
+	pthread_rwlock_init(&_fetchInfoRWLock, NULL);
 	
 	_srcNativeCloneMaster = (uint32_t *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * OPENGL_FETCH_BUFFER_COUNT * sizeof(uint32_t));
 	memset(_srcNativeCloneMaster, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * OPENGL_FETCH_BUFFER_COUNT * sizeof(uint32_t));
@@ -4596,6 +4767,8 @@ OGLClientSharedData::OGLClientSharedData()
 		_srcNativeClone[NDSDisplayID_Main][i]  = _srcNativeCloneMaster + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * ((i * 2) + 0));
 		_srcNativeClone[NDSDisplayID_Touch][i] = _srcNativeCloneMaster + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * ((i * 2) + 1));
 	}
+	
+	memset(&_fetchInfo, 0, sizeof(_fetchInfo));
 }
 
 OGLClientSharedData::~OGLClientSharedData()
@@ -4605,8 +4778,30 @@ OGLClientSharedData::~OGLClientSharedData()
 		DeleteHQnxLUTs_OGL(GL_TEXTURE0 + 1, this->_texLQ2xLUT, this->_texHQ2xLUT, this->_texHQ3xLUT, this->_texHQ4xLUT);
 	}
 	
-	glDeleteTextures(4, &this->_texDisplayFetchNative[0][0]);
-	glDeleteTextures(4, &this->_texDisplayFetchCustom[0][0]);
+	glDeleteTextures(2 * OPENGL_FETCH_BUFFER_COUNT, &this->_texDisplayFetchNative[0][0]);
+	glDeleteTextures(2 * OPENGL_FETCH_BUFFER_COUNT, &this->_texDisplayFetchCustom[0][0]);
+	glDeleteTextures(1, &this->_texDisplayAllWhite);
+	glDeleteTextures(1, &this->_texDisplayAllBlack);
+	
+	if (this->_canProcessFetchOnGPU)
+	{
+		glDeleteTextures(2 * OPENGL_FETCH_BUFFER_COUNT, &this->_texMasterBrightnessMode[0][0]);
+		glDeleteTextures(2 * OPENGL_FETCH_BUFFER_COUNT, &this->_texMasterBrightnessIntensity[0][0]);
+		
+		glDeleteFramebuffersEXT(2, &this->_fboDisplayNativeID[0]);
+		glDeleteFramebuffersEXT(2, &this->_fboDisplayCustomID[0]);
+		this->_fboDisplayNativeID[NDSDisplayID_Main]  = 0;
+		this->_fboDisplayNativeID[NDSDisplayID_Touch] = 0;
+		this->_fboDisplayCustomID[NDSDisplayID_Main]  = 0;
+		this->_fboDisplayCustomID[NDSDisplayID_Touch] = 0;
+		
+		glDeleteTextures(2, &this->_texDisplayPostprocessNative[0]);
+		glDeleteTextures(2, &this->_texDisplayPostprocessCustom[0]);
+		this->_texDisplayPostprocessNative[NDSDisplayID_Main]  = 0;
+		this->_texDisplayPostprocessNative[NDSDisplayID_Touch] = 0;
+		this->_texDisplayPostprocessCustom[NDSDisplayID_Main]  = 0;
+		this->_texDisplayPostprocessCustom[NDSDisplayID_Touch] = 0;
+	}
 	
 	for (size_t i = 0; i < OPENGL_FETCH_BUFFER_COUNT; i++)
 	{
@@ -4627,18 +4822,81 @@ OGLClientSharedData::~OGLClientSharedData()
 		pthread_rwlock_destroy(&this->_srcCloneRWLock[NDSDisplayID_Main][i]);
 	}
 	
-	pthread_rwlock_destroy(&this->_texFetchRWLock[NDSDisplayID_Main]);
-	pthread_rwlock_destroy(&this->_texFetchRWLock[NDSDisplayID_Touch]);
+	pthread_rwlock_destroy(&this->_fetchInfoRWLock);
+	
+	if (this->_vaoVideoProcNativeID != 0)
+	{
+		glDeleteVertexArraysDESMUME(1, &this->_vaoVideoProcNativeID);
+		this->_vaoVideoProcNativeID = 0;
+	}
+	
+	if (this->_vaoVideoProcCustomID != 0)
+	{
+		glDeleteVertexArraysDESMUME(1, &this->_vaoVideoProcCustomID);
+		this->_vaoVideoProcCustomID = 0;
+	}
+	
+	if (this->_vboVideoProcVtxID != 0)
+	{
+		glDeleteBuffers(1, &this->_vboVideoProcVtxID);
+		this->_vboVideoProcVtxID = 0;
+	}
+	
+	if (this->_vboVideoProcTexCoordNativeID != 0)
+	{
+		glDeleteBuffers(1, &this->_vboVideoProcTexCoordNativeID);
+		this->_vboVideoProcTexCoordNativeID = 0;
+	}
+	
+	if (this->_vboVideoProcTexCoordCustomID != 0)
+	{
+		glDeleteBuffers(1, &this->_vboVideoProcTexCoordCustomID);
+		this->_vboVideoProcTexCoordCustomID = 0;
+	}
+	
+	if (this->_programFetch666ConvertOnly != NULL)
+	{
+		delete this->_programFetch666ConvertOnly;
+		this->_programFetch666ConvertOnly = NULL;
+	}
+	
+	if (this->_programFetch666WithMB != NULL)
+	{
+		delete this->_programFetch666WithMB;
+		this->_programFetch666WithMB = NULL;
+	}
+	
+	if (this->_programFetch888WithMB != NULL)
+	{
+		delete this->_programFetch888WithMB;
+		this->_programFetch888WithMB = NULL;
+	}
 }
 
 void OGLClientSharedData::SetContextInfo(OGLContextInfo *contextInfo)
 {
 	this->_contextInfo = contextInfo;
+	this->_canProcessFetchOnGPU = ( (this->_contextInfo != NULL) && this->_contextInfo->IsShaderSupported() && this->_contextInfo->IsFBOSupported() && this->_contextInfo->IsIntegerTextureSupported() );
 }
 
 OGLContextInfo* OGLClientSharedData::GetContextInfo() const
 {
 	return this->_contextInfo;
+}
+
+bool OGLClientSharedData::CanProcessFetchOnGPU() const
+{
+	return this->_canProcessFetchOnGPU;
+}
+
+void OGLClientSharedData::SetPreferCPUVideoProcessing(bool prefersCPUVideoProcessing)
+{
+	this->_preferCPUVideoProcessing = prefersCPUVideoProcessing;
+}
+
+bool OGLClientSharedData::PreferCPUVideoProcessing() const
+{
+	return this->_preferCPUVideoProcessing;
 }
 
 void OGLClientSharedData::SetUseDirectToCPUFilterPipeline(bool willUseDirectCPU)
@@ -4651,14 +4909,13 @@ bool OGLClientSharedData::UseDirectToCPUFilterPipeline() const
 	return this->_useDirectToCPUFilterPipeline;
 }
 
-GLuint OGLClientSharedData::GetFetchTexture(const NDSDisplayID displayID)
+OGLFrameInfoFetch OGLClientSharedData::GetFetchInfo()
 {
-	return this->_texFetch[displayID];
-}
-
-void OGLClientSharedData::SetFetchTexture(const NDSDisplayID displayID, GLuint texID)
-{
-	this->_texFetch[displayID] = texID;
+	pthread_rwlock_rdlock(&this->_fetchInfoRWLock);
+	OGLFrameInfoFetch outFetchInfo = this->_fetchInfo;
+	pthread_rwlock_unlock(&this->_fetchInfoRWLock);
+	
+	return outFetchInfo;
 }
 
 uint32_t* OGLClientSharedData::GetSrcClone(const NDSDisplayID displayID, const u8 bufferIndex) const
@@ -4674,6 +4931,16 @@ GLuint OGLClientSharedData::GetTexNative(const NDSDisplayID displayID, const u8 
 GLuint OGLClientSharedData::GetTexCustom(const NDSDisplayID displayID, const u8 bufferIndex) const
 {
 	return this->_texDisplayFetchCustom[displayID][bufferIndex];
+}
+
+GLuint OGLClientSharedData::GetTexDisplayAllWhite() const
+{
+	return this->_texDisplayAllWhite;
+}
+
+GLuint OGLClientSharedData::GetTexDisplayAllBlack() const
+{
+	return this->_texDisplayAllBlack;
 }
 
 GLuint OGLClientSharedData::GetTexLQ2xLUT() const
@@ -4753,9 +5020,9 @@ void OGLClientSharedData::FetchCustomDisplayToSrcClone(const NDSDisplayInfo *dis
 	}
 }
 
-void OGLClientSharedData::InitOGL()
+void OGLClientSharedData::InitOGL(const NDSDisplayInfo *displayInfoList, const NDSDisplayInfo &currentDisplayInfo)
 {
-	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * OPENGL_FETCH_BUFFER_COUNT * sizeof(uint32_t), this->_srcNativeCloneMaster);
+	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, currentDisplayInfo.framebufferPageSize * currentDisplayInfo.framebufferPageCount, currentDisplayInfo.masterFramebufferHead);
 	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 	
 	glGenTextures(2 * OPENGL_FETCH_BUFFER_COUNT, &this->_texDisplayFetchNative[0][0]);
@@ -4769,7 +5036,7 @@ void OGLClientSharedData::InitOGL()
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_srcNativeClone[NDSDisplayID_Main][i]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, displayInfoList[i].nativeBuffer16[NDSDisplayID_Main]);
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Touch][i]);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
@@ -4777,7 +5044,7 @@ void OGLClientSharedData::InitOGL()
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_srcNativeClone[NDSDisplayID_Touch][i]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, displayInfoList[i].nativeBuffer16[NDSDisplayID_Touch]);
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Main][i]);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
@@ -4785,7 +5052,7 @@ void OGLClientSharedData::InitOGL()
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Main][i]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, displayInfoList[i].customBuffer[NDSDisplayID_Main]);
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Touch][i]);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
@@ -4793,7 +5060,7 @@ void OGLClientSharedData::InitOGL()
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Touch][i]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, displayInfoList[i].customBuffer[NDSDisplayID_Touch]);
 		
 		this->_srcCloneNeedsUpdate[NDSDisplayID_Main][i]  = true;
 		this->_srcCloneNeedsUpdate[NDSDisplayID_Touch][i] = true;
@@ -4802,8 +5069,229 @@ void OGLClientSharedData::InitOGL()
 	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
-	this->_texFetch[NDSDisplayID_Main]  = this->_texDisplayFetchNative[NDSDisplayID_Main][0];
-	this->_texFetch[NDSDisplayID_Touch] = this->_texDisplayFetchNative[NDSDisplayID_Touch][0];
+	const uint32_t whiteColorPixel = 0xFFFFFFFF;
+	glGenTextures(1, &this->_texDisplayAllWhite);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayAllWhite);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, &whiteColorPixel);
+	
+	const uint32_t blackColorPixel = 0xFF000000;
+	glGenTextures(1, &this->_texDisplayAllBlack);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayAllBlack);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, &blackColorPixel);
+	
+	this->_texFetchSelected[NDSDisplayID_Main]  = this->_texDisplayFetchNative[NDSDisplayID_Main][0];
+	this->_texFetchSelected[NDSDisplayID_Touch] = this->_texDisplayFetchNative[NDSDisplayID_Touch][0];
+	
+	if (this->_canProcessFetchOnGPU)
+	{
+		// Set up VBOs
+		glGenBuffers(1, &this->_vboVideoProcVtxID);
+		glGenBuffers(1, &this->_vboVideoProcTexCoordNativeID);
+		glGenBuffers(1, &this->_vboVideoProcTexCoordCustomID);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, this->_vboVideoProcVtxID);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(filterVtxBuffer), filterVtxBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, this->_vboVideoProcTexCoordNativeID);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(this->_vtxTexCoordBufferNative), this->_vtxTexCoordBufferNative, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, this->_vboVideoProcTexCoordCustomID);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(this->_vtxTexCoordBufferCustom), this->_vtxTexCoordBufferCustom, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		
+		// Set up VAOs
+		glGenVertexArraysDESMUME(1, &this->_vaoVideoProcNativeID);
+		glBindVertexArrayDESMUME(this->_vaoVideoProcNativeID);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, this->_vboVideoProcVtxID);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, this->_vboVideoProcTexCoordNativeID);
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_INT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+		
+		glBindVertexArrayDESMUME(0);
+		
+		glGenVertexArraysDESMUME(1, &this->_vaoVideoProcCustomID);
+		glBindVertexArrayDESMUME(this->_vaoVideoProcCustomID);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, this->_vboVideoProcVtxID);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, this->_vboVideoProcTexCoordCustomID);
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_INT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+		
+		glBindVertexArrayDESMUME(0);
+		
+		const GLint texMBFormat = (this->_contextInfo->IsUsingShader150()) ? GL_R8 : GL_INTENSITY8;
+		const u8 tempMBBuffer[GPU_FRAMEBUFFER_NATIVE_HEIGHT] = {0};
+		glGenTextures(2 * OPENGL_FETCH_BUFFER_COUNT, &this->_texMasterBrightnessMode[0][0]);
+		glGenTextures(2 * OPENGL_FETCH_BUFFER_COUNT, &this->_texMasterBrightnessIntensity[0][0]);
+		
+		for (size_t i = 0; i < OPENGL_FETCH_BUFFER_COUNT; i++)
+		{
+			glActiveTexture(GL_TEXTURE0 + OGLDisplayTextureUnitID_MasterBrightnessMode);
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texMasterBrightnessMode[NDSDisplayID_Main][i]);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, texMBFormat, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 1, 0, GL_RED, GL_UNSIGNED_BYTE, tempMBBuffer);
+			
+			glActiveTexture(GL_TEXTURE0 + OGLDisplayTextureUnitID_MasterBrightnessMode);
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texMasterBrightnessMode[NDSDisplayID_Touch][i]);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, texMBFormat, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 1, 0, GL_RED, GL_UNSIGNED_BYTE, tempMBBuffer);
+			
+			glActiveTexture(GL_TEXTURE0 + OGLDisplayTextureUnitID_MasterBrightnessIntensity);
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texMasterBrightnessIntensity[NDSDisplayID_Main][i]);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, texMBFormat, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 1, 0, GL_RED, GL_UNSIGNED_BYTE, tempMBBuffer);
+			
+			glActiveTexture(GL_TEXTURE0 + OGLDisplayTextureUnitID_MasterBrightnessIntensity);
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texMasterBrightnessIntensity[NDSDisplayID_Touch][i]);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, texMBFormat, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 1, 0, GL_RED, GL_UNSIGNED_BYTE, tempMBBuffer);
+		}
+		
+		glActiveTexture(GL_TEXTURE0);
+		
+		glGenTextures(2, &this->_texDisplayPostprocessNative[0]);
+		glGenTextures(2, &this->_texDisplayPostprocessCustom[0]);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayPostprocessNative[NDSDisplayID_Main]);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayPostprocessNative[NDSDisplayID_Touch]);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayPostprocessCustom[NDSDisplayID_Main]);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, NULL);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayPostprocessCustom[NDSDisplayID_Touch]);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, NULL);
+		
+		glGenFramebuffersEXT(2, &this->_fboDisplayNativeID[0]);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, this->_fboDisplayNativeID[NDSDisplayID_Main]);
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayPostprocessNative[NDSDisplayID_Main], 0);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, this->_fboDisplayNativeID[NDSDisplayID_Touch]);
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayPostprocessNative[NDSDisplayID_Touch], 0);
+		
+		glGenFramebuffersEXT(2, &this->_fboDisplayCustomID[0]);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, this->_fboDisplayCustomID[NDSDisplayID_Main]);
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayPostprocessCustom[NDSDisplayID_Main], 0);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, this->_fboDisplayCustomID[NDSDisplayID_Touch]);
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayPostprocessCustom[NDSDisplayID_Touch], 0);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		
+		const ShaderSupportTier supportTier = this->_contextInfo->GetShaderSupport();
+		const bool useShader150 = this->_contextInfo->IsUsingShader150();
+		GLuint programID = 0;
+		GLint uniformTexSampler = 0;
+		
+		std::string tempFSCode;
+		
+		tempFSCode.clear();
+		tempFSCode += "#define CONVERT_COLOR_RGB666\n\n";
+		tempFSCode += FramebufferFetch_FS;
+		this->_programFetch666ConvertOnly = new OGLShaderProgram;
+		this->_programFetch666ConvertOnly->SetShaderSupport(supportTier);
+		this->_programFetch666ConvertOnly->SetVertexAndFragmentShaderOGL(FramebufferFetch_VS, tempFSCode.c_str(), false, useShader150, false);
+		programID = this->_programFetch666ConvertOnly->GetProgramID();
+		glUseProgram(programID);
+		uniformTexSampler = glGetUniformLocation(programID, "texVideo");
+		glUniform1i(uniformTexSampler, OGLDisplayTextureUnitID_Video);
+		
+		tempFSCode.clear();
+		tempFSCode += "#define CONVERT_COLOR_RGB666\n";
+		tempFSCode += "#define APPLY_MASTER_BRIGHTNESS\n\n";
+		tempFSCode += FramebufferFetch_FS;
+		this->_programFetch666WithMB = new OGLShaderProgram;
+		this->_programFetch666WithMB->SetShaderSupport(supportTier);
+		this->_programFetch666WithMB->SetVertexAndFragmentShaderOGL(FramebufferFetch_VS, tempFSCode.c_str(), false, useShader150, false);
+		programID = this->_programFetch666WithMB->GetProgramID();
+		glUseProgram(programID);
+		uniformTexSampler = glGetUniformLocation(programID, "texVideo");
+		glUniform1i(uniformTexSampler, OGLDisplayTextureUnitID_Video);
+		uniformTexSampler = glGetUniformLocation(programID, "texMasterBrightnessMode");
+		glUniform1i(uniformTexSampler, OGLDisplayTextureUnitID_MasterBrightnessMode);
+		uniformTexSampler = glGetUniformLocation(programID, "texMasterBrightnessIntensity");
+		glUniform1i(uniformTexSampler, OGLDisplayTextureUnitID_MasterBrightnessIntensity);
+		
+		tempFSCode.clear();
+		tempFSCode += "#define APPLY_MASTER_BRIGHTNESS\n\n";
+		tempFSCode += FramebufferFetch_FS;
+		this->_programFetch888WithMB = new OGLShaderProgram;
+		this->_programFetch888WithMB->SetShaderSupport(supportTier);
+		this->_programFetch888WithMB->SetVertexAndFragmentShaderOGL(FramebufferFetch_VS, tempFSCode.c_str(), false, useShader150, false);
+		programID = this->_programFetch888WithMB->GetProgramID();
+		glUseProgram(programID);
+		uniformTexSampler = glGetUniformLocation(programID, "texVideo");
+		glUniform1i(uniformTexSampler, OGLDisplayTextureUnitID_Video);
+		uniformTexSampler = glGetUniformLocation(programID, "texMasterBrightnessMode");
+		glUniform1i(uniformTexSampler, OGLDisplayTextureUnitID_MasterBrightnessMode);
+		uniformTexSampler = glGetUniformLocation(programID, "texMasterBrightnessIntensity");
+		glUniform1i(uniformTexSampler, OGLDisplayTextureUnitID_MasterBrightnessIntensity);
+		
+		glUseProgram(0);
+		
+		// Render a dummy frame using each program to force each of them to load.
+		NDSDisplayInfo dummyInfo;
+		memset(&dummyInfo, 0, sizeof(dummyInfo));
+		dummyInfo.isDisplayEnabled[NDSDisplayID_Main] = true;
+		dummyInfo.renderedWidth[NDSDisplayID_Main]   = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		dummyInfo.renderedHeight[NDSDisplayID_Main]  = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+		
+		dummyInfo.colorFormat = NDSColorFormat_BGR666_Rev;
+		dummyInfo.needConvertColorFormat[NDSDisplayID_Main] = true;
+		dummyInfo.needApplyMasterBrightness[NDSDisplayID_Main] = true;
+		dummyInfo.didPerformCustomRender[NDSDisplayID_Main] = true;
+		this->_FetchFromDisplayID_OGL(dummyInfo, NDSDisplayID_Main, this->_texDisplayAllBlack, this->_texMasterBrightnessMode[NDSDisplayID_Main][0], this->_texMasterBrightnessIntensity[NDSDisplayID_Main][0]);
+		
+		dummyInfo.colorFormat = NDSColorFormat_BGR666_Rev;
+		dummyInfo.needConvertColorFormat[NDSDisplayID_Main] = true;
+		dummyInfo.needApplyMasterBrightness[NDSDisplayID_Main] = false;
+		dummyInfo.didPerformCustomRender[NDSDisplayID_Main] = true;
+		this->_FetchFromDisplayID_OGL(dummyInfo, NDSDisplayID_Main, this->_texDisplayAllBlack, this->_texMasterBrightnessMode[NDSDisplayID_Main][0], this->_texMasterBrightnessIntensity[NDSDisplayID_Main][0]);
+		
+		dummyInfo.colorFormat = NDSColorFormat_BGR888_Rev;
+		dummyInfo.needConvertColorFormat[NDSDisplayID_Main] = false;
+		dummyInfo.needApplyMasterBrightness[NDSDisplayID_Main] = true;
+		dummyInfo.didPerformCustomRender[NDSDisplayID_Main] = false;
+		this->_FetchFromDisplayID_OGL(dummyInfo, NDSDisplayID_Main, this->_texDisplayAllBlack, this->_texMasterBrightnessMode[NDSDisplayID_Main][0], this->_texMasterBrightnessIntensity[NDSDisplayID_Main][0]);
+	}
 	
 	if ( (this->_contextInfo != NULL) && this->_contextInfo->IsShaderSupported() )
 	{
@@ -4821,22 +5309,35 @@ void OGLClientSharedData::SetFetchBuffersOGL(const NDSDisplayInfo *displayInfoLi
 	
 	glFinish();
 	
+	if (this->_vboVideoProcTexCoordCustomID != 0)
+	{
+		this->_vtxTexCoordBufferCustom[2] = currentDisplayInfo.customWidth;
+		this->_vtxTexCoordBufferCustom[5] = currentDisplayInfo.customHeight;
+		this->_vtxTexCoordBufferCustom[6] = currentDisplayInfo.customWidth;
+		this->_vtxTexCoordBufferCustom[7] = currentDisplayInfo.customHeight;
+		
+		glBindBuffer(GL_ARRAY_BUFFER, this->_vboVideoProcTexCoordCustomID);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(this->_vtxTexCoordBufferCustom), this->_vtxTexCoordBufferCustom);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+	
+	glActiveTexture(GL_TEXTURE0);
 	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, currentDisplayInfo.framebufferPageSize * currentDisplayInfo.framebufferPageCount, currentDisplayInfo.masterFramebufferHead);
 	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 	
 	for (size_t i = 0; i < currentDisplayInfo.framebufferPageCount; i++)
 	{
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Main][i]);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, displayInfoList[i].nativeBuffer16[NDSDisplayID_Main]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, displayInfoList[i].nativeBuffer16[NDSDisplayID_Main]);
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Touch][i]);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, displayInfoList[i].nativeBuffer16[NDSDisplayID_Touch]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, displayInfoList[i].nativeBuffer16[NDSDisplayID_Touch]);
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Main][i]);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, displayInfoList[i].customBuffer[NDSDisplayID_Main]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, displayInfoList[i].customBuffer[NDSDisplayID_Main]);
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Touch][i]);
-		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, displayInfoList[i].customBuffer[NDSDisplayID_Touch]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, displayInfoList[i].customBuffer[NDSDisplayID_Touch]);
 		
 		pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Main][i]);
 		this->_srcCloneNeedsUpdate[NDSDisplayID_Main][i] = true;
@@ -4850,84 +5351,256 @@ void OGLClientSharedData::SetFetchBuffersOGL(const NDSDisplayInfo *displayInfoLi
 	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
+	if (this->_canProcessFetchOnGPU)
+	{
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayPostprocessCustom[NDSDisplayID_Main]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, NULL);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayPostprocessCustom[NDSDisplayID_Touch]);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, NULL);
+	}
+	
 	glFinish();
+}
+
+GLuint OGLClientSharedData::_FetchFromDisplayID_OGL(const NDSDisplayInfo &currentDisplayInfo, NDSDisplayID displayID, GLuint texVideoID, GLuint texMBModeID, GLuint texMBIntensityID)
+{
+	GLuint programID = 0;
+	const bool isDisplayNative = !currentDisplayInfo.didPerformCustomRender[displayID];
+	const bool needApplyMasterBrightness = currentDisplayInfo.needApplyMasterBrightness[displayID];
+	
+	if (isDisplayNative)
+	{
+		if (needApplyMasterBrightness)
+		{
+			programID = this->_programFetch888WithMB->GetProgramID();
+		}
+		else
+		{
+			// Do nothing here. 24-bit color does not require any conversion.
+		}
+	}
+	else
+	{
+		// Convert color while applying master brightness
+		if (needApplyMasterBrightness)
+		{
+			if (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev)
+			{
+				programID = this->_programFetch666WithMB->GetProgramID();
+			}
+			else
+			{
+				programID = this->_programFetch888WithMB->GetProgramID();
+			}
+		}
+		else // Convert color only
+		{
+			if (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev)
+			{
+				programID = this->_programFetch666ConvertOnly->GetProgramID();
+			}
+			else
+			{
+				// Do nothing here. 24-bit color does not require any conversion.
+			}
+		}
+	}
+	
+	if (programID == 0)
+	{
+		return texVideoID;
+	}
+	
+	if (needApplyMasterBrightness)
+	{
+		glActiveTexture(GL_TEXTURE0 + OGLDisplayTextureUnitID_MasterBrightnessMode);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texMBModeID);
+		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 1, GL_RED, GL_UNSIGNED_BYTE, currentDisplayInfo.masterBrightnessMode[displayID]);
+		
+		glActiveTexture(GL_TEXTURE0 + OGLDisplayTextureUnitID_MasterBrightnessIntensity);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texMBIntensityID);
+		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 1, GL_RED, GL_UNSIGNED_BYTE, currentDisplayInfo.masterBrightnessIntensity[displayID]);
+	}
+	
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, (isDisplayNative) ? this->_fboDisplayNativeID[displayID] : this->_fboDisplayCustomID[displayID]);
+	glUseProgram(programID);
+	
+	glViewport(0, 0, (GLsizei)currentDisplayInfo.renderedWidth[displayID], (GLsizei)currentDisplayInfo.renderedHeight[displayID]);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_STENCIL_TEST);
+	glDisable(GL_BLEND);
+	
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texVideoID);
+	
+	glBindVertexArrayDESMUME( (isDisplayNative) ? this->_vaoVideoProcNativeID : this->_vaoVideoProcCustomID );
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArrayDESMUME(0);
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	
+	texVideoID = (isDisplayNative) ? this->_texDisplayPostprocessNative[displayID] : this->_texDisplayPostprocessCustom[displayID];
+	return texVideoID;
 }
 
 void OGLClientSharedData::FetchFromBufferIndexOGL(const u8 index, const NDSDisplayInfo &currentDisplayInfo)
 {
-	glFlush();
+	OGLFrameInfoFetch newFetchInfo;
+	newFetchInfo.sequenceNumber = currentDisplayInfo.sequenceNumber;
+	newFetchInfo.bufferIndex = currentDisplayInfo.bufferIndex;
 	
-	GLuint texFetchMain = 0;
-	GLuint texFetchTouch = 0;
-	const bool isMainEnabled  = currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
-	const bool isTouchEnabled = currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
+	newFetchInfo.texID[NDSDisplayID_Main]   = this->_texDisplayAllBlack;
+	newFetchInfo.width[NDSDisplayID_Main]   = currentDisplayInfo.renderedWidth[NDSDisplayID_Main];
+	newFetchInfo.height[NDSDisplayID_Main]  = currentDisplayInfo.renderedHeight[NDSDisplayID_Main];
+	newFetchInfo.backlightIntensity[NDSDisplayID_Main] = currentDisplayInfo.backlightIntensity[NDSDisplayID_Main];
+	newFetchInfo.isNativeRender[NDSDisplayID_Main]  = !currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Main];
+	newFetchInfo.isNativeSize[NDSDisplayID_Main]    = !currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Main] || !currentDisplayInfo.isCustomSizeRequested || ((currentDisplayInfo.renderedWidth[NDSDisplayID_Main]  == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (currentDisplayInfo.renderedHeight[NDSDisplayID_Main]  == GPU_FRAMEBUFFER_NATIVE_HEIGHT));
+	newFetchInfo.isDisplayEnabled[NDSDisplayID_Main]   =   currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
+	newFetchInfo.isDisplayAllWhite[NDSDisplayID_Main]  =  !currentDisplayInfo.masterBrightnessDiffersPerLine[NDSDisplayID_Main]  && (currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Main][0]  == GPUMasterBrightMode_Up)   && (currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Main][0]  >= 16);
+	newFetchInfo.isDisplayAllBlack[NDSDisplayID_Main]  = (!currentDisplayInfo.masterBrightnessDiffersPerLine[NDSDisplayID_Main]  && (currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Main][0]  == GPUMasterBrightMode_Down) && (currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Main][0]  >= 16)) || !currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
+	newFetchInfo.isDisplayProcessPossible[NDSDisplayID_Main] = currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Main] && newFetchInfo.isNativeSize[NDSDisplayID_Main] && !newFetchInfo.isDisplayAllWhite[NDSDisplayID_Main] && !newFetchInfo.isDisplayAllBlack[NDSDisplayID_Main];
 	
-	if (isMainEnabled)
+	newFetchInfo.texID[NDSDisplayID_Touch]  = this->_texDisplayAllBlack;
+	newFetchInfo.width[NDSDisplayID_Touch]  = currentDisplayInfo.renderedWidth[NDSDisplayID_Touch];
+	newFetchInfo.height[NDSDisplayID_Touch] = currentDisplayInfo.renderedHeight[NDSDisplayID_Touch];
+	newFetchInfo.backlightIntensity[NDSDisplayID_Touch] = currentDisplayInfo.backlightIntensity[NDSDisplayID_Touch];
+	newFetchInfo.isNativeRender[NDSDisplayID_Touch] = !currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch];
+	newFetchInfo.isNativeSize[NDSDisplayID_Touch]   = !currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch] || !currentDisplayInfo.isCustomSizeRequested || ((currentDisplayInfo.renderedWidth[NDSDisplayID_Touch] == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (currentDisplayInfo.renderedHeight[NDSDisplayID_Touch] == GPU_FRAMEBUFFER_NATIVE_HEIGHT));
+	newFetchInfo.isDisplayEnabled[NDSDisplayID_Touch]  =   currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
+	newFetchInfo.isDisplayAllWhite[NDSDisplayID_Touch] =  !currentDisplayInfo.masterBrightnessDiffersPerLine[NDSDisplayID_Touch] && (currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Touch][0] == GPUMasterBrightMode_Up)   && (currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Touch][0] >= 16);
+	newFetchInfo.isDisplayAllBlack[NDSDisplayID_Touch] = (!currentDisplayInfo.masterBrightnessDiffersPerLine[NDSDisplayID_Touch] && (currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Touch][0] == GPUMasterBrightMode_Down) && (currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Touch][0] >= 16)) || !currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
+	newFetchInfo.isDisplayProcessPossible[NDSDisplayID_Touch] = currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && newFetchInfo.isNativeSize[NDSDisplayID_Touch] && !newFetchInfo.isDisplayAllWhite[NDSDisplayID_Touch] && !newFetchInfo.isDisplayAllBlack[NDSDisplayID_Touch];
+	
+	if (!newFetchInfo.isDisplayEnabled[NDSDisplayID_Main] && !newFetchInfo.isDisplayEnabled[NDSDisplayID_Touch])
 	{
-		if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])
+		pthread_rwlock_wrlock(&this->_fetchInfoRWLock);
+		this->_fetchInfo = newFetchInfo;
+		pthread_rwlock_unlock(&this->_fetchInfoRWLock);
+		return;
+	}
+	
+	if (newFetchInfo.isDisplayEnabled[NDSDisplayID_Main])
+	{
+		if (newFetchInfo.isDisplayAllBlack[NDSDisplayID_Main])
 		{
-			texFetchMain = this->_texDisplayFetchNative[NDSDisplayID_Main][index];
+			newFetchInfo.texID[NDSDisplayID_Main] = this->_texDisplayAllBlack;
+		}
+		else if (newFetchInfo.isDisplayAllWhite[NDSDisplayID_Main])
+		{
+			newFetchInfo.texID[NDSDisplayID_Main] = this->_texDisplayAllWhite;
+		}
+		else if (newFetchInfo.isNativeRender[NDSDisplayID_Main])
+		{
+			newFetchInfo.texID[NDSDisplayID_Main] = this->_texDisplayFetchNative[NDSDisplayID_Main][index];
 		}
 		else
 		{
-			texFetchMain = this->_texDisplayFetchCustom[NDSDisplayID_Main][index];
+			newFetchInfo.texID[NDSDisplayID_Main] = this->_texDisplayFetchCustom[NDSDisplayID_Main][index];
 		}
 	}
 	
-	if (isTouchEnabled)
+	if (newFetchInfo.isDisplayEnabled[NDSDisplayID_Touch])
 	{
-		if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch])
+		if (newFetchInfo.isDisplayAllBlack[NDSDisplayID_Touch])
 		{
-			texFetchTouch = this->_texDisplayFetchNative[NDSDisplayID_Touch][index];
+			newFetchInfo.texID[NDSDisplayID_Touch] = this->_texDisplayAllBlack;
+		}
+		else if (newFetchInfo.isDisplayAllWhite[NDSDisplayID_Touch])
+		{
+			newFetchInfo.texID[NDSDisplayID_Touch] = this->_texDisplayAllWhite;
+		}
+		else if (newFetchInfo.isNativeRender[NDSDisplayID_Touch])
+		{
+			newFetchInfo.texID[NDSDisplayID_Touch] = this->_texDisplayFetchNative[NDSDisplayID_Touch][index];
 		}
 		else
 		{
-			texFetchTouch = this->_texDisplayFetchCustom[NDSDisplayID_Touch][index];
+			newFetchInfo.texID[NDSDisplayID_Touch] = this->_texDisplayFetchCustom[NDSDisplayID_Touch][index];
 		}
 	}
 	
-	this->SetFetchTexture(NDSDisplayID_Main,  texFetchMain);
-	this->SetFetchTexture(NDSDisplayID_Touch, texFetchTouch);
+	if ( this->_preferCPUVideoProcessing || !this->_canProcessFetchOnGPU || ((newFetchInfo.isDisplayAllWhite[NDSDisplayID_Main] || newFetchInfo.isDisplayAllBlack[NDSDisplayID_Main]) && (newFetchInfo.isDisplayAllWhite[NDSDisplayID_Touch] || newFetchInfo.isDisplayAllBlack[NDSDisplayID_Touch])) )
+	{
+		pthread_rwlock_wrlock(&this->_fetchInfoRWLock);
+		this->_fetchInfo = newFetchInfo;
+		pthread_rwlock_unlock(&this->_fetchInfoRWLock);
+		return;
+	}
+	
+	if (newFetchInfo.isDisplayEnabled[NDSDisplayID_Main] && !newFetchInfo.isDisplayAllWhite[NDSDisplayID_Main] && !newFetchInfo.isDisplayAllBlack[NDSDisplayID_Main])
+	{
+		newFetchInfo.texID[NDSDisplayID_Main] = this->_FetchFromDisplayID_OGL(currentDisplayInfo, NDSDisplayID_Main, newFetchInfo.texID[NDSDisplayID_Main], this->_texMasterBrightnessMode[NDSDisplayID_Main][index], this->_texMasterBrightnessIntensity[NDSDisplayID_Main][index]);
+	}
+	
+	if (newFetchInfo.isDisplayEnabled[NDSDisplayID_Touch] && !newFetchInfo.isDisplayAllWhite[NDSDisplayID_Touch] && !newFetchInfo.isDisplayAllBlack[NDSDisplayID_Touch])
+	{
+		newFetchInfo.texID[NDSDisplayID_Touch] = this->_FetchFromDisplayID_OGL(currentDisplayInfo, NDSDisplayID_Touch, newFetchInfo.texID[NDSDisplayID_Touch], this->_texMasterBrightnessMode[NDSDisplayID_Touch][index], this->_texMasterBrightnessIntensity[NDSDisplayID_Touch][index]);
+	}
+	
+	pthread_rwlock_wrlock(&this->_fetchInfoRWLock);
+	this->_fetchInfo = newFetchInfo;
+	pthread_rwlock_unlock(&this->_fetchInfoRWLock);
 }
 
 void OGLClientSharedData::FetchNativeDisplayByID_OGL(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex)
 {
-	if (this->_useDirectToCPUFilterPipeline)
+	const bool isDisplayAllWhite =  !displayInfoList[bufferIndex].masterBrightnessDiffersPerLine[displayID] && (displayInfoList[bufferIndex].masterBrightnessMode[displayID][0] == GPUMasterBrightMode_Up)   && (displayInfoList[bufferIndex].masterBrightnessIntensity[displayID][0] >= 16);
+	const bool isDisplayAllBlack = (!displayInfoList[bufferIndex].masterBrightnessDiffersPerLine[displayID] && (displayInfoList[bufferIndex].masterBrightnessMode[displayID][0] == GPUMasterBrightMode_Down) && (displayInfoList[bufferIndex].masterBrightnessIntensity[displayID][0] >= 16)) || !displayInfoList[bufferIndex].isDisplayEnabled[displayID];
+	
+	if (isDisplayAllWhite || isDisplayAllBlack)
 	{
-		pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
-		this->_srcCloneNeedsUpdate[displayID][bufferIndex] = true;
-		this->FetchNativeDisplayToSrcClone(displayInfoList, displayID, bufferIndex, false);
-		pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
+		return;
 	}
 	
+	if (this->_preferCPUVideoProcessing || !this->_canProcessFetchOnGPU)
+	{
+		// Postprocess on the CPU before applying CPU-based filters or uploading to the GPU.
+		GPU->PostprocessDisplay(displayID, ((NDSDisplayInfo *)displayInfoList)[bufferIndex]);
+		
+		if (this->_useDirectToCPUFilterPipeline)
+		{
+			pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
+			this->_srcCloneNeedsUpdate[displayID][bufferIndex] = true;
+			this->FetchNativeDisplayToSrcClone(displayInfoList, displayID, bufferIndex, false);
+			pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
+		}
+	}
+	
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[displayID][bufferIndex]);
 	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, displayInfoList[bufferIndex].nativeBuffer16[displayID]);
-	
-	// Using Apple Texture Range and Apple Client Storage turns glTexSubImage2D()
-	// from a synchronous function into an asynchronous function. Therefore, we
-	// need to call glFlush() so that we can ensure that the asynchronous data
-	// transfer starts right now.
-	glFlush();
 }
 
 void OGLClientSharedData::FetchCustomDisplayByID_OGL(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex)
 {
-	if (this->_useDirectToCPUFilterPipeline && (displayInfoList[bufferIndex].renderedWidth[displayID] == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (displayInfoList[bufferIndex].renderedHeight[displayID] == GPU_FRAMEBUFFER_NATIVE_HEIGHT))
+	const bool isDisplayAllWhite =  !displayInfoList[bufferIndex].masterBrightnessDiffersPerLine[displayID] && (displayInfoList[bufferIndex].masterBrightnessMode[displayID][0] == GPUMasterBrightMode_Up)   && (displayInfoList[bufferIndex].masterBrightnessIntensity[displayID][0] >= 16);
+	const bool isDisplayAllBlack = (!displayInfoList[bufferIndex].masterBrightnessDiffersPerLine[displayID] && (displayInfoList[bufferIndex].masterBrightnessMode[displayID][0] == GPUMasterBrightMode_Down) && (displayInfoList[bufferIndex].masterBrightnessIntensity[displayID][0] >= 16)) || !displayInfoList[bufferIndex].isDisplayEnabled[displayID];
+	
+	if (isDisplayAllWhite || isDisplayAllBlack)
 	{
-		pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
-		this->_srcCloneNeedsUpdate[displayID][bufferIndex] = true;
-		this->FetchCustomDisplayToSrcClone(displayInfoList, displayID, bufferIndex, false);
-		pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
+		return;
 	}
 	
+	if (this->_preferCPUVideoProcessing || !this->_canProcessFetchOnGPU)
+	{
+		// Postprocess on the CPU before applying CPU-based filters or uploading to the GPU.
+		GPU->PostprocessDisplay(displayID, ((NDSDisplayInfo *)displayInfoList)[bufferIndex]);
+		
+		bool isNativeSize = !displayInfoList[bufferIndex].didPerformCustomRender[displayID] || !displayInfoList[bufferIndex].isCustomSizeRequested || ((displayInfoList[bufferIndex].renderedWidth[displayID] == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (displayInfoList[bufferIndex].renderedHeight[displayID] == GPU_FRAMEBUFFER_NATIVE_HEIGHT));
+		if (isNativeSize && this->_useDirectToCPUFilterPipeline)
+		{
+			pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
+			this->_srcCloneNeedsUpdate[displayID][bufferIndex] = true;
+			this->FetchCustomDisplayToSrcClone(displayInfoList, displayID, bufferIndex, false);
+			pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
+		}
+	}
+	
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[displayID][bufferIndex]);
 	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, displayInfoList[bufferIndex].customWidth, displayInfoList[bufferIndex].customHeight, GL_RGBA, this->_fetchColorFormatOGL, displayInfoList[bufferIndex].customBuffer[displayID]);
-	
-	// Using Apple Texture Range and Apple Client Storage turns glTexSubImage2D()
-	// from a synchronous function into an asynchronous function. Therefore, we
-	// need to call glFlush() so that we can ensure that the asynchronous data
-	// transfer starts right now.
-	glFlush();
 }
 
 #pragma mark -
@@ -4944,11 +5617,10 @@ OGLVideoOutput::OGLVideoOutput()
 	_texCPUFilterDstID[NDSDisplayID_Touch] = 0;
 	_fboFrameCopyID = 0;
 	
-	_processedFrameInfo.bufferIndex = 0;
 	_processedFrameInfo.texID[NDSDisplayID_Main]  = 0;
 	_processedFrameInfo.texID[NDSDisplayID_Touch] = 0;
-	_processedFrameInfo.isMainDisplayProcessed = false;
-	_processedFrameInfo.isTouchDisplayProcessed = false;
+	_processedFrameInfo.backlightIntensity[NDSDisplayID_Main]  = 1.0f;
+	_processedFrameInfo.backlightIntensity[NDSDisplayID_Touch] = 1.0f;
 	
 	_layerList = new std::vector<OGLVideoLayer *>;
 	_layerList->reserve(8);
@@ -5063,7 +5735,7 @@ OGLContextInfo* OGLVideoOutput::GetContextInfo()
 void OGLVideoOutput::Init()
 {
 	this->_canFilterOnGPU = ( this->_contextInfo->IsShaderSupported() && this->_contextInfo->IsFBOSupported() );
-	this->_filtersPreferGPU = this->_canFilterOnGPU;
+	this->_filtersPreferGPU = true;
 	this->_willFilterOnGPU = false;
 	
 	std::vector<bool> wasPreviouslyVisibleList;
@@ -5273,12 +5945,12 @@ void OGLVideoOutput::RenderFrameOGL(bool isRenderingFlipped)
 	}
 }
 
-const OGLProcessedFrameInfo& OGLVideoOutput::GetProcessedFrameInfo()
+const OGLFrameInfoProcessed& OGLVideoOutput::GetFrameInfoProcessed()
 {
 	return this->_processedFrameInfo;
 }
 
-void OGLVideoOutput::SetProcessedFrameInfo(const OGLProcessedFrameInfo &processedInfo)
+void OGLVideoOutput::SetFrameInfoProcessed(const OGLFrameInfoProcessed &processedInfo)
 {
 	this->_processedFrameInfo = processedInfo;
 }
@@ -5413,8 +6085,8 @@ void OGLFilter::SetSrcSizeOGL(GLsizei w, GLsizei h)
 	this->_dstHeight = this->_srcHeight * this->_scale;
 	
 	this->_texCoordBuffer[2] = w;
-	this->_texCoordBuffer[4] = w;
-	this->_texCoordBuffer[5] = h;
+	this->_texCoordBuffer[5] = w;
+	this->_texCoordBuffer[6] = h;
 	this->_texCoordBuffer[7] = h;
 	
 	glBindBuffer(GL_ARRAY_BUFFER, this->_vboTexCoordID);
@@ -5454,6 +6126,16 @@ void OGLFilter::SetScaleOGL(GLfloat scale, void *buffer)
 	{
 		free(buffer);
 	}
+}
+
+GLsizei OGLFilter::GetDstWidth() const
+{
+	return this->_dstWidth;
+}
+
+GLsizei OGLFilter::GetDstHeight() const
+{
+	return this->_dstHeight;
 }
 
 GLuint OGLFilter::RunFilterOGL(GLuint srcTexID)
@@ -5505,7 +6187,7 @@ OGLFilterDeposterize::OGLFilterDeposterize(GLsizei srcWidth, GLsizei srcHeight, 
 	
 	_program->SetShaderSupport(theTier);
 	_program->SetVertexShaderOGL(Sample3x3_VertShader_110, false, useShader150);
-	_program->SetFragmentShaderOGL(FilterDeposterizeFragShader_110, useShader150);
+	_program->SetFragmentShaderOGL(FilterDeposterizeFragShader_110, useShader150, false);
 }
 
 OGLFilterDeposterize::~OGLFilterDeposterize()
@@ -5682,7 +6364,7 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 	{
 		_finalOutputProgram = new OGLShaderProgram;
 		_finalOutputProgram->SetShaderSupport(_shaderSupport);
-		_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, _useShader150);
+		_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, _useShader150, false);
 		
 		const GLuint finalOutputProgramID = _finalOutputProgram->GetProgramID();
 		glUseProgram(finalOutputProgramID);
@@ -5706,7 +6388,7 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 		_shaderFilter = new OGLFilter((GLsizei)_vf->GetSrcWidth(), (GLsizei)_vf->GetSrcHeight(), 1);
 		OGLShaderProgram *shaderFilterProgram = _shaderFilter->GetProgram();
 		shaderFilterProgram->SetShaderSupport(_shaderSupport);
-		shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, _useShader150);
+		shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, _useShader150, false);
 		
 		SetupHQnxLUTs_OGL(GL_TEXTURE0 + 1, _texLQ2xLUT, _texHQ2xLUT, _texHQ3xLUT, _texHQ4xLUT);
 	}
@@ -5807,11 +6489,11 @@ void OGLImage::SetOutputFilterOGL(const int filterID)
 		switch (filterID)
 		{
 			case OutputFilterTypeID_NearestNeighbor:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, _useShader150);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, _useShader150, false);
 				break;
 				
 			case OutputFilterTypeID_Bilinear:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, _useShader150);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, _useShader150, false);
 				this->_displayTexFilter = GL_LINEAR;
 				break;
 				
@@ -5819,11 +6501,11 @@ void OGLImage::SetOutputFilterOGL(const int filterID)
 			{
 				if (this->_shaderSupport == ShaderSupport_BottomTier)
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, FilterBicubicBSplineFastFragShader_110, false, _useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, FilterBicubicBSplineFastFragShader_110, false, _useShader150, false);
 				}
 				else
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicBSplineFragShader_110, false, _useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicBSplineFragShader_110, false, _useShader150, false);
 				}
 				break;
 			}
@@ -5832,38 +6514,38 @@ void OGLImage::SetOutputFilterOGL(const int filterID)
 			{
 				if (this->_shaderSupport == ShaderSupport_BottomTier)
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, FilterBicubicMitchellNetravaliFastFragShader_110, false, _useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, FilterBicubicMitchellNetravaliFastFragShader_110, false, _useShader150, false);
 				}
 				else
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicMitchellNetravaliFragShader_110, false, _useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicMitchellNetravaliFragShader_110, false, _useShader150, false);
 				}
 				break;
 			}
 				
 			case OutputFilterTypeID_Lanczos2:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos2FragShader_110, false, _useShader150);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos2FragShader_110, false, _useShader150, false);
 				break;
 				
 			case OutputFilterTypeID_Lanczos3:
 			{
 				if (this->_shaderSupport >= ShaderSupport_HighTier)
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample6x6Output_VertShader_110, FilterLanczos3FragShader_110, false, _useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample6x6Output_VertShader_110, FilterLanczos3FragShader_110, false, _useShader150, false);
 				}
 				else if (this->_shaderSupport >= ShaderSupport_MidTier)
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample5x5Output_VertShader_110, FilterLanczos3FragShader_110, false, _useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample5x5Output_VertShader_110, FilterLanczos3FragShader_110, false, _useShader150, false);
 				}
 				else
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos3FragShader_110, false, _useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos3FragShader_110, false, _useShader150, false);
 				}
 				break;
 			}
 				
 			default:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, _useShader150);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, _useShader150, false);
 				this->_outputFilter = OutputFilterTypeID_NearestNeighbor;
 				break;
 		}
@@ -5913,30 +6595,30 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 	switch (filterID)
 	{
 		case VideoFilterTypeID_Nearest1_5X:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, _useShader150);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, _useShader150, false);
 			break;
 			
 		case VideoFilterTypeID_Nearest2X:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, _useShader150);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, _useShader150, false);
 			break;
 			
 		case VideoFilterTypeID_Scanline:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, Scalar2xScanlineFragShader_110, false, _useShader150);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, Scalar2xScanlineFragShader_110, false, _useShader150, false);
 			break;
 			
 		case VideoFilterTypeID_EPX:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXFragShader_110, false, _useShader150);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXFragShader_110, false, _useShader150, false);
 			break;
 			
 		case VideoFilterTypeID_EPXPlus:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXPlusFragShader_110, false, _useShader150);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXPlusFragShader_110, false, _useShader150, false);
 			break;
 			
 		case VideoFilterTypeID_2xSaI:
 		{
 			if (this->_shaderSupport >= ShaderSupport_LowTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scalar2xSaIFragShader_110, false, _useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scalar2xSaIFragShader_110, false, _useShader150, false);
 			}
 			else
 			{
@@ -5949,7 +6631,7 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_LowTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuper2xSaIFragShader_110, false, _useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuper2xSaIFragShader_110, false, _useShader150, false);
 			}
 			else
 			{
@@ -5962,7 +6644,7 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_LowTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuperEagle2xFragShader_110, false, _useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuperEagle2xFragShader_110, false, _useShader150, false);
 			}
 			else
 			{
@@ -5972,22 +6654,22 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		}
 			
 		case VideoFilterTypeID_LQ2X:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xFragShader_110, false, _useShader150);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xFragShader_110, false, _useShader150, false);
 			currentHQnxLUT = this->_texLQ2xLUT;
 			break;
 			
 		case VideoFilterTypeID_LQ2XS:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xSFragShader_110, false, _useShader150);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xSFragShader_110, false, _useShader150, false);
 			currentHQnxLUT = this->_texLQ2xLUT;
 			break;
 			
 		case VideoFilterTypeID_HQ2X:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xFragShader_110, false, _useShader150);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xFragShader_110, false, _useShader150, false);
 			currentHQnxLUT = this->_texHQ2xLUT;
 			break;
 			
 		case VideoFilterTypeID_HQ2XS:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xSFragShader_110, false, _useShader150);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xSFragShader_110, false, _useShader150, false);
 			currentHQnxLUT = this->_texHQ2xLUT;
 			break;
 			
@@ -5995,7 +6677,7 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_LowTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xFragShader_110, false, _useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xFragShader_110, false, _useShader150, false);
 				currentHQnxLUT = this->_texHQ3xLUT;
 			}
 			else
@@ -6009,7 +6691,7 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_LowTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xSFragShader_110, false, _useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xSFragShader_110, false, _useShader150, false);
 				currentHQnxLUT = this->_texHQ3xLUT;
 			}
 			else
@@ -6023,7 +6705,7 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_LowTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xFragShader_110, false, _useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xFragShader_110, false, _useShader150, false);
 				currentHQnxLUT = this->_texHQ4xLUT;
 			}
 			else
@@ -6037,7 +6719,7 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_LowTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xSFragShader_110, false, _useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xSFragShader_110, false, _useShader150, false);
 				currentHQnxLUT = this->_texHQ4xLUT;
 			}
 			else
@@ -6051,7 +6733,7 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_MidTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler2xBRZFragShader_110, false, _useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler2xBRZFragShader_110, false, _useShader150, false);
 			}
 			else
 			{
@@ -6064,7 +6746,7 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_MidTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler3xBRZFragShader_110, false, _useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler3xBRZFragShader_110, false, _useShader150, false);
 			}
 			else
 			{
@@ -6077,7 +6759,7 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_MidTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler4xBRZFragShader_110, false, _useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler4xBRZFragShader_110, false, _useShader150, false);
 			}
 			else
 			{
@@ -6091,7 +6773,7 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_MidTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler5xBRZFragShader_110, false, _useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler5xBRZFragShader_110, false, _useShader150, false);
 			}
 			else
 			{
@@ -6104,7 +6786,7 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_MidTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler6xBRZFragShader_110, false, _useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler6xBRZFragShader_110, false, _useShader150, false);
 			}
 			else
 			{
@@ -6321,7 +7003,7 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	{
 		_program = new OGLShaderProgram;
 		_program->SetShaderSupport(oglVO->GetContextInfo()->GetShaderSupport());
-		_program->SetVertexAndFragmentShaderOGL(HUDOutputVertShader_100, HUDOutputFragShader_110, true, oglVO->GetContextInfo()->IsUsingShader150());
+		_program->SetVertexAndFragmentShaderOGL(HUDOutputVertShader_100, HUDOutputFragShader_110, true, oglVO->GetContextInfo()->IsUsingShader150(), false);
 		
 		glUseProgram(_program->GetProgramID());
 		_uniformAngleDegrees = glGetUniformLocation(_program->GetProgramID(), "angleDegrees");
@@ -6780,7 +7462,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	{
 		_finalOutputProgram = new OGLShaderProgram;
 		_finalOutputProgram->SetShaderSupport(shaderSupport);
-		_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, useShader150);
+		_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, useShader150, false);
 		
 		const GLuint finalOutputProgramID = _finalOutputProgram->GetProgramID();
 		glUseProgram(finalOutputProgramID);
@@ -6808,7 +7490,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 			_shaderFilter[i] = new OGLFilter(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 1);
 			OGLShaderProgram *shaderFilterProgram = _shaderFilter[i]->GetProgram();
 			shaderFilterProgram->SetShaderSupport(shaderSupport);
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, useShader150);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, useShader150, false);
 		}
 	}
 	else
@@ -6899,11 +7581,11 @@ OutputFilterTypeID OGLDisplayLayer::SetOutputFilterOGL(const OutputFilterTypeID 
 		switch (filterID)
 		{
 			case OutputFilterTypeID_NearestNeighbor:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, useShader150);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, useShader150, false);
 				break;
 				
 			case OutputFilterTypeID_Bilinear:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, useShader150);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, useShader150, false);
 				this->_displayTexFilter[0] = GL_LINEAR;
 				this->_displayTexFilter[1] = GL_LINEAR;
 				break;
@@ -6912,11 +7594,11 @@ OutputFilterTypeID OGLDisplayLayer::SetOutputFilterOGL(const OutputFilterTypeID 
 			{
 				if (shaderSupport == ShaderSupport_BottomTier)
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, FilterBicubicBSplineFastFragShader_110, false, useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, FilterBicubicBSplineFastFragShader_110, false, useShader150, false);
 				}
 				else
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicBSplineFragShader_110, false, useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicBSplineFragShader_110, false, useShader150, false);
 				}
 				break;
 			}
@@ -6925,38 +7607,38 @@ OutputFilterTypeID OGLDisplayLayer::SetOutputFilterOGL(const OutputFilterTypeID 
 			{
 				if (shaderSupport == ShaderSupport_BottomTier)
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, FilterBicubicMitchellNetravaliFastFragShader_110, false, useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, FilterBicubicMitchellNetravaliFastFragShader_110, false, useShader150, false);
 				}
 				else
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicMitchellNetravaliFragShader_110, false, useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicMitchellNetravaliFragShader_110, false, useShader150, false);
 				}
 				break;
 			}
 				
 			case OutputFilterTypeID_Lanczos2:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos2FragShader_110, false, useShader150);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos2FragShader_110, false, useShader150, false);
 				break;
 				
 			case OutputFilterTypeID_Lanczos3:
 			{
 				if (shaderSupport >= ShaderSupport_HighTier)
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample6x6Output_VertShader_110, FilterLanczos3FragShader_110, false, useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample6x6Output_VertShader_110, FilterLanczos3FragShader_110, false, useShader150, false);
 				}
 				else if (shaderSupport >= ShaderSupport_MidTier)
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample5x5Output_VertShader_110, FilterLanczos3FragShader_110, false, useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample5x5Output_VertShader_110, FilterLanczos3FragShader_110, false, useShader150, false);
 				}
 				else
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos3FragShader_110, false, useShader150);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos3FragShader_110, false, useShader150, false);
 				}
 				break;
 			}
 				
 			default:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, useShader150);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, false, useShader150, false);
 				outputFilter = OutputFilterTypeID_NearestNeighbor;
 				break;
 		}
@@ -6996,30 +7678,30 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		switch (filterID)
 		{
 			case VideoFilterTypeID_Nearest1_5X:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, useShader150, false);
 				break;
 				
 			case VideoFilterTypeID_Nearest2X:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, false, useShader150, false);
 				break;
 				
 			case VideoFilterTypeID_Scanline:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, Scalar2xScanlineFragShader_110, false, useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, Scalar2xScanlineFragShader_110, false, useShader150, false);
 				break;
 				
 			case VideoFilterTypeID_EPX:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXFragShader_110, false, useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXFragShader_110, false, useShader150, false);
 				break;
 				
 			case VideoFilterTypeID_EPXPlus:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXPlusFragShader_110, false, useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXPlusFragShader_110, false, useShader150, false);
 				break;
 				
 			case VideoFilterTypeID_2xSaI:
 			{
 				if (shaderSupport >= ShaderSupport_LowTier)
 				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scalar2xSaIFragShader_110, false, useShader150);
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scalar2xSaIFragShader_110, false, useShader150, false);
 				}
 				else
 				{
@@ -7032,7 +7714,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			{
 				if (shaderSupport >= ShaderSupport_LowTier)
 				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuper2xSaIFragShader_110, false, useShader150);
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuper2xSaIFragShader_110, false, useShader150, false);
 				}
 				else
 				{
@@ -7045,7 +7727,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			{
 				if (shaderSupport >= ShaderSupport_LowTier)
 				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuperEagle2xFragShader_110, false, useShader150);
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuperEagle2xFragShader_110, false, useShader150, false);
 				}
 				else
 				{
@@ -7055,22 +7737,22 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			}
 				
 			case VideoFilterTypeID_LQ2X:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xFragShader_110, false, useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xFragShader_110, false, useShader150, false);
 				currentHQnxLUT = sharedData->GetTexLQ2xLUT();
 				break;
 				
 			case VideoFilterTypeID_LQ2XS:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xSFragShader_110, false, useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xSFragShader_110, false, useShader150, false);
 				currentHQnxLUT = sharedData->GetTexLQ2xLUT();
 				break;
 				
 			case VideoFilterTypeID_HQ2X:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xFragShader_110, false, useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xFragShader_110, false, useShader150, false);
 				currentHQnxLUT = sharedData->GetTexHQ2xLUT();
 				break;
 				
 			case VideoFilterTypeID_HQ2XS:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xSFragShader_110, false, useShader150);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xSFragShader_110, false, useShader150, false);
 				currentHQnxLUT = sharedData->GetTexHQ2xLUT();
 				break;
 				
@@ -7078,7 +7760,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			{
 				if (shaderSupport >= ShaderSupport_LowTier)
 				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xFragShader_110, false, useShader150);
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xFragShader_110, false, useShader150, false);
 					currentHQnxLUT = sharedData->GetTexHQ3xLUT();
 				}
 				else
@@ -7092,7 +7774,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			{
 				if (shaderSupport >= ShaderSupport_LowTier)
 				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xSFragShader_110, false, useShader150);
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xSFragShader_110, false, useShader150, false);
 					currentHQnxLUT = sharedData->GetTexHQ3xLUT();
 				}
 				else
@@ -7106,7 +7788,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			{
 				if (shaderSupport >= ShaderSupport_LowTier)
 				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xFragShader_110, false, useShader150);
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xFragShader_110, false, useShader150, false);
 					currentHQnxLUT = sharedData->GetTexHQ4xLUT();
 				}
 				else
@@ -7120,7 +7802,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			{
 				if (shaderSupport >= ShaderSupport_LowTier)
 				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xSFragShader_110, false, useShader150);
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xSFragShader_110, false, useShader150, false);
 					currentHQnxLUT = sharedData->GetTexHQ4xLUT();
 				}
 				else
@@ -7134,7 +7816,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			{
 				if (shaderSupport >= ShaderSupport_MidTier)
 				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler2xBRZFragShader_110, false, useShader150);
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler2xBRZFragShader_110, false, useShader150, false);
 				}
 				else
 				{
@@ -7147,7 +7829,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			{
 				if (shaderSupport >= ShaderSupport_MidTier)
 				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler3xBRZFragShader_110, false, useShader150);
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler3xBRZFragShader_110, false, useShader150, false);
 				}
 				else
 				{
@@ -7160,7 +7842,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			{
 				if (shaderSupport >= ShaderSupport_MidTier)
 				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler4xBRZFragShader_110, false, useShader150);
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler4xBRZFragShader_110, false, useShader150, false);
 				}
 				else
 				{
@@ -7173,7 +7855,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			{
 				if (shaderSupport >= ShaderSupport_MidTier)
 				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler5xBRZFragShader_110, false, useShader150);
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler5xBRZFragShader_110, false, useShader150, false);
 				}
 				else
 				{
@@ -7186,7 +7868,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			{
 				if (shaderSupport >= ShaderSupport_MidTier)
 				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler6xBRZFragShader_110, false, useShader150);
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler6xBRZFragShader_110, false, useShader150, false);
 				}
 				else
 				{
@@ -7258,145 +7940,96 @@ void OGLDisplayLayer::LoadCustomDisplayByID_OGL(const NDSDisplayID displayID)
 	}
 }
 
-void OGLDisplayLayer::ProcessOGL()
+GLuint OGLDisplayLayer::_ProcessDisplayByID_OGL(NDSDisplayID displayID, GLuint texID, size_t bufferIndex, bool useDeposterize, VideoFilterTypeID filterID, VideoFilter *cpuFilter, GLsizei &inoutWidth, GLsizei &inoutHeight)
 {
-	const GPUClientFetchObject &fetchObj = this->_output->GetFetchObject();
-	OGLClientSharedData *sharedData = (OGLClientSharedData *)fetchObj.GetClientData();
-	
-	const uint8_t bufferIndex = fetchObj.GetLastFetchIndex();
-	const NDSDisplayInfo &emuDisplayInfo = this->_output->GetEmuDisplayInfo();
-	const ClientDisplayMode mode = this->_output->GetPresenterProperties().mode;
-	const bool useDeposterize = this->_output->GetSourceDeposterize();
-	const NDSDisplayID selectedDisplaySource[2] = { this->_output->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main), this->_output->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) };
-	
-	const bool didRenderNative[2] = { !emuDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Main]], !emuDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Touch]] };
-
-	GLuint texMain  = (selectedDisplaySource[NDSDisplayID_Main]  == NDSDisplayID_Main)  ? sharedData->GetFetchTexture(NDSDisplayID_Main)  : sharedData->GetFetchTexture(NDSDisplayID_Touch);
-	GLuint texTouch = (selectedDisplaySource[NDSDisplayID_Touch] == NDSDisplayID_Touch) ? sharedData->GetFetchTexture(NDSDisplayID_Touch) : sharedData->GetFetchTexture(NDSDisplayID_Main);
-	
-	GLsizei width[2]  = { (GLsizei)emuDisplayInfo.renderedWidth[selectedDisplaySource[NDSDisplayID_Main]],  (GLsizei)emuDisplayInfo.renderedWidth[selectedDisplaySource[NDSDisplayID_Touch]] };
-	GLsizei height[2] = { (GLsizei)emuDisplayInfo.renderedHeight[selectedDisplaySource[NDSDisplayID_Main]], (GLsizei)emuDisplayInfo.renderedHeight[selectedDisplaySource[NDSDisplayID_Touch]] };
-	
-	VideoFilter *vfMain  = this->_output->GetPixelScalerObject(NDSDisplayID_Main);
-	VideoFilter *vfTouch = this->_output->GetPixelScalerObject(NDSDisplayID_Touch);
-	
-	bool isDisplayProcessedMain  = false;
-	bool isDisplayProcessedTouch = false;
-	
-	if ( (emuDisplayInfo.pixelBytes != 0) && (useDeposterize || (this->_output->GetPixelScaler() != VideoFilterTypeID_None)) )
+	if (texID == 0)
 	{
-		// Run the video source filters and the pixel scalers
-		const bool willFilterOnGPU = this->_output->WillFilterOnGPU();
-		const bool shouldProcessDisplay[2] = { (didRenderNative[NDSDisplayID_Main]  || !emuDisplayInfo.isCustomSizeRequested) && this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Main)  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
-		                                       (didRenderNative[NDSDisplayID_Touch] || !emuDisplayInfo.isCustomSizeRequested) && this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Touch) && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) && (selectedDisplaySource[NDSDisplayID_Main] != selectedDisplaySource[NDSDisplayID_Touch]) };
-		
-		if (useDeposterize)
+		return 0;
+	}
+	
+	if (useDeposterize)
+	{
+		texID = this->_filterDeposterize[displayID]->RunFilterOGL(texID);
+	}
+	
+	if (filterID != VideoFilterTypeID_None)
+	{
+		if (cpuFilter == NULL)
 		{
-			if (shouldProcessDisplay[NDSDisplayID_Main])
-			{
-				texMain = this->_filterDeposterize[NDSDisplayID_Main]->RunFilterOGL(texMain);
-				isDisplayProcessedMain = true;
-				
-				if (selectedDisplaySource[NDSDisplayID_Main] == selectedDisplaySource[NDSDisplayID_Touch])
-				{
-					isDisplayProcessedTouch = true;
-				}
-			}
+			// Run the pixel scalers. First attempt on the GPU.
+			texID = this->_shaderFilter[displayID]->RunFilterOGL(texID);
 			
-			if (shouldProcessDisplay[NDSDisplayID_Touch])
-			{
-				texTouch = this->_filterDeposterize[NDSDisplayID_Touch]->RunFilterOGL(texTouch);
-				isDisplayProcessedTouch = true;
-			}
+			inoutWidth  = this->_shaderFilter[displayID]->GetDstWidth();
+			inoutHeight = this->_shaderFilter[displayID]->GetDstHeight();
 		}
-		
-		// Run the pixel scalers. First attempt on the GPU.
-		if ( (this->_output->GetPixelScaler() != VideoFilterTypeID_None) && willFilterOnGPU )
-		{
-			if (shouldProcessDisplay[NDSDisplayID_Main])
-			{
-				texMain = this->_shaderFilter[NDSDisplayID_Main]->RunFilterOGL(texMain);
-				
-				width[NDSDisplayID_Main]  = (GLsizei)vfMain->GetDstWidth();
-				height[NDSDisplayID_Main] = (GLsizei)vfMain->GetDstHeight();
-				isDisplayProcessedMain = true;
-				
-				if (selectedDisplaySource[NDSDisplayID_Main] == selectedDisplaySource[NDSDisplayID_Touch])
-				{
-					isDisplayProcessedTouch = true;
-				}
-			}
-			
-			if (shouldProcessDisplay[NDSDisplayID_Touch])
-			{
-				texTouch = this->_shaderFilter[NDSDisplayID_Touch]->RunFilterOGL(texTouch);
-				
-				width[NDSDisplayID_Touch]  = (GLsizei)vfTouch->GetDstWidth();
-				height[NDSDisplayID_Touch] = (GLsizei)vfTouch->GetDstHeight();
-				isDisplayProcessedTouch = true;
-			}
-		}
-		
-		// If the pixel scaler didn't already run on the GPU, then run the pixel scaler on the CPU.
-		if ( (this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !willFilterOnGPU )
+		else
 		{
 			if (useDeposterize)
 			{
 				// Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
-				if (shouldProcessDisplay[NDSDisplayID_Main])
-				{
-					this->_filterDeposterize[NDSDisplayID_Main]->DownloadDstBufferOGL(vfMain->GetSrcBufferPtr(), 0, vfMain->GetSrcHeight());
-				}
-				
-				if (shouldProcessDisplay[NDSDisplayID_Touch])
-				{
-					this->_filterDeposterize[NDSDisplayID_Touch]->DownloadDstBufferOGL(vfTouch->GetSrcBufferPtr(), 0, vfTouch->GetSrcHeight());
-				}
+				this->_filterDeposterize[displayID]->DownloadDstBufferOGL(cpuFilter->GetSrcBufferPtr(), 0, cpuFilter->GetSrcHeight());
 			}
 			
-			if (shouldProcessDisplay[NDSDisplayID_Main])
-			{
-				pthread_rwlock_rdlock(&this->_cpuFilterRWLock[NDSDisplayID_Main][bufferIndex]);
-				vfMain->RunFilter();
-				pthread_rwlock_unlock(&this->_cpuFilterRWLock[NDSDisplayID_Main][bufferIndex]);
-			}
+			pthread_rwlock_rdlock(&this->_cpuFilterRWLock[displayID][bufferIndex]);
+			cpuFilter->RunFilter();
+			pthread_rwlock_unlock(&this->_cpuFilterRWLock[displayID][bufferIndex]);
 			
-			if (shouldProcessDisplay[NDSDisplayID_Touch])
-			{
-				pthread_rwlock_rdlock(&this->_cpuFilterRWLock[NDSDisplayID_Touch][bufferIndex]);
-				vfTouch->RunFilter();
-				pthread_rwlock_unlock(&this->_cpuFilterRWLock[NDSDisplayID_Touch][bufferIndex]);
-			}
+			inoutWidth  = (GLsizei)cpuFilter->GetDstWidth();
+			inoutHeight = (GLsizei)cpuFilter->GetDstHeight();
 			
-			if (shouldProcessDisplay[NDSDisplayID_Main])
-			{
-				texMain = this->_output->GetTexCPUFilterDstID(NDSDisplayID_Main);
-				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texMain);
-				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, (GLsizei)vfMain->GetDstWidth(), (GLsizei)vfMain->GetDstHeight(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, vfMain->GetDstBufferPtr());
-				glFlush();
-				
-				width[NDSDisplayID_Main]  = (GLsizei)vfMain->GetDstWidth();
-				height[NDSDisplayID_Main] = (GLsizei)vfMain->GetDstHeight();
-				isDisplayProcessedMain = true;
-				
-				if (selectedDisplaySource[NDSDisplayID_Main] == selectedDisplaySource[NDSDisplayID_Touch])
-				{
-					isDisplayProcessedTouch = true;
-				}
-			}
-			
-			if (shouldProcessDisplay[NDSDisplayID_Touch])
-			{
-				texTouch = this->_output->GetTexCPUFilterDstID(NDSDisplayID_Touch);
-				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texTouch);
-				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, (GLsizei)vfTouch->GetDstWidth(), (GLsizei)vfTouch->GetDstHeight(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, vfTouch->GetDstBufferPtr());
-				glFlush();
-				
-				width[NDSDisplayID_Touch]  = (GLsizei)vfTouch->GetDstWidth();
-				height[NDSDisplayID_Touch] = (GLsizei)vfTouch->GetDstHeight();
-				isDisplayProcessedTouch = true;
-			}
+			texID = this->_output->GetTexCPUFilterDstID(displayID);
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texID);
+			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, inoutWidth, inoutHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, cpuFilter->GetDstBufferPtr());
 		}
+	}
+	
+	return texID;
+}
+
+void OGLDisplayLayer::ProcessOGL()
+{
+	const GPUClientFetchObject &fetchObj = this->_output->GetFetchObject();
+	OGLClientSharedData *sharedData = (OGLClientSharedData *)fetchObj.GetClientData();
+	const OGLFrameInfoFetch &fetchInfo = sharedData->GetFetchInfo();
+	
+	const ClientDisplayMode mode = this->_output->GetPresenterProperties().mode;
+	const bool useDeposterize = this->_output->GetSourceDeposterize();
+	
+	const NDSDisplayID selectedDisplaySource[2] = {
+		this->_output->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main),
+		this->_output->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch)
+	};
+	
+	GLuint texMain  = (selectedDisplaySource[NDSDisplayID_Main]  == NDSDisplayID_Main)  ? fetchInfo.texID[NDSDisplayID_Main]  : fetchInfo.texID[NDSDisplayID_Touch];
+	GLuint texTouch = (selectedDisplaySource[NDSDisplayID_Touch] == NDSDisplayID_Touch) ? fetchInfo.texID[NDSDisplayID_Touch] : fetchInfo.texID[NDSDisplayID_Main];
+	
+	GLsizei width[2]  = { fetchInfo.width[selectedDisplaySource[NDSDisplayID_Main]],  fetchInfo.width[selectedDisplaySource[NDSDisplayID_Touch]] };
+	GLsizei height[2] = { fetchInfo.height[selectedDisplaySource[NDSDisplayID_Main]], fetchInfo.height[selectedDisplaySource[NDSDisplayID_Touch]] };
+	
+	// Run the video source filters and the pixel scalers
+	if (useDeposterize || (this->_output->GetPixelScaler() != VideoFilterTypeID_None))
+	{
+		const bool willFilterOnGPU = this->_output->WillFilterOnGPU();
+		
+		const bool shouldProcessDisplay[2] = {
+			fetchInfo.isDisplayProcessPossible[selectedDisplaySource[NDSDisplayID_Main]]  && this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Main)  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
+			fetchInfo.isDisplayProcessPossible[selectedDisplaySource[NDSDisplayID_Touch]] && this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Touch) && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) && (selectedDisplaySource[NDSDisplayID_Main] != selectedDisplaySource[NDSDisplayID_Touch])
+		};
+		
+		if (shouldProcessDisplay[NDSDisplayID_Main])
+		{
+			VideoFilter *vfMain = (willFilterOnGPU) ? NULL : this->_output->GetPixelScalerObject(NDSDisplayID_Main);
+			texMain = this->_ProcessDisplayByID_OGL(NDSDisplayID_Main, texMain, fetchInfo.bufferIndex, useDeposterize, this->_output->GetPixelScaler(), vfMain, width[NDSDisplayID_Main], height[NDSDisplayID_Main]);
+		}
+		
+		if (shouldProcessDisplay[NDSDisplayID_Touch])
+		{
+			VideoFilter *vfTouch = (willFilterOnGPU) ? NULL : this->_output->GetPixelScalerObject(NDSDisplayID_Touch);
+			texTouch = this->_ProcessDisplayByID_OGL(NDSDisplayID_Touch, texTouch, fetchInfo.bufferIndex, useDeposterize, this->_output->GetPixelScaler(), vfTouch, width[NDSDisplayID_Touch], height[NDSDisplayID_Touch]);
+		}
+		
+		// OpenGL shader-based filters can modify the viewport, so it needs to be reset here.
+		glViewport(0, 0, this->_output->GetViewportWidth(), this->_output->GetViewportHeight());
 	}
 	
 	// Set the final output texture IDs
@@ -7418,19 +8051,14 @@ void OGLDisplayLayer::ProcessOGL()
 	
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
-	// OpenGL shader-based filters can modify the viewport, so it needs to be reset here.
-	glViewport(0, 0, this->_output->GetViewportWidth(), this->_output->GetViewportHeight());
-	
-	glFlush();
-	
-	OGLProcessedFrameInfo newFrameInfo;
-	newFrameInfo.bufferIndex = bufferIndex;
-	newFrameInfo.isMainDisplayProcessed  = isDisplayProcessedMain;
-	newFrameInfo.isTouchDisplayProcessed = isDisplayProcessedTouch;
+	OGLFrameInfoProcessed newFrameInfo;
+	newFrameInfo.sequenceNumber = fetchInfo.sequenceNumber;
+	newFrameInfo.backlightIntensity[NDSDisplayID_Main]  = fetchInfo.backlightIntensity[NDSDisplayID_Main];
+	newFrameInfo.backlightIntensity[NDSDisplayID_Touch] = fetchInfo.backlightIntensity[NDSDisplayID_Touch];
 	newFrameInfo.texID[NDSDisplayID_Main]  = texMain;
 	newFrameInfo.texID[NDSDisplayID_Touch] = texTouch;
 	
-	this->_output->SetProcessedFrameInfo(newFrameInfo);
+	this->_output->SetFrameInfoProcessed(newFrameInfo);
 }
 
 void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
@@ -7483,10 +8111,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 		this->_UpdateVerticesOGL();
 	}
 	
-	const NDSDisplayInfo &emuDisplayInfo = this->_output->GetEmuDisplayInfo();
-	const float backlightIntensity[2] = { emuDisplayInfo.backlightIntensity[NDSDisplayID_Main], emuDisplayInfo.backlightIntensity[NDSDisplayID_Touch] };
-	
-	const OGLProcessedFrameInfo processedInfo = this->_output->GetProcessedFrameInfo();
+	const OGLFrameInfoProcessed processedInfo = this->_output->GetFrameInfoProcessed();
 	
 	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
 	
@@ -7498,7 +8123,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 			{
 				if (isShaderSupported)
 				{
-					glUniform1f(this->_uniformBacklightIntensity, backlightIntensity[NDSDisplayID_Main]);
+					glUniform1f(this->_uniformBacklightIntensity, processedInfo.backlightIntensity[NDSDisplayID_Main]);
 				}
 				
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, processedInfo.texID[NDSDisplayID_Main]);
@@ -7515,7 +8140,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 			{
 				if (isShaderSupported)
 				{
-					glUniform1f(this->_uniformBacklightIntensity, backlightIntensity[NDSDisplayID_Touch]);
+					glUniform1f(this->_uniformBacklightIntensity, processedInfo.backlightIntensity[NDSDisplayID_Touch]);
 				}
 				
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, processedInfo.texID[NDSDisplayID_Touch]);
@@ -7541,7 +8166,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 					{
 						if (isShaderSupported)
 						{
-							glUniform1f(this->_uniformBacklightIntensity, backlightIntensity[majorDisplayID]);
+							glUniform1f(this->_uniformBacklightIntensity, processedInfo.backlightIntensity[majorDisplayID]);
 						}
 						
 						glBindTexture(GL_TEXTURE_RECTANGLE_ARB, processedInfo.texID[majorDisplayID]);
@@ -7560,7 +8185,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 			{
 				if (isShaderSupported)
 				{
-					glUniform1f(this->_uniformBacklightIntensity, backlightIntensity[NDSDisplayID_Main]);
+					glUniform1f(this->_uniformBacklightIntensity, processedInfo.backlightIntensity[NDSDisplayID_Main]);
 				}
 				
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, processedInfo.texID[NDSDisplayID_Main]);
@@ -7573,7 +8198,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 			{
 				if (isShaderSupported)
 				{
-					glUniform1f(this->_uniformBacklightIntensity, backlightIntensity[NDSDisplayID_Touch]);
+					glUniform1f(this->_uniformBacklightIntensity, processedInfo.backlightIntensity[NDSDisplayID_Touch]);
 				}
 				
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, processedInfo.texID[NDSDisplayID_Touch]);

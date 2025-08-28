@@ -173,6 +173,7 @@ char __hostRendererString[256] = {0};
 	{
 #ifdef PORT_VERSION_OS_X_APP
 		fetchObject = new MacOGLClientFetchObject;
+		GPU->SetWillPostprocessDisplays(false);
 #else
 		fetchObject = new OE_OGLClientFetchObject;
 #endif
@@ -1474,6 +1475,7 @@ MacGPUFetchObjectDisplayLink::MacGPUFetchObjectDisplayLink()
 	
 	_rwlockOutputList = NULL;
 	_cdsOutputList = nil;
+	_numberViewsPreferringCPUVideoProcessing = 0;
 	_numberViewsUsingDirectToCPUFiltering = 0;
 	
 	_displayLinksActiveList.clear();
@@ -1532,6 +1534,11 @@ MacGPUFetchObjectDisplayLink::~MacGPUFetchObjectDisplayLink()
 	}
 }
 
+volatile int32_t MacGPUFetchObjectDisplayLink::GetNumberViewsPreferringCPUVideoProcessing() const
+{
+	return this->_numberViewsPreferringCPUVideoProcessing;
+}
+
 volatile int32_t MacGPUFetchObjectDisplayLink::GetNumberViewsUsingDirectToCPUFiltering() const
 {
 	return this->_numberViewsUsingDirectToCPUFiltering;
@@ -1556,6 +1563,16 @@ void MacGPUFetchObjectDisplayLink::SetOutputList(NSMutableArray *theOutputList, 
 	}
 	
 	this->_rwlockOutputList = theRWLock;
+}
+
+void MacGPUFetchObjectDisplayLink::IncrementViewsPreferringCPUVideoProcessing()
+{
+	atomic_inc_32(&this->_numberViewsPreferringCPUVideoProcessing);
+}
+
+void MacGPUFetchObjectDisplayLink::DecrementViewsPreferringCPUVideoProcessing()
+{
+	atomic_dec_32(&this->_numberViewsPreferringCPUVideoProcessing);
 }
 
 void MacGPUFetchObjectDisplayLink::IncrementViewsUsingDirectToCPUFiltering()

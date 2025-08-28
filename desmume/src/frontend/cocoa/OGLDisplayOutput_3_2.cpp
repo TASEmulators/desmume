@@ -41,6 +41,7 @@ void glGenVertexArrays_3_2(GLsizei n, GLuint *vaoIDs)
 OGLContextInfo_3_2::OGLContextInfo_3_2()
 {
 	_useShader150 = true;
+	_isIntegerTextureSupported = true;
 	_isVBOSupported = true;
 	_isVAOSupported = true;
 	_isPBOSupported = true;

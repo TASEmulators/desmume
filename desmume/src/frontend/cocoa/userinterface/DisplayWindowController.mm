@@ -2005,23 +2005,40 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) setVideoFiltersPreferGPU:(BOOL)theState
 {
-	const BOOL oldState = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
+	const BOOL oldStateWillFilterDirectToCPU = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
+	const BOOL oldStateRequestFilterOnCPU = ![[self cdsVideoOutput] videoFiltersPreferGPU];
 	[[self cdsVideoOutput] setVideoFiltersPreferGPU:theState];
-	const BOOL newState = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
+	const BOOL newStateRequestFilterOnCPU = ![[self cdsVideoOutput] videoFiltersPreferGPU];
+	const BOOL newStateWillFilterDirectToCPU = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
 	
-	if (oldState != newState)
+	if ( (oldStateRequestFilterOnCPU != newStateRequestFilterOnCPU) || (oldStateWillFilterDirectToCPU != newStateWillFilterDirectToCPU) )
 	{
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
 		MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[[cdsCore cdsGPU] fetchObject];
 		
-		if (newState)
+		if (oldStateRequestFilterOnCPU != newStateRequestFilterOnCPU)
 		{
-			dlFetchObj->IncrementViewsUsingDirectToCPUFiltering();
+			if (newStateRequestFilterOnCPU)
+			{
+				dlFetchObj->IncrementViewsPreferringCPUVideoProcessing();
+			}
+			else
+			{
+				dlFetchObj->DecrementViewsPreferringCPUVideoProcessing();
+			}
 		}
-		else
+		
+		if (oldStateWillFilterDirectToCPU != newStateWillFilterDirectToCPU)
 		{
-			dlFetchObj->DecrementViewsUsingDirectToCPUFiltering();
+			if (newStateWillFilterDirectToCPU)
+			{
+				dlFetchObj->IncrementViewsUsingDirectToCPUFiltering();
+			}
+			else
+			{
+				dlFetchObj->DecrementViewsUsingDirectToCPUFiltering();
+			}
 		}
 		
 		[[self cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
@@ -2035,17 +2052,17 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) setSourceDeposterize:(BOOL)theState
 {
-	const BOOL oldState = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
+	const BOOL oldStateWillFilterDirectToCPU = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
 	[[self cdsVideoOutput] setSourceDeposterize:theState];
-	const BOOL newState = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
+	const BOOL newStateWillFilterDirectToCPU = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
 	
-	if (oldState != newState)
+	if (oldStateWillFilterDirectToCPU != newStateWillFilterDirectToCPU)
 	{
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
 		MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[[cdsCore cdsGPU] fetchObject];
 		
-		if (newState)
+		if (newStateWillFilterDirectToCPU)
 		{
 			dlFetchObj->IncrementViewsUsingDirectToCPUFiltering();
 		}
@@ -2076,17 +2093,17 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) setPixelScaler:(NSInteger)filterID
 {
-	const BOOL oldState = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
+	const BOOL oldStateWillFilterDirectToCPU = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
 	[[self cdsVideoOutput] setPixelScaler:filterID];
-	const BOOL newState = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
+	const BOOL newStateWillFilterDirectToCPU = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
 	
-	if (oldState != newState)
+	if (oldStateWillFilterDirectToCPU != newStateWillFilterDirectToCPU)
 	{
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
 		MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[[cdsCore cdsGPU] fetchObject];
 		
-		if (newState)
+		if (newStateWillFilterDirectToCPU)
 		{
 			dlFetchObj->IncrementViewsUsingDirectToCPUFiltering();
 		}

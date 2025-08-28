@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2022 DeSmuME team
+	Copyright (C) 2017-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -46,15 +46,9 @@ class MacOGLDisplayView;
 
 class MacOGLClientSharedData : public OGLClientSharedData
 {
-protected:
-	apple_unfairlock_t _unfairlockTexFetch[2];
-	
 public:
 	MacOGLClientSharedData();
 	~MacOGLClientSharedData();
-	
-	virtual GLuint GetFetchTexture(const NDSDisplayID displayID);
-	virtual void SetFetchTexture(const NDSDisplayID displayID, GLuint texID);
 };
 
 class MacOGLClientFetchObject : public MacGPUFetchObjectDisplayLink
@@ -74,6 +68,8 @@ public:
 	
 	NSOpenGLContext* GetNSContext() const;
 	CGLContextObj GetContext() const;
+	
+	bool CanProcessFetchOnGPU() const;
 	
 	void FetchNativeDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
 	void FetchCustomDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
@@ -122,8 +118,8 @@ public:
 	virtual void ProcessDisplays();
 	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
 	
-	virtual const OGLProcessedFrameInfo& GetProcessedFrameInfo();
-	virtual void SetProcessedFrameInfo(const OGLProcessedFrameInfo &processedInfo);
+	virtual const OGLFrameInfoProcessed& GetFrameInfoProcessed();
+	virtual void SetFrameInfoProcessed(const OGLFrameInfoProcessed &processedInfo);
 	
 	virtual void WriteLockEmuFramebuffer(const uint8_t bufferIndex);
 	virtual void ReadLockEmuFramebuffer(const uint8_t bufferIndex);
