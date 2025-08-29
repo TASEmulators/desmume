@@ -468,7 +468,7 @@ void MacOGLDisplayPresenter::Init()
 		this->_contextInfo = new OGLContextInfo_Legacy;
 	}
 	
-	this->OGLVideoOutput::Init();
+	this->OGLDisplayPresenter::Init();
 	CGLSetCurrentContext(prevContext);
 }
 
@@ -496,7 +496,7 @@ void MacOGLDisplayPresenter::LoadHUDFont()
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::LoadHUDFont();
+	this->OGLDisplayPresenter::LoadHUDFont();
 	CGLUnlockContext(this->_context);
 }
 
@@ -504,7 +504,7 @@ void MacOGLDisplayPresenter::SetScaleFactor(const double scaleFactor)
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetScaleFactor(scaleFactor);
+	this->OGLDisplayPresenter::SetScaleFactor(scaleFactor);
 	CGLUnlockContext(this->_context);
 }
 
@@ -512,7 +512,7 @@ void MacOGLDisplayPresenter::SetFiltersPreferGPU(const bool preferGPU)
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetFiltersPreferGPU(preferGPU);
+	this->OGLDisplayPresenter::SetFiltersPreferGPU(preferGPU);
 	CGLUnlockContext(this->_context);
 }
 
@@ -520,7 +520,7 @@ void MacOGLDisplayPresenter::SetOutputFilter(const OutputFilterTypeID filterID)
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetOutputFilter(filterID);
+	this->OGLDisplayPresenter::SetOutputFilter(filterID);
 	CGLUnlockContext(this->_context);
 }
 
@@ -528,7 +528,7 @@ void MacOGLDisplayPresenter::SetPixelScaler(const VideoFilterTypeID filterID)
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetPixelScaler(filterID);
+	this->OGLDisplayPresenter::SetPixelScaler(filterID);
 	CGLUnlockContext(this->_context);
 }
 
@@ -537,7 +537,7 @@ void MacOGLDisplayPresenter::LoadDisplays()
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::LoadDisplays();
+	this->OGLDisplayPresenter::LoadDisplays();
 	CGLUnlockContext(this->_context);
 }
 
@@ -545,7 +545,7 @@ void MacOGLDisplayPresenter::ProcessDisplays()
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::ProcessDisplays();
+	this->OGLDisplayPresenter::ProcessDisplays();
 	CGLUnlockContext(this->_context);
 }
 
@@ -553,14 +553,14 @@ void MacOGLDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::CopyFrameToBuffer(dstBuffer);
+	this->OGLDisplayPresenter::CopyFrameToBuffer(dstBuffer);
 	CGLUnlockContext(this->_context);
 }
 
 const OGLFrameInfoProcessed& MacOGLDisplayPresenter::GetFrameInfoProcessed()
 {
 	apple_unfairlock_lock(this->_unfairlockProcessedInfo);
-	const OGLFrameInfoProcessed &processedInfo = this->OGLVideoOutput::GetFrameInfoProcessed();
+	const OGLFrameInfoProcessed &processedInfo = this->OGLDisplayPresenter::GetFrameInfoProcessed();
 	apple_unfairlock_unlock(this->_unfairlockProcessedInfo);
 	
 	return processedInfo;
@@ -569,26 +569,8 @@ const OGLFrameInfoProcessed& MacOGLDisplayPresenter::GetFrameInfoProcessed()
 void MacOGLDisplayPresenter::SetFrameInfoProcessed(const OGLFrameInfoProcessed &processedInfo)
 {
 	apple_unfairlock_lock(this->_unfairlockProcessedInfo);
-	this->OGLVideoOutput::SetFrameInfoProcessed(processedInfo);
+	this->OGLDisplayPresenter::SetFrameInfoProcessed(processedInfo);
 	apple_unfairlock_unlock(this->_unfairlockProcessedInfo);
-}
-
-void MacOGLDisplayPresenter::WriteLockEmuFramebuffer(const uint8_t bufferIndex)
-{
-	MacOGLClientFetchObject &fetchObj = (MacOGLClientFetchObject &)this->GetFetchObject();
-	semaphore_wait( fetchObj.SemaphoreFramebufferPageAtIndex(bufferIndex) );
-}
-
-void MacOGLDisplayPresenter::ReadLockEmuFramebuffer(const uint8_t bufferIndex)
-{
-	MacOGLClientFetchObject &fetchObj = (MacOGLClientFetchObject &)this->GetFetchObject();
-	semaphore_wait( fetchObj.SemaphoreFramebufferPageAtIndex(bufferIndex) );
-}
-
-void MacOGLDisplayPresenter::UnlockEmuFramebuffer(const uint8_t bufferIndex)
-{
-	MacOGLClientFetchObject &fetchObj = (MacOGLClientFetchObject &)this->GetFetchObject();
-	semaphore_signal( fetchObj.SemaphoreFramebufferPageAtIndex(bufferIndex) );
 }
 
 #pragma mark -

@@ -31,7 +31,7 @@
 @class CocoaDSDisplayVideo;
 @class EmuControllerDelegate;
 @class InputManager;
-class OGLVideoOutput;
+class OGLDisplayPresenter;
 
 // Subclass NSWindow for full screen windows so that we can override some methods.
 @interface DisplayFullScreenWindow : NSWindow

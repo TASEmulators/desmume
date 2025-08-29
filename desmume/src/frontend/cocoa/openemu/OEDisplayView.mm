@@ -170,7 +170,7 @@ void OE_OGLDisplayPresenter::Init()
 		this->_context = CGLGetCurrentContext();
 	}
 	
-	this->OGLVideoOutput::Init();
+	this->OGLDisplayPresenter::Init();
 }
 
 CGLContextObj OE_OGLDisplayPresenter::GetContext() const

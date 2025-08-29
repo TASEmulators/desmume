@@ -39,7 +39,7 @@
 
 #define OPENGL_FETCH_BUFFER_COUNT	3
 
-class OGLVideoOutput;
+class OGLDisplayPresenter;
 
 enum ShaderSupportTier
 {
@@ -291,7 +291,7 @@ public:
 class OGLVideoLayer
 {
 protected:
-	OGLVideoOutput *_output;
+	OGLDisplayPresenter *_output;
 	bool _isVisible;
 	bool _needUpdateViewport;
 	bool _needUpdateRotationScale;
@@ -333,7 +333,7 @@ protected:
 	void _UpdateVerticesOGL();
 	
 public:
-	OGLHUDLayer(OGLVideoOutput *oglVO);
+	OGLHUDLayer(OGLDisplayPresenter *oglVO);
 	virtual ~OGLHUDLayer();
 	
 	void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
@@ -360,7 +360,7 @@ protected:
 	
 public:
 	OGLDisplayLayer() {};
-	OGLDisplayLayer(OGLVideoOutput *oglVO);
+	OGLDisplayLayer(OGLDisplayPresenter *oglVO);
 	virtual ~OGLDisplayLayer();
 	
 	OutputFilterTypeID SetOutputFilterOGL(const OutputFilterTypeID filterID);
@@ -466,7 +466,7 @@ public:
 	void FetchCustomDisplayByID_OGL(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex);
 };
 
-class OGLVideoOutput : public ClientDisplay3DPresenter
+class OGLDisplayPresenter : public ClientDisplay3DPresenter
 {
 protected:
 	OGLContextInfo *_contextInfo;
@@ -495,8 +495,8 @@ protected:
 	virtual void _ResizeCPUPixelScaler(const VideoFilterTypeID filterID);
 	
 public:
-	OGLVideoOutput();
-	~OGLVideoOutput();
+	OGLDisplayPresenter();
+	~OGLDisplayPresenter();
 	
 	OGLContextInfo* GetContextInfo();
 	
@@ -526,10 +526,6 @@ public:
 	
 	virtual const OGLFrameInfoProcessed& GetFrameInfoProcessed();
 	virtual void SetFrameInfoProcessed(const OGLFrameInfoProcessed &processedInfo);
-	
-	virtual void WriteLockEmuFramebuffer(const uint8_t bufferIndex);
-	virtual void ReadLockEmuFramebuffer(const uint8_t bufferIndex);
-	virtual void UnlockEmuFramebuffer(const uint8_t bufferIndex);
 };
 
 extern void (*glBindVertexArrayDESMUME)(GLuint id);

@@ -66,7 +66,7 @@ public:
 	virtual void FetchFromBufferIndex(const u8 index);
 };
 
-class OE_OGLDisplayPresenter : public OGLVideoOutput
+class OE_OGLDisplayPresenter : public OGLDisplayPresenter
 {
 private:
 	void __InstanceInit(OE_OGLClientFetchObject *fetchObject);

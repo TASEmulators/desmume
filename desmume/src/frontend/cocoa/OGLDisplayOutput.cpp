@@ -5609,7 +5609,7 @@ void OGLClientSharedData::FetchCustomDisplayByID_OGL(const NDSDisplayInfo *displ
 
 #pragma mark -
 
-OGLVideoOutput::OGLVideoOutput()
+OGLDisplayPresenter::OGLDisplayPresenter()
 {
 	_contextInfo = NULL;
 	_viewportWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
@@ -5630,7 +5630,7 @@ OGLVideoOutput::OGLVideoOutput()
 	_layerList->reserve(8);
 }
 
-OGLVideoOutput::~OGLVideoOutput()
+OGLDisplayPresenter::~OGLDisplayPresenter()
 {
 	if (this->_layerList != NULL)
 	{
@@ -5647,17 +5647,17 @@ OGLVideoOutput::~OGLVideoOutput()
 	glDeleteTextures(2, this->_texCPUFilterDstID);
 }
 
-void OGLVideoOutput::_UpdateNormalSize()
+void OGLDisplayPresenter::_UpdateNormalSize()
 {
 	this->GetDisplayLayer()->SetNeedsUpdateVertices();
 }
 
-void OGLVideoOutput::_UpdateOrder()
+void OGLDisplayPresenter::_UpdateOrder()
 {
 	this->GetDisplayLayer()->SetNeedsUpdateVertices();
 }
 
-void OGLVideoOutput::_UpdateRotation()
+void OGLDisplayPresenter::_UpdateRotation()
 {
 	for (size_t i = 0; i < _layerList->size(); i++)
 	{
@@ -5666,7 +5666,7 @@ void OGLVideoOutput::_UpdateRotation()
 	}
 }
 
-void OGLVideoOutput::_UpdateClientSize()
+void OGLDisplayPresenter::_UpdateClientSize()
 {
 	this->_viewportWidth  = (GLsizei)(this->_propsApplied.clientWidth  + 0.0001);
 	this->_viewportHeight = (GLsizei)(this->_propsApplied.clientHeight + 0.0001);
@@ -5676,7 +5676,7 @@ void OGLVideoOutput::_UpdateClientSize()
 	this->ClientDisplay3DPresenter::_UpdateClientSize();
 }
 
-void OGLVideoOutput::_UpdateViewScale()
+void OGLDisplayPresenter::_UpdateViewScale()
 {
 	this->ClientDisplay3DPresenter::_UpdateViewScale();
 	
@@ -5687,7 +5687,7 @@ void OGLVideoOutput::_UpdateViewScale()
 	}
 }
 
-void OGLVideoOutput::_UpdateViewport()
+void OGLDisplayPresenter::_UpdateViewport()
 {
 	glViewport(0, 0, this->_viewportWidth, this->_viewportHeight);
 	
@@ -5698,17 +5698,17 @@ void OGLVideoOutput::_UpdateViewport()
 	}
 }
 
-void OGLVideoOutput::_LoadNativeDisplayByID(const NDSDisplayID displayID)
+void OGLDisplayPresenter::_LoadNativeDisplayByID(const NDSDisplayID displayID)
 {
 	this->GetDisplayLayer()->LoadNativeDisplayByID_OGL(displayID);
 }
 
-void OGLVideoOutput::_LoadCustomDisplayByID(const NDSDisplayID displayID)
+void OGLDisplayPresenter::_LoadCustomDisplayByID(const NDSDisplayID displayID)
 {
 	this->GetDisplayLayer()->LoadCustomDisplayByID_OGL(displayID);
 }
 
-void OGLVideoOutput::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
+void OGLDisplayPresenter::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
 {
 	const VideoFilterAttributes newFilterAttr = VideoFilter::GetAttributesByID(filterID);
 	
@@ -5731,12 +5731,12 @@ void OGLVideoOutput::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
 	glFinish();
 }
 
-OGLContextInfo* OGLVideoOutput::GetContextInfo()
+OGLContextInfo* OGLDisplayPresenter::GetContextInfo()
 {
 	return this->_contextInfo;
 }
 
-void OGLVideoOutput::Init()
+void OGLDisplayPresenter::Init()
 {
 	this->_canFilterOnGPU = ( this->_contextInfo->IsShaderSupported() && this->_contextInfo->IsFBOSupported() );
 	this->_filtersPreferGPU = true;
@@ -5790,14 +5790,14 @@ void OGLVideoOutput::Init()
 	}
 }
 
-void OGLVideoOutput::SetOutputFilter(const OutputFilterTypeID filterID)
+void OGLDisplayPresenter::SetOutputFilter(const OutputFilterTypeID filterID)
 {
 	this->_outputFilter = this->GetDisplayLayer()->SetOutputFilterOGL(filterID);
 	this->GetDisplayLayer()->SetNeedsUpdateRotationScale();
 	this->_needUpdateViewport = true;
 }
 
-void OGLVideoOutput::SetPixelScaler(const VideoFilterTypeID filterID)
+void OGLDisplayPresenter::SetPixelScaler(const VideoFilterTypeID filterID)
 {
 	this->ClientDisplay3DPresenter::SetPixelScaler(filterID);
 	
@@ -5805,49 +5805,49 @@ void OGLVideoOutput::SetPixelScaler(const VideoFilterTypeID filterID)
 	this->_willFilterOnGPU = (this->GetFiltersPreferGPU()) ? this->_hasOGLPixelScaler : false;
 }
 
-void OGLVideoOutput::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
+void OGLDisplayPresenter::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
 {
 	this->GetHUDLayer()->CopyHUDFont(fontFace, glyphSize, glyphTileSize, glyphInfo);
 }
 
-void OGLVideoOutput::SetHUDVisibility(const bool visibleState)
+void OGLDisplayPresenter::SetHUDVisibility(const bool visibleState)
 {
 	this->GetHUDLayer()->SetVisibility(visibleState);
 	this->ClientDisplay3DPresenter::SetHUDVisibility(visibleState);
 }
 
-void OGLVideoOutput::SetFiltersPreferGPU(const bool preferGPU)
+void OGLDisplayPresenter::SetFiltersPreferGPU(const bool preferGPU)
 {
 	this->_filtersPreferGPU = preferGPU;
 	this->_willFilterOnGPU = (preferGPU) ? this->_hasOGLPixelScaler : false;
 }
 
-GLuint OGLVideoOutput::GetTexCPUFilterDstID(const NDSDisplayID displayID) const
+GLuint OGLDisplayPresenter::GetTexCPUFilterDstID(const NDSDisplayID displayID) const
 {
 	return this->_texCPUFilterDstID[displayID];
 }
 
-GLsizei OGLVideoOutput::GetViewportWidth()
+GLsizei OGLDisplayPresenter::GetViewportWidth()
 {
 	return this->_viewportWidth;
 }
 
-GLsizei OGLVideoOutput::GetViewportHeight()
+GLsizei OGLDisplayPresenter::GetViewportHeight()
 {
 	return this->_viewportHeight;
 }
 
-OGLDisplayLayer* OGLVideoOutput::GetDisplayLayer()
+OGLDisplayLayer* OGLDisplayPresenter::GetDisplayLayer()
 {
 	return (OGLDisplayLayer *)this->_layerList->at(0);
 }
 
-OGLHUDLayer* OGLVideoOutput::GetHUDLayer()
+OGLHUDLayer* OGLDisplayPresenter::GetHUDLayer()
 {
 	return (OGLHUDLayer *)this->_layerList->at(1);
 }
 
-void OGLVideoOutput::ProcessDisplays()
+void OGLDisplayPresenter::ProcessDisplays()
 {
 	OGLDisplayLayer *displayLayer = this->GetDisplayLayer();
 	if (displayLayer->IsVisible())
@@ -5856,7 +5856,7 @@ void OGLVideoOutput::ProcessDisplays()
 	}
 }
 
-void OGLVideoOutput::CopyFrameToBuffer(uint32_t *dstBuffer)
+void OGLDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)
 {
 	if (!this->_contextInfo->IsFBOSupported())
 	{
@@ -5892,7 +5892,7 @@ void OGLVideoOutput::CopyFrameToBuffer(uint32_t *dstBuffer)
 	this->_needUpdateViewport = true;
 }
 
-void OGLVideoOutput::PrerenderStateSetupOGL()
+void OGLDisplayPresenter::PrerenderStateSetupOGL()
 {
 	// If the context is managed by us, then setting all of OpenGL's states
 	// once at initialization time should be enough.
@@ -5928,7 +5928,7 @@ void OGLVideoOutput::PrerenderStateSetupOGL()
 	}
 }
 
-void OGLVideoOutput::RenderFrameOGL(bool isRenderingFlipped)
+void OGLDisplayPresenter::RenderFrameOGL(bool isRenderingFlipped)
 {
 	if (this->_needUpdateViewport)
 	{
@@ -5949,29 +5949,14 @@ void OGLVideoOutput::RenderFrameOGL(bool isRenderingFlipped)
 	}
 }
 
-const OGLFrameInfoProcessed& OGLVideoOutput::GetFrameInfoProcessed()
+const OGLFrameInfoProcessed& OGLDisplayPresenter::GetFrameInfoProcessed()
 {
 	return this->_processedFrameInfo;
 }
 
-void OGLVideoOutput::SetFrameInfoProcessed(const OGLFrameInfoProcessed &processedInfo)
+void OGLDisplayPresenter::SetFrameInfoProcessed(const OGLFrameInfoProcessed &processedInfo)
 {
 	this->_processedFrameInfo = processedInfo;
-}
-
-void OGLVideoOutput::WriteLockEmuFramebuffer(const uint8_t bufferIndex)
-{
-	// Do nothing. This is implementation dependent.
-}
-
-void OGLVideoOutput::ReadLockEmuFramebuffer(const uint8_t bufferIndex)
-{
-	// Do nothing. This is implementation dependent.
-}
-
-void OGLVideoOutput::UnlockEmuFramebuffer(const uint8_t bufferIndex)
-{
-	// Do nothing. This is implementation dependent.
 }
 
 #pragma mark -
@@ -6997,7 +6982,7 @@ void OGLVideoLayer::SetVisibility(const bool visibleState)
 
 #pragma mark -
 
-OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
+OGLHUDLayer::OGLHUDLayer(OGLDisplayPresenter *oglVO)
 {
 	_isVisible = false;
 	_needUpdateViewport = true;
@@ -7149,7 +7134,7 @@ void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, c
 		error = FT_Set_Char_Size(fontFace, gSize << 6, gSize << 6, 72, 72);
 		if (error)
 		{
-			printf("OGLVideoOutput: FreeType failed to set the font size!\n");
+			printf("OGLDisplayPresenter: FreeType failed to set the font size!\n");
 		}
 		
 		const FT_GlyphSlot glyphSlot = fontFace->glyph;
@@ -7241,6 +7226,7 @@ void OGLHUDLayer::_UpdateVerticesOGL()
 
 void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 {
+	const bool isShaderSupported = this->_output->GetContextInfo()->IsShaderSupported();
 	size_t hudLength = this->_output->GetHUDString().length();
 	size_t hudTouchLineLength = 0;
 	
@@ -7285,7 +7271,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 	
 	glEnable(GL_BLEND);
 	
-	if (this->_output->GetContextInfo()->IsShaderSupported())
+	if (isShaderSupported)
 	{
 		glUseProgram(this->_program->GetProgramID());
 		
@@ -7331,7 +7317,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 		const ClientDisplayPresenterProperties &cdp = this->_output->GetPresenterProperties();
 		
 		// Draw the touch lines first.
-		if (this->_output->GetContextInfo()->IsShaderSupported())
+		if (isShaderSupported)
 		{
 			glUniform1f(this->_uniformAngleDegrees, cdp.rotation);
 			glUniform1f(this->_uniformScalar, cdp.viewScale);
@@ -7349,7 +7335,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 		glDrawElements(GL_TRIANGLES, (GLsizei)(hudTouchLineLength * 6), GL_UNSIGNED_SHORT, (GLvoid *)((this->_output->GetHUDString().length() + HUD_INPUT_ELEMENT_LENGTH) * 6 * sizeof(uint16_t)));
 		
 		// Then draw the input buttons overlay.
-		if (this->_output->GetContextInfo()->IsShaderSupported())
+		if (isShaderSupported)
 		{
 			glUniform1f(this->_uniformAngleDegrees, 0.0f);
 			glUniform1f(this->_uniformScalar, 1.0f);
@@ -7368,7 +7354,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 	}
 	
 	// Next, draw the backing text box.
-	if (this->_output->GetContextInfo()->IsShaderSupported())
+	if (isShaderSupported)
 	{
 		glUniform1f(this->_uniformAngleDegrees, 0.0f);
 		glUniform1f(this->_uniformScalar, 1.0f);
@@ -7407,7 +7393,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 
 #pragma mark -
 
-OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
+OGLDisplayLayer::OGLDisplayLayer(OGLDisplayPresenter *oglVO)
 {
 	_isVisible = true;
 	_output = oglVO;

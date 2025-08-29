@@ -80,7 +80,7 @@ public:
 	virtual void FetchFromBufferIndex(const u8 index);
 };
 
-class MacOGLDisplayPresenter : public OGLVideoOutput
+class MacOGLDisplayPresenter : public OGLDisplayPresenter
 {
 private:
 	void __InstanceInit(MacOGLClientFetchObject *fetchObject);
@@ -120,10 +120,6 @@ public:
 	
 	virtual const OGLFrameInfoProcessed& GetFrameInfoProcessed();
 	virtual void SetFrameInfoProcessed(const OGLFrameInfoProcessed &processedInfo);
-	
-	virtual void WriteLockEmuFramebuffer(const uint8_t bufferIndex);
-	virtual void ReadLockEmuFramebuffer(const uint8_t bufferIndex);
-	virtual void UnlockEmuFramebuffer(const uint8_t bufferIndex);
 };
 
 class MacOGLDisplayView : public MacDisplayLayeredView
