@@ -662,15 +662,24 @@ void scan_savestates()
 	#endif
 
 	char filename[MAX_PATH + 1];
+	path.getpathnoext(path.STATE_SLOTS, filename);
+	
+	const size_t filenameLen = strlen(filename);
+	const size_t extLen      = strlen(".ds");
+	const size_t numberLen   = strlen("-2147483648"); // Longest possible string length for a 32-bit int
 
 	clear_savestates();
+	
+	if ((filenameLen + extLen + numberLen) >= MAX_PATH)
+	{
+		return;
+	}
+	
+	char *filenameExt = filename + filenameLen;
 
 	for (int i = 0; i < NB_STATES; i++)
 	{
-		path.getpathnoext(path.STATE_SLOTS, filename);
-
-		if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for i */ > MAX_PATH) return;
-		snprintf(filename + strlen(filename), sizeof(filename), ".ds%d", i);
+		snprintf(filenameExt, extLen + numberLen, ".ds%d", i);
 
 		#ifdef _MSC_VER
 		wchar_t wgarbage[1024] = {0};
@@ -683,8 +692,6 @@ void scan_savestates()
 		strncpy(savestates[i].date, format_time(sbuf.st_mtime), 40);
 		savestates[i].date[40 - 1] = '\0';
 	}
-
-	return;
 }
 
 void savestate_slot(int num)
