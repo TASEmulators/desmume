@@ -661,17 +661,19 @@ void scan_savestates()
 	struct stat sbuf;
 	#endif
 
-	char filename[MAX_PATH + 1];
+	char filename[MAX_PATH] = {0};
 	path.getpathnoext(path.STATE_SLOTS, filename);
 	
 	const size_t filenameLen = strlen(filename);
-	const size_t extLen      = strlen(".ds");
 	const size_t numberLen   = strlen("-2147483648"); // Longest possible string length for a 32-bit int
+	const size_t extLen      = strlen(".ds") + numberLen;
+	const size_t totalLen    = filenameLen + extLen;
 
 	clear_savestates();
 	
-	if ((filenameLen + extLen + numberLen) >= MAX_PATH)
+	if (totalLen >= MAX_PATH)
 	{
+		printf("Scan Save State ERROR: The file path is too long. (path length is %llu bytes, maximum length is %llu bytes)\n", (unsigned long long)totalLen, (unsigned long long)MAX_PATH);
 		return;
 	}
 	
@@ -679,7 +681,7 @@ void scan_savestates()
 
 	for (int i = 0; i < NB_STATES; i++)
 	{
-		snprintf(filenameExt, extLen + numberLen, ".ds%d", i);
+		snprintf(filenameExt, extLen, ".ds%d", i);
 
 		#ifdef _MSC_VER
 		wchar_t wgarbage[1024] = {0};
@@ -697,14 +699,25 @@ void scan_savestates()
 void savestate_slot(int num)
 {
 	struct stat sbuf;
-	char filename[MAX_PATH + 1];
+	char filename[MAX_PATH] = {0};
 
 	lastSaveState = num;		//Set last savestate used
 
 	path.getpathnoext(path.STATE_SLOTS, filename);
-
-	if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ > MAX_PATH) return;
-	snprintf(filename + strlen(filename), sizeof(filename), ".ds%d", num);
+	
+	const size_t filenameLen = strlen(filename);
+	const size_t numberLen   = strlen("-2147483648"); // Longest possible string length for a 32-bit int
+	const size_t extLen      = strlen(".ds") + numberLen;
+	const size_t totalLen    = filenameLen + extLen;
+	
+	if (totalLen >= MAX_PATH)
+	{
+		printf("Save State ERROR: The file path is too long. (path length is %llu bytes, maximum length is %llu bytes)\n", (unsigned long long)totalLen, (unsigned long long)MAX_PATH);
+		return;
+	}
+	
+	char *filenameExt = filename + filenameLen;
+	snprintf(filenameExt, extLen, ".ds%d", num);
 
 	if (savestate_save(filename))
 	{
@@ -731,12 +744,23 @@ void savestate_slot(int num)
 
 void loadstate_slot(int num)
 {
-	char filename[MAX_PATH];
+	char filename[MAX_PATH] = {0};
 	int max_index = -1;
 
 	lastSaveState = num;		//Set last savestate used
 
 	path.getpathnoext(path.STATE_SLOTS, filename);
+	
+	const size_t filenameLen = strlen(filename);
+	const size_t numberLen   = strlen("-2147483648"); // Longest possible string length for a 32-bit int
+	const size_t extLen      = strlen(".ds") + numberLen;
+	const size_t totalLen    = filenameLen + extLen;
+	
+	if (totalLen >= MAX_PATH)
+	{
+		printf("Load State ERROR: The file path is too long. (path length is %llu bytes, maximum length is %llu bytes)\n", (unsigned long long)totalLen, (unsigned long long)MAX_PATH);
+		return;
+	}
 
 	//save the state before we load the state, to give people a path for recovery in case they hit the wrong key
 	#ifdef HOST_WINDOWS
@@ -794,9 +818,9 @@ void loadstate_slot(int num)
 			
 		}
 	}
-
-	if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ > MAX_PATH) return;
-	snprintf(filename + strlen(filename), sizeof(filename), ".ds%d", num);
+	
+	char *filenameExt = filename + filenameLen;
+	snprintf(filenameExt, extLen, ".ds%d", num);
 
 	if (savestate_load(filename))
 	{
