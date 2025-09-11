@@ -4753,7 +4753,7 @@ OGLClientSharedData::OGLClientSharedData()
 	
 	pthread_rwlock_init(&_fetchInfoRWLock, NULL);
 	
-	_srcNativeCloneMaster = (uint32_t *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * OPENGL_FETCH_BUFFER_COUNT * sizeof(uint32_t));
+	_srcNativeCloneMaster = (Color4u8 *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * OPENGL_FETCH_BUFFER_COUNT * sizeof(uint32_t));
 	memset(_srcNativeCloneMaster, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * OPENGL_FETCH_BUFFER_COUNT * sizeof(uint32_t));
 	
 	for (size_t i = 0; i < OPENGL_FETCH_BUFFER_COUNT; i++)
@@ -4918,7 +4918,7 @@ OGLFrameInfoFetch OGLClientSharedData::GetFetchInfo()
 	return outFetchInfo;
 }
 
-uint32_t* OGLClientSharedData::GetSrcClone(const NDSDisplayID displayID, const u8 bufferIndex) const
+Color4u8* OGLClientSharedData::GetSrcClone(const NDSDisplayID displayID, const u8 bufferIndex) const
 {
 	return this->_srcNativeClone[displayID][bufferIndex];
 }
@@ -4963,10 +4963,10 @@ GLuint OGLClientSharedData::GetTexHQ4xLUT() const
 	return this->_texHQ4xLUT;
 }
 
-void OGLClientSharedData::CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex)
+void OGLClientSharedData::CopyFromSrcClone(Color4u8 *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex)
 {
 	pthread_rwlock_rdlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
-	memcpy(dstBufferPtr, this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(uint32_t));
+	memcpy(dstBufferPtr, this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(Color4u8));
 	pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 }
 
@@ -4986,7 +4986,7 @@ void OGLClientSharedData::FetchNativeDisplayToSrcClone(const NDSDisplayInfo *dis
 		return;
 	}
 	
-	ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapNone>(displayInfoList[bufferIndex].nativeBuffer16[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapNone>(displayInfoList[bufferIndex].nativeBuffer16[displayID], (u32 *)this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 	this->_srcCloneNeedsUpdate[displayID][bufferIndex] = false;
 	
 	if (needsLock)
@@ -5011,7 +5011,7 @@ void OGLClientSharedData::FetchCustomDisplayToSrcClone(const NDSDisplayInfo *dis
 		return;
 	}
 	
-	ColorspaceConvertBuffer888xTo8888Opaque<false, false>((u32 *)displayInfoList[bufferIndex].customBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	ColorspaceConvertBuffer888xTo8888Opaque<false, false>((u32 *)displayInfoList[bufferIndex].customBuffer[displayID], (u32 *)this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 	this->_srcCloneNeedsUpdate[displayID][bufferIndex] = false;
 	
 	if (needsLock)
@@ -5465,6 +5465,7 @@ void OGLClientSharedData::FetchFromBufferIndexOGL(const u8 index, const NDSDispl
 	newFetchInfo.isDisplayAllWhite[NDSDisplayID_Main]  =  !currentDisplayInfo.masterBrightnessDiffersPerLine[NDSDisplayID_Main]  && (currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Main][0]  == GPUMasterBrightMode_Up)   && (currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Main][0]  >= 16);
 	newFetchInfo.isDisplayAllBlack[NDSDisplayID_Main]  = (!currentDisplayInfo.masterBrightnessDiffersPerLine[NDSDisplayID_Main]  && (currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Main][0]  == GPUMasterBrightMode_Down) && (currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Main][0]  >= 16)) || !currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
 	newFetchInfo.isDisplayProcessPossible[NDSDisplayID_Main] = currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Main] && newFetchInfo.isNativeSize[NDSDisplayID_Main] && !newFetchInfo.isDisplayAllWhite[NDSDisplayID_Main] && !newFetchInfo.isDisplayAllBlack[NDSDisplayID_Main];
+	newFetchInfo.srcNativeClone[NDSDisplayID_Main] = (this->_preferCPUVideoProcessing && this->_useDirectToCPUFilterPipeline && !newFetchInfo.isDisplayAllWhite[NDSDisplayID_Main] && !newFetchInfo.isDisplayAllBlack[NDSDisplayID_Main]) ? this->_srcNativeClone[NDSDisplayID_Main][index] : NULL;
 	
 	newFetchInfo.texID[NDSDisplayID_Touch]  = this->_texDisplayAllBlack;
 	newFetchInfo.width[NDSDisplayID_Touch]  = currentDisplayInfo.renderedWidth[NDSDisplayID_Touch];
@@ -5476,6 +5477,7 @@ void OGLClientSharedData::FetchFromBufferIndexOGL(const u8 index, const NDSDispl
 	newFetchInfo.isDisplayAllWhite[NDSDisplayID_Touch] =  !currentDisplayInfo.masterBrightnessDiffersPerLine[NDSDisplayID_Touch] && (currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Touch][0] == GPUMasterBrightMode_Up)   && (currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Touch][0] >= 16);
 	newFetchInfo.isDisplayAllBlack[NDSDisplayID_Touch] = (!currentDisplayInfo.masterBrightnessDiffersPerLine[NDSDisplayID_Touch] && (currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Touch][0] == GPUMasterBrightMode_Down) && (currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Touch][0] >= 16)) || !currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
 	newFetchInfo.isDisplayProcessPossible[NDSDisplayID_Touch] = currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && newFetchInfo.isNativeSize[NDSDisplayID_Touch] && !newFetchInfo.isDisplayAllWhite[NDSDisplayID_Touch] && !newFetchInfo.isDisplayAllBlack[NDSDisplayID_Touch];
+	newFetchInfo.srcNativeClone[NDSDisplayID_Touch] = (this->_preferCPUVideoProcessing && this->_useDirectToCPUFilterPipeline && !newFetchInfo.isDisplayAllWhite[NDSDisplayID_Touch] && !newFetchInfo.isDisplayAllBlack[NDSDisplayID_Touch]) ? this->_srcNativeClone[NDSDisplayID_Touch][index] : NULL;
 	
 	if (!newFetchInfo.isDisplayEnabled[NDSDisplayID_Main] && !newFetchInfo.isDisplayEnabled[NDSDisplayID_Touch])
 	{
@@ -5856,7 +5858,7 @@ void OGLDisplayPresenter::ProcessDisplays()
 	}
 }
 
-void OGLDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)
+void OGLDisplayPresenter::CopyFrameToBuffer(Color4u8 *dstBuffer)
 {
 	if (!this->_contextInfo->IsFBOSupported())
 	{
@@ -7209,7 +7211,7 @@ void OGLHUDLayer::_UpdateVerticesOGL()
 	
 	glBindBuffer(GL_ARRAY_BUFFER, this->_vboColorVertexID);
 	glBufferData(GL_ARRAY_BUFFER, HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW);
-	uint32_t *vtxColorBufferPtr = (uint32_t *)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY_ARB);
+	Color4u8 *vtxColorBufferPtr = (Color4u8 *)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY_ARB);
 	this->_output->SetHUDColorVertices(vtxColorBufferPtr);
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
@@ -7900,32 +7902,34 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 
 void OGLDisplayLayer::LoadNativeDisplayByID_OGL(const NDSDisplayID displayID)
 {
-	if ((this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !this->_output->WillFilterOnGPU() && !this->_output->GetSourceDeposterize())
+	const GPUClientFetchObject &fetchObj = this->_output->GetFetchObject();
+	OGLClientSharedData *sharedData = (OGLClientSharedData *)fetchObj.GetClientData();
+	const OGLFrameInfoFetch fetchInfo = sharedData->GetFetchInfo();
+	
+	if (fetchInfo.srcNativeClone[displayID] != NULL)
 	{
-		const GPUClientFetchObject &fetchObj = this->_output->GetFetchObject();
-		OGLClientSharedData *sharedData = (OGLClientSharedData *)fetchObj.GetClientData();
+		const uint8_t bufferIndex = fetchInfo.bufferIndex;
 		VideoFilter *vf = this->_output->GetPixelScalerObject(displayID);
 		
-		const uint8_t bufferIndex = fetchObj.GetLastFetchIndex();
-		
 		pthread_rwlock_wrlock(&this->_cpuFilterRWLock[displayID][bufferIndex]);
-		sharedData->CopyFromSrcClone(vf->GetSrcBufferPtr(), displayID, bufferIndex);
+		sharedData->CopyFromSrcClone((Color4u8 *)vf->GetSrcBufferPtr(), displayID, bufferIndex);
 		pthread_rwlock_unlock(&this->_cpuFilterRWLock[displayID][bufferIndex]);
 	}
 }
 
 void OGLDisplayLayer::LoadCustomDisplayByID_OGL(const NDSDisplayID displayID)
 {
-	if ((this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !this->_output->WillFilterOnGPU() && !this->_output->GetSourceDeposterize() && (this->_output->GetEmuDisplayInfo().customWidth == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (this->_output->GetEmuDisplayInfo().customHeight == GPU_FRAMEBUFFER_NATIVE_HEIGHT) )
+	const GPUClientFetchObject &fetchObj = this->_output->GetFetchObject();
+	OGLClientSharedData *sharedData = (OGLClientSharedData *)fetchObj.GetClientData();
+	const OGLFrameInfoFetch fetchInfo = sharedData->GetFetchInfo();
+	
+	if (fetchInfo.srcNativeClone[displayID] != NULL)
 	{
-		const GPUClientFetchObject &fetchObj = this->_output->GetFetchObject();
-		OGLClientSharedData *sharedData = (OGLClientSharedData *)fetchObj.GetClientData();
+		const uint8_t bufferIndex = fetchInfo.bufferIndex;
 		VideoFilter *vf = this->_output->GetPixelScalerObject(displayID);
 		
-		const uint8_t bufferIndex = fetchObj.GetLastFetchIndex();
-		
 		pthread_rwlock_wrlock(&this->_cpuFilterRWLock[displayID][bufferIndex]);
-		sharedData->CopyFromSrcClone(vf->GetSrcBufferPtr(), displayID, bufferIndex);
+		sharedData->CopyFromSrcClone((Color4u8 *)vf->GetSrcBufferPtr(), displayID, bufferIndex);
 		pthread_rwlock_unlock(&this->_cpuFilterRWLock[displayID][bufferIndex]);
 	}
 }

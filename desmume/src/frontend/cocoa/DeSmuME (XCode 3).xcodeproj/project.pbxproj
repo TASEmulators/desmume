@@ -461,7 +461,6 @@
 		AB2A9A441725F00F0062C1A1 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
 		AB2A9A451725F00F0062C1A1 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104111346652500AF11D1 /* cocoa_input.mm */; };
 		AB2A9A461725F00F0062C1A1 /* mic_ext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD9A46413DB99B300777194 /* mic_ext.cpp */; };
-		AB2A9A471725F00F0062C1A1 /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
 		AB2A9A481725F00F0062C1A1 /* cocoa_rom.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104131346652500AF11D1 /* cocoa_rom.mm */; };
 		AB2A9A491725F00F0062C1A1 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB80E04C142BC4A800A52038 /* cocoa_util.mm */; };
 		AB2A9A4A1725F00F0062C1A1 /* cocoa_videofilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */; };
@@ -659,7 +658,6 @@
 		AB2F3C2215CF9C6000858373 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
 		AB2F3C2415CF9C6000858373 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104111346652500AF11D1 /* cocoa_input.mm */; };
 		AB2F3C2515CF9C6000858373 /* mic_ext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD9A46413DB99B300777194 /* mic_ext.cpp */; };
-		AB2F3C2615CF9C6000858373 /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
 		AB2F3C2715CF9C6000858373 /* cocoa_rom.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104131346652500AF11D1 /* cocoa_rom.mm */; };
 		AB2F3C2815CF9C6000858373 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB80E04C142BC4A800A52038 /* cocoa_util.mm */; };
 		AB2F3C2915CF9C6000858373 /* cocoa_videofilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */; };
@@ -831,6 +829,31 @@
 		AB53518818313E4E00CCD532 /* slot2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB53518518313E4E00CCD532 /* slot2.cpp */; };
 		AB53518918313E4E00CCD532 /* slot2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB53518518313E4E00CCD532 /* slot2.cpp */; };
 		AB53518A18313E4E00CCD532 /* slot2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB53518518313E4E00CCD532 /* slot2.cpp */; };
+		AB561BF32E72AD38007F88A5 /* CocoaAudioController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB561BF02E72AD38007F88A5 /* CocoaAudioController.mm */; };
+		AB561BF42E72AD38007F88A5 /* CocoaDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB561BF22E72AD38007F88A5 /* CocoaDisplayView.mm */; };
+		AB561BF52E72AD38007F88A5 /* CocoaAudioController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB561BF02E72AD38007F88A5 /* CocoaAudioController.mm */; };
+		AB561BF62E72AD38007F88A5 /* CocoaDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB561BF22E72AD38007F88A5 /* CocoaDisplayView.mm */; };
+		AB561BF72E72AD38007F88A5 /* CocoaAudioController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB561BF02E72AD38007F88A5 /* CocoaAudioController.mm */; };
+		AB561BF82E72AD38007F88A5 /* CocoaDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB561BF22E72AD38007F88A5 /* CocoaDisplayView.mm */; };
+		AB561BF92E72AD38007F88A5 /* CocoaAudioController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB561BF02E72AD38007F88A5 /* CocoaAudioController.mm */; };
+		AB561BFA2E72AD38007F88A5 /* CocoaDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB561BF22E72AD38007F88A5 /* CocoaDisplayView.mm */; };
+		AB561BFB2E72AD38007F88A5 /* CocoaAudioController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB561BF02E72AD38007F88A5 /* CocoaAudioController.mm */; };
+		AB561BFC2E72AD38007F88A5 /* CocoaDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB561BF22E72AD38007F88A5 /* CocoaDisplayView.mm */; };
+		AB561C032E72AD6E007F88A5 /* ClientAudioOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561BFD2E72AD6E007F88A5 /* ClientAudioOutput.cpp */; };
+		AB561C042E72AD6E007F88A5 /* ClientEmulationOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561BFF2E72AD6E007F88A5 /* ClientEmulationOutput.cpp */; };
+		AB561C052E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561C012E72AD6E007F88A5 /* ClientVideoOutput.cpp */; };
+		AB561C062E72AD6E007F88A5 /* ClientAudioOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561BFD2E72AD6E007F88A5 /* ClientAudioOutput.cpp */; };
+		AB561C072E72AD6E007F88A5 /* ClientEmulationOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561BFF2E72AD6E007F88A5 /* ClientEmulationOutput.cpp */; };
+		AB561C082E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561C012E72AD6E007F88A5 /* ClientVideoOutput.cpp */; };
+		AB561C092E72AD6E007F88A5 /* ClientAudioOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561BFD2E72AD6E007F88A5 /* ClientAudioOutput.cpp */; };
+		AB561C0A2E72AD6E007F88A5 /* ClientEmulationOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561BFF2E72AD6E007F88A5 /* ClientEmulationOutput.cpp */; };
+		AB561C0B2E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561C012E72AD6E007F88A5 /* ClientVideoOutput.cpp */; };
+		AB561C0C2E72AD6E007F88A5 /* ClientAudioOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561BFD2E72AD6E007F88A5 /* ClientAudioOutput.cpp */; };
+		AB561C0D2E72AD6E007F88A5 /* ClientEmulationOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561BFF2E72AD6E007F88A5 /* ClientEmulationOutput.cpp */; };
+		AB561C0E2E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561C012E72AD6E007F88A5 /* ClientVideoOutput.cpp */; };
+		AB561C0F2E72AD6E007F88A5 /* ClientAudioOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561BFD2E72AD6E007F88A5 /* ClientAudioOutput.cpp */; };
+		AB561C102E72AD6E007F88A5 /* ClientEmulationOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561BFF2E72AD6E007F88A5 /* ClientEmulationOutput.cpp */; };
+		AB561C112E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB561C012E72AD6E007F88A5 /* ClientVideoOutput.cpp */; };
 		AB5A795816D5A56000ED84B7 /* InputManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5A795716D5A56000ED84B7 /* InputManager.mm */; };
 		AB5A795916D5A56000ED84B7 /* InputManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5A795716D5A56000ED84B7 /* InputManager.mm */; };
 		AB5A795A16D5A56000ED84B7 /* InputManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5A795716D5A56000ED84B7 /* InputManager.mm */; };
@@ -935,7 +958,6 @@
 		AB711F481481C35F009011C8 /* cocoa_rom.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104131346652500AF11D1 /* cocoa_rom.mm */; };
 		AB711F491481C35F009011C8 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		AB711F4A1481C35F009011C8 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABD104271346653B00AF11D1 /* main.m */; };
-		AB711F4C1481C35F009011C8 /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
 		AB711F4E1481C35F009011C8 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
 		AB711F501481C35F009011C8 /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */; };
 		AB711F511481C35F009011C8 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
@@ -1105,7 +1127,6 @@
 		AB73AA101507C9F500A310C8 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
 		AB73AA121507C9F500A310C8 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104111346652500AF11D1 /* cocoa_input.mm */; };
 		AB73AA131507C9F500A310C8 /* mic_ext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD9A46413DB99B300777194 /* mic_ext.cpp */; };
-		AB73AA141507C9F500A310C8 /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
 		AB73AA151507C9F500A310C8 /* cocoa_rom.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104131346652500AF11D1 /* cocoa_rom.mm */; };
 		AB73AA161507C9F500A310C8 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB80E04C142BC4A800A52038 /* cocoa_util.mm */; };
 		AB73AA171507C9F500A310C8 /* cocoa_videofilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */; };
@@ -1397,7 +1418,6 @@
 		ABAD101815ACE7A00000EC47 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
 		ABAD101A15ACE7A00000EC47 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104111346652500AF11D1 /* cocoa_input.mm */; };
 		ABAD101B15ACE7A00000EC47 /* mic_ext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD9A46413DB99B300777194 /* mic_ext.cpp */; };
-		ABAD101C15ACE7A00000EC47 /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
 		ABAD101D15ACE7A00000EC47 /* cocoa_rom.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104131346652500AF11D1 /* cocoa_rom.mm */; };
 		ABAD101E15ACE7A00000EC47 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB80E04C142BC4A800A52038 /* cocoa_util.mm */; };
 		ABAD101F15ACE7A00000EC47 /* cocoa_videofilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */; };
@@ -2021,8 +2041,6 @@
 		AB3B8DCB2D8A35D900C9CBFD /* OGLDisplayOutput_3_2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OGLDisplayOutput_3_2.h; sourceTree = "<group>"; };
 		AB3B8DCC2D8A35FE00C9CBFD /* colorspacehandler_NEON.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_NEON.cpp; sourceTree = "<group>"; };
 		AB3B8DCD2D8A35FE00C9CBFD /* colorspacehandler_NEON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_NEON.h; sourceTree = "<group>"; };
-		AB3E34C7134AF4500056477A /* cocoa_output.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_output.h; sourceTree = "<group>"; };
-		AB3E34C8134AF4500056477A /* cocoa_output.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_output.mm; sourceTree = "<group>"; };
 		AB3E690E1E231E9900D4CC75 /* MacOGLDisplayView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacOGLDisplayView.h; sourceTree = "<group>"; };
 		AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MacOGLDisplayView.mm; sourceTree = "<group>"; };
 		AB3E69441E25FB8400D4CC75 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
@@ -2069,6 +2087,16 @@
 		AB53517E18313E3100CCD532 /* slot2_auto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_auto.cpp; sourceTree = "<group>"; };
 		AB53518418313E4E00CCD532 /* slot2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot2.h; sourceTree = "<group>"; };
 		AB53518518313E4E00CCD532 /* slot2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2.cpp; sourceTree = "<group>"; };
+		AB561BEF2E72AD38007F88A5 /* CocoaAudioController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CocoaAudioController.h; sourceTree = "<group>"; };
+		AB561BF02E72AD38007F88A5 /* CocoaAudioController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CocoaAudioController.mm; sourceTree = "<group>"; };
+		AB561BF12E72AD38007F88A5 /* CocoaDisplayView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CocoaDisplayView.h; sourceTree = "<group>"; };
+		AB561BF22E72AD38007F88A5 /* CocoaDisplayView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CocoaDisplayView.mm; sourceTree = "<group>"; };
+		AB561BFD2E72AD6E007F88A5 /* ClientAudioOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClientAudioOutput.cpp; sourceTree = "<group>"; };
+		AB561BFE2E72AD6E007F88A5 /* ClientAudioOutput.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientAudioOutput.h; sourceTree = "<group>"; };
+		AB561BFF2E72AD6E007F88A5 /* ClientEmulationOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClientEmulationOutput.cpp; sourceTree = "<group>"; };
+		AB561C002E72AD6E007F88A5 /* ClientEmulationOutput.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientEmulationOutput.h; sourceTree = "<group>"; };
+		AB561C012E72AD6E007F88A5 /* ClientVideoOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClientVideoOutput.cpp; sourceTree = "<group>"; };
+		AB561C022E72AD6E007F88A5 /* ClientVideoOutput.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientVideoOutput.h; sourceTree = "<group>"; };
 		AB58F32B1364F44B0074C376 /* cocoa_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_file.h; sourceTree = "<group>"; };
 		AB58F32C1364F44B0074C376 /* cocoa_file.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_file.mm; sourceTree = "<group>"; };
 		AB5A795616D5A56000ED84B7 /* InputManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InputManager.h; sourceTree = "<group>"; };
@@ -2564,10 +2592,13 @@
 				AB3ACB6514C2361100D7D192 /* userinterface */,
 				AB2F56EF1704C86900E28885 /* utilities.c */,
 				AB2145221714DFF4006DDB0F /* audiosamplegenerator.cpp */,
+				AB561BFD2E72AD6E007F88A5 /* ClientAudioOutput.cpp */,
 				ABD1267120AE812900EFE1B2 /* ClientAVCaptureObject.cpp */,
 				AB0F13911E1B7C320075684F /* ClientDisplayView.cpp */,
+				AB561BFF2E72AD6E007F88A5 /* ClientEmulationOutput.cpp */,
 				ABD4F2711F54A51000D75A1F /* ClientExecutionControl.cpp */,
 				ABC04DA11F67A20500EA6ED7 /* ClientInputHandler.cpp */,
+				AB561C012E72AD6E007F88A5 /* ClientVideoOutput.cpp */,
 				ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */,
 				ABD1267320AE812900EFE1B2 /* macOS_driver.cpp */,
 				ABC04DC91F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp */,
@@ -2577,10 +2608,13 @@
 				ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */,
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				AB2145211714DFF4006DDB0F /* audiosamplegenerator.h */,
+				AB561BFE2E72AD6E007F88A5 /* ClientAudioOutput.h */,
 				ABD1267220AE812900EFE1B2 /* ClientAVCaptureObject.h */,
 				AB0F13901E1B7C320075684F /* ClientDisplayView.h */,
+				AB561C002E72AD6E007F88A5 /* ClientEmulationOutput.h */,
 				ABD4F2721F54A51000D75A1F /* ClientExecutionControl.h */,
 				ABC04DA21F67A20500EA6ED7 /* ClientInputHandler.h */,
+				AB561C022E72AD6E007F88A5 /* ClientVideoOutput.h */,
 				ABA6574914511EC90077E5E9 /* cocoa_cheat.h */,
 				ABD103FE1346652500AF11D1 /* cocoa_core.h */,
 				AB58F32B1364F44B0074C376 /* cocoa_file.h */,
@@ -2588,7 +2622,6 @@
 				AB9971CE134EDA0800531BA7 /* cocoa_globals.h */,
 				AB6A198116CAD66900384EED /* cocoa_GPU.h */,
 				ABD103FF1346652500AF11D1 /* cocoa_input.h */,
-				AB3E34C7134AF4500056477A /* cocoa_output.h */,
 				ABD104001346652500AF11D1 /* cocoa_rom.h */,
 				ABAE2F8218682B8F00C92F4F /* cocoa_slot2.h */,
 				AB80E050142BC4FA00A52038 /* cocoa_util.h */,
@@ -2607,7 +2640,6 @@
 				ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */,
 				AB6A198216CAD66900384EED /* cocoa_GPU.mm */,
 				ABD104111346652500AF11D1 /* cocoa_input.mm */,
-				AB3E34C8134AF4500056477A /* cocoa_output.mm */,
 				ABD104131346652500AF11D1 /* cocoa_rom.mm */,
 				ABAE2F8318682B8F00C92F4F /* cocoa_slot2.mm */,
 				AB80E04C142BC4A800A52038 /* cocoa_util.mm */,
@@ -3251,6 +3283,8 @@
 				ABAE2F7918682B6C00C92F4F /* Slot2WindowDelegate.h */,
 				ABA0356E169127BB00817C69 /* troubleshootingWindowDelegate.h */,
 				AB4B5A1F217E47E400381363 /* WifiSettingsPanel.h */,
+				AB561BEF2E72AD38007F88A5 /* CocoaAudioController.h */,
+				AB561BF12E72AD38007F88A5 /* CocoaDisplayView.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				ABEBCE362A703E260028CE8A /* CheatDatabaseWindowController.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
@@ -3270,6 +3304,8 @@
 				ABAE2F7A18682B6C00C92F4F /* Slot2WindowDelegate.mm */,
 				ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */,
 				AB4B5A20217E47E400381363 /* WifiSettingsPanel.mm */,
+				AB561BF02E72AD38007F88A5 /* CocoaAudioController.mm */,
+				AB561BF22E72AD38007F88A5 /* CocoaDisplayView.mm */,
 			);
 			path = userinterface;
 			sourceTree = "<group>";
@@ -4761,7 +4797,6 @@
 				AB2A9A441725F00F0062C1A1 /* cocoa_firmware.mm in Sources */,
 				AB2A9A451725F00F0062C1A1 /* cocoa_input.mm in Sources */,
 				AB2A9A461725F00F0062C1A1 /* mic_ext.cpp in Sources */,
-				AB2A9A471725F00F0062C1A1 /* cocoa_output.mm in Sources */,
 				AB2A9A481725F00F0062C1A1 /* cocoa_rom.mm in Sources */,
 				AB2A9A491725F00F0062C1A1 /* cocoa_util.mm in Sources */,
 				AB2A9A4A1725F00F0062C1A1 /* cocoa_videofilter.mm in Sources */,
@@ -4870,6 +4905,11 @@
 				AB4B5A22217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 				ABEBCE382A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */,
 				AB1B20AD2AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */,
+				AB561BF52E72AD38007F88A5 /* CocoaAudioController.mm in Sources */,
+				AB561BF62E72AD38007F88A5 /* CocoaDisplayView.mm in Sources */,
+				AB561C062E72AD6E007F88A5 /* ClientAudioOutput.cpp in Sources */,
+				AB561C072E72AD6E007F88A5 /* ClientEmulationOutput.cpp in Sources */,
+				AB561C082E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4957,7 +4997,6 @@
 				AB2F3C2215CF9C6000858373 /* cocoa_firmware.mm in Sources */,
 				AB2F3C2415CF9C6000858373 /* cocoa_input.mm in Sources */,
 				AB2F3C2515CF9C6000858373 /* mic_ext.cpp in Sources */,
-				AB2F3C2615CF9C6000858373 /* cocoa_output.mm in Sources */,
 				AB2F3C2715CF9C6000858373 /* cocoa_rom.mm in Sources */,
 				AB2F3C2815CF9C6000858373 /* cocoa_util.mm in Sources */,
 				AB2F3C2915CF9C6000858373 /* cocoa_videofilter.mm in Sources */,
@@ -5066,6 +5105,11 @@
 				AB4B5A23217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 				ABEBCE392A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */,
 				AB1B20AE2AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */,
+				AB561BF72E72AD38007F88A5 /* CocoaAudioController.mm in Sources */,
+				AB561BF82E72AD38007F88A5 /* CocoaDisplayView.mm in Sources */,
+				AB561C092E72AD6E007F88A5 /* ClientAudioOutput.cpp in Sources */,
+				AB561C0A2E72AD6E007F88A5 /* ClientEmulationOutput.cpp in Sources */,
+				AB561C0B2E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5153,7 +5197,6 @@
 				AB711F601481C35F009011C8 /* cocoa_firmware.mm in Sources */,
 				AB711F461481C35F009011C8 /* cocoa_input.mm in Sources */,
 				AB711F5E1481C35F009011C8 /* mic_ext.cpp in Sources */,
-				AB711F4C1481C35F009011C8 /* cocoa_output.mm in Sources */,
 				AB711F481481C35F009011C8 /* cocoa_rom.mm in Sources */,
 				AB711F6C1481C35F009011C8 /* cocoa_util.mm in Sources */,
 				AB711F6E1481C35F009011C8 /* cocoa_videofilter.mm in Sources */,
@@ -5292,6 +5335,11 @@
 				AB4B5A21217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 				ABEBCE372A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */,
 				AB1B20AC2AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */,
+				AB561BFB2E72AD38007F88A5 /* CocoaAudioController.mm in Sources */,
+				AB561BFC2E72AD38007F88A5 /* CocoaDisplayView.mm in Sources */,
+				AB561C0F2E72AD6E007F88A5 /* ClientAudioOutput.cpp in Sources */,
+				AB561C102E72AD6E007F88A5 /* ClientEmulationOutput.cpp in Sources */,
+				AB561C112E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5379,7 +5427,6 @@
 				AB73AA101507C9F500A310C8 /* cocoa_firmware.mm in Sources */,
 				AB73AA121507C9F500A310C8 /* cocoa_input.mm in Sources */,
 				AB73AA131507C9F500A310C8 /* mic_ext.cpp in Sources */,
-				AB73AA141507C9F500A310C8 /* cocoa_output.mm in Sources */,
 				AB73AA151507C9F500A310C8 /* cocoa_rom.mm in Sources */,
 				AB73AA161507C9F500A310C8 /* cocoa_util.mm in Sources */,
 				AB73AA171507C9F500A310C8 /* cocoa_videofilter.mm in Sources */,
@@ -5518,6 +5565,11 @@
 				AB4B5A25217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 				ABEBCE3B2A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */,
 				AB1B20B02AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */,
+				AB561BF92E72AD38007F88A5 /* CocoaAudioController.mm in Sources */,
+				AB561BFA2E72AD38007F88A5 /* CocoaDisplayView.mm in Sources */,
+				AB561C0C2E72AD6E007F88A5 /* ClientAudioOutput.cpp in Sources */,
+				AB561C0D2E72AD6E007F88A5 /* ClientEmulationOutput.cpp in Sources */,
+				AB561C0E2E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5605,7 +5657,6 @@
 				ABAD101815ACE7A00000EC47 /* cocoa_firmware.mm in Sources */,
 				ABAD101A15ACE7A00000EC47 /* cocoa_input.mm in Sources */,
 				ABAD101B15ACE7A00000EC47 /* mic_ext.cpp in Sources */,
-				ABAD101C15ACE7A00000EC47 /* cocoa_output.mm in Sources */,
 				ABAD101D15ACE7A00000EC47 /* cocoa_rom.mm in Sources */,
 				ABAD101E15ACE7A00000EC47 /* cocoa_util.mm in Sources */,
 				ABAD101F15ACE7A00000EC47 /* cocoa_videofilter.mm in Sources */,
@@ -5714,6 +5765,11 @@
 				AB4B5A24217E47E400381363 /* WifiSettingsPanel.mm in Sources */,
 				ABEBCE3A2A703E260028CE8A /* CheatDatabaseWindowController.mm in Sources */,
 				AB1B20AF2AD5ED59007CA7EB /* slot2_hcv1000.cpp in Sources */,
+				AB561BF32E72AD38007F88A5 /* CocoaAudioController.mm in Sources */,
+				AB561BF42E72AD38007F88A5 /* CocoaDisplayView.mm in Sources */,
+				AB561C032E72AD6E007F88A5 /* ClientAudioOutput.cpp in Sources */,
+				AB561C042E72AD6E007F88A5 /* ClientEmulationOutput.cpp in Sources */,
+				AB561C052E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

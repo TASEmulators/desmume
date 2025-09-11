@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2023 DeSmuME Team
+	Copyright (C) 2013-2025 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -25,6 +25,9 @@
 #import "MacScreenshotCaptureTool.h"
 #import "preferencesWindowDelegate.h"
 
+#import "CocoaAudioController.h"
+#import "CocoaDisplayView.h"
+
 #import "cocoa_globals.h"
 #import "cocoa_cheat.h"
 #import "cocoa_core.h"
@@ -32,7 +35,6 @@
 #import "cocoa_firmware.h"
 #import "cocoa_GPU.h"
 #import "cocoa_input.h"
-#import "cocoa_output.h"
 #import "cocoa_rom.h"
 #import "cocoa_slot2.h"
 
@@ -46,7 +48,7 @@
 
 @synthesize currentRom;
 @dynamic cdsFirmware;
-@dynamic cdsSpeaker;
+@synthesize audioController;
 
 @synthesize cheatWindowDelegate;
 @synthesize screenshotCaptureToolDelegate;
@@ -92,11 +94,9 @@
 @synthesize statusText;
 @synthesize isHardwareMicAvailable;
 @synthesize currentMicGainValue;
-@dynamic currentVolumeValue;
 @synthesize micStatusTooltip;
 @synthesize currentMicStatusIcon;
 @synthesize ndsMicLevelIndicator;
-@synthesize currentVolumeIcon;
 
 @synthesize isShowingSaveStateDialog;
 @synthesize isShowingFileMigrationDialog;
@@ -119,7 +119,6 @@
 	}
 	
 	_unfairlockFirmware = apple_unfairlock_create();
-	_unfairlockSpeaker = apple_unfairlock_create();
 	
 	mainWindow = nil;
 	windowList = [[NSMutableArray alloc] initWithCapacity:32];
@@ -133,7 +132,7 @@
 	
 	currentRom = nil;
 	cdsFirmware = nil;
-	cdsSpeaker = nil;
+	audioController = [[CocoaAudioController alloc] init];
 	
 	isSaveStateEdited = NO;
 	isShowingSaveStateDialog = NO;
@@ -148,8 +147,6 @@
 	lastSetSpeedScalar = 1.0f;
 	isHardwareMicAvailable = NO;
 	currentMicGainValue = 0.0f;
-	isSoundMuted = NO;
-	lastSetVolumeValue = MAX_VOLUME;
 	
 	iconExecute           = [[NSImage imageNamed:@"Icon_Execute_420x420"] retain];
 	iconPause             = [[NSImage imageNamed:@"Icon_Pause_420x420"] retain];
@@ -164,23 +161,11 @@
 	iconMicInClip         = [[NSImage imageNamed:@"Icon_MicrophoneRed_256x256"] retain];
 	iconMicManualOverride = [[NSImage imageNamed:@"Icon_MicrophoneGray_256x256"] retain];
 	
-	iconVolumeFull        = [[NSImage imageNamed:@"Icon_VolumeFull_16x16"] retain];
-	iconVolumeTwoThird    = [[NSImage imageNamed:@"Icon_VolumeTwoThird_16x16"] retain];
-	iconVolumeOneThird    = [[NSImage imageNamed:@"Icon_VolumeOneThird_16x16"] retain];
-	iconVolumeMute        = [[NSImage imageNamed:@"Icon_VolumeMute_16x16"] retain];
-	
-	iconVolumeFullDM      = [[NSImage imageNamed:@"Icon_VolumeFull_DarkMode_16x16"] retain];
-	iconVolumeTwoThirdDM  = [[NSImage imageNamed:@"Icon_VolumeTwoThird_DarkMode_16x16"] retain];
-	iconVolumeOneThirdDM  = [[NSImage imageNamed:@"Icon_VolumeOneThird_DarkMode_16x16"] retain];
-	iconVolumeMuteDM      = [[NSImage imageNamed:@"Icon_VolumeMute_DarkMode_16x16"] retain];
-	
 	isWorking = NO;
 	isRomLoading = NO;
 	statusText = NSSTRING_STATUS_READY;
-	currentVolumeValue = MAX_VOLUME;
 	micStatusTooltip = @"";
 	currentMicStatusIcon = (isRunningDarkMode) ? [iconMicDisabledDM retain] : [iconMicDisabled retain];
-	currentVolumeIcon = (isRunningDarkMode) ? [iconVolumeFullDM retain] : [iconVolumeFull retain];
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(loadRomDidFinish:)
@@ -222,25 +207,11 @@
 	[iconMicInClip release];
 	[iconMicManualOverride release];
 	
-	[iconVolumeFull release];
-	[iconVolumeTwoThird release];
-	[iconVolumeOneThird release];
-	[iconVolumeMute release];
-	
-	[iconVolumeFullDM release];
-	[iconVolumeTwoThirdDM release];
-	[iconVolumeOneThirdDM release];
-	[iconVolumeMuteDM release];
-	
 	[[self currentRom] release];
 	[self setCurrentRom:nil];
 	
-	[self setCdsSpeaker:nil];
-	
 	[self setIsWorking:NO];
 	[self setStatusText:@""];
-	[self setCurrentVolumeValue:0.0f];
-	[self setCurrentVolumeIcon:nil];
 	
 	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
 	[cdsSoundController setContent:nil];
@@ -249,8 +220,9 @@
 	[self setMainWindow:nil];
 	[windowList release];
 	
+	[audioController release];
+	
 	apple_unfairlock_destroy(_unfairlockFirmware);
-	apple_unfairlock_destroy(_unfairlockSpeaker);
 	
 	[super dealloc];
 }
@@ -292,80 +264,6 @@
 	return theFirmware;
 }
 
-- (void) setCdsSpeaker:(CocoaDSSpeaker *)theSpeaker
-{
-	apple_unfairlock_lock(_unfairlockSpeaker);
-	
-	if (theSpeaker == cdsSpeaker)
-	{
-		apple_unfairlock_unlock(_unfairlockSpeaker);
-		return;
-	}
-	
-	if (theSpeaker != nil)
-	{
-		[theSpeaker retain];
-	}
-	
-	[cdsSoundController setContent:[theSpeaker property]];
-	
-	[cdsSpeaker release];
-	cdsSpeaker = theSpeaker;
-	
-	apple_unfairlock_unlock(_unfairlockSpeaker);
-}
-
-- (CocoaDSSpeaker *) cdsSpeaker
-{
-	apple_unfairlock_lock(_unfairlockSpeaker);
-	CocoaDSSpeaker *theSpeaker = cdsSpeaker;
-	apple_unfairlock_unlock(_unfairlockSpeaker);
-	
-	return theSpeaker;
-}
-
-- (void) setCurrentVolumeValue:(float)vol
-{
-	const BOOL currentDarkModeState = [self isRunningDarkMode];
-	currentVolumeValue = vol;
-	
-	// Update the icon.
-	NSImage *currentImage = [self currentVolumeIcon];
-	NSImage *newImage = nil;
-	if (vol <= 0.0f)
-	{
-		newImage = (currentDarkModeState) ? iconVolumeMuteDM : iconVolumeMute;
-	}
-	else if (vol > 0.0f && vol <= VOLUME_THRESHOLD_LOW)
-	{
-		newImage = (currentDarkModeState) ? iconVolumeOneThirdDM : iconVolumeOneThird;
-		isSoundMuted = NO;
-		lastSetVolumeValue = vol;
-	}
-	else if (vol > VOLUME_THRESHOLD_LOW && vol <= VOLUME_THRESHOLD_HIGH)
-	{
-		newImage = (currentDarkModeState) ? iconVolumeTwoThirdDM : iconVolumeTwoThird;
-		isSoundMuted = NO;
-		lastSetVolumeValue = vol;
-	}
-	else
-	{
-		newImage = (currentDarkModeState) ? iconVolumeFullDM : iconVolumeFull;
-		isSoundMuted = NO;
-		lastSetVolumeValue = vol;
-	}
-	
-	if (newImage != currentImage)
-	{
-		[self setCurrentVolumeIcon:newImage];
-	}
-}
-
-- (float) currentVolumeValue
-{
-	return currentVolumeValue;
-}
-
 #pragma mark IBActions
 
 - (IBAction) newDisplayWindow:(id)sender
@@ -379,7 +277,8 @@
 	const BOOL useVerticalSync = ([[newWindowController view] layer] != nil) || [cdsCore isFrameSkipEnabled] || (([cdsCore speedScalar] < 1.03f) && [cdsCore isSpeedLimitEnabled]);
 	[[newWindowController view] setUseVerticalSync:useVerticalSync];
 	
-	[[[newWindowController view] cdsVideoOutput] handleReloadReprocessRedraw];
+	MacDisplayViewOutput *dvo = [[newWindowController view] displayViewOutput];
+	dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
 	[[newWindowController window] makeKeyAndOrderFront:self];
 	[[newWindowController window] makeMainWindow];
 }
@@ -1050,34 +949,33 @@
 
 - (IBAction) changeVolume:(id)sender
 {
-	const float vol = [self currentVolumeValue];
-	[self setCurrentVolumeValue:vol];
-	[[self cdsSpeaker] setVolume:vol];
+	NSNumber *volumeNumber = [audioController volume];
+	[audioController setVolume:volumeNumber];
 }
 
 - (IBAction) changeAudioEngine:(id)sender
 {
-	[[self cdsSpeaker] setAudioOutputEngine:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[audioController setEngineIDValue:(int)[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) changeSpuAdvancedLogic:(id)sender
 {
-	[[self cdsSpeaker] setSpuAdvancedLogic:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
+	[audioController setSpuAdvancedLogic:[CocoaDSUtil getIBActionSenderButtonStateBool:sender] ? YES : NO];
 }
 
 - (IBAction) changeSpuInterpolationMode:(id)sender
 {
-	[[self cdsSpeaker] setSpuInterpolationMode:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[audioController setSpuInterpolationModeIDValue:(SPUInterpolationMode)[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) changeSpuSyncMode:(id)sender
 {
-	[[self cdsSpeaker] setSpuSyncMode:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[audioController setSpuSyncModeIDValue:(ESynchMode)[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) changeSpuSyncMethod:(id)sender
 {
-	[[self cdsSpeaker] setSpuSyncMethod:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[audioController setSpuSyncMethodIDValue:(ESynchMethod)[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) toggleAllDisplays:(id)sender
@@ -1296,14 +1194,12 @@
 
 - (IBAction) writeDefaultsSoundSettings:(id)sender
 {
-	NSMutableDictionary *speakerBindings = (NSMutableDictionary *)[cdsSoundController content];
-	
-	[[NSUserDefaults standardUserDefaults] setFloat:[[speakerBindings valueForKey:@"volume"] floatValue] forKey:@"Sound_Volume"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"audioOutputEngine"] integerValue] forKey:@"Sound_AudioOutputEngine"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[speakerBindings valueForKey:@"spuAdvancedLogic"] boolValue] forKey:@"SPU_AdvancedLogic"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuInterpolationMode"] integerValue] forKey:@"SPU_InterpolationMode"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuSyncMode"] integerValue] forKey:@"SPU_SyncMode"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuSyncMethod"] integerValue] forKey:@"SPU_SyncMethod"];
+	[[NSUserDefaults standardUserDefaults] setFloat:[audioController volumeValue] forKey:@"Sound_Volume"];
+	[[NSUserDefaults standardUserDefaults] setInteger:(NSInteger)[audioController engineIDValue] forKey:@"Sound_AudioOutputEngine"];
+	[[NSUserDefaults standardUserDefaults] setBool:[audioController spuAdvancedLogic] forKey:@"SPU_AdvancedLogic"];
+	[[NSUserDefaults standardUserDefaults] setInteger:(NSInteger)[audioController spuInterpolationModeIDValue] forKey:@"SPU_InterpolationMode"];
+	[[NSUserDefaults standardUserDefaults] setInteger:(NSInteger)[audioController spuSyncModeIDValue] forKey:@"SPU_SyncMode"];
+	[[NSUserDefaults standardUserDefaults] setInteger:(NSInteger)[audioController spuSyncMethodIDValue] forKey:@"SPU_SyncMethod"];
 	
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
@@ -1338,13 +1234,8 @@
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[[[windowController view] cdsVideoOutput] setNDSFrameInfo:[cdsCore execControl]->GetNDSFrameInfo()];
-		[[[windowController view] cdsVideoOutput] hudUpdate];
-		
-		if ([[windowController view] isHUDInputVisible])
-		{
-			[[windowController view] clientDisplayView]->SetViewNeedsFlush();
-		}
+		MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
+		dvo->SetNDSFrameInfoWithInputHint([cdsCore execControl]->GetNDSFrameInfo(), true);
 	}
 }
 
@@ -1361,13 +1252,8 @@
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[[[windowController view] cdsVideoOutput] setNDSFrameInfo:[cdsCore execControl]->GetNDSFrameInfo()];
-		[[[windowController view] cdsVideoOutput] hudUpdate];
-		
-		if ([[windowController view] isHUDInputVisible])
-		{
-			[[windowController view] clientDisplayView]->SetViewNeedsFlush();
-		}
+		MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
+		dvo->SetNDSFrameInfoWithInputHint([cdsCore execControl]->GetNDSFrameInfo(), true);
 	}
 }
 
@@ -1383,13 +1269,8 @@
 		
 		for (DisplayWindowController *windowController in windowList)
 		{
-			[[[windowController view] cdsVideoOutput] setNDSFrameInfo:[cdsCore execControl]->GetNDSFrameInfo()];
-			[[[windowController view] cdsVideoOutput] hudUpdate];
-			
-			if ([[windowController view] isHUDInputVisible])
-			{
-				[[windowController view] clientDisplayView]->SetViewNeedsFlush();
-			}
+			MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
+			dvo->SetNDSFrameInfoWithInputHint([cdsCore execControl]->GetNDSFrameInfo(), true);
 		}
 	}
 }
@@ -1768,7 +1649,8 @@
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[[[windowController view] cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
+		MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
+		dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
@@ -1788,22 +1670,16 @@
 		return;
 	}
 	
-	float vol = 0.0f;
-	
-	if (isSoundMuted)
+	if ([audioController isMuted])
 	{
-		isSoundMuted = NO;
-		vol = lastSetVolumeValue;
+		[audioController setMute:NO];
 		[self setStatusText:@"Sound unmuted."];
 	}
 	else
 	{
-		isSoundMuted = YES;
+		[audioController setMute:YES];
 		[self setStatusText:@"Sound muted."];
 	}
-
-	[self setCurrentVolumeValue:vol];
-	[[self cdsSpeaker] setVolume:vol];
 }
 
 - (void) cmdToggleGPUState:(const ClientCommandAttributes &)cmdAttr
@@ -2049,7 +1925,8 @@
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[[[windowController view] cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
+		MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
+		dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_LOADED];
@@ -2114,7 +1991,8 @@
 	[[cdsCore cdsGPU] clearWithColor:0x8000];
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[[[windowController view] cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
+		MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
+		dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_UNLOADED];
@@ -2287,18 +2165,6 @@
 	
 	[cdsCore setEmulationPaused:(execState == ExecutionBehavior_Pause)];
 	[cdsCore setFrameStatus:frameStatusString];
-}
-
-- (void) addOutputToCore:(CocoaDSOutput *)theOutput
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore addOutput:theOutput];
-}
-
-- (void) removeOutputFromCore:(CocoaDSOutput *)theOutput
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore removeOutput:theOutput];
 }
 
 - (void) changeCoreSpeedWithDouble:(double)newSpeedScalar
@@ -2708,13 +2574,12 @@
 	[[cdsCore cdsController] setHardwareMicMute:[[NSUserDefaults standardUserDefaults] boolForKey:@"Microphone_HardwareMicMute"]];
 	
 	// Set the SPU settings per user preferences.
-	[self setCurrentVolumeValue:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
-	[[self cdsSpeaker] setVolume:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
-	[[self cdsSpeaker] setAudioOutputEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Sound_AudioOutputEngine"]];
-	[[self cdsSpeaker] setSpuAdvancedLogic:[[NSUserDefaults standardUserDefaults] boolForKey:@"SPU_AdvancedLogic"]];
-	[[self cdsSpeaker] setSpuInterpolationMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_InterpolationMode"]];
-	[[self cdsSpeaker] setSpuSyncMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMode"]];
-	[[self cdsSpeaker] setSpuSyncMethod:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMethod"]];
+	[audioController setEngineIDValue:(int)[[NSUserDefaults standardUserDefaults] integerForKey:@"Sound_AudioOutputEngine"]];
+	[audioController setVolumeValue:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
+	[audioController setSpuAdvancedLogic:[[NSUserDefaults standardUserDefaults] boolForKey:@"SPU_AdvancedLogic"]];
+	[audioController setSpuInterpolationModeIDValue:(SPUInterpolationMode)[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_InterpolationMode"]];
+	[audioController setSpuSyncModeIDValue:(ESynchMode)[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMode"]];
+	[audioController setSpuSyncMethodIDValue:(ESynchMethod)[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMethod"]];
 	
 	// Set the 3D rendering options per user preferences.
 	[[cdsCore cdsGPU] setRender3DThreads:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_Threads"]];
@@ -2880,7 +2745,9 @@
 			// Otherwise, just order the window to the front so that the windows will
 			// stack in a deterministic order.
 			[[windowController view] setAllowViewUpdates:YES];
-			[[[windowController view] cdsVideoOutput] handleReloadReprocessRedraw];
+			
+			MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
+			dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
 			
 			if (windowProperties == [windowPropertiesList lastObject])
 			{
@@ -2976,11 +2843,10 @@
 - (void) handleAppearanceChange
 {
 	const BOOL newDarkModeState = [CocoaDSUtil determineDarkModeAppearance];
-	
 	if (newDarkModeState != [self isRunningDarkMode])
 	{
+		[audioController setDarkMode:newDarkModeState];
 		[self setIsRunningDarkMode:newDarkModeState];
-		[self setCurrentVolumeValue:[self currentVolumeValue]];
 		[self updateMicStatusIcon];
 	}
 }

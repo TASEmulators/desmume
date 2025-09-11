@@ -20,7 +20,6 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 
-#import "cocoa_output.h"
 #import "cocoa_globals.h"
 #include "utilities.h"
 
@@ -34,6 +33,7 @@
 #endif
 
 #ifdef PORT_VERSION_OS_X_APP
+	#import "userinterface/CocoaDisplayView.h"
 	#import "userinterface/MacOGLDisplayView.h"
 
 	#ifdef ENABLE_APPLE_METAL
@@ -143,9 +143,9 @@ char __hostRendererString[256] = {0};
 #endif
 	
 #ifdef PORT_VERSION_OS_X_APP
-	gpuEvent = new GPUEventHandlerAsync;
+	gpuEvent = new MacGPUEventHandlerAsync;
 #else
-	gpuEvent = new GPUEventHandlerAsync_Stub;
+	gpuEvent = new MacGPUEventHandlerAsync_Stub;
 #endif
 	GPU->SetEventHandler(gpuEvent);
 	
@@ -371,13 +371,6 @@ char __hostRendererString[256] = {0};
 	
 	return colorFormat;
 }
-
-#ifdef ENABLE_DISPLAYLINK_FETCH
-- (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock
-{
-	((MacGPUFetchObjectDisplayLink *)fetchObject)->SetOutputList(theOutputList, theRWLock);
-}
-#endif
 
 - (void) setRender3DRenderingEngine:(NSInteger)rendererID
 {
@@ -1455,7 +1448,7 @@ static CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	MacGPUFetchObjectDisplayLink *fetchObj = (MacGPUFetchObjectDisplayLink *)displayLinkContext;
 	
 	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
-	fetchObj->FlushAllDisplaysOnDisplayLink(displayLink, inNow, inOutputTime);
+	fetchObj->FlushAllViewsOnDisplayLink(displayLink, inNow, inOutputTime);
 	[tempPool release];
 	
 	return kCVReturnSuccess;
@@ -1463,20 +1456,15 @@ static CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
 
 MacGPUFetchObjectDisplayLink::MacGPUFetchObjectDisplayLink()
 {
-	_id = GPUClientFetchObjectID_GenericDisplayLink;
+	_id = GPUClientFetchObjectID_MacDisplayLink;
 	
 	memset(_name, 0, sizeof(_name));
-	strncpy(_name, "Generic Mac Display Link Video", sizeof(_name) - 1);
+	strncpy(_name, "macOS Display Link GPU Fetch", sizeof(_name) - 1);
 	
 	memset(_description, 0, sizeof(_description));
 	strncpy(_description, "No description.", sizeof(_description) - 1);
 	
 	pthread_mutex_init(&_mutexDisplayLinkLists, NULL);
-	
-	_rwlockOutputList = NULL;
-	_cdsOutputList = nil;
-	_numberViewsPreferringCPUVideoProcessing = 0;
-	_numberViewsUsingDirectToCPUFiltering = 0;
 	
 	_displayLinksActiveList.clear();
 	_displayLinkFlushTimeList.clear();
@@ -1518,94 +1506,6 @@ MacGPUFetchObjectDisplayLink::~MacGPUFetchObjectDisplayLink()
 	
 	pthread_mutex_unlock(&this->_mutexDisplayLinkLists);
 	pthread_mutex_destroy(&this->_mutexDisplayLinkLists);
-	
-	pthread_rwlock_t *currentRWLock = this->_rwlockOutputList;
-	
-	if (currentRWLock != NULL)
-	{
-		pthread_rwlock_wrlock(currentRWLock);
-	}
-	
-	[this->_cdsOutputList release];
-	
-	if (currentRWLock != NULL)
-	{
-		pthread_rwlock_unlock(currentRWLock);
-	}
-}
-
-volatile int32_t MacGPUFetchObjectDisplayLink::GetNumberViewsPreferringCPUVideoProcessing() const
-{
-	return this->_numberViewsPreferringCPUVideoProcessing;
-}
-
-volatile int32_t MacGPUFetchObjectDisplayLink::GetNumberViewsUsingDirectToCPUFiltering() const
-{
-	return this->_numberViewsUsingDirectToCPUFiltering;
-}
-
-void MacGPUFetchObjectDisplayLink::SetOutputList(NSMutableArray *theOutputList, pthread_rwlock_t *theRWLock)
-{
-	pthread_rwlock_t *currentRWLock = this->_rwlockOutputList;
-	
-	if (currentRWLock != NULL)
-	{
-		pthread_rwlock_wrlock(currentRWLock);
-	}
-	
-	[this->_cdsOutputList release];
-	this->_cdsOutputList = theOutputList;
-	[this->_cdsOutputList retain];
-	
-	if (currentRWLock != NULL)
-	{
-		pthread_rwlock_unlock(currentRWLock);
-	}
-	
-	this->_rwlockOutputList = theRWLock;
-}
-
-void MacGPUFetchObjectDisplayLink::IncrementViewsPreferringCPUVideoProcessing()
-{
-	atomic_inc_32(&this->_numberViewsPreferringCPUVideoProcessing);
-}
-
-void MacGPUFetchObjectDisplayLink::DecrementViewsPreferringCPUVideoProcessing()
-{
-	atomic_dec_32(&this->_numberViewsPreferringCPUVideoProcessing);
-}
-
-void MacGPUFetchObjectDisplayLink::IncrementViewsUsingDirectToCPUFiltering()
-{
-	atomic_inc_32(&this->_numberViewsUsingDirectToCPUFiltering);
-}
-
-void MacGPUFetchObjectDisplayLink::DecrementViewsUsingDirectToCPUFiltering()
-{
-	atomic_dec_32(&this->_numberViewsUsingDirectToCPUFiltering);
-}
-
-void MacGPUFetchObjectDisplayLink::PushVideoDataToAllDisplayViews()
-{
-	pthread_rwlock_t *currentRWLock = this->_rwlockOutputList;
-	
-	if (currentRWLock != NULL)
-	{
-		pthread_rwlock_rdlock(currentRWLock);
-	}
-	
-	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
-	{
-		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
-		{
-			[(CocoaDSDisplay *)cdsOutput signalMessage:MESSAGE_RECEIVE_GPU_FRAME];
-		}
-	}
-	
-	if (currentRWLock != NULL)
-	{
-		pthread_rwlock_unlock(currentRWLock);
-	}
 }
 
 void MacGPUFetchObjectDisplayLink::DisplayLinkStartUsingID(CGDirectDisplayID displayID)
@@ -1694,46 +1594,19 @@ void MacGPUFetchObjectDisplayLink::DisplayLinkListUpdate()
 	pthread_mutex_unlock(&this->_mutexDisplayLinkLists);
 }
 
-void MacGPUFetchObjectDisplayLink::FlushAllDisplaysOnDisplayLink(CVDisplayLinkRef displayLink, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput)
+void MacGPUFetchObjectDisplayLink::FlushAllViewsOnDisplayLink(CVDisplayLinkRef displayLink, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput)
 {
-	pthread_rwlock_t *currentRWLock = this->_rwlockOutputList;
 	CGDirectDisplayID displayID = CVDisplayLinkGetCurrentCGDisplay(displayLink);
 	bool didFlushOccur = false;
 	
-	std::vector<ClientDisplay3DView *> cdvFlushList;
-	
-	if (currentRWLock != NULL)
-	{
-		pthread_rwlock_rdlock(currentRWLock);
-	}
-	
-	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
-	{
-		if ([cdsOutput isKindOfClass:[CocoaDSDisplayVideo class]])
-		{
-			if ([(CocoaDSDisplayVideo *)cdsOutput currentDisplayID] == displayID)
-			{
-				ClientDisplay3DView *cdv = [(CocoaDSDisplayVideo *)cdsOutput clientDisplay3DView];
-				
-				if (cdv->GetViewNeedsFlush())
-				{
-					cdvFlushList.push_back(cdv);
-				}
-			}
-		}
-	}
+	std::vector<ClientDisplayViewInterface *> cdvFlushList;
+	this->_outputManager->GenerateFlushListForDisplay((int32_t)displayID, cdvFlushList);
 	
 	const size_t listSize = cdvFlushList.size();
-	
 	if (listSize > 0)
 	{
-		this->FlushMultipleViews(cdvFlushList, timeStampNow, timeStampOutput);
+		this->FlushMultipleViews(cdvFlushList, (uint64_t)timeStampNow->videoTime, timeStampOutput->hostTime);
 		didFlushOccur = true;
-	}
-	
-	if (currentRWLock != NULL)
-	{
-		pthread_rwlock_unlock(currentRWLock);
 	}
 	
 	if (didFlushOccur)
@@ -1747,23 +1620,6 @@ void MacGPUFetchObjectDisplayLink::FlushAllDisplaysOnDisplayLink(CVDisplayLinkRe
 	}
 }
 
-void MacGPUFetchObjectDisplayLink::FlushMultipleViews(const std::vector<ClientDisplay3DView *> &cdvFlushList, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput)
-{
-	const size_t listSize = cdvFlushList.size();
-	
-	for (size_t i = 0; i < listSize; i++)
-	{
-		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
-		cdv->FlushView(NULL);
-	}
-	
-	for (size_t i = 0; i < listSize; i++)
-	{
-		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
-		cdv->FinalizeFlush(NULL, timeStampOutput->hostTime);
-	}
-}
-
 void MacGPUFetchObjectDisplayLink::DoPostFetchActions()
 {
 	this->PushVideoDataToAllDisplayViews();
@@ -1773,7 +1629,7 @@ void MacGPUFetchObjectDisplayLink::DoPostFetchActions()
 
 #pragma mark -
 
-GPUEventHandlerAsync::GPUEventHandlerAsync()
+MacGPUEventHandlerAsync::MacGPUEventHandlerAsync()
 {
 	_fetchObject = nil;
 	_render3DNeedsFinish = false;
@@ -1785,7 +1641,7 @@ GPUEventHandlerAsync::GPUEventHandlerAsync()
 	pthread_mutex_init(&_mutexApplyRender3DSettings, NULL);
 }
 
-GPUEventHandlerAsync::~GPUEventHandlerAsync()
+MacGPUEventHandlerAsync::~MacGPUEventHandlerAsync()
 {
 	if (this->_render3DNeedsFinish)
 	{
@@ -1798,19 +1654,19 @@ GPUEventHandlerAsync::~GPUEventHandlerAsync()
 	pthread_mutex_destroy(&this->_mutexApplyRender3DSettings);
 }
 
-GPUClientFetchObject* GPUEventHandlerAsync::GetFetchObject() const
+GPUClientFetchObject* MacGPUEventHandlerAsync::GetFetchObject() const
 {
 	return this->_fetchObject;
 }
 
-void GPUEventHandlerAsync::SetFetchObject(GPUClientFetchObject *fetchObject)
+void MacGPUEventHandlerAsync::SetFetchObject(GPUClientFetchObject *fetchObject)
 {
 	this->_fetchObject = fetchObject;
 }
 
 #ifdef ENABLE_ASYNC_FETCH
 
-void GPUEventHandlerAsync::DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut)
+void MacGPUEventHandlerAsync::DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut)
 {
 	MacGPUFetchObjectAsync *asyncFetchObj = (MacGPUFetchObjectAsync *)this->_fetchObject;
 	
@@ -1828,7 +1684,7 @@ void GPUEventHandlerAsync::DidFrameBegin(const size_t line, const bool isFrameSk
 	}
 }
 
-void GPUEventHandlerAsync::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo)
+void MacGPUEventHandlerAsync::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo)
 {
 	MacGPUFetchObjectAsync *asyncFetchObj = (MacGPUFetchObjectAsync *)this->_fetchObject;
 	
@@ -1849,34 +1705,34 @@ void GPUEventHandlerAsync::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo
 
 #endif // ENABLE_ASYNC_FETCH
 
-void GPUEventHandlerAsync::DidRender3DBegin()
+void MacGPUEventHandlerAsync::DidRender3DBegin()
 {
 	this->Render3DLock();
 	this->_render3DNeedsFinish = true;
 }
 
-void GPUEventHandlerAsync::DidRender3DEnd()
+void MacGPUEventHandlerAsync::DidRender3DEnd()
 {
 	this->_render3DNeedsFinish = false;
 	this->Render3DUnlock();
 }
 
-void GPUEventHandlerAsync::DidApplyGPUSettingsBegin()
+void MacGPUEventHandlerAsync::DidApplyGPUSettingsBegin()
 {
 	this->ApplyGPUSettingsLock();
 }
 
-void GPUEventHandlerAsync::DidApplyGPUSettingsEnd()
+void MacGPUEventHandlerAsync::DidApplyGPUSettingsEnd()
 {
 	this->ApplyGPUSettingsUnlock();
 }
 
-void GPUEventHandlerAsync::DidApplyRender3DSettingsBegin()
+void MacGPUEventHandlerAsync::DidApplyRender3DSettingsBegin()
 {
 	this->ApplyRender3DSettingsLock();
 }
 
-void GPUEventHandlerAsync::DidApplyRender3DSettingsEnd()
+void MacGPUEventHandlerAsync::DidApplyRender3DSettingsEnd()
 {
 	if (this->_cpuCoreCountRestoreValue > 0)
 	{
@@ -1887,52 +1743,52 @@ void GPUEventHandlerAsync::DidApplyRender3DSettingsEnd()
 	this->ApplyRender3DSettingsUnlock();
 }
 
-void GPUEventHandlerAsync::FramebufferLock()
+void MacGPUEventHandlerAsync::FramebufferLock()
 {
 	pthread_mutex_lock(&this->_mutexFrame);
 }
 
-void GPUEventHandlerAsync::FramebufferUnlock()
+void MacGPUEventHandlerAsync::FramebufferUnlock()
 {
 	pthread_mutex_unlock(&this->_mutexFrame);
 }
 
-void GPUEventHandlerAsync::Render3DLock()
+void MacGPUEventHandlerAsync::Render3DLock()
 {
 	pthread_mutex_lock(&this->_mutex3DRender);
 }
 
-void GPUEventHandlerAsync::Render3DUnlock()
+void MacGPUEventHandlerAsync::Render3DUnlock()
 {
 	pthread_mutex_unlock(&this->_mutex3DRender);
 }
 
-void GPUEventHandlerAsync::ApplyGPUSettingsLock()
+void MacGPUEventHandlerAsync::ApplyGPUSettingsLock()
 {
 	pthread_mutex_lock(&this->_mutexApplyGPUSettings);
 }
 
-void GPUEventHandlerAsync::ApplyGPUSettingsUnlock()
+void MacGPUEventHandlerAsync::ApplyGPUSettingsUnlock()
 {
 	pthread_mutex_unlock(&this->_mutexApplyGPUSettings);
 }
 
-void GPUEventHandlerAsync::ApplyRender3DSettingsLock()
+void MacGPUEventHandlerAsync::ApplyRender3DSettingsLock()
 {
 	pthread_mutex_lock(&this->_mutexApplyRender3DSettings);
 }
 
-void GPUEventHandlerAsync::ApplyRender3DSettingsUnlock()
+void MacGPUEventHandlerAsync::ApplyRender3DSettingsUnlock()
 {
 	pthread_mutex_unlock(&this->_mutexApplyRender3DSettings);
 }
 
-bool GPUEventHandlerAsync::GetRender3DNeedsFinish()
+bool MacGPUEventHandlerAsync::GetRender3DNeedsFinish()
 {
 	return this->_render3DNeedsFinish;
 }
 
-void GPUEventHandlerAsync::SetTempThreadCount(int threadCount)
+void MacGPUEventHandlerAsync::SetTempThreadCount(int threadCount)
 {
 	if (threadCount < 1)
 	{

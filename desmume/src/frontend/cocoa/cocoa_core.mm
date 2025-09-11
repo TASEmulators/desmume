@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2023 DeSmuME team
+	Copyright (C) 2011-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 #import "cocoa_GPU.h"
 #import "cocoa_cheat.h"
 #import "cocoa_globals.h"
-#import "cocoa_output.h"
 #import "cocoa_rom.h"
 #import "cocoa_util.h"
 
@@ -30,6 +29,8 @@
 #include "ClientAVCaptureObject.h"
 #include "ClientExecutionControl.h"
 #include "ClientInputHandler.h"
+#include "ClientEmulationOutput.h"
+#include "ClientVideoOutput.h"
 
 #include "../../movie.h"
 #include "../../NDSSystem.h"
@@ -45,6 +46,8 @@ volatile bool execute = true;
 @implementation CocoaDSCore
 
 @synthesize execControl;
+@synthesize outputManager;
+@synthesize macDisplayOutputManager;
 
 @synthesize cdsFirmware;
 @synthesize cdsController;
@@ -117,6 +120,7 @@ volatile bool execute = true;
 	}
 	
 	execControl = new ClientExecutionControl;
+	outputManager = new ClientEmulationOutputManager;
 	
 	_fpsTimer = nil;
 	_isTimerAtSecond = NO;
@@ -127,6 +131,8 @@ volatile bool execute = true;
 	cdsCheatManager = [[CocoaDSCheatManager alloc] init];
 	cdsOutputList = [[NSMutableArray alloc] initWithCapacity:32];
 	
+	macDisplayOutputManager = ((MacGPUFetchObjectDisplayLink *)[cdsGPU fetchObject])->GetOutputManager();
+	
 	ClientInputHandler *inputHandler = [cdsController inputHandler];
 	inputHandler->SetClientExecutionController(execControl);
 	execControl->SetClientInputHandler(inputHandler);
@@ -136,7 +142,6 @@ volatile bool execute = true;
 	
 	threadParam.cdsCore = self;
 	
-	pthread_rwlock_init(&threadParam.rwlockOutputList, NULL);
 	pthread_mutex_init(&threadParam.mutexThreadExecute, NULL);
 	pthread_cond_init(&threadParam.condThreadExecute, NULL);
 	pthread_rwlock_init(&threadParam.rwlockCoreExecute, NULL);
@@ -173,7 +178,6 @@ volatile bool execute = true;
 		pthread_create(&coreThread, NULL, &RunCoreThread, &threadParam);
 	}
 	
-	[cdsGPU setOutputList:cdsOutputList rwlock:&threadParam.rwlockOutputList];
 	[cdsCheatManager setRwlockCoreExecute:&threadParam.rwlockCoreExecute];
 	
 	macOS_driver *newDriver = new macOS_driver;
@@ -197,7 +201,8 @@ volatile bool execute = true;
 {
 	[self setCoreState:ExecutionBehavior_Pause];
 	
-	[self removeAllOutputs];
+	delete outputManager;
+	outputManager = NULL;
 	
 	((MacGPUFetchObjectAsync *)[cdsGPU fetchObject])->SemaphoreFramebufferDestroy();
 	
@@ -225,7 +230,6 @@ volatile bool execute = true;
 	
 	pthread_mutex_destroy(&threadParam.mutexThreadExecute);
 	pthread_cond_destroy(&threadParam.condThreadExecute);
-	pthread_rwlock_destroy(&threadParam.rwlockOutputList);
 	pthread_rwlock_destroy(&threadParam.rwlockCoreExecute);
 	
 	[self setIsGdbStubStarted:NO];
@@ -612,47 +616,28 @@ volatile bool execute = true;
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	execControl->SetExecutionBehavior((ExecutionBehavior)coreState);
-	pthread_rwlock_rdlock(&threadParam.rwlockOutputList);
 	
 	char frameStatusCStr[64] = {0};
 	
 	switch ((ExecutionBehavior)coreState)
 	{
 		case ExecutionBehavior_Pause:
-		{
-			for (CocoaDSOutput *cdsOutput in cdsOutputList)
-			{
-				[cdsOutput setIdle:YES];
-			}
-			
+			outputManager->SetIdleStateAll(true);
 			snprintf(frameStatusCStr, sizeof(frameStatusCStr), "%llu", (unsigned long long)[self frameNumber]);
-			
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
-		}
 			
 		case ExecutionBehavior_FrameAdvance:
-		{
-			for (CocoaDSOutput *cdsOutput in cdsOutputList)
-			{
-				[cdsOutput setIdle:NO];
-			}
-			
+			outputManager->SetIdleStateAll(false);
 			snprintf(frameStatusCStr, sizeof(frameStatusCStr), "%llu", (unsigned long long)[self frameNumber]);
-			
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
-		}
 			
 		case ExecutionBehavior_Run:
 		{
-			for (CocoaDSOutput *cdsOutput in cdsOutputList)
-			{
-				[cdsOutput setIdle:NO];
-			}
-			
+			outputManager->SetIdleStateAll(false);
 			snprintf(frameStatusCStr, sizeof(frameStatusCStr), "%s", "Executing...");
 
 			if (_fpsTimer == nil)
@@ -670,27 +655,15 @@ volatile bool execute = true;
 		}
 			
 		case ExecutionBehavior_FrameJump:
-		{
-			for (CocoaDSOutput *cdsOutput in cdsOutputList)
-			{
-				if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]])
-				{
-					[cdsOutput setIdle:YES];
-				}
-			}
-			
+			outputManager->SetIdleStatePlatformAndType(PlatformTypeID_Any, ~(OutputTypeID_Video | OutputTypeID_HostDisplay), true);
 			snprintf(frameStatusCStr, sizeof(frameStatusCStr), "Jumping to frame %llu.", (unsigned long long)execControl->GetFrameJumpTarget());
-			
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
-		}
 			
 		default:
 			break;
 	}
-	
-	pthread_rwlock_unlock(&threadParam.rwlockOutputList);
 	
 	pthread_cond_signal(&threadParam.condThreadExecute);
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
@@ -910,20 +883,10 @@ volatile bool execute = true;
 	// count every other instance the timer fires.
 	_isTimerAtSecond = !_isTimerAtSecond;
 	
-	pthread_rwlock_rdlock(&threadParam.rwlockOutputList);
-	
-	for (CocoaDSOutput *cdsOutput in cdsOutputList)
+	if (_isTimerAtSecond)
 	{
-		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
-		{
-			if (_isTimerAtSecond)
-			{
-				[(CocoaDSDisplay *)cdsOutput takeFrameCount];
-			}
-		}
+		macDisplayOutputManager->TakeFrameCountAll();
 	}
-	
-	pthread_rwlock_unlock(&threadParam.rwlockOutputList);
 }
 
 - (NSUInteger) frameNumber
@@ -931,35 +894,19 @@ volatile bool execute = true;
 	return (NSUInteger)execControl->GetFrameIndex();
 }
 
-- (void) addOutput:(CocoaDSOutput *)theOutput
+- (void) addOutput:(ClientEmulationOutput *)theOutput
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockOutputList);
-	
-	if ([theOutput isKindOfClass:[CocoaDSDisplay class]])
-	{
-		[theOutput setRwlockProducer:NULL];
-	}
-	else
-	{
-		[theOutput setRwlockProducer:[self rwlockCoreExecute]];
-	}
-	
-	[[self cdsOutputList] addObject:theOutput];
-	pthread_rwlock_unlock(&threadParam.rwlockOutputList);
+	outputManager->Register(theOutput, &threadParam.rwlockCoreExecute);
 }
 
-- (void) removeOutput:(CocoaDSOutput *)theOutput
+- (void) removeOutput:(ClientEmulationOutput *)theOutput
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockOutputList);
-	[[self cdsOutputList] removeObject:theOutput];
-	pthread_rwlock_unlock(&threadParam.rwlockOutputList);
+	outputManager->Unregister(theOutput);
 }
 
 - (void) removeAllOutputs
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockOutputList);
-	[[self cdsOutputList] removeAllObjects];
-	pthread_rwlock_unlock(&threadParam.rwlockOutputList);
+	outputManager->UnregisterAll();
 }
 
 - (NSString *) cpuEmulationEngineString
@@ -1161,8 +1108,8 @@ static void* RunCoreThread(void *arg)
 	CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
 	ClientCheatManager *cheatManager = [[cdsCore cdsCheatManager] internalManager];
 	ClientExecutionControl *execControl = [cdsCore execControl];
+	ClientDisplayViewOutputManager *macDisplayOutputManager = [cdsCore macDisplayOutputManager];
 	ClientInputHandler *inputHandler = execControl->GetClientInputHandler();
-	NSMutableArray *cdsOutputList = [cdsCore cdsOutputList];
 	const NDSFrameInfo &ndsFrameInfo = execControl->GetNDSFrameInfo();
 	ClientAVCaptureObject *avCaptureObject = NULL;
 	
@@ -1334,34 +1281,19 @@ static void* RunCoreThread(void *arg)
 			executionSpeedAverageFramesCollected = 0.0;
 		}
 		
-		pthread_rwlock_rdlock(&param->rwlockOutputList);
-		
 		switch (behavior)
 		{
 			case ExecutionBehavior_Run:
 			case ExecutionBehavior_FrameAdvance:
 			case ExecutionBehavior_FrameJump:
 			{
-				for (CocoaDSOutput *cdsOutput in cdsOutputList)
-				{
-					if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
-					{
-						[(CocoaDSDisplay *)cdsOutput setNDSFrameInfo:ndsFrameInfo];
-						
-						if (framesToSkip == 0)
-						{
-							[cdsOutput doCoreEmuFrame];
-						}
-					}
-				}
+				macDisplayOutputManager->SetNDSFrameInfoToAll(ndsFrameInfo);
 				break;
 			}
 				
 			default:
 				break;
 		}
-		
-		pthread_rwlock_unlock(&param->rwlockOutputList);
 		
 		switch (behavior)
 		{

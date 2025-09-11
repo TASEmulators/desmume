@@ -43,6 +43,9 @@
 #include <vector>
 #include "utilities.h"
 
+#include "ClientEmulationOutput.h"
+#include "ClientVideoOutput.h"
+
 #import "cocoa_util.h"
 #include "../../GPU.h"
 
@@ -65,7 +68,7 @@ enum ClientDisplayBufferState
 	ClientDisplayBufferState_Reading		= 4		// The buffer is currently being read. It cannot be accessed.
 };
 
-class ClientDisplay3DView;
+struct NDSFrameInfo;
 
 #ifdef ENABLE_ASYNC_FETCH
 
@@ -108,15 +111,10 @@ public:
 typedef std::map<CGDirectDisplayID, CVDisplayLinkRef> DisplayLinksActiveMap;
 typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 
-class MacGPUFetchObjectDisplayLink : public MacGPUFetchObjectAsync
+class MacGPUFetchObjectDisplayLink : public MacGPUFetchObjectAsync, public ClientGPUFetchObjectMultiDisplayView
 {
 protected:
-	pthread_rwlock_t *_rwlockOutputList;
 	pthread_mutex_t _mutexDisplayLinkLists;
-	NSMutableArray *_cdsOutputList;
-	volatile int32_t _numberViewsPreferringCPUVideoProcessing;
-	volatile int32_t _numberViewsUsingDirectToCPUFiltering;
-	
 	DisplayLinksActiveMap _displayLinksActiveList;
 	DisplayLinkFlushTimeLimitMap _displayLinkFlushTimeList;
 	
@@ -124,24 +122,10 @@ public:
 	MacGPUFetchObjectDisplayLink();
 	~MacGPUFetchObjectDisplayLink();
 	
-	volatile int32_t GetNumberViewsPreferringCPUVideoProcessing() const;
-	volatile int32_t GetNumberViewsUsingDirectToCPUFiltering() const;
-	
-	void SetOutputList(NSMutableArray *theOutputList, pthread_rwlock_t *theRWLock);
-	
-	void IncrementViewsPreferringCPUVideoProcessing();
-	void DecrementViewsPreferringCPUVideoProcessing();
-	
-	void IncrementViewsUsingDirectToCPUFiltering();
-	void DecrementViewsUsingDirectToCPUFiltering();
-	
-	void PushVideoDataToAllDisplayViews();
-	
 	void DisplayLinkStartUsingID(CGDirectDisplayID displayID);
 	void DisplayLinkListUpdate();
 	
-	virtual void FlushAllDisplaysOnDisplayLink(CVDisplayLinkRef displayLink, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput);
-	virtual void FlushMultipleViews(const std::vector<ClientDisplay3DView *> &cdvFlushList, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput);
+	virtual void FlushAllViewsOnDisplayLink(CVDisplayLinkRef displayLink, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput);
 	
 	virtual void DoPostFetchActions();
 };
@@ -159,7 +143,7 @@ public:
 
 #endif // ENABLE_ASYNC_FETCH
 
-class GPUEventHandlerAsync : public GPUEventHandlerDefault
+class MacGPUEventHandlerAsync : public GPUEventHandlerDefault
 {
 private:
 	GPUClientFetchObject *_fetchObject;
@@ -172,8 +156,8 @@ private:
 	int _cpuCoreCountRestoreValue;
 	
 public:
-	GPUEventHandlerAsync();
-	~GPUEventHandlerAsync();
+	MacGPUEventHandlerAsync();
+	~MacGPUEventHandlerAsync();
 	
 	GPUClientFetchObject* GetFetchObject() const;
 	void SetFetchObject(GPUClientFetchObject *fetchObject);
@@ -205,7 +189,7 @@ public:
 };
 
 // This stub version is useful for clients that want to run the entire emulation on a single thread.
-class GPUEventHandlerAsync_Stub : public GPUEventHandlerAsync
+class MacGPUEventHandlerAsync_Stub : public MacGPUEventHandlerAsync
 {
 public:
 	virtual void DidRender3DBegin() {};
@@ -224,7 +208,7 @@ public:
 	BOOL _needRestoreRender3DLock;
 	
 	apple_unfairlock_t _unfairlockGpuState;
-	GPUEventHandlerAsync *gpuEvent;
+	MacGPUEventHandlerAsync *gpuEvent;
 	
 	GPUClientFetchObject *fetchObject;
 }
@@ -270,10 +254,6 @@ public:
 @property (assign) BOOL openGLEmulateNDSDepthCalculation;
 @property (assign) BOOL openGLEmulateDepthLEqualPolygonFacing;
 @property (readonly, nonatomic) GPUClientFetchObject *fetchObject;
-
-#ifdef ENABLE_DISPLAYLINK_FETCH
-- (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock;
-#endif
 
 - (BOOL) gpuStateByBit:(const UInt32)stateBit;
 - (void) clearWithColor:(const uint16_t)colorBGRA5551;

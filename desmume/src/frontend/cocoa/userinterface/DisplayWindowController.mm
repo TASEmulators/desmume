@@ -20,19 +20,10 @@
 #import "InputManager.h"
 
 #import "cocoa_core.h"
-#import "cocoa_GPU.h"
-#import "cocoa_file.h"
-#import "cocoa_input.h"
-#import "cocoa_output.h"
 #import "cocoa_globals.h"
-#import "cocoa_videofilter.h"
 #import "cocoa_util.h"
 
-#include "MacOGLDisplayView.h"
-
-#ifdef ENABLE_APPLE_METAL
-#include "MacMetalDisplayView.h"
-#endif
+#include "CocoaDisplayView.h"
 
 #include <Carbon/Carbon.h>
 
@@ -184,7 +175,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	if ([self isFullScreen])
 	{
-		[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
+		MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+		dvo->CommitPresenterProperties(_localViewProps, true);
 	}
 	else
 	{
@@ -199,7 +191,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		// display view to update itself.
 		if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
 		{
-			[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
+			MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+			dvo->CommitPresenterProperties(_localViewProps, true);
 		}
 	}
 }
@@ -224,7 +217,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	else
 	{
-		[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
+		MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+		dvo->CommitPresenterProperties(_localViewProps, true);
 	}
 }
 
@@ -244,7 +238,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([self isFullScreen])
 		{
-			[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
+			MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+			dvo->CommitPresenterProperties(_localViewProps, true);
 		}
 		else
 		{
@@ -261,7 +256,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setDisplayOrder:(NSInteger)theOrder
 {
 	_localViewProps.order = (ClientDisplayOrder)theOrder;
-	[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
+	
+	MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+	dvo->CommitPresenterProperties(_localViewProps, true);
 }
 
 - (NSInteger) displayOrder
@@ -277,6 +274,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	if ([self displayMode] == ClientDisplayMode_Dual)
 	{
+		MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+		
 		if ([self isFullScreen])
 		{
 			switch ([self displayOrientation])
@@ -288,7 +287,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 				case ClientDisplayLayout_Hybrid_16_9:
 				case ClientDisplayLayout_Hybrid_16_10:
 				default:
-					[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
+					dvo->CommitPresenterProperties(_localViewProps, true);
 					break;
 			}
 		}
@@ -298,7 +297,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			{
 				case ClientDisplayLayout_Hybrid_16_9:
 				case ClientDisplayLayout_Hybrid_16_10:
-					[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
+					dvo->CommitPresenterProperties(_localViewProps, true);
 					break;
 					
 				case ClientDisplayLayout_Horizontal:
@@ -450,7 +449,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// window size changed or not.
 	if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
 	{
-		[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps needFlush:YES];
+		MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+		dvo->CommitPresenterProperties(_localViewProps, true);
 	}
 }
 
@@ -650,10 +650,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	NSScreen *screen = [[self window] screen];
 	NSDictionary *deviceDescription = [screen deviceDescription];
 	NSNumber *idNumber = (NSNumber *)[deviceDescription valueForKey:@"NSScreenNumber"];
-	CGDirectDisplayID displayID = [idNumber unsignedIntValue];
+	int32_t displayID = (int32_t)[idNumber intValue];
 	
-	[[[self view] cdsVideoOutput] setCurrentDisplayID:displayID];
-	[[[self view] cdsVideoOutput] clientDisplay3DView]->SetViewNeedsFlush();
+	MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+	dvo->SetDisplayViewID(displayID);
+	dvo->SetViewNeedsFlush();
 }
 
 - (void) respondToScreenChange:(NSNotification *)aNotification
@@ -698,7 +699,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (IBAction) copy:(id)sender
 {
-	[[[self view] cdsVideoOutput] signalMessage:MESSAGE_COPY_TO_PASTEBOARD];
+	MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+	dvo->Dispatch(MESSAGE_COPY_TO_PASTEBOARD);
 }
 
 - (IBAction) changeHardwareMicGain:(id)sender
@@ -1139,11 +1141,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		{
 			[(NSMenuItem *)theItem setState:([[self view] pixelScaler] == [theItem tag]) ? GUI_STATE_ON : GUI_STATE_OFF];
 			
-			bool isSupportingCPU = false;
-			bool isSupportingShader = false;
-			OGLFilter::GetSupport((int)[theItem tag], &isSupportingCPU, &isSupportingShader);
+			BOOL isSupportedOnCPU = false;
+			BOOL isSupportedOnShader = false;
+			[[self view] isPixelScalerSupportedByID:[theItem tag] cpu:isSupportedOnCPU shader:isSupportedOnShader];
 			
-			enable = isSupportingCPU || (isSupportingShader && [[self view] canUseShaderBasedFilters]);
+			enable = isSupportedOnCPU || isSupportedOnShader;
 		}
 	}
 	else if (theAction == @selector(toggleHUDVisibility:))
@@ -1256,7 +1258,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void)windowDidLoad
 {
 	NSRect newViewFrameRect = NSMakeRect(0.0f, (CGFloat)_statusBarHeight, (CGFloat)_localViewProps.clientWidth, (CGFloat)_localViewProps.clientHeight);
-	NSView<CocoaDisplayViewProtocol> *newView = (NSView<CocoaDisplayViewProtocol> *)[[[DisplayView alloc] initWithFrame:newViewFrameRect] autorelease];
+	NSView<CocoaDisplayViewProtocol> *newView = (NSView<CocoaDisplayViewProtocol> *)[[[CocoaDisplayView alloc] initWithFrame:newViewFrameRect] autorelease];
 	[self setView:newView];
 	
 	// Set up the master window that is associated with this window controller.
@@ -1270,14 +1272,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[newView setupLayer];
 	[newView setInputManager:[emuControl inputManager]];
 	
-	// Set up the scaling factor if this is a Retina window
-	float scaleFactor = 1.0f;
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	if ([masterWindow respondsToSelector:@selector(backingScaleFactor)])
-	{
-		scaleFactor = [masterWindow backingScaleFactor];
-	}
-    
 	if (_canUseMavericksFullScreen)
 	{
 		[masterWindow setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
@@ -1288,37 +1283,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[microphoneGainMenuItem setView:microphoneGainControlView];
 	[outputVolumeMenuItem setView:outputVolumeControlView];
 	
-	// Set up the video output thread.
-	CocoaDSDisplayVideo *newDisplayOutput = [[[CocoaDSDisplayVideo alloc] init] autorelease];
-	ClientDisplay3DView *cdv = [newView clientDisplayView];
-	
-	[newDisplayOutput setClientDisplay3DView:cdv];
-	
-	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
-	cdv->Get3DPresenter()->SetHUDFontPath([CocoaDSUtil cPathFromFilePath:fontPath]);
-	cdv->Get3DPresenter()->SetHUDRenderMipmapped(true);
-	
-	if (scaleFactor != 1.0f)
-	{
-		[newDisplayOutput setScaleFactor:scaleFactor];
-	}
-	else
-	{
-		cdv->Get3DPresenter()->LoadHUDFont();
-	}
-	
-	[newView setCdsVideoOutput:newDisplayOutput];
-	
-	// Add the video thread to the output list.
-	[emuControl addOutputToCore:newDisplayOutput];
-	
 	// Setup default values per user preferences.
 	[self setupUserDefaults];
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)notification
 {
-	if ([[[self view] cdsVideoOutput] currentDisplayID] == 0)
+	MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+	
+	if (dvo->GetDisplayViewID() == 0)
 	{
 		[self updateDisplayID];
 	}
@@ -1326,7 +1299,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)windowDidBecomeMain:(NSNotification *)notification
 {
-	if ([[[self view] cdsVideoOutput] currentDisplayID] == 0)
+	MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+	
+	if (dvo->GetDisplayViewID() == 0)
 	{
 		[self updateDisplayID];
 	}
@@ -1443,7 +1418,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)windowWillClose:(NSNotification *)notification
 {
-	[emuControl removeOutputFromCore:[[self view] cdsVideoOutput]];
+	MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+	dvo->SetIdle(true);
 	
 	[[emuControl windowList] removeObject:self];
 	
@@ -1474,12 +1450,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// displays. This feature requires Mac OS X v10.7 Lion or later.
 	
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	MacDisplayLayeredView *cdv = [[self view] clientDisplayView];
+	MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+	MacDisplayLayeredView *cdv = (MacDisplayLayeredView *)dvo->GetClientDisplayView();
 	CALayer<DisplayViewCALayer> *localLayer = cdv->GetCALayer();
 	
 	if ([[self window] respondsToSelector:@selector(backingScaleFactor)])
 	{
-		const double oldScaleFactor = cdv->Get3DPresenter()->GetScaleFactor();
+		const double oldScaleFactor = dvo->GetScaleFactor();
 		const double newScaleFactor = [[self window] backingScaleFactor];
 		
 		if (newScaleFactor != oldScaleFactor)
@@ -1494,8 +1471,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 				[localLayer setContentsScale:newScaleFactor];
 			}
 			
-			cdv->Get3DPresenter()->SetScaleFactor(newScaleFactor);
-			cdv->SetViewNeedsFlush();
+			dvo->SetScaleFactor(newScaleFactor);
+			dvo->SetViewNeedsFlush();
 		}
 	}
 #endif
@@ -1626,826 +1603,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	
 	return enable;
-}
-
-@end
-
-#pragma mark -
-@implementation DisplayView
-
-@synthesize inputManager;
-@synthesize cdsVideoOutput;
-@dynamic clientDisplayView;
-@dynamic canUseShaderBasedFilters;
-@dynamic allowViewUpdates;
-@dynamic isHUDVisible;
-@dynamic isHUDExecutionSpeedVisible;
-@dynamic isHUDVideoFPSVisible;
-@dynamic isHUDRender3DFPSVisible;
-@dynamic isHUDFrameIndexVisible;
-@dynamic isHUDLagFrameCountVisible;
-@dynamic isHUDCPULoadAverageVisible;
-@dynamic isHUDRealTimeClockVisible;
-@dynamic isHUDInputVisible;
-@dynamic hudColorExecutionSpeed;
-@dynamic hudColorVideoFPS;
-@dynamic hudColorRender3DFPS;
-@dynamic hudColorFrameIndex;
-@dynamic hudColorLagFrameCount;
-@dynamic hudColorCPULoadAverage;
-@dynamic hudColorRTC;
-@dynamic hudColorInputPendingAndApplied;
-@dynamic hudColorInputAppliedOnly;
-@dynamic hudColorInputPendingOnly;
-@dynamic displayMainVideoSource;
-@dynamic displayTouchVideoSource;
-@dynamic useVerticalSync;
-@dynamic videoFiltersPreferGPU;
-@dynamic sourceDeposterize;
-@dynamic outputFilter;
-@dynamic pixelScaler;
-
-- (id)initWithFrame:(NSRect)frameRect
-{
-	self = [super initWithFrame:frameRect];
-	if (self == nil)
-	{
-		return self;
-	}
-	
-	inputManager = nil;
-	cdsVideoOutput = nil;
-	localLayer = nil;
-	localOGLContext = nil;
-	
-	return self;
-}
-
-- (void)dealloc
-{
-	[self setInputManager:nil];
-	[self setCdsVideoOutput:nil];
-	[self setLayer:nil];
-	
-	if (localOGLContext != nil)
-	{
-		[localOGLContext clearDrawable];
-		[localOGLContext release];
-	}
-	
-	[localLayer release];
-	
-	[super dealloc];
-}
-
-#pragma mark Class Methods
-
-- (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed
-{
-	BOOL isHandled = NO;
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	
-	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];
-	const ClientInputDeviceProperties inputProperty = inputEncoder->EncodeKeyboardInput((int32_t)[theEvent keyCode], (keyPressed) ? true : false);
-	
-	if (keyPressed && [theEvent window] != nil)
-	{
-		NSString *newStatusText = [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName];
-		[[windowController emuControl] setStatusText:newStatusText];
-	}
-	
-	isHandled = [inputManager dispatchCommandUsingInputProperties:&inputProperty];
-	return isHandled;
-}
-
-- (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed
-{
-	BOOL isHandled = NO;
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	MacDisplayLayeredView *cdv = [localLayer clientDisplayView];
-	const ClientDisplayMode displayMode = cdv->Get3DPresenter()->GetMode();
-	
-	// Convert the clicked location from window coordinates, to view coordinates,
-	// and finally to DS touchscreen coordinates.
-	const int32_t buttonNumber = (int32_t)[theEvent buttonNumber];
-	uint8_t x = 0;
-	uint8_t y = 0;
-	
-	if (displayMode != ClientDisplayMode_Main)
-	{
-		const ClientDisplayPresenterProperties &props = cdv->Get3DPresenter()->GetPresenterProperties();
-		const double scaleFactor = cdv->Get3DPresenter()->GetScaleFactor();
-		const NSEventType eventType = [theEvent type];
-		const bool isInitialMouseDown = (eventType == EVENT_MOUSEDOWN_LEFT) || (eventType == EVENT_MOUSEDOWN_RIGHT) || (eventType == EVENT_MOUSEDOWN_OTHER);
-		
-		// Convert the clicked location from window coordinates, to view coordinates, and finally to NDS touchscreen coordinates.
-		const NSPoint clientLoc = [self convertPoint:[theEvent locationInWindow] fromView:nil];
-		
-		cdv->GetNDSPoint(props,
-						 props.clientWidth / scaleFactor, props.clientHeight / scaleFactor,
-						 clientLoc.x, clientLoc.y, (int)buttonNumber, isInitialMouseDown, x, y);
-	}
-	
-	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];
-	const ClientInputDeviceProperties inputProperty = inputEncoder->EncodeMouseInput(buttonNumber, (float)x, (float)y, (buttonPressed) ? true : false);
-	
-	if (buttonPressed && [theEvent window] != nil)
-	{
-		NSString *newStatusText = (displayMode == ClientDisplayMode_Main) ? [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName] : [NSString stringWithFormat:@"%s:%s X:%i Y:%i", inputProperty.deviceName, inputProperty.elementName, (int)inputProperty.intCoordX, (int)inputProperty.intCoordY];
-		[[windowController emuControl] setStatusText:newStatusText];
-	}
-	
-	isHandled = [inputManager dispatchCommandUsingInputProperties:&inputProperty];
-	return isHandled;
-}
-
-#pragma mark CocoaDisplayView Protocol
-
-- (MacDisplayLayeredView *) clientDisplayView
-{
-	return [localLayer clientDisplayView];
-}
-
-- (BOOL) canUseShaderBasedFilters
-{
-	return [[self cdsVideoOutput] canFilterOnGPU];
-}
-
-- (BOOL) allowViewUpdates
-{
-	return ([self clientDisplayView]->GetAllowViewUpdates()) ? YES : NO;
-}
-
-- (void) setAllowViewUpdates:(BOOL)allowUpdates
-{
-	[self clientDisplayView]->SetAllowViewUpdates((allowUpdates) ? true : false);
-}
-
-- (void) setIsHUDVisible:(BOOL)theState
-{
-	[[self cdsVideoOutput] setIsHUDVisible:theState];
-}
-
-- (BOOL) isHUDVisible
-{
-	return [[self cdsVideoOutput] isHUDVisible];
-}
-
-- (void) setIsHUDExecutionSpeedVisible:(BOOL)theState
-{
-	[[self cdsVideoOutput] setIsHUDExecutionSpeedVisible:theState];
-}
-
-- (BOOL) isHUDExecutionSpeedVisible
-{
-	return [[self cdsVideoOutput] isHUDExecutionSpeedVisible];
-}
-
-- (void) setIsHUDVideoFPSVisible:(BOOL)theState
-{
-	[[self cdsVideoOutput] setIsHUDVideoFPSVisible:theState];
-}
-
-- (BOOL) isHUDVideoFPSVisible
-{
-	return [[self cdsVideoOutput] isHUDVideoFPSVisible];
-}
-
-- (void) setIsHUDRender3DFPSVisible:(BOOL)theState
-{
-	[[self cdsVideoOutput] setIsHUDRender3DFPSVisible:theState];
-}
-
-- (BOOL) isHUDRender3DFPSVisible
-{
-	return [[self cdsVideoOutput] isHUDRender3DFPSVisible];
-}
-
-- (void) setIsHUDFrameIndexVisible:(BOOL)theState
-{
-	[[self cdsVideoOutput] setIsHUDFrameIndexVisible:theState];
-}
-
-- (BOOL) isHUDFrameIndexVisible
-{
-	return [[self cdsVideoOutput] isHUDFrameIndexVisible];
-}
-
-- (void) setIsHUDLagFrameCountVisible:(BOOL)theState
-{
-	[[self cdsVideoOutput] setIsHUDLagFrameCountVisible:theState];
-}
-
-- (BOOL) isHUDLagFrameCountVisible
-{
-	return [[self cdsVideoOutput] isHUDLagFrameCountVisible];
-}
-
-- (void) setIsHUDCPULoadAverageVisible:(BOOL)theState
-{
-	[[self cdsVideoOutput] setIsHUDCPULoadAverageVisible:theState];
-}
-
-- (BOOL) isHUDCPULoadAverageVisible
-{
-	return [[self cdsVideoOutput] isHUDCPULoadAverageVisible];
-}
-
-- (void) setIsHUDRealTimeClockVisible:(BOOL)theState
-{
-	[[self cdsVideoOutput] setIsHUDRealTimeClockVisible:theState];
-}
-
-- (BOOL) isHUDRealTimeClockVisible
-{
-	return [[self cdsVideoOutput] isHUDRealTimeClockVisible];
-}
-
-- (void) setIsHUDInputVisible:(BOOL)theState
-{
-	[[self cdsVideoOutput] setIsHUDInputVisible:theState];
-}
-
-- (BOOL) isHUDInputVisible
-{
-	return [[self cdsVideoOutput] isHUDInputVisible];
-}
-
-- (void) setHudColorExecutionSpeed:(NSColor *)theColor
-{
-	[[self cdsVideoOutput] setHudColorExecutionSpeed:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
-}
-
-- (NSColor *) hudColorExecutionSpeed
-{
-	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorExecutionSpeed]];
-}
-
-- (void) setHudColorVideoFPS:(NSColor *)theColor
-{
-	[[self cdsVideoOutput] setHudColorVideoFPS:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
-}
-
-- (NSColor *) hudColorVideoFPS
-{
-	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorVideoFPS]];
-}
-
-- (void) setHudColorRender3DFPS:(NSColor *)theColor
-{
-	[[self cdsVideoOutput] setHudColorRender3DFPS:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
-}
-
-- (NSColor *) hudColorRender3DFPS
-{
-	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorRender3DFPS]];
-}
-
-- (void) setHudColorFrameIndex:(NSColor *)theColor
-{
-	[[self cdsVideoOutput] setHudColorFrameIndex:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
-}
-
-- (NSColor *) hudColorFrameIndex
-{
-	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorFrameIndex]];
-}
-
-- (void) setHudColorLagFrameCount:(NSColor *)theColor
-{
-	[[self cdsVideoOutput] setHudColorLagFrameCount:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
-}
-
-- (NSColor *) hudColorLagFrameCount
-{
-	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorLagFrameCount]];
-}
-
-- (void) setHudColorCPULoadAverage:(NSColor *)theColor
-{
-	[[self cdsVideoOutput] setHudColorCPULoadAverage:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
-}
-
-- (NSColor *) hudColorCPULoadAverage
-{
-	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorCPULoadAverage]];
-}
-
-- (void) setHudColorRTC:(NSColor *)theColor
-{
-	[[self cdsVideoOutput] setHudColorRTC:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
-}
-
-- (NSColor *) hudColorRTC
-{
-	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorRTC]];
-}
-
-- (void) setHudColorInputPendingAndApplied:(NSColor *)theColor
-{
-	[[self cdsVideoOutput] setHudColorInputPendingAndApplied:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
-}
-
-- (NSColor *) hudColorInputPendingAndApplied
-{
-	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorInputPendingAndApplied]];
-}
-
-- (void) setHudColorInputAppliedOnly:(NSColor *)theColor
-{
-	[[self cdsVideoOutput] setHudColorInputAppliedOnly:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
-}
-
-- (NSColor *) hudColorInputAppliedOnly
-{
-	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorInputAppliedOnly]];
-}
-
-- (void) setHudColorInputPendingOnly:(NSColor *)theColor
-{
-	[[self cdsVideoOutput] setHudColorInputPendingOnly:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
-}
-
-- (NSColor *) hudColorInputPendingOnly
-{
-	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorInputPendingOnly]];
-}
-
-- (void) setDisplayMainVideoSource:(NSInteger)displaySourceID
-{
-	[[self cdsVideoOutput] setDisplayMainVideoSource:displaySourceID];
-	[[self cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
-}
-
-- (NSInteger) displayMainVideoSource
-{
-	return [[self cdsVideoOutput] displayMainVideoSource];
-}
-
-- (void) setDisplayTouchVideoSource:(NSInteger)displaySourceID
-{
-	[[self cdsVideoOutput] setDisplayTouchVideoSource:displaySourceID];
-	[[self cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
-}
-
-- (NSInteger) displayTouchVideoSource
-{
-	return [[self cdsVideoOutput] displayTouchVideoSource];
-}
-
-- (void) setUseVerticalSync:(BOOL)theState
-{
-	[[self cdsVideoOutput] setUseVerticalSync:theState];
-}
-
-- (BOOL) useVerticalSync
-{
-	return [[self cdsVideoOutput] useVerticalSync];
-}
-
-- (void) setVideoFiltersPreferGPU:(BOOL)theState
-{
-	const BOOL oldStateWillFilterDirectToCPU = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
-	const BOOL oldStateRequestFilterOnCPU = ![[self cdsVideoOutput] videoFiltersPreferGPU];
-	[[self cdsVideoOutput] setVideoFiltersPreferGPU:theState];
-	const BOOL newStateRequestFilterOnCPU = ![[self cdsVideoOutput] videoFiltersPreferGPU];
-	const BOOL newStateWillFilterDirectToCPU = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
-	
-	if ( (oldStateRequestFilterOnCPU != newStateRequestFilterOnCPU) || (oldStateWillFilterDirectToCPU != newStateWillFilterDirectToCPU) )
-	{
-		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-		CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
-		MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[[cdsCore cdsGPU] fetchObject];
-		
-		if (oldStateRequestFilterOnCPU != newStateRequestFilterOnCPU)
-		{
-			if (newStateRequestFilterOnCPU)
-			{
-				dlFetchObj->IncrementViewsPreferringCPUVideoProcessing();
-			}
-			else
-			{
-				dlFetchObj->DecrementViewsPreferringCPUVideoProcessing();
-			}
-		}
-		
-		if (oldStateWillFilterDirectToCPU != newStateWillFilterDirectToCPU)
-		{
-			if (newStateWillFilterDirectToCPU)
-			{
-				dlFetchObj->IncrementViewsUsingDirectToCPUFiltering();
-			}
-			else
-			{
-				dlFetchObj->DecrementViewsUsingDirectToCPUFiltering();
-			}
-		}
-		
-		[[self cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
-	}
-}
-
-- (BOOL) videoFiltersPreferGPU
-{
-	return [[self cdsVideoOutput] videoFiltersPreferGPU];
-}
-
-- (void) setSourceDeposterize:(BOOL)theState
-{
-	const BOOL oldStateWillFilterDirectToCPU = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
-	[[self cdsVideoOutput] setSourceDeposterize:theState];
-	const BOOL newStateWillFilterDirectToCPU = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
-	
-	if (oldStateWillFilterDirectToCPU != newStateWillFilterDirectToCPU)
-	{
-		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-		CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
-		MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[[cdsCore cdsGPU] fetchObject];
-		
-		if (newStateWillFilterDirectToCPU)
-		{
-			dlFetchObj->IncrementViewsUsingDirectToCPUFiltering();
-		}
-		else
-		{
-			dlFetchObj->DecrementViewsUsingDirectToCPUFiltering();
-		}
-	}
-	
-	[[self cdsVideoOutput] signalMessage:MESSAGE_REPROCESS_AND_REDRAW];
-}
-
-- (BOOL) sourceDeposterize
-{
-	return [[self cdsVideoOutput] sourceDeposterize];
-}
-
-- (void) setOutputFilter:(NSInteger)filterID
-{
-	[[self cdsVideoOutput] setOutputFilter:filterID];
-	[[self cdsVideoOutput] signalMessage:MESSAGE_REDRAW_VIEW];
-}
-
-- (NSInteger) outputFilter
-{
-	return [[self cdsVideoOutput] outputFilter];
-}
-
-- (void) setPixelScaler:(NSInteger)filterID
-{
-	const BOOL oldStateWillFilterDirectToCPU = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
-	[[self cdsVideoOutput] setPixelScaler:filterID];
-	const BOOL newStateWillFilterDirectToCPU = ( ![[self cdsVideoOutput] willFilterOnGPU] && ![[self cdsVideoOutput] sourceDeposterize] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None) );
-	
-	if (oldStateWillFilterDirectToCPU != newStateWillFilterDirectToCPU)
-	{
-		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-		CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
-		MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[[cdsCore cdsGPU] fetchObject];
-		
-		if (newStateWillFilterDirectToCPU)
-		{
-			dlFetchObj->IncrementViewsUsingDirectToCPUFiltering();
-		}
-		else
-		{
-			dlFetchObj->DecrementViewsUsingDirectToCPUFiltering();
-		}
-	}
-	
-	[[self cdsVideoOutput] signalMessage:MESSAGE_REPROCESS_AND_REDRAW];
-}
-
-- (NSInteger) pixelScaler
-{
-	return [[self cdsVideoOutput] pixelScaler];
-}
-
-- (void) setupLayer
-{
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
-	MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[[cdsCore cdsGPU] fetchObject];
-	
-#ifdef ENABLE_APPLE_METAL
-	BOOL isMetalLayer = NO;
-	
-	if ( (dlFetchObj->GetClientData() != nil) && (dlFetchObj->GetID() == GPUClientFetchObjectID_MacMetal) )
-	{
-		MetalDisplayViewSharedData *metalSharedData = (MetalDisplayViewSharedData *)dlFetchObj->GetClientData();
-		
-		if ([metalSharedData device] != nil)
-		{
-			MacMetalDisplayView *macMTLCDV = new MacMetalDisplayView(metalSharedData);
-			macMTLCDV->Init();
-			
-			localLayer = macMTLCDV->GetCALayer();
-			isMetalLayer = YES;
-		}
-	}
-	else
-#endif
-	{
-		MacOGLDisplayView *macOGLCDV = new MacOGLDisplayView((MacOGLClientFetchObject *)dlFetchObj);
-		macOGLCDV->Init();
-		
-		localLayer = macOGLCDV->GetCALayer();
-		
-#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-		if ([[self window] respondsToSelector:@selector(backingScaleFactor)] && [localLayer respondsToSelector:@selector(setContentsScale:)])
-		{
-			[localLayer setContentsScale:[[self window] backingScaleFactor]];
-		}
-#endif
-		
-		// For macOS 10.8 Mountain Lion and later, we can use the CAOpenGLLayer directly. But for
-		// earlier versions of macOS, using the CALayer directly will cause too many strange issues,
-		// so we'll just keep using the old-school NSOpenGLContext for these older macOS versions.
-		if (IsOSXVersionSupported(10, 8, 0))
-		{
-			macOGLCDV->SetRenderToCALayer(true);
-		}
-		else
-		{
-#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-			if ([self respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
-			{
-				SILENCE_DEPRECATION_MACOS_10_14([self setWantsBestResolutionOpenGLSurface:YES])
-			}
-#endif
-			localOGLContext = ((MacOGLDisplayPresenter *)macOGLCDV->Get3DPresenter())->GetNSContext();
-			[localOGLContext retain];
-		}
-	}
-	
-	MacDisplayLayeredView *cdv = [localLayer clientDisplayView];
-	cdv->Get3DPresenter()->UpdateLayout();
-	
-	if (localOGLContext != nil)
-	{
-		// If localOGLContext isn't nil, then we will not assign the local layer
-		// directly to the view, since the OpenGL context will already be what
-		// is assigned.
-		cdv->FlushAndFinalizeImmediate();
-		return;
-	}
-	
-#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
-	if ([self respondsToSelector:@selector(setLayerContentsRedrawPolicy:)])
-	{
-		[self setLayerContentsRedrawPolicy:NSViewLayerContentsRedrawNever];
-	}
-#endif
-	
-	[self setLayer:localLayer];
-	[self setWantsLayer:YES];
-	
-	if (cdv->GetRenderToCALayer())
-	{
-		[localLayer setNeedsDisplay];
-	}
-	else
-	{
-		cdv->FlushAndFinalizeImmediate();
-	}
-}
-
-- (void) updateLayerPresenterProperties:(ClientDisplayPresenterProperties &)props scaleFactor:(const double)scaleFactor needFlush:(BOOL)needFlush
-{
-	double checkWidth = props.normalWidth;
-	double checkHeight = props.normalHeight;
-	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, props.rotation, checkWidth, checkHeight);
-	props.viewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(checkWidth, checkHeight, props.clientWidth, props.clientHeight);
-	
-	if (localOGLContext != nil)
-	{
-		[localOGLContext update];
-	}
-	else if ([localLayer isKindOfClass:[CAOpenGLLayer class]])
-	{
-		[localLayer setBounds:CGRectMake(0.0f, 0.0f, props.clientWidth / scaleFactor, props.clientHeight / scaleFactor)];
-	}
-#ifdef ENABLE_APPLE_METAL
-	else if ([localLayer isKindOfClass:[CAMetalLayer class]])
-	{
-		[(CAMetalLayer *)localLayer setDrawableSize:CGSizeMake(props.clientWidth, props.clientHeight)];
-	}
-#endif
-	
-	[[self cdsVideoOutput] commitPresenterProperties:props needFlush:needFlush];
-}
-
-#pragma mark InputHIDManagerTarget Protocol
-- (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue hidManager:(InputHIDManager *)hidManager
-{
-	BOOL isHandled = NO;
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	
-	MacInputDevicePropertiesEncoder *inputEncoder = [[hidManager inputManager] inputEncoder];
-	ClientInputDevicePropertiesList inputPropertyList = inputEncoder->EncodeHIDQueue(hidQueue, [hidManager inputManager], false);
-	NSString *newStatusText = nil;
-	
-	const size_t inputCount = inputPropertyList.size();
-	
-	for (size_t i = 0; i < inputCount; i++)
-	{
-		const ClientInputDeviceProperties &inputProperty = inputPropertyList[i];
-		
-		if (inputProperty.isAnalog)
-		{
-			newStatusText = [NSString stringWithFormat:@"%s:%s (%1.2f)", inputProperty.deviceName, inputProperty.elementName, inputProperty.scalar];
-			break;
-		}
-		else if (inputProperty.state == ClientInputDeviceState_On)
-		{
-			newStatusText = [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName];
-			break;
-		}
-	}
-	
-	if (newStatusText != nil)
-	{
-		[[windowController emuControl] setStatusText:newStatusText];
-	}
-	
-	CommandAttributesList cmdList = [inputManager generateCommandListUsingInputList:&inputPropertyList];
-	if (cmdList.empty())
-	{
-		return isHandled;
-	}
-	
-	[inputManager dispatchCommandList:&cmdList];
-	
-	isHandled = YES;
-	return isHandled;
-}
-
-#pragma mark NSView Methods
-
-- (void)lockFocus
-{
-	[super lockFocus];
-	
-	if ( (localOGLContext != nil) && ([localOGLContext view] != self) )
-	{
-		[localOGLContext setView:self];
-	}
-}
-
-- (BOOL)isOpaque
-{
-	return YES;
-}
-
-- (BOOL)wantsDefaultClipping
-{
-	return NO;
-}
-
-- (BOOL)wantsUpdateLayer
-{
-	return YES;
-}
-
-- (void)updateLayer
-{
-	[self clientDisplayView]->FlushAndFinalizeImmediate();
-}
-
-- (void)drawRect:(NSRect)dirtyRect
-{
-	[self clientDisplayView]->FlushAndFinalizeImmediate();
-}
-
-- (void)setFrame:(NSRect)rect
-{
-	NSRect oldFrame = [self frame];
-	[super setFrame:rect];
-	
-	if (rect.size.width != oldFrame.size.width || rect.size.height != oldFrame.size.height)
-	{
-		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-		NSRect newViewportRect = rect;
-		
-#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-		if ([self respondsToSelector:@selector(convertRectToBacking:)])
-		{
-			newViewportRect = [self convertRectToBacking:rect];
-		}
-#endif
-		
-		// Calculate the view scale for the given client size.
-		ClientDisplayPresenterProperties &props = [windowController localViewProperties];
-		props.clientWidth = newViewportRect.size.width;
-		props.clientHeight = newViewportRect.size.height;
-		
-		const double scaleFactor = [[self cdsVideoOutput] clientDisplay3DView]->Get3DPresenter()->GetScaleFactor();
-		[self updateLayerPresenterProperties:props scaleFactor:scaleFactor needFlush:YES];
-	}
-}
-
-#pragma mark NSResponder Methods
-
-- (void)keyDown:(NSEvent *)theEvent
-{
-	BOOL isHandled = [self handleKeyPress:theEvent keyPressed:YES];
-	if (!isHandled)
-	{
-		[super keyDown:theEvent];
-	}
-}
-
-- (void)keyUp:(NSEvent *)theEvent
-{
-	BOOL isHandled = [self handleKeyPress:theEvent keyPressed:NO];
-	if (!isHandled)
-	{
-		[super keyUp:theEvent];
-	}
-}
-
-- (void)mouseDown:(NSEvent *)theEvent
-{
-	BOOL isHandled = [self handleMouseButton:theEvent buttonPressed:YES];
-	if (!isHandled)
-	{
-		[super mouseDown:theEvent];
-	}
-}
-
-- (void)mouseDragged:(NSEvent *)theEvent
-{
-	[self mouseDown:theEvent];
-}
-
-- (void)mouseUp:(NSEvent *)theEvent
-{
-	BOOL isHandled = [self handleMouseButton:theEvent buttonPressed:NO];
-	if (!isHandled)
-	{
-		[super mouseUp:theEvent];
-	}
-}
-
-- (void)rightMouseDown:(NSEvent *)theEvent
-{
-	BOOL isHandled = [self handleMouseButton:theEvent buttonPressed:YES];
-	if (!isHandled)
-	{
-		[super rightMouseDown:theEvent];
-	}
-}
-
-- (void)rightMouseDragged:(NSEvent *)theEvent
-{
-	[self rightMouseDown:theEvent];
-}
-
-- (void)rightMouseUp:(NSEvent *)theEvent
-{
-	BOOL isHandled = [self handleMouseButton:theEvent buttonPressed:NO];
-	if (!isHandled)
-	{
-		[super rightMouseUp:theEvent];
-	}
-}
-
-- (void)otherMouseDown:(NSEvent *)theEvent
-{
-	BOOL isHandled = [self handleMouseButton:theEvent buttonPressed:YES];
-	if (!isHandled)
-	{
-		[super otherMouseDown:theEvent];
-	}
-}
-
-- (void)otherMouseDragged:(NSEvent *)theEvent
-{
-	[self otherMouseDown:theEvent];
-}
-
-- (void)otherMouseUp:(NSEvent *)theEvent
-{
-	BOOL isHandled = [self handleMouseButton:theEvent buttonPressed:NO];
-	if (!isHandled)
-	{
-		[super otherMouseUp:theEvent];
-	}
-}
-
-- (BOOL)acceptsFirstResponder
-{
-	return YES;
-}
-
-- (BOOL)becomeFirstResponder
-{
-	return YES;
-}
-
-- (BOOL)resignFirstResponder
-{
-	return YES;
 }
 
 @end

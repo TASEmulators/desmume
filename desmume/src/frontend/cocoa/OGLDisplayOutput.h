@@ -74,6 +74,7 @@ struct OGLFrameInfoFetch
 	bool isDisplayAllWhite[2];
 	bool isDisplayAllBlack[2];
 	bool isDisplayProcessPossible[2];
+	Color4u8 *srcNativeClone[2];
 };
 typedef struct OGLFrameInfoFetch OGLFrameInfoFetch;
 
@@ -407,8 +408,8 @@ protected:
 	bool _canProcessFetchOnGPU;
 	bool _preferCPUVideoProcessing;
 	bool _useDirectToCPUFilterPipeline;
-	uint32_t *_srcNativeCloneMaster;
-	uint32_t *_srcNativeClone[2][OPENGL_FETCH_BUFFER_COUNT];
+	Color4u8 *_srcNativeCloneMaster;
+	Color4u8 *_srcNativeClone[2][OPENGL_FETCH_BUFFER_COUNT];
 	pthread_rwlock_t _srcCloneRWLock[2][OPENGL_FETCH_BUFFER_COUNT];
 	bool _srcCloneNeedsUpdate[2][OPENGL_FETCH_BUFFER_COUNT];
 	
@@ -440,7 +441,7 @@ public:
 	
 	OGLFrameInfoFetch GetFetchInfo();
 	
-	uint32_t* GetSrcClone(const NDSDisplayID displayID, const u8 bufferIndex) const;
+	Color4u8* GetSrcClone(const NDSDisplayID displayID, const u8 bufferIndex) const;
 	GLuint GetTexNative(const NDSDisplayID displayID, const u8 bufferIndex) const;
 	GLuint GetTexCustom(const NDSDisplayID displayID, const u8 bufferIndex) const;
 	GLuint GetTexDisplayAllWhite() const;
@@ -453,7 +454,7 @@ public:
 	GLuint GetTexHQ3xLUT() const;
 	GLuint GetTexHQ4xLUT() const;
 	
-	void CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex);
+	void CopyFromSrcClone(Color4u8 *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex);
 	void FetchNativeDisplayToSrcClone(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
 	void FetchCustomDisplayToSrcClone(const NDSDisplayInfo *displayInfoList, const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
 	
@@ -520,7 +521,7 @@ public:
 	
 	// Client view interface
 	virtual void ProcessDisplays();
-	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
+	virtual void CopyFrameToBuffer(Color4u8 *dstBuffer);
 	virtual void PrerenderStateSetupOGL();
 	virtual void RenderFrameOGL(bool isRenderingFlipped);
 	

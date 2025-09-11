@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2023 DeSmuME Team
+	Copyright (C) 2011-2025 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 */
 
 #import "appDelegate.h"
+#import "CocoaAudioController.h"
 #import "DisplayWindowController.h"
 #import "EmuControllerDelegate.h"
 #import "FileMigrationDelegate.h"
@@ -34,7 +35,6 @@
 #import "cocoa_firmware.h"
 #import "cocoa_globals.h"
 #import "cocoa_input.h"
-#import "cocoa_output.h"
 #import "cocoa_rom.h"
 #import "cocoa_util.h"
 
@@ -260,9 +260,8 @@
 	[wifiSettingsPanelDelegate fillLibpcapDeviceMenu];
 	
 	// Init the DS speakers.
-	CocoaDSSpeaker *newSpeaker = [[[CocoaDSSpeaker alloc] init] autorelease];
-	[newCore addOutput:newSpeaker];
-	[emuControl setCdsSpeaker:newSpeaker];
+	[newCore addOutput:[[emuControl audioController] audioOutput]];
+	[[emuControl cdsSoundController] setContent:[emuControl audioController]];
 	
 	// Set up all the object controllers.
 	[prefWindowController setContent:[prefWindowDelegate bindings]];
@@ -432,7 +431,7 @@
 	[emuControl writeUserDefaults];
 	
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsController] hardwareMicMute] forKey:@"Microphone_HardwareMicMute"];
-	[[NSUserDefaults standardUserDefaults] setDouble:[emuControl currentVolumeValue] forKey:@"Sound_Volume"];
+	[[NSUserDefaults standardUserDefaults] setDouble:[[emuControl audioController] volumeValue] forKey:@"Sound_Volume"];
 	[[NSUserDefaults standardUserDefaults] setDouble:[emuControl lastSetSpeedScalar] forKey:@"CoreControl_SpeedScalar"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isSpeedLimitEnabled] forKey:@"CoreControl_EnableSpeedLimit"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isFrameSkipEnabled] forKey:@"CoreControl_EnableAutoFrameSkip"];

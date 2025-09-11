@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2023 DeSmuME Team
+	Copyright (C) 2013-2025 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,12 +19,11 @@
 #import "../cocoa_input.h"
 #include "../utilities.h"
 
+@class CocoaAudioController;
 @class InputManager;
 @class CocoaDSRom;
 @class CocoaDSFirmware;
 @class CocoaDSController;
-@class CocoaDSOutput;
-@class CocoaDSSpeaker;
 @class CocoaDSCheatManager;
 @class CheatWindowDelegate;
 @class DisplayWindowController;
@@ -41,7 +40,7 @@ class AudioSampleBlockGenerator;
 	
 	CocoaDSRom *currentRom;
 	CocoaDSFirmware *cdsFirmware;
-	CocoaDSSpeaker *cdsSpeaker;
+	CocoaAudioController *audioController;
 	
 	CheatWindowDelegate *cheatWindowDelegate;
 	MacScreenshotCaptureToolDelegate *screenshotCaptureToolDelegate;
@@ -86,10 +85,8 @@ class AudioSampleBlockGenerator;
 	BOOL isWorking;
 	BOOL isRomLoading;
 	NSString *statusText;
-	float currentVolumeValue;
 	NSString *micStatusTooltip;
 	NSImage *currentMicStatusIcon;
-	NSImage *currentVolumeIcon;
 	BOOL isShowingSaveStateDialog;
 	BOOL isShowingFileMigrationDialog;
 	BOOL isUserInterfaceBlockingExecution;
@@ -101,8 +98,6 @@ class AudioSampleBlockGenerator;
 	CGFloat lastSetSpeedScalar;
 	BOOL isHardwareMicAvailable;
 	float currentMicGainValue;
-	BOOL isSoundMuted;
-	float lastSetVolumeValue;
 	
 	NSImage *iconMicDisabled;
 	NSImage *iconMicDisabledDM;
@@ -111,14 +106,6 @@ class AudioSampleBlockGenerator;
 	NSImage *iconMicActive;
 	NSImage *iconMicInClip;
 	NSImage *iconMicManualOverride;
-	NSImage *iconVolumeFull;
-	NSImage *iconVolumeTwoThird;
-	NSImage *iconVolumeOneThird;
-	NSImage *iconVolumeMute;
-	NSImage *iconVolumeFullDM;
-	NSImage *iconVolumeTwoThirdDM;
-	NSImage *iconVolumeOneThirdDM;
-	NSImage *iconVolumeMuteDM;
 	NSImage *iconExecute;
 	NSImage *iconPause;
 	NSImage *iconSpeedNormal;
@@ -128,14 +115,13 @@ class AudioSampleBlockGenerator;
 	NSMutableArray *windowList;
 	
 	apple_unfairlock_t _unfairlockFirmware;
-	apple_unfairlock_t _unfairlockSpeaker;
 }
 
 @property (readonly) IBOutlet InputManager *inputManager;
 
 @property (assign) CocoaDSRom *currentRom; // Don't rely on autorelease since the emulator doesn't support concurrent unloading
 @property (retain) CocoaDSFirmware *cdsFirmware;
-@property (retain) CocoaDSSpeaker *cdsSpeaker;
+@property (readonly, nonatomic) CocoaAudioController *audioController;
 
 @property (readonly) IBOutlet CheatWindowDelegate *cheatWindowDelegate;
 @property (readonly) IBOutlet MacScreenshotCaptureToolDelegate *screenshotCaptureToolDelegate;
@@ -182,10 +168,8 @@ class AudioSampleBlockGenerator;
 @property (assign) NSString *statusText;
 @property (assign) BOOL isHardwareMicAvailable;
 @property (assign) float currentMicGainValue;
-@property (assign) float currentVolumeValue;
 @property (assign) NSString *micStatusTooltip;
 @property (retain) NSImage *currentMicStatusIcon;
-@property (retain) NSImage *currentVolumeIcon;
 @property (assign) BOOL isShowingSaveStateDialog;
 @property (assign) BOOL isShowingFileMigrationDialog;
 @property (assign) BOOL isUserInterfaceBlockingExecution;
@@ -304,8 +288,6 @@ class AudioSampleBlockGenerator;
 - (BOOL) unloadRom;
 - (void) updateCheatDatabaseRecentsMenu:(NSNotification *)aNotification;
 
-- (void) addOutputToCore:(CocoaDSOutput *)theOutput;
-- (void) removeOutputFromCore:(CocoaDSOutput *)theOutput;
 - (void) changeCoreSpeedWithDouble:(double)newSpeedScalar;
 - (void) executeCore;
 - (void) pauseCore;

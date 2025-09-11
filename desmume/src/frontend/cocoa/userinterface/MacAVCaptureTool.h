@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2018 DeSmuME team
+	Copyright (C) 2018-2025 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -64,8 +64,8 @@ struct AVRational;
 struct SwsContext;
 struct SwrContext;
 class ClientExecutionControl;
+class ClientVideoCaptureOutput;
 @class CocoaDSCore;
-@class CocoaDSVideoCapture;
 
 // a wrapper around a single output AVStream
 struct OutputStream
@@ -131,7 +131,7 @@ public:
 	ClientAVCaptureObject *_captureObject;
 	ClientExecutionControl *execControl;
 	CocoaDSCore *cdsCore;
-	CocoaDSVideoCapture *_videoCaptureOutput;
+	ClientVideoCaptureOutput *_videoCaptureOutput;
 	
 	NSButton *recordButton;
 	

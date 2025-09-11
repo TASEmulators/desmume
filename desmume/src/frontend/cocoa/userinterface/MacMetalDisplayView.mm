@@ -621,201 +621,203 @@
 	
 	MetalTexturePair targetTexPair = {index, currentDisplayInfo.sequenceNumber, nil, nil};
 	
-	if (isMainEnabled || isTouchEnabled)
+	if (!isMainEnabled && !isTouchEnabled)
 	{
+		return targetTexPair;
+	}
+	
+	if (isMainEnabled)
+	{
+		if (isMainNative)
+		{
+			targetTexPair.main  = _texDisplayFetchNative[NDSDisplayID_Main][index];
+		}
+		else
+		{
+			targetTexPair.main  = _texDisplayFetchCustom[NDSDisplayID_Main][index];
+		}
+	}
+	
+	if (isTouchEnabled)
+	{
+		if (isTouchNative)
+		{
+			targetTexPair.touch = _texDisplayFetchNative[NDSDisplayID_Touch][index];
+		}
+		else
+		{
+			targetTexPair.touch = _texDisplayFetchCustom[NDSDisplayID_Touch][index];
+		}
+	}
+	
+	if (currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Main] || currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Touch])
+	{
+		id<MTLComputeCommandEncoder> cce = [cb computeCommandEncoder];
+		
 		if (isMainEnabled)
 		{
-			if (isMainNative)
+			if (isMainNative || (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev) )
 			{
-				targetTexPair.main  = _texDisplayFetchNative[NDSDisplayID_Main][index];
+				[cce setComputePipelineState:_fetch555Pipeline];
+			}
+			else if ( (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev) && currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Main] )
+			{
+				[cce setComputePipelineState:_fetch666Pipeline];
 			}
 			else
 			{
-				targetTexPair.main  = _texDisplayFetchCustom[NDSDisplayID_Main][index];
+				[cce setComputePipelineState:_fetch888Pipeline];
+			}
+			
+			memcpy([_bufMasterBrightMode[NDSDisplayID_Main][index] contents], currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Main], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			memcpy([_bufMasterBrightIntensity[NDSDisplayID_Main][index] contents], currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Main], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			[_bufMasterBrightMode[NDSDisplayID_Main][index] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
+			[_bufMasterBrightIntensity[NDSDisplayID_Main][index] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
+			
+			[cce setBuffer:_bufMasterBrightMode[NDSDisplayID_Main][index] offset:0 atIndex:0];
+			[cce setBuffer:_bufMasterBrightIntensity[NDSDisplayID_Main][index] offset:0 atIndex:1];
+			
+			if (isMainNative)
+			{
+				[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Main][index] atIndex:0];
+				[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Main][index] atIndex:1];
+				[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
+					threadsPerThreadgroup:_fetchThreadsPerGroupNative];
+				
+				targetTexPair.main  = _texDisplayPostprocessNative[NDSDisplayID_Main][index];
+			}
+			else
+			{
+				[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Main][index] atIndex:0];
+				[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Main][index] atIndex:1];
+				[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
+					threadsPerThreadgroup:_fetchThreadsPerGroupCustom];
+				
+				targetTexPair.main  = _texDisplayPostprocessCustom[NDSDisplayID_Main][index];
 			}
 		}
 		
 		if (isTouchEnabled)
 		{
-			if (isTouchNative)
+			if (isTouchNative || (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev) )
 			{
-				targetTexPair.touch = _texDisplayFetchNative[NDSDisplayID_Touch][index];
+				[cce setComputePipelineState:_fetch555Pipeline];
+			}
+			else if ( (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev) && currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Touch] )
+			{
+				[cce setComputePipelineState:_fetch666Pipeline];
 			}
 			else
 			{
-				targetTexPair.touch = _texDisplayFetchCustom[NDSDisplayID_Touch][index];
+				[cce setComputePipelineState:_fetch888Pipeline];
+			}
+			
+			memcpy([_bufMasterBrightMode[NDSDisplayID_Touch][index] contents], currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Touch], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			memcpy([_bufMasterBrightIntensity[NDSDisplayID_Touch][index] contents], currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Touch], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			[_bufMasterBrightMode[NDSDisplayID_Touch][index] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
+			[_bufMasterBrightIntensity[NDSDisplayID_Touch][index] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
+			
+			[cce setBuffer:_bufMasterBrightMode[NDSDisplayID_Touch][index] offset:0 atIndex:0];
+			[cce setBuffer:_bufMasterBrightIntensity[NDSDisplayID_Touch][index] offset:0 atIndex:1];
+			
+			if (isTouchNative)
+			{
+				[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Touch][index] atIndex:0];
+				[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Touch][index] atIndex:1];
+				[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
+					threadsPerThreadgroup:_fetchThreadsPerGroupNative];
+				
+				targetTexPair.touch = _texDisplayPostprocessNative[NDSDisplayID_Touch][index];
+			}
+			else
+			{
+				[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Touch][index] atIndex:0];
+				[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Touch][index] atIndex:1];
+				[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
+					threadsPerThreadgroup:_fetchThreadsPerGroupCustom];
+				
+				targetTexPair.touch = _texDisplayPostprocessCustom[NDSDisplayID_Touch][index];
 			}
 		}
 		
-		if (currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Main] || currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Touch])
+		[cce endEncoding];
+	}
+	else
+	{
+		id<MTLComputeCommandEncoder> cce = [cb computeCommandEncoder];
+		
+		if (isMainEnabled)
 		{
-			id<MTLComputeCommandEncoder> cce = [cb computeCommandEncoder];
-			
-			if (isMainEnabled)
+			if (isMainNative || (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev))
 			{
-				if (isMainNative || (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev) )
-				{
-					[cce setComputePipelineState:_fetch555Pipeline];
-				}
-				else if ( (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev) && currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Main] )
-				{
-					[cce setComputePipelineState:_fetch666Pipeline];
-				}
-				else
-				{
-					[cce setComputePipelineState:_fetch888Pipeline];
-				}
-				
-				memcpy([_bufMasterBrightMode[NDSDisplayID_Main][index] contents], currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Main], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-				memcpy([_bufMasterBrightIntensity[NDSDisplayID_Main][index] contents], currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Main], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-				[_bufMasterBrightMode[NDSDisplayID_Main][index] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
-				[_bufMasterBrightIntensity[NDSDisplayID_Main][index] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
-				
-				[cce setBuffer:_bufMasterBrightMode[NDSDisplayID_Main][index] offset:0 atIndex:0];
-				[cce setBuffer:_bufMasterBrightIntensity[NDSDisplayID_Main][index] offset:0 atIndex:1];
-				
-				if (isMainNative)
-				{
-					[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Main][index] atIndex:0];
-					[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Main][index] atIndex:1];
-					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-						threadsPerThreadgroup:_fetchThreadsPerGroupNative];
-					
-					targetTexPair.main  = _texDisplayPostprocessNative[NDSDisplayID_Main][index];
-				}
-				else
-				{
-					[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Main][index] atIndex:0];
-					[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Main][index] atIndex:1];
-					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-						threadsPerThreadgroup:_fetchThreadsPerGroupCustom];
-					
-					targetTexPair.main  = _texDisplayPostprocessCustom[NDSDisplayID_Main][index];
-				}
+				// 16-bit textures aren't handled natively in Metal for macOS, so we need to explicitly convert to 32-bit here.
+				[cce setComputePipelineState:_fetch555ConvertOnlyPipeline];
+			}
+			else if ( (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev) && currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Main] )
+			{
+				[cce setComputePipelineState:_fetch666ConvertOnlyPipeline];
+			}
+			else
+			{
+				[cce setComputePipelineState:_fetch888ConvertOnlyPipeline];
 			}
 			
-			if (isTouchEnabled)
+			if (isMainNative)
 			{
-				if (isTouchNative || (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev) )
-				{
-					[cce setComputePipelineState:_fetch555Pipeline];
-				}
-				else if ( (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev) && currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Touch] )
-				{
-					[cce setComputePipelineState:_fetch666Pipeline];
-				}
-				else
-				{
-					[cce setComputePipelineState:_fetch888Pipeline];
-				}
+				[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Main][index] atIndex:0];
+				[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Main][index] atIndex:1];
+				[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
+					threadsPerThreadgroup:_fetchThreadsPerGroupNative];
 				
-				memcpy([_bufMasterBrightMode[NDSDisplayID_Touch][index] contents], currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Touch], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-				memcpy([_bufMasterBrightIntensity[NDSDisplayID_Touch][index] contents], currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Touch], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-				[_bufMasterBrightMode[NDSDisplayID_Touch][index] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
-				[_bufMasterBrightIntensity[NDSDisplayID_Touch][index] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
-				
-				[cce setBuffer:_bufMasterBrightMode[NDSDisplayID_Touch][index] offset:0 atIndex:0];
-				[cce setBuffer:_bufMasterBrightIntensity[NDSDisplayID_Touch][index] offset:0 atIndex:1];
-				
-				if (isTouchNative)
-				{
-					[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Touch][index] atIndex:0];
-					[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Touch][index] atIndex:1];
-					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-						threadsPerThreadgroup:_fetchThreadsPerGroupNative];
-					
-					targetTexPair.touch = _texDisplayPostprocessNative[NDSDisplayID_Touch][index];
-				}
-				else
-				{
-					[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Touch][index] atIndex:0];
-					[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Touch][index] atIndex:1];
-					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-						threadsPerThreadgroup:_fetchThreadsPerGroupCustom];
-					
-					targetTexPair.touch = _texDisplayPostprocessCustom[NDSDisplayID_Touch][index];
-				}
+				targetTexPair.main  = _texDisplayPostprocessNative[NDSDisplayID_Main][index];
 			}
-			
-			[cce endEncoding];
+			else
+			{
+				[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Main][index] atIndex:0];
+				[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Main][index] atIndex:1];
+				[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
+					threadsPerThreadgroup:_fetchThreadsPerGroupCustom];
+				
+				targetTexPair.main  = _texDisplayPostprocessCustom[NDSDisplayID_Main][index];
+			}
 		}
-		else
+		
+		if (isTouchEnabled)
 		{
-			id<MTLComputeCommandEncoder> cce = [cb computeCommandEncoder];
-			
-			if (isMainEnabled)
+			if (isTouchNative || (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev))
 			{
-				if (isMainNative || (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev))
-				{
-					// 16-bit textures aren't handled natively in Metal for macOS, so we need to explicitly convert to 32-bit here.
-					[cce setComputePipelineState:_fetch555ConvertOnlyPipeline];
-				}
-				else if ( (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev) && currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Main] )
-				{
-					[cce setComputePipelineState:_fetch666ConvertOnlyPipeline];
-				}
-				else
-				{
-					[cce setComputePipelineState:_fetch888ConvertOnlyPipeline];
-				}
-				
-				if (isMainNative)
-				{
-					[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Main][index] atIndex:0];
-					[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Main][index] atIndex:1];
-					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-						threadsPerThreadgroup:_fetchThreadsPerGroupNative];
-					
-					targetTexPair.main  = _texDisplayPostprocessNative[NDSDisplayID_Main][index];
-				}
-				else
-				{
-					[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Main][index] atIndex:0];
-					[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Main][index] atIndex:1];
-					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-						threadsPerThreadgroup:_fetchThreadsPerGroupCustom];
-					
-					targetTexPair.main  = _texDisplayPostprocessCustom[NDSDisplayID_Main][index];
-				}
+				[cce setComputePipelineState:_fetch555ConvertOnlyPipeline];
+			}
+			else if ( (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev) && currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Touch] )
+			{
+				[cce setComputePipelineState:_fetch666ConvertOnlyPipeline];
+			}
+			else
+			{
+				[cce setComputePipelineState:_fetch888ConvertOnlyPipeline];
 			}
 			
-			if (isTouchEnabled)
+			if (isTouchNative)
 			{
-				if (isTouchNative || (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev))
-				{
-					[cce setComputePipelineState:_fetch555ConvertOnlyPipeline];
-				}
-				else if ( (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev) && currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Touch] )
-				{
-					[cce setComputePipelineState:_fetch666ConvertOnlyPipeline];
-				}
-				else
-				{
-					[cce setComputePipelineState:_fetch888ConvertOnlyPipeline];
-				}
+				[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Touch][index] atIndex:0];
+				[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Touch][index] atIndex:1];
+				[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
+					threadsPerThreadgroup:_fetchThreadsPerGroupNative];
 				
-				if (isTouchNative)
-				{
-					[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Touch][index] atIndex:0];
-					[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Touch][index] atIndex:1];
-					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-						threadsPerThreadgroup:_fetchThreadsPerGroupNative];
-					
-					targetTexPair.touch = _texDisplayPostprocessNative[NDSDisplayID_Touch][index];
-				}
-				else
-				{
-					[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Touch][index] atIndex:0];
-					[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Touch][index] atIndex:1];
-					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-						threadsPerThreadgroup:_fetchThreadsPerGroupCustom];
-					
-					targetTexPair.touch = _texDisplayPostprocessCustom[NDSDisplayID_Touch][index];
-				}
+				targetTexPair.touch = _texDisplayPostprocessNative[NDSDisplayID_Touch][index];
 			}
-			
-			[cce endEncoding];
+			else
+			{
+				[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Touch][index] atIndex:0];
+				[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Touch][index] atIndex:1];
+				[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
+					threadsPerThreadgroup:_fetchThreadsPerGroupCustom];
+				
+				targetTexPair.touch = _texDisplayPostprocessCustom[NDSDisplayID_Touch][index];
+			}
 		}
+		
+		[cce endEncoding];
 	}
 	
 	return targetTexPair;
@@ -892,23 +894,23 @@
 	  destinationOrigin:MTLOriginMake(0, 0, 0)];
 }
 
-- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList timeStampNow:(const CVTimeStamp *)timeStampNow timeStampOutput:(const CVTimeStamp *)timeStampOutput
+- (void) flushMultipleViews:(const std::vector<ClientDisplayViewInterface *> &)cdvFlushList timeStampNow:(uint64_t)timeStampNow timeStampOutput:(uint64_t)timeStampOutput
 {
-	const size_t listSize = cdvFlushList.size();
-	
 	id<MTLCommandBuffer> cbFlush = [commandQueue commandBufferWithUnretainedReferences];
 	id<MTLCommandBuffer> cbFinalize = [commandQueue commandBufferWithUnretainedReferences];
 	
+	const size_t listSize = cdvFlushList.size();
+	
 	for (size_t i = 0; i < listSize; i++)
 	{
-		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
+		ClientDisplayViewInterface *cdv = cdvFlushList[i];
 		cdv->FlushView(cbFlush);
 	}
 	
 	for (size_t i = 0; i < listSize; i++)
 	{
-		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
-		cdv->FinalizeFlush(cbFinalize, timeStampOutput->hostTime);
+		ClientDisplayViewInterface *cdv = cdvFlushList[i];
+		cdv->FinalizeFlush(cbFinalize, timeStampOutput);
 	}
 	
 	[cbFlush enqueue];
@@ -1450,7 +1452,7 @@
 		error = FT_Set_Char_Size(fontFace, gSize << 6, gSize << 6, 72, 72);
 		if (error)
 		{
-			printf("OGLVideoOutput: FreeType failed to set the font size!\n");
+			printf("MacMetalDisplayPresenter: FreeType failed to set the font size!\n");
 		}
 		
 		const FT_GlyphSlot glyphSlot = fontFace->glyph;
@@ -2081,7 +2083,7 @@
 		[self setRenderBufferState:ClientDisplayBufferState_Writing index:selectedIndex];
 		
 		cdp->SetHUDPositionVertices((float)cdp->GetPresenterProperties().clientWidth, (float)cdp->GetPresenterProperties().clientHeight, (float *)[_hudVtxPositionBuffer[selectedIndex] contents]);
-		cdp->SetHUDColorVertices((uint32_t *)[_hudVtxColorBuffer[selectedIndex] contents]);
+		cdp->SetHUDColorVertices((Color4u8 *)[_hudVtxColorBuffer[selectedIndex] contents]);
 		cdp->SetHUDTextureCoordinates((float *)[_hudTexCoordBuffer[selectedIndex] contents]);
 		
 		[self setRenderBufferState:ClientDisplayBufferState_Ready index:selectedIndex];
@@ -2288,7 +2290,7 @@
 	apple_unfairlock_unlock(_unfairlockRenderBufferStates[index]);
 }
 
-- (void) renderToBuffer:(uint32_t *)dstBuffer
+- (void) renderToBuffer:(Color4u8 *)dstBuffer
 {
 	const size_t clientWidth  = cdp->GetPresenterProperties().clientWidth;
 	const size_t clientHeight = cdp->GetPresenterProperties().clientHeight;
@@ -2313,7 +2315,7 @@
 		[texRenderDesc setUsage:MTLTextureUsageRenderTarget];
 		
 		id<MTLTexture> texRender = [[sharedData device] newTextureWithDescriptor:texRenderDesc];
-		id<MTLBuffer> dstMTLBuffer = [[sharedData device] newBufferWithLength:clientWidth * clientHeight * sizeof(uint32_t) options:MTLResourceStorageModeManaged];
+		id<MTLBuffer> dstMTLBuffer = [[sharedData device] newBufferWithLength:clientWidth * clientHeight * sizeof(Color4u8) options:MTLResourceStorageModeManaged];
 		
 		// Now that everything is set up, go ahead and draw everything.
 		[colorAttachment0Desc setTexture:texRender];
@@ -2339,8 +2341,8 @@
 				  sourceSize:MTLSizeMake(clientWidth, clientHeight, 1)
 					toBuffer:dstMTLBuffer
 		   destinationOffset:0
-	  destinationBytesPerRow:clientWidth * sizeof(uint32_t)
-	destinationBytesPerImage:clientWidth * clientHeight * sizeof(uint32_t)];
+	  destinationBytesPerRow:clientWidth * sizeof(Color4u8)
+	destinationBytesPerImage:clientWidth * clientHeight * sizeof(Color4u8)];
 		
 		[bce synchronizeResource:dstMTLBuffer];
 		[bce endEncoding];
@@ -2358,7 +2360,7 @@
 		// Wait on this thread until the GPU completes its task, then continue execution on this thread.
 		semaphore_wait(semRenderToBuffer);
 		
-		memcpy(dstBuffer, [dstMTLBuffer contents], clientWidth * clientHeight * sizeof(uint32_t));
+		memcpy(dstBuffer, [dstMTLBuffer contents], clientWidth * clientHeight * sizeof(Color4u8));
 		
 		[texRender release];
 		[dstMTLBuffer release];
@@ -2589,7 +2591,7 @@ MacMetalFetchObject::MacMetalFetchObject()
 {
 	_useDirectToCPUFilterPipeline = true;
 	
-	_srcNativeCloneMaster = (uint32_t *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * METAL_FETCH_BUFFER_COUNT * sizeof(uint32_t));
+	_srcNativeCloneMaster = (Color4u8 *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * METAL_FETCH_BUFFER_COUNT * sizeof(uint32_t));
 	memset(_srcNativeCloneMaster, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * METAL_FETCH_BUFFER_COUNT * sizeof(uint32_t));
 	
 	for (size_t i = 0; i < METAL_FETCH_BUFFER_COUNT; i++)
@@ -2640,10 +2642,10 @@ void MacMetalFetchObject::Init()
 	this->MacGPUFetchObjectAsync::Init();
 }
 
-void MacMetalFetchObject::CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex)
+void MacMetalFetchObject::CopyFromSrcClone(Color4u8 *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex)
 {
 	pthread_rwlock_rdlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
-	memcpy(dstBufferPtr, this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(uint32_t));
+	memcpy(dstBufferPtr, this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(Color4u8));
 	pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 }
 
@@ -2667,7 +2669,7 @@ void MacMetalFetchObject::_FetchNativeDisplayByID(const NDSDisplayID displayID, 
 		GPU->PostprocessDisplay(displayID, this->_fetchDisplayInfo[bufferIndex]);
 		
 		pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
-		ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(this->_fetchDisplayInfo[bufferIndex].nativeBuffer16[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+		ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(this->_fetchDisplayInfo[bufferIndex].nativeBuffer16[displayID], (uint32_t *)this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 	}
 	
@@ -2681,14 +2683,14 @@ void MacMetalFetchObject::_FetchCustomDisplayByID(const NDSDisplayID displayID, 
 		GPU->PostprocessDisplay(displayID, this->_fetchDisplayInfo[bufferIndex]);
 		
 		pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
-		ColorspaceConvertBuffer888xTo8888Opaque<false, false>((u32 *)this->_fetchDisplayInfo[bufferIndex].customBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+		ColorspaceConvertBuffer888xTo8888Opaque<false, false>((u32 *)this->_fetchDisplayInfo[bufferIndex].customBuffer[displayID], (uint32_t *)this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 	}
 	
 	[(MetalDisplayViewSharedData *)this->_clientData fetchCustomDisplayByID:displayID bufferIndex:bufferIndex blitCommandEncoder:[(MetalDisplayViewSharedData *)this->_clientData bceFetch]];
 }
 
-void MacMetalFetchObject::FlushMultipleViews(const std::vector<ClientDisplay3DView *> &cdvFlushList, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput)
+void MacMetalFetchObject::FlushMultipleViews(const std::vector<ClientDisplayViewInterface *> &cdvFlushList, uint64_t timeStampNow, uint64_t timeStampOutput)
 {
 	[(MetalDisplayViewSharedData *)this->_clientData flushMultipleViews:cdvFlushList timeStampNow:timeStampNow timeStampOutput:timeStampOutput];
 }
@@ -2772,7 +2774,7 @@ void MacMetalDisplayPresenter::_LoadNativeDisplayByID(const NDSDisplayID display
 		const uint8_t bufferIndex = fetchObjMutable.GetLastFetchIndex();
 		
 		dispatch_semaphore_wait(this->_semCPUFilter[displayID], DISPATCH_TIME_FOREVER);
-		fetchObjMutable.CopyFromSrcClone(vf->GetSrcBufferPtr(), displayID, bufferIndex);
+		fetchObjMutable.CopyFromSrcClone((Color4u8 *)vf->GetSrcBufferPtr(), displayID, bufferIndex);
 		dispatch_semaphore_signal(this->_semCPUFilter[displayID]);
 	}
 }
@@ -2787,7 +2789,7 @@ void MacMetalDisplayPresenter::_LoadCustomDisplayByID(const NDSDisplayID display
 		const uint8_t bufferIndex = fetchObjMutable.GetLastFetchIndex();
 		
 		dispatch_semaphore_wait(this->_semCPUFilter[displayID], DISPATCH_TIME_FOREVER);
-		fetchObjMutable.CopyFromSrcClone(vf->GetSrcBufferPtr(), displayID, bufferIndex);
+		fetchObjMutable.CopyFromSrcClone((Color4u8 *)vf->GetSrcBufferPtr(), displayID, bufferIndex);
 		dispatch_semaphore_signal(this->_semCPUFilter[displayID]);
 	}
 }
@@ -2876,7 +2878,7 @@ void MacMetalDisplayPresenter::UpdateLayout()
 	[this->_presenterObject updateRenderBuffers];
 }
 
-void MacMetalDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)
+void MacMetalDisplayPresenter::CopyFrameToBuffer(Color4u8 *dstBuffer)
 {
 	[this->_presenterObject renderToBuffer:dstBuffer];
 }

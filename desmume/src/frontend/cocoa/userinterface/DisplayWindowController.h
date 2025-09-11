@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2017 DeSmuME team
+	Copyright (C) 2013-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 #import <OpenGL/OpenGL.h>
 #include <map>
 
-#import "DisplayViewCALayer.h"
+#import "CocoaDisplayView.h"
 
 #include "../ClientDisplayView.h"
 #undef BOOL
@@ -27,28 +27,12 @@
 #define DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE		1000
 #define DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE		2000
 
-@class CocoaDSController;
-@class CocoaDSDisplayVideo;
 @class EmuControllerDelegate;
 @class InputManager;
-class OGLDisplayPresenter;
 
 // Subclass NSWindow for full screen windows so that we can override some methods.
 @interface DisplayFullScreenWindow : NSWindow
 { }
-@end
-
-@interface DisplayView : NSView<CocoaDisplayViewProtocol>
-{
-	InputManager *inputManager;
-	CocoaDSDisplayVideo *cdsVideoOutput;
-	CALayer<DisplayViewCALayer> *localLayer;
-	NSOpenGLContext *localOGLContext;
-}
-
-- (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
-- (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed;
-
 @end
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5

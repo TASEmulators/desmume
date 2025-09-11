@@ -116,7 +116,7 @@ public:
 	// Client view interface
 	virtual void LoadDisplays();
 	virtual void ProcessDisplays();
-	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
+	virtual void CopyFrameToBuffer(Color4u8 *dstBuffer);
 	
 	virtual const OGLFrameInfoProcessed& GetFrameInfoProcessed();
 	virtual void SetFrameInfoProcessed(const OGLFrameInfoProcessed &processedInfo);

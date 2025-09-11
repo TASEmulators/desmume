@@ -21,58 +21,17 @@
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/QuartzCore.h>
 
-#import "InputManager.h"
 #import "../ClientDisplayView.h"
 
-@class CocoaDSDisplayVideo;
 @class MacClientSharedObject;
 class MacDisplayLayeredView;
+class MacDisplayViewOutput;
 
 @protocol DisplayViewCALayer <NSObject>
 
 @required
 
 @property (assign, nonatomic, getter=clientDisplayView, setter=setClientDisplayView:) MacDisplayLayeredView *_cdv;
-
-@end
-
-@protocol CocoaDisplayViewProtocol <InputHIDManagerTarget, NSObject>
-
-@required
-@property (retain) InputManager *inputManager;
-@property (retain) CocoaDSDisplayVideo *cdsVideoOutput;
-@property (readonly, nonatomic) MacDisplayLayeredView *clientDisplayView;
-@property (readonly) BOOL canUseShaderBasedFilters;
-@property (assign, nonatomic) BOOL allowViewUpdates;
-@property (assign) BOOL isHUDVisible;
-@property (assign) BOOL isHUDExecutionSpeedVisible;
-@property (assign) BOOL isHUDVideoFPSVisible;
-@property (assign) BOOL isHUDRender3DFPSVisible;
-@property (assign) BOOL isHUDFrameIndexVisible;
-@property (assign) BOOL isHUDLagFrameCountVisible;
-@property (assign) BOOL isHUDCPULoadAverageVisible;
-@property (assign) BOOL isHUDRealTimeClockVisible;
-@property (assign) BOOL isHUDInputVisible;
-@property (assign) NSColor *hudColorExecutionSpeed;
-@property (assign) NSColor *hudColorVideoFPS;
-@property (assign) NSColor *hudColorRender3DFPS;
-@property (assign) NSColor *hudColorFrameIndex;
-@property (assign) NSColor *hudColorLagFrameCount;
-@property (assign) NSColor *hudColorCPULoadAverage;
-@property (assign) NSColor *hudColorRTC;
-@property (assign) NSColor *hudColorInputPendingAndApplied;
-@property (assign) NSColor *hudColorInputAppliedOnly;
-@property (assign) NSColor *hudColorInputPendingOnly;
-@property (assign) NSInteger displayMainVideoSource;
-@property (assign) NSInteger displayTouchVideoSource;
-@property (assign) BOOL useVerticalSync;
-@property (assign) BOOL videoFiltersPreferGPU;
-@property (assign) BOOL sourceDeposterize;
-@property (assign) NSInteger outputFilter;
-@property (assign) NSInteger pixelScaler;
-
-- (void) setupLayer;
-- (void) updateLayerPresenterProperties:(ClientDisplayPresenterProperties &)props scaleFactor:(const double)scaleFactor needFlush:(BOOL)needFlush;
 
 @end
 

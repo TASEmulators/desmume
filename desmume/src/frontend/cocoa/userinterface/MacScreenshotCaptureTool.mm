@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2022 DeSmuME team
+	Copyright (C) 2017-2025 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -283,7 +283,7 @@ static void* RunFileWriteThread(void *arg)
 	cdp->LoadDisplays();
 	cdp->ProcessDisplays();
 	cdp->UpdateLayout();
-	cdp->CopyFrameToBuffer((uint32_t *)[newImageRep bitmapData]);
+	cdp->CopyFrameToBuffer((Color4u8 *)[newImageRep bitmapData]);
 	
 	// Write the file.
 	NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];

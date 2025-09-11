@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2018-2022 DeSmuME team
+	Copyright (C) 2018-2025 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,11 +21,10 @@
 
 #import "../cocoa_file.h"
 #import "../cocoa_core.h"
-#import "../cocoa_GPU.h"
-#import "../cocoa_output.h"
 #import "../cocoa_globals.h"
 #import "MacAVCaptureTool.h"
 #import "MacOGLDisplayView.h"
+#include "ClientVideoOutput.h"
 
 #ifdef ENABLE_APPLE_METAL
 #include "MacMetalDisplayView.h"
@@ -1402,15 +1401,16 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	}
 	else
 	{
-		CocoaDSVideoCapture *newVideoCaptureObject = [[CocoaDSVideoCapture alloc] init];
+		ClientVideoCaptureOutput *newVideoCaptureOutput = new ClientVideoCaptureOutput;
 		
 		newCaptureObject->SetOutputFileStream(ffmpegFS);
 		_captureObject = newCaptureObject;
 		
 		execControl->SetClientAVCaptureObject(newCaptureObject);
-		[cdsCore addOutput:newVideoCaptureObject];
+		[cdsCore addOutput:newVideoCaptureOutput];
 		
-		_videoCaptureOutput = newVideoCaptureObject;
+		_videoCaptureOutput = newVideoCaptureOutput;
+		newVideoCaptureOutput->CreateThread();
 	}
 }
 

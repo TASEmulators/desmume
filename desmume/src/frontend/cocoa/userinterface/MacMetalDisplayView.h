@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2022 DeSmuME team
+	Copyright (C) 2017-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -176,7 +176,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 - (void) fetchNativeDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex blitCommandEncoder:(id<MTLBlitCommandEncoder>)bce;
 - (void) fetchCustomDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex blitCommandEncoder:(id<MTLBlitCommandEncoder>)bce;
 
-- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList timeStampNow:(const CVTimeStamp *)timeStampNow timeStampOutput:(const CVTimeStamp *)timeStampOutput;
+- (void) flushMultipleViews:(const std::vector<ClientDisplayViewInterface *> &)cdvFlushList timeStampNow:(uint64_t)timeStampNow timeStampOutput:(uint64_t)timeStampOutput;
 
 @end
 
@@ -261,7 +261,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 - (void) renderFinishAtIndex:(uint8_t)index;
 - (ClientDisplayBufferState) renderBufferStateAtIndex:(uint8_t)index;
 - (void) setRenderBufferState:(ClientDisplayBufferState)bufferState index:(uint8_t)index;
-- (void) renderToBuffer:(uint32_t *)dstBuffer;
+- (void) renderToBuffer:(Color4u8 *)dstBuffer;
 
 @end
 
@@ -297,8 +297,8 @@ class MacMetalFetchObject : public MacGPUFetchObjectDisplayLink
 {
 protected:
 	bool _useDirectToCPUFilterPipeline;
-	uint32_t *_srcNativeCloneMaster;
-	uint32_t *_srcNativeClone[2][METAL_FETCH_BUFFER_COUNT];
+	Color4u8 *_srcNativeCloneMaster;
+	Color4u8 *_srcNativeClone[2][METAL_FETCH_BUFFER_COUNT];
 	pthread_rwlock_t _srcCloneRWLock[2][METAL_FETCH_BUFFER_COUNT];
 	
 	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
@@ -309,11 +309,11 @@ public:
 	virtual ~MacMetalFetchObject();
 	
 	virtual void Init();
-	virtual void CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex);
+	virtual void CopyFromSrcClone(Color4u8 *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex);
 	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);
 	virtual void FetchFromBufferIndex(const u8 index);
 	
-	virtual void FlushMultipleViews(const std::vector<ClientDisplay3DView *> &cdvFlushList, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput);
+	virtual void FlushMultipleViews(const std::vector<ClientDisplayViewInterface *> &cdvFlushList, uint64_t timeStampNow, uint64_t timeStampOutput);
 };
 
 #pragma mark -
@@ -359,7 +359,7 @@ public:
 	virtual void ProcessDisplays();
 	virtual void UpdateLayout();
 	
-	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
+	virtual void CopyFrameToBuffer(Color4u8 *dstBuffer);
 };
 
 class MacMetalDisplayView : public MacDisplayLayeredView

@@ -17,6 +17,7 @@
 
 #import "troubleshootingWindowDelegate.h"
 #import "EmuControllerDelegate.h"
+#import "CocoaAudioController.h"
 
 #include "../../../render3D.h"
 
@@ -25,7 +26,6 @@
 #import "cocoa_cheat.h"
 #import "cocoa_core.h"
 #import "cocoa_GPU.h"
-#import "cocoa_output.h"
 
 @implementation TroubleshootingWindowDelegate
 
@@ -151,10 +151,10 @@
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Edge Marking: "] stringByAppendingString:([[cdsCore cdsGPU] render3DEdgeMarking] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Fog: "] stringByAppendingString:([[cdsCore cdsGPU] render3DFog] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nVideo - Output Engine: "] stringByAppendingString:[NSString stringWithFormat:@"%s (%s)", [[cdsCore cdsGPU] fetchObject]->GetName(), [[cdsCore cdsGPU] fetchObject]->GetDescription()]];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Output Engine: "] stringByAppendingString:[[emuControl cdsSpeaker] audioOutputEngineString]];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Advanced SPU Logic: "] stringByAppendingString:([[emuControl cdsSpeaker] spuAdvancedLogic] ? @"YES" : @"NO")];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Interpolation Method: "] stringByAppendingString:[[emuControl cdsSpeaker] spuInterpolationModeString]];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Synchronization Method: "] stringByAppendingString:[[emuControl cdsSpeaker] spuSyncMethodString]];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Output Engine: "] stringByAppendingString:[[emuControl audioController] engineString]];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Advanced SPU Logic: "] stringByAppendingString:([[emuControl audioController] spuAdvancedLogic] ? @"YES" : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Interpolation Method: "] stringByAppendingString:[[emuControl audioController] spuInterpolationModeString]];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Synchronization Method: "] stringByAppendingString:[[emuControl audioController] spuSyncMethodString]];
 	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n"];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCheats: "] stringByAppendingString:(([cdsCore isCheatingEnabled] && ([[cdsCore cdsCheatManager] itemActiveCount] > 0)) ? [NSString stringWithFormat:@"YES (ActiveCheatCount=%ld)", (unsigned long)[[cdsCore cdsCheatManager] itemActiveCount]] : @"NO")];
 	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n"];

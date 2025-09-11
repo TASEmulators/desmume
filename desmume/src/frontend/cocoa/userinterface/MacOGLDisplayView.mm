@@ -549,7 +549,7 @@ void MacOGLDisplayPresenter::ProcessDisplays()
 	CGLUnlockContext(this->_context);
 }
 
-void MacOGLDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)
+void MacOGLDisplayPresenter::CopyFrameToBuffer(Color4u8 *dstBuffer)
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);

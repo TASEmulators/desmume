@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2018 DeSmuME team
+	Copyright (C) 2017-2025 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -165,16 +165,16 @@ protected:
 	bool _showRTC;
 	bool _showInputs;
 	
-	uint32_t _hudColorExecutionSpeed;
-	uint32_t _hudColorVideoFPS;
-	uint32_t _hudColorRender3DFPS;
-	uint32_t _hudColorFrameIndex;
-	uint32_t _hudColorLagFrameCount;
-	uint32_t _hudColorCPULoadAverage;
-	uint32_t _hudColorRTC;
-	uint32_t _hudColorInputAppliedAndPending;
-	uint32_t _hudColorInputAppliedOnly;
-	uint32_t _hudColorInputPendingOnly;
+	Color4u8 _hudColorExecutionSpeed;
+	Color4u8 _hudColorVideoFPS;
+	Color4u8 _hudColorRender3DFPS;
+	Color4u8 _hudColorFrameIndex;
+	Color4u8 _hudColorLagFrameCount;
+	Color4u8 _hudColorCPULoadAverage;
+	Color4u8 _hudColorRTC;
+	Color4u8 _hudColorInputAppliedAndPending;
+	Color4u8 _hudColorInputAppliedOnly;
+	Color4u8 _hudColorInputPendingOnly;
 	
 	ClientFrameInfo _clientFrameInfo;
 	NDSFrameInfo _ndsFrameInfo;
@@ -193,7 +193,7 @@ protected:
 	size_t _glyphSize;
 	size_t _glyphTileSize;
 	
-	uint32_t *_vfMasterDstBuffer;
+	Color4u8 *_vfMasterDstBuffer;
 	size_t _vfMasterDstBufferSize;
 	VideoFilter *_vf[2];
 	
@@ -263,6 +263,7 @@ public:
 	
 	bool WillHUDRenderMipmapped() const;
 	void SetHUDRenderMipmapped(const bool mipmapState);
+	
 	bool GetHUDVisibility() const;
 	virtual void SetHUDVisibility(const bool visibleState);
 	bool GetHUDShowExecutionSpeed() const;
@@ -281,27 +282,28 @@ public:
 	virtual void SetHUDShowRTC(const bool visibleState);
 	bool GetHUDShowInput() const;
 	virtual void SetHUDShowInput(const bool visibleState);
-	uint32_t GetHUDColorExecutionSpeed() const;
-	virtual void SetHUDColorExecutionSpeed(uint32_t color32);
-	uint32_t GetHUDColorVideoFPS() const;
-	virtual void SetHUDColorVideoFPS(uint32_t color32);
-	uint32_t GetHUDColorRender3DFPS() const;
-	virtual void SetHUDColorRender3DFPS(uint32_t color32);
-	uint32_t GetHUDColorFrameIndex() const;
-	virtual void SetHUDColorFrameIndex(uint32_t color32);
-	uint32_t GetHUDColorLagFrameCount() const;
-	virtual void SetHUDColorLagFrameCount(uint32_t color32);
-	uint32_t GetHUDColorCPULoadAverage() const;
-	virtual void SetHUDColorCPULoadAverage(uint32_t color32);
-	uint32_t GetHUDColorRTC() const;
-	virtual void SetHUDColorRTC(uint32_t color32);
-	uint32_t GetHUDColorInputPendingAndApplied() const;
-	virtual void SetHUDColorInputPendingAndApplied(uint32_t color32);
-	uint32_t GetHUDColorInputAppliedOnly() const;
-	virtual void SetHUDColorInputAppliedOnly(uint32_t color32);
-	uint32_t GetHUDColorInputPendingOnly() const;
-	virtual void SetHUDColorInputPendingOnly(uint32_t color32);
-	uint32_t GetInputColorUsingStates(bool pendingState, bool appliedState);
+	Color4u8 GetHUDColorExecutionSpeed() const;
+	virtual void SetHUDColorExecutionSpeed(Color4u8 color32);
+	Color4u8 GetHUDColorVideoFPS() const;
+	virtual void SetHUDColorVideoFPS(Color4u8 color32);
+	Color4u8 GetHUDColorRender3DFPS() const;
+	virtual void SetHUDColorRender3DFPS(Color4u8 color32);
+	Color4u8 GetHUDColorFrameIndex() const;
+	virtual void SetHUDColorFrameIndex(Color4u8 color32);
+	Color4u8 GetHUDColorLagFrameCount() const;
+	virtual void SetHUDColorLagFrameCount(Color4u8 color32);
+	Color4u8 GetHUDColorCPULoadAverage() const;
+	virtual void SetHUDColorCPULoadAverage(Color4u8 color32);
+	Color4u8 GetHUDColorRTC() const;
+	virtual void SetHUDColorRTC(Color4u8 color32);
+	Color4u8 GetHUDColorInputPendingAndApplied() const;
+	virtual void SetHUDColorInputPendingAndApplied(Color4u8 color32);
+	Color4u8 GetHUDColorInputAppliedOnly() const;
+	virtual void SetHUDColorInputAppliedOnly(Color4u8 color32);
+	Color4u8 GetHUDColorInputPendingOnly() const;
+	virtual void SetHUDColorInputPendingOnly(Color4u8 color32);
+	Color4u8 GetInputColorUsingStates(bool pendingState, bool appliedState);
+	
 	bool HUDNeedsUpdate();
 	void ClearHUDNeedsUpdate();
 	
@@ -313,7 +315,7 @@ public:
 	virtual void ProcessDisplays();
 	virtual void UpdateLayout();
 	
-	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
+	virtual void CopyFrameToBuffer(Color4u8 *dstBuffer);
 	
 	// Emulator interface
 	const NDSDisplayInfo& GetEmuDisplayInfo() const;
@@ -335,7 +337,7 @@ class ClientDisplayViewInterface
 {
 protected:
 	InitialTouchPressMap *_initialTouchInMajorDisplay;
-	int64_t _displayViewID;
+	int32_t _displayViewID;
 	bool _useVerticalSync;
 	bool _viewNeedsFlush;
 	bool _allowViewUpdates;
@@ -345,19 +347,19 @@ public:
 	ClientDisplayViewInterface();
 	virtual ~ClientDisplayViewInterface();
 	
-	int64_t GetDisplayViewID();
-	virtual void SetDisplayViewID(int64_t displayViewID);
+	virtual int32_t GetDisplayViewID();
+	virtual void SetDisplayViewID(int32_t displayViewID);
 	
 	virtual bool GetViewNeedsFlush();
 	virtual void SetViewNeedsFlush();
 	
-	bool GetUseVerticalSync() const;
+	virtual bool GetUseVerticalSync() const;
 	virtual void SetUseVerticalSync(const bool useVerticalSync);
 	
 	// Client view interface
-	bool GetAllowViewUpdates() const;
+	virtual bool GetAllowViewUpdates() const;
 	virtual void SetAllowViewUpdates(bool allowUpdates);
-	bool GetAllowViewFlushes() const;
+	virtual bool GetAllowViewFlushes() const;
 	virtual void SetAllowViewFlushes(bool allowFlushes);
 	
 	virtual void FlushView(void *userData);
@@ -408,7 +410,7 @@ public:
 	
 	void SetHUDPositionVertices(float viewportWidth, float viewportHeight, float *vtxPositionBufferPtr);
 	void SetHUDTouchLinePositionVertices(float *vtxBufferPtr);
-	void SetHUDColorVertices(uint32_t *vtxColorBufferPtr);
+	void SetHUDColorVertices(Color4u8 *vtxColorBufferPtr);
 	void SetHUDTextureCoordinates(float *texCoordBufferPtr);
 	void SetScreenVertices(float *vtxBufferPtr);
 	void SetScreenTextureCoordinates(float w0, float h0, float w1, float h1, float *texCoordBufferPtr);

@@ -101,16 +101,20 @@ void ClientDisplayPresenter::__InstanceInit(const ClientDisplayPresenterProperti
 	_showRTC = false;
 	_showInputs = false;
 	
-	_hudColorExecutionSpeed         = 0xFFFFFFFF;
-	_hudColorVideoFPS               = 0xFFFFFFFF;
-	_hudColorRender3DFPS            = 0xFFFFFFFF;
-	_hudColorFrameIndex             = 0xFFFFFFFF;
-	_hudColorLagFrameCount          = 0xFFFFFFFF;
-	_hudColorCPULoadAverage         = 0xFFFFFFFF;
-	_hudColorRTC                    = 0xFFFFFFFF;
-	_hudColorInputAppliedAndPending = 0xFFFFFFFF;
-	_hudColorInputAppliedOnly       = 0xFF3030FF;
-	_hudColorInputPendingOnly       = 0xFF00C000;
+	const Color4u8 colorWhite = {0xFF, 0xFF, 0xFF, 0xFF};
+	const Color4u8 colorRed   = {0xFF, 0x30, 0x30, 0xFF};
+	const Color4u8 colorGreen = {0x00, 0xC0, 0x00, 0xFF};
+	
+	_hudColorExecutionSpeed         = colorWhite;
+	_hudColorVideoFPS               = colorWhite;
+	_hudColorRender3DFPS            = colorWhite;
+	_hudColorFrameIndex             = colorWhite;
+	_hudColorLagFrameCount          = colorWhite;
+	_hudColorCPULoadAverage         = colorWhite;
+	_hudColorRTC                    = colorWhite;
+	_hudColorInputAppliedAndPending = colorWhite;
+	_hudColorInputAppliedOnly       = colorRed;
+	_hudColorInputPendingOnly       = colorGreen;
 	
 	_clientFrameInfo.videoFPS = 0;
 	_ndsFrameInfo.clear();
@@ -140,14 +144,14 @@ void ClientDisplayPresenter::__InstanceInit(const ClientDisplayPresenterProperti
 	boxInfo.texCoord[6] = 1.0f/16.0f;		boxInfo.texCoord[7] = 1.0f/16.0f;
 	
 	// Set up the CPU pixel scaler objects.
-	_vfMasterDstBufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * sizeof(uint32_t);
-	_vfMasterDstBuffer = (uint32_t *)malloc_alignedPage(_vfMasterDstBufferSize);
+	_vfMasterDstBufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * sizeof(Color4u8);
+	_vfMasterDstBuffer = (Color4u8 *)malloc_alignedPage(_vfMasterDstBufferSize);
 	memset(_vfMasterDstBuffer, 0, _vfMasterDstBufferSize);
 	
 	_vf[NDSDisplayID_Main]  = new VideoFilter(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, VideoFilterTypeID_None, 0);
 	_vf[NDSDisplayID_Touch] = new VideoFilter(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, VideoFilterTypeID_None, 0);
-	_vf[NDSDisplayID_Main]->SetDstBufferPtr(_vfMasterDstBuffer);
-	_vf[NDSDisplayID_Touch]->SetDstBufferPtr(_vfMasterDstBuffer + (_vf[NDSDisplayID_Main]->GetDstWidth() * _vf[NDSDisplayID_Main]->GetDstHeight()));
+	_vf[NDSDisplayID_Main]->SetDstBufferPtr((uint32_t *)_vfMasterDstBuffer);
+	_vf[NDSDisplayID_Touch]->SetDstBufferPtr((uint32_t *)_vfMasterDstBuffer + (_vf[NDSDisplayID_Main]->GetDstWidth() * _vf[NDSDisplayID_Main]->GetDstHeight()));
 	
 	pthread_mutex_init(&_mutexHUDString, NULL);
 }
@@ -257,7 +261,7 @@ void ClientDisplayPresenter::SetScaleFactor(const double scaleFactor)
 {
 	const bool willChangeScaleFactor = (this->_scaleFactor != scaleFactor);
 	
-	if (!willChangeScaleFactor)
+	if ( !willChangeScaleFactor && (this->_hudFontFileCache != NULL) )
 	{
 		return;
 	}
@@ -454,7 +458,7 @@ void ClientDisplayPresenter::SetPixelScaler(const VideoFilterTypeID filterID)
 	const size_t newDstBufferWidth  = (this->_vf[NDSDisplayID_Main]->GetSrcWidth()  + this->_vf[NDSDisplayID_Touch]->GetSrcWidth())  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
 	const size_t newDstBufferHeight = (this->_vf[NDSDisplayID_Main]->GetSrcHeight() + this->_vf[NDSDisplayID_Touch]->GetSrcHeight()) * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
 	
-	uint32_t *oldMasterBuffer = NULL;
+	Color4u8 *oldMasterBuffer = NULL;
 	
 	if ( (oldDstBufferWidth != newDstBufferWidth) || (oldDstBufferHeight != newDstBufferHeight) )
 	{
@@ -684,12 +688,12 @@ void ClientDisplayPresenter::SetHUDShowInput(const bool visibleState)
 	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayPresenter::GetHUDColorExecutionSpeed() const
+Color4u8 ClientDisplayPresenter::GetHUDColorExecutionSpeed() const
 {
 	return this->_hudColorExecutionSpeed;
 }
 
-void ClientDisplayPresenter::SetHUDColorExecutionSpeed(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorExecutionSpeed(Color4u8 color32)
 {
 	this->_hudColorExecutionSpeed = color32;
 	
@@ -700,12 +704,12 @@ void ClientDisplayPresenter::SetHUDColorExecutionSpeed(uint32_t color32)
 	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayPresenter::GetHUDColorVideoFPS() const
+Color4u8 ClientDisplayPresenter::GetHUDColorVideoFPS() const
 {
 	return this->_hudColorVideoFPS;
 }
 
-void ClientDisplayPresenter::SetHUDColorVideoFPS(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorVideoFPS(Color4u8 color32)
 {
 	this->_hudColorVideoFPS = color32;
 	
@@ -716,12 +720,12 @@ void ClientDisplayPresenter::SetHUDColorVideoFPS(uint32_t color32)
 	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayPresenter::GetHUDColorRender3DFPS() const
+Color4u8 ClientDisplayPresenter::GetHUDColorRender3DFPS() const
 {
 	return this->_hudColorRender3DFPS;
 }
 
-void ClientDisplayPresenter::SetHUDColorRender3DFPS(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorRender3DFPS(Color4u8 color32)
 {
 	this->_hudColorRender3DFPS = color32;
 	
@@ -732,12 +736,12 @@ void ClientDisplayPresenter::SetHUDColorRender3DFPS(uint32_t color32)
 	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayPresenter::GetHUDColorFrameIndex() const
+Color4u8 ClientDisplayPresenter::GetHUDColorFrameIndex() const
 {
 	return this->_hudColorFrameIndex;
 }
 
-void ClientDisplayPresenter::SetHUDColorFrameIndex(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorFrameIndex(Color4u8 color32)
 {
 	this->_hudColorFrameIndex = color32;
 	
@@ -748,12 +752,12 @@ void ClientDisplayPresenter::SetHUDColorFrameIndex(uint32_t color32)
 	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayPresenter::GetHUDColorLagFrameCount() const
+Color4u8 ClientDisplayPresenter::GetHUDColorLagFrameCount() const
 {
 	return this->_hudColorLagFrameCount;
 }
 
-void ClientDisplayPresenter::SetHUDColorLagFrameCount(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorLagFrameCount(Color4u8 color32)
 {
 	this->_hudColorLagFrameCount = color32;
 	
@@ -764,12 +768,12 @@ void ClientDisplayPresenter::SetHUDColorLagFrameCount(uint32_t color32)
 	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayPresenter::GetHUDColorCPULoadAverage() const
+Color4u8 ClientDisplayPresenter::GetHUDColorCPULoadAverage() const
 {
 	return this->_hudColorCPULoadAverage;
 }
 
-void ClientDisplayPresenter::SetHUDColorCPULoadAverage(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorCPULoadAverage(Color4u8 color32)
 {
 	this->_hudColorCPULoadAverage = color32;
 	
@@ -780,12 +784,12 @@ void ClientDisplayPresenter::SetHUDColorCPULoadAverage(uint32_t color32)
 	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayPresenter::GetHUDColorRTC() const
+Color4u8 ClientDisplayPresenter::GetHUDColorRTC() const
 {
 	return this->_hudColorRTC;
 }
 
-void ClientDisplayPresenter::SetHUDColorRTC(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorRTC(Color4u8 color32)
 {
 	this->_hudColorRTC = color32;
 	
@@ -796,12 +800,12 @@ void ClientDisplayPresenter::SetHUDColorRTC(uint32_t color32)
 	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayPresenter::GetHUDColorInputPendingAndApplied() const
+Color4u8 ClientDisplayPresenter::GetHUDColorInputPendingAndApplied() const
 {
 	return this->_hudColorInputAppliedAndPending;
 }
 
-void ClientDisplayPresenter::SetHUDColorInputPendingAndApplied(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorInputPendingAndApplied(Color4u8 color32)
 {
 	this->_hudColorInputAppliedAndPending = color32;
 	
@@ -812,12 +816,12 @@ void ClientDisplayPresenter::SetHUDColorInputPendingAndApplied(uint32_t color32)
 	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayPresenter::GetHUDColorInputAppliedOnly() const
+Color4u8 ClientDisplayPresenter::GetHUDColorInputAppliedOnly() const
 {
 	return this->_hudColorInputAppliedOnly;
 }
 
-void ClientDisplayPresenter::SetHUDColorInputAppliedOnly(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorInputAppliedOnly(Color4u8 color32)
 {
 	this->_hudColorInputAppliedOnly = color32;
 	
@@ -828,12 +832,12 @@ void ClientDisplayPresenter::SetHUDColorInputAppliedOnly(uint32_t color32)
 	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayPresenter::GetHUDColorInputPendingOnly() const
+Color4u8 ClientDisplayPresenter::GetHUDColorInputPendingOnly() const
 {
 	return this->_hudColorInputPendingOnly;
 }
 
-void ClientDisplayPresenter::SetHUDColorInputPendingOnly(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorInputPendingOnly(Color4u8 color32)
 {
 	this->_hudColorInputPendingOnly = color32;
 	
@@ -844,9 +848,9 @@ void ClientDisplayPresenter::SetHUDColorInputPendingOnly(uint32_t color32)
 	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayPresenter::GetInputColorUsingStates(bool pendingState, bool appliedState)
+Color4u8 ClientDisplayPresenter::GetInputColorUsingStates(bool pendingState, bool appliedState)
 {
-	uint32_t color = LE_TO_LOCAL_32(0x80808080);
+	Color4u8 color = {0x80, 0x80, 0x80, 0x80};
 	
 	if (pendingState && appliedState)
 	{
@@ -1034,15 +1038,15 @@ void ClientDisplayPresenter::_ResizeCPUPixelScaler(const VideoFilterTypeID filte
 	const size_t newDstBufferWidth  = (this->_vf[NDSDisplayID_Main]->GetSrcWidth()  + this->_vf[NDSDisplayID_Touch]->GetSrcWidth())  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
 	const size_t newDstBufferHeight = (this->_vf[NDSDisplayID_Main]->GetSrcHeight() + this->_vf[NDSDisplayID_Touch]->GetSrcHeight()) * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
 	
-	size_t newMasterBufferSize = newDstBufferWidth * newDstBufferHeight * sizeof(uint32_t);
-	uint32_t *newMasterBuffer = (uint32_t *)malloc_alignedPage(newMasterBufferSize);
+	size_t newMasterBufferSize = newDstBufferWidth * newDstBufferHeight * sizeof(Color4u8);
+	Color4u8 *newMasterBuffer = (Color4u8 *)malloc_alignedPage(newMasterBufferSize);
 	memset(newMasterBuffer, 0, newMasterBufferSize);
 	
 	const size_t newDstBufferSingleWidth  = this->_vf[NDSDisplayID_Main]->GetSrcWidth()  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
 	const size_t newDstBufferSingleHeight = this->_vf[NDSDisplayID_Main]->GetSrcHeight() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
 	
-	this->_vf[NDSDisplayID_Main]->SetDstBufferPtr(newMasterBuffer);
-	this->_vf[NDSDisplayID_Touch]->SetDstBufferPtr(newMasterBuffer + (newDstBufferSingleWidth * newDstBufferSingleHeight));
+	this->_vf[NDSDisplayID_Main]->SetDstBufferPtr((uint32_t *)newMasterBuffer);
+	this->_vf[NDSDisplayID_Touch]->SetDstBufferPtr((uint32_t *)newMasterBuffer + (newDstBufferSingleWidth * newDstBufferSingleHeight));
 	
 	this->_vfMasterDstBuffer = newMasterBuffer;
 	this->_vfMasterDstBufferSize = newMasterBufferSize;
@@ -1058,7 +1062,7 @@ void ClientDisplayPresenter::UpdateLayout()
 	// Do nothing. This is implementation dependent.
 }
 
-void ClientDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)
+void ClientDisplayPresenter::CopyFrameToBuffer(Color4u8 *dstBuffer)
 {
 	// Do nothing. This is implementation dependent.
 }
@@ -1296,12 +1300,12 @@ ClientDisplayViewInterface::~ClientDisplayViewInterface()
 	this->_initialTouchInMajorDisplay = NULL;
 }
 
-int64_t ClientDisplayViewInterface::GetDisplayViewID()
+int32_t ClientDisplayViewInterface::GetDisplayViewID()
 {
 	return this->_displayViewID;
 }
 
-void ClientDisplayViewInterface::SetDisplayViewID(int64_t displayViewID)
+void ClientDisplayViewInterface::SetDisplayViewID(int32_t displayViewID)
 {
 	// This implementation-dependent value will never be used internally.
 	this->_displayViewID = displayViewID;
@@ -1903,7 +1907,7 @@ void ClientDisplay3DPresenter::SetHUDTouchLinePositionVertices(float *vtxBufferP
 	}
 }
 
-void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
+void ClientDisplay3DPresenter::SetHUDColorVertices(Color4u8 *vtxColorBufferPtr)
 {
 	pthread_mutex_lock(&this->_mutexHUDString);
 	std::string hudString = this->_hudString;
@@ -1911,7 +1915,7 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 	
 	const char *cString = hudString.c_str();
 	const size_t textLength = (hudString.length() <= HUD_TEXT_MAX_CHARACTERS) ? hudString.length() : HUD_TEXT_MAX_CHARACTERS;
-	uint32_t currentColor = LE_TO_LOCAL_32(0x40000000);
+	Color4u8 currentColor = {0x00, 0x00, 0x00, 0x40};
 	
 	// First, calculate the color of the text box.
 	// The text box should always be the first character in the string.
@@ -2013,16 +2017,16 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 			continue;
 		}
 		
-		vtxColorBufferPtr[j+0] = LE_TO_LOCAL_32(currentColor); // Top Left
-		vtxColorBufferPtr[j+1] = LE_TO_LOCAL_32(currentColor); // Top Right
-		vtxColorBufferPtr[j+2] = LE_TO_LOCAL_32(currentColor); // Bottom Right
-		vtxColorBufferPtr[j+3] = LE_TO_LOCAL_32(currentColor); // Bottom Left
+		vtxColorBufferPtr[j+0].value = LE_TO_LOCAL_32(currentColor.value); // Top Left
+		vtxColorBufferPtr[j+1].value = LE_TO_LOCAL_32(currentColor.value); // Top Right
+		vtxColorBufferPtr[j+2].value = LE_TO_LOCAL_32(currentColor.value); // Bottom Right
+		vtxColorBufferPtr[j+3].value = LE_TO_LOCAL_32(currentColor.value); // Bottom Left
 	}
 	
 	// Fill in the vertices for the inputs.
 	// "<^>vABXYLRSsgf x:000 y:000";
 	
-	uint32_t inputColors[HUD_INPUT_ELEMENT_LENGTH];
+	Color4u8 inputColors[HUD_INPUT_ELEMENT_LENGTH];
 	inputColors[ 0] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Left == 0),   (this->_ndsFrameInfo.inputStatesApplied.Left == 0) );
 	inputColors[ 1] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Up == 0),     (this->_ndsFrameInfo.inputStatesApplied.Up == 0) );
 	inputColors[ 2] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Right == 0),  (this->_ndsFrameInfo.inputStatesApplied.Right == 0) );
@@ -2039,7 +2043,7 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 	inputColors[13] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Lid == 0),    (this->_ndsFrameInfo.inputStatesApplied.Lid == 0) );
 	inputColors[14] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Touch == 0),  (this->_ndsFrameInfo.inputStatesApplied.Touch == 0) );
 	
-	uint32_t touchColor = inputColors[14];
+	Color4u8 touchColor = inputColors[14];
 	
 	for (size_t k = 15; k < HUD_INPUT_ELEMENT_LENGTH; k++)
 	{
@@ -2048,13 +2052,13 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 	
 	for (size_t k = 0; k < HUD_INPUT_ELEMENT_LENGTH; i++, j+=4, k++)
 	{
-		vtxColorBufferPtr[j+0] = LE_TO_LOCAL_32(inputColors[k]); // Top Left
-		vtxColorBufferPtr[j+1] = LE_TO_LOCAL_32(inputColors[k]); // Top Right
-		vtxColorBufferPtr[j+2] = LE_TO_LOCAL_32(inputColors[k]); // Bottom Right
-		vtxColorBufferPtr[j+3] = LE_TO_LOCAL_32(inputColors[k]); // Bottom Left
+		vtxColorBufferPtr[j+0].value = LE_TO_LOCAL_32(inputColors[k].value); // Top Left
+		vtxColorBufferPtr[j+1].value = LE_TO_LOCAL_32(inputColors[k].value); // Top Right
+		vtxColorBufferPtr[j+2].value = LE_TO_LOCAL_32(inputColors[k].value); // Bottom Right
+		vtxColorBufferPtr[j+3].value = LE_TO_LOCAL_32(inputColors[k].value); // Bottom Left
 	}
 	
-	touchColor = ((this->_ndsFrameInfo.inputStatesPending.Touch != 0) && (this->_ndsFrameInfo.inputStatesApplied.Touch != 0)) ? 0x00000000 : LE_TO_LOCAL_32((touchColor & 0x00FFFFFF) | 0x60000000);
+	touchColor.value = ((this->_ndsFrameInfo.inputStatesPending.Touch != 0) && (this->_ndsFrameInfo.inputStatesApplied.Touch != 0)) ? 0x00000000 : LE_TO_LOCAL_32((touchColor.value & 0x00FFFFFF) | 0x60000000);
 	
 	for (size_t k = 0; k < HUD_INPUT_TOUCH_LINE_ELEMENTS; i++, j+=4, k++)
 	{

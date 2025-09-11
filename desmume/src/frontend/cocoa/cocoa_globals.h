@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2023 DeSmuME Team
+	Copyright (C) 2012-2025 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -370,21 +370,23 @@ enum
 
 enum
 {
-	GPUClientFetchObjectIDMask_Async       = (1 << 0),
-	GPUClientFetchObjectIDMask_DisplayLink = (1 << 1),
-	GPUClientFetchObjectIDMask_OpenGL      = (1 << 2),
-	GPUClientFetchObjectIDMask_Metal       = (1 << 3),
-	GPUClientFetchObjectIDMask_macOS       = (1 << 4),
-	GPUClientFetchObjectIDMask_OpenEmu     = (1 << 5)
+	GPUClientFetchObjectIDMask_MultiDisplayView = (1 << 0),
+	GPUClientFetchObjectIDMask_Async            = (1 << 1),
+	GPUClientFetchObjectIDMask_DisplayLink      = (1 << 2),
+	GPUClientFetchObjectIDMask_OpenGL           = (1 << 3),
+	GPUClientFetchObjectIDMask_Metal            = (1 << 4),
+	GPUClientFetchObjectIDMask_macOS            = (1 << 5),
+	GPUClientFetchObjectIDMask_OpenEmu          = (1 << 6)
 };
 
 enum
 {
-	GPUClientFetchObjectID_Default            = 0,
-	GPUClientFetchObjectID_GenericAsync       = GPUClientFetchObjectIDMask_Async,
-	GPUClientFetchObjectID_GenericDisplayLink = GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink,
-	GPUClientFetchObjectID_GenericOpenGL      = GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink | GPUClientFetchObjectIDMask_OpenGL,
-	GPUClientFetchObjectID_MacOpenGL          = GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink | GPUClientFetchObjectIDMask_OpenGL | GPUClientFetchObjectIDMask_macOS,
-	GPUClientFetchObjectID_MacMetal           = GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink | GPUClientFetchObjectIDMask_Metal  | GPUClientFetchObjectIDMask_macOS,
-	GPUClientFetchObjectID_OpenEmu            = GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink | GPUClientFetchObjectIDMask_OpenGL | GPUClientFetchObjectIDMask_OpenEmu
+	GPUClientFetchObjectID_Default                 = 0,
+	GPUClientFetchObjectID_GenericMultiDisplayView = GPUClientFetchObjectIDMask_MultiDisplayView,
+	GPUClientFetchObjectID_GenericAsync            = GPUClientFetchObjectIDMask_Async,
+	GPUClientFetchObjectID_GenericOpenGL           = GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_OpenGL,
+	GPUClientFetchObjectID_MacDisplayLink          = GPUClientFetchObjectIDMask_MultiDisplayView | GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink | GPUClientFetchObjectIDMask_macOS,
+	GPUClientFetchObjectID_MacOpenGL               = GPUClientFetchObjectIDMask_MultiDisplayView | GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink | GPUClientFetchObjectIDMask_macOS | GPUClientFetchObjectIDMask_OpenGL,
+	GPUClientFetchObjectID_MacMetal                = GPUClientFetchObjectIDMask_MultiDisplayView | GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_DisplayLink | GPUClientFetchObjectIDMask_macOS | GPUClientFetchObjectIDMask_Metal,
+	GPUClientFetchObjectID_OpenEmu                 = GPUClientFetchObjectIDMask_Async | GPUClientFetchObjectIDMask_OpenGL | GPUClientFetchObjectIDMask_OpenEmu
 };

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2022 DeSmuME team
+	Copyright (C) 2011-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -26,17 +26,18 @@
 
 
 class ClientExecutionControl;
+class ClientEmulationOutput;
+class ClientEmulationOutputManager;
+class ClientDisplayViewOutputManager;
 @class CocoaDSCore;
 @class CocoaDSController;
 @class CocoaDSFirmware;
 @class CocoaDSGPU;
-@class CocoaDSOutput;
 @class CocoaDSCheatManager;
 
 typedef struct
 {
 	CocoaDSCore *cdsCore;
-	pthread_rwlock_t rwlockOutputList;
 	pthread_mutex_t mutexThreadExecute;
 	pthread_cond_t condThreadExecute;
 	pthread_rwlock_t rwlockCoreExecute;
@@ -45,6 +46,8 @@ typedef struct
 @interface CocoaDSCore : NSObject
 {
 	ClientExecutionControl *execControl;
+	ClientEmulationOutputManager *outputManager;
+	ClientDisplayViewOutputManager *macDisplayOutputManager;
 	
 	CocoaDSController *cdsController;
 	CocoaDSFirmware *cdsFirmware;
@@ -70,6 +73,8 @@ typedef struct
 }
 
 @property (readonly, nonatomic) ClientExecutionControl *execControl;
+@property (readonly, nonatomic) ClientEmulationOutputManager *outputManager;
+@property (readonly, nonatomic) ClientDisplayViewOutputManager *macDisplayOutputManager;
 
 @property (retain) CocoaDSFirmware *cdsFirmware;
 @property (readonly) CocoaDSController *cdsController;
@@ -143,8 +148,8 @@ typedef struct
 - (void) getTimedEmulatorStatistics:(NSTimer *)timer;
 - (NSUInteger) frameNumber;
 
-- (void) addOutput:(CocoaDSOutput *)theOutput;
-- (void) removeOutput:(CocoaDSOutput *)theOutput;
+- (void) addOutput:(ClientEmulationOutput *)theOutput;
+- (void) removeOutput:(ClientEmulationOutput *)theOutput;
 - (void) removeAllOutputs;
 
 - (NSString *) cpuEmulationEngineString;
