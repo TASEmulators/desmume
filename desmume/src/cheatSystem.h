@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2024 DeSmuME team
+	Copyright (C) 2009-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -14,6 +14,9 @@
 	You should have received a copy of the GNU General Public License
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifndef _CHEAT_SYSTEM_H_
+#define _CHEAT_SYSTEM_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -327,3 +330,5 @@ void CheatItemGenerateDescriptionFlat(const char *folderName, const char *folder
 
 extern CHEATS *cheats;
 extern CHEATSEARCH *cheatSearch;
+
+#endif // _CHEAT_SYSTEM_H_

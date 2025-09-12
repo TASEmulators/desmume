@@ -27,6 +27,7 @@
 
 #include "macOS_driver.h"
 #include "ClientAVCaptureObject.h"
+#include "ClientCheatManager.h"
 #include "ClientExecutionControl.h"
 #include "ClientInputHandler.h"
 #include "ClientEmulationOutput.h"
