@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2022 DeSmuME team
+	Copyright (C) 2012-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -111,31 +111,6 @@ public:
 	virtual uint8_t generateSample();
 };
 
-class CoreAudioOutput
-{
-private:
-	AudioUnit _au;
-	RingBuffer *_buffer;
-	apple_unfairlock_t _unfairlockAU;
-	float _volume;
-	
-public:
-	CoreAudioOutput(size_t bufferSamples, size_t sampleSize);
-	~CoreAudioOutput();
-	
-	void start();
-	void stop();
-	void writeToBuffer(const void *buffer, size_t numberSampleFrames);
-	void clearBuffer();
-	size_t getAvailableSamples() const;
-	void mute();
-	void unmute();
-	void pause();
-	void unpause();
-	float getVolume() const;
-	void setVolume(float vol);
-};
-
 OSStatus CoreAudioInputCaptureCallback(void *inRefCon,
 									   AudioUnitRenderActionFlags *ioActionFlags,
 									   const AudioTimeStamp *inTimeStamp,
@@ -167,13 +142,6 @@ void CoreAudioInputAUHALChanged(void *inRefCon,
 								AudioUnitPropertyID inID,
 								AudioUnitScope inScope,
 								AudioUnitElement inElement);
-
-OSStatus CoreAudioOutputRenderCallback(void *inRefCon,
-									   AudioUnitRenderActionFlags *ioActionFlags,
-									   const AudioTimeStamp *inTimeStamp,
-									   UInt32 inBusNumber,
-									   UInt32 inNumberFrames,
-									   AudioBufferList *ioData);
 
 void CoreAudioInputDefaultHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
 													   const bool isHardwareEnabled,

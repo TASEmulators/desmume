@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2022 DeSmuME team
+	Copyright (C) 2017-2025 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 
 #include "ClientAVCaptureObject.h"
 #include "ClientExecutionControl.h"
+#include "cocoa_globals.h"
 
 // Need to include assert.h this way so that GDB stub will work
 // with an optimized build.

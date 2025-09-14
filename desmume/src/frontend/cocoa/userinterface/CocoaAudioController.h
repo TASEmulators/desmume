@@ -27,19 +27,13 @@
 #endif
 
 
-class MacCoreAudioOutput : public ClientAudioOutput
-{
-public:
-	MacCoreAudioOutput() {};
-	~MacCoreAudioOutput() {};
-	
-	// ClientEmulationOutput methods
-	virtual void SetIdle(bool theState);
-};
+class DummyAudioOutputEngine;
+class MacCoreAudioOutputEngine;
 
 @interface CocoaAudioController : NSObjectController
 {
-	MacCoreAudioOutput *_audioOutput;
+	MacCoreAudioOutputEngine *_audioEngineMacCoreAudio;
+	ClientAudioOutput *_audioOutput;
 
 	NSNumber *_engineID;
 	NSNumber *_volume;
@@ -65,7 +59,7 @@ public:
 }
 
 @property (assign, nonatomic, getter=darkMode, setter=setDarkMode:) BOOL _darkMode;
-@property (readonly, nonatomic, getter=audioOutput) MacCoreAudioOutput *_audioOutput;
+@property (readonly, nonatomic, getter=audioOutput) ClientAudioOutput *_audioOutput;
 @property (assign, nonatomic, getter=engineID, setter=setEngineID:) NSNumber *_engineID;
 @property (assign, nonatomic, getter=volume, setter=setVolume:) NSNumber *_volume;
 @property (assign, getter=speakerVolumeIcon, setter=setSpeakerVolumeIcon:) NSImage *_speakerVolumeIcon;

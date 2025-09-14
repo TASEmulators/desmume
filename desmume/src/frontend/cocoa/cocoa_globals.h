@@ -189,6 +189,8 @@
 
 #define WINDOW_STATUS_BAR_HEIGHT					24		// Height of an emulation window status bar in pixels.
 
+#define DS_FRAMES_PER_SECOND						59.8261 // Number of DS frames per second.
+
 //#define SPU_SAMPLE_RATE								(44100.0 * DS_FRAMES_PER_SECOND / 60.0)	// Samples per second
 #define SPU_SAMPLE_RATE								44100.0	// Samples per second
 #define SPU_SAMPLE_RESOLUTION						16		// Bits per sample; must be a multiple of 8

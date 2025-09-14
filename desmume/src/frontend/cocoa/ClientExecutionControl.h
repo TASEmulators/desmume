@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2021 DeSmuME team
+	Copyright (C) 2017-2025 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -37,7 +37,6 @@
 #define SPEED_SCALAR_DOUBLE							2.0			// Speed scalar for double execution speed.
 #define SPEED_SCALAR_MIN							0.005		// Lower limit for the speed multiplier.
 
-#define DS_FRAMES_PER_SECOND						59.8261		// Number of DS frames per second.
 #define DS_SECONDS_PER_FRAME						(1.0 / DS_FRAMES_PER_SECOND) // The length of time in seconds that, ideally, a frame should be processed within.
 
 #define FRAME_SKIP_AGGRESSIVENESS					1.0			// Must be a value between 0.0 (inclusive) and positive infinity.

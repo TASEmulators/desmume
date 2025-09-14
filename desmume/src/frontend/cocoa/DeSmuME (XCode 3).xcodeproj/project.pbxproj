@@ -448,7 +448,6 @@
 		AB2A9A2D1725F00F0062C1A1 /* slot2_paddle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */; };
 		AB2A9A2E1725F00F0062C1A1 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		AB2A9A2F1725F00F0062C1A1 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
-		AB2A9A301725F00F0062C1A1 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		AB2A9A311725F00F0062C1A1 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		AB2A9A321725F00F0062C1A1 /* SPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECB1345AC8400AF11D1 /* SPU.cpp */; };
 		AB2A9A331725F00F0062C1A1 /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4C1345ACBF00AF11D1 /* task.cpp */; };
@@ -644,7 +643,6 @@
 		AB2F3C0715CF9C6000858373 /* slot2_paddle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */; };
 		AB2F3C0815CF9C6000858373 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		AB2F3C0915CF9C6000858373 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
-		AB2F3C0A15CF9C6000858373 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		AB2F3C0B15CF9C6000858373 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		AB2F3C0D15CF9C6000858373 /* SPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECB1345AC8400AF11D1 /* SPU.cpp */; };
 		AB2F3C0F15CF9C6000858373 /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4C1345ACBF00AF11D1 /* task.cpp */; };
@@ -964,7 +962,6 @@
 		AB711F461481C35F009011C8 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104111346652500AF11D1 /* cocoa_input.mm */; };
 		AB711F471481C35F009011C8 /* cocoa_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104121346652500AF11D1 /* cocoa_core.mm */; };
 		AB711F481481C35F009011C8 /* cocoa_rom.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104131346652500AF11D1 /* cocoa_rom.mm */; };
-		AB711F491481C35F009011C8 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		AB711F4A1481C35F009011C8 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABD104271346653B00AF11D1 /* main.m */; };
 		AB711F4E1481C35F009011C8 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
 		AB711F501481C35F009011C8 /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */; };
@@ -1111,7 +1108,6 @@
 		AB73A9F51507C9F500A310C8 /* slot2_paddle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */; };
 		AB73A9F61507C9F500A310C8 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		AB73A9F71507C9F500A310C8 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
-		AB73A9F81507C9F500A310C8 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		AB73A9F91507C9F500A310C8 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		AB73A9FB1507C9F500A310C8 /* SPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECB1345AC8400AF11D1 /* SPU.cpp */; };
 		AB73A9FD1507C9F500A310C8 /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4C1345ACBF00AF11D1 /* task.cpp */; };
@@ -1157,6 +1153,11 @@
 		AB73AA2D1507C9F500A310C8 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
 		AB73AA2E1507C9F500A310C8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		AB73AA2F1507C9F500A310C8 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
+		AB743E472E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB743E452E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp */; };
+		AB743E482E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB743E452E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp */; };
+		AB743E492E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB743E452E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp */; };
+		AB743E4A2E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB743E452E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp */; };
+		AB743E4B2E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB743E452E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp */; };
 		AB75226F14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB75226D14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns */; };
 		AB7BB17F1D62C8CC00A7A6E2 /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E36C1D6188BC004A2C0D /* colorspacehandler.cpp */; };
 		AB7DDA6D173DC38F004F3D07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
@@ -1401,7 +1402,6 @@
 		ABAD0FFD15ACE7A00000EC47 /* slot2_paddle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */; };
 		ABAD0FFE15ACE7A00000EC47 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		ABAD0FFF15ACE7A00000EC47 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
-		ABAD100015ACE7A00000EC47 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		ABAD100115ACE7A00000EC47 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		ABAD100315ACE7A00000EC47 /* SPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECB1345AC8400AF11D1 /* SPU.cpp */; };
 		ABAD100515ACE7A00000EC47 /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4C1345ACBF00AF11D1 /* task.cpp */; };
@@ -2134,6 +2134,8 @@
 		AB700DDD16CDE4C300FBD336 /* DisplayWindowController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = DisplayWindowController.mm; sourceTree = "<group>"; };
 		AB711F7F1481C35F009011C8 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB73AA331507C9F500A310C8 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB743E452E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MacCoreAudioOutputEngine.cpp; sourceTree = "<group>"; };
+		AB743E462E766E2E007FB6A2 /* MacCoreAudioOutputEngine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacCoreAudioOutputEngine.h; sourceTree = "<group>"; };
 		AB75226D14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_FirmwareConfig.icns; sourceTree = "<group>"; };
 		AB80E04C142BC4A800A52038 /* cocoa_util.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_util.mm; sourceTree = "<group>"; };
 		AB80E050142BC4FA00A52038 /* cocoa_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_util.h; sourceTree = "<group>"; };
@@ -2208,11 +2210,9 @@
 		ABD103FE1346652500AF11D1 /* cocoa_core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_core.h; sourceTree = "<group>"; };
 		ABD103FF1346652500AF11D1 /* cocoa_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_input.h; sourceTree = "<group>"; };
 		ABD104001346652500AF11D1 /* cocoa_rom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_rom.h; sourceTree = "<group>"; };
-		ABD104011346652500AF11D1 /* sndOSX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sndOSX.h; sourceTree = "<group>"; };
 		ABD104111346652500AF11D1 /* cocoa_input.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_input.mm; sourceTree = "<group>"; };
 		ABD104121346652500AF11D1 /* cocoa_core.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_core.mm; sourceTree = "<group>"; };
 		ABD104131346652500AF11D1 /* cocoa_rom.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_rom.mm; sourceTree = "<group>"; };
-		ABD104141346652500AF11D1 /* sndOSX.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sndOSX.cpp; sourceTree = "<group>"; };
 		ABD104271346653B00AF11D1 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		ABD10452134666DD00AF11D1 /* DeSmuME_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DeSmuME_Prefix.pch; sourceTree = "<group>"; };
 		ABD1266320AE80DF00EFE1B2 /* MacAVCaptureTool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacAVCaptureTool.h; sourceTree = "<group>"; };
@@ -2615,7 +2615,6 @@
 				ABECB51318A460910052D52A /* OGLDisplayOutput.cpp */,
 				AB3B8DCA2D8A35D900C9CBFD /* OGLDisplayOutput_3_2.cpp */,
 				ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */,
-				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				AB2145211714DFF4006DDB0F /* audiosamplegenerator.h */,
 				AB561BFE2E72AD6E007F88A5 /* ClientAudioOutput.h */,
 				ABD1267220AE812900EFE1B2 /* ClientAVCaptureObject.h */,
@@ -2642,7 +2641,6 @@
 				ABECB51218A460910052D52A /* OGLDisplayOutput.h */,
 				AB3B8DCB2D8A35D900C9CBFD /* OGLDisplayOutput_3_2.h */,
 				ABD0A5371501AA5A0074A094 /* ringbuffer.h */,
-				ABD104011346652500AF11D1 /* sndOSX.h */,
 				AB2F56EE1704C86900E28885 /* utilities.h */,
 				ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */,
 				ABD104121346652500AF11D1 /* cocoa_core.mm */,
@@ -3285,6 +3283,7 @@
 				AB213D43170CB141006DDB0F /* InputProfileController.h */,
 				ABD1266320AE80DF00EFE1B2 /* MacAVCaptureTool.h */,
 				ABD1266520AE80DF00EFE1B2 /* MacBaseCaptureTool.h */,
+				AB743E462E766E2E007FB6A2 /* MacCoreAudioOutputEngine.h */,
 				AB3E690E1E231E9900D4CC75 /* MacOGLDisplayView.h */,
 				ABAB0AFD1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
@@ -3306,6 +3305,7 @@
 				AB213D44170CB141006DDB0F /* InputProfileController.mm */,
 				ABD1266420AE80DF00EFE1B2 /* MacAVCaptureTool.mm */,
 				ABD1266620AE80DF00EFE1B2 /* MacBaseCaptureTool.mm */,
+				AB743E452E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp */,
 				AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */,
 				ABAB0AFE1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
@@ -4783,7 +4783,6 @@
 				AB2A9A2D1725F00F0062C1A1 /* slot2_paddle.cpp in Sources */,
 				AB2A9A2E1725F00F0062C1A1 /* slot2_piano.cpp in Sources */,
 				AB2A9A2F1725F00F0062C1A1 /* slot2_rumblepak.cpp in Sources */,
-				AB2A9A301725F00F0062C1A1 /* sndOSX.cpp in Sources */,
 				AB2A9A311725F00F0062C1A1 /* SndOut.cpp in Sources */,
 				AB2A9A321725F00F0062C1A1 /* SPU.cpp in Sources */,
 				AB2A9A331725F00F0062C1A1 /* task.cpp in Sources */,
@@ -4920,6 +4919,7 @@
 				AB561C082E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */,
 				AB1E5A382E73F0AC008AFF9F /* ClientCheatManager.cpp in Sources */,
 				AB1E5A392E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
+				AB743E482E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4984,7 +4984,6 @@
 				AB2F3C0715CF9C6000858373 /* slot2_paddle.cpp in Sources */,
 				AB2F3C0815CF9C6000858373 /* slot2_piano.cpp in Sources */,
 				AB2F3C0915CF9C6000858373 /* slot2_rumblepak.cpp in Sources */,
-				AB2F3C0A15CF9C6000858373 /* sndOSX.cpp in Sources */,
 				AB2F3C0B15CF9C6000858373 /* SndOut.cpp in Sources */,
 				AB2F3C0D15CF9C6000858373 /* SPU.cpp in Sources */,
 				AB2F3C0F15CF9C6000858373 /* task.cpp in Sources */,
@@ -5121,6 +5120,7 @@
 				AB561C0B2E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */,
 				AB1E5A3A2E73F0AC008AFF9F /* ClientCheatManager.cpp in Sources */,
 				AB1E5A3B2E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
+				AB743E492E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5185,7 +5185,6 @@
 				AB711F2A1481C35F009011C8 /* slot2_paddle.cpp in Sources */,
 				AB711F2B1481C35F009011C8 /* slot2_piano.cpp in Sources */,
 				AB711F2C1481C35F009011C8 /* slot2_rumblepak.cpp in Sources */,
-				AB711F491481C35F009011C8 /* sndOSX.cpp in Sources */,
 				AB711F511481C35F009011C8 /* SndOut.cpp in Sources */,
 				AB711F1D1481C35F009011C8 /* SPU.cpp in Sources */,
 				AB711F401481C35F009011C8 /* task.cpp in Sources */,
@@ -5352,6 +5351,7 @@
 				AB561C112E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */,
 				AB1E5A3E2E73F0AC008AFF9F /* ClientCheatManager.cpp in Sources */,
 				AB1E5A3F2E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
+				AB743E4B2E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5416,7 +5416,6 @@
 				AB73A9F51507C9F500A310C8 /* slot2_paddle.cpp in Sources */,
 				AB73A9F61507C9F500A310C8 /* slot2_piano.cpp in Sources */,
 				AB73A9F71507C9F500A310C8 /* slot2_rumblepak.cpp in Sources */,
-				AB73A9F81507C9F500A310C8 /* sndOSX.cpp in Sources */,
 				AB73A9F91507C9F500A310C8 /* SndOut.cpp in Sources */,
 				AB73A9FB1507C9F500A310C8 /* SPU.cpp in Sources */,
 				AB73A9FD1507C9F500A310C8 /* task.cpp in Sources */,
@@ -5583,6 +5582,7 @@
 				AB561C0E2E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */,
 				AB1E5A3C2E73F0AC008AFF9F /* ClientCheatManager.cpp in Sources */,
 				AB1E5A3D2E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
+				AB743E4A2E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5647,7 +5647,6 @@
 				ABAD0FFD15ACE7A00000EC47 /* slot2_paddle.cpp in Sources */,
 				ABAD0FFE15ACE7A00000EC47 /* slot2_piano.cpp in Sources */,
 				ABAD0FFF15ACE7A00000EC47 /* slot2_rumblepak.cpp in Sources */,
-				ABAD100015ACE7A00000EC47 /* sndOSX.cpp in Sources */,
 				ABAD100115ACE7A00000EC47 /* SndOut.cpp in Sources */,
 				ABAD100315ACE7A00000EC47 /* SPU.cpp in Sources */,
 				ABAD100515ACE7A00000EC47 /* task.cpp in Sources */,
@@ -5784,6 +5783,7 @@
 				AB561C052E72AD6E007F88A5 /* ClientVideoOutput.cpp in Sources */,
 				AB1E5A362E73F0AC008AFF9F /* ClientCheatManager.cpp in Sources */,
 				AB1E5A372E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
+				AB743E472E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

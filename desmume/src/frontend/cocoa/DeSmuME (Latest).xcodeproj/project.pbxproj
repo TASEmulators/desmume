@@ -213,7 +213,6 @@
 		8C43E81327E3CD0100A35F65 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		8C43E81427E3CD0100A35F65 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
 		8C43E81527E3CD0100A35F65 /* ftgxval.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7831BB4EC1000B08C25 /* ftgxval.c */; };
-		8C43E81627E3CD0100A35F65 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		8C43E81727E3CD0100A35F65 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		8C43E81827E3CD0100A35F65 /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6C13AF1D6D00502E1E /* SoundTouch.cpp */; };
 		8C43E81927E3CD0100A35F65 /* SPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECB1345AC8400AF11D1 /* SPU.cpp */; };
@@ -525,7 +524,6 @@
 		8C43E97627E3CD4C00A35F65 /* slot2_paddle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */; };
 		8C43E97727E3CD4C00A35F65 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		8C43E97827E3CD4C00A35F65 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
-		8C43E97927E3CD4C00A35F65 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		8C43E97A27E3CD4C00A35F65 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		8C43E97B27E3CD4C00A35F65 /* psnames.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731591BB51A8D00B26147 /* psnames.c */; };
 		8C43E97C27E3CD4C00A35F65 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */; };
@@ -812,7 +810,6 @@
 		8CCD847427E40B730024BDD5 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		8CCD847527E40B730024BDD5 /* Database.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABADF1171DEA4C1200A142B1 /* Database.cpp */; };
 		8CCD847627E40B730024BDD5 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
-		8CCD847727E40B730024BDD5 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		8CCD847827E40B730024BDD5 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		8CCD847927E40B730024BDD5 /* ftpfr.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA78C1BB4EC1000B08C25 /* ftpfr.c */; };
 		8CCD847A27E40B730024BDD5 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */; };
@@ -947,6 +944,16 @@
 		AB1773FD182ECA8A009F29DD /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
 		AB1773FF182ECA8A009F29DD /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
 		AB1949DB15034F900098793E /* OESoundInterface.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABB3C6401501BB8300E0C22E /* OESoundInterface.mm */; };
+		AB1C3F4C2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1C3F4B2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp */; };
+		AB1C3F4D2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1C3F4B2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp */; };
+		AB1C3F4E2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1C3F4B2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp */; };
+		AB1C3F4F2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1C3F4B2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp */; };
+		AB1C3F502E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1C3F4B2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp */; };
+		AB1C3F512E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1C3F4B2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp */; };
+		AB1C3F522E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1C3F4B2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp */; };
+		AB1C3F532E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1C3F4B2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp */; };
+		AB1C3F542E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1C3F4B2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp */; };
+		AB1C3F552E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1C3F4B2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp */; };
 		AB26D87C16B5253D00A2305C /* OGLRender_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB68A0DA16B139BC00DE0546 /* OGLRender_3_2.cpp */; };
 		AB28624F20AE3E7B00EAED43 /* MacBaseCaptureTool.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB28624820AE3E7A00EAED43 /* MacBaseCaptureTool.mm */; };
 		AB28625020AE3E7B00EAED43 /* MacBaseCaptureTool.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB28624820AE3E7A00EAED43 /* MacBaseCaptureTool.mm */; };
@@ -1168,7 +1175,6 @@
 		AB36C7F427F2C8AE00C763C8 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		AB36C7F527F2C8AE00C763C8 /* Database.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABADF1171DEA4C1200A142B1 /* Database.cpp */; };
 		AB36C7F627F2C8AE00C763C8 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
-		AB36C7F727F2C8AE00C763C8 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		AB36C7F827F2C8AE00C763C8 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		AB36C7F927F2C8AE00C763C8 /* ftpfr.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA78C1BB4EC1000B08C25 /* ftpfr.c */; };
 		AB36C7FA27F2C8AE00C763C8 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */; };
@@ -1762,7 +1768,6 @@
 		AB7900B2215B84E50082AE82 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		AB7900B3215B84E50082AE82 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
 		AB7900B4215B84E50082AE82 /* ftgxval.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7831BB4EC1000B08C25 /* ftgxval.c */; };
-		AB7900B5215B84E50082AE82 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		AB7900B6215B84E50082AE82 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		AB7900B7215B84E50082AE82 /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6C13AF1D6D00502E1E /* SoundTouch.cpp */; };
 		AB7900B8215B84E50082AE82 /* SPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECB1345AC8400AF11D1 /* SPU.cpp */; };
@@ -2100,7 +2105,6 @@
 		AB790212215B84F20082AE82 /* slot2_paddle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */; };
 		AB790213215B84F20082AE82 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		AB790214215B84F20082AE82 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
-		AB790215215B84F20082AE82 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		AB790216215B84F20082AE82 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		AB790217215B84F20082AE82 /* psnames.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731591BB51A8D00B26147 /* psnames.c */; };
 		AB790218215B84F20082AE82 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */; };
@@ -2361,7 +2365,6 @@
 		AB796D3215CDCBA200C59155 /* slot2_paddle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */; };
 		AB796D3315CDCBA200C59155 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		AB796D3415CDCBA200C59155 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
-		AB796D3515CDCBA200C59155 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		AB796D3615CDCBA200C59155 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		AB796D3715CDCBA200C59155 /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6C13AF1D6D00502E1E /* SoundTouch.cpp */; };
 		AB796D3815CDCBA200C59155 /* SPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECB1345AC8400AF11D1 /* SPU.cpp */; };
@@ -2656,7 +2659,6 @@
 		AB8F3CBA1A53AC2600A80BF6 /* slot2_paddle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */; };
 		AB8F3CBB1A53AC2600A80BF6 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		AB8F3CBC1A53AC2600A80BF6 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
-		AB8F3CBD1A53AC2600A80BF6 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		AB8F3CBE1A53AC2600A80BF6 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		AB8F3CBF1A53AC2600A80BF6 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */; };
 		AB8F3CC01A53AC2600A80BF6 /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6C13AF1D6D00502E1E /* SoundTouch.cpp */; };
@@ -3225,7 +3227,6 @@
 		ABC858F328273FEE00A03EA9 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		ABC858F428273FEE00A03EA9 /* Database.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABADF1171DEA4C1200A142B1 /* Database.cpp */; };
 		ABC858F528273FEE00A03EA9 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
-		ABC858F628273FEE00A03EA9 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		ABC858F728273FEE00A03EA9 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		ABC858F828273FEE00A03EA9 /* ftpfr.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA78C1BB4EC1000B08C25 /* ftpfr.c */; };
 		ABC858F928273FEE00A03EA9 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */; };
@@ -3574,7 +3575,6 @@
 		ABD2CDA726E05CB000FB15F7 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
 		ABD2CDA826E05CB000FB15F7 /* Database.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABADF1171DEA4C1200A142B1 /* Database.cpp */; };
 		ABD2CDA926E05CB000FB15F7 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
-		ABD2CDAA26E05CB000FB15F7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		ABD2CDAB26E05CB000FB15F7 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		ABD2CDAC26E05CB000FB15F7 /* ftpfr.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA78C1BB4EC1000B08C25 /* ftpfr.c */; };
 		ABD2CDAD26E05CB000FB15F7 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */; };
@@ -3868,6 +3868,8 @@
 		AB1B9E601501A78000464647 /* ringbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ringbuffer.cpp; sourceTree = "<group>"; };
 		AB1B9E611501A78000464647 /* coreaudiosound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreaudiosound.h; sourceTree = "<group>"; };
 		AB1B9E621501A78000464647 /* ringbuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ringbuffer.h; sourceTree = "<group>"; };
+		AB1C3F4A2E741AA40047F251 /* MacCoreAudioOutputEngine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MacCoreAudioOutputEngine.h; sourceTree = "<group>"; };
+		AB1C3F4B2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MacCoreAudioOutputEngine.cpp; sourceTree = "<group>"; };
 		AB1D4BAF26E6F8D700A9AE42 /* GPU_Operations_AVX2.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations_AVX2.cpp; sourceTree = "<group>"; };
 		AB1D4BB026E6F8D700A9AE42 /* GPU_Operations_AVX2.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GPU_Operations_AVX2.h; sourceTree = "<group>"; };
 		AB1D4BB126E6F8D700A9AE42 /* GPU_Operations.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations.cpp; sourceTree = "<group>"; };
@@ -4321,11 +4323,9 @@
 		ABD103FE1346652500AF11D1 /* cocoa_core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_core.h; sourceTree = "<group>"; };
 		ABD103FF1346652500AF11D1 /* cocoa_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_input.h; sourceTree = "<group>"; };
 		ABD104001346652500AF11D1 /* cocoa_rom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_rom.h; sourceTree = "<group>"; };
-		ABD104011346652500AF11D1 /* sndOSX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sndOSX.h; sourceTree = "<group>"; };
 		ABD104111346652500AF11D1 /* cocoa_input.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_input.mm; sourceTree = "<group>"; };
 		ABD104121346652500AF11D1 /* cocoa_core.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_core.mm; sourceTree = "<group>"; };
 		ABD104131346652500AF11D1 /* cocoa_rom.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_rom.mm; sourceTree = "<group>"; };
-		ABD104141346652500AF11D1 /* sndOSX.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sndOSX.cpp; sourceTree = "<group>"; };
 		ABD104271346653B00AF11D1 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		ABD10452134666DD00AF11D1 /* DeSmuME_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DeSmuME_Prefix.pch; sourceTree = "<group>"; };
 		ABD10AE31715FCDD00B5729D /* audiosamplegenerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = audiosamplegenerator.h; sourceTree = SOURCE_ROOT; };
@@ -4916,7 +4916,6 @@
 				ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */,
 				ABE6840B189E33BC007FD69C /* OGLDisplayOutput.cpp */,
 				AB1B9E601501A78000464647 /* ringbuffer.cpp */,
-				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				ABD10AE31715FCDD00B5729D /* audiosamplegenerator.h */,
 				AB79913D2E712F510030C0A6 /* ClientAudioOutput.h */,
 				AB28625820AE3E9F00EAED43 /* ClientAVCaptureObject.h */,
@@ -4944,7 +4943,6 @@
 				ABB24F6C1A81EE92006C1108 /* OGLDisplayOutput_3_2.h */,
 				ABE6840E189E33D5007FD69C /* OGLDisplayOutput.h */,
 				AB1B9E621501A78000464647 /* ringbuffer.h */,
-				ABD104011346652500AF11D1 /* sndOSX.h */,
 				AB82445E1704AEC400B8EE20 /* utilities.h */,
 				AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */,
 				ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */,
@@ -5351,6 +5349,7 @@
 				AB01005C170D07AF00D70FBE /* InputProfileController.h */,
 				AB28624920AE3E7B00EAED43 /* MacAVCaptureTool.h */,
 				AB28624A20AE3E7B00EAED43 /* MacBaseCaptureTool.h */,
+				AB1C3F4A2E741AA40047F251 /* MacCoreAudioOutputEngine.h */,
 				AB3BF43F1E2628B6003E2B24 /* MacMetalDisplayView.h */,
 				AB3BF4051E22FEA8003E2B24 /* MacOGLDisplayView.h */,
 				ABD1FBF41F7B7EA600B4F648 /* MacScreenshotCaptureTool.h */,
@@ -5374,6 +5373,7 @@
 				AB01005D170D07B000D70FBE /* InputProfileController.mm */,
 				AB28624720AE3E7A00EAED43 /* MacAVCaptureTool.mm */,
 				AB28624820AE3E7A00EAED43 /* MacBaseCaptureTool.mm */,
+				AB1C3F4B2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp */,
 				AB3BF43B1E26289E003E2B24 /* MacMetalDisplayView.mm */,
 				AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */,
 				ABD1FBF01F7B7E7E00B4F648 /* MacScreenshotCaptureTool.mm */,
@@ -8053,6 +8053,7 @@
 				8C43E7DD27E3CD0100A35F65 /* ftstroke.c in Sources */,
 				8C43E7DE27E3CD0100A35F65 /* RomInfoPanel.mm in Sources */,
 				8C43E7DF27E3CD0100A35F65 /* gfx3d.cpp in Sources */,
+				AB1C3F4E2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				8C43E7E027E3CD0100A35F65 /* GPU.cpp in Sources */,
 				8C43E7E127E3CD0100A35F65 /* features_cpu.c in Sources */,
 				8C43E7E227E3CD0100A35F65 /* slot1_retail_auto.cpp in Sources */,
@@ -8109,7 +8110,6 @@
 				8C43E81327E3CD0100A35F65 /* slot2_piano.cpp in Sources */,
 				8C43E81427E3CD0100A35F65 /* slot2_rumblepak.cpp in Sources */,
 				8C43E81527E3CD0100A35F65 /* ftgxval.c in Sources */,
-				8C43E81627E3CD0100A35F65 /* sndOSX.cpp in Sources */,
 				8C43E81727E3CD0100A35F65 /* SndOut.cpp in Sources */,
 				8C43E81827E3CD0100A35F65 /* SoundTouch.cpp in Sources */,
 				8C43E81927E3CD0100A35F65 /* SPU.cpp in Sources */,
@@ -8323,7 +8323,6 @@
 				8C43E97627E3CD4C00A35F65 /* slot2_paddle.cpp in Sources */,
 				8C43E97727E3CD4C00A35F65 /* slot2_piano.cpp in Sources */,
 				8C43E97827E3CD4C00A35F65 /* slot2_rumblepak.cpp in Sources */,
-				8C43E97927E3CD4C00A35F65 /* sndOSX.cpp in Sources */,
 				8C43E97A27E3CD4C00A35F65 /* SndOut.cpp in Sources */,
 				AB6E3B542E73E7C80088075E /* ClientCheatManager.cpp in Sources */,
 				AB6E17F82A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
@@ -8349,6 +8348,7 @@
 				8C43E98E27E3CD4C00A35F65 /* tinyxml.cpp in Sources */,
 				8C43E98F27E3CD4C00A35F65 /* tinyxmlerror.cpp in Sources */,
 				8C43E99027E3CD4C00A35F65 /* tinyxmlparser.cpp in Sources */,
+				AB1C3F532E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				8C43E99127E3CD4C00A35F65 /* version.cpp in Sources */,
 				8C43E99227E3CD4C00A35F65 /* vfat.cpp in Sources */,
 				8C43E99327E3CD4C00A35F65 /* videofilter.cpp in Sources */,
@@ -8466,6 +8466,7 @@
 				8CCD844E27E40B730024BDD5 /* matrix.cpp in Sources */,
 				8CCD844F27E40B730024BDD5 /* mc.cpp in Sources */,
 				8CCD845027E40B730024BDD5 /* features_cpu.c in Sources */,
+				AB1C3F512E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				8CCD845127E40B730024BDD5 /* metaspu.cpp in Sources */,
 				8CCD845227E40B730024BDD5 /* MMU.cpp in Sources */,
 				8CCD845327E40B730024BDD5 /* mmx_optimized.cpp in Sources */,
@@ -8506,7 +8507,6 @@
 				8CCD847427E40B730024BDD5 /* slot2_piano.cpp in Sources */,
 				8CCD847527E40B730024BDD5 /* Database.cpp in Sources */,
 				8CCD847627E40B730024BDD5 /* slot2_rumblepak.cpp in Sources */,
-				8CCD847727E40B730024BDD5 /* sndOSX.cpp in Sources */,
 				8CCD847827E40B730024BDD5 /* SndOut.cpp in Sources */,
 				8CCD847927E40B730024BDD5 /* ftpfr.c in Sources */,
 				8CCD847A27E40B730024BDD5 /* Slot2WindowDelegate.mm in Sources */,
@@ -8713,7 +8713,6 @@
 				AB36C7F427F2C8AE00C763C8 /* slot2_piano.cpp in Sources */,
 				AB36C7F527F2C8AE00C763C8 /* Database.cpp in Sources */,
 				AB36C7F627F2C8AE00C763C8 /* slot2_rumblepak.cpp in Sources */,
-				AB36C7F727F2C8AE00C763C8 /* sndOSX.cpp in Sources */,
 				AB36C7F827F2C8AE00C763C8 /* SndOut.cpp in Sources */,
 				AB36C7F927F2C8AE00C763C8 /* ftpfr.c in Sources */,
 				AB36C7FA27F2C8AE00C763C8 /* Slot2WindowDelegate.mm in Sources */,
@@ -8726,6 +8725,7 @@
 				AB36C80127F2C8AE00C763C8 /* TDStretch.cpp in Sources */,
 				AB36C80227F2C8AE00C763C8 /* texcache.cpp in Sources */,
 				AB36C80327F2C8AE00C763C8 /* thumb_instructions.cpp in Sources */,
+				AB1C3F522E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				AB36C80427F2C8AE00C763C8 /* ftmm.c in Sources */,
 				AB36C80527F2C8AE00C763C8 /* Timestretcher.cpp in Sources */,
 				AB36C80627F2C8AE00C763C8 /* tinystr.cpp in Sources */,
@@ -8854,6 +8854,7 @@
 			files = (
 				AB79004D215B84E50082AE82 /* AAFilter.cpp in Sources */,
 				AB79004E215B84E50082AE82 /* arm_instructions.cpp in Sources */,
+				AB1C3F4D2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				AB79004F215B84E50082AE82 /* armcpu.cpp in Sources */,
 				AB790050215B84E50082AE82 /* bios.cpp in Sources */,
 				AB790051215B84E50082AE82 /* cache.cpp in Sources */,
@@ -8960,7 +8961,6 @@
 				AB7900B2215B84E50082AE82 /* slot2_piano.cpp in Sources */,
 				AB7900B3215B84E50082AE82 /* slot2_rumblepak.cpp in Sources */,
 				AB7900B4215B84E50082AE82 /* ftgxval.c in Sources */,
-				AB7900B5215B84E50082AE82 /* sndOSX.cpp in Sources */,
 				AB7991472E712F510030C0A6 /* ClientAudioOutput.cpp in Sources */,
 				AB7900B6215B84E50082AE82 /* SndOut.cpp in Sources */,
 				AB7900B7215B84E50082AE82 /* SoundTouch.cpp in Sources */,
@@ -9189,6 +9189,7 @@
 				AB790205215B84F20082AE82 /* saves.cpp in Sources */,
 				AB790206215B84F20082AE82 /* slot1.cpp in Sources */,
 				AB790207215B84F20082AE82 /* slot1_none.cpp in Sources */,
+				AB1C3F502E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				AB790208215B84F20082AE82 /* slot1_r4.cpp in Sources */,
 				AB790209215B84F20082AE82 /* slot1_retail_nand.cpp in Sources */,
 				AB79020A215B84F20082AE82 /* encrypt.cpp in Sources */,
@@ -9203,7 +9204,6 @@
 				AB790213215B84F20082AE82 /* slot2_piano.cpp in Sources */,
 				AB6E17FA2A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
 				AB790214215B84F20082AE82 /* slot2_rumblepak.cpp in Sources */,
-				AB790215215B84F20082AE82 /* sndOSX.cpp in Sources */,
 				AB790216215B84F20082AE82 /* SndOut.cpp in Sources */,
 				AB790217215B84F20082AE82 /* psnames.c in Sources */,
 				AB790218215B84F20082AE82 /* Slot2WindowDelegate.mm in Sources */,
@@ -9325,6 +9325,7 @@
 			files = (
 				AB796CF015CDCBA200C59155 /* AAFilter.cpp in Sources */,
 				AB796CF215CDCBA200C59155 /* arm_instructions.cpp in Sources */,
+				AB1C3F552E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				AB796CF315CDCBA200C59155 /* armcpu.cpp in Sources */,
 				AB796CF415CDCBA200C59155 /* bios.cpp in Sources */,
 				AB796CF515CDCBA200C59155 /* cache.cpp in Sources */,
@@ -9431,7 +9432,6 @@
 				AB796D3315CDCBA200C59155 /* slot2_piano.cpp in Sources */,
 				AB796D3415CDCBA200C59155 /* slot2_rumblepak.cpp in Sources */,
 				ABFEA8281BB4EC1100B08C25 /* ftgxval.c in Sources */,
-				AB796D3515CDCBA200C59155 /* sndOSX.cpp in Sources */,
 				AB7991412E712F510030C0A6 /* ClientAudioOutput.cpp in Sources */,
 				AB796D3615CDCBA200C59155 /* SndOut.cpp in Sources */,
 				AB796D3715CDCBA200C59155 /* SoundTouch.cpp in Sources */,
@@ -9660,6 +9660,7 @@
 				AB8F3CAE1A53AC2600A80BF6 /* saves.cpp in Sources */,
 				AB8F3CAF1A53AC2600A80BF6 /* slot1.cpp in Sources */,
 				AB8F3CB01A53AC2600A80BF6 /* slot1_none.cpp in Sources */,
+				AB1C3F4C2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				AB8F3CB11A53AC2600A80BF6 /* slot1_r4.cpp in Sources */,
 				AB8F3CB21A53AC2600A80BF6 /* slot1_retail_nand.cpp in Sources */,
 				AB8F3CB31A53AC2600A80BF6 /* encrypt.cpp in Sources */,
@@ -9674,7 +9675,6 @@
 				AB8F3CBB1A53AC2600A80BF6 /* slot2_piano.cpp in Sources */,
 				AB6E17F62A675BF1003A564D /* CheatDatabaseWindowController.mm in Sources */,
 				AB8F3CBC1A53AC2600A80BF6 /* slot2_rumblepak.cpp in Sources */,
-				AB8F3CBD1A53AC2600A80BF6 /* sndOSX.cpp in Sources */,
 				AB8F3CBE1A53AC2600A80BF6 /* SndOut.cpp in Sources */,
 				ABA7315C1BB51A8D00B26147 /* psnames.c in Sources */,
 				AB8F3CBF1A53AC2600A80BF6 /* Slot2WindowDelegate.mm in Sources */,
@@ -9974,6 +9974,7 @@
 			files = (
 				ABC8589E28273FEE00A03EA9 /* ftlcdfil.c in Sources */,
 				ABC8589F28273FEE00A03EA9 /* AAFilter.cpp in Sources */,
+				AB1C3F542E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				ABC858A028273FEE00A03EA9 /* arm_instructions.cpp in Sources */,
 				ABC858A128273FEE00A03EA9 /* RomInfoPanel.mm in Sources */,
 				ABC858A228273FEE00A03EA9 /* armcpu.cpp in Sources */,
@@ -10064,7 +10065,6 @@
 				ABC858F328273FEE00A03EA9 /* slot2_piano.cpp in Sources */,
 				ABC858F428273FEE00A03EA9 /* Database.cpp in Sources */,
 				ABC858F528273FEE00A03EA9 /* slot2_rumblepak.cpp in Sources */,
-				ABC858F628273FEE00A03EA9 /* sndOSX.cpp in Sources */,
 				ABC858F728273FEE00A03EA9 /* SndOut.cpp in Sources */,
 				ABC858F828273FEE00A03EA9 /* ftpfr.c in Sources */,
 				ABC858F928273FEE00A03EA9 /* Slot2WindowDelegate.mm in Sources */,
@@ -10209,6 +10209,7 @@
 			files = (
 				ABD2CD5226E05CB000FB15F7 /* ftlcdfil.c in Sources */,
 				ABD2CD5326E05CB000FB15F7 /* AAFilter.cpp in Sources */,
+				AB1C3F4F2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				ABD2CD5426E05CB000FB15F7 /* arm_instructions.cpp in Sources */,
 				ABD2CD5526E05CB000FB15F7 /* RomInfoPanel.mm in Sources */,
 				ABD2CD5626E05CB000FB15F7 /* armcpu.cpp in Sources */,
@@ -10299,7 +10300,6 @@
 				ABD2CDA726E05CB000FB15F7 /* slot2_piano.cpp in Sources */,
 				ABD2CDA826E05CB000FB15F7 /* Database.cpp in Sources */,
 				ABD2CDA926E05CB000FB15F7 /* slot2_rumblepak.cpp in Sources */,
-				ABD2CDAA26E05CB000FB15F7 /* sndOSX.cpp in Sources */,
 				ABD2CDAB26E05CB000FB15F7 /* SndOut.cpp in Sources */,
 				ABD2CDAC26E05CB000FB15F7 /* ftpfr.c in Sources */,
 				ABD2CDAD26E05CB000FB15F7 /* Slot2WindowDelegate.mm in Sources */,

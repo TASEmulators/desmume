@@ -20,36 +20,77 @@
 
 #include "ClientEmulationOutput.h"
 
+#include "rthreads.h"
 #include "../../SPU.h"
 
+
+class ClientAudioOutputEngine
+{
+protected:
+	int _engineID;
+	std::string _engineString;
+	int _bufferSizeForSPUInit;
+	bool _isPaused;
+	
+public:
+	ClientAudioOutputEngine();
+	virtual ~ClientAudioOutputEngine();
+	
+	int GetEngineID() const;
+	const char* GetEngineString() const;
+	int GetBufferSizeForSPUInit() const;
+	bool IsPaused() const;
+	
+	virtual void Start();
+	virtual void Stop();
+	virtual void SetMute(bool theState);
+	virtual void SetPause(bool theState);
+	virtual void SetVolume(int volume);
+	
+	virtual size_t GetAvailableSamples() const;
+	virtual void WriteToBuffer(const void *inSamples, size_t numberSampleFrames);
+	virtual void ClearBuffer();
+	
+	virtual void HandleFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
+	virtual size_t HandlePostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
+	
+};
+
+class DummyAudioOutputEngine : public ClientAudioOutputEngine
+{
+public:
+	DummyAudioOutputEngine() {};
+};
 
 class ClientAudioOutput : public ClientEmulationOutput
 {
 protected:
+	DummyAudioOutputEngine *_dummyAudioEngine;
+	ClientAudioOutputEngine *_audioEngine;
+	SoundInterface_struct _spuCallbackStruct;
+	
 	float _volume;
-	int _engineID;
 	bool _spuAdvancedLogic;
 	SPUInterpolationMode _interpolationModeID;
 	ESynchMode _syncModeID;
 	ESynchMethod _syncMethodID;
 	bool _isMuted;
-	int _filterID;
 	
-	std::string _engineString;
 	std::string _spuInterpolationModeString;
 	std::string _spuSyncMethodString;
 	
-	pthread_mutex_t _mutexEngine;
-	pthread_mutex_t _mutexVolume;
-	pthread_mutex_t _mutexSpuAdvancedLogic;
-	pthread_mutex_t _mutexSpuInterpolationMode;
-	pthread_mutex_t _mutexSpuSyncMethod;
+	slock_t *_mutexEngine;
+	slock_t *_mutexVolume;
+	slock_t *_mutexSpuAdvancedLogic;
+	slock_t *_mutexSpuInterpolationMode;
+	slock_t *_mutexSpuSyncMethod;
 	
 public:
 	ClientAudioOutput();
 	~ClientAudioOutput();
 	
-	void SetEngineByID(int engineID);
+	void SetEngine(ClientAudioOutputEngine *theEngine);
+	ClientAudioOutputEngine* GetEngine();
 	int GetEngineByID();
 	
 	void SetVolume(float vol);
@@ -70,12 +111,12 @@ public:
 	void SetMute(bool theState);
 	bool IsMuted();
 	
-	void SetFilterByID(int filterID);
-	int GetFilterByID();
-	
 	const char* GetEngineString();
 	const char* GetSPUInterpolationModeString();
 	const char* GetSPUSyncMethodString();
+	
+	// ClientEmulationOutput methods
+	virtual void SetIdle(bool theState);
 };
 
 #endif // _CLIENT_AUDIO_OUTPUT_H_

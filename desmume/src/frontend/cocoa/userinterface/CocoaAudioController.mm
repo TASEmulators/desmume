@@ -18,25 +18,9 @@
 #import "CocoaAudioController.h"
 #import "cocoa_util.h"
 
+#include "MacCoreAudioOutputEngine.h"
 #include "cocoa_globals.h"
-#include "sndOSX.h"
 
-
-void MacCoreAudioOutput::SetIdle(bool theState)
-{
-	if (theState)
-	{
-		SNDOSXPauseAudio();
-	}
-	else
-	{
-		SNDOSXUnpauseAudio();
-	}
-	
-	ClientAudioOutput::SetIdle(theState);
-}
-
-#pragma mark -
 
 @implementation CocoaAudioController
 
@@ -76,13 +60,14 @@ void MacCoreAudioOutput::SetIdle(bool theState)
 	
 	_speakerVolumeIcon = (_darkMode) ? _iconSpeakerVolumeFullDM : _iconSpeakerVolumeFull;
 	
-	_audioOutput = new MacCoreAudioOutput;
+	_audioEngineMacCoreAudio = NULL;
+	_audioOutput = new ClientAudioOutput;
 	
 	_engineID = [[NSNumber numberWithInt:_audioOutput->GetEngineByID()] retain];
-	_volume = [[NSNumber numberWithInt:_audioOutput->GetEngineByID()] retain];
-	_spuInterpolationModeID = [[NSNumber numberWithInt:_audioOutput->GetEngineByID()] retain];
-	_spuSyncModeID = [[NSNumber numberWithInt:_audioOutput->GetEngineByID()] retain];
-	_spuSyncMethodID = [[NSNumber numberWithInt:_audioOutput->GetEngineByID()] retain];
+	_volume = [[NSNumber numberWithFloat:_audioOutput->GetVolume()] retain];
+	_spuInterpolationModeID = [[NSNumber numberWithInt:_audioOutput->GetSPUInterpolationModeByID()] retain];
+	_spuSyncModeID = [[NSNumber numberWithInt:_audioOutput->GetSPUSyncModeByID()] retain];
+	_spuSyncMethodID = [[NSNumber numberWithInt:_audioOutput->GetSPUSyncMethodByID()] retain];
 	
 	_engineString = [[NSString stringWithCString:_audioOutput->GetEngineString() encoding:NSUTF8StringEncoding] retain];
 	_spuInterpolationModeString = [[NSString stringWithCString:_audioOutput->GetSPUInterpolationModeString() encoding:NSUTF8StringEncoding] retain];
@@ -95,6 +80,9 @@ void MacCoreAudioOutput::SetIdle(bool theState)
 {
 	delete _audioOutput;
 	_audioOutput = NULL;
+	
+	delete _audioEngineMacCoreAudio;
+	_audioEngineMacCoreAudio = NULL;
 	
 	[_engineID release];
 	[_volume release];
@@ -138,7 +126,36 @@ void MacCoreAudioOutput::SetIdle(bool theState)
 - (void) setEngineID:(NSNumber *)idNumber
 {
 	int newEngineID = [idNumber intValue];
-	_audioOutput->SetEngineByID(newEngineID);
+	ClientAudioOutputEngine *newEngineObject = NULL;
+	
+	if (newEngineID == _audioOutput->GetEngineByID())
+	{
+		return;
+	}
+	
+	switch (newEngineID)
+	{
+		case SNDCORE_MAC_COREAUDIO:
+		{
+			if (_audioEngineMacCoreAudio == NULL)
+			{
+				_audioEngineMacCoreAudio = new MacCoreAudioOutputEngine;
+				newEngineObject = _audioEngineMacCoreAudio;
+			}
+			break;
+		}
+			
+		default:
+			break;
+	}
+	
+	if (newEngineID != SNDCORE_MAC_COREAUDIO)
+	{
+		delete _audioEngineMacCoreAudio;
+		_audioEngineMacCoreAudio = NULL;
+	}
+	
+	_audioOutput->SetEngine(newEngineObject);
 	[self setEngineString:_engineString];
 }
 
