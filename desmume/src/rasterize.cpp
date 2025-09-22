@@ -1587,8 +1587,14 @@ Render3DError SoftRasterizerColorOut::FillZero()
 	{
 		bufferIdx = this->_currentUsageIdx;
 	}
+	else
+	{
+		// No buffer was or is in use, so there is nothing to modify.
+		error = RENDER3DERROR_INVALID_BUFFER;
+		return error;
+	}
 	
-	if ( (bufferIdx != RENDER3D_RESOURCE_INDEX_NONE) && (this->_buffer32[bufferIdx] != NULL) )
+	if (this->_buffer32[bufferIdx] != NULL)
 	{
 		memset(this->_buffer32[bufferIdx], 0, this->_framebufferSize32);
 	}

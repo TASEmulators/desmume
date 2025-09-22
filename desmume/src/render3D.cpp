@@ -385,7 +385,7 @@ size_t Render3DColorOut::BindRead32()
 		this->_currentReadyIdx = RENDER3D_RESOURCE_INDEX_NONE;
 	}
 	
-	if ( (this->_currentReadingIdx32 != oldReadingIdx32) && (oldReadingIdx32 != RENDER3D_RESOURCE_INDEX_NONE) )
+	if ( (oldReadingIdx32 != RENDER3D_RESOURCE_INDEX_NONE) && (this->_currentReadingIdx32 != oldReadingIdx32) )
 	{
 		this->_state[oldReadingIdx32] = AsyncReadState_Free;
 	}

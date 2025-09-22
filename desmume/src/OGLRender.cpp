@@ -1576,7 +1576,7 @@ size_t OpenGLRenderColorOut::BindRead32()
 		this->_currentReadyIdx = RENDER3D_RESOURCE_INDEX_NONE;
 	}
 	
-	if ( (this->_currentReadingIdx32 != oldReadingIdx32) && (oldReadingIdx32 != RENDER3D_RESOURCE_INDEX_NONE) )
+	if ( (oldReadingIdx32 != RENDER3D_RESOURCE_INDEX_NONE) && (this->_currentReadingIdx32 != oldReadingIdx32) )
 	{
 		this->_state[oldReadingIdx32] = AsyncReadState_Free;
 		
@@ -1586,6 +1586,12 @@ size_t OpenGLRenderColorOut::BindRead32()
 			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 			this->_buffer32[oldReadingIdx32] = NULL;
 		}
+	}
+	
+	// Do not proceed if we can't bind a buffer for reading.
+	if (this->_currentReadingIdx32 == RENDER3D_RESOURCE_INDEX_NONE)
+	{
+		return this->_currentReadingIdx32;
 	}
 	
 	if (this->_pbo[this->_currentReadingIdx32] != 0)
@@ -1870,6 +1876,12 @@ Render3DError OpenGLRenderColorOut::FillZero()
 	{
 		bufferIdx32 = this->_currentUsageIdx;
 	}
+	else
+	{
+		// No buffer was or is in use, so there is nothing to modify.
+		error = RENDER3DERROR_INVALID_BUFFER;
+		return error;
+	}
 	
 	if (this->_willConvertColorOnGPU || (this->_texColorOut[bufferIdx32] != 0))
 	{
@@ -1882,8 +1894,7 @@ Render3DError OpenGLRenderColorOut::FillZero()
 	
 	if ( (this->_pbo[bufferIdx32] != 0) &&
 	      this->_willConvertColorOnGPU &&
-	     (bufferIdx32 == this->_currentReadingIdx32) &&
-	     (bufferIdx32 != RENDER3D_RESOURCE_INDEX_NONE) )
+	     (bufferIdx32 == this->_currentReadingIdx32) )
 	{
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, this->_pbo[bufferIdx32]);
 		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
@@ -1899,7 +1910,7 @@ Render3DError OpenGLRenderColorOut::FillZero()
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
 	
-	if ( (bufferIdx32 == this->_currentReadingIdx32) && (bufferIdx32 != RENDER3D_RESOURCE_INDEX_NONE) )
+	if (bufferIdx32 == this->_currentReadingIdx32)
 	{
 		this->_currentReadingIdx16 = bufferIdx32;
 		memset(this->_buffer16[bufferIdx32], 0, this->_framebufferSize16);
