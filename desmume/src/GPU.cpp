@@ -5646,20 +5646,10 @@ void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
 	
 	if (this->_displayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
 	{
-		if (this->_displayInfo.isCustomSizeRequested)
+		for (size_t i = 0; i < this->_displayInfo.framebufferPageCount; i++)
 		{
-			for (size_t i = 0; i < this->_displayInfo.framebufferPageCount; i++)
-			{
-				memset_u16((u8 *)this->_masterFramebuffer + (this->_displayInfo.framebufferPageSize * i), color16, nativeFramebufferPixCount);
-				memset_u16((u8 *)this->_masterFramebuffer + (this->_displayInfo.framebufferPageSize * i) + (nativeFramebufferPixCount * sizeof(u16)), color16, customFramebufferPixCount);
-			}
-		}
-		else
-		{
-			for (size_t i = 0; i < this->_displayInfo.framebufferPageCount; i++)
-			{
-				memset_u16((u8 *)this->_masterFramebuffer + (this->_displayInfo.framebufferPageSize * i), color16, nativeFramebufferPixCount);
-			}
+			memset_u16((u8 *)this->_masterFramebuffer + (this->_displayInfo.framebufferPageSize * i), color16, nativeFramebufferPixCount);
+			memset_u16((u8 *)this->_masterFramebuffer + (this->_displayInfo.framebufferPageSize * i) + (nativeFramebufferPixCount * sizeof(u16)), color16, customFramebufferPixCount);
 		}
 	}
 	else
