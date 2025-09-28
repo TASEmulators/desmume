@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2024 DeSmuME team
+	Copyright (C) 2016-2025 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -115,14 +115,16 @@ FORCEINLINE void ColorspaceConvert555xTo6665Opaque_AVX512(const v512u16 &srcColo
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert5551To8888_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi)
 {
-	const v512u16 srcAlphaBits16 = _mm512_and_si512( _mm512_cmpgt_epi16(_mm512_setzero_si512(), srcColor), _mm512_set1_epi16(0xFF00) );
+	const __mmask32 result = _mm512_cmpgt_epi16_mask(_mm512_setzero_si512(), srcColor);
+	const v512u16 srcAlphaBits16 = _mm512_mask_blend_epi16( result, _mm512_setzero_si512(), _mm512_set1_epi16(0xFF00) );
 	ColorspaceConvert555aTo8888_AVX512<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert5551To6665_AVX512(const v512u16 &srcColor, v512u32 &dstLo, v512u32 &dstHi)
 {
-	const v512u16 srcAlphaBits16 = _mm512_and_si512( _mm512_cmpgt_epi16(_mm512_setzero_si512(), srcColor), _mm512_set1_epi16(0x1F00) );
+	const __mmask32 result = _mm512_cmpgt_epi16_mask(_mm512_setzero_si512(), srcColor);
+	const v512u16 srcAlphaBits16 = _mm512_mask_blend_epi16( result, _mm512_setzero_si512(), _mm512_set1_epi16(0x1F00) );
 	ColorspaceConvert555aTo6665_AVX512<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
