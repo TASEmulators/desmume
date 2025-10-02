@@ -135,6 +135,19 @@ enum {
     SUB_OBJ
 };
 
+#ifdef HAVE_LIBAGG
+enum hud_display_enum {
+    HUD_DISPLAY_FPS,
+    HUD_DISPLAY_INPUT,
+    HUD_DISPLAY_GINPUT,
+    HUD_DISPLAY_FCOUNTER,
+    HUD_DISPLAY_LCOUNTER,
+    HUD_DISPLAY_RTC,
+    HUD_DISPLAY_MIC,
+    HUD_DISPLAY_EDITOR,
+};
+#endif
+
 #ifdef AGG2D_USE_VECTORFONTS
 #define VECTOR_FONT_BASE_SIZE 16
 
@@ -198,8 +211,8 @@ static void Modify_PriInterpolation(GSimpleAction *action, GVariant *parameter, 
 static void Modify_Interpolation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void SetOrientation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void ToggleLayerVisibility(GSimpleAction *action, GVariant *parameter, gpointer user_data);
-static void ToggleHudDisplay(GtkToggleAction* action, gpointer data);
 #ifdef HAVE_LIBAGG
+static void ToggleHudDisplay(hud_display_enum hudId, gboolean active);
 static void HudFps(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HudInput(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HudGraphicalInput(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -3097,16 +3110,6 @@ static void desmume_gtk_menu_tool_layers(GtkApplication *app)
 }
 
 #ifdef HAVE_LIBAGG
-enum hud_display_enum {
-    HUD_DISPLAY_FPS,
-    HUD_DISPLAY_INPUT,
-    HUD_DISPLAY_GINPUT,
-    HUD_DISPLAY_FCOUNTER,
-    HUD_DISPLAY_LCOUNTER,
-    HUD_DISPLAY_RTC,
-    HUD_DISPLAY_MIC,
-    HUD_DISPLAY_EDITOR,
-};
 
 static void ToggleHudDisplay(hud_display_enum hudId, gboolean active)
 {
