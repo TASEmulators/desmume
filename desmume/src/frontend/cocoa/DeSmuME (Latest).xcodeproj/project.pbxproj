@@ -1534,6 +1534,17 @@
 		AB5B1D4C21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */; };
 		AB5B1D4D21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */; };
 		AB5FDDAC1D62C89E0094617C /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */; };
+		AB64DC462E78E3710092D8FC /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */; };
+		AB64DC472E78E3710092D8FC /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */; };
+		AB64DC482E78E3710092D8FC /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */; };
+		AB64DC492E78E3710092D8FC /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */; };
+		AB64DC4A2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */; };
+		AB64DC4B2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */; };
+		AB64DC4C2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */; };
+		AB64DC4D2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */; };
+		AB64DC4E2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */; };
+		AB64DC4F2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */; };
+		AB64DC502E78E3710092D8FC /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */; };
 		AB68101B187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681013187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png */; };
 		AB68101D187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681014187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png */; };
 		AB68101F187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681015187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png */; };
@@ -4092,6 +4103,8 @@
 		AB5B1D4821D1F31D00BF0E0F /* MetalRendererCommonShaders.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MetalRendererCommonShaders.h; sourceTree = "<group>"; };
 		AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = MetalRendererCommonShaders.metal; sourceTree = "<group>"; };
 		AB64987B13ECC73800EE7DD2 /* FileTypeInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = FileTypeInfo.plist; sourceTree = "<group>"; };
+		AB64DC442E78E3710092D8FC /* cgl_3Demu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cgl_3Demu.h; sourceTree = "<group>"; };
+		AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = cgl_3Demu.cpp; sourceTree = "<group>"; };
 		AB681013187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Blue_512x512.png; path = images/Icon_GuitarGrip_Button_Blue_512x512.png; sourceTree = "<group>"; };
 		AB681014187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Green_512x512.png; path = images/Icon_GuitarGrip_Button_Green_512x512.png; sourceTree = "<group>"; };
 		AB681015187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Red_512x512.png; path = images/Icon_GuitarGrip_Button_Red_512x512.png; sourceTree = "<group>"; };
@@ -4909,6 +4922,7 @@
 				AB6E3B452E7385710088075E /* ClientFirmwareControl.cpp */,
 				AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */,
 				ABDB1BEE2E66486E002AD9AF /* ClientVideoOutput.cpp */,
+				AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */,
 				AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */,
 				AB28625320AE3E9E00EAED43 /* macOS_driver.cpp */,
 				AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */,
@@ -4926,6 +4940,7 @@
 				AB6E3B442E7385710088075E /* ClientFirmwareControl.h */,
 				AB11AD881F6757F800CB298E /* ClientInputHandler.h */,
 				ABDB1BED2E66486E002AD9AF /* ClientVideoOutput.h */,
+				AB64DC442E78E3710092D8FC /* cgl_3Demu.h */,
 				ABA6574914511EC90077E5E9 /* cocoa_cheat.h */,
 				ABD103FE1346652500AF11D1 /* cocoa_core.h */,
 				AB58F32B1364F44B0074C376 /* cocoa_file.h */,
@@ -8008,6 +8023,7 @@
 				8C43E7B227E3CD0100A35F65 /* cache.cpp in Sources */,
 				8C43E7B327E3CD0100A35F65 /* fsnitro.cpp in Sources */,
 				8C43E7B427E3CD0100A35F65 /* fttype1.c in Sources */,
+				AB64DC492E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				8C43E7B527E3CD0100A35F65 /* cheatSystem.cpp in Sources */,
 				8C43E7B627E3CD0100A35F65 /* common.cpp in Sources */,
 				8C43E7B727E3CD0100A35F65 /* slot1comp_mc.cpp in Sources */,
@@ -8212,6 +8228,7 @@
 				8C43E90E27E3CD4C00A35F65 /* ftpatent.c in Sources */,
 				8C43E90F27E3CD4C00A35F65 /* sfnt.c in Sources */,
 				8C43E91027E3CD4C00A35F65 /* ftfntfmt.c in Sources */,
+				AB64DC4D2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				8C43E91127E3CD4C00A35F65 /* fttype1.c in Sources */,
 				8C43E91227E3CD4C00A35F65 /* ftmm.c in Sources */,
 				8C43E91327E3CD4C00A35F65 /* ftfstype.c in Sources */,
@@ -8421,6 +8438,7 @@
 				8CCD842327E40B730024BDD5 /* armcpu.cpp in Sources */,
 				8CCD842427E40B730024BDD5 /* bios.cpp in Sources */,
 				8CCD842527E40B730024BDD5 /* cache.cpp in Sources */,
+				AB64DC4E2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				8CCD842627E40B730024BDD5 /* cheatSystem.cpp in Sources */,
 				8CCD842727E40B730024BDD5 /* slot2_auto.cpp in Sources */,
 				8CCD842827E40B730024BDD5 /* ftsystem.c in Sources */,
@@ -8783,6 +8801,7 @@
 				AB36C83D27F2C8AE00C763C8 /* ftdebug.c in Sources */,
 				AB36C83E27F2C8AE00C763C8 /* fttype1.c in Sources */,
 				AB36C83F27F2C8AE00C763C8 /* arm_jit.cpp in Sources */,
+				AB64DC4B2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				AB36C84027F2C8AE00C763C8 /* troubleshootingWindowDelegate.mm in Sources */,
 				AB36C84127F2C8AE00C763C8 /* assembler.cpp in Sources */,
 				AB36C84227F2C8AE00C763C8 /* assert.cpp in Sources */,
@@ -8947,6 +8966,7 @@
 				AB7900A4215B84E50082AE82 /* slot1_retail_mcrom_debug.cpp in Sources */,
 				AB7900A5215B84E50082AE82 /* cocoa_slot2.mm in Sources */,
 				AB7900A6215B84E50082AE82 /* slot1_r4.cpp in Sources */,
+				AB64DC462E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				AB7900A7215B84E50082AE82 /* MacMetalDisplayView.mm in Sources */,
 				AB7900A8215B84E50082AE82 /* slot1_retail_nand.cpp in Sources */,
 				AB7900A9215B84E50082AE82 /* encoding_utf.c in Sources */,
@@ -9207,6 +9227,7 @@
 				AB790216215B84F20082AE82 /* SndOut.cpp in Sources */,
 				AB790217215B84F20082AE82 /* psnames.c in Sources */,
 				AB790218215B84F20082AE82 /* Slot2WindowDelegate.mm in Sources */,
+				AB64DC472E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				AB790219215B84F20082AE82 /* truetype.c in Sources */,
 				AB79021A215B84F20082AE82 /* SoundTouch.cpp in Sources */,
 				AB79021B215B84F20082AE82 /* slot1_retail_auto.cpp in Sources */,
@@ -9418,6 +9439,7 @@
 				AB2EE12C17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp in Sources */,
 				AB5648FF186E6EA8002740F4 /* cocoa_slot2.mm in Sources */,
 				AB796D2A15CDCBA200C59155 /* slot1_r4.cpp in Sources */,
+				AB64DC4C2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				AB78B5C41E384F4F00297FED /* MacMetalDisplayView.mm in Sources */,
 				AB796D2C15CDCBA200C59155 /* slot1_retail_nand.cpp in Sources */,
 				AB35BD8F1DEBF40800844310 /* encoding_utf.c in Sources */,
@@ -9678,6 +9700,7 @@
 				AB8F3CBE1A53AC2600A80BF6 /* SndOut.cpp in Sources */,
 				ABA7315C1BB51A8D00B26147 /* psnames.c in Sources */,
 				AB8F3CBF1A53AC2600A80BF6 /* Slot2WindowDelegate.mm in Sources */,
+				AB64DC4A2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				ABFEA8EA1BB4FB3200B08C25 /* truetype.c in Sources */,
 				AB8F3CC01A53AC2600A80BF6 /* SoundTouch.cpp in Sources */,
 				AB8F3CC11A53AC2600A80BF6 /* slot1_retail_auto.cpp in Sources */,
@@ -9959,6 +9982,7 @@
 				AB9038B717C5ED2200F410BD /* slot1comp_mc.cpp in Sources */,
 				AB3A656316CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
 				AB82445D1704AE9A00B8EE20 /* utilities.c in Sources */,
+				AB64DC4F2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				AB49B556281707590069F1D7 /* OGLDisplayOutput.cpp in Sources */,
 				ABD10AE91715FCDD00B5729D /* audiosamplegenerator.cpp in Sources */,
 				ABD10AEC1715FCDD00B5729D /* mic_ext.cpp in Sources */,
@@ -10067,6 +10091,7 @@
 				ABC858F528273FEE00A03EA9 /* slot2_rumblepak.cpp in Sources */,
 				ABC858F728273FEE00A03EA9 /* SndOut.cpp in Sources */,
 				ABC858F828273FEE00A03EA9 /* ftpfr.c in Sources */,
+				AB64DC482E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				ABC858F928273FEE00A03EA9 /* Slot2WindowDelegate.mm in Sources */,
 				ABC858FA28273FEE00A03EA9 /* SoundTouch.cpp in Sources */,
 				ABC858FB28273FEE00A03EA9 /* ftfstype.c in Sources */,
@@ -10302,6 +10327,7 @@
 				ABD2CDA926E05CB000FB15F7 /* slot2_rumblepak.cpp in Sources */,
 				ABD2CDAB26E05CB000FB15F7 /* SndOut.cpp in Sources */,
 				ABD2CDAC26E05CB000FB15F7 /* ftpfr.c in Sources */,
+				AB64DC502E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				ABD2CDAD26E05CB000FB15F7 /* Slot2WindowDelegate.mm in Sources */,
 				ABD2CDAE26E05CB000FB15F7 /* SoundTouch.cpp in Sources */,
 				ABD2CDAF26E05CB000FB15F7 /* ftfstype.c in Sources */,

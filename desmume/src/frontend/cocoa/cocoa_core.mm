@@ -1141,8 +1141,6 @@ static void* RunCoreThread(void *arg)
 		execControl->ApplySettingsOnExecutionLoopStart();
 		behavior = execControl->GetExecutionBehaviorApplied();
 		
-		[cdsGPU respondToPauseState:(behavior == ExecutionBehavior_Pause)];
-		
 		while (!(behavior != ExecutionBehavior_Pause && execute))
 		{
 			pthread_cond_wait(&param->condThreadExecute, &param->mutexThreadExecute);
@@ -1151,8 +1149,6 @@ static void* RunCoreThread(void *arg)
 			execControl->ApplySettingsOnExecutionLoopStart();
 			behavior = execControl->GetExecutionBehaviorApplied();
 		}
-		
-		[cdsGPU respondToPauseState:(behavior == ExecutionBehavior_Pause)];
 		
 		if ( (lastBehavior == ExecutionBehavior_Run) && (behavior != ExecutionBehavior_Run) )
 		{

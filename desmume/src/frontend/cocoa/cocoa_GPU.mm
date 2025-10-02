@@ -17,9 +17,6 @@
 
 #import "cocoa_GPU.h"
 
-#include <sys/types.h>
-#include <sys/sysctl.h>
-
 #import "cocoa_globals.h"
 #include "utilities.h"
 
@@ -31,6 +28,8 @@
 #else
 	#include "../../OGLRender.h"
 #endif
+
+#include "cgl_3Demu.h"
 
 #ifdef PORT_VERSION_OS_X_APP
 	#import "userinterface/CocoaDisplayView.h"
@@ -54,9 +53,6 @@ GPU3DInterface *core3DList[GPU_3D_RENDERER_COUNT+1] = {
 	&gpu3Dgl,
 	NULL
 };
-
-int __hostRendererID = -1;
-char __hostRendererString[256] = {0};
 
 @implementation CocoaDSGPU
 
@@ -129,7 +125,6 @@ char __hostRendererString[256] = {0};
 	isCPUCoreCountAuto = NO;
 	_render3DThreadsRequested = 0;
 	_render3DThreadCount = 0;
-	_needRestoreRender3DLock = NO;
 	
 	oglrender_init        = &cgl_initOpenGL_StandardAuto;
 	oglrender_deinit      = &cgl_deinitOpenGL;
@@ -142,11 +137,7 @@ char __hostRendererString[256] = {0};
 	OGLCreateRenderer_3_2_Func = &OGLCreateRenderer_3_2;
 #endif
 	
-#ifdef PORT_VERSION_OS_X_APP
 	gpuEvent = new MacGPUEventHandlerAsync;
-#else
-	gpuEvent = new MacGPUEventHandlerAsync_Stub;
-#endif
 	GPU->SetEventHandler(gpuEvent);
 	
 	fetchObject = NULL;
@@ -163,7 +154,7 @@ char __hostRendererString[256] = {0};
 		}
 		else
 		{
-			GPU->SetFramebufferPageCount(METAL_FETCH_BUFFER_COUNT);
+			gpuEvent->SetFramebufferPageCount(METAL_FETCH_BUFFER_COUNT);
 			GPU->SetWillPostprocessDisplays(false);
 		}
 	}
@@ -177,7 +168,7 @@ char __hostRendererString[256] = {0};
 #else
 		fetchObject = new OE_OGLClientFetchObject;
 #endif
-		GPU->SetFramebufferPageCount(OPENGL_FETCH_BUFFER_COUNT);
+		gpuEvent->SetFramebufferPageCount(OPENGL_FETCH_BUFFER_COUNT);
 	}
 	
 	fetchObject->Init();
@@ -259,45 +250,16 @@ char __hostRendererString[256] = {0};
 	const size_t w = (size_t)(theDimensions.width + 0.01);
 	const size_t h = (size_t)(theDimensions.height + 0.01);
 	
-	gpuEvent->Render3DLock();
-	gpuEvent->FramebufferLock();
-	
-#ifdef ENABLE_ASYNC_FETCH
-	const size_t maxPages = GPU->GetDisplayInfo().framebufferPageCount;
-	for (size_t i = 0; i < maxPages; i++)
-	{
-		semaphore_wait( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
-	}
-#endif
-	
-	GPU->SetCustomFramebufferSize(w, h);
-	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
-
-#ifdef ENABLE_ASYNC_FETCH
-	for (size_t i = maxPages - 1; i < maxPages; i--)
-	{
-		semaphore_signal( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
-	}
-#endif
-	
-	gpuEvent->FramebufferUnlock();
-	gpuEvent->Render3DUnlock();
-	
-	if (_needRestoreRender3DLock)
-	{
-		_needRestoreRender3DLock = NO;
-	}
+	gpuEvent->SetFramebufferDimensions(w, h);
 }
 
 - (NSSize) gpuDimensions
 {
-	gpuEvent->Render3DLock();
-	gpuEvent->FramebufferLock();
-	const NSSize dimensions = NSMakeSize(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight());
-	gpuEvent->FramebufferUnlock();
-	gpuEvent->Render3DUnlock();
+	size_t w;
+	size_t h;
+	gpuEvent->GetFramebufferDimensions(w, h);
 	
-	return dimensions;
+	return NSMakeSize((CGFloat)w, (CGFloat)h);
 }
 
 - (void) setGpuScale:(NSUInteger)theScale
@@ -325,51 +287,12 @@ char __hostRendererString[256] = {0};
 			return;
 	}
 	
-	// Change the color format.
-	gpuEvent->Render3DLock();
-	gpuEvent->FramebufferLock();
-	
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	
-	if (dispInfo.colorFormat != (NDSColorFormat)colorFormat)
-	{
-#ifdef ENABLE_ASYNC_FETCH
-		const size_t maxPages = GPU->GetDisplayInfo().framebufferPageCount;
-		for (size_t i = 0; i < maxPages; i++)
-		{
-			semaphore_wait( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
-		}
-#endif
-		
-		GPU->SetColorFormat((NDSColorFormat)colorFormat);
-		fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
-
-#ifdef ENABLE_ASYNC_FETCH
-		for (size_t i = maxPages - 1; i < maxPages; i--)
-		{
-			semaphore_signal( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
-		}
-#endif
-	}
-	
-	gpuEvent->FramebufferUnlock();
-	gpuEvent->Render3DUnlock();
-	
-	if (_needRestoreRender3DLock)
-	{
-		_needRestoreRender3DLock = NO;
-	}
+	gpuEvent->SetColorFormat((NDSColorFormat)colorFormat);
 }
 
 - (NSUInteger) gpuColorFormat
 {
-	gpuEvent->Render3DLock();
-	gpuEvent->FramebufferLock();
-	const NSUInteger colorFormat = (NSUInteger)GPU->GetDisplayInfo().colorFormat;
-	gpuEvent->FramebufferUnlock();
-	gpuEvent->Render3DUnlock();
-	
-	return colorFormat;
+	return (NSUInteger)gpuEvent->GetColorFormat();
 }
 
 - (void) setRender3DRenderingEngine:(NSInteger)rendererID
@@ -441,7 +364,7 @@ char __hostRendererString[256] = {0};
 		case RENDERID_OPENGL_AUTO:
 		case RENDERID_OPENGL_LEGACY:
 		case RENDERID_OPENGL_3_2:
-			hostID = (NSInteger)__hostRendererID;
+			hostID = (NSInteger)cgl_getHostRendererID();
 			break;
 			
 		case RENDERID_NULL:
@@ -474,7 +397,7 @@ char __hostRendererString[256] = {0};
 		case RENDERID_OPENGL_AUTO:
 		case RENDERID_OPENGL_LEGACY:
 		case RENDERID_OPENGL_3_2:
-			theName = std::string((const char *)__hostRendererString);
+			theName = cgl_getHostRendererString();
 			break;
 			
 		case RENDERID_NULL:
@@ -1117,8 +1040,6 @@ char __hostRendererString[256] = {0};
 
 - (void) clearWithColor:(const uint16_t)colorBGRA5551
 {
-	gpuEvent->FramebufferLock();
-	
 #ifdef ENABLE_ASYNC_FETCH
 	const size_t maxPages = GPU->GetDisplayInfo().framebufferPageCount;
 	for (size_t i = 0; i < maxPages; i++)
@@ -1134,35 +1055,10 @@ char __hostRendererString[256] = {0};
 	{
 		semaphore_signal( ((MacGPUFetchObjectAsync *)fetchObject)->SemaphoreFramebufferPageAtIndex(i) );
 	}
-#endif
 	
-	gpuEvent->FramebufferUnlock();
-	
-#ifdef ENABLE_ASYNC_FETCH
 	const u8 bufferIndex = GPU->GetDisplayInfo().bufferIndex;
 	((MacGPUFetchObjectAsync *)fetchObject)->SignalFetchAtIndex(bufferIndex, MESSAGE_FETCH_AND_PERFORM_ACTIONS);
 #endif
-}
-
-- (void) respondToPauseState:(BOOL)isPaused
-{
-	if (isPaused)
-	{
-		if (!_needRestoreRender3DLock && gpuEvent->GetRender3DNeedsFinish())
-		{
-			gpuEvent->Render3DUnlock();
-			_needRestoreRender3DLock = YES;
-		}
-	}
-	else
-	{
-		if (_needRestoreRender3DLock && gpuEvent->GetRender3DNeedsFinish())
-		{
-			gpuEvent->Render3DLock();
-		}
-		
-		_needRestoreRender3DLock = NO;
-	}
 }
 
 @end
@@ -1208,6 +1104,7 @@ static void* RunFetchThread(void *arg)
 MacGPUFetchObjectAsync::MacGPUFetchObjectAsync()
 {
 	_threadFetch = NULL;
+	_pauseState = true;
 	_threadMessageID = MESSAGE_NONE;
 	_fetchIndex = 0;
 	pthread_cond_init(&_condSignalFetch, NULL);
@@ -1261,6 +1158,16 @@ void MacGPUFetchObjectAsync::Init()
 	{
 		pthread_create(&_threadFetch, NULL, &RunFetchThread, this);
 	}
+}
+
+void MacGPUFetchObjectAsync::SetPauseState(bool theState)
+{
+	this->_pauseState = theState;
+}
+
+bool MacGPUFetchObjectAsync::GetPauseState()
+{
+	return this->_pauseState;
 }
 
 void MacGPUFetchObjectAsync::SemaphoreFramebufferCreate()
@@ -1438,7 +1345,7 @@ static void ScreenChangeCallback(CFNotificationCenterRef center,
 	((MacGPUFetchObjectDisplayLink *)observer)->DisplayLinkListUpdate();
 }
 
-static CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
+static CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLinkRef,
                                        const CVTimeStamp *inNow,
                                        const CVTimeStamp *inOutputTime,
                                        CVOptionFlags flagsIn,
@@ -1448,7 +1355,7 @@ static CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	MacGPUFetchObjectDisplayLink *fetchObj = (MacGPUFetchObjectDisplayLink *)displayLinkContext;
 	
 	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
-	fetchObj->FlushAllViewsOnDisplayLink(displayLink, inNow, inOutputTime);
+	fetchObj->FlushAllViewsOnDisplayLink(displayLinkRef, inNow, inOutputTime);
 	[tempPool release];
 	
 	return kCVReturnSuccess;
@@ -1467,6 +1374,7 @@ MacGPUFetchObjectDisplayLink::MacGPUFetchObjectDisplayLink()
 	pthread_mutex_init(&_mutexDisplayLinkLists, NULL);
 	
 	_displayLinksActiveList.clear();
+	_displayLinksStartedList.clear();
 	_displayLinkFlushTimeList.clear();
 	DisplayLinkListUpdate();
 	
@@ -1496,6 +1404,7 @@ MacGPUFetchObjectDisplayLink::~MacGPUFetchObjectDisplayLink()
 		if (CVDisplayLinkIsRunning(displayLinkRef))
 		{
 			CVDisplayLinkStop(displayLinkRef);
+			this->_displayLinksStartedList.erase(displayID);
 		}
 		
 		CVDisplayLinkRelease(displayLinkRef);
@@ -1510,18 +1419,19 @@ MacGPUFetchObjectDisplayLink::~MacGPUFetchObjectDisplayLink()
 
 void MacGPUFetchObjectDisplayLink::DisplayLinkStartUsingID(CGDirectDisplayID displayID)
 {
-	CVDisplayLinkRef displayLink = NULL;
+	CVDisplayLinkRef displayLinkRef = NULL;
 	
 	pthread_mutex_lock(&this->_mutexDisplayLinkLists);
 	
 	if (this->_displayLinksActiveList.find(displayID) != this->_displayLinksActiveList.end())
 	{
-		displayLink = this->_displayLinksActiveList[displayID];
+		displayLinkRef = this->_displayLinksActiveList[displayID];
 	}
 	
-	if ( (displayLink != NULL) && !CVDisplayLinkIsRunning(displayLink) )
+	if ( (displayLinkRef != NULL) && !CVDisplayLinkIsRunning(displayLinkRef) )
 	{
-		CVDisplayLinkStart(displayLink);
+		CVDisplayLinkStart(displayLinkRef);
+		this->_displayLinksStartedList[displayID] = displayLinkRef;
 	}
 	
 	pthread_mutex_unlock(&this->_mutexDisplayLinkLists);
@@ -1570,6 +1480,7 @@ void MacGPUFetchObjectDisplayLink::DisplayLinkListUpdate()
 			if (CVDisplayLinkIsRunning(displayLinkRef))
 			{
 				CVDisplayLinkStop(displayLinkRef);
+				this->_displayLinksStartedList.erase(displayID);
 			}
 			
 			CVDisplayLinkRelease(displayLinkRef);
@@ -1594,9 +1505,9 @@ void MacGPUFetchObjectDisplayLink::DisplayLinkListUpdate()
 	pthread_mutex_unlock(&this->_mutexDisplayLinkLists);
 }
 
-void MacGPUFetchObjectDisplayLink::FlushAllViewsOnDisplayLink(CVDisplayLinkRef displayLink, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput)
+void MacGPUFetchObjectDisplayLink::FlushAllViewsOnDisplayLink(CVDisplayLinkRef displayLinkRef, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput)
 {
-	CGDirectDisplayID displayID = CVDisplayLinkGetCurrentCGDisplay(displayLink);
+	CGDirectDisplayID displayID = CVDisplayLinkGetCurrentCGDisplay(displayLinkRef);
 	bool didFlushOccur = false;
 	
 	std::vector<ClientDisplayViewInterface *> cdvFlushList;
@@ -1616,7 +1527,43 @@ void MacGPUFetchObjectDisplayLink::FlushAllViewsOnDisplayLink(CVDisplayLinkRef d
 	}
 	else if (timeStampNow->videoTime > this->_displayLinkFlushTimeList[displayID])
 	{
-		CVDisplayLinkStop(displayLink);
+		CVDisplayLinkStop(displayLinkRef);
+		this->_displayLinksStartedList.erase(displayID);
+	}
+}
+
+void MacGPUFetchObjectDisplayLink::SetPauseState(bool theState)
+{
+	if (theState == this->_pauseState)
+	{
+		return;
+	}
+	
+	this->_pauseState = theState;
+	
+	if (theState)
+	{
+		for (DisplayLinksActiveMap::iterator it = this->_displayLinksStartedList.begin(); it != this->_displayLinksStartedList.end(); it++)
+		{
+			CVDisplayLinkRef displayLinkRef = it->second;
+			if ( (displayLinkRef != NULL) && CVDisplayLinkIsRunning(displayLinkRef) )
+			{
+				CVDisplayLinkStop(displayLinkRef);
+			}
+		}
+		
+		this->FinalizeAllViews();
+	}
+	else
+	{
+		for (DisplayLinksActiveMap::iterator it = this->_displayLinksStartedList.begin(); it != this->_displayLinksStartedList.end(); it++)
+		{
+			CVDisplayLinkRef displayLinkRef = it->second;
+			if ( (displayLinkRef != NULL) && !CVDisplayLinkIsRunning(displayLinkRef) )
+			{
+				CVDisplayLinkStart(displayLinkRef);
+			}
+		}
 	}
 }
 
@@ -1632,24 +1579,25 @@ void MacGPUFetchObjectDisplayLink::DoPostFetchActions()
 MacGPUEventHandlerAsync::MacGPUEventHandlerAsync()
 {
 	_fetchObject = nil;
-	_render3DNeedsFinish = false;
+	
+	_widthPending       = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_heightPending      = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	_colorFormatPending = NDSColorFormat_BGR555_Rev;
+	_pageCountPending   = 1;
+	
+	_didColorFormatChange = true;
+	_didWidthChange       = true;
+	_didHeightChange      = true;
+	_didPageCountChange   = true;
+	
 	_cpuCoreCountRestoreValue = 0;
 	
-	pthread_mutex_init(&_mutexFrame, NULL);
-	pthread_mutex_init(&_mutex3DRender, NULL);
 	pthread_mutex_init(&_mutexApplyGPUSettings, NULL);
 	pthread_mutex_init(&_mutexApplyRender3DSettings, NULL);
 }
 
 MacGPUEventHandlerAsync::~MacGPUEventHandlerAsync()
 {
-	if (this->_render3DNeedsFinish)
-	{
-		pthread_mutex_unlock(&this->_mutex3DRender);
-	}
-	
-	pthread_mutex_destroy(&this->_mutexFrame);
-	pthread_mutex_destroy(&this->_mutex3DRender);
 	pthread_mutex_destroy(&this->_mutexApplyGPUSettings);
 	pthread_mutex_destroy(&this->_mutexApplyRender3DSettings);
 }
@@ -1664,13 +1612,66 @@ void MacGPUEventHandlerAsync::SetFetchObject(GPUClientFetchObject *fetchObject)
 	this->_fetchObject = fetchObject;
 }
 
+void MacGPUEventHandlerAsync::SetFramebufferPageCount(size_t pageCount)
+{
+	this->ApplyGPUSettingsLock();
+	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+	this->_didPageCountChange = (pageCount != displayInfo.framebufferPageCount);
+	this->_pageCountPending = pageCount;
+	this->ApplyGPUSettingsUnlock();
+}
+
+size_t MacGPUEventHandlerAsync::GetFramebufferPageCount()
+{
+	return this->_pageCountPending;
+}
+
+void MacGPUEventHandlerAsync::SetFramebufferDimensions(size_t w, size_t h)
+{
+	if (w < GPU_FRAMEBUFFER_NATIVE_WIDTH)
+	{
+		w = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	}
+	
+	if (h < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+	{
+		h = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	}
+	
+	this->ApplyGPUSettingsLock();
+	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+	this->_didWidthChange  = (w != displayInfo.customWidth);
+	this->_didHeightChange = (h != displayInfo.customHeight);
+	this->_widthPending  = w;
+	this->_heightPending = h;
+	this->ApplyGPUSettingsUnlock();
+}
+
+void MacGPUEventHandlerAsync::GetFramebufferDimensions(size_t &outWidth, size_t &outHeight)
+{
+	outWidth  = this->_widthPending;
+	outHeight = this->_heightPending;
+}
+
+void MacGPUEventHandlerAsync::SetColorFormat(NDSColorFormat colorFormat)
+{
+	this->ApplyGPUSettingsLock();
+	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+	this->_didColorFormatChange = (colorFormat != displayInfo.colorFormat);
+	this->_colorFormatPending = colorFormat;
+	this->ApplyGPUSettingsUnlock();
+}
+
+NDSColorFormat MacGPUEventHandlerAsync::GetColorFormat()
+{
+	return this->_colorFormatPending;
+}
+
 #ifdef ENABLE_ASYNC_FETCH
 
 void MacGPUEventHandlerAsync::DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut)
 {
 	MacGPUFetchObjectAsync *asyncFetchObj = (MacGPUFetchObjectAsync *)this->_fetchObject;
-	
-	this->FramebufferLock();
 	
 	if (!isFrameSkipRequested)
 	{
@@ -1693,37 +1694,59 @@ void MacGPUEventHandlerAsync::DidFrameEnd(bool isFrameSkipped, const NDSDisplayI
 		asyncFetchObj->SetFetchDisplayInfo(latestDisplayInfo);
 		asyncFetchObj->SetFramebufferState(ClientDisplayBufferState_Ready, latestDisplayInfo.bufferIndex);
 		semaphore_signal( asyncFetchObj->SemaphoreFramebufferPageAtIndex(latestDisplayInfo.bufferIndex) );
-	}
-	
-	this->FramebufferUnlock();
-	
-	if (!isFrameSkipped)
-	{
 		asyncFetchObj->SignalFetchAtIndex(latestDisplayInfo.bufferIndex, MESSAGE_FETCH_AND_PERFORM_ACTIONS);
 	}
 }
 
 #endif // ENABLE_ASYNC_FETCH
 
-void MacGPUEventHandlerAsync::DidRender3DBegin()
-{
-	this->Render3DLock();
-	this->_render3DNeedsFinish = true;
-}
-
-void MacGPUEventHandlerAsync::DidRender3DEnd()
-{
-	this->_render3DNeedsFinish = false;
-	this->Render3DUnlock();
-}
-
 void MacGPUEventHandlerAsync::DidApplyGPUSettingsBegin()
 {
 	this->ApplyGPUSettingsLock();
+	
+	if (this->_didWidthChange || this->_didHeightChange || this->_didColorFormatChange || this->_didPageCountChange)
+	{
+		MacGPUFetchObjectAsync *asyncFetchObj = (MacGPUFetchObjectAsync *)this->_fetchObject;
+		asyncFetchObj->SetPauseState(true);
+		
+		GPU->SetCustomFramebufferSize(this->_widthPending, this->_heightPending);
+		GPU->SetColorFormat(this->_colorFormatPending);
+		GPU->SetFramebufferPageCount(this->_pageCountPending);
+	}
 }
 
 void MacGPUEventHandlerAsync::DidApplyGPUSettingsEnd()
 {
+	if (this->_didWidthChange || this->_didHeightChange || this->_didColorFormatChange || this->_didPageCountChange)
+	{
+		const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+		MacGPUFetchObjectAsync *asyncFetchObj = (MacGPUFetchObjectAsync *)this->_fetchObject;
+		
+#ifdef ENABLE_ASYNC_FETCH
+		const size_t maxPages = displayInfo.framebufferPageCount;
+		for (size_t i = 0; i < maxPages; i++)
+		{
+			semaphore_wait( asyncFetchObj->SemaphoreFramebufferPageAtIndex(i) );
+		}
+#endif
+		this->_fetchObject->SetFetchBuffers(displayInfo);
+
+#ifdef ENABLE_ASYNC_FETCH
+		for (size_t i = maxPages - 1; i < maxPages; i--)
+		{
+			semaphore_signal( asyncFetchObj->SemaphoreFramebufferPageAtIndex(i) );
+		}
+#endif
+		asyncFetchObj->SetPauseState(false);
+		
+		// Update all the change flags now that settings are applied.
+		// In theory, all these flags should get cleared.
+		this->_didWidthChange       = (this->_widthPending       != displayInfo.customWidth);
+		this->_didHeightChange      = (this->_heightPending      != displayInfo.customHeight);
+		this->_didColorFormatChange = (this->_colorFormatPending != displayInfo.colorFormat);
+		this->_didPageCountChange   = (this->_pageCountPending   != displayInfo.framebufferPageCount);
+	}
+	
 	this->ApplyGPUSettingsUnlock();
 }
 
@@ -1741,26 +1764,6 @@ void MacGPUEventHandlerAsync::DidApplyRender3DSettingsEnd()
 	
 	this->_cpuCoreCountRestoreValue = 0;
 	this->ApplyRender3DSettingsUnlock();
-}
-
-void MacGPUEventHandlerAsync::FramebufferLock()
-{
-	pthread_mutex_lock(&this->_mutexFrame);
-}
-
-void MacGPUEventHandlerAsync::FramebufferUnlock()
-{
-	pthread_mutex_unlock(&this->_mutexFrame);
-}
-
-void MacGPUEventHandlerAsync::Render3DLock()
-{
-	pthread_mutex_lock(&this->_mutex3DRender);
-}
-
-void MacGPUEventHandlerAsync::Render3DUnlock()
-{
-	pthread_mutex_unlock(&this->_mutex3DRender);
 }
 
 void MacGPUEventHandlerAsync::ApplyGPUSettingsLock()
@@ -1783,11 +1786,6 @@ void MacGPUEventHandlerAsync::ApplyRender3DSettingsUnlock()
 	pthread_mutex_unlock(&this->_mutexApplyRender3DSettings);
 }
 
-bool MacGPUEventHandlerAsync::GetRender3DNeedsFinish()
-{
-	return this->_render3DNeedsFinish;
-}
-
 void MacGPUEventHandlerAsync::SetTempThreadCount(int threadCount)
 {
 	if (threadCount < 1)
@@ -1799,552 +1797,4 @@ void MacGPUEventHandlerAsync::SetTempThreadCount(int threadCount)
 		this->_cpuCoreCountRestoreValue = CommonSettings.num_cores;
 		CommonSettings.num_cores = threadCount;
 	}
-}
-
-#pragma mark -
-
-#if !defined(MAC_OS_X_VERSION_10_7)
-	#define kCGLPFAOpenGLProfile         (CGLPixelFormatAttribute)99
-	#define kCGLOGLPVersion_Legacy       0x1000
-	#define kCGLOGLPVersion_3_2_Core     0x3200
-	#define kCGLOGLPVersion_GL3_Core     0x3200
-	#define kCGLRPVideoMemoryMegabytes   (CGLRendererProperty)131
-	#define kCGLRPTextureMemoryMegabytes (CGLRendererProperty)132
-#endif
-
-#if !defined(MAC_OS_X_VERSION_10_9)
-	#define kCGLOGLPVersion_GL4_Core 0x4100
-#endif
-
-#if !defined(MAC_OS_X_VERSION_10_13)
-	#define kCGLRPRemovable (CGLRendererProperty)142
-#endif
-
-CGLContextObj OSXOpenGLRendererContext = NULL;
-CGLContextObj OSXOpenGLRendererContextPrev = NULL;
-SILENCE_DEPRECATION_MACOS_10_7( CGLPBufferObj OSXOpenGLRendererPBuffer = NULL )
-
-// Struct to hold renderer info
-struct HostRendererInfo
-{
-	int32_t rendererID;      // Renderer ID, used to associate a renderer with a display device or virtual screen
-	int32_t accelerated;     // Hardware acceleration flag, 0 = Software only, 1 = Has hardware acceleration
-	int32_t displayID;       // Display ID, used to associate a display device with a renderer
-	int32_t online;          // Online flag, 0 = No display device associated, 1 = Display device associated
-	int32_t removable;       // Removable flag, used to indicate if the renderer is removable (like an eGPU), 0 = Fixed, 1 = Removable
-	int32_t virtualScreen;   // Virtual screen index, used to associate a virtual screen with a renderer
-	int32_t videoMemoryMB;   // The total amount of VRAM available to this renderer
-	int32_t textureMemoryMB; // The amount of VRAM available to this renderer for texture usage
-	char vendor[256];        // C-string copy of the host renderer's vendor
-	char name[256];          // C-string copy of the host renderer's name
-	const void *vendorStr;   // Pointer to host renderer's vendor string (parsing this is implementation dependent)
-	const void *nameStr;     // Pointer to host renderer's name string (parsing this is implementation dependent)
-};
-typedef struct HostRendererInfo HostRendererInfo;
-
-static bool __cgl_initOpenGL(const int requestedProfile)
-{
-	bool result = false;
-	CACHE_ALIGN char ctxString[16] = {0};
-	
-	if (requestedProfile == kCGLOGLPVersion_GL4_Core)
-	{
-		strncpy(ctxString, "CGL 4.1", sizeof(ctxString));
-	}
-	else if (requestedProfile == kCGLOGLPVersion_3_2_Core)
-	{
-		strncpy(ctxString, "CGL 3.2", sizeof(ctxString));
-	}
-	else
-	{
-		strncpy(ctxString, "CGL Legacy", sizeof(ctxString));
-	}
-	
-	if (OSXOpenGLRendererContext != NULL)
-	{
-		result = true;
-		return result;
-	}
-	
-	const bool isHighSierraSupported   = IsOSXVersionSupported(10, 13, 0);
-	const bool isMavericksSupported    = (isHighSierraSupported   || IsOSXVersionSupported(10, 9, 0));
-	const bool isMountainLionSupported = (isMavericksSupported    || IsOSXVersionSupported(10, 8, 0));
-	const bool isLionSupported         = (isMountainLionSupported || IsOSXVersionSupported(10, 7, 0));
-	const bool isLeopardSupported      = (isLionSupported         || IsOSXVersionSupported(10, 5, 0));
-	
-	CGLPixelFormatAttribute attrs[] = {
-		kCGLPFAColorSize, (CGLPixelFormatAttribute)24,
-		kCGLPFAAlphaSize, (CGLPixelFormatAttribute)8,
-		kCGLPFADepthSize, (CGLPixelFormatAttribute)24,
-		kCGLPFAStencilSize, (CGLPixelFormatAttribute)8,
-		kCGLPFAOpenGLProfile, (CGLPixelFormatAttribute)0,
-		kCGLPFAAllowOfflineRenderers,
-		kCGLPFAAccelerated,
-		kCGLPFANoRecovery,
-		(CGLPixelFormatAttribute)0
-	};
-	
-	if (requestedProfile == kCGLOGLPVersion_GL4_Core)
-	{
-		if (isMavericksSupported)
-		{
-			attrs[5] = (CGLPixelFormatAttribute)0; // We'll be using FBOs instead of the default framebuffer.
-			attrs[7] = (CGLPixelFormatAttribute)0; // We'll be using FBOs instead of the default framebuffer.
-			attrs[9] = (CGLPixelFormatAttribute)requestedProfile;
-		}
-		else
-		{
-			fprintf(stderr, "%s: Your version of OS X is too old to support 4.1 Core Profile.\n", ctxString);
-			return result;
-		}
-	}
-	else if (requestedProfile == kCGLOGLPVersion_3_2_Core)
-	{
-		// As of 2021/09/03, testing has shown that macOS v10.7's OpenGL 3.2 shader
-		// compiler isn't very reliable, and so we're going to require macOS v10.8
-		// instead, which at least has a working shader compiler for OpenGL 3.2.
-		if (isMountainLionSupported)
-		{
-			attrs[5] = (CGLPixelFormatAttribute)0; // We'll be using FBOs instead of the default framebuffer.
-			attrs[7] = (CGLPixelFormatAttribute)0; // We'll be using FBOs instead of the default framebuffer.
-			attrs[9] = (CGLPixelFormatAttribute)requestedProfile;
-		}
-		else
-		{
-			fprintf(stderr, "%s: Your version of OS X is too old to support 3.2 Core Profile.\n", ctxString);
-			return result;
-		}
-	}
-	else if (isLionSupported)
-	{
-		attrs[9] = (CGLPixelFormatAttribute)kCGLOGLPVersion_Legacy;
-	}
-	else
-	{
-		attrs[8]  = (CGLPixelFormatAttribute)kCGLPFAAccelerated;
-		attrs[9]  = (CGLPixelFormatAttribute)kCGLPFANoRecovery;
-		attrs[11] = (CGLPixelFormatAttribute)0;
-		attrs[12] = (CGLPixelFormatAttribute)0;
-	}
-	
-	CGLError error = kCGLNoError;
-	CGLPixelFormatObj cglPixFormat = NULL;
-	CGLContextObj newContext = NULL;
-	GLint virtualScreenCount = 0;
-	
-	CGLChoosePixelFormat(attrs, &cglPixFormat, &virtualScreenCount);
-	if (cglPixFormat == NULL)
-	{
-		if (requestedProfile == kCGLOGLPVersion_GL4_Core)
-		{
-			// OpenGL 4.1 Core Profile requires hardware acceleration. Bail if we can't find a renderer that supports both.
-			fprintf(stderr, "%s: This system has no HW-accelerated renderers that support 4.1 Core Profile.\n", ctxString);
-			return result;
-		}
-		else if (requestedProfile == kCGLOGLPVersion_3_2_Core)
-		{
-			// OpenGL 3.2 Core Profile requires hardware acceleration. Bail if we can't find a renderer that supports both.
-			fprintf(stderr, "%s: This system has no HW-accelerated renderers that support 3.2 Core Profile.\n", ctxString);
-			return result;
-		}
-		
-		// For Legacy OpenGL, we'll allow fallback to the Apple Software Renderer.
-		// However, doing this will result in a substantial performance loss.
-		if (attrs[8] == kCGLPFAAccelerated)
-		{
-			attrs[8]  = (CGLPixelFormatAttribute)0;
-			attrs[9]  = (CGLPixelFormatAttribute)0;
-			attrs[10] = (CGLPixelFormatAttribute)0;
-		}
-		else
-		{
-			attrs[10] = (CGLPixelFormatAttribute)0;
-			attrs[11] = (CGLPixelFormatAttribute)0;
-			attrs[12] = (CGLPixelFormatAttribute)0;
-		}
-		
-		error = CGLChoosePixelFormat(attrs, &cglPixFormat, &virtualScreenCount);
-		if (error != kCGLNoError)
-		{
-			// We shouldn't fail at this point, but we're including this to account for all code paths.
-			fprintf(stderr, "%s: Failed to create the pixel format structure: %i\n", ctxString, (int)error);
-			return result;
-		}
-		else
-		{
-			printf("WARNING: No HW-accelerated renderers were found -- falling back to Apple Software Renderer.\n         This will result in a substantial performance loss.");
-		}
-	}
-	
-	// Create the OpenGL context using our pixel format, and then save the default assigned virtual screen.
-	error = CGLCreateContext(cglPixFormat, NULL, &newContext);
-	CGLReleasePixelFormat(cglPixFormat);
-	cglPixFormat = NULL;
-	
-	if (error != kCGLNoError)
-	{
-		fprintf(stderr, "%s: Failed to create an OpenGL context: %i\n", ctxString, (int)error);
-		return result;
-	}
-	
-	OSXOpenGLRendererContext = newContext;
-	GLint defaultVirtualScreen = 0;
-	CGLGetVirtualScreen(newContext, &defaultVirtualScreen);
-	
-	// Retrieve the properties of every renderer available on the system.
-	CGLRendererInfoObj cglRendererInfo = NULL;
-	GLint rendererCount = 0;
-	CGLQueryRendererInfo(0xFFFFFFFF, &cglRendererInfo, &rendererCount);
-	
-	HostRendererInfo *rendererInfo = (HostRendererInfo *)malloc(sizeof(HostRendererInfo) * rendererCount);
-	memset(rendererInfo, 0, sizeof(HostRendererInfo) * rendererCount);
-	
-	if (isLeopardSupported)
-	{
-		for (GLint i = 0; i < rendererCount; i++)
-		{
-			HostRendererInfo &info = rendererInfo[i];
-			
-			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPOnline, &(info.online));
-			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPDisplayMask, &(info.displayID));
-			info.displayID = (GLint)CGOpenGLDisplayMaskToDisplayID(info.displayID);
-			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPAccelerated, &(info.accelerated));
-			CGLDescribeRenderer(cglRendererInfo, i, kCGLRPRendererID,  &(info.rendererID));
-			
-			if (isLionSupported)
-			{
-				CGLDescribeRenderer(cglRendererInfo, i, kCGLRPVideoMemoryMegabytes, &(info.videoMemoryMB));
-				CGLDescribeRenderer(cglRendererInfo, i, kCGLRPTextureMemoryMegabytes, &(info.textureMemoryMB));
-			}
-			else
-			{
-				CGLDescribeRenderer(cglRendererInfo, i, kCGLRPVideoMemory, &(info.videoMemoryMB));
-				info.videoMemoryMB = (GLint)(((uint32_t)info.videoMemoryMB + 1) >> 20);
-				CGLDescribeRenderer(cglRendererInfo, i, kCGLRPTextureMemory, &(info.textureMemoryMB));
-				info.textureMemoryMB = (GLint)(((uint32_t)info.textureMemoryMB + 1) >> 20);
-			}
-			
-			if (isHighSierraSupported)
-			{
-				CGLDescribeRenderer(cglRendererInfo, i, kCGLRPRemovable, &(info.removable));
-			}
-		}
-	}
-	else
-	{
-		CGLDestroyRendererInfo(cglRendererInfo);
-		free(rendererInfo);
-		fprintf(stderr, "%s: Failed to retrieve renderer info - requires Mac OS X v10.5 or later.\n", ctxString);
-		return result;
-	}
-	
-	CGLDestroyRendererInfo(cglRendererInfo);
-	cglRendererInfo = NULL;
-	
-	// Retrieve the vendor and renderer info from OpenGL.
-	cgl_beginOpenGL();
-	
-	for (GLint i = 0; i < virtualScreenCount; i++)
-	{
-		CGLSetVirtualScreen(newContext, i);
-		GLint r;
-		CGLGetParameter(newContext, kCGLCPCurrentRendererID, &r);
-
-		for (int j = 0; j < rendererCount; j++)
-		{
-			HostRendererInfo &info = rendererInfo[j];
-			
-			if (r == info.rendererID)
-			{
-				info.virtualScreen = i;
-				
-				info.vendorStr = (const char *)glGetString(GL_VENDOR);
-				if (info.vendorStr != NULL)
-				{
-					strncpy(info.vendor, (const char *)info.vendorStr, sizeof(info.vendor));
-				}
-				else if (info.accelerated == 0)
-				{
-					strncpy(info.vendor, "Apple Inc.", sizeof(info.vendor));
-				}
-				else
-				{
-					strncpy(info.vendor, "UNKNOWN", sizeof(info.vendor));
-				}
-				
-				info.nameStr = (const char *)glGetString(GL_RENDERER);
-				if (info.nameStr != NULL)
-				{
-					strncpy(info.name, (const char *)info.nameStr, sizeof(info.name));
-				}
-				else if (info.accelerated == 0)
-				{
-					strncpy(info.name, "Apple Software Renderer", sizeof(info.name));
-				}
-				else
-				{
-					strncpy(info.name, "UNKNOWN", sizeof(info.name));
-				}
-				
-			}
-		}
-	}
-	
-	cgl_endOpenGL();
-	
-	// Get the default virtual screen.
-	strncpy(__hostRendererString, "UNKNOWN", sizeof(__hostRendererString));
-	__hostRendererID = -1;
-	
-	HostRendererInfo defaultRendererInfo = rendererInfo[0];
-	for (int i = 0; i < rendererCount; i++)
-	{
-		if (defaultVirtualScreen == rendererInfo[i].virtualScreen)
-		{
-			defaultRendererInfo = rendererInfo[i];
-			__hostRendererID = defaultRendererInfo.rendererID;
-			strncpy(__hostRendererString, (const char *)defaultRendererInfo.name, sizeof(__hostRendererString));
-			
-			if ( (defaultRendererInfo.online == 1) && (defaultRendererInfo.vendorStr != NULL) && (defaultRendererInfo.nameStr != NULL) )
-			{
-				break;
-			}
-		}
-	}
-	
-	printf("Default OpenGL Renderer: [0x%08X] %s\n", __hostRendererID, __hostRendererString);
-	/*
-	bool isDefaultRunningIntegratedGPU = false;
-	if ( (defaultRendererInfo.online == 1) && (defaultRendererInfo.vendorStr != NULL) && (defaultRendererInfo.nameStr != NULL) )
-	{
-		const HostRendererInfo &d = defaultRendererInfo;
-		isDefaultRunningIntegratedGPU = (strstr(d.name, "GMA 950") != NULL) ||
-		                                (strstr(d.name, "GMA X3100") != NULL) ||
-		                                (strstr(d.name, "GeForce 9400M") != NULL) ||
-		                                (strstr(d.name, "GeForce 320M") != NULL) ||
-		                                (strstr(d.name, "HD Graphics") != NULL) ||
-		                                (strstr(d.name, "Iris 5100") != NULL) ||
-		                                (strstr(d.name, "Iris Plus") != NULL) ||
-		                                (strstr(d.name, "Iris Pro") != NULL) ||
-		                                (strstr(d.name, "Iris Graphics") != NULL) ||
-		                                (strstr(d.name, "UHD Graphics") != NULL);
-	}
-	*/
-#if defined(DEBUG) && (DEBUG == 1)
-	// Report information on every renderer.
-	if (!isLionSupported)
-	{
-		printf("WARNING: You are running a macOS version earlier than v10.7.\n         Video Memory and Texture Memory reporting is capped\n         at 2048 MB on older macOS.\n");
-	}
-	printf("CGL Renderer Count: %i\n", rendererCount);
-	printf("  Virtual Screen Count: %i\n\n", virtualScreenCount);
-	
-	for (int i = 0; i < rendererCount; i++)
-	{
-		const HostRendererInfo &info = rendererInfo[i];
-		
-		printf("Renderer Index: %i\n", i);
-		printf("Virtual Screen: %i\n", info.virtualScreen);
-		printf("Vendor: %s\n", info.vendor);
-		printf("Renderer: %s\n", info.name);
-		printf("Renderer ID: 0x%08X\n", info.rendererID);
-		printf("Accelerated: %s\n", (info.accelerated == 1) ? "YES" : "NO");
-		printf("Online: %s\n", (info.online == 1) ? "YES" : "NO");
-		
-		if (isHighSierraSupported)
-		{
-			printf("Removable: %s\n", (info.removable == 1) ? "YES" : "NO");
-		}
-		else
-		{
-			printf("Removable: UNSUPPORTED, Requires High Sierra\n");
-		}
-		
-		printf("Display ID: 0x%08X\n", info.displayID);
-		printf("Video Memory: %i MB\n", info.videoMemoryMB);
-		printf("Texture Memory: %i MB\n\n", info.textureMemoryMB);
-	}
-#endif
-	
-	// Search for a better virtual screen that will suit our offscreen rendering better.
-	//
-	// At the moment, we are not supporting removable renderers such as eGPUs. Attempting
-	// to support removable renderers would require a lot more code to handle dynamically
-	// changing display<-->renderer associations. - rogerman 2025/03/25
-	bool wasBetterVirtualScreenFound = false;
-	
-	char *modelCString = NULL;
-	size_t modelStringLen = 0;
-	
-	sysctlbyname("hw.model", NULL, &modelStringLen, NULL, 0);
-	if (modelStringLen > 0)
-	{
-		modelCString = (char *)malloc(modelStringLen * sizeof(char));
-		sysctlbyname("hw.model", modelCString, &modelStringLen, NULL, 0);
-	}
-	
-	for (int i = 0; i < rendererCount; i++)
-	{
-		const HostRendererInfo &info = rendererInfo[i];
-		
-		if ( (defaultRendererInfo.vendorStr == NULL) || (defaultRendererInfo.nameStr == NULL) || (info.vendorStr == NULL) || (info.nameStr == NULL) )
-		{
-			continue;
-		}
-		
-		wasBetterVirtualScreenFound = (info.accelerated == 1) &&
-		(    (        (modelCString != NULL) && (strstr((const char *)modelCString, "MacBookPro") != NULL) &&
-		         (  ( (strstr(defaultRendererInfo.name, "GeForce 9400M") != NULL) &&
-		              (strstr(info.name, "GeForce 9600M GT") != NULL) ) ||
-		            ( (strstr(defaultRendererInfo.name, "HD Graphics") != NULL) &&
-		             ((strstr(info.name, "GeForce GT 330M") != NULL) ||
-		              (strstr(info.name, "Radeon HD 6490M") != NULL) ||
-		              (strstr(info.name, "Radeon HD 6750M") != NULL) ||
-		              (strstr(info.name, "Radeon HD 6770M") != NULL) ||
-		              (strstr(info.name, "GeForce GT 650M") != NULL) ||
-		              (strstr(info.name, "Radeon Pro 450") != NULL) ||
-		              (strstr(info.name, "Radeon Pro 455") != NULL) ||
-		              (strstr(info.name, "Radeon Pro 555") != NULL) ||
-		              (strstr(info.name, "Radeon Pro 560") != NULL)) ) ||
-		            ( (strstr(defaultRendererInfo.name, "Iris Pro") != NULL) &&
-		             ((strstr(info.name, "GeForce GT 750M") != NULL) ||
-		              (strstr(info.name, "Radeon R9 M370X") != NULL)) ) ||
-		            ( (strstr(defaultRendererInfo.name, "UHD Graphics") != NULL) &&
-		             ((strstr(info.name, "Radeon Pro 555X") != NULL) ||
-		              (strstr(info.name, "Radeon Pro 560X") != NULL) ||
-		              (strstr(info.name, "Radeon Pro Vega 16") != NULL) ||
-		              (strstr(info.name, "Radeon Pro Vega 20") != NULL) ||
-		              (strstr(info.name, "Radeon Pro 5300M") != NULL) ||
-		              (strstr(info.name, "Radeon Pro 5500M") != NULL) ||
-		              (strstr(info.name, "Radeon Pro 5600M") != NULL)) )  )   ) ||
-		     (        (modelCString != NULL) && (strstr((const char *)modelCString, "MacPro6,1") != NULL) && (info.online == 0) &&
-		             ((strstr(info.name, "FirePro D300") != NULL) ||
-		              (strstr(info.name, "FirePro D500") != NULL) ||
-		              (strstr(info.name, "FirePro D700") != NULL))   )    );
-		
-		if (wasBetterVirtualScreenFound)
-		{
-			CGLSetVirtualScreen(newContext, info.virtualScreen);
-			__hostRendererID = info.rendererID;
-			strncpy(__hostRendererString, (const char *)info.name, sizeof(__hostRendererString));
-			printf("Found Better OpenGL Renderer: [0x%08X] %s\n", __hostRendererID, __hostRendererString);
-			break;
-		}
-	}
-	
-	// If we couldn't find a better virtual screen for our rendering, then just revert to the default one.
-	if (!wasBetterVirtualScreenFound)
-	{
-		CGLSetVirtualScreen(newContext, defaultVirtualScreen);
-	}
-	
-	// We're done! Report success and return.
-	printf("%s: OpenGL context creation successful.\n\n", ctxString);
-	free(rendererInfo);
-	free(modelCString);
-	
-	result = true;
-	return result;
-}
-
-bool cgl_initOpenGL_StandardAuto()
-{
-	bool isContextCreated = __cgl_initOpenGL(kCGLOGLPVersion_GL4_Core);
-	
-	if (!isContextCreated)
-	{
-		isContextCreated = __cgl_initOpenGL(kCGLOGLPVersion_3_2_Core);
-	}
-	
-	if (!isContextCreated)
-	{
-		isContextCreated = __cgl_initOpenGL(kCGLOGLPVersion_Legacy);
-	}
-	
-	return isContextCreated;
-}
-
-bool cgl_initOpenGL_LegacyAuto()
-{
-	return __cgl_initOpenGL(kCGLOGLPVersion_Legacy);
-}
-
-bool cgl_initOpenGL_3_2_CoreProfile()
-{
-	return __cgl_initOpenGL(kCGLOGLPVersion_3_2_Core);
-}
-
-void cgl_deinitOpenGL()
-{
-	if (OSXOpenGLRendererContext == NULL)
-	{
-		return;
-	}
-	
-	CGLSetCurrentContext(NULL);
-	SILENCE_DEPRECATION_MACOS_10_7( CGLReleasePBuffer(OSXOpenGLRendererPBuffer) );
-	OSXOpenGLRendererPBuffer = NULL;
-	
-	CGLReleaseContext(OSXOpenGLRendererContext);
-	OSXOpenGLRendererContext = NULL;
-	OSXOpenGLRendererContextPrev = NULL;
-}
-
-bool cgl_beginOpenGL()
-{
-	OSXOpenGLRendererContextPrev = CGLGetCurrentContext();
-	CGLSetCurrentContext(OSXOpenGLRendererContext);
-	
-	return true;
-}
-
-void cgl_endOpenGL()
-{
-#ifndef PORT_VERSION_OS_X_APP
-	// The OpenEmu plug-in needs the context reset after 3D rendering since OpenEmu's context
-	// is assumed to be the default context. However, resetting the context for our standalone
-	// app can cause problems since the core emulator's context is assumed to be the default
-	// context. So reset the context for OpenEmu and skip resetting for us.
-	CGLSetCurrentContext(OSXOpenGLRendererContextPrev);
-#endif
-}
-
-bool cgl_framebufferDidResizeCallback(const bool isFBOSupported, size_t w, size_t h)
-{
-	bool result = false;
-	
-	if (isFBOSupported)
-	{
-		result = true;
-		return result;
-	}
-	
-	if (IsOSXVersionSupported(10, 13, 0))
-	{
-		printf("Mac OpenGL: P-Buffers cannot be created on macOS v10.13 High Sierra and later.\n");
-		return result;
-	}
-	
-	// Create a PBuffer if FBOs are not supported.
-	SILENCE_DEPRECATION_MACOS_10_7( CGLPBufferObj newPBuffer = NULL );
-	SILENCE_DEPRECATION_MACOS_10_7( CGLError error = CGLCreatePBuffer((GLsizei)w, (GLsizei)h, GL_TEXTURE_2D, GL_RGBA, 0, &newPBuffer) );
-	
-	if ( (newPBuffer == NULL) || (error != kCGLNoError) )
-	{
-		printf("Mac OpenGL: ERROR - Could not create the P-Buffer: %s\n", CGLErrorString(error));
-		return result;
-	}
-	else
-	{
-		GLint virtualScreenID = 0;
-		CGLGetVirtualScreen(OSXOpenGLRendererContext, &virtualScreenID);
-		SILENCE_DEPRECATION_MACOS_10_7( CGLSetPBuffer(OSXOpenGLRendererContext, newPBuffer, 0, 0, virtualScreenID) );
-	}
-	
-	SILENCE_DEPRECATION_MACOS_10_7( CGLPBufferObj oldPBuffer = OSXOpenGLRendererPBuffer );
-	OSXOpenGLRendererPBuffer = newPBuffer;
-	SILENCE_DEPRECATION_MACOS_10_7( CGLReleasePBuffer(oldPBuffer) );
-	
-	result = true;
-	return result;
 }

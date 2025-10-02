@@ -191,6 +191,11 @@ ClientAudioOutput::ClientAudioOutput()
 	_spuCallbackStruct.FetchSamples       = &SPUFetchSamplesCallback;
 	_spuCallbackStruct.PostProcessSamples = &SPUPostProcessSamples;
 	
+	if (SNDCoreList[1] == NULL)
+	{
+		SNDCoreList[1] = &_spuCallbackStruct;
+	}
+	
 	_volume = MAX_VOLUME;
 	_spuAdvancedLogic = true;
 	_interpolationModeID = SPUInterpolation_Cosine;

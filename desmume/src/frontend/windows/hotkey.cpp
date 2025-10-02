@@ -3,7 +3,7 @@
 	licensed under the terms supplied at the end of this file (for the terms are very long!)
 	Differences from that baseline version are:
 
-	Copyright (C) 2009-2024 DeSmuME team
+	Copyright (C) 2009-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -366,13 +366,25 @@ void HK_StylusAutoHoldKeyDown(int, bool justPressed) {
 		NDS_setTouchPos((u16)winLastTouch.x, (u16)winLastTouch.y);
 	else if (!userTouchesScreen)
 		NDS_releaseTouch();
+
+	if ((emu_paused || !execute || !romloaded) && (HudEditorMode || CommonSettings.hud.ShowInputDisplay || CommonSettings.hud.ShowGraphicalInputDisplay))
+	{
+		Display();
+	}
 }
 
 void HK_AutoHoldClearKeyDown(int, bool justPressed) {
 	ClearAutoHold();
 	StylusAutoHoldPressed = false;
 	if (!userTouchesScreen)
+	{
 		NDS_releaseTouch();
+
+		if ((emu_paused || !execute || !romloaded) && (HudEditorMode || CommonSettings.hud.ShowInputDisplay || CommonSettings.hud.ShowGraphicalInputDisplay))
+		{
+			Display();
+		}
+	}
 }
 
 extern VideoInfo video;

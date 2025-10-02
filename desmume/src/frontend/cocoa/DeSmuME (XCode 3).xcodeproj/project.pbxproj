@@ -311,6 +311,11 @@
 		AB1E5A3D2E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1E5A342E73F0AC008AFF9F /* ClientFirmwareControl.cpp */; };
 		AB1E5A3E2E73F0AC008AFF9F /* ClientCheatManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1E5A322E73F0AC008AFF9F /* ClientCheatManager.cpp */; };
 		AB1E5A3F2E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1E5A342E73F0AC008AFF9F /* ClientFirmwareControl.cpp */; };
+		AB1E6DA62E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1E6DA42E7C63420057B8C9 /* cgl_3Demu.cpp */; };
+		AB1E6DA72E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1E6DA42E7C63420057B8C9 /* cgl_3Demu.cpp */; };
+		AB1E6DA82E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1E6DA42E7C63420057B8C9 /* cgl_3Demu.cpp */; };
+		AB1E6DA92E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1E6DA42E7C63420057B8C9 /* cgl_3Demu.cpp */; };
+		AB1E6DAA2E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1E6DA42E7C63420057B8C9 /* cgl_3Demu.cpp */; };
 		AB213D45170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
 		AB213D46170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
 		AB213D47170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
@@ -1958,6 +1963,8 @@
 		AB1E5A332E73F0AC008AFF9F /* ClientCheatManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientCheatManager.h; sourceTree = "<group>"; };
 		AB1E5A342E73F0AC008AFF9F /* ClientFirmwareControl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClientFirmwareControl.cpp; sourceTree = "<group>"; };
 		AB1E5A352E73F0AC008AFF9F /* ClientFirmwareControl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientFirmwareControl.h; sourceTree = "<group>"; };
+		AB1E6DA42E7C63420057B8C9 /* cgl_3Demu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cgl_3Demu.cpp; sourceTree = "<group>"; };
+		AB1E6DA52E7C63420057B8C9 /* cgl_3Demu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cgl_3Demu.h; sourceTree = "<group>"; };
 		AB213D43170CB141006DDB0F /* InputProfileController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InputProfileController.h; sourceTree = "<group>"; };
 		AB213D44170CB141006DDB0F /* InputProfileController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = InputProfileController.mm; sourceTree = "<group>"; };
 		AB213E981710D074006DDB0F /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -2608,6 +2615,7 @@
 				AB1E5A342E73F0AC008AFF9F /* ClientFirmwareControl.cpp */,
 				ABC04DA11F67A20500EA6ED7 /* ClientInputHandler.cpp */,
 				AB561C012E72AD6E007F88A5 /* ClientVideoOutput.cpp */,
+				AB1E6DA42E7C63420057B8C9 /* cgl_3Demu.cpp */,
 				ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */,
 				ABD1267320AE812900EFE1B2 /* macOS_driver.cpp */,
 				ABC04DC91F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp */,
@@ -2625,6 +2633,7 @@
 				AB1E5A352E73F0AC008AFF9F /* ClientFirmwareControl.h */,
 				ABC04DA21F67A20500EA6ED7 /* ClientInputHandler.h */,
 				AB561C022E72AD6E007F88A5 /* ClientVideoOutput.h */,
+				AB1E6DA52E7C63420057B8C9 /* cgl_3Demu.h */,
 				ABA6574914511EC90077E5E9 /* cocoa_cheat.h */,
 				ABD103FE1346652500AF11D1 /* cocoa_core.h */,
 				AB58F32B1364F44B0074C376 /* cocoa_file.h */,
@@ -4920,6 +4929,7 @@
 				AB1E5A382E73F0AC008AFF9F /* ClientCheatManager.cpp in Sources */,
 				AB1E5A392E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
 				AB743E482E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
+				AB1E6DA72E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5121,6 +5131,7 @@
 				AB1E5A3A2E73F0AC008AFF9F /* ClientCheatManager.cpp in Sources */,
 				AB1E5A3B2E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
 				AB743E492E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
+				AB1E6DA82E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5352,6 +5363,7 @@
 				AB1E5A3E2E73F0AC008AFF9F /* ClientCheatManager.cpp in Sources */,
 				AB1E5A3F2E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
 				AB743E4B2E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
+				AB1E6DAA2E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5583,6 +5595,7 @@
 				AB1E5A3C2E73F0AC008AFF9F /* ClientCheatManager.cpp in Sources */,
 				AB1E5A3D2E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
 				AB743E4A2E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
+				AB1E6DA92E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5784,6 +5797,7 @@
 				AB1E5A362E73F0AC008AFF9F /* ClientCheatManager.cpp in Sources */,
 				AB1E5A372E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
 				AB743E472E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
+				AB1E6DA62E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5982,6 +5996,7 @@
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_FAST_MATH = YES;
 				GCC_FAST_OBJC_DISPATCH = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_MODEL_TUNING = "";
 				"GCC_MODEL_TUNING[sdk=macosx10.4][arch=ppc]" = G4;
 				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc64]" = G5;
@@ -6044,7 +6059,7 @@
 				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;
 				"GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS[arch=i386]" = NO;
 				GCC_FAST_MATH = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				"GCC_MODEL_PPC64[sdk=macosx10.5][arch=ppc64]" = YES;
 				GCC_MODEL_TUNING = G5;
@@ -6054,7 +6069,7 @@
 				GCC_PREFIX_HEADER = DeSmuME_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
 				GCC_STRICT_ALIASING = YES;
-				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_THREADSAFE_STATICS = NO;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_UNROLL_LOOPS = YES;

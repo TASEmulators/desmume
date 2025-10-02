@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2006-2024 DeSmuME team
+	Copyright (C) 2006-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -317,13 +317,10 @@ extern bool killStylusOffScreen;
 
 extern LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void InitRamSearch();
-void FilterUpdate(HWND hwnd, bool user=true);
+void SetWindowMagnificationFilter(HWND hwnd, int filterID, bool user=true);
 
 CRITICAL_SECTION win_execute_sync;
 volatile int win_sound_samplecounter = 0;
-
-CRITICAL_SECTION win_backbuffer_sync;
-volatile bool backbuffer_invalidate = false;
 
 Lock::Lock() : m_cs(&win_execute_sync) { EnterCriticalSection(m_cs); }
 Lock::Lock(CRITICAL_SECTION& cs) : m_cs(&cs) { EnterCriticalSection(m_cs); }
@@ -452,19 +449,6 @@ unsigned short windowSize = 0;
 bool fsWindow = false;
 bool autoHideCursor = false;
 
-class GPUEventHandlerWindows : public GPUEventHandlerDefault
-{
-public:
-	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo)
-	{
-		if (isFrameSkipped)
-		{
-			return;
-		}
-
-		DRV_AviVideoUpdate(latestDisplayInfo);
-	}
-};
 
 class WinPCapInterface : public ClientPCapInterface
 {
@@ -514,8 +498,6 @@ public:
 		_pcap_breakloop((pcap_t *)dev);
 	}
 };
-
-GPUEventHandlerWindows *WinGPUEvent = NULL;
 
 LRESULT CALLBACK HUDFontSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
@@ -673,7 +655,7 @@ void ScaleScreen(float factor, bool user)
 			factor = 2.5f;
 		
 		//don't incorporate prescale into these calculations
-		factor /= video.prescaleHD;
+		factor /= (float)WinGPUEvent->GetFramebufferDimensionsByScaleFactorInteger();
 
 		if (video.layout == 0)
 			MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor));
@@ -1301,7 +1283,6 @@ static void StepRunLoop_Paused()
 	// periodically update single-core OSD when paused and in the foreground
 	if(CommonSettings.single_core() && GetActiveWindow() == mainLoopData.hwnd)
 	{
-		video.srcBuffer = (u8*)GPU->GetDisplayInfo().masterCustomBuffer;
 		DoDisplay();
 	}
 
@@ -1314,14 +1295,6 @@ static void StepRunLoop_User()
 
 	Hud.fps = mainLoopData.fps;
 	Hud.fps3d = GPU->GetFPSRender3D();
-
-	if (mainLoopData.framesskipped == 0)
-	{
-		WaitForSingleObject(display_done_event, display_done_timeout);
-		Display();
-	}
-	ResetEvent(display_done_event);
-
 	mainLoopData.fps3d = Hud.fps3d;
 
 	mainLoopData.toolframecount++;
@@ -1888,12 +1861,12 @@ static void RefreshMicSettings()
 static void SyncGpuBpp()
 {
 	//either of these works. 666 must be packed as 888
-	if(gpu_bpp == 18)
-		GPU->SetColorFormat(NDSColorFormat_BGR666_Rev);
+	if (gpu_bpp == 18)
+		WinGPUEvent->SetColorFormat(NDSColorFormat_BGR666_Rev);
 	else if(gpu_bpp == 15)
-		GPU->SetColorFormat(NDSColorFormat_BGR555_Rev);
+		WinGPUEvent->SetColorFormat(NDSColorFormat_BGR555_Rev);
 	else
-		GPU->SetColorFormat(NDSColorFormat_BGR888_Rev);
+		WinGPUEvent->SetColorFormat(NDSColorFormat_BGR888_Rev);
 }
 
 static BOOL OpenCoreSystemCP(const char* filename_syscp)
@@ -1915,6 +1888,10 @@ int _main()
 	InitDecoder();
 
 	dwMainThread = GetCurrentThreadId();
+
+	oglrender_init = &windows_opengl_init;
+	oglrender_beginOpenGL = &wgl_beginOpenGL;
+	oglrender_endOpenGL = &wgl_endOpenGL;
 
 	//enable opengl 3.2 driver in this port
 	OGLLoadEntryPoints_3_2_Func = OGLLoadEntryPoints_3_2;
@@ -1943,10 +1920,9 @@ int _main()
 	LoadWinPCap(isPCapSupported);
 
 	driver = new WinDriver();
-	WinGPUEvent = new GPUEventHandlerWindows;
+	WinGPUEvent = new Win32GPUEventHandler;
 
 	InitializeCriticalSection(&win_execute_sync);
-	InitializeCriticalSection(&win_backbuffer_sync);
 	InitializeCriticalSection(&display_invoke_handler_cs);
 	display_invoke_ready_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 	display_invoke_done_event = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -1954,10 +1930,6 @@ int _main()
 	display_done_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 //	struct configured_features my_config;
-
-	oglrender_init = &windows_opengl_init;
-	oglrender_beginOpenGL = &wgl_beginOpenGL;
-	oglrender_endOpenGL = &wgl_endOpenGL;
 
 	//try and detect this for users who don't specify it on the commandline
 	//(can't say I really blame them)
@@ -1991,7 +1963,9 @@ int _main()
 	if(GetPrivateProfileBool("Display", "Show Menu In Fullscreen Mode", false, IniName)) style |= DWS_FS_MENU;
 	if (GetPrivateProfileBool("Display", "Non-exclusive Fullscreen Mode", false, IniName)) style |= DWS_FS_WINDOW;
 	
-	gldisplay.filter = GetPrivateProfileBool("Video","Display Method Filter", false, IniName);
+	bool useOutputFilter = GetPrivateProfileBool("Video","Display Method Filter", false, IniName);
+	gldisplay.setUseOutputFilter(useOutputFilter);
+
 	if(GetPrivateProfileBool("Video","VSync", false, IniName))
 		style |= DWS_VSYNC;
 	displayMethod = GetPrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
@@ -2122,6 +2096,13 @@ int _main()
 		boffo[i] = emu_desmume_name_and_version[i];
 	boffo[len] = 0;
 
+	osd = new OSDCLASS(-1);
+
+	NDS_Init();
+	GPU->SetEventHandler(WinGPUEvent);
+	video.SetPrescale(1, 1);
+	SetDisplayNeedsBufferUpdates();
+
 	MainWindow = new WINCLASS(L"DeSmuME", hAppInst);
 	if (!MainWindow->createW(boffo, WndX, WndY, video.width,video.height+video.screengap,
 		WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
@@ -2130,6 +2111,26 @@ int _main()
 		MessageBox(NULL, "Error creating main window", DESMUME_NAME, MB_OK);
 		delete MainWindow;
 		exit(-1);
+	}
+
+	switch (displayMethod)
+	{
+		case DISPMETHOD_OPENGL:
+			break;
+
+		case DISPMETHOD_DDRAW_HW:
+		case DISPMETHOD_DDRAW_SW:
+		default:
+		{
+			HWND hwnd = MainWindow->getHWnd();
+			ddraw.systemMemory = (displayMethod != DISPMETHOD_DDRAW_HW);
+			u32 res = ddraw.create(hwnd);
+			if (res != 0)
+			{
+				MessageBox(hwnd, DDerrors[res], EMU_DESMUME_NAME_AND_VERSION(), MB_OK | MB_ICONERROR);
+			}
+			break;
+		}
 	}
 
 	//disable wacky stylus stuff
@@ -2278,12 +2279,6 @@ int _main()
 
 	CommonSettings.WifiBridgeDeviceID = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 
-	osd = new OSDCLASS(-1);
-
-	NDS_Init();
-
-	GPU->SetEventHandler(WinGPUEvent);
-
 	WinPCapInterface *winpcapInterface = (isPCapSupported) ? new WinPCapInterface : NULL;
 	wifiHandler->SetPCapInterface(winpcapInterface);
 	wifiHandler->SetSocketsSupported(isSocketsSupported);
@@ -2301,8 +2296,7 @@ int _main()
 	
 	CommonSettings.GFX3D_Renderer_TextureScalingFactor = (cmdline.texture_upscale != -1) ? cmdline.texture_upscale : GetValid3DIntSetting("TextureScalingFactor", 1, possibleTexScale, 3);
 	int newPrescaleHD = (cmdline.gpu_resolution_multiplier != -1) ? cmdline.gpu_resolution_multiplier : GetPrivateProfileInt("3D", "PrescaleHD", 1, IniName);
-	video.SetPrescale(newPrescaleHD, 1);
-	GPU->SetCustomFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH*video.prescaleHD, GPU_FRAMEBUFFER_NATIVE_HEIGHT*video.prescaleHD);
+	WinGPUEvent->SetFramebufferDimensionsByScaleFactorInteger(newPrescaleHD);
 	SyncGpuBpp();
 	GPU->ClearWithColor(0xFFFFFF);
 
@@ -2447,10 +2441,10 @@ int _main()
 	CommonSettings.UseExtFirmwareSettings = GetPrivateProfileBool("Firmware", "UseExtFirmwareSettings", false, IniName);
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.ExtFirmwarePath, 256, IniName);
 	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", false, IniName);
-
-	video.setfilter(GetPrivateProfileInt("Video", "Filter", video.NONE, IniName));
-	FilterUpdate(MainWindow->getHWnd(),false);
-		
+	
+	UINT magFilterID = GetPrivateProfileInt("Video", "Filter", video.NONE, IniName);
+	SetWindowMagnificationFilter(MainWindow->getHWnd(), (int)magFilterID, false);
+	
 	// Read the firmware settings from the init file
 	CommonSettings.fwConfig.favoriteColor = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
 	CommonSettings.fwConfig.birthdayMonth = GetPrivateProfileInt("Firmware","bMonth", 7, IniName);
@@ -2663,70 +2657,6 @@ int GetValid3DIntSetting(char *settingName, const int defVal, const int arrName[
 	return defVal;
 }
 
-void UpdateScreenRects()
-{
-	if (video.layout == 1)
-	{
-		// Main screen
-		MainScreenSrcRect.left = 0;
-		MainScreenSrcRect.top = 0;
-		MainScreenSrcRect.right = video.width;
-		MainScreenSrcRect.bottom = video.height/2;
-
-		// Sub screen
-		SubScreenSrcRect.left = 0;
-		SubScreenSrcRect.top = video.height/2;
-		SubScreenSrcRect.right = video.width;
-		SubScreenSrcRect.bottom = video.height;
-	}
-	else
-	if (video.layout == 2)
-	{
-		// Main screen
-		MainScreenSrcRect.left = 0;
-		MainScreenSrcRect.top = 0;
-		MainScreenSrcRect.right = video.width;
-		MainScreenSrcRect.bottom = video.height/2;
-
-		// Sub screen
-		SubScreenSrcRect.left = 0;
-		SubScreenSrcRect.top = video.height/2;
-		SubScreenSrcRect.right = video.width;
-		SubScreenSrcRect.bottom = video.height;
-	}
-	else
-	{
-		if((video.rotation == 90) || (video.rotation == 270))
-		{
-			// Main screen
-			MainScreenSrcRect.left = 0;
-			MainScreenSrcRect.top = 0;
-			MainScreenSrcRect.right = video.height/2;
-			MainScreenSrcRect.bottom = video.width;
-
-			// Sub screen
-			SubScreenSrcRect.left = video.height/2;
-			SubScreenSrcRect.top = 0;
-			SubScreenSrcRect.right = video.height;
-			SubScreenSrcRect.bottom = video.width;
-		}
-		else
-		{
-			// Main screen
-			MainScreenSrcRect.left = 0;
-			MainScreenSrcRect.top = 0;
-			MainScreenSrcRect.right = video.width;
-			MainScreenSrcRect.bottom = video.height/2;
-
-			// Sub screen
-			SubScreenSrcRect.left = 0;
-			SubScreenSrcRect.top = video.height/2;
-			SubScreenSrcRect.right = video.width;
-			SubScreenSrcRect.bottom = video.height;
-		}
-	}
-}
-
 // re-run the aspect ratio calculations if enabled
 void FixAspectRatio()
 {
@@ -2788,7 +2718,6 @@ void SetRotate(HWND hwnd, int rot, bool user)
 	if (maximized)
 		RestoreWindow(hwnd);
 	{
-	Lock lock (win_backbuffer_sync);
 
 	RECT rc;
 	int oldrot = video.rotation;
@@ -3557,8 +3486,11 @@ void RunConfig(CONFIGSCREEN which)
 		NDS_UnPause();
 }
 
-void FilterUpdate(HWND hwnd, bool user)
+void SetWindowMagnificationFilter(HWND hwnd, int filterID, bool user)
 {
+	video.setfilter(filterID);
+	SetDisplayNeedsBufferUpdates();
+
 	u32 style = GetStyle();
 	bool maximized = IsZoomed(hwnd) || fsWindow;
 	if (maximized)
@@ -3825,7 +3757,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, displayMethod == DISPMETHOD_DDRAW_HW);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, displayMethod == DISPMETHOD_DDRAW_SW);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_OPENGL, displayMethod == DISPMETHOD_OPENGL);
-			MainWindow->checkMenu(ID_DISPLAYMETHOD_FILTER, gldisplay.filter);
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_FILTER, gldisplay.useOutputFilter());
 
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
 			MainWindow->checkMenu(IDC_BACKGROUNDINPUT, allowBackgroundInput);
@@ -4005,10 +3937,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 	case WM_SIZING:
 		{
-			{
-				Lock lock(win_backbuffer_sync);
-				backbuffer_invalidate = true;
-			}
 			bool fullscreen = false;
 
 			InvalidateRect(hwnd, NULL, FALSE); 
@@ -4138,6 +4066,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	case WM_KEYDOWN:
 		//MainWindowToolbar->Show(false);
 		input_acquire();
+		if ((emu_paused || !execute || !romloaded) && (HudEditorMode || CommonSettings.hud.ShowInputDisplay || CommonSettings.hud.ShowGraphicalInputDisplay))
+		{
+			Display();
+		}
 		if(wParam != VK_PAUSE)
 			break;
 	
@@ -4195,6 +4127,10 @@ DOKEYDOWN:
 			}
 		}
 		input_acquire();
+		if ((emu_paused || !execute || !romloaded) && (HudEditorMode || CommonSettings.hud.ShowInputDisplay || CommonSettings.hud.ShowGraphicalInputDisplay))
+		{
+			Display();
+		}
 		if(wParam != VK_PAUSE)
 			break;
 	case WM_SYSKEYUP:
@@ -4209,10 +4145,6 @@ DOKEYDOWN:
 		break;
 
 	case WM_SIZE:
-		{
-			Lock lock(win_backbuffer_sync);
-			backbuffer_invalidate = true;
-		}
 		switch(wParam)
 		{
 		case SIZE_MINIMIZED:
@@ -4261,7 +4193,7 @@ DOKEYDOWN:
 				
 				UpdateWndRects(hwnd);
 				MainWindowToolbar->OnSize();
-				SetEvent(display_wakeup_event);
+				Display();
 			}
 			break;
 		}
@@ -4275,16 +4207,12 @@ DOKEYDOWN:
 
 			if(!romloaded)
 			{
-				//ugh, dont do this when creating the window. in case we're using ddraw display method, ddraw wont be setup yet
-				if(ddraw.handle)
-					Display();
+				Display();
 			}
 			else
 			{
 				if(CommonSettings.single_core())
 				{
-					const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-					video.srcBuffer = (u8*)dispInfo.masterCustomBuffer;
 					DoDisplay();
 				}
 			}
@@ -4469,6 +4397,11 @@ DOKEYDOWN:
 				else
 					NDS_setTouchPos(x, y);
 
+				if ((emu_paused || !execute || !romloaded) && (HudEditorMode || CommonSettings.hud.ShowInputDisplay || CommonSettings.hud.ShowGraphicalInputDisplay))
+				{
+					Display();
+				}
+
 				winLastTouch.x = x;
 				winLastTouch.y = y;
 				userTouchesScreen = true;
@@ -4482,7 +4415,14 @@ DOKEYDOWN:
 			HudClickRelease(&Hud);
 		}
 		if (!StylusAutoHoldPressed)
+		{
 			NDS_releaseTouch();
+
+			if ((emu_paused || !execute || !romloaded) && (HudEditorMode || CommonSettings.hud.ShowInputDisplay || CommonSettings.hud.ShowGraphicalInputDisplay))
+			{
+				Display();
+			}
+		}
 		userTouchesScreen = false;
 		return 0;
 
@@ -4496,7 +4436,14 @@ DOKEYDOWN:
 		ReleaseCapture();
 		HudClickRelease(&Hud);
 		if (!StylusAutoHoldPressed)
+		{
 			NDS_releaseTouch();
+
+			if ((emu_paused || !execute || !romloaded) && (HudEditorMode || CommonSettings.hud.ShowInputDisplay || CommonSettings.hud.ShowGraphicalInputDisplay))
+			{
+				Display();
+			}
+		}
 		userTouchesScreen = false;
 		return 0;
 
@@ -4609,158 +4556,70 @@ DOKEYDOWN:
 			break;
 #endif
 		case IDM_RENDER_NORMAL:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.NONE);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.NONE);
 			break;
 		case IDM_RENDER_LQ2X:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.LQ2X);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.LQ2X);
 			break;
 		case IDM_RENDER_LQ2XS:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.LQ2XS);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.LQ2XS);
 			break;
 		case IDM_RENDER_HQ2X:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.HQ2X);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.HQ2X);
 			break;
 		case IDM_RENDER_HQ4X:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.HQ4X);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.HQ4X);
 			break;
 		case IDM_RENDER_HQ2XS:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.HQ2XS);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.HQ2XS);
 			break;
 		case IDM_RENDER_2XSAI:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video._2XSAI);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video._2XSAI);
 			break;
 		case IDM_RENDER_SUPER2XSAI:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.SUPER2XSAI);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.SUPER2XSAI);
 			break;
 		case IDM_RENDER_SUPEREAGLE:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.SUPEREAGLE);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.SUPEREAGLE);
 			break;
 		case IDM_RENDER_SCANLINE:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.SCANLINE);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.SCANLINE);
 			break;
 		case IDM_RENDER_BILINEAR:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.BILINEAR);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.BILINEAR);
 			break;
 		case IDM_RENDER_NEAREST2X:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.NEAREST2X);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.NEAREST2X);
 			break;
 		case IDM_RENDER_EPX:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.EPX);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.EPX);
 			break;
 		case IDM_RENDER_EPXPLUS:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.EPXPLUS);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.EPXPLUS);
 			break;
 		case IDM_RENDER_EPX1POINT5:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.EPX1POINT5);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.EPX1POINT5);
 			break;
 		case IDM_RENDER_EPXPLUS1POINT5:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.EPXPLUS1POINT5);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.EPXPLUS1POINT5);
 			break;
 		case IDM_RENDER_NEAREST1POINT5:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.NEAREST1POINT5);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.NEAREST1POINT5);
 			break;
 		case IDM_RENDER_NEARESTPLUS1POINT5:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video.NEARESTPLUS1POINT5);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video.NEARESTPLUS1POINT5);
 			break;
 		case IDM_RENDER_2XBRZ:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video._2XBRZ);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video._2XBRZ);
 			break;
 		case IDM_RENDER_3XBRZ:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video._3XBRZ);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video._3XBRZ);
 			break;
 		case IDM_RENDER_4XBRZ:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video._4XBRZ);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video._4XBRZ);
 			break;
 		case IDM_RENDER_5XBRZ:
-			{
-				Lock lock (win_backbuffer_sync);
-				video.setfilter(video._5XBRZ);
-				FilterUpdate(hwnd);
-			}
+			SetWindowMagnificationFilter(hwnd, video._5XBRZ);
 			break;
 
 		case IDM_STATE_LOAD:
@@ -5107,54 +4966,102 @@ DOKEYDOWN:
 			return 0;
 
 		case ID_VIEW_FRAMECOUNTER:
+		{
 			CommonSettings.hud.FrameCounterDisplay ^= true;
 			WritePrivateProfileBool("Display", "FrameCounter", CommonSettings.hud.FrameCounterDisplay, IniName);
 			osd->clear();
+			if (emu_paused || !execute || !romloaded)
+			{
+				Display();
+			}
 			return 0;
+		}
 
 		case ID_VIEW_DISPLAYFPS:
+		{
 			CommonSettings.hud.FpsDisplay ^= true;
 			WritePrivateProfileBool("Display", "Display Fps", CommonSettings.hud.FpsDisplay, IniName);
 			osd->clear();
+			if (emu_paused || !execute || !romloaded)
+			{
+				Display();
+			}
 			return 0;
+		}
 
 		case ID_VIEW_DISPLAYINPUT:
+		{
 			CommonSettings.hud.ShowInputDisplay ^= true;
 			WritePrivateProfileBool("Display", "Display Input", CommonSettings.hud.ShowInputDisplay, IniName);
 			osd->clear();
+			if (emu_paused || !execute || !romloaded)
+			{
+				Display();
+			}
 			return 0;
+		}
 
 		case ID_VIEW_DISPLAYGRAPHICALINPUT:
+		{
 			CommonSettings.hud.ShowGraphicalInputDisplay ^= true;
 			WritePrivateProfileBool("Display", "Display Graphical Input", CommonSettings.hud.ShowGraphicalInputDisplay, IniName);
 			osd->clear();
+			if (emu_paused || !execute || !romloaded)
+			{
+				Display();
+			}
 			return 0;
+		}
 
 		case ID_VIEW_DISPLAYLAG:
+		{
 			CommonSettings.hud.ShowLagFrameCounter ^= true;
 			WritePrivateProfileBool("Display", "Display Lag Counter", CommonSettings.hud.ShowLagFrameCounter, IniName);
 			osd->clear();
+			if (emu_paused || !execute || !romloaded)
+			{
+				Display();
+			}
 			return 0;
+		}
 
 		case ID_VIEW_DISPLAYRTC:
+		{
 			CommonSettings.hud.ShowRTC ^= true;
 			WritePrivateProfileBool("Display", "Display RTC", CommonSettings.hud.ShowRTC, IniName);
 			osd->clear();
+			if (emu_paused || !execute || !romloaded)
+			{
+				Display();
+			}
 			return 0;
+		}
 
 		case ID_VIEW_HUDEDITOR:
+		{
 			HudEditorMode ^= true;
 			osd->clear();
 			osd->border(HudEditorMode);
-			if(!HudEditorMode)
+			if (!HudEditorMode)
 				osd->SaveHudEditor();
+			if (emu_paused || !execute || !romloaded)
+			{
+				Display();
+			}
 			return 0;
+		}
 
 		case ID_VIEW_DISPLAYMICROPHONE:
+		{
 			CommonSettings.hud.ShowMicrophone ^= true;
 			WritePrivateProfileBool("Display", "Display Microphone", CommonSettings.hud.ShowMicrophone, IniName);
 			osd->clear();
+			if (emu_paused || !execute || !romloaded)
+			{
+				Display();
+			}
 			return 0;
+		}
 
 		case ID_RAM_SEARCH:
 			if(!RamSearchHWnd)
@@ -5194,40 +5101,35 @@ DOKEYDOWN:
 			break;
 
 		case ID_DISPLAYMETHOD_DIRECTDRAWHW:
-			{
-				Lock lock (win_backbuffer_sync);
-				displayMethod = DISPMETHOD_DDRAW_HW;
-				ddraw.systemMemory = false;
-				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
-				ddraw.createSurfaces(hwnd);
-			}
+			displayMethod = DISPMETHOD_DDRAW_HW;
+			ddraw.systemMemory = false;
+			WritePrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
+			ddraw.createSurfaces(hwnd);
+			SetDisplayNeedsBufferUpdates();
 			break;
 
 		case ID_DISPLAYMETHOD_DIRECTDRAWSW:
-			{
-				Lock lock (win_backbuffer_sync);
-				displayMethod = DISPMETHOD_DDRAW_SW;
-				ddraw.systemMemory = true;
-				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_SW, IniName);
-				ddraw.createSurfaces(hwnd);
-			}
+			displayMethod = DISPMETHOD_DDRAW_SW;
+			ddraw.systemMemory = true;
+			WritePrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_SW, IniName);
+			ddraw.createSurfaces(hwnd);
+			SetDisplayNeedsBufferUpdates();
 			break;
 
 		case ID_DISPLAYMETHOD_OPENGL:
-			{
-				Lock lock (win_backbuffer_sync);
-				displayMethod = DISPMETHOD_OPENGL;
-				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_OPENGL, IniName);
-			}
+			displayMethod = DISPMETHOD_OPENGL;
+			WritePrivateProfileInt("Video","Display Method", DISPMETHOD_OPENGL, IniName);
+			SetDisplayNeedsBufferUpdates();
 			break;
 
 		case ID_DISPLAYMETHOD_FILTER:
-			{
-				Lock lock (win_backbuffer_sync);
-				gldisplay.filter = !gldisplay.filter;
-				WritePrivateProfileInt("Video","Display Method Filter", gldisplay.filter?1:0, IniName);
-			}
+		{
+			bool useOutputFilter = gldisplay.useOutputFilter();
+			useOutputFilter = !useOutputFilter;
+			gldisplay.setUseOutputFilter(useOutputFilter);
+			WritePrivateProfileInt("Video", "Display Method Filter", gldisplay.useOutputFilter() ? 1 : 0, IniName);
 			break;
+		}
 
 		case IDM_RESET:
 			ResetGame();
@@ -5714,39 +5616,15 @@ void Change3DCoreWithFallbackAndSave(int newCore)
 {
 	printf("Attempting change to 3d core to: %s\n",core3DList[newCore]->name);
 
-	if(newCore == GPU3D_OPENGL_OLD)
-		goto TRY_OGL_OLD;
-
-	if(newCore == GPU3D_SWRAST)
-		goto TRY_SWRAST;
-
-	if(newCore == RENDERID_NULL)
+	if (newCore >= 4)
 	{
-		GPU->Change3DRendererByID(RENDERID_NULL);
-		goto DONE;
+		printf("DeSmuME: Invalid 3D renderer chosen; falling back to SoftRasterizer. (core3DList index = %i)\n", newCore);
+		newCore = GPU3D_SWRAST;
 	}
 
-	if(!GPU->Change3DRendererByID(GPU3D_OPENGL_3_2))
-	{
-		printf("falling back to 3d core: %s\n",core3DList[GPU3D_OPENGL_OLD]->name);
-		goto TRY_OGL_OLD;
-	}
-	goto DONE;
+	GPU->Set3DRendererByID(newCore);
 
-TRY_OGL_OLD:
-	if(!GPU->Change3DRendererByID(GPU3D_OPENGL_OLD))
-	{
-		printf("falling back to 3d core: %s\n",core3DList[GPU3D_SWRAST]->name);
-		goto TRY_SWRAST;
-	}
-	goto DONE;
-
-TRY_SWRAST:
-	GPU->Change3DRendererByID(GPU3D_SWRAST);
-	
-DONE:
-	int gpu3dSaveValue = ((cur3DCore != RENDERID_NULL) ? cur3DCore : RENDERID_NULL_SAVED);
-	WritePrivateProfileInt("3D", "Renderer", gpu3dSaveValue, IniName);
+	WritePrivateProfileInt("3D", "Renderer", newCore, IniName);
 }
 
 LRESULT CALLBACK HUDFontSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
@@ -5827,7 +5705,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw, IDC_DEPTH_L_EQUAL_PF, CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing);
 
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
-			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, video.prescaleHD);
+			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, (LPARAM)WinGPUEvent->GetFramebufferDimensionsByScaleFactorInteger());
 
 			// Generate the Color Depth pop-up menu
 			ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), "15 bit");
@@ -5900,35 +5778,21 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					CommonSettings.OpenGL_Emulation_NDSDepthCalculation = IsDlgCheckboxChecked(hw, IDC_NDS_DEPTH_CALC);
 					CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing = IsDlgCheckboxChecked(hw, IDC_DEPTH_L_EQUAL_PF);
 					
-					int newPrescaleHD = video.prescaleHD;
+					int newPrescaleHD = (int)WinGPUEvent->GetFramebufferDimensionsByScaleFactorInteger();
 					LRESULT scaleResult = SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_GETPOS, 0, 0);
 					if (HIWORD(scaleResult) == 0)
 					{
 						newPrescaleHD = LOWORD(scaleResult);
 					}
 
-					{
-						Lock lock(win_backbuffer_sync);
-						if(display_mutex) slock_lock(display_mutex);
-						Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
-						if (newPrescaleHD != video.prescaleHD)
-						{
-							video.SetPrescale(newPrescaleHD, 1);
-							GPU->SetCustomFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH*video.prescaleHD, GPU_FRAMEBUFFER_NATIVE_HEIGHT*video.prescaleHD);
-						}
-						SyncGpuBpp();
-						UpdateScreenRects();
-						if(display_mutex) slock_unlock(display_mutex);
-						// shrink buffer size if necessary
-						const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
-						size_t newBufferSize = displayInfo.customWidth * displayInfo.customHeight * 2 * displayInfo.pixelBytes;
-						if (newBufferSize < video.srcBufferSize) video.srcBufferSize = newBufferSize;
-					}
+					WinGPUEvent->SetFramebufferDimensionsByScaleFactorInteger(newPrescaleHD);
+					Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
+					SyncGpuBpp();
 
 					WritePrivateProfileBool("3D", "HighResolutionInterpolateColor", CommonSettings.GFX3D_HighResolutionInterpolateColor, IniName);
 					WritePrivateProfileBool("3D", "EnableTXTHack", CommonSettings.GFX3D_TXTHack, IniName);
 					WritePrivateProfileBool("3D", "EnableLineHack", CommonSettings.GFX3D_LineHack, IniName);
-					WritePrivateProfileInt ("3D", "PrescaleHD", video.prescaleHD, IniName);
+					WritePrivateProfileInt ("3D", "PrescaleHD", newPrescaleHD, IniName);
 					WritePrivateProfileInt ("3D", "GpuBpp", gpu_bpp, IniName);
 					WritePrivateProfileInt ("3D", "TextureScalingFactor", CommonSettings.GFX3D_Renderer_TextureScalingFactor, IniName);
 					WritePrivateProfileBool("3D", "TextureDeposterize", CommonSettings.GFX3D_Renderer_TextureDeposterize, IniName);
@@ -5949,8 +5813,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 				return TRUE;
 			case IDC_DEFAULT:
 				{
-					Change3DCoreWithFallbackAndSave(GPU3D_DEFAULT);
-					ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), cur3DCore);
+					ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), GPU3D_DEFAULT);
 					//CommonSettings.gfx3d_flushMode = 0;
 					//WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
 				}

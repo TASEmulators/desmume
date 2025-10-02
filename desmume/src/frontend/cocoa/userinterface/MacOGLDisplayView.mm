@@ -253,6 +253,24 @@ void MacOGLClientFetchObject::FetchCustomDisplayToSrcClone(const NDSDisplayID di
 	sharedData->FetchCustomDisplayToSrcClone(this->_fetchDisplayInfo, displayID, bufferIndex, needsLock);
 }
 
+void MacOGLClientFetchObject::SetPauseState(bool theState)
+{
+	if (theState == this->_pauseState)
+	{
+		return;
+	}
+	
+	if (theState)
+	{
+		CGLContextObj prevContext = CGLGetCurrentContext();
+		CGLSetCurrentContext(this->_context);
+		glFinish();
+		CGLSetCurrentContext(prevContext);
+	}
+	
+	this->MacGPUFetchObjectDisplayLink::SetPauseState(theState);
+}
+
 void MacOGLClientFetchObject::Init()
 {
 	MacOGLClientSharedData *sharedData = (MacOGLClientSharedData *)this->_clientData;

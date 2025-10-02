@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2006-2016 DeSmuME team
+	Copyright (C) 2006-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,7 +28,6 @@ extern WINCLASS	*MainWindow;
 extern HINSTANCE hAppInst;
 extern HMENU mainMenu; //Holds handle to the main DeSmuME menu
 extern CToolBar* MainWindowToolbar;
-extern CRITICAL_SECTION win_backbuffer_sync;
 
 extern volatile bool execute, paused;
 extern bool romloaded;

@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009-2015 DeSmuME team
+Copyright (C) 2009-2025 DeSmuME team
 
 This file is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -55,21 +55,19 @@ public:
 	u32 *buffer, *buffer_raw;
 	u32 *filteredbuffer;
 
+	SSurface filterSrcSurface;
+	SSurface filterDstSurface;
+
 	void SetPrescale(int prescaleHD, int prescalePost)
 	{
 		if (this->prescaleHD != prescaleHD || this->prescalePost != prescalePost)
 		{
-			free_aligned(buffer_raw);
-			free_aligned(filteredbuffer);
-
 			this->prescaleHD = prescaleHD;
 			this->prescalePost = prescalePost;
 			prefilterWidth = 256 * prescaleHD;
 			prefilterHeight = 192 * 2 * prescaleHD;
 
 			prescaleTotal = prescaleHD;
-
-			ResizeBuffers();
 
 			setfilter(currentfilter);
 		}
@@ -81,19 +79,33 @@ public:
 		const int kPadSize = 4;
 
 		// raw buffer
+		u32* oldRawBuffer = buffer_raw;
 		size_t rawBufferWidth = prefilterWidth + (kPadSize * 2);
 		size_t rawBufferHeight = prefilterHeight + (kPadSize * 2);
 		rawBufferSize = rawBufferWidth * rawBufferHeight * 4;
-		buffer_raw = buffer = (u32*)malloc_alignedCacheLine(rawBufferSize);
+		buffer_raw = buffer = (u32*)malloc_alignedPage(rawBufferSize);
+		free_aligned(oldRawBuffer);
 
 		// display buffer
+		u32* oldFilteredBuffer = filteredbuffer;
 		size_t scratchBufferWidth = width + (kPadSize * 2);
 		size_t scratchBufferHeight = height + (kPadSize * 2);
 		scratchBufferSize = scratchBufferWidth * scratchBufferHeight * 4;
-		filteredbuffer = (u32*)malloc_alignedCacheLine(scratchBufferSize);
+		filteredbuffer = (u32*)malloc_alignedPage(scratchBufferSize);
+		free_aligned(oldFilteredBuffer);
 
 		//move the buffer pointer inside it's padded area so that earlier reads won't go out of the buffer we allocated
 		buffer += (kPadSize*rawBufferWidth + kPadSize) * 4;
+
+		filterSrcSurface.Height = 384 * prescaleHD;
+		filterSrcSurface.Width = 256 * prescaleHD;
+		filterSrcSurface.Pitch = filterSrcSurface.Width * 2;
+		filterSrcSurface.Surface = (u8*)buffer;
+
+		filterDstSurface.Height = height * prescaleHD;
+		filterDstSurface.Width = width * prescaleHD;
+		filterDstSurface.Pitch = width * 2;
+		filterDstSurface.Surface = (u8*)filteredbuffer;
 
 		// clean the new buffers
 		clear();
@@ -135,10 +147,6 @@ public:
 		//}
 		memset(buffer_raw, 0, rawBufferSize);
 		memset(filteredbuffer, 0, scratchBufferSize);
-	}
-
-	void reset() {
-		SetPrescale(1, 1); //should i do this here?
 	}
 
 	void setfilter(int filter) {
@@ -184,12 +192,7 @@ public:
 			height = prefilterHeight * 2;
 			break;
 		}
-
-		ResizeBuffers();
 	}
-
-	SSurface src;
-	SSurface dst;
 
 	u16* finalBuffer() const
 	{
@@ -199,83 +202,72 @@ public:
 	}
 
 	void filter() {
-
-		src.Height = 384 * prescaleHD;
-		src.Width = 256 * prescaleHD;
-		src.Pitch = src.Width * 2;
-		src.Surface = (u8*)buffer;
-
-		dst.Height = height * prescaleHD;
-		dst.Width = width * prescaleHD;
-		dst.Pitch = width * 2;
-		dst.Surface = (u8*)filteredbuffer;
-
 		switch (currentfilter)
 		{
 		case NONE:
 			break;
 		case LQ2X:
-			RenderLQ2X(src, dst);
+			RenderLQ2X(filterSrcSurface, filterDstSurface);
 			break;
 		case LQ2XS:
-			RenderLQ2XS(src, dst);
+			RenderLQ2XS(filterSrcSurface, filterDstSurface);
 			break;
 		case HQ2X:
-			RenderHQ2X(src, dst);
+			RenderHQ2X(filterSrcSurface, filterDstSurface);
 			break;
 		case HQ4X:
-			RenderHQ4X(src, dst);
+			RenderHQ4X(filterSrcSurface, filterDstSurface);
 			break;
 		case HQ2XS:
-			RenderHQ2XS(src, dst);
+			RenderHQ2XS(filterSrcSurface, filterDstSurface);
 			break;
 		case _2XSAI:
-			Render2xSaI(src, dst);
+			Render2xSaI(filterSrcSurface, filterDstSurface);
 			break;
 		case SUPER2XSAI:
-			RenderSuper2xSaI(src, dst);
+			RenderSuper2xSaI(filterSrcSurface, filterDstSurface);
 			break;
 		case SUPEREAGLE:
-			RenderSuperEagle(src, dst);
+			RenderSuperEagle(filterSrcSurface, filterDstSurface);
 			break;
 		case SCANLINE:
-			RenderScanline(src, dst);
+			RenderScanline(filterSrcSurface, filterDstSurface);
 			break;
 		case BILINEAR:
-			RenderBilinear(src, dst);
+			RenderBilinear(filterSrcSurface, filterDstSurface);
 			break;
 		case NEAREST2X:
-			RenderNearest2X(src, dst);
+			RenderNearest2X(filterSrcSurface, filterDstSurface);
 			break;
 		case EPX:
-			RenderEPX(src, dst);
+			RenderEPX(filterSrcSurface, filterDstSurface);
 			break;
 		case EPXPLUS:
-			RenderEPXPlus(src, dst);
+			RenderEPXPlus(filterSrcSurface, filterDstSurface);
 			break;
 		case EPX1POINT5:
-			RenderEPX_1Point5x(src, dst);
+			RenderEPX_1Point5x(filterSrcSurface, filterDstSurface);
 			break;
 		case EPXPLUS1POINT5:
-			RenderEPXPlus_1Point5x(src, dst);
+			RenderEPXPlus_1Point5x(filterSrcSurface, filterDstSurface);
 			break;
 		case NEAREST1POINT5:
-			RenderNearest_1Point5x(src, dst);
+			RenderNearest_1Point5x(filterSrcSurface, filterDstSurface);
 			break;
 		case NEARESTPLUS1POINT5:
-			RenderNearestPlus_1Point5x(src, dst);
+			RenderNearestPlus_1Point5x(filterSrcSurface, filterDstSurface);
 			break;
 		case _2XBRZ:
-			Render2xBRZ(src, dst);
+			Render2xBRZ(filterSrcSurface, filterDstSurface);
 			break;
 		case _3XBRZ:
-			Render3xBRZ(src, dst);
+			Render3xBRZ(filterSrcSurface, filterDstSurface);
 			break;
 		case _4XBRZ:
-			Render4xBRZ(src, dst);
+			Render4xBRZ(filterSrcSurface, filterDstSurface);
 			break;
 		case _5XBRZ:
-			Render5xBRZ(src, dst);
+			Render5xBRZ(filterSrcSurface, filterDstSurface);
 			break;
 		}
 	}

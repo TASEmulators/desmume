@@ -1,6 +1,6 @@
  /*
 	Copyright (C) 2007 Pascal Giard (evilynux)
-	Copyright (C) 2006-2024 DeSmuME team
+	Copyright (C) 2006-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -31,11 +31,15 @@
 #include <X11/Xlib.h>
 #include <sys/stat.h>
 
+#ifdef AGG2D_USE_VECTORFONTS
+#include <fontconfig/fontconfig.h>
+#endif
+
 #include "types.h"
+#include "main.h"
 #include "firmware.h"
 #include "NDSSystem.h"
 #include "driver.h"
-#include "GPU.h"
 #include "SPU.h"
 #include "../shared/sndsdl.h"
 #include "../shared/ctrlssdl.h"
@@ -103,12 +107,11 @@ extern int _scanline_filter_a, _scanline_filter_b, _scanline_filter_c, _scanline
 VideoFilter* video;
 
 #define GPU_SCALE_FACTOR_MIN 1.0f
-#define GPU_SCALE_FACTOR_MAX 10.0f
+#define GPU_SCALE_FACTOR_MAX 16.0f
 
 float gpu_scale_factor = 1.0f;
-int real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-int real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 
+Gtk2GPUEventHandler *gtk2gpuEvent = NULL;
 
 desmume::config::Config config;
 
@@ -126,6 +129,15 @@ enum {
     SUB_BG_3,
     SUB_OBJ
 };
+
+#ifdef AGG2D_USE_VECTORFONTS
+#define VECTOR_FONT_BASE_SIZE 16
+
+static FcConfig* fontConfig;
+static std::string vectorFontFile;
+
+static std::string FindFontFile(const char* fontName, bool bold);
+#endif
 
 gboolean EmuLoop(gpointer data);
 
@@ -175,6 +187,11 @@ static void SetWinSize(GtkAction *action, GtkRadioAction *current);
 static void SetOrientation(GtkAction *action, GtkRadioAction *current);
 static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data);
 static void ToggleHudDisplay(GtkToggleAction* action, gpointer data);
+#ifdef HAVE_LIBAGG
+static void HudResetLayout(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HudSaveLayout();
+static void HudLoadLayout();
+#endif
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile();
 #endif
@@ -1688,14 +1705,8 @@ static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpo
     return TRUE;
 }
 
-static inline void gpu_screen_to_rgb(u32* dst)
-{
-    ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().isCustomSizeRequested ? (u16*)(GPU->GetDisplayInfo().masterCustomBuffer) : GPU->GetDisplayInfo().masterNativeBuffer16,
-		dst, real_framebuffer_width * real_framebuffer_height * 2);
-}
-
 static inline void drawScreen(cairo_t* cr, u32* buf, gint w, gint h) {
-	cairo_surface_t* surf = cairo_image_surface_create_for_data((u8*)buf, CAIRO_FORMAT_RGB24, w, h, w * 4);
+	cairo_surface_t* surf = cairo_image_surface_create_for_data((u8*)buf, CAIRO_FORMAT_RGB24, w, h, w * sizeof(buf[0]));
 	cairo_set_source_surface(cr, surf, 0, 0);
 	cairo_pattern_set_filter(cairo_get_source(cr), Interpolation);
 	cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_PAD);
@@ -1815,17 +1826,59 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	return TRUE;
 }
 
-static void RedrawScreen() {
-	ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapDst>(
-		GPU->GetDisplayInfo().isCustomSizeRequested ? (u16*)(GPU->GetDisplayInfo().masterCustomBuffer) : GPU->GetDisplayInfo().masterNativeBuffer16,
-		(uint32_t *)video->GetSrcBufferPtr(), real_framebuffer_width * real_framebuffer_height * 2);
+static void RedrawScreen()
+{
+	gtk2gpuEvent->VideoFetchLock();
+	
 #ifdef HAVE_LIBAGG
-	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), real_framebuffer_width, real_framebuffer_height * 2, 1024 * gpu_scale_factor);
-	osd->update();
-	DrawHUD();
-	osd->clear();
-#endif
+	const bool needsHUDDisplay = (
+		CommonSettings.hud.ShowInputDisplay ||
+		CommonSettings.hud.ShowGraphicalInputDisplay ||
+		CommonSettings.hud.FpsDisplay ||
+		CommonSettings.hud.FrameCounterDisplay ||
+		CommonSettings.hud.ShowLagFrameCounter ||
+		CommonSettings.hud.ShowMicrophone ||
+		CommonSettings.hud.ShowRTC ||
+		HudEditorMode
+	);
+	
+	if (needsHUDDisplay)
+	{
+		const int w = (int)video->GetSrcWidth();
+		const int h = (int)video->GetSrcHeight();
+		const double oldGpuScaleFactor = osd->scale;
+		const double newGpuScaleFactor = ( ((double)w / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) + ((double)h / (double)(GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0)) ) / 2.0;
+		
+		if ( ((newGpuScaleFactor + 0.001) < oldGpuScaleFactor) || ((newGpuScaleFactor - 0.001) > oldGpuScaleFactor) )
+		{
+#ifdef AGG2D_USE_VECTORFONTS
+			if (vectorFontFile.size() > 0)
+			{
+				aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * newGpuScaleFactor, true);
+				osd->useVectorFonts = (newGpuScaleFactor >= 1.1f);
+			}
+			else
+			{
+				osd->useVectorFonts = false;
+			}
+#endif // AGG2D_USE_VECTORFONTS
+			
+			Agg_setCustomSize(w, h);
+			osd->scale = newGpuScaleFactor;
+			Hud.rescale(oldGpuScaleFactor, newGpuScaleFactor);
+			HudSaveLayout();
+			aggDraw.hud->setDrawTargetDims( (u8 *)video->GetSrcBufferPtr(), w, h, w * sizeof(u32) );
+		}
+		
+		osd->update();
+		DrawHUD();
+		osd->clear();
+	}
+#endif // HAVE_LIBAGG
+	
 	video->RunFilter();
+	gtk2gpuEvent->VideoFetchUnlock();
+	
 	gtk_widget_queue_draw(pDrawingArea);
 }
 
@@ -1834,6 +1887,9 @@ static void RedrawScreen() {
 #ifdef HAVE_LIBAGG
 static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 {
+	const size_t videoWidth  = video->GetSrcWidth();
+	const size_t videoHeight = video->GetSrcHeight();
+	const int scaleFactor = (int)( ( (((float)videoWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH) + ((float)videoHeight / ((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT*2.0f))) / 2.0f ) + 0.5f );
 	double devX, devY;
 	gint X, Y, topX = -1, topY = -1, botX = -1, botY = -1;
 	static gint startScreen = 0;
@@ -1842,33 +1898,33 @@ static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 		devX = x;
 		devY = y;
 		cairo_matrix_transform_point(&nds_screen.topscreen_matrix, &devX, &devY);
-		topX = devX;
-		topY = devY;
+		topX = devX * scaleFactor;
+		topY = devY * scaleFactor;
 	}
 
 	if (nds_screen.orientation != ORIENT_SINGLE || nds_screen.swap) {
 		devX = x;
 		devY = y;
 		cairo_matrix_transform_point(&nds_screen.touch_matrix, &devX, &devY);
-		botX = devX;
-		botY = devY;
+		botX = devX * scaleFactor;
+		botY = devY * scaleFactor;
 	}
 
-	if (topX >= 0 && topY >= 0 && topX < 256 && topY < 192) {
+	if (topX >= 0 && topY >= 0 && topX < videoWidth && topY < videoHeight) {
 		X = topX;
-		Y = topY + (nds_screen.swap ? 192 : 0);
+		Y = topY + (nds_screen.swap ? videoHeight : 0);
 		startScreen = 0;
-	} else if (botX >= 0 && botY >= 0 && botX < 256 && botY < 192) {
+	} else if (botX >= 0 && botY >= 0 && botX < videoWidth && botY < videoHeight) {
 		X = botX;
-		Y = botY + (nds_screen.swap ? 0 : 192);
+		Y = botY + (nds_screen.swap ? 0 : videoHeight);
 		startScreen = 1;
 	} else if (!start) {
 		if (startScreen == 0) {
-			X = CLAMP(topX, 0, 255);
-			Y = CLAMP(topY, 0, 191) + (nds_screen.swap ? 192 : 0);
+			X = CLAMP(topX, 0, videoWidth-1);
+			Y = CLAMP(topY, 0, videoHeight-1) + (nds_screen.swap ? videoHeight : 0);
 		} else {
-			X = CLAMP(botX, 0, 255);
-			Y = CLAMP(botY, 0, 191) + (nds_screen.swap ? 0 : 192);
+			X = CLAMP(botX, 0, videoWidth-1);
+			Y = CLAMP(botY, 0, videoHeight-1) + (nds_screen.swap ? 0 : videoHeight);
 		}
 	} else {
 		LOG("TopX=%d, TopY=%d, BotX=%d, BotY=%d\n", topX, topY, botX, botY);
@@ -2695,10 +2751,8 @@ static void GraphicsSettingsDialog() {
 			gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(wGPUScale), gpu_scale_factor);
 		config.gpuScaleFactor = gpu_scale_factor;
-		real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor;
-		real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
-		GPU->SetCustomFramebufferSize(real_framebuffer_width, real_framebuffer_height);
-		video->SetSourceSize(real_framebuffer_width, real_framebuffer_height * 2);
+		
+		gtk2gpuEvent->SetFramebufferDimensions( (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor) + 0.5), (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor) + 0.5) );
 
 		CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wPosterize));
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wSmoothing));
@@ -2756,34 +2810,36 @@ static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data)
 
 static void Printscreen()
 {
+	const gint videoWidth  = (gint)video->GetSrcWidth();
+	const gint videoHeight = (gint)video->GetSrcHeight();
+	u8 *screenshotBuffer = (u8 *)malloc_alignedPage(videoWidth * videoHeight * sizeof(u32));
+	
     GdkPixbuf *screenshot;
     const gchar *dir;
     gchar *filename = NULL, *filen = NULL;
     GError *error = NULL;
-    u8 *rgb = (u8*)malloc(real_framebuffer_width * real_framebuffer_height * 2 * 4);
     static int seq = 0;
     gint H, W;
 
-    //rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL);
-    //if (!rgb)
-    //    return;
-
     if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
-        W = real_framebuffer_width;
-        H = real_framebuffer_height * 2;
+        W = videoWidth;
+        H = videoHeight;
     } else {
-        W = real_framebuffer_height * 2;
-        H = real_framebuffer_width;
+        W = videoHeight;
+        H = videoWidth;
     }
 
-    gpu_screen_to_rgb((u32*)rgb);
-    screenshot = gdk_pixbuf_new_from_data(rgb,
+	gtk2gpuEvent->VideoFetchLock();
+	ColorspaceConvertBuffer888xTo8888Opaque<true, false>(video->GetSrcBufferPtr(), (u32 *)screenshotBuffer, videoWidth * videoHeight);
+	gtk2gpuEvent->VideoFetchUnlock();
+
+	screenshot = gdk_pixbuf_new_from_data(screenshotBuffer,
                           GDK_COLORSPACE_RGB,
                           TRUE,
                           8,
                           W,
                           H,
-                          W * 4,
+                          W * sizeof(u32),
                           NULL,
                           NULL);
 
@@ -2810,10 +2866,10 @@ static void Printscreen()
         seq--;
     }
 
-    free(rgb);
     g_object_unref(screenshot);
     g_free(filename);
     g_free(filen);
+    free_aligned(screenshotBuffer);
 }
 
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
@@ -3076,8 +3132,6 @@ gboolean EmuLoop(gpointer data)
     desmume_cycle();    /* Emule ! */
 
     _updateDTools();
-        avout_x264.updateVideo(GPU->GetDisplayInfo().masterNativeBuffer16);
-	RedrawScreen();
 
     if (!config.fpslimiter || keys_latch & KEYMASK_(KEY_BOOST - 1)) {
         if (autoframeskip) {
@@ -3302,12 +3356,68 @@ static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
         break;
     case HUD_DISPLAY_EDITOR:
         HudEditorMode = active;
+        if(!active)
+			HudSaveLayout();
         break;
     default:
         g_printerr("Unknown HUD toggle %u!", hudId);
         break;
     }
     RedrawScreen();
+}
+
+static void HudResetLayout(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	Hud.reset();
+	HudSaveLayout();
+}
+
+static void HudSaveCoordsToVector(HudCoordinates* pCoords, int* pDest)
+{
+	pDest[0] = pCoords->x;
+	pDest[1] = pCoords->y;
+	pDest[2] = pCoords->xsize;
+	pDest[3] = pCoords->ysize;
+}
+
+static void HudLoadCoordsFromVector(HudCoordinates* pCoords, int* pSrc)
+{
+	pCoords->x=pSrc[0];
+	pCoords->y=pSrc[1];
+	pCoords->xsize=pSrc[2];
+	pCoords->ysize=pSrc[3];
+}
+
+static void HudSaveLayout()
+{
+	std::vector<int> vec(8*4); //8 HudCoordinates
+	HudSaveCoordsToVector(&Hud.SavestateSlots, vec.data());
+	HudSaveCoordsToVector(&Hud.FpsDisplay, vec.data()+4);
+	HudSaveCoordsToVector(&Hud.FrameCounter, vec.data()+8);
+	HudSaveCoordsToVector(&Hud.InputDisplay, vec.data()+12);
+	HudSaveCoordsToVector(&Hud.GraphicalInputDisplay, vec.data()+16);
+	HudSaveCoordsToVector(&Hud.LagFrameCounter, vec.data()+20);
+	HudSaveCoordsToVector(&Hud.Microphone, vec.data()+24);
+	HudSaveCoordsToVector(&Hud.RTCDisplay, vec.data()+28);
+	config.hud_layout = vec;
+}
+
+static void HudLoadLayout()
+{
+	std::vector<int> vec=config.hud_layout;
+	if (vec.size()==8*4)
+	{
+		HudLoadCoordsFromVector(&Hud.SavestateSlots, vec.data());
+		HudLoadCoordsFromVector(&Hud.FpsDisplay, vec.data()+4);
+		HudLoadCoordsFromVector(&Hud.FrameCounter, vec.data()+8);
+		HudLoadCoordsFromVector(&Hud.InputDisplay, vec.data()+12);
+		HudLoadCoordsFromVector(&Hud.GraphicalInputDisplay, vec.data()+16);
+		HudLoadCoordsFromVector(&Hud.LagFrameCounter, vec.data()+20);
+		HudLoadCoordsFromVector(&Hud.Microphone, vec.data()+24);
+		HudLoadCoordsFromVector(&Hud.RTCDisplay, vec.data()+28);
+	}
+	else
+		Hud.reset();
 }
 
 static void desmume_gtk_menu_view_hud (GtkActionGroup *ag)
@@ -3508,14 +3618,46 @@ common_gtk_main( class configured_features *my_config)
                     SDL_GetError());
         return 1;
     }
+	
     desmume_init( my_config->disable_sound || !config.audio_enabled);
+
+    gpu_scale_factor = config.gpuScaleFactor;
+    if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
+        gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
+    if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
+        gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
+    config.gpuScaleFactor = gpu_scale_factor;
+	
+    gtk2gpuEvent = new Gtk2GPUEventHandler;
+    GPU->SetEventHandler(gtk2gpuEvent);
+    gtk2gpuEvent->SetFramebufferDimensions( (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor) + 0.5), (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor) + 0.5) );
+	
+    const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+    video = new VideoFilter(dispInfo.customWidth, dispInfo.customHeight * 2, VideoFilterTypeID_None, CommonSettings.num_cores);
+    g_printerr("Using %d threads for video filter.\n", CommonSettings.num_cores);
 
     /* Init the hud / osd stuff */
 #ifdef HAVE_LIBAGG
     Desmume_InitOnce();
     Hud.reset();
     osd = new OSDCLASS(-1);
-#endif
+	
+#ifdef AGG2D_USE_VECTORFONTS
+	if (vectorFontFile.size() > 0)
+	{
+		aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE, true);
+		osd->useVectorFonts = false;
+	}
+	else
+	{
+		osd->useVectorFonts = false;
+	}
+#endif // AGG2D_USE_VECTORFONTS
+	
+	Agg_setCustomSize(video->GetSrcWidth(), video->GetSrcHeight());
+	osd->scale = 1.0;
+	aggDraw.hud->setDrawTargetDims( (u8 *)video->GetSrcBufferPtr(), video->GetSrcWidth(), video->GetSrcHeight(), video->GetSrcWidth() * sizeof(u32) );
+#endif // HAVE_LIBAGG
 
     /*
      * Activate the GDB stubs
@@ -3569,19 +3711,6 @@ common_gtk_main( class configured_features *my_config)
 
     memset(&nds_screen, 0, sizeof(nds_screen));
     nds_screen.orientation = ORIENT_VERTICAL;
-
-    gpu_scale_factor = config.gpuScaleFactor;
-    if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
-        gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
-    if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
-        gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
-    config.gpuScaleFactor = gpu_scale_factor;
-    real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor;
-    real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
-
-    g_printerr("Using %d threads for video filter.\n", CommonSettings.num_cores);
-    GPU->SetCustomFramebufferSize(real_framebuffer_width, real_framebuffer_height);
-    video = new VideoFilter(real_framebuffer_width, real_framebuffer_height * 2, VideoFilterTypeID_None, CommonSettings.num_cores);
 
     /* Create the window */
     pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -3973,6 +4102,10 @@ common_gtk_main( class configured_features *my_config)
 	g_timeout_add(200, OutOfLoopJoyDeviceCheckTimerFunc, 0);
     /* Main loop */
     gtk_main();
+    
+#ifdef HAVE_LIBAGG
+	HudSaveLayout();
+#endif
 
     delete video;
 
@@ -3982,6 +4115,9 @@ common_gtk_main( class configured_features *my_config)
 
     desmume_free();
 
+    delete gtk2gpuEvent;
+    gtk2gpuEvent = NULL;
+	
 #if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
     #if defined(ENABLE_GLX)
 	glx_deinitOpenGL();
@@ -4012,10 +4148,46 @@ common_gtk_main( class configured_features *my_config)
     return EXIT_SUCCESS;
 }
 
+#ifdef AGG2D_USE_VECTORFONTS
+
+static std::string FindFontFile(const char* fontName, bool bold)
+{
+	std::string fontFile;
+	FcPattern* pat = FcNameParse((const FcChar8*)fontName);
+	if(bold)
+		FcPatternAddInteger(pat, FC_WEIGHT, FC_WEIGHT_BOLD);
+	FcConfigSubstitute(fontConfig, pat, FcMatchPattern);
+	FcDefaultSubstitute(pat);
+	
+	// find the font
+	FcResult res;
+	FcPattern* font = FcFontMatch(fontConfig, pat, &res);
+	if (font)
+	{
+		FcChar8* file = NULL;
+		if (FcPatternGetString(font, FC_FILE, 0, &file) == FcResultMatch)
+		{
+			// save the file to another std::string
+			fontFile = (char*)file;
+		}
+		FcPatternDestroy(font);
+	}
+	FcPatternDestroy(pat);
+	return fontFile;
+}
+
+#endif
 
 int main (int argc, char *argv[])
 {
   configured_features my_config;
+
+#ifdef AGG2D_USE_VECTORFONTS
+  fontConfig = FcInitLoadConfigAndFonts();
+  vectorFontFile = FindFontFile("mono", true);
+  if(!vectorFontFile.size())
+    vectorFontFile = FindFontFile("sans", true);
+#endif
 
   // The global menu screws up the window size...
   unsetenv("UBUNTU_MENUPROXY");
@@ -4062,3 +4234,167 @@ int WinMain (HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lpszArgumen
 }
 #endif
 
+Gtk2GPUEventHandler::Gtk2GPUEventHandler()
+{
+	_colorFormatPending = NDSColorFormat_BGR666_Rev;
+	_widthPending       = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_heightPending      = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	_pageCountPending   = GTK2_FRAMEBUFFER_PAGE_COUNT;
+	
+	_didColorFormatChange = true;
+	_didWidthChange       = true;
+	_didHeightChange      = true;
+	_didPageCountChange   = true;
+	
+	_latestBufferIndex = 0;
+	
+	_mutexApplyGPUSettings = slock_new();
+	_mutexVideoFetch = slock_new();
+	
+	for (size_t i = 0; i < GTK2_FRAMEBUFFER_PAGE_COUNT; i++)
+	{
+		_mutexFramebufferPage[i] = slock_new();
+	}
+}
+
+Gtk2GPUEventHandler::~Gtk2GPUEventHandler()
+{
+	slock_free(this->_mutexApplyGPUSettings);
+	slock_free(this->_mutexVideoFetch);
+	
+	for (size_t i = 0; i < GTK2_FRAMEBUFFER_PAGE_COUNT; i++)
+	{
+		slock_free(this->_mutexFramebufferPage[i]);
+	}
+}
+
+void Gtk2GPUEventHandler::SetFramebufferDimensions(size_t w, size_t h)
+{
+	if (w < GPU_FRAMEBUFFER_NATIVE_WIDTH)
+	{
+		w = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	}
+	
+	if (h < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+	{
+		h = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	}
+	
+	slock_lock(this->_mutexApplyGPUSettings);
+	
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	this->_didWidthChange  = (w != dispInfo.customWidth);
+	this->_didHeightChange = (h != dispInfo.customHeight);
+	this->_widthPending  = w;
+	this->_heightPending = h;
+	
+	slock_unlock(this->_mutexApplyGPUSettings);
+}
+
+void Gtk2GPUEventHandler::GetFramebufferDimensions(size_t &outWidth, size_t &outHeight)
+{
+	outWidth  = this->_widthPending;
+	outHeight = this->_heightPending;
+}
+
+void Gtk2GPUEventHandler::SetColorFormat(NDSColorFormat colorFormat)
+{
+	slock_lock(this->_mutexApplyGPUSettings);
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	this->_didColorFormatChange = (colorFormat != dispInfo.colorFormat);
+	this->_colorFormatPending = colorFormat;
+	slock_unlock(this->_mutexApplyGPUSettings);
+}
+
+NDSColorFormat Gtk2GPUEventHandler::GetColorFormat()
+{
+	return this->_colorFormatPending;
+}
+
+void Gtk2GPUEventHandler::VideoFetchLock()
+{
+	slock_lock(this->_mutexVideoFetch);
+}
+
+void Gtk2GPUEventHandler::VideoFetchUnlock()
+{
+	slock_unlock(this->_mutexVideoFetch);
+}
+
+void Gtk2GPUEventHandler::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo)
+{
+	if (isFrameSkipped)
+	{
+		return;
+	}
+	
+	this->_latestBufferIndex = latestDisplayInfo.bufferIndex;
+	
+	slock_lock(this->_mutexFramebufferPage[this->_latestBufferIndex]);
+	
+	// TODO: Video file writes only work on fixed 16-bit buffers at the native-size only.
+	// This currently does not work on custom-sized buffers or any 32-bit color format.
+	avout_x264.updateVideo(latestDisplayInfo.masterNativeBuffer16);
+	
+	this->VideoFetchLock();
+	if (latestDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+	{
+		ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapNone>( (u16 *)latestDisplayInfo.masterCustomBuffer, (u32 *)video->GetSrcBufferPtr(), latestDisplayInfo.customWidth * latestDisplayInfo.customHeight * 2);
+	}
+	else
+	{
+		ColorspaceConvertBuffer888xTo8888Opaque<true, false>( (u32 *)latestDisplayInfo.masterCustomBuffer, (u32 *)video->GetSrcBufferPtr(), latestDisplayInfo.customWidth * latestDisplayInfo.customHeight * 2);
+	}
+	this->VideoFetchUnlock();
+	
+	slock_unlock(this->_mutexFramebufferPage[this->_latestBufferIndex]);
+	
+	RedrawScreen();
+}
+
+void Gtk2GPUEventHandler::DidApplyGPUSettingsBegin()
+{
+	slock_lock(this->_mutexApplyGPUSettings);
+	
+	if (this->_didWidthChange || this->_didHeightChange || this->_didColorFormatChange || this->_didPageCountChange)
+	{
+		if (this->_didWidthChange || this->_didHeightChange)
+		{
+			for (size_t i = 0; i < GTK2_FRAMEBUFFER_PAGE_COUNT; i++)
+			{
+				slock_lock(this->_mutexFramebufferPage[i]);
+			}
+		}
+		
+		GPU->SetCustomFramebufferSize(this->_widthPending, this->_heightPending);
+		GPU->SetColorFormat(this->_colorFormatPending);
+		GPU->SetFramebufferPageCount(this->_pageCountPending);
+	}
+}
+
+void Gtk2GPUEventHandler::DidApplyGPUSettingsEnd()
+{
+	if (this->_didWidthChange || this->_didHeightChange || this->_didColorFormatChange || this->_didPageCountChange)
+	{
+		const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+		
+		if (this->_didWidthChange || this->_didHeightChange)
+		{
+			video->SetSourceSize(dispInfo.customWidth, dispInfo.customHeight * 2);
+			
+			for (size_t i = 0; i < GTK2_FRAMEBUFFER_PAGE_COUNT; i++)
+			{
+				slock_unlock(this->_mutexFramebufferPage[i]);
+			}
+		}
+		
+		// Update all the change flags now that settings are applied.
+		// In theory, all these flags should get cleared.
+		this->_didWidthChange       = (this->_widthPending       != dispInfo.customWidth);
+		this->_didHeightChange      = (this->_heightPending      != dispInfo.customHeight);
+		this->_didColorFormatChange = (this->_colorFormatPending != dispInfo.colorFormat);
+		this->_didPageCountChange   = (this->_pageCountPending   != dispInfo.framebufferPageCount);
+	}
+	
+	slock_unlock(this->_mutexApplyGPUSettings);
+}

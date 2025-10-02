@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018-2024 DeSmuME team
+Copyright (C) 2018-2025 DeSmuME team
 
 This file is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include <windowsx.h>
 
 #include "main.h"
+#include "aviout.h"
 #include "windriver.h"
 #include "winutil.h"
 
@@ -30,6 +31,7 @@ DDRAW ddraw;
 GLDISPLAY gldisplay;
 u32 displayMethod;
 
+Win32GPUEventHandler* WinGPUEvent = NULL;
 VideoInfo video;
 
 int gpu_bpp = 18;
@@ -69,26 +71,11 @@ bool PadToInteger = false;
 float screenSizeRatio = 1.0f;
 bool vCenterResizedScr = true;
 
-//triple buffering logic
-struct DisplayBuffer
-{
-	DisplayBuffer()
-		: buffer(NULL)
-		, size(0)
-	{
-	}
-	u32* buffer;
-	size_t size; //[256*192*4];
-} displayBuffers[3];
-
-volatile int currDisplayBuffer = -1;
-volatile int newestDisplayBuffer = -2;
-slock_t *display_mutex = NULL;
 sthread_t *display_thread = NULL;
+volatile bool displayNeedsBufferUpdates = true;
 volatile bool display_die = false;
 HANDLE display_wakeup_event = INVALID_HANDLE_VALUE;
 HANDLE display_done_event = INVALID_HANDLE_VALUE;
-DWORD display_done_timeout = 500;
 
 int displayPostponeType = 0;
 DWORD displayPostponeUntil = ~0;
@@ -199,11 +186,10 @@ RECT CalculateDisplayLayoutWrapper(RECT rcClient, int targetWidth, int targetHei
 	return rc;
 }
 
-template<typename T> static void doRotate(void* dst)
+template<typename T> static void doRotate(u32 *__restrict src, u8 *__restrict dst)
 {
-	u8* buffer = (u8*)dst;
+	u8 *__restrict buffer = dst;
 	int size = video.size();
-	u32* src = (u32*)video.finalBuffer();
 	int width = video.width;
 	int height = video.height;
 	int pitch = ddraw.surfDescBack.lPitch;
@@ -359,37 +345,21 @@ static void OGL_DrawTexture(RECT* srcRects, RECT* dstRects)
 	}
 	glEnd();
 }
-static void OGL_DoDisplay()
+static void OGL_DoDisplay(NDSColorFormat colorFormat, int videoWidth, int videoHeight, bool useSecondaryVideoBuffer, u8 bufferIndex, void* srcFramebuffer, u32* srcHUD)
 {
 	if (!gldisplay.begin(MainWindow->getHWnd())) return;
-
-	//the ds screen fills the texture entirely, so we dont have garbage at edge to worry about,
-	//but we need to make sure this is clamped for when filtering is selected
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	if (gldisplay.filter)
-	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	}
-	else
-	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	}
 
 	RECT rc;
 	HWND hwnd = MainWindow->getHWnd();
 	GetClientRect(hwnd, &rc);
-	int width = rc.right - rc.left;
-	int height = rc.bottom - rc.top;
+	int windowWidth  = rc.right  - rc.left;
+	int windowHeight = rc.bottom - rc.top;
 
-	glViewport(0, 0, width, height);
+	glViewport(0, 0, windowWidth, windowHeight);
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0.0f, (float)width, (float)height, 0.0f, -100.0f, 100.0f);
+	glOrtho(0.0f, (float)windowWidth, (float)windowHeight, 0.0f, -100.0f, 100.0f);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -405,8 +375,8 @@ static void OGL_DoDisplay()
 		ScreenToClient(hwnd, (LPPOINT)&dr[i].left);
 		ScreenToClient(hwnd, (LPPOINT)&dr[i].right);
 	}
-	dr[2].bottom = height - dr[2].bottom;
-	dr[2].top = height - dr[2].top;
+	dr[2].bottom = windowHeight - dr[2].bottom;
+	dr[2].top    = windowHeight - dr[2].top;
 
 	RECT srcRects[2];
 	const bool isMainGPUFirst = (GPU->GetDisplayInfo().engineID[NDSDisplayID_Main] == GPUEngineID_Main);
@@ -442,25 +412,46 @@ static void OGL_DoDisplay()
 	//	);
 
 	glEnable(GL_TEXTURE_2D);
+	gldisplay.applyOutputFilterOGL();
+
+	if (!useSecondaryVideoBuffer)
+	{
+		WinGPUEvent->VideoFetchLock();
+	}
+
+	glBindTexture(GL_TEXTURE_2D, gldisplay.getTexVideoID(bufferIndex));
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLsizei)videoWidth, (GLsizei)videoHeight, (useSecondaryVideoBuffer) ? GL_BGRA : GL_RGBA, (colorFormat == NDSColorFormat_BGR555_Rev) ? GL_UNSIGNED_SHORT_1_5_5_5_REV : GL_UNSIGNED_INT_8_8_8_8_REV, srcFramebuffer);
+
+	if (!useSecondaryVideoBuffer)
+	{
+		WinGPUEvent->VideoFetchUnlock();
+	}
+
 	// draw DS display
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, video.width, video.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, video.finalBuffer());
 	OGL_DrawTexture(srcRects, dr);
 
 	// draw HUD
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, 0, GL_BGRA, GL_UNSIGNED_BYTE, aggDraw.hud->buf().buf());
-	OGL_DrawTexture(srcRects, dr);
-	glDisable(GL_BLEND);
+	if (srcHUD != NULL)
+	{
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_BLEND);
+
+		glBindTexture(GL_TEXTURE_2D, gldisplay.getTexHudID(bufferIndex));
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, GL_BGRA, GL_UNSIGNED_BYTE, srcHUD);
+
+		OGL_DrawTexture(srcRects, dr);
+		glDisable(GL_BLEND);
+	}
 
 	gldisplay.showPage();
 
 	gldisplay.end();
 }
-static void DD_DoDisplay()
+
+static void DD_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight)
 {
-	if (ddraw.surfDescBack.dwWidth != video.rotatedwidth() || ddraw.surfDescBack.dwHeight != video.rotatedheight())
-		ddraw.createBackSurface(video.rotatedwidth(), video.rotatedheight());
+	if ( (ddraw.surfDescBack.dwWidth != videoWidth) || (ddraw.surfDescBack.dwHeight != videoHeight) )
+		ddraw.createBackSurface(videoWidth, videoHeight);
 
 	if (!ddraw.lock()) return;
 	char* buffer = (char*)ddraw.surfDescBack.lpSurface;
@@ -468,16 +459,16 @@ static void DD_DoDisplay()
 	switch (ddraw.surfDescBack.ddpfPixelFormat.dwRGBBitCount)
 	{
 	case 32:
-		doRotate<u32>(ddraw.surfDescBack.lpSurface);
+		doRotate<u32>(srcFramebuffer, (u8*)ddraw.surfDescBack.lpSurface);
 		break;
 	case 24:
-		doRotate<pix24>(ddraw.surfDescBack.lpSurface);
+		doRotate<pix24>(srcFramebuffer, (u8*)ddraw.surfDescBack.lpSurface);
 		break;
 	case 16:
 		if (ddraw.surfDescBack.ddpfPixelFormat.dwGBitMask != 0x3E0)
-			doRotate<pix16>(ddraw.surfDescBack.lpSurface);
+			doRotate<pix16>(srcFramebuffer, (u8*)ddraw.surfDescBack.lpSurface);
 		else
-			doRotate<pix15>(ddraw.surfDescBack.lpSurface);
+			doRotate<pix15>(srcFramebuffer, (u8*)ddraw.surfDescBack.lpSurface);
 		break;
 	case 0:
 		break;
@@ -579,48 +570,19 @@ static void DD_DoDisplay()
 	}
 }
 
-void displayProc()
-{
-	slock_lock(display_mutex);
-
-	//find a buffer to display
-	int todo = newestDisplayBuffer;
-	bool alreadyDisplayed = (todo == currDisplayBuffer);
-
-	slock_unlock(display_mutex);
-
-	//something new to display:
-	if (!alreadyDisplayed) {
-		//start displaying a new buffer
-		currDisplayBuffer = todo;
-		video.srcBuffer = (u8*)displayBuffers[currDisplayBuffer].buffer;
-		video.srcBufferSize = displayBuffers[currDisplayBuffer].size;
-	}
-	DoDisplay();
-}
 void displayThread(void *arg)
 {
 	do
 	{
-		if ((MainWindow == NULL) || IsMinimized(MainWindow->getHWnd()))
-		{
-			WaitForSingleObject(display_wakeup_event, INFINITE);
-		}
-		else if ((emu_paused || !execute || !romloaded) && (!HudEditorMode && !CommonSettings.hud.ShowInputDisplay && !CommonSettings.hud.ShowGraphicalInputDisplay))
-		{
-			WaitForSingleObject(display_wakeup_event, 250);
-		}
-		else
-		{
-			WaitForSingleObject(display_wakeup_event, 10);
-		}
+		DWORD waitTime = ( (emu_paused || !execute || !romloaded) && HudNeedsDrawStateSlots() ) ? 16 : INFINITE;
+		WaitForSingleObject(display_wakeup_event, waitTime);
 
 		if (display_die)
 		{
 			break;
 		}
 
-		displayProc();
+		DoDisplay();
 		SetEvent(display_done_event);
 	} while (!display_die);
 }
@@ -634,40 +596,18 @@ static void DoDisplay_DrawHud()
 
 void Display()
 {
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-
 	if (CommonSettings.single_core())
 	{
-		video.srcBuffer = (u8*)dispInfo.masterCustomBuffer;
-		video.srcBufferSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
 		DoDisplay();
 	}
 	else
 	{
 		if (display_thread == NULL)
 		{
-			display_mutex = slock_new();
 			display_thread = sthread_create(&displayThread, nullptr);
 		}
 
-		slock_lock(display_mutex);
-
-		if (int diff = (currDisplayBuffer + 1) % 3 - newestDisplayBuffer)
-			newestDisplayBuffer += diff;
-		else newestDisplayBuffer = (currDisplayBuffer + 2) % 3;
-
-		DisplayBuffer& db = displayBuffers[newestDisplayBuffer];
-		size_t targetSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
-		if (db.size != targetSize)
-		{
-			free_aligned(db.buffer);
-			db.buffer = (u32*)malloc_alignedPage(targetSize);
-			db.size = targetSize;
-		}
-		memcpy(db.buffer, dispInfo.masterCustomBuffer, targetSize);
-
-		slock_unlock(display_mutex);
-
+		WaitForSingleObject(display_done_event, WIN32_MAX_FRAME_WAIT_TIME);
 		SetEvent(display_wakeup_event);
 	}
 }
@@ -675,59 +615,123 @@ void Display()
 //does a single display work unit. only to be used from the display thread
 void DoDisplay()
 {
-	Lock lock(win_backbuffer_sync);
+	const NDSDisplayInfo& dispInfo = GPU->GetDisplayInfo();
+	video.srcBuffer = (u8*)dispInfo.masterCustomBuffer;
+	video.srcBufferSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
+
+	const bool isRunningDirectDraw = (displayMethod == DISPMETHOD_DDRAW_HW) || (displayMethod == DISPMETHOD_DDRAW_SW);
+	const bool needsVideoFiltering = (video.currentfilter != video.NONE);
+	const bool needsBacklightApply = (dispInfo.backlightIntensity[NDSDisplayID_Main] < 1.0f) || (dispInfo.backlightIntensity[NDSDisplayID_Touch] < 1.0f);
+
+	const bool needsHUDDrawing = (
+		CommonSettings.hud.ShowInputDisplay ||
+		CommonSettings.hud.ShowGraphicalInputDisplay ||
+		CommonSettings.hud.FpsDisplay ||
+		CommonSettings.hud.FrameCounterDisplay ||
+		CommonSettings.hud.ShowLagFrameCounter ||
+		CommonSettings.hud.ShowMicrophone ||
+		CommonSettings.hud.ShowRTC ||
+		HudEditorMode ||
+		HudNeedsDrawStateSlots() ||
+		AnyLuaActive()
+	);
+
+	bool useSecondaryVideoBuffer = false;
 
 	if (displayPostponeType && !displayNoPostponeNext && (displayPostponeType < 0 || timeGetTime() < displayPostponeUntil))
 		return;
 	displayNoPostponeNext = false;
 
-	//we have to do a copy here because we're about to draw the OSD onto it. bummer.
-	if (gpu_bpp == 15)
-		ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapNone>((u16 *)video.srcBuffer, video.buffer, video.srcBufferSize / 2);
-	else
-		ColorspaceConvertBuffer888xTo8888Opaque<true, false>((u32*)video.srcBuffer, video.buffer, video.srcBufferSize / 4);
-
-	//some games use the backlight for fading effects
-	const size_t pixCount = video.prefilterWidth * video.prefilterHeight / 2;
-	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
-	ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
-	ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer + pixCount, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
-
-	// Lua draws to the HUD buffer, so clear it here instead of right before redrawing the HUD.
-	aggDraw.hud->clear();
-	if (AnyLuaActive())
+	if (displayNeedsBufferUpdates)
 	{
-		if (sthread_isself(display_thread))
+		video.ResizeBuffers();
+
+		if (!isRunningDirectDraw)
 		{
-			InvokeOnMainThread((void(*)(DWORD))
-				CallRegisteredLuaFunctions, LUACALL_AFTEREMULATIONGUI);
+			if ( gldisplay.begin(MainWindow->getHWnd()) )
+			{
+				gldisplay.initVideoTexture(dispInfo.colorFormat, video.width, video.height);
+				gldisplay.end();
+			}
 		}
-		else
-		{
-			CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
-		}
+
+		displayNeedsBufferUpdates = false;
 	}
 
-	// draw hud
-	DoDisplay_DrawHud();
-	if (displayMethod == DISPMETHOD_DDRAW_HW || displayMethod == DISPMETHOD_DDRAW_SW)
+	if (isRunningDirectDraw || needsVideoFiltering || needsBacklightApply)
 	{
+		//we have to do a copy here because we're about to draw the OSD onto it. bummer.
+		WinGPUEvent->VideoFetchLock();
+
+		if (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+			ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapNone>((u16*)video.srcBuffer, video.buffer, video.srcBufferSize / sizeof(u16));
+		else
+			ColorspaceConvertBuffer888xTo8888Opaque<true, false>((u32*)video.srcBuffer, video.buffer, video.srcBufferSize / sizeof(u32));
+
+		WinGPUEvent->VideoFetchUnlock();
+
+		//some games use the backlight for fading effects
+		const size_t pixCount = video.prefilterWidth * video.prefilterHeight / 2;
+		ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer, pixCount, dispInfo.backlightIntensity[NDSDisplayID_Main]);
+		ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer + pixCount, pixCount, dispInfo.backlightIntensity[NDSDisplayID_Touch]);
+
+		useSecondaryVideoBuffer = true;
+	}
+
+	aggDraw.hud->clear();
+
+	if (needsHUDDrawing)
+	{
+		if (AnyLuaActive())
+		{
+			if (sthread_isself(display_thread))
+			{
+				InvokeOnMainThread((void(*)(DWORD))
+				CallRegisteredLuaFunctions, LUACALL_AFTEREMULATIONGUI);
+			}
+			else
+			{
+				CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+			}
+		}
+
+		// draw hud
+		DoDisplay_DrawHud();
+
 		// DirectDraw doesn't support alpha blending, so we must scale and overlay the HUD ourselves.
-		T_AGG_RGBA target((u8*)video.buffer, video.prefilterWidth, video.prefilterHeight, video.prefilterWidth * 4);
-		target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0, 0, video.prefilterWidth, video.prefilterHeight);
+		if (isRunningDirectDraw)
+		{
+			T_AGG_RGBA target((u8*)video.buffer, video.prefilterWidth, video.prefilterHeight, video.prefilterWidth * sizeof(u32));
+			target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0, 0, video.prefilterWidth, video.prefilterHeight);
+		}
 	}
 
 	//apply user's filter
-	video.filter();
+	if (needsVideoFiltering)
+	{
+		video.filter();
+	}
 
-	if (displayMethod == DISPMETHOD_DDRAW_HW || displayMethod == DISPMETHOD_DDRAW_SW)
+	if (isRunningDirectDraw)
 	{
 		gldisplay.kill();
-		DD_DoDisplay();
+
+		u32* srcFramebuffer = (needsVideoFiltering) ? (u32*)video.filteredbuffer : (u32*)video.buffer;
+		DD_DoDisplay(srcFramebuffer, video.rotatedwidth(), video.rotatedheight());
 	}
 	else
 	{
-		OGL_DoDisplay();
+		u32* srcHUD = (needsHUDDrawing) ? (u32*)aggDraw.hud->buf().buf() : NULL;
+
+		if (useSecondaryVideoBuffer)
+		{
+			void* srcFramebuffer = (needsVideoFiltering) ? video.filteredbuffer : video.buffer;
+			OGL_DoDisplay(NDSColorFormat_BGR888_Rev, video.width, video.height, true, dispInfo.bufferIndex, srcFramebuffer, srcHUD);
+		}
+		else
+		{
+			OGL_DoDisplay(dispInfo.colorFormat, dispInfo.customWidth, dispInfo.customHeight * 2, false, dispInfo.bufferIndex, dispInfo.masterCustomBuffer, srcHUD);
+		}
 	}
 }
 
@@ -737,6 +741,74 @@ void KillDisplay()
 	SetEvent(display_wakeup_event);
 	if (display_thread)
 		sthread_join(display_thread);
+}
+
+void SetDisplayNeedsBufferUpdates()
+{
+	displayNeedsBufferUpdates = true;
+}
+
+void UpdateScreenRects()
+{
+	if (video.layout == 1)
+	{
+		// Main screen
+		MainScreenSrcRect.left = 0;
+		MainScreenSrcRect.top = 0;
+		MainScreenSrcRect.right = video.width;
+		MainScreenSrcRect.bottom = video.height / 2;
+
+		// Sub screen
+		SubScreenSrcRect.left = 0;
+		SubScreenSrcRect.top = video.height / 2;
+		SubScreenSrcRect.right = video.width;
+		SubScreenSrcRect.bottom = video.height;
+	}
+	else if (video.layout == 2)
+	{
+		// Main screen
+		MainScreenSrcRect.left = 0;
+		MainScreenSrcRect.top = 0;
+		MainScreenSrcRect.right = video.width;
+		MainScreenSrcRect.bottom = video.height / 2;
+
+		// Sub screen
+		SubScreenSrcRect.left = 0;
+		SubScreenSrcRect.top = video.height / 2;
+		SubScreenSrcRect.right = video.width;
+		SubScreenSrcRect.bottom = video.height;
+	}
+	else
+	{
+		if ((video.rotation == 90) || (video.rotation == 270))
+		{
+			// Main screen
+			MainScreenSrcRect.left = 0;
+			MainScreenSrcRect.top = 0;
+			MainScreenSrcRect.right = video.height / 2;
+			MainScreenSrcRect.bottom = video.width;
+
+			// Sub screen
+			SubScreenSrcRect.left = video.height / 2;
+			SubScreenSrcRect.top = 0;
+			SubScreenSrcRect.right = video.height;
+			SubScreenSrcRect.bottom = video.width;
+		}
+		else
+		{
+			// Main screen
+			MainScreenSrcRect.left = 0;
+			MainScreenSrcRect.top = 0;
+			MainScreenSrcRect.right = video.width;
+			MainScreenSrcRect.bottom = video.height / 2;
+
+			// Sub screen
+			SubScreenSrcRect.left = 0;
+			SubScreenSrcRect.top = video.height / 2;
+			SubScreenSrcRect.right = video.width;
+			SubScreenSrcRect.bottom = video.height;
+		}
+	}
 }
 
 void UpdateWndRects(HWND hwnd, RECT* newClientRect)
@@ -986,7 +1058,7 @@ void SetLayerMasks(int mainEngineMask, int subEngineMask)
 		const int mask = core == 0 ? mainEngineMask : subEngineMask;
 		for (size_t layer = 0; layer < numLayers; layer++)
 		{
-			const bool newLayerState = (mask >> layer) & 0x01 != 0;
+			const bool newLayerState = ((mask >> layer) & 0x01) != 0;
 			if (newLayerState != CommonSettings.dispLayers[core][layer])
 			{
 				gpu->SetLayerEnableState(layer, newLayerState);
@@ -994,4 +1066,184 @@ void SetLayerMasks(int mainEngineMask, int subEngineMask)
 			}
 		}
 	}
+}
+
+Win32GPUEventHandler::Win32GPUEventHandler()
+{
+	_colorFormatPending = NDSColorFormat_BGR666_Rev;
+	_widthPending       = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_heightPending      = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	_pageCountPending   = WIN32_FRAMEBUFFER_COUNT;
+	_scaleFactorIntegerPending = 1;
+
+	_didColorFormatChange = true;
+	_didWidthChange       = true;
+	_didHeightChange      = true;
+	_didPageCountChange   = true;
+
+	_inProcessBufferIndex = 0;
+	_latestAvailableBufferIndex = 0;
+	_currentLockedPageIndex = 0;
+
+	_mutexApplyGPUSettings = slock_new();
+	_mutexVideoFetch = slock_new();
+
+	for (size_t i = 0; i < WIN32_FRAMEBUFFER_COUNT; i++)
+	{
+		_mutexFramebufferPage[i] = slock_new();
+	}
+}
+
+Win32GPUEventHandler::~Win32GPUEventHandler()
+{
+	slock_free(this->_mutexApplyGPUSettings);
+	slock_free(this->_mutexVideoFetch);
+
+	for (size_t i = 0; i < WIN32_FRAMEBUFFER_COUNT; i++)
+	{
+		slock_free(this->_mutexFramebufferPage[i]);
+	}
+}
+
+void Win32GPUEventHandler::SetFramebufferDimensions(size_t w, size_t h)
+{
+	if (w < GPU_FRAMEBUFFER_NATIVE_WIDTH)
+	{
+		w = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	}
+
+	if (h < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+	{
+		h = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	}
+
+	slock_lock(this->_mutexApplyGPUSettings);
+
+	const NDSDisplayInfo& dispInfo = GPU->GetDisplayInfo();
+	this->_didWidthChange  = (w != dispInfo.customWidth);
+	this->_didHeightChange = (h != dispInfo.customHeight);
+	this->_widthPending    = w;
+	this->_heightPending   = h;
+	this->_scaleFactorIntegerPending = ((w / GPU_FRAMEBUFFER_NATIVE_WIDTH) + (h / GPU_FRAMEBUFFER_NATIVE_HEIGHT)) / 2;
+
+	slock_unlock(this->_mutexApplyGPUSettings);
+}
+
+void Win32GPUEventHandler::GetFramebufferDimensions(size_t& outWidth, size_t& outHeight)
+{
+	outWidth  = this->_widthPending;
+	outHeight = this->_heightPending;
+}
+
+void Win32GPUEventHandler::SetFramebufferDimensionsByScaleFactorInteger(size_t scaleFactor)
+{
+	const size_t w = GPU_FRAMEBUFFER_NATIVE_WIDTH  * scaleFactor;
+	const size_t h = GPU_FRAMEBUFFER_NATIVE_HEIGHT * scaleFactor;
+	this->SetFramebufferDimensions(w, h);
+}
+
+size_t Win32GPUEventHandler::GetFramebufferDimensionsByScaleFactorInteger()
+{
+	return this->_scaleFactorIntegerPending;
+}
+
+void Win32GPUEventHandler::SetColorFormat(NDSColorFormat colorFormat)
+{
+	slock_lock(this->_mutexApplyGPUSettings);
+	const NDSDisplayInfo& dispInfo = GPU->GetDisplayInfo();
+	this->_didColorFormatChange = (colorFormat != dispInfo.colorFormat);
+	this->_colorFormatPending = colorFormat;
+	slock_unlock(this->_mutexApplyGPUSettings);
+}
+
+NDSColorFormat Win32GPUEventHandler::GetColorFormat()
+{
+	return this->_colorFormatPending;
+}
+
+void Win32GPUEventHandler::VideoFetchLock()
+{
+	slock_lock(this->_mutexFramebufferPage[this->_latestAvailableBufferIndex]);
+	this->_currentLockedPageIndex = this->_latestAvailableBufferIndex;
+}
+
+void Win32GPUEventHandler::VideoFetchUnlock()
+{
+	slock_unlock(this->_mutexFramebufferPage[this->_currentLockedPageIndex]);
+}
+
+void Win32GPUEventHandler::DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8& selectedBufferIndexInOut)
+{
+	this->GPUEventHandlerDefault::DidFrameBegin(line, isFrameSkipRequested, pageCount, selectedBufferIndexInOut);
+
+	if (!isFrameSkipRequested)
+	{
+		slock_lock(this->_mutexFramebufferPage[selectedBufferIndexInOut]);
+		this->_inProcessBufferIndex = selectedBufferIndexInOut;
+	}
+}
+
+void Win32GPUEventHandler::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo& latestDisplayInfo)
+{
+	if (isFrameSkipped)
+	{
+		return;
+	}
+
+	this->_latestAvailableBufferIndex = latestDisplayInfo.bufferIndex;
+	DRV_AviVideoUpdate(latestDisplayInfo);
+	slock_unlock(this->_mutexFramebufferPage[this->_inProcessBufferIndex]);
+
+	Display();
+}
+
+void Win32GPUEventHandler::DidApplyGPUSettingsBegin()
+{
+	slock_lock(this->_mutexApplyGPUSettings);
+
+	if (this->_didWidthChange || this->_didHeightChange || this->_didColorFormatChange || this->_didPageCountChange)
+	{
+		WaitForSingleObject(display_done_event, WIN32_MAX_FRAME_WAIT_TIME);
+
+		if (this->_didWidthChange || this->_didHeightChange)
+		{
+			for (size_t i = 0; i < WIN32_FRAMEBUFFER_COUNT; i++)
+			{
+				slock_lock(this->_mutexFramebufferPage[i]);
+			}
+		}
+
+		GPU->SetCustomFramebufferSize(this->_widthPending, this->_heightPending);
+		GPU->SetColorFormat(this->_colorFormatPending);
+		GPU->SetFramebufferPageCount(this->_pageCountPending);
+	}
+}
+
+void Win32GPUEventHandler::DidApplyGPUSettingsEnd()
+{
+	if (this->_didWidthChange || this->_didHeightChange || this->_didColorFormatChange || this->_didPageCountChange)
+	{
+		const NDSDisplayInfo& dispInfo = GPU->GetDisplayInfo();
+
+		if (this->_didWidthChange || this->_didHeightChange)
+		{
+			video.SetPrescale(((dispInfo.customWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH) + (dispInfo.customHeight / GPU_FRAMEBUFFER_NATIVE_HEIGHT)) / 2, 1);
+			UpdateScreenRects();
+			SetDisplayNeedsBufferUpdates();
+
+			for (size_t i = 0; i < WIN32_FRAMEBUFFER_COUNT; i++)
+			{
+				slock_unlock(this->_mutexFramebufferPage[i]);
+			}
+		}
+
+		// Update all the change flags now that settings are applied.
+		// In theory, all these flags should get cleared.
+		this->_didWidthChange       = (this->_widthPending       != dispInfo.customWidth);
+		this->_didHeightChange      = (this->_heightPending      != dispInfo.customHeight);
+		this->_didColorFormatChange = (this->_colorFormatPending != dispInfo.colorFormat);
+		this->_didPageCountChange   = (this->_pageCountPending   != dispInfo.framebufferPageCount);
+	}
+
+	slock_unlock(this->_mutexApplyGPUSettings);
 }

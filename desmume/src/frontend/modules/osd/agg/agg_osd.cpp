@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2015 DeSmuME team
+	Copyright (C) 2006-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -545,6 +545,17 @@ static void OSD_HandleTouchDisplay() {
 static int previousslot = 0;
 static char number[10];
 static s64 slotTimer=0;
+
+bool HudNeedsDrawStateSlots()
+{
+	if (HudEditorMode)
+	{
+		return true;
+	}
+
+	s64 fadecounter = 512 - (hudTimer - slotTimer) / 4; //change constant to alter fade speed
+	return (fadecounter > 0);
+}
 
 static void DrawStateSlots(){
 

@@ -74,6 +74,9 @@ public:
 	void FetchNativeDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
 	void FetchCustomDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
 	
+	// MacGPUEventHandlerAsync methods
+	virtual void SetPauseState(bool theState);
+	
 	// GPUClientFetchObject methods
 	virtual void Init();
 	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);

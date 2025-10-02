@@ -21,9 +21,6 @@
 
 #include "config.h"
 
-using std::string;
-using std::vector;
-
 namespace desmume {
 namespace config {
 
@@ -81,10 +78,10 @@ void value<float>::save() {
 	g_key_file_set_double(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData);
 }
 
-/* class value<string> */
+/* class value<std::string> */
 
 template<>
-void value<string>::load() {
+void value<std::string>::load() {
 	char* val = g_key_file_get_string(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), NULL);
 	if (val != NULL) {
 		this->mData = val;
@@ -93,8 +90,27 @@ void value<string>::load() {
 }
 
 template<>
-void value<string>::save() {
+void value<std::string>::save() {
 	g_key_file_set_string(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData.c_str());
+}
+
+/* class value<std::vector<int>> */
+
+template<>
+void value<std::vector<int>>::load() {
+	gsize l;
+	int* val = g_key_file_get_integer_list(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), &l, NULL);
+	if(val)
+	{
+		this->mData.resize(l);
+		std::copy(val, val+l, this->mData.begin());
+		g_free(val);
+	}
+}
+
+template<>
+void value<std::vector<int>>::save() {
+	g_key_file_set_integer_list(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData.data(), this->mData.size());
 }
 
 /* class Config */

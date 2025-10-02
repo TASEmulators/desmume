@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 DeSmuME team
+Copyright (C) 2018-2025 DeSmuME team
 
 This file is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,6 +30,54 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "ddraw.h"
 #include "ogl_display.h"
 
+#define WIN32_FRAMEBUFFER_COUNT 3
+#define WIN32_MAX_FRAME_WAIT_TIME 333 // Maximum time in milliseconds to wait for a video frame to render to a window before starting a new frame.
+
+
+class Win32GPUEventHandler : public GPUEventHandlerDefault
+{
+protected:
+	NDSColorFormat _colorFormatPending;
+	size_t _widthPending;
+	size_t _heightPending;
+	size_t _pageCountPending;
+	size_t _scaleFactorIntegerPending;
+
+	bool _didColorFormatChange;
+	bool _didWidthChange;
+	bool _didHeightChange;
+	bool _didPageCountChange;
+
+	u8 _inProcessBufferIndex;
+	u8 _latestAvailableBufferIndex;
+	u8 _currentLockedPageIndex;
+
+	slock_t *_mutexApplyGPUSettings;
+	slock_t *_mutexVideoFetch;
+	slock_t *_mutexFramebufferPage[WIN32_FRAMEBUFFER_COUNT];
+
+public:
+	Win32GPUEventHandler();
+	~Win32GPUEventHandler();
+
+	void SetFramebufferDimensions(size_t w, size_t h);
+	void GetFramebufferDimensions(size_t& outWidth, size_t& outHeight);
+	void SetFramebufferDimensionsByScaleFactorInteger(size_t scaleFactor);
+	size_t GetFramebufferDimensionsByScaleFactorInteger();
+
+	void SetColorFormat(NDSColorFormat colorFormat);
+	NDSColorFormat GetColorFormat();
+
+	void VideoFetchLock();
+	void VideoFetchUnlock();
+
+	// GPUEventHandler methods
+	virtual void DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8& selectedBufferIndexInOut);
+	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo& latestDisplayInfo);
+	virtual void DidApplyGPUSettingsBegin();
+	virtual void DidApplyGPUSettingsEnd();
+};
+
 extern DDRAW ddraw;
 extern GLDISPLAY gldisplay;
 extern u32 displayMethod;
@@ -37,6 +85,7 @@ const u32 DISPMETHOD_DDRAW_HW = 1;
 const u32 DISPMETHOD_DDRAW_SW = 2;
 const u32 DISPMETHOD_OPENGL = 3;
 
+extern Win32GPUEventHandler* WinGPUEvent;
 extern int gpu_bpp;
 
 extern int emu_paused;
@@ -46,7 +95,6 @@ extern int lastskiprate;
 extern VideoInfo video;
 
 extern RECT FullScreenRect, MainScreenRect, SubScreenRect, GapRect;
-extern RECT MainScreenSrcRect, SubScreenSrcRect;
 const int kGapNone = 0;
 const int kGapBorder = 5;
 const int kGapNDS = 64; // extremely tilted (but some games seem to use this value)
@@ -62,10 +110,8 @@ extern bool vCenterResizedScr;
 extern bool SeparationBorderDrag;
 extern int ScreenGapColor;
 
-extern slock_t *display_mutex;
 extern HANDLE display_wakeup_event;
 extern HANDLE display_done_event;
-extern DWORD display_done_timeout;
 
 extern int displayPostponeType;
 extern DWORD displayPostponeUntil;
@@ -93,6 +139,7 @@ extern int scanline_filter_d;
 void Display();
 void DoDisplay();
 void KillDisplay();
+void SetDisplayNeedsBufferUpdates();
 
 void GetNdsScreenRect(RECT* r);
 
@@ -103,6 +150,7 @@ FORCEINLINE void ServiceDisplayThreadInvocations()
 		_ServiceDisplayThreadInvocation();
 }
 
+void UpdateScreenRects();
 void UpdateWndRects(HWND hwnd, RECT* newClientRect = NULL);
 void TwiddleLayer(UINT ctlid, int core, int layer);
 void SetLayerMasks(int mainEngineMask, int subEngineMask);

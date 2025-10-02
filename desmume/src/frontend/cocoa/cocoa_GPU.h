@@ -81,6 +81,7 @@ protected:
 	semaphore_t _semFramebuffer[MAX_FRAMEBUFFER_PAGES];
 	volatile ClientDisplayBufferState _framebufferState[MAX_FRAMEBUFFER_PAGES];
 	
+	bool _pauseState;
 	uint32_t _threadMessageID;
 	uint8_t _fetchIndex;
 	pthread_t _threadFetch;
@@ -92,6 +93,8 @@ public:
 	~MacGPUFetchObjectAsync();
 	
 	virtual void Init();
+	virtual void SetPauseState(bool theState);
+	bool GetPauseState();
 	
 	void SemaphoreFramebufferCreate();
 	void SemaphoreFramebufferDestroy();
@@ -116,6 +119,7 @@ class MacGPUFetchObjectDisplayLink : public MacGPUFetchObjectAsync, public Clien
 protected:
 	pthread_mutex_t _mutexDisplayLinkLists;
 	DisplayLinksActiveMap _displayLinksActiveList;
+	DisplayLinksActiveMap _displayLinksStartedList;
 	DisplayLinkFlushTimeLimitMap _displayLinkFlushTimeList;
 	
 public:
@@ -125,8 +129,10 @@ public:
 	void DisplayLinkStartUsingID(CGDirectDisplayID displayID);
 	void DisplayLinkListUpdate();
 	
-	virtual void FlushAllViewsOnDisplayLink(CVDisplayLinkRef displayLink, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput);
+	virtual void FlushAllViewsOnDisplayLink(CVDisplayLinkRef displayLinkRef, const CVTimeStamp *timeStampNow, const CVTimeStamp *timeStampOutput);
 	
+	// MacGPUEventHandlerAsync methods
+	virtual void SetPauseState(bool theState);
 	virtual void DoPostFetchActions();
 };
 
@@ -148,11 +154,18 @@ class MacGPUEventHandlerAsync : public GPUEventHandlerDefault
 private:
 	GPUClientFetchObject *_fetchObject;
 	
-	pthread_mutex_t _mutexFrame;
-	pthread_mutex_t _mutex3DRender;
+	NDSColorFormat _colorFormatPending;
+	size_t _widthPending;
+	size_t _heightPending;
+	size_t _pageCountPending;
+	
+	bool _didColorFormatChange;
+	bool _didWidthChange;
+	bool _didHeightChange;
+	bool _didPageCountChange;
+	
 	pthread_mutex_t _mutexApplyGPUSettings;
 	pthread_mutex_t _mutexApplyRender3DSettings;
-	bool _render3DNeedsFinish;
 	int _cpuCoreCountRestoreValue;
 	
 public:
@@ -162,16 +175,19 @@ public:
 	GPUClientFetchObject* GetFetchObject() const;
 	void SetFetchObject(GPUClientFetchObject *fetchObject);
 	
-	void FramebufferLock();
-	void FramebufferUnlock();
-	void Render3DLock();
-	void Render3DUnlock();
+	void SetFramebufferPageCount(size_t pageCount);
+	size_t GetFramebufferPageCount();
+	
+	void SetFramebufferDimensions(size_t w, size_t h);
+	void GetFramebufferDimensions(size_t &w, size_t &h);
+	
+	void SetColorFormat(NDSColorFormat colorFormat);
+	NDSColorFormat GetColorFormat();
+	
 	void ApplyGPUSettingsLock();
 	void ApplyGPUSettingsUnlock();
 	void ApplyRender3DSettingsLock();
 	void ApplyRender3DSettingsUnlock();
-	
-	bool GetRender3DNeedsFinish();
 	
 	void SetTempThreadCount(int threadCount);
 	
@@ -180,20 +196,10 @@ public:
 	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo);
 #endif
 	
-	virtual void DidRender3DBegin();
-	virtual void DidRender3DEnd();
 	virtual void DidApplyGPUSettingsBegin();
 	virtual void DidApplyGPUSettingsEnd();
 	virtual void DidApplyRender3DSettingsBegin();
 	virtual void DidApplyRender3DSettingsEnd();
-};
-
-// This stub version is useful for clients that want to run the entire emulation on a single thread.
-class MacGPUEventHandlerAsync_Stub : public MacGPUEventHandlerAsync
-{
-public:
-	virtual void DidRender3DBegin() {};
-	virtual void DidRender3DEnd() {};
 };
 
 @interface CocoaDSGPU : NSObject
@@ -205,7 +211,6 @@ public:
 	BOOL isCPUCoreCountAuto;
 	int _render3DThreadsRequested;
 	int _render3DThreadCount;
-	BOOL _needRestoreRender3DLock;
 	
 	apple_unfairlock_t _unfairlockGpuState;
 	MacGPUEventHandlerAsync *gpuEvent;
@@ -257,24 +262,5 @@ public:
 
 - (BOOL) gpuStateByBit:(const UInt32)stateBit;
 - (void) clearWithColor:(const uint16_t)colorBGRA5551;
-- (void) respondToPauseState:(BOOL)isPaused;
 
 @end
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-bool cgl_initOpenGL_StandardAuto();
-bool cgl_initOpenGL_LegacyAuto();
-bool cgl_initOpenGL_3_2_CoreProfile();
-
-void cgl_deinitOpenGL();
-bool cgl_beginOpenGL();
-void cgl_endOpenGL();
-bool cgl_framebufferDidResizeCallback(const bool isFBOSupported, size_t w, size_t h);
-
-#ifdef __cplusplus
-}
-#endif

@@ -224,6 +224,7 @@ public:
 	
 	void TakeFrameCountAll();
 	void SetNDSFrameInfoToAll(const NDSFrameInfo &frameInfo);
+	void GenerateViewListAll(std::vector<ClientDisplayViewInterface *> &outFinalizeList);
 	void GenerateFlushListForDisplay(int32_t displayID, std::vector<ClientDisplayViewInterface *> &outFlushList);
 };
 
@@ -255,6 +256,7 @@ public:
 	void PushVideoDataToAllDisplayViews();
 	virtual void FlushAllViewsOnDisplay(int32_t displayID, uint64_t timeStampNow, uint64_t timeStampOutput);
 	virtual void FlushMultipleViews(const std::vector<ClientDisplayViewInterface *> &cdvFlushList, uint64_t timeStampNow, uint64_t timeStampOutput);
+	virtual void FinalizeAllViews();
 };
 
 #endif // _CLIENT_OUTPUT_DISPLAY_H_

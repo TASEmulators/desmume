@@ -164,6 +164,9 @@
 					<Add library="/usr/lib/aarch64-linux-gnu/libopenal.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libGLESv2.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libEGL.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfontconfig.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libaggfontfreetype.a" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfreetype.so" />
 				</Linker>
 			</Target>
 			<Target title="GTK2_AArch64_Release">
@@ -195,6 +198,9 @@
 					<Add library="/usr/lib/aarch64-linux-gnu/libopenal.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libGLESv2.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libEGL.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfontconfig.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libaggfontfreetype.a" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfreetype.so" />
 				</Linker>
 			</Target>
 			<Target title="GTK3_AArch64_Debug">
@@ -222,6 +228,9 @@
 					<Add library="/usr/lib/aarch64-linux-gnu/libopenal.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libGLESv2.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libEGL.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfontconfig.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libaggfontfreetype.a" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfreetype.so" />
 				</Linker>
 				<ExtraCommands>
 					<Add before='rm -f &quot;../gtk/gresource.c&quot;' />
@@ -262,6 +271,9 @@
 					<Add library="/usr/lib/aarch64-linux-gnu/libopenal.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libGLESv2.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libEGL.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfontconfig.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libaggfontfreetype.a" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfreetype.so" />
 				</Linker>
 				<ExtraCommands>
 					<Add before='rm -f &quot;../gtk/gresource.c&quot;' />
@@ -299,6 +311,9 @@
 					<Add library="/usr/lib/aarch64-linux-gnu/libagg.a" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libSDL2.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libopenal.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfontconfig.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libaggfontfreetype.a" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfreetype.so" />
 				</Linker>
 			</Target>
 		</Build>
@@ -310,6 +325,7 @@
 			<Add option="-DHAVE_LIBAGG" />
 			<Add option="-DHAVE_LIBSOUNDTOUCH" />
 			<Add option="-DHAVE_OPENAL" />
+			<Add option="-DAGG2D_USE_VECTORFONTS" />
 			<Add directory="/usr/include" />
 			<Add directory="/usr/include/agg2" />
 			<Add directory="/usr/include/SDL2" />
@@ -326,6 +342,9 @@
 			<Add library="/usr/lib/x86_64-linux-gnu/libagg.a" />
 			<Add library="/usr/lib/x86_64-linux-gnu/libSDL2.so" />
 			<Add library="/usr/lib/x86_64-linux-gnu/libopenal.so" />
+			<Add library="/usr/lib/x86_64-linux-gnu/libfontconfig.so" />
+			<Add library="/usr/lib/x86_64-linux-gnu/libaggfontfreetype.a" />
+			<Add library="/usr/lib/x86_64-linux-gnu/libfreetype.so" />
 		</Linker>
 		<Unit filename="../../../Database.cpp" />
 		<Unit filename="../../../Database.h" />

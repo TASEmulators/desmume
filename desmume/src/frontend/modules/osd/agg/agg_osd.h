@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -80,6 +80,7 @@ public:
 	bool clicked;
 };
 
+bool HudNeedsDrawStateSlots();
 void EditHud(s32 x, s32 y, HudStruct *hudstruct);
 void HudClickRelease(HudStruct *hudstruct);
 

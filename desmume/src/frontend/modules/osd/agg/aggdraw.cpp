@@ -1,7 +1,7 @@
 /*
 The MIT License
 
-Copyright (C) 2009-2010 DeSmuME team
+Copyright (C) 2009-2025 DeSmuME team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -152,13 +152,10 @@ void Agg_init()
 
 	aggDraw.target = targets[0];
 
-	//if we're single core, we don't want to waste time compositing
-	//and the more clever compositing isnt supported in non-windows
+	//if we're single core in Windows, we don't want to waste time compositing
 	#ifdef WIN32
 	if(CommonSettings.single_core())
 		aggDraw.hud = aggDraw.screen;
-	#else
-	aggDraw.hud = aggDraw.screen;
 	#endif
 
 	aggDraw.hud->setFont("verdana18_bold");

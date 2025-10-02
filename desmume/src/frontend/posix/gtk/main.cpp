@@ -1,6 +1,6 @@
  /*
 	Copyright (C) 2007 Pascal Giard (evilynux)
-	Copyright (C) 2006-2024 DeSmuME team
+	Copyright (C) 2006-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -31,15 +31,16 @@
 #include <SDL.h>
 #include <X11/Xlib.h>
 #include <vector>
+
 #ifdef AGG2D_USE_VECTORFONTS
 #include <fontconfig/fontconfig.h>
 #endif
 
 #include "types.h"
+#include "main.h"
 #include "firmware.h"
 #include "NDSSystem.h"
 #include "driver.h"
-#include "GPU.h"
 #include "SPU.h"
 #include "../shared/sndsdl.h"
 #include "../shared/ctrlssdl.h"
@@ -106,11 +107,11 @@ extern int _scanline_filter_a, _scanline_filter_b, _scanline_filter_c, _scanline
 VideoFilter* video;
 
 #define GPU_SCALE_FACTOR_MIN 1.0f
-#define GPU_SCALE_FACTOR_MAX 10.0f
+#define GPU_SCALE_FACTOR_MAX 16.0f
 
 float gpu_scale_factor = 1.0f;
-int real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-int real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+
+Gtk3GPUEventHandler *gtk3gpuEvent = NULL;
 
 
 desmume::config::Config config;
@@ -197,6 +198,7 @@ static void Modify_PriInterpolation(GSimpleAction *action, GVariant *parameter, 
 static void Modify_Interpolation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void SetOrientation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void ToggleLayerVisibility(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ToggleHudDisplay(GtkToggleAction* action, gpointer data);
 #ifdef HAVE_LIBAGG
 static void HudFps(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HudInput(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -1394,14 +1396,8 @@ static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpo
     return TRUE;
 }
 
-static inline void gpu_screen_to_rgb(u32* dst)
-{
-    ColorspaceConvertBuffer555xTo8888Opaque<false, false, BESwapDst>(GPU->GetDisplayInfo().isCustomSizeRequested ? (u16*)(GPU->GetDisplayInfo().masterCustomBuffer) : GPU->GetDisplayInfo().masterNativeBuffer16,
-		dst, real_framebuffer_width * real_framebuffer_height * 2);
-}
-
 static inline void drawScreen(cairo_t* cr, u32* buf, gint w, gint h) {
-	cairo_surface_t* surf = cairo_image_surface_create_for_data((u8*)buf, CAIRO_FORMAT_RGB24, w, h, w * 4);
+	cairo_surface_t* surf = cairo_image_surface_create_for_data((u8*)buf, CAIRO_FORMAT_RGB24, w, h, w * sizeof(buf[0]));
 	cairo_set_source_surface(cr, surf, 0, 0);
 	cairo_pattern_set_filter(cairo_get_source(cr), Interpolation);
 	cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_PAD);
@@ -1606,17 +1602,59 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	return TRUE;
 }
 
-static void RedrawScreen() {
-	ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapDst>(
-		GPU->GetDisplayInfo().isCustomSizeRequested ? (u16*)(GPU->GetDisplayInfo().masterCustomBuffer) : GPU->GetDisplayInfo().masterNativeBuffer16,
-		(uint32_t *)video->GetSrcBufferPtr(), real_framebuffer_width * real_framebuffer_height * 2);
+static void RedrawScreen()
+{
+	gtk3gpuEvent->VideoFetchLock();
+	
 #ifdef HAVE_LIBAGG
-	aggDraw.hud->setDrawTargetDims((u8*)video->GetSrcBufferPtr(), real_framebuffer_width, real_framebuffer_height * 2, real_framebuffer_width * 4);
-	osd->update();
-	DrawHUD();
-	osd->clear();
-#endif
+	const bool needsHUDDisplay = (
+		CommonSettings.hud.ShowInputDisplay ||
+		CommonSettings.hud.ShowGraphicalInputDisplay ||
+		CommonSettings.hud.FpsDisplay ||
+		CommonSettings.hud.FrameCounterDisplay ||
+		CommonSettings.hud.ShowLagFrameCounter ||
+		CommonSettings.hud.ShowMicrophone ||
+		CommonSettings.hud.ShowRTC ||
+		HudEditorMode
+	);
+	
+	if (needsHUDDisplay)
+	{
+		const int w = (int)video->GetSrcWidth();
+		const int h = (int)video->GetSrcHeight();
+		const double oldGpuScaleFactor = osd->scale;
+		const double newGpuScaleFactor = ( ((double)w / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) + ((double)h / (double)(GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0)) ) / 2.0;
+		
+		if ( ((newGpuScaleFactor + 0.001) < oldGpuScaleFactor) || ((newGpuScaleFactor - 0.001) > oldGpuScaleFactor) )
+		{
+#ifdef AGG2D_USE_VECTORFONTS
+			if (vectorFontFile.size() > 0)
+			{
+				aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * newGpuScaleFactor, true);
+				osd->useVectorFonts = (newGpuScaleFactor >= 1.1f);
+			}
+			else
+			{
+				osd->useVectorFonts = false;
+			}
+#endif // AGG2D_USE_VECTORFONTS
+			
+			Agg_setCustomSize(w, h);
+			osd->scale = newGpuScaleFactor;
+			Hud.rescale(oldGpuScaleFactor, newGpuScaleFactor);
+			HudSaveLayout();
+			aggDraw.hud->setDrawTargetDims( (u8 *)video->GetSrcBufferPtr(), w, h, w * sizeof(u32) );
+		}
+		
+		osd->update();
+		DrawHUD();
+		osd->clear();
+	}
+#endif // HAVE_LIBAGG
+	
 	video->RunFilter();
+	gtk3gpuEvent->VideoFetchUnlock();
+	
 	gtk_widget_queue_draw(pDrawingArea);
 }
 
@@ -1628,6 +1666,9 @@ static bool hud_move_started_in_big_screen = false;
 #ifdef HAVE_LIBAGG
 static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 {
+	const size_t videoWidth  = video->GetSrcWidth();
+	const size_t videoHeight = video->GetSrcHeight();
+	const int scaleFactor = (int)( ( (((float)videoWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH) + ((float)videoHeight / ((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT*2.0f))) / 2.0f ) + 0.5f );
 	double devX, devY;
 	gint X, Y, topX = -1, topY = -1, botX = -1, botY = -1, hybTopX = -1, hybTopY = -1, hybBotX = -1, hybBotY = -1;
 	static gint startScreen = 0;
@@ -1638,15 +1679,15 @@ static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 		devX = x;
 		devY = y;
 		cairo_matrix_transform_point(&nds_screen.topscreen_matrix, &devX, &devY);
-		topX = devX * gpu_scale_factor;
-		topY = devY * gpu_scale_factor;
+		topX = devX * scaleFactor;
+		topY = devY * scaleFactor;
 		
 		if(hybrid && !nds_screen.swap) {
 			devX = x;
 			devY = y;
 			cairo_matrix_transform_point(&nds_screen.topscreen_matrix_hybrid, &devX, &devY);
-			hybTopX = devX * gpu_scale_factor;
-			hybTopY = devY * gpu_scale_factor;
+			hybTopX = devX * scaleFactor;
+			hybTopY = devY * scaleFactor;
 		}
 	}
 
@@ -1654,58 +1695,58 @@ static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 		devX = x;
 		devY = y;
 		cairo_matrix_transform_point(&nds_screen.touch_matrix, &devX, &devY);
-		botX = devX * gpu_scale_factor;
-		botY = devY * gpu_scale_factor;
+		botX = devX * scaleFactor;
+		botY = devY * scaleFactor;
 		
 		if(hybrid && nds_screen.swap) {
 			devX = x;
 			devY = y;
 			cairo_matrix_transform_point(&nds_screen.touch_matrix_hybrid, &devX, &devY);
-			hybBotX = devX * gpu_scale_factor;
-			hybBotY = devY * gpu_scale_factor;
+			hybBotX = devX * scaleFactor;
+			hybBotY = devY * scaleFactor;
 		}
 	}
 
-	if (topX >= 0 && topY >= 0 && topX < real_framebuffer_width && topY < real_framebuffer_height) {
+	if (topX >= 0 && topY >= 0 && topX < videoWidth && topY < videoHeight) {
 		X = topX;
-		Y = topY + (osd->swapScreens ? real_framebuffer_height : 0);
+		Y = topY + (osd->swapScreens ? videoHeight : 0);
 		startScreen = 0;
 		if(start)
 			hud_move_started_in_big_screen = false;
-	} else if (hybTopX >= 0 && hybTopY >= 0 && hybTopX < real_framebuffer_width && hybTopY < real_framebuffer_height) {
+	} else if (hybTopX >= 0 && hybTopY >= 0 && hybTopX < videoWidth && hybTopY < videoHeight) {
 		X = hybTopX;
 		Y = hybTopY;
 		startScreen = 0;
 		if(start)
 			hud_move_started_in_big_screen = true;
-	} else if (botX >= 0 && botY >= 0 && botX < real_framebuffer_width && botY < real_framebuffer_height) {
+	} else if (botX >= 0 && botY >= 0 && botX < videoWidth && botY < videoHeight) {
 		X = botX;
-		Y = botY + (osd->swapScreens ? 0 : real_framebuffer_height);
+		Y = botY + (osd->swapScreens ? 0 : videoHeight);
 		startScreen = 1;
 		if(start)
 			hud_move_started_in_big_screen = false;
-	} else if (hybBotX >= 0 && hybBotY >= 0 && hybBotX < real_framebuffer_width && hybBotY < real_framebuffer_height) {
+	} else if (hybBotX >= 0 && hybBotY >= 0 && hybBotX < videoWidth && hybBotY < videoHeight) {
 		X = hybBotX;
-		Y = hybBotY + real_framebuffer_height;
+		Y = hybBotY + videoHeight;
 		startScreen = 1;
 		if(start)
 			hud_move_started_in_big_screen = true;
 	} else if (!start) {
 		if (startScreen == 0) {
 			if(!hud_move_started_in_big_screen || !hybrid) {
-				X = CLAMP(topX, 0, real_framebuffer_width-1);
-				Y = CLAMP(topY, 0, real_framebuffer_height-1) + (osd->swapScreens ? real_framebuffer_height : 0);
+				X = CLAMP(topX, 0, videoWidth-1);
+				Y = CLAMP(topY, 0, videoHeight-1) + (osd->swapScreens ? videoHeight : 0);
 			} else {
-				X = CLAMP(hybTopX, 0, real_framebuffer_width-1);
-				Y = CLAMP(hybTopY, 0, real_framebuffer_height-1);
+				X = CLAMP(hybTopX, 0, videoWidth-1);
+				Y = CLAMP(hybTopY, 0, videoHeight-1);
 			}
 		} else {
 			if(!hud_move_started_in_big_screen || !hybrid) {
-				X = CLAMP(botX, 0, real_framebuffer_width-1);
-				Y = CLAMP(botY, 0, real_framebuffer_height-1) + (osd->swapScreens ? 0 : real_framebuffer_height);
+				X = CLAMP(botX, 0, videoWidth-1);
+				Y = CLAMP(botY, 0, videoHeight-1) + (osd->swapScreens ? 0 : videoHeight);
 			} else {
-				X = CLAMP(hybBotX, 0, real_framebuffer_width-1);
-				Y = CLAMP(hybBotY, 0, real_framebuffer_height-1) + real_framebuffer_height;
+				X = CLAMP(hybBotX, 0, videoWidth-1);
+				Y = CLAMP(hybBotY, 0, videoHeight-1) + videoHeight;
 			}
 		}
 	} else {
@@ -2414,7 +2455,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		default:
 			break;
 		}
-		double old_scale_factor = gpu_scale_factor;
+		
 		gpu_scale_factor = gtk_spin_button_get_value(wGPUScale);
 		if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
 			gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
@@ -2422,25 +2463,9 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 			gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
 		gtk_spin_button_set_value(wGPUScale, gpu_scale_factor);
 		config.gpuScaleFactor = gpu_scale_factor;
-		real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor;
-		real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
-		GPU->SetCustomFramebufferSize(real_framebuffer_width, real_framebuffer_height);
-		video->SetSourceSize(real_framebuffer_width, real_framebuffer_height * 2);
-#ifdef HAVE_LIBAGG
-#ifdef AGG2D_USE_VECTORFONTS
-		if(vectorFontFile.size() > 0)
-		{
-			aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * gpu_scale_factor, true);
-			osd->useVectorFonts=(gpu_scale_factor >= 1.1);
-		}
-		else
-			osd->useVectorFonts=false;
-#endif
-		Agg_setCustomSize(real_framebuffer_width, real_framebuffer_height*2);
-		osd->scale=gpu_scale_factor;
-		Hud.rescale(old_scale_factor, gpu_scale_factor);
-		HudSaveLayout();
-#endif
+		
+		gtk3gpuEvent->SetFramebufferDimensions( (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor) + 0.5), (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor) + 0.5) );
+		
 		CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize = gtk_toggle_button_get_active(wPosterize);
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(wSmoothing);
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
@@ -2497,34 +2522,36 @@ static void ToggleLayerVisibility(GSimpleAction *action, GVariant *parameter, gp
 
 static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
+	const gint videoWidth  = (gint)video->GetSrcWidth();
+	const gint videoHeight = (gint)video->GetSrcHeight();
+	u8 *screenshotBuffer = (u8 *)malloc_alignedPage(videoWidth * videoHeight * sizeof(u32));
+	
     GdkPixbuf *screenshot;
     const gchar *dir;
     gchar *filename = NULL, *filen = NULL;
     GError *error = NULL;
-    u8 *rgb = (u8*)malloc(real_framebuffer_width * real_framebuffer_height * 2 * 4);
     static int seq = 0;
     gint H, W;
 
-    //rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL);
-    //if (!rgb)
-    //    return;
-
     if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
-        W = real_framebuffer_width;
-        H = real_framebuffer_height * 2;
+        W = videoWidth;
+        H = videoHeight;
     } else {
-        W = real_framebuffer_height * 2;
-        H = real_framebuffer_width;
+        W = videoHeight;
+        H = videoWidth;
     }
 
-    gpu_screen_to_rgb((u32*)rgb);
-    screenshot = gdk_pixbuf_new_from_data(rgb,
+	gtk3gpuEvent->VideoFetchLock();
+	ColorspaceConvertBuffer888xTo8888Opaque<true, false>(video->GetSrcBufferPtr(), (u32 *)screenshotBuffer, videoWidth * videoHeight);
+	gtk3gpuEvent->VideoFetchUnlock();
+	
+	screenshot = gdk_pixbuf_new_from_data(screenshotBuffer,
                           GDK_COLORSPACE_RGB,
                           TRUE,
                           8,
                           W,
                           H,
-                          W * 4,
+                          W * sizeof(u32),
                           NULL,
                           NULL);
 
@@ -2551,10 +2578,10 @@ static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer use
         seq--;
     }
 
-    free(rgb);
     g_object_unref(screenshot);
     g_free(filename);
     g_free(filen);
+    free_aligned(screenshotBuffer);
 }
 
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
@@ -2909,8 +2936,6 @@ gboolean EmuLoop(gpointer data)
     desmume_cycle();    /* Emule ! */
 
     _updateDTools();
-        avout_x264.updateVideo(GPU->GetDisplayInfo().masterNativeBuffer16);
-	RedrawScreen();
 
     if (!config.fpslimiter || keys_latch & KEYMASK_(KEY_BOOST - 1)) {
         if (autoframeskip) {
@@ -3400,7 +3425,23 @@ common_gtk_main(GApplication *app, gpointer user_data)
         // TODO: return a non-zero exit status.
         g_application_quit(app);
     }
+	
     desmume_init( my_config->disable_sound || !config.audio_enabled);
+	
+    gpu_scale_factor = config.gpuScaleFactor;
+    if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
+        gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
+    if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
+        gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
+    config.gpuScaleFactor = gpu_scale_factor;
+	
+    gtk3gpuEvent = new Gtk3GPUEventHandler;
+    GPU->SetEventHandler(gtk3gpuEvent);
+    gtk3gpuEvent->SetFramebufferDimensions( (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor) + 0.5), (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor) + 0.5) );
+	
+    const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+    video = new VideoFilter(dispInfo.customWidth, dispInfo.customHeight * 2, VideoFilterTypeID_None, CommonSettings.num_cores);
+    g_printerr("Using %d threads for video filter.\n", CommonSettings.num_cores);
 
     /* Init the hud / osd stuff */
 #ifdef HAVE_LIBAGG
@@ -3411,7 +3452,23 @@ common_gtk_main(GApplication *app, gpointer user_data)
     Desmume_InitOnce();
     Hud.reset();
     osd = new OSDCLASS(-1);
-#endif
+	
+#ifdef AGG2D_USE_VECTORFONTS
+	if (vectorFontFile.size() > 0)
+	{
+		aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE, true);
+		osd->useVectorFonts = false;
+	}
+	else
+	{
+		osd->useVectorFonts = false;
+	}
+#endif // AGG2D_USE_VECTORFONTS
+	
+	Agg_setCustomSize(video->GetSrcWidth(), video->GetSrcHeight());
+	osd->scale = 1.0;
+	aggDraw.hud->setDrawTargetDims( (u8 *)video->GetSrcBufferPtr(), video->GetSrcWidth(), video->GetSrcHeight(), video->GetSrcWidth() * sizeof(u32) );
+#endif // HAVE_LIBAGG
 
     /*
      * Activate the GDB stubs
@@ -3464,33 +3521,6 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     memset(&nds_screen, 0, sizeof(nds_screen));
     nds_screen.orientation = ORIENT_VERTICAL;
-
-    gpu_scale_factor = config.gpuScaleFactor;
-    if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
-        gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
-    if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
-        gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
-    config.gpuScaleFactor = gpu_scale_factor;
-    real_framebuffer_width = GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor;
-    real_framebuffer_height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor;
-
-    g_printerr("Using %d threads for video filter.\n", CommonSettings.num_cores);
-    GPU->SetCustomFramebufferSize(real_framebuffer_width, real_framebuffer_height);
-    video = new VideoFilter(real_framebuffer_width, real_framebuffer_height * 2, VideoFilterTypeID_None, CommonSettings.num_cores);
-#ifdef HAVE_LIBAGG
-#ifdef AGG2D_USE_VECTORFONTS
-	if(vectorFontFile.size() > 0)
-	{
-		aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * gpu_scale_factor, true);
-		osd->useVectorFonts=(gpu_scale_factor >= 1.1);
-	}
-	else
-		osd->useVectorFonts=false;
-#endif
-	Agg_setCustomSize(real_framebuffer_width, real_framebuffer_height*2);
-	osd->scale=gpu_scale_factor;
-	HudLoadLayout();
-#endif
 
     /* Fetch the main elements from the window */
     GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/main.ui");
@@ -4111,16 +4141,21 @@ common_gtk_main(GApplication *app, gpointer user_data)
 }
 
 static void Teardown() {
-    delete video;
 #ifdef HAVE_LIBAGG
 	HudSaveLayout();
 #endif
+	
+    delete video;
+    
 	config.save();
 	avout_x264.end();
 	avout_flac.end();
 
     desmume_free();
 
+    delete gtk3gpuEvent;
+    gtk3gpuEvent = NULL;
+	
 #if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
     #if defined(ENABLE_GLX)
 	glx_deinitOpenGL();
@@ -4237,4 +4272,169 @@ int main (int argc, char *argv[])
   int ret = g_application_run(G_APPLICATION(app), argc, argv);
   Teardown();
   return ret;
+}
+
+Gtk3GPUEventHandler::Gtk3GPUEventHandler()
+{
+	_colorFormatPending = NDSColorFormat_BGR666_Rev;
+	_widthPending       = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_heightPending      = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	_pageCountPending   = GTK3_FRAMEBUFFER_PAGE_COUNT;
+	
+	_didColorFormatChange = true;
+	_didWidthChange       = true;
+	_didHeightChange      = true;
+	_didPageCountChange   = true;
+	
+	_latestBufferIndex = 0;
+	
+	_mutexApplyGPUSettings = slock_new();
+	_mutexVideoFetch = slock_new();
+	
+	for (size_t i = 0; i < GTK3_FRAMEBUFFER_PAGE_COUNT; i++)
+	{
+		_mutexFramebufferPage[i] = slock_new();
+	}
+}
+
+Gtk3GPUEventHandler::~Gtk3GPUEventHandler()
+{
+	slock_free(this->_mutexApplyGPUSettings);
+	slock_free(this->_mutexVideoFetch);
+	
+	for (size_t i = 0; i < GTK3_FRAMEBUFFER_PAGE_COUNT; i++)
+	{
+		slock_free(this->_mutexFramebufferPage[i]);
+	}
+}
+
+void Gtk3GPUEventHandler::SetFramebufferDimensions(size_t w, size_t h)
+{
+	if (w < GPU_FRAMEBUFFER_NATIVE_WIDTH)
+	{
+		w = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	}
+	
+	if (h < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+	{
+		h = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	}
+	
+	slock_lock(this->_mutexApplyGPUSettings);
+	
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	this->_didWidthChange  = (w != dispInfo.customWidth);
+	this->_didHeightChange = (h != dispInfo.customHeight);
+	this->_widthPending  = w;
+	this->_heightPending = h;
+	
+	slock_unlock(this->_mutexApplyGPUSettings);
+}
+
+void Gtk3GPUEventHandler::GetFramebufferDimensions(size_t &outWidth, size_t &outHeight)
+{
+	outWidth  = this->_widthPending;
+	outHeight = this->_heightPending;
+}
+
+void Gtk3GPUEventHandler::SetColorFormat(NDSColorFormat colorFormat)
+{
+	slock_lock(this->_mutexApplyGPUSettings);
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	this->_didColorFormatChange = (colorFormat != dispInfo.colorFormat);
+	this->_colorFormatPending = colorFormat;
+	slock_unlock(this->_mutexApplyGPUSettings);
+}
+
+NDSColorFormat Gtk3GPUEventHandler::GetColorFormat()
+{
+	return this->_colorFormatPending;
+}
+
+void Gtk3GPUEventHandler::VideoFetchLock()
+{
+	slock_lock(this->_mutexVideoFetch);
+}
+
+void Gtk3GPUEventHandler::VideoFetchUnlock()
+{
+	slock_unlock(this->_mutexVideoFetch);
+}
+
+void Gtk3GPUEventHandler::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo)
+{
+	if (isFrameSkipped)
+	{
+		return;
+	}
+	
+	this->_latestBufferIndex = latestDisplayInfo.bufferIndex;
+	
+	slock_lock(this->_mutexFramebufferPage[this->_latestBufferIndex]);
+	
+	// TODO: Video file writes only work on fixed 16-bit buffers at the native-size only.
+	// This currently does not work on custom-sized buffers or any 32-bit color format.
+	avout_x264.updateVideo(latestDisplayInfo.masterNativeBuffer16);
+	
+	this->VideoFetchLock();
+	if (latestDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+	{
+		ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapNone>( (u16 *)latestDisplayInfo.masterCustomBuffer, (u32 *)video->GetSrcBufferPtr(), latestDisplayInfo.customWidth * latestDisplayInfo.customHeight * 2);
+	}
+	else
+	{
+		ColorspaceConvertBuffer888xTo8888Opaque<true, false>( (u32 *)latestDisplayInfo.masterCustomBuffer, (u32 *)video->GetSrcBufferPtr(), latestDisplayInfo.customWidth * latestDisplayInfo.customHeight * 2);
+	}
+	this->VideoFetchUnlock();
+	
+	slock_unlock(this->_mutexFramebufferPage[this->_latestBufferIndex]);
+	
+	RedrawScreen();
+}
+
+void Gtk3GPUEventHandler::DidApplyGPUSettingsBegin()
+{
+	slock_lock(this->_mutexApplyGPUSettings);
+	
+	if (this->_didWidthChange || this->_didHeightChange || this->_didColorFormatChange || this->_didPageCountChange)
+	{
+		if (this->_didWidthChange || this->_didHeightChange)
+		{
+			for (size_t i = 0; i < GTK3_FRAMEBUFFER_PAGE_COUNT; i++)
+			{
+				slock_lock(this->_mutexFramebufferPage[i]);
+			}
+		}
+		
+		GPU->SetCustomFramebufferSize(this->_widthPending, this->_heightPending);
+		GPU->SetColorFormat(this->_colorFormatPending);
+		GPU->SetFramebufferPageCount(this->_pageCountPending);
+	}
+}
+
+void Gtk3GPUEventHandler::DidApplyGPUSettingsEnd()
+{
+	if (this->_didWidthChange || this->_didHeightChange || this->_didColorFormatChange || this->_didPageCountChange)
+	{
+		const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+		
+		if (this->_didWidthChange || this->_didHeightChange)
+		{
+			video->SetSourceSize(dispInfo.customWidth, dispInfo.customHeight * 2);
+			
+			for (size_t i = 0; i < GTK3_FRAMEBUFFER_PAGE_COUNT; i++)
+			{
+				slock_unlock(this->_mutexFramebufferPage[i]);
+			}
+		}
+		
+		// Update all the change flags now that settings are applied.
+		// In theory, all these flags should get cleared.
+		this->_didWidthChange       = (this->_widthPending       != dispInfo.customWidth);
+		this->_didHeightChange      = (this->_heightPending      != dispInfo.customHeight);
+		this->_didColorFormatChange = (this->_colorFormatPending != dispInfo.colorFormat);
+		this->_didPageCountChange   = (this->_pageCountPending   != dispInfo.framebufferPageCount);
+	}
+	
+	slock_unlock(this->_mutexApplyGPUSettings);
 }

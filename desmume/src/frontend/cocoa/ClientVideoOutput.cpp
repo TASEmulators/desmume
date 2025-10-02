@@ -913,6 +913,28 @@ void ClientDisplayViewOutputManager::SetNDSFrameInfoToAll(const NDSFrameInfo &fr
 	pthread_mutex_unlock(&this->_pendingUnregisterListMutex);
 }
 
+void ClientDisplayViewOutputManager::GenerateViewListAll(std::vector<ClientDisplayViewInterface *> &outFinalizeList)
+{
+	// Add all pending outputs to be registered.
+	pthread_mutex_lock(&this->_pendingRegisterListMutex);
+	this->_RegisterPending();
+	pthread_mutex_unlock(&this->_pendingRegisterListMutex);
+	
+	// Remove all pending outputs to be unregistered.
+	pthread_mutex_lock(&this->_pendingUnregisterListMutex);
+	this->_UnregisterPending();
+	
+	// Finally, run the outputs.
+	for (size_t i = 0; i < this->_runList.size(); i++)
+	{
+		ClientDisplayViewOutput *runningOutput = (ClientDisplayViewOutput *)this->_runList[i];
+		ClientDisplayViewInterface *cdv = (ClientDisplayViewInterface *)runningOutput->GetClientDisplayView();
+		outFinalizeList.push_back(cdv);
+	}
+	
+	pthread_mutex_unlock(&this->_pendingUnregisterListMutex);
+}
+
 void ClientDisplayViewOutputManager::GenerateFlushListForDisplay(int32_t displayID, std::vector<ClientDisplayViewInterface *> &outFlushList)
 {
 	// Add all pending outputs to be registered.
@@ -1031,5 +1053,18 @@ void ClientGPUFetchObjectMultiDisplayView::FlushMultipleViews(const std::vector<
 	{
 		ClientDisplayViewInterface *cdv = cdvFlushList[i];
 		cdv->FinalizeFlush(NULL, timeStampOutput);
+	}
+}
+
+void ClientGPUFetchObjectMultiDisplayView::FinalizeAllViews()
+{
+	std::vector<ClientDisplayViewInterface *> cdvList;
+	this->_outputManager->GenerateViewListAll(cdvList);
+	
+	const size_t listSize = cdvList.size();
+	for (size_t i = 0; i < listSize; i++)
+	{
+		ClientDisplayViewInterface *cdv = cdvList[i];
+		cdv->FinalizeFlush(NULL, 0);
 	}
 }

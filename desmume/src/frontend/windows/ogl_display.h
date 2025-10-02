@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 DeSmuME team
+Copyright (C) 2018-2025 DeSmuME team
 
 This file is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #define _OGL_DISPLAY_H_
 
 #include "types.h"
+#include "GPU.h"
 #include "ogl.h"
 
 #include <GL/gl.h>
@@ -34,14 +35,31 @@ private:
 	HWND hwnd;
 	bool initialize(HWND hwnd);
 	bool WGLExtensionSupported(const char *extension_name);
-	void _setvsync(bool isVsyncEnabled);
+
+	bool _isVsyncSupported;
+
+	GLuint *_texVideo;
+	GLuint *_texHud;
+
+	bool _useOutputFilterPending;
+	bool _useOutputFilterApplied;
+	bool _useVsyncPending;
+	bool _useVsyncApplied;
 
 public:
-	bool active;
-	bool wantVsync, haveVsync;
-	bool filter;
-
 	GLDISPLAY();
+	~GLDISPLAY();
+
+	bool active;
+
+	void initVideoTexture(NDSColorFormat colorFormat, GLsizei videoWidth, GLsizei videoHeight);
+	GLuint getTexVideoID(u8 bufferIndex);
+	GLuint getTexHudID(u8 bufferIndex);
+
+	void setUseOutputFilter(bool theState);
+	bool useOutputFilter();
+	void applyOutputFilterOGL();
+
 	void kill();
 	bool begin(HWND hwnd);
 	void end();
