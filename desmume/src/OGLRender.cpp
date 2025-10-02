@@ -3135,8 +3135,6 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
-	glFinish();
-	
 	const bool didSelectedMultisampleSizeChange = (this->_selectedMultisampleSize != CommonSettings.GFX3D_Renderer_MultisampleSize);
 	const bool didEmulateNDSDepthCalculationChange = (this->_emulateNDSDepthCalculation != CommonSettings.OpenGL_Emulation_NDSDepthCalculation);
 	const bool didEnableTextureSmoothingChange = (this->_enableTextureSmoothing != CommonSettings.GFX3D_Renderer_TextureSmoothing);
@@ -3200,7 +3198,6 @@ Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderSt
 		}
 	}
 	
-	glFinish();
 	ENDGL();
 	return error;
 }
