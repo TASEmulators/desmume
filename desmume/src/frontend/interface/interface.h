@@ -106,6 +106,10 @@ EXPORTED void desmume_savestate_slot_save(int index);
 EXPORTED BOOL desmume_savestate_slot_exists(int index);
 EXPORTED char* desmume_savestate_slot_date(int index);
 
+EXPORTED BOOL desmume_backup_import_file(const char *filename);
+EXPORTED BOOL desmume_backup_import_raw(const char *filename, unsigned int force_size);
+EXPORTED BOOL desmume_backup_export_file(const char *filename);
+
 EXPORTED BOOL desmume_gpu_get_layer_main_enable_state(int layer_index);
 EXPORTED BOOL desmume_gpu_get_layer_sub_enable_state(int layer_index);
 EXPORTED void desmume_gpu_set_layer_main_enable_state(int layer_index, BOOL the_state);
