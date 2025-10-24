@@ -106,8 +106,34 @@ EXPORTED void desmume_savestate_slot_save(int index);
 EXPORTED BOOL desmume_savestate_slot_exists(int index);
 EXPORTED char* desmume_savestate_slot_date(int index);
 
+// Battery save (backup memory) import/export
+
+/**
+ * Import battery save file with automatic format detection.
+ * Supports .sav (raw), .dsv (DeSmuME), .duc (Action Replay), .dss (DSOrganize).
+ * The emulator will automatically reset after successful import.
+ * 
+ * @param filename Path to battery save file
+ * @return TRUE on success, FALSE on failure
+ */
 EXPORTED BOOL desmume_backup_import_file(const char *filename);
+
+/**
+ * Import battery save file with manual size override.
+ * Use this when auto-detection fails or you need to force a specific backup size.
+ * 
+ * @param filename Path to battery save file
+ * @param force_size Backup size in bytes (0 = auto-detect, or explicit size like 524288 for 512KB)
+ * @return TRUE on success, FALSE on failure
+ */
 EXPORTED BOOL desmume_backup_import_raw(const char *filename, unsigned int force_size);
+
+/**
+ * Export current battery save to .dsv file.
+ * 
+ * @param filename Destination path for .dsv file
+ * @return TRUE on success, FALSE on failure
+ */
 EXPORTED BOOL desmume_backup_export_file(const char *filename);
 
 EXPORTED BOOL desmume_gpu_get_layer_main_enable_state(int layer_index);
