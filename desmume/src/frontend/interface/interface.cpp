@@ -287,21 +287,7 @@ EXPORTED char* desmume_savestate_slot_date(int index)
     return savestates[index].date;
 }
 
-EXPORTED BOOL desmume_backup_import_file(const char *filename) {
-	if (!nds.backupDevice.isBackupDeviceAvailable()) {
-		return FALSE;
-	}
-	
-	bool success = nds.backupDevice.importData(filename, 0);
-	
-	if (success) {
-		NDS_Reset();
-	}
-	
-	return success ? TRUE : FALSE;
-}
-
-EXPORTED BOOL desmume_backup_import_raw(const char *filename, unsigned int force_size) {
+EXPORTED BOOL desmume_backup_import_file(const char *filename, unsigned int force_size) {
 	if (!nds.backupDevice.isBackupDeviceAvailable()) {
 		return FALSE;
 	}

@@ -109,24 +109,15 @@ EXPORTED char* desmume_savestate_slot_date(int index);
 // Battery save (backup memory) import/export
 
 /**
- * Import battery save file with automatic format detection.
+ * Import battery save file with optional size override.
  * Supports .sav (raw), .dsv (DeSmuME), .duc (Action Replay), .dss (DSOrganize).
  * The emulator will automatically reset after successful import.
- * 
- * @param filename Path to battery save file
- * @return TRUE on success, FALSE on failure
- */
-EXPORTED BOOL desmume_backup_import_file(const char *filename);
-
-/**
- * Import battery save file with manual size override.
- * Use this when auto-detection fails or you need to force a specific backup size.
  * 
  * @param filename Path to battery save file
  * @param force_size Backup size in bytes (0 = auto-detect, or explicit size like 524288 for 512KB)
  * @return TRUE on success, FALSE on failure
  */
-EXPORTED BOOL desmume_backup_import_raw(const char *filename, unsigned int force_size);
+EXPORTED BOOL desmume_backup_import_file(const char *filename, unsigned int force_size);
 
 /**
  * Export current battery save to .dsv file.
