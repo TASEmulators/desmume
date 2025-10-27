@@ -287,6 +287,28 @@ EXPORTED char* desmume_savestate_slot_date(int index)
     return savestates[index].date;
 }
 
+EXPORTED BOOL desmume_backup_import_file(const char *filename, unsigned int force_size) {
+	if (!nds.backupDevice.isBackupDeviceAvailable()) {
+		return FALSE;
+	}
+	
+	bool success = nds.backupDevice.importData(filename, force_size);
+	
+	if (success) {
+		NDS_Reset();
+	}
+	
+	return success ? TRUE : FALSE;
+}
+
+EXPORTED BOOL desmume_backup_export_file(const char *filename) {
+	if (!nds.backupDevice.isBackupDeviceAvailable()) {
+		return FALSE;
+	}
+	
+	return nds.backupDevice.exportData(filename) ? TRUE : FALSE;
+}
+
 EXPORTED BOOL desmume_gpu_get_layer_main_enable_state(int layer_index)
 {
     return GPU->GetEngineMain()->GetLayerEnableState(layer_index);
