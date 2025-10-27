@@ -112,7 +112,18 @@ EXPORTED char* desmume_savestate_slot_date(int index);
  * Import battery save file with optional size override.
  * Supports .sav (raw), .dsv (DeSmuME), .duc (Action Replay), .dss (DSOrganize).
  * The emulator will automatically reset after successful import.
- * 
+ *
+ * Prerequisites:
+ *   - MMU_new.backupDevice is a global object initialized at program startup
+ *   - A ROM should be loaded via desmume_open() first - the BackupDevice constructor
+ *     checks gameInfo.romsize and returns early if no ROM is loaded, preventing
+ *     proper initialization of the save file path
+ *
+ * Typical usage:
+ *   desmume_init();              // Initialize emulator
+ *   desmume_open("game.nds");    // Load ROM (initializes backup device filename)
+ *   desmume_backup_import_file("save.sav", 0);  // Now safe to import
+ *
  * @param filename Path to battery save file
  * @param force_size Backup size in bytes (0 = auto-detect, or explicit size like 524288 for 512KB)
  * @return TRUE on success, FALSE on failure
@@ -121,7 +132,18 @@ EXPORTED BOOL desmume_backup_import_file(const char *filename, unsigned int forc
 
 /**
  * Export current battery save to .dsv file.
- * 
+ *
+ * Prerequisites:
+ *   - MMU_new.backupDevice is a global object initialized at program startup
+ *   - A ROM must be loaded via desmume_open() first - the BackupDevice needs
+ *     the ROM to be loaded to have a valid save filename and data
+ *
+ * Typical usage:
+ *   desmume_init();              // Initialize emulator
+ *   desmume_open("game.nds");    // Load ROM
+ *   // ... play game, save data is created ...
+ *   desmume_backup_export_file("backup.dsv");  // Export save data
+ *
  * @param filename Destination path for .dsv file
  * @return TRUE on success, FALSE on failure
  */
