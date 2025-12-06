@@ -22,6 +22,7 @@
 #include <string.h>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "types.h"
 #include "ROMReader.h"
@@ -487,7 +488,17 @@ enum MicMode
 	MicMode_Physical      = 3
 };
 
-extern struct TCommonSettings
+struct GameHackCheat
+{
+	virtual void Run() {}
+
+	void write08(uint32_t address, uint8_t value);
+	void write(uint32_t address, size_t sz, void* value);
+	void write32(uint32_t address, uint32_t value);
+	uint32_t read32(uint32_t address);
+};
+
+struct TCommonSettings
 {
 	bool GFX3D_HighResolutionInterpolateColor;
 	bool GFX3D_EdgeMark;
@@ -536,10 +547,12 @@ extern struct TCommonSettings
 
 		struct
 		{
-			bool overclock;
-			bool stylusjitter;
+			bool overclock = false;
+			bool stylusjitter = false;
+			std::vector<std::shared_ptr<GameHackCheat>> cheats;
 		} flags;
 		
+
 		void apply();
 		void clear();
 	} gamehacks;
@@ -594,7 +607,9 @@ extern struct TCommonSettings
 	
 	TCommonSettings();
 	bool single_core();
-} CommonSettings;
+};
+
+extern TCommonSettings CommonSettings;
 
 void NDS_RunAdvansceneAutoImport();
 

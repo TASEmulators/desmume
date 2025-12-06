@@ -2246,6 +2246,8 @@ void NDS_exec(s32 nb)
 		cheats->process(CHEAT_TYPE_INTERNAL);
 		CHEATS::ResetJitIfNeeded();
 	}
+	for(auto& cheat : CommonSettings.gamehacks.flags.cheats)
+		cheat->Run();
 
 	GDBSTUB_MUTEX_UNLOCK();
 }
@@ -3462,6 +3464,53 @@ bool TCommonSettings::single_core()
 	return (num_cores == 1);
 }
 
+//library of individual game hacks
+namespace
+{
+	struct rabbids_us : public GameHackCheat
+	{
+		void Run() override
+		{
+			if(0xe28dd02c == read32(0x203cf18))
+				write32(0x203cf18, 0xeb0f0878);
+			write32(0x23ff100, 0xe59d1000);
+			write(0x23ff104, 48, "\x01\x00\x51\xE3\x03\x00\x00\x1A\x10\x10\x8F\xE2\x1E\x00\x91\xE8\x00\x30\x81\xE5\x00\x40\x82\xE5\x2C\xD0\x8D\xE2\x1E\xFF\x2F\xE1\xC4\xD5\x18\x02\xCC\xD5\x18\x02\x21\x59\xA0\xE3\x00\x40\xA0\xE3");
+		}
+	};
+
+	struct rabbids_eu : public GameHackCheat
+	{
+		void Run() override
+		{
+			if(0xe28dd02c == read32(0x203d108))
+				write32(0x203d108, 0xeb0efcbc);
+			write32(0x23ff100, 0xe59d1000);
+			write(0x23ff104, 48, "\x01\x00\x51\xE3\x03\x00\x00\x1A\x10\x10\x8F\xE2\x1E\x00\x91\xE8\x00\x30\x81\xE5\x00\x40\x82\xE5\x2C\xD0\x8D\xE2\x1E\xFF\x2F\xE1\x4C\xDA\x18\x02\x54\xDA\x18\x02\x21\x59\xA0\xE3\x00\x40\xA0\xE3");
+		}
+	};
+}
+
+void GameHackCheat::write08(uint32_t address, uint8_t value)
+{
+	_MMU_ARM9_write08(address, value);
+}
+
+void GameHackCheat::write(uint32_t address, size_t sz, void* value)
+{
+	for(size_t i = 0; i < sz; i++)
+		write08(address + i, ((uint8_t*)value)[i]);
+}
+
+void GameHackCheat::write32(uint32_t address, uint32_t value)
+{
+	_MMU_ARM9_write32(address, value);
+}
+
+uint32_t GameHackCheat::read32(uint32_t address)
+{
+	return _MMU_ARM9_read32(address);
+}
+
 void TCommonSettings::GameHacks::apply()
 {
 	clear();
@@ -3469,9 +3518,13 @@ void TCommonSettings::GameHacks::apply()
 
 	flags.overclock = gameInfo.IsCode("IPK") || gameInfo.IsCode("IPG"); //HG/SS
 	flags.stylusjitter = gameInfo.IsCode("YDM"); //CSI: Dark Motives
+	
+	//Rabbids Go Home
+	if(gameInfo.IsCode("VRGE")) flags.cheats.emplace_back(new rabbids_us());
+	if(gameInfo.IsCode("VRGV")) flags.cheats.emplace_back(new rabbids_eu());
 }
 
 void TCommonSettings::GameHacks::clear()
 {
-	memset(&flags,0,sizeof(flags));
+	reconstruct(&flags);
 }
