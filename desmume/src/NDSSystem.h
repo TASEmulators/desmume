@@ -22,7 +22,6 @@
 #include <string.h>
 #include <string>
 #include <vector>
-#include <memory>
 
 #include "types.h"
 #include "ROMReader.h"
@@ -492,10 +491,10 @@ struct GameHackCheat
 {
 	virtual void Run() {}
 
-	void write08(uint32_t address, uint8_t value);
-	void write(uint32_t address, size_t sz, void* value);
-	void write32(uint32_t address, uint32_t value);
-	uint32_t read32(uint32_t address);
+	void write08(u32 address, u8 value);
+	void write(u32 address, size_t sz, void* value);
+	void write32(u32 address, u32 value);
+	u32 read32(u32 address);
 };
 
 struct TCommonSettings
@@ -545,16 +544,19 @@ struct TCommonSettings
 	{
 		bool en;
 
-		struct
+		struct GameHacksFlags
 		{
-			bool overclock = false;
-			bool stylusjitter = false;
-			std::vector<std::shared_ptr<GameHackCheat>> cheats;
+			bool overclock;
+			bool stylusjitter;
+			std::vector<GameHackCheat*> cheats;
+			
+			void reset();
 		} flags;
 		
 
 		void apply();
 		void clear();
+		void execute();
 	} gamehacks;
 
 	int StylusPressure;
