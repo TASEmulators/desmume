@@ -3966,7 +3966,7 @@
 			attributes = {
 				ORGANIZATIONNAME = "DeSmuME Team";
 			};
-			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (Xcode 3)" */;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 3)" */;
 			compatibilityVersion = "Xcode 3.1";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
@@ -5997,6 +5997,7 @@
 				GCC_FAST_MATH = YES;
 				GCC_FAST_OBJC_DISPATCH = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				"GCC_MODEL_PPC64[sdk=macosx10.5][arch=ppc64]" = YES;
 				GCC_MODEL_TUNING = "";
 				"GCC_MODEL_TUNING[sdk=macosx10.4][arch=ppc]" = G4;
 				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc64]" = G5;
@@ -6011,7 +6012,7 @@
 					GDB_STUB,
 				);
 				GCC_STRICT_ALIASING = YES;
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				"GCC_SYMBOLS_PRIVATE_EXTERN[arch=ppc]" = NO;
 				GCC_THREADSAFE_STATICS = NO;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
@@ -6059,17 +6060,19 @@
 				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;
 				"GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS[arch=i386]" = NO;
 				GCC_FAST_MATH = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				"GCC_MODEL_PPC64[sdk=macosx10.5][arch=ppc64]" = YES;
 				GCC_MODEL_TUNING = G5;
+				"GCC_MODEL_TUNING[sdk=macosx10.4][arch=ppc]" = G4;
+				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc]" = G4;
 				GCC_OBJC_CALL_CXX_CDTORS = YES;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = DeSmuME_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
 				GCC_STRICT_ALIASING = YES;
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				"GCC_SYMBOLS_PRIVATE_EXTERN[arch=ppc]" = YES;
 				GCC_THREADSAFE_STATICS = NO;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_UNROLL_LOOPS = YES;
@@ -6143,7 +6146,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (Xcode 3)" */ = {
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 3)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C01FCF4F08A954540054247B /* Debug */,
