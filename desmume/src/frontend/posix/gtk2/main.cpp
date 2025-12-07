@@ -153,6 +153,7 @@ static void RecordMovieDialog();
 static void PlayMovieDialog();
 static void StopMovie();
 static void ImportBackupDialog();
+static void ExportBackupDialog();
 static void OpenNdsDialog();
 static void SaveStateDialog();
 static void LoadStateDialog();
@@ -245,6 +246,7 @@ static const char *ui_description =
 #endif
 "      <separator/>"
 "      <menuitem action='importbackup'/>"
+"      <menuitem action='exportbackup'/>"
 "      <separator/>"
 "      <menuitem action='recordmovie'/>"
 "      <menuitem action='playmovie'/>"
@@ -439,6 +441,7 @@ static const GtkActionEntry action_entries[] = {
       { "savestateto",    NULL,         "Save state _to ...",         NULL,  NULL,   SaveStateDialog },
       { "loadstatefrom",  NULL,         "Load state _from ...",         NULL,  NULL,   LoadStateDialog },
       { "importbackup",  NULL,         "_Import backup from ...",         NULL,  NULL,   ImportBackupDialog },
+      { "exportbackup",  NULL,         "_Export backup to ...",         NULL,  NULL,   ExportBackupDialog },
       { "recordmovie",  NULL,         "Record movie _to ...",         NULL,  NULL,   RecordMovieDialog },
       { "playmovie",  NULL,         "Play movie _from ...",         NULL,  NULL,   PlayMovieDialog },
       { "stopmovie",  NULL,         "Stop movie", NULL,  NULL,   StopMovie },
@@ -1187,7 +1190,7 @@ static void PlayMovieDialog()
     gtk_widget_destroy(pFileSelection);
 }
 
-static void ImportBackupDialog()
+static void ImportExportBackupDialog(bool is_export)
 {
     GtkFileFilter *pFilter_dsm, *pFilter_any;
     GtkWidget *pFileSelection;
@@ -1201,20 +1204,23 @@ static void ImportBackupDialog()
 
     pFilter_dsm = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_dsm, "*.sav");
-    gtk_file_filter_set_name(pFilter_dsm, "Battery save file (.sav)");
+    gtk_file_filter_set_name(pFilter_dsm, "Raw/No$GBA Save format (.sav)");
 
     pFilter_any = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_any, "*");
     gtk_file_filter_set_name(pFilter_any, "All files");
 
     /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_dialog_new("Import backup from...",
+    pFileSelection = gtk_file_chooser_dialog_new(
+            is_export?"Export Backup Memory To ..." : "Import backup from...",
             GTK_WINDOW(pParent),
-            GTK_FILE_CHOOSER_ACTION_OPEN,
+            is_export?GTK_FILE_CHOOSER_ACTION_SAVE:GTK_FILE_CHOOSER_ACTION_OPEN,
             GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-            GTK_STOCK_OPEN, GTK_RESPONSE_OK,
+            is_export?GTK_STOCK_SAVE:GTK_STOCK_OPEN,
+            GTK_RESPONSE_OK,
             NULL);
-    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
+    if (is_export)
+        gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
 
     /* Only the dialog window is accepting events: */
     gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
@@ -1226,11 +1232,27 @@ static void ImportBackupDialog()
     switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
     case GTK_RESPONSE_OK:
         sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
-	struct stat st; int ret;
-	if(stat(sPath, &st) != -1) {
-		ret = MMU_new.backupDevice.importData(sPath, st.st_size);
-		NDS_Reset(); // reboot game
+        int ret;
+        if (is_export) {
+            ret = MMU_new.backupDevice.exportData(sPath);
+        } else {
+            ret = false;
+            struct stat st;
+            if(stat(sPath, &st) != -1) {
+                ret = MMU_new.backupDevice.importData(sPath, st.st_size);
+            }
 	}
+        if(ret == false ) {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
+                    GTK_DIALOG_MODAL,
+                    GTK_MESSAGE_ERROR,
+                    GTK_BUTTONS_OK,
+                    is_export?"Unable to export:\n%s":"Unable to import:\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        } else if (!is_export) {
+            NDS_Reset(); // reboot game
+        }
         g_free(sPath);
         break;
     default:
@@ -1239,6 +1261,15 @@ static void ImportBackupDialog()
     gtk_widget_destroy(pFileSelection);
 }
 
+static void ImportBackupDialog()
+{
+    ImportExportBackupDialog(false);
+}
+
+static void ExportBackupDialog()
+{
+    ImportExportBackupDialog(true);
+}
 
 static void SaveStateDialog()
 {
