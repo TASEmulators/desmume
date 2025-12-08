@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 DeSmuME team
+Copyright (C) 2018-2025 DeSmuME team
 
 This file is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -31,6 +31,9 @@ const char *DDerrors[] = {
 DDRAW::DDRAW() :
 	handle(NULL), clip(NULL)
 {
+	systemMemory = false;
+	vSync = false;
+
 	surface.primary = NULL;
 	surface.back = NULL;
 	memset(&surfDesc, 0, sizeof(surfDesc));

@@ -3096,14 +3096,14 @@ LRESULT OpenFile()
 
 	ofn.lpstrFilter = 
 		L"All Usable Files (*.nds, *.ds.gba, *.srl, *.zip, *.7z, *.rar, *.gz)\0*.nds;*.ds.gba;*.srl;*.zip;*.7z;*.rar;*.gz\0"
-		"NDS ROM file (*.nds,*.srl)\0*.nds;*.srl\0"
-		"NDS/GBA ROM File (*.ds.gba)\0*.ds.gba\0"
-		"Zipped NDS ROM file (*.zip)\0*.zip\0"
-		"7Zipped NDS ROM file (*.7z)\0*.7z\0"
-		"RARed NDS ROM file (*.rar)\0*.rar\0"
-		"GZipped NDS ROM file (*.gz)\0*.gz\0"
-		"Any file (*.*)\0*.*\0"
-		"\0"
+		L"NDS ROM file (*.nds,*.srl)\0*.nds;*.srl\0"
+		L"NDS/GBA ROM File (*.ds.gba)\0*.ds.gba\0"
+		L"Zipped NDS ROM file (*.zip)\0*.zip\0"
+		L"7Zipped NDS ROM file (*.7z)\0*.7z\0"
+		L"RARed NDS ROM file (*.rar)\0*.rar\0"
+		L"GZipped NDS ROM file (*.gz)\0*.gz\0"
+		L"Any file (*.*)\0*.*\0"
+		L"\0"
 		; //gzip doesnt actually work right now
 
 	ofn.nFilterIndex = 1;

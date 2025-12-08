@@ -25,7 +25,6 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "windriver.h"
 #include "winutil.h"
 
-#include <cmath>
 
 DDRAW ddraw;
 GLDISPLAY gldisplay;
@@ -816,7 +815,10 @@ void UpdateWndRects(HWND hwnd, RECT* newClientRect)
 	POINT ptClient;
 	RECT rc;
 
-	GapRect = {0,0,0,0};
+	GapRect.left = 0;
+	GapRect.top = 0;
+	GapRect.right = 0;
+	GapRect.bottom = 0;
 
 	bool maximized = IsZoomed(hwnd) != FALSE;
 
@@ -847,8 +849,8 @@ void UpdateWndRects(HWND hwnd, RECT* newClientRect)
 		wndHeight = (rc.right - rc.left);
 
 		ratio = ((float)wndHeight / (float)512);
-		oneScreenHeight = (int)std::round(((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * ratio));
-		int oneScreenWidth = (int)std::round(((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * ratio));
+		oneScreenHeight    = (int)( ((float)GPU_FRAMEBUFFER_NATIVE_WIDTH  * ratio) + 0.5f );
+		int oneScreenWidth = (int)( ((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * ratio) + 0.5f );
 		int vResizedScrOffset = 0;
 
 		// Main screen

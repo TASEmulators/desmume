@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2006-2024 DeSmuME team
+	Copyright (C) 2006-2025 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -517,51 +517,13 @@ HRESULT AVIFileStream::WriteAllFrames()
 
 NDSCaptureObject::NDSCaptureObject()
 {
-	// Create the format structs.
-	memset(&_bmpFormat, 0, sizeof(BITMAPINFOHEADER));
-	_bmpFormat.biSize = 0x28;
-	_bmpFormat.biPlanes = 1;
-	_bmpFormat.biBitCount = 24;
-
-	memset(&_wavFormat, 0, sizeof(WAVEFORMATEX));
-
-	_pendingVideoBuffer = NULL;
-	_pendingAudioBuffer = NULL;
-	_pendingAudioWriteSize = NULL;
-	_pendingBufferCount = 0;
-	_currentBufferIndex = 0;
-
-	// Create the colorspace conversion threads.
-	_numThreads = CommonSettings.num_cores;
-
-	if (_numThreads > MAX_CONVERT_THREADS)
-	{
-		_numThreads = MAX_CONVERT_THREADS;
-	}
-	else if (_numThreads < 2)
-	{
-		_numThreads = 0;
-	}
-
-	for (size_t i = 0; i < _numThreads; i++)
-	{
-		memset(&_convertParam[i], 0, sizeof(VideoConvertParam));
-		_convertParam[i].captureObj = this;
-
-		_convertThread[i] = new Task();
-		_convertThread[i]->start(false);
-	}
-	
-	// Generate the AVI file streams.
-	_fs = new AVIFileStream;
-
-	_fileWriteThread = new Task();
-	_fileWriteThread->start(false);
+	__InstanceInit();
 }
 
 NDSCaptureObject::NDSCaptureObject(size_t frameWidth, size_t frameHeight, const WAVEFORMATEX *wfex)
-	: NDSCaptureObject()
 {
+	__InstanceInit();
+
 	_bmpFormat.biWidth = frameWidth;
 	_bmpFormat.biHeight = frameHeight * 2;
 	_bmpFormat.biSizeImage = _bmpFormat.biWidth * _bmpFormat.biHeight * 3;
@@ -621,6 +583,50 @@ NDSCaptureObject::NDSCaptureObject(size_t frameWidth, size_t frameHeight, const 
 			_convertParam[i].frameWidth = _bmpFormat.biWidth;
 		}
 	}
+}
+
+void NDSCaptureObject::__InstanceInit()
+{
+	// Create the format structs.
+	memset(&_bmpFormat, 0, sizeof(BITMAPINFOHEADER));
+	_bmpFormat.biSize = 0x28;
+	_bmpFormat.biPlanes = 1;
+	_bmpFormat.biBitCount = 24;
+
+	memset(&_wavFormat, 0, sizeof(WAVEFORMATEX));
+
+	_pendingVideoBuffer = NULL;
+	_pendingAudioBuffer = NULL;
+	_pendingAudioWriteSize = NULL;
+	_pendingBufferCount = 0;
+	_currentBufferIndex = 0;
+
+	// Create the colorspace conversion threads.
+	_numThreads = CommonSettings.num_cores;
+
+	if (_numThreads > MAX_CONVERT_THREADS)
+	{
+		_numThreads = MAX_CONVERT_THREADS;
+	}
+	else if (_numThreads < 2)
+	{
+		_numThreads = 0;
+	}
+
+	for (size_t i = 0; i < _numThreads; i++)
+	{
+		memset(&_convertParam[i], 0, sizeof(VideoConvertParam));
+		_convertParam[i].captureObj = this;
+
+		_convertThread[i] = new Task();
+		_convertThread[i]->start(false);
+	}
+	
+	// Generate the AVI file streams.
+	_fs = new AVIFileStream;
+
+	_fileWriteThread = new Task();
+	_fileWriteThread->start(false);
 }
 
 NDSCaptureObject::~NDSCaptureObject()

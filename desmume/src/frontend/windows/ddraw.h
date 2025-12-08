@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 DeSmuME team
+Copyright (C) 2018-2025 DeSmuME team
 
 This file is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -47,8 +47,8 @@ struct DDRAW
 	DDSURFACEDESC2			surfDescBack;
 	LPDIRECTDRAWCLIPPER		clip;
 
-	bool systemMemory = false;
-	bool vSync = false;
+	bool systemMemory;
+	bool vSync;
 };
 
 #endif
