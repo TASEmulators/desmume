@@ -14,17 +14,12 @@
 		<VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
 	</PropertyGroup>
 
-	<!-- reformat version to be more useful -->
+	<!-- reformat version to be more safe -->
 	<PropertyGroup>
 		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '10.0'">10</NDS_VSVER>
-		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '11.0'">11</NDS_VSVER>
-		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '12.0'">12</NDS_VSVER>
-		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '14.0'">14</NDS_VSVER>
-		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '15.0'">15</NDS_VSVER>
-		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '16.0'">16</NDS_VSVER>
-		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '17.0'">17</NDS_VSVER>
-		<NDS_VSVER Condition="'$(VisualStudioVersion)' == '18.0'">18</NDS_VSVER>
-		<!-- others may not be supported, so lets not list them here -->
+		<!-- Doesn't work on 2010 -->
+		<NDS_VSVER Condition="'$(VisualStudioVersion)' &gt;= '11.0'">$(VisualStudioVersion.Split('.')[0])</NDS_VSVER>
+
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '10'">VS2010</NDS_VisualStudioName>
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '11'">VS2012</NDS_VisualStudioName>
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '12'">VS2013</NDS_VisualStudioName>
@@ -33,6 +28,8 @@
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '16'">VS2019</NDS_VisualStudioName>
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '17'">VS2022</NDS_VisualStudioName>
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '18'">VS2026</NDS_VisualStudioName>
+		<!-- Update when next version releases -->
+		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' &gt; '18'">VS_Unknown</NDS_VisualStudioName>
 	</PropertyGroup>
 
 	<!-- Generate optimization level property from configuration name -->
