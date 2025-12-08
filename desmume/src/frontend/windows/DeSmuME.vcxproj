@@ -24,18 +24,18 @@
     <RootNamespace>DeSmuME</RootNamespace>
     <PreferredToolArchitecture>x64</PreferredToolArchitecture>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(VisualStudioVersion)' == '16.0'" Label="TargetPlatform">
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(VisualStudioVersion)' != '16.0'" Label="TargetPlatform">
+  <PropertyGroup Condition="'$(VisualStudioVersion)' &lt; '16.0'" Label="TargetPlatform">
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(VisualStudioVersion)' == '17.0'" Label="TargetPlatform">
+  <PropertyGroup Condition="'$(VisualStudioVersion)' &gt;= '16.0'" Label="TargetPlatform">
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <!-- desmume customization: set PlatformToolset to an uptodate choice for vs2015 and leave it to the default vs2010 toolset for vs2010 -->
   <!-- NOTE: the location of this hack is important or else we break resource editing, intellisense, and ctrl+f7 in vs2010 either; or it doesnt work for vs2015. weird. -->
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '18.0'" Label="Configuration">
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(VisualStudioVersion)' == '17.0'" Label="Configuration">
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
@@ -47,6 +47,12 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(VisualStudioVersion)' == '14.0'" Label="Configuration">
     <PlatformToolset>v140_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '12.0'" Label="Configuration">
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '11.0'" Label="Configuration">
+    <PlatformToolset>v110_xp</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="PropertySheets">
