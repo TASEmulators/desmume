@@ -3532,7 +3532,6 @@ void TCommonSettings::GameHacks::clear()
 void TCommonSettings::GameHacks::execute()
 {
 	const size_t cheatCount = flags.cheats.size();
-	
 	for (size_t i = 0; i < cheatCount; i++)
 	{
 		flags.cheats[i]->Run();
@@ -3541,12 +3540,11 @@ void TCommonSettings::GameHacks::execute()
 
 void TCommonSettings::GameHacks::GameHacksFlags::reset()
 {
-	const size_t cheatCount = cheats.size();
-	
 	overclock = false;
 	stylusjitter = false;
-	
-	for (int i = (int)cheatCount - 1; i > 0; i--)
+
+	const size_t cheatCount = cheats.size();
+	for (size_t i = 0; i < cheatCount; i++)
 	{
 		delete cheats[i];
 	}
