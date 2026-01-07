@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2025 DeSmuME team
+	Copyright (C) 2014-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2302,38 +2302,54 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 			bvec4 needBlend = notEqual( blendResult.zyxw, ivec4(BLEND_NONE) );\n\
 			bvec4 doLineBlend = greaterThanEqual( blendResult.zyxw, ivec4(BLEND_DOMINANT) );\n\
 			vec3 blendPix[4];\n\
+			blendPix[0] = newFragColor;\n\
+			blendPix[1] = newFragColor;\n\
+			blendPix[2] = newFragColor;\n\
+			blendPix[3] = newFragColor;\n\
 			\n\
-			haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
-			haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
-			doLineBlend[0] = (  doLineBlend[0] ||\n\
-							   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-								 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-								 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
-			blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+			if (needBlend[0])\n\
+			{\n\
+				haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
+				haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
+				doLineBlend[0] = (  doLineBlend[0] ||\n\
+								   !(((blendResult[1] != BLEND_NONE) && !IsPixEqual(src[0], src[4])) ||\n\
+									 ((blendResult[3] != BLEND_NONE) && !IsPixEqual(src[0], src[8])) ||\n\
+									 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
+				blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+			}\n\
 			\n\
-			haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
-			haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
-			doLineBlend[1] = (  doLineBlend[1] ||\n\
-						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
-			blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+			if (needBlend[1])\n\
+			{\n\
+				haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
+				haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
+				doLineBlend[1] = (  doLineBlend[1] ||\n\
+							  !(((blendResult[0] != BLEND_NONE) && !IsPixEqual(src[0], src[2])) ||\n\
+								((blendResult[2] != BLEND_NONE) && !IsPixEqual(src[0], src[6])) ||\n\
+								(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
+				blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+			}\n\
 			\n\
-			haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
-			haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
-			doLineBlend[2] = (  doLineBlend[2] ||\n\
-						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
-			blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+			if (needBlend[2])\n\
+			{\n\
+				haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
+				haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
+				doLineBlend[2] = (  doLineBlend[2] ||\n\
+							  !(((blendResult[3] != BLEND_NONE) && !IsPixEqual(src[0], src[8])) ||\n\
+								((blendResult[1] != BLEND_NONE) && !IsPixEqual(src[0], src[4])) ||\n\
+								(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
+				blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+			}\n\
 			\n\
-			haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
-			haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
-			doLineBlend[3] = (  doLineBlend[3] ||\n\
-						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
-			blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+			if (needBlend[3])\n\
+			{\n\
+				haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
+				haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
+				doLineBlend[3] = (  doLineBlend[3] ||\n\
+							  !(((blendResult[2] != BLEND_NONE) && !IsPixEqual(src[0], src[6])) ||\n\
+								((blendResult[0] != BLEND_NONE) && !IsPixEqual(src[0], src[2])) ||\n\
+								(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
+				blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+			}\n\
 			\n\
 			int i = int( dot(floor(fract(texCoord[0]) * 2.05), vec2(1.05, 2.05)) );\n\
 			\n\
@@ -2425,9 +2441,9 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 		bool haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v0 != v4) && (v5 != v4);\n\
 		bool haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v0 != v8) && (v7 != v8);\n\
 		bool needBlend = (blend[2] != BLEND_NONE);\n\
-		bool doLineBlend = (  blend[2] >= BLEND_DOMINANT ||\n\
-					       !((blend[1] != BLEND_NONE && !IsPixEqual(k[0], k[4])) ||\n\
-					         (blend[3] != BLEND_NONE && !IsPixEqual(k[0], k[8])) ||\n\
+		bool doLineBlend = (  (blend[2] >= BLEND_DOMINANT) ||\n\
+					       !(((blend[1] != BLEND_NONE) && !IsPixEqual(k[0], k[4])) ||\n\
+					         ((blend[3] != BLEND_NONE) && !IsPixEqual(k[0], k[8])) ||\n\
 					         (IsPixEqual(k[4], k[3]) && IsPixEqual(k[3], k[2]) && IsPixEqual(k[2], k[1]) && IsPixEqual(k[1], k[8]) && !IsPixEqual(k[0], k[2])) ) );\n\
 		\n\
 		vec3 blendPix = ( DistYCbCr(k[0], k[1]) <= DistYCbCr(k[0], k[3]) ) ? k[1] : k[3];\n\
@@ -2631,38 +2647,54 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 				bvec4 needBlend = notEqual( blendResult.zyxw, ivec4(BLEND_NONE) );\n\
 				bvec4 doLineBlend = greaterThanEqual( blendResult.zyxw, ivec4(BLEND_DOMINANT) );\n\
 				vec3 blendPix[4];\n\
+				blendPix[0] = newFragColor;\n\
+				blendPix[1] = newFragColor;\n\
+				blendPix[2] = newFragColor;\n\
+				blendPix[3] = newFragColor;\n\
 				\n\
-				haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
-				haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
-				doLineBlend[0] = (  doLineBlend[0] ||\n\
-								   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-									 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-									 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
-				blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+				if (needBlend[0])\n\
+				{\n\
+					haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
+					haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
+					doLineBlend[0] = (  doLineBlend[0] ||\n\
+									   !(((blendResult[1] != BLEND_NONE) && !IsPixEqual(src[0], src[4])) ||\n\
+										 ((blendResult[3] != BLEND_NONE) && !IsPixEqual(src[0], src[8])) ||\n\
+										 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
+					blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+				}\n\
 				\n\
-				haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
-				haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
-				doLineBlend[1] = (  doLineBlend[1] ||\n\
-							  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-								(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-								(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
-				blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+				if (needBlend[1])\n\
+				{\n\
+					haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
+					haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
+					doLineBlend[1] = (  doLineBlend[1] ||\n\
+								  !(((blendResult[0] != BLEND_NONE) && !IsPixEqual(src[0], src[2])) ||\n\
+									((blendResult[2] != BLEND_NONE) && !IsPixEqual(src[0], src[6])) ||\n\
+									(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
+					blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+				}\n\
 				\n\
-				haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
-				haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
-				doLineBlend[2] = (  doLineBlend[2] ||\n\
-							  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-								(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-								(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
-				blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+				if (needBlend[2])\n\
+				{\n\
+					haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
+					haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
+					doLineBlend[2] = (  doLineBlend[2] ||\n\
+								  !(((blendResult[3] != BLEND_NONE) && !IsPixEqual(src[0], src[8])) ||\n\
+									((blendResult[1] != BLEND_NONE) && !IsPixEqual(src[0], src[4])) ||\n\
+									(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
+					blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+				}\n\
 				\n\
-				haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
-				haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
-				doLineBlend[3] = (  doLineBlend[3] ||\n\
-							  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-								(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-								(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
-				blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+				if (needBlend[3])\n\
+				{\n\
+					haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
+					haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
+					doLineBlend[3] = (  doLineBlend[3] ||\n\
+								  !(((blendResult[2] != BLEND_NONE) && !IsPixEqual(src[0], src[6])) ||\n\
+									((blendResult[0] != BLEND_NONE) && !IsPixEqual(src[0], src[2])) ||\n\
+									(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
+					blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+				}\n\
 				\n\
 				if (i == 0)\n\
 				{\n\
@@ -2779,9 +2811,9 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 		bool haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v0 != v4) && (v5 != v4);\n\
 		bool haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v0 != v8) && (v7 != v8);\n\
 		bool needBlend = (blend[2] != BLEND_NONE);\n\
-		bool doLineBlend = (  blend[2] >= BLEND_DOMINANT ||\n\
-					       !((blend[1] != BLEND_NONE && !IsPixEqual(k[0], k[4])) ||\n\
-					         (blend[3] != BLEND_NONE && !IsPixEqual(k[0], k[8])) ||\n\
+		bool doLineBlend = (  (blend[2] >= BLEND_DOMINANT) ||\n\
+					       !(((blend[1] != BLEND_NONE) && !IsPixEqual(k[0], k[4])) ||\n\
+					         ((blend[3] != BLEND_NONE) && !IsPixEqual(k[0], k[8])) ||\n\
 					         (IsPixEqual(k[4], k[3]) && IsPixEqual(k[3], k[2]) && IsPixEqual(k[2], k[1]) && IsPixEqual(k[1], k[8]) && !IsPixEqual(k[0], k[2])) ) );\n\
 		\n\
 		vec3 blendPix = ( DistYCbCr(k[0], k[1]) <= DistYCbCr(k[0], k[3]) ) ? k[1] : k[3];\n\
@@ -2995,38 +3027,54 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 			bvec4 needBlend = notEqual( blendResult.zyxw, ivec4(BLEND_NONE) );\n\
 			bvec4 doLineBlend = greaterThanEqual( blendResult.zyxw, ivec4(BLEND_DOMINANT) );\n\
 			vec3 blendPix[4];\n\
+			blendPix[0] = newFragColor;\n\
+			blendPix[1] = newFragColor;\n\
+			blendPix[2] = newFragColor;\n\
+			blendPix[3] = newFragColor;\n\
 			\n\
-			haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
-			haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
-			doLineBlend[0] = (  doLineBlend[0] ||\n\
-							   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-								 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-								 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
-			blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+			if (needBlend[0])\n\
+			{\n\
+				haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
+				haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
+				doLineBlend[0] = (  doLineBlend[0] ||\n\
+								   !(((blendResult[1] != BLEND_NONE) && !IsPixEqual(src[0], src[4])) ||\n\
+									 ((blendResult[3] != BLEND_NONE) && !IsPixEqual(src[0], src[8])) ||\n\
+									 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
+				blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+			}\n\
 			\n\
-			haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
-			haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
-			doLineBlend[1] = (  doLineBlend[1] ||\n\
-						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
-			blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+			if (needBlend[1])\n\
+			{\n\
+				haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
+				haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
+				doLineBlend[1] = (  doLineBlend[1] ||\n\
+							  !(((blendResult[0] != BLEND_NONE) && !IsPixEqual(src[0], src[2])) ||\n\
+								((blendResult[2] != BLEND_NONE) && !IsPixEqual(src[0], src[6])) ||\n\
+								(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
+				blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+			}\n\
 			\n\
-			haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
-			haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
-			doLineBlend[2] = (  doLineBlend[2] ||\n\
-						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
-			blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+			if (needBlend[2])\n\
+			{\n\
+				haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
+				haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
+				doLineBlend[2] = (  doLineBlend[2] ||\n\
+							  !(((blendResult[3] != BLEND_NONE) && !IsPixEqual(src[0], src[8])) ||\n\
+								((blendResult[1] != BLEND_NONE) && !IsPixEqual(src[0], src[4])) ||\n\
+								(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
+				blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+			}\n\
 			\n\
-			haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
-			haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
-			doLineBlend[3] = (  doLineBlend[3] ||\n\
-						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
-			blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+			if (needBlend[3])\n\
+			{\n\
+				haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
+				haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
+				doLineBlend[3] = (  doLineBlend[3] ||\n\
+							  !(((blendResult[2] != BLEND_NONE) && !IsPixEqual(src[0], src[6])) ||\n\
+								((blendResult[0] != BLEND_NONE) && !IsPixEqual(src[0], src[2])) ||\n\
+								(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
+				blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+			}\n\
 			\n\
 			int i = int( dot(floor(fract(texCoord[0]) * 4.05), vec2(1.05, 4.05)) );\n\
 			\n\
@@ -3384,38 +3432,54 @@ static const char *Scaler5xBRZFragShader_110 = {"\
 				bvec4 needBlend = notEqual( blendResult.zyxw, ivec4(BLEND_NONE) );\n\
 				bvec4 doLineBlend = greaterThanEqual( blendResult.zyxw, ivec4(BLEND_DOMINANT) );\n\
 				vec3 blendPix[4];\n\
+				blendPix[0] = newFragColor;\n\
+				blendPix[1] = newFragColor;\n\
+				blendPix[2] = newFragColor;\n\
+				blendPix[3] = newFragColor;\n\
 				\n\
-				haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
-				haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
-				doLineBlend[0] = (  doLineBlend[0] ||\n\
-								   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-									 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-									 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
-				blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+				if (needBlend[0])\n\
+				{\n\
+					haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
+					haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
+					doLineBlend[0] = (  doLineBlend[0] ||\n\
+									   !(((blendResult[1] != BLEND_NONE) && !IsPixEqual(src[0], src[4])) ||\n\
+										 ((blendResult[3] != BLEND_NONE) && !IsPixEqual(src[0], src[8])) ||\n\
+										 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
+					blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+				}\n\
 				\n\
-				haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
-				haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
-				doLineBlend[1] = (  doLineBlend[1] ||\n\
-							  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-								(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-								(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
-				blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+				if (needBlend[1])\n\
+				{\n\
+					haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
+					haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
+					doLineBlend[1] = (  doLineBlend[1] ||\n\
+								  !(((blendResult[0] != BLEND_NONE) && !IsPixEqual(src[0], src[2])) ||\n\
+									((blendResult[2] != BLEND_NONE) && !IsPixEqual(src[0], src[6])) ||\n\
+									(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
+					blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+				}\n\
 				\n\
-				haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
-				haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
-				doLineBlend[2] = (  doLineBlend[2] ||\n\
-							  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-								(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-								(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
-				blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+				if (needBlend[2])\n\
+				{\n\
+					haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
+					haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
+					doLineBlend[2] = (  doLineBlend[2] ||\n\
+								  !(((blendResult[3] != BLEND_NONE) && !IsPixEqual(src[0], src[8])) ||\n\
+									((blendResult[1] != BLEND_NONE) && !IsPixEqual(src[0], src[4])) ||\n\
+									(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
+					blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+				}\n\
 				\n\
-				haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
-				haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
-				doLineBlend[3] = (  doLineBlend[3] ||\n\
-							  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-								(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-								(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
-				blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+				if (needBlend[3])\n\
+				{\n\
+					haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
+					haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
+					doLineBlend[3] = (  doLineBlend[3] ||\n\
+								  !(((blendResult[2] != BLEND_NONE) && !IsPixEqual(src[0], src[6])) ||\n\
+									((blendResult[0] != BLEND_NONE) && !IsPixEqual(src[0], src[2])) ||\n\
+									(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
+					blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+				}\n\
 				\n\
 				if (i == 0)\n\
 				{\n\
@@ -3825,38 +3889,54 @@ static const char *Scaler6xBRZFragShader_110 = {"\
 				bvec4 needBlend = notEqual( blendResult.zyxw, ivec4(BLEND_NONE) );\n\
 				bvec4 doLineBlend = greaterThanEqual( blendResult.zyxw, ivec4(BLEND_DOMINANT) );\n\
 				vec3 blendPix[4];\n\
+				blendPix[0] = newFragColor;\n\
+				blendPix[1] = newFragColor;\n\
+				blendPix[2] = newFragColor;\n\
+				blendPix[3] = newFragColor;\n\
 				\n\
-				haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
-				haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
-				doLineBlend[0] = (  doLineBlend[0] ||\n\
-								   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-									 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-									 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
-				blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+				if (needBlend[0])\n\
+				{\n\
+					haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
+					haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
+					doLineBlend[0] = (  doLineBlend[0] ||\n\
+									   !(((blendResult[1] != BLEND_NONE) && !IsPixEqual(src[0], src[4])) ||\n\
+										 ((blendResult[3] != BLEND_NONE) && !IsPixEqual(src[0], src[8])) ||\n\
+										 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
+					blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+				}\n\
 				\n\
-				haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
-				haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
-				doLineBlend[1] = (  doLineBlend[1] ||\n\
-							  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-								(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-								(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
-				blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+				if (needBlend[1])\n\
+				{\n\
+					haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
+					haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
+					doLineBlend[1] = (  doLineBlend[1] ||\n\
+								  !(((blendResult[0] != BLEND_NONE) && !IsPixEqual(src[0], src[2])) ||\n\
+									((blendResult[2] != BLEND_NONE) && !IsPixEqual(src[0], src[6])) ||\n\
+									(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
+					blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+				}\n\
 				\n\
-				haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
-				haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
-				doLineBlend[2] = (  doLineBlend[2] ||\n\
-							  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-								(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-								(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
-				blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+				if (needBlend[2])\n\
+				{\n\
+					haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
+					haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
+					doLineBlend[2] = (  doLineBlend[2] ||\n\
+								  !(((blendResult[3] != BLEND_NONE) && !IsPixEqual(src[0], src[8])) ||\n\
+									((blendResult[1] != BLEND_NONE) && !IsPixEqual(src[0], src[4])) ||\n\
+									(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
+					blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+				}\n\
 				\n\
-				haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
-				haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
-				doLineBlend[3] = (  doLineBlend[3] ||\n\
-							  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-								(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-								(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
-				blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+				if (needBlend[3])\n\
+				{\n\
+					haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
+					haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
+					doLineBlend[3] = (  doLineBlend[3] ||\n\
+								  !(((blendResult[2] != BLEND_NONE) && !IsPixEqual(src[0], src[6])) ||\n\
+									((blendResult[0] != BLEND_NONE) && !IsPixEqual(src[0], src[2])) ||\n\
+									(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
+					blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+				}\n\
 				\n\
 				if (i == 0)\n\
 				{\n\
