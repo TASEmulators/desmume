@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2025 DeSmuME team
+	Copyright (C) 2017-2026 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1728,6 +1728,7 @@ void ClientDisplay3DPresenter::SetHUDTouchLinePositionVertices(float *vtxBufferP
 	const float y = 191.0f - ((this->_ndsFrameInfo.inputStatesApplied.Touch == 0) ? this->_ndsFrameInfo.touchLocYApplied : this->_ndsFrameInfo.touchLocYPending);
 	const float w = this->_propsApplied.normalWidth / 2.0f;
 	const float h = this->_propsApplied.normalHeight / 2.0f;
+	static const float native_w = (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	
 	if (this->_propsApplied.mode == ClientDisplayMode_Dual)
 	{
@@ -1737,122 +1738,122 @@ void ClientDisplay3DPresenter::SetHUDTouchLinePositionVertices(float *vtxBufferP
 			{
 				if (this->_propsApplied.order == ClientDisplayOrder_MainFirst)
 				{
-					vtxBufferPtr[0]		=  x;															vtxBufferPtr[1]		=  h;						// Vertical line, top left
-					vtxBufferPtr[2]		=  x + 1.0f;													vtxBufferPtr[3]		=  h;						// Vertical line, top right
-					vtxBufferPtr[4]		=  x + 1.0f;													vtxBufferPtr[5]		= -h;						// Vertical line, bottom right
-					vtxBufferPtr[6]		=  x;															vtxBufferPtr[7]		= -h;						// Vertical line, bottom left
+					vtxBufferPtr[0]  =  x;                          vtxBufferPtr[1]  =  h;                   // Vertical line, top left
+					vtxBufferPtr[2]  =  x + 1.0f;                   vtxBufferPtr[3]  =  h;                   // Vertical line, top right
+					vtxBufferPtr[4]  =  x + 1.0f;                   vtxBufferPtr[5]  = -h;                   // Vertical line, bottom right
+					vtxBufferPtr[6]  =  x;                          vtxBufferPtr[7]  = -h;                   // Vertical line, bottom left
 					
-					vtxBufferPtr[8]		=  0.0f;														vtxBufferPtr[9]		= -h + y + 1.0f;			// Horizontal line, top left
-					vtxBufferPtr[10]	=  w;															vtxBufferPtr[11]	= -h + y + 1.0f;			// Horizontal line, top right
-					vtxBufferPtr[12]	=  w;															vtxBufferPtr[13]	= -h + y;					// Horizontal line, bottom right
-					vtxBufferPtr[14]	=  0.0f;														vtxBufferPtr[15]	= -h + y;					// Horizontal line, bottom left
+					vtxBufferPtr[8]  =  0.0f;                       vtxBufferPtr[9]  = -h + y + 1.0f;        // Horizontal line, top left
+					vtxBufferPtr[10] =  w;                          vtxBufferPtr[11] = -h + y + 1.0f;        // Horizontal line, top right
+					vtxBufferPtr[12] =  w;                          vtxBufferPtr[13] = -h + y;               // Horizontal line, bottom right
+					vtxBufferPtr[14] =  0.0f;                       vtxBufferPtr[15] = -h + y;               // Horizontal line, bottom left
 				}
 				else
 				{
-					vtxBufferPtr[0]		= -w + x;														vtxBufferPtr[1]		=  h;						// Vertical line, top left
-					vtxBufferPtr[2]		= -w + x + 1.0f;												vtxBufferPtr[3]		=  h;						// Vertical line, top right
-					vtxBufferPtr[4]		= -w + x + 1.0f;												vtxBufferPtr[5]		= -h;						// Vertical line, bottom right
-					vtxBufferPtr[6]		= -w + x;														vtxBufferPtr[7]		= -h;						// Vertical line, bottom left
+					vtxBufferPtr[0]  = -w + x;                      vtxBufferPtr[1]  =  h;                   // Vertical line, top left
+					vtxBufferPtr[2]  = -w + x + 1.0f;               vtxBufferPtr[3]  =  h;                   // Vertical line, top right
+					vtxBufferPtr[4]  = -w + x + 1.0f;               vtxBufferPtr[5]  = -h;                   // Vertical line, bottom right
+					vtxBufferPtr[6]  = -w + x;                      vtxBufferPtr[7]  = -h;                   // Vertical line, bottom left
 					
-					vtxBufferPtr[8]		= -w;															vtxBufferPtr[9]		= -h + y + 1.0f;			// Horizontal line, top left
-					vtxBufferPtr[10]	=  0.0f;														vtxBufferPtr[11]	= -h + y + 1.0f;			// Horizontal line, top right
-					vtxBufferPtr[12]	=  0.0f;														vtxBufferPtr[13]	= -h + y;					// Horizontal line, bottom right
-					vtxBufferPtr[14]	= -w;															vtxBufferPtr[15]	= -h + y;					// Horizontal line, bottom left
+					vtxBufferPtr[8]  = -w;                          vtxBufferPtr[9]  = -h + y + 1.0f;        // Horizontal line, top left
+					vtxBufferPtr[10] =  0.0f;                       vtxBufferPtr[11] = -h + y + 1.0f;        // Horizontal line, top right
+					vtxBufferPtr[12] =  0.0f;                       vtxBufferPtr[13] = -h + y;               // Horizontal line, bottom right
+					vtxBufferPtr[14] = -w;                          vtxBufferPtr[15] = -h + y;               // Horizontal line, bottom left
 				}
 				
-				memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));							// Unused lines
+				memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));             // Unused lines
 				break;
 			}
 				
 			case ClientDisplayLayout_Hybrid_2_1:
 			{
-				vtxBufferPtr[0]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + (x/2.0f);				vtxBufferPtr[1]		= -h + 96.0f;				// Minor bottom display, vertical line, top left
-				vtxBufferPtr[2]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + ((x+1.0f)/2.0f);		vtxBufferPtr[3]		= -h + 96.0f;				// Minor bottom display, vertical line, top right
-				vtxBufferPtr[4]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + ((x+1.0f)/2.0f);		vtxBufferPtr[5]		= -h;						// Minor bottom display, vertical line, bottom right
-				vtxBufferPtr[6]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + (x/2.0f);				vtxBufferPtr[7]		= -h;						// Minor bottom display, vertical line, bottom left
+				vtxBufferPtr[0]  = -w + native_w + (x/2.0f);        vtxBufferPtr[1]  = -h + 96.0f;           // Minor bottom display, vertical line, top left
+				vtxBufferPtr[2]  = -w + native_w + ((x+1.0f)/2.0f); vtxBufferPtr[3]  = -h + 96.0f;           // Minor bottom display, vertical line, top right
+				vtxBufferPtr[4]  = -w + native_w + ((x+1.0f)/2.0f); vtxBufferPtr[5]  = -h;                   // Minor bottom display, vertical line, bottom right
+				vtxBufferPtr[6]  = -w + native_w + (x/2.0f);        vtxBufferPtr[7]  = -h;                   // Minor bottom display, vertical line, bottom left
 				
-				vtxBufferPtr[8]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;							vtxBufferPtr[9]		= -h + ((y+1.0f)/2.0f);		// Minor bottom display, horizontal line, top left
-				vtxBufferPtr[10]	=  w;																vtxBufferPtr[11]	= -h + ((y+1.0f)/2.0f);		// Minor bottom display, horizontal line, top right
-				vtxBufferPtr[12]	=  w;																vtxBufferPtr[13]	= -h + (y/2.0f);			// Minor bottom display, horizontal line, bottom right
-				vtxBufferPtr[14]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;							vtxBufferPtr[15]	= -h + (y/2.0f);			// Minor bottom display, horizontal line, bottom left
+				vtxBufferPtr[8]  = -w + native_w;                   vtxBufferPtr[9]  = -h + ((y+1.0f)/2.0f); // Minor bottom display, horizontal line, top left
+				vtxBufferPtr[10] =  w;                              vtxBufferPtr[11] = -h + ((y+1.0f)/2.0f); // Minor bottom display, horizontal line, top right
+				vtxBufferPtr[12] =  w;                              vtxBufferPtr[13] = -h + (y/2.0f);        // Minor bottom display, horizontal line, bottom right
+				vtxBufferPtr[14] = -w + native_w;                   vtxBufferPtr[15] = -h + (y/2.0f);        // Minor bottom display, horizontal line, bottom left
 				
 				if (this->_propsApplied.order == ClientDisplayOrder_MainFirst)
 				{
-					memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));													// Unused lines
+					memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));         // Unused lines
 				}
 				else
 				{
-					vtxBufferPtr[16]	= -w + x;														vtxBufferPtr[17]	=  h;						// Major display, vertical line, top left
-					vtxBufferPtr[18]	= -w + x + 1.0f;												vtxBufferPtr[19]	=  h;						// Major display, vertical line, top right
-					vtxBufferPtr[20]	= -w + x + 1.0f;												vtxBufferPtr[21]	= -h;						// Major display, vertical line, bottom right
-					vtxBufferPtr[22]	= -w + x;														vtxBufferPtr[23]	= -h;						// Major display, vertical line, bottom left
+					vtxBufferPtr[16] = -w + x;                      vtxBufferPtr[17] =  h;                   // Major display, vertical line, top left
+					vtxBufferPtr[18] = -w + x + 1.0f;               vtxBufferPtr[19] =  h;                   // Major display, vertical line, top right
+					vtxBufferPtr[20] = -w + x + 1.0f;               vtxBufferPtr[21] = -h;                   // Major display, vertical line, bottom right
+					vtxBufferPtr[22] = -w + x;                      vtxBufferPtr[23] = -h;                   // Major display, vertical line, bottom left
 					
-					vtxBufferPtr[24]	= -w;															vtxBufferPtr[25]	= -h + y + 1.0f;			// Major display, horizontal line, top left
-					vtxBufferPtr[26]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;						vtxBufferPtr[27]	= -h + y + 1.0f;			// Major display, horizontal line, top right
-					vtxBufferPtr[28]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;						vtxBufferPtr[29]	= -h + y;					// Major display, horizontal line, bottom right
-					vtxBufferPtr[30]	= -w;															vtxBufferPtr[31]	= -h + y;					// Major display, horizontal line, bottom left
+					vtxBufferPtr[24] = -w;                          vtxBufferPtr[25] = -h + y + 1.0f;        // Major display, horizontal line, top left
+					vtxBufferPtr[26] = -w + native_w;               vtxBufferPtr[27] = -h + y + 1.0f;        // Major display, horizontal line, top right
+					vtxBufferPtr[28] = -w + native_w;               vtxBufferPtr[29] = -h + y;               // Major display, horizontal line, bottom right
+					vtxBufferPtr[30] = -w;                          vtxBufferPtr[31] = -h + y;               // Major display, horizontal line, bottom left
 				}
 				break;
 			}
 				
 			case ClientDisplayLayout_Hybrid_16_9:
 			{
-				vtxBufferPtr[0]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + (x/3.0f);				vtxBufferPtr[1]		= -h + 64.0f;				// Minor bottom display, vertical line, top left
-				vtxBufferPtr[2]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + ((x+1.0f)/3.0f);		vtxBufferPtr[3]		= -h + 64.0f;				// Minor bottom display, vertical line, top right
-				vtxBufferPtr[4]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + ((x+1.0f)/3.0f);		vtxBufferPtr[5]		= -h;						// Minor bottom display, vertical line, bottom right
-				vtxBufferPtr[6]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + (x/3.0f);				vtxBufferPtr[7]		= -h;						// Minor bottom display, vertical line, bottom left
+				vtxBufferPtr[0]  = -w + native_w + (x/3.0f);        vtxBufferPtr[1]  = -h + 64.0f;           // Minor bottom display, vertical line, top left
+				vtxBufferPtr[2]  = -w + native_w + ((x+1.0f)/3.0f); vtxBufferPtr[3]  = -h + 64.0f;           // Minor bottom display, vertical line, top right
+				vtxBufferPtr[4]  = -w + native_w + ((x+1.0f)/3.0f); vtxBufferPtr[5]  = -h;                   // Minor bottom display, vertical line, bottom right
+				vtxBufferPtr[6]  = -w + native_w + (x/3.0f);        vtxBufferPtr[7]  = -h;                   // Minor bottom display, vertical line, bottom left
 				
-				vtxBufferPtr[8]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;							vtxBufferPtr[9]		= -h + ((y+1.0f)/3.0f);		// Minor bottom display, horizontal line, top left
-				vtxBufferPtr[10]	=  w;																vtxBufferPtr[11]	= -h + ((y+1.0f)/3.0f);		// Minor bottom display, horizontal line, top right
-				vtxBufferPtr[12]	=  w;																vtxBufferPtr[13]	= -h + (y/3.0f);			// Minor bottom display, horizontal line, bottom right
-				vtxBufferPtr[14]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;							vtxBufferPtr[15]	= -h + (y/3.0f);			// Minor bottom display, horizontal line, bottom left
+				vtxBufferPtr[8]  = -w + native_w;                   vtxBufferPtr[9]  = -h + ((y+1.0f)/3.0f); // Minor bottom display, horizontal line, top left
+				vtxBufferPtr[10] =  w;                              vtxBufferPtr[11] = -h + ((y+1.0f)/3.0f); // Minor bottom display, horizontal line, top right
+				vtxBufferPtr[12] =  w;                              vtxBufferPtr[13] = -h + (y/3.0f);        // Minor bottom display, horizontal line, bottom right
+				vtxBufferPtr[14] = -w + native_w;                   vtxBufferPtr[15] = -h + (y/3.0f);        // Minor bottom display, horizontal line, bottom left
 				
 				if (this->_propsApplied.order == ClientDisplayOrder_MainFirst)
 				{
-					memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));													// Unused lines
+					memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));         // Unused lines
 				}
 				else
 				{
-					vtxBufferPtr[16]	= -w + x;														vtxBufferPtr[17]	=  h;						// Major display, vertical line, top left
-					vtxBufferPtr[18]	= -w + x + 1.0f;												vtxBufferPtr[19]	=  h;						// Major display, vertical line, top right
-					vtxBufferPtr[20]	= -w + x + 1.0f;												vtxBufferPtr[21]	= -h;						// Major display, vertical line, bottom right
-					vtxBufferPtr[22]	= -w + x;														vtxBufferPtr[23]	= -h;						// Major display, vertical line, bottom left
+					vtxBufferPtr[16] = -w + x;                      vtxBufferPtr[17] =  h;                   // Major display, vertical line, top left
+					vtxBufferPtr[18] = -w + x + 1.0f;               vtxBufferPtr[19] =  h;                   // Major display, vertical line, top right
+					vtxBufferPtr[20] = -w + x + 1.0f;               vtxBufferPtr[21] = -h;                   // Major display, vertical line, bottom right
+					vtxBufferPtr[22] = -w + x;                      vtxBufferPtr[23] = -h;                   // Major display, vertical line, bottom left
 					
-					vtxBufferPtr[24]	= -w;															vtxBufferPtr[25]	= -h + y + 1.0f;			// Major display, horizontal line, top left
-					vtxBufferPtr[26]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;						vtxBufferPtr[27]	= -h + y + 1.0f;			// Major display, horizontal line, top right
-					vtxBufferPtr[28]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;						vtxBufferPtr[29]	= -h + y;					// Major display, horizontal line, bottom right
-					vtxBufferPtr[30]	= -w;															vtxBufferPtr[31]	= -h + y;					// Major display, horizontal line, bottom left
+					vtxBufferPtr[24] = -w;                          vtxBufferPtr[25] = -h + y + 1.0f;        // Major display, horizontal line, top left
+					vtxBufferPtr[26] = -w + native_w;               vtxBufferPtr[27] = -h + y + 1.0f;        // Major display, horizontal line, top right
+					vtxBufferPtr[28] = -w + native_w;               vtxBufferPtr[29] = -h + y;               // Major display, horizontal line, bottom right
+					vtxBufferPtr[30] = -w;                          vtxBufferPtr[31] = -h + y;               // Major display, horizontal line, bottom left
 				}
 				break;
 			}
 				
 			case ClientDisplayLayout_Hybrid_16_10:
 			{
-				vtxBufferPtr[0]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + (x/5.0f);				vtxBufferPtr[1]		= -h + 38.4f;				// Minor bottom display, vertical line, top left
-				vtxBufferPtr[2]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + ((x+1.0f)/5.0f);		vtxBufferPtr[3]		= -h + 38.4f;				// Minor bottom display, vertical line, top right
-				vtxBufferPtr[4]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + ((x+1.0f)/5.0f);		vtxBufferPtr[5]		= -h;						// Minor bottom display, vertical line, bottom right
-				vtxBufferPtr[6]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + (x/5.0f);				vtxBufferPtr[7]		= -h;						// Minor bottom display, vertical line, bottom left
+				vtxBufferPtr[0]  = -w + native_w + (x/5.0f);        vtxBufferPtr[1]  = -h + 38.4f;           // Minor bottom display, vertical line, top left
+				vtxBufferPtr[2]  = -w + native_w + ((x+1.0f)/5.0f); vtxBufferPtr[3]  = -h + 38.4f;           // Minor bottom display, vertical line, top right
+				vtxBufferPtr[4]  = -w + native_w + ((x+1.0f)/5.0f); vtxBufferPtr[5]  = -h;                   // Minor bottom display, vertical line, bottom right
+				vtxBufferPtr[6]  = -w + native_w + (x/5.0f);        vtxBufferPtr[7]  = -h;                   // Minor bottom display, vertical line, bottom left
 				
-				vtxBufferPtr[8]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;							vtxBufferPtr[9]		= -h + ((y+1.0f)/5.0f);		// Minor bottom display, horizontal line, top left
-				vtxBufferPtr[10]	=  w;																vtxBufferPtr[11]	= -h + ((y+1.0f)/5.0f);		// Minor bottom display, horizontal line, top right
-				vtxBufferPtr[12]	=  w;																vtxBufferPtr[13]	= -h + (y/5.0f);			// Minor bottom display, horizontal line, bottom right
-				vtxBufferPtr[14]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;							vtxBufferPtr[15]	= -h + (y/5.0f);			// Minor bottom display, horizontal line, bottom left
+				vtxBufferPtr[8]  = -w + native_w;                   vtxBufferPtr[9]  = -h + ((y+1.0f)/5.0f); // Minor bottom display, horizontal line, top left
+				vtxBufferPtr[10] =  w;                              vtxBufferPtr[11] = -h + ((y+1.0f)/5.0f); // Minor bottom display, horizontal line, top right
+				vtxBufferPtr[12] =  w;                              vtxBufferPtr[13] = -h + (y/5.0f);        // Minor bottom display, horizontal line, bottom right
+				vtxBufferPtr[14] = -w + native_w;                   vtxBufferPtr[15] = -h + (y/5.0f);        // Minor bottom display, horizontal line, bottom left
 				
 				if (this->_propsApplied.order == ClientDisplayOrder_MainFirst)
 				{
-					memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));													// Unused lines
+					memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));         // Unused lines
 				}
 				else
 				{
-					vtxBufferPtr[16]	= -w + x;														vtxBufferPtr[17]	=  h;						// Major display, vertical line, top left
-					vtxBufferPtr[18]	= -w + x + 1.0f;												vtxBufferPtr[19]	=  h;						// Major display, vertical line, top right
-					vtxBufferPtr[20]	= -w + x + 1.0f;												vtxBufferPtr[21]	= -h;						// Major display, vertical line, bottom right
-					vtxBufferPtr[22]	= -w + x;														vtxBufferPtr[23]	= -h;						// Major display, vertical line, bottom left
+					vtxBufferPtr[16] = -w + x;                      vtxBufferPtr[17] =  h;                   // Major display, vertical line, top left
+					vtxBufferPtr[18] = -w + x + 1.0f;               vtxBufferPtr[19] =  h;                   // Major display, vertical line, top right
+					vtxBufferPtr[20] = -w + x + 1.0f;               vtxBufferPtr[21] = -h;                   // Major display, vertical line, bottom right
+					vtxBufferPtr[22] = -w + x;                      vtxBufferPtr[23] = -h;                   // Major display, vertical line, bottom left
 					
-					vtxBufferPtr[24]	= -w;															vtxBufferPtr[25]	= -h + y + 1.0f;			// Major display, horizontal line, top left
-					vtxBufferPtr[26]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;						vtxBufferPtr[27]	= -h + y + 1.0f;			// Major display, horizontal line, top right
-					vtxBufferPtr[28]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;						vtxBufferPtr[29]	= -h + y;					// Major display, horizontal line, bottom right
-					vtxBufferPtr[30]	= -w;															vtxBufferPtr[31]	= -h + y;					// Major display, horizontal line, bottom left
+					vtxBufferPtr[24] = -w;                          vtxBufferPtr[25] = -h + y + 1.0f;        // Major display, horizontal line, top left
+					vtxBufferPtr[26] = -w + native_w;               vtxBufferPtr[27] = -h + y + 1.0f;        // Major display, horizontal line, top right
+					vtxBufferPtr[28] = -w + native_w;               vtxBufferPtr[29] = -h + y;               // Major display, horizontal line, bottom right
+					vtxBufferPtr[30] = -w;                          vtxBufferPtr[31] = -h + y;               // Major display, horizontal line, bottom left
 				}
 				break;
 			}
@@ -1863,47 +1864,47 @@ void ClientDisplay3DPresenter::SetHUDTouchLinePositionVertices(float *vtxBufferP
 				
 				if (this->_propsApplied.order == ClientDisplayOrder_MainFirst)
 				{
-					vtxBufferPtr[0]		= -w + x;														vtxBufferPtr[1]		= -g/2.0f;					// Vertical line, top left
-					vtxBufferPtr[2]		= -w + x + 1.0f;												vtxBufferPtr[3]		= -g/2.0f;					// Vertical line, top right
-					vtxBufferPtr[4]		= -w + x + 1.0f;												vtxBufferPtr[5]		= -h;						// Vertical line, bottom right
-					vtxBufferPtr[6]		= -w + x;														vtxBufferPtr[7]		= -h;						// Vertical line, bottom left
+					vtxBufferPtr[0]  = -w + x;                      vtxBufferPtr[1]  = -g/2.0f;              // Vertical line, top left
+					vtxBufferPtr[2]  = -w + x + 1.0f;               vtxBufferPtr[3]  = -g/2.0f;              // Vertical line, top right
+					vtxBufferPtr[4]  = -w + x + 1.0f;               vtxBufferPtr[5]  = -h;                   // Vertical line, bottom right
+					vtxBufferPtr[6]  = -w + x;                      vtxBufferPtr[7]  = -h;                   // Vertical line, bottom left
 					
-					vtxBufferPtr[8]		= -w;															vtxBufferPtr[9]		= -h + y + 1.0f;			// Horizontal line, top left
-					vtxBufferPtr[10]	=  w;															vtxBufferPtr[11]	= -h + y + 1.0f;			// Horizontal line, top right
-					vtxBufferPtr[12]	=  w;															vtxBufferPtr[13]	= -h + y;					// Horizontal line, bottom right
-					vtxBufferPtr[14]	= -w;															vtxBufferPtr[15]	= -h + y;					// Horizontal line, bottom left
+					vtxBufferPtr[8]  = -w;                          vtxBufferPtr[9]  = -h + y + 1.0f;        // Horizontal line, top left
+					vtxBufferPtr[10] =  w;                          vtxBufferPtr[11] = -h + y + 1.0f;        // Horizontal line, top right
+					vtxBufferPtr[12] =  w;                          vtxBufferPtr[13] = -h + y;               // Horizontal line, bottom right
+					vtxBufferPtr[14] = -w;                          vtxBufferPtr[15] = -h + y;               // Horizontal line, bottom left
 				}
 				else
 				{
-					vtxBufferPtr[0]		= -w + x;														vtxBufferPtr[1]		=  h;						// Vertical line, top left
-					vtxBufferPtr[2]		= -w + x + 1.0f;												vtxBufferPtr[3]		=  h;						// Vertical line, top right
-					vtxBufferPtr[4]		= -w + x + 1.0f;												vtxBufferPtr[5]		=  g/2.0f;					// Vertical line, bottom right
-					vtxBufferPtr[6]		= -w + x;														vtxBufferPtr[7]		=  g/2.0f;					// Vertical line, bottom left
+					vtxBufferPtr[0]  = -w + x;                      vtxBufferPtr[1]  =  h;                   // Vertical line, top left
+					vtxBufferPtr[2]  = -w + x + 1.0f;               vtxBufferPtr[3]  =  h;                   // Vertical line, top right
+					vtxBufferPtr[4]  = -w + x + 1.0f;               vtxBufferPtr[5]  =  g/2.0f;              // Vertical line, bottom right
+					vtxBufferPtr[6]  = -w + x;                      vtxBufferPtr[7]  =  g/2.0f;              // Vertical line, bottom left
 					
-					vtxBufferPtr[8]		= -w;															vtxBufferPtr[9]		=  g/2.0f + y + 1.0f;		// Horizontal line, top left
-					vtxBufferPtr[10]	=  w;															vtxBufferPtr[11]	=  g/2.0f + y + 1.0f;		// Horizontal line, top right
-					vtxBufferPtr[12]	=  w;															vtxBufferPtr[13]	=  g/2.0f + y;				// Horizontal line, bottom right
-					vtxBufferPtr[14]	= -w;															vtxBufferPtr[15]	=  g/2.0f + y;				// Horizontal line, bottom left
+					vtxBufferPtr[8]  = -w;                          vtxBufferPtr[9]  =  g/2.0f + y + 1.0f;   // Horizontal line, top left
+					vtxBufferPtr[10] =  w;                          vtxBufferPtr[11] =  g/2.0f + y + 1.0f;   // Horizontal line, top right
+					vtxBufferPtr[12] =  w;                          vtxBufferPtr[13] =  g/2.0f + y;          // Horizontal line, bottom right
+					vtxBufferPtr[14] = -w;                          vtxBufferPtr[15] =  g/2.0f + y;          // Horizontal line, bottom left
 				}
 				
-				memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));														// Unused lines
+				memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));             // Unused lines
 				break;
 			}
 		}
 	}
 	else // displayModeID == ClientDisplayMode_Main || displayModeID == ClientDisplayMode_Touch
 	{
-		vtxBufferPtr[0]		= -w + x;																	vtxBufferPtr[1]		=  h;						// Vertical line, top left
-		vtxBufferPtr[2]		= -w + x + 1.0f;															vtxBufferPtr[3]		=  h;						// Vertical line, top right
-		vtxBufferPtr[4]		= -w + x + 1.0f;															vtxBufferPtr[5]		= -h;						// Vertical line, bottom right
-		vtxBufferPtr[6]		= -w + x;																	vtxBufferPtr[7]		= -h;						// Vertical line, bottom left
+		vtxBufferPtr[0]  = -w + x;                                  vtxBufferPtr[1]  =  h;                   // Vertical line, top left
+		vtxBufferPtr[2]  = -w + x + 1.0f;                           vtxBufferPtr[3]  =  h;                   // Vertical line, top right
+		vtxBufferPtr[4]  = -w + x + 1.0f;                           vtxBufferPtr[5]  = -h;                   // Vertical line, bottom right
+		vtxBufferPtr[6]  = -w + x;                                  vtxBufferPtr[7]  = -h;                   // Vertical line, bottom left
 		
-		vtxBufferPtr[8]		= -w;																		vtxBufferPtr[9]		= -h + y + 1.0f;			// Horizontal line, top left
-		vtxBufferPtr[10]	=  w;																		vtxBufferPtr[11]	= -h + y + 1.0f;			// Horizontal line, top right
-		vtxBufferPtr[12]	=  w;																		vtxBufferPtr[13]	= -h + y;					// Horizontal line, bottom right
-		vtxBufferPtr[14]	= -w;																		vtxBufferPtr[15]	= -h + y;					// Horizontal line, bottom left
+		vtxBufferPtr[8]  = -w;                                      vtxBufferPtr[9]  = -h + y + 1.0f;        // Horizontal line, top left
+		vtxBufferPtr[10] =  w;                                      vtxBufferPtr[11] = -h + y + 1.0f;        // Horizontal line, top right
+		vtxBufferPtr[12] =  w;                                      vtxBufferPtr[13] = -h + y;               // Horizontal line, bottom right
+		vtxBufferPtr[14] = -w;                                      vtxBufferPtr[15] = -h + y;               // Horizontal line, bottom left
 		
-		memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));																// Alternate lines
+		memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));                     // Alternate lines
 	}
 }
 
