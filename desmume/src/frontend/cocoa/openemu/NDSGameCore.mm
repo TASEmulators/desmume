@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2023 DeSmuME team
+	Copyright (C) 2012-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,6 +15,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#import <OpenEmuBase/OERingBuffer.h>
+
 #import "NDSGameCore.h"
 #import "OESoundInterface.h"
 #import "OENDSSystemResponderClient.h"
@@ -25,8 +27,9 @@
 #import "../cocoa_firmware.h"
 #import "../cocoa_GPU.h"
 #import "../cocoa_input.h"
-#import "../ClientDisplayView.h"
-#import "../ClientInputHandler.h"
+#include "../ClientCheatManager.h"
+#include "../ClientDisplayView.h"
+#include "../ClientInputHandler.h"
 #include "../OGLDisplayOutput_3_2.h"
 
 #import "OEDisplayView.h"
@@ -34,7 +37,10 @@
 #include "../../NDSSystem.h"
 #include "../../GPU.h"
 #include "../../render3D.h"
+
+#ifdef BOOL
 #undef BOOL
+#endif
 
 #define DISPLAYMODE_STATEBIT_CHECK(_STATEBITS_, _ID_) ((((_STATEBITS_) >> ((uint64_t)_ID_)) & 1ULL) != 0ULL)
 #define DISPLAYMODE_STATEBITGROUP_CLEAR(_STATEBITS_, _BITMASK_) _STATEBITS_ = (((_STATEBITS_) | (_BITMASK_)) ^ (_BITMASK_))
@@ -122,7 +128,6 @@ volatile bool execute = true;
 
 @implementation NDSGameCore
 
-@synthesize cdsGPU;
 @synthesize cdsFirmware;
 @synthesize cdsCheats;
 @dynamic ndsDisplayMode;
@@ -139,7 +144,7 @@ volatile bool execute = true;
 	_willUseOpenGL3Context = true;
 	_videoContext = NULL;
 	_cdp = NULL;
-	cdsGPU = NULL;
+	_graphicsControl = NULL;
 	
 	// Set up threading locks
 	_unfairlockReceivedFrameIndex = apple_unfairlock_create();
@@ -202,28 +207,25 @@ volatile bool execute = true;
 	[cdsFirmware applySettings];
 	
 	// Set up the sound core
-	CommonSettings.spu_advanced = true;
-	CommonSettings.spuInterpolationMode = SPUInterpolation_Cosine;
-	CommonSettings.SPU_sync_mode = SPU_SYNC_MODE_SYNCHRONOUS;
-	CommonSettings.SPU_sync_method = SPU_SYNC_METHOD_N;
-	
 	if ([self respondsToSelector:@selector(audioBufferAtIndex:)])
 	{
-		openEmuSoundInterfaceBuffer = [self audioBufferAtIndex:0];
+		OERingBuffer *oeBuffer = [self audioBufferAtIndex:0];
+		_audioEngine = new OEAudioOutputEngine(oeBuffer, false);
 	}
 	else
 	{
-		SILENCE_DEPRECATION_OPENEMU( openEmuSoundInterfaceBuffer = [self ringBufferAtIndex:0]; )
+		OERingBuffer *oeBuffer = nil;
+		SILENCE_DEPRECATION_OPENEMU( oeBuffer = [self ringBufferAtIndex:0]; )
+		_audioEngine = new OEAudioOutputEngine(oeBuffer, true);
 	}
 	
-	NSInteger result = SPU_ChangeSoundCore(SNDCORE_OPENEMU, (int)SPU_BUFFER_BYTES);
-	if (result == -1)
-	{
-		SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
-	}
-	
-	SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
-	SPU_SetVolume(100);
+	_audioOutput = new ClientAudioOutput;
+	_audioOutput->SetEngine(_audioEngine);
+	_audioOutput->SetSPUAdvancedLogic(true);
+	_audioOutput->SetSPUInterpolationModeByID(SPUInterpolation_Cosine);
+	_audioOutput->SetSPUSyncModeByID(ESynchMode_Synchronous);
+	_audioOutput->SetSPUSyncMethodByID(ESynchMethod_N);
+	_audioOutput->SetVolume(100.0f);
     
 	// Set up the DS display
 	_displayModeStatesPending = kDisplayModeStatesDefault;
@@ -320,13 +322,14 @@ volatile bool execute = true;
 	_videoContext = NULL;
 	
 	delete _cdp;
+	delete _graphicsControl;
 	delete _inputHandler;
 	
-	SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
-	NDS_DeInit();
+	_audioOutput->SetEngine(NULL);
+	delete _audioEngine;
+	delete _audioOutput;
 	
-	// Release cdsGPU after NDS_DeInit() to avoid potential crashes.
-	[cdsGPU release];
+	NDS_DeInit();
 	
 	pthread_rwlock_destroy(&rwlockCoreExecute);
 	apple_unfairlock_destroy(unfairlockDisplayMode);
@@ -343,22 +346,23 @@ volatile bool execute = true;
 	OE_OGLClientFetchObject *fetchObj = NULL;
 	
 	// Set up the NDS GPU
-	if (cdsGPU == nil)
+	
+	if (_graphicsControl == NULL)
 	{
-		cdsGPU = [[CocoaDSGPU alloc] init];
-		[cdsGPU setRender3DThreads:0]; // Pass 0 to automatically set the number of rendering threads
-		[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
-		[cdsGPU setRender3DFragmentSamplingHack:NO];
-		[cdsGPU setRender3DTextureSmoothing:NO];
-		[cdsGPU setRender3DTextureScalingFactor:1];
-		[cdsGPU setGpuScale:1];
-		[cdsGPU setGpuColorFormat:NDSColorFormat_BGR666_Rev];
+		_graphicsControl = new OEGraphicsControl;
+		_graphicsControl->Set3DRenderingThreadCount(0);
+		_graphicsControl->SetEngine3DClientIndex(CORE3DLIST_SWRASTERIZE);
+		_graphicsControl->Set3DFragmentSamplingHackEnable(false);
+		_graphicsControl->Set3DTextureSmoothingEnable(false);
+		_graphicsControl->Set3DTextureScalingFactor(1);
+		_graphicsControl->SetFramebufferDimensionsByScaleFactorInteger(1);
+		_graphicsControl->SetColorFormat(NDSColorFormat_BGR666_Rev);
 		
-		fetchObj = (OE_OGLClientFetchObject *)[cdsGPU fetchObject];
+		fetchObj = (OE_OGLClientFetchObject *)_graphicsControl->GetFetchObject();
 	}
 	else
 	{
-		fetchObj = (OE_OGLClientFetchObject *)[cdsGPU fetchObject];
+		fetchObj = (OE_OGLClientFetchObject *)_graphicsControl->GetFetchObject();
 		fetchObj->Init();
 		fetchObj->SetFetchBuffers( GPU->GetDisplayInfo() );
 	}
@@ -391,13 +395,14 @@ volatile bool execute = true;
 			_cdp->LoadHUDFont();
 		}
 		
+		static const Color4u8 whiteColor = {0xFF, 0xFF, 0xFF, 0xFF};
 		_cdp->SetOutputFilter(OutputFilterTypeID_NearestNeighbor);
 		_cdp->SetPixelScaler(VideoFilterTypeID_None);
 		_cdp->SetFiltersPreferGPU(true);
 		_cdp->SetSourceDeposterize(false);
-		_cdp->SetHUDColorInputAppliedOnly(0xFFFFFFFF);
-		_cdp->SetHUDColorInputPendingOnly(0xFFFFFFFF);
-		_cdp->SetHUDColorInputPendingAndApplied(0xFFFFFFFF);
+		_cdp->SetHUDColorInputAppliedOnly(whiteColor);
+		_cdp->SetHUDColorInputPendingOnly(whiteColor);
+		_cdp->SetHUDColorInputPendingAndApplied(whiteColor);
 	}
 	else
 	{
@@ -631,31 +636,31 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 		}
 		_cdp->SetHUDShowVideoFPS(isVideoFPSEnabled);
 		
-		[cdsGPU setRender3DFragmentSamplingHack:(DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Software_FragmentSamplingHack)) ? YES : NO];
-		[cdsGPU setRender3DTextureSmoothing:(DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_OpenGL_SmoothTextures)) ? YES : NO];
+		_graphicsControl->Set3DFragmentSamplingHackEnable(DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Software_FragmentSamplingHack));
+		_graphicsControl->Set3DTextureSmoothingEnable(DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_OpenGL_SmoothTextures));
 		
 		if ( (appliedState & NDSDISPLAYMODE_GROUPBITMASK_GPUENGINE) != (_displayModeStatesApplied & NDSDISPLAYMODE_GROUPBITMASK_GPUENGINE) )
 		{
 			if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Engine_Software) )
 			{
-				[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
-				[cdsGPU setGpuColorFormat:NDSColorFormat_BGR666_Rev];
+				_graphicsControl->SetEngine3DClientIndex(CORE3DLIST_SWRASTERIZE);
+				_graphicsControl->SetColorFormat(NDSColorFormat_BGR666_Rev);
 			}
 			else if ( DISPLAYMODE_STATEBIT_CHECK(appliedState, NDSDisplayOptionID_GPU_Engine_OpenGL) )
 			{
-				[cdsGPU setRender3DRenderingEngine:CORE3DLIST_OPENGL];
-				[cdsGPU setGpuColorFormat:NDSColorFormat_BGR888_Rev];
+				_graphicsControl->SetEngine3DClientIndex(CORE3DLIST_OPENGL);
+				_graphicsControl->SetColorFormat(NDSColorFormat_BGR888_Rev);
 			}
 		}
 		
 		if ( (appliedState & NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING) != (_displayModeStatesApplied & NDSDISPLAYMODE_GROUPBITMASK_RENDERSCALING) )
 		{
-			[cdsGPU setGpuScale:_selectedRenderScaling];
+			_graphicsControl->SetFramebufferDimensionsByScaleFactorInteger(_selectedRenderScaling);
 		}
 		
 		if ( (appliedState & NDSDISPLAYMODE_GROUPBITMASK_TEXTURESCALING) != (_displayModeStatesApplied & NDSDISPLAYMODE_GROUPBITMASK_TEXTURESCALING) )
 		{
-			[cdsGPU setRender3DTextureScalingFactor:_selectedTextureScaling];
+			_graphicsControl->Set3DTextureScalingFactor(_selectedTextureScaling);
 		}
 		
 		_displayModeStatesApplied = appliedState;

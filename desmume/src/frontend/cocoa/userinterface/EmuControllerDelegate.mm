@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2025 DeSmuME Team
+	Copyright (C) 2013-2026 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 
 #import "CocoaAudioController.h"
 #import "CocoaDisplayView.h"
+#import "CocoaGraphicsController.h"
 
 #import "cocoa_globals.h"
 #import "cocoa_cheat.h"
@@ -57,6 +58,7 @@
 @synthesize firmwarePanelController;
 @synthesize romInfoPanelController;
 @synthesize cdsCoreController;
+@synthesize cdsGraphicsController;
 @synthesize cdsSoundController;
 @synthesize cheatWindowController;
 @synthesize slot2WindowController;
@@ -215,6 +217,7 @@
 	
 	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
 	[cdsSoundController setContent:nil];
+	[cdsGraphicsController setContent:nil];
 	[firmwarePanelController setContent:nil];
 	
 	[self setMainWindow:nil];
@@ -1057,30 +1060,30 @@
 
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
 	
 	// Force end of editing of any text fields.
 	[[(NSControl *)sender window] makeFirstResponder:nil];
 	
-	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DRenderingEngine] forKey:@"Render3D_RenderingEngine"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DHighPrecisionColorInterpolation] forKey:@"Render3D_HighPrecisionColorInterpolation"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DEdgeMarking] forKey:@"Render3D_EdgeMarking"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DFog] forKey:@"Render3D_Fog"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DTextures] forKey:@"Render3D_Textures"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DThreads] forKey:@"Render3D_Threads"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DLineHack] forKey:@"Render3D_LineHack"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DMultisampleSize] forKey:@"Render3D_MultisampleSize"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DTextureScalingFactor] forKey:@"Render3D_TextureScalingFactor"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DTextureDeposterize] forKey:@"Render3D_TextureDeposterize"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DTextureSmoothing] forKey:@"Render3D_TextureSmoothing"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DFragmentSamplingHack] forKey:@"Render3D_FragmentSamplingHack"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] gpuScale] forKey:@"Render3D_ScalingFactor"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] gpuColorFormat] forKey:@"Render3D_ColorFormat"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[graphicsController engine3DClientIndex] forKey:@"Render3D_RenderingEngine"];
+	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController highPrecisionColorInterpolationEnable] forKey:@"Render3D_HighPrecisionColorInterpolation"];
+	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController edgeMarkEnable] forKey:@"Render3D_EdgeMarking"];
+	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController fogEnable] forKey:@"Render3D_Fog"];
+	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController textureEnable] forKey:@"Render3D_Textures"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[graphicsController render3DThreads] forKey:@"Render3D_Threads"];
+	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController lineHackEnable] forKey:@"Render3D_LineHack"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[graphicsController multisampleSize] forKey:@"Render3D_MultisampleSize"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[graphicsController textureScalingFactor] forKey:@"Render3D_TextureScalingFactor"];
+	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController textureDeposterizeEnable] forKey:@"Render3D_TextureDeposterize"];
+	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController textureSmoothingEnable] forKey:@"Render3D_TextureSmoothing"];
+	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController fragmentSamplingHackEnable] forKey:@"Render3D_FragmentSamplingHack"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[graphicsController gpuScale] forKey:@"Render3D_ScalingFactor"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[graphicsController gpuColorFormat] forKey:@"Render3D_ColorFormat"];
 	
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateShadowPolygon] forKey:@"Render3D_OpenGL_EmulateShadowPolygon"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateSpecialZeroAlphaBlending] forKey:@"Render3D_OpenGL_EmulateSpecialZeroAlphaBlending"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateNDSDepthCalculation] forKey:@"Render3D_OpenGL_EmulateNDSDepthCalculation"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] openGLEmulateDepthLEqualPolygonFacing] forKey:@"Render3D_OpenGL_EmulateDepthLEqualPolygonFacing"];
+	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController shadowPolygonEnable] forKey:@"Render3D_OpenGL_EmulateShadowPolygon"];
+	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController specialZeroAlphaBlendingEnable] forKey:@"Render3D_OpenGL_EmulateSpecialZeroAlphaBlending"];
+	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController ndsDepthCalculationEnable] forKey:@"Render3D_OpenGL_EmulateNDSDepthCalculation"];
+	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController depthLEqualPolygonFacingEnable] forKey:@"Render3D_OpenGL_EmulateDepthLEqualPolygonFacing"];
 	
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
@@ -1689,11 +1692,11 @@
 		return;
 	}
 	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
 	const NSInteger bitNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
-	const UInt32 flagBit = [cdsCore.cdsGPU gpuStateFlags] ^ (1 << bitNumber);
+	const UInt32 flagBit = [graphicsController gpuStateFlags] ^ (1 << bitNumber);
 	
-	[cdsCore.cdsGPU setGpuStateFlags:flagBit];
+	[graphicsController setGpuStateFlags:flagBit];
 }
 
 - (BOOL) handleLoadRomByURL:(NSURL *)fileURL
@@ -1988,7 +1991,9 @@
 	[screenshotCaptureToolDelegate setRomName:[currentRom internalName]];
 	[avCaptureToolDelegate setRomName:[currentRom internalName]];
 	
-	[[cdsCore cdsGPU] clearWithColor:0x8000];
+	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
+	[graphicsController clearWithColor:0x8000];
+	
 	for (DisplayWindowController *windowController in windowList)
 	{
 		MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
@@ -2462,15 +2467,17 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore updateCurrentSessionMACAddressString:NO];
-	[screenshotCaptureToolDelegate setFetchObject:[[cdsCore cdsGPU] fetchObject]];
-	[avCaptureToolDelegate setFetchObject:[[cdsCore cdsGPU] fetchObject]];
+	
+	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
+	[screenshotCaptureToolDelegate setFetchObject:[graphicsController fetchObject]];
+	[avCaptureToolDelegate setFetchObject:[graphicsController fetchObject]];
 	[self fillOpenGLMSAAMenu];
 }
 
 - (void) fillOpenGLMSAAMenu
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	NSUInteger maxSamples = [[cdsCore cdsGPU] openglDeviceMaxMultisamples];
+	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
+	NSUInteger maxSamples = [graphicsController maxMultisampleSize];
 	size_t itemCount = 0;
 	
 	while (maxSamples > 1)
@@ -2582,27 +2589,29 @@
 	[audioController setSpuSyncMethodIDValue:(ESynchMethod)[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMethod"]];
 	
 	// Set the 3D rendering options per user preferences.
-	[[cdsCore cdsGPU] setRender3DThreads:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_Threads"]];
-	[[cdsCore cdsGPU] setRender3DRenderingEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_RenderingEngine"]];
-	[[cdsCore cdsGPU] setRender3DHighPrecisionColorInterpolation:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_HighPrecisionColorInterpolation"]];
-	[[cdsCore cdsGPU] setRender3DEdgeMarking:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_EdgeMarking"]];
-	[[cdsCore cdsGPU] setRender3DFog:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Fog"]];
-	[[cdsCore cdsGPU] setRender3DTextures:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Textures"]];
-	[[cdsCore cdsGPU] setRender3DLineHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_LineHack"]];
-	[[cdsCore cdsGPU] setRender3DMultisampleSize:[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_MultisampleSize"]];
-	[[cdsCore cdsGPU] setRender3DTextureScalingFactor:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_TextureScalingFactor"]];
-	[[cdsCore cdsGPU] setRender3DTextureDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_TextureDeposterize"]];
-	[[cdsCore cdsGPU] setRender3DTextureSmoothing:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_TextureSmoothing"]];
-	[[cdsCore cdsGPU] setRender3DFragmentSamplingHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_FragmentSamplingHack"]];
-	[[cdsCore cdsGPU] setGpuScale:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ScalingFactor"]];
-	[[cdsCore cdsGPU] setGpuColorFormat:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ColorFormat"]];
+	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
 	
-	[[cdsCore cdsGPU] setOpenGLEmulateShadowPolygon:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateShadowPolygon"]];
-	[[cdsCore cdsGPU] setOpenGLEmulateSpecialZeroAlphaBlending:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateSpecialZeroAlphaBlending"]];
-	[[cdsCore cdsGPU] setOpenGLEmulateNDSDepthCalculation:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateNDSDepthCalculation"]];
-	[[cdsCore cdsGPU] setOpenGLEmulateDepthLEqualPolygonFacing:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateDepthLEqualPolygonFacing"]];
+	[graphicsController setRender3DThreads:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_Threads"]];
+	[graphicsController setEngine3DClientIndex:[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_RenderingEngine"]];
+	[graphicsController setHighPrecisionColorInterpolationEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_HighPrecisionColorInterpolation"]];
+	[graphicsController setEdgeMarkEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_EdgeMarking"]];
+	[graphicsController setFogEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Fog"]];
+	[graphicsController setTextureEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Textures"]];
+	[graphicsController setLineHackEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_LineHack"]];
+	[graphicsController setMultisampleSize:[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_MultisampleSize"]];
+	[graphicsController setTextureScalingFactor:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_TextureScalingFactor"]];
+	[graphicsController setTextureDeposterizeEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_TextureDeposterize"]];
+	[graphicsController setTextureSmoothingEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_TextureSmoothing"]];
+	[graphicsController setFragmentSamplingHackEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_FragmentSamplingHack"]];
+	[graphicsController setGpuScale:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ScalingFactor"]];
+	[graphicsController setGpuColorFormat:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ColorFormat"]];
 	
-	((MacGPUFetchObjectAsync *)[[cdsCore cdsGPU] fetchObject])->FetchSynchronousAtIndex(0);
+	[graphicsController setShadowPolygonEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateShadowPolygon"]];
+	[graphicsController setSpecialZeroAlphaBlendingEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateSpecialZeroAlphaBlending"]];
+	[graphicsController setNdsDepthCalculationEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateNDSDepthCalculation"]];
+	[graphicsController setDepthLEqualPolygonFacingEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateDepthLEqualPolygonFacing"]];
+	
+	((MacGPUFetchObjectAsync *)[graphicsController fetchObject])->FetchSynchronousAtIndex(0);
 	
 	// Set the stylus options per user preferences.
 	[[cdsCore cdsController] setStylusPressure:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_StylusPressure"]];
@@ -3145,9 +3154,11 @@
 	}
 	else if (theAction == @selector(toggleGPUState:))
 	{
+		CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
+		
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem*)theItem setState:([[cdsCore cdsGPU] gpuStateByBit:(UInt32)[theItem tag]]) ? GUI_STATE_ON : GUI_STATE_OFF];
+			[(NSMenuItem*)theItem setState:([graphicsController gpuStateByBit:(UInt32)[theItem tag]]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
 	

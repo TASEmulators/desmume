@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,35 +15,35 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import <OpenEmuBase/OERingBuffer.h>
-#include "../../SPU.h"
+#ifndef __OE_SOUND_INTERFACE_H__
+#define __OE_SOUND_INTERFACE_H__
+
+#include "../ClientAudioOutput.h"
+
+#ifdef BOOL
+#undef BOOL
+#endif
 
 #define SNDCORE_OPENEMU 58326
 
-// Sound interface to the SPU
-extern SoundInterface_struct SNDOpenEmu;
+@class OERingBuffer;
 
-// Ring buffer
-extern OERingBuffer *openEmuSoundInterfaceBuffer;
-
-#ifdef __cplusplus
-extern "C"
+class OEAudioOutputEngine : public ClientAudioOutputEngine
 {
-#endif
+private:
+	void __InstanceInit(OERingBuffer *oeBuffer, bool useOldAPI);
+	
+protected:
+	OERingBuffer *_buffer;
+	bool _willUseOldAPI;
+	
+public:
+	OEAudioOutputEngine();
+	OEAudioOutputEngine(OERingBuffer *oeBuffer, bool useOldAPI);
+	
+	// ClientAudioOutputEngine methods
+	virtual size_t GetAvailableSamples() const;
+	virtual void WriteToBuffer(const void *inSamples, size_t numberSampleFrames);
+};
 
-// OpenEmu functions for the sound interface
-int		SNDOpenEmuInit(int buffer_size);
-void	SNDOpenEmuDeInit();
-int		SNDOpenEmuReset();
-void	SNDOpenEmuUpdateAudio(s16 *buffer, u32 num_samples);
-u32		SNDOpenEmuGetAudioSpace();
-void	SNDOpenEmuMuteAudio();
-void	SNDOpenEmuUnMuteAudio();
-void	SNDOpenEmuSetVolume(int volume);
-void	SNDOpenEmuClearBuffer();
-void	SNDOpenEmuFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
-size_t	SNDOpenEmuPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
-
-#ifdef __cplusplus
-}
-#endif
+#endif // __OE_SOUND_INTERFACE_H__

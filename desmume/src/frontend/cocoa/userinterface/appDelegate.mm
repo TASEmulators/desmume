@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2025 DeSmuME Team
+	Copyright (C) 2011-2026 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 #import "appDelegate.h"
 #import "CocoaAudioController.h"
+#import "CocoaGraphicsController.h"
 #import "DisplayWindowController.h"
 #import "EmuControllerDelegate.h"
 #import "FileMigrationDelegate.h"
@@ -262,6 +263,10 @@
 	// Init the DS speakers.
 	[newCore addOutput:[[emuControl audioController] audioOutput]];
 	[[emuControl cdsSoundController] setContent:[emuControl audioController]];
+	
+	// Init the graphics controller.
+	CocoaGraphicsController *graphicsController = [[[CocoaGraphicsController alloc] initWithGraphicsControl:[newCore graphicsControl]] autorelease];
+	[[emuControl cdsGraphicsController] setContent:graphicsController];
 	
 	// Set up all the object controllers.
 	[prefWindowController setContent:[prefWindowDelegate bindings]];

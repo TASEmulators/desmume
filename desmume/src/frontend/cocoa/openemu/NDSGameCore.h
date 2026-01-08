@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2022 DeSmuME team
+	Copyright (C) 2012-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,6 +15,9 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef __OE_NDS_GAME_CORE_H__
+#define __OE_NDS_GAME_CORE_H__
+
 #import <Cocoa/Cocoa.h>
 #import <OpenEmuBase/OEGameCore.h>
 #import "OENDSSystemResponderClient.h"
@@ -23,15 +26,20 @@
 #include <pthread.h>
 
 #include "../ClientExecutionControl.h"
-#include "OEDisplayView.h"
+#import "OEDisplayView.h"
+
+#ifdef BOOL
+#undef BOOL
+#endif
 
 #define SILENCE_DEPRECATION_OPENEMU(expression)  SILENCE_DEPRECATION(expression)
 
 class ClientInputHandler;
 class OE_OGLDisplayPresenter;
+class ClientAudioOutput;
+class OEAudioOutputEngine;
 
 @class CocoaDSCheatManager;
-@class CocoaDSGPU;
 @class CocoaDSFirmware;
 	
 // NDS Display Mode Keys for OpenEmu Display Mode Options
@@ -289,7 +297,6 @@ typedef struct OEMenuItemDesc OEMenuItemDesc;
 	
 	NSMutableDictionary *addedCheatsDict;
 	CocoaDSCheatManager *cdsCheats;
-	CocoaDSGPU *cdsGPU;
 	CocoaDSFirmware *cdsFirmware;
 	
 	MacInputHandler *_inputHandler;
@@ -309,6 +316,10 @@ typedef struct OEMenuItemDesc OEMenuItemDesc;
 	bool _willUseOpenGL3Context;
 	CGLContextObj _videoContext;
 	OE_OGLDisplayPresenter *_cdp;
+	OEGraphicsControl *_graphicsControl;
+	
+	ClientAudioOutput *_audioOutput;
+	OEAudioOutputEngine *_audioEngine;
 	
 	NSTimer *_fpsTimer;
 	BOOL _isTimerAtSecond;
@@ -342,7 +353,6 @@ typedef struct OEMenuItemDesc OEMenuItemDesc;
 }
 
 @property (retain) CocoaDSCheatManager *cdsCheats;
-@property (retain) CocoaDSGPU *cdsGPU;
 @property (retain) CocoaDSFirmware *cdsFirmware;
 @property (assign) uint64_t ndsDisplayMode;
 
@@ -356,3 +366,5 @@ typedef struct OEMenuItemDesc OEMenuItemDesc;
 - (NSDictionary<NSString *, id> *) generateDisplayModeItemByID:(NDSDisplayOptionID)optionID states:(const uint64_t)states;
 
 @end
+
+#endif // __OE_NDS_GAME_CORE_H__

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2025 DeSmuME Team
+	Copyright (C) 2012-2026 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 #import "preferencesWindowDelegate.h"
 #import "EmuControllerDelegate.h"
 #import "cheatWindowDelegate.h"
+#import "CocoaGraphicsController.h"
 
 #import "cocoa_core.h"
 #import "cocoa_GPU.h"
@@ -926,8 +927,9 @@
 
 - (void) markUnsupportedOpenGLMSAAMenuItems
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	NSInteger maxSamples = (NSInteger)[[cdsCore cdsGPU] openglDeviceMaxMultisamples];
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuController content];
+	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[emuControl cdsGraphicsController] content];
+	NSInteger maxSamples = (NSInteger)[graphicsController maxMultisampleSize];
 	size_t itemCount = [openglMSAAPopUpButton numberOfItems];
 	BOOL needAddUnsupportedSeparator = YES;
 	

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2022 DeSmuME team
+	Copyright (C) 2022-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _OPENEMU_DISPLAYOUTPUT_H_
-#define _OPENEMU_DISPLAYOUTPUT_H_
+#ifndef __OPENEMU_DISPLAY_VIEW_H__
+#define __OPENEMU_DISPLAY_VIEW_H__
 
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/OpenGL.h>
@@ -25,25 +25,9 @@
 #import "../cocoa_GPU.h"
 #import "../cocoa_util.h"
 #include "../ClientDisplayView.h"
+#include "../ClientGraphicsControl.h"
 #include "../OGLDisplayOutput_3_2.h"
 
-#ifdef BOOL
-#undef BOOL
-#endif
-
-
-class OE_OGLClientSharedData : public OGLClientSharedData
-{
-protected:
-	apple_unfairlock_t _unfairlockTexFetch[2];
-	
-public:
-	OE_OGLClientSharedData();
-	~OE_OGLClientSharedData();
-	
-	virtual GLuint GetFetchTexture(const NDSDisplayID displayID);
-	virtual void SetFetchTexture(const NDSDisplayID displayID, GLuint texID);
-};
 
 class OE_OGLClientFetchObject : public GPUClientFetchObject
 {
@@ -83,4 +67,16 @@ public:
 	CGLContextObj GetContext() const;
 };
 
-#endif // _OPENEMU_DISPLAYOUTPUT_H_
+class OEGraphicsControl : public ClientGraphicsControl
+{
+public:
+	OEGraphicsControl();
+	~OEGraphicsControl();
+	
+	void Set3DEngineByID(int engineID);
+	void SetEngine3DClientIndex(int clientListIndex);
+	int GetEngine3DClientIndex();
+	void DidApplyGPUSettingsEnd();
+};
+
+#endif // __OPENEMU_DISPLAY_VIEW_H__

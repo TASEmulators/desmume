@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2025 DeSmuME Team
+	Copyright (C) 2013-2026 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 @class CocoaDSFirmware;
 @class CocoaDSController;
 @class CocoaDSCheatManager;
+@class CocoaGraphicsController;
 @class CheatWindowDelegate;
 @class DisplayWindowController;
 @class RomInfoPanel;
@@ -49,6 +50,7 @@ class AudioSampleBlockGenerator;
 	NSObjectController *firmwarePanelController;
 	NSObjectController *romInfoPanelController;
 	NSObjectController *cdsCoreController;
+	NSObjectController *cdsGraphicsController;
 	NSObjectController *cdsSoundController;
 	NSObjectController *cheatWindowController;
 	NSObjectController *slot2WindowController;
@@ -130,6 +132,7 @@ class AudioSampleBlockGenerator;
 @property (readonly) IBOutlet NSObjectController *firmwarePanelController;
 @property (readonly) IBOutlet NSObjectController *romInfoPanelController;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
+@property (readonly) IBOutlet NSObjectController *cdsGraphicsController;
 @property (readonly) IBOutlet NSObjectController *cdsSoundController;
 @property (readonly) IBOutlet NSObjectController *cheatWindowController;
 @property (readonly) IBOutlet NSObjectController *slot2WindowController;

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2025 DeSmuME team
+	Copyright (C) 2017-2026 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@
 #define EXECUTION_WAIT_BIAS_MAX						1.10
 
 class ClientAVCaptureObject;
+class ClientGraphicsControl;
 
 enum ExecutionBehavior
 {
@@ -205,6 +206,7 @@ class ClientExecutionControl
 {
 protected:
 	ClientInputHandler *_inputHandler;
+	ClientGraphicsControl *_graphicsControl;
 	
 	ClientExecutionControlSettings _settingsPending;
 	ClientExecutionControlSettings _settingsApplied;
@@ -252,6 +254,9 @@ public:
 	
 	ClientInputHandler* GetClientInputHandler();
 	void SetClientInputHandler(ClientInputHandler *inputHandler);
+	
+	ClientGraphicsControl* GetClientGraphicsControl();
+	void SetClientGraphicsControl(ClientGraphicsControl *graphicsControl);
 	
 	CPUEmulationEngineID GetCPUEmulationEngineID();
 	const char* GetCPUEmulationEngineName();

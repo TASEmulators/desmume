@@ -44,5 +44,13 @@
 	#define MSB_FIRST 1
 #endif
 
+#if defined(__APPLE__)
+	#include <AvailabilityMacros.h>
+	
+	#if !defined(METAL_DISABLE_FOR_BUILD_TARGET) && defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
+		#define ENABLE_APPLE_METAL
+	#endif
+#endif
+
 #define PORT_VERSION	"Cocoa"
 #define PORT_VERSION_OS_X_APP

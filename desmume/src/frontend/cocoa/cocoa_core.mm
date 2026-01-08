@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2025 DeSmuME team
+	Copyright (C) 2011-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #import "cocoa_globals.h"
 #import "cocoa_rom.h"
 #import "cocoa_util.h"
+#import "userinterface/CocoaGraphicsController.h"
 
 #include "macOS_driver.h"
 #include "ClientAVCaptureObject.h"
@@ -49,10 +50,10 @@ volatile bool execute = true;
 @synthesize execControl;
 @synthesize outputManager;
 @synthesize macDisplayOutputManager;
+@synthesize graphicsControl;
 
 @synthesize cdsFirmware;
 @synthesize cdsController;
-@synthesize cdsGPU;
 @synthesize cdsCheatManager;
 @synthesize cdsOutputList;
 
@@ -123,16 +124,25 @@ volatile bool execute = true;
 	execControl = new ClientExecutionControl;
 	outputManager = new ClientEmulationOutputManager;
 	
+	bool useMetalRenderer = false;
+	
+#ifdef ENABLE_APPLE_METAL
+	const bool isMetalDisabled = [[NSUserDefaults standardUserDefaults] boolForKey:@"Debug_DisableMetal"] ? true : false;
+	useMetalRenderer = !isMetalDisabled && IsOSXVersionSupported(10, 11, 0);
+#endif
+	
+	graphicsControl = new MacGraphicsControl(useMetalRenderer);
+	execControl->SetClientGraphicsControl(graphicsControl);
+	
 	_fpsTimer = nil;
 	_isTimerAtSecond = NO;
 	
 	cdsFirmware = nil;
 	cdsController = [[CocoaDSController alloc] init];
-	cdsGPU = [[CocoaDSGPU alloc] init];
 	cdsCheatManager = [[CocoaDSCheatManager alloc] init];
 	cdsOutputList = [[NSMutableArray alloc] initWithCapacity:32];
 	
-	macDisplayOutputManager = ((MacGPUFetchObjectDisplayLink *)[cdsGPU fetchObject])->GetOutputManager();
+	macDisplayOutputManager = ((MacGPUFetchObjectDisplayLink *)graphicsControl->GetFetchObject())->GetOutputManager();
 	
 	ClientInputHandler *inputHandler = [cdsController inputHandler];
 	inputHandler->SetClientExecutionController(execControl);
@@ -205,15 +215,10 @@ volatile bool execute = true;
 	delete outputManager;
 	outputManager = NULL;
 	
-	((MacGPUFetchObjectAsync *)[cdsGPU fetchObject])->SemaphoreFramebufferDestroy();
-	
 	[self setCdsFirmware:nil];
 	
 	[cdsController release];
 	cdsController = nil;
-	
-	[cdsGPU release];
-	cdsGPU = nil;
 	
 	[cdsOutputList release];
 	cdsOutputList = nil;
@@ -222,6 +227,11 @@ volatile bool execute = true;
 	[self setExtFirmwareMACAddressString:nil];
 	[self setFirmwareMACAddressSelectionString:nil];
 	[self setCurrentSessionMACAddressString:nil];
+	
+	((MacGPUFetchObjectAsync *)graphicsControl->GetFetchObject())->SemaphoreFramebufferDestroy();
+	execControl->SetClientGraphicsControl(NULL);
+	delete graphicsControl;
+	graphicsControl = NULL;
 	
 	apple_unfairlock_destroy(_unfairlockMasterExecute);
 	
@@ -1106,9 +1116,9 @@ static void* RunCoreThread(void *arg)
 	
 	CoreThreadParam *param = (CoreThreadParam *)arg;
 	CocoaDSCore *cdsCore = (CocoaDSCore *)param->cdsCore;
-	CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
 	ClientCheatManager *cheatManager = [[cdsCore cdsCheatManager] internalManager];
 	ClientExecutionControl *execControl = [cdsCore execControl];
+	MacGraphicsControl *graphicsControl = (MacGraphicsControl *)execControl->GetClientGraphicsControl();
 	ClientDisplayViewOutputManager *macDisplayOutputManager = [cdsCore macDisplayOutputManager];
 	ClientInputHandler *inputHandler = execControl->GetClientInputHandler();
 	const NDSFrameInfo &ndsFrameInfo = execControl->GetNDSFrameInfo();
@@ -1131,7 +1141,7 @@ static void* RunCoreThread(void *arg)
 	ExecutionBehavior lastBehavior = ExecutionBehavior_Pause;
 	uint64_t frameJumpTarget = 0;
 	
-	((MacGPUFetchObjectAsync *)[cdsGPU fetchObject])->SemaphoreFramebufferCreate();
+	((MacGPUFetchObjectAsync *)graphicsControl->GetFetchObject())->SemaphoreFramebufferCreate();
 	
 	do
 	{

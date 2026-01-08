@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2025 DeSmuME team
+	Copyright (C) 2017-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -85,8 +85,10 @@ struct DisplayViewShaderProperties
 };
 typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 
-@interface MetalDisplayViewSharedData : MacClientSharedObject
+@interface MetalDisplayViewSharedData : NSObject
 {
+	MacGPUFetchObjectDisplayLink *GPUFetchObject;
+	
 	id<MTLDevice> device;
 	NSString *name;
 	NSString *description;
@@ -143,6 +145,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MTLSize deposterizeThreadGroupsPerGrid;
 }
 
+@property (assign, nonatomic) MacGPUFetchObjectDisplayLink *GPUFetchObject;
+
 @property (readonly, nonatomic) id<MTLDevice> device;
 @property (readonly, nonatomic) NSString *name;
 @property (readonly, nonatomic) NSString *description;
@@ -183,7 +187,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @interface MacMetalDisplayPresenterObject : NSObject
 {
 	ClientDisplay3DPresenter *cdp;
-	MetalDisplayViewSharedData *sharedData;
 	
 	MTLRenderPassDescriptor *_outputRenderPassDesc;
 	MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
@@ -225,7 +228,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 }
 
 @property (readonly, nonatomic) ClientDisplay3DPresenter *cdp;
-@property (assign, nonatomic) MetalDisplayViewSharedData *sharedData;
+@property (readonly, nonatomic) MetalDisplayViewSharedData *sharedData;
 @property (readonly, nonatomic) MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
 @property (retain) id<MTLComputePipelineState> pixelScalePipeline;
 @property (retain) id<MTLRenderPipelineState> outputDrawablePipeline;
@@ -318,13 +321,14 @@ public:
 
 #pragma mark -
 
-class MacMetalDisplayPresenter : public ClientDisplay3DPresenter, public MacDisplayPresenterInterface
+class MacMetalDisplayPresenter : public ClientDisplay3DPresenter
 {
 private:
-	void __InstanceInit(MacClientSharedObject *sharedObject);
+	void __InstanceInit(MetalDisplayViewSharedData *sharedObject);
 	
 protected:
 	MacMetalDisplayPresenterObject *_presenterObject;
+	MetalDisplayViewSharedData *_sharedData;
 	pthread_mutex_t _mutexProcessPtr;
 	dispatch_semaphore_t _semCPUFilter[2];
 	
@@ -339,7 +343,7 @@ protected:
 	
 public:
 	MacMetalDisplayPresenter();
-	MacMetalDisplayPresenter(MacClientSharedObject *sharedObject);
+	MacMetalDisplayPresenter(MetalDisplayViewSharedData *sharedObject);
 	virtual ~MacMetalDisplayPresenter();
 	
 	MacMetalDisplayPresenterObject* GetPresenterObject() const;
@@ -347,7 +351,8 @@ public:
 	dispatch_semaphore_t GetCPUFilterSemaphore(const NDSDisplayID displayID);
 	
 	virtual void Init();
-	virtual void SetSharedData(MacClientSharedObject *sharedObject);
+	MetalDisplayViewSharedData* GetSharedData();
+	virtual void SetSharedData(MetalDisplayViewSharedData *sharedObject);
 	virtual void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
 	
 	// NDS screen filters
@@ -365,14 +370,14 @@ public:
 class MacMetalDisplayView : public MacDisplayLayeredView
 {
 private:
-	void __InstanceInit(MacClientSharedObject *sharedObject);
+	void __InstanceInit(MetalDisplayViewSharedData *sharedObject);
 	
 protected:
 	apple_unfairlock_t _unfairlockViewNeedsFlush;
 	
 public:
 	MacMetalDisplayView();
-	MacMetalDisplayView(MacClientSharedObject *sharedObject);
+	MacMetalDisplayView(MetalDisplayViewSharedData *sharedObject);
 	virtual ~MacMetalDisplayView();
 	
 	virtual void Init();

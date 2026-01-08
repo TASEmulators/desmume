@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2025 DeSmuME team
+	Copyright (C) 2017-2026 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@
 ClientExecutionControl::ClientExecutionControl()
 {
 	_inputHandler = NULL;
+	_graphicsControl = NULL;
 	
 	_newSettingsPendingOnReset = true;
 	_newSettingsPendingOnExecutionLoopStart = true;
@@ -176,6 +177,16 @@ ClientInputHandler* ClientExecutionControl::GetClientInputHandler()
 void ClientExecutionControl::SetClientInputHandler(ClientInputHandler *inputHandler)
 {
 	this->_inputHandler = inputHandler;
+}
+
+ClientGraphicsControl* ClientExecutionControl::GetClientGraphicsControl()
+{
+	return this->_graphicsControl;
+}
+
+void ClientExecutionControl::SetClientGraphicsControl(ClientGraphicsControl *graphicsControl)
+{
+	this->_graphicsControl = graphicsControl;
 }
 
 CPUEmulationEngineID ClientExecutionControl::GetCPUEmulationEngineID()

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2025 DeSmuME team
+	Copyright (C) 2025-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #import "DisplayWindowController.h"
 #import "EmuControllerDelegate.h"
 #import "InputManager.h"
+#import "CocoaGraphicsController.h"
 
 #import "cocoa_core.h"
 #import "cocoa_GPU.h"
@@ -500,8 +501,9 @@
 - (void) setupLayer
 {
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
-	MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[[cdsCore cdsGPU] fetchObject];
+	EmuControllerDelegate *emuControl = [windowController emuControl];
+	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[emuControl cdsGraphicsController] content];
+	MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[graphicsController fetchObject];
 	_dvo->SetMacFetchObject(dlFetchObj);
 	
 #ifdef ENABLE_APPLE_METAL

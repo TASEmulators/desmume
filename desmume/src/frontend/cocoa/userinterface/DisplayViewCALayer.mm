@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,27 +18,6 @@
 #import "DisplayViewCALayer.h"
 #import "../cocoa_GPU.h"
 
-MacDisplayPresenterInterface::MacDisplayPresenterInterface()
-{
-	_sharedData = nil;
-}
-
-MacDisplayPresenterInterface::MacDisplayPresenterInterface(MacClientSharedObject *sharedObject)
-{
-	_sharedData = sharedObject;
-}
-
-MacClientSharedObject* MacDisplayPresenterInterface::GetSharedData()
-{
-	return this->_sharedData;
-}
-
-void MacDisplayPresenterInterface::SetSharedData(MacClientSharedObject *sharedObject)
-{
-	this->_sharedData = sharedObject;
-}
-
-#pragma mark -
 
 MacDisplayLayeredView::MacDisplayLayeredView()
 {

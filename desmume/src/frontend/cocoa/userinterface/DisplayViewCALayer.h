@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2025 DeSmuME team
+	Copyright (C) 2017-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,9 +23,7 @@
 
 #import "../ClientDisplayView.h"
 
-@class MacClientSharedObject;
 class MacDisplayLayeredView;
-class MacDisplayViewOutput;
 
 @protocol DisplayViewCALayer <NSObject>
 
@@ -34,20 +32,6 @@ class MacDisplayViewOutput;
 @property (assign, nonatomic, getter=clientDisplayView, setter=setClientDisplayView:) MacDisplayLayeredView *_cdv;
 
 @end
-
-class MacDisplayPresenterInterface
-{
-protected:
-	MacClientSharedObject *_sharedData;
-	
-public:
-	MacDisplayPresenterInterface();
-	MacDisplayPresenterInterface(MacClientSharedObject *sharedObject);
-	virtual ~MacDisplayPresenterInterface() {}
-	
-	MacClientSharedObject* GetSharedData();
-	virtual void SetSharedData(MacClientSharedObject *sharedObject);
-};
 
 class MacDisplayLayeredView : public ClientDisplay3DView
 {

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2022 DeSmuME team
+	Copyright (C) 2012-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,86 +17,46 @@
 
 #import "OESoundInterface.h"
 
+#import <OpenEmuBase/OERingBuffer.h>
 #import "../cocoa_globals.h"
-#include <pthread.h>
-#include "NDSGameCore.h"
+#import "NDSGameCore.h"
 
 
-OERingBuffer *openEmuSoundInterfaceBuffer = nil;
-static BOOL kWillUseOldAPI = NO;
-
-// Sound interface to the SPU
-SoundInterface_struct SNDOpenEmu = {
-	SNDCORE_OPENEMU,
-	"OpenEmu Sound Interface",
-	SNDOpenEmuInit,
-	SNDOpenEmuDeInit,
-	SNDOpenEmuUpdateAudio,
-	SNDOpenEmuGetAudioSpace,
-	SNDOpenEmuMuteAudio,
-	SNDOpenEmuUnMuteAudio,
-	SNDOpenEmuSetVolume,
-	SNDOpenEmuClearBuffer,
-	NULL,
-	NULL
-};
-
-SoundInterface_struct *SNDCoreList[] = {
-	&SNDDummy,
-	&SNDOpenEmu,
-	NULL
-};
-
-int SNDOpenEmuInit(int buffer_size)
+OEAudioOutputEngine::OEAudioOutputEngine()
 {
-	[openEmuSoundInterfaceBuffer setLength:buffer_size * 4 / SPU_SAMPLE_SIZE];
-	kWillUseOldAPI = ![openEmuSoundInterfaceBuffer respondsToSelector:@selector(freeBytes)];
+	__InstanceInit(NULL, false);
+}
+
+OEAudioOutputEngine::OEAudioOutputEngine(OERingBuffer *oeBuffer, bool useOldAPI)
+{
+	__InstanceInit(oeBuffer, useOldAPI);
+}
+
+void OEAudioOutputEngine::__InstanceInit(OERingBuffer *oeBuffer, bool useOldAPI)
+{
+	_engineID = SNDCORE_OPENEMU;
+	_engineString = "OpenEmu Sound Interface";
+	_bufferSizeForSPUInit = SPU_BUFFER_BYTES;
+	_isPaused = false;
 	
-	return 0;
+	[oeBuffer setLength:_bufferSizeForSPUInit * 4 / SPU_SAMPLE_SIZE];
+	_buffer = oeBuffer;
+	_willUseOldAPI = useOldAPI;
 }
 
-void SNDOpenEmuDeInit()
-{
-	// Do nothing.
-}
+// ClientAudioOutputEngine methods
 
-int SNDOpenEmuReset()
+size_t OEAudioOutputEngine::GetAvailableSamples() const
 {
-	// Do nothing. The OpenEmu frontend will take care of this.
-	return 0;
-}
-
-void SNDOpenEmuUpdateAudio(s16 *buffer, u32 num_samples)
-{
-	[openEmuSoundInterfaceBuffer write:buffer maxLength:num_samples * SPU_SAMPLE_SIZE];
-}
-
-u32 SNDOpenEmuGetAudioSpace()
-{
-	if (kWillUseOldAPI)
+	if (this->_willUseOldAPI)
 	{
-		SILENCE_DEPRECATION_OPENEMU( return (u32)[openEmuSoundInterfaceBuffer usedBytes] / SPU_SAMPLE_SIZE; )
+		SILENCE_DEPRECATION_OPENEMU( return (size_t)[this->_buffer usedBytes] / SPU_SAMPLE_SIZE; )
 	}
 	
-	return (u32)[openEmuSoundInterfaceBuffer freeBytes] / SPU_SAMPLE_SIZE;
+	return (size_t)[this->_buffer freeBytes] / SPU_SAMPLE_SIZE;
 }
 
-void SNDOpenEmuMuteAudio()
+void OEAudioOutputEngine::WriteToBuffer(const void *inSamples, size_t numberSampleFrames)
 {
-	// Do nothing. The OpenEmu frontend will take care of this.
-}
-
-void SNDOpenEmuUnMuteAudio()
-{
-	// Do nothing. The OpenEmu frontend will take care of this.
-}
-
-void SNDOpenEmuSetVolume(int volume)
-{
-	// Do nothing. The OpenEmu frontend will take care of this.
-}
-
-void SNDOpenEmuClearBuffer()
-{
-	// Do nothing. The OpenEmu frontend will take care of this.
+	[this->_buffer write:inSamples maxLength:numberSampleFrames * SPU_SAMPLE_SIZE];
 }

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2025 DeSmuME team
+	Copyright (C) 2017-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -74,7 +74,7 @@ public:
 	void FetchNativeDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
 	void FetchCustomDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
 	
-	// MacGPUEventHandlerAsync methods
+	// MacGPUFetchObjectAsync methods
 	virtual void SetPauseState(bool theState);
 	
 	// GPUClientFetchObject methods

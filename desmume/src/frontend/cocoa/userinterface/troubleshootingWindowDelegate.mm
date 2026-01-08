@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2025 DeSmuME team
+	Copyright (C) 2012-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 #import "troubleshootingWindowDelegate.h"
 #import "EmuControllerDelegate.h"
 #import "CocoaAudioController.h"
+#import "CocoaGraphicsController.h"
 
 #include "../../../render3D.h"
 
@@ -73,6 +74,7 @@
 {
 	static NSString *unspecifiedStr = @"Unspecified"; // Do not expose localized version for this NSString -- we want this to be in English
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
+	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[emuControl cdsGraphicsController] content];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	// Force end of editing of any text fields.
@@ -108,36 +110,36 @@
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nUse Game-Specific Hacks: "] stringByAppendingString:([cdsCore emuFlagUseGameSpecificHacks] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nExternal BIOS: "] stringByAppendingString:([cdsCore emuFlagUseExternalBios] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nExternal Firmware: "] stringByAppendingString:([cdsCore emuFlagUseExternalFirmware] ? @"YES" : @"NO")];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nGPU - Scaling Factor: "] stringByAppendingString:[NSString stringWithFormat:@"%ldx", (unsigned long)[[cdsCore cdsGPU] gpuScale]]];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nGPU - Color Depth: "] stringByAppendingString:[NSString stringWithFormat:@"%@", ([[cdsCore cdsGPU] gpuColorFormat] == NDSColorFormat_BGR555_Rev) ? @"15-bit" : (([[cdsCore cdsGPU] gpuColorFormat] == NDSColorFormat_BGR666_Rev) ? @"18-bit" : @"24-bit")]];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nGPU - Scaling Factor: "] stringByAppendingString:[NSString stringWithFormat:@"%ldx", (unsigned long)[graphicsController gpuScale]]];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nGPU - Color Depth: "] stringByAppendingString:[NSString stringWithFormat:@"%@", ([graphicsController gpuColorFormat] == NDSColorFormat_BGR555_Rev) ? @"15-bit" : (([graphicsController gpuColorFormat] == NDSColorFormat_BGR666_Rev) ? @"18-bit" : @"24-bit")]];
 	
-	NSString *render3DEngineDetails = [[cdsCore cdsGPU] render3DRenderingEngineAppliedHostRendererName];
-	switch ([[cdsCore cdsGPU] render3DRenderingEngineApplied])
+	NSString *render3DEngineDetails = [graphicsController engine3DClientNameApplied];
+	switch ([graphicsController engine3DInternalIDApplied])
 	{
 		case RENDERID_NULL:
 			break;
 			
 		case RENDERID_SOFTRASTERIZER:
 			render3DEngineDetails = [NSString stringWithFormat:@"%@ (HighResColor=%@, LineHack=%@, FragmentSamplingHack=%@, ThreadCount=%@)",
-									 [[cdsCore cdsGPU] render3DRenderingEngineAppliedHostRendererName],
-									 ([[cdsCore cdsGPU] render3DHighPrecisionColorInterpolation] ? @"YES" : @"NO"),
-									 ([[cdsCore cdsGPU] render3DLineHack] ? @"YES" : @"NO"),
-									 ([[cdsCore cdsGPU] render3DFragmentSamplingHack] ? @"YES" : @"NO"),
-									 ([[cdsCore cdsGPU] render3DThreads] == 0 ? @"Automatic" : [NSString stringWithFormat:@"%ld", (unsigned long)[[cdsCore cdsGPU] render3DThreads]])];
+									 [graphicsController engine3DClientNameApplied],
+									 ([graphicsController highPrecisionColorInterpolationEnable] ? @"YES" : @"NO"),
+									 ([graphicsController fragmentSamplingHackEnable] ? @"YES" : @"NO"),
+									 ([graphicsController lineHackEnable] ? @"YES" : @"NO"),
+									 ([graphicsController render3DThreads] == 0 ? @"Automatic" : [NSString stringWithFormat:@"%ld", (unsigned long)[graphicsController render3DThreads]])];
 			break;
 			
 		case RENDERID_OPENGL_AUTO:
 		case RENDERID_OPENGL_LEGACY:
 		case RENDERID_OPENGL_3_2:
 			render3DEngineDetails = [NSString stringWithFormat:@"%@ [0x%08lX] (EnableShadowPolygons=%@, EnableZeroAlphaBlending=%@, EnableNDSDepthCalculation=%@, EnableDepthLEqualPolygonFacing=%@, MSAA=%@, SmoothTextures=%@)",
-									 [[cdsCore cdsGPU] render3DRenderingEngineAppliedHostRendererName],
-									 (long)[[cdsCore cdsGPU] render3DRenderingEngineAppliedHostRendererID],
-									 [[cdsCore cdsGPU] openGLEmulateShadowPolygon] ? @"YES" : @"NO",
-									 [[cdsCore cdsGPU] openGLEmulateSpecialZeroAlphaBlending] ? @"YES" : @"NO",
-									 [[cdsCore cdsGPU] openGLEmulateNDSDepthCalculation] ? @"YES" : @"NO",
-									 [[cdsCore cdsGPU] openGLEmulateDepthLEqualPolygonFacing] ? @"YES" : @"NO",
-									 ([[cdsCore cdsGPU] render3DMultisampleSize] == 0) ? @"Off" : [NSString stringWithFormat:@"%ld", (unsigned long)[[cdsCore cdsGPU] render3DMultisampleSize]],
-									 [[cdsCore cdsGPU] render3DTextureSmoothing] ? @"YES" : @"NO"];
+									 [graphicsController engine3DClientNameApplied],
+									 (long)[graphicsController engine3DClientIDApplied],
+									 [graphicsController shadowPolygonEnable] ? @"YES" : @"NO",
+									 [graphicsController specialZeroAlphaBlendingEnable] ? @"YES" : @"NO",
+									 [graphicsController ndsDepthCalculationEnable] ? @"YES" : @"NO",
+									 [graphicsController depthLEqualPolygonFacingEnable] ? @"YES" : @"NO",
+									 ([graphicsController multisampleSize] == 0) ? @"Off" : [NSString stringWithFormat:@"%ld", (unsigned long)[graphicsController multisampleSize]],
+									 [graphicsController textureSmoothingEnable] ? @"YES" : @"NO"];
 			break;
 			
 		default:
@@ -145,12 +147,12 @@
 	}
 	
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Engine: "] stringByAppendingString:render3DEngineDetails];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Enable Textures: "] stringByAppendingString:([[cdsCore cdsGPU] render3DTextures] ? @"YES" : @"NO")];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Texture Deposterize: "] stringByAppendingString:([[cdsCore cdsGPU] render3DTextureDeposterize] ? @"YES" : @"NO")];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Texture Scaling Factor: "] stringByAppendingString:[NSString stringWithFormat:@"%ldx", (unsigned long)[[cdsCore cdsGPU] render3DTextureScalingFactor]]];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Edge Marking: "] stringByAppendingString:([[cdsCore cdsGPU] render3DEdgeMarking] ? @"YES" : @"NO")];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Fog: "] stringByAppendingString:([[cdsCore cdsGPU] render3DFog] ? @"YES" : @"NO")];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nVideo - Output Engine: "] stringByAppendingString:[NSString stringWithFormat:@"%s (%s)", [[cdsCore cdsGPU] fetchObject]->GetName(), [[cdsCore cdsGPU] fetchObject]->GetDescription()]];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Enable Textures: "] stringByAppendingString:([graphicsController textureEnable] ? @"YES" : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Texture Deposterize: "] stringByAppendingString:([graphicsController textureDeposterizeEnable] ? @"YES" : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Texture Scaling Factor: "] stringByAppendingString:[NSString stringWithFormat:@"%ldx", (unsigned long)[graphicsController textureScalingFactor]]];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Edge Marking: "] stringByAppendingString:([graphicsController edgeMarkEnable] ? @"YES" : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Fog: "] stringByAppendingString:([graphicsController fogEnable] ? @"YES" : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nVideo - Output Engine: "] stringByAppendingString:[NSString stringWithFormat:@"%s (%s)", [graphicsController fetchObject]->GetName(), [graphicsController fetchObject]->GetDescription()]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Output Engine: "] stringByAppendingString:[[emuControl audioController] engineString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Advanced SPU Logic: "] stringByAppendingString:([[emuControl audioController] spuAdvancedLogic] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Interpolation Method: "] stringByAppendingString:[[emuControl audioController] spuInterpolationModeString]];

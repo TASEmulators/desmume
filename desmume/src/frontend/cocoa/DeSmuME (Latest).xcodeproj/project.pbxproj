@@ -1319,7 +1319,6 @@
 		AB36C88C27F2C8AE00C763C8 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABAE1F6E1F6873E70080EFE3 /* CoreVideo.framework */; };
 		AB3A655E16CC5421001F5D4A /* EmuControllerDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3A655D16CC5421001F5D4A /* EmuControllerDelegate.mm */; };
 		AB3A656116CC5438001F5D4A /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3A656016CC5438001F5D4A /* cocoa_GPU.mm */; };
-		AB3A656316CC5438001F5D4A /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3A656016CC5438001F5D4A /* cocoa_GPU.mm */; };
 		AB3BF4021E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */; };
 		AB3BF4031E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */; };
 		AB3BF4331E2562F2003E2B24 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */; };
@@ -1370,6 +1369,27 @@
 		AB405690169F5DCC0016AC3E /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405674169F5DCC0016AC3E /* x86operand.cpp */; };
 		AB405693169F5DCC0016AC3E /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405676169F5DCC0016AC3E /* x86util.cpp */; };
 		AB407F371A6206FB00313213 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
+		AB455DF82E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */; };
+		AB455DF92E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */; };
+		AB455DFA2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */; };
+		AB455DFB2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */; };
+		AB455DFC2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */; };
+		AB455DFD2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */; };
+		AB455DFE2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */; };
+		AB455DFF2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */; };
+		AB455E002E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */; };
+		AB455E012E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */; };
+		AB455E022E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */; };
+		AB455E052E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
+		AB455E062E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
+		AB455E072E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
+		AB455E082E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
+		AB455E092E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
+		AB455E0A2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
+		AB455E0B2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
+		AB455E0C2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
+		AB455E0D2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
+		AB455E0E2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
 		AB46E54F2814F42500A4E3D6 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; };
 		AB46E5502814F42700A4E3D6 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; };
 		AB46E5522814F43300A4E3D6 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; };
@@ -1522,7 +1542,6 @@
 		AB54718C1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */; };
 		AB552DC8281A079000F48ECD /* OEDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB49B5382816879E0069F1D7 /* OEDisplayView.mm */; };
 		AB5648FF186E6EA8002740F4 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */; };
-		AB564901186E6EA8002740F4 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */; };
 		AB564904186E6EBC002740F4 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */; };
 		AB564907186E6F0C002740F4 /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB564906186E6F0C002740F4 /* ForceFeedback.framework */; };
 		AB564910186E6F67002740F4 /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = AB564909186E6F67002740F4 /* Image_MemoryExpansionPak.png */; };
@@ -2483,6 +2502,8 @@
 		AB79FFFF215B84E50082AE82 /* Icon_VolumeTwoThird_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AE1B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png */; };
 		AB7EC7F4189B2B92009D198A /* Icon_AutoholdClear_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB7EC7F2189B2B92009D198A /* Icon_AutoholdClear_420x420.png */; };
 		AB7EC7F6189B2B92009D198A /* Icon_AutoholdSet_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB7EC7F3189B2B92009D198A /* Icon_AutoholdSet_420x420.png */; };
+		AB8044F22F0E4A2B00A6824E /* ClientAVCaptureObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB28625720AE3E9F00EAED43 /* ClientAVCaptureObject.cpp */; };
+		AB8044F32F0E4C5600A6824E /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB80E04C142BC4A800A52038 /* cocoa_util.mm */; };
 		AB82445B1704AE9A00B8EE20 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB82445A1704AE9A00B8EE20 /* utilities.c */; };
 		AB82445D1704AE9A00B8EE20 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB82445A1704AE9A00B8EE20 /* utilities.c */; };
 		AB8493AF1B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493A81B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png */; };
@@ -4075,6 +4096,10 @@
 		AB405675169F5DCC0016AC3E /* x86operand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86operand.h; sourceTree = "<group>"; };
 		AB405676169F5DCC0016AC3E /* x86util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86util.cpp; sourceTree = "<group>"; };
 		AB405677169F5DCC0016AC3E /* x86util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86util.h; sourceTree = "<group>"; };
+		AB455DF62E8E624A009DEF2B /* ClientGraphicsControl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ClientGraphicsControl.h; sourceTree = "<group>"; };
+		AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ClientGraphicsControl.cpp; sourceTree = "<group>"; };
+		AB455E032E8F77EB009DEF2B /* CocoaGraphicsController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CocoaGraphicsController.h; sourceTree = "<group>"; };
+		AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CocoaGraphicsController.mm; sourceTree = "<group>"; };
 		AB46E54B2814F40800A4E3D6 /* arm64_emit.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = arm64_emit.cpp; sourceTree = "<group>"; };
 		AB46E54C2814F40800A4E3D6 /* arm_emit.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = arm_emit.cpp; sourceTree = "<group>"; };
 		AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = arm_jit_arm.cpp; sourceTree = "<group>"; };
@@ -4920,6 +4945,7 @@
 				ABDB1BE12E6602A5002AD9AF /* ClientEmulationOutput.cpp */,
 				ABB1C9461F5281AE0004844F /* ClientExecutionControl.cpp */,
 				AB6E3B452E7385710088075E /* ClientFirmwareControl.cpp */,
+				AB455DF72E8E624A009DEF2B /* ClientGraphicsControl.cpp */,
 				AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */,
 				ABDB1BEE2E66486E002AD9AF /* ClientVideoOutput.cpp */,
 				AB64DC452E78E3710092D8FC /* cgl_3Demu.cpp */,
@@ -4938,6 +4964,7 @@
 				ABDB1BE02E6602A5002AD9AF /* ClientEmulationOutput.h */,
 				ABB1C9471F5281AE0004844F /* ClientExecutionControl.h */,
 				AB6E3B442E7385710088075E /* ClientFirmwareControl.h */,
+				AB455DF62E8E624A009DEF2B /* ClientGraphicsControl.h */,
 				AB11AD881F6757F800CB298E /* ClientInputHandler.h */,
 				ABDB1BED2E66486E002AD9AF /* ClientVideoOutput.h */,
 				AB64DC442E78E3710092D8FC /* cgl_3Demu.h */,
@@ -5375,6 +5402,7 @@
 				AB3FBD7E2176DE95005722D0 /* WifiSettingsPanel.h */,
 				AB79914A2E71EF050030C0A6 /* CocoaAudioController.h */,
 				AB7991302E70B1700030C0A6 /* CocoaDisplayView.h */,
+				AB455E032E8F77EB009DEF2B /* CocoaGraphicsController.h */,
 				AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB6E17F42A675BF1003A564D /* CheatDatabaseWindowController.mm */,
@@ -5399,6 +5427,7 @@
 				AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */,
 				AB79914B2E71EF050030C0A6 /* CocoaAudioController.mm */,
 				AB7991252E70B1420030C0A6 /* CocoaDisplayView.mm */,
+				AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */,
 			);
 			path = userinterface;
 			sourceTree = "<group>";
@@ -5625,8 +5654,8 @@
 				ABB3C63D1501BB8300E0C22E /* NDSGameCore.h */,
 				ABB3C63F1501BB8300E0C22E /* OENDSSystemResponderClient.h */,
 				ABB3C6411501BB8300E0C22E /* OESoundInterface.h */,
-				ABB3C63E1501BB8300E0C22E /* NDSGameCore.mm */,
 				ABB3C6401501BB8300E0C22E /* OESoundInterface.mm */,
+				ABB3C63E1501BB8300E0C22E /* NDSGameCore.mm */,
 				ABB3C63B1501BB8300E0C22E /* DeSmuME_Prefix_OpenEmu.pch */,
 				ABB3C63C1501BB8300E0C22E /* Info (OpenEmu Plug-in).plist */,
 			);
@@ -8070,6 +8099,7 @@
 				8C43E7DE27E3CD0100A35F65 /* RomInfoPanel.mm in Sources */,
 				8C43E7DF27E3CD0100A35F65 /* gfx3d.cpp in Sources */,
 				AB1C3F4E2E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
+				AB455E012E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */,
 				8C43E7E027E3CD0100A35F65 /* GPU.cpp in Sources */,
 				8C43E7E127E3CD0100A35F65 /* features_cpu.c in Sources */,
 				8C43E7E227E3CD0100A35F65 /* slot1_retail_auto.cpp in Sources */,
@@ -8115,6 +8145,7 @@
 				8C43E80827E3CD0100A35F65 /* MacMetalDisplayView.mm in Sources */,
 				8C43E80927E3CD0100A35F65 /* slot1_retail_nand.cpp in Sources */,
 				8C43E80A27E3CD0100A35F65 /* encoding_utf.c in Sources */,
+				AB455E072E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */,
 				8C43E80B27E3CD0100A35F65 /* OGLDisplayOutput.cpp in Sources */,
 				8C43E80C27E3CD0100A35F65 /* slot2_expMemory.cpp in Sources */,
 				8C43E80D27E3CD0100A35F65 /* xbrz.cpp in Sources */,
@@ -8231,6 +8262,7 @@
 				AB64DC4D2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				8C43E91127E3CD4C00A35F65 /* fttype1.c in Sources */,
 				8C43E91227E3CD4C00A35F65 /* ftmm.c in Sources */,
+				AB455E062E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */,
 				8C43E91327E3CD4C00A35F65 /* ftfstype.c in Sources */,
 				8C43E91427E3CD4C00A35F65 /* pshinter.c in Sources */,
 				8C43E91527E3CD4C00A35F65 /* ClientExecutionControl.cpp in Sources */,
@@ -8308,6 +8340,7 @@
 				8C43E95727E3CD4C00A35F65 /* mc.cpp in Sources */,
 				8C43E95827E3CD4C00A35F65 /* metaspu.cpp in Sources */,
 				8C43E95927E3CD4C00A35F65 /* WifiSettingsPanel.mm in Sources */,
+				AB455DFA2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */,
 				8C43E95A27E3CD4C00A35F65 /* MMU.cpp in Sources */,
 				8C43E95B27E3CD4C00A35F65 /* mmx_optimized.cpp in Sources */,
 				8C43E95C27E3CD4C00A35F65 /* movie.cpp in Sources */,
@@ -8485,6 +8518,7 @@
 				8CCD844F27E40B730024BDD5 /* mc.cpp in Sources */,
 				8CCD845027E40B730024BDD5 /* features_cpu.c in Sources */,
 				AB1C3F512E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
+				AB455DFE2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */,
 				8CCD845127E40B730024BDD5 /* metaspu.cpp in Sources */,
 				8CCD845227E40B730024BDD5 /* MMU.cpp in Sources */,
 				8CCD845327E40B730024BDD5 /* mmx_optimized.cpp in Sources */,
@@ -8530,6 +8564,7 @@
 				8CCD847A27E40B730024BDD5 /* Slot2WindowDelegate.mm in Sources */,
 				8CCD847B27E40B730024BDD5 /* SoundTouch.cpp in Sources */,
 				8CCD847C27E40B730024BDD5 /* ftfstype.c in Sources */,
+				AB455E0D2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */,
 				8CCD847D27E40B730024BDD5 /* slot1_retail_auto.cpp in Sources */,
 				8CCD847E27E40B730024BDD5 /* SPU.cpp in Sources */,
 				8CCD847F27E40B730024BDD5 /* sse_optimized.cpp in Sources */,
@@ -8644,6 +8679,7 @@
 				AB36C7A227F2C8AE00C763C8 /* RomInfoPanel.mm in Sources */,
 				AB36C7A327F2C8AE00C763C8 /* armcpu.cpp in Sources */,
 				AB36C7A427F2C8AE00C763C8 /* bios.cpp in Sources */,
+				AB455E022E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */,
 				AB36C7A527F2C8AE00C763C8 /* cache.cpp in Sources */,
 				AB36C7A627F2C8AE00C763C8 /* cheatSystem.cpp in Sources */,
 				AB36C7A727F2C8AE00C763C8 /* slot2_auto.cpp in Sources */,
@@ -8657,6 +8693,7 @@
 				AB36C7AE27F2C8AE00C763C8 /* debug.cpp in Sources */,
 				AB36C7AF27F2C8AE00C763C8 /* decrypt.cpp in Sources */,
 				AB36C7B027F2C8AE00C763C8 /* directory.cpp in Sources */,
+				AB455E0B2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */,
 				AB36C7B127F2C8AE00C763C8 /* Disassembler.cpp in Sources */,
 				AB88005A2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				AB36C7B227F2C8AE00C763C8 /* disc.cpp in Sources */,
@@ -8942,6 +8979,7 @@
 				AB79008C215B84E50082AE82 /* MMU.cpp in Sources */,
 				AB79008D215B84E50082AE82 /* OGLDisplayOutput_3_2.cpp in Sources */,
 				AB79008E215B84E50082AE82 /* mmx_optimized.cpp in Sources */,
+				AB455E052E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */,
 				AB79008F215B84E50082AE82 /* ClientExecutionControl.cpp in Sources */,
 				AB790090215B84E50082AE82 /* rsemaphore.c in Sources */,
 				AB790091215B84E50082AE82 /* movie.cpp in Sources */,
@@ -8970,6 +9008,7 @@
 				AB7900A7215B84E50082AE82 /* MacMetalDisplayView.mm in Sources */,
 				AB7900A8215B84E50082AE82 /* slot1_retail_nand.cpp in Sources */,
 				AB7900A9215B84E50082AE82 /* encoding_utf.c in Sources */,
+				AB455DFF2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */,
 				AB7900AA215B84E50082AE82 /* OGLDisplayOutput.cpp in Sources */,
 				AB7900AB215B84E50082AE82 /* slot2_expMemory.cpp in Sources */,
 				AB7900AC215B84E50082AE82 /* xbrz.cpp in Sources */,
@@ -9231,6 +9270,7 @@
 				AB790219215B84F20082AE82 /* truetype.c in Sources */,
 				AB79021A215B84F20082AE82 /* SoundTouch.cpp in Sources */,
 				AB79021B215B84F20082AE82 /* slot1_retail_auto.cpp in Sources */,
+				AB455E0C2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */,
 				AB79021C215B84F20082AE82 /* SPU.cpp in Sources */,
 				AB79021D215B84F20082AE82 /* retro_stat.c in Sources */,
 				AB79021E215B84F20082AE82 /* ClientInputHandler.cpp in Sources */,
@@ -9317,6 +9357,7 @@
 				AB79026F215B84F20082AE82 /* Database.cpp in Sources */,
 				AB790270215B84F20082AE82 /* x86compilercontext.cpp in Sources */,
 				AB790271215B84F20082AE82 /* x86compilerfunc.cpp in Sources */,
+				AB455DF92E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */,
 				AB790272215B84F20082AE82 /* x86compileritem.cpp in Sources */,
 				AB790273215B84F20082AE82 /* x86cpuinfo.cpp in Sources */,
 				AB790274215B84F20082AE82 /* cocoa_slot2.mm in Sources */,
@@ -9415,6 +9456,7 @@
 				AB796D1A15CDCBA200C59155 /* MMU.cpp in Sources */,
 				ABB24F6D1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */,
 				AB796D1B15CDCBA200C59155 /* mmx_optimized.cpp in Sources */,
+				AB455E082E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */,
 				ABB1C9481F5281AE0004844F /* ClientExecutionControl.cpp in Sources */,
 				AB2ABA3F1C9F9CFA00173B15 /* rsemaphore.c in Sources */,
 				AB796D1C15CDCBA200C59155 /* movie.cpp in Sources */,
@@ -9443,6 +9485,7 @@
 				AB78B5C41E384F4F00297FED /* MacMetalDisplayView.mm in Sources */,
 				AB796D2C15CDCBA200C59155 /* slot1_retail_nand.cpp in Sources */,
 				AB35BD8F1DEBF40800844310 /* encoding_utf.c in Sources */,
+				AB455E002E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */,
 				ABE6840C189E33BC007FD69C /* OGLDisplayOutput.cpp in Sources */,
 				AB796D2D15CDCBA200C59155 /* slot2_expMemory.cpp in Sources */,
 				AB47B52F18A45C35009A42AF /* xbrz.cpp in Sources */,
@@ -9704,6 +9747,7 @@
 				ABFEA8EA1BB4FB3200B08C25 /* truetype.c in Sources */,
 				AB8F3CC01A53AC2600A80BF6 /* SoundTouch.cpp in Sources */,
 				AB8F3CC11A53AC2600A80BF6 /* slot1_retail_auto.cpp in Sources */,
+				AB455E0A2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */,
 				AB8F3CC21A53AC2600A80BF6 /* SPU.cpp in Sources */,
 				AB000DD71CCC6B4200413F02 /* retro_stat.c in Sources */,
 				AB11AD8A1F6757F800CB298E /* ClientInputHandler.cpp in Sources */,
@@ -9790,6 +9834,7 @@
 				ABADF11F1DEA4D0000A142B1 /* Database.cpp in Sources */,
 				AB8F3D081A53AC2600A80BF6 /* x86compilercontext.cpp in Sources */,
 				AB8F3D091A53AC2600A80BF6 /* x86compilerfunc.cpp in Sources */,
+				AB455DFB2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */,
 				AB8F3D0A1A53AC2600A80BF6 /* x86compileritem.cpp in Sources */,
 				AB8F3D0B1A53AC2600A80BF6 /* x86cpuinfo.cpp in Sources */,
 				AB8F3D0C1A53AC2600A80BF6 /* cocoa_slot2.mm in Sources */,
@@ -9818,7 +9863,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AB000DD31CCC6B3B00413F02 /* file_path.c in Sources */,
-				AB564901186E6EA8002740F4 /* cocoa_slot2.mm in Sources */,
+				AB455DFD2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */,
 				ABCFA9F6178BDE920030C8BA /* encrypt.cpp in Sources */,
 				ABB3C66C1501C04F00E0C22E /* NDSGameCore.mm in Sources */,
 				ABB3C6701501C04F00E0C22E /* videofilter.cpp in Sources */,
@@ -9867,6 +9912,7 @@
 				AB49B53F281687B90069F1D7 /* ftfntfmt.c in Sources */,
 				ABB3C68C1501C04F00E0C22E /* cpu_detect_x86_gcc.cpp in Sources */,
 				ABB3C68D1501C04F00E0C22E /* FIFOSampleBuffer.cpp in Sources */,
+				AB8044F22F0E4A2B00A6824E /* ClientAVCaptureObject.cpp in Sources */,
 				ABDB1BE62E6602A5002AD9AF /* ClientEmulationOutput.cpp in Sources */,
 				AB9038A817C5ECFD00F410BD /* advanscene.cpp in Sources */,
 				AB000DD61CCC6B3F00413F02 /* retro_dirent.c in Sources */,
@@ -9885,6 +9931,7 @@
 				AB031B5518472F3100541888 /* cocoa_cheat.mm in Sources */,
 				AB4C81E71B21677700ACECD5 /* hq3x.cpp in Sources */,
 				ABB3C6991501C04F00E0C22E /* decrypt.cpp in Sources */,
+				AB8044F32F0E4C5600A6824E /* cocoa_util.mm in Sources */,
 				ABB3C69A1501C04F00E0C22E /* header.cpp in Sources */,
 				AB1773FF182ECA8A009F29DD /* slot2_passme.cpp in Sources */,
 				ABB3C69B1501C04F00E0C22E /* cache.cpp in Sources */,
@@ -9980,7 +10027,6 @@
 				AB49B549281687B90069F1D7 /* ftpfr.c in Sources */,
 				AB68A0DD16B139BC00DE0546 /* OGLRender_3_2.cpp in Sources */,
 				AB9038B717C5ED2200F410BD /* slot1comp_mc.cpp in Sources */,
-				AB3A656316CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
 				AB82445D1704AE9A00B8EE20 /* utilities.c in Sources */,
 				AB64DC4F2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				AB49B556281707590069F1D7 /* OGLDisplayOutput.cpp in Sources */,
@@ -10067,6 +10113,7 @@
 				ABC858DD28273FEE00A03EA9 /* ROMReader.cpp in Sources */,
 				ABC858DE28273FEE00A03EA9 /* rtc.cpp in Sources */,
 				ABC858DF28273FEE00A03EA9 /* saves.cpp in Sources */,
+				AB455E092E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */,
 				ABC858E028273FEE00A03EA9 /* ClientExecutionControl.cpp in Sources */,
 				ABC858E128273FEE00A03EA9 /* slot1.cpp in Sources */,
 				ABC858E228273FEE00A03EA9 /* slot1_none.cpp in Sources */,
@@ -10095,6 +10142,7 @@
 				ABC858F928273FEE00A03EA9 /* Slot2WindowDelegate.mm in Sources */,
 				ABC858FA28273FEE00A03EA9 /* SoundTouch.cpp in Sources */,
 				ABC858FB28273FEE00A03EA9 /* ftfstype.c in Sources */,
+				AB455DFC2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */,
 				ABC858FC28273FEE00A03EA9 /* slot1_retail_auto.cpp in Sources */,
 				ABC858FD28273FEE00A03EA9 /* SPU.cpp in Sources */,
 				ABC858FE28273FEE00A03EA9 /* sse_optimized.cpp in Sources */,
@@ -10303,6 +10351,7 @@
 				ABD2CD9126E05CB000FB15F7 /* ROMReader.cpp in Sources */,
 				ABD2CD9226E05CB000FB15F7 /* rtc.cpp in Sources */,
 				ABD2CD9326E05CB000FB15F7 /* saves.cpp in Sources */,
+				AB455E0E2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */,
 				ABD2CD9426E05CB000FB15F7 /* ClientExecutionControl.cpp in Sources */,
 				ABD2CD9526E05CB000FB15F7 /* slot1.cpp in Sources */,
 				ABD2CD9626E05CB000FB15F7 /* slot1_none.cpp in Sources */,
@@ -10331,6 +10380,7 @@
 				ABD2CDAD26E05CB000FB15F7 /* Slot2WindowDelegate.mm in Sources */,
 				ABD2CDAE26E05CB000FB15F7 /* SoundTouch.cpp in Sources */,
 				ABD2CDAF26E05CB000FB15F7 /* ftfstype.c in Sources */,
+				AB455DF82E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */,
 				ABD2CDB026E05CB000FB15F7 /* slot1_retail_auto.cpp in Sources */,
 				ABD2CDB126E05CB000FB15F7 /* SPU.cpp in Sources */,
 				ABD2CDB226E05CB000FB15F7 /* sse_optimized.cpp in Sources */,
@@ -10865,6 +10915,7 @@
 				);
 				INFOPLIST_FILE = "openemu/Info (OpenEmu Plug-in).plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.desmume.DeSmuME-OpenEmu";
 				PRODUCT_NAME = DeSmuME;
 				WRAPPER_EXTENSION = oecoreplugin;
 			};
@@ -10894,6 +10945,7 @@
 				INFOPLIST_FILE = "openemu/Info (OpenEmu Plug-in).plist";
 				LLVM_LTO = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.desmume.DeSmuME-OpenEmu";
 				PRODUCT_NAME = DeSmuME;
 				WRAPPER_EXTENSION = oecoreplugin;
 			};

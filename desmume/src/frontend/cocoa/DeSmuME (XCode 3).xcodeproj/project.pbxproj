@@ -877,6 +877,16 @@
 		AB6A198416CAD66900384EED /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A198216CAD66900384EED /* cocoa_GPU.mm */; };
 		AB6A198516CAD66900384EED /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A198216CAD66900384EED /* cocoa_GPU.mm */; };
 		AB6A198616CAD66900384EED /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A198216CAD66900384EED /* cocoa_GPU.mm */; };
+		AB6A1F6D2F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6A1F6B2F0E77BE007BA44D /* ClientGraphicsControl.cpp */; };
+		AB6A1F6E2F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6A1F6B2F0E77BE007BA44D /* ClientGraphicsControl.cpp */; };
+		AB6A1F6F2F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6A1F6B2F0E77BE007BA44D /* ClientGraphicsControl.cpp */; };
+		AB6A1F702F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6A1F6B2F0E77BE007BA44D /* ClientGraphicsControl.cpp */; };
+		AB6A1F712F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6A1F6B2F0E77BE007BA44D /* ClientGraphicsControl.cpp */; };
+		AB6A1F742F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A1F732F0E77DB007BA44D /* CocoaGraphicsController.mm */; };
+		AB6A1F752F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A1F732F0E77DB007BA44D /* CocoaGraphicsController.mm */; };
+		AB6A1F762F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A1F732F0E77DB007BA44D /* CocoaGraphicsController.mm */; };
+		AB6A1F772F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A1F732F0E77DB007BA44D /* CocoaGraphicsController.mm */; };
+		AB6A1F782F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A1F732F0E77DB007BA44D /* CocoaGraphicsController.mm */; };
 		AB6D78942809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB6D78932809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
 		AB6D78952809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB6D78932809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
 		AB6D78962809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB6D78932809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png */; };
@@ -2122,6 +2132,10 @@
 		AB6A187B16C9951C00384EED /* EmuControllerDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = EmuControllerDelegate.mm; sourceTree = "<group>"; };
 		AB6A198116CAD66900384EED /* cocoa_GPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_GPU.h; sourceTree = "<group>"; };
 		AB6A198216CAD66900384EED /* cocoa_GPU.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_GPU.mm; sourceTree = "<group>"; };
+		AB6A1F6B2F0E77BE007BA44D /* ClientGraphicsControl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClientGraphicsControl.cpp; sourceTree = "<group>"; };
+		AB6A1F6C2F0E77BE007BA44D /* ClientGraphicsControl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientGraphicsControl.h; sourceTree = "<group>"; };
+		AB6A1F722F0E77DB007BA44D /* CocoaGraphicsController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CocoaGraphicsController.h; sourceTree = "<group>"; };
+		AB6A1F732F0E77DB007BA44D /* CocoaGraphicsController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CocoaGraphicsController.mm; sourceTree = "<group>"; };
 		AB6D78932809FA43007C6B0A /* Icon_MicrophoneIdleNoHardware_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneIdleNoHardware_256x256.png; path = images/Icon_MicrophoneIdleNoHardware_256x256.png; sourceTree = "<group>"; };
 		AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_nand.cpp; sourceTree = "<group>"; };
 		AB6FE66A26E6F7C2002B2106 /* GPU_Operations_AVX2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations_AVX2.cpp; sourceTree = "<group>"; };
@@ -2613,6 +2627,7 @@
 				AB561BFF2E72AD6E007F88A5 /* ClientEmulationOutput.cpp */,
 				ABD4F2711F54A51000D75A1F /* ClientExecutionControl.cpp */,
 				AB1E5A342E73F0AC008AFF9F /* ClientFirmwareControl.cpp */,
+				AB6A1F6B2F0E77BE007BA44D /* ClientGraphicsControl.cpp */,
 				ABC04DA11F67A20500EA6ED7 /* ClientInputHandler.cpp */,
 				AB561C012E72AD6E007F88A5 /* ClientVideoOutput.cpp */,
 				AB1E6DA42E7C63420057B8C9 /* cgl_3Demu.cpp */,
@@ -2631,6 +2646,7 @@
 				AB561C002E72AD6E007F88A5 /* ClientEmulationOutput.h */,
 				ABD4F2721F54A51000D75A1F /* ClientExecutionControl.h */,
 				AB1E5A352E73F0AC008AFF9F /* ClientFirmwareControl.h */,
+				AB6A1F6C2F0E77BE007BA44D /* ClientGraphicsControl.h */,
 				ABC04DA21F67A20500EA6ED7 /* ClientInputHandler.h */,
 				AB561C022E72AD6E007F88A5 /* ClientVideoOutput.h */,
 				AB1E6DA52E7C63420057B8C9 /* cgl_3Demu.h */,
@@ -3302,6 +3318,7 @@
 				AB4B5A1F217E47E400381363 /* WifiSettingsPanel.h */,
 				AB561BEF2E72AD38007F88A5 /* CocoaAudioController.h */,
 				AB561BF12E72AD38007F88A5 /* CocoaDisplayView.h */,
+				AB6A1F722F0E77DB007BA44D /* CocoaGraphicsController.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				ABEBCE362A703E260028CE8A /* CheatDatabaseWindowController.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
@@ -3324,6 +3341,7 @@
 				AB4B5A20217E47E400381363 /* WifiSettingsPanel.mm */,
 				AB561BF02E72AD38007F88A5 /* CocoaAudioController.mm */,
 				AB561BF22E72AD38007F88A5 /* CocoaDisplayView.mm */,
+				AB6A1F732F0E77DB007BA44D /* CocoaGraphicsController.mm */,
 			);
 			path = userinterface;
 			sourceTree = "<group>";
@@ -3966,7 +3984,7 @@
 			attributes = {
 				ORGANIZATIONNAME = "DeSmuME Team";
 			};
-			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 3)" */;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (Xcode 3)" */;
 			compatibilityVersion = "Xcode 3.1";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
@@ -4930,6 +4948,8 @@
 				AB1E5A392E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
 				AB743E482E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				AB1E6DA72E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
+				AB6A1F6E2F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */,
+				AB6A1F752F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5132,6 +5152,8 @@
 				AB1E5A3B2E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
 				AB743E492E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				AB1E6DA82E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
+				AB6A1F6F2F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */,
+				AB6A1F762F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5364,6 +5386,8 @@
 				AB1E5A3F2E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
 				AB743E4B2E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				AB1E6DAA2E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
+				AB6A1F712F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */,
+				AB6A1F782F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5596,6 +5620,8 @@
 				AB1E5A3D2E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
 				AB743E4A2E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				AB1E6DA92E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
+				AB6A1F702F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */,
+				AB6A1F772F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5798,6 +5824,8 @@
 				AB1E5A372E73F0AC008AFF9F /* ClientFirmwareControl.cpp in Sources */,
 				AB743E472E766E2E007FB6A2 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				AB1E6DA62E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
+				AB6A1F6D2F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */,
+				AB6A1F742F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -6146,7 +6174,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 3)" */ = {
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (Xcode 3)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C01FCF4F08A954540054247B /* Debug */,

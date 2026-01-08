@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2025 DeSmuME team
+	Copyright (C) 2011-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -29,10 +29,10 @@ class ClientExecutionControl;
 class ClientEmulationOutput;
 class ClientEmulationOutputManager;
 class ClientDisplayViewOutputManager;
+class MacGraphicsControl;
 @class CocoaDSCore;
 @class CocoaDSController;
 @class CocoaDSFirmware;
-@class CocoaDSGPU;
 @class CocoaDSCheatManager;
 
 typedef struct
@@ -48,10 +48,10 @@ typedef struct
 	ClientExecutionControl *execControl;
 	ClientEmulationOutputManager *outputManager;
 	ClientDisplayViewOutputManager *macDisplayOutputManager;
+	MacGraphicsControl *graphicsControl;
 	
 	CocoaDSController *cdsController;
 	CocoaDSFirmware *cdsFirmware;
-	CocoaDSGPU *cdsGPU;
 	CocoaDSCheatManager *cdsCheatManager;
 	NSMutableArray *cdsOutputList;
 	
@@ -75,10 +75,10 @@ typedef struct
 @property (readonly, nonatomic) ClientExecutionControl *execControl;
 @property (readonly, nonatomic) ClientEmulationOutputManager *outputManager;
 @property (readonly, nonatomic) ClientDisplayViewOutputManager *macDisplayOutputManager;
+@property (readonly, nonatomic) MacGraphicsControl *graphicsControl;
 
 @property (retain) CocoaDSFirmware *cdsFirmware;
 @property (readonly) CocoaDSController *cdsController;
-@property (readonly) CocoaDSGPU *cdsGPU;
 @property (readonly) CocoaDSCheatManager *cdsCheatManager;
 @property (readonly) NSMutableArray *cdsOutputList;
 
