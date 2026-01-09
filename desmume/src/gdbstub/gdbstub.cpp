@@ -58,7 +58,7 @@ slock *cpu_mutex = NULL;
 #endif
 
 #if 1
-#define DEBUG_LOG( fmt, ...) fprintf(stdout, fmt, ##__VA_ARGS__)
+#define DEBUG_LOG( fmt, ...) if(getenv("GDBSTUB_DEBUG")) fprintf(stdout, fmt, ##__VA_ARGS__)
 #else
 #define DEBUG_LOG( fmt, ...)
 #endif
