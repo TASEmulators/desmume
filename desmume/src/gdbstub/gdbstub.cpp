@@ -1107,7 +1107,12 @@ createSocket ( int port) {
   sock = socket (PF_INET, SOCK_STREAM, 0);
 
   if ( sock != INVALID_SOCKET)
-    {
+  {
+#ifndef WIN32
+      /* reuse socket, might have stall state if previously used */
+      int yes = 1;
+      setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+#endif
       if (bind (sock, (struct sockaddr *) &bind_addr,
                 sizeof (bind_addr)) == -1) {
         LOG_ERROR("Bind failed \"%s\" port %d\n", strerror( errno), port);
