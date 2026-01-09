@@ -1597,14 +1597,16 @@ createStub_gdb( uint16_t port,
 
     if ( stub->thread == NULL) {
       LOG_ERROR("Failed to create listener thread\n");
-	  delete stub;
+      delete stub;
+      stub = NULL;
     }
     else {
       DEBUG_LOG("Created GDB stub on port %d\n", port);
     }
   }
   else {
-	  delete stub;
+    delete stub;
+    stub = NULL;
   }
 
   return stub;
