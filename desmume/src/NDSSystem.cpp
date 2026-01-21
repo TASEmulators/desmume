@@ -3488,6 +3488,33 @@ namespace
 			write(0x23ff104, 48, (char*)"\x01\x00\x51\xE3\x03\x00\x00\x1A\x10\x10\x8F\xE2\x1E\x00\x91\xE8\x00\x30\x81\xE5\x00\x40\x82\xE5\x2C\xD0\x8D\xE2\x1E\xFF\x2F\xE1\x4C\xDA\x18\x02\x54\xDA\x18\x02\x21\x59\xA0\xE3\x00\x40\xA0\xE3");
 		}
 	};
+
+	struct puppyshop_eu : public GameHackCheat
+	{
+		virtual void Run()
+		{
+			if(0xe3a02002 == read32(0x22029C98))
+				write32(0x22029C98, 0xe3a02000);
+		}
+	};
+
+	struct puppyshop_us : public GameHackCheat
+	{
+		virtual void Run()
+		{
+			if(0xe3a02002 == read32(0x22029DD8))
+				write32(0x22029DD8, 0xe3a02000);
+		}
+	};
+
+	struct puppyshop_ja : public GameHackCheat
+	{
+		virtual void Run()
+		{
+			if(0xe3a02002 == read32(0x2203ADAC))
+				write32(0x2203ADAC, 0xe3a02000);
+		}
+	};
 }
 
 void GameHackCheat::write08(u32 address, u8 value)
@@ -3522,6 +3549,10 @@ void TCommonSettings::GameHacks::apply()
 	//Rabbids Go Home
 	if(gameInfo.IsCode("VRGE")) flags.cheats.push_back(new rabbids_us());
 	if(gameInfo.IsCode("VRGV")) flags.cheats.push_back(new rabbids_eu());
+	// My Puppy Shop/Puppy Palace/Machi no Pet-ya-san DS - 200 Piki Wanchan Daishuugou
+	if(gameInfo.IsCode("YPTP")) flags.cheats.push_back(new puppyshop_eu());
+	if(gameInfo.IsCode("YPTE")) flags.cheats.push_back(new puppyshop_us());
+	if(gameInfo.IsCode("YPTJ")) flags.cheats.push_back(new puppyshop_ja());
 }
 
 void TCommonSettings::GameHacks::clear()
