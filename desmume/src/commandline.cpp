@@ -67,7 +67,7 @@ static const char* help_string = \
 "                            multipler; 1:256x192 (default), 2:512x384," ENDL
 "                            3:768x576, 4:1024x768, 5:1280x960" ENDL
 " --windowed-fullscreen" ENDL
-"                            Launches in windowed fullscreen (same as alt+enter)" ENDL
+"                            Launches in windowed fullscreen (same as F11)" ENDL
 #else
 " --scale N                  scale factor for window; default 1.0" ENDL
 " --horizontal               display touch screen to the right; default OFF" ENDL

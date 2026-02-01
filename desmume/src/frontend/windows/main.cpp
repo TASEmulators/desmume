@@ -859,7 +859,7 @@ static u32 currWindowStyle = DWS_NORMAL;
 void SetStyle(u32 dws);
 static u32 GetStyle() { return currWindowStyle; }
 
-static void ToggleFullscreen()
+void ToggleFullscreen()
 {
 	u32 style = GetStyle();
 	HWND hwnd = MainWindow->getHWnd();
@@ -4090,7 +4090,7 @@ DOKEYDOWN:
 			if(message == WM_SYSKEYDOWN && wParam==VK_RETURN && !(lParam&0x40000000))
 			{
 				if(IsZoomed(hwnd))
-					ShowWindow(hwnd,SW_NORMAL); //maximize and fullscreen get mixed up so make sure no maximize now. IOW, alt+enter from fullscreen should never result in a maximized state
+					ShowWindow(hwnd,SW_NORMAL); //maximize and fullscreen get mixed up so make sure no maximize now. IOW, alt+enter/F11 from fullscreen should never result in a maximized state
 				ToggleFullscreen();
 			}
 			else
