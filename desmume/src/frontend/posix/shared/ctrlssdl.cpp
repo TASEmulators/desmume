@@ -826,7 +826,7 @@ process_ctrls_event( SDL_Event& event,
         break;
 
       case SDL_KEYDOWN:
-        if (event.key.keysym.sym == SDLK_RETURN) && (event.key.keysym.mod & KMOD_ALT) {
+        if ((event.key.keysym.sym == SDLK_RETURN) && (event.key.keysym.mod & KMOD_ALT)) {
             SDL_SetWindowFullscreen(cfg->window, fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
             fullscreen = !fullscreen;
             break;
