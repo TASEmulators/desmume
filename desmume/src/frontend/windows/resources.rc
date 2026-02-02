@@ -2300,6 +2300,7 @@ BEGIN
     ID_LABEL_HK29           "Stylus Auto-Hold"
     ID_LABEL_HK30           "LCDs layout mode"
     ID_LABEL_HK31           "LCDs swap"
+    ID_LABEL_HK77           "Toggle fullscreen"
 END
 
 STRINGTABLE
