@@ -832,19 +832,24 @@ Render3DError ShaderProgramCreateOGL(GLuint &vtxShaderID,
 		glCompileShader(vtxShaderID);
 		if (!ValidateShaderCompileOGL(GL_VERTEX_SHADER, vtxShaderID))
 		{
-			error = OGLERROR_SHADER_CREATE_ERROR;
-			return error;
+			glDeleteShader(vtxShaderID);
+			vtxShaderID = 0;
+			return OGLERROR_SHADER_CREATE_ERROR;
 		}
 	}
-	
+
 	if (fragShaderID == 0)
 	{
 		fragShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 		if (fragShaderID == 0)
 		{
 			INFO("OpenGL: Failed to create the fragment shader.\n");
-			error = OGLERROR_SHADER_CREATE_ERROR;
-			return error;
+			if (vtxShaderID != 0)
+			{
+				glDeleteShader(vtxShaderID);
+				vtxShaderID = 0;
+			}
+			return OGLERROR_SHADER_CREATE_ERROR;
 		}
 		
 		const char *fragShaderCStringPtr = fragShaderCString;
@@ -852,6 +857,13 @@ Render3DError ShaderProgramCreateOGL(GLuint &vtxShaderID,
 		glCompileShader(fragShaderID);
 		if (!ValidateShaderCompileOGL(GL_FRAGMENT_SHADER, fragShaderID))
 		{
+			glDeleteShader(fragShaderID);
+			fragShaderID = 0;
+			if (vtxShaderID != 0)
+			{
+				glDeleteShader(vtxShaderID);
+				vtxShaderID = 0;
+			}
 			error = OGLERROR_SHADER_CREATE_ERROR;
 			return error;
 		}

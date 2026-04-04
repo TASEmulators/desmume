@@ -489,6 +489,7 @@ enum MicMode
 
 struct GameHackCheat
 {
+	virtual ~GameHackCheat() = default;
 	virtual void Run() {}
 
 	void write08(u32 address, u8 value);

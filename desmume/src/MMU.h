@@ -722,12 +722,15 @@ FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u3
 #endif
 
 	// break points, wheee
-	for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
+	if (!memReadBreakPoints.empty())
 	{
-		if (addr == memReadBreakPoints[i])
+		for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
 		{
-			execute = false;
-			i = memReadBreakPoints.size();
+			if (addr == memReadBreakPoints[i])
+			{
+				execute = false;
+				break;
+			}
 		}
 	}
 
@@ -770,12 +773,15 @@ FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 #endif
 
 	// break points, wheee
-	for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
+	if (!memReadBreakPoints.empty())
 	{
-		if (addr == memReadBreakPoints[i])
+		for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
 		{
-			execute = false;
-			i = memReadBreakPoints.size();
+			if (addr == memReadBreakPoints[i])
+			{
+				execute = false;
+				break;
+			}
 		}
 	}
 
@@ -830,12 +836,15 @@ FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
     call_registered_interface_mem_hook(addr, 4, HOOK_READ);
 #endif
 	// break points, wheee
-	for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
+	if (!memReadBreakPoints.empty())
 	{
-		if (addr == memReadBreakPoints[i])
+		for (size_t i = 0; i < memReadBreakPoints.size(); ++i)
 		{
-			execute = false;
-			i = memReadBreakPoints.size();
+			if (addr == memReadBreakPoints[i])
+			{
+				execute = false;
+				break;
+			}
 		}
 	}
 
@@ -895,12 +904,15 @@ FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	}
 
 	// break points, wheee
-	for (size_t i = 0; i < memWriteBreakPoints.size(); ++i)
+	if (!memWriteBreakPoints.empty())
 	{
-		if (addr == memWriteBreakPoints[i])
+		for (size_t i = 0; i < memWriteBreakPoints.size(); ++i)
 		{
-			execute = false;
-			i = memWriteBreakPoints.size();
+			if (addr == memWriteBreakPoints[i])
+			{
+				execute = false;
+				break;
+			}
 		}
 	}
 
@@ -953,12 +965,15 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	}
 
 	// break points, wheee
-	for (size_t i = 0; i < memWriteBreakPoints.size(); ++i)
+	if (!memWriteBreakPoints.empty())
 	{
-		if (addr == memWriteBreakPoints[i])
+		for (size_t i = 0; i < memWriteBreakPoints.size(); ++i)
 		{
-			execute = false;
-			i = memWriteBreakPoints.size();
+			if (addr == memWriteBreakPoints[i])
+			{
+				execute = false;
+				break;
+			}
 		}
 	}
 
@@ -1008,12 +1023,15 @@ FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	}
 
 	// break points, wheee
-	for (size_t i = 0; i < memWriteBreakPoints.size(); ++i)
+	if (!memWriteBreakPoints.empty())
 	{
-		if (addr == memWriteBreakPoints[i])
+		for (size_t i = 0; i < memWriteBreakPoints.size(); ++i)
 		{
-			execute = false;
-			i = memWriteBreakPoints.size();
+			if (addr == memWriteBreakPoints[i])
+			{
+				execute = false;
+				break;
+			}
 		}
 	}
 
