@@ -68,7 +68,7 @@ jobs:
       - name: buildit
         run: |
           cd desmume/src/frontend/windows/
-          echo "OPT=-fstrength-reduce -fthread-jumps -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -fexpensive-optimizations -fforce-addr -fomit-frame-pointer -ffast-math -march=pentium4 -mtune=pentium4 -mmmx -msse2" > config.mak
+          echo "OPT=-fthread-jumps -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -fexpensive-optimizations -fomit-frame-pointer -ffast-math -march=x86-64 -mtune=generic -msse2" > config.mak
           make -j8
           mkdir /tmp/DeSmuME
           cp desmume.exe /tmp/DeSmuME
@@ -84,27 +84,58 @@ jobs:
           name: desmume-mingw-win32
           path: /tmp/DeSmuME.tar.xz
 
-  build_macos:
-    name: Build DeSmuME (macOS)
+  build_macos_intel:
+    name: Build DeSmuME (macOS/Intel64)
     runs-on: macos-14
 
     steps:
       - name: checkout
         uses: actions/checkout@v4
-      
+
+      - name: install xcpretty
+        run: gem install xcpretty
+
       - name: xcodebuild
         run: |
           cd desmume/src/frontend/cocoa/
           xcodebuild archive -project "DeSmuME (Latest).xcodeproj" -scheme "DeSmuME (macOS App; Intel64 -- Latest Xcode)" -arch x86_64 -archivePath "$(pwd)/desmume.xcarchive" | xcpretty -c
-      
+
       - name: make zip
         run: |
           cd desmume/src/frontend/cocoa/desmume.xcarchive/Products/Applications/
           7z a DeSmuME.app.zip DeSmuME.app
 
-      - name: Upload artifict
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos
+          name: macos-intel64
           path: desmume/src/frontend/cocoa/desmume.xcarchive/Products/Applications/DeSmuME.app.zip
-          if-no-files-found: error 
+          if-no-files-found: error
+
+  build_macos_arm64:
+    name: Build DeSmuME (macOS/AppleSilicon)
+    runs-on: macos-14
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install xcpretty
+        run: gem install xcpretty
+
+      - name: xcodebuild
+        run: |
+          cd desmume/src/frontend/cocoa/
+          xcodebuild archive -project "DeSmuME (Latest).xcodeproj" -scheme "DeSmuME (macOS App; AppleSilicon -- Latest Xcode)" -arch arm64 -archivePath "$(pwd)/desmume-arm64.xcarchive" | xcpretty -c
+
+      - name: make zip
+        run: |
+          cd desmume/src/frontend/cocoa/desmume-arm64.xcarchive/Products/Applications/
+          7z a DeSmuME.app.zip DeSmuME.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64
+          path: desmume/src/frontend/cocoa/desmume-arm64.xcarchive/Products/Applications/DeSmuME.app.zip
+          if-no-files-found: error
