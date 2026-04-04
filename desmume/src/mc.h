@@ -151,6 +151,7 @@ public:
 	bool import_dsv(const char *filename);
 	bool export_no_gba(const char* fname);
 	bool export_raw(const char* filename);
+	bool export_dsv(const char* filename);
 	bool no_gba_unpack(u8 *&buf, u32 &size);
 	
 	bool load_movie(EMUFILE *is);

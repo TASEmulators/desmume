@@ -1109,10 +1109,13 @@ bool BackupDevice::exportData(const char *filename)
 	{
 		char tmp[MAX_PATH];
 		memset(tmp, 0, MAX_PATH);
-		strcpy(tmp, filename);
+		strncpy(tmp, filename, MAX_PATH - 1);
 		tmp[strlen(tmp)-1] = 0;
 		return export_no_gba(tmp);
 	}
+
+	if (memcmp(filename + strlen(filename) - 4, ".dsv", 4) == 0)
+		return export_dsv(filename);
 
 	if (memcmp(filename + strlen(filename) - 4, ".sav", 4) == 0)
 		return export_raw(filename);
@@ -1408,6 +1411,45 @@ bool BackupDevice::export_raw(const char* filename)
 	return true;
 }
 
+bool BackupDevice::export_dsv(const char* filename)
+{
+	// Export in native DeSmuME .dsv format (raw data + padding + footer)
+	std::vector<u8> data(this->_fsize);
+	u32 pos = this->_fpMC->ftell();
+	this->_fpMC->fseek(0, SEEK_SET);
+	this->_fpMC->fread((char *)&data[0], this->_fsize);
+	this->_fpMC->fseek(pos, SEEK_SET);
+
+	FILE *outf = fopen(filename, "wb");
+	if (!outf) return false;
+
+	u32 size = (u32)data.size();
+	u32 padSize = pad_up_size(size);
+
+	// Write raw data
+	if (size > 0)
+		fwrite(&data[0], 1, size, outf);
+
+	// Pad to standard save size
+	for (u32 i = size; i < padSize; i++)
+		fputc(uninitializedValue, outf);
+
+	// Write DSV footer (matches the format written by ensure())
+	fprintf(outf, "%s", DESMUME_BACKUP_FOOTER_TXT);
+
+	u32 leVal;
+	leVal = LOCAL_TO_LE_32(size);       fwrite(&leVal, 4, 1, outf);
+	leVal = LOCAL_TO_LE_32(padSize);    fwrite(&leVal, 4, 1, outf);
+	leVal = LOCAL_TO_LE_32(this->_info.type);     fwrite(&leVal, 4, 1, outf);
+	leVal = LOCAL_TO_LE_32(this->_addr_size);     fwrite(&leVal, 4, 1, outf);
+	leVal = LOCAL_TO_LE_32(this->_info.size);     fwrite(&leVal, 4, 1, outf);
+	leVal = LOCAL_TO_LE_32((u32)0);     fwrite(&leVal, 4, 1, outf);  // version
+	fprintf(outf, "%s", kDesmumeSaveCookie);
+
+	fclose(outf);
+	return true;
+}
+
 u32 BackupDevice::pad_up_size(u32 startSize)
 {
 	u32 size = startSize;
@@ -1619,8 +1661,21 @@ bool BackupDevice::import_dsv(const char *filename)
 	}
 	
 	// Read the backup data into memory.
+	// Sanity check: DS save data should never exceed 1 MB
+	if (importFileFooter.info.padSize == 0 || importFileFooter.info.padSize > 1024 * 1024)
+	{
+		fclose(theFile);
+		printf("BackupDevice: DSV import failed! Invalid padSize: %u\n", (unsigned int)importFileFooter.info.padSize);
+		return result;
+	}
 	u8 *backupData = (u8 *)malloc(importFileFooter.info.padSize);
-	
+	if (backupData == NULL)
+	{
+		fclose(theFile);
+		printf("BackupDevice: DSV import failed! Could not allocate %u bytes.\n", (unsigned int)importFileFooter.info.padSize);
+		return result;
+	}
+
 	fseek(theFile, 0, SEEK_SET);
 	const size_t backupDataReadByteCount = fread(backupData, 1, importFileFooter.info.padSize, theFile);
 	fclose(theFile); // At this point, both backup data and footer should have been read, so we can close the import file now.

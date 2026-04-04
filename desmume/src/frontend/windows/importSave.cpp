@@ -197,7 +197,7 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 		if (res)
 		{
 			printf("Save was successfully imported\n");
-			NDS_Reset(); // reboot game
+			// NDS_Reset() is already called inside importData() on success
 		}
 		else
 			printf("Save was not successfully imported");

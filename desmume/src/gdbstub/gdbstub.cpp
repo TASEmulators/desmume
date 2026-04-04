@@ -1114,7 +1114,12 @@ createSocket ( int port) {
 
   if ( sock != INVALID_SOCKET)
   {
-#ifndef WIN32
+#ifdef WIN32
+      /* On Windows, use SO_EXCLUSIVEADDRUSE for safe port reuse.
+         SO_REUSEADDR on Windows allows multiple sockets on the same port (security risk). */
+      int exclusive = 1;
+      setsockopt(sock, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (const char*)&exclusive, sizeof(int));
+#else
       /* reuse socket, might have stall state if previously used */
       int yes = 1;
       setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));

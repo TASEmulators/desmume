@@ -1251,7 +1251,7 @@ static void ImportExportBackupDialog(bool is_export)
             gtk_dialog_run(GTK_DIALOG(pDialog));
             gtk_widget_destroy(pDialog);
         } else if (!is_export) {
-            NDS_Reset(); // reboot game
+            // NDS_Reset() is already called inside importData() on success
         }
         g_free(sPath);
         break;
