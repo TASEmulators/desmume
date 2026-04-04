@@ -3368,12 +3368,13 @@ bool AdhocCommInterface::Start(WifiHandler* currentWifiHandler)
 	#endif
 
 	// Bind the socket to any address on port 7000.
-	sockaddr_t saddr;
-	saddr.sa_family = AF_INET;
-	*(u32*)&saddr.sa_data[2] = htonl(INADDR_ANY);
-	*(u16*)&saddr.sa_data[0] = htons(BASEPORT);
+	struct sockaddr_in saddr_in;
+	memset(&saddr_in, 0, sizeof(saddr_in));
+	saddr_in.sin_family = AF_INET;
+	saddr_in.sin_addr.s_addr = htonl(INADDR_ANY);
+	saddr_in.sin_port = htons(BASEPORT);
 
-	result = bind(thisSocket, &saddr, sizeof(sockaddr_t));
+	result = bind(thisSocket, (sockaddr_t*)&saddr_in, sizeof(saddr_in));
 	if(result < 0)
 	{
 		closesocket(thisSocket);
@@ -3616,14 +3617,21 @@ bool SoftAPCommInterface::_IsDNSRequestToWFC(u16 ethertype, const u8* body)
 	{
 		// Assemble the requested domain name
 		u8 bitlength = 0; char domainname[256] = "";
+		size_t domainlen = 0;
 		while((bitlength = body[curoffset++]) != 0)
 		{
+			// Bounds check: ensure we don't overflow domainname
+			if (domainlen + bitlength + 1 >= sizeof(domainname))
+				break;
+
 			strncat(domainname, (const char*)&body[curoffset], bitlength);
+			domainlen += bitlength;
 
 			curoffset += bitlength;
 			if(body[curoffset] != 0)
 			{
 				strcat(domainname, ".");
+				domainlen++;
 			}
 		}
 
@@ -4934,7 +4942,10 @@ void WifiHandler::RXPacketRawToQueue(const RXRawPacketData& rawPacket)
 		if(packetIEEE80211HeaderPtr != NULL)
 		{
 			memset(newRXPacket.rxData, 0, sizeof(newRXPacket.rxData));
-			memcpy(newRXPacket.rxData, packetIEEE80211HeaderPtr, newRXPacket.rxHeader.length);
+			if (newRXPacket.rxHeader.length <= sizeof(newRXPacket.rxData))
+				memcpy(newRXPacket.rxData, packetIEEE80211HeaderPtr, newRXPacket.rxHeader.length);
+			else
+				memcpy(newRXPacket.rxData, packetIEEE80211HeaderPtr, sizeof(newRXPacket.rxData));
 			newRXPacket.latencyCount = 0;
 
 			if(WILLADVANCESEQNO)

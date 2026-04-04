@@ -58,10 +58,10 @@ static inline s8 read_s8(u32 addr) { return (s8)_MMU_read08<ARMCPU_ARM7,MMU_AT_D
 
 #define SPUCHAN_PCM16B_AT(x) ((u32)(x) % SPUINTERPOLATION_TAPS)
 
-//#ifdef FASTBUILD
+#ifdef FASTBUILD
 	#undef FORCEINLINE
 	#define FORCEINLINE
-//#endif
+#endif
 
 //static ISynchronizingAudioBuffer* _currentSynchronizer = metaspu_construct(ESynchMethod_Z);
 static ISynchronizingAudioBuffer* _currentSynchronizer = metaspu_construct(ESynchMethod_N);
@@ -223,6 +223,7 @@ int SPU_Init(int coreid, int newBufferSizeBytes)
 	for (size_t i = 0; i < COSINE_INTERPOLATION_RESOLUTION; i++)
 		cos_lut[i] = (u16)floor((1u<<16) * ((1.0 - cos(((double)i/(double)COSINE_INTERPOLATION_RESOLUTION) * M_PI)) * 0.5));
 
+	delete SPU_core;
 	SPU_core = new SPU_struct((int)ceil(samples_per_hline));
 	SPU_Reset();
 

@@ -457,10 +457,10 @@ bool CommandLine::parse(int argc,char **argv)
 		CommonSettings.autodetectBackupMethod = autodetect_method;
 
 	//TODO NOT MAX PRIORITY! change ARM9BIOS etc to be a std::string
-	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM9BIOS,_bios_arm9); }
-	if(_bios_arm7) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM7BIOS,_bios_arm7); }
-	#ifndef HOST_WINDOWS 
-		if(_fw_path) { CommonSettings.UseExtFirmware = true; CommonSettings.UseExtFirmwareSettings = true; strcpy(CommonSettings.ExtFirmwarePath,_fw_path); }
+	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strncpy(CommonSettings.ARM9BIOS,_bios_arm9,sizeof(CommonSettings.ARM9BIOS)-1); CommonSettings.ARM9BIOS[sizeof(CommonSettings.ARM9BIOS)-1]='\0'; }
+	if(_bios_arm7) { CommonSettings.UseExtBIOS = true; strncpy(CommonSettings.ARM7BIOS,_bios_arm7,sizeof(CommonSettings.ARM7BIOS)-1); CommonSettings.ARM7BIOS[sizeof(CommonSettings.ARM7BIOS)-1]='\0'; }
+	#ifndef HOST_WINDOWS
+		if(_fw_path) { CommonSettings.UseExtFirmware = true; CommonSettings.UseExtFirmwareSettings = true; strncpy(CommonSettings.ExtFirmwarePath,_fw_path,sizeof(CommonSettings.ExtFirmwarePath)-1); CommonSettings.ExtFirmwarePath[sizeof(CommonSettings.ExtFirmwarePath)-1]='\0'; }
 	#endif
 	if(_fw_boot) CommonSettings.BootFromFirmware = true;
 	if(_bios_swi) CommonSettings.SWIFromBIOS = true;

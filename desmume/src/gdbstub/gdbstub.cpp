@@ -800,6 +800,9 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
     if ( hexToInt( &rx_ptr, &addr)) {
       if ( *rx_ptr++ == ',') {
         if ( hexToInt( &rx_ptr, &length)) {
+          // Cap length to prevent buffer overflow: mem2hex writes length*2 bytes
+          if (length > (BUFMAX / 2) - 32)
+            length = (BUFMAX / 2) - 32;
           //DEBUG_LOG("mem read from %08x (%d)\n", addr, length);
           if ( !mem2hex( stub->direct_memio, addr, out_ptr, length)) {
             strcpy ( (char *)out_ptr, "E03");
@@ -1602,6 +1605,10 @@ createStub_gdb( uint16_t port,
 
     if ( stub->thread == NULL) {
       LOG_ERROR("Failed to create listener thread\n");
+      if (stub->listen_fd != -1)
+        CLOSESOCKET(stub->listen_fd);
+      delete stub->direct_memio;
+      delete stub->gdb_memio;
       delete stub;
       stub = NULL;
     }
@@ -1610,6 +1617,10 @@ createStub_gdb( uint16_t port,
     }
   }
   else {
+    if (stub->listen_fd != -1)
+      CLOSESOCKET(stub->listen_fd);
+    delete stub->direct_memio;
+    delete stub->gdb_memio;
     delete stub;
     stub = NULL;
   }

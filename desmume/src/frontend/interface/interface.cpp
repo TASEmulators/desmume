@@ -293,9 +293,8 @@ EXPORTED BOOL desmume_backup_import_file(const char *filename, unsigned int forc
 	if (!success) {
         return FALSE;
 	}
-    
-    NDS_Reset();
-	
+
+	// NDS_Reset() is already called inside importData() on success
     return TRUE;
 }
 
