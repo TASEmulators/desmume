@@ -57,17 +57,20 @@ slock *cpu_mutex = NULL;
 #define UNUSED_PARM( parm) parm
 #endif
 
+static int gdbstub_debug_enabled = -1;
+static inline int gdbstub_debug_check() {
+	if (gdbstub_debug_enabled < 0)
+		gdbstub_debug_enabled = (getenv("GDBSTUB_DEBUG") != NULL) ? 1 : 0;
+	return gdbstub_debug_enabled;
+}
+
 #if 1
-#define DEBUG_LOG( fmt, ...) if(getenv("GDBSTUB_DEBUG")) fprintf(stdout, fmt, ##__VA_ARGS__)
+#define DEBUG_LOG( fmt, ...) if(gdbstub_debug_check()) fprintf(stdout, fmt, ##__VA_ARGS__)
 #else
 #define DEBUG_LOG( fmt, ...)
 #endif
 
-#if 0
 #define LOG_ERROR( fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
-#else
-#define LOG_ERROR( fmt, ...)
-#endif
 
 #ifdef WIN32
 #define RECV(A,B,C) recv(A, (char*)B, C, 0)
@@ -800,6 +803,9 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
     if ( hexToInt( &rx_ptr, &addr)) {
       if ( *rx_ptr++ == ',') {
         if ( hexToInt( &rx_ptr, &length)) {
+          // Cap length to prevent buffer overflow: mem2hex writes length*2 bytes
+          if (length > (BUFMAX / 2) - 32)
+            length = (BUFMAX / 2) - 32;
           //DEBUG_LOG("mem read from %08x (%d)\n", addr, length);
           if ( !mem2hex( stub->direct_memio, addr, out_ptr, length)) {
             strcpy ( (char *)out_ptr, "E03");
@@ -1108,7 +1114,12 @@ createSocket ( int port) {
 
   if ( sock != INVALID_SOCKET)
   {
-#ifndef WIN32
+#ifdef WIN32
+      /* On Windows, use SO_EXCLUSIVEADDRUSE for safe port reuse.
+         SO_REUSEADDR on Windows allows multiple sockets on the same port (security risk). */
+      int exclusive = 1;
+      setsockopt(sock, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (const char*)&exclusive, sizeof(int));
+#else
       /* reuse socket, might have stall state if previously used */
       int yes = 1;
       setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
@@ -1602,6 +1613,10 @@ createStub_gdb( uint16_t port,
 
     if ( stub->thread == NULL) {
       LOG_ERROR("Failed to create listener thread\n");
+      if (stub->listen_fd != -1)
+        CLOSESOCKET(stub->listen_fd);
+      delete stub->direct_memio;
+      delete stub->gdb_memio;
       delete stub;
       stub = NULL;
     }
@@ -1610,6 +1625,10 @@ createStub_gdb( uint16_t port,
     }
   }
   else {
+    if (stub->listen_fd != -1)
+      CLOSESOCKET(stub->listen_fd);
+    delete stub->direct_memio;
+    delete stub->gdb_memio;
     delete stub;
     stub = NULL;
   }
