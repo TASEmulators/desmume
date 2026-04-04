@@ -131,7 +131,12 @@ EXPORTED char* desmume_savestate_slot_date(int index);
 EXPORTED BOOL desmume_backup_import_file(const char *filename, unsigned int force_size);
 
 /**
- * Export current battery save to .dsv file.
+ * Export current battery save to file.
+ *
+ * Supported formats (determined by file extension):
+ *   - .dsv  - DeSmuME native save format (raw data + metadata footer)
+ *   - .sav  - Raw save data (no metadata)
+ *   - .sav* - no$GBA format
  *
  * Prerequisites:
  *   - MMU_new.backupDevice is a global object initialized at program startup
@@ -144,7 +149,7 @@ EXPORTED BOOL desmume_backup_import_file(const char *filename, unsigned int forc
  *   // ... play game, save data is created ...
  *   desmume_backup_export_file("backup.dsv");  // Export save data
  *
- * @param filename Destination path for .dsv file
+ * @param filename Destination path (.dsv, .sav, or .sav*)
  * @return TRUE on success, FALSE on failure
  */
 EXPORTED BOOL desmume_backup_export_file(const char *filename);
