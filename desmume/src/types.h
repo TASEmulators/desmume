@@ -28,9 +28,9 @@
 #endif
 
 //analyze microsoft compilers
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
 	#define HOST_WINDOWS
-#endif //_MSC_VER
+#endif
 
 // Determine CPU architecture for platforms that don't use the autoconf script
 #if defined(HOST_WINDOWS) || defined(DESMUME_COCOA)
