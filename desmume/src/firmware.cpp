@@ -136,10 +136,24 @@ u32 CFIRMWARE::_decrypt(const u8 *in, u8* &out)
 
 				len = (data >> 12) + 3;
 				offset = (data & 0xFFF);
+
+				// Prevent unsigned underflow: ensure back-reference is within output
+				if (offset >= xOut)
+				{
+					delete[] out;
+					out = NULL;
+					return 0;
+				}
 				windowOffset = (xOut - offset - 1);
 
 				for(j = 0; j < len; j++)
 				{
+					if (xOut >= blockSize || windowOffset >= blockSize)
+					{
+						delete[] out;
+						out = NULL;
+						return 0;
+					}
 					T1WriteByte(out, xOut, T1ReadByte(out, windowOffset));
 					xOut++;
 					windowOffset++;
@@ -150,6 +164,12 @@ u32 CFIRMWARE::_decrypt(const u8 *in, u8* &out)
 			}
 			else
 			{
+				if (xOut >= blockSize)
+				{
+					delete[] out;
+					out = NULL;
+					return 0;
+				}
 				T1WriteByte(out, xOut, T1ReadByte((u8*)curBlock, (xIn % 8)));
 				xOut++;
 				xIn++;
@@ -166,7 +186,7 @@ u32 CFIRMWARE::_decrypt(const u8 *in, u8* &out)
 			d = ((d << 1) & 0xFF);
 		}
 	}
-	
+
 	return (blockSize);
 }
 
@@ -222,10 +242,24 @@ u32 CFIRMWARE::_decompress(const u8 *in, u8* &out)
 
 				len = (data >> 12) + 3;
 				offset = (data & 0xFFF);
+
+				// Prevent unsigned underflow: ensure back-reference is within output
+				if (offset >= xOut)
+				{
+					delete[] out;
+					out = NULL;
+					return 0;
+				}
 				windowOffset = (xOut - offset - 1);
 
 				for(j = 0; j < len; j++)
 				{
+					if (xOut >= blockSize || windowOffset >= blockSize)
+					{
+						delete[] out;
+						out = NULL;
+						return 0;
+					}
 					T1WriteByte(out, xOut, T1ReadByte(out, windowOffset));
 					xOut++;
 					windowOffset++;
@@ -236,6 +270,12 @@ u32 CFIRMWARE::_decompress(const u8 *in, u8* &out)
 			}
 			else
 			{
+				if (xOut >= blockSize)
+				{
+					delete[] out;
+					out = NULL;
+					return 0;
+				}
 				T1WriteByte(out, xOut, T1ReadByte((u8*)curBlock, (xIn % 8)));
 				xOut++;
 				xIn++;
@@ -251,7 +291,7 @@ u32 CFIRMWARE::_decompress(const u8 *in, u8* &out)
 			d = ((d << 1) & 0xFF);
 		}
 	}
-	
+
 	return (blockSize);
 }
 //================================================================================

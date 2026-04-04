@@ -243,7 +243,7 @@ void * ZIPROMReaderInit(const char * filename)
 
 		memset(tmp2,0,sizeof(tmp2));
 		tmp1 = strndup(filename, strlen(filename) - 4);
-		sprintf(tmp2, "%s/%s", tmp1, dirent->d_name);
+		snprintf(tmp2, sizeof(tmp2), "%s/%s", tmp1, dirent->d_name);
 		free(tmp1);
 		return zzip_fopen(tmp2, "rb");
 	}

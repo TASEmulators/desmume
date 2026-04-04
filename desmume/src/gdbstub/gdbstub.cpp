@@ -57,17 +57,20 @@ slock *cpu_mutex = NULL;
 #define UNUSED_PARM( parm) parm
 #endif
 
+static int gdbstub_debug_enabled = -1;
+static inline int gdbstub_debug_check() {
+	if (gdbstub_debug_enabled < 0)
+		gdbstub_debug_enabled = (getenv("GDBSTUB_DEBUG") != NULL) ? 1 : 0;
+	return gdbstub_debug_enabled;
+}
+
 #if 1
-#define DEBUG_LOG( fmt, ...) if(getenv("GDBSTUB_DEBUG")) fprintf(stdout, fmt, ##__VA_ARGS__)
+#define DEBUG_LOG( fmt, ...) if(gdbstub_debug_check()) fprintf(stdout, fmt, ##__VA_ARGS__)
 #else
 #define DEBUG_LOG( fmt, ...)
 #endif
 
-#if 0
 #define LOG_ERROR( fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
-#else
-#define LOG_ERROR( fmt, ...)
-#endif
 
 #ifdef WIN32
 #define RECV(A,B,C) recv(A, (char*)B, C, 0)

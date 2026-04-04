@@ -3141,6 +3141,16 @@ static void SoftAP_RXPacketGet_Callback(u_char* userData, const pcap_pkthdr* pkt
 	}
 
 	RXRawPacketData* rawPacket = (RXRawPacketData*)userData;
+
+	// Calculate emulated packet size before writing
+	const size_t emuPacketSize = (pktHeader->len + (sizeof(WifiDataFrameHeaderDS2STA) + sizeof(WifiLLCSNAPHeader) - sizeof(EthernetFrameHeader)) + 3) & 0xFFFC;
+
+	// Bounds check: ensure we don't overflow the RX buffer
+	if (rawPacket->writeLocation + sizeof(DesmumeFrameHeader) + emuPacketSize > sizeof(rawPacket->buffer))
+	{
+		return;
+	}
+
 	u8* targetPacket = &rawPacket->buffer[rawPacket->writeLocation];
 
 	// Generate the emulator header.
@@ -3148,7 +3158,7 @@ static void SoftAP_RXPacketGet_Callback(u_char* userData, const pcap_pkthdr* pkt
 	strncpy(emulatorHeader.frameID, DESMUME_EMULATOR_FRAME_ID, 8);
 	emulatorHeader.version = DESMUME_EMULATOR_FRAME_CURRENT_VERSION;
 	emulatorHeader.timeStamp = 0;
-	emulatorHeader.emuPacketSize = (pktHeader->len + (sizeof(WifiDataFrameHeaderDS2STA) + sizeof(WifiLLCSNAPHeader) - sizeof(EthernetFrameHeader)) + 3) & 0xFFFC;
+	emulatorHeader.emuPacketSize = emuPacketSize;
 
 	emulatorHeader.packetAttributes.value = 0;
 	emulatorHeader.packetAttributes.IsTXRate20 = 1;
@@ -3332,9 +3342,8 @@ bool AdhocCommInterface::Start(WifiHandler* currentWifiHandler)
 
 	// Create an UDP socket.
 	thisSocket = socket(AF_INET, SOCK_DGRAM, 0);
-	if(thisSocket < 0)
+	if(thisSocket == INVALID_SOCKET)
 	{
-		thisSocket = INVALID_SOCKET;
 
 		// Ad-hoc mode really needs a socket to work at all, so don't even bother
 		// running this comm interface if we didn't get a working socket.
@@ -3429,7 +3438,7 @@ void AdhocCommInterface::Stop()
 {
 	socket_t& thisSocket = *((socket_t*)this->_wifiSocket);
 
-	if(thisSocket >= 0)
+	if(thisSocket != INVALID_SOCKET)
 	{
 		slock_lock(this->_mutexRXThreadRunningFlag);
 
@@ -3461,7 +3470,7 @@ size_t AdhocCommInterface::TXPacketSend(u8* txTargetBuffer, size_t txLength)
 	socket_t& thisSocket = *((socket_t*)this->_wifiSocket);
 	sockaddr_t& thisSendAddr = *((sockaddr_t*)this->_sendAddr);
 
-	if((thisSocket < 0) || (txTargetBuffer == NULL) || (txLength == 0))
+	if((thisSocket == INVALID_SOCKET) || (txTargetBuffer == NULL) || (txLength == 0))
 	{
 		return txPacketSize;
 	}
@@ -3521,7 +3530,7 @@ void AdhocCommInterface::RXPacketGet()
 {
 	socket_t& thisSocket = *((socket_t*)this->_wifiSocket);
 
-	if((thisSocket < 0) || (this->_rawPacket == NULL) || (this->_wifiHandler == NULL))
+	if((thisSocket == INVALID_SOCKET) || (this->_rawPacket == NULL) || (this->_wifiHandler == NULL))
 	{
 		return;
 	}
