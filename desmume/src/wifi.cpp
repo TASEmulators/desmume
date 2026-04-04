@@ -3141,6 +3141,16 @@ static void SoftAP_RXPacketGet_Callback(u_char* userData, const pcap_pkthdr* pkt
 	}
 
 	RXRawPacketData* rawPacket = (RXRawPacketData*)userData;
+
+	// Calculate emulated packet size before writing
+	const size_t emuPacketSize = (pktHeader->len + (sizeof(WifiDataFrameHeaderDS2STA) + sizeof(WifiLLCSNAPHeader) - sizeof(EthernetFrameHeader)) + 3) & 0xFFFC;
+
+	// Bounds check: ensure we don't overflow the RX buffer
+	if (rawPacket->writeLocation + sizeof(DesmumeFrameHeader) + emuPacketSize > sizeof(rawPacket->buffer))
+	{
+		return;
+	}
+
 	u8* targetPacket = &rawPacket->buffer[rawPacket->writeLocation];
 
 	// Generate the emulator header.
@@ -3148,7 +3158,7 @@ static void SoftAP_RXPacketGet_Callback(u_char* userData, const pcap_pkthdr* pkt
 	strncpy(emulatorHeader.frameID, DESMUME_EMULATOR_FRAME_ID, 8);
 	emulatorHeader.version = DESMUME_EMULATOR_FRAME_CURRENT_VERSION;
 	emulatorHeader.timeStamp = 0;
-	emulatorHeader.emuPacketSize = (pktHeader->len + (sizeof(WifiDataFrameHeaderDS2STA) + sizeof(WifiLLCSNAPHeader) - sizeof(EthernetFrameHeader)) + 3) & 0xFFFC;
+	emulatorHeader.emuPacketSize = emuPacketSize;
 
 	emulatorHeader.packetAttributes.value = 0;
 	emulatorHeader.packetAttributes.IsTXRate20 = 1;
@@ -3332,9 +3342,8 @@ bool AdhocCommInterface::Start(WifiHandler* currentWifiHandler)
 
 	// Create an UDP socket.
 	thisSocket = socket(AF_INET, SOCK_DGRAM, 0);
-	if(thisSocket < 0)
+	if(thisSocket == INVALID_SOCKET)
 	{
-		thisSocket = INVALID_SOCKET;
 
 		// Ad-hoc mode really needs a socket to work at all, so don't even bother
 		// running this comm interface if we didn't get a working socket.
@@ -3368,12 +3377,13 @@ bool AdhocCommInterface::Start(WifiHandler* currentWifiHandler)
 	#endif
 
 	// Bind the socket to any address on port 7000.
-	sockaddr_t saddr;
-	saddr.sa_family = AF_INET;
-	*(u32*)&saddr.sa_data[2] = htonl(INADDR_ANY);
-	*(u16*)&saddr.sa_data[0] = htons(BASEPORT);
+	struct sockaddr_in saddr_in;
+	memset(&saddr_in, 0, sizeof(saddr_in));
+	saddr_in.sin_family = AF_INET;
+	saddr_in.sin_addr.s_addr = htonl(INADDR_ANY);
+	saddr_in.sin_port = htons(BASEPORT);
 
-	result = bind(thisSocket, &saddr, sizeof(sockaddr_t));
+	result = bind(thisSocket, (sockaddr_t*)&saddr_in, sizeof(saddr_in));
 	if(result < 0)
 	{
 		closesocket(thisSocket);
@@ -3428,7 +3438,7 @@ void AdhocCommInterface::Stop()
 {
 	socket_t& thisSocket = *((socket_t*)this->_wifiSocket);
 
-	if(thisSocket >= 0)
+	if(thisSocket != INVALID_SOCKET)
 	{
 		slock_lock(this->_mutexRXThreadRunningFlag);
 
@@ -3460,7 +3470,7 @@ size_t AdhocCommInterface::TXPacketSend(u8* txTargetBuffer, size_t txLength)
 	socket_t& thisSocket = *((socket_t*)this->_wifiSocket);
 	sockaddr_t& thisSendAddr = *((sockaddr_t*)this->_sendAddr);
 
-	if((thisSocket < 0) || (txTargetBuffer == NULL) || (txLength == 0))
+	if((thisSocket == INVALID_SOCKET) || (txTargetBuffer == NULL) || (txLength == 0))
 	{
 		return txPacketSize;
 	}
@@ -3520,7 +3530,7 @@ void AdhocCommInterface::RXPacketGet()
 {
 	socket_t& thisSocket = *((socket_t*)this->_wifiSocket);
 
-	if((thisSocket < 0) || (this->_rawPacket == NULL) || (this->_wifiHandler == NULL))
+	if((thisSocket == INVALID_SOCKET) || (this->_rawPacket == NULL) || (this->_wifiHandler == NULL))
 	{
 		return;
 	}
@@ -3616,14 +3626,21 @@ bool SoftAPCommInterface::_IsDNSRequestToWFC(u16 ethertype, const u8* body)
 	{
 		// Assemble the requested domain name
 		u8 bitlength = 0; char domainname[256] = "";
+		size_t domainlen = 0;
 		while((bitlength = body[curoffset++]) != 0)
 		{
+			// Bounds check: ensure we don't overflow domainname
+			if (domainlen + bitlength + 1 >= sizeof(domainname))
+				break;
+
 			strncat(domainname, (const char*)&body[curoffset], bitlength);
+			domainlen += bitlength;
 
 			curoffset += bitlength;
 			if(body[curoffset] != 0)
 			{
 				strcat(domainname, ".");
+				domainlen++;
 			}
 		}
 
@@ -4934,7 +4951,10 @@ void WifiHandler::RXPacketRawToQueue(const RXRawPacketData& rawPacket)
 		if(packetIEEE80211HeaderPtr != NULL)
 		{
 			memset(newRXPacket.rxData, 0, sizeof(newRXPacket.rxData));
-			memcpy(newRXPacket.rxData, packetIEEE80211HeaderPtr, newRXPacket.rxHeader.length);
+			if (newRXPacket.rxHeader.length <= sizeof(newRXPacket.rxData))
+				memcpy(newRXPacket.rxData, packetIEEE80211HeaderPtr, newRXPacket.rxHeader.length);
+			else
+				memcpy(newRXPacket.rxData, packetIEEE80211HeaderPtr, sizeof(newRXPacket.rxData));
 			newRXPacket.latencyCount = 0;
 
 			if(WILLADVANCESEQNO)
