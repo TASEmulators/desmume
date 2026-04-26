@@ -98,7 +98,7 @@ jobs:
       - name: xcodebuild
         run: |
           cd desmume/src/frontend/cocoa/
-          xcodebuild archive -project "DeSmuME (Latest).xcodeproj" -scheme "DeSmuME (macOS App; Universal -- Latest Xcode)" -archivePath "$(pwd)/desmume.xcarchive" | xcpretty -c
+          xcodebuild archive -project "DeSmuME (Latest).xcodeproj" -scheme "DeSmuME (macOS App; Universal -- Latest Xcode)" -destination "generic/platform=macOS" -archivePath "$(pwd)/desmume.xcarchive" | xcpretty -c
       
       - name: make zip
         run: |
