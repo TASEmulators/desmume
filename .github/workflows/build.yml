@@ -91,18 +91,21 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
+        
+      - name: install xcpretty
+        run: gem install xcpretty
       
       - name: xcodebuild
         run: |
           cd desmume/src/frontend/cocoa/
-          xcodebuild archive -project "DeSmuME (Latest).xcodeproj" -scheme "DeSmuME (macOS App; Intel64 -- Latest Xcode)" -arch x86_64 -archivePath "$(pwd)/desmume.xcarchive" | xcpretty -c
+          xcodebuild archive -project "DeSmuME (Latest).xcodeproj" -scheme "DeSmuME (macOS App; Universal -- Latest Xcode)" -archivePath "$(pwd)/desmume.xcarchive" | xcpretty -c
       
       - name: make zip
         run: |
           cd desmume/src/frontend/cocoa/desmume.xcarchive/Products/Applications/
           7z a DeSmuME.app.zip DeSmuME.app
 
-      - name: Upload artifict
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos
