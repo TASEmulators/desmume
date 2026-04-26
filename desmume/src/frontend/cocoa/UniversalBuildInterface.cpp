@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2022 DeSmuME team
+	Copyright (C) 2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,18 +16,9 @@
 */
 
 /*
-	Unlike the other build targets, the OpenEmu plug-in build system has
-	the goal of maintaining a single build target for itself to keep
-	things simple. This causes a number of things to happen:
-
-	1. No PGO. But we can't do PGO anyways because we're building a plug-in,
-	   and therefore can't run the plug-in through Xcode's debugger to even
-	   generate the optimization profile for PGO.
-	2. No separate build file lists for different binaries. While we don't
-	   suppport PowerPC or i386 builds for the plug-in, we do support x86_64,
-	   x86_64h, and arm64 builds. To make up for build list differences
-	   between binaries, we use this file to account for them.
- */
+	This file is responsible for accounting for the different build lists
+	used for each architecture in Universal build targets.
+*/
 
 #if defined(HAVE_JIT)
 	#if defined(__i386__) || defined(__x86_64__)
