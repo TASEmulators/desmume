@@ -3471,10 +3471,8 @@ namespace
 	{
 		virtual void Run()
 		{
-			if(0xe28dd02c == read32(0x203cf18))
-				write32(0x203cf18, 0xeb0f0878);
-			write32(0x23ff100, 0xe59d1000);
-			write(0x23ff104, 48, (char*)"\x01\x00\x51\xE3\x03\x00\x00\x1A\x10\x10\x8F\xE2\x1E\x00\x91\xE8\x00\x30\x81\xE5\x00\x40\x82\xE5\x2C\xD0\x8D\xE2\x1E\xFF\x2F\xE1\xC4\xD5\x18\x02\xCC\xD5\x18\x02\x21\x59\xA0\xE3\x00\x40\xA0\xE3");
+			if (0xebfaff8f == read32(0x218d518))
+				write32(0x218d518, 0xe3a00001);
 		}
 	};
 
@@ -3482,10 +3480,8 @@ namespace
 	{
 		virtual void Run()
 		{
-			if(0xe28dd02c == read32(0x203d108))
-				write32(0x203d108, 0xeb0efcbc);
-			write32(0x23ff100, 0xe59d1000);
-			write(0x23ff104, 48, (char*)"\x01\x00\x51\xE3\x03\x00\x00\x1A\x10\x10\x8F\xE2\x1E\x00\x91\xE8\x00\x30\x81\xE5\x00\x40\x82\xE5\x2C\xD0\x8D\xE2\x1E\xFF\x2F\xE1\x4C\xDA\x18\x02\x54\xDA\x18\x02\x21\x59\xA0\xE3\x00\x40\xA0\xE3");
+			if (0xebfafee9 == read32(0x218d9a0))
+				write32(0x218d9a0, 0xe3a00001);
 		}
 	};
 
