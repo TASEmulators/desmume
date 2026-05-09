@@ -346,6 +346,24 @@ static u32 reflect(u32 ref, char ch)
 	return value;
 }
 
+static u32 reflect8(u32 ref)
+{
+	ref = ((ref & 0x0F) << 4) | ((ref & 0xF0) >> 4);
+	ref = ((ref & 0x33) << 2) | ((ref & 0xCC) >> 2);
+	ref = ((ref & 0x55) << 1) | ((ref & 0xAA) >> 1);
+	return ref;
+}
+
+static u32 reflect32(u32 ref)
+{
+	ref = ((ref & 0x0000FFFF) << 16) | ((ref & 0xFFFF0000) >> 16);
+	ref = ((ref & 0x00FF00FF) <<  8) | ((ref & 0xFF00FF00) >>  8);
+	ref = ((ref & 0x0F0F0F0F) <<  4) | ((ref & 0xF0F0F0F0) >>  4);
+	ref = ((ref & 0x33333333) <<  2) | ((ref & 0xCCCCCCCC) >>  2);
+	ref = ((ref & 0x55555555) <<  1) | ((ref & 0xAAAAAAAA) >>  1);
+	return ref;
+}
+
 static u32 WIFI_calcCRC32(u8* data, int len)
 {
 	u32 crc = 0xFFFFFFFF;
@@ -366,10 +384,10 @@ static void WIFI_initCRC32Table()
 
 	for(int i = 0; i < 0x100; i++)
 	{
-		WIFI_CRC32Table[i] = reflect(i, 8) << 24;
+		WIFI_CRC32Table[i] = reflect8(i) << 24;
 		for(int j = 0; j < 8; j++)
 			WIFI_CRC32Table[i] = (WIFI_CRC32Table[i] << 1) ^ (WIFI_CRC32Table[i] & (1 << 31) ? polynomial : 0);
-		WIFI_CRC32Table[i] = reflect(WIFI_CRC32Table[i], 32);
+		WIFI_CRC32Table[i] = reflect32(WIFI_CRC32Table[i]);
 	}
 }
 
