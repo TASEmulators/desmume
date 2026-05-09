@@ -20,9 +20,15 @@
 #include <string.h>
 
 #include "../slot2.h"
+#include "../emufile.h"
 
-u8 hcv1000_cnt;
-char hcv1000_data[16];
+static u8 hcv1000_cnt;
+static u8 hcv1000_data[16] = 
+{ 0x5F, 0x5F, 0x5F, 0x5F,
+  0x5F, 0x5F, 0x5F, 0x5F,
+  0x5F, 0x5F, 0x5F, 0x5F,
+  0x5F, 0x5F, 0x5F, 0x5F
+};
 
 class Slot2_HCV1000 : public ISlot2Interface
 {
@@ -34,17 +40,15 @@ public:
 		return &info;
 	}
 
-	virtual bool init()
+	virtual void connect()
 	{
 		hcv1000_cnt = 0;
-		memset(hcv1000_data, 0x5F, 16);
-
-		return TRUE;
 	}
 
 	virtual void writeByte(u8 PROCNUM, u32 addr, u8 val)
 	{
-		if (addr == 0xA000000) { hcv1000_cnt = (val & 0x83); }
+		if (addr == 0xA000000)
+			hcv1000_cnt = (val & 0x83);
 	}
 
 	virtual u8	readByte(u8 PROCNUM, u32 addr)
@@ -58,12 +62,15 @@ public:
 		}
 
 		//HCV_CNT
-		else if (addr == 0xA000000) { slot_byte = hcv1000_cnt; }
+		else if (addr == 0xA000000)
+		{
+			slot_byte = hcv1000_cnt;
+		}
 
 		//HCV_DATA
 		else if ((addr >= 0xA000010) && (addr <= 0xA00001F))
 		{
-			slot_byte = (u8)hcv1000_data[addr & 0xF];
+			slot_byte = hcv1000_data[addr & 0xF];
 		}
 
 		return slot_byte;
@@ -71,6 +78,24 @@ public:
 
 	virtual u16	readWord(u8 PROCNUM, u32 addr) { return 0xFDFD; };
 	virtual u32	readLong(u8 PROCNUM, u32 addr) { return 0xFDFDFDFD; };
+
+	virtual void savestate(EMUFILE &os)
+	{
+		s32 version = 0;
+		os.write_32LE(version);
+
+		os.write_u8(hcv1000_cnt);
+	}
+
+	virtual void loadstate(EMUFILE &is)
+	{
+		s32 version = is.read_s32LE();
+
+		if (version >= 0)
+		{
+			is.read_u8(hcv1000_cnt);
+		}
+	}
 };
 
 ISlot2Interface* construct_Slot2_HCV1000() { return new Slot2_HCV1000(); }
