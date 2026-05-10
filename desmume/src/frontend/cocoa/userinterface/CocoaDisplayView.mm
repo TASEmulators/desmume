@@ -33,6 +33,12 @@
 #import "cocoa_util.h"
 #import "cocoa_globals.h"
 
+@interface CocoaDisplayView ()
++ (id) attributedInputStatusForProperty:(const ClientInputDeviceProperties &)inputProperty
+                           inputManager:(InputManager *)inputManager
+                                 suffix:(NSString *)suffix;
+@end
+
 @implementation CocoaDisplayView
 
 @synthesize inputManager;
@@ -117,12 +123,37 @@
 	
 	if (keyPressed && [theEvent window] != nil)
 	{
-		NSString *newStatusText = [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName];
-		[[windowController emuControl] setStatusText:newStatusText];
+		[[windowController emuControl] setStatusText:[CocoaDisplayView attributedInputStatusForProperty:inputProperty
+		                                                                                  inputManager:inputManager
+		                                                                                        suffix:nil]];
 	}
-	
+
 	isHandled = [inputManager dispatchCommandUsingInputProperties:&inputProperty];
 	return isHandled;
+}
+
++ (id) attributedInputStatusForProperty:(const ClientInputDeviceProperties &)inputProperty
+                           inputManager:(InputManager *)inputManager
+                                 suffix:(NSString *)suffix
+{
+	ClientCommandAttributes cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputProperty.deviceCode
+	                                                                        elementCode:inputProperty.elementCode];
+	NSString *base = [NSString stringWithFormat:@"%s: %s", inputProperty.deviceName, inputProperty.elementName];
+	if (suffix != nil) base = [base stringByAppendingString:suffix];
+
+	if (cmdAttr.tag[0] == '\0' || cmdAttr.dispatchFunction == NULL)
+	{
+		return base;
+	}
+
+	NSString *bindingName = [NSString stringWithCString:cmdAttr.tag encoding:NSUTF8StringEncoding];
+	NSString *combined = [NSString stringWithFormat:@"%@ - %@", base, bindingName];
+	NSMutableAttributedString *attr = [[[NSMutableAttributedString alloc] initWithString:combined] autorelease];
+	const NSUInteger boldStart = [combined length] - [bindingName length];
+	[attr addAttribute:NSFontAttributeName
+	             value:[NSFont boldSystemFontOfSize:[NSFont smallSystemFontSize]]
+	             range:NSMakeRange(boldStart, [bindingName length])];
+	return attr;
 }
 
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed
@@ -158,8 +189,11 @@
 	
 	if (buttonPressed && [theEvent window] != nil)
 	{
-		NSString *newStatusText = (displayMode == ClientDisplayMode_Main) ? [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName] : [NSString stringWithFormat:@"%s:%s X:%i Y:%i", inputProperty.deviceName, inputProperty.elementName, (int)inputProperty.intCoordX, (int)inputProperty.intCoordY];
-		[[windowController emuControl] setStatusText:newStatusText];
+		NSString *coordSuffix = (displayMode == ClientDisplayMode_Main) ? nil
+		                        : [NSString stringWithFormat:@" X:%i Y:%i", (int)inputProperty.intCoordX, (int)inputProperty.intCoordY];
+		[[windowController emuControl] setStatusText:[CocoaDisplayView attributedInputStatusForProperty:inputProperty
+		                                                                                  inputManager:inputManager
+		                                                                                        suffix:coordSuffix]];
 	}
 	
 	isHandled = [inputManager dispatchCommandUsingInputProperties:&inputProperty];
