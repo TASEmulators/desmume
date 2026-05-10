@@ -1568,19 +1568,25 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	else if (theAction == @selector(changeCoreSpeed:))
 	{
-		NSInteger speedScalar = (NSInteger)([cdsCore speedScalar] * 100.0);
-		
-		if (speedScalar != (NSInteger)(SPEED_SCALAR_NORMAL * 100.0))
+		if (![cdsCore isSpeedLimitEnabled])
 		{
-			[theItem setLabel:NSSTRING_TITLE_SPEED_1X];
+			[theItem setLabel:NSLocalizedString(@"Unlimited", nil)];
 			[theItem setTag:100];
-			[theItem setImage:[emuControl iconSpeedNormal]];
+			[theItem setImage:[emuControl iconSpeedDouble]];
 		}
 		else
 		{
-			[theItem setLabel:NSSTRING_TITLE_SPEED_2X];
-			[theItem setTag:200];
-			[theItem setImage:[emuControl iconSpeedDouble]];
+			const long current = lround([cdsCore speedScalar]);
+			const long shown = (current < 1) ? 1 : ((current > 8) ? 8 : current);
+			long next;
+			if (shown <= 1)      next = 2;
+			else if (shown <= 2) next = 4;
+			else if (shown <= 4) next = 6;
+			else if (shown <= 6) next = 8;
+			else                 next = 1;
+			[theItem setLabel:[NSString stringWithFormat:NSLocalizedString(@"Speed %ldx", nil), shown]];
+			[theItem setTag:(NSInteger)(next * 100)];
+			[theItem setImage:(shown == 1) ? [emuControl iconSpeedNormal] : [emuControl iconSpeedDouble]];
 		}
 	}
 	else if (theAction == @selector(openRom:))

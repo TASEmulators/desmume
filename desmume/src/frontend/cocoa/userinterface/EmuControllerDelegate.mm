@@ -195,6 +195,50 @@
 	return self;
 }
 
+- (void) awakeFromNib
+{
+	static dispatch_once_t addExtraSpeedItemsOnce;
+	dispatch_once(&addExtraSpeedItemsOnce, ^{
+		NSMenu *speedMenu = nil;
+		for (NSMenuItem *topItem in [[NSApp mainMenu] itemArray])
+		{
+			NSMenu *sub = [topItem submenu];
+			for (NSMenuItem *subItem in [sub itemArray])
+			{
+				NSMenu *grand = [subItem submenu];
+				for (NSMenuItem *grandItem in [grand itemArray])
+				{
+					if ([grandItem action] == @selector(changeCoreSpeed:))
+					{
+						speedMenu = grand;
+						break;
+					}
+				}
+				if (speedMenu != nil) break;
+			}
+			if (speedMenu != nil) break;
+		}
+
+		if (speedMenu == nil) return;
+
+		NSInteger insertAt = [speedMenu indexOfItemWithTag:200];
+		if (insertAt < 0) insertAt = [speedMenu numberOfItems] - 1;
+		else insertAt += 1;
+
+		const long extras[] = {4, 6, 8};
+		for (size_t i = 0; i < sizeof(extras)/sizeof(extras[0]); i++)
+		{
+			NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"%ldx", extras[i]]
+			                                              action:@selector(changeCoreSpeed:)
+			                                       keyEquivalent:@""];
+			[item setTag:extras[i] * 100];
+			[item setTarget:self];
+			[speedMenu insertItem:item atIndex:insertAt + i];
+			[item release];
+		}
+	});
+}
+
 - (void)dealloc
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
@@ -3088,14 +3132,15 @@
 	else if (theAction == @selector(changeCoreSpeed:))
 	{
 		NSInteger speedScalar = (NSInteger)([cdsCore speedScalar] * 100.0);
-		
+
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
 			if ([theItem tag] == -1)
 			{
 				if (speedScalar == (NSInteger)(SPEED_SCALAR_HALF * 100.0) ||
 					speedScalar == (NSInteger)(SPEED_SCALAR_NORMAL * 100.0) ||
-					speedScalar == (NSInteger)(SPEED_SCALAR_DOUBLE * 100.0))
+					speedScalar == (NSInteger)(SPEED_SCALAR_DOUBLE * 100.0) ||
+					speedScalar == 400 || speedScalar == 600 || speedScalar == 800)
 				{
 					[(NSMenuItem*)theItem setState:GUI_STATE_OFF];
 				}
@@ -3111,17 +3156,25 @@
 		}
 		else if ([(id)theItem isMemberOfClass:[NSToolbarItem class]])
 		{
-			if (speedScalar == (NSInteger)(SPEED_SCALAR_DOUBLE * 100.0))
+			if (![cdsCore isSpeedLimitEnabled])
 			{
-				[(NSToolbarItem*)theItem setLabel:NSSTRING_TITLE_SPEED_1X];
+				[(NSToolbarItem*)theItem setLabel:NSLocalizedString(@"Unlimited", nil)];
 				[(NSToolbarItem*)theItem setTag:100];
-				[(NSToolbarItem*)theItem setImage:iconSpeedNormal];
+				[(NSToolbarItem*)theItem setImage:iconSpeedDouble];
 			}
 			else
 			{
-				[(NSToolbarItem*)theItem setLabel:NSSTRING_TITLE_SPEED_2X];
-				[(NSToolbarItem*)theItem setTag:200];
-				[(NSToolbarItem*)theItem setImage:iconSpeedDouble];
+				const long current = lround([cdsCore speedScalar]);
+				const long shown = (current < 1) ? 1 : ((current > 8) ? 8 : current);
+				long next;
+				if (shown <= 1)      next = 2;
+				else if (shown <= 2) next = 4;
+				else if (shown <= 4) next = 6;
+				else if (shown <= 6) next = 8;
+				else                 next = 1;
+				[(NSToolbarItem*)theItem setLabel:[NSString stringWithFormat:NSLocalizedString(@"Speed %ldx", nil), shown]];
+				[(NSToolbarItem*)theItem setTag:(NSInteger)(next * 100)];
+				[(NSToolbarItem*)theItem setImage:(shown == 1) ? iconSpeedNormal : iconSpeedDouble];
 			}
 		}
 	}
