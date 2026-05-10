@@ -147,6 +147,9 @@
 	selectedExportRomSaveID = 0;
 	
 	lastSetSpeedScalar = 1.0f;
+	isSpeedScalarToggleEngaged = NO;
+	speedScalarBeforeToggle = 1.0f;
+	speedScalarToggleCurrent = 1.0f;
 	isHardwareMicAvailable = NO;
 	currentMicGainValue = 0.0f;
 	
@@ -1488,8 +1491,37 @@
 {
 	const float inputSpeedScalar = (cmdAttr.useInputForScalar) ? cmdAttr.input.scalar : cmdAttr.floatValue[0];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	[cdsCore setSpeedScalar:(cmdAttr.input.state == ClientInputDeviceState_Off) ? lastSetSpeedScalar : inputSpeedScalar];
+	[self setVerticalSyncForNonLayerBackedViews:nil];
+}
+
+- (void) cmdSetSpeedScalarToggle:(const ClientCommandAttributes &)cmdAttr
+{
+	if (cmdAttr.input.state == ClientInputDeviceState_Off)
+	{
+		return;
+	}
+
+	const float inputSpeedScalar = (cmdAttr.useInputForScalar) ? cmdAttr.input.scalar : cmdAttr.floatValue[0];
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+
+	if (isSpeedScalarToggleEngaged && speedScalarToggleCurrent == inputSpeedScalar)
+	{
+		[cdsCore setSpeedScalar:speedScalarBeforeToggle];
+		isSpeedScalarToggleEngaged = NO;
+	}
+	else
+	{
+		if (!isSpeedScalarToggleEngaged)
+		{
+			speedScalarBeforeToggle = lastSetSpeedScalar;
+		}
+		[cdsCore setSpeedScalar:inputSpeedScalar];
+		speedScalarToggleCurrent = inputSpeedScalar;
+		isSpeedScalarToggleEngaged = YES;
+	}
+
 	[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 

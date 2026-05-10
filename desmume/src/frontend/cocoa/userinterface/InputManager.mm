@@ -1167,7 +1167,10 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	
 	ClientCommandAttributes cmdToggleSpeed						= NewCommandAttributesWithFunction("Set Speed", &ClientCommandHoldToggleSpeedScalar);
 	cmdToggleSpeed.floatValue[0] = 1.0f;
-	
+
+	ClientCommandAttributes cmdSetSpeedToggle					= NewCommandAttributesWithFunction("Set Speed (Toggle)", &ClientCommandSetSpeedScalarToggle);
+	cmdSetSpeedToggle.floatValue[0] = 2.0f;
+
 	ClientCommandAttributes cmdToggleSpeedLimiter				= NewCommandAttributesWithFunction("Enable/Disable Speed Limiter", &ClientCommandToggleSpeedLimiter);
 	ClientCommandAttributes cmdToggleAutoFrameSkip				= NewCommandAttributesWithFunction("Enable/Disable Auto Frame Skip", &ClientCommandToggleAutoFrameSkip);
 	ClientCommandAttributes cmdToggleCheats						= NewCommandAttributesWithFunction("Enable/Disable Cheat System", &ClientCommandToggleCheats);
@@ -1225,6 +1228,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	defaultCommandAttributes["Rotate Display Right"]			= cmdRotateDisplayRight;
 	defaultCommandAttributes["Toggle All Displays"]				= cmdToggleAllDisplays;
 	defaultCommandAttributes["Set Speed"]						= cmdToggleSpeed;
+	defaultCommandAttributes["Set Speed (Toggle)"]				= cmdSetSpeedToggle;
 	defaultCommandAttributes["Enable/Disable Speed Limiter"]	= cmdToggleSpeedLimiter;
 	defaultCommandAttributes["Enable/Disable Auto Frame Skip"]	= cmdToggleAutoFrameSkip;
 	defaultCommandAttributes["Enable/Disable Cheat System"]		= cmdToggleCheats;
@@ -1698,7 +1702,8 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 		const NSInteger slotNumber = [(NSNumber *)[deviceInfo valueForKey:@"intValue0"] integerValue] + 1;
 		inputSummary = [NSString stringWithFormat:NSSTRING_TITLE_SLOT_NUMBER, slotNumber];
 	}
-	else if (strncmp(commandTag, "Set Speed", INPUT_HANDLER_STRING_LENGTH) == 0)
+	else if (strncmp(commandTag, "Set Speed", INPUT_HANDLER_STRING_LENGTH) == 0 ||
+	         strncmp(commandTag, "Set Speed (Toggle)", INPUT_HANDLER_STRING_LENGTH) == 0)
 	{
 		const float speedScalar = [(NSNumber *)[deviceInfo valueForKey:@"floatValue0"] floatValue];
 		inputSummary = [NSString stringWithFormat:NSSTRING_INPUTPREF_SPEED_SCALAR, speedScalar];
@@ -2210,6 +2215,12 @@ void ClientCommandHoldToggleSpeedScalar(const ClientCommandAttributes &cmdAttr, 
 {
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdHoldToggleSpeedScalar:cmdAttr];
+}
+
+void ClientCommandSetSpeedScalarToggle(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdSetSpeedScalarToggle:cmdAttr];
 }
 
 void ClientCommandToggleSpeedLimiter(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)

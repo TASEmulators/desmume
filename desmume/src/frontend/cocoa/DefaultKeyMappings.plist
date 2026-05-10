@@ -52,6 +52,7 @@
 		<string>Rotate Display Right</string>
 		<string>Toggle All Displays</string>
 		<string>Set Speed</string>
+		<string>Set Speed (Toggle)</string>
 		<string>Enable/Disable Speed Limiter</string>
 		<string>Enable/Disable Auto Frame Skip</string>
 		<string>Enable/Disable Cheat System</string>

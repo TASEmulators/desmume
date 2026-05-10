@@ -98,6 +98,9 @@ class AudioSampleBlockGenerator;
 	NSInteger selectedRomSaveTypeID;
 	
 	CGFloat lastSetSpeedScalar;
+	BOOL isSpeedScalarToggleEngaged;
+	CGFloat speedScalarBeforeToggle;
+	CGFloat speedScalarToggleCurrent;
 	BOOL isHardwareMicAvailable;
 	float currentMicGainValue;
 	
@@ -272,6 +275,7 @@ class AudioSampleBlockGenerator;
 - (void) cmdToggleAllDisplays:(const ClientCommandAttributes &)cmdAttr;
 
 - (void) cmdHoldToggleSpeedScalar:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdSetSpeedScalarToggle:(const ClientCommandAttributes &)cmdAttr;
 - (void) cmdToggleSpeedLimiter:(const ClientCommandAttributes &)cmdAttr;
 - (void) cmdToggleAutoFrameSkip:(const ClientCommandAttributes &)cmdAttr;
 - (void) cmdToggleCheats:(const ClientCommandAttributes &)cmdAttr;

@@ -159,6 +159,7 @@
 							 inputSettingsLoadStateSlot,	@"Load State Slot",
 							 inputSettingsSaveStateSlot,	@"Save State Slot",
 							 inputSettingsSetSpeedLimit,	@"Set Speed",
+							 inputSettingsSetSpeedLimit,	@"Set Speed (Toggle)",
 							 inputSettingsGPUState,			@"Enable/Disable GPU State",
 							 inputSettingsPaddleController,	@"Paddle",
 							 nil];

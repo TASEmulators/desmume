@@ -223,6 +223,7 @@ void ClientCommandCopyScreen(const ClientCommandAttributes &cmdAttr, void *dispa
 void ClientCommandRotateDisplayRelative(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
 void ClientCommandToggleAllDisplays(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
 void ClientCommandHoldToggleSpeedScalar(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandSetSpeedScalarToggle(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
 void ClientCommandToggleSpeedLimiter(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
 void ClientCommandToggleAutoFrameSkip(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
 void ClientCommandToggleCheats(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
