@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2025 DeSmuME Team
+	Copyright (C) 2012-2026 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -42,8 +42,10 @@
 
 #define NSSTRING_TITLE_EXECUTE_CONTROL				NSLocalizedString(@"Execute", nil)
 #define NSSTRING_TITLE_PAUSE_CONTROL				NSLocalizedString(@"Pause", nil)
-#define NSSTRING_TITLE_DISABLE_SPEED_LIMIT			NSLocalizedString(@"Disable Speed Limit", nil)
-#define NSSTRING_TITLE_ENABLE_SPEED_LIMIT			NSLocalizedString(@"Enable Speed Limit", nil)
+#define NSSTRING_TITLE_MENU_DISABLE_SPEED_LIMIT     NSLocalizedString(@"Disable Speed Limiter", nil)
+#define NSSTRING_TITLE_MENU_ENABLE_SPEED_LIMIT      NSLocalizedString(@"Enable Speed Limiter", nil)
+#define NSSTRING_TITLE_TOOLBAR_DISABLE_SPEED_LIMITER NSLocalizedString(@"Disable Limiter", nil)
+#define NSSTRING_TITLE_TOOLBAR_ENABLE_SPEED_LIMITER NSLocalizedString(@"Enable Limiter", nil)
 #define NSSTRING_TITLE_DISABLE_AUTO_FRAME_SKIP		NSLocalizedString(@"Disable Auto Frame Skip", nil)
 #define NSSTRING_TITLE_ENABLE_AUTO_FRAME_SKIP		NSLocalizedString(@"Enable Auto Frame Skip", nil)
 #define NSSTRING_TITLE_DISABLE_CHEATS				NSLocalizedString(@"Disable Cheat System", nil)
@@ -56,8 +58,16 @@
 #define NSSTRING_TITLE_SHOW_STATUS_BAR				NSLocalizedString(@"Show Status Bar", nil)
 #define NSSTRING_TITLE_HIDE_TOOLBAR					NSLocalizedString(@"Hide Toolbar", nil)
 #define NSSTRING_TITLE_SHOW_TOOLBAR					NSLocalizedString(@"Show Toolbar", nil)
-#define NSSTRING_TITLE_SPEED_1X						NSLocalizedString(@"Speed 1x", nil)
-#define NSSTRING_TITLE_SPEED_2X						NSLocalizedString(@"Speed 2x", nil)
+#define NSSTRING_TITLE_SPEED_1X                     NSLocalizedString(@"Speed 1x", nil)
+#define NSSTRING_TITLE_SPEED_2X                     NSLocalizedString(@"Speed 2x", nil)
+#define NSSTRING_TITLE_SPEED_3X                     NSLocalizedString(@"Speed 3x", nil)
+#define NSSTRING_TITLE_SPEED_4X                     NSLocalizedString(@"Speed 4x", nil)
+#define NSSTRING_TITLE_SPEED_5X                     NSLocalizedString(@"Speed 5x", nil)
+#define NSSTRING_TITLE_SPEED_6X                     NSLocalizedString(@"Speed 6x", nil)
+#define NSSTRING_TITLE_SPEED_7X                     NSLocalizedString(@"Speed 7x", nil)
+#define NSSTRING_TITLE_SPEED_8X                     NSLocalizedString(@"Speed 8x", nil)
+#define NSSTRING_TITLE_SPEED_9X                     NSLocalizedString(@"Speed 9x", nil)
+#define NSSTRING_TITLE_SPEED_10X                    NSLocalizedString(@"Speed 10x", nil)
 #define NSSTRING_TITLE_SLOT_NUMBER					NSLocalizedString(@"Slot %ld", nil)
 
 #define NSSTRING_TITLE_TECH_SUPPORT_WINDOW_TITLE	NSLocalizedString(@"Support Request Form", nil)
@@ -133,6 +143,16 @@
 #define NSSTRING_STATUS_NO_GBA_SRAM_CHOSEN			NSLocalizedString(@"No GBA SRAM chosen.", nil)
 #define NSSTRING_STATUS_NO_GBA_SRAM_FOUND			NSLocalizedString(@"No GBA SRAM found.", nil)
 
+#define NSSTRING_STATUS_REPLAY_LOADING              NSLocalizedString(@"Loading replay...", nil)
+#define NSSTRING_STATUS_REPLAY_LOADED               NSLocalizedString(@"Replay loaded successfully.", nil)
+#define NSSTRING_STATUS_REPLAY_LOADING_FAILED       NSLocalizedString(@"Replay loading failed!", nil)
+#define NSSTRING_STATUS_REPLAY_RECORDING_STARTED    NSLocalizedString(@"Replay recording started.", nil)
+#define NSSTRING_STATUS_REPLAY_CREATION_FAILED      NSLocalizedString(@"Replay creation failed!", nil)
+#define NSSTRING_STATUS_REPLAY_STOPPED              NSLocalizedString(@"Replay stopped.", nil)
+
+#define NSSTRING_STATUS_SOUND_MUTED                 NSLocalizedString(@"Sound muted.", nil)
+#define NSSTRING_STATUS_SOUND_UNMUTED               NSLocalizedString(@"Sound unmuted.", nil)
+
 #define NSSTRING_DISPLAYMODE_MAIN					NSLocalizedString(@"Main", nil)
 #define NSSTRING_DISPLAYMODE_TOUCH					NSLocalizedString(@"Touch", nil)
 #define NSSTRING_DISPLAYMODE_DUAL					NSLocalizedString(@"Dual Screen", nil)
@@ -148,7 +168,14 @@
 #define NSSTRING_INPUTPREF_MIC_AUDIO_FILE_NONE_SELECTED	NSLocalizedString(@"No audio file selected.", nil)
 #define NSSTRING_INPUTPREF_MIC_WHITE_NOISE			NSLocalizedString(@"White Noise", nil)
 #define NSSTRING_INPUTPREF_MIC_SINE_WAVE			NSLocalizedString(@"%1.1f Hz Sine Wave", nil)
-#define NSSTRING_INPUTPREF_SPEED_SCALAR				NSLocalizedString(@"%1.2fx Speed", nil)
+#define NSSTRING_INPUTPREF_SPEED_SCALAR_HOLD        NSLocalizedString(@"Hold for %1.2fx speed", nil)
+#define NSSTRING_INPUTPREF_SPEED_SCALAR_LATCH_SINGLE NSLocalizedString(@"Latch speed to %1.2fx", nil)
+#define NSSTRING_INPUTPREF_SPEED_SCALAR_LATCH_LIST_1 NSLocalizedString(@"Latch speed to %1.1fx/1x", nil)
+#define NSSTRING_INPUTPREF_SPEED_SCALAR_LATCH_LIST_2 NSLocalizedString(@"Latch speed to %1.1fx/%1.1fx/1x", nil)
+#define NSSTRING_INPUTPREF_SPEED_SCALAR_LATCH_LIST_3 NSLocalizedString(@"Latch speed to %1.1fx/%1.1fx/%1.1fx/1x", nil)
+#define NSSTRING_INPUTPREF_SPEED_SCALAR_LATCH_LIST_4 NSLocalizedString(@"Latch speed to %1.1fx/%1.1fx/%1.1fx/%1.1fx/1x", nil)
+#define NSSTRING_INPUTPREF_SPEED_ERROR_INPUT_MODE   NSLocalizedString(@"ERROR: Unknown input mode.", nil)
+#define NSSTRING_INPUTPREF_SPEED_ERROR_INVALID_LIST_COUNT NSLocalizedString(@"ERROR: Invalid list count.", nil)
 #define NSSTRING_INPUTPREF_GPU_STATE_ALL_MAIN		NSLocalizedString(@"Main GPU - All Layers", nil)
 #define NSSTRING_INPUTPREF_GPU_STATE_ALL_SUB		NSLocalizedString(@"Sub GPU - All Layers", nil)
 
@@ -309,6 +336,21 @@ enum
 {
 	CHEATSEARCH_UNSIGNED							= 0,
 	CHEATSEARCH_SIGNED								= 1
+};
+
+enum SpeedLimitInputMode
+{
+	SpeedLimitInputMode_Hold                        = 0,
+	SpeedLimitInputMode_LatchSingle                 = 1,
+	SpeedLimitInputMode_LatchList                   = 2
+};
+
+enum SpeedLimitInputList
+{
+	SpeedLimitInputList1                            = 0,
+	SpeedLimitInputList2                            = 1,
+	SpeedLimitInputList3                            = 2,
+	SpeedLimitInputList4                            = 3
 };
 
 /*

@@ -85,8 +85,18 @@
 
 @synthesize iconExecute;
 @synthesize iconPause;
-@synthesize iconSpeedNormal;
-@synthesize iconSpeedDouble;
+@synthesize iconSpeed1x;
+@synthesize iconSpeed2x;
+@synthesize iconSpeed3x;
+@synthesize iconSpeed4x;
+@synthesize iconSpeed5x;
+@synthesize iconSpeed6x;
+@synthesize iconSpeed7x;
+@synthesize iconSpeed8x;
+@synthesize iconSpeed9x;
+@synthesize iconSpeed10x;
+@synthesize iconSpeedLimiterEnable;
+@synthesize iconSpeedLimiterDisable;
 
 @synthesize lastSetSpeedScalar;
 
@@ -150,10 +160,22 @@
 	isHardwareMicAvailable = NO;
 	currentMicGainValue = 0.0f;
 	
-	iconExecute           = [[NSImage imageNamed:@"Icon_Execute_420x420"] retain];
-	iconPause             = [[NSImage imageNamed:@"Icon_Pause_420x420"] retain];
-	iconSpeedNormal       = [[NSImage imageNamed:@"Icon_Speed1x_420x420"] retain];
-	iconSpeedDouble       = [[NSImage imageNamed:@"Icon_Speed2x_420x420"] retain];
+	iconExecute           = [[NSImage imageNamed:@"Icon_Execute_32x32"] retain];
+	iconPause             = [[NSImage imageNamed:@"Icon_Pause_32x32"] retain];
+	
+	iconSpeed1x           = [[NSImage imageNamed:@"Icon_Speed_1x_32x32"] retain];
+	iconSpeed2x           = [[NSImage imageNamed:@"Icon_Speed_2x_32x32"] retain];
+	iconSpeed3x           = [[NSImage imageNamed:@"Icon_Speed_3x_32x32"] retain];
+	iconSpeed4x           = [[NSImage imageNamed:@"Icon_Speed_4x_32x32"] retain];
+	iconSpeed5x           = [[NSImage imageNamed:@"Icon_Speed_5x_32x32"] retain];
+	iconSpeed6x           = [[NSImage imageNamed:@"Icon_Speed_6x_32x32"] retain];
+	iconSpeed7x           = [[NSImage imageNamed:@"Icon_Speed_7x_32x32"] retain];
+	iconSpeed8x           = [[NSImage imageNamed:@"Icon_Speed_8x_32x32"] retain];
+	iconSpeed9x           = [[NSImage imageNamed:@"Icon_Speed_9x_32x32"] retain];
+	iconSpeed10x          = [[NSImage imageNamed:@"Icon_Speed_10x_32x32"] retain];
+	
+	iconSpeedLimiterEnable  = [[NSImage imageNamed:@"Icon_SpeedLimiterEnable_32x32"] retain];
+	iconSpeedLimiterDisable = [[NSImage imageNamed:@"Icon_SpeedLimiterDisable_32x32"] retain];
 	
 	iconMicDisabled       = [[NSImage imageNamed:@"Icon_MicrophoneBlack_256x256"] retain];
 	iconMicDisabledDM     = [[NSImage imageNamed:@"Icon_MicrophoneOff_DarkMode_256x256"] retain];
@@ -165,7 +187,7 @@
 	
 	isWorking = NO;
 	isRomLoading = NO;
-	statusText = NSSTRING_STATUS_READY;
+	statusText = [[NSAttributedString alloc] initWithString:NSSTRING_STATUS_READY];
 	micStatusTooltip = @"";
 	currentMicStatusIcon = (isRunningDarkMode) ? [iconMicDisabledDM retain] : [iconMicDisabled retain];
 	
@@ -198,8 +220,19 @@
 	
 	[iconExecute release];
 	[iconPause release];
-	[iconSpeedNormal release];
-	[iconSpeedDouble release];
+	
+	[iconSpeed1x release];
+	[iconSpeed2x release];
+	[iconSpeed3x release];
+	[iconSpeed4x release];
+	[iconSpeed5x release];
+	[iconSpeed6x release];
+	[iconSpeed7x release];
+	[iconSpeed8x release];
+	[iconSpeed9x release];
+	[iconSpeed10x release];
+	[iconSpeedLimiterEnable release];
+	[iconSpeedLimiterDisable release];
 	
 	[iconMicDisabled release];
 	[iconMicDisabledDM release];
@@ -213,7 +246,7 @@
 	[self setCurrentRom:nil];
 	
 	[self setIsWorking:NO];
-	[self setStatusText:@""];
+	[self setStatusText:nil];
 	
 	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
 	[cdsSoundController setContent:nil];
@@ -407,7 +440,7 @@
 	const BOOL isStateLoaded = [CocoaDSFile loadState:selectedFile];
 	if (!isStateLoaded)
 	{
-		[self setStatusText:NSSTRING_STATUS_SAVESTATE_LOADING_FAILED];
+		[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_LOADING_FAILED];
 		[self restoreCoreState];
 		return;
 	}
@@ -418,7 +451,7 @@
 		[[windowController window] setDocumentEdited:isSaveStateEdited];
 	}
 	
-	[self setStatusText:NSSTRING_STATUS_SAVESTATE_LOADED];
+	[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_LOADED];
 	[self restoreCoreState];
 	
 	[self setCurrentSaveStateURL:selectedFile];
@@ -433,7 +466,7 @@
 		const BOOL isStateSaved = [CocoaDSFile saveState:[self currentSaveStateURL]];
 		if (!isStateSaved)
 		{
-			[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
+			[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
 			return;
 		}
 		
@@ -443,7 +476,7 @@
 			[[windowController window] setDocumentEdited:isSaveStateEdited];
 		}
 		
-		[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVED];
+		[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_SAVED];
 		[self restoreCoreState];
 	}
 	else
@@ -484,7 +517,7 @@
 		const BOOL isStateSaved = [CocoaDSFile saveState:saveFileURL];
 		if (!isStateSaved)
 		{
-			[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
+			[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
 			return;
 		}
 		
@@ -494,7 +527,7 @@
 			[[windowController window] setDocumentEdited:isSaveStateEdited];
 		}
 		
-		[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVED];
+		[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_SAVED];
 		[self restoreCoreState];
 		
 		[self setCurrentSaveStateURL:saveFileURL];
@@ -513,7 +546,7 @@
 	const BOOL isStateLoaded = [CocoaDSFile loadState:[self currentSaveStateURL]];
 	if (!isStateLoaded)
 	{
-		[self setStatusText:NSSTRING_STATUS_SAVESTATE_REVERTING_FAILED];
+		[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_REVERTING_FAILED];
 		return;
 	}
 	
@@ -523,7 +556,7 @@
 		[[windowController window] setDocumentEdited:isSaveStateEdited];
 	}
 	
-	[self setStatusText:NSSTRING_STATUS_SAVESTATE_REVERTED];
+	[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_REVERTED];
 	[self restoreCoreState];
 }
 
@@ -577,7 +610,7 @@
 		
 		[self pauseCore];
 		const BOOL isMovieLoaded = [CocoaDSFile loadReplay:selectedFile];
-		[self setStatusText:(isMovieLoaded) ? @"Replay loaded successfully." : @"Replay loading failed!"];
+		[self setStatusTextWithString:(isMovieLoaded) ? NSSTRING_STATUS_REPLAY_LOADED : NSSTRING_STATUS_REPLAY_LOADING_FAILED];
 		[self restoreCoreState];
 	}
 }
@@ -622,7 +655,7 @@
 		//[fileManager release];
 		
 		const BOOL isMovieStarted = [cdsCore startReplayRecording:fileURL sramURL:sramURL];
-		[self setStatusText:(isMovieStarted) ? @"Replay recording started." : @"Replay creation failed!"];
+		[self setStatusTextWithString:(isMovieStarted) ? NSSTRING_STATUS_REPLAY_RECORDING_STARTED : NSSTRING_STATUS_REPLAY_CREATION_FAILED];
 		[self restoreCoreState];
 	}
 }
@@ -633,7 +666,7 @@
 	
 	[self pauseCore];
 	[cdsCore stopReplay];
-	[self setStatusText:@"Replay stopped."];
+	[self setStatusTextWithString:NSSTRING_STATUS_REPLAY_STOPPED];
 	[self restoreCoreState];
 }
 
@@ -683,7 +716,7 @@
 		}
 		
 		const BOOL isRomSaveImported = [CocoaDSFile importRomSave:selectedFile];
-		[self setStatusText:(isRomSaveImported) ? NSSTRING_STATUS_ROM_SAVE_IMPORTED : NSSTRING_STATUS_ROM_SAVE_IMPORT_FAILED];
+		[self setStatusTextWithString:(isRomSaveImported) ? NSSTRING_STATUS_ROM_SAVE_IMPORTED : NSSTRING_STATUS_ROM_SAVE_IMPORT_FAILED];
 	}
 	
 	[self restoreCoreState];
@@ -705,7 +738,7 @@
 		if (romSaveURL != nil)
 		{
 			const BOOL isRomSaveExported = [CocoaDSFile exportRomSaveToURL:[panel URL] romSaveURL:romSaveURL fileType:[self selectedExportRomSaveID]];
-			[self setStatusText:(isRomSaveExported) ? NSSTRING_STATUS_ROM_SAVE_EXPORTED : NSSTRING_STATUS_ROM_SAVE_EXPORT_FAILED];
+			[self setStatusTextWithString:(isRomSaveExported) ? NSSTRING_STATUS_ROM_SAVE_EXPORTED : NSSTRING_STATUS_ROM_SAVE_EXPORT_FAILED];
 		}
 	}
 	
@@ -1227,6 +1260,16 @@
 
 #pragma mark Class Methods
 
+- (void) setStatusTextWithString:(NSString *)theString
+{
+	[self setStatusText:[[[NSAttributedString alloc] initWithString:theString] autorelease]];
+}
+
+- (void) setStatusTextWithCString:(const char *)cString
+{
+	[self setStatusText:[[[NSAttributedString alloc] initWithString:[NSString stringWithCString:cString encoding:NSUTF8StringEncoding]] autorelease]];
+}
+
 - (void) cmdUpdateDSController:(const ClientCommandAttributes &)cmdAttr
 {
 	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
@@ -1334,7 +1377,7 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] setAutohold:theState];
-	[self setStatusText:(theState) ? NSSTRING_STATUS_AUTOHOLD_SET : NSSTRING_STATUS_AUTOHOLD_SET_RELEASE];
+	[self setStatusTextWithString:(theState) ? NSSTRING_STATUS_AUTOHOLD_SET : NSSTRING_STATUS_AUTOHOLD_SET_RELEASE];
 }
 
 - (void) cmdAutoholdClear:(const ClientCommandAttributes &)cmdAttr
@@ -1346,7 +1389,7 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] clearAutohold];
-	[self setStatusText:NSSTRING_STATUS_AUTOHOLD_CLEAR];
+	[self setStatusTextWithString:NSSTRING_STATUS_AUTOHOLD_CLEAR];
 	
 }
 
@@ -1380,7 +1423,7 @@
 	[self pauseCore];
 	
 	const BOOL isStateLoaded = [CocoaDSFile loadState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
-	[self setStatusText:(isStateLoaded) ? NSSTRING_STATUS_SAVESTATE_LOADED : NSSTRING_STATUS_SAVESTATE_LOADING_FAILED];
+	[self setStatusTextWithString:(isStateLoaded) ? NSSTRING_STATUS_SAVESTATE_LOADED : NSSTRING_STATUS_SAVESTATE_LOADING_FAILED];
 	
 	[self restoreCoreState];
 }
@@ -1395,14 +1438,14 @@
 	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
 	if (saveStatePath == nil)
 	{
-		[self setStatusText:NSSTRING_STATUS_CANNOT_GENERATE_SAVE_PATH];
+		[self setStatusTextWithString:NSSTRING_STATUS_CANNOT_GENERATE_SAVE_PATH];
 		return;
 	}
 	
 	const BOOL isDirectoryCreated = [CocoaDSFile createUserAppSupportDirectory:@"States"];
 	if (!isDirectoryCreated)
 	{
-		[self setStatusText:NSSTRING_STATUS_CANNOT_CREATE_SAVE_DIRECTORY];
+		[self setStatusTextWithString:NSSTRING_STATUS_CANNOT_CREATE_SAVE_DIRECTORY];
 		return;
 	}
 	
@@ -1422,7 +1465,7 @@
 	[self pauseCore];
 	
 	const BOOL isStateSaved = [CocoaDSFile saveState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
-	[self setStatusText:(isStateSaved) ? NSSTRING_STATUS_SAVESTATE_SAVED : NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
+	[self setStatusTextWithString:(isStateSaved) ? NSSTRING_STATUS_SAVESTATE_SAVED : NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
 	
 	[self restoreCoreState];
 }
@@ -1484,12 +1527,141 @@
 	}
 }
 
-- (void) cmdHoldToggleSpeedScalar:(const ClientCommandAttributes &)cmdAttr
+- (void) cmdSetSpeedScalar:(const ClientCommandAttributes &)cmdAttr
 {
 	const float inputSpeedScalar = (cmdAttr.useInputForScalar) ? cmdAttr.input.scalar : cmdAttr.floatValue[0];
+	const SpeedLimitInputMode inputMode = (SpeedLimitInputMode)cmdAttr.intValue[0];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
-	[cdsCore setSpeedScalar:(cmdAttr.input.state == ClientInputDeviceState_Off) ? lastSetSpeedScalar : inputSpeedScalar];
+	switch (inputMode)
+	{
+		case SpeedLimitInputMode_LatchSingle:
+		{
+			if (cmdAttr.input.state != ClientInputDeviceState_On)
+			{
+				break;
+			}
+			
+			[cdsCore setSpeedScalar:([cdsCore speedScalar] == inputSpeedScalar) ? lastSetSpeedScalar : inputSpeedScalar];
+			break;
+		}
+			
+		case SpeedLimitInputMode_LatchList:
+		{
+			if (cmdAttr.input.state != ClientInputDeviceState_On)
+			{
+				break;
+			}
+			
+			const SpeedLimitInputList speedLimitListCount = (SpeedLimitInputList)cmdAttr.intValue[1];
+			const SpeedLimitInputList speedLimitListSelect = (SpeedLimitInputList)cmdAttr.intValue[2];
+			
+			switch (speedLimitListCount)
+			{
+				case SpeedLimitInputList1:
+				{
+					if (speedLimitListSelect == SpeedLimitInputList1)
+					{
+						[cdsCore setSpeedScalar:cmdAttr.floatValue[0]];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList2];
+					}
+					else
+					{
+						[cdsCore setSpeedScalar:1.0f];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList1];
+					}
+					break;
+				}
+					
+				case SpeedLimitInputList2:
+				{
+					if (speedLimitListSelect == SpeedLimitInputList1)
+					{
+						[cdsCore setSpeedScalar:cmdAttr.floatValue[0]];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList2];
+					}
+					else if (speedLimitListSelect == SpeedLimitInputList2)
+					{
+						[cdsCore setSpeedScalar:cmdAttr.floatValue[1]];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList3];
+					}
+					else
+					{
+						[cdsCore setSpeedScalar:1.0f];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList1];
+					}
+					break;
+				}
+					
+				case SpeedLimitInputList3:
+				{
+					if (speedLimitListSelect == SpeedLimitInputList1)
+					{
+						[cdsCore setSpeedScalar:cmdAttr.floatValue[0]];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList2];
+					}
+					else if (speedLimitListSelect == SpeedLimitInputList2)
+					{
+						[cdsCore setSpeedScalar:cmdAttr.floatValue[1]];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList3];
+					}
+					else if (speedLimitListSelect == SpeedLimitInputList3)
+					{
+						[cdsCore setSpeedScalar:cmdAttr.floatValue[2]];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList4];
+					}
+					else
+					{
+						[cdsCore setSpeedScalar:1.0f];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList1];
+					}
+					break;
+				}
+					
+				case SpeedLimitInputList4:
+				{
+					if (speedLimitListSelect == SpeedLimitInputList1)
+					{
+						[cdsCore setSpeedScalar:cmdAttr.floatValue[0]];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList2];
+					}
+					else if (speedLimitListSelect == SpeedLimitInputList2)
+					{
+						[cdsCore setSpeedScalar:cmdAttr.floatValue[1]];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList3];
+					}
+					else if (speedLimitListSelect == SpeedLimitInputList3)
+					{
+						[cdsCore setSpeedScalar:cmdAttr.floatValue[2]];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList4];
+					}
+					else if (speedLimitListSelect == SpeedLimitInputList4)
+					{
+						[cdsCore setSpeedScalar:cmdAttr.floatValue[3]];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList4+1];
+					}
+					else
+					{
+						[cdsCore setSpeedScalar:1.0f];
+						[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList1];
+					}
+					break;
+				}
+					
+				default:
+					[cdsCore setSpeedScalar:1.0f];
+					[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList1];
+					break;
+			}
+			break;
+		}
+			
+		case SpeedLimitInputMode_Hold:
+		default:
+			[cdsCore setSpeedScalar:(cmdAttr.input.state == ClientInputDeviceState_Off) ? lastSetSpeedScalar : inputSpeedScalar];
+			break;
+	}
+	
 	[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 
@@ -1505,13 +1677,13 @@
 	if ([cdsCore isSpeedLimitEnabled])
 	{
 		[cdsCore setIsSpeedLimitEnabled:NO];
-		[self setStatusText:NSSTRING_STATUS_SPEED_LIMIT_DISABLED];
+		[self setStatusTextWithString:NSSTRING_STATUS_SPEED_LIMIT_DISABLED];
 		[[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"CoreControl_EnableSpeedLimit"];
 	}
 	else
 	{
 		[cdsCore setIsSpeedLimitEnabled:YES];
-		[self setStatusText:NSSTRING_STATUS_SPEED_LIMIT_ENABLED];
+		[self setStatusTextWithString:NSSTRING_STATUS_SPEED_LIMIT_ENABLED];
 		[[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"CoreControl_EnableSpeedLimit"];
 	}
 	
@@ -1530,13 +1702,13 @@
 	if ([cdsCore isFrameSkipEnabled])
 	{
 		[cdsCore setIsFrameSkipEnabled:NO];
-		[self setStatusText:NSSTRING_STATUS_AUTO_FRAME_SKIP_DISABLED];
+		[self setStatusTextWithString:NSSTRING_STATUS_AUTO_FRAME_SKIP_DISABLED];
 		[[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"CoreControl_EnableAutoFrameSkip"];
 	}
 	else
 	{
 		[cdsCore setIsFrameSkipEnabled:YES];
-		[self setStatusText:NSSTRING_STATUS_AUTO_FRAME_SKIP_ENABLED];
+		[self setStatusTextWithString:NSSTRING_STATUS_AUTO_FRAME_SKIP_ENABLED];
 		[[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"CoreControl_EnableAutoFrameSkip"];
 	}
 	
@@ -1555,13 +1727,13 @@
 	if ([cdsCore isCheatingEnabled])
 	{
 		[cdsCore setIsCheatingEnabled:NO];
-		[self setStatusText:NSSTRING_STATUS_CHEATS_DISABLED];
+		[self setStatusTextWithString:NSSTRING_STATUS_CHEATS_DISABLED];
 		[[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"CoreControl_EnableCheats"];
 	}
 	else
 	{
 		[cdsCore setIsCheatingEnabled:YES];
-		[self setStatusText:NSSTRING_STATUS_CHEATS_ENABLED];
+		[self setStatusTextWithString:NSSTRING_STATUS_CHEATS_ENABLED];
 		[[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"CoreControl_EnableCheats"];
 	}
 }
@@ -1639,7 +1811,7 @@
 		return;
 	}
 	
-	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESETTING];
+	[self setStatusTextWithString:NSSTRING_STATUS_EMULATOR_RESETTING];
 	[self setIsWorking:YES];
 	
 	for (DisplayWindowController *windowController in windowList)
@@ -1656,7 +1828,7 @@
 		dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
 	}
 	
-	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
+	[self setStatusTextWithString:NSSTRING_STATUS_EMULATOR_RESET];
 	[self setIsWorking:NO];
 	[self writeDefaultsSlot1Settings:nil];
 	
@@ -1676,12 +1848,12 @@
 	if ([audioController isMuted])
 	{
 		[audioController setMute:NO];
-		[self setStatusText:@"Sound unmuted."];
+		[self setStatusTextWithString:NSSTRING_STATUS_SOUND_UNMUTED];
 	}
 	else
 	{
 		[audioController setMute:YES];
-		[self setStatusText:@"Sound muted."];
+		[self setStatusTextWithString:NSSTRING_STATUS_SOUND_MUTED];
 	}
 }
 
@@ -1843,7 +2015,7 @@
 		return result;
 	}
 	
-	[self setStatusText:NSSTRING_STATUS_ROM_LOADING];
+	[self setStatusTextWithString:NSSTRING_STATUS_ROM_LOADING];
 	[self setIsWorking:YES];
 	
 	for (DisplayWindowController *windowController in windowList)
@@ -1903,7 +2075,7 @@
 			[self restoreCoreState];
 		}
 		
-		[self setStatusText:NSSTRING_STATUS_ROM_LOADING_FAILED];
+		[self setStatusTextWithString:NSSTRING_STATUS_ROM_LOADING_FAILED];
 		[self setIsWorking:NO];
 		[self setIsRomLoading:NO];
 		
@@ -1932,7 +2104,7 @@
 		dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
 	}
 	
-	[self setStatusText:NSSTRING_STATUS_ROM_LOADED];
+	[self setStatusTextWithString:NSSTRING_STATUS_ROM_LOADED];
 	[self setIsWorking:NO];
 	[self setIsRomLoading:NO];
 	
@@ -1974,7 +2146,7 @@
 	[cheatWindowDelegate cheatSystemEnd];
 	
 	// Update the UI to indicate that the ROM has started the process of unloading.
-	[self setStatusText:NSSTRING_STATUS_ROM_UNLOADING];
+	[self setStatusTextWithString:NSSTRING_STATUS_ROM_UNLOADING];
 	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
 	
 	// Unload the ROM.
@@ -2000,7 +2172,7 @@
 		dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
 	}
 	
-	[self setStatusText:NSSTRING_STATUS_ROM_UNLOADED];
+	[self setStatusTextWithString:NSSTRING_STATUS_ROM_UNLOADED];
 	[self setIsWorking:NO];
 	
 	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2WindowController content];
@@ -2301,7 +2473,7 @@
 			if (!isStateSaved)
 			{
 				// Throw an error here...
-				[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
+				[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
 				return;
 			}
 			break;
@@ -3083,13 +3255,13 @@
 			{
 				[(NSToolbarItem*)theItem setLabel:NSSTRING_TITLE_SPEED_1X];
 				[(NSToolbarItem*)theItem setTag:100];
-				[(NSToolbarItem*)theItem setImage:iconSpeedNormal];
+				[(NSToolbarItem*)theItem setImage:iconSpeed1x];
 			}
 			else
 			{
 				[(NSToolbarItem*)theItem setLabel:NSSTRING_TITLE_SPEED_2X];
 				[(NSToolbarItem*)theItem setTag:200];
-				[(NSToolbarItem*)theItem setImage:iconSpeedDouble];
+				[(NSToolbarItem*)theItem setImage:iconSpeed2x];
 			}
 		}
 	}
@@ -3097,7 +3269,7 @@
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem*)theItem setTitle:([cdsCore isSpeedLimitEnabled]) ? NSSTRING_TITLE_DISABLE_SPEED_LIMIT : NSSTRING_TITLE_ENABLE_SPEED_LIMIT];
+			[(NSMenuItem*)theItem setTitle:([cdsCore isSpeedLimitEnabled]) ? NSSTRING_TITLE_MENU_DISABLE_SPEED_LIMIT : NSSTRING_TITLE_MENU_ENABLE_SPEED_LIMIT];
 		}
 	}
 	else if (theAction == @selector(toggleAutoFrameSkip:))

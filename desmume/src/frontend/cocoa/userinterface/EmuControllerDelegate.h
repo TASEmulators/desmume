@@ -86,7 +86,7 @@ class AudioSampleBlockGenerator;
 	BOOL isRunningDarkMode;
 	BOOL isWorking;
 	BOOL isRomLoading;
-	NSString *statusText;
+	NSAttributedString *statusText;
 	NSString *micStatusTooltip;
 	NSImage *currentMicStatusIcon;
 	BOOL isShowingSaveStateDialog;
@@ -110,8 +110,19 @@ class AudioSampleBlockGenerator;
 	NSImage *iconMicManualOverride;
 	NSImage *iconExecute;
 	NSImage *iconPause;
-	NSImage *iconSpeedNormal;
-	NSImage *iconSpeedDouble;
+	
+	NSImage *iconSpeed1x;
+	NSImage *iconSpeed2x;
+	NSImage *iconSpeed3x;
+	NSImage *iconSpeed4x;
+	NSImage *iconSpeed5x;
+	NSImage *iconSpeed6x;
+	NSImage *iconSpeed7x;
+	NSImage *iconSpeed8x;
+	NSImage *iconSpeed9x;
+	NSImage *iconSpeed10x;
+	NSImage *iconSpeedLimiterEnable;
+	NSImage *iconSpeedLimiterDisable;
 	
 	DisplayWindowController *mainWindow;
 	NSMutableArray *windowList;
@@ -160,15 +171,25 @@ class AudioSampleBlockGenerator;
 
 @property (readonly) NSImage *iconExecute;
 @property (readonly) NSImage *iconPause;
-@property (readonly) NSImage *iconSpeedNormal;
-@property (readonly) NSImage *iconSpeedDouble;
+@property (readonly) NSImage *iconSpeed1x;
+@property (readonly) NSImage *iconSpeed2x;
+@property (readonly) NSImage *iconSpeed3x;
+@property (readonly) NSImage *iconSpeed4x;
+@property (readonly) NSImage *iconSpeed5x;
+@property (readonly) NSImage *iconSpeed6x;
+@property (readonly) NSImage *iconSpeed7x;
+@property (readonly) NSImage *iconSpeed8x;
+@property (readonly) NSImage *iconSpeed9x;
+@property (readonly) NSImage *iconSpeed10x;
+@property (readonly) NSImage *iconSpeedLimiterEnable;
+@property (readonly) NSImage *iconSpeedLimiterDisable;
 
 @property (readonly) CGFloat lastSetSpeedScalar;
 
 @property (assign) BOOL isRunningDarkMode;
 @property (assign) BOOL isWorking;
 @property (assign) BOOL isRomLoading;
-@property (assign) NSString *statusText;
+@property (retain) NSAttributedString *statusText;
 @property (assign) BOOL isHardwareMicAvailable;
 @property (assign) float currentMicGainValue;
 @property (assign) NSString *micStatusTooltip;
@@ -255,6 +276,9 @@ class AudioSampleBlockGenerator;
 
 - (IBAction) closeSheet:(id)sender;
 
+- (void) setStatusTextWithString:(NSString *)theString;
+- (void) setStatusTextWithCString:(const char *)cString;
+
 - (void) cmdUpdateDSController:(const ClientCommandAttributes &)cmdAttr;
 - (void) cmdUpdateDSControllerWithTurbo:(const ClientCommandAttributes &)cmdAttr;
 - (void) cmdUpdateDSTouch:(const ClientCommandAttributes &)cmdAttr;
@@ -271,7 +295,7 @@ class AudioSampleBlockGenerator;
 - (void) cmdRotateDisplayRelative:(const ClientCommandAttributes &)cmdAttr;
 - (void) cmdToggleAllDisplays:(const ClientCommandAttributes &)cmdAttr;
 
-- (void) cmdHoldToggleSpeedScalar:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdSetSpeedScalar:(const ClientCommandAttributes &)cmdAttr;
 - (void) cmdToggleSpeedLimiter:(const ClientCommandAttributes &)cmdAttr;
 - (void) cmdToggleAutoFrameSkip:(const ClientCommandAttributes &)cmdAttr;
 - (void) cmdToggleCheats:(const ClientCommandAttributes &)cmdAttr;

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2025 DeSmuME team
+	Copyright (C) 2013-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -844,6 +844,61 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[emuControl changeCoreSpeed:sender];
 }
 
+- (IBAction) toggleCoreSpeed2x:(id)sender
+{
+	[emuControl changeCoreSpeed:sender];
+}
+
+- (IBAction) toggleCoreSpeed3x:(id)sender
+{
+	[emuControl changeCoreSpeed:sender];
+}
+
+- (IBAction) toggleCoreSpeed4x:(id)sender
+{
+	[emuControl changeCoreSpeed:sender];
+}
+
+- (IBAction) toggleCoreSpeed5x:(id)sender
+{
+	[emuControl changeCoreSpeed:sender];
+}
+
+- (IBAction) toggleCoreSpeed6x:(id)sender
+{
+	[emuControl changeCoreSpeed:sender];
+}
+
+- (IBAction) toggleCoreSpeed7x:(id)sender
+{
+	[emuControl changeCoreSpeed:sender];
+}
+
+- (IBAction) toggleCoreSpeed8x:(id)sender
+{
+	[emuControl changeCoreSpeed:sender];
+}
+
+- (IBAction) toggleCoreSpeed9x:(id)sender
+{
+	[emuControl changeCoreSpeed:sender];
+}
+
+- (IBAction) toggleCoreSpeed10x:(id)sender
+{
+	[emuControl changeCoreSpeed:sender];
+}
+
+- (IBAction) toggleCoreSpeed24681x:(id)sender
+{
+	[emuControl changeCoreSpeed:sender];
+}
+
+- (IBAction) toggleSpeedLimiter:(id)sender
+{
+	[emuControl toggleSpeedLimiter:sender];
+}
+
 - (IBAction) openRom:(id)sender
 {
 	[emuControl openRom:sender];
@@ -1523,6 +1578,25 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 #endif
 
+- (void) speedToggleToolbarItemUpdate:(NSToolbarItem *)theItem title:(NSString *)itemTitle tag:(NSInteger)itemTag icon:(NSImage *)itemImage
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[[emuControl cdsCoreController] content];
+	NSInteger speedScalar = (NSInteger)(([cdsCore speedScalar] * 100.0) + 0.5);
+	
+	if (speedScalar == itemTag)
+	{
+		[theItem setLabel:NSSTRING_TITLE_SPEED_1X];
+		[theItem setTag:100];
+		[theItem setImage:[emuControl iconSpeed1x]];
+	}
+	else
+	{
+		[theItem setLabel:itemTitle];
+		[theItem setTag:itemTag];
+		[theItem setImage:itemImage];
+	}
+}
+
 - (BOOL)validateToolbarItem:(NSToolbarItem *)theItem
 {
 	BOOL enable = YES;
@@ -1566,21 +1640,90 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			enable = NO;
 		}
 	}
-	else if (theAction == @selector(changeCoreSpeed:))
+	else if (theAction == @selector(toggleCoreSpeed2x:))
 	{
-		NSInteger speedScalar = (NSInteger)([cdsCore speedScalar] * 100.0);
+		[self speedToggleToolbarItemUpdate:theItem title:NSSTRING_TITLE_SPEED_2X tag:200 icon:[emuControl iconSpeed2x]];
+	}
+	else if (theAction == @selector(toggleCoreSpeed3x:))
+	{
+		[self speedToggleToolbarItemUpdate:theItem title:NSSTRING_TITLE_SPEED_3X tag:300 icon:[emuControl iconSpeed3x]];
+	}
+	else if (theAction == @selector(toggleCoreSpeed4x:))
+	{
+		[self speedToggleToolbarItemUpdate:theItem title:NSSTRING_TITLE_SPEED_4X tag:400 icon:[emuControl iconSpeed4x]];
+	}
+	else if (theAction == @selector(toggleCoreSpeed5x:))
+	{
+		[self speedToggleToolbarItemUpdate:theItem title:NSSTRING_TITLE_SPEED_5X tag:500 icon:[emuControl iconSpeed5x]];
+	}
+	else if (theAction == @selector(toggleCoreSpeed6x:))
+	{
+		[self speedToggleToolbarItemUpdate:theItem title:NSSTRING_TITLE_SPEED_6X tag:600 icon:[emuControl iconSpeed6x]];
+	}
+	else if (theAction == @selector(toggleCoreSpeed7x:))
+	{
+		[self speedToggleToolbarItemUpdate:theItem title:NSSTRING_TITLE_SPEED_7X tag:700 icon:[emuControl iconSpeed7x]];
+	}
+	else if (theAction == @selector(toggleCoreSpeed8x:))
+	{
+		[self speedToggleToolbarItemUpdate:theItem title:NSSTRING_TITLE_SPEED_8X tag:800 icon:[emuControl iconSpeed8x]];
+	}
+	else if (theAction == @selector(toggleCoreSpeed9x:))
+	{
+		[self speedToggleToolbarItemUpdate:theItem title:NSSTRING_TITLE_SPEED_9X tag:900 icon:[emuControl iconSpeed9x]];
+	}
+	else if (theAction == @selector(toggleCoreSpeed10x:))
+	{
+		[self speedToggleToolbarItemUpdate:theItem title:NSSTRING_TITLE_SPEED_10X tag:1000 icon:[emuControl iconSpeed10x]];
+	}
+	else if (theAction == @selector(toggleCoreSpeed24681x:))
+	{
+		NSInteger speedScalar = (NSInteger)(([cdsCore speedScalar] * 100.0) + 0.5);
 		
-		if (speedScalar != (NSInteger)(SPEED_SCALAR_NORMAL * 100.0))
+		switch (speedScalar)
 		{
-			[theItem setLabel:NSSTRING_TITLE_SPEED_1X];
-			[theItem setTag:100];
-			[theItem setImage:[emuControl iconSpeedNormal]];
+			case 100:
+				[theItem setLabel:NSSTRING_TITLE_SPEED_2X];
+				[theItem setTag:200];
+				[theItem setImage:[emuControl iconSpeed2x]];
+				break;
+				
+			case 200:
+				[theItem setLabel:NSSTRING_TITLE_SPEED_4X];
+				[theItem setTag:400];
+				[theItem setImage:[emuControl iconSpeed4x]];
+				break;
+				
+			case 400:
+				[theItem setLabel:NSSTRING_TITLE_SPEED_6X];
+				[theItem setTag:600];
+				[theItem setImage:[emuControl iconSpeed6x]];
+				break;
+				
+			case 600:
+				[theItem setLabel:NSSTRING_TITLE_SPEED_8X];
+				[theItem setTag:800];
+				[theItem setImage:[emuControl iconSpeed8x]];
+				break;
+				
+			default:
+				[theItem setLabel:NSSTRING_TITLE_SPEED_1X];
+				[theItem setTag:100];
+				[theItem setImage:[emuControl iconSpeed1x]];
+				break;
+		}
+	}
+	else if (theAction == @selector(toggleSpeedLimiter:))
+	{
+		if ([cdsCore isSpeedLimitEnabled])
+		{
+			[theItem setLabel:NSSTRING_TITLE_TOOLBAR_DISABLE_SPEED_LIMITER];
+			[theItem setImage:[emuControl iconSpeedLimiterDisable]];
 		}
 		else
 		{
-			[theItem setLabel:NSSTRING_TITLE_SPEED_2X];
-			[theItem setTag:200];
-			[theItem setImage:[emuControl iconSpeedDouble]];
+			[theItem setLabel:NSSTRING_TITLE_TOOLBAR_ENABLE_SPEED_LIMITER];
+			[theItem setImage:[emuControl iconSpeedLimiterEnable]];
 		}
 	}
 	else if (theAction == @selector(openRom:))

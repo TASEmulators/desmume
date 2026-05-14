@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2014 DeSmuME Team
+	Copyright (C) 2012-2026 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
 	NSButton *inputProfileNextButton;
 	NSOutlineView *inputPrefOutlineView;
 	NSObjectController *inputSettingsController;
+	NSObjectController *inputSettingsSpeedLimitController;
 	InputProfileController *inputProfileController;
 	
 	NSWindow *inputProfileSheet;
@@ -60,6 +61,12 @@
 	NSUInteger _defaultProfileListCount;
 	NSMutableArray *defaultProfilesList;
 	NSMutableArray *savedProfilesList;
+	
+	BOOL enableSpeedLimitList1;
+	BOOL enableSpeedLimitList2;
+	BOOL enableSpeedLimitList3;
+	BOOL enableSpeedLimitList4;
+	BOOL useSpeedLimitList;
 }
 
 @property (readonly) IBOutlet NSObject *dummyObject;
@@ -69,6 +76,7 @@
 @property (readonly) IBOutlet NSButton *inputProfileNextButton;
 @property (readonly) IBOutlet NSOutlineView *inputPrefOutlineView;
 @property (readonly) IBOutlet NSObjectController *inputSettingsController;
+@property (readonly) IBOutlet NSObjectController *inputSettingsSpeedLimitController;
 @property (readonly) IBOutlet InputProfileController *inputProfileController;
 
 @property (readonly) IBOutlet NSWindow *inputProfileSheet;
@@ -88,6 +96,12 @@
 @property (retain) NSString *configInputTargetID;
 @property (retain) NSMutableDictionary *inputSettingsInEdit;
 
+@property (assign) BOOL enableSpeedLimitList1;
+@property (assign) BOOL enableSpeedLimitList2;
+@property (assign) BOOL enableSpeedLimitList3;
+@property (assign) BOOL enableSpeedLimitList4;
+@property (assign) BOOL useSpeedLimitList;
+
 - (void) initSettingsSheets;
 - (void) loadSavedProfilesList;
 - (void) populateInputProfileMenu;
@@ -104,13 +118,16 @@
 
 - (IBAction) setInputAdd:(id)sender;
 - (IBAction) removeInput:(id)sender;
-- (IBAction) changeSpeed:(id)sender;
+- (IBAction) setSpeedToNormal:(id)sender;
 - (IBAction) showSettingsSheet:(id)sender;
 - (IBAction) closeSettingsSheet:(id)sender;
 
 - (IBAction) updateCustomTurboPatternControls:(id)sender;
 - (IBAction) setTurboPatternBits:(id)sender;
 - (IBAction) setTurboPatternUsingTag:(id)sender;
+
+- (IBAction) setSpeedLimitInputMode:(id)sender;
+- (IBAction) setSpeedLimitListCount:(id)sender;
 
 - (IBAction) profileNew:(id)sender;
 - (IBAction) profileView:(id)sender;

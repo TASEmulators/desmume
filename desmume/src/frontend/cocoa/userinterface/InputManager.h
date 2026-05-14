@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2022 DeSmuME Team
+	Copyright (C) 2013-2026 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -191,6 +191,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 
 - (ClientCommandAttributes) mappedCommandAttributesOfDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode;
 - (void) setMappedCommandAttributes:(const ClientCommandAttributes *)cmdAttr deviceCode:(const char *)deviceCode elementCode:(const char *)elementCode;
+- (void) setMappedCommandAttributeIntValue:(const ClientCommandAttributes &)cmdAttr index:(NSInteger)index value:(int32_t)value;
 - (void) updateInputSettingsSummaryInDeviceInfoDictionary:(NSMutableDictionary *)deviceInfo commandTag:(const char *)commandTag;
 
 - (OSStatus) loadAudioFileUsingPath:(NSString *)filePath;
@@ -222,7 +223,7 @@ void ClientCommandSaveEmuSaveStateSlot(const ClientCommandAttributes &cmdAttr, v
 void ClientCommandCopyScreen(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
 void ClientCommandRotateDisplayRelative(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
 void ClientCommandToggleAllDisplays(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
-void ClientCommandHoldToggleSpeedScalar(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandSetSpeedScalar(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
 void ClientCommandToggleSpeedLimiter(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
 void ClientCommandToggleAutoFrameSkip(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
 void ClientCommandToggleCheats(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2022 DeSmuME Team
+	Copyright (C) 2012-2026 DeSmuME Team
 	
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1088,16 +1088,18 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 				   [NSImage imageNamed:@"Icon_PaddleKnob_256x256"],					@"Paddle",
 				   [NSImage imageNamed:@"Icon_AutoholdSet_420x420"],				@"Autohold - Set",
 				   [NSImage imageNamed:@"Icon_AutoholdClear_420x420"],				@"Autohold - Clear",
-				   [NSImage imageNamed:@"Icon_DisplayToggle_420x420"],				@"Toggle All Displays",
-				   [NSImage imageNamed:@"Icon_RotateCCW_420x420"],					@"Rotate Display Left",
-				   [NSImage imageNamed:@"Icon_RotateCW_420x420"],					@"Rotate Display Right",
-				   [NSImage imageNamed:@"Icon_ShowHUD_420x420"],					@"HUD",
-				   [NSImage imageNamed:@"Icon_Execute_420x420"],					@"Execute",
-				   [NSImage imageNamed:@"Icon_Pause_420x420"],						@"Pause",
-				   [NSImage imageNamed:@"Icon_Execute_420x420"],					@"Execute/Pause",
-				   [NSImage imageNamed:@"Icon_FrameAdvance_420x420"],				@"Frame Advance",
-				   [NSImage imageNamed:@"Icon_FrameJump_420x420"],					@"Frame Jump",
-				   [NSImage imageNamed:@"Icon_Reset_420x420"],						@"Reset",
+				   [NSImage imageNamed:@"Icon_DisplayToggle_16x16"],				@"Toggle All Displays",
+				   [NSImage imageNamed:@"Icon_SetSpeed_16x16"],						@"Set Speed",
+				   [NSImage imageNamed:@"Icon_SpeedLimiterEnable_16x16"],			@"Enable/Disable Speed Limiter",
+				   [NSImage imageNamed:@"Icon_RotateCCW_16x16"],					@"Rotate Display Left",
+				   [NSImage imageNamed:@"Icon_RotateCW_16x16"],						@"Rotate Display Right",
+				   [NSImage imageNamed:@"Icon_ShowHUD_16x16"],						@"HUD",
+				   [NSImage imageNamed:@"Icon_Execute_16x16"],						@"Execute",
+				   [NSImage imageNamed:@"Icon_Pause_16x16"],						@"Pause",
+				   [NSImage imageNamed:@"Icon_Execute_16x16"],						@"Execute/Pause",
+				   [NSImage imageNamed:@"Icon_FrameAdvance_16x16"],					@"Frame Advance",
+				   [NSImage imageNamed:@"Icon_FrameJump_16x16"],					@"Frame Jump",
+				   [NSImage imageNamed:@"Icon_Reset_16x16"],						@"Reset",
 				   [NSImage imageNamed:@"Icon_DSButtonSelect_420x420"],				@"Touch",
 				   [NSImage imageNamed:@"Icon_VolumeMute_16x16"],					@"Mute/Unmute",
 				   nil];
@@ -1165,8 +1167,14 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	
 	ClientCommandAttributes cmdToggleAllDisplays				= NewCommandAttributesWithFunction("Toggle All Displays", &ClientCommandToggleAllDisplays);
 	
-	ClientCommandAttributes cmdToggleSpeed						= NewCommandAttributesWithFunction("Set Speed", &ClientCommandHoldToggleSpeedScalar);
-	cmdToggleSpeed.floatValue[0] = 1.0f;
+	ClientCommandAttributes cmdSetSpeed                         = NewCommandAttributesWithFunction("Set Speed", &ClientCommandSetSpeedScalar);
+	cmdSetSpeed.intValue[0] = SpeedLimitInputMode_Hold; // Determines whether the speed is set by holding the control or by toggling a latched value. 0 = Hold, 1 = Latch Single, 2 = Latch List
+	cmdSetSpeed.intValue[1] = SpeedLimitInputList1; // Sets how many speed scalars should be used in the list.
+	cmdSetSpeed.intValue[2] = 0; // Tracks which speed scalar in the sequence should be used. [0...3] correspond to this command's float values. Setting this to any value other than [0...3] will revert back to 1.0.
+	cmdSetSpeed.floatValue[0] = 2.0f; // The speed scalar value. Normal Speed = 1.0, Double Speed = 2.0, Triple Speed = 3.0, and so on.
+	cmdSetSpeed.floatValue[1] = 4.0f; // The next speed scaler to include in the sequence. Only applies for Latch List mode.
+	cmdSetSpeed.floatValue[2] = 6.0f; // The next speed scaler to include in the sequence. Only applies for Latch List mode.
+	cmdSetSpeed.floatValue[3] = 8.0f; // The next speed scaler to include in the sequence. Only applies for Latch List mode.
 	
 	ClientCommandAttributes cmdToggleSpeedLimiter				= NewCommandAttributesWithFunction("Enable/Disable Speed Limiter", &ClientCommandToggleSpeedLimiter);
 	ClientCommandAttributes cmdToggleAutoFrameSkip				= NewCommandAttributesWithFunction("Enable/Disable Auto Frame Skip", &ClientCommandToggleAutoFrameSkip);
@@ -1224,7 +1232,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	defaultCommandAttributes["Rotate Display Left"]				= cmdRotateDisplayLeft;
 	defaultCommandAttributes["Rotate Display Right"]			= cmdRotateDisplayRight;
 	defaultCommandAttributes["Toggle All Displays"]				= cmdToggleAllDisplays;
-	defaultCommandAttributes["Set Speed"]						= cmdToggleSpeed;
+	defaultCommandAttributes["Set Speed"]						= cmdSetSpeed;
 	defaultCommandAttributes["Enable/Disable Speed Limiter"]	= cmdToggleSpeedLimiter;
 	defaultCommandAttributes["Enable/Disable Auto Frame Skip"]	= cmdToggleAutoFrameSkip;
 	defaultCommandAttributes["Enable/Disable Cheat System"]		= cmdToggleCheats;
@@ -1617,6 +1625,12 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	commandMap[inputKey] = *cmdAttr;
 }
 
+- (void) setMappedCommandAttributeIntValue:(const ClientCommandAttributes &)cmdAttr index:(NSInteger)index value:(int32_t)value
+{
+	const std::string inputKey = std::string(cmdAttr.input.deviceCode) + ":" + std::string(cmdAttr.input.elementCode);
+	commandMap[inputKey].intValue[index] = value;
+}
+
 - (void) updateInputSettingsSummaryInDeviceInfoDictionary:(NSMutableDictionary *)deviceInfo commandTag:(const char *)commandTag
 {
 	NSString *inputSummary = nil;
@@ -1700,8 +1714,73 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	}
 	else if (strncmp(commandTag, "Set Speed", INPUT_HANDLER_STRING_LENGTH) == 0)
 	{
-		const float speedScalar = [(NSNumber *)[deviceInfo valueForKey:@"floatValue0"] floatValue];
-		inputSummary = [NSString stringWithFormat:NSSTRING_INPUTPREF_SPEED_SCALAR, speedScalar];
+		const SpeedLimitInputMode inputMode = (SpeedLimitInputMode)[(NSNumber *)[deviceInfo valueForKey:@"intValue0"] intValue];
+		switch (inputMode)
+		{
+			case SpeedLimitInputMode_Hold:
+			{
+				const float speedScalar = [(NSNumber *)[deviceInfo valueForKey:@"floatValue0"] floatValue];
+				inputSummary = [NSString stringWithFormat:NSSTRING_INPUTPREF_SPEED_SCALAR_HOLD, speedScalar];
+				break;
+			}
+				
+			case SpeedLimitInputMode_LatchSingle:
+			{
+				const float speedScalar = [(NSNumber *)[deviceInfo valueForKey:@"floatValue0"] floatValue];
+				inputSummary = [NSString stringWithFormat:NSSTRING_INPUTPREF_SPEED_SCALAR_LATCH_SINGLE, speedScalar];
+				break;
+			}
+				
+			case SpeedLimitInputMode_LatchList:
+			{
+				const SpeedLimitInputList speedLimitListCount = (SpeedLimitInputList)[(NSNumber *)[deviceInfo valueForKey:@"intValue1"] intValue];
+				switch (speedLimitListCount)
+				{
+					case SpeedLimitInputList1:
+					{
+						const float speedScalar0 = [(NSNumber *)[deviceInfo valueForKey:@"floatValue0"] floatValue];
+						inputSummary = [NSString stringWithFormat:NSSTRING_INPUTPREF_SPEED_SCALAR_LATCH_LIST_1, speedScalar0];
+						break;
+					}
+						
+					case SpeedLimitInputList2:
+					{
+						const float speedScalar0 = [(NSNumber *)[deviceInfo valueForKey:@"floatValue0"] floatValue];
+						const float speedScalar1 = [(NSNumber *)[deviceInfo valueForKey:@"floatValue1"] floatValue];
+						inputSummary = [NSString stringWithFormat:NSSTRING_INPUTPREF_SPEED_SCALAR_LATCH_LIST_2, speedScalar0, speedScalar1];
+						break;
+					}
+						
+					case SpeedLimitInputList3:
+					{
+						const float speedScalar0 = [(NSNumber *)[deviceInfo valueForKey:@"floatValue0"] floatValue];
+						const float speedScalar1 = [(NSNumber *)[deviceInfo valueForKey:@"floatValue1"] floatValue];
+						const float speedScalar2 = [(NSNumber *)[deviceInfo valueForKey:@"floatValue2"] floatValue];
+						inputSummary = [NSString stringWithFormat:NSSTRING_INPUTPREF_SPEED_SCALAR_LATCH_LIST_3, speedScalar0, speedScalar1, speedScalar2];
+						break;
+					}
+						
+					case SpeedLimitInputList4:
+					{
+						const float speedScalar0 = [(NSNumber *)[deviceInfo valueForKey:@"floatValue0"] floatValue];
+						const float speedScalar1 = [(NSNumber *)[deviceInfo valueForKey:@"floatValue1"] floatValue];
+						const float speedScalar2 = [(NSNumber *)[deviceInfo valueForKey:@"floatValue2"] floatValue];
+						const float speedScalar3 = [(NSNumber *)[deviceInfo valueForKey:@"floatValue3"] floatValue];
+						inputSummary = [NSString stringWithFormat:NSSTRING_INPUTPREF_SPEED_SCALAR_LATCH_LIST_4, speedScalar0, speedScalar1, speedScalar2, speedScalar3];
+						break;
+					}
+						
+					default:
+						inputSummary = NSSTRING_INPUTPREF_SPEED_ERROR_INVALID_LIST_COUNT;
+						break;
+				}
+				break;
+			}
+				
+			default:
+				inputSummary = NSSTRING_INPUTPREF_SPEED_ERROR_INPUT_MODE;
+				break;
+		}
 	}
 	else if (strncmp(commandTag, "Enable/Disable GPU State", INPUT_HANDLER_STRING_LENGTH) == 0)
 	{
@@ -2206,10 +2285,10 @@ void ClientCommandToggleAllDisplays(const ClientCommandAttributes &cmdAttr, void
 	[emuControl cmdToggleAllDisplays:cmdAttr];
 }
 
-void ClientCommandHoldToggleSpeedScalar(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+void ClientCommandSetSpeedScalar(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
 {
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
-	[emuControl cmdHoldToggleSpeedScalar:cmdAttr];
+	[emuControl cmdSetSpeedScalar:cmdAttr];
 }
 
 void ClientCommandToggleSpeedLimiter(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)

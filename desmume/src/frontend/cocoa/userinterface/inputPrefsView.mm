@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2022 DeSmuME Team
+	Copyright (C) 2012-2026 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
 @synthesize inputProfileNextButton;
 @synthesize inputPrefOutlineView;
 @synthesize inputSettingsController;
+@synthesize inputSettingsSpeedLimitController;
 @synthesize inputProfileController;
 @synthesize inputSettingsNDSInput;
 @synthesize inputSettingsMicrophone;
@@ -50,6 +51,11 @@
 @synthesize inputManager;
 @dynamic configInputTargetID;
 @synthesize inputSettingsInEdit;
+@synthesize enableSpeedLimitList1;
+@synthesize enableSpeedLimitList2;
+@synthesize enableSpeedLimitList3;
+@synthesize enableSpeedLimitList4;
+@synthesize useSpeedLimitList;
 
 - (id)initWithFrame:(NSRect)frame
 {
@@ -104,6 +110,12 @@
 	configInputTargetID = nil;
 	configInputList = [[NSMutableDictionary alloc] initWithCapacity:128];
 	inputSettingsInEdit = nil;
+	
+	enableSpeedLimitList1 = YES;
+	enableSpeedLimitList2 = NO;
+	enableSpeedLimitList3 = NO;
+	enableSpeedLimitList4 = NO;
+	useSpeedLimitList = NO;
 	
     return self;
 }
@@ -794,13 +806,35 @@
 	}
 }
 
-- (IBAction) changeSpeed:(id)sender
+- (IBAction) setSpeedToNormal:(id)sender
 {
 	NSMutableDictionary *deviceInfo = (NSMutableDictionary *)[inputSettingsController content];
-	if (deviceInfo != nil)
+	if (deviceInfo == nil)
 	{
-		const float speedScalar = (float)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0f;
-		[deviceInfo setObject:[NSNumber numberWithFloat:speedScalar] forKey:@"floatValue0"];
+		return;
+	}
+	
+	const SpeedLimitInputList speedLimitIndex = (SpeedLimitInputList)[CocoaDSUtil getIBActionSenderTag:sender];
+	switch (speedLimitIndex)
+	{
+		case SpeedLimitInputList1:
+			[deviceInfo setObject:[NSNumber numberWithFloat:1.0f] forKey:@"floatValue0"];
+			break;
+			
+		case SpeedLimitInputList2:
+			[deviceInfo setObject:[NSNumber numberWithFloat:1.0f] forKey:@"floatValue1"];
+			break;
+			
+		case SpeedLimitInputList3:
+			[deviceInfo setObject:[NSNumber numberWithFloat:1.0f] forKey:@"floatValue2"];
+			break;
+			
+		case SpeedLimitInputList4:
+			[deviceInfo setObject:[NSNumber numberWithFloat:1.0f] forKey:@"floatValue3"];
+			break;
+			
+		default:
+			break;
 	}
 }
 
@@ -823,6 +857,47 @@
 	if (theSheet == inputSettingsNDSInput)
 	{
 		[self updateCustomTurboPatternControls:turboPatternControl];
+	}
+	else if (theSheet == inputSettingsSetSpeedLimit)
+	{
+		const SpeedLimitInputMode inputMode = (SpeedLimitInputMode)[(NSNumber *)[(NSMutableDictionary *)[inputSettingsController content] valueForKey:@"intValue0"] intValue];
+		[self setUseSpeedLimitList:(inputMode == SpeedLimitInputMode_LatchList) ? YES : NO];
+		
+		SpeedLimitInputList listCountIndex = (SpeedLimitInputList)[(NSNumber *)[(NSMutableDictionary *)[inputSettingsController content] valueForKey:@"intValue1"] intValue];
+		
+		switch (listCountIndex)
+		{
+			case SpeedLimitInputList1:
+				[self setEnableSpeedLimitList1:YES];
+				[self setEnableSpeedLimitList2:NO];
+				[self setEnableSpeedLimitList3:NO];
+				[self setEnableSpeedLimitList4:NO];
+				break;
+				
+			case SpeedLimitInputList2:
+				[self setEnableSpeedLimitList1:YES];
+				[self setEnableSpeedLimitList2:YES];
+				[self setEnableSpeedLimitList3:NO];
+				[self setEnableSpeedLimitList4:NO];
+				break;
+				
+			case SpeedLimitInputList3:
+				[self setEnableSpeedLimitList1:YES];
+				[self setEnableSpeedLimitList2:YES];
+				[self setEnableSpeedLimitList3:YES];
+				[self setEnableSpeedLimitList4:NO];
+				break;
+				
+			case SpeedLimitInputList4:
+				[self setEnableSpeedLimitList1:YES];
+				[self setEnableSpeedLimitList2:YES];
+				[self setEnableSpeedLimitList3:YES];
+				[self setEnableSpeedLimitList4:YES];
+				break;
+				
+			default:
+				break;
+		}
 	}
 	
 #if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
@@ -953,6 +1028,63 @@
 	[editedDeviceInfo setValue:turboPatternLengthNumber forKey:@"intValue3"];
 	
 	[self updateCustomTurboPatternControls:turboPatternControl];
+}
+
+- (IBAction) setSpeedLimitInputMode:(id)sender
+{
+	const SpeedLimitInputMode inputMode = (SpeedLimitInputMode)[CocoaDSUtil getIBActionSenderTag:sender];
+	const BOOL willUseSpeedLimitList = (inputMode == SpeedLimitInputMode_LatchList) ? YES : NO;
+	
+	[self setUseSpeedLimitList:willUseSpeedLimitList];
+	
+	if (!willUseSpeedLimitList)
+	{
+		NSMutableDictionary *editedDeviceInfo = (NSMutableDictionary *)[inputSettingsController content];
+		[editedDeviceInfo setValue:[NSNumber numberWithInteger:0] forKey:@"intValue1"];
+		[self setEnableSpeedLimitList1:YES];
+		[self setEnableSpeedLimitList2:NO];
+		[self setEnableSpeedLimitList3:NO];
+		[self setEnableSpeedLimitList4:NO];
+	}
+}
+
+- (IBAction) setSpeedLimitListCount:(id)sender
+{
+	SpeedLimitInputList listCountIndex = (SpeedLimitInputList)[CocoaDSUtil getIBActionSenderTag:sender];
+	
+	switch (listCountIndex)
+	{
+		case SpeedLimitInputList1:
+			[self setEnableSpeedLimitList1:YES];
+			[self setEnableSpeedLimitList2:NO];
+			[self setEnableSpeedLimitList3:NO];
+			[self setEnableSpeedLimitList4:NO];
+			break;
+			
+		case SpeedLimitInputList2:
+			[self setEnableSpeedLimitList1:YES];
+			[self setEnableSpeedLimitList2:YES];
+			[self setEnableSpeedLimitList3:NO];
+			[self setEnableSpeedLimitList4:NO];
+			break;
+			
+		case SpeedLimitInputList3:
+			[self setEnableSpeedLimitList1:YES];
+			[self setEnableSpeedLimitList2:YES];
+			[self setEnableSpeedLimitList3:YES];
+			[self setEnableSpeedLimitList4:NO];
+			break;
+			
+		case SpeedLimitInputList4:
+			[self setEnableSpeedLimitList1:YES];
+			[self setEnableSpeedLimitList2:YES];
+			[self setEnableSpeedLimitList3:YES];
+			[self setEnableSpeedLimitList4:YES];
+			break;
+			
+		default:
+			break;
+	}
 }
 
 - (IBAction) profileNew:(id)sender

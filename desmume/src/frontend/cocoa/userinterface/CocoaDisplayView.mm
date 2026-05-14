@@ -107,18 +107,79 @@
 
 #pragma mark Class Methods
 
+- (void) updateStatusTextForInput:(const ClientInputDeviceProperties &)inputProperty
+{
+	NSString *inputString = nil;
+	if (inputProperty.isAnalog)
+	{
+		inputString = [NSString stringWithFormat:@"%s:%s (%1.2f)", inputProperty.deviceName, inputProperty.elementName, inputProperty.scalar];
+	}
+	else if (inputProperty.state == ClientInputDeviceState_On)
+	{
+		inputString = [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName];
+	}
+	else
+	{
+		// For now, we won't update the status text when a digital input is released.
+		return;
+	}
+	
+	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
+	EmuControllerDelegate *emuControl = [windowController emuControl];
+	const ClientCommandAttributes cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputProperty.deviceCode elementCode:inputProperty.elementCode];
+	
+	if (cmdAttr.tag[0] == '\0' || cmdAttr.dispatchFunction == NULL)
+	{
+		// This input is not mapped to anything, so just report what input was pressed.
+		[emuControl setStatusTextWithString:inputString];
+	}
+	else
+	{
+		// This input is mapped, so report both the input itself and the command to which the input is mapped.
+		NSString *commandString = nil;
+		
+		if (strncmp(cmdAttr.tag, "Touch", 6) == 0)
+		{
+			// Touch commands also report the NDS coordinates when the command occurred.
+			if (cmdAttr.useInputForIntCoord)
+			{
+				commandString = [NSString stringWithFormat:@"%s X:%i Y:%i", cmdAttr.tag, (int)inputProperty.intCoordX, (int)inputProperty.intCoordY];
+			}
+			else if (cmdAttr.useInputForFloatCoord)
+			{
+				commandString = [NSString stringWithFormat:@"%s X:%1.2f Y:%1.2f", cmdAttr.tag, inputProperty.floatCoordX, inputProperty.floatCoordY];
+			}
+			else
+			{
+				commandString = [NSString stringWithFormat:@"%s X:%i Y:%i", cmdAttr.tag, (int)cmdAttr.intValue[1], (int)cmdAttr.intValue[2]];
+			}
+		}
+		else
+		{
+			commandString = [NSString stringWithCString:cmdAttr.tag encoding:NSUTF8StringEncoding];
+		}
+		
+		NSString *combinedString = [NSString stringWithFormat:@"%@ - %@", inputString, commandString];
+		const NSUInteger boldStart = [combinedString length] - [commandString length];
+		
+		NSMutableAttributedString *attrString = [[[NSMutableAttributedString alloc] initWithString:combinedString] autorelease];
+		[attrString addAttribute:NSFontAttributeName value:[NSFont boldSystemFontOfSize:[NSFont smallSystemFontSize]]
+						   range:NSMakeRange(boldStart, [commandString length])];
+		
+		[emuControl setStatusText:attrString];
+	}
+}
+
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed
 {
 	BOOL isHandled = NO;
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	
 	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];
 	const ClientInputDeviceProperties inputProperty = inputEncoder->EncodeKeyboardInput((int32_t)[theEvent keyCode], (keyPressed) ? true : false);
 	
 	if (keyPressed && [theEvent window] != nil)
 	{
-		NSString *newStatusText = [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName];
-		[[windowController emuControl] setStatusText:newStatusText];
+		[self updateStatusTextForInput:inputProperty];
 	}
 	
 	isHandled = [inputManager dispatchCommandUsingInputProperties:&inputProperty];
@@ -128,7 +189,7 @@
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed
 {
 	BOOL isHandled = NO;
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
+	
 	MacDisplayLayeredView *cdv = [localLayer clientDisplayView];
 	const ClientDisplayMode displayMode = cdv->Get3DPresenter()->GetMode();
 	
@@ -158,8 +219,7 @@
 	
 	if (buttonPressed && [theEvent window] != nil)
 	{
-		NSString *newStatusText = (displayMode == ClientDisplayMode_Main) ? [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName] : [NSString stringWithFormat:@"%s:%s X:%i Y:%i", inputProperty.deviceName, inputProperty.elementName, (int)inputProperty.intCoordX, (int)inputProperty.intCoordY];
-		[[windowController emuControl] setStatusText:newStatusText];
+		[self updateStatusTextForInput:inputProperty];
 	}
 	
 	isHandled = [inputManager dispatchCommandUsingInputProperties:&inputProperty];
@@ -709,42 +769,44 @@
 - (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue hidManager:(InputHIDManager *)hidManager
 {
 	BOOL isHandled = NO;
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	
 	MacInputDevicePropertiesEncoder *inputEncoder = [[hidManager inputManager] inputEncoder];
 	ClientInputDevicePropertiesList inputPropertyList = inputEncoder->EncodeHIDQueue(hidQueue, [hidManager inputManager], false);
-	NSString *newStatusText = nil;
-	
-	const size_t inputCount = inputPropertyList.size();
-	
-	for (size_t i = 0; i < inputCount; i++)
-	{
-		const ClientInputDeviceProperties &inputProperty = inputPropertyList[i];
-		
-		if (inputProperty.isAnalog)
-		{
-			newStatusText = [NSString stringWithFormat:@"%s:%s (%1.2f)", inputProperty.deviceName, inputProperty.elementName, inputProperty.scalar];
-			break;
-		}
-		else if (inputProperty.state == ClientInputDeviceState_On)
-		{
-			newStatusText = [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName];
-			break;
-		}
-	}
-	
-	if (newStatusText != nil)
-	{
-		[[windowController emuControl] setStatusText:newStatusText];
-	}
 	
 	CommandAttributesList cmdList = [inputManager generateCommandListUsingInputList:&inputPropertyList];
-	if (cmdList.empty())
+	const size_t cmdCount = cmdList.size();
+	
+	if (cmdCount > 0)
 	{
+		// Report the last command and dispatch the command list.
+		for (int i = (int)cmdCount - 1; i >= 0; i--)
+		{
+			const ClientInputDeviceProperties &inputProperty = cmdList[i].input;
+			if (inputProperty.isAnalog || (inputProperty.state == ClientInputDeviceState_On))
+			{
+				[self updateStatusTextForInput:inputProperty];
+				break;
+			}
+		}
+		
+		[inputManager dispatchCommandList:&cmdList];
+	}
+	else
+	{
+		// Report the last active input, but do nothing else.
+		const size_t inputCount = inputPropertyList.size();
+		for (int i = (int)inputCount - 1; i >= 0; i--)
+		{
+			const ClientInputDeviceProperties &inputProperty = inputPropertyList[i];
+			if (inputProperty.isAnalog || (inputProperty.state == ClientInputDeviceState_On))
+			{
+				[self updateStatusTextForInput:inputProperty];
+				break;
+			}
+		}
+		
 		return isHandled;
 	}
-	
-	[inputManager dispatchCommandList:&cmdList];
 	
 	isHandled = YES;
 	return isHandled;

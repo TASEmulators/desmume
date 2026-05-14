@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2025 DeSmuME team
+	Copyright (C) 2013-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -127,7 +127,20 @@
 - (IBAction) toggleExecutePause:(id)sender;
 - (IBAction) frameAdvance:(id)sender;
 - (IBAction) reset:(id)sender;
+
 - (IBAction) changeCoreSpeed:(id)sender;
+- (IBAction) toggleCoreSpeed2x:(id)sender;
+- (IBAction) toggleCoreSpeed3x:(id)sender;
+- (IBAction) toggleCoreSpeed4x:(id)sender;
+- (IBAction) toggleCoreSpeed5x:(id)sender;
+- (IBAction) toggleCoreSpeed6x:(id)sender;
+- (IBAction) toggleCoreSpeed7x:(id)sender;
+- (IBAction) toggleCoreSpeed8x:(id)sender;
+- (IBAction) toggleCoreSpeed9x:(id)sender;
+- (IBAction) toggleCoreSpeed10x:(id)sender;
+- (IBAction) toggleCoreSpeed24681x:(id)sender;
+- (IBAction) toggleSpeedLimiter:(id)sender;
+
 - (IBAction) openRom:(id)sender;
 
 // View Menu
