@@ -75,6 +75,7 @@ NDS_SLOT2_TYPE slot2Type = NDS_SLOT2_AUTO;
 savestates_t savestates[NB_STATES];
 
 #define SAVESTATE_VERSION       12
+#define SAVESTATE_MAX_SIZE      (64 * 1024 * 1024)
 static const char* magic = "DeSmuME SState\0";
 
 //a savestate chunk loader can set this if it wants to permit a silent failure (for compatibility)
@@ -1360,6 +1361,24 @@ bool savestate_load(EMUFILE &is)
 	if (!is.read_32LE(comprlen)) return false;
 
 	if (ssversion != SAVESTATE_VERSION) return false;
+
+	const int streamSize = is.size();
+	const int payloadStart = is.ftell();
+	if (streamSize < payloadStart || len == 0 || len > SAVESTATE_MAX_SIZE)
+		return false;
+
+	const u32 payloadSize = streamSize - payloadStart;
+	if (comprlen == 0xFFFFFFFF)
+	{
+		if (len < 32 || len != (u32)streamSize)
+			return false;
+	}
+	else
+	{
+		const u32 maxCompressedSize = SAVESTATE_MAX_SIZE + (SAVESTATE_MAX_SIZE >> 9) + 12;
+		if (comprlen == 0 || comprlen > maxCompressedSize || comprlen != payloadSize)
+			return false;
+	}
 
 	std::vector<u8> buf(len);
 
