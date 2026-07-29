@@ -1266,7 +1266,8 @@ bool NDS_ReadFirmwareDataFromFile(const char *fileName, NDSFirmwareData *outFirm
 		*outFileSize = fileSize;
 	}
 	
-	if ( (fileSize != NDS_FW_SIZE_V1) && (fileSize != NDS_FW_SIZE_V2) )
+	if ( ((fileSize != NDS_FW_SIZE_V1) && (fileSize != NDS_FW_SIZE_V2)) ||
+	     (fileSize > sizeof(NDSFirmwareData)) )
 	{
 		fclose(fp);
 		return result;
