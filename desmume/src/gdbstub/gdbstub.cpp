@@ -392,6 +392,12 @@ step_instruction_watch( void *data, uint32_t addr, UNUSED_PARM(int thunmb)) {
 /* BUFMAX defines the maximum number of characters in inbound/outbound buffers*/
 /* at least NUMREGBYTES*2 are needed for register packets */
 #define BUFMAX 2048
+#define OUT_PACKET_PREFIX_SIZE 1
+#define OUT_PACKET_CHECKSUM_SIZE 3
+#define OUT_PACKET_TERMINATOR_SIZE 1
+#define OUT_PACKET_PAYLOAD_MAX \
+  (BUFMAX - OUT_PACKET_PREFIX_SIZE - OUT_PACKET_CHECKSUM_SIZE - \
+   OUT_PACKET_TERMINATOR_SIZE)
 
 
 
@@ -462,11 +468,14 @@ hexToInt( const uint8_t **ptr, uint32_t *intValue)
 
 static uint8_t *
 mem2hex ( armcpu_memory_iface *memio, uint32_t mem_addr,
-          uint8_t *buf, int count)
+          uint8_t *buf, uint32_t count)
 {
   uint8_t ch;
 
   //set_mem_fault_trap(may_fault);
+
+  if (count > OUT_PACKET_PAYLOAD_MAX / 2)
+    return NULL;
 
   while (count-- > 0)
     {
@@ -573,7 +582,6 @@ getOutPacket( void) {
   return (struct debug_out_packet *)&the_out_packet;
 }
 
-#define CHECKSUM_PART_SIZE 3
 /**
  * send the packet in buffer.
  */
@@ -583,6 +591,9 @@ putpacket ( SOCKET_TYPE sock, struct debug_out_packet *out_packet, uint32_t size
   uint32_t count;
   unsigned char *ch_ptr = (unsigned char *)&out_packet->start_ptr[-1];
   uint8_t reply_ch;
+
+  if (size > OUT_PACKET_PAYLOAD_MAX)
+    return -1;
 
   //DEBUG_LOG_START( "Putting packet size %d ", size);
   /* add the '$' to the start of the packet */
