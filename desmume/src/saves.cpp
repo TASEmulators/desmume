@@ -510,6 +510,10 @@ static void mmu_savestate(EMUFILE &os)
 
 static bool mmu_loadstate(EMUFILE &is, int size)
 {
+	const int chunkStart = is.ftell();
+	if (chunkStart < 0 || size < 0)
+		return false;
+
 	//read version
 	u32 version;
 	if (is.read_32LE(version) != 1) return false;
@@ -595,9 +599,22 @@ static bool mmu_loadstate(EMUFILE &is, int size)
 	if (version < 8) return ok;
 
 	//version 8:
+	u32 firmwareSize;
+	if (is.read_32LE(firmwareSize) != 1)
+		return false;
+
+	const int firmwareDataPos = is.ftell();
+	if (firmwareDataPos < chunkStart || firmwareDataPos - chunkStart > size)
+		return false;
+
+	const u32 remainingChunkSize = size - (firmwareDataPos - chunkStart);
+	if (firmwareSize > sizeof(MMU.fw.data._raw) || firmwareSize > remainingChunkSize)
+		return false;
+
 	memset(MMU.fw.data._raw, 0, sizeof(NDSFirmwareData));
-	MMU.fw.size = is.read_u32LE();
-	is.fread(MMU.fw.data._raw, MMU.fw.size);
+	if (is.fread(MMU.fw.data._raw, firmwareSize) != firmwareSize)
+		return false;
+	MMU.fw.size = firmwareSize;
 	
 	return ok;
 }
