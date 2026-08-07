@@ -3901,7 +3901,8 @@ common_gtk_main(GApplication *app, gpointer user_data)
         // TODO: Why is there no GTK_RECENT_INFO()?!
         GtkRecentInfo *info = static_cast<GtkRecentInfo*>(data);
         const char *mime = gtk_recent_info_get_mime_type(info);
-        if (strcmp(mime, "application/x-nintendo-ds-rom") != 0) {
+        if (strcmp(mime, "application/x-nintendo-ds-rom") != 0 &&
+            strcmp(mime, "application/vnd.nintendo.nitro.rom") != 0) {
             gtk_recent_info_unref(info);
             return;
         }

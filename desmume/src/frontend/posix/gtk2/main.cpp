@@ -3893,6 +3893,7 @@ common_gtk_main( class configured_features *my_config)
         GtkWidget * recentFiles = gtk_recent_chooser_menu_new();
         GtkRecentFilter * recentFilter = gtk_recent_filter_new();
         gtk_recent_filter_add_mime_type(recentFilter, "application/x-nintendo-ds-rom");
+        gtk_recent_filter_add_mime_type(recentFilter, "application/vnd.nintendo.nitro.rom");
         gtk_recent_chooser_set_filter(GTK_RECENT_CHOOSER(recentFiles), recentFilter);
         gtk_menu_item_set_submenu(GTK_MENU_ITEM(recentMenu), recentFiles);
         g_signal_connect(G_OBJECT(recentFiles), "item-activated", G_CALLBACK(OpenRecent), NULL);
