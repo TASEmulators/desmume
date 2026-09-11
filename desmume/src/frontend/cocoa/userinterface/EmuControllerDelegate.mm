@@ -39,6 +39,10 @@
 #import "cocoa_rom.h"
 #import "cocoa_slot2.h"
 
+#ifdef HAVE_LUA
+#import "../MacLuaScriptConsole.h"
+#endif
+
 #if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
 	#import <AVFoundation/AVFoundation.h>
 #endif
@@ -1089,6 +1093,20 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore generateFirmwareMACAddress];
+}
+
+- (IBAction) addLuaScript:(id)sender
+{
+#ifdef HAVE_LUA
+	lua_script_open_console();
+#endif
+}
+
+- (IBAction) closeAllLuaScripts:(id)sender
+{
+#ifdef HAVE_LUA
+	lua_script_close_all();
+#endif
 }
 
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender
