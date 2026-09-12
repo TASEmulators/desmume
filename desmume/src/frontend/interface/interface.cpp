@@ -39,6 +39,7 @@
 
 #define SCREENS_PIXEL_SIZE 98304
 volatile bool execute = false;
+static bool rom_opened = false;
 TieredRegion hooked_regions [HOOK_COUNT];
 std::map<unsigned int, memory_cb_fnc> hooks[HOOK_COUNT];
 
@@ -97,9 +98,21 @@ EXPORTED void desmume_set_language(u8 lang)
 EXPORTED int desmume_open(const char *filename)
 {
     int i;
+    if (rom_opened) {
+        NDS_FreeROM();
+    }
     clear_savestates();
     i = NDS_LoadROM(filename);
+    if (i > 0) {
+        rom_opened = true;
+    }
     return i;
+}
+
+EXPORTED void desmume_close()
+{
+    NDS_FreeROM();
+    rom_opened = false;
 }
 
 EXPORTED void desmume_set_savetype(int type) {
