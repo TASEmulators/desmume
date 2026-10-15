@@ -15,17 +15,13 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: microsoft/setup-msbuild@v2
+      - name: Download verified Windows build
+        uses: actions/download-artifact@v4
         with:
-          msbuild-architecture: x64
-      - name: Build instrumented DeSmuME
-        shell: cmd
-        run: |
-          set CL=-Wno-c++11-narrowing
-          msbuild "desmume\src\frontend\windows\DeSmuME.sln" /p:Configuration=Release /p:Platform=x64 /p:CL_cgthreads=1 /p:CLToolExe=clang-cl.exe /m
-          if errorlevel 1 exit /b 1
-          call desmume\src\frontend\windows\ci_postbuild.bat
-          if errorlevel 1 exit /b 1
+          name: desmume-win-x64
+          run-id: 38701498268
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: desmume-bin
       - name: Test frame execution and RAM CSV with open-source homebrew
         shell: pwsh
         run: |
@@ -33,7 +29,7 @@ jobs:
           $rom = Join-Path $env:RUNNER_TEMP 'argvTest.nds'
           Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/devkitPro/nds-hb-menu/master/testfiles/argvTest.nds' -OutFile $rom
           if ((Get-Item $rom).Length -lt 100000) { throw 'Homebrew ROM download incomplete' }
-          $exe = Get-ChildItem 'desmume/src/frontend/windows/__bins' -Filter '*.exe' -Recurse |
+          $exe = Get-ChildItem 'desmume-bin' -Filter '*.exe' -Recurse |
             Where-Object { $_.Name -match 'desmume' } | Select-Object -First 1
           if (-not $exe) { throw 'No DeSmuME executable found' }
           $scriptFile = Join-Path $env:RUNNER_TEMP 'volt-hunt-script.txt'
@@ -47,7 +43,13 @@ jobs:
           Write-Host "Homebrew ROM: $rom"
           $proc = Start-Process -FilePath $exe.FullName -ArgumentList ('"' + $rom + '"') -WorkingDirectory $workdir -PassThru
           try {
-            Start-Sleep -Seconds 35
+            Start-Sleep -Seconds 20
+            $proc.Refresh()
+            Write-Host "Emulator status: exited=$($proc.HasExited), window='$($proc.MainWindowTitle)', handle=$($proc.MainWindowHandle)"
+            if ($proc.HasExited) { Write-Host "Emulator exit code: $($proc.ExitCode)" }
+            Write-Host "RAM trace candidates:"
+            Get-ChildItem $env:RUNNER_TEMP -Filter 'volt_hunt_trace.csv' -Recurse -ErrorAction SilentlyContinue |
+              Select-Object FullName,Length | Format-Table
           } finally {
             if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
           }
