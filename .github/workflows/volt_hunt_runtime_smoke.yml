@@ -42,7 +42,7 @@ jobs:
           New-Item -Path $workdir -ItemType Directory -Force | Out-Null
           Write-Host "Executable: $($exe.FullName)"
           Write-Host "Homebrew ROM: $rom"
-          $proc = Start-Process -FilePath $exe.FullName -ArgumentList ('"' + $rom + '"') -WorkingDirectory $workdir -PassThru
+          $proc = Start-Process -FilePath $exe.FullName -ArgumentList ('--disable-sound "' + $rom + '"') -WorkingDirectory $workdir -PassThru
           try {
             Start-Sleep -Seconds 20
             $proc.Refresh()
