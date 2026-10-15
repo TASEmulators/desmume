@@ -1396,7 +1396,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)windowDidResize:(NSNotification *)notification
 {
-	if ([self isFullScreen])
+	// Legacy fullscreen sizes the view explicitly, without the windowed status-bar offset.
+	// Native fullscreen can deliver its final resize after windowDidEnterFullScreen:.
+	if ([self isFullScreen] && !_canUseMavericksFullScreen)
 	{
 		return;
 	}
