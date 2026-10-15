@@ -15,13 +15,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Download verified Windows build
-        uses: actions/download-artifact@v4
-        with:
-          name: desmume-win-x64
-          run-id: 38701498268
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: desmume-bin
+      - uses: microsoft/setup-msbuild@v2
+      - name: Build current instrumented DeSmuME
+        shell: pwsh
+        run: |
+          msbuild desmume/src/frontend/windows/DeSmuME.sln /m /p:Configuration=Release /p:Platform=x64
       - name: Test frame execution and RAM CSV with open-source homebrew
         shell: pwsh
         run: |
@@ -29,7 +27,7 @@ jobs:
           $rom = Join-Path $env:RUNNER_TEMP 'argvTest.nds'
           Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/devkitPro/nds-hb-menu/master/testfiles/argvTest.nds' -OutFile $rom
           if ((Get-Item $rom).Length -lt 100000) { throw 'Homebrew ROM download incomplete' }
-          $exe = Get-ChildItem 'desmume-bin' -Filter '*.exe' -Recurse |
+          $exe = Get-ChildItem 'desmume/src/frontend/windows/__bins' -Filter '*.exe' -Recurse |
             Where-Object { $_.Name -match 'desmume' } | Select-Object -First 1
           if (-not $exe) { throw 'No DeSmuME executable found' }
           Copy-Item 'desmume/src/frontend/windows/7z.dll' (Join-Path $exe.DirectoryName '7z.dll') -Force
@@ -38,6 +36,7 @@ jobs:
             Set-Content -Path $scriptFile -Encoding ascii
           $env:VH_TRACE_ADDRS = '02000000,02000004'
           $env:VH_INPUT_SCRIPT = $scriptFile
+          $env:VH_DIAGNOSTICS = '1'
           $workdir = Join-Path $env:RUNNER_TEMP 'volt-hunt-smoke'
           New-Item -Path $workdir -ItemType Directory -Force | Out-Null
           Write-Host "Executable: $($exe.FullName)"
@@ -87,6 +86,8 @@ jobs:
             if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
           }
           $trace = Join-Path $workdir 'volt_hunt_trace.csv'
+          $nativeLog = Join-Path $workdir "volt_hunt_runtime.log"
+          if (Test-Path $nativeLog) { Write-Host "Native startup diagnostics:"; Get-Content $nativeLog }
           Write-Host "Smoke workdir contents:"
           Get-ChildItem $workdir -Force | Select-Object Name,Length | Format-Table
           if (-not (Test-Path $trace)) { throw 'No trace generated; inspect uploaded runtime-diagnostics.txt for process and window details' }
@@ -111,4 +112,5 @@ jobs:
           path: |
             ${{ runner.temp }}/volt-hunt-smoke/volt_hunt_trace.csv
             ${{ runner.temp }}/volt-hunt-smoke/runtime-diagnostics.txt
+            ${{ runner.temp }}/volt-hunt-smoke/volt_hunt_runtime.log
           if-no-files-found: warn
