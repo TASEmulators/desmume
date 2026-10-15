@@ -32,6 +32,7 @@ jobs:
           $exe = Get-ChildItem 'desmume-bin' -Filter '*.exe' -Recurse |
             Where-Object { $_.Name -match 'desmume' } | Select-Object -First 1
           if (-not $exe) { throw 'No DeSmuME executable found' }
+          Copy-Item 'desmume/src/frontend/windows/7z.dll' (Join-Path $exe.DirectoryName '7z.dll') -Force
           $scriptFile = Join-Path $env:RUNNER_TEMP 'volt-hunt-script.txt'
           "0,9,000`n10,39,001`n40,69,080`n70,199,000`n" |
             Set-Content -Path $scriptFile -Encoding ascii
@@ -47,6 +48,27 @@ jobs:
             $proc.Refresh()
             Write-Host "Emulator status: exited=$($proc.HasExited), window='$($proc.MainWindowTitle)', handle=$($proc.MainWindowHandle)"
             if ($proc.HasExited) { Write-Host "Emulator exit code: $($proc.ExitCode)" }
+            if ($proc.MainWindowTitle -eq 'Error') {
+              Add-Type @'
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+public class VHWin {
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr hwnd, StringBuilder buffer, int capacity);
+  [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr hwnd, Callback callback, IntPtr param);
+  public delegate bool Callback(IntPtr hwnd, IntPtr param);
+  public static void Dump(IntPtr hwnd) {
+    EnumChildWindows(hwnd, (child, unused) => {
+      var buffer = new StringBuilder(1024);
+      GetWindowText(child, buffer, buffer.Capacity);
+      if (buffer.Length > 0) Console.WriteLine("ERROR DIALOG: " + buffer.ToString());
+      return true;
+    }, IntPtr.Zero);
+  }
+}
+'@
+              [VHWin]::Dump($proc.MainWindowHandle)
+            }
             Write-Host "RAM trace candidates:"
             Get-ChildItem $env:RUNNER_TEMP -Filter 'volt_hunt_trace.csv' -Recurse -ErrorAction SilentlyContinue |
               Select-Object FullName,Length | Format-Table
