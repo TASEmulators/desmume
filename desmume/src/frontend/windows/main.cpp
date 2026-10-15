@@ -36,6 +36,7 @@
 #include <commdlg.h>
 #include <tchar.h>
 #include <stdio.h>
+#include <cstdlib>
 
 #include <GL/gl.h>
 #include <GL/glext.h>
@@ -1241,6 +1242,55 @@ static struct MainLoopData
 	int toolframecount;
 } mainLoopData = {0};
 
+
+/*
+ * Volt Hunt experimental ARM9 main-RAM sampler.
+ * Opt-in: set VH_TRACE_ADDRS=02000000,02000004 (up to four aligned hex addresses).
+ * Output: volt_hunt_trace.csv in the emulator working directory.
+ * Values are raw 32-bit words; no movement semantics are assumed.
+ * This initial hook deliberately does NOT alter emulated controller inputs.
+ */
+static FILE *vhTraceFile = NULL;
+static unsigned int vhTraceAddresses[4] = {0, 0, 0, 0};
+static unsigned int vhTraceCount = 0;
+static unsigned long long vhTraceFrame = 0;
+static bool vhTraceConfigured = false;
+
+static void VoltHuntTraceAfterFrame()
+{
+	if (!vhTraceConfigured)
+	{
+		vhTraceConfigured = true;
+		const char *env = getenv("VH_TRACE_ADDRS");
+		if (env == NULL || *env == 0) return;
+		const char *p = env;
+		while (*p != 0 && vhTraceCount < 4)
+		{
+			char *end = NULL;
+			const unsigned long addr = strtoul(p, &end, 16);
+			if (end == p) break;
+			if (addr >= 0x02000000UL && addr <= 0x023FFFFCUL && (addr & 3UL) == 0)
+				vhTraceAddresses[vhTraceCount++] = (unsigned int)addr;
+			p = end;
+			if (*p != ',') break;
+			++p;
+		}
+		if (vhTraceCount == 0) return;
+		vhTraceFile = fopen("volt_hunt_trace.csv", "w");
+		if (vhTraceFile == NULL) return;
+		fprintf(vhTraceFile, "frame");
+		for (unsigned int i = 0; i < vhTraceCount; ++i)
+			fprintf(vhTraceFile, ",0x%08X", vhTraceAddresses[i]);
+		fprintf(vhTraceFile, "\\n");
+	}
+	if (vhTraceFile == NULL) return;
+	fprintf(vhTraceFile, "%llu", ++vhTraceFrame);
+	for (unsigned int i = 0; i < vhTraceCount; ++i)
+		fprintf(vhTraceFile, ",%u", MMU_read32(ARMCPU_ARM9, vhTraceAddresses[i]));
+	fprintf(vhTraceFile, "\\n");
+	fflush(vhTraceFile);
+}
+
 static void StepRunLoop_Core()
 {
 	input_acquire();
@@ -1259,6 +1309,7 @@ static void StepRunLoop_Core()
 	{
 		Lock lock;
 		NDS_exec<false>();
+		VoltHuntTraceAfterFrame();
 		SPU_Emulate_user();
 		win_sound_samplecounter = DESMUME_SAMPLE_RATE/60;
 	}
