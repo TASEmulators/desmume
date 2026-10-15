@@ -17,9 +17,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: microsoft/setup-msbuild@v2
       - name: Build current instrumented DeSmuME
-        shell: pwsh
+        shell: cmd
         run: |
-          msbuild desmume/src/frontend/windows/DeSmuME.sln /m /p:Configuration=Release /p:Platform=x64
+          set CL=-Wno-c++11-narrowing
+          msbuild "desmume\src\frontend\windows\DeSmuME.sln" /p:Configuration=Release /p:Platform=x64 /p:CL_cgthreads=1 /p:CLToolExe=clang-cl.exe /m
+          if errorlevel 1 exit /b 1
+          call desmume\src\frontend\windows\ci_postbuild.bat
+          if errorlevel 1 exit /b 1
       - name: Test frame execution and RAM CSV with open-source homebrew
         shell: pwsh
         run: |
