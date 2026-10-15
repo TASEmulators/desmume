@@ -1281,13 +1281,13 @@ static void VoltHuntTraceAfterFrame()
 		fprintf(vhTraceFile, "frame");
 		for (unsigned int i = 0; i < vhTraceCount; ++i)
 			fprintf(vhTraceFile, ",0x%08X", vhTraceAddresses[i]);
-		fprintf(vhTraceFile, "\\n");
+		fprintf(vhTraceFile, "\n");
 	}
 	if (vhTraceFile == NULL) return;
 	fprintf(vhTraceFile, "%llu", ++vhTraceFrame);
 	for (unsigned int i = 0; i < vhTraceCount; ++i)
 		fprintf(vhTraceFile, ",%u", MMU_read32(ARMCPU_ARM9, vhTraceAddresses[i]));
-	fprintf(vhTraceFile, "\\n");
+	fprintf(vhTraceFile, "\n");
 	fflush(vhTraceFile);
 }
 
