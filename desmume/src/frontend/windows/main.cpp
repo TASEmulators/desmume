@@ -1291,6 +1291,68 @@ static void VoltHuntTraceAfterFrame()
 	fflush(vhTraceFile);
 }
 
+
+/* Volt Hunt opt-in deterministic button playback.
+ * VH_INPUT_SCRIPT points to a text file containing start_frame,end_frame,hex_mask.
+ * Frames are zero-based and inclusive; later lines override earlier lines.
+ * Bit masks: RIGHT=1 LEFT=2 DOWN=4 UP=8 START=16 SELECT=32
+ * B=64 A=128 Y=256 X=512 L=1024 R=2048.
+ */
+struct VoltHuntInputRange {
+	unsigned long long first;
+	unsigned long long last;
+	unsigned int mask;
+};
+static std::vector<VoltHuntInputRange> vhInputRanges;
+static bool vhInputInitialized = false;
+static unsigned long long vhInputFrame = 0;
+
+static void VoltHuntApplyScriptedInput()
+{
+	if (!vhInputInitialized)
+	{
+		vhInputInitialized = true;
+		const char *filename = getenv("VH_INPUT_SCRIPT");
+		if (filename && *filename)
+		{
+			FILE *file = fopen(filename, "r");
+			if (file)
+			{
+				char line[256];
+				while (fgets(line, sizeof(line), file))
+				{
+					VoltHuntInputRange range = {};
+					if (sscanf(line, "%llu,%llu,%x", &range.first, &range.last, &range.mask) == 3
+						&& range.first <= range.last && range.last <= 100000000ULL)
+						vhInputRanges.push_back(range);
+				}
+				fclose(file);
+			}
+		}
+	}
+	if (vhInputRanges.empty()) return;
+	unsigned int mask = 0;
+	for (size_t i = 0; i < vhInputRanges.size(); ++i)
+	{
+		const VoltHuntInputRange &r = vhInputRanges[i];
+		if (vhInputFrame >= r.first && vhInputFrame <= r.last) mask = r.mask;
+	}
+	UserButtons &buttons = NDS_getProcessingUserInput().buttons;
+	buttons.R = (mask & 0x001) != 0;
+	buttons.L = (mask & 0x002) != 0;
+	buttons.D = (mask & 0x004) != 0;
+	buttons.U = (mask & 0x008) != 0;
+	buttons.S = (mask & 0x010) != 0;
+	buttons.T = (mask & 0x020) != 0;
+	buttons.B = (mask & 0x040) != 0;
+	buttons.A = (mask & 0x080) != 0;
+	buttons.Y = (mask & 0x100) != 0;
+	buttons.X = (mask & 0x200) != 0;
+	buttons.W = (mask & 0x400) != 0;
+	buttons.E = (mask & 0x800) != 0;
+	++vhInputFrame;
+}
+
 static void StepRunLoop_Core()
 {
 	input_acquire();
@@ -1299,6 +1361,7 @@ static void StepRunLoop_Core()
 		input_process();
 		FCEUMOV_HandlePlayback();
 		CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+		VoltHuntApplyScriptedInput();
 	}
 	NDS_endProcessingInput();
 	FCEUMOV_HandleRecording();
