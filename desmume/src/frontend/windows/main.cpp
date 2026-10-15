@@ -1250,6 +1250,16 @@ static struct MainLoopData
  * Values are raw 32-bit words; no movement semantics are assumed.
  * This initial hook deliberately does NOT alter emulated controller inputs.
  */
+static void VoltHuntDiagnostic(const char *message)
+{
+	const char *enabled = getenv("VH_DIAGNOSTICS");
+	if (!enabled || !*enabled) return;
+	FILE *file = fopen("volt_hunt_runtime.log", "a");
+	if (!file) return;
+	fprintf(file, "%s\n", message);
+	fclose(file);
+}
+
 static unsigned int vhEffectiveInputMask = 0;
 static FILE *vhTraceFile = NULL;
 static unsigned int vhTraceAddresses[4] = {0, 0, 0, 0};
@@ -1259,6 +1269,7 @@ static bool vhTraceConfigured = false;
 
 static void VoltHuntTraceAfterFrame()
 {
+	if (vhTraceFrame == 0) VoltHuntDiagnostic("trace hook reached after emulated frame");
 	if (!vhTraceConfigured)
 	{
 		vhTraceConfigured = true;
@@ -1278,6 +1289,7 @@ static void VoltHuntTraceAfterFrame()
 		}
 		if (vhTraceCount == 0) return;
 		vhTraceFile = fopen("volt_hunt_trace.csv", "w");
+		VoltHuntDiagnostic(vhTraceFile ? "trace CSV opened" : "trace CSV open FAILED");
 		if (vhTraceFile == NULL) return;
 		fprintf(vhTraceFile, "frame,effective_input_hex");
 		for (unsigned int i = 0; i < vhTraceCount; ++i)
@@ -1689,6 +1701,7 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 	if (NDS_LoadROM(filename, physicalName, logicalName) > 0)
 	{
 		INFO("Loading %s was successful\n",logicalName);
+		VoltHuntDiagnostic("ROM loaded successfully");
 		VoltHuntResetExperiment();
 		
 		NDS_SLOT2_TYPE selectedSlot2Type = slot2_GetSelectedType();
@@ -1712,7 +1725,7 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 		return TRUE;		
 	}
 	else
-		msgbox->error("Loading %s FAILED.\n", logicalName);
+		{ VoltHuntDiagnostic("ROM load FAILED"); msgbox->error("Loading %s FAILED.\n", logicalName); }
 
 	return FALSE;
 }
@@ -2724,6 +2737,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 {
 //	testelf();
+	VoltHuntDiagnostic("WinMain entered");
 
     CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);
 
@@ -2759,6 +2773,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	}
 
 	//--------------------------------
+	VoltHuntDiagnostic("entering _main");
 	int ret = _main();
 	//--------------------------------
 
