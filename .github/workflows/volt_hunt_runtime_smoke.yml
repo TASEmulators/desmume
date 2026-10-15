@@ -42,6 +42,9 @@ jobs:
           New-Item -Path $workdir -ItemType Directory -Force | Out-Null
           Write-Host "Executable: $($exe.FullName)"
           Write-Host "Homebrew ROM: $rom"
+          $diagnostics = Join-Path $workdir 'runtime-diagnostics.txt'
+          Start-Transcript -Path $diagnostics -Force | Out-Null
+          try {
           $proc = Start-Process -FilePath $exe.FullName -ArgumentList ('--disable-sound "' + $rom + '"') -WorkingDirectory $workdir -PassThru
           try {
             Start-Sleep -Seconds 20
@@ -76,7 +79,7 @@ jobs:
             if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
           }
           $trace = Join-Path $workdir 'volt_hunt_trace.csv'
-          if (-not (Test-Path $trace)) { throw 'No trace generated: Windows runner GUI session may be unavailable or ROM did not execute frames' }
+          if (-not (Test-Path $trace)) { throw 'No trace generated; inspect uploaded runtime-diagnostics.txt for process and window details' }
           $rows = @(Import-Csv $trace)
           Write-Host "Frame rows: $($rows.Count)"
           if ($rows.Count -lt 70) { throw "Insufficient frames: $($rows.Count)" }
@@ -87,10 +90,15 @@ jobs:
           Write-Host "Frames with scripted RIGHT: $right; A: $a"
           if ($right -lt 20 -or $a -lt 20) { throw 'Scripted effective input phases not observed' }
           Write-Host 'PASS: emulated frames, scripted controller inputs and ARM9 RAM recorded together.'
+          } finally {
+            Stop-Transcript -ErrorAction SilentlyContinue | Out-Null
+          }
       - name: Upload diagnostic trace
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: volt-hunt-homebrew-runtime-trace
-          path: ${{ runner.temp }}/volt-hunt-smoke/volt_hunt_trace.csv
+          path: |
+            ${{ runner.temp }}/volt-hunt-smoke/volt_hunt_trace.csv
+            ${{ runner.temp }}/volt-hunt-smoke/runtime-diagnostics.txt
           if-no-files-found: warn
