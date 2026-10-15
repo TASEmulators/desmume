@@ -50,23 +50,23 @@ jobs:
             if ($proc.HasExited) { Write-Host "Emulator exit code: $($proc.ExitCode)" }
             if ($proc.MainWindowTitle -eq 'Error') {
               Add-Type @'
-using System;
-using System.Text;
-using System.Runtime.InteropServices;
-public class VHWin {
-  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr hwnd, StringBuilder buffer, int capacity);
-  [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr hwnd, Callback callback, IntPtr param);
-  public delegate bool Callback(IntPtr hwnd, IntPtr param);
-  public static void Dump(IntPtr hwnd) {
-    EnumChildWindows(hwnd, (child, unused) => {
-      var buffer = new StringBuilder(1024);
-      GetWindowText(child, buffer, buffer.Capacity);
-      if (buffer.Length > 0) Console.WriteLine("ERROR DIALOG: " + buffer.ToString());
-      return true;
-    }, IntPtr.Zero);
-  }
-}
-'@
+              using System;
+              using System.Text;
+              using System.Runtime.InteropServices;
+              public class VHWin {
+                [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr hwnd, StringBuilder buffer, int capacity);
+                [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr hwnd, Callback callback, IntPtr param);
+                public delegate bool Callback(IntPtr hwnd, IntPtr param);
+                public static void Dump(IntPtr hwnd) {
+                  EnumChildWindows(hwnd, (child, unused) => {
+                    var buffer = new StringBuilder(1024);
+                    GetWindowText(child, buffer, buffer.Capacity);
+                    if (buffer.Length > 0) Console.WriteLine("ERROR DIALOG: " + buffer.ToString());
+                    return true;
+                  }, IntPtr.Zero);
+                }
+              }
+              '@
               [VHWin]::Dump($proc.MainWindowHandle)
             }
             Write-Host "RAM trace candidates:"
