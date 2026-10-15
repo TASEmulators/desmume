@@ -7,6 +7,7 @@ on:
       - volt-hunt/instrumentation
     paths:
       - '.github/workflows/volt_hunt_runtime_smoke.yml'
+      - 'desmume/src/frontend/windows/main.cpp'
 
 jobs:
   smoke:
@@ -22,7 +23,9 @@ jobs:
         run: |
           set CL=-Wno-c++11-narrowing
           msbuild "desmume\src\frontend\windows\DeSmuME.sln" /p:Configuration=Release /p:Platform=x64 /p:CL_cgthreads=1 /p:CLToolExe=clang-cl.exe /m
+          if errorlevel 1 exit /b 1
           call desmume\src\frontend\windows\ci_postbuild.bat
+          if errorlevel 1 exit /b 1
       - name: Test frame execution and RAM CSV with open-source homebrew
         shell: pwsh
         run: |
