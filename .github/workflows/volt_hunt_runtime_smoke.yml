@@ -76,7 +76,7 @@ jobs:
             if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
           }
           $trace = Join-Path $workdir 'volt_hunt_trace.csv'
-          if (-not (Test-Path $trace)) { throw 'No trace generated: emulator may not have executed frames in CI desktop session' }
+          if (-not (Test-Path $trace)) { throw 'No trace generated: Windows runner GUI session may be unavailable or ROM did not execute frames' }
           $rows = @(Import-Csv $trace)
           Write-Host "Frame rows: $($rows.Count)"
           if ($rows.Count -lt 70) { throw "Insufficient frames: $($rows.Count)" }
