@@ -42,6 +42,10 @@ jobs:
           New-Item -Path $workdir -ItemType Directory -Force | Out-Null
           Write-Host "Executable: $($exe.FullName)"
           Write-Host "Homebrew ROM: $rom"
+          Write-Host "ROM bytes: $((Get-Item $rom).Length)"
+          Write-Host "Executable bytes: $($exe.Length)"
+          Write-Host "Executable directory contents:"
+          Get-ChildItem $exe.DirectoryName | Select-Object Name,Length | Format-Table
           $diagnostics = Join-Path $workdir 'runtime-diagnostics.txt'
           Start-Transcript -Path $diagnostics -Force | Out-Null
           try {
@@ -51,6 +55,10 @@ jobs:
             $proc.Refresh()
             Write-Host "Emulator status: exited=$($proc.HasExited), window='$($proc.MainWindowTitle)', handle=$($proc.MainWindowHandle)"
             if ($proc.HasExited) { Write-Host "Emulator exit code: $($proc.ExitCode)" }
+            Write-Host "Related processes:"
+            Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'desmume|werfault' } |
+              Select-Object ProcessId,ParentProcessId,Name,CommandLine | Format-List
+            Write-Host "Process working set (bytes): $($proc.WorkingSet64)"
             if ($proc.MainWindowTitle -eq 'Error') {
               Add-Type @'
               using System;
@@ -79,6 +87,8 @@ jobs:
             if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
           }
           $trace = Join-Path $workdir 'volt_hunt_trace.csv'
+          Write-Host "Smoke workdir contents:"
+          Get-ChildItem $workdir -Force | Select-Object Name,Length | Format-Table
           if (-not (Test-Path $trace)) { throw 'No trace generated; inspect uploaded runtime-diagnostics.txt for process and window details' }
           $rows = @(Import-Csv $trace)
           Write-Host "Frame rows: $($rows.Count)"
