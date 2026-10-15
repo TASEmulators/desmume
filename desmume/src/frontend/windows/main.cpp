@@ -1250,6 +1250,7 @@ static struct MainLoopData
  * Values are raw 32-bit words; no movement semantics are assumed.
  * This initial hook deliberately does NOT alter emulated controller inputs.
  */
+static unsigned int vhEffectiveInputMask = 0;
 static FILE *vhTraceFile = NULL;
 static unsigned int vhTraceAddresses[4] = {0, 0, 0, 0};
 static unsigned int vhTraceCount = 0;
@@ -1354,7 +1355,6 @@ static void VoltHuntApplyScriptedInput()
 }
 
 
-static unsigned int vhEffectiveInputMask = 0;
 static void VoltHuntCaptureEffectiveInput()
 {
 	const UserButtons &b = NDS_getProcessingUserInput().buttons;
