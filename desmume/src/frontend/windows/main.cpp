@@ -1278,13 +1278,13 @@ static void VoltHuntTraceAfterFrame()
 		if (vhTraceCount == 0) return;
 		vhTraceFile = fopen("volt_hunt_trace.csv", "w");
 		if (vhTraceFile == NULL) return;
-		fprintf(vhTraceFile, "frame");
+		fprintf(vhTraceFile, "frame,effective_input_hex");
 		for (unsigned int i = 0; i < vhTraceCount; ++i)
 			fprintf(vhTraceFile, ",0x%08X", vhTraceAddresses[i]);
 		fprintf(vhTraceFile, "\n");
 	}
 	if (vhTraceFile == NULL) return;
-	fprintf(vhTraceFile, "%llu", ++vhTraceFrame);
+	fprintf(vhTraceFile, "%llu,0x%03X", ++vhTraceFrame, vhEffectiveInputMask);
 	for (unsigned int i = 0; i < vhTraceCount; ++i)
 		fprintf(vhTraceFile, ",%u", MMU_read32(ARMCPU_ARM9, vhTraceAddresses[i]));
 	fprintf(vhTraceFile, "\n");
@@ -1353,6 +1353,20 @@ static void VoltHuntApplyScriptedInput()
 	++vhInputFrame;
 }
 
+
+static unsigned int vhEffectiveInputMask = 0;
+static void VoltHuntCaptureEffectiveInput()
+{
+	const UserButtons &b = NDS_getProcessingUserInput().buttons;
+	vhEffectiveInputMask =
+		(b.R ? 0x001 : 0) | (b.L ? 0x002 : 0) |
+		(b.D ? 0x004 : 0) | (b.U ? 0x008 : 0) |
+		(b.S ? 0x010 : 0) | (b.T ? 0x020 : 0) |
+		(b.B ? 0x040 : 0) | (b.A ? 0x080 : 0) |
+		(b.Y ? 0x100 : 0) | (b.X ? 0x200 : 0) |
+		(b.W ? 0x400 : 0) | (b.E ? 0x800 : 0);
+}
+
 static void StepRunLoop_Core()
 {
 	input_acquire();
@@ -1362,6 +1376,7 @@ static void StepRunLoop_Core()
 		FCEUMOV_HandlePlayback();
 		CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
 		VoltHuntApplyScriptedInput();
+		VoltHuntCaptureEffectiveInput();
 	}
 	NDS_endProcessingInput();
 	FCEUMOV_HandleRecording();
