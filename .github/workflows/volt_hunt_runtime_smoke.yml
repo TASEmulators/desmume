@@ -1,0 +1,69 @@
+name: Volt Hunt runtime smoke (homebrew)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - volt-hunt/instrumentation
+    paths:
+      - '.github/workflows/volt_hunt_runtime_smoke.yml'
+
+jobs:
+  smoke:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+      - name: Build instrumented DeSmuME
+        shell: cmd
+        run: |
+          set CL=-Wno-c++11-narrowing
+          msbuild "desmume\src\frontend\windows\DeSmuME.sln" /p:Configuration=Release /p:Platform=x64 /p:CL_cgthreads=1 /p:CLToolExe=clang-cl.exe /m
+          call desmume\src\frontend\windows\ci_postbuild.bat
+      - name: Test frame execution and RAM CSV with open-source homebrew
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $rom = Join-Path $env:RUNNER_TEMP 'argvTest.nds'
+          Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/devkitPro/nds-hb-menu/master/testfiles/argvTest.nds' -OutFile $rom
+          if ((Get-Item $rom).Length -lt 100000) { throw 'Homebrew ROM download incomplete' }
+          $exe = Get-ChildItem 'desmume/src/frontend/windows/__bins' -Filter '*.exe' -Recurse |
+            Where-Object { $_.Name -match 'desmume' } | Select-Object -First 1
+          if (-not $exe) { throw 'No DeSmuME executable found' }
+          $scriptFile = Join-Path $env:RUNNER_TEMP 'volt-hunt-script.txt'
+          "0,9,000`n10,39,001`n40,69,080`n70,199,000`n" |
+            Set-Content -Path $scriptFile -Encoding ascii
+          $env:VH_TRACE_ADDRS = '02000000,02000004'
+          $env:VH_INPUT_SCRIPT = $scriptFile
+          $workdir = Join-Path $env:RUNNER_TEMP 'volt-hunt-smoke'
+          New-Item -Path $workdir -ItemType Directory -Force | Out-Null
+          Write-Host "Executable: $($exe.FullName)"
+          Write-Host "Homebrew ROM: $rom"
+          $proc = Start-Process -FilePath $exe.FullName -ArgumentList ('"' + $rom + '"') -WorkingDirectory $workdir -PassThru
+          try {
+            Start-Sleep -Seconds 35
+          } finally {
+            if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+          }
+          $trace = Join-Path $workdir 'volt_hunt_trace.csv'
+          if (-not (Test-Path $trace)) { throw 'No trace generated: emulator may not have executed frames in CI desktop session' }
+          $rows = @(Import-Csv $trace)
+          Write-Host "Frame rows: $($rows.Count)"
+          if ($rows.Count -lt 70) { throw "Insufficient frames: $($rows.Count)" }
+          $first = $rows | Select-Object -First 1
+          if (-not ($first.PSObject.Properties.Name -contains 'effective_input_hex')) { throw 'Input column missing' }
+          $right = @($rows | Where-Object { $_.effective_input_hex -eq '0x001' }).Count
+          $a = @($rows | Where-Object { $_.effective_input_hex -eq '0x080' }).Count
+          Write-Host "Frames with scripted RIGHT: $right; A: $a"
+          if ($right -lt 20 -or $a -lt 20) { throw 'Scripted effective input phases not observed' }
+          Write-Host 'PASS: emulated frames, scripted controller inputs and ARM9 RAM recorded together.'
+      - name: Upload diagnostic trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: volt-hunt-homebrew-runtime-trace
+          path: ${{ runner.temp }}/volt-hunt-smoke/volt_hunt_trace.csv
+          if-no-files-found: warn
