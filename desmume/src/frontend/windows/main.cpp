@@ -36,6 +36,7 @@
 #include <commdlg.h>
 #include <tchar.h>
 #include <stdio.h>
+#include <cstdlib>
 
 #include <GL/gl.h>
 #include <GL/glext.h>
@@ -1241,6 +1242,159 @@ static struct MainLoopData
 	int toolframecount;
 } mainLoopData = {0};
 
+
+/*
+ * Volt Hunt experimental ARM9 main-RAM sampler.
+ * Opt-in: set VH_TRACE_ADDRS=02000000,02000004 (up to four aligned hex addresses).
+ * Output: volt_hunt_trace.csv in the emulator working directory.
+ * Values are raw 32-bit words; no movement semantics are assumed.
+ * This initial hook deliberately does NOT alter emulated controller inputs.
+ */
+static void VoltHuntDiagnostic(const char *message)
+{
+	const char *enabled = getenv("VH_DIAGNOSTICS");
+	if (!enabled || !*enabled) return;
+	FILE *file = fopen("volt_hunt_runtime.log", "a");
+	if (!file) return;
+	fprintf(file, "%s\n", message);
+	fclose(file);
+}
+
+static unsigned int vhEffectiveInputMask = 0;
+static FILE *vhTraceFile = NULL;
+static unsigned int vhTraceAddresses[4] = {0, 0, 0, 0};
+static unsigned int vhTraceCount = 0;
+static unsigned long long vhTraceFrame = 0;
+static bool vhTraceConfigured = false;
+
+static void VoltHuntTraceAfterFrame()
+{
+	if (vhTraceFrame == 0) VoltHuntDiagnostic("trace hook reached after emulated frame");
+	if (!vhTraceConfigured)
+	{
+		vhTraceConfigured = true;
+		const char *env = getenv("VH_TRACE_ADDRS");
+		if (env == NULL || *env == 0) return;
+		const char *p = env;
+		while (*p != 0 && vhTraceCount < 4)
+		{
+			char *end = NULL;
+			const unsigned long addr = strtoul(p, &end, 16);
+			if (end == p) break;
+			if (addr >= 0x02000000UL && addr <= 0x023FFFFCUL && (addr & 3UL) == 0)
+				vhTraceAddresses[vhTraceCount++] = (unsigned int)addr;
+			p = end;
+			if (*p != ',') break;
+			++p;
+		}
+		if (vhTraceCount == 0) return;
+		vhTraceFile = fopen("volt_hunt_trace.csv", "w");
+		VoltHuntDiagnostic(vhTraceFile ? "trace CSV opened" : "trace CSV open FAILED");
+		if (vhTraceFile == NULL) return;
+		fprintf(vhTraceFile, "frame,effective_input_hex");
+		for (unsigned int i = 0; i < vhTraceCount; ++i)
+			fprintf(vhTraceFile, ",0x%08X", vhTraceAddresses[i]);
+		fprintf(vhTraceFile, "\n");
+	}
+	if (vhTraceFile == NULL) return;
+	fprintf(vhTraceFile, "%llu,0x%03X", ++vhTraceFrame, vhEffectiveInputMask);
+	for (unsigned int i = 0; i < vhTraceCount; ++i)
+		fprintf(vhTraceFile, ",%u", MMU_read32(ARMCPU_ARM9, vhTraceAddresses[i]));
+	fprintf(vhTraceFile, "\n");
+	fflush(vhTraceFile);
+}
+
+
+/* Volt Hunt opt-in deterministic button playback.
+ * VH_INPUT_SCRIPT points to a text file containing start_frame,end_frame,hex_mask.
+ * Frames are zero-based and inclusive; later lines override earlier lines.
+ * Bit masks: RIGHT=1 LEFT=2 DOWN=4 UP=8 START=16 SELECT=32
+ * B=64 A=128 Y=256 X=512 L=1024 R=2048.
+ */
+struct VoltHuntInputRange {
+	unsigned long long first;
+	unsigned long long last;
+	unsigned int mask;
+};
+static std::vector<VoltHuntInputRange> vhInputRanges;
+static bool vhInputInitialized = false;
+static unsigned long long vhInputFrame = 0;
+
+static void VoltHuntApplyScriptedInput()
+{
+	if (!vhInputInitialized)
+	{
+		vhInputInitialized = true;
+		const char *filename = getenv("VH_INPUT_SCRIPT");
+		if (filename && *filename)
+		{
+			FILE *file = fopen(filename, "r");
+			if (file)
+			{
+				char line[256];
+				while (fgets(line, sizeof(line), file))
+				{
+					VoltHuntInputRange range = {};
+					if (sscanf(line, "%llu,%llu,%x", &range.first, &range.last, &range.mask) == 3
+						&& range.first <= range.last && range.last <= 100000000ULL)
+						vhInputRanges.push_back(range);
+				}
+				fclose(file);
+			}
+		}
+	}
+	if (vhInputRanges.empty()) return;
+	unsigned int mask = 0;
+	for (size_t i = 0; i < vhInputRanges.size(); ++i)
+	{
+		const VoltHuntInputRange &r = vhInputRanges[i];
+		if (vhInputFrame >= r.first && vhInputFrame <= r.last) mask = r.mask;
+	}
+	UserButtons &buttons = NDS_getProcessingUserInput().buttons;
+	buttons.R = (mask & 0x001) != 0;
+	buttons.L = (mask & 0x002) != 0;
+	buttons.D = (mask & 0x004) != 0;
+	buttons.U = (mask & 0x008) != 0;
+	buttons.S = (mask & 0x010) != 0;
+	buttons.T = (mask & 0x020) != 0;
+	buttons.B = (mask & 0x040) != 0;
+	buttons.A = (mask & 0x080) != 0;
+	buttons.Y = (mask & 0x100) != 0;
+	buttons.X = (mask & 0x200) != 0;
+	buttons.W = (mask & 0x400) != 0;
+	buttons.E = (mask & 0x800) != 0;
+	++vhInputFrame;
+}
+
+
+static void VoltHuntCaptureEffectiveInput()
+{
+	const UserButtons &b = NDS_getProcessingUserInput().buttons;
+	vhEffectiveInputMask =
+		(b.R ? 0x001 : 0) | (b.L ? 0x002 : 0) |
+		(b.D ? 0x004 : 0) | (b.U ? 0x008 : 0) |
+		(b.S ? 0x010 : 0) | (b.T ? 0x020 : 0) |
+		(b.B ? 0x040 : 0) | (b.A ? 0x080 : 0) |
+		(b.Y ? 0x100 : 0) | (b.X ? 0x200 : 0) |
+		(b.W ? 0x400 : 0) | (b.E ? 0x800 : 0);
+}
+
+static void VoltHuntResetExperiment()
+{
+	if (vhTraceFile != NULL)
+	{
+		fclose(vhTraceFile);
+		vhTraceFile = NULL;
+	}
+	vhTraceCount = 0;
+	vhTraceFrame = 0;
+	vhTraceConfigured = false;
+	vhEffectiveInputMask = 0;
+	vhInputRanges.clear();
+	vhInputInitialized = false;
+	vhInputFrame = 0;
+}
+
 static void StepRunLoop_Core()
 {
 	input_acquire();
@@ -1249,6 +1403,8 @@ static void StepRunLoop_Core()
 		input_process();
 		FCEUMOV_HandlePlayback();
 		CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+		VoltHuntApplyScriptedInput();
+		VoltHuntCaptureEffectiveInput();
 	}
 	NDS_endProcessingInput();
 	FCEUMOV_HandleRecording();
@@ -1259,6 +1415,7 @@ static void StepRunLoop_Core()
 	{
 		Lock lock;
 		NDS_exec<false>();
+		VoltHuntTraceAfterFrame();
 		SPU_Emulate_user();
 		win_sound_samplecounter = DESMUME_SAMPLE_RATE/60;
 	}
@@ -1544,6 +1701,8 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 	if (NDS_LoadROM(filename, physicalName, logicalName) > 0)
 	{
 		INFO("Loading %s was successful\n",logicalName);
+		VoltHuntDiagnostic("ROM loaded successfully");
+		VoltHuntResetExperiment();
 		
 		NDS_SLOT2_TYPE selectedSlot2Type = slot2_GetSelectedType();
 		Guitar.Enabled	= (selectedSlot2Type == NDS_SLOT2_GUITARGRIP)?true:false;
@@ -1566,7 +1725,7 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 		return TRUE;		
 	}
 	else
-		msgbox->error("Loading %s FAILED.\n", logicalName);
+		{ VoltHuntDiagnostic("ROM load FAILED"); msgbox->error("Loading %s FAILED.\n", logicalName); }
 
 	return FALSE;
 }
@@ -2578,6 +2737,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 {
 //	testelf();
+	VoltHuntDiagnostic("WinMain entered");
 
     CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);
 
@@ -2613,6 +2773,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	}
 
 	//--------------------------------
+	VoltHuntDiagnostic("entering _main");
 	int ret = _main();
 	//--------------------------------
 
