@@ -1367,6 +1367,22 @@ static void VoltHuntCaptureEffectiveInput()
 		(b.W ? 0x400 : 0) | (b.E ? 0x800 : 0);
 }
 
+static void VoltHuntResetExperiment()
+{
+	if (vhTraceFile != NULL)
+	{
+		fclose(vhTraceFile);
+		vhTraceFile = NULL;
+	}
+	vhTraceCount = 0;
+	vhTraceFrame = 0;
+	vhTraceConfigured = false;
+	vhEffectiveInputMask = 0;
+	vhInputRanges.clear();
+	vhInputInitialized = false;
+	vhInputFrame = 0;
+}
+
 static void StepRunLoop_Core()
 {
 	input_acquire();
@@ -1673,6 +1689,7 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 	if (NDS_LoadROM(filename, physicalName, logicalName) > 0)
 	{
 		INFO("Loading %s was successful\n",logicalName);
+		VoltHuntResetExperiment();
 		
 		NDS_SLOT2_TYPE selectedSlot2Type = slot2_GetSelectedType();
 		Guitar.Enabled	= (selectedSlot2Type == NDS_SLOT2_GUITARGRIP)?true:false;
