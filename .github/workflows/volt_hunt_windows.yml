@@ -1,0 +1,34 @@
+name: Volt Hunt Windows baseline
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - volt-hunt/windows-baseline
+
+jobs:
+  build-windows-x64:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+      - name: Build DeSmuME x64
+        shell: cmd
+        run: |
+          set CL=-Wno-c++11-narrowing
+          msbuild "desmume\src\frontend\windows\DeSmuME.sln" /p:Configuration=Release /p:Platform=x64 /p:CL_cgthreads=1 /p:CLToolExe=clang-cl.exe /m
+          call desmume\src\frontend\windows\ci_postbuild.bat
+      - name: Validate executable
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem 'desmume/src/frontend/windows/__bins' -Filter '*.exe' -Recurse
+          if (-not $exe) { throw 'No Windows executable produced' }
+          $exe | Select-Object FullName,Length | Format-Table
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desmume-baseline-windows-x64
+          path: desmume/src/frontend/windows/__bins/*
+          if-no-files-found: error
