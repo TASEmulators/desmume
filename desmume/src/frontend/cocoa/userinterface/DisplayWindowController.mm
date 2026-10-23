@@ -101,7 +101,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_isMinSizeNormal = YES;
 	_statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
 	_isUpdatingDisplayScaleValueOnly = NO;
-	_canUseMavericksFullScreen = IsOSXVersionSupported(10, 9, 0);
+	_canUseModernFullScreen = IsOSXVersionSupported(10, 7, 0);
 	_masterWindowScale = 1.0;
 	_masterWindowFrame = NSMakeRect(0.0, 0.0, _localViewProps.clientWidth, _localViewProps.clientHeight + _localViewProps.gapDistance);
 	_masterStatusBarState = NO;
@@ -168,7 +168,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	// Convert angle to clockwise-direction degrees (left-handed Cartesian coordinate system).
 	_localRotation = newAngleDegrees;
-	_localViewProps.rotation = 360.0 - _localRotation;
+	_localViewProps.rotation = (newAngleDegrees == 0.0) ? 0.0 : 360.0 - newAngleDegrees;
 	
 	// Set the minimum content size for the window, since this will change based on rotation.
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
@@ -181,10 +181,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	else
 	{
 		// Resize the window.
-		NSWindow *theWindow = [self window];
-		const NSSize oldBounds = [theWindow frame].size;
+		const NSSize oldBounds = [masterWindow frame].size;
 		[self resizeWithTransform];
-		const NSSize newBounds = [theWindow frame].size;
+		const NSSize newBounds = [masterWindow frame].size;
 		
 		// If the window size didn't change, it is possible that the old and new rotation angles
 		// are 180 degrees offset from each other. In this case, we'll need to force the
@@ -333,7 +332,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	double transformedMinWidth = _minDisplayViewSize.width;
 	double transformedMinHeight = _minDisplayViewSize.height;
 	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
-	[[self window] setContentMinSize:NSMakeSize(transformedMinWidth, transformedMinHeight + _statusBarHeight)];
+	[masterWindow setContentMinSize:NSMakeSize(transformedMinWidth, transformedMinHeight + _statusBarHeight)];
 }
 
 - (BOOL) isMinSizeNormal
@@ -343,43 +342,52 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) setIsShowingStatusBar:(BOOL)showStatusBar
 {
-	NSRect frameRect = [masterWindow frame];
-	
 	if (showStatusBar)
 	{
-		_statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
-		frameRect.size.height += WINDOW_STATUS_BAR_HEIGHT;
-		
-		NSRect screenFrame = [[masterWindow screen] visibleFrame];
-		if (frameRect.size.height > screenFrame.size.height)
+		if (_statusBarHeight < WINDOW_STATUS_BAR_HEIGHT)
 		{
-			NSRect windowContentRect = [[masterWindow contentView] bounds];
-			double widthToHeightRatio = windowContentRect.size.width / windowContentRect.size.height;
-			windowContentRect.size.height -= frameRect.size.height - screenFrame.size.height;
-			windowContentRect.size.width = windowContentRect.size.height * widthToHeightRatio;
+			_statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
 			
-			frameRect.size.height = screenFrame.size.height;
-			frameRect.size.width = windowContentRect.size.width;			
-		}
-		else
-		{
-			frameRect.origin.y -= WINDOW_STATUS_BAR_HEIGHT;
+			NSRect frameRect = [masterWindow frame];
+			frameRect.size.height += WINDOW_STATUS_BAR_HEIGHT;
+			
+			NSRect screenFrame = [[masterWindow screen] visibleFrame];
+			if (frameRect.size.height > screenFrame.size.height)
+			{
+				NSRect windowContentRect = [[masterWindow contentView] bounds];
+				double widthToHeightRatio = windowContentRect.size.width / windowContentRect.size.height;
+				windowContentRect.size.height -= frameRect.size.height - screenFrame.size.height;
+				windowContentRect.size.width = windowContentRect.size.height * widthToHeightRatio;
+				
+				frameRect.size.height = screenFrame.size.height;
+				frameRect.size.width = windowContentRect.size.width;
+			}
+			else
+			{
+				frameRect.origin.y -= WINDOW_STATUS_BAR_HEIGHT;
+			}
+			
+			[masterWindow setFrame:frameRect display:YES animate:NO];
 		}
 	}
 	else
 	{
-		_statusBarHeight = 0;
-		frameRect.origin.y += WINDOW_STATUS_BAR_HEIGHT;
-		frameRect.size.height -= WINDOW_STATUS_BAR_HEIGHT;
+		if (_statusBarHeight > 0)
+		{
+			_statusBarHeight = 0;
+			
+			NSRect frameRect = [masterWindow frame];
+			frameRect.origin.y += WINDOW_STATUS_BAR_HEIGHT;
+			frameRect.size.height -= WINDOW_STATUS_BAR_HEIGHT;
+			
+			[masterWindow setFrame:frameRect display:YES animate:NO];
+		}
 	}
-	
-	[[NSUserDefaults standardUserDefaults] setBool:showStatusBar forKey:@"DisplayView_ShowStatusBar"];
-	[masterWindow setFrame:frameRect display:YES animate:NO];
 }
 
 - (BOOL) isShowingStatusBar
 {
-	return !(_statusBarHeight == 0);
+	return (_statusBarHeight > 0);
 }
 
 #pragma mark Class Methods
@@ -418,7 +426,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_localViewProps.viewScale	= _localViewScale;
 	_localViewProps.gapScale	= gapScale;
 	_localViewProps.gapDistance	= DS_DISPLAY_UNSCALED_GAP * gapScale;
-	_localViewProps.rotation	= 360.0 - _localRotation;
+	_localViewProps.rotation	= (_localRotation == 0.0) ? 0.0 : 360.0 - _localRotation;
 	
 	ClientDisplayPresenter::CalculateNormalSize(mode, layout, gapScale, _localViewProps.normalWidth, _localViewProps.normalHeight);
 	
@@ -436,7 +444,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	double transformedMinWidth = _minDisplayViewSize.width;
 	double transformedMinHeight = _minDisplayViewSize.height;
 	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
-	[[self window] setContentMinSize:NSMakeSize(transformedMinWidth, transformedMinHeight + _statusBarHeight)];
+	[masterWindow setContentMinSize:NSMakeSize(transformedMinWidth, transformedMinHeight + _statusBarHeight)];
 	
 	// Set the client size and resize the window.
 	const NSRect newWindowFrame = [self updateViewProperties];
@@ -505,17 +513,17 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (BOOL) masterStatusBarState
 {
-	return (![self isFullScreen] || !_canUseMavericksFullScreen) ? [self isShowingStatusBar] : _masterStatusBarState;
+	return (![self isFullScreen] || !_canUseModernFullScreen) ? [self isShowingStatusBar] : _masterStatusBarState;
 }
 
 - (NSRect) masterWindowFrame
 {
-	return (![self isFullScreen] || !_canUseMavericksFullScreen) ? [masterWindow frame] : _masterWindowFrame;
+	return (![self isFullScreen] || !_canUseModernFullScreen) ? [masterWindow frame] : _masterWindowFrame;
 }
 
 - (double) masterWindowScale
 {
-	return (![self isFullScreen] || !_canUseMavericksFullScreen) ? [self displayScale] : _masterWindowScale;
+	return (![self isFullScreen] || !_canUseModernFullScreen) ? [self displayScale] : _masterWindowScale;
 }
 
 - (NSRect) updateViewProperties
@@ -561,16 +569,43 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (double) maxViewScaleInHostScreen:(double)contentBoundsWidth height:(double)contentBoundsHeight
 {
+	const NSScreen *windowScreen = [[self window] screen];
+	NSRect screenFrameVisible = [windowScreen visibleFrame];
+	
+	// Account for the display notch, but only for macOS 12 Monterey and later.
+#if HAVE_OSAVAILABLE && defined(MAC_OS_VERSION_12_0) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_12_0)
+	if (@available(macOS 12.0, *))
+	{
+		// The following code technically shouldn't be necessary, since [NSScreen visibleFrame] should already
+		// fully account for the auxillary left and right areas. It is only being included here as a reference
+		// for when a complete implementation is written that takes advantage of the auxillary areas.
+		//    - rogerman, 10/22/2026
+		
+		const NSEdgeInsets safeAreaInsets = [windowScreen safeAreaInsets];
+		if (safeAreaInsets.top > 0.0)
+		{
+			const NSRect screenFrame = [windowScreen frame];
+			const NSRect auxTopLeftArea  = [windowScreen auxiliaryTopLeftArea];
+			const NSRect auxTopRightArea = [windowScreen auxiliaryTopRightArea];
+			const CGFloat auxHeight = (auxTopLeftArea.size.height > auxTopRightArea.size.height) ? auxTopLeftArea.size.height : auxTopRightArea.size.height;
+			
+			if (auxHeight > screenFrame.size.height - screenFrameVisible.origin.y - screenFrameVisible.size.height)
+			{
+				screenFrameVisible.size.height = screenFrame.size.height - screenFrameVisible.origin.y - auxHeight;
+			}
+		}
+	}
+#endif
+	
 	// Determine the maximum scale based on the visible screen size (which
-	// doesn't include the menu bar or dock).
-	const NSRect screenFrame = [[NSScreen mainScreen] visibleFrame];
+	// doesn't include the menu bar, dock, or display notch).
 	const NSRect windowFrame = [[self window] frameRectForContentRect:NSMakeRect(0.0, 0.0, contentBoundsWidth, contentBoundsHeight + _statusBarHeight)];
-	const NSSize visibleScreenBounds = { (screenFrame.size.width - (windowFrame.size.width - contentBoundsWidth)), (screenFrame.size.height - (windowFrame.size.height - contentBoundsHeight)) };
+	const NSSize visibleScreenBounds = { (screenFrameVisible.size.width - (windowFrame.size.width - contentBoundsWidth)), (screenFrameVisible.size.height - (windowFrame.size.height - contentBoundsHeight)) };
 	
 	return ClientDisplayPresenter::GetMaxScalarWithinBounds(contentBoundsWidth, contentBoundsHeight, visibleScreenBounds.width, visibleScreenBounds.height);
 }
 
-- (void) enterFullScreen
+- (void) enterLegacyFullScreen
 {
 	NSScreen *targetScreen = [masterWindow screen];
 	
@@ -579,7 +614,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	if (_screenMap.find(targetScreen) != _screenMap.end())
 	{
 		DisplayWindowController *currentFullScreenWindow = _screenMap[targetScreen];
-		[currentFullScreenWindow exitFullScreen];
+		[currentFullScreenWindow exitLegacyFullScreen];
 	}
 	
 	[[self window] orderOut:nil];
@@ -597,10 +632,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 																								   defer:NO
 																								  screen:targetScreen] autorelease];
 	[newFullScreenWindow setHasShadow:NO];
-	[view setFrame:screenRect];
-	[[newFullScreenWindow contentView] addSubview:view];
-	[newFullScreenWindow setInitialFirstResponder:view];
 	[newFullScreenWindow setDelegate:self];
+	[self setWindow:newFullScreenWindow];
+	
+	[view removeFromSuperviewWithoutNeedingDisplay];
+	[[newFullScreenWindow contentView] addSubview:view];
+	[view setFrame:screenRect];
 	
 	// If the target screen is the main screen (index 0), then autohide the menu bar and dock.
 	if (targetScreen == [[NSScreen screens] objectAtIndex:0])
@@ -609,7 +646,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	
 	// Show the full screen window.
-	[self setWindow:newFullScreenWindow];
+	[newFullScreenWindow setInitialFirstResponder:view];
 	[newFullScreenWindow makeKeyAndOrderFront:self];
 	[newFullScreenWindow makeMainWindow];
 	[newFullScreenWindow display];
@@ -618,7 +655,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_screenMap[targetScreen] = self;
 }
 
-- (void) exitFullScreen
+- (void) exitLegacyFullScreen
 {
 	_screenMap.erase([self assignedScreen]);
 	[self setAssignedScreen:nil];
@@ -631,14 +668,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	
 	[self setWindow:masterWindow];
+	[view removeFromSuperviewWithoutNeedingDisplay];
+	[[masterWindow contentView] addSubview:view];
 	[self resizeWithTransform];
 	
 	NSRect viewFrame = [[masterWindow contentView] frame];
 	viewFrame.size.height -= _statusBarHeight;
 	viewFrame.origin.y = _statusBarHeight;
-    
 	[view setFrame:viewFrame];
-	[[masterWindow contentView] addSubview:view];
+	
     [masterWindow setInitialFirstResponder:view];
 	[masterWindow makeKeyAndOrderFront:self];
 	[masterWindow makeMainWindow];
@@ -659,39 +697,39 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) respondToScreenChange:(NSNotification *)aNotification
 {
-	if (_canUseMavericksFullScreen)
+	// This method only applies for displays in full screen mode. For displays in
+	// windowed mode, we don't need to do anything.
+	if (![self isFullScreen])
 	{
 		return;
 	}
+	
+	// We only need to handle this ourselves for legacy full screen.
+	// Full screen mode from later macOS can handle this stuff automatically.
+	if (_canUseModernFullScreen)
+	{
+		return;
+	}
+	
+	NSArray *screenList = [NSScreen screens];
+	
+	// If the assigned screen was disconnected, exit full screen mode. Hopefully, the
+	// window will automatically move onto an available screen.
+	if (![screenList containsObject:[self assignedScreen]])
+	{
+		[self exitLegacyFullScreen];
+	}
 	else
 	{
-		// This method only applies for displays in full screen mode. For displays in
-		// windowed mode, we don't need to do anything.
-		if (![self isFullScreen])
-		{
-			return;
-		}
+		// There are many other reasons that a screen change would occur, but the only
+		// other one we care about is a resolution change. Let's just assume that a
+		// resolution change occurred and resize the full screen window.
+		NSRect screenRect = [assignedScreen frame];
+		[[self window] setFrame:screenRect display:NO];
 		
-		NSArray *screenList = [NSScreen screens];
-		
-		// If the assigned screen was disconnected, exit full screen mode. Hopefully, the
-		// window will automatically move onto an available screen.
-		if (![screenList containsObject:[self assignedScreen]])
-		{
-			[self exitFullScreen];
-		}
-		else
-		{
-			// There are many other reasons that a screen change would occur, but the only
-			// other one we care about is a resolution change. Let's just assume that a
-			// resolution change occurred and resize the full screen window.
-			NSRect screenRect = [assignedScreen frame];
-			[[self window] setFrame:screenRect display:NO];
-			
-			screenRect.origin.x = 0.0;
-			screenRect.origin.y = 0.0;
-			[view setFrame:screenRect];
-		}
+		screenRect.origin.x = 0.0;
+		screenRect.origin.y = 0.0;
+		[view setFrame:screenRect];
 	}
 }
 
@@ -800,13 +838,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (IBAction) toggleStatusBar:(id)sender
 {
-	[self setIsShowingStatusBar:([self isShowingStatusBar]) ? NO : YES];
+	const BOOL willShowStatusBar = ([self isShowingStatusBar]) ? NO : YES;
+	[self setIsShowingStatusBar:willShowStatusBar];
+	[[NSUserDefaults standardUserDefaults] setBool:willShowStatusBar forKey:@"DisplayView_ShowStatusBar"];
 }
 
 - (IBAction) toggleFullScreenDisplay:(id)sender
 {
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	if (_canUseMavericksFullScreen)
+	if (_canUseModernFullScreen)
 	{
 		[masterWindow toggleFullScreen:nil];
 	}
@@ -815,11 +855,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([self isFullScreen])
 		{
-			[self exitFullScreen];
+			[self exitLegacyFullScreen];
 		}
 		else
 		{
-			[self enterFullScreen];
+			[self enterLegacyFullScreen];
 		}
 	}
 }
@@ -1328,7 +1368,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[newView setInputManager:[emuControl inputManager]];
 	
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	if (_canUseMavericksFullScreen)
+	if (_canUseModernFullScreen)
 	{
 		[masterWindow setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
 	}
@@ -1396,11 +1436,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)windowDidResize:(NSNotification *)notification
 {
-	if ([self isFullScreen])
-	{
-		return;
-	}
-	
 	NSRect newContentFrame = [[[self window] contentView] bounds];
 	newContentFrame.origin.y = _statusBarHeight;
 	newContentFrame.size.height -= _statusBarHeight;
@@ -1560,20 +1595,26 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_masterWindowFrame = [masterWindow frame];
 	_masterStatusBarState = [self isShowingStatusBar];
 	[self setIsShowingStatusBar:NO];
-}
-
-- (void)windowDidEnterFullScreen:(NSNotification *)notification
-{
+	
+	// Add the screen that this window is on to the assigned screens list.
 	NSScreen *targetScreen = [masterWindow screen];
 	[self setAssignedScreen:targetScreen];
 	_screenMap[targetScreen] = self;
 }
 
+- (void)windowDidEnterFullScreen:(NSNotification *)notification
+{
+	// Always ensure that the view matches the window size when the window finishes entering full screen.
+	[view setFrame:[[[self window] contentView] bounds]];
+}
+
 - (void)windowWillExitFullScreen:(NSNotification *)notification
 {
+	[self setIsShowingStatusBar:_masterStatusBarState];
+	
+	// Remove the screen that this window is on from the assigned screens list.
 	_screenMap.erase([self assignedScreen]);
 	[self setAssignedScreen:nil];
-	[self setIsShowingStatusBar:_masterStatusBarState];
 }
 
 #endif

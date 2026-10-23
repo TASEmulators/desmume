@@ -77,6 +77,7 @@ class MacGPUFetchObjectDisplayLink;
 	MacDisplayViewOutput *_dvo;
 	CALayer<DisplayViewCALayer> *localLayer;
 	NSOpenGLContext *localOGLContext;
+	BOOL _willRenderToCALayerDirectly;
 }
 
 - (void) updateStatusTextForInput:(const ClientInputDeviceProperties &)inputProperty;

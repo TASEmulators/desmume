@@ -60,7 +60,7 @@
 	BOOL _isMinSizeNormal;
 	NSUInteger _statusBarHeight;
 	BOOL _isUpdatingDisplayScaleValueOnly;
-	BOOL _canUseMavericksFullScreen;
+	BOOL _canUseModernFullScreen;
 	BOOL _masterStatusBarState;
 	NSRect _masterWindowFrame;
 	double _masterWindowScale;
@@ -115,8 +115,8 @@
 - (NSRect) updateViewProperties;
 - (void) resizeWithTransform;
 - (double) maxViewScaleInHostScreen:(double)contentBoundsWidth height:(double)contentBoundsHeight;
-- (void) enterFullScreen;
-- (void) exitFullScreen;
+- (void) enterLegacyFullScreen;
+- (void) exitLegacyFullScreen;
 - (void) updateDisplayID;
 
 - (IBAction) copy:(id)sender;

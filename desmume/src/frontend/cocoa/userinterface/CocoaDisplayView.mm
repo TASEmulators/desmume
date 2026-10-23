@@ -83,6 +83,17 @@
 	localLayer = nil;
 	localOGLContext = nil;
 	
+	// For macOS 10.8 Mountain Lion and later, we can render to the CAOpenGLLayer directly. But
+	// for earlier versions of macOS, using the CAOpenGLLayer directly will cause too many strange
+	// issues, so we'll just keep using the old-school NSOpenGLContext for these older macOS versions.
+	//
+	// Real-world testing in Lion shows major performance drops on the following GPUs when
+	// rendering directly to the CAOpenGLLayer (compared to rendering to the NSOpenGLContext):
+	// - Intel GMA 950
+	// - Nvidia GeForce 9400M
+	// - Nvidia GeForce 9600M GT
+	_willRenderToCALayerDirectly = IsOSXVersionSupported(10, 8, 0);
+	
 	return self;
 }
 
@@ -597,10 +608,7 @@
 		}
 #endif
 		
-		// For macOS 10.8 Mountain Lion and later, we can use the CAOpenGLLayer directly. But for
-		// earlier versions of macOS, using the CALayer directly will cause too many strange issues,
-		// so we'll just keep using the old-school NSOpenGLContext for these older macOS versions.
-		if (IsOSXVersionSupported(10, 8, 0))
+		if (_willRenderToCALayerDirectly)
 		{
 			macOGLCDV->SetRenderToCALayer(true);
 		}
