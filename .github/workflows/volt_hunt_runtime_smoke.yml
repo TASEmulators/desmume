@@ -1,0 +1,120 @@
+name: Volt Hunt runtime smoke (homebrew)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - volt-hunt/instrumentation
+    paths:
+      - '.github/workflows/volt_hunt_runtime_smoke.yml'
+      - 'desmume/src/frontend/windows/main.cpp'
+
+jobs:
+  smoke:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - name: Build current instrumented DeSmuME
+        shell: cmd
+        run: |
+          set CL=-Wno-c++11-narrowing
+          msbuild "desmume\src\frontend\windows\DeSmuME.sln" /p:Configuration=Release /p:Platform=x64 /p:CL_cgthreads=1 /p:CLToolExe=clang-cl.exe /m
+          if errorlevel 1 exit /b 1
+          call desmume\src\frontend\windows\ci_postbuild.bat
+          if errorlevel 1 exit /b 1
+      - name: Test frame execution and RAM CSV with open-source homebrew
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $rom = Join-Path $env:RUNNER_TEMP 'argvTest.nds'
+          Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/devkitPro/nds-hb-menu/master/testfiles/argvTest.nds' -OutFile $rom
+          if ((Get-Item $rom).Length -lt 100000) { throw 'Homebrew ROM download incomplete' }
+          $exe = Get-ChildItem 'desmume/src/frontend/windows/__bins' -Filter '*.exe' -Recurse |
+            Where-Object { $_.Name -match 'desmume' } | Select-Object -First 1
+          if (-not $exe) { throw 'No DeSmuME executable found' }
+          Copy-Item 'desmume/src/frontend/windows/7z.dll' (Join-Path $exe.DirectoryName '7z.dll') -Force
+          $scriptFile = Join-Path $env:RUNNER_TEMP 'volt-hunt-script.txt'
+          "0,9,000`n10,39,001`n40,69,080`n70,199,000`n" |
+            Set-Content -Path $scriptFile -Encoding ascii
+          $env:VH_TRACE_ADDRS = '02000000,02000004'
+          $env:VH_INPUT_SCRIPT = $scriptFile
+          $env:VH_DIAGNOSTICS = '1'
+          $workdir = Join-Path $env:RUNNER_TEMP 'volt-hunt-smoke'
+          New-Item -Path $workdir -ItemType Directory -Force | Out-Null
+          Write-Host "Executable: $($exe.FullName)"
+          Write-Host "Homebrew ROM: $rom"
+          Write-Host "ROM bytes: $((Get-Item $rom).Length)"
+          Write-Host "Executable bytes: $($exe.Length)"
+          Write-Host "Executable directory contents:"
+          Get-ChildItem $exe.DirectoryName | Select-Object Name,Length | Format-Table
+          $diagnostics = Join-Path $workdir 'runtime-diagnostics.txt'
+          Start-Transcript -Path $diagnostics -Force | Out-Null
+          try {
+          $proc = Start-Process -FilePath $exe.FullName -ArgumentList ('--disable-sound "' + $rom + '"') -WorkingDirectory $workdir -PassThru
+          try {
+            Start-Sleep -Seconds 20
+            $proc.Refresh()
+            Write-Host "Emulator status: exited=$($proc.HasExited), window='$($proc.MainWindowTitle)', handle=$($proc.MainWindowHandle)"
+            if ($proc.HasExited) { Write-Host "Emulator exit code: $($proc.ExitCode)" }
+            Write-Host "Related processes:"
+            Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'desmume|werfault' } |
+              Select-Object ProcessId,ParentProcessId,Name,CommandLine | Format-List
+            Write-Host "Process working set (bytes): $($proc.WorkingSet64)"
+            if ($proc.MainWindowTitle -eq 'Error') {
+              Add-Type @'
+              using System;
+              using System.Text;
+              using System.Runtime.InteropServices;
+              public class VHWin {
+                [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr hwnd, StringBuilder buffer, int capacity);
+                [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr hwnd, Callback callback, IntPtr param);
+                public delegate bool Callback(IntPtr hwnd, IntPtr param);
+                public static void Dump(IntPtr hwnd) {
+                  EnumChildWindows(hwnd, (child, unused) => {
+                    var buffer = new StringBuilder(1024);
+                    GetWindowText(child, buffer, buffer.Capacity);
+                    if (buffer.Length > 0) Console.WriteLine("ERROR DIALOG: " + buffer.ToString());
+                    return true;
+                  }, IntPtr.Zero);
+                }
+              }
+          '@
+              [VHWin]::Dump($proc.MainWindowHandle)
+            }
+            Write-Host "RAM trace candidates:"
+            Get-ChildItem $env:RUNNER_TEMP -Filter 'volt_hunt_trace.csv' -Recurse -ErrorAction SilentlyContinue |
+              Select-Object FullName,Length | Format-Table
+          } finally {
+            if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+          }
+          $trace = Join-Path $workdir 'volt_hunt_trace.csv'
+          $nativeLog = Join-Path $workdir "volt_hunt_runtime.log"
+          if (Test-Path $nativeLog) { Write-Host "Native startup diagnostics:"; Get-Content $nativeLog }
+          Write-Host "Smoke workdir contents:"
+          Get-ChildItem $workdir -Force | Select-Object Name,Length | Format-Table
+          if (-not (Test-Path $trace)) { throw 'No trace generated; inspect uploaded runtime-diagnostics.txt for process and window details' }
+          $rows = @(Import-Csv $trace)
+          Write-Host "Frame rows: $($rows.Count)"
+          if ($rows.Count -lt 70) { throw "Insufficient frames: $($rows.Count)" }
+          $first = $rows | Select-Object -First 1
+          if (-not ($first.PSObject.Properties.Name -contains 'effective_input_hex')) { throw 'Input column missing' }
+          $right = @($rows | Where-Object { $_.effective_input_hex -eq '0x001' }).Count
+          $a = @($rows | Where-Object { $_.effective_input_hex -eq '0x080' }).Count
+          Write-Host "Frames with scripted RIGHT: $right; A: $a"
+          if ($right -lt 20 -or $a -lt 20) { throw 'Scripted effective input phases not observed' }
+          Write-Host 'PASS: emulated frames, scripted controller inputs and ARM9 RAM recorded together.'
+          } finally {
+            Stop-Transcript -ErrorAction SilentlyContinue | Out-Null
+          }
+      - name: Upload diagnostic trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: volt-hunt-homebrew-runtime-trace
+          path: |
+            ${{ runner.temp }}/volt-hunt-smoke/volt_hunt_trace.csv
+            ${{ runner.temp }}/volt-hunt-smoke/runtime-diagnostics.txt
+            ${{ runner.temp }}/volt-hunt-smoke/volt_hunt_runtime.log
+          if-no-files-found: warn

@@ -1,0 +1,10 @@
+# Volt Hunt input playback example (zero-based, inclusive frames)
+# format: first_frame,last_frame,hex_mask
+# bit mask: RIGHT=001 LEFT=002 DOWN=004 UP=008 START=010 SELECT=020
+#           B=040 A=080 Y=100 X=200 L=400 R=800
+# Load a playable NSMB savestate manually before treating measurements as physics.
+0,29,000
+30,89,001
+90,119,000
+120,179,081
+180,239,000
