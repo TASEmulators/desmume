@@ -24,15 +24,14 @@
 #define DESMUME_COCOA
 #define ENABLE_OPENGL_STANDARD
 #define HAVE_LIBZ
-//#define HAVE_LUA
-//#define HAVE_AV_CONFIG_H
-//#define EXPERIMENTAL_WIFI_COMM
+#ifdef ENABLE_LUA_COCOA
+#define HAVE_LUA
+#define LUA_USE_POSIX
+#define LUA_USE_DLOPEN
+#endif
 
 #define FT2_BUILD_LIBRARY
 #define DARWIN_NO_CARBON
-
-#define LUA_USE_POSIX
-#define LUA_USE_DLOPEN
 
 #define GL_SILENCE_DEPRECATION
 

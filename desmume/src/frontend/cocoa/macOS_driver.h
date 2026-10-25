@@ -22,7 +22,13 @@
 
 #include "../../driver.h"
 
+#ifdef HAVE_LUA
+#include <string>
+#endif
+
 class ClientExecutionControl;
+
+class ClientDisplayViewOutputManager;
 
 class macOS_driver : public BaseDriver
 {
@@ -30,20 +36,36 @@ private:
 	pthread_mutex_t *__mutexThreadExecute;
 	pthread_rwlock_t *__rwlockCoreExecute;
 	ClientExecutionControl *__execControl;
+	ClientDisplayViewOutputManager *__displayOutputManager;
+	
+#ifdef HAVE_LUA
+	pthread_mutex_t __mutexQueue;
+	std::string __queuedScriptFile;
+	int __queuedScriptUid;
+	bool __hasQueuedScript;
+#endif
 	
 public:
-	virtual ~macOS_driver() {}
+	macOS_driver();
+	virtual ~macOS_driver();
 	
 	pthread_mutex_t* GetCoreThreadMutexLock();
 	void SetCoreThreadMutexLock(pthread_mutex_t *theMutex);
 	pthread_rwlock_t* GetCoreExecuteRWLock();
 	void SetCoreExecuteRWLock(pthread_rwlock_t *theRwLock);
 	void SetExecutionControl(ClientExecutionControl *execControl);
+	void SetDisplayOutputManager(ClientDisplayViewOutputManager *displayOutputManager);
+	
+#ifdef HAVE_LUA
+	void QueueScript(int uid, const char *filename);
+	bool GetQueuedScript(int &uid, std::string &filename);
+#endif
 	
 	virtual void AVI_SoundUpdate(void *soundData, int soundLen);
 	virtual bool AVI_IsRecording();
 	virtual bool WAV_IsRecording();
 	
+	virtual eStepMainLoopResult EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore);
 	virtual void EMU_DebugIdleEnter();
 	virtual void EMU_DebugIdleUpdate();
 	virtual void EMU_DebugIdleWakeUp();
