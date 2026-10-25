@@ -71,7 +71,10 @@ EXPORTED void desmume_free(void);
 
 // 0 = Japanese, 1 = English, 2 = French, 3 = German, 4 = Italian, 5 = Spanish
 EXPORTED void desmume_set_language(u8 language);
+// Opens a new ROM, if a ROM was already opened, a new one is opened and the old was is automatically free'd.
 EXPORTED int desmume_open(const char *filename);
+// Frees and closes a ROM opened with desmume_open.
+EXPORTED void desmume_close();
 EXPORTED void desmume_set_savetype(int type);
 EXPORTED void desmume_pause(void);
 EXPORTED void desmume_resume(void);
