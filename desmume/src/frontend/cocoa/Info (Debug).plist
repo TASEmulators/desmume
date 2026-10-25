@@ -4,6 +4,8 @@
 <dict>
 	<key>NSRequiresAquaSystemAppearance</key>
 	<false/>
+	<key>NSPrefersDisplaySafeAreaCompatibilityMode</key>
+	<false/>
 	<key>NSSupportsAutomaticGraphicsSwitching</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
