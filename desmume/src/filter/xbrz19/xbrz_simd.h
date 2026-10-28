@@ -41,6 +41,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <type_traits>
 
 #if !defined(XBRZ_FORCE_SCALAR) && !defined(WINXP) && \
     (defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64) || \
@@ -139,28 +140,31 @@ XBRZ_SIMD_INLINE uint32_t packPixel(Pix16 a)
     return static_cast<uint32_t>(_mm_cvtsi128_si32(_mm_packus_epi16(a.v, a.v)));
 }
 
+template <unsigned int N> XBRZ_SIMD_INLINE __m128i div16Pow2(__m128i x, std::true_type)
+{
+    constexpr int shift = N == 2 ? 1 : N == 4 ? 2 : N == 8 ? 3 : N == 16 ? 4 : N == 32 ? 5 : N == 64 ? 6 : 7;
+    static_assert(N == (1u << shift), "");
+    return _mm_srli_epi16(x, shift);
+}
+
+template <unsigned int N> XBRZ_SIMD_INLINE __m128i div16Pow2(__m128i x, std::false_type)
+{
+    //q = floor(x * floor(65536 / N) / 65536) is floor(x / N) or one less; fix up by the remainder
+    const __m128i q = _mm_mulhi_epu16(x, _mm_set1_epi16(static_cast<short>(65536 / N)));
+    const __m128i r = _mm_sub_epi16(x, _mm_mullo_epi16(q, _mm_set1_epi16(static_cast<short>(N))));
+    const __m128i fix = _mm_cmpgt_epi16(r, _mm_set1_epi16(static_cast<short>(N - 1))); //-1 where r >= N
+    return _mm_sub_epi16(q, fix);
+}
+
 template <unsigned int N> XBRZ_SIMD_INLINE __m128i div16(__m128i x) //exact x / N for 0 <= x < 32768
 {
-    if constexpr ((N & (N - 1)) == 0)
-    {
-        constexpr int shift = N == 2 ? 1 : N == 4 ? 2 : N == 8 ? 3 : N == 16 ? 4 : N == 32 ? 5 : N == 64 ? 6 : 7;
-        static_assert(N == (1u << shift));
-        return _mm_srli_epi16(x, shift);
-    }
-    else
-    {
-        //q = floor(x * floor(65536 / N) / 65536) is floor(x / N) or one less; fix up by the remainder
-        const __m128i q = _mm_mulhi_epu16(x, _mm_set1_epi16(static_cast<short>(65536 / N)));
-        const __m128i r = _mm_sub_epi16(x, _mm_mullo_epi16(q, _mm_set1_epi16(static_cast<short>(N))));
-        const __m128i fix = _mm_cmpgt_epi16(r, _mm_set1_epi16(static_cast<short>(N - 1))); //-1 where r >= N
-        return _mm_sub_epi16(q, fix);
-    }
+    return div16Pow2<N>(x, std::integral_constant<bool, ((N & (N - 1)) == 0)>{});
 }
 
 //per channel: (front * M + back * (N - M) + N / 2) / N
 template <unsigned int M, unsigned int N> XBRZ_SIMD_INLINE Pix16 gradient(Pix16 front, Pix16 back)
 {
-    static_assert(0 < M && M < N && N <= 128); //255 * N + N / 2 must fit a signed 16-bit lane
+    static_assert(0 < M && M < N && N <= 128, ""); //255 * N + N / 2 must fit a signed 16-bit lane
     const __m128i num = _mm_add_epi16(_mm_add_epi16(_mm_mullo_epi16(front.v, _mm_set1_epi16(static_cast<short>(M))),
                                                     _mm_mullo_epi16(back.v,  _mm_set1_epi16(static_cast<short>(N - M)))),
                                       _mm_set1_epi16(static_cast<short>(N / 2)));
@@ -244,26 +248,29 @@ XBRZ_SIMD_INLINE uint32_t packPixel(Pix16 a)
     return vget_lane_u32(vreinterpret_u32_u8(vqmovn_u16(vcombine_u16(a.v, a.v))), 0);
 }
 
+template <unsigned int N> XBRZ_SIMD_INLINE uint16x4_t div16Pow2(uint16x4_t x, std::true_type)
+{
+    constexpr int shift = N == 2 ? 1 : N == 4 ? 2 : N == 8 ? 3 : N == 16 ? 4 : N == 32 ? 5 : N == 64 ? 6 : 7;
+    static_assert(N == (1u << shift), "");
+    return vshr_n_u16(x, shift);
+}
+
+template <unsigned int N> XBRZ_SIMD_INLINE uint16x4_t div16Pow2(uint16x4_t x, std::false_type)
+{
+    const uint16x4_t q = vshrn_n_u32(vmull_u16(x, vdup_n_u16(static_cast<uint16_t>(65536 / N))), 16);
+    const uint16x4_t r = vsub_u16(x, vmul_u16(q, vdup_n_u16(static_cast<uint16_t>(N))));
+    const uint16x4_t fix = vcge_u16(r, vdup_n_u16(static_cast<uint16_t>(N))); //0xffff where r >= N
+    return vsub_u16(q, fix);
+}
+
 template <unsigned int N> XBRZ_SIMD_INLINE uint16x4_t div16(uint16x4_t x) //exact x / N for 0 <= x < 32768
 {
-    if constexpr ((N & (N - 1)) == 0)
-    {
-        constexpr int shift = N == 2 ? 1 : N == 4 ? 2 : N == 8 ? 3 : N == 16 ? 4 : N == 32 ? 5 : N == 64 ? 6 : 7;
-        static_assert(N == (1u << shift));
-        return vshr_n_u16(x, shift);
-    }
-    else
-    {
-        const uint16x4_t q = vshrn_n_u32(vmull_u16(x, vdup_n_u16(static_cast<uint16_t>(65536 / N))), 16);
-        const uint16x4_t r = vsub_u16(x, vmul_u16(q, vdup_n_u16(static_cast<uint16_t>(N))));
-        const uint16x4_t fix = vcge_u16(r, vdup_n_u16(static_cast<uint16_t>(N))); //0xffff where r >= N
-        return vsub_u16(q, fix);
-    }
+    return div16Pow2<N>(x, std::integral_constant<bool, ((N & (N - 1)) == 0)>{});
 }
 
 template <unsigned int M, unsigned int N> XBRZ_SIMD_INLINE Pix16 gradient(Pix16 front, Pix16 back)
 {
-    static_assert(0 < M && M < N && N <= 128);
+    static_assert(0 < M && M < N && N <= 128, "");
     uint16x4_t num = vmul_n_u16(front.v, static_cast<uint16_t>(M));
     num = vmla_n_u16(num, back.v, static_cast<uint16_t>(N - M));
     num = vadd_u16(num, vdup_n_u16(static_cast<uint16_t>(N / 2)));
@@ -348,7 +355,7 @@ XBRZ_SIMD_INLINE uint32_t packPixel(Pix16 a)
 
 template <unsigned int M, unsigned int N> XBRZ_SIMD_INLINE Pix16 gradient(Pix16 front, Pix16 back)
 {
-    static_assert(0 < M && M < N && N <= 128);
+    static_assert(0 < M && M < N && N <= 128, "");
     Pix16 r;
     for (int i = 0; i < 4; ++i)
         r.v[i] = static_cast<uint16_t>((front.v[i] * M + back.v[i] * (N - M) + N / 2) / N);

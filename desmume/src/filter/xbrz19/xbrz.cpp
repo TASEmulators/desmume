@@ -69,6 +69,13 @@ namespace
 using simd::U32x4;
 using simd::F32x4;
 
+//C++14 stand-in for std::clamp
+template <typename T> FORCE_INLINE
+T clampValue(T v, T lo, T hi)
+{
+    return v < lo ? lo : (hi < v ? hi : v);
+}
+
 
 //blend front color with opacity M / N over opaque background: https://en.wikipedia.org/wiki/Alpha_compositing
 //Limitation: alpha should be applied in gamma-decoded linear RGB space: https://ssp.impulsetrain.com/gamma-premult.html
@@ -85,7 +92,7 @@ uint32_t gradientRGB(uint32_t pixFront, uint32_t pixBack)
 template <unsigned int M, unsigned int N> inline
 uint32_t gradientARGB(uint32_t pixFront, uint32_t pixBack)
 {
-    static_assert(0 < M && M < N && N <= 1000);
+    static_assert(0 < M && M < N && N <= 1000, "");
 
     const unsigned int weightFront = getAlpha(pixFront) * M;
     const unsigned int weightBack  = getAlpha(pixBack) * (N - M);
@@ -195,6 +202,26 @@ Channels unpackChannels(U32x4 pix)
 }
 
 template <bool withAlpha> FORCE_INLINE
+F32x4 distAlphaTerm(F32x4 d, const Channels& pix1, const Channels& pix2, std::true_type)
+{
+    using namespace simd;
+    /*  Requirements for a color distance handling alpha channel: with a1, a2 in [0, 1]
+
+        1. if a1 = a2, distance should be: a1 * distYCbCr()
+        2. if a1 = 0,  distance should be: a2 * distYCbCr(black, white) = a2 * 255
+        3. if a1 = 1,  ??? maybe: 255 * (1 - a2) + a2 * distYCbCr()
+
+        std::min(a1, a2) * distYCbCr(pix1, pix2) + 255 * abs(a1 - a2);   */
+    return fmul(fadd(fmul(fmin(pix1.a, pix2.a), d), fmul(fabs(fsub(pix1.a, pix2.a)), fset1(255.0f))), fset1(1.0f / 255));
+}
+
+template <bool withAlpha> FORCE_INLINE
+F32x4 distAlphaTerm(F32x4 d, const Channels&, const Channels&, std::false_type)
+{
+    return d;
+}
+
+template <bool withAlpha> FORCE_INLINE
 F32x4 distYCbCr4(const Channels& pix1, const Channels& pix2)
 {
     using namespace simd;
@@ -211,18 +238,7 @@ F32x4 distYCbCr4(const Channels& pix1, const Channels& pix2)
     //we skip division by 255 to have similar range like other distance functions
     F32x4 d = fsqrt(fadd(fadd(fmul(y, y), fmul(c_b, c_b)), fmul(c_r, c_r)));
 
-    if constexpr (withAlpha)
-    {
-        /*  Requirements for a color distance handling alpha channel: with a1, a2 in [0, 1]
-
-            1. if a1 = a2, distance should be: a1 * distYCbCr()
-            2. if a1 = 0,  distance should be: a2 * distYCbCr(black, white) = a2 * 255
-            3. if a1 = 1,  ??? maybe: 255 * (1 - a2) + a2 * distYCbCr()
-
-            std::min(a1, a2) * distYCbCr(pix1, pix2) + 255 * abs(a1 - a2);   */
-        d = fmul(fadd(fmul(fmin(pix1.a, pix2.a), d), fmul(fabs(fsub(pix1.a, pix2.a)), fset1(255.0f))), fset1(1.0f / 255));
-    }
-    return d;
+    return distAlphaTerm<withAlpha>(d, pix1, pix2, std::integral_constant<bool, withAlpha>{});
 }
 
 template <bool withAlpha> FORCE_INLINE
@@ -398,7 +414,7 @@ inline BlendType getBottomL(unsigned char b) { return static_cast<BlendType>(0x3
 
 inline bool blendingNeeded(unsigned char b)
 {
-    static_assert(BLEND_NONE == 0);
+    static_assert(BLEND_NONE == 0, "");
     return b != 0;
 }
 
@@ -476,20 +492,27 @@ constexpr RowPairLoc rowPairLoc[16] =
 
 struct DistPairIndex
 {
-    constexpr DistPairIndex() : idx()
-    {
-        for (auto& row : idx)
-            for (int& v : row)
-                v = -1;
-        for (int p = 0; p < 24; ++p)
-        {
-            idx[distPairs[p][0]][distPairs[p][1]] = p;
-            idx[distPairs[p][1]][distPairs[p][0]] = p;
-        }
-    }
     int idx[9][9];
 };
-constexpr DistPairIndex distPairIndex;
+
+// MSVC builds this translation unit as C++14 and rejects a constexpr
+// constructor that writes its own members (C2131). A constexpr free function
+// may build a local object under C++14, so the index stays a compile-time
+// constant and the generated code is unchanged.
+constexpr DistPairIndex makeDistPairIndex()
+{
+    DistPairIndex index = {};
+    for (auto& row : index.idx)
+        for (int& v : row)
+            v = -1;
+    for (int p = 0; p < 24; ++p)
+    {
+        index.idx[distPairs[p][0]][distPairs[p][1]] = p;
+        index.idx[distPairs[p][1]][distPairs[p][0]] = p;
+    }
+    return index;
+}
+constexpr DistPairIndex distPairIndex = makeDistPairIndex();
 
 //the distances blendPixel() can ask for, for the pixel E at (x, y): entries of the
 //distance rows y - 1 .. y + 1 are read when asked (the pair index is a compile-time
@@ -634,13 +657,36 @@ struct OobReaderDuplicate
 {
     static void padRow(const uint32_t* src, int srcWidth, int srcHeight, int srcPitch, int y, uint32_t* row /*column 0*/)
     {
-        const uint32_t* srcRow = src + srcPitch * std::clamp(y, 0, srcHeight - 1);
+        const uint32_t* srcRow = src + srcPitch * clampValue(y, 0, srcHeight - 1);
         std::memcpy(row, srcRow, srcWidth * sizeof(uint32_t));
         std::fill(row - PAD_LEFT, row, srcRow[0]);
         std::fill(row + srcWidth, row + srcWidth + PAD_RIGHT, srcRow[srcWidth - 1]);
     }
 };
 
+
+template <int blockSize> FORCE_INLINE
+void fillBlockTail2(uint32_t* trg, int& x, U32x4 col4, std::true_type)
+{
+    simd::storeu2(trg + x, col4);
+    x += 2;
+}
+
+template <int blockSize> FORCE_INLINE
+void fillBlockTail2(uint32_t*, int&, U32x4, std::false_type)
+{
+}
+
+template <int blockSize> FORCE_INLINE
+void fillBlockTail1(uint32_t* trg, int x, uint32_t col, std::true_type)
+{
+    trg[x] = col;
+}
+
+template <int blockSize> FORCE_INLINE
+void fillBlockTail1(uint32_t*, int, uint32_t, std::false_type)
+{
+}
 
 template <int blockSize> FORCE_INLINE
 void fillBlock(uint32_t* trg, int trgWidth, uint32_t col)
@@ -652,13 +698,8 @@ void fillBlock(uint32_t* trg, int trgWidth, uint32_t col)
         int x = 0;
         for (; x + 4 <= blockSize; x += 4)
             storeu(trg + x, col4);
-        if constexpr (blockSize % 4 >= 2)
-        {
-            storeu2(trg + x, col4);
-            x += 2;
-        }
-        if constexpr (blockSize % 2 == 1)
-            trg[x] = col;
+        fillBlockTail2<blockSize>(trg, x, col4, std::integral_constant<bool, (blockSize % 4 >= 2)>{});
+        fillBlockTail1<blockSize>(trg, x, col, std::integral_constant<bool, (blockSize % 2 == 1)>{});
     }
 }
 
@@ -667,7 +708,8 @@ void fillBlock(uint32_t* trg, int trgWidth, uint32_t col)
 template <int blockSize, int... J> FORCE_INLINE
 void blockRowVectors(U32x4* row, U32x4 pix, std::integer_sequence<int, J...>)
 {
-    ((row[J] = simd::lanes<(4 * J) / blockSize, (4 * J + 1) / blockSize, (4 * J + 2) / blockSize, (4 * J + 3) / blockSize>(pix)), ...);
+    const int expand[] = { 0, ((row[J] = simd::lanes<(4 * J) / blockSize, (4 * J + 1) / blockSize, (4 * J + 2) / blockSize, (4 * J + 3) / blockSize>(pix)), 0)... };
+    (void)expand;
 }
 
 //fill the blocks of four consecutive source pixels
@@ -1428,7 +1470,7 @@ void xbrz19::scale(size_t factor, const uint32_t* src, uint32_t* trg, int srcWid
         return;
     }
 
-    static_assert(SCALE_FACTOR_MAX == 9);
+    static_assert(SCALE_FACTOR_MAX == 9, "");
     switch (factor)
     {
         case 2: return scaleImageFmt<Scaler2x>(colFmt, src, trg, srcWidth, srcHeight, srcPitchPixels, trgPitchPixels, cfg, yFirst, yLast);
