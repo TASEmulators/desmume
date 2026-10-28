@@ -449,7 +449,8 @@ bool CommandLine::parse(int argc,char **argv)
 	else if(_render3d == "OLDGL") render3d = COMMANDLINE_RENDER3D_OLDGL;
 	else if(_render3d == "AUTOGL") render3d = COMMANDLINE_RENDER3D_AUTOGL;
 	else if(_render3d == "GL") render3d = COMMANDLINE_RENDER3D_GL;
-
+	else if(_render3d == "WGPU") render3d = COMMANDLINE_RENDER3D_WGPU;
+	else if(_render3d == "WEBGPU") render3d = COMMANDLINE_RENDER3D_WGPU;
 	if (_texture_deposterize != -1) CommonSettings.GFX3D_Renderer_TextureDeposterize = (_texture_deposterize == 1);
 	if (_texture_smooth != -1) CommonSettings.GFX3D_Renderer_TextureSmoothing = (_texture_smooth == 1);
 

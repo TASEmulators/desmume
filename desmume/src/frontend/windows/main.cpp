@@ -53,6 +53,7 @@
 #include "GPU.h"
 #include "SPU.h"
 #include "OGLRender_3_2.h"
+#include "WGPURender.h"
 #include "rasterize.h"
 #include "gfx3d.h"
 #include "render3D.h"
@@ -434,13 +435,79 @@ SoundInterface_struct *SNDCoreList[] = {
 	NULL
 };
 
-GPU3DInterface *core3DList[] = {
-	&gpu3DNull,
-	&gpu3Dgl_3_2,
-	&gpu3DRasterize,
-	&gpu3DglOld,
-	NULL
-};
+// Filled by Build3DRendererList() at startup. The first entries are fixed, but
+// WebGPU contributes one entry per usable backend, so the tail is dynamic.
+GPU3DInterface *core3DList[GPU3D_MAX_COUNT] = { NULL };
+
+// Builds the renderer list: the fixed cores, then one entry per WebGPU backend
+// that wgpu-native reported ("WebGPU - D3D12", "WebGPU - Vulkan", ...). Software
+// adapters are filtered out by the renderer itself; the emulator's own
+// SoftRasterizer stays in the list.
+static void Build3DRendererList()
+{
+	int count = 0;
+
+	core3DList[count++] = &gpu3DNull;
+	core3DList[count++] = &gpu3Dgl_3_2;
+	core3DList[count++] = &gpu3DRasterize;
+	core3DList[count++] = &gpu3DglOld;
+
+#if defined(ENABLE_WGPU)
+	WGPURender_InitBackendList();
+
+	const size_t backendCount = WGPURender_GetBackendCount();
+
+	for (size_t i = 0; (i < backendCount) && (count < (GPU3D_MAX_COUNT - 2)); i++)
+	{
+		core3DList[count++] = WGPURender_GetBackendInterface(i);
+	}
+
+	// Nothing reported (no usable adapter): still offer the generic entry so the
+	// user can try, and so a config that already selected WebGPU keeps working.
+	if (backendCount == 0)
+	{
+		core3DList[count++] = &gpu3DWGPU;
+	}
+#else
+	core3DList[count++] = &gpu3DWGPU;
+#endif
+
+	core3DList[count] = NULL;
+}
+
+static void Select3DCoreComboItem(HWND hDlg, const int coreIndex)
+{
+	const HWND hCombo = GetDlgItem(hDlg, IDC_3DCORE);
+	const int itemCount = ComboBox_GetCount(hCombo);
+
+	for (int i = 0; i < itemCount; i++)
+	{
+		if ( (int)ComboBox_GetItemData(hCombo, i) == coreIndex )
+		{
+			ComboBox_SetCurSel(hCombo, i);
+			return;
+		}
+	}
+
+	if (itemCount > 0)
+	{
+		ComboBox_SetCurSel(hCombo, 0);
+	}
+}
+
+static int GetSelected3DCore(HWND hDlg)
+{
+	const HWND hCombo = GetDlgItem(hDlg, IDC_3DCORE);
+	const int selected = ComboBox_GetCurSel(hCombo);
+
+	if (selected < 0)
+	{
+		return cur3DCore;
+	}
+
+	const LRESULT coreIndex = ComboBox_GetItemData(hCombo, selected);
+	return (coreIndex == CB_ERR) ? cur3DCore : (int)coreIndex;
+}
 
 bool autoframeskipenab=1;
 bool continuousframeAdvancing = false;
@@ -2386,6 +2453,7 @@ int _main()
 	if(cmdline.render3d == COMMANDLINE_RENDER3D_OLDGL) cur3DCore = GPU3D_OPENGL_OLD;
 	if(cmdline.render3d == COMMANDLINE_RENDER3D_GL) cur3DCore = GPU3D_OPENGL_3_2; //no way of forcing it, at least not right now. I dont care.
 	if(cmdline.render3d == COMMANDLINE_RENDER3D_AUTOGL) cur3DCore = GPU3D_OPENGL_3_2; //this will fallback i guess
+	if(cmdline.render3d == COMMANDLINE_RENDER3D_WGPU) cur3DCore = GPU3D_WGPU;
 
 	CommonSettings.GFX3D_HighResolutionInterpolateColor = GetPrivateProfileBool("3D", "HighResolutionInterpolateColor", 1, IniName);
 	CommonSettings.GFX3D_EdgeMark = GetPrivateProfileBool("3D", "EnableEdgeMark", 1, IniName);
@@ -2579,7 +2647,21 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 {
 //	testelf();
 
+#if defined(ENABLE_WGPU)
+	// Headless development hook: render a reference scene through the WebGPU
+	// renderer and exit. Used to validate the backend without a ROM.
+	const char *wgpuSelfTestPath = getenv("DESMUME_WGPU_SELFTEST");
+	if (wgpuSelfTestPath != NULL)
+	{
+		return WGPURender_SelfTest(wgpuSelfTestPath);
+	}
+#endif
+
     CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);
+
+	// Build the renderer list first: it probes wgpu for its available backends,
+	// and the settings loaded below validate the saved renderer index against it.
+	Build3DRendererList();
 
 	TIMECAPS tc;
 	if (timeGetDevCaps(&tc, sizeof(TIMECAPS))== TIMERR_NOERROR)
@@ -5613,7 +5695,7 @@ void Change3DCoreWithFallbackAndSave(int newCore)
 {
 	printf("Attempting change to 3d core to: %s\n",core3DList[newCore]->name);
 
-	if (newCore >= 4)
+	if (newCore < 0 || newCore >= GPU3D_MAX_COUNT || core3DList[newCore] == NULL)
 	{
 		printf("DeSmuME: Invalid 3D renderer chosen; falling back to SoftRasterizer. (core3DList index = %i)\n", newCore);
 		newCore = GPU3D_SWRAST;
@@ -5745,12 +5827,30 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 				}
 			}
 
-			// Generate the 3D Rendering Engine pop-up menu
-			for (int i = 0; core3DList[i] != NULL; i++)
+			// Generate the 3D Rendering Engine pop-up menu. Each entry stores its
+			// core3DList index in the item data, since the tail of the list is
+			// built at runtime (one entry per available WebGPU backend).
 			{
-				ComboBox_AddString(GetDlgItem(hw, IDC_3DCORE), core3DList[i]->name);
+				const HWND h3DCoreCombo = GetDlgItem(hw, IDC_3DCORE);
+
+				for (int i = 0; (i < GPU3D_MAX_COUNT) && (core3DList[i] != NULL); i++)
+				{
+					const int item = ComboBox_AddString(h3DCoreCombo, core3DList[i]->name);
+					if (item >= 0)
+					{
+						ComboBox_SetItemData(h3DCoreCombo, item, (LPARAM)i);
+					}
+				}
+
+				if ( (cur3DCore >= 0) && (cur3DCore < GPU3D_MAX_COUNT) && (core3DList[cur3DCore] != NULL) )
+				{
+					Select3DCoreComboItem(hw, cur3DCore);
+				}
+				else
+				{
+					Select3DCoreComboItem(hw, GPU3D_DEFAULT);
+				}
 			}
-			ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), cur3DCore);
 		}
 		return TRUE;
 	case WM_COMMAND:
@@ -5783,7 +5883,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					}
 
 					WinGPUEvent->SetFramebufferDimensionsByScaleFactorInteger(newPrescaleHD);
-					Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
+					Change3DCoreWithFallbackAndSave(GetSelected3DCore(hw));
 					SyncGpuBpp();
 
 					WritePrivateProfileBool("3D", "HighResolutionInterpolateColor", CommonSettings.GFX3D_HighResolutionInterpolateColor, IniName);
@@ -5810,7 +5910,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 				return TRUE;
 			case IDC_DEFAULT:
 				{
-					ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), GPU3D_DEFAULT);
+					Select3DCoreComboItem(hw, GPU3D_DEFAULT);
 					//CommonSettings.gfx3d_flushMode = 0;
 					//WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
 				}

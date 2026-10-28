@@ -30,6 +30,7 @@ extern int _commandline_linux_nojoy;
 #define COMMANDLINE_RENDER3D_OLDGL 3
 #define COMMANDLINE_RENDER3D_GL 4
 #define COMMANDLINE_RENDER3D_AUTOGL 5
+#define COMMANDLINE_RENDER3D_WGPU 6
 
 //this class will also eventually try to take over the responsibility of using the args that it handles
 //for example: preparing the emulator run by loading the rom, savestate, and/or movie in the correct pattern.

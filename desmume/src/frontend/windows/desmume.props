@@ -94,7 +94,7 @@
 
 		<ClCompile>
 
-			<AdditionalIncludeDirectories>.;..\..;lua\include;glib-2.20.1\build;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\..;lua\include;glib-2.20.1\build;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\..\libretro-common\include;..\..\..\3rdparty\wgpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 
 			<!-- universal definitions -->
 			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;WIN32_FRONTEND;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -159,6 +159,9 @@
 			<!-- desmume configuration: features we always have in windows -->
 			<PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;HAVE_LUA=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
+			<!-- WebGPU renderer. wgpu-native binaries are only shipped for x64. -->
+			<PreprocessorDefinitions Condition="'$(Platform)' == 'x64'">ENABLE_WGPU=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
 		</ClCompile>
 
 		<Link>
@@ -166,8 +169,8 @@
 			<ProgramDatabaseFile>$(IntDir)TargetName.pdb</ProgramDatabaseFile>
 
 			<!-- deps config for x64 -->
-			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">.\zlib128;agg;.libs;.libs\x64</AdditionalLibraryDirectories>
-			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">.\zlib128;agg;.libs;.libs\x64;..\..\..\3rdparty\libs\x64</AdditionalLibraryDirectories>
+			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;wgpu_native.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- deps config for Win32 -->
 			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">.\zlib128;agg;.libs;.libs\win32</AdditionalLibraryDirectories>
@@ -262,6 +265,14 @@
 			<Output ItemName="ClCompile" TaskParameter="OutputItemList"/>
 		</UNDUPOBJ_TASK>
 	</Target>
-	<!-- ================ UNDUPOBJ ================ -->
+		<!-- ================ UNDUPOBJ ================ -->
+
+		<!-- Ship the WebGPU runtime next to the executable. -->
+	<Target Name="CopyWGPUNative" AfterTargets="Build" Condition="'$(Platform)' == 'x64'">
+		<ItemGroup>
+			<WGPUNativeFiles Include="$(MSBuildThisFileDirectory)..\..\..\3rdparty\libs\x64\wgpu_native.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(WGPUNativeFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="'@(WGPUNativeFiles)' != ''" />
+	</Target>
 
 </Project>

@@ -62,6 +62,12 @@ extern bool ShowLagFrameCounter;
 #define GPU3D_OPENGL_3_2 1
 #define GPU3D_SWRAST 2
 #define GPU3D_OPENGL_OLD 3
+// Index of the first WebGPU entry. The list carries one entry per available
+// wgpu backend, so anything from here on is a WebGPU variant.
+#define GPU3D_WGPU 4
+// Upper bound for core3DList, which is filled at runtime because the number of
+// usable WebGPU backends depends on the machine.
+#define GPU3D_MAX_COUNT 16
 
 extern void Change3DCoreWithFallbackAndSave(int newCore);
 
