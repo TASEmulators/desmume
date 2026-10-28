@@ -95,7 +95,10 @@
     <ClCompile Include="..\..\filter\hq4x.cpp" />
     <ClCompile Include="..\..\filter\lq2x.cpp" />
     <ClCompile Include="..\..\filter\scanline.cpp" />
-    <ClCompile Include="..\..\filter\xbrz.cpp" />
+    <ClCompile Include="..\..\filter\xbrz.cpp">
+      <!-- The xBRZ 1.9 core (filter/xbrz19) uses if constexpr. -->
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
     <ClCompile Include="..\..\firmware.cpp" />
     <ClCompile Include="..\..\frontend\modules\ImageOut.cpp" />
     <ClCompile Include="..\..\gfx3d.cpp" />
@@ -373,6 +376,10 @@
     <ClInclude Include="..\..\Database.h" />
     <ClInclude Include="..\..\filter\filter.h" />
     <ClInclude Include="..\..\filter\xbrz.h" />
+    <ClInclude Include="..\..\filter\xbrz19\xbrz.h" />
+    <ClInclude Include="..\..\filter\xbrz19\xbrz_config.h" />
+    <ClInclude Include="..\..\filter\xbrz19\xbrz_simd.h" />
+    <ClInclude Include="..\..\filter\xbrz19\xbrz_tools.h" />
     <ClInclude Include="..\..\gdbstub.h" />
     <ClInclude Include="..\..\libretro-common\include\compat\getopt.h" />
     <ClInclude Include="..\..\libretro-common\include\compat\msvc.h" />
