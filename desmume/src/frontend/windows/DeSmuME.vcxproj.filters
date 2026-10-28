@@ -930,6 +930,9 @@
     <ClCompile Include="display.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="DPI.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\addons\slot2_hcv1000.cpp">
       <Filter>addons</Filter>
     </ClCompile>
@@ -1630,6 +1633,9 @@
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="display.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="DPI.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="..\..\filter\xbrz19\xbrz.h" />

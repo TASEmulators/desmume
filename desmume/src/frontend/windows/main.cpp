@@ -72,6 +72,7 @@
 #include "recentroms.h"
 #include "resource.h"
 #include "CWindow.h"
+#include "DPI.h"
 #include "version.h"
 #include "inputdx.h"
 #include "console.h"
@@ -712,7 +713,10 @@ void ScaleScreen(float factor, bool user)
 				defw = defh*w1x/h1x;
 		}
 
-		MainWindow->setClientSize(defw, defh);
+		// defw/defh are logical (96 DPI) sizes; the client area is in physical
+		// pixels now that the process is per-monitor DPI aware.
+		HWND hwnd = MainWindow->getHWnd();
+		MainWindow->setClientSize(DPI_ScaleForWindow(defw, hwnd), DPI_ScaleForWindow(defh, hwnd));
 	}
 	else
 	{
@@ -721,25 +725,32 @@ void ScaleScreen(float factor, bool user)
 		else if(factor==kScale2point5x)
 			factor = 2.5f;
 
+		HWND hwnd = MainWindow->getHWnd();
+		const int clientWidth  = DPI_ScaleForWindow((int)(video.rotatedwidthgap()  * factor), hwnd);
+		const int clientHeight = DPI_ScaleForWindow((int)(video.rotatedheightgap() * factor), hwnd);
+
 		if (video.layout == 0)
-			MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor));
+			MainWindow->setClientSize(clientWidth, clientHeight);
 		else
 			if (video.layout == 1)
 			{
-				MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor * 2 / screenSizeRatio), (int)(video.rotatedheightgap() * factor / 2));
+				MainWindow->setClientSize(DPI_ScaleForWindow((int)(video.rotatedwidthgap() * factor * 2 / screenSizeRatio), hwnd),
+				                          DPI_ScaleForWindow((int)(video.rotatedheightgap() * factor / 2), hwnd));
 			}
 			else
 				if (video.layout == 2)
-					MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor / 2));
+					MainWindow->setClientSize(clientWidth, DPI_ScaleForWindow((int)(video.rotatedheightgap() * factor / 2), hwnd));
 	}
 }
 
 void SetMinWindowSize()
 {
+	HWND hwnd = (MainWindow != NULL) ? MainWindow->getHWnd() : NULL;
+
 	if(ForceRatio)
-		MainWindow->setMinSize(video.rotatedwidth(), video.rotatedheight());
+		MainWindow->setMinSize(DPI_ScaleForWindow(video.rotatedwidth(), hwnd), DPI_ScaleForWindow(video.rotatedheight(), hwnd));
 	else
-		MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
+		MainWindow->setMinSize(DPI_ScaleForWindow(video.rotatedwidthgap(), hwnd), DPI_ScaleForWindow(video.rotatedheightgap(), hwnd));
 }
 
 void UnscaleScreenCoords(s32& x, s32& y)
@@ -962,10 +973,10 @@ void RestoreWindow(HWND hwnd)
 		RECT rc;
 		rc.left = WndX;
 		rc.top = WndY;
-		rc.right = rc.left + GetPrivateProfileInt("Video", "Window width", GPU_FRAMEBUFFER_NATIVE_WIDTH, IniName);
-		rc.bottom = rc.top + GetPrivateProfileInt("Video", "Window height", GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, IniName);
+		rc.right = rc.left + DPI_ScaleForWindow(GetPrivateProfileInt("Video", "Window width", GPU_FRAMEBUFFER_NATIVE_WIDTH, IniName), hwnd);
+		rc.bottom = rc.top + DPI_ScaleForWindow(GetPrivateProfileInt("Video", "Window height", GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, IniName), hwnd);
 
-		AdjustWindowRect(&rc, GetWindowLong(hwnd, GWL_STYLE), true);
+		DPI_AdjustWindowRectEx(&rc, (DWORD)GetWindowLong(hwnd, GWL_STYLE), TRUE, (DWORD)GetWindowLong(hwnd, GWL_EXSTYLE), hwnd);
 		SetWindowPos(hwnd, 0, WndX, WndY, rc.right - rc.left, rc.bottom - rc.top, SWP_NOOWNERZORDER | SWP_NOZORDER);
 	}
 	else
@@ -2168,7 +2179,17 @@ int _main()
 	SetDisplayNeedsBufferUpdates();
 
 	MainWindow = new WINCLASS(L"DeSmuME", hAppInst);
-	if (!MainWindow->createW(boffo, WndX, WndY, video.width,video.height+video.screengap,
+
+	// Open at the size the window will keep once ScaleScreen() runs, using the
+	// DPI of the monitor the saved position points at. Without this the first
+	// frame is drawn into a native-size window and then jumps.
+	int startupDPI = DPI_GetSystem();
+	if ( (WndX > -10000) && (WndY > -10000) )
+	{
+		startupDPI = DPI_GetForPoint(WndX, WndY);
+	}
+
+	if (!MainWindow->createW(boffo, WndX, WndY, DPI_Scale(video.width, startupDPI), DPI_Scale(video.height+video.screengap, startupDPI),
 		WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 		NULL))
 	{
@@ -2646,6 +2667,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 {
 //	testelf();
+
+	// Must happen before any window exists. The manifest already requests
+	// PerMonitorV2; this covers builds that do not embed it.
+	DPI_EnablePerMonitorAwareness();
 
 #if defined(ENABLE_WGPU)
 	// Headless development hook: render a reference scene through the WebGPU
@@ -3603,9 +3628,20 @@ void SaveWindowSize(HWND hwnd)
 	if(IsZoomed(hwnd) || fsWindow) return;
 	RECT rc;
 	GetClientRect(hwnd, &rc);
-	rc.top += MainWindowToolbar->GetHeight();
-	WritePrivateProfileInt("Video", "Window width", (rc.right - rc.left), IniName);
-	WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
+
+	// setClientSize() adds the toolbar height back on, so store the height of
+	// the screen area only, not the whole client area.
+	rc.bottom -= MainWindowToolbar->GetHeight();
+	if (rc.bottom <= 0)
+	{
+		return;
+	}
+
+	// Stored in 96 DPI units so the window keeps its apparent size when the
+	// settings are reused on a monitor with a different scaling factor.
+	const int dpi = DPI_GetForWindow(hwnd);
+	WritePrivateProfileInt("Video", "Window width", DPI_Unscale(rc.right - rc.left, dpi), IniName);
+	WritePrivateProfileInt("Video", "Window height", DPI_Unscale(rc.bottom - rc.top, dpi), IniName);
 }
 
 void SaveWindowPos(HWND hwnd)
@@ -3998,6 +4034,37 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		return 0;
 	}
 
+	case WM_DPICHANGED:
+		{
+			// The window landed on a monitor with a different scaling factor.
+			// Windows suggests a rect that keeps the apparent size; accept it,
+			// then re-derive the layout with the new DPI so the presets and the
+			// toolbar keep matching.
+			const RECT * const suggested = (const RECT *)lParam;
+
+			SetWindowPos(hwnd, NULL, suggested->left, suggested->top,
+			             suggested->right - suggested->left, suggested->bottom - suggested->top,
+			             SWP_NOZORDER | SWP_NOACTIVATE);
+
+			if (MainWindowToolbar != NULL)
+			{
+				MainWindowToolbar->SetDPI(DPI_GetForWindow(hwnd));
+			}
+
+			SetMinWindowSize();
+
+			if ( !IsZoomed(hwnd) && !fsWindow && (windowSize != 0) )
+			{
+				ScaleScreen(windowSize, false);
+			}
+			else
+			{
+				UpdateWndRects(hwnd);
+			}
+
+			return 0;
+		}
+
 	case WM_KILLFOCUS:
 		if(lostFocusPause) {
 			if(!emu_paused) {
@@ -4059,20 +4126,22 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				int minX = 0;
 				int minY = 0;
 
+				// Min sizes are compared against the window rect, which is in
+				// physical pixels, so the logical DS sizes need scaling first.
 				if (video.layout == 0)
 				{
-					minX = video.rotatedwidthgap();
-					minY = video.rotatedheightgap();
+					minX = DPI_ScaleForWindow(video.rotatedwidthgap(), hwnd);
+					minY = DPI_ScaleForWindow(video.rotatedheightgap(), hwnd);
 				}
 				else if (video.layout == 1)
 				{
-					minX = video.rotatedwidthgap() * 2;
-					minY = video.rotatedheightgap() * screenSizeRatio / 2;
+					minX = DPI_ScaleForWindow(video.rotatedwidthgap() * 2, hwnd);
+					minY = DPI_ScaleForWindow(video.rotatedheightgap() * screenSizeRatio / 2, hwnd);
 				}
 				else if (video.layout == 2)
 				{
-					minX = video.rotatedwidthgap();
-					minY = video.rotatedheightgap() / 2;
+					minX = DPI_ScaleForWindow(video.rotatedwidthgap(), hwnd);
+					minY = DPI_ScaleForWindow(video.rotatedheightgap() / 2, hwnd);
 				}
 
 				if(verticalDrag && !sideways && SeparationBorderDrag && video.layout == 0)

@@ -29,6 +29,7 @@
 
 #include "resource.h"
 #include "winutil.h"
+#include "DPI.h"
 #include "version.h"
 
 using namespace std;
@@ -304,7 +305,7 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			SetWindowLongPtr(hDlg, DWLP_USER, (LONG_PTR)wnd);
 			SetWindowLongPtr(GetDlgItem(hDlg, IDC_MEMVIEWBOX), DWLP_USER, (LONG_PTR)wnd);
 
-			wnd->font = CreateFont(16, 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
+			wnd->font = CreateFont(DPI_ScaleForWindow(16, hDlg), 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
 				OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, GetFontQuality(), FIXED_PITCH, "Courier New");
 
 			s_memoryRegions[MEMVIEW_ARM9].hardwareAddress = arm9InitAddress;

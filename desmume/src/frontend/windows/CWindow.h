@@ -196,6 +196,11 @@ public:
 	void AppendButton(int uID, int uBitmapID, DWORD dwState, bool bDropdown);
 	void AppendSeparator();
 
+	// Rebuilds the toolbar for a new scaling factor. The button bitmaps are
+	// resampled and the control itself is recreated, because the toolbar locks
+	// its image size once the first bitmap has been added.
+	void SetDPI(int dpi);
+
 	void EnableButton(int uID, bool bEnable) {
 		SendMessage(hWnd, TB_ENABLEBUTTON, uID, bEnable ? TRUE:FALSE); }
 	void CheckButton(int uID, bool bCheck) {
@@ -209,7 +214,26 @@ public:
 	int GetHeight();
 
 private:
+	// Everything needed to recreate the button strip at a different DPI.
+	struct ToolbarItem
+	{
+		int id;
+		int bitmapId;
+		DWORD state;
+		bool dropdown;
+		bool separator;
+	};
+
 	HWND hWnd;
+	HWND hParent;
+	int dpi;
+	std::vector<ToolbarItem> items;
+
+	void CreateToolBarWindow();
+	void AppendItem(const ToolbarItem &item);
+	int GetBitmapIndex(int uBitmapID);
+	void DestroyBitmaps();
+
 	// We have to keep the bitmaps here because destroying them
 	// directly after use would also destroy the toolbar.
 	// They'll be destroyed when the CToolBar destructor is called.

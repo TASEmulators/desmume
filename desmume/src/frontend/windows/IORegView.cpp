@@ -27,6 +27,7 @@
 
 #include "resource.h"
 #include "main.h"
+#include "DPI.h"
 
 //this message is only supported in vista so folks sdk might not have it.
 //therefore we shall declare it here
@@ -623,12 +624,12 @@ LRESULT CALLBACK IORegView_Proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			SetWindowLongPtr(hWnd, DWLP_USER, (LONG)wnd);
 
 			// Create the fixed-pitch font
-			wnd->hFont = CreateFont(16, 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
+			wnd->hFont = CreateFont(DPI_ScaleForWindow(16, hWnd), 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
 				OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, GetFontQuality(), FIXED_PITCH, "Courier New");
 
 			// Create the vertical scrollbar
 			// The sizing and positioning of the scrollbar is done in WM_SIZE messages
-			wnd->vsbWidth = GetSystemMetrics(SM_CXVSCROLL);
+			wnd->vsbWidth = DPI_GetSystemMetricsForWindow(SM_CXVSCROLL, hWnd);
 			wnd->hScrollbar = CreateWindow("Scrollbar", "",
 				WS_CHILD | WS_VISIBLE | WS_DISABLED | SBS_VERT,
 				0, 0, 0, 0, hWnd, NULL, hAppInst, NULL);

@@ -26,6 +26,7 @@
 
 #include "resource.h"
 #include "main.h"
+#include "DPI.h"
 #include "IORegView.h"
 #include "windriver.h"
 
@@ -213,11 +214,17 @@ void CToolWindow::PostInitialize()
 		DWORD style = WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 		RECT rc;
 
+		// The tool windows size themselves in pixels, which are logical units
+		// here, so scale them for the monitor the main window sits on.
+		HWND hRef = (MainWindow != NULL) ? MainWindow->getHWnd() : NULL;
+		const int scaledWidth = DPI_ScaleForWindow(width, hRef);
+		const int scaledHeight = DPI_ScaleForWindow(height, hRef);
+
 		rc.left = 0;
-		rc.right = width;
+		rc.right = scaledWidth;
 		rc.top = 0;
-		rc.bottom = height;
-		AdjustWindowRect(&rc, style, FALSE);
+		rc.bottom = scaledHeight;
+		DPI_AdjustWindowRectEx(&rc, style, FALSE, 0, hRef);
 
 		hWnd = CreateWindow(className, title.c_str(), style, CW_USEDEFAULT, CW_USEDEFAULT, 
 			rc.right - rc.left, rc.bottom - rc.top, HWND_DESKTOP, NULL, hAppInst, (LPVOID)this);
@@ -335,30 +342,186 @@ void RefreshAllToolWindows()
 //   The Toolkit - Toolbar API wrapper
 //-----------------------------------------------------------------------------
 
-CToolBar::CToolBar(HWND hParent)
-	: hidden(false)
+static const int kToolBarBitmapSize = 16;
+
+// Nearest-neighbour upscale of a toolbar bitmap to size x size.
+//
+// The pixels are copied through GetDIBits/SetDIBits instead of StretchBlt: the
+// artwork is pixel art, so replicating pixels is both sharper and completely
+// predictable, and the result stays a plain device-dependent bitmap, which is
+// what TB_ADDBITMAP expects. Returns the original handle when no scaling is
+// needed; otherwise the original is destroyed and the caller owns the result.
+static HBITMAP ScaleBitmapToSquare(HBITMAP hbmp, int size)
 {
-	// Create the toolbar
+	BITMAP bm;
+	if (GetObject(hbmp, sizeof(bm), &bm) == 0)
+	{
+		return hbmp;
+	}
+
+	if ( (bm.bmWidth == size) && (bm.bmHeight == size) )
+	{
+		return hbmp;
+	}
+
+	const int srcWidth = bm.bmWidth;
+	const int srcHeight = bm.bmHeight;
+	if ( (srcWidth <= 0) || (srcHeight <= 0) || (size <= 0) )
+	{
+		return hbmp;
+	}
+
+	const int srcStride = ((srcWidth * 3) + 3) & ~3;
+	const int dstStride = ((size * 3) + 3) & ~3;
+
+	HDC dcScreen = GetDC(NULL);
+	if (dcScreen == NULL)
+	{
+		return hbmp;
+	}
+
+	HDC dc = CreateCompatibleDC(dcScreen);
+	if (dc == NULL)
+	{
+		ReleaseDC(NULL, dcScreen);
+		return hbmp;
+	}
+
+	BITMAPINFO srcInfo;
+	ZeroMemory(&srcInfo, sizeof(srcInfo));
+	srcInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	srcInfo.bmiHeader.biWidth = srcWidth;
+	srcInfo.bmiHeader.biHeight = srcHeight;
+	srcInfo.bmiHeader.biPlanes = 1;
+	srcInfo.bmiHeader.biBitCount = 24;
+	srcInfo.bmiHeader.biCompression = BI_RGB;
+
+	std::vector<u8> srcPixels((size_t)srcStride * (size_t)srcHeight);
+	if (GetDIBits(dc, hbmp, 0, srcHeight, &srcPixels[0], &srcInfo, DIB_RGB_COLORS) == 0)
+	{
+		DeleteDC(dc);
+		ReleaseDC(NULL, dcScreen);
+		return hbmp;
+	}
+
+	std::vector<u8> dstPixels((size_t)dstStride * (size_t)size);
+	for (int y = 0; y < size; y++)
+	{
+		const int srcY = (y * srcHeight) / size;
+		for (int x = 0; x < size; x++)
+		{
+			const int srcX = (x * srcWidth) / size;
+			memcpy(&dstPixels[(size_t)y * dstStride + (size_t)x * 3],
+			       &srcPixels[(size_t)srcY * srcStride + (size_t)srcX * 3], 3);
+		}
+	}
+
+	// Use the screen DC here: a bitmap created from an empty memory DC would
+	// come out monochrome.
+	HBITMAP hbmpScaled = CreateCompatibleBitmap(dcScreen, size, size);
+	if (hbmpScaled == NULL)
+	{
+		DeleteDC(dc);
+		ReleaseDC(NULL, dcScreen);
+		return hbmp;
+	}
+
+	BITMAPINFO dstInfo;
+	ZeroMemory(&dstInfo, sizeof(dstInfo));
+	dstInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	dstInfo.bmiHeader.biWidth = size;
+	dstInfo.bmiHeader.biHeight = size;
+	dstInfo.bmiHeader.biPlanes = 1;
+	dstInfo.bmiHeader.biBitCount = 24;
+	dstInfo.bmiHeader.biCompression = BI_RGB;
+
+	SetDIBits(dc, hbmpScaled, 0, size, &dstPixels[0], &dstInfo, DIB_RGB_COLORS);
+
+	DeleteDC(dc);
+	ReleaseDC(NULL, dcScreen);
+	DeleteObject(hbmp);
+
+	return hbmpScaled;
+}
+
+void CToolBar::CreateToolBarWindow()
+{
 	// Note: dropdown buttons look like crap without TBSTYLE_FLAT
 	hWnd = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, 
 		WS_CHILD | WS_VISIBLE | WS_BORDER | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS, 
 		0, 0, 0, 0, hParent, NULL, hAppInst, NULL);
 
+	if (hWnd == NULL)
+	{
+		return;
+	}
+
 	// Send it a few messages to finish setting it up
 	SendMessage(hWnd, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
 	SendMessage(hWnd, TB_SETEXTENDEDSTYLE, 0, TBSTYLE_EX_DRAWDDARROWS);
+
+	// Must be set before the first bitmap is added; the button strip is sized
+	// from the image size, which is what makes the toolbar grow with the DPI.
+	// The unscaled case is left at the common-control default so the window
+	// looks exactly as it always did at 100%.
+	const int bitmapSize = DPI_Scale(kToolBarBitmapSize, dpi);
+	if (bitmapSize != kToolBarBitmapSize)
+	{
+		SendMessage(hWnd, TB_SETBITMAPSIZE, 0, MAKELPARAM(bitmapSize, bitmapSize));
+	}
 }
 
-CToolBar::~CToolBar()
+void CToolBar::DestroyBitmaps()
 {
-	// Delete all the HBITMAPs we kept stored
-	for (TBitmapList::iterator it = hBitmaps.begin(); 
-		it != hBitmaps.end(); it++)
+	for (TBitmapList::iterator it = hBitmaps.begin(); it != hBitmaps.end(); it++)
 	{
 		DeleteObject(it->second.second);
 	}
 
 	hBitmaps.clear();
+}
+
+CToolBar::CToolBar(HWND hParent)
+	: hWnd(NULL)
+	, hParent(hParent)
+	, dpi(DPI_GetForWindow(hParent))
+	, hidden(false)
+{
+	CreateToolBarWindow();
+}
+
+CToolBar::~CToolBar()
+{
+	DestroyBitmaps();
+}
+
+void CToolBar::SetDPI(int newDPI)
+{
+	if ( (newDPI <= 0) || (newDPI == dpi) || (hWnd == NULL) )
+	{
+		return;
+	}
+
+	dpi = newDPI;
+
+	const bool wasVisible = !hidden;
+
+	DestroyBitmaps();
+	DestroyWindow(hWnd);
+
+	hWnd = NULL;
+	CreateToolBarWindow();
+
+	for (size_t i = 0; i < items.size(); i++)
+	{
+		AppendItem(items[i]);
+	}
+
+	Show(wasVisible);
+
+	SetWindowPos(hWnd, NULL, 
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
+		SWP_NOZORDER | SWP_NOMOVE);
 }
 
 void CToolBar::Show(bool bShow)
@@ -434,76 +597,95 @@ void CToolBar::OnSize()
 		SWP_NOZORDER | SWP_NOMOVE);
 }
 
-void CToolBar::AppendButton(int uID, int uBitmapID, DWORD dwState, bool bDropdown)
+void CToolBar::AppendItem(const ToolbarItem &item)
 {
-	HBITMAP hbmp;
-	TBADDBITMAP bmp;
-	TBBUTTON btn;
+	if (hWnd == NULL)
+	{
+		return;
+	}
 
-	// Get the bitmap and replace the key color (magenta) with the right color
-	hbmp = LoadBitmap(hAppInst, MAKEINTRESOURCE(uBitmapID));
+	TBBUTTON btn;
+	memset(&btn, 0, sizeof(TBBUTTON));
+	btn.idCommand = -1;
+	btn.iString = -1;
+
+	if (item.separator)
+	{
+		btn.fsStyle = TBSTYLE_SEP;
+		SendMessage(hWnd, TB_ADDBUTTONS, 1, (LPARAM)&btn);
+		return;
+	}
+
+	btn.fsStyle = item.dropdown ? TBSTYLE_DROPDOWN : TBSTYLE_BUTTON;
+	btn.fsState = item.state;
+	btn.idCommand = item.id;
+	btn.iBitmap = GetBitmapIndex(item.bitmapId);
+
+	SendMessage(hWnd, TB_ADDBUTTONS, 1, (LPARAM)&btn);
+}
+
+int CToolBar::GetBitmapIndex(int uBitmapID)
+{
+	// If we don't already have the bitmap, retrieve it, scale it for the
+	// current DPI, adapt its key color and store it in the list
+	TBitmapList::iterator it = hBitmaps.find(uBitmapID);
+	if (it != hBitmaps.end())
+	{
+		return it->second.first;
+	}
+
+	HBITMAP hbmp = LoadBitmap(hAppInst, MAKEINTRESOURCE(uBitmapID));
+	if (hbmp == NULL)
+	{
+		return 0;
+	}
+
+	hbmp = ScaleBitmapToSquare(hbmp, DPI_Scale(kToolBarBitmapSize, dpi));
 	MakeBitmapPseudoTransparent(hbmp, RGB(255, 0, 255), GetSysColor(COLOR_BTNFACE));
 
 	// Add the bitmap to the toolbar's image list
+	TBADDBITMAP bmp;
 	bmp.hInst = NULL;
 	bmp.nID = (UINT_PTR)hbmp;
 
-	int bmpid = SendMessage(hWnd, TB_ADDBITMAP, 1, (LPARAM)&bmp);
+	const int bmpid = (int)SendMessage(hWnd, TB_ADDBITMAP, 1, (LPARAM)&bmp);
 
 	// Save the bitmap (if it gets deleted, the toolbar is too)
 	hBitmaps[uBitmapID] = TBitmapPair(bmpid, hbmp);
 
-	// And finally add the button
-	memset(&btn, 0, sizeof(TBBUTTON));
-	btn.fsStyle = bDropdown ? TBSTYLE_DROPDOWN : TBSTYLE_BUTTON;
-	btn.fsState = dwState;
-	btn.idCommand = uID;
-	btn.iString = -1;
-	btn.iBitmap = bmpid;
+	return bmpid;
+}
 
-	SendMessage(hWnd, TB_ADDBUTTONS, 1, (LPARAM)&btn);
+void CToolBar::AppendButton(int uID, int uBitmapID, DWORD dwState, bool bDropdown)
+{
+	ToolbarItem item;
+	item.id = uID;
+	item.bitmapId = uBitmapID;
+	item.state = dwState;
+	item.dropdown = bDropdown;
+	item.separator = false;
+
+	items.push_back(item);
+	AppendItem(item);
 }
 
 void CToolBar::AppendSeparator()
 {
-	TBBUTTON btn;
+	ToolbarItem item;
+	item.id = -1;
+	item.bitmapId = 0;
+	item.state = 0;
+	item.dropdown = false;
+	item.separator = true;
 
-	memset(&btn, 0, sizeof(TBBUTTON));
-	btn.fsStyle = TBSTYLE_SEP;
-	btn.idCommand = -1;
-	btn.iString = -1;
-
-	SendMessage(hWnd, TB_ADDBUTTONS, 1, (LPARAM)&btn);
+	items.push_back(item);
+	AppendItem(item);
 }
 
 void CToolBar::ChangeButtonBitmap(int uID, int uBitmapID)
 {
-	int bmpid = 0;
-
-	// If we don't already have the bitmap, retrieve it,
-	// adapt it and store it in the list
-	TBitmapList::iterator it = hBitmaps.find(uBitmapID);
-
-	if (it == hBitmaps.end())
-	{
-		HBITMAP hbmp;
-		TBADDBITMAP bmp;
-
-		hbmp = LoadBitmap(hAppInst, MAKEINTRESOURCE(uBitmapID));
-		MakeBitmapPseudoTransparent(hbmp, RGB(255, 0, 255), GetSysColor(COLOR_BTNFACE));
-
-		bmp.hInst = NULL;
-		bmp.nID = (UINT_PTR)hbmp;
-
-		bmpid = SendMessage(hWnd, TB_ADDBITMAP, 1, (LPARAM)&bmp);
-
-		hBitmaps[uBitmapID] = TBitmapPair(bmpid, hbmp);
-	}
-	else
-		bmpid = hBitmaps[uBitmapID].first;
-
 	// Finally change the bitmap
-	SendMessage(hWnd, TB_CHANGEBITMAP, uID, MAKELPARAM(bmpid, 0));
+	SendMessage(hWnd, TB_CHANGEBITMAP, uID, MAKELPARAM(GetBitmapIndex(uBitmapID), 0));
 }
 
 void CToolBar::EnableButtonDropdown(int uID, bool bDropdown)
@@ -643,10 +825,10 @@ void WINCLASS::setMinSize(int width, int height)
 
 static void MyAdjustWindowRectEx(RECT* rect, HWND hwnd)
 {
-	AdjustWindowRectEx(rect,GetWindowStyle(hwnd),TRUE,GetWindowExStyle(hwnd));
+	DPI_AdjustWindowRectEx(rect,GetWindowStyle(hwnd),TRUE,GetWindowExStyle(hwnd),hwnd);
 	
 	//get height of one menu to subtract off
-	int cymenu = GetSystemMetrics(SM_CYMENU);
+	int cymenu = DPI_GetSystemMetricsForWindow(SM_CYMENU, hwnd);
 	
 	//get the height of the actual menu to add back on
 	MENUBARINFO mbi;
@@ -768,7 +950,7 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 	// windows screws up the window size if the top of the window goes too high above the top of the screen
 	if(keepRatio & KEEPY)
 	{
-		int titleBarHeight = GetSystemMetrics(SM_CYSIZE);
+		int titleBarHeight = DPI_GetSystemMetricsForWindow(SM_CYSIZE, hwnd);
 		int topExceeded = -(titleBarHeight + rect->top);
 		if(topExceeded > 0)
 		{
