@@ -55,6 +55,8 @@ GPU3DInterface gpu3DWGPU = {
 #define WGPU_FRAME_ALPHA_TEST		0x04u
 #define WGPU_FRAME_TEX_SMOOTHING	0x08u
 #define WGPU_FRAME_TOON_SHADING		0x10u
+#define WGPU_FRAME_LEQUAL_FACING	0x20u
+#define WGPU_FRAME_W_DEPTH			0x40u
 
 #define WGPU_POLY_WIREFRAME			0x01u
 #define WGPU_POLY_ENABLE_FOG		0x02u
@@ -64,6 +66,7 @@ GPU3DInterface gpu3DWGPU = {
 #define WGPU_POLY_BACK_FACING		0x20u
 #define WGPU_POLY_DRAWABLE			0x40u
 #define WGPU_POLY_TRANSLUCENT		0x80u
+#define WGPU_POLY_DEPTH_EQUAL		0x100u
 
 // ---------------------------------------------------------------------------
 // Shaders
@@ -142,6 +145,9 @@ static const char *kWGSL_Geometry = R"WGSH(
 @group(0) @binding(3) var sampNear: sampler;
 @group(0) @binding(4) var sampLinear: sampler;
 @group(0) @binding(5) var<storage, read> tables: Tables;
+// The back-facing mask the opaque pass wrote (bind group 1; the translucent
+// pass reads it for the depth L-equal polygon facing rule).
+@group(1) @binding(0) var texMask: texture_2d<f32>;
 
 struct VSIn
 {
@@ -157,6 +163,9 @@ struct VSOut
 	@location(0) uv: vec2f,
 	@location(1) color: vec4f,
 	@location(2) @interpolate(flat) polyIndex: u32,
+	// The clip-space w, carried as a perspective-correct varying. This equals
+	// 1/gl_FragCoord.w without depending on the target's fragCoord.w semantics.
+	@location(3) viewW: f32,
 };
 
 struct FSOut
@@ -164,6 +173,7 @@ struct FSOut
 	@location(0) color: vec4f,
 	@location(1) polyID: vec4f,
 	@location(2) fogAttr: vec4f,
+	@location(3) backFacing: vec4f,
 	@builtin(frag_depth) depth: f32,
 };
 
@@ -186,6 +196,7 @@ fn vsGeom(input: VSIn) -> VSOut
 	                 p.y * sy - oy * p.w,
 	                 p.z * 0.5 + p.w * 0.5,
 	                 p.w);
+	out.viewW = p.w;
 
 	let sizeS = f32(8u << ps.texSizeS);
 	let sizeT = f32(8u << ps.texSizeT);
@@ -203,6 +214,19 @@ fn fsGeom(input: VSOut) -> FSOut
 	let ps = polys[input.polyIndex];
 	let opaquePass = (ps.flags & 128u) == 0u;
 	let enableTexture = (ps.flags & 8u) != 0u;
+
+	// Depth L-equal polygon facing: a translucent polygon doing the depth-equal
+	// test only draws where the opaque winner was back-facing and this polygon
+	// is front-facing, matching the OpenGL renderer's rule.
+	if ( ((frame.flags & 32u) != 0u) && ((ps.flags & 128u) != 0u) && ((ps.flags & 256u) != 0u) )
+	{
+		// The interpolated position built-in carries the fragment coordinates.
+		let opaqueBackFacing = textureLoad(texMask, vec2i(floor(input.clip.xy)), 0).r;
+		if ( ((ps.flags & 32u) != 0u) || (opaqueBackFacing < 0.5) )
+		{
+			discard;
+		}
+	}
 
 	var out: FSOut;
 	var texColor = vec4f(1.0, 1.0, 1.0, 1.0);
@@ -290,10 +314,21 @@ fn fsGeom(input: VSOut) -> FSOut
 	                           select(0.5, 1.0, color.a > 0.999)),
 	                     isDrawable);
 
-	// Quantize to the NDS 24-bit depth buffer. Doing this per fragment (instead
-	// of per vertex) avoids cross-GPU interpolation differences, which is the
-	// same approach the OpenGL renderer takes.
-	out.depth = clamp(floor(input.clip.z * 4194303.0) * (4.0 / 16777215.0), 0.0, 1.0);
+	out.backFacing = vec4f(select(0.0, 1.0, (ps.flags & 32u) != 0u));
+
+	// NDS 24-bit depth. In W-buffering mode the depth is the (perspective-
+	// correct) clip w; in z-buffering mode some LSBs of the z depth are dropped
+	// so that the overworld map in Dragon Quest IV shows up correctly. Both
+	// formulas match the OpenGL renderer. Doing this per fragment (instead of
+	// per vertex) avoids cross-GPU interpolation differences.
+	if ((frame.flags & 64u) != 0u)
+	{
+		out.depth = clamp(input.viewW * (4096.0 / 16777215.0), 0.0, 1.0);
+	}
+	else
+	{
+		out.depth = clamp(floor(input.clip.z * 4194303.0) * (4.0 / 16777215.0), 0.0, 1.0);
+	}
 
 	return out;
 }
@@ -454,6 +489,31 @@ fn fsOutput(@builtin(position) fragCoord: vec4f) -> @location(0) vec4f
 	let a5 = floor(a8 / 8.0);
 
 	return vec4f(rgb6 / 255.0, a5 / 255.0);
+}
+)WGSH";
+
+// Zero-alpha stencil mark pass. Runs with no color attachment and marks (via
+// the stencil buffer) every pixel whose current framebuffer color still has a
+// zero alpha -- the pixels no opaque fragment has reached. The zero-alpha
+// geometry draws then render translucent polygons onto exactly those pixels.
+static const char *kWGSL_ZeroAlphaMark = R"WGSH(
+@group(0) @binding(0) var texIn: texture_2d<f32>;
+
+@vertex
+fn vsFullscreen(@builtin(vertex_index) vertexIndex: u32) -> @builtin(position) vec4f
+{
+	var pos = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
+	return vec4f(pos[vertexIndex], 0.0, 1.0);
+}
+
+@fragment
+fn fsZeroAlphaMark(@builtin(position) fragCoord: vec4f)
+{
+	let c = vec2i(floor(fragCoord.xy));
+	if (textureLoad(texIn, c, 0).a <= 0.001)
+	{
+		discard;
+	}
 }
 )WGSH";
 
@@ -1218,7 +1278,7 @@ WGPURender::WGPURender(const uint32_t instanceBackends)
 	_deviceInfo.isEdgeMarkSupported = true;
 	_deviceInfo.isFogSupported = true;
 	_deviceInfo.isTextureSmoothingSupported = true;
-	_deviceInfo.maxAnisotropy = 1.0f;
+	_deviceInfo.maxAnisotropy = 16.0f;
 	// WebGPU guarantees 4x MSAA for the formats used here; anything else must
 	// fall back to 1 sample.
 	_deviceInfo.maxSamples = 4;
@@ -1241,8 +1301,21 @@ WGPURender::WGPURender(const uint32_t instanceBackends)
 	_fogView = NULL;
 	_depthTex = NULL;
 	_depthView = NULL;
+	_depthSampleView = NULL;
 	_outputTex = NULL;
 	_outputView = NULL;
+	_backFacingTexA = NULL;
+	_backFacingViewA = NULL;
+	_backFacingTexB = NULL;
+	_backFacingViewB = NULL;
+	_backFacingTexMSA = NULL;
+	_backFacingViewMSA = NULL;
+	_backFacingTexMSB = NULL;
+	_backFacingViewMSB = NULL;
+	_backFacingTexResolvedA = NULL;
+	_backFacingViewResolvedA = NULL;
+	_resolvedDepthTex = NULL;
+	_resolvedDepthView = NULL;
 
 	_colorTexMS = NULL;
 	_colorViewMS = NULL;
@@ -1252,6 +1325,7 @@ WGPURender::WGPURender(const uint32_t instanceBackends)
 	_fogViewMS = NULL;
 	_depthTexMS = NULL;
 	_depthViewMS = NULL;
+	_depthSampleViewMS = NULL;
 
 	_clearColorTex = NULL;
 	_clearColorView = NULL;
@@ -1272,12 +1346,14 @@ WGPURender::WGPURender(const uint32_t instanceBackends)
 	_shaderModuleClear = NULL;
 	_shaderModuleDepthResolve = NULL;
 	_shaderModuleOutput = NULL;
+	_shaderModuleZeroAlphaMark = NULL;
 
 	_geomBGL = NULL;
 	_postBGL = NULL;
 	_clearBGL = NULL;
 	_depthResolveBGL = NULL;
 	_outputBGL = NULL;
+	_maskBGL = NULL;
 	_geomLayout = NULL;
 	_postLayout = NULL;
 	_clearLayout = NULL;
@@ -1291,17 +1367,21 @@ WGPURender::WGPURender(const uint32_t instanceBackends)
 	_clearBindGroup = NULL;
 	_depthResolveBindGroup = NULL;
 	_outputBindGroup = NULL;
+	_geomMaskBindGroupA = NULL;
+	_geomMaskBindGroupB = NULL;
 
 	_whiteTex = NULL;
 	_whiteView = NULL;
 	_whiteBindGroup = NULL;
 
 	memset(_geomPipelines, 0, sizeof(_geomPipelines));
+	memset(_geomPipelinesZeroAlpha, 0, sizeof(_geomPipelinesZeroAlpha));
 	_edgePipeline = NULL;
 	_fogPipeline = NULL;
 	_clearPipeline = NULL;
 	_depthResolvePipeline = NULL;
 	_outputPipeline = NULL;
+	_zeroAlphaMarkPipeline = NULL;
 
 	_currentState = NULL;
 	_useClearImage = false;
@@ -1568,12 +1648,17 @@ void WGPURender::_DestroyPipelines()
 	if (_clearBindGroup) { wgpuBindGroupRelease(_clearBindGroup); _clearBindGroup = NULL; }
 	if (_depthResolveBindGroup) { wgpuBindGroupRelease(_depthResolveBindGroup); _depthResolveBindGroup = NULL; }
 	if (_outputBindGroup) { wgpuBindGroupRelease(_outputBindGroup); _outputBindGroup = NULL; }
+	if (_geomMaskBindGroupA) { wgpuBindGroupRelease(_geomMaskBindGroupA); _geomMaskBindGroupA = NULL; }
+	if (_geomMaskBindGroupB) { wgpuBindGroupRelease(_geomMaskBindGroupB); _geomMaskBindGroupB = NULL; }
+	if (_geomMaskBindGroupA) { wgpuBindGroupRelease(_geomMaskBindGroupA); _geomMaskBindGroupA = NULL; }
+	if (_geomMaskBindGroupB) { wgpuBindGroupRelease(_geomMaskBindGroupB); _geomMaskBindGroupB = NULL; }
 
 	if (_edgePipeline) { wgpuRenderPipelineRelease(_edgePipeline); _edgePipeline = NULL; }
 	if (_fogPipeline) { wgpuRenderPipelineRelease(_fogPipeline); _fogPipeline = NULL; }
 	if (_clearPipeline) { wgpuRenderPipelineRelease(_clearPipeline); _clearPipeline = NULL; }
 	if (_depthResolvePipeline) { wgpuRenderPipelineRelease(_depthResolvePipeline); _depthResolvePipeline = NULL; }
 	if (_outputPipeline) { wgpuRenderPipelineRelease(_outputPipeline); _outputPipeline = NULL; }
+	if (_zeroAlphaMarkPipeline) { wgpuRenderPipelineRelease(_zeroAlphaMarkPipeline); _zeroAlphaMarkPipeline = NULL; }
 
 	for (size_t a = 0; a < 2; a++)
 	{
@@ -1593,6 +1678,21 @@ void WGPURender::_DestroyPipelines()
 		}
 	}
 
+	for (size_t a = 0; a < 2; a++)
+	{
+		for (size_t b = 0; b < 2; b++)
+		{
+			for (size_t c = 0; c < 2; c++)
+			{
+				if (_geomPipelinesZeroAlpha[a][b][c] != NULL)
+				{
+					wgpuRenderPipelineRelease(_geomPipelinesZeroAlpha[a][b][c]);
+					_geomPipelinesZeroAlpha[a][b][c] = NULL;
+				}
+			}
+		}
+	}
+
 	if (_samplerNearest) { wgpuSamplerRelease(_samplerNearest); _samplerNearest = NULL; }
 	if (_samplerLinear) { wgpuSamplerRelease(_samplerLinear); _samplerLinear = NULL; }
 
@@ -1601,6 +1701,7 @@ void WGPURender::_DestroyPipelines()
 	if (_shaderModuleClear) { wgpuShaderModuleRelease(_shaderModuleClear); _shaderModuleClear = NULL; }
 	if (_shaderModuleDepthResolve) { wgpuShaderModuleRelease(_shaderModuleDepthResolve); _shaderModuleDepthResolve = NULL; }
 	if (_shaderModuleOutput) { wgpuShaderModuleRelease(_shaderModuleOutput); _shaderModuleOutput = NULL; }
+	if (_shaderModuleZeroAlphaMark) { wgpuShaderModuleRelease(_shaderModuleZeroAlphaMark); _shaderModuleZeroAlphaMark = NULL; }
 
 	if (_geomLayout) { wgpuPipelineLayoutRelease(_geomLayout); _geomLayout = NULL; }
 	if (_postLayout) { wgpuPipelineLayoutRelease(_postLayout); _postLayout = NULL; }
@@ -1613,6 +1714,7 @@ void WGPURender::_DestroyPipelines()
 	if (_clearBGL) { wgpuBindGroupLayoutRelease(_clearBGL); _clearBGL = NULL; }
 	if (_depthResolveBGL) { wgpuBindGroupLayoutRelease(_depthResolveBGL); _depthResolveBGL = NULL; }
 	if (_outputBGL) { wgpuBindGroupLayoutRelease(_outputBGL); _outputBGL = NULL; }
+	if (_maskBGL) { wgpuBindGroupLayoutRelease(_maskBGL); _maskBGL = NULL; }
 
 	if (_whiteBindGroup) { wgpuBindGroupRelease(_whiteBindGroup); _whiteBindGroup = NULL; }
 	if (_whiteView) { wgpuTextureViewRelease(_whiteView); _whiteView = NULL; }
@@ -1656,8 +1758,12 @@ Render3DError WGPURender::_CreateRenderTargets(size_t w, size_t h)
 	_polyIDTex = wgpuDeviceCreateTexture(_device, &texDesc);
 	_fogTex = wgpuDeviceCreateTexture(_device, &texDesc);
 
+	// The geometry depth buffer carries a stencil component for the special
+	// zero-alpha blending pass. The postprocess passes sample its depth aspect
+	// and (under MSAA) a resolved Depth32Float copy.
+	//
 	WGPUTextureDescriptor depthDesc = texDesc;
-	depthDesc.format = WGPUTextureFormat_Depth32Float;
+	depthDesc.format = WGPUTextureFormat_Depth24PlusStencil8;
 	depthDesc.usage = depthUsage;
 	_depthTex = wgpuDeviceCreateTexture(_device, &depthDesc);
 
@@ -1671,8 +1777,29 @@ Render3DError WGPURender::_CreateRenderTargets(size_t w, size_t h)
 	_polyIDView = wgpuTextureCreateView(_polyIDTex, &viewDesc);
 	_fogView = wgpuTextureCreateView(_fogTex, &viewDesc);
 
-	viewDesc.format = WGPUTextureFormat_Depth32Float;
+	// The back-facing masks for the depth L-equal polygon facing rule (see the
+	// member comments for how A and B are used).
+	WGPUTextureDescriptor bfDesc = texDesc;
+	bfDesc.usage = (WGPUTextureUsage)(WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_TextureBinding);
+	_backFacingTexA = wgpuDeviceCreateTexture(_device, &bfDesc);
+	_backFacingTexB = wgpuDeviceCreateTexture(_device, &bfDesc);
+
+	viewDesc.format = WGPUTextureFormat_Depth24PlusStencil8;
 	_depthView = wgpuTextureCreateView(_depthTex, &viewDesc);
+
+	// Depth-only view for bind groups: WebGPU rejects texture views that carry
+	// both the depth and the stencil aspect when sampled, and a view that
+	// selects a single aspect has to use that aspect's own format -- Depth24Plus
+	// for the depth half of Depth24PlusStencil8.
+	viewDesc.format = WGPUTextureFormat_Depth24Plus;
+	viewDesc.aspect = WGPUTextureAspect_DepthOnly;
+	_depthSampleView = wgpuTextureCreateView(_depthTex, &viewDesc);
+	viewDesc.format = WGPUTextureFormat_Depth24PlusStencil8;
+	viewDesc.aspect = WGPUTextureAspect_All;
+
+	viewDesc.format = WGPUTextureFormat_RGBA8Unorm;
+	_backFacingViewA = wgpuTextureCreateView(_backFacingTexA, &viewDesc);
+	_backFacingViewB = wgpuTextureCreateView(_backFacingTexB, &viewDesc);
 
 	// The output conversion target. Same format as the color buffer; the 6665
 	// data is stored in its 8888 channels (see kWGSL_Output).
@@ -1694,8 +1821,10 @@ Render3DError WGPURender::_CreateRenderTargets(size_t w, size_t h)
 		_colorTexMS = wgpuDeviceCreateTexture(_device, &msDesc);
 		_polyIDTexMS = wgpuDeviceCreateTexture(_device, &msDesc);
 		_fogTexMS = wgpuDeviceCreateTexture(_device, &msDesc);
+		_backFacingTexMSA = wgpuDeviceCreateTexture(_device, &msDesc);
+		_backFacingTexMSB = wgpuDeviceCreateTexture(_device, &msDesc);
 
-		msDesc.format = WGPUTextureFormat_Depth32Float;
+		msDesc.format = WGPUTextureFormat_Depth24PlusStencil8;
 		msDesc.usage = depthUsage;
 		_depthTexMS = wgpuDeviceCreateTexture(_device, &msDesc);
 
@@ -1704,11 +1833,37 @@ Render3DError WGPURender::_CreateRenderTargets(size_t w, size_t h)
 		_colorViewMS = wgpuTextureCreateView(_colorTexMS, &msViewDesc);
 		_polyIDViewMS = wgpuTextureCreateView(_polyIDTexMS, &msViewDesc);
 		_fogViewMS = wgpuTextureCreateView(_fogTexMS, &msViewDesc);
+		_backFacingViewMSA = wgpuTextureCreateView(_backFacingTexMSA, &msViewDesc);
+		_backFacingViewMSB = wgpuTextureCreateView(_backFacingTexMSB, &msViewDesc);
 
-		msViewDesc.format = WGPUTextureFormat_Depth32Float;
+		msViewDesc.format = WGPUTextureFormat_Depth24PlusStencil8;
 		_depthViewMS = wgpuTextureCreateView(_depthTexMS, &msViewDesc);
 
-		if ( (_colorTexMS == NULL) || (_polyIDTexMS == NULL) || (_fogTexMS == NULL) || (_depthTexMS == NULL) )
+		msViewDesc.format = WGPUTextureFormat_Depth24Plus;
+		msViewDesc.aspect = WGPUTextureAspect_DepthOnly;
+		_depthSampleViewMS = wgpuTextureCreateView(_depthTexMS, &msViewDesc);
+		msViewDesc.format = WGPUTextureFormat_Depth24PlusStencil8;
+		msViewDesc.aspect = WGPUTextureAspect_All;
+
+		// Single-sample copies the postprocess passes and the translucent pass
+		// read under MSAA: the resolved geometry depth and the resolved
+		// back-facing mask A.
+		WGPUTextureDescriptor resolvedDesc = texDesc;
+		resolvedDesc.usage = (WGPUTextureUsage)(WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_TextureBinding);
+		_backFacingTexResolvedA = wgpuDeviceCreateTexture(_device, &resolvedDesc);
+
+		resolvedDesc.format = WGPUTextureFormat_Depth32Float;
+		_resolvedDepthTex = wgpuDeviceCreateTexture(_device, &resolvedDesc);
+
+		msViewDesc.format = WGPUTextureFormat_RGBA8Unorm;
+		_backFacingViewResolvedA = wgpuTextureCreateView(_backFacingTexResolvedA, &msViewDesc);
+
+		msViewDesc.format = WGPUTextureFormat_Depth32Float;
+		_resolvedDepthView = wgpuTextureCreateView(_resolvedDepthTex, &msViewDesc);
+
+		if ( (_colorTexMS == NULL) || (_polyIDTexMS == NULL) || (_fogTexMS == NULL) || (_depthTexMS == NULL) ||
+		     (_backFacingTexMSA == NULL) || (_backFacingTexMSB == NULL) || (_backFacingTexResolvedA == NULL) ||
+		     (_resolvedDepthTex == NULL) )
 		{
 			printf("WGPU: multisampled render target creation failed; falling back to 1 sample\n");
 			this->_DestroyRenderTargets();
@@ -1766,9 +1921,22 @@ void WGPURender::_DestroyRenderTargets()
 	if (_fogView) { wgpuTextureViewRelease(_fogView); _fogView = NULL; }
 	if (_fogTex) { wgpuTextureRelease(_fogTex); _fogTex = NULL; }
 	if (_depthView) { wgpuTextureViewRelease(_depthView); _depthView = NULL; }
+	if (_depthSampleView) { wgpuTextureViewRelease(_depthSampleView); _depthSampleView = NULL; }
 	if (_depthTex) { wgpuTextureRelease(_depthTex); _depthTex = NULL; }
 	if (_outputView) { wgpuTextureViewRelease(_outputView); _outputView = NULL; }
 	if (_outputTex) { wgpuTextureRelease(_outputTex); _outputTex = NULL; }
+	if (_backFacingViewA) { wgpuTextureViewRelease(_backFacingViewA); _backFacingViewA = NULL; }
+	if (_backFacingTexA) { wgpuTextureRelease(_backFacingTexA); _backFacingTexA = NULL; }
+	if (_backFacingViewB) { wgpuTextureViewRelease(_backFacingViewB); _backFacingViewB = NULL; }
+	if (_backFacingTexB) { wgpuTextureRelease(_backFacingTexB); _backFacingTexB = NULL; }
+	if (_backFacingViewMSA) { wgpuTextureViewRelease(_backFacingViewMSA); _backFacingViewMSA = NULL; }
+	if (_backFacingTexMSA) { wgpuTextureRelease(_backFacingTexMSA); _backFacingTexMSA = NULL; }
+	if (_backFacingViewMSB) { wgpuTextureViewRelease(_backFacingViewMSB); _backFacingViewMSB = NULL; }
+	if (_backFacingTexMSB) { wgpuTextureRelease(_backFacingTexMSB); _backFacingTexMSB = NULL; }
+	if (_backFacingViewResolvedA) { wgpuTextureViewRelease(_backFacingViewResolvedA); _backFacingViewResolvedA = NULL; }
+	if (_backFacingTexResolvedA) { wgpuTextureRelease(_backFacingTexResolvedA); _backFacingTexResolvedA = NULL; }
+	if (_resolvedDepthView) { wgpuTextureViewRelease(_resolvedDepthView); _resolvedDepthView = NULL; }
+	if (_resolvedDepthTex) { wgpuTextureRelease(_resolvedDepthTex); _resolvedDepthTex = NULL; }
 
 	if (_colorViewMS) { wgpuTextureViewRelease(_colorViewMS); _colorViewMS = NULL; }
 	if (_colorTexMS) { wgpuTextureRelease(_colorTexMS); _colorTexMS = NULL; }
@@ -1777,6 +1945,7 @@ void WGPURender::_DestroyRenderTargets()
 	if (_fogViewMS) { wgpuTextureViewRelease(_fogViewMS); _fogViewMS = NULL; }
 	if (_fogTexMS) { wgpuTextureRelease(_fogTexMS); _fogTexMS = NULL; }
 	if (_depthViewMS) { wgpuTextureViewRelease(_depthViewMS); _depthViewMS = NULL; }
+	if (_depthSampleViewMS) { wgpuTextureViewRelease(_depthSampleViewMS); _depthSampleViewMS = NULL; }
 	if (_depthTexMS) { wgpuTextureRelease(_depthTexMS); _depthTexMS = NULL; }
 
 	if (_clearColorView) { wgpuTextureViewRelease(_clearColorView); _clearColorView = NULL; }
@@ -1790,6 +1959,8 @@ void WGPURender::_DestroyRenderTargets()
 	if (_clearBindGroup) { wgpuBindGroupRelease(_clearBindGroup); _clearBindGroup = NULL; }
 	if (_depthResolveBindGroup) { wgpuBindGroupRelease(_depthResolveBindGroup); _depthResolveBindGroup = NULL; }
 	if (_outputBindGroup) { wgpuBindGroupRelease(_outputBindGroup); _outputBindGroup = NULL; }
+	if (_geomMaskBindGroupA) { wgpuBindGroupRelease(_geomMaskBindGroupA); _geomMaskBindGroupA = NULL; }
+	if (_geomMaskBindGroupB) { wgpuBindGroupRelease(_geomMaskBindGroupB); _geomMaskBindGroupB = NULL; }
 
 	for (size_t i = 0; i < 2; i++)
 	{
@@ -1827,9 +1998,12 @@ Render3DError WGPURender::_CreatePipelines()
 	wgsl.code = WGSLString(kWGSL_Output);
 	_shaderModuleOutput = wgpuDeviceCreateShaderModule(_device, &moduleDesc);
 
+	wgsl.code = WGSLString(kWGSL_ZeroAlphaMark);
+	_shaderModuleZeroAlphaMark = wgpuDeviceCreateShaderModule(_device, &moduleDesc);
+
 	if ( (_shaderModuleGeometry == NULL) || (_shaderModulePost == NULL) ||
 	     (_shaderModuleClear == NULL) || (_shaderModuleDepthResolve == NULL) ||
-	     (_shaderModuleOutput == NULL) )
+	     (_shaderModuleOutput == NULL) || (_shaderModuleZeroAlphaMark == NULL) )
 	{
 		printf("WGPU: shader module creation failed\n");
 		return RENDER3DERROR_INVALID_VALUE;
@@ -1847,11 +2021,17 @@ Render3DError WGPURender::_CreatePipelines()
 		desc.mipmapFilter = WGPUMipmapFilterMode_Nearest;
 		desc.lodMinClamp = 0.0f;
 		desc.lodMaxClamp = 32.0f;
+		// WebGPU requires all filter modes to be linear when the anisotropic
+		// clamp is not 1, so the nearest sampler stays at 1 here; anisotropic
+		// filtering only ever applies through the linear sampler below.
 		desc.maxAnisotropy = 1;
 		_samplerNearest = wgpuDeviceCreateSampler(_device, &desc);
 
 		desc.magFilter = WGPUFilterMode_Linear;
 		desc.minFilter = WGPUFilterMode_Linear;
+		// Anisotropic filtering, matching what the OpenGL renderer applies to
+		// its textures. 16 is the maximum every WebGPU implementation reports.
+		desc.maxAnisotropy = 16;
 		// Only matters when upscaled textures carry mip levels; with a single
 		// level nothing is filtered.
 		desc.mipmapFilter = WGPUMipmapFilterMode_Linear;
@@ -1987,12 +2167,27 @@ Render3DError WGPURender::_CreatePipelines()
 		_outputBGL = wgpuDeviceCreateBindGroupLayout(_device, &desc);
 	}
 
+	// Back-facing mask bind group layout (bind group 1 of the geometry passes;
+	// the translucent pass reads the opaque pass's mask through it).
+	{
+		WGPUBindGroupLayoutEntry entry;
+		memset(&entry, 0, sizeof(entry));
+		entry.binding = 0;
+		entry.visibility = WGPUShaderStage_Fragment;
+		entry.texture.sampleType = WGPUTextureSampleType_Float;
+		entry.texture.viewDimension = WGPUTextureViewDimension_2D;
+
+		WGPUBindGroupLayoutDescriptor desc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
+		desc.entryCount = 1;
+		desc.entries = &entry;
+		_maskBGL = wgpuDeviceCreateBindGroupLayout(_device, &desc);
+	}
+
 	{
 		WGPUBindGroupLayout layouts[1] = {_geomBGL};
 		WGPUPipelineLayoutDescriptor desc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
 		desc.bindGroupLayoutCount = 1;
 		desc.bindGroupLayouts = layouts;
-		_geomLayout = wgpuDeviceCreatePipelineLayout(_device, &desc);
 
 		layouts[0] = _postBGL;
 		_postLayout = wgpuDeviceCreatePipelineLayout(_device, &desc);
@@ -2007,7 +2202,17 @@ Render3DError WGPURender::_CreatePipelines()
 		_outputLayout = wgpuDeviceCreatePipelineLayout(_device, &desc);
 	}
 
-	if ( (_geomBGL == NULL) || (_postBGL == NULL) || (_clearBGL == NULL) || (_depthResolveBGL == NULL) || (_outputBGL == NULL) ||
+	// The geometry pipeline layout carries the per-texture bind group and the
+	// back-facing mask bind group.
+	{
+		WGPUBindGroupLayout layouts[2] = {_geomBGL, _maskBGL};
+		WGPUPipelineLayoutDescriptor desc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
+		desc.bindGroupLayoutCount = 2;
+		desc.bindGroupLayouts = layouts;
+		_geomLayout = wgpuDeviceCreatePipelineLayout(_device, &desc);
+	}
+
+	if ( (_geomBGL == NULL) || (_postBGL == NULL) || (_clearBGL == NULL) || (_depthResolveBGL == NULL) || (_outputBGL == NULL) || (_maskBGL == NULL) ||
 	     (_geomLayout == NULL) || (_postLayout == NULL) || (_clearLayout == NULL) || (_depthResolveLayout == NULL) || (_outputLayout == NULL) )
 	{
 		printf("WGPU: bind group layout creation failed\n");
@@ -2073,7 +2278,7 @@ Render3DError WGPURender::_CreatePipelines()
 		desc.multisample.count = _sampleCount;
 
 		WGPUDepthStencilState depth = WGPU_DEPTH_STENCIL_STATE_INIT;
-		depth.format = WGPUTextureFormat_Depth32Float;
+		depth.format = WGPUTextureFormat_Depth24PlusStencil8;
 		depth.depthWriteEnabled = WGPUOptionalBool_True;
 		depth.depthCompare = WGPUCompareFunction_Always;
 
@@ -2094,6 +2299,41 @@ Render3DError WGPURender::_CreatePipelines()
 		desc.fragment = &fragment;
 		desc.depthStencil = &depth;
 		_clearPipeline = wgpuDeviceCreateRenderPipeline(_device, &desc);
+	}
+
+	// Zero-alpha stencil mark pipeline: depth-only pass, no color targets. The
+	// fragment discards on framebuffer pixels with a zero alpha, and surviving
+	// fragments replace stencil bit 0x40.
+	{
+		WGPURenderPipelineDescriptor desc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
+		desc.layout = _outputLayout;
+		desc.vertex.module = _shaderModuleZeroAlphaMark;
+		desc.vertex.entryPoint = WGSLString("vsFullscreen");
+		desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+		desc.primitive.cullMode = WGPUCullMode_None;
+		desc.multisample.count = _sampleCount;
+
+		WGPUDepthStencilState depth = WGPU_DEPTH_STENCIL_STATE_INIT;
+		depth.format = WGPUTextureFormat_Depth24PlusStencil8;
+		depth.depthWriteEnabled = WGPUOptionalBool_False;
+		depth.depthCompare = WGPUCompareFunction_Always;
+		depth.stencilFront.compare = WGPUCompareFunction_Always;
+		depth.stencilFront.failOp = WGPUStencilOperation_Keep;
+		depth.stencilFront.depthFailOp = WGPUStencilOperation_Keep;
+		depth.stencilFront.passOp = WGPUStencilOperation_Replace;
+		depth.stencilBack = depth.stencilFront;
+		depth.stencilReadMask = 0xFF;
+		depth.stencilWriteMask = 0x40;
+
+		WGPUFragmentState fragment = WGPU_FRAGMENT_STATE_INIT;
+		fragment.module = _shaderModuleZeroAlphaMark;
+		fragment.entryPoint = WGSLString("fsZeroAlphaMark");
+		fragment.targetCount = 0;
+		fragment.targets = NULL;
+
+		desc.fragment = &fragment;
+		desc.depthStencil = &depth;
+		_zeroAlphaMarkPipeline = wgpuDeviceCreateRenderPipeline(_device, &desc);
 	}
 
 	// Depth resolve pipeline: fullscreen triangle, depth-only target, no color.
@@ -2263,7 +2503,7 @@ void WGPURender::_CreateBindGroups()
 		entries[2].textureView = _fogView;
 
 		entries[3].binding = 3;
-		entries[3].textureView = _depthView;
+		entries[3].textureView = (_sampleCount > 1) ? _resolvedDepthView : _depthSampleView;
 
 		entries[4].binding = 4;
 		entries[4].sampler = _samplerNearest;
@@ -2308,7 +2548,7 @@ void WGPURender::_CreateBindGroups()
 		WGPUBindGroupEntry entry;
 		memset(&entry, 0, sizeof(entry));
 		entry.binding = 0;
-		entry.textureView = _depthViewMS;
+		entry.textureView = _depthSampleViewMS;
 
 		WGPUBindGroupDescriptor desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
 		desc.layout = _depthResolveBGL;
@@ -2332,11 +2572,46 @@ void WGPURender::_CreateBindGroups()
 		desc.entries = &entry;
 		_outputBindGroup = wgpuDeviceCreateBindGroup(_device, &desc);
 	}
+
+	// The back-facing mask bind groups. Group A carries the mask the
+	// translucent pass reads (the resolved copy under MSAA, the raw mask
+	// otherwise); group B is a placeholder the opaque pass binds -- its shader
+	// never reads the mask, but the pipeline layout requires the slot to be
+	// filled, and it must not reference one of the pass's own attachments.
+	if (_geomMaskBindGroupA != NULL) { wgpuBindGroupRelease(_geomMaskBindGroupA); _geomMaskBindGroupA = NULL; }
+	if (_geomMaskBindGroupB != NULL) { wgpuBindGroupRelease(_geomMaskBindGroupB); _geomMaskBindGroupB = NULL; }
+
+	{
+		WGPUTextureView readViewA = (_sampleCount > 1) ? _backFacingViewResolvedA : _backFacingViewA;
+		WGPUTextureView views[2] = {readViewA, _backFacingViewB};
+		WGPUBindGroup *groups[2] = {&_geomMaskBindGroupA, &_geomMaskBindGroupB};
+
+		for (size_t i = 0; i < 2; i++)
+		{
+			if (views[i] == NULL)
+			{
+				continue;
+			}
+
+			WGPUBindGroupEntry entry;
+			memset(&entry, 0, sizeof(entry));
+			entry.binding = 0;
+			entry.textureView = views[i];
+
+			WGPUBindGroupDescriptor desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
+			desc.layout = _maskBGL;
+			desc.entryCount = 1;
+			desc.entries = &entry;
+			*groups[i] = wgpuDeviceCreateBindGroup(_device, &desc);
+		}
+	}
 }
 
-WGPURenderPipeline WGPURender::_GetGeomPipeline(const WGPUDrawRun &run)
+WGPURenderPipeline WGPURender::_GetGeomPipeline(const WGPUDrawRun &run, const WGPUGeometryFamily family)
 {
-	WGPURenderPipeline &pipeline = _geomPipelines[run.topology][run.depthEqual][run.depthWrite][run.blend];
+	WGPURenderPipeline &pipeline = (family == WGPUGeometryFamily_ZeroAlpha)
+	                                   ? _geomPipelinesZeroAlpha[run.topology][run.depthEqual][run.depthWrite]
+	                                   : _geomPipelines[run.topology][run.depthEqual][run.depthWrite][run.blend];
 	if (pipeline != NULL)
 	{
 		return pipeline;
@@ -2383,9 +2658,20 @@ WGPURenderPipeline WGPURender::_GetGeomPipeline(const WGPUDrawRun &run)
 	desc.multisample.count = _sampleCount;
 
 	WGPUDepthStencilState depth = WGPU_DEPTH_STENCIL_STATE_INIT;
-	depth.format = WGPUTextureFormat_Depth32Float;
-	depth.depthWriteEnabled = (run.depthWrite != 0) ? WGPUOptionalBool_True : WGPUOptionalBool_False;
+	depth.format = WGPUTextureFormat_Depth24PlusStencil8;
+	depth.depthWriteEnabled = ((run.depthWrite != 0) && (family != WGPUGeometryFamily_ZeroAlpha)) ? WGPUOptionalBool_True : WGPUOptionalBool_False;
 	depth.depthCompare = (run.depthEqual != 0) ? WGPUCompareFunction_LessEqual : WGPUCompareFunction_Less;
+
+	// Stencil: inert for the normal passes. The zero-alpha pass tests stencil
+	// bit 0x40 (set by the mark pass on framebuffer pixels that still have a
+	// zero alpha) and writes nothing itself; the reference is set per pass.
+	depth.stencilFront.compare = (family == WGPUGeometryFamily_ZeroAlpha) ? WGPUCompareFunction_NotEqual : WGPUCompareFunction_Always;
+	depth.stencilFront.failOp = WGPUStencilOperation_Keep;
+	depth.stencilFront.depthFailOp = WGPUStencilOperation_Keep;
+	depth.stencilFront.passOp = WGPUStencilOperation_Keep;
+	depth.stencilBack = depth.stencilFront;
+	depth.stencilReadMask = (family == WGPUGeometryFamily_ZeroAlpha) ? 0x40 : 0xFF;
+	depth.stencilWriteMask = 0x00;
 	desc.depthStencil = &depth;
 
 	WGPUBlendState blend = WGPU_BLEND_STATE_INIT;
@@ -2397,19 +2683,28 @@ WGPURenderPipeline WGPURender::_GetGeomPipeline(const WGPUDrawRun &run)
 	blend.alpha.srcFactor = WGPUBlendFactor_One;
 	blend.alpha.dstFactor = WGPUBlendFactor_One;
 
-	WGPUColorTargetState targets[3];
-	for (size_t i = 0; i < 3; i++)
+	WGPUColorTargetState targets[4];
+	for (size_t i = 0; i < 4; i++)
 	{
 		targets[i] = WGPU_COLOR_TARGET_STATE_INIT;
 		targets[i].format = WGPUTextureFormat_RGBA8Unorm;
 		targets[i].writeMask = WGPUColorWriteMask_All;
 	}
-	targets[0].blend = (run.blend != 0) ? &blend : NULL;
+
+	// The zero-alpha pass writes RGB only: the framebuffer alpha must stay at
+	// zero so that later translucent fragments keep applying the zero-alpha
+	// rule, and it draws without blending.
+	const bool isZeroAlpha = (family == WGPUGeometryFamily_ZeroAlpha);
+	targets[0].blend = ( (run.blend != 0) && !isZeroAlpha ) ? &blend : NULL;
+	if (isZeroAlpha)
+	{
+		targets[0].writeMask = (WGPUColorWriteMask)(WGPUColorWriteMask_Red | WGPUColorWriteMask_Green | WGPUColorWriteMask_Blue);
+	}
 
 	WGPUFragmentState fragment = WGPU_FRAGMENT_STATE_INIT;
 	fragment.module = _shaderModuleGeometry;
 	fragment.entryPoint = WGSLString("fsGeom");
-	fragment.targetCount = 3;
+	fragment.targetCount = 4;
 	fragment.targets = targets;
 
 	desc.fragment = &fragment;
@@ -2464,6 +2759,8 @@ void WGPURender::_WriteFrameUniforms(const GFX3D_State &renderState)
 	if (renderState.DISP3DCNT.EnableAlphaTest) { uniform->flags |= WGPU_FRAME_ALPHA_TEST; }
 	if (this->_enableTextureSmoothing) { uniform->flags |= WGPU_FRAME_TEX_SMOOTHING; }
 	if (renderState.DISP3DCNT.PolygonShading) { uniform->flags |= WGPU_FRAME_TOON_SHADING; }
+	if (CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing) { uniform->flags |= WGPU_FRAME_LEQUAL_FACING; }
+	if (renderState.SWAP_BUFFERS.DepthMode) { uniform->flags |= WGPU_FRAME_W_DEPTH; }
 
 	uniform->clearColor[0] = (float)this->_clearColor6665.r / 63.0f;
 	uniform->clearColor[1] = (float)this->_clearColor6665.g / 63.0f;
@@ -2584,6 +2881,7 @@ void WGPURender::_BuildGeometry(const GFX3D_State &renderState, const GFX3D_Geom
 		if ( (_textureList[i] != NULL) && _textureList[i]->IsSamplingEnabled() ) { ps.flags |= WGPU_POLY_ENABLE_TEX; }
 		if ( (packFormat != TEXMODE_A3I5) && (packFormat != TEXMODE_A5I3) ) { ps.flags |= WGPU_POLY_SINGLE_BIT_ALPHA; }
 		if (cPoly.isPolyBackFacing) { ps.flags |= WGPU_POLY_BACK_FACING; }
+		if (rawPoly.attribute.DepthEqualTest_Enable) { ps.flags |= WGPU_POLY_DEPTH_EQUAL; }
 		if (isTranslucent) { ps.flags |= WGPU_POLY_TRANSLUCENT; }
 
 		ps.texSizeS = rawPoly.texParam.SizeShiftS;
@@ -2866,10 +3164,27 @@ void WGPURender::_EncodeRenderPasses(const GFX3D_State &renderState)
 	FrameUniform *uniform = (FrameUniform *)_frameUniformData;
 	const bool isMSAA = (_sampleCount > 1) && (_colorViewMS != NULL) && (_depthViewMS != NULL);
 
-	// --- pass 1: clear + geometry ---
+	// Runs never span the opaque/translucent boundary (their blend flag comes
+	// straight from the polygon's translucency), so the split is a single scan.
+	size_t firstTranslucentRun = _drawRuns.size();
+	for (size_t i = 0; i < _drawRuns.size(); i++)
 	{
-		WGPURenderPassColorAttachment colorAttachments[3];
-		for (size_t i = 0; i < 3; i++)
+		if (_drawRuns[i].blend != 0)
+		{
+			firstTranslucentRun = i;
+			break;
+		}
+	}
+	const bool hasTranslucentRuns = (firstTranslucentRun < _drawRuns.size());
+	const bool willRunZeroAlpha = CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending &&
+	                              hasTranslucentRuns && (_zeroAlphaMarkPipeline != NULL) && (_outputBindGroup != NULL);
+
+	// --- pass 1: clear + opaque geometry ---
+	// Also writes the back-facing mask (attachment 3) the translucent pass
+	// reads for the depth L-equal polygon facing rule.
+	{
+		WGPURenderPassColorAttachment colorAttachments[4];
+		for (size_t i = 0; i < 4; i++)
 		{
 			colorAttachments[i] = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
 			colorAttachments[i].loadOp = WGPULoadOp_Clear;
@@ -2894,12 +3209,24 @@ void WGPURender::_EncodeRenderPasses(const GFX3D_State &renderState)
 		colorAttachments[2].clearValue.b = 0.0;
 		colorAttachments[2].clearValue.a = 1.0;
 
+		// Mask A: 0.0 = "no opaque winner / front facing", which makes the
+		// translucent depth-equal rule discard -- matching OpenGL where pixels
+		// without an opaque fragment fail the facing check.
+		colorAttachments[3].view = isMSAA ? _backFacingViewMSA : _backFacingViewA;
+		colorAttachments[3].clearValue.r = 0.0;
+		colorAttachments[3].clearValue.g = 0.0;
+		colorAttachments[3].clearValue.b = 0.0;
+		colorAttachments[3].clearValue.a = 1.0;
+
 		if (isMSAA)
 		{
-			// The single-sampled targets receive the resolved color.
+			// The single-sampled targets receive the resolved color. The
+			// resolve happens here (not only after the translucent pass) so
+			// that the zero-alpha mark pass can read the framebuffer.
 			colorAttachments[0].resolveTarget = _colorView;
 			colorAttachments[1].resolveTarget = _polyIDView;
 			colorAttachments[2].resolveTarget = _fogView;
+			colorAttachments[3].resolveTarget = _backFacingViewResolvedA;
 		}
 
 		WGPURenderPassDepthStencilAttachment depthAttachment = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
@@ -2907,9 +3234,12 @@ void WGPURender::_EncodeRenderPasses(const GFX3D_State &renderState)
 		depthAttachment.depthLoadOp = WGPULoadOp_Clear;
 		depthAttachment.depthStoreOp = WGPUStoreOp_Store;
 		depthAttachment.depthClearValue = uniform->clearDepth;
+		depthAttachment.stencilLoadOp = WGPULoadOp_Clear;
+		depthAttachment.stencilStoreOp = WGPUStoreOp_Store;
+		depthAttachment.stencilClearValue = 0;
 
 		WGPURenderPassDescriptor passDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
-		passDesc.colorAttachmentCount = 3;
+		passDesc.colorAttachmentCount = 4;
 		passDesc.colorAttachments = colorAttachments;
 		passDesc.depthStencilAttachment = &depthAttachment;
 
@@ -2927,7 +3257,12 @@ void WGPURender::_EncodeRenderPasses(const GFX3D_State &renderState)
 			wgpuRenderPassEncoderSetVertexBuffer(pass, 0, _frameUploadBuffer, _frameUploadVertexOffset, _frameUploadVertexBytes);
 		}
 
-		for (size_t i = 0; i < _drawRuns.size(); i++)
+		if (_geomMaskBindGroupB != NULL)
+		{
+			wgpuRenderPassEncoderSetBindGroup(pass, 1, _geomMaskBindGroupB, 0, NULL);
+		}
+
+		for (size_t i = 0; i < firstTranslucentRun; i++)
 		{
 			const WGPUDrawRun &run = _drawRuns[i];
 			if ( (run.vertexCount == 0) || ((run.firstVertex + run.vertexCount) * sizeof(VertexGPU) > _frameUploadVertexBytes) )
@@ -2935,7 +3270,156 @@ void WGPURender::_EncodeRenderPasses(const GFX3D_State &renderState)
 				continue;
 			}
 
-			WGPURenderPipeline pipeline = this->_GetGeomPipeline(run);
+			WGPURenderPipeline pipeline = this->_GetGeomPipeline(run, WGPUGeometryFamily_Normal);
+			if (pipeline == NULL)
+			{
+				continue;
+			}
+
+			wgpuRenderPassEncoderSetPipeline(pass, pipeline);
+
+			WGPUTextureEntry *texEntry = this->_GetTextureEntry(run.tex);
+			WGPUBindGroup geomBindGroup = _whiteBindGroup;
+			if ( (texEntry != NULL) && (texEntry->bindGroup != NULL) )
+			{
+				geomBindGroup = texEntry->bindGroup;
+			}
+
+			if (geomBindGroup != NULL)
+			{
+				wgpuRenderPassEncoderSetBindGroup(pass, 0, geomBindGroup, 0, NULL);
+			}
+
+			wgpuRenderPassEncoderDraw(pass, run.vertexCount, 1, run.firstVertex, 0);
+		}
+
+		wgpuRenderPassEncoderEnd(pass);
+		wgpuRenderPassEncoderRelease(pass);
+	}
+
+	// --- pass 1a: zero-alpha stencil mark ---
+	// Marks every pixel the opaque pass has not reached (framebuffer alpha is
+	// still zero) so that the translucent pass can apply the special zero-
+	// alpha blending rule there.
+	if (willRunZeroAlpha)
+	{
+		WGPURenderPassDepthStencilAttachment depthAttachment = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
+		depthAttachment.view = isMSAA ? _depthViewMS : _depthView;
+		depthAttachment.depthLoadOp = WGPULoadOp_Load;
+		depthAttachment.depthStoreOp = WGPUStoreOp_Store;
+		depthAttachment.stencilLoadOp = WGPULoadOp_Load;
+		depthAttachment.stencilStoreOp = WGPUStoreOp_Store;
+
+		WGPURenderPassDescriptor passDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
+		passDesc.colorAttachmentCount = 0;
+		passDesc.colorAttachments = NULL;
+		passDesc.depthStencilAttachment = &depthAttachment;
+
+		WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(encoder, &passDesc);
+		wgpuRenderPassEncoderSetPipeline(pass, _zeroAlphaMarkPipeline);
+		wgpuRenderPassEncoderSetBindGroup(pass, 0, _outputBindGroup, 0, NULL);
+		wgpuRenderPassEncoderSetStencilReference(pass, 0x40);
+		wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
+		wgpuRenderPassEncoderEnd(pass);
+		wgpuRenderPassEncoderRelease(pass);
+	}
+
+	// --- pass 1b: zero-alpha draws + translucent geometry ---
+	{
+		WGPURenderPassColorAttachment colorAttachments[4];
+		for (size_t i = 0; i < 4; i++)
+		{
+			colorAttachments[i] = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
+			colorAttachments[i].loadOp = WGPULoadOp_Load;
+			colorAttachments[i].storeOp = WGPUStoreOp_Store;
+		}
+
+		colorAttachments[0].view = isMSAA ? _colorViewMS : _colorView;
+		colorAttachments[1].view = isMSAA ? _polyIDViewMS : _polyIDView;
+		colorAttachments[2].view = isMSAA ? _fogViewMS : _fogView;
+		colorAttachments[3].view = isMSAA ? _backFacingViewMSB : _backFacingViewB;
+
+		if (isMSAA)
+		{
+			colorAttachments[0].resolveTarget = _colorView;
+			colorAttachments[1].resolveTarget = _polyIDView;
+			colorAttachments[2].resolveTarget = _fogView;
+		}
+
+		WGPURenderPassDepthStencilAttachment depthAttachment = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
+		depthAttachment.view = isMSAA ? _depthViewMS : _depthView;
+		depthAttachment.depthLoadOp = WGPULoadOp_Load;
+		depthAttachment.depthStoreOp = WGPUStoreOp_Store;
+		depthAttachment.stencilLoadOp = WGPULoadOp_Load;
+		depthAttachment.stencilStoreOp = WGPUStoreOp_Store;
+
+		WGPURenderPassDescriptor passDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
+		passDesc.colorAttachmentCount = 4;
+		passDesc.colorAttachments = colorAttachments;
+		passDesc.depthStencilAttachment = &depthAttachment;
+
+		WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(encoder, &passDesc);
+
+		if (_frameUploadVertexBytes > 0)
+		{
+			wgpuRenderPassEncoderSetVertexBuffer(pass, 0, _frameUploadBuffer, _frameUploadVertexOffset, _frameUploadVertexBytes);
+		}
+
+		if (_geomMaskBindGroupA != NULL)
+		{
+			wgpuRenderPassEncoderSetBindGroup(pass, 1, _geomMaskBindGroupA, 0, NULL);
+		}
+
+		// Special zero-alpha blending: translucent polygons drawn without
+		// blending and without touching the alpha channel, restricted by the
+		// stencil to the pixels no opaque fragment has reached.
+		if (willRunZeroAlpha)
+		{
+			wgpuRenderPassEncoderSetStencilReference(pass, 0x40);
+
+			for (size_t i = firstTranslucentRun; i < _drawRuns.size(); i++)
+			{
+				const WGPUDrawRun &run = _drawRuns[i];
+				if ( (run.vertexCount == 0) || ((run.firstVertex + run.vertexCount) * sizeof(VertexGPU) > _frameUploadVertexBytes) )
+				{
+					continue;
+				}
+
+				WGPURenderPipeline pipeline = this->_GetGeomPipeline(run, WGPUGeometryFamily_ZeroAlpha);
+				if (pipeline == NULL)
+				{
+					continue;
+				}
+
+				wgpuRenderPassEncoderSetPipeline(pass, pipeline);
+
+				WGPUTextureEntry *texEntry = this->_GetTextureEntry(run.tex);
+				WGPUBindGroup geomBindGroup = _whiteBindGroup;
+				if ( (texEntry != NULL) && (texEntry->bindGroup != NULL) )
+				{
+					geomBindGroup = texEntry->bindGroup;
+				}
+
+				if (geomBindGroup != NULL)
+				{
+					wgpuRenderPassEncoderSetBindGroup(pass, 0, geomBindGroup, 0, NULL);
+				}
+
+				wgpuRenderPassEncoderDraw(pass, run.vertexCount, 1, run.firstVertex, 0);
+			}
+		}
+
+		wgpuRenderPassEncoderSetStencilReference(pass, 0x00);
+
+		for (size_t i = firstTranslucentRun; i < _drawRuns.size(); i++)
+		{
+			const WGPUDrawRun &run = _drawRuns[i];
+			if ( (run.vertexCount == 0) || ((run.firstVertex + run.vertexCount) * sizeof(VertexGPU) > _frameUploadVertexBytes) )
+			{
+				continue;
+			}
+
+			WGPURenderPipeline pipeline = this->_GetGeomPipeline(run, WGPUGeometryFamily_Normal);
 			if (pipeline == NULL)
 			{
 				continue;
@@ -2966,7 +3450,7 @@ void WGPURender::_EncodeRenderPasses(const GFX3D_State &renderState)
 	if (isMSAA && (_depthResolvePipeline != NULL) && (_depthResolveBindGroup != NULL))
 	{
 		WGPURenderPassDepthStencilAttachment depthAttachment = WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_INIT;
-		depthAttachment.view = _depthView;
+		depthAttachment.view = _resolvedDepthView;
 		depthAttachment.depthLoadOp = WGPULoadOp_Clear;
 		depthAttachment.depthStoreOp = WGPUStoreOp_Store;
 		depthAttachment.depthClearValue = 1.0;

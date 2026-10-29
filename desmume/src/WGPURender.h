@@ -133,6 +133,14 @@ struct WGPUDrawRun
 	uint8_t blend;
 };
 
+// Which geometry pass a pipeline serves. The zero-alpha pass forces blending
+// and depth writes off, writes no alpha channel, and runs its stencil test.
+enum WGPUGeometryFamily
+{
+	WGPUGeometryFamily_Normal = 0,
+	WGPUGeometryFamily_ZeroAlpha = 1,
+};
+
 class WGPURender : public Render3D
 {
 protected:
@@ -159,12 +167,38 @@ protected:
 	WGPUTextureView _fogView;
 	WGPUTexture _depthTex;
 	WGPUTextureView _depthView;
+	// Depth-only views of the same textures. The geometry pass attaches the
+	// depth-stencil texture through _depthView, which carries both aspects;
+	// anything that samples it in a bind group must use one of these instead,
+	// because WebGPU forbids binding views with both aspects enabled.
+	WGPUTextureView _depthSampleView;
 
 	// Final conversion target. In 24-bit mode a fullscreen pass writes the
 	// framebuffer as 6665 stored in the 8888 channels here, so the flush's
 	// readback skips the CPU-side colorspace conversion.
 	WGPUTexture _outputTex;
 	WGPUTextureView _outputView;
+
+	// Back-facing masks for the depth L-equal polygon facing rule. The opaque
+	// pass writes whether its winning fragment was back-facing into mask A and
+	// the translucent pass reads it; masks B exist so that the translucent and
+	// zero-alpha passes can keep four render targets without sampling their
+	// own attachments.
+	WGPUTexture _backFacingTexA;
+	WGPUTextureView _backFacingViewA;
+	WGPUTexture _backFacingTexB;
+	WGPUTextureView _backFacingViewB;
+	WGPUTexture _backFacingTexMSA;
+	WGPUTextureView _backFacingViewMSA;
+	WGPUTexture _backFacingTexMSB;
+	WGPUTextureView _backFacingViewMSB;
+	WGPUTexture _backFacingTexResolvedA;
+	WGPUTextureView _backFacingViewResolvedA;
+
+	// The resolved copy of the multisampled geometry depth buffer, sampled by
+	// the postprocess passes. Only created when MSAA is on.
+	WGPUTexture _resolvedDepthTex;
+	WGPUTextureView _resolvedDepthView;
 
 	// Multisampled variants of the targets above. They are only created when
 	// MSAA is enabled; the single-sampled targets then become the resolve
@@ -179,6 +213,7 @@ protected:
 	WGPUTextureView _fogViewMS;
 	WGPUTexture _depthTexMS;
 	WGPUTextureView _depthViewMS;
+	WGPUTextureView _depthSampleViewMS;
 
 	// Clear-image sources, always native size.
 	WGPUTexture _clearColorTex;
@@ -204,12 +239,14 @@ protected:
 	WGPUShaderModule _shaderModuleClear;
 	WGPUShaderModule _shaderModuleDepthResolve;
 	WGPUShaderModule _shaderModuleOutput;
+	WGPUShaderModule _shaderModuleZeroAlphaMark;
 
 	WGPUBindGroupLayout _geomBGL;
 	WGPUBindGroupLayout _postBGL;
 	WGPUBindGroupLayout _clearBGL;
 	WGPUBindGroupLayout _depthResolveBGL;
 	WGPUBindGroupLayout _outputBGL;
+	WGPUBindGroupLayout _maskBGL;
 	WGPUPipelineLayout _geomLayout;
 	WGPUPipelineLayout _postLayout;
 	WGPUPipelineLayout _clearLayout;
@@ -223,6 +260,8 @@ protected:
 	WGPUBindGroup _clearBindGroup;
 	WGPUBindGroup _depthResolveBindGroup;
 	WGPUBindGroup _outputBindGroup;
+	WGPUBindGroup _geomMaskBindGroupA;
+	WGPUBindGroup _geomMaskBindGroupB;
 
 	// 1x1 white texture and the bind group built around it. Drawn in place of a
 	// texture for polygons that sample nothing, so index 0 is always bound.
@@ -230,13 +269,18 @@ protected:
 	WGPUTextureView _whiteView;
 	WGPUBindGroup _whiteBindGroup;
 
-	// pipeline cache: [topology][depthEqual][depthWrite][blend]
+	// Geometry pipelines, keyed [topology][depthEqual][depthWrite][blend] for
+	// the normal passes, and [topology][depthEqual][depthWrite] for the
+	// zero-alpha pass (which forces blending and depth writes off and writes
+	// no alpha channel).
 	WGPURenderPipeline _geomPipelines[2][2][2][2];
+	WGPURenderPipeline _geomPipelinesZeroAlpha[2][2][2];
 	WGPURenderPipeline _edgePipeline;
 	WGPURenderPipeline _fogPipeline;
 	WGPURenderPipeline _clearPipeline;
 	WGPURenderPipeline _depthResolvePipeline;
 	WGPURenderPipeline _outputPipeline;
+	WGPURenderPipeline _zeroAlphaMarkPipeline;
 
 	std::map<u64, WGPUTextureEntry> _textureMap;
 
@@ -255,7 +299,7 @@ protected:
 	void _BuildGeometry(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList);
 	void _EncodeRenderPasses(const GFX3D_State &renderState);
 	Render3DTexture* _GetLoadedTexture(const POLY &thePoly);
-	WGPURenderPipeline _GetGeomPipeline(const WGPUDrawRun &run);
+	WGPURenderPipeline _GetGeomPipeline(const WGPUDrawRun &run, const WGPUGeometryFamily family);
 	WGPUTextureEntry* _GetTextureEntry(Render3DTexture *tex);
 	void _FlushTextureMap();
 
