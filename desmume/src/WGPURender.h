@@ -170,10 +170,14 @@ protected:
 	WGPUTexture _clearFogTex;
 	WGPUTextureView _clearFogView;
 
-	WGPUBuffer _vertexBuffer;
-	WGPUBuffer _polyStateBuffer;
-	WGPUBuffer _frameUniformBuffer;
-	WGPUBuffer _tablesBuffer;
+	// One buffer carries the frame uniform, the lookup tables, the per-polygon
+	// states and the vertex data. wgpu-native allocates a staging buffer for
+	// every wgpuQueueWriteBuffer() call, so keeping the four regions together
+	// turns four allocations per frame into one.
+	WGPUBuffer _frameUploadBuffer;
+	std::vector<u8> _frameUploadStaging;
+	size_t _frameUploadVertexOffset;
+	size_t _frameUploadVertexBytes;
 	WGPUBuffer _readbackBuffer[2];
 	size_t _readbackBufferSize;
 
@@ -214,7 +218,6 @@ protected:
 	std::map<u64, WGPUTextureEntry> _textureMap;
 
 	std::vector<WGPUDrawRun> _drawRuns;
-	std::vector<u8> _vertexStaging;
 
 	u8 *_texUnpackBuffer;
 	u8 _frameUniformData[832];

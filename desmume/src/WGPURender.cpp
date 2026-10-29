@@ -549,6 +549,21 @@ struct VertexGPU
 static const size_t kMaxClippedPolys = CLIPPED_POLYLIST_SIZE;
 static const size_t kMaxVertices = CLIPPED_POLYLIST_SIZE * 8;
 
+// Frame upload layout, in bytes inside _frameUploadBuffer.
+//
+// The uniform and the tables live at fixed 256-byte aligned offsets because
+// that is what WebGPU requires of uniform/storage bind group offsets. The
+// polygon states are indexed by polygon id, so their base must also stay fixed;
+// the vertices are appended right after the polygon states that this frame
+// actually uses. That way the whole frame is one contiguous range and costs a
+// single wgpuQueueWriteBuffer() call.
+static const size_t kUploadUniformOffset    = 0;
+static const size_t kUploadTablesOffset     = 256;
+static const size_t kUploadPolyStateOffset  = (kUploadTablesOffset + sizeof(TablesGPU) + 255) & ~(size_t)255;
+static const size_t kUploadPolyStateBytes   = kMaxClippedPolys * sizeof(PolyStateGPU);
+static const size_t kUploadVertexCapBytes   = kMaxVertices * sizeof(VertexGPU);
+static const size_t kUploadBufferSize       = kUploadPolyStateOffset + kUploadPolyStateBytes + kUploadVertexCapBytes;
+
 // ---------------------------------------------------------------------------
 // wgpu-native helpers
 // ---------------------------------------------------------------------------
@@ -1172,10 +1187,9 @@ WGPURender::WGPURender(const uint32_t instanceBackends)
 	_clearFogTex = NULL;
 	_clearFogView = NULL;
 
-	_vertexBuffer = NULL;
-	_polyStateBuffer = NULL;
-	_frameUniformBuffer = NULL;
-	_tablesBuffer = NULL;
+	_frameUploadBuffer = NULL;
+	_frameUploadVertexOffset = kUploadPolyStateOffset;
+	_frameUploadVertexBytes = 0;
 	_readbackBuffer[0] = NULL;
 	_readbackBuffer[1] = NULL;
 	_readbackBufferSize = 0;
@@ -1454,10 +1468,10 @@ void WGPURender::_TeardownDevice()
 	this->_DestroyRenderTargets();
 	this->_DestroyPipelines();
 
-	if (_vertexBuffer) { wgpuBufferRelease(_vertexBuffer); _vertexBuffer = NULL; }
-	if (_polyStateBuffer) { wgpuBufferRelease(_polyStateBuffer); _polyStateBuffer = NULL; }
-	if (_frameUniformBuffer) { wgpuBufferRelease(_frameUniformBuffer); _frameUniformBuffer = NULL; }
-	if (_tablesBuffer) { wgpuBufferRelease(_tablesBuffer); _tablesBuffer = NULL; }
+	if (_frameUploadBuffer) { wgpuBufferRelease(_frameUploadBuffer); _frameUploadBuffer = NULL; }
+	_frameUploadVertexOffset = kUploadPolyStateOffset;
+	_frameUploadVertexBytes = 0;
+	_frameUploadStaging.clear();
 }
 
 void WGPURender::_DestroyPipelines()
@@ -1992,17 +2006,9 @@ Render3DError WGPURender::_CreatePipelines()
 
 void WGPURender::_CreateBindGroups()
 {
-	if ( (_frameUniformBuffer == NULL) || (_polyStateBuffer == NULL) || (_polyIDView == NULL) )
+	if ( (_frameUploadBuffer == NULL) || (_polyIDView == NULL) )
 	{
 		return;
-	}
-
-	if (_tablesBuffer == NULL)
-	{
-		WGPUBufferDescriptor bufDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
-		bufDesc.usage = (WGPUBufferUsage)(WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst);
-		bufDesc.size = sizeof(TablesGPU);
-		_tablesBuffer = wgpuDeviceCreateBuffer(_device, &bufDesc);
 	}
 
 	if (_postBindGroup != NULL) { wgpuBindGroupRelease(_postBindGroup); _postBindGroup = NULL; }
@@ -2059,12 +2065,14 @@ void WGPURender::_CreateBindGroups()
 		memset(entries, 0, sizeof(entries));
 
 		entries[0].binding = 0;
-		entries[0].buffer = _frameUniformBuffer;
+		entries[0].buffer = _frameUploadBuffer;
+		entries[0].offset = kUploadUniformOffset;
 		entries[0].size = sizeof(FrameUniform);
 
 		entries[1].binding = 1;
-		entries[1].buffer = _polyStateBuffer;
-		entries[1].size = kMaxClippedPolys * sizeof(PolyStateGPU);
+		entries[1].buffer = _frameUploadBuffer;
+		entries[1].offset = kUploadPolyStateOffset;
+		entries[1].size = kUploadPolyStateBytes;
 
 		entries[2].binding = 2;
 		entries[2].textureView = _whiteView;
@@ -2076,7 +2084,8 @@ void WGPURender::_CreateBindGroups()
 		entries[4].sampler = _samplerLinear;
 
 		entries[5].binding = 5;
-		entries[5].buffer = _tablesBuffer;
+		entries[5].buffer = _frameUploadBuffer;
+		entries[5].offset = kUploadTablesOffset;
 		entries[5].size = sizeof(TablesGPU);
 
 		WGPUBindGroupDescriptor desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
@@ -2091,7 +2100,8 @@ void WGPURender::_CreateBindGroups()
 		memset(entries, 0, sizeof(entries));
 
 		entries[0].binding = 0;
-		entries[0].buffer = _frameUniformBuffer;
+		entries[0].buffer = _frameUploadBuffer;
+		entries[0].offset = kUploadUniformOffset;
 		entries[0].size = sizeof(FrameUniform);
 
 		entries[1].binding = 1;
@@ -2107,7 +2117,8 @@ void WGPURender::_CreateBindGroups()
 		entries[4].sampler = _samplerNearest;
 
 		entries[5].binding = 5;
-		entries[5].buffer = _tablesBuffer;
+		entries[5].buffer = _frameUploadBuffer;
+		entries[5].offset = kUploadTablesOffset;
 		entries[5].size = sizeof(TablesGPU);
 
 		WGPUBindGroupDescriptor desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
@@ -2323,8 +2334,18 @@ void WGPURender::_WriteFrameUniforms(const GFX3D_State &renderState)
 		tables.fogDensity[i] = (float)((density == 127) ? 255 : (density << 1)) / 255.0f;
 	}
 
-	wgpuQueueWriteBuffer(_queue, _frameUniformBuffer, 0, _frameUniformData, sizeof(FrameUniform));
-	wgpuQueueWriteBuffer(_queue, _tablesBuffer, 0, &tables, sizeof(TablesGPU));
+	// Everything this frame needs is already laid out in the upload staging
+	// buffer, so the frame costs one upload call. wgpu-native allocates a
+	// staging buffer per call, and this used to be four of them per frame.
+	if (_frameUploadBuffer == NULL)
+	{
+		return;
+	}
+
+	memcpy(_frameUploadStaging.data() + kUploadUniformOffset, _frameUniformData, sizeof(FrameUniform));
+	memcpy(_frameUploadStaging.data() + kUploadTablesOffset, &tables, sizeof(TablesGPU));
+
+	wgpuQueueWriteBuffer(_queue, _frameUploadBuffer, 0, _frameUploadStaging.data(), _frameUploadVertexOffset + _frameUploadVertexBytes);
 }
 
 void WGPURender::_BuildGeometry(const GFX3D_State &renderState, const GFX3D_GeometryList &renderGList)
@@ -2335,17 +2356,31 @@ void WGPURender::_BuildGeometry(const GFX3D_State &renderState, const GFX3D_Geom
 	_rawPolyList = (POLY *)renderGList.rawPolyList;
 
 	_drawRuns.clear();
-	_vertexStaging.clear();
+	_frameUploadVertexOffset = kUploadPolyStateOffset;
+	_frameUploadVertexBytes = 0;
 
 	if (_clippedPolyCount == 0)
 	{
 		return;
 	}
 
-	_vertexStaging.reserve(_clippedPolyCount * 6 * sizeof(VertexGPU));
+	if (_frameUploadStaging.size() < kUploadBufferSize)
+	{
+		return;
+	}
 
-	std::vector<PolyStateGPU> polyStates(_clippedPolyCount);
-	PolyStateGPU *polyStatePtr = &polyStates[0];
+	// Polygon states are indexed by polygon id, so they stay at a fixed offset;
+	// the vertices are appended right after the states this frame uses. Both go
+	// straight into the upload staging buffer, so no extra copy is needed
+	// before the single upload in _WriteFrameUniforms().
+	const size_t polyStateBytes = _clippedPolyCount * sizeof(PolyStateGPU);
+	u8 * const staging = _frameUploadStaging.data();
+
+	memset(staging + kUploadPolyStateOffset, 0, polyStateBytes);
+
+	PolyStateGPU * const polyStatePtr = (PolyStateGPU *)(staging + kUploadPolyStateOffset);
+	_frameUploadVertexOffset = kUploadPolyStateOffset + polyStateBytes;
+	VertexGPU * const vertexBase = (VertexGPU *)(staging + _frameUploadVertexOffset);
 
 	for (size_t i = 0; i < _clippedPolyCount; i++)
 	{
@@ -2423,9 +2458,15 @@ void WGPURender::_BuildGeometry(const GFX3D_State &renderState, const GFX3D_Geom
 			vertexCount = (vertCount == 4) ? 6 : 3;
 		}
 
-		const size_t firstVertex = _vertexStaging.size() / sizeof(VertexGPU);
-		_vertexStaging.resize(_vertexStaging.size() + vertexCount * sizeof(VertexGPU));
-		VertexGPU *vtxPtr = (VertexGPU *)(&_vertexStaging[0] + firstVertex * sizeof(VertexGPU));
+		const size_t firstVertex = _frameUploadVertexBytes / sizeof(VertexGPU);
+		if ( (_frameUploadVertexBytes + (vertexCount * sizeof(VertexGPU))) > kUploadVertexCapBytes )
+		{
+			_textureList[i] = NULL;
+			continue;
+		}
+
+		VertexGPU * const vtxPtr = vertexBase + firstVertex;
+		_frameUploadVertexBytes += vertexCount * sizeof(VertexGPU);
 
 		for (size_t v = 0; v < vertCount; v++)
 		{
@@ -2492,13 +2533,6 @@ void WGPURender::_BuildGeometry(const GFX3D_State &renderState, const GFX3D_Geom
 			_drawRuns.push_back(run);
 		}
 	}
-
-	if ( !_vertexStaging.empty() && (_vertexStaging.size() <= kMaxVertices * sizeof(VertexGPU)) )
-	{
-		wgpuQueueWriteBuffer(_queue, _vertexBuffer, 0, &_vertexStaging[0], _vertexStaging.size());
-	}
-
-	wgpuQueueWriteBuffer(_queue, _polyStateBuffer, 0, &polyStates[0], polyStates.size() * sizeof(PolyStateGPU));
 }
 
 WGPUTextureEntry* WGPURender::_GetTextureEntry(Render3DTexture *tex)
@@ -2617,12 +2651,14 @@ WGPUTextureEntry* WGPURender::_GetTextureEntry(Render3DTexture *tex)
 	memset(entries, 0, sizeof(entries));
 
 	entries[0].binding = 0;
-	entries[0].buffer = _frameUniformBuffer;
+	entries[0].buffer = _frameUploadBuffer;
+	entries[0].offset = kUploadUniformOffset;
 	entries[0].size = sizeof(FrameUniform);
 
 	entries[1].binding = 1;
-	entries[1].buffer = _polyStateBuffer;
-	entries[1].size = kMaxClippedPolys * sizeof(PolyStateGPU);
+	entries[1].buffer = _frameUploadBuffer;
+	entries[1].offset = kUploadPolyStateOffset;
+	entries[1].size = kUploadPolyStateBytes;
 
 	entries[2].binding = 2;
 	entries[2].textureView = entry.view;
@@ -2634,7 +2670,8 @@ WGPUTextureEntry* WGPURender::_GetTextureEntry(Render3DTexture *tex)
 	entries[4].sampler = _samplerLinear;
 
 	entries[5].binding = 5;
-	entries[5].buffer = _tablesBuffer;
+	entries[5].buffer = _frameUploadBuffer;
+	entries[5].offset = kUploadTablesOffset;
 	entries[5].size = sizeof(TablesGPU);
 
 	WGPUBindGroupDescriptor bgDesc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
@@ -2717,15 +2754,15 @@ void WGPURender::_EncodeRenderPasses(const GFX3D_State &renderState)
 			wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
 		}
 
-		if ( !_vertexStaging.empty() )
+		if (_frameUploadVertexBytes > 0)
 		{
-			wgpuRenderPassEncoderSetVertexBuffer(pass, 0, _vertexBuffer, 0, _vertexStaging.size());
+			wgpuRenderPassEncoderSetVertexBuffer(pass, 0, _frameUploadBuffer, _frameUploadVertexOffset, _frameUploadVertexBytes);
 		}
 
 		for (size_t i = 0; i < _drawRuns.size(); i++)
 		{
 			const WGPUDrawRun &run = _drawRuns[i];
-			if ( (run.vertexCount == 0) || ((run.firstVertex + run.vertexCount) * sizeof(VertexGPU) > _vertexStaging.size()) )
+			if ( (run.vertexCount == 0) || ((run.firstVertex + run.vertexCount) * sizeof(VertexGPU) > _frameUploadVertexBytes) )
 			{
 				continue;
 			}
@@ -2931,23 +2968,10 @@ Render3DError WGPURender::Render(const GFX3D_State &renderState, const GFX3D_Geo
 
 		{
 			WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
-			desc.usage = (WGPUBufferUsage)(WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst);
-			desc.size = sizeof(FrameUniform);
-			_frameUniformBuffer = wgpuDeviceCreateBuffer(_device, &desc);
-		}
-
-		{
-			WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
-			desc.usage = (WGPUBufferUsage)(WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst);
-			desc.size = kMaxClippedPolys * sizeof(PolyStateGPU);
-			_polyStateBuffer = wgpuDeviceCreateBuffer(_device, &desc);
-		}
-
-		{
-			WGPUBufferDescriptor desc = WGPU_BUFFER_DESCRIPTOR_INIT;
-			desc.usage = (WGPUBufferUsage)(WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst);
-			desc.size = kMaxVertices * sizeof(VertexGPU);
-			_vertexBuffer = wgpuDeviceCreateBuffer(_device, &desc);
+			desc.usage = (WGPUBufferUsage)(WGPUBufferUsage_Uniform | WGPUBufferUsage_Storage | WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst);
+			desc.size = kUploadBufferSize;
+			_frameUploadBuffer = wgpuDeviceCreateBuffer(_device, &desc);
+			_frameUploadStaging.resize(kUploadBufferSize);
 		}
 
 		this->_CreateBindGroups();
