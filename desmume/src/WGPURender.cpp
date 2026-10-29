@@ -1201,6 +1201,10 @@ WGPURender::WGPURender(const uint32_t instanceBackends)
 	_clearBindGroup = NULL;
 	_depthResolveBindGroup = NULL;
 
+	_whiteTex = NULL;
+	_whiteView = NULL;
+	_whiteBindGroup = NULL;
+
 	memset(_geomPipelines, 0, sizeof(_geomPipelines));
 	_edgePipeline = NULL;
 	_fogPipeline = NULL;
@@ -1502,6 +1506,10 @@ void WGPURender::_DestroyPipelines()
 	if (_postBGL) { wgpuBindGroupLayoutRelease(_postBGL); _postBGL = NULL; }
 	if (_clearBGL) { wgpuBindGroupLayoutRelease(_clearBGL); _clearBGL = NULL; }
 	if (_depthResolveBGL) { wgpuBindGroupLayoutRelease(_depthResolveBGL); _depthResolveBGL = NULL; }
+
+	if (_whiteBindGroup) { wgpuBindGroupRelease(_whiteBindGroup); _whiteBindGroup = NULL; }
+	if (_whiteView) { wgpuTextureViewRelease(_whiteView); _whiteView = NULL; }
+	if (_whiteTex) { wgpuTextureRelease(_whiteTex); _whiteTex = NULL; }
 }
 
 void WGPURender::_FlushTextureMap()
@@ -2000,6 +2008,83 @@ void WGPURender::_CreateBindGroups()
 	if (_postBindGroup != NULL) { wgpuBindGroupRelease(_postBindGroup); _postBindGroup = NULL; }
 	if (_clearBindGroup != NULL) { wgpuBindGroupRelease(_clearBindGroup); _clearBindGroup = NULL; }
 	if (_depthResolveBindGroup != NULL) { wgpuBindGroupRelease(_depthResolveBindGroup); _depthResolveBindGroup = NULL; }
+	if (_whiteBindGroup != NULL) { wgpuBindGroupRelease(_whiteBindGroup); _whiteBindGroup = NULL; }
+
+	// Untextured polygons still draw through the geometry pipeline, whose layout
+	// requires a bind group at index 0. A 1x1 white texel is the identity for
+	// every NDS texture mode, so it stands in for the missing texture instead of
+	// leaving the slot unbound (which wgpu rejects as a validation error).
+	if (_whiteTex == NULL)
+	{
+		WGPUTextureDescriptor texDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
+		texDesc.usage = (WGPUTextureUsage)(WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst);
+		texDesc.dimension = WGPUTextureDimension_2D;
+		texDesc.size.width = 1;
+		texDesc.size.height = 1;
+		texDesc.size.depthOrArrayLayers = 1;
+		texDesc.format = WGPUTextureFormat_RGBA8Unorm;
+		texDesc.mipLevelCount = 1;
+		texDesc.sampleCount = 1;
+		_whiteTex = wgpuDeviceCreateTexture(_device, &texDesc);
+
+		if (_whiteTex != NULL)
+		{
+			const u32 whitePixel = 0xFFFFFFFF;
+			WGPUTexelCopyTextureInfo dst = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+			dst.texture = _whiteTex;
+
+			WGPUTexelCopyBufferLayout layout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
+			layout.bytesPerRow = (uint32_t)sizeof(whitePixel);
+			layout.rowsPerImage = 1;
+
+			WGPUExtent3D extent = WGPU_EXTENT_3D_INIT;
+			extent.width = 1;
+			extent.height = 1;
+			extent.depthOrArrayLayers = 1;
+
+			wgpuQueueWriteTexture(_queue, &dst, &whitePixel, sizeof(whitePixel), &layout, &extent);
+
+			WGPUTextureViewDescriptor viewDesc = WGPU_TEXTURE_VIEW_DESCRIPTOR_INIT;
+			viewDesc.format = WGPUTextureFormat_RGBA8Unorm;
+			viewDesc.dimension = WGPUTextureViewDimension_2D;
+			viewDesc.mipLevelCount = 1;
+			viewDesc.arrayLayerCount = 1;
+			_whiteView = wgpuTextureCreateView(_whiteTex, &viewDesc);
+		}
+	}
+
+	if (_whiteView != NULL)
+	{
+		WGPUBindGroupEntry entries[6];
+		memset(entries, 0, sizeof(entries));
+
+		entries[0].binding = 0;
+		entries[0].buffer = _frameUniformBuffer;
+		entries[0].size = sizeof(FrameUniform);
+
+		entries[1].binding = 1;
+		entries[1].buffer = _polyStateBuffer;
+		entries[1].size = kMaxClippedPolys * sizeof(PolyStateGPU);
+
+		entries[2].binding = 2;
+		entries[2].textureView = _whiteView;
+
+		entries[3].binding = 3;
+		entries[3].sampler = _samplerNearest;
+
+		entries[4].binding = 4;
+		entries[4].sampler = _samplerLinear;
+
+		entries[5].binding = 5;
+		entries[5].buffer = _tablesBuffer;
+		entries[5].size = sizeof(TablesGPU);
+
+		WGPUBindGroupDescriptor desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
+		desc.layout = _geomBGL;
+		desc.entryCount = 6;
+		desc.entries = entries;
+		_whiteBindGroup = wgpuDeviceCreateBindGroup(_device, &desc);
+	}
 
 	{
 		WGPUBindGroupEntry entries[6];
@@ -2654,9 +2739,15 @@ void WGPURender::_EncodeRenderPasses(const GFX3D_State &renderState)
 			wgpuRenderPassEncoderSetPipeline(pass, pipeline);
 
 			WGPUTextureEntry *texEntry = this->_GetTextureEntry(run.tex);
+			WGPUBindGroup geomBindGroup = _whiteBindGroup;
 			if ( (texEntry != NULL) && (texEntry->bindGroup != NULL) )
 			{
-				wgpuRenderPassEncoderSetBindGroup(pass, 0, texEntry->bindGroup, 0, NULL);
+				geomBindGroup = texEntry->bindGroup;
+			}
+
+			if (geomBindGroup != NULL)
+			{
+				wgpuRenderPassEncoderSetBindGroup(pass, 0, geomBindGroup, 0, NULL);
 			}
 
 			wgpuRenderPassEncoderDraw(pass, run.vertexCount, 1, run.firstVertex, 0);

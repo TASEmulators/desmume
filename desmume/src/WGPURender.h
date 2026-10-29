@@ -198,6 +198,12 @@ protected:
 	WGPUBindGroup _clearBindGroup;
 	WGPUBindGroup _depthResolveBindGroup;
 
+	// 1x1 white texture and the bind group built around it. Drawn in place of a
+	// texture for polygons that sample nothing, so index 0 is always bound.
+	WGPUTexture _whiteTex;
+	WGPUTextureView _whiteView;
+	WGPUBindGroup _whiteBindGroup;
+
 	// pipeline cache: [topology][depthEqual][depthWrite][blend]
 	WGPURenderPipeline _geomPipelines[2][2][2][2];
 	WGPURenderPipeline _edgePipeline;
