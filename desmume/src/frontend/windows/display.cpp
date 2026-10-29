@@ -28,6 +28,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 
 DDRAW ddraw;
 GLDISPLAY gldisplay;
+WGPUDISPLAY wgpudisplay;
 u32 displayMethod;
 
 Win32GPUEventHandler* WinGPUEvent = NULL;
@@ -569,6 +570,58 @@ static void DD_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight)
 	}
 }
 
+static void WGPU_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight)
+{
+	HWND hwnd = MainWindow->getHWnd();
+
+	// Destination rects are stored in screen coordinates; the WebGPU surface
+	// covers the client area, so convert them to client coordinates. The window
+	// size is queried by the platform adapter, not here.
+	RECT dstRects[2] = { MainScreenRect, SubScreenRect };
+	for (int i = 0; i < 2; i++)
+	{
+		ScreenToClient(hwnd, (LPPOINT)&dstRects[i].left);
+		ScreenToClient(hwnd, (LPPOINT)&dstRects[i].right);
+	}
+
+	RECT srcRects[2];
+	const bool isMainGPUFirst = (GPU->GetDisplayInfo().engineID[NDSDisplayID_Main] == GPUEngineID_Main);
+
+	if (video.swap == 0)
+	{
+		srcRects[0] = MainScreenSrcRect;
+		srcRects[1] = SubScreenSrcRect;
+		if (osd) osd->swapScreens = false;
+	}
+	else if (video.swap == 1)
+	{
+		srcRects[0] = SubScreenSrcRect;
+		srcRects[1] = MainScreenSrcRect;
+		if (osd) osd->swapScreens = true;
+	}
+	else if (video.swap == 2)
+	{
+		srcRects[0] = (!isMainGPUFirst) ? SubScreenSrcRect : MainScreenSrcRect;
+		srcRects[1] = (!isMainGPUFirst) ? MainScreenSrcRect : SubScreenSrcRect;
+		if (osd) osd->swapScreens = !isMainGPUFirst;
+	}
+	else if (video.swap == 3)
+	{
+		srcRects[0] = (!isMainGPUFirst) ? MainScreenSrcRect : SubScreenSrcRect;
+		srcRects[1] = (!isMainGPUFirst) ? SubScreenSrcRect : MainScreenSrcRect;
+		if (osd) osd->swapScreens = isMainGPUFirst;
+	}
+
+	if (!wgpudisplay.begin(hwnd))
+	{
+		return;
+	}
+
+	wgpudisplay.present(srcFramebuffer, videoWidth, videoHeight,
+	                    srcRects, dstRects, &GapRect, video.rotation,
+	                    (u32)ScreenGapColor);
+}
+
 void displayThread(void *arg)
 {
 	do
@@ -619,6 +672,7 @@ void DoDisplay()
 	video.srcBufferSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
 
 	const bool isRunningDirectDraw = (displayMethod == DISPMETHOD_DDRAW_HW) || (displayMethod == DISPMETHOD_DDRAW_SW);
+	const bool isRunningWGPU = (displayMethod == DISPMETHOD_WGPU);
 	const bool needsVideoFiltering = (video.currentfilter != video.NONE);
 	const bool needsBacklightApply = (dispInfo.backlightIntensity[NDSDisplayID_Main] < 1.0f) || (dispInfo.backlightIntensity[NDSDisplayID_Touch] < 1.0f);
 
@@ -645,7 +699,7 @@ void DoDisplay()
 	{
 		video.ResizeBuffers();
 
-		if (!isRunningDirectDraw)
+		if (!isRunningDirectDraw && !isRunningWGPU)
 		{
 			if ( gldisplay.begin(MainWindow->getHWnd()) )
 			{
@@ -657,7 +711,7 @@ void DoDisplay()
 		displayNeedsBufferUpdates = false;
 	}
 
-	if (isRunningDirectDraw || needsVideoFiltering || needsBacklightApply)
+	if (isRunningDirectDraw || isRunningWGPU || needsVideoFiltering || needsBacklightApply)
 	{
 		//we have to do a copy here because we're about to draw the OSD onto it. bummer.
 		WinGPUEvent->VideoFetchLock();
@@ -698,7 +752,9 @@ void DoDisplay()
 		DoDisplay_DrawHud();
 
 		// DirectDraw doesn't support alpha blending, so we must scale and overlay the HUD ourselves.
-		if (isRunningDirectDraw)
+		// The WebGPU path uploads a single opaque BGRA texture, so it composites the HUD on the
+		// CPU in the same way rather than adding a second blended pipeline.
+		if (isRunningDirectDraw || isRunningWGPU)
 		{
 			T_AGG_RGBA target((u8*)video.buffer, video.prefilterWidth, video.prefilterHeight, video.prefilterWidth * sizeof(u32));
 			target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0, 0, video.prefilterWidth, video.prefilterHeight);
@@ -714,12 +770,22 @@ void DoDisplay()
 	if (isRunningDirectDraw)
 	{
 		gldisplay.kill();
+		wgpudisplay.kill();
 
 		u32* srcFramebuffer = (needsVideoFiltering) ? (u32*)video.filteredbuffer : (u32*)video.buffer;
 		DD_DoDisplay(srcFramebuffer, video.rotatedwidth(), video.rotatedheight());
 	}
+	else if (isRunningWGPU)
+	{
+		gldisplay.kill();
+
+		u32* srcFramebuffer = (needsVideoFiltering) ? (u32*)video.filteredbuffer : (u32*)video.buffer;
+		WGPU_DoDisplay(srcFramebuffer, video.width, video.height);
+	}
 	else
 	{
+		wgpudisplay.kill();
+
 		u32* srcHUD = (needsHUDDrawing) ? (u32*)aggDraw.hud->buf().buf() : NULL;
 
 		if (useSecondaryVideoBuffer)

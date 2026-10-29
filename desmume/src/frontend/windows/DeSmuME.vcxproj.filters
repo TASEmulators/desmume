@@ -106,6 +106,9 @@
     <Filter Include="utils\colorspacehandler">
       <UniqueIdentifier>{db5dc512-2b75-4476-8cac-75fd4acfd85f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="frontend\shared">
+      <UniqueIdentifier>{7b0f4c62-1d38-4f9a-9c2e-5a6d3b8e4c11}</UniqueIdentifier>
+    </Filter>
     <Filter Include="frontend\Windows">
       <UniqueIdentifier>{56813aa6-2261-4011-8938-105c0b4b3773}</UniqueIdentifier>
     </Filter>
@@ -930,6 +933,15 @@
     <ClCompile Include="display.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="wgpu_display.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="wgpu_present_win32.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\wgpu_present.cpp">
+      <Filter>frontend\shared</Filter>
+    </ClCompile>
     <ClCompile Include="DPI.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -1634,6 +1646,15 @@
     </ClInclude>
     <ClInclude Include="display.h">
       <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="wgpu_display.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="wgpu_present_win32.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\wgpu_present.h">
+      <Filter>frontend\shared</Filter>
     </ClInclude>
     <ClInclude Include="DPI.h">
       <Filter>frontend\Windows</Filter>

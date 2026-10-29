@@ -29,6 +29,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "rthreads/rthreads.h"
 #include "ddraw.h"
 #include "ogl_display.h"
+#include "wgpu_display.h"
 
 #define WIN32_FRAMEBUFFER_COUNT 3
 #define WIN32_MAX_FRAME_WAIT_TIME 333 // Maximum time in milliseconds to wait for a video frame to render to a window before starting a new frame.
@@ -80,10 +81,12 @@ public:
 
 extern DDRAW ddraw;
 extern GLDISPLAY gldisplay;
+extern WGPUDISPLAY wgpudisplay;
 extern u32 displayMethod;
 const u32 DISPMETHOD_DDRAW_HW = 1;
 const u32 DISPMETHOD_DDRAW_SW = 2;
 const u32 DISPMETHOD_OPENGL = 3;
+const u32 DISPMETHOD_WGPU = 4;
 
 extern Win32GPUEventHandler* WinGPUEvent;
 extern int gpu_bpp;

@@ -120,6 +120,12 @@ libdesmume_a_SOURCES = \
 	../../libretro-common/rthreads/rthreads.c \
 	../../libretro-common/encodings/encoding_utf.c
 
+# WebGPU presentation layer: the portable core and the Linux adapter exist but
+# are not wired up yet. See shared/wgpu_present_linux.h before enabling them.
+#libdesmume_a_SOURCES += \
+#	../../shared/wgpu_present.cpp \
+#	shared/wgpu_present_linux.cpp
+
 if HAVE_JIT
 libdesmume_a_SOURCES += \
 	../../arm_jit.h ../../instruction_attributes.h

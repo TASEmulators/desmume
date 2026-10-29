@@ -2040,10 +2040,17 @@ int _main()
 	
 	bool useOutputFilter = GetPrivateProfileBool("Video","Display Method Filter", false, IniName);
 	gldisplay.setUseOutputFilter(useOutputFilter);
+	wgpudisplay.setUseOutputFilter(useOutputFilter);
 
 	if(GetPrivateProfileBool("Video","VSync", false, IniName))
 		style |= DWS_VSYNC;
 	displayMethod = GetPrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
+#if !defined(ENABLE_WGPU)
+	// WebGPU presentation is only built for x64. Never start with a method that
+	// this build cannot provide.
+	if (displayMethod == DISPMETHOD_WGPU)
+		displayMethod = DISPMETHOD_DDRAW_HW;
+#endif
 
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
 	video.rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
@@ -2201,6 +2208,7 @@ int _main()
 	switch (displayMethod)
 	{
 		case DISPMETHOD_OPENGL:
+		case DISPMETHOD_WGPU:
 			break;
 
 		case DISPMETHOD_DDRAW_HW:
@@ -3872,6 +3880,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, displayMethod == DISPMETHOD_DDRAW_HW);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, displayMethod == DISPMETHOD_DDRAW_SW);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_OPENGL, displayMethod == DISPMETHOD_OPENGL);
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_WGPU, displayMethod == DISPMETHOD_WGPU);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_FILTER, gldisplay.useOutputFilter());
 
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
@@ -5267,7 +5276,19 @@ DOKEYDOWN:
 		case ID_DISPLAYMETHOD_OPENGL:
 			displayMethod = DISPMETHOD_OPENGL;
 			WritePrivateProfileInt("Video","Display Method", DISPMETHOD_OPENGL, IniName);
+			wgpudisplay.kill();
 			SetDisplayNeedsBufferUpdates();
+			break;
+
+		case ID_DISPLAYMETHOD_WGPU:
+#if defined(ENABLE_WGPU)
+			displayMethod = DISPMETHOD_WGPU;
+			WritePrivateProfileInt("Video","Display Method", DISPMETHOD_WGPU, IniName);
+			wgpudisplay.kill();
+			SetDisplayNeedsBufferUpdates();
+#else
+			MessageBox(hwnd, "This build does not include the WebGPU display method.", DESMUME_NAME, MB_OK | MB_ICONINFORMATION);
+#endif
 			break;
 
 		case ID_DISPLAYMETHOD_FILTER:
@@ -5275,6 +5296,7 @@ DOKEYDOWN:
 			bool useOutputFilter = gldisplay.useOutputFilter();
 			useOutputFilter = !useOutputFilter;
 			gldisplay.setUseOutputFilter(useOutputFilter);
+			wgpudisplay.setUseOutputFilter(useOutputFilter);
 			WritePrivateProfileInt("Video", "Display Method Filter", gldisplay.useOutputFilter() ? 1 : 0, IniName);
 			break;
 		}
@@ -6905,4 +6927,5 @@ void SetStyle(u32 dws)
 
 	gldisplay.setvsync(!!(GetStyle()&DWS_VSYNC));
 	ddraw.vSync = GetStyle()&DWS_VSYNC;
+	wgpudisplay.setvsync(!!(GetStyle()&DWS_VSYNC));
 }

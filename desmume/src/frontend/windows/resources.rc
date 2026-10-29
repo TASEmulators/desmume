@@ -1822,6 +1822,7 @@ BEGIN
             MENUITEM "DirectDraw &SW",              ID_DISPLAYMETHOD_DIRECTDRAWSW
             MENUITEM SEPARATOR
             MENUITEM "&OpenGL",                     ID_DISPLAYMETHOD_OPENGL
+            MENUITEM "&WebGPU",                     ID_DISPLAYMETHOD_WGPU
             MENUITEM "&Filter",                     ID_DISPLAYMETHOD_FILTER
             MENUITEM SEPARATOR
             MENUITEM "&VSync",                      ID_DISPLAYMETHOD_VSYNC

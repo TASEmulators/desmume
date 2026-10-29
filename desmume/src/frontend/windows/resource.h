@@ -999,6 +999,7 @@
 #define ID_40093                        40093
 #define IDM_SLOT1                       40097
 #define ID_DISPLAYMETHOD_OPENGL         40102
+#define ID_DISPLAYMETHOD_WGPU           40200
 #define IDM_FILE_IMPORT_DB              40103
 #define IDM_AUTODETECTSAVETYPE_INTERNAL 40104
 #define ID_DISPLAYMETHOD_OPENGL_FILTER  40104

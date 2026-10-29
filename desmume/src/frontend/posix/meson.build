@@ -310,6 +310,23 @@ if get_option('gdb-stub')
   ]
 endif
 
+# WebGPU presentation layer. The platform-independent core and the Linux adapter
+# already exist, but nothing calls them yet, so they stay out of the build.
+# Turning this on needs a Linux build of wgpu-native (built with the x11 and/or
+# wayland feature) plus a decision on how the GTK frontend hands a window to
+# WebGPU. See shared/wgpu_present_linux.h for the remaining steps.
+#
+# dep_wgpu = dependency('wgpu_native', required: false)
+#if dep_wgpu.found()
+#  dependencies += dep_wgpu
+#  add_global_arguments(['-DENABLE_WGPU', '-DWGPU_PRESENT_LINUX'],
+#                       language: ['c', 'cpp'])
+#  libdesmume_src += [
+#    '../../shared/wgpu_present.cpp',
+#    'shared/wgpu_present_linux.cpp',
+#  ]
+#endif
+
 libdesmume = static_library('desmume',
   libdesmume_src,
   dependencies: dependencies,
