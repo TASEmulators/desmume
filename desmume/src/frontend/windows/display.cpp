@@ -31,6 +31,27 @@ GLDISPLAY gldisplay;
 WGPUDISPLAY wgpudisplay;
 u32 displayMethod;
 
+// The window the OpenGL display method has presented into, if any.
+//
+// SwapBuffers() is what spends a window: from the first one on, the WGL
+// implementation owns the window's presentation path, and afterwards every
+// flip-model DXGI swapchain (D3D11 and D3D12) as well as every Vulkan swapchain is
+// refused on that HWND -- CreateSwapChainForHwnd() returns E_ACCESSDENIED and
+// wgpu-core turns the failed surface configure into the fatal "Invalid surface"
+// panic from wgpuSurfaceConfigure(). SetPixelFormat() and a current context on
+// their own are harmless, and deleting the context or releasing the DC does not
+// undo it: only a new HWND helps.
+//
+// Written on the display thread (OGL_DoDisplay) and read from there as well as
+// from the menu handler; a stale NULL read can only cost a missing warning, since
+// DoDisplay() re-checks it before it draws a WebGPU frame.
+static volatile HWND _glPresentedHwnd = NULL;
+
+bool DisplayWindowUsedByOpenGL(HWND hwnd)
+{
+	return (hwnd != NULL) && (hwnd == _glPresentedHwnd);
+}
+
 Win32GPUEventHandler* WinGPUEvent = NULL;
 VideoInfo video;
 
@@ -444,6 +465,7 @@ static void OGL_DoDisplay(NDSColorFormat colorFormat, int videoWidth, int videoH
 	}
 
 	gldisplay.showPage();
+	_glPresentedHwnd = hwnd;
 
 	gldisplay.end();
 }
@@ -672,7 +694,26 @@ void DoDisplay()
 	video.srcBufferSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
 
 	const bool isRunningDirectDraw = (displayMethod == DISPMETHOD_DDRAW_HW) || (displayMethod == DISPMETHOD_DDRAW_SW);
-	const bool isRunningWGPU = (displayMethod == DISPMETHOD_WGPU);
+
+	// A window that the OpenGL display method has already presented into cannot
+	// host a WebGPU surface any more, and asking wgpu for one anyway aborts the
+	// process. The menu entry that selects WebGPU refuses and explains why, so this
+	// only catches the case where the method changed between two frames; keep
+	// drawing through the OpenGL path instead of walking into wgpuSurfaceConfigure().
+	const bool windowRejectsWGPU = DisplayWindowUsedByOpenGL(MainWindow->getHWnd());
+	const bool isRunningWGPU = (displayMethod == DISPMETHOD_WGPU) && !windowRejectsWGPU;
+
+	if (windowRejectsWGPU && (displayMethod == DISPMETHOD_WGPU))
+	{
+		static bool didWarnWindowRejectsWGPU = false;
+
+		if (!didWarnWindowRejectsWGPU)
+		{
+			didWarnWindowRejectsWGPU = true;
+			INFO("WGPU: this window was already used by the OpenGL display method; staying on OpenGL.\n");
+		}
+	}
+
 	const bool needsVideoFiltering = (video.currentfilter != video.NONE);
 	const bool needsBacklightApply = (dispInfo.backlightIntensity[NDSDisplayID_Main] < 1.0f) || (dispInfo.backlightIntensity[NDSDisplayID_Touch] < 1.0f);
 

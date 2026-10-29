@@ -88,6 +88,11 @@ const u32 DISPMETHOD_DDRAW_SW = 2;
 const u32 DISPMETHOD_OPENGL = 3;
 const u32 DISPMETHOD_WGPU = 4;
 
+// True once the OpenGL display method has presented into hwnd. Such a window can
+// never host a WebGPU surface again, so callers that are about to create one have
+// to ask first -- see the comment on _glPresentedHwnd in display.cpp.
+bool DisplayWindowUsedByOpenGL(HWND hwnd);
+
 extern Win32GPUEventHandler* WinGPUEvent;
 extern int gpu_bpp;
 

@@ -5282,6 +5282,33 @@ DOKEYDOWN:
 
 		case ID_DISPLAYMETHOD_WGPU:
 #if defined(ENABLE_WGPU)
+			// The OpenGL display method spends this window for every other graphics
+			// API (see _glPresentedHwnd in display.cpp), and the failure mode is a
+			// fatal wgpuSurfaceConfigure() panic, so refuse the switch while the
+			// window still belongs to the OpenGL presentation path. Rebuilding the
+			// main window would drag the toolbar, the menus, the DPI state and every
+			// cached HWND along with it, so asking for a restart is the cheaper
+			// answer. Going the other way (WebGPU -> OpenGL) is fine.
+			if (DisplayWindowUsedByOpenGL(hwnd))
+			{
+				MessageBox(hwnd,
+					"The WebGPU display method cannot be used in this window.\n"
+					"\n"
+					"The OpenGL display method has already drawn into this window, and after "
+					"that Windows will not let another graphics API take the window over. "
+					"Switching the display method cannot undo it.\n"
+					"\n"
+					"Please restart DeSmuME and choose WebGPU again. Within a single session "
+					"the switch only works one way: WebGPU to OpenGL is fine, OpenGL to "
+					"WebGPU needs a restart.",
+					DESMUME_NAME, MB_OK | MB_ICONINFORMATION);
+
+				// displayMethod stays as it is; keep the check marks agreeing with it.
+				MainWindow->checkMenu(ID_DISPLAYMETHOD_OPENGL, displayMethod == DISPMETHOD_OPENGL);
+				MainWindow->checkMenu(ID_DISPLAYMETHOD_WGPU, displayMethod == DISPMETHOD_WGPU);
+				break;
+			}
+
 			displayMethod = DISPMETHOD_WGPU;
 			WritePrivateProfileInt("Video","Display Method", DISPMETHOD_WGPU, IniName);
 			wgpudisplay.kill();
