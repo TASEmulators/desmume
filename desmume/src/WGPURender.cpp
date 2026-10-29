@@ -1364,7 +1364,17 @@ Render3DError WGPURender::RenderPowerOff()
 
 Render3DError WGPURender::VramReconfigureSignal()
 {
-	this->_FlushTextureMap();
+	// Match the base-class (and OpenGL) behavior: only invalidate the CPU-side
+	// texture cache. The GPU texture map must survive this signal. Flushing it
+	// here forced every visible texture through the full rebuild path (unpack +
+	// deposterize + upscale + upload + bind group) on every VRAM reconfigure,
+	// even when its data had not changed at all -- Castlevania: Dawn of Sorrow
+	// reconfigures VRAM several times per frame, which cost about 4000 wasted
+	// texture rebuilds every 120 frames and dropped the frame rate to ~28 FPS
+	// with texture postprocessing enabled. Invalidated entries are verified
+	// lazily by TextureCache::GetTexture() via VRAMCompareAndUpdate(), so
+	// genuinely changed textures still reload through _GetTextureEntry()'s
+	// slow path.
 	texCache.Invalidate();
 
 	return RENDER3DERROR_NOERR;
