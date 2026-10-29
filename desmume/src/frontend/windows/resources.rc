@@ -141,7 +141,7 @@ BEGIN
     LTEXT           "Fixes text bugs in some games.(e.g. Etrian Odyssey)",ID_LABEL_TXTHACK1,12,77,171,8
     LTEXT           "May need to be toggled on/off per scene.",ID_LABEL_TXTHACK2,12,86,167,8
     CONTROL         "Enable TXT Hack",IDC_TXTHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,67,73,10
-    GROUPBOX        "OpenGL Options",IDC_STATIC,7,131,315,116
+    GROUPBOX        "OpenGL / WebGPU Options",IDC_STATIC,7,131,315,116
     GROUPBOX        "General Options",IDC_STATIC,198,7,124,120
     LTEXT           "GPU Scaling Factor",IDC_STATIC,203,20,64,8
     CONTROL         "Deposterize Textures",IDC_TEX_DEPOSTERIZE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,203,79,79,10
