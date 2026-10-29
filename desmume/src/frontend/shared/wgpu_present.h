@@ -127,9 +127,10 @@ private:
 //   4. Feed the frontend's screen rectangles in, as WGPUPresentRect, plus the
 //      already composited BGRA frame.
 //
-// A skeleton adapter for Linux (X11 and Wayland) lives in
-// src/frontend/posix/shared/wgpu_present_linux.cpp; it is compiled only when
-// WGPU_PRESENT_LINUX is defined, which the POSIX build does not do yet.
+// The Linux X11 and Wayland adapters live in
+// src/frontend/posix/shared/wgpu_present_linux.cpp, with WGPULinuxDisplay in
+// wgpu_display_linux.cpp. The POSIX meson build compiles them automatically
+// when a Linux wgpu-native is present (see the wgpu-native-path option).
 // ---------------------------------------------------------------------------
 
 #endif // _WGPU_PRESENT_H_

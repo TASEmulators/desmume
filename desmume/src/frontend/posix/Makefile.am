@@ -120,11 +120,22 @@ libdesmume_a_SOURCES = \
 	../../libretro-common/rthreads/rthreads.c \
 	../../libretro-common/encodings/encoding_utf.c
 
-# WebGPU presentation layer: the portable core and the Linux adapter exist but
-# are not wired up yet. See shared/wgpu_present_linux.h before enabling them.
-#libdesmume_a_SOURCES += \
-#	../../shared/wgpu_present.cpp \
-#	shared/wgpu_present_linux.cpp
+# WebGPU. The portable presentation core, the display wrapper and the 3D
+# renderer always compile and provide stubs when wgpu-native is absent. The
+# Linux native-window adapter is only built when configure finds wgpu-native
+# (--enable-wgpu, plus CPPFLAGS/LDFLAGS or a non-system installation on the
+# link path).
+libdesmume_a_SOURCES += \
+	../../WGPURender.cpp \
+	../shared/wgpu_present.cpp \
+	shared/wgpu_display_linux.cpp
+
+if ENABLE_WGPU
+AM_CPPFLAGS += $(WGPU_CFLAGS) -I$(top_srcdir)/../../../3rdparty/wgpu
+LIBS += $(WGPU_LIBS)
+libdesmume_a_SOURCES += \
+	shared/wgpu_present_linux.cpp
+endif
 
 if HAVE_JIT
 libdesmume_a_SOURCES += \

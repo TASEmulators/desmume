@@ -59,6 +59,31 @@ AC_CHECK_LIB(zzip, zzip_open, [
 dnl - Check for X11
 AC_PATH_X
 
+dnl - optional WebGPU presentation layer (wgpu-native)
+AC_ARG_ENABLE([wgpu],
+               [AC_HELP_STRING([--enable-wgpu], [Build the WebGPU presentation layer (requires wgpu-native)])],
+               [wgpu=$enableval],
+               [wgpu=no])
+have_wgpu=no
+if test "x$wgpu" = "xyes" ; then
+    AC_CHECK_HEADERS([webgpu.h], [have_wgpu=yes], [have_wgpu=no])
+    if test "x$have_wgpu" = "xyes" ; then
+        AC_CHECK_LIB([wgpu_native], [wgpuCreateInstance], [
+            WGPU_LIBS="-lwgpu_native"
+            WGPU_CFLAGS="-DENABLE_WGPU -DWGPU_PRESENT_LINUX"
+            AC_CHECK_HEADERS([X11/Xlib.h], [WGPU_CFLAGS="$WGPU_CFLAGS -DWGPU_PRESENT_X11"])
+            AC_SUBST(WGPU_CFLAGS)
+            AC_SUBST(WGPU_LIBS)
+        ], [have_wgpu=no])
+    fi
+    if test "x$have_wgpu" = "xyes" ; then
+        AC_MSG_NOTICE([WebGPU presentation enabled])
+    else
+        AC_MSG_WARN([Cannot build with WebGPU -- wgpu-native headers or library not found.])
+    fi
+fi
+AM_CONDITIONAL([ENABLE_WGPU], [test "x$have_wgpu" = "xyes"])
+
 dnl - Check for SDL2
 AC_PATH_PROGS(SDLCONFIG, [sdl2-config])
 if test ! "x$SDLCONFIG" = "x" ; then

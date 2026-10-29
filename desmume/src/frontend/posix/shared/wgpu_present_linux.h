@@ -20,22 +20,17 @@
 
 // Linux adapters for the portable WebGPU presentation layer.
 //
-// Not built yet: the POSIX frontend defines neither WGPU_PRESENT_LINUX nor
-// WGPU_PRESENT_X11, so this header and its .cpp compile to nothing. They exist
-// so that porting only needs build-system work plus the frontend integration
-// described below, instead of another rewrite of the renderer.
+// WGPU_PRESENT_LINUX turns these on. The POSIX meson build defines it whenever
+// wgpu-native is found, and WGPU_PRESENT_X11 as well when X11 is available.
+// Link a Linux build of wgpu-native (libwgpu_native.so) that was built with the
+// x11 and/or wayland feature.
 //
-// Wiring it up requires:
-//   1. Define WGPU_PRESENT_LINUX (plus WGPU_PRESENT_X11 when X11 is available)
-//      and compile this file together with src/frontend/shared/wgpu_present.cpp.
-//   2. Link a Linux build of wgpu-native (libwgpu_native.so) that was built with
-//      the x11 and/or wayland feature.
-//   3. Decide how the GTK frontend hands a window to WebGPU. A GTK widget cannot
-//      be used as a surface directly, so either render into the toplevel X11
-//      window (gdk_x11_window_get_xid) or host a native child window. On Wayland
-//      gdk_wayland_window_get_wl_surface provides the wl_surface.
-//   4. Drive LinuxWaylandPresentWindow::setClientSize() from the configure event
-//      handler, since Wayland has no synchronous client-size query.
+// The GTK frontend renders into the drawing area's GdkWindow, which is a native
+// X11 window or wl_surface depending on the active GDK backend:
+//   X11     : gdk_x11_window_get_xid() + GDK_DISPLAY_XDISPLAY()
+//   Wayland : gdk_wayland_window_get_wl_surface() + gdk_wayland_display_get_wl_display()
+// LinuxWaylandPresentWindow::setClientSize() has to be pushed by the frontend,
+// since Wayland has no synchronous client-size query.
 //
 // Those are frontend questions only. WGPUPresent itself does not change.
 
@@ -52,6 +47,8 @@ class LinuxX11PresentWindow : public WGPUPresentWindow
 public:
 	LinuxX11PresentWindow(Display *display, unsigned long window);
 	~LinuxX11PresentWindow();
+
+	bool matches(Display *display, unsigned long window) const;
 
 	bool getClientSize(int *width, int *height) const;
 	void *createSurface(void *instance);
@@ -70,6 +67,8 @@ class LinuxWaylandPresentWindow : public WGPUPresentWindow
 {
 public:
 	LinuxWaylandPresentWindow(void *display, void *surface);
+
+	bool matches(void *display, void *surface) const;
 
 	// Wayland reports the size asynchronously through xdg_surface.configure(),
 	// so the frontend has to push it in.

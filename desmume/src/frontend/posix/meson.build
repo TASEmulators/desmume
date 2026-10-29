@@ -1,7 +1,7 @@
 project('desmume',
   ['c', 'cpp'],
   version: '2.7.10',
-  meson_version: '>=0.45',
+  meson_version: '>=0.54',
   default_options: [
     'warning_level=1',
     'c_std=c11',
@@ -9,6 +9,9 @@ project('desmume',
   ],
   license: 'GPL2+',
 )
+
+fs = import('fs')
+cxx = meson.get_compiler('cpp')
 
 dep_glib2 = dependency('glib-2.0')
 dep_sdl = dependency('sdl2')
@@ -310,22 +313,58 @@ if get_option('gdb-stub')
   ]
 endif
 
-# WebGPU presentation layer. The platform-independent core and the Linux adapter
-# already exist, but nothing calls them yet, so they stay out of the build.
-# Turning this on needs a Linux build of wgpu-native (built with the x11 and/or
-# wayland feature) plus a decision on how the GTK frontend hands a window to
-# WebGPU. See shared/wgpu_present_linux.h for the remaining steps.
-#
-# dep_wgpu = dependency('wgpu_native', required: false)
-#if dep_wgpu.found()
-#  dependencies += dep_wgpu
-#  add_global_arguments(['-DENABLE_WGPU', '-DWGPU_PRESENT_LINUX'],
-#                       language: ['c', 'cpp'])
-#  libdesmume_src += [
-#    '../../shared/wgpu_present.cpp',
-#    'shared/wgpu_present_linux.cpp',
-#  ]
-#endif
+# WebGPU presentation layer. The portable core (src/frontend/shared) is used by
+# both Windows and Linux; the Linux adapters live in shared/wgpu_present_linux.*
+# and shared/wgpu_display_linux.*. It is enabled automatically when a Linux
+# libwgpu_native.so is present (the checked-in 3rdparty copy, or the directory
+# passed with -Dwgpu-native-path=/path/to/wgpu-linux-x86_64-release).
+wgpu_native_path = get_option('wgpu-native-path')
+wgpu_native_lib_dir = meson.current_source_dir() / '../../../3rdparty/libs/linux-x86_64'
+wgpu_native_include = include_directories('../../../3rdparty/wgpu')
+
+if wgpu_native_path != ''
+  wgpu_native_path_abs = wgpu_native_path
+  if not fs.is_absolute(wgpu_native_path)
+    wgpu_native_path_abs = join_paths(meson.current_source_dir(), wgpu_native_path)
+  endif
+
+  if fs.exists(join_paths(wgpu_native_path_abs, 'lib', 'libwgpu_native.so'))
+    wgpu_native_lib_dir = join_paths(wgpu_native_path_abs, 'lib')
+    wgpu_native_include = include_directories(join_paths(wgpu_native_path_abs, 'include', 'webgpu'))
+  else
+    wgpu_native_lib_dir = wgpu_native_path_abs
+  endif
+endif
+
+dep_wgpu_lib = cxx.find_library('wgpu_native', dirs: wgpu_native_lib_dir, required: false)
+
+# The portable core, the display wrapper and the WebGPU 3D renderer always
+# compile: without wgpu-native they provide stubs so the GTK frontend can keep
+# one code path and still list the renderer.
+libdesmume_src += [
+  '../../WGPURender.cpp',
+  '../shared/wgpu_present.cpp',
+  'shared/wgpu_display_linux.cpp',
+]
+
+if dep_wgpu_lib.found()
+  wgpu_args = ['-DENABLE_WGPU', '-DWGPU_PRESENT_LINUX']
+  if cxx.has_header('X11/Xlib.h')
+    wgpu_args += '-DWGPU_PRESENT_X11'
+  endif
+  add_global_arguments(wgpu_args, language: ['c', 'cpp'])
+
+  dep_wgpu = declare_dependency(
+    dependencies: dep_wgpu_lib,
+    include_directories: wgpu_native_include,
+    link_args: ['-Wl,-rpath,' + wgpu_native_lib_dir],
+  )
+  dependencies += dep_wgpu
+
+  libdesmume_src += [
+    'shared/wgpu_present_linux.cpp',
+  ]
+endif
 
 libdesmume = static_library('desmume',
   libdesmume_src,

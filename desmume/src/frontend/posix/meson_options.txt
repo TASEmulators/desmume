@@ -48,3 +48,9 @@ option('gdb-stub',
   value: false,
   description: 'Enable gdb stub',
 )
+
+option('wgpu-native-path',
+  type: 'string',
+  value: '',
+  description: 'Directory containing libwgpu_native.so, or a wgpu-native release root with lib/ and include/webgpu. Empty uses 3rdparty/libs/linux-x86_64.',
+)

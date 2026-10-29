@@ -164,7 +164,7 @@
             <child>
               <object class="GtkLabel">
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Multisample Antialiasing (OpenGL):</property>
+                <property name="label" translatable="yes">Multisample Antialiasing (OpenGL/WebGPU):</property>
               </object>
               <packing>
                 <property name="left-attach">0</property>

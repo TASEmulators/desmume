@@ -32,6 +32,13 @@
 #include <X11/Xlib.h>
 #include <vector>
 
+#if defined(GDK_WINDOWING_X11)
+#include <gdk/gdkx.h>
+#endif
+#if defined(GDK_WINDOWING_WAYLAND)
+#include <gdk/gdkwayland.h>
+#endif
+
 #ifdef AGG2D_USE_VECTORFONTS
 #include <fontconfig/fontconfig.h>
 #endif
@@ -55,6 +62,8 @@
 #include "dTool.h"
 #include "../shared/desmume_config.h"
 #include "../shared/gdksdl.cpp"
+#include "../../../WGPURender.h"
+#include "../shared/wgpu_display_linux.h"
 #include "cheatsGTK.h"
 #include "frontend/modules/osd/agg/agg_osd.h"
 
@@ -105,6 +114,11 @@
 static int draw_count;
 extern int _scanline_filter_a, _scanline_filter_b, _scanline_filter_c, _scanline_filter_d;
 VideoFilter* video;
+
+// WebGPU presentation. The object is a stub when the build does not include
+// wgpu-native, in which case every frame falls back to the Cairo path below.
+static WGPULinuxDisplay wgpu_display;
+static bool wgpu_initialization_failed = false;
 
 #define GPU_SCALE_FACTOR_MIN 1.0f
 #define GPU_SCALE_FACTOR_MAX 16.0f
@@ -365,18 +379,58 @@ SoundInterface_struct *SNDCoreList[] = {
 NULL
 };
 
-GPU3DInterface *core3DList[] = {
-	&gpu3DNull,
-	&gpu3DRasterize,
+// Filled by Build3DRendererList(). The first entries are fixed, but WebGPU
+// contributes one entry per usable backend, so the tail is dynamic.
+#define GPU3D_MAX_COUNT 16
+
+GPU3DInterface *core3DList[GPU3D_MAX_COUNT] = { NULL };
+static int wgpuFirstCoreIndex = -1;
+
+// Builds the renderer list: the fixed cores, then one entry per WebGPU backend
+// that wgpu-native reported ("WebGPU - Vulkan", ...). Software adapters are
+// filtered out by the renderer itself; SoftRasterizer stays in the list.
+static void Build3DRendererList()
+{
+	if (core3DList[0] != NULL)
+	{
+		return;
+	}
+
+	int count = 0;
+
+	core3DList[count++] = &gpu3DNull;
+	core3DList[count++] = &gpu3DRasterize;
+
 #if defined(ENABLE_OPENGL_ES)
-	&gpu3Dgl_ES_3_0,
+	core3DList[count++] = &gpu3Dgl_ES_3_0;
 #elif defined(ENABLE_OPENGL_STANDARD)
-	&gpu3Dgl,
-	&gpu3DglOld,
-	&gpu3Dgl_3_2,
+	core3DList[count++] = &gpu3Dgl;
+	core3DList[count++] = &gpu3DglOld;
+	core3DList[count++] = &gpu3Dgl_3_2;
 #endif
-	NULL
-};
+
+#if defined(ENABLE_WGPU)
+	wgpuFirstCoreIndex = count;
+
+	WGPURender_InitBackendList();
+
+	const size_t backendCount = WGPURender_GetBackendCount();
+
+	for (size_t i = 0; (i < backendCount) && (count < (GPU3D_MAX_COUNT - 2)); i++)
+	{
+		core3DList[count++] = WGPURender_GetBackendInterface(i);
+	}
+
+	// Nothing reported (no usable adapter): still offer the generic entry so the
+	// user can try, and so a config that already selected WebGPU keeps working.
+	if (backendCount == 0)
+	{
+		core3DList[count++] = &gpu3DWGPU;
+	}
+#endif
+
+	core3DList[count] = NULL;
+}
 
 int multisampleSizes[] = {0, 2, 4, 8, 16, 32};
 
@@ -425,6 +479,9 @@ init_configured_features( class configured_features *config	)
 {
   if(config->render3d == COMMANDLINE_RENDER3D_GL || config->render3d == COMMANDLINE_RENDER3D_OLDGL || config->render3d == COMMANDLINE_RENDER3D_AUTOGL)
     config->engine_3d = 2;
+  else if (config->render3d == COMMANDLINE_RENDER3D_WGPU)
+	  // Resolved to the first WebGPU entry once Build3DRendererList() has run.
+    config->engine_3d = -2;
   else if (config->render3d == COMMANDLINE_RENDER3D_DEFAULT)
 	  // Setting it to -1 so that common_gtk_main() will ignore it and load it from file or reconfigure it.
     config->engine_3d = -1;
@@ -1406,6 +1463,23 @@ static void ToggleSwapScreens(GSimpleAction *action, GVariant *parameter, gpoint
 
 static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpointer data)
 {
+#if defined(ENABLE_WGPU)
+	if (event != NULL)
+	{
+		GdkWindow *window = gtk_widget_get_window(widget);
+		const int scale = (window != NULL) ? MAX(1, gdk_window_get_scale_factor(window)) : 1;
+
+		wgpu_display.setClientSize(event->width * scale, event->height * scale);
+
+		// A new size or a re-realized window is a good moment to retry a device
+		// that was not available earlier.
+		if (!wgpu_display.active)
+		{
+			wgpu_initialization_failed = false;
+		}
+	}
+#endif
+
     return TRUE;
 }
 
@@ -1504,6 +1578,309 @@ static void calc_hybrid_vertical_params(gint daW, gint daH, gint gap, gint dstSc
 	draw_params.hybridBigScreenScale = hyb_ratio2 / hyb_ratio1;
 }
 
+#if defined(ENABLE_WGPU)
+
+// ---------------------------------------------------------------------------
+// WebGPU presentation
+//
+// The composited frame is the same one the Cairo path draws: video's
+// destination buffer, main screen on top, sub screen below. The destination
+// rectangles are computed in the unrotated local image space and transformed
+// with the same matrix the Cairo path uses, so embedding, integer scaling and
+// rotation stay in sync with the window code above. WGPUPresent applies the
+// rotation to the source UVs, exactly like the OpenGL and Windows paths.
+// ---------------------------------------------------------------------------
+
+struct WGPULinuxLocalRect
+{
+	bool visible;
+	int x;
+	int y;
+	int w;
+	int h;
+};
+
+static WGPUPresentRect WGPU_TransformRect(const cairo_matrix_t *matrix, const WGPULinuxLocalRect &rect)
+{
+	WGPUPresentRect out;
+
+	if (!rect.visible || (rect.w <= 0) || (rect.h <= 0))
+	{
+		out.left = 0;
+		out.top = 0;
+		out.right = 0;
+		out.bottom = 0;
+		return out;
+	}
+
+	double x0 = rect.x;
+	double y0 = rect.y;
+	double x1 = rect.x + rect.w;
+	double y1 = rect.y + rect.h;
+
+	cairo_matrix_transform_point(matrix, &x0, &y0);
+	cairo_matrix_transform_point(matrix, &x1, &y1);
+
+	out.left   = (int)lround(MIN(x0, x1));
+	out.top    = (int)lround(MIN(y0, y1));
+	out.right  = (int)lround(MAX(x0, x1));
+	out.bottom = (int)lround(MAX(y0, y1));
+
+	return out;
+}
+
+// GTK3 reports GdkWindow dimensions and hands out Cairo coordinates in
+// application (logical) pixels, while a Vulkan/X11 swap chain and the X11
+// client-size query use device pixels. Scale the final destination rects so
+// the two agree on HiDPI displays.
+static WGPUPresentRect WGPU_ScaleRect(const WGPUPresentRect &rect, int scale)
+{
+	WGPUPresentRect out;
+
+	out.left   = rect.left * scale;
+	out.top    = rect.top * scale;
+	out.right  = rect.right * scale;
+	out.bottom = rect.bottom * scale;
+
+	return out;
+}
+
+static void WGPU_GetLocalRects(int dstW, int dstH, int gap,
+							   WGPULinuxLocalRect *mainRect,
+							   WGPULinuxLocalRect *subRect,
+							   WGPULinuxLocalRect *gapRect)
+{
+	const int screenW = dstW;
+	const int screenH = dstH / 2;
+
+	mainRect->visible = true;
+	mainRect->x = 0;
+	mainRect->y = 0;
+	mainRect->w = screenW;
+	mainRect->h = screenH;
+
+	subRect->visible = true;
+	subRect->x = 0;
+	subRect->y = 0;
+	subRect->w = screenW;
+	subRect->h = screenH;
+
+	gapRect->visible = false;
+	gapRect->x = 0;
+	gapRect->y = 0;
+	gapRect->w = 0;
+	gapRect->h = 0;
+
+	switch (nds_screen.orientation)
+	{
+		case ORIENT_VERTICAL:
+			if (nds_screen.swap)
+			{
+				mainRect->y = screenH + gap;
+			}
+			else
+			{
+				subRect->y = screenH + gap;
+			}
+
+			if (gap > 0)
+			{
+				gapRect->visible = true;
+				gapRect->x = 0;
+				gapRect->y = screenH;
+				gapRect->w = screenW;
+				gapRect->h = gap;
+			}
+			break;
+
+		case ORIENT_HORIZONTAL:
+			if (nds_screen.swap)
+			{
+				subRect->x = 0;
+				mainRect->x = screenW;
+			}
+			else
+			{
+				subRect->x = screenW;
+			}
+			break;
+
+		case ORIENT_SINGLE:
+			// Only the selected screen is shown, either at the origin.
+			if (nds_screen.swap)
+			{
+				mainRect->visible = false;
+			}
+			else
+			{
+				subRect->visible = false;
+			}
+			break;
+
+		default:
+			// Hybrid layouts need a third, differently scaled quad, which the
+			// portable presenter does not expose yet. Leave them to Cairo.
+			mainRect->visible = false;
+			subRect->visible = false;
+			break;
+	}
+}
+
+static void WGPU_SetScreenMatrix(cairo_matrix_t *matrix, const cairo_matrix_t *base, int x, int y)
+{
+	*matrix = *base;
+	cairo_matrix_translate(matrix, x, y);
+	cairo_matrix_scale(matrix, (double)draw_params.dstScale / 2.0, (double)draw_params.dstScale / 2.0);
+	cairo_matrix_invert(matrix);
+}
+
+static bool WGPU_BeginNativeWindow(GdkWindow *window)
+{
+#if defined(WGPU_PRESENT_X11)
+	if (GDK_IS_X11_WINDOW(window))
+	{
+		GdkDisplay *gdkDisplay = gdk_window_get_display(window);
+		return wgpu_display.beginX11(GDK_DISPLAY_XDISPLAY(gdkDisplay),
+									 (unsigned long)gdk_x11_window_get_xid(window));
+	}
+#endif
+
+#if defined(GDK_WINDOWING_WAYLAND)
+	// Presenting straight to GTK's wl_surface makes both GTK and wgpu commit
+	// buffers to the same surface, which the compositor rejects with a Wayland
+	// protocol error. Keep the native path available for experiments, but use
+	// Cairo by default on Wayland. Set DESMUME_WGPU_WAYLAND=1 to try it.
+	if ( (g_getenv("DESMUME_WGPU_WAYLAND") != NULL) && GDK_IS_WAYLAND_WINDOW(window) )
+	{
+		GdkDisplay *gdkDisplay = gdk_window_get_display(window);
+		return wgpu_display.beginWayland(gdk_wayland_display_get_wl_display(gdkDisplay),
+										 gdk_wayland_window_get_wl_surface(window));
+	}
+#endif
+
+	return false;
+}
+
+// Returns true when WebGPU presented the frame. False means Cairo should draw
+// it instead; a failed device or surface is torn down so the next expose can
+// retry (or keep using Cairo when the device is unavailable).
+static bool WGPU_PresentFrame(GdkWindow *window, gint daW, gint daH)
+{
+	if ( (nds_screen.orientation == ORIENT_HYBRID_EQUAL) ||
+		 (nds_screen.orientation == ORIENT_HYBRID_VERTICAL) )
+	{
+		return false;
+	}
+
+	if ( (nds_screen.rotation_angle != 0) && (nds_screen.rotation_angle != 90) &&
+		 (nds_screen.rotation_angle != 180) && (nds_screen.rotation_angle != 270) )
+	{
+		return false;
+	}
+
+	if (!wgpu_display.active)
+	{
+		if (wgpu_initialization_failed)
+		{
+			return false;
+		}
+
+		if (!WGPU_BeginNativeWindow(window))
+		{
+			wgpu_initialization_failed = true;
+			return false;
+		}
+	}
+
+	u32 *fbuf = video->GetDstBufferPtr();
+	const int dstW = video->GetDstWidth();
+	const int dstH = video->GetDstHeight();
+
+	if ( (fbuf == NULL) || (dstW <= 0) || (dstH < 2) )
+	{
+		return false;
+	}
+
+	WGPULinuxLocalRect localMain;
+	WGPULinuxLocalRect localSub;
+	WGPULinuxLocalRect localGap;
+	WGPU_GetLocalRects(dstW, dstH, draw_params.gap, &localMain, &localSub, &localGap);
+
+	// Same transform as ExposeDrawingArea's Cairo setup. For 90/270 imgW and
+	// imgH hold the swapped bounding box, while the local image keeps the
+	// unrotated dimensions.
+	double localW = draw_params.imgW;
+	double localH = draw_params.imgH;
+
+	if ( (nds_screen.rotation_angle == 90) || (nds_screen.rotation_angle == 270) )
+	{
+		localW = draw_params.imgH;
+		localH = draw_params.imgW;
+	}
+
+	cairo_matrix_t base;
+	cairo_matrix_init_identity(&base);
+	cairo_matrix_translate(&base, daW / 2.0, daH / 2.0);
+	cairo_matrix_scale(&base, draw_params.ratio, draw_params.ratio);
+	cairo_matrix_rotate(&base, M_PI / 180.0 * nds_screen.rotation_angle);
+	cairo_matrix_translate(&base, -localW / 2.0, -localH / 2.0);
+
+	// Keep the touch/stylus mapping identical to the Cairo path, including the
+	// swapped and rotated layouts.
+	if (localMain.visible)
+	{
+		WGPU_SetScreenMatrix(&nds_screen.topscreen_matrix, &base, localMain.x, localMain.y);
+	}
+	if (localSub.visible)
+	{
+		WGPU_SetScreenMatrix(&nds_screen.touch_matrix, &base, localSub.x, localSub.y);
+	}
+
+	WGPUPresentRect dstRects[2];
+	const int scale = MAX(1, gdk_window_get_scale_factor(window));
+
+	// WGPUPresent maps srcRects to destinations according to the rotation:
+	//   0/270 : dst[0] <- main, dst[1] <- sub
+	//   90/180: dst[0] <- sub,  dst[1] <- main
+	const int rotation = nds_screen.rotation_angle;
+	const bool swapDestinationOrder = (rotation == 90) || (rotation == 180);
+
+	for (int i = 0; i < 2; i++)
+	{
+		const bool isMain = swapDestinationOrder ? (i == 1) : (i == 0);
+		dstRects[i] = WGPU_ScaleRect(WGPU_TransformRect(&base, isMain ? localMain : localSub), scale);
+	}
+
+	WGPUPresentRect srcRects[2];
+	srcRects[0].left   = 0;
+	srcRects[0].top    = 0;
+	srcRects[0].right  = dstW;
+	srcRects[0].bottom = dstH / 2;
+
+	srcRects[1].left   = 0;
+	srcRects[1].top    = dstH / 2;
+	srcRects[1].right  = dstW;
+	srcRects[1].bottom = dstH;
+
+	WGPUPresentRect gapRect = WGPU_ScaleRect(WGPU_TransformRect(&base, localGap), scale);
+	const WGPUPresentRect *gapPtr = (gapRect.right > gapRect.left && gapRect.bottom > gapRect.top) ? &gapRect : NULL;
+
+	// 0x00BBGGRR. Cairo uses 30% gray for the gap; keep the same colour.
+	const u32 gapColor = 0x004D4D4D;
+
+	wgpu_display.setClientSize(daW * scale, daH * scale);
+
+	if (!wgpu_display.present(fbuf, dstW, dstH, srcRects, dstRects, gapPtr, rotation, gapColor))
+	{
+		wgpu_display.kill();
+		return false;
+	}
+
+	return true;
+}
+
+#endif // ENABLE_WGPU
+
 /* Drawing callback */
 static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
@@ -1574,6 +1951,17 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 		
 		draw_params.valid = true;
 	}
+
+#if defined(ENABLE_WGPU)
+	// Present the composited frame directly through WebGPU. If the device or
+	// surface is unavailable this returns false and the Cairo path below draws
+	// the frame instead, so a missing adapter never leaves a blank window.
+	if (WGPU_PresentFrame(window, daW, daH))
+	{
+		draw_count++;
+		return TRUE;
+	}
+#endif
 
 	GdkDrawingContext *context = gdk_window_begin_draw_frame(window, gdk_window_get_clip_region(window));
 	cairo_t* cr = gdk_drawing_context_get_cairo_context(context);
@@ -2324,6 +2712,8 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	GtkToggleButton *wPosterize, *wSmoothing, *wHCInterpolate;
 	GtkSpinButton *wGPUScale;
 
+	Build3DRendererList();
+
 	GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/graphics.ui");
 	dialog = GTK_DIALOG(gtk_builder_get_object(builder, "dialog"));
 	wGrid = GTK_GRID(gtk_builder_get_object(builder, "graphics_grid"));
@@ -2338,17 +2728,16 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	wHCInterpolate = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "hc_interpolate"));
 	g_object_unref(builder);
 
-#if defined(ENABLE_OPENGL_ES)
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 4);
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 3);
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 2);
-#elif defined(ENABLE_OPENGL_STANDARD)
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 5);
-#else
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 5);
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 4);
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 3);
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 2);
+	// Populate the combo from the runtime renderer list so that the WebGPU
+	// entries ("WebGPU - Vulkan", ...) appear next to the built-in cores.
+	GtkComboBoxText *coreComboText = GTK_COMBO_BOX_TEXT(coreCombo);
+	gtk_combo_box_text_remove_all(coreComboText);
+	for (int i = 0; (i < GPU3D_MAX_COUNT) && (core3DList[i] != NULL); i++)
+	{
+		gtk_combo_box_text_append_text(coreComboText, core3DList[i]->name);
+	}
+
+#if !defined(ENABLE_OPENGL_STANDARD) && !defined(ENABLE_OPENGL_ES) && !defined(ENABLE_WGPU)
 	gtk_grid_remove_row(wGrid, 5);
 	gtk_grid_remove_row(wGrid, 4);
 #endif
@@ -2386,20 +2775,28 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
     {
     	int sel3DCore = gtk_combo_box_get_active(coreCombo);
 
+		if ( (sel3DCore < 0) || (sel3DCore >= GPU3D_MAX_COUNT) || (core3DList[sel3DCore] == NULL) )
+		{
+			sel3DCore = RENDERID_SOFTRASTERIZER;
+		}
+
     	// Change only if needed
 		if (sel3DCore != cur3DCore)
 		{
+			// OpenGL entries need their context callbacks selected first. The
+			// other cores (Null, SoftRasterizer, WebGPU) need none.
+#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_GLX)
+			if (sel3DCore == 2)
+			{
+	#if defined(ENABLE_EGL)
+				oglrender_init = &egl_initOpenGL_ES_3_0;
+	#else
+				oglrender_init = &sdl_initOpenGL_ES_3_0;
+	#endif
+			}
+#elif defined(ENABLE_OPENGL_STANDARD)
 			switch (sel3DCore)
 			{
-#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_GLX)
-				case 2:
-	#if defined(ENABLE_EGL)
-					oglrender_init = &egl_initOpenGL_ES_3_0;
-	#else
-					oglrender_init = &sdl_initOpenGL_ES_3_0;
-	#endif
-					break;
-#elif defined(ENABLE_OPENGL_STANDARD)
 				case 2:
 	#if defined(ENABLE_GLX)
 					oglrender_init = &glx_initOpenGL_StandardAuto;
@@ -2429,20 +2826,8 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 					oglrender_init = &sdl_initOpenGL_3_2_CoreProfile;
 	#endif
 					break;
-#endif
-				default:
-				{
-					if (sel3DCore > 0)
-					{
-						sel3DCore = RENDERID_SOFTRASTERIZER;
-					}
-					else
-					{
-						sel3DCore = RENDERID_NULL;
-					}
-					break;
-				}
 			}
+#endif
 			
 			if (GPU->Change3DRendererByID(sel3DCore))
 			{
@@ -3350,6 +3735,9 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 	config.load();
 
+	// Must exist before any renderer index is validated or shown in the UI.
+	Build3DRendererList();
+
     driver = new GtkDriver();
 
     SDL_TimerID limiter_timer = 0;
@@ -4010,37 +4398,42 @@ common_gtk_main(GApplication *app, gpointer user_data)
     int core = my_config->engine_3d;
     // setup the gdk 3D emulation;
 
-    // Check if commandLine argument was passed or not
-    if (core == -1)
+    if (core == -2)
+    {
+    	// --3d-render=wgpu: resolve to the first usable WebGPU entry.
+    	core = (wgpuFirstCoreIndex >= 0) ? wgpuFirstCoreIndex : RENDERID_SOFTRASTERIZER;
+    	my_config->engine_3d = core;
+    }
+    else if (core == -1)
 	{
     	// If it was not passed, then get the Renderer config from the file
     	core = config.core3D;
-
-    	// Check if it is valid
-#if defined(ENABLE_OPENGL_ES)
-    	if (!(core >= 0 && core <= 2))
-#elif defined(ENABLE_OPENGL_STANDARD)
-		if (!(core >= 0 && core <= 4))
-#endif
-		{
-    		// If it is invalid, reset it to SoftRasterizer
-    		core = 1;
-    	}
-    	//Set this too for clarity
         my_config->engine_3d = core;
     }
 
+	// Check that the index still exists in the runtime renderer list (WebGPU
+	// contributes a variable number of entries, and the build options may have
+	// changed since the config was written).
+	if ( (core < 0) || (core >= GPU3D_MAX_COUNT) || (core3DList[core] == NULL) )
+	{
+		core = RENDERID_SOFTRASTERIZER;
+		my_config->engine_3d = core;
+	}
+
+	// OpenGL entries need their context callbacks selected first. The other
+	// cores (Null, SoftRasterizer, WebGPU) need none.
+#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_GLX)
+	if (core == 2)
+	{
+	#if defined(ENABLE_EGL)
+		oglrender_init = &egl_initOpenGL_ES_3_0;
+	#else
+		oglrender_init = &sdl_initOpenGL_ES_3_0;
+	#endif
+	}
+#elif defined(ENABLE_OPENGL_STANDARD)
 	switch (core)
 	{
-#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_GLX)
-		case 2:
-	#if defined(ENABLE_EGL)
-			oglrender_init = &egl_initOpenGL_ES_3_0;
-	#else
-			oglrender_init = &sdl_initOpenGL_ES_3_0;
-	#endif
-			break;
-#elif defined(ENABLE_OPENGL_STANDARD)
 		case 2:
 	#if defined(ENABLE_GLX)
 			oglrender_init = &glx_initOpenGL_StandardAuto;
@@ -4070,20 +4463,8 @@ common_gtk_main(GApplication *app, gpointer user_data)
 			oglrender_init = &sdl_initOpenGL_3_2_CoreProfile;
 	#endif
 			break;
-#endif
-		default:
-		{
-			if (core > 0)
-			{
-				core = RENDERID_SOFTRASTERIZER;
-			}
-			else
-			{
-				core = RENDERID_NULL;
-			}
-			break;
-		}
 	}
+#endif
 
 	if (!GPU->Change3DRendererByID(core)) {
 		GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);

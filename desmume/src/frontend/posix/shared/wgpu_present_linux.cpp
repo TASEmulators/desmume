@@ -15,8 +15,9 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Untested skeleton: compiled only when WGPU_PRESENT_LINUX is defined, which the
-// POSIX build does not do yet. See wgpu_present_linux.h for the wiring steps.
+// Linux adapters for the portable WebGPU presentation layer. Compiled only when
+// WGPU_PRESENT_LINUX is defined; the POSIX meson build does that automatically
+// once wgpu-native is available. See wgpu_present_linux.h for the wiring.
 
 #include "wgpu_present_linux.h"
 
@@ -39,6 +40,11 @@ LinuxX11PresentWindow::LinuxX11PresentWindow(Display *display, unsigned long win
 LinuxX11PresentWindow::~LinuxX11PresentWindow()
 {
 	// The Display connection belongs to the frontend; do not close it here.
+}
+
+bool LinuxX11PresentWindow::matches(Display *display, unsigned long window) const
+{
+	return (this->_display == display) && (this->_window == window);
 }
 
 bool LinuxX11PresentWindow::getClientSize(int *width, int *height) const
@@ -92,6 +98,11 @@ LinuxWaylandPresentWindow::LinuxWaylandPresentWindow(void *display, void *surfac
 	, _width(0)
 	, _height(0)
 {
+}
+
+bool LinuxWaylandPresentWindow::matches(void *display, void *surface) const
+{
+	return (this->_display == display) && (this->_surface == surface);
 }
 
 void LinuxWaylandPresentWindow::setClientSize(int width, int height)
