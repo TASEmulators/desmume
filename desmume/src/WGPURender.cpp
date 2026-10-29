@@ -613,9 +613,15 @@ static WGPUStringView WGSLString(const char *str)
 // asynchronous request is driven by pumping instance events until its callback
 // has run. The callbacks are registered with WGPUCallbackMode_AllowProcessEvents
 // for that reason.
+//
+// Most frame waits finish in about a millisecond, so the loop spins at first to
+// pick the result up with no extra latency. If the wait runs longer -- the GPU
+// is busy, a texture flood landed in the same frame -- it falls back to 1 ms
+// sleeps so the calling thread stops hogging its core while it waits.
 static bool WGSLWaitForFlag(WGPUInstance instance, const bool *done)
 {
 	const std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+	const std::chrono::steady_clock::time_point spinDeadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(2);
 
 	while (!*done)
 	{
@@ -626,7 +632,14 @@ static bool WGSLWaitForFlag(WGPUInstance instance, const bool *done)
 			return false;
 		}
 
-		std::this_thread::yield();
+		if (std::chrono::steady_clock::now() > spinDeadline)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+		else
+		{
+			std::this_thread::yield();
+		}
 	}
 
 	return true;
