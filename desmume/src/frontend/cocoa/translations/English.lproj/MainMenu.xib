@@ -8510,6 +8510,17 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 															<int key="NSTag">2</int>
 															<reference key="NSTarget" ref="458352299"/>
 														</object>
+														<object class="NSMenuItem" id="823815601">
+															<reference key="NSMenu" ref="55340633"/>
+															<string key="NSTitle">WebGPU</string>
+															<string key="NSKeyEquiv"/>
+															<int key="NSMnemonicLoc">2147483647</int>
+															<reference key="NSOnImage" ref="396634170"/>
+															<reference key="NSMixedImage" ref="678976864"/>
+															<string key="NSAction">_popUpItemAction:</string>
+															<int key="NSTag">3</int>
+															<reference key="NSTarget" ref="458352299"/>
+														</object>
 													</array>
 													<reference key="NSMenuFont" ref="462791774"/>
 												</object>
@@ -31255,6 +31266,17 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 											<reference key="NSMixedImage" ref="678976864"/>
 											<string key="NSAction">_popUpItemAction:</string>
 											<int key="NSTag">1002</int>
+											<reference key="NSTarget" ref="659048795"/>
+										</object>
+										<object class="NSMenuItem" id="823815602">
+											<reference key="NSMenu" ref="647789229"/>
+											<string key="NSTitle">WebGPU</string>
+											<string key="NSKeyEquiv"/>
+											<int key="NSMnemonicLoc">2147483647</int>
+											<reference key="NSOnImage" ref="396634170"/>
+											<reference key="NSMixedImage" ref="678976864"/>
+											<string key="NSAction">_popUpItemAction:</string>
+											<int key="NSTag">3</int>
 											<reference key="NSTarget" ref="659048795"/>
 										</object>
 									</array>

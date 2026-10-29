@@ -30,6 +30,8 @@
 
 #include "utilities.h"
 
+#include "../../WGPURender.h"
+
 #import "CocoaDisplayView.h"
 #import "MacOGLDisplayView.h"
 
@@ -162,6 +164,10 @@ void MacGraphicsControl::Set3DEngineByID(int engineID)
 			this->_3DEngineCallbackStruct = gpu3Dgl_3_2;
 			break;
 			
+		case RENDERID_WGPU:
+			this->_3DEngineCallbackStruct = gpu3DWGPU;
+			break;
+			
 		default:
 			puts("DeSmuME: Invalid 3D renderer chosen; falling back to SoftRasterizer.");
 			engineID = RENDERID_SOFTRASTERIZER;
@@ -204,6 +210,10 @@ void MacGraphicsControl::SetEngine3DClientIndex(int clientListIndex)
 			engineID = RENDERID_OPENGL_3_2;
 			break;
 			
+		case CORE3DLIST_WGPU:
+			engineID = RENDERID_WGPU;
+			break;
+			
 		default:
 			puts("DeSmuME: Invalid 3D renderer chosen; falling back to SoftRasterizer.");
 			engineID = RENDERID_NULL;
@@ -238,6 +248,10 @@ int MacGraphicsControl::GetEngine3DClientIndex()
 			
 		case RENDERID_OPENGL_3_2:
 			clientListIndex = RENDERID_OPENGL_3_2;
+			break;
+			
+		case RENDERID_WGPU:
+			clientListIndex = CORE3DLIST_WGPU;
 			break;
 			
 		default:

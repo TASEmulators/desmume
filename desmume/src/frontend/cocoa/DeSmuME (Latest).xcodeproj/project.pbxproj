@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AB53C0032F9D8AB400025334 /* WGPURender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB53C0012F9D8AB400025334 /* WGPURender.cpp */; settings = {COMPILER_FLAGS = "-DENABLE_WGPU"; }; };
+		AB53C0042F9D8AB400025334 /* libwgpu_native.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = AB53C0022F9D8AB400025334 /* libwgpu_native.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		8C43E74627E3CD0100A35F65 /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
 		8C43E74727E3CD0100A35F65 /* Icon_MicrophoneGray_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB0FBD81A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png */; };
 		8C43E74827E3CD0100A35F65 /* DefaultKeyMappings.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */; };
@@ -4870,7 +4872,23 @@
 		ABFEA8EA1BB4FB3200B08C25 /* truetype.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7E61BB4EC1000B08C25 /* truetype.c */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		AB53C0052F9D8AB400025334 /* Embed wgpu-native */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				AB53C0042F9D8AB400025334 /* libwgpu_native.dylib in CopyFiles */,
+			);
+			name = "Embed wgpu-native";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		AB53C0012F9D8AB400025334 /* WGPURender.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = WGPURender.cpp; path = ../../WGPURender.cpp; sourceTree = "<group>"; };
+		AB53C0022F9D8AB400025334 /* libwgpu_native.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libwgpu_native.dylib; path = ../../../3rdparty/libs/macos/libwgpu_native.dylib; sourceTree = "<group>"; };
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -7540,6 +7558,7 @@
 				AB53AFBE2F9D8AB400025334 /* ShellScript */,
 				AB53AFBF2F9D8AB400025334 /* Sources */,
 				AB53B08A2F9D8AB400025334 /* Frameworks */,
+				AB53C0052F9D8AB400025334 /* Embed wgpu-native */,
 			);
 			buildRules = (
 			);
@@ -10955,6 +10974,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB53C0032F9D8AB400025334 /* WGPURender.cpp in Sources */,
 				AB53AFC02F9D8AB400025334 /* AAFilter.cpp in Sources */,
 				AB53AFC12F9D8AB400025334 /* arm_instructions.cpp in Sources */,
 				AB53AFC22F9D8AB400025334 /* armcpu.cpp in Sources */,
@@ -13037,7 +13057,23 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_UNROLL_LOOPS = YES;
 				LLVM_LTO = YES_THIN;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty/wgpu",
+				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty/libs/macos",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lwgpu_native",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
 			};
 			name = Debug;
 		};
@@ -13052,7 +13088,23 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_UNROLL_LOOPS = YES;
 				LLVM_LTO = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty/wgpu",
+				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty/libs/macos",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lwgpu_native",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
 			};
 			name = Release;
 		};
