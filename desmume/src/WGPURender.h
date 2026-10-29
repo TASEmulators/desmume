@@ -160,6 +160,12 @@ protected:
 	WGPUTexture _depthTex;
 	WGPUTextureView _depthView;
 
+	// Final conversion target. In 24-bit mode a fullscreen pass writes the
+	// framebuffer as 6665 stored in the 8888 channels here, so the flush's
+	// readback skips the CPU-side colorspace conversion.
+	WGPUTexture _outputTex;
+	WGPUTextureView _outputView;
+
 	// Multisampled variants of the targets above. They are only created when
 	// MSAA is enabled; the single-sampled targets then become the resolve
 	// targets (color) or the postprocess inputs (depth, via a resolve pass,
@@ -197,15 +203,18 @@ protected:
 	WGPUShaderModule _shaderModulePost;
 	WGPUShaderModule _shaderModuleClear;
 	WGPUShaderModule _shaderModuleDepthResolve;
+	WGPUShaderModule _shaderModuleOutput;
 
 	WGPUBindGroupLayout _geomBGL;
 	WGPUBindGroupLayout _postBGL;
 	WGPUBindGroupLayout _clearBGL;
 	WGPUBindGroupLayout _depthResolveBGL;
+	WGPUBindGroupLayout _outputBGL;
 	WGPUPipelineLayout _geomLayout;
 	WGPUPipelineLayout _postLayout;
 	WGPUPipelineLayout _clearLayout;
 	WGPUPipelineLayout _depthResolveLayout;
+	WGPUPipelineLayout _outputLayout;
 
 	WGPUSampler _samplerNearest;
 	WGPUSampler _samplerLinear;
@@ -213,6 +222,7 @@ protected:
 	WGPUBindGroup _postBindGroup;
 	WGPUBindGroup _clearBindGroup;
 	WGPUBindGroup _depthResolveBindGroup;
+	WGPUBindGroup _outputBindGroup;
 
 	// 1x1 white texture and the bind group built around it. Drawn in place of a
 	// texture for polygons that sample nothing, so index 0 is always bound.
@@ -226,6 +236,7 @@ protected:
 	WGPURenderPipeline _fogPipeline;
 	WGPURenderPipeline _clearPipeline;
 	WGPURenderPipeline _depthResolvePipeline;
+	WGPURenderPipeline _outputPipeline;
 
 	std::map<u64, WGPUTextureEntry> _textureMap;
 

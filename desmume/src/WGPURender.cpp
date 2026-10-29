@@ -424,6 +424,39 @@ fn fsFog(@builtin(position) fragCoord: vec4f) -> @location(0) vec4f
 }
 )WGSH";
 
+// Output format conversion pass. Reads the composited 8888 framebuffer and
+// writes it back as 6665 stored in the 8888 channels (r,g,b >> 2, a >> 3),
+// byte-identical to ColorspaceConvertBuffer8888To6665 on the CPU and to the
+// OpenGL renderer's framebuffer output program. Running this on the GPU lets
+// the flush skip the per-pixel CPU conversion.
+static const char *kWGSL_Output = R"WGSH(
+@group(0) @binding(0) var texIn: texture_2d<f32>;
+
+@vertex
+fn vsFullscreen(@builtin(vertex_index) vertexIndex: u32) -> @builtin(position) vec4f
+{
+	var pos = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
+	return vec4f(pos[vertexIndex], 0.0, 1.0);
+}
+
+@fragment
+fn fsOutput(@builtin(position) fragCoord: vec4f) -> @location(0) vec4f
+{
+	let c = vec2i(floor(fragCoord.xy));
+	let color = textureLoad(texIn, c, 0);
+
+	// textureLoad on RGBA8Unorm yields exact multiples of 1/255, so the
+	// quantization below reproduces the CPU shifts exactly.
+	let rgb8 = floor(color.rgb * 255.0 + 0.5);
+	let a8 = floor(color.a * 255.0 + 0.5);
+
+	let rgb6 = floor(rgb8 / 4.0);
+	let a5 = floor(a8 / 8.0);
+
+	return vec4f(rgb6 / 255.0, a5 / 255.0);
+}
+)WGSH";
+
 // Clear-image pass: the NDS "rear plane" capture is copied from native
 // resolution source textures into the (possibly upscaled) render targets.
 static const char *kWGSL_Clear = R"WGSH(
@@ -1195,6 +1228,8 @@ WGPURender::WGPURender(const uint32_t instanceBackends)
 	_fogView = NULL;
 	_depthTex = NULL;
 	_depthView = NULL;
+	_outputTex = NULL;
+	_outputView = NULL;
 
 	_colorTexMS = NULL;
 	_colorViewMS = NULL;
@@ -1223,15 +1258,18 @@ WGPURender::WGPURender(const uint32_t instanceBackends)
 	_shaderModulePost = NULL;
 	_shaderModuleClear = NULL;
 	_shaderModuleDepthResolve = NULL;
+	_shaderModuleOutput = NULL;
 
 	_geomBGL = NULL;
 	_postBGL = NULL;
 	_clearBGL = NULL;
 	_depthResolveBGL = NULL;
+	_outputBGL = NULL;
 	_geomLayout = NULL;
 	_postLayout = NULL;
 	_clearLayout = NULL;
 	_depthResolveLayout = NULL;
+	_outputLayout = NULL;
 
 	_samplerNearest = NULL;
 	_samplerLinear = NULL;
@@ -1239,6 +1277,7 @@ WGPURender::WGPURender(const uint32_t instanceBackends)
 	_postBindGroup = NULL;
 	_clearBindGroup = NULL;
 	_depthResolveBindGroup = NULL;
+	_outputBindGroup = NULL;
 
 	_whiteTex = NULL;
 	_whiteView = NULL;
@@ -1249,6 +1288,7 @@ WGPURender::WGPURender(const uint32_t instanceBackends)
 	_fogPipeline = NULL;
 	_clearPipeline = NULL;
 	_depthResolvePipeline = NULL;
+	_outputPipeline = NULL;
 
 	_currentState = NULL;
 	_useClearImage = false;
@@ -1514,11 +1554,13 @@ void WGPURender::_DestroyPipelines()
 	if (_postBindGroup) { wgpuBindGroupRelease(_postBindGroup); _postBindGroup = NULL; }
 	if (_clearBindGroup) { wgpuBindGroupRelease(_clearBindGroup); _clearBindGroup = NULL; }
 	if (_depthResolveBindGroup) { wgpuBindGroupRelease(_depthResolveBindGroup); _depthResolveBindGroup = NULL; }
+	if (_outputBindGroup) { wgpuBindGroupRelease(_outputBindGroup); _outputBindGroup = NULL; }
 
 	if (_edgePipeline) { wgpuRenderPipelineRelease(_edgePipeline); _edgePipeline = NULL; }
 	if (_fogPipeline) { wgpuRenderPipelineRelease(_fogPipeline); _fogPipeline = NULL; }
 	if (_clearPipeline) { wgpuRenderPipelineRelease(_clearPipeline); _clearPipeline = NULL; }
 	if (_depthResolvePipeline) { wgpuRenderPipelineRelease(_depthResolvePipeline); _depthResolvePipeline = NULL; }
+	if (_outputPipeline) { wgpuRenderPipelineRelease(_outputPipeline); _outputPipeline = NULL; }
 
 	for (size_t a = 0; a < 2; a++)
 	{
@@ -1545,16 +1587,19 @@ void WGPURender::_DestroyPipelines()
 	if (_shaderModulePost) { wgpuShaderModuleRelease(_shaderModulePost); _shaderModulePost = NULL; }
 	if (_shaderModuleClear) { wgpuShaderModuleRelease(_shaderModuleClear); _shaderModuleClear = NULL; }
 	if (_shaderModuleDepthResolve) { wgpuShaderModuleRelease(_shaderModuleDepthResolve); _shaderModuleDepthResolve = NULL; }
+	if (_shaderModuleOutput) { wgpuShaderModuleRelease(_shaderModuleOutput); _shaderModuleOutput = NULL; }
 
 	if (_geomLayout) { wgpuPipelineLayoutRelease(_geomLayout); _geomLayout = NULL; }
 	if (_postLayout) { wgpuPipelineLayoutRelease(_postLayout); _postLayout = NULL; }
 	if (_clearLayout) { wgpuPipelineLayoutRelease(_clearLayout); _clearLayout = NULL; }
 	if (_depthResolveLayout) { wgpuPipelineLayoutRelease(_depthResolveLayout); _depthResolveLayout = NULL; }
+	if (_outputLayout) { wgpuPipelineLayoutRelease(_outputLayout); _outputLayout = NULL; }
 
 	if (_geomBGL) { wgpuBindGroupLayoutRelease(_geomBGL); _geomBGL = NULL; }
 	if (_postBGL) { wgpuBindGroupLayoutRelease(_postBGL); _postBGL = NULL; }
 	if (_clearBGL) { wgpuBindGroupLayoutRelease(_clearBGL); _clearBGL = NULL; }
 	if (_depthResolveBGL) { wgpuBindGroupLayoutRelease(_depthResolveBGL); _depthResolveBGL = NULL; }
+	if (_outputBGL) { wgpuBindGroupLayoutRelease(_outputBGL); _outputBGL = NULL; }
 
 	if (_whiteBindGroup) { wgpuBindGroupRelease(_whiteBindGroup); _whiteBindGroup = NULL; }
 	if (_whiteView) { wgpuTextureViewRelease(_whiteView); _whiteView = NULL; }
@@ -1615,6 +1660,15 @@ Render3DError WGPURender::_CreateRenderTargets(size_t w, size_t h)
 
 	viewDesc.format = WGPUTextureFormat_Depth32Float;
 	_depthView = wgpuTextureCreateView(_depthTex, &viewDesc);
+
+	// The output conversion target. Same format as the color buffer; the 6665
+	// data is stored in its 8888 channels (see kWGSL_Output).
+	WGPUTextureDescriptor outDesc = texDesc;
+	outDesc.usage = (WGPUTextureUsage)(WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc);
+	_outputTex = wgpuDeviceCreateTexture(_device, &outDesc);
+
+	viewDesc.format = WGPUTextureFormat_RGBA8Unorm;
+	_outputView = wgpuTextureCreateView(_outputTex, &viewDesc);
 
 	// Multisampled variants. When MSAA is on, the single-sampled color targets
 	// above become resolve targets, and a fullscreen pass copies the
@@ -1700,6 +1754,8 @@ void WGPURender::_DestroyRenderTargets()
 	if (_fogTex) { wgpuTextureRelease(_fogTex); _fogTex = NULL; }
 	if (_depthView) { wgpuTextureViewRelease(_depthView); _depthView = NULL; }
 	if (_depthTex) { wgpuTextureRelease(_depthTex); _depthTex = NULL; }
+	if (_outputView) { wgpuTextureViewRelease(_outputView); _outputView = NULL; }
+	if (_outputTex) { wgpuTextureRelease(_outputTex); _outputTex = NULL; }
 
 	if (_colorViewMS) { wgpuTextureViewRelease(_colorViewMS); _colorViewMS = NULL; }
 	if (_colorTexMS) { wgpuTextureRelease(_colorTexMS); _colorTexMS = NULL; }
@@ -1720,6 +1776,7 @@ void WGPURender::_DestroyRenderTargets()
 	if (_postBindGroup) { wgpuBindGroupRelease(_postBindGroup); _postBindGroup = NULL; }
 	if (_clearBindGroup) { wgpuBindGroupRelease(_clearBindGroup); _clearBindGroup = NULL; }
 	if (_depthResolveBindGroup) { wgpuBindGroupRelease(_depthResolveBindGroup); _depthResolveBindGroup = NULL; }
+	if (_outputBindGroup) { wgpuBindGroupRelease(_outputBindGroup); _outputBindGroup = NULL; }
 
 	for (size_t i = 0; i < 2; i++)
 	{
@@ -1754,8 +1811,12 @@ Render3DError WGPURender::_CreatePipelines()
 	wgsl.code = WGSLString(kWGSL_DepthResolve);
 	_shaderModuleDepthResolve = wgpuDeviceCreateShaderModule(_device, &moduleDesc);
 
+	wgsl.code = WGSLString(kWGSL_Output);
+	_shaderModuleOutput = wgpuDeviceCreateShaderModule(_device, &moduleDesc);
+
 	if ( (_shaderModuleGeometry == NULL) || (_shaderModulePost == NULL) ||
-	     (_shaderModuleClear == NULL) || (_shaderModuleDepthResolve == NULL) )
+	     (_shaderModuleClear == NULL) || (_shaderModuleDepthResolve == NULL) ||
+	     (_shaderModuleOutput == NULL) )
 	{
 		printf("WGPU: shader module creation failed\n");
 		return RENDER3DERROR_INVALID_VALUE;
@@ -1898,6 +1959,21 @@ Render3DError WGPURender::_CreatePipelines()
 		_depthResolveBGL = wgpuDeviceCreateBindGroupLayout(_device, &desc);
 	}
 
+	// Output conversion bind group layout (the composited 8888 framebuffer).
+	{
+		WGPUBindGroupLayoutEntry entry;
+		memset(&entry, 0, sizeof(entry));
+		entry.binding = 0;
+		entry.visibility = WGPUShaderStage_Fragment;
+		entry.texture.sampleType = WGPUTextureSampleType_Float;
+		entry.texture.viewDimension = WGPUTextureViewDimension_2D;
+
+		WGPUBindGroupLayoutDescriptor desc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
+		desc.entryCount = 1;
+		desc.entries = &entry;
+		_outputBGL = wgpuDeviceCreateBindGroupLayout(_device, &desc);
+	}
+
 	{
 		WGPUBindGroupLayout layouts[1] = {_geomBGL};
 		WGPUPipelineLayoutDescriptor desc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
@@ -1913,10 +1989,13 @@ Render3DError WGPURender::_CreatePipelines()
 
 		layouts[0] = _depthResolveBGL;
 		_depthResolveLayout = wgpuDeviceCreatePipelineLayout(_device, &desc);
+
+		layouts[0] = _outputBGL;
+		_outputLayout = wgpuDeviceCreatePipelineLayout(_device, &desc);
 	}
 
-	if ( (_geomBGL == NULL) || (_postBGL == NULL) || (_clearBGL == NULL) || (_depthResolveBGL == NULL) ||
-	     (_geomLayout == NULL) || (_postLayout == NULL) || (_clearLayout == NULL) || (_depthResolveLayout == NULL) )
+	if ( (_geomBGL == NULL) || (_postBGL == NULL) || (_clearBGL == NULL) || (_depthResolveBGL == NULL) || (_outputBGL == NULL) ||
+	     (_geomLayout == NULL) || (_postLayout == NULL) || (_clearLayout == NULL) || (_depthResolveLayout == NULL) || (_outputLayout == NULL) )
 	{
 		printf("WGPU: bind group layout creation failed\n");
 		return RENDER3DERROR_INVALID_VALUE;
@@ -2030,7 +2109,32 @@ Render3DError WGPURender::_CreatePipelines()
 		_depthResolvePipeline = wgpuDeviceCreateRenderPipeline(_device, &desc);
 	}
 
-	if ( (_edgePipeline == NULL) || (_fogPipeline == NULL) || (_clearPipeline == NULL) || (_depthResolvePipeline == NULL) )
+	// Output conversion pipeline. Plain copy semantics: the pass is a final
+	// fullscreen draw with no blending and no depth attachment.
+	{
+		WGPURenderPipelineDescriptor desc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
+		desc.layout = _outputLayout;
+		desc.vertex.module = _shaderModuleOutput;
+		desc.vertex.entryPoint = WGSLString("vsFullscreen");
+		desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+		desc.primitive.cullMode = WGPUCullMode_None;
+		desc.multisample.count = 1;
+
+		WGPUColorTargetState target = WGPU_COLOR_TARGET_STATE_INIT;
+		target.format = WGPUTextureFormat_RGBA8Unorm;
+		target.writeMask = WGPUColorWriteMask_All;
+
+		WGPUFragmentState fragment = WGPU_FRAGMENT_STATE_INIT;
+		fragment.module = _shaderModuleOutput;
+		fragment.entryPoint = WGSLString("fsOutput");
+		fragment.targetCount = 1;
+		fragment.targets = &target;
+		desc.fragment = &fragment;
+
+		_outputPipeline = wgpuDeviceCreateRenderPipeline(_device, &desc);
+	}
+
+	if ( (_edgePipeline == NULL) || (_fogPipeline == NULL) || (_clearPipeline == NULL) || (_depthResolvePipeline == NULL) || (_outputPipeline == NULL) )
 	{
 		printf("WGPU: postprocess pipeline creation failed\n");
 		return RENDER3DERROR_INVALID_VALUE;
@@ -2198,6 +2302,22 @@ void WGPURender::_CreateBindGroups()
 		desc.entryCount = 1;
 		desc.entries = &entry;
 		_depthResolveBindGroup = wgpuDeviceCreateBindGroup(_device, &desc);
+	}
+
+	if (_outputBindGroup != NULL) { wgpuBindGroupRelease(_outputBindGroup); _outputBindGroup = NULL; }
+
+	if (_colorView != NULL)
+	{
+		WGPUBindGroupEntry entry;
+		memset(&entry, 0, sizeof(entry));
+		entry.binding = 0;
+		entry.textureView = _colorView;
+
+		WGPUBindGroupDescriptor desc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
+		desc.layout = _outputBGL;
+		desc.entryCount = 1;
+		desc.entries = &entry;
+		_outputBindGroup = wgpuDeviceCreateBindGroup(_device, &desc);
 	}
 }
 
@@ -2899,13 +3019,38 @@ void WGPURender::_EncodeRenderPasses(const GFX3D_State &renderState)
 		wgpuRenderPassEncoderRelease(pass);
 	}
 
+	// --- pass 4: output format conversion ---
+	// In 24-bit mode the composited framebuffer is converted to 6665 stored in
+	// the 8888 channels on the GPU, so the flush's readback only has to copy
+	// the result and the CPU-side colorspace conversion is skipped.
+	const bool willConvertColorOnGPU = ( (_outputFormat == NDSColorFormat_BGR666_Rev) && (_outputPipeline != NULL) && (_outputBindGroup != NULL) );
+
+	if (willConvertColorOnGPU)
+	{
+		WGPURenderPassColorAttachment colorAttachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
+		colorAttachment.view = _outputView;
+		colorAttachment.loadOp = WGPULoadOp_Clear;
+		colorAttachment.storeOp = WGPUStoreOp_Store;
+
+		WGPURenderPassDescriptor passDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
+		passDesc.colorAttachmentCount = 1;
+		passDesc.colorAttachments = &colorAttachment;
+
+		WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(encoder, &passDesc);
+		wgpuRenderPassEncoderSetPipeline(pass, _outputPipeline);
+		wgpuRenderPassEncoderSetBindGroup(pass, 0, _outputBindGroup, 0, NULL);
+		wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
+		wgpuRenderPassEncoderEnd(pass);
+		wgpuRenderPassEncoderRelease(pass);
+	}
+
 	// --- queue the readback for the color-out slot that owns this frame ---
 	const size_t colorOutIdx = (this->_lastBoundColorOut <= 1) ? this->_lastBoundColorOut : RENDER3D_RESOURCE_INDEX_NONE;
 
 	if ( (colorOutIdx != RENDER3D_RESOURCE_INDEX_NONE) && (_readbackBuffer[colorOutIdx] != NULL) )
 	{
 		WGPUTexelCopyTextureInfo src = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
-		src.texture = _colorTex;
+		src.texture = willConvertColorOnGPU ? _outputTex : _colorTex;
 
 		WGPUTexelCopyBufferInfo dst = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
 		dst.buffer = _readbackBuffer[colorOutIdx];
@@ -2965,12 +3110,15 @@ void WGPURender::ReadbackFramebuffer(const size_t idx, u8 *dstRaw, u8 *dstConver
 
 	wgpuBufferUnmap(_readbackBuffer[idx]);
 
-	// Colorspace conversion, matching what the OpenGL color output does.
+	// Colorspace conversion, matching what the OpenGL color output does. In
+	// 24-bit mode the output pass already wrote the framebuffer as 6665 stored
+	// in the 8888 channels (see kWGSL_Output), so both CPU buffers receive the
+	// readback unchanged and the per-pixel CPU conversion is skipped.
 	const size_t pixCount = _framebufferWidth * _framebufferHeight;
 
 	if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
 	{
-		ColorspaceConvertBuffer8888To6665<false, false>((const u32 *)dstRaw, (u32 *)dstConverted, pixCount);
+		memcpy(dstConverted, dstRaw, pixCount * sizeof(Color4u8));
 	}
 	else
 	{
