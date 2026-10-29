@@ -43,9 +43,12 @@ public:
 	~WGPUDISPLAY();
 
 	// Creates the device, surface and pipeline on first use for this window.
+	// `instanceBackends` pins wgpu-native to one backend (WGPUInstanceBackend
+	// bits) so that each backend can appear as its own display method; zero lets
+	// wgpu-native pick. Passing a different mask rebuilds everything.
 	// Returns false when WebGPU is unavailable (build without ENABLE_WGPU, no
 	// adapter, surface creation failure, ...).
-	bool begin(HWND hwnd);
+	bool begin(HWND hwnd, u32 instanceBackends = 0);
 
 	// Releases the swap chain (called when another display method takes over).
 	void kill();
@@ -71,6 +74,9 @@ public:
 private:
 	WGPUPresent _present;
 	Win32PresentWindow* _window;
+
+	// Backend the current surface was created for, as WGPUInstanceBackend bits.
+	u32 _instanceBackends;
 
 	bool _useOutputFilterPending;
 };

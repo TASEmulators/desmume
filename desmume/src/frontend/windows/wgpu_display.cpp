@@ -35,6 +35,7 @@ WGPUDISPLAY::WGPUDISPLAY()
 {
 	active = false;
 	_window = NULL;
+	_instanceBackends = 0;
 	_useOutputFilterPending = false;
 }
 
@@ -43,16 +44,17 @@ WGPUDISPLAY::~WGPUDISPLAY()
 	kill();
 }
 
-bool WGPUDISPLAY::begin(HWND hwnd)
+bool WGPUDISPLAY::begin(HWND hwnd, u32 instanceBackends)
 {
-	if ( (_window != NULL) && _window->matches(hwnd) && _present.isReady() )
+	if ( (_window != NULL) && _window->matches(hwnd) && _present.isReady() &&
+		 (_instanceBackends == instanceBackends) )
 	{
 		active = true;
 		return true;
 	}
 
-	// A different window (or a previous failure) means the surface has to be
-	// rebuilt from scratch.
+	// A different window, a different backend (or a previous failure) means the
+	// surface has to be rebuilt from scratch.
 	kill();
 
 	if (hwnd == NULL)
@@ -62,7 +64,7 @@ bool WGPUDISPLAY::begin(HWND hwnd)
 
 	_window = new Win32PresentWindow(hwnd);
 
-	if (!_present.begin(_window))
+	if (!_present.begin(_window, (uint32_t)instanceBackends))
 	{
 		delete _window;
 		_window = NULL;
@@ -70,6 +72,7 @@ bool WGPUDISPLAY::begin(HWND hwnd)
 		return false;
 	}
 
+	_instanceBackends = instanceBackends;
 	active = true;
 
 	return true;
@@ -86,6 +89,8 @@ void WGPUDISPLAY::kill()
 		delete _window;
 		_window = NULL;
 	}
+
+	_instanceBackends = 0;
 }
 
 void WGPUDISPLAY::setvsync(bool vsync)
@@ -138,12 +143,13 @@ WGPUDISPLAY::WGPUDISPLAY()
 {
 	active = false;
 	_window = NULL;
+	_instanceBackends = 0;
 	_useOutputFilterPending = false;
 }
 
 WGPUDISPLAY::~WGPUDISPLAY() {}
 
-bool WGPUDISPLAY::begin(HWND) { return false; }
+bool WGPUDISPLAY::begin(HWND, u32) { return false; }
 void WGPUDISPLAY::kill() {}
 void WGPUDISPLAY::setvsync(bool vsync) {}
 void WGPUDISPLAY::setUseOutputFilter(bool theState) { _useOutputFilterPending = theState; }

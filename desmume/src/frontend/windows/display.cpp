@@ -30,6 +30,7 @@ DDRAW ddraw;
 GLDISPLAY gldisplay;
 WGPUDISPLAY wgpudisplay;
 u32 displayMethod;
+u32 displayWGPUBackend = 0;
 
 // The window the OpenGL display method has presented into, if any.
 //
@@ -634,8 +635,18 @@ static void WGPU_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight)
 		if (osd) osd->swapScreens = isMainGPUFirst;
 	}
 
-	if (!wgpudisplay.begin(hwnd))
+	if (!wgpudisplay.begin(hwnd, displayWGPUBackend))
 	{
+		// This runs every frame while the setup is broken, so complain only once.
+		// Most likely cause: the pinned backend cannot present into this window
+		// (picking another backend, or Automatic, is the way out).
+		static bool reportedFailure = false;
+		if (!reportedFailure)
+		{
+			reportedFailure = true;
+			INFO("WGPU: could not start the display on backend mask %u; choose another backend or Automatic.\n", displayWGPUBackend);
+		}
+
 		return;
 	}
 

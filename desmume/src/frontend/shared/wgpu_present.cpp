@@ -50,6 +50,8 @@ bool WGPUPresent::present(const uint32_t *, int, int, const WGPUPresentRect *,
 #include <utility>
 
 #include "webgpu.h"
+// wgpu-native extensions (WGPUInstanceExtras) used to pin the instance backend.
+#include "wgpu.h"
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -179,6 +181,10 @@ struct WGPUPresent::Impl
 {
 	WGPUPresentWindow *window;
 
+	// Instance backends this presentation path is pinned to, as
+	// WGPUInstanceBackend bits. Zero lets wgpu-native pick any backend.
+	uint32_t instanceBackends;
+
 	WGPUInstance instance;
 	WGPUAdapter adapter;
 	WGPUDevice device;
@@ -219,6 +225,7 @@ struct WGPUPresent::Impl
 
 	Impl() :
 		window(NULL),
+		instanceBackends(0),
 		instance(NULL),
 		adapter(NULL),
 		device(NULL),
@@ -254,7 +261,7 @@ struct WGPUPresent::Impl
 	}
 
 	void Destroy();
-	bool CreateDevice();
+	bool CreateDevice(uint32_t instanceBackends);
 	bool CreateSurface();
 	bool CreatePipeline();
 	bool CreateBuffers();
@@ -263,14 +270,30 @@ struct WGPUPresent::Impl
 	bool CreateBindGroup(WGPUTextureView view, WGPUSampler sampler, WGPUBindGroup *out);
 };
 
-bool WGPUPresent::Impl::CreateDevice()
+bool WGPUPresent::Impl::CreateDevice(uint32_t instanceBackends)
 {
+	// Remembered first: the early-out below must not leave a stale mask behind.
+	this->instanceBackends = instanceBackends;
+
 	if (this->instance != NULL)
 	{
 		return true;
 	}
 
+	WGPUInstanceExtras extras;
+	memset(&extras, 0, sizeof(extras));
+
 	WGPUInstanceDescriptor instanceDesc = WGPU_INSTANCE_DESCRIPTOR_INIT;
+
+	if (instanceBackends != 0)
+	{
+		// Pin the instance to the requested backend so the frontend can offer one
+		// display method per backend, the same way it lists the 3D renderers.
+		extras.chain.sType = (WGPUSType)WGPUSType_InstanceExtras;
+		extras.backends = (WGPUInstanceBackend)instanceBackends;
+		instanceDesc.nextInChain = &extras.chain;
+	}
+
 	this->instance = wgpuCreateInstance(&instanceDesc);
 
 	if (this->instance == NULL)
@@ -733,6 +756,7 @@ void WGPUPresent::Impl::Destroy()
 	if (this->instance != NULL) { wgpuInstanceRelease(this->instance); this->instance = NULL; }
 
 	this->window = NULL;
+	this->instanceBackends = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -754,30 +778,37 @@ WGPUPresent::~WGPUPresent()
 	}
 }
 
-bool WGPUPresent::begin(WGPUPresentWindow *window)
+bool WGPUPresent::begin(WGPUPresentWindow *window, uint32_t instanceBackends)
 {
 	if (_impl == NULL)
 	{
 		return false;
 	}
 
-	if (_impl->ready && (_impl->window == window))
+	// Same window and same backend: keep what is already running.
+	const bool isSameRequest = (_impl->window == window) && (_impl->instanceBackends == instanceBackends);
+
+	if (_impl->ready && isSameRequest)
 	{
 		return true;
 	}
 
-	if (_impl->failed)
+	// A failure is only sticky for the request that produced it: picking another
+	// backend (or window) deserves a fresh attempt.
+	if (_impl->failed && isSameRequest)
 	{
 		return false;
 	}
 
 	// Start from a clean slate so a partially initialized attempt cannot leak or
 	// keep a surface bound to a stale window.
+	_impl->failed = false;
 	_impl->Destroy();
 
 	_impl->window = window;
 
-	if (!_impl->CreateDevice())
+	// CreateDevice() takes the backend mask and records it on the way in.
+	if (!_impl->CreateDevice(instanceBackends))
 	{
 		return false;
 	}

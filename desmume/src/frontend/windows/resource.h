@@ -1000,6 +1000,14 @@
 #define IDM_SLOT1                       40097
 #define ID_DISPLAYMETHOD_OPENGL         40102
 #define ID_DISPLAYMETHOD_WGPU           40200
+
+// One entry per WebGPU backend, appended to the "WebGPU" submenu at run time from
+// the same list the 3D renderer uses (src/WGPURender.cpp) so both offer exactly
+// the backends this machine can run. Contiguous on purpose: the command handler
+// resolves the whole block with one range check. Entry N carries the mask from
+// WGPURender_GetBackendMask(N); ID_DISPLAYMETHOD_WGPU itself means "automatic".
+#define ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST 40201
+#define ID_DISPLAYMETHOD_WGPU_BACKEND_LAST  40217
 #define IDM_FILE_IMPORT_DB              40103
 #define IDM_AUTODETECTSAVETYPE_INTERNAL 40104
 #define ID_DISPLAYMETHOD_OPENGL_FILTER  40104
@@ -1159,7 +1167,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
-#define _APS_NEXT_COMMAND_VALUE         40159
+#define _APS_NEXT_COMMAND_VALUE         40218
 #define _APS_NEXT_CONTROL_VALUE         1068
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

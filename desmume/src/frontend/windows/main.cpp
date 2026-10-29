@@ -476,6 +476,124 @@ static void Build3DRendererList()
 	core3DList[count] = NULL;
 }
 
+#if defined(ENABLE_WGPU)
+// ---------------------------------------------------------------------------
+// WebGPU display method: one menu entry per backend
+// ---------------------------------------------------------------------------
+//
+// The 3D renderer list already carries one entry per backend wgpu-native reported
+// for this machine ("WebGPU - D3D12", "WebGPU - Vulkan", ...). The display method
+// offers the same choice through a "WebGPU" submenu: the resource only holds
+// "Automatic", the per-backend entries are appended once the list above exists,
+// so a backend that cannot run here never shows up in either place.
+
+// Defined further down, next to PopulateLuaSubmenu(). Declared here because the
+// submenu lookup below needs it before that point.
+static HMENU GetMenuItemParent(UINT itemId, HMENU hMenu);
+
+// Index in the renderer backend list for an instance backend mask, or -1.
+static int WGPUBackendIndexFromMask(const u32 mask)
+{
+	const size_t backendCount = WGPURender_GetBackendCount();
+
+	for (size_t i = 0; i < backendCount; i++)
+	{
+		if (WGPURender_GetBackendMask(i) == mask)
+		{
+			return (int)i;
+		}
+	}
+
+	return -1;
+}
+
+// Appends one entry per available backend under the "WebGPU" submenu. Called once
+// the main window -- and with it the menu -- exists.
+static void BuildDisplayMethodBackendMenu()
+{
+	HMENU webgpuMenu = GetMenuItemParent(ID_DISPLAYMETHOD_WGPU, mainMenu);
+	const size_t backendCount = WGPURender_GetBackendCount();
+
+	if ( (webgpuMenu == NULL) || (backendCount == 0) )
+	{
+		return;
+	}
+
+	AppendMenuW(webgpuMenu, MF_SEPARATOR, 0, NULL);
+
+	for (size_t i = 0; (i < backendCount) && ((ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST + i) < ID_DISPLAYMETHOD_WGPU_BACKEND_LAST); i++)
+	{
+		const char *label = WGPURender_GetBackendLabel(i);
+
+		if (label == NULL)
+		{
+			continue;
+		}
+
+		AppendMenuA(webgpuMenu, MF_STRING, ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST + (UINT)i, label);
+	}
+}
+
+// Keeps the check marks of the "WebGPU" submenu in step with the live display
+// method. Both the automatic entry (mask 0) and the per-backend ones are covered.
+static void UpdateDisplayMethodMenuChecks()
+{
+	const bool isWGPU = (displayMethod == DISPMETHOD_WGPU);
+	const size_t backendCount = WGPURender_GetBackendCount();
+
+	MainWindow->checkMenu(ID_DISPLAYMETHOD_WGPU, isWGPU && (displayWGPUBackend == 0));
+
+	for (size_t i = 0; (i < backendCount) && ((ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST + i) < ID_DISPLAYMETHOD_WGPU_BACKEND_LAST); i++)
+	{
+		MainWindow->checkMenu(ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST + (UINT)i,
+							  isWGPU && (displayWGPUBackend == WGPURender_GetBackendMask(i)));
+	}
+}
+
+// Switches the display method to WebGPU on `instanceBackends` (WGPUInstanceBackend
+// bits; zero lets wgpu-native pick) for window `target`. Returns false when the
+// window cannot host WebGPU any more, in which case the current method is left
+// untouched.
+static bool SwitchToWGPUDisplay(HWND target, const u32 instanceBackends)
+{
+	// The OpenGL display method spends this window for every other graphics API
+	// (see _glPresentedHwnd in display.cpp), and the failure mode is a fatal
+	// wgpuSurfaceConfigure() panic, so refuse the switch while the window still
+	// belongs to the OpenGL presentation path. Rebuilding the main window would
+	// drag the toolbar, the menus, the DPI state and every cached HWND along with
+	// it, so asking for a restart is the cheaper answer. Going the other way
+	// (WebGPU -> OpenGL) is fine.
+	if (DisplayWindowUsedByOpenGL(target))
+	{
+		MessageBox(target,
+			"The WebGPU display method cannot be used in this window.\n"
+			"\n"
+			"The OpenGL display method has already drawn into this window, and after "
+			"that Windows will not let another graphics API take the window over. "
+			"Switching the display method cannot undo it.\n"
+			"\n"
+			"Please restart DeSmuME and choose WebGPU again. Within a single session "
+			"the switch only works one way: WebGPU to OpenGL is fine, OpenGL to "
+			"WebGPU needs a restart.",
+			DESMUME_NAME, MB_OK | MB_ICONINFORMATION);
+
+		return false;
+	}
+
+	displayWGPUBackend = instanceBackends;
+	displayMethod = DISPMETHOD_WGPU;
+
+	WritePrivateProfileInt("Video", "Display Method", DISPMETHOD_WGPU, IniName);
+	WritePrivateProfileInt("Video", "Display Method Backend", (int)instanceBackends, IniName);
+
+	// Drop the surface so the next frame builds one for the chosen backend.
+	wgpudisplay.kill();
+	SetDisplayNeedsBufferUpdates();
+
+	return true;
+}
+#endif
+
 static void Select3DCoreComboItem(HWND hDlg, const int coreIndex)
 {
 	const HWND hCombo = GetDlgItem(hDlg, IDC_3DCORE);
@@ -2050,6 +2168,18 @@ int _main()
 	// this build cannot provide.
 	if (displayMethod == DISPMETHOD_WGPU)
 		displayMethod = DISPMETHOD_DDRAW_HW;
+#else
+	// Backend the WebGPU display method is pinned to, as WGPUInstanceBackend bits
+	// (zero = let wgpu-native pick). A value this machine can no longer run -- new
+	// driver, different GPU, backend dropped from the build -- falls back to
+	// automatic instead of leaving the emulator on a display method that never
+	// draws.
+	displayWGPUBackend = (u32)GetPrivateProfileInt("Video", "Display Method Backend", 0, IniName);
+	if ( (displayWGPUBackend != 0) && (WGPUBackendIndexFromMask(displayWGPUBackend) < 0) )
+	{
+		printf("WGPU: ignoring saved display backend mask %u, it is not available\n", displayWGPUBackend);
+		displayWGPUBackend = 0;
+	}
 #endif
 
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
@@ -2247,6 +2377,13 @@ int _main()
 		delete MainWindow;
 		exit(-1);
 	}
+
+#if defined(ENABLE_WGPU)
+	// The menu exists now, so the per-backend WebGPU entries can be added under
+	// the "WebGPU" submenu. This needs Build3DRendererList() to have run, which
+	// happened before _main().
+	BuildDisplayMethodBackendMenu();
+#endif
 
 	SetStyle(style);
 
@@ -3880,7 +4017,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, displayMethod == DISPMETHOD_DDRAW_HW);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, displayMethod == DISPMETHOD_DDRAW_SW);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_OPENGL, displayMethod == DISPMETHOD_OPENGL);
+#if defined(ENABLE_WGPU)
+			// Covers the automatic entry and one entry per backend.
+			UpdateDisplayMethodMenuChecks();
+#else
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_WGPU, displayMethod == DISPMETHOD_WGPU);
+#endif
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_FILTER, gldisplay.useOutputFilter());
 
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
@@ -5282,37 +5424,13 @@ DOKEYDOWN:
 
 		case ID_DISPLAYMETHOD_WGPU:
 #if defined(ENABLE_WGPU)
-			// The OpenGL display method spends this window for every other graphics
-			// API (see _glPresentedHwnd in display.cpp), and the failure mode is a
-			// fatal wgpuSurfaceConfigure() panic, so refuse the switch while the
-			// window still belongs to the OpenGL presentation path. Rebuilding the
-			// main window would drag the toolbar, the menus, the DPI state and every
-			// cached HWND along with it, so asking for a restart is the cheaper
-			// answer. Going the other way (WebGPU -> OpenGL) is fine.
-			if (DisplayWindowUsedByOpenGL(hwnd))
+			// "Automatic": no backend pinned, which is also how a settings file
+			// written before the per-backend entries existed reads.
+			if (!SwitchToWGPUDisplay(hwnd, 0))
 			{
-				MessageBox(hwnd,
-					"The WebGPU display method cannot be used in this window.\n"
-					"\n"
-					"The OpenGL display method has already drawn into this window, and after "
-					"that Windows will not let another graphics API take the window over. "
-					"Switching the display method cannot undo it.\n"
-					"\n"
-					"Please restart DeSmuME and choose WebGPU again. Within a single session "
-					"the switch only works one way: WebGPU to OpenGL is fine, OpenGL to "
-					"WebGPU needs a restart.",
-					DESMUME_NAME, MB_OK | MB_ICONINFORMATION);
-
-				// displayMethod stays as it is; keep the check marks agreeing with it.
-				MainWindow->checkMenu(ID_DISPLAYMETHOD_OPENGL, displayMethod == DISPMETHOD_OPENGL);
-				MainWindow->checkMenu(ID_DISPLAYMETHOD_WGPU, displayMethod == DISPMETHOD_WGPU);
-				break;
+				// Nothing changed, so put the check marks back where they were.
+				UpdateDisplayMethodMenuChecks();
 			}
-
-			displayMethod = DISPMETHOD_WGPU;
-			WritePrivateProfileInt("Video","Display Method", DISPMETHOD_WGPU, IniName);
-			wgpudisplay.kill();
-			SetDisplayNeedsBufferUpdates();
 #else
 			MessageBox(hwnd, "This build does not include the WebGPU display method.", DESMUME_NAME, MB_OK | MB_ICONINFORMATION);
 #endif
@@ -5735,6 +5853,22 @@ DOKEYDOWN:
 				{
 					backup_setManualBackupType(id-IDC_SAVETYPE);
 				}
+#if defined(ENABLE_WGPU)
+				// One entry per WebGPU display backend. They share a contiguous ID
+				// block because the set is built at run time, so there is no case
+				// label for each of them.
+				if ( (id >= ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST) && (id < ID_DISPLAYMETHOD_WGPU_BACKEND_LAST) )
+				{
+					const u32 backendMask = WGPURender_GetBackendMask((size_t)(id - ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST));
+
+					// A menu entry outliving the list it came from would land here with
+					// a zero mask; treat that as "nothing selected" and resync the marks.
+					if ( (backendMask == 0) || !SwitchToWGPUDisplay(hwnd, backendMask) )
+					{
+						UpdateDisplayMethodMenuChecks();
+					}
+				}
+#endif
 				return 0;
 			}
 		}

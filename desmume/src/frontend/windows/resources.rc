@@ -1822,7 +1822,14 @@ BEGIN
             MENUITEM "DirectDraw &SW",              ID_DISPLAYMETHOD_DIRECTDRAWSW
             MENUITEM SEPARATOR
             MENUITEM "&OpenGL",                     ID_DISPLAYMETHOD_OPENGL
-            MENUITEM "&WebGPU",                     ID_DISPLAYMETHOD_WGPU
+            // "Automatic" is the only WebGPU entry that lives in the resource: the
+            // per-backend ones are appended at run time, because which backends
+            // this machine can run is only known then. See
+            // BuildDisplayMethodBackendMenu() in main.cpp.
+            POPUP "&WebGPU"
+            BEGIN
+                MENUITEM "&Automatic",              ID_DISPLAYMETHOD_WGPU
+            END
             MENUITEM "&Filter",                     ID_DISPLAYMETHOD_FILTER
             MENUITEM SEPARATOR
             MENUITEM "&VSync",                      ID_DISPLAYMETHOD_VSYNC

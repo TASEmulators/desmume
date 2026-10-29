@@ -44,6 +44,18 @@ size_t WGPURender_GetBackendCount();
 // The renderer entry for backend <index>. Never NULL for index < count.
 GPU3DInterface *WGPURender_GetBackendInterface(const size_t index);
 
+// The instance backend mask (WGPUInstanceBackend bits) behind entry <index>.
+// Frontends that offer the same backend choice outside the 3D renderer -- the
+// WebGPU display method, for instance -- pin their instance with it. Zero for an
+// out-of-range index, which is also the "let wgpu-native pick" value.
+uint32_t WGPURender_GetBackendMask(const size_t index);
+
+// Short backend name ("D3D12", "Vulkan", ...) behind entry <index>, without the
+// "WebGPU - " prefix that the renderer names carry. NULL for an out-of-range
+// index. Used where the surrounding label already says WebGPU, such as a
+// "WebGPU" submenu in the display method menu.
+const char *WGPURender_GetBackendLabel(const size_t index);
+
 #include <map>
 #include <vector>
 

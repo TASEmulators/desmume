@@ -83,6 +83,13 @@ extern DDRAW ddraw;
 extern GLDISPLAY gldisplay;
 extern WGPUDISPLAY wgpudisplay;
 extern u32 displayMethod;
+
+// Instance backends the WebGPU display method is pinned to, as
+// WGPUInstanceBackend bits. Zero lets wgpu-native pick a backend, which is also
+// what the generic "WebGPU" entry stores. Each backend is its own menu entry, so
+// the choice has to survive a restart.
+extern u32 displayWGPUBackend;
+
 const u32 DISPMETHOD_DDRAW_HW = 1;
 const u32 DISPMETHOD_DDRAW_SW = 2;
 const u32 DISPMETHOD_OPENGL = 3;

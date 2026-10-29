@@ -673,7 +673,9 @@ static const WGPUBackendOption kKnownWGPUBackends[] = {
 static const size_t kKnownWGPUBackendCount = sizeof(kKnownWGPUBackends) / sizeof(kKnownWGPUBackends[0]);
 
 static char sWGPUBackendNames[kKnownWGPUBackendCount][32];
+static const char *sWGPUBackendLabels[kKnownWGPUBackendCount];
 static GPU3DInterface sWGPUBackendInterfaces[kKnownWGPUBackendCount];
+static uint32_t sWGPUBackendMasks[kKnownWGPUBackendCount];
 static size_t sWGPUBackendInterfaceCount = 0;
 static bool sWGPUBackendListReady = false;
 
@@ -891,6 +893,9 @@ void WGPURender_InitBackendList()
 			rendererInterface->NDS_3D_Init = kKnownWGPUBackends[i].create;
 			rendererInterface->NDS_3D_Close = WGPURender::Destroy;
 
+			sWGPUBackendMasks[sWGPUBackendInterfaceCount] = backendMask;
+			sWGPUBackendLabels[sWGPUBackendInterfaceCount] = kKnownWGPUBackends[i].label;
+
 			sWGPUBackendInterfaceCount++;
 		}
 	}
@@ -909,6 +914,26 @@ GPU3DInterface *WGPURender_GetBackendInterface(const size_t index)
 	}
 
 	return &sWGPUBackendInterfaces[index];
+}
+
+uint32_t WGPURender_GetBackendMask(const size_t index)
+{
+	if (index >= sWGPUBackendInterfaceCount)
+	{
+		return 0;
+	}
+
+	return sWGPUBackendMasks[index];
+}
+
+const char *WGPURender_GetBackendLabel(const size_t index)
+{
+	if (index >= sWGPUBackendInterfaceCount)
+	{
+		return NULL;
+	}
+
+	return sWGPUBackendLabels[index];
 }
 
 struct BufferMapResult

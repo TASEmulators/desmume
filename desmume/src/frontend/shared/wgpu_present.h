@@ -73,7 +73,12 @@ public:
 	// not owned and must outlive every present() call. Returns false when
 	// WebGPU is unavailable (build without ENABLE_WGPU, no adapter, surface
 	// creation failure, ...), in which case the caller should fall back.
-	bool begin(WGPUPresentWindow *window);
+	//
+	// `instanceBackends` pins the instance to a set of WGPUInstanceBackend bits,
+	// so a frontend can offer one present path per backend ("WebGPU - Vulkan"
+	// next to "WebGPU - D3D12"). Zero lets wgpu-native pick. Calling begin()
+	// again with a different mask rebuilds everything.
+	bool begin(WGPUPresentWindow *window, uint32_t instanceBackends = 0);
 
 	// Releases everything, including the surface. Safe to call at any time and
 	// repeatedly; begin() starts from a clean slate afterwards.
