@@ -32,6 +32,13 @@ void WGPUPresent::kill() {}
 void WGPUPresent::setvsync(bool) {}
 void WGPUPresent::setUseOutputFilter(bool) {}
 bool WGPUPresent::useOutputFilter() const { return false; }
+void WGPUPresent::setUpscaler(int) {}
+int WGPUPresent::upscaler() const { return WGPUPresentUpscaler_Off; }
+bool WGPUPresent::upscalerCompiled() const { return false; }
+void WGPUPresent::setUpscalerShaderSource(WGPUPresentShaderSource *) {}
+int WGPUPresent::upscalerCount() { return 0; }
+const char *WGPUPresent::upscalerName(int) { return NULL; }
+bool WGPUPresent::isUpscaler(int upscaler) { return upscaler == WGPUPresentUpscaler_Off; }
 bool WGPUPresent::isReady() const { return false; }
 
 bool WGPUPresent::present(const uint32_t *, int, int, const WGPUPresentRect *,
@@ -171,6 +178,133 @@ static bool WaitForFlag(WGPUInstance instance, const bool *done)
 	return true;
 }
 
+// ---------------------------------------------------------------------------
+// GPU filters
+// ---------------------------------------------------------------------------
+//
+// A chain is a list of passes over the frame. A pass reads the texture the pass
+// before it made -- the frame for the first -- and writes one of its own, and
+// the quads that draw the two screens sample the last of them, so the whole
+// chain costs one render pass per pass and nothing else.
+//
+// Nothing here is uploaded per frame: a pass is handed the sizes of its source
+// and its target, which change when the frame or the window does and not
+// otherwise, so they are written to its uniform buffer then and read from the
+// same buffer after.
+
+// The most passes any of the chains has; ScaleFX has five.
+#define WGPU_UPSCALER_MAX_PASSES 5
+
+// The largest target a chain may be asked for: the default limit of
+// maxTextureDimension2D, which every device wgpu supports is at least.
+#define WGPU_UPSCALER_MAX_TARGET 8192
+
+// The four float4s a pass is handed, in the order and the layout of the struct
+// the WGSL declares.
+struct UpscalerConstants
+{
+	float sourceSize[4]; // xy: the size the pass reads, zw: one texel
+	float outputSize[4]; // xy: the size of its target, zw: one pixel of it
+	float scale[4];      // xy: outputSize.xy / sourceSize.xy
+	float secondSize[4]; // xy: the size of a second texture, zw: one texel
+};
+
+struct UpscalerSource
+{
+	int value;                    // the WGPUPresentUpscaler it implements
+	const char *name;             // for the menu and the log
+	const char *const *resources; // per pass: the resource holding its WGSL
+	const int *scales;            // per pass: 0 is the target size, n is n times the frame
+	const int *seconds;           // per pass: the texture it reads besides the one the
+	                              // pass before it made, as an index of the outputs --
+	                              // 0 is the frame, n the target of pass n - 1, -1 that
+	                              // it reads one texture only
+	int passCount;
+};
+
+static const char *const g_xbrzResources[]           = { "XBRZ_FREESCALE_WGSL" };
+static const char *const g_lanczos3Resources[]       = { "LANCZOS3_WGSL" };
+static const char *const g_bicubicResources[]        = { "BICUBIC_WGSL" };
+static const char *const g_xbrLv2Resources[]         = { "XBR_LV2_WGSL" };
+static const char *const g_xbrLv2NoBlendResources[]  = { "XBR_LV2_NOBLEND_WGSL" };
+static const char *const g_xbrLv3Resources[]         = { "XBR_LV3_WGSL" };
+static const char *const g_ptSkyWalkerResources[]    = { "PT_SKYWALKER541_WGSL" };
+
+// The flags of every pixel at the frame size, then the blend that reads them
+// and the frame together.
+static const char *const g_xbr2xResources[]          = { "XBR_2X_PASS0_WGSL", "XBR_2X_PASS1_WGSL" };
+
+// xBR lv3 in the two passes of its preset: the edge data of every pixel, then
+// the interpolation that reads it and the frame together.
+static const char *const g_xbrLv3MultipassResources[] = { "XBR_LV3_PASS0_WGSL", "XBR_LV3_PASS1_WGSL" };
+
+// super-xBR: the edge data, the picture doubled, then the jinc filter over it.
+static const char *const g_superXbrResources[]       = { "SUPER_XBR_PASS0_WGSL", "SUPER_XBR_PASS1_WGSL", "SUPER_XBR_JINC2_WGSL" };
+
+// ScaleFX: the metrics of the edge, the strengths of the corners, the
+// junctions, the subpixels, and the pass that takes the colour from the frame
+// at each of them.
+static const char *const g_scalefxResources[]        = { "SCALEFX_PASS0_WGSL", "SCALEFX_PASS1_WGSL", "SCALEFX_PASS2_WGSL", "SCALEFX_PASS3_WGSL", "SCALEFX_PASS4_WGSL" };
+
+// xBR-mlv4: two passes of edge data, the line each quarter of the pixel
+// follows at twice the frame size, and the interpolation along it.
+static const char *const g_xbrMlv4Resources[]        = { "XBR_MLV4_PASS1_WGSL", "XBR_MLV4_PASS2_WGSL", "XBR_MLV4_PASS3_WGSL", "XBR_MLV4_PASS4_WGSL" };
+
+static const int g_singleScales[]                    = { 0 };
+static const int g_xbr2xScales[]                     = { 1, 0 };
+static const int g_xbrLv3MultipassScales[]           = { 1, 0 };
+static const int g_superXbrScales[]                  = { 1, 2, 0 };
+static const int g_scalefxScales[]                   = { 1, 1, 1, 1, 0 };
+static const int g_xbrMlv4Scales[]                   = { 1, 1, 2, 0 };
+
+static const int g_noSecond[]                        = { -1 };
+static const int g_xbr2xSeconds[]                    = { -1, 0 };
+static const int g_xbrLv3MultipassSeconds[]          = { -1, 0 };
+static const int g_superXbrSeconds[]                 = { -1, 0, -1 };
+static const int g_scalefxSeconds[]                  = { -1, -1, 1, -1, 0 };
+static const int g_xbrMlv4Seconds[]                  = { -1, 0, 0, 0 };
+
+// Rows are in menu order, and the menu is drawn straight off this table, so a
+// chain sits where it reads best: the two resampling filters first, then the
+// edge blenders.
+static const UpscalerSource g_upscalers[] =
+{
+	{ WGPUPresentUpscaler_Xbrz,             "xBRZ",              g_xbrzResources,             g_singleScales,          g_noSecond,                 1 },
+	{ WGPUPresentUpscaler_Lanczos3,         "Lanczos3",          g_lanczos3Resources,         g_singleScales,          g_noSecond,                 1 },
+	{ WGPUPresentUpscaler_Bicubic,          "Bicubic",           g_bicubicResources,          g_singleScales,          g_noSecond,                 1 },
+	{ WGPUPresentUpscaler_XbrLv2,           "xBR lv2",           g_xbrLv2Resources,           g_singleScales,          g_noSecond,                 1 },
+	{ WGPUPresentUpscaler_XbrLv2NoBlend,    "xBR lv2 no-blend",  g_xbrLv2NoBlendResources,    g_singleScales,          g_noSecond,                 1 },
+	{ WGPUPresentUpscaler_XbrLv3,           "xBR lv3",           g_xbrLv3Resources,           g_singleScales,          g_noSecond,                 1 },
+	{ WGPUPresentUpscaler_XbrLv3Multipass,  "xBR lv3 multipass", g_xbrLv3MultipassResources,  g_xbrLv3MultipassScales, g_xbrLv3MultipassSeconds,   2 },
+	{ WGPUPresentUpscaler_SuperXbr,         "super-xBR",         g_superXbrResources,         g_superXbrScales,        g_superXbrSeconds,          3 },
+	{ WGPUPresentUpscaler_ScaleFx,          "ScaleFX",           g_scalefxResources,          g_scalefxScales,         g_scalefxSeconds,           5 },
+	{ WGPUPresentUpscaler_Xbr2x,            "2xBR",              g_xbr2xResources,            g_xbr2xScales,           g_xbr2xSeconds,             2 },
+	{ WGPUPresentUpscaler_XbrMlv4,          "xBR-mlv4",          g_xbrMlv4Resources,          g_xbrMlv4Scales,         g_xbrMlv4Seconds,           4 },
+	{ WGPUPresentUpscaler_PtSkyWalker541,   "PT SkyWalker541",   g_ptSkyWalkerResources,      g_singleScales,          g_noSecond,                 1 },
+};
+
+#define WGPU_UPSCALER_COUNT ((int)(sizeof(g_upscalers) / sizeof(g_upscalers[0])))
+
+// The rows are the menu, and the values are the menu positions, so a new chain
+// needs both an enum entry and a row here; adding only one leaves a numbered
+// item with no name, or a chain that never appears.
+static_assert(WGPU_UPSCALER_COUNT == (WGPUPresentUpscalerCount - 1),
+			  "one chain table row per WGPUPresentUpscaler value, Off excepted");
+
+// The row of the table a WGPUPresentUpscaler value is, or -1.
+static int UpscalerIndex(int value)
+{
+	for (int i = 0; i < WGPU_UPSCALER_COUNT; i++)
+	{
+		if (g_upscalers[i].value == value)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 } // namespace
 
 // ---------------------------------------------------------------------------
@@ -220,6 +354,54 @@ struct WGPUPresent::Impl
 	WGPUBuffer vertexBuffer;
 	uint64_t vertexBufferSize;
 
+	// The GPU filter the frame goes through. The two screens are chained
+	// separately: each one has its own copy of its half of the frame, its own
+	// targets and its own bind groups, so a filter that reads the pixels around
+	// one never reads the other screen's across the seam. The pipelines are
+	// shared, because they depend on the filter and not on the screen.
+	// `upscalerBuilt` is the value those pipelines were built for, and
+	// `upscalerFailed` says the WGSL of the selected filter did not compile, in
+	// which case the plain blit is presented instead.
+	WGPUPresentShaderSource *shaderSource;
+	int upscaler;
+	int upscalerBuilt;
+	bool upscalerFailed;
+	WGPUBindGroupLayout upscalerBindGroupLayout;
+	WGPUPipelineLayout upscalerPipelineLayout;
+
+	struct UpscalerPass
+	{
+		WGPUBindGroup group;         // what it reads, and its constants
+		WGPUBuffer constants;
+		WGPUTexture texture;         // the target it draws into
+		WGPUTextureView view;
+	};
+
+	struct UpscalerScreen
+	{
+		UpscalerPass passes[WGPU_UPSCALER_MAX_PASSES];
+
+		// The screen's own copy of its half of the frame, and where its chain
+		// starts. A texture view cannot be a sub-rectangle, so the rectangle
+		// the screen occupies is copied out of the frame texture before the
+		// first pass reads it; the two formats match, so the copy is straight.
+		WGPUTexture sourceTex;
+		WGPUTextureView sourceView;
+
+		// The last target, bound for the pipeline that draws this screen's quad.
+		WGPUBindGroup outputGroup;
+
+		int passCount;
+		uint32_t width;
+		uint32_t height;
+		uint32_t targetWidth;
+		uint32_t targetHeight;
+	};
+
+	WGPURenderPipeline upscalerPipelines[WGPU_UPSCALER_MAX_PASSES];
+	int upscalerPipelineCount;
+	UpscalerScreen upscalerScreens[2];
+
 	bool ready;
 	bool failed;
 
@@ -255,9 +437,18 @@ struct WGPUPresent::Impl
 		videoFilter(false),
 		vertexBuffer(NULL),
 		vertexBufferSize(0),
+		shaderSource(NULL),
+		upscaler(WGPUPresentUpscaler_Off),
+		upscalerBuilt(WGPUPresentUpscaler_Off),
+		upscalerFailed(false),
+		upscalerBindGroupLayout(NULL),
+		upscalerPipelineLayout(NULL),
+		upscalerPipelineCount(0),
 		ready(false),
 		failed(false)
 	{
+		memset(this->upscalerPipelines, 0, sizeof(this->upscalerPipelines));
+		memset(this->upscalerScreens, 0, sizeof(this->upscalerScreens));
 	}
 
 	void Destroy();
@@ -268,6 +459,14 @@ struct WGPUPresent::Impl
 	bool ConfigureSurface(uint32_t w, uint32_t h);
 	bool EnsureVideoTexture(uint32_t w, uint32_t h, bool useFilter);
 	bool CreateBindGroup(WGPUTextureView view, WGPUSampler sampler, WGPUBindGroup *out);
+
+	bool CreateUpscalerResources();
+	bool CreateUpscalerPipeline(WGPUShaderModule module, int index);
+	bool BuildUpscalerChain(int value);
+	void ReleaseUpscalerChain();
+	void ReleaseUpscalerScreen(UpscalerScreen &screen);
+	bool PrepareUpscaler(int screen, uint32_t width, uint32_t height, uint32_t targetWidth, uint32_t targetHeight);
+	void DrawUpscalerChain(WGPUCommandEncoder encoder, int screen, const WGPUPresentRect &source);
 };
 
 bool WGPUPresent::Impl::CreateDevice(uint32_t instanceBackends)
@@ -545,7 +744,18 @@ bool WGPUPresent::Impl::CreatePipeline()
 
 	this->pipeline = wgpuDeviceCreateRenderPipeline(this->device, &pipelineDesc);
 
-	return (this->pipeline != NULL);
+	if (this->pipeline == NULL)
+	{
+		return false;
+	}
+
+	// The GPU filter chains need layouts of their own. A device that cannot
+	// make them leaves the filters unavailable: PrepareUpscaler() gives up on
+	// a NULL layout long before it asks for a shader, and the plain blit is
+	// what the frame gets.
+	this->CreateUpscalerResources();
+
+	return true;
 }
 
 bool WGPUPresent::Impl::CreateBindGroup(WGPUTextureView view, WGPUSampler sampler, WGPUBindGroup *out)
@@ -693,7 +903,9 @@ bool WGPUPresent::Impl::EnsureVideoTexture(uint32_t w, uint32_t h, bool useFilte
 	}
 
 	WGPUTextureDescriptor textureDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
-	textureDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
+	// CopySrc as well: a GPU filter copies each screen's rectangle out of this
+	// texture before running that screen's chain over it.
+	textureDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst | WGPUTextureUsage_CopySrc;
 	textureDesc.dimension = WGPUTextureDimension_2D;
 	textureDesc.size.width = w;
 	textureDesc.size.height = h;
@@ -722,9 +934,532 @@ bool WGPUPresent::Impl::EnsureVideoTexture(uint32_t w, uint32_t h, bool useFilte
 	return this->CreateBindGroup(this->videoView, this->videoFilter ? this->samplerLinear : this->samplerNearest, &this->videoBindGroup);
 }
 
+// ---------------------------------------------------------------------------
+// GPU filters
+// ---------------------------------------------------------------------------
+
+// The one bind group layout every pass of every chain uses: the texture it
+// reads, a sampler for the shaders that fetch through one, its constants, and
+// the second texture of a longer chain with a sampler of its own. A pass of a
+// single texture leaves the last two unread, and a layout entry a shader does
+// not use costs nothing.
+bool WGPUPresent::Impl::CreateUpscalerResources()
+{
+	WGPUBindGroupLayoutEntry entries[5] = {
+		WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT,
+		WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT,
+		WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT,
+		WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT,
+		WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT
+	};
+
+	entries[0].binding = 0;
+	entries[0].visibility = WGPUShaderStage_Fragment;
+	entries[0].texture.sampleType = WGPUTextureSampleType_Float;
+	entries[0].texture.viewDimension = WGPUTextureViewDimension_2D;
+
+	entries[1].binding = 1;
+	entries[1].visibility = WGPUShaderStage_Fragment;
+	entries[1].sampler.type = WGPUSamplerBindingType_Filtering;
+
+	entries[2].binding = 2;
+	entries[2].visibility = WGPUShaderStage_Fragment;
+	entries[2].buffer.type = WGPUBufferBindingType_Uniform;
+	entries[2].buffer.hasDynamicOffset = false;
+	entries[2].buffer.minBindingSize = sizeof(UpscalerConstants);
+
+	entries[3].binding = 3;
+	entries[3].visibility = WGPUShaderStage_Fragment;
+	entries[3].texture.sampleType = WGPUTextureSampleType_Float;
+	entries[3].texture.viewDimension = WGPUTextureViewDimension_2D;
+
+	entries[4].binding = 4;
+	entries[4].visibility = WGPUShaderStage_Fragment;
+	entries[4].sampler.type = WGPUSamplerBindingType_Filtering;
+
+	WGPUBindGroupLayoutDescriptor layoutDesc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
+	layoutDesc.entryCount = 5;
+	layoutDesc.entries = entries;
+
+	this->upscalerBindGroupLayout = wgpuDeviceCreateBindGroupLayout(this->device, &layoutDesc);
+
+	if (this->upscalerBindGroupLayout == NULL)
+	{
+		return false;
+	}
+
+	WGPUPipelineLayoutDescriptor pipelineLayoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
+	pipelineLayoutDesc.bindGroupLayoutCount = 1;
+	pipelineLayoutDesc.bindGroupLayouts = &this->upscalerBindGroupLayout;
+
+	this->upscalerPipelineLayout = wgpuDeviceCreatePipelineLayout(this->device, &pipelineLayoutDesc);
+
+	return (this->upscalerPipelineLayout != NULL);
+}
+
+// A pass covers its target and takes its taps from the texture, so it needs
+// neither a vertex buffer nor an attribute: the vertex stage makes the quad out
+// of the vertex index, and the draw is the four vertices of a strip.
+bool WGPUPresent::Impl::CreateUpscalerPipeline(WGPUShaderModule module, int index)
+{
+	WGPUVertexState vertexState = WGPU_VERTEX_STATE_INIT;
+	vertexState.module = module;
+	vertexState.entryPoint = Lit("vsMain");
+	vertexState.bufferCount = 0;
+	vertexState.buffers = NULL;
+
+	WGPUColorTargetState colorTarget = WGPU_COLOR_TARGET_STATE_INIT;
+	colorTarget.format = WGPUTextureFormat_RGBA8Unorm;
+	colorTarget.blend = NULL;
+	colorTarget.writeMask = WGPUColorWriteMask_All;
+
+	WGPUFragmentState fragmentState = WGPU_FRAGMENT_STATE_INIT;
+	fragmentState.module = module;
+	fragmentState.entryPoint = Lit("fsMain");
+	fragmentState.targetCount = 1;
+	fragmentState.targets = &colorTarget;
+
+	WGPUPrimitiveState primitiveState = WGPU_PRIMITIVE_STATE_INIT;
+	primitiveState.topology = WGPUPrimitiveTopology_TriangleStrip;
+	primitiveState.cullMode = WGPUCullMode_None;
+
+	WGPUMultisampleState multisampleState = WGPU_MULTISAMPLE_STATE_INIT;
+	multisampleState.count = 1;
+
+	WGPURenderPipelineDescriptor pipelineDesc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
+	pipelineDesc.layout = this->upscalerPipelineLayout;
+	pipelineDesc.vertex = vertexState;
+	pipelineDesc.primitive = primitiveState;
+	pipelineDesc.multisample = multisampleState;
+	pipelineDesc.fragment = &fragmentState;
+
+	this->upscalerPipelines[index] = wgpuDeviceCreateRenderPipeline(this->device, &pipelineDesc);
+
+	return (this->upscalerPipelines[index] != NULL);
+}
+
+void WGPUPresent::Impl::ReleaseUpscalerScreen(UpscalerScreen &screen)
+{
+	for (int i = 0; i < WGPU_UPSCALER_MAX_PASSES; i++)
+	{
+		UpscalerPass &state = screen.passes[i];
+
+		if (state.group != NULL) { wgpuBindGroupRelease(state.group); state.group = NULL; }
+		if (state.constants != NULL) { wgpuBufferRelease(state.constants); state.constants = NULL; }
+		if (state.view != NULL) { wgpuTextureViewRelease(state.view); state.view = NULL; }
+		if (state.texture != NULL) { wgpuTextureRelease(state.texture); state.texture = NULL; }
+	}
+
+	if (screen.outputGroup != NULL)
+	{
+		wgpuBindGroupRelease(screen.outputGroup);
+		screen.outputGroup = NULL;
+	}
+
+	if (screen.sourceView != NULL) { wgpuTextureViewRelease(screen.sourceView); screen.sourceView = NULL; }
+	if (screen.sourceTex != NULL) { wgpuTextureRelease(screen.sourceTex); screen.sourceTex = NULL; }
+
+	screen.passCount = 0;
+	screen.width = 0;
+	screen.height = 0;
+	screen.targetWidth = 0;
+	screen.targetHeight = 0;
+}
+
+void WGPUPresent::Impl::ReleaseUpscalerChain()
+{
+	this->ReleaseUpscalerScreen(this->upscalerScreens[0]);
+	this->ReleaseUpscalerScreen(this->upscalerScreens[1]);
+
+	for (int i = 0; i < WGPU_UPSCALER_MAX_PASSES; i++)
+	{
+		if (this->upscalerPipelines[i] != NULL)
+		{
+			wgpuRenderPipelineRelease(this->upscalerPipelines[i]);
+			this->upscalerPipelines[i] = NULL;
+		}
+	}
+
+	this->upscalerPipelineCount = 0;
+	this->upscalerBuilt = WGPUPresentUpscaler_Off;
+}
+
+// Compiles one module and one pipeline per pass. The pipelines stay for as long
+// as the chain does; only the targets below them are rebuilt when a size
+// changes, because a pass pipeline is independent of the size it draws at.
+bool WGPUPresent::Impl::BuildUpscalerChain(int value)
+{
+	const int index = UpscalerIndex(value);
+
+	if ( (index < 0) || (this->device == NULL) ||
+		 (this->upscalerBindGroupLayout == NULL) || (this->upscalerPipelineLayout == NULL) )
+	{
+		return false;
+	}
+
+	if ( (value == this->upscalerBuilt) && (this->upscalerPipelineCount > 0) )
+	{
+		return true;
+	}
+
+	// A chain whose WGSL the device rejected is not compiled again: the menu
+	// keeps it selectable, and the frames it is selected for are presented with
+	// the plain blit rather than with a compile attempt per frame.
+	if ( (value == this->upscalerBuilt) && this->upscalerFailed )
+	{
+		return false;
+	}
+
+	this->ReleaseUpscalerChain();
+
+	const UpscalerSource &source = g_upscalers[index];
+
+	bool built = true;
+
+	for (int pass = 0; (pass < source.passCount) && built; pass++)
+	{
+		const char *code = NULL;
+		size_t length = 0;
+
+		if ( (this->shaderSource == NULL) ||
+			 !this->shaderSource->getShader(source.resources[pass], &code, &length) ||
+			 (code == NULL) || (length == 0) )
+		{
+			printf("WGPU present: the %s shader %s is missing\n", source.name, source.resources[pass]);
+			built = false;
+			break;
+		}
+
+		// The sources are resources rather than string literals, so they carry
+		// their length instead of a terminator.
+		WGPUShaderSourceWGSL wgsl = WGPU_SHADER_SOURCE_WGSL_INIT;
+		wgsl.code.data = code;
+		wgsl.code.length = length;
+
+		WGPUShaderModuleDescriptor shaderDesc = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
+		shaderDesc.nextInChain = &wgsl.chain;
+
+		WGPUShaderModule module = wgpuDeviceCreateShaderModule(this->device, &shaderDesc);
+
+		if (module == NULL)
+		{
+			built = false;
+			break;
+		}
+
+		built = this->CreateUpscalerPipeline(module, pass);
+
+		wgpuShaderModuleRelease(module);
+	}
+
+	this->upscalerBuilt = value;
+	this->upscalerFailed = !built;
+
+	if (!built)
+	{
+		this->ReleaseUpscalerChain();
+		this->upscalerBuilt = value;
+		printf("WGPU present: the %s filter is not available on this device\n", source.name);
+		return false;
+	}
+
+	this->upscalerPipelineCount = source.passCount;
+
+	return true;
+}
+
+// Builds one screen's source texture, the targets of its chain and the bind
+// group of every pass, one time per size. `width`/`height` is the rectangle the
+// screen occupies in the frame, `targetWidth`/`targetHeight` the size it is
+// drawn at on screen, which is also the size of its last target.
+bool WGPUPresent::Impl::PrepareUpscaler(int screenIndex, uint32_t width, uint32_t height,
+										uint32_t targetWidth, uint32_t targetHeight)
+{
+	if ( (this->upscaler == WGPUPresentUpscaler_Off) || (this->shaderSource == NULL) )
+	{
+		return false;
+	}
+
+	if (!this->BuildUpscalerChain(this->upscaler))
+	{
+		return false;
+	}
+
+	const int index = UpscalerIndex(this->upscaler);
+
+	if ( (index < 0) || (this->upscalerPipelineCount != g_upscalers[index].passCount) )
+	{
+		return false;
+	}
+
+	const UpscalerSource &source = g_upscalers[index];
+	UpscalerScreen &screen = this->upscalerScreens[screenIndex];
+
+	if ( (screen.outputGroup != NULL) &&
+		 (screen.width == width) &&
+		 (screen.height == height) &&
+		 (screen.targetWidth == targetWidth) &&
+		 (screen.targetHeight == targetHeight) )
+	{
+		return true;
+	}
+
+	this->ReleaseUpscalerScreen(screen);
+
+	screen.width = width;
+	screen.height = height;
+	screen.targetWidth = targetWidth;
+	screen.targetHeight = targetHeight;
+
+	// The screen's own copy of its half of the frame: the chain has to read
+	// nothing but this screen, or a filter that looks at its neighbours would
+	// reach across the seam into the other one.
+	{
+		WGPUExtent3D sourceSize = WGPU_EXTENT_3D_INIT;
+		sourceSize.width = width;
+		sourceSize.height = height;
+		sourceSize.depthOrArrayLayers = 1;
+
+		WGPUTextureDescriptor sourceDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
+		sourceDesc.size = sourceSize;
+		sourceDesc.mipLevelCount = 1;
+		sourceDesc.sampleCount = 1;
+		sourceDesc.dimension = WGPUTextureDimension_2D;
+		// The same format as the frame, so the copy out of it is a straight one.
+		sourceDesc.format = WGPUTextureFormat_BGRA8Unorm;
+		sourceDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
+
+		screen.sourceTex = wgpuDeviceCreateTexture(this->device, &sourceDesc);
+		screen.sourceView = (screen.sourceTex != NULL) ? wgpuTextureCreateView(screen.sourceTex, NULL) : NULL;
+
+		if ( (screen.sourceTex == NULL) || (screen.sourceView == NULL) )
+		{
+			printf("WGPU present: the %s filter cannot hold the frame of screen %d\n", source.name, screenIndex + 1);
+			this->ReleaseUpscalerScreen(screen);
+			return false;
+		}
+	}
+
+	WGPUTextureView input = screen.sourceView;
+	uint32_t inputWidth = width;
+	uint32_t inputHeight = height;
+
+	// What each pass made, so that a later one can be handed it as its second
+	// texture: 2xBR's blend reads the flags of the pass in front of it and the
+	// frame together.
+	WGPUTextureView passViews[WGPU_UPSCALER_MAX_PASSES] = { NULL };
+	uint32_t passWidths[WGPU_UPSCALER_MAX_PASSES] = { 0 };
+	uint32_t passHeights[WGPU_UPSCALER_MAX_PASSES] = { 0 };
+
+	for (int pass = 0; pass < source.passCount; pass++)
+	{
+		UpscalerPass &state = screen.passes[pass];
+
+		const int second = source.seconds[pass];
+		WGPUTextureView secondView = screen.sourceView;
+		uint32_t secondWidth = width;
+		uint32_t secondHeight = height;
+
+		if (second > 0)
+		{
+			secondView = passViews[second - 1];
+			secondWidth = passWidths[second - 1];
+			secondHeight = passHeights[second - 1];
+		}
+
+		// A fixed scale is a multiple of the frame rather than of the pass
+		// before it, which is what the presets ask for.
+		uint32_t passWidth = (source.scales[pass] > 0) ? (width * (uint32_t)source.scales[pass]) : targetWidth;
+		uint32_t passHeight = (source.scales[pass] > 0) ? (height * (uint32_t)source.scales[pass]) : targetHeight;
+
+		if (passWidth == 0) { passWidth = 1; }
+		if (passHeight == 0) { passHeight = 1; }
+
+		WGPUExtent3D size = WGPU_EXTENT_3D_INIT;
+		size.width = passWidth;
+		size.height = passHeight;
+		size.depthOrArrayLayers = 1;
+
+		WGPUTextureDescriptor textureDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
+		textureDesc.size = size;
+		textureDesc.mipLevelCount = 1;
+		textureDesc.sampleCount = 1;
+		textureDesc.dimension = WGPUTextureDimension_2D;
+		textureDesc.format = WGPUTextureFormat_RGBA8Unorm;
+		textureDesc.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_TextureBinding;
+
+		state.texture = wgpuDeviceCreateTexture(this->device, &textureDesc);
+		state.view = (state.texture != NULL) ? wgpuTextureCreateView(state.texture, NULL) : NULL;
+
+		WGPUBufferDescriptor bufferDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
+		bufferDesc.size = sizeof(UpscalerConstants);
+		bufferDesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+		bufferDesc.mappedAtCreation = false;
+
+		state.constants = wgpuDeviceCreateBuffer(this->device, &bufferDesc);
+
+		if ( (state.view == NULL) || (state.constants == NULL) )
+		{
+			printf("WGPU present: the %s filter cannot make pass %d of screen %d\n", source.name, pass + 1, screenIndex + 1);
+			this->ReleaseUpscalerScreen(screen);
+			return false;
+		}
+
+		// The sizes of this pass, written once: they change when the window or
+		// the frame does, and not per frame.
+		UpscalerConstants constants;
+		memset(&constants, 0, sizeof(constants));
+
+		constants.sourceSize[0] = (float)inputWidth;
+		constants.sourceSize[1] = (float)inputHeight;
+		constants.sourceSize[2] = 1.0f / (float)inputWidth;
+		constants.sourceSize[3] = 1.0f / (float)inputHeight;
+		constants.outputSize[0] = (float)passWidth;
+		constants.outputSize[1] = (float)passHeight;
+		constants.outputSize[2] = 1.0f / (float)passWidth;
+		constants.outputSize[3] = 1.0f / (float)passHeight;
+		constants.scale[0] = (float)passWidth / (float)inputWidth;
+		constants.scale[1] = (float)passHeight / (float)inputHeight;
+		constants.secondSize[0] = (float)secondWidth;
+		constants.secondSize[1] = (float)secondHeight;
+		constants.secondSize[2] = 1.0f / (float)secondWidth;
+		constants.secondSize[3] = 1.0f / (float)secondHeight;
+
+		wgpuQueueWriteBuffer(this->queue, state.constants, 0, &constants, sizeof(constants));
+
+		WGPUBindGroupEntry entries[5] = {
+			WGPU_BIND_GROUP_ENTRY_INIT,
+			WGPU_BIND_GROUP_ENTRY_INIT,
+			WGPU_BIND_GROUP_ENTRY_INIT,
+			WGPU_BIND_GROUP_ENTRY_INIT,
+			WGPU_BIND_GROUP_ENTRY_INIT
+		};
+
+		entries[0].binding = 0;
+		entries[0].textureView = input;
+
+		entries[1].binding = 1;
+		entries[1].sampler = this->samplerNearest;
+
+		entries[2].binding = 2;
+		entries[2].buffer = state.constants;
+		entries[2].offset = 0;
+		entries[2].size = sizeof(UpscalerConstants);
+
+		entries[3].binding = 3;
+		entries[3].textureView = secondView;
+
+		entries[4].binding = 4;
+		entries[4].sampler = this->samplerNearest;
+
+		WGPUBindGroupDescriptor groupDesc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
+		groupDesc.layout = this->upscalerBindGroupLayout;
+		groupDesc.entryCount = 5;
+		groupDesc.entries = entries;
+
+		state.group = wgpuDeviceCreateBindGroup(this->device, &groupDesc);
+
+		if (state.group == NULL)
+		{
+			printf("WGPU present: the %s filter cannot bind pass %d\n", source.name, pass + 1);
+			this->ReleaseUpscalerScreen(screen);
+			return false;
+		}
+
+		input = state.view;
+		inputWidth = passWidth;
+		inputHeight = passHeight;
+
+		passViews[pass] = state.view;
+		passWidths[pass] = passWidth;
+		passHeights[pass] = passHeight;
+	}
+
+	// The last target is what this screen's quad samples, through the same bind
+	// group layout as the frame itself.
+	if (!this->CreateBindGroup(passViews[source.passCount - 1], this->samplerNearest, &screen.outputGroup))
+	{
+		this->ReleaseUpscalerScreen(screen);
+		return false;
+	}
+
+	screen.passCount = source.passCount;
+
+	printf("WGPU present: %s, screen %d %ux%u over %ux%u, %d pass(es)\n",
+		   source.name, screenIndex + 1, width, height, targetWidth, targetHeight, source.passCount);
+
+	return true;
+}
+
+// Copies this screen's rectangle out of the frame into the screen's own texture
+// and runs the chain over it. The copy is what keeps the two screens apart: the
+// first pass of a chain only ever sees the pixels of the screen it belongs to,
+// so an edge filter cannot blend one screen into the other across the seam
+// between them.
+void WGPUPresent::Impl::DrawUpscalerChain(WGPUCommandEncoder encoder, int screenIndex, const WGPUPresentRect &sourceRect)
+{
+	UpscalerScreen &screen = this->upscalerScreens[screenIndex];
+
+	if ( (screen.passCount == 0) || (screen.sourceTex == NULL) || (this->videoTex == NULL) )
+	{
+		return;
+	}
+
+	WGPUTexelCopyTextureInfo copySource = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+	copySource.texture = this->videoTex;
+	copySource.origin.x = (uint32_t)sourceRect.left;
+	copySource.origin.y = (uint32_t)sourceRect.top;
+
+	WGPUTexelCopyTextureInfo copyDestination = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+	copyDestination.texture = screen.sourceTex;
+
+	WGPUExtent3D copySize = WGPU_EXTENT_3D_INIT;
+	copySize.width = screen.width;
+	copySize.height = screen.height;
+	copySize.depthOrArrayLayers = 1;
+
+	wgpuCommandEncoderCopyTextureToTexture(encoder, &copySource, &copyDestination, &copySize);
+
+	for (int i = 0; i < screen.passCount; i++)
+	{
+		WGPURenderPassColorAttachment colorAttachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
+		colorAttachment.view = screen.passes[i].view;
+		colorAttachment.loadOp = WGPULoadOp_Clear;
+		colorAttachment.storeOp = WGPUStoreOp_Store;
+		colorAttachment.clearValue.r = 0.0;
+		colorAttachment.clearValue.g = 0.0;
+		colorAttachment.clearValue.b = 0.0;
+		colorAttachment.clearValue.a = 1.0;
+
+		WGPURenderPassDescriptor renderPassDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
+		renderPassDesc.colorAttachmentCount = 1;
+		renderPassDesc.colorAttachments = &colorAttachment;
+
+		WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(encoder, &renderPassDesc);
+
+		if (pass == NULL)
+		{
+			return;
+		}
+
+		wgpuRenderPassEncoderSetPipeline(pass, this->upscalerPipelines[i]);
+		wgpuRenderPassEncoderSetBindGroup(pass, 0, screen.passes[i].group, 0, NULL);
+		wgpuRenderPassEncoderDraw(pass, 4, 1, 0, 0);
+
+		wgpuRenderPassEncoderEnd(pass);
+		wgpuRenderPassEncoderRelease(pass);
+	}
+}
+
 void WGPUPresent::Impl::Destroy()
 {
 	this->ready = false;
+
+	this->ReleaseUpscalerChain();
+
+	if (this->upscalerPipelineLayout != NULL) { wgpuPipelineLayoutRelease(this->upscalerPipelineLayout); this->upscalerPipelineLayout = NULL; }
+	if (this->upscalerBindGroupLayout != NULL) { wgpuBindGroupLayoutRelease(this->upscalerBindGroupLayout); this->upscalerBindGroupLayout = NULL; }
+	this->upscalerFailed = false;
 
 	if (this->videoBindGroup != NULL) { wgpuBindGroupRelease(this->videoBindGroup); this->videoBindGroup = NULL; }
 	if (this->videoView != NULL) { wgpuTextureViewRelease(this->videoView); this->videoView = NULL; }
@@ -878,6 +1613,77 @@ bool WGPUPresent::useOutputFilter() const
 	return (_impl != NULL) && _impl->videoFilter;
 }
 
+void WGPUPresent::setUpscaler(int upscaler)
+{
+	if (_impl == NULL)
+	{
+		return;
+	}
+
+	if ( (upscaler < WGPUPresentUpscaler_Off) || (upscaler >= WGPUPresentUpscalerCount) )
+	{
+		upscaler = WGPUPresentUpscaler_Off;
+	}
+
+	if (_impl->upscaler == upscaler)
+	{
+		return;
+	}
+
+	_impl->upscaler = upscaler;
+
+	// Turning the filters off gives the targets back at once, but keeps the
+	// pipelines, so turning them on again costs nothing. Switching from one
+	// filter to another releases the old chain when the next frame builds the
+	// new one, in BuildUpscalerChain().
+	if (upscaler == WGPUPresentUpscaler_Off)
+	{
+		_impl->ReleaseUpscalerScreen(_impl->upscalerScreens[0]);
+		_impl->ReleaseUpscalerScreen(_impl->upscalerScreens[1]);
+	}
+}
+
+int WGPUPresent::upscaler() const
+{
+	return (_impl != NULL) ? _impl->upscaler : WGPUPresentUpscaler_Off;
+}
+
+bool WGPUPresent::upscalerCompiled() const
+{
+	return (_impl != NULL) && (_impl->upscaler != WGPUPresentUpscaler_Off) && !_impl->upscalerFailed;
+}
+
+void WGPUPresent::setUpscalerShaderSource(WGPUPresentShaderSource *source)
+{
+	if (_impl == NULL)
+	{
+		return;
+	}
+
+	_impl->shaderSource = source;
+
+	// Chains compiled from the previous source are stale.
+	_impl->ReleaseUpscalerChain();
+	_impl->upscalerFailed = false;
+}
+
+int WGPUPresent::upscalerCount()
+{
+	return WGPU_UPSCALER_COUNT;
+}
+
+const char *WGPUPresent::upscalerName(int upscaler)
+{
+	const int index = UpscalerIndex(upscaler);
+
+	return (index < 0) ? NULL : g_upscalers[index].name;
+}
+
+bool WGPUPresent::isUpscaler(int upscaler)
+{
+	return (upscaler == WGPUPresentUpscaler_Off) || (UpscalerIndex(upscaler) >= 0);
+}
+
 bool WGPUPresent::isReady() const
 {
 	return (_impl != NULL) && _impl->ready;
@@ -969,11 +1775,45 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 
 	wgpuQueueWriteTexture(d.queue, &uploadDest, pixels, (size_t)width * (size_t)height * 4, &uploadLayout, &uploadSize);
 
+	// The GPU filter, when one is selected, is set up before the quads are
+	// built: which texture a screen's quad samples decides the uv its vertices
+	// carry. Each screen has a chain of its own over its own copy of its half of
+	// the frame, so a filter never reads across the seam between the two.
+	// Rotation is left out: the filters want upright pixels, and a rotated
+	// frame would feed them sideways taps.
+	bool chain[2] = { false, false };
+
+	if ( (d.upscaler != WGPUPresentUpscaler_Off) && (rotation == 0) )
+	{
+		for (int i = 0; i < 2; i++)
+		{
+			const int screenWidth  = srcRects[i].right - srcRects[i].left;
+			const int screenHeight = srcRects[i].bottom - srcRects[i].top;
+			const int targetWidth  = dstRects[i].right - dstRects[i].left;
+			const int targetHeight = dstRects[i].bottom - dstRects[i].top;
+
+			if ( (screenWidth <= 0) || (screenHeight <= 0) || (targetWidth <= 0) || (targetHeight <= 0) )
+			{
+				continue;
+			}
+
+			// A screen is drawn at the size of its destination rectangle, which
+			// is also how large its last target is. The cap keeps a window
+			// larger than the device limit from asking for a texture it cannot
+			// have; the sampler then does the last stretch.
+			uint32_t chainWidth  = (uint32_t)((targetWidth  > WGPU_UPSCALER_MAX_TARGET) ? WGPU_UPSCALER_MAX_TARGET : targetWidth);
+			uint32_t chainHeight = (uint32_t)((targetHeight > WGPU_UPSCALER_MAX_TARGET) ? WGPU_UPSCALER_MAX_TARGET : targetHeight);
+
+			chain[i] = d.PrepareUpscaler(i, (uint32_t)screenWidth, (uint32_t)screenHeight, chainWidth, chainHeight);
+		}
+	}
+
 	// Build the quads. Positions are converted straight to NDC here because the
 	// window size is known; UVs are permuted exactly like the OpenGL path so
 	// that screen rotation matches.
 	Vertex vertices[18];
 	int vertexCount = 0;
+	int screenVertexStart[2] = { 0, 0 };
 
 	const float halfW = (float)windowWidth;
 	const float halfH = (float)windowHeight;
@@ -1063,10 +1903,13 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 		const int dstRight  = dstRects[i].right;
 		const int dstBottom = dstRects[i].bottom;
 
-		const float u1 = (float)s.left   / (float)width;
-		const float u2 = (float)s.right  / (float)width;
-		const float v1 = (float)s.top    / (float)height;
-		const float v2 = (float)s.bottom / (float)height;
+		// A chained screen samples a texture that holds that screen and nothing
+		// else, so its uv runs over the whole of it rather than over a sub-
+		// rectangle of the frame.
+		const float u1 = chain[i] ? 0.0f : (float)s.left   / (float)width;
+		const float u2 = chain[i] ? 1.0f : (float)s.right  / (float)width;
+		const float v1 = chain[i] ? 0.0f : (float)s.top    / (float)height;
+		const float v2 = chain[i] ? 1.0f : (float)s.bottom / (float)height;
 
 		const float u[4] = { u1, u2, u2, u1 };
 		const float v[4] = { v1, v1, v2, v2 };
@@ -1077,6 +1920,8 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 		const float xs[4] = { ndcX(dstLeft), ndcX(dstRight), ndcX(dstRight), ndcX(dstLeft) };
 		const float ys[4] = { ndcY(dstTop), ndcY(dstTop), ndcY(dstBottom), ndcY(dstBottom) };
 
+		screenVertexStart[i] = vertexCount;
+
 		pushQuad(xs, ys, us, vs, 1.0f, 1.0f, 1.0f);
 	}
 
@@ -1084,6 +1929,14 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 
 	WGPUCommandEncoderDescriptor encoderDesc = WGPU_COMMAND_ENCODER_DESCRIPTOR_INIT;
 	WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(d.device, &encoderDesc);
+
+	for (int i = 0; i < 2; i++)
+	{
+		if (chain[i])
+		{
+			d.DrawUpscalerChain(encoder, i, srcRects[i]);
+		}
+	}
 
 	WGPURenderPassColorAttachment colorAttachment = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
 	colorAttachment.view = targetView;
@@ -1109,8 +1962,25 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 		wgpuRenderPassEncoderDraw(pass, (uint32_t)gapVertexCount, 1, 0, 0);
 	}
 
-	wgpuRenderPassEncoderSetBindGroup(pass, 0, d.videoBindGroup, 0, NULL);
-	wgpuRenderPassEncoderDraw(pass, 12, 1, (uint32_t)gapVertexCount, 0);
+	// Each screen is its own draw, because a chained screen samples a texture of
+	// its own: the two quads no longer share one bind group.
+	for (int i = 0; i < 2; i++)
+	{
+		WGPUBindGroup group = d.videoBindGroup;
+
+		if (chain[i] && (d.upscalerScreens[i].outputGroup != NULL))
+		{
+			group = d.upscalerScreens[i].outputGroup;
+		}
+
+		if (group == NULL)
+		{
+			continue;
+		}
+
+		wgpuRenderPassEncoderSetBindGroup(pass, 0, group, 0, NULL);
+		wgpuRenderPassEncoderDraw(pass, 6, 1, (uint32_t)screenVertexStart[i], 0);
+	}
 
 	wgpuRenderPassEncoderEnd(pass);
 

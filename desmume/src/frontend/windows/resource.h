@@ -1008,6 +1008,16 @@
 // WGPURender_GetBackendMask(N); ID_DISPLAYMETHOD_WGPU itself means "automatic".
 #define ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST 40201
 #define ID_DISPLAYMETHOD_WGPU_BACKEND_LAST  40217
+
+// Config -> Display Method -> GPU Filter. "Off" is the one entry the resource
+// holds; the filters themselves are appended at run time from the chain table of
+// src/frontend/shared/wgpu_present.cpp, so the names live in one place and a
+// build without the WGSL simply offers none of them. Entry N of the block
+// carries the WGPUPresentUpscaler value N, and the command handler resolves the
+// whole block with one range check.
+#define ID_DISPLAYMETHOD_GPUFILTER_OFF      40230
+#define ID_DISPLAYMETHOD_GPUFILTER_FIRST    40231
+#define ID_DISPLAYMETHOD_GPUFILTER_LAST     40249
 #define IDM_FILE_IMPORT_DB              40103
 #define IDM_AUTODETECTSAVETYPE_INTERNAL 40104
 #define ID_DISPLAYMETHOD_OPENGL_FILTER  40104

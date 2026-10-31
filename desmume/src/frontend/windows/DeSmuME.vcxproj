@@ -265,6 +265,7 @@
     <ClCompile Include="display.cpp" />
     <ClCompile Include="wgpu_display.cpp" />
     <ClCompile Include="wgpu_present_win32.cpp" />
+    <ClCompile Include="wgpu_upscaler_win32.cpp" />
     <ClCompile Include="..\shared\wgpu_present.cpp" />
     <ClCompile Include="DPI.cpp" />
     <ClCompile Include="FEX_Interface.cpp" />
@@ -563,6 +564,7 @@
     <ClInclude Include="display.h" />
     <ClInclude Include="wgpu_display.h" />
     <ClInclude Include="wgpu_present_win32.h" />
+    <ClInclude Include="wgpu_upscaler_win32.h" />
     <ClInclude Include="..\shared\wgpu_present.h" />
     <ClInclude Include="DPI.h" />
     <ClInclude Include="FEX_Interface.h" />
@@ -670,6 +672,7 @@
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\modules\osd\agg\agg2d.inl" />
     <None Include="..\thumb_tabdef.inc" />
+    <None Include="upscalers\libretro\*.wgsl" />
     <None Include="..\..\utils\AsmJit\COPYING.txt" />
     <None Include="bitmap1.bmp" />
     <None Include="bitmaps\FileBinary.ico" />

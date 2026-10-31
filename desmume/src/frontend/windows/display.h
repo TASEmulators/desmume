@@ -90,6 +90,12 @@ extern u32 displayMethod;
 // the choice has to survive a restart.
 extern u32 displayWGPUBackend;
 
+// The GPU filter the WebGPU display method runs the frame through, one of
+// WGPUPresentUpscaler. Off is the plain blit. The filter's WGSL is compiled the
+// first time a frame is presented with it selected, so this is only the choice;
+// the chain behind it is built on demand (src/frontend/shared/wgpu_present.cpp).
+extern int displayGPUFilter;
+
 const u32 DISPMETHOD_DDRAW_HW = 1;
 const u32 DISPMETHOD_DDRAW_SW = 2;
 const u32 DISPMETHOD_OPENGL = 3;

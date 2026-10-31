@@ -939,6 +939,9 @@
     <ClCompile Include="wgpu_present_win32.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="wgpu_upscaler_win32.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="..\shared\wgpu_present.cpp">
       <Filter>frontend\shared</Filter>
     </ClCompile>
@@ -1651,6 +1654,9 @@
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="wgpu_present_win32.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="wgpu_upscaler_win32.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\wgpu_present.h">

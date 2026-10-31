@@ -18,6 +18,7 @@
 #ifndef _WGPU_PRESENT_H_
 #define _WGPU_PRESENT_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
 // ---------------------------------------------------------------------------
@@ -38,6 +39,57 @@ struct WGPUPresentRect
 	int top;
 	int right;
 	int bottom;
+};
+
+// ---------------------------------------------------------------------------
+// GPU filters
+// ---------------------------------------------------------------------------
+//
+// The present path runs the libretro shader chains of upscalers/libretro: a
+// chain is a list of passes, each of which reads the texture the pass before it
+// made -- the screen's own half of the frame for the first -- and writes one of
+// its own. Each of the two screens gets a chain of its own, over a copy of just
+// that screen, so no filter ever reads across the seam between them; the quad
+// that draws a screen then samples the last target of that screen's chain.
+//
+// The chains are WGSL, so they are WebGPU only; the OpenGL and DirectDraw
+// display methods have no shader stage to hang them on. Their sources are not
+// built into this file: a frontend hands them over through a
+// WGPUPresentShaderSource, which on Windows reads the RCDATA resources of
+// resources.rc. Without one the filters are simply not offered.
+// The order is the order of the "GPU Filter" submenu, and the values are also
+// what a settings file stores, so they must not be renumbered once released: a
+// filter added later goes at the end of the list.
+enum WGPUPresentUpscaler
+{
+	WGPUPresentUpscaler_Off = 0,
+
+	WGPUPresentUpscaler_Xbrz,
+	WGPUPresentUpscaler_Lanczos3,
+	WGPUPresentUpscaler_Bicubic,
+	WGPUPresentUpscaler_XbrLv2,
+	WGPUPresentUpscaler_XbrLv2NoBlend,
+	WGPUPresentUpscaler_XbrLv3,
+	WGPUPresentUpscaler_XbrLv3Multipass,
+	WGPUPresentUpscaler_SuperXbr,
+	WGPUPresentUpscaler_ScaleFx,
+	WGPUPresentUpscaler_Xbr2x,
+	WGPUPresentUpscaler_XbrMlv4,
+	WGPUPresentUpscaler_PtSkyWalker541,
+
+	WGPUPresentUpscalerCount
+};
+
+// Supplies the WGSL text of the resources the chain table names. `name` is the
+// resource name of one pass ("LANCZOS3_WGSL", ...). The text does not have to
+// be NUL terminated: the length is returned with it, and it must stay valid for
+// as long as the object is alive.
+class WGPUPresentShaderSource
+{
+public:
+	virtual ~WGPUPresentShaderSource() {}
+
+	virtual bool getShader(const char *name, const char **source, size_t *length) = 0;
 };
 
 // The only part a platform has to implement. Keep adapters dumb: they translate
@@ -87,6 +139,27 @@ public:
 	void setvsync(bool vsync);
 	void setUseOutputFilter(bool theState);
 	bool useOutputFilter() const;
+
+	// The chain the frame goes through, one of WGPUPresentUpscaler. Off is the
+	// plain blit. Takes effect on the next present(); a chain whose WGSL does
+	// not compile on this device leaves upscalerCompiled() false and presents
+	// the plain blit instead.
+	void setUpscaler(int upscaler);
+	int upscaler() const;
+	bool upscalerCompiled() const;
+
+	// Where the chain WGSL comes from. Not owned; must outlive the present
+	// object. Setting it retires any chain compiled from the previous one, so
+	// it is meant to be called once, before the first frame.
+	void setUpscalerShaderSource(WGPUPresentShaderSource *source);
+
+	static int upscalerCount();
+	static const char *upscalerName(int upscaler);
+
+	// True for Off and for every value the chain table has a row for, which is
+	// what validates one read out of a settings file: a value left over from
+	// another build falls back to Off instead of indexing the table.
+	static bool isUpscaler(int upscaler);
 
 	// Presents one frame.
 	//   pixels   : BGRA8888, top-down, tightly packed, width * height * 4 bytes

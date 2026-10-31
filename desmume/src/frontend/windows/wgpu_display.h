@@ -57,6 +57,13 @@ public:
 	void setUseOutputFilter(bool theState);
 	bool useOutputFilter();
 
+	// The GPU filter the frame goes through, one of WGPUPresentUpscaler. Its
+	// WGSL is compiled the first time a frame is presented with it selected,
+	// and only for the filter that is selected.
+	void setUpscaler(int upscaler);
+	int upscaler();
+	bool upscalerCompiled();
+
 	// Presents one frame.
 	//   pixels     : BGRA8888, top-down, width * height * 4 bytes
 	//   srcRects   : source rectangles inside pixels (main/sub screen)
@@ -79,6 +86,7 @@ private:
 	u32 _instanceBackends;
 
 	bool _useOutputFilterPending;
+	int _upscalerPending;
 };
 
 #endif // _WGPU_DISPLAY_H_

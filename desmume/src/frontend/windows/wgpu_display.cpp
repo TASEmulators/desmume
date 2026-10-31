@@ -20,6 +20,7 @@
 #if defined(ENABLE_WGPU)
 
 #include "wgpu_present_win32.h"
+#include "wgpu_upscaler_win32.h"
 
 static inline WGPUPresentRect ToPresentRect(const RECT *rc)
 {
@@ -37,6 +38,7 @@ WGPUDISPLAY::WGPUDISPLAY()
 	_window = NULL;
 	_instanceBackends = 0;
 	_useOutputFilterPending = false;
+	_upscalerPending = WGPUPresentUpscaler_Off;
 }
 
 WGPUDISPLAY::~WGPUDISPLAY()
@@ -75,6 +77,13 @@ bool WGPUDISPLAY::begin(HWND hwnd, u32 instanceBackends)
 	_instanceBackends = instanceBackends;
 	active = true;
 
+	// The GPU filters are WGSL, carried in the executable's resources; handing
+	// the source over here is what keeps the present layer free of Windows.
+	// Nothing is compiled yet: the chain of the selected filter is built the
+	// first time a frame is presented with it selected.
+	_present.setUpscalerShaderSource(WGPUCreateWin32UpscalerShaderSource());
+	_present.setUpscaler(_upscalerPending);
+
 	return true;
 }
 
@@ -107,6 +116,22 @@ void WGPUDISPLAY::setUseOutputFilter(bool theState)
 bool WGPUDISPLAY::useOutputFilter()
 {
 	return _useOutputFilterPending;
+}
+
+void WGPUDISPLAY::setUpscaler(int upscaler)
+{
+	_upscalerPending = upscaler;
+	_present.setUpscaler(upscaler);
+}
+
+int WGPUDISPLAY::upscaler()
+{
+	return _upscalerPending;
+}
+
+bool WGPUDISPLAY::upscalerCompiled()
+{
+	return _present.upscalerCompiled();
 }
 
 bool WGPUDISPLAY::present(const u32 *pixels, int width, int height,
@@ -145,6 +170,7 @@ WGPUDISPLAY::WGPUDISPLAY()
 	_window = NULL;
 	_instanceBackends = 0;
 	_useOutputFilterPending = false;
+	_upscalerPending = WGPUPresentUpscaler_Off;
 }
 
 WGPUDISPLAY::~WGPUDISPLAY() {}
@@ -154,6 +180,9 @@ void WGPUDISPLAY::kill() {}
 void WGPUDISPLAY::setvsync(bool vsync) {}
 void WGPUDISPLAY::setUseOutputFilter(bool theState) { _useOutputFilterPending = theState; }
 bool WGPUDISPLAY::useOutputFilter() { return _useOutputFilterPending; }
+void WGPUDISPLAY::setUpscaler(int upscaler) { _upscalerPending = upscaler; }
+int WGPUDISPLAY::upscaler() { return _upscalerPending; }
+bool WGPUDISPLAY::upscalerCompiled() { return false; }
 
 bool WGPUDISPLAY::present(const u32*, int, int, const RECT*, const RECT*,
 						  const RECT*, int, u32)

@@ -476,6 +476,30 @@ static void Build3DRendererList()
 	core3DList[count] = NULL;
 }
 
+// ---------------------------------------------------------------------------
+// GPU filters
+// ---------------------------------------------------------------------------
+//
+// The chains live in src/frontend/shared/wgpu_present.cpp and their names come
+// from there; this side only records which one is selected. Selecting a filter
+// compiles nothing: its WGSL is fetched out of the resources and built into
+// pipelines when a frame is next presented with it selected, so a filter that
+// is never picked is never read, let alone compiled.
+static void SetDisplayGPUFilter(int filter)
+{
+	// A value from an older ini, or an entry left over from a build with more
+	// chains, falls back to the plain blit rather than to nothing at all.
+	if (!WGPUPresent::isUpscaler(filter))
+	{
+		filter = WGPUPresentUpscaler_Off;
+	}
+
+	displayGPUFilter = filter;
+	wgpudisplay.setUpscaler(filter);
+
+	WritePrivateProfileInt("Video", "Display Method GPU Filter", filter, IniName);
+}
+
 #if defined(ENABLE_WGPU)
 // ---------------------------------------------------------------------------
 // WebGPU display method: one menu entry per backend
@@ -547,6 +571,40 @@ static void UpdateDisplayMethodMenuChecks()
 	{
 		MainWindow->checkMenu(ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST + (UINT)i,
 							  isWGPU && (displayWGPUBackend == WGPURender_GetBackendMask(i)));
+	}
+}
+
+// Appends one entry per GPU filter under the "GPU Filter" submenu. Only "Off"
+// lives in the resource: the names come from the chain table in
+// src/frontend/shared/wgpu_present.cpp, so a filter added there shows up here
+// without a second list to keep in step, and a build without the WGSL offers
+// none of them.
+static void BuildDisplayMethodGpuFilterMenu()
+{
+	HMENU filterMenu = GetMenuItemParent(ID_DISPLAYMETHOD_GPUFILTER_OFF, mainMenu);
+
+	if (filterMenu == NULL)
+	{
+		return;
+	}
+
+	// The enum, not the table count: a value without a row is simply skipped,
+	// and the block of IDs has room for every value there is.
+	for (int value = WGPUPresentUpscaler_Off + 1; value < WGPUPresentUpscalerCount; value++)
+	{
+		if ( (ID_DISPLAYMETHOD_GPUFILTER_FIRST + value) >= ID_DISPLAYMETHOD_GPUFILTER_LAST )
+		{
+			break;
+		}
+
+		const char *label = WGPUPresent::upscalerName(value);
+
+		if (label == NULL)
+		{
+			continue;
+		}
+
+		AppendMenuA(filterMenu, MF_STRING, ID_DISPLAYMETHOD_GPUFILTER_FIRST + (UINT)value, label);
 	}
 }
 
@@ -2160,6 +2218,17 @@ int _main()
 	gldisplay.setUseOutputFilter(useOutputFilter);
 	wgpudisplay.setUseOutputFilter(useOutputFilter);
 
+	// The GPU filter of the WebGPU display method. Nothing is compiled here:
+	// the chain of the selected filter is built the first time a frame is
+	// presented with it selected, and a filter that is never selected is never
+	// read out of the resources, let alone compiled.
+	displayGPUFilter = GetPrivateProfileInt("Video", "Display Method GPU Filter", WGPUPresentUpscaler_Off, IniName);
+	if (!WGPUPresent::isUpscaler(displayGPUFilter))
+	{
+		displayGPUFilter = WGPUPresentUpscaler_Off;
+	}
+	wgpudisplay.setUpscaler(displayGPUFilter);
+
 	if(GetPrivateProfileBool("Video","VSync", false, IniName))
 		style |= DWS_VSYNC;
 	displayMethod = GetPrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
@@ -2383,6 +2452,10 @@ int _main()
 	// the "WebGPU" submenu. This needs Build3DRendererList() to have run, which
 	// happened before _main().
 	BuildDisplayMethodBackendMenu();
+
+	// The GPU filters come from the chain table, which exists in every build
+	// that has the WebGPU display method at all.
+	BuildDisplayMethodGpuFilterMenu();
 #endif
 
 	SetStyle(style);
@@ -4025,6 +4098,29 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 #endif
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_FILTER, gldisplay.useOutputFilter());
 
+			// The GPU filters are WGSL chains, so only the WebGPU display
+			// method can run one. The choice is kept while another method is
+			// active -- the stored filter applies again on the way back --
+			// but the entries are greyed out so that picking one never looks
+			// like it did something it did not.
+			{
+				const bool gpuFiltersUsable = (displayMethod == DISPMETHOD_WGPU);
+
+				MainWindow->checkMenu(ID_DISPLAYMETHOD_GPUFILTER_OFF, displayGPUFilter == WGPUPresentUpscaler_Off);
+				MainWindow->enableMenu(ID_DISPLAYMETHOD_GPUFILTER_OFF, gpuFiltersUsable);
+
+				for (int value = WGPUPresentUpscaler_Off + 1; value < WGPUPresentUpscalerCount; value++)
+				{
+					if ( (ID_DISPLAYMETHOD_GPUFILTER_FIRST + value) >= ID_DISPLAYMETHOD_GPUFILTER_LAST )
+					{
+						break;
+					}
+
+					MainWindow->checkMenu(ID_DISPLAYMETHOD_GPUFILTER_FIRST + (UINT)value, displayGPUFilter == value);
+					MainWindow->enableMenu(ID_DISPLAYMETHOD_GPUFILTER_FIRST + (UINT)value, gpuFiltersUsable);
+				}
+			}
+
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
 			MainWindow->checkMenu(IDC_BACKGROUNDINPUT, allowBackgroundInput);
 
@@ -5446,6 +5542,10 @@ DOKEYDOWN:
 			break;
 		}
 
+		case ID_DISPLAYMETHOD_GPUFILTER_OFF:
+			SetDisplayGPUFilter(WGPUPresentUpscaler_Off);
+			break;
+
 		case IDM_RESET:
 			ResetGame();
 			return 0;
@@ -5852,6 +5952,14 @@ DOKEYDOWN:
 				if ((id >= IDC_SAVETYPE) && (id < IDC_SAVETYPE+MAX_SAVE_TYPES+1))
 				{
 					backup_setManualBackupType(id-IDC_SAVETYPE);
+				}
+				// One entry per GPU filter, sharing a contiguous ID block for the
+				// same reason as the backends below: the entries are built at run
+				// time from the chain table. Entry N of the block is the
+				// WGPUPresentUpscaler value N.
+				if ( (id >= ID_DISPLAYMETHOD_GPUFILTER_FIRST) && (id < ID_DISPLAYMETHOD_GPUFILTER_LAST) )
+				{
+					SetDisplayGPUFilter((int)(id - ID_DISPLAYMETHOD_GPUFILTER_FIRST));
 				}
 #if defined(ENABLE_WGPU)
 				// One entry per WebGPU display backend. They share a contiguous ID

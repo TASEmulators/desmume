@@ -31,6 +31,7 @@ GLDISPLAY gldisplay;
 WGPUDISPLAY wgpudisplay;
 u32 displayMethod;
 u32 displayWGPUBackend = 0;
+int displayGPUFilter = 0; // WGPUPresentUpscaler_Off
 
 // The window the OpenGL display method has presented into, if any.
 //
