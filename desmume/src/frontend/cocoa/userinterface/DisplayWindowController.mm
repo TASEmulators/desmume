@@ -589,9 +589,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			const NSRect auxTopRightArea = [windowScreen auxiliaryTopRightArea];
 			const CGFloat auxHeight = (auxTopLeftArea.size.height > auxTopRightArea.size.height) ? auxTopLeftArea.size.height : auxTopRightArea.size.height;
 			
-			if (auxHeight > screenFrame.size.height - screenFrameVisible.origin.y - screenFrameVisible.size.height)
+			if (auxHeight > NSMaxY(screenFrame) - NSMaxY(screenFrameVisible))
 			{
-				screenFrameVisible.size.height = screenFrame.size.height - screenFrameVisible.origin.y - auxHeight;
+				screenFrameVisible.size.height = NSMaxY(screenFrame) - NSMinY(screenFrameVisible) - auxHeight;
 			}
 		}
 	}
