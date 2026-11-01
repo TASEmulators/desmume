@@ -942,6 +942,9 @@
     <ClCompile Include="ddraw.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="dxerr8_compat.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="ogl_display.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -1798,9 +1801,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="directx\directx.7z">
-      <Filter>frontend\Windows\libs</Filter>
-    </CustomBuild>
     <CustomBuild Include="lua\lua.7z">
       <Filter>frontend\Windows\libs</Filter>
     </CustomBuild>

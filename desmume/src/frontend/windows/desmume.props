@@ -170,11 +170,15 @@
 
 			<!-- deps config for x64 -->
 			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">.\zlib128;agg;.libs;.libs\x64;..\..\..\3rdparty\libs\x64</AdditionalLibraryDirectories>
-			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;wgpu_native.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<!-- ddraw/dinput8/dsound/dxguid come straight from the Windows SDK.
+			     The pieces the legacy DirectX SDK also used to supply are built from
+			     source instead: dinput8.lib ships c_dfDIJoystick2 itself, and
+			     dxerr8_compat.cpp provides the dxerr8 entry points. -->
+			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">ddraw.lib;dinput8.lib;dsound.lib;dxguid.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;wgpu_native.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- deps config for Win32 -->
 			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">.\zlib128;agg;.libs;.libs\win32</AdditionalLibraryDirectories>
-			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;zlib-vc8-Win32.lib;agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">ddraw.lib;dinput8.lib;dsound.lib;dxguid.lib;zlib-vc8-Win32.lib;agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- special deps config for newer VS -->
 			<AdditionalDependencies Label="Configuration" Condition="'$(NDS_VSVER)' &gt;= '14'">legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
