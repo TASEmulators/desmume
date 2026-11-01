@@ -963,6 +963,9 @@
     <ClCompile Include="DPI.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="UiFont.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\addons\slot2_hcv1000.cpp">
       <Filter>addons</Filter>
     </ClCompile>
@@ -1699,6 +1702,9 @@
       <Filter>frontend\shared</Filter>
     </ClInclude>
     <ClInclude Include="DPI.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="UiFont.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="..\..\filter\xbrz19\xbrz.h" />

@@ -268,6 +268,7 @@
     <ClCompile Include="wgpu_upscaler_win32.cpp" />
     <ClCompile Include="..\shared\wgpu_present.cpp" />
     <ClCompile Include="DPI.cpp" />
+    <ClCompile Include="UiFont.cpp" />
     <ClCompile Include="FEX_Interface.cpp" />
     <ClCompile Include="File_Extractor\7z_C\7zAlloc.c" />
     <ClCompile Include="File_Extractor\7z_C\7zBuf.c" />
@@ -572,6 +573,7 @@
     <ClInclude Include="wgpu_upscaler_win32.h" />
     <ClInclude Include="..\shared\wgpu_present.h" />
     <ClInclude Include="DPI.h" />
+    <ClInclude Include="UiFont.h" />
     <ClInclude Include="FEX_Interface.h" />
     <ClInclude Include="File_Extractor\7z_C\7z.h" />
     <ClInclude Include="File_Extractor\7z_C\7zAlloc.h" />

@@ -27,6 +27,7 @@
 #include "resource.h"
 #include "main.h"
 #include "DPI.h"
+#include "UiFont.h"
 #include "IORegView.h"
 #include "windriver.h"
 
@@ -1078,6 +1079,9 @@ DWORD TOOLSCLASS::ThreadFunc()
 {
 	LOG("Start thread\n");
 
+	// The font hook is per thread, and every tool window opens its dialog on a
+	// thread of its own, so it has to be installed here before doOpen().
+	uiFont::init();
 
 	DWORD ret = doOpen();
 	if(ret) return ret;

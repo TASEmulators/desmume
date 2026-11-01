@@ -28,6 +28,7 @@
 #include "resource.h"
 #include "main.h"
 #include "DPI.h"
+#include "UiFont.h"
 
 //this message is only supported in vista so folks sdk might not have it.
 //therefore we shall declare it here
@@ -625,7 +626,7 @@ LRESULT CALLBACK IORegView_Proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 			// Create the fixed-pitch font
 			wnd->hFont = CreateFont(DPI_ScaleForWindow(16, hWnd), 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
-				OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, GetFontQuality(), FIXED_PITCH, "Courier New");
+				OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, GetFontQuality(), FIXED_PITCH, uiFont::monoFace());
 
 			// Create the vertical scrollbar
 			// The sizing and positioning of the scrollbar is done in WM_SIZE messages

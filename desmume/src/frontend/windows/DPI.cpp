@@ -31,6 +31,7 @@ typedef BOOL (WINAPI *PFN_SetProcessDpiAwarenessContext)(HANDLE context);
 typedef HRESULT (WINAPI *PFN_SetProcessDpiAwareness)(int awareness);
 typedef int (WINAPI *PFN_GetSystemMetricsForDpi)(int index, UINT dpi);
 typedef BOOL (WINAPI *PFN_AdjustWindowRectExForDpi)(LPRECT rect, DWORD style, BOOL menu, DWORD exStyle, UINT dpi);
+typedef BOOL (WINAPI *PFN_SystemParametersInfoForDpi)(UINT action, UINT param, PVOID data, UINT winIni, UINT dpi);
 
 #define DPI_AWARENESS_CONTEXT_PMV2_VALUE  ((HANDLE)(LONG_PTR)-4)
 #define DPI_PROCESS_PER_MONITOR_AWARE     2
@@ -43,6 +44,7 @@ static PFN_SetProcessDpiAwarenessContext pSetProcessDpiAwarenessContext = NULL;
 static PFN_SetProcessDpiAwareness       pSetProcessDpiAwareness = NULL;
 static PFN_GetSystemMetricsForDpi       pGetSystemMetricsForDpi = NULL;
 static PFN_AdjustWindowRectExForDpi     pAdjustWindowRectExForDpi = NULL;
+static PFN_SystemParametersInfoForDpi   pSystemParametersInfoForDpi = NULL;
 
 static void DPI_ResolveEntryPoints()
 {
@@ -66,6 +68,7 @@ static void DPI_ResolveEntryPoints()
 		pSetProcessDpiAwarenessContext = (PFN_SetProcessDpiAwarenessContext)GetProcAddress(user32, "SetProcessDpiAwarenessContext");
 		pGetSystemMetricsForDpi = (PFN_GetSystemMetricsForDpi)GetProcAddress(user32, "GetSystemMetricsForDpi");
 		pAdjustWindowRectExForDpi = (PFN_AdjustWindowRectExForDpi)GetProcAddress(user32, "AdjustWindowRectExForDpi");
+		pSystemParametersInfoForDpi = (PFN_SystemParametersInfoForDpi)GetProcAddress(user32, "SystemParametersInfoForDpi");
 	}
 
 	// shcore.dll only exists from Windows 8.1 on; a failure here simply means
@@ -220,4 +223,16 @@ BOOL DPI_AdjustWindowRectEx(RECT *rect, DWORD style, BOOL menu, DWORD exStyle, H
 	}
 
 	return AdjustWindowRectEx(rect, style, menu, exStyle);
+}
+
+BOOL DPI_SystemParametersInfoForDpi(UINT action, UINT param, void *data, UINT winIni, UINT dpi)
+{
+	DPI_ResolveEntryPoints();
+
+	if (pSystemParametersInfoForDpi == NULL)
+	{
+		return FALSE;
+	}
+
+	return pSystemParametersInfoForDpi(action, param, data, winIni, dpi);
 }

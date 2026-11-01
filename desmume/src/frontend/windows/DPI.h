@@ -53,4 +53,10 @@ int DPI_UnscaleForWindow(int value, HWND hwnd);
 int DPI_GetSystemMetricsForWindow(int index, HWND hwnd);
 BOOL DPI_AdjustWindowRectEx(RECT *rect, DWORD style, BOOL menu, DWORD exStyle, HWND hwnd);
 
+// SystemParametersInfo() for a specific DPI, for the metrics tables that come in
+// per-DPI flavours (NONCLIENTMETRICS is the one the frontend needs).  Returns
+// FALSE when the entry point is missing, in which case the caller uses the plain
+// call and scales the result itself.
+BOOL DPI_SystemParametersInfoForDpi(UINT action, UINT param, void *data, UINT winIni, UINT dpi);
+
 #endif // DPI_H

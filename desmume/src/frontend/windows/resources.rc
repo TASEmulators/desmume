@@ -1855,6 +1855,7 @@ BEGIN
         MENUITEM "&Hotkey Config",              IDM_HOTKEY_CONFIG
         MENUITEM "&Wifi Settings",              IDM_WIFISETTINGS
         MENUITEM "&Path Settings",              IDM_PATHSETTINGS
+        MENUITEM "Use &Modern UI Font",         IDM_USE_MODERN_FONT
         MENUITEM "Background Pause",            IDC_BACKGROUNDPAUSE
         MENUITEM "Background Input",            IDC_BACKGROUNDINPUT
         POPUP "Display &Method"

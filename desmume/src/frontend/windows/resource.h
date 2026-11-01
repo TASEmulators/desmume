@@ -1200,13 +1200,16 @@
 #define IDM_FILE_PAUSERECORDING         40252
 #define IDM_FILE_RESUMERECORDING        40253
 
+// Config > Use Modern UI Font (see UiFont.h).
+#define IDM_USE_MODERN_FONT             40254
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
-#define _APS_NEXT_COMMAND_VALUE         40254
+#define _APS_NEXT_COMMAND_VALUE         40255
 #define _APS_NEXT_CONTROL_VALUE         65015
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

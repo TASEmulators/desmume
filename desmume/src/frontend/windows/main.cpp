@@ -73,6 +73,7 @@
 #include "resource.h"
 #include "CWindow.h"
 #include "DPI.h"
+#include "UiFont.h"
 #include "version.h"
 #include "inputdx.h"
 #include "console.h"
@@ -380,6 +381,7 @@ int WndY = 0;
 extern HWND RamSearchHWnd;
 static bool lostFocusPause = true;
 static bool lastPauseFromLostFocus = false;
+static bool useModernFont = true;	// system UI font instead of the bitmap one
 bool FrameLimit = true;
 extern bool allowBackgroundInput;
 
@@ -2182,6 +2184,10 @@ static BOOL OpenCoreSystemCP(const char* filename_syscp)
 DWORD wmTimerRes;
 int _main()
 {
+	// Before the first dialog is created: this is where the system UI font is
+	// picked up and the hook that applies it to every dialog is installed.
+	uiFont::init();
+
 	//7zip initialization
 	InitDecoder();
 
@@ -2346,6 +2352,11 @@ int _main()
 	CommonSettings.GFX3D_Renderer_TextureSmoothing =  GetPrivateProfileBool("3D", "TextureSmooth", 0, IniName);
 	gpu_bpp = GetValid3DIntSetting("GpuBpp", 18, possibleBPP, 3);
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
+
+	// The modern UI font is the default; the menu entry exists so that the 2005
+	// era look can be brought back if a dialog does not fit on the user's font.
+	useModernFont = GetPrivateProfileBool("UI", "ModernFont", true, IniName);
+	uiFont::setModern(useModernFont);
 
 	//Get Ram-Watch values
 	RWSaveWindowPos = GetPrivateProfileBool("RamWatch", "SaveWindowPos", false, IniName);
@@ -4293,6 +4304,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
 			MainWindow->checkMenu(IDC_BACKGROUNDINPUT, allowBackgroundInput);
+			MainWindow->checkMenu(IDM_USE_MODERN_FONT, useModernFont);
 
 			MainWindow->checkMenu(IDM_CHEATS_DISABLE, CommonSettings.cheatsDisable == true);
 
@@ -5661,6 +5673,12 @@ DOKEYDOWN:
 			}
 			else
 				ShowToolWindow(RamWatchHWnd);
+			return 0;
+
+		case IDM_USE_MODERN_FONT:
+			useModernFont = !useModernFont;
+			uiFont::setModern(useModernFont);
+			WritePrivateProfileBool("UI", "ModernFont", useModernFont, IniName);
 			return 0;
 
 		case IDC_BACKGROUNDPAUSE:
