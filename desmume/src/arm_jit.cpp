@@ -451,7 +451,7 @@ static GpVar bb_profiler_entry;
 	c.mov(cpu_ptr(CPSR.val), SPSR); \
 	c.and_(SPSR, (1<<5)); \
 	c.shr(SPSR, 5); \
-	c.lea(tmp, ptr_abs((void*)0xFFFFFFFC, SPSR.r64(), kScale2Times)); \
+	c.lea(tmp, ptr_abs((void*)(uintptr_t)0xFFFFFFFC, SPSR.r64(), kScale2Times)); \
 	c.and_(tmp, reg_ptr(15)); \
 	c.mov(cpu_ptr(next_instruction), tmp); \
 	c.unuse(tmp); \
@@ -1507,7 +1507,7 @@ static int OP_MRS_SPSR(const u32 i)
 	/* cpu->CPSR.val = (cpu->CPSR.val & ~byte_mask) | (operand & byte_mask); */ \
 	c.mov(xPSR, xPSR_mem); \
 	c.and_(operand, byte_mask); \
-	c.and_(xPSR, ~byte_mask); \
+	c.and_(xPSR, (sysint_t)(u32)~byte_mask); \
 	c.or_(xPSR, operand); \
 	c.mov(xPSR_mem, xPSR); \
 	c.jmp(__done); \
@@ -1515,7 +1515,7 @@ static int OP_MRS_SPSR(const u32 i)
 	c.bind(__USR); \
 	c.mov(xPSR, xPSR_mem); \
 	c.and_(operand, byte_mask_USR); \
-	c.and_(xPSR, ~byte_mask_USR); \
+	c.and_(xPSR, (sysint_t)(u32)~byte_mask_USR); \
 	c.or_(xPSR, operand); \
 	c.mov(xPSR_mem, xPSR); \
 	c.bind(__done); \
@@ -2464,7 +2464,7 @@ static int op_bx(Mem srcreg, bool blx, bool test_thumb)
 		dst = c.newGpVar(kX86VarTypeGpd);
 		c.mov(dst, thumb);
 		c.and_(thumb, 1);
-		c.lea(mask, ptr_abs((void*)0xFFFFFFFC, thumb.r64(), kScale2Times));
+		c.lea(mask, ptr_abs((void*)(uintptr_t)0xFFFFFFFC, thumb.r64(), kScale2Times));
 		c.shl(thumb, 5);
 		c.or_(cpu_ptr_byte(CPSR, 0), thumb.r8Lo());
 		c.and_(dst, mask);
@@ -3769,7 +3769,7 @@ static int op_bx_thumb(Mem srcreg, bool blx, bool test_thumb)
 	if(test_thumb)
 	{
 		GpVar mask = c.newGpVar(kX86VarTypeGpd);
-		c.lea(mask, ptr_abs((void*)0xFFFFFFFC, thumb.r64(), kScale2Times));
+		c.lea(mask, ptr_abs((void*)(uintptr_t)0xFFFFFFFC, thumb.r64(), kScale2Times));
 		c.and_(dst, mask);
 	}
 	else

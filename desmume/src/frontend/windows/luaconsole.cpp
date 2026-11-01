@@ -121,7 +121,7 @@ int WINAPI FileSysWatcher (LPVOID arg)
 				// so check to make sure it was the file we care about
 				if(memcmp(&origData.ftLastWriteTime, &data.ftLastWriteTime, sizeof(FILETIME)))
 				{
-					RequestAbortLuaScript((int)hDlg, "terminated to reload the script");
+					RequestAbortLuaScript((intptr_t)hDlg, "terminated to reload the script");
 					PostMessage(hDlg, WM_COMMAND, IDC_BUTTON_LUARUN, 0);
 				}
 			}
@@ -249,7 +249,7 @@ HWND IsScriptFileOpen(const char* Path)
 }
 
 
-void PrintToWindowConsole(int hDlgAsInt, const char* str)
+void PrintToWindowConsole(intptr_t hDlgAsInt, const char* str)
 {
 	HWND hDlg = (HWND)hDlgAsInt;
 	HWND hConsole = GetDlgItem(hDlg, IDC_LUACONSOLE);
@@ -278,7 +278,7 @@ void PrintToWindowConsole(int hDlgAsInt, const char* str)
 }
 
 extern int Show_Genesis_Screen(HWND hWnd);
-void OnStart(int hDlgAsInt)
+void OnStart(intptr_t hDlgAsInt)
 {
 	HWND hDlg = (HWND)hDlgAsInt;
 	LuaPerWindowInfo& info = LuaWindowInfo[hDlg];
@@ -290,7 +290,7 @@ void OnStart(int hDlgAsInt)
 //	Show_Genesis_Screen(HWnd); // otherwise we might never show the first thing the script draws
 }
 
-void OnStop(int hDlgAsInt, bool statusOK)
+void OnStop(intptr_t hDlgAsInt, bool statusOK)
 {
 	HWND hDlg = (HWND)hDlgAsInt;
 	LuaPerWindowInfo& info = LuaWindowInfo[hDlg];
@@ -471,7 +471,7 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			LuaWindowInfo[hDlg] = info;
 			RegisterWatcherThread(hDlg);
 
-			OpenLuaContext((int)hDlg, PrintToWindowConsole, OnStart, OnStop);
+			OpenLuaContext((intptr_t)hDlg, PrintToWindowConsole, OnStart, OnStop);
 
 			DragAcceptFiles(hDlg, TRUE);
 
@@ -623,8 +623,8 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 					{
 						// tell the OS to open the file with its associated editor,
 						// without blocking on it or leaving a command window open.
-						if((int)ShellExecute(NULL, "edit", PhysicalName, NULL, NULL, SW_SHOWNORMAL) == SE_ERR_NOASSOC)
-							if((int)ShellExecute(NULL, "open", PhysicalName, NULL, NULL, SW_SHOWNORMAL) == SE_ERR_NOASSOC)
+						if((INT_PTR)ShellExecute(NULL, "edit", PhysicalName, NULL, NULL, SW_SHOWNORMAL) == SE_ERR_NOASSOC)
+							if((INT_PTR)ShellExecute(NULL, "open", PhysicalName, NULL, NULL, SW_SHOWNORMAL) == SE_ERR_NOASSOC)
 								ShellExecute(NULL, NULL, "notepad", PhysicalName, NULL, SW_SHOWNORMAL);
 					}
 					if(created)
@@ -655,13 +655,13 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 					bool exists = ObtainFile(Str_Tmp, LogicalName, PhysicalName, "luarun", s_nonLuaExtensions, sizeof(s_nonLuaExtensions)/sizeof(*s_nonLuaExtensions));
 					Update_Recent_Script(LogicalName, info.subservient);
 					if(DemandLua())
-						RunLuaScriptFile((int)hDlg, PhysicalName);
+						RunLuaScriptFile((intptr_t)hDlg, PhysicalName);
 				}	break;
 				case IDC_BUTTON_LUASTOP:
 				{
-					PrintToWindowConsole((int)hDlg, "user clicked stop button\r\n");
+					PrintToWindowConsole((intptr_t)hDlg, "user clicked stop button\r\n");
 					SetActiveWindow(MainWindow->getHWnd());
-					if(DemandLua()) StopLuaScript((int)hDlg);
+					if(DemandLua()) StopLuaScript((intptr_t)hDlg);
 				}	break;
 				case IDC_NOTIFY_SUBSERVIENT:
 				{
@@ -683,7 +683,7 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 						KillWatcherThread(hDlg);
 						LuaScriptHWnds.erase(remove(LuaScriptHWnds.begin(), LuaScriptHWnds.end(), hDlg), LuaScriptHWnds.end());
 						LuaWindowInfo.erase(hDlg);
-						CloseLuaContext((int)hDlg);
+						CloseLuaContext((intptr_t)hDlg);
 //						Build_Main_Menu();
 						EndDialog(hDlg, true);
 					}
@@ -697,8 +697,8 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 		{
 			LuaPerWindowInfo& info = LuaWindowInfo[hDlg];
 
-			PrintToWindowConsole((int)hDlg, "user closed script window\r\n");
-			StopLuaScript((int)hDlg);
+			PrintToWindowConsole((intptr_t)hDlg, "user closed script window\r\n");
+			StopLuaScript((intptr_t)hDlg);
 			if(info.started)
 			{
 				// not stopped yet, wait to close until we are, otherwise we'll crash
@@ -716,7 +716,7 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			KillWatcherThread(hDlg);
 			LuaScriptHWnds.erase(remove(LuaScriptHWnds.begin(), LuaScriptHWnds.end(), hDlg), LuaScriptHWnds.end());
 			LuaWindowInfo.erase(hDlg);
-			CloseLuaContext((int)hDlg);
+			CloseLuaContext((intptr_t)hDlg);
 //			Build_Main_Menu();
 			EndDialog(hDlg, true);
 		}	return true;

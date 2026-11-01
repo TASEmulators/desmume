@@ -622,7 +622,7 @@ LRESULT CALLBACK IORegView_Proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			// Retrieve the CIORegView instance passed upon window creation
 			// and match it to the window
 			wnd = (CIORegView*)((CREATESTRUCT*)lParam)->lpCreateParams;
-			SetWindowLongPtr(hWnd, DWLP_USER, (LONG)wnd);
+			SetWindowLongPtr(hWnd, DWLP_USER, (LONG_PTR)wnd);
 
 			// Create the fixed-pitch font
 			wnd->hFont = CreateFont(DPI_ScaleForWindow(16, hWnd), 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 

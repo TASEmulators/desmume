@@ -368,7 +368,7 @@ INT_PTR CALLBACK LevelBarProc(HWND hBar, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if (msg == WM_PAINT)
 	{
-		u8 chan = (u8)GetProp(hBar, "chan");
+		u8 chan = (u8)(LONG_PTR)GetProp(hBar, "chan");
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hBar, &ps);
 		int vol =  volBar[chan + chanOfs()];
@@ -392,7 +392,7 @@ INT_PTR CALLBACK PanBarProc(HWND hBar, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if (msg == WM_PAINT)
 	{
-		u8 chan = (u8)GetProp(hBar, "chan");
+		u8 chan = (u8)(LONG_PTR)GetProp(hBar, "chan");
 		channel_struct &thischan = SPU_core->channels[chan + chanOfs()];
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hBar, &ps);
@@ -427,11 +427,11 @@ static INT_PTR CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 			for(int chanId = 0; chanId < 8; chanId++) {
 				HWND tmp = GetDlgItem(hDlg, IDC_SOUND0VOLBAR+chanId);
 				OldLevelBarProc = SetWindowLongPtr(tmp, GWLP_WNDPROC, (LONG_PTR)LevelBarProc);
-				SetProp(tmp, "chan", (HANDLE)chanId);
+				SetProp(tmp, "chan", (HANDLE)(LONG_PTR)chanId);
 
 				tmp = GetDlgItem(hDlg, IDC_SOUND0PANBAR+chanId);
 				OldPanBarProc = SetWindowLongPtr(tmp, GWLP_WNDPROC, (LONG_PTR)PanBarProc);
-				SetProp(tmp, "chan", (HANDLE)chanId);
+				SetProp(tmp, "chan", (HANDLE)(LONG_PTR)chanId);
 			}
 
 			for(int chanId = 0; chanId < 8; chanId++) {

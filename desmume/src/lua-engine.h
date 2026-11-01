@@ -19,12 +19,16 @@
 #define LUA_SCRIPT_H
 
 #include "types.h"
+#include <stdint.h>
 
-void OpenLuaContext(int uid, void(*print)(int uid, const char* str) = 0, void(*onstart)(int uid) = 0, void(*onstop)(int uid, bool statusOK) = 0);
-void RunLuaScriptFile(int uid, const char* filename);
-void StopLuaScript(int uid);
-void RequestAbortLuaScript(int uid, const char* message = 0);
-void CloseLuaContext(int uid);
+// The "uid" (a.k.a. script context id) is an opaque value chosen by the frontend.
+// It must be wide enough to hold a native handle (e.g. an HWND on Windows/x64),
+// so it is declared as intptr_t instead of int.
+void OpenLuaContext(intptr_t uid, void(*print)(intptr_t uid, const char* str) = 0, void(*onstart)(intptr_t uid) = 0, void(*onstop)(intptr_t uid, bool statusOK) = 0);
+void RunLuaScriptFile(intptr_t uid, const char* filename);
+void StopLuaScript(intptr_t uid);
+void RequestAbortLuaScript(intptr_t uid, const char* message = 0);
+void CloseLuaContext(intptr_t uid);
 bool AnyLuaActive();
 
 enum LuaCallID
@@ -89,9 +93,9 @@ struct LuaSaveData
 
 	Record* recordList;
 
-	void SaveRecord(int uid, unsigned int key); // saves Lua stack into a record and pops it
-	void LoadRecord(int uid, unsigned int key, unsigned int itemsToLoad) const; // pushes a record's data onto the Lua stack
-	void SaveRecordPartial(int uid, unsigned int key, int idx); // saves part of the Lua stack (at the given index) into a record and does NOT pop anything
+	void SaveRecord(intptr_t uid, unsigned int key); // saves Lua stack into a record and pops it
+	void LoadRecord(intptr_t uid, unsigned int key, unsigned int itemsToLoad) const; // pushes a record's data onto the Lua stack
+	void SaveRecordPartial(intptr_t uid, unsigned int key, int idx); // saves part of the Lua stack (at the given index) into a record and does NOT pop anything
 
 	void ExportRecords(void* file) const; // writes all records to an already-open file
 	void ImportRecords(void* file); // reads records from an already-open file

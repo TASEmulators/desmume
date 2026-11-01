@@ -7303,7 +7303,7 @@ const char* MakeScriptPathAbsolute(const char* filename, const char* extraDirToC
 	return filename;
 }
 
-extern void RequestAbortLuaScript(int uid, const char* message);
+extern void RequestAbortLuaScript(intptr_t uid, const char* message);
 
 const char* OpenLuaScript(const char* filename, const char* extraDirToCheck, bool makeSubservient)
 {
@@ -7327,12 +7327,7 @@ const char* OpenLuaScript(const char* filename, const char* extraDirToCheck, boo
 		}
 		else
 		{
-		#pragma warning( push )  
-			//'type cast': pointer truncation from 'HWND' to 'int'
-			//it's just a hash key. it's probably safe
-			#pragma warning( disable : 4311 )  
-			RequestAbortLuaScript((int)scriptHWnd, "terminated to restart because of a call to emu.openscript");
-		#pragma warning( pop )  
+			RequestAbortLuaScript((intptr_t)scriptHWnd, "terminated to restart because of a call to emu.openscript");
 
 			SendMessage(scriptHWnd, WM_COMMAND, IDC_BUTTON_LUARUN, 0);
 		}
