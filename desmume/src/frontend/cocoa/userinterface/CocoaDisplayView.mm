@@ -653,6 +653,19 @@
 		cdv->Get3DPresenter()->LoadHUDFont();
 	}
 	
+	// Initialize backing-pixel dimensions even if the view never receives a size change.
+	NSRect viewportRect = [self bounds];
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+	if ([self respondsToSelector:@selector(convertRectToBacking:)])
+	{
+		viewportRect = [self convertRectToBacking:viewportRect];
+	}
+#endif
+	ClientDisplayPresenterProperties &props = [windowController localViewProperties];
+	props.clientWidth = viewportRect.size.width;
+	props.clientHeight = viewportRect.size.height;
+	[self updateLayerPresenterProperties:props scaleFactor:scaleFactor needFlush:NO];
+
 	cdv->Get3DPresenter()->UpdateLayout();
 	
 	if (localOGLContext != nil)
