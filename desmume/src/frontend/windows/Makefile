@@ -115,6 +115,7 @@ SRCS = \
 	ram_search.cpp \
 	ramwatch.cpp \
 	recentroms.cpp \
+	record_compositor.cpp \
 	replay.cpp \
 	slot1_config.cpp \
 	snddx.cpp \
@@ -378,6 +379,20 @@ CSRCS = \
 	File_Extractor/7z_C/win32/Threads.c \
 
 RESRCS = resources.rc
+
+# Media Foundation recording.  mf_build.h turns it on by itself for MSVC; the
+# MSYS2 clang64 and ucrt64 toolchains carry <mfapi.h>, <mfreadwrite.h> and the
+# matching import libraries as well, so a build there can opt in with
+#
+#     make MF=1 CROSS=x86_64-w64-mingw32-
+#
+# The default i686 target this file is written for has no Media Foundation
+# headers, which is why this is a switch and not a test.
+ifeq ($(MF),1)
+  CPPFLAGS += -DDESMUME_ENABLE_MF=1
+  LIBS += -lmfplat -lmfreadwrite -lmfuuid
+  SRCS += mflite.cpp mfvideowriter.cpp videoencoders.cpp recording_settings.cpp
+endif
 
 RESOBJS = $(RESRCS:.rc=.o)
 OBJS=$(SRCS:.cpp=.o)

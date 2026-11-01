@@ -42,6 +42,8 @@ void FrameAdvance(bool state);
 void ResetGame();	//Resets game (for the menu item & hotkey
 void AviRecordTo();
 void AviEnd();
+void RecordVideoTo();
+void RecordVideoPause();
 void WavRecordTo(int wavmode);
 void WavEnd();
 void UpdateTitle();

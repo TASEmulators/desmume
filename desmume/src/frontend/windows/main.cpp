@@ -116,6 +116,10 @@
 #include "ramwatch.h"
 #include "ram_search.h"
 #include "aviout.h"
+#if DESMUME_ENABLE_MF
+#include "recording_settings.h"
+#include "videoencoders.h"
+#endif
 #include "soundView.h"
 #include "importSave.h"
 #include "fsnitroView.h"
@@ -1207,6 +1211,33 @@ static HMENU GetMenuItemParent(UINT itemId, HMENU hMenu = mainMenu)
 	return NULL;
 }
 
+// The VFW AVI writer and the WAV recorders predate the Media Foundation path
+// and now live in their own submenu so the File menu only shows the recorder
+// people are meant to use.  A classic MENU resource cannot give a popup an
+// identifier, so the submenu is found by the ID of its first item.
+static HMENU GetLegacyRecordingMenu()
+{
+	HMENU fileMenu = GetSubMenu(mainMenu, 0);
+	if (fileMenu == NULL)
+		return NULL;
+
+	const int itemCount = GetMenuItemCount(fileMenu);
+	for (int i = 0; i < itemCount; i++)
+	{
+		HMENU subMenu = GetSubMenu(fileMenu, i);
+		if (subMenu == NULL)
+			continue;
+
+		MENUITEMINFO mii = {sizeof(MENUITEMINFO)};
+		mii.fMask = MIIM_ID;
+
+		if (GetMenuItemInfo(subMenu, 0, TRUE, &mii) && mii.wID == IDM_FILE_RECORDAVI)
+			return subMenu;
+	}
+
+	return NULL;
+}
+
 static void PopulateLuaSubmenu()
 {
 	static HMENU luasubmenu = GetMenuItemParent(IDC_NEW_LUA_SCRIPT);
@@ -1898,8 +1929,24 @@ int MenuInit()
 
 #ifndef DEVELOPER_MENU_ITEMS
 	// menu items that are only useful for desmume developers (maybe)
-	HMENU fileMenu = GetSubMenu(mainMenu, 0);
-	DeleteMenu(fileMenu, IDM_FILE_RECORDUSERSPUWAV, MF_BYCOMMAND);
+	HMENU legacyRecordMenu = GetLegacyRecordingMenu();
+	if (legacyRecordMenu != NULL)
+	{
+		DeleteMenu(legacyRecordMenu, IDM_FILE_RECORDUSERSPUWAV, MF_BYCOMMAND);
+	}
+#endif
+
+#if !DESMUME_ENABLE_MF
+	// The Media Foundation entries are in the resource script for every build,
+	// but a build without MF has no command handler behind them.
+	{
+		HMENU fileMenu = GetSubMenu(mainMenu, 0);
+		if (fileMenu != NULL)
+		{
+			DeleteMenu(fileMenu, IDM_FILE_RECORDVIDEO, MF_BYCOMMAND);
+			DeleteMenu(fileMenu, IDM_FILE_PAUSERECORDING, MF_BYCOMMAND);
+		}
+	}
 #endif
 
 	//zero 27-mar-2015 - removing this.. its just glitchy and rarely maintained.
@@ -3201,6 +3248,114 @@ void AviRecordTo()
 	NDS_UnPause();
 }
 
+#if DESMUME_ENABLE_MF
+// Picks an encoder, then a file name, then starts writing through Media
+// Foundation.  Unlike the AVI path there is no codec dialog on top of the save
+// dialog: the encoder was chosen before, and the sink writer just uses it.
+void RecordVideoTo()
+{
+	NDS_Pause();
+
+	RecordParams params;
+	LoadRecordingParams(&params);
+
+	if (!ShowRecordingSettings(MainWindow->getHWnd(), &params))
+	{
+		NDS_UnPause();
+		return;
+	}
+
+	SaveRecordingParams(params);
+
+	const RecordContainer *container = videoEncoders::containerFor(params.videoSubtype, params.audioSubtype);
+	if (container == NULL)
+	{
+		NDS_UnPause();
+		return;
+	}
+
+	// The file type follows from the encoder pair, so the extension cannot
+	// disagree with what the writer is about to mux.
+	char extension[16] = "";
+	WideCharToMultiByte(CP_ACP, 0, container->extension + 1, -1, extension, sizeof(extension) - 1, NULL, NULL);
+
+	std::string filter;
+	filter += container->description;
+	filter += " (*.";
+	filter += extension;
+	filter += ")";
+	filter.push_back('\0');
+	filter += "*.";
+	filter += extension;
+	filter.push_back('\0');
+	filter.push_back('\0');
+
+	char outFilename[MAX_PATH] = "";
+	OPENFILENAME ofn;
+	memset(&ofn, 0, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = MainWindow->getHWnd();
+	ofn.lpstrFilter = filter.c_str();
+	ofn.lpstrDefExt = extension;
+	ofn.lpstrTitle = "Save Recording as";
+
+	std::string dir = path.getpath(path.AVI_FILES);
+	ofn.lpstrInitialDir = dir.c_str();
+	path.formatname(outFilename);
+	ofn.lpstrFile = outFilename;
+
+	const int len = strlen(outFilename);
+	if (len + (int)dir.length() + 8 > MAX_PATH)
+		outFilename[MAX_PATH - dir.length() - 8] = '\0';
+
+	strcat(outFilename, ".");
+	strcat(outFilename, extension);
+
+	ofn.nMaxFile = MAX_PATH;
+	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
+
+	if (GetSaveFileName(&ofn))
+	{
+		if (AVI_IsRecording())
+		{
+			DRV_AviEnd();
+		}
+
+		// "Record at the window size" means the window as it is at this
+		// instant: the size is frozen for the whole recording, because the
+		// encoder was told what it is and cannot be told again.
+		RECT client;
+		if (GetClientRect(MainWindow->getHWnd(), &client))
+		{
+			params.pictureWidth	 = client.right - client.left;
+			params.pictureHeight = client.bottom - client.top;
+		}
+
+		if (DRV_AviBeginEx(outFilename, params))
+		{
+			LOG("Recording started.");
+			driver->AddLine("Recording started.");
+		}
+
+		dir = Path::GetFileDirectoryPath(outFilename);
+		path.setpath(path.AVI_FILES, dir);
+		WritePrivateProfileStringW(LSECTION, AVIKEY, mbstowcs(dir).c_str(), IniNameW);
+	}
+
+	NDS_UnPause();
+}
+
+void RecordVideoPause()
+{
+	if (!DRV_AviCanPause())
+	{
+		return;
+	}
+
+	DRV_AviPause(!DRV_AviIsPaused());
+}
+#endif // DESMUME_ENABLE_MF
+
 void WavEnd()
 {
 	NDS_Pause();
@@ -3906,15 +4061,26 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MENUITEMINFOW mii;
 			WCHAR menuItemString[256];
 			ZeroMemory(&mii, sizeof(MENUITEMINFOW));
+			//The legacy recorders sit in their own submenu, so their text and
+			//enable state has to be set through that submenu, not the menu bar.
+			HMENU legacyMenu = GetLegacyRecordingMenu();
 			//Check if AVI is recording
 			mii.cbSize = sizeof(MENUITEMINFOW);
 			mii.fMask = MIIM_STRING;
 			LoadStringW(hAppInst, !AVI_IsRecording() ? IDM_FILE_RECORDAVI : IDM_FILE_STOPAVI, menuItemString, 256);
 			mii.dwTypeData = menuItemString;
-			SetMenuItemInfoW(mainMenu, IDM_FILE_RECORDAVI, FALSE, &mii);
+			SetMenuItemInfoW(legacyMenu, IDM_FILE_RECORDAVI, FALSE, &mii);
 			//Check if WAV is recording
 			LoadStringW(hAppInst, !WAV_IsRecording() ? IDM_FILE_RECORDWAV : IDM_FILE_STOPWAV, menuItemString, 256);
-			SetMenuItemInfoW(mainMenu, IDM_FILE_RECORDWAV, FALSE, &mii);
+			SetMenuItemInfoW(legacyMenu, IDM_FILE_RECORDWAV, FALSE, &mii);
+#if DESMUME_ENABLE_MF
+			//Check if the Media Foundation recorder is running
+			LoadStringW(hAppInst, !AVI_IsRecording() ? IDM_FILE_RECORDVIDEO : IDM_FILE_STOPVIDEO, menuItemString, 256);
+			SetMenuItemInfoW(mainMenu, IDM_FILE_RECORDVIDEO, FALSE, &mii);
+			//Pause only exists for the Media Foundation writer; VFW has no such state
+			LoadStringW(hAppInst, !DRV_AviIsPaused() ? IDM_FILE_PAUSERECORDING : IDM_FILE_RESUMERECORDING, menuItemString, 256);
+			SetMenuItemInfoW(mainMenu, IDM_FILE_PAUSERECORDING, FALSE, &mii);
+#endif
 
 			//Menu items dependent on a ROM loaded
 			DesEnableMenuItem(mainMenu, IDM_GAME_INFO,         romloaded);
@@ -3924,8 +4090,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_STATE_LOAD,        romloaded);
 			DesEnableMenuItem(mainMenu, IDM_PRINTSCREEN,       romloaded);
 			DesEnableMenuItem(mainMenu, IDM_QUICK_PRINTSCREEN, romloaded);
-			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    romloaded);
-			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDWAV,    romloaded);
+			DesEnableMenuItem(legacyMenu, IDM_FILE_RECORDAVI,    romloaded);
+			DesEnableMenuItem(legacyMenu, IDM_FILE_RECORDWAV,    romloaded);
+#if DESMUME_ENABLE_MF
+			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDVIDEO,  romloaded);
+			DesEnableMenuItem(mainMenu, IDM_FILE_PAUSERECORDING, romloaded && DRV_AviCanPause());
+#endif
 			DesEnableMenuItem(mainMenu, IDM_RESET,             romloaded && !(movieMode == MOVIEMODE_PLAY && movie_readonly));
 			DesEnableMenuItem(mainMenu, IDM_CLOSEROM,          romloaded);
 			DesEnableMenuItem(mainMenu, IDM_SHUT_UP,           romloaded);
@@ -3933,7 +4103,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_CHEATS_SEARCH,     romloaded);
 			//DesEnableMenuItem(mainMenu, IDM_WIFISETTINGS,      romloaded);
 #ifdef DEVELOPER_MENU_ITEMS
-			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDUSERSPUWAV,    romloaded && !WAV_IsRecording());
+			DesEnableMenuItem(legacyMenu, IDM_FILE_RECORDUSERSPUWAV,    romloaded && !WAV_IsRecording());
 #endif
 
 
@@ -4936,6 +5106,21 @@ DOKEYDOWN:
 			else
 				AviRecordTo();
 			break;
+#if DESMUME_ENABLE_MF
+		case IDM_FILE_RECORDVIDEO:
+			if (AVI_IsRecording())
+			{
+				AviEnd();
+			}
+			else
+			{
+				RecordVideoTo();
+			}
+			break;
+		case IDM_FILE_PAUSERECORDING:
+			RecordVideoPause();
+			break;
+#endif
 		case IDM_FILE_RECORDWAV:
 			if (WAV_IsRecording())
 				WAV_End();

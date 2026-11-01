@@ -1171,14 +1171,43 @@
 #define ID_LABEL_TEXTURE_SCALING        64007
 #define ID_LABEL_SHADOW_POLYGONS        64009
 
+// Recording settings dialog and its controls (Media Foundation recorder)
+#define IDD_RECORD_SETTINGS             10016
+
+#define IDC_REC_VIDEO_TITLE             65000
+#define IDC_REC_VIDEO                   65001
+#define IDC_REC_VIDEO_BITRATE           65002
+#define IDC_REC_VIDEO_SPIN              65003
+#define IDC_REC_VIDEO_PRESET            65004
+#define IDC_REC_PROFILE                 65005
+#define IDC_REC_FRAMERATE               65006
+#define IDC_REC_SUMMARY                 65007
+#define IDC_REC_HINT                    65008
+#define IDC_REC_AUDIO_TITLE             65009
+#define IDC_REC_AUDIO                   65010
+#define IDC_REC_AUDIO_BITRATE           65011
+#define IDC_REC_AUDIO_SPIN              65012
+#define IDC_REC_AUDIO_PRESET            65013
+#define IDC_REC_SAMPLE_RATE             65014
+#define IDC_REC_CAPTURE                 65015
+#define IDC_REC_FILTER                  65016
+
+// Commands.  The STOP and RESUME ids are string-table entries only: the menu
+// text is swapped by loading the alternate id, which is how the existing
+// "Record AVI" / "Stop AVI" pair works.
+#define IDM_FILE_RECORDVIDEO            40250
+#define IDM_FILE_STOPVIDEO              40251
+#define IDM_FILE_PAUSERECORDING         40252
+#define IDM_FILE_RESUMERECORDING        40253
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
-#define _APS_NEXT_COMMAND_VALUE         40218
-#define _APS_NEXT_CONTROL_VALUE         1068
+#define _APS_NEXT_COMMAND_VALUE         40254
+#define _APS_NEXT_CONTROL_VALUE         65015
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

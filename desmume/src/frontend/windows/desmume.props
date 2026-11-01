@@ -182,7 +182,9 @@
 			<!-- general deps config -->
 			<AdditionalDependencies>lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
 			<!-- (and windows libs) -->
-			<AdditionalDependencies>vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<!-- ole32 covers CoInitializeEx for the Media Foundation recorder and
+			     CLSIDFromString for the codec GUIDs it remembers -->
+			<AdditionalDependencies>vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
 

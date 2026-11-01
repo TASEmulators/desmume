@@ -228,6 +228,21 @@
     <ClCompile Include="aviout.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="mflite.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="mfvideowriter.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="recording_settings.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="record_compositor.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="videoencoders.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="cheatsWin.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -1012,6 +1027,27 @@
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="aviout.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="mflite.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="mfvideowriter.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="recording_settings.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="record_compositor.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="mf_build.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="video_writer.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="videoencoders.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="cheatsWin.h">

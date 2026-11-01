@@ -372,12 +372,17 @@
     <ClCompile Include="mapView.cpp" />
     <ClCompile Include="matrixView.cpp" />
     <ClCompile Include="memView.cpp" />
+    <ClCompile Include="mflite.cpp" />
+    <ClCompile Include="mfvideowriter.cpp" />
     <ClCompile Include="oamView.cpp" />
     <ClCompile Include="palView.cpp" />
     <ClCompile Include="ram_search.cpp" />
     <ClCompile Include="ramwatch.cpp" />
+    <ClCompile Include="record_compositor.cpp" />
+    <ClCompile Include="recording_settings.cpp" />
     <ClCompile Include="soundView.cpp" />
     <ClCompile Include="tileView.cpp" />
+    <ClCompile Include="videoencoders.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\addons\slot1comp_mc.h" />
@@ -661,11 +666,18 @@
     <ClInclude Include="mapView.h" />
     <ClInclude Include="matrixView.h" />
     <ClInclude Include="memView.h" />
+    <ClInclude Include="mf_build.h" />
+    <ClInclude Include="mflite.h" />
+    <ClInclude Include="mfvideowriter.h" />
     <ClInclude Include="oamView.h" />
     <ClInclude Include="palView.h" />
     <ClInclude Include="ram_search.h" />
     <ClInclude Include="ramwatch.h" />
+    <ClInclude Include="record_compositor.h" />
+    <ClInclude Include="recording_settings.h" />
     <ClInclude Include="soundView.h" />
+    <ClInclude Include="video_writer.h" />
+    <ClInclude Include="videoencoders.h" />
     <ClInclude Include="tileView.h" />
   </ItemGroup>
   <ItemGroup>
