@@ -30,7 +30,7 @@ jobs:
           path: desmume/src/frontend/interface/build/libdesmume.so
 
   build_macos:
-    runs-on: macos-14
+    runs-on: macos-15
     name: Build MacOS
     steps:
       - name: Checkout
