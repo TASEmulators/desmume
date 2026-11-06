@@ -48,6 +48,21 @@ int DPI_Unscale(int value, int dpi);
 int DPI_ScaleForWindow(int value, HWND hwnd);
 int DPI_UnscaleForWindow(int value, HWND hwnd);
 
+// Scale of a dialog's client area against the 96 DPI size its hand painted
+// content was drawn for.  The two axes can differ: dialog units come from the
+// template font's average character width and line height, which round
+// independently at fractional DPIs (an 8 pt template is 12 x 25 px per unit at
+// 192 DPI, so the dialog grows 2.0x horizontally but 1.923x vertically).
+// `uniform` is the smaller of the two, for content that has to stay square.
+struct DPI_ClientScale
+{
+	float x;
+	float y;
+	float uniform;
+};
+
+DPI_ClientScale DPI_GetClientScale(HWND hwnd, int designWidth, int designHeight);
+
 // DPI-aware replacements for GetSystemMetrics() and AdjustWindowRectEx().
 // Both consult the window's monitor instead of the system DPI.
 int DPI_GetSystemMetricsForWindow(int index, HWND hwnd);

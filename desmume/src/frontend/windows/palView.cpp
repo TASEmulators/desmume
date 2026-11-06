@@ -22,6 +22,7 @@
 
 #include "types.h"
 #include "debug.h"
+#include "DPI.h"
 #include "MMU.h"
 #include "gfx3d.h"
 
@@ -39,59 +40,98 @@ typedef struct
 
 palview_struct	*PalView = NULL;
 
+// The palette grid is painted by hand, so it does not follow the dialog when
+// the dialog manager scales the template for the monitor DPI.  Keep the 96 DPI
+// layout - sixteen cells of eleven pixels starting at (3,55), with one pixel
+// between the cells - and scale it, shrinking the cell only when rounding
+// would push the last column or row past the room the template leaves.
+static int PalView_GridStep(HWND hwnd)
+{
+	// The 96 DPI client is 180 x 299 pixels; the dialog does not necessarily
+	// grow by the same factor on both axes (see DPI_GetClientScale).
+	const DPI_ClientScale scale = DPI_GetClientScale(hwnd, 180, 299);
+	int step = (int)(11.0f * scale.uniform + 0.5f);
+
+	RECT client;
+	GetClientRect(hwnd, &client);
+
+	const int left = (int)(3.0f * scale.x + 0.5f);
+	const int right = (int)(1.0f * scale.x + 0.5f);
+	if (step * 16 > client.right - left - right)
+		step = (client.right - left - right) / 16;
+
+	RECT update;
+	if (GetWindowRect(GetDlgItem(hwnd, IDC_AUTO_UPDATE), &update))
+	{
+		MapWindowPoints(NULL, hwnd, (POINT *)&update, 2);
+
+		const int top = (int)(55.0f * scale.y + 0.5f);
+		const int gap = (int)(6.0f * scale.y + 0.5f);
+		if (step * 16 > update.top - gap - top)
+			step = (update.top - gap - top) / 16;
+	}
+
+	return (step > 0) ? step : 1;
+}
+
 LRESULT PalView_OnPaint(const u16 * adr, u16 num, HWND hwnd, WPARAM wParam, LPARAM lParam)
 {
-        HDC          hdc;
-        PAINTSTRUCT  ps;
-        RECT         rect;
-        HBRUSH       brush;
-        u16 c;
-        char tmp[80];
-        
-        rect.left = 3;    
-        rect.top = 55;    
-        rect.right = 13;    
-        rect.bottom = 65;    
-        hdc = BeginPaint(hwnd, &ps);
-        
-        if(adr)
-        {
-             u32 y;
+	HDC          hdc;
+	PAINTSTRUCT  ps;
+	RECT         rect;
+	HBRUSH       brush;
+	u16 c;
+	char tmp[80];
 
-             for(y = 0; y < 16; ++y)
-             {
-                  u32 x;
+	const DPI_ClientScale scale = DPI_GetClientScale(hwnd, 180, 299);
+	const int step = PalView_GridStep(hwnd);
+	int gap = (int)(1.0f * scale.uniform + 0.5f);
+	const int left = (int)(3.0f * scale.x + 0.5f);
+	const int top = (int)(55.0f * scale.y + 0.5f);
 
-                  for(x = 0; x < 16; ++x)
-                  {
-                       c = adr[(y<<4)+x+0x100*num];
-											 int r = (c>>0)&0x1F;
-											 int g = (c>>5)&0x1F;
-											 int b = (c>>10)&0x1F;
-											 //zero 08-dec-2013
-											 //main.cpp converts the screen from 555 via RGB15TO24_REVERSE which uses material_5bit_to_8bit. thus we get results here mirroring the display as follows:
-											 r = material_5bit_to_8bit[r];
-											 g = material_5bit_to_8bit[g];
-											 b = material_5bit_to_8bit[b];
-                       brush = CreateSolidBrush(RGB(r,g,b));
-                       FillRect(hdc, &rect, brush);
-                       DeleteObject(brush);
-                       rect.left += 11;
-                       rect.right += 11;
-                  }
-                  rect.top += 11;
-                  rect.bottom += 11;
-                  rect.left = 3;
-                  rect.right = 13;
-             }
-             sprintf(tmp, "Pal : %d", num);
-             SetWindowText(GetDlgItem(hwnd, IDC_PALNUM), tmp);
-        }
-        else
-             TextOut(hdc, 3, 55, "Pas de palette", 14);
-        EndPaint(hwnd, &ps);
+	// The 1 px gap between the cells never disappears, or the palette becomes
+	// one solid block at very small scales.
+	if (gap < 1)
+		gap = 1;
 
-        return 0;
+	hdc = BeginPaint(hwnd, &ps);
+
+	if(adr)
+	{
+		u32 y;
+
+		for(y = 0; y < 16; ++y)
+		{
+			u32 x;
+
+			for(x = 0; x < 16; ++x)
+			{
+				c = adr[(y<<4)+x+0x100*num];
+				int r = (c>>0)&0x1F;
+				int g = (c>>5)&0x1F;
+				int b = (c>>10)&0x1F;
+				//zero 08-dec-2013
+				//main.cpp converts the screen from 555 via RGB15TO24_REVERSE which uses material_5bit_to_8bit. thus we get results here mirroring the display as follows:
+				r = material_5bit_to_8bit[r];
+				g = material_5bit_to_8bit[g];
+				b = material_5bit_to_8bit[b];
+				rect.left = left + x * step;
+				rect.top = top + y * step;
+				rect.right = rect.left + step - gap;
+				rect.bottom = rect.top + step - gap;
+				brush = CreateSolidBrush(RGB(r,g,b));
+				FillRect(hdc, &rect, brush);
+				DeleteObject(brush);
+			}
+		}
+		sprintf(tmp, "Pal : %d", num);
+		SetWindowText(GetDlgItem(hwnd, IDC_PALNUM), tmp);
+	}
+	else
+		TextOut(hdc, left, top, "Pas de palette", 14);
+	EndPaint(hwnd, &ps);
+
+	return 0;
 }
 
 BOOL CALLBACK ViewPalProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)

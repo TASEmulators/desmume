@@ -201,6 +201,30 @@ int DPI_UnscaleForWindow(int value, HWND hwnd)
 	return DPI_Unscale(value, DPI_GetForWindow(hwnd));
 }
 
+DPI_ClientScale DPI_GetClientScale(HWND hwnd, int designWidth, int designHeight)
+{
+	DPI_ClientScale scale = { 1.0f, 1.0f, 1.0f };
+
+	RECT client;
+	if ( (hwnd == NULL) || (designWidth <= 0) || (designHeight <= 0) || !GetClientRect(hwnd, &client) )
+	{
+		return scale;
+	}
+
+	if (client.right > 0)
+	{
+		scale.x = (float)client.right / (float)designWidth;
+	}
+
+	if (client.bottom > 0)
+	{
+		scale.y = (float)client.bottom / (float)designHeight;
+	}
+
+	scale.uniform = (scale.x < scale.y) ? scale.x : scale.y;
+	return scale;
+}
+
 int DPI_GetSystemMetricsForWindow(int index, HWND hwnd)
 {
 	DPI_ResolveEntryPoints();
