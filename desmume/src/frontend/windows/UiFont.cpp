@@ -617,6 +617,11 @@ namespace
 
 		ScaleContext scale = { fromDpi, toDpi };
 		EnumChildWindows(dialog, scaleChild, (LPARAM)&scale);
+
+		// The list views move with the rest of the layout and their font is
+		// rebuilt, but a column width is a pixel count and would keep the size
+		// it had on the previous monitor.
+		DPI_RescaleListColumns(dialog, (int)fromDpi, (int)toDpi);
 	}
 
 	void onDpiChangedInternal(HWND dialog, UINT oldDpi, UINT newDpi)

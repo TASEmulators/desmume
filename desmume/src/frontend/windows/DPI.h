@@ -63,6 +63,18 @@ struct DPI_ClientScale
 
 DPI_ClientScale DPI_GetClientScale(HWND hwnd, int designWidth, int designHeight);
 
+// A report view column width is a physical pixel count, so unlike the dialog
+// template it does not grow with the monitor DPI: a column that was a snug fit
+// for the 8 point template becomes "Add..." as soon as the header font doubles.
+// These take the 96 DPI design widths and return the width to use on the
+// list's current monitor, never narrower than the header text itself needs.
+int DPI_ListColumnWidth(HWND list, const char *title, int width96);
+
+// Same problem when a dialog moves to another monitor: the font and the client
+// area are rebuilt for the new DPI, but the columns keep the old pixel widths.
+// Scales every column of every list view below `dialog` by the DPI ratio.
+void DPI_RescaleListColumns(HWND dialog, int fromDpi, int toDpi);
+
 // DPI-aware replacements for GetSystemMetrics() and AdjustWindowRectEx().
 // Both consult the window's monitor instead of the system DPI.
 int DPI_GetSystemMetricsForWindow(int index, HWND hwnd);

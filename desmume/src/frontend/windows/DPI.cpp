@@ -18,6 +18,7 @@
 #include "DPI.h"
 
 #include <windows.h>
+#include <commctrl.h>
 
 // The per-monitor entry points were added over several OS releases, and the
 // project still builds against whatever SDK happens to be installed, so none of
@@ -223,6 +224,92 @@ DPI_ClientScale DPI_GetClientScale(HWND hwnd, int designWidth, int designHeight)
 
 	scale.uniform = (scale.x < scale.y) ? scale.x : scale.y;
 	return scale;
+}
+
+int DPI_ListColumnWidth(HWND list, const char *title, int width96)
+{
+	const int dpi = DPI_GetForWindow(list);
+	int width = DPI_Scale(width96, dpi);
+
+	// An empty title (the check box column) never has to fit anything.
+	if ( (title == NULL) || (title[0] == '\0') )
+	{
+		return width;
+	}
+
+	HDC dc = GetDC(list);
+	if (dc == NULL)
+	{
+		return width;
+	}
+
+	// Measure with the font the list really uses.  With the modern UI font
+	// switched on this is not the template font, and the two do not have the
+	// same width for the same string.
+	HFONT font = (HFONT)SendMessageA(list, WM_GETFONT, 0, 0);
+	HGDIOBJ old = (font != NULL) ? SelectObject(dc, font) : NULL;
+
+	SIZE text = { 0, 0 };
+	if ( GetTextExtentPoint32A(dc, title, lstrlenA(title), &text) )
+	{
+		// Header cells pad the text on both sides and the sort indicator needs
+		// its room too, even though none of these lists sorts on click.
+		const int needed = (int)text.cx + DPI_Scale(14, dpi);
+		if (width < needed)
+		{
+			width = needed;
+		}
+	}
+
+	if (old != NULL)
+	{
+		SelectObject(dc, old);
+	}
+	ReleaseDC(list, dc);
+
+	return width;
+}
+
+static BOOL CALLBACK DPI_RescaleListColumnsProc(HWND child, LPARAM param)
+{
+	const int *dpi = (const int *)param;
+
+	char className[32] = { 0 };
+	if ( (GetClassNameA(child, className, (int)sizeof(className)) == 0) ||
+	     (lstrcmpiA(className, "SysListView32") != 0) )
+	{
+		return TRUE;
+	}
+
+	const HWND header = (HWND)SendMessageW(child, LVM_GETHEADER, 0, 0);
+	if (header == NULL)
+	{
+		return TRUE;
+	}
+
+	const int count = (int)SendMessageW(header, HDM_GETITEMCOUNT, 0, 0);
+	for (int i = 0; i < count; i++)
+	{
+		const int width = (int)SendMessageW(child, LVM_GETCOLUMNWIDTH, (WPARAM)i, 0);
+		if (width > 0)
+		{
+			SendMessageW(child, LVM_SETCOLUMNWIDTH, (WPARAM)i,
+			             MAKELPARAM(MulDiv(width, dpi[1], dpi[0]), 0));
+		}
+	}
+
+	return TRUE;
+}
+
+void DPI_RescaleListColumns(HWND dialog, int fromDpi, int toDpi)
+{
+	if ( (dialog == NULL) || (fromDpi <= 0) || (toDpi <= 0) || (fromDpi == toDpi) )
+	{
+		return;
+	}
+
+	const int dpi[2] = { fromDpi, toDpi };
+	EnumChildWindows(dialog, DPI_RescaleListColumnsProc, (LPARAM)&dpi);
 }
 
 int DPI_GetSystemMetricsForWindow(int index, HWND hwnd)

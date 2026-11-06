@@ -33,6 +33,7 @@
 #include "resource.h"
 #include "main.h"
 #include "cheatsWin.h"
+#include "DPI.h"
 
 HWND RamWatchHWnd = NULL;
 
@@ -821,7 +822,9 @@ void init_list_box(HWND Box, const char* Strs[], int numColumns, int *columnWidt
 		Col.iOrder = i;
 		Col.iSubItem = i;
 		Col.pszText = (LPSTR)(Strs[i]);
-		Col.cx = columnWidths[i];
+		// The widths are given for 96 DPI, like the rest of the layout; a raw
+		// pixel width here would stay at that size while the header font grows.
+		Col.cx = DPI_ListColumnWidth(Box, Strs[i], columnWidths[i]);
 		ListView_InsertColumn(Box,i,&Col);
 	}
 
