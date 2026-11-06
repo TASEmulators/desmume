@@ -801,6 +801,9 @@
     <ClCompile Include="..\..\frontend\modules\ImageOut.cpp">
       <Filter>frontend\modules</Filter>
     </ClCompile>
+    <ClCompile Include="ImageWrite.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\libretro-common\formats\png\rpng_encode.c">
       <Filter>libretro-common\formats\png</Filter>
     </ClCompile>
@@ -1030,6 +1033,9 @@
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
     <ClInclude Include="AboutBox.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageWrite.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="aviout.h">

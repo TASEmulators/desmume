@@ -286,6 +286,9 @@ void PathInfo::ReadPathSettings()
 	GetPrivateProfileString(SECTION, FORMATKEY, "%f_%s_%r", screenshotFormat, MAX_FORMAT, IniName);
 	savelastromvisit = GetPrivateProfileBool(SECTION, LASTVISITKEY, true, IniName);
 	currentimageformat = (ImageFormat)GetPrivateProfileInt(SECTION, DEFAULTFORMATKEY, PNG, IniName);
+	GetPrivateProfileString(SECTION, SCREENSHOTEXTKEY, "", imageExtension, sizeof(imageExtension), IniName);
+	if (imageExtension[0] == '\0')
+		strcpy(imageExtension, (currentimageformat == BMP) ? ".bmp" : ".png");
 	r4Format = (R4Format)GetPrivateProfileInt(SECTION, R4FORMATKEY, R4_CHEAT_DAT, IniName);
 	if ((r4Format != R4_CHEAT_DAT) && (r4Format != R4_USRCHEAT_DAT))
 	{
@@ -480,6 +483,26 @@ void PathInfo::formatname(char *output)
 
 PathInfo::ImageFormat PathInfo::imageformat() {
 	return currentimageformat;
+}
+
+const char *PathInfo::imageextension()
+{
+	return (imageExtension[0] != '\0') ? imageExtension : ".png";
+}
+
+void PathInfo::setimageextension(const char *ext)
+{
+	if (ext == NULL || ext[0] == '\0')
+		return;
+
+	strncpy(imageExtension, ext, sizeof(imageExtension) - 1);
+	imageExtension[sizeof(imageExtension) - 1] = '\0';
+
+#ifdef HOST_WINDOWS
+	// "Save Screenshot As..." does not go through WritePathSettings(), so
+	// persist the choice here too; Quick Screenshot picks it up next time.
+	WritePrivateProfileString(SECTION, SCREENSHOTEXTKEY, imageExtension, IniName);
+#endif
 }
 
 void PathInfo::SetRomName(const char *filename)

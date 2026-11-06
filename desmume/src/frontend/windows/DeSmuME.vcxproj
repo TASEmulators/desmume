@@ -351,6 +351,7 @@
     <ClCompile Include="fsnitroView.cpp" />
     <ClCompile Include="gbaslot_config.cpp" />
     <ClCompile Include="hotkey.cpp" />
+    <ClCompile Include="ImageWrite.cpp" />
     <ClCompile Include="importSave.cpp" />
     <ClCompile Include="inputdx.cpp" />
     <ClCompile Include="luaconsole.cpp" />
@@ -562,6 +563,7 @@
     <ClInclude Include="..\..\metaspu\SoundTouch\TDStretch.h" />
     <ClInclude Include="..\..\metaspu\SoundTouch\WavFile.h" />
     <ClInclude Include="AboutBox.h" />
+    <ClInclude Include="ImageWrite.h" />
     <ClInclude Include="aviout.h" />
     <ClInclude Include="cheatsWin.h" />
     <ClInclude Include="colorctrl.h" />

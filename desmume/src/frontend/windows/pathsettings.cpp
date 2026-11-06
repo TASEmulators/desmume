@@ -26,6 +26,7 @@
 #include "main.h"
 #include "path.h"
 #include "pathsettings.h"
+#include "ImageWrite.h"
 #include "utils/xstring.h"
 
 extern bool autoLoadLua;
@@ -120,6 +121,7 @@ void WritePathSettings()
 	WritePrivateProfileStringW(LSECTION, LUAKEY, mbstowcs((std::string)path.pathToLua).c_str(), IniNameW);
 
 	WritePrivateProfileInt(SECTION, DEFAULTFORMATKEY, path.currentimageformat, IniName);
+	WritePrivateProfileString(SECTION, SCREENSHOTEXTKEY, path.imageextension(), IniName);
 	WritePrivateProfileString(SECTION, FORMATKEY, path.screenshotFormat, IniName);
 
 	WritePrivateProfileInt(SECTION, LASTVISITKEY, path.savelastromvisit, IniName);
@@ -205,6 +207,23 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 		"%S\t\tSecond: Two Digit\r\n";
 	GetClientRect(hwnd, &ti.rect);
 	SendMessage(toolTip, TTM_ADDTOOL, NULL, (LPARAM)&ti);
+
+	// PNG/BMP here are the default and the fallback when WIC is unavailable.
+	// The full list of formats WIC can write is offered by "Save Screenshot As".
+	if (imageWriteAvailable())
+	{
+		TOOLINFO ti2;
+		ZeroMemory(&ti2, sizeof(ti2));
+		ti2.cbSize   = sizeof(ti2);
+		ti2.hwnd     = hDlg;
+		ti2.hinst    = hAppInst;
+		ti2.uFlags   = TTF_SUBCLASS | TTF_IDISHWND;
+		ti2.uId      = (UINT_PTR)GetDlgItem(hDlg, IDC_SAVEAS);
+		ti2.lpszText = "PNG/BMP are the default and the fallback formats. "
+		               "Other formats are offered by WIC in File > Save Screenshot As.";
+		GetClientRect(GetDlgItem(hDlg, IDC_SAVEAS), &ti2.rect);
+		SendMessage(toolTip, TTM_ADDTOOL, NULL, (LPARAM)&ti2);
+	}
 
 	return TRUE;
 }
@@ -324,10 +343,12 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 		case IDC_PNG:
 				CheckRadioButton(hDlg, IDC_PNG, IDC_BMP, IDC_PNG);
 				path.currentimageformat = path.PNG;
+				path.setimageextension(".png");
 			break;
 		case IDC_BMP:
 				CheckRadioButton(hDlg, IDC_PNG, IDC_BMP, IDC_BMP);
 				path.currentimageformat = path.BMP;
+				path.setimageextension(".bmp");
 			break;
 		case IDC_USELASTVISIT:
 			{

@@ -89,11 +89,16 @@ public:
 	#define FIRMWAREKEY		L"Firmware"
 	#define FORMATKEY		"format"
 	#define DEFAULTFORMATKEY "defaultFormat"
+	#define SCREENSHOTEXTKEY "imageExtension"
 	#define NEEDSSAVINGKEY	"needsSaving"
 	#define LASTVISITKEY	"lastVisit"
 	#define LUAKEY			L"Lua"
 	#define SLOT1DKEY		L"Slot1D"
 	char screenshotFormat[MAX_FORMAT];
+	// Extension of the last chosen screenshot format, e.g. ".png" or ".jpg".
+	// WIC can encode more than PNG/BMP; when WIC is unavailable the front end
+	// ignores this and uses currentimageformat (the bundled writers) instead.
+	char imageExtension[16];
 	bool savelastromvisit;
 
 	enum KnownPath
@@ -181,6 +186,9 @@ public:
 	ImageFormat currentimageformat;
 
 	ImageFormat imageformat();
+
+	const char *imageextension();
+	void setimageextension(const char *ext);
 
 	void SetRomName(const char *filename);
 

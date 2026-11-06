@@ -98,6 +98,7 @@ SRCS = \
 	gbaslot_config.cpp \
 	ginfo.cpp \
 	hotkey.cpp \
+	ImageWrite.cpp \
 	importSave.cpp \
 	inputdx.cpp \
 	lightView.cpp \
