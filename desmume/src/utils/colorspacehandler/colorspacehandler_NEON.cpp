@@ -553,15 +553,28 @@ size_t ColorspaceConvertBuffer555xTo888_NEON(const u16 *__restrict src, u8 *__re
 		tempRBLo = vorrq_u16( vshlq_n_u16(srcVec.val[0], 11), vshrq_n_u16(srcVec.val[0], 7) );
 		tempRBHi = vorrq_u16( vshlq_n_u16(srcVec.val[1], 11), vshrq_n_u16(srcVec.val[1], 7) );
 		
+		// vuzp1q_u8() returns the low byte of every 16-bit lane, which is where
+		// this packing step puts the blue component; vuzp2q_u8() returns the
+		// high byte, which holds the red component.  dstVec is then stored
+		// interleaved as val[0], val[1], val[2], so val[0] is the first byte of
+		// each output pixel.
+		//
+		// SWAP_RB == false must produce RGB888 (matching the scalar fallback and
+		// the AltiVec/SSE2 paths), therefore val[0] = red and val[2] = blue.
+		// SWAP_RB == true must produce BGR888, therefore the two are exchanged.
+		//
+		// These two branches used to be inverted, which made every 24-bit
+		// conversion on ARM emit red and blue swapped -- the NDS video capture
+		// path being the visible victim of it.
 		if (SWAP_RB)
-		{
-			dstVec.val[2] = vandq_u8( vuzp1q_u8(vreinterpretq_u8_u16(tempRBLo), vreinterpretq_u8_u16(tempRBHi)), vdupq_n_u8(0xF8) );
-			dstVec.val[0] = vandq_u8( vuzp2q_u8(vreinterpretq_u8_u16(tempRBLo), vreinterpretq_u8_u16(tempRBHi)), vdupq_n_u8(0xF8) );
-		}
-		else
 		{
 			dstVec.val[0] = vandq_u8( vuzp1q_u8(vreinterpretq_u8_u16(tempRBLo), vreinterpretq_u8_u16(tempRBHi)), vdupq_n_u8(0xF8) );
 			dstVec.val[2] = vandq_u8( vuzp2q_u8(vreinterpretq_u8_u16(tempRBLo), vreinterpretq_u8_u16(tempRBHi)), vdupq_n_u8(0xF8) );
+		}
+		else
+		{
+			dstVec.val[2] = vandq_u8( vuzp1q_u8(vreinterpretq_u8_u16(tempRBLo), vreinterpretq_u8_u16(tempRBHi)), vdupq_n_u8(0xF8) );
+			dstVec.val[0] = vandq_u8( vuzp2q_u8(vreinterpretq_u8_u16(tempRBLo), vreinterpretq_u8_u16(tempRBHi)), vdupq_n_u8(0xF8) );
 		}
 		
 		dstVec.val[1] = vandq_u8( vuzp1q_u8( vreinterpretq_u8_u16(vshrq_n_u16(srcVec.val[0], 2)), vreinterpretq_u8_u16(vshrq_n_u16(srcVec.val[1], 2)) ), vdupq_n_u8(0xF8) );
