@@ -2370,10 +2370,107 @@
 	semaphore_destroy(renderTask, semRenderToBuffer);
 }
 
+- (void) setRenderBufferingCapacity:(long)capacity
+{
+	// dispatch_semaphore has no "grow" API, but the value is just a counter, so
+	// signalling it up front raises the effective capacity.  Each rendered
+	// frame still consumes one slot in -renderStartAtIndex: and returns it from
+	// the command buffer completion handler, so this stays balanced.
+	if (capacity < 1)
+	{
+		capacity = 1;
+	}
+	
+	for (size_t i = 0; i < RENDER_BUFFER_COUNT; i++)
+	{
+		for (long slot = 1; slot < capacity; slot++)
+		{
+			dispatch_semaphore_signal(_semRenderBuffers[i]);
+		}
+	}
+}
+
+// Video capture output.  Everything up to the vertex/texture bindings is the
+// exact same code path the on-screen view uses, so rotation, view scale,
+// layout (including the hybrid ones), order, gap, deposterize, pixel scaler,
+// output filter and backlight intensity all apply without any capture-side
+// reimplementation.  The only difference is the render target: instead of a
+// CAMetalDrawable it is a texture backed by a CVPixelBuffer's IOSurface, so
+// VideoToolbox reads the GPU frame in place with no CPU round trip.
+- (BOOL) renderToPixelBuffer:(CVPixelBufferRef)pixelBuffer textureCache:(CVMetalTextureCacheRef)textureCache
+{
+	if ( (pixelBuffer == NULL) || (textureCache == NULL) )
+	{
+		return NO;
+	}
+	
+	const size_t width  = CVPixelBufferGetWidth(pixelBuffer);
+	const size_t height = CVPixelBufferGetHeight(pixelBuffer);
+	const size_t clientWidth  = (size_t)cdp->GetPresenterProperties().clientWidth;
+	const size_t clientHeight = (size_t)cdp->GetPresenterProperties().clientHeight;
+	
+	if ( (width == 0) || (height == 0) || (width != clientWidth) || (height != clientHeight) )
+	{
+		return NO;
+	}
+	
+	CVMetalTextureRef cvTexture = NULL;
+	if (CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault, textureCache, pixelBuffer, NULL,
+												  MTLPixelFormatBGRA8Unorm, width, height, 0, &cvTexture) != kCVReturnSuccess)
+	{
+		return NO;
+	}
+	
+	id<MTLTexture> texTarget = CVMetalTextureGetTexture(cvTexture);
+	if (texTarget == nil)
+	{
+		CFRelease(cvTexture);
+		return NO;
+	}
+	
+	@autoreleasepool
+	{
+		[colorAttachment0Desc setTexture:texTarget];
+		
+		// doSwapRB MUST be NO here, for the same reason the presented drawable
+		// path uses NO: the render target is BGRA8Unorm, so Metal already maps
+		// the fragment's R/G/B onto the B/G/R bytes of the IOSurface, which is
+		// exactly the byte order kCVPixelFormatType_32BGRA promises.  Swapping
+		// here would exchange red and blue in the encoded video.
+		//
+		// (-renderToBuffer: passes YES only because its contract is "produce
+		// 32-bit RGBA memory for NSBitmapImageRep", the opposite direction.)
+		id<MTLCommandBuffer> cb = [self newCommandBuffer];
+		const MetalRenderFrameInfo mrfi = [self renderFrameInfo];
+		
+		[self renderForCommandBuffer:cb
+				 outputPipelineState:[self outputDrawablePipeline]
+					   hudPipelineState:[[self sharedData] hudBGRAPipeline]
+							 texDisplays:[self texPairProcess]
+									mrfi:mrfi
+								 doYFlip:NO
+							   doSwapRB:NO];
+		
+		// -renderForCommandBuffer: took a render-buffer slot in
+		// -renderStartAtIndex:, so it MUST be handed back when the GPU is done
+		// -- exactly like the presented-drawable path does.  The CVMetalTexture
+		// wrapper has to outlive the GPU work that reads it for the same reason.
+		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+			[self renderFinishAtIndex:mrfi.renderIndex];
+			CFRelease(cvTexture);
+		}];
+		
+		[cb commit];
+		
+		[colorAttachment0Desc setTexture:nil];
+	}
+	
+	return YES;
+}
+
 @end
 
 @implementation DisplayViewMetalLayer
-
 @synthesize _cdv;
 @synthesize presenterObject;
 @synthesize layerDrawable0;

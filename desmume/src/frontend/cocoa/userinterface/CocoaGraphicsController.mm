@@ -165,7 +165,20 @@ void MacGraphicsControl::Set3DEngineByID(int engineID)
 			break;
 			
 		case RENDERID_WGPU:
+			// WGPURender.cpp is only part of the Universal target's sources, and
+			// it only defines gpu3DWGPU when built with ENABLE_WGPU.  Every
+			// other target used to reference the symbol unconditionally and
+			// failed to link with "_gpu3DWGPU, referenced from
+			// MacGraphicsControl::Set3DEngineByID(int)".  Without a WGPU
+			// backend there is nothing to select, so fall back like any other
+			// unavailable engine.
+#if defined(ENABLE_WGPU)
 			this->_3DEngineCallbackStruct = gpu3DWGPU;
+#else
+			puts("DeSmuME: The WebGPU renderer is not built into this target; falling back to SoftRasterizer.");
+			engineID = RENDERID_SOFTRASTERIZER;
+			this->_3DEngineCallbackStruct = gpu3DRasterize;
+#endif
 			break;
 			
 		default:

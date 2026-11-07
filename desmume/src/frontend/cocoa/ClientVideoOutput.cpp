@@ -19,11 +19,15 @@
 
 #include "ClientAVCaptureObject.h"
 #include "ClientDisplayView.h"
-#include "ClientExecutionControl.h"
+#include "userinterface/MacMetalVideoCapture.h"
 
+#include "../../GPU.h"
 #include "../../common.h"
+#include "../../utils/colorspacehandler/colorspacehandler.h"
 
 #include "cocoa_globals.h"
+
+#include <stdio.h>
 
 #ifdef BOOL
 #undef BOOL
@@ -89,34 +93,64 @@ void ClientVideoOutput::HandleReceiveGPUFrame()
 
 ClientVideoCaptureOutput::ClientVideoCaptureOutput()
 {
-	_threadName = "Generic Video Capture Output";
-	_platformId = PlatformTypeID_Any;
-	_typeId = OutputTypeID_Generic | OutputTypeID_Video | OutputTypeID_Audio;
-	
-	_cdp = NULL;
 	_avCaptureObject = NULL;
-	_videoCaptureBuffer = NULL;
+	_targetWidth = 0;
+	_targetHeight = 0;
+	_mode = ClientDisplayMode_Dual;
+	_layout = ClientDisplayLayout_Vertical;
+	_order = ClientDisplayOrder_MainFirst;
+	_gapScale = 0.0;
+	_rotation = 0.0;
+	_useDeposterize = false;
+	_outputFilterID = OutputFilterTypeID_Bilinear;
+	_pixelScalerID = VideoFilterTypeID_None;
+	_gpuCapture = NULL;
+	_gpuCaptureDisabled = false;
+	_gpuDroppedFrameCount = 0;
+	_gpuFrameIndex = 0;
 	
 	pthread_mutex_init(&_mutexCaptureBuffer, NULL);
 }
 
 ClientVideoCaptureOutput::~ClientVideoCaptureOutput()
 {
-	pthread_mutex_lock(&this->_mutexCaptureBuffer);
-	free_aligned(this->_videoCaptureBuffer);
-	pthread_mutex_unlock(&this->_mutexCaptureBuffer);
+	// Tear the GPU presenter down first: SetActiveVideoCaptureOutput(NULL) has
+	// already guaranteed that no frame is in flight, so this cannot race with
+	// ProcessFrame().
+	MacMetalVideoCaptureDestroy(this->_gpuCapture);
+	this->_gpuCapture = NULL;
 	
 	pthread_mutex_destroy(&this->_mutexCaptureBuffer);
 }
 
-void ClientVideoCaptureOutput::SetPresenter(ClientDisplay3DPresenter *cdp)
+void ClientVideoCaptureOutput::SetProperties(size_t width, size_t height,
+											 ClientDisplayMode mode, ClientDisplayLayout layout,
+											 ClientDisplayOrder order, double gapScale, double rotation,
+											 bool useDeposterize, OutputFilterTypeID outputFilterID,
+											 VideoFilterTypeID pixelScalerID)
 {
-	this->_cdp = cdp;
-}
-
-ClientDisplay3DPresenter* ClientVideoCaptureOutput::GetPresenter()
-{
-	return this->_cdp;
+	pthread_mutex_lock(&this->_mutexCaptureBuffer);
+	this->_targetWidth = width;
+	this->_targetHeight = height;
+	this->_mode = mode;
+	this->_layout = layout;
+	this->_order = order;
+	this->_gapScale = gapScale;
+	this->_rotation = rotation;
+	this->_useDeposterize = useDeposterize;
+	this->_outputFilterID = outputFilterID;
+	this->_pixelScalerID = pixelScalerID;
+	pthread_mutex_unlock(&this->_mutexCaptureBuffer);
+	
+	// Echo the geometry the recording will use.  If a screen is black or the
+	// two screens look swapped, this line says immediately whether the
+	// requested mode/layout/order actually reached the capture path.
+	printf("DeSmuME[AVCapture]: Capture geometry: mode=%d layout=%d order=%d gapScale=%.3f rotation=%.1f deposterize=%d outputFilter=%d scaler=%d target=%zux%zu source=%zux%zu\n",
+		   (int)mode, (int)layout, (int)order, gapScale,
+		   rotation, (int)useDeposterize, (int)outputFilterID, (int)pixelScalerID,
+		   width, height,
+		   (size_t)GPU_FRAMEBUFFER_NATIVE_WIDTH, (size_t)GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	fflush(stdout);
 }
 
 void ClientVideoCaptureOutput::SetCaptureObject(ClientAVCaptureObject *captureObject)
@@ -129,33 +163,89 @@ ClientAVCaptureObject* ClientVideoCaptureOutput::GetCaptureObject()
 	return this->_avCaptureObject;
 }
 
-void ClientVideoCaptureOutput::HandleReceiveGPUFrame()
+// The only capture path.  There is deliberately no CPU compositor: it used to
+// hand VideoToolbox a raw RGB888 pointer into a staging buffer, and that
+// pointer is what crashed the encoder thread when the buffer was gone
+// (vImageConvert_RGB888toBGRA8888 dereferencing NULL + slot offset).  It also
+// duplicated the presenter's geometry maths, so a CPU frame and a GPU frame of
+// the same settings did not even agree on framing.
+//
+// A finished frame can only reach the encoder as a CVPixelBufferRef now, which
+// carries its own dimensions and lifetime.
+void ClientVideoCaptureOutput::ProcessFrame(ClientDisplay3DPresenter *srcPresenter)
 {
-	this->ClientVideoOutput::HandleReceiveGPUFrame();
-	
-	if ( (this->_cdp == NULL) || (this->_avCaptureObject == NULL) )
+	if ( (srcPresenter == NULL) || (this->_avCaptureObject == NULL) || this->_gpuCaptureDisabled )
 	{
 		return;
 	}
 	
-	const ClientDisplayPresenterProperties &cdpProperty = this->_cdp->GetPresenterProperties();
-	
-	this->_cdp->LoadDisplays();
-	this->_cdp->ProcessDisplays();
-	this->_cdp->UpdateLayout();
-	
-	pthread_mutex_lock(&this->_mutexCaptureBuffer);
-	
-	if (this->_videoCaptureBuffer == NULL)
+	if (this->_gpuCapture == NULL)
 	{
-		this->_videoCaptureBuffer = (Color4u8 *)malloc_alignedPage(cdpProperty.clientWidth * cdpProperty.clientHeight * sizeof(Color4u8));
+		MacVideoCaptureGeometry geometry;
+		
+		pthread_mutex_lock(&this->_mutexCaptureBuffer);
+		geometry.width          = this->_targetWidth;
+		geometry.height         = this->_targetHeight;
+		geometry.mode           = this->_mode;
+		geometry.layout         = this->_layout;
+		geometry.order          = this->_order;
+		geometry.gapScale       = this->_gapScale;
+		geometry.rotation       = this->_rotation;
+		geometry.useDeposterize = this->_useDeposterize;
+		geometry.outputFilterID = this->_outputFilterID;
+		geometry.pixelScalerID  = this->_pixelScalerID;
+		pthread_mutex_unlock(&this->_mutexCaptureBuffer);
+		
+		// Built here, on the display thread, on the first captured frame: a
+		// presenter created on the UI thread would retain the shared fetch
+		// textures while the fetch object is replacing them, which is what the
+		// earlier second-presenter design crashed on.
+		void *sharedData = MacMetalPresenterGetSharedData(srcPresenter);
+		if ( (sharedData == NULL) || (geometry.width == 0) || (geometry.height == 0) )
+		{
+			this->_gpuCaptureDisabled = true;
+			
+			printf("DeSmuME[AVCapture]: Recording is unavailable: %s.  Recording requires the Metal display path.\n",
+				   (sharedData == NULL) ? "the active display is not using Metal" : "the capture size is zero");
+			fflush(stdout);
+			return;
+		}
+		
+		this->_gpuCapture = MacMetalVideoCaptureCreate(sharedData, geometry);
+		if (this->_gpuCapture == NULL)
+		{
+			this->_gpuCaptureDisabled = true;
+			
+			printf("DeSmuME[AVCapture]: Recording is unavailable: could not set up the Metal capture presenter.\n");
+			fflush(stdout);
+			return;
+		}
 	}
 	
-	this->_cdp->CopyFrameToBuffer(this->_videoCaptureBuffer);
-	this->_avCaptureObject->CaptureVideoFrame(this->_videoCaptureBuffer, (size_t)cdpProperty.clientWidth, (size_t)cdpProperty.clientHeight, NDSColorFormat_BGR888_Rev);
-	this->_avCaptureObject->StreamWriteStart();
+	void *pixelBuffer = MacMetalVideoCaptureRenderFrame(this->_gpuCapture);
+	if (pixelBuffer == NULL)
+	{
+		// Still consume a capture tick: the timeline must keep advancing with
+		// real time even while frames are being dropped.
+		this->_gpuFrameIndex++;
+		
+		if ( (++this->_gpuDroppedFrameCount <= 3) || ((this->_gpuDroppedFrameCount % 180) == 0) )
+		{
+			printf("DeSmuME[AVCapture]: Dropped a GPU frame (count=%u); the encoder is behind.\n",
+				   this->_gpuDroppedFrameCount);
+			fflush(stdout);
+		}
+		return;
+	}
 	
-	pthread_mutex_unlock(&this->_mutexCaptureBuffer);
+	if (!this->_avCaptureObject->QueuePixelBufferFrame(pixelBuffer, this->_gpuFrameIndex))
+	{
+		// The capture object rejected it (stream closing), so the buffer is
+		// still ours to release.
+		MacMetalVideoCaptureReleasePixelBuffer(pixelBuffer);
+	}
+	
+	this->_gpuFrameIndex++;
 }
 
 ClientDisplayViewOutput::ClientDisplayViewOutput()
@@ -852,12 +942,58 @@ void ClientDisplayViewOutput::SetNDSFrameInfoWithInputHint(const NDSFrameInfo &n
 	}
 }
 
+// AV capture frames are produced on the display output thread, immediately
+// after that thread finishes presenting the main view.  Holding this lock
+// while a frame is copied also prevents closeFileStream() from deleting the
+// capture output out from under a running frame.
+static pthread_mutex_t _mutexActiveVideoCaptureOutput = PTHREAD_MUTEX_INITIALIZER;
+static ClientVideoCaptureOutput *_activeVideoCaptureOutput = NULL;
+static int32_t _captureFramePending = 0;
+
+void SetActiveVideoCaptureOutput(ClientVideoCaptureOutput *output)
+{
+	pthread_mutex_lock(&_mutexActiveVideoCaptureOutput);
+	_activeVideoCaptureOutput = output;
+	__atomic_store_n(&_captureFramePending, 0, __ATOMIC_RELEASE);
+	pthread_mutex_unlock(&_mutexActiveVideoCaptureOutput);
+}
+
+// Called once per display link tick, on the fetch thread, right before the
+// display outputs are signalled.  Whichever display output thread arrives
+// first consumes the request, so even with several windows open we record
+// exactly one frame per tick instead of one frame per view.
+static void RequestVideoCaptureFrame()
+{
+	__atomic_store_n(&_captureFramePending, 1, __ATOMIC_RELEASE);
+}
+
+static void RunActiveVideoCaptureOutput(ClientDisplay3DPresenter *mainPresenter)
+{
+	if (__atomic_exchange_n(&_captureFramePending, 0, __ATOMIC_ACQ_REL) == 0)
+	{
+		return;
+	}
+	
+	pthread_mutex_lock(&_mutexActiveVideoCaptureOutput);
+	if (_activeVideoCaptureOutput != NULL)
+	{
+		_activeVideoCaptureOutput->ProcessFrame(mainPresenter);
+	}
+	pthread_mutex_unlock(&_mutexActiveVideoCaptureOutput);
+}
+
 void ClientDisplayViewOutput::HandleReceiveGPUFrame()
 {
 	this->ClientVideoOutput::HandleReceiveGPUFrame();
 	
-	this->_cdv->Get3DPresenter()->LoadDisplays();
-	this->_cdv->Get3DPresenter()->ProcessDisplays();
+	ClientDisplay3DPresenter *mainPresenter = this->_cdv->Get3DPresenter();
+	mainPresenter->LoadDisplays();
+	mainPresenter->ProcessDisplays();
+	
+	// The capture consumer only reads GetEmuDisplayInfo() from the main
+	// presenter (plain CPU framebuffer memory).  No second presenter, no
+	// CopyFrameToBuffer, no extra Metal command buffer or semaphore signal.
+	RunActiveVideoCaptureOutput(mainPresenter);
 }
 
 void ClientDisplayViewOutput::HandleEmuFrameProcessed()
@@ -1024,6 +1160,7 @@ void ClientGPUFetchObjectMultiDisplayView::DecrementViewsUsingDirectToCPUFilteri
 
 void ClientGPUFetchObjectMultiDisplayView::PushVideoDataToAllDisplayViews()
 {
+	RequestVideoCaptureFrame();
 	this->_outputManager->DispatchAll(MESSAGE_RECEIVE_GPU_FRAME);
 }
 

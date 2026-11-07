@@ -23,6 +23,7 @@
 #import "MacBaseCaptureTool.h"
 #include "../ClientAVCaptureObject.h"
 #include "../ClientExecutionControl.h"
+#include "MacVideoToolboxCapture.h"
 
 
 enum VideoSizeOptionID
@@ -132,9 +133,14 @@ public:
 	ClientExecutionControl *execControl;
 	CocoaDSCore *cdsCore;
 	ClientVideoCaptureOutput *_videoCaptureOutput;
-	
+	ClientAVCaptureFileStream *_fileStream;
+
 	NSButton *recordButton;
-	
+	NSPopUpButton *videoEncoderPopUpButton;
+	NSPopUpButton *audioCodecPopUpButton;
+	NSPopUpButton *containerPopUpButton;
+	NSArray *_encoderList;
+
 	NSInteger videoSizeOption;
 	NSInteger videoWidth;
 	NSInteger videoHeight;
@@ -144,6 +150,9 @@ public:
 }
 
 @property (readonly) IBOutlet NSButton *recordButton;
+@property (readonly) IBOutlet NSPopUpButton *videoEncoderPopUpButton;
+@property (readonly) IBOutlet NSPopUpButton *audioCodecPopUpButton;
+@property (readonly) IBOutlet NSPopUpButton *containerPopUpButton;
 @property (assign) ClientExecutionControl *execControl;
 @property (assign) CocoaDSCore *cdsCore;
 @property (assign) NSInteger videoSizeOption;
@@ -155,6 +164,11 @@ public:
 @property (assign) BOOL isFileStreamClosing;
 
 - (void) setVideoSizeUsingEmulatorSettings;
+- (void) resolveCaptureOutlets;
+- (void) reloadEncoderList;
+- (void) setupAudioCodecList;
+- (void) setupContainerList;
+- (MacVideoEncoderChoice *) selectedEncoder;
 - (void) readUserDefaults;
 - (void) writeUserDefaults;
 - (void) openFileStream;
@@ -162,6 +176,8 @@ public:
 - (void) avFileStreamCloseFinish:(NSNotification *)aNotification;
 
 - (IBAction) toggleRecordingState:(id)sender;
+- (IBAction) changeAudioCodec:(id)sender;
+- (IBAction) changeContainer:(id)sender;
 
 @end
 

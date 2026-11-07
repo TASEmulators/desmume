@@ -16,11 +16,13 @@
  */
 
 #include <pthread.h>
+#include <dispatch/dispatch.h>
 
 #include <map>
 
 #import "../cocoa_file.h"
 #import "../cocoa_core.h"
+#import "../cocoa_GPU.h"
 #import "../cocoa_globals.h"
 #import "MacAVCaptureTool.h"
 #import "MacOGLDisplayView.h"
@@ -44,6 +46,16 @@ extern "C"
 */
 static std::map<VideoSizeOptionID, VideoSize> _videoSizeMap;
 bool FFmpegFileStream::__needFFmpegLibraryInit = true;
+
+// Everything the detached close thread needs.  SetOutputFileStream(NULL)
+// clears the capture object's pointer, so the stream has to be passed along
+// explicitly -- the old code lost it here and never finalized the file.
+struct MacAVCaptureCloseContext
+{
+	ClientAVCaptureObject *captureObject;
+	ClientAVCaptureFileStream *fileStream;
+	ClientVideoCaptureOutput *output;
+};
 /*
 static void fill_rgb_image(AVFrame *pict, size_t frameIndex, size_t width, size_t height)
 {
@@ -1052,7 +1064,12 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 {
 	ClientAVCaptureError error = ClientAVCaptureError_None;
 	
-	error = this->FlushVideo(param.srcVideo, param.videoBufferSize);
+	// Video no longer reaches a stream as a raw CPU buffer (see
+	// ClientAVCaptureObject: frames are CVPixelBuffers, owned by the frame
+	// itself).  This class is not instantiated any more -- VideoToolboxFileStream
+	// replaced it -- but it still has to compile, so the video flush is fed
+	// nothing.
+	error = this->FlushVideo(NULL, 0);
 	if (error)
 	{
 		this->Close(FSCA_PurgeQueue);
@@ -1099,6 +1116,9 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 @implementation MacAVCaptureToolDelegate
 
 @synthesize recordButton;
+@synthesize videoEncoderPopUpButton;
+@synthesize audioCodecPopUpButton;
+@synthesize containerPopUpButton;
 @synthesize execControl;
 @synthesize cdsCore;
 @dynamic videoSizeOption;
@@ -1143,8 +1163,16 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	execControl = NULL;
 	cdsCore = NULL;
 	_videoCaptureOutput = NULL;
-	
-	formatID = AVFileTypeID_mp4_H264_AAC;
+	_fileStream = NULL;
+
+	videoEncoderPopUpButton = nil;
+	audioCodecPopUpButton = nil;
+	containerPopUpButton = nil;
+	_encoderList = [[NSArray alloc] init];
+
+	// formatID now indexes the dynamically built encoder list rather than the
+	// old hard-coded AVFileTypeID bitmask.
+	formatID = 0;
 	videoSizeOption = VideoSizeOption_UseEmulatorSettings;
 	videoWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	videoHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2;
@@ -1157,6 +1185,283 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 											   object:nil];
 	
 	return self;
+}
+
+- (void) dealloc
+{
+	[_encoderList release];
+	[super dealloc];
+}
+
+// Legacy-format xibs can silently drop newly added IBOutletConnections when
+// ibtool compiles them.  The pop-ups carry tags in the nib, so recover them
+// from the one outlet that is definitely wired.  Harmless when IB did connect
+// them (the nil checks short-circuit).
+- (void) resolveCaptureOutlets
+{
+	if (recordButton == nil)
+	{
+		return;
+	}
+
+	NSView *root = [recordButton superview];
+	if (root == nil)
+	{
+		root = [[recordButton window] contentView];
+	}
+	if (root == nil)
+	{
+		return;
+	}
+
+	if (audioCodecPopUpButton == nil)
+	{
+		NSView *view = [root viewWithTag:99101];
+		if ([view isKindOfClass:[NSPopUpButton class]])
+		{
+			audioCodecPopUpButton = (NSPopUpButton *)view;
+		}
+	}
+
+	if (containerPopUpButton == nil)
+	{
+		NSView *view = [root viewWithTag:99102];
+		if ([view isKindOfClass:[NSPopUpButton class]])
+		{
+			containerPopUpButton = (NSPopUpButton *)view;
+		}
+	}
+
+	NSLog(@"DeSmuME[AVCapture]: Outlets wired: encoder=%d audio=%d container=%d",
+		  (int)(videoEncoderPopUpButton != nil),
+		  (int)(audioCodecPopUpButton != nil),
+		  (int)(containerPopUpButton != nil));
+}
+
+- (void) awakeFromNib
+{
+	[self resolveCaptureOutlets];
+	[self reloadEncoderList];
+	[self setupAudioCodecList];
+	[self setupContainerList];
+}
+
+// Rebuild the encoder pop-up from VTCopyVideoEncoderList().  Nothing is
+// hard-coded: hardware and software encoders both appear, and a saved
+// encoderID is restored when it still exists on this machine (otherwise the
+// first, hardware-preferred, row is used -- same fallback as the Windows
+// recorder).
+// AVCaptureTool_Container: "auto" (default), "mp4" or "mov".  Auto picks MP4
+// for H.264/HEVC and QuickTime Movie for every other encoder.
+- (MacCaptureContainer) containerPreference
+{
+	NSString *value = [[NSUserDefaults standardUserDefaults] stringForKey:@"AVCaptureTool_Container"];
+	if ([value caseInsensitiveCompare:@"mp4"] == NSOrderedSame)
+	{
+		return MacCaptureContainer_MP4;
+	}
+	if ([value caseInsensitiveCompare:@"mov"] == NSOrderedSame)
+	{
+		return MacCaptureContainer_MOV;
+	}
+	return MacCaptureContainer_Auto;
+}
+
+// AVCaptureTool_AudioCodec: "aac" (default), "alac" (lossless) or "lpcm"
+// (uncompressed).  Ogg/Vorbis/Opus and FLAC are not writable by AVFoundation.
+- (MacAudioCodec) audioCodecPreference
+{
+	NSString *value = [[NSUserDefaults standardUserDefaults] stringForKey:@"AVCaptureTool_AudioCodec"];
+	if ([value caseInsensitiveCompare:@"alac"] == NSOrderedSame)
+	{
+		return MacAudioCodec_ALAC;
+	}
+	if ( ([value caseInsensitiveCompare:@"lpcm"] == NSOrderedSame) ||
+		 ([value caseInsensitiveCompare:@"pcm"] == NSOrderedSame) )
+	{
+		return MacAudioCodec_LPCM;
+	}
+	return MacAudioCodec_AAC;
+}
+
+- (NSString *) audioCodecLabel
+{
+	switch ([self audioCodecPreference])
+	{
+		case MacAudioCodec_ALAC: return @"ALAC";
+		case MacAudioCodec_LPCM: return @"LPCM";
+		default: return @"AAC";
+	}
+}
+
+// The audio format is a real, visible choice.  AVFoundation has no Vorbis/Opus
+// encoder and no Ogg muxer; ALAC and LPCM are the two native lossless options.
+- (void) setupAudioCodecList
+{
+	if (audioCodecPopUpButton == nil)
+	{
+		return;
+	}
+
+	[audioCodecPopUpButton removeAllItems];
+
+	[audioCodecPopUpButton addItemWithTitle:@"AAC (lossy)"];
+	[[audioCodecPopUpButton lastItem] setTag:MacAudioCodec_AAC];
+	[audioCodecPopUpButton addItemWithTitle:@"ALAC (lossless)"];
+	[[audioCodecPopUpButton lastItem] setTag:MacAudioCodec_ALAC];
+	[audioCodecPopUpButton addItemWithTitle:@"LPCM (uncompressed)"];
+	[[audioCodecPopUpButton lastItem] setTag:MacAudioCodec_LPCM];
+
+	[audioCodecPopUpButton selectItemWithTag:(NSInteger)[self audioCodecPreference]];
+	[audioCodecPopUpButton setTarget:self];
+	[audioCodecPopUpButton setAction:@selector(changeAudioCodec:)];
+}
+
+- (void) changeAudioCodec:(id)sender
+{
+	if (audioCodecPopUpButton == nil)
+	{
+		return;
+	}
+
+	NSString *value = nil;
+	switch ([[audioCodecPopUpButton selectedItem] tag])
+	{
+		case MacAudioCodec_ALAC: value = @"alac"; break;
+		case MacAudioCodec_LPCM: value = @"lpcm"; break;
+		default:                 value = @"aac";  break;
+	}
+
+	[[NSUserDefaults standardUserDefaults] setObject:value forKey:@"AVCaptureTool_AudioCodec"];
+	NSLog(@"DeSmuME[AVCapture]: Audio codec selected: %@", value);
+}
+
+// MP4 is preferred by default and is probed at record time for every codec;
+// AVFoundation rejecting it (ProRes, raw RGB, ...) falls back to MOV.  MOV
+// here is an explicit override that skips the probe entirely.
+- (void) setupContainerList
+{
+	if (containerPopUpButton == nil)
+	{
+		return;
+	}
+
+	[containerPopUpButton removeAllItems];
+
+	[containerPopUpButton addItemWithTitle:@"MP4"];
+	[[containerPopUpButton lastItem] setTag:MacCaptureContainer_MP4];
+	[containerPopUpButton addItemWithTitle:@"MOV"];
+	[[containerPopUpButton lastItem] setTag:MacCaptureContainer_MOV];
+
+	// AVCaptureTool_Container=auto still resolves to the MP4 row.
+	const NSInteger selectedTag = ([self containerPreference] == MacCaptureContainer_MOV)
+								  ? MacCaptureContainer_MOV : MacCaptureContainer_MP4;
+	[containerPopUpButton selectItemWithTag:selectedTag];
+	[containerPopUpButton setTarget:self];
+	[containerPopUpButton setAction:@selector(changeContainer:)];
+}
+
+- (void) changeContainer:(id)sender
+{
+	if (containerPopUpButton == nil)
+	{
+		return;
+	}
+
+	NSString *value = ([[containerPopUpButton selectedItem] tag] == MacCaptureContainer_MOV) ? @"mov" : @"mp4";
+	[[NSUserDefaults standardUserDefaults] setObject:value forKey:@"AVCaptureTool_Container"];
+	NSLog(@"DeSmuME[AVCapture]: Container selected: %@", value);
+}
+
+- (void) reloadEncoderList
+{
+	NSArray *encoders = [MacVideoEncoderChoice availableVideoEncoders];
+	[_encoderList release];
+	_encoderList = [encoders retain];
+
+	if (videoEncoderPopUpButton == nil)
+	{
+		return;
+	}
+
+	[videoEncoderPopUpButton removeAllItems];
+	for (NSUInteger i = 0; i < [_encoderList count]; i++)
+	{
+		MacVideoEncoderChoice *choice = [_encoderList objectAtIndex:i];
+		[videoEncoderPopUpButton addItemWithTitle:[choice description]];
+		[[videoEncoderPopUpButton itemAtIndex:i] setTag:(NSInteger)i];
+	}
+
+	NSString *savedID = [[NSUserDefaults standardUserDefaults] stringForKey:@"AVCaptureTool_VideoEncoderID"];
+	NSInteger selectedIndex = -1;
+
+	if ( (savedID != nil) && ([savedID length] > 0) )
+	{
+		for (NSUInteger i = 0; i < [_encoderList count]; i++)
+		{
+			MacVideoEncoderChoice *choice = [_encoderList objectAtIndex:i];
+			if ([choice->encoderID isEqualToString:savedID])
+			{
+				selectedIndex = (NSInteger)i;
+				break;
+			}
+		}
+	}
+
+	// Row 0 is not necessarily H.264 -- VTCopyVideoEncoderList also reports
+	// ProRes, depth/alpha HEVC, JPEG and raw-RGB encoders, several of which
+	// cannot be muxed into MP4 or played back normally.  When there is no saved
+	// preference, prefer the hardware H.264 encoder, then any MP4-capable one.
+	if (selectedIndex < 0)
+	{
+		for (NSUInteger i = 0; i < [_encoderList count]; i++)
+		{
+			MacVideoEncoderChoice *choice = [_encoderList objectAtIndex:i];
+			if ([choice->encoderID isEqualToString:@"com.apple.videotoolbox.videoencoder.ave.avc"])
+			{
+				selectedIndex = (NSInteger)i;
+				break;
+			}
+		}
+	}
+
+	if (selectedIndex < 0)
+	{
+		for (NSUInteger i = 0; i < [_encoderList count]; i++)
+		{
+			MacVideoEncoderChoice *choice = [_encoderList objectAtIndex:i];
+			if (!choice->isAudioOnly && MacCodecIsH264OrHEVC(choice->codecType))
+			{
+				selectedIndex = (NSInteger)i;
+				break;
+			}
+		}
+	}
+
+	if (selectedIndex < 0)
+	{
+		selectedIndex = 0;
+	}
+
+	[self setFormatID:selectedIndex];
+	[videoEncoderPopUpButton selectItemWithTag:selectedIndex];
+
+	MacVideoEncoderChoice *chosen = [self selectedEncoder];
+	NSLog(@"DeSmuME[AVCapture]: %lu encoders available, selected '%s', audio=%@",
+		  (unsigned long)[_encoderList count],
+		  (chosen != nil) ? [chosen->encoderID UTF8String] : "(none)",
+		  [self audioCodecLabel]);
+}
+
+- (MacVideoEncoderChoice *) selectedEncoder
+{
+	const NSInteger index = [self formatID];
+	if ( (index < 0) || (index >= (NSInteger)[_encoderList count]) )
+	{
+		return nil;
+	}
+
+	return [_encoderList objectAtIndex:(NSUInteger)index];
 }
 
 - (void) setDisplayMode:(NSInteger)displayModeID
@@ -1268,7 +1573,10 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 - (void) readUserDefaults
 {
 	[self setSaveDirectoryPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"AVCaptureTool_DirectoryPath"]];
-	[self setFormatID:[[NSUserDefaults standardUserDefaults] integerForKey:@"AVCaptureTool_FileFormat"]];
+	[self resolveCaptureOutlets];
+	[self reloadEncoderList];
+	[self setupAudioCodecList];
+	[self setupContainerList];
 	[self setUseDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"AVCaptureTool_Deposterize"]];
 	[self setOutputFilterID:[[NSUserDefaults standardUserDefaults] integerForKey:@"AVCaptureTool_OutputFilter"]];
 	[self setPixelScalerID:[[NSUserDefaults standardUserDefaults] integerForKey:@"AVCaptureTool_PixelScaler"]];
@@ -1286,7 +1594,22 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 - (void) writeUserDefaults
 {
 	[[NSUserDefaults standardUserDefaults] setObject:[self saveDirectoryPath] forKey:@"AVCaptureTool_DirectoryPath"];
+
+	MacVideoEncoderChoice *chosenEncoder = [self selectedEncoder];
+	if (chosenEncoder != nil)
+	{
+		[[NSUserDefaults standardUserDefaults] setObject:chosenEncoder->encoderID forKey:@"AVCaptureTool_VideoEncoderID"];
+	}
 	[[NSUserDefaults standardUserDefaults] setInteger:[self formatID] forKey:@"AVCaptureTool_FileFormat"];
+
+	if (audioCodecPopUpButton != nil)
+	{
+		[self changeAudioCodec:audioCodecPopUpButton];
+	}
+	if (containerPopUpButton != nil)
+	{
+		[self changeContainer:containerPopUpButton];
+	}
 	[[NSUserDefaults standardUserDefaults] setBool:[self useDeposterize] forKey:@"AVCaptureTool_Deposterize"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self outputFilterID] forKey:@"AVCaptureTool_OutputFilter"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self pixelScalerID] forKey:@"AVCaptureTool_PixelScaler"];
@@ -1317,6 +1640,28 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 		return;
 	}
 	
+	// Recording renders through the Metal front end's presenter and encodes the
+	// resulting pixel buffer directly.  There is no CPU compositor any more
+	// (it was the source of a hard crash in the encoder thread), so a front end
+	// that is not Metal cannot record.  Say so instead of writing a file with
+	// no video in it.
+#ifndef ENABLE_APPLE_METAL
+	NSLog(@"DeSmuME[AVCapture]: Recording requires the Metal display path; this build has it disabled.");
+	NSBeginAlertSheet(@"Recording Unavailable",
+					  @"OK", nil, nil, nil, nil, nil, nil, nil,
+					  @"This build was compiled without the Metal display path, so screen recording is not available. Screenshots still work.");
+	return;
+#else
+	if (currentFetchObj->GetID() != GPUClientFetchObjectID_MacMetal)
+	{
+		NSLog(@"DeSmuME[AVCapture]: Recording requires the Metal display path; the active fetch object is %d.", (int)currentFetchObj->GetID());
+		NSBeginAlertSheet(@"Recording Unavailable",
+						  @"OK", nil, nil, nil, nil, nil, nil, nil,
+						  @"Screen recording requires the Metal display path. The emulator is currently running on the OpenGL path, which is only used when Metal is unavailable (or Debug_DisableMetal is set).");
+		return;
+	}
+#endif
+	
 	// Check for the existence of the target writable directory. Cancel the recording operation
 	// if the directory does not exist or is not writable.
 	NSString *savePath = [self saveDirectoryPath];
@@ -1342,6 +1687,8 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	
 	[fileManager release];
 	
+	// Frames reach the encoder only as finished CVPixelBuffers, so the capture
+	// object owns no video storage.
 	ClientAVCaptureObject *newCaptureObject = new ClientAVCaptureObject([self videoWidth], [self videoHeight]);
 	
 	// Set up the rendering properties.
@@ -1385,32 +1732,103 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	NSString *savePathNSString = [CocoaDSUtil filePathFromCPath:param.savePath.c_str()];
 	std::string fileName = std::string([CocoaDSUtil cPathFromFilePath:[savePathNSString stringByAppendingPathComponent:fileNameNSString]]);
 	
-	// Create the output file stream.
-	ClientAVCaptureError error = ClientAVCaptureError_None;
-	FFmpegFileStream *ffmpegFS = new FFmpegFileStream;
-	
-	ffmpegFS->InitBaseProperties((AVFileTypeID)param.formatID, fileName,
-								 param.cdpProperty.clientWidth, param.cdpProperty.clientHeight,
-								 MAX_PENDING_FRAME_COUNT);
-	
-	error = ffmpegFS->Open();
-	if (error)
+	// Create the native VideoToolbox output stream from the encoder the user
+	// picked.  This replaces the old (never working) FFmpegFileStream.
+	MacVideoEncoderChoice *chosenEncoder = [self selectedEncoder];
+	if (chosenEncoder == nil)
 	{
-		puts("Error starting AV capture file stream.");
+		NSLog(@"DeSmuME[AVCapture]: No encoder selected; cancelling capture.");
 		delete newCaptureObject;
+		return;
 	}
-	else
+
+	// Pass the preference through unchanged.  VideoToolboxFileStream::Open()
+	// probes MP4 first for every codec (including AV1 on machines that support
+	// it) and falls back to MOV only when AVFoundation rejects it.
+	const MacCaptureContainer container = [self containerPreference];
+
+	MacVideoEncoderSpec encoderSpec = [chosenEncoder encoderSpec];
+	encoderSpec.container = container;
+	encoderSpec.audioCodec = [self audioCodecPreference];
+	VideoToolboxFileStream *newFileStream = new VideoToolboxFileStream(encoderSpec);
+
+	// fileTypeID only feeds the capture object's codec flags.  The real
+	// container and the file extension are resolved by VideoToolboxFileStream::Open().
+	const AVFileTypeID fileTypeID = encoderSpec.isAudioOnly ? AVFileTypeID_m4a_AAC :
+		((container == MacCaptureContainer_MP4) ? AVFileTypeID_mp4_H264_AAC : AVFileTypeID_mov_H264_ALAC);
+
+	newFileStream->InitBaseProperties(fileTypeID, fileName,
+									 param.cdpProperty.clientWidth, param.cdpProperty.clientHeight,
+									 MAX_PENDING_FRAME_COUNT);
+
+	ClientVideoCaptureOutput *newVideoCaptureOutput = new ClientVideoCaptureOutput;
+	newVideoCaptureOutput->SetProperties(param.cdpProperty.clientWidth, param.cdpProperty.clientHeight,
+										 param.cdpProperty.mode, param.cdpProperty.layout, param.cdpProperty.order,
+										 param.cdpProperty.gapScale, param.cdpProperty.rotation,
+										 param.useDeposterize, param.outputFilterID,
+										 param.pixelScalerID);
+	newVideoCaptureOutput->SetCaptureObject(newCaptureObject);
+
+	// This is a synchronous frame consumer driven by the display output thread
+	// (see SetActiveVideoCaptureOutput in ClientVideoOutput.cpp).  It renders
+	// the frame through a dedicated Metal capture presenter straight into an
+	// IOSurface-backed pixel buffer, so nothing is read back to the CPU.  Do
+	// NOT create that presenter here: it must be built on the display thread,
+	// which is where the shared fetch textures are owned.
+
+	// Open LAST.  AVAssetWriter creates a 0-byte file the moment it is
+	// allocated, so every failure-prone step has to happen before it exists.
+	// (A missed finishWriting used to leave exactly that 0-byte file behind.)
+	const ClientAVCaptureError error = newFileStream->Open();
+	if (error != ClientAVCaptureError_None)
 	{
-		ClientVideoCaptureOutput *newVideoCaptureOutput = new ClientVideoCaptureOutput;
-		
-		newCaptureObject->SetOutputFileStream(ffmpegFS);
-		_captureObject = newCaptureObject;
-		
-		execControl->SetClientAVCaptureObject(newCaptureObject);
-		[cdsCore addOutput:newVideoCaptureOutput];
-		
-		_videoCaptureOutput = newVideoCaptureOutput;
-		newVideoCaptureOutput->CreateThread();
+		NSLog(@"DeSmuME[AVCapture]: Could not start file stream (error %d).", (int)error);
+		delete newVideoCaptureOutput;
+		delete newFileStream;
+		delete newCaptureObject;
+		return;
+	}
+
+	newCaptureObject->SetOutputFileStream(newFileStream);
+	_captureObject = newCaptureObject;
+	_fileStream = newFileStream;
+	_videoCaptureOutput = newVideoCaptureOutput;
+
+	// Activate LAST, once every object is fully constructed.  The display
+	// output thread picks this up on its next presented frame.  No manager
+	// registration, no thread and no message dispatch: the DisplayLink stays
+	// the single frame pacer and all presenter work stays on one thread.
+	execControl->SetClientAVCaptureObject(newCaptureObject);
+	SetActiveVideoCaptureOutput(newVideoCaptureOutput);
+
+	NSLog(@"DeSmuME[AVCapture]: Recording started (encoder=%s, audio=%@, %lux%lu).",
+		  encoderSpec.encoderID.c_str(), [self audioCodecLabel],
+		  (unsigned long)param.cdpProperty.clientWidth, (unsigned long)param.cdpProperty.clientHeight);
+
+	// Startup self-check.  Every one of these has to be right for a frame to
+	// reach the encoder; if a recording ever yields a 0-byte file again, this
+	// single line shows which link in the chain broke.
+	NSLog(@"DeSmuME[AVCapture]: State check: fsValid=%d capturingVideo=%d capturingAudio=%d coreHasObject=%d frameSource=displayThread",
+		  (int)newCaptureObject->IsFileStreamValid(),
+		  (int)newCaptureObject->IsCapturingVideo(),
+		  (int)newCaptureObject->IsCapturingAudio(),
+		  (int)(execControl->GetClientAVCaptureObjectApplied() == newCaptureObject));
+
+	// Speed diagnostics.  core sleeps only while frameTime > 0, so these three
+	// values tell us directly whether the emulator's frame pacer is active.
+	NSLog(@"DeSmuME[AVCapture]: Frame pacer: limiter=%d scalar=%.3f frameTime=%.6f",
+		  (int)execControl->GetEnableSpeedLimiterApplied(),
+		  execControl->GetExecutionSpeedApplied(),
+		  execControl->GetFrameTime());
+
+	// frameTime is 0 whenever the limiter is off, so the core never sleeps and
+	// the speed scalar has no effect (1x/2x/0.5x all behave identically).  At
+	// that rate the encoder is guaranteed to fall behind, so say so loudly.
+	if (!execControl->GetEnableSpeedLimiterApplied())
+	{
+		NSLog(@"DeSmuME[AVCapture]: WARNING: the speed limiter is OFF, so the emulator runs far above 60 fps. "
+			  @"The encoder cannot keep up and frames will be dropped. "
+			  @"Turn on Emulation > Speed Limit (pref key CoreControl_EnableSpeedLimit) for reliable recording.");
 	}
 }
 
@@ -1422,19 +1840,62 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	}
 	
 	[self setIsFileStreamClosing:YES];
-	[cdsCore removeOutput:_videoCaptureOutput];
+
+	ClientVideoCaptureOutput *outputToDelete = _videoCaptureOutput;
+
+	// Unregister FIRST.  This takes the same lock the display output thread
+	// holds while capturing a frame, so it both stops new frames and waits for
+	// any in-flight frame to finish before the capture output is handed to the
+	// asynchronous close thread for deletion.
+	SetActiveVideoCaptureOutput(NULL);
 	_videoCaptureOutput = NULL;
+
+	if (outputToDelete != NULL)
+	{
+		outputToDelete->SetCaptureObject(NULL);
+	}
+
 	execControl->SetClientAVCaptureObject(NULL);
-	_captureObject->SetOutputFileStream(NULL);
 	
+	// Stop capturing immediately, but do NOT clear the file stream yet.
+	// SetClientAVCaptureObject(NULL) only updates the *pending* settings; the
+	// core thread keeps using the applied pointer until the next frame.  If the
+	// stream were cleared here, StartFrame() could observe a valid stream, get
+	// preempted, and then dereference NULL inside QueueWait() -- the
+	// "Bad pointer dereference at 0x88" crash in the Emulation Core thread.
+	_captureObject->StopCapture();
+	
+	// Bounded wait: the applied pointer normally clears on the next emulated
+	// frame (~17 ms).  It cannot clear while emulation is paused, which is
+	// harmless -- SetOutputFileStream() below takes the write lock and waits
+	// for any in-flight frame by itself.
+	for (int i = 0; i < 150; i++)
+	{
+		if (execControl->GetClientAVCaptureObjectApplied() == NULL)
+		{
+			break;
+		}
+		usleep(1000);
+	}
+	
+	// Safe now: no reader can be inside the stream, and StopCapture() also
+	// guarantees no new frame will start using it.
+	_captureObject->SetOutputFileStream(NULL);
+
+	MacAVCaptureCloseContext *closeContext = new MacAVCaptureCloseContext;
+	closeContext->captureObject = _captureObject;
+	closeContext->fileStream = _fileStream;
+	closeContext->output = outputToDelete;
+	_fileStream = NULL;
+
 	pthread_t fileWriteThread;
 	pthread_attr_t fileWriteThreadAttr;
-	
+
 	pthread_attr_init(&fileWriteThreadAttr);
 	pthread_attr_setdetachstate(&fileWriteThreadAttr, PTHREAD_CREATE_DETACHED);
-	pthread_create(&fileWriteThread, &fileWriteThreadAttr, &RunAVCaptureCloseThread, _captureObject);
+	pthread_create(&fileWriteThread, &fileWriteThreadAttr, &RunAVCaptureCloseThread, closeContext);
 	pthread_attr_destroy(&fileWriteThreadAttr);
-	
+
 	_captureObject = NULL;
 }
 
@@ -1455,9 +1916,13 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	{
 		[self closeFileStream];
 	}
-	
-	[recordButton setTitle:(newState) ? @"Stop Recording" : @"Start Recording"];
-	[self setIsRecording:newState];
+
+	// Reflect what actually happened: openFileStream can fail (no encoder,
+	// unwritable directory, encoder session refused), in which case the button
+	// must stay on "Start Recording" instead of lying about the state.
+	const BOOL actualState = [self isRecording];
+	[recordButton setTitle:(actualState) ? @"Stop Recording" : @"Start Recording"];
+	[self setIsRecording:actualState];
 }
 
 @end
@@ -1471,15 +1936,36 @@ static void* RunAVCaptureCloseThread(void *arg)
 	}
 #endif
 	
-	ClientAVCaptureObject *captureObject = (ClientAVCaptureObject *)arg;
-	FFmpegFileStream *ffmpegFS = (FFmpegFileStream *)captureObject->GetOutputFileStream();
-	
-	captureObject->StreamWriteFinish();
-	
-	delete ffmpegFS;
-	delete captureObject;
-	
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	MacAVCaptureCloseContext *ctx = (MacAVCaptureCloseContext *)arg;
+
+	NSLog(@"DeSmuME[AVCapture]: Closing recording (finalizing container)...");
+
+	// Finalize the container FIRST.  StreamWriteFinish() joins the file-write
+	// thread and is the only step here that can stall; if it ran first, a stall
+	// would leave AVAssetWriter's buffer unflushed -- i.e. the 0-byte .mov the
+	// user reported.  Production has already been stopped in closeFileStream,
+	// so at worst a handful of queued tail frames are dropped.
+	if (ctx->fileStream != NULL)
+	{
+		ctx->fileStream->Close(FSCA_WriteRemainingInQueue);
+		delete ctx->fileStream;	// ~MacVTWriter also finalizes as a fallback
+		ctx->fileStream = NULL;
+	}
+
+	ctx->captureObject->StreamWriteFinish();
+	delete ctx->captureObject;
+
+	NSLog(@"DeSmuME[AVCapture]: Recording closed.");
+	[pool release];
+
+	// No deferred teardown needed.  SetActiveVideoCaptureOutput(NULL) in
+	// closeFileStream() takes the display thread's capture lock, so by the
+	// time we get here no frame callback can still hold this pointer.
+	delete ctx->output;
+	delete ctx;
+
 	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.avFileStreamCloseFinish" object:nil userInfo:nil];
-	
+
 	return NULL;
 }
