@@ -25,6 +25,10 @@ desmume_src = [
   gresource,
 ]
 
+if dep_lua.found()
+  desmume_src += ['tools/luaScriptConsole.cpp']
+endif
+
 if get_option('glx') and dep_gl.found()
   desmume_src += [
     '../shared/glx_3Demu.cpp',
@@ -52,6 +56,7 @@ executable('desmume',
   include_directories: includes,
   link_with: libdesmume,
   cpp_args: ['-DGTK_DISABLE_DEPRECATED'],
+  link_args: ['-Wl,--dynamic-list,' + meson.current_source_dir() / '../lua-exports.txt'],
   install: true,
 )
 
