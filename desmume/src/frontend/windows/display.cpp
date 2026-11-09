@@ -25,6 +25,11 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "windriver.h"
 #include "winutil.h"
 
+#ifdef DESMUME_NATIVE_DRAW
+#include "../modules/osd/agg/native_draw.h"
+#endif
+
+
 
 DDRAW ddraw;
 GLDISPLAY gldisplay;
@@ -809,8 +814,20 @@ void DoDisplay()
 		// CPU in the same way rather than adding a second blended pipeline.
 		if (isRunningDirectDraw || isRunningWGPU)
 		{
+#ifdef DESMUME_NATIVE_DRAW
+			// Straight-alpha CPU composite.  This replaces Agg2D::transformImage,
+			// which was the last remaining direct AGG instantiation in the
+			// Windows frontend (it bypassed AggDrawTarget entirely).
+			NativeDraw_CompositeHUD(
+				(u8*)video.buffer, video.prefilterWidth, video.prefilterHeight,
+				video.prefilterWidth * sizeof(u32),
+				(const u8*)aggDraw.hud->buf().buf(),
+				aggDraw.hud->buf().width(), aggDraw.hud->buf().height(),
+				aggDraw.hud->buf().stride_abs());
+#else
 			T_AGG_RGBA target((u8*)video.buffer, video.prefilterWidth, video.prefilterHeight, video.prefilterWidth * sizeof(u32));
 			target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0, 0, video.prefilterWidth, video.prefilterHeight);
+#endif
 		}
 	}
 

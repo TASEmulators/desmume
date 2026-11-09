@@ -882,6 +882,9 @@
     <ClCompile Include="..\modules\osd\agg\agg_osd.cpp">
       <Filter>frontend\modules\osd\agg</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\osd\agg\native_draw.cpp">
+      <Filter>frontend\modules\osd\agg</Filter>
+    </ClCompile>
     <ClCompile Include="mic-win.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -1641,6 +1644,12 @@
     <ClInclude Include="..\modules\osd\agg\agg_osd.h">
       <Filter>frontend\modules\osd\agg</Filter>
     </ClInclude>
+    <ClInclude Include="..\modules\osd\agg\native_draw.h">
+      <Filter>frontend\modules\osd\agg</Filter>
+    </ClInclude>
+    <ClInclude Include="osd_fonts\osd_fonts.h">
+      <Filter>frontend\Windows\resources</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\metaspu\SoundTouch\FIRFilter.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
@@ -1803,6 +1812,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc">
+      <Filter>frontend\Windows\resources</Filter>
+    </ResourceCompile>
+    <ResourceCompile Include="osd_fonts\osd_fonts.rc">
       <Filter>frontend\Windows\resources</Filter>
     </ResourceCompile>
   </ItemGroup>

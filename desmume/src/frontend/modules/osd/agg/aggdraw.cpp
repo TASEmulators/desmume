@@ -29,6 +29,10 @@ THE SOFTWARE.
 
 #include "aggdraw.h"
 
+#ifdef DESMUME_NATIVE_DRAW
+#include "native_draw.h"
+#endif
+
 #include "agg_renderer_base.h"
 #include "agg_renderer_primitives.h"
 #include "agg_renderer_scanline.h"
@@ -64,42 +68,51 @@ THE SOFTWARE.
 typedef std::map<std::string, const agg::int8u*> TAgg_Font_Table;
 static TAgg_Font_Table font_table;
 
+#ifdef DESMUME_NATIVE_DRAW
+// The native OSD backend takes its bitmap fonts from RCDATA resources in the
+// executable, not from libagg's static arrays.  fonts_list[].font is filled
+// in Agg_init() once the resources have been loaded.
+#define AGG_FONT(x) NULL
+#else
+#define AGG_FONT(x) agg::x
+#endif
+
 font_type fonts_list[] =
 {
-	{ agg::gse4x6, "gse4x6" },
-	{ agg::gse4x8, "gse4x8" },
-	{ agg::gse5x7, "gse5x7" },
-	{ agg::gse5x9, "gse5x9" },
-	{ agg::gse6x9, "gse6x9" },
-	{ agg::gse6x12, "gse6x12" },
-	{ agg::gse7x11, "gse7x11" },
-	{ agg::gse7x11_bold, "gse7x11_bold" },
-	{ agg::gse7x15, "gse7x15" },
-	{ agg::gse7x15_bold, "gse7x15_bold" },
-	{ agg::gse8x16, "gse8x16" },
-	{ agg::gse8x16_bold, "gse8x16_bold" },
-	{ agg::mcs11_prop, "mcs11_prop" },
-	{ agg::mcs11_prop_condensed, "mcs11_prop_condensed" },
-	{ agg::mcs12_prop, "mcs12_prop" },
-	{ agg::mcs13_prop, "mcs13_prop" },
-	{ agg::mcs5x10_mono, "mcs5x10_mono" },
-	{ agg::mcs5x11_mono, "mcs5x11_mono" },
-	{ agg::mcs6x10_mono, "mcs6x10_mono" },
-	{ agg::mcs6x11_mono, "mcs6x11_mono" },
-	{ agg::mcs7x12_mono_high, "mcs7x12_mono_high" },
-	{ agg::mcs7x12_mono_low, "mcs7x12_mono_low" },
-	{ agg::verdana12, "verdana12" },
-	{ agg::verdana12_bold, "verdana12_bold" },
-	{ agg::verdana13, "verdana13" },
-	{ agg::verdana13_bold, "verdana13_bold" },
-	{ agg::verdana14, "verdana14" },
-	{ agg::verdana14_bold, "verdana14_bold" },
-	{ agg::verdana16, "verdana16" },
-	{ agg::verdana16_bold, "verdana16_bold" },
-	{ agg::verdana17, "verdana17" },
-	{ agg::verdana17_bold, "verdana17_bold" },
-	{ agg::verdana18, "verdana18" },
-	{ agg::verdana18_bold, "verdana18_bold" },
+	{ AGG_FONT(gse4x6), "gse4x6" },
+	{ AGG_FONT(gse4x8), "gse4x8" },
+	{ AGG_FONT(gse5x7), "gse5x7" },
+	{ AGG_FONT(gse5x9), "gse5x9" },
+	{ AGG_FONT(gse6x9), "gse6x9" },
+	{ AGG_FONT(gse6x12), "gse6x12" },
+	{ AGG_FONT(gse7x11), "gse7x11" },
+	{ AGG_FONT(gse7x11_bold), "gse7x11_bold" },
+	{ AGG_FONT(gse7x15), "gse7x15" },
+	{ AGG_FONT(gse7x15_bold), "gse7x15_bold" },
+	{ AGG_FONT(gse8x16), "gse8x16" },
+	{ AGG_FONT(gse8x16_bold), "gse8x16_bold" },
+	{ AGG_FONT(mcs11_prop), "mcs11_prop" },
+	{ AGG_FONT(mcs11_prop_condensed), "mcs11_prop_condensed" },
+	{ AGG_FONT(mcs12_prop), "mcs12_prop" },
+	{ AGG_FONT(mcs13_prop), "mcs13_prop" },
+	{ AGG_FONT(mcs5x10_mono), "mcs5x10_mono" },
+	{ AGG_FONT(mcs5x11_mono), "mcs5x11_mono" },
+	{ AGG_FONT(mcs6x10_mono), "mcs6x10_mono" },
+	{ AGG_FONT(mcs6x11_mono), "mcs6x11_mono" },
+	{ AGG_FONT(mcs7x12_mono_high), "mcs7x12_mono_high" },
+	{ AGG_FONT(mcs7x12_mono_low), "mcs7x12_mono_low" },
+	{ AGG_FONT(verdana12), "verdana12" },
+	{ AGG_FONT(verdana12_bold), "verdana12_bold" },
+	{ AGG_FONT(verdana13), "verdana13" },
+	{ AGG_FONT(verdana13_bold), "verdana13_bold" },
+	{ AGG_FONT(verdana14), "verdana14" },
+	{ AGG_FONT(verdana14_bold), "verdana14_bold" },
+	{ AGG_FONT(verdana16), "verdana16" },
+	{ AGG_FONT(verdana16_bold), "verdana16_bold" },
+	{ AGG_FONT(verdana17), "verdana17" },
+	{ AGG_FONT(verdana17_bold), "verdana17_bold" },
+	{ AGG_FONT(verdana18), "verdana18" },
+	{ AGG_FONT(verdana18_bold), "verdana18_bold" },
 };
 int font_Nums = ARRAY_SIZE(fonts_list);
 
@@ -118,6 +131,25 @@ static void Agg_init_fonts()
 
 AggDraw_Desmume aggDraw;
 
+#ifdef DESMUME_NATIVE_DRAW
+
+// "Route 1": the very same AggDrawTarget contract, but every primitive is
+// rasterised by GDI+ instead of Agg2D.  The three buffers below keep the same
+// size/format/lifetime, so agg_osd.cpp, lua-engine.cpp and the OpenGL HUD
+// texture path are completely unchanged.
+static std::vector<u32> luaBuffer(GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT*2);
+static std::vector<u32> hudBuffer(GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT*2);
+
+static NativeDrawTarget native_targetScreen_32bit(0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, GPU_FRAMEBUFFER_NATIVE_WIDTH*4);
+static NativeDrawTarget native_targetScreen_16bit(0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, GPU_FRAMEBUFFER_NATIVE_WIDTH*2);
+static NativeDrawTarget native_targetLua((u8*)luaBuffer.data(), GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, GPU_FRAMEBUFFER_NATIVE_WIDTH*4);
+static NativeDrawTarget native_targetHud((u8*)hudBuffer.data(), GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, GPU_FRAMEBUFFER_NATIVE_WIDTH*4);
+
+#define AGG_TARGET_SCREEN_32  (&native_targetScreen_32bit)
+#define AGG_TARGET_SCREEN_16  (&native_targetScreen_16bit)
+
+#else
+
 T_AGG_RGBA agg_targetScreen_32bit(0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, GPU_FRAMEBUFFER_NATIVE_WIDTH*4);
 T_AGG_RGB555 agg_targetScreen_16bit(0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, GPU_FRAMEBUFFER_NATIVE_WIDTH*2);
 
@@ -127,22 +159,39 @@ T_AGG_RGBA agg_targetLua((u8*)luaBuffer.data(), GPU_FRAMEBUFFER_NATIVE_WIDTH, GP
 static std::vector<u32> hudBuffer(GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT*2);
 T_AGG_RGBA agg_targetHud((u8*)hudBuffer.data(), GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT*2, GPU_FRAMEBUFFER_NATIVE_WIDTH*4);
 
+#define AGG_TARGET_SCREEN_32  (&agg_targetScreen_32bit)
+#define AGG_TARGET_SCREEN_16  (&agg_targetScreen_16bit)
+
+#endif
+
 static AggDrawTarget* targets[] = {
-	&agg_targetScreen_32bit,
+	AGG_TARGET_SCREEN_32,
+#ifdef DESMUME_NATIVE_DRAW
+	&native_targetHud,
+	&native_targetLua,
+#else
 	&agg_targetHud,
 	&agg_targetLua,
+#endif
 };
 
 void Agg_init()
 {
+#ifdef DESMUME_NATIVE_DRAW
+	NativeDraw_Init();
+	// The bitmap font blobs are RCDATA resources; resolve them once here and
+	// keep the public fonts_list[]/font_table contract unchanged.
+	for(u32 i=0;i<font_Nums;i++)
+		fonts_list[i].font = NativeDraw_FontData(fonts_list[i].name);
+#endif
 	Agg_init_fonts();
 	switch(aggDraw.screenBytesPerPixel)
 	{
 		case 2:
-			targets[0]=&agg_targetScreen_16bit;
+			targets[0]=AGG_TARGET_SCREEN_16;
 			break;
 		case 4:
-			targets[0]=&agg_targetScreen_32bit;
+			targets[0]=AGG_TARGET_SCREEN_32;
 			break;
 	}
 
