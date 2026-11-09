@@ -63,6 +63,9 @@
 #include "../shared/desmume_config.h"
 #include "../shared/gdksdl.cpp"
 #include "../../../WGPURender.h"
+#if defined(ENABLE_WGPU)
+#include "wgpu.h"
+#endif
 #include "../shared/wgpu_display_linux.h"
 #include "cheatsGTK.h"
 #include "frontend/modules/osd/agg/agg_osd.h"
@@ -430,6 +433,46 @@ static void Build3DRendererList()
 #endif
 
 	core3DList[count] = NULL;
+}
+
+// The WGPUInstanceBackend mask the WebGPU presenter should use. A mask of zero
+// asks wgpu-native for every backend it was built with, which on Linux also
+// creates a GLES instance. That instance is destroyed at process exit, after
+// GTK has already released the EGL display; eglDestroyContext() then fails
+// without an EGL error and the khronos-egl wrapper panics while unwinding
+// through wgpuInstanceRelease(), which aborts the process. Never pass zero:
+// use the backend the user picked, or the first one the renderer enumeration
+// found (its preferred backend).
+static uint32_t WGPU_PresentationBackendMask()
+{
+#if defined(ENABLE_WGPU)
+	WGPURender_InitBackendList();
+
+	const size_t backendCount = WGPURender_GetBackendCount();
+	const uint32_t requested = (uint32_t)config.presentationWGPUBackend;
+
+	if (requested != 0)
+	{
+		for (size_t i = 0; i < backendCount; i++)
+		{
+			if (WGPURender_GetBackendMask(i) == requested)
+			{
+				return requested;
+			}
+		}
+	}
+
+	if (backendCount > 0)
+	{
+		return WGPURender_GetBackendMask(0);
+	}
+
+	// No adapter was reported. Pin Vulkan rather than asking for every backend;
+	// if it cannot present, begin() fails and Cairo keeps drawing.
+	return (uint32_t)WGPUInstanceBackend_Vulkan;
+#else
+	return 0;
+#endif
 }
 
 int multisampleSizes[] = {0, 2, 4, 8, 16, 32};
@@ -1757,7 +1800,8 @@ static bool WGPU_BeginNativeWindow(GtkWidget *widget, GdkWindow *window)
 	{
 		GdkDisplay *gdkDisplay = gdk_window_get_display(window);
 		return wgpu_display.beginX11(GDK_DISPLAY_XDISPLAY(gdkDisplay),
-									 (unsigned long)gdk_x11_window_get_xid(window));
+									 (unsigned long)gdk_x11_window_get_xid(window),
+									 WGPU_PresentationBackendMask());
 	}
 #endif
 
@@ -1773,7 +1817,7 @@ static bool WGPU_BeginNativeWindow(GtkWidget *widget, GdkWindow *window)
 		WGPU_GetDrawingAreaPosition(widget, &x, &y);
 		return wgpu_display.beginWayland(gdk_wayland_display_get_wl_display(gdkDisplay),
 										 gdk_wayland_window_get_wl_surface(window),
-										 x, y);
+										 x, y, WGPU_PresentationBackendMask());
 	}
 #endif
 
@@ -2734,7 +2778,8 @@ static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, g
 // software presentation is chosen, exactly as the Windows frontend does.
 static void PresentationComboChanged(GtkComboBox *combo, gpointer user_data)
 {
-	gtk_widget_set_sensitive(GTK_WIDGET(user_data), gtk_combo_box_get_active(combo) == 0);
+	const char *id = gtk_combo_box_get_active_id(combo);
+	gtk_widget_set_sensitive(GTK_WIDGET(user_data), (id != NULL) && (strcmp(id, "software") != 0));
 }
 
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
@@ -2779,7 +2824,54 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	gtk_grid_remove_row(wGrid, 4);
 #endif
 	gtk_combo_box_set_active(coreCombo, cur3DCore);
-	gtk_combo_box_set_active(wPresentation, config.presentationWGPU ? 0 : 1);
+
+	// Screen presentation. Like the 3D renderer list, offer one entry per
+	// usable WebGPU backend ("WebGPU - Vulkan", ...) next to the software
+	// path. The id of a WebGPU item is its WGPUInstanceBackend mask, which is
+	// what WGPULinuxDisplay pins the present instance to.
+	GtkComboBoxText *presentationComboText = GTK_COMBO_BOX_TEXT(wPresentation);
+	gtk_combo_box_text_remove_all(presentationComboText);
+
+#if defined(ENABLE_WGPU)
+	const size_t presentationBackendCount = WGPURender_GetBackendCount();
+
+	if (presentationBackendCount > 0)
+	{
+		for (size_t i = 0; i < presentationBackendCount; i++)
+		{
+			char id[32];
+			char label[64];
+			g_snprintf(id, sizeof(id), "%u", (unsigned)WGPURender_GetBackendMask(i));
+			g_snprintf(label, sizeof(label), "WebGPU - %s", WGPURender_GetBackendLabel(i));
+			gtk_combo_box_text_append(presentationComboText, id, label);
+		}
+	}
+	else
+#endif
+	{
+		char id[32];
+		g_snprintf(id, sizeof(id), "%u", (unsigned)WGPU_PresentationBackendMask());
+		gtk_combo_box_text_append(presentationComboText, id, "WebGPU");
+	}
+
+	gtk_combo_box_text_append(presentationComboText, "software", "Software (Cairo)");
+
+	if (config.presentationWGPU)
+	{
+		char activePresentationId[32];
+		g_snprintf(activePresentationId, sizeof(activePresentationId), "%u", (unsigned)WGPU_PresentationBackendMask());
+
+		// The configured backend may have disappeared (another machine, a
+		// driver change); then the first WebGPU entry is the fallback.
+		if (!gtk_combo_box_set_active_id(wPresentation, activePresentationId))
+		{
+			gtk_combo_box_set_active(wPresentation, 0);
+		}
+	}
+	else
+	{
+		gtk_combo_box_set_active_id(wPresentation, "software");
+	}
 
 	// Populate the GPU filters from the chain table, so a filter added there
 	// shows up here without a second list to keep in step. The id of each item
@@ -2955,21 +3047,38 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		config.gpuFilter = selectedFilter;
 		wgpu_display.setUpscaler(selectedFilter);
 
-		// Screen presentation backend. Switching to software tears the WebGPU
-		// subsurface down so that Cairo can draw into GDK's surface again;
-		// switching back lets the next expose create a fresh surface.
-		const bool useWGPUPresentation = (gtk_combo_box_get_active(wPresentation) == 0);
-		if (useWGPUPresentation != config.presentationWGPU)
+		// Screen presentation path. The selected WebGPU backend is the id of
+		// the combo item, or "software" for Cairo. Switching either tears the
+		// WebGPU subsurface down so that Cairo can draw into GDK's surface
+		// again; the next expose recreates it with the new backend.
+		const char *presentationId = gtk_combo_box_get_active_id(wPresentation);
+		const bool useWGPUPresentation = (presentationId != NULL) && (strcmp(presentationId, "software") != 0);
+
+		uint32_t selectedPresentationBackend = (uint32_t)config.presentationWGPUBackend;
+		if (useWGPUPresentation)
 		{
-			config.presentationWGPU = useWGPUPresentation;
+			selectedPresentationBackend = (presentationId != NULL)
+				? (uint32_t)g_ascii_strtoull(presentationId, NULL, 10)
+				: WGPU_PresentationBackendMask();
+		}
+
+		const bool presentationChanged = (useWGPUPresentation != config.presentationWGPU) ||
+			( useWGPUPresentation &&
+			  (selectedPresentationBackend != (uint32_t)config.presentationWGPUBackend) );
+
+		config.presentationWGPU = useWGPUPresentation;
+		if (useWGPUPresentation)
+		{
+			config.presentationWGPUBackend = (int)selectedPresentationBackend;
+		}
+
+		if (presentationChanged)
+		{
+			wgpu_display.kill();
 
 			if (useWGPUPresentation)
 			{
 				wgpu_initialization_failed = false;
-			}
-			else
-			{
-				wgpu_display.kill();
 			}
 
 			if (pDrawingArea != NULL)
@@ -4643,7 +4752,13 @@ static void Teardown() {
 #ifdef HAVE_LIBAGG
 	HudSaveLayout();
 #endif
-	
+
+	// Release the WebGPU instance while the native window and the toolkit's
+	// EGL/Vulkan state are still alive. The static destructor would otherwise
+	// do it after exit() has started tearing down GTK and the display
+	// connection, which is too late for the graphics drivers.
+	wgpu_display.kill();
+
     delete video;
     
 	config.save();

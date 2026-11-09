@@ -27,6 +27,7 @@ WGPULinuxDisplay::WGPULinuxDisplay()
 	this->active = false;
 	this->_window = NULL;
 	this->_wayland = false;
+	this->_instanceBackends = 0;
 	this->_useOutputFilterPending = false;
 	this->_upscalerPending = WGPUPresentUpscaler_Off;
 }
@@ -36,10 +37,11 @@ WGPULinuxDisplay::~WGPULinuxDisplay()
 	this->kill();
 }
 
-bool WGPULinuxDisplay::beginX11(void *display, unsigned long window)
+bool WGPULinuxDisplay::beginX11(void *display, unsigned long window, uint32_t instanceBackends)
 {
 	if ( (this->_window != NULL) && !this->_wayland &&
 		 static_cast<LinuxX11PresentWindow *>(this->_window)->matches((Display *)display, window) &&
+		 (this->_instanceBackends == instanceBackends) &&
 		 this->_present.isReady() )
 	{
 		this->active = true;
@@ -55,8 +57,9 @@ bool WGPULinuxDisplay::beginX11(void *display, unsigned long window)
 
 	this->_window = new LinuxX11PresentWindow((Display *)display, window);
 	this->_wayland = false;
+	this->_instanceBackends = instanceBackends;
 
-	if (!this->_present.begin(this->_window))
+	if (!this->_present.begin(this->_window, instanceBackends))
 	{
 		delete this->_window;
 		this->_window = NULL;
@@ -76,10 +79,11 @@ bool WGPULinuxDisplay::beginX11(void *display, unsigned long window)
 	return true;
 }
 
-bool WGPULinuxDisplay::beginWayland(void *display, void *surface, int x, int y)
+bool WGPULinuxDisplay::beginWayland(void *display, void *surface, int x, int y, uint32_t instanceBackends)
 {
 	if ( (this->_window != NULL) && this->_wayland &&
 		 static_cast<LinuxWaylandPresentWindow *>(this->_window)->matches(display, surface) &&
+		 (this->_instanceBackends == instanceBackends) &&
 		 this->_present.isReady() )
 	{
 		this->active = true;
@@ -96,8 +100,9 @@ bool WGPULinuxDisplay::beginWayland(void *display, void *surface, int x, int y)
 	LinuxWaylandPresentWindow *window = new LinuxWaylandPresentWindow(display, surface, x, y);
 	this->_window = window;
 	this->_wayland = true;
+	this->_instanceBackends = instanceBackends;
 
-	if (!this->_present.begin(window))
+	if (!this->_present.begin(window, instanceBackends))
 	{
 		delete this->_window;
 		this->_window = NULL;
@@ -125,6 +130,8 @@ void WGPULinuxDisplay::kill()
 		delete this->_window;
 		this->_window = NULL;
 	}
+
+	this->_instanceBackends = 0;
 }
 
 void WGPULinuxDisplay::setClientSize(int width, int height, int scale)
@@ -206,14 +213,15 @@ WGPULinuxDisplay::WGPULinuxDisplay()
 	this->active = false;
 	this->_window = NULL;
 	this->_wayland = false;
+	this->_instanceBackends = 0;
 	this->_useOutputFilterPending = false;
 	this->_upscalerPending = WGPUPresentUpscaler_Off;
 }
 
 WGPULinuxDisplay::~WGPULinuxDisplay() {}
 
-bool WGPULinuxDisplay::beginX11(void *, unsigned long) { return false; }
-bool WGPULinuxDisplay::beginWayland(void *, void *, int, int) { return false; }
+bool WGPULinuxDisplay::beginX11(void *, unsigned long, uint32_t) { return false; }
+bool WGPULinuxDisplay::beginWayland(void *, void *, int, int, uint32_t) { return false; }
 void WGPULinuxDisplay::kill() {}
 void WGPULinuxDisplay::setClientSize(int, int, int) {}
 void WGPULinuxDisplay::setClientPosition(int, int) {}

@@ -44,13 +44,17 @@ public:
 	// Creates the device, surface and pipeline on first use for this window.
 	// `display` is a Display* and `window` an X11 Window; the handle pair is
 	// remembered so that presenting to the same window is free.
-	bool beginX11(void *display, unsigned long window);
+	// `instanceBackends` is a WGPUInstanceBackend mask; zero asks wgpu-native
+	// for every backend it was built with, which on Linux also creates a GLES
+	// instance that must not be destroyed during exit(). Please pass one of the
+	// masks enumerated by WGPURender_GetBackendMask().
+	bool beginX11(void *display, unsigned long window, uint32_t instanceBackends = 0);
 
 	// Wayland counterpart. `display` is a wl_display* and `surface` GDK's
 	// drawing-area wl_surface*; the adapter presents through a child
 	// wl_subsurface. `x`/`y` are the drawing area's position inside GDK's
 	// toplevel surface. The size has to be pushed through setClientSize().
-	bool beginWayland(void *display, void *surface, int x, int y);
+	bool beginWayland(void *display, void *surface, int x, int y, uint32_t instanceBackends = 0);
 
 	// Releases the swap chain. Called when the widget is unrealized or another
 	// presentation path takes over.
@@ -86,6 +90,7 @@ private:
 	WGPUPresent _present;
 	WGPUPresentWindow* _window;
 
+	uint32_t _instanceBackends;
 	bool _wayland;
 	bool _useOutputFilterPending;
 	int _upscalerPending;
