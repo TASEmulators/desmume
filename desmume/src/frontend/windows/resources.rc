@@ -2407,9 +2407,9 @@ END
 // GPU filters: the WGSL of the libretro upscaler chains
 //
 // Verbatim from https://github.com/libretro/glsl-shaders, through the WebGPU
-// ports of upscalers/libretro beside this file. One resource per pass rather
-// than one string literal per pass, so the files stay the shaders they came
-// from and can be diffed against upstream.
+// ports in ../shared/upscalers/libretro, which both frontends share. One
+// resource per pass rather than one string literal per pass, so the files stay
+// the shaders they came from and can be diffed against upstream.
 //
 // Nothing here is read at startup: a pass is fetched only when the filter it
 // belongs to is selected, and only that chain is compiled (see
@@ -2417,29 +2417,29 @@ END
 //
 /////////////////////////////////////////////////////////////////////////////
 
-XBRZ_FREESCALE_WGSL         RCDATA  "upscalers\\libretro\\XbrzFreescale.wgsl"
-LANCZOS3_WGSL               RCDATA  "upscalers\\libretro\\Lanczos3.wgsl"
-BICUBIC_WGSL                RCDATA  "upscalers\\libretro\\Bicubic.wgsl"
-XBR_LV2_WGSL                RCDATA  "upscalers\\libretro\\XbrLv2.wgsl"
-XBR_LV2_NOBLEND_WGSL        RCDATA  "upscalers\\libretro\\XbrLv2NoBlend.wgsl"
-XBR_LV3_WGSL                RCDATA  "upscalers\\libretro\\XbrLv3.wgsl"
-XBR_LV3_PASS0_WGSL          RCDATA  "upscalers\\libretro\\XbrLv3Multipass0.wgsl"
-XBR_LV3_PASS1_WGSL          RCDATA  "upscalers\\libretro\\XbrLv3Multipass1.wgsl"
-SUPER_XBR_PASS0_WGSL        RCDATA  "upscalers\\libretro\\SuperXbrPass0.wgsl"
-SUPER_XBR_PASS1_WGSL        RCDATA  "upscalers\\libretro\\SuperXbrPass1.wgsl"
-SUPER_XBR_JINC2_WGSL        RCDATA  "upscalers\\libretro\\SuperXbrJinc2.wgsl"
-SCALEFX_PASS0_WGSL          RCDATA  "upscalers\\libretro\\ScaleFxPass0.wgsl"
-SCALEFX_PASS1_WGSL          RCDATA  "upscalers\\libretro\\ScaleFxPass1.wgsl"
-SCALEFX_PASS2_WGSL          RCDATA  "upscalers\\libretro\\ScaleFxPass2.wgsl"
-SCALEFX_PASS3_WGSL          RCDATA  "upscalers\\libretro\\ScaleFxPass3.wgsl"
-SCALEFX_PASS4_WGSL          RCDATA  "upscalers\\libretro\\ScaleFxPass4.wgsl"
-XBR_2X_PASS0_WGSL           RCDATA  "upscalers\\libretro\\Xbr2xPass0.wgsl"
-XBR_2X_PASS1_WGSL           RCDATA  "upscalers\\libretro\\Xbr2xPass1.wgsl"
-XBR_MLV4_PASS1_WGSL         RCDATA  "upscalers\\libretro\\XbrMlv4Pass1.wgsl"
-XBR_MLV4_PASS2_WGSL         RCDATA  "upscalers\\libretro\\XbrMlv4Pass2.wgsl"
-XBR_MLV4_PASS3_WGSL         RCDATA  "upscalers\\libretro\\XbrMlv4Pass3.wgsl"
-XBR_MLV4_PASS4_WGSL         RCDATA  "upscalers\\libretro\\XbrMlv4Pass4.wgsl"
-PT_SKYWALKER541_WGSL        RCDATA  "upscalers\\libretro\\PT_SkyWalker541.wgsl"
+XBRZ_FREESCALE_WGSL         RCDATA  "..\\shared\\upscalers\\libretro\\XbrzFreescale.wgsl"
+LANCZOS3_WGSL               RCDATA  "..\\shared\\upscalers\\libretro\\Lanczos3.wgsl"
+BICUBIC_WGSL                RCDATA  "..\\shared\\upscalers\\libretro\\Bicubic.wgsl"
+XBR_LV2_WGSL                RCDATA  "..\\shared\\upscalers\\libretro\\XbrLv2.wgsl"
+XBR_LV2_NOBLEND_WGSL        RCDATA  "..\\shared\\upscalers\\libretro\\XbrLv2NoBlend.wgsl"
+XBR_LV3_WGSL                RCDATA  "..\\shared\\upscalers\\libretro\\XbrLv3.wgsl"
+XBR_LV3_PASS0_WGSL          RCDATA  "..\\shared\\upscalers\\libretro\\XbrLv3Multipass0.wgsl"
+XBR_LV3_PASS1_WGSL          RCDATA  "..\\shared\\upscalers\\libretro\\XbrLv3Multipass1.wgsl"
+SUPER_XBR_PASS0_WGSL        RCDATA  "..\\shared\\upscalers\\libretro\\SuperXbrPass0.wgsl"
+SUPER_XBR_PASS1_WGSL        RCDATA  "..\\shared\\upscalers\\libretro\\SuperXbrPass1.wgsl"
+SUPER_XBR_JINC2_WGSL        RCDATA  "..\\shared\\upscalers\\libretro\\SuperXbrJinc2.wgsl"
+SCALEFX_PASS0_WGSL          RCDATA  "..\\shared\\upscalers\\libretro\\ScaleFxPass0.wgsl"
+SCALEFX_PASS1_WGSL          RCDATA  "..\\shared\\upscalers\\libretro\\ScaleFxPass1.wgsl"
+SCALEFX_PASS2_WGSL          RCDATA  "..\\shared\\upscalers\\libretro\\ScaleFxPass2.wgsl"
+SCALEFX_PASS3_WGSL          RCDATA  "..\\shared\\upscalers\\libretro\\ScaleFxPass3.wgsl"
+SCALEFX_PASS4_WGSL          RCDATA  "..\\shared\\upscalers\\libretro\\ScaleFxPass4.wgsl"
+XBR_2X_PASS0_WGSL           RCDATA  "..\\shared\\upscalers\\libretro\\Xbr2xPass0.wgsl"
+XBR_2X_PASS1_WGSL           RCDATA  "..\\shared\\upscalers\\libretro\\Xbr2xPass1.wgsl"
+XBR_MLV4_PASS1_WGSL         RCDATA  "..\\shared\\upscalers\\libretro\\XbrMlv4Pass1.wgsl"
+XBR_MLV4_PASS2_WGSL         RCDATA  "..\\shared\\upscalers\\libretro\\XbrMlv4Pass2.wgsl"
+XBR_MLV4_PASS3_WGSL         RCDATA  "..\\shared\\upscalers\\libretro\\XbrMlv4Pass3.wgsl"
+XBR_MLV4_PASS4_WGSL         RCDATA  "..\\shared\\upscalers\\libretro\\XbrMlv4Pass4.wgsl"
+PT_SKYWALKER541_WGSL        RCDATA  "..\\shared\\upscalers\\libretro\\PT_SkyWalker541.wgsl"
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////

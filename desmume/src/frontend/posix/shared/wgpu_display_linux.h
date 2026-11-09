@@ -67,6 +67,13 @@ public:
 	void setUseOutputFilter(bool theState);
 	bool useOutputFilter();
 
+	// The GPU filter the frame goes through, one of WGPUPresentUpscaler. Its
+	// WGSL is compiled the first time a frame is presented with it selected,
+	// and only for the filter that is selected.
+	void setUpscaler(int upscaler);
+	int upscaler();
+	bool upscalerCompiled();
+
 	// Presents one already composited BGRA frame. The rectangles use the same
 	// conventions as WGPUPresent::present().
 	bool present(const u32* pixels, int width, int height,
@@ -81,6 +88,7 @@ private:
 
 	bool _wayland;
 	bool _useOutputFilterPending;
+	int _upscalerPending;
 
 	WGPULinuxDisplay(const WGPULinuxDisplay&);
 	WGPULinuxDisplay& operator=(const WGPULinuxDisplay&);

@@ -50,7 +50,7 @@
           </packing>
         </child>
         <child>
-          <!-- n-columns=3 n-rows=7 -->
+          <!-- n-columns=3 n-rows=8 -->
           <object class="GtkGrid" id="graphics_grid">
             <property name="can-focus">False</property>
             <child>
@@ -209,6 +209,25 @@
               <packing>
                 <property name="left-attach">1</property>
                 <property name="top-attach">6</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">GPU filter:</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">7</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBoxText" id="gpu_filter_combo">
+                <property name="can-focus">False</property>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">7</property>
               </packing>
             </child>
             <child>

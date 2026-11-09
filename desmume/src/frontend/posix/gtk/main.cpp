@@ -2729,11 +2729,19 @@ static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, g
 }
 
 
+// The GPU filters are WGSL chains run by the WebGPU presenter, so the choice is
+// only meaningful while that presentation is selected. The value is kept when
+// software presentation is chosen, exactly as the Windows frontend does.
+static void PresentationComboChanged(GtkComboBox *combo, gpointer user_data)
+{
+	gtk_widget_set_sensitive(GTK_WIDGET(user_data), gtk_combo_box_get_active(combo) == 0);
+}
+
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
 	GtkDialog *dialog;
 	GtkGrid *wGrid;
 	GtkComboBox *coreCombo, *wScale, *wMultisample;
-	GtkComboBox *wPresentation;
+	GtkComboBox *wPresentation, *wGPUFilter;
 	GtkToggleButton *wPosterize, *wSmoothing, *wHCInterpolate;
 	GtkSpinButton *wGPUScale;
 
@@ -2752,6 +2760,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	wSmoothing = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "smoothing"));
 	wHCInterpolate = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "hc_interpolate"));
 	wPresentation = GTK_COMBO_BOX(gtk_builder_get_object(builder, "presentation_combo"));
+	wGPUFilter = GTK_COMBO_BOX(gtk_builder_get_object(builder, "gpu_filter_combo"));
 	g_object_unref(builder);
 
 	// Populate the combo from the runtime renderer list so that the WebGPU
@@ -2764,12 +2773,42 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	}
 
 #if !defined(ENABLE_OPENGL_STANDARD) && !defined(ENABLE_OPENGL_ES) && !defined(ENABLE_WGPU)
+	gtk_grid_remove_row(wGrid, 7);
 	gtk_grid_remove_row(wGrid, 6);
 	gtk_grid_remove_row(wGrid, 5);
 	gtk_grid_remove_row(wGrid, 4);
 #endif
 	gtk_combo_box_set_active(coreCombo, cur3DCore);
 	gtk_combo_box_set_active(wPresentation, config.presentationWGPU ? 0 : 1);
+
+	// Populate the GPU filters from the chain table, so a filter added there
+	// shows up here without a second list to keep in step. The id of each item
+	// is its WGPUPresentUpscaler value.
+	GtkComboBoxText *filterComboText = GTK_COMBO_BOX_TEXT(wGPUFilter);
+	gtk_combo_box_text_remove_all(filterComboText);
+	gtk_combo_box_text_append(filterComboText, "0", "Off");
+
+	for (int value = WGPUPresentUpscaler_Off + 1; value < WGPUPresentUpscalerCount; value++)
+	{
+		const char *name = WGPUPresent::upscalerName(value);
+
+		if (name == NULL)
+		{
+			continue;
+		}
+
+		char id[16];
+		g_snprintf(id, sizeof(id), "%d", value);
+		gtk_combo_box_text_append(filterComboText, id, name);
+	}
+
+	int activeFilter = WGPUPresent::isUpscaler(config.gpuFilter) ? config.gpuFilter : WGPUPresentUpscaler_Off;
+	char activeFilterId[16];
+	g_snprintf(activeFilterId, sizeof(activeFilterId), "%d", activeFilter);
+	gtk_combo_box_set_active_id(wGPUFilter, activeFilterId);
+
+	gtk_widget_set_sensitive(GTK_WIDGET(wGPUFilter), config.presentationWGPU);
+	g_signal_connect(wPresentation, "changed", G_CALLBACK(PresentationComboChanged), wGPUFilter);
 
 	// The shift it work for scale up to 4. For scaling more than 4, a mapping function is required
 	gtk_combo_box_set_active(wScale, CommonSettings.GFX3D_Renderer_TextureScalingFactor >> 1);
@@ -2902,6 +2941,19 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		config.multisampling = selectedMultisample != 0;
 		CommonSettings.GFX3D_Renderer_MultisampleSize = multisampleSizes[selectedMultisample];
 #endif
+
+		// GPU filter. It only runs when a frame goes through the WebGPU
+		// presenter; the value is kept while software presentation is in use.
+		const char *filterId = gtk_combo_box_get_active_id(wGPUFilter);
+		int selectedFilter = (filterId != NULL) ? (int)g_ascii_strtoll(filterId, NULL, 10) : WGPUPresentUpscaler_Off;
+
+		if (!WGPUPresent::isUpscaler(selectedFilter))
+		{
+			selectedFilter = WGPUPresentUpscaler_Off;
+		}
+
+		config.gpuFilter = selectedFilter;
+		wgpu_display.setUpscaler(selectedFilter);
 
 		// Screen presentation backend. Switching to software tears the WebGPU
 		// subsurface down so that Cairo can draw into GDK's surface again;
@@ -3785,6 +3837,16 @@ common_gtk_main(GApplication *app, gpointer user_data)
     configured_features *my_config = static_cast<configured_features*>(user_data);
 
 	config.load();
+
+	// The GPU filter belongs to the WebGPU presentation path. Nothing is
+	// compiled here: the chain of the selected filter is built on the first
+	// frame presented with it selected. A value left over from another build
+	// falls back to the plain blit.
+	if (!WGPUPresent::isUpscaler(config.gpuFilter))
+	{
+		config.gpuFilter = WGPUPresentUpscaler_Off;
+	}
+	wgpu_display.setUpscaler(config.gpuFilter);
 
 	// Must exist before any renderer index is validated or shown in the UI.
 	Build3DRendererList();

@@ -20,6 +20,7 @@
 #if defined(ENABLE_WGPU)
 
 #include "wgpu_present_linux.h"
+#include "wgpu_upscaler_linux.h"
 
 WGPULinuxDisplay::WGPULinuxDisplay()
 {
@@ -27,6 +28,7 @@ WGPULinuxDisplay::WGPULinuxDisplay()
 	this->_window = NULL;
 	this->_wayland = false;
 	this->_useOutputFilterPending = false;
+	this->_upscalerPending = WGPUPresentUpscaler_Off;
 }
 
 WGPULinuxDisplay::~WGPULinuxDisplay()
@@ -62,6 +64,13 @@ bool WGPULinuxDisplay::beginX11(void *display, unsigned long window)
 		return false;
 	}
 
+	// The GPU filters are WGSL carried in the GResource bundle; handing the
+	// source over here keeps the present layer free of GTK and GIO. Nothing is
+	// compiled yet: the chain of the selected filter is built the first time a
+	// frame is presented with it selected.
+	this->_present.setUpscalerShaderSource(WGPUCreateLinuxUpscalerShaderSource());
+	this->_present.setUpscaler(this->_upscalerPending);
+
 	this->active = true;
 
 	return true;
@@ -95,6 +104,10 @@ bool WGPULinuxDisplay::beginWayland(void *display, void *surface, int x, int y)
 		this->active = false;
 		return false;
 	}
+
+	// See beginX11(): source first, then the chain that is pending.
+	this->_present.setUpscalerShaderSource(WGPUCreateLinuxUpscalerShaderSource());
+	this->_present.setUpscaler(this->_upscalerPending);
 
 	this->active = true;
 
@@ -155,6 +168,22 @@ bool WGPULinuxDisplay::useOutputFilter()
 	return this->_useOutputFilterPending;
 }
 
+void WGPULinuxDisplay::setUpscaler(int upscaler)
+{
+	this->_upscalerPending = upscaler;
+	this->_present.setUpscaler(upscaler);
+}
+
+int WGPULinuxDisplay::upscaler()
+{
+	return this->_upscalerPending;
+}
+
+bool WGPULinuxDisplay::upscalerCompiled()
+{
+	return this->_present.upscalerCompiled();
+}
+
 bool WGPULinuxDisplay::present(const u32 *pixels, int width, int height,
 							   const WGPUPresentRect *srcRects, const WGPUPresentRect *dstRects,
 							   const WGPUPresentRect *gapRect, int rotation, u32 gapColor)
@@ -178,6 +207,7 @@ WGPULinuxDisplay::WGPULinuxDisplay()
 	this->_window = NULL;
 	this->_wayland = false;
 	this->_useOutputFilterPending = false;
+	this->_upscalerPending = WGPUPresentUpscaler_Off;
 }
 
 WGPULinuxDisplay::~WGPULinuxDisplay() {}
@@ -190,6 +220,9 @@ void WGPULinuxDisplay::setClientPosition(int, int) {}
 void WGPULinuxDisplay::setvsync(bool) {}
 void WGPULinuxDisplay::setUseOutputFilter(bool theState) { this->_useOutputFilterPending = theState; }
 bool WGPULinuxDisplay::useOutputFilter() { return this->_useOutputFilterPending; }
+void WGPULinuxDisplay::setUpscaler(int upscaler) { this->_upscalerPending = upscaler; }
+int WGPULinuxDisplay::upscaler() { return this->_upscalerPending; }
+bool WGPULinuxDisplay::upscalerCompiled() { return false; }
 
 bool WGPULinuxDisplay::present(const u32*, int, int, const WGPUPresentRect*,
 							   const WGPUPresentRect*, const WGPUPresentRect*, int, u32)

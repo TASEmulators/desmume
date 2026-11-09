@@ -6,5 +6,35 @@
     <file preprocess="xml-stripblanks" compressed="true">menu.ui</file>
     <file preprocess="xml-stripblanks" compressed="true">emulation_settings.ui</file>
     <file preprocess="xml-stripblanks" compressed="true">graphics.ui</file>
+
+    <!--
+      GPU filters: the WGSL of the libretro upscaler chains, shared with the
+      Windows frontend. The alias is the resource name the chain table in
+      src/frontend/shared/wgpu_present.cpp asks the shader source for, so the
+      lookup path is simply /org/desmume/DeSmuME/<name>.
+    -->
+    <file alias="XBRZ_FREESCALE_WGSL"      compressed="true">../../shared/upscalers/libretro/XbrzFreescale.wgsl</file>
+    <file alias="LANCZOS3_WGSL"            compressed="true">../../shared/upscalers/libretro/Lanczos3.wgsl</file>
+    <file alias="BICUBIC_WGSL"             compressed="true">../../shared/upscalers/libretro/Bicubic.wgsl</file>
+    <file alias="XBR_LV2_WGSL"             compressed="true">../../shared/upscalers/libretro/XbrLv2.wgsl</file>
+    <file alias="XBR_LV2_NOBLEND_WGSL"     compressed="true">../../shared/upscalers/libretro/XbrLv2NoBlend.wgsl</file>
+    <file alias="XBR_LV3_WGSL"             compressed="true">../../shared/upscalers/libretro/XbrLv3.wgsl</file>
+    <file alias="XBR_LV3_PASS0_WGSL"       compressed="true">../../shared/upscalers/libretro/XbrLv3Multipass0.wgsl</file>
+    <file alias="XBR_LV3_PASS1_WGSL"       compressed="true">../../shared/upscalers/libretro/XbrLv3Multipass1.wgsl</file>
+    <file alias="SUPER_XBR_PASS0_WGSL"     compressed="true">../../shared/upscalers/libretro/SuperXbrPass0.wgsl</file>
+    <file alias="SUPER_XBR_PASS1_WGSL"     compressed="true">../../shared/upscalers/libretro/SuperXbrPass1.wgsl</file>
+    <file alias="SUPER_XBR_JINC2_WGSL"     compressed="true">../../shared/upscalers/libretro/SuperXbrJinc2.wgsl</file>
+    <file alias="SCALEFX_PASS0_WGSL"       compressed="true">../../shared/upscalers/libretro/ScaleFxPass0.wgsl</file>
+    <file alias="SCALEFX_PASS1_WGSL"       compressed="true">../../shared/upscalers/libretro/ScaleFxPass1.wgsl</file>
+    <file alias="SCALEFX_PASS2_WGSL"       compressed="true">../../shared/upscalers/libretro/ScaleFxPass2.wgsl</file>
+    <file alias="SCALEFX_PASS3_WGSL"       compressed="true">../../shared/upscalers/libretro/ScaleFxPass3.wgsl</file>
+    <file alias="SCALEFX_PASS4_WGSL"       compressed="true">../../shared/upscalers/libretro/ScaleFxPass4.wgsl</file>
+    <file alias="XBR_2X_PASS0_WGSL"        compressed="true">../../shared/upscalers/libretro/Xbr2xPass0.wgsl</file>
+    <file alias="XBR_2X_PASS1_WGSL"        compressed="true">../../shared/upscalers/libretro/Xbr2xPass1.wgsl</file>
+    <file alias="XBR_MLV4_PASS1_WGSL"      compressed="true">../../shared/upscalers/libretro/XbrMlv4Pass1.wgsl</file>
+    <file alias="XBR_MLV4_PASS2_WGSL"      compressed="true">../../shared/upscalers/libretro/XbrMlv4Pass2.wgsl</file>
+    <file alias="XBR_MLV4_PASS3_WGSL"      compressed="true">../../shared/upscalers/libretro/XbrMlv4Pass3.wgsl</file>
+    <file alias="XBR_MLV4_PASS4_WGSL"      compressed="true">../../shared/upscalers/libretro/XbrMlv4Pass4.wgsl</file>
+    <file alias="PT_SKYWALKER541_WGSL"     compressed="true">../../shared/upscalers/libretro/PT_SkyWalker541.wgsl</file>
   </gresource>
 </gresources>

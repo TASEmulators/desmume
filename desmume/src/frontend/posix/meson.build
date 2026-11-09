@@ -348,6 +348,7 @@ libdesmume_src += [
   '../shared/wgpu_present.cpp',
   'shared/wgpu_display_linux.cpp',
   'shared/wgpu_present_linux.cpp',
+  'shared/wgpu_upscaler_linux.cpp',
 ]
 
 add_global_arguments(['-DENABLE_WGPU'], language: ['c', 'cpp'])

@@ -689,7 +689,7 @@
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\modules\osd\agg\agg2d.inl" />
     <None Include="..\thumb_tabdef.inc" />
-    <None Include="upscalers\libretro\*.wgsl" />
+    <None Include="..\shared\upscalers\libretro\*.wgsl" />
     <None Include="..\..\utils\AsmJit\COPYING.txt" />
     <None Include="bitmap1.bmp" />
     <None Include="bitmaps\FileBinary.ico" />
