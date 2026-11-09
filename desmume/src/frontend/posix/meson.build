@@ -317,9 +317,9 @@ endif
 # both Windows and Linux; the Linux adapters live in shared/wgpu_present_linux.*
 # and shared/wgpu_display_linux.*. It is enabled automatically when a Linux
 # libwgpu_native.so is present (the checked-in 3rdparty copy, or the directory
-# passed with -Dwgpu-native-path=/path/to/wgpu-linux-x86_64-release).
+# passed with -Dwgpu-native-path=/path/to/wgpu-linux-<arch>-release).
 wgpu_native_path = get_option('wgpu-native-path')
-wgpu_native_lib_dir = meson.current_source_dir() / '../../../3rdparty/libs/linux-x86_64'
+wgpu_native_lib_dir = meson.current_source_dir() / '../../../3rdparty/libs' / ('linux-' + host_machine.cpu_family())
 wgpu_native_include = include_directories('../../../3rdparty/wgpu')
 
 if wgpu_native_path != ''

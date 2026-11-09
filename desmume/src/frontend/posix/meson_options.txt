@@ -52,5 +52,5 @@ option('gdb-stub',
 option('wgpu-native-path',
   type: 'string',
   value: '',
-  description: 'Directory containing libwgpu_native.so, or a wgpu-native release root with lib/ and include/webgpu. Empty uses 3rdparty/libs/linux-x86_64.',
+  description: 'Directory containing libwgpu_native.so, or a wgpu-native release root with lib/ and include/webgpu. Empty uses 3rdparty/libs/linux-<host cpu family> (e.g. linux-x86_64 or linux-aarch64).',
 )
