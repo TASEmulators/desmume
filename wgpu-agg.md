@@ -201,3 +201,38 @@ fn fsOverlay(input: VSOut) -> @location(0) vec4f
 | `frontend/modules/osd/wgpu/wgpu_draw.h/.cpp` | 2 | 新增 |
 | `frontend/modules/osd/wgpu/hud_shapes.wgsl` | 2 | 新增 |
 | `frontend/modules/osd/agg/agg_osd.cpp`、`lua-engine.cpp` | 全部 | **不改** |
+
+## 8. 平台适用性（Windows / Linux / macOS）
+
+### 8.1 已提交的 GDI+ 后端是 Windows 专属
+
+- `native_draw.h:42` 用 `#if defined(DESMUME_NATIVE_DRAW) && defined(WIN32)` 包住整个类；依赖 GDI+（`gdiplus.lib`）、Win32 资源 API（`FindResource` / `LoadResource` / `LockResource`、`RT_RCDATA`）与 MSVC 的 `ResourceCompile`（`osd_fonts.rc` + vcxproj 条件项）。
+- `desmume.props` 的 `UseNativeOsd` 开关只存在于 Windows 工程；`display.cpp` 的 CPU 合成替换点也在 Windows 前端。
+- posix / cocoa 不定义 `DESMUME_NATIVE_DRAW`，因此**没有破坏**这两个平台，但也**没有给它们带来任何去 AGG 的收益**。
+- 结论：这是「Windows 后端替换」，不是可移植方案。
+
+### 8.2 WGPU 阶段 1：渲染层平台无关，数据层不是
+
+- `frontend/shared/wgpu_present.cpp` 不 include `windows.h` / `webgpu.h` / 前端头（`wgpu_present.h:32-33`）；posix meson 已经编译它（`posix/meson.build:352`），并配有 Linux 适配器 `wgpu_present_linux.cpp` 与 `wgpu_display_linux.cpp:194-203`。阶段 1 的第二纹理、overlay 管线与顶点改动**可被 Linux 直接复用**，前提是接口只用 `const uint32_t*` 传 HUD 像素。
+- 但 HUD 数据的来源语义不同：Windows 有独立的 256×384 HUD 帧缓冲；posix GTK 在 `gtk/main.cpp:4084` 直接 `aggDraw.hud->setDrawTargetDims(video->GetSrcBufferPtr(), ...)`，把 HUD 画进**视频源缓冲本身**，没有独立位图。把阶段 1 移植到 Linux 必须先给 posix 分配独立 HUD 缓冲并改这一处（或让 overlay 接口支持任意尺寸 / stride）。
+- Linux 仍编译 `aggdraw.cpp` / `agg_osd.cpp`（`posix/meson.build:301-302`，受 `dep_agg` 控制），`HAVE_LIBAGG` 可关（`meson.build:294`）；关闭后 OSDCLASS 退化为壳、Lua `agg.*` 变 no-op。因此 Linux 要去 AGG，还需要一个非 AGG 的 HUD 生成层 —— GDI+ 不可用，可选：复用 `lua-engine.cpp:2980` 的 `PutTextInternal` + `Small_Font_Data` 软件 blit，或引入平台无关的软件光栅库。
+- macOS 不走 WebGPU：cocoa 用 Metal 渲染（`MacMetalDisplayView.mm`），且不编译 `osd/agg`（cocoa 目录内无 `aggdraw.cpp` / `HAVE_LIBAGG` 引用）。阶段 1 对 macOS **不适用**。
+
+### 8.3 阶段 2 / 3：算法可移植，代码不可直接复用
+
+- WGSL 是 WebGPU 标准，Metal 用 MSL，shader 源码不能共用；但 SDF 与 `dot + mix` 渐变的算法、几何与状态机设计可以照搬。
+- cocoa Metal 已有等价且更完整的实现：FreeType 字形图集 + 每字一个 quad（`ClientDisplayView.cpp:500-547`、`MacMetalDisplayViewShaders.metal:166-203`）。要达到阶段 2/3 的效果，在 `hud_fragment` 里补 SDF 分支比给 cocoa 引入 WebGPU 更合理。
+
+### 8.4 全平台去 AGG 的三个前置条件
+
+1. **接口去 AGG 化**：`aggdraw.h` 无条件 include `agg2d.h` / `agg_color_rgba.h` / `agg_rendering_buffer.h`，`AggDrawTarget` 使用 `agg::rgba8`、`agg::rendering_buffer` 和 `Agg2DBase` 枚举。需换成自定义 POD 类型，否则任何平台都仍必须安装 AGG 头。
+2. **字体资源平台无关化**：34 份字体目前是 Windows RCDATA。需改成编译期数组、独立数据文件或各平台自有资源机制；名称与顺序必须保持以兼容旧 ini 和 Lua 脚本。
+3. **HUD 帧缓冲语义统一**：把 posix 的「直接画进视频缓冲」改成与 Windows 一致的独立 256×384 缓冲，overlay 接口才有统一输入。
+
+### 8.5 结论
+
+| 平台 | GDI+ 后端 | WGPU 阶段 1 | 阶段 2 / 3 |
+| --- | --- | --- | --- |
+| Windows | 已实现 | 直接适用 | 直接适用 |
+| Linux | 不适用 | 渲染层可复用；需先分离独立 HUD 缓冲并提供非 AGG 生成层 | 算法可复用；需接口去 AGG 化 |
+| macOS (cocoa) | 不适用 | 不适用（走 Metal） | 建议在现有 Metal HUD 管线里补 SDF 分支 |
