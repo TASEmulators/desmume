@@ -31,9 +31,10 @@ class WGPUPresentWindow;
 // class only owns the native-window adapter and forwards the frame.
 //
 // The native handles cross the boundary as void* so this header does not drag
-// Xlib or wayland-client into the frontend. On builds without ENABLE_WGPU, or
-// when the compile-time surface backend does not match the running GDK backend,
-// beginX11()/beginWayland() return false and the caller falls back to Cairo.
+// Xlib or wayland-client into the frontend. The Linux adapters are always
+// compiled; beginX11()/beginWayland() still return false when wgpu-native is
+// unavailable or the surface cannot be created, and the caller falls back to
+// Cairo.
 class WGPULinuxDisplay
 {
 public:
@@ -45,16 +46,22 @@ public:
 	// remembered so that presenting to the same window is free.
 	bool beginX11(void *display, unsigned long window);
 
-	// Wayland counterpart. `display` is a wl_display* and `surface` a
-	// wl_surface*; the size has to be pushed through setClientSize().
-	bool beginWayland(void *display, void *surface);
+	// Wayland counterpart. `display` is a wl_display* and `surface` GDK's
+	// drawing-area wl_surface*; the adapter presents through a child
+	// wl_subsurface. `x`/`y` are the drawing area's position inside GDK's
+	// toplevel surface. The size has to be pushed through setClientSize().
+	bool beginWayland(void *display, void *surface, int x, int y);
 
 	// Releases the swap chain. Called when the widget is unrealized or another
 	// presentation path takes over.
 	void kill();
 
-	// Wayland only: GTK knows the new size from its configure event.
-	void setClientSize(int width, int height);
+	// Wayland only: GTK knows the new size from its configure event. The size
+	// is in physical pixels; `scale` is GDK's integer buffer scale.
+	void setClientSize(int width, int height, int scale);
+
+	// Wayland only: position of the drawing area inside the toplevel surface.
+	void setClientPosition(int x, int y);
 
 	void setvsync(bool vsync);
 	void setUseOutputFilter(bool theState);

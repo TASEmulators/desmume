@@ -1464,12 +1464,12 @@ static void ToggleSwapScreens(GSimpleAction *action, GVariant *parameter, gpoint
 static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpointer data)
 {
 #if defined(ENABLE_WGPU)
-	if (event != NULL)
+	if (config.presentationWGPU && (event != NULL))
 	{
 		GdkWindow *window = gtk_widget_get_window(widget);
 		const int scale = (window != NULL) ? MAX(1, gdk_window_get_scale_factor(window)) : 1;
 
-		wgpu_display.setClientSize(event->width * scale, event->height * scale);
+		wgpu_display.setClientSize(event->width * scale, event->height * scale, scale);
 
 		// A new size or a re-realized window is a good moment to retry a device
 		// that was not available earlier.
@@ -1734,9 +1734,25 @@ static void WGPU_SetScreenMatrix(cairo_matrix_t *matrix, const cairo_matrix_t *b
 	cairo_matrix_invert(matrix);
 }
 
-static bool WGPU_BeginNativeWindow(GdkWindow *window)
+// Position of the drawing area inside the toplevel's client area, in GTK's
+// logical pixels. GDK's Wayland backend hands out the toplevel wl_surface for
+// child windows, so the WebGPU subsurface has to be offset past the menu and
+// toolbar; on X11 the drawing area has a window of its own and this is unused.
+static void WGPU_GetDrawingAreaPosition(GtkWidget *widget, int *x, int *y)
 {
-#if defined(WGPU_PRESENT_X11)
+	*x = 0;
+	*y = 0;
+
+	GtkWidget *toplevel = gtk_widget_get_toplevel(widget);
+	if ( (toplevel != NULL) && gtk_widget_get_realized(toplevel) )
+	{
+		gtk_widget_translate_coordinates(widget, toplevel, 0, 0, x, y);
+	}
+}
+
+static bool WGPU_BeginNativeWindow(GtkWidget *widget, GdkWindow *window)
+{
+#if defined(GDK_WINDOWING_X11)
 	if (GDK_IS_X11_WINDOW(window))
 	{
 		GdkDisplay *gdkDisplay = gdk_window_get_display(window);
@@ -1746,15 +1762,18 @@ static bool WGPU_BeginNativeWindow(GdkWindow *window)
 #endif
 
 #if defined(GDK_WINDOWING_WAYLAND)
-	// Presenting straight to GTK's wl_surface makes both GTK and wgpu commit
-	// buffers to the same surface, which the compositor rejects with a Wayland
-	// protocol error. Keep the native path available for experiments, but use
-	// Cairo by default on Wayland. Set DESMUME_WGPU_WAYLAND=1 to try it.
-	if ( (g_getenv("DESMUME_WGPU_WAYLAND") != NULL) && GDK_IS_WAYLAND_WINDOW(window) )
+	// Present through a child wl_subsurface so that wgpu and GDK own separate
+	// wl_surfaces; committing to GDK's surface directly would race GTK's own
+	// Cairo frames and make the compositor report a protocol error.
+	if (GDK_IS_WAYLAND_WINDOW(window))
 	{
 		GdkDisplay *gdkDisplay = gdk_window_get_display(window);
+		int x = 0;
+		int y = 0;
+		WGPU_GetDrawingAreaPosition(widget, &x, &y);
 		return wgpu_display.beginWayland(gdk_wayland_display_get_wl_display(gdkDisplay),
-										 gdk_wayland_window_get_wl_surface(window));
+										 gdk_wayland_window_get_wl_surface(window),
+										 x, y);
 	}
 #endif
 
@@ -1764,7 +1783,7 @@ static bool WGPU_BeginNativeWindow(GdkWindow *window)
 // Returns true when WebGPU presented the frame. False means Cairo should draw
 // it instead; a failed device or surface is torn down so the next expose can
 // retry (or keep using Cairo when the device is unavailable).
-static bool WGPU_PresentFrame(GdkWindow *window, gint daW, gint daH)
+static bool WGPU_PresentFrame(GtkWidget *widget, GdkWindow *window, gint daW, gint daH)
 {
 	if ( (nds_screen.orientation == ORIENT_HYBRID_EQUAL) ||
 		 (nds_screen.orientation == ORIENT_HYBRID_VERTICAL) )
@@ -1785,7 +1804,7 @@ static bool WGPU_PresentFrame(GdkWindow *window, gint daW, gint daH)
 			return false;
 		}
 
-		if (!WGPU_BeginNativeWindow(window))
+		if (!WGPU_BeginNativeWindow(widget, window))
 		{
 			wgpu_initialization_failed = true;
 			return false;
@@ -1868,7 +1887,12 @@ static bool WGPU_PresentFrame(GdkWindow *window, gint daW, gint daH)
 	// 0x00BBGGRR. Cairo uses 30% gray for the gap; keep the same colour.
 	const u32 gapColor = 0x004D4D4D;
 
-	wgpu_display.setClientSize(daW * scale, daH * scale);
+	wgpu_display.setClientSize(daW * scale, daH * scale, scale);
+
+	int daX = 0;
+	int daY = 0;
+	WGPU_GetDrawingAreaPosition(widget, &daX, &daY);
+	wgpu_display.setClientPosition(daX, daY);
 
 	if (!wgpu_display.present(fbuf, dstW, dstH, srcRects, dstRects, gapPtr, rotation, gapColor))
 	{
@@ -1956,7 +1980,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	// Present the composited frame directly through WebGPU. If the device or
 	// surface is unavailable this returns false and the Cairo path below draws
 	// the frame instead, so a missing adapter never leaves a blank window.
-	if (WGPU_PresentFrame(window, daW, daH))
+	if (config.presentationWGPU && WGPU_PresentFrame(widget, window, daW, daH))
 	{
 		draw_count++;
 		return TRUE;
@@ -2709,6 +2733,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	GtkDialog *dialog;
 	GtkGrid *wGrid;
 	GtkComboBox *coreCombo, *wScale, *wMultisample;
+	GtkComboBox *wPresentation;
 	GtkToggleButton *wPosterize, *wSmoothing, *wHCInterpolate;
 	GtkSpinButton *wGPUScale;
 
@@ -2726,6 +2751,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	wPosterize = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "posterize"));
 	wSmoothing = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "smoothing"));
 	wHCInterpolate = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "hc_interpolate"));
+	wPresentation = GTK_COMBO_BOX(gtk_builder_get_object(builder, "presentation_combo"));
 	g_object_unref(builder);
 
 	// Populate the combo from the runtime renderer list so that the WebGPU
@@ -2738,10 +2764,12 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	}
 
 #if !defined(ENABLE_OPENGL_STANDARD) && !defined(ENABLE_OPENGL_ES) && !defined(ENABLE_WGPU)
+	gtk_grid_remove_row(wGrid, 6);
 	gtk_grid_remove_row(wGrid, 5);
 	gtk_grid_remove_row(wGrid, 4);
 #endif
 	gtk_combo_box_set_active(coreCombo, cur3DCore);
+	gtk_combo_box_set_active(wPresentation, config.presentationWGPU ? 0 : 1);
 
 	// The shift it work for scale up to 4. For scaling more than 4, a mapping function is required
 	gtk_combo_box_set_active(wScale, CommonSettings.GFX3D_Renderer_TextureScalingFactor >> 1);
@@ -2874,6 +2902,29 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		config.multisampling = selectedMultisample != 0;
 		CommonSettings.GFX3D_Renderer_MultisampleSize = multisampleSizes[selectedMultisample];
 #endif
+
+		// Screen presentation backend. Switching to software tears the WebGPU
+		// subsurface down so that Cairo can draw into GDK's surface again;
+		// switching back lets the next expose create a fresh surface.
+		const bool useWGPUPresentation = (gtk_combo_box_get_active(wPresentation) == 0);
+		if (useWGPUPresentation != config.presentationWGPU)
+		{
+			config.presentationWGPU = useWGPUPresentation;
+
+			if (useWGPUPresentation)
+			{
+				wgpu_initialization_failed = false;
+			}
+			else
+			{
+				wgpu_display.kill();
+			}
+
+			if (pDrawingArea != NULL)
+			{
+				gtk_widget_queue_draw(pDrawingArea);
+			}
+		}
     }
     // End: OK Response Block
         break;

@@ -17,7 +17,7 @@
 
 #include "wgpu_display_linux.h"
 
-#if defined(ENABLE_WGPU) && defined(WGPU_PRESENT_LINUX)
+#if defined(ENABLE_WGPU)
 
 #include "wgpu_present_linux.h"
 
@@ -36,7 +36,6 @@ WGPULinuxDisplay::~WGPULinuxDisplay()
 
 bool WGPULinuxDisplay::beginX11(void *display, unsigned long window)
 {
-#if defined(WGPU_PRESENT_X11)
 	if ( (this->_window != NULL) && !this->_wayland &&
 		 static_cast<LinuxX11PresentWindow *>(this->_window)->matches((Display *)display, window) &&
 		 this->_present.isReady() )
@@ -54,11 +53,6 @@ bool WGPULinuxDisplay::beginX11(void *display, unsigned long window)
 
 	this->_window = new LinuxX11PresentWindow((Display *)display, window);
 	this->_wayland = false;
-#else
-	(void)display;
-	(void)window;
-	return false;
-#endif
 
 	if (!this->_present.begin(this->_window))
 	{
@@ -73,7 +67,7 @@ bool WGPULinuxDisplay::beginX11(void *display, unsigned long window)
 	return true;
 }
 
-bool WGPULinuxDisplay::beginWayland(void *display, void *surface)
+bool WGPULinuxDisplay::beginWayland(void *display, void *surface, int x, int y)
 {
 	if ( (this->_window != NULL) && this->_wayland &&
 		 static_cast<LinuxWaylandPresentWindow *>(this->_window)->matches(display, surface) &&
@@ -90,7 +84,7 @@ bool WGPULinuxDisplay::beginWayland(void *display, void *surface)
 		return false;
 	}
 
-	LinuxWaylandPresentWindow *window = new LinuxWaylandPresentWindow(display, surface);
+	LinuxWaylandPresentWindow *window = new LinuxWaylandPresentWindow(display, surface, x, y);
 	this->_window = window;
 	this->_wayland = true;
 
@@ -120,7 +114,7 @@ void WGPULinuxDisplay::kill()
 	}
 }
 
-void WGPULinuxDisplay::setClientSize(int width, int height)
+void WGPULinuxDisplay::setClientSize(int width, int height, int scale)
 {
 	if (this->_window == NULL)
 	{
@@ -129,10 +123,20 @@ void WGPULinuxDisplay::setClientSize(int width, int height)
 
 	if (this->_wayland)
 	{
-		static_cast<LinuxWaylandPresentWindow *>(this->_window)->setClientSize(width, height);
+		static_cast<LinuxWaylandPresentWindow *>(this->_window)->setClientSize(width, height, scale);
 	}
 
 	// X11 can query the size itself, so there is nothing to push there.
+}
+
+void WGPULinuxDisplay::setClientPosition(int x, int y)
+{
+	if ( (this->_window == NULL) || !this->_wayland )
+	{
+		return;
+	}
+
+	static_cast<LinuxWaylandPresentWindow *>(this->_window)->setClientPosition(x, y);
 }
 
 void WGPULinuxDisplay::setvsync(bool vsync)
@@ -179,9 +183,10 @@ WGPULinuxDisplay::WGPULinuxDisplay()
 WGPULinuxDisplay::~WGPULinuxDisplay() {}
 
 bool WGPULinuxDisplay::beginX11(void *, unsigned long) { return false; }
-bool WGPULinuxDisplay::beginWayland(void *, void *) { return false; }
+bool WGPULinuxDisplay::beginWayland(void *, void *, int, int) { return false; }
 void WGPULinuxDisplay::kill() {}
-void WGPULinuxDisplay::setClientSize(int, int) {}
+void WGPULinuxDisplay::setClientSize(int, int, int) {}
+void WGPULinuxDisplay::setClientPosition(int, int) {}
 void WGPULinuxDisplay::setvsync(bool) {}
 void WGPULinuxDisplay::setUseOutputFilter(bool theState) { this->_useOutputFilterPending = theState; }
 bool WGPULinuxDisplay::useOutputFilter() { return this->_useOutputFilterPending; }

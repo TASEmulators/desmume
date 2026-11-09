@@ -26,6 +26,8 @@ dep_soundtouch = dependency('soundtouch', required: false)
 dep_agg = dependency('libagg', required: false)
 dep_fontconfig = dependency('fontconfig', required: false)
 dep_egl = dependency('egl', required: false)
+dep_wayland = dependency('wayland-client')
+dep_x11 = dependency('x11')
 
 # XXX: something wrong with this one.
 #dep_lua = dependency('lua-5.1', required: false)
@@ -315,9 +317,9 @@ endif
 
 # WebGPU presentation layer. The portable core (src/frontend/shared) is used by
 # both Windows and Linux; the Linux adapters live in shared/wgpu_present_linux.*
-# and shared/wgpu_display_linux.*. It is enabled automatically when a Linux
-# libwgpu_native.so is present (the checked-in 3rdparty copy, or the directory
-# passed with -Dwgpu-native-path=/path/to/wgpu-linux-<arch>-release).
+# and shared/wgpu_display_linux.*. wgpu-native is a hard dependency of the POSIX
+# build: it is taken from the checked-in 3rdparty copy, or from the directory
+# passed with -Dwgpu-native-path=/path/to/wgpu-linux-<arch>-release.
 wgpu_native_path = get_option('wgpu-native-path')
 wgpu_native_lib_dir = meson.current_source_dir() / '../../../3rdparty/libs' / ('linux-' + host_machine.cpu_family())
 wgpu_native_include = include_directories('../../../3rdparty/wgpu')
@@ -336,35 +338,26 @@ if wgpu_native_path != ''
   endif
 endif
 
-dep_wgpu_lib = cxx.find_library('wgpu_native', dirs: wgpu_native_lib_dir, required: false)
+dep_wgpu_lib = cxx.find_library('wgpu_native', dirs: wgpu_native_lib_dir, required: true)
 
-# The portable core, the display wrapper and the WebGPU 3D renderer always
-# compile: without wgpu-native they provide stubs so the GTK frontend can keep
-# one code path and still list the renderer.
+# The portable core, the display wrapper and the WebGPU 3D renderer are always
+# built. The X11 and Wayland adapters are part of the same build; the frontend
+# simply picks the one that matches the running GDK backend.
 libdesmume_src += [
   '../../WGPURender.cpp',
   '../shared/wgpu_present.cpp',
   'shared/wgpu_display_linux.cpp',
+  'shared/wgpu_present_linux.cpp',
 ]
 
-if dep_wgpu_lib.found()
-  wgpu_args = ['-DENABLE_WGPU', '-DWGPU_PRESENT_LINUX']
-  if cxx.has_header('X11/Xlib.h')
-    wgpu_args += '-DWGPU_PRESENT_X11'
-  endif
-  add_global_arguments(wgpu_args, language: ['c', 'cpp'])
+add_global_arguments(['-DENABLE_WGPU'], language: ['c', 'cpp'])
 
-  dep_wgpu = declare_dependency(
-    dependencies: dep_wgpu_lib,
-    include_directories: wgpu_native_include,
-    link_args: ['-Wl,-rpath,' + wgpu_native_lib_dir],
-  )
-  dependencies += dep_wgpu
-
-  libdesmume_src += [
-    'shared/wgpu_present_linux.cpp',
-  ]
-endif
+dep_wgpu = declare_dependency(
+  dependencies: dep_wgpu_lib,
+  include_directories: wgpu_native_include,
+  link_args: ['-Wl,-rpath,' + wgpu_native_lib_dir],
+)
+dependencies += [dep_wgpu, dep_wayland, dep_x11]
 
 libdesmume = static_library('desmume',
   libdesmume_src,
