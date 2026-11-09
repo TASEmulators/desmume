@@ -303,7 +303,8 @@ protected:
 	GLint _uniformViewSize;
 	GLint _uniformRenderFlipped;
 	GLint _uniformBacklightIntensity;
-	
+	GLint _uniformIsOverlay;
+
 public:
 	virtual ~OGLVideoLayer() {};
 	
@@ -354,6 +355,9 @@ protected:
 	GLuint _vaoMainStatesID;
 	GLuint _vboVertexID;
 	GLuint _vboTexCoordID;
+	
+	GLuint _texLuaOverlay[2];
+	bool _isLuaOverlayTexCreated;
 	
 	void _UpdateRotationScaleOGL();
 	void _UpdateVerticesOGL();

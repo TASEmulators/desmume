@@ -5305,9 +5305,15 @@ void ResetInfo(LuaContextInfo& info)
 	info.guiData.data = (u32*)aggDraw.hud->buf().buf();
 	info.guiData.stridePix = aggDraw.hud->buf().stride_abs() / 4;
 #else
+#ifdef DESMUME_COCOA
+	extern uint32_t* lua_script_get_graphics_buffer(void);
+	info.guiData.data = (u32*)lua_script_get_graphics_buffer();
+	info.guiData.stridePix = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+#else
 	static u32 dummyBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2];
 	info.guiData.data = dummyBuffer;
 	info.guiData.stridePix = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+#endif
 #endif
 	info.guiData.xMin = 0;
 	info.guiData.xMax = 256;

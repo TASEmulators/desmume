@@ -21,6 +21,11 @@
 
 #include "MacMetalDisplayView.h"
 
+#ifdef HAVE_LUA
+#include "../MacLuaScriptConsole.h"
+#include "../../../lua-engine.h"
+#endif
+
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <IOKit/graphics/IOGraphicsLib.h>
@@ -935,6 +940,9 @@
 @synthesize colorAttachment0Desc;
 @synthesize pixelScalePipeline;
 @synthesize outputDrawablePipeline;
+#ifdef HAVE_LUA
+@synthesize luaOverlayPipeline;
+#endif
 @synthesize drawableFormat;
 @synthesize bufCPUFilterDstMain;
 @synthesize bufCPUFilterDstTouch;
@@ -973,6 +981,12 @@
 	
 	pixelScalePipeline = nil;
 	outputDrawablePipeline = nil;
+#ifdef HAVE_LUA
+	luaOverlayPipeline = nil;
+	texLuaOverlay[0] = nil;
+	texLuaOverlay[1] = nil;
+	isLuaOverlayTexCreated = NO;
+#endif
 	drawableFormat = MTLPixelFormatRGBA8Unorm;
 	
 	_texDisplaySrcDeposterize[NDSDisplayID_Main][0]  = nil;
@@ -1068,6 +1082,15 @@
 	
 	[self setPixelScalePipeline:nil];
 	[self setOutputDrawablePipeline:nil];
+#ifdef HAVE_LUA
+	[self setLuaOverlayPipeline:nil];
+	if (isLuaOverlayTexCreated)
+	{
+		[texLuaOverlay[0] release];
+		[texLuaOverlay[1] release];
+		isLuaOverlayTexCreated = NO;
+	}
+#endif
 	[self setTexHUDCharMap:nil];
 	
 	for (size_t i = 0; i < RENDER_BUFFER_COUNT; i++)
@@ -1343,6 +1366,37 @@
 	[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:[self drawableFormat]];
 	outputDrawablePipeline = [[[[self sharedData] device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil] retain];
 	[outputPipelineDesc release];
+
+#ifdef HAVE_LUA
+	MTLRenderPipelineDescriptor *luaPipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
+	[luaPipelineDesc setAlphaToOneEnabled:NO];
+	[luaPipelineDesc setVertexFunction:[[[self sharedData] defaultLibrary] newFunctionWithName:@"display_output_vertex"]];
+	[luaPipelineDesc setFragmentFunction:[[[self sharedData] defaultLibrary] newFunctionWithName:@"lua_overlay_filter"]];
+	
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:[self drawableFormat]];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setBlendingEnabled:YES];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setRgbBlendOperation:MTLBlendOperationAdd];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setAlphaBlendOperation:MTLBlendOperationAdd];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setSourceRGBBlendFactor:MTLBlendFactorSourceAlpha];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setSourceAlphaBlendFactor:MTLBlendFactorZero];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setDestinationRGBBlendFactor:MTLBlendFactorOneMinusSourceAlpha];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setDestinationAlphaBlendFactor:MTLBlendFactorOne];
+
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+	if (@available(macOS 10.13, *))
+	{
+		[[[luaPipelineDesc vertexBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
+		[[[luaPipelineDesc vertexBuffers] objectAtIndexedSubscript:1] setMutability:MTLMutabilityImmutable];
+		[[[luaPipelineDesc vertexBuffers] objectAtIndexedSubscript:2] setMutability:MTLMutabilityImmutable];
+		[[[luaPipelineDesc vertexBuffers] objectAtIndexedSubscript:3] setMutability:MTLMutabilityImmutable];
+		[[[luaPipelineDesc fragmentBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
+		[[[luaPipelineDesc fragmentBuffers] objectAtIndexedSubscript:1] setMutability:MTLMutabilityImmutable];
+	}
+#endif
+
+	luaOverlayPipeline = [[[[self sharedData] device] newRenderPipelineStateWithDescriptor:luaPipelineDesc error:nil] retain];
+	[luaPipelineDesc release];
+#endif
 	
 	// Set up processing textures.
 	MTLTextureDescriptor *texDisplaySrcDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
@@ -2204,6 +2258,111 @@
 			break;
 	}
 	
+#ifdef HAVE_LUA
+	if (AnyLuaActive())
+	{
+		if (!isLuaOverlayTexCreated)
+		{
+			MTLTextureDescriptor *texDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+																							   width:256
+																							  height:192
+																						   mipmapped:NO];
+			[texDesc setResourceOptions:MTLResourceStorageModeShared];
+			[texDesc setStorageMode:MTLStorageModeShared];
+			[texDesc setUsage:MTLTextureUsageShaderRead];
+			
+			texLuaOverlay[0] = [[[self sharedData] device] newTextureWithDescriptor:texDesc];
+			texLuaOverlay[1] = [[[self sharedData] device] newTextureWithDescriptor:texDesc];
+			isLuaOverlayTexCreated = YES;
+		}
+		
+		uint32_t *luaBuffer = lua_script_lock_overlay_buffer();
+
+		MTLRegion region = MTLRegionMake2D(0, 0, 256, 192);
+		[texLuaOverlay[NDSDisplayID_Main] replaceRegion:region mipmapLevel:0 withBytes:luaBuffer bytesPerRow:256 * sizeof(uint32_t)];
+		[texLuaOverlay[NDSDisplayID_Touch] replaceRegion:region mipmapLevel:0 withBytes:luaBuffer + (256 * 192) bytesPerRow:256 * sizeof(uint32_t)];
+
+		lua_script_unlock_overlay_buffer();
+		
+		[rce setRenderPipelineState:luaOverlayPipeline];
+		[rce setVertexBytes:_vtxPositionBuffer length:sizeof(_vtxPositionBuffer) atIndex:0];
+		[rce setVertexBytes:_texCoordBuffer length:sizeof(_texCoordBuffer) atIndex:1];
+		[rce setVertexBytes:&_cdvPropertiesBuffer length:sizeof(_cdvPropertiesBuffer) atIndex:2];
+		[rce setVertexBytes:&doYFlip length:sizeof(uint8_t) atIndex:3];
+		[rce setFragmentBytes:&willSwapRB length:sizeof(uint8_t) atIndex:1];
+		
+		const float fullIntensity = 1.0f;
+		
+		switch (cdp->GetPresenterProperties().mode)
+		{
+			case ClientDisplayMode_Main:
+			{
+				if ( (texDisplay.main != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main) )
+				{
+					[rce setFragmentBytes:&fullIntensity length:sizeof(fullIntensity) atIndex:0];
+					[rce setFragmentTexture:texLuaOverlay[NDSDisplayID_Main] atIndex:0];
+					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+				}
+				break;
+			}
+				
+			case ClientDisplayMode_Touch:
+			{
+				if ( (texDisplay.touch != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch) )
+				{
+					[rce setFragmentBytes:&fullIntensity length:sizeof(fullIntensity) atIndex:0];
+					[rce setFragmentTexture:texLuaOverlay[NDSDisplayID_Touch] atIndex:0];
+					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+				}
+				break;
+			}
+				
+			case ClientDisplayMode_Dual:
+			{
+				const NDSDisplayID majorDisplayID = (cdp->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
+				const size_t majorDisplayVtx = (cdp->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
+				
+				switch (cdp->GetPresenterProperties().layout)
+				{
+					case ClientDisplayLayout_Hybrid_2_1:
+					case ClientDisplayLayout_Hybrid_16_9:
+					case ClientDisplayLayout_Hybrid_16_10:
+					{
+						if ( (texDisplay.tex[majorDisplayID] != nil) && cdp->IsSelectedDisplayEnabled(majorDisplayID) )
+						{
+							[rce setFragmentBytes:&fullIntensity length:sizeof(fullIntensity) atIndex:0];
+							[rce setFragmentTexture:texLuaOverlay[majorDisplayID] atIndex:0];
+							[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:majorDisplayVtx vertexCount:4];
+						}
+						break;
+					}
+						
+					default:
+						break;
+				}
+				
+				if ( (texDisplay.main != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main) )
+				{
+					[rce setFragmentBytes:&fullIntensity length:sizeof(fullIntensity) atIndex:0];
+					[rce setFragmentTexture:texLuaOverlay[NDSDisplayID_Main] atIndex:0];
+					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+				}
+				
+				if ( (texDisplay.touch != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch) )
+				{
+					[rce setFragmentBytes:&fullIntensity length:sizeof(fullIntensity) atIndex:0];
+					[rce setFragmentTexture:texLuaOverlay[NDSDisplayID_Touch] atIndex:0];
+					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+				}
+				break;
+			}
+				
+			default:
+				break;
+		}
+	}
+#endif
+
 	// Draw the HUD.
 	[self renderStartAtIndex:mrfi.renderIndex];
 	
