@@ -165,6 +165,9 @@
 #define IDC_BUTTON_LUASTOP              312
 #define IDC_BUTTON_LUABROWSE            313
 #define IDC_BUTTON_LUAEDIT              314
+// About button in the Lua Script window.  Uses a high ID so the resource
+// editor's next auto-generated control cannot accidentally reuse it.
+#define IDC_BUTTON_LUAABOUT             4001
 #define IDC_NOTIFY_SUBSERVIENT          315
 #define IDD_ARCHIVEFILECHOOSER          316
 #define IDD_LUA                         317

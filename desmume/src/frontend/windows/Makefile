@@ -23,6 +23,11 @@ CPPFLAGS = -DMINGW_HAS_SECURE_API \
   -DNOMINMAX \
   -I../../libretro-common/include -Izlib128
 
+# MinGW still compiles the vendored Lua 5.1.5 sources (see the liblua.a rule
+# below).  lua-engine.cpp now uses only Lua's public 5.1 C API, so this path
+# stays valid even though the MSVC build has moved to LuaJIT 2.1.  To switch
+# this port too: drop -I../../lua, drop the liblua.a rule/target, and link the
+# LuaJIT lua51.dll from .libs/<arch> instead.
 CXXFLAGS = -I. -I../.. -I../../frontend/modules/osd/agg \
   -Iagg/include -Iwinpcap -Idirectx -I../../lua \
   -fpermissive -fms-extensions -Wno-write-strings -std=gnu++11 $(OPT)

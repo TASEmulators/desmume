@@ -42,6 +42,12 @@
 #include "../../wifi.h"
 #undef BOOL
 
+// Cocoa still amalgamates the vendored Lua 5.1.5 sources into this one
+// translation unit.  lua-engine.cpp no longer reads lua_State internals, so
+// this remains a supported configuration; the Windows frontend has moved to
+// LuaJIT 2.1.  LuaJIT cannot be amalgamated (it contains assembler), so
+// migrating this port means deleting the includes below, removing the lapi.c
+// file reference from the Xcode project, and linking a LuaJIT library.
 #ifdef HAVE_LUA
 #define LUA_CORE
 #define loslib_c

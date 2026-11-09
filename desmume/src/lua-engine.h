@@ -31,6 +31,24 @@ void RequestAbortLuaScript(intptr_t uid, const char* message = 0);
 void CloseLuaContext(intptr_t uid);
 bool AnyLuaActive();
 
+// Runtime description of the Lua engine the scripts actually run on.
+// This is queried from a fresh temporary lua_State rather than from the
+// version macros in the headers this was compiled against: on Windows
+// lua51.dll is delay-loaded, so either stock Lua 5.1 or LuaJIT may answer.
+// Modelled on vba-rerecording's VBALuaEngineVersion().
+struct LuaEngineInfo
+{
+	char version[128];   // "LuaJIT 2.1.1792588164 (Lua 5.1)" / "Lua 5.1 (no LuaJIT)"
+	char platform[64];   // "x64 / Windows" (LuaJIT only, else empty)
+	char jit[96];        // trace-compiler policy, or "n/a (not LuaJIT)"
+	char headers[64];    // LUA_RELEASE of the headers this was built against
+	bool  isLuaJIT;
+};
+
+// Fills *out. Returns false if a temporary lua_State could not be created.
+// The caller must make sure the Lua DLL is loadable first on delay-load builds.
+bool GetLuaEngineInfo(LuaEngineInfo* out);
+
 enum LuaCallID
 {
 	LUACALL_BEFOREEMULATION,

@@ -29,8 +29,11 @@ dep_egl = dependency('egl', required: false)
 dep_wayland = dependency('wayland-client')
 dep_x11 = dependency('x11')
 
-# XXX: something wrong with this one.
-#dep_lua = dependency('lua-5.1', required: false)
+# Lua stays off here.  Enabling it needs -DHAVE_LUA propagated into the core
+# sources (autotools has the same gap) as well as a dependency.  lua-engine.cpp
+# itself is engine-agnostic now - only the public Lua 5.1 C API - so either
+# 'luajit' (preferred, matches the Windows build) or 'lua-5.1' works here.
+#dep_lua = dependency('luajit', required: false)
 
 if get_option('wifi')
   add_global_arguments('-DEXPERIMENTAL_WIFI_COMM', language: ['c', 'cpp'])
@@ -300,7 +303,8 @@ if dep_agg.found()
   ]
 endif
 
-# TODO: fix Lua on ¬Windows.
+# TODO: fix Lua on non-Windows (needs HAVE_LUA defined for the core sources;
+# see the note at the dependency declaration above).
 #if dep_lua.found()
 #  dependencies += dep_lua
 #  libdesmume_src += [

@@ -16,6 +16,7 @@
 */
 
 #include <assert.h>
+#include <stdio.h>
 #include <process.h>
 #include <vector>
 #include <map>
@@ -23,6 +24,7 @@
 #include <algorithm>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <winver.h>
 #include <commdlg.h>
 #include <shellapi.h>
 #include "driver.h"
@@ -404,6 +406,88 @@ static int Change_File_L(char *Dest, char *Dir, char *Titre, char *Filter, char 
 	return 0;
 }
 
+// "About" support, modelled on vba-rerecording's LuaOpenDialog.cpp.
+// version.dll is not linked by this project, so its entry points are resolved
+// at runtime instead of changing the MSVC/MinGW build files.  A stock Lua 5.1
+// DLL carries a FileVersion resource ("5.1.4" for the old shipped build),
+// while LuaJIT has none, so the line is simply omitted when there is nothing
+// to report.
+typedef DWORD (WINAPI *LuaGetFileVersionInfoSizeA)(LPCSTR, LPDWORD);
+typedef BOOL  (WINAPI *LuaGetFileVersionInfoA)(LPCSTR, DWORD, DWORD, LPVOID);
+typedef BOOL  (WINAPI *LuaVerQueryValueA)(LPCVOID, LPCSTR, LPVOID*, UINT*);
+
+static void GetLuaDllFileVersion(const char* path, char* out, size_t outSize)
+{
+	out[0] = '\0';
+	if(!path[0])
+		return;
+
+	HMODULE ver = LoadLibraryA("version.dll");
+	if(!ver)
+		return;
+
+	LuaGetFileVersionInfoSizeA pSize = (LuaGetFileVersionInfoSizeA)GetProcAddress(ver, "GetFileVersionInfoSizeA");
+	LuaGetFileVersionInfoA     pInfo = (LuaGetFileVersionInfoA)GetProcAddress(ver, "GetFileVersionInfoA");
+	LuaVerQueryValueA          pQuery = (LuaVerQueryValueA)GetProcAddress(ver, "VerQueryValueA");
+
+	if(pSize && pInfo && pQuery)
+	{
+		DWORD ignored = 0;
+		DWORD size = pSize(path, &ignored);
+		if(size)
+		{
+			std::vector<BYTE> data(size);
+			if(pInfo(path, 0, size, &data[0]))
+			{
+				WORD* translation = NULL;
+				UINT translationLen = 0;
+				if(pQuery(&data[0], "\\VarFileInfo\\Translation", (LPVOID*)&translation, &translationLen)
+					&& translationLen >= 2 * sizeof(WORD))
+				{
+					char key[64];
+					snprintf(key, sizeof(key), "\\StringFileInfo\\%04x%04x\\FileVersion",
+						translation[0], translation[1]);
+					char* value = NULL;
+					UINT valueLen = 0;
+					if(pQuery(&data[0], key, (LPVOID*)&value, &valueLen) && value && valueLen > 1)
+					{
+						strncpy(out, value, outSize - 1);
+						out[outSize - 1] = '\0';
+					}
+				}
+
+				// The 2008 stock Lua 5.1 DLL has no VarFileInfo translation
+				// table, so the string lookup above cannot work.  Its numeric
+				// VS_FIXEDFILEINFO still says 5.1.4.0; vba-rerecording falls
+				// back the same way.
+				if(out[0] == '\0')
+				{
+					VS_FIXEDFILEINFO* fixed = NULL;
+					UINT fixedLen = 0;
+					if(pQuery(&data[0], "\\", (LPVOID*)&fixed, &fixedLen)
+						&& fixed && fixedLen >= sizeof(VS_FIXEDFILEINFO)
+						&& fixed->dwSignature == VS_FFI_SIGNATURE)
+					{
+						unsigned major    = HIWORD(fixed->dwFileVersionMS);
+						unsigned minor    = LOWORD(fixed->dwFileVersionMS);
+						unsigned build    = HIWORD(fixed->dwFileVersionLS);
+						unsigned revision = LOWORD(fixed->dwFileVersionLS);
+						if(major || minor || build)
+						{
+							if(revision)
+								snprintf(out, outSize, "%u.%u.%u.%u", major, minor, build, revision);
+							else
+								snprintf(out, outSize, "%u.%u.%u", major, minor, build);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	FreeLibrary(ver);
+}
+
 LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	RECT r;
@@ -662,6 +746,60 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 					PrintToWindowConsole((intptr_t)hDlg, "user clicked stop button\r\n");
 					SetActiveWindow(MainWindow->getHWnd());
 					if(DemandLua()) StopLuaScript((intptr_t)hDlg);
+				}	break;
+				case IDC_BUTTON_LUAABOUT:
+				{
+					// MSVC builds delay-load lua51.dll.  Asking Lua anything before
+					// the DLL is present would raise a delay-load exception, so use
+					// the same guard (and the same error message) as Run/Stop.
+					if(!DemandLua())
+						break;
+
+					LuaEngineInfo info;
+					if(!GetLuaEngineInfo(&info))
+					{
+						MessageBoxA(hDlg, "The Lua engine could not be started.",
+							"About Lua Scripting", MB_OK | MB_ICONERROR);
+						break;
+					}
+
+					// luaL_newstate() above loaded the DLL through the delay-load
+					// import table.  Keep the extra reference: unloading it would
+					// leave already-resolved imports pointing at a freed module.
+					HMODULE mod = GetModuleHandleA("lua51.dll");
+					if(!mod)
+						mod = LoadLibraryA("lua51.dll");
+
+					char dllPath[MAX_PATH] = "";
+					if(mod)
+						GetModuleFileNameA(mod, dllPath, MAX_PATH);
+
+					char fileVersion[128] = "";
+					GetLuaDllFileVersion(dllPath, fileVersion, sizeof(fileVersion));
+
+					char text[2048];
+					int n = snprintf(text, sizeof(text),
+						"DeSmuME Lua Scripting\r\n\r\n"
+						"Engine     : %s\r\n"
+						"Platform   : %s\r\n"
+						"Trace JIT  : %s\r\n"
+						"Headers    : %s\r\n"
+						"Lua DLL    : %s\r\n",
+						info.version,
+						info.platform[0] ? info.platform : "n/a (not LuaJIT)",
+						info.jit,
+						info.headers,
+						dllPath[0] ? dllPath : "(not loaded as a DLL)");
+					if(fileVersion[0] && n > 0 && (size_t)n < sizeof(text))
+						snprintf(text + n, sizeof(text) - n, "File ver   : %s\r\n", fileVersion);
+
+					MessageBoxA(hDlg, text, "About Lua Scripting", MB_OK | MB_ICONINFORMATION);
+
+					// Echo a one-line summary into the Output Console too, so the
+					// version can be copied along with the rest of the script output.
+					char line[512];
+					snprintf(line, sizeof(line), "Lua engine: %s\r\n", info.version);
+					PrintToWindowConsole((intptr_t)hDlg, line);
 				}	break;
 				case IDC_NOTIFY_SUBSERVIENT:
 				{

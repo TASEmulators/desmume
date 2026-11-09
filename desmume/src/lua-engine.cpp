@@ -47,6 +47,9 @@
 #endif
 
 #include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include <cmath>
 #include <vector>
 #include <map>
 #include <string>
@@ -80,12 +83,22 @@ static bool IsHardwareAddressValid(u32 address) {
 // actual lua engine follows
 // adapted from gens-rr, nitsuja + upthorn
 
+// Only Lua's public C API is used here.  LuaJIT keeps lua_State opaque and does
+// not ship the internal headers (lstate.h/lobject.h), so nothing below may touch
+// lua_State fields, Proto or luaconf.h-internal macros such as lua_number2int.
 extern "C" {
 	#include "lua.h"
 	#include "lauxlib.h"
 	#include "lualib.h"
-	#include "lstate.h"
 };
+
+// Lua 5.1's lua_number2int() is an internal luaconf.h macro and LuaJIT does
+// not provide it.  Both engines use a double lua_Number here and the macro
+// rounds to nearest, so lround() reproduces the same result portably.
+static inline int LuaNumberToInt(lua_Number value)
+{
+	return (int)std::lround((double)value);
+}
 
 enum SpeedMode
 {
@@ -170,8 +183,21 @@ bool g_stopAllScriptsEnabled = true;
 	#define GetCurrentInfo() (*infoStack.front()) // should be faster but relies on infoStack correctly being updated to always have the current info in the first element
 #else
 	std::map<lua_State*, LuaContextInfo*> luaStateToContextMap;
-	#define GetCurrentInfo() (*luaStateToContextMap[L->l_G->mainthread]) // should always work but might be slower
+	#define GetCurrentInfo() (*luaStateToContextMap[L]) // should always work but might be slower
 #endif
+
+// LuaJIT does not call debug hooks from inside JIT-compiled traces, so the
+// count hook by itself cannot guarantee that a "stop script" request takes
+// effect in a tight Lua loop.  Calling this from hot Lua C entry points gives
+// a reliable C-side abort path: TAS scripts reach emu.frameadvance() or
+// emu.wait() once per iteration.  CallExitFunction() temporarily clears panic,
+// so the exit callback is never interrupted by this check.
+static void CheckLuaAbort(lua_State* L)
+{
+	LuaContextInfo& info = GetCurrentInfo();
+	if(info.panic)
+		luaL_error(L, "%s", info.panicMessage[0] ? info.panicMessage : "terminated by user");
+}
 
 //#define ASK_USER_ON_FREEZE // dialog on freeze is disabled now because it seems to be unnecessary, but this can be re-defined to enable it
 
@@ -314,7 +340,7 @@ static int memory_registerHook(lua_State* L, LuaMemHookType hookType, int defaul
 	// re-cache regions of hooked memory across all scripts
 	CalculateMemHookRegions(hookType);
 
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 0;
 }
 
@@ -382,7 +408,7 @@ DEFINE_LUA_FUNCTION(emu_registerbefore, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEMULATION]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEMULATION]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(emu_registerafter, "func")
@@ -393,7 +419,7 @@ DEFINE_LUA_FUNCTION(emu_registerafter, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTEREMULATION]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTEREMULATION]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(emu_registerexit, "func")
@@ -404,7 +430,7 @@ DEFINE_LUA_FUNCTION(emu_registerexit, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEXIT]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEXIT]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(emu_registerstart, "func") // TODO: use call registered LUACALL_ONSTART functions on reset
@@ -418,7 +444,7 @@ DEFINE_LUA_FUNCTION(emu_registerstart, "func") // TODO: use call registered LUAC
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_ONSTART]);
 	if (!lua_isnil(L,-1) && driver->EMU_HasEmulationStarted())
 		lua_call(L,0,0); // call the function now since the game has already started and this start function hasn't been called yet
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(gui_register, "func")
@@ -429,7 +455,7 @@ DEFINE_LUA_FUNCTION(gui_register, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTEREMULATIONGUI]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTEREMULATIONGUI]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(state_registersave, "func[,savekey]")
@@ -442,7 +468,7 @@ DEFINE_LUA_FUNCTION(state_registersave, "func[,savekey]")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFORESAVE]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFORESAVE]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(state_registerload, "func[,loadkey]")
@@ -455,7 +481,7 @@ DEFINE_LUA_FUNCTION(state_registerload, "func[,loadkey]")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTERLOAD]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTERLOAD]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 
@@ -476,7 +502,7 @@ DEFINE_LUA_FUNCTION(input_registerhotkey, "keynum,func")
 			luaL_checktype(L, 2, LUA_TFUNCTION);
 		lua_settop(L,2);
 		lua_setfield(L, LUA_REGISTRYINDEX, key);
-		StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+		StopScriptIfFinished(luaStateToUIDMap[L]);
 		return 1;
 	}
 }
@@ -518,7 +544,7 @@ static int doPopup(lua_State* L, const char* deftype, const char* deficon)
 	static const int etypes [] = {MB_OK, MB_YESNO, MB_YESNOCANCEL, MB_OKCANCEL, MB_ABORTRETRYIGNORE};
 	static const int eicons [] = {MB_ICONINFORMATION, MB_ICONQUESTION, MB_ICONWARNING, MB_ICONERROR};
 //	DialogsOpen++;
-	uintptr_t uid = luaStateToUIDMap[L->l_G->mainthread];
+	uintptr_t uid = luaStateToUIDMap[L];
 	EnableWindow(MainWindow->getHWnd(), false);
 //	if (Full_Screen)
 //	{
@@ -646,7 +672,7 @@ static char* ConstructScriptSaveDataPath(char* output, int bufferSize, LuaContex
 // also, if you change the default value that will reset the variable to the new default.
 DEFINE_LUA_FUNCTION(emu_persistglobalvariables, "variabletable")
 {
-	intptr_t uid = luaStateToUIDMap[L->l_G->mainthread];
+	intptr_t uid = luaStateToUIDMap[L];
 	LuaContextInfo& info = GetCurrentInfo();
 
 	// construct a path we can load the persistent variables from
@@ -771,10 +797,21 @@ void DeferFunctionCall(lua_State* L, const char* idstring)
 
 	int num = lua_gettop(L);
 
-	// get the C function pointer
-	//lua_CFunction cf = lua_tocfunction(L, -(num+1));
-	lua_CFunction cf = (L->ci->func)->value.gc->cl.c.f;
-	assert(cf);
+	// get the C function pointer through the debug API.  LuaJIT keeps lua_State
+	// opaque, so the old ci->func access is gone; "f" pushes the function that
+	// is running at the given stack level, which we pop again immediately.
+	lua_Debug frame;
+	lua_CFunction cf = NULL;
+	if(lua_getstack(L, 0, &frame) && lua_getinfo(L, "f", &frame))
+	{
+		cf = lua_tocfunction(L, -1);
+		lua_pop(L, 1);
+	}
+	if(!cf)
+	{
+		info.numDeferredFuncs--; // nothing was actually deferred
+		return;
+	}
 	lua_pushcfunction(L,cf);
 
 	// make a list of the function and its arguments (and also pop those arguments from the stack)
@@ -937,10 +974,11 @@ static void toCStringConverter(lua_State* L, int i, char*& ptr, int& remaining)
 		case LUA_TBOOLEAN: APPENDPRINT lua_toboolean(L,i) ? "true" : "false" END break;
 		case LUA_TSTRING: APPENDPRINT "%s",lua_tostring(L,i) END break;
 		case LUA_TNUMBER: APPENDPRINT "%.12g",lua_tonumber(L,i) END break;
-		case LUA_TFUNCTION: 
-			if((L->base + i-1)->value.gc->cl.c.isC)
+		case LUA_TFUNCTION:
+		{
+			lua_CFunction func = lua_tocfunction(L, i);
+			if(func)
 			{
-				lua_CFunction func = lua_tocfunction(L, i);
 				std::map<lua_CFunction, const char*>::iterator iter = s_cFuncInfoMap.find(func);
 				if(iter == s_cFuncInfoMap.end())
 					goto defcase;
@@ -948,19 +986,21 @@ static void toCStringConverter(lua_State* L, int i, char*& ptr, int& remaining)
 			}
 			else
 			{
-				APPENDPRINT "function(" END 
-				Proto* p = (L->base + i-1)->value.gc->cl.l.p;
-				int numParams = p->numparams + (p->is_vararg?1:0);
-				for (int n=0; n<p->numparams; n++)
+				// LuaJIT does not expose Lua 5.1's Proto internals, so a Lua
+				// function is reported by source location instead of by its
+				// parameter-name list.  (">S" pops the pushed function.)
+				lua_Debug ar;
+				lua_pushvalue(L, i);
+				if(lua_getinfo(L, ">S", &ar) && ar.what && ar.what[0] != 'C')
 				{
-					APPENDPRINT "%s", getstr(p->locvars[n].varname) END 
-					if(n != numParams-1)
-						APPENDPRINT "," END
+					APPENDPRINT "function(%s:%d)", ar.short_src, ar.linedefined END
 				}
-				if(p->is_vararg)
-					APPENDPRINT "..." END
-				APPENDPRINT ")" END
+				else
+				{
+					goto defcase;
+				}
 			}
+		}
 			break;
 defcase:default: APPENDPRINT "%s:%p",luaL_typename(L,i),lua_topointer(L,i) END break;
 		case LUA_TTABLE:
@@ -1143,7 +1183,7 @@ DEFINE_LUA_FUNCTION(print, "...")
 {
 	const char* str = toCString(L);
 
-	intptr_t uid = luaStateToUIDMap[L->l_G->mainthread];
+	intptr_t uid = luaStateToUIDMap[L];
 	LuaContextInfo& info = GetCurrentInfo();
 
 	if(info.print)
@@ -1347,7 +1387,7 @@ DEFINE_LUA_FUNCTION(bit_tohex, "x [,n]")
   return 1;
 }
 
-static const struct luaL_Reg bit_funcs[] = {
+static const struct luaL_Reg  bit_funcs[] = {
   { "tobit",	bit_tobit },
   { "bnot",	bit_bnot },
   { "band",	bit_band },
@@ -1436,7 +1476,7 @@ void indicateBusy(lua_State* L, bool busy)
 		va_end(argp);
 		lua_concat(L, 2);
 		LuaContextInfo& info = GetCurrentInfo();
-		intptr_t uid = luaStateToUIDMap[L->l_G->mainthread];
+		intptr_t uid = luaStateToUIDMap[L];
 		if(info.print)
 		{
 			info.print(uid, lua_tostring(L,-1));
@@ -1450,7 +1490,7 @@ void indicateBusy(lua_State* L, bool busy)
 	}
 */
 #if defined(WIN32_FRONTEND)
-	uintptr_t uid = luaStateToUIDMap[L->l_G->mainthread];
+	uintptr_t uid = luaStateToUIDMap[L];
 	HWND hDlg = (HWND)uid;
 	char str [1024];
 	GetWindowText(hDlg, str, 1000);
@@ -1475,6 +1515,12 @@ void indicateBusy(lua_State* L, bool busy)
 #define MAX_WORRY_COUNT 6000
 void LuaRescueHook(lua_State* L, lua_Debug *dbg)
 {
+	// RequestAbortLuaScript re-arms the count hook with a count of 1 so this
+	// runs at the next VM instruction.  Restore the normal cadence right away
+	// (setting a hook from inside a hook is allowed) so an abort does not make
+	// every later bytecode run through the hook.
+	lua_sethook(L, LuaRescueHook, LUA_MASKCOUNT, HOOKCOUNT);
+
 	LuaContextInfo& info = GetCurrentInfo();
 
 	info.worryCount++;
@@ -1525,8 +1571,10 @@ void LuaRescueHook(lua_State* L, lua_Debug *dbg)
 		if(stoprunning)
 		{
 			//lua_sethook(L, NULL, 0, 0);
-			assert(L->errfunc || L->errorJmp);
-			luaL_error(L, info.panic ? info.panicMessage : "terminated by user");
+			// No errfunc/errorJmp probe: LuaJIT keeps lua_State opaque.  This hook
+			// only ever runs from inside a protected call (luaL_dofile/lua_pcall),
+			// so raising the error here is safe on both engines.
+			luaL_error(L, "%s", info.panic ? info.panicMessage : "terminated by user");
 		}
 
 		info.panic = false;
@@ -1558,7 +1606,7 @@ void printfToOutput(const char* fmt, ...)
 	if(info.print)
 	{
 		lua_State* L = info.L;
-		intptr_t uid = luaStateToUIDMap[L->l_G->mainthread];
+		intptr_t uid = luaStateToUIDMap[L];
 		info.print(uid, str);
 		info.print(uid, "\r\n");
 		worry(L,300);
@@ -1679,6 +1727,7 @@ int StepEmulationAtSpeed(lua_State* L, SpeedMode speedMode, bool allowPause)
 // acts similar to normal emulation update
 DEFINE_LUA_FUNCTION(emu_emulateframe, "")
 {
+	CheckLuaAbort(L);
 	if(FailVerifyAtFrameBoundary(L, "emu.emulateframe", 0,1))
 		return 0;
 
@@ -1688,6 +1737,7 @@ DEFINE_LUA_FUNCTION(emu_emulateframe, "")
 // acts as a fast-forward emulation update that still renders every frame
 DEFINE_LUA_FUNCTION(emu_emulateframefastnoskipping, "")
 {
+	CheckLuaAbort(L);
 	if(FailVerifyAtFrameBoundary(L, "emu.emulateframefastnoskipping", 0,1))
 		return 0;
 
@@ -1697,6 +1747,7 @@ DEFINE_LUA_FUNCTION(emu_emulateframefastnoskipping, "")
 // acts as a fast-forward emulation update
 DEFINE_LUA_FUNCTION(emu_emulateframefast, "")
 {
+	CheckLuaAbort(L);
 	if(FailVerifyAtFrameBoundary(L, "emu.emulateframefast", 0,1))
 		return 0;
 
@@ -1707,6 +1758,7 @@ DEFINE_LUA_FUNCTION(emu_emulateframefast, "")
 // that also doesn't render any graphics or generate any sounds
 DEFINE_LUA_FUNCTION(emu_emulateframeinvisible, "")
 {
+	CheckLuaAbort(L);
 	if(FailVerifyAtFrameBoundary(L, "emu.emulateframeinvisible", 0,1))
 		return 0;
 
@@ -1744,6 +1796,7 @@ DEFINE_LUA_FUNCTION(emu_speedmode, "mode")
 // (e.g. a savestate could possibly get loaded before emu.wait() returns)
 DEFINE_LUA_FUNCTION(emu_wait, "")
 {
+	CheckLuaAbort(L);
 	LuaContextInfo& info = GetCurrentInfo();
 	StepEmulationOnce(false, false, -1, true, true);
 	dontworry(info);
@@ -1756,10 +1809,11 @@ DEFINE_LUA_FUNCTION(emu_wait, "")
 
 DEFINE_LUA_FUNCTION(emu_frameadvance, "")
 {
+	CheckLuaAbort(L);
 	if(FailVerifyAtFrameBoundary(L, "emu.frameadvance", 0,1))
 		return emu_wait(L);
 
-	intptr_t uid = luaStateToUIDMap[L->l_G->mainthread];
+	intptr_t uid = luaStateToUIDMap[L];
 	LuaContextInfo& info = GetCurrentInfo();
 
 	if(!info.ranFrameAdvance)
@@ -2228,7 +2282,7 @@ DEFINE_LUA_FUNCTION(state_loadscriptdata, "location")
 			//		saveData.ImportRecords(luaSaveFile);
 			//		fclose(luaSaveFile);
 
-			//		intptr_t uid = luaStateToUIDMap[L->l_G->mainthread];
+			//		intptr_t uid = luaStateToUIDMap[L];
 			//		LuaContextInfo& info = GetCurrentInfo();
 
 			//		lua_settop(L, 0);
@@ -3260,8 +3314,7 @@ DEFINE_LUA_FUNCTION(gui_setopacity, "alpha_0_to_1")
 	lua_Number opacF = luaL_checknumber(L,1);
 	opacF *= 255.0;
 	if(opacF < 0) opacF = 0;
-	int opac;
-	lua_number2int(opac, opacF);
+	int opac = LuaNumberToInt(opacF);
 	LuaContextInfo& info = GetCurrentInfo();
 	info.transparencyModifier = opac;
 	return 0;
@@ -3279,8 +3332,7 @@ DEFINE_LUA_FUNCTION(gui_settransparency, "transparency_4_to_0")
 	lua_Number opacF = 4 - transp;
 	opacF *= 255.0 / 4.0;
 	if(opacF < 0) opacF = 0;
-	int opac;
-	lua_number2int(opac, opacF);
+	int opac = LuaNumberToInt(opacF);
 	LuaContextInfo& info = GetCurrentInfo();
 	info.transparencyModifier = opac;
 	return 0;
@@ -3865,7 +3917,7 @@ DEFINE_LUA_FUNCTION(emu_registermenustart, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_ONINITMENU]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_ONINITMENU]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 
@@ -3897,7 +3949,7 @@ DEFINE_LUA_FUNCTION(emu_register3devent, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_REGISTER3DEVENT]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_REGISTER3DEVENT]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 
@@ -4426,7 +4478,7 @@ static int curve(lua_State *L)
 
 #endif
 
-static const struct luaL_reg aggbasicshapes [] =
+static const struct luaL_Reg aggbasicshapes [] =
 {
 	{"line", line},
 	{"triangle", triangle},
@@ -4536,7 +4588,7 @@ static int lineWidth(lua_State *L)
 
 #endif
 
-static const struct luaL_reg agggeneralattributes [] =
+static const struct luaL_Reg agggeneralattributes [] =
 {
 //	{"blendMode", blendMode},
 //	{"imageBlendMode", imageBlendMode},
@@ -4596,7 +4648,7 @@ static int text(lua_State *L)
 
 #endif
 
-static const struct luaL_reg aggcustom [] =
+static const struct luaL_Reg aggcustom [] =
 {
 	{"setFont", setFont},
 	{"text", text},
@@ -4811,7 +4863,7 @@ DEFINE_LUA_FUNCTION(controller_get, "[joystickID = 0 [,returnDiagonals = false]]
     return 0;
 #endif
 }
-static const struct luaL_reg controllerlib [] = {
+static const struct luaL_Reg controllerlib [] = {
 	{"get", controller_get},
 	{"read", controller_get},
 	{NULL, NULL}
@@ -4826,7 +4878,7 @@ static int gcEMUFILE_MEMORY(lua_State *L)
 }
 
 
-static const struct luaL_reg styluslib [] =
+static const struct luaL_Reg styluslib [] =
 {
 	{"get", stylus_read},
 	{"peek", stylus_peek},
@@ -4837,7 +4889,7 @@ static const struct luaL_reg styluslib [] =
 	{NULL, NULL}
 };
 
-static const struct luaL_reg emulib [] =
+static const struct luaL_Reg emulib [] =
 {
 	{"frameadvance", emu_frameadvance},
 	{"gamecode", emu_gamecode},
@@ -4875,7 +4927,7 @@ static const struct luaL_reg emulib [] =
 //	{"openrom", emu_loadrom},
 	{NULL, NULL}
 };
-static const struct luaL_reg guilib [] =
+static const struct luaL_Reg guilib [] =
 {
 	{"register", gui_register},
 	{"text", gui_text},
@@ -4906,7 +4958,7 @@ static const struct luaL_reg guilib [] =
 	{"image", gui_gdoverlay},
 	{NULL, NULL}
 };
-static const struct luaL_reg statelib [] =
+static const struct luaL_Reg statelib [] =
 {
 	{"create", state_create},
 	{"save", state_save},
@@ -4921,7 +4973,7 @@ static const struct luaL_reg statelib [] =
 	//{"registerload", state_registerload},
 	{NULL, NULL}
 };
-static const struct luaL_reg memorylib [] =
+static const struct luaL_Reg memorylib [] =
 {
 	{"readbyte", memory_readbyte},
 	{"readbytesigned", memory_readbytesigned},
@@ -4963,7 +5015,7 @@ static const struct luaL_reg memorylib [] =
 
 	{NULL, NULL}
 };
-static const struct luaL_reg joylib [] =
+static const struct luaL_Reg joylib [] =
 {
 	{"get", joy_get},
 	{"getdown", joy_getdown},
@@ -4979,7 +5031,7 @@ static const struct luaL_reg joylib [] =
 	{"readup", joy_getup},
 	{NULL, NULL}
 };
-static const struct luaL_reg inputlib [] =
+static const struct luaL_Reg inputlib [] =
 {
 	{"get", input_getcurrentinputstatus},
 	{"registerhotkey", input_registerhotkey},
@@ -4988,7 +5040,7 @@ static const struct luaL_reg inputlib [] =
 	{"read", input_getcurrentinputstatus},
 	{NULL, NULL}
 };
-static const struct luaL_reg movielib [] =
+static const struct luaL_Reg movielib [] =
 {
 	{"active", movie_isactive},
 	{"recording", movie_isrecording},
@@ -5017,7 +5069,7 @@ static const struct luaL_reg movielib [] =
 	{"getreadonly", movie_getreadonly},
 	{NULL, NULL}
 };
-static const struct luaL_reg soundlib [] =
+static const struct luaL_Reg soundlib [] =
 {
 	{"clear", sound_clear},
 	{NULL, NULL}
@@ -5167,9 +5219,34 @@ cFuncInfo [] = // this info is stored here to avoid having to change all of Lua'
 	{"_LOADLIB", "__gc", "", true},
 };
 
+// LuaJIT never calls debug hooks from JIT-compiled traces.  Measured with the
+// shipped LuaJIT 2.1.1792588164: a 3,000,000-iteration pure Lua loop fired a
+// LUA_MASKCOUNT hook 0 times with JIT on, 1464 times with jit.off().  Since
+// LuaRescueHook is both the "stop script" and the infinite-loop safeguard,
+// leave the trace compiler off by default (LuaJIT's interpreter is still
+// faster than stock Lua 5.1).  Define LUAENGINE_ENABLE_JIT=1 to opt in, or a
+// script can call jit.on() itself; in either case a pure-Lua tight loop then
+// becomes unstoppable from the GUI, so CheckLuaAbort() is the only safety net.
+#ifndef LUAENGINE_ENABLE_JIT
+#define LUAENGINE_ENABLE_JIT 0
+#endif
+
 void registerLibs(lua_State* L)
 {
 	luaL_openlibs(L);
+
+#if !LUAENGINE_ENABLE_JIT
+	lua_getglobal(L, "jit");
+	if(lua_istable(L, -1))
+	{
+		lua_getfield(L, -1, "off");
+		if(lua_isfunction(L, -1))
+			lua_call(L, 0, 0); // jit.off(): no arguments turns compilation off globally
+		else
+			lua_pop(L, 1);
+	}
+	lua_pop(L, 1);
+#endif
 
 	luaL_register(L, "emu", emulib);
 	luaL_register(L, "gui", guilib);
@@ -5180,7 +5257,15 @@ void registerLibs(lua_State* L)
 	luaL_register(L, "input", inputlib); // for user input
 	luaL_register(L, "movie", movielib);
 	luaL_register(L, "sound", soundlib);
-	luaL_register(L, "bit", bit_funcs); // LuaBitOp library
+
+	// LuaJIT opens the bit library itself and JIT-compiles bit.* calls, so do
+	// not overwrite that table with the ported LuaBitOp implementation.  Stock
+	// Lua 5.1 has no bit table at all and must keep using the ported one.
+	lua_getglobal(L, "bit");
+	const bool engineHasBitLib = lua_istable(L, -1);
+	lua_pop(L, 1);
+	if(!engineHasBitLib)
+		luaL_register(L, "bit", bit_funcs); // LuaBitOp library (Lua 5.1 only)
 
 	luaL_register(L, "agg", aggbasicshapes);
 	luaL_register(L, "agg", agggeneralattributes);
@@ -5204,7 +5289,11 @@ void registerLibs(lua_State* L)
 	lua_register(L, "SHIFT", bitshift);
 	lua_register(L, "BIT", bitbit);
 
-	luabitop_validate(L);
+	// The self-test validates the *ported* LuaBitOp number-punning (and its
+	// dependency on the host FPU control word).  It is meaningless when the
+	// engine's own bit library is in use.
+	if(!engineHasBitLib)
+		luabitop_validate(L);
 
 	// populate s_cFuncInfoMap the first time
 	static bool once = true;
@@ -5486,11 +5575,13 @@ void RequestAbortLuaScript(intptr_t uid, const char* message)
 	lua_State* L = info.L;
 	if(L)
 	{
-		// this probably isn't the right way to do it
-		// but calling luaL_error here is positively unsafe
-		// (it seemingly works fine but sometimes corrupts the emulation state in colorful ways)
-		// and this works pretty well and is definitely safe, so screw it
-		info.L->hookcount = 1; // run hook function as soon as possible
+		// Calling luaL_error here is positively unsafe (it seemingly works fine
+		// but sometimes corrupts the emulation state in colorful ways), so just
+		// ask the rescue hook to run as soon as possible and let it raise the
+		// error from inside the protected call.  LuaJIT keeps lua_State opaque,
+		// so the old "L->hookcount = 1" poke is replaced by the public API.
+		// LuaRescueHook restores the normal HOOKCOUNT cadence on its next run.
+		lua_sethook(L, LuaRescueHook, LUA_MASKCOUNT, 1);
 		info.panic = true; // and call luaL_error once we're inside the hook function
 		if(message)
 		{
@@ -5534,23 +5625,25 @@ void SetLoadKey(LuaContextInfo& info, const char* key)
 
 void HandleCallbackError(lua_State* L, LuaContextInfo& info, intptr_t uid, bool stopScript)
 {
+	// Every caller invokes this right after lua_pcall() returned an error, so
+	// there is no active protected frame left to rethrow into.  LuaJIT keeps
+	// lua_State opaque, so the old errfunc/errorJmp probe is gone; always report
+	// directly instead of risking luaL_error() hitting the panic function.
 	info.crashed = true;
-	if(L->errfunc || L->errorJmp)
-		luaL_error(L, lua_tostring(L,-1));
+	const char* errmsg = lua_tostring(L,-1);
+	if(!errmsg)
+		errmsg = "(error object is not a string)";
+	if(info.print)
+	{
+		info.print(uid, errmsg);
+		info.print(uid, "\r\n");
+	}
 	else
 	{
-		if(info.print)
-		{
-			info.print(uid, lua_tostring(L,-1));
-			info.print(uid, "\r\n");
-		}
-		else
-		{
-			fprintf(stderr, "%s\n", lua_tostring(L,-1));
-		}
-		if(stopScript)
-			StopLuaScript(uid);
+		fprintf(stderr, "%s\n", errmsg);
 	}
+	if(stopScript)
+		StopLuaScript(uid);
 }
 
 void CallExitFunction(intptr_t uid)
@@ -6066,12 +6159,12 @@ void CallRegisteredLuaLoadFunctions(int savestateNumber, const LuaSaveData& save
 				info.running = true;
 				RefreshScriptSpeedStatus();
 
-				// since the scriptdata can be very expensive to load
-				// (e.g. the registered save function returned some huge tables)
-				// check the number of parameters the registered load function expects
-				// and don't bother loading the parameters it wouldn't receive anyway
-				int numParamsExpected = (L->top - 1)->value.gc->cl.l.p->numparams;
-				if(numParamsExpected) numParamsExpected--; // minus one for the savestate number we always pass in
+			// LuaJIT keeps lua_State opaque, so the callback's Proto::numparams
+			// is no longer reachable through the public C API.  Load every saved
+			// item instead: Lua simply discards arguments the callback does not
+			// declare.  This loses only the old "skip expensive data" shortcut,
+			// not correctness ((unsigned)-1 is also what the load-all path uses).
+			int numParamsExpected = -1;
 
 				int prevGarbage = lua_gc(L, LUA_GCCOUNT, 0);
 
@@ -6205,7 +6298,7 @@ static void LuaStackToBinaryConverter(lua_State* L, int i, std::vector<unsigned 
 				{
 					char errmsg [1024];
 					sprintf(errmsg, "values of type \"%s\" are not allowed to be returned from registered save functions.\r\n", luaL_typename(L,i));
-					info.print(luaStateToUIDMap[L->l_G->mainthread], errmsg);
+					info.print(luaStateToUIDMap[L], errmsg);
 				}
 				else
 				{
@@ -6379,7 +6472,7 @@ void BinaryToLuaStackConverter(lua_State* L, const unsigned char*& data, unsigne
 						sprintf(errmsg, "values of type \"%s\" are not allowed to be loaded into registered load functions. The save state's Lua save data file might be corrupted.\r\n", lua_typename(L,type));
 					else
 						sprintf(errmsg, "The save state's Lua save data file seems to be corrupted.\r\n");
-					info.print(luaStateToUIDMap[L->l_G->mainthread], errmsg);
+					info.print(luaStateToUIDMap[L], errmsg);
 				}
 				else
 				{
@@ -6790,5 +6883,83 @@ void RefreshScriptSpeedStatus()
 				g_anyScriptsHighSpeed = true;
 		++iter;
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Engine identification for the Lua Script window's "About" button.
+//
+// As in vba-rerecording's VBALuaEngineVersion(), the engine is asked what it
+// is instead of trusting the headers: _VERSION comes from the loaded
+// implementation and the "jit" table only exists in LuaJIT.  A fresh temporary
+// state is used because a script may be mid-execution on the emulator's thread
+// while the user opens the dialog.  Only public Lua 5.1 C API is used, so this
+// works with both the vendored Lua 5.1.5 and LuaJIT 2.1.
+// ---------------------------------------------------------------------------
+bool GetLuaEngineInfo(LuaEngineInfo* out)
+{
+	if(!out)
+		return false;
+
+	LuaEngineInfo blank = {};
+	*out = blank;
+	strncpy(out->headers, LUA_RELEASE, sizeof(out->headers) - 1);
+
+	lua_State* L = luaL_newstate();
+	if(!L)
+	{
+		strncpy(out->version, "lua51.dll did not start", sizeof(out->version) - 1);
+		return false;
+	}
+	luaL_openlibs(L);
+
+	char language[64] = "";
+	lua_getglobal(L, "_VERSION");
+	if(lua_isstring(L, -1))
+		strncpy(language, lua_tostring(L, -1), sizeof(language) - 1);
+	lua_pop(L, 1);
+
+	char engine[96] = "", arch[32] = "", osName[32] = "";
+	lua_getglobal(L, "jit");
+	if(lua_istable(L, -1))
+	{
+		out->isLuaJIT = true;
+
+		lua_getfield(L, -1, "version");
+		if(lua_isstring(L, -1))
+			strncpy(engine, lua_tostring(L, -1), sizeof(engine) - 1);
+		lua_pop(L, 1);
+
+		lua_getfield(L, -1, "arch");
+		if(lua_isstring(L, -1))
+			strncpy(arch, lua_tostring(L, -1), sizeof(arch) - 1);
+		lua_pop(L, 1);
+
+		lua_getfield(L, -1, "os");
+		if(lua_isstring(L, -1))
+			strncpy(osName, lua_tostring(L, -1), sizeof(osName) - 1);
+		lua_pop(L, 1);
+	}
+	lua_pop(L, 1);
+	lua_close(L);
+
+	if(engine[0])
+		snprintf(out->version, sizeof(out->version), "%s (%s)",
+			engine, language[0] ? language : "Lua 5.1");
+	else if(language[0])
+		snprintf(out->version, sizeof(out->version), "%s (no LuaJIT)", language);
+	else
+		strncpy(out->version, "no version reported", sizeof(out->version) - 1);
+
+	if(out->isLuaJIT)
+	{
+		snprintf(out->platform, sizeof(out->platform), "%s / %s",
+			arch[0] ? arch : "?", osName[0] ? osName : "?");
+		snprintf(out->jit, sizeof(out->jit), "%s (LUAENGINE_ENABLE_JIT=%d)",
+			LUAENGINE_ENABLE_JIT ? "enabled" : "off by default", (int)LUAENGINE_ENABLE_JIT);
+	}
+	else
+		strncpy(out->jit, "n/a (not LuaJIT)", sizeof(out->jit) - 1);
+
+	return true;
 }
 

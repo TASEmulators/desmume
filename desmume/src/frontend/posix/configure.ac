@@ -236,15 +236,19 @@ AC_SUBST(GTHREAD_LIBS)
 
 AC_PATH_PROG(UPDATEDESKTOP, [update-desktop-database])
 
-# Need check for both lua and lua5.1 to run on debian, see mysql bug #29945
-PKG_CHECK_MODULES(LUA,
-                  lua >= 5.1,
-                  HAVE_LUA=yes,
-                  HAVE_LUA=no)
-PKG_CHECK_MODULES(LUA,
-                  lua5.1 >= 5.1,
-                  HAVE_LUA=yes,
-                  HAVE_LUA=no)
+# lua-engine.cpp only uses Lua's public 5.1 C API now, so any engine exposing
+# that ABI works.  Prefer LuaJIT 2.1 (what the Windows frontend ships), then
+# fall back to the distro's Lua 5.1 .pc names.  The old code ran two
+# unconditional PKG_CHECK_MODULES calls, which let the second one clobber
+# LUA_CFLAGS/LUA_LIBS (and HAVE_LUA) from the first - see mysql bug #29945.
+PKG_CHECK_MODULES([LUA], [luajit >= 2.1], [HAVE_LUA=yes], [HAVE_LUA=no])
+if test "x$HAVE_LUA" = "xno" ; then
+  PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1], [HAVE_LUA=yes], [HAVE_LUA=no])
+fi
+if test "x$HAVE_LUA" = "xno" ; then
+  PKG_CHECK_MODULES([LUA], [lua >= 5.1], [HAVE_LUA=yes], [HAVE_LUA=no])
+fi
+AS_IF([test "x$HAVE_LUA" = "xno"], [LUA_CFLAGS=; LUA_LIBS=])
 AC_SUBST(LUA_CFLAGS)
 AC_SUBST(LUA_LIBS)
 dnl -- force lua disabled
