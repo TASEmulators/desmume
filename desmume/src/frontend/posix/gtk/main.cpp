@@ -3842,6 +3842,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 	
     Desmume_InitOnce();
     Hud.reset();
+    HudLoadLayout();
     osd = new OSDCLASS(-1);
 	
 #ifdef AGG2D_USE_VECTORFONTS
