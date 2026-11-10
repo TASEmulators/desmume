@@ -41,7 +41,8 @@ struct LuaEngineInfo
 	char version[128];   // "LuaJIT 2.1.1792588164 (Lua 5.1)" / "Lua 5.1 (no LuaJIT)"
 	char platform[64];   // "x64 / Windows" (LuaJIT only, else empty)
 	char jit[96];        // trace-compiler policy, or "n/a (not LuaJIT)"
-	char headers[64];    // LUA_RELEASE of the headers this was built against
+	char headers[64];    // "Lua 5.1.4 (LuaJIT 2.1.1792588164)" - LUA_RELEASE, plus
+	                     // LUAJIT_VERSION when luajit.h was included
 	bool  isLuaJIT;
 };
 

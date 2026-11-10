@@ -105,10 +105,25 @@ static bool IsHardwareAddressValid(u32 address) {
 // Only Lua's public C API is used here.  LuaJIT keeps lua_State opaque and does
 // not ship the internal headers (lstate.h/lobject.h), so nothing below may touch
 // lua_State fields, Proto or luaconf.h-internal macros such as lua_number2int.
+//
+// The Cocoa build has to spell the path out.  Xcode generates a header map from
+// every header file that is referenced by the project and consults it before
+// the -I paths, so a plain #include "lua.h" resolved to the vendored Lua 5.1.5
+// sources that are still in the tree for the MinGW makefile - the dialog
+// reported "Headers: Lua 5.1.5" while the Windows build compiles against
+// LuaJIT.  Naming the LuaJIT headers here keeps the two front ends on the same
+// declarations and makes LUAJIT_VERSION visible below.
 extern "C" {
+#ifdef DESMUME_LUA_DYNAMIC
+	#include "frontend/windows/lua/include/lua.h"
+	#include "frontend/windows/lua/include/lauxlib.h"
+	#include "frontend/windows/lua/include/lualib.h"
+	#include "frontend/windows/lua/include/luajit.h"
+#else
 	#include "lua.h"
 	#include "lauxlib.h"
 	#include "lualib.h"
+#endif
 };
 
 // Cocoa has no import library and does not ship LuaJIT, so the entry points
@@ -7480,7 +7495,14 @@ bool GetLuaEngineInfo(LuaEngineInfo* out)
 
 	LuaEngineInfo blank = {};
 	*out = blank;
+#ifdef LUAJIT_VERSION
+	// The headers ship the LuaJIT version next to the Lua 5.1 compatibility
+	// level; reporting both makes it obvious when the runtime dylib is a
+	// different LuaJIT build than the headers (which is fine, same ABI).
+	snprintf(out->headers, sizeof(out->headers), "%s (%s)", LUA_RELEASE, LUAJIT_VERSION);
+#else
 	strncpy(out->headers, LUA_RELEASE, sizeof(out->headers) - 1);
+#endif
 
 	char reason[512];
 	lua_State* L = LuaEngineNewState(reason, sizeof(reason));

@@ -49,6 +49,18 @@ it was built for, the trace-JIT policy and the headers the binary was compiled
 against; macOS also shows the dylib the entry points were resolved from. That is
 usually faster than reading `runtime.version` back out of a failing script.
 
+Two things in that dialog are easy to misread. `Headers` names the headers the
+binary was compiled against - for the MSVC and Cocoa builds that is the in-tree
+LuaJIT copy under `frontend/windows/lua/include`, and the line repeats its
+`LuaJIT 2.1.<date>` so it cannot be confused with the runtime one; the MinGW
+makefile still compiles the vendored Lua 5.1.5 and will say so. `Engine` comes
+from the engine actually answering, so a Homebrew dylib built on a different day
+shows a different `LuaJIT 2.1.<date>` number - same 2.1 ABI, so that is
+expected. And `Library` pointing at `/opt/homebrew/...` merely means the app
+bundle does not contain `Contents/Frameworks/libluajit-5.1.dylib`; the loader
+prefers the bundle, so distributing a self-contained build is a matter of
+copying the dylib there (and re-signing the bundle).
+
 ## Installation
 
 The editor knows two kinds of Lua library directories: a **library directory**
