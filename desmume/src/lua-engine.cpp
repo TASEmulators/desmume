@@ -71,6 +71,8 @@
 #include <map>
 #include <string>
 #include <algorithm>
+#include <mutex>
+#include <thread>
 
 #include "armcpu.h"
 #include "movie.h"
@@ -220,12 +222,57 @@ struct LuaContextInfo {
 	void(*print)(intptr_t uid, const char* str);
 	void(*onstart)(intptr_t uid);
 	void(*onstop)(intptr_t uid, bool statusOK);
+	// Cross-thread teardown requests.  See the comment above LuaProcessRequests().
+	bool stopRequested;   // a UI thread asked for this script to be stopped
+	bool closeRequested;  // a UI thread asked for this context to be destroyed
+	bool inStop;          // StopLuaScript() is running on the engine thread right now
 };
 std::map<intptr_t, LuaContextInfo*> luaContextInfo;
 std::map<lua_State*, uintptr_t> luaStateToUIDMap;
 int g_numScriptsStarted = 0;
 bool g_anyScriptsHighSpeed = false;
 bool g_stopAllScriptsEnabled = true;
+
+// ---------------------------------------------------------------------------
+// Thread ownership of the Lua states
+//
+// Scripts run on the emulation core thread, but Stop/Close come from the
+// front end's UI thread, and the Lua console can close its window while a
+// script is being torn down.  Two rules keep that from corrupting memory:
+//
+//   1. Only the thread that ran a script may touch its lua_State.  A stop from
+//      anywhere else just raises a flag.
+//   2. Only that thread may insert into or delete from luaContextInfo, because
+//      it walks the map every frame while dispatching callbacks.  Contexts
+//      created on a UI thread are parked in sPendingContexts until then.
+//
+// Violating either one used to free the LuaContextInfo under StopLuaScript (the
+// console window closes itself from -onScriptStopped, which is posted *during*
+// that very call), so the map cleanup at the end walked a freed std::map.
+// ---------------------------------------------------------------------------
+static std::mutex sContextRequestMutex;
+static std::thread::id sLuaEngineThreadId;
+static bool sLuaEngineThreadKnown = false;
+static bool sDrainingRequests = false;
+static std::vector<LuaContextInfo*> sPendingContexts;
+static std::vector<intptr_t> sPendingContextUids;
+
+static void MarkLuaEngineThread()
+{
+	sLuaEngineThreadId = std::this_thread::get_id();
+	sLuaEngineThreadKnown = true;
+}
+
+static bool OnLuaEngineThread()
+{
+	// Before the first script runs there is no owner yet, and nothing can be
+	// executing, so treat whoever asks as safe.
+	return !sLuaEngineThreadKnown || sLuaEngineThreadId == std::this_thread::get_id();
+}
+
+// Adds contexts parked by a UI thread and performs the stop/close requests it
+// left behind.  Must run on the engine thread; see its definition for why.
+void LuaProcessRequests(void);
 
 #define USE_INFO_STACK
 #ifdef USE_INFO_STACK
@@ -1635,6 +1682,17 @@ void LuaRescueHook(lua_State* L, lua_Debug *dbg)
 			// No errfunc/errorJmp probe: LuaJIT keeps lua_State opaque.  This hook
 			// only ever runs from inside a protected call (luaL_dofile/lua_pcall),
 			// so raising the error here is safe on both engines.
+			if(info.panic && info.panicMessage[0] == 0)
+			{
+				// RequestAbortLuaScript() raised the flag from the UI thread and
+				// could not ask Lua where it was; do it here, where the stack is
+				// ours and we are inside the VM.
+				luaL_where(L, 1);
+				const char* whereString = lua_tostring(L, -1);
+				snprintf(info.panicMessage, sizeof(info.panicMessage), "%sscript terminated",
+					whereString ? whereString : "");
+				lua_pop(L, 1);
+			}
 			luaL_error(L, "%s", info.panic ? info.panicMessage : "terminated by user");
 		}
 
@@ -5710,6 +5768,9 @@ void ResetInfo(LuaContextInfo& info)
 	info.numMemHooks = 0;
 	info.persistVars.clear();
 	info.newDefaultData.ClearRecords();
+	info.stopRequested = false;
+	info.closeRequested = false;
+	info.inStop = false;
 #ifdef HAVE_LIBAGG
 	info.guiData.data = (u32*)aggDraw.hud->buf().buf();
 	info.guiData.stridePix = aggDraw.hud->buf().stride_abs() / 4;
@@ -5739,11 +5800,29 @@ void OpenLuaContext(intptr_t uid, void(*print)(intptr_t uid, const char* str), v
 	newInfo->print = print;
 	newInfo->onstart = onstart;
 	newInfo->onstop = onstop;
-	luaContextInfo[uid] = newInfo;
+
+	// luaContextInfo is walked by the engine thread on every frame, so a UI
+	// thread that opened a console only hands the context over; it is added to
+	// the map at the start of the next frame.  Nothing can run this context in
+	// between, because starting a script is queued the same way.
+	if (OnLuaEngineThread())
+	{
+		std::lock_guard<std::mutex> lock(sContextRequestMutex);
+		luaContextInfo[uid] = newInfo;
+	}
+	else
+	{
+		std::lock_guard<std::mutex> lock(sContextRequestMutex);
+		sPendingContextUids.push_back(uid);
+		sPendingContexts.push_back(newInfo);
+	}
 }
 
 void RunLuaScriptFile(intptr_t uid, const char* filenameCStr)
 {
+	MarkLuaEngineThread();
+	LuaProcessRequests();
+
 	if(luaContextInfo.find(uid) == luaContextInfo.end())
 		return;
 	StopLuaScript(uid);
@@ -5909,39 +5988,44 @@ void StopScriptIfFinished(intptr_t uid, bool justReturned)
 	}
 }
 
+// Raises the panic flag on a context the caller knows is still alive.  Touches
+// no Lua API: see RequestAbortLuaScript() for why.
+static void RaiseAbortRequest(LuaContextInfo& info, const char* message)
+{
+	if(!info.L)
+		return;
+
+	if(message)
+	{
+		strncpy(info.panicMessage, message, sizeof(info.panicMessage));
+		info.panicMessage[sizeof(info.panicMessage)-1] = 0;
+	}
+	else
+	{
+		// Filled in with file/line by LuaRescueHook, which can safely ask Lua
+		// where it is.
+		info.panicMessage[0] = 0;
+	}
+	info.panic = true;
+}
+
 void RequestAbortLuaScript(intptr_t uid, const char* message)
 {
-	if(luaContextInfo.find(uid) == luaContextInfo.end())
+	// This is called from the front end's UI thread while the emulation thread
+	// is executing the script, so it may not touch the lua_State at all.
+	// lua_sethook()/luaL_where()/lua_pop() would write to the live stack and
+	// allocate from the live heap underneath the running VM; that corrupts it
+	// and the damage surfaces later, far away - as a walk over a std::map that
+	// had already been freed, for instance.
+	//
+	// So: only raise the panic flag.  LuaRescueHook (engine thread, inside the
+	// protected call) reads it at its next invocation - one per HOOKCOUNT VM
+	// instructions - and raises the error from there.
+	std::lock_guard<std::mutex> lock(sContextRequestMutex);
+	std::map<intptr_t, LuaContextInfo*>::iterator it = luaContextInfo.find(uid);
+	if(it == luaContextInfo.end() || it->second == NULL)
 		return;
-	LuaContextInfo& info = *luaContextInfo[uid];
-	lua_State* L = info.L;
-	if(L)
-	{
-		// Calling luaL_error here is positively unsafe (it seemingly works fine
-		// but sometimes corrupts the emulation state in colorful ways), so just
-		// ask the rescue hook to run as soon as possible and let it raise the
-		// error from inside the protected call.  LuaJIT keeps lua_State opaque,
-		// so the old "L->hookcount = 1" poke is replaced by the public API.
-		// LuaRescueHook restores the normal HOOKCOUNT cadence on its next run.
-		lua_sethook(L, LuaRescueHook, LUA_MASKCOUNT, 1);
-		info.panic = true; // and call luaL_error once we're inside the hook function
-		if(message)
-		{
-			strncpy(info.panicMessage, message, sizeof(info.panicMessage));
-			info.panicMessage[sizeof(info.panicMessage)-1] = 0;
-		}
-		else
-		{
-			// attach file/line info because this is the case where it's most necessary to see that,
-			// and often it won't be possible for the later luaL_error call to retrieve it otherwise.
-			// this means sometimes printing multiple file/line numbers if luaL_error does find something,
-			// but that's fine since more information is probably better anyway.
-			luaL_where(L,0); // should be 0 and not 1 here to get useful (on force stop) messages
-			const char* whereString = lua_tostring(L,-1);
-			snprintf(info.panicMessage, sizeof(info.panicMessage), "%sscript terminated", whereString);
-			lua_pop(L,1);
-		}
-	}
+	RaiseAbortRequest(*it->second, message);
 }
 
 void SetSaveKey(LuaContextInfo& info, const char* key)
@@ -6081,6 +6165,25 @@ void CallExitFunction(intptr_t uid)
 
 void StopLuaScript(intptr_t uid)
 {
+	const bool foreignThread = !OnLuaEngineThread();
+
+	if(foreignThread)
+	{
+		// Called from the front end's UI thread.  It may not touch the Lua state
+		// (see RequestAbortLuaScript) and may not start the teardown either,
+		// because the engine thread could be in the middle of one.  Leave the
+		// request behind and let LuaProcessRequests() act on it.
+		std::lock_guard<std::mutex> lock(sContextRequestMutex);
+		std::map<intptr_t, LuaContextInfo*>::iterator it = luaContextInfo.find(uid);
+		if(it == luaContextInfo.end() || it->second == NULL)
+			return;
+		LuaContextInfo& info = *it->second;
+		info.stopRequested = true;
+		if(info.running)
+			RaiseAbortRequest(info, NULL);
+		return;
+	}
+
 	LuaContextInfo* infoPtr = luaContextInfo[uid];
 	if(!infoPtr)
 		return;
@@ -6091,9 +6194,13 @@ void StopLuaScript(intptr_t uid)
 	{
 		// if it's currently running then we can't stop it now without crashing
 		// so the best we can do is politely request for it to go kill itself
-		RequestAbortLuaScript(uid);
+		info.stopRequested = true;
+		RaiseAbortRequest(info, NULL);
 		return;
 	}
+
+	info.stopRequested = false;
+	info.inStop = true;
 
 	lua_State* L = info.L;
 	if(L)
@@ -6186,13 +6293,112 @@ void StopLuaScript(intptr_t uid)
 		}
 		RefreshScriptStartedStatus();
 	}
+
+	info.inStop = false;
+}
+
+// Drops a context that a UI thread opened but the engine thread has not adopted
+// yet, and reports whether it was still pending.  Safe to call from any thread:
+// until LuaProcessRequests() adopts it, the engine thread has never seen it.
+static bool DropPendingContext(intptr_t uid)
+{
+	std::lock_guard<std::mutex> lock(sContextRequestMutex);
+	for (size_t i = 0; i < sPendingContextUids.size(); i++)
+	{
+		if (sPendingContextUids[i] == uid)
+		{
+			delete sPendingContexts[i];
+			sPendingContextUids.erase(sPendingContextUids.begin() + i);
+			sPendingContexts.erase(sPendingContexts.begin() + i);
+			return true;
+		}
+	}
+	return false;
 }
 
 void CloseLuaContext(intptr_t uid)
 {
+	if(DropPendingContext(uid))
+		return;
+
+	if(!OnLuaEngineThread())
+	{
+		// Deleting the context here would free the very object the engine
+		// thread may still be walking (it is what StopLuaScript() runs in).
+		// Leave a note; LuaProcessRequests() destroys it on the engine thread,
+		// right after StopLuaScript() has finished there.
+		std::lock_guard<std::mutex> lock(sContextRequestMutex);
+		std::map<intptr_t, LuaContextInfo*>::iterator it = luaContextInfo.find(uid);
+		if(it == luaContextInfo.end() || it->second == NULL)
+			return;
+		LuaContextInfo& info = *it->second;
+		info.closeRequested = true;
+		info.stopRequested = true;
+		if(info.running)
+			RaiseAbortRequest(info, NULL);
+		return;
+	}
+
 	StopLuaScript(uid);
-	delete luaContextInfo[uid];
-	luaContextInfo.erase(uid);
+
+	// Drop it from the map before freeing it: once it is gone from there, no
+	// request from another thread can reach the freed object.
+	LuaContextInfo* infoPtr = NULL;
+	{
+		std::lock_guard<std::mutex> lock(sContextRequestMutex);
+		std::map<intptr_t, LuaContextInfo*>::iterator it = luaContextInfo.find(uid);
+		if(it != luaContextInfo.end())
+		{
+			infoPtr = it->second;
+			luaContextInfo.erase(it);
+		}
+	}
+	delete infoPtr;
+}
+
+// Runs on the engine thread, once per frame.  Adopts the contexts a UI thread
+// opened, then honours the stop/close requests it left behind.  Everything is
+// collected before anything is acted on, because StopLuaScript() and
+// CloseLuaContext() erase from luaContextInfo themselves.
+void LuaProcessRequests(void)
+{
+	if(sDrainingRequests || !OnLuaEngineThread())
+		return;
+	sDrainingRequests = true;
+
+	{
+		std::lock_guard<std::mutex> lock(sContextRequestMutex);
+		for (size_t i = 0; i < sPendingContexts.size(); i++)
+			luaContextInfo[sPendingContextUids[i]] = sPendingContexts[i];
+		sPendingContexts.clear();
+		sPendingContextUids.clear();
+	}
+
+	std::vector<intptr_t> toStop;
+	std::vector<intptr_t> toClose;
+	std::map<intptr_t, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	for (; iter != end; ++iter)
+	{
+		LuaContextInfo& info = *iter->second;
+		if(info.inStop)
+		{
+			// Already being torn down on this thread (an exit callback can get
+			// back here through emu.frameadvance); the request is redundant.
+			info.stopRequested = false;
+			continue;
+		}
+		if(info.closeRequested)
+			toClose.push_back(iter->first);
+		else if(info.stopRequested)
+			toStop.push_back(iter->first);
+	}
+	for (size_t i = 0; i < toStop.size(); i++)
+		StopLuaScript(toStop[i]);
+	for (size_t i = 0; i < toClose.size(); i++)
+		CloseLuaContext(toClose[i]);
+
+	sDrainingRequests = false;
 }
 
 
@@ -6416,6 +6622,10 @@ void _CallRegisteredLuaFunctions(LuaCallID calltype, int (*beforeCallback)(lua_S
 
 void CallRegisteredLuaFunctions(LuaCallID calltype)
 {
+	// Every front end pumps this at least once per frame, which makes it the
+	// natural place to adopt contexts opened by the UI thread and to act on the
+	// stops and closes it asked for.  No-op on any other thread.
+	LuaProcessRequests();
 	_CallRegisteredLuaFunctions(calltype, NULL, NULL);
 }
 

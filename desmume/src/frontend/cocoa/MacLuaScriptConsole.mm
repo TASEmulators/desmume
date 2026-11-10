@@ -70,6 +70,19 @@
 static NSMutableDictionary *g_consoles = nil;
 static intptr_t g_next_uid = 1;
 
+// g_consoles is AppKit-touched state, so only the main thread may look at it.
+// The engine callbacks below arrive on the emulation thread while a script is
+// running, which is exactly when the dictionary is also being mutated by the
+// console windows - looking a controller up from there is a data race.
+static void RunOnMainThreadSyncConsole(dispatch_block_t block)
+{
+	if ([NSThread isMainThread]) {
+		block();
+		return;
+	}
+	dispatch_sync(dispatch_get_main_queue(), block);
+}
+
 @implementation LuaConsoleWindowController
 
 @synthesize uid;
@@ -413,24 +426,39 @@ static intptr_t g_next_uid = 1;
 @end
 
 static void lua_print_cb(intptr_t uid, const char *str) {
-	LuaConsoleWindowController *con = [g_consoles objectForKey:[NSNumber numberWithInteger:uid]];
-	if (con) {
-		[con performSelectorOnMainThread:@selector(appendOutputMainThread:) withObject:[NSString stringWithUTF8String:str] waitUntilDone:NO];
-	}
+	// Runs on the emulation thread; hand the text to the main thread before
+	// touching the console table.
+	NSString *text = [[NSString alloc] initWithUTF8String:(str != NULL) ? str : ""];
+	dispatch_async(dispatch_get_main_queue(), ^{
+		LuaConsoleWindowController *con = [g_consoles objectForKey:[NSNumber numberWithInteger:uid]];
+		if (con) {
+			[con appendOutputMainThread:text];
+		}
+	});
 }
 
 static void lua_onstart_cb(intptr_t uid) {
-	LuaConsoleWindowController *con = [g_consoles objectForKey:[NSNumber numberWithInteger:uid]];
-	if (con) {
-		[con performSelectorOnMainThread:@selector(onScriptStarted) withObject:nil waitUntilDone:NO];
-	}
+	dispatch_async(dispatch_get_main_queue(), ^{
+		LuaConsoleWindowController *con = [g_consoles objectForKey:[NSNumber numberWithInteger:uid]];
+		if (con) {
+			[con onScriptStarted];
+		}
+	});
 }
 
 static void lua_onstop_cb(intptr_t uid, bool statusOK) {
-	LuaConsoleWindowController *con = [g_consoles objectForKey:[NSNumber numberWithInteger:uid]];
-	if (con) {
-		[con performSelectorOnMainThread:@selector(onScriptStopped) withObject:nil waitUntilDone:NO];
-	}
+	// Posted from inside StopLuaScript(), on the emulation thread, before the
+	// Lua state is closed and before the menu cleanup runs.  The window must
+	// not close itself from here: that would re-enter CloseLuaContext() and
+	// free the context while StopLuaScript() is still using it.  The window
+	// close is therefore only ever requested, and CloseLuaContext() defers the
+	// actual teardown to the engine thread.
+	dispatch_async(dispatch_get_main_queue(), ^{
+		LuaConsoleWindowController *con = [g_consoles objectForKey:[NSNumber numberWithInteger:uid]];
+		if (con) {
+			[con onScriptStopped];
+		}
+	});
 }
 
 void lua_script_open_console(void) {
@@ -456,20 +484,26 @@ extern "C" const char *MacLua_ConsoleRunFile(const char *path)
 	if (path == NULL || path[0] == '\0')
 		return "emu.openscript: no filename given";
 
-	if (!g_consoles) {
-		g_consoles = [[NSMutableDictionary alloc] init];
-	}
+	// Called from the emulation thread, in the middle of a running script.
+	// Creating the window and registering it has to happen on the main thread.
+	__block LuaConsoleWindowController *controller = nil;
+	RunOnMainThreadSyncConsole(^{
+		if (!g_consoles) {
+			g_consoles = [[NSMutableDictionary alloc] init];
+		}
 
-	LuaConsoleWindowController *controller = [[LuaConsoleWindowController alloc] init];
-	intptr_t uid = g_next_uid++;
-	controller.uid = uid;
+		controller = [[LuaConsoleWindowController alloc] init];
+		intptr_t uid = g_next_uid++;
+		controller.uid = uid;
 
-	[g_consoles setObject:controller forKey:[NSNumber numberWithInteger:uid]];
+		[g_consoles setObject:controller forKey:[NSNumber numberWithInteger:uid]];
 
-	OpenLuaContext(uid, lua_print_cb, lua_onstart_cb, lua_onstop_cb);
+		OpenLuaContext(uid, lua_print_cb, lua_onstart_cb, lua_onstop_cb);
 
-	controller.filename = std::string(path);
-	[controller showWindow];
+		controller.filename = std::string(path);
+		[controller showWindow];
+	});
+
 	// Kick it off through the normal run path so the file watcher, the path
 	// field and the stop button all behave exactly as if the user had pressed
 	// Run after picking the file by hand.
